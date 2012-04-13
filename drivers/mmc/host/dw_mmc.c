@@ -2572,6 +2572,11 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	if (host->pdata->caps2)
 		mmc->caps2 = host->pdata->caps2;
 
+	if (host->pdata->pm_caps) {
+		mmc->pm_caps |= host->pdata->pm_caps;
+		mmc->pm_flags = mmc->pm_caps;
+	}
+
 	if (host->pdata->get_bus_wd)
 		bus_width = host->pdata->get_bus_wd(slot->id);
 	else if (host->dev->of_node)
@@ -3184,6 +3189,8 @@ int dw_mci_suspend(struct dw_mci *host)
 		struct dw_mci_slot *slot = host->slot[i];
 		if (!slot)
 			continue;
+		if (slot->mmc)
+			slot->mmc->pm_flags |= slot->mmc->pm_caps;
 		ret = mmc_suspend_host(slot->mmc);
 		if (ret < 0) {
 			while (--i >= 0) {
