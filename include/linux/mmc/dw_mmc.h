@@ -184,6 +184,7 @@ struct dw_mci {
 	struct dw_mci_dma_data	*dma_data;
 #endif
 	unsigned int		desc_sz;
+	unsigned int		align_size;
 
 	struct pm_qos_request	pm_qos_int;
 	struct delayed_work	qos_work;

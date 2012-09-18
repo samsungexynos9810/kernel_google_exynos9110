@@ -790,6 +790,9 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 
 	/* Set the descriptor base address */
 	mci_writel(host, DBADDR, host->sg_dma);
+
+	host->align_size = (host->data_shift == 3) ? 8 : 4;
+
 	return 0;
 }
 
@@ -809,6 +812,7 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 {
 	struct scatterlist *sg;
 	unsigned int i, sg_len;
+	unsigned int align_mask = host->align_size - 1;
 
 	if (!next && data->host_cookie)
 		return data->host_cookie;
@@ -821,11 +825,11 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 	if (data->blocks * data->blksz < DW_MCI_DMA_THRESHOLD)
 		return -EINVAL;
 
-	if (data->blksz & 3)
+	if (data->blksz & align_mask)
 		return -EINVAL;
 
 	for_each_sg(data->sg, sg, data->sg_len, i) {
-		if (sg->offset & 3 || sg->length & 3)
+		if (sg->offset & align_mask || sg->length & align_mask)
 			return -EINVAL;
 	}
 
@@ -2920,6 +2924,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 		mmc->max_seg_size = mmc->max_req_size;
 #endif /* CONFIG_MMC_DW_IDMAC */
 	}
+
+	if (host->align_size)
+		mmc->align_size = host->align_size;
 
 	host->vmmc = devm_regulator_get(mmc_dev(mmc), "vmmc");
 	if (IS_ERR(host->vmmc)) {
