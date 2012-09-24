@@ -3189,16 +3189,17 @@ int dw_mci_suspend(struct dw_mci *host)
 		struct dw_mci_slot *slot = host->slot[i];
 		if (!slot)
 			continue;
-		if (slot->mmc)
+		if (slot->mmc) {
 			slot->mmc->pm_flags |= slot->mmc->pm_caps;
-		ret = mmc_suspend_host(slot->mmc);
-		if (ret < 0) {
-			while (--i >= 0) {
-				slot = host->slot[i];
-				if (slot)
-					mmc_resume_host(host->slot[i]->mmc);
+			ret = mmc_suspend_host(slot->mmc);
+			if (ret < 0) {
+				while (--i >= 0) {
+					slot = host->slot[i];
+					if (slot)
+						mmc_resume_host(host->slot[i]->mmc);
+				}
+				return ret;
 			}
-			return ret;
 		}
 	}
 
