@@ -224,6 +224,7 @@ struct dw_mci {
 	u32			quirks;
 
 	struct regulator	*vmmc;	/* Power regulator */
+	struct regulator	*vqmmc;
 	unsigned long		irq_flags; /* IRQ flags */
 	int			irq;
 };
