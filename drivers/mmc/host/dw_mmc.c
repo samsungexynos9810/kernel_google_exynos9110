@@ -29,6 +29,7 @@
 #include <linux/irq.h>
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
+#include <linux/mmc/sdio.h>
 #include <linux/mmc/dw_mmc.h>
 #include <linux/mmc/sd.h>
 #include <linux/bitops.h>
@@ -330,6 +331,19 @@ void dw_mci_reg_dump(struct dw_mci *host)
 	dev_err(host->dev, ": ciu-clk:            %s\n",
 			      atomic_read(&host->ciu_clk_cnt) ? "enable" : "disable");
 	dev_err(host->dev, ": ===========================================\n");
+}
+
+static inline bool dw_mci_stop_abort_cmd(struct mmc_command *cmd)
+{
+	u32 op = cmd->opcode;
+
+	if ((op == MMC_STOP_TRANSMISSION) ||
+	    (op == MMC_GO_IDLE_STATE) ||
+	    (op == MMC_GO_INACTIVE_STATE) ||
+	    ((op == SD_IO_RW_EXTENDED) && (cmd->arg & 0x80000000) &&
+	     ((cmd->arg >> 9) & 0xff) == SDIO_CCCR_ABORT))
+		return true;
+	return false;
 }
 
 static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
@@ -960,11 +974,6 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	WARN_ON(slot->mrq);
 
-	/*
-	 * The check for card presence and queueing of the request must be
-	 * atomic, otherwise the card could be removed in between and the
-	 * request wouldn't fail until another card was inserted.
-	 */
 	spin_lock_bh(&host->lock);
 
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
