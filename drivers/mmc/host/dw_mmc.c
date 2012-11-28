@@ -698,22 +698,38 @@ static void dw_mci_idmac_complete_dma(struct dw_mci *host)
 static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 				    unsigned int sg_len)
 {
-	int i;
+	int i, j;
+	int desc_cnt = 0;
 	struct idmac_desc *desc = host->sg_cpu;
 
-	for (i = 0; i < sg_len; i++, desc++) {
+	for (i = 0; i < sg_len; i++) {
 		unsigned int length = sg_dma_len(&data->sg[i]);
+		unsigned int sz_per_desc;
+		int left = (int)length;
 		u32 mem_addr = sg_dma_address(&data->sg[i]);
 
-		/* Set the OWN bit and disable interrupts for this descriptor */
-		desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC | IDMAC_DES0_CH;
+		for (j = 0; j < (length + 4096 - 1) / 4096; j++) {
+			/*
+			 * Set the OWN bit
+			 * and disable interrupts for this descriptor
+			 */
+			desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
+					IDMAC_DES0_CH;
 
-		/* Buffer length */
-		desc->des1 = length;
-		IDMAC_SET_BUFFER1_SIZE(desc, length);
+			/* Buffer length */
+			sz_per_desc = min(left, 4096);
+			desc->des1 = length;
+			IDMAC_SET_BUFFER1_SIZE(desc, sz_per_desc);
 
-		/* Physical address to DMA to/from */
-		desc->des2 = mem_addr;
+			/* Physical address to DMA to/from */
+			desc->des2 = mem_addr;
+
+			desc++;
+			desc_cnt++;
+			mem_addr += sz_per_desc;
+			left -= sz_per_desc;
+		}
+
 	}
 
 	/* Set first descriptor */
@@ -721,7 +737,7 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 	desc->des0 |= IDMAC_DES0_FD;
 
 	/* Set last descriptor */
-	desc = host->sg_cpu + (i - 1) * sizeof(struct idmac_desc);
+	desc = host->sg_cpu + (desc_cnt - 1) * sizeof(struct idmac_desc);
 	desc->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
 	desc->des0 |= IDMAC_DES0_LD;
 
