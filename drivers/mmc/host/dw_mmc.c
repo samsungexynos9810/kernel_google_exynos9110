@@ -3184,12 +3184,19 @@ EXPORT_SYMBOL(dw_mci_remove);
 int dw_mci_suspend(struct dw_mci *host)
 {
 	int i, ret = 0;
+	u32 clkena;
 
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
 		if (!slot)
 			continue;
 		if (slot->mmc) {
+			clkena = mci_readl(host, CLKENA);
+			clkena &= ~((SDMMC_CLKEN_LOW_PWR) << slot->id);
+			mci_writel(host, CLKENA, clkena);
+			mci_send_cmd(slot,
+				SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+
 			slot->mmc->pm_flags |= slot->mmc->pm_caps;
 			ret = mmc_suspend_host(slot->mmc);
 			if (ret < 0) {
