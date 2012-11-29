@@ -223,6 +223,9 @@ struct dw_mci {
 	/* Workaround flags */
 	u32			quirks;
 
+	/* S/W reset timer */
+	struct timer_list       timer;
+
 	struct regulator	*vmmc;	/* Power regulator */
 	struct regulator	*vqmmc;
 	unsigned long		irq_flags; /* IRQ flags */
@@ -337,6 +340,7 @@ struct dw_mci_board {
 	struct dw_mci_dma_ops *dma_ops;
 	struct dma_pdata *data;
 	struct block_settings *blk_settings;
+	unsigned int sw_timeout;
 };
 
 #endif /* LINUX_MMC_DW_MMC_H */
