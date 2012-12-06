@@ -317,6 +317,7 @@ struct dw_mci_board {
 	int (*get_cd)(u32 slot_id);
 	int (*get_ocr)(u32 slot_id);
 	int (*get_bus_wd)(u32 slot_id);
+	void (*hw_reset)(u32 slot_id);
 
 	/* cd_type: Type of Card Detection method (see cd_types enum above) */
 	enum dw_mci_cd_types cd_type;
