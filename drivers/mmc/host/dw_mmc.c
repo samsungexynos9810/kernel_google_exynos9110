@@ -2790,6 +2790,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 
 	slot = mmc_priv(mmc);
 	slot->id = id;
+#ifdef CONFIG_MMC_CLKGATE
+	mmc->clkgate_delay = 10;
+#endif
 	slot->mmc = mmc;
 	slot->host = host;
 	host->slot[id] = slot;
