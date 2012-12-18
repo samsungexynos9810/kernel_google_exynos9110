@@ -338,6 +338,7 @@ struct dw_mci_board {
 	 */
 	u8 clk_smpl;
 	bool tuned;
+	bool only_once_tune;
 
 	/* delay in mS before detecting cards after interrupt */
 	u32 detect_delay_ms;

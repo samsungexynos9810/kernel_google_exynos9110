@@ -3157,6 +3157,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 			return ERR_PTR(ret);
 	}
 
+	if (of_find_property(np, "only_once_tune", NULL))
+		pdata->only_once_tune = true;
+
 	if (of_find_property(np, "keep-power-in-suspend", NULL))
 		pdata->pm_caps |= MMC_PM_KEEP_POWER;
 

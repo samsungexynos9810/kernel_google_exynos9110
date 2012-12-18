@@ -628,11 +628,13 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	 * that worked.
 	 */
 	best_sample = find_median_of_5bits(sample_good);
+
 	dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
 			sample_good, best_sample);
 	if (best_sample >= 0) {
 		host->pdata->clk_smpl = best_sample;
-		host->pdata->tuned = true;
+		if (host->pdata->only_once_tune)
+			host->pdata->tuned = true;
 		dw_mci_exynos_set_sample(host, best_sample, false);
 		return 0;
 	}
