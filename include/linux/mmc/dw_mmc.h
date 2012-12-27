@@ -235,6 +235,12 @@ struct dw_mci {
 	struct timer_list       dto_timer;
 	unsigned int		dto_cnt;
 
+	struct delayed_work	tp_mon;
+	u32			transferred_cnt;
+	u32			cmd_cnt;
+	struct pm_qos_request	pm_qos_mif;
+	struct pm_qos_request	pm_qos_cpu;
+
 	struct regulator	*vmmc;	/* Power regulator */
 	struct regulator	*vqmmc;
 	unsigned long		irq_flags; /* IRQ flags */
@@ -286,6 +292,12 @@ struct block_settings {
 	unsigned int	max_blk_count;	/* maximum number of blocks in one req*/
 	unsigned int	max_req_size;	/* maximum number of bytes in one req*/
 	unsigned int	max_seg_size;	/* see blk_queue_max_segment_size */
+};
+
+struct dw_mci_mon_table {
+	u32	range;
+	s32	mif_lock_value;
+	s32	cpu_lock_value;
 };
 
 /* Board platform data */
@@ -355,6 +367,7 @@ struct dw_mci_board {
 	struct dw_mci_dma_ops *dma_ops;
 	struct dma_pdata *data;
 	struct block_settings *blk_settings;
+	struct dw_mci_mon_table *tp_mon_tbl;
 	unsigned int sw_timeout;
 };
 

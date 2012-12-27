@@ -1001,11 +1001,16 @@ static void __dw_mci_start_request(struct dw_mci *host,
 	host->completed_events = 0;
 	host->data_status = 0;
 
+	if (host->pdata->tp_mon_tbl)
+		host->cmd_cnt++;
+
 	data = cmd->data;
 	if (data) {
 		dw_mci_set_timeout(host);
 		mci_writel(host, BYTCNT, data->blksz*data->blocks);
 		mci_writel(host, BLKSIZ, data->blksz);
+		if (host->pdata->tp_mon_tbl)
+			host->transferred_cnt += data->blksz * data->blocks;
 	}
 
 	cmdflags = dw_mci_prepare_command(slot->mmc, cmd);
@@ -1134,20 +1139,15 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
 		set_bit(DW_MMC_CARD_NEED_INIT, &slot->flags);
-		/* Power up slot */
-		if (slot->host->pdata->setpower)
-			slot->host->pdata->setpower(slot->id, mmc->ocr_avail);
-		regs = mci_readl(slot->host, PWREN);
-		regs |= (1 << slot->id);
-		mci_writel(slot->host, PWREN, regs);
+		if (slot->host->pdata->tp_mon_tbl)
+			schedule_delayed_work(&slot->host->tp_mon, HZ);
 		break;
 	case MMC_POWER_OFF:
-		/* Power down slot */
-		if (slot->host->pdata->setpower)
-			slot->host->pdata->setpower(slot->id, 0);
-		regs = mci_readl(slot->host, PWREN);
-		regs &= ~(1 << slot->id);
-		mci_writel(slot->host, PWREN, regs);
+		if (slot->host->pdata->tp_mon_tbl) {
+			cancel_delayed_work_sync(&slot->host->tp_mon);
+			pm_qos_update_request(&slot->host->pm_qos_mif, 0);
+			pm_qos_update_request(&slot->host->pm_qos_cpu, 0);
+		}
 		break;
 	default:
 		break;
@@ -2247,6 +2247,38 @@ static void dw_mci_timeout_timer(unsigned long data)
 	}
 }
 
+static void dw_mci_tp_mon(struct work_struct *work)
+{
+	struct dw_mci *host = container_of(work, struct dw_mci, tp_mon.work);
+	struct dw_mci_mon_table *tp_tbl = host->pdata->tp_mon_tbl;
+	s32 mif_lock_value = 0;
+	s32 cpu_lock_value = 0;
+
+	while (tp_tbl->range) {
+		if (host->transferred_cnt > tp_tbl->range)
+			break;
+		tp_tbl++;
+	}
+
+	mif_lock_value = tp_tbl->mif_lock_value;
+	cpu_lock_value = tp_tbl->cpu_lock_value;
+
+	dev_dbg(host->dev, "%d byte/s cnt=%d mif=%d cpu=%d\n",
+						host->transferred_cnt,
+						host->cmd_cnt,
+						mif_lock_value,
+						cpu_lock_value);
+
+	pm_qos_update_request_timeout(&host->pm_qos_mif,
+					mif_lock_value, 2000000);
+	pm_qos_update_request_timeout(&host->pm_qos_cpu,
+					cpu_lock_value, 2000000);
+
+	host->transferred_cnt = 0;
+	host->cmd_cnt = 0;
+	schedule_delayed_work(&host->tp_mon, HZ);
+}
+
 static void dw_mci_work_routine_card(struct work_struct *work)
 {
 	struct dw_mci *host = container_of(work, struct dw_mci, card_work);
@@ -2993,7 +3025,15 @@ int dw_mci_probe(struct dw_mci *host)
 	if (!host->card_workqueue)
 		goto err_dmaunmap;
 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+
 	dw_mci_qos_init(host);
+	if (host->pdata->tp_mon_tbl) {
+		INIT_DELAYED_WORK(&host->tp_mon, dw_mci_tp_mon);
+		pm_qos_add_request(&host->pm_qos_mif,
+					PM_QOS_BUS_THROUGHPUT, 0);
+		pm_qos_add_request(&host->pm_qos_cpu,
+					PM_QOS_CPU_FREQ_MIN, 0);
+	}
 
 	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
 			       host->irq_flags, "dw-mci", host);
@@ -3049,6 +3089,10 @@ int dw_mci_probe(struct dw_mci *host)
 err_workqueue:
 	destroy_workqueue(host->card_workqueue);
 	dw_mci_qos_exit(host);
+	if (host->pdata->tp_mon_tbl) {
+		pm_qos_remove_request(&host->pm_qos_mif);
+		pm_qos_remove_request(&host->pm_qos_cpu);
+	}
 
 err_dmaunmap:
 	if (host->use_dma && host->dma_ops->exit)
@@ -3092,6 +3136,11 @@ void dw_mci_remove(struct dw_mci *host)
 	del_timer_sync(&host->timer);
 	del_timer_sync(&host->dto_timer);
 	destroy_workqueue(host->card_workqueue);
+	if (host->pdata->tp_mon_tbl) {
+		cancel_delayed_work_sync(&host->tp_mon);
+		pm_qos_remove_request(&host->pm_qos_mif);
+		pm_qos_remove_request(&host->pm_qos_cpu);
+	}
 
 	dw_mci_qos_exit(host);
 
@@ -3134,6 +3183,14 @@ int dw_mci_suspend(struct dw_mci *host)
 		}
 	}
 
+	if (host->pdata->tp_mon_tbl &&
+		(host->pdata->pm_caps & MMC_PM_KEEP_POWER)) {
+		cancel_delayed_work_sync(&host->tp_mon);
+		pm_qos_update_request(&host->pm_qos_mif, 0);
+		pm_qos_update_request(&host->pm_qos_cpu, 0);
+		host->transferred_cnt = 0;
+		host->cmd_cnt = 0;
+	}
 	if (host->vmmc)
 		regulator_disable(host->vmmc);
 
@@ -3196,6 +3253,14 @@ int dw_mci_resume(struct dw_mci *host)
 		if (ret < 0)
 			return ret;
 	}
+
+	if (host->pdata->tp_mon_tbl &&
+		(host->pdata->pm_caps & MMC_PM_KEEP_POWER)) {
+		host->transferred_cnt = 0;
+		host->cmd_cnt = 0;
+		schedule_delayed_work(&host->tp_mon, HZ);
+	}
+
 	return 0;
 }
 EXPORT_SYMBOL(dw_mci_resume);
