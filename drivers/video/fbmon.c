@@ -312,19 +312,23 @@ static void parse_vendor_block(unsigned char *block, struct fb_monspecs *specs)
 }
 
 static void parse_vendor_specific_block(struct fb_vendor *vsdb,
-					unsigned char *svsdb)
+					unsigned char *svsdb, u8 length)
 {
 	unsigned int offset = 0;
 	int i;
 
-	DPRINTK("========================================\n");
 	DPRINTK("Vendor Specific Data Block (VSDB)\n");
-	DPRINTK("========================================\n");
 	vsdb->ieee_reg = svsdb[offset + 1]
 			| (svsdb[offset + 2] << 8)
 			| (svsdb[offset + 3] << 16);
 	vsdb->phy_addr = svsdb[offset + 4] << 8;
 	vsdb->phy_addr |= svsdb[offset + 5];
+
+	DPRINTK("   ieee_reg: 0x%06x\n", vsdb->ieee_reg);
+	DPRINTK("   physical address: 0x%08x\n", vsdb->phy_addr);
+	if (length < 8)
+		return;
+
 	vsdb->video_present = (svsdb[offset + 8] & VSDB_VIDEO_PRESENT_MASK)
 					>> VSDB_VIDEO_PRESENT;
 	vsdb->i_latency_field = (svsdb[offset + 8] & VSDB_I_LATENCY_FIELD_MASK)
@@ -334,6 +338,10 @@ static void parse_vendor_specific_block(struct fb_vendor *vsdb,
 
 	offset += (vsdb->latency_field * 2 + vsdb->i_latency_field * 2);
 
+	DPRINTK("   video present: %d\n", vsdb->video_present);
+	if (!vsdb->video_present)
+		return;
+
 	vsdb->s3d_present = (svsdb[offset + 9] & VSDB_3D_PRESENT_MASK)
 					>> VSDB_3D_PRESENT;
 	vsdb->s3d_multi_present = (svsdb[offset + 9] & VSDB_3D_MT_PRESENT_MASK)
@@ -342,9 +350,6 @@ static void parse_vendor_specific_block(struct fb_vendor *vsdb,
 					>> VSDB_VIC_LEN;
 	vsdb->s3d_len = svsdb[offset + 10] & VSDB_3D_LEN_MASK;
 
-	DPRINTK("   ieee_reg: 0x%06x\n", vsdb->ieee_reg);
-	DPRINTK("   physical address: 0x%08x\n", vsdb->phy_addr);
-	DPRINTK("   video present: %d\n", vsdb->video_present);
 	DPRINTK("   HDMI VIC LEN: %d\n", vsdb->vic_len);
 	DPRINTK("   HDMI 3D LEN: %d\n", vsdb->s3d_len);
 	DPRINTK("   3D present: %d\n", vsdb->s3d_present);
@@ -387,8 +392,6 @@ static void parse_vendor_specific_block(struct fb_vendor *vsdb,
 				offset++;
 		}
 	}
-
-	DPRINTK("========================================\n");
 }
 
 static void get_dpms_capabilities(unsigned char flags,
@@ -1247,7 +1250,7 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 		if (!vsdb)
 			return;
 
-		parse_vendor_specific_block(vsdb, svsdb);
+		parse_vendor_specific_block(vsdb, svsdb, svsdb_n);
 		if (vsdb->ieee_reg == 0x000c03)
 			specs->misc |= FB_MISC_HDMI;
 
