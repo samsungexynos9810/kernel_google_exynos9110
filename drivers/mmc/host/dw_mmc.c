@@ -1302,7 +1302,7 @@ static int dw_mci_3_3v_signal_voltage_switch(struct dw_mci_slot *slot)
 		}
 	} else {
 		reg = mci_readl(slot->host, UHS_REG);
-		reg |= (0x1 << slot->id);
+		reg &= ~(0x1 << slot->id);
 		mci_writel(slot->host, UHS_REG, reg);
 	}
 
