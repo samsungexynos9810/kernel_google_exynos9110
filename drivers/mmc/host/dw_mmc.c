@@ -371,8 +371,8 @@ static inline bool dw_mci_stop_abort_cmd(struct mmc_command *cmd)
 	if ((op == MMC_STOP_TRANSMISSION) ||
 	    (op == MMC_GO_IDLE_STATE) ||
 	    (op == MMC_GO_INACTIVE_STATE) ||
-	    ((op == SD_IO_RW_EXTENDED) && (cmd->arg & 0x80000000) &&
-	     ((cmd->arg >> 9) & 0xff) == SDIO_CCCR_ABORT))
+	    ((op == SD_IO_RW_DIRECT) && (cmd->arg & 0x80000000) &&
+	     ((cmd->arg >> 9) & 0x1FFFF) == SDIO_CCCR_ABORT))
 		return true;
 	return false;
 }
@@ -383,10 +383,11 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 	struct dw_mci_slot *slot = mmc_priv(mmc);
 	struct dw_mci *host = slot->host;
 	const struct dw_mci_drv_data *drv_data = slot->host->drv_data;
-	u32 cmdr;
+	u32 cmdr, argr;
 	cmd->error = -EINPROGRESS;
 
 	cmdr = cmd->opcode;
+	argr = ((cmd->arg >> 9) & 0x1FFFF);
 
 	if (cmdr == SD_SWITCH_VOLTAGE)
 		cmdr |= SDMMC_VOLT_SWITCH;
@@ -395,6 +396,12 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 		cmdr |= SDMMC_CMD_STOP;
 	else
 		cmdr |= SDMMC_CMD_PRV_DAT_WAIT;
+
+	if ((cmd->opcode == SD_IO_RW_DIRECT) &&
+			(argr == SDIO_CCCR_ABORT)) {
+		cmdr &= ~SDMMC_CMD_PRV_DAT_WAIT;
+		cmdr |= SDMMC_CMD_STOP;
+	}
 
 	if (cmd->flags & MMC_RSP_PRESENT) {
 		/* We expect a response, so set this bit */
