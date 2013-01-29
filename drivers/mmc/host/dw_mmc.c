@@ -988,6 +988,10 @@ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
 
 	if (dw_mci_submit_data_dma(host, data)) {
 		int flags = SG_MITER_ATOMIC;
+
+		if (SDMMC_GET_FCNT(mci_readl(host, STATUS)))
+			dw_mci_wait_reset(host->dev, host, SDMMC_CTRL_FIFO_RESET);
+
 		if (host->data->flags & MMC_DATA_READ)
 			flags |= SG_MITER_TO_SG;
 		else
@@ -2244,6 +2248,7 @@ static void dw_mci_read_data_pio(struct dw_mci *host, bool dto)
 	u32 status;
 	unsigned int len;
 	unsigned int remain, fcnt;
+	u32 temp;
 
 	do {
 		if (!sg_miter_next(sg_miter))
@@ -2282,6 +2287,13 @@ static void dw_mci_read_data_pio(struct dw_mci *host, bool dto)
 	return;
 
 done:
+
+	/* Disable RX/TX IRQs */
+	mci_writel(host, RINTSTS, SDMMC_INT_TXDR | SDMMC_INT_RXDR);
+	temp = mci_readl(host, INTMASK);
+	temp  &= ~(SDMMC_INT_RXDR | SDMMC_INT_TXDR);
+	mci_writel(host, INTMASK, temp);
+
 	sg_miter_stop(sg_miter);
 	host->sg = NULL;
 	smp_wmb();
@@ -2299,6 +2311,7 @@ static void dw_mci_write_data_pio(struct dw_mci *host)
 	unsigned int len;
 	unsigned int fifo_depth = host->fifo_depth;
 	unsigned int remain, fcnt;
+	u32 temp;
 
 	do {
 		if (!sg_miter_next(sg_miter))
@@ -2336,6 +2349,13 @@ static void dw_mci_write_data_pio(struct dw_mci *host)
 	return;
 
 done:
+
+	/* Disable RX/TX IRQs */
+	mci_writel(host, RINTSTS, SDMMC_INT_TXDR | SDMMC_INT_RXDR);
+	temp = mci_readl(host, INTMASK);
+	temp  &= ~(SDMMC_INT_RXDR | SDMMC_INT_TXDR);
+	mci_writel(host, INTMASK, temp);
+
 	sg_miter_stop(sg_miter);
 	host->sg = NULL;
 	smp_wmb();
