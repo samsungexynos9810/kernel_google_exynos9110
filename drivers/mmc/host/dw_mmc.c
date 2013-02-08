@@ -3262,12 +3262,23 @@ int dw_mci_resume(struct dw_mci *host)
 
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
+		struct mmc_ios ios;
 		if (!slot)
 			continue;
 		if (slot->mmc->pm_flags & MMC_PM_KEEP_POWER &&
 					dw_mci_get_cd(slot->mmc)) {
+			memcpy(&ios, &slot->mmc->ios,
+						sizeof(struct mmc_ios));
+			ios.timing = MMC_TIMING_LEGACY;
+			dw_mci_set_ios(slot->mmc, &ios);
 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
 			dw_mci_setup_bus(slot, true);
+			if (host->pdata->tuned) {
+				if (drv_data && drv_data->misc_control)
+					drv_data->misc_control(host, CTRL_SET_CLK_SAMPLE);
+				mci_writel(host, CDTHRCTL,
+						host->cd_rd_thr << 16 | 1);
+			}
 		}
 
 		ret = mmc_resume_host(host->slot[i]->mmc);
