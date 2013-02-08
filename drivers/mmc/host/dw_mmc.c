@@ -1778,7 +1778,6 @@ static void dw_mci_tasklet_func(unsigned long priv)
 						&host->pending_events))
 				break;
 
-			host->data = NULL;
 			set_bit(EVENT_DATA_COMPLETE, &host->completed_events);
 			status = host->data_status;
 
@@ -1852,6 +1851,8 @@ static void dw_mci_tasklet_func(unsigned long priv)
 				dev_info(host->dev,
 				"Done, S/W timer for data timeout by Data transfer Done\n");
 			}
+
+			host->data = NULL;
 
 			if (!data->stop && !host->stop_snd) {
 				dw_mci_request_end(host, host->mrq);
