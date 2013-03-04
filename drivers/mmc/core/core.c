@@ -922,7 +922,7 @@ int mmc_interrupt_hpi(struct mmc_card *card)
 	}
 
 	mmc_claim_host(card->host);
-	err = mmc_send_status(card, &status);
+	err = mmc_send_status(card, &status, 0);
 	if (err) {
 		pr_err("%s: Get card status fail\n", mmc_hostname(card->host));
 		goto out;
@@ -954,7 +954,7 @@ int mmc_interrupt_hpi(struct mmc_card *card)
 
 	prg_wait = jiffies + msecs_to_jiffies(card->ext_csd.out_of_int_time);
 	do {
-		err = mmc_send_status(card, &status);
+		err = mmc_send_status(card, &status, 0);
 
 		if (!err && R1_CURRENT_STATE(status) == R1_STATE_TRAN)
 			break;
@@ -3187,14 +3187,14 @@ static int mmc_wait_trans_state(struct mmc_card *card, unsigned int wait_ms)
 	int waited = 0;
 	int status = 0;
 
-	mmc_send_status(card, &status);
+	mmc_send_status(card, &status, 0);
 
 	while (R1_CURRENT_STATE(status) != R1_STATE_TRAN) {
 		if (waited > wait_ms)
 			return 0;
 		mdelay(MIN_WAIT_MS);
 		waited += MIN_WAIT_MS;
-		mmc_send_status(card, &status);
+		mmc_send_status(card, &status, 0);
 	}
 	return waited;
 }
