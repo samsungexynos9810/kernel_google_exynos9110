@@ -3318,6 +3318,11 @@ int dw_mci_resume(struct dw_mci *host)
 			spin_unlock(&host->ciu_clk_lock);
 		}
 
+		if (dw_mci_get_cd(slot->mmc))
+			set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+		else
+			clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+
 		ret = mmc_resume_host(host->slot[i]->mmc);
 		if (ret < 0)
 			return ret;
