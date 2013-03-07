@@ -180,7 +180,8 @@ static void s3c24xx_serial_stop_tx(struct uart_port *port)
 		else
 			disable_irq_nosync(ourport->tx_irq);
 #ifdef CONFIG_SERIAL_SAMSUNG_DMA
-		if (uart_dma->use_dma) {
+		if ((uart_dma->use_dma) && (uart_dma->tx.busy)) {
+			uart_dma->tx.busy = 0;
 			uart_dma->ops->stop(uart_dma->tx.ch);
 		}
 #endif
@@ -340,6 +341,8 @@ static void callback_uart_tx_dma(void *data)
 	dma_unmap_single(port->dev, uart_dma->tx_src_addr,
 			uart_dma->tx.req_size, DMA_TO_DEVICE);
 
+	uart_dma->tx.busy = 0;
+
 	xmit = &port->state->xmit;
 	xmit->tail = (xmit->tail + uart_dma->tx.req_size)&(UART_XMIT_SIZE - 1);
 	port->icount.tx += uart_dma->tx.req_size;
@@ -386,6 +389,7 @@ static void prepare_dma(struct uart_dma_data *dma,
 		uart_dma = container_of((void *)dma,
 				struct exynos_uart_dma, tx);
 		info.fp = callback_uart_tx_dma;
+		uart_dma->tx.busy = 1;
 	} else {
 		uart_dma = container_of((void *)dma,
 				struct exynos_uart_dma, rx);
