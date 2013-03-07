@@ -267,6 +267,9 @@ static void callback_uart_rx_dma(void *data)
 	dma_unmap_single(port->dev, uart_dma->rx_dst_addr,
 			received_size, DMA_FROM_DEVICE);
 
+	if (received_size == 0)
+		goto out;
+
 	/* Error check after DMA transfer */
 	if (uerstat != 0) {
 		printk(KERN_ERR "UART Rx DMA Error(0x%x)!!!\n", uerstat);
@@ -290,6 +293,7 @@ static void callback_uart_rx_dma(void *data)
 	tty_insert_flip_string(&port->state->port, uart_dma->rx_buff, received_size);
 	tty_flip_buffer_push(&port->state->port);
 
+out:
 	if (uart_dma->rx.busy == 1)
 		uart_rx_dma_request(ourport);
 }
