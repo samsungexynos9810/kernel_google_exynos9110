@@ -523,8 +523,10 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 	dma_addr_t dst_addr = 0;
 	int max_count = 256;
 
-	if (uart_dma->use_dma == 0)
+	if (uart_dma->use_dma == 0) {
+		max_count = 64;
 		goto rx_use_cpu;
+	}
 
 	utrstat = rd_regl(port, S3C2410_UTRSTAT);
 	uart_dma->ops->getposition(uart_dma->rx.ch, &src_addr, &dst_addr);
