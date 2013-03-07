@@ -543,9 +543,9 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 
 	uart_rx_drain_fifo(ourport, (utrstat >> 16) & 0xff);
 
-	uart_rx_dma_request(ourport);
-
 	wr_regl(port, S3C2410_UTRSTAT, UTRSTAT_TIMEOUT);
+
+	uart_rx_dma_request(ourport);
 
 	goto out;
 
