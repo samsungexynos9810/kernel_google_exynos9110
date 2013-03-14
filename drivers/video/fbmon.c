@@ -760,15 +760,33 @@ static struct fb_videomode *fb_create_modedb(unsigned char *edid, int *dbsize)
 }
 
 /**
- * fb_destroy_modedb - destroys mode database
+ * fb_destroy_xxdb - destroys databases
  * @modedb: mode database to destroy
+ * @audiodb: audio database to destroy
+ * @videodb: video database to destroy
+ * @vsdb: vendor specific data blcok database to destroy
  *
  * DESCRIPTION:
- * Destroy mode database created by fb_create_modedb
+ * Destroy databases created by fb_create_modedb or fb_edid_add_monspecs
  */
 void fb_destroy_modedb(struct fb_videomode *modedb)
 {
 	kfree(modedb);
+}
+
+void fb_destroy_audiodb(struct fb_audio *audiodb)
+{
+	kfree(audiodb);
+}
+
+void fb_destroy_videodb(struct fb_video *videodb)
+{
+	kfree(videodb);
+}
+
+void fb_destroy_vsdb(struct fb_vendor *vsdb)
+{
+	kfree(vsdb);
 }
 
 static int fb_get_monitor_limits(unsigned char *edid, struct fb_monspecs *specs)
@@ -1138,27 +1156,27 @@ static u8 fb_edid_get_cea_bit_rates(u8 cea_bit_rates)
  * @edid:	128 byte array with an E-EDID block
  * @specs:	monitor specs to be extended
  */
-void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
+int fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 	unsigned char *block;
-	struct fb_videomode *m;
-	struct fb_video *videodb;
-	struct fb_audio *audiodb;
-	struct fb_vendor *vsdb;
+	struct fb_videomode *m = NULL;
+	struct fb_video *videodb = NULL;
+	struct fb_audio *audiodb = NULL;
+	struct fb_vendor *vsdb = NULL;
 	int num = 0, i;
 	u8 sad[128 - 5], svd[64], svsdb[128 - 5];
 	u8 edt[(128 - 4) / DETAILED_TIMING_DESCRIPTION_SIZE];
 	u8 pos = 4, sad_n = 0, svd_n = 0, svsdb_n = 0;
 
 	if (!edid)
-		return;
+		return -EINVAL;
 
 	if (!edid_checksum(edid))
-		return;
+		return -EINVAL;
 
 	if (edid[0] != 0x2 || edid[1] != 0x3 ||
 	    edid[2] < 4 || edid[2] > 128 - DETAILED_TIMING_DESCRIPTION_SIZE)
-		return;
+		return -EINVAL;
 
 	DPRINTK("  Data Block Collection\n");
 
@@ -1205,7 +1223,7 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 		pr_debug("Found %d lpcm audio blocks\n", sad_n);
 		audiodb = kzalloc(sad_n * sizeof(struct fb_audio), GFP_KERNEL);
 		if (!audiodb)
-			return;
+			goto fail_audiodb;
 
 		for (i = 0; i < sad_n; i++) {
 			audiodb[i].format = FB_AUDIO_LPCM;
@@ -1227,7 +1245,7 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 	if (svd_n > 0) {
 		videodb = kzalloc(svd_n * sizeof(struct fb_video), GFP_KERNEL);
 		if (!videodb)
-			return;
+			goto fail_videodb;
 
 		for (i = 0; i < svd_n; i++) {
 			videodb[i].vic_idx = svd[i];
@@ -1248,7 +1266,7 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 	if (svsdb_n > 0) {
 		vsdb = kzalloc(sizeof(struct fb_vendor), GFP_KERNEL);
 		if (!vsdb)
-			return;
+			goto fail_vsdb;
 
 		parse_vendor_specific_block(vsdb, svsdb, svsdb_n);
 		if (vsdb->ieee_reg == 0x000c03)
@@ -1271,13 +1289,13 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 
 	/* No video descriptors, so nothing more to do */
 	if (!(num + svd_n))
-		return;
+		return 1;
 
 	m = kzalloc((specs->modedb_len + num + svd_n) *
 		       sizeof(struct fb_videomode), GFP_KERNEL);
 
 	if (!m)
-		return;
+		goto fail_modedb;
 
 	memcpy(m, specs->modedb, specs->modedb_len * sizeof(struct fb_videomode));
 
@@ -1302,6 +1320,20 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 	kfree(specs->modedb);
 	specs->modedb = m;
 	specs->modedb_len = specs->modedb_len + num + svd_n;
+
+	return 1;
+
+fail_modedb:
+	kfree(vsdb);
+
+fail_vsdb:
+	kfree(videodb);
+
+fail_videodb:
+	kfree(audiodb);
+
+fail_audiodb:
+	return -ENOMEM;
 }
 
 /*
@@ -1712,10 +1744,19 @@ void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 	specs = NULL;
 }
-void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
+int fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 }
 void fb_destroy_modedb(struct fb_videomode *modedb)
+{
+}
+void fb_destroy_audiodb(struct fb_audio *audiodb)
+{
+}
+void fb_destroy_videodb(struct fb_video *videodb)
+{
+}
+void fb_destroy_vsdb(struct fb_vendor *vsdb)
 {
 }
 int fb_get_mode(int flags, u32 val, struct fb_var_screeninfo *var,
@@ -1826,3 +1867,6 @@ EXPORT_SYMBOL(fb_edid_add_monspecs);
 EXPORT_SYMBOL(fb_get_mode);
 EXPORT_SYMBOL(fb_validate_mode);
 EXPORT_SYMBOL(fb_destroy_modedb);
+EXPORT_SYMBOL(fb_destroy_audiodb);
+EXPORT_SYMBOL(fb_destroy_videodb);
+EXPORT_SYMBOL(fb_destroy_vsdb);
