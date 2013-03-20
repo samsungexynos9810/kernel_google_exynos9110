@@ -1868,6 +1868,18 @@ static void dw_mci_tasklet_func(unsigned long priv)
 			prev_state = state = STATE_SENDING_STOP;
 			if (!data->error)
 				send_stop_cmd(host, data);
+
+			if (test_and_clear_bit(EVENT_DATA_ERROR,
+						&host->pending_events)) {
+				if (data->stop)
+					send_stop_cmd(host, data);
+				else {
+					dw_mci_start_command(host,
+							&host->stop,
+							host->stop_cmdr);
+					host->stop_snd = true;
+				}
+			}
 			/* fall through */
 
 		case STATE_SENDING_STOP:
