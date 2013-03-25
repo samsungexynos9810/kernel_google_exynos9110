@@ -360,14 +360,10 @@ static void callback_uart_tx_dma(void *data)
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS)
 		uart_write_wakeup(port);
 
-	if (uart_circ_empty(xmit)) {
-		s3c24xx_serial_stop_tx(port);
-	} else {
-		/* Unmask tx DMA */
-		uintm = rd_regl(port, S3C64XX_UINTM);
-		uintm &= ~(0x1 << 2);
-		wr_regl(port, S3C64XX_UINTM, uintm);
-	}
+	/* Unmask tx DMA */
+	uintm = rd_regl(port, S3C64XX_UINTM);
+	uintm &= ~(0x1 << 2);
+	wr_regl(port, S3C64XX_UINTM, uintm);
 }
 
 static void prepare_dma(struct uart_dma_data *dma,
