@@ -1169,14 +1169,14 @@ int fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 	u8 pos = 4, sad_n = 0, svd_n = 0, svsdb_n = 0;
 
 	if (!edid)
-		return -EINVAL;
+		return 1;
 
 	if (!edid_checksum(edid))
-		return -EINVAL;
+		return 1;
 
 	if (edid[0] != 0x2 || edid[1] != 0x3 ||
 	    edid[2] < 4 || edid[2] > 128 - DETAILED_TIMING_DESCRIPTION_SIZE)
-		return -EINVAL;
+		return 1;
 
 	DPRINTK("  Data Block Collection\n");
 
