@@ -515,6 +515,8 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 #ifndef CONFIG_SERIAL_SAMSUNG_DMA
 	unsigned int ufcon, ch, flag, ufstat, uerstat;
 	int max_count = 64;
+
+	spin_lock_irqsave(&port->lock, flags);
 #else
 	struct exynos_uart_dma *uart_dma = &ourport->uart_dma;
 	unsigned int ufcon, ufstat, utrstat, uerstat = 0;
@@ -522,6 +524,8 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 	dma_addr_t src_addr = 0;
 	dma_addr_t dst_addr = 0;
 	int max_count = 256;
+
+	spin_lock_irqsave(&port->lock, flags);
 
 	if (uart_dma->use_dma == 0) {
 		max_count = 64;
@@ -551,7 +555,6 @@ s3c24xx_serial_rx_chars(int irq, void *dev_id)
 
 rx_use_cpu:
 #endif
-	spin_lock_irqsave(&port->lock, flags);
 
 	while (max_count-- > 0) {
 		ufcon = rd_regl(port, S3C2410_UFCON);
