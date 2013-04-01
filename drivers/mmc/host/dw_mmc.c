@@ -77,6 +77,7 @@ struct idmac_desc {
 };
 #endif /* CONFIG_MMC_DW_IDMAC */
 
+#define QOS_DELAY	10
 #define DATA_RETRY	1
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
@@ -123,6 +124,36 @@ static void dw_mci_biu_clk_dis(struct dw_mci *host)
 		clk_disable_unprepare(host->biu_clk);
 		atomic_dec_return(&host->biu_clk_cnt);
 	}
+}
+
+static void dw_mci_qos_work(struct work_struct *work)
+{
+	struct dw_mci *host = container_of(work, struct dw_mci, qos_work.work);
+	pm_qos_update_request(&host->pm_qos_int, 0);
+}
+
+static void dw_mci_qos_init(struct dw_mci *host)
+{
+	INIT_DELAYED_WORK(&host->qos_work, dw_mci_qos_work);
+	pm_qos_add_request(&host->pm_qos_int, PM_QOS_DEVICE_THROUGHPUT, 0);
+}
+
+static void dw_mci_qos_exit(struct dw_mci *host)
+{
+	pm_qos_remove_request(&host->pm_qos_int);
+}
+
+static void dw_mci_qos_get(struct dw_mci *host)
+{
+	if (delayed_work_pending(&host->qos_work))
+		cancel_delayed_work_sync(&host->qos_work);
+	pm_qos_update_request(&host->pm_qos_int, host->pdata->qos_int_level);
+}
+
+static void dw_mci_qos_put(struct dw_mci *host)
+{
+	queue_delayed_work(system_nrt_wq, &host->qos_work,
+			msecs_to_jiffies(QOS_DELAY));
 }
 
 #if defined(CONFIG_DEBUG_FS)
@@ -1028,7 +1059,10 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	WARN_ON(slot->mrq);
 
+	dw_mci_qos_get(host);
+
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
+		dw_mci_qos_put(host);
 		spin_unlock_bh(&host->lock);
 		mrq->cmd->error = -ENOMEDIUM;
 		mmc_request_done(mmc, mrq);
@@ -1037,6 +1071,7 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	if (!dw_mci_stop_abort_cmd(mrq->cmd)) {
 		if (!dw_mci_wait_data_busy(host, mrq)) {
+			dw_mci_qos_put(host);
 			mrq->cmd->error = -ENOTRECOVERABLE;
 			mmc_request_done(mmc, mrq);
 			return;
@@ -1352,6 +1387,7 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
 	}
 
 	spin_unlock(&host->lock);
+	dw_mci_qos_put(host);
 	mmc_request_done(prev_mmc, mrq);
 	spin_lock(&host->lock);
 }
@@ -2279,6 +2315,7 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 
 					del_timer(&host->timer);
 					spin_unlock(&host->lock);
+					dw_mci_qos_put(host);
 					mmc_request_done(slot->mmc, mrq);
 					spin_lock(&host->lock);
 				}
@@ -2956,6 +2993,8 @@ int dw_mci_probe(struct dw_mci *host)
 	if (!host->card_workqueue)
 		goto err_dmaunmap;
 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
+	dw_mci_qos_init(host);
+
 	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
 			       host->irq_flags, "dw-mci", host);
 
@@ -3009,6 +3048,7 @@ int dw_mci_probe(struct dw_mci *host)
 
 err_workqueue:
 	destroy_workqueue(host->card_workqueue);
+	dw_mci_qos_exit(host);
 
 err_dmaunmap:
 	if (host->use_dma && host->dma_ops->exit)
@@ -3052,6 +3092,8 @@ void dw_mci_remove(struct dw_mci *host)
 	del_timer_sync(&host->timer);
 	del_timer_sync(&host->dto_timer);
 	destroy_workqueue(host->card_workqueue);
+
+	dw_mci_qos_exit(host);
 
 	if (host->use_dma && host->dma_ops->exit)
 		host->dma_ops->exit(host);

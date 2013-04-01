@@ -15,6 +15,7 @@
 #define LINUX_MMC_DW_MMC_H
 
 #include <linux/scatterlist.h>
+#include <linux/pm_qos.h>
 
 #define MAX_MCI_SLOTS	2
 
@@ -179,6 +180,10 @@ struct dw_mci {
 #else
 	struct dw_mci_dma_data	*dma_data;
 #endif
+
+	struct pm_qos_request	pm_qos_int;
+	struct delayed_work	qos_work;
+
 	u32			cmd_status;
 	u32			data_status;
 	u32			stop_cmdr;
@@ -318,6 +323,9 @@ struct dw_mci_board {
 	int (*get_ocr)(u32 slot_id);
 	int (*get_bus_wd)(u32 slot_id);
 	void (*hw_reset)(u32 slot_id);
+
+	/* INT QOS khz */
+	unsigned int qos_int_level;
 
 	/* cd_type: Type of Card Detection method (see cd_types enum above) */
 	enum dw_mci_cd_types cd_type;
