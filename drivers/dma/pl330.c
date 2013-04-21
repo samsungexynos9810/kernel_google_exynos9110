@@ -2026,11 +2026,21 @@ static inline void _free_event(struct pl330_thread *thrd, int ev)
 {
 	struct pl330_dmac *pl330 = thrd->dmac;
 	struct pl330_info *pi = pl330->pinfo;
+	void __iomem *regs = pi->base;
+	u32 inten = readl(regs + INTEN);
 
 	/* If the event is valid and was held by the thread */
 	if (ev >= 0 && ev < pi->pcfg.num_events
-			&& pl330->events[ev] == thrd->id)
+			&& pl330->events[ev] == thrd->id) {
 		pl330->events[ev] = -1;
+
+		if (readl(regs + ES) & (1 << ev)) {
+			if (!(inten & (1 << ev)))
+				writel(inten | (1 << ev), regs + INTEN);
+			writel(1 << ev, regs + INTCLR);
+			writel(inten & ~(1 << ev) , regs + INTEN);
+		}
+	}
 }
 
 static void pl330_release_channel(void *ch_id)
