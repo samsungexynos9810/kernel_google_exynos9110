@@ -1746,6 +1746,7 @@ void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 }
 int fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
+	return 1;
 }
 void fb_destroy_modedb(struct fb_videomode *modedb)
 {
