@@ -28,6 +28,9 @@
 		pinctrl4 = &pinctrl_4;
 		pinctrl5 = &pinctrl_5;
 		pinctrl6 = &pinctrl_6;
+		mshc0 = &dwmmc_0;
+		mshc1 = &dwmmc_1;
+		mshc2 = &dwmmc_2;
 	};
 
 	chipid@10000000 {
@@ -184,5 +187,38 @@
 		compatible = "samsung,exynos5430-pinctrl";
 		reg = <0x14CE0000 0x1100>;
 		interrupts = <0 442 0>;
+	};
+
+	dwmmc_0: dwmmc0@15540000 {
+		compatible = "samsung,exynos5430-dw-mshc";
+		reg = <0x15540000 0x2000>;
+		interrupts = <0 225 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 565>, <&clock 141>;
+		clock-names = "biu", "ciu";
+		status = "disabled";
+	};
+
+	dwmmc_1: dwmmc1@15550000 {
+		compatible = "samsung,exynos5430-dw-mshc";
+		reg = <0x15550000 0x2000>;
+		interrupts = <0 226 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 566>, <&clock 142>;
+		clock-names = "biu", "ciu";
+		status = "disabled";
+	};
+
+	dwmmc_2: dwmmc2@15560000 {
+		compatible = "samsung,exynos5430-dw-mshc";
+		reg = <0x15560000 0x2000>;
+		interrupts = <0 227 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 567>, <&clock 143>;
+		clock-names = "biu", "ciu";
+		status = "disabled";
 	};
 };
