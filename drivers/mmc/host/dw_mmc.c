@@ -942,8 +942,9 @@ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
 		unsigned int rxwmark_val, msize_val, i;
 		unsigned int msize[8] = {1, 4, 8, 16, 32, 64, 128, 256};
 
-		for (i = 1; sizeof(msize) / sizeof(unsigned int); i++) {
-			if ((data->blksz / 4) % msize[i] == 0)
+		for (i = 1; i < sizeof(msize) / sizeof(unsigned int); i++) {
+			if (data->blksz != 0 &&
+				(data->blksz / (1 << host->data_shift)) % msize[i] == 0)
 				continue;
 			else
 				break;
@@ -957,9 +958,9 @@ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
 				rxwmark_val = 1;
 			}
 		} else {
-			if (i > 2) {
-				msize_val = i - 2;
-				rxwmark_val = msize[i-2] - 1;
+			if (i > 5) {
+				msize_val = i - 5;
+				rxwmark_val = msize[i-5] - 1;
 			} else {
 				msize_val = 0;
 				rxwmark_val = 1;
