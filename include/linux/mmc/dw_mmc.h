@@ -226,6 +226,10 @@ struct dw_mci {
 	/* S/W reset timer */
 	struct timer_list       timer;
 
+	/* Data timeout timer */
+	struct timer_list       dto_timer;
+	unsigned int		dto_cnt;
+
 	struct regulator	*vmmc;	/* Power regulator */
 	struct regulator	*vqmmc;
 	unsigned long		irq_flags; /* IRQ flags */
@@ -254,6 +258,8 @@ struct dw_mci_dma_ops {
 #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
 /* Bypass the security management unit */
 #define DW_MCI_QUIRK_BYPASS_SMU			BIT(4)
+/* Use S/W data timeout */
+#define DW_MMC_QUIRK_SW_DATA_TIMEOUT		BIT(8)
 
 /* Slot level quirks */
 /* This slot has no write protect */
