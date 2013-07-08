@@ -181,296 +181,103 @@
 #define S5PCSIS_RESO_MAX_PIX_HEIGHT			(0xffff)
 #endif
 
+#define FIMC_IS_SETTLE(w, h, f, s)	{	\
+	.width		= w,			\
+	.height		= h,			\
+	.framerate	= f,			\
+	.settle		= s,			\
+}
+
 static struct fimc_is_settle settle_3l2[] = {
 	/* 4144x3106@30fps */
-	{
-		.width		= 4144,
-		.height		= 3106,
-		.framerate	= 30,
-		.settle		= 23,
-	},
+	FIMC_IS_SETTLE(4144, 3106, 30, 23),
 	/* 4144x2332@30fps */
-	{
-		.width		= 4144,
-		.height		= 2332,
-		.framerate	= 30,
-		.settle		= 23,
-	},
+	FIMC_IS_SETTLE(4144, 2332, 30, 23),
 	/* 1024x584@120fps */
-	{
-		.width		= 1024,
-		.height		= 584,
-		.framerate	= 120,
-		.settle		= 17,
-	},
+	FIMC_IS_SETTLE(1024, 584, 120, 17),
 	/* 2072x1166@60fps */
-	{
-		.width		= 2072,
-		.height		= 1162,
-		.framerate	= 60,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(2072, 1162, 60, 9),
 	/* 2072x1166@24fps */
-	{
-		.width		= 2072,
-		.height		= 1166,
-		.framerate	= 24,
-		.settle		= 5,
-	},
+	FIMC_IS_SETTLE(2072, 1166, 24, 5),
 	/* 2072x1154@24fps */
-	{
-		.width		= 2072,
-		.height		= 1154,
-		.framerate	= 24,
-		.settle		= 5,
-	}
+	FIMC_IS_SETTLE(2072, 1154, 24, 5),
 };
 
 static struct fimc_is_settle settle_imx135[] = {
 	/* 1936x1090@24fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 7,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 24, 7),
 	/* 1936x1090@30fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 5,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 30, 5),
 	/* 1936x1450@24fps */
-	{
-		.width		= 1936,
-		.height		= 1450,
-		.framerate	= 24,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(1936, 1450, 24, 9),
 	/* 2064x1162@24fps */
-	{
-		.width		= 2064,
-		.height		= 1162,
-		.framerate	= 24,
-		.settle		= 8,
-	},
+	FIMC_IS_SETTLE(2064, 1162, 24, 8),
 	/* 1936x1090@60fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 60,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 60, 9),
 	/* 816x460@60fps */
-	{
-		.width		= 816,
-		.height		= 460,
-		.framerate	= 60,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(816, 460, 60, 9),
 	/* 736x490@120fps */
-	{
-		.width		= 736,
-		.height		= 490,
-		.framerate	= 120,
-		.settle		= 11,
-	},
+	FIMC_IS_SETTLE(736, 490, 120, 11),
 	/* 1296x730@120fps */
-	{
-		.width		= 1296,
-		.height		= 730,
-		.framerate	= 120,
-		.settle		= 11,
-	},
+	FIMC_IS_SETTLE(1296, 730, 120, 11),
 	/* 4112x2314@24ps */
-	{
-		.width		= 4112,
-		.height		= 2314,
-		.framerate	= 24,
-		.settle		= 14,
-	},
+	FIMC_IS_SETTLE(4112, 2314, 24, 14),
 	/* 816x460@120fps */
-	{
-		.width		= 816,
-		.height		= 460,
-		.framerate	= 120,
-		.settle		= 18,
-	},
+	FIMC_IS_SETTLE(816, 460, 120, 18),
 	/* 4144x2332@24fps */
-	{
-		.width		= 4144,
-		.height		= 2332,
-		.framerate	= 24,
-		.settle		= 19,
-	},
+	FIMC_IS_SETTLE(4144, 2332, 24, 19),
 	/* 4144x2332@30fps */
-	{
-		.width		= 4144,
-		.height		= 2332,
-		.framerate	= 30,
-		.settle		= 18,
-	},
+	FIMC_IS_SETTLE(4144, 2332, 30, 18),
 	/* 4112x3082@24fps */
-	{
-		.width		= 4112,
-		.height		= 3082,
-		.framerate	= 24,
-		.settle		= 19,
-	},
+	FIMC_IS_SETTLE(4112, 3082, 24, 19),
 	/* 4144x3106@24fps */
-	{
-		.width		= 4144,
-		.height		= 3106,
-		.framerate	= 24,
-		.settle		= 23,
-	},
+	FIMC_IS_SETTLE(4144, 3106, 24, 23),
 	/* 4144x3106@30fps */
-	{
-		.width		= 4144,
-		.height		= 3106,
-		.framerate	= 30,
-		.settle		= 23,
-	},
+	FIMC_IS_SETTLE(4144, 3106, 30, 23),
 	/* 2048x1152@60fps */
-	{
-		.width		= 2048,
-		.height		= 1152,
-		.framerate	= 60,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(2048, 1152, 60, 9),
 	/* 1024x576@120fps */
-	{
-		.width		= 1024,
-		.height		= 576,
-		.framerate	= 120,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(1024, 576, 120, 9),
 	/* 1024x576@60fps */
-	{
-		.width		= 1024,
-		.height		= 576,
-		.framerate	= 60,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(1024, 576, 60, 9),
 	/* 1936x1090@15fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 15,
-		.settle		= 7,
-	}
+	FIMC_IS_SETTLE(1936, 1090, 15, 7),
 };
 
 static struct fimc_is_settle settle_imx134[] = {
 	/* 3280x2458@30fps */
-	{
-		.width		= 3280,
-		.height		= 2458,
-		.framerate	= 30,
-		.settle		= 15,
-	},
+	FIMC_IS_SETTLE(3280, 2458, 30, 15),
 	/* 3280x2458@24fps */
-	{
-		.width		= 3280,
-		.height		= 2458,
-		.framerate	= 24,
-		.settle		= 12,
-	},
+	FIMC_IS_SETTLE(3280, 2458, 24, 12),
 	/* 1936x1450@24fps */
-	{
-		.width		= 1936,
-		.height		= 1450,
-		.framerate	= 24,
-		.settle		= 12,
-	},
+	FIMC_IS_SETTLE(1936, 1450, 24, 12),
 	/* 3280x1846@30fps */
-	{
-		.width		= 3280,
-		.height		= 1846,
-		.framerate	= 30,
-		.settle		= 11,
-	},
+	FIMC_IS_SETTLE(3280, 1846, 30, 11),
 	/* 3280x1846@60fps */
-	{
-		.width		= 3280,
-		.height		= 1846,
-		.framerate	= 24,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(3280, 1846, 24, 9),
 	/* 1936x1090@60fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 9,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 24, 9),
 	/* 816x460@120fps */
-	{
-		.width		= 816,
-		.height		= 460,
-		.framerate	= 120,
-		.settle		= 7,
-	}
+	FIMC_IS_SETTLE(816, 460, 120, 7),
 };
 
 static struct fimc_is_settle settle_6b2[] = {
 	/* 1456x1090@24fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SETTLE(1456, 1090, 24, 13),
 	/* 1936x1090@24fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 24, 13),
 	/* 1456x1090@30fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
+	FIMC_IS_SETTLE(1456, 1090, 30, 16),
 	/* 1936x1090@30fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 30, 16),
 	/* 1456x1090@24fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SETTLE(1456, 1090, 24, 13),
 	/* 1936x1090@24fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SETTLE(1936, 1090, 24, 13),
 	/* 1456x1090@30fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
+	FIMC_IS_SETTLE(1456, 1090, 30, 16),
 	/* 1936x1090@30fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	}
+	FIMC_IS_SETTLE(1936, 1090, 30, 16),
 };
 
 static int get_hsync_settle(struct fimc_is_settle *settle_table,
