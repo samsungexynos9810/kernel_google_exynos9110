@@ -1315,10 +1315,27 @@ static int dw_mci_3_3v_signal_voltage_switch(struct dw_mci_slot *slot)
 static int dw_mci_1_8v_signal_voltage_switch(struct dw_mci_slot *slot)
 {
 	struct dw_mci *host = slot->host;
+	unsigned long timeout = jiffies + msecs_to_jiffies(10);
 	u32 reg;
-	int ret = 0;
+	int ret = 0, retry = 10;
+	u32 status;
 
 	dw_mci_wait_reset(host->dev, host, SDMMC_CTRL_RESET);
+
+	/* Check For DATA busy */
+	do {
+
+		while (time_before(jiffies, timeout)) {
+			status = mci_readl(host, STATUS);
+			if (!(status & SDMMC_DATA_BUSY))
+				goto out;
+		}
+
+		dw_mci_wait_reset(host->dev, host, SDMMC_CTRL_RESET);
+		timeout = jiffies + msecs_to_jiffies(10);
+	} while (--retry);
+
+out:
 	reg = mci_readl(host, CLKENA);
 	reg &= ~((SDMMC_CLKEN_LOW_PWR | SDMMC_CLKEN_ENABLE) << slot->id);
 	mci_writel(host, CLKENA, reg);
