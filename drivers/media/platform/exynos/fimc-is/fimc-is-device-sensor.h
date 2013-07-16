@@ -28,6 +28,13 @@ enum fimc_is_sensor_output_entity {
 	FIMC_IS_SENSOR_OUTPUT_FRONT,
 };
 
+struct fimc_is_settle {
+	u32 width;
+	u32 height;
+	u32 framerate;
+	u32 settle;
+};
+
 struct fimc_is_enum_sensor {
 	u32 sensor;
 	u32 pixel_width;
@@ -38,6 +45,8 @@ struct fimc_is_enum_sensor {
 	u32 csi_ch;
 	u32 flite_ch;
 	u32 i2c_ch;
+	u32 settles;
+	struct fimc_is_settle *settle_table;
 	struct sensor_open_extended ext;
 	char *setfile_name;
 };

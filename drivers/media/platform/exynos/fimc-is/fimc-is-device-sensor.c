@@ -181,264 +181,312 @@
 #define S5PCSIS_RESO_MAX_PIX_HEIGHT			(0xffff)
 #endif
 
-struct _csis_hsync_settle {
-	int channel;
-	int width;
-	int height;
-	int framerate;
-	int settle;
+static struct fimc_is_settle settle_3l2[] = {
+	/* 4144x3106@30fps */
+	{
+		.width		= 4144,
+		.height		= 3106,
+		.framerate	= 30,
+		.settle		= 23,
+	},
+	/* 4144x2332@30fps */
+	{
+		.width		= 4144,
+		.height		= 2332,
+		.framerate	= 30,
+		.settle		= 23,
+	},
+	/* 1024x584@120fps */
+	{
+		.width		= 1024,
+		.height		= 584,
+		.framerate	= 120,
+		.settle		= 17,
+	},
+	/* 2072x1166@60fps */
+	{
+		.width		= 2072,
+		.height		= 1162,
+		.framerate	= 60,
+		.settle		= 9,
+	},
+	/* 2072x1166@24fps */
+	{
+		.width		= 2072,
+		.height		= 1166,
+		.framerate	= 24,
+		.settle		= 5,
+	},
+	/* 2072x1154@24fps */
+	{
+		.width		= 2072,
+		.height		= 1154,
+		.framerate	= 24,
+		.settle		= 5,
+	}
 };
 
-static struct _csis_hsync_settle csis_hsync_settle[] = {
-	/* IMX135, 1936x1090@24fps */
-	[0] = {
-		.channel	= CSI_ID_A,
+static struct fimc_is_settle settle_imx135[] = {
+	/* 1936x1090@24fps */
+	{
 		.width		= 1936,
 		.height		= 1090,
 		.framerate	= 24,
 		.settle		= 7,
 	},
-	/* IMX135, 1936x1090@30fps */
-	[1] = {
-		.channel	= CSI_ID_A,
+	/* 1936x1090@30fps */
+	{
 		.width		= 1936,
 		.height		= 1090,
 		.framerate	= 30,
 		.settle		= 5,
 	},
-	/* IMX135, 1936x1450@24fps */
-	[2] = {
-		.channel	= CSI_ID_A,
+	/* 1936x1450@24fps */
+	{
 		.width		= 1936,
 		.height		= 1450,
 		.framerate	= 24,
 		.settle		= 9,
 	},
-	/* IMX135, 2064x1162@24fps */
-	[3] = {
-		.channel	= CSI_ID_A,
+	/* 2064x1162@24fps */
+	{
 		.width		= 2064,
 		.height		= 1162,
 		.framerate	= 24,
 		.settle		= 8,
 	},
-	/* IMX135, 1936x1090@60fps */
-	[4] = {
-		.channel	= CSI_ID_A,
+	/* 1936x1090@60fps */
+	{
 		.width		= 1936,
 		.height		= 1090,
 		.framerate	= 60,
 		.settle		= 9,
 	},
-	/* IMX135, 816x460@60fps */
-	[5] = {
-		.channel	= CSI_ID_A,
+	/* 816x460@60fps */
+	{
 		.width		= 816,
 		.height		= 460,
 		.framerate	= 60,
 		.settle		= 9,
 	},
-	/* IMX135, 736x490@120fps */
-	[6] = {
-		.channel	= CSI_ID_A,
+	/* 736x490@120fps */
+	{
 		.width		= 736,
 		.height		= 490,
 		.framerate	= 120,
 		.settle		= 11,
 	},
-	/* IMX135, 1296x730@120fps */
-	[7] = {
-		.channel	= CSI_ID_A,
+	/* 1296x730@120fps */
+	{
 		.width		= 1296,
 		.height		= 730,
 		.framerate	= 120,
 		.settle		= 11,
 	},
-	/* IMX135, 4112x2314@24ps */
-	[8] = {
-		.channel	= CSI_ID_A,
+	/* 4112x2314@24ps */
+	{
 		.width		= 4112,
 		.height		= 2314,
 		.framerate	= 24,
 		.settle		= 14,
 	},
-	/* IMX135, 816x460@120fps */
-	[9] = {
-		.channel	= CSI_ID_A,
+	/* 816x460@120fps */
+	{
 		.width		= 816,
 		.height		= 460,
 		.framerate	= 120,
 		.settle		= 18,
 	},
-	/* IMX135, 4144x2332@24fps */
-	[10] = {
-		.channel	= CSI_ID_A,
+	/* 4144x2332@24fps */
+	{
 		.width		= 4144,
 		.height		= 2332,
 		.framerate	= 24,
 		.settle		= 19,
 	},
-	/* IMX135, 4144x2332@30fps */
-	[11] = {
-		.channel	= CSI_ID_A,
+	/* 4144x2332@30fps */
+	{
 		.width		= 4144,
 		.height		= 2332,
 		.framerate	= 30,
 		.settle		= 18,
 	},
-	/* IMX135, 4112x3082@24fps */
-	[12] = {
-		.channel	= CSI_ID_A,
+	/* 4112x3082@24fps */
+	{
 		.width		= 4112,
 		.height		= 3082,
 		.framerate	= 24,
 		.settle		= 19,
 	},
-	/* IMX135, 4144x3106@24fps */
-	[13] = {
-		.channel	= CSI_ID_A,
+	/* 4144x3106@24fps */
+	{
 		.width		= 4144,
 		.height		= 3106,
 		.framerate	= 24,
 		.settle		= 23,
 	},
-	/* IMX135, 4144x3106@30fps */
-	[14] = {
-		.channel	= CSI_ID_A,
+	/* 4144x3106@30fps */
+	{
 		.width		= 4144,
 		.height		= 3106,
 		.framerate	= 30,
 		.settle		= 23,
 	},
-	/* IMX135, 2048x1152@60fps */
-	[15] = {
-		.channel	= CSI_ID_A,
+	/* 2048x1152@60fps */
+	{
 		.width		= 2048,
 		.height		= 1152,
 		.framerate	= 60,
 		.settle		= 9,
 	},
-	/* IMX135, 1024x576@120fps */
-	[16] = {
-		.channel	= CSI_ID_A,
+	/* 1024x576@120fps */
+	{
 		.width		= 1024,
 		.height		= 576,
 		.framerate	= 120,
 		.settle		= 9,
 	},
-	/* IMX135, 1024x576@60fps */
-	[17] = {
-		.channel	= CSI_ID_A,
+	/* 1024x576@60fps */
+	{
 		.width		= 1024,
 		.height		= 576,
 		.framerate	= 60,
 		.settle		= 9,
 	},
-	/* IMX135, 1936x1090@15fps */
-	[18] = {
-		.channel	= CSI_ID_A,
+	/* 1936x1090@15fps */
+	{
 		.width		= 1936,
 		.height		= 1090,
 		.framerate	= 15,
 		.settle		= 7,
-	},
-	/* S5K6B2, 1456x1090@24fps */
-	[19] = {
-		.channel	= CSI_ID_B,
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
-	/* S5K6B2, 1936x1090@24fps */
-	[20] = {
-		.channel	= CSI_ID_B,
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
-	/* S5K6B2, 1456x1090@30fps */
-	[21] = {
-		.channel	= CSI_ID_B,
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
-	/* S5K6B2, 1936x1090@30fps */
-	[22] = {
-		.channel	= CSI_ID_B,
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
-	/* S5K6B2, 1456x1090@24fps */
-	[23] = {
-		.channel	= CSI_ID_C,
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
-	/* S5K6B2, 1936x1090@24fps */
-	[24] = {
-		.channel	= CSI_ID_C,
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
-	/* S5K6B2, 1456x1090@30fps */
-	[25] = {
-		.channel	= CSI_ID_C,
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
-	/* S5K6B2, 1936x1090@30fps */
-	[26] = {
-		.channel	= CSI_ID_C,
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
+	}
 };
 
-static unsigned int num_of_settle = ARRAY_SIZE(csis_hsync_settle);
+static struct fimc_is_settle settle_imx134[] = {
+	/* 3280x2458@30fps */
+	{
+		.width		= 3280,
+		.height		= 2458,
+		.framerate	= 30,
+		.settle		= 15,
+	},
+	/* 3280x2458@24fps */
+	{
+		.width		= 3280,
+		.height		= 2458,
+		.framerate	= 24,
+		.settle		= 12,
+	},
+	/* 1936x1450@24fps */
+	{
+		.width		= 1936,
+		.height		= 1450,
+		.framerate	= 24,
+		.settle		= 12,
+	},
+	/* 3280x1846@30fps */
+	{
+		.width		= 3280,
+		.height		= 1846,
+		.framerate	= 30,
+		.settle		= 11,
+	},
+	/* 3280x1846@60fps */
+	{
+		.width		= 3280,
+		.height		= 1846,
+		.framerate	= 24,
+		.settle		= 9,
+	},
+	/* 1936x1090@60fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 9,
+	},
+	/* 816x460@120fps */
+	{
+		.width		= 816,
+		.height		= 460,
+		.framerate	= 120,
+		.settle		= 7,
+	}
+};
 
-static int get_hsync_settle(int channel, int width,
-				int height, int framerate)
+static struct fimc_is_settle settle_6b2[] = {
+	/* 1456x1090@24fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1936x1090@24fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1456x1090@30fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	},
+	/* 1936x1090@30fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	},
+	/* 1456x1090@24fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1936x1090@24fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1456x1090@30fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	},
+	/* 1936x1090@30fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	}
+};
+
+static int get_hsync_settle(struct fimc_is_settle *settle_table,
+	u32 settles, u32 width, u32 height, u32 framerate)
 {
-	int i;
+	int ret = 0;
+	u32 i;
 
-	for (i = 0; i < num_of_settle; i++) {
-		if ((csis_hsync_settle[i].channel == channel) &&
-		    (csis_hsync_settle[i].width == width) &&
-		    (csis_hsync_settle[i].height == height) &&
-		    (csis_hsync_settle[i].framerate == framerate)) {
-			dbg_front("settle time: ch%d, %dx%d@%dfps -> %d",
-				channel, width, height, framerate,
-				csis_hsync_settle[i].settle);
-
-			return csis_hsync_settle[i].settle;
-		}
+	for (i = 0; i < settles; i++) {
+		if ((settle_table[i].width == width) &&
+		    (settle_table[i].height == height) &&
+		    (settle_table[i].framerate == framerate))
+			ret = settle_table[i].settle;
 	}
 
-	warn("could not find proper settle time: ch%d, %dx%d@%dfps",
-		channel, width, height, framerate);
-
-	/*
-	 * return a max settle time value in above table
-	 * as a default depending on the channel
-	 */
-	if (channel == CSI_ID_A)
-		return 23;
-
-	return 16;
+	return ret;
 }
 
 static void s5pcsis_enable_interrupts(unsigned long mipi_reg_base, bool on)
@@ -574,10 +622,18 @@ int enable_mipi(void)
 	return 0;
 }
 
-int start_mipi_csi(int channel, struct fimc_is_frame_info *f_frame,
-			int framerate)
+static int start_mipi_csi(u32 channel,
+	struct fimc_is_settle *settle_table,
+	u32 settles,
+	struct fimc_is_frame_info *f_frame,
+	int framerate)
 {
+	u32 settle;
+	u32 width, height;
 	unsigned long base_reg = (unsigned long)MIPICSI0_REG_BASE;
+
+	width = f_frame->width;
+	height = f_frame->height;
 
 	if (channel == CSI_ID_A)
 		base_reg = (unsigned long)MIPICSI0_REG_BASE;
@@ -587,9 +643,25 @@ int start_mipi_csi(int channel, struct fimc_is_frame_info *f_frame,
 		base_reg = (unsigned long)MIPICSI2_REG_BASE;
 
 	s5pcsis_reset(base_reg);
-	s5pcsis_set_hsync_settle(base_reg,
-			get_hsync_settle(channel, f_frame->width,
-				f_frame->height, framerate));
+
+	settle = get_hsync_settle(settle_table, settles, width, height, framerate);
+	if (!settle) {
+		/*
+		 * return a max settle time value in above table
+		 * as a default depending on the channel
+		 */
+		if (channel == CSI_ID_A)
+			settle = 23;
+		else
+			settle = 16;
+
+		warn("could not find proper settle time: ch%d, %dx%d@%dfps",
+			channel, width, height, framerate);
+	}
+
+	pr_info("[SEN:D:%d] settle(%dx%d@%d) = %d\n", channel, width, height, framerate, settle);
+
+	s5pcsis_set_hsync_settle(base_reg, settle);
 	s5pcsis_set_params(base_reg, f_frame);
 	s5pcsis_system_enable(base_reg, true);
 	s5pcsis_enable_interrupts(base_reg, true);
@@ -957,6 +1029,8 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	enum_sensor[SENSOR_NAME_IMX135].flite_ch = FLITE_ID_A;
 	enum_sensor[SENSOR_NAME_IMX135].i2c_ch = 0;
 	enum_sensor[SENSOR_NAME_IMX135].setfile_name = "setfile_imx135.bin";
+	enum_sensor[SENSOR_NAME_IMX135].settles = ARRAY_SIZE(settle_imx135);
+	enum_sensor[SENSOR_NAME_IMX135].settle_table = settle_imx135;
 
 	ext = &enum_sensor[SENSOR_NAME_IMX135].ext;
 
@@ -1021,6 +1095,8 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch = 1;
 	}
 	enum_sensor[SENSOR_NAME_S5K6B2].setfile_name = "setfile_6b2.bin";
+	enum_sensor[SENSOR_NAME_S5K6B2].settles = ARRAY_SIZE(settle_6b2);
+	enum_sensor[SENSOR_NAME_S5K6B2].settle_table = settle_6b2;
 
 	ext = &enum_sensor[SENSOR_NAME_S5K6B2].ext;
 	memset(ext, 0x0, sizeof(struct sensor_open_extended));
@@ -1039,6 +1115,8 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	enum_sensor[SENSOR_NAME_S5K3L2].flite_ch = FLITE_ID_A;
 	enum_sensor[SENSOR_NAME_S5K3L2].i2c_ch = 0;
 	enum_sensor[SENSOR_NAME_S5K3L2].setfile_name = "setfile_3l2.bin";
+	enum_sensor[SENSOR_NAME_S5K3L2].settles = ARRAY_SIZE(settle_3l2);
+	enum_sensor[SENSOR_NAME_S5K3L2].settle_table = settle_3l2;
 
 	ext = &enum_sensor[SENSOR_NAME_S5K3L2].ext;
 
@@ -1548,7 +1626,11 @@ int fimc_is_sensor_front_start(struct fimc_is_device_sensor *device)
 	frame.width = device->width;
 	frame.height = device->height;
 
-	start_mipi_csi(device->active_sensor->csi_ch, &frame, device->framerate);
+	start_mipi_csi(device->active_sensor->csi_ch,
+		device->active_sensor->settle_table,
+		device->active_sensor->settles,
+		&frame,
+		device->framerate);
 
 	/*start mipi*/
 	dbg_front("start mipi (snesor id:%d) (port:%d) : %d x %d\n",

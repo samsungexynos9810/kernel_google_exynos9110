@@ -1167,7 +1167,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		pm_runtime_get_sync(dev);
 #else
 		fimc_is_runtime_resume(dev);
-		printk(KERN_INFO "%s(%d) - fimc_is runtime resume complete\n", __func__, on);
+		pr_info("%s(%d) - fimc_is runtime resume complete\n", __func__, on);
 #endif
 
 		snprintf(fw_name, sizeof(fw_name), "%s", FIMC_IS_FW);
@@ -1188,7 +1188,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 			tdnr_s3d_pixel_async_sw_reset(this);
 #endif
 
-		printk(KERN_INFO "%s(%d) - async bridge\n", __func__, on);
+		pr_info("%s(%d) - async bridge\n", __func__, on);
 
 		/* 4. A5 start address setting */
 		dbg_ischain("imemory.base(dvaddr) : 0x%08x\n",
@@ -1197,14 +1197,14 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 			this->imemory.kvaddr);
 
 		if (!this->imemory.dvaddr) {
-			err("firmware device virtual is null");
+			merr("firmware device virtual is null", this);
 			ret = -ENOMEM;
 			goto exit;
 		}
 
 		writel(this->imemory.dvaddr, this->regs + BBOAR);
 
-		printk(KERN_INFO "%s(%d) - check dvaddr validate...\n", __func__, on);
+		pr_debug("%s(%d) - check dvaddr validate...\n", __func__, on);
 
 #ifdef CONFIG_ARM_TRUSTZONE
 		exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(PA_FIMC_IS_GIC_C + 0x4), 0x000000FF, 0);
@@ -1220,13 +1220,13 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		/* 5. A5 power on*/
 		writel(0x1, PMUREG_ISP_ARM_CONFIGURATION);
 
-		printk(KERN_INFO "%s(%d) - A5 Power on\n", __func__, on);
+		pr_info("%s(%d) - A5 Power on\n", __func__, on);
 
 		/* 6. enable A5 */
 		writel(0x00018000, PMUREG_ISP_ARM_OPTION);
 		timeout = 1000;
 
-		printk(KERN_INFO "%s(%d) - A5 enable start...\n", __func__, on);
+		pr_debug("%s(%d) - A5 enable start...\n", __func__, on);
 
 		while ((__raw_readl(PMUREG_ISP_ARM_STATUS) & 0x1) != 0x1) {
 			if (timeout == 0)
@@ -1235,14 +1235,14 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 			udelay(1);
 		}
 
-		printk(KERN_INFO "%s(%d) - A5 enable end...\n", __func__, on);
+		pr_debug("%s(%d) - A5 enable end...\n", __func__, on);
 
 		set_bit(FIMC_IS_ISCHAIN_POWER_ON, &this->state);
 
 		/* for mideaserver force down */
 		set_bit(FIMC_IS_ISCHAIN_POWER_ON, &core->state);
 
-		printk(KERN_INFO "%s(%d) - change A5 state\n", __func__, on);
+		pr_debug("%s(%d) - change A5 state\n", __func__, on);
 	} else {
 		/* 1. disable A5 */
 		if (test_bit(IS_IF_STATE_START, &this->interface->state))
