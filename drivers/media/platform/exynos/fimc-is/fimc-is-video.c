@@ -189,18 +189,51 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		dbg("V4L2_PIX_FMT_SBGGR10(w:%d)(h:%d)\n",
 				frame->width, frame->height);
 		sizes[0] = frame->width*frame->height*2;
+		if (frame->bytesperline[0]) {
+		    if (frame->bytesperline[0] >= frame->width * 5 / 4) {
+			sizes[0] = frame->bytesperline[0]
+			    * frame->height;
+		    } else {
+			err("Bytesperline too small\
+				(fmt(V4L2_PIX_FMT_SBGGR10), W(%d), Bytes(%d))",
+				frame->width,
+				frame->bytesperline[0]);
+		    }
+		}
 		sizes[1] = SPARE_SIZE;
 		break;
 	case V4L2_PIX_FMT_SBGGR16:
 		dbg("V4L2_PIX_FMT_SBGGR16(w:%d)(h:%d)\n",
 				frame->width, frame->height);
 		sizes[0] = frame->width*frame->height*2;
+		if (frame->bytesperline[0]) {
+			if (frame->bytesperline[0] >= frame->width * 2) {
+				sizes[0] = frame->bytesperline[0]
+						* frame->height;
+			} else {
+				err("Bytesperline too small\
+				(fmt(V4L2_PIX_FMT_SBGGR16), W(%d), Bytes(%d))",
+				frame->width,
+				frame->bytesperline[0]);
+			}
+		}
 		sizes[1] = SPARE_SIZE;
 		break;
 	case V4L2_PIX_FMT_SBGGR12:
 		dbg("V4L2_PIX_FMT_SBGGR12(w:%d)(h:%d)\n",
 				frame->width, frame->height);
 		sizes[0] = get_plane_size_flite(frame->width,frame->height);
+		if (frame->bytesperline[0]) {
+			if (frame->bytesperline[0] >= frame->width * 3 / 2) {
+				sizes[0] = frame->bytesperline[0]
+						* frame->height;
+			} else {
+				err("Bytesperline too small\
+				(fmt(V4L2_PIX_FMT_SBGGR12), W(%d), Bytes(%d))",
+				frame->width,
+				frame->bytesperline[0]);
+			}
+		}
 		sizes[1] = SPARE_SIZE;
 		break;
 	default:
@@ -420,11 +453,15 @@ static int fimc_is_queue_set_format_mplane(struct fimc_is_queue *queue,
 	queue->framecfg.height			= pix->height;
 
 	for (plane = 0; plane < fmt->num_planes; ++plane) {
-		if (pix->plane_fmt[plane].bytesperline)
+		if (pix->plane_fmt[plane].bytesperline) {
+			queue->framecfg.bytesperline[plane] =
+				pix->plane_fmt[plane].bytesperline;
 			queue->framecfg.width_stride[plane] =
 				pix->plane_fmt[plane].bytesperline - pix->width;
-		else
+		} else {
+			queue->framecfg.bytesperline[plane] = 0;
 			queue->framecfg.width_stride[plane] = 0;
+		}
 	}
 
 p_err:

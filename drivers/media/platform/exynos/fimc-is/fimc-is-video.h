@@ -68,6 +68,7 @@ struct fimc_is_frame_cfg {
 	u32				height;
 	u32				width_stride[FIMC_IS_MAX_PLANES];
 	u32				size[FIMC_IS_MAX_PLANES];
+	u32				bytesperline[FIMC_IS_MAX_PLANES];
 };
 
 struct fimc_is_queue_ops {
