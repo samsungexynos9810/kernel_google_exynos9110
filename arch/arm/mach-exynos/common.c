@@ -64,10 +64,12 @@ static const char name_exynos4210[] = "EXYNOS4210";
 static const char name_exynos4212[] = "EXYNOS4212";
 static const char name_exynos4412[] = "EXYNOS4412";
 static const char name_exynos5250[] = "EXYNOS5250";
+static const char name_exynos5430[] = "EXYNOS5430";
 static const char name_exynos5440[] = "EXYNOS5440";
 
 static void exynos4_map_io(void);
 static void exynos5_map_io(void);
+static void exynos5430_map_io(void);
 static void exynos5440_map_io(void);
 static void exynos4_init_uarts(struct s3c2410_uartcfg *cfg, int no);
 static int exynos_init(void);
@@ -102,6 +104,12 @@ static struct cpu_table cpu_ids[] __initdata = {
 		.map_io		= exynos5_map_io,
 		.init		= exynos_init,
 		.name		= name_exynos5250,
+	}, {
+		.idcode		= EXYNOS5430_SOC_ID,
+		.idmask		= EXYNOS5_SOC_MASK,
+		.map_io		= exynos5430_map_io,
+		.init		= exynos_init,
+		.name		= name_exynos5430,
 	}, {
 		.idcode		= EXYNOS5440_SOC_ID,
 		.idmask		= EXYNOS5_SOC_MASK,
@@ -295,6 +303,15 @@ static struct map_desc exynos5_iodesc[] __initdata = {
 	},
 };
 
+static struct map_desc exynos5430_iodesc0[] __initdata = {
+	{
+		.virtual	= (unsigned long)S3C_VA_UART,
+		.pfn		= __phys_to_pfn(EXYNOS5430_PA_UART),
+		.length		= SZ_512K,
+		.type		= MT_DEVICE,
+	},
+};
+
 static struct map_desc exynos5440_iodesc0[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_UART,
@@ -450,6 +467,11 @@ static void __init exynos5_map_io(void)
 
 	if (soc_is_exynos5250())
 		iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
+}
+
+static void __init exynos5430_map_io(void)
+{
+	iotable_init(exynos5430_iodesc0, ARRAY_SIZE(exynos5430_iodesc0));
 }
 
 static void __init exynos5440_map_io(void)
