@@ -1,0 +1,90 @@
+/*
+ * SAMSUNG EXYNOS5430 SoC device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * SAMSUNG EXYNOS5430 SoC device nodes are listed in this file.
+ * EXYNOS5430 based board files can include this file and provide
+ * values for board specfic bindings.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "skeleton.dtsi"
+/ {
+	compatible = "samsung,exynos5430";
+
+	interrupt-parent = <&gic>;
+
+	chipid@10000000 {
+		compatible = "samsung,exynos4210-chipid";
+		reg = <0x10000000 0x100>;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu0: cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x0>;
+			clock-frequency = <1800000000>;
+		};
+	};
+
+	gic:interrupt-controller@11001000 {
+		compatible = "arm,cortex-a15-gic";
+		#interrupt-cells = <3>;
+		interrupt-controller;
+		reg =	<0x11001000 0x1000>,
+			<0x11002000 0x1000>,
+			<0x11004000 0x2000>,
+			<0x11006000 0x2000>;
+		interrupts = <1 9 0xf04>;
+	};
+
+	mct@101C0000 {
+		compatible = "samsung,exynos4210-mct";
+		reg = <0x101C0000 0x800>;
+		interrupt-controller;
+		#interrups-cells = <1>;
+		interrupt-parent = <&mct_map>;
+		interrupts = <0>, <1>, <2>, <3>, <4>, <5>, <6>, <7>;
+
+		mct_map: mct-map {
+			#interrupt-cells = <1>;
+			#address-cells = <0>;
+			#size-cells = <0>;
+			interrupt-map = <0 &gic 0 102 0>,
+					<1 &gic 0 103 0>,
+					<2 &gic 0 104 0>,
+					<3 &gic 0 105 0>,
+					<4 &gic 0 106 0>,
+					<5 &gic 0 107 0>,
+					<6 &gic 0 108 0>,
+					<7 &gic 0 109 0>;
+		};
+	};
+
+	serial@14C10000 {
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x14C10000 0x100>;
+		interrupts = <0 421 0>;
+	};
+
+	serial@14C20000 {
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x14C20000 0x100>;
+		interrupts = <0 422 0>;
+	};
+
+	serial@14C30000 {
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x14C30000 0x100>;
+		interrupts = <0 423 0>;
+	};
+};
