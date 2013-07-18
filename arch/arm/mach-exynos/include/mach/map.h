@@ -15,6 +15,16 @@
 
 #include <plat/map-base.h>
 
+#ifdef CONFIG_SOC_EXYNOS5430
+/*
+ * The virtual and physical address of UART is aligned to 1MiB boundary usally.
+ * However, the Exynos5430's UART physical address is alignd to 64KB boundary.
+ * So, the virtual address needs to re-set to 64KB align boundary.
+ */
+#undef S3C_VA_UART
+#define S3C_VA_UART			S3C_ADDR(0x01010000)
+#endif
+
 /*
  * EXYNOS4 UART offset is 0x10000 but the older S5P SoCs are 0x400.
  * So need to define it, and here is to avoid redefinition warning.
@@ -204,6 +214,7 @@
 
 #define EXYNOS4_PA_UART			0x13800000
 #define EXYNOS5_PA_UART			0x12C00000
+#define EXYNOS5430_PA_UART		0x14C10000
 
 #define EXYNOS4_PA_VP			0x12C00000
 #define EXYNOS4_PA_MIXER		0x12C10000
