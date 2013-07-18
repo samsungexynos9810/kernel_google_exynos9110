@@ -19,6 +19,7 @@
 volatile u8 *uart_base;
 
 #include <plat/uncompress.h>
+#include <plat/cpu.h>
 
 static unsigned int __raw_readl(unsigned int ptr)
 {
@@ -34,11 +35,13 @@ static void arch_detect_cpu(void)
 	 *    bits 23:20 describe the exynosX family
 	 *
 	 */
-	chip_id >>= 20;
-	chip_id &= 0xf;
+	chip_id &= EXYNOS5_SOC_MASK;
+	chip_id >>= 16;
 
-	if (chip_id == 0x5)
+	if (chip_id == 0x4352)
 		uart_base = (volatile u8 *)EXYNOS5_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
+	else if (chip_id & 0xE543)
+		uart_base = (volatile u8 *)EXYNOS5430_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
 	else
 		uart_base = (volatile u8 *)EXYNOS4_PA_UART + (S3C_UART_OFFSET * CONFIG_S3C_LOWLEVEL_UART_PORT);
 
