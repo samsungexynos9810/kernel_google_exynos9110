@@ -465,11 +465,13 @@ void __init exynos_set_timer_source(u8 channels)
 
 void __init exynos_init_time(void)
 {
+#ifdef CONFIG_CLKSRC_SAMSUNG_PWM
 	unsigned int timer_irqs[SAMSUNG_PWM_NUM] = {
 		EXYNOS4_IRQ_TIMER0_VIC, EXYNOS4_IRQ_TIMER1_VIC,
 		EXYNOS4_IRQ_TIMER2_VIC, EXYNOS4_IRQ_TIMER3_VIC,
 		EXYNOS4_IRQ_TIMER4_VIC,
 	};
+#endif
 
 	if (of_have_populated_dt()) {
 #ifdef CONFIG_OF
