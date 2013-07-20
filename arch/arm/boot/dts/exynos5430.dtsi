@@ -14,10 +14,21 @@
  */
 
 #include "skeleton.dtsi"
+/include/ "exynos5430-pinctrl.dtsi"
 / {
 	compatible = "samsung,exynos5430";
 
 	interrupt-parent = <&gic>;
+
+	aliases {
+		pinctrl0 = &pinctrl_0;
+		pinctrl1 = &pinctrl_1;
+		pinctrl2 = &pinctrl_2;
+		pinctrl3 = &pinctrl_3;
+		pinctrl4 = &pinctrl_4;
+		pinctrl5 = &pinctrl_5;
+		pinctrl6 = &pinctrl_6;
+	};
 
 	chipid@10000000 {
 		compatible = "samsung,exynos4210-chipid";
@@ -86,5 +97,53 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C30000 0x100>;
 		interrupts = <0 423 0>;
+	};
+
+	pinctrl_0: pinctrl@10580000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x10580000 0x1000>;
+		interrupts = <0 16 0>;
+
+		wakeup-interrupt-controller {
+			compatible = "samsung,exynos4210-wakeup-eint";
+			interrupt-parent = <&gic>;
+			interrupts = <0 16 0>;
+		};
+	};
+
+	pinctrl_1: pinctrl@114B0000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x114B0000 0x1000>;
+		interrupts = <0 68 0>;
+	};
+
+	pinctrl_2: pinctrl@10FE0000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x10FE0000 0x1000>;
+		interrupts = <0 179 0>;
+	};
+
+	pinctrl_3: pinctrl@15690000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x15690000 0x1000>;
+		interrupts = <0 229 0>;
+	};
+
+	pinctrl_4: pinctrl@14CD0000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x14CD0000 0x1100>;
+		interrupts = <0 441 0>;
+	};
+
+	pinctrl_5: pinctrl@14CC0000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x14CC0000 0x1100>;
+		interrupts = <0 440 0>;
+	};
+
+	pinctrl_6: pinctrl@14CE0000 {
+		compatible = "samsung,exynos5430-pinctrl";
+		reg = <0x14CE0000 0x1100>;
+		interrupts = <0 442 0>;
 	};
 };
