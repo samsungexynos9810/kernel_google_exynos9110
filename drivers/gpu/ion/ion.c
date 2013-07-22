@@ -35,6 +35,8 @@
 #include <linux/debugfs.h>
 #include <linux/dma-buf.h>
 
+#include <asm/cacheflush.h>
+
 #include "ion_priv.h"
 
 /**
@@ -108,6 +110,11 @@ static bool ion_buffer_need_kmap(struct ion_buffer *buffer)
 		(buffer->flags & ION_FLAG_PRESERVE_KMAP) &&
 		(buffer->size < __KVA_PRESERVE_HIGHLIMIT) &&
 		(buffer->size >= __KVA_PRESERVE_LOWLIMIT);
+}
+
+static bool ion_buffer_need_flush_all(struct ion_buffer *buffer)
+{
+	return buffer->size >= __KVA_PRESERVE_HIGHLIMIT;
 }
 
 static void ion_buffer_set_cpumapped(struct ion_buffer *buffer)
@@ -758,6 +765,9 @@ EXPORT_SYMBOL(ion_sg_table);
 static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 				       struct device *dev,
 				       enum dma_data_direction direction);
+static void ion_buffer_sync_for_cpu(struct ion_buffer *buffer,
+			            struct device *dev,
+			            enum dma_data_direction direction);
 
 static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
 					enum dma_data_direction direction)
@@ -773,6 +783,10 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 			      struct sg_table *table,
 			      enum dma_data_direction direction)
 {
+	struct dma_buf *dmabuf = attachment->dmabuf;
+	struct ion_buffer *buffer = dmabuf->priv;
+
+	ion_buffer_sync_for_cpu(buffer, attachment->dev, direction);
 }
 
 static int ion_buffer_alloc_dirty(struct ion_buffer *buffer)
@@ -791,6 +805,20 @@ struct ion_vma_list {
 	struct vm_area_struct *vma;
 };
 
+static void __flush_dcache_all(void *arg)
+{
+	flush_cache_louis();
+}
+
+/* This it not applicable to MP scheduling */
+static void flush_all_cpu_caches(void)
+{
+	preempt_disable();
+	smp_call_function(__flush_dcache_all, NULL, 1);
+	flush_cache_all();
+	preempt_enable();
+}
+
 static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 				       struct device *dev,
 				       enum dma_data_direction dir)
@@ -799,11 +827,37 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 	int i;
 	struct ion_vma_list *vma_list;
 
+	if (!ion_buffer_cached(buffer))
+		return;
+
 	pr_debug("%s: syncing for device %s\n", __func__,
 		 dev ? dev_name(dev) : "null");
 
-	if (!ion_buffer_fault_user_mappings(buffer))
+	if (!ion_buffer_fault_user_mappings(buffer)) {
+		mutex_lock(&buffer->lock);
+		if (ion_buffer_need_flush_all(buffer)) {
+			flush_all_cpu_caches();
+		} else if (!IS_ERR_OR_NULL(buffer->vaddr)) {
+			dmac_map_area(buffer->vaddr, buffer->size, dir);
+			if (dir != DMA_FROM_DEVICE)
+				for_each_sg(buffer->sg_table->sgl, sg,
+						buffer->sg_table->nents, i)
+					outer_clean_range(sg_phys(sg),
+						sg_phys(sg) + sg->length);
+			else
+				for_each_sg(buffer->sg_table->sgl, sg,
+						buffer->sg_table->nents, i)
+					outer_inv_range(sg_phys(sg),
+						sg_phys(sg) + sg->length);
+			mutex_unlock(&buffer->lock);
+			return;
+		} else {
+			dma_sync_sg_for_device(dev, buffer->sg_table->sgl,
+						buffer->sg_table->nents, dir);
+		}
+		mutex_unlock(&buffer->lock);
 		return;
+	}
 
 	mutex_lock(&buffer->lock);
 	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i) {
@@ -817,6 +871,40 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 
 		zap_page_range(vma, vma->vm_start, vma->vm_end - vma->vm_start,
 			       NULL);
+	}
+	mutex_unlock(&buffer->lock);
+}
+
+static void ion_buffer_sync_for_cpu(struct ion_buffer *buffer,
+			            struct device *dev,
+			            enum dma_data_direction dir)
+{
+	int i;
+	struct scatterlist *sg;
+
+	if (!ion_buffer_cached(buffer))
+		return;
+
+	pr_debug("%s: syncing for cpu against %s\n", __func__,
+		 dev ? dev_name(dev) : "null");
+
+	if (ion_buffer_fault_user_mappings(buffer))
+		return;
+
+	if (dir == DMA_TO_DEVICE)
+		return;
+
+	mutex_lock(&buffer->lock);
+	if (ion_buffer_need_flush_all(buffer)) {
+		flush_all_cpu_caches();
+	} else if (!IS_ERR_OR_NULL(buffer->vaddr)) {
+		dmac_unmap_area(buffer->vaddr, buffer->size, dir);
+		for_each_sg(buffer->sg_table->sgl, sg,
+				buffer->sg_table->nents, i)
+			outer_inv_range(sg_phys(sg), sg_phys(sg) + sg->length);
+	} else {
+		dma_sync_sg_for_device(dev, buffer->sg_table->sgl,
+					buffer->sg_table->nents, dir);
 	}
 	mutex_unlock(&buffer->lock);
 }
@@ -1094,8 +1182,17 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
-	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
+	if (ion_buffer_cached(buffer)) {
+		if (ion_buffer_need_flush_all(buffer))
+			flush_all_cpu_caches();
+		else if (!IS_ERR_OR_NULL(buffer->vaddr))
+			dmac_flush_range(buffer->vaddr,
+					 buffer->vaddr + buffer->size);
+		else
+			dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
 			       buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+	}
+
 	dma_buf_put(dmabuf);
 	return 0;
 }
