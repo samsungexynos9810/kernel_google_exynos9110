@@ -255,4 +255,246 @@
 		clock-names = "biu", "ciu";
 		status = "disabled";
 	};
+
+	sysmmu_aud: sysmmu@0x114E0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x114E0000 0x1000>;
+		interrupts = <0 64 0>;
+		status = "ok";
+	};
+
+	sysmmu_flite0: sysmmu@0x12150000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x12150000 0x1000>;
+		interrupts = <0 128 0>;
+		status = "ok";
+	};
+
+	sysmmu_flite1: sysmmu@0x12160000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x12160000 0x1000>;
+		interrupts = <0 130 0>;
+		status = "ok";
+	};
+
+	sysmmu_flite3: sysmmu@0x12170000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x12170000 0x1000>;
+		interrupts = <0 132 0>;
+		status = "ok";
+	};
+
+	sysmmu_3aa0: sysmmu@0x12180000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x12180000 0x1000>;
+		interrupts = <0 137 0>;
+		status = "ok";
+	};
+
+	sysmmu_3aa1: sysmmu@0x121A0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x121A0000 0x1000>;
+		interrupts = <0 147 0>;
+		status = "ok";
+	};
+
+	sysmmu_g2d: sysmmu@0x12450000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x12450000 0x1000>;
+		interrupts = <0 257 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 457>, <&clock 450>;
+		status = "ok";
+	};
+
+	sysmmu_decon0x: sysmmu@0x13A00000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13A00000 0x1000>;
+		interrupts = <0 192 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 624>, <&clock 610>;
+		status = "ok";
+	};
+
+	sysmmu_decon1x: sysmmu@0x13A10000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13A10000 0x1000>;
+		interrupts = <0 194 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 625>, <&clock 610>;
+		status = "ok";
+	};
+
+	sysmmu_tv0x: sysmmu@0x13A20000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13A20000 0x1000>;
+		interrupts = <0 214 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 672>, <&clock 665>;
+		status = "ok";
+	};
+
+	sysmmu_tv1x: sysmmu@0x13A30000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13A30000 0x1000>;
+		interrupts = <0 216 0>;
+		status = "ok";
+	};
+
+	sysmmu_gscl0: sysmmu@0x13C80000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13C80000 0x1000>;
+		interrupts = <0 288 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 490>, <&clock 480>;
+		status = "ok";
+	};
+
+	sysmmu_gscl1: sysmmu@0x13C90000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13C90000 0x1000>;
+		interrupts = <0 290 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 491>, <&clock 481>;
+		status = "ok";
+	};
+
+	sysmmu_gscl2: sysmmu@0x13CA0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13CA0000 0x1000>;
+		interrupts = <0 292 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 492>, <&clock 482>;
+		status = "ok";
+	};
+
+	sysmmu_flite2: sysmmu@0x142B0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x142B0000 0x1000>;
+		interrupts = <0 160 0>;
+		status = "ok";
+	};
+
+	sysmmu_isp0: sysmmu@0x142C0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x142C0000 0x1000>,
+		      <0x142D0000 0x1000>,
+		      <0x14320000 0x1000>,
+		      <0x14330000 0x1000>,
+		      <0x14340000 0x1000>;
+		interrupts = <0 162 0>,
+			     <0 169 0>,
+			     <0 346 0>,
+			     <0 338 0>,
+			     <0 340 0>;
+		status = "ok";
+	};
+
+	sysmmu_isp1: sysmmu@0x143A0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x143A0000 0x1000>,
+		      <0x143B0000 0x1000>,
+		      <0x143D0000 0x1000>;
+		interrupts = <0 342 0>,
+			     <0 344 0>,
+			     <0 349 0>;
+		status = "ok";
+	};
+
+	sysmmu_isp2: sysmmu@0x143C0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x143C0000 0x1000>;
+		interrupts = <0 336 0>;
+		status = "ok";
+	};
+
+	sysmmu_hevc: sysmmu@0x14F00000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x14F00000 0x1000>,
+		      <0x14F10000 0x1000>;
+		interrupts = <0 449 0>,
+			     <0 451 0>;
+		status = "ok";
+	};
+
+	sysmmu_scaler0: sysmmu@0x15040000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15040000 0x1000>;
+		interrupts = <0 404 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 530>, <&clock 520>;
+		status = "ok";
+	};
+
+	sysmmu_scaler1: sysmmu@0x15050000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15050000 0x1000>;
+		interrupts = <0 406 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 531>, <&clock 521>;
+		status = "ok";
+	};
+
+	sysmmu_jpeg: sysmmu@0x15060000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15060000 0x1000>;
+		interrupts = <0 408 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 532>, <&clock 522>;
+		status = "ok";
+	};
+
+	sysmmu_mfc0: sysmmu@0x15200000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15200000 0x1000>,
+		      <0x15210000 0x1000>;
+		interrupts = <0 352 0>,
+			     <0 354 0>;
+		status = "ok";
+	};
+
+	sysmmu_mfc1: sysmmu@0x15300000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15300000 0x1000>,
+		      <0x15310000 0x1000>;
+		interrupts = <0 360 0>,
+			     <0 362 0>;
+		status = "ok";
+	};
+
+	sysmmu_pdma: sysmmu@0x15650000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15650000 0x1000>;
+		interrupts = <0 240 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 590>, <&clock 560>;
+		status = "ok";
+	};
+
+	sysmmu_mmc0: sysmmu@0x15660000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15660000 0x1000>;
+		interrupts = <0 233 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 591>, <&clock 565>;
+		status = "ok";
+	};
+
+	sysmmu_mmc1: sysmmu@0x15670000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15670000 0x1000>;
+		interrupts = <0 236 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 592>, <&clock 566>;
+		status = "ok";
+	};
+
+	sysmmu_mmc2: sysmmu@0x15680000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15680000 0x1000>;
+		interrupts = <0 238 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 593>, <&clock 567>;
+		status = "ok";
+	};
 };
