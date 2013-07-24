@@ -21,6 +21,7 @@ enum sec_device_type {
 	S5M8763X,
 	S5M8767X,
 	S2MPS11X,
+	S2MPS13X,
 };
 
 /**
@@ -63,11 +64,11 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic);
 void sec_irq_exit(struct sec_pmic_dev *sec_pmic);
 int sec_irq_resume(struct sec_pmic_dev *sec_pmic);
 
-extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest);
-extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
-extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value);
-extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf);
-extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask);
+extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
+extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf);
+extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value);
+extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf);
+extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u8 val, u32 mask);
 
 struct sec_platform_data {
 	struct sec_regulator_data	*regulators;
@@ -105,11 +106,18 @@ struct sec_platform_data {
 	int                             buck_ramp_delay;
 
 	int				buck2_ramp_delay;
+	int				buck3_ramp_delay;
+	int				buck4_ramp_delay;
+	int				buck6_ramp_delay;
+	int				buck710_ramp_delay;
+	int				buck89_ramp_delay;
+	int				buck15_ramp_delay;
 	int				buck34_ramp_delay;
 	int				buck5_ramp_delay;
 	int				buck16_ramp_delay;
 	int				buck7810_ramp_delay;
 	int				buck9_ramp_delay;
+	int				bb_ramp_delay;
 
 	bool                            buck2_ramp_enable;
 	bool                            buck3_ramp_enable;

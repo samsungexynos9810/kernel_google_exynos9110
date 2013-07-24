@@ -61,40 +61,49 @@ static struct mfd_cell s2mps11_devs[] = {
 	},
 };
 
+static struct mfd_cell s2mps13_devs[] = {
+	{
+		.name = "s2mps13-pmic",
+	},
+};
+
 #ifdef CONFIG_OF
 static struct of_device_id sec_dt_match[] = {
 	{	.compatible = "samsung,s5m8767-pmic",
 		.data = (void *)S5M8767X,
 	},
+	{	.compatible = "samsung,s2mps13-pmic",
+		.data = S2MPS13X,
+	},
 	{},
 };
 #endif
 
-int sec_reg_read(struct sec_pmic_dev *sec_pmic, u8 reg, void *dest)
+int sec_reg_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest)
 {
 	return regmap_read(sec_pmic->regmap, reg, dest);
 }
 EXPORT_SYMBOL_GPL(sec_reg_read);
 
-int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf)
 {
 	return regmap_bulk_read(sec_pmic->regmap, reg, buf, count);
 }
 EXPORT_SYMBOL_GPL(sec_bulk_read);
 
-int sec_reg_write(struct sec_pmic_dev *sec_pmic, u8 reg, u8 value)
+int sec_reg_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value)
 {
 	return regmap_write(sec_pmic->regmap, reg, value);
 }
 EXPORT_SYMBOL_GPL(sec_reg_write);
 
-int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u8 reg, int count, u8 *buf)
+int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf)
 {
 	return regmap_raw_write(sec_pmic->regmap, reg, buf, count);
 }
 EXPORT_SYMBOL_GPL(sec_bulk_write);
 
-int sec_reg_update(struct sec_pmic_dev *sec_pmic, u8 reg, u8 val, u8 mask)
+int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u8 val, u32 mask)
 {
 	return regmap_update_bits(sec_pmic->regmap, reg, mask, val);
 }
@@ -224,6 +233,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 	case S2MPS11X:
 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps11_devs,
 				      ARRAY_SIZE(s2mps11_devs), NULL, 0, NULL);
+		break;
+	case S2MPS13X:
+		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps13_devs,
+				      ARRAY_SIZE(s2mps13_devs), NULL, 0, NULL);
 		break;
 	default:
 		/* If this happens the probe function is problem */
