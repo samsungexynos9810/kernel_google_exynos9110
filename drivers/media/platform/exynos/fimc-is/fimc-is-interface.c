@@ -709,48 +709,48 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 
 static inline u32 fimc_is_get_intr(struct fimc_is_interface *itf)
 {
-	u32 status;
+	u32 status = 0;
+#if !defined(CONFIG_SOC_EXYNOS5430)
 	volatile struct is_common_reg __iomem *com_regs = itf->com_regs;
 
-	status = readl(itf->regs + INTMSR1) |
-		readl(&com_regs->ihcmd_iflag) |
+	status = readl(&com_regs->ihcmd_iflag) |
 		readl(&com_regs->scc_iflag) |
 		readl(&com_regs->dis_iflag) |
 		readl(&com_regs->scp_iflag) |
 		readl(&com_regs->meta_iflag) |
 		readl(&com_regs->shot_iflag);
+#endif
+
+	status |= readl(itf->regs + INTMSR1);
 
 	return status;
 }
 
+#if !defined(CONFIG_SOC_EXYNOS5430)
 static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
 	u32 index)
 {
 	volatile struct is_common_reg __iomem *com_regs = itf->com_regs;
 
+	writel((1 << index), itf->regs + INTCR1);
+
 	switch (index) {
 	case INTR_GENERAL:
-		writel((1<<INTR_GENERAL), itf->regs + INTCR1);
 		writel(0, &com_regs->ihcmd_iflag);
 		break;
 	case INTR_SCC_FDONE:
-		writel((1<<INTR_SCC_FDONE), itf->regs + INTCR1);
 		writel(0, &com_regs->scc_iflag);
 		break;
 	case INTR_DIS_FDONE:
-		writel((1<<INTR_DIS_FDONE), itf->regs + INTCR1);
 		writel(0, &com_regs->dis_iflag);
 		break;
 	case INTR_SCP_FDONE:
-		writel((1<<INTR_SCP_FDONE), itf->regs + INTCR1);
 		writel(0, &com_regs->scp_iflag);
 		break;
 	case INTR_META_DONE:
-		writel((1<<INTR_META_DONE), itf->regs + INTCR1);
 		writel(0, &com_regs->meta_iflag);
 		break;
 	case INTR_SHOT_DONE:
-		writel((1<<INTR_SHOT_DONE), itf->regs + INTCR1);
 		writel(0, &com_regs->shot_iflag);
 		break;
 	default:
@@ -758,6 +758,13 @@ static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
 		break;
 	}
 }
+#else
+static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
+	u32 index)
+{
+	writel((1 << index), itf->regs + INTCR1);
+}
+#endif
 
 static void wq_func_general(struct work_struct *data)
 {
@@ -1789,6 +1796,7 @@ static void interface_timer(unsigned long data)
 				for (j = 0; j < 64; ++j)
 					pr_err("MCTL[%d] : %08X\n", j, readl(regs + (4 * j)));
 
+#if !defined(CONFIG_SOC_EXYNOS5430)
 				if (readl(&itf->com_regs->shot_iflag)) {
 					pr_err("\n### MCUCTL check ###\n");
 					fimc_is_clr_intr(itf, INTR_SHOT_DONE);
@@ -1796,6 +1804,7 @@ static void interface_timer(unsigned long data)
 					for (j = 0; j < 64; ++j)
 						pr_err("MCTL[%d] : %08X\n", j, readl(regs + (4 * j)));
 				}
+#endif
 #ifdef BUG_ON_ENABLE
 				BUG();
 #endif
@@ -1972,13 +1981,14 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 	this->com_regs = (struct is_common_reg *)(regs + ISSR0);
 
 	/* common register init */
+#if !defined(CONFIG_SOC_EXYNOS5430)
 	writel(0, &this->com_regs->ihcmd_iflag);
 	writel(0, &this->com_regs->scc_iflag);
 	writel(0, &this->com_regs->dis_iflag);
 	writel(0, &this->com_regs->scp_iflag);
 	writel(0, &this->com_regs->meta_iflag);
 	writel(0, &this->com_regs->shot_iflag);
-
+#endif
 	ret = request_irq(irq, interface_isr, 0, "mcuctl", this);
 	if (ret)
 		err("request_irq failed\n");
