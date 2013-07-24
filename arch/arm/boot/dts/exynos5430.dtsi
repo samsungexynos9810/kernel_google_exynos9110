@@ -42,11 +42,45 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		cpu0: cpu@0 {
+		cpu@L0 {
 			device_type = "cpu";
 			compatible = "arm,cortex-a7";
+			reg = <0x100>;
+		};
+		cpu@L1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x101>;
+		};
+		cpu@L2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x102>;
+		};
+		cpu@L3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x103>;
+		};
+		cpu@B0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a15";
 			reg = <0x0>;
-			clock-frequency = <1800000000>;
+		};
+		cpu@B1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a15";
+			reg = <0x1>;
+		};
+		cpu@B2 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a15";
+			reg = <0x2>;
+		};
+		cpu@B3 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a15";
+			reg = <0x3>;
 		};
 	};
 
