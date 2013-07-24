@@ -309,6 +309,21 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_UART),
 		.length		= SZ_512K,
 		.type		= MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_PMU,
+		.pfn            = __phys_to_pfn(EXYNOS5430_PA_PMU),
+		.length         = SZ_64K,
+		.type           = MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_SYSRAM,
+		.pfn            = __phys_to_pfn(EXYNOS5_PA_SYSRAM),
+		.length         = SZ_4K,
+		.type           = MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn            = __phys_to_pfn(EXYNOS5430_PA_SYSRAM_NS),
+		.length         = SZ_4K,
+		.type           = MT_DEVICE,
 	},
 };
 
