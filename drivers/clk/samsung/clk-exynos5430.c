@@ -785,6 +785,54 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	GATE(phyclk_ufs_rx0_symbol, "phyclk_ufs_rx0_symbol", "mout_phyclk_ufs_rx0_symbol_user", ENABLE_SCLK_FSYS, 15, 0, 0),
 	GATE(phyclk_ufs_rx1_symbol, "phyclk_ufs_rx1_symbol", "mout_phyclk_ufs_rx1_symbol_user", ENABLE_SCLK_FSYS, 16, 0, 0),
 
+	/* BUS1 */
+	GATE(aclk_bus1nd_400, "aclk_bus1nd_400", "mout_aclk_bus1_400_user", ENABLE_ACLK_BUS1, 0, 0, 0),
+	GATE(aclk_bus1sw2nd_400, "aclk_bus1sw2nd_400", "mout_aclk_bus1_400_user", ENABLE_ACLK_BUS1, 1, 0, 0),
+	GATE(aclk_bus1np_133, "aclk_bus1np_133", "dout_pclk_bus1_133", ENABLE_ACLK_BUS1, 2, 0, 0),
+	GATE(aclk_bus1sw2np_133, "aclk_bus1sw2np_133", "dout_pclk_bus1_133", ENABLE_ACLK_BUS1, 3, 0, 0),
+	GATE(aclk_ahb2apb_bus1p, "aclk_ahb2apb_bus1p", "dout_pclk_bus1_133", ENABLE_ACLK_BUS1, 4, 0, 0),
+	GATE(pclk_bus1srvnd_133, "pclk_bus1srvnd_133", "dout_pclk_bus1_133", ENABLE_PCLK_BUS1, 2, 0, 0),
+	GATE(pclk_sysreg_bus1, "pclk_sysreg_bus1", "dout_pclk_bus1_133", ENABLE_PCLK_BUS1, 1, 0, 0),
+	GATE(pclk_pmu_bus1, "pclk_pmu_bus1", "dout_pclk_bus1_133", ENABLE_PCLK_BUS1, 0, 0, 0),
+
+	/* BUS2 */
+	GATE(aclk_bus2rtnd_400, "aclk_bus2rtnd_400", "mout_aclk_bus2_400_user", ENABLE_ACLK_BUS2, 0, 0, 0),
+	GATE(aclk_bus2bend_400, "aclk_bus2bend_400", "mout_aclk_bus2_400_user", ENABLE_ACLK_BUS2, 1, 0, 0),
+	GATE(aclk_bus2np_133, "aclk_bus2np_133", "dout_pclk_bus2_133", ENABLE_ACLK_BUS2, 2, 0, 0),
+	GATE(aclk_ahb2apb_bus2p, "aclk_ahb2apb_bus2p", "dout_pclk_bus2_133", ENABLE_ACLK_BUS2, 3, 0, 0),
+	GATE(pclk_bus2srvnd_133, "pclk_bus2srvnd_133", "dout_pclk_bus2_133", ENABLE_PCLK_BUS2, 2, 0, 0),
+	GATE(pclk_sysreg_bus2, "pclk_sysreg_bus2", "dout_pclk_bus2_133", ENABLE_PCLK_BUS2, 0, 0, 0),
+	GATE(pclk_pmu_bus2, "pclk_pmu_bus2", "dout_pclk_bus2_133", ENABLE_PCLK_BUS2, 1, 0, 0),
+
+	/* G2D */
+	GATE(aclk_g2d, "aclk_g2d", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 0, 0, 0),
+	GATE(aclk_g2dnd_400, "aclk_g2dnd_400", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 2, 0, 0),
+	GATE(aclk_xiu_g2dx, "aclk_xiu_g2dx", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 4, 0, 0),
+	GATE(aclk_asyncaxi_sysx, "aclk_asyncaxi_sysx", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 7, 0, 0),
+	GATE(aclk_axius_g2dx, "aclk_axius_g2dx", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 8, 0, 0),
+	GATE(aclk_alb_g2d, "aclk_alb_g2d", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 9, 0, 0),
+	GATE(aclk_qe_g2d, "aclk_qe_g2d", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 10, 0, 0),
+	GATE(aclk_smmu_g2d, "aclk_smmu_g2d", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D_SECURE_SMMU_G2D, 0, 0, 0),
+	GATE(aclk_ppmu_g2dx, "aclk_ppmu_g2dx", "mout_aclk_g2d_400_user", ENABLE_ACLK_G2D, 13, 0, 0),
+
+	GATE(aclk_mdma1, "aclk_mdma1", "mout_aclk_g2d_266_user", ENABLE_ACLK_G2D, 1, 0, 0),
+	GATE(aclk_qe_mdma1, "aclk_qe_mdma1", "mout_aclk_g2d_266_user", ENABLE_ACLK_G2D, 11, 0, 0),
+	GATE(aclk_smmu_mdma1, "aclk_smmu_mdma1", "mout_aclk_g2d_266_user", ENABLE_ACLK_G2D, 12, 0, 0),
+
+	GATE(aclk_g2dnp_133, "aclk_g2dnp_133", "dout_pclk_g2d", ENABLE_ACLK_G2D, 3, 0, 0),
+	GATE(aclk_ahb2apb_g2d0p, "aclk_ahb2apb_g2d0p", "dout_pclk_g2d", ENABLE_ACLK_G2D, 5, 0, 0),
+	GATE(aclk_ahb2apb_g2d1p, "aclk_ahb2apb_g2d1p", "dout_pclk_g2d", ENABLE_ACLK_G2D, 6, 0, 0),
+	GATE(pclk_g2d, "pclk_g2d", ENABLE_PCLK_G2D, 0, 0, 0),
+	GATE(pclk_sysreg_g2d, "pclk_sysreg_g2d", ENABLE_PCLK_G2D, 1, 0, 0),
+	GATE(pclk_pmu_g2d, "pclk_pmu_g2d", ENABLE_PCLK_G2D, 2, 0, 0),
+	GATE(pclk_asyncaxi_sysx, "pclk_asyncaxi_sysx", ENABLE_PCLK_G2D, 3, 0, 0),
+	GATE(pclk_alb_g2d, "pclk_alb_g2d", ENABLE_PCLK_G2D, 4, 0, 0),
+	GATE(pclk_qe_g2d, "pclk_qe_g2d", ENABLE_PCLK_G2D, 5, 0, 0),
+	GATE(pclk_qe_mdma1, "pclk_qe_mdma1", ENABLE_PCLK_G2D, 6, 0, 0),
+	GATE(pclk_smmu_g2d, "pclk_smmu_g2d", ENABLE_PCLK_G2D_SECURE_SMMU_G2D, 0, 0, 0),
+	GATE(pclk_smmu_mdma1, "pclk_smmu_mdma1", ENABLE_PCLK_G2D, 7, 0, 0),
+	GATE(pclk_ppmu_g2d, "pclk_ppmu_g2d", ENABLE_PCLK_G2D, 8, 0, 0),
+
 };
 
 /* fixed rate clocks generated outside the soc */
