@@ -875,6 +875,13 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	struct ion_buffer *buffer = dmabuf->priv;
 	int ret = 0;
 
+	if ((((vma->vm_pgoff << PAGE_SHIFT) >= buffer->size)) ||
+		((vma->vm_end - vma->vm_start) >
+			 (buffer->size - (vma->vm_pgoff << PAGE_SHIFT)))) {
+		pr_err("%s: trying to map outside of buffer.\n", __func__);
+		return -EINVAL;
+	}
+
 	if (!buffer->heap->ops->map_user) {
 		pr_err("%s: this heap does not define a method for mapping "
 		       "to userspace\n", __func__);
