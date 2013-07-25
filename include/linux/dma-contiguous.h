@@ -57,6 +57,12 @@ struct cma;
 struct page;
 struct device;
 
+struct cma_info {
+	phys_addr_t	base;
+	size_t		size;
+	size_t		free;
+};
+
 #ifdef CONFIG_CMA
 
 /*
@@ -76,6 +82,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
 bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 				 int count);
 
+int dma_contiguous_info(struct device *dev, struct cma_info *info);
 #else
 
 #define MAX_CMA_AREAS	(0)
@@ -101,6 +108,11 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 				 int count)
 {
 	return false;
+}
+
+int dma_contiguous_info(struct device *dev, struct cma_info *info)
+{
+	return -ENOSYS;
 }
 
 #endif

@@ -36,6 +36,7 @@
 struct cma {
 	unsigned long	base_pfn;
 	unsigned long	count;
+	unsigned long	free_count;
 	unsigned long	*bitmap;
 };
 
@@ -171,6 +172,7 @@ static __init struct cma *cma_create_area(unsigned long base_pfn,
 
 	cma->base_pfn = base_pfn;
 	cma->count = count;
+	cma->free_count = count;
 	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
 
 	if (!cma->bitmap)
@@ -338,6 +340,7 @@ struct page *dma_alloc_from_contiguous(struct device *dev, int count,
 		if (ret == 0) {
 			bitmap_set(cma->bitmap, pageno, count);
 			page = pfn_to_page(pfn);
+			cma->free_count -= count;
 			break;
 		} else if (ret != -EBUSY) {
 			break;
@@ -384,7 +387,33 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 	mutex_lock(&cma_mutex);
 	bitmap_clear(cma->bitmap, pfn - cma->base_pfn, count);
 	free_contig_range(pfn, count);
+	cma->free_count += count;
 	mutex_unlock(&cma_mutex);
 
 	return true;
+}
+
+/**
+ * dma_contiguous_info() - retrieving contiguous memory information
+ * @dev:  Pointer to device to get the information.
+ * @info: [OUT] pointer to a structure to store the information
+ *
+ * This fills @info the status of a contiguous memory. -ENODEV if
+ * the given device does not have contiguous memory.
+ */
+int dma_contiguous_info(struct device *dev, struct cma_info *info)
+{
+	struct cma *cma = dev_get_cma_area(dev);
+
+	if (!info)
+		return 0;
+
+	if (!cma)
+		return -ENODEV;
+
+	info->base = cma->base_pfn << PAGE_SHIFT;
+	info->size = cma->count << PAGE_SHIFT;
+	info->free = cma->free_count << PAGE_SHIFT;
+
+	return 0;
 }
