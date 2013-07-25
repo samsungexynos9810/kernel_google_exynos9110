@@ -186,6 +186,9 @@ struct input_keymap_entry {
 #define EV_FF			0x15
 #define EV_PWR			0x16
 #define EV_FF_STATUS		0x17
+#ifdef CONFIG_VT_TKEY_SKIP_MATCH
+#define EV_TOUCHKEY		0x18
+#endif
 #define EV_MAX			0x1f
 #define EV_CNT			(EV_MAX+1)
 
@@ -468,6 +471,13 @@ struct input_keymap_entry {
 #define KEY_RFKILL		247	/* Key that controls all radios */
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
+
+/* Dummy touchkey code */
+#define KEY_DUMMY_HOME1		249
+#define KEY_DUMMY_HOME2		250
+#define KEY_DUMMY_MENU		251
+#define KEY_DUMMY_HOME		252
+#define KEY_DUMMY_BACK		253
 
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
@@ -822,9 +832,13 @@ struct input_keymap_entry {
 #define ABS_MT_DISTANCE		0x3b	/* Contact hover distance */
 #define ABS_MT_TOOL_X		0x3c	/* Center X tool position */
 #define ABS_MT_TOOL_Y		0x3d	/* Center Y tool position */
+#define ABS_MT_ANGLE		0x3e	/* touch angle */
+#define ABS_MT_PALM		0x3f	/* palm touch */
+#define ABS_MT_COMPONENT	0x40	/* touch component */
+#define ABS_MT_SUMSIZE		0x41	/* touch sumsize */
 
 
-#define ABS_MAX			0x3f
+#define ABS_MAX			0x41
 #define ABS_CNT			(ABS_MAX+1)
 
 /*
@@ -847,7 +861,14 @@ struct input_keymap_entry {
 #define SW_FRONT_PROXIMITY	0x0b  /* set = front proximity sensor active */
 #define SW_ROTATE_LOCK		0x0c  /* set = rotate locked/disabled */
 #define SW_LINEIN_INSERT	0x0d  /* set = inserted */
-#define SW_MAX			0x0f
+#define SW_HPHL_OVERCURRENT	0x0e  /* set = over current on left hph */
+#define SW_HPHR_OVERCURRENT	0x0f  /* set = over current on right hph */
+#define SW_UNSUPPORT_INSERT	0x10  /* set = unsupported device inserted */
+#define SW_PEN_INSERT		0x13	/* set = pen out */
+#define SW_STROBE_INSERT	0x14	/* set = strobe out */
+#define SW_FLIP			0x15  /* set = flip cover... */
+#define SW_GLOVE		0x16	/* set = glove mode */
+#define SW_MAX			0x17
 #define SW_CNT			(SW_MAX+1)
 
 /*
