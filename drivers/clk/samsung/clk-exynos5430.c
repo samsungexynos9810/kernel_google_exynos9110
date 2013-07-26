@@ -29,58 +29,58 @@ enum exynos5430_clks {
 	clk_uart_baud0 = 10, uart0, uart1, uart2, mct,
 
 	/* gate for special clocks (sclk) */
-	sclk_jpeg_top,
+	sclk_jpeg_top = 20,
 
-	sclk_isp_spi0_top, sclk_isp_spi1_top, sclk_isp_uart_top,
+	sclk_isp_spi0_top = 30, sclk_isp_spi1_top, sclk_isp_uart_top,
 	sclk_isp_sensor0, sclk_isp_sensor1, sclk_isp_sensor2,
 
-	sclk_hdmi_spdif_top,
+	sclk_hdmi_spdif_top = 40,
 
-	sclk_usbdrd30_top, sclk_ufsunipro_top, sclk_mmc0_top, sclk_mmc1_top, sclk_mmc2_top,
+	sclk_usbdrd30_top = 50, sclk_ufsunipro_top, sclk_mmc0_top, sclk_mmc1_top, sclk_mmc2_top,
 
-	sclk_spi0_top, sclk_spi1_top, sclk_spi2_top, sclk_uart0_top, sclk_uart1_top, sclk_uart2_top,
+	sclk_spi0_top = 60, sclk_spi1_top, sclk_spi2_top, sclk_uart0_top, sclk_uart1_top, sclk_uart2_top,
 	sclk_pcm1_top, sclk_i2s1_top, sclk_spdif_top, sclk_slimbus_top,
 
-	sclk_hpm_mif, sclk_decon_eclk_mif, sclk_decon_vclk_mif, sclk_dsd_mif,
+	sclk_hpm_mif = 80, sclk_decon_eclk_mif, sclk_decon_vclk_mif, sclk_dsd_mif,
 
 	sclk_mphy_pll, sclk_ufs_mphy, sclk_lli_mphy,
 
 	sclk_jpeg,
 
-	sclk_decon_eclk, sclk_decon_vclk, sclk_dsd, sclk_hdmi_spdif,
+	sclk_decon_eclk = 100, sclk_decon_vclk, sclk_dsd, sclk_hdmi_spdif,
 
-	sclk_pcm1, sclk_i2s1, sclk_spi0, sclk_spi1, sclk_spi2, sclk_uart0,
+	sclk_pcm1 = 110, sclk_i2s1, sclk_spi0, sclk_spi1, sclk_spi2, sclk_uart0,
 	sclk_uart1, sclk_uart2, sclk_slimbus, sclk_spdif,
 
-	sclk_isp_spi0, sclk_isp_spi1, sclk_isp_uart, sclk_isp_mtcadc,
+	sclk_isp_spi0 = 130, sclk_isp_spi1, sclk_isp_uart, sclk_isp_mtcadc,
 
-	sclk_usbdrd30, sclk_mmc0, sclk_mmc1, sclk_mmc2, sclk_ufsunipro, sclk_mphy,
+	sclk_usbdrd30 = 140, sclk_mmc0, sclk_mmc1, sclk_mmc2, sclk_ufsunipro, sclk_mphy,
 
 	/* gate clocks */
 
-	aclk_mifnm_200, aclk_mifnd_133, aclk_mif_133, aclk_mif_400, aclk_mif_200,
+	aclk_mifnm_200 = 300, aclk_mifnd_133, aclk_mif_133, aclk_mif_400, aclk_mif_200,
 	clkm_phy, clk2x_phy, aclk_drex0, aclk_drex1,
 
-	aclk_cpif_200, aclk_disp_333, aclk_disp_222, aclk_bus1_400, aclk_bus2_400,
+	aclk_cpif_200 = 320, aclk_disp_333, aclk_disp_222, aclk_bus1_400, aclk_bus2_400,
 
-	aclk_g2d_400, aclk_g2d_266, aclk_mfc0_333, aclk_mfc1_333, aclk_hevc_400,
+	aclk_g2d_400 = 330, aclk_g2d_266, aclk_mfc0_333, aclk_mfc1_333, aclk_hevc_400,
 	aclk_isp_400, aclk_isp_dis_400, aclk_cam0_552, aclk_cam0_400,
 	aclk_cam0_333, aclk_cam1_552, aclk_cam1_400, aclk_cam1_333,
 	aclk_gscl_333, aclk_gscl_111, aclk_fsys_200, aclk_mscl_400,
 	aclk_peris_66, aclk_peric_66, aclk_imem_266, aclk_imem_200,
 
-	phyclk_lli_tx0_symbol, phyclk_lli_rx0_symbol,
+	phyclk_lli_tx0_symbol = 360, phyclk_lli_rx0_symbol,
 
-	phyclk_mixer_pixel, phyclk_hdmi_pixel, phyclk_hdmiphy_tmds_clko,
+	phyclk_mixer_pixel = 370, phyclk_hdmi_pixel, phyclk_hdmiphy_tmds_clko,
 	phyclk_mipidphy_rxclkesc0, phyclk_mipidphy_bitclkdiv8,
 
-	ioclk_i2s1_bclk, ioclk_spi0_clk, ioclk_spi1_clk, ioclk_spi2_clk, ioclk_slimbus_clk,
+	ioclk_i2s1_bclk 390, ioclk_spi0_clk, ioclk_spi1_clk, ioclk_spi2_clk, ioclk_slimbus_clk,
 
-	phyclk_rxbyteclkhs0_s4, phyclk_rxbyteclkhs0_s2a,
+	phyclk_rxbyteclkhs0_s4 = 400, phyclk_rxbyteclkhs0_s2a,
 
 	phyclk_rxbyteclkhs0_s2b,
 
-	phyclk_usbdrd30_udrd30_phyclock, phyclk_usbdrd30_udrd30_pipe_pclk,
+	phyclk_usbdrd30_udrd30_phyclock = 420, phyclk_usbdrd30_udrd30_pipe_pclk,
 	phyclk_usbhost20_phy_freeclk, phyclk_usbhost20_phy_phyclock,
 	phyclk_usbhost20_phy_clk48mohci, phyclk_usbhost20_phy_hsic1,
 	phyclk_ufs_tx0_symbol, phyclk_ufs_tx1_symbol,
