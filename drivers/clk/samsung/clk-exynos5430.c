@@ -56,6 +56,7 @@ enum exynos5430_clks {
 
 	sclk_usbdrd30 = 140, sclk_mmc0, sclk_mmc1, sclk_mmc2, sclk_ufsunipro, sclk_mphy,
 
+
 	/* gate clocks */
 
 	aclk_mifnm_200 = 300, aclk_mifnd_133, aclk_mif_133, aclk_mif_400, aclk_mif_200,
@@ -80,11 +81,74 @@ enum exynos5430_clks {
 
 	phyclk_rxbyteclkhs0_s2b,
 
-	phyclk_usbdrd30_udrd30_phyclock = 420, phyclk_usbdrd30_udrd30_pipe_pclk,
+	phyclk_usbdrd30_udrd30_phyclock = 410, phyclk_usbdrd30_udrd30_pipe_pclk,
 	phyclk_usbhost20_phy_freeclk, phyclk_usbhost20_phy_phyclock,
 	phyclk_usbhost20_phy_clk48mohci, phyclk_usbhost20_phy_hsic1,
 	phyclk_ufs_tx0_symbol, phyclk_ufs_tx1_symbol,
 	phyclk_ufs_rx0_symbol, phyclk_ufs_rx1_symbol,
+
+	aclk_bus1nd_400 = 430, aclk_bus1sw2nd_400, aclk_bus1np_133, aclk_bus1sw2np_133,
+	aclk_ahb2apb_bus1p, pclk_bus1srvnd_133, pclk_sysreg_bus1, pclk_pmu_bus1,
+
+	aclk_bus2rtnd_400 = 440, aclk_bus2bend_400, aclk_bus2np_133, aclk_ahb2apb_bus2p,
+	pclk_bus2srvnd_133, pclk_sysreg_bus2, pclk_pmu_bus2,
+
+	/* g2d gate */
+	aclk_g2d = 450, aclk_g2dnd_400, aclk_xiu_g2dx, aclk_asyncaxi_sysx,
+	aclk_axius_g2dx, aclk_alb_g2d, aclk_qe_g2d, aclk_smmu_g2d, aclk_ppmu_g2dx,
+	aclk_mdma1 = 460, aclk_qe_mdma1, aclk_smmu_mdma1,
+	aclk_g2dnp_133, aclk_ahb2apb_g2d0p, aclk_ahb2apb_g2d1p, pclk_g2d,
+	pclk_sysreg_g2d = 470, pclk_pmu_g2d, pclk_asyncaxi_sysx, pclk_alb_g2d,
+	pclk_qe_g2d, pclk_qe_mdma1, pclk_smmu_g2d, pclk_smmu_mdma1, pclk_ppmu_g2d,
+
+	/* gscl gate */
+	aclk_gscl0 = 480, aclk_gscl1, aclk_gscl2, aclk_gsd, aclk_gsclbend_333,
+	aclk_gsclrtnd_333, aclk_xiu_gsclx, aclk_qe_gscl0, aclk_qe_gscl1, aclk_qe_gscl2,
+	aclk_smmu_gscl0 = 490, aclk_smmu_gscl1, aclk_smmu_gscl2, aclk_ppmu_gscl0,
+	aclk_ppmu_gscl1, aclk_ppmu_gscl2,
+	aclk_ahb2apb_gsclp = 500, pclk_gscl0, pclk_gscl1, pclk_gscl2, pclk_sysreg_gscl,
+	pclk_pmu_gscl, pclk_qe_gscl0, pclk_qe_gscl1, pclk_qe_gscl2,
+	pclk_smmu_gscl0 = 510, pclk_smmu_gscl1, pclk_smmu_gscl2,
+	pclk_ppmu_gscl0, pclk_ppmu_gscl1, pclk_ppmu_gscl2,
+
+	/* mscl gate */
+	aclk_m2mscaler0 = 520, aclk_m2mscaler1, aclk_jpeg, aclk_msclnd_400,
+	aclk_xiu_msclx, aclk_qe_m2mscaler0, aclk_qe_m2mscaler1, aclk_qe_jpeg,
+	aclk_smmu_m3mscaler0 = 530, aclk_smmu_m2mscaler1, aclk_smmu_jpeg,
+	aclk_ppmu_m2mscaler0, aclk_ppmu_m2mscaler1,
+	aclk_msclnp_100, aclk_ahb2apb_mscl0p, pclk_m2mscaler0, pclk_m2mscaler1,
+	pclk_jpeg = 540, pclk_sysreg_mscl, pclk_pmu_mscl,
+	pclk_qe_m2mscaler0, pclk_qe_m2mscaler1, pclk_qe_jpeg,
+	pclk_smmu_m2mscaler0 = 550, pclk_smmu_m2mscaler1, pclk_smmu_jpeg,
+	pclk_ppmu_m2mscaler0, pclk_ppmu_m2mscaler1, pclk_ppmu_jpeg,
+
+	/* fsys gate */
+	aclk_pdma = 560, aclk_usbdrd30, aclk_usbhost20, aclk_sromc, aclk_ufs,
+	aclk_mmc0, aclk_mmc1, aclk_mmc2, aclk_tsi,
+	aclk_fsysnp_200 = 570, aclk_fsysnd_200, aclk_xiu_fsyssx, aclk_xiu_fsysx,
+	aclk_ahb_fsysh, aclk_ahb_usbhs, aclk_ahb_usblinkh,
+	aclk_ahb2axi_usbhs = 580, aclk_ahb2apb_fsysp, aclk_axius_fsyssx,
+	aclk_axius_usbhs, aclk_axius_pdma, aclk_qe_usbdrd30, aclk_qe_ufs,
+	aclk_smmu_pdma = 590, aclk_smmu_mmc0, aclk_smmu_mmc1, aclk_smmu_mmc2, aclk_ppmu_fsys,
+	pclk_gpio_fsys, pclk_pmu_fsys, pclk_sysreg_fsys, pclk_qe_usbdrd30,
+	pclk_qe_ufs = 600, pclk_smmu_pdma, pclk_smmu_mmc0, pclk_smmu_mmc1, pclk_smmu_mmc2,
+	pclk_ppmu_fsys,
+
+	/* dis gate */
+	aclk_decon = 610, aclk_disp0nd_333, aclk_disp1nd_333, aclk_xiu_disp1x,
+	aclk_xiu_decon0x, aclk_xiu_decon1x, aclk_axius_disp1x,
+	aclk_qe_deconm0 = 620, aclk_qe_deconm1, aclk_qe_deconm2, aclk_qe_deconm3,
+	aclk_smmu_decon0x, aclk_smmu_decon1x, aclk_ppmu_decon0x, aclk_ppmu_decon1x,
+	aclk_dispnp_100 = 630, aclk_ahb_disph, aclk_ahb2apb_dispsfr0p,
+	aclk_ahb2apb_dispsfr1p, aclk_ahb2apb_dispsfr2p, pclk_decon, pclk_tv_mixer,
+	pclk_dsim0 = 640, pclk_mdnie, pclk_mic, pclk_hdmi, pclk_hdmiphy,
+	pclk_sysreg_disp, pclk_pmu_disp, pclk_asyncaxi_tvx,
+	pclk_qe_deconm0 = 650, pclk_qe_deconm1, pclk_qe_deconm2, pclk_qe_deconm3, pclk_qe_deconm4,
+	pclk_qe_mixerm0, pclk_qe_mixerm1, pclk_smmu_decon0x, pclk_smmu_decon1x,
+	pclk_smmu_tvx = 660, pclk_ppmu_decon0x, pclk_ppmu_decon1x, pclk_ppmu_tvx,
+	aclk_hdmi, aclk_tv_mixer, aclk_xiu_tvx, aclk_asyncaxis_tvx,
+	aclk_qe_mixerm0 = 670, aclk_qe_mixerm1, aclk_smmu_tvx, aclk_ppmu_tvx, pclk_decon,
+
 
 	nr_clks,
 };
