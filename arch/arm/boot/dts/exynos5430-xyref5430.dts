@@ -27,7 +27,7 @@
 	fixed-rate-clocks {
 		oscclk {
 			compatible = "samsung,exynos5430-oscclk";
-			clock-frequency = <10000000>;
+			clock-frequency = <24000000>;
 		};
 	};
 };
