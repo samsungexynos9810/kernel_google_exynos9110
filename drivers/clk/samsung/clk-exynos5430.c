@@ -867,6 +867,37 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	GATE(pclk_ppmu_gscl1, "pclk_ppmu_gscl1", "mout_aclk_gscl_111_user", ENABLE_PCLK_GSCL, 12, 0, 0),
 	GATE(pclk_ppmu_gscl2, "pclk_ppmu_gscl2", "mout_aclk_gscl_111_user", ENABLE_PCLK_GSCL, 13, 0, 0),
 
+	/*MSCL*/
+	GATE(aclk_m2mscaler0, "aclk_m2mscaler0", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 0, 0, 0),
+	GATE(aclk_jpeg, "aclk_jpeg", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 2, 0, 0),
+	GATE(aclk_msclnd_400, "aclk_msclnd_400", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 3, 0, 0),
+	GATE(aclk_xiu_msclx, "aclk_xiu_msclx", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 5, 0, 0),
+	GATE(aclk_qe_m2mscaler0, "aclk_qe_m2mscaler0", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 7, 0, 0),
+	GATE(aclk_qe_m2mscaler1, "aclk_qe_m2mscaler1", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 8, 0, 0),
+	GATE(aclk_qe_jpeg, "aclk_qe_jpeg", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 9, 0, 0),
+	GATE(aclk_smmu_m2mscaler0, "aclk_smmu_m2mscaler0", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER0, 0, 0, 0),
+	GATE(aclk_smmu_m2mscaler1, "aclk_smmu_m2mscaler1", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER1, 0, 0, 0),
+	GATE(aclk_smmu_jpeg, "aclk_smmu_jpeg", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL_SECURE_SMMU_JPEG, 0, 0, 0),
+	GATE(aclk_ppmu_m2mscaler0, "aclk_ppmu_m2mscaler0", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 10, 0, 0),
+	GATE(aclk_ppmu_m2mscaler1, "aclk_ppmu_m2mscaler1", "mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 11, 0, 0),
+
+
+	GATE(aclk_msclnp_100, "aclk_msclnp_100", "dout_pclk_mscl", ENABLE_ACLK_MSCL, 4, 0, 0),
+	GATE(aclk_ahb2apb_mscl0p, "aclk_ahb2apb_mscl0p", "dout_pclk_mscl", ENABLE_ACLK_MSCL, 0, 0, 0),
+	GATE(pclk_m2mscaler0, "pclk_m2mscaler0", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 0, 0, 0),
+	GATE(pclk_jpeg, "pclk_jpeg", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 2, 0, 0),
+	GATE(pclk_sysreg_mscl, "pclk_sysreg_mscl", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 3, 0, 0),
+	GATE(pclk_pmu_mscl, "pclk_pmu_mscl", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 4, 0, 0),
+	GATE(pclk_qe_m2mscaler0, "pclk_qe_m2mscaler0", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 5, 0, 0),
+	GATE(pclk_qe_m2mscaler1, "pclk_qe_m2mscaler1", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 6, 0, 0),
+	GATE(pclk_qe_jpeg, "pclk_qe_jpeg", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 7, 0, 0),
+	GATE(pclk_smmu_m2mscaler0, "pclk_smmu_m2mscaler0", "dout_pclk_mscl", ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER0, 0, 0, 0),
+	GATE(pclk_smmu_m2mscaler1, "pclk_smmu_m2mscaler1", "dout_pclk_mscl", ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER1, 0, 0, 0),
+	GATE(pclk_smmu_jpeg, "pclk_smmu_jpeg", "dout_pclk_mscl", ENABLE_PCLK_MSCL_SECURE_SMMU_JPEG, 0, 0, 0),
+	GATE(pclk_ppmu_m2mscaler0, "pclk_ppmu_m2mscaler0", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 8, 0, 0),
+	GATE(pclk_ppmu_m2mscaler1, "pclk_ppmu_m2mscaler1", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 9, 0, 0),
+	GATE(pclk_ppmu_jpeg, "pclk_ppmu_jpeg", "dout_pclk_mscl", ENABLE_PCLK_MSCL, 10, 0, 0),
+
 };
 
 /* fixed rate clocks generated outside the soc */
