@@ -1845,6 +1845,9 @@ static int pl330_update(const struct pl330_info *pi)
 
 			id = pl330->events[ev];
 
+			if (id == -1)
+				continue;
+
 			thrd = &pl330->channels[id];
 
 			active = thrd->req_running;
