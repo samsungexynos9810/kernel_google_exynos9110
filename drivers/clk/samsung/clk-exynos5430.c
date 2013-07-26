@@ -915,11 +915,11 @@ unsigned long base_regs[nr_cmu];
 static inline __iomem void *get_va(unsigned long input_addr)
 {
 	int base_idx;
-	unsigned int offset;
+	unsigned long offset;
 	__iomem void *ret;
 
 	base_idx = input_addr >> 20;
-	offset = input_addr & ~(0xf << 20);
+	offset = input_addr & 0xfffff;
 	ret = base_regs[base_idx] + (void *)offset;
 
 	return ret;
