@@ -16,12 +16,8 @@
 	model = "Samsung XYREF5430 board based on EXYNOS5430";
 	compatible = "samsung,XYREF5430", "samsung,exynos5430";
 
-	memory {
-		reg = <0x20000000 0x10000000>;
-	};
-
 	chosen {
-		bootargs = "root=/dev/ram0 rw ramdisk=8192 initrd=0x21000000,8M console=ttySAC2,115200 init=/linuxrc mem=2048M clk_ignore_unused";
+		bootargs = "console=ttySAC2,115200 clk_ignore_unused";
 	};
 
 	fixed-rate-clocks {
