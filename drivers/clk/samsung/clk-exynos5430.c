@@ -1130,6 +1130,10 @@ void __init exynos5430_clk_init(struct device_node *np)
 		exynos5430_div_clks[i].offset = (unsigned long)get_va(exynos5430_div_clks[i].offset);
 	}
 
+	for (i = 0; i < ARRAY_SIZE(exynos5430_gate_clks); i++) {
+		exynos5430_gate_clks[i].offset = (unsigned long)get_va(exynos5430_gate_clks[i].offset);
+	}
+
 	samsung_clk_init(np, 0, nr_clks, exynos5430_clk_regs,
 			ARRAY_SIZE(exynos5430_clk_regs), NULL, 0);
 
