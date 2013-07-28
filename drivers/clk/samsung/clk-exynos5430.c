@@ -149,6 +149,12 @@ enum exynos5430_clks {
 	aclk_hdmi, aclk_tv_mixer, aclk_xiu_tvx, aclk_asyncaxis_tvx,
 	aclk_qe_mixerm0 = 670, aclk_qe_mixerm1, aclk_smmu_tvx, aclk_ppmu_tvx,
 
+	/* mfc0 gate */
+	aclk_mfc0 = 680, aclk_mfc0nd_333, aclk_xiu_mfc0x, aclk_qe_mfc0_0, aclk_qe_mfc0_1,
+	aclk_smmu_mfc0_0, aclk_smmu_mfc0_1, aclk_ppmu_mfc0_0, aclk_ppmu_mfc0_1,
+	aclk_mfc0np_83 = 690, aclk_ahb2apb_mfc0p, pclk_mfc0, pclk_sysreg_mfc0, pclk_pmu_mfc0,
+	pclk_qe_mfc0_0 = 700, pclk_qe_mfc0_1, pclk_smmu_mfc0_0, pclk_smmu_mfc0_1,
+	pclk_ppmu_mfc0_0, pclk_ppmu_mfc0_1,
 
 	nr_clks,
 };
@@ -1086,6 +1092,29 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(aclk_qe_mixerm1, "aclk_qe_mixerm1", "mout_aclk_disp_222_user", EXYNOS5430_ENABLE_ACLK_DISP1, 25, 0, 0),
 	CGTE(aclk_smmu_tvx, "aclk_smmu_tvx", "mout_aclk_disp_222_user", EXYNOS5430_ENABLE_ACLK_DISP1, 28, 0, 0),
 	CGTE(aclk_ppmu_tvx, "aclk_ppmu_tvx", "mout_aclk_disp_222_user", EXYNOS5430_ENABLE_ACLK_DISP1, 31, 0, 0),
+
+	/* MFC0 */
+	CGTE(aclk_mfc0, "aclk_mfc0", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 0, 0, 0),
+	CGTE(aclk_mfc0nd_333, "aclk_mfc0nd_333", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 1, 0, 0),
+	CGTE(aclk_xiu_mfc0x, "aclk_xiu_mfc0x", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 3, 0, 0),
+	CGTE(aclk_qe_mfc0_0, "aclk_qe_mfc0_0", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 5, 0, 0),
+	CGTE(aclk_qe_mfc0_1, "aclk_qe_mfc0_1", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 6, 0, 0),
+	CGTE(aclk_smmu_mfc0_0, "aclk_smmu_mfc0_0", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0_SECURE_SMMU_MFC, 0, 0, 0),
+	CGTE(aclk_smmu_mfc0_1, "aclk_smmu_mfc0_1", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0_SECURE_SMMU_MFC, 1, 0, 0),
+	CGTE(aclk_ppmu_mfc0_0, "aclk_ppmu_mfc0_0", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 9, 0, 0),
+	CGTE(aclk_ppmu_mfc0_1, "aclk_ppmu_mfc0_1", "mout_aclk_mfc0_333_user", EXYNOS5430_ENABLE_ACLK_MFC0, 10, 0, 0),
+
+	CGTE(aclk_mfc0np_83, "aclk_mfc0np_83", "dout_pclk_mfc0", EXYNOS5430_ENABLE_ACLK_MFC0, 2, 0, 0),
+	CGTE(aclk_ahb2apb_mfc0p, "aclk_ahb2apb_mfc0p", "dout_pclk_mfc0", EXYNOS5430_ENABLE_ACLK_MFC0, 4, 0, 0),
+	CGTE(pclk_mfc0, "pclk_mfc0", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 0, 0, 0),
+	CGTE(pclk_sysreg_mfc0, "pclk_sysreg_mfc0", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 1, 0, 0),
+	CGTE(pclk_pmu_mfc0, "pclk_pmu_mfc0", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 2, 0, 0),
+	CGTE(pclk_qe_mfc0_0, "pclk_qe_mfc0_0", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 3, 0, 0),
+	CGTE(pclk_qe_mfc0_1, "pclk_qe_mfc0_1", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 4, 0, 0),
+	CGTE(pclk_smmu_mfc0_0, "pclk_smmu_mfc0_0", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0_SECURE_SMMU_MFC, 0, 0, 0),
+	CGTE(pclk_smmu_mfc0_1, "pclk_smmu_mfc0_1", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0_SECURE_SMMU_MFC, 1, 0, 0),
+	CGTE(pclk_ppmu_mfc0_0, "pclk_ppmu_mfc0_0", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 7, 0, 0),
+	CGTE(pclk_ppmu_mfc0_1, "pclk_ppmu_mfc0_1", "dout_pclk_mfc0", EXYNOS5430_ENABLE_PCLK_MFC0, 8, 0, 0),
 
 };
 
