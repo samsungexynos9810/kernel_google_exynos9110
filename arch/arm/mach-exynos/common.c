@@ -307,7 +307,7 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_UART,
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_UART),
-		.length		= SZ_512K,
+		.length		= SZ_256K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual        = (unsigned long)S5P_VA_PMU,
