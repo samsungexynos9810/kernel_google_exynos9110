@@ -173,7 +173,7 @@ enum exynos5430_clks {
 	/* aud gate */
 	sclk_ca5 = 770, aclk_dmac, aclk_sramc, aclk_audnp_133, aclk_audnd_133,
 	aclk_xiu_lpassx, aclk_axi2apb_lpassp, aclk_axids_lpassp, pclk_sfr_ctrl, pclk_intr_ctrl,
-	pclk_timer = 780, pclk_i2s, pclk_pcm, pclk_uart, pclk_slimbus, pclk_sysreg_aud,
+	pclk_timer = 780, pclk_i2s, pclk_pcm, pclk_uart, pclk_slimbus_aud, pclk_sysreg_aud,
 	pclk_pmu_aud, pclk_gpio_aud, pclk_dbg,
 
 	/* imem gate */
@@ -187,6 +187,15 @@ enum exynos5430_clks {
 	pclk_sysreg_imem = 830, pclk_pmu_imem, pclk_alb_imem, pclk_qe_sss_cci, pclk_qe_sss_dram,
 	pclk_qe_slimsss, pclk_smmu_sss_cci, pclk_smmu_sss_dram, pclk_smmu_slimsss,
 	pclk_smmu_rtic = 840, pclk_ppmu_sssx,
+
+	/* peris gate */
+	aclk_perisnp_66 = 850, aclk_ahb2apb_peris0p, aclk_ahb2apb_peris1p, pclk_tzpc0,
+	pclk_tzpc1, pclk_tzpc2, pclk_tzpc3, pclk_tzpc4, pclk_tzpc5, pclk_tzpc6,
+	pclk_tzpc7 = 860, pclk_tzpc8, pclk_tzpc9, pclk_tzpc10, pclk_tzpc11, pclk_tzpc12,
+	pclk_seckey_apbif, pclk_hdmi_cec, pclk_mct, pclk_wdt_egl,
+	pclk_wdt_kfc = 870, pclk_chipid_apbif, pclk_toprtc, pclk_cmu_top_apbif, pclk_sysreg_peris,
+	pclk_tmu0_apbif, pclk_tmu1_apbif, pclk_custom_efuse_apbif, pclk_antirbk_cnt_apbif,
+	pclk_efuse_writer0_apbif = 880, pclk_efuse_writer1_apbif, pclk_hpm_apbif,
 
 	nr_clks,
 };
@@ -1210,7 +1219,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_i2s, "pclk_i2s", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 3, 0, 0),
 	CGTE(pclk_pcm, "pclk_pcm", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 4, 0, 0),
 	CGTE(pclk_uart, "pclk_uart", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 5, 0, 0),
-	CGTE(pclk_slimbus, "pclk_slimbus", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 6, 0, 0),
+	CGTE(pclk_slimbus_aud, "pclk_slimbus_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 6, 0, 0),
 	CGTE(pclk_sysreg_aud, "pclk_sysreg_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 7, 0, 0),
 	CGTE(pclk_pmu_aud, "pclk_pmu_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 8, 0, 0),
 	CGTE(pclk_gpio_aud, "pclk_gpio_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 9, 0, 0),
@@ -1257,6 +1266,40 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_smmu_slimsss, "pclk_smmu_slimsss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SMMU_SLIMSSS, 0, 0, 0),
 	CGTE(pclk_smmu_rtic, "pclk_smmu_rtic", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SMMU_RTIC, 0, 0, 0),
 	CGTE(pclk_ppmu_sssx, "pclk_ppmu_sssx", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 13, 0, 0),
+
+	/*PERIS*/
+	CGTE(aclk_perisnp_66, "aclk_perisnp_66", "aclk_peris_66", EXYNOS5430_ENABLE_ACLK_PERIS, 0, 0, 0),
+	CGTE(aclk_ahb2apb_peris0p, "aclk_ahb2apb_peris0p", "aclk_peris_66", EXYNOS5430_ENABLE_ACLK_PERIS, 1, 0, 0),
+	CGTE(aclk_ahb2apb_peris1p, "aclk_ahb2apb_peris1p", "aclk_peris_66", EXYNOS5430_ENABLE_ACLK_PERIS, 2, 0, 0),
+	CGTE(pclk_tzpc0, "pclk_tzpc0", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 0, 0, 0),
+	CGTE(pclk_tzpc1, "pclk_tzpc1", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 1, 0, 0),
+	CGTE(pclk_tzpc2, "pclk_tzpc2", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 2, 0, 0),
+	CGTE(pclk_tzpc3, "pclk_tzpc3", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 3, 0, 0),
+	CGTE(pclk_tzpc4, "pclk_tzpc4", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 4, 0, 0),
+	CGTE(pclk_tzpc5, "pclk_tzpc5", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 5, 0, 0),
+	CGTE(pclk_tzpc6, "pclk_tzpc6", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 6, 0, 0),
+	CGTE(pclk_tzpc7, "pclk_tzpc7", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 7, 0, 0),
+	CGTE(pclk_tzpc8, "pclk_tzpc8", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 8, 0, 0),
+	CGTE(pclk_tzpc9, "pclk_tzpc9", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 9, 0, 0),
+	CGTE(pclk_tzpc10, "pclk_tzpc10", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 10, 0, 0),
+	CGTE(pclk_tzpc11, "pclk_tzpc11", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 11, 0, 0),
+	CGTE(pclk_tzpc12, "pclk_tzpc12", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TZPC, 12, 0, 0),
+	CGTE(pclk_seckey_apbif, "pclk_seckey_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_SECKEY_APBIF, 0, 0, 0),
+	CGTE(pclk_hdmi_cec, "pclk_hdmi_cec", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 14, 0, 0),
+	CGTE(pclk_mct, "pclk_mct", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 15, 0, 0),
+	CGTE(pclk_wdt_egl, "pclk_wdt_egl", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 16, 0, 0),
+	CGTE(pclk_wdt_kfc, "pclk_wdt_kfc", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 17, 0, 0),
+	CGTE(pclk_chipid_apbif, "pclk_chipid_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_CHIPID_APBIF, 0, 0, 0),
+	CGTE(pclk_toprtc, "pclk_toprtc", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_TOPRTC, 0, 0, 0),
+	CGTE(pclk_cmu_top_apbif, "pclk_cmu_top_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 20, 0, 0),
+	CGTE(pclk_sysreg_peris, "pclk_sysreg_peris", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 21, 0, 0),
+	CGTE(pclk_tmu0_apbif, "pclk_tmu0_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 23, 0, 0),
+	CGTE(pclk_tmu1_apbif, "pclk_tmu1_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 24, 0, 0),
+	CGTE(pclk_custom_efuse_apbif, "pclk_custom_efuse_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_CUSTOM_EFUSE_APBIF, 0, 0, 0),
+	CGTE(pclk_antirbk_cnt_apbif, "pclk_antirbk_cnt_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS_SECURE_ANTIRBK_CNT_APBIF, 0, 0, 0),
+	CGTE(pclk_efuse_writer0_apbif, "pclk_efuse_writer0_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 28, 0, 0),
+	CGTE(pclk_efuse_writer1_apbif, "pclk_efuse_writer1_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 29, 0, 0),
+	CGTE(pclk_hpm_apbif, "pclk_hpm_apbif", "aclk_peris_66", EXYNOS5430_ENABLE_PCLK_PERIS, 30, 0, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
