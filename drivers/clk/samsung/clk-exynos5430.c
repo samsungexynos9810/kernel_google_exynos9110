@@ -163,6 +163,13 @@ enum exynos5430_clks {
 	pclk_qe_mfc1_0 = 730, pclk_qe_mfc1_1, pclk_smmu_mfc1_0, pclk_smmu_mfc1_1,
 	pclk_ppmu_mfc1_0, pclk_ppmu_mfc1_1,
 
+	/* hevc gate */
+	aclk_hevc = 740, aclk_hevcnd_400, aclk_xiu_hevcx, aclk_qe_hevc_0, aclk_qe_hevc_1,
+	aclk_smmu_hevc_0, aclk_smmu_hevc_1, aclk_ppmu_hevc_0, aclk_ppmu_hevc_1, aclk_hevcnp_100,
+	aclk_ahb2apb_hevcp = 750, pclk_hevc, pclk_sysreg_hevc, pclk_pmu_hevc,
+	pclk_qe_hevc_0, pclk_qe_hevc_1, pclk_smmu_hevc_0, pclk_smmu_hevc_1,
+	pclk_ppmu_hevc_0, pclk_ppmu_hevc_1,
+
 	nr_clks,
 };
 
@@ -1145,6 +1152,29 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_smmu_mfc1_1, "pclk_smmu_mfc1_1", "dout_pclk_mfc1", EXYNOS5430_ENABLE_PCLK_MFC1_SECURE_SMMU_MFC, 1, 0, 0),
 	CGTE(pclk_ppmu_mfc1_0, "pclk_ppmu_mfc1_0", "dout_pclk_mfc1", EXYNOS5430_ENABLE_PCLK_MFC1, 7, 0, 0),
 	CGTE(pclk_ppmu_mfc1_1, "pclk_ppmu_mfc1_1", "dout_pclk_mfc1", EXYNOS5430_ENABLE_PCLK_MFC1, 8, 0, 0),
+
+	/*HEVC*/
+	CGTE(aclk_hevc, "aclk_hevc", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 0, 0, 0),
+	CGTE(aclk_hevcnd_400, "aclk_hevcnd_400", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 1, 0, 0),
+	CGTE(aclk_xiu_hevcx, "aclk_xiu_hevcx", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 3, 0, 0),
+	CGTE(aclk_qe_hevc_0, "aclk_qe_hevc_0", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 5, 0, 0),
+	CGTE(aclk_qe_hevc_1, "aclk_qe_hevc_1", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 6, 0, 0),
+	CGTE(aclk_smmu_hevc_0, "aclk_smmu_hevc_0", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC, 0, 0, 0),
+	CGTE(aclk_smmu_hevc_1, "aclk_smmu_hevc_1", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC, 1, 0, 0),
+	CGTE(aclk_ppmu_hevc_0, "aclk_ppmu_hevc_0", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 9, 0, 0),
+	CGTE(aclk_ppmu_hevc_1, "aclk_ppmu_hevc_1", "mout_aclk_hevc_400_user", EXYNOS5430_ENABLE_ACLK_HEVC, 10, 0, 0),
+
+	CGTE(aclk_hevcnp_100, "aclk_hevcnp_100", "dout_pclk_hevc", EXYNOS5430_ENABLE_ACLK_HEVC, 2, 0, 0),
+	CGTE(aclk_ahb2apb_hevcp, "aclk_ahb2apb_hevcp", "dout_pclk_hevc", EXYNOS5430_ENABLE_ACLK_HEVC, 4, 0, 0),
+	CGTE(pclk_hevc, "pclk_hevc", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 0, 0, 0),
+	CGTE(pclk_sysreg_hevc, "pclk_sysreg_hevc", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 1, 0, 0),
+	CGTE(pclk_pmu_hevc, "pclk_pmu_hevc", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 2, 0, 0),
+	CGTE(pclk_qe_hevc_0, "pclk_qe_hevc_0", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 3, 0, 0),
+	CGTE(pclk_qe_hevc_1, "pclk_qe_hevc_1", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 4, 0, 0),
+	CGTE(pclk_smmu_hevc_0, "pclk_smmu_hevc_0", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC, 0, 0, 0),
+	CGTE(pclk_smmu_hevc_1, "pclk_smmu_hevc_1", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC, 1, 0, 0),
+	CGTE(pclk_ppmu_hevc_0, "pclk_ppmu_hevc_0", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 7, 0, 0),
+	CGTE(pclk_ppmu_hevc_1, "pclk_ppmu_hevc_1", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 8, 0, 0),
 
 };
 
