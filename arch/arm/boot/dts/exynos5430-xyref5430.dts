@@ -373,4 +373,31 @@
 			};
 		};
 	};
+	/* hsi2c7 */
+	i2c@20 {
+		compatible = "i2c-gpio";
+		gpios = <&gpj1 0 0 /* sda */
+			 &gpj1 1 0 /* scl */
+			>;
+		i2c-gpio,delay-us = <2>;	/* ~100 kHz */
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "okay";
+		touchscreen@20 {
+			compatible = "synaptics,rmi4";
+			reg = <0x20>;
+			gpios = <&gpj1 2 0xf>;
+			sensor_max_x = <1079>;
+			sensor_max_y = <1919>;
+			max_touch_width = <28>;
+			irq_type = <8200>;
+			firmware_name = "tsp_synaptics/synaptics_b0_h.fw";
+			fac_firmware_name = "tsp_synaptics/synaptics_b0_fac.fw";
+			num_of_rx = <28>;
+			num_of_tx = <16>;
+			panel_revision = <8>;
+		};
+
+
+	};
 };
