@@ -176,6 +176,18 @@ enum exynos5430_clks {
 	pclk_timer = 780, pclk_i2s, pclk_pcm, pclk_uart, pclk_slimbus, pclk_sysreg_aud,
 	pclk_pmu_aud, pclk_gpio_aud, pclk_dbg,
 
+	/* imem gate */
+	aclk_sss = 800, aclk_slimsss, aclk_rtic, aclk_imemnd_266, aclk_xiu_sssx,
+	aclk_asyncahbm_sss_egl, aclk_alb_imem, aclk_qe_sss_cci, aclk_qe_sss_dram, aclk_qe_slimsss,
+	aclk_smmu_sss_cci = 810, aclk_smmu_sss_dram, aclk_smmu_slimsss, aclk_smmu_rtic,
+	aclk_ppmu_sssx, aclk_gic, aclk_int_mem, aclk_xiu_pimemx,
+	aclk_axi2apb_imem0p = 820, aclk_axi2apb_imem1p, aclk_asyncaxis_mif_pimemx,
+	aclk_axids_pimemx_gic, aclk_axids_pimemx_imem0p, aclk_axids_pimemx_imem1p,
+	pclk_sss, pclk_slimsss, pclk_rtic,
+	pclk_sysreg_imem = 830, pclk_pmu_imem, pclk_alb_imem, pclk_qe_sss_cci, pclk_qe_sss_dram,
+	pclk_qe_slimsss, pclk_smmu_sss_cci, pclk_smmu_sss_dram, pclk_smmu_slimsss,
+	pclk_smmu_rtic = 840, pclk_ppmu_sssx,
+
 	nr_clks,
 };
 
@@ -1204,6 +1216,47 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_gpio_aud, "pclk_gpio_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 9, 0, 0),
 
 	CGTE(pclk_dbg, "pclk_dbg", "dout_aud_pclk_dbg", EXYNOS5430_ENABLE_SCLK_AUD0, 1, 0, 0),
+
+	/*IMEM*/
+	CGTE(aclk_sss, "aclk_sss", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SSS, 0, 0, 0),
+	CGTE(aclk_slimsss, "aclk_slimsss", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SLIMSSS, 0, 0, 0),
+	CGTE(aclk_rtic, "aclk_rtic", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SLIMSSS, 0, 0, 0),
+	CGTE(aclk_imemnd_266, "aclk_imemnd_266", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 1, 0, 0),
+	CGTE(aclk_xiu_sssx, "aclk_xiu_sssx", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 3, 0, 0),
+	CGTE(aclk_asyncahbm_sss_egl, "aclk_asyncahbm_sss_egl", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 7, 0, 0),
+	CGTE(aclk_alb_imem, "aclk_alb_imem", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 12, 0, 0),
+	CGTE(aclk_qe_sss_cci, "aclk_qe_sss_cci", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 13, 0, 0),
+	CGTE(aclk_qe_sss_dram, "aclk_qe_sss_dram", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 14, 0, 0),
+	CGTE(aclk_qe_slimsss, "aclk_qe_slimsss", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 15, 0, 0),
+	CGTE(aclk_smmu_sss_cci, "aclk_smmu_sss_cci", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SMMU_SSS, 0, 0, 0),
+	CGTE(aclk_smmu_sss_dram, "aclk_smmu_sss_dram", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SMMU_SSS, 1, 0, 0),
+	CGTE(aclk_smmu_slimsss, "aclk_smmu_slimsss", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SMMU_SLIMSSS, 0, 0, 0),
+	CGTE(aclk_smmu_rtic, "aclk_smmu_rtic", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SMMU_RTIC, 0, 0, 0),
+	CGTE(aclk_ppmu_sssx, "aclk_ppmu_sssx", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM, 16, 0, 0),
+
+	CGTE(aclk_gic, "aclk_gic", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 0, 0, 0),
+	CGTE(aclk_int_mem, "aclk_int_mem", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_INT_MEM, 0, 0, 0),
+	CGTE(aclk_xiu_pimemx, "aclk_xiu_pimemx", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 2, 0, 0),
+	CGTE(aclk_axi2apb_imem0p, "aclk_axi2apb_imem0p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 4, 0, 0),
+	CGTE(aclk_axi2apb_imem1p, "aclk_axi2apb_imem1p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 5, 0, 0),
+	CGTE(aclk_asyncaxis_mif_pimemx, "aclk_asyncaxis_mif_pimemx", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 6, 0, 0),
+	CGTE(aclk_axids_pimemx_gic, "aclk_axids_pimemx_gic", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 9, 0, 0),
+	CGTE(aclk_axids_pimemx_imem0p, "aclk_axids_pimemx_imem0p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 10, 0, 0),
+	CGTE(aclk_axids_pimemx_imem1p, "aclk_axids_pimemx_imem1p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 10, 0, 0),
+	CGTE(pclk_sss, "pclk_sss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SSS, 0, 0, 0),
+	CGTE(pclk_slimsss, "pclk_slimsss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SLIMSSS, 0, 0, 0),
+	CGTE(pclk_rtic, "pclk_rtic", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_RTIC, 0, 0, 0),
+	CGTE(pclk_sysreg_imem, "pclk_sysreg_imem", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 3, 0, 0),
+	CGTE(pclk_pmu_imem, "pclk_pmu_imem", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 4, 0, 0),
+	CGTE(pclk_alb_imem, "pclk_alb_imem", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 5, 0, 0),
+	CGTE(pclk_qe_sss_cci, "pclk_qe_sss_cci", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 6, 0, 0),
+	CGTE(pclk_qe_sss_dram, "pclk_qe_sss_dram", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 7, 0, 0),
+	CGTE(pclk_qe_slimsss, "pclk_qe_slimsss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 8, 0, 0),
+	CGTE(pclk_smmu_sss_cci, "pclk_smmu_sss_cci", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SMMU_SSS, 0, 0, 0),
+	CGTE(pclk_smmu_sss_dram, "pclk_smmu_sss_dram", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SMMU_SSS, 1, 0, 0),
+	CGTE(pclk_smmu_slimsss, "pclk_smmu_slimsss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SMMU_SLIMSSS, 0, 0, 0),
+	CGTE(pclk_smmu_rtic, "pclk_smmu_rtic", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SMMU_RTIC, 0, 0, 0),
+	CGTE(pclk_ppmu_sssx, "pclk_ppmu_sssx", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM, 13, 0, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
