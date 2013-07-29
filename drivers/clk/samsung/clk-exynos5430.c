@@ -170,6 +170,12 @@ enum exynos5430_clks {
 	pclk_qe_hevc_0, pclk_qe_hevc_1, pclk_smmu_hevc_0, pclk_smmu_hevc_1,
 	pclk_ppmu_hevc_0, pclk_ppmu_hevc_1,
 
+	/* aud gate */
+	sclk_ca5 = 770, aclk_dmac, aclk_sramc, aclk_audnp_133, aclk_audnd_133,
+	aclk_xiu_lpassx, aclk_axi2apb_lpassp, aclk_axids_lpassp, pclk_sfr_ctrl, pclk_intr_ctrl,
+	pclk_timer = 780, pclk_i2s, pclk_pcm, pclk_uart, pclk_slimbus, pclk_sysreg_aud,
+	pclk_pmu_aud, pclk_gpio_aud, pclk_dbg,
+
 	nr_clks,
 };
 
@@ -1176,6 +1182,28 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_ppmu_hevc_0, "pclk_ppmu_hevc_0", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 7, 0, 0),
 	CGTE(pclk_ppmu_hevc_1, "pclk_ppmu_hevc_1", "dout_pclk_hevc", EXYNOS5430_ENABLE_PCLK_HEVC, 8, 0, 0),
 
+	/*AUD*/
+	CGTE(sclk_ca5, "sclk_ca5", "dout_aud_ca5", EXYNOS5430_ENABLE_SCLK_AUD0, 0, 0, 0),
+
+	CGTE(aclk_dmac, "aclk_dmac", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 0, 0, 0),
+	CGTE(aclk_sramc, "aclk_sramc", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 1, 0, 0),
+	CGTE(aclk_audnp_133, "aclk_audnp_133", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 3, 0, 0),
+	CGTE(aclk_audnd_133, "aclk_audnd_133", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 2, 0, 0),
+	CGTE(aclk_xiu_lpassx, "aclk_xiu_lpassx", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 4, 0, 0),
+	CGTE(aclk_axi2apb_lpassp, "aclk_axi2apb_lpassp", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 5, 0, 0),
+	CGTE(aclk_axids_lpassp, "aclk_axids_lpassp", "dout_aclk_aud", EXYNOS5430_ENABLE_ACLK_AUD, 6, 0, 0),
+	CGTE(pclk_sfr_ctrl, "pclk_sfr_ctrl", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 0, 0, 0),
+	CGTE(pclk_intr_ctrl, "pclk_intr_ctrl", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 1, 0, 0),
+	CGTE(pclk_timer, "pclk_timer", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 2, 0, 0),
+	CGTE(pclk_i2s, "pclk_i2s", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 3, 0, 0),
+	CGTE(pclk_pcm, "pclk_pcm", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 4, 0, 0),
+	CGTE(pclk_uart, "pclk_uart", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 5, 0, 0),
+	CGTE(pclk_slimbus, "pclk_slimbus", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 6, 0, 0),
+	CGTE(pclk_sysreg_aud, "pclk_sysreg_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 7, 0, 0),
+	CGTE(pclk_pmu_aud, "pclk_pmu_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 8, 0, 0),
+	CGTE(pclk_gpio_aud, "pclk_gpio_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 9, 0, 0),
+
+	CGTE(pclk_dbg, "pclk_dbg", "dout_aud_pclk_dbg", EXYNOS5430_ENABLE_SCLK_AUD0, 1, 0, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
