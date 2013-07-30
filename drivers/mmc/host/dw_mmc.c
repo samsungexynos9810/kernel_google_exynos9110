@@ -3991,6 +3991,8 @@ int dw_mci_resume(struct dw_mci *host)
 
 	int i, ret;
 
+	host->current_speed = 0;
+
 	if (host->vmmc) {
 		ret = regulator_enable(host->vmmc);
 		if (ret) {
