@@ -205,6 +205,12 @@ enum exynos5430_clks {
 	pclk_gpio_touch = 910, pclk_spi0, pclk_spi1, pclk_spi2, pclk_i2s1,
 	pclk_pcm1, pclk_spdif, pclk_slimbus, pclk_pwm,
 
+	/* g3d */
+	aclk_g3d = 1000, aclk_g3dnd_600, aclk_asyncapbm_g3d, aclk_qe_g3d0, aclk_qe_g3d1,
+	aclk_ppmu_g3d0, aclk_ppmu_g3d1, aclk_g3dnp_150, aclk_ahb2apb_g3dp, aclk_asyncapbs_g3d,
+	pclk_sysreg_g3d = 1010, pclk_pmu_g3d, pclk_qe_g3d0, pclk_qe_g3d1,
+	pclk_ppmu_g3d0, pclk_ppmu_g3d1,
+
 	nr_clks,
 };
 
@@ -1340,6 +1346,25 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_slimbus, "pclk_slimbus", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 27, 0, 0),
 	CGTE(pclk_pwm, "pclk_pwm", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 28, 0, 0),
 
+	/*G3D*/
+	CGTE(aclk_g3d, "aclk_g3d", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 0, 0, 0),
+
+	CGTE(aclk_g3dnd_600, "aclk_g3dnd_600", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 1, 0, 0),
+	CGTE(aclk_asyncapbm_g3d, "aclk_asyncapbm_g3d", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 4, 0, 0),
+	CGTE(aclk_qe_g3d0, "aclk_qe_g3d0", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 6, 0, 0),
+	CGTE(aclk_qe_g3d1, "aclk_qe_g3d1", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 7, 0, 0),
+	CGTE(aclk_ppmu_g3d0, "aclk_ppmu_g3d0", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 8, 0, 0),
+	CGTE(aclk_ppmu_g3d1, "aclk_ppmu_g3d1", "dout_aclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 9, 0, 0),
+
+	CGTE(aclk_g3dnp_150, "aclk_g3dnp_150", "dout_pclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 2, 0, 0),
+	CGTE(aclk_ahb2apb_g3dp, "aclk_ahb2apb_g3dp", "dout_pclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 3, 0, 0),
+	CGTE(aclk_asyncapbs_g3d, "aclk_asyncapbs_g3d", "dout_pclk_g3d", EXYNOS5430_ENABLE_ACLK_G3D, 5, 0, 0),
+	CGTE(pclk_sysreg_g3d, "pclk_sysreg_g3d", "dout_pclk_g3d", EXYNOS5430_ENABLE_PCLK_G3D, 0, 0, 0),
+	CGTE(pclk_pmu_g3d, "pclk_pmu_g3d", "dout_pclk_g3d", EXYNOS5430_ENABLE_PCLK_G3D, 1, 0, 0),
+	CGTE(pclk_qe_g3d0, "pclk_qe_g3d0", "dout_pclk_g3d", EXYNOS5430_ENABLE_PCLK_G3D, 2, 0, 0),
+	CGTE(pclk_qe_g3d1, "pclk_qe_g3d1", "dout_pclk_g3d", EXYNOS5430_ENABLE_PCLK_G3D, 3, 0, 0),
+	CGTE(pclk_ppmu_g3d0, "pclk_ppmu_g3d0", "dout_pclk_g3d", EXYNOS5430_ENABLE_PCLK_G3D, 4, 0, 0),
+	CGTE(pclk_ppmu_g3d1, "pclk_ppmu_g3d1", "dout_pclk_g3d", EXYNOS5430_ENABLE_PCLK_G3D, 5, 0, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
