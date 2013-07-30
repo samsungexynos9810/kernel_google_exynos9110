@@ -14,6 +14,7 @@
 #include <linux/memblock.h>
 #include <linux/io.h>
 #include <linux/clocksource.h>
+#include <linux/exynos_ion.h>
 
 #include <asm/mach/arch.h>
 #include <mach/regs-pmu.h>
@@ -38,6 +39,11 @@ static char const *xyref5430_dt_compat[] __initdata = {
 	NULL
 };
 
+static void __init xyref5430_reserve(void)
+{
+	init_exynos_ion_contig_heap();
+}
+
 DT_MACHINE_START(XYREF5430, "XYREF5430")
 	.init_irq	= exynos5_init_irq,
 	.smp		= smp_ops(exynos_smp_ops),
@@ -47,4 +53,5 @@ DT_MACHINE_START(XYREF5430, "XYREF5430")
 	.init_time	= exynos_init_time,
 	.dt_compat	= xyref5430_dt_compat,
 	.restart        = exynos5_restart,
+	.reserve	= xyref5430_reserve,
 MACHINE_END
