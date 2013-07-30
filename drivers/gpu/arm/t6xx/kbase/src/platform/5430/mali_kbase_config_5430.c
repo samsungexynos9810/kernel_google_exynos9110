@@ -284,7 +284,7 @@ kbase_platform_config platform_config = {
 		.io_resources              = &io_resources,
 		.midgard_type              = KBASE_MALI_T604
 };
-
+#ifndef CONFIG_MALI_PLATFORM_FAKE
 int kbase_platform_early_init(void)
 {
 	kbase_platform_config *config;
@@ -298,3 +298,4 @@ int kbase_platform_early_init(void)
 		config->attributes,
 		attribute_count * sizeof(config->attributes[0]));
 }
+#endif

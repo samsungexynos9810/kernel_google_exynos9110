@@ -18,6 +18,7 @@
 /*
  * Job Scheduler: Completely Fair Policy Implementation
  */
+#include <linux/version.h>
 
 #include <kbase/src/common/mali_kbase.h>
 #include <kbase/src/common/mali_kbase_jm.h>

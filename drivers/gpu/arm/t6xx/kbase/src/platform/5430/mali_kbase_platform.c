@@ -41,7 +41,7 @@
 #include <linux/fb.h>
 #include <linux/clk.h>
 #include <mach/regs-clock.h>
-#include <mach/pmu.h>
+//#include <mach/pmu.h>
 #include <mach/regs-pmu.h>
 #include <asm/delay.h>
 
@@ -107,11 +107,11 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D power */
-	__raw_writel(0x7, EXYNOS5420_G3D_CONFIGURATION);
+	__raw_writel(0x7, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability for 1ms */
 	timeout = 10;
-	while ((__raw_readl(EXYNOS5420_G3D_STATUS) & 0x7) != 0x7) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) != 0x7) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d power\n");
@@ -252,7 +252,7 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 
 int kbase_platform_is_power_on(void)
 {
-	return ((__raw_readl(EXYNOS5420_G3D_STATUS) & 0x7) == 0x7) ? 1 : 0;
+	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) == 0x7) ? 1 : 0;
 }
 
 static int kbase_platform_power_on(void)
@@ -260,12 +260,12 @@ static int kbase_platform_power_on(void)
 	int timeout;
 
 	/* Turn on G3D  */
-	__raw_writel(0x7, EXYNOS5420_G3D_CONFIGURATION);
+	__raw_writel(0x7, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while ((__raw_readl(EXYNOS5420_G3D_STATUS) & 0x7) != 0x7) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) != 0x7) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d via g3d_configuration\n");
@@ -283,12 +283,12 @@ static int kbase_platform_power_off(void)
 	int timeout;
 
 	/* Turn off G3D  */
-	__raw_writel(0x0, EXYNOS5420_G3D_CONFIGURATION);
+	__raw_writel(0x0, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while (__raw_readl(EXYNOS5420_G3D_STATUS) & 0x7) {
+	while (__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) {
 		if (timeout == 0) {
 			/* need to call panic */
 			panic("failed to turn off g3d via g3d_configuration\n");
@@ -380,6 +380,7 @@ static ssize_t show_clock(struct device *dev, struct device_attribute *attr, cha
 
 static ssize_t set_clock(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
+#if 0 //helsinki
 	struct kbase_device *kbdev;
 	struct exynos_context *platform;
 	unsigned int tmp = 0, freq = 0;
@@ -421,7 +422,9 @@ static ssize_t set_clock(struct device *dev, struct device_attribute *attr, cons
 		tmp = __raw_readl(EXYNOS5_CLKDIV_STAT_TOP2);
 	} while (tmp & 0x10000);
 
-	return count;
+	return counti;
+#endif
+	return 0;
 }
 
 static ssize_t show_fbdev(struct device *dev, struct device_attribute *attr, char *buf)

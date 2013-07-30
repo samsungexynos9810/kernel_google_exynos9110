@@ -37,7 +37,7 @@
 #include <linux/io.h>
 #include <linux/pm_qos.h>
 
-#include <mach/bts.h>
+//#include <mach/bts.h>
 #include <mach/map.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
@@ -58,7 +58,7 @@
 #include <linux/devfreq.h>
 #endif
 
-#include <mach/exynos5_bus.h>
+//#include <mach/exynos5_bus.h>
 
 #ifdef MALI_DVFS_ASV_ENABLE
 #include <mach/asv-exynos.h>
@@ -737,6 +737,7 @@ void kbase_tmu_normal_work(void)
 
 void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 {
+#if 0 //helsinki
 	struct clk *ext_xtal = NULL;
 	struct clk *aclk_g3d_sw = NULL;
 	struct clk *fout_vpll = NULL;
@@ -800,7 +801,7 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(platform->aclk_g3d));
 	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(aclk_g3d_dout));
 #endif
-
+#endif
 	return;
 }
 
@@ -868,9 +869,9 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 #endif
 		kbase_platform_dvfs_set_vol(mali_dvfs_infotbl[level].voltage + gpu_voltage_margin);
 		kbase_platform_dvfs_set_clock(kbdev, mali_dvfs_infotbl[level].clock);
-		bts_change_g3d_state(mali_dvfs_infotbl[level].clock);
+//		bts_change_g3d_state(mali_dvfs_infotbl[level].clock); //helsinki
 	} else {
-		bts_change_g3d_state(mali_dvfs_infotbl[level].clock);
+//		bts_change_g3d_state(mali_dvfs_infotbl[level].clock); //helsinki
 		kbase_platform_dvfs_set_clock(kbdev, mali_dvfs_infotbl[level].clock);
 		kbase_platform_dvfs_set_vol(mali_dvfs_infotbl[level].voltage + gpu_voltage_margin);
 #if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
