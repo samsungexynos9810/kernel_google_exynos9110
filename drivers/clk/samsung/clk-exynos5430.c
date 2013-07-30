@@ -380,7 +380,7 @@ PNAME(mout_sclk_mmc2_user_p) = { "oscclk", "sclk_mmc2_top" };
 PNAME(mout_sclk_ufsunipro_user_p) = { "oscclk", "sclk_ufsunipro_top" };
 PNAME(mout_mphy_pll_26m_user_p) = { "oscclk", "sclk_mphy_pll_26m" };
 PNAME(mout_phyclk_lli_mphy_to_ufs_user_p) = { "oscclk", "phyclk_lli_mphy_to_ufs" };
-PNAME(mout_phyclk_usbdrd30_usbdrd30_phyclock_p) = { "oscclk", "phyclk_usbdrd30_udrd30_phyclock" };
+PNAME(mout_phyclk_usbdrd30_udrd30_phyclock_p) = { "oscclk", "phyclk_usbdrd30_udrd30_phyclock" };
 PNAME(mout_phyclk_usbdrd30_udrd30_pipe_pclk_p) = { "oscclk", "phyclk_usbdrd30_udrd30_pipe_pclk" };
 PNAME(mout_phyclk_usbhost20_phy_freeclk_p) = { "oscclk", "phyclk_usbhost20_phy_freeclk" };
 PNAME(mout_phyclk_usbhost20_phy_phyclock_p) = { "oscclk", "phyclk_usbhost20_phy_phyclock" };
@@ -571,7 +571,7 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMX(none, "mout_sclk_ufsunipro_user", mout_sclk_ufsunipro_user_p, EXYNOS5430_SRC_SEL_FSYS1, 24, 1),
 	CMX(none, "mout_mphy_pll_26m_user", mout_mphy_pll_26m_user_p, EXYNOS5430_SRC_SEL_FSYS0, 4, 1),
 	CMX(none, "mout_phyclk_lli_mphy_to_ufs_user", mout_phyclk_lli_mphy_to_ufs_user_p, EXYNOS5430_SRC_SEL_FSYS3, 0, 1),
-	CMX(none, "mout_phyclk_usbdrd30_usbdrd30_phyclock", mout_phyclk_usbdrd30_usbdrd30_phyclock_p, EXYNOS5430_SRC_SEL_FSYS2, 0, 1),
+	CMX(none, "mout_phyclk_usbdrd30_udrd30_phyclock", mout_phyclk_usbdrd30_udrd30_phyclock_p, EXYNOS5430_SRC_SEL_FSYS2, 0, 1),
 	CMX(none, "mout_phyclk_usbdrd30_udrd30_pipe_pclk", mout_phyclk_usbdrd30_udrd30_pipe_pclk_p, EXYNOS5430_SRC_SEL_FSYS2, 4, 1),
 	CMX(none, "mout_phyclk_usbhost20_phy_freeclk", mout_phyclk_usbhost20_phy_freeclk_p, EXYNOS5430_SRC_SEL_FSYS2, 8, 1),
 	CMX(none, "mout_phyclk_usbhost20_phy_phyclock", mout_phyclk_usbhost20_phy_phyclock_p, EXYNOS5430_SRC_SEL_FSYS2, 12, 1),
