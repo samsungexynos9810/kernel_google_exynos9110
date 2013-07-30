@@ -366,9 +366,9 @@ PNAME(mout_sclk_decon_vclk_user_p) = { "oscclk", "sclk_decon_vclk_top" };
 PNAME(mout_sclk_decon_vclk_disp_p) = { "mout_disp_pll", "mout_sclk_decon_vclk_user" };
 PNAME(mout_sclk_dsd_user_p)	= { "oscclk", "sclk_dsd" };
 PNAME(mout_phyclk_hdmiphy_pixel_clko_user_p) = { "oscclk", "phyclk_hdmiphy_pixel_clko" };
-PNAME(mout_phyclk_hdmiphy_tmds_clko_user_p) = { "oscclk", "phyclk_hdmiphy_tmds_clko" };
-PNAME(mout_phyclk_mipidphy_rxclkesc0_user_p) = { "oscclk", "phyclk_mipidphy_rxclkesc0" };
-PNAME(mout_phyclk_mipidphy_bitclkdiv8_user_p) = { "oscclk", "phyclk_mipidphy_bitclkdiv8" };
+PNAME(mout_phyclk_hdmiphy_tmds_clko_user_p) = { "oscclk", "phyclk_hdmiphy_tmds_clko_phy" };
+PNAME(mout_phyclk_mipidphy_rxclkesc0_user_p) = { "oscclk", "phyclk_mipidphy_rxclkesc0_phy" };
+PNAME(mout_phyclk_mipidphy_bitclkdiv8_user_p) = { "oscclk", "phyclk_mipidphy_bitclkdiv8_phy" };
 
 
 /* FSYS */
@@ -380,16 +380,16 @@ PNAME(mout_sclk_mmc2_user_p) = { "oscclk", "sclk_mmc2_top" };
 PNAME(mout_sclk_ufsunipro_user_p) = { "oscclk", "sclk_ufsunipro_top" };
 PNAME(mout_mphy_pll_26m_user_p) = { "oscclk", "sclk_mphy_pll_26m" };
 PNAME(mout_phyclk_lli_mphy_to_ufs_user_p) = { "oscclk", "phyclk_lli_mphy_to_ufs" };
-PNAME(mout_phyclk_usbdrd30_udrd30_phyclock_p) = { "oscclk", "phyclk_usbdrd30_udrd30_phyclock" };
-PNAME(mout_phyclk_usbdrd30_udrd30_pipe_pclk_p) = { "oscclk", "phyclk_usbdrd30_udrd30_pipe_pclk" };
-PNAME(mout_phyclk_usbhost20_phy_freeclk_p) = { "oscclk", "phyclk_usbhost20_phy_freeclk" };
-PNAME(mout_phyclk_usbhost20_phy_phyclock_p) = { "oscclk", "phyclk_usbhost20_phy_phyclock" };
-PNAME(mout_phyclk_usbhost20_phy_clk48mohci_p) = { "oscclk", "phyclk_usbhost20_phy_clk48mohci" };
-PNAME(mout_phyclk_usbhost20_phy_hsic1_p) = { "oscclk", "phyclk_usbhost20_phy_hsc1" };
-PNAME(mout_phyclk_ufs_tx0_symbol_user_p) = { "oscclk", "phyclk_ufs_tx0_symbol" };
-PNAME(mout_phyclk_ufs_tx1_symbol_user_p) = { "oscclk", "phyclk_ufs_tx1_symbol" };
-PNAME(mout_phyclk_ufs_rx0_symbol_user_p) = { "oscclk", "phyclk_ufs_rx0_symbol" };
-PNAME(mout_phyclk_ufs_rx1_symbol_user_p) = { "oscclk", "phyclk_ufs_rx1_symbol" };
+PNAME(mout_phyclk_usbdrd30_udrd30_phyclock_p) = { "oscclk", "phyclk_usbdrd30_udrd30_phyclock_phy" };
+PNAME(mout_phyclk_usbdrd30_udrd30_pipe_pclk_p) = { "oscclk", "phyclk_usbdrd30_udrd30_pipe_pclk_phy" };
+PNAME(mout_phyclk_usbhost20_phy_freeclk_p) = { "oscclk", "phyclk_usbhost20_phy_freeclk_phy" };
+PNAME(mout_phyclk_usbhost20_phy_phyclock_p) = { "oscclk", "phyclk_usbhost20_phy_phyclock_phy" };
+PNAME(mout_phyclk_usbhost20_phy_clk48mohci_p) = { "oscclk", "phyclk_usbhost20_phy_clk48mohci_phy" };
+PNAME(mout_phyclk_usbhost20_phy_hsic1_p) = { "oscclk", "phyclk_usbhost20_phy_hsc1_phy" };
+PNAME(mout_phyclk_ufs_tx0_symbol_user_p) = { "oscclk", "phyclk_ufs_tx0_symbol_phy" };
+PNAME(mout_phyclk_ufs_tx1_symbol_user_p) = { "oscclk", "phyclk_ufs_tx1_symbol_phy" };
+PNAME(mout_phyclk_ufs_rx0_symbol_user_p) = { "oscclk", "phyclk_ufs_rx0_symbol_phy" };
+PNAME(mout_phyclk_ufs_rx1_symbol_user_p) = { "oscclk", "phyclk_ufs_rx1_symbol_phy" };
 
 /* AUD0 */
 PNAME(mout_aud_pll_user_p)	= { "fin_pll", "mout_aud_pll" };
@@ -413,25 +413,25 @@ PNAME(mout_phyclk_rxbyteclkhs0_s2b_p) = { "oscclk", "phyclk_rxbyteclkhs0_s2b" };
 
 struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
 	FRATE(none, "oscclk", NULL, CLK_IS_ROOT, 24000000),
-	FRATE(none, "phyclk_usbdrd30_udrd30_phyclock", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_usbdrd30_udrd30_pipe_pclk", NULL, CLK_IS_ROOT, 125000000),
-	FRATE(none, "phyclk_usbhost20_phy_freeclk", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_usbhost20_phy_phyclock", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_usbhost20_phy_clk48mohci", NULL, CLK_IS_ROOT, 48000000),
-	FRATE(none, "phyclk_usbhost20_phy_hsic1", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_ufs_tx0_symbol", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_ufs_tx1_symbol", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_ufs_rx0_symbol", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_ufs_rx1_symbol", NULL, CLK_IS_ROOT, 300000000),
+	FRATE(none, "phyclk_usbdrd30_udrd30_phyclock_phy", NULL, CLK_IS_ROOT, 60000000),
+	FRATE(none, "phyclk_usbdrd30_udrd30_pipe_pclk_phy", NULL, CLK_IS_ROOT, 125000000),
+	FRATE(none, "phyclk_usbhost20_phy_freeclk_phy", NULL, CLK_IS_ROOT, 60000000),
+	FRATE(none, "phyclk_usbhost20_phy_phyclock_phy", NULL, CLK_IS_ROOT, 60000000),
+	FRATE(none, "phyclk_usbhost20_phy_clk48mohci_phy", NULL, CLK_IS_ROOT, 48000000),
+	FRATE(none, "phyclk_usbhost20_phy_hsic1_phy", NULL, CLK_IS_ROOT, 60000000),
+	FRATE(none, "phyclk_ufs_tx0_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
+	FRATE(none, "phyclk_ufs_tx1_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
+	FRATE(none, "phyclk_ufs_rx0_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
+	FRATE(none, "phyclk_ufs_rx1_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
 	FRATE(none, "phyclk_lli_tx0_symbol", NULL, CLK_IS_ROOT, 150000000),
 	FRATE(none, "phyclk_lli_rx0_symbol", NULL, CLK_IS_ROOT, 150000000),
 	FRATE(none, "phyclk_rxbyteclkhs0_s4", NULL, CLK_IS_ROOT, 188000000),
 	FRATE(none, "phyclk_rxbyteclkhs0_s2a", NULL, CLK_IS_ROOT, 188000000),
 	FRATE(none, "phyclk_rxbyteclkhs0_s2b", NULL, CLK_IS_ROOT, 188000000),
 	FRATE(none, "phyclk_hdmiphy_pixel_clko", NULL, CLK_IS_ROOT, 166000000),
-	FRATE(none, "phyclk_hdmiphy_tmds_clko", NULL, CLK_IS_ROOT, 250000000),
-	FRATE(none, "phyclk_mipidphy_rxclkesc0", NULL, CLK_IS_ROOT, 20000000),
-	FRATE(none, "phyclk_mipidphy_bitclkdiv8", NULL, CLK_IS_ROOT, 188000000),
+	FRATE(none, "phyclk_hdmiphy_tmds_clko_phy", NULL, CLK_IS_ROOT, 250000000),
+	FRATE(none, "phyclk_mipidphy_rxclkesc0_phy", NULL, CLK_IS_ROOT, 20000000),
+	FRATE(none, "phyclk_mipidphy_bitclkdiv8_phy", NULL, CLK_IS_ROOT, 188000000),
 
 	FRATE(none, "phyclk_ufs_mphy_to_lli", NULL, CLK_IS_ROOT, 26000000),
 	FRATE(none, "phyclk_lli_mphy_to_ufs", NULL, CLK_IS_ROOT, 26000000),
