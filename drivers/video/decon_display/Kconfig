@@ -1,0 +1,41 @@
+menuconfig DECON
+	bool "Samsung Display Enhancement Controller(DECON)"
+	select FB_CFB_FILLRECT
+	select FB_CFB_COPYAREA
+	select FB_CFB_IMAGEBLIT
+	select S5P_DEV_MIPI_DSIM0
+	depends on FB
+
+config DECON_FB
+	bool "Samsung DECON Framebuffer driver"
+	depends on DECON
+	default y
+
+config FB_I80_COMMAND_MODE
+	bool "DECON FB I80 MODE"
+	depends on DECON_FB
+	default n
+
+config DECON_MIPI_DSI
+	bool "Samsung DECON MIPI-DSI driver"
+	depends on DECON
+	default n
+
+config DECON_LCD
+	depends on DECON
+	bool "Select LCD panel driver"
+
+config DECON_LCD_S6E8AA0
+	depends on DECON_LCD && DECON_MIPI_DSI
+	tristate "S6E8AA0 AMOLED HD LCD driver(800 x 1280)"
+
+config DECON_LCD_S6E3FA0
+	depends on DECON_LCD && DECON_MIPI_DSI
+	tristate "S6E8FA0 AMOLED FULL HD LCD driver(1080 x 1920)"
+
+config DECON_LCD_PARALLEL_RGB
+	depends on DECON_LCD && !DECON_MIPI_DSI
+	tristate "LCD_480w_PARALLEL_RGB 800x 480"
+
+config S5P_DEV_MIPI_DSIM0
+	bool
