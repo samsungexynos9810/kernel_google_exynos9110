@@ -459,6 +459,12 @@ enum exynos5430_clks {
 };
 
 static __initdata void *exynos5430_clk_regs[] = {
+	EXYNOS5430_SRC_SEL_EGL0,
+	EXYNOS5430_SRC_SEL_EGL1,
+	EXYNOS5430_SRC_SEL_EGL2,
+	EXYNOS5430_SRC_SEL_KFC0,
+	EXYNOS5430_SRC_SEL_KFC1,
+	EXYNOS5430_SRC_SEL_KFC2,
 	EXYNOS5430_SRC_SEL_AUD0,
 	EXYNOS5430_SRC_SEL_AUD1,
 	EXYNOS5430_SRC_SEL_BUS1,
@@ -508,6 +514,10 @@ static __initdata void *exynos5430_clk_regs[] = {
 	EXYNOS5430_SRC_SEL_TOP_FSYS1,
 	EXYNOS5430_SRC_SEL_TOP_PERIC0,
 	EXYNOS5430_SRC_SEL_TOP_PERIC1,
+	EXYNOS5430_DIV_EGL0,
+	EXYNOS5430_DIV_EGL1,
+	EXYNOS5430_DIV_KFC0,
+	EXYNOS5430_DIV_KFC1,
 	EXYNOS5430_DIV_AUD0,
 	EXYNOS5430_DIV_AUD1,
 	EXYNOS5430_DIV_AUD2,
@@ -555,6 +565,18 @@ static __initdata void *exynos5430_clk_regs[] = {
  * list of controller registers to be saved and restored during a
  * suspend/resume cycle.
  */
+
+/* EGL */
+PNAME(mout_egl_pll_p)		= { "fin_pll", "fout_egl_pll" };
+PNAME(mout_egl_dpll_p)		= { "fin_pll", "fout_egl_dpll" };
+PNAME(mout_bus_pll_user_egl_p)	= { "fin_pll", "mout_bus_pll_sub" };
+PNAME(mout_egl1_p)		= { "mout_egl_pll", "mout_egl_dpll" };
+PNAME(mout_egl2_p)		= { "mout_egl1", "mout_bus_pll_user_egl" };
+
+/*KFC*/
+PNAME(mout_kfc_pll_p)		= { "fin_pll", "fout_kfc_pll" };
+PNAME(mout_bus_pll_user_kfc_p)	= { "fin_pll", "mout_bus_pll_sub" };
+PNAME(mout_kfc_p)		= { "mout_kfc_pll", "mout_bus_pll_user_kfc" };
 
 /* TOP */
 PNAME(mout_bus_pll_user_p) = { "fin_pll", "mout_bus_pll_sub" };
@@ -787,6 +809,15 @@ struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
 		MUX_A(_id, cname, pnames, (unsigned long)o, s, w, a)
 
 struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
+	CMX(none, "mout_egl_pll", mout_egl_pll_p, EXYNOS5430_SRC_SEL_EGL0, 0, 1),
+	CMX(none, "mout_egl_dpll", mout_egl_dpll_p, EXYNOS5430_SRC_SEL_EGL0, 4, 1),
+	CMX(none, "mout_bus_pll_user_egl", mout_bus_pll_user_egl_p, EXYNOS5430_SRC_SEL_EGL1, 0, 1),
+	CMX(none, "mout_egl1", mout_egl1_p, EXYNOS5430_SRC_SEL_EGL2, 0, 1),
+	CMX(none, "mout_egl2", mout_egl2_p, EXYNOS5430_SRC_SEL_EGL2, 4, 1),
+	CMX(none, "mout_kfc_pll", mout_kfc_pll_p, EXYNOS5430_SRC_SEL_KFC0, 0, 1),
+	CMX(none, "mout_bus_pll_user_kfc", mout_bus_pll_user_kfc_p, EXYNOS5430_SRC_SEL_KFC1, 0, 1),
+	CMX(none, "mout_kfc", mout_kfc_p, EXYNOS5430_SRC_SEL_KFC2, 0, 1),
+
 	CMX(none, "mout_bus_pll_user", mout_bus_pll_user_p, EXYNOS5430_SRC_SEL_TOP1, 0, 1),
 	CMX(none, "mout_mfc_pll_user", mout_mfc_pll_user_p, EXYNOS5430_SRC_SEL_TOP1, 4, 1),
 	CMX(none, "mout_mphy_pll_user", mout_mphy_pll_user_p, EXYNOS5430_SRC_SEL_TOP1, 8, 1),
@@ -984,6 +1015,24 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 		DIV_A(_id, cname, pname, (unsigned long)o, s, w, a)
 
 struct samsung_div_clock exynos5430_div_clks[] __initdata = {
+	CDV(none, "dout_egl1", "mout_egl2", EXYNOS5430_DIV_EGL0, 0, 3),
+	CDV(none, "dout_egl2", "dout_egl1", EXYNOS5430_DIV_EGL0, 4, 3),
+	CDV(none, "dout_aclk_egl", "dout_egl2", EXYNOS5430_DIV_EGL0, 8, 3),
+	CDV(none, "dout_atclk_egl", "dout_egl2", EXYNOS5430_DIV_EGL0, 16, 3),
+	CDV(none, "dout_pclk_dbg_egl", "dout_atclk", EXYNOS5430_DIV_EGL0, 20, 3),
+	CDV(none, "dout_pclk_egl", "dout_atclk", EXYNOS5430_DIV_EGL0, 12, 3),
+	CDV(none, "dout_sclk_hpm_egl", "mout_egl2", EXYNOS5430_DIV_EGL1, 4, 3),
+	CDV(none, "dout_egl_pll", "mout_egl2", EXYNOS5430_DIV_EGL1, 0, 3),
+	CDV(none, "dout_kfc1", "mout_kfc", EXYNOS5430_DIV_KFC0, 0, 3),
+	CDV(none, "dout_kfc2", "dout_kfc1", EXYNOS5430_DIV_KFC0, 4, 3),
+	CDV(none, "dout_aclk_kfc", "dout_kfc2", EXYNOS5430_DIV_KFC0, 10, 3),
+	CDV(none, "dout_atclk_kfc", "dout_kfc2", EXYNOS5430_DIV_KFC0, 16, 3),
+	CDV(none, "dout_pclk_dbg_kfc", "dout_kfc2", EXYNOS5430_DIV_KFC0, 20, 3),
+	CDV(none, "dout_pclk_kfc", "dout_kfc2", EXYNOS5430_DIV_KFC0, 12, 3),
+	CDV(none, "dout_cntclk", "dout_kfc2", EXYNOS5430_DIV_KFC0, 24, 3),
+	CDV(none, "dout_sclk_hpm_kfc", "mout_kfc", EXYNOS5430_DIV_KFC1, 4, 3),
+	CDV(none, "dout_kfc_pll", "mout_kfc", EXYNOS5430_DIV_KFC1, 0, 3),
+
 	CDV(none, "dout_aclk_g2d_400", "mout_aclk_g2d_400_b", EXYNOS5430_DIV_TOP1, 0, 3),
 	CDV(none, "dout_aclk_g2d_266", "mout_bus_pll_user", EXYNOS5430_DIV_TOP1, 8, 3),
 	CDV(none, "dout_aclk_gscl_333", "mout_aclk_gscl_333", EXYNOS5430_DIV_TOP1, 24, 3),
