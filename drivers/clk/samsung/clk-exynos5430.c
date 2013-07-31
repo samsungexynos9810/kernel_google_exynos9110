@@ -803,7 +803,6 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDV(none, "dout_pclk_bus1_133", "mout_aclk_bus1_400_user", EXYNOS5430_DIV_BUS1, 0, 3),
 	CDV(none, "dout_pclk_bus2_133", "mout_aclk_bus2_400_user", EXYNOS5430_DIV_BUS2, 0, 3),
 
-#if 0
 	CDV(none, "dout_pclk_g2d", "mout_aclk_g2d_266_user", EXYNOS5430_DIV_G2D, 0, 2),
 
 	CDV(none, "dout_pclk_mscl", "mout_aclk_mscl_400_user", EXYNOS5430_DIV_MSCL, 0, 3),
@@ -816,7 +815,7 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDV(none, "dout_pclk_mfc1", "mout_aclk_mfc1_333_user", EXYNOS5430_DIV_MFC1, 0, 2),
 
 	CDV(none, "dout_pclk_hevc", "mout_aclk_hevc_400_user", EXYNOS5430_DIV_HEVC, 0, 2),
-#endif
+
 	CDV(none, "dout_pclk_disp", "mout_aclk_disp_333_user", EXYNOS5430_DIV_DISP, 0, 2),
 	CDV(none, "dout_sclk_decon_eclk_disp", "mout_sclk_decon_eclk_disp", EXYNOS5430_DIV_DISP, 4, 3),
 	CDV(none, "dout_sclk_decon_vclk_disp", "mout_sclk_decon_vclk_disp", EXYNOS5430_DIV_DISP, 8, 3),
