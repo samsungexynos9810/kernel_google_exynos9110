@@ -210,6 +210,126 @@ static const struct sensor_param init_sensor_param = {
 	},
 };
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+static const struct taa_param init_taa_param = {
+	.control = {
+		.cmd = CONTROL_COMMAND_START,
+		.bypass = CONTROL_BYPASS_DISABLE,
+		.err = CONTROL_ERROR_NO,
+	},
+	.otf_input = {
+		.cmd = OTF_INPUT_COMMAND_ENABLE,
+		.width = DEFAULT_CAPTURE_STILL_WIDTH,
+		.height = DEFAULT_CAPTURE_STILL_HEIGHT,
+		.format = OTF_INPUT_FORMAT_BAYER,
+		.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT,
+		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
+		.crop_offset_x = 0,
+		.crop_offset_y = 0,
+		.crop_width = 0,
+		.crop_height = 0,
+		.frametime_min = 0,
+		.frametime_max = 33333,
+		.binning_ratio_x = 1000,
+		.binning_ratio_y = 1000,
+		.err = OTF_INPUT_ERROR_NO,
+	},
+	.vdma1_input = {
+		.cmd = DMA_INPUT_COMMAND_DISABLE,
+		.width = 0,
+		.height = 0,
+		.format = 0,
+		.bitwidth = 0,
+		.plane = 0,
+		.order = 0,
+		.buffer_number = 0,
+		.buffer_address = 0,
+		.binning_ratio_x = 1000,
+		.binning_ratio_y = 1000,
+		.err = 0,
+	},
+	.ddma_input = {
+		.cmd = DMA_INPUT_COMMAND_DISABLE,
+	},
+	.otf_output = {
+		.cmd = OTF_OUTPUT_COMMAND_DISABLE,
+	},
+	.vdma4_output = {
+		.cmd = DMA_OUTPUT_COMMAND_DISABLE,
+		.dma_out_mask = 0,
+		.width = DEFAULT_CAPTURE_STILL_WIDTH,
+		.height = DEFAULT_CAPTURE_STILL_HEIGHT,
+		.format = DMA_INPUT_FORMAT_YUV444,
+		.bitwidth = DMA_INPUT_BIT_WIDTH_8BIT,
+		.plane = DMA_INPUT_PLANE_1,
+		.order = DMA_INPUT_ORDER_YCbCr,
+		.buffer_number = 0,
+		.buffer_address = 0,
+		.err = DMA_OUTPUT_ERROR_NO,
+	},
+	.vdma2_output = {
+		.cmd = DMA_OUTPUT_COMMAND_DISABLE,
+		.width = DEFAULT_CAPTURE_STILL_WIDTH,
+		.height = DEFAULT_CAPTURE_STILL_HEIGHT,
+		.format = DMA_OUTPUT_FORMAT_BAYER,
+		.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT,
+		.plane = DMA_OUTPUT_PLANE_1,
+		.order = DMA_OUTPUT_ORDER_GB_BG,
+		.buffer_number = 0,
+		.buffer_address = 0,
+		.dma_out_mask = 0xFFFFFFFF,
+		.err = DMA_OUTPUT_ERROR_NO,
+	},
+	.ddma_output = {
+		.cmd = DMA_OUTPUT_COMMAND_DISABLE,
+	},
+};
+
+static const struct isp_param init_isp_param = {
+	.control = {
+		.cmd = CONTROL_COMMAND_START,
+		.bypass = CONTROL_BYPASS_DISABLE,
+		.err = CONTROL_ERROR_NO,
+	},
+	.otf_input = {
+		.cmd = OTF_INPUT_COMMAND_DISABLE,
+	},
+	.vdma1_input = {
+		.cmd = DMA_INPUT_COMMAND_DISABLE,
+		.width = 0,
+		.height = 0,
+		.format = 0,
+		.bitwidth = 0,
+		.plane = 0,
+		.order = 0,
+		.buffer_number = 0,
+		.buffer_address = 0,
+		.binning_ratio_x = 1000,
+		.binning_ratio_y = 1000,
+		.err = 0,
+	},
+	.vdma3_input = {
+		.cmd = DMA_INPUT_COMMAND_DISABLE,
+	},
+	.otf_output = {
+		.cmd = OTF_OUTPUT_COMMAND_ENABLE,
+		.width = DEFAULT_CAPTURE_STILL_WIDTH,
+		.height = DEFAULT_CAPTURE_STILL_HEIGHT,
+		.format = OTF_OUTPUT_FORMAT_YUV444,
+		.bitwidth = OTF_OUTPUT_BIT_WIDTH_12BIT,
+		.order = OTF_OUTPUT_ORDER_BAYER_GR_BG,
+		.uiCropOffsetX = 0,
+		.uiCropOffsetX = 0,
+		.err = OTF_OUTPUT_ERROR_NO,
+	},
+	.vdma4_output = {
+		.cmd = DMA_OUTPUT_COMMAND_DISABLE,
+	},
+	.vdma5_output = {
+		.cmd = DMA_OUTPUT_COMMAND_DISABLE,
+	},
+};
+#else
 static const struct isp_param init_isp_param = {
 	.control = {
 		.cmd = CONTROL_COMMAND_START,
@@ -351,6 +471,7 @@ static const struct isp_param init_isp_param = {
 		.err = DMA_OUTPUT_ERROR_NO,
 	},
 };
+#endif
 
 static const struct drc_param init_drc_param = {
 	.control = {
@@ -1194,6 +1315,258 @@ static int fimc_is_itf_a_param(struct fimc_is_device_ischain *device,
 	return ret;
 }
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
+{
+	int ret = 0;
+	u32 setfile;
+	u32 group = 0;
+#ifdef DEBUG
+	u32 navailable = 0;
+	struct is_region *region = device->is_region;
+#endif
+
+	mdbgd_ischain(" NAME          SIZE    BINNING    FRAMERATE\n", device);
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
+		device->group_3ax.id == GROUP_ID_3A0)
+		mdbgd_ischain("SENSOR :  %04dx%04d        %1dx%1d          %3d\n",
+			device,
+			region->parameter.taa.vdma1_input.width + device->margin_width,
+			region->parameter.taa.vdma1_input.height + device->margin_height,
+			(region->parameter.taa.vdma1_input.binning_ratio_x / 1000),
+			(region->parameter.taa.vdma1_input.binning_ratio_y / 1000),
+			region->parameter.sensor.frame_rate.frame_rate
+			);
+	else
+		mdbgd_ischain("SENSOR :  %04dx%04d        %1dx%1d          %3d\n",
+			device,
+			region->parameter.sensor.dma_output.width,
+			region->parameter.sensor.dma_output.height,
+			(region->parameter.taa.otf_input.binning_ratio_x / 1000),
+			(region->parameter.taa.otf_input.binning_ratio_y / 1000),
+			region->parameter.sensor.frame_rate.frame_rate
+			);
+	mdbgd_ischain(" NAME    ON  BYPASS PATH        SIZE FORMAT\n", device);
+	mdbgd_ischain("3AX DI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.taa.control.cmd,
+		region->parameter.taa.control.bypass,
+		region->parameter.taa.vdma1_input.cmd,
+		region->parameter.taa.vdma1_input.width,
+		region->parameter.taa.vdma1_input.height,
+		region->parameter.taa.vdma1_input.format
+		);
+	mdbgd_ischain("3AX DO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.taa.control.cmd,
+		region->parameter.taa.control.bypass,
+		region->parameter.taa.vdma2_output.cmd,
+		region->parameter.taa.vdma2_output.width,
+		region->parameter.taa.vdma2_output.height,
+		region->parameter.taa.vdma2_output.format
+		);
+	mdbgd_ischain("ISP DI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.isp.control.cmd,
+		region->parameter.isp.control.bypass,
+		region->parameter.isp.vdma1_input.cmd,
+		region->parameter.isp.vdma1_input.width,
+		region->parameter.isp.vdma1_input.height,
+		region->parameter.isp.vdma1_input.format
+		);
+	mdbgd_ischain("ISP OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.isp.control.cmd,
+		region->parameter.isp.control.bypass,
+		region->parameter.isp.otf_input.cmd,
+		region->parameter.isp.otf_input.width,
+		region->parameter.isp.otf_input.height,
+		region->parameter.isp.otf_input.format
+		);
+	mdbgd_ischain("ISP OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.isp.control.cmd,
+		region->parameter.isp.control.bypass,
+		region->parameter.isp.otf_output.cmd,
+		region->parameter.isp.otf_output.width,
+		region->parameter.isp.otf_output.height,
+		region->parameter.isp.otf_output.format
+		);
+	mdbgd_ischain("DRC OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.drc.control.cmd,
+		region->parameter.drc.control.bypass,
+		region->parameter.drc.otf_input.cmd,
+		region->parameter.drc.otf_input.width,
+		region->parameter.drc.otf_input.height,
+		region->parameter.drc.otf_input.format
+		);
+	mdbgd_ischain("DRC OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.drc.control.cmd,
+		region->parameter.drc.control.bypass,
+		region->parameter.drc.otf_output.cmd,
+		region->parameter.drc.otf_output.width,
+		region->parameter.drc.otf_output.height,
+		region->parameter.drc.otf_output.format
+		);
+	mdbgd_ischain("SCC OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.scalerc.control.cmd,
+		region->parameter.scalerc.control.bypass,
+		region->parameter.scalerc.otf_input.cmd,
+		region->parameter.scalerc.otf_input.width,
+		region->parameter.scalerc.otf_input.height,
+		region->parameter.scalerc.otf_input.format
+		);
+	mdbgd_ischain("SCC DO : %2d    %4d  %3d   %04dx%04d %4d,%d\n", device,
+		region->parameter.scalerc.control.cmd,
+		region->parameter.scalerc.control.bypass,
+		region->parameter.scalerc.dma_output.cmd,
+		region->parameter.scalerc.dma_output.width,
+		region->parameter.scalerc.dma_output.height,
+		region->parameter.scalerc.dma_output.format,
+		region->parameter.scalerc.dma_output.plane
+		);
+	mdbgd_ischain("SCC OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.scalerc.control.cmd,
+		region->parameter.scalerc.control.bypass,
+		region->parameter.scalerc.otf_output.cmd,
+		region->parameter.scalerc.otf_output.width,
+		region->parameter.scalerc.otf_output.height,
+		region->parameter.scalerc.otf_output.format
+		);
+	mdbgd_ischain("ODC OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.odc.control.cmd,
+		region->parameter.odc.control.bypass,
+		region->parameter.odc.otf_input.cmd,
+		region->parameter.odc.otf_input.width,
+		region->parameter.odc.otf_input.height,
+		region->parameter.odc.otf_input.format
+		);
+	mdbgd_ischain("ODC OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.odc.control.cmd,
+		region->parameter.odc.control.bypass,
+		region->parameter.odc.otf_output.cmd,
+		region->parameter.odc.otf_output.width,
+		region->parameter.odc.otf_output.height,
+		region->parameter.odc.otf_output.format
+		);
+	mdbgd_ischain("DIS OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.dis.control.cmd,
+		region->parameter.dis.control.bypass,
+		region->parameter.dis.otf_input.cmd,
+		region->parameter.dis.otf_input.width,
+		region->parameter.dis.otf_input.height,
+		region->parameter.dis.otf_input.format
+		);
+	mdbgd_ischain("DIS OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.dis.control.cmd,
+		region->parameter.dis.control.bypass,
+		region->parameter.dis.otf_output.cmd,
+		region->parameter.dis.otf_output.width,
+		region->parameter.dis.otf_output.height,
+		region->parameter.dis.otf_output.format
+		);
+	mdbgd_ischain("DNR OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.tdnr.control.cmd,
+		region->parameter.tdnr.control.bypass,
+		region->parameter.tdnr.otf_input.cmd,
+		region->parameter.tdnr.otf_input.width,
+		region->parameter.tdnr.otf_input.height,
+		region->parameter.tdnr.otf_input.format
+		);
+	mdbgd_ischain("DNR OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.tdnr.control.cmd,
+		region->parameter.tdnr.control.bypass,
+		region->parameter.tdnr.otf_output.cmd,
+		region->parameter.tdnr.otf_output.width,
+		region->parameter.tdnr.otf_output.height,
+		region->parameter.tdnr.otf_output.format
+		);
+	mdbgd_ischain("SCP OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.scalerp.control.cmd,
+		region->parameter.scalerp.control.bypass,
+		region->parameter.scalerp.otf_input.cmd,
+		region->parameter.scalerp.otf_input.width,
+		region->parameter.scalerp.otf_input.height,
+		region->parameter.scalerp.otf_input.format
+		);
+	mdbgd_ischain("SCC DO : %2d    %4d  %3d   %04dx%04d %4d,%d\n", device,
+		region->parameter.scalerp.control.cmd,
+		region->parameter.scalerp.control.bypass,
+		region->parameter.scalerp.dma_output.cmd,
+		region->parameter.scalerp.dma_output.width,
+		region->parameter.scalerp.dma_output.height,
+		region->parameter.scalerp.dma_output.format,
+		region->parameter.scalerp.dma_output.plane
+		);
+	mdbgd_ischain("SCP OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.scalerp.control.cmd,
+		region->parameter.scalerp.control.bypass,
+		region->parameter.scalerp.otf_output.cmd,
+		region->parameter.scalerp.otf_output.width,
+		region->parameter.scalerp.otf_output.height,
+		region->parameter.scalerp.otf_output.format
+		);
+	mdbgd_ischain("FD  OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.fd.control.cmd,
+		region->parameter.fd.control.bypass,
+		region->parameter.fd.otf_input.cmd,
+		region->parameter.fd.otf_input.width,
+		region->parameter.fd.otf_input.height,
+		region->parameter.fd.otf_input.format
+		);
+	mdbgd_ischain(" NAME   CMD    IN_SZIE   OT_SIZE      CROP       POS\n", device);
+	mdbgd_ischain("SCC CI :  %d  %04dx%04d %04dx%04d %04dx%04d %04dx%04d\n", device,
+		region->parameter.scalerc.input_crop.cmd,
+		region->parameter.scalerc.input_crop.in_width,
+		region->parameter.scalerc.input_crop.in_height,
+		region->parameter.scalerc.input_crop.out_width,
+		region->parameter.scalerc.input_crop.out_height,
+		region->parameter.scalerc.input_crop.crop_width,
+		region->parameter.scalerc.input_crop.crop_height,
+		region->parameter.scalerc.input_crop.pos_x,
+		region->parameter.scalerc.input_crop.pos_y
+		);
+	mdbgd_ischain("SCC CO :  %d  %04dx%04d %04dx%04d %04dx%04d %04dx%04d\n", device,
+		region->parameter.scalerc.output_crop.cmd,
+		navailable,
+		navailable,
+		navailable,
+		navailable,
+		region->parameter.scalerc.output_crop.crop_width,
+		region->parameter.scalerc.output_crop.crop_height,
+		region->parameter.scalerc.output_crop.pos_x,
+		region->parameter.scalerc.output_crop.pos_y
+		);
+	mdbgd_ischain("SCP CI :  %d  %04dx%04d %04dx%04d %04dx%04d %04dx%04d\n", device,
+		region->parameter.scalerp.input_crop.cmd,
+		region->parameter.scalerp.input_crop.in_width,
+		region->parameter.scalerp.input_crop.in_height,
+		region->parameter.scalerp.input_crop.out_width,
+		region->parameter.scalerp.input_crop.out_height,
+		region->parameter.scalerp.input_crop.crop_width,
+		region->parameter.scalerp.input_crop.crop_height,
+		region->parameter.scalerp.input_crop.pos_x,
+		region->parameter.scalerp.input_crop.pos_y
+		);
+	mdbgd_ischain("SCP CO :  %d  %04dx%04d %04dx%04d %04dx%04d %04dx%04d\n", device,
+		region->parameter.scalerp.output_crop.cmd,
+		navailable,
+		navailable,
+		navailable,
+		navailable,
+		region->parameter.scalerp.output_crop.crop_width,
+		region->parameter.scalerp.output_crop.crop_height,
+		region->parameter.scalerp.output_crop.pos_x,
+		region->parameter.scalerp.output_crop.pos_y
+		);
+
+	setfile = (device->setfile & FIMC_IS_SETFILE_MASK);
+	group |= GROUP_ID(device->group_3ax.id);
+	group |= GROUP_ID(device->group_isp.id);
+
+	ret = fimc_is_hw_a_param(device->interface,
+		device->instance,
+		group,
+		setfile);
+
+	return ret;
+}
+#else
 static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 {
 	int ret = 0;
@@ -1444,6 +1817,7 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 
 	return ret;
 }
+#endif
 
 static int fimc_is_itf_enum(struct fimc_is_device_ischain *this)
 {
@@ -1554,6 +1928,10 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 
 	memcpy(&region->parameter.sensor, &init_sensor_param,
 		sizeof(struct sensor_param));
+#if defined(CONFIG_SOC_EXYNOS5430)
+	memcpy(&region->parameter.taa, &init_taa_param,
+		sizeof(struct taa_param));
+#endif
 	memcpy(&region->parameter.isp, &init_isp_param,
 		sizeof(struct isp_param));
 	memcpy(&region->parameter.drc, &init_drc_param,
@@ -2639,6 +3017,270 @@ p_err:
 	return ret;
 }
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
+	u32 *lindex, u32 *hindex, u32 *indexes, struct fimc_is_queue *queue)
+{
+	int ret = 0;
+	struct taa_param *taa_param;
+	struct isp_param *isp_param;
+	struct fimc_is_device_sensor *sensor;
+	u32 active_sensor_width, active_sensor_height, binning;
+
+	BUG_ON(!device);
+	BUG_ON(!lindex);
+	BUG_ON(!hindex);
+	BUG_ON(!indexes);
+	BUG_ON(!device->sensor);
+
+	taa_param = &device->is_region->parameter.taa;
+	isp_param = &device->is_region->parameter.isp;
+	sensor = device->sensor;
+
+	dbg_ischain("request otf size : %dx%d\n",
+		device->sensor_width, device->sensor_height);
+
+	if (sensor->active_sensor) {
+		active_sensor_width = sensor->active_sensor->pixel_width;
+		active_sensor_height = sensor->active_sensor->pixel_height;
+	} else {
+		active_sensor_width = sensor->width;
+		active_sensor_height = sensor->height;
+	}
+
+	binning = min(
+		BINNING(active_sensor_width, sensor->width),
+		BINNING(active_sensor_height, sensor->height)
+		);
+
+	taa_param->control.cmd = CONTROL_COMMAND_START;
+	taa_param->control.bypass = CONTROL_BYPASS_DISABLE;
+	taa_param->control.run_mode = 1;
+	*lindex |= LOWBIT_OF(PARAM_3AA_CONTROL);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_CONTROL);
+	(*indexes)++;
+
+	/* OTF input */
+#ifdef USE_OTF_INTERFACE
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
+		device->group_3ax.id == GROUP_ID_3A0) {
+		/* reprocessing instnace uses actual sensor size */
+		binning = min(
+			BINNING(active_sensor_width, device->chain0_width),
+			BINNING(active_sensor_height, device->chain0_height)
+			);
+		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
+	} else {
+		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+	}
+#else
+	taa_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
+#endif
+
+	taa_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
+	taa_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
+	taa_param->otf_input.order = OTF_INPUT_ORDER_BAYER_GR_BG;
+	taa_param->otf_input.frametime_min = 0;
+	taa_param->otf_input.frametime_max = 1000000;
+	taa_param->otf_input.width = device->sensor_width;
+	taa_param->otf_input.height = device->sensor_height;
+	taa_param->otf_input.crop_offset_x = 0;
+	taa_param->otf_input.crop_offset_y = 0;
+	taa_param->otf_input.crop_width = device->sensor_width;
+	taa_param->otf_input.crop_height = device->sensor_height;
+	taa_param->otf_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
+	taa_param->otf_input.uiBDSOutWidth = device->chain0_width;
+	taa_param->otf_input.uiBDSOutHeight = device->chain0_height;
+	taa_param->otf_input.binning_ratio_x = binning;
+	taa_param->otf_input.binning_ratio_y = binning;
+	*lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
+	(*indexes)++;
+
+	/* DMA input */
+#ifdef USE_OTF_INTERFACE
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
+		device->group_3ax.id == GROUP_ID_3A0) {
+		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+	} else {
+		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
+	}
+#else
+	taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+#endif
+
+	taa_param->vdma1_input.width = device->sensor_width;
+	taa_param->vdma1_input.height = device->sensor_height;
+	taa_param->vdma1_input.uiDmaCropOffsetX = 0;
+	taa_param->vdma1_input.uiDmaCropOffsetY = 0;
+	taa_param->vdma1_input.uiDmaCropWidth = device->sensor_width;
+	taa_param->vdma1_input.uiDmaCropHeight = device->sensor_height;
+	taa_param->vdma1_input.uiBayerCropOffsetX = 0;
+	taa_param->vdma1_input.uiBayerCropOffsetY = 0;
+	taa_param->vdma1_input.uiBayerCropWidth = 0;
+	taa_param->vdma1_input.uiBayerCropHeight = 0;
+	taa_param->vdma1_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
+	taa_param->vdma1_input.uiBDSOutWidth = device->chain0_width;
+	taa_param->vdma1_input.uiBDSOutHeight = device->chain0_height;
+	taa_param->vdma1_input.uiUserMinFrameTime = 0;
+	taa_param->vdma1_input.uiUserMaxFrameTime = 1000000;
+	taa_param->vdma1_input.uiWideFrameGap = 1;
+	taa_param->vdma1_input.uiFrameGap = 0;
+	taa_param->vdma1_input.uiLineGap = 50;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		taa_param->vdma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_12BIT;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		taa_param->vdma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+	} else {
+		taa_param->vdma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+		mwarn("Invalid bayer format", device);
+	}
+
+	taa_param->vdma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
+	taa_param->vdma1_input.order = DMA_INPUT_ORDER_GR_BG;
+	taa_param->vdma1_input.plane = 1;
+	taa_param->vdma1_input.buffer_number = 0;
+	taa_param->vdma1_input.buffer_address = 0;
+	taa_param->vdma1_input.binning_ratio_x = binning;
+	taa_param->vdma1_input.binning_ratio_y = binning;
+	/*
+	 * hidden spec
+	 *     [0] : sensor size is dma input size
+	 *     [X] : sensor size is reserved field
+	 */
+	taa_param->vdma1_input.uiReserved[1] = 0;
+	taa_param->vdma1_input.uiReserved[2] = 0;
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
+	(*indexes)++;
+
+	/* OTF output: will be removed */
+	taa_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
+	taa_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444;
+	taa_param->otf_output.bitwidth = OTF_OUTPUT_BIT_WIDTH_12BIT;
+	taa_param->otf_output.order = OTF_INPUT_ORDER_BAYER_GR_BG;
+	*lindex |= LOWBIT_OF(PARAM_3AA_OTF_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_OUTPUT);
+	(*indexes)++;
+
+	/* Befor BDS */
+	taa_param->vdma4_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	taa_param->vdma4_output.width = device->sensor_width;
+	taa_param->vdma4_output.height = device->sensor_height;
+	taa_param->vdma4_output.buffer_number = 0;
+	taa_param->vdma4_output.buffer_address = 0;
+	taa_param->vdma4_output.dma_out_mask = 0;
+	taa_param->vdma4_output.format = DMA_OUTPUT_FORMAT_BAYER;
+	taa_param->vdma4_output.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
+	taa_param->vdma4_output.notify_dma_done
+		= DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	(*indexes)++;
+
+	/* After BDS */
+	taa_param->vdma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	taa_param->vdma2_output.width = device->chain0_width;
+	taa_param->vdma2_output.height = device->chain0_height;
+	taa_param->vdma2_output.buffer_number = 0;
+	taa_param->vdma2_output.buffer_address = 0;
+	taa_param->vdma2_output.dma_out_mask = 0;
+	taa_param->vdma2_output.format = DMA_OUTPUT_FORMAT_BAYER;
+	taa_param->vdma2_output.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
+	taa_param->vdma2_output.notify_dma_done
+		= DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	(*indexes)++;
+
+	pr_info("[ISC:D:%d] otf size(%d x %d)",
+		device->instance, device->sensor_width, device->sensor_height);
+
+	return ret;
+}
+
+static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
+	u32 width, u32 height, u32 *lindex, u32 *hindex, u32 *indexes)
+{
+	int ret = 0;
+	struct isp_param *isp_param;
+	struct drc_param *drc_param;
+	struct scalerc_param *scc_param;
+	u32 chain0_width, chain0_height;
+
+	BUG_ON(!device);
+	BUG_ON(!lindex);
+	BUG_ON(!hindex);
+	BUG_ON(!indexes);
+
+	isp_param = &device->is_region->parameter.isp;
+	drc_param = &device->is_region->parameter.drc;
+	scc_param = &device->is_region->parameter.scalerc;
+	chain0_width = width;
+	chain0_height = height;
+
+	dbg_ischain("request chain0 size : %dx%d\n",
+		chain0_width, chain0_height);
+
+	/* ISP */
+	isp_param->control.cmd = CONTROL_COMMAND_START;
+	isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
+	isp_param->control.run_mode = 1;
+	*lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
+	(*indexes)++;
+
+	isp_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+	isp_param->vdma1_input.width = chain0_width;
+	isp_param->vdma1_input.height = chain0_height;
+	isp_param->vdma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
+	isp_param->vdma1_input.uiLineGap = 50;
+	/* TODO: 12 or 16 */
+	isp_param->vdma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_12BIT;
+	*lindex |= LOWBIT_OF(PARAM_ISP_VDMA1_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_VDMA1_INPUT);
+	(*indexes)++;
+
+	isp_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
+	isp_param->otf_output.width = chain0_width;
+	isp_param->otf_output.height = chain0_height;
+	isp_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444;
+	isp_param->otf_output.bitwidth = OTF_OUTPUT_BIT_WIDTH_12BIT;
+	isp_param->otf_output.order = OTF_INPUT_ORDER_BAYER_GR_BG;
+	*lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
+	(*indexes)++;
+
+	/* DRC */
+	drc_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+	drc_param->otf_input.width = chain0_width;
+	drc_param->otf_input.height = chain0_height;
+	*lindex |= LOWBIT_OF(PARAM_DRC_OTF_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_DRC_OTF_INPUT);
+	(*indexes)++;
+
+	drc_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
+	drc_param->otf_output.width = chain0_width;
+	drc_param->otf_output.height = chain0_height;
+	*lindex |= LOWBIT_OF(PARAM_DRC_OTF_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_DRC_OTF_OUTPUT);
+	(*indexes)++;
+
+	/* SCC */
+	scc_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+	scc_param->otf_input.width = chain0_width;
+	scc_param->otf_input.height = chain0_height;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
+	(*indexes)++;
+
+	pr_info("[ISC:D:%d] chain0 size(%d x %d)",
+		device->instance, chain0_width, chain0_height);
+
+	return ret;
+}
+#else
 static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	u32 *lindex, u32 *hindex, u32 *indexes, struct fimc_is_queue *queue)
 {
@@ -2854,6 +3496,7 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 
 	return ret;
 }
+#endif
 
 static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 	u32 width, u32 height, u32 *lindex, u32 *hindex, u32 *indexes)
@@ -3401,6 +4044,138 @@ exit:
 #endif
 
 #ifdef BAYER_CROP_DZOOM
+#if defined(CONFIG_SOC_EXYNOS5430)
+static int fimc_is_ischain_s_3ax_size(struct fimc_is_device_ischain *device,
+	u32 crop_x, u32 crop_y,
+	u32 crop_width, u32 crop_height,
+	u32 bds_width, u32 bds_height)
+{
+	int ret = 0;
+	struct taa_param *taa_param;
+	struct isp_param *isp_param;
+	u32 min_width, max_width, min_height, max_height;
+
+	u32 sensor_width, sensor_height;
+	u32 indexes, lindex, hindex;
+
+	taa_param = &device->is_region->parameter.taa;
+	isp_param = &device->is_region->parameter.isp;
+	indexes = lindex = hindex = 0;
+	sensor_width = device->sensor->width - device->margin_width;
+	sensor_height = device->sensor->height - device->margin_height;
+	if ((crop_width < bds_width) ||
+		(crop_height < bds_height)) {
+		bds_width = crop_width;
+		bds_height = crop_height;
+	}
+
+#ifdef PRINT_DZOOM
+	pr_info("[ISP:D:%d] request 3ax input size(%dx%d),\
+		Bcrop size(%dx%d), BDS size(%dx%d), zoom(%d)\n",
+		device->instance, sensor_width, sensor_height,
+		crop_width, crop_height, bds_width, bds_height,
+		sensor_width * 1000 / crop_width);
+#endif
+
+	/* Check length for center crop */
+	min_width = crop_width + crop_x;
+	max_width = crop_width + (crop_x << 1);
+	min_height = crop_height + crop_y;
+	max_height = crop_height + (crop_y << 1);
+	if ((min_width > sensor_width) || (max_width < sensor_width)
+	|| (min_height > sensor_height) || (max_height < sensor_height)) {
+		mwarn("Crop width or height is not valid.\
+			Crop region(%d, %d, %d, %d) Input region(%d, %d)",
+			device, crop_x, crop_y, crop_width, crop_height,
+			sensor_width, sensor_height);
+		goto exit;
+	}
+
+	/* CHECK align */
+	if ((crop_width % 4) || (crop_height % 2)) {
+		mwarn("Input width or height align does not fit.(%d x %d)",
+			device, crop_width, crop_height);
+		goto exit;
+	}
+
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
+		device->group_3ax.id == GROUP_ID_3A0) {
+		/* 3AX DMA INPUT */
+		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+		taa_param->vdma1_input.width = sensor_width;
+		taa_param->vdma1_input.height = sensor_height;
+		taa_param->vdma1_input.uiDmaCropWidth = sensor_width;
+		taa_param->vdma1_input.uiDmaCropHeight = sensor_height;
+		taa_param->vdma1_input.uiBayerCropOffsetX = crop_x;
+		taa_param->vdma1_input.uiBayerCropOffsetY = crop_y;
+		taa_param->vdma1_input.uiBayerCropWidth = crop_width;
+		taa_param->vdma1_input.uiBayerCropHeight = crop_height;
+		taa_param->vdma1_input.uiBDSOutWidth = bds_width;
+		taa_param->vdma1_input.uiBDSOutHeight = bds_height;
+		lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
+		hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
+		indexes++;
+	} else {
+		/* 3AX DMA INPUT */
+		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
+		taa_param->vdma1_input.width = sensor_width;
+		taa_param->vdma1_input.height = sensor_height;
+		taa_param->vdma1_input.uiDmaCropWidth = sensor_width;
+		taa_param->vdma1_input.uiDmaCropHeight = sensor_height;
+		taa_param->vdma1_input.uiBDSOutWidth = bds_width;
+		taa_param->vdma1_input.uiBDSOutHeight = bds_height;
+		lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
+		hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
+		indexes++;
+
+		/* 3AX OTF INPUT */
+		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+		taa_param->otf_input.width = sensor_width;
+		taa_param->otf_input.height = sensor_height;
+		taa_param->otf_input.crop_offset_x = crop_x;
+		taa_param->otf_input.crop_offset_y = crop_y;
+		taa_param->otf_input.crop_width = crop_width;
+		taa_param->otf_input.crop_height = crop_height;
+		taa_param->otf_input.uiBDSOutWidth = bds_width;
+		taa_param->otf_input.uiBDSOutHeight = bds_height;
+		lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
+		hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
+		indexes++;
+	}
+
+	/* 3AX Before BDS DMA OUTPUT */
+	taa_param->vdma4_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	taa_param->vdma4_output.width = crop_width;
+	taa_param->vdma4_output.height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	indexes++;
+
+	/* 3AX After BDS DMA OUTPUT */
+	taa_param->vdma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	taa_param->vdma2_output.width = bds_width;
+	taa_param->vdma2_output.height = bds_height;
+	lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	indexes++;
+
+	ret = fimc_is_itf_s_param(device,
+		indexes, lindex, hindex);
+	if (ret) {
+		merr("fimc_is_itf_s_param is fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	device->sensor_width = sensor_width;
+	device->sensor_height = sensor_height;
+	device->dzoom_width = crop_width;
+
+exit:
+
+	return ret;
+}
+#else
 static int fimc_is_ischain_s_3ax_size(struct fimc_is_device_ischain *device,
 	u32 crop_x, u32 crop_y,
 	u32 crop_width, u32 crop_height,
@@ -3529,6 +4304,7 @@ exit:
 
 	return ret;
 }
+#endif
 #endif
 
 #ifdef BAYER_CROP_DZOOM
@@ -4101,6 +4877,127 @@ p_err:
 	return ret;
 }
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *leader,
+	struct fimc_is_queue *queue)
+
+{
+	int ret = 0;
+	struct taa_param *taa_param;
+	struct sensor_param *sensor_param;
+	struct fimc_is_device_sensor *sensor;
+	u32 group_id = 0;
+	u32 active_sensor_width, active_sensor_height, binning;
+	u32 indexes, lindex, hindex;
+
+	dbg_ischain("%s()\n", __func__);
+
+	sensor_param = &device->is_region->parameter.sensor;
+	taa_param = &device->is_region->parameter.taa;
+	sensor = device->sensor;
+
+	group_id |= GROUP_ID(device->group_3ax.id);
+	group_id |= GROUP_ID(device->group_isp.id);
+
+	ret = fimc_is_itf_process_stop(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_process_stop is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+#ifdef USE_OTF_INTERFACE
+	device->sensor_width = sensor->width - device->margin_width;
+	device->sensor_height = sensor->height - device->margin_height;
+#else
+	device->sensor_width = leader->input.width - device->margin_width;
+	device->sensor_height = leader->input.height - device->margin_height;
+#endif
+	pr_info("scalable sensor input: %dx%d\n", device->sensor_width,
+			device->sensor_height);
+
+	indexes = lindex = hindex = 0;
+
+#ifdef FIXED_FPS_DEBUG
+	sensor_param->frame_rate.frame_rate = FIXED_FPS_VALUE;
+#else
+	sensor_param->frame_rate.frame_rate = sensor->framerate;
+#endif
+	lindex |= LOWBIT_OF(PARAM_SENSOR_FRAME_RATE);
+	hindex |= HIGHBIT_OF(PARAM_SENSOR_FRAME_RATE);
+	indexes++;
+
+	sensor_param->dma_output.width = sensor->width;
+	sensor_param->dma_output.height = sensor->height;
+	lindex |= LOWBIT_OF(PARAM_SENSOR_DMA_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_SENSOR_DMA_OUTPUT);
+	indexes++;
+
+	if (sensor->active_sensor) {
+		active_sensor_width = sensor->active_sensor->pixel_width;
+		active_sensor_height = sensor->active_sensor->pixel_height;
+	} else {
+		active_sensor_width = sensor->width;
+		active_sensor_height = sensor->height;
+	}
+
+	binning = min(
+		BINNING(active_sensor_width, sensor->width),
+		BINNING(active_sensor_height, sensor->height)
+		);
+
+	/* 3AX DMA INPUT */
+	taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
+	taa_param->vdma1_input.width = device->sensor_width;
+	taa_param->vdma1_input.height = device->sensor_height;
+	taa_param->vdma1_input.uiDmaCropWidth = device->sensor_width;
+	taa_param->vdma1_input.uiDmaCropHeight = device->sensor_height;
+	taa_param->vdma1_input.binning_ratio_x = binning;
+	taa_param->vdma1_input.binning_ratio_y = binning;
+	lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
+	hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
+	indexes++;
+
+	/* 3AX OTF INPUT */
+	taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+	taa_param->otf_input.width = device->sensor_width;
+	taa_param->otf_input.height = device->sensor_height;
+	taa_param->otf_input.crop_offset_x = 0;
+	taa_param->otf_input.crop_offset_y = 0;
+	taa_param->otf_input.crop_width = device->sensor_width;
+	taa_param->otf_input.crop_height = device->sensor_height;
+	taa_param->otf_input.binning_ratio_x = binning;
+	taa_param->otf_input.binning_ratio_y = binning;
+	lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
+	hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
+	indexes++;
+
+	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	if (ret) {
+		merr("fimc_is_itf_s_param is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = fimc_is_itf_a_param(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_a_param is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = fimc_is_itf_process_start(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_process_start is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+p_err:
+	return ret;
+}
+#else
 static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *leader,
 	struct fimc_is_queue *queue)
@@ -4220,6 +5117,7 @@ static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
 p_err:
 	return ret;
 }
+#endif
 
 int fimc_is_ischain_3a1_reqbufs(struct fimc_is_device_ischain *device,
 	u32 count)

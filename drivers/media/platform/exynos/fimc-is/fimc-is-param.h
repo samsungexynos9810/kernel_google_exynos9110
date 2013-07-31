@@ -840,6 +840,9 @@ enum is_entry {
 	ENTRY_GLOBAL,
 	ENTRY_BUFFER,
 	ENTRY_SENSOR,
+#if defined(CONFIG_SOC_EXYNOS5430)
+	ENTRY_3AA,
+#endif
 	ENTRY_ISP,
 	ENTRY_DRC,
 	ENTRY_SCALERC,
@@ -926,6 +929,8 @@ enum is_param_set_bit {
 #define LOWBIT_OF_NUM(num)		(num >= 32 ? 0 : BIT0<<num)
 #define HIGHBIT_OF_NUM(num)		(num >= 32 ? BIT0<<(num-32) : 0)
 
+#if !defined(CONFIG_SOC_EXYNOS5430)
+
 /* 0~31 */
 #define PARAM_GLOBAL_SHOTMODE		0
 #define PARAM_SENSOR_CONTROL		INC_NUM(PARAM_GLOBAL_SHOTMODE)
@@ -959,10 +964,46 @@ enum is_param_set_bit {
 #define PARAM_SCALERC_OTF_INPUT		INC_NUM(PARAM_SCALERC_CONTROL)
 #define PARAM_SCALERC_IMAGE_EFFECT	INC_NUM(PARAM_SCALERC_OTF_INPUT)
 #define PARAM_SCALERC_INPUT_CROP	INC_NUM(PARAM_SCALERC_IMAGE_EFFECT)
-#define PARAM_SCALERC_OUTPUT_CROP	INC_NUM(PARAM_SCALERC_INPUT_CROP)
-#define PARAM_SCALERC_OTF_OUTPUT	INC_NUM(PARAM_SCALERC_OUTPUT_CROP)
+
+#else /* #if !defined(CONFIG_SOC_EXYNOS5430) */
+//0~31
+#define PARAM_GLOBAL_SHOTMODE		0
+#define PARAM_SENSOR_CONTROL		INC_NUM(PARAM_GLOBAL_SHOTMODE)
+#define PARAM_SENSOR_OTF_INPUT		INC_NUM(PARAM_SENSOR_CONTROL)
+#define PARAM_SENSOR_OTF_OUTPUT		INC_NUM(PARAM_SENSOR_OTF_INPUT)
+#define PARAM_SENSOR_FRAME_RATE		INC_NUM(PARAM_SENSOR_OTF_OUTPUT)
+#define PARAM_SENSOR_DMA_OUTPUT		INC_NUM(PARAM_SENSOR_FRAME_RATE)
+#define PARAM_BUFFER_CONTROL		INC_NUM(PARAM_SENSOR_DMA_OUTPUT)
+#define PARAM_BUFFER_OTF_INPUT		INC_NUM(PARAM_BUFFER_CONTROL)
+#define PARAM_BUFFER_OTF_OUTPUT		INC_NUM(PARAM_BUFFER_OTF_INPUT)
+#define PARAM_3AA_CONTROL		INC_NUM(PARAM_BUFFER_OTF_OUTPUT)
+#define PARAM_3AA_OTF_INPUT		INC_NUM(PARAM_3AA_CONTROL)
+#define PARAM_3AA_VDMA1_INPUT		INC_NUM(PARAM_3AA_OTF_INPUT)
+#define PARAM_3AA_DDMA_INPUT		INC_NUM(PARAM_3AA_VDMA1_INPUT)
+#define PARAM_3AA_OTF_OUTPUT		INC_NUM(PARAM_3AA_DDMA_INPUT)
+#define PARAM_3AA_VDMA4_OUTPUT		INC_NUM(PARAM_3AA_OTF_OUTPUT)
+#define PARAM_3AA_VDMA2_OUTPUT		INC_NUM(PARAM_3AA_VDMA4_OUTPUT)
+#define PARAM_3AA_DDMA_OUTPUT		INC_NUM(PARAM_3AA_VDMA2_OUTPUT)
+#define PARAM_ISP_CONTROL		INC_NUM(PARAM_3AA_DDMA_OUTPUT)
+#define PARAM_ISP_OTF_INPUT		INC_NUM(PARAM_ISP_CONTROL)
+#define PARAM_ISP_VDMA1_INPUT		INC_NUM(PARAM_ISP_OTF_INPUT)
+#define PARAM_ISP_VDMA3_INPUT		INC_NUM(PARAM_ISP_VDMA1_INPUT)
+#define PARAM_ISP_OTF_OUTPUT		INC_NUM(PARAM_ISP_VDMA3_INPUT)
+#define PARAM_ISP_VDMA4_OUTPUT		INC_NUM(PARAM_ISP_OTF_OUTPUT)
+#define PARAM_ISP_VDMA5_OUTPUT		INC_NUM(PARAM_ISP_VDMA4_OUTPUT)
+#define PARAM_DRC_CONTROL		INC_NUM(PARAM_ISP_VDMA5_OUTPUT)
+#define PARAM_DRC_OTF_INPUT		INC_NUM(PARAM_DRC_CONTROL)
+#define PARAM_DRC_DMA_INPUT		INC_NUM(PARAM_DRC_OTF_INPUT)
+#define PARAM_DRC_OTF_OUTPUT		INC_NUM(PARAM_DRC_DMA_INPUT)
+#define PARAM_SCALERC_CONTROL		INC_NUM(PARAM_DRC_OTF_OUTPUT)
+#define PARAM_SCALERC_OTF_INPUT		INC_NUM(PARAM_SCALERC_CONTROL)
+#define PARAM_SCALERC_IMAGE_EFFECT	INC_NUM(PARAM_SCALERC_OTF_INPUT)
+#define PARAM_SCALERC_INPUT_CROP	INC_NUM(PARAM_SCALERC_IMAGE_EFFECT)
+#endif /* #if !defined(CONFIG_SOC_EXYNOS5430) */
 
 /* 32~63 */
+#define PARAM_SCALERC_OUTPUT_CROP	INC_NUM(PARAM_SCALERC_INPUT_CROP)
+#define PARAM_SCALERC_OTF_OUTPUT	INC_NUM(PARAM_SCALERC_OUTPUT_CROP)
 #define PARAM_SCALERC_DMA_OUTPUT	INC_NUM(PARAM_SCALERC_OTF_OUTPUT)
 #define PARAM_ODC_CONTROL		INC_NUM(PARAM_SCALERC_DMA_OUTPUT)
 #define PARAM_ODC_OTF_INPUT		INC_NUM(PARAM_ODC_CONTROL)
@@ -992,25 +1033,32 @@ enum is_param_set_bit {
 
 #define PARAM_STRNUM_GLOBAL		(PARAM_GLOBAL_SHOTMODE)
 #define PARAM_RANGE_GLOBAL		1
-#define PARAM_STRNUM_SENSOR		(PARAM_SENSOR_BYPASS)
+#define PARAM_STRNUM_SENSOR		(PARAM_SENSOR_CONTROL)
 #define PARAM_RANGE_SENSOR		5
-#define PARAM_STRNUM_BUFFER		(PARAM_BUFFER_BYPASS)
+#define PARAM_STRNUM_BUFFER		(PARAM_BUFFER_CONTROL)
 #define PARAM_RANGE_BUFFER		3
-#define PARAM_STRNUM_ISP		(PARAM_ISP_BYPASS)
+#if defined(CONFIG_SOC_EXYNOS5430)
+#define PARAM_STRNUM_3AA		(PARAM_3AA_CONTROL)
+#define PARAM_RANGE_3AA			8
+#define PARAM_STRNUM_ISP		(PARAM_ISP_CONTROL)
+#define PARAM_RANGE_ISP			7
+#else
+#define PARAM_STRNUM_ISP		(PARAM_ISP_CONTROL)
 #define PARAM_RANGE_ISP			15
-#define PARAM_STRNUM_DRC		(PARAM_DRC_BYPASS)
+#endif
+#define PARAM_STRNUM_DRC		(PARAM_DRC_CONTROL)
 #define PARAM_RANGE_DRC			4
-#define PARAM_STRNUM_SCALERC		(PARAM_SCALERC_BYPASS)
+#define PARAM_STRNUM_SCALERC		(PARAM_SCALERC_CONTROL)
 #define PARAM_RANGE_SCALERC		7
-#define PARAM_STRNUM_ODC		(PARAM_ODC_BYPASS)
+#define PARAM_STRNUM_ODC		(PARAM_ODC_CONTROL)
 #define PARAM_RANGE_ODC			3
-#define PARAM_STRNUM_DIS		(PARAM_DIS_BYPASS)
+#define PARAM_STRNUM_DIS		(PARAM_DIS_CONTROL)
 #define PARAM_RANGE_DIS			3
-#define PARAM_STRNUM_TDNR		(PARAM_TDNR_BYPASS)
+#define PARAM_STRNUM_TDNR		(PARAM_TDNR_CONTROL)
 #define PARAM_RANGE_TDNR		5
-#define PARAM_STRNUM_SCALERP		(PARAM_SCALERP_BYPASS)
+#define PARAM_STRNUM_SCALERP		(PARAM_SCALERP_CONTROL)
 #define PARAM_RANGE_SCALERP		9
-#define PARAM_STRNUM_LHFD		(PARAM_FD_BYPASS)
+#define PARAM_STRNUM_LHFD		(PARAM_FD_CONTROL)
 #define PARAM_RANGE_LHFD		4
 
 #define PARAM_LOW_MASK		(0xFFFFFFFF)
@@ -1885,6 +1933,28 @@ struct buffer_param {
 	struct param_otf_output	otf_output;
 };
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+struct taa_param {
+	struct param_control		control;
+	struct param_otf_input		otf_input;	/* otf_input */
+	struct param_dma_input		vdma1_input;	/* dma1_input */
+	struct param_dma_input		ddma_input;	/* not use */
+	struct param_otf_output		otf_output;	/* not use */
+	struct param_dma_output		vdma4_output;	/* Before BDS */
+	struct param_dma_output		vdma2_output;	/* After BDS */
+	struct param_dma_output		ddma_output;	/* not use */
+};
+
+struct isp_param {
+	struct param_control		control;
+	struct param_otf_input		otf_input;	/* not use */
+	struct param_dma_input		vdma1_input;	/* dma1_input */
+	struct param_dma_input		vdma3_input;	/* not use */
+	struct param_otf_output		otf_output;	/* otf_out */
+	struct param_dma_output		vdma4_output;	/* not use */
+	struct param_dma_output		vdma5_output;	/* not use */
+};
+#else
 struct isp_param {
 	struct param_control		control;
 	struct param_otf_input		otf_input;
@@ -1902,6 +1972,7 @@ struct isp_param {
 	struct param_dma_output		dma1_output;
 	struct param_dma_output		dma2_output;
 };
+#endif
 
 struct drc_param {
 	struct param_control		control;
@@ -1963,6 +2034,9 @@ struct is_param_region {
 	struct global_param		global;
 	struct sensor_param		sensor;
 	struct buffer_param		buf;
+#if defined(CONFIG_SOC_EXYNOS5430)
+	struct taa_param		taa;
+#endif
 	struct isp_param		isp;
 	struct drc_param		drc;
 	struct scalerc_param	scalerc;
