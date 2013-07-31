@@ -497,4 +497,50 @@
 		clocks = <&clock 593>, <&clock 567>;
 		status = "ok";
 	};
+
+	decon_fb: decon_fb {
+		compatible = "samsung,exynos5-decon";
+		reg = <0x13800000 0x40000>;
+		samsung,vidcon0 = <0x00>;
+		samsung,vidcon1 = <0x80>;
+		samsung,default_win = <0>;
+
+		samsung,left_margin = <20>;
+		samsung,right_margin = <20>;
+		samsung,upper_margin = <3>;
+		samsung,lower_margin = <20>;
+		samsung,hsync_len = <20>;
+		samsung,vsync_len = <2>;
+		samsung,xres = <1080>;
+		samsung,yres = <1920>;
+		samsung,virtual_x = <1080>;
+		samsung,virtual_y = <1920>;
+		samsung,width = <71>;
+		samsung,height = <114>;
+		samsung,max_bpp = <32>;
+		samsung,default_bpp = <24>;
+
+		samsung,i80_irq_no = <233>;
+		samsung,irq_no = <234>;
+
+		clock-names = "lcd", "sclk_eclk", "sclk_vclk", "decon_dsd";
+		clocks = <&clock 321>, <&clock 100>, <&clock 101>, <&clock 102>;
+
+		iommu = <&sysmmu_decon0x>, <&sysmmu_decon1x>;
+	};
+
+	mipi_dsi: mipi_dsi {
+		compatible = "samsung,exynos5-dsim";
+		reg = <0x13900000 0x40000>;
+		samsung,irq_no = <237>;
+
+		samsung,left_margin = <20>;
+		samsung,right_margin = <20>;
+		samsung,upper_margin = <3>;
+		samsung,lower_margin = <20>;
+		samsung,hsync_len = <20>;
+		samsung,vsync_len = <2>;
+		samsung,xres = <1080>;
+		samsung,yres = <1920>;
+	};
 };
