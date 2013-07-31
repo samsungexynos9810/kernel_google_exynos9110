@@ -48,6 +48,7 @@ struct exynos_pcie {
 #define PCIE_IRQ_SPECIAL		0x008
 #define PCIE_IRQ_EN_PULSE		0x00c
 #define PCIE_IRQ_EN_LEVEL		0x010
+#define IRQ_MSI_ENABLE			(0x1 << 2)
 #define PCIE_IRQ_EN_SPECIAL		0x014
 #define PCIE_PWR_RESET			0x018
 #define PCIE_CORE_RESET			0x01c
@@ -320,9 +321,51 @@ static irqreturn_t exynos_pcie_irq_handler(int irq, void *arg)
 	return IRQ_HANDLED;
 }
 
+#ifdef CONFIG_PCI_MSI
+static void exynos_pcie_clear_irq_level(struct pcie_port *pp)
+{
+	u32 val;
+	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
+	void __iomem *elbi_base = exynos_pcie->elbi_base;
+
+	val = readl(elbi_base + PCIE_IRQ_LEVEL);
+	writel(val, elbi_base + PCIE_IRQ_LEVEL);
+	return;
+}
+
+static irqreturn_t exynos_pcie_msi_irq_handler(int irq, void *arg)
+{
+	struct pcie_port *pp = arg;
+
+	/* handle msi irq */
+	dw_handle_msi_irq(pp);
+	exynos_pcie_clear_irq_level(pp);
+
+	return IRQ_HANDLED;
+}
+
+static void exynos_pcie_msi_init(struct pcie_port *pp)
+{
+	u32 val;
+	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
+	void __iomem *elbi_base = exynos_pcie->elbi_base;
+
+	dw_pcie_msi_init(pp);
+
+	/* enable MSI interrupt */
+	val = readl(elbi_base + PCIE_IRQ_EN_LEVEL);
+	val |= IRQ_MSI_ENABLE;
+	writel(val, elbi_base + PCIE_IRQ_EN_LEVEL);
+	return;
+}
+#endif
+
 static void exynos_pcie_enable_interrupts(struct pcie_port *pp)
 {
 	exynos_pcie_enable_irq_pulse(pp);
+#ifdef CONFIG_PCI_MSI
+	exynos_pcie_msi_init(pp);
+#endif
 	return;
 }
 
@@ -407,6 +450,23 @@ static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
 		dev_err(&pdev->dev, "failed to request irq\n");
 		return ret;
 	}
+
+#ifdef CONFIG_PCI_MSI
+	pp->msi_irq = platform_get_irq(pdev, 0);
+
+	if (!pp->msi_irq) {
+		dev_err(&pdev->dev, "failed to get msi irq\n");
+		return -ENODEV;
+	}
+
+	ret = devm_request_irq(&pdev->dev, pp->msi_irq,
+				exynos_pcie_msi_irq_handler,
+				IRQF_SHARED, "exynos-pcie", pp);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to request msi irq\n");
+		return ret;
+	}
+#endif
 
 	pp->root_bus_nr = -1;
 	pp->ops = &exynos_pcie_host_ops;

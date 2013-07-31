@@ -38,6 +38,10 @@ struct pcie_port {
 	int			irq;
 	u32			lanes;
 	struct pcie_host_ops	*ops;
+#ifdef CONFIG_PCI_MSI
+	int			msi_irq;
+	int			msi_irq_start;
+#endif
 };
 
 struct pcie_host_ops {
@@ -55,6 +59,10 @@ int cfg_read(void *addr, int where, int size, u32 *val);
 int cfg_write(void *addr, int where, int size, u32 val);
 int dw_pcie_wr_own_conf(struct pcie_port *pp, int where, int size, u32 val);
 int dw_pcie_rd_own_conf(struct pcie_port *pp, int where, int size, u32 *val);
+#if CONFIG_PCI_MSI
+void dw_handle_msi_irq(struct pcie_port *pp);
+void dw_pcie_msi_init(struct pcie_port *pp);
+#endif
 int dw_pcie_link_up(struct pcie_port *pp);
 void dw_pcie_setup_rc(struct pcie_port *pp);
 int dw_pcie_host_init(struct pcie_port *pp);

@@ -11,8 +11,10 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/irq.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/msi.h>
 #include <linux/of_address.h>
 #include <linux/pci.h>
 #include <linux/pci_regs.h>
@@ -61,6 +63,14 @@
 #define PCIE_ATU_DEV(x)			(((x) & 0x1f) << 19)
 #define PCIE_ATU_FUNC(x)		(((x) & 0x7) << 16)
 #define PCIE_ATU_UPPER_TARGET		0x91C
+
+#ifdef CONFIG_PCI_MSI
+#define MAX_MSI_IRQS			32
+#define MAX_MSI_CTRLS			8
+
+static unsigned int msi_data;
+static DECLARE_BITMAP(msi_irq_in_use, MAX_MSI_IRQS);
+#endif
 
 static struct hw_pci dw_pci;
 
@@ -144,6 +154,202 @@ int dw_pcie_wr_own_conf(struct pcie_port *pp, int where, int size,
 	return ret;
 }
 
+#ifdef CONFIG_PCI_MSI
+static struct irq_chip dw_msi_chip = {
+	.name = "PCI-MSI",
+	.irq_enable = unmask_msi_irq,
+	.irq_disable = mask_msi_irq,
+	.irq_mask = mask_msi_irq,
+	.irq_unmask = unmask_msi_irq,
+};
+
+/* MSI int handler */
+void dw_handle_msi_irq(struct pcie_port *pp)
+{
+	unsigned long val;
+	int i, pos;
+
+	for (i = 0; i < MAX_MSI_CTRLS; i++) {
+		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_STATUS + i * 12, 4,
+				(u32 *)&val);
+		if (val) {
+			pos = 0;
+			while ((pos = find_next_bit(&val, 32, pos)) != 32) {
+				generic_handle_irq(pp->msi_irq_start
+					+ (i * 32) + pos);
+				pos++;
+			}
+		}
+		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_STATUS + i * 12, 4, val);
+	}
+}
+
+void dw_pcie_msi_init(struct pcie_port *pp)
+{
+	/* program the msi_data */
+	dw_pcie_wr_own_conf(pp, PCIE_MSI_ADDR_LO, 4,
+			__virt_to_phys((u32)(&msi_data)));
+	dw_pcie_wr_own_conf(pp, PCIE_MSI_ADDR_HI, 4, 0);
+}
+
+static int find_valid_pos0(int msgvec, int pos, int *pos0)
+{
+	int flag = 1;
+
+	do {
+		pos = find_next_zero_bit(msi_irq_in_use,
+				MAX_MSI_IRQS, pos);
+		/*if you have reached to the end then get out from here.*/
+		if (pos == MAX_MSI_IRQS)
+			return -ENOSPC;
+		/*
+		 * Check if this position is at correct offset.nvec is always a
+		 * power of two. pos0 must be nvec bit alligned.
+		 */
+		if (pos % msgvec)
+			pos += msgvec - (pos % msgvec);
+		else
+			flag = 0;
+	} while (flag);
+
+	*pos0 = pos;
+	return 0;
+}
+
+/* Dynamic irq allocate and deallocation */
+static int assign_irq(int no_irqs, struct msi_desc *desc, int *pos)
+{
+	int res, bit, irq, pos0, pos1, i;
+	u32 val;
+	struct pcie_port *pp = sys_to_pcie(desc->dev->bus->sysdata);
+
+	if (!pp) {
+		BUG();
+		return -EINVAL;
+	}
+
+	pos0 = find_first_zero_bit(msi_irq_in_use,
+			MAX_MSI_IRQS);
+	if (pos0 % no_irqs) {
+		if (find_valid_pos0(no_irqs, pos0, &pos0))
+			goto no_valid_irq;
+	}
+	if (no_irqs > 1) {
+		pos1 = find_next_bit(msi_irq_in_use,
+				MAX_MSI_IRQS, pos0);
+		/* there must be nvec number of consecutive free bits */
+		while ((pos1 - pos0) < no_irqs) {
+			if (find_valid_pos0(no_irqs, pos1, &pos0))
+				goto no_valid_irq;
+			pos1 = find_next_bit(msi_irq_in_use,
+					MAX_MSI_IRQS, pos0);
+		}
+	}
+
+	irq = (pp->msi_irq_start + pos0);
+
+	if ((irq + no_irqs) > (pp->msi_irq_start + MAX_MSI_IRQS-1))
+		goto no_valid_irq;
+
+	i = 0;
+	while (i < no_irqs) {
+		set_bit(pos0 + i, msi_irq_in_use);
+		irq_alloc_descs((irq + i), (irq + i), 1, 0);
+		irq_set_msi_desc(irq + i, desc);
+		irq_set_chip_and_handler(irq + i, &dw_msi_chip,
+					handle_simple_irq);
+		set_irq_flags(irq + i, IRQF_VALID);
+		/*Enable corresponding interrupt in MSI interrupt controller */
+		res = ((pos0 + i) / 32) * 12;
+		bit = (pos0 + i) % 32;
+		dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
+		val |= 1 << bit;
+		dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
+		i++;
+	}
+
+	*pos = pos0;
+	return irq;
+
+no_valid_irq:
+	*pos = pos0;
+	return -ENOSPC;
+}
+
+static void clear_irq(unsigned int irq)
+{
+	int res, bit, val, pos;
+	struct irq_desc *desc;
+	struct msi_desc *msi;
+	struct pcie_port *pp;
+
+	/* get the port structure */
+	desc = irq_to_desc(irq);
+	msi = irq_desc_get_msi_desc(desc);
+	pp = sys_to_pcie(msi->dev->bus->sysdata);
+	if (!pp) {
+		BUG();
+		return;
+	}
+
+	pos = irq - pp->msi_irq_start;
+
+	irq_free_desc(irq);
+
+	clear_bit(pos, msi_irq_in_use);
+
+	/* Disable corresponding interrupt on MSI interrupt controller */
+	res = (pos / 32) * 12;
+	bit = pos % 32;
+	dw_pcie_rd_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, &val);
+	val &= ~(1 << bit);
+	dw_pcie_wr_own_conf(pp, PCIE_MSI_INTR0_ENABLE + res, 4, val);
+}
+
+int arch_setup_msi_irq(struct pci_dev *pdev, struct msi_desc *desc)
+{
+	int irq, pos, msgvec;
+	u16 msg_ctr;
+	struct msi_msg msg;
+	struct pcie_port *pp = sys_to_pcie(pdev->bus->sysdata);
+
+	if (!pp) {
+		BUG();
+		return -EINVAL;
+	}
+
+	pci_read_config_word(pdev, desc->msi_attrib.pos+PCI_MSI_FLAGS,
+				&msg_ctr);
+	msgvec = (msg_ctr&PCI_MSI_FLAGS_QSIZE) >> 4;
+	if (msgvec == 0)
+		msgvec = (msg_ctr & PCI_MSI_FLAGS_QMASK) >> 1;
+	if (msgvec > 5)
+		msgvec = 0;
+
+	irq = assign_irq((1 << msgvec), desc, &pos);
+	if (irq < 0)
+		return irq;
+
+	msg_ctr &= ~PCI_MSI_FLAGS_QSIZE;
+	msg_ctr |= msgvec << 4;
+	pci_write_config_word(pdev, desc->msi_attrib.pos + PCI_MSI_FLAGS,
+				msg_ctr);
+	desc->msi_attrib.multiple = msgvec;
+
+	msg.address_hi = 0x0;
+	msg.address_lo = __virt_to_phys((u32)(&msi_data));
+	msg.data = pos;
+	write_msi_msg(irq, &msg);
+
+	return 0;
+}
+
+void arch_teardown_msi_irq(unsigned int irq)
+{
+	clear_irq(irq);
+}
+#endif
+
 int dw_pcie_link_up(struct pcie_port *pp)
 {
 	if (pp->ops->link_up)
@@ -224,6 +430,13 @@ int dw_pcie_host_init(struct pcie_port *pp)
 		dev_err(pp->dev, "Failed to parse the number of lanes\n");
 		return -EINVAL;
 	}
+
+#ifdef CONFIG_PCI_MSI
+	if (of_property_read_u32(np, "msi-base", &pp->msi_irq_start)) {
+		dev_err(pp->dev, "Failed to parse the number of lanes\n");
+		return -EINVAL;
+	}
+#endif
 
 	if (pp->ops->host_init)
 		pp->ops->host_init(pp);
