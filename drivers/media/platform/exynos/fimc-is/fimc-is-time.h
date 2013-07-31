@@ -29,7 +29,7 @@
 struct fimc_is_time {
 	u32 instance;
 	u32 group_id;
-	u32 frames;
+	u32 report_period;
 	u32 time_count;
 	u32 time1_min;
 	u32 time1_max;
@@ -50,7 +50,9 @@ struct fimc_is_time {
 void measure_init(struct fimc_is_time *time,
 	u32 instance,
 	u32 group_id,
-	u32 frames);
+	u32 report_period);
+void measure_period(struct fimc_is_time *time,
+	u32 report_period);
 void measure_time(
 	struct fimc_is_time *time,
 	struct timeval *time_queued,

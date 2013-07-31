@@ -2940,6 +2940,20 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
+#ifdef MEASURE_TIME
+#ifdef INTERNAL_TIME
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		measure_period(&device->group_3ax.time, 1);
+		measure_period(&device->group_isp.time, 1);
+		measure_period(&device->group_dis.time, 1);
+	} else {
+		measure_period(&device->group_3ax.time, 66);
+		measure_period(&device->group_isp.time, 66);
+		measure_period(&device->group_dis.time, 66);
+	}
+#endif
+#endif
+
 	set_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state);
 
 p_err:

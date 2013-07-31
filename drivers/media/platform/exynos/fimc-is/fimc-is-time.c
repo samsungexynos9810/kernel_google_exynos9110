@@ -8,11 +8,14 @@
 #ifdef MEASURE_TIME
 #ifdef INTERNAL_TIME
 
-void measure_init(struct fimc_is_time *time, u32 instance, u32 group_id, u32 frames)
+void measure_init(struct fimc_is_time *time,
+	u32 instance,
+	u32 group_id,
+	u32 report_period)
 {
 	time->instance = instance;
 	time->group_id = group_id;
-	time->frames = frames;
+	time->report_period = report_period;
 	time->time_count = 0;
 	time->time1_min = 0;
 	time->time1_max = 0;
@@ -26,6 +29,12 @@ void measure_init(struct fimc_is_time *time, u32 instance, u32 group_id, u32 fra
 	time->time4_cur = 0;
 	time->time4_old = 0;
 	time->time4_tot = 0;
+}
+
+void measure_period(struct fimc_is_time *time,
+	u32 report_period)
+{
+	time->report_period = report_period;
 }
 
 void measure_time(
@@ -81,7 +90,7 @@ void measure_time(
 
 	time->time_count++;
 
-	if (time->time_count % time->frames)
+	if (time->time_count % time->report_period)
 		return;
 
 	pr_info("I%dG%d t1(%05d,%05d,%05d), t2(%05d,%05d,%05d), t3(%05d,%05d,%05d) : %d(%dfps)",
@@ -89,8 +98,8 @@ void measure_time(
 		temp1, time->time1_max, time->time1_tot / time->time_count,
 		temp2, time->time2_max, time->time2_tot / time->time_count,
 		temp3, time->time3_max, time->time3_tot / time->time_count,
-		time->time4_tot / time->frames,
-		(1000000 * time->frames) / time->time4_tot);
+		time->time4_tot / time->report_period,
+		(1000000 * time->report_period) / time->time4_tot);
 
 	time->time_count = 0;
 	time->time1_tot = 0;
