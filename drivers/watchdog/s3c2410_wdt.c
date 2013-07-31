@@ -155,6 +155,17 @@ static inline int s3c2410wdt_is_running(void)
 	return readl(wdt_base + S3C2410_WTCON) & S3C2410_WTCON_ENABLE;
 }
 
+static int s3c2410wdt_set_min_max_timeout(struct watchdog_device *wdd)
+{
+	unsigned long freq = clk_get_rate(wdt_clock);
+
+	wdd->min_timeout = 1;
+	wdd->max_timeout = S3C2410_WTCNT_MAX *
+		(S3C2410_WTCON_PRESCALE_MAX + 1) * S3C2410_WTCON_DIVMAX / freq;
+
+	return 0;
+}
+
 static int s3c2410wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeout)
 {
 	unsigned long freq = clk_get_rate(wdt_clock);
@@ -356,6 +367,7 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 	/* see if we can actually set the requested timer margin, and if
 	 * not, try the default value */
 
+	s3c2410wdt_set_min_max_timeout(&s3c2410_wdd);
 	watchdog_init_timeout(&s3c2410_wdd, tmr_margin,  &pdev->dev);
 	if (s3c2410wdt_set_heartbeat(&s3c2410_wdd, s3c2410_wdd.timeout)) {
 		started = s3c2410wdt_set_heartbeat(&s3c2410_wdd,
