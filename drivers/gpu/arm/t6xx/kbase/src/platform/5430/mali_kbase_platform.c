@@ -122,14 +122,15 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D clock */
-	clk_g3d = clk_get(dev, "g3d");
+	clk_g3d = clk_get(NULL, "aclk_g3d");
+
 	if (IS_ERR(clk_g3d)) {
 		clk_g3d = NULL;
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [g3d]\n");
 	} else {
 		clk_enable(clk_g3d);
 		/* Turn on G3D AHB2APB clock */
-		clk_ahb2apb_g3dp = clk_get(dev, "clk_ahb2apb_g3dp");
+/*		clk_ahb2apb_g3dp = clk_get(dev, "clk_ahb2apb_g3dp");
 		if (IS_ERR(clk_ahb2apb_g3dp)) {
 			clk_ahb2apb_g3dp = NULL;
 			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [clk_ahb2apb_g3dp]\n");
@@ -137,8 +138,11 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 			clk_enable(clk_ahb2apb_g3dp);
 			clk_g3d_status = 1;
 		}
+*/
+			clk_g3d_status = 1;
 	}
 
+/*
 	fout_vpll = clk_get(dev, "fout_vpll");
 	if (IS_ERR(fout_vpll)) {
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fout_vpll]\n");
@@ -193,6 +197,9 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	(void) clk_enable(platform->aclk_g3d);
+	*/
+
+//	clk_set_rate(clk_g3d, MALI_T6XX_DEFAULT_CLOCK);
 #if defined(CONFIG_EXYNOS_THERMAL)
 	exynos_gpu_add_notifier(&exynos5_g3d_tmu_nb);
 	tmu_on_off = true;
@@ -219,7 +226,7 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
-		(void) clk_enable(clk_ahb2apb_g3dp);
+//		(void) clk_enable(clk_ahb2apb_g3dp);
 		(void) clk_enable(platform->aclk_g3d);
 	}
 	clk_g3d_status = 1;
@@ -241,7 +248,7 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 		return 0;
 
 	if (clk_g3d) {
-		(void)clk_disable(clk_ahb2apb_g3dp);
+//		(void)clk_disable(clk_ahb2apb_g3dp);
 		(void)clk_disable(clk_g3d);
 		(void)clk_disable(platform->aclk_g3d);
 	}
@@ -380,7 +387,6 @@ static ssize_t show_clock(struct device *dev, struct device_attribute *attr, cha
 
 static ssize_t set_clock(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-#if 0 //helsinki
 	struct kbase_device *kbdev;
 	struct exynos_context *platform;
 	unsigned int tmp = 0, freq = 0;
@@ -422,9 +428,7 @@ static ssize_t set_clock(struct device *dev, struct device_attribute *attr, cons
 		tmp = __raw_readl(EXYNOS5_CLKDIV_STAT_TOP2);
 	} while (tmp & 0x10000);
 
-	return counti;
-#endif
-	return 0;
+	return count;
 }
 
 static ssize_t show_fbdev(struct device *dev, struct device_attribute *attr, char *buf)
