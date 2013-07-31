@@ -40,6 +40,9 @@
 #include <mach/map.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
+#include <linux/clkdev.h>
+#include <linux/clk-provider.h>
+#include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
 //#include <mach/pmu.h>
 #include <mach/regs-pmu.h>
@@ -122,7 +125,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D clock */
-	clk_g3d = clk_get(NULL, "aclk_g3d");
+	clk_g3d = __clk_lookup("aclk_g3d");
 
 	if (IS_ERR(clk_g3d)) {
 		clk_g3d = NULL;
