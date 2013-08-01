@@ -25,9 +25,6 @@ enum exynos5430_clks {
 	/* core clocks */
 	fin_pll, mem_pll, bus_pll, mfc_pll, mphy_pll, disp_pll, isp_pll, aud_pll,
 
-	/* temp clocks, to be modified */
-	clk_uart_baud0 = 10, uart0, uart1, uart2, mct,
-
 	/* gate for special clocks (sclk) */
 	sclk_jpeg_top = 20,
 
