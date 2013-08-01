@@ -16,6 +16,7 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/module.h>
+#include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/mipi-lli.h>
 
@@ -306,6 +307,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 static int exynos_mipi_lli_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	struct device_node *node = dev->of_node;
 	struct mipi_lli *lli;
 	struct resource *res;
 	void __iomem *regs, *remote_regs, *sysregs;
@@ -377,6 +379,15 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
+	if (node) {
+		ret = of_platform_populate(node, NULL, NULL, dev);
+		if (ret)
+			dev_err(dev, "failed to add mphy\n");
+	} else {
+		dev_err(dev, "no device node, failed to add mphy\n");
+		ret = -ENODEV;
+	}
+
 	lli->mphy = exynos_get_mphy();
 	if (!lli->mphy) {
 		dev_err(dev, "failed get mphy\n");
@@ -397,12 +408,23 @@ static int exynos_mipi_lli_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id exynos_mipi_lli_dt_match[] = {
+	{
+		.compatible = "samsung,exynos-mipi-lli"
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(of, exynos_mipi_lli_dt_match);
+#endif
+
 static struct platform_driver exynos_mipi_lli_driver = {
 	.probe = exynos_mipi_lli_probe,
 	.remove = exynos_mipi_lli_remove,
 	.driver = {
 		.name = "exynos-mipi-lli",
 		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(exynos_mipi_lli_dt_match),
 	},
 };
 

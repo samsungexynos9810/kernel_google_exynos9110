@@ -16,6 +16,7 @@
 #include <linux/interrupt.h>
 #include <linux/io.h>
 #include <linux/module.h>
+#include <linux/of_platform.h>
 #include <linux/platform_device.h>
 
 #include "exynos-mipi-lli-mphy.h"
@@ -117,12 +118,23 @@ struct device *exynos_get_mphy(void)
 }
 EXPORT_SYMBOL(exynos_get_mphy);
 
+#ifdef CONFIG_OF
+static const struct of_device_id exynos_mphy_dt_match[] = {
+	{
+		.compatible = "samsung,exynos-mipi-lli-mphy"
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(of, exynos_mphy_dt_match);
+#endif
+
 static struct platform_driver exynos_mipi_lli_mphy_driver = {
 	.probe		= exynos_mipi_lli_mphy_probe,
 	.remove		= exynos_mipi_lli_mphy_remove,
 	.driver		= {
 		.name	= "exynos-mipi-lli-mphy",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(exynos_mphy_dt_match),
 	},
 };
 
