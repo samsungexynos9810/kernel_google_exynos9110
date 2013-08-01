@@ -165,7 +165,18 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
 
 static notrace u32 exynos4_read_sched_clock(void)
 {
-        return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+	unsigned int lo;
+	unsigned int try_cnt = 0xff;
+
+	do {
+		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+		try_cnt--;
+	} while (!lo && try_cnt > 0);
+
+	if (!try_cnt)
+		WARN_ON(!lo);
+
+	return lo;
 }
 
 static cycle_t exynos4_frc_read(struct clocksource *cs)
@@ -184,7 +195,14 @@ static cycle_t exynos4_frc_read(struct clocksource *cs)
 		val = ((cycle_t)hi << 32) | lo;
 	} else {
 		/* 32bit supporting clocksource */
-		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+		unsigned int try_cnt = 0xff;
+		do {
+			val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+			try_cnt--;
+		} while (!val && try_cnt > 0);
+
+		if (!try_cnt)
+			WARN_ON(!val);
 	}
 	return val;
 }
