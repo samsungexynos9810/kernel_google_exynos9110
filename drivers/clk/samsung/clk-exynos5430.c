@@ -108,7 +108,7 @@ enum exynos5430_clks {
 	/* mscl gate */
 	aclk_m2mscaler0 = 520, aclk_m2mscaler1, aclk_jpeg, aclk_msclnd_400,
 	aclk_xiu_msclx, aclk_qe_m2mscaler0, aclk_qe_m2mscaler1, aclk_qe_jpeg,
-	aclk_smmu_m3mscaler0 = 530, aclk_smmu_m2mscaler1, aclk_smmu_jpeg,
+	aclk_smmu_m2mscaler0 = 530, aclk_smmu_m2mscaler1, aclk_smmu_jpeg,
 	aclk_ppmu_m2mscaler0, aclk_ppmu_m2mscaler1,
 	aclk_msclnp_100, aclk_ahb2apb_mscl0p, pclk_m2mscaler0, pclk_m2mscaler1,
 	pclk_jpeg = 540, pclk_sysreg_mscl, pclk_pmu_mscl,
@@ -860,10 +860,10 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	/* sclk TOP */
 
-#if 0
 	/* sclk TOP_MSCL */
 	CGTE(sclk_jpeg_top, "sclk_jpeg_top", "dout_sclk_jpeg", EXYNOS5430_ENABLE_SCLK_TOP_MSCL, 0, 0, 0),
 
+#if 0
 	/* sclk TOP_CAM1 */
 	CGTE(sclk_isp_spi0_top, "sclk_isp_spi0_top", "dout_sclk_isp_spi0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 0, 0, 0),
 	CGTE(sclk_isp_spi1_top, "sclk_isp_spi1_top", "dout_sclk_isp_spi1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 1, 0, 0),
@@ -999,7 +999,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_sysreg_bus2, "pclk_sysreg_bus2", "dout_pclk_bus2_133", EXYNOS5430_ENABLE_PCLK_BUS2, 0, 0, 0),
 	CGTE(pclk_pmu_bus2, "pclk_pmu_bus2", "dout_pclk_bus2_133", EXYNOS5430_ENABLE_PCLK_BUS2, 1, 0, 0),
 
-#if 0
 	/* G2D */
 	CGTE(aclk_g2d, "aclk_g2d", "mout_aclk_g2d_400_user", EXYNOS5430_ENABLE_ACLK_G2D, 0, 0, 0),
 	CGTE(aclk_g2dnd_400, "aclk_g2dnd_400", "mout_aclk_g2d_400_user", EXYNOS5430_ENABLE_ACLK_G2D, 2, 0, 0),
@@ -1094,7 +1093,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_ppmu_m2mscaler0, "pclk_ppmu_m2mscaler0", "dout_pclk_mscl", EXYNOS5430_ENABLE_PCLK_MSCL, 8, 0, 0),
 	CGTE(pclk_ppmu_m2mscaler1, "pclk_ppmu_m2mscaler1", "dout_pclk_mscl", EXYNOS5430_ENABLE_PCLK_MSCL, 9, 0, 0),
 	CGTE(pclk_ppmu_jpeg, "pclk_ppmu_jpeg", "dout_pclk_mscl", EXYNOS5430_ENABLE_PCLK_MSCL, 10, 0, 0),
-#endif
 
 	/*FSYS*/
 	CGTE(aclk_pdma, "aclk_pdma", "mout_aclk_fsys_200_user", EXYNOS5430_ENABLE_ACLK_FSYS0, 0, 0, 0),
