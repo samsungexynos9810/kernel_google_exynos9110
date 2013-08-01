@@ -155,7 +155,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C10000 0x100>;
 		interrupts = <0 421 0>;
-		clocks = <&clock 11>, <&clock 10>;
+		clocks = <&clock 115>, <&clock 115>;
 		clock-names = "uart", "clk_uart_baud0";
 	};
 
@@ -163,7 +163,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C20000 0x100>;
 		interrupts = <0 422 0>;
-		clocks = <&clock 12>, <&clock 10>;
+		clocks = <&clock 116>, <&clock 116>;
 		clock-names = "uart", "clk_uart_baud0";
 	};
 
@@ -171,7 +171,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C30000 0x100>;
 		interrupts = <0 423 0>;
-		clocks = <&clock 13>, <&clock 10>;
+		clocks = <&clock 117>, <&clock 117>;
 		clock-names = "uart", "clk_uart_baud0";
 	};
 
