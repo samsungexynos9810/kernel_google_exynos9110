@@ -5,6 +5,25 @@
 
 #include "fimc-is-time.h"
 
+static struct timeval itime1;
+
+void TIME_STR1(void)
+{
+	do_gettimeofday(&itime1);
+}
+
+void TIME_END1(void)
+{
+	u32 time;
+	struct timeval temp;
+
+	do_gettimeofday(&temp);
+	time = (temp.tv_sec - itime1.tv_sec)*1000000 +
+		(temp.tv_usec - itime1.tv_usec);
+
+	pr_info("TIME_MEASURE : %dus\n", time);
+}
+
 #ifdef MEASURE_TIME
 #ifdef INTERNAL_TIME
 

@@ -26,9 +26,15 @@
 #define REPROCESSING_SHIFT		24
 #define SSX_VINDEX_MASK			0x00FF0000
 #define SSX_VINDEX_SHIFT		16
-#define BPP_VINDEX_MASK			0x0000FF00
-#define BPP_VINDEX_SHIFT		8
+#define TAX_VINDEX_MASK			0x0000FF00
+#define TAX_VINDEX_SHIFT		8
 #define MODULE_MASK			0x000000FF
+
+#define FIMC_IS_SETFILE_MASK		0xFFFF
+#define FIMC_IS_CRANGE_MASK		0xFFFF0000
+#define FIMC_IS_CRANGE_SHIFT		16
+#define FIMC_IS_CRANGE_WIDE		0
+#define FIMC_IS_CRANGE_NARROW		1
 
 /*global state*/
 enum fimc_is_ischain_state {
@@ -195,9 +201,10 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 	struct fimc_is_minfo *minfo);
 int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 	struct fimc_is_video_ctx *vctx);
-int fimc_is_ischain_init(struct fimc_is_device_ischain *this,
-	u32 module, u32 channel, struct sensor_open_extended *ext,
-	char *setfile_name);
+int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
+	u32 module,
+	u32 group_id,
+	u32 rep_stream);
 int fimc_is_ischain_g_capability(struct fimc_is_device_ischain *this,
 	u32 user_ptr);
 int fimc_is_ischain_print_status(struct fimc_is_device_ischain *this);

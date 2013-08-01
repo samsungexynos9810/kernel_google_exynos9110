@@ -2260,8 +2260,13 @@ int fimc_is_hw_setfile(struct fimc_is_interface *this,
 }
 
 int fimc_is_hw_open(struct fimc_is_interface *this,
-	u32 instance, u32 module, u32 info, u32 group, u32 flag,
-	u32 *mwidth, u32 *mheight)
+	u32 instance,
+	u32 module,
+	u32 info,
+	u32 group,
+	u32 flag,
+	u32 *mwidth,
+	u32 *mheight)
 {
 	int ret;
 	struct fimc_is_msg msg, reply;

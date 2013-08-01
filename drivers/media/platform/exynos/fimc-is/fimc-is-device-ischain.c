@@ -128,9 +128,10 @@ static int isfw_debug_open(struct inode *inode, struct file *file)
 static int isfw_debug_read(struct file *file, char __user *user_buf,
 	size_t buf_len, loff_t *ppos)
 {
-	int debug_cnt;
 	char *debug;
-	int count1, count2;
+	size_t debug_cnt, backup_cnt;
+	size_t count1, count2;
+	size_t buf_count = 0;
 	struct fimc_is_device_ischain *device =
 		(struct fimc_is_device_ischain *)file->private_data;
 	struct fimc_is_ishcain_mem *imemory;
@@ -153,6 +154,7 @@ static int isfw_debug_read(struct file *file, char __user *user_buf,
 		DEBUG_CNT, DMA_FROM_DEVICE);
 
 	debug_cnt = *((int *)(imemory->kvaddr + DEBUGCTL_OFFSET)) - DEBUG_OFFSET;
+	backup_cnt = core->debug_cnt;
 
 	if (core->debug_cnt > debug_cnt) {
 		count1 = DEBUG_CNT - core->debug_cnt;
@@ -162,34 +164,39 @@ static int isfw_debug_read(struct file *file, char __user *user_buf,
 		count2 = 0;
 	}
 
-	if (count1) {
+	buf_count = buf_len;
+
+	if (buf_count && count1) {
 		debug = (char *)(imemory->kvaddr + DEBUG_OFFSET + core->debug_cnt);
 
-		if (count1 > buf_len)
-			count1 = buf_len;
+		if (count1 > buf_count)
+			count1 = buf_count;
+
+		buf_count -= count1;
 
 		memcpy(user_buf, debug, count1);
 		core->debug_cnt += count1;
 	}
 
-	if (count1 == buf_len) {
-		count2 = 0;
-		goto exit;
-	}
-
-	if (count2) {
-		core->debug_cnt = 0;
+	if (buf_count && count2) {
 		debug = (char *)(imemory->kvaddr + DEBUG_OFFSET);
 
-		if ((count1 + count2) > buf_len)
-			count2 = buf_len -  count1;
+		if (count2 > buf_count)
+			count2 = buf_count;
+
+		buf_count -= count2;
 
 		memcpy(user_buf, debug, count2);
-		core->debug_cnt += count2;
+		core->debug_cnt = count2;
 	}
 
+	pr_info("FW_READ : Origin(%d), New(%d) - Length(%d)\n",
+		backup_cnt,
+		core->debug_cnt,
+		(buf_len - buf_count));
+
 exit:
-	return count1 + count2;
+	return buf_len - buf_count;
 }
 
 static const struct file_operations debug_fops = {
@@ -1840,58 +1847,25 @@ static int fimc_is_itf_enum(struct fimc_is_device_ischain *this)
 }
 
 static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
-	u32 module, u32 info)
+	u32 module,
+	u32 group_id,
+	u32 flag,
+	struct sensor_open_extended *ext_info)
 {
 	int ret = 0;
-	int instance;
-	u32 flag, vindex, group, origin;
-	struct fimc_is_device_ischain *temp;
-	struct fimc_is_groupmgr *groupmgr;
-	struct is_region *region = device->is_region;
+	struct is_region *region;
 	struct fimc_is_interface *itf;
 
-	groupmgr = device->groupmgr;
-	flag = (module & REPROCESSING_MASK) >> REPROCESSING_SHIFT;
-	vindex = (module & BPP_VINDEX_MASK) >> BPP_VINDEX_SHIFT;
-	module = module & MODULE_MASK;
-	device->module = module;
-	origin = device->module;
+	BUG_ON(!device);
+	BUG_ON(!device->is_region);
+	BUG_ON(!device->sensor);
+	BUG_ON(!device->interface);
+	BUG_ON(!ext_info);
+
+	region = device->is_region;
 	itf = device->interface;
 
-	if (flag) {
-		instance = device->instance - 1;
-		while (instance >= 0) {
-			temp = groupmgr->group[instance][GROUP_ID_ISP]->device;
-#ifdef DEBUG
-			pr_info("i%d(%08X != %08X)\n", instance, temp->module, origin);
-#endif
-			if (temp->module  == origin)
-				break;
-			instance--;
-		}
-
-		if (instance < 0) {
-			merr("original instance can NOT be found", device);
-			ret = -EINVAL;
-			goto p_err;
-		}
-
-		flag = REPROCESSING_FLAG | instance;
-		set_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state);
-	}
-
-	if (vindex == FIMC_IS_VIDEO_3A0_NUM) {
-		group = GROUP_ID_3A0;
-		pr_info("[ISP:V:%d] <-> [3A0:V:X]\n", device->instance);
-	} else if (vindex == FIMC_IS_VIDEO_3A1_NUM) {
-		group = GROUP_ID_3A1;
-		pr_info("[ISP:V:%d] <-> [3A1:V:X]\n", device->instance);
-		set_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state);
-	} else {
-		merr("video index is invalid(%d)", device, vindex);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	memcpy(&region->shared[0], ext_info, sizeof(struct sensor_open_extended));
 
 	fimc_is_ischain_region_flush(device);
 
@@ -1901,8 +1875,14 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	ret = fimc_is_hw_open(device->interface, device->instance, module, info,
-		group, flag, &device->margin_width, &device->margin_height);
+	ret = fimc_is_hw_open(device->interface,
+		device->instance,
+		module,
+		device->imemory.dvaddr_shared,
+		group_id,
+		flag,
+		&device->margin_width,
+		&device->margin_height);
 	if (ret) {
 		merr("fimc_is_hw_open is fail", device);
 		device->pdata->print_cfg(device->pdev,
@@ -1913,7 +1893,7 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 
 	set_bit(IS_IF_STATE_SENSOR_OPENED, &itf->state);
 
-	/*hack*/
+	/* HACK */
 	device->margin_left = 8;
 	device->margin_right = 8;
 	device->margin_top = 6;
@@ -1926,7 +1906,7 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 	fimc_is_ischain_region_invalid(device);
 
 	if (region->shared[MAX_SHARED_COUNT-1] != MAGIC_NUMBER) {
-		err("MAGIC NUMBER error\n");
+		merr("MAGIC NUMBER error", device);
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -2736,6 +2716,7 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 	device->dzoom_width	= 0;
 	device->force_down	= false;
 	device->sensor		= NULL;
+	device->module		= 0;
 
 	imemory			= &device->imemory;
 	imemory->base		= minfo->base;
@@ -2869,24 +2850,32 @@ exit:
 }
 
 int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
-	u32 module, u32 channel, struct sensor_open_extended *ext,
-	char *setfile_name)
+	u32 module,
+	u32 group_id,
+	u32 flag)
 {
 	int ret = 0;
+	u32 channel;
+	char *setfile_name;
+	struct sensor_open_extended *ext_info;
+	struct fimc_is_device_sensor *sensor;
 
 	BUG_ON(!device);
 	BUG_ON(!device->sensor);
-	BUG_ON(!ext);
 
-	dbg_ischain("%s(module : %d, channel : %d, Af : %d)\n",
-		__func__, module, channel, ext->actuator_con.product_name);
+	dbg_ischain("%s(module : %d)\n", __func__, module);
+
+	sensor = device->sensor;
+	channel = sensor->enum_sensor[module].i2c_ch;
+	ext_info = &sensor->enum_sensor[module].ext;
+	setfile_name = sensor->enum_sensor[module].setfile_name;
 
 	if (test_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state)) {
 		mwarn("sensor is already open", device);
 		goto p_err;
 	}
 
-	if (!test_bit(FIMC_IS_SENSOR_OPEN, &device->sensor->state)) {
+	if (!test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
 		merr("I2C gpio is not yet set", device);
 		ret = -EINVAL;
 		goto p_err;
@@ -2911,10 +2900,7 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 		}
 	}
 
-	memcpy(&device->is_region->shared[0], ext,
-		sizeof(struct sensor_open_extended));
-
-	ret = fimc_is_itf_open(device, module, device->imemory.dvaddr_shared);
+	ret = fimc_is_itf_open(device, module, group_id, flag, ext_info);
 	if (ret) {
 		merr("open fail", device);
 		goto p_err;
@@ -2936,7 +2922,7 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 
 	ret = fimc_is_itf_init_process_stop(device);
 	if (ret) {
-		merr("processoff fail", device);
+		merr("fimc_is_itf_init_process_stop is fail", device);
 		goto p_err;
 	}
 
@@ -2954,85 +2940,47 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 #endif
 #endif
 
+	device->module = module;
 	set_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state);
 
 p_err:
 	return ret;
 }
 
-static int fimc_is_ischain_s_setfile(struct fimc_is_device_ischain *device)
+static int fimc_is_ischain_s_setfile(struct fimc_is_device_ischain *device,
+	u32 setfile, u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	int ret = 0;
-	u32 group_id = 0;
-	struct fimc_is_group *group_isp;
+	u32 crange;
 	struct isp_param *isp_param;
-	u32 indexes, lindex, hindex, range;
 
 	BUG_ON(!device);
+	BUG_ON(!lindex);
+	BUG_ON(!hindex);
+	BUG_ON(!indexes);
+
+	pr_info("[ISC:D:%d] setfile is %08X\n", device->instance, setfile);
+
+	if ((setfile & FIMC_IS_SETFILE_MASK) >= ISS_SUB_END) {
+		merr("setfile id(%08X) is invalid", device, setfile);
+		ret = -EINVAL;
+		goto p_err;
+	}
 
 	isp_param = &device->is_region->parameter.isp;
-	group_isp = &device->group_isp;
-	indexes = lindex = hindex = 0;
-
-	if (group_isp->smp_shot.count < 1) {
-		merr("group%d is working(%d), setfile change is fail",
-			device, group_isp->id, group_isp->smp_shot.count);
-		goto p_err;
-	}
-
-	pr_info("[ISC:D:%d] setfile is %08X\n", device->instance,
-		device->setfile);
-
-	group_id |= GROUP_ID(device->group_3ax.id);
-	group_id |= GROUP_ID(device->group_isp.id);
-	if (test_bit(FIMC_IS_GROUP_ACTIVE, &device->group_dis.state))
-		group_id |= GROUP_ID(device->group_dis.id);
-
-	if ((device->setfile & FIMC_IS_SETFILE_MASK) >= ISS_SUB_END) {
-		merr("setfile id(%08X) is invalid", device, device->setfile);
-		goto p_err;
-	}
-
-	ret = fimc_is_itf_process_stop(device, group_id);
-	if (ret) {
-		merr("fimc_is_itf_process_stop fail", device);
-		goto p_err;
-	}
-
 	/*
-	 * range
-	 * 0 : wide range
-	 * 1 : narrow range
+	 * Color Range
+	 * 0 : Wide range
+	 * 1 : Narrow range
 	 */
-	range = device->setfile >> 16;
-	if (range)
+	crange = (setfile & FIMC_IS_CRANGE_MASK) >> FIMC_IS_CRANGE_SHIFT;
+	if (crange)
 		isp_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444_TRUNCATED;
 	else
 		isp_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444;
-	lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
-	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	ret = fimc_is_itf_a_param(device, group_id);
-	if (ret) {
-		merr("fimc_is_itf_a_param is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	ret = fimc_is_itf_process_start(device, group_id);
-	if (ret) {
-		merr("fimc_is_itf_process_start fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	*lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
+	(*indexes)++;
 
 p_err:
 	return ret;
@@ -3864,6 +3812,64 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 		(*indexes)++;
 	}
 
+	return ret;
+}
+
+static int fimc_is_ischain_chg_setfile(struct fimc_is_device_ischain *device)
+{
+	int ret = 0;
+	u32 group_id = 0;
+	struct fimc_is_group *group_isp;
+	u32 indexes, lindex, hindex;
+
+	BUG_ON(!device);
+
+	group_isp = &device->group_isp;
+	indexes = lindex = hindex = 0;
+
+	if (group_isp->smp_shot.count < 1) {
+		merr("group%d is working(%d), setfile change is fail",
+			device, group_isp->id, group_isp->smp_shot.count);
+		goto p_err;
+	}
+
+	group_id |= GROUP_ID(device->group_3ax.id);
+	group_id |= GROUP_ID(device->group_isp.id);
+	if (test_bit(FIMC_IS_GROUP_ACTIVE, &device->group_dis.state))
+		group_id |= GROUP_ID(device->group_dis.id);
+
+	ret = fimc_is_itf_process_stop(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_process_stop fail", device);
+		goto p_err;
+	}
+
+	ret = fimc_is_ischain_s_setfile(device, device->setfile, &lindex, &hindex, &indexes);
+	if (ret)
+		merr("fimc_is_ischain_s_setfile is fail", device);
+
+	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	if (ret) {
+		merr("fimc_is_itf_s_param is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = fimc_is_itf_a_param(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_a_param is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = fimc_is_itf_process_start(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_process_start fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+p_err:
 	return ret;
 }
 
@@ -5399,6 +5405,17 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 
 	fimc_is_ischain_s_path(device, &lindex, &hindex, &indexes);
 
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		device->setfile = 0;
+		device->setfile |= (FIMC_IS_CRANGE_WIDE << FIMC_IS_CRANGE_SHIFT);
+		device->setfile |= ISS_SUB_SCENARIO_STILL_CAPTURE;
+	} else {
+		device->setfile = 0;
+		device->setfile |= (FIMC_IS_CRANGE_WIDE << FIMC_IS_CRANGE_SHIFT);
+		device->setfile |= ISS_SUB_SCENARIO_STILL_PREVIEW;
+	}
+	fimc_is_ischain_s_setfile(device, device->setfile, &lindex, &hindex, &indexes);
+
 #ifdef FIXED_FPS_DEBUG
 	sensor_param->frame_rate.frame_rate = FIXED_FPS_VALUE;
 #else
@@ -6746,9 +6763,9 @@ int fimc_is_ischain_3a0_callback(struct fimc_is_device_ischain *device,
 		setfile_save = device->setfile;
 		device->setfile = frame->shot_ext->setfile;
 
-		ret = fimc_is_ischain_s_setfile(device);
+		ret = fimc_is_ischain_chg_setfile(device);
 		if (ret) {
-			err("fimc_is_ischain_s_setfile is fail");
+			err("fimc_is_ischain_chg_setfile is fail");
 			device->setfile = setfile_save;
 			goto p_err;
 		}
@@ -6894,9 +6911,9 @@ int fimc_is_ischain_3a1_callback(struct fimc_is_device_ischain *device,
 		setfile_save = device->setfile;
 		device->setfile = frame->shot_ext->setfile;
 
-		ret = fimc_is_ischain_s_setfile(device);
+		ret = fimc_is_ischain_chg_setfile(device);
 		if (ret) {
-			err("fimc_is_ischain_s_setfile is fail");
+			err("fimc_is_ischain_chg_setfile is fail");
 			device->setfile = setfile_save;
 			goto p_err;
 		}

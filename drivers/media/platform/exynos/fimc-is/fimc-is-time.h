@@ -45,6 +45,9 @@ struct fimc_is_time {
 	u32 time4_tot;
 };
 
+void TIME_STR1(void);
+void TIME_END1(void);
+
 #ifdef MEASURE_TIME
 #ifdef INTERNAL_TIME
 void measure_init(struct fimc_is_time *time,
