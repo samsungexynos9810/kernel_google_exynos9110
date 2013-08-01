@@ -2639,6 +2639,145 @@ p_err:
 	return ret;
 }
 
+static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
+	u32 *lindex, u32 *hindex, u32 *indexes, struct fimc_is_queue *queue)
+{
+	int ret = 0;
+	struct isp_param *isp_param;
+	struct fimc_is_device_sensor *sensor;
+	u32 active_sensor_width, active_sensor_height, binning;
+
+	BUG_ON(!device);
+	BUG_ON(!lindex);
+	BUG_ON(!hindex);
+	BUG_ON(!indexes);
+	BUG_ON(!device->sensor);
+
+	isp_param = &device->is_region->parameter.isp;
+	sensor = device->sensor;
+
+	dbg_ischain("request otf size : %dx%d\n",
+		device->sensor_width, device->sensor_height);
+
+	if (sensor->active_sensor) {
+		active_sensor_width = sensor->active_sensor->pixel_width;
+		active_sensor_height = sensor->active_sensor->pixel_height;
+	} else {
+		active_sensor_width = sensor->width;
+		active_sensor_height = sensor->height;
+	}
+
+	binning = min(
+		BINNING(active_sensor_width, sensor->width),
+		BINNING(active_sensor_height, sensor->height)
+		);
+
+	isp_param->control.cmd = CONTROL_COMMAND_START;
+	isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
+	isp_param->control.run_mode = 1;
+	*lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
+	(*indexes)++;
+
+#ifdef USE_OTF_INTERFACE
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
+		device->group_3ax.id == GROUP_ID_3A0) {
+		/* reprocessing instnace uses actual sensor size */
+		binning = min(
+			BINNING(active_sensor_width, device->chain0_width),
+			BINNING(active_sensor_height, device->chain0_height)
+			);
+		isp_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
+	} else {
+		isp_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+	}
+#else
+	isp_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
+#endif
+
+	isp_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
+	isp_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
+	isp_param->otf_input.order = OTF_INPUT_ORDER_BAYER_GR_BG;
+	isp_param->otf_input.frametime_min = 0;
+	isp_param->otf_input.frametime_max = 1000000;
+	isp_param->otf_input.width = device->sensor_width;
+	isp_param->otf_input.height = device->sensor_height;
+	isp_param->otf_input.crop_offset_x = 0;
+	isp_param->otf_input.crop_offset_y = 0;
+	isp_param->otf_input.crop_width = device->sensor_width;
+	isp_param->otf_input.crop_height = device->sensor_height;
+	isp_param->otf_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
+	isp_param->otf_input.uiBDSOutWidth = device->chain0_width;
+	isp_param->otf_input.uiBDSOutHeight = device->chain0_height;
+	isp_param->otf_input.binning_ratio_x = binning;
+	isp_param->otf_input.binning_ratio_y = binning;
+	*lindex |= LOWBIT_OF(PARAM_ISP_OTF_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
+	(*indexes)++;
+
+#ifdef USE_OTF_INTERFACE
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
+		device->group_3ax.id == GROUP_ID_3A0) {
+		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+	} else {
+		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
+	}
+#else
+	isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+#endif
+
+	isp_param->dma1_input.width = device->sensor_width;
+	isp_param->dma1_input.height = device->sensor_height;
+	isp_param->dma1_input.uiDmaCropOffsetX = 0;
+	isp_param->dma1_input.uiDmaCropOffsetY = 0;
+	isp_param->dma1_input.uiDmaCropWidth = device->sensor_width;
+	isp_param->dma1_input.uiDmaCropHeight = device->sensor_height;
+	isp_param->dma1_input.uiBayerCropOffsetX = 0;
+	isp_param->dma1_input.uiBayerCropOffsetY = 0;
+	isp_param->dma1_input.uiBayerCropWidth = 0;
+	isp_param->dma1_input.uiBayerCropHeight = 0;
+	isp_param->dma1_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
+	isp_param->dma1_input.uiBDSOutWidth = device->chain0_width;
+	isp_param->dma1_input.uiBDSOutHeight = device->chain0_height;
+	isp_param->dma1_input.uiUserMinFrameTime = 0;
+	isp_param->dma1_input.uiUserMaxFrameTime = 1000000;
+	isp_param->dma1_input.uiWideFrameGap = 1;
+	isp_param->dma1_input.uiFrameGap = 0;
+	isp_param->dma1_input.uiLineGap = 50;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_12BIT;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+	} else {
+		isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+		mwarn("Invalid bayer format", device);
+	}
+
+	isp_param->dma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
+	isp_param->dma1_input.order = DMA_INPUT_ORDER_GR_BG;
+	isp_param->dma1_input.plane = 1;
+	isp_param->dma1_input.buffer_number = 0;
+	isp_param->dma1_input.buffer_address = 0;
+	isp_param->dma1_input.binning_ratio_x = binning;
+	isp_param->dma1_input.binning_ratio_y = binning;
+	/*
+	 * hidden spec
+	 *     [0] : sensor size is dma input size
+	 *     [X] : sensor size is reserved field
+	 */
+	isp_param->dma1_input.uiReserved[1] = 0;
+	isp_param->dma1_input.uiReserved[2] = 0;
+	*lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
+	(*indexes)++;
+
+	pr_info("[ISC:D:%d] otf size(%d x %d)",
+		device->instance, device->sensor_width, device->sensor_height);
+
+	return ret;
+}
+
 static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	u32 width, u32 height, u32 *lindex, u32 *hindex, u32 *indexes)
 {
@@ -4188,9 +4327,7 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue)
 {
 	int ret = 0;
-	struct isp_param *isp_param;
 	struct sensor_param *sensor_param;
-	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_subdev *leader_3ax;
 	struct fimc_is_device_sensor *sensor;
 	struct fimc_is_groupmgr *groupmgr;
@@ -4205,7 +4342,6 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	u32 lindex = 0;
 	u32 hindex = 0;
 	u32 indexes = 0;
-	u32 active_sensor_width, active_sensor_height, binning;
 #if defined(ENABLE_FULL_BYPASS)
 	int cfg;
 #endif
@@ -4218,10 +4354,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 
 	groupmgr = device->groupmgr;
 	group = &device->group_isp;
-	framemgr = &queue->framemgr;
 	leader_3ax = &device->group_3ax.leader;
 	sensor = device->sensor;
-	isp_param = &device->is_region->parameter.isp;
 	sensor_param = &device->is_region->parameter.sensor;
 
 	if (test_bit(FIMC_IS_ISDEV_DSTART, &leader->state)) {
@@ -4321,6 +4455,9 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		device->chain2_height = chain1_hmin;
 	}
 #endif
+	fimc_is_ischain_s_otf_size(device,
+		&lindex, &hindex, &indexes, queue);
+
 	fimc_is_ischain_s_chain0_size(device,
 		device->chain0_width, device->chain0_height, &lindex, &hindex, &indexes);
 
@@ -4342,242 +4479,6 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 #endif
 	sensor_param->dma_output.width = sensor->width;
 	sensor_param->dma_output.height = sensor->height;
-
-	if (sensor->active_sensor) {
-		active_sensor_width = sensor->active_sensor->pixel_width;
-		active_sensor_height = sensor->active_sensor->pixel_height;
-	} else {
-		active_sensor_width = sensor->width;
-		active_sensor_height = sensor->height;
-	}
-
-	binning = min(
-		BINNING(active_sensor_width, sensor->width),
-		BINNING(active_sensor_height, sensor->height)
-		);
-
-#ifdef USE_OTF_INTERFACE
-	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0) {
-
-		/* reprocessing instnace uses actual sensor size */
-		binning = min(
-			BINNING(active_sensor_width, device->chain0_width),
-			BINNING(active_sensor_height, device->chain0_height)
-			);
-
-		isp_param->control.cmd = CONTROL_COMMAND_START;
-		isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
-		isp_param->control.run_mode = 1;
-		lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
-		hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
-		indexes++;
-
-		isp_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
-		isp_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
-		isp_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
-		isp_param->otf_input.order = OTF_INPUT_ORDER_BAYER_GR_BG;
-		isp_param->otf_input.frametime_min = 0;
-		isp_param->otf_input.frametime_max = 1000000;
-		isp_param->otf_input.width = device->chain0_width;
-		isp_param->otf_input.height = device->chain0_height;
-		isp_param->otf_input.binning_ratio_x = binning;
-		isp_param->otf_input.binning_ratio_y = binning;
-		lindex |= LOWBIT_OF(PARAM_ISP_OTF_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
-		indexes++;
-
-		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-		isp_param->dma1_input.width = device->sensor_width;
-		isp_param->dma1_input.height = device->sensor_height;
-		isp_param->dma1_input.uiDmaCropOffsetX = 0;
-		isp_param->dma1_input.uiDmaCropOffsetY = 0;
-		isp_param->dma1_input.uiDmaCropWidth = device->chain0_width;
-		isp_param->dma1_input.uiDmaCropHeight = device->chain0_height;
-		isp_param->dma1_input.uiBayerCropOffsetX = 0;
-		isp_param->dma1_input.uiBayerCropOffsetY = 0;
-		isp_param->dma1_input.uiBayerCropWidth = 0;
-		isp_param->dma1_input.uiBayerCropHeight = 0;
-		isp_param->dma1_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
-		isp_param->dma1_input.uiBDSOutWidth = device->chain0_width;
-		isp_param->dma1_input.uiBDSOutHeight = device->chain0_height;
-		isp_param->dma1_input.uiUserMinFrameTime = 0;
-		isp_param->dma1_input.uiUserMaxFrameTime = 1000000;
-		isp_param->dma1_input.uiWideFrameGap = 1;
-		isp_param->dma1_input.uiFrameGap = 0;
-		isp_param->dma1_input.uiLineGap = 50;
-
-		if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-			isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_12BIT;
-		} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-			isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
-		} else {
-			isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
-			mwarn("Invalid bayer format", device);
-		}
-
-		isp_param->dma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
-		isp_param->dma1_input.order = DMA_INPUT_ORDER_GR_BG;
-		isp_param->dma1_input.plane = 1;
-		isp_param->dma1_input.buffer_number = 0;
-		isp_param->dma1_input.buffer_address = 0;
-		isp_param->dma1_input.binning_ratio_x = binning;
-		isp_param->dma1_input.binning_ratio_y = binning;
-		/*
-		 * hidden spec
-		 *     [0] : sensor size is dma input size
-		 *     [X] : sneosr size is reserved field
-		 */
-		isp_param->dma1_input.uiReserved[1] = 0;
-		isp_param->dma1_input.uiReserved[2] = 0;
-		lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-		indexes++;
-	} else {
-		isp_param->control.cmd = CONTROL_COMMAND_START;
-		isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
-		isp_param->control.run_mode = 1;
-		lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
-		hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
-		indexes++;
-
-		isp_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
-		isp_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
-		isp_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
-		isp_param->otf_input.order = OTF_INPUT_ORDER_BAYER_GR_BG;
-		isp_param->otf_input.frametime_min = 0;
-		isp_param->otf_input.frametime_max = 1000000;
-		isp_param->otf_input.width = device->sensor_width;
-		isp_param->otf_input.height = device->sensor_height;
-		isp_param->otf_input.crop_offset_x = 0;
-		isp_param->otf_input.crop_offset_y = 0;
-		isp_param->otf_input.crop_width = device->sensor_width;
-		isp_param->otf_input.crop_height = device->sensor_height;
-		isp_param->otf_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
-		isp_param->otf_input.uiBDSOutWidth = device->chain0_width;
-		isp_param->otf_input.uiBDSOutHeight = device->chain0_height;
-		isp_param->otf_input.binning_ratio_x = binning;
-		isp_param->otf_input.binning_ratio_y = binning;
-		lindex |= LOWBIT_OF(PARAM_ISP_OTF_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
-		indexes++;
-
-		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
-		isp_param->dma1_input.width = device->sensor_width;
-		isp_param->dma1_input.height = device->sensor_height;
-		isp_param->dma1_input.uiDmaCropOffsetX = 0;
-		isp_param->dma1_input.uiDmaCropOffsetY = 0;
-		isp_param->dma1_input.uiDmaCropWidth = device->sensor_width;
-		isp_param->dma1_input.uiDmaCropHeight = device->sensor_height;
-		isp_param->dma1_input.uiBayerCropOffsetX = 0;
-		isp_param->dma1_input.uiBayerCropOffsetY = 0;
-		isp_param->dma1_input.uiBayerCropWidth = 0;
-		isp_param->dma1_input.uiBayerCropHeight = 0;
-		isp_param->dma1_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
-		isp_param->dma1_input.uiBDSOutWidth = device->chain0_width;
-		isp_param->dma1_input.uiBDSOutHeight = device->chain0_height;
-		isp_param->dma1_input.uiUserMinFrameTime = 0;
-		isp_param->dma1_input.uiUserMaxFrameTime = 1000000;
-		isp_param->dma1_input.uiWideFrameGap = 1;
-		isp_param->dma1_input.uiFrameGap = 0;
-		isp_param->dma1_input.uiLineGap = 50;
-
-		if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-			isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_12BIT;
-		} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-			isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
-		} else {
-			isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
-			mwarn("Invalid bayer format", device);
-		}
-
-		isp_param->dma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
-		isp_param->dma1_input.order = DMA_INPUT_ORDER_GR_BG;
-		isp_param->dma1_input.plane = 1;
-		isp_param->dma1_input.buffer_number = 0;
-		isp_param->dma1_input.buffer_address = 0;
-		isp_param->dma1_input.binning_ratio_x = binning;
-		isp_param->dma1_input.binning_ratio_y = binning;
-		/*
-		 * hidden spec
-		 *     [0] : sensor size is dma input size
-		 *     [X] : sneosr size is reserved field
-		 */
-		isp_param->dma1_input.uiReserved[1] = 0;
-		isp_param->dma1_input.uiReserved[2] = 0;
-		lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-		indexes++;
-	}
-#else
-	isp_param->control.cmd = CONTROL_COMMAND_START;
-	isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
-	isp_param->control.run_mode = 1;
-	lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
-	hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
-	indexes++;
-
-	isp_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
-	isp_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
-	isp_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
-	isp_param->otf_input.order = OTF_INPUT_ORDER_BAYER_GR_BG;
-	isp_param->otf_input.frametime_min = 0;
-	isp_param->otf_input.frametime_max = 1000000;
-	isp_param->otf_input.width = device->sensor_width;
-	isp_param->otf_input.height = device->sensor_height;
-	isp_param->otf_input.binning_ratio_x = binning;
-	isp_param->otf_input.binning_ratio_y = binning;
-	lindex |= LOWBIT_OF(PARAM_ISP_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
-	indexes++;
-
-	isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-	isp_param->dma1_input.width = device->sensor_width;
-	isp_param->dma1_input.height = device->sensor_height;
-	isp_param->dma1_input.uiDmaCropOffsetX = 0;
-	isp_param->dma1_input.uiDmaCropOffsetY = 0;
-	isp_param->dma1_input.uiDmaCropWidth = device->sensor_width;
-	isp_param->dma1_input.uiDmaCropHeight = device->sensor_height;
-	isp_param->dma1_input.uiBayerCropOffsetX = 0;
-	isp_param->dma1_input.uiBayerCropOffsetY = 0;
-	isp_param->dma1_input.uiBayerCropWidth = 0;
-	isp_param->dma1_input.uiBayerCropHeight = 0;
-	isp_param->dma1_input.uiBDSOutEnable = ISP_BDS_COMMAND_ENABLE;
-	isp_param->dma1_input.uiBDSOutWidth = device->chain0_width;
-	isp_param->dma1_input.uiBDSOutHeight = device->chain0_height;
-	isp_param->dma1_input.uiUserMinFrameTime = 0;
-	isp_param->dma1_input.uiUserMaxFrameTime = 1000000;
-	isp_param->dma1_input.uiWideFrameGap = 1;
-	isp_param->dma1_input.uiFrameGap = 0;
-	isp_param->dma1_input.uiLineGap = 50;
-
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_12BIT;
-	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
-	} else {
-		isp_param->dma1_input.uiMemoryWidthBits = DMA_INPUT_MEMORY_WIDTH_16BIT;
-		mwarn("Invalid bayer format", device);
-	}
-
-	isp_param->dma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
-	isp_param->dma1_input.order = DMA_INPUT_ORDER_GR_BG;
-	isp_param->dma1_input.plane = 1;
-	isp_param->dma1_input.buffer_number = 0;
-	isp_param->dma1_input.buffer_address = 0;
-	isp_param->dma1_input.binning_ratio_x = binning;
-	isp_param->dma1_input.binning_ratio_y = binning;
-	/*
-	 * hidden spec
-	 *     [0] : sensor size is dma input size
-	 *     [X] : sneosr size is reserved field
-	 */
-	isp_param->dma1_input.uiReserved[1] = 0;
-	isp_param->dma1_input.uiReserved[2] = 0;
-	lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-	indexes++;
-#endif
 
 	lindex = 0xFFFFFFFF;
 	hindex = 0xFFFFFFFF;
