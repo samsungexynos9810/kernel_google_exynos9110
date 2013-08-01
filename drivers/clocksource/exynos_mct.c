@@ -170,16 +170,23 @@ static notrace u32 exynos4_read_sched_clock(void)
 
 static cycle_t exynos4_frc_read(struct clocksource *cs)
 {
-	unsigned int lo, hi;
-	u32 hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
+	cycle_t val;
 
-	do {
-		hi = hi2;
-		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+	if (unlikely(cs->mask == CLOCKSOURCE_MASK(64))) {
+		/* 64bit supporting clocksource */
+		unsigned int hi, hi2, lo;
 		hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-	} while (hi != hi2);
-
-	return ((cycle_t)hi << 32) | lo;
+		do {
+			hi = hi2;
+			lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+			hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
+		} while (hi != hi2);
+		val = ((cycle_t)hi << 32) | lo;
+	} else {
+		/* 32bit supporting clocksource */
+		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+	}
+	return val;
 }
 
 static void exynos4_frc_resume(struct clocksource *cs)
