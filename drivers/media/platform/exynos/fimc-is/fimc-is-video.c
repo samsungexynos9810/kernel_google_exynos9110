@@ -577,7 +577,7 @@ exit:
 	return ret;
 }
 
-inline void fimc_is_queue_wait_prepare(struct vb2_queue *vbq)
+void fimc_is_queue_wait_prepare(struct vb2_queue *vbq)
 {
 	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_video *video;
@@ -594,7 +594,7 @@ inline void fimc_is_queue_wait_prepare(struct vb2_queue *vbq)
 	mutex_unlock(&video->lock);
 }
 
-inline void fimc_is_queue_wait_finish(struct vb2_queue *vbq)
+void fimc_is_queue_wait_finish(struct vb2_queue *vbq)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx;
