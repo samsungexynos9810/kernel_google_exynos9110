@@ -22,7 +22,7 @@
 
 #ifdef CONFIG_SYNC
 
-#include <linux/sync.h>
+#include "../../../../../../staging/android/sync.h"
 #include <kbase/src/common/mali_kbase.h>
 
 struct mali_sync_timeline {
