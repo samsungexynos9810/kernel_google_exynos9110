@@ -4,7 +4,7 @@
 config VIDEO_EXYNOS
 	bool "Exynos Multimedia Devices"
 	depends on ARCH_EXYNOS4 || ARCH_EXYNOS5
-	default n
+	default y
 	select VIDEO_FIXED_MINOR_RANGES
 	help
 	  This is a representative exynos multimedia device.
@@ -12,6 +12,7 @@ config VIDEO_EXYNOS
 if VIDEO_EXYNOS
 	source "drivers/media/platform/exynos/mdev/Kconfig"
 	source "drivers/media/platform/exynos/gsc/Kconfig"
+	source "drivers/media/platform/exynos/mfc/Kconfig"
 endif
 
 config MEDIA_EXYNOS
