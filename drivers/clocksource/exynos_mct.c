@@ -394,11 +394,13 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
 			(((unsigned long long) NSEC_PER_SEC / HZ * evt->mult) >> evt->shift);
 		exynos4_mct_tick_start(cycles_per_jiffy, 1, mevt);
 		break;
+	case CLOCK_EVT_MODE_RESUME:
+		exynos4_mct_write(TICK_BASE_CNT, mevt->base + MCT_L_TCNTB_OFFSET);
+		break;
 
 	case CLOCK_EVT_MODE_ONESHOT:
 	case CLOCK_EVT_MODE_UNUSED:
 	case CLOCK_EVT_MODE_SHUTDOWN:
-	case CLOCK_EVT_MODE_RESUME:
 		break;
 	}
 }
