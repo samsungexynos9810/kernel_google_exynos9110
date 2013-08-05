@@ -155,12 +155,14 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
 {
 	u32 reg;
 
-	exynos4_mct_write(lo, EXYNOS4_MCT_G_CNT_L);
-	exynos4_mct_write(hi, EXYNOS4_MCT_G_CNT_U);
-
 	reg = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
-	reg |= MCT_G_TCON_START;
-	exynos4_mct_write(reg, EXYNOS4_MCT_G_TCON);
+	if (!(reg & MCT_G_TCON_START)) {
+		exynos4_mct_write(lo, EXYNOS4_MCT_G_CNT_L);
+		exynos4_mct_write(hi, EXYNOS4_MCT_G_CNT_U);
+
+		reg |= MCT_G_TCON_START;
+		exynos4_mct_write(reg, EXYNOS4_MCT_G_TCON);
+	}
 }
 
 static notrace u32 exynos4_read_sched_clock(void)
