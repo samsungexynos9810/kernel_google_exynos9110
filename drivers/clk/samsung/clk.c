@@ -274,3 +274,66 @@ unsigned long _get_rate(const char *clk_name)
 	clk_put(clk);
 	return rate;
 }
+
+/* utility function to set parent with names */
+int exynos_set_parent(const char *child, const char *parent)
+{
+	struct clk *p;
+	struct clk *c;
+
+	p= __clk_lookup(parent);
+	if (IS_ERR(p)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, parent);
+		return -EINVAL;
+	}
+
+	c= __clk_lookup(child);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, child);
+		return -EINVAL;
+	}
+
+	return clk_set_parent(c, p);
+}
+
+/* utility function to get parent name with name */
+struct clk *exynos_get_parent(const char *child)
+{
+	struct clk *c;
+
+	c = __clk_lookup(child);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, child);
+		return NULL;
+	}
+
+	return clk_get_parent(c);
+}
+
+/* utility function to set rate with name */
+int exynos_set_rate(const char *conid, unsigned int rate)
+{
+	struct clk *target;
+
+	target = __clk_lookup(conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	return clk_set_rate(target, rate);
+}
+
+/* utility function to get rate with name */
+unsigned int  exynos_get_rate(const char *conid)
+{
+	struct clk *target;
+
+	target = __clk_lookup(conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	return clk_get_rate(target);
+}

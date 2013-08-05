@@ -260,4 +260,10 @@ extern void __init samsung_clk_register_gate(
 
 extern unsigned long _get_rate(const char *clk_name);
 
+
+extern int exynos_set_parent(const char *child, const char *parent);
+extern struct clk *exynos_get_parent(const char *child);
+extern int exynos_set_rate(const char *conid, unsigned int rate);
+extern unsigned int  exynos_get_rate(const char *conid);
+
 #endif /* __SAMSUNG_CLK_H */
