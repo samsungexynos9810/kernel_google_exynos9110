@@ -39,7 +39,7 @@
  * Synpatics IC report those data through F51's edge swipe
  * fucntionality.
  */
-#define SURFACE_TOUCH
+/*#define SURFACE_TOUCH*/
 
 #define	USE_OPEN_CLOSE
 #ifdef USE_OPEN_CLOSE
