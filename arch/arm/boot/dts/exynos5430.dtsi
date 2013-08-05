@@ -408,14 +408,24 @@
 		status = "ok";
 	};
 
-	sysmmu_hevc: sysmmu@0x14F00000 {
+	sysmmu_hevc0: sysmmu@0x14F00000 {
 		compatible = "samsung,exynos5430-sysmmu";
-		reg = <0x14F00000 0x1000>,
-		      <0x14F10000 0x1000>;
-		interrupts = <0 449 0>,
-			     <0 451 0>;
+		reg = <0x14F00000 0x1000>;
+		interrupts = <0 449 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 745>, <&clock 740>;
 		status = "ok";
 	};
+
+	sysmmu_hevc1: sysmmu@0x14F10000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x14F10000 0x1000>;
+		interrupts = <0 451 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 746>, <&clock 740>;
+		status = "ok";
+	};
+
 
 	sysmmu_scaler0: sysmmu@0x15040000 {
 		compatible = "samsung,exynos5430-sysmmu";
@@ -444,21 +454,40 @@
 		status = "ok";
 	};
 
-	sysmmu_mfc0: sysmmu@0x15200000 {
+	sysmmu_mfc0_0: sysmmu@0x15200000 {
 		compatible = "samsung,exynos5430-sysmmu";
-		reg = <0x15200000 0x1000>,
-		      <0x15210000 0x1000>;
-		interrupts = <0 352 0>,
-			     <0 354 0>;
+		reg = <0x15200000 0x1000>;
+		interrupts = <0 352 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 685>, <&clock 680>;
 		status = "ok";
 	};
 
-	sysmmu_mfc1: sysmmu@0x15300000 {
+	sysmmu_mfc0_1: sysmmu@0x15210000 {
 		compatible = "samsung,exynos5430-sysmmu";
-		reg = <0x15300000 0x1000>,
-		      <0x15310000 0x1000>;
-		interrupts = <0 360 0>,
-			     <0 362 0>;
+		reg = <0x15210000 0x1000>;
+		interrupts = <0 354 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 686>, <&clock 680>;
+		status = "ok";
+	};
+
+
+	sysmmu_mfc1_0: sysmmu@0x15300000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15300000 0x1000>;
+		interrupts = <0 360 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 715>, <&clock 710>;
+		status = "ok";
+	};
+
+	sysmmu_mfc1_1: sysmmu@0x15310000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15310000 0x1000>;
+		interrupts = <0 362 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 716>, <&clock 710>;
 		status = "ok";
 	};
 
