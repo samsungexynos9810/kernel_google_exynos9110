@@ -18,6 +18,7 @@
 
 #include "clk.h"
 #include "clk-pll.h"
+#include "clk-exynos5430.h"
 
 enum exynos5430_clks {
 	none,
@@ -1561,7 +1562,6 @@ static __initdata struct of_device_id ext_clk_match[] = {
 	{ },
 };
 
-
 /* register exynos5430 clocks */
 void __init exynos5430_clk_init(struct device_node *np)
 {
@@ -1632,6 +1632,7 @@ void __init exynos5430_clk_init(struct device_node *np)
 	samsung_clk_register_gate(exynos5430_gate_clks,
 			ARRAY_SIZE(exynos5430_gate_clks));
 
+	exynos5430_clock_init();
 	pr_info("Exynos5430: clock setup completed\n");
 }
 CLK_OF_DECLARE(exynos5430_clk, "samsung,exynos5430-clock", exynos5430_clk_init);
