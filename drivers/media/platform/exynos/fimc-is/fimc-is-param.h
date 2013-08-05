@@ -2102,6 +2102,11 @@ struct is_face_marker {
 	u32	blink_level;
 };
 
+struct is_debug_region {
+	u32	frame_count;
+	u32	reserved[PARAMETER_MAX_MEMBER-1];
+};
+
 #define MAX_FRAME_COUNT		8
 #define MAX_FRAME_COUNT_PREVIEW	4
 #define MAX_FRAME_COUNT_CAPTURE	1
@@ -2114,6 +2119,7 @@ struct is_region {
 	struct is_tune_region	tune;
 	struct is_frame_header	header[MAX_FRAME_COUNT];
 	struct is_face_marker	face[MAX_FACE_COUNT];
+	struct is_debug_region	debug;
 	u32			shared[MAX_SHARED_COUNT];
 };
 
