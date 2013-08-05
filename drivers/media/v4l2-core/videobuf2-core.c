@@ -196,6 +196,13 @@ static int __vb2_queue_alloc(struct vb2_queue *q, enum v4l2_memory memory,
 	struct vb2_buffer *vb;
 	int ret;
 
+	q->timeline_max = 0;
+	q->timeline = sw_sync_timeline_create(q->name);
+	if (!q->timeline) {
+		dprintk(1, "Failed to create timeline\n");
+		return -ENOMEM;
+	}
+
 	for (buffer = 0; buffer < num_buffers; ++buffer) {
 		/* Allocate videobuf buffer structures */
 		vb = kzalloc(q->buf_struct_size, GFP_KERNEL);
@@ -307,6 +314,11 @@ static void __vb2_queue_free(struct vb2_queue *q, unsigned int buffers)
 	if (!q->num_buffers)
 		q->memory = 0;
 	INIT_LIST_HEAD(&q->queued_list);
+
+	if (q->timeline) {
+		sync_timeline_destroy(&q->timeline->obj);
+		q->timeline = NULL;
+	}
 }
 
 /**
@@ -872,6 +884,7 @@ void vb2_buffer_done(struct vb2_buffer *vb, enum vb2_buffer_state state)
 	vb->state = state;
 	list_add_tail(&vb->done_entry, &q->done_list);
 	atomic_dec(&q->queued_count);
+	sw_sync_timeline_inc(q->timeline, 1);
 	spin_unlock_irqrestore(&q->done_lock, flags);
 
 	/* Inform any processes that may be waiting for buffers */
@@ -888,6 +901,7 @@ static void __fill_vb2_buffer(struct vb2_buffer *vb, const struct v4l2_buffer *b
 				struct v4l2_plane *v4l2_planes)
 {
 	unsigned int plane;
+	int fence_fd = (int)b->reserved;
 
 	if (V4L2_TYPE_IS_MULTIPLANAR(b->type)) {
 		/* Fill in driver-provided information for OUTPUT types */
@@ -945,6 +959,14 @@ static void __fill_vb2_buffer(struct vb2_buffer *vb, const struct v4l2_buffer *b
 			v4l2_planes[0].data_offset = 0;
 		}
 
+	}
+
+	if ((b->flags & V4L2_BUF_FLAG_USE_SYNC) && fence_fd >= 0) {
+		vb->acquire_fence = sync_fence_fdget(fence_fd);
+		if (!vb->acquire_fence) {
+			dprintk(1, "failed to import fence fd %d\n", fence_fd);
+			return -EINVAL;
+		}
 	}
 
 	vb->v4l2_buf.field = b->field;
@@ -1366,6 +1388,24 @@ int vb2_qbuf(struct vb2_queue *q, struct v4l2_buffer *b)
 	if (q->streaming)
 		__enqueue_in_driver(vb);
 
+	q->timeline_max++;
+	if (b->flags & V4L2_BUF_FLAG_USE_SYNC) {
+		struct sync_pt *pt;
+		struct sync_fence *fence;
+		int fd;
+
+		fd = get_unused_fd();
+		if (fd >= 0) {
+			pt = sw_sync_pt_create(q->timeline, q->timeline_max);
+			fence = sync_fence_create("vb2", pt);
+			sync_fence_install(fence, fd);
+			vb->v4l2_buf.reserved = fd;
+		} else {
+			dprintk(1, "qbuf: failed to get unused fd\n");
+			vb->v4l2_buf.reserved = -1;
+		}
+	}
+
 	/* Fill buffer information for the userspace */
 	__fill_v4l2_buffer(vb, b);
 
@@ -1602,6 +1642,7 @@ EXPORT_SYMBOL_GPL(vb2_dqbuf);
  */
 static void __vb2_queue_cancel(struct vb2_queue *q)
 {
+	struct vb2_buffer *vb;
 	unsigned int i;
 
 	/*
@@ -1615,12 +1656,20 @@ static void __vb2_queue_cancel(struct vb2_queue *q)
 	/*
 	 * Remove all buffers from videobuf's list...
 	 */
+	list_for_each_entry(vb, &q->queued_list, queued_entry) {
+		if (vb->acquire_fence) {
+			sync_fence_put(vb->acquire_fence);
+			vb->acquire_fence = NULL;
+		}
+	}
 	INIT_LIST_HEAD(&q->queued_list);
 	/*
 	 * ...and done list; userspace will not receive any buffers it
 	 * has not already dequeued before initiating cancel.
 	 */
 	INIT_LIST_HEAD(&q->done_list);
+	if (q->timeline)
+		sw_sync_timeline_inc(q->timeline, atomic_read(&q->queued_count));
 	atomic_set(&q->queued_count, 0);
 	wake_up_all(&q->done_wq);
 
@@ -2071,6 +2120,9 @@ int vb2_queue_init(struct vb2_queue *q)
 	INIT_LIST_HEAD(&q->done_list);
 	spin_lock_init(&q->done_lock);
 	init_waitqueue_head(&q->done_wq);
+
+	if (!q->name)
+		q->name = "vb2";
 
 	if (q->buf_struct_size == 0)
 		q->buf_struct_size = sizeof(struct vb2_buffer);
