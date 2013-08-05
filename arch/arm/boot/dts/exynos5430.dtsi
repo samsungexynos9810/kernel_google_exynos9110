@@ -543,4 +543,13 @@
 		samsung,xres = <1080>;
 		samsung,yres = <1920>;
 	};
+
+	watchdog@10020000 {
+		compatible = "samsung,s3c2410-wdt";
+		reg = <0x10020000 0x100>;
+		interrupts = <0 101 0>;
+		clocks = <&clock 870>;
+		clock-names = "watchdog";
+		timeout-sec = <30>;
+	};
 };
