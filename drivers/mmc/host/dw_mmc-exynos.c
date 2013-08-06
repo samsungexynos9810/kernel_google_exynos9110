@@ -178,7 +178,20 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
 
 	return 0;
 }
-
+static void dw_mci_exynos_register_dump(struct dw_mci *host)
+{
+	dev_err(host->dev, ": CLKSEL:	0x%08x\n", mci_readl(host, CLKSEL));
+	dev_err(host->dev, ": DWMCI_EMMCP_BASE:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_EMMCP_BASE));
+	dev_err(host->dev, ": DWMCI_MPSECURITY:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_MPSECURITY));
+	dev_err(host->dev, ": DWMCI_MPSBEGIN0:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_MPSBEGIN0));
+	dev_err(host->dev, ": DWMCI_MPSEND0:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_MPSEND0));
+	dev_err(host->dev, ": DWMCI_MPSCTRL0:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_MPSCTRL0));
+}
 static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
 {
 	/*
@@ -451,6 +464,7 @@ static const struct dw_mci_drv_data exynos_drv_data = {
 	.init			= dw_mci_exynos_priv_init,
 	.setup_clock		= dw_mci_exynos_setup_clock,
 	.prepare_command	= dw_mci_exynos_prepare_command,
+	.register_dump		= dw_mci_exynos_register_dump,
 	.set_ios		= dw_mci_exynos_set_ios,
 	.parse_dt		= dw_mci_exynos_parse_dt,
 	.cfg_smu		= dw_mci_exynos_cfg_smu,

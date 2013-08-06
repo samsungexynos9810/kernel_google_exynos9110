@@ -196,6 +196,93 @@ err:
 }
 #endif /* defined(CONFIG_DEBUG_FS) */
 
+void dw_mci_cmd_reg_summary(struct dw_mci *host)
+{
+	u32 reg;
+	reg = mci_readl(host, CMD);
+
+	dev_err(host->dev, ": ================= CMD REG =================\n");
+	dev_err(host->dev, ": read/write        : %s\n",
+					(reg & (0x1 << 10)) ? "write" : "read");
+	dev_err(host->dev, ": data expected     : %d\n", (reg >> 9) & 0x1);
+	dev_err(host->dev, ": cmd index         : %d\n", (reg >> 0) & 0x3f);
+}
+
+void dw_mci_status_reg_summary(struct dw_mci *host)
+{
+	u32 reg;
+	reg = mci_readl(host, STATUS);
+
+	dev_err(host->dev, ": ================ STATUS REG ===============\n");
+	dev_err(host->dev, ": fifocount         : %d\n", (reg >> 17) & 0x1fff);
+	dev_err(host->dev, ": response index    : %d\n", (reg >> 11) & 0x3f);
+	dev_err(host->dev, ": data state mc busy: %d\n", (reg >> 10) & 0x1);
+	dev_err(host->dev, ": data busy         : %d\n", (reg >> 9) & 0x1);
+	dev_err(host->dev, ": data 3 state      : %d\n", (reg >> 8) & 0x1);
+	dev_err(host->dev, ": command fsm state : %d\n", (reg >> 4) & 0xf);
+	dev_err(host->dev, ": fifo full         : %d\n", (reg >> 3) & 0x1);
+	dev_err(host->dev, ": fifo empty        : %d\n", (reg >> 2) & 0x1);
+	dev_err(host->dev, ": fifo tx watermark : %d\n", (reg >> 1) & 0x1);
+	dev_err(host->dev, ": fifo rx watermark : %d\n", (reg >> 0) & 0x1);
+}
+
+void dw_mci_reg_dump(struct dw_mci *host)
+{
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
+
+	dev_err(host->dev, ": ============== REGISTER DUMP ==============\n");
+	dev_err(host->dev, ": CTRL:	0x%08x\n", mci_readl(host, CTRL));
+	dev_err(host->dev, ": PWREN:	0x%08x\n", mci_readl(host, PWREN));
+	dev_err(host->dev, ": CLKDIV:	0x%08x\n", mci_readl(host, CLKDIV));
+	dev_err(host->dev, ": CLKSRC:	0x%08x\n", mci_readl(host, CLKSRC));
+	dev_err(host->dev, ": CLKENA:	0x%08x\n", mci_readl(host, CLKENA));
+	dev_err(host->dev, ": TMOUT:	0x%08x\n", mci_readl(host, TMOUT));
+	dev_err(host->dev, ": CTYPE:	0x%08x\n", mci_readl(host, CTYPE));
+	dev_err(host->dev, ": BLKSIZ:	0x%08x\n", mci_readl(host, BLKSIZ));
+	dev_err(host->dev, ": BYTCNT:	0x%08x\n", mci_readl(host, BYTCNT));
+	dev_err(host->dev, ": INTMSK:	0x%08x\n", mci_readl(host, INTMASK));
+	dev_err(host->dev, ": CMDARG:	0x%08x\n", mci_readl(host, CMDARG));
+	dev_err(host->dev, ": CMD:	0x%08x\n", mci_readl(host, CMD));
+	dev_err(host->dev, ": RESP0:	0x%08x\n", mci_readl(host, RESP0));
+	dev_err(host->dev, ": RESP1:	0x%08x\n", mci_readl(host, RESP1));
+	dev_err(host->dev, ": RESP2:	0x%08x\n", mci_readl(host, RESP2));
+	dev_err(host->dev, ": RESP3:	0x%08x\n", mci_readl(host, RESP3));
+	dev_err(host->dev, ": MINTSTS:	0x%08x\n", mci_readl(host, MINTSTS));
+	dev_err(host->dev, ": RINTSTS:	0x%08x\n", mci_readl(host, RINTSTS));
+	dev_err(host->dev, ": STATUS:	0x%08x\n", mci_readl(host, STATUS));
+	dev_err(host->dev, ": FIFOTH:	0x%08x\n", mci_readl(host, FIFOTH));
+	dev_err(host->dev, ": CDETECT:	0x%08x\n", mci_readl(host, CDETECT));
+	dev_err(host->dev, ": WRTPRT:	0x%08x\n", mci_readl(host, WRTPRT));
+	dev_err(host->dev, ": GPIO:	0x%08x\n", mci_readl(host, GPIO));
+	dev_err(host->dev, ": TCBCNT:	0x%08x\n", mci_readl(host, TCBCNT));
+	dev_err(host->dev, ": TBBCNT:	0x%08x\n", mci_readl(host, TBBCNT));
+	dev_err(host->dev, ": DEBNCE:	0x%08x\n", mci_readl(host, DEBNCE));
+	dev_err(host->dev, ": USRID:	0x%08x\n", mci_readl(host, USRID));
+	dev_err(host->dev, ": VERID:	0x%08x\n", mci_readl(host, VERID));
+	dev_err(host->dev, ": HCON:	0x%08x\n", mci_readl(host, HCON));
+	dev_err(host->dev, ": UHS_REG:	0x%08x\n", mci_readl(host, UHS_REG));
+	dev_err(host->dev, ": BMOD:	0x%08x\n", mci_readl(host, BMOD));
+	dev_err(host->dev, ": PLDMND:	0x%08x\n", mci_readl(host, PLDMND));
+	dev_err(host->dev, ": DBADDR:	0x%08x\n", mci_readl(host, DBADDR));
+	dev_err(host->dev, ": IDSTS:	0x%08x\n", mci_readl(host, IDSTS));
+	dev_err(host->dev, ": IDINTEN:	0x%08x\n", mci_readl(host, IDINTEN));
+	dev_err(host->dev, ": DSCADDR:	0x%08x\n", mci_readl(host, DSCADDR));
+	dev_err(host->dev, ": BUFADDR:	0x%08x\n", mci_readl(host, BUFADDR));
+	if (drv_data && drv_data->register_dump)
+		drv_data->register_dump(host);
+	dw_mci_cmd_reg_summary(host);
+	dw_mci_status_reg_summary(host);
+	dev_err(host->dev, ": ============== STATUS DUMP ================\n");
+	dev_err(host->dev, ": cmd_status:      0x%08x\n", host->cmd_status);
+	dev_err(host->dev, ": data_status:     0x%08x\n", host->data_status);
+	dev_err(host->dev, ": pending_events:  0x%08lx\n", host->pending_events);
+	dev_err(host->dev, ": completed_events:0x%08lx\n", host->completed_events);
+	dev_err(host->dev, ": state:           %d\n", host->state);
+	dev_err(host->dev, ": ciu-clk:            %s\n",
+			      atomic_read(&host->ciu_clk_cnt) ? "enable" : "disable");
+	dev_err(host->dev, ": ===========================================\n");
+}
+
 static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 {
 	struct mmc_data	*data;
