@@ -25,6 +25,7 @@
 #include <asm/smp_plat.h>
 #include <asm/smp_scu.h>
 #include <asm/firmware.h>
+#include <asm/cputype.h>
 
 #include <mach/hardware.h>
 #include <mach/regs-clock.h>
@@ -43,13 +44,20 @@ static inline void __iomem *cpu_boot_reg_base(void)
 	return S5P_VA_SYSRAM;
 }
 
-static inline void __iomem *cpu_boot_reg(int cpu)
+static inline void __iomem *cpu_boot_reg(int phys_cpu)
 {
 	void __iomem *boot_reg;
+	unsigned int cluster, core;
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
 
 	boot_reg = cpu_boot_reg_base();
-	if (soc_is_exynos4412())
-		boot_reg += 4*cpu;
+	boot_reg += cluster ? 0 : 0x10;
+
+	if (soc_is_exynos4412() || soc_is_exynos5430())
+		boot_reg += 4 * core;
+
 	return boot_reg;
 }
 
@@ -88,10 +96,48 @@ static void __cpuinit exynos_secondary_init(unsigned int cpu)
 	spin_unlock(&boot_lock);
 }
 
+static int exynos_power_up_cpu(unsigned int cpu)
+{
+	unsigned int timeout;
+	unsigned int val;
+
+	/* Checking already enabled core power */
+	if  ((__raw_readl(EXYNOS_ARM_CORE_STATUS(cpu)) & EXYNOS_CORE_PWR_EN)
+			== EXYNOS_CORE_PWR_EN) {
+		printk(KERN_WARNING "%s: Already enabled core power.\n",
+			 __func__);
+		return 0;
+	}
+
+	/* Local core power up and initiate wakeup*/
+	val = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+	val |= EXYNOS_CORE_INIT_WAKEUP_FROM_LOWPWR | EXYNOS_CORE_PWR_EN;
+	__raw_writel(val, EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+
+	/* wait max 10 ms until cpu is on */
+	timeout = 10;
+	while (timeout) {
+		if  ((__raw_readl(EXYNOS_ARM_CORE_STATUS(cpu)) & EXYNOS_CORE_PWR_EN)
+				== EXYNOS_CORE_PWR_EN)
+			break;
+
+		mdelay(1);
+		timeout--;
+
+		if (timeout == 0) {
+			printk(KERN_ERR "cpu%d power up failed", cpu);
+			return -ETIMEDOUT;
+		}
+	}
+
+	return 0;
+}
+
 static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
 {
 	unsigned long timeout;
 	unsigned long phys_cpu = cpu_logical_map(cpu);
+	int ret;
 
 	/*
 	 * Set synchronisation state between this boot processor
@@ -109,27 +155,12 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct 
 	 */
 	write_pen_release(phys_cpu);
 
-	if (!(__raw_readl(EXYNOS_ARM_CORE1_STATUS) & EXYNOS_CORE_LOCAL_PWR_EN)) {
-		__raw_writel(EXYNOS_CORE_LOCAL_PWR_EN,
-			     EXYNOS_ARM_CORE1_CONFIGURATION);
-
-		timeout = 10;
-
-		/* wait max 10 ms until cpu1 is on */
-		while ((__raw_readl(EXYNOS_ARM_CORE1_STATUS)
-			& EXYNOS_CORE_LOCAL_PWR_EN) != EXYNOS_CORE_LOCAL_PWR_EN) {
-			if (timeout-- == 0)
-				break;
-
-			mdelay(1);
-		}
-
-		if (timeout == 0) {
-			printk(KERN_ERR "cpu1 power enable failed");
-			spin_unlock(&boot_lock);
-			return -ETIMEDOUT;
-		}
+	ret = exynos_power_up_cpu(phys_cpu);
+	if (ret) {
+		spin_unlock(&boot_lock);
+		return ret;
 	}
+
 	/*
 	 * Send the secondary CPU a soft interrupt, thereby causing
 	 * the boot monitor to read the system wide flags register,
@@ -151,9 +182,12 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct 
 		if (call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr))
 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
 
-		call_firmware_op(cpu_boot, phys_cpu);
-
-		arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+		if (soc_is_exynos5430()) {
+			dsb_sev();
+		} else {
+			call_firmware_op(cpu_boot, phys_cpu);
+			arch_send_wakeup_ipi_mask(cpumask_of(cpu));
+		}
 
 		if (pen_release == -1)
 			break;
@@ -203,9 +237,6 @@ static void __init exynos_smp_init_cpus(void)
 static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
 {
 	int i;
-
-	if (!(soc_is_exynos5250() || soc_is_exynos5440()))
-		scu_enable(scu_base_addr());
 
 	/*
 	 * Write the address of secondary startup into the
