@@ -157,6 +157,28 @@ struct dma_map_ops arm_coherent_dma_ops = {
 };
 EXPORT_SYMBOL(arm_coherent_dma_ops);
 
+static void *arm_exynos_dma_alloc(struct device *dev, size_t size,
+	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs);
+static void arm_exynos_dma_free(struct device *dev, size_t size, void *cpu_addr,
+				  dma_addr_t handle, struct dma_attrs *attrs);
+
+struct dma_map_ops arm_exynos_dma_ops = {
+	.alloc			= arm_exynos_dma_alloc,
+	.free			= arm_exynos_dma_free,
+	.mmap			= arm_dma_mmap,
+	.get_sgtable		= arm_dma_get_sgtable,
+	.map_page		= arm_dma_map_page,
+	.unmap_page		= arm_dma_unmap_page,
+	.map_sg			= arm_dma_map_sg,
+	.unmap_sg		= arm_dma_unmap_sg,
+	.sync_single_for_cpu	= arm_dma_sync_single_for_cpu,
+	.sync_single_for_device	= arm_dma_sync_single_for_device,
+	.sync_sg_for_cpu	= arm_dma_sync_sg_for_cpu,
+	.sync_sg_for_device	= arm_dma_sync_sg_for_device,
+	.set_dma_mask		= arm_dma_set_mask,
+};
+EXPORT_SYMBOL(arm_exynos_dma_ops);
+
 static u64 get_coherent_dma_mask(struct device *dev)
 {
 	u64 mask = (u64)arm_dma_limit;
@@ -711,6 +733,42 @@ static void *arm_coherent_dma_alloc(struct device *dev, size_t size,
 			   __builtin_return_address(0));
 }
 
+static void *arm_exynos_dma_alloc(struct device *dev, size_t size,
+	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
+{
+	pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
+	void *addr;
+	u64 mask = get_coherent_dma_mask(dev);
+	struct page *page = NULL;
+
+#ifdef CONFIG_DMA_API_DEBUG
+	u64 limit = (mask + 1) & ~mask;
+	if (limit && size >= limit) {
+		dev_warn(dev, "coherent allocation too big (requested %#x mask %#llx)\n",
+			size, mask);
+		return NULL;
+	}
+#endif
+
+	if (!mask)
+		return NULL;
+
+	if (mask < 0xffffffffULL)
+		gfp |= GFP_DMA;
+
+	gfp &= ~(__GFP_COMP);
+
+	*handle = DMA_ERROR_CODE;
+	size = PAGE_ALIGN(size);
+
+	addr = __alloc_remap_buffer(dev, size, gfp, prot, &page,
+			__builtin_return_address(0));
+	if (addr)
+		*handle = pfn_to_dma(dev, page_to_pfn(page));
+
+	return addr;
+}
+
 /*
  * Create userspace mapping for the DMA-coherent memory.
  */
@@ -781,6 +839,17 @@ static void arm_coherent_dma_free(struct device *dev, size_t size, void *cpu_add
 				  dma_addr_t handle, struct dma_attrs *attrs)
 {
 	__arm_dma_free(dev, size, cpu_addr, handle, attrs, true);
+}
+
+static void arm_exynos_dma_free(struct device *dev, size_t size, void *cpu_addr,
+				  dma_addr_t handle, struct dma_attrs *attrs)
+{
+	struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
+
+	size = PAGE_ALIGN(size);
+
+	__dma_free_remap(cpu_addr, size);
+	__dma_free_buffer(page, size);
 }
 
 int arm_dma_get_sgtable(struct device *dev, struct sg_table *sgt,
