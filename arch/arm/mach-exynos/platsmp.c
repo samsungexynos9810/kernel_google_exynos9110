@@ -96,10 +96,15 @@ static void __cpuinit exynos_secondary_init(unsigned int cpu)
 	spin_unlock(&boot_lock);
 }
 
-static int exynos_power_up_cpu(unsigned int cpu)
+static int exynos_power_up_cpu(unsigned int phys_cpu)
 {
+	unsigned int core, cluster, cpu;
 	unsigned int timeout;
 	unsigned int val;
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+	cpu = (cluster * 4) + core;
 
 	/* Checking already enabled core power */
 	if  ((__raw_readl(EXYNOS_ARM_CORE_STATUS(cpu)) & EXYNOS_CORE_PWR_EN)
