@@ -40,11 +40,8 @@
 #include <mach/map.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
-#include <linux/clkdev.h>
-#include <linux/clk-provider.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
-//#include <mach/pmu.h>
 #include <mach/regs-pmu.h>
 #include <asm/delay.h>
 
@@ -64,7 +61,6 @@ bool tmu_on_off;
 #define MALI_T6XX_DEFAULT_CLOCK (MALI_DVFS_START_FREQ*MHZ)
 
 static struct clk *clk_g3d = NULL;
-static struct clk *clk_ahb2apb_g3dp = NULL;
 
 static int clk_g3d_status = 0;
 
@@ -100,7 +96,7 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
 	struct device *dev =  kbdev->osdev.dev;
-	struct clk *fout_vpll = NULL, *mout_vpll = NULL, *aclk_g3d_sw = NULL, *aclk_g3d_dout = NULL;
+	struct clk *fin_pll = NULL, *fout_g3d_pll = NULL, *mout_g3d_pll = NULL;
 	int timeout, ret;
 	struct exynos_context *platform;
 
@@ -125,84 +121,47 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D clock */
-	clk_g3d = __clk_lookup("aclk_g3d");
-
+	fin_pll = clk_get(dev, "fin_pll");
+	if (IS_ERR(fin_pll)) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fin_pll]\n");
+		goto out;
+	}
+	fout_g3d_pll = clk_get(dev, "fout_g3d_pll");
+	if (IS_ERR(fout_g3d_pll)) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fout_g3d_pll]\n");
+		goto out;
+	}
+	mout_g3d_pll = clk_get(dev, "mout_g3d_pll");
+	if (IS_ERR(mout_g3d_pll)) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_g3d_pll]\n");
+		goto out;
+	}
+	clk_g3d = clk_get(dev, "dout_aclk_g3d");
 	if (IS_ERR(clk_g3d)) {
 		clk_g3d = NULL;
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [g3d]\n");
+		goto out;
 	} else {
-		clk_enable(clk_g3d);
-		/* Turn on G3D AHB2APB clock */
-/*		clk_ahb2apb_g3dp = clk_get(dev, "clk_ahb2apb_g3dp");
-		if (IS_ERR(clk_ahb2apb_g3dp)) {
-			clk_ahb2apb_g3dp = NULL;
-			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [clk_ahb2apb_g3dp]\n");
-		} else {
-			clk_enable(clk_ahb2apb_g3dp);
-			clk_g3d_status = 1;
-		}
-*/
-			clk_g3d_status = 1;
+		platform->aclk_g3d = clk_g3d;
 	}
-
-/*
-	fout_vpll = clk_get(dev, "fout_vpll");
-	if (IS_ERR(fout_vpll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fout_vpll]\n");
-		goto out;
-	}
-	mout_vpll = clk_get(dev, "mout_vpll");
-	if (IS_ERR(mout_vpll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_vpll]\n");
-		goto out;
-	}
-	aclk_g3d_dout = clk_get(dev, "aclk_g3d_dout");
-	if (IS_ERR(aclk_g3d_dout)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d_dout]\n");
-		goto out;
-	}
-	aclk_g3d_sw = clk_get(dev, "aclk_g3d_sw");
-	if (IS_ERR(aclk_g3d_sw)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d_sw]\n");
-		goto out;
-	}
-	platform->aclk_g3d = clk_get(dev, "aclk_g3d");
-	if (IS_ERR(platform->aclk_g3d)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d]\n");
-		goto out;
-	}
-
-	ret = clk_set_parent(platform->aclk_g3d, aclk_g3d_sw);
+	ret = clk_set_parent(platform->aclk_g3d, mout_g3d_pll);
 	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d]\n");
-		goto out;
-	}
-	ret = clk_set_parent(aclk_g3d_sw, aclk_g3d_dout);
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d_sw]\n");
-		goto out;
-	}
-	ret = clk_set_parent(aclk_g3d_dout, mout_vpll);
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d_dout]\n");
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [mout_g3d_pll]\n");
 		goto out;
 	}
 
-	clk_set_rate(fout_vpll, MALI_T6XX_DEFAULT_CLOCK);
-	if (IS_ERR(fout_vpll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_rate [fout_vpll] = %d\n", MALI_T6XX_DEFAULT_CLOCK);
+	/*
+	ret = clk_set_parent(mout_g3d_pll, fout_g3d_pll);
+	if (ret < 0) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [fout_g3d_pll]\n");
 		goto out;
 	}
-	clk_set_rate(aclk_g3d_dout, MALI_T6XX_DEFAULT_CLOCK);
-	if (IS_ERR(aclk_g3d_dout)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_rate [aclk_g3d_dout] = %d\n", MALI_T6XX_DEFAULT_CLOCK);
-		goto out;
-	}
-
-	(void) clk_enable(platform->aclk_g3d);
 	*/
 
-//	clk_set_rate(clk_g3d, MALI_T6XX_DEFAULT_CLOCK);
+	(void) clk_enable(platform->aclk_g3d);
+	clk_set_rate(platform->aclk_g3d, MALI_T6XX_DEFAULT_CLOCK);
+	clk_g3d_status = 1;
+
 #if defined(CONFIG_EXYNOS_THERMAL)
 	exynos_gpu_add_notifier(&exynos5_g3d_tmu_nb);
 	tmu_on_off = true;
@@ -229,7 +188,6 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
-//		(void) clk_enable(clk_ahb2apb_g3dp);
 		(void) clk_enable(platform->aclk_g3d);
 	}
 	clk_g3d_status = 1;
@@ -251,7 +209,6 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 		return 0;
 
 	if (clk_g3d) {
-//		(void)clk_disable(clk_ahb2apb_g3dp);
 		(void)clk_disable(clk_g3d);
 		(void)clk_disable(platform->aclk_g3d);
 	}
@@ -428,8 +385,8 @@ static ssize_t set_clock(struct device *dev, struct device_attribute *attr, cons
 	kbase_platform_dvfs_set_level(kbdev, kbase_platform_dvfs_get_level(freq));
 	/* Waiting for clock is stable */
 	do {
-		tmp = __raw_readl(EXYNOS5_CLKDIV_STAT_TOP2);
-	} while (tmp & 0x10000);
+		tmp = __raw_readl(EXYNOS5430_DIV_STAT_G3D);
+	} while (tmp & 0x1);
 
 	return count;
 }
