@@ -41,6 +41,7 @@
 #include <mach/map.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
+#include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
 #include <asm/delay.h>
 #include <linux/regulator/consumer.h>
@@ -737,14 +738,10 @@ void kbase_tmu_normal_work(void)
 
 void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 {
-#if 0 //helsinki
-	struct clk *ext_xtal = NULL;
-	struct clk *aclk_g3d_sw = NULL;
-	struct clk *fout_vpll = NULL;
-	struct clk *aclk_g3d_dout = NULL;
-	static long vpll_rate_prev = -1;
-	unsigned long vpll_rate = freq * 1000000;
-	unsigned long aclk_rate = freq * 1000000;
+	struct device *dev =  kbdev->osdev.dev;
+	struct clk *fout_g3d_pll = NULL, *mout_g3d_pll = NULL, *dout_aclk_g3d = NULL;
+	static long g3d_rate_prev = -1;
+	unsigned long g3d_rate = freq * 1000000;
 
 	unsigned long tmp = 0;
 	struct exynos_context *platform;
@@ -760,47 +757,35 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 	if (platform->aclk_g3d == 0)
 		return;
 
-	aclk_g3d_dout = clk_get(kbdev->osdev.dev, "aclk_g3d_dout");
-	if (IS_ERR(aclk_g3d_dout)) {
-		printk(KERN_ERR "[kbase_platform_dvfs_set_clock] failed to clk_get [aclk_g3d_dout] = %ld\n", aclk_rate);
+	dout_aclk_g3d = clk_get(dev, "dout_aclk_g3d");
+	if (IS_ERR(dout_aclk_g3d)) {
+		printk(KERN_ERR "[kbase_platform_dvfs_set_clock] failed to clk_get [dout_aclk_g3d] = %ld\n", g3d_rate);
 
 		return;
 	}
 
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
-	if (vpll_rate != vpll_rate_prev) {
-		ext_xtal = clk_get(kbdev->osdev.dev, "ext_xtal");
-		aclk_g3d_sw = clk_get(kbdev->osdev.dev, "aclk_g3d_sw");
-		fout_vpll = clk_get(kbdev->osdev.dev, "fout_vpll");
-		if (IS_ERR(ext_xtal) || IS_ERR(aclk_g3d_sw) || IS_ERR(fout_vpll)) {
-			printk(KERN_ERR "[kbase_platform_dvfs_set_clock] failed to clk_get ext_xtal, aclk_g3d_sw or fout_vpll\n");
-			return;
-		}
+	if (g3d_rate != g3d_rate_prev) {
+		/*change here for future stable clock changing*/
+		fout_g3d_pll = clk_get(dev, "fout_g3d_pll");
+		fout_g3d_pll = clk_get(dev, "fout_g3d_pll");
 
-		/*for stable clock input.*/
-		clk_set_rate(aclk_g3d_dout, 100000000);
-		clk_set_parent(platform->aclk_g3d, ext_xtal);
-
-		/*change vpll*/
-		clk_set_rate(fout_vpll, vpll_rate);
-
-		/*restore parent*/
-		clk_set_parent(platform->aclk_g3d, aclk_g3d_sw);
-		vpll_rate_prev = vpll_rate;
+		clk_set_parent(platform->aclk_g3d, mout_g3d_pll);
+		dout_aclk_g3d = clk_get(dev, "dout_aclk_g3d");
+		g3d_rate_prev = g3d_rate;
 	}
 
-	clk_set_rate(aclk_g3d_dout, aclk_rate);
+	clk_set_rate(dout_aclk_g3d, g3d_rate);
 
 	/* Waiting for clock is stable */
 	do {
-		tmp = __raw_readl(EXYNOS5_CLKDIV_STAT_TOP2);
-	} while (tmp & 0x10000);
+		tmp = __raw_readl(EXYNOS5430_DIV_STAT_G3D);
+	} while (tmp & 0x1);
 
 #ifdef MALI_DEBUG
 	DEBUG_PRINT_INFO("===clock set: %ld\n", aclk_rate);
 	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(platform->aclk_g3d));
-	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(aclk_g3d_dout));
-#endif
+	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(dout_aclk_g3d));
 #endif
 	return;
 }
