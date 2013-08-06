@@ -31,6 +31,9 @@
 		mshc0 = &dwmmc_0;
 		mshc1 = &dwmmc_1;
 		mshc2 = &dwmmc_2;
+		gsc0 = &gsc_0;
+		gsc1 = &gsc_1;
+		gsc2 = &gsc_2;
 	};
 
 	chipid@10000000 {
@@ -525,6 +528,42 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 593>, <&clock 567>;
 		status = "ok";
+	};
+
+	gsc_0: gsc@13C00000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13C00000 0x1000>;
+		interrupts = <0 297 0>;
+		clocks = <&clock 480>;
+		clock-names = "gscl";
+		ip_ver = <2>;
+		mif_min = <160000>;
+		int_min = <111000>;
+		iommu = <&sysmmu_gscl0>;
+	};
+
+	gsc_1: gsc@0x13C10000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13C10000 0x1000>;
+		interrupts = <0 298 0>;
+		clocks = <&clock 481>;
+		clock-names = "gscl";
+		ip_ver = <2>;
+		mif_min = <160000>;
+		int_min = <111000>;
+		iommu = <&sysmmu_gscl1>;
+	};
+
+	gsc_2: gsc@0x13C20000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13C20000 0x1000>;
+		interrupts = <0 299 0>;
+		clocks = <&clock 482>;
+		clock-names = "gscl";
+		ip_ver = <2>;
+		mif_min = <160000>;
+		int_min = <111000>;
+		iommu = <&sysmmu_gscl2>;
 	};
 
 	decon_fb: decon_fb {
