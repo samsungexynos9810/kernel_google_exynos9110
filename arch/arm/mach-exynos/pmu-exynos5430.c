@@ -247,7 +247,6 @@ static int __init exynos_pmu_init(void)
 	 * Set measure power on/off duration
 	 * Use SC_USE_FEEDBACK
 	 */
-	exynos_init_pmu();
 
 	/* Enable USE_STANDBY_WFI for all CORE */
 	__raw_writel(EXYNOS5_USE_STANDBY_WFI_ALL,
