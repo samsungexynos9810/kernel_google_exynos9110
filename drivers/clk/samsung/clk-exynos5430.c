@@ -710,6 +710,33 @@ PNAME(mout_sclk_slimbus_p)	= { "dout_sclk_slimbus", "dout_sclk_slimbus_frac" };
 PNAME(mout_phyclk_rxbyteclkhs0_s4_p) = { "oscclk", "phyclk_rxbyteclkhs0_s4" };
 PNAME(mout_phyclk_rxbyteclkhs0_s2a_p) = { "oscclk", "phyclk_rxbyteclkhs0_s2a" };
 
+
+PNAME(mout_aclk_cam0_552_user_p) = { "oscclk", "aclk_cam0_552" };
+PNAME(mout_aclk_cam0_400_user_p) = { "oscclk", "aclk_cam0_400" };
+PNAME(mout_aclk_cam0_333_user_p) = { "oscclk", "aclk_cam0_333" };
+PNAME(mout_aclk_lite_a_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_lite_a_b_p) = { "mout_aclk_lite_a_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_lite_b_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_lite_b_b_p) = { "mout_aclk_lite_b_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_lite_d_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_lite_d_b_p) = { "mout_aclk_lite_d_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_sclk_pixelasync_lite_c_init_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_sclk_pixelasync_lite_c_init_b_p) = { "mout_sclk_pixelasync_lite_c_init_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_sclk_pixelasync_lite_c_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_sclk_pixelasync_lite_c_b_p) = { "mout_sclk_pixelasync_lite_c_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_3aa0_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_3aa0_b_p) = { "mout_aclk_3aa0_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_3aa1_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_3aa1_b_p) = { "mout_aclk_3aa1_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_csis0_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_csis0_b_p) = { "mout_aclk_csis0_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_csis1_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
+PNAME(mout_aclk_csis1_b_p) = { "mout_aclk_csis1_a", "mout_aclk_cam0_333_user" };
+PNAME(mout_aclk_cam0_400_p) = { "mout_aclk_cam0_400_user", "mout_aclk_cam0_333_user" };
+PNAME(mout_sclk_lite_freecnt_a_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b", "dout_pclk_pixelasync_lite_c", "dout_pclk_lite_d" };
+PNAME(mout_sclk_lite_freecnt_b_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b", "dout_pclk_pixelasync_lite_c", "dout_pclk_lite_d" };
+PNAME(mout_sclk_lite_freecnt_c_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b", "dout_pclk_pixelasync_lite_c", "dout_pclk_lite_d" };
+
 /* CAM1 */
 PNAME(mout_sclk_isp_spi0_user_p) = { "oscclk", "sclk_isp_spi0_top" };
 PNAME(mout_sclk_isp_spi1_user_p) = { "oscclk", "sclk_isp_spi1_top" };
@@ -903,6 +930,32 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMX(none, "mout_sclk_isp_spi1_user", mout_sclk_isp_spi1_user_p, EXYNOS5430_SRC_SEL_CAM10, 16, 1),
 	CMX(none, "mout_sclk_isp_uart_user", mout_sclk_isp_uart_user_p, EXYNOS5430_SRC_SEL_CAM10, 20, 1),
 	CMX(none, "mout_phyclk_rxbyteclkhs0_s2b", mout_phyclk_rxbyteclkhs0_s2b_p, EXYNOS5430_SRC_SEL_CAM11, 0, 1),
+
+	CMX(none, "mout_aclk_cam0_552_user", mout_aclk_cam0_552_user_p, EXYNOS5430_SRC_SEL_CAM00, 0, 1),
+	CMX(none, "mout_aclk_cam0_400_user", mout_aclk_cam0_400_user_p, EXYNOS5430_SRC_SEL_CAM00, 4, 1),
+	CMX(none, "mout_aclk_cam0_333_user", mout_aclk_cam0_333_user_p, EXYNOS5430_SRC_SEL_CAM00, 8, 1),
+	CMX(none, "mout_aclk_lite_a_a", mout_aclk_lite_a_a_p, EXYNOS5430_SRC_SEL_CAM02, 4, 1),
+	CMX(none, "mout_aclk_lite_a_b", mout_aclk_lite_a_b_p, EXYNOS5430_SRC_SEL_CAM02, 8, 1),
+	CMX(none, "mout_aclk_lite_b_a", mout_aclk_lite_b_a_p, EXYNOS5430_SRC_SEL_CAM02, 12, 1),
+	CMX(none, "mout_aclk_lite_b_b", mout_aclk_lite_b_b_p, EXYNOS5430_SRC_SEL_CAM02, 16, 1),
+	CMX(none, "mout_aclk_lite_d_a", mout_aclk_lite_d_a_p, EXYNOS5430_SRC_SEL_CAM02, 20, 1),
+	CMX(none, "mout_aclk_lite_d_b", mout_aclk_lite_d_b_p, EXYNOS5430_SRC_SEL_CAM02, 24, 1),
+	CMX(none, "mout_sclk_pixelasync_lite_c_init_a", mout_sclk_pixelasync_lite_c_init_a_p, EXYNOS5430_SRC_SEL_CAM04, 0, 1),
+	CMX(none, "mout_sclk_pixelasync_lite_c_init_b", mout_sclk_pixelasync_lite_c_init_b_p, EXYNOS5430_SRC_SEL_CAM04, 4, 1),
+	CMX(none, "mout_sclk_pixelasync_lite_c_a", mout_sclk_pixelasync_lite_c_a_p, EXYNOS5430_SRC_SEL_CAM04, 8, 1),
+	CMX(none, "mout_sclk_pixelasync_lite_c_b", mout_sclk_pixelasync_lite_c_b_p, EXYNOS5430_SRC_SEL_CAM04, 12, 1),
+	CMX(none, "mout_aclk_3aa0_a", mout_aclk_3aa0_a_p, EXYNOS5430_SRC_SEL_CAM03, 0, 1),
+	CMX(none, "mout_aclk_3aa0_b", mout_aclk_3aa0_b_p, EXYNOS5430_SRC_SEL_CAM03, 4, 1),
+	CMX(none, "mout_aclk_3aa1_a", mout_aclk_3aa1_a_p, EXYNOS5430_SRC_SEL_CAM03, 8, 1),
+	CMX(none, "mout_aclk_3aa1_b", mout_aclk_3aa1_b_p, EXYNOS5430_SRC_SEL_CAM03, 12, 1),
+	CMX(none, "mout_aclk_csis0_a", mout_aclk_csis0_a_p, EXYNOS5430_SRC_SEL_CAM03, 16, 1),
+	CMX(none, "mout_aclk_csis0_b", mout_aclk_csis0_b_p, EXYNOS5430_SRC_SEL_CAM03, 20, 1),
+	CMX(none, "mout_aclk_csis1_a", mout_aclk_csis1_a_p, EXYNOS5430_SRC_SEL_CAM03, 24, 1),
+	CMX(none, "mout_aclk_csis1_b", mout_aclk_csis1_b_p, EXYNOS5430_SRC_SEL_CAM03, 28, 1),
+	CMX(none, "mout_aclk_cam0_400", mout_aclk_cam0_400_p, EXYNOS5430_SRC_SEL_CAM02, 0, 1),
+	CMX(none, "mout_sclk_lite_freecnt_a", mout_sclk_lite_freecnt_a_p, EXYNOS5430_SRC_SEL_CAM04, 16, 1),
+	CMX(none, "mout_sclk_lite_freecnt_b", mout_sclk_lite_freecnt_b_p, EXYNOS5430_SRC_SEL_CAM04, 20, 1),
+	CMX(none, "mout_sclk_lite_freecnt_c", mout_sclk_lite_freecnt_c_p, EXYNOS5430_SRC_SEL_CAM04, 24, 1),
 };
 
 #define CDV(_id, cname, pname, o, s, w) \
@@ -1028,6 +1081,25 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDV(none, "dout_sclk_slimbus_frac", "mout_aud_pll_sub", EXYNOS5430_DIV_AUD4, 24, 8),
 	CDV(none, "dout_sclk_uart", "mout_aud_pll_sub", EXYNOS5430_DIV_AUD1, 12, 4),
 #endif
+
+	CDV(none, "dout_aclk_lite_a", "mout_aclk_lite_a_b", EXYNOS5430_DIV_CAM01, 0, 3),
+	CDV(none, "dout_aclk_lite_b", "mout_aclk_lite_b_b", EXYNOS5430_DIV_CAM01, 8, 3),
+	CDV(none, "dout_aclk_lite_d", "mout_aclk_lite_d_b", EXYNOS5430_DIV_CAM01, 16, 3),
+	CDV(none, "dout_sclk_pixelasync_lite_c_init", "mout_sclk_pixelasync_lite_c_init_b", EXYNOS5430_DIV_CAM03, 0, 3),
+	CDV(none, "dout_sclk_pixelasync_lite_c", "mout_sclk_pixelasync_lite_c_b", EXYNOS5430_DIV_CAM03, 10, 3),
+	CDV(none, "dout_aclk_3aa0", "mout_aclk_3aa0_b", EXYNOS5430_DIV_CAM02, 0, 3),
+	CDV(none, "dout_aclk_3aa1", "mout_aclk_3aa1_b", EXYNOS5430_DIV_CAM02, 8, 3),
+	CDV(none, "dout_aclk_csis0", "mout_aclk_csis0_b", EXYNOS5430_DIV_CAM02, 16, 3),
+	CDV(none, "dout_aclk_csis1", "mout_aclk_csis1_b", EXYNOS5430_DIV_CAM02, 16, 3),
+	CDV(none, "dout_aclk_cam0_400", "mout_aclk_cam0_400", EXYNOS5430_DIV_CAM00, 0, 3),
+	CDV(none, "dout_aclk_cam0_200", "mout_aclk_cam0_400", EXYNOS5430_DIV_CAM00, 4, 3),
+	CDV(none, "dout_pclk_lite_a", "dout_aclk_lite_a", EXYNOS5430_DIV_CAM01, 4, 2),
+	CDV(none, "dout_pclk_lite_b", "dout_aclk_lite_b", EXYNOS5430_DIV_CAM01, 12, 2),
+	CDV(none, "dout_pclk_lite_d", "dout_aclk_lite_d", EXYNOS5430_DIV_CAM01, 20, 2),
+	CDV(none, "dout_pclk_pixelasync_lite_c", "dout_sclk_pixelasync_lite_c_init", EXYNOS5430_DIV_CAM03, 4, 2),
+	CDV(none, "dout_pclk_3aa0", "dout_aclk_3aa0", EXYNOS5430_DIV_CAM02, 4, 2),
+	CDV(none, "dout_pclk_3aa1", "dout_aclk_3aa1", EXYNOS5430_DIV_CAM02, 12, 2),
+	CDV(none, "dout_pclk_cam0_50", "dout_aclk_cam0_200", EXYNOS5430_DIV_CAM00, 8, 2),
 };
 
 #define CGTE(_id, cname, pname, o, b, f, gf) \
