@@ -710,7 +710,6 @@ PNAME(mout_sclk_slimbus_p)	= { "dout_sclk_slimbus", "dout_sclk_slimbus_frac" };
 PNAME(mout_phyclk_rxbyteclkhs0_s4_p) = { "oscclk", "phyclk_rxbyteclkhs0_s4" };
 PNAME(mout_phyclk_rxbyteclkhs0_s2a_p) = { "oscclk", "phyclk_rxbyteclkhs0_s2a" };
 
-
 PNAME(mout_aclk_cam0_552_user_p) = { "oscclk", "aclk_cam0_552" };
 PNAME(mout_aclk_cam0_400_user_p) = { "oscclk", "aclk_cam0_400" };
 PNAME(mout_aclk_cam0_333_user_p) = { "oscclk", "aclk_cam0_333" };
@@ -742,6 +741,16 @@ PNAME(mout_sclk_isp_spi0_user_p) = { "oscclk", "sclk_isp_spi0_top" };
 PNAME(mout_sclk_isp_spi1_user_p) = { "oscclk", "sclk_isp_spi1_top" };
 PNAME(mout_sclk_isp_uart_user_p) = { "oscclk", "sclk_isp_uart_top" };
 PNAME(mout_phyclk_rxbyteclkhs0_s2b_p) = { "oscclk", "phyclk_rxbyteclkhs0_s2b" };
+
+PNAME(mout_aclk_cam1_552_user_p) = { "oscclk", "aclk_cam1_552" };
+PNAME(mout_aclk_cam1_400_user_p) = { "oscclk", "aclk_cam1_400" };
+PNAME(mout_aclk_cam1_333_user_p) = { "oscclk", "aclk_cam1_333" };
+PNAME(mout_aclk_lite_c_a_p) = { "mout_aclk_cam1_552_user", "mout_aclk_cam1_400_user" };
+PNAME(mout_aclk_lite_c_b_p) = { "mout_aclk_lite_c_a", "mout_aclk_cam1_333_user" };
+PNAME(mout_aclk_fd_a_p) = { "mout_aclk_cam1_552_user", "mout_aclk_cam1_400_user" };
+PNAME(mout_aclk_fd_b_p) = { "mout_aclk_fd_a", "mout_aclk_cam1_333_user" };
+PNAME(mout_aclk_csis2_a_p) = { "mout_aclk_cam1_552_user", "mout_aclk_cam1_400_user" };
+PNAME(mout_aclk_csis2_b_p) = { "mout_aclk_csis2_a", "mout_aclk_cam1_333_user" };
 
 struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
 	FRATE(none, "oscclk", NULL, CLK_IS_ROOT, 24000000),
@@ -956,6 +965,17 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMX(none, "mout_sclk_lite_freecnt_a", mout_sclk_lite_freecnt_a_p, EXYNOS5430_SRC_SEL_CAM04, 16, 1),
 	CMX(none, "mout_sclk_lite_freecnt_b", mout_sclk_lite_freecnt_b_p, EXYNOS5430_SRC_SEL_CAM04, 20, 1),
 	CMX(none, "mout_sclk_lite_freecnt_c", mout_sclk_lite_freecnt_c_p, EXYNOS5430_SRC_SEL_CAM04, 24, 1),
+
+	CMX(none, "mout_aclk_cam1_552_user", mout_aclk_cam1_552_user_p, EXYNOS5430_SRC_SEL_CAM10, 0, 1),
+	CMX(none, "mout_aclk_cam1_400_user", mout_aclk_cam1_400_user_p, EXYNOS5430_SRC_SEL_CAM10, 4, 1),
+	CMX(none, "mout_aclk_cam1_333_user", mout_aclk_cam1_333_user_p, EXYNOS5430_SRC_SEL_CAM10, 8, 1),
+	CMX(none, "mout_aclk_lite_c_a", mout_aclk_lite_c_a_p, EXYNOS5430_SRC_SEL_CAM12, 0, 1),
+	CMX(none, "mout_aclk_lite_c_b", mout_aclk_lite_c_b_p, EXYNOS5430_SRC_SEL_CAM12, 4, 1),
+	CMX(none, "mout_aclk_fd_a", mout_aclk_fd_a_p, EXYNOS5430_SRC_SEL_CAM12, 8, 1),
+	CMX(none, "mout_aclk_fd_b", mout_aclk_fd_b_p, EXYNOS5430_SRC_SEL_CAM12, 12, 1),
+	CMX(none, "mout_aclk_csis2_a", mout_aclk_csis2_a_p, EXYNOS5430_SRC_SEL_CAM12, 16, 1),
+	CMX(none, "mout_aclk_csis2_b", mout_aclk_csis2_b_p, EXYNOS5430_SRC_SEL_CAM12, 20, 1),
+
 };
 
 #define CDV(_id, cname, pname, o, s, w) \
@@ -1100,6 +1120,18 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDV(none, "dout_pclk_3aa0", "dout_aclk_3aa0", EXYNOS5430_DIV_CAM02, 4, 2),
 	CDV(none, "dout_pclk_3aa1", "dout_aclk_3aa1", EXYNOS5430_DIV_CAM02, 12, 2),
 	CDV(none, "dout_pclk_cam0_50", "dout_aclk_cam0_200", EXYNOS5430_DIV_CAM00, 8, 2),
+
+	CDV(none, "dout_atclk_cam1", "mout_aclk_cam1_552_user", EXYNOS5430_DIV_CAM10, 0, 3),
+	CDV(none, "dout_pclk_dbg_cam1", "mout_aclk_cam1_552_user", EXYNOS5430_DIV_CAM10, 4, 3),
+	CDV(none, "dout_pclk_cam1_166", "mout_aclk_cam1_333_user", EXYNOS5430_DIV_CAM10, 8, 2),
+	CDV(none, "dout_pclk_cam1_83", "mout_aclk_cam1_333_user", EXYNOS5430_DIV_CAM10, 12, 2),
+	CDV(none, "dout_sclk_isp_mpwm", "dout_pclk_cam1_83", EXYNOS5430_DIV_CAM10, 16, 2),
+	CDV(none, "dout_aclk_lite_c", "mout_aclk_lite_c_b", EXYNOS5430_DIV_CAM11, 0, 2),
+	CDV(none, "dout_aclk_fd", "mout_aclk_fd_b", EXYNOS5430_DIV_CAM11, 8, 2),
+	CDV(none, "dout_aclk_csis2_a", "mout_aclk_csis2_b", EXYNOS5430_DIV_CAM11, 16, 2),
+	CDV(none, "dout_pclk_lite_c", "dout_aclk_lite_c", EXYNOS5430_DIV_CAM11, 4, 2),
+	CDV(none, "dout_pclk_fd", "dout_aclk_fd", EXYNOS5430_DIV_CAM11, 12, 2),
+
 };
 
 #define CGTE(_id, cname, pname, o, b, f, gf) \
