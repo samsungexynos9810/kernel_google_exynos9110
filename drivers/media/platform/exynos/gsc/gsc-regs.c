@@ -16,11 +16,116 @@
 #include <mach/map.h>
 #include "gsc-core.h"
 
+void gsc_hw_set_pp_index_init(struct gsc_dev *dev)
+{
+	u32 cfg = readl(dev->regs + GSC_ENABLE);
+	cfg &= ~GSC_ENABLE_PP_IDX_INIT_MASK;
+	cfg |= GSC_ENABLE_PP_IDX_INIT_SHADOW;
+	writel(cfg, dev->regs + GSC_ENABLE);
+}
+
+void gsc_hw_set_sfr_update_force(struct gsc_dev *dev)
+{
+	u32 cfg = readl(dev->regs + GSC_ENABLE);
+	cfg |= GSC_ENABLE_SFR_UPDATE_FORCE;
+	writel(cfg, dev->regs + GSC_ENABLE);
+}
+
+void gsc_hw_set_local_path_open_irq_mask(struct gsc_dev *dev, bool mask)
+{
+	u32 cfg;
+
+	cfg = readl(dev->regs + GSC_IRQ);
+	if (mask)
+		cfg |= GSC_IRQ_LOCAL_PATH_OPEN_MASK;
+	else
+		cfg &= ~GSC_IRQ_LOCAL_PATH_OPEN_MASK;
+	writel(cfg, dev->regs + GSC_IRQ);
+}
+
+void gsc_hw_set_read_slave_error_mask(struct gsc_dev *dev, bool mask)
+{
+	u32 cfg;
+
+	cfg = readl(dev->regs + GSC_IRQ);
+	if (mask)
+		cfg |= GSC_IRQ_READ_SLAVE_ERROR_MASK;
+	else
+		cfg &= ~GSC_IRQ_READ_SLAVE_ERROR_MASK;
+	writel(cfg, dev->regs + GSC_IRQ);
+}
+
+void gsc_hw_set_write_slave_error_mask(struct gsc_dev *dev, bool mask)
+{
+	u32 cfg;
+
+	cfg = readl(dev->regs + GSC_IRQ);
+	if (mask)
+		cfg |= GSC_IRQ_WRITE_SLAVE_ERROR_MASK;
+	else
+		cfg &= ~GSC_IRQ_WRITE_SLAVE_ERROR_MASK;
+	writel(cfg, dev->regs + GSC_IRQ);
+}
+
+void gsc_hw_set_max_read_axi_issue_cap(struct gsc_dev *dev, u32 level)
+{
+	u32 cfg = readl(dev->regs + GSC_IN_CON);
+
+	cfg &= ~GSC_IN_IC_MAX_MASK;
+	cfg |= GSC_IN_IC_MAX_MO(level);
+
+	writel(cfg, dev->regs + GSC_IN_CON);
+}
+
+void gsc_hw_set_max_write_axi_issue_cap(struct gsc_dev *dev, u32 level)
+{
+	u32 cfg = readl(dev->regs + GSC_OUT_CON);
+
+	cfg &= ~GSC_OUT_IC_MAX_MASK;
+	cfg |= GSC_OUT_IC_MAX_MO(level);
+
+	writel(cfg, dev->regs + GSC_OUT_CON);
+}
+
+void gsc_hw_set_output_rotation(struct gsc_ctx *ctx)
+{
+	struct gsc_dev *dev = ctx->gsc_dev;
+	u32 cfg;
+	gsc_info();
+	cfg = readl(dev->regs + GSC_OUT_CON);
+	cfg &= ~GSC_OUT_ROT_MASK;
+
+	switch (ctx->gsc_ctrls.rotate->val) {
+	case 270:
+		cfg |= GSC_OUT_ROT_270;
+		break;
+	case 180:
+		cfg |= GSC_OUT_ROT_180;
+		break;
+	case 90:
+		if (ctx->gsc_ctrls.hflip->val)
+			cfg |= GSC_OUT_ROT_90_XFLIP;
+		else if (ctx->gsc_ctrls.vflip->val)
+			cfg |= GSC_OUT_ROT_90_YFLIP;
+		else
+			cfg |= GSC_OUT_ROT_90;
+		break;
+	case 0:
+		if (ctx->gsc_ctrls.hflip->val)
+			cfg |= GSC_OUT_ROT_XFLIP;
+		else if (ctx->gsc_ctrls.vflip->val)
+			cfg |= GSC_OUT_ROT_YFLIP;
+	}
+
+	writel(cfg, dev->regs + GSC_OUT_CON);
+}
+
 void gsc_hw_set_sw_reset(struct gsc_dev *dev)
 {
 	u32 cfg = 0;
 
 	cfg |= GSC_SW_RESET_SRESET;
+
 	writel(cfg, dev->regs + GSC_SW_RESET);
 }
 
@@ -65,8 +170,10 @@ int gsc_wait_reset(struct gsc_dev *dev)
 	u32 cfg;
 	u32 cnt = (loops_per_jiffy * HZ) / MSEC_PER_SEC;
 
+	gsc_info("cnt : %d", cnt);
 	do {
 		cfg = readl(dev->regs + GSC_SW_RESET);
+		gsc_info();
 		if (!cfg)
 			return 0;
 	} while (--cnt);
@@ -256,6 +363,18 @@ void gsc_hw_set_overflow_irq_mask(struct gsc_dev *dev, bool mask)
 		cfg |= GSC_IRQ_OR_MASK;
 	else
 		cfg &= ~GSC_IRQ_OR_MASK;
+	writel(cfg, dev->regs + GSC_IRQ);
+}
+
+void gsc_hw_set_deadlock_irq_mask(struct gsc_dev *dev, bool mask)
+{
+	u32 cfg;
+
+	cfg = readl(dev->regs + GSC_IRQ);
+	if (mask)
+		cfg |= GSC_IRQ_DEADLOCK_MASK;
+	else
+		cfg &= ~GSC_IRQ_DEADLOCK_MASK;
 	writel(cfg, dev->regs + GSC_IRQ);
 }
 
@@ -529,6 +648,7 @@ void gsc_hw_set_output_path(struct gsc_ctx *ctx)
 void gsc_hw_set_out_size(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *dev = ctx->gsc_dev;
+	struct exynos_platform_gscaler *pdata = dev->pdata;
 	struct gsc_frame *frame = &ctx->d_frame;
 	u32 cfg;
 
@@ -544,8 +664,7 @@ void gsc_hw_set_out_size(struct gsc_ctx *ctx)
 	}
 
 	/* Set output scaled size */
-	if (ctx->gsc_ctrls.rotate->val == 90 ||
-	    ctx->gsc_ctrls.rotate->val == 270) {
+	if (use_input_rotator) {
 		cfg = GSC_SCALED_WIDTH(frame->crop.height);
 		cfg |= GSC_SCALED_HEIGHT(frame->crop.width);
 	} else {
@@ -670,11 +789,12 @@ void gsc_hw_set_mainscaler(struct gsc_ctx *ctx)
 	writel(cfg, dev->regs + GSC_MAIN_V_RATIO);
 }
 
-void gsc_hw_set_rotation(struct gsc_ctx *ctx)
+void gsc_hw_set_input_rotation(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *dev = ctx->gsc_dev;
 	u32 cfg;
 
+	gsc_info();
 	cfg = readl(dev->regs + GSC_IN_CON);
 	cfg &= ~GSC_IN_ROT_MASK;
 

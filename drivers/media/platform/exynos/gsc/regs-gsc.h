@@ -28,12 +28,8 @@
 #define SYSREG_GSCBLK_CFG0		(S3C_VA_SYS + 0x0220)
 #define GSC_PXLASYNC_MASK(x)		(1 << (18 + (x)))
 #define GSC_PXLASYNC_MASK_ALL		(0xF << 18)
-#define GSC_OUT_DST_FIMD_SEL(x)		soc_is_exynos5410() ? \
-					(1 << (10 + 2 *(x))) : \
-					(1 << (8 + 2 *(x)))
-#define GSC_OUT_DST_MXR_SEL(x)		soc_is_exynos5410() ? \
-					(2 << (10 + 2 *(x))) : \
-					(2 << (8 + 2 *(x)))
+#define GSC_OUT_DST_FIMD_SEL(x)		(1 << (8 + 2 *(x)))
+#define GSC_OUT_DST_MXR_SEL(x)		(2 << (8 + 2 *(x)))
 #define GSC_PXLASYNC_RST(x)		(1 << (x))
 #define PXLASYNC_LO_MASK_CAMIF_TOP	(1 << 20)
 #define SYSREG_GSCBLK_CFG1		(S3C_VA_SYS + 0x0224)
@@ -47,6 +43,14 @@
 
 /* G-Scaler enable */
 #define GSC_ENABLE			0x00
+
+#define GSC_ENABLE_PP_IDX_INIT_MASK	(1 << 9)
+#define GSC_ENABLE_PP_IDX_INIT_NOSHADOW	(0 << 9)
+#define GSC_ENABLE_PP_IDX_INIT_SHADOW	(1 << 9)
+#define GSC_ENABLE_STOP_STATUS_IDLE	(0 << 6)
+#define GSC_ENABLE_STOP_STATUS_STOP_SEQ	(1 << 6)
+#define GSC_ENABLE_SFR_UPDATE_FORCE	(1 << 5)
+
 #define GSC_ENABLE_PP_UPDATE_TIME_MASK	(1 << 9)
 #define GSC_ENABLE_PP_UPDATE_TIME_CURR	(0 << 9)
 #define GSC_ENABLE_PP_UPDATE_TIME_EOPAS	(1 << 9)
@@ -71,14 +75,28 @@
 
 /* G-Scaler IRQ */
 #define GSC_IRQ				0x08
+
+#define GSC_IRQ_LOCAL_PATH_OPEN		(1 << 21)
+#define GSC_IRQ_READ_SLAVE_ERROR	(1 << 20)
+#define GSC_IRQ_WRITE_SLAVE_ERROR	(1 << 19)
+#define GSC_IRQ_LOCAL_PATH_OPEN_MASK	(1 << 6)
+#define GSC_IRQ_READ_SLAVE_ERROR_MASK	(1 << 5)
+#define GSC_IRQ_WRITE_SLAVE_ERROR_MASK	(1 << 4)
+
+#define GSC_IRQ_STATUS_DEADLOCK_IRQ	(1 << 18)
 #define GSC_IRQ_STATUS_OR_IRQ		(1 << 17)
-#define GSC_IRQ_STATUS_OR_FRM_DONE	(1 << 16)
+#define GSC_IRQ_STATUS_FRM_DONE		(1 << 16)
+#define GSC_IRQ_DEADLOCK_MASK		(1 << 3)
 #define GSC_IRQ_OR_MASK			(1 << 2)
 #define GSC_IRQ_FRMDONE_MASK		(1 << 1)
 #define GSC_IRQ_ENABLE			(1 << 0)
 
 /* G-Scaler input control */
 #define GSC_IN_CON			0x10
+
+#define GSC_IN_IC_MAX_MASK		(7 << 23)
+#define GSC_IN_IC_MAX_MO(x)		(x << 23)
+
 #define GSC_IN_CHROM_STRIDE_SEL_MASK	(1 << 20)
 #define GSC_IN_CHROM_STRIDE_SEPAR	(1 << 20)
 #define GSC_IN_RB_SWAP_MASK		(1 << 19)
@@ -146,6 +164,18 @@
 
 /* G-Scaler output control */
 #define GSC_OUT_CON			0x20
+
+#define GSC_OUT_IC_MAX_MASK		(7 << 20)
+#define GSC_OUT_IC_MAX_MO(x)		(x << 20)
+#define GSC_OUT_ROT_MASK		(7 << 16)
+#define GSC_OUT_ROT_270			(7 << 16)
+#define GSC_OUT_ROT_90_YFLIP		(6 << 16)
+#define GSC_OUT_ROT_90_XFLIP		(5 << 16)
+#define GSC_OUT_ROT_90			(4 << 16)
+#define GSC_OUT_ROT_180			(3 << 16)
+#define GSC_OUT_ROT_YFLIP		(2 << 16)
+#define GSC_OUT_ROT_XFLIP		(1 << 16)
+
 #define GSC_OUT_GLOBAL_ALPHA_MASK	(0xff << 24)
 #define GSC_OUT_GLOBAL_ALPHA(x)		((x) << 24)
 #define GSC_OUT_CHROM_STRIDE_SEL_MASK	(1 << 13)

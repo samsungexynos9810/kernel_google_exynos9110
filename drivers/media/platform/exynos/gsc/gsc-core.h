@@ -36,7 +36,6 @@
 #include <media/videobuf2-cma-phys.h>
 #elif defined(CONFIG_VIDEOBUF2_ION)
 #include <media/videobuf2-ion.h>
-#include <plat/sysmmu.h>
 #endif
 
 extern const int h_coef_8t[7][16][8];
@@ -71,7 +70,7 @@ extern int gsc_dbg;
 				__func__, __LINE__, ##args);		\
 	} while (0)
 
-#define GSC_MAX_CLOCKS			3
+#define GSC_MAX_CLOCKS			5
 #define GSC_SHUTDOWN_TIMEOUT		((100*HZ)/1000)
 #define GSC_MAX_DEVS			4
 #define WORKQUEUE_NAME_SIZE		32
@@ -142,11 +141,6 @@ enum gsc_cap_input_entity {
 	GSC_IN_FIMD_WRITEBACK,
 };
 
-enum gsc_irq {
-	GSC_OR_IRQ = 17,
-	GSC_DONE_IRQ = 16,
-};
-
 enum gsc_qos_status {
 	GSC_QOS_OFF,
 	GSC_QOS_ON,
@@ -161,6 +155,8 @@ enum {
 	CLK_GATE,
 	CLK_CHILD,
 	CLK_PARENT,
+	CLK_S_CHILD,
+	CLK_S_PARENT,
 };
 
 /**
@@ -202,8 +198,13 @@ enum gsc_yuv_fmt {
 		(img == V4L2_PIX_FMT_YVU420M) || (img == V4L2_PIX_FMT_NV12MT_16X16))
 #define is_AYV12(img) (img == V4L2_PIX_FMT_YVU420)
 #define is_ver_5a (pdata->ip_ver == IP_VER_GSC_5A)
+#define is_ver_5h (pdata->ip_ver == IP_VER_GSC_5H)
 #define is_rotation \
 	((ctx->gsc_ctrls.rotate->val == 90) || (ctx->gsc_ctrls.rotate->val == 270))
+#define use_input_rotator \
+	(((ctx->gsc_ctrls.rotate->val == 90) ||\
+	 (ctx->gsc_ctrls.rotate->val == 270)) &&\
+	 ((!ctx->scaler.is_scaled_down) || (!is_ver_5h)))
 #define gsc_m2m_run(dev) test_bit(ST_M2M_RUN, &(dev)->state)
 #define gsc_m2m_opened(dev) test_bit(ST_M2M_OPEN, &(dev)->state)
 #define gsc_out_run(dev) test_bit(ST_OUTPUT_STREAMON, &(dev)->state)
@@ -314,6 +315,7 @@ struct gsc_scaler {
 	u32	pre_vratio;
 	unsigned long main_hratio;
 	unsigned long main_vratio;
+	bool	is_scaled_down;
 };
 
 struct gsc_dev;
@@ -552,8 +554,6 @@ struct gsc_dev {
 	struct clk			*clock[GSC_MAX_CLOCKS];
 	atomic_t			clk_cnt;
 	void __iomem			*regs;
-	struct resource			*regs_res;
-	int				irq;
 	wait_queue_head_t		irq_queue;
 	struct workqueue_struct		*irq_workqueue;
 	struct gsc_m2m_device		m2m;
@@ -574,8 +574,6 @@ struct gsc_dev {
 	atomic_t			qos_cnt;
 	struct pm_qos_request		exynos5_gsc_mif_qos;
 	struct pm_qos_request		exynos5_gsc_int_qos;
-	struct clk			*clk_child;
-	struct clk			*clk_parent;
 };
 
 /**
@@ -612,7 +610,6 @@ struct gsc_ctx {
 	struct gsc_ctrls	gsc_ctrls;
 	struct timer_list	op_timer;
 	bool			ctrls_rdy;
-	struct sysmmu_prefbuf	prebuf[GSC_MAX_PREF_BUF];
 	struct work_struct	fence_work;
 	struct list_head	fence_wait_list;
 };
@@ -648,10 +645,11 @@ int gsc_g_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr);
 int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr);
 int gsc_cal_prescaler_ratio(struct gsc_variant *var, u32 src, u32 dst, u32 *ratio);
 void gsc_get_prescaler_shfactor(u32 hratio, u32 vratio, u32 *sh);
-void gsc_check_src_scale_info(struct gsc_variant *var, struct gsc_frame *s_frame,
-			u32 *wratio, u32 tx, u32 ty, u32 *hratio, int rot);
-int gsc_check_scaler_ratio(struct gsc_variant *var, int sw, int sh, int dw,
-			   int dh, int rot, int out_path);
+void gsc_check_src_scale_info(struct gsc_variant *var,
+		struct gsc_frame *s_frame, u32 *wratio,
+		u32 tx, u32 ty, u32 *hratio);
+int gsc_check_scaler_ratio(struct gsc_ctx *ctx, struct gsc_variant *var,
+		int sw, int sh, int dw, int dh, int rot, int out_path);
 int gsc_set_scaler_info(struct gsc_ctx *ctx);
 int gsc_ctrls_create(struct gsc_ctx *ctx);
 void gsc_ctrls_delete(struct gsc_ctx *ctx);
@@ -720,20 +718,17 @@ static inline int gsc_hw_get_curr_in_buf_idx(struct gsc_dev *dev)
 static inline int gsc_hw_get_irq_status(struct gsc_dev *dev)
 {
 	u32 cfg = readl(dev->regs + GSC_IRQ);
-	if (cfg & (1 << GSC_OR_IRQ))
-		return GSC_OR_IRQ;
-	else
-		return GSC_DONE_IRQ;
+	cfg &= (GSC_IRQ_LOCAL_PATH_OPEN | GSC_IRQ_READ_SLAVE_ERROR |
+		GSC_IRQ_WRITE_SLAVE_ERROR | GSC_IRQ_STATUS_DEADLOCK_IRQ |
+		GSC_IRQ_STATUS_OR_IRQ | GSC_IRQ_STATUS_FRM_DONE);
 
+	return cfg;
 }
 
 static inline void gsc_hw_clear_irq(struct gsc_dev *dev, int irq)
 {
 	u32 cfg = readl(dev->regs + GSC_IRQ);
-	if (irq == GSC_OR_IRQ)
-		cfg |= GSC_IRQ_STATUS_OR_IRQ;
-	else if (irq == GSC_DONE_IRQ)
-		cfg |= GSC_IRQ_STATUS_OR_FRM_DONE;
+	cfg |= irq;
 	writel(cfg, dev->regs + GSC_IRQ);
 }
 
@@ -827,7 +822,7 @@ void gsc_hw_set_out_image_rgb(struct gsc_ctx *ctx);
 void gsc_hw_set_out_image_format(struct gsc_ctx *ctx);
 void gsc_hw_set_prescaler(struct gsc_ctx *ctx);
 void gsc_hw_set_mainscaler(struct gsc_ctx *ctx);
-void gsc_hw_set_rotation(struct gsc_ctx *ctx);
+void gsc_hw_set_input_rotation(struct gsc_ctx *ctx);
 void gsc_hw_set_global_alpha(struct gsc_ctx *ctx);
 void gsc_hw_set_sfr_update(struct gsc_ctx *ctx);
 void gsc_hw_set_local_dst(int id, int out, bool on);
@@ -855,5 +850,13 @@ void gsc_hw_set_pixelasync_reset_output(struct gsc_dev *dev);
 void gsc_hw_set_pixelasync_reset_wb(struct gsc_dev *dev);
 
 int gsc_set_protected_content(struct gsc_dev *gsc, bool enable);
-
+void gsc_hw_set_pp_index_init(struct gsc_dev *dev);
+void gsc_hw_set_sfr_update_force(struct gsc_dev *dev);
+void gsc_hw_set_local_path_open_irq_mask(struct gsc_dev *dev, bool mask);
+void gsc_hw_set_read_slave_error_mask(struct gsc_dev *dev, bool mask);
+void gsc_hw_set_write_slave_error_mask(struct gsc_dev *dev, bool mask);
+void gsc_hw_set_max_read_axi_issue_cap(struct gsc_dev *dev, u32 level);
+void gsc_hw_set_max_write_axi_issue_cap(struct gsc_dev *dev, u32 level);
+void gsc_hw_set_output_rotation(struct gsc_ctx *ctx);
+void gsc_hw_set_deadlock_irq_mask(struct gsc_dev *dev, bool mask);
 #endif /* GSC_CORE_H_ */

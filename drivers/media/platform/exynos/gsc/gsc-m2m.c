@@ -90,8 +90,7 @@ int gsc_fill_addr(struct gsc_ctx *ctx)
 
 	vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
 	if (vb->num_planes != s_frame->fmt->num_planes) {
-		gsc_err("gsc(%s): vb(%p) planes=%d s_frame(%p) planes=%d\n",
-			v4l2_m2m_get_src_vq(ctx->m2m_ctx)->name,
+		gsc_err(" vb(%p) planes=%d s_frame(%p) planes=%d\n",
 			vb, vb->num_planes, s_frame, s_frame->fmt->num_planes);
 		return -EINVAL;
 	}
@@ -101,8 +100,7 @@ int gsc_fill_addr(struct gsc_ctx *ctx)
 
 	vb = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
 	if (vb->num_planes != d_frame->fmt->num_planes) {
-		gsc_err("gsc(%s): vb(%p) planes=%d d_frame(%p) planes=%d\n",
-			v4l2_m2m_get_dst_vq(ctx->m2m_ctx)->name,
+		gsc_err("vb(%p) planes=%d d_frame(%p) planes=%d\n",
 			vb, vb->num_planes, d_frame, d_frame->fmt->num_planes);
 		return -EINVAL;
 	}
@@ -172,12 +170,6 @@ static void gsc_m2m_device_run(void *priv)
 		goto put_device;
 	}
 
-	if (!gsc->protected_content) {
-		struct gsc_frame *frame = &ctx->s_frame;
-		exynos_sysmmu_set_pbuf(&gsc->pdev->dev, frame->fmt->nr_comp,
-				ctx->prebuf);
-	}
-
 	if (ctx->state & GSC_PARAMS) {
 		gsc_hw_set_sw_reset(gsc);
 		ret = gsc_wait_reset(gsc);
@@ -188,6 +180,9 @@ static void gsc_m2m_device_run(void *priv)
 		gsc_hw_set_input_buf_masking(gsc, GSC_M2M_BUF_NUM, false);
 		gsc_hw_set_output_buf_masking(gsc, GSC_M2M_BUF_NUM, false);
 		gsc_hw_set_frm_done_irq_mask(gsc, false);
+		gsc_hw_set_deadlock_irq_mask(gsc, false);
+		gsc_hw_set_read_slave_error_mask(gsc, false);
+		gsc_hw_set_write_slave_error_mask(gsc, false);
 		gsc_hw_set_gsc_irq_enable(gsc, true);
 		gsc_hw_set_one_frm_mode(gsc, true);
 		gsc_hw_set_freerun_clock_mode(gsc, false);
@@ -209,7 +204,10 @@ static void gsc_m2m_device_run(void *priv)
 		gsc_hw_set_mainscaler(ctx);
 		gsc_hw_set_h_coef(ctx);
 		gsc_hw_set_v_coef(ctx);
-		gsc_hw_set_rotation(ctx);
+		if (ctx->scaler.is_scaled_down)
+			gsc_hw_set_output_rotation(ctx);
+		else
+			gsc_hw_set_input_rotation(ctx);
 		gsc_hw_set_global_alpha(ctx);
 	}
 
@@ -232,7 +230,6 @@ static void gsc_m2m_device_run(void *priv)
 			goto put_device;
 		}
 	}
-
 	ctx->op_timer.expires = (jiffies + 2 * HZ);
 	add_timer(&ctx->op_timer);
 
@@ -317,10 +314,8 @@ static void gsc_m2m_fence_work(struct work_struct *work)
 			sync_fence_put(fence);
 		}
 
-		if (ctx->m2m_ctx) {
+		if (ctx->m2m_ctx)
 			v4l2_m2m_buf_queue(ctx->m2m_ctx, &buffer->vb);
-			v4l2_m2m_try_schedule(ctx->m2m_ctx);
-		}
 
 		spin_lock_irqsave(&ctx->slock, flags);
 	}
@@ -573,18 +568,20 @@ static int gsc_m2m_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 	f = (cr->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) ?
 		&ctx->s_frame : &ctx->d_frame;
 
+	/* Default is input rotator */
+	ctx->scaler.is_scaled_down = false;
 	/* Check to see if scaling ratio is within supported range */
 	if (gsc_ctx_state_is_set(GSC_DST_FMT | GSC_SRC_FMT, ctx)) {
 		if (cr->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-			ret = gsc_check_scaler_ratio(variant, cr->c.width,
-					cr->c.height, ctx->d_frame.crop.width,
-					ctx->d_frame.crop.height,
-					ctx->gsc_ctrls.rotate->val, ctx->out_path);
+			ret = gsc_check_scaler_ratio(ctx, variant,
+			cr->c.width, cr->c.height,
+			ctx->d_frame.crop.width,ctx->d_frame.crop.height,
+			ctx->gsc_ctrls.rotate->val, ctx->out_path);
 		} else {
-			ret = gsc_check_scaler_ratio(variant, ctx->s_frame.crop.width,
-					ctx->s_frame.crop.height, cr->c.width,
-					cr->c.height, ctx->gsc_ctrls.rotate->val,
-					ctx->out_path);
+			ret = gsc_check_scaler_ratio(ctx, variant,
+			ctx->s_frame.crop.width, ctx->s_frame.crop.height,
+			cr->c.width, cr->c.height,
+			ctx->gsc_ctrls.rotate->val, ctx->out_path);
 		}
 		if (ret) {
 			gsc_err("Out of scaler range");
@@ -639,28 +636,35 @@ static int queue_init(void *priv, struct vb2_queue *src_vq,
 	int ret;
 
 	memset(src_vq, 0, sizeof(*src_vq));
-	src_vq->name = kasprintf(GFP_KERNEL, "%s-src", dev_name(&ctx->gsc_dev->pdev->dev));
 	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
 	src_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	src_vq->drv_priv = ctx;
 	src_vq->ops = &gsc_m2m_qops;
 	src_vq->mem_ops = ctx->gsc_dev->vb2->ops;
+	src_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 
 	ret = vb2_queue_init(src_vq);
-	if (ret)
+	if (ret) {
+		gsc_err("failed to init vb2_queue");
 		return ret;
+	}
 
 	memset(dst_vq, 0, sizeof(*dst_vq));
-	dst_vq->name = kasprintf(GFP_KERNEL, "%s-dst", dev_name(&ctx->gsc_dev->pdev->dev));
 	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
 	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	dst_vq->drv_priv = ctx;
 	dst_vq->ops = &gsc_m2m_qops;
 	dst_vq->mem_ops = ctx->gsc_dev->vb2->ops;
+	dst_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 
-	return vb2_queue_init(dst_vq);
+	ret = vb2_queue_init(dst_vq);
+	if (ret) {
+		gsc_err("failed to init vb2_queue");
+		return ret;
+	}
+	return ret;
 }
 
 static int gsc_m2m_open(struct file *file)
@@ -679,6 +683,7 @@ static int gsc_m2m_open(struct file *file)
 		return -ENOMEM;
 
 	v4l2_fh_init(&ctx->fh, gsc->m2m.vfd);
+
 	ret = gsc_ctrls_create(ctx);
 	if (ret)
 		goto error_fh;
@@ -740,8 +745,6 @@ static int gsc_m2m_release(struct file *file)
 	 */
 	BUG_ON(gsc->protected_content);
 
-	kfree(ctx->m2m_ctx->cap_q_ctx.q.name);
-	kfree(ctx->m2m_ctx->out_q_ctx.q.name);
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 	gsc_ctrls_delete(ctx);
 	v4l2_fh_del(&ctx->fh);
@@ -803,6 +806,7 @@ int gsc_register_m2m_device(struct gsc_dev *gsc)
 	vfd->ioctl_ops	= &gsc_m2m_ioctl_ops;
 	vfd->release	= video_device_release;
 	vfd->lock	= &gsc->lock;
+	vfd->vfl_dir	= VFL_DIR_M2M;
 	snprintf(vfd->name, sizeof(vfd->name), "%s:m2m", dev_name(&pdev->dev));
 
 	video_set_drvdata(vfd, gsc);

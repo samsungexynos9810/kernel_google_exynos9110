@@ -39,7 +39,7 @@ static int gsc_capture_queue_setup(struct vb2_queue *vq,
 {
 	struct gsc_ctx *ctx = vq->drv_priv;
 	struct gsc_fmt *ffmt = ctx->d_frame.fmt;
-	int i;
+	int i, ret = 0;
 
 	if (!ffmt)
 		return -EINVAL;
@@ -50,7 +50,12 @@ static int gsc_capture_queue_setup(struct vb2_queue *vq,
 		sizes[i] = get_plane_size(&ctx->d_frame, i);
 		allocators[i] = ctx->gsc_dev->alloc_ctx;
 	}
-	vb2_queue_init(vq);
+
+	ret = vb2_queue_init(vq);
+	if (ret) {
+		gsc_err("failed to init vb2_queue");
+		return ret;
+	}
 
 	return 0;
 }
@@ -878,9 +883,19 @@ static int gsc_capture_streamon(struct file *file, void *priv,
 
 	if (p->disp) {
 		gsc_pm_qos_ctrl(gsc, GSC_QOS_ON, 267000, 200000);
-		media_entity_pipeline_start(&p->disp->entity, p->pipe);
+		ret = media_entity_pipeline_start(&p->disp->entity,
+							p->pipe);
+		if (ret) {
+			gsc_err("media entity pipeline start fail");
+			return ret;
+		}
 	} else if (p->sensor) {
-		media_entity_pipeline_start(&p->sensor->entity, p->pipe);
+		ret = media_entity_pipeline_start(&p->sensor->entity,
+							p->pipe);
+		if (ret) {
+			gsc_err("media entity pipeline start fail");
+			return ret;
+		}
 	} else {
 		gsc_err("Error pipeline");
 		return -EPIPE;
@@ -1466,7 +1481,11 @@ int gsc_register_capture_device(struct gsc_dev *gsc)
 	q->ops = &gsc_capture_qops;
 	q->mem_ops = gsc->vb2->ops;
 
-	vb2_queue_init(q);
+	ret = vb2_queue_init(q);
+	if (ret) {
+		gsc_err("failed to init vb2_queue");
+		goto err_ctx_alloc;
+	}
 
 	ret = video_register_device(vfd, VFL_TYPE_GRABBER,
 				    EXYNOS_VIDEONODE_GSC_CAP(gsc->id));

@@ -85,6 +85,8 @@ int gsc_out_hw_set(struct gsc_ctx *ctx)
 		gsc_hw_set_fire_bit_sync_mode(gsc, false);
 
 	gsc_hw_set_frm_done_irq_mask(gsc, false);
+	gsc_hw_set_read_slave_error_mask(gsc, false);
+	gsc_hw_set_deadlock_irq_mask(gsc, false);
 	gsc_hw_set_gsc_irq_enable(gsc, true);
 	gsc_hw_set_one_frm_mode(gsc, false);
 	gsc_hw_set_freerun_clock_mode(gsc, true);
@@ -101,7 +103,7 @@ int gsc_out_hw_set(struct gsc_ctx *ctx)
 	gsc_hw_set_mainscaler(ctx);
 	gsc_hw_set_h_coef(ctx);
 	gsc_hw_set_v_coef(ctx);
-	gsc_hw_set_rotation(ctx);
+	gsc_hw_set_input_rotation(ctx);
 	gsc_hw_set_global_alpha(ctx);
 
 	gsc_hw_enable_control(gsc, true);
@@ -488,7 +490,12 @@ static int gsc_output_streamon(struct file *file, void *priv,
 		return ret;
 	}
 
-	media_entity_pipeline_start(&out->vfd->entity, gsc->pipeline.pipe);
+	ret = media_entity_pipeline_start(&out->vfd->entity,
+					gsc->pipeline.pipe);
+	if (ret) {
+		gsc_err("media entity pipeline start fail");
+		return ret;
+	}
 
 	return vb2_streamon(&gsc->out.vbq, type);
 }
@@ -573,10 +580,12 @@ static int gsc_output_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 
 	f = &ctx->s_frame;
 
+	ctx->scaler.is_scaled_down = false;
 	/* Check to see if scaling ratio is within supported range */
 	if ((ctx->state & (GSC_DST_FMT | GSC_SRC_FMT)) == mask) {
-		ret = gsc_check_scaler_ratio(variant, f->crop.width,
-				f->crop.height, ctx->d_frame.crop.width,
+		ret = gsc_check_scaler_ratio(ctx, variant,
+				f->crop.width, f->crop.height,
+				ctx->d_frame.crop.width,
 				ctx->d_frame.crop.height,
 				ctx->gsc_ctrls.rotate->val, ctx->out_path);
 		if (ret) {
@@ -676,7 +685,7 @@ static int gsc_out_queue_setup(struct vb2_queue *vq, const struct v4l2_format *f
 {
 	struct gsc_ctx *ctx = vq->drv_priv;
 	struct gsc_fmt *ffmt = ctx->s_frame.fmt;
-	int i;
+	int i, ret = 0;
 
 	if (IS_ERR(ffmt)) {
 		gsc_err("Invalid source format");
@@ -689,7 +698,12 @@ static int gsc_out_queue_setup(struct vb2_queue *vq, const struct v4l2_format *f
 		sizes[i] = get_plane_size(&ctx->s_frame, i);
 		allocators[i] = ctx->gsc_dev->alloc_ctx;
 	}
-	vb2_queue_init(vq);
+
+	ret = vb2_queue_init(vq);
+	if (ret) {
+		gsc_err("failed to init vb2_queue");
+		return ret;
+	}
 
 	return 0;
 }
@@ -707,12 +721,6 @@ int gsc_out_set_in_addr(struct gsc_dev *gsc, struct gsc_ctx *ctx,
 	gsc_hw_set_input_addr(gsc, &ctx->s_frame.addr, index);
 	active_queue_push(&gsc->out, buf, gsc);
 	buf->idx = index;
-
-	if (!gsc->protected_content) {
-		struct gsc_frame *frame = &ctx->s_frame;
-		exynos_sysmmu_set_pbuf(&gsc->pdev->dev, frame->fmt->nr_comp,
-				ctx->prebuf);
-	}
 
 	return 0;
 }
@@ -1032,7 +1040,6 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 
 	q = &gsc->out.vbq;
 	memset(q, 0, sizeof(*q));
-	q->name = vfd->name;
 	q->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
 	q->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	q->drv_priv = gsc->out.ctx;
@@ -1040,7 +1047,11 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 	q->mem_ops = gsc->vb2->ops;
 	q->buf_struct_size = sizeof(struct gsc_input_buf);
 
-	vb2_queue_init(q);
+	ret = vb2_queue_init(q);
+	if (ret) {
+		gsc_err("failed to init vb2_queue");
+		goto err_ctx_alloc;
+	}
 
 	ret = video_register_device(vfd, VFL_TYPE_GRABBER,
 				    EXYNOS_VIDEONODE_GSC_OUT(gsc->id));
