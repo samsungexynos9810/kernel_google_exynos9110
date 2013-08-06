@@ -84,6 +84,7 @@ struct v4l2_m2m_ctx {
 struct v4l2_m2m_buffer {
 	struct vb2_buffer	vb;
 	struct list_head	list;
+	struct list_head	wait;
 };
 
 void *v4l2_m2m_get_curr_priv(struct v4l2_m2m_dev *m2m_dev);
