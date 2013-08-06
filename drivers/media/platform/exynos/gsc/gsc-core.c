@@ -453,12 +453,13 @@ int gsc_try_fmt_mplane(struct gsc_ctx *ctx, struct v4l2_format *f)
 
 	if (ctx->gsc_ctrls.csc_eq_mode->val)
 		ctx->gsc_ctrls.csc_eq->val =
-			(pix_mp->width >= 1280) ? 1 : 0;
-	if (ctx->gsc_ctrls.csc_eq->val) /* HD */
+		(pix_mp->width >= 1280) ?
+		V4L2_COLORSPACE_REC709 : V4L2_COLORSPACE_SMPTE170M;
+
+	if (is_csc_eq_709) /* HD */
 		pix_mp->colorspace = V4L2_COLORSPACE_REC709;
 	else	/* SD */
 		pix_mp->colorspace = V4L2_COLORSPACE_SMPTE170M;
-
 
 	for (i = 0; i < pix_mp->num_planes; ++i) {
 		int bpl = (pix_mp->width * fmt->depth[i]) >> 3;
@@ -987,14 +988,14 @@ static const struct v4l2_ctrl_config gsc_custom_ctrl[] = {
 		.max = true,
 		.min = false,
 		.step = 1,
-		.def = DEFAULT_CSC_EQ,
+		.def = true,
 	}, {
 		.ops = &gsc_ctrl_ops,
 		.id = V4L2_CID_CSC_EQ,
 		.name = "Set CSC equation",
 		.type = V4L2_CTRL_TYPE_INTEGER,
 		.flags = V4L2_CTRL_FLAG_SLIDER,
-		.max = 8,
+		.max = V4L2_COLORSPACE_SRGB,
 		.min = 1,
 		.step = 1,
 		.def = V4L2_COLORSPACE_REC709,
@@ -1004,7 +1005,7 @@ static const struct v4l2_ctrl_config gsc_custom_ctrl[] = {
 		.name = "Set CSC range",
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
 		.flags = V4L2_CTRL_FLAG_SLIDER,
-		.def = DEFAULT_CSC_RANGE,
+		.def = true,
 		.step = 1,
 		.max = true,
 		.min = false,
@@ -1014,7 +1015,7 @@ static const struct v4l2_ctrl_config gsc_custom_ctrl[] = {
 		.name = "Enable content protection",
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
 		.flags = V4L2_CTRL_FLAG_SLIDER,
-		.def = DEFAULT_CONTENT_PROTECTION,
+		.def = false,
 		.step = 1,
 		.max = true,
 		.min = false,

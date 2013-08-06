@@ -87,9 +87,6 @@ extern int gsc_dbg;
 #define DEFAULT_GSC_SINK_HEIGHT		480
 #define DEFAULT_GSC_SOURCE_WIDTH	800
 #define DEFAULT_GSC_SOURCE_HEIGHT	480
-#define DEFAULT_CSC_EQ			1
-#define DEFAULT_CSC_RANGE		1
-#define DEFAULT_CONTENT_PROTECTION	0
 
 #define GSC_LAST_DEV_ID			3
 #define GSC_PAD_SINK			0
@@ -205,6 +202,8 @@ enum gsc_yuv_fmt {
 	(((ctx->gsc_ctrls.rotate->val == 90) ||\
 	 (ctx->gsc_ctrls.rotate->val == 270)) &&\
 	 ((!ctx->scaler.is_scaled_down) || (!is_ver_5h)))
+#define is_csc_eq_709 \
+	(ctx->gsc_ctrls.csc_eq->val == V4L2_COLORSPACE_REC709)
 #define gsc_m2m_run(dev) test_bit(ST_M2M_RUN, &(dev)->state)
 #define gsc_m2m_opened(dev) test_bit(ST_M2M_OPEN, &(dev)->state)
 #define gsc_out_run(dev) test_bit(ST_OUTPUT_STREAMON, &(dev)->state)

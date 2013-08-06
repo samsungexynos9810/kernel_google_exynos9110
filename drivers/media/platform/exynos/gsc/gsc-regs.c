@@ -546,7 +546,7 @@ void gsc_hw_set_in_image_rgb(struct gsc_ctx *ctx)
 	u32 cfg;
 
 	cfg = readl(dev->regs + GSC_IN_CON);
-	if (ctx->gsc_ctrls.csc_eq->val) {
+	if (is_csc_eq_709) {
 		if (ctx->gsc_ctrls.csc_range->val)
 			cfg |= GSC_IN_RGB_HD_WIDE;
 		else
@@ -681,7 +681,7 @@ void gsc_hw_set_out_image_rgb(struct gsc_ctx *ctx)
 	u32 cfg;
 
 	cfg = readl(dev->regs + GSC_OUT_CON);
-	if (ctx->gsc_ctrls.csc_eq->val) {
+	if (is_csc_eq_709) {
 		if (ctx->gsc_ctrls.csc_range->val)
 			cfg |= GSC_OUT_RGB_HD_WIDE;
 		else
