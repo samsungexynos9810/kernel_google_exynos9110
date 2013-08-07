@@ -40,6 +40,8 @@
 #include <mach/map.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
+#include <linux/clkdev.h>
+#include <linux/clk-provider.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-pmu.h>
@@ -95,7 +97,6 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
-	struct device *dev =  kbdev->osdev.dev;
 	struct clk *fin_pll = NULL, *fout_g3d_pll = NULL, *mout_g3d_pll = NULL;
 	int timeout, ret;
 	struct exynos_context *platform;
@@ -121,22 +122,24 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D clock */
-	fin_pll = clk_get(dev, "fin_pll");
+	fin_pll = __clk_lookup("fin_pll");
 	if (IS_ERR(fin_pll)) {
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fin_pll]\n");
 		goto out;
 	}
-	fout_g3d_pll = clk_get(dev, "fout_g3d_pll");
+	fout_g3d_pll = __clk_lookup("fout_g3d_pll");
+	clk_prepare(fout_g3d_pll);
 	if (IS_ERR(fout_g3d_pll)) {
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fout_g3d_pll]\n");
 		goto out;
 	}
-	mout_g3d_pll = clk_get(dev, "mout_g3d_pll");
+	mout_g3d_pll = __clk_lookup("mout_g3d_pll");
 	if (IS_ERR(mout_g3d_pll)) {
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_g3d_pll]\n");
 		goto out;
 	}
-	clk_g3d = clk_get(dev, "dout_aclk_g3d");
+	clk_g3d = __clk_lookup("dout_aclk_g3d");
+	clk_prepare(clk_g3d);
 	if (IS_ERR(clk_g3d)) {
 		clk_g3d = NULL;
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [g3d]\n");
