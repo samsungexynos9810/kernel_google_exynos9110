@@ -276,6 +276,23 @@ enum exynos5430_clks {
 	gate_bus2srvnd_133 = 2040, gate_ahb2apb_bus2p, gate_bus2np_133,
 	gate_bus2bend_400, gate_bus2rtnd_400,
 
+	/* cpif0 ip gate */
+	gate_mphy_pll = 2050, gate_mphy_pll_mif, gate_freq_det_mphy_pll,
+	gate_ufs_mphy, gate_lli_mphy, gate_gpio_cpif, gate_pmu_cpif,
+	gate_sysreg_cpif,
+	gate_lli_rx0_symbol = 2060, gate_lli_tx0_symbol,
+	gate_lli_rx0_cfg, gate_lli_tx0_cfg,
+	gate_lli_cmn_cfg, gate_lli_be_targ,
+	gate_lli_ll_targ = 2070, gate_lli_be_init,
+	gate_lli_ll_init, gate_lli_svc_rem,
+	gate_lli_svc_loc, gate_mdma0,
+
+	/* cpif1 ip gate */
+	gate_smmu_mdma0 = 2080, gate_ppmu_llix, gate_qe_mdma0,
+	gate_axius_lli_be, gate_axius_lli_ll, gate_ahb2apb_cpifp,
+	gate_xiu_llix = 2090, gate_xiu_cpifsfrx,
+	gate_cpifnp_200, gate_cpifnm_200,
+
 	nr_clks,
 };
 
@@ -1609,6 +1626,42 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_bus2np_133,"gate_bus2np_133", NULL, EXYNOS5430_ENABLE_IP_BUS21, 2, 0, 0),
 	CGTE(gate_bus2bend_400,"gate_bus2bend_400", NULL, EXYNOS5430_ENABLE_IP_BUS21, 1, 0, 0),
 	CGTE(gate_bus2rtnd_400,"gate_bus2rtnd_400", NULL, EXYNOS5430_ENABLE_IP_BUS21, 0, 0, 0),
+
+	/* CPIF0 */
+	CGTE(gate_mphy_pll,"gate_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 19, 0, 0),
+	CGTE(gate_mphy_pll_mif,"gate_mphy_pll_mif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 18, 0, 0),
+	CGTE(gate_freq_det_mphy_pll,"gate_freq_det_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 17, 0, 0),
+	CGTE(gate_ufs_mphy,"gate_ufs_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 16, 0, 0),
+	CGTE(gate_lli_mphy,"gate_lli_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 15, 0, 0),
+	CGTE(gate_gpio_cpif,"gate_gpio_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 14, 0, 0),
+	CGTE(gate_pmu_cpif,"gate_pmu_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 13, 0, 0),
+	CGTE(gate_sysreg_cpif,"gate_sysreg_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 12, 0, 0),
+	CGTE(gate_lli_rx0_symbol,"gate_lli_rx0_symbol", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 11, 0, 0),
+	CGTE(gate_lli_tx0_symbol,"gate_lli_tx0_symbol", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 10, 0, 0),
+	CGTE(gate_lli_rx0_cfg,"gate_lli_rx0_cfg", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 9, 0, 0),
+	CGTE(gate_lli_tx0_cfg,"gate_lli_tx0_cfg", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 8, 0, 0),
+	CGTE(gate_lli_cmn_cfg,"gate_lli_cmn_cfg", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 7, 0, 0),
+	CGTE(gate_lli_be_targ,"gate_lli_be_targ", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 6, 0, 0),
+	CGTE(gate_lli_ll_targ,"gate_lli_ll_targ", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 5, 0, 0),
+	CGTE(gate_lli_be_init,"gate_lli_be_init", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 4, 0, 0),
+	CGTE(gate_lli_ll_init,"gate_lli_ll_init", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 3, 0, 0),
+	CGTE(gate_lli_svc_rem,"gate_lli_svc_rem", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 2, 0, 0),
+	CGTE(gate_lli_svc_loc,"gate_lli_svc_loc", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 1, 0, 0),
+	CGTE(gate_mdma0,"gate_mdma0", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 0, 0, 0),
+
+	/* CPIF1 */
+	CGTE(gate_smmu_mdma0,"gate_smmu_mdma0", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 9, 0, 0),
+	CGTE(gate_ppmu_llix,"gate_ppmu_llix", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 8, 0, 0),
+	CGTE(gate_qe_mdma0,"gate_qe_mdma0", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 7, 0, 0),
+	CGTE(gate_axius_lli_be,"gate_axius_lli_be", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 6, 0, 0),
+	CGTE(gate_axius_lli_ll,"gate_axius_lli_ll", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 5, 0, 0),
+	CGTE(gate_ahb2apb_cpifp,"gate_ahb2apb_cpifp", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 4, 0, 0),
+	CGTE(gate_xiu_llix,"gate_xiu_llix", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 3, 0, 0),
+	CGTE(gate_xiu_cpifsfrx,"gate_xiu_cpifsfrx", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 2, 0, 0),
+	CGTE(gate_cpifnp_200,"gate_cpifnp_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 1, 0, 0),
+	CGTE(gate_cpifnm_200,"gate_cpifnm_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 0, 0, 0),
+
+
 };
 
 /* fixed rate clocks generated outside the soc */
