@@ -73,7 +73,7 @@ static struct of_device_id sec_dt_match[] = {
 		.data = (void *)S5M8767X,
 	},
 	{	.compatible = "samsung,s2mps13-pmic",
-		.data = S2MPS13X,
+		.data = (void *)S2MPS13X,
 	},
 	{},
 };
