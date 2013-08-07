@@ -507,7 +507,7 @@
 
 		samsung,left_margin = <20>;
 		samsung,right_margin = <20>;
-		samsung,upper_margin = <3>;
+		samsung,upper_margin = <2>;
 		samsung,lower_margin = <20>;
 		samsung,hsync_len = <20>;
 		samsung,vsync_len = <2>;
@@ -536,7 +536,7 @@
 
 		samsung,left_margin = <20>;
 		samsung,right_margin = <20>;
-		samsung,upper_margin = <3>;
+		samsung,upper_margin = <2>;
 		samsung,lower_margin = <20>;
 		samsung,hsync_len = <20>;
 		samsung,vsync_len = <2>;
