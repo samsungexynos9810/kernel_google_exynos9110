@@ -313,6 +313,22 @@ enum exynos5430_clks {
 	gate_xiu_disp1x = 2150, gate_dispnp_100,
 	gate_disp1nd_333, gate_disp0nd_333,
 	
+	/* fsys0 ip gate */
+	gate_mphy = 2160, gate_sysreg_fsys, gate_pmu_fsys, gate_gpio_fsys,
+	gate_tsi, gate_mmc2, gate_mmc1, gate_mmc0,
+	gate_ufs = 2170, gate_sromc, gate_usbhost20,
+	gate_usbdrd30, gate_pdma,
+
+	/* fsys1 ip gate */
+	gate_ppmu_fsys = 2180, gate_smmu_mmc2, gate_smmu_mmc1,
+	gate_smmu_mmc0, gate_smmu_pdma,
+	gate_qe_ufs, gate_qe_usbdrd30,
+	gate_axius_pdma = 2190, gate_axius_usbhs, gate_axius_fsyssx,
+	gate_ahb2apb_fsysp, gate_ahb2axi_usbhs, gate_ahb_usblinkh,
+	gate_ahb_usbhs, gate_ahb_fsysh,
+	gate_xiu_fsysx = 2200, gate_xiu_fsyssx,
+	gate_fsysnp_200, gate_fsysnd_200,
+
 	nr_clks,
 };
 
@@ -1721,6 +1737,42 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_dispnp_100,"gate_dispnp_100", NULL, EXYNOS5430_ENABLE_IP_DISP1, 2, 0, 0),
 	CGTE(gate_disp1nd_333,"gate_disp1nd_333", NULL, EXYNOS5430_ENABLE_IP_DISP1, 1, 0, 0),
 	CGTE(gate_disp0nd_333,"gate_disp0nd_333", NULL, EXYNOS5430_ENABLE_IP_DISP1, 0, 0, 0),
+
+	/* FSYS0 */
+	CGTE(gate_mphy,"gate_mphy", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 14, 0, 0),
+	CGTE(gate_sysreg_fsys,"gate_sysreg_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 13, 0, 0),
+	CGTE(gate_pmu_fsys,"gate_pmu_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 12, 0, 0),
+	CGTE(gate_gpio_fsys,"gate_gpio_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 11, 0, 0),
+	CGTE(gate_tsi,"gate_tsi", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 10, 0, 0),
+	CGTE(gate_mmc2,"gate_mmc2", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 8, 0, 0),
+	CGTE(gate_mmc1,"gate_mmc1", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 7, 0, 0),
+	CGTE(gate_mmc0,"gate_mmc0", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 6, 0, 0),
+	CGTE(gate_ufs,"gate_ufs", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 5, 0, 0),
+	CGTE(gate_sromc,"gate_sromc", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 4, 0, 0),
+	CGTE(gate_usbhost20,"gate_usbhost20", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 3, 0, 0),
+	CGTE(gate_usbdrd30,"gate_usbdrd30", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 1, 0, 0),
+	CGTE(gate_pdma,"gate_pdma", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 0, 0, 0),
+
+	/* FSYS1 */
+	CGTE(gate_ppmu_fsys,"gate_ppmu_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 21, 0, 0),
+	CGTE(gate_smmu_mmc2,"gate_smmu_mmc2", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 20, 0, 0),
+	CGTE(gate_smmu_mmc1,"gate_smmu_mmc1", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 19, 0, 0),
+	CGTE(gate_smmu_mmc0,"gate_smmu_mmc0", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 18, 0, 0),
+	CGTE(gate_smmu_pdma,"gate_smmu_pdma", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 17, 0, 0),
+	CGTE(gate_qe_ufs,"gate_qe_ufs", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 14, 0, 0),
+	CGTE(gate_qe_usbdrd30,"gate_qe_usbdrd30", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 12, 0, 0),
+	CGTE(gate_axius_pdma,"gate_axius_pdma", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 11, 0, 0),
+	CGTE(gate_axius_usbhs,"gate_axius_usbhs", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 10, 0, 0),
+	CGTE(gate_axius_fsyssx,"gate_axius_fsyssx", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 9, 0, 0),
+	CGTE(gate_ahb2apb_fsysp,"gate_ahb2apb_fsysp", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 8, 0, 0),
+	CGTE(gate_ahb2axi_usbhs,"gate_ahb2axi_usbhs", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 7, 0, 0),
+	CGTE(gate_ahb_usblinkh,"gate_ahb_usblinkh", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 6, 0, 0),
+	CGTE(gate_ahb_usbhs,"gate_ahb_usbhs", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 5, 0, 0),
+	CGTE(gate_ahb_fsysh,"gate_ahb_fsysh", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 4, 0, 0),
+	CGTE(gate_xiu_fsysx,"gate_xiu_fsysx", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 3, 0, 0),
+	CGTE(gate_xiu_fsyssx,"gate_xiu_fsyssx", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 2, 0, 0),
+	CGTE(gate_fsysnp_200,"gate_fsysnp_200", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 1, 0, 0),
+	CGTE(gate_fsysnd_200,"gate_fsysnd_200", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 0, 0, 0),
 
 };
 
