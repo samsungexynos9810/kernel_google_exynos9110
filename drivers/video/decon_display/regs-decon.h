@@ -292,8 +292,8 @@
 #define w233DSTEREOCON				(0x324)
 
 /* Buffer start/end addresses(Shadow, R_ONLY) */
-#define SHD_VIDW_BUF_START(_buff)		(0x400 + ((_buff) * 8))
-#define SHD_VIDW_BUF_END(_buff)			(0x414 + ((_buff) * 8))
+#define SHD_VIDW_BUF_START(_buff)		(0x400 + ((_buff) * 4))
+#define SHD_VIDW_BUF_END(_buff)			(0x414 + ((_buff) * 4))
 
 #define FRAMEFIFO_REG0				(0x500)
 #define FRAMEFIFO_REG7				(0x51C)
