@@ -557,4 +557,39 @@
 		compatible = "samsung,secure-firmware";
 		reg = <0x0207F000 0x1000>;
 	};
+
+	usb@15400000 {
+		compatible = "samsung,exynos5-dwusb3";
+		clocks = <&clock 50>, <&clock 140>, <&clock 561>;
+		clock-names = "sclk_usbdrd30", "usbdrd30", "aclk_usbdrd30";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		status = "disabled";
+
+		dwc3 {
+			compatible = "synopsys,dwc3";
+			reg = <0x15400000 0x10000>;
+			interrupts = <0 231 0>;
+			usb-phy = <&dwc3_usb2_phy &dwc3_usb3_phy>;
+		};
+	};
+
+	dwc3_usb2_phy: usbphy {
+		compatible = "samsung,exynos5-usb2phy-dummy";
+	};
+
+	dwc3_usb3_phy: usbphy@15500000 {
+		compatible = "samsung,exynos5-usb3phy";
+		reg = <0x15500000 0x100>;
+		clocks = <&clock 1>, <&clock 140>, <&clock 410>, <&clock 411>;
+		clock-names = "ext_xtal", "usbdrd30", "usbdrd30_phyclock", "usbdrd30_pipe_pclk";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		usbphy-sys {
+			reg = <0x105C0704 0xC>;
+		};
+	};
 };
