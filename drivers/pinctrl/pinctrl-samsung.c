@@ -281,6 +281,22 @@ static void pin_to_reg_bank(struct samsung_pinctrl_drv_data *drvdata,
 		*bank = b;
 }
 
+/* set dat register's mask to avoid func mode pin */
+static void samsung_set_dat_mask(struct samsung_pin_bank *bank, const u32 data)
+{
+	u32 cnt, func, mask, width;
+
+	width = bank->type->fld_width[PINCFG_TYPE_FUNC];
+	mask = (1 << width) - 1;
+
+	bank->dat_mask = 0;
+	for (cnt = 0; cnt < 8; cnt++) {
+		func = (data >> (width * cnt)) & mask;
+		if (func == FUNC_OUTPUT)
+			bank->dat_mask |= 1 << cnt;
+	}
+}
+
 /* enable or disable a pinmux function */
 static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 					unsigned group, bool enable)
@@ -320,6 +336,12 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 		if (enable)
 			data |= drvdata->pin_groups[group].func << shift;
 		writel(data, reg + type->reg_offset[PINCFG_TYPE_FUNC]);
+
+		/* Ensure to clear DAT register when using GPIO func mode */
+		samsung_set_dat_mask(bank, data);
+		data = readl(reg + type->reg_offset[PINCFG_TYPE_DAT]);
+		data &= bank->dat_mask;
+		writel(data, reg + type->reg_offset[PINCFG_TYPE_DAT]);
 
 		spin_unlock_irqrestore(&bank->slock, flags);
 	}
@@ -378,6 +400,8 @@ static int samsung_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
 	if (!input)
 		data |= FUNC_OUTPUT << shift;
 	writel(data, reg);
+
+	samsung_set_dat_mask(bank, data);
 
 	spin_unlock_irqrestore(&bank->slock, flags);
 
@@ -509,6 +533,7 @@ static void samsung_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
 	data &= ~(1 << offset);
 	if (value)
 		data |= 1 << offset;
+	data &= bank->dat_mask;
 	writel(data, reg + type->reg_offset[PINCFG_TYPE_DAT]);
 
 	spin_unlock_irqrestore(&bank->slock, flags);
@@ -774,6 +799,10 @@ static int samsung_pinctrl_register(struct platform_device *pdev,
 	}
 
 	for (bank = 0; bank < drvdata->ctrl->nr_banks; ++bank) {
+		void __iomem 	*reg;
+		unsigned long 	flags;
+		u32 		data;
+
 		pin_bank = &drvdata->ctrl->pin_banks[bank];
 		pin_bank->grange.name = pin_bank->name;
 		pin_bank->grange.id = bank;
@@ -782,6 +811,17 @@ static int samsung_pinctrl_register(struct platform_device *pdev,
 		pin_bank->grange.npins = pin_bank->gpio_chip.ngpio;
 		pin_bank->grange.gc = &pin_bank->gpio_chip;
 		pinctrl_add_gpio_range(drvdata->pctl_dev, &pin_bank->grange);
+
+		reg = drvdata->virt_base + pin_bank->pctl_offset +
+				pin_bank->type->reg_offset[PINCFG_TYPE_FUNC];
+
+		spin_lock_irqsave(&pin_bank->slock, flags);
+
+		/* set initial dat_mask */
+		data = readl(reg);
+		samsung_set_dat_mask(pin_bank, data);
+
+		spin_unlock_irqrestore(&pin_bank->slock, flags);
 	}
 
 	ret = samsung_pinctrl_parse_dt(pdev, drvdata);

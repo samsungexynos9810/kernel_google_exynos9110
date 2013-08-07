@@ -120,6 +120,7 @@ struct samsung_pin_bank_type {
  * @eint_func: function to set in CON register to configure pin as EINT.
  * @eint_type: type of the external interrupt supported by the bank.
  * @eint_mask: bit mask of pins which support EINT function.
+ * @dat_mask: bit mask of data register for GPIO Function mode.
  * @name: name to be prefixed for each pin in this pin bank.
  * @of_node: OF node of the bank.
  * @drvdata: link to controller driver data
@@ -138,6 +139,7 @@ struct samsung_pin_bank {
 	enum eint_type	eint_type;
 	u32		eint_mask;
 	u32		eint_offset;
+	u32		dat_mask;
 	char		*name;
 	void		*soc_priv;
 	struct device_node *of_node;
