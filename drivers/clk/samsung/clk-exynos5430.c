@@ -329,6 +329,16 @@ enum exynos5430_clks {
 	gate_xiu_fsysx = 2200, gate_xiu_fsyssx,
 	gate_fsysnp_200, gate_fsysnd_200,
 
+	/* g2d ip gate */
+	gate_pmu_g2d = 2210, gate_sysreg_g2d, gate_mdma1, gate_g2d,
+	gate_ppmu_g2dx, gate_smmu_mdma1,
+
+	gate_qe_mdma1 = 2220, gate_qe_g2d, gate_alb_g2d,
+	gate_axius_g2dx, gate_asyncaxi_sysx,
+	gate_ahb2apb_g2d1p, gate_ahb2apb_g2d0p,
+	gate_xiu_g2dx = 2230, gate_g2dnp_133, gate_g2dnd_400,
+	gate_smmu_g2d,
+
 	nr_clks,
 };
 
@@ -1773,6 +1783,28 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_xiu_fsyssx,"gate_xiu_fsyssx", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 2, 0, 0),
 	CGTE(gate_fsysnp_200,"gate_fsysnp_200", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 1, 0, 0),
 	CGTE(gate_fsysnd_200,"gate_fsysnd_200", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 0, 0, 0),
+
+	/* G2D */
+	CGTE(gate_pmu_g2d,"gate_pmu_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D0, 3, 0, 0),
+	CGTE(gate_sysreg_g2d,"gate_sysreg_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D0, 2, 0, 0),
+	CGTE(gate_mdma1,"gate_mdma1", NULL, EXYNOS5430_ENABLE_IP_G2D0, 1, 0, 0),
+	CGTE(gate_g2d,"gate_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D0, 0, 0, 0),
+
+	CGTE(gate_ppmu_g2dx,"gate_ppmu_g2dx", NULL, EXYNOS5430_ENABLE_IP_G2D1, 12, 0, 0),
+	CGTE(gate_smmu_mdma1,"gate_smmu_mdma1", NULL, EXYNOS5430_ENABLE_IP_G2D1, 11, 0, 0),
+	CGTE(gate_qe_mdma1,"gate_qe_mdma1", NULL, EXYNOS5430_ENABLE_IP_G2D1, 9, 0, 0),
+	CGTE(gate_qe_g2d,"gate_qe_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D1, 8, 0, 0),
+	CGTE(gate_alb_g2d,"gate_alb_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D1, 7, 0, 0),
+	CGTE(gate_axius_g2dx,"gate_axius_g2dx", NULL, EXYNOS5430_ENABLE_IP_G2D1, 6, 0, 0),
+	CGTE(gate_asyncaxi_sysx,"gate_asyncaxi_sysx", NULL, EXYNOS5430_ENABLE_IP_G2D1, 5, 0, 0),
+	CGTE(gate_ahb2apb_g2d1p,"gate_ahb2apb_g2d1p", NULL, EXYNOS5430_ENABLE_IP_G2D1, 4, 0, 0),
+	CGTE(gate_ahb2apb_g2d0p,"gate_ahb2apb_g2d0p", NULL, EXYNOS5430_ENABLE_IP_G2D1, 3, 0, 0),
+	CGTE(gate_xiu_g2dx,"gate_xiu_g2dx", NULL, EXYNOS5430_ENABLE_IP_G2D1, 2, 0, 0),
+	CGTE(gate_g2dnp_133,"gate_g2dnp_133", NULL, EXYNOS5430_ENABLE_IP_G2D1, 1, 0, 0),
+	CGTE(gate_g2dnd_400,"gate_g2dnd_400", NULL, EXYNOS5430_ENABLE_IP_G2D1, 0, 0, 0),
+
+	CGTE(gate_smmu_g2d,"gate_smmu_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D_SECURE_SMMU_G2D, 0, 0, 0),
+
 
 };
 
