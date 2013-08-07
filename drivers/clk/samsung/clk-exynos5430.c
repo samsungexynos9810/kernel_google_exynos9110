@@ -267,6 +267,15 @@ enum exynos5430_clks {
 	gate_smmu_lpassx = 2020, gate_axids_lpassp, gate_axi2apb_lpassp,
 	gate_xiu_lpassx, gate_audnp_133, gate_audnd_133,
 
+	/* bus ip gate */
+	gate_bus1srvnd_133 = 2030, gate_ahb2apb_bus1p, gate_bus1np_133,
+	gate_bus1nd_400,
+
+	gate_pmu_bus2, gate_sysreg_bus2,
+
+	gate_bus2srvnd_133 = 2040, gate_ahb2apb_bus2p, gate_bus2np_133,
+	gate_bus2bend_400, gate_bus2rtnd_400,
+
 	nr_clks,
 };
 
@@ -1586,6 +1595,20 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_audnp_133,"gate_audnp_133", NULL, EXYNOS5430_ENABLE_IP_AUD1, 1, 0, 0),
 	CGTE(gate_audnd_133,"gate_audnd_133", NULL, EXYNOS5430_ENABLE_IP_AUD1, 0, 0, 0),
 
+	/* BUS */
+	CGTE(gate_bus1srvnd_133,"gate_bus1srvnd_133", NULL, EXYNOS5430_ENABLE_IP_BUS11, 3, 0, 0),
+	CGTE(gate_ahb2apb_bus1p,"gate_ahb2apb_bus1p", NULL, EXYNOS5430_ENABLE_IP_BUS11, 2, 0, 0),
+	CGTE(gate_bus1np_133,"gate_bus1np_133", NULL, EXYNOS5430_ENABLE_IP_BUS11, 1, 0, 0),
+	CGTE(gate_bus1nd_400,"gate_bus1nd_400", NULL, EXYNOS5430_ENABLE_IP_BUS11, 0, 0, 0),
+
+	CGTE(gate_pmu_bus2,"gate_pmu_bus2", NULL, EXYNOS5430_ENABLE_IP_BUS20, 1, 0, 0),
+	CGTE(gate_sysreg_bus2,"gate_sysreg_bus2", NULL, EXYNOS5430_ENABLE_IP_BUS20, 0, 0, 0),
+
+	CGTE(gate_bus2srvnd_133,"gate_bus2srvnd_133", NULL, EXYNOS5430_ENABLE_IP_BUS21, 4, 0, 0),
+	CGTE(gate_ahb2apb_bus2p,"gate_ahb2apb_bus2p", NULL, EXYNOS5430_ENABLE_IP_BUS21, 3, 0, 0),
+	CGTE(gate_bus2np_133,"gate_bus2np_133", NULL, EXYNOS5430_ENABLE_IP_BUS21, 2, 0, 0),
+	CGTE(gate_bus2bend_400,"gate_bus2bend_400", NULL, EXYNOS5430_ENABLE_IP_BUS21, 1, 0, 0),
+	CGTE(gate_bus2rtnd_400,"gate_bus2rtnd_400", NULL, EXYNOS5430_ENABLE_IP_BUS21, 0, 0, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
