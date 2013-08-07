@@ -206,7 +206,6 @@ void s5p_mipi_dsi_enable_lane(struct mipi_dsim_device *dsim, unsigned int lane,
 	unsigned int enable)
 {
 	unsigned int reg;
-	void __iomem * addr;
 
 	reg = readl(dsim->reg_base + S5P_DSIM_CONFIG);
 

@@ -1039,13 +1039,6 @@ struct lcd_ops s5p_mipi_dsi_lcd_ops = {
 	.set_power = s5p_mipi_dsi_set_power,
 };
 
-static void s5p_mipi_dsi_set_cmu()
-{
-	void __iomem *regs;
-	u32 data;
-
-}
-
 static int mipi_lcd_power_control(struct mipi_dsim_device *dsim,
 			unsigned int power)
 {
@@ -1183,7 +1176,7 @@ err_platform_get:
 	clk_disable(dsim->clock);
 	clk_put(dsim->clock);
 
-err_clock_get:
+/*err_clock_get:*/
 	kfree(dsim);
 	pm_runtime_put_sync(&pdev->dev);
 	return ret;
