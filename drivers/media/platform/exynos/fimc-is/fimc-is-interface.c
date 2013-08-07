@@ -1686,7 +1686,8 @@ static inline void wq_func_schedule(struct fimc_is_interface *itf,
 static void interface_timer(unsigned long data)
 {
 	u32 shot_count, scount_3ax, scount_isp, i, j;
-	unsigned long flags, regs;
+	unsigned long flags;
+	void __iomem *regs;
 	struct fimc_is_interface *itf = (struct fimc_is_interface *)data;
 	struct fimc_is_core *core;
 	struct fimc_is_device_ischain *device;
@@ -1792,7 +1793,7 @@ static void interface_timer(unsigned long data)
 				fimc_is_hw_print(itf);
 
 				pr_err("\n### MCUCTL dump ###\n");
-				regs = (unsigned long)itf->com_regs;
+				regs = itf->com_regs;
 				for (j = 0; j < 64; ++j)
 					pr_err("MCTL[%d] : %08X\n", j, readl(regs + (4 * j)));
 

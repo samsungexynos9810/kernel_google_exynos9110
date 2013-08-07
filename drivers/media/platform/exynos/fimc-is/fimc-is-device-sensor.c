@@ -443,18 +443,18 @@ static int get_hsync_settle(int channel, int width,
 
 static void s5pcsis_enable_interrupts(unsigned long mipi_reg_base, bool on)
 {
-	u32 val = readl(mipi_reg_base + S5PCSIS_INTMSK);
+	u32 val = is_readl(mipi_reg_base + S5PCSIS_INTMSK);
 
 	val = on ? val | S5PCSIS_INTMSK_EN_ALL :
 		   val & ~S5PCSIS_INTMSK_EN_ALL;
-	writel(val, mipi_reg_base + S5PCSIS_INTMSK);
+	is_writel(val, mipi_reg_base + S5PCSIS_INTMSK);
 }
 
 static void s5pcsis_reset(unsigned long mipi_reg_base)
 {
-	u32 val = readl(mipi_reg_base + S5PCSIS_CTRL);
+	u32 val = is_readl(mipi_reg_base + S5PCSIS_CTRL);
 
-	writel(val | S5PCSIS_CTRL_RESET, mipi_reg_base + S5PCSIS_CTRL);
+	is_writel(val | S5PCSIS_CTRL_RESET, mipi_reg_base + S5PCSIS_CTRL);
 	udelay(10);
 }
 
@@ -462,7 +462,7 @@ static void s5pcsis_system_enable(unsigned long mipi_reg_base, int on)
 {
 	u32 val;
 
-	val = readl(mipi_reg_base + S5PCSIS_CTRL);
+	val = is_readl(mipi_reg_base + S5PCSIS_CTRL);
 
 #if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	val |= S5PCSIS_CTRL_WCLK_EXTCLK;
@@ -474,14 +474,14 @@ static void s5pcsis_system_enable(unsigned long mipi_reg_base, int on)
 		val |= S5PCSIS_CTRL_WCLK_EXTCLK;
 	} else
 		val &= ~S5PCSIS_CTRL_ENABLE;
-	writel(val, mipi_reg_base + S5PCSIS_CTRL);
+	is_writel(val, mipi_reg_base + S5PCSIS_CTRL);
 
-	val = readl(mipi_reg_base + S5PCSIS_DPHYCTRL);
+	val = is_readl(mipi_reg_base + S5PCSIS_DPHYCTRL);
 	if (on)
 		val |= S5PCSIS_DPHYCTRL_ENABLE;
 	else
 		val &= ~S5PCSIS_DPHYCTRL_ENABLE;
-	writel(val, mipi_reg_base + S5PCSIS_DPHYCTRL);
+	is_writel(val, mipi_reg_base + S5PCSIS_DPHYCTRL);
 }
 
 /* Called with the state.lock mutex held */
@@ -491,28 +491,28 @@ static void __s5pcsis_set_format(unsigned long mipi_reg_base,
 	u32 val;
 
 	/* Color format */
-	val = readl(mipi_reg_base + S5PCSIS_CONFIG);
+	val = is_readl(mipi_reg_base + S5PCSIS_CONFIG);
 	val = (val & ~S5PCSIS_CFG_FMT_MASK) | S5PCSIS_CFG_FMT_RAW10;
 #if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	val |= S5PCSIS_CFG_START_INTERVAL(1);
 #endif
-	writel(val, mipi_reg_base + S5PCSIS_CONFIG);
+	is_writel(val, mipi_reg_base + S5PCSIS_CONFIG);
 
 	/* Pixel resolution */
 	val = (f_frame->o_width << 16) | f_frame->o_height;
-	writel(val, mipi_reg_base + S5PCSIS_RESOL);
+	is_writel(val, mipi_reg_base + S5PCSIS_RESOL);
 }
 
 static void s5pcsis_set_hsync_settle(unsigned long mipi_reg_base, int settle)
 {
-	u32 val = readl(mipi_reg_base + S5PCSIS_DPHYCTRL);
+	u32 val = is_readl(mipi_reg_base + S5PCSIS_DPHYCTRL);
 
 	if (soc_is_exynos5250())
 		val = (val & ~S5PCSIS_DPHYCTRL_HSS_MASK) | (0x6 << 28);
 	else
 		val = (val & ~S5PCSIS_DPHYCTRL_HSS_MASK) | (settle << 24);
 
-	writel(val, mipi_reg_base + S5PCSIS_DPHYCTRL);
+	is_writel(val, mipi_reg_base + S5PCSIS_DPHYCTRL);
 }
 
 static void s5pcsis_set_params(unsigned long mipi_reg_base,
@@ -521,28 +521,28 @@ static void s5pcsis_set_params(unsigned long mipi_reg_base,
 	u32 val;
 
 #if defined(CONFIG_SOC_EXYNOS5410)
-	val = readl(mipi_reg_base + S5PCSIS_CONFIG);
+	val = is_readl(mipi_reg_base + S5PCSIS_CONFIG);
 	if (soc_is_exynos5250())
 		val = (val & ~S5PCSIS_CFG_NR_LANE_MASK) | (2 - 1);
 	else
 		val = (val & ~S5PCSIS_CFG_NR_LANE_MASK) | (4 - 1);
-	writel(val, mipi_reg_base + S5PCSIS_CONFIG);
+	is_writel(val, mipi_reg_base + S5PCSIS_CONFIG);
 #endif
 
 	__s5pcsis_set_format(mipi_reg_base, f_frame);
 
-	val = readl(mipi_reg_base + S5PCSIS_CTRL);
+	val = is_readl(mipi_reg_base + S5PCSIS_CTRL);
 	val &= ~S5PCSIS_CTRL_ALIGN_32BIT;
 
 	/* Not using external clock. */
 	val &= ~S5PCSIS_CTRL_WCLK_EXTCLK;
 
-	writel(val, mipi_reg_base + S5PCSIS_CTRL);
+	is_writel(val, mipi_reg_base + S5PCSIS_CTRL);
 
 	/* Update the shadow register. */
-	val = readl(mipi_reg_base + S5PCSIS_CTRL);
-	writel(val | S5PCSIS_CTRL_UPDATE_SHADOW(1),
-						mipi_reg_base + S5PCSIS_CTRL);
+	val = is_readl(mipi_reg_base + S5PCSIS_CTRL);
+	is_writel(val | S5PCSIS_CTRL_UPDATE_SHADOW(1),
+			mipi_reg_base + S5PCSIS_CTRL);
 }
 
 int enable_mipi(void)

@@ -194,7 +194,7 @@ static void flite_hw_set_cam_source_size(unsigned long flite_reg_base,
 	cfg |= FLITE_REG_CISRCSIZE_SIZE_H(f_frame->o_width);
 	cfg |= FLITE_REG_CISRCSIZE_SIZE_V(f_frame->o_height);
 
-	writel(cfg, flite_reg_base + FLITE_REG_CISRCSIZE);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CISRCSIZE);
 }
 
 static void flite_hw_set_dma_offset(unsigned long flite_reg_base,
@@ -210,7 +210,7 @@ static void flite_hw_set_dma_offset(unsigned long flite_reg_base,
 
 	cfg |= FLITE_REG_CIOCAN_OCAN_V(f_frame->o_height);
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIOCAN);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIOCAN);
 }
 
 static void flite_hw_set_cam_channel(unsigned long flite_reg_base)
@@ -226,7 +226,7 @@ static void flite_hw_set_cam_channel(unsigned long flite_reg_base)
 #ifdef USE_OTF_INTERFACE
 	if (flite_reg_base == (unsigned long)FIMCLITE0_REG_BASE) {
 		cfg = FLITE_REG_CIGENERAL_CAM_A;
-		writel(cfg, flite_reg_base + FLITE_REG_CIGENERAL);
+		is_writel(cfg, flite_reg_base + FLITE_REG_CIGENERAL);
 	}
 #endif
 }
@@ -235,25 +235,25 @@ static void flite_hw_set_capture_start(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
 
-	cfg = readl(flite_reg_base + FLITE_REG_CIIMGCPT);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIIMGCPT);
 	cfg |= FLITE_REG_CIIMGCPT_IMGCPTEN;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIIMGCPT);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIIMGCPT);
 }
 
 static void flite_hw_set_capture_stop(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
 
-	cfg = readl(flite_reg_base + FLITE_REG_CIIMGCPT);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIIMGCPT);
 	cfg &= ~FLITE_REG_CIIMGCPT_IMGCPTEN;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIIMGCPT);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIIMGCPT);
 }
 
 static int flite_hw_get_capture_status(unsigned long flite_reg_base)
 {
-	return (readl(flite_reg_base + FLITE_REG_CIIMGCPT)
+	return (is_readl(flite_reg_base + FLITE_REG_CIIMGCPT)
 		& FLITE_REG_CIIMGCPT_IMGCPTEN) ? 1 : 0;
 }
 
@@ -261,9 +261,9 @@ static int flite_hw_set_source_format(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
 
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 	cfg |= FLITE_REG_CIGCTRL_RAW10;
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 
 	return 0;
 }
@@ -275,21 +275,21 @@ static void flite_hw_set_dma_fmt(unsigned long flite_reg_base,
 
 	BUG_ON(!queue);
 
-	cfg = readl(flite_reg_base + FLITE_REG_CIODMAFMT);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIODMAFMT);
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12)
 		cfg |= FLITE_REG_CIODMAFMT_PACK12;
 	else
 		cfg |= FLITE_REG_CIODMAFMT_NORMAL;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIODMAFMT);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIODMAFMT);
 }
 
 static void flite_hw_set_output_dma(unsigned long flite_reg_base, bool enable,
 	struct fimc_is_queue *queue)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	if (enable) {
 		cfg &= ~FLITE_REG_CIGCTRL_ODMA_DISABLE;
@@ -298,47 +298,47 @@ static void flite_hw_set_output_dma(unsigned long flite_reg_base, bool enable,
 		cfg |= FLITE_REG_CIGCTRL_ODMA_DISABLE;
 	}
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 
 static void flite_hw_set_output_local(unsigned long flite_reg_base, bool enable)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	if (enable)
 		cfg &= ~FLITE_REG_CIGCTRL_OLOCAL_DISABLE;
 	else
 		cfg |= FLITE_REG_CIGCTRL_OLOCAL_DISABLE;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 
 /* will use for pattern generation testing
 static void flite_hw_set_test_pattern_enable(void)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 	cfg |= FLITE_REG_CIGCTRL_TEST_PATTERN_COLORBAR;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 */
 
 static void flite_hw_set_config_irq(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 	cfg &= ~(FLITE_REG_CIGCTRL_INVPOLPCLK | FLITE_REG_CIGCTRL_INVPOLVSYNC
 			| FLITE_REG_CIGCTRL_INVPOLHREF);
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 
 static void flite_hw_set_interrupt_source(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	/* for checking stop complete */
 	cfg &= ~FLITE_REG_CIGCTRL_IRQ_LASTEN0_DISABLE;
@@ -352,13 +352,13 @@ static void flite_hw_set_interrupt_source(unsigned long flite_reg_base)
 	/* for checking overflow */
 	cfg &= ~FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 
 static void flite_hw_clr_interrupt_source(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	/* for checking stop complete */
 	cfg |= FLITE_REG_CIGCTRL_IRQ_LASTEN0_DISABLE;
@@ -372,40 +372,40 @@ static void flite_hw_clr_interrupt_source(unsigned long flite_reg_base)
 	/* for checking overflow */
 	cfg |= FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 
 static void flite_hw_force_reset(unsigned long flite_reg_base)
 {
 	u32 cfg = 0, retry = 100;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	/* request sw reset */
 	cfg |= FLITE_REG_CIGCTRL_SWRST_REQ;
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 
 	/* checking reset ready */
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 	while (retry-- && !(cfg & FLITE_REG_CIGCTRL_SWRST_RDY))
-		cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+		cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	if (!(cfg & FLITE_REG_CIGCTRL_SWRST_RDY))
 		warn("[CamIF] sw reset is not read but forcelly");
 
 	/* sw reset */
 	cfg |= FLITE_REG_CIGCTRL_SWRST;
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 	warn("[CamIF] sw reset");
 }
 
 static void flite_hw_set_camera_type(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
 
 	cfg |= FLITE_REG_CIGCTRL_SELCAM_MIPI;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 
 static void flite_hw_set_window_offset(unsigned long flite_reg_base,
@@ -414,38 +414,38 @@ static void flite_hw_set_window_offset(unsigned long flite_reg_base,
 	u32 cfg = 0;
 	u32 hoff2, voff2;
 
-	cfg = readl(flite_reg_base + FLITE_REG_CIWDOFST);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CIWDOFST);
 	cfg &= ~(FLITE_REG_CIWDOFST_HOROFF_MASK |
 		FLITE_REG_CIWDOFST_VEROFF_MASK);
 	cfg |= FLITE_REG_CIWDOFST_WINOFSEN |
 		FLITE_REG_CIWDOFST_WINHOROFST(f_frame->offs_h) |
 		FLITE_REG_CIWDOFST_WINVEROFST(f_frame->offs_v);
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIWDOFST);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIWDOFST);
 
 	hoff2 = f_frame->o_width - f_frame->width - f_frame->offs_h;
 	voff2 = f_frame->o_height - f_frame->height - f_frame->offs_v;
 	cfg = FLITE_REG_CIWDOFST2_WINHOROFST2(hoff2) |
 		FLITE_REG_CIWDOFST2_WINVEROFST2(voff2);
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIWDOFST2);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIWDOFST2);
 }
 
 static void flite_hw_set_last_capture_end_clear(unsigned long flite_reg_base)
 {
 	u32 cfg = 0;
 
-	cfg = readl(flite_reg_base + FLITE_REG_CISTATUS2);
+	cfg = is_readl(flite_reg_base + FLITE_REG_CISTATUS2);
 	cfg &= ~FLITE_REG_CISTATUS2_LASTCAPEND;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CISTATUS2);
+	is_writel(cfg, flite_reg_base + FLITE_REG_CISTATUS2);
 }
 
 int flite_hw_get_present_frame_buffer(unsigned long flite_reg_base)
 {
 	u32 status = 0;
 
-	status = readl(flite_reg_base + FLITE_REG_CISTATUS3);
+	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS3);
 	status &= FLITE_REG_CISTATUS3_PRESENT_MASK;
 
 	return status;
@@ -455,21 +455,21 @@ int flite_hw_get_status2(unsigned long flite_reg_base)
 {
 	u32 status = 0;
 
-	status = readl(flite_reg_base + FLITE_REG_CISTATUS2);
+	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS2);
 
 	return status;
 }
 
 void flite_hw_set_status1(unsigned long flite_reg_base, u32 val)
 {
-	writel(val, flite_reg_base + FLITE_REG_CISTATUS);
+	is_writel(val, flite_reg_base + FLITE_REG_CISTATUS);
 }
 
 int flite_hw_get_status1(unsigned long flite_reg_base)
 {
 	u32 status = 0;
 
-	status = readl(flite_reg_base + FLITE_REG_CISTATUS);
+	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS);
 
 	return status;
 }
@@ -478,15 +478,15 @@ int flite_hw_getnclr_status1(unsigned long flite_reg_base)
 {
 	u32 status = 0;
 
-	status = readl(flite_reg_base + FLITE_REG_CISTATUS);
-	writel(0, flite_reg_base + FLITE_REG_CISTATUS);
+	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS);
+	is_writel(0, flite_reg_base + FLITE_REG_CISTATUS);
 
 	return status;
 }
 
 void flite_hw_set_status2(unsigned long flite_reg_base, u32 val)
 {
-	writel(val, flite_reg_base + FLITE_REG_CISTATUS2);
+	is_writel(val, flite_reg_base + FLITE_REG_CISTATUS2);
 }
 
 void flite_hw_set_start_addr(unsigned long flite_reg_base, u32 number, u32 addr)
@@ -500,7 +500,7 @@ void flite_hw_set_start_addr(unsigned long flite_reg_base, u32 number, u32 addr)
 		target = flite_reg_base + 0x200 + (0x4*number);
 	}
 
-	writel(addr, target);
+	is_writel(addr, target);
 }
 
 u32 flite_hw_get_start_addr(unsigned long flite_reg_base, u32 number)
@@ -514,29 +514,29 @@ u32 flite_hw_get_start_addr(unsigned long flite_reg_base, u32 number)
 		target = flite_reg_base + 0x200 + (0x4*number);
 	}
 
-	return readl(target);
+	return is_readl(target);
 }
 
 void flite_hw_set_use_buffer(unsigned long flite_reg_base, u32 number)
 {
 	u32 buffer;
-	buffer = readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	buffer = is_readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
 	buffer |= 1<<number;
-	writel(buffer, flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	is_writel(buffer, flite_reg_base + FLITE_REG_CIFCNTSEQ);
 }
 
 void flite_hw_set_unuse_buffer(unsigned long flite_reg_base, u32 number)
 {
 	u32 buffer;
-	buffer = readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	buffer = is_readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
 	buffer &= ~(1<<number);
-	writel(buffer, flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	is_writel(buffer, flite_reg_base + FLITE_REG_CIFCNTSEQ);
 }
 
 u32 flite_hw_get_buffer_seq(unsigned long flite_reg_base)
 {
 	u32 buffer;
-	buffer = readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	buffer = is_readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
 	return buffer;
 }
 
@@ -544,7 +544,7 @@ int init_fimc_lite(unsigned long mipi_reg_base)
 {
 	int i;
 
-	writel(0, mipi_reg_base + FLITE_REG_CIFCNTSEQ);
+	is_writel(0, mipi_reg_base + FLITE_REG_CIFCNTSEQ);
 
 	for (i = 0; i < 32; i++)
 		flite_hw_set_start_addr(mipi_reg_base , i, 0xffffffff);
@@ -928,7 +928,7 @@ static irqreturn_t fimc_is_flite_irq_handler(int irq, void *data)
 
 		for (i = 0; i < 278; i += 4)
 			pr_info("REG[%X] : 0x%08X\n", i,
-				readl(flite->regs + i));
+				is_readl(flite->regs + i));
 
 		flite_hw_force_reset(flite->regs);
 
@@ -1031,11 +1031,11 @@ clear_status:
 
 		/* err("[CamIF_0]Overflow Cr\n"); */
 		pr_err("[CamIF%d] OFCR\n", instance);
-		ciwdofst = readl(flite->regs + 0x10);
+		ciwdofst = is_readl(flite->regs + 0x10);
 		ciwdofst  |= (0x1 << 14);
-		writel(ciwdofst, flite->regs + 0x10);
+		is_writel(ciwdofst, flite->regs + 0x10);
 		ciwdofst  &= ~(0x1 << 14);
-		writel(ciwdofst, flite->regs + 0x10);
+		is_writel(ciwdofst, flite->regs + 0x10);
 	}
 
 	if (status1 & (1 << 9)) {
@@ -1043,11 +1043,11 @@ clear_status:
 
 		/* err("[CamIF_0]Overflow Cb\n"); */
 		pr_err("[CamIF%d] OFCB\n", instance);
-		ciwdofst = readl(flite->regs + 0x10);
+		ciwdofst = is_readl(flite->regs + 0x10);
 		ciwdofst  |= (0x1 << 15);
-		writel(ciwdofst, flite->regs + 0x10);
+		is_writel(ciwdofst, flite->regs + 0x10);
 		ciwdofst  &= ~(0x1 << 15);
-		writel(ciwdofst, flite->regs + 0x10);
+		is_writel(ciwdofst, flite->regs + 0x10);
 	}
 
 	if (status1 & (1 << 10)) {
@@ -1055,11 +1055,11 @@ clear_status:
 
 		/* err("[CamIF_0]Overflow Y\n"); */
 		pr_err("[CamIF%d] OFY\n", instance);
-		ciwdofst = readl(flite->regs + 0x10);
+		ciwdofst = is_readl(flite->regs + 0x10);
 		ciwdofst  |= (0x1 << 30);
-		writel(ciwdofst, flite->regs + 0x10);
+		is_writel(ciwdofst, flite->regs + 0x10);
 		ciwdofst  &= ~(0x1 << 30);
-		writel(ciwdofst, flite->regs + 0x10);
+		is_writel(ciwdofst, flite->regs + 0x10);
 	}
 
 	return IRQ_HANDLED;

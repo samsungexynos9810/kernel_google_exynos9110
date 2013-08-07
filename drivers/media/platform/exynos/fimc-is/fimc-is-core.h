@@ -394,6 +394,9 @@
 #define dbg_frame(fmt, args...)
 #endif
 
+#define is_readl(c)		readl((void __iomem *)(c))
+#define is_writel(v,c)		writel((v),(void __iomem *)(c))
+
 enum fimc_is_debug_device {
 	FIMC_IS_DEBUG_MAIN = 0,
 	FIMC_IS_DEBUG_EC,
