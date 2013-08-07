@@ -272,7 +272,7 @@
 			#interrupt-cells = <2>;
 		};
 
-		gpc1: gpjc1 {
+		gpc1: gpc1 {
 			gpio-controller;
 			#gpio-cells = <2>;
 
