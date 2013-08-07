@@ -293,6 +293,26 @@ enum exynos5430_clks {
 	gate_xiu_llix = 2090, gate_xiu_cpifsfrx,
 	gate_cpifnp_200, gate_cpifnm_200,
 
+	/* disp0 ip gate */
+	gate_freq_det_disp_pll = 2100, gate_pmu_disp, gate_sysreg_disp,
+	gate_dsd, gate_mic, gate_mdnie,
+	gate_dsim0 = 2110, gate_tv_mixer, gate_hdmiphy,
+	gate_hdmi, gate_decon,
+
+	/* disp1 ip gate */
+	gate_ppmu_tvx = 2120, gate_ppmu_decon1x, gate_ppmu_decon0x,
+	gate_smmu_tvx, gate_smmu_decon1x, gate_smmu_decon0x,
+	gate_qe_mixerm1, gate_qe_mixerm0,
+	gate_qe_deconm4 = 2130, gate_qe_deconm3, gate_qe_deconm2,
+	gate_qe_deconm1, gate_qe_deconm0,
+	gate_ahb2apb_dispsfr2p, gate_ahb2apb_dispsfr1p,
+	gate_ahb2apb_dispsfr0p,
+
+	gate_axius_disp1x = 2140, gate_asyncaxi_tvx, gate_ahb_disph,
+	gate_xiu_tvx, gate_xiu_decon1x, gate_xiu_decon0x,
+	gate_xiu_disp1x = 2150, gate_dispnp_100,
+	gate_disp1nd_333, gate_disp0nd_333,
+	
 	nr_clks,
 };
 
@@ -1661,6 +1681,46 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_cpifnp_200,"gate_cpifnp_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 1, 0, 0),
 	CGTE(gate_cpifnm_200,"gate_cpifnm_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 0, 0, 0),
 
+	/* DISP0 */
+	CGTE(gate_freq_det_disp_pll,"gate_freq_det_disp_pll", NULL, EXYNOS5430_ENABLE_IP_DISP0, 11, 0, 0),
+	CGTE(gate_pmu_disp,"gate_pmu_disp", NULL, EXYNOS5430_ENABLE_IP_DISP0, 10, 0, 0),
+	CGTE(gate_sysreg_disp,"gate_sysreg_disp", NULL, EXYNOS5430_ENABLE_IP_DISP0, 9, 0, 0),
+	CGTE(gate_dsd,"gate_dsd", NULL, EXYNOS5430_ENABLE_IP_DISP0, 8, 0, 0),
+	CGTE(gate_mic,"gate_mic", NULL, EXYNOS5430_ENABLE_IP_DISP0, 7, 0, 0),
+	CGTE(gate_mdnie,"gate_mdnie", NULL, EXYNOS5430_ENABLE_IP_DISP0, 6, 0, 0),
+	CGTE(gate_dsim0,"gate_dsim0", NULL, EXYNOS5430_ENABLE_IP_DISP0, 4, 0, 0),
+	CGTE(gate_tv_mixer,"gate_tv_mixer", NULL, EXYNOS5430_ENABLE_IP_DISP0, 3, 0, 0),
+	CGTE(gate_hdmiphy,"gate_hdmiphy", NULL, EXYNOS5430_ENABLE_IP_DISP0, 2, 0, 0),
+	CGTE(gate_hdmi,"gate_hdmi", NULL, EXYNOS5430_ENABLE_IP_DISP0, 1, 0, 0),
+	CGTE(gate_decon,"gate_decon", NULL, EXYNOS5430_ENABLE_IP_DISP0, 0, 0, 0),
+
+	/* DISP1 */
+	CGTE(gate_ppmu_tvx,"gate_ppmu_tvx", NULL, EXYNOS5430_ENABLE_IP_DISP1, 30, 0, 0),
+	CGTE(gate_ppmu_decon1x,"gate_ppmu_decon1x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 29, 0, 0),
+	CGTE(gate_ppmu_decon0x,"gate_ppmu_decon0x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 28, 0, 0),
+	CGTE(gate_smmu_tvx,"gate_smmu_tvx", NULL, EXYNOS5430_ENABLE_IP_DISP1, 27, 0, 0),
+	CGTE(gate_smmu_decon1x,"gate_smmu_decon1x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 26, 0, 0),
+	CGTE(gate_smmu_decon0x,"gate_smmu_decon0x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 25, 0, 0),
+	CGTE(gate_qe_mixerm1,"gate_qe_mixerm1", NULL, EXYNOS5430_ENABLE_IP_DISP1, 24, 0, 0),
+	CGTE(gate_qe_mixerm0,"gate_qe_mixerm0", NULL, EXYNOS5430_ENABLE_IP_DISP1, 23, 0, 0),
+	CGTE(gate_qe_deconm4,"gate_qe_deconm4", NULL, EXYNOS5430_ENABLE_IP_DISP1, 22, 0, 0),
+	CGTE(gate_qe_deconm3,"gate_qe_deconm3", NULL, EXYNOS5430_ENABLE_IP_DISP1, 21, 0, 0),
+	CGTE(gate_qe_deconm2,"gate_qe_deconm2", NULL, EXYNOS5430_ENABLE_IP_DISP1, 20, 0, 0),
+	CGTE(gate_qe_deconm1,"gate_qe_deconm1", NULL, EXYNOS5430_ENABLE_IP_DISP1, 19, 0, 0),
+	CGTE(gate_qe_deconm0,"gate_qe_deconm0", NULL, EXYNOS5430_ENABLE_IP_DISP1, 18, 0, 0),
+	CGTE(gate_ahb2apb_dispsfr2p,"gate_ahb2apb_dispsfr2p", NULL, EXYNOS5430_ENABLE_IP_DISP1, 17, 0, 0),
+	CGTE(gate_ahb2apb_dispsfr1p,"gate_ahb2apb_dispsfr1p", NULL, EXYNOS5430_ENABLE_IP_DISP1, 16, 0, 0),
+	CGTE(gate_ahb2apb_dispsfr0p,"gate_ahb2apb_dispsfr0p", NULL, EXYNOS5430_ENABLE_IP_DISP1, 15, 0, 0),
+	CGTE(gate_axius_disp1x,"gate_axius_disp1x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 14, 0, 0),
+	CGTE(gate_asyncaxi_tvx,"gate_asyncaxi_tvx", NULL, EXYNOS5430_ENABLE_IP_DISP1, 8, 0, 0),
+	CGTE(gate_ahb_disph,"gate_ahb_disph", NULL, EXYNOS5430_ENABLE_IP_DISP1, 7, 0, 0),
+	CGTE(gate_xiu_tvx,"gate_xiu_tvx", NULL, EXYNOS5430_ENABLE_IP_DISP1, 6, 0, 0),
+	CGTE(gate_xiu_decon1x,"gate_xiu_decon1x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 5, 0, 0),
+	CGTE(gate_xiu_decon0x,"gate_xiu_decon0x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 4, 0, 0),
+	CGTE(gate_xiu_disp1x,"gate_xiu_disp1x", NULL, EXYNOS5430_ENABLE_IP_DISP1, 3, 0, 0),
+	CGTE(gate_dispnp_100,"gate_dispnp_100", NULL, EXYNOS5430_ENABLE_IP_DISP1, 2, 0, 0),
+	CGTE(gate_disp1nd_333,"gate_disp1nd_333", NULL, EXYNOS5430_ENABLE_IP_DISP1, 1, 0, 0),
+	CGTE(gate_disp0nd_333,"gate_disp0nd_333", NULL, EXYNOS5430_ENABLE_IP_DISP1, 0, 0, 0),
 
 };
 
