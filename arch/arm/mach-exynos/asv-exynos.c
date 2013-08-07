@@ -133,12 +133,13 @@ static void set_asv_info(struct asv_common *exynos_asv_common, bool show_volt)
 static int __init asv_init(void)
 {
 	struct asv_common *exynos_asv_common;
-	int ret;
+	int ret = 0;
 
 	exynos_asv_common = kzalloc(sizeof(struct asv_common), GFP_KERNEL);
 
 	if (!exynos_asv_common) {
 		pr_err("ASV : Allocation failed\n");
+		ret = -EINVAL;
 		goto out1;
 	}
 
@@ -148,6 +149,7 @@ static int __init asv_init(void)
 		//ret = exynos5430_init_asv(exynos_asv_common);
 	} else {
 		pr_err("ASV : Unknown SoC type\n");
+		ret = -EINVAL;
 		goto out2;
 	}
 
@@ -160,6 +162,7 @@ static int __init asv_init(void)
 	if (exynos_asv_common->init) {
 		if (exynos_asv_common->init()) {
 			pr_err("ASV : Can not run init functioin\n");
+			ret = -EINVAL;
 			goto out2;
 		}
 	}
@@ -169,6 +172,7 @@ static int __init asv_init(void)
 		ret = exynos_asv_common->regist_asv_member();
 	} else {
 		pr_err("ASV : There is no regist_asv_member function\n");
+		ret = -EINVAL;
 		goto out2;
 	}
 
@@ -177,6 +181,6 @@ static int __init asv_init(void)
 out2:
 	kfree(exynos_asv_common);
 out1:
-	return -EINVAL;
+	return ret;
 }
 arch_initcall_sync(asv_init);
