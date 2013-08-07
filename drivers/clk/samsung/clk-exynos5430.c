@@ -404,6 +404,20 @@ enum exynos5430_clks {
 
 	gate_smmu_mfc1_1, gate_smmu_mfc1_0,
 
+	/* mscl ip gate */
+	gate_pmu_mscl = 2390, gate_sysreg_mscl, gate_jpeg,
+	gate_m2mscaler1, gate_m2mscaler0,
+
+	gate_ppmu_jpeg,
+	gate_ppmu_m2mscaler1, gate_ppmu_m2mscaler0,
+	gate_qe_jpeg = 2400, gate_qe_m2mscaler1,
+	gate_qe_m2mscaler0, gate_ahb2apb_mscl0p,
+	gate_xiu_msclx, gate_msclnp_100, gate_msclnd_400,
+
+	gate_smmu_m2mscaler0 = 2410,
+	gate_smmu_m2mscaler1,
+	gate_smmu_jpeg,
+
 	nr_clks,
 };
 
@@ -2002,6 +2016,30 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	CGTE(gate_smmu_mfc1_1,"gate_smmu_mfc1_1", NULL, EXYNOS5430_ENABLE_IP_MFC1_SECURE_SMMU_MFC, 1, 0, 0),
 	CGTE(gate_smmu_mfc1_0,"gate_smmu_mfc1_0", NULL, EXYNOS5430_ENABLE_IP_MFC1_SECURE_SMMU_MFC, 0, 0, 0),
+
+	/* MSCL */
+	CGTE(gate_pmu_mscl,"gate_pmu_mscl", NULL, EXYNOS5430_ENABLE_IP_MSCL0, 4, 0, 0),
+	CGTE(gate_sysreg_mscl,"gate_sysreg_mscl", NULL, EXYNOS5430_ENABLE_IP_MSCL0, 3, 0, 0),
+	CGTE(gate_jpeg,"gate_jpeg", NULL, EXYNOS5430_ENABLE_IP_MSCL0, 2, 0, 0),
+	CGTE(gate_m2mscaler1,"gate_m2mscaler1", NULL, EXYNOS5430_ENABLE_IP_MSCL0, 1, 0, 0),
+	CGTE(gate_m2mscaler0,"gate_m2mscaler0", NULL, EXYNOS5430_ENABLE_IP_MSCL0, 0, 0, 0),
+
+	CGTE(gate_ppmu_jpeg,"gate_ppmu_jpeg", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 9, 0, 0),
+	CGTE(gate_ppmu_m2mscaler1,"gate_ppmu_m2mscaler1", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 8, 0, 0),
+	CGTE(gate_ppmu_m2mscaler0,"gate_ppmu_m2mscaler0", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 7, 0, 0),
+	CGTE(gate_qe_jpeg,"gate_qe_jpeg", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 6, 0, 0),
+	CGTE(gate_qe_m2mscaler1,"gate_qe_m2mscaler1", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 5, 0, 0),
+	CGTE(gate_qe_m2mscaler0,"gate_qe_m2mscaler0", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 4, 0, 0),
+	CGTE(gate_ahb2apb_mscl0p,"gate_ahb2apb_mscl0p", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 3, 0, 0),
+	CGTE(gate_xiu_msclx,"gate_xiu_msclx", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 2, 0, 0),
+	CGTE(gate_msclnp_100,"gate_msclnp_100", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 1, 0, 0),
+	CGTE(gate_msclnd_400,"gate_msclnd_400", NULL, EXYNOS5430_ENABLE_IP_MSCL1, 0, 0, 0),
+
+	CGTE(gate_smmu_m2mscaler0,"gate_smmu_m2mscaler0", NULL, EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER0, 0, 0, 0),
+
+	CGTE(gate_smmu_m2mscaler1,"gate_smmu_m2mscaler1", NULL, EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER1, 0, 0, 0),
+
+	CGTE(gate_smmu_jpeg,"gate_smmu_jpeg", NULL, EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_JPEG, 0, 0, 0),
 
 };
 
