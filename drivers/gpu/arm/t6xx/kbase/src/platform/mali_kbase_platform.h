@@ -56,10 +56,6 @@ int kbase_platform_clock_off(struct kbase_device *kbdev);
 #define EXYNOS5420_G3D_CONFIGURATION        EXYNOS5410_G3D_CONFIGURATION
 #define EXYNOS5420_G3D_STATUS               EXYNOS5410_G3D_STATUS
 #define EXYNOS5420_G3D_OPTION               EXYNOS5410_G3D_OPTION
-#elif SOC_NAME == 5430 //helsinki touch here
-#define EXYNOS5430_G3D_CONFIGURATION        EXYNOS5_G3D_CONFIGURATION
-#define EXYNOS5430_G3D_STATUS               EXYNOS5_G3D_STATUS
-#define EXYNOS5430_G3D_OPTION               EXYNOS5_G3D_OPTION
 #endif
 
 #endif /* _KBASE_PLATFORM_H_ */
