@@ -257,6 +257,16 @@ enum exynos5430_clks {
 	pclk_qe_mdma0, pclk_ppmu_llix, pclk_smmu_mdma0,
 	sclk_lli_cmn_cfg, sclk_lli_tx0_cfg, sclk_lli_rx0_cfg,
 
+	/* aud0 ip gate */
+	gate_gpio_aud = 2000, gate_pmu_aud, gate_sysreg_aud, gate_slimbus,
+	gate_uart, gate_pcm, gate_i2s, gate_timer, gate_intr_ctrl,
+	gate_sfr_ctrl = 2010, gate_sramc, gate_dmac, gate_pclk_dbg,
+	gate_ca5,
+
+	/* aud1 ip gate */
+	gate_smmu_lpassx = 2020, gate_axids_lpassp, gate_axi2apb_lpassp,
+	gate_xiu_lpassx, gate_audnp_133, gate_audnd_133,
+
 	nr_clks,
 };
 
@@ -1550,6 +1560,32 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_lli_cmn_cfg, "sclk_lli_cmn_cfg", "aclk_cpif_200", EXYNOS5430_ENABLE_SCLK_CPIF, 0, 0, 0),
 	CGTE(sclk_lli_tx0_cfg, "sclk_lli_tx0_cfg", "aclk_cpif_200", EXYNOS5430_ENABLE_SCLK_CPIF, 1, 0, 0),
 	CGTE(sclk_lli_rx0_cfg, "sclk_lli_rx0_cfg", "aclk_cpif_200", EXYNOS5430_ENABLE_SCLK_CPIF, 2, 0, 0),
+
+	/* IP Gate */
+	/* AUD0 */
+	CGTE(gate_gpio_aud,"gate_gpio_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 13, 0, 0),
+	CGTE(gate_pmu_aud,"gate_pmu_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 12, 0, 0),
+	CGTE(gate_sysreg_aud,"gate_sysreg_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 11, 0, 0),
+	CGTE(gate_slimbus,"gate_slimbus", NULL, EXYNOS5430_ENABLE_IP_AUD0, 10, 0, 0),
+	CGTE(gate_uart,"gate_uart", NULL, EXYNOS5430_ENABLE_IP_AUD0, 9, 0, 0),
+	CGTE(gate_pcm,"gate_pcm", NULL, EXYNOS5430_ENABLE_IP_AUD0, 8, 0, 0),
+	CGTE(gate_i2s,"gate_i2s", NULL, EXYNOS5430_ENABLE_IP_AUD0, 7, 0, 0),
+	CGTE(gate_timer,"gate_timer", NULL, EXYNOS5430_ENABLE_IP_AUD0, 6, 0, 0),
+	CGTE(gate_intr_ctrl,"gate_intr_ctrl", NULL, EXYNOS5430_ENABLE_IP_AUD0, 5, 0, 0),
+	CGTE(gate_sfr_ctrl,"gate_sfr_ctrl", NULL, EXYNOS5430_ENABLE_IP_AUD0, 4, 0, 0),
+	CGTE(gate_sramc,"gate_sramc", NULL, EXYNOS5430_ENABLE_IP_AUD0, 3, 0, 0),
+	CGTE(gate_dmac,"gate_dmac", NULL, EXYNOS5430_ENABLE_IP_AUD0, 2, 0, 0),
+	CGTE(gate_pclk_dbg,"gate_pclk_dbg", NULL, EXYNOS5430_ENABLE_IP_AUD0, 1, 0, 0),
+	CGTE(gate_ca5,"gate_ca5", NULL, EXYNOS5430_ENABLE_IP_AUD0, 0, 0, 0),
+
+	/* AUD1 */
+	CGTE(gate_smmu_lpassx,"gate_smmu_lpassx", NULL, EXYNOS5430_ENABLE_IP_AUD1, 5, 0, 0),
+	CGTE(gate_axids_lpassp,"gate_axids_lpassp", NULL, EXYNOS5430_ENABLE_IP_AUD1, 4, 0, 0),
+	CGTE(gate_axi2apb_lpassp,"gate_axi2apb_lpassp", NULL, EXYNOS5430_ENABLE_IP_AUD1, 3, 0, 0),
+	CGTE(gate_xiu_lpassx,"gate_xiu_lpassx", NULL, EXYNOS5430_ENABLE_IP_AUD1, 2, 0, 0),
+	CGTE(gate_audnp_133,"gate_audnp_133", NULL, EXYNOS5430_ENABLE_IP_AUD1, 1, 0, 0),
+	CGTE(gate_audnd_133,"gate_audnd_133", NULL, EXYNOS5430_ENABLE_IP_AUD1, 0, 0, 0),
+
 };
 
 /* fixed rate clocks generated outside the soc */
