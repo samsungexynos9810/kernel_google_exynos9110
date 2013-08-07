@@ -370,6 +370,40 @@ enum exynos5430_clks {
 
 	gate_smmu_hevc_1, gate_smmu_hevc_0,
 
+	/* imem ip gate */
+	gate_pmu_imem = 2310, gate_sysreg_imem, gate_gic,
+
+	gate_ppmu_sssx, gate_qe_slimsss,
+	gate_qe_sss_dram, gate_qe_sss_cci, gate_alb_imem,
+
+	gate_axids_pimemx_imem1p = 2320, gate_axids_pimemx_imem0p,
+	gate_axids_pimemx_gic, gate_axius_xsssx,
+	gate_asyncahbm_sss_egl, gate_asyncaxis_mif_pimemx,
+	gate_axi2apb_imem1p, gate_axi2apb_imem0p,
+	gate_xiu_sssx = 2330, gate_xiu_pimemx, gate_imemnd_266,
+	gate_int_mem, gate_sss, gate_slimsss,
+	gate_rtic,
+
+	gate_smmu_sss_dram = 2340, gate_smmu_sss_cci,
+	gate_smmu_slimsss, gate_smmu_rtic,
+
+	/* mfc ip gate */
+	gate_pmu_mfc0 = 2350, gate_sysreg_mfc0, gate_mfc0,
+	gate_ppmu_mfc0_1, gate_ppmu_mfc0_0,
+
+	gate_qe_mfc0_1, gate_qe_mfc0_0, gate_ahb2apb_mfc0p,
+	gate_xiu_mfc0x = 2360, gate_mfc0np_83, gate_mfc0nd_333,
+	gate_smmu_mfc0_1, gate_smmu_mfc0_0,
+	
+	gate_pmu_mfc1 = 2370, gate_sysreg_mfc1, gate_mfc1,
+	gate_ppmu_mfc1_1, gate_ppmu_mfc1_0,
+	gate_qe_mfc1_1, gate_qe_mfc1_0,
+
+	gate_ahb2apb_mfc1p = 2380, gate_xiu_mfc1x,
+	gate_mfc1np_83, gate_mfc1nd_333,
+
+	gate_smmu_mfc1_1, gate_smmu_mfc1_0,
+
 	nr_clks,
 };
 
@@ -1895,6 +1929,79 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	CGTE(gate_smmu_hevc_1,"gate_smmu_hevc_1", NULL, EXYNOS5430_ENABLE_IP_HEVC_SECURE_SMMU_HEVC, 1, 0, 0),
 	CGTE(gate_smmu_hevc_0,"gate_smmu_hevc_0", NULL, EXYNOS5430_ENABLE_IP_HEVC_SECURE_SMMU_HEVC, 0, 0, 0),
+
+	/* IMEM */
+	CGTE(gate_pmu_imem,"gate_pmu_imem", NULL, EXYNOS5430_ENABLE_IP_IMEM0, 2, 0, 0),
+	CGTE(gate_sysreg_imem,"gate_sysreg_imem", NULL, EXYNOS5430_ENABLE_IP_IMEM0, 1, 0, 0),
+	CGTE(gate_gic,"gate_gic", NULL, EXYNOS5430_ENABLE_IP_IMEM0, 0, 0, 0),
+
+	CGTE(gate_ppmu_sssx,"gate_ppmu_sssx", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 19, 0, 0),
+	CGTE(gate_qe_slimsss,"gate_qe_slimsss", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 14, 0, 0),
+	CGTE(gate_qe_sss_dram,"gate_qe_sss_dram", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 13, 0, 0),
+	CGTE(gate_qe_sss_cci,"gate_qe_sss_cci", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 12, 0, 0),
+	CGTE(gate_alb_imem,"gate_alb_imem", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 11, 0, 0),
+	CGTE(gate_axids_pimemx_imem1p,"gate_axids_pimemx_imem1p", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 10, 0, 0),
+	CGTE(gate_axids_pimemx_imem0p,"gate_axids_pimemx_imem0p", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 9, 0, 0),
+	CGTE(gate_axids_pimemx_gic,"gate_axids_pimemx_gic", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 8, 0, 0),
+	CGTE(gate_axius_xsssx,"gate_axius_xsssx", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 7, 0, 0),
+	CGTE(gate_asyncahbm_sss_egl,"gate_asyncahbm_sss_egl", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 6, 0, 0),
+	CGTE(gate_asyncaxis_mif_pimemx,"gate_asyncaxis_mif_pimemx", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 5, 0, 0),
+	CGTE(gate_axi2apb_imem1p,"gate_axi2apb_imem1p", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 4, 0, 0),
+	CGTE(gate_axi2apb_imem0p,"gate_axi2apb_imem0p", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 3, 0, 0),
+	CGTE(gate_xiu_sssx,"gate_xiu_sssx", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 2, 0, 0),
+	CGTE(gate_xiu_pimemx,"gate_xiu_pimemx", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 1, 0, 0),
+	CGTE(gate_imemnd_266,"gate_imemnd_266", NULL, EXYNOS5430_ENABLE_IP_IMEM1, 0, 0, 0),
+
+	CGTE(gate_int_mem,"gate_int_mem", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_INT_MEM, 0, 0, 0),
+
+	CGTE(gate_sss,"gate_sss", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_SSS, 0, 0, 0),
+
+	CGTE(gate_slimsss,"gate_slimsss", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_SLIMSSS, 0, 0, 0),
+
+	CGTE(gate_rtic,"gate_rtic", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_RTIC, 0, 0, 0),
+
+	CGTE(gate_smmu_sss_dram,"gate_smmu_sss_dram", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_SMMU_SSS, 1, 0, 0),
+	CGTE(gate_smmu_sss_cci,"gate_smmu_sss_cci", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_SMMU_SSS, 0, 0, 0),
+
+	CGTE(gate_smmu_slimsss,"gate_smmu_slimsss", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_SMMU_SLIMSSS, 0, 0, 0),
+
+	CGTE(gate_smmu_rtic,"gate_smmu_rtic", NULL, EXYNOS5430_ENABLE_IP_IMEM_SECURE_SMMU_RTIC, 0, 0, 0),
+
+	/* MFC0 */
+	CGTE(gate_pmu_mfc0,"gate_pmu_mfc0", NULL, EXYNOS5430_ENABLE_IP_MFC00, 2, 0, 0),
+	CGTE(gate_sysreg_mfc0,"gate_sysreg_mfc0", NULL, EXYNOS5430_ENABLE_IP_MFC00, 1, 0, 0),
+	CGTE(gate_mfc0,"gate_mfc0", NULL, EXYNOS5430_ENABLE_IP_MFC00, 0, 0, 0),
+
+	CGTE(gate_ppmu_mfc0_1,"gate_ppmu_mfc0_1", NULL, EXYNOS5430_ENABLE_IP_MFC01, 9, 0, 0),
+	CGTE(gate_ppmu_mfc0_0,"gate_ppmu_mfc0_0", NULL, EXYNOS5430_ENABLE_IP_MFC01, 8, 0, 0),
+
+	CGTE(gate_qe_mfc0_1,"gate_qe_mfc0_1", NULL, EXYNOS5430_ENABLE_IP_MFC01, 5, 0, 0),
+	CGTE(gate_qe_mfc0_0,"gate_qe_mfc0_0", NULL, EXYNOS5430_ENABLE_IP_MFC01, 4, 0, 0),
+	CGTE(gate_ahb2apb_mfc0p,"gate_ahb2apb_mfc0p", NULL, EXYNOS5430_ENABLE_IP_MFC01, 3, 0, 0),
+	CGTE(gate_xiu_mfc0x,"gate_xiu_mfc0x", NULL, EXYNOS5430_ENABLE_IP_MFC01, 2, 0, 0),
+	CGTE(gate_mfc0np_83,"gate_mfc0np_83", NULL, EXYNOS5430_ENABLE_IP_MFC01, 1, 0, 0),
+	CGTE(gate_mfc0nd_333,"gate_mfc0nd_333", NULL, EXYNOS5430_ENABLE_IP_MFC01, 0, 0, 0),
+
+	CGTE(gate_smmu_mfc0_1,"gate_smmu_mfc0_1", NULL, EXYNOS5430_ENABLE_IP_MFC0_SECURE_SMMU_MFC, 1, 0, 0),
+	CGTE(gate_smmu_mfc0_0,"gate_smmu_mfc0_0", NULL, EXYNOS5430_ENABLE_IP_MFC0_SECURE_SMMU_MFC, 0, 0, 0),
+
+	/* MFC1 */
+	CGTE(gate_pmu_mfc1,"gate_pmu_mfc1", NULL, EXYNOS5430_ENABLE_IP_MFC10, 2, 0, 0),
+	CGTE(gate_sysreg_mfc1,"gate_sysreg_mfc1", NULL, EXYNOS5430_ENABLE_IP_MFC10, 1, 0, 0),
+	CGTE(gate_mfc1,"gate_mfc1", NULL, EXYNOS5430_ENABLE_IP_MFC10, 0, 0, 0),
+
+	CGTE(gate_ppmu_mfc1_1,"gate_ppmu_mfc1_1", NULL, EXYNOS5430_ENABLE_IP_MFC11, 9, 0, 0),
+	CGTE(gate_ppmu_mfc1_0,"gate_ppmu_mfc1_0", NULL, EXYNOS5430_ENABLE_IP_MFC11, 8, 0, 0),
+
+	CGTE(gate_qe_mfc1_1,"gate_qe_mfc1_1", NULL, EXYNOS5430_ENABLE_IP_MFC11, 5, 0, 0),
+	CGTE(gate_qe_mfc1_0,"gate_qe_mfc1_0", NULL, EXYNOS5430_ENABLE_IP_MFC11, 4, 0, 0),
+	CGTE(gate_ahb2apb_mfc1p,"gate_ahb2apb_mfc1p", NULL, EXYNOS5430_ENABLE_IP_MFC11, 3, 0, 0),
+	CGTE(gate_xiu_mfc1x,"gate_xiu_mfc1x", NULL, EXYNOS5430_ENABLE_IP_MFC11, 2, 0, 0),
+	CGTE(gate_mfc1np_83,"gate_mfc1np_83", NULL, EXYNOS5430_ENABLE_IP_MFC11, 1, 0, 0),
+	CGTE(gate_mfc1nd_333,"gate_mfc1nd_333", NULL, EXYNOS5430_ENABLE_IP_MFC11, 0, 0, 0),
+
+	CGTE(gate_smmu_mfc1_1,"gate_smmu_mfc1_1", NULL, EXYNOS5430_ENABLE_IP_MFC1_SECURE_SMMU_MFC, 1, 0, 0),
+	CGTE(gate_smmu_mfc1_0,"gate_smmu_mfc1_0", NULL, EXYNOS5430_ENABLE_IP_MFC1_SECURE_SMMU_MFC, 0, 0, 0),
 
 };
 
