@@ -874,7 +874,7 @@ static int ion_device_register(void)
 }
 #endif	/* CONFIG_ION_EXYNOS_OF */
 
-static struct platform_driver ion_driver = {
+static struct platform_driver ion_driver __refdata = {
 	.probe	= exynos_ion_probe,
 	.remove	= exynos_ion_remove,
 	.driver	= {
