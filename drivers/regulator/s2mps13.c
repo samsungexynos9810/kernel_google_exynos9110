@@ -409,7 +409,7 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 		config.driver_data = s2mps13;
 		config.of_node = pdata->regulators[i].reg_node;
 
-		s2mps13->rdev[i] = regulator_register(&regulators[i], &config);
+		s2mps13->rdev[i] = regulator_register(&regulators[id], &config);
 		if (IS_ERR(s2mps13->rdev[i])) {
 			ret = PTR_ERR(s2mps13->rdev[i]);
 			dev_err(&pdev->dev, "regulator init failed for %d\n",
