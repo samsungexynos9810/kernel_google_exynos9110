@@ -258,7 +258,7 @@ enum exynos5430_clks {
 	sclk_lli_cmn_cfg, sclk_lli_tx0_cfg, sclk_lli_rx0_cfg,
 
 	/* aud0 ip gate */
-	gate_gpio_aud = 2000, gate_pmu_aud, gate_sysreg_aud, gate_slimbus,
+	gate_gpio_aud = 2000, gate_pmu_aud, gate_sysreg_aud, gate_slimbus_aud,
 	gate_uart, gate_pcm, gate_i2s, gate_timer, gate_intr_ctrl,
 	gate_sfr_ctrl = 2010, gate_sramc, gate_dmac, gate_pclk_dbg,
 	gate_ca5,
@@ -417,6 +417,43 @@ enum exynos5430_clks {
 	gate_smmu_m2mscaler0 = 2410,
 	gate_smmu_m2mscaler1,
 	gate_smmu_jpeg,
+
+	/* peric ip gate */
+	gate_slimbus = 2420, gate_pwm, gate_spdif, gate_pcm1,
+	gate_i2s1, gate_spi2, gate_spi1, gate_spi0, gate_adcif,
+	gate_gpio_touch = 2430, gate_gpio_nfc, gate_gpio_peric,
+	gate_pmu_peric, gate_sysreg_peric,
+	gate_uart2, gate_uart1, gate_uart0,
+	gate_hsi2c3 = 2440, gate_hsi2c2, gate_hsi2c1, gate_hsi2c0,
+	gate_i2c7, gate_i2c6, gate_i2c5, gate_i2c4,
+	gate_i2c3 = 2450, gate_i2c2, gate_i2c1, gate_i2c0,
+
+	gate_ahb2apb_peric2p, gate_ahb2apb_peric1p,
+	gate_ahb2apb_peric0p, gate_pericnp_66,
+
+	/* peris ip gate */
+	gate_asv_tb = 2460, gate_hpm_apbif,
+	gate_efuse_writer1, gate_efuse_writer1_apbif,
+	gate_efuse_writer0, gate_efuse_writer0_apbif,
+	gate_tmu1, gate_tmu1_apbif,
+	gate_tmu0 = 2470, gate_tmu0_apbif, gate_pmu_peris,
+	gate_sysreg_peris, gate_cmu_top_apbif,
+	gate_wdt_kfc = 2480, gate_wdt_egl,
+	gate_mct, gate_hdmi_cec,
+
+	gate_ahb2apb_peris1p, gate_ahb2apb_peris0p,
+	gate_perisnp_66,
+
+	gate_tzpc12 = 2490, gate_tzpc11, gate_tzpc10,
+	gate_tzpc9, gate_tzpc8, gate_tzpc7, gate_tzpc6,
+	gate_tzpc5, gate_tzpc4,
+	gate_tzpc3 = 2500, gate_tzpc2, gate_tzpc1, gate_tzpc0,
+	gate_seckey, gate_seckey_apbif,
+	gate_chipid, gate_chipid_apbif,
+
+	gate_toprtc = 2510,
+	gate_custom_efuse, gate_custom_efuse_apbif,
+	gate_antirbk_cnt, gate_antirbk_cnt_apbif,
 
 	nr_clks,
 };
@@ -1717,7 +1754,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_gpio_aud,"gate_gpio_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 13, 0, 0),
 	CGTE(gate_pmu_aud,"gate_pmu_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 12, 0, 0),
 	CGTE(gate_sysreg_aud,"gate_sysreg_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 11, 0, 0),
-	CGTE(gate_slimbus,"gate_slimbus", NULL, EXYNOS5430_ENABLE_IP_AUD0, 10, 0, 0),
+	CGTE(gate_slimbus_aud,"gate_slimbus_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 10, 0, 0),
 	CGTE(gate_uart,"gate_uart", NULL, EXYNOS5430_ENABLE_IP_AUD0, 9, 0, 0),
 	CGTE(gate_pcm,"gate_pcm", NULL, EXYNOS5430_ENABLE_IP_AUD0, 8, 0, 0),
 	CGTE(gate_i2s,"gate_i2s", NULL, EXYNOS5430_ENABLE_IP_AUD0, 7, 0, 0),
@@ -2040,6 +2077,93 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_smmu_m2mscaler1,"gate_smmu_m2mscaler1", NULL, EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER1, 0, 0, 0),
 
 	CGTE(gate_smmu_jpeg,"gate_smmu_jpeg", NULL, EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_JPEG, 0, 0, 0),
+
+	/* PERIC */
+	CGTE(gate_slimbus,"gate_slimbus", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 28, 0, 0),
+	CGTE(gate_pwm,"gate_pwm", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 27, 0, 0),
+	CGTE(gate_spdif,"gate_spdif", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 26, 0, 0),
+	CGTE(gate_pcm1,"gate_pcm1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 25, 0, 0),
+	CGTE(gate_i2s1,"gate_i2s1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 24, 0, 0),
+	CGTE(gate_spi2,"gate_spi2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 23, 0, 0),
+	CGTE(gate_spi1,"gate_spi1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 22, 0, 0),
+	CGTE(gate_spi0,"gate_spi0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 21, 0, 0),
+	CGTE(gate_adcif,"gate_adcif", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 20, 0, 0),
+	CGTE(gate_gpio_touch,"gate_gpio_touch", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 19, 0, 0),
+	CGTE(gate_gpio_nfc,"gate_gpio_nfc", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 18, 0, 0),
+	CGTE(gate_gpio_peric,"gate_gpio_peric", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 17, 0, 0),
+	CGTE(gate_pmu_peric,"gate_pmu_peric", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 16, 0, 0),
+	CGTE(gate_sysreg_peric,"gate_sysreg_peric", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 15, 0, 0),
+	CGTE(gate_uart2,"gate_uart2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 14, 0, 0),
+	CGTE(gate_uart1,"gate_uart1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 13, 0, 0),
+	CGTE(gate_uart0,"gate_uart0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 12, 0, 0),
+	CGTE(gate_hsi2c3,"gate_hsi2c3", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 11, 0, 0),
+	CGTE(gate_hsi2c2,"gate_hsi2c2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 10, 0, 0),
+	CGTE(gate_hsi2c1,"gate_hsi2c1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 9, 0, 0),
+	CGTE(gate_hsi2c0,"gate_hsi2c0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 8, 0, 0),
+	CGTE(gate_i2c7,"gate_i2c7", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 7, 0, 0),
+	CGTE(gate_i2c6,"gate_i2c6", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 6, 0, 0),
+	CGTE(gate_i2c5,"gate_i2c5", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 5, 0, 0),
+	CGTE(gate_i2c4,"gate_i2c4", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 4, 0, 0),
+	CGTE(gate_i2c3,"gate_i2c3", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 3, 0, 0),
+	CGTE(gate_i2c2,"gate_i2c2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 2, 0, 0),
+	CGTE(gate_i2c1,"gate_i2c1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 1, 0, 0),
+	CGTE(gate_i2c0,"gate_i2c0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 0, 0, 0),
+
+	CGTE(gate_ahb2apb_peric2p,"gate_ahb2apb_peric2p", NULL, EXYNOS5430_ENABLE_IP_PERIC1, 3, 0, 0),
+	CGTE(gate_ahb2apb_peric1p,"gate_ahb2apb_peric1p", NULL, EXYNOS5430_ENABLE_IP_PERIC1, 2, 0, 0),
+	CGTE(gate_ahb2apb_peric0p,"gate_ahb2apb_peric0p", NULL, EXYNOS5430_ENABLE_IP_PERIC1, 1, 0, 0),
+	CGTE(gate_pericnp_66,"gate_pericnp_66", NULL, EXYNOS5430_ENABLE_IP_PERIC1, 0, 0, 0),
+
+	/* PERIS */
+	CGTE(gate_asv_tb,"gate_asv_tb", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 23, 0, 0),
+	CGTE(gate_hpm_apbif,"gate_hpm_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 22, 0, 0),
+	CGTE(gate_efuse_writer1,"gate_efuse_writer1", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 21, 0, 0),
+	CGTE(gate_efuse_writer1_apbif,"gate_efuse_writer1_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 20, 0, 0),
+	CGTE(gate_efuse_writer0,"gate_efuse_writer0", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 19, 0, 0),
+	CGTE(gate_efuse_writer0_apbif,"gate_efuse_writer0_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 18, 0, 0),
+	CGTE(gate_tmu1,"gate_tmu1", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 14, 0, 0),
+	CGTE(gate_tmu1_apbif,"gate_tmu1_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 13, 0, 0),
+	CGTE(gate_tmu0,"gate_tmu0", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 12, 0, 0),
+	CGTE(gate_tmu0_apbif,"gate_tmu0_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 11, 0, 0),
+	CGTE(gate_pmu_peris,"gate_pmu_peris", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 10, 0, 0),
+	CGTE(gate_sysreg_peris,"gate_sysreg_peris", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 9, 0, 0),
+	CGTE(gate_cmu_top_apbif,"gate_cmu_top_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 8, 0, 0),
+	CGTE(gate_wdt_kfc,"gate_wdt_kfc", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 5, 0, 0),
+	CGTE(gate_wdt_egl,"gate_wdt_egl", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 4, 0, 0),
+	CGTE(gate_mct,"gate_mct", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 3, 0, 0),
+	CGTE(gate_hdmi_cec,"gate_hdmi_cec", NULL, EXYNOS5430_ENABLE_IP_PERIS0, 2, 0, 0),
+
+	CGTE(gate_ahb2apb_peris1p,"gate_ahb2apb_peris1p", NULL, EXYNOS5430_ENABLE_IP_PERIS1, 2, 0, 0),
+	CGTE(gate_ahb2apb_peris0p,"gate_ahb2apb_peris0p", NULL, EXYNOS5430_ENABLE_IP_PERIS1, 1, 0, 0),
+	CGTE(gate_perisnp_66,"gate_perisnp_66", NULL, EXYNOS5430_ENABLE_IP_PERIS1, 0, 0, 0),
+
+	CGTE(gate_tzpc12,"gate_tzpc12", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 12, 0, 0),
+	CGTE(gate_tzpc11,"gate_tzpc11", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 11, 0, 0),
+	CGTE(gate_tzpc10,"gate_tzpc10", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 10, 0, 0),
+	CGTE(gate_tzpc9,"gate_tzpc9", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 9, 0, 0),
+	CGTE(gate_tzpc8,"gate_tzpc8", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 8, 0, 0),
+	CGTE(gate_tzpc7,"gate_tzpc7", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 7, 0, 0),
+	CGTE(gate_tzpc6,"gate_tzpc6", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 6, 0, 0),
+	CGTE(gate_tzpc5,"gate_tzpc5", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 5, 0, 0),
+	CGTE(gate_tzpc4,"gate_tzpc4", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 4, 0, 0),
+	CGTE(gate_tzpc3,"gate_tzpc3", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 3, 0, 0),
+	CGTE(gate_tzpc2,"gate_tzpc2", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 2, 0, 0),
+	CGTE(gate_tzpc1,"gate_tzpc1", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 1, 0, 0),
+	CGTE(gate_tzpc0,"gate_tzpc0", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TZPC, 0, 0, 0),
+
+	CGTE(gate_seckey,"gate_seckey", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_SECKEY, 1, 0, 0),
+	CGTE(gate_seckey_apbif,"gate_seckey_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_SECKEY, 0, 0, 0),
+
+	CGTE(gate_chipid,"gate_chipid", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 1, 0, 0),
+	CGTE(gate_chipid_apbif,"gate_chipid_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 0, 0, 0),
+
+	CGTE(gate_toprtc,"gate_toprtc", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TOPRTC, 0, 0, 0),
+
+	CGTE(gate_custom_efuse,"gate_custom_efuse", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CUSTOM_EFUSE, 1, 0, 0),
+	CGTE(gate_custom_efuse_apbif,"gate_custom_efuse_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CUSTOM_EFUSE, 0, 0, 0),
+
+	CGTE(gate_antirbk_cnt,"gate_antirbk_cnt", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_ANTIRBK_CNT, 1, 0, 0),
+	CGTE(gate_antirbk_cnt_apbif,"gate_antirbk_cnt_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_ANTIRBK_CNT, 0, 0, 0),
 
 };
 
