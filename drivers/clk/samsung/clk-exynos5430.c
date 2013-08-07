@@ -349,6 +349,18 @@ enum exynos5430_clks {
 	gate_asyncapb_g3d, gate_ahb2apb_g3dp,
 	gate_g3dnp_150, gate_g3dnd_600,
 
+	/* gscl ip gate */
+	gate_pmu_gscl = 2260, gate_sysreg_gscl,
+	gate_gsd, gate_gscl2, gate_gscl1, gate_gscl0,
+
+	gate_ppmu_gscl2 = 2270, gate_ppmu_gscl1, gate_ppmu_gscl0,
+	gate_qe_gscl2, gate_qe_gscl1, gate_qe_gscl0,
+	gate_ahb2apb_gsclp, gate_xiu_gsclx,
+	gate_gsclnp_111 = 2280,
+	gate_gsclrtnd_333, gate_gsclbend_333,
+	gate_smmu_gscl0, gate_smmu_gscl1, gate_smmu_gscl2,
+
+
 	nr_clks,
 };
 
@@ -1830,6 +1842,34 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_ahb2apb_g3dp,"gate_ahb2apb_g3dp", NULL, EXYNOS5430_ENABLE_IP_G3D1, 2, 0, 0),
 	CGTE(gate_g3dnp_150,"gate_g3dnp_150", NULL, EXYNOS5430_ENABLE_IP_G3D1, 1, 0, 0),
 	CGTE(gate_g3dnd_600,"gate_g3dnd_600", NULL, EXYNOS5430_ENABLE_IP_G3D1, 0, 0, 0),
+
+	/* GSCL */
+	CGTE(gate_pmu_gscl,"gate_pmu_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 5, 0, 0),
+	CGTE(gate_sysreg_gscl,"gate_sysreg_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 4, 0, 0),
+	CGTE(gate_gsd,"gate_gsd", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 3, 0, 0),
+	CGTE(gate_gscl2,"gate_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 2, 0, 0),
+	CGTE(gate_gscl1,"gate_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 1, 0, 0),
+	CGTE(gate_gscl0,"gate_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 0, 0, 0),
+
+	CGTE(gate_ppmu_gscl2,"gate_ppmu_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 13, 0, 0),
+	CGTE(gate_ppmu_gscl1,"gate_ppmu_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 12, 0, 0),
+	CGTE(gate_ppmu_gscl0,"gate_ppmu_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 11, 0, 0),
+
+	CGTE(gate_qe_gscl2,"gate_qe_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 7, 0, 0),
+	CGTE(gate_qe_gscl1,"gate_qe_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 6, 0, 0),
+	CGTE(gate_qe_gscl0,"gate_qe_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 5, 0, 0),
+	CGTE(gate_ahb2apb_gsclp,"gate_ahb2apb_gsclp", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 4, 0, 0),
+	CGTE(gate_xiu_gsclx,"gate_xiu_gsclx", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 3, 0, 0),
+	CGTE(gate_gsclnp_111,"gate_gsclnp_111", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 2, 0, 0),
+	CGTE(gate_gsclrtnd_333,"gate_gsclrtnd_333", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 1, 0, 0),
+	CGTE(gate_gsclbend_333,"gate_gsclbend_333", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 0, 0, 0),
+
+	CGTE(gate_smmu_gscl0,"gate_smmu_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL0, 0, 0, 0),
+
+	CGTE(gate_smmu_gscl1,"gate_smmu_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL1, 0, 0, 0),
+
+	CGTE(gate_smmu_gscl2,"gate_smmu_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL2, 0, 0, 0),
+
 
 };
 
