@@ -4597,18 +4597,6 @@ static int s3c_fb_resume(struct device *dev)
 	}
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(sfb->dev);
-#elif !defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-	if (!sfb->fb_mif_handle) {
-		sfb->fb_mif_handle = exynos5_bus_mif_min(300000);
-		if (!sfb->fb_mif_handle)
-			dev_err(sfb->dev, "failed to request min_freq for mif\n");
-	}
-
-	if (!sfb->fb_int_handle) {
-		sfb->fb_int_handle = exynos5_bus_int_min(160000);
-		if (!sfb->fb_int_handle)
-			dev_err(sfb->dev, "failed to request min_freq for int\n");
-	}
 #endif
 	clk_enable(sfb->bus_clk);
 
@@ -4623,8 +4611,6 @@ static int s3c_fb_resume(struct device *dev)
 
 	pd->vidcon1 |= VIDCON1_VCLK_HOLD;
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
-	writel(REG_CLKGATE_MODE_NON_CLOCK_GATE,
-			sfb->regs + REG_CLKGATE_MODE);
 	/* zero all windows before we do anything */
 	for (win_no = 0; win_no < sfb->variant.nr_windows; win_no++)
 		s3c_fb_clear_win(sfb, win_no);
@@ -4685,19 +4671,6 @@ static int s3c_fb_runtime_resume(struct device *dev)
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
 	struct s3c_fb_platdata *pd = sfb->pdata;
 
-#if !defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-	if (!sfb->fb_mif_handle) {
-		sfb->fb_mif_handle = exynos5_bus_mif_min(300000);
-		if (!sfb->fb_mif_handle)
-			dev_err(sfb->dev, "failed to request min_freq for mif\n");
-	}
-
-	if (!sfb->fb_int_handle) {
-		sfb->fb_int_handle = exynos5_bus_int_min(160000);
-		if (!sfb->fb_int_handle)
-			dev_err(sfb->dev, "failed to request min_freq for int\n");
-	}
-#endif
 	clk_enable(sfb->bus_clk);
 
 	clk_enable(sfb->axi_disp1);
