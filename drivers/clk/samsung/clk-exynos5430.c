@@ -339,6 +339,16 @@ enum exynos5430_clks {
 	gate_xiu_g2dx = 2230, gate_g2dnp_133, gate_g2dnd_400,
 	gate_smmu_g2d,
 
+	/* g3d ip gate */
+	gate_freq_det_g3d_pll = 2240, gate_hpm_g3d, gate_pmu_g3d,
+	gate_sysreg_g3d, gate_g3d,
+
+	gate_ppmu_g3d1, gate_ppmu_g3d0,
+
+	gate_qe_g3d1 = 2250, gate_qe_g3d0,
+	gate_asyncapb_g3d, gate_ahb2apb_g3dp,
+	gate_g3dnp_150, gate_g3dnd_600,
+
 	nr_clks,
 };
 
@@ -1805,6 +1815,21 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	CGTE(gate_smmu_g2d,"gate_smmu_g2d", NULL, EXYNOS5430_ENABLE_IP_G2D_SECURE_SMMU_G2D, 0, 0, 0),
 
+	/* G3D */
+	CGTE(gate_freq_det_g3d_pll,"gate_freq_det_g3d_pll", NULL, EXYNOS5430_ENABLE_IP_G3D0, 4, 0, 0),
+	CGTE(gate_hpm_g3d,"gate_hpm_g3d", NULL, EXYNOS5430_ENABLE_IP_G3D0, 3, 0, 0),
+	CGTE(gate_pmu_g3d,"gate_pmu_g3d", NULL, EXYNOS5430_ENABLE_IP_G3D0, 2, 0, 0),
+	CGTE(gate_sysreg_g3d,"gate_sysreg_g3d", NULL, EXYNOS5430_ENABLE_IP_G3D0, 1, 0, 0),
+	CGTE(gate_g3d,"gate_g3d", NULL, EXYNOS5430_ENABLE_IP_G3D0, 0, 0, 0),
+
+	CGTE(gate_ppmu_g3d1,"gate_ppmu_g3d1", NULL, EXYNOS5430_ENABLE_IP_G3D1, 7, 0, 0),
+	CGTE(gate_ppmu_g3d0,"gate_ppmu_g3d0", NULL, EXYNOS5430_ENABLE_IP_G3D1, 6, 0, 0),
+	CGTE(gate_qe_g3d1,"gate_qe_g3d1", NULL, EXYNOS5430_ENABLE_IP_G3D1, 5, 0, 0),
+	CGTE(gate_qe_g3d0,"gate_qe_g3d0", NULL, EXYNOS5430_ENABLE_IP_G3D1, 4, 0, 0),
+	CGTE(gate_asyncapb_g3d,"gate_asyncapb_g3d", NULL, EXYNOS5430_ENABLE_IP_G3D1, 3, 0, 0),
+	CGTE(gate_ahb2apb_g3dp,"gate_ahb2apb_g3dp", NULL, EXYNOS5430_ENABLE_IP_G3D1, 2, 0, 0),
+	CGTE(gate_g3dnp_150,"gate_g3dnp_150", NULL, EXYNOS5430_ENABLE_IP_G3D1, 1, 0, 0),
+	CGTE(gate_g3dnd_600,"gate_g3dnd_600", NULL, EXYNOS5430_ENABLE_IP_G3D1, 0, 0, 0),
 
 };
 
