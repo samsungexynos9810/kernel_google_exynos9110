@@ -141,21 +141,27 @@ void __iomem *exynos_list_feed[] = {
 	EXYNOS_ARM_CORE_OPTION(5),
 	EXYNOS_ARM_CORE_OPTION(6),
 	EXYNOS_ARM_CORE_OPTION(7),
-	EXYNOS54XX_ARM_COMMON_OPTION,
-	EXYNOS54XX_KFC_COMMON_OPTION,
-	EXYNOS5_GSCL_OPTION,
-	EXYNOS5_ISP_OPTION,
-	EXYNOS5410_MFC_OPTION,
-	EXYNOS5410_G3D_OPTION,
-	EXYNOS5410_DISP1_OPTION,
-	EXYNOS5410_MAU_OPTION,
-	EXYNOS5420_G2D_OPTION,
-	EXYNOS5420_MSC_OPTION,
+	EXYNOS5430_EAGLE_NONCPU_OPTION,
+	EXYNOS5430_KFC_NONCPU_OPTION,
 	EXYNOS5_TOP_PWR_OPTION,
 	EXYNOS5_TOP_PWR_SYSMEM_OPTION,
+	EXYNOS5430_GSCL_OPTION,
+	EXYNOS5430_CAM0_OPTION,
+	EXYNOS5430_MSCL_OPTION,
+	EXYNOS5430_G3D_OPTION,
+	EXYNOS5430_DISP_OPTION,
+	EXYNOS5430_CAM1_OPTION,
+	EXYNOS5430_AUD_OPTION,
+	EXYNOS5430_FSYS_OPTION,
+	EXYNOS5430_BUS2_OPTION,
+	EXYNOS5430_G2D_OPTION,
+	EXYNOS5430_ISP_OPTION,
+	EXYNOS5430_MFC0_OPTION,
+	EXYNOS5430_MFC1_OPTION,
+	EXYNOS5430_HEVC_OPTION,
 };
 
-static void exynos_init_pmu(void)
+static void exynos_use_feedback(void)
 {
 	unsigned int i;
 	unsigned int tmp;
@@ -183,27 +189,32 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 void exynos_xxti_sys_powerdown(bool enable)
 {
 	unsigned int value;
-	void __iomem *base;
-/* modify */
-	base = soc_is_exynos5250() ? EXYNOS5_XXTI_SYS_PWR_REG :
-				     EXYNOS4_XXTI_LOWPWR;
 
-	value = __raw_readl(base);
+	value = __raw_readl(EXYNOS5_XXTI_SYS_PWR_REG);
 
 	if (enable)
 		value |= EXYNOS_SYS_PWR_CFG;
 	else
 		value &= ~EXYNOS_SYS_PWR_CFG;
 
-	__raw_writel(value, base);
+	__raw_writel(value, EXYNOS5_XXTI_SYS_PWR_REG);
 }
 
-void exynos_cpu_reset_assert_ctrl(bool on)
+static void exynos_cpu_reset_assert_ctrl(bool on, enum cpu_type cluster)
 {
 	unsigned int i;
 	unsigned int option;
+	unsigned int cpu_s, cpu_f;
 
-	for (i = 0; i < num_possible_cpus(); i++) {
+	if (cluster == KFC) {
+		cpu_s = CPUS_PER_CLUSTER;
+		cpu_f = cpu_s + CPUS_PER_CLUSTER - 1;
+	} else {
+		cpu_s = 0;
+		cpu_f = CPUS_PER_CLUSTER - 1;
+	}
+
+	for (i = cpu_s; i < cpu_f; i++) {
 		option = __raw_readl(EXYNOS_ARM_CORE_OPTION(i));
 		option = on ? (option | EXYNOS_USE_DELAYED_RESET_ASSERTION) :
 				   (option & ~EXYNOS_USE_DELAYED_RESET_ASSERTION);
@@ -212,51 +223,23 @@ void exynos_cpu_reset_assert_ctrl(bool on)
 
 }
 
-void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type)
-{
-	unsigned int value;
-
-	/*
-	 * When SYS_WDTRESET is set, watchdog timer reset request is ignored
-	 * by power management unit.
-	 */
-	pmu_wdt_reset_type = EXYNOS_SYS_WDTRESET;
-	if (pmu_wdt_reset_type == NULL) {
-		pr_err("Failed to %s pmu wdt reset\n",
-				on ? "enable" : "disable");
-	return;
-	}
-
-	value = __raw_readl(EXYNOS_AUTOMATIC_WDT_RESET_DISABLE);
-	if (on)
-		value &= ~pmu_wdt_reset_type;
-	else
-		value |= pmu_wdt_reset_type;
-	__raw_writel(value, EXYNOS_AUTOMATIC_WDT_RESET_DISABLE);
-	value = __raw_readl(EXYNOS_MASK_WDT_RESET_REQUEST);
-	if (on)
-		value &= ~pmu_wdt_reset_type;
-	else
-		value |= pmu_wdt_reset_type;
-	__raw_writel(value, EXYNOS_MASK_WDT_RESET_REQUEST);
-}
-
 static int __init exynos_pmu_init(void)
 {
 	/*
 	 * Set measure power on/off duration
 	 * Use SC_USE_FEEDBACK
 	 */
+	exynos_use_feedback();
 
 	/* Enable USE_STANDBY_WFI for all CORE */
 	__raw_writel(EXYNOS5_USE_STANDBY_WFI_ALL,
 			EXYNOS_CENTRAL_SEQ_OPTION);
 
-	exynos_cpu_reset_assert_ctrl(true);
+	exynos_cpu_reset_assert_ctrl(true, ARM);
 
 	exynos_pmu_config = exynos5430_pmu_config;
 
-	if (exynos_pmu_config == NULL)
+	if (exynos_pmu_config != NULL)
 		pr_info("EXYNOS5430 PMU Initialize\n");
 	else
 		pr_info("EXYNOS: PMU not supported\n");
