@@ -297,8 +297,13 @@ static int samsung_usb3phy_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
+static struct samsung_usbphy_drvdata usb3phy_exynos5250 = {
 	.cpu_type		= TYPE_EXYNOS5250,
+	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
+};
+
+static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
+	.cpu_type		= TYPE_EXYNOS5,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
 };
 
@@ -306,6 +311,9 @@ static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
 static const struct of_device_id samsung_usbphy_dt_match[] = {
 	{
 		.compatible = "samsung,exynos5250-usb3phy",
+		.data = &usb3phy_exynos5250
+	}, {
+		.compatible = "samsung,exynos5-usb3phy",
 		.data = &usb3phy_exynos5
 	},
 	{},
@@ -316,6 +324,9 @@ MODULE_DEVICE_TABLE(of, samsung_usbphy_dt_match);
 static struct platform_device_id samsung_usbphy_driver_ids[] = {
 	{
 		.name		= "exynos5250-usb3phy",
+		.driver_data	= (unsigned long)&usb3phy_exynos5250,
+	}, {
+		.name		= "exynos5-usb3phy",
 		.driver_data	= (unsigned long)&usb3phy_exynos5,
 	},
 	{},

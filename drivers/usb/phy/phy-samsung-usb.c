@@ -97,6 +97,7 @@ void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on)
 		 * device phy control with enable bit at position 0.
 		 */
 	case TYPE_EXYNOS5250:
+	case TYPE_EXYNOS5:
 		if (sphy->phy_type == USB_PHY_TYPE_DEVICE) {
 			reg = sphy->pmuregs +
 				sphy->drv_data->devphy_reg_offset;
@@ -174,7 +175,8 @@ int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy)
 	 * In exynos5250 USB host and device PHY use
 	 * external crystal clock XXTI
 	 */
-	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
+	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250 ||
+		sphy->drv_data->cpu_type == TYPE_EXYNOS5)
 		ref_clk = devm_clk_get(sphy->dev, "ext_xtal");
 	else
 		ref_clk = devm_clk_get(sphy->dev, "xusbxti");
@@ -183,7 +185,8 @@ int samsung_usbphy_get_refclk_freq(struct samsung_usbphy *sphy)
 		return PTR_ERR(ref_clk);
 	}
 
-	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250) {
+	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250 ||
+		sphy->drv_data->cpu_type == TYPE_EXYNOS5) {
 		/* set clock frequency for PLL */
 		switch (clk_get_rate(ref_clk)) {
 		case 9600 * KHZ:
