@@ -552,4 +552,9 @@
 		clock-names = "watchdog";
 		timeout-sec = <30>;
 	};
+
+	firmware@0207F000 {
+		compatible = "samsung,secure-firmware";
+		reg = <0x0207F000 0x1000>;
+	};
 };
