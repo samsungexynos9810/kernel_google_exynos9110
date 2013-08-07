@@ -1203,7 +1203,7 @@ int fimc_is_video_streamoff(struct file *file,
 	framemgr_x_barrier_irq(framemgr, 0);
 
 	if (qcount > 0)
-		mwarn("video%d qbuf is not empty(%d)", vctx,
+		mwarn("video%d stream off : queued buffer is not empty(%d)", vctx,
 			vctx->video->id, qcount);
 
 	if (vbq->type != type) {

@@ -1329,6 +1329,7 @@ int fimc_is_sensor_buffer_finish(struct fimc_is_device_sensor *device,
 	} else {
 		err("frame(%d) is not com state(%d)", index, frame->state);
 		fimc_is_frame_print_all(framemgr);
+		ret = -EINVAL;
 	}
 
 	framemgr_x_barrier_irqr(framemgr, FMGR_IDX_3 + index, flags);
@@ -1343,7 +1344,10 @@ void fimc_is_sensor_dtp(unsigned long data)
 	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_device_sensor *device;
 	struct fimc_is_device_ischain *ischain;
-	struct vb2_queue *vbq;
+	struct fimc_is_queue *queue;
+	struct fimc_is_framemgr *framemgr;
+	struct fimc_is_frame *frame;
+	unsigned long flags;
 	u32 i;
 
 	BUG_ON(!data);
@@ -1357,10 +1361,16 @@ void fimc_is_sensor_dtp(unsigned long data)
 		return;
 	}
 
-	vbq = vctx->q_dst.vbq;
 	ischain = device->ischain;
 	if (!ischain) {
 		err("ischain is NULL");
+		return;
+	}
+
+	queue = GET_DST_QUEUE(vctx);
+	framemgr = &queue->framemgr;
+	if ((framemgr->frame_cnt == 0) || (framemgr->frame_cnt >= FRAMEMGR_MAX_REQUEST)) {
+		err("frame count of framemgr is invalid(%d)", framemgr->frame_cnt);
 		return;
 	}
 
@@ -1369,12 +1379,22 @@ void fimc_is_sensor_dtp(unsigned long data)
 	set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_isp.state);
 	up(&ischain->group_3ax.smp_trigger);
 
-	for (i = 0; i < VIDEO_MAX_FRAME; i++) {
-		if (vbq->bufs[i] && vbq->bufs[i]->state == VB2_BUF_STATE_ACTIVE) {
-			pr_err("%s buffer done!!!! %d \n", __func__, i);
-			vb2_buffer_done(vbq->bufs[i], VB2_BUF_STATE_ERROR);
+	framemgr_e_barrier_irqs(framemgr, 0, flags);
+
+	for (i = 0; i < framemgr->frame_cnt; i++) {
+		frame = &framemgr->frame[i];
+		if (frame->state == FIMC_IS_FRAME_STATE_REQUEST) {
+			pr_err("%s buffer done1!!!! %d \n", __func__, i);
+			fimc_is_frame_trans_req_to_com(framemgr, frame);
+			queue_done(vctx, queue, i, VB2_BUF_STATE_ERROR);
+		} else if (frame->state == FIMC_IS_FRAME_STATE_PROCESS) {
+			pr_err("%s buffer done2!!!! %d \n", __func__, i);
+			fimc_is_frame_trans_pro_to_com(framemgr, frame);
+			queue_done(vctx, queue, i, VB2_BUF_STATE_ERROR);
 		}
 	}
+
+	framemgr_x_barrier_irqr(framemgr, 0, flags);
 }
 #endif
 
