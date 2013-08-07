@@ -2177,7 +2177,9 @@ int synaptics_rmi4_fw_update_on_probe(struct synaptics_rmi4_data *rmi4_data)
 {
 	int retval;
 	const struct firmware *fw_entry = NULL;
+#ifndef NO_FIRMWARE_UPDATE
 	unsigned char *fw_data = NULL;
+#endif
 	char fw_path[SYNAPTICS_MAX_FW_PATH];
 
 #ifdef CONFIG_SEC_TSP_FACTORY
@@ -2201,7 +2203,7 @@ int synaptics_rmi4_fw_update_on_probe(struct synaptics_rmi4_data *rmi4_data)
 	if (synaptics_skip_firmware_update(rmi4_data, fw_entry))
 		goto done;
 
-#if 0
+#ifndef NO_FIRMWARE_UPDATE
 	fw_data = (unsigned char *) fw_entry->data;
 
 	retval = synaptics_fw_updater(fw_data);

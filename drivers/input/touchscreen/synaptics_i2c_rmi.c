@@ -3540,27 +3540,40 @@ static int synaptics_power(bool on)
 	struct regulator *regulator_vdd;
 	struct regulator *regulator_avdd;
 	static bool enabled;
+	int error;
 
 	if (enabled == on)
 		return 0;
 
 	regulator_vdd = regulator_get(NULL, "tsp_io");
 	if (IS_ERR(regulator_vdd)) {
-		printk(KERN_ERR "[TSP]ts_power_on : tsp_io regulator_get failed\n");
+		pr_err("%s: [TSP]ts_power_on : tsp_io regulator_get failed\n",
+				__func__);
 		return PTR_ERR(regulator_vdd);
 	}
 
 	regulator_avdd = regulator_get(NULL, "tsp_avdd");
 	if (IS_ERR(regulator_avdd)) {
-		printk(KERN_ERR "[TSP]ts_power_on : tsp_avdd regulator_get failed\n");
+		pr_err("%s: [TSP]ts_power_on : tsp_avdd regulator_get failed\n",
+				__func__);
 		return PTR_ERR(regulator_avdd);
 	}
 
-	printk(KERN_ERR "[TSP] %s %s\n", __func__, on ? "on" : "off");
+	pr_info("%s: [TSP] %s\n", __func__, on ? "on" : "off");
 
 	if (on) {
-		regulator_enable(regulator_vdd);
-		regulator_enable(regulator_avdd);
+		error = regulator_enable(regulator_vdd);
+		if (error) {
+			pr_err("%s: Failed to enable vdd: %d\n", __func__,
+				error);
+			return error;
+		}
+		error = regulator_enable(regulator_avdd);
+		if (error) {
+			pr_err("%s: Failed to enable avdd: %d\n", __func__,
+				error);
+			return error;
+		}
 
 	} else {
 		/*

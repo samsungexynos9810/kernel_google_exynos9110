@@ -24,6 +24,7 @@
 
 /*#define dev_dbg(dev, fmt, arg...) dev_info(dev, fmt, ##arg)*/
 
+#define NO_FIRMWARE_UPDATE
 #define SYNAPTICS_DEVICE_NAME	"GT-I95XX"
 /*#define TSP_BOOSTER*/
 #ifdef TSP_BOOSTER
@@ -32,7 +33,7 @@
 #define TOUCH_BOOSTER_CHG_TIME	200
 #endif
 
-#define SECURE_TSP
+/*#define SECURE_TSP*/
 
 /* To support suface touch, firmware should support data
  * which is required related app ex) MT_ANGLE, MT_PALM ...
