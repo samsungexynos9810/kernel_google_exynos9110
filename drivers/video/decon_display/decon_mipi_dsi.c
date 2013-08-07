@@ -510,14 +510,14 @@ int s5p_mipi_dsi_set_clock(struct mipi_dsim_device *dsim,
 				return -EINVAL;
 			}
 			if (!soc_is_exynos5250()) {
-#if 1
+#if defined(CONFIG_DECON_LCD_S6E8AA0)
 				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
 				s5p_mipi_dsi_set_timing_register0(dsim, 0x03, 0x06);
 				s5p_mipi_dsi_set_timing_register1(dsim, 0x04, 0x15,
 									0x09, 0x04);
 				s5p_mipi_dsi_set_timing_register2(dsim, 0x05, 0x06,
 									0x07);
-#else
+#elif defined(CONFIG_DECON_LCD_S6E3FA0)
 				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
 				s5p_mipi_dsi_set_timing_register0(dsim, 0x06, 0x0b);
 				s5p_mipi_dsi_set_timing_register1(dsim, 0x07, 0x27,
@@ -1070,12 +1070,89 @@ static int mipi_lcd_power_control(struct mipi_dsim_device *dsim,
 	return 1;
 }
 
+static void mipi_cmu_set(void)
+{
+	void __iomem *regs;
+	u32 data;
+
+	/* Set DISP_PLL = 131Mhz */
+	regs = ioremap(0x13B90100, 0x4);
+	writel(0xA0830303, regs);
+	iounmap(regs);
+	msleep(100);
+
+	/* Set MFC_PLL = 1332Mhz */
+	regs = ioremap(0x105B0120, 0x4);
+	writel(0xA0DE0400, regs);
+	iounmap(regs);
+	msleep(100);
+
+	/* Set MUX_DECON_ECLK_A: MOUT_BUS_PLL_SUB */
+	regs = ioremap(0x105B0210, 0x4);
+	data = readl(regs) | 0x1;
+	writel(data, regs);
+	iounmap(regs);
+
+	/* Set ACLK_DISP_333_RATIO = 0x2 */
+	regs = ioremap(0x105B060c, 0x4);
+	data = readl(regs) & ~(0x7 << 4);
+	data |= (0x2 << 4);
+	writel(data, regs);
+
+	/* Set SCLK_DECON_ECLK_RATIO = 0x2 */
+	regs = ioremap(0x105B0610, 0x4);
+	data = readl(regs);
+	data &= ~0xf;
+	data |= 0x2;
+	writel(data, regs);
+	iounmap(regs);
+
+	/* SET MUX_DISP_PLL: FOUT_DISP_PLL */
+	regs = ioremap(0x13B90200, 0x4);
+	writel(0x1, regs);
+	iounmap(regs);
+
+	/* Set MUX_SCLK_DSD_USER: SCLK_DSD
+	 * MUX_SCLK_DECON_VCLK_USER: SCLK_DECON_VCLK
+	 * MUX_SCLK_DECON_ECLK_USER: SCLK_DECON_ECLK
+	 * MUX_SCLK_ACLK_DISP_222_USER: ACLK_DISP_222
+	 * MUX_SCLK_ACLK_DISP_333_USER: ACLK_DISP_333
+	 */
+	regs = ioremap(0x13B90204, 0x4);
+	data = readl(regs + 0x4);
+	data |= 0x11111;
+	writel(data, regs);
+	iounmap(regs);
+
+	/* Set MUX_PHYCLK_MIPIDPHY_RXCLKESC0_USER:
+	 *	MUX_PHYCLK_MIPIDPHY_RXCLKESC0
+	 * Set MUX_PHYCLK_MIPIDPHY_BITCLKDIV8_USER:
+	 *	MUX_PHYCLK_MIPIDPHY_BITCLKDIV8
+	 */
+	regs = ioremap(0x13B90208, 0x4);
+	data = readl(regs);
+	data |= (1 << 8) | (1 << 12);
+	writel(data, regs);
+	iounmap(regs);
+
+	/* Set MUX_SCLK_DECON_ECLK: MOUT_SCLK_DECON_ECLK_USER */
+	regs = ioremap(0x13B9020C, 0x4);
+	writel(0x1, regs);
+	iounmap(regs);
+
+	/* Set: ignore CLK1 was toggling */
+	regs = ioremap(0x13B90508, 0x4);
+	writel(0, regs);
+	iounmap(regs);
+}
+
 static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 {
 	struct resource *res;
 	struct mipi_dsim_device *dsim = NULL;
 	int ret = -1;
 
+	mipi_cmu_set();
 	if (!dsim)
 		dsim = kzalloc(sizeof(struct mipi_dsim_device),
 			GFP_KERNEL);
@@ -1258,10 +1335,15 @@ struct mipi_dsim_config g_dsim_config = {
 	.e_byte_clk	= DSIM_PLL_OUT_DIV8,
 	.e_burst_mode	= DSIM_BURST,
 
+#if defined(CONFIG_DECON_LCD_S6E8AA0)
 	.p = 4,
 	.m = 80,
 	.s = 2,
-
+#elif defined(CONFIG_DECON_LCD_S6E3FA0)
+	.p = 4,
+	.m = 75,
+	.s = 1,
+#endif
 	/* D-PHY PLL stable time spec :min = 200usec ~ max 400usec */
 	.pll_stable_time = 500,
 

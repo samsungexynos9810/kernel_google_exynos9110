@@ -656,7 +656,7 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 		clk = clk_get_rate(sfb->bus_clk);
 	else
 		clk = clk_get_rate(sfb->lcd_clk);
-	clk = 300000000;
+	clk = 133000000;
 	tmp = (unsigned long long)clk;
 	tmp *= pixclk;
 
@@ -1178,6 +1178,7 @@ static int s3c_fb_setcolreg(unsigned regno,
 static void s3c_fb_activate_window(struct s3c_fb *sfb, unsigned int index)
 {
 	u32 data;
+
 	data = readl(sfb->regs + WINCON(index));
 	data |= WINCONx_ENWIN;
 	writel(data, sfb->regs + WINCON(index));
@@ -3870,55 +3871,6 @@ static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 }
 #endif
 
-static void s3c_fb_clock_set(void)
-{
-	void __iomem *regs;
-	u32 data;
-
-	/* DISPL_PLL_SEL */
-	regs = ioremap(0x13B90200, 0x4);
-	writel(0x1, regs);
-	iounmap(regs);
-
-	/* MUX_SCLK_DECON_ECLK , MUX_SCLK_DECON_VCLK  */
-	regs = ioremap(0x13B9020C, 0x4);
-	writel(0x1, regs);
-	iounmap(regs);
-
-	/* ACLK_DISP_333_USER_SEL */
-	regs = ioremap(0x13B90204, 0x4);
-	data = readl(regs);
-	data |= 0x11111;
-	writel(data, regs);
-	iounmap(regs);
-
-	regs = ioremap(0x13B90208, 0x4);
-	data = readl(regs);
-	data |= (1 << 8) | (1 << 12);
-	writel(data, regs);
-	iounmap(regs);
-
-	/* DISP PLL CON0 */
-	regs = ioremap(0x13B90100, 0x4);
-	writel(0xA0850303, regs);
-	iounmap(regs);
-
-	regs = ioremap(0x13B90508, 0x4);
-	writel(0, regs);
-	iounmap(regs);
-
-	regs = ioremap(0x105B0210, 0x4);
-	data = readl(regs) | 0x1;
-	writel(data, regs);
-	iounmap(regs);
-
-	/* ACLK_DISP_333_RATIO */
-	regs = ioremap(0x105B060c, 0x8);
-	data = readl(regs) | 0x10;
-	writel(data, regs);
-}
-
-
 static struct s3c_fb_driverdata s3c_fb_data_exynos5;
 
 static struct s3c_fb_pd_win decon_fb_win0;
@@ -3990,7 +3942,6 @@ static int s3c_fb_probe(struct platform_device *pdev)
 
 	parse_plat_data(dev);
 
-	s3c_fb_clock_set();
 	fbdrv = &s3c_fb_data_exynos5;
 
 	if (fbdrv->variant.nr_windows > S3C_FB_MAX_WIN) {

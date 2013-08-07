@@ -30,8 +30,10 @@ static struct backlight_device *bd;
 static const unsigned char ED[] = {0xed, 0x01, 0x00};
 static const unsigned char FD[] = {0xfd, 0x16, 0x80};
 static const unsigned char F6[] = {0xf6, 0x08};
+static const unsigned char E7[] = {0xE7, 0xED, 0xC7, 0x23, 0x57, 0xA5};
 static const unsigned char E8[] = {0xeb, 0x01, 0x00};
 static const unsigned char C0[] = {0xc0, 0x63, 0x02, 0x03, 0x32, 0xFF, 0x44, 0x44, 0xC0, 0x00, 0x40};
+static const unsigned char D29[] = {0x29, 0x00, 0x00};
 
 static const unsigned char SEQ_READ_ID[] = {
 	0x04,
@@ -324,141 +326,79 @@ static int s6e3fa0_probe(struct mipi_dsim_device *dsim)
 
 static void init_lcd(struct mipi_dsim_device *dsim)
 {
-#ifndef CONFIG_FB_I80_COMMAND_MODE
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned int)SEQ_TEST_KEY_ON_F0,
 			ARRAY_SIZE(SEQ_TEST_KEY_ON_F0)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_F0 command.\n");
 
+	msleep(12);
 
-
-	usleep_range(16000, 16000);
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_ON_FC,
-				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_FC command.\n");
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			(unsigned int)SEQ_TOUCHKEY_OFF,
-				ARRAY_SIZE(SEQ_TOUCHKEY_OFF)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TOUCHKEY_OFF command.\n");
-
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_OFF_FC,
-				ARRAY_SIZE(SEQ_TEST_KEY_OFF_FC)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_OFF_FC command.\n");
-
-	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-		0x11, 0);
-
-	msleep(20);
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_DISPCTL,
-				ARRAY_SIZE(SEQ_DISPCTL)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_DISPCTL command.\n");
-
-	update_brightness(bd->props.brightness);
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_ACL_CONTROL,
-				ARRAY_SIZE(SEQ_ACL_CONTROL)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_ACL_CONTROL command.\n");
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_ETC_PENTILE_SETTING,
-				ARRAY_SIZE(SEQ_ETC_PENTILE_SETTING)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_ETC_PENTILE_SETTING command.\n");
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			(unsigned int)SEQ_GLOBAL_PARAM_SOURCE_AMP,
-				ARRAY_SIZE(SEQ_GLOBAL_PARAM_SOURCE_AMP)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_GLOBAL_PARAM_SOURCE_AMP command.\n");
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			(unsigned int)SEQ_ETC_SOURCE_AMP,
-				ARRAY_SIZE(SEQ_ETC_SOURCE_AMP)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_ETC_SOURCE_AMP command.\n");
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			(unsigned int)SEQ_GLOBAL_PARAM_BIAS_CURRENT,
-				ARRAY_SIZE(SEQ_GLOBAL_PARAM_BIAS_CURRENT)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_GLOBAL_PARAM_BIAS_CURRENT command.\n");
-
-
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			(unsigned int)SEQ_ETC_BIAS_CURRENT,
-				ARRAY_SIZE(SEQ_ETC_BIAS_CURRENT)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_ETC_BIAS_CURRENT command.\n");
-
-	msleep(120);
-
-	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	dev_info(dsim->dev, "Display in VIDEO(RGB) mode\n");
-#else
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int)SEQ_TEST_KEY_ON_F0,
-			ARRAY_SIZE(SEQ_TEST_KEY_ON_F0)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_F0 command.\n");
-
-	usleep_range(16000, 16000);
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)SEQ_TEST_KEY_ON_F1,
 				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_FC command.\n");
 
+	msleep(12);
+
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)SEQ_TEST_KEY_ON_FC,
 				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_FC command.\n");
 
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	msleep(12);
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)ED,
 				ARRAY_SIZE(ED)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TOUCHKEY_OFF command.\n");
-
+	msleep(12);
 
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)FD,
-				ARRAY_SIZE(FD)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_OFF_FC command.\n");
+			(unsigned int)E7,
+				ARRAY_SIZE(E7)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_GLOBAL_PARAM_SOURCE_AMP command.\n");
 
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			(unsigned int)F6,
-				ARRAY_SIZE(F6)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TE_ON command.\n");
+	msleep(120);
 
 	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
 		0x11, 0);
 
-	msleep(120);
+	mdelay(20);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x29, 0);
+
+	mdelay(120);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+		0xF2, 0x02);
+
+	mdelay(12);
 
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)E8,
 				ARRAY_SIZE(E8)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_OFF_FC command.\n");
 
+	mdelay(12);
+
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)C0,
 				ARRAY_SIZE(C0)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_OFF_FC command.\n");
+		dev_err(dsim->dev, "fail to send SEQ_DISPCTL command.\n");
 
+	mdelay(12);
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)D29,
+				ARRAY_SIZE(D29)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_DISPCTL command.\n");
+
+	mdelay(12);
 
 	update_brightness(bd->props.brightness);
 
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TE_ON,
-				ARRAY_SIZE(SEQ_TE_ON)) == -1)
-		dev_err(dsim->dev, "fail to send SEQ_TE_ON command.\n");
-
-	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	dev_info(dsim->dev, "Display in COMMAND(i80) mode\n");
-#endif
+	dev_info(dsim->dev, "is displaying in VIDEO(RGB) mode\n");
 }
 
 static int s6e3fa0_displayon(struct mipi_dsim_device *dsim)
