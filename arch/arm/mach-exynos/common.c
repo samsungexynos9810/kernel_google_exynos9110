@@ -60,6 +60,8 @@
 #define L2_AUX_VAL 0x7C470001
 #define L2_AUX_MASK 0xC200ffff
 
+#define REG_CPU_STATE_ADDR     (S5P_VA_SYSRAM_NS + 0x28)
+
 static const char name_exynos4210[] = "EXYNOS4210";
 static const char name_exynos4212[] = "EXYNOS4212";
 static const char name_exynos4412[] = "EXYNOS4412";
@@ -501,6 +503,28 @@ void exynos5_restart(char mode, const char *cmd)
 	}
 
 	__raw_writel(val, addr);
+}
+
+void set_boot_flag(unsigned int cpu, unsigned int mode)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
+
+	if (mode & BOOT_MODE_MASK)
+		tmp &= ~BOOT_MODE_MASK;
+
+	tmp |= mode;
+	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
+}
+
+void clear_boot_flag(unsigned int cpu, unsigned int mode)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
+	tmp &= ~mode;
+	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
 }
 
 void __init exynos_init_late(void)

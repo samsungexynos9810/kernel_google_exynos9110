@@ -31,6 +31,15 @@ config CPU_IDLE_GOV_MENU
 config ARCH_NEEDS_CPU_IDLE_COUPLED
 	def_bool n
 
+config EXYNOS_CPUIDLE_C2
+	bool "EXYNOS CPUIDLE C2"
+	depends on CPU_IDLE
+	default y
+	help
+	  Enable C2 state on cpuidle
+
+
+
 if CPU_IDLE
 
 config CPU_IDLE_CALXEDA

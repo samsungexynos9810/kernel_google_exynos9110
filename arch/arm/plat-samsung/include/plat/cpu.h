@@ -168,6 +168,21 @@ IS_SAMSUNG_CPU(exynos5440, EXYNOS5440_SOC_ID, EXYNOS5_SOC_MASK)
 
 #define print_mhz(m) ((m) / MHZ), (((m) / 1000) % 1000)
 
+/* cpu boot mode flag */
+#define RESET          (1 << 0)
+#define SECONDARY_RESET (1 << 1)
+#define HOTPLUG                (1 << 2)
+#define C2_STATE       (1 << 3)
+#define CORE_SWITCH    (1 << 4)
+#define WAIT_FOR_OB_L2FLUSH (1 << 5)
+
+#define BOOT_MODE_MASK  0x1f
+
+extern void set_boot_flag(unsigned int cpu, unsigned int mode);
+extern void clear_boot_flag(unsigned int cpu, unsigned int mode);
+
+
+
 /* forward declaration */
 struct s3c24xx_uart_resources;
 struct platform_device;

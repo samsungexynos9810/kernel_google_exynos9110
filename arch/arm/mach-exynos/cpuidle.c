@@ -1,4 +1,4 @@
-/* linux/arch/arm/mach-exynos4/cpuidle.c
+/* linux/arch/arm/mach-exynos/cpuidle.c
  *
  * Copyright (c) 2011 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com
@@ -15,58 +15,256 @@
 #include <linux/io.h>
 #include <linux/export.h>
 #include <linux/time.h>
+#include <linux/serial_core.h>
+#include <linux/platform_device.h>
+#include <linux/gpio.h>
+#include <linux/suspend.h>
+#include <linux/clk.h>
+#include <linux/cpu.h>
 
 #include <asm/proc-fns.h>
 #include <asm/smp_scu.h>
 #include <asm/suspend.h>
 #include <asm/unified.h>
-#include <asm/cpuidle.h>
-#include <mach/regs-clock.h>
+#include <asm/cputype.h>
+#include <asm/cacheflush.h>
+#include <asm/system_misc.h>
+#include <asm/tlbflush.h>
+
 #include <mach/regs-pmu.h>
+#include <mach/regs-clock.h>
+#include <mach/pmu.h>
+#if 0
+#include <mach/smc.h>
+#include <mach/asv.h>
+#include <mach/devfreq.h>
+#endif
 
+#include <plat/pm.h>
 #include <plat/cpu.h>
+#include <plat/devs.h>
+#include <plat/regs-serial.h>
+#include <plat/gpio-cfg.h>
+#include <plat/gpio-core.h>
+#include <plat/usb-phy.h>
+#if 0
+#include <plat/audio.h>
+#endif
+#include <plat/clock.h>
 
-#include "common.h"
+#ifdef CONFIG_ARM_TRUSTZONE
+#define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
+#define REG_DIRECTGO_FLAG	(S5P_VA_SYSRAM_NS + 0x20)
+#else
+#define REG_DIRECTGO_ADDR	EXYNOS_INFORM0
+#define REG_DIRECTGO_FLAG	EXYNOS_INFORM1
+#endif
 
-#define REG_DIRECTGO_ADDR	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
-			S5P_INFORM7 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
-			(S5P_VA_SYSRAM + 0x24) : S5P_INFORM0))
-#define REG_DIRECTGO_FLAG	(samsung_rev() == EXYNOS4210_REV_1_1 ? \
-			S5P_INFORM6 : (samsung_rev() == EXYNOS4210_REV_1_0 ? \
-			(S5P_VA_SYSRAM + 0x20) : S5P_INFORM1))
+#define EXYNOS_CHECK_DIRECTGO	0xFCBA0D10
+#define EXYNOS_CHECK_LPA	0xABAD0000
 
-#define S5P_CHECK_AFTR		0xFCBA0D10
-
-static int exynos4_enter_lowpower(struct cpuidle_device *dev,
+static int exynos_enter_idle(struct cpuidle_device *dev,
+			struct cpuidle_driver *drv,
+			      int index);
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+static int exynos_enter_c2(struct cpuidle_device *dev,
+				 struct cpuidle_driver *drv,
+				 int index);
+#endif
+static int exynos_enter_lowpower(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index);
 
-static DEFINE_PER_CPU(struct cpuidle_device, exynos4_cpuidle_device);
+struct check_reg_lpa {
+	void __iomem	*check_reg;
+	unsigned int	check_bit;
+};
 
-static struct cpuidle_driver exynos4_idle_driver = {
-	.name			= "exynos4_idle",
-	.owner			= THIS_MODULE,
-	.states = {
-		[0] = ARM_CPUIDLE_WFI_STATE,
-		[1] = {
-			.enter			= exynos4_enter_lowpower,
-			.exit_latency		= 300,
-			.target_residency	= 100000,
-			.flags			= CPUIDLE_FLAG_TIME_VALID,
-			.name			= "C1",
-			.desc			= "ARM power down",
-		},
+/*
+ * List of check power domain list for LPA mode
+ * These register are have to power off to enter LPA mode
+ */
+#if 0
+static struct check_reg_lpa exynos5_power_domain[] = {
+	{.check_reg = EXYNOS5_GSCL_STATUS,	.check_bit = 0x7},
+#if defined (CONFIG_SOC_EXYNOS5410)
+	{.check_reg = EXYNOS5_ISP_STATUS,	.check_bit = 0x7},
+#endif
+	{.check_reg = EXYNOS5410_MFC_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5410_G3D_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5410_DISP1_STATUS,	.check_bit = 0x7},
+};
+#endif
+/*
+ * List of check clock gating list for LPA mode
+ * If clock of list is not gated, system can not enter LPA mode.
+ */
+#if 0
+static struct check_reg_lpa exynos5_clock_gating[] = {
+	{.check_reg = EXYNOS5_CLKGATE_IP_DISP1,		.check_bit = 0x00000008},
+	{.check_reg = EXYNOS5_CLKGATE_IP_MFC,		.check_bit = 0x00000001},
+	{.check_reg = EXYNOS5_CLKGATE_IP_GEN,		.check_bit = 0x0000001E},
+	{.check_reg = EXYNOS5_CLKGATE_BUS_FSYS0,	.check_bit = 0x00000002},
+#if defined (CONFIG_SOC_EXYNOS5410)
+	{.check_reg = EXYNOS5_CLKGATE_IP_PERIC,         .check_bit = 0x003F7FC0},
+#else
+	{.check_reg = EXYNOS5_CLKGATE_IP_PERIC,		.check_bit = 0x00077FC0},
+#endif
+};
+#endif
+
+#if defined(CONFIG_EXYNOS_DEV_DWMCI)
+enum hc_type {
+	HC_SDHC,
+	HC_MSHC,
+};
+
+struct check_device_op {
+	void __iomem		*base;
+	struct platform_device	*pdev;
+	enum hc_type		type;
+};
+
+static struct check_device_op chk_sdhc_op[] = {
+	{.base = 0, .pdev = &exynos5_device_dwmci0, .type = HC_MSHC},
+	{.base = 0, .pdev = &exynos5_device_dwmci1, .type = HC_MSHC},
+	{.base = 0, .pdev = &exynos5_device_dwmci2, .type = HC_MSHC},
+};
+
+static int sdmmc_dev_num;
+/* If SD/MMC interface is working: return = 1 or not 0 */
+static int check_sdmmc_op(unsigned int ch)
+{
+	if (unlikely(ch >= sdmmc_dev_num)) {
+		pr_err("Invalid ch[%d] for SD/MMC\n", ch);
+		return 0;
+	}
+#if 0
+	if (soc_is_exynos5410())
+		return (__raw_readl(EXYNOS5_CLKSRC_MASK_FSYS) & (1 << (ch * 4))) ? 1 : 0;
+	else
+#endif
+		return (__raw_readl(EXYNOS5_CLKSRC_MASK_FSYS) & (1 << ((ch * 4) + 8))) ? 1 : 0;
+}
+
+/* Check all sdmmc controller */
+static int loop_sdmmc_check(void)
+{
+	unsigned int iter;
+
+	for (iter = 0; iter < sdmmc_dev_num; iter++) {
+		if (check_sdmmc_op(iter)) {
+			pr_debug("SDMMC [%d] working\n", iter);
+			return 1;
+		}
+	}
+	return 0;
+}
+#endif
+
+#if 0
+static int exynos_check_reg_status(struct check_reg_lpa *reg_list,
+				    unsigned int list_cnt)
+{
+	unsigned int i;
+	unsigned int tmp;
+
+	for (i = 0; i < list_cnt; i++) {
+		tmp = __raw_readl(reg_list[i].check_reg);
+		if (tmp & reg_list[i].check_bit)
+			return -EBUSY;
+	}
+
+	return 0;
+}
+
+static int exynos_uart_fifo_check(void)
+{
+	unsigned int ret;
+	unsigned int check_val;
+
+	ret = 0;
+
+	/* Check UART for console is empty */
+	check_val = __raw_readl(S5P_VA_UART(CONFIG_S3C_LOWLEVEL_UART_PORT) +
+				0x18);
+
+	ret = ((check_val >> 16) & 0xff);
+
+	return ret;
+}
+
+static int __maybe_unused exynos_check_enter_mode(void)
+{
+	/* Check power domain */
+	if (exynos_check_reg_status(exynos5_power_domain,
+			    ARRAY_SIZE(exynos5_power_domain)))
+		return EXYNOS_CHECK_DIDLE;
+
+	/* Check clock gating */
+	if (exynos_check_reg_status(exynos5_clock_gating,
+			    ARRAY_SIZE(exynos5_clock_gating)))
+		return EXYNOS_CHECK_DIDLE;
+
+#if defined(CONFIG_SOC_EXYNOS5420)
+	if (check_adma_status())
+		return EXYNOS_CHECK_DIDLE;
+#endif
+#if defined(CONFIG_EXYNOS_DEV_DWMCI)
+	if (loop_sdmmc_check())
+		return EXYNOS_CHECK_DIDLE;
+#endif
+
+	if (exynos_check_usb_op())
+		return EXYNOS_CHECK_DIDLE;
+
+	return EXYNOS_CHECK_LPA;
+}
+#endif
+static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
+	[0] = {
+		.enter			= exynos_enter_idle,
+		.exit_latency		= 1,
+		.target_residency	= 100,
+		.flags			= CPUIDLE_FLAG_TIME_VALID,
+		.name			= "C1",
+		.desc			= "ARM clock gating(WFI)",
 	},
-	.state_count = 2,
-	.safe_state_index = 0,
+	[1] = {
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+		.enter			= exynos_enter_c2,
+		.exit_latency		= 30,
+		.target_residency	= 1000,
+		.flags			= CPUIDLE_FLAG_TIME_VALID,
+		.name			= "C2",
+		.desc			= "ARM power down",
+	},
+	[2] = {
+#endif
+		.enter                  = exynos_enter_lowpower,
+		.exit_latency           = 300,
+		.target_residency       = 5000,
+		.flags                  = CPUIDLE_FLAG_TIME_VALID,
+		.name                   = "C3",
+		.desc                   = "ARM power down",
+	},
+};
+
+static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
+
+static struct cpuidle_driver exynos_idle_driver = {
+	.name		= "exynos_idle",
+	.owner		= THIS_MODULE,
 };
 
 /* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
-static void exynos4_set_wakeupmask(void)
+#if 0
+static void exynos_set_wakeupmask(void)
 {
-	__raw_writel(0x0000ff3e, S5P_WAKEUP_MASK);
+	__raw_writel(0x40003ffe, EXYNOS_WAKEUP_MASK);
 }
 
+#if !defined(CONFIG_ARM_TRUSTZONE)
 static unsigned int g_pwr_ctrl, g_diag_reg;
 
 static void save_cpu_arch_register(void)
@@ -86,64 +284,311 @@ static void restore_cpu_arch_register(void)
 	asm("mcr p15, 0, %0, c15, c0, 1" : : "r"(g_diag_reg) : "cc");
 	return;
 }
+#else
+static void save_cpu_arch_register(void)
+{
+}
+
+static void restore_cpu_arch_register(void)
+{
+}
+#endif
 
 static int idle_finisher(unsigned long flags)
 {
+#if defined(CONFIG_ARM_TRUSTZONE)
+	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, 0);
+#else
 	cpu_do_idle();
+#endif
 	return 1;
 }
+#endif
 
-static int exynos4_enter_core0_aftr(struct cpuidle_device *dev,
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+static int c2_finisher(unsigned long flags)
+{
+#if defined(CONFIG_ARM_TRUSTZONE)
+	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+	/*
+	 * Secure monitor disables the SMP bit and takes the CPU out of the
+	 * coherency domain.
+	 */
+	local_flush_tlb_all();
+#else
+	cpu_do_idle();
+#endif
+	return 1;
+}
+#endif
+#if 0
+static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
+	struct timeval before, after;
+	int idle_time;
 	unsigned long tmp;
+	unsigned int ret = 0;
+	unsigned int cpuid = smp_processor_id();
 
-	exynos4_set_wakeupmask();
+	local_irq_disable();
+	do_gettimeofday(&before);
+
+	exynos_set_wakeupmask();
 
 	/* Set value of power down register for aftr mode */
 	exynos_sys_powerdown_conf(SYS_AFTR);
 
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
-	__raw_writel(S5P_CHECK_AFTR, REG_DIRECTGO_FLAG);
+	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
+
+	if (soc_is_exynos5410())
+		exynos_disable_idle_clock_down(KFC);
 
 	save_cpu_arch_register();
 
 	/* Setting Central Sequence Register for power down mode */
-	tmp = __raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
-	tmp &= ~S5P_CENTRAL_LOWPWR_CFG;
-	__raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
+	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
+	__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+
+	set_boot_flag(cpuid, C2_STATE);
 
 	cpu_pm_enter();
-	cpu_suspend(0, idle_finisher);
 
-#ifdef CONFIG_SMP
-	if (!soc_is_exynos5250())
-		scu_enable(S5P_VA_SCU);
-#endif
+	ret = cpu_suspend(0, idle_finisher);
+	if (ret) {
+		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+		tmp |= EXYNOS_CENTRAL_LOWPWR_CFG;
+		__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	}
+
+	clear_boot_flag(cpuid, C2_STATE);
+
 	cpu_pm_exit();
 
 	restore_cpu_arch_register();
 
-	/*
-	 * If PMU failed while entering sleep mode, WFI will be
-	 * ignored by PMU and then exiting cpu_do_idle().
-	 * S5P_CENTRAL_LOWPWR_CFG bit will not be set automatically
-	 * in this situation.
-	 */
-	tmp = __raw_readl(S5P_CENTRAL_SEQ_CONFIGURATION);
-	if (!(tmp & S5P_CENTRAL_LOWPWR_CFG)) {
-		tmp |= S5P_CENTRAL_LOWPWR_CFG;
-		__raw_writel(tmp, S5P_CENTRAL_SEQ_CONFIGURATION);
-	}
+	if (soc_is_exynos5410())
+		exynos_enable_idle_clock_down(KFC);
 
 	/* Clear wakeup state register */
-	__raw_writel(0x0, S5P_WAKEUP_STAT);
+	__raw_writel(0x0, EXYNOS_WAKEUP_STAT);
 
+	do_gettimeofday(&after);
+
+	local_irq_enable();
+	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+		    (after.tv_usec - before.tv_usec);
+
+	dev->last_residency = idle_time;
 	return index;
 }
 
-static int exynos4_enter_lowpower(struct cpuidle_device *dev,
+static struct sleep_save exynos5_lpa_save[] = {
+	/* CMU side */
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_TOP),
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_GSCL),
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_DISP1_0),
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_MAUDIO),
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_FSYS),
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_PERIC0),
+	SAVE_ITEM(EXYNOS5_CLKSRC_MASK_PERIC1),
+	SAVE_ITEM(EXYNOS5_CLKSRC_TOP3),
+#if defined(CONFIG_SOC_EXYNOS5420)
+	SAVE_ITEM(EXYNOS5_CLKSRC_TOP5),
+#endif
+};
+
+static struct sleep_save exynos5_set_clksrc[] = {
+	{ .reg = EXYNOS5_CLKSRC_MASK_TOP		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5_CLKSRC_MASK_GSCL		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5_CLKSRC_MASK_DISP1_0		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5_CLKSRC_MASK_MAUDIO		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5_CLKSRC_MASK_FSYS		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5_CLKSRC_MASK_PERIC0		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5_CLKSRC_MASK_PERIC1		, .val = 0xffffffff, },
+};
+
+static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
+				struct cpuidle_driver *drv,
+				int index)
+{
+	struct timeval before, after;
+	int idle_time, ret = 0;
+	unsigned long tmp;
+	unsigned int cpuid = smp_processor_id();
+
+	/*
+	 * Before enter central sequence mode, clock src register have to set
+	 */
+	s3c_pm_do_save(exynos5_lpa_save, ARRAY_SIZE(exynos5_lpa_save));
+	s3c_pm_do_restore_core(exynos5_set_clksrc,
+			       ARRAY_SIZE(exynos5_set_clksrc));
+
+	local_irq_disable();
+	do_gettimeofday(&before);
+
+	/*
+	 * Unmasking all wakeup source.
+	 */
+	__raw_writel(0x7FFFE000, EXYNOS_WAKEUP_MASK);
+
+	/* Configure GPIO Power down control register */
+	exynos_set_lpa_pdn(S3C_GPIO_END);
+
+	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
+	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
+
+	/* Set value of power down register for aftr mode */
+	exynos_sys_powerdown_conf(SYS_LPA);
+
+	if (soc_is_exynos5410())
+		exynos_disable_idle_clock_down(KFC);
+
+	save_cpu_arch_register();
+
+	/* Setting Central Sequence Register for power down mode */
+	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
+	__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+
+	do {
+		/* Waiting for flushing UART fifo */
+	} while (exynos_uart_fifo_check());
+
+	set_boot_flag(cpuid, C2_STATE);
+
+	if (soc_is_exynos5420()) {
+		__raw_writel(EXYNOS_CHECK_LPA, EXYNOS_PMU_SPARE1);
+
+		tmp = __raw_readl(EXYNOS5420_SFR_AXI_CGDIS1_REG);
+		tmp |= (EXYNOS5420_UFS | EXYNOS5420_ACE_KFC | EXYNOS5420_ACE_EAGLE);
+		__raw_writel(tmp, EXYNOS5420_SFR_AXI_CGDIS1_REG);
+
+		exynos5_mif_transition_disable(true);
+
+		if (clkm_phy->usage) {
+			mif_max = true;
+			clk_disable(clkm_phy);
+		}
+	}
+	cpu_pm_enter();
+
+	ret = cpu_suspend(0, idle_finisher);
+	if (ret) {
+		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+		tmp |= EXYNOS_CENTRAL_LOWPWR_CFG;
+		__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+
+		goto early_wakeup;
+	}
+#ifdef CONFIG_SMP
+#if !defined(CONFIG_ARM_TRUSTZONE)
+	scu_enable(S5P_VA_SCU);
+#endif
+#endif
+	/* For release retention */
+	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_GPIO_OPTION);
+	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_UART_OPTION);
+	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCA_OPTION);
+	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCB_OPTION);
+	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCC_OPTION);
+	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_SPI_OPTION);
+	__raw_writel((1 << 28), EXYNOS_PAD_RET_EBIA_OPTION);
+	__raw_writel((1 << 28), EXYNOS_PAD_RET_EBIB_OPTION);
+	if (soc_is_exynos5420())
+		__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_HSI_OPTION);
+
+early_wakeup:
+	if (soc_is_exynos5420()) {
+		if (mif_max) {
+			clk_enable(clkm_phy);
+			mif_max = false;
+		}
+
+		exynos5_mif_transition_disable(false);
+
+		__raw_writel(0, EXYNOS_PMU_SPARE1);
+
+		tmp = __raw_readl(EXYNOS5420_SFR_AXI_CGDIS1_REG);
+		tmp &= ~(EXYNOS5420_UFS | EXYNOS5420_ACE_KFC | EXYNOS5420_ACE_EAGLE);
+		__raw_writel(tmp, EXYNOS5420_SFR_AXI_CGDIS1_REG);
+
+		exynos5_mif_nocp_resume();
+	}
+
+	clear_boot_flag(cpuid, C2_STATE);
+
+	cpu_pm_exit();
+
+	restore_cpu_arch_register();
+
+	if (soc_is_exynos5410())
+		exynos_enable_idle_clock_down(KFC);
+
+	s3c_pm_do_restore_core(exynos5_lpa_save,
+			       ARRAY_SIZE(exynos5_lpa_save));
+
+	/* Clear wakeup state register */
+	__raw_writel(0x0, EXYNOS_WAKEUP_STAT);
+
+	do_gettimeofday(&after);
+
+	local_irq_enable();
+	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+		    (after.tv_usec - before.tv_usec);
+
+	dev->last_residency = idle_time;
+	return index;
+}
+#endif
+
+static int exynos_enter_idle(struct cpuidle_device *dev,
+				struct cpuidle_driver *drv,
+				int index)
+{
+	struct timeval before, after;
+	int idle_time;
+
+	local_irq_disable();
+	do_gettimeofday(&before);
+
+	cpu_do_idle();
+
+	do_gettimeofday(&after);
+	local_irq_enable();
+	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+		    (after.tv_usec - before.tv_usec);
+
+	dev->last_residency = idle_time;
+	return index;
+}
+
+static unsigned int exynos_get_core_num(void)
+{
+	unsigned int pwr_offset = 0;
+	unsigned int cpu;
+	unsigned int tmp;
+
+	struct cpumask cpu_power_on_mask;
+
+	cpumask_clear(&cpu_power_on_mask);
+
+	for (cpu = 0; cpu < num_possible_cpus(); cpu++) {
+		tmp = __raw_readl(EXYNOS_ARM_CORE_STATUS(cpu + pwr_offset));
+
+		if (tmp & EXYNOS_CORE_LOCAL_PWR_EN)
+			cpumask_set_cpu(cpu, &cpu_power_on_mask);
+	}
+
+	return cpumask_weight(&cpu_power_on_mask);
+}
+
+static int exynos_enter_lowpower(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
@@ -151,75 +596,228 @@ static int exynos4_enter_lowpower(struct cpuidle_device *dev,
 
 	/* This mode only can be entered when other core's are offline */
 	if (num_online_cpus() > 1)
-		new_index = drv->safe_state_index;
-
-	if (new_index == 0)
-		return arm_cpuidle_simple_enter(dev, drv, new_index);
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+		return exynos_enter_c2(dev, drv, (new_index - 1));
+#else
+		return exynos_enter_idle(dev, drv, (new_index - 2));
+#endif
+	if (exynos_get_core_num() > 1)
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+		return exynos_enter_c2(dev, drv, (new_index - 1));
+#else
+		return exynos_enter_idle(dev, drv, (new_index - 2));
+#endif
+#if 0
+	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
+		return exynos_enter_core0_aftr(dev, drv, new_index);
 	else
-		return exynos4_enter_core0_aftr(dev, drv, new_index);
+		return exynos_enter_core0_lpa(dev, drv, new_index);
+#endif
+	return 0;
 }
 
-static void __init exynos5_core_down_clk(void)
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+static int exynos_enter_c2(struct cpuidle_device *dev,
+				struct cpuidle_driver *drv,
+				int index)
+{
+	struct timeval before, after;
+	int idle_time, ret = 0;
+	unsigned int cpuid = smp_processor_id(), cpu_offset = 0;
+//	unsigned int cluster_id = read_cpuid(CPUID_MPIDR) >> 8 & 0xf;
+	unsigned int value;
+
+	local_irq_disable();
+	do_gettimeofday(&before);
+
+	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
+	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
+
+	cpu_offset = cpuid ^ 0x4;
+//	cpu_offset = cpuid;
+
+	set_boot_flag(cpu_offset, C2_STATE);
+	cpu_pm_enter();
+
+	__raw_writel(0x0, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+
+	value = __raw_readl(EXYNOS5410_ARM_INTR_SPREAD_ENABLE);
+	value &= ~(0x1 << cpu_offset);
+	__raw_writel(value, EXYNOS5410_ARM_INTR_SPREAD_ENABLE);
+
+	ret = cpu_suspend(0, c2_finisher);
+	if (ret)
+		__raw_writel(0xf, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+
+	value = __raw_readl(EXYNOS5410_ARM_INTR_SPREAD_ENABLE);
+	value |= (0x1 << cpu_offset);
+	__raw_writel(value, EXYNOS5410_ARM_INTR_SPREAD_ENABLE);
+
+	clear_boot_flag(cpu_offset, C2_STATE);
+	cpu_pm_exit();
+
+	do_gettimeofday(&after);
+	local_irq_enable();
+	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+		    (after.tv_usec - before.tv_usec);
+
+	dev->last_residency = idle_time;
+
+//printk("enter C2 : %d\n", cpu_offset);
+
+	return index;
+}
+#endif
+
+#if 0
+void exynos_enable_idle_clock_down(unsigned int cluster)
 {
 	unsigned int tmp;
 
-	/*
-	 * Enable arm clock down (in idle) and set arm divider
-	 * ratios in WFI/WFE state.
-	 */
-	tmp = PWR_CTRL1_CORE2_DOWN_RATIO | \
-	      PWR_CTRL1_CORE1_DOWN_RATIO | \
-	      PWR_CTRL1_DIV2_DOWN_EN	 | \
-	      PWR_CTRL1_DIV1_DOWN_EN	 | \
-	      PWR_CTRL1_USE_CORE1_WFE	 | \
-	      PWR_CTRL1_USE_CORE0_WFE	 | \
-	      PWR_CTRL1_USE_CORE1_WFI	 | \
-	      PWR_CTRL1_USE_CORE0_WFI;
-	__raw_writel(tmp, EXYNOS5_PWR_CTRL1);
+	if (cluster) {
+		/* For A15 core */
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL1);
+		tmp &= ~((0x7 << 28) | (0x7 << 16) | (1 << 9) | (1 << 8));
+		tmp |= (0x7 << 28) | (0x7 << 16) | 0x3ff;
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL1);
 
-	/*
-	 * Enable arm clock up (on exiting idle). Set arm divider
-	 * ratios when not in idle along with the standby duration
-	 * ratios.
-	 */
-	tmp = PWR_CTRL2_DIV2_UP_EN	 | \
-	      PWR_CTRL2_DIV1_UP_EN	 | \
-	      PWR_CTRL2_DUR_STANDBY2_VAL | \
-	      PWR_CTRL2_DUR_STANDBY1_VAL | \
-	      PWR_CTRL2_CORE2_UP_RATIO	 | \
-	      PWR_CTRL2_CORE1_UP_RATIO;
-	__raw_writel(tmp, EXYNOS5_PWR_CTRL2);
-}
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL2);
+		tmp &= ~((0x3 << 24) | (0xffff << 8) | (0x77));
+		tmp |= (1 << 16) | (1 << 8) | (1 << 4) | (1 << 0);
+		tmp |= (1 << 25) | (1 << 24);
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL2);
+	} else {
+		/* For A7 core */
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL_KFC);
+		tmp &= ~((0x7 << 16) | (1 << 8));
+		tmp |= (0x7 << 16) | 0x1ff;
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL_KFC);
 
-static int __init exynos4_init_cpuidle(void)
-{
-	int cpu_id, ret;
-	struct cpuidle_device *device;
-
-	if (soc_is_exynos5250())
-		exynos5_core_down_clk();
-
-	ret = cpuidle_register_driver(&exynos4_idle_driver);
-	if (ret) {
-		printk(KERN_ERR "CPUidle failed to register driver\n");
-		return ret;
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL2_KFC);
+		tmp &= ~((0x1 << 24) | (0xffff << 8) | (0x7));
+		tmp |= (1 << 16) | (1 << 8) | (1 << 0);
+		tmp |= 1 << 24;
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL2_KFC);
 	}
 
-	for_each_online_cpu(cpu_id) {
-		device = &per_cpu(exynos4_cpuidle_device, cpu_id);
+	pr_debug("%s idle clock down is enabled\n", cluster ? "ARM" : "KFC");
+}
+
+void exynos_disable_idle_clock_down(unsigned int cluster)
+{
+	unsigned int tmp;
+
+	if (cluster) {
+		/* For A15 core */
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL1);
+		tmp &= ~((0x7 << 28) | (0x7 << 16) | (1 << 9) | (1 << 8));
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL1);
+
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL2);
+		tmp &= ~((0x3 << 24) | (0xffff << 8) | (0x77));
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL2);
+	} else {
+		/* For A7 core */
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL_KFC);
+		tmp &= ~((0x7 << 16) | (1 << 8));
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL_KFC);
+
+		tmp = __raw_readl(EXYNOS5_PWR_CTRL2_KFC);
+		tmp &= ~((0x1 << 24) | (0xffff << 8) | (0x7));
+		__raw_writel(tmp, EXYNOS5_PWR_CTRL2_KFC);
+	}
+
+	pr_debug("%s idle clock down is disabled\n", cluster ? "ARM" : "KFC");
+}
+#endif
+
+static int exynos_cpuidle_notifier_event(struct notifier_block *this,
+					  unsigned long event,
+					  void *ptr)
+{
+	switch (event) {
+	case PM_SUSPEND_PREPARE:
+		cpu_idle_poll_ctrl(true);
+		pr_debug("PM_SUSPEND_PREPARE for CPUIDLE\n");
+		return NOTIFY_OK;
+	case PM_POST_RESTORE:
+	case PM_POST_SUSPEND:
+		cpu_idle_poll_ctrl(false);
+		pr_debug("PM_POST_SUSPEND for CPUIDLE\n");
+		return NOTIFY_OK;
+	}
+	return NOTIFY_DONE;
+}
+
+static struct notifier_block exynos_cpuidle_notifier = {
+	.notifier_call = exynos_cpuidle_notifier_event,
+};
+
+static int __init exynos_init_cpuidle(void)
+{
+	int i, max_cpuidle_state, cpu_id;
+	struct cpuidle_device *device;
+	struct cpuidle_driver *drv = &exynos_idle_driver;
+	struct cpuidle_state *idle_set;
+
+#if defined(CONFIG_EXYNOS_DEV_DWMCI)
+	struct platform_device *pdev;
+	struct resource *res;
+#endif
+#if 0
+	if (soc_is_exynos5410()) {
+		exynos_enable_idle_clock_down(ARM);
+		exynos_enable_idle_clock_down(KFC);
+	}
+#endif
+
+	/* Setup cpuidle driver */
+	idle_set = exynos5_cpuidle_set;
+	drv->state_count = ARRAY_SIZE(exynos5_cpuidle_set);
+
+	max_cpuidle_state = drv->state_count;
+	for (i = 0; i < max_cpuidle_state; i++) {
+		memcpy(&drv->states[i], &idle_set[i],
+				sizeof(struct cpuidle_state));
+	}
+	drv->safe_state_index = 0;
+	cpuidle_register_driver(&exynos_idle_driver);
+
+	for_each_cpu(cpu_id, cpu_online_mask) {
+		device = &per_cpu(exynos_cpuidle_device, cpu_id);
 		device->cpu = cpu_id;
+		device->state_count = max_cpuidle_state;
 
-		/* Support IDLE only */
-		if (cpu_id != 0)
-			device->state_count = 1;
-
-		ret = cpuidle_register_device(device);
-		if (ret) {
-			printk(KERN_ERR "CPUidle register device failed\n");
-			return ret;
+		if (cpuidle_register_device(device)) {
+			printk(KERN_ERR "CPUidle register device failed\n,");
+			return -EIO;
 		}
 	}
 
+#if defined(CONFIG_EXYNOS_DEV_DWMCI)
+	sdmmc_dev_num = ARRAY_SIZE(chk_sdhc_op);
+
+	for (i = 0; i < sdmmc_dev_num; i++) {
+
+		pdev = chk_sdhc_op[i].pdev;
+
+		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+		if (!res) {
+			pr_err("failed to get iomem region\n");
+			return -EINVAL;
+		}
+
+		chk_sdhc_op[i].base = ioremap(res->start, resource_size(res));
+
+		if (!chk_sdhc_op[i].base) {
+			pr_err("failed to map io region\n");
+			return -EINVAL;
+		}
+	}
+#endif
+
+	register_pm_notifier(&exynos_cpuidle_notifier);
+
 	return 0;
 }
-device_initcall(exynos4_init_cpuidle);
+device_initcall(exynos_init_cpuidle);
