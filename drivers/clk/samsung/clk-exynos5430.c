@@ -360,6 +360,15 @@ enum exynos5430_clks {
 	gate_gsclrtnd_333, gate_gsclbend_333,
 	gate_smmu_gscl0, gate_smmu_gscl1, gate_smmu_gscl2,
 
+	/* hevc ip gate */
+	gate_pmu_hevc = 2290, gate_sysreg_hevc, gate_hevc,
+
+	gate_ppmu_hevc_1, gate_ppmu_hevc_0,
+	gate_qe_hevc_1, gate_qe_hevc_0,
+	gate_ahb2apb_hevcp = 2300, gate_xiu_hevcx,
+	gate_hevcnp_100, gate_hevcnd_400,
+
+	gate_smmu_hevc_1, gate_smmu_hevc_0,
 
 	nr_clks,
 };
@@ -1870,6 +1879,22 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	CGTE(gate_smmu_gscl2,"gate_smmu_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL2, 0, 0, 0),
 
+	/* HEVC */
+	CGTE(gate_pmu_hevc,"gate_pmu_hevc", NULL, EXYNOS5430_ENABLE_IP_HEVC0, 2, 0, 0),
+	CGTE(gate_sysreg_hevc,"gate_sysreg_hevc", NULL, EXYNOS5430_ENABLE_IP_HEVC0, 1, 0, 0),
+	CGTE(gate_hevc,"gate_hevc", NULL, EXYNOS5430_ENABLE_IP_HEVC0, 0, 0, 0),
+
+	CGTE(gate_ppmu_hevc_1,"gate_ppmu_hevc_1", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 9, 0, 0),
+	CGTE(gate_ppmu_hevc_0,"gate_ppmu_hevc_0", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 8, 0, 0),
+	CGTE(gate_qe_hevc_1,"gate_qe_hevc_1", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 5, 0, 0),
+	CGTE(gate_qe_hevc_0,"gate_qe_hevc_0", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 4, 0, 0),
+	CGTE(gate_ahb2apb_hevcp,"gate_ahb2apb_hevcp", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 3, 0, 0),
+	CGTE(gate_xiu_hevcx,"gate_xiu_hevcx", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 2, 0, 0),
+	CGTE(gate_hevcnp_100,"gate_hevcnp_100", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 1, 0, 0),
+	CGTE(gate_hevcnd_400,"gate_hevcnd_400", NULL, EXYNOS5430_ENABLE_IP_HEVC1, 0, 0, 0),
+
+	CGTE(gate_smmu_hevc_1,"gate_smmu_hevc_1", NULL, EXYNOS5430_ENABLE_IP_HEVC_SECURE_SMMU_HEVC, 1, 0, 0),
+	CGTE(gate_smmu_hevc_0,"gate_smmu_hevc_0", NULL, EXYNOS5430_ENABLE_IP_HEVC_SECURE_SMMU_HEVC, 0, 0, 0),
 
 };
 
