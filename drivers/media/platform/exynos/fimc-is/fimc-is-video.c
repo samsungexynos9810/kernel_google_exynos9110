@@ -252,6 +252,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_src->drv_priv	= vctx;
 		vbq_src->ops		= vctx->vb2_ops;
 		vbq_src->mem_ops	= vctx->mem_ops;
+		vbq_src->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 		ret = vb2_queue_init(vbq_src);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -266,6 +267,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_dst->drv_priv	= vctx;
 		vbq_dst->ops		= vctx->vb2_ops;
 		vbq_dst->mem_ops	= vctx->mem_ops;
+		vbq_dst->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 		ret = vb2_queue_init(vbq_dst);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -281,6 +283,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_src->drv_priv	= vctx;
 		vbq_src->ops		= vctx->vb2_ops;
 		vbq_src->mem_ops	= vctx->mem_ops;
+		vbq_src->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 		ret = vb2_queue_init(vbq_src);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -293,6 +296,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_dst->drv_priv	= vctx;
 		vbq_dst->ops		= vctx->vb2_ops;
 		vbq_dst->mem_ops	= vctx->mem_ops;
+		vbq_dst->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 		ret = vb2_queue_init(vbq_dst);
 		if (ret) {
 			err("vb2_queue_init fail");
