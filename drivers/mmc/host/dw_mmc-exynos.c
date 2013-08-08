@@ -472,12 +472,26 @@ static u32 dw_mci_exynos_get_sample(struct dw_mci *host)
 	return SDMMC_CLKSEL_CCLK_SAMPLE(clksel);
 }
 
+static s8 exynos_dwmci_extra_tuning(u8 map)
+{
+	s8 sel = -1;
+
+	if ((map & 0x03) == 0x03)
+		sel = 0;
+	else if ((map & 0x0c) == 0x0c)
+		sel = 3;
+	else if ((map & 0x06) == 0x06)
+		sel = 2;
+
+	return sel;
+}
+
 /*
  * After testing all (8) possible clock sample values and using one bit for
  * each value that works, return the "middle" bit position of any sequential
- * 5 bits.
+ * bits.
  */
-static int find_median_of_5bits(unsigned int map)
+static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 {
 	unsigned int i, testbits;
 
@@ -501,14 +515,12 @@ static int find_median_of_5bits(unsigned int map)
 		if ((testbits & THREEBITS) == THREEBITS)
 			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
 	}
-/* Middle is bit 0. */
-#define ONEBITS 0x1
 
-	for (i = 0; i < (8 + 0); i++, testbits >>= 1) {
-		if ((testbits & ONEBITS) == ONEBITS)
-			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+	if (host->pdata->extra_tuning) {
+		dev_info(host->dev, "Extra Tuning\n");
+		i = exynos_dwmci_extra_tuning(map);
+		return SDMMC_CLKSEL_CCLK_SAMPLE(i);
 	}
-
 
 	return -1;
 }
@@ -634,10 +646,9 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	kfree(tuning_blk);
 
 	/*
-	 * See if we got at least 5 consectutive clock sample values
-	 * that worked.
+	 * Get at middle clock sample values.
 	 */
-	best_sample = find_median_of_5bits(sample_good);
+	best_sample = find_median_of_bits(host, sample_good);
 
 	dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
 			sample_good, best_sample);

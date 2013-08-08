@@ -3158,6 +3158,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 			return ERR_PTR(ret);
 	}
 
+	if (of_find_property(np, "extra_tuning", NULL))
+		pdata->extra_tuning = true;
+
 	if (of_find_property(np, "only_once_tune", NULL))
 		pdata->only_once_tune = true;
 
