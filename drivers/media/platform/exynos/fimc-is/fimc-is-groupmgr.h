@@ -13,7 +13,7 @@
 #define FIMC_IS_GROUP_MGR_H
 
 #include "fimc-is-time.h"
-#include "fimc-is-device.h"
+#include "fimc-is-subdev-ctrl.h"
 #include "fimc-is-video.h"
 
 /* #define DEBUG_AA */

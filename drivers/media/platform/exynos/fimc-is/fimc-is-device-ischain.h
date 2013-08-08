@@ -15,7 +15,6 @@
 #include <linux/pm_qos.h>
 
 #include "fimc-is-mem.h"
-#include "fimc-is-device.h"
 #include "fimc-is-groupmgr.h"
 
 #define SENSOR_MAX_CTL			0x10
