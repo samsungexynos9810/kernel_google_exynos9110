@@ -43,6 +43,10 @@ enum type_pmu_wdt_reset {
 	PMU_WDT_RESET_TYPE0 = 0,
 	/* if pmu_wdt_reset is EXYNOS5410_SYS_WDTRESET */
 	PMU_WDT_RESET_TYPE1,
+	/* if pmu_wdt_reset is EXYNOS5430_SYS_WDTRESET_EGL */
+	PMU_WDT_RESET_TYPE2,
+	/* if pmu_wdt_reset is EXYNOS5430_SYS_WDTRESET_KFC */
+	PMU_WDT_RESET_TYPE3,
 };
 
 extern unsigned long l2x0_regs_phys;
@@ -72,5 +76,6 @@ extern void exynos_enable_idle_clock_down(unsigned int cluster);
 extern void exynos_disable_idle_clock_down(unsigned int cluster);
 extern void exynos_lpi_mask_ctrl(bool on);
 extern void exynos_set_dummy_state(bool on);
+extern void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type);
 
 #endif /* __ASM_ARCH_PMU_H */
