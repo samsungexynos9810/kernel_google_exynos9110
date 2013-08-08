@@ -64,6 +64,7 @@
 #define WINCONx_BPPORDER_BGR_F			(1 << 8)
 #define WINCONx_BLD_PLANE			(0 << 6)
 #define WINCONx_BLD_PIX				(1 << 6)
+#define WINCONx_ALPHA_MUL			(1 << 7)
 
 #define WINCONx_BPPMODE_MASK			(0xf << 2)
 #define WINCONx_BPPMODE_SHIFT			(2)
