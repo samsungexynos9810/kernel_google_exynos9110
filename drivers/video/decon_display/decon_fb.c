@@ -915,6 +915,8 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	/* VIDTCON2 */
 	writel(data, sfb->regs + sfb->variant.vidtcon + 8);
 
+	writel(win_mode->yres-1, sfb->regs + LINECNT_OP_THRESHOLD);
+
 	data = sfb->pdata->vidcon0;
 	data &= ~(VIDCON0_CLKVAL_F_MASK);
 	data |= VIDCON0_CLKVALUP | VIDCON0_VLCKFREE;
@@ -925,12 +927,8 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	data &= ~VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
 
-	data = readl(sfb->regs + SHADOWCON);
-	data |= 0x1;
-	writel(data, sfb->regs + SHADOWCON);
-
 	data = readl(sfb->regs + DECON_UPDATE);
-	data |= SHADOWCON_STANDALONE_UPDATE_ALWAYS;
+	data |= DECON_UPDATE_STANDALONE_F;
 	writel(data, sfb->regs + DECON_UPDATE);
 }
 
@@ -1044,7 +1042,7 @@ static int s3c_fb_set_par(struct fb_info *info)
 	shadow_protect_win(win, 0);
 
 	data = readl(sfb->regs + DECON_UPDATE);
-	data |= SHADOWCON_STANDALONE_UPDATE_ALWAYS;
+	data |= DECON_UPDATE_STANDALONE_F;
 	writel(data, sfb->regs + DECON_UPDATE);
 
 	pm_runtime_put_sync(sfb->dev);
@@ -1182,6 +1180,10 @@ static void s3c_fb_activate_window(struct s3c_fb *sfb, unsigned int index)
 	data = readl(sfb->regs + WINCON(index));
 	data |= WINCONx_ENWIN;
 	writel(data, sfb->regs + WINCON(index));
+
+	data = readl(sfb->regs + DECON_UPDATE);
+	data |= DECON_UPDATE_STANDALONE_F;
+	writel(data, sfb->regs + DECON_UPDATE);
 }
 
 static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
@@ -1193,7 +1195,7 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 	writel(data, sfb->regs + VIDCON0);
 
 	data = readl(sfb->regs + DECON_UPDATE);
-	data |= SHADOWCON_STANDALONE_UPDATE_ALWAYS;
+	data |= DECON_UPDATE_STANDALONE_F;
 	writel(data, sfb->regs + DECON_UPDATE);
 }
 
@@ -2254,6 +2256,9 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		if (!sfb->windows[i]->local)
 			shadow_protect_win(sfb->windows[i], 0);
 	}
+	data = readl(sfb->regs + DECON_UPDATE);
+	data |= DECON_UPDATE_STANDALONE_F;
+	writel(data, sfb->regs + DECON_UPDATE);
 }
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
@@ -4385,8 +4390,9 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 		dev_warn(sfb->dev, "ENVID not set while disabling fb");
 
 	data = readl(sfb->regs + DECON_UPDATE);
-	data |= SHADOWCON_STANDALONE_UPDATE_ALWAYS;
+	data |= DECON_UPDATE_STANDALONE_F;
 	writel(data, sfb->regs + DECON_UPDATE);
+
 	sfb->power_state = POWER_DOWN;
 
 	clk_disable(sfb->lcd_clk);
