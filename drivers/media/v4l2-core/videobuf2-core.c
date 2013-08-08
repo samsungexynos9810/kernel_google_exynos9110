@@ -897,7 +897,7 @@ EXPORT_SYMBOL_GPL(vb2_buffer_done);
  * v4l2_buffer by the userspace. The caller has already verified that struct
  * v4l2_buffer has a valid number of planes.
  */
-static void __fill_vb2_buffer(struct vb2_buffer *vb, const struct v4l2_buffer *b,
+static int __fill_vb2_buffer(struct vb2_buffer *vb, const struct v4l2_buffer *b,
 				struct v4l2_plane *v4l2_planes)
 {
 	unsigned int plane;
@@ -972,6 +972,8 @@ static void __fill_vb2_buffer(struct vb2_buffer *vb, const struct v4l2_buffer *b
 	vb->v4l2_buf.field = b->field;
 	vb->v4l2_buf.timestamp = b->timestamp;
 	vb->v4l2_buf.flags = b->flags & ~V4L2_BUFFER_MASK_FLAGS;
+
+	return 0;
 }
 
 /**
@@ -987,7 +989,9 @@ static int __qbuf_userptr(struct vb2_buffer *vb, const struct v4l2_buffer *b)
 	int write = !V4L2_TYPE_IS_OUTPUT(q->type);
 
 	/* Copy relevant information provided by the userspace */
-	__fill_vb2_buffer(vb, b, planes);
+	ret = __fill_vb2_buffer(vb, b, planes);
+	if (ret)
+		return ret;
 
 	for (plane = 0; plane < vb->num_planes; ++plane) {
 		/* Skip the plane if already verified */
@@ -1062,8 +1066,7 @@ err:
  */
 static int __qbuf_mmap(struct vb2_buffer *vb, const struct v4l2_buffer *b)
 {
-	__fill_vb2_buffer(vb, b, vb->v4l2_planes);
-	return 0;
+	return __fill_vb2_buffer(vb, b, vb->v4l2_planes);
 }
 
 /**
@@ -1079,7 +1082,9 @@ static int __qbuf_dmabuf(struct vb2_buffer *vb, const struct v4l2_buffer *b)
 	int write = !V4L2_TYPE_IS_OUTPUT(q->type);
 
 	/* Verify and copy relevant information provided by the userspace */
-	__fill_vb2_buffer(vb, b, planes);
+	ret = __fill_vb2_buffer(vb, b, planes);
+	if (ret)
+		return ret;
 
 	for (plane = 0; plane < vb->num_planes; ++plane) {
 		struct dma_buf *dbuf = dma_buf_get(planes[plane].m.fd);
