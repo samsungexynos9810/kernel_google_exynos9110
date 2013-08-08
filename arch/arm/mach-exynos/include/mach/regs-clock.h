@@ -15,6 +15,7 @@
 
 #include <plat/cpu.h>
 #include <mach/map.h>
+#include <mach/regs-clock-exynos5430.h>
 
 #define EXYNOS_CLKREG(x)			(S5P_VA_CMU + (x))
 
