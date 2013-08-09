@@ -269,8 +269,8 @@ int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *this);
 /*scp subdev*/
 int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *this);
 int fimc_is_ischain_scp_stop(struct fimc_is_device_ischain *this);
-int fimc_is_ischain_scp_s_format(struct fimc_is_device_ischain *this,
-	u32 width, u32 height);
+int fimc_is_ischain_scp_s_format(struct fimc_is_device_ischain *device,
+	u32 pixelformat, u32 width, u32 height);
 
 /* vdisc subdev */
 int fimc_is_ischain_dis_start(struct fimc_is_device_ischain *this,

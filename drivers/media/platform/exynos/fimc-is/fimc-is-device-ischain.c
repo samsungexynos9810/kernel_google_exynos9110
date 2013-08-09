@@ -3736,17 +3736,25 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_SCALERP_INPUT_CROP);
 	(*indexes)++;
 
-	/* sclaer can't apply stride to each plane, only y plane.
-	cb, cr plane should be half of y plane, it's automatically set
-	3 plane : all plane can be 32 stride or 16, 8
-	2 plane : y plane only can be 32, 16 stride, other should be half of y
-	1 plane : all plane can be 8 plane */
+	/*
+	 * scaler can't apply stride to each plane, only y plane.
+	 * basically cb, cr plane should be half of y plane,
+	 * and it's automatically set
+	 *
+	 * 3 plane : all plane should be 8 or 16 stride
+	 * 2 plane : y plane should be 32, 16 stride, others should be half stride of y
+	 * 1 plane : all plane should be 8 stride
+	 */
+	/*
+	 * limitation of output_crop.pos_x and pos_y
+	 * YUV422 3P, YUV420 3P : pos_x and pos_y should be x2
+	 * YUV422 1P : pos_x should be x2
+	 */
 	if (queue->framecfg.width_stride[0]) {
 		scp_param->output_crop.cmd = SCALER_CROP_COMMAND_ENABLE;
 		scp_param->output_crop.pos_x = 0;
 		scp_param->output_crop.pos_y = 0;
-		scp_param->output_crop.crop_width = chain3_width +
-			queue->framecfg.width_stride[0];
+		scp_param->output_crop.crop_width = chain3_width + queue->framecfg.width_stride[0];
 		scp_param->output_crop.crop_height = chain3_height;
 		*lindex |= LOWBIT_OF(PARAM_SCALERP_OUTPUT_CROP);
 		*hindex |= HIGHBIT_OF(PARAM_SCALERP_OUTPUT_CROP);
@@ -5847,18 +5855,62 @@ int fimc_is_ischain_scp_stop(struct fimc_is_device_ischain *device)
 	return ret;
 }
 
-int fimc_is_ischain_scp_s_format(struct fimc_is_device_ischain *this,
-	u32 width, u32 height)
+int fimc_is_ischain_scp_s_format(struct fimc_is_device_ischain *device,
+	u32 pixelformat, u32 width, u32 height)
 {
 	int ret = 0;
 
-	this->chain1_width = width;
-	this->chain1_height = height;
-	this->chain2_width = width;
-	this->chain2_height = height;
-	this->chain3_width = width;
-	this->chain3_height = height;
+	/* check scaler size limitation */
+	switch (pixelformat) {
+	/*
+	 * YUV422 1P, YUV422 2P : x8
+	 * YUV422 3P : x16
+	 */
+	case V4L2_PIX_FMT_YUV422P:
+		if (width % 8) {
+			merr("width(%d) of format(%d) is not supported size",
+				device, width, pixelformat);
+			ret = -EINVAL;
+			goto p_err;
+		}
+		break;
+	/*
+	 * YUV420 2P : x8
+	 * YUV420 3P : x16
+	 */
+	case V4L2_PIX_FMT_NV12M:
+	case V4L2_PIX_FMT_NV21M:
+		if (width % 8) {
+			merr("width(%d) of format(%d) is not supported size",
+				device, width, pixelformat);
+			ret = -EINVAL;
+			goto p_err;
+		}
+		break;
+	case V4L2_PIX_FMT_YUV420M:
+	case V4L2_PIX_FMT_YVU420M:
+		if (width % 16) {
+			merr("width(%d) of format(%d) is not supported size",
+				device, width, pixelformat);
+			ret = -EINVAL;
+			goto p_err;
+		}
+		break;
+	default:
+		merr("format(%d) is not supported", device, pixelformat);
+		ret = -EINVAL;
+		goto p_err;
+		break;
+	}
 
+	device->chain1_width = width;
+	device->chain1_height = height;
+	device->chain2_width = width;
+	device->chain2_height = height;
+	device->chain3_width = width;
+	device->chain3_height = height;
+
+p_err:
 	return ret;
 }
 
