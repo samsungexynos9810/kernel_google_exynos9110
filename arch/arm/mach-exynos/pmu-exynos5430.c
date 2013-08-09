@@ -20,6 +20,8 @@
 #include <mach/pmu.h>
 #include <asm/cputype.h>
 
+#define REG_CPU_STATE_ADDR     (S5P_VA_SYSRAM_NS + 0x28)
+
 static struct exynos_pmu_conf *exynos_pmu_config;
 
 static struct exynos_pmu_conf exynos5430_pmu_config[] = {
@@ -160,6 +162,28 @@ void __iomem *exynos_list_feed[] = {
 	EXYNOS5430_MFC1_OPTION,
 	EXYNOS5430_HEVC_OPTION,
 };
+
+void set_boot_flag(unsigned int cpu, unsigned int mode)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
+
+	if (mode & BOOT_MODE_MASK)
+		tmp &= ~BOOT_MODE_MASK;
+
+	tmp |= mode;
+	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
+}
+
+void clear_boot_flag(unsigned int cpu, unsigned int mode)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
+	tmp &= ~mode;
+	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
+}
 
 static void exynos_use_feedback(void)
 {

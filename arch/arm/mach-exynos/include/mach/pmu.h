@@ -51,6 +51,18 @@ struct exynos_pmu_conf {
 	unsigned int val[NUM_SYS_POWERDOWN];
 };
 
+/* cpu boot mode flag */
+#define RESET			(1 << 0)
+#define SECONDARY_RESET		(1 << 1)
+#define HOTPLUG			(1 << 2)
+#define C2_STATE		(1 << 3)
+#define CORE_SWITCH		(1 << 4)
+#define WAIT_FOR_OB_L2FLUSH	(1 << 5)
+
+#define BOOT_MODE_MASK  0x1f
+
+extern void set_boot_flag(unsigned int cpu, unsigned int mode);
+extern void clear_boot_flag(unsigned int cpu, unsigned int mode);
 extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
 extern void exynos_xxti_sys_powerdown(bool enable);
 extern void s3c_cpu_resume(void);

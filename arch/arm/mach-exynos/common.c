@@ -505,35 +505,15 @@ void exynos5_restart(char mode, const char *cmd)
 	__raw_writel(val, addr);
 }
 
-void set_boot_flag(unsigned int cpu, unsigned int mode)
-{
-	unsigned int tmp;
-
-	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
-
-	if (mode & BOOT_MODE_MASK)
-		tmp &= ~BOOT_MODE_MASK;
-
-	tmp |= mode;
-	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
-}
-
-void clear_boot_flag(unsigned int cpu, unsigned int mode)
-{
-	unsigned int tmp;
-
-	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
-	tmp &= ~mode;
-	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
-}
-
 void __init exynos_init_late(void)
 {
 	if (of_machine_is_compatible("samsung,exynos5440"))
 		/* to be supported later */
 		return;
 
+#ifdef CONFIG_PM_RUNTIME
 	exynos_pm_late_initcall();
+#endif
 }
 
 #ifdef CONFIG_OF
