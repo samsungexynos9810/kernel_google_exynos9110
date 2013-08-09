@@ -80,6 +80,7 @@ static DEFINE_MUTEX(cpufreq_lock);
 static DEFINE_MUTEX(cpufreq_scale_lock);
 
 static bool exynos_cpufreq_init_done;
+static bool suspend_prepared = false;
 
 /* Include CPU mask of each cluster */
 cluster_type exynos_boot_cluster;
@@ -496,6 +497,42 @@ out:
 	return ret;
 }
 
+static int __cpuinit exynos_cpufreq_cpu_notifier(struct notifier_block *notifier,
+					unsigned long action, void *hcpu)
+{
+	unsigned int cpu = (unsigned long)hcpu;
+	struct device *dev;
+
+	if (suspend_prepared)
+		return NOTIFY_OK;
+
+	dev = get_cpu_device(cpu);
+	if (dev) {
+		switch (action) {
+		case CPU_DOWN_PREPARE:
+		case CPU_DOWN_PREPARE_FROZEN:
+			mutex_lock(&cpufreq_lock);
+			exynos_info[CA7]->blocked = true;
+			exynos_info[CA15]->blocked = true;
+			mutex_unlock(&cpufreq_lock);
+			break;
+		case CPU_DOWN_FAILED:
+		case CPU_DOWN_FAILED_FROZEN:
+		case CPU_DEAD:
+			mutex_lock(&cpufreq_lock);
+			exynos_info[CA7]->blocked = false;
+			exynos_info[CA15]->blocked = false;
+			mutex_unlock(&cpufreq_lock);
+			break;
+		}
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block __refdata exynos_cpufreq_cpu_nb = {
+	.notifier_call = exynos_cpufreq_cpu_notifier,
+};
+
 /*
  * exynos_cpufreq_pm_notifier - block CPUFREQ's activities in suspend-resume
  *			context
@@ -547,6 +584,8 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		if (regulator_set_voltage(arm_regulator, volt, volt))
 			goto err;
 
+		suspend_prepared = true;
+
 		pr_debug("PM_SUSPEND_PREPARE for CPUFREQ\n");
 
 		break;
@@ -557,6 +596,8 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		exynos_info[CA7]->blocked = false;
 		exynos_info[CA15]->blocked = false;
 		mutex_unlock(&cpufreq_lock);
+
+		suspend_prepared = false;
 
 		break;
 	}
@@ -1162,6 +1203,7 @@ static int __init exynos_cpufreq_init(void)
 
 	set_boot_freq();
 
+	register_hotcpu_notifier(&exynos_cpufreq_cpu_nb);
 	register_pm_notifier(&exynos_cpufreq_nb);
 	register_reboot_notifier(&exynos_cpufreq_reboot_notifier);
 #if 0 /* FIXME */
@@ -1278,6 +1320,7 @@ err_cpufreq:
 	pm_qos_remove_notifier(PM_QOS_KFC_FREQ_MAX, &exynos_kfc_max_qos_notifier);
 	unregister_reboot_notifier(&exynos_cpufreq_reboot_notifier);
 	unregister_pm_notifier(&exynos_cpufreq_nb);
+	unregister_hotcpu_notifier(&exynos_cpufreq_cpu_nb);
 err_set_freq:
 	regulator_put(kfc_regulator);
 err_vdd_kfc:
