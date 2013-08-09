@@ -702,6 +702,7 @@
 		clocks = <&clock 870>;
 		clock-names = "watchdog";
 		timeout-sec = <30>;
+		pmu_wdt_reset_type = <3>;
 	};
 
 	firmware@0207F000 {
