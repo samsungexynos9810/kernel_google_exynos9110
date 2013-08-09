@@ -43,11 +43,13 @@
 #include <linux/of.h>
 
 #include <mach/map.h>
+#include <mach/pmu.h>
 
 #undef S3C_VA_WATCHDOG
 #define S3C_VA_WATCHDOG (0)
 
 #include <plat/regs-watchdog.h>
+#include <plat/watchdog.h>
 
 #define CONFIG_S3C2410_WATCHDOG_ATBOOT		(0)
 #define CONFIG_S3C2410_WATCHDOG_DEFAULT_TIME	(15)
@@ -119,6 +121,17 @@ static int s3c2410wdt_stop(struct watchdog_device *wdd)
 
 	return 0;
 }
+
+#ifdef CONFIG_PM
+static int s3c2410wdt_int_clear(struct watchdog_device *wdd)
+{
+	spin_lock(&wdt_lock);
+	writel(1, wdt_base + S3C2410_WTCLRINT);
+	spin_unlock(&wdt_lock);
+
+	return 0;
+}
+#endif
 
 static int s3c2410wdt_start(struct watchdog_device *wdd)
 {
@@ -315,17 +328,52 @@ static inline void s3c2410wdt_cpufreq_deregister(void)
 }
 #endif
 
+static const struct of_device_id s3c2410_wdt_match[];
+
+static int s3c2410wdt_get_platdata(struct platform_device *pdev)
+{
+#ifdef CONFIG_OF
+	struct s3c_watchdog_platdata *pdata;
+	struct device_node *np = pdev->dev.of_node;
+
+	if (np) {
+		const struct of_device_id *match;
+		match = of_match_node(s3c2410_wdt_match, pdev->dev.of_node);
+		pdev->dev.platform_data = (struct s3c_watchdog_platdata *)match->data;
+		pdata = pdev->dev.platform_data;
+		if (of_property_read_u32(np, "pmu_wdt_reset_type",
+					&pdata->pmu_wdt_reset_type)) {
+			pr_err("%s: failed to get pmu_wdt_reset_type property\n", __func__);
+			return -EINVAL;
+		}
+	}
+#else
+	pdev->dev.platform_data = dev_get_platdata(&pdev->dev);
+#endif
+	return 0;
+}
+
 static int s3c2410wdt_probe(struct platform_device *pdev)
 {
 	struct device *dev;
 	unsigned int wtcon;
 	int started = 0;
 	int ret;
+	struct s3c_watchdog_platdata *pdata;
 
 	DBG("%s: probe=%p\n", __func__, pdev);
 
 	dev = &pdev->dev;
 	wdt_dev = &pdev->dev;
+
+	if (s3c2410wdt_get_platdata(pdev)) {
+		dev_err(dev, "failed to get platdata\n");
+		return -EINVAL;
+	}
+	pdata = dev_get_platdata(&pdev->dev);
+	/* Enable pmu watchdog reset control */
+	if (pdata != NULL && pdata->pmu_wdt_control != NULL)
+		pdata->pmu_wdt_control(1, pdata->pmu_wdt_reset_type);
 
 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (wdt_mem == NULL) {
@@ -458,6 +506,9 @@ static unsigned long wtdat_save;
 
 static int s3c2410wdt_suspend(struct platform_device *dev, pm_message_t state)
 {
+	struct s3c_watchdog_platdata *pdata;
+
+	pdata = dev_get_platdata(&dev->dev);
 	/* Save watchdog state, and turn it off. */
 	wtcon_save = readl(wdt_base + S3C2410_WTCON);
 	wtdat_save = readl(wdt_base + S3C2410_WTDAT);
@@ -465,11 +516,26 @@ static int s3c2410wdt_suspend(struct platform_device *dev, pm_message_t state)
 	/* Note that WTCNT doesn't need to be saved. */
 	s3c2410wdt_stop(&s3c2410_wdd);
 
+	/* Disable pmu watchdog reset control */
+	if (pdata != NULL && pdata->pmu_wdt_control != NULL)
+		pdata->pmu_wdt_control(0, pdata->pmu_wdt_reset_type);
+
 	return 0;
 }
 
 static int s3c2410wdt_resume(struct platform_device *dev)
 {
+	struct s3c_watchdog_platdata *pdata;
+
+	pdata = dev_get_platdata(&dev->dev);
+	/* Stop and clear watchdog interrupt */
+	s3c2410wdt_stop(&s3c2410_wdd);
+	s3c2410wdt_int_clear(&s3c2410_wdd);
+
+	/* Enable pmu watchdog reset control */
+	if (pdata != NULL && pdata->pmu_wdt_control != NULL)
+		pdata->pmu_wdt_control(1, pdata->pmu_wdt_reset_type);
+
 	/* Restore watchdog state. */
 
 	writel(wtdat_save, wdt_base + S3C2410_WTDAT);
@@ -488,8 +554,14 @@ static int s3c2410wdt_resume(struct platform_device *dev)
 #endif /* CONFIG_PM */
 
 #ifdef CONFIG_OF
+static struct s3c_watchdog_platdata watchdog_platform_data = {
+	.pmu_wdt_control = exynos_pmu_wdt_control,
+};
+
 static const struct of_device_id s3c2410_wdt_match[] = {
-	{ .compatible = "samsung,s3c2410-wdt" },
+	{ .compatible = "samsung,s3c2410-wdt",
+	  .data = &watchdog_platform_data,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, s3c2410_wdt_match);
