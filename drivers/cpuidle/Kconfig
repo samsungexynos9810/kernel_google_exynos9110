@@ -38,8 +38,6 @@ config EXYNOS_CPUIDLE_C2
 	help
 	  Enable C2 state on cpuidle
 
-
-
 if CPU_IDLE
 
 config CPU_IDLE_CALXEDA
