@@ -85,6 +85,9 @@
 #define WINCONx_ALPHA_SEL			(1 << 1)
 #define WINCONx_ENWIN				(1 << 0)
 
+#define WINCONx_BPPORDER_C_F_RGB	(1 << 8)
+#define WINCONx_BPPORDER_C_F_BGR	(0 << 8)
+
 #define WINCON1_ALPHA_MUL_F			(1 << 7)
 #define WINCON2_ALPHA_MUL_F			(1 << 7)
 #define WINCON3_ALPHA_MUL_F			(1 << 7)
