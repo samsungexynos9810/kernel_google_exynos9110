@@ -141,6 +141,12 @@ struct s3c_fb_i80mode {
 	u8 frame_skip:2;
 	u8 rs_pol:1;
 	u32 refresh;
+	u32 left_margin;
+	u32 right_margin;
+	u32 upper_margin;
+	u32 lower_margin;
+	u32 hsync_len;
+	u32 vsync_len;
 	u32 xres;
 	u32 yres;
 	u32 pixclock;
@@ -463,7 +469,7 @@ static const struct of_device_id exynos5_decon[] = {
 MODULE_DEVICE_TABLE(of, exynos5_decon);
 #endif
 
-
+static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
 
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 			u32 win_no, u32 bufmode, u32 bufsel)
@@ -906,7 +912,7 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	data &= ~VIDOUTCON0_IF_MASK;
 	data |= VIDOUTCON0_I80IF_F;
 	writel(data, sfb->regs + VIDOUTCON0);
-#else
+#endif
 	data = VIDTCON0_VBPD(win_mode->upper_margin - 1)
 			| VIDTCON0_VFPD(win_mode->lower_margin - 1)
 			| VIDTCON0_VSPW(win_mode->vsync_len - 1);
@@ -916,13 +922,14 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 			| VIDTCON1_HSPW(win_mode->hsync_len - 1);
 	/* VIDTCON1 */
 	writel(data, sfb->regs + sfb->variant.vidtcon + 4);
-#endif
 	data = VIDTCON2_LINEVAL(win_mode->yres - 1)
 			| VIDTCON2_HOZVAL(win_mode->xres - 1);
 	/* VIDTCON2 */
 	writel(data, sfb->regs + sfb->variant.vidtcon + 8);
 
+#ifndef CONFIG_FB_I80_COMMAND_MODE
 	writel(win_mode->yres-1, sfb->regs + LINECNT_OP_THRESHOLD);
+#endif
 
 	data = sfb->pdata->vidcon0;
 	data &= ~(VIDCON0_CLKVAL_F_MASK);
@@ -1344,12 +1351,11 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 #endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	irq_ctrl_reg = readl(regs + VIDINTCON1);
-	irq_ctrl_reg |= VIDINTCON1_INT_I180;
+	irq_ctrl_reg |= VIDINTCON1_INT_I80;
 	writel(irq_ctrl_reg, regs + VIDINTCON1);
 
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
-	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
 	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
 	irq_ctrl_reg |= VIDINTCON0_INT_I80_EN;
 #endif
@@ -1441,10 +1447,17 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 
 	irq_sts_reg = readl(regs + VIDINTCON1);
 	if (irq_sts_reg & VIDINTCON1_INT_FRAME) {
-
 		/* VSYNC interrupt, accept it */
 		writel(VIDINTCON1_INT_FRAME, regs + VIDINTCON1);
 
+		sfb->vsync_info.timestamp = timestamp;
+		wake_up_interruptible_all(&sfb->vsync_info.wait);
+	}
+	if (irq_sts_reg & VIDINTCON1_INT_I80) {
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+		s3c_fb_sw_trigger(sfb);
+#endif
+		writel(VIDINTCON1_INT_I80, regs + VIDINTCON1);
 		sfb->vsync_info.timestamp = timestamp;
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
@@ -3750,7 +3763,7 @@ static void s3c_fb_enable_i80_irq(struct s3c_fb *sfb)
 	pm_runtime_get_sync(sfb->dev);
 
 	irq_ctrl_reg = readl(regs + VIDINTCON1);
-	irq_ctrl_reg |= VIDINTCON1_INT_I180;
+	irq_ctrl_reg |= VIDINTCON1_INT_I80;
 	writel(irq_ctrl_reg, regs + VIDINTCON1);
 
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
@@ -3781,10 +3794,9 @@ static irqreturn_t s3c_fb_i80_irq(int irq, void *dev_id)
 	u32 irq_sts_reg;
 
 	spin_lock(&sfb->slock);
-
 	irq_sts_reg = readl(regs + VIDINTCON1);
-	if (irq_sts_reg & VIDINTCON1_INT_I180) {
-		irq_sts_reg |= VIDINTCON1_INT_I180;
+	if (irq_sts_reg & VIDINTCON1_INT_I80) {
+		irq_sts_reg |= VIDINTCON1_INT_I80;
 		writel(irq_sts_reg, regs + VIDINTCON1);
 	}
 
@@ -3884,11 +3896,20 @@ static void s3c_fb_configure_trigger(struct s3c_fb *sfb)
 	u32 data = readl(regs);
 
 	data |= TRIGCON_TRIGEN_PER_I80_RGB_F | TRIGCON_TRIGEN_I80_RGB_F;
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+	data &= ~TRIGCON_HWTRIGEN_I80_RGB;
+	data &= ~TRIGCON_HWTRIGMASK_I80_RGB;
+	data |= TRIGCON_SWTRIGEN_I80_RGB;
+#else
 	data &= ~(TRIGCON_SWTRIGEN_I80_RGB);
 	data |= TRIGCON_HWTRIGEN_I80_RGB;
 	data |= TRIGCON_HWTRIGMASK_I80_RGB;
-
+#endif
 	writel(data, regs);
+
+	data = readl(sfb->regs + DECON_UPDATE);
+	data |= DECON_UPDATE_STANDALONE_F;
+	writel(data, sfb->regs + DECON_UPDATE);
 }
 
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
@@ -3938,11 +3959,13 @@ static int parse_decon_win_params(struct device *dev)
 
 static int parse_plat_data(struct device *dev)
 {
+#ifndef CONFIG_FB_I80_COMMAND_MODE
 	if (of_property_read_u32(dev->of_node,
 			"samsung,vidcon1", &decon_platdata.vidcon1)) {
 		dev_err(dev, "Fail to get vidcon1 value.\n");
 		return -1;
 	}
+#endif
 	if (of_property_read_u32(dev->of_node,
 			"samsung,default_win", &decon_platdata.default_win)) {
 		dev_err(dev, "Fail to get vidcon1 value.\n");
@@ -4035,14 +4058,8 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		goto err_lcd_clk;
 	}
 #ifdef CONFIG_FB_I80_COMMAND_MODE
-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
-	if (!res) {
-		dev_err(dev, "failed to acquire irq resource\n");
-		ret = -ENOENT;
-		goto err_lcd_clk;
-	}
-	sfb->irq_no = res->start;
-	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_i80_irq,
+	DT_READ_U32(dev->of_node, "i80_irq_no", sfb->irq_no);
+	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
 			  0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "i80 irq request failed\n");
@@ -4257,6 +4274,10 @@ static int s3c_fb_probe(struct platform_device *pdev)
 
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
 	s3c_fb_activate_window_dma(sfb, default_win);
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+	s3c_fb_enable_irq(sfb);
+	s3c_fb_sw_trigger(sfb);
+#endif
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 0);
 	ret = iovmm_activate(&pdev->dev);

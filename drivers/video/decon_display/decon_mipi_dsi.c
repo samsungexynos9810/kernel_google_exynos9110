@@ -83,11 +83,13 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	writel(0x1, reg + 0x10);
 	iounmap(reg);
 
+#ifdef CONFIG_FB_I80_SW_TRIGGER
 	reg = ioremap(0x13B80000, 0x4);
 	writel(0x0, reg);
 	mdelay(5);
 	writel(0x1, reg);
 	iounmap(reg);
+#endif
 
 	return 0;
 }
@@ -518,12 +520,21 @@ int s5p_mipi_dsi_set_clock(struct mipi_dsim_device *dsim,
 				s5p_mipi_dsi_set_timing_register2(dsim, 0x05, 0x06,
 									0x07);
 #elif defined(CONFIG_DECON_LCD_S6E3FA0)
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
+				s5p_mipi_dsi_set_timing_register0(dsim, 0x08, 0x0d);
+				s5p_mipi_dsi_set_timing_register1(dsim, 0x09, 0x30,
+									0x0e, 0x0a);
+				s5p_mipi_dsi_set_timing_register2(dsim, 0x0c, 0x11,
+									0x0d);
+#else
 				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
 				s5p_mipi_dsi_set_timing_register0(dsim, 0x06, 0x0b);
 				s5p_mipi_dsi_set_timing_register1(dsim, 0x07, 0x27,
 									0x0d, 0x08);
 				s5p_mipi_dsi_set_timing_register2(dsim, 0x09, 0x0d,
 									0x0b);
+#endif
 #endif
 			}
 			dsim->byte_clk = dsim->hs_clk / 8;
@@ -1064,8 +1075,17 @@ static int mipi_lcd_power_control(struct mipi_dsim_device *dsim,
 		data |= 0x1;
 		writel(data, regs + 0x4);
 		usleep_range(5000, 6000);
+		iounmap(regs);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+		regs = ioremap(0x14CC00C0, 0x4);
+		data = readl(regs);
+		data &= ~(0xf << 4);
+		data |= (0x2 << 4);
+		writel(data, regs);
+		iounmap(regs);
+#endif
 	}
-	iounmap(regs);
 
 	return 1;
 }
@@ -1325,7 +1345,7 @@ struct mipi_dsim_config g_dsim_config = {
 	/* main frame fifo auto flush at VSYNC pulse */
 	.auto_flush	= false,
 	.eot_disable	= false,
-	.auto_vertical_cnt = true,
+	.auto_vertical_cnt = false,
 	.hse = false,
 	.hfp = false,
 	.hbp = false,
@@ -1340,9 +1360,15 @@ struct mipi_dsim_config g_dsim_config = {
 	.m = 80,
 	.s = 2,
 #elif defined(CONFIG_DECON_LCD_S6E3FA0)
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	.p = 2,
+	.m = 46,
+	.s = 1,
+#else
 	.p = 4,
 	.m = 75,
 	.s = 1,
+#endif
 #endif
 	/* D-PHY PLL stable time spec :min = 200usec ~ max 400usec */
 	.pll_stable_time = 500,

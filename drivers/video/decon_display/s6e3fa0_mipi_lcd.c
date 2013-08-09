@@ -31,7 +31,7 @@ static const unsigned char ED[] = {0xed, 0x01, 0x00};
 static const unsigned char FD[] = {0xfd, 0x16, 0x80};
 static const unsigned char F6[] = {0xf6, 0x08};
 static const unsigned char E7[] = {0xE7, 0xED, 0xC7, 0x23, 0x57, 0xA5};
-static const unsigned char E8[] = {0xeb, 0x01, 0x00};
+static const unsigned char EB[] = {0xeb, 0x01, 0x00};
 static const unsigned char C0[] = {0xc0, 0x63, 0x02, 0x03, 0x32, 0xFF, 0x44, 0x44, 0xC0, 0x00, 0x40};
 static const unsigned char D29[] = {0x29, 0x00, 0x00};
 
@@ -335,7 +335,7 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)SEQ_TEST_KEY_ON_F1,
-				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
+				ARRAY_SIZE(SEQ_TEST_KEY_ON_F1)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_FC command.\n");
 
 	msleep(12);
@@ -352,19 +352,30 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 				ARRAY_SIZE(ED)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TOUCHKEY_OFF command.\n");
 	msleep(12);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)FD,
+				ARRAY_SIZE(FD)) == -1)
+		dev_err(dsim->dev, "fail to send FD command.\n");
+	msleep(12);
 
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+		0xF6, 0x08);
+
+	mdelay(12);
+#else
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)E7,
 				ARRAY_SIZE(E7)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_GLOBAL_PARAM_SOURCE_AMP command.\n");
 
 	msleep(120);
-
+#endif
 	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
 		0x11, 0);
 
 	mdelay(20);
-
+#ifndef CONFIG_FB_I80_COMMAND_MODE
 	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 
@@ -374,10 +385,10 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 		0xF2, 0x02);
 
 	mdelay(12);
-
+#endif
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)E8,
-				ARRAY_SIZE(E8)) == -1)
+			(unsigned int)EB,
+				ARRAY_SIZE(EB)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_OFF_FC command.\n");
 
 	mdelay(12);
@@ -388,12 +399,22 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 		dev_err(dsim->dev, "fail to send SEQ_DISPCTL command.\n");
 
 	mdelay(12);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x35, 0x0);
 
+	mdelay(12);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x29, 0);
+
+	msleep(12);
+#else
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)D29,
 				ARRAY_SIZE(D29)) == -1)
 		dev_err(dsim->dev, "fail to send SEQ_DISPCTL command.\n");
-
+#endif
 	mdelay(12);
 
 	update_brightness(bd->props.brightness);

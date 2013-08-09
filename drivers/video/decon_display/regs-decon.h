@@ -205,7 +205,7 @@
 #define VIDINTCON1				(0x224)
 
 #define VIDINTCON1_INT_EXTRA			(1 << 3)
-#define VIDINTCON1_INT_I180			(1 << 2)
+#define VIDINTCON1_INT_I80			(1 << 2)
 #define VIDINTCON1_INT_FRAME			(1 << 1)
 #define VIDINTCON1_INT_FIFO			(1 << 0)
 
