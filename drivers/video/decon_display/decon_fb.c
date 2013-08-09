@@ -469,7 +469,7 @@ static const struct of_device_id exynos5_decon[] = {
 MODULE_DEVICE_TABLE(of, exynos5_decon);
 #endif
 
-static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
+void s3c_fb_sw_trigger(struct s3c_fb *sfb);
 
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 			u32 win_no, u32 bufmode, u32 bufsel)
@@ -3537,29 +3537,6 @@ static ssize_t s3c_fb_vsync_show(struct device *dev,
 
 static DEVICE_ATTR(vsync, S_IRUGO, s3c_fb_vsync_show, NULL);
 
-#ifdef CONFIG_ION_EXYNOS
-#if 0
-int s3c_fb_sysmmu_fault_handler(struct device *dev, const char *mmuname,
-		enum exynos_sysmmu_inttype itype, unsigned long pgtable_base,
-		unsigned long fault_addr)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct s3c_fb *sfb = platform_get_drvdata(pdev);
-
-	pr_err("FIMD1 PAGE FAULT occurred at 0x%lx (Page table base: 0x%lx)\n",
-			fault_addr, pgtable_base);
-
-	s3c_fb_dump_registers(sfb);
-
-	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
-
-	BUG();
-
-	return 0;
-}
-#endif
-#endif
-
 #ifdef CONFIG_DEBUG_FS
 
 static int s3c_fb_debugfs_show(struct seq_file *f, void *offset)
@@ -3739,10 +3716,9 @@ static void decon_fb_enable_interrupt(struct s3c_fb *sfb, u32 enable)
 	writel(data, regs);
 }
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_EXYNOS_FIMD_V8
 static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 {
-#ifdef CONFIG_FB_EXYNOS_FIMD_V8
 	pr_err("dumping registers\n");
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4, sfb->regs,
 			0x0280, false);
@@ -3752,96 +3728,9 @@ static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 	pr_err("...\n");
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
 			sfb->regs + 0x20000, 0x20, false);
+}
 #endif
-}
-
-static void s3c_fb_enable_i80_irq(struct s3c_fb *sfb)
-{
-	void __iomem *regs = sfb->regs;
-	u32 irq_ctrl_reg;
-
-	pm_runtime_get_sync(sfb->dev);
-
-	irq_ctrl_reg = readl(regs + VIDINTCON1);
-	irq_ctrl_reg |= VIDINTCON1_INT_I80;
-	writel(irq_ctrl_reg, regs + VIDINTCON1);
-
-	irq_ctrl_reg = readl(regs + VIDINTCON0);
-	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
-	irq_ctrl_reg |= VIDINTCON0_INT_I80_EN;
-	writel(irq_ctrl_reg, regs + VIDINTCON0);
-
-	pm_runtime_put_sync(sfb->dev);
-}
-
-static void s3c_fb_hw_trigger_mask(struct s3c_fb *sfb, bool mask)
-{
-	void __iomem  *regs = sfb->regs + TRIGCON;
-	u32 data = readl(regs);
-
-	if (mask)
-		data |= TRIGCON_HWTRIGMASK_I80_RGB;
-	else
-		data &= ~TRIGCON_HWTRIGMASK_I80_RGB;
-
-	writel(data, regs);
-}
-
-static irqreturn_t s3c_fb_i80_irq(int irq, void *dev_id)
-{
-	struct s3c_fb *sfb = dev_id;
-	void __iomem  *regs = sfb->regs;
-	u32 irq_sts_reg;
-
-	spin_lock(&sfb->slock);
-	irq_sts_reg = readl(regs + VIDINTCON1);
-	if (irq_sts_reg & VIDINTCON1_INT_I80) {
-		irq_sts_reg |= VIDINTCON1_INT_I80;
-		writel(irq_sts_reg, regs + VIDINTCON1);
-	}
-
-	spin_unlock(&sfb->slock);
-	return IRQ_HANDLED;
-}
-
-static int s3c_fb_copy_bootloader_fb(struct platform_device *pdev,
-		struct dma_buf *dest_buf)
-{
-	struct resource *res;
-	int ret = 0;
-	size_t i;
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	if (!res || !res->start || !resource_size(res)) {
-		dev_warn(&pdev->dev, "failed to find bootloader framebuffer\n");
-		return -ENOENT;
-	}
-
-	ret = dma_buf_begin_cpu_access(dest_buf, 0, resource_size(res),
-			DMA_TO_DEVICE);
-	if (ret < 0) {
-		dev_warn(&pdev->dev, "dma_buf_begin_cpu_access() failed on bootloader framebuffer: %u\n",
-				ret);
-		goto err;
-	}
-	for (i = 0; i < resource_size(res); i += PAGE_SIZE) {
-		void *page = phys_to_page(res->start + i);
-		void *from_virt = kmap(page);
-		void *to_virt = dma_buf_kmap(dest_buf, i / PAGE_SIZE);
-		memcpy(to_virt, from_virt, PAGE_SIZE);
-		kunmap(page);
-		dma_buf_kunmap(dest_buf, i / PAGE_SIZE, to_virt);
-	}
-
-	dma_buf_end_cpu_access(dest_buf, 0, resource_size(res), DMA_TO_DEVICE);
-
-err:
-	if (memblock_free(res->start, resource_size(res)))
-		dev_warn(&pdev->dev, "failed to free bootloader framebuffer memblock\n");
-
-	return ret;
-}
-
+#if 0
 static int s3c_fb_clear_fb(struct s3c_fb *sfb,
 		struct dma_buf *dest_buf, size_t size)
 {
@@ -3864,32 +3753,8 @@ static int s3c_fb_clear_fb(struct s3c_fb *sfb,
 	dma_buf_end_cpu_access(dest_buf, 0, size, DMA_TO_DEVICE);
 	return 0;
 }
-
-static void decon_fb_set_clk_val_up(struct s3c_fb *sfb, u32 mode)
-{
-	void __iomem *regs = sfb->regs + VIDCON0;
-	u32 data = readl(regs);
-
-	if (mode)
-		data |= VIDCON0_CLKVALUP;
-	else
-		data &= ~VIDCON0_CLKVALUP;
-
-	writel(data, regs);
-}
-
-static void decon_fb_set_clk_free_run(struct s3c_fb *sfb, u32 mode)
-{
-	void __iomem *regs = sfb->regs + VIDCON0;
-	u32 data = readl(regs);
-
-	if (mode)
-		data |= VIDCON0_VLCKFREE;
-	else
-		data &= ~VIDCON0_VLCKFREE;
-
-	writel(data, regs);
-}
+#endif
+#ifdef CONFIG_FB_I80_COMMAND_MODE
 static void s3c_fb_configure_trigger(struct s3c_fb *sfb)
 {
 	void __iomem *regs = sfb->regs + TRIGCON;
@@ -3912,6 +3777,7 @@ static void s3c_fb_configure_trigger(struct s3c_fb *sfb)
 	writel(data, sfb->regs + DECON_UPDATE);
 }
 
+#ifdef CONFIG_FB_I80_SW_TRIGGER
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 {
 	void __iomem *regs = sfb->regs + TRIGCON;
@@ -3921,6 +3787,7 @@ static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 
 	writel(data, regs);
 }
+#endif
 #endif
 
 static struct s3c_fb_driverdata s3c_fb_data_exynos5;
