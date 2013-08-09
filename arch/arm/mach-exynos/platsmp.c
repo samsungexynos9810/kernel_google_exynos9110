@@ -264,6 +264,26 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
 		if (call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr))
 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
 	}
+
+	if (soc_is_exynos5430()) {
+		void __iomem *noncpu_config_reg;
+		unsigned int tmp;
+		unsigned int cluster
+			= MPIDR_AFFINITY_LEVEL(cpu_logical_map(0), 1);
+
+		if (cluster)
+			noncpu_config_reg = EXYNOS5430_KFC_NONCPU_CONFIGURATION;
+		else
+			noncpu_config_reg = EXYNOS5430_EAGLE_NONCPU_CONFIGURATION;
+
+		tmp = __raw_readl(EXYNOS5430_EAGLE_NONCPU_CONFIGURATION);
+		tmp |= EXYNOS_CORE_INIT_WAKEUP_FROM_LOWPWR;
+		__raw_writel(tmp, EXYNOS5430_EAGLE_NONCPU_CONFIGURATION);
+
+		do {
+			tmp = __raw_readl(noncpu_config_reg + 0x4);
+		} while ((tmp & 0xf) != 0xf);
+	}
 }
 
 struct smp_operations exynos_smp_ops __initdata = {
