@@ -139,6 +139,8 @@ void v4l2_m2m_ctx_release(struct v4l2_m2m_ctx *m2m_ctx);
 
 void v4l2_m2m_buf_queue(struct v4l2_m2m_ctx *m2m_ctx, struct vb2_buffer *vb);
 
+void v4l2_m2m_try_schedule(struct v4l2_m2m_ctx *m2m_ctx);
+
 /**
  * v4l2_m2m_num_src_bufs_ready() - return the number of source buffers ready for
  * use

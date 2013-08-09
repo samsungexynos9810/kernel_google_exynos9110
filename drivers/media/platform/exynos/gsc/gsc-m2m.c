@@ -314,8 +314,10 @@ static void gsc_m2m_fence_work(struct work_struct *work)
 			sync_fence_put(fence);
 		}
 
-		if (ctx->m2m_ctx)
+		if (ctx->m2m_ctx) {
 			v4l2_m2m_buf_queue(ctx->m2m_ctx, &buffer->vb);
+			v4l2_m2m_try_schedule(ctx->m2m_ctx);
+		}
 
 		spin_lock_irqsave(&ctx->slock, flags);
 	}

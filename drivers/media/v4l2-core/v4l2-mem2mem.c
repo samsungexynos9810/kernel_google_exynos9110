@@ -202,7 +202,7 @@ static void v4l2_m2m_try_run(struct v4l2_m2m_dev *m2m_dev)
  * An example of the above could be an instance that requires more than one
  * src/dst buffer per transaction.
  */
-static void v4l2_m2m_try_schedule(struct v4l2_m2m_ctx *m2m_ctx)
+void v4l2_m2m_try_schedule(struct v4l2_m2m_ctx *m2m_ctx)
 {
 	struct v4l2_m2m_dev *m2m_dev;
 	unsigned long flags_job, flags_out, flags_cap;
