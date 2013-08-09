@@ -596,7 +596,7 @@
 		samsung,max_bpp = <32>;
 		samsung,default_bpp = <24>;
 
-		samsung,i80_irq_no = <233>;
+		samsung,i80_irq_no = <235>;
 		samsung,irq_no = <234>;
 
 		clock-names = "lcd", "sclk_eclk", "sclk_vclk", "decon_dsd";
