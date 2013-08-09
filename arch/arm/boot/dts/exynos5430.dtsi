@@ -682,4 +682,13 @@
 		iommu = <&sysmmu_mfc1_0>, <&sysmmu_mfc1_1>;
 	};
 
+	hevc@14FE0000 {
+		compatible = "samsung,hevc";
+		reg = <0x14FE0000 0x10000>;
+		interrupts = <0 448 0>;
+		clock-names = "hevc";
+		clocks = <&clock 740>;
+		iommu = <&sysmmu_hevc0>, <&sysmmu_hevc1>;
+		status = "ok";
+	};
 };
