@@ -16,6 +16,8 @@
 #define S5P_VIDEONODE_MFC_DEC		6
 #define S5P_VIDEONODE_MFC_ENC		7
 
+#define EXYNOS_VIDEONODE_HEVC_DEC		10
+
 #define EXYNOS_VIDEONODE_JPEG_HX_DEC(x)		(13 - (x) * 2)
 #define EXYNOS_VIDEONODE_JPEG_HX_ENC(x)		(14 - (x) * 2)
 
