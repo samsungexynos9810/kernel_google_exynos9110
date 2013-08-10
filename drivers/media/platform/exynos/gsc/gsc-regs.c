@@ -24,6 +24,69 @@ void gsc_hw_set_pp_index_init(struct gsc_dev *dev)
 	writel(cfg, dev->regs + GSC_ENABLE);
 }
 
+void gsc_hw_set_lookup_table(struct gsc_dev *dev)
+{
+	writel(0xCCCCCCCC, dev->regs + GSC_IN_QOS_LUT07_00);
+	writel(0xCCCCCCCC, dev->regs + GSC_IN_QOS_LUT15_08);
+	writel(0xA9876543, dev->regs + GSC_IN_QOS_LUT07_00);
+	writel(0xFFFFEDCB, dev->regs + GSC_IN_QOS_LUT15_08);
+}
+
+void gsc_hw_set_smart_if_pix_num(struct gsc_ctx *ctx)
+{
+	struct gsc_dev *dev = ctx->gsc_dev;
+	struct gsc_frame *frame = &ctx->d_frame;
+
+	u32 cfg = readl(dev->regs + GSC_SMART_IF_PIXEL_NUM);
+	cfg = frame->crop.width * frame->crop.height;
+	writel(cfg, dev->regs + GSC_SMART_IF_PIXEL_NUM);
+}
+
+void gsc_hw_set_smart_if_con(struct gsc_dev *dev, bool enable)
+{
+	u32 cfg = readl(dev->regs + GSC_SMART_IF_CON);
+
+	if (enable)
+		cfg = (GSC_SMART_IF_EN | GSC_HIRACHICAL_MODE);
+	else
+		cfg &= ~GSC_SMART_IF_EN;
+
+	writel(cfg, dev->regs + GSC_SMART_IF_CON);
+}
+
+void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable)
+{
+	struct gsc_dev *dev = ctx->gsc_dev;
+	u32 cfg = 0;
+
+	if (enable) {
+		gsc_info("gsc start");
+		/* realtime effort */
+		cfg = readl(dev->regs + GSC_BUSCON);
+		cfg |= GSC_BUSCON_REAL_TIME_ACCESS_EN;
+		writel(cfg, dev->regs + GSC_BUSCON);
+
+		/* set enable sfr */
+		gsc_hw_set_pp_index_init(dev);
+
+		gsc_hw_set_smart_if_pix_num(ctx);
+		gsc_hw_set_smart_if_con(dev, true);
+		gsc_hw_set_lookup_table(dev);
+		gsc_hw_set_sfr_update(ctx);
+
+		cfg = readl(dev->regs + GSC_ENABLE);
+		cfg |= GSC_ENABLE_ON;
+		cfg |= GSC_ENABLE_QOS_ENABLE;
+		writel(cfg, dev->regs + GSC_ENABLE);
+	} else {
+		gsc_info("gsc stop");
+		gsc_hw_set_smart_if_con(dev, false);
+		cfg = readl(dev->regs + GSC_ENABLE);
+		cfg &= ~GSC_ENABLE_ON;
+		writel(cfg, dev->regs + GSC_ENABLE);
+	}
+}
+
 void gsc_hw_set_sfr_update_force(struct gsc_dev *dev)
 {
 	u32 cfg = readl(dev->regs + GSC_ENABLE);
@@ -91,7 +154,6 @@ void gsc_hw_set_output_rotation(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *dev = ctx->gsc_dev;
 	u32 cfg;
-	gsc_info();
 	cfg = readl(dev->regs + GSC_OUT_CON);
 	cfg &= ~GSC_OUT_ROT_MASK;
 
@@ -170,10 +232,8 @@ int gsc_wait_reset(struct gsc_dev *dev)
 	u32 cfg;
 	u32 cnt = (loops_per_jiffy * HZ) / MSEC_PER_SEC;
 
-	gsc_info("cnt : %d", cnt);
 	do {
 		cfg = readl(dev->regs + GSC_SW_RESET);
-		gsc_info();
 		if (!cfg)
 			return 0;
 	} while (--cnt);
@@ -203,22 +263,21 @@ int gsc_wait_stop(struct gsc_dev *dev)
 
 	while (time_before(jiffies, timeo)) {
 		cfg = readl(dev->regs + GSC_ENABLE);
-		if (!(cfg & GSC_ENABLE_OP_STATUS))
+		if (!(cfg & GSC_ENABLE_STOP_STATUS_STOP_SEQ))
 			return 0;
 		usleep_range(10, 20);
 	}
 	/* This is workaround until next chips.
 	 * If fimd is stop than gsc, gsc didn't work complete
 	 */
+
 	gsc_hw_set_sw_reset(dev);
 	ret = gsc_wait_reset(dev);
 	if (ret < 0) {
 		gsc_err("gscaler s/w reset timeout");
 		return ret;
 	}
-	gsc_hw_set_pixelasync_reset_output(dev);
 	gsc_info("wait time : %d ms", jiffies_to_msecs(jiffies - timeo + 10));
-
 	return 0;
 }
 
@@ -716,14 +775,14 @@ void gsc_hw_set_out_image_format(struct gsc_ctx *ctx)
 		 GSC_OUT_CHROM_STRIDE_SEL_MASK | GSC_OUT_RB_SWAP_MASK);
 	writel(cfg, dev->regs + GSC_OUT_CON);
 
+	if (ctx->out_path != GSC_DMA) {
+		cfg |= GSC_OUT_XRGB8888;
+		goto end_set;
+	}
+
 	if (is_rgb(frame->fmt->pixelformat)) {
 		gsc_hw_set_out_image_rgb(ctx);
 		return;
-	}
-
-	if (ctx->out_path != GSC_DMA) {
-		cfg |= GSC_OUT_YUV444;
-		goto end_set;
 	}
 
 	for (i = 0; i < frame->fmt->num_planes; i++)
@@ -794,7 +853,6 @@ void gsc_hw_set_input_rotation(struct gsc_ctx *ctx)
 	struct gsc_dev *dev = ctx->gsc_dev;
 	u32 cfg;
 
-	gsc_info();
 	cfg = readl(dev->regs + GSC_IN_CON);
 	cfg &= ~GSC_IN_ROT_MASK;
 
@@ -862,22 +920,19 @@ void gsc_hw_set_mixer(int id)
 	writel(cfg, SYSREG_DISP1BLK_CFG);
 }
 
-void gsc_hw_set_local_dst(int id, int out, bool on)
+void gsc_hw_set_local_dst(struct gsc_dev* dev, int out, bool on)
 {
-	u32 cfg = readl(SYSREG_GSCBLK_CFG0);
+	u32 cfg = readl(dev->sysreg_disp + DSD_CFG);
 
-	if (out == GSC_FIMD) {
-		if (on)
-			cfg |= (GSC_OUT_DST_FIMD_SEL(id));
-		else
-			cfg &= ~((GSC_OUT_DST_FIMD_SEL(id)));
-	} else if (out == GSC_MIXER) {
-		if (on)
-			cfg |= (GSC_OUT_DST_MXR_SEL(id));
-		else
-			cfg &= ~((GSC_OUT_DST_MXR_SEL(id)));
+	if (on) {
+		cfg &= ~((0x3 << (4 + dev->id * 2)) | (0x1 << (0 + dev->id)));
+		cfg |= (0x1 << (4 + dev->id * 2));
+		writel(cfg, dev->sysreg_disp + DSD_CFG);
+		writel(0x80000000, dev->sysreg_disp + DSD_RESERVE10);
+	} else {
+		cfg &= ~(0x3 << (4 + dev->id * 2));
+		writel(cfg, dev->sysreg_disp + DSD_CFG);
 	}
-	writel(cfg, SYSREG_GSCBLK_CFG0);
 }
 
 void gsc_hw_set_pixelasync_reset_wb(struct gsc_dev *dev)

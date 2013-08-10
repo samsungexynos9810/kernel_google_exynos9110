@@ -41,6 +41,9 @@
 #define SYSREG_GSCBLK_CFG2		(S3C_VA_SYS + 0x2000)
 #define PXLASYNC_LO_MASK_CAMIF_GSCL(x)	(1 << (x))
 
+#define DSD_CFG				(0x1000)
+#define DSD_CFG_MUX			(0x1004)
+#define DSD_RESERVE10			(0x1048)
 /* G-Scaler enable */
 #define GSC_ENABLE			0x00
 
@@ -311,8 +314,15 @@
 /* G-Scaler vertical scaling filter */
 #define GSC_VCOEF(n, s, x)	(0x200 + (n) * 0x4 + (s) * 0x30 + (x) * 0x300)
 
+/* G-Scaler lookup table */
+#define GSC_IN_QOS_LUT07_00		0xAA0
+#define GSC_IN_QOS_LUT15_08		0xAA4
+#define GSC_OUT_QOS_LUT07_00		0xAB0
+#define GSC_OUT_QOS_LUT15_08		0xAB4
+
 /* G-Scaler BUS control */
 #define GSC_BUSCON			0xA78
+#define GSC_BUSCON_REAL_TIME_ACCESS_EN	(1 << 9)
 #define GSC_BUSCON_INT_TIME_MASK	(1 << 8)
 #define GSC_BUSCON_INT_DATA_TRANS	(0 << 8)
 #define GSC_BUSCON_INT_AXI_RESPONSE	(1 << 8)
@@ -323,6 +333,13 @@
 #define GSC_VPOSITION			0xA7C
 #define GSC_VPOS_F(x)			((x) << 0)
 
+/* G-Scaler SMART IF PIXEL NUM */
+#define GSC_SMART_IF_PIXEL_NUM		0xAF0
+
+/* G-Scaler SMART IF CON*/
+#define GSC_SMART_IF_CON		0xAF4
+#define GSC_SMART_IF_EN			(1 << 0)
+#define GSC_HIRACHICAL_MODE		(0x3 << 1)
 
 /* G-Scaler clock initial count */
 #define GSC_CLK_INIT_COUNT		0xC00

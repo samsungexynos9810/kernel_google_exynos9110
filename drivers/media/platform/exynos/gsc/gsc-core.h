@@ -22,6 +22,8 @@
 #include <linux/io.h>
 #include <linux/pm_runtime.h>
 #include <linux/pm_qos.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
 #include <mach/videonode.h>
 #include <media/videobuf2-core.h>
 #include <media/v4l2-ctrls.h>
@@ -573,6 +575,8 @@ struct gsc_dev {
 	atomic_t			qos_cnt;
 	struct pm_qos_request		exynos5_gsc_mif_qos;
 	struct pm_qos_request		exynos5_gsc_int_qos;
+	void __iomem			*sysreg_disp;
+	void __iomem			*sysreg_gscl;
 };
 
 /**
@@ -824,7 +828,7 @@ void gsc_hw_set_mainscaler(struct gsc_ctx *ctx);
 void gsc_hw_set_input_rotation(struct gsc_ctx *ctx);
 void gsc_hw_set_global_alpha(struct gsc_ctx *ctx);
 void gsc_hw_set_sfr_update(struct gsc_ctx *ctx);
-void gsc_hw_set_local_dst(int id, int out, bool on);
+void gsc_hw_set_local_dst(struct gsc_dev *gsc, int out, bool on);
 void gsc_hw_set_mixer(int id);
 void gsc_hw_set_sysreg_writeback(struct gsc_dev *dev);
 void gsc_hw_set_pxlasync_camif_lo_mask(struct gsc_dev *dev, bool on);
@@ -834,6 +838,7 @@ void gsc_hw_set_in_pingpong_update(struct gsc_dev *dev);
 void gsc_hw_set_in_chrom_stride(struct gsc_ctx *ctx);
 void gsc_hw_set_out_chrom_stride(struct gsc_ctx *ctx);
 void gsc_hw_set_fire_bit_sync_mode(struct gsc_dev *dev, bool mask);
+void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable);
 
 int gsc_hw_get_input_buf_mask_status(struct gsc_dev *dev);
 int gsc_hw_get_done_input_buf_index(struct gsc_dev *dev);
@@ -858,4 +863,7 @@ void gsc_hw_set_max_read_axi_issue_cap(struct gsc_dev *dev, u32 level);
 void gsc_hw_set_max_write_axi_issue_cap(struct gsc_dev *dev, u32 level);
 void gsc_hw_set_output_rotation(struct gsc_ctx *ctx);
 void gsc_hw_set_deadlock_irq_mask(struct gsc_dev *dev, bool mask);
+void gsc_hw_set_smart_if_con(struct gsc_dev *dev, bool enable);
+void gsc_hw_set_smart_if_pix_num(struct gsc_ctx *ctx);
+void gsc_hw_set_sfr_update(struct gsc_ctx *ctx);
 #endif /* GSC_CORE_H_ */

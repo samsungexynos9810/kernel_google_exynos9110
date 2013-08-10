@@ -33,25 +33,7 @@
 
 int gsc_out_hw_reset_off(struct gsc_dev *gsc)
 {
-	int ret;
-	struct exynos_platform_gscaler *pdata = gsc->pdata;
-
-	gsc_hw_enable_control(gsc, false);
-	ret = gsc_wait_stop(gsc);
-	if (ret < 0) {
-		gsc_err("gscaler stop timeout");
-		return ret;
-	}
-
-	if (is_ver_5a) {
-		gsc_hw_set_sw_reset(gsc);
-		ret = gsc_wait_reset(gsc);
-		if (ret < 0) {
-			gsc_err("gscaler s/w reset timeout");
-			return ret;
-		}
-		gsc_hw_set_pixelasync_reset_output(gsc);
-	}
+	gsc_hw_enable_localout(gsc->out.ctx, false);
 
 	return 0;
 }
@@ -59,7 +41,7 @@ int gsc_out_hw_reset_off(struct gsc_dev *gsc)
 int gsc_out_hw_set(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *gsc = ctx->gsc_dev;
-	struct exynos_platform_gscaler *pdata = gsc->pdata;
+	struct gsc_pipeline *p = &gsc->pipeline;
 	int ret = 0;
 
 	ret = gsc_set_scaler_info(ctx);
@@ -68,28 +50,21 @@ int gsc_out_hw_set(struct gsc_ctx *ctx)
 		return ret;
 	}
 
-
 	if (gsc->out.ctx->out_path == GSC_FIMD) {
-		gsc_hw_set_local_dst(gsc->id, GSC_FIMD, true);
+		gsc_hw_set_local_dst(gsc, GSC_FIMD, true);
 	} else {
 		gsc_hw_set_mixer(gsc->id);
-		gsc_hw_set_local_dst(gsc->id, GSC_MIXER, true);
+		gsc_hw_set_local_dst(gsc, GSC_MIXER, true);
 	}
 
-	if (is_ver_5a)
-		gsc_hw_set_pixelasync_reset_output(gsc);
-
-	if (gsc_hw_get_mxr_path_status())
-		gsc_hw_set_fire_bit_sync_mode(gsc, true);
-	else
-		gsc_hw_set_fire_bit_sync_mode(gsc, false);
-
 	gsc_hw_set_frm_done_irq_mask(gsc, false);
+	gsc_hw_set_overflow_irq_mask(gsc, false);
 	gsc_hw_set_read_slave_error_mask(gsc, false);
-	gsc_hw_set_deadlock_irq_mask(gsc, false);
+	gsc_hw_set_write_slave_error_mask(gsc, false);
+	gsc_hw_set_deadlock_irq_mask(gsc, true);
 	gsc_hw_set_gsc_irq_enable(gsc, true);
 	gsc_hw_set_one_frm_mode(gsc, false);
-	gsc_hw_set_freerun_clock_mode(gsc, true);
+	gsc_hw_set_freerun_clock_mode(gsc, false);
 
 	gsc_hw_set_input_path(ctx);
 	gsc_hw_set_in_size(ctx);
@@ -104,15 +79,32 @@ int gsc_out_hw_set(struct gsc_ctx *ctx)
 	gsc_hw_set_h_coef(ctx);
 	gsc_hw_set_v_coef(ctx);
 	gsc_hw_set_input_rotation(ctx);
-	gsc_hw_set_global_alpha(ctx);
 
-	gsc_hw_enable_control(gsc, true);
+	ret = v4l2_subdev_call(p->disp, core, ioctl,
+			S3CFB_SHADOW_PROTECT, (void*)true);
+	if (ret) {
+		gsc_err("Decon subdev ioctl failed");
+		return ret;
+	}
+
+	gsc_hw_enable_localout(ctx, true);
 	ret = gsc_wait_operating(gsc);
 	if (ret < 0) {
 		gsc_err("wait operation timeout");
 		return -EINVAL;
 	}
+
 	gsc_pipeline_s_stream(gsc, true);
+
+	ret = v4l2_subdev_call(p->disp, core, ioctl,
+			S3CFB_SHADOW_PROTECT, (void*)false);
+	if (!ret)
+		ret = v4l2_subdev_call(p->disp, core, ioctl,
+				S3CFB_STAND_ALONE_UPDATE, NULL);
+	if (ret) {
+		gsc_err("Decon subdev ioctl failed");
+		return ret;
+	}
 
 	return 0;
 }
@@ -272,13 +264,51 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 		r->width = crop->rect.width;
 		r->height = crop->rect.height;
 	} else {
+		struct gsc_pipeline *p = &gsc->pipeline;
+		int ret = 0;
 		f = &ctx->d_frame;
 		f->crop.left = crop->rect.left;
 		f->crop.top = crop->rect.top;
 		f->crop.width = crop->rect.width;
 		f->crop.height = crop->rect.height;
-		if (f->crop.width % 2)
-			f->crop.width -= 1;
+
+		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+			ret = v4l2_subdev_call(p->disp, core, ioctl,
+				S3CFB_SHADOW_PROTECT, (void*)true);
+			if (ret) {
+				gsc_err("Decon subdev ioctl failed");
+				return ret;
+			}
+			ret = gsc_set_scaler_info(ctx);
+			if (ret) {
+				gsc_err("Scaler setup error");
+				return ret;
+			}
+			gsc_hw_set_out_size(ctx);
+			gsc_hw_set_prescaler(ctx);
+			gsc_hw_set_mainscaler(ctx);
+
+			gsc_hw_set_smart_if_pix_num(ctx);
+			gsc_hw_set_smart_if_con(gsc, true);
+			gsc_hw_set_sfr_update(ctx);
+			ret = v4l2_subdev_call(p->disp, pad, set_crop,
+				fh, crop);
+			if (ret) {
+				gsc_err("Decon subdev ioctl failed");
+				return ret;
+			}
+			ret = v4l2_subdev_call(p->disp, core, ioctl,
+				S3CFB_SHADOW_PROTECT, (void*)false);
+			if (!ret) {
+				ret = v4l2_subdev_call(p->disp, core,
+					ioctl, S3CFB_SYNC_SLAVE_UPDATE,
+					NULL);
+				if (ret) {
+					gsc_err("Decon subdev ioctl failed");
+					return ret;
+				}
+			}
+		}
 	}
 
 	gsc_dbg("pad%d: (%d,%d)/%dx%d", crop->pad, crop->rect.left, crop->rect.top,
@@ -290,7 +320,6 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct gsc_dev *gsc = entity_data_to_gsc(v4l2_get_subdevdata(sd));
-	struct exynos_platform_gscaler *pdata = gsc->pdata;
 	int ret;
 
 	if (enable) {
@@ -300,11 +329,10 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 			return -EINVAL;
 		}
 	} else {
-		if (is_ver_5a) {
-			ret = gsc_out_hw_reset_off(gsc);
-			if (ret < 0)
-				return ret;
-		}
+		ret = gsc_out_hw_reset_off(gsc);
+		if (ret < 0)
+			return ret;
+
 		INIT_LIST_HEAD(&gsc->out.active_buf_q);
 		clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
 		pm_runtime_put_sync(&gsc->pdev->dev);
@@ -355,7 +383,6 @@ static int gsc_output_querycap(struct file *file, void *priv,
 	cap->bus_info[0] = 0;
 	cap->capabilities = V4L2_CAP_STREAMING |
 		V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_VIDEO_OUTPUT_MPLANE;
-
 	return 0;
 }
 
@@ -657,7 +684,15 @@ static int gsc_out_stop_streaming(struct vb2_queue *q)
 {
 	struct gsc_ctx *ctx = q->drv_priv;
 	struct gsc_dev *gsc = ctx->gsc_dev;
+	struct gsc_pipeline *p = &gsc->pipeline;
 	int ret = 0;
+
+	ret = v4l2_subdev_call(p->disp, core, ioctl,
+			S3CFB_SHADOW_PROTECT, (void*)true);
+	if (ret) {
+		gsc_err("Decon subdev ioctl failed");
+		return ret;
+	}
 
 	ret = gsc_pipeline_s_stream(gsc, false);
 	if (ret)
@@ -668,11 +703,6 @@ static int gsc_out_stop_streaming(struct vb2_queue *q)
 		gsc_err("G-Scaler video s_stream off failed");
 		return ret;
 	}
-
-	if (gsc->out.ctx->out_path == GSC_FIMD)
-		gsc_hw_set_local_dst(gsc->id, GSC_FIMD, false);
-	else
-		gsc_hw_set_local_dst(gsc->id, GSC_MIXER, false);
 
 	media_entity_pipeline_stop(&gsc->out.vfd->entity);
 
@@ -811,6 +841,7 @@ static int gsc_out_link_setup(struct media_entity *entity,
 				gsc->pipeline.disp = sd;
 				if (!strcmp(sd->name, name)) {
 					gsc->out.ctx->out_path = GSC_FIMD;
+					gsc_info("link enable");
 				} else {
 					gsc->out.ctx->out_path = GSC_MIXER;
 				}
@@ -818,13 +849,8 @@ static int gsc_out_link_setup(struct media_entity *entity,
 				gsc_err("G-Scaler source pad was linked already");
 		} else if (!(flags & ~MEDIA_LNK_FL_ENABLED)) {
 			if (gsc->pipeline.disp != NULL) {
-				if (gsc->out.ctx->out_path == GSC_FIMD) {
-					gsc_hw_set_local_dst(gsc->id,
-							     GSC_FIMD, false);
-				} else {
-					gsc_hw_set_local_dst(gsc->id,
-							     GSC_MIXER, false);
-				}
+				if (gsc->out.ctx->out_path == GSC_FIMD)
+					gsc_info("link disable");
 				gsc->pipeline.disp = NULL;
 				gsc->out.ctx->out_path = 0;
 			} else
@@ -859,7 +885,6 @@ static int gsc_output_open(struct file *file)
 
 	if (ret)
 		return ret;
-
 	gsc_dbg("pid: %d, state: 0x%lx", task_pid_nr(current), gsc->state);
 
 	/* Return if the corresponding mem2mem/output/capture video node
@@ -882,7 +907,6 @@ static int gsc_output_open(struct file *file)
 		clear_bit(ST_OUTPUT_OPEN, &gsc->state);
 		return ret;
 	}
-
 	return ret;
 }
 
@@ -891,7 +915,6 @@ static int gsc_output_close(struct file *file)
 	struct gsc_dev *gsc = video_drvdata(file);
 
 	gsc_dbg("pid: %d, state: 0x%lx", task_pid_nr(current), gsc->state);
-
 	/* if we didn't properly sequence with the secure side to turn off
 	 * content protection, we may be left in a very bad state and the
 	 * only way to recover this reliably is to reboot.
@@ -996,6 +1019,37 @@ error:
 	return ret;
 }
 
+int gsc_get_sysreg_addr(struct gsc_dev *gsc)
+{
+	if (of_have_populated_dt()) {
+		struct device_node *nd;
+
+		nd = of_find_compatible_node(NULL, NULL,
+				"samsung,exynos5-sysreg_localout");
+		if (!nd) {
+			gsc_err("failed find compatible node");
+			return -ENODEV;
+		}
+
+		gsc->sysreg_disp = of_iomap(nd, 0);
+		if (!gsc->sysreg_disp) {
+			gsc_err("Failed to get address.");
+			return -ENOMEM;
+		}
+
+		gsc->sysreg_gscl = of_iomap(nd, 1);
+		if (!gsc->sysreg_gscl) {
+			gsc_err("Failed to get address.");
+			return -ENOMEM;
+		}
+	} else {
+		gsc_err("failed have populated device tree");
+		return -EIO;
+	}
+
+	return 0;
+}
+
 int gsc_register_output_device(struct gsc_dev *gsc)
 {
 	struct video_device *vfd;
@@ -1029,6 +1083,7 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 	vfd->v4l2_dev	= &gsc->mdev[MDEV_OUTPUT]->v4l2_dev;
 	vfd->release	= video_device_release;
 	vfd->lock	= &gsc->lock;
+	vfd->vfl_dir	= VFL_DIR_TX;
 	video_set_drvdata(vfd, gsc);
 
 	gsc_out	= &gsc->out;
@@ -1045,6 +1100,7 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 	q->drv_priv = gsc->out.ctx;
 	q->ops = &gsc_output_qops;
 	q->mem_ops = gsc->vb2->ops;
+	q->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	q->buf_struct_size = sizeof(struct gsc_input_buf);
 
 	ret = vb2_queue_init(q);
@@ -1074,7 +1130,12 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 		goto err_sd_reg;
 
 	vfd->ctrl_handler = &ctx->ctrl_handler;
-	gsc_dbg("gsc output driver registered as /dev/video%d, ctx(0x%08x)",
+
+	ret = gsc_get_sysreg_addr(gsc);
+	if (ret)
+		goto err_sd_reg;
+
+	gsc_info("gsc output driver registered as /dev/video%d, ctx(0x%08x)",
 		vfd->num, (u32)ctx);
 	return 0;
 

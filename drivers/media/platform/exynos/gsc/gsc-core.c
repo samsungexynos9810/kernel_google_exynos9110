@@ -25,7 +25,6 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
-#include <linux/of.h>
 #include <linux/v4l2-mediabus.h>
 #include <linux/exynos_iovmm.h>
 #include <media/v4l2-ioctl.h>
@@ -1259,6 +1258,7 @@ static int gsc_get_media_info(struct device *dev, void *p)
 	struct platform_device *pdev = to_platform_device(dev);
 
 	mdev[pdev->id] = dev_get_drvdata(dev);
+
 	if (!mdev[pdev->id])
 		return -ENODEV;
 
@@ -1640,6 +1640,7 @@ static int gsc_probe(struct platform_device *pdev)
 
 	/* find media device */
 	driver = driver_find(MDEV_MODULE_NAME, &platform_bus_type);
+
 	if (!driver)
 		goto err_m2m;
 
@@ -1651,14 +1652,14 @@ static int gsc_probe(struct platform_device *pdev)
 	gsc->mdev[MDEV_OUTPUT] = mdev[MDEV_OUTPUT];
 	gsc->mdev[MDEV_CAPTURE] = mdev[MDEV_CAPTURE];
 
-	gsc_dbg("mdev->mdev[%d] = 0x%08x, mdev->mdev[%d] = 0x%08x",
+	gsc_info("mdev->mdev[%d] = 0x%08x, mdev->mdev[%d] = 0x%08x",
 		 MDEV_OUTPUT, (u32)gsc->mdev[MDEV_OUTPUT], MDEV_CAPTURE,
 		 (u32)gsc->mdev[MDEV_CAPTURE]);
-#if 0
+
 	ret = gsc_register_output_device(gsc);
 	if (ret)
 		goto err_m2m;
-
+#if 0
 	if (gsc->pdata)	{
 		ret = gsc_register_capture_device(gsc);
 		if (ret)
@@ -1670,13 +1671,13 @@ static int gsc_probe(struct platform_device *pdev)
 	gsc->irq_workqueue = create_singlethread_workqueue(workqueue_name);
 	if (gsc->irq_workqueue == NULL) {
 		dev_err(&pdev->dev, "failed to create workqueue for gsc\n");
-		goto err_capture;
+		goto err_m2m;
 	}
 
 	gsc->alloc_ctx = gsc->vb2->init(gsc);
 	if (IS_ERR(gsc->alloc_ctx)) {
 		ret = PTR_ERR(gsc->alloc_ctx);
-		goto err_capture;
+		goto err_m2m;
 	}
 
 	exynos_create_iovmm(&pdev->dev, 3, 3);
@@ -1687,11 +1688,12 @@ static int gsc_probe(struct platform_device *pdev)
 	gsc_info("gsc-%d registered successfully", gsc->id);
 
 	return 0;
-
+#if 0
 err_capture:
 	gsc_unregister_capture_device(gsc);
-//err_output:
-//	gsc_unregister_output_device(gsc);
+err_output:
+	gsc_unregister_output_device(gsc);
+#endif
 err_m2m:
 	gsc_unregister_m2m_device(gsc);
 err_clk_put:
@@ -1770,6 +1772,7 @@ static int gsc_resume(struct device *dev)
 			v4l2_m2m_job_finish(gsc->m2m.m2m_dev, ctx->m2m_ctx);
 		}
 	}
+
 	return 0;
 }
 
