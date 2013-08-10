@@ -36,6 +36,7 @@
 		gsc2 = &gsc_2;
 		mfc0 = &mfc_0;
 		mfc1 = &mfc_1;
+		mdev0 = &mdev_0;
 	};
 
 	chipid@10000000 {
@@ -536,6 +537,15 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 593>, <&clock 567>;
 		status = "ok";
+	};
+
+	mdev_0: mdev_output {
+		compatible = "samsung,exynos5-mdev";
+	};
+
+	sysreg_localout: sysreg_localout@0x13B80000 {
+		compatible = "samsung,exynos5-sysreg_localout";
+		reg = <0x13B80000 0x2000>, <0x13CB0000 0x2000>;
 	};
 
 	gsc_0: gsc@13C00000 {
