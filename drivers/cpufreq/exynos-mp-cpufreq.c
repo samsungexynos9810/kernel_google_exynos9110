@@ -353,9 +353,6 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 		goto out;
 	}
 
-	if (!is_alive(cur))
-		goto out;
-
 	freqs[cur]->cpu = cpu;
 	freqs[cur]->new = target_freq;
 
