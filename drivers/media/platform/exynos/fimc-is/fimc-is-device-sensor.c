@@ -493,42 +493,6 @@ int stop_mipi_csi(int channel)
 	return 0;
 }
 
-static int testnset_state(struct fimc_is_device_sensor *device,
-	unsigned long state)
-{
-	int ret = 0;
-
-	spin_lock(&device->slock_state);
-
-	if (test_bit(state, &device->state)) {
-		ret = -EINVAL;
-		goto exit;
-	}
-	set_bit(state, &device->state);
-
-exit:
-	spin_unlock(&device->slock_state);
-	return ret;
-}
-
-static int testnclr_state(struct fimc_is_device_sensor *device,
-	unsigned long state)
-{
-	int ret = 0;
-
-	spin_lock(&device->slock_state);
-
-	if (!test_bit(state, &device->state)) {
-		ret = -EINVAL;
-		goto exit;
-	}
-	clear_bit(state, &device->state);
-
-exit:
-	spin_unlock(&device->slock_state);
-	return ret;
-}
-
 int fimc_is_sensor_clock_on(struct fimc_is_device_sensor *device, u32 source)
 {
 	int ret = 0;
@@ -759,7 +723,6 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
 	clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 	clear_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
-	spin_lock_init(&device->slock_state);
 
 	ret = fimc_is_flite_probe(&device->flite, (u32)device);
 	if (ret) {
@@ -1101,7 +1064,7 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 	int ret = 0;
 	struct fimc_is_core *core;
 
-	if (testnset_state(device, FIMC_IS_SENSOR_OPEN)) {
+	if (test_and_set_bit(FIMC_IS_SENSOR_OPEN, &device->state)) {
 		merr("already open", device);
 		ret = -EMFILE;
 		goto p_err;
@@ -1171,7 +1134,7 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 
 	core = (struct fimc_is_core *)device->vctx->video->core;
 
-	if (testnclr_state(device, FIMC_IS_SENSOR_OPEN)) {
+	if (!test_and_clear_bit(FIMC_IS_SENSOR_OPEN, &device->state)) {
 		merr("already close", device);
 		ret = -EMFILE;
 		goto p_err;
@@ -1352,7 +1315,7 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device,
 
 	dbg_back("%s\n", __func__);
 
-	if (testnset_state(device, FIMC_IS_SENSOR_BACK_START)) {
+	if (test_and_set_bit(FIMC_IS_SENSOR_BACK_START, &device->state)) {
 		err("already back start");
 		ret = -EINVAL;
 		goto exit;
@@ -1386,7 +1349,7 @@ int fimc_is_sensor_back_stop(struct fimc_is_device_sensor *device)
 
 	dbg_back("%s\n", __func__);
 
-	if (testnclr_state(device, FIMC_IS_SENSOR_BACK_START)) {
+	if (!test_and_clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state)) {
 		warn("already back stop");
 		goto exit;
 	}
@@ -1484,7 +1447,7 @@ int fimc_is_sensor_front_start(struct fimc_is_device_sensor *device,
 
 	dbg_front("%s\n", __func__);
 
-	if (testnset_state(device, FIMC_IS_SENSOR_FRONT_START)) {
+	if (test_and_set_bit(FIMC_IS_SENSOR_FRONT_START, &device->state)) {
 		merr("already front start", device);
 		ret = -EINVAL;
 		goto p_err;
@@ -1531,7 +1494,7 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 
 	dbg_front("%s\n", __func__);
 
-	if (testnclr_state(device, FIMC_IS_SENSOR_FRONT_START)) {
+	if (!test_and_clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state)) {
 		warn("already front stop");
 		goto exit;
 	}

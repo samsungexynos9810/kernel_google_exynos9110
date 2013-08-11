@@ -89,9 +89,6 @@ struct fimc_is_device_sensor {
 	wait_queue_head_t		instant_wait;
 	struct work_struct		instant_work;
 	unsigned long			state;
-	spinlock_t			slock_state;
-
-	void *dev_data;
 
 	/* hardware configuration */
 	u32				clk_source;
