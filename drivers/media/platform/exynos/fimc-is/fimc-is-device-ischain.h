@@ -130,7 +130,6 @@ struct fimc_is_device_ischain {
 	bool					force_down;
 	unsigned long				state;
 	struct mutex				mutex_state;
-	spinlock_t				slock_state;
 
 	u32					dzoom_width;
 	u32					bds_width;

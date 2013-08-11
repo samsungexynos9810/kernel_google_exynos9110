@@ -2655,7 +2655,6 @@ int fimc_is_ischain_probe(struct fimc_is_device_ischain *device,
 	clear_bit(FIMC_IS_ISDEV_DSTART, &device->fd.state);
 
 	mutex_init(&device->mutex_state);
-	spin_lock_init(&device->slock_state);
 
 #ifdef FW_DEBUG
 	debugfs_root = debugfs_create_dir(DEBUG_FS_ROOT_NAME, NULL);
