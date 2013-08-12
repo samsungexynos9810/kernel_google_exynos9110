@@ -503,6 +503,20 @@ out:
 	return ret;
 }
 
+#ifdef CONFIG_PM
+static int exynos_cpufreq_suspend(struct cpufreq_policy *policy)
+{
+	return 0;
+}
+
+static int exynos_cpufreq_resume(struct cpufreq_policy *policy)
+{
+	freqs[CA7]->old = get_boot_freq(CA7);
+	freqs[CA15]->old = get_boot_freq(CA15);
+	return 0;
+}
+#endif
+
 static int __cpuinit exynos_cpufreq_cpu_notifier(struct notifier_block *notifier,
 					unsigned long action, void *hcpu)
 {
@@ -725,6 +739,10 @@ static struct cpufreq_driver exynos_driver = {
 	.get		= exynos_getspeed,
 	.init		= exynos_cpufreq_cpu_init,
 	.name		= "exynos_cpufreq",
+#ifdef CONFIG_PM
+	.suspend	= exynos_cpufreq_suspend,
+	.resume		= exynos_cpufreq_resume,
+#endif
 };
 
 /************************** sysfs interface ************************/
