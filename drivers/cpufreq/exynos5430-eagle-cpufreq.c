@@ -407,7 +407,7 @@ static void exynos5430_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 		tmp = __raw_readl(EXYNOS5430_SRC_STAT_EGL2);
 		tmp &= EXYNOS5430_SRC_STAT_EGL2_EGL2_MASK;
 		tmp >>= EXYNOS5430_SRC_STAT_EGL2_EGL2_SHIFT;
-	} while (tmp != 0x1);
+	} while (tmp != 0x2);
 
 	/* 3. Set EGL_PLL Lock time */
 	pdiv = ((exynos5430_egl_pll_pms_table_CA15[new_index] &
@@ -438,7 +438,7 @@ static void exynos5430_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 		tmp = __raw_readl(EXYNOS5430_SRC_STAT_EGL2);
 		tmp &= EXYNOS5430_SRC_STAT_EGL2_EGL2_MASK;
 		tmp >>= EXYNOS5430_SRC_STAT_EGL2_EGL2_SHIFT;
-	} while (tmp != 0x0);
+	} while (tmp != 0x1);
 
 	/* 7. restore original div value */
 	if ((new_index < L17) && (old_index < L17))
