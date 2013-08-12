@@ -408,23 +408,29 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	}
 
 	if (old_index > new_index) {
-		if (cur == CA15)
-			pm_qos_update_request(&exynos_mif_qos_CA15,
-					exynos_info[cur]->bus_table[new_index]);
-		else
-			pm_qos_update_request(&exynos_mif_qos_CA7,
-					exynos_info[cur]->bus_table[new_index]);
+		if (cur == CA15) {
+			if (pm_qos_request_active(&exynos_mif_qos_CA15))
+				pm_qos_update_request(&exynos_mif_qos_CA15,
+						exynos_info[cur]->bus_table[new_index]);
+		} else {
+			if (pm_qos_request_active(&exynos_mif_qos_CA7))
+				pm_qos_update_request(&exynos_mif_qos_CA7,
+						exynos_info[cur]->bus_table[new_index]);
+		}
 	}
 
 	exynos_info[cur]->set_freq(old_index, new_index);
 
 	if (old_index < new_index) {
-		if (cur == CA15)
-			pm_qos_update_request(&exynos_mif_qos_CA15,
-					exynos_info[cur]->bus_table[new_index]);
-		else
-			pm_qos_update_request(&exynos_mif_qos_CA7,
-					exynos_info[cur]->bus_table[new_index]);
+		if (cur == CA15) {
+			if (pm_qos_request_active(&exynos_mif_qos_CA15))
+				pm_qos_update_request(&exynos_mif_qos_CA15,
+						exynos_info[cur]->bus_table[new_index]);
+		} else {
+			if (pm_qos_request_active(&exynos_mif_qos_CA7))
+				pm_qos_update_request(&exynos_mif_qos_CA7,
+						exynos_info[cur]->bus_table[new_index]);
+		}
 	}
 
 #ifdef CONFIG_SMP
