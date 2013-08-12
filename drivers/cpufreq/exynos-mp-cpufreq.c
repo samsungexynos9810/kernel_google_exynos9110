@@ -474,8 +474,13 @@ static int exynos_target(struct cpufreq_policy *policy,
 	/* verify old frequency */
 	BUG_ON(freqs[cur]->old != exynos_getspeed(policy->cpu));
 
-	target_freq = max((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MIN), target_freq);
-	target_freq = min((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MAX), target_freq);
+	if (cur == CA15) {
+		target_freq = max((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MIN), target_freq);
+		target_freq = min((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MAX), target_freq);
+	} else {
+		target_freq = max((unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MIN), target_freq);
+		target_freq = min((unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MAX), target_freq);
+	}
 
 	if (cpufreq_frequency_table_target(policy, freq_table,
 				target_freq, relation, &index)) {
