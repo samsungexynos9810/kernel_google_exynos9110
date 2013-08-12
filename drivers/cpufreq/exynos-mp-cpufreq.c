@@ -471,8 +471,8 @@ static int exynos_target(struct cpufreq_policy *policy,
 	if (exynos_info[cur]->blocked)
 		goto out;
 
-	/* get current frequency */
-	freqs[cur]->old = exynos_getspeed(policy->cpu);
+	/* verify old frequency */
+	BUG_ON(freqs[cur]->old != exynos_getspeed(policy->cpu));
 
 	target_freq = max((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MIN), target_freq);
 	target_freq = min((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MAX), target_freq);
@@ -488,6 +488,9 @@ static int exynos_target(struct cpufreq_policy *policy,
 
 	/* frequency and volt scaling */
 	ret = exynos_cpufreq_scale(target_freq, freqs[cur]->old, policy->cpu);
+
+	/* save current frequency */
+	freqs[cur]->old = target_freq;
 
 out:
 	mutex_unlock(&cpufreq_lock);
