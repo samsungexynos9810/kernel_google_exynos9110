@@ -1291,7 +1291,7 @@ static int __init exynos_cpufreq_init(void)
 #endif
 
 	pm_qos_add_request(&boot_cpu_qos, PM_QOS_CPU_FREQ_MIN, 0);
-	pm_qos_update_request_timeout(&boot_cpu_qos, 1200000, 40000 * 1000);
+	pm_qos_update_request_timeout(&boot_cpu_qos, 1000000, 40000 * 1000);
 
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_add_request(&exynos_mif_qos_CA7, PM_QOS_BUS_THROUGHPUT, 0);
