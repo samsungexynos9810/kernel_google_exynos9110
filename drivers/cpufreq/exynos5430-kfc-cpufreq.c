@@ -473,20 +473,28 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	set_volt_table_CA7();
 
 	mout_kfc = __clk_lookup("mout_kfc");
-	if (IS_ERR(mout_kfc))
-		return PTR_ERR(mout_kfc);
+	if (!mout_kfc) {
+		pr_err("failed get mout_kfc clk\n");
+		return -EINVAL;
+	}
 
 	mout_kfc_pll = __clk_lookup("mout_kfc_pll");
-	if (IS_ERR(mout_kfc_pll))
+	if (!mout_kfc_pll) {
+		pr_err("failed get mout_kfc_pll clk\n");
 		goto err_mout_kfc_pll;
+	}
 
 	sclk_bus_pll = __clk_lookup("mout_bus_pll_sub");
-	if (IS_ERR(sclk_bus_pll))
+	if (!sclk_bus_pll) {
+		pr_err("failed get mout_bus_pll_sub clk\n");
 		goto err_sclk_bus_pll;
+	}
 
 	mout_bus_pll_user = __clk_lookup("mout_bus_pll_user_kfc");
-	if (IS_ERR(mout_bus_pll_user))
+	if (!mout_bus_pll_user) {
+		pr_err("failed get mout_bus_pll_user_kfc clk\n");
 		goto err_mout_bus_pll_user;
+	}
 
 	if (clk_set_parent(mout_bus_pll_user, sclk_bus_pll)) {
 		pr_err("Unable to set parent %s of clock %s.\n",
@@ -497,8 +505,10 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	rate = clk_get_rate(mout_bus_pll_user) / 1000;
 
 	fout_kfc_pll = __clk_lookup("fout_kfc_pll");
-	if (IS_ERR(fout_kfc_pll))
+	if (!fout_kfc_pll) {
+		pr_err("failed get fout_kfc_pll clk\n");
 		goto err_fout_kfc_pll;
+	}
 
 	clk_put(sclk_bus_pll);
 

@@ -547,16 +547,22 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	set_volt_table_CA15();
 
 	mout_egl2 = __clk_lookup("mout_egl2");
-	if (IS_ERR(mout_egl2))
-		return PTR_ERR(mout_egl2);
+	if (!mout_egl2) {
+		pr_err("failed get mout_egl2 clk\n");
+		return -EINVAL;
+	}
 
 	mout_egl1 = __clk_lookup("mout_egl1");
-	if (IS_ERR(mout_egl1))
+	if (!mout_egl1) {
+		pr_err("failed get mout_egl1 clk\n");
 		goto err_mout_egl1;
+	}
 
 	mout_egl_pll = __clk_lookup("mout_egl_pll");
-	if (IS_ERR(mout_egl_pll))
+	if (!mout_egl_pll) {
+		pr_err("failed get mout_egl_pll clk\n");
 		goto err_mout_egl_pll;
+	}
 
 	if (clk_set_parent(mout_egl1, mout_egl_pll)) {
 		pr_err("Unable to set parent %s of clock %s.\n",
@@ -565,12 +571,16 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	}
 
 	sclk_bus_pll = __clk_lookup("mout_bus_pll_sub");
-	if (IS_ERR(sclk_bus_pll))
+	if (!sclk_bus_pll) {
+		pr_err("failed get mout_bus_pll_sub clk\n");
 		goto err_sclk_bus_pll;
+	}
 
 	mout_bus_pll_user = __clk_lookup("mout_bus_pll_user_egl");
-	if (IS_ERR(mout_bus_pll_user))
+	if (!mout_bus_pll_user) {
+		pr_err("failed get mout_bus_pll_user_egl clk\n");
 		goto err_mout_bus_pll_user;
+	}
 
 	if (clk_set_parent(mout_bus_pll_user, sclk_bus_pll)) {
 		pr_err("Unable to set parent %s of clock %s.\n",
@@ -581,8 +591,10 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	rate = clk_get_rate(mout_bus_pll_user) / 1000;
 
 	fout_egl_pll = __clk_lookup("fout_egl_pll");
-	if (IS_ERR(fout_egl_pll))
+	if (!fout_egl_pll) {
+		pr_err("failed get fout_egl_pll clk\n");
 		goto err_fout_egl_pll;
+	}
 
 	clk_put(sclk_bus_pll);
 	clk_put(mout_egl_pll);
