@@ -17,8 +17,7 @@
 #include <asm/firmware.h>
 
 #include <mach/map.h>
-
-#include "smc.h"
+#include <mach/smc.h>
 
 static void __iomem *ns_base;
 
