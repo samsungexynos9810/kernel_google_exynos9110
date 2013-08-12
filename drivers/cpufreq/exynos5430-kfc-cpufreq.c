@@ -554,7 +554,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
 	info->bus_table = exynos5430_bus_table_CA7;
-	info->cpu_clk = mout_kfc;
+	info->cpu_clk = fout_kfc_pll;
 
 	info->volt_table = exynos5430_volt_table_CA7;
 	info->freq_table = exynos5430_freq_table_CA7;
