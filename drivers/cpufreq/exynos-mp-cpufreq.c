@@ -263,7 +263,7 @@ static unsigned int get_boot_freq(unsigned int cluster)
 
 static unsigned int get_boot_volt(int cluster)
 {
-	int boot_freq = get_boot_freq(cluster);
+	unsigned int boot_freq = get_boot_freq(cluster);
 
 	return get_freq_volt(cluster, boot_freq);
 }
