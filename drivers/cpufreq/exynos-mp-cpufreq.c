@@ -229,6 +229,30 @@ static void cluster_onoff_monitor(struct work_struct *work)
 	queue_delayed_work_on(0, cluster_monitor_wq, &monitor_cluster_on, msecs_to_jiffies(100));
 }
 
+static unsigned int get_freq_volt(int cluster, unsigned int target_freq)
+{
+	int index;
+	int i;
+
+	struct cpufreq_frequency_table *table = exynos_info[cluster]->freq_table;
+
+	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+		unsigned int freq = table[i].frequency;
+		if (freq == CPUFREQ_ENTRY_INVALID)
+			continue;
+
+		if (target_freq == freq) {
+			index = i;
+			break;
+		}
+	}
+
+	if (table[i].frequency == CPUFREQ_TABLE_END)
+		return -EINVAL;
+
+	return exynos_info[cluster]->volt_table[index];
+}
+
 static unsigned int get_boot_freq(unsigned int cluster)
 {
 	if (exynos_info[cluster] == NULL)
@@ -240,26 +264,8 @@ static unsigned int get_boot_freq(unsigned int cluster)
 static unsigned int get_boot_volt(int cluster)
 {
 	int boot_freq = get_boot_freq(cluster);
-	int index;
-	int i;
 
-	struct cpufreq_frequency_table *table = exynos_info[cluster]->freq_table;
-
-	for (i = 0; (table[i].frequency != CPUFREQ_TABLE_END); i++) {
-		unsigned int freq = table[i].frequency;
-		if (freq == CPUFREQ_ENTRY_INVALID)
-			continue;
-
-		if (boot_freq == freq) {
-			index = i;
-			break;
-		}
-	}
-
-	if (table[i].frequency == CPUFREQ_TABLE_END)
-		return -EINVAL;
-
-	return exynos_info[cluster]->volt_table[index];
+	return get_freq_volt(cluster, boot_freq);
 }
 
 int exynos_verify_speed(struct cpufreq_policy *policy)
@@ -562,11 +568,11 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		bootfreqCA7 = get_boot_freq(CA7);
 		bootfreqCA15 = get_boot_freq(CA15);
 
-		freqCA7 = exynos_getspeed_cluster(CA7);
-		freqCA15 = exynos_getspeed_cluster(CA15);
+		freqCA7 = freqs[CA7]->old;
+		freqCA15 = freqs[CA15]->old;
 
 		volt = max(get_boot_volt(CA7),
-				get_match_volt(ID_KFC, freqCA7));
+				get_freq_volt(CA7, freqCA7));
 		BUG_ON(volt <= 0);
 		volt = get_limit_voltage(volt);
 
@@ -574,7 +580,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 			goto err;
 
 		volt = max(get_boot_volt(CA15),
-				get_match_volt(ID_ARM, freqCA15));
+				get_freq_volt(CA15, freqCA15));
 		BUG_ON(volt <= 0);
 		volt = get_limit_voltage(volt);
 
