@@ -26,6 +26,7 @@
 #include <linux/firmware.h>
 #include <linux/dma-mapping.h>
 #include <linux/scatterlist.h>
+#include <linux/videodev2.h>
 #include <linux/videodev2_exynos_camera.h>
 #include <linux/vmalloc.h>
 #include <linux/interrupt.h>
