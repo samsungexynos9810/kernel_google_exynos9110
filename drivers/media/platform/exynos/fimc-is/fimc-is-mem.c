@@ -23,7 +23,6 @@
 #include <mach/dev.h>
 #endif
 #include <media/exynos_mc.h>
-#include <linux/cma.h>
 #include <asm/cacheflush.h>
 #include <asm/pgtable.h>
 #include <linux/firmware.h>

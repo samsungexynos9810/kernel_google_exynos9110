@@ -20,7 +20,6 @@
 #include <linux/slab.h>
 #include <mach/videonode.h>
 #include <media/exynos_mc.h>
-#include <linux/cma.h>
 #include <asm/cacheflush.h>
 #include <asm/pgtable.h>
 #include <linux/firmware.h>
