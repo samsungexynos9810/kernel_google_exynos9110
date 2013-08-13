@@ -374,9 +374,11 @@ void kbase_gpu_interrupt(kbase_device *kbdev, u32 val)
 		mali_bool cores_are_available;
 		unsigned long flags;
 
+		KBASE_TIMELINE_PM_CHECKTRANS(kbdev, SW_FLOW_PM_CHECKTRANS_GPU_INTERRUPT_START);
 		spin_lock_irqsave(&kbdev->pm.power_change_lock, flags);
 		cores_are_available = kbase_pm_check_transitions_nolock(kbdev);
 		spin_unlock_irqrestore(&kbdev->pm.power_change_lock, flags);
+		KBASE_TIMELINE_PM_CHECKTRANS(kbdev, SW_FLOW_PM_CHECKTRANS_GPU_INTERRUPT_END);
 
 		if (cores_are_available) {
 			/* Fast-path Job Scheduling on PM IRQ */

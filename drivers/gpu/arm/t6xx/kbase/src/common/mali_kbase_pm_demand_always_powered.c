@@ -13,17 +13,16 @@
  *
  */
 
-
-
 /**
- * @file mali_kbase_pm_demand.c
- * A simple demand based power management policy
+ * @file mali_kbase_pm_demand_always_powered.c
+ * A demand based power management policy which keeps overall GPU power on at 
+ * all times, but turns off individual shader cores when not required.
  */
 
 #include <kbase/src/common/mali_kbase.h>
 #include <kbase/src/common/mali_kbase_pm.h>
 
-static u64 demand_get_core_mask(struct kbase_device *kbdev)
+static u64 demand_always_powered_get_core_mask(struct kbase_device *kbdev)
 {
 	u64 desired = kbdev->shader_needed_bitmap | kbdev->shader_inuse_bitmap;
 
@@ -33,20 +32,17 @@ static u64 demand_get_core_mask(struct kbase_device *kbdev)
 	return desired;
 }
 
-static mali_bool demand_get_core_active (struct kbase_device *kbdev)
+static mali_bool demand_always_powered_get_core_active(struct kbase_device *kbdev)
 {
-	if (0 == kbdev->pm.active_count)
-		return MALI_FALSE;
-
 	return MALI_TRUE;
 }
 
-static void demand_init(struct kbase_device *kbdev)
+static void demand_always_powered_init(struct kbase_device *kbdev)
 {
 	CSTD_UNUSED(kbdev);
 }
 
-static void demand_term(struct kbase_device *kbdev)
+static void demand_always_powered_term(struct kbase_device *kbdev)
 {
 	CSTD_UNUSED(kbdev);
 }
@@ -55,14 +51,14 @@ static void demand_term(struct kbase_device *kbdev)
  *
  * This is the static structure that defines the demand power policy's callback and name.
  */
-const kbase_pm_policy kbase_pm_demand_policy_ops = {
-	"demand",			/* name */
-	demand_init,			/* init */
-	demand_term,			/* term */
-	demand_get_core_mask,		/* get_core_mask */
-	demand_get_core_active,		/* get_core_active */
-	0u,				/* flags */
-	KBASE_PM_POLICY_ID_DEMAND,	/* id */
+const kbase_pm_policy kbase_pm_demand_always_powered_policy_ops = {
+	"demand_always_powered",			/* name */
+	demand_always_powered_init,			/* init */
+	demand_always_powered_term,			/* term */
+	demand_always_powered_get_core_mask,		/* get_core_mask */
+	demand_always_powered_get_core_active,		/* get_core_active */
+	0u,						/* flags */
+	KBASE_PM_POLICY_ID_DEMAND_ALWAYS_POWERED,	/* id */
 };
 
-KBASE_EXPORT_TEST_API(kbase_pm_demand_policy_ops)
+KBASE_EXPORT_TEST_API(kbase_pm_demand_always_powered_policy_ops)

@@ -167,6 +167,8 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 	struct device *dev =  kbdev->osdev.dev;
 	struct exynos_context * platform = (struct exynos_context *) kbdev->platform_context;
 
+	pr_info("g3d turn on\n");
+
 	kbase_platform_clock_on(kbdev);
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
@@ -209,6 +211,7 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 
 static void pm_callback_runtime_off(kbase_device *kbdev)
 {
+	pr_info("g3d turn off\n");
 	kbase_platform_clock_off(kbdev);
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)

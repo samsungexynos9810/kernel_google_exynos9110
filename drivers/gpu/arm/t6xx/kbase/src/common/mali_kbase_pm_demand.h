@@ -52,4 +52,4 @@ typedef struct kbasep_pm_policy_demand {
 	int dummy;
 } kbasep_pm_policy_demand;
 
-#endif
+#endif				/* MALI_KBASE_PM_DEMAND_H */

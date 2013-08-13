@@ -44,6 +44,7 @@
 #include <linux/clk-provider.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
+#include <mach/pmu.h>
 #include <mach/regs-pmu.h>
 #include <asm/delay.h>
 
@@ -805,7 +806,7 @@ static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *at
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (sysfs_streq("0", buf)) {
-		mali_dvfs_freq_unlock();
+		mali_dvfs_freq_max_unlock(SYSFS_LOCK);
 	} else {
 		step = mali_get_dvfs_step();
 		ret = kstrtoint(buf, 0, &clock);
@@ -815,11 +816,11 @@ static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *at
 		}
 
 		if (clock == mali_get_dvfs_clock(step-1))
-			mali_dvfs_freq_unlock();
+			mali_dvfs_freq_max_unlock(SYSFS_LOCK);
 
 		for (i = step-2; i >= 0; i--) {
 			if (clock == mali_get_dvfs_clock(i)) {
-				mali_dvfs_freq_lock(i);
+				mali_dvfs_freq_max_lock(i, SYSFS_LOCK);
 				break;
 			}
 		}
@@ -880,7 +881,7 @@ static ssize_t set_min_lock_dvfs(struct device *dev, struct device_attribute *at
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (sysfs_streq("0", buf)) {
-		mali_dvfs_freq_min_unlock();
+		mali_dvfs_freq_min_unlock(SYSFS_LOCK);
 	} else {
 		step = mali_get_dvfs_step();
 		ret = kstrtoint(buf, 0, &clock);
@@ -890,11 +891,11 @@ static ssize_t set_min_lock_dvfs(struct device *dev, struct device_attribute *at
 		}
 
 		if (clock == mali_get_dvfs_clock(0))
-			mali_dvfs_freq_min_unlock();
+			mali_dvfs_freq_min_unlock(SYSFS_LOCK);
 
 		for (i = 1; i < step; i++) {
 			if (clock == mali_get_dvfs_clock(i)) {
-				mali_dvfs_freq_min_lock(i);
+				mali_dvfs_freq_min_lock(i, SYSFS_LOCK);
 				break;
 			}
 		}
@@ -1003,7 +1004,7 @@ static ssize_t set_tmu_control(struct device *dev, struct device_attribute *attr
 	if (sysfs_streq("0", buf)) {
 		if (gpu_voltage_margin != 0)
 			kbase_set_power_margin(0);
-		mali_dvfs_freq_unlock();
+		mali_dvfs_freq_max_unlock(TMU_LOCK);
 		tmu_on_off = false;
 	}
 	else if (sysfs_streq("1", buf))

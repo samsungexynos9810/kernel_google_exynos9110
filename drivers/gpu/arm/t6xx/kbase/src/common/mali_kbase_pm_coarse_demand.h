@@ -17,7 +17,7 @@
 
 /**
  * @file mali_kbase_pm_coarse_demand.h
- * "Coarse" power management policy
+ * "Coarse Demand" power management policy
  */
 
 #ifndef MALI_KBASE_PM_COARSE_DEMAND_H
@@ -55,4 +55,4 @@ typedef struct kbasep_pm_policy_coarse_demand {
 	int dummy;
 } kbasep_pm_policy_coarse_demand;
 
-#endif
+#endif				/* MALI_KBASE_PM_COARSE_DEMAND_H */

@@ -118,7 +118,7 @@ TRACE_EVENT(mali_sw_counter, TP_PROTO(unsigned int event_id, signed long long va
 
 #undef TRACE_INCLUDE_PATH
 #undef linux
-#define TRACE_INCLUDE_PATH MALI_KBASE_SRC_LINUX_PATH
+#define TRACE_INCLUDE_PATH .
 
 /* This part must be outside protection */
 #include <trace/define_trace.h>
