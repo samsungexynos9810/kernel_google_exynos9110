@@ -1028,6 +1028,65 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->I2CChannel = enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch;
 	ext->I2CSclk = I2C_L0;
 
+	/* 3L2 */
+	enum_sensor[SENSOR_NAME_S5K3L2].sensor = SENSOR_NAME_S5K3L2;
+	enum_sensor[SENSOR_NAME_S5K3L2].pixel_width = 4128 + 16;
+	enum_sensor[SENSOR_NAME_S5K3L2].pixel_height = 3096 + 10;
+	enum_sensor[SENSOR_NAME_S5K3L2].active_width = 4128;
+	enum_sensor[SENSOR_NAME_S5K3L2].active_height = 3096;
+	enum_sensor[SENSOR_NAME_S5K3L2].max_framerate = 120;
+	enum_sensor[SENSOR_NAME_S5K3L2].csi_ch = 0;
+	enum_sensor[SENSOR_NAME_S5K3L2].flite_ch = FLITE_ID_A;
+	enum_sensor[SENSOR_NAME_S5K3L2].i2c_ch = 0;
+	enum_sensor[SENSOR_NAME_S5K3L2].setfile_name = "setfile_3l2.bin";
+
+	ext = &enum_sensor[SENSOR_NAME_S5K3L2].ext;
+
+	ext->actuator_con.product_name = ACTUATOR_NAME_DWXXXX;
+	ext->actuator_con.peri_type = SE_I2C;
+	ext->actuator_con.peri_setting.i2c.channel
+		= SENSOR_CONTROL_I2C0;
+
+	if (soc_is_exynos5250()) {
+		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
+	} else if (soc_is_exynos5430()) {
+#if defined(CONFIG_MACH_SMDK5410)
+		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 15;
+#else
+		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
+#endif
+	} else {
+#if defined(CONFIG_MACH_SMDK5420)
+		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 15;
+#else
+		ext->flash_con.product_name = FLADRV_NAME_MAX77693;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
+#endif
+	}
+
+	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
+	ext->mclk = 0;
+	ext->mipi_lane_num = 0;
+	ext->mipi_speed = 0;
+	ext->fast_open_sensor = 0;
+	ext->self_calibration_mode = 0;
+	ext->I2CChannel = 0;
+	ext->I2CSclk = I2C_L0;
+
 p_err:
 	return ret;
 }
