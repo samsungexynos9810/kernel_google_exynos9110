@@ -116,7 +116,7 @@ static int fimc_is_3a0_video_open(struct file *file)
 		goto p_err;
 	}
 
-	fimc_is_video_open(vctx,
+	ret = fimc_is_video_open(vctx,
 		device,
 		VIDEO_3A0_READY_BUFFERS,
 		video,
@@ -125,6 +125,11 @@ static int fimc_is_3a0_video_open(struct file *file)
 		&fimc_is_ischain_3a0_ops,
 		&fimc_is_ischain_sub_ops,
 		core->mem.vb2->ops);
+	if (ret) {
+		err("fimc_is_video_open is fail");
+		close_vctx(file, video, vctx);
+		goto p_err;
+	}
 
 p_err:
 	return ret;

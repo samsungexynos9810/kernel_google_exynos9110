@@ -252,7 +252,11 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_src->drv_priv	= vctx;
 		vbq_src->ops		= vctx->vb2_ops;
 		vbq_src->mem_ops	= vctx->mem_ops;
-		vb2_queue_init(vbq_src);
+		ret = vb2_queue_init(vbq_src);
+		if (ret) {
+			err("vb2_queue_init fail");
+			goto err_queue_init;
+		}
 		vctx->q_src.vbq = vbq_src;
 	} else if (vctx->type == FIMC_IS_VIDEO_TYPE_CAPTURE) {
 		BUG_ON(!vbq_dst);
@@ -262,7 +266,11 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_dst->drv_priv	= vctx;
 		vbq_dst->ops		= vctx->vb2_ops;
 		vbq_dst->mem_ops	= vctx->mem_ops;
-		vb2_queue_init(vbq_dst);
+		ret = vb2_queue_init(vbq_dst);
+		if (ret) {
+			err("vb2_queue_init fail");
+			goto err_queue_init;
+		}
 		vctx->q_dst.vbq = vbq_dst;
 	} else if (vctx->type == FIMC_IS_VIDEO_TYPE_M2M) {
 		BUG_ON(!vbq_src);
@@ -273,7 +281,11 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_src->drv_priv	= vctx;
 		vbq_src->ops		= vctx->vb2_ops;
 		vbq_src->mem_ops	= vctx->mem_ops;
-		vb2_queue_init(vbq_src);
+		ret = vb2_queue_init(vbq_src);
+		if (ret) {
+			err("vb2_queue_init fail");
+			goto err_queue_init;
+		}
 		vctx->q_src.vbq = vbq_src;
 
 		vbq_dst->type		= V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
@@ -281,13 +293,18 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_dst->drv_priv	= vctx;
 		vbq_dst->ops		= vctx->vb2_ops;
 		vbq_dst->mem_ops	= vctx->mem_ops;
-		vb2_queue_init(vbq_dst);
+		ret = vb2_queue_init(vbq_dst);
+		if (ret) {
+			err("vb2_queue_init fail");
+			goto err_queue_init;
+		}
 		vctx->q_dst.vbq = vbq_dst;
 	} else {
 		merr("video type is invalid(%d)", vctx, vctx->type);
 		ret = -EINVAL;
 	}
 
+err_queue_init:
 	return ret;
 }
 
@@ -738,13 +755,21 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 		fimc_is_queue_open(q_src, buf_rdycount);
 
 		q_src->vbq = kzalloc(sizeof(struct vb2_queue), GFP_KERNEL);
-		queue_init(vctx, q_src->vbq, NULL);
+		ret = queue_init(vctx, q_src->vbq, NULL);
+		if (ret) {
+			err("queue_init fail");
+			goto err_queue_init;
+		}
 		break;
 	case FIMC_IS_VIDEO_TYPE_CAPTURE:
 		fimc_is_queue_open(q_dst, buf_rdycount);
 
 		q_dst->vbq = kzalloc(sizeof(struct vb2_queue), GFP_KERNEL);
-		queue_init(vctx, NULL, q_dst->vbq);
+		ret = queue_init(vctx, NULL, q_dst->vbq);
+		if (ret) {
+			err("queue_init fail");
+			goto err_queue_init;
+		}
 		break;
 	case FIMC_IS_VIDEO_TYPE_M2M:
 		fimc_is_queue_open(q_src, buf_rdycount);
@@ -752,7 +777,11 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 
 		q_src->vbq = kzalloc(sizeof(struct vb2_queue), GFP_KERNEL);
 		q_dst->vbq = kzalloc(sizeof(struct vb2_queue), GFP_KERNEL);
-		queue_init(vctx, q_src->vbq, q_dst->vbq);
+		ret = queue_init(vctx, q_src->vbq, q_dst->vbq);
+		if (ret) {
+			err("queue_init fail");
+			goto err_queue_init;
+		}
 		break;
 	default:
 		merr("invalid type(%d)", vctx, video_type);
@@ -760,6 +789,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 		break;
 	}
 
+err_queue_init:
 	return ret;
 }
 

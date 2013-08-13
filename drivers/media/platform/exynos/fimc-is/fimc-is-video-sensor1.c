@@ -91,7 +91,7 @@ static int fimc_is_ss1_video_open(struct file *file)
 	device = &core->sensor[1];
 	device->instance = 1;
 
-	fimc_is_video_open(vctx,
+	ret = fimc_is_video_open(vctx,
 		device,
 		VIDEO_SENSOR_READY_BUFFERS,
 		video,
@@ -100,6 +100,11 @@ static int fimc_is_ss1_video_open(struct file *file)
 		NULL,
 		&fimc_is_ischain_sub_ops,
 		core->mem.vb2->ops);
+	if (ret) {
+		err("fimc_is_video_open is fail");
+		close_vctx(file, video, vctx);
+		goto p_err;
+	}
 
 	ret = fimc_is_sensor_open(device, vctx);
 	if (ret < 0) {

@@ -118,7 +118,7 @@ static int fimc_is_isp_video_open(struct file *file)
 		goto p_err;
 	}
 
-	fimc_is_video_open(vctx,
+	ret = fimc_is_video_open(vctx,
 		device,
 		VIDEO_ISP_READY_BUFFERS,
 		&core->video_isp,
@@ -127,6 +127,11 @@ static int fimc_is_isp_video_open(struct file *file)
 		&fimc_is_ischain_isp_ops,
 		NULL,
 		core->mem.vb2->ops);
+	if (ret) {
+		err("fimc_is_video_open is fail");
+		close_vctx(file, video, vctx);
+		goto p_err;
+	}
 
 p_err:
 	return ret;
