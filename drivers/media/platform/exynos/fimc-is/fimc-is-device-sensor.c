@@ -45,9 +45,9 @@
 #include "fimc-is-device-sensor.h"
 
 /* PMU for FIMC-IS*/
-#define MIPICSI0_REG_BASE	(S5P_VA_MIPICSI0)   /* phy : 0x13c2_0000 */
-#define MIPICSI1_REG_BASE	(S5P_VA_MIPICSI1)   /* phy : 0x13c3_0000 */
-#define MIPICSI2_REG_BASE	(S5P_VA_MIPICSI2)   /* phy : 0x13d1_0000 */
+#define MIPICSI0_REG_BASE	(S5P_VA_MIPICSI0)   /* phy : 0x13c2_0000(5410) 0x1212_0000(5430)*/
+#define MIPICSI1_REG_BASE	(S5P_VA_MIPICSI1)   /* phy : 0x13c3_0000(5410) 0x1213_0000(5430)*/
+#define MIPICSI2_REG_BASE	(S5P_VA_MIPICSI2)   /* phy : 0x13d1_0000(5410) 0x141d_0000(5430)*/
 
 /*MIPI*/
 #if defined(CONFIG_SOC_EXYNOS5250) || defined(CONFIG_SOC_EXYNOS5410)
@@ -56,7 +56,7 @@
 #define S5PCSIS_CTRL_DPDN_DEFAULT			(0 << 31)
 #define S5PCSIS_CTRL_DPDN_SWAP				(1 << 31)
 #define S5PCSIS_CTRL_ALIGN_32BIT			(1 << 20)
-#define S5PCSIS_CTRL_UPDATE_SHADOW			(1 << 16)
+#define S5PCSIS_CTRL_UPDATE_SHADOW(x)			(x << 16)
 #define S5PCSIS_CTRL_WCLK_EXTCLK			(1 << 8)
 #define S5PCSIS_CTRL_RESET				(1 << 4)
 #define S5PCSIS_CTRL_ENABLE				(1 << 0)
@@ -465,7 +465,7 @@ static void s5pcsis_system_enable(unsigned long mipi_reg_base, int on)
 
 	val = readl(mipi_reg_base + S5PCSIS_CTRL);
 
-#if defined(CONFIG_SOC_EXYNOS5420)
+#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	val |= S5PCSIS_CTRL_WCLK_EXTCLK;
 	val |= S5PCSIS_CTRL_NUMOFDATALANE(0x3);
 #endif
@@ -494,7 +494,7 @@ static void __s5pcsis_set_format(unsigned long mipi_reg_base,
 	/* Color format */
 	val = readl(mipi_reg_base + S5PCSIS_CONFIG);
 	val = (val & ~S5PCSIS_CFG_FMT_MASK) | S5PCSIS_CFG_FMT_RAW10;
-#if defined(CONFIG_SOC_EXYNOS5420)
+#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	val |= S5PCSIS_CFG_START_INTERVAL(1);
 #endif
 	writel(val, mipi_reg_base + S5PCSIS_CONFIG);
@@ -542,12 +542,8 @@ static void s5pcsis_set_params(unsigned long mipi_reg_base,
 
 	/* Update the shadow register. */
 	val = readl(mipi_reg_base + S5PCSIS_CTRL);
-#if defined(CONFIG_SOC_EXYNOS5420)
 	writel(val | S5PCSIS_CTRL_UPDATE_SHADOW(1),
 						mipi_reg_base + S5PCSIS_CTRL);
-#else
-	writel(val | S5PCSIS_CTRL_UPDATE_SHADOW, mipi_reg_base + S5PCSIS_CTRL);
-#endif
 }
 
 int enable_mipi(void)
@@ -556,50 +552,27 @@ int enable_mipi(void)
 	u32 cfg;
 
 	addr = S5P_MIPI_DPHY_CONTROL(0);
-
 	cfg = __raw_readl(addr);
-	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
+	if (!soc_is_exynos5430())
+		cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
+	cfg |= S5P_MIPI_DPHY_ENABLE;
 	__raw_writel(cfg, addr);
-
-	if (1) {
-		cfg |= S5P_MIPI_DPHY_ENABLE;
-	} else if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN)
-			& (~S5P_MIPI_DPHY_SRESETN))) {
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
-	}
-
-	__raw_writel(cfg, addr);
-
 
 	addr = S5P_MIPI_DPHY_CONTROL(1);
-
 	cfg = __raw_readl(addr);
-	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
-	__raw_writel(cfg, addr);
-
-	if (1) {
-		cfg |= S5P_MIPI_DPHY_ENABLE;
-	} else if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN)
-			& (~S5P_MIPI_DPHY_SRESETN))) {
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
-	}
-
+	if (!soc_is_exynos5430())
+		cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
+	cfg |= S5P_MIPI_DPHY_ENABLE;
 	__raw_writel(cfg, addr);
 
 	addr = S5P_MIPI_DPHY_CONTROL(2);
-
 	cfg = __raw_readl(addr);
-	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
-	__raw_writel(cfg, addr);
-
+	if (!soc_is_exynos5430())
+		cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
 	cfg |= S5P_MIPI_DPHY_ENABLE;
-	if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN)
-			& (~S5P_MIPI_DPHY_SRESETN)))
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
-
 	__raw_writel(cfg, addr);
-	return 0;
 
+	return 0;
 }
 
 int start_mipi_csi(int channel, struct fimc_is_frame_info *f_frame,
