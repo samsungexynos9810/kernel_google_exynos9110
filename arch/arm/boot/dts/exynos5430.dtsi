@@ -709,4 +709,160 @@
 		iommu = <&sysmmu_hevc0>, <&sysmmu_hevc1>;
 		status = "ok";
 	};
+
+	i2c_0: i2c@14E00000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14E00000 0x1000>;
+		interrupts = <0 424 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c0_bus>;
+		clocks = <&clock 893>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_1: i2c@14E10000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14E10000 0x1000>;
+		interrupts = <0 425 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c1_bus>;
+		clocks = <&clock 894>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_2: i2c@14E20000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14E20000 0x1000>;
+		interrupts = <0 426 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c2_bus>;
+		clocks = <&clock 895>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_3: i2c@14E30000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14E30000 0x1000>;
+		interrupts = <0 427 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c3_bus>;
+		clocks = <&clock 896>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_4: i2c@14E80000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14E80000 0x1000>;
+		interrupts = <0 443 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c4_bus>;
+		clocks = <&clock 897>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_5: i2c@14E90000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14E90000 0x1000>;
+		interrupts = <0 444 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c5_bus>;
+		clocks = <&clock 898>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_6: i2c@14EA0000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14EA0000 0x1000>;
+		interrupts = <0 445 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c6_bus>;
+		clocks = <&clock 899>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	i2c_7: i2c@14EB0000 {
+		compatible = "samsung,s3c2440-i2c";
+		reg = <0x14EB0000 0x1000>;
+		interrupts = <0 446 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2c7_bus>;
+		clocks = <&clock 900>;
+		clock-names = "i2c";
+		status = "disabled";
+	};
+
+	hsi2c_0: hsi2c@14E40000 {
+		compatible = "samsung,exynos5-hsi2c";
+		reg = <0x14E40000 0x1000>;
+		interrupts = <0 428 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hs_i2c0_bus>;
+		clocks = <&clock 901>;
+		clock-names = "hsi2c";
+		status = "disabled";
+	};
+
+	hsi2c_1: hsi2c@14E50000 {
+		compatible = "samsung,exynos5-hsi2c";
+		reg = <0x14E50000 0x1000>;
+		interrupts = <0 429 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hs_i2c1_bus>;
+		clocks = <&clock 902>;
+		clock-names = "hsi2c";
+		status = "disabled";
+	};
+
+	hsi2c_2: hsi2c@14E60000 {
+		compatible = "samsung,exynos5-hsi2c";
+		reg = <0x14E60000 0x1000>;
+		interrupts = <0 430 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hs_i2c2_bus>;
+		clocks = <&clock 903>;
+		clock-names = "hsi2c";
+		status = "disabled";
+	};
+
+	hsi2c_3: hsi2c@14E70000 {
+		compatible = "samsung,exynos5-hsi2c";
+		reg = <0x14E70000 0x1000>;
+		interrupts = <0 431 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hs_i2c3_bus>;
+		clocks = <&clock 903>;
+		clock-names = "hsi2c";
+		status = "disabled";
+	};
 };
