@@ -31,7 +31,6 @@
 #include <linux/interrupt.h>
 #include <mach/regs-clock.h>
 #include <linux/pm_qos.h>
-#include <mach/devfreq.h>
 #include <linux/bug.h>
 
 #include "fimc-is-core.h"
