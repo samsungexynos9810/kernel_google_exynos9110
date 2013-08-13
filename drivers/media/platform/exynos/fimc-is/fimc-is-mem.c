@@ -88,7 +88,7 @@ int fimc_is_mem_probe(struct fimc_is_mem *this,
 		ret = PTR_ERR(this->alloc_ctx);
 		goto p_err;
 	}
-	exynos_create_iovmm(&pdev->dev, 1, 3);
+	exynos_create_iovmm(&pdev->dev, 1, 4);
 
 p_err:
 	return ret;
