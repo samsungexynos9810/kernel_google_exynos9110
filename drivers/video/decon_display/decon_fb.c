@@ -4314,6 +4314,8 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	clk_disable(sfb->axi_disp1);
 
 	clk_disable(sfb->bus_clk);
+
+	clk_disable(sfb->sclk_eclk);
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
 #endif
@@ -4345,15 +4347,30 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	}
 
 	pm_runtime_get_sync(sfb->dev);
+
 	clk_enable(sfb->bus_clk);
 
 	clk_enable(sfb->axi_disp1);
 
 	clk_enable(sfb->lcd_clk);
 
+	clk_enable(sfb->sclk_eclk);
 
 	sfb->power_state = POWER_ON;
 
+	decon_fb_reset(sfb);
+	decon_fb_set_clkgate_mode(sfb, 1, 1, 1);
+	decon_fb_blending_bit_count_option(sfb, 1);
+	decon_fb_set_vidout(sfb, 1);
+	decon_fb_enable_interrupt(sfb, 1);
+	decon_fb_enable_crc(sfb, 1);
+	decon_fb_enable_crc_clk(sfb, 1);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	decon_fb_set_vidoutif(sfb, 2);
+#else
+	decon_fb_set_vidoutif(sfb, 0);
+#endif
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
 
 	/* set video clock running at under-run */
@@ -4371,7 +4388,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	/* use platform specified window as the basis for the lcd timings */
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
-
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_configure_trigger(sfb);
+#endif
 	mutex_lock(&sfb->vsync_info.irq_lock);
 	if (sfb->vsync_info.irq_refcount)
 		s3c_fb_enable_irq(sfb);
@@ -4393,6 +4412,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(reg, sfb->regs + VIDCON0);
 
+	reg = readl(sfb->regs + DECON_UPDATE);
+	reg |= DECON_UPDATE_STANDALONE_F;
+	writel(reg, sfb->regs + DECON_UPDATE);
 	sfb->output_on = true;
 
 err:
@@ -4406,7 +4428,7 @@ static int s3c_fb_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
 	int ret = 0;
-	u32 vidcon0;
+	u32 vidcon0, data;
 
 	mutex_lock(&sfb->output_lock);
 	sfb->power_state = POWER_DOWN;
@@ -4434,11 +4456,18 @@ static int s3c_fb_suspend(struct device *dev)
 		} else
 			dev_warn(sfb->dev, "ENVID not set while disabling fb");
 
+		data = readl(sfb->regs + DECON_UPDATE);
+		data |= DECON_UPDATE_STANDALONE_F;
+		writel(data, sfb->regs + DECON_UPDATE);
+
 		clk_disable(sfb->lcd_clk);
 
 		clk_disable(sfb->axi_disp1);
 
 		clk_disable(sfb->bus_clk);
+
+		clk_disable(sfb->sclk_eclk);
+
 #ifdef CONFIG_ION_EXYNOS
 		iovmm_deactivate(dev);
 #endif
@@ -4469,16 +4498,31 @@ static int s3c_fb_resume(struct device *dev)
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(sfb->dev);
 #endif
+
 	clk_enable(sfb->bus_clk);
 
 	clk_enable(sfb->axi_disp1);
 
-	if (!sfb->variant.has_clksel)
-		clk_enable(sfb->lcd_clk);
+	clk_enable(sfb->lcd_clk);
+
+	clk_enable(sfb->sclk_eclk);
 
 	/* setup gpio and output polarity controls */
 
 	sfb->power_state = POWER_ON;
+
+	decon_fb_reset(sfb);
+	decon_fb_set_clkgate_mode(sfb, 1, 1, 1);
+	decon_fb_blending_bit_count_option(sfb, 1);
+	decon_fb_set_vidout(sfb, 1);
+	decon_fb_enable_interrupt(sfb, 1);
+	decon_fb_enable_crc(sfb, 1);
+	decon_fb_enable_crc_clk(sfb, 1);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	decon_fb_set_vidoutif(sfb, 2);
+#else
+	decon_fb_set_vidoutif(sfb, 0);
+#endif
 
 	pd->vidcon1 |= VIDCON1_VCLK_HOLD;
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
@@ -4489,6 +4533,9 @@ static int s3c_fb_resume(struct device *dev)
 	/* use platform specified window as the basis for the lcd timings */
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_configure_trigger(sfb);
+#endif
 
 	mutex_lock(&sfb->vsync_info.irq_lock);
 	if (sfb->vsync_info.irq_refcount)
@@ -4511,6 +4558,9 @@ static int s3c_fb_resume(struct device *dev)
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(reg, sfb->regs + VIDCON0);
 
+	reg = readl(sfb->regs + DECON_UPDATE);
+	reg |= DECON_UPDATE_STANDALONE_F;
+	writel(reg, sfb->regs + DECON_UPDATE);
 	sfb->output_on = true;
 
 err:
@@ -4533,6 +4583,8 @@ static int s3c_fb_runtime_suspend(struct device *dev)
 
 	clk_disable(sfb->bus_clk);
 
+	clk_disable(sfb->sclk_eclk);
+
 	return 0;
 }
 
@@ -4547,6 +4599,8 @@ static int s3c_fb_runtime_resume(struct device *dev)
 	clk_enable(sfb->axi_disp1);
 
 	clk_enable(sfb->lcd_clk);
+
+	clk_enable(sfb->sclk_eclk);
 
 	sfb->power_state = POWER_ON;
 

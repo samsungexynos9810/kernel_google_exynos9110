@@ -45,13 +45,11 @@
 #include "decon_mipi_dsi.h"
 #include "regs-mipidsim.h"
 
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
-
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_wr_comp);
 static DECLARE_COMPLETION(dsim_rd_comp);
+
+static void mipi_cmu_set(void);
 
 #define MIPI_WR_TIMEOUT msecs_to_jiffies(250)
 #define MIPI_RD_TIMEOUT msecs_to_jiffies(250)
@@ -846,60 +844,6 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 }
 
 #ifdef CONFIG_PM
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void s5p_mipi_dsi_early_suspend(struct early_suspend *handler)
-{
-	struct mipi_dsim_device *dsim =
-		container_of(handler, struct mipi_dsim_device, early_suspend);
-	struct platform_device *pdev = to_platform_device(dsim->dev);
-
-	dsim->dsim_lcd_drv->suspend(dsim);
-	dsim->state = DSIM_STATE_SUSPEND;
-	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-	clk_disable(dsim->clock);
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 0);
-	*/
-	mipi_lcd_power_control(dsim, 0);
-	pm_runtime_put_sync(&pdev->dev);
-}
-
-static void s5p_mipi_dsi_late_resume(struct early_suspend *handler)
-{
-	struct mipi_dsim_device *dsim =
-		container_of(handler, struct mipi_dsim_device, early_suspend);
-	struct platform_device *pdev = to_platform_device(dsim->dev);
-
-	pm_runtime_get_sync(&pdev->dev);
-	clk_enable(dsim->clock);
-
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 1);
-	*/
-	mipi_lcd_power_control(dsim, 1);
-
-	if (dsim->dsim_lcd_drv->resume)
-		dsim->dsim_lcd_drv->resume(dsim);
-	s5p_mipi_dsi_init_dsim(dsim);
-	s5p_mipi_dsi_init_link(dsim);
-#if defined(CONFIG_LCD_MIPI_TC358764)
-	s5p_mipi_dsi_enable_hs_clock(dsim, 1);
-	s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 1);
-	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
-	s5p_mipi_dsi_clear_int_status(dsim,
-			INTSRC_SFR_FIFO_EMPTY);
-	dsim->dsim_lcd_drv->displayon(dsim);
-	s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 0);
-#else
-	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
-	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
-	s5p_mipi_dsi_set_hs_enable(dsim);
-	dsim->dsim_lcd_drv->displayon(dsim);
-#endif
-}
-#else
 static int s5p_mipi_dsi_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -910,14 +854,16 @@ static int s5p_mipi_dsi_suspend(struct device *dev)
 	dsim->enabled = false;
 	dsim->dsim_lcd_drv->suspend(dsim);
 	dsim->state = DSIM_STATE_SUSPEND;
+	mipi_lcd_power_control(dsim, 0);
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 	/*
 	if (dsim->pd->mipi_power)
 		dsim->pd->mipi_power(dsim, 0);
 	*/
-	mipi_lcd_power_control(dsim, 0);
 	pm_runtime_put_sync(dev);
+	/*
 	clk_disable(dsim->clock);
+	*/
 	return 0;
 }
 
@@ -929,8 +875,11 @@ static int s5p_mipi_dsi_resume(struct device *dev)
 	if (dsim->enabled == true)
 		return 0;
 
+	mipi_cmu_set();
 	pm_runtime_get_sync(&pdev->dev);
+	/*
 	clk_enable(dsim->clock);
+	*/
 
 	/*
 	if (dsim->pd->mipi_power)
@@ -943,24 +892,14 @@ static int s5p_mipi_dsi_resume(struct device *dev)
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
 	dsim->enabled = true;
-#if defined(CONFIG_LCD_MIPI_TC358764)
-	s5p_mipi_dsi_enable_hs_clock(dsim, 1);
-	s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 1);
-	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
-	s5p_mipi_dsi_clear_int_status(dsim,
-			INTSRC_SFR_FIFO_EMPTY);
-	dsim->dsim_lcd_drv->displayon(dsim);
-	s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 0);
-#else
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
 	dsim->dsim_lcd_drv->displayon(dsim);
-#endif
 
 	return 0;
 }
-#endif
+
 static int s5p_mipi_dsi_runtime_suspend(struct device *dev)
 {
 	return 0;
