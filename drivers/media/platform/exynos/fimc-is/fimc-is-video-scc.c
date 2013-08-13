@@ -56,6 +56,7 @@ int fimc_is_scc_video_probe(void *core_data)
 		core_data,
 		FIMC_IS_VIDEO_SCC_NAME,
 		FIMC_IS_VIDEO_SCC_NUM,
+		VFL_DIR_RX,
 		&video->lock,
 		&fimc_is_scc_video_fops,
 		&fimc_is_scc_video_ioctl_ops);

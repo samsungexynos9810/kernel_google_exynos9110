@@ -157,6 +157,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	void *core_data,
 	char *video_name,
 	u32 video_number,
+	u32 vfl_dir,
 	struct mutex *lock,
 	const struct v4l2_file_operations *fops,
 	const struct v4l2_ioctl_ops *ioctl_ops);

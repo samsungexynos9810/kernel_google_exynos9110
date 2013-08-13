@@ -52,6 +52,7 @@ int fimc_is_scp_video_probe(void *data)
 		data,
 		FIMC_IS_VIDEO_SCP_NAME,
 		FIMC_IS_VIDEO_SCP_NUM,
+		VFL_DIR_RX,
 		&video->lock,
 		&fimc_is_scp_video_fops,
 		&fimc_is_scp_video_ioctl_ops);

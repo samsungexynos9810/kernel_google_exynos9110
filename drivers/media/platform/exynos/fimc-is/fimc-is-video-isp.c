@@ -62,6 +62,7 @@ int fimc_is_isp_video_probe(void *data)
 		data,
 		FIMC_IS_VIDEO_ISP_NAME,
 		FIMC_IS_VIDEO_ISP_NUM,
+		VFL_DIR_M2M,
 		&video->lock,
 		&fimc_is_isp_video_fops,
 		&fimc_is_isp_video_ioctl_ops);

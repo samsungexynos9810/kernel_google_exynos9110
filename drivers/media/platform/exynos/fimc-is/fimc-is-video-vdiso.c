@@ -55,6 +55,7 @@ int fimc_is_vdo_video_probe(void *data)
 		data,
 		FIMC_IS_VIDEO_VDISO_NAME,
 		FIMC_IS_VIDEO_VDO_NUM,
+		VFL_DIR_TX,
 		&video->lock,
 		&fimc_is_vdo_video_fops,
 		&fimc_is_vdo_video_ioctl_ops);

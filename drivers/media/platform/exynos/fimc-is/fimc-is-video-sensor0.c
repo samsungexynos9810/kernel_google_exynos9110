@@ -55,6 +55,7 @@ int fimc_is_ss0_video_probe(void *data)
 		data,
 		FIMC_IS_VIDEO_SEN0_NAME,
 		FIMC_IS_VIDEO_SS0_NUM,
+		VFL_DIR_RX,
 		&video->lock,
 		&fimc_is_ss0_video_fops,
 		&fimc_is_ss0_video_ioctl_ops);

@@ -688,6 +688,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	void *core_data,
 	char *video_name,
 	u32 video_number,
+	u32 vfl_dir,
 	struct mutex *lock,
 	const struct v4l2_file_operations *fops,
 	const struct v4l2_ioctl_ops *ioctl_ops)
@@ -709,6 +710,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	video->vd.minor		= -1;
 	video->vd.release	= video_device_release;
 	video->vd.lock		= lock;
+	video->vd.vfl_dir	= vfl_dir;
 	video_set_drvdata(&video->vd, core);
 
 	ret = video_register_device(&video->vd,

@@ -63,6 +63,7 @@ int fimc_is_3a0_video_probe(void *data)
 		data,
 		FIMC_IS_VIDEO_3A0_NAME,
 		FIMC_IS_VIDEO_3A0_NUM,
+		VFL_DIR_M2M,
 		&video->lock,
 		&fimc_is_3a0_video_fops,
 		&fimc_is_3a0_video_ioctl_ops);
