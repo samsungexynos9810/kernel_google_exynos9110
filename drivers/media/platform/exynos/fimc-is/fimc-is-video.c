@@ -685,7 +685,6 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	video->vb2		= core->mem.vb2;
 	video->vd.fops		= fops;
 	video->vd.ioctl_ops	= ioctl_ops;
-	video->vd.v4l2_dev	= &core->mdev->v4l2_dev;
 	video->vd.minor		= -1;
 	video->vd.release	= video_device_release;
 	video->vd.lock		= lock;
@@ -696,13 +695,6 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 				(EXYNOS_VIDEONODE_FIMC_IS + video_number));
 	if (ret) {
 		err("Failed to register video device");
-		goto p_err;
-	}
-
-	video->pads.flags = MEDIA_PAD_FL_SINK;
-	ret = media_entity_init(&video->vd.entity, 1, &video->pads, 0);
-	if (ret) {
-		err("Failed to media_entity_init ScalerP video device\n");
 		goto p_err;
 	}
 

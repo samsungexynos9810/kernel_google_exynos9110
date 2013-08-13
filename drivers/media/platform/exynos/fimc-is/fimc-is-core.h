@@ -474,8 +474,6 @@ struct fimc_is_core {
 
 	/* depended on isp */
 	struct exynos5_platform_fimc_is		*pdata;
-	struct exynos_md			*mdev;
-
 
 	struct fimc_is_groupmgr			groupmgr;
 	struct fimc_is_clock			clock;
@@ -515,8 +513,6 @@ void fimc_is_mem_suspend(void *alloc_ctxes);
 void fimc_is_mem_resume(void *alloc_ctxes);
 void fimc_is_mem_cache_clean(const void *start_addr, unsigned long size);
 void fimc_is_mem_cache_inv(const void *start_addr, unsigned long size);
-int fimc_is_pipeline_s_stream_preview
-	(struct media_entity *start_entity, int on);
 int fimc_is_init_set(struct fimc_is_core *dev , u32 val);
 int fimc_is_load_fw(struct fimc_is_core *dev);
 int fimc_is_load_setfile(struct fimc_is_core *dev);
