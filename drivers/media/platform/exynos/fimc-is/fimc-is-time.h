@@ -47,6 +47,7 @@ struct fimc_is_time {
 
 void TIME_STR1(void);
 void TIME_END1(void);
+uint64_t fimc_is_get_timestamp(void);
 
 #ifdef MEASURE_TIME
 #ifdef INTERNAL_TIME

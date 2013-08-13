@@ -7442,8 +7442,7 @@ int fimc_is_ischain_tag(struct fimc_is_device_ischain *ischain,
 	do_posix_clock_monotonic_gettime(&curtime);
 
 	frame->shot->dm.request.frameCount = frame->fcount;
-	frame->shot->dm.sensor.timeStamp =
-		(uint64_t)curtime.tv_sec*1000000000 + curtime.tv_nsec;
+	frame->shot->dm.sensor.timeStamp = fimc_is_get_timestamp();
 #endif
 	return ret;
 }

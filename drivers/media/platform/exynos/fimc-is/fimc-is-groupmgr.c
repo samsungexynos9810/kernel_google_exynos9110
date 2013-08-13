@@ -1350,12 +1350,12 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group_next, *group_prev;
 	struct fimc_is_group_framemgr *gframemgr;
 	struct fimc_is_group_frame *gframe;
-	struct timespec curtime;
+	uint64_t timestamp;
 	int async_step = 0;
 	bool try_sdown = false;
 	bool try_rdown = false;
 
-	do_posix_clock_monotonic_gettime(&curtime);
+	timestamp = fimc_is_get_timestamp();
 
 	BUG_ON(!groupmgr);
 	BUG_ON(!group);
@@ -1435,8 +1435,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		ldr_frame->fcount = atomic_read(&group->sensor_fcount);
 		atomic_set(&group->backup_fcount, ldr_frame->fcount);
 		ldr_frame->shot->dm.request.frameCount = ldr_frame->fcount;
-		ldr_frame->shot->dm.sensor.timeStamp =
-			(uint64_t)curtime.tv_sec * 1000000000 + curtime.tv_nsec;
+		ldr_frame->shot->dm.sensor.timeStamp = timestamp;
 
 		/* real automatic increase */
 		if (async_step && (atomic_read(&group->smp_shot_count) > MIN_OF_SYNC_SHOTS))
