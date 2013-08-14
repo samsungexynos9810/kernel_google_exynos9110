@@ -264,6 +264,28 @@ struct exynos5_sensor_gpio_info {
 	struct gpio_set power;
 };
 
+struct fimc_is_gpio_info {
+	int gpio_main_rst;
+	int gpio_main_sda;
+	int gpio_main_scl;
+	int gpio_main_mclk;
+	int gpio_main_flash_en;
+	int gpio_main_flash_torch;
+
+	int gpio_vt_rst;
+	int gpio_vt_sda;
+	int gpio_vt_scl;
+	int gpio_vt_mclk;
+
+	int gpio_spi_clk;
+	int gpio_spi_csn;
+	int gpio_spi_miso;
+	int gpio_spi_mosi;
+
+	int gpio_uart_txd;
+	int gpio_uart_rxd;
+};
+
 struct platform_device;
 
  /**
@@ -316,6 +338,7 @@ struct exynos5_platform_fimc_is {
 	int	hw_ver;
 	struct exynos5_fimc_is_sensor_info *sensor_info[FIMC_IS_MAX_CAMIF_CLIENTS];
 	struct exynos5_sensor_gpio_info *gpio_info;
+	struct fimc_is_gpio_info *_gpio_info;
 	int	flag_power_on[FLITE_ID_END];
 	int	(*cfg_gpio)(struct platform_device *pdev, int channel, bool flag_on);
 	int	(*clk_cfg)(struct platform_device *pdev);
