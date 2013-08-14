@@ -9,6 +9,8 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/kthread.h>
+
 #ifndef FIMC_IS_FRAME_MGR_H
 #define FIMC_IS_FRAME_MGR_H
 
