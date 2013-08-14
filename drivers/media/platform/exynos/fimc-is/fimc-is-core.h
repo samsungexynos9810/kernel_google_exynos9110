@@ -187,6 +187,13 @@
 #undef ENABLE_ODC
 #endif
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+#undef ENABLE_FULL_BYPASS
+#undef ENABLE_CLOCK_GATE
+#undef ENABLE_DVFS
+#undef USE_OWN_FAULT_HANDLER
+#endif
+
 /*
  * -----------------------------------------------------------------------------
  * Debug Message Configuration
