@@ -33,6 +33,7 @@
 #include <linux/pm_qos.h>
 #include <linux/bug.h>
 #include <linux/v4l2-mediabus.h>
+#include <linux/exynos_iovmm.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"

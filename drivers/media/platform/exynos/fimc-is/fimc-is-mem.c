@@ -32,7 +32,7 @@
 #include <linux/videodev2_exynos_camera.h>
 #include <linux/vmalloc.h>
 #include <linux/interrupt.h>
-#include <plat/iovmm.h>
+#include <linux/exynos_iovmm.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"
