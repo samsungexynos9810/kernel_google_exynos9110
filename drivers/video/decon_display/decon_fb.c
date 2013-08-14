@@ -2372,6 +2372,8 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	int count = 100;
 	int i;
 
+	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
+
 	pm_runtime_get_sync(sfb->dev);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
