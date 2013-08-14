@@ -36,7 +36,6 @@
 #include <linux/syscalls.h>
 #include <linux/bug.h>
 
-#include <mach/bts.h>
 #include <mach/map.h>
 #include <mach/regs-clock.h>
 #include <mach/smc.h>
@@ -1042,7 +1041,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		dbg_ischain("pm_runtime_suspended = %d\n",
 			pm_runtime_suspended(dev));
 		pm_runtime_get_sync(dev);
-		bts_initialize("pd-fimclite", true);
 #else
 		fimc_is_runtime_resume(dev);
 		printk(KERN_INFO "%s(%d) - fimc_is runtime resume complete\n", __func__, on);
@@ -1138,7 +1136,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 
 		/* 2. FIMC-IS local power down */
 #if defined(CONFIG_PM_RUNTIME)
-		bts_initialize("pd-fimclite", false);
 		pm_runtime_put_sync(dev);
 		dbg_ischain("pm_runtime_suspended = %d\n",
 					pm_runtime_suspended(dev));
