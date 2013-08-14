@@ -1018,7 +1018,10 @@ void tdnr_s3d_pixel_async_sw_reset(struct fimc_is_device_ischain *this)
 
 int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 {
-	int i, ret = 0;
+#ifdef CONFIG_ARM_TRUSTZONE
+	int i;
+#endif
+	int ret = 0;
 	u32 timeout;
 	u32 debug;
 
@@ -1083,14 +1086,14 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		printk(KERN_INFO "%s(%d) - check dvaddr validate...\n", __func__, on);
 
 #ifdef CONFIG_ARM_TRUSTZONE
-		exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(0x131E0004), 0x000000FF, 0);
+		exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(PA_FIMC_IS_GIC_C + 0x4), 0x000000FF, 0);
 		for (i = 0; i < 3; i++)
-			exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(0x131F0080 + (i * 4)), 0xFFFFFFFF, 0);
+			exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(PA_FIMC_IS_GIC_D + 0x80 + (i * 4)), 0xFFFFFFFF, 0);
 		for (i = 0; i < 18; i++)
-			exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(0x131F0400 + (i * 4)), 0x10101010, 0);
+			exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(PA_FIMC_IS_GIC_D + 0x400 + (i * 4)), 0x10101010, 0);
 
-		exynos_smc_readsfr(0x131E0004, &debug);
-		pr_info("%s : 0x131E0004 : 0x%08x\n", __func__, debug);
+		exynos_smc_readsfr(PA_FIMC_IS_GIC_C + 0x4, &debug);
+		pr_info("%s : PA_FIMC_IS_GIC_C : 0x%08x\n", __func__, debug);
 #endif
 
 		/* 5. A5 power on*/

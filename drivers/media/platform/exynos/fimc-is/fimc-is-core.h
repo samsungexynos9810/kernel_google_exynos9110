@@ -193,6 +193,7 @@
 #undef ENABLE_CLOCK_GATE
 #undef ENABLE_DVFS
 #undef USE_OWN_FAULT_HANDLER
+#define CONFIG_ARM_TRUSTZONE
 #endif
 
 /*

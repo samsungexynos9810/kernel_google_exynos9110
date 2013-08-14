@@ -355,4 +355,13 @@
 #define SYSREG_GSCBLK_CFG1			(S3C_VA_SYS + 0x0224)
 #define SYSREG_ISPBLK_CFG			(S3C_VA_SYS + 0x022C)
 
+/* GIC for FIMC-IS*/
+#if defined(CONFIG_SOC_EXYNOS5430)
+#define PA_FIMC_IS_GIC_C			(0x141E0000)
+#define PA_FIMC_IS_GIC_D			(0x141F0000)
+#else
+#define PA_FIMC_IS_GIC_C			(0x131E0000)
+#define PA_FIMC_IS_GIC_D			(0x131F0000)
+#endif
+
 #endif
