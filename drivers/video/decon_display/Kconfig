@@ -16,6 +16,18 @@ config FB_I80_COMMAND_MODE
 	depends on DECON_FB
 	default n
 
+choice
+	prompt "I80 Trigger Mode"
+	depends on FB_I80_COMMAND_MODE
+
+	config FB_I80_SW_TRIGGER
+	bool "I80 Software Trigger Mode"
+
+	config FB_I80_HW_TRIGGER
+	bool "I80 Hardware Trigger Mode"
+
+endchoice
+
 config DECON_MIPI_DSI
 	bool "Samsung DECON MIPI-DSI driver"
 	depends on DECON

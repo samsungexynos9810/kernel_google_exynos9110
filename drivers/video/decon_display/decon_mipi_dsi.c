@@ -81,13 +81,11 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	writel(0x1, reg + 0x10);
 	iounmap(reg);
 
-#ifdef CONFIG_FB_I80_SW_TRIGGER
 	reg = ioremap(0x13B80000, 0x4);
 	writel(0x0, reg);
 	mdelay(5);
 	writel(0x1, reg);
 	iounmap(reg);
-#endif
 
 	return 0;
 }
@@ -1017,12 +1015,14 @@ static int mipi_lcd_power_control(struct mipi_dsim_device *dsim,
 		iounmap(regs);
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifndef CONFIG_FB_I80_SW_TRIGGER
 		regs = ioremap(0x14CC00C0, 0x4);
 		data = readl(regs);
 		data &= ~(0xf << 4);
 		data |= (0x2 << 4);
 		writel(data, regs);
 		iounmap(regs);
+#endif
 #endif
 	}
 

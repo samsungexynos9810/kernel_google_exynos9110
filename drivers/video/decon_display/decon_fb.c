@@ -24,6 +24,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
+#include <linux/of_gpio.h>
+#include <linux/of.h>
 
 #if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
 #include <media/v4l2-subdev.h>
@@ -468,8 +470,9 @@ static const struct of_device_id exynos5_decon[] = {
 };
 MODULE_DEVICE_TABLE(of, exynos5_decon);
 #endif
-
-void s3c_fb_sw_trigger(struct s3c_fb *sfb);
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
+#endif
 
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 			u32 win_no, u32 bufmode, u32 bufsel)
@@ -1350,6 +1353,7 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg |= VIDINTCON0_FIFOSEL_MAIN_EN;
 #endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+
 	irq_ctrl_reg = readl(regs + VIDINTCON1);
 	irq_ctrl_reg |= VIDINTCON1_INT_I80;
 	writel(irq_ctrl_reg, regs + VIDINTCON1);
@@ -1435,7 +1439,23 @@ void s3c_fb_log_fifo_underflow_locked(struct s3c_fb *sfb, ktime_t timestamp)
 			sizeof(sfb->debug_data.regs_at_underflow));
 #endif
 }
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+static irqreturn_t decon_fb_isr_for_sw_trigger(int irq, void *dev_id)
+{
+	struct s3c_fb *sfb = dev_id;
+	void __iomem  *regs = sfb->regs;
+	u32 irq_sts_reg;
+	ktime_t timestamp = ktime_get();
 
+	spin_lock(&sfb->slock);
+	s3c_fb_sw_trigger(sfb);
+	sfb->vsync_info.timestamp = timestamp;
+	wake_up_interruptible_all(&sfb->vsync_info.wait);
+
+	spin_unlock(&sfb->slock);
+	return IRQ_HANDLED;
+}
+#endif
 static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 {
 	struct s3c_fb *sfb = dev_id;
@@ -1454,9 +1474,6 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
 	if (irq_sts_reg & VIDINTCON1_INT_I80) {
-#ifdef CONFIG_FB_I80_SW_TRIGGER
-		s3c_fb_sw_trigger(sfb);
-#endif
 		writel(VIDINTCON1_INT_I80, regs + VIDINTCON1);
 		sfb->vsync_info.timestamp = timestamp;
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
@@ -1465,7 +1482,6 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		writel(VIDINTCON1_INT_FIFO, regs + VIDINTCON1);
 		s3c_fb_log_fifo_underflow_locked(sfb, timestamp);
 	}
-
 	spin_unlock(&sfb->slock);
 	return IRQ_HANDLED;
 }
@@ -1483,7 +1499,9 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 	pm_runtime_get_sync(sfb->dev);
 
 	timestamp = sfb->vsync_info.timestamp;
+#ifndef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_activate_vsync(sfb);
+#endif
 	if (timeout) {
 		ret = wait_event_interruptible_timeout(sfb->vsync_info.wait,
 				!ktime_equal(timestamp,
@@ -1494,7 +1512,9 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 				!ktime_equal(timestamp,
 						sfb->vsync_info.timestamp));
 	}
+#ifndef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_deactivate_vsync(sfb);
+#endif
 
 	pm_runtime_put_sync(sfb->dev);
 
@@ -3859,6 +3879,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	int default_win;
 	int i;
 	int ret = 0;
+	int gpio;
 	u32 reg;
 
 	parse_plat_data(dev);
@@ -3925,6 +3946,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		goto err_lcd_clk;
 	}
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifndef CONFIG_FB_I80_SW_TRIGGER
 	DT_READ_U32(dev->of_node, "i80_irq_no", sfb->irq_no);
 	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
 			  0, "s3c_fb", sfb);
@@ -3932,6 +3954,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		dev_err(dev, "i80 irq request failed\n");
 		goto err_lcd_clk;
 	}
+#endif
 #else
 	DT_READ_U32(dev->of_node, "irq_no", sfb->irq_no);
 	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
@@ -4025,9 +4048,17 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		dev_err(sfb->dev, "failed to ion_client_create\n");
 		goto err_pm_runtime;
 	}
+
 	/* setup vmm */
 	exynos_create_iovmm(&pdev->dev, 5, 0);
 #endif
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+	gpio = of_get_gpio(dev->of_node, 0);
+	sfb->irq_no = gpio_to_irq(gpio);
+	ret = devm_request_irq(dev, sfb->irq_no, decon_fb_isr_for_sw_trigger,
+			  IRQF_TRIGGER_RISING, "s3c_fb", sfb);
+#endif
+
 	default_win = sfb->pdata->default_win;
 	for (win = 0; win < fbdrv->variant.nr_windows; win++) {
 		if (!pd->win[win])
@@ -4141,10 +4172,6 @@ static int s3c_fb_probe(struct platform_device *pdev)
 
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
 	s3c_fb_activate_window_dma(sfb, default_win);
-#ifdef CONFIG_FB_I80_SW_TRIGGER
-	s3c_fb_enable_irq(sfb);
-	s3c_fb_sw_trigger(sfb);
-#endif
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 0);
 	ret = iovmm_activate(&pdev->dev);
