@@ -609,6 +609,8 @@
 		samsung,i80_irq_no = <235>;
 		samsung,irq_no = <234>;
 
+		gpios = <&gpf1 3 0xf>;
+
 		clock-names = "lcd", "sclk_eclk", "sclk_vclk", "decon_dsd";
 		clocks = <&clock 321>, <&clock 100>, <&clock 101>, <&clock 102>;
 
