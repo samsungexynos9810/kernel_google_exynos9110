@@ -1336,6 +1336,12 @@ config PL310_ERRATA_769419
 	  on systems with an outer cache, the store buffer is drained
 	  explicitly.
 
+config ARM_ERRATA_761320
+	bool "ARM errata: no direct eviction"
+	depends on CPU_V7 && SMP
+	help
+	  This option enables the workaround for the 761320 Cortex-A9 erratum.
+
 config ARM_ERRATA_766421
 	bool "ARM errata: Strongly-Ordered/Device load or NC LDREX could return incorrect data"
 	depends on CPU_V7
