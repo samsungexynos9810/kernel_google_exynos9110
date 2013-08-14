@@ -393,14 +393,14 @@
 			};
 		};
 	};
-	/* hsi2c7 */
-	i2c@20 {
-		compatible = "i2c-gpio";
+
+	i2c@14E10000 {
 		gpios = <&gpj1 0 0 /* sda */
 			 &gpj1 1 0 /* scl */
 			>;
-		i2c-gpio,delay-us = <2>;	/* ~100 kHz */
-		#address-cells = <1>;
+		status = "okay";
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
 		#size-cells = <0>;
 		status = "okay";
 		touchscreen@20 {
