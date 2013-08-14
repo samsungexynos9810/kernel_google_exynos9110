@@ -601,7 +601,7 @@ exit:
 	return ret;
 }
 
-#else
+#elif defined(CONFIG_SOC_EXYNOS5410)
 int fimc_is_set_dvfs(struct fimc_is_core *core,
 			struct fimc_is_device_ischain *ischain,
 			int group_id, int __level, int i2c_clk)
@@ -708,6 +708,13 @@ int fimc_is_set_dvfs(struct fimc_is_core *core,
 
 exit:
 	return ret;
+}
+#elif defined(CONFIG_SOC_EXYNOS5430)
+int fimc_is_set_dvfs(struct fimc_is_core *core,
+			struct fimc_is_device_ischain *ischain,
+			int group_id, int __level, int i2c_clk)
+{
+	return 0;
 }
 #endif
 
