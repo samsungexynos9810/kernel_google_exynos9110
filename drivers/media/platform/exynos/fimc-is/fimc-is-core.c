@@ -32,6 +32,7 @@
 #include <mach/regs-clock.h>
 #include <linux/pm_qos.h>
 #include <linux/bug.h>
+#include <linux/v4l2-mediabus.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"
