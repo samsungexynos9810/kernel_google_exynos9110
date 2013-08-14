@@ -797,7 +797,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	enum_sensor[SENSOR_NAME_S5K6A3].active_width = 1392;
 	enum_sensor[SENSOR_NAME_S5K6A3].active_height = 1392;
 	enum_sensor[SENSOR_NAME_S5K6A3].max_framerate = 30;
-	if (soc_is_exynos5410()) {
+	if (soc_is_exynos5430()) {
 		enum_sensor[SENSOR_NAME_S5K6A3].csi_ch = 2;
 		enum_sensor[SENSOR_NAME_S5K6A3].flite_ch = FLITE_ID_C;
 		enum_sensor[SENSOR_NAME_S5K6A3].i2c_ch = 2;
@@ -836,7 +836,12 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
 		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
-	} else if (soc_is_exynos5410()) {
+	} else if (soc_is_exynos5430()) {
+		ext->flash_con.product_name = FLADRV_NAME_MAX77693;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
+	} else {
 		ext->flash_con.product_name = FLADRV_NAME_MAX77693;
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
@@ -876,7 +881,12 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
 		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
-	} else if (soc_is_exynos5410()) {
+	} else if (soc_is_exynos5430()) {
+		ext->flash_con.product_name = FLADRV_NAME_KTD267;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 15;
+	} else {
 		ext->flash_con.product_name = FLADRV_NAME_KTD267;
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
@@ -916,7 +926,12 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
 		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
-	} else if (soc_is_exynos5410()) {
+	} else if (soc_is_exynos5430()) {
+		ext->flash_con.product_name = FLADRV_NAME_KTD267;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 15;
+	} else {
 		ext->flash_con.product_name = FLADRV_NAME_KTD267;
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
@@ -955,19 +970,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		ext->flash_con.peri_type = SE_GPIO;
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
 		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
-	} else if (soc_is_exynos5410()) {
-#if defined(CONFIG_MACH_SMDK5410)
-		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
-		ext->flash_con.peri_type = SE_GPIO;
-		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
-		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 15;
-#else
-		ext->flash_con.product_name = FLADRV_NAME_MAX77693;
-		ext->flash_con.peri_type = SE_GPIO;
-		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
-		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
-#endif
-	} else if (soc_is_exynos5420()) {
+	} else if (soc_is_exynos5430()) {
 #if defined(CONFIG_MACH_SMDK5420)
 		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
 		ext->flash_con.peri_type = SE_GPIO;
@@ -979,6 +982,11 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
 		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
 #endif
+	} else {
+		ext->flash_con.product_name = FLADRV_NAME_AAT1290A;
+		ext->flash_con.peri_type = SE_GPIO;
+		ext->flash_con.peri_setting.gpio.first_gpio_port_no = 14;
+		ext->flash_con.peri_setting.gpio.second_gpio_port_no = 15;
 	}
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
@@ -997,11 +1005,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	enum_sensor[SENSOR_NAME_S5K6B2].active_width = 1920;
 	enum_sensor[SENSOR_NAME_S5K6B2].active_height = 1080;
 	enum_sensor[SENSOR_NAME_S5K6B2].max_framerate = 30;
-	if (soc_is_exynos5410()) {
-		enum_sensor[SENSOR_NAME_S5K6B2].csi_ch = 2;
-		enum_sensor[SENSOR_NAME_S5K6B2].flite_ch = FLITE_ID_C;
-		enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch = 2;
-	} else if (soc_is_exynos5420()) {
+	if (soc_is_exynos5430()) {
 #if defined(CONFIG_MACH_SMDK5420)
 		enum_sensor[SENSOR_NAME_S5K6B2].csi_ch = 1;
 		enum_sensor[SENSOR_NAME_S5K6B2].flite_ch = FLITE_ID_B;
@@ -1011,6 +1015,10 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 		enum_sensor[SENSOR_NAME_S5K6B2].flite_ch = FLITE_ID_B;
 		enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch = 2;
 #endif
+	} else {
+		enum_sensor[SENSOR_NAME_S5K6B2].csi_ch = 1;
+		enum_sensor[SENSOR_NAME_S5K6B2].flite_ch = FLITE_ID_B;
+		enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch = 1;
 	}
 	enum_sensor[SENSOR_NAME_S5K6B2].setfile_name = "setfile_6b2.bin";
 
