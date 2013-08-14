@@ -2214,7 +2214,6 @@ static u32 _get_gpu_memory_total_pages(void) {
 	down(&kbase_dev_list_lock);
 	list_for_each(entry, &kbase_dev_list) {
 		struct kbase_device *kbdev = NULL;
-		kbasep_kctx_list_element *element;
 
 		kbdev = list_entry(entry, struct kbase_device, osdev.entry);
 		/* output the total memory usage and cap for this device */
