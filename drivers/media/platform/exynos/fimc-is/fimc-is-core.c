@@ -34,6 +34,9 @@
 #include <linux/bug.h>
 #include <linux/v4l2-mediabus.h>
 #include <linux/exynos_iovmm.h>
+#ifdef CONFIG_OF
+#include <linux/of.h>
+#endif
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"
@@ -1187,6 +1190,26 @@ static const struct dev_pm_ops fimc_is_pm_ops = {
 	.runtime_resume		= fimc_is_runtime_resume,
 };
 
+#ifdef CONFIG_OF
+static const struct of_device_id exynos_fimc_is_match[] = {
+	{
+		.compatible = "samsung,exynos5-fimc-is",
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(of, exynos_fimc_is_match);
+
+static struct platform_driver fimc_is_driver = {
+	.probe		= fimc_is_probe,
+	.remove		= fimc_is_remove,
+	.driver = {
+		.name	= FIMC_IS_MODULE_NAME,
+		.owner	= THIS_MODULE,
+		.pm	= &fimc_is_pm_ops,
+		.of_match_table = exynos_fimc_is_match,
+	}
+};
+#else
 static struct platform_driver fimc_is_driver = {
 	.probe		= fimc_is_probe,
 	.remove	= __devexit_p(fimc_is_remove),
@@ -1211,6 +1234,9 @@ static void __exit fimc_is_exit(void)
 }
 module_init(fimc_is_init);
 module_exit(fimc_is_exit);
+#endif
+
+module_platform_driver(fimc_is_driver);
 
 MODULE_AUTHOR("Jiyoung Shin<idon.shin@samsung.com>");
 MODULE_DESCRIPTION("Exynos FIMC_IS2 driver");

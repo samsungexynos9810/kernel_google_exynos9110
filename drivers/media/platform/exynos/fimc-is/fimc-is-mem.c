@@ -33,6 +33,7 @@
 #include <linux/vmalloc.h>
 #include <linux/interrupt.h>
 #include <linux/exynos_iovmm.h>
+#include <linux/of.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"
