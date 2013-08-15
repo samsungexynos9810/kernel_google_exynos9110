@@ -1277,6 +1277,12 @@ static int fimc_is_probe(struct platform_device *pdev)
 		2,
 		(u32)core->regs);
 
+	ret = v4l2_device_register(&pdev->dev, &core->v4l2_dev_is);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to register fimc-is v4l2 device\n");
+		goto p_err3;
+	}
+
 	/* video entity - sensor0 */
 	fimc_is_ss0_video_probe(core);
 

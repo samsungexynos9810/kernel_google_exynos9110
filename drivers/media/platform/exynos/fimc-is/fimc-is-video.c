@@ -744,6 +744,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	video->vb2		= core->mem.vb2;
 	video->vd.fops		= fops;
 	video->vd.ioctl_ops	= ioctl_ops;
+	video->vd.v4l2_dev	= &core->v4l2_dev_is;
 	video->vd.minor		= -1;
 	video->vd.release	= video_device_release;
 	video->vd.lock		= lock;

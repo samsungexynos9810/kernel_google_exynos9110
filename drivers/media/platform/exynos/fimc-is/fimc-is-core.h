@@ -43,9 +43,6 @@
 #include "fimc-is-mem.h"
 
 #define FIMC_IS_MODULE_NAME			"exynos5-fimc-is"
-#define FIMC_IS_SENSOR_ENTITY_NAME		"exynos5-fimc-is-sensor"
-#define FIMC_IS_FRONT_ENTITY_NAME		"exynos5-fimc-is-front"
-#define FIMC_IS_BACK_ENTITY_NAME		"exynos5-fimc-is-back"
 
 #define FIMC_IS_COMMAND_TIMEOUT			(3*HZ)
 #define FIMC_IS_STARTUP_TIMEOUT			(3*HZ)
@@ -447,41 +444,6 @@ enum fimc_is_front_state {
 	FIMC_IS_FRONT_ST_SUSPENDED,
 };
 
-struct fimc_is_core;
-
-struct fimc_is_sensor_dev {
-	struct v4l2_subdev		sd;
-	struct media_pad		pads;
-	struct v4l2_mbus_framefmt	mbus_fmt;
-	enum fimc_is_sensor_output_entity	output;
-};
-
-struct fimc_is_front_dev {
-	struct v4l2_subdev		sd;
-	struct media_pad		pads[FIMC_IS_FRONT_PADS_NUM];
-	struct v4l2_mbus_framefmt	mbus_fmt[FIMC_IS_FRONT_PADS_NUM];
-	enum fimc_is_front_input_entity	input;
-	enum fimc_is_front_output_entity	output;
-	u32 width;
-	u32 height;
-
-};
-
-struct fimc_is_back_dev {
-	struct v4l2_subdev		sd;
-	struct media_pad		pads[FIMC_IS_BACK_PADS_NUM];
-	struct v4l2_mbus_framefmt	mbus_fmt[FIMC_IS_BACK_PADS_NUM];
-	enum fimc_is_back_input_entity	input;
-	enum fimc_is_back_output_entity	output;
-	int	dis_on;
-	int	odc_on;
-	int	tdnr_on;
-	u32 width;
-	u32 height;
-	u32 dis_width;
-	u32 dis_height;
-};
-
 struct fimc_is_clock {
 	struct mutex				lock;
 	unsigned long				msk_state;
@@ -516,9 +478,7 @@ struct fimc_is_core {
 	struct fimc_is_device_sensor		sensor[FIMC_IS_MAX_NODES];
 	struct fimc_is_device_ischain		ischain[FIMC_IS_MAX_NODES];
 
-	struct fimc_is_sensor_dev		dev_sensor;
-	struct fimc_is_front_dev		front;
-	struct fimc_is_back_dev			back;
+	struct v4l2_device			v4l2_dev_is;
 
 	/* 0-bayer, 1-scalerC, 2-3DNR, 3-scalerP */
 	struct fimc_is_video			video_ss0;
