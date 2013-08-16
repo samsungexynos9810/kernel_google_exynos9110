@@ -1207,7 +1207,7 @@ static int __init exynos_cpufreq_init(void)
 	arm_regulator = regulator_get(NULL, "vdd_eagle");
 	if (IS_ERR(arm_regulator)) {
 		pr_err("%s: failed to get resource vdd_eagle\n", __func__);
-		goto err_vdd_arm;
+		goto err_vdd_eagle;
 	}
 
 	kfc_regulator = regulator_get(NULL, "vdd_kfc");
@@ -1361,11 +1361,8 @@ err_cpufreq:
 err_set_freq:
 	regulator_put(kfc_regulator);
 err_vdd_kfc:
-	if (!IS_ERR(kfc_regulator))
-		regulator_put(kfc_regulator);
-err_vdd_arm:
-	if (!IS_ERR(arm_regulator))
-		regulator_put(arm_regulator);
+	regulator_put(arm_regulator);
+err_vdd_eagle:
 err_init_cpufreq:
 	kfree(freqs[CA15]);
 err_alloc_freqs_CA15:
