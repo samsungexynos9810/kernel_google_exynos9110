@@ -1377,7 +1377,7 @@ static struct platform_driver fimc_is_driver = {
 	.probe		= fimc_is_probe,
 	.remove	= __devexit_p(fimc_is_remove),
 	.driver = {
-		.name	= FIMC_IS_MODULE_NAME,
+		.name	= FIMC_IS_DRV_NAME,
 		.owner	= THIS_MODULE,
 		.pm	= &fimc_is_pm_ops,
 	}
