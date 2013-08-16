@@ -510,10 +510,6 @@ void __init exynos_init_late(void)
 	if (of_machine_is_compatible("samsung,exynos5440"))
 		/* to be supported later */
 		return;
-
-#ifdef CONFIG_PM_RUNTIME
-	exynos_pm_late_initcall();
-#endif
 }
 
 #ifdef CONFIG_OF
