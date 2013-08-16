@@ -1,7 +1,7 @@
 /*
  * Exynos Generic power domain support.
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com
  *
  * Implementation of Exynos specific power domain control which is used in
@@ -11,103 +11,331 @@
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
-*/
-
-#include <linux/io.h>
-#include <linux/err.h>
-#include <linux/slab.h>
-#include <linux/pm_domain.h>
-#include <linux/delay.h>
+ */
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 #include <linux/sched.h>
 
-#include <mach/regs-pmu.h>
-#include <plat/devs.h>
+#include <mach/pm_domains.h>
 
-/*
- * Exynos specific wrapper around the generic power domain
- */
-struct exynos_pm_domain {
-	void __iomem *base;
-	char const *name;
-	bool is_off;
-	struct generic_pm_domain pd;
-};
+#ifndef pr_fmt
+#define pr_fmt(fmt) fmt
+#endif
 
-static int exynos_pd_power(struct generic_pm_domain *domain, bool power_on)
+#ifdef PM_DOMAIN_DEBUG
+#define DEBUG_PRINT_INFO(fmt, ...) printk(pr_fmt(fmt), ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT_INFO(fmt, ...)
+#endif
+
+#ifdef CONFIG_OF
+static void exynos_pd_add_callback(struct exynos_pm_domain *pd,
+				enum EXYNOS_PROCESS_ORDER cb_order,
+				enum EXYNOS_PROCESS_TYPE cb_type,
+				int (*callback)(struct exynos_pm_domain *pd))
 {
-	struct exynos_pm_domain *pd;
-	void __iomem *base;
-	u32 timeout, pwr;
-	char *op;
+	struct exynos_pm_callback *cb_on = NULL;
+	struct exynos_pm_callback *cb_off = NULL;
 
-	pd = container_of(domain, struct exynos_pm_domain, pd);
-	base = pd->base;
-
-	pwr = power_on ? S5P_INT_LOCAL_PWR_EN : 0;
-	__raw_writel(pwr, base);
-
-	/* Wait max 1ms */
-	timeout = 10;
-
-	while ((__raw_readl(base + 0x4) & S5P_INT_LOCAL_PWR_EN)	!= pwr) {
-		if (!timeout) {
-			op = (power_on) ? "enable" : "disable";
-			pr_err("Power domain %s %s failed\n", domain->name, op);
-			return -ETIMEDOUT;
-		}
-		timeout--;
-		cpu_relax();
-		usleep_range(80, 100);
+	if (!pd) {
+		pr_err("PM DOMAIN: can't add callback, pd is empty\n");
+		return;
 	}
+
+	if (!callback) {
+		pr_err("PM DOMAIN: can't add callback, callback is empty\n");
+		return;
+	}
+
+	if (cb_type & EXYNOS_PROCESS_ON) {
+		cb_on = kzalloc(sizeof(struct exynos_pm_callback), GFP_KERNEL);
+		if (cb_on == NULL) {
+			pr_err("PM DOMAIN: can't allocation callback, no free memory\n");
+			return;
+		}
+
+		cb_on->callback = callback;
+
+		if (cb_order & EXYNOS_PROCESS_BEFORE)
+			list_add_tail(&cb_on->node, &pd->cb_pre_on);
+
+		if (cb_order & EXYNOS_PROCESS_AFTER)
+			list_add_tail(&cb_on->node, &pd->cb_post_on);
+	}
+
+	if (cb_type & EXYNOS_PROCESS_OFF) {
+		cb_off = kzalloc(sizeof(struct exynos_pm_callback), GFP_KERNEL);
+		if (cb_off == NULL) {
+			pr_err("PM DOMAIN: can't allocation callback, no free memory\n");
+			goto err;
+		}
+
+		cb_off->callback = callback;
+
+		if (cb_order & EXYNOS_PROCESS_BEFORE)
+			list_add_tail(&cb_off->node, &pd->cb_pre_off);
+
+		if (cb_order & EXYNOS_PROCESS_AFTER)
+			list_add_tail(&cb_off->node, &pd->cb_post_off);
+	}
+
+	return;
+err:
+	kfree(cb_on);
+}
+
+/* Sub-domain does not have power on/off features.
+ * dummy power on/off function is required.
+ */
+static inline int exynos_pd_power_dummy(struct exynos_pm_domain *pd,
+					int power_flags)
+{
+
+	DEBUG_PRINT_INFO("%s: dummy power on/off: %d\n", pd->genpd.name, power_flags);
 	return 0;
 }
 
-static int exynos_pd_power_on(struct generic_pm_domain *domain)
+static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 {
-	return exynos_pd_power(domain, true);
+	unsigned long timeout;
+
+	if (unlikely(!pd))
+		return -EINVAL;
+
+	if (likely(pd->base)) {
+		/* sc_feedback to OPTION register */
+		__raw_writel(pd->pd_option, pd->base+0x8);
+
+		/* on/off value to CONFIGURATION register */
+		__raw_writel(power_flags, pd->base);
+
+		/* Wait max 1ms */
+		timeout = 100;
+		/* check STATUS register */
+		while ((__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) != power_flags) {
+			if (timeout == 0) {
+				pr_err("%s@%p: %08x, %08x, %08x\n",
+						pd->genpd.name,
+						pd->base,
+						__raw_readl(pd->base),
+						__raw_readl(pd->base+4),
+						__raw_readl(pd->base+8));
+				pr_err("PM DOMAIN: %s can't control power, timeout\n", pd->genpd.name);
+				return -ETIMEDOUT;
+			}
+			--timeout;
+			cpu_relax();
+			usleep_range(8, 10);
+		}
+	}
+	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
+				pd->genpd.name, pd->base,
+				__raw_readl(pd->base),
+				__raw_readl(pd->base+4),
+				__raw_readl(pd->base+8));
+
+	return 0;
 }
 
-static int exynos_pd_power_off(struct generic_pm_domain *domain)
+static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 {
-	return exynos_pd_power(domain, false);
+	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
+	struct exynos_pm_callback *exynos_callback;
+	struct exynos_pm_reg *exynos_reg;
+	int ret;
+
+	if (unlikely(!pd->on)) {
+		pr_err("PM DOMAIN: %s can't support power on!\n", genpd->name);
+		return -EINVAL;
+	}
+
+	list_for_each_entry(exynos_callback, &pd->cb_pre_on, node) {
+		ret = exynos_callback->callback(pd);
+		if (unlikely(ret)) {
+			pr_err("PM DOMAIN: %s makes error at pre power on!\n", genpd->name);
+			return ret;
+		}
+	}
+
+	list_for_each_entry(exynos_reg, &pd->reg_before_list, node) {
+		if (exynos_reg->reg_type & EXYNOS_PROCESS_ON)
+			__raw_writel(exynos_reg->value, exynos_reg->reg);
+	}
+
+	ret = pd->on(pd, EXYNOS_INT_LOCAL_PWR_EN);
+	if (unlikely(ret)) {
+		pr_err("PM DOMAIN: %s makes error at power on!\n", genpd->name);
+		return ret;
+	}
+
+	list_for_each_entry(exynos_reg, &pd->reg_after_list, node) {
+		if (exynos_reg->reg_type & EXYNOS_PROCESS_ON)
+			__raw_writel(exynos_reg->value, exynos_reg->reg);
+	}
+
+	list_for_each_entry(exynos_callback, &pd->cb_post_on, node) {
+		ret = exynos_callback->callback(pd);
+		if (unlikely(ret)) {
+			pr_err("PM DOMAIN: %s makes error at post power on!\n", genpd->name);
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
-#define EXYNOS_GPD(PD, BASE, NAME)			\
-static struct exynos_pm_domain PD = {			\
-	.base = (void __iomem *)BASE,			\
-	.name = NAME,					\
-	.pd = {						\
-		.power_off = exynos_pd_power_off,	\
-		.power_on = exynos_pd_power_on,	\
-	},						\
+static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
+{
+	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
+	struct exynos_pm_callback *exynos_callback;
+	struct exynos_pm_reg *exynos_reg;
+	int ret;
+
+	if (unlikely(!pd->off)) {
+		pr_err("PM DOMAIN: %s can't support power off!\n", genpd->name);
+		return -EINVAL;
+	}
+
+	list_for_each_entry(exynos_callback, &pd->cb_pre_off, node) {
+		ret = exynos_callback->callback(pd);
+		if (unlikely(ret)) {
+			pr_err("PM DOMAIN: %s occur error at pre power off!\n", genpd->name);
+			return ret;
+		}
+	}
+
+	list_for_each_entry(exynos_reg, &pd->reg_before_list, node) {
+		if (exynos_reg->reg_type & EXYNOS_PROCESS_OFF)
+			__raw_writel(exynos_reg->value, exynos_reg->reg);
+	}
+
+	ret = pd->off(pd, 0);
+	if (unlikely(ret)) {
+		pr_err("PM DOMAIN: %s occur error at power off!\n", genpd->name);
+		return ret;
+	}
+
+	list_for_each_entry(exynos_reg, &pd->reg_after_list, node) {
+		if (exynos_reg->reg_type & EXYNOS_PROCESS_OFF)
+			__raw_writel(exynos_reg->value, exynos_reg->reg);
+	}
+
+	list_for_each_entry(exynos_callback, &pd->cb_post_off, node) {
+		ret = exynos_callback->callback(pd);
+		if (unlikely(ret)) {
+			pr_err("PM DOMAIN: %s occur error at post power off!\n", genpd->name);
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
-#ifdef CONFIG_OF
-static void exynos_add_device_to_domain(struct exynos_pm_domain *pd,
+static int exynos_pd_power_post(struct exynos_pm_domain *pd)
+{
+	struct exynos_pm_domain *sub_pd;
+	struct exynos_pm_clk *pclk;
+	struct gpd_link *domain_link;
+
+	list_for_each_entry(domain_link, &pd->genpd.master_links, master_node) {
+		sub_pd = container_of(domain_link->slave, struct exynos_pm_domain, genpd);
+		exynos_pd_power_post(sub_pd);
+	}
+
+	list_for_each_entry(pclk, &pd->clk_list, node)
+		clk_disable(pclk->clk);
+
+	return 0;
+}
+
+static int exynos_pd_power_pre(struct exynos_pm_domain *pd)
+{
+	struct exynos_pm_domain *sub_pd;
+	struct exynos_pm_clk *pclk;
+	struct gpd_link *domain_link;
+
+	list_for_each_entry(pclk, &pd->clk_list, node) {
+		if (clk_enable(pclk->clk)) {
+			list_for_each_entry_continue_reverse(pclk, &pd->clk_list, node)
+				clk_disable(pclk->clk);
+			return -EINVAL;
+		}
+	}
+
+	list_for_each_entry(domain_link, &pd->genpd.master_links, master_node) {
+		sub_pd = container_of(domain_link->slave, struct exynos_pm_domain, genpd);
+		if (exynos_pd_power_pre(sub_pd)) {
+			list_for_each_entry_continue_reverse(domain_link, &pd->genpd.master_links, master_node) {
+				sub_pd = container_of(domain_link->slave, struct exynos_pm_domain, genpd);
+				exynos_pd_power_post(sub_pd);
+			}
+			list_for_each_entry(pclk, &pd->clk_list, node)
+				clk_disable(pclk->clk);
+			return -EINVAL;
+		}
+	}
+
+	return 0;
+}
+
+static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
+{
+	pd->genpd.power_off = exynos_genpd_power_off;
+	pd->genpd.power_on = exynos_genpd_power_on;
+
+	INIT_LIST_HEAD(&pd->clk_list);
+	INIT_LIST_HEAD(&pd->reg_before_list);
+	INIT_LIST_HEAD(&pd->reg_after_list);
+	INIT_LIST_HEAD(&pd->cb_pre_on);
+	INIT_LIST_HEAD(&pd->cb_post_on);
+	INIT_LIST_HEAD(&pd->cb_pre_off);
+	INIT_LIST_HEAD(&pd->cb_post_off);
+
+	pm_genpd_init(&pd->genpd, NULL, false);
+
+	exynos_pd_add_callback(pd, EXYNOS_PROCESS_BEFORE, EXYNOS_PROCESS_ONOFF,
+				exynos_pd_power_pre);
+	exynos_pd_add_callback(pd, EXYNOS_PROCESS_AFTER, EXYNOS_PROCESS_ONOFF,
+				exynos_pd_power_post);
+}
+
+static void exynos_add_device_to_pd(struct exynos_pm_domain *pd,
 					 struct device *dev)
 {
 	int ret;
 
-	dev_dbg(dev, "adding to power domain %s\n", pd->pd.name);
+	if (unlikely(!pd)) {
+		pr_err("PM DOMAIN: can't add device, domain is empty\n");
+		return;
+	}
+
+	if (unlikely(!dev)) {
+		pr_err("PM DOMAIN: can't add device, device is empty\n");
+		return;
+	}
+
+	DEBUG_PRINT_INFO("adding %s to power domain %s\n", dev_name(dev), pd->genpd.name);
 
 	while (1) {
-		ret = pm_genpd_add_device(&pd->pd, dev);
+		ret = pm_genpd_add_device(&pd->genpd, dev);
 		if (ret != -EAGAIN)
 			break;
 		cond_resched();
 	}
 
-	pm_genpd_dev_need_restore(dev, true);
+	if (!ret) {
+		pm_genpd_dev_need_restore(dev, true);
+		pr_info("PM DOMAIN: %s, Device : %s Registered\n", pd->genpd.name, dev_name(dev));
+	} else
+		pr_err("PM DOMAIN: %s can't add device %s\n", pd->genpd.name, dev_name(dev));
 }
 
-static void exynos_remove_device_from_domain(struct device *dev)
+static void exynos_remove_device_from_pd(struct device *dev)
 {
 	struct generic_pm_domain *genpd = dev_to_genpd(dev);
 	int ret;
 
-	dev_dbg(dev, "removing from power domain %s\n", genpd->name);
+	DEBUG_PRINT_INFO("removing %s from power domain %s\n", dev_name(dev), genpd->name);
 
 	while (1) {
 		ret = pm_genpd_remove_device(genpd, dev);
@@ -123,14 +351,22 @@ static void exynos_read_domain_from_dt(struct device *dev)
 	struct exynos_pm_domain *pd;
 	struct device_node *node;
 
+	/* add platform device to power domain
+	 * 1. get power domain node for given platform device
+	 * 2. get power domain device from power domain node
+	 * 3. get power domain structure from power domain device
+	 * 4. add given platform device to power domain structure.
+	 */
 	node = of_parse_phandle(dev->of_node, "samsung,power-domain", 0);
 	if (!node)
 		return;
+
 	pd_pdev = of_find_device_by_node(node);
 	if (!pd_pdev)
 		return;
+
 	pd = platform_get_drvdata(pd_pdev);
-	exynos_add_device_to_domain(pd, dev);
+	exynos_add_device_to_pd(pd, dev);
 }
 
 static int exynos_pm_notifier_call(struct notifier_block *nb,
@@ -142,12 +378,10 @@ static int exynos_pm_notifier_call(struct notifier_block *nb,
 	case BUS_NOTIFY_BIND_DRIVER:
 		if (dev->of_node)
 			exynos_read_domain_from_dt(dev);
-
 		break;
 
 	case BUS_NOTIFY_UNBOUND_DRIVER:
-		exynos_remove_device_from_domain(dev);
-
+		exynos_remove_device_from_pd(dev);
 		break;
 	}
 	return NOTIFY_DONE;
@@ -159,12 +393,18 @@ static struct notifier_block platform_nb = {
 
 static __init int exynos_pm_dt_parse_domains(void)
 {
-	struct platform_device *pdev;
-	struct device_node *np;
+	struct platform_device *pdev = NULL;
+	struct device_node *np = NULL;
+	int ret;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos4210-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
 		struct exynos_pm_domain *pd;
-		int on;
+		struct device_node *children;
+		unsigned int val;
+
+		/* skip unmanaged power domain */
+		if (!of_device_is_available(np))
+			continue;
 
 		pdev = of_find_device_by_node(np);
 
@@ -175,116 +415,89 @@ static __init int exynos_pm_dt_parse_domains(void)
 			return -ENOMEM;
 		}
 
-		pd->pd.name = kstrdup(np->name, GFP_KERNEL);
-		pd->name = pd->pd.name;
+		pd->genpd.name = kstrdup(np->name, GFP_KERNEL);
+		pd->name = pd->genpd.name;
+		pd->genpd.of_node = np;
 		pd->base = of_iomap(np, 0);
-		pd->pd.power_off = exynos_pd_power_off;
-		pd->pd.power_on = exynos_pd_power_on;
-		pd->pd.of_node = np;
+		pd->on = exynos_pd_power;
+		pd->off = exynos_pd_power;
+
+		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
+		if (ret)
+			pd->pd_option = 0x0102;
+		else
+			pd->pd_option = val;
+
 
 		platform_set_drvdata(pdev, pd);
 
-		on = __raw_readl(pd->base + 0x4) & S5P_INT_LOCAL_PWR_EN;
+		exynos_pm_powerdomain_init(pd);
 
-		pm_genpd_init(&pd->pd, NULL, !on);
+		/* add LOGICAL sub-domain
+		 * It is not assumed that there is REAL sub-domain.
+		 * Power on/off functions are not defined here.
+		 */
+		for_each_child_of_node(np, children) {
+			struct exynos_pm_domain *sub_pd;
+			struct platform_device *sub_pdev;
+
+			if (!children)
+				break;
+
+			sub_pd = kzalloc(sizeof(*sub_pd), GFP_KERNEL);
+			if (!sub_pd) {
+				pr_err("%s: failed to allocate memory for domain\n",
+						__func__);
+				return -ENOMEM;
+			}
+
+			sub_pd->genpd.name = kstrdup(children->name, GFP_KERNEL);
+			sub_pd->name = sub_pd->genpd.name;
+			sub_pd->genpd.of_node = children;
+			sub_pd->on = exynos_pd_power_dummy;
+			sub_pd->off = exynos_pd_power_dummy;
+
+			/* kernel does not create sub-domain pdev. */
+			sub_pdev = of_find_device_by_node(children);
+			if (!sub_pdev)
+				sub_pdev = of_platform_device_create(children, NULL, &pdev->dev);
+			if (!sub_pdev) {
+				pr_err("sub domain allocation failed: %s\n", kstrdup(children->name, GFP_KERNEL));
+				continue;
+			}
+			platform_set_drvdata(sub_pdev, sub_pd);
+
+			exynos_pm_powerdomain_init(sub_pd);
+
+			if (pm_genpd_add_subdomain(&pd->genpd, &sub_pd->genpd))
+				pr_err("PM DOMAIN: %s can't add subdomain %s\n", pd->genpd.name, sub_pd->genpd.name);
+		}
 	}
 
 	bus_register_notifier(&platform_bus_type, &platform_nb);
 
+	pr_info("EXYNOS5: PM Domain Initialize\n");
+
 	return 0;
 }
-#else
-static __init int exynos_pm_dt_parse_domains(void)
+#endif
+
+static int __init exynos5_pm_domain_init(void)
 {
-	return 0;
-}
-#endif /* CONFIG_OF */
-
-static __init __maybe_unused void exynos_pm_add_dev_to_genpd(struct platform_device *pdev,
-						struct exynos_pm_domain *pd)
-{
-	if (pdev->dev.bus) {
-		if (!pm_genpd_add_device(&pd->pd, &pdev->dev))
-			pm_genpd_dev_need_restore(&pdev->dev, true);
-		else
-			pr_info("%s: error in adding %s device to %s power"
-				"domain\n", __func__, dev_name(&pdev->dev),
-				pd->name);
-	}
-}
-
-EXYNOS_GPD(exynos4_pd_mfc, S5P_PMU_MFC_CONF, "pd-mfc");
-EXYNOS_GPD(exynos4_pd_g3d, S5P_PMU_G3D_CONF, "pd-g3d");
-EXYNOS_GPD(exynos4_pd_lcd0, S5P_PMU_LCD0_CONF, "pd-lcd0");
-EXYNOS_GPD(exynos4_pd_lcd1, S5P_PMU_LCD1_CONF, "pd-lcd1");
-EXYNOS_GPD(exynos4_pd_tv, S5P_PMU_TV_CONF, "pd-tv");
-EXYNOS_GPD(exynos4_pd_cam, S5P_PMU_CAM_CONF, "pd-cam");
-EXYNOS_GPD(exynos4_pd_gps, S5P_PMU_GPS_CONF, "pd-gps");
-
-static struct exynos_pm_domain *exynos4_pm_domains[] = {
-	&exynos4_pd_mfc,
-	&exynos4_pd_g3d,
-	&exynos4_pd_lcd0,
-	&exynos4_pd_lcd1,
-	&exynos4_pd_tv,
-	&exynos4_pd_cam,
-	&exynos4_pd_gps,
-};
-
-static __init int exynos4_pm_init_power_domain(void)
-{
-	int idx;
-
+#ifdef CONFIG_OF
 	if (of_have_populated_dt())
 		return exynos_pm_dt_parse_domains();
+#endif
 
-	for (idx = 0; idx < ARRAY_SIZE(exynos4_pm_domains); idx++) {
-		struct exynos_pm_domain *pd = exynos4_pm_domains[idx];
-		int on = __raw_readl(pd->base + 0x4) & S5P_INT_LOCAL_PWR_EN;
-
-		pm_genpd_init(&pd->pd, NULL, !on);
-	}
-
-#ifdef CONFIG_S5P_DEV_FIMD0
-	exynos_pm_add_dev_to_genpd(&s5p_device_fimd0, &exynos4_pd_lcd0);
-#endif
-#ifdef CONFIG_S5P_DEV_TV
-	exynos_pm_add_dev_to_genpd(&s5p_device_hdmi, &exynos4_pd_tv);
-	exynos_pm_add_dev_to_genpd(&s5p_device_mixer, &exynos4_pd_tv);
-#endif
-#ifdef CONFIG_S5P_DEV_MFC
-	exynos_pm_add_dev_to_genpd(&s5p_device_mfc, &exynos4_pd_mfc);
-#endif
-#ifdef CONFIG_S5P_DEV_FIMC0
-	exynos_pm_add_dev_to_genpd(&s5p_device_fimc0, &exynos4_pd_cam);
-#endif
-#ifdef CONFIG_S5P_DEV_FIMC1
-	exynos_pm_add_dev_to_genpd(&s5p_device_fimc1, &exynos4_pd_cam);
-#endif
-#ifdef CONFIG_S5P_DEV_FIMC2
-	exynos_pm_add_dev_to_genpd(&s5p_device_fimc2, &exynos4_pd_cam);
-#endif
-#ifdef CONFIG_S5P_DEV_FIMC3
-	exynos_pm_add_dev_to_genpd(&s5p_device_fimc3, &exynos4_pd_cam);
-#endif
-#ifdef CONFIG_S5P_DEV_CSIS0
-	exynos_pm_add_dev_to_genpd(&s5p_device_mipi_csis0, &exynos4_pd_cam);
-#endif
-#ifdef CONFIG_S5P_DEV_CSIS1
-	exynos_pm_add_dev_to_genpd(&s5p_device_mipi_csis1, &exynos4_pd_cam);
-#endif
-#ifdef CONFIG_S5P_DEV_G2D
-	exynos_pm_add_dev_to_genpd(&s5p_device_g2d, &exynos4_pd_lcd0);
-#endif
-#ifdef CONFIG_S5P_DEV_JPEG
-	exynos_pm_add_dev_to_genpd(&s5p_device_jpeg, &exynos4_pd_cam);
-#endif
-	return 0;
+	pr_err("EXYNOS5: PM Domain works along with Device Tree\n");
+	return -EPERM;
 }
-arch_initcall(exynos4_pm_init_power_domain);
+arch_initcall(exynos5_pm_domain_init);
 
-int __init exynos_pm_late_initcall(void)
+static __init int exynos_pm_domain_idle(void)
 {
 	pm_genpd_poweroff_unused();
+
 	return 0;
 }
+late_initcall(exynos_pm_domain_idle);
