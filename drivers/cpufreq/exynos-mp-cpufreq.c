@@ -31,7 +31,9 @@
 #include <linux/sysfs.h>
 #include <linux/cpumask.h>
 
+#include <asm/smp_plat.h>
 #include <asm/cputype.h>
+
 #include <mach/cpufreq.h>
 #include <mach/asv-exynos.h>
 #include <mach/regs-pmu.h>
@@ -1187,7 +1189,7 @@ static int __init exynos_cpufreq_init(void)
 	}
 
 	/* Get to boot_cluster_num - 0 for CA7; 1 for CA15 */
-	boot_cluster = !(read_cpuid(CPUID_MPIDR) >> 8 & 0xf);
+	boot_cluster = !MPIDR_AFFINITY_LEVEL(cpu_logical_map(0), 1);
 	pr_debug("%s: boot_cluster is %s\n", __func__,
 					boot_cluster == CA7 ? "CA7" : "CA15");
 	exynos_boot_cluster = boot_cluster;
