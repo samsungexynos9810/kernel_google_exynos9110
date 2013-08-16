@@ -960,11 +960,11 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 	bootfreqCA7 = get_boot_freq(CA7);
 	bootfreqCA15 = get_boot_freq(CA15);
 
-	freqCA7 = exynos_getspeed_cluster(CA7);
-	freqCA15 = exynos_getspeed_cluster(CA15);
+	freqCA7 = freqs[CA7]->old;
+	freqCA15 = freqs[CA15]->old;
 
 	volt = max(get_boot_volt(CA7),
-			get_match_volt(ID_KFC, freqCA7));
+			get_freq_volt(CA7, freqCA7));
 	volt = get_limit_voltage(volt);
 
 	if (regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt))
@@ -974,7 +974,7 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 		exynos_info[CA7]->set_ema(volt);
 
 	volt = max(get_boot_volt(CA15),
-			get_match_volt(ID_ARM, freqCA15));
+			get_freq_volt(CA15, freqCA15));
 	volt = get_limit_voltage(volt);
 
 	if (regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt))
