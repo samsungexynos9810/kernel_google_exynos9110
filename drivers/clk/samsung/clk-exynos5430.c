@@ -1201,20 +1201,18 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDV(none, "dout_mmc2_a", "mout_sclk_mmc2_b", EXYNOS5430_DIV_TOP_FSYS1, 0, 4),
 	CDV(none, "dout_mmc2_b", "dout_mmc2_a", EXYNOS5430_DIV_TOP_FSYS1, 4, 8),
 	CDV(none, "dout_ufsunipro", "mout_sclk_ufsunipro", EXYNOS5430_DIV_TOP_FSYS2, 4, 4),
-#if 0
 	CDV(none, "dout_sclk_jpeg", "mout_sclk_jpeg_c", EXYNOS5430_DIV_TOP_MSCL, 0, 4),
 	CDV(none, "dout_sclk_isp_spi0_a", "mout_sclk_isp_spi0", EXYNOS5430_DIV_TOP_CAM10, 0, 4),
 	CDV(none, "dout_sclk_isp_spi0_b", "dout_sclk_isp_spi0_a", EXYNOS5430_DIV_TOP_CAM10, 4, 8),
 	CDV(none, "dout_sclk_isp_spi1_a", "mout_sclk_isp_spi1", EXYNOS5430_DIV_TOP_CAM10, 12, 4),
-	CDV(none, "dout_sclk_isp_spi1_b", "dout_sclk_isp_spi1_b", EXYNOS5430_DIV_TOP_CAM10, 16, 8),
+	CDV(none, "dout_sclk_isp_spi1_b", "dout_sclk_isp_spi1_a", EXYNOS5430_DIV_TOP_CAM10, 16, 8),
 	CDV(none, "dout_sclk_isp_uart", "mout_sclk_isp_uart", EXYNOS5430_DIV_TOP_CAM10, 24, 4),
 	CDV(none, "dout_sclk_isp_sensor0_a", "mout_sclk_isp_sensor0", EXYNOS5430_DIV_TOP_CAM11, 0, 4),
-	CDV(none, "dout_sclk_isp_sensor0_b", "mout_sclk_isp_sensor0_a", EXYNOS5430_DIV_TOP_CAM11, 4, 4),
+	CDV(none, "dout_sclk_isp_sensor0_b", "dout_sclk_isp_sensor0_a", EXYNOS5430_DIV_TOP_CAM11, 4, 4),
 	CDV(none, "dout_sclk_isp_sensor1_a", "mout_sclk_isp_sensor1", EXYNOS5430_DIV_TOP_CAM11, 8, 4),
-	CDV(none, "dout_sclk_isp_sensor1_b", "mout_sclk_isp_sensor1_a", EXYNOS5430_DIV_TOP_CAM11, 12, 4),
+	CDV(none, "dout_sclk_isp_sensor1_b", "dout_sclk_isp_sensor1_a", EXYNOS5430_DIV_TOP_CAM11, 12, 4),
 	CDV(none, "dout_sclk_isp_sensor2_a", "mout_sclk_isp_sensor2", EXYNOS5430_DIV_TOP_CAM11, 16, 4),
-	CDV(none, "dout_sclk_isp_sensor2_b", "mout_sclk_isp_sensor2_a", EXYNOS5430_DIV_TOP_CAM11, 20, 4),
-#endif
+	CDV(none, "dout_sclk_isp_sensor2_b", "dout_sclk_isp_sensor2_a", EXYNOS5430_DIV_TOP_CAM11, 20, 4),
 
 	CDV(none, "dout_mem_pll", "mout_mem_pll", EXYNOS5430_DIV_MIF0, 4, 2),
 	CDV(none, "dout_bus_pll", "mout_bus_pll", EXYNOS5430_DIV_MIF0, 0, 2),
@@ -1338,7 +1336,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	/* sclk TOP_MSCL */
 	CGTE(sclk_jpeg_top, "sclk_jpeg_top", "dout_sclk_jpeg", EXYNOS5430_ENABLE_SCLK_TOP_MSCL, 0, 0, 0),
 
-#if 0
 	/* sclk TOP_CAM1 */
 	CGTE(sclk_isp_spi0_top, "sclk_isp_spi0_top", "dout_sclk_isp_spi0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 0, 0, 0),
 	CGTE(sclk_isp_spi1_top, "sclk_isp_spi1_top", "dout_sclk_isp_spi1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 1, 0, 0),
@@ -1346,7 +1343,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_isp_sensor0, "sclk_isp_sensor0", "dout_sclk_isp_sensor0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 5, 0, 0),
 	CGTE(sclk_isp_sensor1, "sclk_isp_sensor1", "dout_sclk_isp_sensor1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 6, 0, 0),
 	CGTE(sclk_isp_sensor2, "sclk_isp_sensor2", "dout_sclk_isp_sensor2_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 7, 0, 0),
-#endif
 
 	/* sclk TOP_DISP */
 	CGTE(sclk_hdmi_spdif_top, "sclk_hdmi_spdif_top", "mout_sclk_hdmi_spdif", EXYNOS5430_ENABLE_SCLK_TOP_DISP, 0, 0, 0),
