@@ -91,7 +91,9 @@ static struct cpumask cluster_cpus[CA_END];
 
 DEFINE_PER_CPU(cluster_type, cpu_cur_cluster);
 
+#if 0	/* FIXME */
 static struct pm_qos_request boot_cpu_qos;
+#endif
 static struct pm_qos_request min_cpu_qos;
 static struct pm_qos_request max_cpu_qos;
 static struct pm_qos_request min_kfc_qos;
@@ -1299,8 +1301,10 @@ static int __init exynos_cpufreq_init(void)
 	}
 #endif
 
+#if 0	/* FIXME */
 	pm_qos_add_request(&boot_cpu_qos, PM_QOS_CPU_FREQ_MIN, 0);
 	pm_qos_update_request_timeout(&boot_cpu_qos, 1000000, 40000 * 1000);
+#endif
 
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_add_request(&exynos_mif_qos_CA7, PM_QOS_BUS_THROUGHPUT, 0);
@@ -1329,7 +1333,9 @@ err_workqueue:
 		pm_qos_remove_request(&exynos_mif_qos_CA15);
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_remove_request(&exynos_mif_qos_CA7);
+#if 0	/* FIXME */
 	pm_qos_remove_request(&boot_cpu_qos);
+#endif
 #ifdef CONFIG_PM
 err_kfc_max_limit:
 	sysfs_remove_file(power_kobj, &cpufreq_kfc_min_limit.attr);
