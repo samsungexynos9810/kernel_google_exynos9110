@@ -606,7 +606,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		BUG_ON(volt <= 0);
 		volt = get_limit_voltage(volt);
 
-		if (regulator_set_voltage(kfc_regulator, volt, volt))
+		if (regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt))
 			goto err;
 
 		volt = max(get_boot_volt(CA15),
@@ -614,7 +614,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		BUG_ON(volt <= 0);
 		volt = get_limit_voltage(volt);
 
-		if (regulator_set_voltage(arm_regulator, volt, volt))
+		if (regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt))
 			goto err;
 
 		suspend_prepared = true;
@@ -664,13 +664,13 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 		else
 			volt_offset = COLD_VOLT_OFFSET;
 
-		volt = get_limit_voltage(regulator_get_voltage(arm_regulator));
-		regulator_set_voltage(arm_regulator, volt, volt);
+		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA15]->regulator));
+		regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
 		if (exynos_info[CA15]->set_ema)
 			exynos_info[CA15]->set_ema(volt);
 
-		volt = get_limit_voltage(regulator_get_voltage(kfc_regulator));
-		regulator_set_voltage(kfc_regulator, volt, volt);
+		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA7]->regulator));
+		regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
 		if (exynos_info[CA7]->set_ema)
 			exynos_info[CA7]->set_ema(volt);
 	} else {
@@ -679,15 +679,15 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 		else
 			volt_offset = 0;
 
-		volt = get_limit_voltage(regulator_get_voltage(arm_regulator)
+		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA15]->regulator)
 							- COLD_VOLT_OFFSET);
 		if (exynos_info[CA15]->set_ema)
 			exynos_info[CA15]->set_ema(volt);
-		regulator_set_voltage(arm_regulator, volt, volt);
+		regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
 
-		volt = get_limit_voltage(regulator_get_voltage(kfc_regulator)
+		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA7]->regulator)
 							- COLD_VOLT_OFFSET);
-		regulator_set_voltage(kfc_regulator, volt, volt);
+		regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
 		if (exynos_info[CA7]->set_ema)
 			exynos_info[CA7]->set_ema(volt);
 	}
@@ -967,7 +967,7 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 			get_match_volt(ID_KFC, freqCA7));
 	volt = get_limit_voltage(volt);
 
-	if (regulator_set_voltage(kfc_regulator, volt, volt))
+	if (regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt))
 		goto err;
 
 	if (exynos_info[CA7]->set_ema)
@@ -977,7 +977,7 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 			get_match_volt(ID_ARM, freqCA15));
 	volt = get_limit_voltage(volt);
 
-	if (regulator_set_voltage(arm_regulator, volt, volt))
+	if (regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt))
 		goto err;
 
 	if (exynos_info[CA15]->set_ema)
@@ -1204,9 +1204,9 @@ static int __init exynos_cpufreq_init(void)
 	if (ret)
 		goto err_init_cpufreq;
 
-	arm_regulator = regulator_get(NULL, "vdd_arm");
+	arm_regulator = regulator_get(NULL, "vdd_eagle");
 	if (IS_ERR(arm_regulator)) {
-		pr_err("%s: failed to get resource vdd_arm\n", __func__);
+		pr_err("%s: failed to get resource vdd_eagle\n", __func__);
 		goto err_vdd_arm;
 	}
 
