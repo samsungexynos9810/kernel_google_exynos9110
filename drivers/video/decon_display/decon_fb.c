@@ -26,7 +26,7 @@
 #include <linux/kthread.h>
 #include <linux/of_gpio.h>
 #include <linux/of.h>
-
+#define CONFIG_FB_EXYNOS_FIMD_MC
 #if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-common.h>
@@ -365,6 +365,7 @@ struct s3c_fb_win {
 	struct v4l2_subdev sd;		/* Take a window as a v4l2_subdevice */
 #endif
 	int local;		/* use of local path gscaler to window in fimd */
+	bool ready_to_dma;
 };
 
 /**
@@ -676,23 +677,6 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 }
 
 /**
- * vidosd_set_size() - set OSD size for a window
- *
- * @win: the window to set OSD size for
- * @size: OSD size register value
- */
-#ifdef CONFIG_FB_EXYNOS_FIMD_MC
-static void vidosd_set_size(struct s3c_fb_win *win, u32 size)
-{
-	struct s3c_fb *sfb = win->parent;
-
-	/* OSD can be set up if osd_size_off != 0 for this window */
-	if (win->variant.osd_size_off)
-		writel(size, sfb->regs + OSD_BASE(win->index, sfb->variant)
-				+ win->variant.osd_size_off);
-}
-#endif
-/**
  * shadow_protect_win() - disable updating values from shadow registers at vsync
  *
  * @win: window to protect registers for
@@ -710,6 +694,51 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 	} else {
 		data &= ~SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
+	}
+}
+
+static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
+{
+	struct s3c_fb *sfb = win->parent;
+	u32 data = readl(sfb->regs + TRIGCON);
+	if (enable)
+		data &= ~(1 << 4);
+	else
+		data |= (1 << 4);
+	writel(data, sfb->regs + TRIGCON);
+}
+
+static void patch_set_shadow_protect(struct s3c_fb_win *win, struct s3c_fb *sfb, int enable)
+{
+	u32 data, timeout = 0;
+
+	if (enable) {
+		if ((readl(sfb->regs + WINCON_SHADOW(0))) & 0x1) {
+			while(1) {
+				data = readl(sfb->regs + DECON_UPDATE_SHADOW);
+				if (!(data & 1))
+					break;
+
+				udelay(100);
+
+				if (++timeout > 2000) {
+					dev_err(sfb->dev, "\n\n %s Timeout error\n\n", __func__);
+					break;
+				} else {
+					dev_err(sfb->dev, "shodow update bit is not\
+							'0'\n");
+				}
+			}
+		}
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger_mask_enable(win, true);
+#endif
+		shadow_protect_win(win, 1);
+	} else {
+		shadow_protect_win(win, 0);
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger_mask_enable(win, false);
+#endif
 	}
 }
 
@@ -1346,12 +1375,11 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
 	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
-#ifdef CONFIG_DEBUG_FS
+
 	irq_ctrl_reg &= ~VIDINTCON0_FIFOLEVEL_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FIFOLEVEL_EMPTY;
 	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
 	irq_ctrl_reg |= VIDINTCON0_FIFOSEL_MAIN_EN;
-#endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 
 	irq_ctrl_reg = readl(regs + VIDINTCON1);
@@ -1479,6 +1507,7 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
 	if (irq_sts_reg & VIDINTCON1_INT_FIFO) {
+		dev_err(sfb->dev, "underrun\n");
 		writel(VIDINTCON1_INT_FIFO, regs + VIDINTCON1);
 		s3c_fb_log_fifo_underflow_locked(sfb, timestamp);
 	}
@@ -2080,7 +2109,6 @@ static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 			regs->vidosd_c[win_no] = size;
 	}
 */
-	regs->shadowcon |= SHADOWCON_CHx_ENABLE(win_no);
 
 	regs->wincon[win_no] = wincon(win->fbinfo->var.bits_per_pixel,
 			win->fbinfo->var.transp.length,
@@ -2258,13 +2286,13 @@ err:
 	mutex_unlock(&sfb->output_lock);
 	return ret;
 }
-
 static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	unsigned short i;
 	unsigned int data;
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (!sfb->windows[i]->local)
+		if ((!sfb->windows[i]->local) &&
+				(!sfb->windows[i]->ready_to_dma))
 			shadow_protect_win(sfb->windows[i], 1);
 	}
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
@@ -2299,22 +2327,19 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		}
 	}
 
-	if (sfb->variant.has_shadowcon) {
-		data = readl(sfb->regs + SHADOWCON);
-		if ((data & 0x21) == 0x21)
-			data = (0x21 | regs->shadowcon);
-		else
-			data = regs->shadowcon | 0x1;
-
-		writel(data, sfb->regs + SHADOWCON);
-	}
-
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!sfb->windows[i]->local)
 			shadow_protect_win(sfb->windows[i], 0);
 	}
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
+
+	/* temporaly localpath window is 0 */
+	if (sfb->windows[0]->ready_to_dma) {
+		data |= DECON_UPDATE_SLAVE_SYNC;
+		sfb->windows[0]->ready_to_dma = false;
+	}
+
 	writel(data, sfb->regs + DECON_UPDATE);
 }
 
@@ -2936,27 +2961,11 @@ static inline struct s3c_fb_win *v4l2_subdev_to_s3c_fb_win(struct v4l2_subdev *s
 static int s3c_fb_sd_pad_set_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 		       struct v4l2_subdev_format *format)
 {
-	u32 data;
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
-	struct s3c_fb *sfb = win->parent;
 
 	/* (width, height) : (xres, yres) */
 	win->fbinfo->var.xres = format->format.width;
 	win->fbinfo->var.yres = format->format.height;
-	data = win->fbinfo->var.xres * win->fbinfo->var.yres;
-
-	vidosd_set_size(win, data);
-
-	if (data > (1280*720)) {
-		data = readl(sfb->regs + WINCON(win->index));
-		data |= WINCONx_CSC_CON_EQ709;
-		writel(data, sfb->regs + WINCON(win->index));
-		dev_dbg(sfb->dev, "Over HD size : (width, height) : (%d, %d)\n",
-				win->fbinfo->var.xres, win->fbinfo->var.yres);
-	}
-
-	dev_dbg(sfb->dev, "Set sd pad format (width, height) : (%d, %d)\n",
-			win->fbinfo->var.xres, win->fbinfo->var.yres);
 	return 0;
 }
 
@@ -2981,19 +2990,28 @@ static int s3c_fb_sd_pad_get_fmt(struct v4l2_subdev *sd, struct v4l2_subdev_fh *
 static int s3c_fb_sd_set_pad_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh *fh,
 		       struct v4l2_subdev_crop *crop)
 {
-	int ret;
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
+	struct fb_var_screeninfo *var = &win->fbinfo->var;
 	struct s3c_fb *sfb = win->parent;
 	struct s3c_fb_user_window user_window;
+	int win_no = win->index;
+	void __iomem *regs = sfb->regs;
+	u32 data;
 
 	/* (left, top) : (xoffset, yoffset) */
 	user_window.x = crop->rect.left;
 	user_window.y = crop->rect.top;
 
-	ret = s3c_fb_set_window_position(win->fbinfo, user_window);
+	if (!s3c_fb_validate_x_alignment(sfb, user_window.x, var->xres,
+			var->bits_per_pixel))
+		return -EINVAL;
 
-	if (ret)
-		return ret;
+	/* write 'OSD' registers to control position of framebuffer */
+	data = vidosd_a(user_window.x, user_window.y);
+	writel(data, regs + VIDOSD_A(win_no));
+
+	data = vidosd_b(user_window.x, user_window.y, var->xres, var->yres);
+	writel(data, regs + VIDOSD_B(win_no));
 
 	dev_dbg(sfb->dev, "Set sd pad crop (x, y) : (%d, %d)\n",
 			crop->rect.left, crop->rect.top);
@@ -3026,38 +3044,68 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	u32 data = 0;
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
-	int ret;
 	if (enable) {
-		shadow_protect_win(win, 1);
-		data = readl(sfb->regs + SHADOWCON);
-		data |= (SHADOWCON_CHx_ENABLE(win->index) |
-				SHADOWCON_CHx_LOCAL_ENABLE(win->index));
-		writel(data, sfb->regs + SHADOWCON);
 		data = readl(sfb->regs + WINCON(win->index));
-		data |= WINCONx_INRGB_YCBCR;
-		data |= (1 << 0);
+		data &= ~(0x07 << 20); /* Masking */
+		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
-		shadow_protect_win(win, 0);
 	} else {
-		shadow_protect_win(win, 1);
-		data = readl(sfb->regs + SHADOWCON);
-		data &=  ~(SHADOWCON_CHx_ENABLE(win->index) |
-				SHADOWCON_CHx_LOCAL_ENABLE(win->index));
-		writel(data, sfb->regs + SHADOWCON);
 		data = readl(sfb->regs + WINCON(win->index));
-		data &= ~(1 << 0);
+		data &= ~(0x07 << 20); /* Masking == diable local path */
 		writel(data, sfb->regs + WINCON(win->index));
-		shadow_protect_win(win, 0);
-
-		ret = s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
-		if (ret) {
-			dev_err(sfb->dev, "wait timeout for vsync: %s\n", __func__);
-			return ret;
-		}
+		win->local = 0;
+		win->ready_to_dma = true;
 	}
-
 	dev_dbg(sfb->dev, "Get the window via local path started/stopped : %d\n",
 			enable);
+	return 0;
+}
+
+static void hw_trigger(struct s3c_fb *sfb)
+{
+	u32 data = readl(sfb->regs + TRIGCON);
+	data |= (1 << 4);
+	writel(data, sfb->regs + TRIGCON);
+}
+
+static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
+{
+	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
+	struct s3c_fb *sfb = win->parent;
+	u32 enable = (u32)arg;
+	u32 data = 0;
+
+	switch (cmd) {
+	case S3CFB_SHADOW_PROTECT:
+		if (enable)
+			patch_set_shadow_protect(win, sfb, 1);
+		else
+			patch_set_shadow_protect(win, sfb, 0);
+		break;
+
+	case S3CFB_STAND_ALONE_UPDATE:
+		data = readl(sfb->regs + DECON_UPDATE);
+		data |= DECON_UPDATE_STANDALONE_F;
+		writel(data, sfb->regs + DECON_UPDATE);
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger(sfb);
+#endif
+		break;
+
+	case S3CFB_SYNC_SLAVE_UPDATE:
+		data = readl(sfb->regs + DECON_UPDATE);
+		data |= DECON_UPDATE_STANDALONE_F;
+		data |= DECON_UPDATE_SLAVE_SYNC;
+		writel(data, sfb->regs + DECON_UPDATE);
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger(sfb);
+#endif
+		break;
+
+	default:
+		dev_err(sfb->dev, "unsupported s3c_fb_sd_ioctl\n");
+		return -EINVAL;
+	}
 	return 0;
 }
 
@@ -3068,6 +3116,10 @@ static const struct v4l2_subdev_pad_ops s3c_fb_sd_pad_ops = {
 	.set_crop = s3c_fb_sd_set_pad_crop,
 };
 
+static const struct v4l2_subdev_core_ops s3c_fb_sd_core_ops = {
+	.ioctl = s3c_fb_sd_ioctl,
+};
+
 static const struct v4l2_subdev_video_ops s3c_fb_sd_video_ops = {
 	.s_stream = s3c_fb_sd_s_stream,
 };
@@ -3075,27 +3127,8 @@ static const struct v4l2_subdev_video_ops s3c_fb_sd_video_ops = {
 static const struct v4l2_subdev_ops s3c_fb_sd_ops = {
 	.pad = &s3c_fb_sd_pad_ops,
 	.video = &s3c_fb_sd_video_ops,
+	.core = &s3c_fb_sd_core_ops,
 };
-
-static void s3c_fb_mc_local_path_setup(struct s3c_fb_win *win)
-{
-	u32 data = 0;
-	struct s3c_fb *sfb = win->parent;
-
-	if (win->local) {
-		/* Enable  the channel 1 to a local path for the window1
-		   in fimd1 */
-
-		/* MIXER0_VALID[7] & MIXER1_VALID[4] : should be 0
-		   (FIMD1 Data Valid) */
-		data = __raw_readl(SYSREG_DISP1BLK_CFG);
-		data &= ~(SYSREG_MIXER0_VALID | SYSREG_MIXER1_VALID);
-		writel(data, SYSREG_DISP1BLK_CFG);
-	}
-
-	dev_dbg(sfb->dev, "Local path set up in Winow[%d] : %d\n", win->index,
-		win->local);
-}
 
 static int s3c_fb_me_link_setup(struct media_entity *entity,
 			      const struct media_pad *local,
@@ -3120,9 +3153,7 @@ static int s3c_fb_me_link_setup(struct media_entity *entity,
 				win->use = 1;
 	}
 
-	s3c_fb_mc_local_path_setup(win);
-
-	dev_dbg(sfb->dev, "MC link set up between Window[%d] and Gscaler: \
+	dev_info(sfb->dev, "MC link set up between Window[%d] and Gscaler: \
 			flag - %d\n", win->index, flags);
 	return 0;
 }
@@ -3254,6 +3285,8 @@ static int s3c_fb_create_mc_links(struct s3c_fb_win *win)
 		}
 	}
 
+	win->ready_to_dma = false;
+
 	dev_dbg(sfb->dev, "A link between Gscaler and window[%d] is created \
 		successfully\n", win->index);
 
@@ -3282,26 +3315,13 @@ static inline struct s3c_fb *v4l2_subdev_to_s3c_fb(struct v4l2_subdev *sd)
 static int s3c_fb_sd_wb_s_stream(struct v4l2_subdev *sd_wb, int enable)
 {
 	struct s3c_fb *sfb = v4l2_subdev_to_s3c_fb(sd_wb);
-	u32 ret;
-	u32 vidcon0 = readl(sfb->regs + VIDCON0);
-	u32 vidcon2 = readl(sfb->regs + VIDCON2);
-	u32 vidoutcon = readl(sfb->regs + VIDOUT_CON);
+	u32 ret, data;
+	u32 vidoutcon = readl(sfb->regs + VIDOUTCON0);
 
-	vidcon0 &= ~VIDCON0_VIDOUT_MASK;
-	vidcon2 &= ~(VIDCON2_WB_MASK | VIDCON2_TVFORMATSEL_HW_SW_MASK | \
-					VIDCON2_TVFORMATSEL_MASK);
-	vidoutcon &= ~VIDOUT_CON_F_MASK;
-
-	if (enable) {
-		vidoutcon |= VIDOUT_CON_WB;
-		vidcon0 |= VIDCON0_VIDOUT_WB;
-		vidcon2 |= (VIDCON2_WB_ENABLE | VIDCON2_TVFORMATSEL_SW | \
-					VIDCON2_TVFORMATSEL_YUV444);
-	} else {
-		vidoutcon |= VIDOUT_CON_RGB;
-		vidcon0 |= VIDCON0_VIDOUT_RGB;
-		vidcon2 |= VIDCON2_WB_DISABLE;
-	}
+	if (enable)
+		vidoutcon |= VIDOUTCON0_WB_F;
+	else
+		vidoutcon &= ~VIDOUTCON0_WB_F;
 
 	ret = s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
 	if (ret) {
@@ -3309,9 +3329,7 @@ static int s3c_fb_sd_wb_s_stream(struct v4l2_subdev *sd_wb, int enable)
 		return ret;
 	}
 
-	writel(vidcon0, sfb->regs + VIDCON0);
-	writel(vidcon2, sfb->regs + VIDCON2);
-	writel(vidoutcon, sfb->regs + VIDOUT_CON);
+	writel(vidoutcon, sfb->regs + VIDOUTCON0);
 
 	dev_dbg(sfb->dev, "Get the writeback started/stopped : %d\n", enable);
 	return 0;
