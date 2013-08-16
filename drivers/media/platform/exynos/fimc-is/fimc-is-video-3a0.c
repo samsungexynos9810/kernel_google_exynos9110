@@ -61,7 +61,7 @@ int fimc_is_3a0_video_probe(void *data)
 
 	ret = fimc_is_video_probe(video,
 		data,
-		FIMC_IS_VIDEO_3A0_NAME,
+		FIMC_IS_VIDEO_3AA_NAME(0),
 		FIMC_IS_VIDEO_3A0_NUM,
 		VFL_DIR_M2M,
 		&video->lock,

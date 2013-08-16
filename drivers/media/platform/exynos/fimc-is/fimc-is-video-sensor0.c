@@ -53,7 +53,7 @@ int fimc_is_ss0_video_probe(void *data)
 
 	ret = fimc_is_video_probe(video,
 		data,
-		FIMC_IS_VIDEO_SEN0_NAME,
+		FIMC_IS_VIDEO_SEN_NAME(0),
 		FIMC_IS_VIDEO_SS0_NUM,
 		VFL_DIR_RX,
 		&video->lock,

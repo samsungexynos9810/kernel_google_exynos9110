@@ -52,7 +52,7 @@ int fimc_is_vdc_video_probe(void *data)
 
 	ret = fimc_is_video_probe(video,
 		data,
-		FIMC_IS_VIDEO_VDISC_NAME,
+		FIMC_IS_VIDEO_VDC_NAME,
 		FIMC_IS_VIDEO_VDC_NUM,
 		VFL_DIR_RX,
 		&video->lock,

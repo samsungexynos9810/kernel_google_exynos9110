@@ -16,15 +16,14 @@
 #define VIDEO_VDISC_READY_BUFFERS		1
 #define VIDEO_VDISO_READY_BUFFERS		0
 
-#define FIMC_IS_VIDEO_SEN0_NAME			"exynos5-fimc-is-sensor0"
-#define FIMC_IS_VIDEO_SEN1_NAME			"exynos5-fimc-is-sensor1"
-#define FIMC_IS_VIDEO_3A0_NAME			"exynos5-fimc-is-3a0"
-#define FIMC_IS_VIDEO_3A1_NAME			"exynos5-fimc-is-3a1"
-#define FIMC_IS_VIDEO_ISP_NAME			"exynos5-fimc-is-isp"
-#define FIMC_IS_VIDEO_SCC_NAME			"exynos5-fimc-is-scalerc"
-#define FIMC_IS_VIDEO_SCP_NAME			"exynos5-fimc-is-scalerp"
-#define FIMC_IS_VIDEO_VDISC_NAME		"exynos5-fimc-is-vdisc"
-#define FIMC_IS_VIDEO_VDISO_NAME		"exynos5-fimc-is-vdiso"
+#define FIMC_IS_VIDEO_NAME(name)		(FIMC_IS_DRV_NAME"-"name)
+#define FIMC_IS_VIDEO_SEN_NAME(id)		FIMC_IS_VIDEO_NAME("sensor."#id)
+#define FIMC_IS_VIDEO_3AA_NAME(id)		FIMC_IS_VIDEO_NAME("3aa."#id)
+#define FIMC_IS_VIDEO_ISP_NAME			FIMC_IS_VIDEO_NAME("isp")
+#define FIMC_IS_VIDEO_SCC_NAME			FIMC_IS_VIDEO_NAME("scalerc")
+#define FIMC_IS_VIDEO_SCP_NAME			FIMC_IS_VIDEO_NAME("scalerp")
+#define FIMC_IS_VIDEO_VDC_NAME			FIMC_IS_VIDEO_NAME("vdisc")
+#define FIMC_IS_VIDEO_VDO_NAME			FIMC_IS_VIDEO_NAME("vdiso")
 
 struct fimc_is_device_ischain;
 struct fimc_is_subdev;
