@@ -1260,6 +1260,17 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		dbg_ischain("pm_runtime_suspended = %d\n",
 					pm_runtime_suspended(dev));
 #else
+		/* A5 power off*/
+		timeout = 1000;
+		writel(0x0, PMUREG_ISP_ARM_CONFIGURATION);
+		while ((__raw_readl(PMUREG_ISP_ARM_STATUS) & 0x1) && timeout) {
+			timeout--;
+			udelay(1);
+		}
+		if (timeout == 0)
+			err("A5 power down failed(status:%x)\n",
+				__raw_readl(PMUREG_ISP_ARM_STATUS));
+
 		fimc_is_runtime_suspend(dev);
 #endif
 		clear_bit(FIMC_IS_ISCHAIN_POWER_ON, &this->state);
