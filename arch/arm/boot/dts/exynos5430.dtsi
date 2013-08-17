@@ -777,6 +777,25 @@
 		};
 	};
 
+	usb@15510000 {
+		compatible = "samsung,exynos5-ehci";
+		reg = <0x15510000 0x100>;
+		interrupts = <0 230 0>;
+		samsung,vbus-gpio = <&gph1 3 0>;
+		clocks = <&clock 2172>;
+		clock-names = "usbhost";
+		status = "ok";
+	};
+
+	usb@15520000 {
+		compatible = "samsung,exynos5-ohci";
+		reg = <0x15520000 0x100>;
+		interrupts = <0 230 0>;
+		clocks = <&clock 2172>;
+		clock-names = "usbhost";
+		status = "ok";
+	};
+
 	usb2phy@15530000 {
 		compatible = "samsung,exynos5-usb2phy";
 		reg = <0x15530000 0x100>;
