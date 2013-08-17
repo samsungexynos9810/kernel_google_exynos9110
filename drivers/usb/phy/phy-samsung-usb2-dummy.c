@@ -41,7 +41,7 @@ static int samsung_usb2phy_dummy_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, sphy);
 
-	return usb_add_phy(&sphy->phy, USB_PHY_TYPE_USB2);
+	return usb_add_phy(&sphy->phy, USB_PHY_TYPE_UNDEFINED);
 }
 
 static int samsung_usb2phy_dummy_remove(struct platform_device *pdev)
