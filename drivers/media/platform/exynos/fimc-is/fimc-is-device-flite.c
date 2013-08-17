@@ -183,6 +183,11 @@
 #define FLITE_REG_CIGENERAL_CAM_A			(0)
 #define FLITE_REG_CIGENERAL_CAM_B			(1)
 #define FLITE_REG_CIGENERAL_CAM_C			(2)
+#define FLITE_REG_CIGENERAL_CAM_D			(3)
+#define FLITE_REG_CIGENERAL_3AA1_CAM_A			(0 << 14)
+#define FLITE_REG_CIGENERAL_3AA1_CAM_B			(1 << 14)
+#define FLITE_REG_CIGENERAL_3AA1_CAM_C			(2 << 14)
+#define FLITE_REG_CIGENERAL_3AA1_CAM_D			(3 << 14)
 
 #define FLITE_REG_CIFCNTSEQ				0x100
 
@@ -213,22 +218,14 @@ static void flite_hw_set_dma_offset(unsigned long flite_reg_base,
 	is_writel(cfg, flite_reg_base + FLITE_REG_CIOCAN);
 }
 
-static void flite_hw_set_cam_channel(unsigned long flite_reg_base)
+static void flite_hw_set_cam_channel(unsigned long flite_reg_base,
+	unsigned long otf_setting)
 {
 	u32 cfg = 0;
 
-	/*
-	 * this register decide that otf is used to a channel
-	 * only cam A support otf interface
-	 * hardware can not support several otf at same time
-	 */
+	cfg |= otf_setting;
 
-#ifdef USE_OTF_INTERFACE
-	if (flite_reg_base == (unsigned long)FIMCLITE0_REG_BASE) {
-		cfg = FLITE_REG_CIGENERAL_CAM_A;
-		is_writel(cfg, flite_reg_base + FLITE_REG_CIGENERAL);
-	}
-#endif
+	is_writel(cfg, flite_reg_base + FLITE_REG_CIGENERAL);
 }
 
 static void flite_hw_set_capture_start(unsigned long flite_reg_base)
@@ -554,9 +551,10 @@ int init_fimc_lite(unsigned long mipi_reg_base)
 
 int start_fimc_lite(unsigned long mipi_reg_base,
 	struct fimc_is_frame_info *f_frame,
-	struct fimc_is_queue *queue)
+	struct fimc_is_queue *queue,
+	unsigned long otf_setting)
 {
-	flite_hw_set_cam_channel(mipi_reg_base);
+	flite_hw_set_cam_channel(mipi_reg_base, otf_setting);
 	flite_hw_set_cam_source_size(mipi_reg_base, f_frame);
 	flite_hw_set_dma_offset(mipi_reg_base, f_frame, queue);
 	flite_hw_set_camera_type(mipi_reg_base);
@@ -1074,44 +1072,10 @@ int fimc_is_flite_probe(struct fimc_is_device_flite *flite, u32 data)
 
 	if (flite->channel == FLITE_ID_A) {
 		flite->regs = (unsigned long)S5P_VA_FIMCLITE0;
-
-#ifdef USE_OTF_INTERFACE
-		tasklet_init(&flite->tasklet_flite_str,
-			tasklet_flite_str0,
-			(unsigned long)flite);
-
-		tasklet_init(&flite->tasklet_flite_end,
-			tasklet_flite_end,
-			(unsigned long)flite);
-#else
-		tasklet_init(&flite->tasklet_flite_str,
-			tasklet_flite_str1,
-			(unsigned long)flite);
-
-		tasklet_init(&flite->tasklet_flite_end,
-			tasklet_flite_end,
-			(unsigned long)flite);
-#endif
 	} else if (flite->channel == FLITE_ID_B) {
 		flite->regs = (unsigned long)S5P_VA_FIMCLITE1;
-
-		tasklet_init(&flite->tasklet_flite_str,
-			tasklet_flite_str1,
-			(unsigned long)flite);
-
-		tasklet_init(&flite->tasklet_flite_end,
-			tasklet_flite_end,
-			(unsigned long)flite);
 	} else if (flite->channel == FLITE_ID_C) {
 		flite->regs = (unsigned long)S5P_VA_FIMCLITE2;
-
-		tasklet_init(&flite->tasklet_flite_str,
-			tasklet_flite_str1,
-			(unsigned long)flite);
-
-		tasklet_init(&flite->tasklet_flite_end,
-			tasklet_flite_end,
-			(unsigned long)flite);
 	} else
 		err("unresolved channel input");
 
@@ -1190,13 +1154,56 @@ int fimc_is_flite_start(struct fimc_is_device_flite *flite,
 	u32 buffer;
 	bool buffer_ready;
 	unsigned long flags;
+	unsigned long otf_setting = 0;
 	struct fimc_is_frame *item;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_queue *queue;
+	struct fimc_is_device_sensor *sensor;
+
+	sensor = (struct fimc_is_device_sensor *)flite->private_data;
 
 	BUG_ON(!flite);
 	BUG_ON(!finfo);
 	BUG_ON(!vctx);
+
+	if (sensor->is_otf) {
+		tasklet_init(&flite->tasklet_flite_str,
+			tasklet_flite_str0,
+			(unsigned long)flite);
+
+		tasklet_init(&flite->tasklet_flite_end,
+			tasklet_flite_end,
+			(unsigned long)flite);
+	} else {
+		tasklet_init(&flite->tasklet_flite_str,
+			tasklet_flite_str1,
+			(unsigned long)flite);
+
+		tasklet_init(&flite->tasklet_flite_end,
+			tasklet_flite_end,
+			(unsigned long)flite);
+	}
+
+	if (sensor->is_otf) {
+		dbg_sensor("Enabling OTF path. channel(%d), target(%d)",
+			flite->channel, sensor->target_3aa);
+		if (flite->channel == FLITE_ID_A) {
+			if (sensor->target_3aa == FIMC_IS_VIDEO_3A0_NUM)
+				otf_setting = FLITE_REG_CIGENERAL_CAM_A;
+			else if (sensor->target_3aa == FIMC_IS_VIDEO_3A1_NUM)
+				otf_setting = FLITE_REG_CIGENERAL_3AA1_CAM_A;
+			else
+				err("invalid OTF target 3AA");
+		} else if (flite->channel == FLITE_ID_B) {
+			if (sensor->target_3aa == FIMC_IS_VIDEO_3A0_NUM)
+				otf_setting = FLITE_REG_CIGENERAL_CAM_B;
+			else if (sensor->target_3aa == FIMC_IS_VIDEO_3A1_NUM)
+				otf_setting = FLITE_REG_CIGENERAL_3AA1_CAM_B;
+			else
+				err("invalid OTF target 3AA");
+		} else
+			err("invalid FLITE channel for OTF setting");
+	}
 
 	queue = GET_DST_QUEUE(vctx);
 	framemgr = GET_DST_FRAMEMGR(vctx);
@@ -1240,13 +1247,12 @@ int fimc_is_flite_start(struct fimc_is_device_flite *flite,
 	framemgr_x_barrier_irqr(framemgr, 0, flags);
 
 	flite_hw_set_output_dma(flite->regs, buffer_ready, queue);
-#ifdef USE_OTF_INTERFACE
-	flite_hw_set_output_local(flite->regs, true);
-#else
-	flite_hw_set_output_local(flite->regs, false);
-#endif
+	if (sensor->is_otf)
+		flite_hw_set_output_local(flite->regs, true);
+	else
+		flite_hw_set_output_local(flite->regs, false);
 
-	start_fimc_lite(flite->regs, finfo, queue);
+	start_fimc_lite(flite->regs, finfo, queue, otf_setting);
 
 	return ret;
 }

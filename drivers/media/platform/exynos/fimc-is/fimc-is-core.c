@@ -366,7 +366,7 @@ int fimc_is_clock_set(struct fimc_is_core *this,
 		goto exit;
 	}
 
-	if (group_id == GROUP_ID_3A1)
+	if (test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &this->state))
 		goto exit;
 
 	if (refcount >= 3)

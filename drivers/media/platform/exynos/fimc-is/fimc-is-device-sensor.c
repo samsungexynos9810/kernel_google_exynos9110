@@ -1237,14 +1237,22 @@ int fimc_is_sensor_s_active_sensor(struct fimc_is_device_sensor *device,
 	u32 input)
 {
 	int ret = 0;
+	int module = 0;
 
-	mdbgd_sensor("%s(%d)\n", device, __func__, input);
+	module = input & MODULE_MASK;
 
-	device->active_sensor = &device->enum_sensor[input];
+	mdbgd_sensor("%s(%08X) module(%d)\n", device, __func__, input, module);
+
+	device->active_sensor = &device->enum_sensor[module];
 	device->framerate = min_t(unsigned int, SENSOR_DEFAULT_FRAMERATE,
 				device->active_sensor->max_framerate);
 	device->width = device->active_sensor->pixel_width;
 	device->height = device->active_sensor->pixel_height;
+	device->is_otf = (input & OTF_3AA_MASK) >> OTF_3AA_SHIFT;
+	device->target_3aa = (input & BPP_VINDEX_MASK) >> BPP_VINDEX_SHIFT;
+
+	dbg_sensor("%s OTF(%d) target 3AA(%d)\n", __func__,
+		device->is_otf, device->target_3aa);
 
 	return ret;
 }

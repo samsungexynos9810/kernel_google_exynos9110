@@ -214,7 +214,6 @@
 #define FW_DEBUG
 #define RESERVED_MEM
 #define USE_FRAME_SYNC
-#define USE_OTF_INTERFACE
 #define BAYER_CROP_DZOOM
 /* #define SCALER_CROP_DZOOM */
 /* #define USE_ADVANCED_DZOOM */

@@ -47,6 +47,7 @@ enum fimc_is_group_state {
 
 enum fimc_is_global_group_state {
 	FIMC_IS_GGROUP_INIT,
+	FIMC_IS_GGROUP_SMP_INIT,
 	FIMC_IS_GGROUP_STOP
 };
 

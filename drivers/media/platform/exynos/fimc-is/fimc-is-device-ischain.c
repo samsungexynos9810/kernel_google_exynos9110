@@ -1586,7 +1586,8 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 
 	mdbgd_ischain(" NAME          SIZE    BINNING    FRAMERATE\n", device);
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0)
+		!test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state))
+
 		mdbgd_ischain("SENSOR :  %04dx%04d        %1dx%1d          %3d\n",
 			device,
 			region->parameter.isp.dma1_input.width + device->margin_width,
@@ -1844,7 +1845,7 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 {
 	int ret = 0;
 	int instance;
-	u32 flag, vindex, group, origin;
+	u32 flag, vindex, group, origin, otf_flag;
 	struct fimc_is_device_ischain *temp;
 	struct fimc_is_groupmgr *groupmgr;
 	struct is_region *region = device->is_region;
@@ -1853,6 +1854,7 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 	groupmgr = device->groupmgr;
 	flag = (module & REPROCESSING_MASK) >> REPROCESSING_SHIFT;
 	vindex = (module & BPP_VINDEX_MASK) >> BPP_VINDEX_SHIFT;
+	otf_flag = (module & OTF_3AA_MASK) >> OTF_3AA_SHIFT;
 	module = module & MODULE_MASK;
 	device->module = module;
 	origin = device->module;
@@ -1880,13 +1882,23 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 		set_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state);
 	}
 
+	if (!flag) {
+		if (otf_flag) {
+			pr_info("3AA OTF Path Enabled\n");
+			set_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state);
+		} else {
+			pr_info("3AA OTF Path Disabled\n");
+			clear_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state);
+		}
+	}
+
 	if (vindex == FIMC_IS_VIDEO_3A0_NUM) {
 		group = GROUP_ID_3A0;
 		pr_info("[ISP:V:%d] <-> [3A0:V:X]\n", device->instance);
 	} else if (vindex == FIMC_IS_VIDEO_3A1_NUM) {
 		group = GROUP_ID_3A1;
 		pr_info("[ISP:V:%d] <-> [3A1:V:X]\n", device->instance);
-		set_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state);
+
 	} else {
 		merr("video index is invalid(%d)", device, vindex);
 		ret = -EINVAL;
@@ -3068,9 +3080,8 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	(*indexes)++;
 
 	/* OTF input */
-#ifdef USE_OTF_INTERFACE
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0) {
+		!test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state)) {
 		/* reprocessing instnace uses actual sensor size */
 		binning = min(
 			BINNING(active_sensor_width, device->chain0_width),
@@ -3080,9 +3091,6 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	} else {
 		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
 	}
-#else
-	taa_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
-#endif
 
 	taa_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
 	taa_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
@@ -3105,16 +3113,12 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	(*indexes)++;
 
 	/* DMA input */
-#ifdef USE_OTF_INTERFACE
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0) {
+		!test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state)) {
 		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
 	} else {
 		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
 	}
-#else
-	taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-#endif
 
 	taa_param->vdma1_input.width = device->sensor_width;
 	taa_param->vdma1_input.height = device->sensor_height;
@@ -3328,9 +3332,8 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
 	(*indexes)++;
 
-#ifdef USE_OTF_INTERFACE
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0) {
+		!test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state)) {
 		/* reprocessing instnace uses actual sensor size */
 		binning = min(
 			BINNING(active_sensor_width, device->chain0_width),
@@ -3340,9 +3343,6 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	} else {
 		isp_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
 	}
-#else
-	isp_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
-#endif
 
 	isp_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
 	isp_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
@@ -3364,16 +3364,12 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
 	(*indexes)++;
 
-#ifdef USE_OTF_INTERFACE
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0) {
+		!test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state)) {
 		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
 	} else {
 		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
 	}
-#else
-	isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-#endif
 
 	isp_param->dma1_input.width = device->sensor_width;
 	isp_param->dma1_input.height = device->sensor_height;
@@ -4243,7 +4239,7 @@ static int fimc_is_ischain_s_3ax_size(struct fimc_is_device_ischain *device,
 	}
 
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		device->group_3ax.id == GROUP_ID_3A0) {
+		!test_bit(FIMC_IS_ISCHAIN_OTF_OPEN, &device->state)) {
 		/* 3AX DMA INPUT */
 		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
 		isp_param->dma1_input.width = sensor_width;
@@ -4922,13 +4918,8 @@ static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-#ifdef USE_OTF_INTERFACE
 	device->sensor_width = sensor->width - device->margin_width;
 	device->sensor_height = sensor->height - device->margin_height;
-#else
-	device->sensor_width = leader->input.width - device->margin_width;
-	device->sensor_height = leader->input.height - device->margin_height;
-#endif
 	pr_info("scalable sensor input: %dx%d\n", device->sensor_width,
 			device->sensor_height);
 
@@ -5042,13 +5033,8 @@ static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-#ifdef USE_OTF_INTERFACE
 	device->sensor_width = sensor->width - device->margin_width;
 	device->sensor_height = sensor->height - device->margin_height;
-#else
-	device->sensor_width = leader->input.width - device->margin_width;
-	device->sensor_height = leader->input.height - device->margin_height;
-#endif
 	pr_info("scalable sensor input: %dx%d\n", device->sensor_width,
 			device->sensor_height);
 
@@ -5278,13 +5264,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	}
 
 	/* 1. check chain size */
-#ifdef USE_OTF_INTERFACE
 	device->sensor_width = sensor->width - device->margin_width;
 	device->sensor_height = sensor->height - device->margin_height;
-#else
-	device->sensor_width = leader_3ax->input.width - device->margin_width;
-	device->sensor_height = leader_3ax->input.height - device->margin_height;
-#endif
 
 	if (leader_3ax->output.width != leader->input.width) {
 		merr("width size is invalid(%d != %d)", device,
