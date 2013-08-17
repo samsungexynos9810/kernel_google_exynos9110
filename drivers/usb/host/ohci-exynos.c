@@ -315,6 +315,7 @@ static const struct dev_pm_ops exynos_ohci_pm_ops = {
 static const struct of_device_id exynos_ohci_match[] = {
 	{ .compatible = "samsung,exynos4210-ohci" },
 	{ .compatible = "samsung,exynos5440-ohci" },
+	{ .compatible = "samsung,exynos5-ohci" },
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_ohci_match);
