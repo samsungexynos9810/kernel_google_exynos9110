@@ -250,6 +250,25 @@ static void spi_clock_init(void)
 	exynos_set_rate("dout_sclk_spi2_a", 100000000);
 }
 
+void usb_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_usbdrd30_user", "oscclk");
+
+	exynos_set_parent("mout_phyclk_usbdrd30_udrd30_phyclock",
+			"phyclk_usbdrd30_udrd30_phyclock_phy");
+	exynos_set_parent("mout_phyclk_usbdrd30_udrd30_pipe_pclk",
+			"phyclk_usbdrd30_udrd30_pipe_pclk_phy");
+
+	exynos_set_parent("mout_phyclk_usbhost20_phy_freeclk",
+			"phyclk_usbhost20_phy_freeclk_phy");
+	exynos_set_parent("mout_phyclk_usbhost20_phy_phyclock",
+			"phyclk_usbhost20_phy_phyclock_phy");
+	exynos_set_parent("mout_phyclk_usbhost20_phy_clk48mohci",
+			"phyclk_usbhost20_phy_clk48mohci_phy");
+	exynos_set_parent("mout_phyclk_usbhost20_phy_hsic1",
+			"phyclk_usbhost20_phy_hsic1_phy");
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -263,4 +282,5 @@ void __init exynos5430_clock_init(void)
 	gsc_init_clock();
 	/* spi clock init */
 	spi_clock_init();
+	usb_init_clock();
 }
