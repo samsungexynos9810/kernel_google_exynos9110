@@ -836,8 +836,6 @@ int fimc_is_runtime_suspend(struct device *dev)
 
 	pr_info("FIMC_IS runtime suspend in\n");
 
-	writel(0x0, PMUREG_ISP_ARM_OPTION);
-
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (core->mem.alloc_ctx)
 		vb2_ion_detach_iommu(core->mem.alloc_ctx);

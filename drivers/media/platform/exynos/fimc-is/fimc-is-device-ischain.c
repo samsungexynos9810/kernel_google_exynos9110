@@ -1254,10 +1254,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		debug = readl(this->interface->regs + ISSR6);
 		printk(KERN_INFO "%s: A5 state(0x%x)\n", __func__, debug);
 
-		writel(0x0, PMUREG_CMU_RESET_ISP_SYS_PWR_REG);
-		writel(0x0, PMUREG_CMU_SYSCLK_ISP_SYS_PWR_REG);
-		writel(0x0, PMUREG_ISP_ARM_SYS_PWR_REG);
-
 		/* 2. FIMC-IS local power down */
 #if defined(CONFIG_PM_RUNTIME)
 		pm_runtime_put_sync(dev);
