@@ -777,6 +777,22 @@
 		};
 	};
 
+	usb2phy@15530000 {
+		compatible = "samsung,exynos5-usb2phy";
+		reg = <0x15530000 0x100>;
+		clocks = <&clock 1>, <&clock 412>, <&clock 413>,
+			<&clock 414>, <&clock 415>, <&clock 2172>;
+		clock-names = "ext_xtal", "usbhost_freeclk", "usbhost_phyclock",
+			"usbhost_clk48mohci", "usbhost_hsic1", "usbhost";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		usbphy-sys {
+			reg = <0x105C0708 0xC>;
+		};
+	};
+
 	mfc_0: mfc0@152E0000 {
 		compatible = "samsung,mfc-v6";
 		reg = <0x152E0000 0x10000>;
