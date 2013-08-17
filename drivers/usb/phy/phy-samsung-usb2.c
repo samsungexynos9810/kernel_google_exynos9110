@@ -291,7 +291,8 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 	samsung_usbphy_cfg_sel(sphy);
 
 	/* Initialize usb phy registers */
-	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
+	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250 ||
+		sphy->drv_data->cpu_type == TYPE_EXYNOS5)
 		samsung_exynos5_usb2phy_enable(sphy);
 	else
 		samsung_usb2phy_enable(sphy);
@@ -334,7 +335,8 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 	}
 
 	/* De-initialize usb phy registers */
-	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250)
+	if (sphy->drv_data->cpu_type == TYPE_EXYNOS5250 ||
+		sphy->drv_data->cpu_type == TYPE_EXYNOS5)
 		samsung_exynos5_usb2phy_disable(sphy);
 	else
 		samsung_usb2phy_disable(sphy);
@@ -377,7 +379,8 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
 
 	drv_data = samsung_usbphy_get_driver_data(pdev);
 
-	if (drv_data->cpu_type == TYPE_EXYNOS5250)
+	if (drv_data->cpu_type == TYPE_EXYNOS5250 ||
+		drv_data->cpu_type == TYPE_EXYNOS5)
 		clk = devm_clk_get(dev, "usbhost");
 	else
 		clk = devm_clk_get(dev, "otg");
@@ -446,10 +449,16 @@ static const struct samsung_usbphy_drvdata usb2phy_exynos4 = {
 	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
 };
 
-static struct samsung_usbphy_drvdata usb2phy_exynos5 = {
+static struct samsung_usbphy_drvdata usb2phy_exynos5250 = {
 	.cpu_type		= TYPE_EXYNOS5250,
 	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
 	.hostphy_reg_offset	= EXYNOS_USBHOST_PHY_CTRL_OFFSET,
+};
+
+static struct samsung_usbphy_drvdata usb2phy_exynos5 = {
+	.cpu_type		= TYPE_EXYNOS5,
+	.hostphy_en_mask	= EXYNOS_USBPHY_ENABLE,
+	.hostphy_reg_offset	= EXYNOS5_USB2PHY_CTRL_OFFSET,
 };
 
 #ifdef CONFIG_OF
@@ -462,7 +471,10 @@ static const struct of_device_id samsung_usbphy_dt_match[] = {
 		.data = &usb2phy_exynos4,
 	}, {
 		.compatible = "samsung,exynos5250-usb2phy",
-		.data = &usb2phy_exynos5
+		.data = &usb2phy_exynos5250,
+	}, {
+		.compatible = "samsung,exynos5-usb2phy",
+		.data = &usb2phy_exynos5,
 	},
 	{},
 };
@@ -478,6 +490,9 @@ static struct platform_device_id samsung_usbphy_driver_ids[] = {
 		.driver_data	= (unsigned long)&usb2phy_exynos4,
 	}, {
 		.name		= "exynos5250-usb2phy",
+		.driver_data	= (unsigned long)&usb2phy_exynos5250,
+	}, {
+		.name		= "exynos5-usb2phy",
 		.driver_data	= (unsigned long)&usb2phy_exynos5,
 	},
 	{},
