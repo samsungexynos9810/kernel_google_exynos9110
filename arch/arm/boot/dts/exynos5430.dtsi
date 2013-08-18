@@ -934,6 +934,11 @@
 			      "sysreg", "pmu", "gpio", "dbg";
 		status = "ok";
 	};
- 
 
+	seiren {
+		compatible = "samsung,exynos5430-seiren";
+		clocks = <&clock 770>;
+		clock-names = "ca5";
+		status = "ok";
+	};
 };
