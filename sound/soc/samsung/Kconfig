@@ -34,6 +34,9 @@ config SND_SAMSUNG_SPDIF
 config SND_SAMSUNG_I2S
 	tristate
 
+config SND_SAMSUNG_AUDSS
+	tristate
+
 config SND_SAMSUNG_FAKEDMA
 	tristate "Use Fake-DMA for Samsung I2S"
 	depends on SND_SOC_SAMSUNG

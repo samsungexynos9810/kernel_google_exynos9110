@@ -9,6 +9,7 @@ snd-soc-s3c-i2s-v2-objs := s3c-i2s-v2.o
 snd-soc-samsung-spdif-objs := spdif.o
 snd-soc-pcm-objs := pcm.o
 snd-soc-i2s-objs := i2s.o
+snd-soc-lpass-objs := lpass.o
 
 obj-$(CONFIG_SND_SOC_SAMSUNG) += snd-soc-s3c24xx.o
 obj-$(CONFIG_SND_S3C24XX_I2S) += snd-soc-s3c24xx-i2s.o
@@ -20,6 +21,7 @@ obj-$(CONFIG_SND_SAMSUNG_PCM) += snd-soc-pcm.o
 obj-$(CONFIG_SND_SAMSUNG_I2S) += snd-soc-i2s.o
 obj-$(CONFIG_SND_SAMSUNG_I2S) += snd-soc-idma.o
 obj-$(CONFIG_SND_SAMSUNG_FAKEDMA) += snd-soc-fdma.o
+obj-$(CONFIG_SND_SAMSUNG_AUDSS) += snd-soc-lpass.o
 
 # S3C24XX Machine Support
 snd-soc-jive-wm8750-objs := jive_wm8750.o
