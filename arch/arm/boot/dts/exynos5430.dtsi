@@ -941,4 +941,46 @@
 		clock-names = "ca5";
 		status = "ok";
 	};
+
+	i2s0: i2s@11440000 {
+		compatible = "samsung,i2s-v5";
+		reg = <0x11440000 0x100>;
+		dmas = <&adma 0 &adma 2>;
+		dma-names = "tx", "rx";
+		interrupts = <0 70 0>;
+		clocks = <&clock 781>,		/* pclk_i2s */
+			 <&clock 781>,		/* pclk_i2s */
+			 <&clock 789>;		/* sclk_i2s */
+		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
+		samsung,supports-6ch;
+		samsung,supports-rstclr;
+		samsung,supports-secdai;
+		samsung,supports-tdm;
+		samsung,supports-low-rfs;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s0_bus>;
+		status = "disabled";
+		i2s-sec {
+			dmas = <&adma 1>;
+			dma-names = "tx-sec";
+		};
+	};
+
+	i2s1: i2s@14D60000 {
+		compatible = "samsung,i2s-v5";
+		reg = <0x14D60000 0x100>;
+		dmas = <&pdma 31 &pdma 30>;
+		dma-names = "tx", "rx";
+		interrupts = <0 435 0>;
+		clocks = <&clock 914>,		/* pclk_i2s1 */
+			 <&clock 914>,		/* pclk_i2s1 */
+			 <&clock 111>;		/* sclk_i2s1 */
+		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
+		samsung,supports-6ch;
+		samsung,supports-rstclr;
+		samsung,supports-tdm;
+		pinctrl-names = "default";
+		pinctrl-0 = <&i2s1_bus>;
+		status = "disabled";
+	};
 };
