@@ -416,6 +416,19 @@
 
 	};
 
+	hsi2c_1: hsi2c@14E50000 {
+		compatible = "samsung,exynos5-hsi2c";
+		clock-frequency = <400000>;	/* 400KHz */
+		status = "okay";
+		audio_codec: codec@3e {
+			compatible = "audience,es515";
+			reg = <0x3E>;
+			gpios = <&gpg3 4 0	/* reset */
+				 &gpg3 5 0	/* wakeup */
+				 &gpa0 5 0xF>;	/* interrupt */
+		};
+	};
+
 	usb@15400000 {
 		status = "okay";
 	};
