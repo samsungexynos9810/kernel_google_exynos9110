@@ -883,12 +883,10 @@ int fimc_is_runtime_resume(struct device *dev)
 	pm_stay_awake(dev);
 	pr_info("FIMC_IS runtime resume in\n");
 
-	/* 1. Enable MIPI */
+	/* Enable MIPI */
 	enable_mipi();
 
-	printk(KERN_INFO "FIMC_IS runtime resume - mipi enabled\n");
-
-	/* 2. Low clock setting */
+	/* Low clock setting */
 	if (core->pdata->clk_cfg) {
 		core->pdata->clk_cfg(core->pdev);
 	} else {
@@ -897,9 +895,7 @@ int fimc_is_runtime_resume(struct device *dev)
 		goto p_err;
 	}
 
-	printk(KERN_INFO "FIMC_IS runtime resume - Low clock setting complete\n");
-
-	/* 4. Clock on */
+	/* Clock on */
 	if (core->pdata->clk_on) {
 		core->pdata->clk_on(core->pdev);
 	} else {
@@ -908,24 +904,9 @@ int fimc_is_runtime_resume(struct device *dev)
 		goto p_err;
 	}
 
-	printk(KERN_INFO "FIMC_IS runtime resume -  Clock on\n");
-
-#if defined(CONFIG_SOC_EXYNOS5250)
-	/* 5. High clock setting */
-	if (core->pdata->clk_cfg) {
-		core->pdata->clk_cfg(core->pdev);
-	} else {
-		err("clk_cfg is fail\n");
-		ret = -EINVAL;
-		goto p_err;
-	}
-	printk(KERN_INFO "FIMC_IS runtime resume - high clock setting complete\n");
-#endif
-
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (core->mem.alloc_ctx)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);
-	printk(KERN_INFO "FIMC_IS runtime resume - ion attach complete\n");
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS5420)
