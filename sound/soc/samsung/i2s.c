@@ -31,6 +31,9 @@
 #include "idma.h"
 #include "i2s.h"
 #include "i2s-regs.h"
+#ifdef CONFIG_SND_SAMSUNG_FAKEDMA
+#include "fdma.h"
+#endif
 
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
 
@@ -959,6 +962,45 @@ static void i2s_init_bit_slice(struct i2s_dai *i2s)
 	}
 }
 
+#ifdef CONFIG_SND_SAMSUNG_FAKEDMA
+int i2s_get_fifo_cnt(struct snd_pcm_substream * substream,
+			struct snd_soc_dai *dai)
+{
+	struct i2s_dai *i2s = to_info(dai);
+	u32 fic = readl(i2s->addr + I2SFIC);
+	u32 fics = readl(i2s->addr + I2SFICS);
+
+	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+		return (fic & 0x7F);
+	else if (is_secondary(i2s))
+		return ((fics >> 8) & 0x7F);
+	else
+		return ((fic >> 8) & 0x7F);
+}
+
+void i2s_write_fifo(struct snd_pcm_substream * substream,
+			struct snd_soc_dai *dai, u32 val)
+{
+	struct i2s_dai *i2s = to_info(dai);
+
+	writel(val, i2s->addr + (is_secondary(i2s) ? I2STXDS : I2STXD));
+}
+
+u32 i2s_read_fifo(struct snd_pcm_substream * substream,
+			struct snd_soc_dai *dai)
+{
+	struct i2s_dai *i2s = to_info(dai);
+
+	return readl(i2s->addr + I2SRXD);
+}
+
+static struct samsung_fdma_cpu_ops cpu_ops = {
+	.get_fifo_cnt	= i2s_get_fifo_cnt,
+	.write_fifo	= i2s_write_fifo,
+	.read_fifo	= i2s_read_fifo
+};
+#endif
+
 #ifdef CONFIG_PM
 static int i2s_suspend(struct snd_soc_dai *dai)
 {
@@ -1189,7 +1231,11 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 		snd_soc_register_component(&sec_dai->pdev->dev,
 					   &samsung_i2s_component,
 					   &sec_dai->i2s_dai_drv, 1);
+#ifdef CONFIG_SND_SAMSUNG_FAKEDMA
+		asoc_fdma_platform_register(&pdev->dev, &cpu_ops);
+#else
 		asoc_dma_platform_register(&pdev->dev);
+#endif
 		return 0;
 	}
 
@@ -1336,8 +1382,11 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 
 	pm_runtime_enable(&pdev->dev);
 
+#ifdef CONFIG_SND_SAMSUNG_FAKEDMA
+	asoc_fdma_platform_register(&pdev->dev, &cpu_ops);
+#else
 	asoc_dma_platform_register(&pdev->dev);
-
+#endif
 	if (quirks & QUIRK_IDMA)
 		asoc_idma_platform_register(&pdev->dev);
 
@@ -1369,7 +1418,11 @@ static int samsung_i2s_remove(struct platform_device *pdev)
 	i2s->pri_dai = NULL;
 	i2s->sec_dai = NULL;
 
+#ifdef CONFIG_SND_SAMSUNG_FAKEDMA
+	asoc_fdma_platform_unregister(&pdev->dev);
+#else
 	asoc_dma_platform_unregister(&pdev->dev);
+#endif
 	snd_soc_unregister_component(&pdev->dev);
 
 	return 0;
