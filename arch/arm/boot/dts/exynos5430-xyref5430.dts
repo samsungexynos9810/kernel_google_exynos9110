@@ -442,4 +442,12 @@
 			gpios = <&gpa2 0 0xf>;
 		};
 	};
+
+	i2s0: i2s@11440000 {
+		status = "okay";
+	};
+
+	i2s1: i2s@14D60000 {
+		status = "okay";
+	};
 };
