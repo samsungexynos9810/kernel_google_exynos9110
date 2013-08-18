@@ -450,4 +450,9 @@
 	i2s1: i2s@14D60000 {
 		status = "okay";
 	};
+
+	audio_codec_dummy: dummy-codec {
+		compatible = "samsung,dummy-codec";
+		status = "okay";
+	};
 };
