@@ -15,6 +15,7 @@
 #include <linux/of.h>
 #include <linux/of_address.h>
 #include <mach/regs-clock-exynos5430.h>
+#include <mach/regs-pmu.h>
 
 #include "clk.h"
 #include "clk-pll.h"
@@ -118,6 +119,30 @@ static void top_clk_enable(void)
 	pr_info("Clock enables : TOP, MIF\n");
 }
 
+void clkout_init_clock(void)
+{
+	/* CLKOUT is 19MHz from AUD_PLL (196.608MHz / 10) */
+	writel(49282, EXYNOS5430_VA_CMU_TOP + 0x0114);	/* AUD_PLL_CON1 (K) */
+	writel((1 << 31) | (459 << 16) | (7 << 8) | (3),
+		EXYNOS5430_VA_CMU_TOP + 0x0110);	/* AUD_PLL_CON0 */
+
+	/* CMU_AUD */
+	writel(0x00520, EXYNOS5430_VA_CMU_AUD + 0x0600);/* CLK_DIV_AUD0 */
+	writel(0xF2BF7, EXYNOS5430_VA_CMU_AUD + 0x0604);/* CLK_DIV_AUD1 */
+
+	/* CLK_MUX_SEL_AUD0 */
+	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
+	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
+	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+
+	/* CLK_MUX_SEL_AUD1 */
+	exynos_set_parent("mout_sclk_i2s_a", "mout_aud_pll_sub");
+	exynos_set_parent("mout_sclk_pcm_a", "mout_aud_pll_sub");
+
+	writel(0x10901, EXYNOS5430_VA_CMU_TOP + 0x0C00); /* AUD_PLL / 10 */
+	writel(0x00700, EXYNOS_PMU_DEBUG);
+}
+
 void mfc_init_clock(void)
 {
 	exynos_set_parent("mout_aclk_mfc0_333_user", "aclk_mfc0_333");
@@ -132,4 +157,5 @@ void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
 	mfc_init_clock();
+	clkout_init_clock();
 }
