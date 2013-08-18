@@ -468,4 +468,15 @@
 		compatible = "samsung,dummy-codec";
 		status = "okay";
 	};
+
+	sound {
+		compatible = "samsung,xyref-es515";
+		samsung,i2s-controller = <&i2s0		/* primary */
+					  &i2s0		/* secondary */
+					  &i2s1>;	/* hdmi */
+		samsung,audio-codec = <&audio_codec
+				       &audio_codec
+				       &audio_codec_dummy>;
+				       status = "okay";
+	};
 };
