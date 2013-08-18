@@ -153,9 +153,26 @@ void mfc_init_clock(void)
 	exynos_set_parent("mout_bus_pll_user", "dout_bus_pll");
 }
 
+void adma_init_clock(void)
+{
+	void __iomem *aud_base;
+	unsigned int reg;
+
+	aud_base = ioremap(0x11400000, SZ_4K);
+
+	reg = __raw_readl(aud_base + 0x8);
+	reg &= ~0x1;
+	__raw_writel(reg, aud_base + 0x8);
+	reg |= 0x1;
+	__raw_writel(reg, aud_base + 0x8);
+
+	iounmap(aud_base);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
 	mfc_init_clock();
 	clkout_init_clock();
+	adma_init_clock();
 }
