@@ -80,6 +80,7 @@ config SOC_EXYNOS5430
 	select S5P_PM if PM
 	select S5P_SLEEP if PM
 	select EXYNOS5430_PM if PM
+	select SAMSUNG_DMADEV
 	help
 	  Enable EXYNOS5430 SoC support
 
