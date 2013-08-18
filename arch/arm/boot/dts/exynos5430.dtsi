@@ -917,4 +917,23 @@
 		clock-names = "hsi2c";
 		status = "disabled";
 	};
+
+	lpass: lpass-controller@11400000 {
+		compatible = "samsung,exynos5430-lpass";
+		reg = <0x11400000 0x100>,
+		      <0x03000000 0x48000>;
+		clocks = <&clock 771>,
+			 <&clock 772>,
+			 <&clock 779>,
+			 <&clock 780>,
+			 <&clock 785>,
+			 <&clock 786>,
+			 <&clock 787>,
+			 <&clock 788>;
+		clock-names = "dmac", "sramc", "intr", "timer",
+			      "sysreg", "pmu", "gpio", "dbg";
+		status = "ok";
+	};
+ 
+
 };
