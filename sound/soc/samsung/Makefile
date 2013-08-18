@@ -73,3 +73,5 @@ obj-$(CONFIG_SND_SOC_LOWLAND) += snd-soc-lowland.o
 obj-$(CONFIG_SND_SOC_LITTLEMILL) += snd-soc-littlemill.o
 obj-$(CONFIG_SND_SOC_BELLS) += snd-soc-bells.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_XYREF_ES515) += snd-soc-xyref-es515.o
+
+obj-$(CONFIG_SND_SAMSUNG_SEIREN) += seiren/
