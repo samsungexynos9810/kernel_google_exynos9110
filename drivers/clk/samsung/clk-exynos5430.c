@@ -169,7 +169,7 @@ enum exynos5430_clks {
 	sclk_ca5 = 770, aclk_dmac, aclk_sramc, aclk_audnp_133, aclk_audnd_133,
 	aclk_xiu_lpassx, aclk_axi2apb_lpassp, aclk_axids_lpassp, pclk_sfr_ctrl, pclk_intr_ctrl,
 	pclk_timer = 780, pclk_i2s, pclk_pcm, pclk_uart, pclk_slimbus_aud, pclk_sysreg_aud,
-	pclk_pmu_aud, pclk_gpio_aud, pclk_dbg,
+	pclk_pmu_aud, pclk_gpio_aud, pclk_dbg, sclk_i2s,
 
 	/* imem gate */
 	aclk_sss = 800, aclk_slimsss, aclk_rtic, aclk_imemnd_266, aclk_xiu_sssx,
@@ -1756,6 +1756,8 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(pclk_gpio_aud, "pclk_gpio_aud", "dout_aclk_aud", EXYNOS5430_ENABLE_PCLK_AUD, 9, 0, 0),
 
 	CGTE(pclk_dbg, "pclk_dbg", "dout_aud_pclk_dbg", EXYNOS5430_ENABLE_SCLK_AUD0, 1, 0, 0),
+
+	CGTE(sclk_i2s, "sclk_i2s", "dout_sclk_i2s", EXYNOS5430_SRC_ENABLE_AUD1, 0, 0, 0),
 
 	/*IMEM*/
 	CGTE(aclk_sss, "aclk_sss", "aclk_imem_266", EXYNOS5430_ENABLE_ACLK_IMEM_SECURE_SSS, 0, 0, 0),
