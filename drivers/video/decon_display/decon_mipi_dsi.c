@@ -70,6 +70,9 @@ MODULE_DEVICE_TABLE(of, exynos5_dsim);
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
 struct mipi_dsim_config g_dsim_config;
 
+struct mipi_dsim_device *dsim_for_decon;
+EXPORT_SYMBOL(dsim_for_decon);
+
 int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
 	void __iomem *reg;
@@ -914,17 +917,20 @@ static int s5p_mipi_dsi_runtime_resume(struct device *dev)
 #define s5p_mipi_dsi_runtime_resume NULL
 #endif
 
-static int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
+int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 {
-	pm_runtime_get_sync(dsim->dev);
+	/*
 	clk_enable(dsim->clock);
-
+	*/
 	if (dsim->enabled == true)
 		return 0;
+
+	pm_runtime_get_sync(dsim->dev);
 	/*
 	if (dsim->pd->mipi_power)
 		dsim->pd->mipi_power(dsim, 1);
 	*/
+	mipi_cmu_set();
 	mipi_lcd_power_control(dsim, 1);
 
 	if (dsim->dsim_lcd_drv->resume)
@@ -932,28 +938,20 @@ static int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
 	dsim->enabled = true;
-#if defined(CONFIG_LCD_MIPI_TC358764)
-	s5p_mipi_dsi_enable_hs_clock(dsim, 1);
-	s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 1);
-	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
-	s5p_mipi_dsi_clear_int_status(dsim,
-			INTSRC_SFR_FIFO_EMPTY);
-	dsim->dsim_lcd_drv->displayon(dsim);
-	s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 0);
-#else
+
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
 	dsim->dsim_lcd_drv->displayon(dsim);
-#endif
 
 	return 0;
 }
 
-static int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
+int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 {
 	if (dsim->enabled == false)
 		return 0;
+
 	dsim->enabled = false;
 	dsim->dsim_lcd_drv->suspend(dsim);
 	dsim->state = DSIM_STATE_SUSPEND;
@@ -965,7 +963,9 @@ static int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	mipi_lcd_power_control(dsim, 0);
 
 	pm_runtime_put_sync(dsim->dev);
+	/*
 	clk_disable(dsim->clock);
+	*/
 
 	return 0;
 }
@@ -973,13 +973,13 @@ static int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 static int s5p_mipi_dsi_set_power(struct lcd_device *lcd, int power)
 {
 	struct mipi_dsim_device *dsim = lcd_get_data(lcd);
-
+/*
 	if (power == FB_BLANK_UNBLANK) {
 		s5p_mipi_dsi_enable(dsim);
 	} else {
 		s5p_mipi_dsi_disable(dsim);
 	}
-
+*/
 	return 0;
 }
 
@@ -1192,11 +1192,11 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
 	dsim->dsim_lcd_drv->displayon(dsim);
+	dsim_for_decon = dsim;
 	dev_info(&pdev->dev, "mipi-dsi driver(%s mode) has been probed.\n",
 		(g_dsim_config.e_interface == DSIM_COMMAND) ?
 			"CPU" : "RGB");
 
-	dsim->lcd = lcd_device_register("s5p_dsim", &pdev->dev, dsim, &s5p_mipi_dsi_lcd_ops);
 	mutex_init(&dsim_rd_wr_mutex);
 	return 0;
 

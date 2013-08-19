@@ -101,6 +101,9 @@ static struct pm_qos_request exynos5_int_qos;
 
 struct s3c_fb;
 
+extern struct mipi_dsim_device *dsim_for_decon;
+extern int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim);
+extern int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim);
 #ifdef CONFIG_ION_EXYNOS
 extern struct ion_device *ion_exynos;
 #endif
@@ -1274,6 +1277,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
 		ret = s3c_fb_disable(sfb);
+		s5p_mipi_dsi_disable(dsim_for_decon);
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos5_mif_qos, 0);
 #endif
@@ -1283,6 +1287,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos5_mif_qos, 200000);
 #endif
+		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
 		break;
 
@@ -4329,7 +4334,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 static int s3c_fb_disable(struct s3c_fb *sfb)
 {
 	u32 vidcon0, data;
-	int ret = 0;
+	int ret = 0, timecnt = 2000;
 
 	mutex_lock(&sfb->output_lock);
 
@@ -4364,6 +4369,21 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 	writel(data, sfb->regs + DECON_UPDATE);
+
+
+	do {
+		data = readl(sfb->regs + VIDCON0);
+		data &= VIDCON0_DECON_STOP_STATUS;
+		timecnt--;
+	}
+	while (data & timecnt--);
+
+	if (timecnt == 0)
+		dev_err(sfb->dev, "Failed to disable DECON");
+	else
+		dev_info(sfb->dev, "DECON has stopped");
+
+	decon_fb_reset(sfb);
 
 	sfb->power_state = POWER_DOWN;
 
