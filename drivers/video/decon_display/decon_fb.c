@@ -679,6 +679,7 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 	return result;
 }
 
+/*
 static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
 {
 	struct s3c_fb *sfb = win->parent;
@@ -689,6 +690,7 @@ static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
 		data |= TRIGCON_HWTRIGMASK_I80_RGB;
 	writel(data, sfb->regs + TRIGCON);
 }
+*/
 
 /**
  * shadow_protect_win() - disable updating values from shadow registers at vsync
