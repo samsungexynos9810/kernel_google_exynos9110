@@ -3909,8 +3909,10 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	int default_win;
 	int i;
 	int ret = 0;
-	int gpio;
 	u32 reg;
+#ifdef CONFIG_FB_I80_SW_TRIGGER
+	int gpio;
+#endif
 
 	parse_plat_data(dev);
 

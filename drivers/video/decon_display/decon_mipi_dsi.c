@@ -973,13 +973,13 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 static int s5p_mipi_dsi_set_power(struct lcd_device *lcd, int power)
 {
 	struct mipi_dsim_device *dsim = lcd_get_data(lcd);
-/*
+
 	if (power == FB_BLANK_UNBLANK) {
 		s5p_mipi_dsi_enable(dsim);
 	} else {
 		s5p_mipi_dsi_disable(dsim);
 	}
-*/
+
 	return 0;
 }
 
