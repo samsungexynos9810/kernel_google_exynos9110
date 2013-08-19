@@ -704,7 +704,7 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 
 	if (protect) {
 #ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger_mask_enable(win, true);
+		/* hw_trigger_mask_enable(win, true); */
 #endif
 		data |= SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
@@ -712,7 +712,7 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 		data &= ~SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
 #ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger_mask_enable(win, false);
+		/* hw_trigger_mask_enable(win, false); */
 #endif
 	}
 }
@@ -3073,13 +3073,6 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
-static void hw_trigger(struct s3c_fb *sfb)
-{
-	u32 data = readl(sfb->regs + TRIGCON);
-	data |= TRIGCON_HWTRIGMASK_I80_RGB;
-	writel(data, sfb->regs + TRIGCON);
-}
-
 static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
@@ -3100,7 +3093,7 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		data |= DECON_UPDATE_STANDALONE_F;
 		writel(data, sfb->regs + DECON_UPDATE);
 #ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger(sfb);
+		/* hw_trigger_mask_enable(win, false); */
 #endif
 		break;
 
@@ -3110,7 +3103,7 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		data |= DECON_UPDATE_SLAVE_SYNC;
 		writel(data, sfb->regs + DECON_UPDATE);
 #ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger(sfb);
+		/* hw_trigger_mask_enable(win, false); */
 #endif
 		break;
 
