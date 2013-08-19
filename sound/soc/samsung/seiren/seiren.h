@@ -54,7 +54,7 @@
 #define SP_OBUF_NUM		(0x1)
 
 
-#define INSTANCE_MAX		(10)
+#define INSTANCE_MAX		(1)
 #define BUF_SIZE_MAX		(0x50000)
 
 #define SAMPLE_RATE_MIN		(8000)
