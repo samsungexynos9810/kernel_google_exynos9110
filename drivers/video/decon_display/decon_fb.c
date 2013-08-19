@@ -676,6 +676,17 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 	return result;
 }
 
+static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
+{
+	struct s3c_fb *sfb = win->parent;
+	u32 data = readl(sfb->regs + TRIGCON);
+	if (enable)
+		data &= ~(1 << 4);
+	else
+		data |= (1 << 4);
+	writel(data, sfb->regs + TRIGCON);
+}
+
 /**
  * shadow_protect_win() - disable updating values from shadow registers at vsync
  *
@@ -689,23 +700,18 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 	u32 data = readl(regs);
 
 	if (protect) {
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger_mask_enable(win, true);
+#endif
 		data |= SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
 	} else {
 		data &= ~SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger_mask_enable(win, false);
+#endif
 	}
-}
-
-static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
-{
-	struct s3c_fb *sfb = win->parent;
-	u32 data = readl(sfb->regs + TRIGCON);
-	if (enable)
-		data &= ~(1 << 4);
-	else
-		data |= (1 << 4);
-	writel(data, sfb->regs + TRIGCON);
 }
 
 static void patch_set_shadow_protect(struct s3c_fb_win *win, struct s3c_fb *sfb, int enable)
