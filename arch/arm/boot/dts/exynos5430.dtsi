@@ -710,6 +710,58 @@
 		status = "ok";
 	};
 
+	amba {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		compatible = "arm,amba-bus";
+		interrupt-parent = <&gic>;
+		ranges;
+
+		pdma: pdma@15610000 {
+			compatible = "arm,pl330", "arm,primecell";
+			reg = <0x15610000 0x1000>;
+			interrupts = <0 228 0>;
+			clocks = <&clock 590>, <&clock 560>;
+			clock-names = "sysmmu", "apb_pclk";
+			#dma-cells = <1>;
+			#dma-channels = <8>;
+			#dma-requests = <32>;
+		};
+
+		adma: adma@11420000 {
+			compatible = "arm,pl330", "arm,primecell";
+			reg = <0x11420000 0x1000>;
+			interrupts = <0 73 0>;
+			clocks = <&clock 771>;
+			clock-names = "apb_pclk";
+			#dma-cells = <1>;
+			#dma-channels = <6>;
+			#dma-requests = <16>;
+		};
+
+		mdma0: mdma@10F80000 {
+			compatible = "arm,pl330", "arm,primecell";
+			reg = <0x10F80000 0x1000>;
+			interrupts = <0 182 0>;
+			clocks = <&clock 1180>;
+			clock-names = "apb_pclk";
+			#dma-cells = <1>;
+			#dma-channels = <2>;
+			#dma-requests = <1>;
+		};
+
+		mdma1: mdma@12500000 {
+			compatible = "arm,pl330", "arm,primecell";
+			reg = <0x12500000 0x1000>;
+			interrupts = <0 271 0>;
+			clocks = <&clock 460>;
+			clock-names = "apb_pclk";
+			#dma-cells = <1>;
+			#dma-channels = <4>;
+			#dma-requests = <1>;
+		};
+	};
+
 	i2c_0: i2c@14E00000 {
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x14E00000 0x1000>;
