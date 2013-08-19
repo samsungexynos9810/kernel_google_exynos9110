@@ -681,9 +681,9 @@ static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
 	struct s3c_fb *sfb = win->parent;
 	u32 data = readl(sfb->regs + TRIGCON);
 	if (enable)
-		data &= ~(1 << 4);
+		data &= ~TRIGCON_HWTRIGMASK_I80_RGB;
 	else
-		data |= (1 << 4);
+		data |= TRIGCON_HWTRIGMASK_I80_RGB;
 	writel(data, sfb->regs + TRIGCON);
 }
 
@@ -736,15 +736,9 @@ static void patch_set_shadow_protect(struct s3c_fb_win *win, struct s3c_fb *sfb,
 				}
 			}
 		}
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger_mask_enable(win, true);
-#endif
 		shadow_protect_win(win, 1);
 	} else {
 		shadow_protect_win(win, 0);
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger_mask_enable(win, false);
-#endif
 	}
 }
 
@@ -3075,7 +3069,7 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 static void hw_trigger(struct s3c_fb *sfb)
 {
 	u32 data = readl(sfb->regs + TRIGCON);
-	data |= (1 << 4);
+	data |= TRIGCON_HWTRIGMASK_I80_RGB;
 	writel(data, sfb->regs + TRIGCON);
 }
 
