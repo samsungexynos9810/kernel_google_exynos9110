@@ -616,6 +616,7 @@
 
 		samsung,i80_irq_no = <235>;
 		samsung,irq_no = <234>;
+		samsung,fifo_irq_no = <233>;
 
 		gpios = <&gpf1 3 0xf>;
 
