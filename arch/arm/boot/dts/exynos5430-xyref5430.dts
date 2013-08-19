@@ -332,14 +332,14 @@
 				};
 
 				ldo30_reg: LDO30 {
-					regulator-name = "vdd_ldo30";
+					regulator-name = "tsp_avdd";
 					regulator-min-microvolt = <1400000>;
 					regulator-max-microvolt = <3400000>;
 					regulator-always-on;
 				};
 
 				ldo31_reg: LDO31 {
-					regulator-name = "vdd_ldo31";
+					regulator-name = "tsp_io";
 					regulator-min-microvolt = <1000000>;
 					regulator-max-microvolt = <2100000>;
 					regulator-always-on;
