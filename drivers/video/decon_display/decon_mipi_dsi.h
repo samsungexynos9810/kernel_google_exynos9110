@@ -387,7 +387,7 @@ extern struct mipi_dsim_lcd_driver s6e63m0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver tc358764_mipi_lcd_driver;
 #elif defined(CONFIG_LCD_MIPI_HYDISWUXGA)
 extern struct mipi_dsim_lcd_driver hydiswuxga_mipi_lcd_driver;
-#elif defined(CONFIG_DECON_LCD_3FA0)
+#elif defined(CONFIG_DECON_LCD_S6E3FA0)
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
 #endif
 

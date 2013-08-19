@@ -36,7 +36,6 @@
 
 #include <video/mipi_display.h>
 
-#include <plat/fb.h>
 #include <plat/cpu.h>
 
 #include <mach/map.h>
@@ -44,6 +43,8 @@
 #include "decon_mipi_dsi_lowlevel.h"
 #include "decon_mipi_dsi.h"
 #include "regs-mipidsim.h"
+#include "decon_fb.h"
+#include "decon_dt.h"
 
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_wr_comp);
@@ -66,9 +67,6 @@ static const struct of_device_id exynos5_dsim[] = {
 };
 MODULE_DEVICE_TABLE(of, exynos5_dsim);
 #endif
-
-extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
-struct mipi_dsim_config g_dsim_config;
 
 struct mipi_dsim_device *dsim_for_decon;
 EXPORT_SYMBOL(dsim_for_decon);
@@ -1126,7 +1124,9 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	struct mipi_dsim_device *dsim = NULL;
 	int ret = -1;
 
+	parse_display_dsi_dt(pdev->dev.of_node);
 	mipi_cmu_set();
+
 	if (!dsim)
 		dsim = kzalloc(sizeof(struct mipi_dsim_device),
 			GFP_KERNEL);
@@ -1138,10 +1138,9 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	dsim->dev = &pdev->dev;
 	dsim->id = pdev->id;
 
-
 	pm_runtime_enable(&pdev->dev);
 
-	dsim->dsim_config = &g_dsim_config;
+	dsim->dsim_config = get_display_dsi_drvdata();
 	/*
 	dsim->clock = clk_get(&pdev->dev, dsim->pd->clk_name);
 	if (IS_ERR(dsim->clock)) {
@@ -1209,7 +1208,7 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	dsim->dsim_lcd_drv->displayon(dsim);
 	dsim_for_decon = dsim;
 	dev_info(&pdev->dev, "mipi-dsi driver(%s mode) has been probed.\n",
-		(g_dsim_config.e_interface == DSIM_COMMAND) ?
+		(dsim->dsim_config->e_interface == DSIM_COMMAND) ?
 			"CPU" : "RGB");
 
 	mutex_init(&dsim_rd_wr_mutex);
@@ -1288,59 +1287,6 @@ static const struct dev_pm_ops mipi_dsi_pm_ops = {
 #endif
 	.runtime_suspend	= s5p_mipi_dsi_runtime_suspend,
 	.runtime_resume		= s5p_mipi_dsi_runtime_resume,
-};
-
-
-struct mipi_dsim_config g_dsim_config = {
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	.e_interface	= DSIM_COMMAND,
-#else
-	.e_interface	= DSIM_VIDEO,
-#endif
-	.e_pixel_format = DSIM_24BPP_888,
-	/* main frame fifo auto flush at VSYNC pulse */
-	.auto_flush	= false,
-	.eot_disable	= true,
-	.auto_vertical_cnt = false,
-	.hse = false,
-	.hfp = false,
-	.hbp = false,
-	.hsa = false,
-
-	.e_no_data_lane = DSIM_DATA_LANE_4,
-	.e_byte_clk	= DSIM_PLL_OUT_DIV8,
-	.e_burst_mode	= DSIM_BURST,
-
-#if defined(CONFIG_DECON_LCD_S6E8AA0)
-	.p = 4,
-	.m = 80,
-	.s = 2,
-#elif defined(CONFIG_DECON_LCD_S6E3FA0)
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	.p = 2,
-	.m = 46,
-	.s = 1,
-#else
-	.p = 4,
-	.m = 75,
-	.s = 1,
-#endif
-#endif
-	/* D-PHY PLL stable time spec :min = 200usec ~ max 400usec */
-	.pll_stable_time = 500,
-
-	.esc_clk = 7 * 1000000, /* escape clk : 7MHz */
-
-	/* stop state holding counter after bta change count 0 ~ 0xfff */
-	.stop_holding_cnt = 0x0fff,
-	.bta_timeout = 0xff,		/* bta timeout 0 ~ 0xff */
-	.rx_timeout = 0xffff,		/* lp rx timeout 0 ~ 0xffff */
-
-#if defined(CONFIG_DECON_LCD_S6E8AA0)
-	.dsim_ddi_pd = &s6e8aa0_mipi_lcd_driver,
-#elif defined(CONFIG_DECON_LCD_S6E3FA0)
-	.dsim_ddi_pd = &s6e3fa0_mipi_lcd_driver,
-#endif
 };
 
 static struct platform_driver s5p_mipi_dsi_driver = {

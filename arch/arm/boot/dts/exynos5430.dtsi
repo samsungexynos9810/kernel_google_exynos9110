@@ -599,21 +599,6 @@
 		samsung,vidcon1 = <0x80>;
 		samsung,default_win = <0>;
 
-		samsung,left_margin = <5>;
-		samsung,right_margin = <10>;
-		samsung,upper_margin = <20>;
-		samsung,lower_margin = <20>;
-		samsung,hsync_len = <5>;
-		samsung,vsync_len = <2>;
-		samsung,xres = <1080>;
-		samsung,yres = <1920>;
-		samsung,virtual_x = <1080>;
-		samsung,virtual_y = <1920>;
-		samsung,width = <71>;
-		samsung,height = <114>;
-		samsung,max_bpp = <32>;
-		samsung,default_bpp = <24>;
-
 		samsung,i80_irq_no = <235>;
 		samsung,irq_no = <234>;
 		samsung,fifo_irq_no = <233>;
@@ -626,6 +611,30 @@
 		iommu = <&sysmmu_decon0x>, <&sysmmu_decon1x>;
 
 		samsung,power-domain = <&spd_decon>;
+
+		fb_driver_data {
+			fb_variant {
+				nr_windows = <5>;
+				vidtcon = <0x2020>;
+				wincon = <0x20>;
+				winmap = <0x270>;
+				keycon = <0x230>;
+				osd = <0xB0>;
+				osd_stride = <16>;
+				buf_start = <0x150>;
+				buf_size  = <0x200>;
+				buf_end   = <0x1A0>;
+				palette_0 = <0x2400>;
+				palette_1 = <0x2800>;
+				palette_2 = <0x2c00>;
+				palette_3 = <0x3000>;
+				palette_4 = <0x3400>;
+				has_shadowcon = <1>;
+				has_blendcon  = <1>;
+				has_alphacon  = <1>;
+				has_fixvclk   = <1>;
+			};
+		};
 	};
 
 	mipi_dsi: mipi_dsi {
@@ -633,15 +642,11 @@
 		reg = <0x13900000 0x40000>;
 		samsung,irq_no = <237>;
 
-		samsung,left_margin = <20>;
-		samsung,right_margin = <20>;
-		samsung,upper_margin = <2>;
-		samsung,lower_margin = <20>;
-		samsung,hsync_len = <20>;
-		samsung,vsync_len = <2>;
-		samsung,xres = <1080>;
-		samsung,yres = <1920>;
 		samsung,power-domain = <&spd_mipi_dsi>;
+	};
+
+	disp_driver {
+		compatible = "samsung,exynos5-disp_driver";
 	};
 
 	watchdog@10020000 {
