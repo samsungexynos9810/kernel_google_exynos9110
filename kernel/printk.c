@@ -865,6 +865,21 @@ static inline void boot_delay_msec(int level)
 }
 #endif
 
+#if defined(CONFIG_PRINTK_CORE_NUM)
+static bool printk_core_num = 1;
+#else
+static bool printk_core_num = 0;
+#endif
+module_param_named(core_num, printk_core_num, bool, S_IRUGO | S_IWUSR);
+
+static size_t print_core_num(char *buf)
+{
+	if (!printk_core_num || !buf)
+		return 0;
+
+	return sprintf(buf, "[c%d] ", smp_processor_id());
+}
+
 #if defined(CONFIG_PRINTK_TIME)
 static bool printk_time = 1;
 #else
@@ -908,6 +923,7 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
+	len += print_core_num(buf ? buf + len : NULL);
 	return len;
 }
 
