@@ -85,14 +85,9 @@
 		};
 	};
 
-	i2c@66 {
-		compatible = "i2c-gpio";
-		gpios = <&gpd2 0 0 /* sda */
-			 &gpd2 1 0 /* scl */
-			>;
-		i2c-gpio,delay-us = <2>;	/* ~100 kHz */
-		#address-cells = <1>;
-		#size-cells = <0>;
+	hsi2c@14E40000 {
+		samsung,hs-mode;
+		clock-frequency = <2500000>;
 		status = "okay";
 
 		s2mps13_pmic@66 {
