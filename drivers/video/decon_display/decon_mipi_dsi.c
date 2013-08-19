@@ -1024,6 +1024,21 @@ static int mipi_lcd_power_control(struct mipi_dsim_device *dsim,
 		iounmap(regs);
 #endif
 #endif
+	} else {
+		data = readl(regs + 0x4);
+		data &= ~0x1;
+		writel(data, regs + 0x4);
+		usleep_range(5000, 6000);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifndef CONFIG_FB_I80_SW_TRIGGER
+		regs = ioremap(0x14CC00C0, 0x4);
+		data = readl(regs);
+		data &= ~(0xf << 4);
+		writel(data, regs);
+		iounmap(regs);
+#endif
+#endif
 	}
 
 	return 1;
@@ -1260,7 +1275,9 @@ static void s5p_mipi_dsi_shutdown(struct platform_device *pdev)
 		mipi_lcd_power_control(dsim, 0);
 
 		pm_runtime_put_sync(&pdev->dev);
+		/*
 		clk_disable(dsim->clock);
+		*/
 	}
 }
 
