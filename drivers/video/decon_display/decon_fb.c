@@ -1375,29 +1375,32 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	u32 irq_ctrl_reg;
 
 	pm_runtime_get_sync(sfb->dev);
-	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
-	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
-	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
-	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
-	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
-
-	irq_ctrl_reg &= ~VIDINTCON0_FIFOLEVEL_MASK;
-	irq_ctrl_reg |= VIDINTCON0_FIFOLEVEL_EMPTY;
-	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
-	irq_ctrl_reg |= VIDINTCON0_FIFOSEL_MAIN_EN;
 #ifdef CONFIG_FB_I80_COMMAND_MODE
-
 	irq_ctrl_reg = readl(regs + VIDINTCON1);
 	irq_ctrl_reg |= VIDINTCON1_INT_I80;
 	writel(irq_ctrl_reg, regs + VIDINTCON1);
 
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
-	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
 	irq_ctrl_reg |= VIDINTCON0_INT_I80_EN;
+	irq_ctrl_reg &= ~VIDINTCON0_FIFOLEVEL_MASK;
+	irq_ctrl_reg |= VIDINTCON0_FIFOLEVEL_EMPTY;
+	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
+	irq_ctrl_reg |= VIDINTCON0_FIFOSEL_MAIN_EN;
+#else
+	irq_ctrl_reg = readl(regs + VIDINTCON0);
+	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
+	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
+	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
+	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
+	irq_ctrl_reg &= ~VIDINTCON0_FIFOLEVEL_MASK;
+	irq_ctrl_reg |= VIDINTCON0_FIFOLEVEL_EMPTY;
+	irq_ctrl_reg |= VIDINTCON0_INT_FIFO;
+	irq_ctrl_reg |= VIDINTCON0_FIFOSEL_MAIN_EN;
 #endif
 	writel(irq_ctrl_reg, regs + VIDINTCON0);
+
 	pm_runtime_put_sync(sfb->dev);
 }
 
@@ -1513,7 +1516,7 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
 	if (irq_sts_reg & VIDINTCON1_INT_FIFO) {
-		dev_err(sfb->dev, "underrun\n");
+		dev_err(sfb->dev, "DECON FIFO underrun\n");
 		writel(VIDINTCON1_INT_FIFO, regs + VIDINTCON1);
 		s3c_fb_log_fifo_underflow_locked(sfb, timestamp);
 	}
@@ -3988,6 +3991,14 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		goto err_lcd_clk;
 	}
 #endif
+
+	DT_READ_U32(dev->of_node, "fifo_irq_no", sfb->irq_no);
+	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
+				0, "s3c_fb", sfb);
+	if (ret) {
+		dev_err(dev, "fifo irq request failed\n");
+		goto err_lcd_clk;
+	}
 
 	sfb->bus_clk = devm_clk_get(dev, "lcd");
 	if (IS_ERR(sfb->bus_clk)) {
