@@ -1349,11 +1349,7 @@ static void s5p_mipi_dsi_unregister(void)
 {
 	platform_driver_unregister(&s5p_mipi_dsi_driver);
 }
-#if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
 late_initcall(s5p_mipi_dsi_register);
-#else
-module_init(s5p_mipi_dsi_register);
-#endif
 module_exit(s5p_mipi_dsi_unregister);
 
 MODULE_AUTHOR("Haowei li <haowei.li@samsung.com>");

@@ -1239,6 +1239,8 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 {
 	u32 data;
 
+	writel(0x1000000, sfb->regs + WINxMAP(index));
+
 	data = readl(sfb->regs + VIDCON0);
 	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
@@ -4818,11 +4820,7 @@ static void __exit s3c_fb_cleanup(void)
 	platform_driver_unregister(&s3c_fb_driver);
 }
 
-#if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
 late_initcall(s3c_fb_init);
-#else
-module_init(s3c_fb_init);
-#endif
 module_exit(s3c_fb_cleanup);
 
 MODULE_AUTHOR("Ben Dooks <ben@simtec.co.uk>");
