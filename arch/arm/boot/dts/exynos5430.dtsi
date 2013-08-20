@@ -279,6 +279,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12150000 0x1000>;
 		interrupts = <0 128 0>;
+		samsung,power-domain = <&pd_cam0>;
 		status = "ok";
 	};
 
@@ -286,6 +287,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12160000 0x1000>;
 		interrupts = <0 130 0>;
+		samsung,power-domain = <&pd_cam0>;
 		status = "ok";
 	};
 
@@ -293,6 +295,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12170000 0x1000>;
 		interrupts = <0 132 0>;
+		samsung,power-domain = <&pd_cam0>;
 		status = "ok";
 	};
 
@@ -300,6 +303,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12180000 0x1000>;
 		interrupts = <0 137 0>;
+		samsung,power-domain = <&pd_cam0>;
 		status = "ok";
 	};
 
@@ -307,6 +311,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x121A0000 0x1000>;
 		interrupts = <0 147 0>;
+		samsung,power-domain = <&pd_cam0>;
 		status = "ok";
 	};
 
@@ -389,6 +394,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x142B0000 0x1000>;
 		interrupts = <0 160 0>;
+		samsung,power-domain = <&pd_cam1>;
 		status = "ok";
 	};
 
@@ -404,6 +410,7 @@
 			     <0 346 0>,
 			     <0 338 0>,
 			     <0 340 0>;
+		samsung,power-domain = <&pd_isp>;
 		status = "ok";
 	};
 
@@ -415,6 +422,7 @@
 		interrupts = <0 342 0>,
 			     <0 344 0>,
 			     <0 349 0>;
+		samsung,power-domain = <&pd_isp>;
 		status = "ok";
 	};
 
@@ -422,6 +430,7 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x143C0000 0x1000>;
 		interrupts = <0 336 0>;
+		samsung,power-domain = <&pd_isp>;
 		status = "ok";
 	};
 
@@ -757,7 +766,6 @@
 	pd_cam0: pd-cam0@105c4020 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4020 0x20>;
-		status = "disabled";
 	};
 
 	pd_mscl: pd-mscl@105c4040 {
@@ -828,7 +836,6 @@
 	pd_cam1: pd-cam1@105c40a0 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c40a0 0x20>;
-		status = "disabled";
 	};
 
 	pd_maudio: pd-maudio@105c40c0 {
@@ -878,7 +885,6 @@
 	pd_isp: pd-isp@105c4140 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4140 0x20>;
-		status = "disabled";
 	};
 
 	pd_mfc0: pd-mfc0@105c4180 {
@@ -1217,6 +1223,9 @@
 			<&sysmmu_isp0>,
 			<&sysmmu_isp1>,
 			<&sysmmu_isp2>;
+		samsung,power-domain = <&pd_cam0
+					&pd_cam1
+					&pd_isp>;
 		status = "ok";
 	};
 };
