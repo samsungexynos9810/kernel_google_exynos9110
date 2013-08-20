@@ -129,7 +129,7 @@
 #define IS_ISP_SET_PARAM_AA_SLEEP(dev, x) \
 		(dev->is_p_region->parameter.isp.aa.sleep = x)
 #define IS_ISP_SET_PARAM_AA_FACE(dev, x) \
-		(dev->is_p_region->parameter.isp.aa.uiAfFace = x)
+		(dev->is_p_region->parameter.isp.aa.af_face = x)
 #define IS_ISP_SET_PARAM_AA_TOUCH_X(dev, x) \
 		(dev->is_p_region->parameter.isp.aa.touch_x = x)
 #define IS_ISP_SET_PARAM_AA_TOUCH_Y(dev, x) \
@@ -1660,9 +1660,9 @@ struct param_otf_input {
 	u32	crop_offset_y;
 	u32	crop_width;
 	u32	crop_height;
-	u32	uiBDSOutEnable;
-	u32	uiBDSOutWidth;
-	u32	uiBDSOutHeight;
+	u32	bds_out_enable;
+	u32	bds_out_width;
+	u32	bds_out_height;
 	u32	frametime_min;
 	u32	frametime_max;
 	u32	binning_ratio_x;
@@ -1681,26 +1681,26 @@ struct param_dma_input {
 	u32	order;
 	u32	buffer_number;
 	u32	buffer_address;
-	u32	uiBayerCropOffsetX;
-	u32	uiBayerCropOffsetY;
-	u32	uiBayerCropWidth;
-	u32	uiBayerCropHeight;
-	u32	uiDmaCropOffsetX;
-	u32	uiDmaCropOffsetY;
-	u32	uiDmaCropWidth;
-	u32	uiDmaCropHeight;
-	u32	uiBDSOutEnable;
-	u32	uiBDSOutWidth;
-	u32	uiBDSOutHeight;
-	u32	uiUserMinFrameTime;
-	u32	uiUserMaxFrameTime;
-	u32	uiWideFrameGap;
-	u32	uiFrameGap;
-	u32	uiLineGap;
-	u32	uiMemoryWidthBits;
+	u32	bayer_crop_offset_x;
+	u32	bayer_crop_offset_y;
+	u32	bayer_crop_width;
+	u32	bayer_crop_height;
+	u32	dma_crop_offset_x;
+	u32	dma_crop_offset_y;
+	u32	dma_crop_width;
+	u32	dma_crop_height;
+	u32	bds_out_enable;
+	u32	bds_out_width;
+	u32	bds_out_height;
+	u32	user_min_frame_time;
+	u32	user_max_frame_time;
+	u32	wide_frame_gap;
+	u32	frame_gap;
+	u32	line_gap;
+	u32	memory_width_bits;
 	u32	binning_ratio_x;
 	u32	binning_ratio_y;
-	u32	uiReserved[PARAMETER_MAX_MEMBER-29];
+	u32	reserved[PARAMETER_MAX_MEMBER-29];
 	u32	err;
 };
 
@@ -1711,8 +1711,8 @@ struct param_otf_output {
 	u32	format;
 	u32	bitwidth;
 	u32	order;
-	u32	uiCropOffsetX;
-	u32 uiCropOffsetY;
+	u32	crop_offset_x;
+	u32	crop_offset_y;
 	u32	reserved[PARAMETER_MAX_MEMBER-9];
 	u32	err;
 };
@@ -1751,27 +1751,27 @@ struct param_isp_aa {
 	u32	target;
 	u32	mode;
 	u32	scene;
-	u32	uiAfTouch;
-	u32	uiAfFace;
-	u32	uiAfResponse;
+	u32	af_touch;
+	u32	af_face;
+	u32	af_response;
 	u32	sleep;
 	u32	touch_x;
 	u32	touch_y;
 	u32	manual_af_setting;
 	/*0: Legacy, 1: Camera 2.0*/
-	u32	uiCamApi2P0;
+	u32	cam_api_2p0;
 	/* For android.control.afRegions in Camera 2.0,
 	Resolution based on YUV output size*/
-	u32	uiAfRegionLeft;
+	u32	af_region_left;
 	/* For android.control.afRegions in Camera 2.0,
 	Resolution based on YUV output size*/
-	u32	uiAfRegionTop;
+	u32	af_region_top;
 	/* For android.control.afRegions in Camera 2.0,
 	Resolution based on YUV output size*/
-	u32	uiAfRegionRight;
+	u32	af_region_right;
 	/* For android.control.afRegions in Camera 2.0,
 	Resolution based on YUV output size*/
-	u32	uiAfRegionBottom;
+	u32	af_region_bottom;
 	u32	reserved[PARAMETER_MAX_MEMBER-17];
 	u32	err;
 };
@@ -1813,20 +1813,20 @@ struct param_isp_adjust {
 	s32	brightness;
 	s32	hue;
 	/* 0 or 1 */
-	u32	uiHotPixelEnable;
+	u32	hot_pixel_enable;
 	/* -127 ~ 127 */
-	s32	uiNoiseReductionStrength;
+	s32	noise_reduction_strength;
 	/* 0 or 1 */
-	u32	uiShadingCorrectionEnable;
+	u32	shading_correction_enable;
 	/* 0 or 1 */
-	u32	uiUserGammaEnable;
+	u32	user_gamma_enable;
 	/* -127 ~ 127 */
-	s32	uiEdgeEnhancementStrength;
+	s32	edge_enhancement_strength;
 	/* ISP_AdjustSceneIndexEnum */
-	u32	uiUserSceneMode;
-	u32	uiMinFrameTime;
-	u32	uiMaxFrameTime;
-	u32	uiReserved[PARAMETER_MAX_MEMBER-16];
+	u32	user_scene_mode;
+	u32	min_frame_time;
+	u32	max_frame_time;
+	u32	reserved[PARAMETER_MAX_MEMBER-16];
 	u32	err;
 };
 
@@ -1838,7 +1838,7 @@ struct param_isp_metering {
 	u32	win_height;
 	u32	exposure_mode;
 	/* 0: Legacy, 1: Camera 2.0 */
-	u32	uiCamApi2P0;
+	u32	cam_api_2p0;
 	u32	reserved[PARAMETER_MAX_MEMBER-8];
 	u32	err;
 };
@@ -2170,8 +2170,8 @@ struct is_face_marker {
 	u32	roll_angle;
 	u32 yaw_angle;
 	u32	confidence;
-	u32	uiIsTracked;
-	u32	uiTrackedFaceID;
+	u32	is_tracked;
+	u32	tracked_face_id;
 	u32	smile_level;
 	u32	blink_level;
 };
@@ -2264,6 +2264,6 @@ struct is_debug_control {
 	u32 isp_frame_drop;	/* Frame Drop Count.*/
 	u32 drc_frame_drop;	/* Frame Drop Count.*/
 	u32 dis_frame_drop;	/* Frame Drop Count.*/
-	u32 uiFDFrameDrop;
+	u32 fd_frame_drop;
 };
 #endif
