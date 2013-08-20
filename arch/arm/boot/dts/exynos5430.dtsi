@@ -1228,4 +1228,12 @@
 					&pd_isp>;
 		status = "ok";
 	};
+
+	sss@11100000 {
+		compatible = "samsung,exynos5430-sss";
+		reg = <0x11100000 0x8000>;
+		interrupts = <0 315 0>;
+		clocks = <&clock 2334>;
+		clock-names = "secss";
+	};
 };
