@@ -33,6 +33,7 @@
 #include <linux/delay.h>
 #include <linux/version.h>
 #include <linux/hrtimer.h>
+#include <linux/of.h>
 
 #include <asm/cacheflush.h>
 
@@ -52,7 +53,7 @@
 #include "ace.h"
 #include "ace_sfr.h"
 
-#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5)
+#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5) || defined(CONFIG_ACE_USE_SSS_VER_6)
 #define S5P_ACE_DRIVER_NAME		"s5p-sss"
 #else
 #define S5P_ACE_DRIVER_NAME		"s5p-slimsss"
@@ -86,6 +87,7 @@
 enum s5p_ip_version {
 	SSS_VER_4,
 	SSS_VER_5,
+	SSS_VER_6,
 	SLIMSSS_VER_1,
 };
 
@@ -2329,7 +2331,7 @@ static int s5p_ace_probe(struct platform_device *pdev)
 		goto err_mem1;
 	}
 
-#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5)
+#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5) || defined(CONFIG_ACE_USE_SSS_VER_6)
 	s5p_adt->clock = clk_get(&pdev->dev, "secss");
 #else
 	s5p_adt->clock = clk_get(&pdev->dev, "slimsss");
@@ -2339,11 +2341,15 @@ static int s5p_ace_probe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto err_clk;
 	}
+	clk_prepare(s5p_adt->clock);
+
 	s5p_ace_init_clock_gating();
 #if defined(CONFIG_ACE_USE_SSS_VER_4)
 	s5p_adt->ipver = SSS_VER_4;
 #elif defined(CONFIG_ACE_USE_SSS_VER_5)
 	s5p_adt->ipver = SSS_VER_5;
+#elif defined(CONFIG_ACE_USE_SSS_VER_6)
+	s5p_adt->ipver = SSS_VER_6;
 #else
 	s5p_adt->ipver = SLIMSSS_VER_1;
 #endif
@@ -2528,6 +2534,7 @@ err_irq:
 	free_irq(s5p_adt->irq, (void *)s5p_adt);
 	s5p_adt->irq = 0;
 #endif
+	clk_unprepare(s5p_adt->clock);
 err_clk:
 	iounmap(s5p_adt->ace_base);
 	s5p_adt->ace_base = NULL;
@@ -2555,6 +2562,7 @@ static int s5p_ace_remove(struct platform_device *dev)
 #endif
 
 	if (s5p_adt->clock) {
+		clk_unprepare(s5p_adt->clock);
 		clk_put(s5p_adt->clock);
 		s5p_adt->clock = NULL;
 	}
@@ -2661,6 +2669,14 @@ static int s5p_ace_resume(struct platform_device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id cryptographic_accelerator_match[] = {
+	{ .compatible = "samsung,exynos5430-sss"},
+	{},
+};
+MODULE_DEVICE_TABLE(of, cryptographic_accelerator_match);
+#endif
+
 static struct platform_driver s5p_ace_driver = {
 	.probe		= s5p_ace_probe,
 	.remove		= s5p_ace_remove,
@@ -2669,12 +2685,15 @@ static struct platform_driver s5p_ace_driver = {
 	.driver		= {
 		.name	= S5P_ACE_DRIVER_NAME,
 		.owner	= THIS_MODULE,
+#ifdef CONFIG_OF
+		.of_match_table = of_match_ptr(cryptographic_accelerator_match),
+#endif
 	},
 };
 
 static int __init s5p_ace_init(void)
 {
-#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5)
+#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5) || defined(CONFIG_ACE_USE_SSS_VER_6)
 	printk(KERN_INFO "S5P ACE Driver(SSS), (c) 2010 Samsung Electronics\n");
 #else
 	printk(KERN_INFO "S5P ACE Driver(SLIMSSS), (c) 2013 Samsung Electronics\n");

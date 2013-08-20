@@ -315,7 +315,11 @@ config ACE_USE_SSS_VER_4
 
 config ACE_USE_SSS_VER_5
 	bool "SSS v5.x"
-	depends on CRYPTO_S5P_DEV_ACE && !ARCH_S5PV210
+	depends on CRYPTO_S5P_DEV_ACE && !ARCH_S5PV210 && !SOC_EXYNOS5430
+
+config ACE_USE_SSS_VER_6
+	bool "SSS v6.x"
+	depends on CRYPTO_S5P_DEV_ACE && SOC_EXYNOS5430
 
 config ACE_USE_SLIMSSS_VER_1
 	bool "SlimSSS v1.x"
