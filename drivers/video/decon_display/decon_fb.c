@@ -2658,7 +2658,7 @@ static int s3c_fb_sd_set_pad_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh 
 	user_window.x = crop->rect.left;
 	user_window.y = crop->rect.top;
 
-	if (!s3c_fb_validate_x_alignment(sfb, user_window.x, var->xres,
+	if (!s3c_fb_validate_x_alignment(sfb, user_window.x, crop->rect.width,
 			var->bits_per_pixel))
 		return -EINVAL;
 
@@ -2666,7 +2666,8 @@ static int s3c_fb_sd_set_pad_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh 
 	data = vidosd_a(user_window.x, user_window.y);
 	writel(data, regs + VIDOSD_A(win_no));
 
-	data = vidosd_b(user_window.x, user_window.y, var->xres, var->yres);
+	data = vidosd_b(user_window.x, user_window.y, crop->rect.width,
+			crop->rect.height);
 	writel(data, regs + VIDOSD_B(win_no));
 
 	dev_dbg(sfb->dev, "Set sd pad crop (x, y) : (%d, %d)\n",
