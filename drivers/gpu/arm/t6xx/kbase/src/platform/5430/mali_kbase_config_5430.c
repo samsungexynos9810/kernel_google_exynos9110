@@ -21,6 +21,7 @@
 #include <kbase/src/platform/mali_kbase_platform.h>
 #include <linux/suspend.h>
 #include <kbase/src/platform/mali_kbase_dvfs.h>
+#include <../drivers/clk/samsung/clk.h>
 
 #define HZ_IN_MHZ                           (1000000)
 #ifdef CONFIG_MALI_T6XX_RT_PM
@@ -163,7 +164,6 @@ void kbase_device_runtime_disable(struct kbase_device *kbdev)
 static int pm_callback_runtime_on(kbase_device *kbdev)
 {
 	int ret;
-	struct clk *mout_vpll = NULL, *aclk_g3d_sw = NULL, *aclk_g3d_dout = NULL;
 	struct device *dev =  kbdev->osdev.dev;
 	struct exynos_context * platform = (struct exynos_context *) kbdev->platform_context;
 
@@ -174,38 +174,20 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 	if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
 		return -EPERM;
 #endif
-	mout_vpll = clk_get(dev, "mout_vpll");
-	if (IS_ERR(mout_vpll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_vpll]\n");
-		return 0;
-	}
-	aclk_g3d_dout = clk_get(dev, "aclk_g3d_dout");
-	if (IS_ERR(aclk_g3d_dout)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d_dout]\n");
-		return 0;
-	}
-	aclk_g3d_sw = clk_get(dev, "aclk_g3d_sw");
-	if (IS_ERR(aclk_g3d_sw)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d_sw]\n");
-		return 0;
-	}
 
-	ret = clk_set_parent(platform->aclk_g3d, aclk_g3d_sw);
+	ret = exynos_set_parent("dout_aclk_g3d", "mout_g3d_pll");
 	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [platform->aclk_g3d]\n");
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_patent [mout_g3d_pll]\n");
 		return 0;
 	}
-	ret = clk_set_parent(aclk_g3d_sw, aclk_g3d_dout);
+/*
+	//enalbe this for stable gpu
+	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
 	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d_sw]\n");
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
 		return 0;
 	}
-	ret = clk_set_parent(aclk_g3d_dout, mout_vpll);
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d_dout]\n");
-		return 0;
-	}
-
+*/
 	return 0;
 }
 

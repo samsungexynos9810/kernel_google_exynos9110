@@ -776,7 +776,6 @@
 	pd_g3d: pd-g3d@105c4060 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4060 0x20>;
-		status = "disabled";
 	};
 
 	pd_disp: pd-disp@105c4080 {

@@ -44,6 +44,7 @@
 #include <linux/clk-provider.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
+#include <../drivers/clk/samsung/clk.h>
 #include <mach/pmu.h>
 #include <mach/regs-pmu.h>
 #include <asm/delay.h>
@@ -98,7 +99,6 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
-	struct clk *fin_pll = NULL, *fout_g3d_pll = NULL, *mout_g3d_pll = NULL;
 	int timeout, ret;
 	struct exynos_context *platform;
 
@@ -108,11 +108,11 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D power */
-	__raw_writel(0x7, EXYNOS5430_G3D_CONFIGURATION);
+	__raw_writel(0xf, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability for 1ms */
 	timeout = 10;
-	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) != 0x7) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) != 0xf) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d power\n");
@@ -123,47 +123,34 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D clock */
-	fin_pll = __clk_lookup("fin_pll");
-	if (IS_ERR(fin_pll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fin_pll]\n");
-		goto out;
-	}
-	fout_g3d_pll = __clk_lookup("fout_g3d_pll");
-	clk_prepare(fout_g3d_pll);
-	if (IS_ERR(fout_g3d_pll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [fout_g3d_pll]\n");
-		goto out;
-	}
-	mout_g3d_pll = __clk_lookup("mout_g3d_pll");
-	if (IS_ERR(mout_g3d_pll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_g3d_pll]\n");
-		goto out;
-	}
 	clk_g3d = __clk_lookup("dout_aclk_g3d");
 	clk_prepare(clk_g3d);
 	if (IS_ERR(clk_g3d)) {
 		clk_g3d = NULL;
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [g3d]\n");
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to __clk_lookup [g3d]\n");
 		goto out;
 	} else {
 		platform->aclk_g3d = clk_g3d;
 	}
-	ret = clk_set_parent(platform->aclk_g3d, mout_g3d_pll);
+
+	ret = exynos_set_parent("dout_aclk_g3d"," mout_g3d_pll");
 	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [mout_g3d_pll]\n");
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
 		goto out;
 	}
 
-	/*
-	ret = clk_set_parent(mout_g3d_pll, fout_g3d_pll);
+/*
+	// enable this for stable gpu
+	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
 	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [fout_g3d_pll]\n");
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
 		goto out;
 	}
-	*/
+*/
 
-	(void) clk_enable(platform->aclk_g3d);
-	clk_set_rate(platform->aclk_g3d, MALI_T6XX_DEFAULT_CLOCK);
+//	exynos_set_rate("dout_aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
+	(void) clk_enable(clk_g3d);
+
 	clk_g3d_status = 1;
 
 #if defined(CONFIG_EXYNOS_THERMAL)
@@ -192,7 +179,6 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
-		(void) clk_enable(platform->aclk_g3d);
 	}
 	clk_g3d_status = 1;
 
@@ -214,7 +200,6 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 
 	if (clk_g3d) {
 		(void)clk_disable(clk_g3d);
-		(void)clk_disable(platform->aclk_g3d);
 	}
 	clk_g3d_status = 0;
 
@@ -223,7 +208,7 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 
 int kbase_platform_is_power_on(void)
 {
-	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) == 0x7) ? 1 : 0;
+	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) == 0xf) ? 1 : 0;
 }
 
 static int kbase_platform_power_on(void)
@@ -231,12 +216,12 @@ static int kbase_platform_power_on(void)
 	int timeout;
 
 	/* Turn on G3D  */
-	__raw_writel(0x7, EXYNOS5430_G3D_CONFIGURATION);
+	__raw_writel(0xf, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) != 0x7) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) != 0xf) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d via g3d_configuration\n");
@@ -259,7 +244,7 @@ static int kbase_platform_power_off(void)
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while (__raw_readl(EXYNOS5430_G3D_STATUS) & 0x7) {
+	while (__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) {
 		if (timeout == 0) {
 			/* need to call panic */
 			panic("failed to turn off g3d via g3d_configuration\n");

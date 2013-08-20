@@ -43,6 +43,7 @@
 #include <linux/clk.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
+#include <../drivers/clk/samsung/clk.h>
 #include <asm/delay.h>
 #include <linux/regulator/consumer.h>
 #include <linux/regulator/driver.h>
@@ -738,12 +739,11 @@ void kbase_tmu_normal_work(void)
 
 void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 {
-	struct device *dev =  kbdev->osdev.dev;
-	struct clk *fout_g3d_pll = NULL, *mout_g3d_pll = NULL, *dout_aclk_g3d = NULL;
 	static long g3d_rate_prev = -1;
 	unsigned long g3d_rate = freq * 1000000;
 
 	unsigned long tmp = 0;
+	int ret;
 	struct exynos_context *platform;
 
 	if (!kbdev)
@@ -757,25 +757,25 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 	if (platform->aclk_g3d == 0)
 		return;
 
-	dout_aclk_g3d = clk_get(dev, "dout_aclk_g3d");
-	if (IS_ERR(dout_aclk_g3d)) {
-		printk(KERN_ERR "[kbase_platform_dvfs_set_clock] failed to clk_get [dout_aclk_g3d] = %ld\n", g3d_rate);
-
-		return;
-	}
-
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (g3d_rate != g3d_rate_prev) {
 		/*change here for future stable clock changing*/
-		fout_g3d_pll = clk_get(dev, "fout_g3d_pll");
-		fout_g3d_pll = clk_get(dev, "fout_g3d_pll");
-
-		clk_set_parent(platform->aclk_g3d, mout_g3d_pll);
-		dout_aclk_g3d = clk_get(dev, "dout_aclk_g3d");
+		ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
+		if (ret < 0) {
+			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
+			return;
+		}
+	/*
+		//enable this for stable gpu
+		ret = exynos_set_parent("mout_ged_pll", "fout_g3d_pll");
+		if (ret < 0) {
+			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
+			return;
+		}
+	*/
 		g3d_rate_prev = g3d_rate;
 	}
-
-	clk_set_rate(dout_aclk_g3d, g3d_rate);
+//	exynos_set_rate("dout_aclk_g3d", g3d_rate);
 
 	/* Waiting for clock is stable */
 	do {
@@ -785,7 +785,6 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 #ifdef MALI_DEBUG
 	DEBUG_PRINT_INFO("===clock set: %ld\n", aclk_rate);
 	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(platform->aclk_g3d));
-	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(dout_aclk_g3d));
 #endif
 	return;
 }

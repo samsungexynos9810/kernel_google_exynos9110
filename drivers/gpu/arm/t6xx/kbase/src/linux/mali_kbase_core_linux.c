@@ -85,6 +85,8 @@ static int kbase_dev_nr;
 static DEFINE_SEMAPHORE(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
 
+kbase_attribute *g_pd;
+
 KBASE_EXPORT_TEST_API(kbase_dev_list_lock)
 KBASE_EXPORT_TEST_API(kbase_dev_list)
 #define KERNEL_SIDE_DDK_VERSION_STRING "K:" MALI_RELEASE_NAME "(GPL)"
@@ -2492,6 +2494,17 @@ static int kbase_common_device_init(kbase_device *kbdev)
 	return err;
 }
 
+#ifdef CONFIG_OF
+static const struct of_device_id exynos_mali_match[] = {
+	{
+		.compatible = "arm,mali",
+	},
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, exynos_mali_match);
+#endif
+
 static int kbase_platform_device_probe(struct platform_device *pdev)
 {
 	struct kbase_device *kbdev;
@@ -2522,7 +2535,8 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 	osdev = &kbdev->osdev;
 	osdev->dev = &pdev->dev;
-	platform_data = (kbase_attribute *) osdev->dev->platform_data;
+//	platform_data = (kbase_attribute *) osdev->dev->platform_data;
+	platform_data = g_pd;
 
 	if (NULL == platform_data) {
 		dev_err(osdev->dev, "Platform data not specified\n");
@@ -2789,6 +2803,8 @@ static const struct dev_pm_ops kbase_pm_ops = {
 #endif /* CONFIG_PM_RUNTIME */
 };
 
+
+
 static struct platform_driver kbase_platform_driver = {
 	.probe = kbase_platform_device_probe,
 	.remove = kbase_platform_device_remove,
@@ -2796,6 +2812,7 @@ static struct platform_driver kbase_platform_driver = {
 		   .name = kbase_drv_name,
 		   .owner = THIS_MODULE,
 		   .pm = &kbase_pm_ops,
+		   .of_match_table = exynos_mali_match,
 		   },
 };
 
@@ -2851,6 +2868,7 @@ static int __init kbase_driver_init(void)
 		return err;
 	}
 
+	g_pd = (kbase_attribute*)config->attributes;
 #endif /* CONFIG_CONFIG_MACH_MANTA */
 #else /* CONFIG_MALI_PLATFORM_FAKE */
 
