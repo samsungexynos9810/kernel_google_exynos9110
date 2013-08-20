@@ -1300,7 +1300,7 @@ struct mipi_dsim_config g_dsim_config = {
 	.e_pixel_format = DSIM_24BPP_888,
 	/* main frame fifo auto flush at VSYNC pulse */
 	.auto_flush	= false,
-	.eot_disable	= false,
+	.eot_disable	= true,
 	.auto_vertical_cnt = false,
 	.hse = false,
 	.hfp = false,

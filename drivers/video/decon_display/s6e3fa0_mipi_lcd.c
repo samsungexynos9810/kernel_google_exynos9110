@@ -276,6 +276,7 @@ static int update_brightness(int brightness)
 {
 	int backlightlevel;
 
+	if(1) return 1;
 	backlightlevel = get_backlight_level(brightness);
 
 	while (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
