@@ -1236,4 +1236,12 @@
 		clocks = <&clock 2334>;
 		clock-names = "secss";
 	};
+
+	slimsss@11140000 {
+		compatible = "samsung,exynos5430-slimsss";
+		reg = <0x11140000 0x1000>;
+		interrupts = <0 312 0>;
+		clocks = <&clock 2335>;
+		clock-names = "slimsss";
+	};
 };
