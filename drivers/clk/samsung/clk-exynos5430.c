@@ -897,6 +897,9 @@ PNAME(mout_aclk_fd_b_p) = { "mout_aclk_fd_a", "mout_aclk_cam1_333_user" };
 PNAME(mout_aclk_csis2_a_p) = { "mout_aclk_cam1_552_user", "mout_aclk_cam1_400_user" };
 PNAME(mout_aclk_csis2_b_p) = { "mout_aclk_csis2_a", "mout_aclk_cam1_333_user" };
 
+PNAME(mout_aclk_isp_400_user_p) = { "oscclk", "aclk_isp_400" };
+PNAME(mout_aclk_isp_dis_400_user_p) = { "oscclk", "aclk_isp_dis_400" };
+
 struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
 	FRATE(none, "oscclk", NULL, CLK_IS_ROOT, 24000000),
 	FRATE(none, "phyclk_usbdrd30_udrd30_phyclock_phy", NULL, CLK_IS_ROOT, 60000000),
@@ -1130,6 +1133,8 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMX(none, "mout_aclk_csis2_a", mout_aclk_csis2_a_p, EXYNOS5430_SRC_SEL_CAM12, 16, 1),
 	CMX(none, "mout_aclk_csis2_b", mout_aclk_csis2_b_p, EXYNOS5430_SRC_SEL_CAM12, 20, 1),
 
+	CMX(none, "mout_aclk_isp_400_user", mout_aclk_isp_400_user_p, EXYNOS5430_SRC_SEL_ISP, 0, 1),
+	CMX(none, "mout_aclk_isp_dis_400_user", mout_aclk_isp_dis_400_user_p, EXYNOS5430_SRC_SEL_ISP, 4, 1),
 };
 
 #define CDV(_id, cname, pname, o, s, w) \
@@ -1302,6 +1307,10 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDV(none, "dout_pclk_lite_c", "dout_aclk_lite_c", EXYNOS5430_DIV_CAM11, 4, 2),
 	CDV(none, "dout_pclk_fd", "dout_aclk_fd", EXYNOS5430_DIV_CAM11, 12, 2),
 
+	CDV(none, "dout_aclk_isp_c_200", "mout_aclk_isp_400_user", EXYNOS5430_DIV_ISP, 0, 3),
+	CDV(none, "dout_aclk_isp_d_200", "mout_aclk_isp_400_user", EXYNOS5430_DIV_CAM10, 4, 3),
+	CDV(none, "dout_pclk_isp", "mout_aclk_isp_400_user", EXYNOS5430_DIV_CAM10, 8, 3),
+	CDV(none, "dout_pclk_isp_dis", "mout_aclk_isp_dis_400_user", EXYNOS5430_DIV_CAM10, 12, 3),
 };
 
 #define CGTE(_id, cname, pname, o, b, f, gf) \
