@@ -19,6 +19,7 @@
 #include <mach/regs-pmu.h>
 #include <mach/pmu.h>
 #include <asm/cputype.h>
+#include <asm/smp_plat.h>
 
 #define REG_CPU_STATE_ADDR     (S5P_VA_SYSRAM_NS + 0x28)
 
@@ -165,24 +166,40 @@ void __iomem *exynos_list_feed[] = {
 
 void set_boot_flag(unsigned int cpu, unsigned int mode)
 {
-	unsigned int tmp;
+	unsigned int phys_cpu = cpu_logical_map(cpu);
+	unsigned int tmp, core, cluster;
+	void __iomem *addr;
 
-	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+	addr = REG_CPU_STATE_ADDR + 4 * (core + cluster * 4);
+
+	tmp = __raw_readl(addr);
 
 	if (mode & BOOT_MODE_MASK)
 		tmp &= ~BOOT_MODE_MASK;
+	else
+		BUG_ON(mode == 0);
 
 	tmp |= mode;
-	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
+	__raw_writel(tmp, addr);
 }
 
 void clear_boot_flag(unsigned int cpu, unsigned int mode)
 {
-	unsigned int tmp;
+	unsigned int phys_cpu = cpu_logical_map(cpu);
+	unsigned int tmp, core, cluster;
+	void __iomem *addr;
 
-	tmp = __raw_readl(REG_CPU_STATE_ADDR + (cpu * 4));
+	BUG_ON(mode == 0);
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+	addr = REG_CPU_STATE_ADDR + 4 * (core + cluster * 4);
+
+	tmp = __raw_readl(addr);
 	tmp &= ~mode;
-	__raw_writel(tmp, REG_CPU_STATE_ADDR + (cpu * 4));
+	__raw_writel(tmp, addr);
 }
 
 static void exynos_use_feedback(void)
