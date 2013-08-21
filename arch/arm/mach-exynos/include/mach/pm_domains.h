@@ -76,7 +76,8 @@ struct exynos_pm_domain {
 	int (*off)(struct exynos_pm_domain *pd, int power_flags);
 	struct list_head cb_post_off;
 	spinlock_t interrupt_lock;
-
+	int (*check_status)(struct exynos_pm_domain *pd);
+	unsigned int status;
 	unsigned int pd_option;
 };
 

@@ -92,7 +92,22 @@ static inline int exynos_pd_power_dummy(struct exynos_pm_domain *pd,
 {
 
 	DEBUG_PRINT_INFO("%s: dummy power on/off: %d\n", pd->genpd.name, power_flags);
+	pd->status = power_flags;
+
 	return 0;
+}
+
+static int exynos_pd_status(struct exynos_pm_domain *pd)
+{
+	if (unlikely(!pd))
+		return -EINVAL;
+
+	if (likely(pd->base)) {
+		/* check STATUS register */
+		pd->status = (__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN);
+	}
+
+	return pd->status;
 }
 
 static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
@@ -128,6 +143,7 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 			usleep_range(8, 10);
 		}
 	}
+	pd->status = power_flags;
 	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
 				pd->genpd.name, pd->base,
 				__raw_readl(pd->base),
@@ -290,6 +306,8 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	INIT_LIST_HEAD(&pd->cb_post_on);
 	INIT_LIST_HEAD(&pd->cb_pre_off);
 	INIT_LIST_HEAD(&pd->cb_post_off);
+	pd->status = true;
+	pd->check_status = exynos_pd_status;
 
 	pm_genpd_init(&pd->genpd, NULL, false);
 
