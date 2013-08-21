@@ -318,6 +318,40 @@ void mscl_init_clock(void)
 			exynos_get_rate("pclk_jpeg"));
 }
 
+void g2d_init_clock(void)
+{
+	int clk_rate1;
+	int clk_rate2;
+
+	if (exynos_set_parent("mout_aclk_g2d_400_a", "mout_bus_pll_user"))
+		pr_err("Unable to set parent %s of clock %s\n"
+				,"mout_bus_pll_user", "mout_aclk_g2d_400_a");
+
+	if (exynos_set_parent("mout_aclk_g2d_400_b", "mout_aclk_g2d_400_a"))
+		pr_err("Unable to set parent %s of clock %s\n"
+				,"mout_aclk_g2d_400_a", "mout_aclk_g2d_400_b");
+
+	if (exynos_set_parent("mout_aclk_g2d_400_user", "dout_aclk_g2d_400"))
+		pr_err("Unable to set parent %s of clock %s\n"
+				, "dout_aclk_g2d_400", "mout_aclk_g2d_400_user");
+
+	if (exynos_set_parent("mout_aclk_g2d_266_user", "dout_aclk_g2d_266"))
+		pr_err("Unable to set parent %s of clock %s\n"
+				, "dout_aclk_g2d_266", "mout_aclk_g2d_266_user");
+
+	if (exynos_set_rate("dout_aclk_g2d_400", 400000000))
+		pr_err("Can't set %s clock rate\n", "dout_aclk_g2d_400");
+
+	if (exynos_set_rate("dout_aclk_g2d_266", 267000000))
+		pr_err("Can't set %s clock rate\n", "dout_aclk_g2d_266");
+
+	clk_rate1 = exynos_get_rate("aclk_g2d_400");
+	clk_rate2 = exynos_get_rate("aclk_g2d_266");
+
+	pr_debug("[%s:%d] aclk_g2d_400:%d, aclk_g2d_266:%d\n"
+			, __func__, __LINE__, clk_rate1, clk_rate2);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -334,4 +368,5 @@ void __init exynos5430_clock_init(void)
 	spi_clock_init();
 	usb_init_clock();
 	mscl_init_clock();
+	g2d_init_clock();
 }
