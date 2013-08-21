@@ -138,6 +138,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
 		goto out;
 	}
+
 	__raw_writel(0x00, EXYNOS5430_ENABLE_IP_G3D0);
 	__raw_writel(0xe6260602, EXYNOS5430_G3D_PLL_CON0);
 
@@ -145,10 +146,17 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 		if(__raw_readl(EXYNOS5430_G3D_PLL_CON0)&(0x1<<29))
 			break;
 	}
+
 	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
 	if (ret < 0) {
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
 		goto out;
+	}
+
+	__raw_writel(0x1, EXYNOS5430_SRC_SEL_G3D);
+	while(1){
+		if(__raw_readl(EXYNOS5430_SRC_SEL_G3D))
+			break;
 	}
 
 	__raw_writel(0x1F, EXYNOS5430_ENABLE_IP_G3D0);
