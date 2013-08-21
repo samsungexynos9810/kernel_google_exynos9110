@@ -62,7 +62,7 @@ extern "C" {
 #define ACE_PKA_OFFSET		(0x4000)
 #else
 #define ACE_FC_OFFSET		(0x0)
-#define ACE_AES_OFFSET		(0x500)
+#define ACE_AES_OFFSET		(0x400)
 #define ACE_HASH_OFFSET		(0x800)
 #endif
 

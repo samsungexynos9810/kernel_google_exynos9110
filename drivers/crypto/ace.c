@@ -2671,7 +2671,11 @@ static int s5p_ace_resume(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id cryptographic_accelerator_match[] = {
+#if defined(CONFIG_ACE_USE_SSS_VER_6)
 	{ .compatible = "samsung,exynos5430-sss"},
+#else
+	{ .compatible = "samsung,exynos5430-slimsss"},
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, cryptographic_accelerator_match);
