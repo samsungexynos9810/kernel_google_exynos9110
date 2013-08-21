@@ -1119,6 +1119,7 @@
 
 	seiren {
 		compatible = "samsung,exynos5430-seiren";
+		interrupts = <0 69 0>;
 		clocks = <&clock 770>;
 		clock-names = "ca5";
 		status = "ok";
