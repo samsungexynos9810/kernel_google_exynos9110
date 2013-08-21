@@ -211,6 +211,23 @@ void g3d_init_clock(void)
 	__raw_writel(0x1F, EXYNOS5430_ENABLE_IP_G3D0);
 }
 
+void gsc_init_clock(void)
+{
+	exynos_set_parent("mout_aclk_gscl_333", "mout_mfc_pll_user");
+
+	exynos_set_parent("dout_aclk_gscl_333", "mout_aclk_gscl_333");
+	exynos_set_parent("dout_aclk_gscl_111", "mout_aclk_gscl_333");
+
+	exynos_set_parent("aclk_gscl_333", "dout_aclk_gscl_333");
+	exynos_set_parent("aclk_gscl_111", "dout_aclk_gscl_111");
+
+	exynos_set_parent("mout_aclk_gscl_333_user", "aclk_gscl_333");
+	exynos_set_parent("mout_aclk_gscl_111_user", "aclk_gscl_111");
+
+	exynos_set_rate("dout_aclk_gscl_333", 333 * 1000000);
+	exynos_set_rate("dout_aclk_gscl_111", 111 * 1000000);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -221,4 +238,5 @@ void __init exynos5430_clock_init(void)
 	cam1_init_clock();
 	isp_init_clock();
 	g3d_init_clock();
+	gsc_init_clock();
 }
