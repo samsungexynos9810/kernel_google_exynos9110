@@ -532,6 +532,48 @@
 			samsung,pin-pud = <1>;
 			samsung,pin-drv = <0>;
 		};
+
+		fimc_is_uart: fimc-is-uart {
+			samsung,pins = "gpc1-1", "gpc0-7";
+			samsung,pin-function = <3>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_main_i2c: fimc-is-main-i2c {
+			samsung,pins = "gpc2-1", "gpc2-0";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_main_mclk: fimc-is-main-mclk {
+			samsung,pins = "gpc2-1", "gpc2-0", "gpd7-0";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_vt_i2c: fimc-is-vt-i2c {
+			samsung,pins = "gpc2-3", "gpc2-2";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_vt_mclk: fimc-is-vt-mclk {
+			samsung,pins = "gpc2-3", "gpc2-2", "gpd7-1";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_spi0: fimc-is-spi0 {
+			samsung,pins = "gpc3-3", "gpc3-2", "gpc3-1", "gpc3-0";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
 	};
 
 	pinctrl@14CE0000 {

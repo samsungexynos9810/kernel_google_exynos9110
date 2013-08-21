@@ -1176,6 +1176,18 @@
 		reg = <0x14000000 0x1A0000>;
 		interrupts = <0 165 0>, /* ARMISP_GIC */
 			     <0 166 0>; /* ISP_GIC */
+		pinctrl-names = "fimc-is-uart",
+				"main-i2c",
+				"main-mclk",
+				"vt-i2c",
+				"vt-mclk",
+				"fimc-is-spi0";
+		pinctrl-0 = <&fimc_is_uart>;
+		pinctrl-1 = <&fimc_is_main_i2c>;
+		pinctrl-2 = <&fimc_is_main_mclk>;
+		pinctrl-3 = <&fimc_is_vt_i2c>;
+		pinctrl-4 = <&fimc_is_vt_mclk>;
+		pinctrl-5 = <&fimc_is_spi0>;
 		clocks = <&clock 33>, <&clock 34>, <&clock 35>;
 		clock-names =	"sclk_isp_sensor0",
 				"sclk_isp_sensor1",
