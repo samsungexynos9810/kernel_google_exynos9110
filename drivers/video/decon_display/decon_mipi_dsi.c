@@ -1049,9 +1049,9 @@ static void mipi_cmu_set(void)
 	void __iomem *regs;
 	u32 data;
 
-	/* Set DISP_PLL = 131Mhz */
+	/* Set DISP_PLL = 136Mhz */
 	regs = ioremap(0x13B90100, 0x4);
-	writel(0xA0830303, regs);
+	writel(0xA0880303, regs);
 	iounmap(regs);
 	msleep(100);
 
