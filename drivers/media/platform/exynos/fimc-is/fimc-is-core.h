@@ -208,8 +208,8 @@
 /* #define DBG_STREAMING */
 #define DEBUG_INSTANCE 0xF
 #define BUG_ON_ENABLE
-/* #define FIXED_FPS_DEBUG */
-#define FIXED_FPS_VALUE 10
+#define FIXED_FPS_DEBUG
+#define FIXED_FPS_VALUE 15
 /* #define DBG_FLITEISR */
 #define FW_DEBUG
 #define RESERVED_MEM
