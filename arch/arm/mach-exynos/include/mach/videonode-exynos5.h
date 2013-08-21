@@ -36,4 +36,6 @@
 
 #define EXYNOS_VIDEONODE_SCALER(x)		(50 + x)
 
+#define EXYNOS_VIDEONODE_FIMG2D			55
+
 #endif /* __MACH_VIDEONODE_EXYNOS5_H */
