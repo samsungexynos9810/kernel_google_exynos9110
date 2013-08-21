@@ -31,7 +31,7 @@
 
 #include "gsc-core.h"
 static char *gsc_clocks[GSC_MAX_CLOCKS] = {
-	"gscl", "mout_aclk_gscl_333_user", "aclk_gscl_333",
+	"gate_gscl", "mout_aclk_gscl_333_user", "aclk_gscl_333",
 	"mout_aclk_gscl_111_user", "aclk_gscl_111"
 };
 int gsc_dbg = 6;
