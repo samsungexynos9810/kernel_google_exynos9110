@@ -1,0 +1,20 @@
+#
+# Copyright (c) 2013 Samsung Electronics Co., Ltd.
+#		http://www.samsung.com/
+#
+# Licensed under GPLv2
+
+config VIDEO_EXYNOS_FIMG2D
+	bool "V4L2 Samsung Graphics 2D Driver"
+	depends on VIDEO_EXYNOS
+	select V4L2_MEM2MEM_DEV
+	default n
+	---help---
+	  This is a v4l2 driver for graphics 2D driver in Samsung ARM based SoC.
+
+config FIMG2D_CCI_SNOOP
+	bool "Enables CCI snoop control"
+	depends on VIDEO_EXYNOS_FIMG2D && EXYNOS5_CCI
+	default n
+	---help---
+	  This enables a CCI snoop control for cache coherency.
