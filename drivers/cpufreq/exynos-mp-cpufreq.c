@@ -712,8 +712,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 	pr_debug("%s: cpu[%d]\n", __func__, policy->cpu);
 
 	policy->cur = policy->min = policy->max = exynos_getspeed(policy->cpu);
-	freqs[CA7]->old = exynos_getspeed_cluster(CA7);
-	freqs[CA15]->old = exynos_getspeed_cluster(CA15);
 
 	cpufreq_frequency_table_get_attr(exynos_info[cur]->freq_table, policy->cpu);
 
@@ -1237,6 +1235,10 @@ static int __init exynos_cpufreq_init(void)
 		freq_table[exynos_info[CA7]->min_support_idx].frequency;
 
 	set_boot_freq();
+
+	/* set initial old frequency */
+	freqs[CA7]->old = exynos_getspeed_cluster(CA7);
+	freqs[CA15]->old = exynos_getspeed_cluster(CA15);
 
 	register_hotcpu_notifier(&exynos_cpufreq_cpu_nb);
 	register_pm_notifier(&exynos_cpufreq_nb);
