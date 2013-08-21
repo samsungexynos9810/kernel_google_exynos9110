@@ -46,8 +46,104 @@ struct platform_device; /* don't need the contents */
 int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 				int channel, bool flag_on)
 {
+	struct pinctrl *pinctrl_mclk;
+	struct pinctrl *pinctrl_i2c;
+	struct exynos5_platform_fimc_is *pdata;
+	struct fimc_is_gpio_info *_gpio_info;
+
+	pdata = dev_get_platdata(&pdev->dev);
+	if (!pdata)
+		return PTR_ERR(pdata);
+
+	_gpio_info = pdata->_gpio_info;
+	if (!_gpio_info)
+		return PTR_ERR(_gpio_info);
+
 	pr_debug("%s\n", __func__);
 
+	if ((flag_on == false) && (channel == CSI_ID_A)) {
+		gpio_request_one(_gpio_info->gpio_main_sda, GPIOF_IN, "MAIN_CAM_SDA");
+		gpio_free(_gpio_info->gpio_main_sda);
+
+		gpio_request_one(_gpio_info->gpio_main_scl, GPIOF_IN, "MAIN_CAM_SCL");
+		gpio_free(_gpio_info->gpio_main_scl);
+
+		gpio_request_one(_gpio_info->gpio_main_mclk, GPIOF_IN, "MAIN_CAM_MCLK");
+		gpio_free(_gpio_info->gpio_main_mclk);
+
+		usleep_range(1000, 1000);
+		__gpio_set_value(_gpio_info->gpio_main_rst, 0);
+		usleep_range(1000, 1000);
+		__gpio_set_value(_gpio_info->gpio_main_rst, 1);
+		gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_IN, "MAIN_CAM_RESET");
+		gpio_free(_gpio_info->gpio_main_rst);
+		goto exit;
+	} else if ((flag_on == false) && (channel == CSI_ID_B)) {
+		gpio_request_one(_gpio_info->gpio_vt_sda, GPIOF_IN, "MAIN_CAM_SDA");
+		gpio_free(_gpio_info->gpio_vt_sda);
+
+		gpio_request_one(_gpio_info->gpio_vt_scl, GPIOF_IN, "MAIN_CAM_SCL");
+		gpio_free(_gpio_info->gpio_vt_scl);
+
+		gpio_request_one(_gpio_info->gpio_vt_mclk, GPIOF_IN, "MAIN_CAM_MCLK");
+		gpio_free(_gpio_info->gpio_vt_mclk);
+
+		usleep_range(1000, 1000);
+		__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
+		usleep_range(1000, 1000);
+		__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
+		gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "MAIN_CAM_RESET");
+		gpio_free(_gpio_info->gpio_vt_rst);
+		goto exit;
+	} else {
+		pr_err("%s: could not find sensor\n", __func__);
+	}
+
+	if ((flag_on == true) && (channel == CSI_ID_A)) {
+		/* RESET(GPC0)*/
+		gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_OUT_INIT_HIGH, "MAIN_CAM_RESET");
+		__gpio_set_value(_gpio_info->gpio_main_rst, 0);
+		usleep_range(1000, 1000);
+		__gpio_set_value(_gpio_info->gpio_main_rst, 1);
+		usleep_range(1000, 1000);
+		gpio_free(_gpio_info->gpio_main_rst);
+
+		/* I2C(GPC2) */
+		pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"main-i2c");
+		if (IS_ERR(pinctrl_i2c))
+			pr_err("%s: main cam i2c pins are not configured\n", __func__);
+		msleep(1);
+
+		/* CIS_CLK(GPD7) */
+		pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"main-mclk");
+		if (IS_ERR(pinctrl_mclk))
+			pr_err("%s: main cam mclk pin is not configured\n", __func__);
+		usleep_range(1000, 1000);
+	} else if ((flag_on == true) && (channel == CSI_ID_B)) {
+		/* RESET(GPC0) */
+		gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_OUT_INIT_HIGH, "VT_CAM_RESET");
+		__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
+		usleep_range(1000, 1000);
+		__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
+		usleep_range(1000, 1000);
+		gpio_free(_gpio_info->gpio_vt_rst);
+
+		/* I2C(GPC2) */
+		pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"vt-i2c");
+		if (IS_ERR(pinctrl_i2c))
+			pr_err("%s: vt cam i2c pins are not configured\n", __func__);
+		msleep(1);
+
+		/* CIS_CLK(GPD7) */
+		pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"vt-mclk");
+		if (IS_ERR(pinctrl_mclk))
+			pr_err("%s: vt cam mclk pin is not configured\n", __func__);
+		usleep_range(1000, 1000);
+	} else {
+		pr_err("%s: could not find sensor\n", __func__);
+	}
+
+exit:
 	return 0;
 }
 
