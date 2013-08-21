@@ -1,7 +1,15 @@
 #ifndef __SEIREN_H
 #define __SEIREN_H
 
-/* Commbox between driver and firmware */
+/* Register offset */
+#define SW_INTR_CA5		(0x0040)
+#define INTR_CA5_STATUS		(0x0044)
+#define INTR_CA5_MASK		(0x0048)
+#define SW_INTR_CPU		(0x0050)
+#define INTR_CPU_STATUS		(0x0054)
+#define INTR_CPU_MASK		(0x0058)
+
+/* Mailbox between driver and firmware */
 #define VIRSION_ID		(0x0000)
 #define CMD_CODE		(0x0004)
 #define HANDLE_ID		(0x0008)
@@ -207,6 +215,7 @@ struct seiren_info {
 	void __iomem	*mailbox;
 	void __iomem	*mem;
 	struct clk	*clk_ca5;
+	unsigned int	irq_ca5;
 
 	unsigned char	*bufmem;
 	unsigned int	bufmem_pa;

@@ -104,7 +104,7 @@ static void esa_fw_download(void)
 	int n;
 #endif
 
-	esa_info("%s: firmware size = %d", __func__, fw_bin_size);
+	esa_info("%s: firmware size = %d\n", __func__, fw_bin_size);
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	memset(si.mem, 0, 288 * 1024);
@@ -182,29 +182,20 @@ static void esa_buffer_init(struct file *file)
 	rtd->obuf1 = buf;
 }
 
-static int esa_send_intr(void)
+static int esa_send_cmd(u32 cmd_code)
 {
-	int n;
-	si.isr_done = 0;
+	int ret;
 
-#ifdef USE_SRAM_ONLY
-	writel(1, si.mailbox + (31 << 2));
-	for (n = 0; n < 500; n++) {
-		if (readl(si.mailbox + (31 << 2)) == 2) {
-			writel(0, si.mailbox + (31 << 2));
-			break;
-		}
-		msleep(1);
+	si.isr_done = 0;
+	writel(cmd_code, si.mailbox + CMD_CODE);	/* command */
+	writel(1, si.regs + SW_INTR_CA5);		/* trigger ca5 */
+	ret = wait_event_interruptible_timeout(esa_wq, si.isr_done, HZ / 2);
+	if (!ret) {
+		esa_err("%s: CMD(%08X) timed out!!!\n",
+					__func__, cmd_code);
+		return -EBUSY;
 	}
-	if (n == 500) {
-		esa_err("@@@@@@@@@@ %s: timed out!!! (intr reg = %08X)\n",
-			__func__, readl(si.mailbox + (31 << 2)));
-		writel(0, si.mailbox + (31 << 2));
-	}
-#else
-	/* later... irq_trigger */
-	wait_event_interruptible_timeout(esa_wq, si.isr_done, 1*HZ);
-#endif
+
 	return 0;
 }
 
@@ -264,9 +255,7 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	writel(obuf - si.bufmem, si.mailbox + PHY_ADDR_OUTBUF);
 #endif
 	writel(size, si.mailbox + SIZE_OF_INDATA);
-
-	writel(CMD_EXE, si.mailbox + CMD_CODE);
-	esa_send_intr();
+	esa_send_cmd(CMD_EXE);
 
 	/* check response of FW */
 	response = readl(si.mailbox + RETURN_CMD);
@@ -405,8 +394,7 @@ static int esa_exe(struct file *file, unsigned int param,
 	writel(ibuf - si.bufmem, si.mailbox + PHY_ADDR_INBUF);
 	writel(obuf - si.bufmem, si.mailbox + PHY_ADDR_OUTBUF);
 	writel(ibuf_info.mem_size, si.mailbox + SIZE_OF_INDATA);
-	writel(CMD_EXE, si.mailbox + CMD_CODE);
-	esa_send_intr();
+	esa_send_cmd(CMD_EXE);
 
 	/* check response of FW */
 	response = readl(si.mailbox + RETURN_CMD);
@@ -455,15 +443,13 @@ static int esa_set_params(struct file *file, unsigned int param,
 		esa_debug("%s: sampling rate: %ld\n", __func__, arg);
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
 		writel((unsigned int)arg, si.mailbox + PARAMS_VAL1);
-		writel((param << 16) | CMD_SET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_SET_PARAMS);
 		break;
 	case PCM_PARAM_NUM_OF_CH:
 		esa_debug("%s: channel: %ld\n", __func__, arg);
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
 		writel((unsigned int)arg, si.mailbox + PARAMS_VAL1);
-		writel((param << 16) | CMD_SET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_SET_PARAMS);
 		break;
 	case PCM_PARAM_BIT_PER_SAMPLE:
 		esa_debug("PCM_PARAM_BIT_PER_SAMPLE: arg:%ld\n", arg);
@@ -490,8 +476,7 @@ static int esa_set_params(struct file *file, unsigned int param,
 		esa_debug("%s: eq preset: %ld\n", __func__, arg);
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
 		writel((unsigned int)arg, si.mailbox + PARAMS_VAL1);
-		writel((param << 16) | CMD_SET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_SET_PARAMS);
 		break;
 	case EQ_PARAM_NUM_OF_BANDS:
 		esa_debug("EQ_PARAM_NUM_OF_BANDS: arg:%ld\n", arg);
@@ -516,8 +501,7 @@ static int esa_set_params(struct file *file, unsigned int param,
 		break;
 	case ADEC_PARAM_SET_EOS:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		writel((param << 16) | CMD_SET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_SET_PARAMS);
 		esa_debug("ADEC_PARAM_SET_EOS: handle_id:%x\n", rtd->handle_id);
 		rtd->get_eos = true;
 		break;
@@ -556,8 +540,7 @@ static int esa_get_params(struct file *file, unsigned int param,
 		break;
 	case PCM_PARAM_SAMPLE_RATE:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		writel((param << 16) | CMD_GET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_GET_PARAMS);
 		val = readl(si.mailbox + RETURN_CMD);
 		esa_info("%s: sampling rate:%ld\n", __func__, val);
 
@@ -570,8 +553,7 @@ static int esa_get_params(struct file *file, unsigned int param,
 		break;
 	case PCM_PARAM_NUM_OF_CH:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		writel((param << 16) | CMD_GET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_GET_PARAMS);
 		val = readl(si.mailbox + RETURN_CMD);
 		esa_info("%s: Channel:%ld\n", __func__, val);
 
@@ -605,8 +587,7 @@ static int esa_get_params(struct file *file, unsigned int param,
 		break;
 	case ADEC_PARAM_GET_OUTPUT_STATUS:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		writel((param << 16) | CMD_GET_PARAMS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd((param << 16) | CMD_GET_PARAMS);
 		val = readl(si.mailbox + RETURN_CMD);
 		esa_debug("OUTPUT_STATUS:%ld, handle_id:%x\n", val, rtd->handle_id);
 		ret = copy_to_user((unsigned long *)arg, &val,
@@ -638,8 +619,8 @@ static int esa_get_params(struct file *file, unsigned int param,
 
 	return ret;
 }
-#if 0	/* later */
-static void esa_isr(unsigned long intr_status)
+
+static irqreturn_t esa_isr(int irqno, void *id)
 {
 	unsigned int fw_stat, log_size, val;
 
@@ -670,8 +651,11 @@ static void esa_isr(unsigned long intr_status)
 						__func__, fw_stat);
 		break;
 	}
+
+	writel(0, si.regs + SW_INTR_CPU);
+
+	return IRQ_HANDLED;
 }
-#endif
 
 static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -690,9 +674,8 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SEIREN_IOCTL_CH_CREATE:
 		rtd->ip_type = (unsigned int) arg;
 		arg = arg << 16;
-		writel(CMD_CREATE, si.mailbox + CMD_CODE);
 		writel(arg, si.mailbox + IP_TYPE);
-		esa_send_intr();
+		esa_send_cmd(CMD_CREATE);
 		rtd->handle_id = readl(si.mailbox + IP_ID);
 		esa_buffer_init(file);
 		esa_debug("CH_CREATE: ret_val:%x, handle_id:%x\n",
@@ -701,8 +684,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case SEIREN_IOCTL_CH_DESTROY:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		writel(CMD_DESTROY, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd(CMD_DESTROY);
 		esa_debug("CH_DESTROY: ret_val:%x, handle_id:%x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
@@ -725,8 +707,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SEIREN_IOCTL_CH_FLUSH:
 		arg = arg << 16;
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		writel(CMD_RESET, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd(CMD_RESET);
 		esa_debug("CH_FLUSH: val: %x, handle_id : %x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
@@ -747,7 +728,7 @@ static int esa_open(struct inode *inode, struct file *file)
 {
 	struct esa_rtd *rtd;
 	unsigned int dec_ver;
-	int i;
+	int ret, i;
 
 	/* alloc rtd */
 	rtd = esa_alloc_rtd();
@@ -771,9 +752,14 @@ static int esa_open(struct inode *inode, struct file *file)
 		esa_info("Turn on CA5...\n");
 		esa_fw_download();
 
+		ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
+		if (ret < 0) {
+			esa_err("Failed to claim CA5 irq\n");
+			return -EFAULT;
+		}
+
 		/* check decoder version */
-		writel(SYS_GET_STATUS, si.mailbox + CMD_CODE);
-		esa_send_intr();
+		esa_send_cmd(SYS_GET_STATUS);
 		dec_ver = readl(si.mailbox) & 0xFF00;
 		dec_ver = dec_ver >> 8;
 		esa_info("Decoder version : %x\n", dec_ver);
@@ -796,6 +782,8 @@ static int esa_release(struct inode *inode, struct file *file)
 	esa_free_rtd(rtd);
 
 	if (si.rtd_cnt == 0) {
+		free_irq(si.irq_ca5, 0);
+
 		/* power off */
 		esa_info("Turn off CA5...\n");
 		lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
@@ -851,6 +839,7 @@ static const char banner[] =
 static int esa_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	struct resource *res;
 	int ret = 0;
 #ifdef FW_DOWNLOAD_TEST
 	int n;
@@ -877,6 +866,14 @@ static int esa_probe(struct platform_device *pdev)
 		esa_err("Failed to get lpass mem\n");
 		return -ENODEV;
 	}
+
+	/* CA5 irq no. */
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (!res) {
+		dev_err(&pdev->dev, "Failed to get irq resource\n");
+		return -ENXIO;
+	}
+	si.irq_ca5 = res->start;
 
 	/* base address for IBUF and OBUF */
 	si.bufmem = devm_kzalloc(dev, BASEMEM_SIZE, GFP_KERNEL);
@@ -907,9 +904,6 @@ static int esa_probe(struct platform_device *pdev)
 
 	/* hold reset */
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
-
-	/* set irq callback */
-	/* later: esa_isr */
 
 	esa_info("regs       = %08X\n", (u32)si.regs);
 	esa_info("mailbox    = %08X\n", (u32)si.mailbox);
