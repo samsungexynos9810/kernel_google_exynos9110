@@ -206,6 +206,11 @@ void isp_init_clock(void)
 	exynos_set_rate("dout_aclk_isp_dis_400", 400 * 1000000);
 }
 
+void g3d_init_clock(void)
+{
+	__raw_writel(0x1F, EXYNOS5430_ENABLE_IP_G3D0);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -215,4 +220,5 @@ void __init exynos5430_clock_init(void)
 	cam0_init_clock();
 	cam1_init_clock();
 	isp_init_clock();
+	g3d_init_clock();
 }
