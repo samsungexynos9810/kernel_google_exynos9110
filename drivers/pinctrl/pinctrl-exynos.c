@@ -1079,6 +1079,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl1",
 	}, {
 		/* pin-controller instance 2 data */
@@ -1089,6 +1091,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl2",
 	}, {
 		/* pin-controller instance 3 data */
@@ -1099,6 +1103,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl3",
 	}, {
 		/* pin-controller instance 4 data */
@@ -1109,6 +1115,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl4",
 	}, {
 		/* pin-controller instance 5 data */
@@ -1119,6 +1127,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl5",
 	}, {
 		/* pin-controller instance 6 data */
@@ -1129,6 +1139,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl6",
 	},
 };
