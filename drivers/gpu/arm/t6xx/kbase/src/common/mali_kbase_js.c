@@ -2016,6 +2016,16 @@ void kbasep_js_job_done_slot_irq(kbase_jd_atom *katom, int slot_nr,
 		tick_diff = ktime_sub(*end_timestamp, katom->start_timestamp);
 
 		microseconds_spent = ktime_to_ns(tick_diff);
+
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
+		if (katom->core_req & BASE_JD_REQ_ONLY_COMPUTE)
+			atomic_inc(&kbdev->pm.metrics.cnt_compute_jobs);
+		else if (katom->core_req & BASE_JD_REQ_FS)
+			atomic_inc(&kbdev->pm.metrics.cnt_fragment_jobs);
+		else if (katom->core_req & BASE_JD_REQ_CS)
+			atomic_inc(&kbdev->pm.metrics.cnt_vertex_jobs);
+#endif
+
 		do_div(microseconds_spent, 1000);
 
 		/* Round up time spent to the minimum timer resolution */

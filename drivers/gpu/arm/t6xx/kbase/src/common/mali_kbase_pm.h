@@ -120,6 +120,9 @@ typedef struct kbasep_pm_metrics_data {
 
 	void *platform_data;
 	struct kbase_device *kbdev;
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
+	atomic_t cnt_compute_jobs, cnt_vertex_jobs, cnt_fragment_jobs;
+#endif
 } kbasep_pm_metrics_data;
 
 /** Actions for DVFS.

@@ -309,6 +309,11 @@ int kbase_platform_dvfs_event(struct kbase_device *kbdev, u32 utilisation)
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
+	atomic_set(&kbdev->pm.metrics.cnt_compute_jobs, 0);
+	atomic_set(&kbdev->pm.metrics.cnt_vertex_jobs, 0);
+	atomic_set(&kbdev->pm.metrics.cnt_fragment_jobs, 0);
+#endif
 	queue_work_on(0, mali_dvfs_wq, &mali_dvfs_work);
 	/*add error handle here*/
 	return MALI_TRUE;

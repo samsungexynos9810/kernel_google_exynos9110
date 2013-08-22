@@ -75,6 +75,7 @@ endif
 
 #MALI_SEC
 DEFINES +=-DSLSI_INTEGRATION -DSLSI_FENCE_INTEGRATION
+DEFINES +=-DCL_UTILIZATION_BOOST_BY_WEIGHT
 
 # Use our defines when compiling
 ccflags-y += $(DEFINES) -I$(KBASE_PATH) -I$(src)/linux -I$(KBASE_SRC_PATH) -I$(src)/platform -I$(KBASE_PLATFORM_PATH) -I$(UMP_PATH)
