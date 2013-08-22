@@ -613,6 +613,22 @@ static void exynos_pinctrl_suspend_bank(
 	pr_debug("%s: save fltcon1 %#010x\n", bank->name, save->eint_fltcon1);
 }
 
+static void exynos_pinctrl_suspend_inttype(
+				struct samsung_pinctrl_drv_data *drvdata,
+				struct samsung_pin_bank *bank)
+{
+	void __iomem *regs = drvdata->virt_base;
+
+	exynos_pinctrl_suspend_bank(drvdata, bank);
+
+	writel(0x0, regs + EXYNOS_GPIO_ECON_OFFSET
+						+ bank->eint_offset);
+	writel(0x0, regs + EXYNOS_GPIO_EFLTCON_OFFSET
+						+ 2 * bank->eint_offset);
+	writel(0x0, regs + EXYNOS_GPIO_EFLTCON_OFFSET
+						+ 2 * bank->eint_offset + 4);
+}
+
 static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
@@ -622,6 +638,8 @@ static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
 		if (bank->eint_type == EINT_TYPE_GPIO)
 			exynos_pinctrl_suspend_bank(drvdata, bank);
+		else if (bank->eint_type == EINT_TYPE_WKUP)
+			exynos_pinctrl_suspend_inttype(drvdata, bank);
 }
 
 static void exynos_pinctrl_resume_bank(
@@ -656,7 +674,8 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 	int i;
 
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
-		if (bank->eint_type == EINT_TYPE_GPIO)
+		if (bank->eint_type == EINT_TYPE_GPIO ||
+			bank->eint_type == EINT_TYPE_WKUP)
 			exynos_pinctrl_resume_bank(drvdata, bank);
 }
 
@@ -1069,6 +1088,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
 		.eint_wkup_init = exynos_eint_wkup_init,
+		.suspend	= exynos_pinctrl_suspend,
+		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl0",
 	}, {
 		/* pin-controller instance 1 data */
