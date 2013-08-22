@@ -285,6 +285,39 @@ void usb_init_clock(void)
 			"phyclk_usbhost20_phy_hsic1_phy");
 }
 
+void mscl_init_clock(void)
+{
+	exynos_set_parent("mout_aclk_mscl_400_a", "mout_bus_pll_user");
+	exynos_set_parent("mout_aclk_mscl_400_b", "mout_aclk_mscl_400_a");
+	exynos_set_parent("dout_aclk_mscl_400", "mout_aclk_mscl_400_b");
+	exynos_set_parent("aclk_mscl_400", "dout_aclk_mscl_400");
+	exynos_set_parent("mout_aclk_mscl_400_user", "aclk_mscl_400");
+	exynos_set_parent("dout_pclk_mscl", "mout_aclk_mscl_400_user");
+
+	exynos_set_parent("aclk_m2mscaler0", "mout_aclk_mscl_400_user");
+	exynos_set_parent("aclk_m2mscaler1", "mout_aclk_mscl_400_user");
+	exynos_set_parent("pclk_m2mscaler0", "dout_pclk_mscl");
+	exynos_set_parent("pclk_m2mscaler1", "dout_pclk_mscl");
+
+	exynos_set_parent("aclk_jpeg", "mout_aclk_mscl_400_user");
+	exynos_set_parent("pclk_jpeg", "dout_pclk_mscl");
+
+	exynos_set_rate("dout_aclk_mscl_400", 400 * 1000000);
+	exynos_set_rate("dout_pclk_mscl", 100 * 1000000);
+
+	pr_debug("scaler_0: aclk_m2mscaler0 %d pclk_m2mscaler0 %d\n",
+			exynos_get_rate("aclk_m2mscaler0"),
+			exynos_get_rate("pclk_m2mscaler0"));
+
+	pr_debug("scaler_1: aclk_m2mscaler1 %d pclk_m2mscaler1 %d\n",
+			exynos_get_rate("aclk_m2mscaler1"),
+			exynos_get_rate("pclk_m2mscaler1"));
+
+	pr_debug("jpeg: aclk_jpeg %d pclk_jpeg %d\n",
+			exynos_get_rate("aclk_jpeg"),
+			exynos_get_rate("pclk_jpeg"));
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -300,4 +333,5 @@ void __init exynos5430_clock_init(void)
 	/* spi clock init */
 	spi_clock_init();
 	usb_init_clock();
+	mscl_init_clock();
 }
