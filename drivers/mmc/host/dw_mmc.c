@@ -1696,6 +1696,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 			if (data && cmd->error && cmd != data->stop) {
 				/* To avoid fifo full condition */
 				dw_mci_fifo_reset(host->dev, host);
+				dw_mci_ciu_reset(host->dev, host);
 
 				if (host->mrq->data->stop)
 					send_stop_cmd(host, host->mrq->data);
@@ -1731,6 +1732,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 
 				/* To avoid fifo full condition */
 				dw_mci_fifo_reset(host->dev, host);
+				dw_mci_ciu_reset(host->dev, host);
 
 				if (data->stop)
 					send_stop_cmd(host, data);
@@ -1817,8 +1819,9 @@ static void dw_mci_tasklet_func(unsigned long priv)
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
 				dw_mci_fifo_reset(host->dev, host);
+				dw_mci_ciu_reset(host->dev, host);
 
-		} else {
+			} else {
 				data->bytes_xfered = data->blocks * data->blksz;
 				data->error = 0;
 			}
@@ -1858,6 +1861,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
 				dw_mci_fifo_reset(host->dev, host);
+				dw_mci_ciu_reset(host->dev, host);
 			}
 
 			host->cmd = NULL;
@@ -1878,6 +1882,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 
 			dw_mci_stop_dma(host);
 			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
+			set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
 
 			state = STATE_DATA_BUSY;
 			break;
@@ -2589,7 +2594,7 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 							mrq->data->error = -ENOMEDIUM;
 						/* fall through */
 					case STATE_SENDING_STOP:
-						if (!mrq->stop)
+						if (mrq->stop)
 							mrq->stop->error = -ENOMEDIUM;
 						break;
 					}
@@ -2627,7 +2632,9 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 #ifdef CONFIG_MMC_DW_IDMAC
 				dw_mci_idma_reset_dma(host);
 #endif
-
+			} else if (host->cur_slot) {
+				dw_mci_ciu_reset(host->dev, host);
+				mci_writel(host, RINTSTS, 0xFFFFFFFF);
 			}
 
 			spin_unlock_bh(&host->lock);
