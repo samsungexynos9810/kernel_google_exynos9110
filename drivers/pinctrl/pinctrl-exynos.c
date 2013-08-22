@@ -535,6 +535,13 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 			return -ENXIO;
 		}
 
+		bank->soc_priv = devm_kzalloc(d->dev,
+			sizeof(struct exynos_eint_gpio_save), GFP_KERNEL);
+		if (!bank->soc_priv) {
+			irq_domain_remove(bank->irq_domain);
+			return -ENOMEM;
+		}
+
 		if (!of_find_property(bank->of_node, "interrupts", NULL)) {
 			bank->eint_type = EINT_TYPE_WKUP_MUX;
 			++muxed_banks;
@@ -634,11 +641,10 @@ static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
 	int i;
-
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
 		if (bank->eint_type == EINT_TYPE_GPIO)
 			exynos_pinctrl_suspend_bank(drvdata, bank);
-		else if (bank->eint_type == EINT_TYPE_WKUP)
+		else if (bank->eint_type == EINT_TYPE_WKUP_MUX)
 			exynos_pinctrl_suspend_inttype(drvdata, bank);
 }
 
@@ -675,7 +681,7 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
 		if (bank->eint_type == EINT_TYPE_GPIO ||
-			bank->eint_type == EINT_TYPE_WKUP)
+			bank->eint_type == EINT_TYPE_WKUP_MUX)
 			exynos_pinctrl_resume_bank(drvdata, bank);
 }
 
