@@ -2041,7 +2041,7 @@ static int hevc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM
+#ifdef CONFIG_PM_SLEEP
 static int hevc_suspend(struct device *dev)
 {
 	struct hevc_dev *m_dev = platform_get_drvdata(to_platform_device(dev));
