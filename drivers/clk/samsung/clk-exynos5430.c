@@ -1569,7 +1569,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_uart2_top, "sclk_uart2_top", "dout_sclk_uart2", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 5, 0, 0),
 	CGTE(sclk_pcm1_top, "sclk_pcm1_top", "dout_sclk_pcm1", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 7, 0, 0),
 	CGTE(sclk_i2s1_top, "sclk_i2s1_top", "dout_sclk_i2s1", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 8, 0, 0),
-	CGTE(sclk_spdif_top, "sclk_spdif_top", "dout_sclk_spdif", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 9, 0, 0),
+	CGTE(sclk_spdif_top, "sclk_spdif_top", "mout_sclk_spdif", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 9, 0, 0),
 	CGTE(sclk_slimbus_top, "sclk_slimbus_top", "dout_sclk_slimbus", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 10, 0, 0),
 
 	/* MIF */
