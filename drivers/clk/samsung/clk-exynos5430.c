@@ -627,7 +627,7 @@ enum exynos5430_clks {
 	mout_sclk_decon_eclk_a, mout_sclk_decon_eclk_b,
 	mout_sclk_decon_eclk_c,
 	mout_sclk_decon_vclk_a, mout_sclk_decon_vclk_b,
-	mout_sclk_decon_vclk_c, mout_sclk_decon_vclk_d,
+	mout_sclk_decon_vclk_c,
 	mout_sclk_dsd_a = 3100, mout_sclk_dsd_b, mout_sclk_dsd_c,
 	mout_phyclk_lli_tx0_symbol_user,
 	mout_phyclk_lli_rx0_symbol_user,
@@ -744,7 +744,7 @@ enum exynos5430_clks {
 	dout_aclk_disp_333, dout_aclk_disp_222,
 	dout_aclk_bus1_400 = 4120, dout_aclk_bus2_400,
 	dout_sclk_decon_eclk,
-	dout_sclk_decon_vclk, dout_sclk_decon_vclk_frac,
+	dout_sclk_decon_vclk, dout_sclk_dsd,
 	dout_sclk_mphy, dout_pclk_bus1_133, dout_pclk_bus2_133,
 	dout_pclk_g2d = 4130, dout_pclk_mscl,
 	dout_aclk_g3d, dout_pclk_g3d, dout_sclk_hpm_g3d,
@@ -970,12 +970,11 @@ PNAME(mout_aclk_disp_222_p)	= { "dout_mfc_pll", "mout_bus_pll_sub" };
 PNAME(mout_aclk_bus1_400_a_p)	= { "dout_bus_pll", "dout_mfc_pll_div3" };
 PNAME(mout_aclk_bus1_400_b_p)	= { "mout_bus_pll_sub", "mout_aclk_bus1_400_a" };
 PNAME(mout_sclk_decon_eclk_a_p) = { "oscclk", "mout_bus_pll_sub" };
-PNAME(mout_sclk_decon_eclk_b_p) = { "mout_aclk_decon_eclk_a", "dout_mfc_pll" };
-PNAME(mout_sclk_decon_eclk_c_p) = { "mout_aclk_decon_eclk_b", "dout_mphy_pll" };
+PNAME(mout_sclk_decon_eclk_b_p) = { "mout_sclk_decon_eclk_a", "dout_mfc_pll" };
+PNAME(mout_sclk_decon_eclk_c_p) = { "mout_sclk_decon_eclk_b", "mout_mphy_pll" };
 PNAME(mout_sclk_decon_vclk_a_p) = { "oscclk", "mout_bus_pll_sub" };
 PNAME(mout_sclk_decon_vclk_b_p) = { "mout_sclk_decon_vclk_a", "dout_mfc_pll" };
-PNAME(mout_sclk_decon_vclk_c_p) = { "mout_sclk_decon_vclk_b", "dout_mphy_pll" };
-PNAME(mout_sclk_decon_vclk_d_p) = { "dout_sclk_decon_vclk", "dout_sclk_decon_vclk_frac" };
+PNAME(mout_sclk_decon_vclk_c_p) = { "mout_sclk_decon_vclk_b", "mout_mphy_pll" };
 PNAME(mout_sclk_dsd_a_p)	= { "oscclk", "dout_mfc_pll" };
 PNAME(mout_sclk_dsd_b_p)	= { "mout_sclk_dsd_a", "mout_mphy_pll" };
 PNAME(mout_sclk_dsd_c_p)	= { "mout_sclk_dsd_b", "mout_bus_pll_sub" };
@@ -1019,7 +1018,7 @@ PNAME(mout_sclk_decon_eclk_user_p) = { "oscclk", "sclk_decon_eclk_top" };
 PNAME(mout_sclk_decon_eclk_disp_p) = { "mout_disp_pll", "mout_sclk_decon_eclk_user" };
 PNAME(mout_sclk_decon_vclk_user_p) = { "oscclk", "sclk_decon_vclk_top" };
 PNAME(mout_sclk_decon_vclk_disp_p) = { "mout_disp_pll", "mout_sclk_decon_vclk_user" };
-PNAME(mout_sclk_dsd_user_p)	= { "oscclk", "sclk_dsd" };
+PNAME(mout_sclk_dsd_user_p)	= { "oscclk", "sclk_dsd_mif" };
 PNAME(mout_phyclk_hdmiphy_pixel_clko_user_p) = { "oscclk", "phyclk_hdmiphy_pixel_clko" };
 PNAME(mout_phyclk_hdmiphy_tmds_clko_user_p) = { "oscclk", "phyclk_hdmiphy_tmds_clko_phy" };
 PNAME(mout_phyclk_mipidphy_rxclkesc0_user_p) = { "oscclk", "phyclk_mipidphy_rxclkesc0_phy" };
@@ -1223,7 +1222,6 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMUX(mout_sclk_decon_vclk_a, EXYNOS5430_SRC_SEL_MIF4, 16, 1),
 	CMUX(mout_sclk_decon_vclk_b, EXYNOS5430_SRC_SEL_MIF4, 20, 1),
 	CMUX(mout_sclk_decon_vclk_c, EXYNOS5430_SRC_SEL_MIF4, 24, 1),
-	CMUX(mout_sclk_decon_vclk_d, EXYNOS5430_SRC_SEL_MIF4, 28, 1),
 	CMUX(mout_sclk_dsd_a, EXYNOS5430_SRC_SEL_MIF5, 0, 1),
 	CMUX(mout_sclk_dsd_b, EXYNOS5430_SRC_SEL_MIF5, 4, 1),
 	CMUX(mout_sclk_dsd_c, EXYNOS5430_SRC_SEL_MIF5, 8, 1),
@@ -1444,7 +1442,7 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_aclk_bus2_400, "mout_bus_pll_sub", EXYNOS5430_DIV_MIF3, 16, 4),
 	CDIV(dout_sclk_decon_eclk, "mout_sclk_decon_eclk_c", EXYNOS5430_DIV_MIF4, 0, 4),
 	CDIV(dout_sclk_decon_vclk, "mout_sclk_decon_vclk_c", EXYNOS5430_DIV_MIF4, 4, 4),
-	CDIV(dout_sclk_decon_vclk_frac, "mout_sclk_decon_vclk_c", EXYNOS5430_DIV_MIF5, 24, 8),
+	CDIV(dout_sclk_dsd, "mout_sclk_dsd_c", EXYNOS5430_DIV_MIF4, 8, 4),
 
 	CDIV(dout_sclk_mphy, "mout_mphy_pll", EXYNOS5430_DIV_CPIF, 0, 5),
 
@@ -1583,7 +1581,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(aclk_bus2_400, "aclk_bus2_400", "dout_aclk_bus2_400", EXYNOS5430_ENABLE_ACLK_MIF3, 4, 0, 0),
 
 	CGTE(sclk_decon_eclk_mif, "sclk_decon_eclk_mif", "dout_sclk_decon_eclk", EXYNOS5430_ENABLE_SCLK_MIF, 5, 0, 0),
-	CGTE(sclk_decon_vclk_mif, "sclk_decon_vclk_mif", "mout_sclk_decon_vclk_d", EXYNOS5430_ENABLE_SCLK_MIF, 6, 0, 0),
+	CGTE(sclk_decon_vclk_mif, "sclk_decon_vclk_mif", "dout_sclk_decon_vclk", EXYNOS5430_ENABLE_SCLK_MIF, 6, 0, 0),
 	CGTE(sclk_dsd_mif, "sclk_dsd_mif", "dout_sclk_dsd", EXYNOS5430_ENABLE_SCLK_MIF, 7, 0, 0),
 
 #if 0
