@@ -1373,7 +1373,7 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_aclk_g2d_400, "mout_aclk_g2d_400_b", EXYNOS5430_DIV_TOP1, 0, 3),
 	CDIV(dout_aclk_g2d_266, "mout_bus_pll_user", EXYNOS5430_DIV_TOP1, 8, 3),
 	CDIV(dout_aclk_gscl_333, "mout_aclk_gscl_333", EXYNOS5430_DIV_TOP1, 24, 3),
-	CDIV(dout_aclk_gscl_111, "mout_aclk_gscl_111", EXYNOS5430_DIV_TOP1, 28, 3),
+	CDIV(dout_aclk_gscl_111, "mout_aclk_gscl_333", EXYNOS5430_DIV_TOP1, 28, 3),
 	CDIV(dout_aclk_mscl_400, "mout_aclk_mscl_400_b", EXYNOS5430_DIV_TOP2, 4, 3),
 	CDIV(dout_aclk_imem_266, "mout_bus_pll_user", EXYNOS5430_DIV_TOP3, 16, 3),
 	CDIV(dout_aclk_imem_200, "mout_bus_pll_user", EXYNOS5430_DIV_TOP3, 20, 3),
