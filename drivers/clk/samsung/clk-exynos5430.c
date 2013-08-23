@@ -1127,7 +1127,8 @@ struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
 	FRATE(none, "phyclk_ufs_mphy_to_lli", NULL, CLK_IS_ROOT, 26000000),
 	FRATE(none, "phyclk_lli_mphy_to_ufs", NULL, CLK_IS_ROOT, 26000000),
 
-	FRATE(none, "ioclk_audiocdclk0", NULL, CLK_IS_ROOT, 0),
+	FRATE(none, "ioclk_audiocdclk0", NULL, CLK_IS_ROOT, 83400000),
+	FRATE(none, "ioclk_audiocdclk1", NULL, CLK_IS_ROOT, 83400000),
 	FRATE(none, "ioclk_spdif_extclk", NULL, CLK_IS_ROOT, 36864000),
 };
 
@@ -1467,7 +1468,6 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_sclk_decon_eclk_disp, "mout_sclk_decon_eclk_disp", EXYNOS5430_DIV_DISP, 4, 3),
 	CDIV(dout_sclk_decon_vclk_disp, "mout_sclk_decon_vclk_disp", EXYNOS5430_DIV_DISP, 8, 3),
 
-#if 0
 	CDIV(dout_aud_ca5, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD0, 0, 4),
 	CDIV(dout_aclk_aud, "dout_aud_ca5", EXYNOS5430_DIV_AUD0, 4, 4),
 	CDIV(dout_aud_pclk_dbg, "dout_aud_ca5", EXYNOS5430_DIV_AUD0, 8, 4),
@@ -1475,7 +1475,6 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_sclk_pcm, "mout_sclk_pcm", EXYNOS5430_DIV_AUD1, 4, 8),
 	CDIV(dout_sclk_slimbus_aud, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD1, 16, 5),
 	CDIV(dout_sclk_uart, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD1, 12, 4),
-#endif
 
 	CDIV(dout_aclk_lite_a, "mout_aclk_lite_a_b", EXYNOS5430_DIV_CAM01, 0, 3),
 	CDIV(dout_aclk_lite_b, "mout_aclk_lite_b_b", EXYNOS5430_DIV_CAM01, 8, 3),
