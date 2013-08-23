@@ -848,6 +848,47 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 #define EXYNOS_TMU_DRV_DATA (NULL)
 #endif
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+static struct exynos_tmu_platform_data const exynos5_tmu_data = {
+	.trigger_levels[0] = 85,
+	.trigger_levels[1] = 90,
+	.trigger_levels[2] = 95,
+	.trigger_levels[3] = 110,
+	.trigger_level0_en = 1,
+	.trigger_level1_en = 1,
+	.trigger_level2_en = 1,
+	.trigger_level3_en = 1,
+	.gain = 5,
+	.reference_voltage = 16,
+	.noise_cancel_mode = 4,
+	.cal_type = TYPE_ONE_POINT_TRIMMING,
+	.efuse_value = 55,
+	.freq_tab[0] = {
+		.freq_clip_max = 900 * 1000,
+		.temp_level = 85,
+	},
+	.freq_tab[1] = {
+		.freq_clip_max = 800 * 1000,
+		.temp_level = 90,
+	},
+	.freq_tab[2] = {
+		.freq_clip_max = 700 * 1000,
+		.temp_level = 95,
+	},
+	.freq_tab[3] = {
+		.freq_clip_max = 600 * 1000,
+		.temp_level = 100,
+	},
+	.size[THERMAL_TRIP_ACTIVE] = 1,
+	.size[THERMAL_TRIP_PASSIVE] = 3,
+	.freq_tab_count = 4,
+	.type = SOC_ARCH_EXYNOS,
+};
+#define EXYNOS5430_TMU_DRV_DATA (&exynos5_tmu_data)
+#else
+#define EXYNOS5430_TMU_DRV_DATA (NULL)
+#endif
+
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_tmu_match[] = {
 	{
@@ -862,6 +903,10 @@ static const struct of_device_id exynos_tmu_match[] = {
 		.compatible = "samsung,exynos5250-tmu",
 		.data = (void *)EXYNOS_TMU_DRV_DATA,
 	},
+	{
+		.compatible = "samsung,exynos5430-tmu",
+		.data = (void *)EXYNOS5430_TMU_DRV_DATA,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_tmu_match);
@@ -875,6 +920,10 @@ static struct platform_device_id exynos_tmu_driver_ids[] = {
 	{
 		.name		= "exynos5250-tmu",
 		.driver_data    = (kernel_ulong_t)EXYNOS_TMU_DRV_DATA,
+	},
+	{
+		.name		= "exynos5430-tmu",
+		.driver_data	= (kernel_ulong_t)EXYNOS5430_TMU_DRV_DATA,
 	},
 	{ },
 };
