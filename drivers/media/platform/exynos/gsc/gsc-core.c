@@ -1398,6 +1398,7 @@ static int gsc_runtime_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gsc_dev *gsc = (struct gsc_dev *)platform_get_drvdata(pdev);
+
 	if (clk_set_parent(gsc->clock[CLK_CHILD],
 			gsc->clock[CLK_PARENT])) {
 		dev_err(dev, "Unable to set parent %s of clock %s.\n",

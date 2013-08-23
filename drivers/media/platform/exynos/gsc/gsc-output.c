@@ -335,8 +335,6 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 
 		INIT_LIST_HEAD(&gsc->out.active_buf_q);
 		clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
-		pm_runtime_put_sync(&gsc->pdev->dev);
-		gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
 	}
 
 	return 0;
@@ -776,14 +774,6 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 	}
 
 	if (!test_and_set_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
-		struct exynos_platform_gscaler *pdata = gsc->pdata;
-		ret = pm_runtime_get_sync(&gsc->pdev->dev);
-		if (ret < 0) {
-			gsc_err("fail to pm_runtime_get_sync()");
-			return;
-		}
-		gsc_pm_qos_ctrl(gsc, GSC_QOS_ON,
-			pdata->mif_min, pdata->int_min);
 		gsc_hw_set_sw_reset(gsc);
 		ret = gsc_wait_reset(gsc);
 		if (ret < 0) {
@@ -882,11 +872,18 @@ static int gsc_output_open(struct file *file)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
 	int ret = v4l2_fh_open(file);
+	struct exynos_platform_gscaler *pdata = gsc->pdata;
 
 	if (ret)
 		return ret;
 	gsc_dbg("pid: %d, state: 0x%lx", task_pid_nr(current), gsc->state);
+	ret = pm_runtime_get_sync(&gsc->pdev->dev);
+	if (ret < 0) {
+		gsc_err("fail to pm_runtime_get_sync()");
+		return ret;
+	}
 
+	gsc_pm_qos_ctrl(gsc, GSC_QOS_ON, pdata->mif_min, pdata->int_min);
 	/* Return if the corresponding mem2mem/output/capture video node
 	   is already opened. */
 	if (gsc_m2m_opened(gsc) || gsc_cap_opened(gsc) || gsc_out_opened(gsc)) {
@@ -926,6 +923,8 @@ static int gsc_output_close(struct file *file)
 	gsc_ctrls_delete(gsc->out.ctx);
 	v4l2_fh_release(file);
 
+	pm_runtime_put_sync(&gsc->pdev->dev);
+	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
 	return 0;
 }
 
