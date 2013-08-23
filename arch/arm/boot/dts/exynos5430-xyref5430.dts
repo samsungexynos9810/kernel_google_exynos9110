@@ -431,12 +431,12 @@
 
 	/*disp_driver*/
 	decon_fb: decon_fb {
-		samsung,left_margin = <5>;
-		samsung,right_margin = <10>;
-		samsung,upper_margin = <20>;
-		samsung,lower_margin = <20>;
-		samsung,hsync_len = <5>;
-		samsung,vsync_len = <2>;
+		samsung,left_margin = <1>;
+		samsung,right_margin = <1>;
+		samsung,upper_margin = <10>;
+		samsung,lower_margin = <1>;
+		samsung,hsync_len = <1>;
+		samsung,vsync_len = <1>;
 		samsung,xres = <1080>;
 		samsung,yres = <1920>;
 		samsung,virtual_x = <1080>;
