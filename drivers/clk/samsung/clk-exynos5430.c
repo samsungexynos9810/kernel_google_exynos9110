@@ -664,9 +664,9 @@ enum exynos5430_clks {
 	mout_phyclk_ufs_rx0_symbol_user,
 	mout_phyclk_ufs_rx1_symbol_user,
 	mout_aud_pll_user, mout_aud_dpll_user, mout_aud_pll_sub,
-	mout_sclk_i2s_a = 3170, mout_sclk_i2s_b,
-	mout_sclk_pcm_a, mout_sclk_pcm_b, mout_sclk_slimbus,
-	mout_phyclk_rxbyteclkhs0_s4,
+	mout_sclk_i2s = 3170,
+	mout_sclk_pcm = 3172,
+	mout_phyclk_rxbyteclkhs0_s4 = 4175,
 	mout_phyclk_rxbyteclkhs0_s2a,
 	mout_sclk_isp_spi0_user = 3180, mout_sclk_isp_spi1_user,
 	mout_sclk_isp_uart_user, mout_phyclk_rxbyteclkhs0_s2b,
@@ -753,10 +753,10 @@ enum exynos5430_clks {
 	dout_pclk_disp = 4140,
 	dout_sclk_decon_eclk_disp, dout_sclk_decon_vclk_disp,
 	dout_aud_ca5, dout_aclk_aud, dout_aud_pclk_dbg,
-	dout_sclk_i2s = 4150, dout_sclk_i2s_frac,
-	dout_sclk_pcm, dout_sclk_pcm_frac,
-	dout_sclk_slimbus_aud, dout_sclk_slimbus_frac,
-	dout_sclk_uart,
+	dout_sclk_i2s = 4150,
+	dout_sclk_pcm = 4152,
+	dout_sclk_slimbus_aud = 4154,
+	dout_sclk_uart = 4156,
 	dout_aclk_lite_a = 4160,
 	dout_aclk_lite_b, dout_aclk_lite_d,
 	dout_sclk_pixelasync_lite_c_init,
@@ -1050,11 +1050,8 @@ PNAME(mout_phyclk_ufs_rx1_symbol_user_p) = { "oscclk", "phyclk_ufs_rx1_symbol_ph
 PNAME(mout_aud_pll_user_p)	= { "fin_pll", "mout_aud_pll" };
 PNAME(mout_aud_dpll_user_p)	= { "fin_pll", "mout_aud_dpll" };
 PNAME(mout_aud_pll_sub_p)	= { "mout_aud_pll_user", "mout_aud_dpll_user" };
-PNAME(mout_sclk_i2s_a_p)	= { "mout_aud_pll_sub", "ioclk_audiocdclk0" };
-PNAME(mout_sclk_i2s_b_p)	= { "dout_sclk_i2s", "dout_sclk_i2s_frac" };
-PNAME(mout_sclk_pcm_a_p)	= { "mout_aud_pll_sub", "ioclk_audiocdclk0" };
-PNAME(mout_sclk_pcm_b_p)	= { "dout_sclk_pcm", "dout_sclk_pcm_frac" };
-PNAME(mout_sclk_slimbus_p)	= { "dout_sclk_slimbus", "dout_sclk_slimbus_frac" };
+PNAME(mout_sclk_i2s_p)		= { "mout_aud_pll_sub", "ioclk_audiocdclk0" };
+PNAME(mout_sclk_pcm_p)		= { "mout_aud_pll_sub", "ioclk_audiocdclk0" };
 
 /* CAM0 */
 PNAME(mout_phyclk_rxbyteclkhs0_s4_p) = { "oscclk", "phyclk_rxbyteclkhs0_s4" };
@@ -1290,11 +1287,8 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMUX(mout_aud_pll_user, EXYNOS5430_SRC_SEL_AUD0, 0, 1),
 	CMUX(mout_aud_dpll_user, EXYNOS5430_SRC_SEL_AUD0, 4, 1),
 	CMUX(mout_aud_pll_sub, EXYNOS5430_SRC_SEL_AUD0, 8, 1),
-	CMUX(mout_sclk_i2s_a, EXYNOS5430_SRC_SEL_AUD1, 0, 1),
-	CMUX(mout_sclk_i2s_b, EXYNOS5430_SRC_SEL_AUD1, 4, 1),
-	CMUX(mout_sclk_pcm_a, EXYNOS5430_SRC_SEL_AUD1, 8, 1),
-	CMUX(mout_sclk_pcm_b, EXYNOS5430_SRC_SEL_AUD1, 12, 1),
-	CMUX(mout_sclk_slimbus, EXYNOS5430_SRC_SEL_AUD1, 16, 1),
+	CMUX(mout_sclk_i2s, EXYNOS5430_SRC_SEL_AUD1, 0, 1),
+	CMUX(mout_sclk_pcm, EXYNOS5430_SRC_SEL_AUD1, 8, 1),
 
 	CMUX(mout_phyclk_rxbyteclkhs0_s4, EXYNOS5430_SRC_SEL_CAM01, 4, 1),
 	CMUX(mout_phyclk_rxbyteclkhs0_s2a, EXYNOS5430_SRC_SEL_CAM01, 0, 1),
@@ -1477,12 +1471,9 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_aud_ca5, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD0, 0, 4),
 	CDIV(dout_aclk_aud, "dout_aud_ca5", EXYNOS5430_DIV_AUD0, 4, 4),
 	CDIV(dout_aud_pclk_dbg, "dout_aud_ca5", EXYNOS5430_DIV_AUD0, 8, 4),
-	CDIV(dout_sclk_i2s, "mout_sclk_i2s_a", EXYNOS5430_DIV_AUD1, 0, 4),
-	CDIV(dout_sclk_i2s_frac, "mout_sclk_i2s_a", EXYNOS5430_DIV_AUD2, 24, 8),
-	CDIV(dout_sclk_pcm, "mout_sclk_pcm_a", EXYNOS5430_DIV_AUD1, 4, 8),
-	CDIV(dout_sclk_pcm_frac, "mout_sclk_pcm_a", EXYNOS5430_DIV_AUD3, 24, 8),
+	CDIV(dout_sclk_i2s, "mout_sclk_i2s", EXYNOS5430_DIV_AUD1, 0, 4),
+	CDIV(dout_sclk_pcm, "mout_sclk_pcm", EXYNOS5430_DIV_AUD1, 4, 8),
 	CDIV(dout_sclk_slimbus_aud, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD1, 16, 5),
-	CDIV(dout_sclk_slimbus_frac, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD4, 24, 8),
 	CDIV(dout_sclk_uart, "mout_aud_pll_sub", EXYNOS5430_DIV_AUD1, 12, 4),
 #endif
 
