@@ -883,6 +883,9 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.size[THERMAL_TRIP_PASSIVE] = 3,
 	.freq_tab_count = 4,
 	.type = SOC_ARCH_EXYNOS,
+	.clock_count = 2,
+	.clk_name[0] = "pclk_tmu0_apbif",
+	.clk_name[1] = "pclk_tmu1_apbif",
 };
 #define EXYNOS5430_TMU_DRV_DATA (&exynos5_tmu_data)
 #else
@@ -985,10 +988,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	data->clk = devm_clk_get(&pdev->dev, "tmu_apbif");
-	if (IS_ERR(data->clk)) {
-		dev_err(&pdev->dev, "Failed to get clock\n");
-		return  PTR_ERR(data->clk);
+	for (i = 0; i < pdata->clock_count; i++) {
+		data->clk[i] = devm_clk_get(&pdev->dev, pdata->clk_name[i]);
+		if (IS_ERR(data->clk[i])) {
+			dev_err(&pdev->dev, "Failed to get clock\n");
+			return  PTR_ERR(data->clk);
+		}
 	}
 
 	ret = clk_prepare(data->clk);
