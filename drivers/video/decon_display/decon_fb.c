@@ -1201,8 +1201,10 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 
 	pm_runtime_put_sync(sfb->dev);
 
-	if (timeout && ret == 0)
+	if (timeout && ret == 0) {
+		dev_err(sfb->dev, "wait for vsync timeout");
 		return -ETIMEDOUT;
+	}
 
 	return 0;
 }
