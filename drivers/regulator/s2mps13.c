@@ -139,7 +139,7 @@ static int s2m_set_ramp_delay(struct regulator_dev *rdev, int ramp_delay)
 				  ramp_mask << ramp_shift, ramp_value << ramp_shift);
 }
 
-static int s2m_set_voltage_sel_regmap(struct regulator_dev *rdev, unsigned sel)
+static int s2m_set_voltage_sel_regmap_rev0(struct regulator_dev *rdev, unsigned sel)
 {
 	int ret, reg_id = rdev_get_id(rdev);
 	int mode_mask = 0x0c, pwm_mode = 0x03 << 2, auto_mode = 0x02 << 2;
@@ -162,6 +162,25 @@ static int s2m_set_voltage_sel_regmap(struct regulator_dev *rdev, unsigned sel)
 		if (ret < 0)
 			goto out;
 	}
+
+	if (rdev->desc->apply_bit)
+		ret = regmap_update_bits(rdev->regmap, rdev->desc->apply_reg,
+					 rdev->desc->apply_bit,
+					 rdev->desc->apply_bit);
+	return ret;
+out :
+	pr_warn("%s: failed to set voltage_sel_regmap\n", rdev->desc->name);
+	return ret;
+}
+
+static int s2m_set_voltage_sel_regmap_rev1(struct regulator_dev *rdev, unsigned sel)
+{
+	int ret;
+
+	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+				  rdev->desc->vsel_mask, sel);
+	if (ret < 0)
+		goto out;
 
 	if (rdev->desc->apply_bit)
 		ret = regmap_update_bits(rdev->regmap, rdev->desc->apply_reg,
@@ -216,26 +235,39 @@ static struct regulator_ops s2mps13_ldo_ops = {
 	.set_ramp_delay		= s2m_set_ramp_delay,
 };
 
-static struct regulator_ops s2mps13_buck_ops = {
+static struct regulator_ops s2mps13_buck_ops_rev0 = {
 	.list_voltage		= regulator_list_voltage_linear,
 	.map_voltage		= regulator_map_voltage_linear,
 	.is_enabled		= regulator_is_enabled_regmap,
 	.enable			= s2m_enable,
 	.disable		= regulator_disable_regmap,
 	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
-	.set_voltage_sel	= s2m_set_voltage_sel_regmap,
+	.set_voltage_sel	= s2m_set_voltage_sel_regmap_rev0,
 	.set_voltage_time_sel	= s2m_set_voltage_time_sel,
 	.set_mode		= s2m_set_mode,
 	.set_ramp_delay		= s2m_set_ramp_delay,
 };
 
-#define regulator_desc_ldo1(num)	{		\
+static struct regulator_ops s2mps13_buck_ops_rev1 = {
+	.list_voltage		= regulator_list_voltage_linear,
+	.map_voltage		= regulator_map_voltage_linear,
+	.is_enabled		= regulator_is_enabled_regmap,
+	.enable			= s2m_enable,
+	.disable		= regulator_disable_regmap,
+	.get_voltage_sel	= regulator_get_voltage_sel_regmap,
+	.set_voltage_sel	= s2m_set_voltage_sel_regmap_rev1,
+	.set_voltage_time_sel	= s2m_set_voltage_time_sel,
+	.set_mode		= s2m_set_mode,
+	.set_ramp_delay		= s2m_set_ramp_delay,
+};
+
+#define regulator_desc_ldo1(num, rev)	{		\
 	.name		= "LDO"#num,			\
 	.id		= S2MPS13_LDO##num,		\
 	.ops		= &s2mps13_ldo_ops,		\
 	.type		= REGULATOR_VOLTAGE,		\
 	.owner		= THIS_MODULE,			\
-	.min_uV		= S2MPS13_LDO_MIN1,		\
+	.min_uV		= S2MPS13_LDO_MIN1_REV##rev,	\
 	.uV_step	= S2MPS13_LDO_STEP2,		\
 	.n_voltages	= S2MPS13_LDO_N_VOLTAGES,	\
 	.vsel_reg	= S2MPS13_REG_L1CTRL + num - 1,	\
@@ -286,13 +318,13 @@ static struct regulator_ops s2mps13_buck_ops = {
 	.enable_mask	= S2MPS13_ENABLE_MASK		\
 }
 
-#define regulator_desc_buck1_6(num)	{			\
+#define regulator_desc_buck1_6(num, rev)	{		\
 	.name		= "BUCK"#num,				\
 	.id		= S2MPS13_BUCK##num,			\
-	.ops		= &s2mps13_buck_ops,			\
+	.ops		= &s2mps13_buck_ops_rev##rev,		\
 	.type		= REGULATOR_VOLTAGE,			\
 	.owner		= THIS_MODULE,				\
-	.min_uV		= S2MPS13_BUCK_MIN1,			\
+	.min_uV		= S2MPS13_BUCK_MIN1_REV##rev,		\
 	.uV_step	= S2MPS13_BUCK_STEP1,			\
 	.n_voltages	= S2MPS13_BUCK_N_VOLTAGES,		\
 	.vsel_reg	= S2MPS13_REG_B1CTRL2 + (num - 1) * 2,	\
@@ -301,13 +333,13 @@ static struct regulator_ops s2mps13_buck_ops = {
 	.enable_mask	= S2MPS13_ENABLE_MASK			\
 }
 
-#define regulator_desc_buck7 {					\
+#define regulator_desc_buck7(num, rev) {			\
 	.name		= "BUCK7",				\
 	.id		= S2MPS13_BUCK7,			\
-	.ops		= &s2mps13_buck_ops,			\
+	.ops		= &s2mps13_buck_ops_rev##rev,		\
 	.type		= REGULATOR_VOLTAGE,			\
 	.owner		= THIS_MODULE,				\
-	.min_uV		= S2MPS13_BUCK_MIN1,			\
+	.min_uV		= S2MPS13_BUCK_MIN1_REV##rev,		\
 	.uV_step	= S2MPS13_BUCK_STEP1,			\
 	.n_voltages	= S2MPS13_BUCK_N_VOLTAGES,		\
 	.vsel_reg	= S2MPS13_REG_B7CTRL2,			\
@@ -316,13 +348,13 @@ static struct regulator_ops s2mps13_buck_ops = {
 	.enable_mask	= S2MPS13_ENABLE_MASK			\
 }
 
-#define regulator_desc_buck7_sw	{				\
+#define regulator_desc_buck7_sw(num, rev)	{		\
 	.name		= "BUCK7_SW",				\
 	.id		= S2MPS13_BUCK7_SW,			\
-	.ops		= &s2mps13_buck_ops,			\
+	.ops		= &s2mps13_buck_ops_rev##rev,		\
 	.type		= REGULATOR_VOLTAGE,			\
 	.owner		= THIS_MODULE,				\
-	.min_uV		= S2MPS13_BUCK_MIN1,			\
+	.min_uV		= S2MPS13_BUCK_MIN1_REV##rev,		\
 	.uV_step	= S2MPS13_BUCK_STEP1,			\
 	.n_voltages	= S2MPS13_BUCK_N_VOLTAGES,		\
 	.vsel_reg	= S2MPS13_REG_B7CTRL2,			\
@@ -331,13 +363,13 @@ static struct regulator_ops s2mps13_buck_ops = {
 	.enable_mask	= S2MPS13_SW_ENABLE_MASK		\
 }
 
-#define regulator_desc_buck10 {					\
+#define regulator_desc_buck10(num, rev) {			\
 	.name		= "BUCK10",				\
 	.id		= S2MPS13_BUCK10,			\
-	.ops		= &s2mps13_buck_ops,			\
+	.ops		= &s2mps13_buck_ops_rev##rev,		\
 	.type		= REGULATOR_VOLTAGE,			\
 	.owner		= THIS_MODULE,				\
-	.min_uV		= S2MPS13_BUCK_MIN1,			\
+	.min_uV		= S2MPS13_BUCK_MIN1_REV##rev,		\
 	.uV_step	= S2MPS13_BUCK_STEP1,			\
 	.n_voltages	= S2MPS13_BUCK_N_VOLTAGES,		\
 	.vsel_reg	= S2MPS13_REG_B10CTRL2,			\
@@ -349,7 +381,7 @@ static struct regulator_ops s2mps13_buck_ops = {
 #define regulator_desc_buck89(num)	{			\
 	.name		= "BUCK"#num,				\
 	.id		= S2MPS13_BUCK##num,			\
-	.ops		= &s2mps13_buck_ops,			\
+	.ops		= &s2mps13_buck_ops_rev1,		\
 	.type		= REGULATOR_VOLTAGE,			\
 	.owner		= THIS_MODULE,				\
 	.min_uV		= S2MPS13_BUCK_MIN1,			\
@@ -364,7 +396,7 @@ static struct regulator_ops s2mps13_buck_ops = {
 #define regulator_desc_bb1	{				\
 	.name		= "BUCKBOOST",				\
 	.id		= S2MPS13_BB1,				\
-	.ops		= &s2mps13_buck_ops,			\
+	.ops		= &s2mps13_buck_ops_rev1,		\
 	.type		= REGULATOR_VOLTAGE,			\
 	.owner		= THIS_MODULE,				\
 	.min_uV		= S2MPS13_BUCK_MIN2,			\
@@ -376,59 +408,116 @@ static struct regulator_ops s2mps13_buck_ops = {
 	.enable_mask	= S2MPS13_ENABLE_MASK			\
 }
 
-static struct regulator_desc regulators[] = {
-	regulator_desc_ldo2(1),
-	regulator_desc_ldo4(2),
-	regulator_desc_ldo3(3),
-	regulator_desc_ldo2(4),
-	regulator_desc_ldo2(5),
-	regulator_desc_ldo2(6),
-	regulator_desc_ldo3(7),
-	regulator_desc_ldo3(8),
-	regulator_desc_ldo3(9),
-	regulator_desc_ldo4(10),
-	regulator_desc_ldo1(11),
-	regulator_desc_ldo1(12),
-	regulator_desc_ldo1(13),
-	regulator_desc_ldo2(14),
-	regulator_desc_ldo2(15),
-	regulator_desc_ldo4(16),
-	regulator_desc_ldo4(17),
-	regulator_desc_ldo3(18),
-	regulator_desc_ldo3(19),
-	regulator_desc_ldo4(20),
-	regulator_desc_ldo3(21),
-	regulator_desc_ldo3(22),
-	regulator_desc_ldo2(23),
-	regulator_desc_ldo2(24),
-	regulator_desc_ldo4(25),
-	regulator_desc_ldo4(26),
-	regulator_desc_ldo4(27),
-	regulator_desc_ldo3(28),
-	regulator_desc_ldo4(29),
-	regulator_desc_ldo4(30),
-	regulator_desc_ldo3(31),
-	regulator_desc_ldo3(32),
-	regulator_desc_ldo4(33),
-	regulator_desc_ldo3(34),
-	regulator_desc_ldo4(35),
-	regulator_desc_ldo2(36),
-	regulator_desc_ldo3(37),
-	regulator_desc_ldo4(38),
-	regulator_desc_ldo3(39),
-	regulator_desc_ldo4(40),
-	regulator_desc_buck1_6(1),
-	regulator_desc_buck1_6(2),
-	regulator_desc_buck1_6(3),
-	regulator_desc_buck1_6(4),
-	regulator_desc_buck1_6(5),
-	regulator_desc_buck1_6(6),
-	regulator_desc_buck7,
-	regulator_desc_buck7_sw,
-	regulator_desc_buck89(8),
-	regulator_desc_buck89(9),
-	regulator_desc_buck10,
-	regulator_desc_bb1,
+static struct regulator_desc regulators[][S2MPS13_REGULATOR_MAX] = {
+	{
+		/* for s2mps13 rev0 */
+		regulator_desc_ldo2(1),
+		regulator_desc_ldo4(2),
+		regulator_desc_ldo3(3),
+		regulator_desc_ldo2(4),
+		regulator_desc_ldo2(5),
+		regulator_desc_ldo2(6),
+		regulator_desc_ldo3(7),
+		regulator_desc_ldo3(8),
+		regulator_desc_ldo3(9),
+		regulator_desc_ldo4(10),
+		regulator_desc_ldo1(11,0),
+		regulator_desc_ldo1(12,0),
+		regulator_desc_ldo1(13,0),
+		regulator_desc_ldo2(14),
+		regulator_desc_ldo2(15),
+		regulator_desc_ldo4(16),
+		regulator_desc_ldo4(17),
+		regulator_desc_ldo3(18),
+		regulator_desc_ldo3(19),
+		regulator_desc_ldo4(20),
+		regulator_desc_ldo3(21),
+		regulator_desc_ldo3(22),
+		regulator_desc_ldo2(23),
+		regulator_desc_ldo2(24),
+		regulator_desc_ldo4(25),
+		regulator_desc_ldo4(26),
+		regulator_desc_ldo4(27),
+		regulator_desc_ldo3(28),
+		regulator_desc_ldo4(29),
+		regulator_desc_ldo4(30),
+		regulator_desc_ldo3(31),
+		regulator_desc_ldo3(32),
+		regulator_desc_ldo4(33),
+		regulator_desc_ldo3(34),
+		regulator_desc_ldo4(35),
+		regulator_desc_ldo2(36),
+		regulator_desc_ldo3(37),
+		regulator_desc_ldo4(38),
+		regulator_desc_ldo3(39),
+		regulator_desc_ldo4(40),
+		regulator_desc_buck1_6(1,0),
+		regulator_desc_buck1_6(2,0),
+		regulator_desc_buck1_6(3,0),
+		regulator_desc_buck1_6(4,0),
+		regulator_desc_buck1_6(5,0),
+		regulator_desc_buck1_6(6,0),
+		regulator_desc_buck7(0,0),
+		regulator_desc_buck7_sw(0,0),
+		regulator_desc_buck89(8),
+		regulator_desc_buck89(9),
+		regulator_desc_buck10(0,0),
+		regulator_desc_bb1,
+	}, {
+		/* for s2mps13 rev1 */
+		regulator_desc_ldo2(1),
+		regulator_desc_ldo4(2),
+		regulator_desc_ldo3(3),
+		regulator_desc_ldo2(4),
+		regulator_desc_ldo2(5),
+		regulator_desc_ldo2(6),
+		regulator_desc_ldo3(7),
+		regulator_desc_ldo3(8),
+		regulator_desc_ldo3(9),
+		regulator_desc_ldo4(10),
+		regulator_desc_ldo1(11,1),
+		regulator_desc_ldo1(12,1),
+		regulator_desc_ldo1(13,1),
+		regulator_desc_ldo2(14),
+		regulator_desc_ldo2(15),
+		regulator_desc_ldo4(16),
+		regulator_desc_ldo4(17),
+		regulator_desc_ldo3(18),
+		regulator_desc_ldo3(19),
+		regulator_desc_ldo4(20),
+		regulator_desc_ldo3(21),
+		regulator_desc_ldo3(22),
+		regulator_desc_ldo2(23),
+		regulator_desc_ldo2(24),
+		regulator_desc_ldo4(25),
+		regulator_desc_ldo4(26),
+		regulator_desc_ldo4(27),
+		regulator_desc_ldo3(28),
+		regulator_desc_ldo4(29),
+		regulator_desc_ldo4(30),
+		regulator_desc_ldo3(31),
+		regulator_desc_ldo3(32),
+		regulator_desc_ldo4(33),
+		regulator_desc_ldo3(34),
+		regulator_desc_ldo4(35),
+		regulator_desc_ldo2(36),
+		regulator_desc_ldo3(37),
+		regulator_desc_ldo4(38),
+		regulator_desc_ldo3(39),
+		regulator_desc_ldo4(40),
+		regulator_desc_buck1_6(1,1),
+		regulator_desc_buck1_6(2,1),
+		regulator_desc_buck1_6(3,1),
+		regulator_desc_buck1_6(4,1),
+		regulator_desc_buck1_6(5,1),
+		regulator_desc_buck1_6(6,1),
+		regulator_desc_buck7(0,1),
+		regulator_desc_buck7_sw(0,1),
+		regulator_desc_buck89(8),
+		regulator_desc_buck89(9),
+		regulator_desc_buck10(0,1),
+		regulator_desc_bb1,
+	}
 };
 
 #ifdef CONFIG_OF
@@ -467,11 +556,12 @@ static int s2mps13_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
 
 	pdata->regulators = rdata;
 	for_each_child_of_node(regulators_np, reg_np) {
-		for (i = 0; i < ARRAY_SIZE(regulators); i++)
-			if (!of_node_cmp(reg_np->name, regulators[i].name))
+		for (i = 0; i < ARRAY_SIZE(regulators[iodev->rev_num]); i++)
+			if (!of_node_cmp(reg_np->name,
+					regulators[iodev->rev_num][i].name))
 				break;
 
-		if (i == ARRAY_SIZE(regulators)) {
+		if (i == ARRAY_SIZE(regulators[iodev->rev_num])) {
 			dev_warn(iodev->dev,
 			"don't know how to configure regulator %s\n",
 			reg_np->name);
@@ -519,6 +609,10 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 	if (!s2mps13)
 		return -ENOMEM;
 
+	ret = sec_reg_read(iodev, S2MPS13_REG_ID, &iodev->rev_num);
+	if (ret < 0)
+		return ret;
+
 	platform_set_drvdata(pdev, s2mps13);
 
 	for (i = 0; i < pdata->num_regulators; i++) {
@@ -528,9 +622,10 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 		config.init_data = pdata->regulators[i].initdata;
 		config.driver_data = s2mps13;
 		config.of_node = pdata->regulators[i].reg_node;
-		s2mps13->opmode[id] = regulators[id].enable_mask;
+		s2mps13->opmode[id] = regulators[iodev->rev_num][id].enable_mask;
 
-		s2mps13->rdev[i] = regulator_register(&regulators[id], &config);
+		s2mps13->rdev[i] = regulator_register(
+				&regulators[iodev->rev_num][id], &config);
 		if (IS_ERR(s2mps13->rdev[i])) {
 			ret = PTR_ERR(s2mps13->rdev[i]);
 			dev_err(&pdev->dev, "regulator init failed for %d\n",

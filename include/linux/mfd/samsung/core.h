@@ -49,6 +49,7 @@ struct sec_pmic_dev {
 	struct mutex irqlock;
 
 	int device_type;
+	int rev_num;
 	int irq_base;
 	int irq;
 	struct regmap_irq_chip_data *irq_data;
