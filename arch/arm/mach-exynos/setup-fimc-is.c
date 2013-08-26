@@ -79,20 +79,20 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 		gpio_free(_gpio_info->gpio_main_rst);
 		goto exit;
 	} else if ((flag_on == false) && (channel == CSI_ID_B)) {
-		gpio_request_one(_gpio_info->gpio_vt_sda, GPIOF_IN, "MAIN_CAM_SDA");
+		gpio_request_one(_gpio_info->gpio_vt_sda, GPIOF_IN, "VT_CAM_SDA");
 		gpio_free(_gpio_info->gpio_vt_sda);
 
-		gpio_request_one(_gpio_info->gpio_vt_scl, GPIOF_IN, "MAIN_CAM_SCL");
+		gpio_request_one(_gpio_info->gpio_vt_scl, GPIOF_IN, "VT_CAM_SCL");
 		gpio_free(_gpio_info->gpio_vt_scl);
 
-		gpio_request_one(_gpio_info->gpio_vt_mclk, GPIOF_IN, "MAIN_CAM_MCLK");
+		gpio_request_one(_gpio_info->gpio_vt_mclk, GPIOF_IN, "VT_CAM_MCLK");
 		gpio_free(_gpio_info->gpio_vt_mclk);
 
 		usleep_range(1000, 1000);
 		__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
 		usleep_range(1000, 1000);
 		__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
-		gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "MAIN_CAM_RESET");
+		gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "VT_CAM_RESET");
 		gpio_free(_gpio_info->gpio_vt_rst);
 		goto exit;
 	} else {
