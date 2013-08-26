@@ -17,6 +17,7 @@ obj-$(CONFIG_SOC_EXYNOS5430)	+= asv-exynos.o
 
 obj-$(CONFIG_EXYNOS5430_PM)	+= pm-exynos5430.o
 obj-$(CONFIG_PM_RUNTIME)	+= pm_domains.o
+obj-$(CONFIG_PM_RUNTIME_TEST_SYSFS)	+= pm_domains_sysfs.o
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
 
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
