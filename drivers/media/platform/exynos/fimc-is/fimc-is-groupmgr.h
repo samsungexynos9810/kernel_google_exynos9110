@@ -42,11 +42,13 @@ enum fimc_is_group_state {
 	FIMC_IS_GROUP_RUN,
 	FIMC_IS_GROUP_REQUEST_FSTOP,
 	FIMC_IS_GROUP_FORCE_STOP,
-	FIMC_IS_GROUP_OTF_INPUT
+	FIMC_IS_GROUP_OTF_INPUT,
+	FIMC_IS_GROUP_SMP_INIT
 };
 
 enum fimc_is_global_group_state {
 	FIMC_IS_GGROUP_INIT,
+	FIMC_IS_GGROUP_SMP_INIT,
 	FIMC_IS_GGROUP_STOP
 };
 
@@ -129,6 +131,8 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_video_ctx *vctx,
 	struct fimc_is_device_ischain *device,
 	fimc_is_start_callback start_callback);
+int fimc_is_group_sema_init(struct fimc_is_groupmgr *groupmgr,
+	struct fimc_is_group *group);
 int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
 	struct fimc_is_video_ctx *vctx);

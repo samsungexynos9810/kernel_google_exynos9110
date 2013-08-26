@@ -23,8 +23,10 @@
 #define FIMC_IS_SETFILE_MASK		0xFFFF
 
 #define REPROCESSING_FLAG		0x80000000
-#define REPROCESSING_MASK		0xFF000000
-#define REPROCESSING_SHIFT		24
+#define REPROCESSING_MASK		0xF0000000
+#define REPROCESSING_SHIFT		28
+#define OTF_3AA_MASK			0x0F000000
+#define OTF_3AA_SHIFT			24
 #define SSX_VINDEX_MASK			0x00FF0000
 #define SSX_VINDEX_SHIFT		16
 #define TAX_VINDEX_MASK			0x0000FF00
@@ -44,7 +46,6 @@ enum fimc_is_ischain_state {
 	FIMC_IS_ISCHAIN_POWER_ON,
 	FIMC_IS_ISCHAIN_OPEN_SENSOR,
 	FIMC_IS_ISCHAIN_REPROCESSING,
-	FIMC_IS_ISCHAIN_OTF_OPEN,
 };
 
 enum fimc_is_camera_device {
@@ -225,6 +226,8 @@ int fimc_is_ischain_3a0_reqbufs(struct fimc_is_device_ischain *device,
 	u32 count);
 int fimc_is_ischain_3a0_s_format(struct fimc_is_device_ischain *this,
 	u32 width, u32 height);
+int fimc_is_ischain_3a0_s_input(struct fimc_is_device_ischain *this,
+	u32 input);
 int fimc_is_ischain_3a0_buffer_queue(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue,
 	u32 index);
@@ -246,6 +249,8 @@ int fimc_is_ischain_3a1_reqbufs(struct fimc_is_device_ischain *device,
 	u32 count);
 int fimc_is_ischain_3a1_s_format(struct fimc_is_device_ischain *this,
 	u32 width, u32 height);
+int fimc_is_ischain_3a1_s_input(struct fimc_is_device_ischain *this,
+	u32 input);
 int fimc_is_ischain_3a1_buffer_queue(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue,
 	u32 index);
@@ -263,6 +268,8 @@ int fimc_is_ischain_isp_reqbufs(struct fimc_is_device_ischain *device,
 	u32 count);
 int fimc_is_ischain_isp_s_format(struct fimc_is_device_ischain *this,
 	u32 width, u32 height);
+int fimc_is_ischain_isp_s_input(struct fimc_is_device_ischain *this,
+	u32 input);
 int fimc_is_ischain_isp_buffer_queue(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue,
 	u32 index);
@@ -360,5 +367,7 @@ extern const struct fimc_is_queue_ops fimc_is_ischain_sub_ops;
 int fimc_is_itf_power_down(struct fimc_is_interface *interface);
 int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on);
 void fimc_is_ischain_savefirm(struct fimc_is_device_ischain *this);
+
+#define IS_ISCHAIN_OTF(device)	((device)->group_3ax.leader.input.is_otf)
 
 #endif

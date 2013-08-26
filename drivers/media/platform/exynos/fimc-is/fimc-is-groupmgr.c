@@ -553,18 +553,10 @@ int fimc_is_groupmgr_probe(struct fimc_is_groupmgr *groupmgr)
 			groupmgr->group[i][j] = NULL;
 	}
 
-	sema_init(&groupmgr->group_smp_res[GROUP_ID_3A0], 1);
-#ifdef USE_OTF_INTERFACE
-	sema_init(&groupmgr->group_smp_res[GROUP_ID_3A1], MIN_OF_SHOT_RSC);
-#else
-	sema_init(&groupmgr->group_smp_res[GROUP_ID_3A1], 1);
-#endif
-	sema_init(&groupmgr->group_smp_res[GROUP_ID_ISP], 1);
-	sema_init(&groupmgr->group_smp_res[GROUP_ID_DIS], 1);
-
 	for (i = 0; i < GROUP_ID_MAX; ++i) {
 		clear_bit(FIMC_IS_GGROUP_STOP, &groupmgr->group_state[i]);
 		clear_bit(FIMC_IS_GGROUP_INIT, &groupmgr->group_state[i]);
+		clear_bit(FIMC_IS_GGROUP_SMP_INIT, &groupmgr->group_state[i]);
 	}
 
 	return ret;
@@ -580,7 +572,6 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	char name[30];
 	struct fimc_is_subdev *leader;
 	struct fimc_is_framemgr *framemgr;
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
 
 	BUG_ON(!groupmgr);
 	BUG_ON(!group);
@@ -612,14 +603,6 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 			goto p_err;
 		}
 
-		if (id == GROUP_ID_3A1) {
-			sema_init(&groupmgr->group_smp_res[id], MIN_OF_SHOT_RSC);
-			sched_setscheduler_nocheck(groupmgr->group_task[id],
-						SCHED_FIFO, &param);
-		} else {
-			sema_init(&groupmgr->group_smp_res[id], 1);
-		}
-
 		clear_bit(FIMC_IS_GGROUP_STOP, &groupmgr->group_state[id]);
 		set_bit(FIMC_IS_GGROUP_INIT, &groupmgr->group_state[id]);
 	}
@@ -633,6 +616,8 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	clear_bit(FIMC_IS_GROUP_FORCE_STOP, &group->state);
 	clear_bit(FIMC_IS_GROUP_READY, &group->state);
 	clear_bit(FIMC_IS_GROUP_RUN, &group->state);
+	clear_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
+	clear_bit(FIMC_IS_GROUP_SMP_INIT, &group->state);
 
 	group->start_callback = start_callback;
 	group->device = device;
@@ -669,37 +654,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	/* 4. Configure Group & Subdev List */
 	switch (id) {
 	case GROUP_ID_3A0:
-		sema_init(&group->smp_shot, 1);
-		atomic_set(&group->smp_shot_count, 1);
-		clear_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
-		group->async_shots = 0;
-		group->sync_shots = 1;
-
-		/* path configuration */
-		group->prev = NULL;
-		group->next = &device->group_isp;
-		group->subdev[ENTRY_SCALERC] = NULL;
-		group->subdev[ENTRY_DIS] = NULL;
-		group->subdev[ENTRY_TDNR] = NULL;
-		group->subdev[ENTRY_SCALERP] = NULL;
-		group->subdev[ENTRY_LHFD] = NULL;
-		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
-		break;
 	case GROUP_ID_3A1:
-#ifdef USE_OTF_INTERFACE
-		sema_init(&group->smp_shot, MIN_OF_SHOT_RSC);
-		atomic_set(&group->smp_shot_count, MIN_OF_SHOT_RSC);
-		set_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
-		group->async_shots = MIN_OF_ASYNC_SHOTS;
-		group->sync_shots = MIN_OF_SYNC_SHOTS;
-#else
-		sema_init(&group->smp_shot, 1);
-		atomic_set(&group->smp_shot_count, 1);
-		clear_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
-		group->async_shots = 0;
-		group->sync_shots = 1;
-#endif
-
 		/* path configuration */
 		group->prev = NULL;
 		group->next = &device->group_isp;
@@ -711,12 +666,6 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	case GROUP_ID_ISP:
-		sema_init(&group->smp_shot, 1);
-		atomic_set(&group->smp_shot_count, 1);
-		clear_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
-		group->async_shots = 0;
-		group->sync_shots = 1;
-
 		/* path configuration */
 		group->prev = &device->group_3ax;
 		group->next = NULL;
@@ -741,12 +690,6 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	case GROUP_ID_DIS:
-		sema_init(&group->smp_shot, 1);
-		atomic_set(&group->smp_shot_count, 1);
-		clear_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
-		group->async_shots = 0;
-		group->sync_shots = 1;
-
 		/* path configuration */
 		group->prev = NULL;
 		group->next = NULL;
@@ -772,6 +715,57 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 
 p_err:
 	return ret;
+}
+
+int fimc_is_group_sema_init(struct fimc_is_groupmgr *groupmgr,
+	struct fimc_is_group *group)
+{
+	struct fimc_is_device_ischain *device;
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO - 1 };
+
+	BUG_ON(!groupmgr);
+	BUG_ON(!group);
+	BUG_ON(group->instance >= FIMC_IS_MAX_NODES);
+	BUG_ON(group->id >= GROUP_ID_MAX);
+
+	device = group->device;
+
+	if (test_bit(FIMC_IS_GROUP_SMP_INIT, &group->state))
+		warn("already initialized");
+
+	if (!test_bit(FIMC_IS_GGROUP_SMP_INIT, &groupmgr->group_state[group->id])) {
+		pr_info("%s: Initializing GGroup(%d)\n", __func__, group->id);
+		if ((group->id == GROUP_ID_3A0 || group->id == GROUP_ID_3A1) &&
+			IS_ISCHAIN_OTF(device)) {
+			pr_info("%s: OTF setting for GGroup(%d)\n", __func__, group->id);
+			sema_init(&groupmgr->group_smp_res[group->id], MIN_OF_SHOT_RSC);
+			sched_setscheduler_nocheck(groupmgr->group_task[group->id],
+						SCHED_FIFO, &param);
+		} else
+			sema_init(&groupmgr->group_smp_res[group->id], 1);
+
+		set_bit(FIMC_IS_GGROUP_SMP_INIT, &groupmgr->group_state[group->id]);
+	}
+
+	if ((group->id == GROUP_ID_3A0 || group->id == GROUP_ID_3A1) &&
+		IS_ISCHAIN_OTF(device)) {
+		pr_info("%s: OTF setting for Group(%d)\n", __func__, group->id);
+		sema_init(&group->smp_shot, MIN_OF_SHOT_RSC);
+		atomic_set(&group->smp_shot_count, MIN_OF_SHOT_RSC);
+		set_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
+		group->async_shots = MIN_OF_ASYNC_SHOTS;
+		group->sync_shots = MIN_OF_SYNC_SHOTS;
+	} else {
+		sema_init(&group->smp_shot, 1);
+		atomic_set(&group->smp_shot_count, 1);
+		clear_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state);
+		group->async_shots = 0;
+		group->sync_shots = 1;
+	}
+
+	set_bit(FIMC_IS_GROUP_SMP_INIT, &group->state);
+
+	return 0;
 }
 
 int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
@@ -821,6 +815,7 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 		kthread_stop(groupmgr->group_task[group->id]);
 
 		clear_bit(FIMC_IS_GGROUP_INIT, &groupmgr->group_state[group->id]);
+		clear_bit(FIMC_IS_GGROUP_SMP_INIT, &groupmgr->group_state[group->id]);
 	}
 
 	groupmgr->group[group->instance][group->id] = NULL;
@@ -846,6 +841,7 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 	}
 
 	clear_bit(FIMC_IS_GROUP_OPEN, &group->state);
+	clear_bit(FIMC_IS_GROUP_SMP_INIT, &group->state);
 
 p_err:
 	return ret;
@@ -968,6 +964,8 @@ int fimc_is_group_process_start(struct fimc_is_groupmgr *groupmgr,
 	BUG_ON(group->instance >= FIMC_IS_MAX_NODES);
 	BUG_ON(group->id >= GROUP_ID_MAX);
 	BUG_ON(!queue);
+	BUG_ON(!test_bit(FIMC_IS_GGROUP_SMP_INIT, &groupmgr->group_state[group->id]));
+	BUG_ON(!test_bit(FIMC_IS_GROUP_SMP_INIT, &group->state));
 
 	if (test_bit(FIMC_IS_GROUP_READY, &group->state)) {
 		warn("already group start");

@@ -118,7 +118,7 @@ static int fimc_is_3a1_video_open(struct file *file)
 
 	ret = fimc_is_video_open(vctx,
 		device,
-		VIDEO_3A1_READY_BUFFERS,
+		VIDEO_3AA_READY_BUFFERS,
 		video,
 		FIMC_IS_VIDEO_TYPE_M2M,
 		&fimc_is_3a1_qops,
@@ -455,7 +455,18 @@ static int fimc_is_3a1_video_g_input(struct file *file, void *priv,
 static int fimc_is_3a1_video_s_input(struct file *file, void *priv,
 	unsigned int input)
 {
-	/* Todo: add to set input control code */
+	struct fimc_is_video_ctx *vctx = file->private_data;
+	struct fimc_is_device_ischain *device;
+
+	BUG_ON(!vctx);
+
+	mdbgv_3a1("%s input(%08X)\n", vctx, __func__, input);
+
+	device = vctx->device;
+	BUG_ON(!device);
+
+	fimc_is_ischain_3a1_s_input(device, input);
+
 	return 0;
 }
 
@@ -551,6 +562,7 @@ static int fimc_is_3a1_queue_setup(struct vb2_queue *vbq,
 	struct fimc_is_video *video;
 	struct fimc_is_queue *queue;
 	struct fimc_is_core *core;
+	struct fimc_is_device_ischain *device;
 	void *alloc_ctx;
 
 	BUG_ON(!vctx);
@@ -562,10 +574,14 @@ static int fimc_is_3a1_queue_setup(struct vb2_queue *vbq,
 	core = video->core;
 	alloc_ctx = core->mem.alloc_ctx;
 
-	if (*num_buffers < VIDEO_3A1_MIN_BUFFERS) {
-		warn("number of req. buffers is too small(%d->%d)\n",
-			*num_buffers, VIDEO_3A1_MIN_BUFFERS);
-		*num_buffers = VIDEO_3A1_MIN_BUFFERS;
+	device = vctx->device;
+
+	if (IS_ISCHAIN_OTF(device)) {
+		if (*num_buffers < VIDEO_3AA_OTF_MIN_BUFFERS) {
+			warn("number of req. buffers is too small(%d->%d)\n",
+				*num_buffers, VIDEO_3AA_OTF_MIN_BUFFERS);
+			*num_buffers = VIDEO_3AA_OTF_MIN_BUFFERS;
+		}
 	}
 
 	ret = fimc_is_queue_setup(queue,

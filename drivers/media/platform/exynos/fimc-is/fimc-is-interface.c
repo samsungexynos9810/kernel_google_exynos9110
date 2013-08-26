@@ -1474,53 +1474,107 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 	case GROUP_ID_3A0:
 		sub_framemgr = GET_DST_FRAMEMGR(vctx);
 
-		if (fcount != ldr_frame->fcount) {
-			err("cause : mismatch(%d != %d)", fcount,
-				ldr_frame->fcount);
-			status1 = ISR_NDONE;
-		}
-
-		wq_func_group_3a0(groupmgr, group, ldr_framemgr, ldr_frame,
-			sub_framemgr, vctx, status1);
-		break;
-	case GROUP_ID_3A1:
-		sub_framemgr = GET_DST_FRAMEMGR(vctx);
-
-		if (fcount != ldr_frame->fcount) {
+		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state)) {
 			/*
-			 * 3A1 is otf interface and 3A1 can have 2 more shots
+			 * When OTF is enabled, 3A0 can have 2 more shots
 			 * done is reported to hal if frame count is same
 			 * not done is reported to hal if driver frame count is
 			 * less than firmware frame count
 			 * this correction is repeated
 			 */
-			while (ldr_frame) {
-				if (fcount == ldr_frame->fcount) {
-					status1 = ISR_DONE;
-					wq_func_group_3a1(groupmgr, group,
-						ldr_framemgr, ldr_frame,
-						sub_framemgr, vctx, status1);
-					break;
-				} else if (fcount > ldr_frame->fcount) {
-					err("cause : mismatch(%d != %d)", fcount,
-						ldr_frame->fcount);
-					status1 = ISR_NDONE;
-					wq_func_group_3a1(groupmgr, group,
-						ldr_framemgr, ldr_frame,
-						sub_framemgr, vctx, status1);
+			if (fcount != ldr_frame->fcount) {
 
-					/* get next leader frame */
-					fimc_is_frame_process_head(ldr_framemgr,
-						&ldr_frame);
-				} else {
-					warn("%d done is ignored", fcount);
-					break;
+				while (ldr_frame) {
+					if (fcount == ldr_frame->fcount) {
+						status1 = ISR_DONE;
+						wq_func_group_3a0(groupmgr, group,
+							ldr_framemgr, ldr_frame,
+							sub_framemgr, vctx, status1);
+						break;
+					} else if (fcount > ldr_frame->fcount) {
+						err("cause: mismatch(%d != %d)",
+							fcount,
+							ldr_frame->fcount);
+						status1 = ISR_NDONE;
+						wq_func_group_3a0(groupmgr, group,
+							ldr_framemgr, ldr_frame,
+							sub_framemgr, vctx, status1);
+
+						/* get next leader frame */
+						fimc_is_frame_process_head(ldr_framemgr,
+							&ldr_frame);
+					} else {
+						warn("%d done is ignored", fcount);
+						break;
+					}
 				}
+			} else {
+				wq_func_group_3a0(groupmgr, group,
+					ldr_framemgr, ldr_frame,
+					sub_framemgr, vctx, status1);
 			}
 		} else {
-			wq_func_group_3a1(groupmgr, group,
-				ldr_framemgr, ldr_frame,
+			if (fcount != ldr_frame->fcount) {
+				err("cause : mismatch(%d != %d)", fcount,
+					ldr_frame->fcount);
+				status1 = ISR_NDONE;
+			}
+
+			wq_func_group_3a0(groupmgr, group, ldr_framemgr, ldr_frame,
 				sub_framemgr, vctx, status1);
+		}
+		break;
+	case GROUP_ID_3A1:
+		sub_framemgr = GET_DST_FRAMEMGR(vctx);
+
+		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state)) {
+			/*
+			 * When OTF is enabled, 3A1 can have 2 more shots
+			 * done is reported to hal if frame count is same
+			 * not done is reported to hal if driver frame count is
+			 * less than firmware frame count
+			 * this correction is repeated
+			 */
+			if (fcount != ldr_frame->fcount) {
+
+				while (ldr_frame) {
+					if (fcount == ldr_frame->fcount) {
+						status1 = ISR_DONE;
+						wq_func_group_3a1(groupmgr, group,
+							ldr_framemgr, ldr_frame,
+							sub_framemgr, vctx, status1);
+						break;
+					} else if (fcount > ldr_frame->fcount) {
+						err("cause : mismatch(%d != %d)", fcount,
+							ldr_frame->fcount);
+						status1 = ISR_NDONE;
+						wq_func_group_3a1(groupmgr, group,
+							ldr_framemgr, ldr_frame,
+							sub_framemgr, vctx, status1);
+
+						/* get next leader frame */
+						fimc_is_frame_process_head(ldr_framemgr,
+							&ldr_frame);
+					} else {
+						warn("%d done is ignored", fcount);
+						break;
+					}
+				}
+			} else {
+				wq_func_group_3a1(groupmgr, group,
+					ldr_framemgr, ldr_frame,
+					sub_framemgr, vctx, status1);
+			}
+		} else {
+			if (fcount != ldr_frame->fcount) {
+				err("cause : mismatch(%d != %d)", fcount,
+					ldr_frame->fcount);
+				status1 = ISR_NDONE;
+			}
+
+			wq_func_group_3a1(groupmgr, group, ldr_framemgr, ldr_frame,
+				sub_framemgr, vctx, status1);
+
 		}
 		break;
 	case GROUP_ID_ISP:

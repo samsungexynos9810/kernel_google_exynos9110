@@ -23,6 +23,7 @@ enum fimc_is_subdev_state {
 struct fimc_is_subdev_path {
 	u32					width;
 	u32					height;
+	u32					is_otf;
 };
 
 struct fimc_is_subdev {

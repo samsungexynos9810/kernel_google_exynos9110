@@ -596,6 +596,8 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	if (ret)
 		merr("fimc_is_device_init(%d, %d, %d) is fail", vctx, module, group_id, rep_stream);
 
+	fimc_is_ischain_isp_s_input(device, input);
+
 p_err:
 	return ret;
 }

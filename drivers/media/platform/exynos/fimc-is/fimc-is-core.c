@@ -369,8 +369,9 @@ int fimc_is_clock_set(struct fimc_is_core *this,
 		goto exit;
 	}
 
-	if (group_id == GROUP_ID_3A1)
-		goto exit;
+	for (i = 0; i < refcount; i++)
+		if (IS_ISCHAIN_OTF(&this->ischain[i]))
+			goto exit;
 
 	if (refcount >= 3)
 		group_id = GROUP_ID_MAX;

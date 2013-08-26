@@ -424,7 +424,7 @@ static int fimc_is_ss1_video_s_input(struct file *file, void *priv,
 
 	BUG_ON(!vctx);
 
-	mdbgv_ss1("%s(input : %d)\n", vctx, __func__, input);
+	mdbgv_ss1("%s(input : %08X)\n", vctx, __func__, input);
 
 	device = vctx->device;
 	framemgr = GET_DST_FRAMEMGR(vctx);
