@@ -707,7 +707,6 @@ void gsc_hw_set_output_path(struct gsc_ctx *ctx)
 void gsc_hw_set_out_size(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *dev = ctx->gsc_dev;
-	struct exynos_platform_gscaler *pdata = dev->pdata;
 	struct gsc_frame *frame = &ctx->d_frame;
 	u32 cfg;
 
@@ -723,7 +722,7 @@ void gsc_hw_set_out_size(struct gsc_ctx *ctx)
 	}
 
 	/* Set output scaled size */
-	if (use_input_rotator) {
+	if (is_rotation) {
 		cfg = GSC_SCALED_WIDTH(frame->crop.height);
 		cfg |= GSC_SCALED_HEIGHT(frame->crop.width);
 	} else {

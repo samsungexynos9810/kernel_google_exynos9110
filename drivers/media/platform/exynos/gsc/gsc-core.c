@@ -616,12 +616,10 @@ int gsc_check_scaler_ratio(struct gsc_ctx *ctx,
 			struct gsc_variant *var, int sw, int sh, int dw,
 			int dh, int rot, int out_path)
 {
-	struct exynos_platform_gscaler *pdata = ctx->gsc_dev->pdata;
 	int tmp_w, tmp_h, sc_down_max;
 	sc_down_max =
 		(out_path == GSC_DMA) ? var->sc_down_max : var->local_sc_down;
-
-	if (use_input_rotator) {
+	if (is_rotation) {
 		tmp_w = dh;
 		tmp_h = dw;
 	} else {
@@ -650,7 +648,7 @@ int gsc_set_scaler_info(struct gsc_ctx *ctx)
 
 	if (is_ver_5h && (s_frame->crop.width > d_frame->crop.width) &&
 		(s_frame->crop.height > d_frame->crop.height))
-		sc->is_scaled_down = false;
+		sc->is_scaled_down = true;
 	else
 		sc->is_scaled_down = false;
 
@@ -663,7 +661,7 @@ int gsc_set_scaler_info(struct gsc_ctx *ctx)
 		return ret;
 	}
 
-	if (use_input_rotator) {
+	if (is_rotation) {
 		ty = d_frame->crop.width;
 		tx = d_frame->crop.height;
 	} else {
