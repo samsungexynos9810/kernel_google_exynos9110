@@ -66,16 +66,10 @@ enum exynos5430_clks {
 	aclk_gscl_333, aclk_gscl_111, aclk_fsys_200, aclk_mscl_400,
 	aclk_peris_66, aclk_peric_66, aclk_imem_266, aclk_imem_200,
 
-	phyclk_lli_tx0_symbol = 360, phyclk_lli_rx0_symbol,
-
 	phyclk_mixer_pixel = 370, phyclk_hdmi_pixel, phyclk_hdmiphy_tmds_clko,
 	phyclk_mipidphy_rxclkesc0, phyclk_mipidphy_bitclkdiv8,
 
 	ioclk_i2s1_bclk = 390, ioclk_spi0_clk, ioclk_spi1_clk, ioclk_spi2_clk, ioclk_slimbus_clk,
-
-	phyclk_rxbyteclkhs0_s4 = 400, phyclk_rxbyteclkhs0_s2a,
-
-	phyclk_rxbyteclkhs0_s2b,
 
 	phyclk_usbdrd30_udrd30_phyclock = 410, phyclk_usbdrd30_udrd30_pipe_pclk,
 	phyclk_usbhost20_phy_freeclk, phyclk_usbhost20_phy_phyclock,
@@ -776,6 +770,33 @@ enum exynos5430_clks {
 	dout_aclk_isp_c_200, dout_aclk_isp_d_200,
 	dout_pclk_isp, dout_pclk_isp_dis,
 
+	/* fixed clock */
+	oscclk = 5000,
+	phyclk_usbdrd30_udrd30_phyclock_phy,
+	phyclk_usbdrd30_udrd30_pipe_pclk_phy,
+	phyclk_usbhost20_phy_freeclk_phy,
+	phyclk_usbhost20_phy_phyclock_phy,
+	phyclk_usbhost20_phy_clk48mohci_phy,
+	phyclk_usbhost20_phy_hsic1_phy,
+	phyclk_ufs_tx0_symbol_phy = 5010,
+	phyclk_ufs_tx1_symbol_phy,
+	phyclk_ufs_rx0_symbol_phy,
+	phyclk_ufs_rx1_symbol_phy,
+	phyclk_lli_tx0_symbol,
+	phyclk_lli_rx0_symbol,
+	phyclk_rxbyteclkhs0_s4 = 5020,
+	phyclk_rxbyteclkhs0_s2a,
+	phyclk_rxbyteclkhs0_s2b,
+	phyclk_hdmiphy_pixel_clko,
+	phyclk_hdmiphy_tmds_clko_phy,
+	phyclk_mipidphy_rxclkesc0_phy,
+	phyclk_mipidphy_bitclkdiv8_phy,
+	phyclk_ufs_mphy_to_lli = 5030,
+	phyclk_lli_mphy_to_ufs,
+	ioclk_audiocdclk0,
+	ioclk_audiocdclk1,
+	ioclk_spdif_extclk,
+
 	nr_clks,
 };
 
@@ -1101,34 +1122,37 @@ PNAME(mout_aclk_csis2_b_p) = { "mout_aclk_csis2_a", "mout_aclk_cam1_333_user" };
 PNAME(mout_aclk_isp_400_user_p) = { "oscclk", "aclk_isp_400" };
 PNAME(mout_aclk_isp_dis_400_user_p) = { "oscclk", "aclk_isp_dis_400" };
 
+#define CFRATE(_id, pname, f, rate) \
+		FRATE(_id, #_id, pname, f, rate)
+
 struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
-	FRATE(none, "oscclk", NULL, CLK_IS_ROOT, 24000000),
-	FRATE(none, "phyclk_usbdrd30_udrd30_phyclock_phy", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_usbdrd30_udrd30_pipe_pclk_phy", NULL, CLK_IS_ROOT, 125000000),
-	FRATE(none, "phyclk_usbhost20_phy_freeclk_phy", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_usbhost20_phy_phyclock_phy", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_usbhost20_phy_clk48mohci_phy", NULL, CLK_IS_ROOT, 48000000),
-	FRATE(none, "phyclk_usbhost20_phy_hsic1_phy", NULL, CLK_IS_ROOT, 60000000),
-	FRATE(none, "phyclk_ufs_tx0_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_ufs_tx1_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_ufs_rx0_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_ufs_rx1_symbol_phy", NULL, CLK_IS_ROOT, 300000000),
-	FRATE(none, "phyclk_lli_tx0_symbol", NULL, CLK_IS_ROOT, 150000000),
-	FRATE(none, "phyclk_lli_rx0_symbol", NULL, CLK_IS_ROOT, 150000000),
-	FRATE(none, "phyclk_rxbyteclkhs0_s4", NULL, CLK_IS_ROOT, 188000000),
-	FRATE(none, "phyclk_rxbyteclkhs0_s2a", NULL, CLK_IS_ROOT, 188000000),
-	FRATE(none, "phyclk_rxbyteclkhs0_s2b", NULL, CLK_IS_ROOT, 188000000),
-	FRATE(none, "phyclk_hdmiphy_pixel_clko", NULL, CLK_IS_ROOT, 166000000),
-	FRATE(none, "phyclk_hdmiphy_tmds_clko_phy", NULL, CLK_IS_ROOT, 250000000),
-	FRATE(none, "phyclk_mipidphy_rxclkesc0_phy", NULL, CLK_IS_ROOT, 20000000),
-	FRATE(none, "phyclk_mipidphy_bitclkdiv8_phy", NULL, CLK_IS_ROOT, 188000000),
+	CFRATE(oscclk, NULL, CLK_IS_ROOT, 24000000),
+	CFRATE(phyclk_usbdrd30_udrd30_phyclock_phy, NULL, CLK_IS_ROOT, 60000000),
+	CFRATE(phyclk_usbdrd30_udrd30_pipe_pclk_phy, NULL, CLK_IS_ROOT, 125000000),
+	CFRATE(phyclk_usbhost20_phy_freeclk_phy, NULL, CLK_IS_ROOT, 60000000),
+	CFRATE(phyclk_usbhost20_phy_phyclock_phy, NULL, CLK_IS_ROOT, 60000000),
+	CFRATE(phyclk_usbhost20_phy_clk48mohci_phy, NULL, CLK_IS_ROOT, 48000000),
+	CFRATE(phyclk_usbhost20_phy_hsic1_phy, NULL, CLK_IS_ROOT, 60000000),
+	CFRATE(phyclk_ufs_tx0_symbol_phy, NULL, CLK_IS_ROOT, 300000000),
+	CFRATE(phyclk_ufs_tx1_symbol_phy, NULL, CLK_IS_ROOT, 300000000),
+	CFRATE(phyclk_ufs_rx0_symbol_phy, NULL, CLK_IS_ROOT, 300000000),
+	CFRATE(phyclk_ufs_rx1_symbol_phy, NULL, CLK_IS_ROOT, 300000000),
+	CFRATE(phyclk_lli_tx0_symbol, NULL, CLK_IS_ROOT, 150000000),
+	CFRATE(phyclk_lli_rx0_symbol, NULL, CLK_IS_ROOT, 150000000),
+	CFRATE(phyclk_rxbyteclkhs0_s4, NULL, CLK_IS_ROOT, 188000000),
+	CFRATE(phyclk_rxbyteclkhs0_s2a, NULL, CLK_IS_ROOT, 188000000),
+	CFRATE(phyclk_rxbyteclkhs0_s2b, NULL, CLK_IS_ROOT, 188000000),
+	CFRATE(phyclk_hdmiphy_pixel_clko, NULL, CLK_IS_ROOT, 166000000),
+	CFRATE(phyclk_hdmiphy_tmds_clko_phy, NULL, CLK_IS_ROOT, 250000000),
+	CFRATE(phyclk_mipidphy_rxclkesc0_phy, NULL, CLK_IS_ROOT, 20000000),
+	CFRATE(phyclk_mipidphy_bitclkdiv8_phy, NULL, CLK_IS_ROOT, 188000000),
 
-	FRATE(none, "phyclk_ufs_mphy_to_lli", NULL, CLK_IS_ROOT, 26000000),
-	FRATE(none, "phyclk_lli_mphy_to_ufs", NULL, CLK_IS_ROOT, 26000000),
+	CFRATE(phyclk_ufs_mphy_to_lli, NULL, CLK_IS_ROOT, 26000000),
+	CFRATE(phyclk_lli_mphy_to_ufs, NULL, CLK_IS_ROOT, 26000000),
 
-	FRATE(none, "ioclk_audiocdclk0", NULL, CLK_IS_ROOT, 83400000),
-	FRATE(none, "ioclk_audiocdclk1", NULL, CLK_IS_ROOT, 83400000),
-	FRATE(none, "ioclk_spdif_extclk", NULL, CLK_IS_ROOT, 36864000),
+	CFRATE(ioclk_audiocdclk0, NULL, CLK_IS_ROOT, 83400000),
+	CFRATE(ioclk_audiocdclk1, NULL, CLK_IS_ROOT, 83400000),
+	CFRATE(ioclk_spdif_extclk, NULL, CLK_IS_ROOT, 36864000),
 };
 
 #define CMX(_id, cname, pnames, o, s, w) \
@@ -1586,8 +1610,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 #if 0
 	/* CPIF */
-	CGTE(phyclk_lli_tx0_symbol, "phyclk_lli_tx0_symbol", "mout_phyclk_lli_tx0_symbol_user", EXYNOS5430_ENABLE_SCLK_CPIF, 5, 0, 0),
-	CGTE(phyclk_lli_rx0_symbol, "phyclk_lli_rx0_symbol", "mout_phyclk_lli_rx0_symbol_user", EXYNOS5430_ENABLE_SCLK_CPIF, 6, 0, 0),
 	CGTE(sclk_mphy_pll, "sclk_mphy_pll", "mout_mphy_pll", EXYNOS5430_ENABLE_SCLK_CPIF, 9, 0, 0),
 	CGTE(sclk_ufs_mphy, "sclk_ufs_mphy", "dout_sclk_mphy", EXYNOS5430_ENABLE_SCLK_CPIF, 4, 0, 0),
 	CGTE(sclk_lli_mphy, "sclk_lli_mphy", "mout_sclk_mphy", EXYNOS5430_ENABLE_SCLK_CPIF, 3, 0, 0),
@@ -1627,16 +1649,11 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	/* MSCL */
 	CGTE(sclk_jpeg, "sclk_jpeg", "mout_sclk_jpeg_user", EXYNOS5430_ENABLE_SCLK_MSCL, 0, 0, 0),
 
-	/* CAM0 */
-	CGTE(phyclk_rxbyteclkhs0_s4, "phyclk_rxbyteclkhs0_s4", "mout_phyclk_rxbyteclkhs0_s4", EXYNOS5430_ENABLE_SCLK_CAM0, 8, 0, 0),
-	CGTE(phyclk_rxbyteclkhs0_s2a, "phyclk_rxbyteclkhs0_s2a", "mout_phyclk_rxbyteclkhs0_s2a", EXYNOS5430_ENABLE_SCLK_CAM0, 7, 0, 0),
-
 	/* CAM1 */
 	CGTE(sclk_isp_spi0, "sclk_isp_spi0", "mout_sclk_isp_spi0_user", EXYNOS5430_ENABLE_SCLK_CAM1, 4, 0, 0),
 	CGTE(sclk_isp_spi1, "sclk_isp_spi1", "mout_sclk_isp_spi1_user", EXYNOS5430_ENABLE_SCLK_CAM1, 5, 0, 0),
 	CGTE(sclk_isp_uart, "sclk_isp_uart", "mout_sclk_isp_uart_user", EXYNOS5430_ENABLE_SCLK_CAM1, 6, 0, 0),
 	CGTE(sclk_isp_mtcadc, "sclk_isp_mtcadc", NULL, EXYNOS5430_ENABLE_SCLK_CAM1, 7, 0, 0),
-	CGTE(phyclk_rxbyteclkhs0_s2b, "phyclk_rxbyteclkhs0_s2b", "mout_phyclk_rxbyteclkhs0_s2b", EXYNOS5430_ENABLE_SCLK_CAM1, 11, 0, 0),
 #endif
 
 	/* FSYS */
