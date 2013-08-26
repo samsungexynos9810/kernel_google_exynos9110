@@ -481,7 +481,6 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 	switch (bits_per_pixel) {
 	case 8:
 		data |= WINCONx_BPPMODE_8BPP_1232;
-		data |= WINCONx_BURSTLEN_8WORD;
 		data |= WINCONx_BYTSWP;
 		break;
 	case 16:
@@ -494,7 +493,6 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 		else
 			data |= WINCONx_BPPMODE_16BPP_565;
 		data |= WINCONx_HAWSWP;
-		data |= WINCONx_BURSTLEN_16WORD;
 		break;
 	case 24:
 	case 32:
@@ -514,9 +512,10 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 			data |= WINCONx_BPPMODE_24BPP_888;
 
 		data |= WINCONx_WSWP;
-		data |= WINCONx_BURSTLEN_8WORD;
 		break;
 	}
+
+	data |= WINCONx_BURSTLEN_8WORD;
 
 	if (transp_length != 1)
 		data |= WINCONx_ALPHA_SEL;
