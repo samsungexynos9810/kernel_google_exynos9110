@@ -115,6 +115,7 @@ struct exynos_tmu_platform_data {
 	enum calibration_type cal_type;
 	enum soc_type type;
 	struct freq_clip_table freq_tab[4];
+	int size[THERMAL_TRIP_CRITICAL + 1];
 	unsigned int freq_tab_count;
 	unsigned int clock_count;
 };

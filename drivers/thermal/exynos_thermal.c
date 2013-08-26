@@ -145,6 +145,7 @@ struct	thermal_trip_point_conf {
 
 struct	thermal_cooling_conf {
 	struct freq_clip_table freq_data[MAX_TRIP_COUNT];
+	int size[THERMAL_TRIP_CRITICAL + 1];
 	int freq_clip_count;
 };
 
@@ -452,7 +453,7 @@ static void exynos_report_trigger(void)
 /* Register with the in-kernel thermal management */
 static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
 {
-	int ret;
+	int ret, count;
 	struct cpumask mask_val;
 
 	if (!sensor_conf || !sensor_conf->read_temperature) {
@@ -466,16 +467,20 @@ static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
 
 	th_zone->sensor_conf = sensor_conf;
 	cpumask_set_cpu(0, &mask_val);
-	th_zone->cool_dev[0] = cpufreq_cooling_register(&mask_val);
-	if (IS_ERR(th_zone->cool_dev[0])) {
-		pr_err("Failed to register cpufreq cooling device\n");
-		ret = -EINVAL;
-		goto err_unregister;
+
+	for (count = 0; count < EXYNOS_ZONE_COUNT; count++) {
+		th_zone->cool_dev[count] = cpufreq_cooling_register(&mask_val);
+		if (IS_ERR(th_zone->cool_dev[count])) {
+			 pr_err("Failed to register cpufreq cooling device\n");
+			 ret = -EINVAL;
+			 th_zone->cool_dev_size = count;
+			 goto err_unregister;
+		 }
 	}
-	th_zone->cool_dev_size++;
+	th_zone->cool_dev_size = count;
 
 	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
-			EXYNOS_ZONE_COUNT, 0, NULL, &exynos_dev_ops, NULL, 0,
+			th_zone->sensor_conf->trip_data.trip_count, 0, NULL, &exynos_dev_ops, NULL, 0,
 			sensor_conf->trip_data.trigger_falling ?
 			0 : IDLE_INTERVAL);
 
