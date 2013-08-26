@@ -693,42 +693,6 @@ int exynos5430_fimc_is_clk_on(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
-	/* CAM0 */
-	fimc_is_enable("gate_lite_a");
-	fimc_is_enable("gate_asyncapb_lite_a");
-	fimc_is_enable("gate_lite_b");
-	fimc_is_enable("gate_asyncapb_lite_b");
-	fimc_is_enable("gate_lite_d");
-	fimc_is_enable("gate_asyncapb_lite_d");
-	fimc_is_enable("gate_pixelasync_lite_c");
-
-	fimc_is_enable("gate_3aa0");
-	fimc_is_enable("gate_3aa1");
-
-	fimc_is_enable("gate_csis0");
-	fimc_is_enable("gate_csis1");
-
-	fimc_is_enable("gate_cam0nd_400");
-	fimc_is_enable("gate_cam0nd_276");
-	fimc_is_enable("gate_ahb2apb_ispsfrp");
-
-	/* CAM1 */
-	fimc_is_enable("gate_isp_ca5");
-
-	fimc_is_enable("gate_cam1nd_400");
-	fimc_is_enable("gate_cam1np_333");
-	fimc_is_enable("gate_axi_isp_cx");
-	fimc_is_enable("gate_ahb_sfrisp2h");
-
-	fimc_is_enable("gate_lite_c");
-	fimc_is_enable("gate_csis2");
-	fimc_is_enable("gate_fd");
-
-	fimc_is_enable("gate_fd");
-
-	/* ISP */
-	fimc_is_enable("gate_isp");
-
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
 	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
