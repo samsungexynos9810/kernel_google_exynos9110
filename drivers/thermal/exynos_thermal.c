@@ -84,6 +84,7 @@
 #define EXYNOS_MUX_ADDR_VALUE		6
 #define EXYNOS_MUX_ADDR_SHIFT		20
 #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
+#define EXYNOS_THERM_TRIP_EN		(1 << 12)
 
 #define EFUSE_MIN_VALUE 40
 #define EFUSE_MAX_VALUE 100
@@ -111,6 +112,13 @@
 #define WARN_ZONE       3
 #define MONITOR_ZONE    2
 #define SAFE_ZONE       1
+
+/* Rising, Falling interrupt bit number*/
+#define RISE_LEVEL1_SHIFT	4
+#define RISE_LEVEL2_SHIFT	8
+#define FALL_LEVEL0_SHIFT	16
+#define FALL_LEVEL1_SHIFT	20
+#define FALL_LEVEL2_SHIFT	24
 
 #define GET_ZONE(trip) (trip + 2)
 #define GET_TRIP(zone) (zone - 2)
@@ -676,17 +684,19 @@ static void exynos_tmu_control(struct platform_device *pdev, bool on)
 	}
 
 	if (on) {
-		con |= EXYNOS_TMU_CORE_ON;
-		interrupt_en = pdata->trigger_level3_en << 12 |
-			pdata->trigger_level2_en << 8 |
-			pdata->trigger_level1_en << 4 |
+		con |= (EXYNOS_TMU_CORE_ON | EXYNOS_THERM_TRIP_EN);
+		interrupt_en =
+			pdata->trigger_level2_en << FALL_LEVEL2_SHIFT |
+			pdata->trigger_level1_en << FALL_LEVEL1_SHIFT |
+			pdata->trigger_level0_en << FALL_LEVEL0_SHIFT |
+			pdata->trigger_level2_en << RISE_LEVEL2_SHIFT |
+			pdata->trigger_level1_en << RISE_LEVEL1_SHIFT |
 			pdata->trigger_level0_en;
-		if (pdata->threshold_falling)
-			interrupt_en |= interrupt_en << 16;
 	} else {
 		con |= EXYNOS_TMU_CORE_OFF;
 		interrupt_en = 0; /* Disable all interrupts */
 	}
+	con |= EXYNOS_THERM_TRIP_EN;
 	writel(interrupt_en, data->base + EXYNOS_TMU_REG_INTEN);
 	writel(con, data->base + EXYNOS_TMU_REG_CONTROL);
 
