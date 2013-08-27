@@ -38,6 +38,7 @@
 #include "fimc-is-framemgr.h"
 #include "fimc-is-device-sensor.h"
 #include "fimc-is-device-ischain.h"
+#include "fimc-is-dvfs.h"
 
 #include "fimc-is-video.h"
 #include "fimc-is-mem.h"
@@ -455,6 +456,15 @@ struct fimc_is_clock {
 	unsigned long				dvfs_state;
 };
 
+struct fimc_is_dvfs_ctrl {
+	int cur_int_qos;
+	int cur_mif_qos;
+	int cur_i2c_qos;
+
+	struct fimc_is_dvfs_scenario_ctrl *static_ctrl;
+	struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl;
+};
+
 struct fimc_is_core {
 	struct platform_device			*pdev;
 	struct resource				*regs_res;
@@ -492,6 +502,8 @@ struct fimc_is_core {
 	struct fimc_is_video			video_vdo;
 
 	spinlock_t				slock_clock_gate;
+
+	struct fimc_is_dvfs_ctrl		dvfs_ctrl;
 };
 
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
@@ -508,15 +520,6 @@ int fimc_is_init_set(struct fimc_is_core *dev , u32 val);
 int fimc_is_load_fw(struct fimc_is_core *dev);
 int fimc_is_load_setfile(struct fimc_is_core *dev);
 int fimc_is_clock_set(struct fimc_is_core *dev,	int group_id, bool on);
-#if defined(CONFIG_SOC_EXYNOS5420)
-int fimc_is_set_dvfs(struct fimc_is_core *core,
-			struct fimc_is_device_ischain *ischain,
-			int group_id, int int_level, int mif_level, int i2c_clk);
-#else
-int fimc_is_set_dvfs(struct fimc_is_core *core,
-			struct fimc_is_device_ischain *ischain,
-			int group_id, int level, int i2c_clk);
-#endif
 int fimc_is_resource_get(struct fimc_is_core *core);
 int fimc_is_resource_put(struct fimc_is_core *core);
 int fimc_is_otf_close(struct fimc_is_device_ischain *ischain);

@@ -66,7 +66,6 @@
 #define FIMC_IS_VERSION_SIZE			42
 #define FIMC_IS_SETFILE_VER_OFFSET		0x40
 #define FIMC_IS_SETFILE_VER_SIZE		52
-#define FIMC_IS_SETFILE_MASK			0xFFFF
 
 #define BINNING(x, y) ((1 << (((x) / (y)) >> 1)) * 1000)
 
@@ -2061,8 +2060,13 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 {
 	int ret = 0;
 	u32 retry = 10000;
+#ifdef ENABLE_DVFS
+	int scenario_id;
+#endif
 	struct fimc_is_group *group_3ax, *group_isp;
+	struct fimc_is_core *core;
 
+	core = (struct fimc_is_core *)device->interface->core;
 	group_3ax = &device->group_3ax;
 	group_isp = &device->group_isp;
 
@@ -2089,6 +2093,22 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 	else
 		pr_err("[ISC:D:%d] stream on NOT ready\n", device->instance);
 
+#ifdef ENABLE_DVFS
+	mutex_lock(&core->clock.lock);
+	if (!pm_qos_request_active(&device->user_qos)) {
+		/* try to find dynamic scenario to apply */
+		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_STATIC_SN, device);
+		if (scenario_id >= 0) {
+			struct fimc_is_dvfs_scenario_ctrl *static_ctrl =
+				core->dvfs_ctrl.static_ctrl;
+			pr_info("%s: [ISC:D:%d] static scenario(%d)-[%s]\n",
+					__func__, device->instance, scenario_id,
+					static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
+			fimc_is_set_dvfs(device, scenario_id);
+		}
+	}
+	mutex_unlock(&core->clock.lock);
+#endif
 	ret = fimc_is_hw_stream_on(device->interface, device->instance);
 
 p_err:
@@ -2332,13 +2352,6 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 #ifdef ENABLE_CLOCK_GATE
 	struct fimc_is_core *core = (struct fimc_is_core *)device->interface->core;
 #endif
-#ifdef ENABLE_DVFS
-#if defined(CONFIG_SOC_EXYNOS5420)
-	int int_level = 0;
-	int mif_level = 0;
-	int i2c_clk = 0;
-#endif
-#endif
 	BUG_ON(!device);
 	BUG_ON(!group);
 	BUG_ON(!frame);
@@ -2380,165 +2393,6 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	/* dynamic clock on */
 	fimc_is_clock_set(core, group->id, true);
 #endif
-
-#ifdef ENABLE_DVFS
-#if defined(CONFIG_SOC_EXYNOS5420)
-	mutex_lock(&core->clock.lock);
-
-	/* Set DVFS level by scenario */
-	if (device->sensor->framerate > 30) {
-		core->clock.dvfs_skipcnt = DVFS_SKIP_FRAME_NUM;
-		fimc_is_set_dvfs(core, device, group->id, DVFS_L0,
-							DVFS_MIF_L2, I2C_L0);
-	} else if (atomic_read(&core->video_isp.refcount) >= 3) {
-		if (device->sensor_width > 2560) {
-			core->clock.dvfs_skipcnt = 1000;
-			fimc_is_set_dvfs(core, device, group->id, DVFS_L0,
-							DVFS_MIF_L0, I2C_L0);
-		} else if (core->clock.dvfs_skipcnt > 0) {
-			core->clock.dvfs_skipcnt--;
-		}
-	} else if ((device->module == SENSOR_NAME_IMX135) &&
-		test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-		core->clock.dvfs_skipcnt = DVFS_SKIP_FRAME_NUM;
-		fimc_is_set_dvfs(core, device, group->id, DVFS_L0,
-							DVFS_MIF_L2, I2C_L0);
-	} else {
-		if (core->clock.dvfs_skipcnt > 0)
-			core->clock.dvfs_skipcnt--;
-	}
-
-	if (!core->clock.dvfs_skipcnt &&
-				!pm_qos_request_active(&device->user_qos)) {
-		if ((device->chain0_width > 2560) ||
-					(device->sensor->framerate == 120)) {
-			int_level = DVFS_L0;
-			mif_level = DVFS_MIF_L2;
-			i2c_clk = I2C_L0;
-		} else if (test_bit(FIMC_IS_ISDEV_DSTART, &device->dis.state)) {
-			int_level = DVFS_L0;
-			mif_level = DVFS_MIF_L2;
-			i2c_clk = I2C_L0;
-		} else if ((device->module == SENSOR_NAME_IMX135) &&
-			test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-			int_level = DVFS_L0;
-			mif_level = DVFS_MIF_L2;
-			i2c_clk = I2C_L0;
-		} else if (atomic_read(&core->video_isp.refcount) >= 3) {
-			int_level = DVFS_L1_1;
-			mif_level = DVFS_MIF_L3;
-			i2c_clk = I2C_L1_1;
-		} else {
-			switch (device->module) {
-			case SENSOR_NAME_IMX135:
-				if ((device->setfile & FIMC_IS_SETFILE_MASK) == \
-						ISS_SUB_SCENARIO_VIDEO) {
-					int_level = DVFS_L1;
-					mif_level = DVFS_MIF_L2;
-					i2c_clk = I2C_L1;
-				} else {
-					int_level = DVFS_L1;
-					mif_level = DVFS_MIF_L3;
-					i2c_clk = I2C_L1;
-				}
-				break;
-			case SENSOR_NAME_S5K6B2:
-				if (((device->setfile & FIMC_IS_SETFILE_MASK) \
-					== ISS_SUB_SCENARIO_FRONT_VT1) \
-					|| ((device->setfile & FIMC_IS_SETFILE_MASK) == \
-					ISS_SUB_SCENARIO_FRONT_VT2)) {
-					int_level = DVFS_L1_3;
-					mif_level = DVFS_MIF_L4;
-					i2c_clk = I2C_L2;
-				} else {
-					int_level = DVFS_L1_3;
-					mif_level = DVFS_MIF_L4;
-					i2c_clk = I2C_L2;
-				}
-				break;
-			default:
-				pr_warn("%s: This sensor can't be applied to DVFS\n", __func__);
-				int_level = DVFS_L0;
-				mif_level = DVFS_MIF_L1;
-				i2c_clk = I2C_L0;
-				break;
-			}
-		}
-
-		fimc_is_set_dvfs(core, device, group->id, int_level,
-							mif_level, i2c_clk);
-	}
-
-	mutex_unlock(&core->clock.lock);
-#else
-	mutex_lock(&core->clock.lock);
-	if (device->sensor->framerate > 30) {
-		core->clock.dvfs_skipcnt = DVFS_SKIP_FRAME_NUM;
-		fimc_is_set_dvfs(core, device, group->id, DVFS_L0, I2C_L0);
-	} else if (atomic_read(&core->video_isp.refcount) >= 3) {
-		if (device->sensor_width > 2560) {
-			core->clock.dvfs_skipcnt = 1000;
-			fimc_is_set_dvfs(core, device, group->id, \
-			DVFS_L0, I2C_L0);
-		} else if (core->clock.dvfs_skipcnt > 0) {
-			core->clock.dvfs_skipcnt--;
-		}
-        } else if (device->module == SENSOR_NAME_IMX135 &&
-		test_bit(FIMC_IS_ISCHAIN_REPROCESSING, \
-		&device->state)) {
-		core->clock.dvfs_skipcnt = DVFS_SKIP_FRAME_NUM;
-		fimc_is_set_dvfs(core, device, group->id, DVFS_L0, I2C_L0);
-	} else {
-		if (core->clock.dvfs_skipcnt > 0)
-			core->clock.dvfs_skipcnt--;
-	}
-
-	/* update dvfs */
-	if (!core->clock.dvfs_skipcnt) {
-		if (!pm_qos_request_active(&device->user_qos)) {
-			if ((2560 < device->chain0_width) ||
-			device->sensor->framerate == 120 ||
-			test_bit(FIMC_IS_ISDEV_DSTART, &device->dis.state) ||
-			(device->module == SENSOR_NAME_IMX135 &&
-				test_bit(FIMC_IS_ISCHAIN_REPROCESSING, \
-				&device->state))) {
-				fimc_is_set_dvfs(core, device, group->id, \
-					DVFS_L0, I2C_L0);
-			} else if (atomic_read(&core->video_isp.refcount) >= 3) {
-				fimc_is_set_dvfs(core, device, group->id, \
-				DVFS_L1_1, I2C_L1_1);
-			} else if (device->module == SENSOR_NAME_IMX135 &&
-				!test_bit(FIMC_IS_ISCHAIN_REPROCESSING, \
-					&device->state)) {
-				if ((device->setfile && 0xffff) == \
-					ISS_SUB_SCENARIO_VIDEO)
-					fimc_is_set_dvfs(core, device, group->id, \
-						DVFS_L1, I2C_L1);
-				else
-					fimc_is_set_dvfs(core, device, group->id, \
-						DVFS_L1, I2C_L1);
-			} else if (device->module == SENSOR_NAME_S5K6B2) {
-				if (((device->setfile && 0xffff) \
-					== ISS_SUB_SCENARIO_FRONT_VT1) \
-					|| ((device->setfile & 0xffff) == \
-					ISS_SUB_SCENARIO_FRONT_VT2))
-					fimc_is_set_dvfs(core, device, group->id, \
-						DVFS_L1_3, I2C_L2);
-				else
-					fimc_is_set_dvfs(core, device, group->id, \
-						DVFS_L1_3, I2C_L2);
-			} else {
-				pr_warn("%s: No DVFS senario for this case.\n", \
-					__func__);
-				fimc_is_set_dvfs(core, device, group->id, DVFS_L0, \
-					I2C_L0);
-			}
-		}
-	}
-	mutex_unlock(&core->clock.lock);
-#endif
-#endif
-
 	ret = fimc_is_hw_shot_nblk(device->interface,
 		device->instance,
 		GROUP_ID(group->id),

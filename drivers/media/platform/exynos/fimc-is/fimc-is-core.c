@@ -546,184 +546,6 @@ static struct notifier_block exynos_mif_nb = {
 };
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5420)
-int fimc_is_set_dvfs(struct fimc_is_core *core,
-			struct fimc_is_device_ischain *ischain,
-			int group_id, int int_level, int mif_level, int i2c_clk)
-{
-	int ret = 0;
-	int refcount;
-
-	refcount = atomic_read(&core->video_isp.refcount);
-	if (refcount < 0) {
-		err("invalid ischain refcount");
-		goto exit;
-	}
-
-	/* set state */
-	if (int_level == DVFS_L0) {
-		set_bit(group_id, &core->clock.dvfs_state);
-	} else {
-		if (test_bit(GROUP_ID_3A0, &core->clock.dvfs_state)
-			&& !test_bit(GROUP_ID_ISP, &core->clock.dvfs_state))
-			goto exit;
-		else
-			core->clock.dvfs_state = 0;
-	}
-
-	/* check current level */
-	if (core->clock.dvfs_level != int_level) {
-		ret = fimc_is_itf_i2c_lock(ischain, i2c_clk, true);
-		if (ret) {
-			err("fimc_is_itf_i2_clock fail\n");
-			goto exit;
-		}
-
-		pm_qos_update_request(&exynos5_isp_qos_dev, int_level);
-		core->clock.dvfs_level = int_level;
-
-		/* i2c unlock */
-		ret = fimc_is_itf_i2c_lock(ischain, i2c_clk, false);
-		if (ret) {
-			err("fimc_is_itf_i2c_unlock fail\n");
-			goto exit;
-		}
-
-		pr_info("[RSC:%d] %s: DVFS INT level(%d) \n", ischain->instance,
-							__func__, int_level);
-	}
-
-	if (core->clock.dvfs_mif_level != mif_level) {
-		pm_qos_update_request(&exynos5_isp_qos_mem, mif_level);
-		core->clock.dvfs_mif_level = mif_level;
-
-		pr_info("[RSC:%d] %s: DVFS MIF level(%d) \n", ischain->instance,
-							__func__, mif_level);
-	}
-
-	dbg("[RSC:%d] %s: DVFS level(%d), MIF level (%d), I2C clock(%d)\n",
-		ischain->instance, __func__, int_level, mif_level, i2c_clk);
-exit:
-	return ret;
-}
-
-#elif defined(CONFIG_SOC_EXYNOS5410)
-int fimc_is_set_dvfs(struct fimc_is_core *core,
-			struct fimc_is_device_ischain *ischain,
-			int group_id, int __level, int i2c_clk)
-{
-	int ret = 0;
-	int refcount;
-	int rear_recording;
-	int level;
-
-	refcount = atomic_read(&core->video_isp.refcount);
-	if (refcount < 0) {
-		err("invalid ischain refcount");
-		goto exit;
-	}
-
-	/* check that is it rear recording senario */
-	if (__level == DVFS_L1_2_1) {
-		rear_recording = 1;
-		level = DVFS_L1_2;
-	} else {
-		rear_recording = 0;
-		level = __level;
-	}
-
-	/* set state */
-	if (level == DVFS_L0) {
-		set_bit(group_id, &core->clock.dvfs_state);
-	} else {
-		if (test_bit(GROUP_ID_3A0, &core->clock.dvfs_state)
-			&& !test_bit(GROUP_ID_ISP, &core->clock.dvfs_state)) {
-			goto exit;
-		} else {
-			core->clock.dvfs_state = 0;
-		}
-	}
-
-	/* check current level */
-	if (core->clock.dvfs_level == __level)
-		goto exit;
-
-	/* i2c lock */
-	ret = fimc_is_itf_i2c_lock(ischain, i2c_clk, true);
-	if (ret) {
-		err("fimc_is_itf_i2_clock fail\n");
-		goto exit;
-	}
-	/* update mif level */
-	if (rear_recording) {
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) && defined(ENABLE_MIF_400)
-		if (core->clock.dvfs_mif_level != 400000) {
-			pm_qos_update_request(&exynos5_isp_qos_mem, 400000);
-			core->clock.dvfs_level = 400000;
-		}
-#endif
-		/* update int level */
-		pm_qos_update_request(&exynos5_isp_qos_dev, level);
-	} else if (level != DVFS_L1_3) {
-		/* update int level */
-		pm_qos_update_request(&exynos5_isp_qos_dev, level);
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) && defined(ENABLE_MIF_400)
-		if (core->clock.dvfs_mif_level != 800000) {
-			pm_qos_update_request(&exynos5_isp_qos_mem, 800000);
-			core->clock.dvfs_level = 800000;
-		}
-#endif
-	} else {
-		if (((ischain->setfile && 0xffff) == \
-			ISS_SUB_SCENARIO_FRONT_VT1) || \
-			((ischain->setfile && 0xffff) == \
-			ISS_SUB_SCENARIO_FRONT_VT2)) {
-			if (core->clock.dvfs_mif_level != 400000) {
-				pm_qos_update_request(&exynos5_isp_qos_mem, \
-					400000);
-				core->clock.dvfs_level = 400000;
-			}
-		}
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) && defined(ENABLE_MIF_400)
-		else if (core->clock.dvfs_mif_level != 400000) {
-			pm_qos_update_request(&exynos5_isp_qos_mem, 400000);
-			core->clock.dvfs_level = 400000;
-		}
-#endif
-		/* update int level */
-		if (((ischain->setfile & 0xffff) == \
-			ISS_SUB_SCENARIO_FRONT_VT1) || \
-			((ischain->setfile& 0xffff)  == \
-			ISS_SUB_SCENARIO_FRONT_VT2))
-			pm_qos_update_request(&exynos5_isp_qos_dev, level);
-		else
-			pm_qos_update_request(&exynos5_isp_qos_dev, level);
-	}
-
-	/* i2c unlock */
-	ret = fimc_is_itf_i2c_lock(ischain, i2c_clk, false);
-	if (ret) {
-		err("fimc_is_itf_i2c_unlock fail\n");
-		goto exit;
-	}
-
-	core->clock.dvfs_level = __level;
-
-	dbg("[RSC:%d] %s: DVFS level(%d), I2C clock(%d)\n",
-		ischain->instance, __func__, level, i2c_clk);
-
-exit:
-	return ret;
-}
-#elif defined(CONFIG_SOC_EXYNOS5430)
-int fimc_is_set_dvfs(struct fimc_is_core *core,
-			struct fimc_is_device_ischain *ischain,
-			int group_id, int __level, int i2c_clk)
-{
-	return 0;
-}
-#endif
-
 int fimc_is_resource_get(struct fimc_is_core *core)
 {
 	int ret = 0;
@@ -734,14 +556,18 @@ int fimc_is_resource_get(struct fimc_is_core *core)
 		atomic_read(&core->rsccount));
 
 	if (!atomic_read(&core->rsccount)) {
+		int int_qos, mif_qos;
 		/* 1. interface open */
 		fimc_is_interface_open(&core->interface);
 
+		int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, FIMC_IS_SN_MAX);
+		mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, FIMC_IS_SN_MAX);
+
 		/* 2. bus lock */
 		pr_info("[RSC] %s: DVFS LOCK(%d, %d)\n",
-			__func__, DVFS_L0, DVFS_L0);
-		pm_qos_add_request(&exynos5_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, DVFS_L0);
-		pm_qos_add_request(&exynos5_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, DVFS_L0);
+			__func__, int_qos, mif_qos);
+		pm_qos_add_request(&exynos5_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, int_qos);
+		pm_qos_add_request(&exynos5_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
 #if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
 		exynos5_mif_bpll_register_notifier(&exynos_mif_nb);
 #endif
@@ -1329,6 +1155,12 @@ static int fimc_is_probe(struct platform_device *pdev)
 	spin_lock_init(&core->slock_clock_gate);
 	mutex_init(&core->clock.lock);
 
+#ifdef ENABLE_DVFS
+	/* dvfs controller init */
+	ret = fimc_is_dvfs_init(core);
+	if (ret)
+		err("%s: fimc_is_dvfs_init failed!\n", __func__);
+#endif
 	return 0;
 
 p_err3:

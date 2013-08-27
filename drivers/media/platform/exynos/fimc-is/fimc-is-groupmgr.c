@@ -1346,6 +1346,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_frame *ldr_frame)
 {
 	int ret = 0;
+	struct fimc_is_core *core;
 	struct fimc_is_device_ischain *device;
 	struct fimc_is_group *group_next, *group_prev;
 	struct fimc_is_group_framemgr *gframemgr;
@@ -1355,6 +1356,9 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	bool try_sdown = false;
 	bool try_rdown = false;
 
+#ifdef ENABLE_DVFS
+	int scenario_id;
+#endif
 	timestamp = fimc_is_get_timestamp();
 
 	BUG_ON(!groupmgr);
@@ -1460,6 +1464,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 
 	PROGRAM_COUNT(5);
 	device = group->device;
+	core = (struct fimc_is_core *)device->interface->core;
 	group_next = group->next;
 	group_prev = group->prev;
 	gframemgr = &groupmgr->framemgr[group->instance];
@@ -1581,6 +1586,31 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 
 #ifdef DEBUG_AA
 	fimc_is_group_debug_aa_shot(group, ldr_frame);
+#endif
+
+#ifdef ENABLE_DVFS
+	mutex_lock(&core->clock.lock);
+	if (!pm_qos_request_active(&device->user_qos)) {
+		/* try to find dynamic scenario to apply */
+		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_DYNAMIC_SN, device);
+
+		if (scenario_id > 0) {
+			struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl = core->dvfs_ctrl.dynamic_ctrl;
+			pr_info("%s: GRP:%d dynamic scenario(%d)-[%s]\n",
+					__func__, group->id, scenario_id,
+					dynamic_ctrl->scenarios[dynamic_ctrl->cur_scenario_idx].scenario_nm);
+			fimc_is_set_dvfs(device, scenario_id);
+		}
+
+		if ((scenario_id < 0) && (core->dvfs_ctrl.dynamic_ctrl->cur_frame_tick == 0)) {
+			struct fimc_is_dvfs_scenario_ctrl *static_ctrl = core->dvfs_ctrl.static_ctrl;
+			pr_info("%s: GRP:%d restore static scenario(%d)-[%s]\n",
+					__func__, group->id, static_ctrl->cur_scenario_id,
+					static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
+			fimc_is_set_dvfs(device, static_ctrl->cur_scenario_id);
+		}
+	}
+	mutex_unlock(&core->clock.lock);
 #endif
 
 	PROGRAM_COUNT(6);
