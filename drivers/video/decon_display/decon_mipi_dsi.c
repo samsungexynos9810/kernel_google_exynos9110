@@ -45,12 +45,11 @@
 #include "regs-mipidsim.h"
 #include "decon_fb.h"
 #include "decon_dt.h"
+#include "decon_pm.h"
 
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_wr_comp);
 static DECLARE_COMPLETION(dsim_rd_comp);
-
-static void mipi_cmu_set(void);
 
 #define MIPI_WR_TIMEOUT msecs_to_jiffies(250)
 #define MIPI_RD_TIMEOUT msecs_to_jiffies(250)
@@ -90,8 +89,6 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 
 	return 0;
 }
-static int mipi_lcd_power_control(struct mipi_dsim_device *dsim, unsigned int power);
-
 
 static void s5p_mipi_dsi_set_packet_ctrl(struct mipi_dsim_device *dsim)
 {
@@ -853,16 +850,12 @@ static int s5p_mipi_dsi_suspend(struct device *dev)
 	dsim->enabled = false;
 	dsim->dsim_lcd_drv->suspend(dsim);
 	dsim->state = DSIM_STATE_SUSPEND;
-	mipi_lcd_power_control(dsim, 0);
+
+	disable_display_dsi_power(dev);
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 0);
-	*/
+
 	pm_runtime_put_sync(dev);
-	/*
-	clk_disable(dsim->clock);
-	*/
+
 	return 0;
 }
 
@@ -874,17 +867,10 @@ static int s5p_mipi_dsi_resume(struct device *dev)
 	if (dsim->enabled == true)
 		return 0;
 
-	mipi_cmu_set();
+	enable_display_dsi_clocks_exynos5430(dev);
 	pm_runtime_get_sync(&pdev->dev);
-	/*
-	clk_enable(dsim->clock);
-	*/
 
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 1);
-	*/
-	mipi_lcd_power_control(dsim, 1);
+	enable_display_dsi_power(dev);
 
 	if (dsim->dsim_lcd_drv->resume)
 		dsim->dsim_lcd_drv->resume(dsim);
@@ -917,19 +903,13 @@ static int s5p_mipi_dsi_runtime_resume(struct device *dev)
 
 int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 {
-	/*
-	clk_enable(dsim->clock);
-	*/
 	if (dsim->enabled == true)
 		return 0;
 
 	pm_runtime_get_sync(dsim->dev);
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 1);
-	*/
-	mipi_cmu_set();
-	mipi_lcd_power_control(dsim, 1);
+
+	enable_display_dsi_clocks_exynos5430(dsim->dev);
+	enable_display_dsi_power(dsim->dev);
 
 	if (dsim->dsim_lcd_drv->resume)
 		dsim->dsim_lcd_drv->resume(dsim);
@@ -954,16 +934,10 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	dsim->dsim_lcd_drv->suspend(dsim);
 	dsim->state = DSIM_STATE_SUSPEND;
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 0);
-	*/
-	mipi_lcd_power_control(dsim, 0);
+
+	disable_display_dsi_power(dsim->dev);
 
 	pm_runtime_put_sync(dsim->dev);
-	/*
-	clk_disable(dsim->clock);
-	*/
 
 	return 0;
 }
@@ -985,139 +959,6 @@ struct lcd_ops s5p_mipi_dsi_lcd_ops = {
 	.set_power = s5p_mipi_dsi_set_power,
 };
 
-static int mipi_lcd_power_control(struct mipi_dsim_device *dsim,
-			unsigned int power)
-{
-	void __iomem *regs = ioremap(0x14CC01E0, 0x8);
-	u32 data;
-
-	if (power) {
-		data = readl(regs);
-		data |= 0x1;
-		writel(data, regs);
-
-		data = readl(regs + 0x4);
-		data |= 0x1;
-		writel(data, regs + 0x4);
-		usleep_range(5000, 6000);
-
-		data = readl(regs + 0x4);
-		data &= ~0x1;
-		writel(data, regs + 0x4);
-		usleep_range(5000, 6000);
-		msleep(5);
-		data = readl(regs + 0x4);
-		data |= 0x1;
-		writel(data, regs + 0x4);
-		usleep_range(5000, 6000);
-		iounmap(regs);
-
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-#ifndef CONFIG_FB_I80_SW_TRIGGER
-		regs = ioremap(0x14CC00C0, 0x4);
-		data = readl(regs);
-		data &= ~(0xf << 4);
-		data |= (0x2 << 4);
-		writel(data, regs);
-		iounmap(regs);
-#endif
-#endif
-	} else {
-		data = readl(regs + 0x4);
-		data &= ~0x1;
-		writel(data, regs + 0x4);
-		usleep_range(5000, 6000);
-
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-#ifndef CONFIG_FB_I80_SW_TRIGGER
-		regs = ioremap(0x14CC00C0, 0x4);
-		data = readl(regs);
-		data &= ~(0xf << 4);
-		writel(data, regs);
-		iounmap(regs);
-#endif
-#endif
-	}
-
-	return 1;
-}
-
-static void mipi_cmu_set(void)
-{
-	void __iomem *regs;
-	u32 data;
-
-	/* Set DISP_PLL = 136Mhz */
-	regs = ioremap(0x13B90100, 0x4);
-	writel(0xA0880303, regs);
-	iounmap(regs);
-	msleep(100);
-
-	/* Set MFC_PLL = 1332Mhz */
-	regs = ioremap(0x105B0120, 0x4);
-	writel(0xA0DE0400, regs);
-	iounmap(regs);
-	msleep(100);
-
-	/* Set MUX_DECON_ECLK_A: MOUT_BUS_PLL_SUB */
-	regs = ioremap(0x105B0210, 0x4);
-	data = readl(regs) | 0x1;
-	writel(data, regs);
-	iounmap(regs);
-
-	/* Set ACLK_DISP_333_RATIO = 0x2 */
-	regs = ioremap(0x105B060c, 0x4);
-	data = readl(regs) & ~(0x7 << 4);
-	data |= (0x2 << 4);
-	writel(data, regs);
-
-	/* Set SCLK_DECON_ECLK_RATIO = 0x2 */
-	regs = ioremap(0x105B0610, 0x4);
-	data = readl(regs);
-	data &= ~0xf;
-	data |= 0x2;
-	writel(data, regs);
-	iounmap(regs);
-
-	/* SET MUX_DISP_PLL: FOUT_DISP_PLL */
-	regs = ioremap(0x13B90200, 0x4);
-	writel(0x1, regs);
-	iounmap(regs);
-
-	/* Set MUX_SCLK_DSD_USER: SCLK_DSD
-	 * MUX_SCLK_DECON_VCLK_USER: SCLK_DECON_VCLK
-	 * MUX_SCLK_DECON_ECLK_USER: SCLK_DECON_ECLK
-	 * MUX_SCLK_ACLK_DISP_222_USER: ACLK_DISP_222
-	 * MUX_SCLK_ACLK_DISP_333_USER: ACLK_DISP_333
-	 */
-	regs = ioremap(0x13B90204, 0x4);
-	data = readl(regs + 0x4);
-	data |= 0x11111;
-	writel(data, regs);
-	iounmap(regs);
-
-	/* Set MUX_PHYCLK_MIPIDPHY_RXCLKESC0_USER:
-	 *	MUX_PHYCLK_MIPIDPHY_RXCLKESC0
-	 * Set MUX_PHYCLK_MIPIDPHY_BITCLKDIV8_USER:
-	 *	MUX_PHYCLK_MIPIDPHY_BITCLKDIV8
-	 */
-	regs = ioremap(0x13B90208, 0x4);
-	data = readl(regs);
-	data |= (1 << 8) | (1 << 12);
-	writel(data, regs);
-	iounmap(regs);
-
-	/* Set MUX_SCLK_DECON_ECLK: MOUT_SCLK_DECON_ECLK_USER */
-	regs = ioremap(0x13B9020C, 0x4);
-	writel(0x1, regs);
-	iounmap(regs);
-
-	/* Set: ignore CLK1 was toggling */
-	regs = ioremap(0x13B90508, 0x4);
-	writel(0, regs);
-	iounmap(regs);
-}
-
 static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 {
 	struct resource *res;
@@ -1125,7 +966,7 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	int ret = -1;
 
 	parse_display_dsi_dt(pdev->dev.of_node);
-	mipi_cmu_set();
+	init_display_dsi_clocks(&pdev->dev);
 
 	if (!dsim)
 		dsim = kzalloc(sizeof(struct mipi_dsim_device),
@@ -1141,14 +982,7 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	pm_runtime_enable(&pdev->dev);
 
 	dsim->dsim_config = get_display_dsi_drvdata();
-	/*
-	dsim->clock = clk_get(&pdev->dev, dsim->pd->clk_name);
-	if (IS_ERR(dsim->clock)) {
-		dev_err(&pdev->dev, "failed to get dsim clock source\n");
-		goto err_clock_get;
-	}
-	clk_enable(dsim->clock);
-	*/
+
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
 		dev_err(&pdev->dev, "failed to get io memory region\n");
@@ -1199,7 +1033,7 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	if (dsim->pd->mipi_power)
 		dsim->pd->mipi_power(dsim, 1);
 	*/
-	mipi_lcd_power_control(dsim, 1);
+	enable_display_dsi_power(&pdev->dev);
 
 	dsim->enabled = true;
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
@@ -1267,16 +1101,9 @@ static void s5p_mipi_dsi_shutdown(struct platform_device *pdev)
 
 		s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 
-		/*
-		if (dsim->pd->mipi_power)
-			dsim->pd->mipi_power(dsim, 0);
-		*/
-		mipi_lcd_power_control(dsim, 0);
+		disable_display_dsi_power(&pdev->dev);
 
 		pm_runtime_put_sync(&pdev->dev);
-		/*
-		clk_disable(dsim->clock);
-		*/
 	}
 }
 

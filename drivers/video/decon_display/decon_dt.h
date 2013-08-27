@@ -22,6 +22,7 @@ struct s3c_fb_platdata *get_display_platdata_exynos5430(void);
 struct mipi_dsim_config *get_display_dsi_drvdata_exynos5430(void);
 
 int parse_display_dsi_dt_exynos5430(struct device_node *np);
+int get_display_dsi_power_gpio_exynos5430(void);
 
 #define parse_display_dt(node) parse_display_dt_exynos5430(node)
 #define get_display_drvdata() get_display_drvdata_exynos5430()
@@ -30,6 +31,8 @@ int parse_display_dsi_dt_exynos5430(struct device_node *np);
 
 /* Temporary code for parsinng DSI device tree */
 #define parse_display_dsi_dt(node) parse_display_dsi_dt_exynos5430(node)
+#define get_display_dsi_power_gpio() get_display_dsi_power_gpio_exynos5430()
+
 #endif
 
 #endif

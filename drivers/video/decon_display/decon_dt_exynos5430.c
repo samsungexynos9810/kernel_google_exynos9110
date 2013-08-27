@@ -12,6 +12,8 @@
 #include <linux/errno.h>
 #include <linux/of.h>
 #include <linux/fb.h>
+#include <linux/of_gpio.h>
+
 #include "decon_fb.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
@@ -47,7 +49,7 @@
 static struct s3c_fb_driverdata g_fb_drvdata;
 static struct s3c_fb_win_variant g_fb_win_variant[S3C_FB_MAX_WIN];
 static struct s3c_fb_pd_win g_fb_win0;
-struct s3c_fb_platdata g_decon_platdata;
+static struct s3c_fb_platdata g_decon_platdata;
 
 struct mipi_dsim_config g_dsim_config = {
 #if defined(CONFIG_DECON_LCD_S6E8AA0)
@@ -56,6 +58,8 @@ struct mipi_dsim_config g_dsim_config = {
 	.dsim_ddi_pd = &s6e3fa0_mipi_lcd_driver,
 #endif
 };
+
+static unsigned int g_dsi_power_gpio_num;
 
 static int parse_decon_platdata(struct device_node *np)
 {
@@ -264,10 +268,15 @@ static int parse_dsi_drvdata(struct device_node *np)
 	DT_READ_U32_OPTIONAL(np, "bta_timeout", g_dsim_config.bta_timeout);
 	DT_READ_U32_OPTIONAL(np, "rx_timeout", g_dsim_config.rx_timeout);
 
+	g_dsi_power_gpio_num = of_get_gpio(np, 0);
+
 	return 0;
 }
 
-
+int get_display_dsi_power_gpio_exynos5430(void)
+{
+	return g_dsi_power_gpio_num;
+}
 
 int parse_display_dsi_dt_exynos5430(struct device_node *np)
 {

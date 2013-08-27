@@ -318,10 +318,6 @@ struct s3c_fb_debug {
 struct s3c_fb {
 	spinlock_t		slock;
 	struct device		*dev;
-	struct clk		*bus_clk;
-	struct clk		*lcd_clk;
-	struct clk		*axi_disp1;
-	struct clk		*sclk_eclk;
 	void __iomem		*regs;
 	struct s3c_fb_variant	 variant;
 

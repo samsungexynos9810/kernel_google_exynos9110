@@ -55,6 +55,7 @@
 
 #include "decon_fb.h"
 #include "decon_dt.h"
+#include "decon_pm.h"
 
 #ifdef CONFIG_DEBUG_FS
 #include <linux/debugfs.h>
@@ -307,11 +308,13 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 	unsigned long long tmp;
 	unsigned int result;
 
+	/* Temporary source
 	if (sfb->variant.has_clksel)
 		clk = clk_get_rate(sfb->bus_clk);
 	else
 		clk = clk_get_rate(sfb->lcd_clk);
-	clk = 133000000;
+	*/
+	clk = 136000000;
 	tmp = (unsigned long long)clk;
 	tmp *= pixclk;
 
@@ -3554,14 +3557,14 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	if (!res) {
 		dev_err(dev, "failed to find registers\n");
 		ret = -ENOENT;
-		goto err_lcd_clk;
+		goto resource_exception;
 	}
 
 	sfb->regs = devm_request_and_ioremap(dev, res);
 	if (!sfb->regs) {
 		dev_err(dev, "failed to map registers\n");
 		ret = -ENXIO;
-		goto err_lcd_clk;
+		goto resource_exception;
 	}
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 #ifndef CONFIG_FB_I80_SW_TRIGGER
@@ -3570,7 +3573,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 			  0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "i80 irq request failed\n");
-		goto err_lcd_clk;
+		goto resource_exception;
 	}
 #endif
 #else
@@ -3579,7 +3582,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 			  0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "video irq request failed\n");
-		goto err_lcd_clk;
+		goto resource_exception;
 	}
 #endif
 
@@ -3588,40 +3591,11 @@ static int s3c_fb_probe(struct platform_device *pdev)
 				0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "fifo irq request failed\n");
-		goto err_lcd_clk;
+		goto resource_exception;
 	}
 
-	sfb->bus_clk = devm_clk_get(dev, "lcd");
-	if (IS_ERR(sfb->bus_clk)) {
-		dev_err(dev, "failed to get bus clock\n");
-		ret = PTR_ERR(sfb->bus_clk);
-		goto err_sfb;
-	}
-	clk_prepare_enable(sfb->bus_clk);
-
-	sfb->axi_disp1 = devm_clk_get(dev, "decon_dsd");
-	if (IS_ERR(sfb->axi_disp1)) {
-		dev_err(dev, "failed to get axi bus clock\n");
-		ret = PTR_ERR(sfb->axi_disp1);
-		goto err_bus_clk;
-	}
-	clk_prepare_enable(sfb->axi_disp1);
-
-	sfb->lcd_clk = devm_clk_get(dev, "sclk_vclk");
-	if (IS_ERR(sfb->lcd_clk)) {
-		dev_err(dev, "failed to get lcd clock\n");
-		ret = PTR_ERR(sfb->lcd_clk);
-		goto err_axi_clk;
-	}
-	clk_prepare_enable(sfb->lcd_clk);
-
-	sfb->sclk_eclk = devm_clk_get(dev, "sclk_eclk");
-	if (IS_ERR(sfb->sclk_eclk)) {
-		dev_err(dev, "failed to get sclk_eclk clock\n");
-		ret = PTR_ERR(sfb->sclk_eclk);
-		goto err_axi_clk;
-	}
-	clk_prepare_enable(sfb->sclk_eclk);
+	/* clock enable */
+	ret = init_display_decon_clocks(dev);
 
 	dev_dbg(dev, "got resources (regs %p), probing windows\n", sfb->regs);
 
@@ -3672,7 +3646,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	sfb->fb_ion_client = ion_client_create(ion_exynos, "fimd");
 	if (IS_ERR(sfb->fb_ion_client)) {
 		dev_err(sfb->dev, "failed to ion_client_create\n");
-		goto err_pm_runtime;
+		goto resource_exception;
 	}
 
 	/* setup vmm */
@@ -3721,7 +3695,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 			dev_err(dev, "failed to create window %d\n", win);
 			for (; win >= 0; win--)
 				s3c_fb_release_win(sfb, sfb->windows[win]);
-			goto err_pm_runtime;
+			goto resource_exception;
 		}
 
 		decon_fb_set_buffer_mode(sfb, win, 1, 0);
@@ -3846,23 +3820,9 @@ err_mc_link_create_fail:
 	s3c_fb_unregister_mc_entities(sfb->windows[win]);
 #endif
 
-err_pm_runtime:
+resource_exception:
 	pm_runtime_put_sync(sfb->dev);
 
-err_lcd_clk:
-	pm_runtime_disable(sfb->dev);
-
-	if (!sfb->variant.has_clksel) {
-		clk_disable(sfb->lcd_clk);
-		clk_put(sfb->lcd_clk);
-	}
-
-err_axi_clk:
-	clk_disable(sfb->axi_disp1);
-	clk_put(sfb->axi_disp1);
-err_bus_clk:
-	clk_disable(sfb->bus_clk);
-	clk_put(sfb->bus_clk);
 err_sfb:
 #ifdef CONFIG_ION_EXYNOS
 	if (sfb->update_regs_wq)
@@ -3900,18 +3860,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
-	if (!sfb->variant.has_clksel) {
-		clk_disable(sfb->lcd_clk);
-		clk_put(sfb->lcd_clk);
-	}
-
-	clk_disable(sfb->axi_disp1);
-
-	clk_disable(sfb->bus_clk);
-
-	clk_put(sfb->axi_disp1);
-
-	clk_put(sfb->bus_clk);
+	disable_display_decon_clocks(sfb->dev);
 
 	s3c_fb_debugfs_cleanup(sfb);
 
@@ -3977,13 +3926,8 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	sfb->power_state = POWER_DOWN;
 
-	clk_disable(sfb->lcd_clk);
+	disable_display_decon_clocks(sfb->dev);
 
-	clk_disable(sfb->axi_disp1);
-
-	clk_disable(sfb->bus_clk);
-
-	clk_disable(sfb->sclk_eclk);
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
 #endif
@@ -4016,14 +3960,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	pm_runtime_get_sync(sfb->dev);
 
-	clk_enable(sfb->bus_clk);
-
-	clk_enable(sfb->axi_disp1);
-
-	clk_enable(sfb->lcd_clk);
-
-	clk_enable(sfb->sclk_eclk);
-
+	enable_display_decon_clocks(sfb->dev);
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
@@ -4128,13 +4065,7 @@ static int s3c_fb_suspend(struct device *dev)
 		data |= DECON_UPDATE_STANDALONE_F;
 		writel(data, sfb->regs + DECON_UPDATE);
 
-		clk_disable(sfb->lcd_clk);
-
-		clk_disable(sfb->axi_disp1);
-
-		clk_disable(sfb->bus_clk);
-
-		clk_disable(sfb->sclk_eclk);
+		disable_display_decon_clocks(sfb->dev);
 
 #ifdef CONFIG_ION_EXYNOS
 		iovmm_deactivate(dev);
@@ -4166,17 +4097,9 @@ static int s3c_fb_resume(struct device *dev)
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(sfb->dev);
 #endif
-
-	clk_enable(sfb->bus_clk);
-
-	clk_enable(sfb->axi_disp1);
-
-	clk_enable(sfb->lcd_clk);
-
-	clk_enable(sfb->sclk_eclk);
+	enable_display_decon_clocks(sfb->dev);
 
 	/* setup gpio and output polarity controls */
-
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
@@ -4245,14 +4168,7 @@ static int s3c_fb_runtime_suspend(struct device *dev)
 
 	sfb->power_state = POWER_DOWN;
 
-	clk_disable(sfb->lcd_clk);
-
-	clk_disable(sfb->axi_disp1);
-
-	clk_disable(sfb->bus_clk);
-
-	clk_disable(sfb->sclk_eclk);
-
+	disable_display_decon_clocks(sfb->dev);
 	return 0;
 }
 
@@ -4262,13 +4178,7 @@ static int s3c_fb_runtime_resume(struct device *dev)
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
 	struct s3c_fb_platdata *pd = sfb->pdata;
 
-	clk_enable(sfb->bus_clk);
-
-	clk_enable(sfb->axi_disp1);
-
-	clk_enable(sfb->lcd_clk);
-
-	clk_enable(sfb->sclk_eclk);
+	enable_display_decon_clocks(dev);
 
 	sfb->power_state = POWER_ON;
 
