@@ -518,8 +518,6 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 		break;
 	}
 
-	data |= WINCONx_BURSTLEN_8WORD;
-
 	if (transp_length != 1)
 		data |= WINCONx_ALPHA_SEL;
 
@@ -1885,6 +1883,13 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			regs->wincon[i] |= WINCONx_ENWIN;
 		else
 			regs->wincon[i] &= ~WINCONx_ENWIN;
+
+		/*
+		 * Because BURSTLEN field does not have shadow register,
+		 * this bit field should be retain always.
+		 */
+		regs->wincon[i] |= WINCONx_BURSTLEN_8WORD;
+
 		regs->winmap[i] = color_map;
 
 		if (enabled && config->state == S3C_FB_WIN_STATE_BUFFER) {
