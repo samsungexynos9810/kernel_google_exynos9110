@@ -34,6 +34,8 @@ u32 __iomem *last_fcount1;
 #define enter_process_barrier(itf) spin_lock_irq(&itf->process_barrier);
 #define exit_process_barrier(itf) spin_unlock_irq(&itf->process_barrier);
 
+extern struct fimc_is_sysfs_debug sysfs_debug;
+
 int print_fre_work_list(struct fimc_is_work_list *this)
 {
 	struct list_head *temp;
@@ -1650,8 +1652,9 @@ static void wq_func_shot(struct work_struct *data)
 					device, group->id, (u32)frame->req_flag);
 
 #ifdef ENABLE_CLOCK_GATE
-			/* dynamic clock off */
-			fimc_is_clock_set(core, group->id, false);
+			if (sysfs_debug.en_clk_gate)
+				/* dynamic clock off */
+				fimc_is_clock_set(core, group->id, false);
 #endif
 
 			wq_func_group(groupmgr, group, grp_framemgr, frame,

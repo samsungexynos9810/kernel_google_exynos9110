@@ -456,6 +456,11 @@ struct fimc_is_clock {
 	unsigned long				dvfs_state;
 };
 
+struct fimc_is_sysfs_debug {
+	unsigned int en_dvfs;
+	unsigned int en_clk_gate;
+};
+
 struct fimc_is_dvfs_ctrl {
 	int cur_int_qos;
 	int cur_mif_qos;

@@ -41,6 +41,9 @@
 #include "fimc-is-groupmgr.h"
 #include "fimc-is-cmd.h"
 
+/* sysfs variable for debug */
+extern struct fimc_is_sysfs_debug sysfs_debug;
+
 static void fimc_is_gframe_free_head(struct fimc_is_group_framemgr *framemgr,
 	struct fimc_is_group_frame **item)
 {
@@ -1590,7 +1593,8 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 
 #ifdef ENABLE_DVFS
 	mutex_lock(&core->clock.lock);
-	if (!pm_qos_request_active(&device->user_qos)) {
+	if ((!pm_qos_request_active(&device->user_qos)) &&
+			(sysfs_debug.en_dvfs)) {
 		/* try to find dynamic scenario to apply */
 		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_DYNAMIC_SN, device);
 

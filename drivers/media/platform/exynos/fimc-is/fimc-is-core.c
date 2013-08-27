@@ -67,6 +67,9 @@ extern int fimc_is_vdo_video_probe(void *data);
 struct pm_qos_request exynos5_isp_qos_dev;
 struct pm_qos_request exynos5_isp_qos_mem;
 
+/* sysfs global variable for debug */
+struct fimc_is_sysfs_debug sysfs_debug;
+
 static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 {
 	int ret = 0;
@@ -983,6 +986,87 @@ static struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 }
 #endif
 
+static ssize_t show_en_clk_gate(struct device *dev, struct device_attribute *attr,
+				  char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", sysfs_debug.en_clk_gate);
+}
+
+static ssize_t store_en_clk_gate(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	struct fimc_is_core *core =
+		(struct fimc_is_core *)platform_get_drvdata(to_platform_device(dev));
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	if (value > 0)
+		sysfs_debug.en_clk_gate = value;
+	else {
+		sysfs_debug.en_clk_gate = 0;
+		fimc_is_clock_set(core, GROUP_ID_MAX, true);
+	}
+out:
+	return count;
+}
+
+static ssize_t show_en_dvfs(struct device *dev, struct device_attribute *attr,
+				  char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", sysfs_debug.en_dvfs);
+}
+
+static ssize_t store_en_dvfs(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+	struct fimc_is_core *core =
+		(struct fimc_is_core *)platform_get_drvdata(to_platform_device(dev));
+	unsigned int value;
+	int i, ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	if (value > 0) {
+		/* It can not re-define static scenario */
+		sysfs_debug.en_dvfs = value;
+	} else {
+		sysfs_debug.en_dvfs = 0;
+		/* update dvfs lever to max */
+		mutex_lock(&core->clock.lock);
+		sysfs_debug.en_dvfs = value;
+		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
+			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state)))
+				fimc_is_set_dvfs(&(core->ischain[i]), FIMC_IS_SN_MAX);
+		}
+		fimc_is_dvfs_init(core);
+		core->dvfs_ctrl.static_ctrl->cur_scenario_id = FIMC_IS_SN_MAX;
+		mutex_unlock(&core->clock.lock);
+	}
+out:
+	return count;
+}
+
+static DEVICE_ATTR(en_clk_gate, 0644, show_en_clk_gate, store_en_clk_gate);
+static DEVICE_ATTR(en_dvfs, 0644, show_en_dvfs, store_en_dvfs);
+
+static struct attribute *fimc_is_debug_entries[] = {
+	&dev_attr_en_clk_gate.attr,
+	&dev_attr_en_dvfs.attr,
+	NULL,
+};
+static struct attribute_group fimc_is_debug_attr_group = {
+	.name	= "debug",
+	.attrs	= fimc_is_debug_entries,
+};
+
 static int fimc_is_probe(struct platform_device *pdev)
 {
 	struct exynos5_platform_fimc_is *pdata;
@@ -1154,6 +1238,11 @@ static int fimc_is_probe(struct platform_device *pdev)
 	/* init spin_lock for clock gating */
 	spin_lock_init(&core->slock_clock_gate);
 	mutex_init(&core->clock.lock);
+
+	/* set sysfs for debuging */
+	sysfs_debug.en_clk_gate = 1;
+	sysfs_debug.en_dvfs = 1;
+	ret = sysfs_create_group(&core->pdev->dev.kobj, &fimc_is_debug_attr_group);
 
 #ifdef ENABLE_DVFS
 	/* dvfs controller init */

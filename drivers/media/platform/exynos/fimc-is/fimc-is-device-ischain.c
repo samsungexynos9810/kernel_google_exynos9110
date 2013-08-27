@@ -98,6 +98,9 @@ extern struct fimc_is_from_info		*sysfs_finfo;
 extern struct fimc_is_from_info		*sysfs_pinfo;
 #endif
 
+/* sysfs variable for debug */
+extern struct fimc_is_sysfs_debug sysfs_debug;
+
 #ifdef FW_DEBUG
 #define DEBUG_FS_ROOT_NAME	"fimc-is"
 #define DEBUG_FS_FILE_NAME	"isfw-msg"
@@ -2095,7 +2098,8 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 
 #ifdef ENABLE_DVFS
 	mutex_lock(&core->clock.lock);
-	if (!pm_qos_request_active(&device->user_qos)) {
+	if ((!pm_qos_request_active(&device->user_qos)) &&
+			(sysfs_debug.en_dvfs)) {
 		/* try to find dynamic scenario to apply */
 		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_STATIC_SN, device);
 		if (scenario_id >= 0) {
@@ -2391,7 +2395,8 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 
 #ifdef ENABLE_CLOCK_GATE
 	/* dynamic clock on */
-	fimc_is_clock_set(core, group->id, true);
+	if (sysfs_debug.en_clk_gate)
+		fimc_is_clock_set(core, group->id, true);
 #endif
 	ret = fimc_is_hw_shot_nblk(device->interface,
 		device->instance,
