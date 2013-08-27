@@ -3966,7 +3966,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 		data &= VIDCON0_DECON_STOP_STATUS;
 		timecnt--;
 	}
-	while (data & timecnt--);
+	while (data & timecnt);
 
 	if (timecnt == 0)
 		dev_err(sfb->dev, "Failed to disable DECON");
