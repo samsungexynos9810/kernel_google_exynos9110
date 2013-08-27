@@ -13,6 +13,22 @@
 
 #include <linux/dmaengine.h>
 
+/*
+ * The configuration of spi dma mode
+ */
+enum {
+	DMA_MODE = 0,
+	CPU_MODE = 1,
+};
+
+/*
+ * The configuration of spi swap mode
+ */
+enum {
+	NO_SWAP_MODE = 0,
+	SWAP_MODE = 1,
+};
+
 struct platform_device;
 
 /**
@@ -39,6 +55,8 @@ struct s3c64xx_spi_csinfo {
 struct s3c64xx_spi_info {
 	int src_clk_nr;
 	int num_cs;
+	int dma_mode;
+	int swap_mode;
 	int (*cfg_gpio)(void);
 	dma_filter_fn filter;
 };
@@ -53,12 +71,12 @@ struct s3c64xx_spi_info {
  * Call this from machine init code for each SPI Controller that
  * has some chips attached to it.
  */
-extern void s3c64xx_spi0_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
-						int num_cs);
-extern void s3c64xx_spi1_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
-						int num_cs);
-extern void s3c64xx_spi2_set_platdata(int (*cfg_gpio)(void), int src_clk_nr,
-						int num_cs);
+extern void s3c64xx_spi0_set_platdata(struct s3c64xx_spi_info *pd,
+				      int src_clk_nr, int num_cs);
+extern void s3c64xx_spi1_set_platdata(struct s3c64xx_spi_info *pd,
+				      int src_clk_nr, int num_cs);
+extern void s3c64xx_spi2_set_platdata(struct s3c64xx_spi_info *pd,
+				      int src_clk_nr, int num_cs);
 
 /* defined by architecture to configure gpio */
 extern int s3c64xx_spi0_cfg_gpio(void);
