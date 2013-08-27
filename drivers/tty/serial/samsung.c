@@ -179,13 +179,15 @@ static void s3c24xx_serial_stop_tx(struct uart_port *port)
 				portaddrl(port, S3C64XX_UINTM));
 		else
 			disable_irq_nosync(ourport->tx_irq);
+#ifdef CONFIG_SERIAL_SAMSUNG_DMA
+		if (uart_dma->use_dma) {
+			uart_dma->ops->stop(uart_dma->tx.ch);
+		}
+#endif
 		tx_enabled(port) = 0;
 		if (port->flags & UPF_CONS_FLOW)
 			s3c24xx_serial_rx_enable(port);
 	}
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-	uart_dma->ops->stop(uart_dma->tx.ch);
-#endif
 }
 
 static void s3c24xx_serial_start_tx(struct uart_port *port)
@@ -219,11 +221,13 @@ static void s3c24xx_serial_stop_rx(struct uart_port *port)
 				portaddrl(port, S3C64XX_UINTM));
 		else
 			disable_irq_nosync(ourport->rx_irq);
+#ifdef CONFIG_SERIAL_SAMSUNG_DMA
+		if (uart_dma->use_dma) {
+			uart_dma->ops->stop(uart_dma->rx.ch);
+		}
+#endif
 		rx_enabled(port) = 0;
 	}
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-	uart_dma->ops->stop(uart_dma->rx.ch);
-#endif
 }
 
 #ifdef CONFIG_SERIAL_SAMSUNG_DMA
