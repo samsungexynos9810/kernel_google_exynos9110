@@ -679,6 +679,7 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 
 static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 {
+	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 	void __iomem *regs = sdd->regs;
 	u32 val;
 
@@ -714,14 +715,32 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	case 32:
 		val |= S3C64XX_SPI_MODE_BUS_TSZ_WORD;
 		val |= S3C64XX_SPI_MODE_CH_TSZ_WORD;
+		if (sci->swap_mode == SWAP_MODE) {
+			writel(S3C64XX_SPI_SWAP_TX_EN |
+				S3C64XX_SPI_SWAP_TX_BYTE |
+				S3C64XX_SPI_SWAP_TX_HALF_WORD |
+				S3C64XX_SPI_SWAP_RX_EN |
+				S3C64XX_SPI_SWAP_RX_BYTE |
+				S3C64XX_SPI_SWAP_RX_HALF_WORD,
+				regs + S3C64XX_SPI_SWAP_CFG);
+		}
 		break;
 	case 16:
 		val |= S3C64XX_SPI_MODE_BUS_TSZ_HALFWORD;
 		val |= S3C64XX_SPI_MODE_CH_TSZ_HALFWORD;
+		if (sci->swap_mode == SWAP_MODE) {
+			writel(S3C64XX_SPI_SWAP_TX_EN |
+				S3C64XX_SPI_SWAP_TX_BYTE |
+				S3C64XX_SPI_SWAP_RX_EN |
+				S3C64XX_SPI_SWAP_RX_BYTE,
+				regs + S3C64XX_SPI_SWAP_CFG);
+		}
 		break;
 	default:
 		val |= S3C64XX_SPI_MODE_BUS_TSZ_BYTE;
 		val |= S3C64XX_SPI_MODE_CH_TSZ_BYTE;
+		if (sci->swap_mode == SWAP_MODE)
+			writel(0, regs + S3C64XX_SPI_SWAP_CFG);
 		break;
 	}
 
@@ -1263,6 +1282,11 @@ static struct s3c64xx_spi_info *s3c64xx_spi_parse_dt(struct device *dev)
 		sci->dma_mode = DMA_MODE;
 	else
 		sci->dma_mode = CPU_MODE;
+
+	if (of_get_property(dev->of_node, "swap-mode", NULL))
+		sci->swap_mode = SWAP_MODE;
+	else
+		sci->swap_mode = NO_SWAP_MODE;
 
 	if (of_property_read_u32(dev->of_node, "samsung,spi-src-clk", &temp)) {
 		dev_warn(dev, "spi bus clock parent not specified, using clock at index 0 as parent\n");
