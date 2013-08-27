@@ -429,18 +429,16 @@ struct gsc_m2m_device {
  *  @target_rot_en_h: max pixel dst scaled height with the rotator is on
  */
 struct gsc_pix_max {
-	u16 org_scaler_bypass_w;
-	u16 org_scaler_bypass_h;
-	u16 org_scaler_input_w;
-	u16 org_scaler_input_h;
-	u16 real_rot_dis_w;
-	u16 real_rot_dis_h;
-	u16 real_rot_en_w;
-	u16 real_rot_en_h;
-	u16 target_rot_dis_w;
-	u16 target_rot_dis_h;
-	u16 target_rot_en_w;
-	u16 target_rot_en_h;
+	u16 org_w;
+	u16 org_h;
+	u16 real_w;
+	u16 real_h;
+	u16 target_w;
+	u16 target_h;
+	u16 rot_w;
+	u16 rot_h;
+	u16 otf_w;
+	u16 otf_h;
 };
 
 /**
@@ -460,10 +458,10 @@ struct gsc_pix_min {
 	u16 org_h;
 	u16 real_w;
 	u16 real_h;
-	u16 target_rot_dis_w;
-	u16 target_rot_dis_h;
-	u16 target_rot_en_w;
-	u16 target_rot_en_h;
+	u16 target_w;
+	u16 target_h;
+	u16 otf_w;
+	u16 otf_h;
 };
 
 struct gsc_pix_align {

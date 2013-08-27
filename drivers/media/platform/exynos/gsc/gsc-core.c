@@ -397,6 +397,7 @@ int gsc_try_fmt_mplane(struct gsc_ctx *ctx, struct v4l2_format *f)
 	struct gsc_fmt *fmt;
 	u32 max_w, max_h, mod_x, mod_y;
 	u32 min_w, min_h, tmp_w, tmp_h;
+	u32 ffs_org_w, ffs_org_h;
 	int i;
 
 	gsc_dbg("user put w: %d, h: %d", pix_mp->width, pix_mp->height);
@@ -414,28 +415,49 @@ int gsc_try_fmt_mplane(struct gsc_ctx *ctx, struct v4l2_format *f)
 		return -EINVAL;
 	}
 
-	max_w = variant->pix_max->target_rot_dis_w;
-	max_h = variant->pix_max->target_rot_dis_h;
+	max_w = variant->pix_max->org_w;
+	max_h = variant->pix_max->org_h;
+
+	ffs_org_w = ffs(variant->pix_align->org_w);
+	ffs_org_h = ffs(variant->pix_align->org_h);
 	if (V4L2_TYPE_IS_OUTPUT(f->type)) {
-		mod_x = ffs(variant->pix_align->org_w) - 1;
-		if (is_yuv420(fmt->pixelformat))
-			mod_y = ffs(variant->pix_align->org_h) - 1;
-		else
-			mod_y = ffs(variant->pix_align->org_h) - 2;
-		min_w = variant->pix_min->org_w;
-		min_h = variant->pix_min->org_h;
-	} else {
-		if (is_yuv420(fmt->pixelformat)) {
-			mod_x = ffs(variant->pix_align->org_w) - 1;
-			mod_y = 1;
+		if (is_rgb(fmt->pixelformat)) {
+			if (is_rgb32(fmt->pixelformat)) {
+				mod_x = ffs_org_w - 3;
+				mod_y = ffs_org_h - 3;
+			} else {
+				mod_x = ffs_org_w - 2;
+				mod_y = ffs_org_h - 2;
+			}
+			min_w = variant->pix_min->org_w / 2;
+			min_h = variant->pix_min->org_h / 2;
 		} else {
-			mod_x = ffs(variant->pix_align->org_w) - 2;
-			mod_y = 0;
+			if (is_tiled(fmt)) {
+				mod_x = ffs_org_w + 1;
+				mod_y = ffs_org_h + 1;
+			} else {
+				mod_x = ffs_org_w - 1;
+				mod_y = ffs_org_h - 1;
+			}
+			min_w = variant->pix_min->org_w;
+			min_h = variant->pix_min->org_h;
 		}
-		min_w = variant->pix_min->target_rot_dis_w;
-		min_h = variant->pix_min->target_rot_dis_h;
+	} else {
+		if (is_rgb(fmt->pixelformat)) {
+			mod_x = ffs_org_w - 3;
+			mod_y = ffs_org_h - 3;
+			min_w = variant->pix_min->target_w / 2;
+			min_h = variant->pix_min->target_h / 2;
+		} else {
+			mod_x = ffs_org_w - 2;
+			mod_y = ffs_org_h - 2;
+			min_w = variant->pix_min->target_w;
+			min_h = variant->pix_min->target_h;
+		}
 	}
-	gsc_dbg("mod_x: %d, mod_y: %d, max_w: %d, max_h = %d",
+
+	gsc_info("org_w: %d", variant->pix_align->org_w);
+	gsc_info("mod_x: %d, mod_y: %d, max_w: %d, max_h = %d",
 	     mod_x, mod_y, max_w, max_h);
 	/* To check if image size is modified to adjust parameter against
 	   hardware abilities */
@@ -537,6 +559,7 @@ int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr)
 	struct gsc_variant *var = gsc->variant;
 	u32 mod_x = 0, mod_y = 0, tmp_w, tmp_h;
 	u32 min_w, min_h, max_w, max_h;
+	u32 offset_w, offset_h;
 
 	if (cr->c.top < 0 || cr->c.left < 0) {
 		gsc_err("doesn't support negative values for top & left\n");
@@ -556,36 +579,53 @@ int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr)
 
 	if (V4L2_TYPE_IS_OUTPUT(cr->type)) {
 		if (is_rotation) {
-			max_w = min(f->f_width, (u32)var->pix_max->real_rot_en_w);
-			max_h = min(f->f_height, (u32)var->pix_max->real_rot_en_h);
-			min_w = is_yuv420(f->fmt->pixelformat) ? 32 : 16;
-			min_h = is_rgb(f->fmt->pixelformat) ? 32 : 64;
+			max_w = min(f->f_width, (u32)var->pix_max->rot_w);
+			max_h = min(f->f_height, (u32)var->pix_max->rot_h);
+			if (is_rgb(f->fmt->pixelformat)) {
+				min_w = min_h = var->pix_min->real_w / 2;
+				offset_w = offset_h = 2;
+			} else {
+				min_w = min_h = var->pix_min->real_w;
+				offset_w = offset_h = 4;
+			}
 		} else {
-			max_w = min(f->f_width, (u32)var->pix_max->real_rot_dis_w);
-			max_h = min(f->f_height, (u32)var->pix_max->real_rot_dis_h);
-			min_w = is_rgb(f->fmt->pixelformat) ? 32 : 64;
-			min_h = is_yuv420(f->fmt->pixelformat) ? 32 : 16;
+			max_w = min(f->f_width, (u32)var->pix_max->real_w);
+			max_h = min(f->f_height, (u32)var->pix_max->real_h);
+			if (is_rgb(f->fmt->pixelformat)) {
+				min_w = var->pix_min->real_w / 2;
+				min_h = var->pix_min->real_h / 2;
+				offset_w = 2;
+				offset_h = 1;
+			} else {
+				min_w = var->pix_min->real_w;
+				min_h = var->pix_min->real_h;
+				offset_w = 4;
+				offset_h = 1;
+			}
 		}
 	} else {
 		if (is_rotation) {
-			max_w = min(f->f_width, (u32)var->pix_max->target_rot_en_w);
-			max_h = min(f->f_height, (u32)var->pix_max->target_rot_en_h);
-			min_w = is_yuv420(f->fmt->pixelformat) ? 16 : 8;
-			min_h = is_rgb(f->fmt->pixelformat) ? 16 : 32;
+			max_w = min(f->f_width, (u32)var->pix_max->rot_w);
+			max_h = min(f->f_height, (u32)var->pix_max->rot_h);
 		} else {
-			max_w = min(f->f_width, (u32)var->pix_max->target_rot_dis_w);
-			max_h = min(f->f_height, (u32)var->pix_max->target_rot_dis_h);
-			min_w = is_rgb(f->fmt->pixelformat) ? 16 : 32;
-			min_h = is_yuv420(f->fmt->pixelformat) ? 16 : 8;
+			max_w = min(f->f_width, (u32)var->pix_max->target_w);
+			max_h = min(f->f_height, (u32)var->pix_max->target_h);
 		}
 		if (is_rgb(f->fmt->pixelformat)) {
+			min_w = var->pix_min->target_w / 2;
+			min_h = var->pix_min->target_h / 2;
 			mod_x = ffs(var->pix_align->target_w) - 2;
 			mod_y = ffs(var->pix_align->target_h) - 2;
+			offset_w = offset_h = 1;
 		} else {
+			min_w = var->pix_min->target_w;
+			min_h = var->pix_min->target_h;
 			mod_x = ffs(var->pix_align->target_w) - 1;
 			mod_y = ffs(var->pix_align->target_h) - 1;
+			offset_w = offset_h = 2;
 		}
 	}
+
 	gsc_dbg("mod_x: %d, mod_y: %d, min_w: %d, min_h = %d,\
 		tmp_w : %d, tmp_h : %d",
 		mod_x, mod_y, min_w, min_h, tmp_w, tmp_h);
@@ -602,9 +642,8 @@ int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr)
 	if (cr->c.top + tmp_h > max_h)
 		cr->c.top = max_h - tmp_h;
 
-	if (is_yuv420(f->fmt->pixelformat) || is_yuv422(f->fmt->pixelformat))
-		if (cr->c.left % 2)
-			cr->c.left -= 1;
+	cr->c.left -= (cr->c.left % offset_w);
+	cr->c.top -= (cr->c.top % offset_h);
 
 	gsc_dbg("Aligned l:%d, t:%d, w:%d, h:%d, f_w: %d, f_h: %d",
 	    cr->c.left, cr->c.top, cr->c.width, cr->c.height, max_w, max_h);
@@ -1454,35 +1493,32 @@ static void gsc_parse_dt(struct device_node *np, struct gsc_dev *gsc)
 #endif
 
 struct gsc_pix_max gsc_v_max = {
-	.org_scaler_bypass_w	= 8192,
-	.org_scaler_bypass_h	= 8192,
-	.org_scaler_input_w	= 4800,
-	.org_scaler_input_h	= 3344,
-	.real_rot_dis_w		= 4800,
-	.real_rot_dis_h		= 3344,
-	.real_rot_en_w		= 2048,
-	.real_rot_en_h		= 2048,
-	.target_rot_dis_w	= 4800,
-	.target_rot_dis_h	= 3344,
-	.target_rot_en_w	= 3344,
-	.target_rot_en_h	= 4800,
+	.org_w		= 4800,
+	.org_h		= 3344,
+	.real_w		= 4800,
+	.real_h		= 3344,
+	.target_w	= 4800,
+	.target_h	= 3344,
+	.rot_w		= 2047,
+	.rot_h		= 2047,
+	.otf_w		= 2560,
+	.otf_h		= 1600,
 };
 
 struct gsc_pix_min gsc_v_min = {
-		.org_w			= 64,
-		.org_h			= 32,
-		.real_w			= 64,
-		.real_h			= 32,
-		.target_rot_dis_w	= 32,
-		.target_rot_dis_h	= 16,
-		.target_rot_en_w	= 16,
-		.target_rot_en_h	= 8,
+	.org_w		= 64,
+	.org_h		= 32,
+	.real_w		= 64,
+	.real_h		= 32,
+	.target_w	= 32,
+	.target_h	= 16,
+	.otf_w		= 64,
+	.otf_h		= 64,
 };
 
 struct gsc_pix_align gsc_v_align = {
-		.org_h			= 16,
-		.org_w			= 16,
-		.offset_w		= 2,
+		.org_w			= 4,
+		.org_h			= 4,
 		.real_w			= 1,
 		.real_h			= 1,
 		.target_w		= 2,

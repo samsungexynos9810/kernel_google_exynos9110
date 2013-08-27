@@ -1078,21 +1078,21 @@ static void gsc_cap_check_limit_size(struct gsc_dev *gsc, unsigned int pad,
 		    ctx->gsc_ctrls.rotate->val == 270)) {
 			min_w = variant->pix_min->real_w;
 			min_h = variant->pix_min->real_h;
-			max_w = variant->pix_max->real_rot_en_w;
-			max_h = variant->pix_max->real_rot_en_h;
+			max_w = variant->pix_max->rot_w;
+			max_h = variant->pix_max->rot_h;
 		} else {
 			min_w = variant->pix_min->real_w;
 			min_h = variant->pix_min->real_h;
-			max_w = variant->pix_max->real_rot_dis_w;
-			max_h = variant->pix_max->real_rot_dis_h;
+			max_w = variant->pix_max->real_w;
+			max_h = variant->pix_max->real_h;
 		}
 		break;
 
 	case GSC_PAD_SOURCE:
-		min_w = variant->pix_min->target_rot_dis_w;
-		min_h = variant->pix_min->target_rot_dis_h;
-		max_w = variant->pix_max->target_rot_dis_w;
-		max_h = variant->pix_max->target_rot_dis_h;
+		min_w = variant->pix_min->target_w;
+		min_h = variant->pix_min->target_h;
+		max_w = variant->pix_max->target_w;
+		max_h = variant->pix_max->target_h;
 		break;
 
 	default:
@@ -1206,8 +1206,8 @@ static void gsc_cap_try_crop(struct gsc_dev *gsc, struct v4l2_rect *crop,
 	struct gsc_ctx *ctx = gsc->cap.ctx;
 	struct gsc_frame *frame = gsc_capture_get_frame(ctx, pad);
 
-	u32 crop_min_w = variant->pix_min->target_rot_dis_w;
-	u32 crop_min_h = variant->pix_min->target_rot_dis_h;
+	u32 crop_min_w = variant->pix_min->target_w;
+	u32 crop_min_h = variant->pix_min->target_h;
 	u32 crop_max_w = frame->f_width;
 	u32 crop_max_h = frame->f_height;
 

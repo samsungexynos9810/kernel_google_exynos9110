@@ -117,17 +117,17 @@ static void gsc_subdev_try_crop(struct gsc_dev *gsc, struct v4l2_rect *cr)
 
 	if (gsc->out.ctx->gsc_ctrls.rotate->val == 90 ||
 		gsc->out.ctx->gsc_ctrls.rotate->val == 270) {
-		max_w = variant->pix_max->target_rot_en_w;
-		max_h = variant->pix_max->target_rot_en_h;
-		min_w = variant->pix_min->target_rot_en_w;
-		min_h = variant->pix_min->target_rot_en_h;
+		max_w = variant->pix_max->otf_w;
+		max_h = variant->pix_max->otf_h;
+		min_w = variant->pix_min->otf_w;
+		min_h = variant->pix_min->otf_h;
 		tmp_w = cr->height;
 		tmp_h = cr->width;
 	} else {
-		max_w = variant->pix_max->target_rot_dis_w;
-		max_h = variant->pix_max->target_rot_dis_h;
-		min_w = variant->pix_min->target_rot_dis_w;
-		min_h = variant->pix_min->target_rot_dis_h;
+		max_w = variant->pix_max->otf_w;
+		max_h = variant->pix_max->otf_h;
+		min_w = variant->pix_min->otf_w;
+		min_h = variant->pix_min->otf_h;
 		tmp_w = cr->width;
 		tmp_h = cr->height;
 	}
