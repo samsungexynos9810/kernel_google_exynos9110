@@ -37,6 +37,9 @@
 		mfc0 = &mfc_0;
 		mfc1 = &mfc_1;
 		mdev0 = &mdev_0;
+		spi0 = &spi_0;
+		spi1 = &spi_1;
+		spi2 = &spi_2;
 	};
 
 	chipid@10000000 {
@@ -1210,6 +1213,57 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2s1_bus>;
 		status = "disabled";
+	};
+
+	spi_0: spi@14d20000 {
+		compatible = "samsung,exynos4210-spi";
+		reg = <0x14d20000 0x100>;
+		interrupts = <0 432 0>;
+		dma-mode;
+		dmas = <&pdma 9
+			&pdma 8>;
+		dma-names = "tx", "rx";
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2427>, <&clock 4057>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi0_bus>;
+	};
+
+	spi_1: spi@14d30000 {
+		compatible = "samsung,exynos4210-spi";
+		reg = <0x14d30000 0x100>;
+		interrupts = <0 433 0>;
+		dma-mode;
+		dmas = <&pdma 11
+			&pdma 10>;
+		dma-names = "tx", "rx";
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2426>, <&clock 4058>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi1_bus>;
+	};
+
+	spi_2: spi@14d40000 {
+		compatible = "samsung,exynos4210-spi";
+		reg = <0x14d40000 0x100>;
+		interrupts = <0 434 0>;
+		dma-mode;
+		dmas = <&pdma 13
+			&pdma 12>;
+		dma-names = "tx", "rx";
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2425>, <&clock 4059>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi2_bus>;
 	};
 
 	fimc_is@14000000 {
