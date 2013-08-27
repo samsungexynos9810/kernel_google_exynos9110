@@ -94,6 +94,7 @@ struct exynos_adc {
 
 	u32			value;
 	unsigned int            version;
+	bool			phy_ctrl;
 };
 
 static const struct of_device_id exynos_adc_match[] = {
@@ -269,6 +270,11 @@ static int exynos_adc_probe(struct platform_device *pdev)
 
 	info = iio_priv(indio_dev);
 
+	if (of_find_property(np, "samsung,adc-phy-control", NULL))
+		info->phy_ctrl = true;
+	else
+		info->phy_ctrl = false;
+
 	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	info->regs = devm_request_and_ioremap(&pdev->dev, mem);
 	if (!info->regs) {
@@ -276,11 +282,13 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		goto err_iio;
 	}
 
-	mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	info->enable_reg = devm_request_and_ioremap(&pdev->dev, mem);
-	if (!info->enable_reg) {
-		ret = -ENOMEM;
-		goto err_iio;
+	if (info->phy_ctrl) {
+		mem = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+		info->enable_reg = devm_request_and_ioremap(&pdev->dev, mem);
+		if (!info->enable_reg) {
+			ret = -ENOMEM;
+			goto err_iio;
+		}
 	}
 
 	irq = platform_get_irq(pdev, 0);
@@ -302,7 +310,8 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		goto err_iio;
 	}
 
-	writel(1, info->enable_reg);
+	if (info->phy_ctrl)
+		writel(1, info->enable_reg);
 
 	info->clk = devm_clk_get(&pdev->dev, "adc");
 	if (IS_ERR(info->clk)) {
@@ -379,7 +388,10 @@ static int exynos_adc_remove(struct platform_device *pdev)
 				exynos_adc_remove_devices);
 	regulator_disable(info->vdd);
 	clk_disable_unprepare(info->clk);
-	writel(0, info->enable_reg);
+
+	if (info->phy_ctrl)
+		writel(0, info->enable_reg);
+
 	iio_device_unregister(indio_dev);
 	free_irq(info->irq, info);
 	iio_device_free(indio_dev);
@@ -405,7 +417,10 @@ static int exynos_adc_suspend(struct device *dev)
 	}
 
 	clk_disable_unprepare(info->clk);
-	writel(0, info->enable_reg);
+
+	if (info->phy_ctrl)
+		writel(0, info->enable_reg);
+
 	regulator_disable(info->vdd);
 
 	return 0;
@@ -421,7 +436,9 @@ static int exynos_adc_resume(struct device *dev)
 	if (ret)
 		return ret;
 
-	writel(1, info->enable_reg);
+	if (info->phy_ctrl)
+		writel(1, info->enable_reg);
+
 	clk_prepare_enable(info->clk);
 
 	exynos_adc_hw_init(info);
