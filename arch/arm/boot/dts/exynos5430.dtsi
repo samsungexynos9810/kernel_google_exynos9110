@@ -628,10 +628,18 @@
 		samsung,irq_no = <234>;
 		samsung,fifo_irq_no = <233>;
 
-		gpios = <&gpf1 3 0xf>;
-
-		clock-names = "lcd", "sclk_eclk", "sclk_vclk", "decon_dsd";
-		clocks = <&clock 321>, <&clock 100>, <&clock 101>, <&clock 102>;
+		clock-names = "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll", 
+			"aclk_disp_333", "aclk_disp_222", "sclk_decon_eclk_mif", "sclk_decon_vclk_mif", "sclk_dsd_mif",
+			"mout_aclk_disp_333_user", "mout_aclk_disp_222_user", "mout_sclk_decon_eclk_user", "mout_sclk_decon_vclk_user", "mout_sclk_dsd_user",
+			"mout_sclk_decon_eclk_disp",
+			"dout_aclk_disp_333",
+			"dout_sclk_decon_eclk";
+		clocks = <&clock 3092>, <&clock 3075>, <&clock 3124>,
+			 <&clock 321>, <&clock 322>, <&clock 81>, <&clock 82>, <&clock 83>,
+			 <&clock 3125>, <&clock 3126>, <&clock 3130>, <&clock 3132>, <&clock 3134>,
+			 <&clock 3131>,
+			 <&clock 4116>,
+			 <&clock 4122>;
 
 		iommu = <&sysmmu_decon0x>, <&sysmmu_decon1x>;
 
@@ -666,6 +674,16 @@
 		compatible = "samsung,exynos5-dsim";
 		reg = <0x13900000 0x40000>;
 		samsung,irq_no = <237>;
+
+		clock-names = "phyclk_mipidphy_rxclkesc0_phy", "phyclk_mipidphy_bitclkdiv8_phy",
+			"mout_phyclk_mipidphy_rxclkesc0_user", "mout_phyclk_mipidphy_bitclkdiv8_user";
+		clocks = <&clock 5025>, <&clock 5026>,
+			 <&clock 3137>, <&clock 3138>;
+
+		gpios = <&gpf0 0 0x1>;
+		pinctrl-names = "turnon_tes", "turnoff_tes";
+		pinctrl-0 = <&disp_teson>;
+		pinctrl-1 = <&disp_tesoff>;
 
 		samsung,power-domain = <&spd_mipi_dsi>;
 	};

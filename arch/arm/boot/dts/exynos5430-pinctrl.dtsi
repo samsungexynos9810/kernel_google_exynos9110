@@ -602,6 +602,16 @@
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 		};
+
+		disp_teson: disp_teson {
+			samsung,pins = "gpg0-1";
+			samsung,pin-function = <2>;
+		};
+
+		disp_tesoff: disp_tesoff {
+			samsung,pins = "gpg0-1";
+			samsung,pin-function = <0>;
+		};
 	};
 
 	pinctrl@14CE0000 {
