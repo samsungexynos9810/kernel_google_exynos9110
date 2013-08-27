@@ -538,7 +538,7 @@ static int fimc_is_set_cmd(struct fimc_is_interface *itf,
 
 exit:
 	if (ret)
-		fimc_is_hw_print(itf);
+		fimc_is_hw_logdump(itf);
 
 	return ret;
 }
@@ -953,7 +953,7 @@ static void wq_func_general(struct work_struct *data)
 			break;
 		case IHC_NOT_READY:
 			err("IHC_NOT_READY is occured, need reset");
-			fimc_is_hw_print(itf);
+			fimc_is_hw_logdump(itf);
 			break;
 		default:
 			err("func_general unknown(0x%08X) end\n", msg->command);
@@ -1220,8 +1220,7 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 		pr_err("[3A0:D:%d] GRP0 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
 		ldr_frame->shot_ext->request_3ax = 0;
-		/* HACK : VB2_BUF_STATE_ERROR */
-		done_state = VB2_BUF_STATE_DONE;
+		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
@@ -1255,7 +1254,7 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 	fimc_is_ischain_meta_invalid(ldr_frame);
 
 	fimc_is_frame_trans_pro_to_com(ldr_framemgr, ldr_frame);
-	fimc_is_group_done(groupmgr, group, ldr_frame);
+	fimc_is_group_done(groupmgr, group, ldr_frame, done_state);
 	queue_done(vctx, src_queue, ldr_frame->index, done_state);
 }
 
@@ -1281,8 +1280,7 @@ static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 		pr_err("[3A1:D:%d] GRP1 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
 		ldr_frame->shot_ext->request_3ax = 0;
-		/* HACK : VB2_BUF_STATE_ERROR */
-		done_state = VB2_BUF_STATE_DONE;
+		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
@@ -1316,7 +1314,7 @@ static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 	fimc_is_ischain_meta_invalid(ldr_frame);
 
 	fimc_is_frame_trans_pro_to_com(ldr_framemgr, ldr_frame);
-	fimc_is_group_done(groupmgr, group, ldr_frame);
+	fimc_is_group_done(groupmgr, group, ldr_frame, done_state);
 	queue_done(vctx, src_queue, ldr_frame->index, done_state);
 }
 
@@ -1345,8 +1343,7 @@ static void wq_func_group_isp(struct fimc_is_groupmgr *groupmgr,
 		pr_err("[ISP:D:%d] GRP2 NOT DONE(%d, %d)\n", group->instance,
 			frame->fcount, frame->index);
 		frame->shot_ext->request_isp = 0;
-		/* HACK : VB2_BUF_STATE_ERROR */
-		done_state = VB2_BUF_STATE_DONE;
+		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
@@ -1406,7 +1403,7 @@ static void wq_func_group_isp(struct fimc_is_groupmgr *groupmgr,
 #endif
 
 	fimc_is_frame_trans_pro_to_com(framemgr, frame);
-	fimc_is_group_done(groupmgr, group, frame);
+	fimc_is_group_done(groupmgr, group, frame, done_state);
 	queue_done(vctx, queue, frame->index, done_state);
 }
 
@@ -1426,8 +1423,7 @@ static void wq_func_group_dis(struct fimc_is_groupmgr *groupmgr,
 	if (status != ISR_DONE) {
 		pr_err("[DIS:D:%d] GRP3 NOT DONE(%d, %d)\n", group->instance,
 			frame->fcount, frame->index);
-		/* HACK : VB2_BUF_STATE_ERROR */
-		done_state = VB2_BUF_STATE_DONE;
+		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
@@ -1442,7 +1438,7 @@ static void wq_func_group_dis(struct fimc_is_groupmgr *groupmgr,
 	fimc_is_ischain_meta_invalid(frame);
 
 	fimc_is_frame_trans_pro_to_com(framemgr, frame);
-	fimc_is_group_done(groupmgr, group, frame);
+	fimc_is_group_done(groupmgr, group, frame, done_state);
 	queue_done(vctx, queue, frame->index, done_state);
 }
 
@@ -1467,7 +1463,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 	 */
 	if (ldr_framemgr->frame_com_cnt >= 2)
 		warn("remained completes is %d(%X)",
-			ldr_framemgr->frame_com_cnt, group->id);
+			(ldr_framemgr->frame_com_cnt + 1), group->id);
 
 	if (status2 != IS_SHOT_SUCCESS)
 		err("cause : %d", status2);
@@ -1790,7 +1786,7 @@ static void interface_timer(unsigned long data)
 				atomic_set(&itf->shot_timeout[i], 0);
 			} else {
 				pr_err("\n### firmware messsage dump ###\n");
-				fimc_is_hw_print(itf);
+				fimc_is_hw_logdump(itf);
 
 				pr_err("\n### MCUCTL dump ###\n");
 				regs = itf->com_regs;
@@ -2113,7 +2109,7 @@ void fimc_is_interface_unlock(struct fimc_is_interface *this)
 	wake_up(&this->lock_wait_queue);
 }
 
-int fimc_is_hw_print(struct fimc_is_interface *this)
+int fimc_is_hw_logdump(struct fimc_is_interface *this)
 {
 	int debug_cnt, sentence_i;
 	char *debug;
@@ -2170,6 +2166,40 @@ int fimc_is_hw_print(struct fimc_is_interface *this)
 	}
 
 	return count;
+}
+
+int fimc_is_hw_memdump(struct fimc_is_interface *this,
+	u32 start,
+	u32 end)
+{
+	u32 *cur;
+	u32 items, offset;
+	char term[50], sentence[250];
+
+	cur = (u32 *)start;
+	items = 0;
+	offset = 0;
+
+	memset(sentence, 0, sizeof(sentence));
+	printk(KERN_ERR "Memory Dump(0x%08X ~ 0x%08X)\n", start, end);
+
+	while((u32)cur <= end) {
+		if (!(items % 8)) {
+			printk(KERN_ERR "%s", sentence);
+			offset = 0;
+			snprintf(term, sizeof(term), "%p:      ", cur);
+			snprintf(&sentence[offset], sizeof(sentence) - offset, "%s", term);
+			offset += strlen(term);
+		}
+
+		snprintf(term, sizeof(term), "%08X   ", *cur);
+		snprintf(&sentence[offset], sizeof(sentence) - offset, "%s", term);
+		offset += strlen(term);
+		cur++;
+		items++;
+	}
+
+	return (u32)cur - end;
 }
 
 int fimc_is_hw_enum(struct fimc_is_interface *this)

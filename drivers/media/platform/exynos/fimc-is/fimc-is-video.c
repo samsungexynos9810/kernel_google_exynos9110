@@ -519,7 +519,7 @@ int fimc_is_queue_buffer_queue(struct fimc_is_queue *queue,
 	frame = &framemgr->frame[index];
 
 	/* uninitialized frame need to get info */
-	if (frame->init == FRAME_UNI_MEM)
+	if (frame->memory == FRAME_UNI_MEM)
 		goto set_info;
 
 	/* plane count check */
@@ -600,7 +600,7 @@ set_info:
 		frame->stream_size = queue->framecfg.size[spare];
 	}
 
-	frame->init = FRAME_INI_MEM;
+	frame->memory = FRAME_INI_MEM;
 
 	queue->buf_refcount++;
 
@@ -1251,6 +1251,8 @@ int queue_done(struct fimc_is_video_ctx *vctx,
 		goto p_err;
 	}
 
+	/* HACK : VB2_BUF_STATE_ERROR */
+	state = VB2_BUF_STATE_DONE;
 	vb2_buffer_done(vb, state);
 
 p_err:
