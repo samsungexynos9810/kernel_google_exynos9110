@@ -471,6 +471,18 @@
 		};
 	};
 
+	spi_0: spi@14d20000 {
+		status = "disabled";
+	};
+
+	spi_1: spi@14d30000 {
+		status = "disabled";
+	};
+
+	spi_2: spi@14d40000 {
+		status = "disabled";
+	};
+
 	/*disp_driver*/
 	decon_fb: decon_fb {
 		samsung,left_margin = <1>;
