@@ -228,6 +228,18 @@ void gsc_init_clock(void)
 	exynos_set_rate("dout_aclk_gscl_111", 111 * 1000000);
 }
 
+static void spi_clock_init(void)
+{
+	exynos_set_parent("mout_sclk_spi0", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_spi1", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_spi2", "mout_bus_pll_user");
+
+	/* dout_sclk_spi_a should be 100Mhz */
+	exynos_set_rate("dout_sclk_spi0_a", 100000000);
+	exynos_set_rate("dout_sclk_spi1_a", 100000000);
+	exynos_set_rate("dout_sclk_spi2_a", 100000000);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -239,4 +251,6 @@ void __init exynos5430_clock_init(void)
 	isp_init_clock();
 	g3d_init_clock();
 	gsc_init_clock();
+	/* spi clock init */
+	spi_clock_init();
 }
