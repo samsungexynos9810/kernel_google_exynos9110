@@ -117,7 +117,7 @@ struct sec_platform_data {
 	int				buck16_ramp_delay;
 	int				buck7810_ramp_delay;
 	int				buck9_ramp_delay;
-	int				bb_ramp_delay;
+	int				bb1_ramp_delay;
 
 	bool                            buck2_ramp_enable;
 	bool                            buck3_ramp_enable;
