@@ -38,6 +38,7 @@
 #include <linux/cpufreq.h>
 #include <linux/cpu_cooling.h>
 #include <linux/of.h>
+#include <linux/delay.h>
 
 /* Exynos generic registers */
 #define EXYNOS_TMU_REG_TRIMINFO		0x0
@@ -73,7 +74,10 @@
 #define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
 
 /* Exynos5250 and Exynos4412 specific registers */
-#define EXYNOS_TMU_TRIMINFO_CON	0x14
+#define EXYNOS_TRIMINFO_RELOAD1		0x01
+#define EXYNOS_TRIMINFO_RELOAD2		0x11
+#define EXYNOS_TRIMINFO_CONFIG		0x10
+#define EXYNOS_TRIMINFO_CONTROL		0x14
 #define EXYNOS_THD_TEMP_RISE		0x50
 #define EXYNOS_THD_TEMP_FALL		0x54
 #define EXYNOS_EMUL_CON		0x80
@@ -591,7 +595,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	unsigned int status, trim_info;
 	unsigned int rising_threshold = 0, falling_threshold = 0;
-	int ret = 0, threshold_code, i, trigger_levs = 0;
+	int ret = 0, threshold_code, i, trigger_levs = 0, timeout = 5;
 
 	mutex_lock(&data->lock);
 	clk_enable(data->clk);
@@ -603,9 +607,21 @@ static int exynos_tmu_initialize(struct platform_device *pdev)
 	}
 
 	if (data->soc == SOC_ARCH_EXYNOS) {
-		__raw_writel(EXYNOS_TRIMINFO_RELOAD,
-				data->base + EXYNOS_TMU_TRIMINFO_CON);
+		__raw_writel(EXYNOS_TRIMINFO_RELOAD1,
+				data->base + EXYNOS_TRIMINFO_CONFIG);
+		__raw_writel(EXYNOS_TRIMINFO_RELOAD2,
+				data->base + EXYNOS_TRIMINFO_CONTROL);
 	}
+	while (readl(data->base + EXYNOS_TRIMINFO_CONTROL) & EXYNOS_TRIMINFO_RELOAD1) {
+		if(!timeout) {
+			pr_err("Thermal TRIMINFO register reload failed\n");
+			break;
+		}
+		timeout--;
+		cpu_relax();
+		usleep_range(5,10);
+	}
+
 	/* Save trimming info in order to perform calibration */
 	trim_info = readl(data->base + EXYNOS_TMU_REG_TRIMINFO);
 	data->temp_error1 = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
