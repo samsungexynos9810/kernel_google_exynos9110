@@ -324,18 +324,18 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 	return result;
 }
 
-/*
-static void hw_trigger_mask_enable(struct s3c_fb_win *win, bool enable)
+
+static void hw_trigger_mask_enable(struct s3c_fb *sfb, bool enable)
 {
-	struct s3c_fb *sfb = win->parent;
-	u32 data = readl(sfb->regs + TRIGCON);
+	void __iomem *regs = sfb->regs + TRIGCON;
+	u32 data = readl(regs);
+
 	if (enable)
 		data &= ~TRIGCON_HWTRIGMASK_I80_RGB;
 	else
 		data |= TRIGCON_HWTRIGMASK_I80_RGB;
-	writel(data, sfb->regs + TRIGCON);
+	writel(data, regs);
 }
-*/
 
 /**
  * shadow_protect_win() - disable updating values from shadow registers at vsync
@@ -3870,9 +3870,34 @@ static int s3c_fb_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static void decon_fb_direct_on_off(struct s3c_fb *sfb, bool enable)
+{
+	void __iomem *regs = sfb->regs + VIDCON0;
+	u32 data = readl(regs);
+
+	if (enable)
+		data |= VIDCON0_ENVID_F | VIDCON0_ENVID;
+	else
+		data &= ~VIDCON0_ENVID_F & ~VIDCON0_ENVID;
+
+	writel(data, regs);
+}
+
+#ifndef CONFIG_FB_I80_COMMAND_MODE
+static void decon_fb_perframeoff(struct s3c_fb *sfb)
+{
+	void __iomem *regs = sfb->regs + VIDCON0;
+	u32 data = readl(regs);
+
+	data &= ~VIDCON0_ENVID_F;
+
+	writel(data, regs);
+}
+#endif
+
 static int s3c_fb_disable(struct s3c_fb *sfb)
 {
-	u32 vidcon0, data;
+	u32 data;
 	int ret = 0, timecnt = 2000;
 
 	mutex_lock(&sfb->output_lock);
@@ -3892,18 +3917,17 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	if (sfb->update_regs_wq)
 		flush_workqueue(sfb->update_regs_wq);
 #endif
-	vidcon0 = readl(sfb->regs + VIDCON0);
-
-	/* see the note in the framebuffer datasheet about
-	 * why you cannot take both of these bits down at the
-	 * same time. */
-
-	if (vidcon0 & VIDCON0_ENVID) {
-		vidcon0 |= VIDCON0_ENVID;
-		vidcon0 &= ~VIDCON0_ENVID_F;
-		writel(vidcon0, sfb->regs + VIDCON0);
-	} else
-		dev_warn(sfb->dev, "ENVID not set while disabling fb");
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	hw_trigger_mask_enable(sfb, true);
+#endif
+	while (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT) {
+		dev_dbg(sfb->dev, "wait for line counter");
+	};
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	decon_fb_direct_on_off(sfb, false);
+#else
+	decon_fb_perframeoff(sfb);
+#endif
 
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
@@ -4012,10 +4036,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
-
-	reg = readl(sfb->regs + VIDCON0);
-	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
-	writel(reg, sfb->regs + VIDCON0);
+	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
 	reg |= DECON_UPDATE_STANDALONE_F;
@@ -4033,7 +4054,7 @@ static int s3c_fb_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
 	int ret = 0;
-	u32 vidcon0, data;
+	u32 data;
 
 	mutex_lock(&sfb->output_lock);
 	sfb->power_state = POWER_DOWN;
@@ -4046,20 +4067,17 @@ static int s3c_fb_suspend(struct device *dev)
 
 		if (sfb->update_regs_wq)
 			flush_workqueue(sfb->update_regs_wq);
-
-		vidcon0 = readl(sfb->regs + VIDCON0);
-
-		/* see the note in the framebuffer datasheet about
-		 * why you cannot take both of these bits down at the
-		 * same time.
-		*/
-
-		if (vidcon0 & VIDCON0_ENVID) {
-			vidcon0 |= VIDCON0_ENVID;
-			vidcon0 &= ~VIDCON0_ENVID_F;
-			writel(vidcon0, sfb->regs + VIDCON0);
-		} else
-			dev_warn(sfb->dev, "ENVID not set while disabling fb");
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+		hw_trigger_mask_enable(sfb, true);
+#endif
+		while (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT) {
+			dev_dbg(sfb->dev, "wait for line counter");
+		};
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+		decon_fb_direct_on_off(sfb, false);
+#else
+		decon_fb_perframeoff(sfb);
+#endif
 
 		data = readl(sfb->regs + DECON_UPDATE);
 		data |= DECON_UPDATE_STANDALONE_F;
@@ -4145,9 +4163,7 @@ static int s3c_fb_resume(struct device *dev)
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
 
-	reg = readl(sfb->regs + VIDCON0);
-	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
-	writel(reg, sfb->regs + VIDCON0);
+	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
 	reg |= DECON_UPDATE_STANDALONE_F;
