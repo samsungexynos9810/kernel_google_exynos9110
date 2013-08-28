@@ -151,7 +151,7 @@ static int s2m_set_voltage_sel_regmap_rev0(struct regulator_dev *rdev, unsigned 
 			goto out;
 	}
 
-	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+	ret = regmap_update_bits(rdev->regmap, rdev->desc->vsel_reg,
 				  rdev->desc->vsel_mask, sel);
 	if (ret < 0)
 		goto out;
@@ -177,7 +177,7 @@ static int s2m_set_voltage_sel_regmap_rev1(struct regulator_dev *rdev, unsigned 
 {
 	int ret;
 
-	ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
+	ret = regmap_update_bits(rdev->regmap, rdev->desc->vsel_reg,
 				  rdev->desc->vsel_mask, sel);
 	if (ret < 0)
 		goto out;
