@@ -659,9 +659,11 @@
 		samsung,vidcon1 = <0x80>;
 		samsung,default_win = <0>;
 
-		samsung,i80_irq_no = <235>;
-		samsung,irq_no = <234>;
-		samsung,fifo_irq_no = <233>;
+		/* interrupt numbers:
+		   - 1'st : i80 irq no
+		   - 2'nd : video mode irq no
+		   - 3'rd : fifo irq no */
+		interrupts = <0 203 0>, <0 202 0>, <0 201 0>;
 
 		gpios = <&gpf1 3 0xf>;
 		clock-names = "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll",
@@ -709,7 +711,7 @@
 	mipi_dsi: mipi_dsi {
 		compatible = "samsung,exynos5-dsim";
 		reg = <0x13900000 0x40000>;
-		samsung,irq_no = <237>;
+		interrupts = <0 205 0>;
 
 		clock-names = "phyclk_mipidphy_rxclkesc0_phy", "phyclk_mipidphy_bitclkdiv8_phy",
 			"mout_phyclk_mipidphy_rxclkesc0_user", "mout_phyclk_mipidphy_bitclkdiv8_user";
