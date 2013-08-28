@@ -901,7 +901,6 @@
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4080 0x20>;
 		pd-option = <0x0102>;
-		status = "disabled";
 
 		spd_decon: spd-decon@105c4080 {
 			compatible = "samsung,exynos5430-spd";
