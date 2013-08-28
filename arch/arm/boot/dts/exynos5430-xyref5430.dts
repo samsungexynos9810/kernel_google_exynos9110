@@ -466,6 +466,13 @@
 					regulator-always-on;
 					regulator-initial-mode = <3>;
 				};
+
+				ldo40_reg: LDO40 {
+					regulator-name = "vdd_ldo40";
+					regulator-min-microvolt = <1400000>;
+					regulator-max-microvolt = <3400000>;
+					regulator-always-on;
+				};
 			};
 		};
 	};
