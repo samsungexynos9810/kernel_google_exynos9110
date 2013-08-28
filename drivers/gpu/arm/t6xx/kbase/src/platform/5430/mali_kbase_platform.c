@@ -160,7 +160,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	__raw_writel(0x1F, EXYNOS5430_ENABLE_IP_G3D0);
-	exynos_set_rate("dout_aclk_g3d", 550 * 1000000/*MALI_T6XX_DEFAULT_CLOCK*/);
+	exynos_set_rate("dout_aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
 
 	(void) clk_enable(clk_g3d);
 
