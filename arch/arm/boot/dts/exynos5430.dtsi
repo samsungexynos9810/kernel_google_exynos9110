@@ -628,7 +628,8 @@
 		samsung,irq_no = <234>;
 		samsung,fifo_irq_no = <233>;
 
-		clock-names = "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll", 
+		gpios = <&gpf1 3 0xf>;
+		clock-names = "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll",
 			"aclk_disp_333", "aclk_disp_222", "sclk_decon_eclk_mif", "sclk_decon_vclk_mif", "sclk_dsd_mif",
 			"mout_aclk_disp_333_user", "mout_aclk_disp_222_user", "mout_sclk_decon_eclk_user", "mout_sclk_decon_vclk_user", "mout_sclk_dsd_user",
 			"mout_sclk_decon_eclk_disp",
@@ -680,7 +681,6 @@
 		clocks = <&clock 5025>, <&clock 5026>,
 			 <&clock 3137>, <&clock 3138>;
 
-		gpios = <&gpf0 0 0x1>;
 		pinctrl-names = "turnon_tes", "turnoff_tes";
 		pinctrl-0 = <&disp_teson>;
 		pinctrl-1 = <&disp_tesoff>;

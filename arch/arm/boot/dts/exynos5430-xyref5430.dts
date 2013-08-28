@@ -598,6 +598,8 @@
 		samsung,xres = <1080>;
 		samsung,yres = <1920>;
 
+		gpios = <&gpf0 0 0x1>;
+
 		/* Interface definition: 0 - DSIM_COMMAND,
 					 1 - DSIM_VDEO */
 		e_interface = <0>;
