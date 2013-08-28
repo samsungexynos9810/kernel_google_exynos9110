@@ -996,7 +996,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 #else
 		enum_sensor[SENSOR_NAME_S5K6B2].csi_ch = 1;
 		enum_sensor[SENSOR_NAME_S5K6B2].flite_ch = FLITE_ID_B;
-		enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch = 2;
+		enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch = 1;
 #endif
 	} else {
 		enum_sensor[SENSOR_NAME_S5K6B2].csi_ch = 1;

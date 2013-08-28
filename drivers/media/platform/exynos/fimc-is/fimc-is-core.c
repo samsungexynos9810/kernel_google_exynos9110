@@ -1156,9 +1156,9 @@ static int fimc_is_probe(struct platform_device *pdev)
 		FLITE_ID_B);
 #else
 	fimc_is_sensor_probe(&core->sensor[1],
-		2,
-		CSI_ID_C,
-		FLITE_ID_C);
+		1,
+		CSI_ID_B,
+		FLITE_ID_B);
 #endif
 
 	/* device entity - ischain0 */
