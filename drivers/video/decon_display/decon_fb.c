@@ -324,7 +324,7 @@ static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
 	return result;
 }
 
-
+#ifdef CONFIG_FB_I80_HW_TRIGGER
 static void hw_trigger_mask_enable(struct s3c_fb *sfb, bool enable)
 {
 	void __iomem *regs = sfb->regs + TRIGCON;
@@ -336,6 +336,7 @@ static void hw_trigger_mask_enable(struct s3c_fb *sfb, bool enable)
 		data |= TRIGCON_HWTRIGMASK_I80_RGB;
 	writel(data, regs);
 }
+#endif
 
 /**
  * shadow_protect_win() - disable updating values from shadow registers at vsync
@@ -1121,16 +1122,16 @@ void s3c_fb_log_fifo_underflow_locked(struct s3c_fb *sfb, ktime_t timestamp)
 			sizeof(sfb->debug_data.regs_at_underflow));
 #endif
 }
-#ifdef CONFIG_FB_I80_SW_TRIGGER
-static irqreturn_t decon_fb_isr_for_sw_trigger(int irq, void *dev_id)
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 {
 	struct s3c_fb *sfb = dev_id;
-	void __iomem  *regs = sfb->regs;
-	u32 irq_sts_reg;
 	ktime_t timestamp = ktime_get();
 
 	spin_lock(&sfb->slock);
+#ifdef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_sw_trigger(sfb);
+#endif
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 
@@ -1152,11 +1153,6 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		/* VSYNC interrupt, accept it */
 		writel(VIDINTCON1_INT_FRAME, regs + VIDINTCON1);
 
-		sfb->vsync_info.timestamp = timestamp;
-		wake_up_interruptible_all(&sfb->vsync_info.wait);
-	}
-	if (irq_sts_reg & VIDINTCON1_INT_I80) {
-		writel(VIDINTCON1_INT_I80, regs + VIDINTCON1);
 		sfb->vsync_info.timestamp = timestamp;
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
@@ -3474,6 +3470,19 @@ static void s3c_fb_configure_trigger(struct s3c_fb *sfb)
 	writel(data, sfb->regs + DECON_UPDATE);
 }
 
+static int decon_fb_config_eint_for_te(struct s3c_fb *sfb)
+{
+	int ret, gpio;
+	struct device *dev = sfb->dev;
+
+	gpio = of_get_gpio(dev->of_node, 0);
+	sfb->irq_no = gpio_to_irq(gpio);
+	ret = devm_request_irq(dev, sfb->irq_no, decon_fb_isr_for_eint,
+			  IRQF_TRIGGER_RISING, "s3c_fb", sfb);
+
+	return ret;
+}
+
 #ifdef CONFIG_FB_I80_SW_TRIGGER
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 {
@@ -3503,9 +3512,6 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	int default_win;
 	int i;
 	int ret = 0;
-#ifdef CONFIG_FB_I80_SW_TRIGGER
-	int gpio;
-#endif
 	u32 reg;
 
 	parse_display_dt(dev->of_node);
@@ -3571,17 +3577,7 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		ret = -ENXIO;
 		goto resource_exception;
 	}
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-#ifndef CONFIG_FB_I80_SW_TRIGGER
-	DT_READ_U32(dev->of_node, "samsung,i80_irq_no", &sfb->irq_no);
-	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
-			  0, "s3c_fb", sfb);
-	if (ret) {
-		dev_err(dev, "i80 irq request failed\n");
-		goto resource_exception;
-	}
-#endif
-#else
+#ifndef CONFIG_FB_I80_COMMAND_MODE
 	DT_READ_U32(dev->of_node, "samsung,irq_no", &sfb->irq_no);
 	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
 			  0, "s3c_fb", sfb);
@@ -3657,11 +3653,12 @@ static int s3c_fb_probe(struct platform_device *pdev)
 	/* setup vmm */
 	exynos_create_iovmm(&pdev->dev, 5, 0);
 #endif
-#ifdef CONFIG_FB_I80_SW_TRIGGER
-	gpio = of_get_gpio(dev->of_node, 0);
-	sfb->irq_no = gpio_to_irq(gpio);
-	ret = devm_request_irq(dev, sfb->irq_no, decon_fb_isr_for_sw_trigger,
-			  IRQF_TRIGGER_RISING, "s3c_fb", sfb);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	ret = decon_fb_config_eint_for_te(sfb);
+	if (ret) {
+		dev_err(dev, "failed to request an external interrupt for TE signal\n");
+		goto resource_exception;
+	}
 #endif
 
 	default_win = sfb->pdata->default_win;
