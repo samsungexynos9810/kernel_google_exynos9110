@@ -1497,7 +1497,9 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 					mem_res->end, mem_res->start,
 					sdd->rx_dma.dmach, sdd->tx_dma.dmach);
 
+	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
+	pm_request_idle(&pdev->dev);
 
 	return 0;
 
