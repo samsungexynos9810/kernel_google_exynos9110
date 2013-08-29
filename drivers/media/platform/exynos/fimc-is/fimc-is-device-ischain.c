@@ -2348,6 +2348,18 @@ int fimc_is_itf_power_down(struct fimc_is_interface *interface)
 	return ret;
 }
 
+int fimc_is_itf_sys_ctl(struct fimc_is_device_ischain *this,
+			int cmd, int val)
+{
+	int ret = 0;
+	struct fimc_is_interface *itf = this->interface;
+
+	ret = fimc_is_hw_sys_ctl(itf, this->instance,
+				cmd, val);
+
+	return ret;
+}
+
 static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	struct fimc_is_group *group,
 	struct fimc_is_frame *frame)
@@ -5157,6 +5169,13 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	ret = fimc_is_itf_f_param(device);
 	if (ret) {
 		merr("fimc_is_itf_f_param is fail", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = fimc_is_itf_sys_ctl(device, IS_SYS_CLOCK_GATE, sysfs_debug.en_clk_gate);
+	if (ret) {
+		merr("fimc_is_itf_sys_ctl is fail", device);
 		ret = -EINVAL;
 		goto p_err;
 	}

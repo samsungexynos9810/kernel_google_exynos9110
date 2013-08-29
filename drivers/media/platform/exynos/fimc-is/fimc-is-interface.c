@@ -868,6 +868,12 @@ static void wq_func_general(struct work_struct *data)
 					sizeof(struct fimc_is_msg));
 				testnclr_wakeup(itf, msg->parameter1);
 				break;
+			case HIC_SYSTEM_CONTROL:
+				dbg_interface("system control done\n");
+				memcpy(&itf->reply, msg,
+					sizeof(struct fimc_is_msg));
+				testnclr_wakeup(itf, msg->parameter1);
+				break;
 			/*non-blocking command*/
 			case HIC_SHOT:
 				err("shot done is not acceptable\n");
@@ -2624,6 +2630,28 @@ int fimc_is_hw_power_down(struct fimc_is_interface *this,
 	msg.group = 0;
 	msg.parameter1 = 0;
 	msg.parameter2 = 0;
+	msg.parameter3 = 0;
+	msg.parameter4 = 0;
+
+	ret = fimc_is_set_cmd(this, &msg, &reply);
+
+	return ret;
+}
+
+int fimc_is_hw_sys_ctl(struct fimc_is_interface *this,
+	u32 instance, int cmd, int val)
+{
+	int ret;
+	struct fimc_is_msg msg, reply;
+
+	dbg_interface("sys_ctl(cmd(%d), val(%d))\n", cmd, val);
+
+	msg.id = 0;
+	msg.command = HIC_SYSTEM_CONTROL;
+	msg.instance = instance;
+	msg.group = 0;
+	msg.parameter1 = cmd;
+	msg.parameter2 = val;
 	msg.parameter3 = 0;
 	msg.parameter4 = 0;
 
