@@ -206,37 +206,33 @@ static int __maybe_unused exynos_check_enter_mode(void)
 	return EXYNOS_CHECK_LPA;
 }
 
-static struct cpuidle_driver exynos_idle_driver = {
-	.name                   = "exynos_idle",
-	.owner                  = THIS_MODULE,
-	.states = {
-			[0] = {
-				.enter			= exynos_enter_idle,
-				.exit_latency		= 1,
-				.target_residency	= 500,
-				.flags			= CPUIDLE_FLAG_TIME_VALID,
-				.name			= "C1",
-				.desc			= "ARM clock gating(WFI)",
-			},
+static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
+	[0] = {
+		.enter			= exynos_enter_idle,
+		.exit_latency		= 1,
+		.target_residency	= 500,
+		.flags			= CPUIDLE_FLAG_TIME_VALID,
+		.name			= "C1",
+		.desc			= "ARM clock gating(WFI)",
+	},
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-			[1] = {
-				.enter                  = exynos_enter_c2,
-				.exit_latency           = 30,
-				.target_residency       = 1000,
-				.flags                  = CPUIDLE_FLAG_TIME_VALID,
-				.name                   = "C2",
-				.desc                   = "ARM power down",
-			},
-		},
-	.state_count = 2,
-#else
-		},
-	.state_count = 1,
+	[1] = {
+		.enter                  = exynos_enter_c2,
+		.exit_latency           = 30,
+		.target_residency       = 1000,
+		.flags                  = CPUIDLE_FLAG_TIME_VALID,
+		.name                   = "C2",
+		.desc                   = "ARM power down",
+	},
 #endif
-	.safe_state_index = 0,
 };
 
 static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
+
+static struct cpuidle_driver exynos_idle_driver = {
+	.name                   = "exynos_idle",
+	.owner                  = THIS_MODULE,
+};
 
 /* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
 static void exynos_set_wakeupmask(void)
@@ -560,22 +556,34 @@ static struct notifier_block exynos_cpuidle_notifier = {
 
 static int __init exynos_init_cpuidle(void)
 {
-	int cpu_id, ret;
+	int i, cpu_id, ret;
 	struct cpuidle_device *device;
 
 #if defined(CONFIG_EXYNOS_DEV_DWMCI)
 	struct platform_device *pdev;
 	struct resource *res;
 #endif
+	exynos_idle_driver.state_count = ARRAY_SIZE(exynos5_cpuidle_set);
+
+	for (i = 0; i < exynos_idle_driver.state_count; i++) {
+		memcpy(&exynos_idle_driver.states[i],
+				&exynos5_cpuidle_set[i],
+				sizeof(struct cpuidle_state));
+	}
+
+	exynos_idle_driver.safe_state_index = 0;
+
 	ret = cpuidle_register_driver(&exynos_idle_driver);
-		if (ret) {
-			printk(KERN_ERR "CPUidle register device failed\n,");
-			return ret;
-		}
+	if (ret) {
+		printk(KERN_ERR "CPUidle register device failed\n,");
+		return ret;
+	}
 
 	for_each_cpu(cpu_id, cpu_online_mask) {
 		device = &per_cpu(exynos_cpuidle_device, cpu_id);
 		device->cpu = cpu_id;
+
+		device->state_count = exynos_idle_driver.state_count;
 
 		if (cpuidle_register_device(device)) {
 			printk(KERN_ERR "CPUidle register device failed\n,");
