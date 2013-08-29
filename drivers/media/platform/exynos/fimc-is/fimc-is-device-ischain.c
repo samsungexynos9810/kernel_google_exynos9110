@@ -5416,6 +5416,35 @@ int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device)
 	scc_param->dma_output.width = queue->framecfg.width;
 	scc_param->dma_output.height = queue->framecfg.height;
 
+	switch (queue->framecfg.format.pixelformat) {
+	case V4L2_PIX_FMT_YUYV:
+		scc_param->dma_output.format = DMA_OUTPUT_FORMAT_YUV422,
+		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_1;
+		scc_param->dma_output.order = DMA_OUTPUT_ORDER_CrYCbY;
+		break;
+	case V4L2_PIX_FMT_NV21M:
+	case V4L2_PIX_FMT_NV21:
+		scc_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
+		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_2;
+		scc_param->dma_output.order = DMA_OUTPUT_ORDER_CbCr;
+		break;
+	case V4L2_PIX_FMT_NV12M:
+	case V4L2_PIX_FMT_NV12:
+		scc_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
+		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_2;
+		scc_param->dma_output.order = DMA_OUTPUT_ORDER_CrCb;
+		break;
+	case V4L2_PIX_FMT_YUV420M:
+	case V4L2_PIX_FMT_YVU420M:
+		scc_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
+		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_3;
+		scc_param->dma_output.order = DMA_OUTPUT_ORDER_NO;
+		break;
+	default:
+		mwarn("unknown preview pixelformat", device);
+		break;
+	}
+
 	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
 	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
 	indexes++;
