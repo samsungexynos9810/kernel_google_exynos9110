@@ -17,6 +17,7 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 #include <linux/i2c.h>
+#include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/interrupt.h>
 #include <linux/pm_runtime.h>
@@ -58,12 +59,16 @@ static struct mfd_cell s5m8767_devs[] = {
 static struct mfd_cell s2mps11_devs[] = {
 	{
 		.name = "s2mps11-pmic",
+	}, {
+		.name = "s2m-rtc",
 	},
 };
 
 static struct mfd_cell s2mps13_devs[] = {
 	{
 		.name = "s2mps13-pmic",
+	}, {
+		.name = "s2m-rtc",
 	},
 };
 
@@ -108,6 +113,38 @@ int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u8 val, u32 mask)
 	return regmap_update_bits(sec_pmic->regmap, reg, mask, val);
 }
 EXPORT_SYMBOL_GPL(sec_reg_update);
+int sec_rtc_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest)
+{
+	return regmap_read(sec_pmic->rtc_regmap, reg, dest);
+}
+EXPORT_SYMBOL_GPL(sec_rtc_read);
+
+int sec_rtc_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count,
+		u8 *buf)
+{
+	return regmap_bulk_read(sec_pmic->rtc_regmap, reg, buf, count);
+}
+EXPORT_SYMBOL_GPL(sec_rtc_bulk_read);
+
+int sec_rtc_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value)
+{
+	return regmap_write(sec_pmic->rtc_regmap, reg, value);
+}
+EXPORT_SYMBOL_GPL(sec_rtc_write);
+
+int sec_rtc_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count,
+		u8 *buf)
+{
+	return regmap_raw_write(sec_pmic->rtc_regmap, reg, buf, count);
+}
+EXPORT_SYMBOL_GPL(sec_rtc_bulk_write);
+
+int sec_rtc_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val,
+		u32 mask)
+{
+	return regmap_update_bits(sec_pmic->rtc_regmap, reg, mask, val);
+}
+EXPORT_SYMBOL_GPL(sec_rtc_update);
 
 static struct regmap_config sec_regmap_config = {
 	.reg_bits = 8,
@@ -116,34 +153,31 @@ static struct regmap_config sec_regmap_config = {
 
 
 #ifdef CONFIG_OF
-/*
- * Only the common platform data elements for s5m8767 are parsed here from the
- * device tree. Other sub-modules of s5m8767 such as pmic, rtc , charger and
- * others have to parse their own platform data elements from device tree.
- *
- * The s5m8767 platform data structure is instantiated here and the drivers for
- * the sub-modules need not instantiate another instance while parsing their
- * platform data.
- */
 static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
 					struct device *dev)
 {
-	struct sec_platform_data *pd;
+	struct sec_platform_data *pdata;
+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+	struct device_node *np = dev->of_node;
+	int gpio;
 
-	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
-	if (!pd) {
-		dev_err(dev, "could not allocate memory for pdata\n");
+	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+	if (!pdata) {
+		dev_err(dev, "failed to allocate platform data\n");
 		return ERR_PTR(-ENOMEM);
 	}
+	dev->platform_data = pdata;
 
-	/*
-	 * ToDo: the 'wakeup' member in the platform data is more of a linux
-	 * specfic information. Hence, there is no binding for that yet and
-	 * not parsed here.
-	 */
+	gpio = of_get_gpio(np, 0);
+	if (!gpio_is_valid(gpio)) {
+		dev_err(dev, "failed to get interrupt gpio\n");
+		return ERR_PTR(-EINVAL);
+	}
+	i2c->irq = gpio_to_irq(gpio);
 
-	return pd;
+	return pdata;
 }
+
 #else
 static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
 					struct device *dev)
@@ -197,6 +231,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 		sec_pmic->irq_base = pdata->irq_base;
 		sec_pmic->wakeup = pdata->wakeup;
 		sec_pmic->pdata = pdata;
+		sec_pmic->irq = i2c->irq;
 	}
 
 	sec_pmic->regmap = devm_regmap_init_i2c(i2c, &sec_regmap_config);
@@ -209,6 +244,13 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 
 	sec_pmic->rtc = i2c_new_dummy(i2c->adapter, RTC_I2C_ADDR);
 	i2c_set_clientdata(sec_pmic->rtc, sec_pmic);
+	sec_pmic->rtc_regmap = devm_regmap_init_i2c(sec_pmic->rtc, &sec_regmap_config);
+	if (IS_ERR(sec_pmic->rtc_regmap)) {
+		ret = PTR_ERR(sec_pmic->rtc_regmap);
+		dev_err(&sec_pmic->rtc->dev,"Failed to allocate register map: %d\n",
+			ret);
+		return ret;
+	}
 
 	if (pdata && pdata->cfg_pmic_irq)
 		pdata->cfg_pmic_irq();
