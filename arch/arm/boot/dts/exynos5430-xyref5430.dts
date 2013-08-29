@@ -95,6 +95,7 @@
 		status = "okay";
 
 		s2mps13_pmic@66 {
+			gpios = <&gpa0 2 0xf>;
 			compatible = "samsung,s2mps13-pmic";
 			reg = <0x66>;
 
