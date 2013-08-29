@@ -573,6 +573,10 @@ static int samsung_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
 static int samsung_gpio_direction_output(struct gpio_chip *gc, unsigned offset,
 							int value)
 {
+	struct samsung_pin_bank *bank = gc_to_pin_bank(gc);
+
+	bank->dat_mask |= 1 << offset;
+
 	samsung_gpio_set(gc, offset, value);
 	return pinctrl_gpio_direction_output(gc->base + offset);
 }
