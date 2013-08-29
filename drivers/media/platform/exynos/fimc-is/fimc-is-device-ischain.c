@@ -3120,6 +3120,21 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
 	(*indexes)++;
 
+	/* SCC CROP */
+	scc_param->input_crop.cmd = SCALER_CROP_COMMAND_ENABLE;
+	scc_param->input_crop.pos_x = 0;
+	scc_param->input_crop.pos_y = 0;
+	scc_param->input_crop.crop_width = chain0_width;
+	scc_param->input_crop.crop_height = chain0_height;
+	scc_param->input_crop.in_width = chain0_width;
+	scc_param->input_crop.in_height = chain0_height;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	(*indexes)++;
+
+	device->bds_width = width;
+	device->bds_height = height;
+
 	pr_info("[ISC:D:%d] chain0 size(%d x %d)",
 		device->instance, chain0_width, chain0_height);
 
@@ -3328,6 +3343,21 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
 	(*indexes)++;
 
+	/* SCC CROP */
+	scc_param->input_crop.cmd = SCALER_CROP_COMMAND_ENABLE;
+	scc_param->input_crop.pos_x = 0;
+	scc_param->input_crop.pos_y = 0;
+	scc_param->input_crop.crop_width = chain0_width;
+	scc_param->input_crop.crop_height = chain0_height;
+	scc_param->input_crop.in_width = chain0_width;
+	scc_param->input_crop.in_height = chain0_height;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	(*indexes)++;
+
+	device->bds_width = width;
+	device->bds_height = height;
+
 	pr_info("[ISC:D:%d] chain0 size(%d x %d)",
 		device->instance, chain0_width, chain0_height);
 
@@ -3391,12 +3421,6 @@ static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 
 	/* SCC OUTPUT */
 	scc_param->input_crop.cmd = SCALER_CROP_COMMAND_ENABLE;
-	scc_param->input_crop.pos_x = 0;
-	scc_param->input_crop.pos_y = 0;
-	scc_param->input_crop.crop_width = chain0_width;
-	scc_param->input_crop.crop_height = chain0_height;
-	scc_param->input_crop.in_width = chain0_width;
-	scc_param->input_crop.in_height = chain0_height;
 	scc_param->input_crop.out_width = chain1_width;
 	scc_param->input_crop.out_height = chain1_height;
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
@@ -4208,77 +4232,6 @@ exit:
 	return ret;
 }
 #endif
-#endif
-
-#ifdef BAYER_CROP_DZOOM
-static int fimc_is_ischain_s_bayer_dzoom(struct fimc_is_device_ischain *device,
-	u32 bds_width, u32 bds_height)
-{
-	int ret = 0;
-	struct drc_param *drc_param;
-	struct scalerc_param *scc_param;
-
-	u32 indexes, lindex, hindex;
-
-	drc_param = &device->is_region->parameter.drc;
-	scc_param = &device->is_region->parameter.scalerc;
-	indexes = lindex = hindex = 0;
-
-#ifdef PRINT_DZOOM
-	pr_info("[ISP:D:%d] request bayer down size : %dx%d\n",
-		device->instance, bds_width, bds_height);
-#endif
-
-	/* DRC */
-	drc_param->otf_input.width = bds_width;
-	drc_param->otf_input.height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_DRC_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_DRC_OTF_INPUT);
-	indexes++;
-
-	drc_param->otf_output.width = bds_width;
-	drc_param->otf_output.height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_DRC_OTF_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_DRC_OTF_OUTPUT);
-	indexes++;
-
-	/* SCC INPUT */
-	scc_param->otf_input.width = bds_width;
-	scc_param->otf_input.height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
-	indexes++;
-
-	/* SCC INPUT CROP */
-	scc_param->input_crop.crop_width = bds_width;
-	scc_param->input_crop.crop_height = bds_height;
-	scc_param->input_crop.in_width = bds_width;
-	scc_param->input_crop.in_height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
-	indexes++;
-
-	/* SCC UNSCALED DMA OUT */
-	scc_param->dma_output.width = bds_width;
-	scc_param->dma_output.height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device,
-		indexes, lindex, hindex);
-	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	device->bds_width = bds_width;
-	device->bds_height = bds_height;
-
-exit:
-	return ret;
-}
 #endif
 
 #ifdef ENABLE_DRC
@@ -7112,16 +7065,27 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	if (bds_width && bds_height
 	&& (bds_width <= device->chain0_width)
 	&& ((bds_width != device->bds_width) || (bds_height != device->bds_height))) {
-		ret = fimc_is_ischain_s_bayer_dzoom(device,
-			frame->shot->udm.bayer.width,
-			frame->shot->udm.bayer.height);
+		u32 lindex = 0;
+		u32 hindex = 0;
+		u32 indexes = 0;
+		ret = fimc_is_ischain_s_chain0_size(device,
+			bds_width, bds_height,
+			&lindex, &hindex, &indexes);
 		if (ret) {
-			merr("fimc_is_ischain_s_bayer_dzoom is fail:\
+			merr("fimc_is_ischain_s_chain0_size is fail:\
 				BDS(%d, %d), fcount(%d)\n",
 				device,
 				frame->shot->udm.bayer.width,
 				frame->shot->udm.bayer.height,
 				frame->fcount);
+			ret = -EINVAL;
+			goto exit;
+		}
+
+		ret = fimc_is_itf_s_param(device,
+			indexes, lindex, hindex);
+		if (ret) {
+			merr("fimc_is_itf_s_param is fail", device);
 			ret = -EINVAL;
 			goto exit;
 		}
