@@ -27,6 +27,10 @@
 		};
 	};
 
+	rtc {
+		status = "okey";
+	};
+
 	dwmmc0@15540000 {
 		status = "okay";
 		num-slots = <1>;
