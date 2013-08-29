@@ -129,6 +129,7 @@ struct samsung_pin_bank_type {
  * @grange: linux gpio pin range supported by this bank.
  * @slock: spinlock protecting bank registers
  * @pm_save: saved register values during suspend
+ * @pm_save_mask: mask bit to restore register during resume
  */
 struct samsung_pin_bank {
 	struct samsung_pin_bank_type *type;
@@ -150,6 +151,9 @@ struct samsung_pin_bank {
 	spinlock_t slock;
 
 	u32 pm_save[PINCFG_TYPE_NUM + 1]; /* +1 to handle double CON registers*/
+#ifdef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+	u32 pm_save_mask;
+#endif
 };
 
 /**

@@ -442,6 +442,11 @@ static int samsung_pinconf_rw(struct pinctrl_dev *pctldev, unsigned int pin,
 		data &= ~(mask << shift);
 		data |= (cfg_value << shift);
 		writel(data, reg_base + cfg_reg);
+
+#ifdef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+		bank->pm_save_mask |= 1 << cfg_type;
+		bank->pm_save[cfg_type] = data;
+#endif
 	} else {
 		data >>= shift;
 		data &= mask;
@@ -524,6 +529,11 @@ static void samsung_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
 		data |= 1 << offset;
 	data &= bank->dat_mask;
 	writel(data, reg + type->reg_offset[PINCFG_TYPE_DAT]);
+
+#ifdef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+	bank->pm_save_mask |= 1 << PINCFG_TYPE_DAT;
+	bank->pm_save[PINCFG_TYPE_DAT] = data;
+#endif
 
 	spin_unlock_irqrestore(&bank->slock, flags);
 }
@@ -826,6 +836,9 @@ static int samsung_pinctrl_register(struct platform_device *pdev,
 
 		spin_lock_irqsave(&pin_bank->slock, flags);
 
+#ifdef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+		pin_bank->pm_save_mask |= 1 << PINCFG_TYPE_FUNC;
+#endif
 		/* set initial dat_mask */
 		data = readl(reg);
 		samsung_set_dat_mask(pin_bank, data);
@@ -1042,9 +1055,11 @@ static void samsung_pinctrl_suspend_dev(
 		if (!widths[PINCFG_TYPE_CON_PDN])
 			continue;
 
+#ifndef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
 		for (type = 0; type < PINCFG_TYPE_NUM; type++)
 			if (widths[type])
 				bank->pm_save[type] = readl(reg + offs[type]);
+#endif
 
 		if (widths[PINCFG_TYPE_FUNC] * bank->nr_pins > 32) {
 			/* Some banks have two config registers */
@@ -1109,11 +1124,18 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 				 bank->pm_save[PINCFG_TYPE_FUNC]);
 		}
 		writel(bank->pm_save[PINCFG_TYPE_FUNC], reg + offs[PINCFG_TYPE_FUNC]);
-		writel(bank->pm_save[PINCFG_TYPE_DAT] & bank->dat_mask,
-			reg + offs[PINCFG_TYPE_DAT]);
+#ifdef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+		if (bank->pm_save_mask & (1 << PINCFG_TYPE_DAT))
+#endif
+			writel(bank->pm_save[PINCFG_TYPE_DAT] & bank->dat_mask,
+				reg + offs[PINCFG_TYPE_DAT]);
 		for (type = PINCFG_TYPE_PUD; type < PINCFG_TYPE_NUM; type++)
 			if (widths[type])
-				writel(bank->pm_save[type], reg + offs[type]);
+#ifdef PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+				if  (bank->pm_save_mask & (1 << type))
+#endif
+					writel(bank->pm_save[type],
+							reg + offs[type]);
 	}
 }
 

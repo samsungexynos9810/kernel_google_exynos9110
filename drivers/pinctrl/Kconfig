@@ -211,6 +211,18 @@ config PINCTRL_EXYNOS
 	depends on OF && GPIOLIB
 	select PINCTRL_SAMSUNG
 
+config PINCTRL_EXYNOS_RUNTIME_PM_SAVE
+	bool "Save pinctrl registers on run time"
+	depends on PINCTRL_EXYNOS
+	depends on EXYNOS_STRICT_IOREMAP
+	help
+	  The whole pinctrl registers are saved on suspend time and
+	  restored on resume time. This patch saves them on runtime
+	  and restored used registers only.
+
+	  This option depends on CONFIG_PINCTRL_EXYNOS and CONFIG_
+	  EXYNOS_STRICT_IOREMAP.
+
 config PINCTRL_EXYNOS5440
 	bool "Samsung EXYNOS5440 SoC pinctrl driver"
 	select PINMUX
