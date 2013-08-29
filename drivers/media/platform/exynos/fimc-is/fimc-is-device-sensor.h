@@ -61,8 +61,6 @@ struct fimc_is_device_sensor {
 	u32 width;
 	u32 height;
 	u32 framerate;
-	u32 is_otf;
-	u32 target_3aa;
 
 	struct fimc_is_video_ctx	*vctx;
 	struct fimc_is_device_ischain   *ischain;
