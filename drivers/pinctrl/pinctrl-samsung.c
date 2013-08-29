@@ -1103,7 +1103,10 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 				 reg, readl(reg + offs[PINCFG_TYPE_FUNC]),
 				 bank->pm_save[PINCFG_TYPE_FUNC]);
 		}
-		for (type = 0; type < PINCFG_TYPE_NUM; type++)
+		writel(bank->pm_save[PINCFG_TYPE_FUNC], reg + offs[PINCFG_TYPE_FUNC]);
+		writel(bank->pm_save[PINCFG_TYPE_DAT] & bank->dat_mask,
+			reg + offs[PINCFG_TYPE_DAT]);
+		for (type = PINCFG_TYPE_PUD; type < PINCFG_TYPE_NUM; type++)
 			if (widths[type])
 				writel(bank->pm_save[type], reg + offs[type]);
 	}
