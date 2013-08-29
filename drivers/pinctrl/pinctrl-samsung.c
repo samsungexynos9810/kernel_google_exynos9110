@@ -281,22 +281,6 @@ static void pin_to_reg_bank(struct samsung_pinctrl_drv_data *drvdata,
 		*bank = b;
 }
 
-/* set dat register's mask to avoid func mode pin */
-static void samsung_set_dat_mask(struct samsung_pin_bank *bank, const u32 data)
-{
-	u32 cnt, func, mask, width;
-
-	width = bank->type->fld_width[PINCFG_TYPE_FUNC];
-	mask = (1 << width) - 1;
-
-	bank->dat_mask = 0;
-	for (cnt = 0; cnt < 8; cnt++) {
-		func = (data >> (width * cnt)) & mask;
-		if (func == FUNC_OUTPUT)
-			bank->dat_mask |= 1 << cnt;
-	}
-}
-
 /* enable or disable a pinmux function */
 static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 					unsigned group, bool enable)
@@ -337,8 +321,11 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 			data |= drvdata->pin_groups[group].func << shift;
 		writel(data, reg + type->reg_offset[PINCFG_TYPE_FUNC]);
 
-		/* Ensure to clear DAT register when using GPIO func mode */
-		samsung_set_dat_mask(bank, data);
+		/*
+		 * The pin could be FUNC mode or INPUT mode. Therefore, its
+		 * DAT register has to be masked.
+		 */
+		bank->dat_mask &= ~(1 << pin_offset);
 		data = readl(reg + type->reg_offset[PINCFG_TYPE_DAT]);
 		data &= bank->dat_mask;
 		writel(data, reg + type->reg_offset[PINCFG_TYPE_DAT]);
@@ -397,11 +384,13 @@ static int samsung_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
 
 	data = readl(reg);
 	data &= ~(mask << shift);
-	if (!input)
+	if (!input) {
 		data |= FUNC_OUTPUT << shift;
+		bank->dat_mask |= 1 << pin_offset;
+	} else {
+		bank->dat_mask &= ~(1 << pin_offset);
+	}
 	writel(data, reg);
-
-	samsung_set_dat_mask(bank, data);
 
 	spin_unlock_irqrestore(&bank->slock, flags);
 
@@ -743,6 +732,22 @@ static int samsung_pinctrl_parse_dt(struct platform_device *pdev,
 	drvdata->nr_functions = func_idx;
 
 	return 0;
+}
+
+/* set dat register's mask to avoid func mode pin */
+static void samsung_set_dat_mask(struct samsung_pin_bank *bank, const u32 data)
+{
+	u32 cnt, func, mask, width;
+
+	width = bank->type->fld_width[PINCFG_TYPE_FUNC];
+	mask = (1 << width) - 1;
+
+	bank->dat_mask = 0;
+	for (cnt = 0; cnt < 8; cnt++) {
+		func = (data >> (width * cnt)) & mask;
+		if (func == FUNC_OUTPUT)
+			bank->dat_mask |= 1 << cnt;
+	}
 }
 
 /* register the pinctrl interface with the pinctrl subsystem */
