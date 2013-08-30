@@ -729,6 +729,7 @@ void gsc_hw_set_out_size(struct gsc_ctx *ctx)
 		cfg = GSC_SCALED_WIDTH(frame->crop.width);
 		cfg |= GSC_SCALED_HEIGHT(frame->crop.height);
 	}
+
 	writel(cfg, dev->regs + GSC_SCALED_SIZE);
 }
 
@@ -845,6 +846,13 @@ void gsc_hw_set_mainscaler(struct gsc_ctx *ctx)
 
 	cfg = GSC_MAIN_V_RATIO_VALUE(sc->main_vratio);
 	writel(cfg, dev->regs + GSC_MAIN_V_RATIO);
+
+	if ((!is_tiled(ctx->s_frame.fmt)) &&
+			(sc->main_hratio > GSC_SC_UP_MAX_RATIO) &&
+			(sc->main_vratio > GSC_SC_UP_MAX_RATIO))
+		sc->is_scaled_down = true;
+	else
+		sc->is_scaled_down = false;
 }
 
 void gsc_hw_set_input_rotation(struct gsc_ctx *ctx)

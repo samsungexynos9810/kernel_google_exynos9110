@@ -681,15 +681,8 @@ int gsc_set_scaler_info(struct gsc_ctx *ctx)
 	struct gsc_frame *s_frame = &ctx->s_frame;
 	struct gsc_frame *d_frame = &ctx->d_frame;
 	struct gsc_variant *variant = ctx->gsc_dev->variant;
-	struct exynos_platform_gscaler *pdata = ctx->gsc_dev->pdata;
 	int tx, ty;
 	int ret;
-
-	if (is_ver_5h && (s_frame->crop.width > d_frame->crop.width) &&
-		(s_frame->crop.height > d_frame->crop.height))
-		sc->is_scaled_down = true;
-	else
-		sc->is_scaled_down = false;
 
 	ret = gsc_check_scaler_ratio(ctx, variant, s_frame->crop.width,
 		s_frame->crop.height, d_frame->crop.width,
