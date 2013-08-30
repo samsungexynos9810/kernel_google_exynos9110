@@ -4541,25 +4541,6 @@ int fimc_is_ischain_3a0_s_format(struct fimc_is_device_ischain *device,
 	subdev->input.width = width;
 	subdev->input.height = height;
 
-	/* for low light capture mode */
-	if (test_bit(FIMC_IS_ISDEV_DSTART, &subdev->state)) {
-		if (((width != device->bds_width) || (height != device->bds_height))) {
-			ret = fimc_is_ischain_s_3ax_size(device, 0, 0,
-				device->chain0_width, device->chain0_height,
-				width, height);
-			if (ret) {
-				merr("fimc_is_ischain_s_3ax_size is fail:\
-					CROP(%d, %d, %d, %d), BDS(%d, %d)\n",
-					device, 0, 0,
-					device->chain0_width, device->chain0_height,
-					width, height);
-				ret = -EINVAL;
-				goto p_err;
-			}
-		}
-	}
-
-p_err:
 	return ret;
 }
 
