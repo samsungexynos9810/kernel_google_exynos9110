@@ -456,8 +456,8 @@ int gsc_try_fmt_mplane(struct gsc_ctx *ctx, struct v4l2_format *f)
 		}
 	}
 
-	gsc_info("org_w: %d", variant->pix_align->org_w);
-	gsc_info("mod_x: %d, mod_y: %d, max_w: %d, max_h = %d",
+	gsc_dbg("org_w: %d", variant->pix_align->org_w);
+	gsc_dbg("mod_x: %d, mod_y: %d, max_w: %d, max_h = %d",
 	     mod_x, mod_y, max_w, max_h);
 	/* To check if image size is modified to adjust parameter against
 	   hardware abilities */
