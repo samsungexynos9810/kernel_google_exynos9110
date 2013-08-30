@@ -352,17 +352,11 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 	u32 data = readl(regs);
 
 	if (protect) {
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		/* hw_trigger_mask_enable(win, true); */
-#endif
 		data |= SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
 	} else {
 		data &= ~SHADOWCON_WINx_PROTECT(win->index);
 		writel(data, regs);
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		/* hw_trigger_mask_enable(win, false); */
-#endif
 	}
 }
 
