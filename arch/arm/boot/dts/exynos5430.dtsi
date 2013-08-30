@@ -782,6 +782,7 @@
 		reg = <0x15510000 0x100>;
 		interrupts = <0 230 0>;
 		samsung,vbus-gpio = <&gph1 3 0>;
+		samsung,boost5v-gpio = <&gpf2 2 0>;
 		clocks = <&clock 2172>;
 		clock-names = "usbhost";
 		status = "ok";

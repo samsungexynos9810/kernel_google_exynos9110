@@ -56,7 +56,7 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	int err;
-	int gpio;
+	int gpio, gpio_boost5v;
 
 	if (!dev->of_node)
 		return;
@@ -69,6 +69,18 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
 				    "ehci_vbus_gpio");
 	if (err)
 		dev_err(dev, "can't request ehci vbus gpio %d", gpio);
+
+	gpio_boost5v = of_get_named_gpio(dev->of_node, "samsung,boost5v-gpio", 0);
+	if (!gpio_is_valid(gpio_boost5v))
+		return;
+
+	err = devm_gpio_request_one(dev, gpio_boost5v, GPIOF_OUT_INIT_HIGH,
+				    "usb_boost5v_gpio");
+	if (err)
+		dev_err(dev, "can't request usb boost5v gpio %d", gpio_boost5v);
+
+	gpio_set_value(gpio_boost5v, 1);
+	gpio_set_value(gpio, 1);
 }
 
 static int s5p_ehci_probe(struct platform_device *pdev)
