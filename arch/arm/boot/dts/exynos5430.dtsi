@@ -744,8 +744,8 @@
 
 	usb@15400000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 50>, <&clock 140>, <&clock 561>;
-		clock-names = "sclk_usbdrd30", "usbdrd30", "aclk_usbdrd30";
+		clocks = <&clock 50>, <&clock 2173>;
+		clock-names = "sclk_usbdrd30", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
@@ -766,8 +766,8 @@
 	dwc3_usb3_phy: usbphy@15500000 {
 		compatible = "samsung,exynos5-usb3phy";
 		reg = <0x15500000 0x100>;
-		clocks = <&clock 1>, <&clock 140>, <&clock 410>, <&clock 411>;
-		clock-names = "ext_xtal", "usbdrd30", "usbdrd30_phyclock", "usbdrd30_pipe_pclk";
+		clocks = <&clock 1>, <&clock 410>, <&clock 411>, <&clock 2173>;
+		clock-names = "ext_xtal", "usbdrd30_phyclock", "usbdrd30_pipe_pclk", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
