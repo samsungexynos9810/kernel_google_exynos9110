@@ -305,7 +305,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		clocks = <&clock 565>, <&clock 141>;
-		clock-names = "biu", "ciu";
+		clock-names = "biu", "gate_ciu";
 		status = "disabled";
 	};
 
@@ -316,7 +316,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		clocks = <&clock 566>, <&clock 142>;
-		clock-names = "biu", "ciu";
+		clock-names = "biu", "gate_ciu";
 		status = "disabled";
 	};
 
@@ -327,7 +327,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		clocks = <&clock 567>, <&clock 143>;
-		clock-names = "biu", "ciu";
+		clock-names = "biu", "gate_ciu";
 		status = "disabled";
 	};
 

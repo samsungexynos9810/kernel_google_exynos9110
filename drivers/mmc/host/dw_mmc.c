@@ -2218,7 +2218,7 @@ int dw_mci_probe(struct dw_mci *host)
 		}
 	}
 
-	host->ciu_clk = devm_clk_get(host->dev, "ciu");
+	host->ciu_clk = devm_clk_get(host->dev, "gate_ciu");
 	if (IS_ERR(host->ciu_clk)) {
 		dev_dbg(host->dev, "ciu clock not available\n");
 	} else {
