@@ -99,8 +99,8 @@
 #define MAX_COOLING_DEVICE 4
 #define MAX_THRESHOLD_LEVS 4
 
-#define ACTIVE_INTERVAL 500
-#define IDLE_INTERVAL 10000
+#define ACTIVE_INTERVAL 100
+#define IDLE_INTERVAL 1000
 #define MCELSIUS	1000
 
 #ifdef CONFIG_THERMAL_EMULATION
@@ -130,6 +130,11 @@
 #define EXYNOS_ZONE_COUNT	1
 #define EXYNOS_TMU_COUNT	5
 #define EXYSNO_CLK_COUNT	2
+#define EXYNOS_GPU_NUMBER	2
+#define EXYNOS_ISP_NUMBER	4
+
+#define MIN_TEMP	20
+#define MAX_TEMP	125
 
 struct exynos_tmu_data {
 	struct exynos_tmu_platform_data *pdata;
@@ -536,12 +541,10 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp, int id)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	int temp_code;
 
-	if (data->soc == SOC_ARCH_EXYNOS4210)
-		/* temp should range between 25 and 125 */
-		if (temp < 25 || temp > 125) {
-			temp_code = -EINVAL;
-			goto out;
-		}
+	if (temp > MAX_TEMP)
+		temp_code = MAX_TEMP;
+	else if (temp < MIN_TEMP)
+		temp_code = MIN_TEMP;
 
 	switch (pdata->cal_type) {
 	case TYPE_TWO_POINT_TRIMMING:
@@ -556,7 +559,7 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp, int id)
 		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
 		break;
 	}
-out:
+
 	return temp_code;
 }
 
@@ -568,13 +571,6 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code, int id)
 {
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	int temp;
-
-	if (data->soc == SOC_ARCH_EXYNOS4210)
-		/* temp_code should range between 75 and 175 */
-		if (temp_code < 75 || temp_code > 175) {
-			temp = -ENODATA;
-			goto out;
-		}
 
 	switch (pdata->cal_type) {
 	case TYPE_TWO_POINT_TRIMMING:
@@ -588,7 +584,13 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code, int id)
 		temp = temp_code - EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
 		break;
 	}
-out:
+
+	/* temperature should range between minimum and maximum */
+	if (temp > MAX_TEMP)
+		temp = MAX_TEMP;
+	else if (temp < MIN_TEMP)
+		temp = MIN_TEMP;
+
 	return temp;
 }
 
@@ -735,7 +737,7 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 static int exynos_tmu_read(struct exynos_tmu_data *data)
 {
 	u8 temp_code;
-	int temp, i;
+	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0, isp_temp = 0;;
 
 	mutex_lock(&data->lock);
 	clk_enable(data->clk[0]);
@@ -744,12 +746,26 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
 		temp = code_to_temp(data, temp_code, i);
+
+		if (i == EXYNOS_GPU_NUMBER) {
+			gpu_temp = temp;
+		}
+		else if (i == EXYNOS_ISP_NUMBER) {
+			isp_temp = temp;
+		}
+		else {
+			if (temp > max)
+				max = temp;
+			if (temp < min)
+				min = temp;
+		}
+
 	}
 
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
-	return temp;
+	return max;
 }
 
 #ifdef CONFIG_THERMAL_EMULATION
