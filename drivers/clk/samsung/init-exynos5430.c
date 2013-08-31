@@ -367,6 +367,14 @@ void jpeg_init_clock(void)
 	pr_debug("jpeg: sclk_jpeg %d\n", exynos_get_rate("sclk_jpeg"));
 }
 
+void cpif_init_clock(void)
+{
+	exynos_set_parent("mout_phyclk_lli_tx0_symbol_user",
+			  "phyclk_lli_tx0_symbol");
+	exynos_set_parent("mout_phyclk_lli_rx0_symbol_user",
+			  "phyclk_lli_rx0_symbol");
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -385,4 +393,5 @@ void __init exynos5430_clock_init(void)
 	mscl_init_clock();
 	g2d_init_clock();
 	jpeg_init_clock();
+	cpif_init_clock();
 }
