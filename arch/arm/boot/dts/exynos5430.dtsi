@@ -1630,4 +1630,20 @@
 		iommu = <&sysmmu_g2d>;
 		samsung,power-domain = <&pd_g2d>;
 	};
+
+	mipi-lli@10F24000 {
+		compatible = "samsung,exynos-mipi-lli";
+		reg = <0x10F24000 0x4000>,
+		      <0x10F34000 0x4000>,
+		      <0x10FD0000 0x2000>;
+		interrupts = <0 184 0>, <0 185 0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		mphy {
+			compatible = "samsung,exynos-mipi-lli-mphy";
+			reg = <0x10F20000 0x4000>;
+		};
+	};
 };
