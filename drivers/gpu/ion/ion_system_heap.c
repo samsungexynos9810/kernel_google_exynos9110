@@ -130,6 +130,8 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 			continue;
 
 		info = kmalloc(sizeof(struct page_info), GFP_KERNEL);
+		if (!info)
+			return NULL;
 		info->page = page;
 		info->order = orders[i];
 		return info;
