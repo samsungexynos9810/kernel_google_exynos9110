@@ -660,7 +660,7 @@ enum exynos5430_clks {
 	mout_aud_pll_user, mout_aud_dpll_user, mout_aud_pll_sub,
 	mout_sclk_i2s = 3170,
 	mout_sclk_pcm = 3172,
-	mout_phyclk_rxbyteclkhs0_s4 = 4175,
+	mout_phyclk_rxbyteclkhs0_s4 = 3175,
 	mout_phyclk_rxbyteclkhs0_s2a,
 	mout_sclk_isp_spi0_user = 3180, mout_sclk_isp_spi1_user,
 	mout_sclk_isp_uart_user, mout_phyclk_rxbyteclkhs0_s2b,
