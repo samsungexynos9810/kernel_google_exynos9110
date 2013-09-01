@@ -1522,10 +1522,288 @@
 		pinctrl-3 = <&fimc_is_uart &fimc_is_vt_i2c>;
 		pinctrl-4 = <&fimc_is_uart &fimc_is_vt_i2c &fimc_is_vt_mclk>;
 		pinctrl-5 = <&fimc_is_spi0>;
-		clocks = <&clock 33>, <&clock 34>, <&clock 35>;
-		clock-names =	"sclk_isp_sensor0",
+		clocks =	<&clock 30>,
+				<&clock 31>,
+				<&clock 32>,
+				<&clock 33>,
+				<&clock 34>,
+				<&clock 35>,
+
+				<&clock 130>,
+				<&clock 131>,
+				<&clock 132>,
+
+				<&clock 335>,
+				<&clock 336>,
+				<&clock 337>,
+				<&clock 338>,
+				<&clock 339>,
+				<&clock 340>,
+				<&clock 341>,
+				<&clock 342>,
+
+				<&clock 3010>,
+
+				<&clock 3063>,
+				<&clock 3064>,
+				<&clock 3065>,
+				<&clock 3066>,
+				<&clock 3067>,
+				<&clock 3068>,
+
+				<&clock 3175>,
+				<&clock 3176>,
+
+				<&clock 3180>,
+				<&clock 3181>,
+				<&clock 3182>,
+				<&clock 3183>,
+				<&clock 3184>,
+				<&clock 3185>,
+				<&clock 3186>,
+
+				<&clock 3190>,
+				<&clock 3191>,
+				<&clock 3192>,
+				<&clock 3193>,
+				<&clock 3194>,
+				<&clock 3195>,
+				<&clock 3196>,
+				<&clock 3197>,
+				<&clock 3198>,
+				<&clock 3199>,
+
+				<&clock 3200>,
+				<&clock 3201>,
+				<&clock 3202>,
+				<&clock 3203>,
+				<&clock 3204>,
+				<&clock 3205>,
+				<&clock 3206>,
+				<&clock 3207>,
+
+				<&clock 3210>,
+
+				<&clock 3220>,
+				<&clock 3221>,
+				<&clock 3222>,
+				<&clock 3223>,
+				<&clock 3224>,
+				<&clock 3225>,
+				<&clock 3226>,
+				<&clock 3227>,
+
+				<&clock 3230>,
+				<&clock 3231>,
+				<&clock 3232>,
+				<&clock 3233>,
+				<&clock 3234>,
+				<&clock 3235>,
+
+				<&clock 4040>,
+				<&clock 4041>,
+				<&clock 4042>,
+				<&clock 4043>,
+				<&clock 4044>,
+				<&clock 4045>,
+				<&clock 4046>,
+				<&clock 4047>,
+
+				<&clock 4080>,
+				<&clock 4081>,
+				<&clock 4082>,
+				<&clock 4083>,
+				<&clock 4084>,
+
+				<&clock 4090>,
+				<&clock 4091>,
+				<&clock 4092>,
+				<&clock 4093>,
+				<&clock 4094>,
+				<&clock 4095>,
+
+				<&clock 4160>,
+				<&clock 4161>,
+				<&clock 4162>,
+				<&clock 4163>,
+				<&clock 4164>,
+				<&clock 4165>,
+				<&clock 4166>,
+				<&clock 4167>,
+				<&clock 4168>,
+
+				<&clock 4170>,
+				<&clock 4171>,
+				<&clock 4172>,
+				<&clock 4173>,
+				<&clock 4174>,
+				<&clock 4175>,
+				<&clock 4176>,
+				<&clock 4177>,
+
+				<&clock 4180>,
+				<&clock 4181>,
+				<&clock 4182>,
+				<&clock 4183>,
+				<&clock 4184>,
+				<&clock 4185>,
+				<&clock 4186>,
+				<&clock 4187>,
+
+				<&clock 4190>,
+				<&clock 4191>,
+				<&clock 4192>,
+				<&clock 4193>,
+				<&clock 4194>,
+				<&clock 4195>,
+				<&clock 4196>,
+
+				<&clock 5000>,
+
+				<&clock 5020>,
+				<&clock 5021>,
+				<&clock 5022>;
+		clock-names =	"sclk_isp_spi0_top", /* 30 */
+				"sclk_isp_spi1_top",
+				"sclk_isp_uart_top",
+				"sclk_isp_sensor0",
 				"sclk_isp_sensor1",
-				"sclk_isp_sensor2";
+				"sclk_isp_sensor2",
+
+				"sclk_isp_spi0", /* 130 */
+				"sclk_isp_spi1",
+				"sclk_isp_uart",
+
+				"aclk_isp_400", /* 335 */
+				"aclk_isp_dis_400",
+				"aclk_cam0_552",
+				"aclk_cam0_400",
+				"aclk_cam0_333",
+				"aclk_cam1_552",
+				"aclk_cam1_400",
+				"aclk_cam1_333",
+
+				"mout_bus_pll_user", /* 3010 */
+
+				"mout_sclk_isp_spi0", /* 3063 */
+				"mout_sclk_isp_spi1",
+				"mout_sclk_isp_uart",
+				"mout_sclk_isp_sensor0",
+				"mout_sclk_isp_sensor1",
+				"mout_sclk_isp_sensor2",
+
+				"mout_phyclk_rxbyteclkhs0_s4", /* 3175 */
+				"mout_phyclk_rxbyteclkhs0_s2a",
+
+				"mout_sclk_isp_spi0_user", /* 3180 */
+				"mout_sclk_isp_spi1_user",
+				"mout_sclk_isp_uart_user",
+				"mout_phyclk_rxbyteclkhs0_s2b",
+				"mout_aclk_cam0_552_user",
+				"mout_aclk_cam0_400_user",
+				"mout_aclk_cam0_333_user",
+
+				"mout_aclk_lite_a_a", /* 3190 */
+				"mout_aclk_lite_a_b",
+				"mout_aclk_lite_b_a",
+				"mout_aclk_lite_b_b",
+				"mout_aclk_lite_d_a",
+				"mout_aclk_lite_d_b",
+				"mout_sclk_pixelasync_lite_c_init_a",
+				"mout_sclk_pixelasync_lite_c_init_b",
+				"mout_sclk_pixelasync_lite_c_a",
+				"mout_sclk_pixelasync_lite_c_b",
+
+				"mout_aclk_3aa0_a", /* 3200 */
+				"mout_aclk_3aa0_b",
+				"mout_aclk_3aa1_a",
+				"mout_aclk_3aa1_b",
+				"mout_aclk_csis0_a",
+				"mout_aclk_csis0_b",
+				"mout_aclk_csis1_a",
+				"mout_aclk_csis1_b",
+
+				"mout_aclk_cam0_400", /* 3210 */
+
+				"mout_sclk_lite_freecnt_a", /* 3220 */
+				"mout_sclk_lite_freecnt_b",
+				"mout_sclk_lite_freecnt_c",
+				"mout_aclk_cam1_552_user",
+				"mout_aclk_cam1_400_user",
+				"mout_aclk_cam1_333_user",
+				"mout_aclk_lite_c_a",
+				"mout_aclk_lite_c_b",
+
+				"mout_aclk_fd_a", /* 3230 */
+				"mout_aclk_fd_b",
+				"mout_aclk_csis2_a",
+				"mout_aclk_csis2_b",
+				"mout_aclk_isp_400_user",
+				"mout_aclk_isp_dis_400_user",
+
+				"dout_aclk_isp_400", /* 4040 */
+				"dout_aclk_isp_dis_400",
+				"dout_aclk_cam0_552",
+				"dout_aclk_cam0_400_top",
+				"dout_aclk_cam0_333",
+				"dout_aclk_cam1_552",
+				"dout_aclk_cam1_400",
+				"dout_aclk_cam1_333",
+
+				"dout_sclk_isp_spi0_a", /* 4080 */
+				"dout_sclk_isp_spi0_b",
+				"dout_sclk_isp_spi1_a",
+				"dout_sclk_isp_spi1_b",
+				"dout_sclk_isp_uart",
+
+				"dout_sclk_isp_sensor0_a", /* 4090 */
+				"dout_sclk_isp_sensor0_b",
+				"dout_sclk_isp_sensor1_a",
+				"dout_sclk_isp_sensor1_b",
+				"dout_sclk_isp_sensor2_a",
+				"dout_sclk_isp_sensor2_b",
+
+				"dout_aclk_lite_a", /* 4160 */
+				"dout_aclk_lite_b",
+				"dout_aclk_lite_d",
+				"dout_sclk_pixelasync_lite_c_init",
+				"dout_sclk_pixelasync_lite_c",
+				"dout_aclk_3aa0",
+				"dout_aclk_3aa1",
+				"dout_aclk_csis0",
+				"dout_aclk_csis1",
+
+				"dout_aclk_cam0_400", /* 4170 */
+				"dout_aclk_cam0_200",
+				"dout_pclk_lite_a",
+				"dout_pclk_lite_b",
+				"dout_pclk_lite_d",
+				"dout_pclk_pixelasync_lite_c",
+				"dout_pclk_3aa0",
+				"dout_pclk_3aa1",
+
+				"dout_pclk_cam0_50", /* 4180 */
+				"dout_atclk_cam1",
+				"dout_pclk_dbg_cam1",
+				"dout_pclk_cam1_166",
+				"dout_pclk_cam1_83",
+				"dout_sclk_isp_mpwm",
+				"dout_aclk_lite_c",
+				"dout_aclk_fd",
+
+				"dout_aclk_csis2_a", /* 4190 */
+				"dout_pclk_lite_c",
+				"dout_pclk_fd",
+				"dout_aclk_isp_c_200",
+				"dout_aclk_isp_d_200",
+				"dout_pclk_isp",
+				"dout_pclk_isp_dis",
+
+				"oscclk", /* 5000 */
+
+				"phyclk_rxbyteclkhs0_s4", /* 5020 */
+				"phyclk_rxbyteclkhs0_s2a",
+				"phyclk_rxbyteclkhs0_s2b";
 		iommu = <&sysmmu_flite_a>,
 			<&sysmmu_flite_b>,
 			<&sysmmu_flite_c>,
