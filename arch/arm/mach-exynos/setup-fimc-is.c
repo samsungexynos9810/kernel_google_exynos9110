@@ -237,88 +237,192 @@ unsigned int  fimc_is_enable(const char *conid)
 	return clk_enable(target);
 }
 
+/* utility function to set parent with DT */
+int fimc_is_set_parent_dt(struct platform_device *pdev,
+		const char *child, const char *parent)
+{
+	struct clk *p;
+	struct clk *c;
+
+	p= clk_get(&pdev->dev, parent);
+	if (IS_ERR(p)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, parent);
+		return -EINVAL;
+	}
+
+	c= clk_get(&pdev->dev, child);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, child);
+		return -EINVAL;
+	}
+
+	return clk_set_parent(c, p);
+}
+
+/* utility function to get parent with DT */
+struct clk *fimc_is_get_parent_dt(struct platform_device *pdev,
+		const char *child)
+{
+	struct clk *c;
+
+	c = clk_get(&pdev->dev, child);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, child);
+		return NULL;
+	}
+
+	return clk_get_parent(c);
+}
+
+/* utility function to set rate with DT */
+int fimc_is_set_rate_dt(struct platform_device *pdev,
+		const char *conid, unsigned int rate)
+{
+	struct clk *target;
+
+	target = clk_get(&pdev->dev, conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	return clk_set_rate(target, rate);
+}
+
+/* utility function to get rate with DT */
+unsigned int  fimc_is_get_rate_dt(struct platform_device *pdev,
+		const char *conid)
+{
+	struct clk *target;
+	unsigned int rate_target;
+
+	target = clk_get(&pdev->dev, conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	rate_target = clk_get_rate(target);
+	pr_info("%s : %d\n", conid, rate_target);
+
+	return rate_target;
+}
+
+/* utility function to eable with DT */
+unsigned int  fimc_is_enable_dt(struct platform_device *pdev,
+		const char *conid)
+{
+	struct clk *target;
+
+	target = clk_get(&pdev->dev, conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	clk_prepare(target);
+
+	return clk_enable(target);
+}
+
+/* utility function to disable with DT */
+void  fimc_is_disable_dt(struct platform_device *pdev,
+		const char *conid)
+{
+	struct clk *target;
+
+	target = clk_get(&pdev->dev, conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+	}
+
+	clk_disable(target);
+	clk_unprepare(target);
+}
+
 int cfg_clk_div_max(struct platform_device *pdev)
 {
 	/* SCLK */
 	/* SCLK_SPI0 */
-	fimc_is_set_parent("mout_sclk_isp_spi0", "oscclk");
-	fimc_is_set_rate("dout_sclk_isp_spi0_a", 1);
-	fimc_is_set_rate("dout_sclk_isp_spi0_b", 1);
-	fimc_is_set_parent("mout_sclk_isp_spi0_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "oscclk");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 1);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_b", 1);
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0_user", "oscclk");
 
 	/* SCLK_SPI1 */
-	fimc_is_set_parent("mout_sclk_isp_spi1", "oscclk");
-	fimc_is_set_rate("dout_sclk_isp_spi1_a", 1);
-	fimc_is_set_rate("dout_sclk_isp_spi1_b", 1);
-	fimc_is_set_parent("mout_sclk_isp_spi1_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1", "oscclk");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 1);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 1);
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1_user", "oscclk");
 
 	/* SCLK_UART */
-	fimc_is_set_parent("mout_sclk_isp_uart", "oscclk");
-	fimc_is_set_rate("dout_sclk_isp_uart", 1);
-	fimc_is_set_parent("mout_sclk_isp_uart_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart", "oscclk");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_uart", 1);
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart_user", "oscclk");
 
 	/* CAM0 */
 	/* USER_MUX_SEL */
-	fimc_is_set_parent("mout_aclk_cam0_552_user", "oscclk");
-	fimc_is_set_parent("mout_aclk_cam0_400_user", "oscclk");
-	fimc_is_set_parent("mout_aclk_cam0_333_user", "oscclk");
-	fimc_is_set_parent("mout_phyclk_rxbyteclkhs0_s4", "oscclk");
-	fimc_is_set_parent("mout_phyclk_rxbyteclkhs0_s2a", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_552_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_400_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_333_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_phyclk_rxbyteclkhs0_s4", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_phyclk_rxbyteclkhs0_s2a", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_phyclk_rxbyteclkhs0_s2b", "oscclk");
 	/* LITE A */
-	fimc_is_set_rate("dout_aclk_lite_a", 1);
-	fimc_is_set_rate("dout_pclk_lite_a", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_a", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_a", 1);
 	/* LITE B */
-	fimc_is_set_rate("dout_aclk_lite_b", 1);
-	fimc_is_set_rate("dout_pclk_lite_b", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_b", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_b", 1);
 	/* LITE D */
-	fimc_is_set_rate("dout_aclk_lite_d", 1);
-	fimc_is_set_rate("dout_pclk_lite_d", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_d", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_d", 1);
 	/* LITE C PIXELASYNC */
-	fimc_is_set_rate("dout_sclk_pixelasync_lite_c_init", 1);
-	fimc_is_set_rate("dout_pclk_pixelasync_lite_c", 1);
-	fimc_is_set_rate("dout_sclk_pixelasync_lite_c", 1);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 1);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 1);
 	/* 3AA 0 */
-	fimc_is_set_rate("dout_aclk_3aa0", 1);
-	fimc_is_set_rate("dout_pclk_3aa0", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_3aa0", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_3aa0", 1);
 	/* 3AA 0 */
-	fimc_is_set_rate("dout_aclk_3aa1", 1);
-	fimc_is_set_rate("dout_pclk_3aa1", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_3aa1", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_3aa1", 1);
 	/* CSI 0 */
-	fimc_is_set_rate("dout_aclk_csis0", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_csis0", 1);
 	/* CSI 1 */
-	fimc_is_set_rate("dout_aclk_csis1", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_csis1", 1);
 	/* CAM0 400 */
-	fimc_is_set_rate("dout_aclk_cam0_400", 1);
-	fimc_is_set_rate("dout_aclk_cam0_200", 1);
-	fimc_is_set_rate("dout_pclk_cam0_50", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_400", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_200", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam0_50", 1);
 
 	/* CAM1 */
 	/* USER_MUX_SEL */
-	fimc_is_set_parent("mout_aclk_cam1_552_user", "oscclk");
-	fimc_is_set_parent("mout_aclk_cam1_400_user", "oscclk");
-	fimc_is_set_parent("mout_aclk_cam1_333_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_552_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_400_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_333_user", "oscclk");
 	/* C-A5 */
-	fimc_is_set_rate("dout_atclk_cam1", 1);
-	fimc_is_set_rate("dout_pclk_dbg_cam1", 1);
+	fimc_is_set_rate_dt(pdev, "dout_atclk_cam1", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_dbg_cam1", 1);
 	/* LITE A */
-	fimc_is_set_rate("dout_aclk_lite_c", 1);
-	fimc_is_set_rate("dout_pclk_lite_c", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_c", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_c", 1);
 	/* FD */
-	fimc_is_set_rate("dout_aclk_fd", 1);
-	fimc_is_set_rate("dout_pclk_fd", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_fd", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_fd", 1);
 	/* CSI 2 */
-	fimc_is_set_rate("dout_aclk_csis2_a", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_csis2_a", 1);
 
 	/* CMU_ISP */
 	/* USER_MUX_SEL */
-	fimc_is_set_parent("mout_aclk_isp_400_user", "oscclk");
-	fimc_is_set_parent("mout_aclk_isp_dis_400_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_400_user", "oscclk");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_dis_400_user", "oscclk");
 	/* ISP */
-	fimc_is_set_rate("dout_aclk_isp_c_200", 1);
-	fimc_is_set_rate("dout_aclk_isp_d_200", 1);
-	fimc_is_set_rate("dout_pclk_isp", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_c_200", 1);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_d_200", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_isp", 1);
 	/* DIS */
-	fimc_is_set_rate("dout_pclk_isp_dis", 1);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 1);
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_TOP_DUMP */
@@ -404,27 +508,27 @@ int cfg_clk_div_max(struct platform_device *pdev)
 int cfg_clk_sclk(struct platform_device *pdev)
 {
 	/* SCLK_SPI0 */
-	fimc_is_set_parent("mout_sclk_isp_spi0", "mout_bus_pll_user");
-	fimc_is_set_rate("dout_sclk_isp_spi0_a", 100 * 1000000);
-	fimc_is_set_rate("dout_sclk_isp_spi0_b", 100 * 1000000);
-	fimc_is_get_rate("sclk_isp_spi0_top");
-	fimc_is_set_parent("mout_sclk_isp_spi0_user", "sclk_isp_spi0_top");
-	fimc_is_get_rate("sclk_isp_spi0");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "mout_bus_pll_user");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 100 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_b", 100 * 1000000);
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi0_top");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0_user", "sclk_isp_spi0_top");
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi0");
 
 	/* SCLK_SPI1 */
-	fimc_is_set_parent("mout_sclk_isp_spi1", "mout_bus_pll_user");
-	fimc_is_set_rate("dout_sclk_isp_spi1_a", 100 * 1000000);
-	fimc_is_set_rate("dout_sclk_isp_spi1_b", 100 * 1000000);
-	fimc_is_get_rate("sclk_isp_spi1_top");
-	fimc_is_set_parent("mout_sclk_isp_spi1_user", "sclk_isp_spi1_top");
-	fimc_is_get_rate("sclk_isp_spi1");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1", "mout_bus_pll_user");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 100 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 100 * 1000000);
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi1_top");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1_user", "sclk_isp_spi1_top");
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi1");
 
 	/* SCLK_UART */
-	fimc_is_set_parent("mout_sclk_isp_uart", "mout_bus_pll_user");
-	fimc_is_set_rate("dout_sclk_isp_uart", 200 * 1000000);
-	fimc_is_get_rate("sclk_isp_uart_top");
-	fimc_is_set_parent("mout_sclk_isp_uart_user", "sclk_isp_uart_top");
-	fimc_is_get_rate("sclk_isp_uart");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart", "mout_bus_pll_user");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_uart", 200 * 1000000);
+	fimc_is_get_rate_dt(pdev, "sclk_isp_uart_top");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart_user", "sclk_isp_uart_top");
+	fimc_is_get_rate_dt(pdev, "sclk_isp_uart");
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
@@ -448,90 +552,91 @@ int cfg_clk_sclk(struct platform_device *pdev)
 int cfg_clk_cam0(struct platform_device *pdev)
 {
 	/* CMU_TOP */
-	fimc_is_get_rate("aclk_cam0_552");
-	fimc_is_get_rate("aclk_cam0_400");
-	fimc_is_get_rate("aclk_cam0_333");
+	fimc_is_get_rate_dt(pdev, "aclk_cam0_552");
+	fimc_is_get_rate_dt(pdev, "aclk_cam0_400");
+	fimc_is_get_rate_dt(pdev, "aclk_cam0_333");
 
 	/* USER_MUX_SEL */
-	fimc_is_set_parent("mout_aclk_cam0_552_user", "aclk_cam0_552");
-	fimc_is_set_parent("mout_aclk_cam0_400_user", "aclk_cam0_400");
-	fimc_is_set_parent("mout_aclk_cam0_333_user", "aclk_cam0_333");
-	fimc_is_set_parent("mout_phyclk_rxbyteclkhs0_s4", "phyclk_rxbyteclkhs0_s4");
-	fimc_is_set_parent("mout_phyclk_rxbyteclkhs0_s2a", "phyclk_rxbyteclkhs0_s2a");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_552_user", "aclk_cam0_552");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_400_user", "aclk_cam0_400");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_333_user", "aclk_cam0_333");
+	fimc_is_set_parent_dt(pdev, "mout_phyclk_rxbyteclkhs0_s4", "phyclk_rxbyteclkhs0_s4");
+	fimc_is_set_parent_dt(pdev, "mout_phyclk_rxbyteclkhs0_s2a", "phyclk_rxbyteclkhs0_s2a");
+	fimc_is_set_parent_dt(pdev, "mout_phyclk_rxbyteclkhs0_s2b", "phyclk_rxbyteclkhs0_s2b");
 
 	/* LITE A */
-	fimc_is_set_parent("mout_aclk_lite_a_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_lite_a_b", "mout_aclk_lite_a_a");
-	fimc_is_set_rate("dout_aclk_lite_a", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_lite_a");
-	fimc_is_set_rate("dout_pclk_lite_a", 276 * 1000000);
-	fimc_is_get_rate("dout_pclk_lite_a");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_a_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_a_b", "mout_aclk_lite_a_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_a", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_a");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_a", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_a");
 
 	/* LITE B */
-	fimc_is_set_parent("mout_aclk_lite_b_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_lite_b_b", "mout_aclk_lite_b_a");
-	fimc_is_set_rate("dout_aclk_lite_b", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_lite_b");
-	fimc_is_set_rate("dout_pclk_lite_b", 276 * 1000000);
-	fimc_is_get_rate("dout_pclk_lite_b");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_b_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_b_b", "mout_aclk_lite_b_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_b", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_b");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_b", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_b");
 
 	/* LITE D */
-	fimc_is_set_parent("mout_aclk_lite_d_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_lite_d_b", "mout_aclk_lite_d_a");
-	fimc_is_set_rate("dout_aclk_lite_d", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_lite_d");
-	fimc_is_set_rate("dout_pclk_lite_d", 276 * 1000000);
-	fimc_is_get_rate("dout_pclk_lite_d");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_d_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_d_b", "mout_aclk_lite_d_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_d", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_d");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_d", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_d");
 
 	/* LITE C PIXELASYNC */
-	fimc_is_set_parent("mout_sclk_pixelasync_lite_c_init_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_sclk_pixelasync_lite_c_init_b", "mout_sclk_pixelasync_lite_c_init_a");
-	fimc_is_set_rate("dout_sclk_pixelasync_lite_c_init", 552 * 1000000);
-	fimc_is_get_rate("dout_sclk_pixelasync_lite_c_init");
-	fimc_is_set_rate("dout_pclk_pixelasync_lite_c", 276 * 1000000);
-	fimc_is_get_rate("dout_pclk_pixelasync_lite_c");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_b", "mout_sclk_pixelasync_lite_c_init_a");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_pixelasync_lite_c");
 
-	fimc_is_set_parent("mout_sclk_pixelasync_lite_c_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_sclk_pixelasync_lite_c_b", "mout_aclk_cam0_333_user");
-	fimc_is_set_rate("dout_sclk_pixelasync_lite_c", 333 * 1000000);
-	fimc_is_get_rate("dout_sclk_pixelasync_lite_c");
-
-	/* 3AA 0 */
-	fimc_is_set_parent("mout_aclk_3aa0_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_3aa0_b", "mout_aclk_3aa0_a");
-	fimc_is_set_rate("dout_aclk_3aa0", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_3aa0");
-	fimc_is_set_rate("dout_pclk_3aa0", 276 * 1000000);
-	fimc_is_get_rate("dout_pclk_3aa0");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_b", "mout_aclk_cam0_333_user");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 333 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_sclk_pixelasync_lite_c");
 
 	/* 3AA 0 */
-	fimc_is_set_parent("mout_aclk_3aa1_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_3aa1_b", "mout_aclk_3aa1_a");
-	fimc_is_set_rate("dout_aclk_3aa1", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_3aa1");
-	fimc_is_set_rate("dout_pclk_3aa1", 276 * 1000000);
-	fimc_is_get_rate("dout_pclk_3aa1");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa0_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa0_b", "mout_aclk_3aa0_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_3aa0", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_3aa0");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_3aa0", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_3aa0");
+
+	/* 3AA 0 */
+	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa1_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa1_b", "mout_aclk_3aa1_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_3aa1", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_3aa1");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_3aa1", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_3aa1");
 
 	/* CSI 0 */
-	fimc_is_set_parent("mout_aclk_csis0_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_csis0_b", "mout_aclk_csis0_a");
-	fimc_is_set_rate("dout_aclk_csis0", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_csis0");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_csis0_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_csis0_b", "mout_aclk_csis0_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_csis0", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_csis0");
 
 	/* CSI 1 */
-	fimc_is_set_parent("mout_aclk_csis1_a", "mout_aclk_cam0_552_user");
-	fimc_is_set_parent("mout_aclk_csis1_b", "mout_aclk_csis1_a");
-	fimc_is_set_rate("dout_aclk_csis1", 552 * 1000000);
-	fimc_is_get_rate("dout_aclk_csis1");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_csis1_a", "mout_aclk_cam0_552_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_csis1_b", "mout_aclk_csis1_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_csis1", 552 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_csis1");
 
 	/* CAM0 400 */
-	fimc_is_set_parent("mout_aclk_cam0_400", "mout_aclk_cam0_400_user");
-	fimc_is_set_rate("dout_aclk_cam0_400", 400 * 1000000);
-	fimc_is_get_rate("dout_aclk_cam0_400");
-	fimc_is_set_rate("dout_aclk_cam0_200", 200 * 1000000);
-	fimc_is_get_rate("dout_aclk_cam0_200");
-	fimc_is_set_rate("dout_pclk_cam0_50", 50 * 1000000);
-	fimc_is_get_rate("dout_pclk_cam0_50");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_400", "mout_aclk_cam0_400_user");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_400", 400 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_400");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_200", 200 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_200");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam0_50", 50 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_cam0_50");
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
@@ -571,42 +676,42 @@ int cfg_clk_cam0(struct platform_device *pdev)
 int cfg_clk_cam1(struct platform_device *pdev)
 {
 	/* CMU_TOP */
-	fimc_is_get_rate("aclk_cam1_552");
-	fimc_is_get_rate("aclk_cam1_400");
-	fimc_is_get_rate("aclk_cam1_333");
+	fimc_is_get_rate_dt(pdev, "aclk_cam1_552");
+	fimc_is_get_rate_dt(pdev, "aclk_cam1_400");
+	fimc_is_get_rate_dt(pdev, "aclk_cam1_333");
 
 	/* USER_MUX_SEL */
-	fimc_is_set_parent("mout_aclk_cam1_552_user", "aclk_cam1_552");
-	fimc_is_set_parent("mout_aclk_cam1_400_user", "aclk_cam1_400");
-	fimc_is_set_parent("mout_aclk_cam1_333_user", "aclk_cam1_333");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_552_user", "aclk_cam1_552");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_400_user", "aclk_cam1_400");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_333_user", "aclk_cam1_333");
 
 	/* C-A5 */
-	fimc_is_set_rate("dout_atclk_cam1", 276 * 1000000);
-	fimc_is_get_rate("dout_atclk_cam1");
-	fimc_is_set_rate("dout_pclk_dbg_cam1", 138 * 1000000);
-	fimc_is_get_rate("dout_pclk_dbg_cam1");
+	fimc_is_set_rate_dt(pdev, "dout_atclk_cam1", 276 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_atclk_cam1");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_dbg_cam1", 138 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_dbg_cam1");
 
 	/* LITE A */
-	fimc_is_set_parent("mout_aclk_lite_c_a", "mout_aclk_cam1_400_user");
-	fimc_is_set_parent("mout_aclk_lite_c_b", "mout_aclk_cam1_333_user");
-	fimc_is_set_rate("dout_aclk_lite_c", 333 * 1000000);
-	fimc_is_get_rate("dout_aclk_lite_c");
-	fimc_is_set_rate("dout_pclk_lite_c", 166 * 1000000);
-	fimc_is_get_rate("dout_pclk_lite_c");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_c_a", "mout_aclk_cam1_400_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_c_b", "mout_aclk_cam1_333_user");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_c", 333 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_c");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_c", 166 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_c");
 
 	/* FD */
-	fimc_is_set_parent("mout_aclk_fd_a", "mout_aclk_cam1_400_user");
-	fimc_is_set_parent("mout_aclk_fd_b", "mout_aclk_fd_a");
-	fimc_is_set_rate("dout_aclk_fd", 400 * 1000000);
-	fimc_is_get_rate("dout_aclk_fd");
-	fimc_is_set_rate("dout_pclk_fd", 200 * 1000000);
-	fimc_is_get_rate("dout_pclk_fd");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_fd_a", "mout_aclk_cam1_400_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_fd_b", "mout_aclk_fd_a");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_fd", 400 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_fd");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_fd", 200 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_fd");
 
 	/* CSI 2 */
-	fimc_is_set_parent("mout_aclk_csis2_a", "mout_aclk_cam1_400_user");
-	fimc_is_set_parent("mout_aclk_csis2_b", "mout_aclk_cam1_333_user");
-	fimc_is_set_rate("dout_aclk_csis2_a", 333 * 1000000);
-	fimc_is_get_rate("dout_aclk_csis2_a");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_a", "mout_aclk_cam1_400_user");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_b", "mout_aclk_cam1_333_user");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_csis2_a", 333 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_csis2_a");
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
@@ -635,23 +740,23 @@ int cfg_clk_cam1(struct platform_device *pdev)
 int cfg_clk_isp(struct platform_device *pdev)
 {
 	/* CMU_TOP */
-	fimc_is_get_rate("aclk_isp_400");
-	fimc_is_get_rate("aclk_isp_dis_400");
+	fimc_is_get_rate_dt(pdev, "aclk_isp_400");
+	fimc_is_get_rate_dt(pdev, "aclk_isp_dis_400");
 
 	/* CMU_ISP */
 	/* USER_MUX_SEL */
-	fimc_is_set_parent("mout_aclk_isp_400_user", "aclk_isp_400");
-	fimc_is_set_parent("mout_aclk_isp_dis_400_user", "aclk_isp_dis_400");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_400_user", "aclk_isp_400");
+	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_dis_400_user", "aclk_isp_dis_400");
 	/* ISP */
-	fimc_is_set_rate("dout_aclk_isp_c_200", 200 * 1000000);
-	fimc_is_get_rate("dout_aclk_isp_c_200");
-	fimc_is_set_rate("dout_aclk_isp_d_200", 200 * 1000000);
-	fimc_is_get_rate("dout_aclk_isp_d_200");
-	fimc_is_set_rate("dout_pclk_isp", 80 * 1000000);
-	fimc_is_get_rate("dout_pclk_isp");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_c_200", 200 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_c_200");
+	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_d_200", 200 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_d_200");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_isp", 80 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_isp");
 	/* DIS */
-	fimc_is_set_rate("dout_pclk_isp_dis", 200 * 1000000);
-	fimc_is_get_rate("dout_pclk_isp_dis");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 200 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_isp_dis");
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
@@ -695,6 +800,7 @@ int exynos5430_fimc_is_clk_on(struct platform_device *pdev)
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
+	pr_info("EXYNOS5430_ENABLE_SCLK_TOP_CAM1(0x%x)\n", readl(EXYNOS5430_ENABLE_SCLK_TOP_CAM1));
 	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
 	pr_info("EXYNOS5430_ENABLE_IP_CAM00(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM00));
 	pr_info("EXYNOS5430_ENABLE_IP_CAM01(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM01));
@@ -734,10 +840,10 @@ int exynos5430_fimc_is_sensor_clk_on(struct platform_device *pdev, u32 source)
 	snprintf(div_b_name, sizeof(div_b_name), "dout_sclk_isp_sensor%d_b", source);
 	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", source);
 
-	fimc_is_set_parent(mux_name, "oscclk");
-	fimc_is_set_rate(div_a_name, 24 * 1000000);
-	fimc_is_set_rate(div_b_name, 24 * 1000000);
-	fimc_is_get_rate(sclk_name);
+	fimc_is_set_parent_dt(pdev, mux_name, "oscclk");
+	fimc_is_set_rate_dt(pdev, div_a_name, 24 * 1000000);
+	fimc_is_set_rate_dt(pdev, div_b_name, 24 * 1000000);
+	fimc_is_get_rate_dt(pdev, sclk_name);
 
 	return 0;
 }
@@ -756,10 +862,10 @@ int exynos5430_fimc_is_sensor_clk_off(struct platform_device *pdev, u32 source)
 	snprintf(div_b_name, sizeof(div_b_name), "dout_sclk_isp_sensor%d_b", source);
 	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", source);
 
-	fimc_is_set_parent(mux_name, "oscclk");
-	fimc_is_set_rate(div_a_name, 1);
-	fimc_is_set_rate(div_b_name, 1);
-	fimc_is_get_rate(sclk_name);
+	fimc_is_set_parent_dt(pdev, mux_name, "oscclk");
+	fimc_is_set_rate_dt(pdev, div_a_name, 1);
+	fimc_is_set_rate_dt(pdev, div_b_name, 1);
+	fimc_is_get_rate_dt(pdev, sclk_name);
 
 	return 0;
 }
