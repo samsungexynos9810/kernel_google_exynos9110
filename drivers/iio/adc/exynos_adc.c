@@ -313,7 +313,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
 	if (info->phy_ctrl)
 		writel(1, info->enable_reg);
 
-	info->clk = devm_clk_get(&pdev->dev, "adc");
+	info->clk = devm_clk_get(&pdev->dev, "gate_adcif");
 	if (IS_ERR(info->clk)) {
 		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
 							PTR_ERR(info->clk));
