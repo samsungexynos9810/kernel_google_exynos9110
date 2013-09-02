@@ -660,10 +660,10 @@
 		samsung,default_win = <0>;
 
 		/* interrupt numbers:
-		   - 1'st : i80 irq no
+		   - 1'st : fifo irq no
 		   - 2'nd : video mode irq no
-		   - 3'rd : fifo irq no */
-		interrupts = <0 203 0>, <0 202 0>, <0 201 0>;
+		   - 3'rd : i80 irq no */
+		interrupts = <0 201 0>, <0 202 0>, <0 203 0>;
 
 		gpios = <&gpf1 3 0xf>;
 		clock-names = "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll",
