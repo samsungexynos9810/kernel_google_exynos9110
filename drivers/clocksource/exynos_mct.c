@@ -509,20 +509,6 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem 
 #endif /* CONFIG_LOCAL_TIMERS */
 }
 
-static struct delay_timer mct_delay_timer;
-
-static unsigned long exynos_mct_read_current_timer(void)
-{
-	return (unsigned long)exynos4_read_sched_clock();
-}
-
-static void __init exynos4_timer_delay_init(void)
-{
-	mct_delay_timer.read_current_timer = &exynos_mct_read_current_timer;
-	mct_delay_timer.freq = clk_rate;
-	register_current_timer_delay(&mct_delay_timer);
-}
-
 void __init mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1)
 {
 	mct_irqs[MCT_G0_IRQ] = irq_g0;
@@ -533,7 +519,6 @@ void __init mct_init(void __iomem *base, int irq_g0, int irq_l0, int irq_l1)
 	exynos4_timer_resources(NULL, base);
 	exynos4_clocksource_init();
 	exynos4_clockevent_init();
-	exynos4_timer_delay_init();
 }
 
 static void __init mct_init_dt(struct device_node *np, unsigned int int_type)
@@ -561,7 +546,6 @@ static void __init mct_init_dt(struct device_node *np, unsigned int int_type)
 	exynos4_timer_resources(np, of_iomap(np, 0));
 	exynos4_clocksource_init();
 	exynos4_clockevent_init();
-	exynos4_timer_delay_init();
 }
 
 
