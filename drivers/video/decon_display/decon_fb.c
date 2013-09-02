@@ -3496,10 +3496,6 @@ static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 #endif
 #endif
 
-#define DT_READ_U32(node, key, value) do {\
-		of_property_read_u32((node), key, value); \
-	} while (0)
-
 static int s3c_fb_probe(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
@@ -3578,7 +3574,13 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		goto resource_exception;
 	}
 #ifndef CONFIG_FB_I80_COMMAND_MODE
-	DT_READ_U32(dev->of_node, "samsung,irq_no", &sfb->irq_no);
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+	if (res == NULL) {
+		dev_err(dev, "getting video irq resource failed\n");
+		ret = -ENOENT;
+		goto resource_exception;
+	}
+	sfb->irq_no = res->start;
 	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
 			  0, "s3c_fb", sfb);
 	if (ret) {
@@ -3586,8 +3588,14 @@ static int s3c_fb_probe(struct platform_device *pdev)
 		goto resource_exception;
 	}
 #endif
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (res == NULL) {
+		dev_err(dev, "getting fifo irq resource failed\n");
+		ret = -ENOENT;
+		goto resource_exception;
+	}
+	sfb->irq_no = res->start;
 
-	DT_READ_U32(dev->of_node, "samsung,fifo_irq_no", &sfb->irq_no);
 	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
 				0, "s3c_fb", sfb);
 	if (ret) {

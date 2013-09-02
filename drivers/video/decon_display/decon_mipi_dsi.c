@@ -1009,7 +1009,13 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	 * it uses frame done interrupt handler
 	 * only in case of MIPI Video mode.
 	 */
-	DT_READ_U32(pdev->dev.of_node, "irq_no", dsim->irq);
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (res == NULL) {
+		dev_err(&pdev->dev, "getting dsi irq resource failed\n");
+		ret = -ENOENT;
+		goto err_irq;
+	}
+	dsim->irq = res->start;
 	if (request_irq(dsim->irq, s5p_mipi_dsi_interrupt_handler,
 			IRQF_DISABLED, "mipi-dsi", dsim)) {
 		dev_err(&pdev->dev, "request_irq failed.\n");
