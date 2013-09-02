@@ -120,10 +120,6 @@ static void esa_fw_download(void)
 	for (n = 0; n < 64; n += 4)
 		esa_info("%s: FW code 0x%08X = %08x\n",
 			__func__, n, readl(si.mem + n));
-
-	for (n = 0; n <= 0x80; n += 4)
-		esa_info("%s: FW stat 0x%08X = %08x\n",
-			__func__, 0x47000 + n, readl(si.mem + 0x47000 + n));
 #endif
 }
 
