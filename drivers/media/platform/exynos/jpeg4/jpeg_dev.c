@@ -269,6 +269,7 @@ static int queue_init_dec(void *priv, struct vb2_queue *src_vq,
 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 	src_vq->ops = &jpeg_dec_vb2_qops;
 	src_vq->mem_ops = ctx->dev->vb2->ops;
+	src_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 
 	ret = vb2_queue_init(src_vq);
 	if (ret)
@@ -281,6 +282,7 @@ static int queue_init_dec(void *priv, struct vb2_queue *src_vq,
 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 	dst_vq->ops = &jpeg_dec_vb2_qops;
 	dst_vq->mem_ops = ctx->dev->vb2->ops;
+	dst_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 
 	return vb2_queue_init(dst_vq);
 }
@@ -298,6 +300,7 @@ static int queue_init_enc(void *priv, struct vb2_queue *src_vq,
 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 	src_vq->ops = &jpeg_enc_vb2_qops;
 	src_vq->mem_ops = ctx->dev->vb2->ops;
+	src_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 
 	ret = vb2_queue_init(src_vq);
 	if (ret)
@@ -310,6 +313,7 @@ static int queue_init_enc(void *priv, struct vb2_queue *src_vq,
 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
 	dst_vq->ops = &jpeg_enc_vb2_qops;
 	dst_vq->mem_ops = ctx->dev->vb2->ops;
+	dst_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 
 	return vb2_queue_init(dst_vq);
 }
@@ -1033,5 +1037,5 @@ module_init(jpeg_init);
 module_exit(jpeg_exit);
 
 MODULE_AUTHOR("taeho07.lee@samsung.com>");
-MODULE_DESCRIPTION("JPEG v2.x H/W Device Driver");
+MODULE_DESCRIPTION("JPEG v4.x H/W Device Driver");
 MODULE_LICENSE("GPL");
