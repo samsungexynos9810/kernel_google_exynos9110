@@ -479,6 +479,14 @@ config EXYNOS4_SDHCI_CH2_8BIT
 	  If selected, Channel 3 is disabled.
 endif
 
+comment "Configuration for additional options"
+
+config EXYNOS_STRICT_IOREMAP
+	bool "Strict ioremap"
+	help
+	  This option limits to ioremap once. It prevents from
+	  accessing the the extraordinary range.
+
 endmenu
 
 endif

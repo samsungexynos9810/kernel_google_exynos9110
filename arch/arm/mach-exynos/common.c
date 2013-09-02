@@ -570,6 +570,97 @@ int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
 	iotable_init(&iodesc, 1);
 	return 1;
 }
+
+#ifdef CONFIG_EXYNOS_STRICT_IOREMAP
+#define STRICT_IOREMAP_MAX	10
+#define STRICT_IOREMAP_OK	(STRICT_IOREMAP_MAX)
+#define STRICT_IOREMAP_OCCUPIED	(STRICT_IOREMAP_MAX + 1)
+#define STRICT_IOREMAP_ACROSS	(STRICT_IOREMAP_MAX + 2)
+
+static int strict_ioremap_nr;
+static struct range strict_ioremap[STRICT_IOREMAP_MAX];
+static int strict_ioremap_once[STRICT_IOREMAP_MAX];
+
+static int exynos_check_strict_ioremap(unsigned long start, size_t size)
+{
+	int i;
+	s64 start1 = (s64)start;
+	s64 end1 = (s64)start + size - 1;
+
+	if (start1 > end1)
+		return -ERANGE;
+
+	for (i = 0; i < strict_ioremap_nr; i++) {
+		if (strict_ioremap[i].start > end1 ||
+			strict_ioremap[i].end < start) {
+			/* out of strict ioremap range */
+			;
+		} else if (strict_ioremap[i].start == start1 &&
+			strict_ioremap[i].end == end1) {
+			/* fit to strict ioremap range */
+			if (strict_ioremap_once[i] == STRICT_IOREMAP_OCCUPIED)
+				return STRICT_IOREMAP_OCCUPIED;
+			return i;
+		} else {
+			return STRICT_IOREMAP_ACROSS;
+		}
+	}
+	return STRICT_IOREMAP_OK;
+}
+
+static int exynos_declair_strict_ioremap_range(unsigned long start, size_t size)
+{
+	int ret = exynos_check_strict_ioremap(start, size);
+	s64 start1 = (s64)start;
+	s64 end1 = (s64)start + size - 1;
+
+	if (ret == STRICT_IOREMAP_OK) {
+		pr_info("Declair strict ioremap: 0x%08x - 0x%08x\n",
+			(unsigned int)start1, (unsigned int) end1);
+		strict_ioremap_nr = add_range(strict_ioremap,
+			STRICT_IOREMAP_MAX,
+			strict_ioremap_nr, start1, end1);
+	} else {
+		pr_debug("Unvalid strict ioremap range: 0x%08x, 0x%08x\n",
+			(unsigned int)start1, (unsigned int) end1);
+		return -1;
+	}
+	return 0;
+}
+
+static void __iomem *exynos_ioremap_caller(unsigned long addr, size_t size,
+					   unsigned int mtype, void *caller)
+{
+	int val = exynos_check_strict_ioremap(addr, size);
+
+	if (val >= 0 && val < strict_ioremap_nr)
+		strict_ioremap_once[val] = STRICT_IOREMAP_OCCUPIED;
+	else if (val == STRICT_IOREMAP_OCCUPIED || val == STRICT_IOREMAP_ACROSS)
+		BUG();
+
+	return __arm_ioremap_caller(addr, size, mtype, caller);
+}
+
+int __init exynos_declair_strict_ioremap(unsigned long node, const char *uname,
+					int depth, void *data)
+{
+	u32 start, size;
+	__be32 *reg;
+	unsigned long len;
+
+	if (!of_flat_dt_is_compatible(node, (char *)data))
+		return 0;
+
+	reg = of_get_flat_dt_prop(node, "reg", &len);
+	if (reg == NULL || len != (sizeof(unsigned long) * 2))
+		return 0;
+
+	start = be32_to_cpu(reg[0]);
+	size = be32_to_cpu(reg[1]);
+	exynos_declair_strict_ioremap_range(start, size);
+	return 0;
+}
+#endif
 #endif
 
 /*
@@ -651,6 +742,11 @@ static void __init exynos5_map_io(void)
 
 static void __init exynos5430_map_io(void)
 {
+#ifdef CONFIG_EXYNOS_STRICT_IOREMAP
+	arch_ioremap_caller = exynos_ioremap_caller;
+	of_scan_flat_dt(exynos_declair_strict_ioremap,
+			"samsung,exynos5430-pinctrl");
+#endif
 	iotable_init(exynos5430_iodesc0, ARRAY_SIZE(exynos5430_iodesc0));
 }
 
