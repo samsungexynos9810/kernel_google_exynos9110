@@ -17,6 +17,7 @@
 #include <linux/slab.h>
 #include <linux/dma-mapping.h>
 #include <linux/module.h>
+#include <linux/of.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
 
@@ -32,6 +33,8 @@
 
 #define ST_RUNNING		(1<<0)
 #define ST_OPENED		(1<<1)
+
+#define SRAM_END		(0x04000000)
 
 static atomic_t dram_usage_cnt;
 
@@ -210,11 +213,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 	prtd->dma_start = runtime->dma_addr;
 	prtd->dma_pos = prtd->dma_start;
 	prtd->dma_end = prtd->dma_start + totbytes;
-
-	if (runtime->dma_addr >= S5P_PA_SDRAM)
-		prtd->dram_used = true;
-	else
-		prtd->dram_used = false;
+	prtd->dram_used = runtime->dma_addr < SRAM_END ? false : true;
 	spin_unlock_irq(&prtd->lock);
 
 	pr_info("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d #Prds=%d dma_area=0x%x\n",
@@ -411,10 +410,47 @@ static int preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
 	return 0;
 }
 
+static const char *dma_prop_addr[2] = {
+	[SNDRV_PCM_STREAM_PLAYBACK] = "samsung,tx-buf",
+	[SNDRV_PCM_STREAM_CAPTURE]  = "samsung,rx-buf"
+};
+static const char *dma_prop_size[2] = {
+	[SNDRV_PCM_STREAM_PLAYBACK] = "samsung,tx-size",
+	[SNDRV_PCM_STREAM_CAPTURE]  = "samsung,rx-size"
+};
+static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
+					struct device_node *np)
+{
+	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
+	struct snd_dma_buffer *buf = &substream->dma_buffer;
+	dma_addr_t dma_addr;
+	size_t size;
+
+	pr_debug("Entered %s\n", __func__);
+
+	if (of_property_read_u32(np, dma_prop_addr[stream], &dma_addr))
+		return -ENOMEM;
+
+	if (of_property_read_u32(np, dma_prop_size[stream], &size))
+		return -ENOMEM;
+
+	buf->dev.type = SNDRV_DMA_TYPE_DEV;
+	buf->dev.dev = pcm->card->dev;
+	buf->private_data = NULL;
+	buf->addr = dma_addr;
+	buf->area = ioremap(buf->addr, size);
+
+	if (!buf->area)
+		return -ENOMEM;
+	buf->bytes = size;
+	return 0;
+}
+
 static void dma_free_dma_buffers(struct snd_pcm *pcm)
 {
 	struct snd_pcm_substream *substream;
 	struct snd_dma_buffer *buf;
+	struct runtime_data *prtd;
 	int stream;
 
 	pr_debug("Entered %s\n", __func__);
@@ -428,8 +464,13 @@ static void dma_free_dma_buffers(struct snd_pcm *pcm)
 		if (!buf->area)
 			continue;
 
-		dma_free_writecombine(pcm->card->dev, buf->bytes,
-				      buf->area, buf->addr);
+		prtd = substream->runtime->private_data;
+		if (prtd->dram_used)
+			dma_free_writecombine(pcm->card->dev, buf->bytes,
+						buf->area, buf->addr);
+		else
+			iounmap(buf->area);
+
 		buf->area = NULL;
 	}
 }
@@ -440,6 +481,7 @@ static int dma_new(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_card *card = rtd->card->snd_card;
 	struct snd_pcm *pcm = rtd->pcm;
+	struct device_node *np = rtd->cpu_dai->dev->of_node;
 	int ret = 0;
 
 	pr_debug("Entered %s\n", __func__);
@@ -450,15 +492,25 @@ static int dma_new(struct snd_soc_pcm_runtime *rtd)
 		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
 
 	if (pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
-		ret = preallocate_dma_buffer(pcm,
-			SNDRV_PCM_STREAM_PLAYBACK);
+		ret = 0;
+		if (np)
+			ret = preallocate_dma_buffer_of(pcm,
+				SNDRV_PCM_STREAM_PLAYBACK, np);
+		if (ret)
+			ret = preallocate_dma_buffer(pcm,
+				SNDRV_PCM_STREAM_PLAYBACK);
 		if (ret)
 			goto out;
 	}
 
 	if (pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream) {
-		ret = preallocate_dma_buffer(pcm,
-			SNDRV_PCM_STREAM_CAPTURE);
+		ret = 0;
+		if (np)
+			ret = preallocate_dma_buffer_of(pcm,
+				SNDRV_PCM_STREAM_CAPTURE, np);
+		if (ret)
+			ret = preallocate_dma_buffer(pcm,
+				SNDRV_PCM_STREAM_CAPTURE);
 		if (ret)
 			goto out;
 	}
