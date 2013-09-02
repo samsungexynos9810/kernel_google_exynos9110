@@ -22,10 +22,12 @@
 #define V4L2_PIX_FMT_ARGB32    v4l2_fourcc('A', 'R', 'G', 'B') /* 32  ARGB-8-8-8-8   */
 
 /* two planes -- one Y, one Cr + Cb interleaved  */
+#define V4L2_PIX_FMT_YUV422V_2P v4l2_fourcc('Y', 'U', 'V', '2') /* 16  Y/Cb/Cr */
 #define V4L2_PIX_FMT_YUV444_2P v4l2_fourcc('Y', 'U', '2', 'P') /* 24  Y/CbCr */
 #define V4L2_PIX_FMT_YVU444_2P v4l2_fourcc('Y', 'V', '2', 'P') /* 24  Y/CrCb */
 
 /* three planes -- one Y, one Cr, one Cb */
+#define V4L2_PIX_FMT_YUV422V_3P v4l2_fourcc('Y', 'U', 'V', '3') /* 16  Y/Cb/Cr */
 #define V4L2_PIX_FMT_YUV444_3P v4l2_fourcc('Y', 'U', '3', 'P') /* 24  Y/Cb/Cr */
 
 /* two non contiguous planes - one Y, one Cr + Cb interleaved  */
@@ -56,8 +58,10 @@
 #define V4L2_PIX_FMT_JPEG_420 v4l2_fourcc('J', 'P', 'G', '0')
 /* grey of JFIF JPEG */
 #define V4L2_PIX_FMT_JPEG_GRAY v4l2_fourcc('J', 'P', 'G', 'G')
+/* yuv422v of JFIF JPEG */
+#define V4L2_PIX_FMT_JPEG_422V v4l2_fourcc('J', 'P', 'G', '5')
 /* yuv411 of JFIF JPEG */
-#define V4L2_PIX_FMT_JPEG_411 v4l2_fourcc('J', 'P', 'G', '3')
+#define V4L2_PIX_FMT_JPEG_411 v4l2_fourcc('J', 'P', 'G', '1')
 
 /*
  *	C O N T R O L S
