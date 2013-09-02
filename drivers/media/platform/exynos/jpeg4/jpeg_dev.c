@@ -634,14 +634,6 @@ ctx_err:
 	return IRQ_HANDLED;
 }
 
-static int jpeg_setup_controller(struct jpeg_dev *ctrl)
-{
-	mutex_init(&ctrl->lock);
-	init_waitqueue_head(&ctrl->wq);
-
-	return 0;
-}
-
 static int jpeg_probe(struct platform_device *pdev)
 {
 	struct jpeg_dev *dev;
@@ -660,12 +652,9 @@ static int jpeg_probe(struct platform_device *pdev)
 
 	dev->plat_dev = pdev;
 
-	/* setup jpeg control */
-	ret = jpeg_setup_controller(dev);
-	if (ret) {
-		jpeg_err("failed to setup controller\n");
-		goto err_setup;
-	}
+	/* Init lock and wait queue */
+	mutex_init(&dev->lock);
+	init_waitqueue_head(&dev->wq);
 
 	/* memory region */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
