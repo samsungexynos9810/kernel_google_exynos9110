@@ -824,6 +824,7 @@ static int jpeg_probe(struct platform_device *pdev)
 		goto err_video_reg;
 	}
 
+	exynos_create_iovmm(&pdev->dev, 2, 2);
 #ifdef CONFIG_BUSFREQ_OPP
 	/* To lock bus frequency in OPP mode */
 	jpeg->bus_dev = dev_get("exynos-busfreq");
