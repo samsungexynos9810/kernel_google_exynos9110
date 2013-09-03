@@ -472,6 +472,8 @@ static void jpeg_device_dec_run(void *priv)
 	struct jpeg_dec_param dec_param;
 	struct vb2_buffer *vb = NULL;
 	unsigned long flags;
+	unsigned int component;
+	unsigned int ret = 0;
 
 	jpeg = ctx->dev;
 
@@ -483,28 +485,47 @@ static void jpeg_device_dec_run(void *priv)
 	jpeg_sw_reset(jpeg->reg_base);
 	jpeg_set_interrupt(jpeg->reg_base);
 
+	jpeg_set_huf_table_enable(jpeg->reg_base, true);
+	jpeg_set_enc_tbl(jpeg->reg_base, 0);
+
 	jpeg_set_encode_tbl_select(jpeg->reg_base, 0);
+
+	jpeg_set_stream_size(jpeg->reg_base,
+			dec_param.in_width, dec_param.in_height);
+	jpeg_set_dec_in_fmt(jpeg->reg_base, dec_param.in_fmt);
+	jpeg_set_dec_out_fmt(jpeg->reg_base, dec_param.out_fmt);
 
 	vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
 	jpeg_set_stream_buf_address(jpeg->reg_base, jpeg->vb2->plane_addr(vb, 0));
 
 	vb = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
 	jpeg_set_frame_buf_address(jpeg->reg_base,
-	dec_param.out_fmt, jpeg->vb2->plane_addr(vb, 0), dec_param.in_width, dec_param.in_height);
+	dec_param.out_fmt, jpeg->vb2->plane_addr(vb, 0), dec_param.out_width, dec_param.out_height);
 
 	if (dec_param.out_width > 0 && dec_param.out_height > 0) {
-		if ((dec_param.out_width * 2 == dec_param.in_width) &&
-			(dec_param.out_height * 2 == dec_param.in_height))
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_2, JPEG_SCALE_2);
-		else if ((dec_param.out_width * 4 == dec_param.in_width) &&
-			(dec_param.out_height * 4 == dec_param.in_height))
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_4, JPEG_SCALE_4);
+		if ((dec_param.out_width == dec_param.in_width / 2) &&
+			(dec_param.out_height == dec_param.in_height / 2))
+			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_2);
+		else if ((dec_param.out_width == dec_param.in_width / 4) &&
+			(dec_param.out_height == dec_param.in_height / 4))
+			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_4);
 		else
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_NORMAL, JPEG_SCALE_NORMAL);
+			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_NORMAL);
 	}
 
-	jpeg_set_dec_out_fmt(jpeg->reg_base, dec_param.out_fmt);
-	jpeg_set_dec_bitstream_size(jpeg->reg_base, dec_param.size);
+	if (dec_param.in_fmt == JPEG_GRAY)
+		component = 1;
+	else
+		component = 3;
+	if ((ret = jpeg_set_number_of_component(jpeg->reg_base, component)))
+		printk(KERN_ERR "component is incorrect\n");
+
+	if (((jpeg->vb2->plane_addr(vb, 0) + 0x23f) + dec_param.size) % 16 == 0) {
+		jpeg_set_dec_bitstream_size(jpeg->reg_base, dec_param.size / 16);
+	} else {
+		jpeg_set_dec_bitstream_size(jpeg->reg_base, (dec_param.size / 16) + 1);
+	}
+
 	jpeg_set_timer_count(jpeg->reg_base, dec_param.in_width * dec_param.in_height * 8 + 0xff);
 	jpeg_set_enc_dec_mode(jpeg->reg_base, DECODING);
 

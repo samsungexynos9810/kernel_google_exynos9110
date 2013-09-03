@@ -50,12 +50,44 @@ void jpeg_set_enc_dec_mode(void __iomem *base, enum jpeg_mode mode)
 	}
 }
 
+void jpeg_set_dec_in_fmt(void __iomem *base,
+		enum jpeg_stream_format in_fmt)
+{
+	unsigned int reg = 0;
+
+	writel(0x0, base + S5P_JPEG_IMG_FMT_REG); /* clear */
+	reg = readl(base + S5P_JPEG_IMG_FMT_REG) &
+		~S5P_JPEG_FMT_MASK; /* clear dec format */
+
+	switch (in_fmt) {
+		case JPEG_GRAY:
+			reg = reg | S5P_JPEG_FMT_GRAY;
+			break;
+
+		case JPEG_444:
+			reg = reg | S5P_JPEG_FMT_YUV_444;
+			break;
+
+		case JPEG_422:
+			reg = reg | S5P_JPEG_FMT_YUV_422;
+			break;
+
+		case JPEG_420:
+			reg = reg | S5P_JPEG_FMT_YUV_420;
+			break;
+
+		default:
+			break;
+	}
+	writel(reg, base + S5P_JPEG_IMG_FMT_REG);
+}
+
 void jpeg_set_dec_out_fmt(void __iomem *base,
 					enum jpeg_frame_format out_fmt)
 {
 	unsigned int reg = 0;
 
-	writel(0, base + S5P_JPEG_IMG_FMT_REG); /* clear */
+	reg = readl(base + S5P_JPEG_IMG_FMT_REG);
 
 	/* set jpeg deocde ouput format register */
 	switch (out_fmt) {
@@ -517,17 +549,30 @@ void jpeg_set_huf_table_enable(void __iomem *base, int value)
 }
 
 void jpeg_set_dec_scaling(void __iomem *base,
-		enum jpeg_scale_value x_value, enum jpeg_scale_value y_value)
+		enum jpeg_scale_value value)
 {
 	unsigned int	reg;
+	unsigned int	denom;
 
 	reg = readl(base + S5P_JPEG_CNTL_REG) &
-			~(S5P_JPEG_HOR_SCALING_MASK |
-				S5P_JPEG_VER_SCALING_MASK);
+				~S5P_JPEG_DEC_IMG_RESLN_TYPE_MASK;
 
-	writel(reg | S5P_JPEG_HOR_SCALING(x_value) |
-			S5P_JPEG_VER_SCALING(y_value),
-				base + S5P_JPEG_CNTL_REG);
+	switch (value) {
+		case JPEG_SCALE_NORMAL:
+			denom = 0;
+			break;
+		case JPEG_SCALE_2:
+			denom = 1;
+			break;
+		case JPEG_SCALE_4:
+			denom = 2;
+			break;
+		default:
+			denom = 0;
+			break;
+	}
+
+	writel(reg | S5P_JPEG_DEC_IMG_RESLN_TYPE(denom), base + S5P_JPEG_CNTL_REG);
 }
 
 void jpeg_set_sys_int_enable(void __iomem *base, int value)
@@ -679,10 +724,9 @@ void jpeg_set_timer_count(void __iomem *base, unsigned int size)
 void jpeg_get_frame_size(void __iomem *base,
 			unsigned int *width, unsigned int *height)
 {
-	*width = (readl(base + S5P_JPEG_DECODE_XY_SIZE_REG) &
-				S5P_JPEG_DECODED_SIZE_MASK);
-	*height = (readl(base + S5P_JPEG_DECODE_XY_SIZE_REG) >> 16) &
-				S5P_JPEG_DECODED_SIZE_MASK ;
+	*width = (readl(base + S5P_JPEG_IMG_SIZE_REG) & S5P_JPEG_X_SIZE_MASK);
+	*height = ((readl(base + S5P_JPEG_IMG_SIZE_REG) >> S5P_JPEG_Y_SIZE_SHIFT)
+			& S5P_JPEG_Y_SIZE_MASK);
 }
 
 enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base)
@@ -690,7 +734,7 @@ enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base)
 	unsigned int	reg;
 	enum jpeg_stream_format out_format;
 
-	reg = readl(base + S5P_JPEG_DECODE_IMG_FMT_REG);
+	reg = readl(base + S5P_JPEG_IMG_FMT_REG);
 
 	out_format =
 		((reg & 0x03) == 0x01) ? JPEG_444 :
@@ -699,4 +743,17 @@ enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base)
 		((reg & 0x03) == 0x00) ? JPEG_GRAY : JPEG_RESERVED;
 
 	return out_format;
+}
+
+int jpeg_set_number_of_component(void __iomem *base, unsigned int num_component)
+{
+	unsigned int reg = 0;
+
+	if (num_component < 1 || num_component > 3)
+		return -EINVAL;
+
+	reg = readl(base + S5P_JPEG_TBL_SEL_REG);
+
+	writel(reg | S5P_JPEG_NUMBER_OF_COMPONENTS(num_component), base + S5P_JPEG_TBL_SEL_REG);
+	return 0;
 }
