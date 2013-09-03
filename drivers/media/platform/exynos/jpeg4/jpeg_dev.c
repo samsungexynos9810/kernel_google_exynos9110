@@ -51,7 +51,7 @@
 
 #include "jpeg_mem.h"
 #include "jpeg_regs.h"
-#include "regs_jpeg_v2_x.h"
+#include "regs_jpeg_v4_x.h"
 
 static int jpeg_dec_queue_setup(struct vb2_queue *vq,
 					const struct v4l2_format *fmt, unsigned int *num_buffers,
