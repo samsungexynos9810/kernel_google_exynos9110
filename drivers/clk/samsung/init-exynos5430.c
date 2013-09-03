@@ -208,6 +208,16 @@ void isp_init_clock(void)
 
 void g3d_init_clock(void)
 {
+	exynos_set_parent("dout_aclk_g3d", "mout_g3d_pll");
+
+	__raw_writel(__raw_readl(EXYNOS5430_G3D_PLL_CON0) | (0xe << 28),
+			EXYNOS5430_G3D_PLL_CON0);
+	while (__raw_readl(EXYNOS5430_G3D_PLL_CON0) | (0x1 << 29))
+		break;
+
+	exynos_set_parent("mout_g3d_pll", "fin_pll");
+	exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
+
 	__raw_writel(0x1F, EXYNOS5430_ENABLE_IP_G3D0);
 }
 
