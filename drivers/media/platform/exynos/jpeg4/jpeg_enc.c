@@ -1,9 +1,9 @@
-/* linux/drivers/media/video/exynos/jpeg/jpeg_dev.c
+/* linux/drivers/media/platform/exynos/jpeg4/jpeg_dev.c
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  * http://www.samsung.com/
  *
- * Core file for Samsung Jpeg v2.x Interface driver
+ * Core file for Samsung Jpeg v4.x Interface driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as

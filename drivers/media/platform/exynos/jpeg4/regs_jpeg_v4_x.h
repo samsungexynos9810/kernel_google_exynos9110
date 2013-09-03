@@ -1,4 +1,4 @@
-/* linux/drivers/media/video/exynos/jpeg/regs-jpeg_v4_x.h
+/* linux/drivers/media/platform/exynos/jpeg4/regs-jpeg_v4_x.h
  *
  * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  * http://www.samsung.com/

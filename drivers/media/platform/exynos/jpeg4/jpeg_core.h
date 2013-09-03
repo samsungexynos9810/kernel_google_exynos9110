@@ -1,6 +1,6 @@
-/* linux/drivers/media/video/samsung/jpeg_v2x/jpeg_core.h
+/* linux/drivers/media/platform/exynos/jpeg4/jpeg_core.h
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  * http://www.samsung.com/
  *
  * Definition for core file of the jpeg operation.
