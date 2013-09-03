@@ -59,6 +59,8 @@
 #define VOLTAGE_OFFSET_MARGIN 37500
 #endif
 
+extern void g3d_init_clock(void);
+
 unsigned int gpu_voltage_margin;
 bool tmu_on_off;
 
@@ -133,33 +135,8 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 		platform->aclk_g3d = clk_g3d;
 	}
 
-	ret = exynos_set_parent("dout_aclk_g3d", "mout_g3d_pll");
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
-		goto out;
-	}
+	g3d_init_clock();
 
-	__raw_writel(0x00, EXYNOS5430_ENABLE_IP_G3D0);
-	__raw_writel(0xe6260602, EXYNOS5430_G3D_PLL_CON0);
-
-	while(1){
-		if(__raw_readl(EXYNOS5430_G3D_PLL_CON0)&(0x1<<29))
-			break;
-	}
-
-	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
-		goto out;
-	}
-
-	__raw_writel(0x1, EXYNOS5430_SRC_SEL_G3D);
-	while(1){
-		if(__raw_readl(EXYNOS5430_SRC_SEL_G3D))
-			break;
-	}
-
-	__raw_writel(0x1F, EXYNOS5430_ENABLE_IP_G3D0);
 	exynos_set_rate("dout_aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
 
 	(void) clk_enable(clk_g3d);
@@ -178,7 +155,7 @@ out:
 
 int kbase_platform_clock_on(struct kbase_device *kbdev)
 {
-/*
+
 	struct exynos_context *platform;
 	if (!kbdev)
 		return -ENODEV;
@@ -186,16 +163,18 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 	platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
-*/
+
 	if (clk_g3d_status == 1)
 		return 0;
 
-	kbase_platform_power_clock_init(kbdev);
-/*
+	g3d_init_clock();
+
+	exynos_set_rate("dout_aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
+
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
 	}
-*/
+
 	clk_g3d_status = 1;
 
 	return 0;
