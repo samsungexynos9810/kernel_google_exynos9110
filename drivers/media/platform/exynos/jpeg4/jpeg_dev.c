@@ -495,6 +495,7 @@ static void jpeg_device_dec_run(void *priv)
 			dec_param.in_width, dec_param.in_height);
 	jpeg_set_dec_in_fmt(jpeg->reg_base, dec_param.in_fmt);
 	jpeg_set_dec_out_fmt(jpeg->reg_base, dec_param.out_fmt);
+	jpeg_alpha_value_set(jpeg->reg_base, 0xff);
 
 	vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
 	jpeg_set_stream_buf_address(jpeg->reg_base, jpeg->vb2->plane_addr(vb, 0));

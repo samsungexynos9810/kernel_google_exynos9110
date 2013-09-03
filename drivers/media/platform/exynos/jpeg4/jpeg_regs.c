@@ -760,3 +760,8 @@ int jpeg_set_number_of_component(void __iomem *base, unsigned int num_component)
 	writel(reg | S5P_JPEG_NUMBER_OF_COMPONENTS(num_component), base + S5P_JPEG_TBL_SEL_REG);
 	return 0;
 }
+
+void jpeg_alpha_value_set(void __iomem *base, unsigned int alpha)
+{
+	writel(S5P_JPEG_ARGB32(alpha), base + S5P_JPEG_PADDING_REG);
+}

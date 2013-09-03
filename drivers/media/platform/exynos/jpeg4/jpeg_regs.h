@@ -49,5 +49,5 @@ void jpeg_get_frame_size(void __iomem *base,
 			unsigned int *width, unsigned int *height);
 int jpeg_set_number_of_component(void __iomem *base, unsigned int num_component);
 enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base);
-
+void jpeg_alpha_value_set(void __iomem *base, unsigned int alpha);
 #endif /* __JPEG_REGS_H__ */
