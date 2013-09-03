@@ -101,7 +101,7 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
-	int timeout, ret;
+	int timeout;
 	struct exynos_context *platform;
 
 	platform = (struct exynos_context *) kbdev->platform_context;
