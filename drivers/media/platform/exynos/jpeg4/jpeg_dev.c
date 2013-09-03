@@ -469,6 +469,7 @@ static void jpeg_device_dec_run(void *priv)
 {
 	struct jpeg_ctx *ctx = priv;
 	struct jpeg_dev *jpeg = ctx->dev;
+	struct exynos_platform_jpeg *pdata = jpeg->pdata;
 	struct jpeg_dec_param dec_param;
 	struct vb2_buffer *vb = NULL;
 	unsigned long flags;
@@ -509,6 +510,9 @@ static void jpeg_device_dec_run(void *priv)
 		else if ((dec_param.out_width == dec_param.in_width / 4) &&
 			(dec_param.out_height == dec_param.in_height / 4))
 			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_4);
+		else if (is_ver_5h && (dec_param.out_width == dec_param.in_width / 8) &&
+			(dec_param.out_height == dec_param.in_height / 8))
+			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_8);
 		else
 			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_NORMAL);
 	}

@@ -567,6 +567,9 @@ void jpeg_set_dec_scaling(void __iomem *base,
 		case JPEG_SCALE_4:
 			denom = 2;
 			break;
+		case JPEG_SCALE_8:
+			denom = 3;
+			break;
 		default:
 			denom = 0;
 			break;

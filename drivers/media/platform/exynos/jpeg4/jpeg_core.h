@@ -121,6 +121,7 @@ enum jpeg_scale_value {
 	JPEG_SCALE_NORMAL,
 	JPEG_SCALE_2,
 	JPEG_SCALE_4,
+	JPEG_SCALE_8,
 };
 
 enum jpeg_interface {
