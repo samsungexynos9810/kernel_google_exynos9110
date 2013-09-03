@@ -1,9 +1,9 @@
-/* linux/drivers/media/video/exynos/jpeg/jpeg_regs.c
+/* linux/drivers/media/platform/exynos/jpeg4/jpeg_regs.c
  *
- * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * Register interface file for jpeg v2.x driver
+ * Register interface file for jpeg v4.x driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,7 +15,7 @@
 #include "jpeg_regs.h"
 #include "jpeg_conf.h"
 #include "jpeg_core.h"
-#include "regs_jpeg_v2_x.h"
+#include "regs_jpeg_v4_x.h"
 
 void jpeg_sw_reset(void __iomem *base)
 {
@@ -279,23 +279,23 @@ void jpeg_set_enc_out_fmt(void __iomem *base,
 	unsigned int reg;
 
 	reg = readl(base + S5P_JPEG_IMG_FMT_REG) &
-			~S5P_JPEG_ENC_FMT_MASK; /* clear enc format */
+			~S5P_JPEG_FMT_MASK; /* clear enc format */
 
 	switch (out_fmt) {
 	case JPEG_GRAY:
-		reg = reg | S5P_JPEG_ENC_FMT_GRAY;
+		reg = reg | S5P_JPEG_FMT_GRAY;
 		break;
 
 	case JPEG_444:
-		reg = reg | S5P_JPEG_ENC_FMT_YUV_444;
+		reg = reg | S5P_JPEG_FMT_YUV_444;
 		break;
 
 	case JPEG_422:
-		reg = reg | S5P_JPEG_ENC_FMT_YUV_422;
+		reg = reg | S5P_JPEG_FMT_YUV_422;
 		break;
 
 	case JPEG_420:
-		reg = reg | S5P_JPEG_ENC_FMT_YUV_420;
+		reg = reg | S5P_JPEG_FMT_YUV_420;
 		break;
 
 	default:
