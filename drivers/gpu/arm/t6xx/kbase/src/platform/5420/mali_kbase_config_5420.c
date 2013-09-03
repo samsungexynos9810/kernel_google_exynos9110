@@ -266,6 +266,18 @@ static kbase_attribute config_attributes[] = {
 		100000
 	},
 	{
+		KBASE_CONFIG_ATTR_JS_SOFT_STOP_TICKS,
+		10
+	}, /*1000ms*/
+	{
+		KBASE_CONFIG_ATTR_JS_HARD_STOP_TICKS_SS,
+		150
+	},
+	{
+		KBASE_CONFIG_ATTR_JS_RESET_TICKS_SS,
+		160
+	},
+	{
 		KBASE_CONFIG_ATTR_JS_RESET_TIMEOUT_MS,
 		500 /* 500ms before cancelling stuck jobs */
 	},

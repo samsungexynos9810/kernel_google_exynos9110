@@ -49,7 +49,7 @@ STATIC void *kbasep_trace_timeline_seq_start(struct seq_file *s, loff_t *pos)
 		return NULL;
 
 	return &kbase_trace_timeline_desc_table[*pos];
-	}
+}
 
 STATIC void kbasep_trace_timeline_seq_stop(struct seq_file *s, void *data)
 {
@@ -84,7 +84,7 @@ static const struct seq_operations kbasep_trace_timeline_seq_ops = {
 STATIC int kbasep_trace_timeline_debugfs_open(struct inode *inode, struct file *file)
 {
 	return seq_open(file, &kbasep_trace_timeline_seq_ops);
-	}
+}
 
 static const struct file_operations kbasep_trace_timeline_debugfs_fops = {
 	.open = kbasep_trace_timeline_debugfs_open,

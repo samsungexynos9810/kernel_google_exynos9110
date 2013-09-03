@@ -70,14 +70,16 @@
 #define ASV_CMD_ENABLE 0
 #endif
 
+#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#define GPU_MAX_CLK 480
+#endif
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_LOCK_MAX 480
-#define GPU_THROTTLING_LOCK1 5
-#define GPU_THROTTLING_LOCK2 4
-#define GPU_THROTTLING_LOCK3 3
-#define GPU_THROTTLING_LOCK4 1
-#define GPU_TRIPPING_LOCK 1
+#define GPU_THROTTLING_90_95 480
+#define GPU_THROTTLING_95_100 420
+#define GPU_THROTTLING_100_105 350
+#define GPU_THROTTLING_105_110 177
+#define GPU_TRIPPING_110 100
 #endif
 
 #define COLD_MINIMUM_VOL 950000
@@ -124,7 +126,7 @@ static mali_dvfs_info mali_dvfs_infotbl[] = {
 	{862500, 266, 60, 90, 0, 400000, 222000, 250000},
 	{912500, 350, 70, 90, 0, 667000, 333000, 250000},
 	{962500, 420, 78, 99, 0, 800000, 400000, 250000},
-	{1000000, 480, 98, 100, 0, 800000, 400000, 1200000},
+	{1000000, 480, 98, 100, 0, 800000, 400000, 700000},
 	{1037500, 533, 99, 100, 0, 800000, 400000, 1200000},
 };
 
@@ -138,6 +140,8 @@ typedef struct _mali_dvfs_status_type{
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	int max_lock;
 	int min_lock;
+	int user_max_lock[NUMBER_LOCK];
+	int user_min_lock[NUMBER_LOCK];
 #endif
 #ifdef MALI_DVFS_ASV_ENABLE
 	int asv_status;
@@ -191,11 +195,6 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 	unsigned long flags;
 	struct exynos_context *platform;
 
-	if (!kbase_platform_dvfs_get_enable_status()) {
-		mutex_unlock(&mali_enable_clock_lock);
-		return;
-	}
-
 	platform = (struct exynos_context *)dvfs_status->kbdev->platform_context;
 #ifdef MALI_DVFS_ASV_ENABLE
 	if (dvfs_status->asv_status == ASV_STATUS_DISABLE_REQ) {
@@ -207,7 +206,7 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
 
 #ifdef CONFIG_EXYNOS_THERMAL
-	if (dvfs_status->step == kbase_platform_dvfs_get_level(GPU_THROTTLING_LOCK_MAX)) {
+	if (dvfs_status->step == kbase_platform_dvfs_get_level(GPU_MAX_CLK)) {
 		dvfs_status->step--;
 		goto skip;
 	}
@@ -237,12 +236,13 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 skip:
 #endif
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
-	if ((dvfs_status->max_lock >= 0) && (dvfs_status->step > dvfs_status->max_lock)) {
-		dvfs_status->step = dvfs_status->max_lock;
-	}
 	if (dvfs_status->min_lock > 0) {
 		if (dvfs_status->step < dvfs_status->min_lock)
 			dvfs_status->step = dvfs_status->min_lock;
+	}
+
+	if ((dvfs_status->max_lock >= 0) && (dvfs_status->step > dvfs_status->max_lock)) {
+		dvfs_status->step = dvfs_status->max_lock;
 	}
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
@@ -307,6 +307,9 @@ int kbase_platform_dvfs_event(struct kbase_device *kbdev, u32 utilisation)
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+	atomic_set(&kbdev->pm.metrics.time_compute_jobs, 0);atomic_set(&kbdev->pm.metrics.time_vertex_jobs, 0);atomic_set(&kbdev->pm.metrics.time_fragment_jobs, 0);
+#endif
 	queue_work_on(0, mali_dvfs_wq, &mali_dvfs_work);
 	/*add error handle here*/
 	return MALI_TRUE;
@@ -405,6 +408,7 @@ int kbase_platform_dvfs_enable(bool enable, int freq)
 int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 {
 	unsigned long flags;
+	int i;
 	/*default status
 	  add here with the right function to get initilization value.
 	 */
@@ -429,6 +433,10 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	mali_dvfs_status_current.max_lock = -1;
 	mali_dvfs_status_current.min_lock = -1;
+	for (i = 0; i < NUMBER_LOCK; i++) {
+		mali_dvfs_status_current.user_max_lock[i] = -1;
+		mali_dvfs_status_current.user_min_lock[i] = -1;
+	}
 #endif
 #ifdef MALI_DVFS_ASV_ENABLE
 	mali_dvfs_status_current.asv_status = ASV_STATUS_NOT_INIT;
@@ -500,65 +508,141 @@ int mali_get_dvfs_current_level(void)
 	return current_level;
 }
 
-int mali_dvfs_freq_lock(int level)
+int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock)
 {
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	unsigned long flags;
+	int i, step = 0;
 
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
-	if (mali_dvfs_status_current.min_lock >= 0) {
-		printk(KERN_ERR "[G3D] max lock Error : min lock is already set\n");
+
+	step = mali_get_dvfs_step();
+	if (step-1 < level) {
 		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 		return -1;
 	}
+
+	if (user_lock < TMU_LOCK || user_lock >= NUMBER_LOCK) {
+		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+		return -1;
+	}
+
+	mali_dvfs_status_current.user_max_lock[user_lock] = level;
 	mali_dvfs_status_current.max_lock = level;
+
+	if (mali_dvfs_status_current.max_lock != -1) {
+		for (i = 0; i < NUMBER_LOCK; i++)
+			if (mali_dvfs_status_current.user_max_lock[i] != -1)
+				mali_dvfs_status_current.max_lock = MIN(mali_dvfs_status_current.max_lock, mali_dvfs_status_current.user_max_lock[i]);
+	} else {
+		mali_dvfs_status_current.max_lock = level;
+	}
+
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
-	printk("[G3D] max Lock Set : %d\n", level);
+	printk("[G3D] Lock max clk: %d\n", mali_dvfs_infotbl[level].clock);
 #endif
 	return 0;
 }
-void mali_dvfs_freq_unlock(void)
+void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock)
 {
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	unsigned long flags;
+	int i;
+	bool dirty = false;
 
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
-	mali_dvfs_status_current.max_lock = -1;
+
+	if (user_lock < TMU_LOCK || user_lock >= NUMBER_LOCK) {
+		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+		return;
+	}
+
+	mali_dvfs_status_current.user_max_lock[user_lock] = -1;
+	mali_dvfs_status_current.max_lock = kbase_platform_dvfs_get_level(GPU_MAX_CLK);
+
+	for (i = 0; i < NUMBER_LOCK; i++) {
+		if (mali_dvfs_status_current.user_max_lock[i] != -1) {
+			dirty = true;
+			mali_dvfs_status_current.max_lock = MIN(mali_dvfs_status_current.user_max_lock[i], mali_dvfs_status_current.max_lock);
+		}
+	}
+
+	if (!dirty)
+		mali_dvfs_status_current.max_lock = -1;
+
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 #endif
 
-	printk("[G3D] max Lock Unset\n");
+	printk("[G3D] Unlock max clk\n");
 }
 
-int mali_dvfs_freq_min_lock(int level)
+int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
 {
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	unsigned long flags;
+	int i, step = 0;
 
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
-	if (mali_dvfs_status_current.max_lock >= 0) {
-		printk(KERN_ERR "[G3D] min lock Error : max lock is already set\n");
+
+	step = mali_get_dvfs_step();
+	if (step-1 < level) {
 		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 		return -1;
 	}
+
+	if (user_lock < TMU_LOCK || user_lock >= NUMBER_LOCK) {
+		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+		return -1;
+	}
+
+	mali_dvfs_status_current.user_min_lock[user_lock] = level;
 	mali_dvfs_status_current.min_lock = level;
+
+	if (mali_dvfs_status_current.min_lock != -1) {
+		for (i = 0; i < NUMBER_LOCK; i++)
+			if (mali_dvfs_status_current.user_min_lock[i] != -1)
+				mali_dvfs_status_current.min_lock = MIN(mali_dvfs_status_current.min_lock, mali_dvfs_status_current.user_min_lock[i]);
+	} else {
+		mali_dvfs_status_current.min_lock = level;
+	}
+
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
-	printk("[G3D] min Lock Set : %d\n", level);
+	printk("[G3D] Lock min clk: %d\n", mali_dvfs_infotbl[level].clock);
 #endif
 	return 0;
 }
-void mali_dvfs_freq_min_unlock(void)
+void mali_dvfs_freq_min_unlock(gpu_lock_type user_lock)
 {
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	unsigned long flags;
+	int i;
+	bool dirty = false;
 
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
-	mali_dvfs_status_current.min_lock = -1;
+
+	if (user_lock < TMU_LOCK || user_lock >= NUMBER_LOCK) {
+		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+		return;
+	}
+
+	mali_dvfs_status_current.user_min_lock[user_lock] = -1;
+	mali_dvfs_status_current.min_lock = kbase_platform_dvfs_get_level(GPU_MAX_CLK);
+
+	for (i = 0; i < NUMBER_LOCK; i++) {
+		if (mali_dvfs_status_current.user_min_lock[i] != -1) {
+			dirty = true;
+			mali_dvfs_status_current.min_lock = MIN(mali_dvfs_status_current.min_lock, mali_dvfs_status_current.user_min_lock[i]);
+		}
+	}
+
+	if (!dirty)
+		mali_dvfs_status_current.min_lock = -1;
+
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 #endif
-	printk("[G3D] min Lock Unset\n");
+	printk("[G3D] Unlock min clk\n");
 }
 
 int kbase_platform_regulator_init(void)
@@ -710,19 +794,31 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 
 	clkrate = clk_get_rate(platform->aclk_g3d);
 
-	if (event == GPU_THROTTLING1)
-		lock_level = GPU_THROTTLING_LOCK1;
-	else if (event == GPU_THROTTLING2)
-		lock_level = GPU_THROTTLING_LOCK2;
-	else if (event == GPU_THROTTLING3)
-		lock_level = GPU_THROTTLING_LOCK3;
-	else if (event == GPU_THROTTLING4)
-		lock_level = GPU_THROTTLING_LOCK4;
-	else
-		lock_level = GPU_TRIPPING_LOCK;
+	switch(event) {
+		case GPU_THROTTLING1:
+			lock_level = GPU_THROTTLING_90_95;
+			printk("[G3D] GPU_THROTTLING_90_95\n");
+			break;
+		case GPU_THROTTLING2:
+			lock_level = GPU_THROTTLING_95_100;
+			printk("[G3D] GPU_THROTTLING_95_100\n");
+			break;
+		case GPU_THROTTLING3:
+			lock_level = GPU_THROTTLING_100_105;
+			printk("[G3D] GPU_THROTTLING_100_105\n");
+			break;
+		case GPU_THROTTLING4:
+			lock_level = GPU_THROTTLING_105_110;
+			printk("[G3D] GPU_THROTTLING_105_110\n");
+			break;
+		case GPU_TRIPPING:
+			lock_level = GPU_TRIPPING_110;
+			printk("[G3D] GPU_THROTTLING_110\n");
+		default:
+			return 0;
+	}
 
-	kbase_platform_dvfs_set_level(kbdev, lock_level);
-	mali_dvfs_freq_lock(lock_level);
+	mali_dvfs_freq_max_lock(kbase_platform_dvfs_get_level(lock_level), TMU_LOCK);
 #endif
 	return 0;
 }
@@ -730,7 +826,7 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 void kbase_tmu_normal_work(void)
 {
 #ifdef CONFIG_MALI_T6XX_DVFS
-	mali_dvfs_freq_unlock();
+	mali_dvfs_freq_max_unlock(TMU_LOCK);
 #endif
 }
 #endif
@@ -977,15 +1073,13 @@ ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, ch
 	if (!kbdev)
 		return -ENODEV;
 
-	for (i = 0; i < MALI_DVFS_STEP; i++) {
+	for (i = MALI_DVFS_STEP - 1; i >= 0; i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
 				mali_dvfs_infotbl[i].clock,
 				mali_dvfs_infotbl[i].time);
 	}
 
-	if (ret < PAGE_SIZE - 1) {
-		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
-	} else {
+	if (ret >= PAGE_SIZE - 1) {
 		buf[PAGE_SIZE-2] = '\n';
 		buf[PAGE_SIZE-1] = '\0';
 		ret = PAGE_SIZE-1;

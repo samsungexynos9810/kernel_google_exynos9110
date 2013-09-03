@@ -263,7 +263,7 @@ struct kbase_jd_atom {
 	/* Assigned after atom is completed. Used to check whether PRLAM-10676 workaround should be applied */
 	int slot_nr;
 
-	u32 atom_flags; 
+	u32 atom_flags;
 };
 
 /*

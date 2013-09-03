@@ -453,8 +453,8 @@ void kbase_finish_soft_job(kbase_jd_atom *katom)
 #ifdef SLSI_FENCE_INTEGRATION
 		mutex_lock(&katom->fence_mt);
 		if (katom->fence) {
-		sync_fence_put(katom->fence);
-		katom->fence = NULL;
+			sync_fence_put(katom->fence);
+			katom->fence = NULL;
 		}
 		mutex_unlock(&katom->fence_mt);
 		kbase_fence_del_timer(katom);
@@ -514,6 +514,7 @@ void kbase_resume_suspended_soft_jobs(kbase_device *kbdev)
 #define KBASE_FENCE_TIMEOUT 1000
 #define DUMP_CHUNK 256
 
+#ifdef KBASE_FENCE_DUMP
 static const char *kbase_sync_status_str(int status)
 {
 	if (status > 0)
@@ -607,6 +608,7 @@ static void kbase_fence_dump(struct sync_fence *fence)
 		}
 	}
 }
+#endif
 
 static void kbase_fence_timeout(unsigned long data)
 {
@@ -620,8 +622,11 @@ static void kbase_fence_timeout(unsigned long data)
 		kbase_fence_del_timer(katom);
 		return;
 	}
-	pr_info("kbase_fence_timeout after %d\n", KBASE_FENCE_TIMEOUT);
+	pr_info("Release fence is not signaled on [%p] for %d ms\n", katom->fence, KBASE_FENCE_TIMEOUT);
+
+#ifdef KBASE_FENCE_DUMP
 	kbase_fence_dump(katom->fence);
+#endif
 #ifdef KBASE_FENCE_TIMEOUT_FAKE_SIGNAL
 	if (katom->fence)
 		kbase_fence_wait_callback(katom->fence, &katom->sync_waiter);

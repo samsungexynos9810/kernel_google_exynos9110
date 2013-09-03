@@ -513,7 +513,7 @@ mali_bool MOCKABLE(kbase_pm_check_transitions_nolock) (struct kbase_device *kbde
 		KBASE_TRACE_ADD(kbdev, PM_WAKE_WAITERS, NULL, NULL, 0u, 0);
 		wake_up(&kbdev->pm.gpu_in_desired_state_wait);
 	}
-
+	
 	spin_unlock(&kbdev->pm.gpu_powered_lock);
 
 	/* kbase_pm_ca_update_core_status can cause one-level recursion into

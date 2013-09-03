@@ -145,12 +145,12 @@ void kbase_pm_do_poweroff(kbase_device *kbdev)
 	/* Force all cores off */
 	kbdev->pm.desired_shader_state = 0;
 
-		/* Force all cores to be unavailable, in the situation where 
-		 * transitions are in progress for some cores but not others,
-		 * and kbase_pm_check_transitions_nolock can not immediately
-		 * power off the cores */
-		kbdev->shader_available_bitmap = 0;
-		kbdev->tiler_available_bitmap = 0;
+	/* Force all cores to be unavailable, in the situation where 
+	 * transitions are in progress for some cores but not others,
+	 * and kbase_pm_check_transitions_nolock can not immediately
+	 * power off the cores */
+	kbdev->shader_available_bitmap = 0;
+	kbdev->tiler_available_bitmap = 0;
 	kbdev->l2_available_bitmap = 0;
 
 	KBASE_TIMELINE_PM_CHECKTRANS(kbdev, SW_FLOW_PM_CHECKTRANS_PM_DO_POWEROFF_START);
@@ -159,18 +159,18 @@ void kbase_pm_do_poweroff(kbase_device *kbdev)
 	/* Don't need 'cores_are_available', because we don't return anything */
 	CSTD_UNUSED(cores_are_available);
 
-		spin_unlock_irqrestore(&kbdev->pm.power_change_lock, flags);
+	spin_unlock_irqrestore(&kbdev->pm.power_change_lock, flags);
 
 	/* NOTE: We won't wait to reach the core's desired state, even if we're
 	 * powering off the GPU itself too. It's safe to cut the power whilst
 	 * they're transitioning to off, because the cores should be idle and all
 	 * cache flushes should already have occurred */
 
-		/* Consume any change-state events */
-		kbase_timeline_pm_check_handle_event(kbdev, KBASE_TIMELINE_PM_EVENT_GPU_STATE_CHANGED);
-		/* Disable interrupts and turn the clock off */
-		kbase_pm_clock_off(kbdev);
-	}
+	/* Consume any change-state events */
+	kbase_timeline_pm_check_handle_event(kbdev, KBASE_TIMELINE_PM_EVENT_GPU_STATE_CHANGED);
+	/* Disable interrupts and turn the clock off */
+	kbase_pm_clock_off(kbdev);
+}
 
 mali_error kbase_pm_powerup(kbase_device *kbdev)
 {
@@ -230,7 +230,7 @@ void kbase_pm_context_active(kbase_device *kbdev)
 }
 
 int kbase_pm_context_active_handle_suspend(kbase_device *kbdev, kbase_pm_suspend_handler suspend_handler)
-{
+{	
 	int c;
 	int old_count;
 
@@ -349,7 +349,7 @@ void kbase_pm_term(kbase_device *kbdev)
 	KBASE_DEBUG_ASSERT(kbdev->pm.active_count == 0);
 	KBASE_DEBUG_ASSERT(kbdev->pm.gpu_cycle_counter_requests == 0);
 
-		/* Free any resources the policy allocated */
+	/* Free any resources the policy allocated */
 	kbase_pm_policy_term(kbdev);
 	kbase_pm_ca_term(kbdev);
 

@@ -20,7 +20,6 @@
 #include <kbase/src/common/mali_kbase_mem.h>
 #include <kbase/src/common/mali_midg_regmap.h>
 #include <kbase/src/linux/mali_kbase_mem_linux.h>
-#include <kbase/src/common/mali_kbase_js_affinity.h>
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -835,7 +834,7 @@ static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *at
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (sysfs_streq("0", buf)) {
-		mali_dvfs_freq_unlock();
+		mali_dvfs_freq_max_unlock(SYSFS_LOCK);
 	} else {
 		step = mali_get_dvfs_step();
 		ret = kstrtoint(buf, 0, &clock);
@@ -845,11 +844,11 @@ static ssize_t set_max_lock_dvfs(struct device *dev, struct device_attribute *at
 		}
 
 		if (clock == mali_get_dvfs_clock(step-1))
-			mali_dvfs_freq_unlock();
+			mali_dvfs_freq_max_unlock(SYSFS_LOCK);
 
 		for (i = step-2; i >= 0; i--) {
 			if (clock == mali_get_dvfs_clock(i)) {
-				mali_dvfs_freq_lock(i);
+				mali_dvfs_freq_max_lock(i, SYSFS_LOCK);
 				break;
 			}
 		}
@@ -910,7 +909,7 @@ static ssize_t set_min_lock_dvfs(struct device *dev, struct device_attribute *at
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (sysfs_streq("0", buf)) {
-		mali_dvfs_freq_min_unlock();
+		mali_dvfs_freq_min_unlock(SYSFS_LOCK);
 	} else {
 		step = mali_get_dvfs_step();
 		ret = kstrtoint(buf, 0, &clock);
@@ -920,11 +919,11 @@ static ssize_t set_min_lock_dvfs(struct device *dev, struct device_attribute *at
 		}
 
 		if (clock == mali_get_dvfs_clock(0))
-			mali_dvfs_freq_min_unlock();
+			mali_dvfs_freq_min_unlock(SYSFS_LOCK);
 
 		for (i = 1; i < step; i++) {
 			if (clock == mali_get_dvfs_clock(i)) {
-				mali_dvfs_freq_min_lock(i);
+				mali_dvfs_freq_min_lock(i, SYSFS_LOCK);
 				break;
 			}
 		}
@@ -968,46 +967,6 @@ static ssize_t set_asv(struct device *dev, struct device_attribute *attr, const 
 	return count;
 }
 
-static ssize_t show_affinity_mask(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	struct kbase_device *kbdev;
-	ssize_t ret = 0;
-
-	kbdev = dev_get_drvdata(dev);
-
-	if (!kbdev)
-		return -ENODEV;
-
-	ret += snprintf(buf+ret, PAGE_SIZE-ret, "0x%x", (u32)kbase_js_get_affinity_mask());
-
-	if (ret < PAGE_SIZE - 1) {
-		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
-	} else {
-		buf[PAGE_SIZE-2] = '\n';
-		buf[PAGE_SIZE-1] = '\0';
-		ret = PAGE_SIZE-1;
-	}
-
-	return ret;
-}
-
-static ssize_t set_affinity_mask(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
-{
-	unsigned long mask;
-	struct kbase_device *kbdev;
-	kbdev = dev_get_drvdata(dev);
-
-	if (!kbdev)
-		return -ENODEV;
-
-	if (kstrtoul(buf, 0, &mask) == 0)
-		kbase_js_set_affinity_mask((u32)mask);
-	else
-		pr_info("Invalid mask!!!\n");
-
-	return count;
-}
-
 static ssize_t show_tmu(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
@@ -1033,7 +992,7 @@ static ssize_t set_tmu_control(struct device *dev, struct device_attribute *attr
 	if (sysfs_streq("0", buf)) {
 		if (gpu_voltage_margin != 0)
 			kbase_set_power_margin(0);
-		mali_dvfs_freq_unlock();
+		mali_dvfs_freq_max_unlock(TMU_LOCK);
 		tmu_on_off = false;
 	}
 	else if (sysfs_streq("1", buf))
@@ -1080,7 +1039,6 @@ DEVICE_ATTR(time_in_state, S_IRUGO|S_IWUSR, show_time_in_state, set_time_in_stat
 DEVICE_ATTR(tmu, S_IRUGO|S_IWUSR, show_tmu, set_tmu_control);
 DEVICE_ATTR(utilization, S_IRUGO|S_IWUSR, show_utilization, NULL);
 DEVICE_ATTR(dvfs_table, S_IRUGO|S_IWUSR, show_dvfs_table, NULL);
-DEVICE_ATTR(affinity_mask, S_IRUGO|S_IWUSR, show_affinity_mask, set_affinity_mask);
 DEVICE_ATTR(power_state, S_IRUGO|S_IWUSR, show_power_state, NULL);
 
 int kbase_platform_create_sysfs_file(struct device *dev)
@@ -1145,11 +1103,6 @@ int kbase_platform_create_sysfs_file(struct device *dev)
 		goto out;
 	}
 
-	if (device_create_file(dev, &dev_attr_affinity_mask)) {
-		dev_err(dev, "Couldn't create sysfs file [affinity_mask]\n");
-		goto out;
-	}
-
 	if (device_create_file(dev, &dev_attr_power_state)) {
 		dev_err(dev, "Couldn't create sysfs file [power_state]\n");
 		goto out;
@@ -1174,7 +1127,6 @@ void kbase_platform_remove_sysfs_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_tmu);
 	device_remove_file(dev, &dev_attr_utilization);
 	device_remove_file(dev, &dev_attr_dvfs_table);
-	device_remove_file(dev, &dev_attr_affinity_mask);
 	device_remove_file(dev, &dev_attr_power_state);
 }
 #endif /* CONFIG_MALI_T6XX_DEBUG_SYS */

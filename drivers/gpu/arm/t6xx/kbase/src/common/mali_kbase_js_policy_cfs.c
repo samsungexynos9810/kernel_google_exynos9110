@@ -18,7 +18,6 @@
 /*
  * Job Scheduler: Completely Fair Policy Implementation
  */
-#include <linux/version.h>
 
 #include <kbase/src/common/mali_kbase.h>
 #include <kbase/src/common/mali_kbase_jm.h>
@@ -715,53 +714,53 @@ static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 				u32 ticks = atom->sched_info.cfs.ticks++;
 
 #if !CINSTR_DUMPING_ENABLED
-					/* Job is Soft-Stoppable */
-					if (ticks == js_devdata->soft_stop_ticks) {
-						/* Job has been scheduled for at least js_devdata->soft_stop_ticks ticks.
-						 * Soft stop the slot so we can run other jobs.
-						 */
-						KBASE_DEBUG_PRINT_INFO(KBASE_JM, "Soft-stop");
+				/* Job is Soft-Stoppable */
+				if (ticks == js_devdata->soft_stop_ticks) {
+					/* Job has been scheduled for at least js_devdata->soft_stop_ticks ticks.
+					 * Soft stop the slot so we can run other jobs.
+					 */
+					KBASE_DEBUG_PRINT_INFO(KBASE_JM, "Soft-stop");
 
 #if KBASE_DISABLE_SCHEDULING_SOFT_STOPS == 0
-						kbase_job_slot_softstop(kbdev, s, atom);
+					kbase_job_slot_softstop(kbdev, s, atom);
 #endif
-					} else if (ticks == js_devdata->hard_stop_ticks_ss) {
-						/* Job has been scheduled for at least js_devdata->hard_stop_ticks_ss ticks.
-						 * It should have been soft-stopped by now. Hard stop the slot.
-						 */
+				} else if (ticks == js_devdata->hard_stop_ticks_ss) {
+					/* Job has been scheduled for at least js_devdata->hard_stop_ticks_ss ticks.
+					 * It should have been soft-stopped by now. Hard stop the slot.
+					 */
 #if KBASE_DISABLE_SCHEDULING_HARD_STOPS == 0
-						KBASE_DEBUG_PRINT_WARN(KBASE_JM, "JS: Job Hard-Stopped (took more than %lu ticks at %lu ms/tick)", (unsigned long)ticks, (unsigned long)(js_devdata->scheduling_tick_ns / 1000000u));
-						kbase_job_slot_hardstop(atom->kctx, s, atom);
+					KBASE_DEBUG_PRINT_WARN(KBASE_JM, "JS: Job Hard-Stopped (took more than %lu ticks at %lu ms/tick)", (unsigned long)ticks, (unsigned long)(js_devdata->scheduling_tick_ns / 1000000u));
+					kbase_job_slot_hardstop(atom->kctx, s, atom);
 #endif
-					} else if (ticks == js_devdata->gpu_reset_ticks_ss) {
-						/* Job has been scheduled for at least js_devdata->gpu_reset_ticks_ss ticks.
-						 * It should have left the GPU by now. Signal that the GPU needs to be reset.
-						 */
-						reset_needed = MALI_TRUE;
-					}
+				} else if (ticks == js_devdata->gpu_reset_ticks_ss) {
+					/* Job has been scheduled for at least js_devdata->gpu_reset_ticks_ss ticks.
+					 * It should have left the GPU by now. Signal that the GPU needs to be reset.
+					 */
+					reset_needed = MALI_TRUE;
+				}
 #else 				/* !CINSTR_DUMPING_ENABLED */
 				/* NOTE: During CINSTR_DUMPING_ENABLED, we use the alternate timeouts, which
 				 * makes the hard-stop and GPU reset timeout much longer. We also ensure that
 				 * we don't soft-stop at all. */
-					if (ticks == js_devdata->soft_stop_ticks) {
-						/* Job has been scheduled for at least js_devdata->soft_stop_ticks.
+				if (ticks == js_devdata->soft_stop_ticks) {
+					/* Job has been scheduled for at least js_devdata->soft_stop_ticks.
 					 * We do not soft-stop during CINSTR_DUMPING_ENABLED, however.
-						 */
-						KBASE_DEBUG_PRINT_INFO(KBASE_JM, "Soft-stop");
-					} else if (ticks == js_devdata->hard_stop_ticks_nss) {
-						/* Job has been scheduled for at least js_devdata->hard_stop_ticks_nss ticks.
-						 * Hard stop the slot.
-						 */
+					 */
+					KBASE_DEBUG_PRINT_INFO(KBASE_JM, "Soft-stop");
+				} else if (ticks == js_devdata->hard_stop_ticks_nss) {
+					/* Job has been scheduled for at least js_devdata->hard_stop_ticks_nss ticks.
+					 * Hard stop the slot.
+					 */
 #if KBASE_DISABLE_SCHEDULING_HARD_STOPS == 0
-						KBASE_DEBUG_PRINT_WARN(KBASE_JM, "JS: Job Hard-Stopped (took more than %lu ticks at %lu ms/tick)", (unsigned long)ticks, (unsigned long)(js_devdata->scheduling_tick_ns / 1000000u));
-						kbase_job_slot_hardstop(atom->kctx, s, atom);
+					KBASE_DEBUG_PRINT_WARN(KBASE_JM, "JS: Job Hard-Stopped (took more than %lu ticks at %lu ms/tick)", (unsigned long)ticks, (unsigned long)(js_devdata->scheduling_tick_ns / 1000000u));
+					kbase_job_slot_hardstop(atom->kctx, s, atom);
 #endif
-					} else if (ticks == js_devdata->gpu_reset_ticks_nss) {
-						/* Job has been scheduled for at least js_devdata->gpu_reset_ticks_nss ticks.
-						 * It should have left the GPU by now. Signal that the GPU needs to be reset.
-						 */
-						reset_needed = MALI_TRUE;
-					}
+				} else if (ticks == js_devdata->gpu_reset_ticks_nss) {
+					/* Job has been scheduled for at least js_devdata->gpu_reset_ticks_nss ticks.
+					 * It should have left the GPU by now. Signal that the GPU needs to be reset.
+					 */
+					reset_needed = MALI_TRUE;
+				}
 #endif				/* !CINSTR_DUMPING_ENABLED */
 			}
 		}

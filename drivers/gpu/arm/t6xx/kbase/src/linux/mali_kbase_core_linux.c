@@ -88,8 +88,6 @@ static int kbase_dev_nr;
 static DEFINE_SEMAPHORE(kbase_dev_list_lock);
 static LIST_HEAD(kbase_dev_list);
 
-kbase_attribute *g_pd;
-
 KBASE_EXPORT_TEST_API(kbase_dev_list_lock)
 KBASE_EXPORT_TEST_API(kbase_dev_list)
 #define KERNEL_SIDE_DDK_VERSION_STRING "K:" MALI_RELEASE_NAME "(GPL)"

@@ -41,6 +41,11 @@
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 #define CONFIG_MALI_T6XX_FREQ_LOCK
+typedef enum gpu_lock_type{
+	TMU_LOCK = 0,
+	SYSFS_LOCK,
+	NUMBER_LOCK
+} gpu_lock_type;
 #ifdef CONFIG_CPU_FREQ
 /* This define should be updated after ASV is enabled */
 #ifdef IS_ASV_ENABLED
@@ -93,15 +98,22 @@ int mali_get_dvfs_table(char *buf, size_t buf_size);
 int mali_get_dvfs_current_level(void);
 int mali_get_dvfs_upper_locked_freq(void);
 int mali_get_dvfs_under_locked_freq(void);
+#ifdef CONFIG_SOC_EXYNOS5420
+int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock);
+void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock);
+int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock);
+void mali_dvfs_freq_min_unlock(gpu_lock_type user_lock);
+#else
 int mali_dvfs_freq_lock(int level);
 void mali_dvfs_freq_unlock(void);
 int mali_dvfs_freq_under_lock(int level);
 void mali_dvfs_freq_under_unlock(void);
+int mali_dvfs_freq_min_lock(int level);
+void mali_dvfs_freq_min_unlock(void);
+#endif
 
 int mali_get_dvfs_max_locked_freq(void);
 int mali_get_dvfs_min_locked_freq(void);
-int mali_dvfs_freq_min_lock(int level);
-void mali_dvfs_freq_min_unlock(void);
 
 ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t set_time_in_state(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);

@@ -14,6 +14,7 @@
 
 
 # Driver version string which is returned to userspace via an ioctl
+#MALI_RELEASE_NAME ?= "r3p0-01bet0"
 MALI_RELEASE_NAME ?= "r3p0-pre-eac"
 
 # Paths required for build
@@ -75,7 +76,7 @@ endif
 
 #MALI_SEC
 DEFINES +=-DSLSI_INTEGRATION -DSLSI_FENCE_INTEGRATION
-DEFINES +=-DCL_UTILIZATION_BOOST_BY_WEIGHT
+DEFINES +=-DCL_UTILIZATION_BOOST_BY_TIME_WEIGHT
 
 # Use our defines when compiling
 ccflags-y += $(DEFINES) -I$(KBASE_PATH) -I$(src)/linux -I$(KBASE_SRC_PATH) -I$(src)/platform -I$(KBASE_PLATFORM_PATH) -I$(UMP_PATH)

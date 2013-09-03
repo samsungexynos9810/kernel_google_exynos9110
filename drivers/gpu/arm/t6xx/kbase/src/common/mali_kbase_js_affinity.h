@@ -65,7 +65,7 @@ mali_bool kbase_js_can_run_job_on_slot_no_lock(kbase_device *kbdev, int js);
  * Returns MALI_TRUE if a valid affinity was chosen, MALI_FALSE if
  * no cores were available.
  *
- * @param[out] affinity Affinity bitmap computed
+ * @param[out] affinity       Affinity bitmap computed
  * @param kbdev The kbase device structure of the device
  * @param katom Job chain of which affinity is going to be found
  * @param js    Slot the job chain is being submitted
@@ -151,9 +151,4 @@ static INLINE void kbase_js_debug_log_current_affinities(kbase_device *kbdev)
 	  /** @} *//* end group base_kbase_api */
 	  /** @} *//* end group base_api */
 
-#define AFFINITY_MASK_ENABLE
-#ifdef AFFINITY_MASK_ENABLE
-void kbase_js_set_affinity_mask(u64 mask);
-u64 kbase_js_get_affinity_mask(void);
-#endif
 #endif				/* _KBASE_JS_AFFINITY_H_ */

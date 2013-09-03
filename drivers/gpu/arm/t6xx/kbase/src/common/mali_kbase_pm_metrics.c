@@ -80,10 +80,8 @@ mali_error kbasep_pm_metrics_init(kbase_device *kbdev)
 	hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
 
 	kbase_pm_register_vsync_callback(kbdev);
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
-	atomic_set(&kbdev->pm.metrics.cnt_compute_jobs, 0);
-	atomic_set(&kbdev->pm.metrics.cnt_vertex_jobs, 0);
-	atomic_set(&kbdev->pm.metrics.cnt_fragment_jobs, 0);
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+	atomic_set(&kbdev->pm.metrics.time_compute_jobs, 0);atomic_set(&kbdev->pm.metrics.time_vertex_jobs, 0);atomic_set(&kbdev->pm.metrics.time_fragment_jobs, 0);
 #endif
 
 	return MALI_ERROR_NONE;
@@ -167,7 +165,7 @@ void kbase_pm_report_vsync(kbase_device *kbdev, int buffer_updated)
 
 KBASE_EXPORT_TEST_API(kbase_pm_report_vsync)
 
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
 /*
 * peak_flops: 100/85
 * sobel: 100/50
@@ -179,8 +177,8 @@ KBASE_EXPORT_TEST_API(kbase_pm_report_vsync)
 int kbase_pm_get_dvfs_utilisation(kbase_device *kbdev)
 {
 	int utilisation = 0;
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
-	int compute_jobs = 0, vertex_jobs = 0, fragment_jobs = 0, total_jobs = 0, compute_jobs_rate = 0;
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+	int compute_time = 0, vertex_time = 0, fragment_time = 0, total_time = 0, compute_time_rate = 0;
 #endif
 
 	ktime_t now = ktime_get();
@@ -205,16 +203,16 @@ int kbase_pm_get_dvfs_utilisation(kbase_device *kbdev)
 	}
 
 	utilisation = (100 * kbdev->pm.metrics.time_busy) / (kbdev->pm.metrics.time_idle + kbdev->pm.metrics.time_busy);
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
-	compute_jobs = atomic_read(&kbdev->pm.metrics.cnt_compute_jobs);
-	vertex_jobs = atomic_read(&kbdev->pm.metrics.cnt_vertex_jobs);
-	fragment_jobs = atomic_read(&kbdev->pm.metrics.cnt_fragment_jobs);
-	total_jobs = compute_jobs + vertex_jobs + fragment_jobs;
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+	compute_time = atomic_read(&kbdev->pm.metrics.time_compute_jobs);
+	vertex_time = atomic_read(&kbdev->pm.metrics.time_vertex_jobs);
+	fragment_time = atomic_read(&kbdev->pm.metrics.time_fragment_jobs);
+	total_time = compute_time + vertex_time + fragment_time;
 
-	if (compute_jobs > 0 && total_jobs > 0)
+	if (compute_time > 0 && total_time > 0)
 	{
-		compute_jobs_rate = compute_jobs * 100 / total_jobs;
-		utilisation = utilisation * (COMPUTE_JOB_WEIGHT * compute_jobs_rate + 100 * (100 - compute_jobs_rate));
+		compute_time_rate = (100 * compute_time) / total_time;
+		utilisation = utilisation * (COMPUTE_JOB_WEIGHT * compute_time_rate + 100 * (100 - compute_time_rate));
 		utilisation /= 10000;
 
 		if (utilisation >= 100) utilisation = 100;

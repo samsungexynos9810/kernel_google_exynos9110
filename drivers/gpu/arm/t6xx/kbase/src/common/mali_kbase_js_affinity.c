@@ -97,7 +97,7 @@ STATIC INLINE mali_bool kbase_affinity_requires_split(kbase_device *kbdev)
 		 * correctly decide that a core-split is required. */
 
 		return (mali_bool) (nr_compute_ctxs > 0 && nr_noncompute_ctxs > 0);
-	}
+	} 
 	return MALI_FALSE;
 }
 
@@ -139,43 +139,6 @@ mali_bool kbase_js_can_run_job_on_slot_no_lock(kbase_device *kbdev, int js)
 	return MALI_FALSE;
 }
 
-#ifdef AFFINITY_MASK_ENABLE
-static u64 affinity_mask = 0xFFFF;
-static spinlock_t affinity_mask_spinlock;
-static int init_once;
-void kbase_js_set_affinity_mask(u64 mask)
-{
-	unsigned long flags;
-	if (!init_once) {
-		spin_lock_init(&affinity_mask_spinlock);
-		init_once = 1;
-	}
-	if (mask) {
-		spin_lock_irqsave(&affinity_mask_spinlock, flags);
-		affinity_mask = mask;
-		spin_unlock_irqrestore(&affinity_mask_spinlock, flags);
-		pr_info("affinity mask is set to 0x%x.\n", (u32)mask);
-	} else {
-		pr_info("Invalid mask!!!\n");
-	}
-	return;
-}
-
-u64 kbase_js_get_affinity_mask(void)
-{
-	u64 val;
-	unsigned long flags;
-	if (!init_once) {
-		spin_lock_init(&affinity_mask_spinlock);
-		init_once = 1;
-	}
-	spin_lock_irqsave(&affinity_mask_spinlock, flags);
-	val = affinity_mask;
-	spin_unlock_irqrestore(&affinity_mask_spinlock, flags);
-
-	return val;
-}
-#endif
 /*
  * As long as it has been decided to have a deeper modification of
  * what job scheduler, power manager and affinity manager will
@@ -264,10 +227,10 @@ mali_bool kbase_js_choose_affinity(u64 * const affinity, kbase_device *kbdev, kb
 		low_bitmap = core_availability_mask ^ high_bitmap;
 
 		if (affinity_job_uses_high_cores(kbdev, katom))
-				*affinity = high_bitmap;
+			*affinity = high_bitmap;
 		else
 			*affinity = low_bitmap;
-			}
+	}
 
 	spin_unlock_irqrestore(&kbdev->pm.power_change_lock, flags);
 
