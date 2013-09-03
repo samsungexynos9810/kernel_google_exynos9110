@@ -56,7 +56,7 @@ int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
 	 * Few SoCs may not have this switch available
 	 */
 	if (sphy->sysreg == NULL)
-		dev_warn(sphy->dev, "Can't get usb-phy sysreg cfg register\n");
+		dev_dbg(sphy->dev, "Can't get usb-phy sysreg cfg register\n");
 
 	of_node_put(usbphy_sys);
 
@@ -132,7 +132,7 @@ void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy)
 	u32 reg;
 
 	if (!sphy->sysreg) {
-		dev_warn(sphy->dev, "Can't configure specified phy mode\n");
+		dev_dbg(sphy->dev, "Can't configure specified phy mode\n");
 		return;
 	}
 
