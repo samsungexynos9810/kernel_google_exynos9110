@@ -2023,7 +2023,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	struct s3c_dma_buf_data old_dma_bufs[S3C_FB_MAX_WIN];
 	bool wait_for_vsync;
-	int count = 100;
+	int count = 10;
 	int i;
 
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
