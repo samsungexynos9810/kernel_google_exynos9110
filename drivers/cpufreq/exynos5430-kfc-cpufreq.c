@@ -67,7 +67,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	/*
 	 * Clock divider value for following
 	 * { KFC1, KFC2, ACLK_KFC, PCLK_KFC,
-	 *   ATCLK, PCLK_DBG, CNTCLK }
+	 *   ATCLK, PCLK_DBG_KFC, SCLK_CNTCLK }
 	 */
 
 	/* ARM L0: 2.0GHz */
@@ -95,7 +95,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 2, 7, 7, 7, 3 },
 
 	/* ARM L8: 1.2GHz */
-	{ 0, 0, 2, 7, 7, 7, 3 },
+	{ 0, 0, 1, 7, 7, 7, 3 },
 
 	/* ARM L9: 1.1GHz */
 	{ 0, 0, 1, 7, 7, 7, 3 },
@@ -125,7 +125,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 1, 4, 4, 4, 3 },
 
 	/* ARM L18: 200MHz */
-	{ 0, 0, 1, 2, 2, 2, 3 },
+	{ 0, 0, 0, 2, 2, 2, 3 },
 };
 
 static unsigned int clkdiv_cpu1_5430_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
@@ -256,25 +256,25 @@ static unsigned int exynos5430_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
  * ASV group voltage table
  */
 static const unsigned int asv_voltage_5430_CA7[CPUFREQ_LEVEL_END_CA7] = {
-	1100000,	/* L0  2000 */
-	1100000,	/* L1  1900 */
-	1100000,	/* L2  1800 */
-	1100000,	/* L3  1700 */
-	1100000,	/* L4  1600 */
-	1100000,	/* L5  1500 */
-	1100000,	/* L6  1400 */
-	1100000,	/* L7  1300 */
-	1100000,	/* L8  1200 */
+	1225000,	/* L0  2000 */
+	1225000,	/* L1  1900 */
+	1225000,	/* L2  1800 */
+	1225000,	/* L3  1700 */
+	1225000,	/* L4  1600 */
+	1225000,	/* L5  1500 */
+	1200000,	/* L6  1400 */
+	1150000,	/* L7  1300 */
+	1125000,	/* L8  1200 */
 	1100000,	/* L9  1100 */
-	1100000,	/* L10 1000 */
-	1100000,	/* L11  900 */
-	1100000,	/* L12  800 */
-	1100000,	/* L13  700 */
-	1100000,	/* L14  600 */
-	1100000,	/* L15  500 */
-	1100000,	/* L16  400 */
-	1100000,	/* L17  300 */
-	1100000,	/* L18  200 */
+	1050000,	/* L10 1000 */
+	1025000,	/* L11  900 */
+	 975000,	/* L12  800 */
+	 950000,	/* L13  700 */
+	 950000,	/* L14  600 */
+	 950000,	/* L15  500 */
+	 950000,	/* L16  400 */
+	 950000,	/* L17  300 */
+	 950000,	/* L18  200 */
 };
 
 /* Minimum memory throughput in megabytes per second */
