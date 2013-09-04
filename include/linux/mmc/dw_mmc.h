@@ -340,6 +340,7 @@ struct dw_mci_board {
 	bool tuned;
 	bool extra_tuning;
 	bool only_once_tune;
+	bool register_notifier;
 
 	/* delay in mS before detecting cards after interrupt */
 	u32 detect_delay_ms;

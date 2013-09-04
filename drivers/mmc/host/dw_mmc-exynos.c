@@ -21,122 +21,16 @@
 #include <linux/gpio.h>
 #include <linux/slab.h>	/* for kmalloc/kfree prototype */
 
+#include <mach/exynos-pm.h>
+
 #include "dw_mmc.h"
 #include "dw_mmc-pltfm.h"
+#include "dw_mmc-exynos.h"
 
-#define NUM_PINS(x)			(x + 2)
-
-#define DWMCI_CLKSEL			0x09C	/* Ken : need to unify definition */
-#define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 7) << 0)
-#define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 7) << 16)
-#define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 7) << 24)
-#define SDMMC_CLKSEL_GET_DRV_WD3(x)	(((x) >> 16) & 0x7)
-#define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
-#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
-					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
-					SDMMC_CLKSEL_CCLK_DIVIDER(z))
-
-#define SDMMC_CMD_USE_HOLD_REG		BIT(29)
-
-/*
- * DDR200 dependent
- */
-#define DWMCI_DDR200_RDDQS_EN		0x110
-#define DWMCI_DDR200_ASYNC_FIFO_CTRL	0x114
-#define DWMCI_DDR200_DLINE_CTRL		0x118
-/* DDR200 RDDQS Enable*/
-#define DWMCI_TXDT_CRC_TIMER_FASTLIMIT(x)	(((x) & 0xFF) << 16)
-#define DWMCI_TXDT_CRC_TIMER_INITVAL(x)		(((x) & 0xFF) << 8)
-#define DWMCI_AXI_NON_BLOCKING_WRITE		BIT(7)
-#define DWMCI_BUSY_CHK_CLK_STOP_EN		BIT(2)
-#define DWMCI_RXDATA_START_BIT_SEL		BIT(1)
-#define DWMCI_RDDQS_EN				BIT(0)
-#define DWMCI_DDR200_RDDQS_EN_DEF	DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0x12) | \
-					DWMCI_TXDT_CRC_TIMER_INITVAL(0x14)
-#define DWMCI_DDR200_DLINE_CTRL_DEF	DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | \
-					DWMCI_RD_DQS_DELAY_CTRL(0x40)
-
-/* DDR200 Async FIFO Control */
-#define DWMCI_ASYNC_FIFO_RESET		BIT(0)
-
-/* DDR200 DLINE Control */
-#define DWMCI_FIFO_CLK_DELAY_CTRL(x)	(((x) & 0x3) << 16)
-#define DWMCI_RD_DQS_DELAY_CTRL(x)	((x) & 0x3FF)
-
-/* Block number in eMMC */
-#define DWMCI_BLOCK_NUM			0xFFFFFFFF
-
-#define DWMCI_EMMCP_BASE		0x1000
-#define DWMCI_MPSECURITY		(DWMCI_EMMCP_BASE + 0x0010)
-#define DWMCI_MPSBEGIN0			(DWMCI_EMMCP_BASE + 0x0200)
-#define DWMCI_MPSEND0			(DWMCI_EMMCP_BASE + 0x0204)
-#define DWMCI_MPSCTRL0			(DWMCI_EMMCP_BASE + 0x020C)
-
-/* SMU control bits */
-#define DWMCI_MPSCTRL_SECURE_READ_BIT		BIT(7)
-#define DWMCI_MPSCTRL_SECURE_WRITE_BIT		BIT(6)
-#define DWMCI_MPSCTRL_NON_SECURE_READ_BIT	BIT(5)
-#define DWMCI_MPSCTRL_NON_SECURE_WRITE_BIT	BIT(4)
-#define DWMCI_MPSCTRL_USE_FUSE_KEY		BIT(3)
-#define DWMCI_MPSCTRL_ECB_MODE			BIT(2)
-#define DWMCI_MPSCTRL_ENCRYPTION		BIT(1)
-#define DWMCI_MPSCTRL_VALID			BIT(0)
-
-#define EXYNOS4210_FIXED_CIU_CLK_DIV	2
-#define EXYNOS4412_FIXED_CIU_CLK_DIV	4
-
-/* Variations in Exynos specific dw-mshc controller */
-enum dw_mci_exynos_type {
-	DW_MCI_TYPE_EXYNOS4210,
-	DW_MCI_TYPE_EXYNOS4412,
-	DW_MCI_TYPE_EXYNOS5250,
-	DW_MCI_TYPE_EXYNOS5430,
-};
-
-/* Exynos implementation specific driver private data */
-struct dw_mci_exynos_priv_data {
-	enum dw_mci_exynos_type ctrl_type;
-	u8			ciu_div;
-	u32			sdr_timing;
-	u32			ddr_timing;
-	u32			hs200_timing;
-	u32			ddr200_timing;
-	u32			*ref_clk;
-};
-
-/*
- * Tunning patterns are from emmc4.5 spec section 6.6.7.1
- * Figure 27 (for 8-bit) and Figure 28 (for 4bit).
- */
-static const u8 tuning_blk_pattern_4bit[] = {
-	0xff, 0x0f, 0xff, 0x00, 0xff, 0xcc, 0xc3, 0xcc,
-	0xc3, 0x3c, 0xcc, 0xff, 0xfe, 0xff, 0xfe, 0xef,
-	0xff, 0xdf, 0xff, 0xdd, 0xff, 0xfb, 0xff, 0xfb,
-	0xbf, 0xff, 0x7f, 0xff, 0x77, 0xf7, 0xbd, 0xef,
-	0xff, 0xf0, 0xff, 0xf0, 0x0f, 0xfc, 0xcc, 0x3c,
-	0xcc, 0x33, 0xcc, 0xcf, 0xff, 0xef, 0xff, 0xee,
-	0xff, 0xfd, 0xff, 0xfd, 0xdf, 0xff, 0xbf, 0xff,
-	0xbb, 0xff, 0xf7, 0xff, 0xf7, 0x7f, 0x7b, 0xde,
-};
-
-static const u8 tuning_blk_pattern_8bit[] = {
-	0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00, 0x00,
-	0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc, 0xcc,
-	0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff, 0xff,
-	0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee, 0xff,
-	0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd, 0xdd,
-	0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff, 0xbb,
-	0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff, 0xff,
-	0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee, 0xff,
-	0xff, 0xff, 0xff, 0x00, 0xff, 0xff, 0xff, 0x00,
-	0x00, 0xff, 0xff, 0xcc, 0xcc, 0xcc, 0x33, 0xcc,
-	0xcc, 0xcc, 0x33, 0x33, 0xcc, 0xcc, 0xcc, 0xff,
-	0xff, 0xff, 0xee, 0xff, 0xff, 0xff, 0xee, 0xee,
-	0xff, 0xff, 0xff, 0xdd, 0xff, 0xff, 0xff, 0xdd,
-	0xdd, 0xff, 0xff, 0xff, 0xbb, 0xff, 0xff, 0xff,
-	0xbb, 0xbb, 0xff, 0xff, 0xff, 0x77, 0xff, 0xff,
-	0xff, 0x77, 0x77, 0xff, 0x77, 0xbb, 0xdd, 0xee,
-};
+/* SFR save/restore for LPA */
+struct dw_mci *dw_mci_lpa_host[3] = {0, 0, 0};
+unsigned int dw_mci_host_count;
+unsigned int dw_mci_save_sfr[3][30];
 
 static struct dw_mci_exynos_compatible {
 	char				*compatible;
@@ -177,6 +71,158 @@ static int dw_mci_exynos_priv_init(struct dw_mci *host)
 	host->priv = priv;
 
 	return 0;
+}
+
+/*
+ * MSHC SFR save/restore
+ */
+void dw_mci_exynos_save_host_base(struct dw_mci *host)
+{
+	dw_mci_lpa_host[dw_mci_host_count] = host;
+	dw_mci_host_count++;
+}
+
+static void exynos_sfr_save(unsigned int i)
+{
+	struct dw_mci *host = dw_mci_lpa_host[i];
+
+	dw_mci_save_sfr[i][0] = mci_readl(host, CTRL);
+	dw_mci_save_sfr[i][1] = mci_readl(host, PWREN);
+	dw_mci_save_sfr[i][2] = mci_readl(host, CLKDIV);
+	dw_mci_save_sfr[i][3] = mci_readl(host, CLKSRC);
+	dw_mci_save_sfr[i][4] = mci_readl(host, CLKENA);
+	dw_mci_save_sfr[i][5] = mci_readl(host, TMOUT);
+	dw_mci_save_sfr[i][6] = mci_readl(host, CTYPE);
+	dw_mci_save_sfr[i][7] = mci_readl(host, INTMASK);
+	dw_mci_save_sfr[i][8] = mci_readl(host, FIFOTH);
+	dw_mci_save_sfr[i][9] = mci_readl(host, UHS_REG);
+	dw_mci_save_sfr[i][10] = mci_readl(host, BMOD);
+	dw_mci_save_sfr[i][11] = mci_readl(host, PLDMND);
+	dw_mci_save_sfr[i][12] = mci_readl(host, DBADDR);
+	dw_mci_save_sfr[i][13] = mci_readl(host, IDINTEN);
+	dw_mci_save_sfr[i][14] = mci_readl(host, CLKSEL);
+	dw_mci_save_sfr[i][15] = mci_readl(host, CDTHRCTL);
+}
+
+static void exynos_sfr_restore(unsigned int i)
+{
+	struct dw_mci *host = dw_mci_lpa_host[i];
+
+	int startbit_clear = false;
+	unsigned int cmd_status = 0;
+	unsigned long timeout = jiffies + msecs_to_jiffies(500);
+
+	mci_writel(host, CTRL , dw_mci_save_sfr[i][0]);
+	mci_writel(host, PWREN, dw_mci_save_sfr[i][1]);
+	mci_writel(host, CLKDIV, dw_mci_save_sfr[i][2]);
+	mci_writel(host, CLKSRC, dw_mci_save_sfr[i][3]);
+	mci_writel(host, CLKENA, dw_mci_save_sfr[i][4]);
+	mci_writel(host, TMOUT, dw_mci_save_sfr[i][5]);
+	mci_writel(host, CTYPE, dw_mci_save_sfr[i][6]);
+	mci_writel(host, INTMASK, dw_mci_save_sfr[i][7]);
+	mci_writel(host, FIFOTH, dw_mci_save_sfr[i][8]);
+	mci_writel(host, UHS_REG, dw_mci_save_sfr[i][9]);
+	mci_writel(host, BMOD  , dw_mci_save_sfr[i][10]);
+	mci_writel(host, PLDMND, dw_mci_save_sfr[i][11]);
+	mci_writel(host, DBADDR, dw_mci_save_sfr[i][12]);
+	mci_writel(host, IDINTEN, dw_mci_save_sfr[i][13]);
+	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][14]);
+	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][15]);
+
+	mci_writel(host, CMDARG, 0);
+	wmb();
+	mci_writel(host, CMD, (SDMMC_CMD_START |
+				SDMMC_CMD_UPD_CLK |
+				SDMMC_CMD_PRV_DAT_WAIT));
+
+	while (time_before(jiffies, timeout)) {
+		cmd_status = mci_readl(host, CMD);
+		if (!(cmd_status & SDMMC_CMD_START)) {
+			startbit_clear = true;
+			break;
+		}
+	}
+	if (startbit_clear == false)
+		dev_err(host->dev, "CMD start bit stuck %02d\n", i);
+}
+
+static int dw_mmc_exynos_notifier0(struct notifier_block *self,
+					unsigned long cmd, void *v)
+{
+	switch (cmd) {
+	case LPA_ENTER:
+		exynos_sfr_save(0);
+		break;
+	case LPA_ENTER_FAIL:
+	case LPA_EXIT:
+		exynos_sfr_restore(0);
+		break;
+	}
+
+	return 0;
+}
+
+static int dw_mmc_exynos_notifier1(struct notifier_block *self,
+					unsigned long cmd, void *v)
+{
+	switch (cmd) {
+	case LPA_ENTER:
+		exynos_sfr_save(1);
+		break;
+	case LPA_ENTER_FAIL:
+	case LPA_EXIT:
+		exynos_sfr_restore(1);
+		break;
+	}
+
+	return 0;
+}
+
+static int dw_mmc_exynos_notifier2(struct notifier_block *self,
+									unsigned long cmd, void *v)
+{
+	switch (cmd) {
+	case LPA_ENTER:
+		exynos_sfr_save(2);
+		break;
+	case LPA_ENTER_FAIL:
+	case LPA_EXIT:
+		exynos_sfr_restore(2);
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block dw_mmc_exynos_notifier_block[3] = {
+	[0] = {
+		.notifier_call = dw_mmc_exynos_notifier0,
+	},
+	[1] = {
+		.notifier_call = dw_mmc_exynos_notifier1,
+	},
+	[2] = {
+		.notifier_call = dw_mmc_exynos_notifier2,
+	},
+};
+
+void dw_mci_exynos_register_notifier(struct dw_mci *host)
+{
+	/*
+	 * Should be called sequentially
+	 */
+	dw_mci_lpa_host[dw_mci_host_count] = host;
+	exynos_pm_register_notifier(&(dw_mmc_exynos_notifier_block[dw_mci_host_count++]));
+}
+
+void dw_mci_exynos_unregister_notifier(struct dw_mci *host)
+{
+	int i;
+
+	for (i = 0; i < 3; i++) {
+		if (host == dw_mci_lpa_host[i])
+			exynos_pm_unregister_notifier(&(dw_mmc_exynos_notifier_block[i]));
+	}
 }
 
 /*
@@ -715,6 +761,8 @@ static const struct dw_mci_drv_data exynos_drv_data = {
 	.cfg_smu		= dw_mci_exynos_cfg_smu,
 	.execute_tuning		= dw_mci_exynos_execute_tuning,
 	.misc_control		= dw_mci_exynos_misc_control,
+	.register_notifier	= dw_mci_exynos_register_notifier,
+	.unregister_notifier	= dw_mci_exynos_unregister_notifier,
 };
 
 static const struct of_device_id dw_mci_exynos_match[] = {

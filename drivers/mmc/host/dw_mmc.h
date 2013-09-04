@@ -236,5 +236,7 @@ struct dw_mci_drv_data {
 	void		(*cfg_smu)(struct dw_mci *host);
 	int		(*execute_tuning)(struct dw_mci *host, u32 opcode);
 	int		(*misc_control)(struct dw_mci *host, enum dw_mci_misc_control control);
+	void		(*register_notifier)(struct dw_mci *host);
+	void		(*unregister_notifier)(struct dw_mci *host);
 };
 #endif /* _DW_MMC_H_ */

@@ -3096,6 +3096,22 @@ static bool mci_wait_reset(struct device *dev, struct dw_mci *host)
 	return false;
 }
 
+#define REGISTER_NOTI 0
+#define UNREGISTER_NOTI 1
+
+static void dw_mci_register_notifier(struct dw_mci *host, u32 reg_noti)
+{
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
+
+	if (reg_noti == REGISTER_NOTI) {
+		if (drv_data && drv_data->register_notifier)
+			drv_data->register_notifier(host);
+	} else if (reg_noti == REGISTER_NOTI) {
+		if (drv_data && drv_data->unregister_notifier)
+			drv_data->unregister_notifier(host);
+	}
+}
+
 #ifdef CONFIG_OF
 static struct dw_mci_of_quirks {
 	char *quirk;
@@ -3455,6 +3471,10 @@ int dw_mci_probe(struct dw_mci *host)
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
 
+	if (drv_data && drv_data->register_notifier)
+		dw_mci_register_notifier(host, REGISTER_NOTI);
+
+
 	return 0;
 
 err_workqueue:
@@ -3486,6 +3506,7 @@ EXPORT_SYMBOL(dw_mci_probe);
 
 void dw_mci_remove(struct dw_mci *host)
 {
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int i;
 
 	mci_writel(host, RINTSTS, 0xFFFFFFFF);
@@ -3512,6 +3533,9 @@ void dw_mci_remove(struct dw_mci *host)
 		pm_qos_remove_request(&host->pm_qos_mif);
 		pm_qos_remove_request(&host->pm_qos_cpu);
 	}
+
+	if (drv_data && drv_data->register_notifier)
+		dw_mci_register_notifier(host, UNREGISTER_NOTI);
 
 	dw_mci_qos_exit(host);
 
