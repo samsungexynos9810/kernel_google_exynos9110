@@ -135,6 +135,38 @@
 		interrupts = <1 9 0xf04>;
 	};
 
+	cci {
+		compatible = "arm,cci";
+		reg = <0x10700000 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		cci_s@0 {
+			device_type = "cci";
+			SIF = "IMEM";
+			reg = <0x1000>;
+		};
+		cci_s@1 {
+			device_type = "cci";
+			SIF = "G2DG3D";
+			reg = <0x2000>;
+		};
+		cci_s@2 {
+			device_type = "cci";
+			SIF = "C-SIGHT";
+			reg = <0x3000>;
+		};
+		cci_s@3 {
+			device_type = "cci";
+			SIF = "EAGLE";
+			reg = <0x4000>;
+		};
+		cci_s@4 {
+			device_type = "cci";
+			SIF = "KFC";
+			reg = <0x5000>;
+		};
+	};
+
 	mct@101C0000 {
 		compatible = "samsung,exynos4210-mct";
 		reg = <0x101C0000 0x800>;
