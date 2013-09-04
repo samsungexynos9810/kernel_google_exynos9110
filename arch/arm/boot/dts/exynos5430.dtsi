@@ -205,6 +205,8 @@
 	serial@14C10000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C10000 0x100>;
+		dmas = <&pdma 1 &pdma 0>;
+		dma-names = "tx", "rx";
 		interrupts = <0 421 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart0_bus>;
@@ -215,6 +217,8 @@
 	serial@14C20000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C20000 0x100>;
+		dmas = <&pdma 3 &pdma 2>;
+		dma-names = "tx", "rx";
 		interrupts = <0 422 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart1_bus>;
@@ -225,6 +229,8 @@
 	serial@14C30000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C30000 0x100>;
+		dmas = <&pdma 5 &pdma 4>;
+		dma-names = "tx", "rx";
 		interrupts = <0 423 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart2_bus>;
@@ -235,6 +241,8 @@
 	serial@11460000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x11460000 0x100>;
+		dmas = <&adma 5 &adma 6>;
+		dma-names = "tx", "rx";
 		interrupts = <0 67 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart_aud_bus>;
