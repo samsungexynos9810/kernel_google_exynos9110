@@ -1316,7 +1316,7 @@ static int __init exynos_cpufreq_init(void)
 	if (exynos_info[CA7]->bus_table || exynos_info[CA15]->bus_table) {
 		INIT_DEFERRABLE_WORK(&monitor_cluster_on, cluster_onoff_monitor);
 
-		cluster_monitor_wq = create_freezable_workqueue("cluster_monitor");
+		cluster_monitor_wq = create_workqueue("cluster_monitor");
 		if (!cluster_monitor_wq) {
 			pr_err("%s: failed to create cluster_monitor_wq\n", __func__);
 			goto err_workqueue;
