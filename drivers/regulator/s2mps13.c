@@ -145,7 +145,7 @@ static int s2m_set_voltage_sel_regmap_rev0(struct regulator_dev *rdev, unsigned 
 	int mode_mask = 0x0c, pwm_mode = 0x03 << 2, auto_mode = 0x02 << 2;
 
 	if (reg_id == S2MPS13_BUCK6) {
-		ret = regmap_update_bits(rdev->regmap, rdev->desc->vsel_reg,
+		ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
 				  mode_mask, pwm_mode);
 		if (ret < 0)
 			goto out;
@@ -157,7 +157,7 @@ static int s2m_set_voltage_sel_regmap_rev0(struct regulator_dev *rdev, unsigned 
 		goto out;
 
 	if (reg_id == S2MPS13_BUCK6) {
-		ret = regmap_update_bits(rdev->regmap, rdev->desc->vsel_reg,
+		ret = regmap_update_bits(rdev->regmap, rdev->desc->enable_reg,
 				  mode_mask, auto_mode);
 		if (ret < 0)
 			goto out;
@@ -232,7 +232,6 @@ static struct regulator_ops s2mps13_ldo_ops = {
 	.set_voltage_sel	= regulator_set_voltage_sel_regmap,
 	.set_voltage_time_sel	= s2m_set_voltage_time_sel,
 	.set_mode		= s2m_set_mode,
-	.set_ramp_delay		= s2m_set_ramp_delay,
 };
 
 static struct regulator_ops s2mps13_buck_ops_rev0 = {
@@ -578,7 +577,7 @@ static int s2mps13_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
 	return 0;
 }
 #else
-static int s5m8767_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
+static int s2mps13_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
 					struct sec_platform_data *pdata)
 {
 	return 0;
@@ -592,6 +591,10 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 	struct regulator_config config = { };
 	struct s2mps13_info *s2mps13;
 	int i, ret;
+
+	ret = sec_reg_read(iodev, S2MPS13_REG_ID, &iodev->rev_num);
+	if (ret < 0)
+		return ret;
 
 	if (iodev->dev->of_node) {
 		ret = s2mps13_pmic_dt_parse_pdata(iodev, pdata);
@@ -608,10 +611,6 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 				GFP_KERNEL);
 	if (!s2mps13)
 		return -ENOMEM;
-
-	ret = sec_reg_read(iodev, S2MPS13_REG_ID, &iodev->rev_num);
-	if (ret < 0)
-		return ret;
 
 	platform_set_drvdata(pdev, s2mps13);
 
