@@ -518,4 +518,4 @@ static __init int exynos_pm_domain_idle(void)
 
 	return 0;
 }
-late_initcall(exynos_pm_domain_idle);
+late_initcall_sync(exynos_pm_domain_idle);
