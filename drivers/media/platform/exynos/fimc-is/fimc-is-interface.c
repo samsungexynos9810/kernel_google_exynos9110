@@ -1726,7 +1726,8 @@ static inline void wq_func_schedule(struct fimc_is_interface *itf,
 
 static void interface_timer(unsigned long data)
 {
-	u32 shot_count, scount_3ax, scount_isp, i, j;
+	u32 shot_count, scount_3ax, scount_isp;
+	u32 fcount, i, j;
 	unsigned long flags;
 	void __iomem *regs;
 	struct fimc_is_interface *itf = (struct fimc_is_interface *)data;
@@ -1755,10 +1756,10 @@ static void interface_timer(unsigned long data)
 
 		sensor = device->sensor;
 		if (!sensor)
-			break;
+			continue;
 
 		if (!test_bit(FIMC_IS_SENSOR_FRONT_START, &sensor->state))
-			break;
+			continue;
 
 		if (test_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state)) {
 			spin_lock_irq(&itf->shot_check_lock);
@@ -1766,7 +1767,7 @@ static void interface_timer(unsigned long data)
 				atomic_set(&itf->shot_check[i], 0);
 				atomic_set(&itf->shot_timeout[i], 0);
 				spin_unlock_irq(&itf->shot_check_lock);
-				break;
+				continue;
 			}
 			spin_unlock_irq(&itf->shot_check_lock);
 
@@ -1796,7 +1797,7 @@ static void interface_timer(unsigned long data)
 
 		if (shot_count) {
 			atomic_inc(&itf->shot_timeout[i]);
-			pr_err ("timer[%d] is increase to %d\n", i,
+			pr_err ("shot timer[%d] is increased to %d\n", i,
 				atomic_read(&itf->shot_timeout[i]));
 		}
 
@@ -1852,6 +1853,41 @@ static void interface_timer(unsigned long data)
 #endif
 				return;
 			}
+		}
+	}
+
+	for (i = 0; i < FIMC_IS_MAX_NODES; ++i) {
+		sensor = &core->sensor[i];
+
+		if (!test_bit(FIMC_IS_SENSOR_FRONT_START, &sensor->state))
+			continue;
+
+		fcount = atomic_read(&sensor->flite.fcount);
+		if (fcount == atomic_read(&itf->sensor_check[i])) {
+			atomic_inc(&itf->sensor_timeout[i]);
+			pr_err ("sensor timer[%d] is increased to %d\n", i,
+				atomic_read(&itf->sensor_timeout[i]));
+		} else {
+			atomic_set(&itf->sensor_timeout[i], 0);
+			atomic_set(&itf->sensor_check[i], fcount);
+		}
+
+		if (atomic_read(&itf->sensor_timeout[i]) > TRY_TIMEOUT_COUNT) {
+			merr("sensor is timeout(%d, %d)", sensor,
+				atomic_read(&itf->sensor_timeout[i]),
+				atomic_read(&itf->sensor_check[i]));
+
+			pr_err("\n### firmware messsage dump ###\n");
+			fimc_is_hw_logdump(itf);
+
+			pr_err("\n### MCUCTL dump ###\n");
+			regs = itf->com_regs;
+			for (j = 0; j < 64; ++j)
+				pr_err("MCTL[%d] : %08X\n", j, readl(regs + (4 * j)));
+#ifdef BUG_ON_ENABLE
+			BUG();
+#endif
+			return;
 		}
 	}
 
@@ -2069,6 +2105,8 @@ int fimc_is_interface_open(struct fimc_is_interface *this)
 		this->processing[i] = IS_IF_PROCESSING_INIT;
 		atomic_set(&this->shot_check[i], 0);
 		atomic_set(&this->shot_timeout[i], 0);
+		atomic_set(&this->sensor_check[i], 0);
+		atomic_set(&this->sensor_timeout[i], 0);
 	}
 	this->pdown_ready = IS_IF_POWER_DOWN_READY;
 	atomic_set(&this->lock_pid, 0);

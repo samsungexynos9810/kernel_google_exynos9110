@@ -280,20 +280,54 @@ static struct fimc_is_settle settle_6b2[] = {
 	FIMC_IS_SETTLE(1936, 1090, 30, 16),
 };
 
-static int get_hsync_settle(struct fimc_is_settle *settle_table,
+static u32 get_hsync_settle(struct fimc_is_settle *settle_table,
 	u32 settles, u32 width, u32 height, u32 framerate)
 {
-	int ret = 0;
+	u32 settle;
+	u32 max_settle;
+	u32 proximity_framerate, proximity_settle;
 	u32 i;
+
+	settle = 0;
+	max_settle = 0;
+	proximity_framerate = 0;
+	proximity_settle = 0;
 
 	for (i = 0; i < settles; i++) {
 		if ((settle_table[i].width == width) &&
 		    (settle_table[i].height == height) &&
-		    (settle_table[i].framerate == framerate))
-			ret = settle_table[i].settle;
+		    (settle_table[i].framerate == framerate)) {
+			settle = settle_table[i].settle;
+			break;
+		}
+
+		if ((settle_table[i].width == width) &&
+		    (settle_table[i].height == height) &&
+		    (settle_table[i].framerate > proximity_framerate)) {
+			proximity_settle = settle_table[i].settle;
+			proximity_framerate = settle_table[i].framerate;
+		}
+
+		if (settle_table[i].settle > max_settle)
+			max_settle = settle_table[i].settle;
 	}
 
-	return ret;
+	if (!settle) {
+		if (proximity_settle) {
+			settle = proximity_settle;
+		} else {
+			/*
+			 * return a max settle time value in above table
+			 * as a default depending on the channel
+			 */
+			settle = max_settle;
+
+			warn("could not find proper settle time: %dx%d@%dfps",
+				width, height, framerate);
+		}
+	}
+
+	return settle;
 }
 
 static void s5pcsis_enable_interrupts(unsigned long mipi_reg_base, bool on)
@@ -452,20 +486,6 @@ static int start_mipi_csi(u32 channel,
 	s5pcsis_reset(base_reg);
 
 	settle = get_hsync_settle(settle_table, settles, width, height, framerate);
-	if (!settle) {
-		/*
-		 * return a max settle time value in above table
-		 * as a default depending on the channel
-		 */
-		if (channel == CSI_ID_A)
-			settle = 23;
-		else
-			settle = 16;
-
-		warn("could not find proper settle time: ch%d, %dx%d@%dfps",
-			channel, width, height, framerate);
-	}
-
 	pr_info("[SEN:D:%d] settle(%dx%d@%d) = %d\n", channel, width, height, framerate, settle);
 
 	s5pcsis_set_hsync_settle(base_reg, settle);

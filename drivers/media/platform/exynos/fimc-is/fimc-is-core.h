@@ -219,7 +219,7 @@
 /* #define PRINT_CAPABILITY */
 /* #define PRINT_BUFADDR */
 /* #define PRINT_DZOOM */
-#define ISDRV_VERSION 242
+#define ISDRV_VERSION 243
 
 #if (defined(BAYER_CROP_DZOOM) && defined(SCALER_CROP_DZOOM))
 #error BAYER_CROP_DZOOM and SCALER_CROP_DZOOM can''t be enable together

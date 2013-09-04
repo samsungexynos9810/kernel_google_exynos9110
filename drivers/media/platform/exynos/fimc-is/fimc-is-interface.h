@@ -152,9 +152,14 @@ struct fimc_is_interface {
 	struct fimc_is_framemgr		*framemgr;
 
 	struct fimc_is_work_list	nblk_cam_ctrl;
+
+	/* shot timeout check */
 	spinlock_t			shot_check_lock;
 	atomic_t			shot_check[FIMC_IS_MAX_NODES];
 	atomic_t			shot_timeout[FIMC_IS_MAX_NODES];
+	/* sensor timeout check */
+	atomic_t			sensor_check[FIMC_IS_MAX_NODES];
+	atomic_t			sensor_timeout[FIMC_IS_MAX_NODES];
 	struct timer_list		timer;
 
 	struct camera2_uctl		isp_peri_ctl;
