@@ -518,6 +518,12 @@ static void jpeg_device_dec_run(void *priv)
 			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_NORMAL);
 	}
 
+	if (dec_param.top_margin != 0 || dec_param.left_margin != 0 ||
+			dec_param.bottom_margin != 0 || dec_param.right_margin != 0) {
+		jpeg_set_window_margin(jpeg->reg_base, dec_param.top_margin, dec_param.bottom_margin,
+				dec_param.left_margin, dec_param.right_margin);
+	}
+
 	if (dec_param.in_fmt == JPEG_GRAY)
 		component = 1;
 	else

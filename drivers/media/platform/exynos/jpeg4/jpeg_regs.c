@@ -765,3 +765,30 @@ void jpeg_alpha_value_set(void __iomem *base, unsigned int alpha)
 {
 	writel(S5P_JPEG_ARGB32(alpha), base + S5P_JPEG_PADDING_REG);
 }
+
+void jpeg_dec_window_ctrl(void __iomem *base, unsigned int is_start)
+{
+	writel(is_start & 1, base + S5P_JPEG_DEC_WINDOW_CNTL);
+}
+
+void jpeg_set_window_margin(void __iomem *base, unsigned int top, unsigned int bottom,
+			unsigned int left, unsigned int right)
+{
+	jpeg_dec_window_ctrl(base, true);
+	writel(S5P_JPEG_IMG_TOP_MARGIN(top), base + S5P_JPEG_DEC_WINDOW_MARN_1);
+	writel(S5P_JPEG_IMG_BOTTOM_MARGIN(bottom), base + S5P_JPEG_DEC_WINDOW_MARN_1);
+
+	writel(S5P_JPEG_IMG_LEFT_MARGIN(left), base + S5P_JPEG_DEC_WINDOW_MARN_2);
+	writel(S5P_JPEG_IMG_RIGHT_MARGIN(right), base + S5P_JPEG_DEC_WINDOW_MARN_2);
+	jpeg_dec_window_ctrl(base, false);
+}
+
+void jpeg_get_window_margin(void __iomem *base, unsigned int *top, unsigned int *bottom,
+			unsigned int *left, unsigned int *right)
+{
+	*top = readl(base + S5P_JPEG_DEC_WINDOW_MARN_1) & S5P_JPEG_IMG_TOP_MARGIN_MASK;
+	*bottom = readl(base + S5P_JPEG_DEC_WINDOW_MARN_1) & S5P_JPEG_IMG_BOTTOM_MARGIN_MASK;
+
+	*left = readl(base + S5P_JPEG_DEC_WINDOW_MARN_2) & S5P_JPEG_IMG_LEFT_MARGIN_MASK;
+	*right = readl(base + S5P_JPEG_DEC_WINDOW_MARN_2) & S5P_JPEG_IMG_RIGHT_MARGIN_MASK;
+}

@@ -156,6 +156,10 @@ struct jpeg_dec_param {
 	unsigned int out_plane;
 	unsigned int in_depth;
 	unsigned int out_depth[JPEG_MAX_PLANE];
+	unsigned int top_margin;
+	unsigned int left_margin;
+	unsigned int bottom_margin;
+	unsigned int right_margin;
 
 	enum jpeg_stream_format in_fmt;
 	enum jpeg_frame_format out_fmt;

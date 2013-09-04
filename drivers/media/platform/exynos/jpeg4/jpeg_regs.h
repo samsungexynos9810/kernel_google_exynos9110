@@ -50,4 +50,9 @@ void jpeg_get_frame_size(void __iomem *base,
 int jpeg_set_number_of_component(void __iomem *base, unsigned int num_component);
 enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base);
 void jpeg_alpha_value_set(void __iomem *base, unsigned int alpha);
+void jpeg_dec_window_ctrl(void __iomem *base, unsigned int is_start);
+void jpeg_set_window_margin(void __iomem *base, unsigned int top, unsigned int bottom,
+					unsigned int left, unsigned int right);
+void jpeg_get_window_margin(void __iomem *base, unsigned int *top, unsigned int *bottom,
+					unsigned int *left, unsigned int *right);
 #endif /* __JPEG_REGS_H__ */

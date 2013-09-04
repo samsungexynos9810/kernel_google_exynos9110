@@ -469,6 +469,42 @@ static int jpeg_dec_m2m_streamoff(struct file *file, void *priv,
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
 
+static int jpeg_dec_g_crop(struct file *file, void *priv, struct v4l2_crop *cr)
+{
+	struct jpeg_ctx *ctx = priv;
+	int out_width =	ctx->param.dec_param.out_width;
+	int out_height = ctx->param.dec_param.out_height;
+
+	cr->c.top = ctx->param.dec_param.top_margin;
+	cr->c.left = ctx->param.dec_param.left_margin;
+	cr->c.height = out_height - ctx->param.dec_param.bottom_margin - cr->c.top;
+	cr->c.width = out_width - ctx->param.dec_param.right_margin - cr->c.left;
+
+	return 0;
+}
+
+static int jpeg_dec_s_crop(struct file *file, void *priv, struct v4l2_crop *cr)
+{
+	struct jpeg_ctx *ctx = priv;
+	int out_width =	ctx->param.dec_param.out_width;
+	int out_height = ctx->param.dec_param.out_height;
+
+	if (cr->c.top < 0 || cr->c.left < 0 ||
+			cr->c.top > out_height || cr->c.left > out_width ||
+			cr->c.width <= 0 || cr->c.height <= 0) {
+		v4l2_err(&ctx->dev->v4l2_dev, "Not supported crop data");
+		return -EINVAL;
+	}
+
+	ctx->param.dec_param.top_margin = cr->c.top;
+	ctx->param.dec_param.left_margin = cr->c.left;
+
+	ctx->param.dec_param.bottom_margin = out_height - (cr->c.top + cr->c.height);
+	ctx->param.dec_param.right_margin = out_width - (cr->c.left + cr->c.width);
+
+	return 0;
+}
+
 static int vidioc_dec_s_jpegcomp(struct file *file, void *priv,
 			struct v4l2_jpegcompression *jpegcomp)
 {
@@ -514,6 +550,8 @@ static const struct v4l2_ioctl_ops jpeg_dec_ioctl_ops = {
 	.vidioc_dqbuf			= jpeg_dec_m2m_dqbuf,
 	.vidioc_streamon		= jpeg_dec_m2m_streamon,
 	.vidioc_streamoff		= jpeg_dec_m2m_streamoff,
+	.vidioc_g_crop			= jpeg_dec_g_crop,
+	.vidioc_s_crop			= jpeg_dec_s_crop,
 	.vidioc_s_ctrl			= jpeg_dec_vidioc_s_ctrl,
 };
 const struct v4l2_ioctl_ops *get_jpeg_dec_v4l2_ioctl_ops(void)
