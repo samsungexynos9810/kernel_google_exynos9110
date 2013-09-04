@@ -29,7 +29,6 @@
 #define TRACE_WORK_ID_SCC	0x8
 #define TRACE_WORK_ID_DIS	0x10
 #define TRACE_WORK_ID_SCP	0x20
-#define TRACE_WORK_ID_META	0x40
 #define TRACE_WORK_ID_MASK	0xFF
 
 #define MAX_NBLOCKING_COUNT	3
@@ -56,7 +55,6 @@ enum interrupt_map {
 	INTR_DIS_FDONE		= 3,
 	INTR_SCP_FDONE		= 4,
 	/* 5 is ISP YUV DONE */
-	INTR_META_DONE		= 6,
 	INTR_SHOT_DONE		= 7,
 	INTR_MAX_MAP
 };

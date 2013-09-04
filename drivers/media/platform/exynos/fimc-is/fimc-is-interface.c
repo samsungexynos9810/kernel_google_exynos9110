@@ -675,15 +675,6 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->scp_param3);
 		msg->parameter4 = 0;
 		break;
-	case INTR_META_DONE:
-		msg->id = 0;
-		msg->command = IHC_FRAME_DONE;
-		msg->instance = readl(&com_regs->meta_sensor_id);
-		msg->parameter1 = readl(&com_regs->meta_param1);
-		msg->parameter2 = 0;
-		msg->parameter3 = 0;
-		msg->parameter4 = 0;
-		break;
 	case INTR_SHOT_DONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -748,9 +739,6 @@ static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
 		break;
 	case INTR_SCP_FDONE:
 		writel(0, &com_regs->scp_iflag);
-		break;
-	case INTR_META_DONE:
-		writel(0, &com_regs->meta_iflag);
 		break;
 	case INTR_SHOT_DONE:
 		writel(0, &com_regs->shot_iflag);
@@ -1975,28 +1963,6 @@ static irqreturn_t interface_isr(int irq, void *data)
 		fimc_is_clr_intr(itf, INTR_SCP_FDONE);
 	}
 
-	if (status & (1<<INTR_META_DONE)) {
-		work_wq = &itf->work_wq[INTR_META_DONE];
-		work_list = &itf->work_list[INTR_META_DONE];
-
-		/* meta done is not needed now
-		this can be used in the future */
-#if 0
-		get_free_work_irq(work_list, &work);
-		if (work) {
-			fimc_is_get_cmd(itf, &work->msg, INTR_META_DONE);
-			work->fcount = work->msg.parameter1;
-			set_req_work_irq(work_list, work);
-
-			if (!work_pending(work_wq))
-				wq_func_schedule(itf, work_wq);
-		} else
-			err("free work item is empty4");
-#endif
-		status &= ~(1<<INTR_META_DONE);
-		fimc_is_clr_intr(itf, INTR_META_DONE);
-	}
-
 	if (status != 0)
 		err("status is NOT all clear(0x%08X)", status);
 
@@ -2069,8 +2035,6 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 		TRACE_WORK_ID_DIS, MAX_WORK_COUNT);
 	init_work_list(&this->work_list[INTR_SCP_FDONE],
 		TRACE_WORK_ID_SCP, MAX_WORK_COUNT);
-	init_work_list(&this->work_list[INTR_META_DONE],
-		TRACE_WORK_ID_META, MAX_WORK_COUNT);
 	init_work_list(&this->work_list[INTR_SHOT_DONE],
 		TRACE_WORK_ID_SHOT, MAX_WORK_COUNT);
 

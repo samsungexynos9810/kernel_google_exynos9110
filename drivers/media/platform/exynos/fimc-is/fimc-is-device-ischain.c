@@ -6691,8 +6691,6 @@ int fimc_is_ischain_print_status(struct fimc_is_device_ischain *device)
 	fimc_is_frame_print_request_list(framemgr);
 	fimc_is_frame_print_process_list(framemgr);
 	fimc_is_frame_print_complete_list(framemgr);
-	print_fre_work_list(&itf->work_list[INTR_META_DONE]);
-	print_req_work_list(&itf->work_list[INTR_META_DONE]);
 
 	return ret;
 }
