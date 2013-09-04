@@ -2017,7 +2017,7 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 	notify_fcount_sen1		= &this->com_regs->fcount_sen1;
 	notify_fcount_sen2		= &this->com_regs->fcount_sen2;
 	last_fcount1			= &this->com_regs->fcount_sen3;
-	last_fcount0			= &this->com_regs->reserved8[0];
+	last_fcount0			= &this->com_regs->grp1_done_frame_num;
 	this->core			= (void *)core;
 	clear_bit(IS_IF_STATE_OPEN, &this->state);
 	clear_bit(IS_IF_STATE_START, &this->state);

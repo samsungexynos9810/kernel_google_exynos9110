@@ -12,7 +12,7 @@
 #ifndef FIMC_IS_CMD_H
 #define FIMC_IS_CMD_H
 
-#define IS_COMMAND_VER 122 /* IS COMMAND VERSION 1.22 */
+#define IS_COMMAND_VER 131 /* IS COMMAND VERSION 1.31 */
 
 enum is_cmd {
 	/* HOST -> IS */
@@ -48,6 +48,7 @@ enum is_cmd {
 	HIC_CALIBRATE_ACTUATOR,
 	HIC_GET_IP_STATUS /* 30 */,
 	HIC_I2C_CONTROL_LOCK,
+	HIC_SYSTEM_CONTROL /* 0x20 */,
 	HIC_COMMAND_END,
 	/* IS -> HOST */
 	IHC_GET_SENSOR_NUMBER = 0x1000,
@@ -97,6 +98,16 @@ enum is_subscenario_id {
 	ISS_SUB_END,
 };
 
+enum is_system_control_id {
+	IS_SYS_CLOCK_GATE	= 0,
+	IS_SYS_END		= 1,
+};
+
+enum is_system_control_cmd {
+	SYS_CONTROL_DISABLE	= 0,
+	SYS_CONTROL_ENABLE	= 1,
+};
+
 struct is_setfile_header_element {
 	u32 binary_addr;
 	u32 binary_size;
@@ -118,6 +129,7 @@ struct is_setfile_header {
 #define IS_SET_INTERRUPT(base)		(base->uiINTGR1 |= IS_SET_INT_BIT)
 #define IS_CLR_INTERRUPT(base)		(base->uiINTCR1 |= IS_CLR_INT_BIT)
 
+#if defined(CONFIG_SOC_EXYNOS5430)
 struct is_common_reg {
 	u32 hicmd;
 	u32 hic_sensorid;
@@ -126,7 +138,76 @@ struct is_common_reg {
 	u32 hic_param3;
 	u32 hic_param4;
 
+	u32 power_down_debug_number;
 	u32 reserved1[3];
+
+	u32 ihcmd;
+	u32 ihc_sensorid;
+	u32 ihc_param1;
+	u32 ihc_param2;
+	u32 ihc_param3;
+	u32 ihc_param4;
+
+	u32 reserved2[3];
+
+	u32 taa0c_sensor_id;
+	u32 taa0c_param1;
+	u32 taa0c_param2;
+	u32 taa0c_param3;
+
+	u32 reserved3[3];
+
+	u32 taa1c_sensor_id;
+	u32 taa1c_param1;
+	u32 taa1c_param2;
+	u32 taa1c_param3;
+
+	u32 reserved4[3];
+
+	u32 scc_sensor_id;
+	u32 scc_param1;
+	u32 scc_param2;
+	u32 scc_param3;
+
+	u32 reserved5[3];
+
+	u32 dis_sensor_id;
+	u32 dis_param1;
+	u32 dis_param2;
+	u32 dis_param3;
+
+	u32 reserved6[3];
+
+	u32 scp_sensor_id;
+	u32 scp_param1;
+	u32 scp_param2;
+	u32 scp_param3;
+
+	u32 reserved7[4];
+
+	u32 shot_sensor_id;
+	u32 shot_param1;
+	u32 shot_param2;
+	u32 shot_param3;
+
+	u32 grp1_done_frame_num;
+
+	u32 fcount_sen3;
+	u32 fcount_sen2;
+	u32 fcount_sen1;
+	u32 fcount_sen0;
+};
+#else
+struct is_common_reg {
+	u32 hicmd;
+	u32 hic_sensorid;
+	u32 hic_param1;
+	u32 hic_param2;
+	u32 hic_param3;
+	u32 hic_param4;
+
+	u32 power_down_debug_number;
+	u32 reserved1[2];
 
 	u32 ihcmd_iflag;
 	u32 ihcmd;
@@ -181,13 +262,14 @@ struct is_common_reg {
 	u32 shot_param2;
 	u32 shot_param3;
 
-	u32 reserved8[1];
+	u32 grp1_done_frame_num;
 
 	u32 fcount_sen3;
 	u32 fcount_sen2;
 	u32 fcount_sen1;
 	u32 fcount_sen0;
 };
+#endif
 
 struct is_mcuctl_reg {
 	u32 mcuctl;
