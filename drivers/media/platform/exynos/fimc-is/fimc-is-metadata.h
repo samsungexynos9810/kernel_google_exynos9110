@@ -928,7 +928,7 @@ struct camera2_scaler_uctl {
 	uint32_t sccTargetAddress[4];
 	uint32_t scpTargetAddress[4];
 	uint32_t disTargetAddress[4];
-	uint32_t ispTargetAddress[4];
+	uint32_t taapTargetAddress[4]; /* 3AA preview DMA */
 	uint32_t orientation;
 };
 
@@ -1018,7 +1018,7 @@ struct camera2_shot_ext {
 		[0] disable stream out
 		[1] enable stream out
 	*/
-	uint32_t		request_3ax;
+	uint32_t		request_taap; /* 3AA preview DMA */
 	uint32_t		request_isp;
 	uint32_t		request_scc;
 	uint32_t		request_dis;

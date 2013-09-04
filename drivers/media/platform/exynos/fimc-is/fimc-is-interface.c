@@ -1209,7 +1209,7 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 	if (status != ISR_DONE) {
 		pr_err("[3A0:D:%d] GRP0 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
-		ldr_frame->shot_ext->request_3ax = 0;
+		ldr_frame->shot_ext->request_taap = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
@@ -1269,7 +1269,7 @@ static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 	if (status != ISR_DONE) {
 		pr_err("[3A1:D:%d] GRP1 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
-		ldr_frame->shot_ext->request_3ax = 0;
+		ldr_frame->shot_ext->request_taap = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 

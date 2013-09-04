@@ -5205,26 +5205,26 @@ static int fimc_is_ischain_3ax_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			ldr_frame->shot->uctl.scalerUd.ispTargetAddress[0] =
+			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[0] =
 				frame->dvaddr_buffer[0];
-			ldr_frame->shot->uctl.scalerUd.ispTargetAddress[1] = 0;
-			ldr_frame->shot->uctl.scalerUd.ispTargetAddress[2] = 0;
+			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
+			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
 			frame->stream->findex = ldr_frame->index;
 			set_bit(OUT_3AX_FRAME, &ldr_frame->out_flag);
 			set_bit(REQ_FRAME, &frame->req_flag);
 			fimc_is_frame_trans_req_to_pro(framemgr, frame);
 		} else {
-			ldr_frame->shot->uctl.scalerUd.ispTargetAddress[0] = 0;
-			ldr_frame->shot->uctl.scalerUd.ispTargetAddress[1] = 0;
-			ldr_frame->shot->uctl.scalerUd.ispTargetAddress[2] = 0;
+			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[0] = 0;
+			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
+			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
 			merr("3ax %d frame is drop", device, ldr_frame->fcount);
 		}
 
 		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_8, flags);
 	} else {
-		ldr_frame->shot->uctl.scalerUd.ispTargetAddress[0] = 0;
-		ldr_frame->shot->uctl.scalerUd.ispTargetAddress[1] = 0;
-		ldr_frame->shot->uctl.scalerUd.ispTargetAddress[2] = 0;
+		ldr_frame->shot->uctl.scalerUd.taapTargetAddress[0] = 0;
+		ldr_frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
+		ldr_frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
 	}
 
 p_err:

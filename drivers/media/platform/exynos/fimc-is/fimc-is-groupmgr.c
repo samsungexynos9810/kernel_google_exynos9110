@@ -308,7 +308,7 @@ static void fimc_is_group_3a0_cancel(struct fimc_is_framemgr *ldr_framemgr,
 
 	pr_err("[3A0:D:%d] GRP0 CANCEL(%d, %d)\n", instance,
 		ldr_frame->fcount, ldr_frame->index);
-	ldr_frame->shot_ext->request_3ax = 0;
+	ldr_frame->shot_ext->request_taap = 0;
 
 	src_queue = GET_SRC_QUEUE(vctx);
 	dst_queue = GET_DST_QUEUE(vctx);
@@ -350,7 +350,7 @@ static void fimc_is_group_3a1_cancel(struct fimc_is_framemgr *ldr_framemgr,
 
 	pr_err("[3A1:D:%d] GRP1 CANCEL(%d, %d)\n", instance,
 		ldr_frame->fcount, ldr_frame->index);
-	ldr_frame->shot_ext->request_3ax = 0;
+	ldr_frame->shot_ext->request_taap = 0;
 
 	src_queue = GET_SRC_QUEUE(vctx);
 	dst_queue = GET_DST_QUEUE(vctx);
