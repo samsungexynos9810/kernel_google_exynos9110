@@ -456,7 +456,11 @@ static void __init set_volt_table_CA7(void)
 	exynos5430_freq_table_CA7[L3].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA7[L4].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA7[L5].frequency = CPUFREQ_ENTRY_INVALID;
-	max_support_idx_CA7 = L6;
+	exynos5430_freq_table_CA7[L6].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L7].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L8].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L9].frequency = CPUFREQ_ENTRY_INVALID;
+	max_support_idx_CA7 = L10;
 	min_support_idx_CA7 = L18;
 }
 

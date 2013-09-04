@@ -524,7 +524,12 @@ static void __init set_volt_table_CA15(void)
 	exynos5430_freq_table_CA15[L7].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA15[L8].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA15[L9].frequency = CPUFREQ_ENTRY_INVALID;
-	max_support_idx_CA15 = L10;
+	exynos5430_freq_table_CA15[L10].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA15[L11].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA15[L12].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA15[L13].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA15[L14].frequency = CPUFREQ_ENTRY_INVALID;
+	max_support_idx_CA15 = L15;
 	min_support_idx_CA15 = L18;
 	exynos5430_freq_table_CA15[L19].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA15[L20].frequency = CPUFREQ_ENTRY_INVALID;
