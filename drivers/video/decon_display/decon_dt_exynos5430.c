@@ -13,10 +13,14 @@
 #include <linux/of.h>
 #include <linux/fb.h>
 #include <linux/of_gpio.h>
+#include <linux/platform_device.h>
 
+#include "decon_display_driver.h"
 #include "decon_fb.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
+
+#define DISP_CTRL_NAME	"decon_ctrl"
 
 #define DT_READ_U32(node, key, value) do {\
 		pprop = key; \
@@ -58,6 +62,9 @@ struct mipi_dsim_config g_dsim_config = {
 	.dsim_ddi_pd = &s6e3fa0_mipi_lcd_driver,
 #endif
 };
+
+#define DISPLAY_CONTROLLER_REG_INDEX	0
+#define DISPLAY_DRIVER_REG_INDEX	1
 
 static unsigned int g_dsi_power_gpio_num;
 
@@ -183,7 +190,7 @@ static int parse_fb_win_variants(struct device_node *np)
 
 /* parse_display_dt_exynos5430
  */
-int parse_display_dt_exynos5430(struct device_node *np)
+static int parse_display_dt_exynos5430(struct device_node *np)
 {
 	int ret = 0;
 	struct device_node *decon_np;
@@ -221,6 +228,84 @@ int parse_display_dt_exynos5430(struct device_node *np)
 	g_fb_drvdata.win[4] = &g_fb_win_variant[4];
 end:
 	return 0;
+}
+
+/* parse_all_dt_exynos5430 -
+ * this function is for parsing TOP device tree of the display subsystem */
+static int parse_all_dt_exynos5430(struct device_node *parent)
+{
+	int ret = 0;
+	struct device_node *decon;
+	decon = of_get_child_by_name(parent, DISP_CTRL_NAME);
+	if (!decon) {
+		pr_err("device tree errror : empty dt node\n");
+		return -EINVAL;
+	}
+	parse_display_dt_exynos5430(decon);
+	return ret;
+}
+
+static int parse_interrupt_dt_exynos5430(struct platform_device *pdev,
+	struct display_driver *ddp)
+{
+	int ret = 0;
+	struct resource *res;
+
+#ifndef CONFIG_FB_I80_COMMAND_MODE
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+	if (res == NULL) {
+		pr_err("getting video irq resource failed\n");
+		return -ENOENT;
+	}
+	ddp->decon_driver.irq_no = res->start;
+#endif
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+	if (res == NULL) {
+		pr_err("getting fifo irq resource failed\n");
+		return -ENOENT;
+	}
+	ddp->decon_driver.fifo_irq_no = res->start;
+
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
+	if (res == NULL) {
+		pr_err("failed to get i80 frame done irq resource\n");
+		return -ENOENT;
+	}
+	ddp->decon_driver.i80_irq_no = res->start;
+
+	return ret;
+}
+
+/* parse_display_driver_dt_exynos5430
+ * for creating all display device tree data & set up H/W info like as
+ * base address and IRQ numbers of all display system IPs. */
+int parse_display_driver_dt_exynos5430(struct platform_device *pdev,
+	struct display_driver *ddp)
+{
+	int ret = 0;
+	struct device *dev = &pdev->dev;
+
+	ddp->display_driver = dev;
+
+	ddp->decon_driver.regs = platform_get_resource(pdev,
+		IORESOURCE_MEM, DISPLAY_CONTROLLER_REG_INDEX);
+	if (!ddp->decon_driver.regs) {
+		pr_err("failed to find registers for DECON\n");
+		return -ENOENT;
+	}
+	ret = parse_interrupt_dt_exynos5430(pdev, ddp);
+	if (ret < 0) {
+		pr_err("interrupt parse error system\n");
+		return -EINVAL;
+	}
+
+	ret = parse_all_dt_exynos5430(dev->of_node);
+	if (ret < 0) {
+		pr_err("device tree parse error system\n");
+		return -EINVAL;
+	}
+
+	return ret;
 }
 
 struct s3c_fb_driverdata *get_display_drvdata_exynos5430(void)
@@ -273,7 +358,7 @@ static int parse_dsi_drvdata(struct device_node *np)
 	return 0;
 }
 
-int get_display_dsi_power_gpio_exynos5430(void)
+int get_display_dsi_reset_gpio_exynos5430(void)
 {
 	return g_dsi_power_gpio_num;
 }
@@ -324,15 +409,15 @@ void dump_s3c_fb_variant(struct s3c_fb_variant *p_fb_variant)
 
 void dump_s3c_fb_win_variant(struct s3c_fb_win_variant *p_fb_win_variant)
 {
-	pr_err("[INFO] has_osd_c:1: 0x%0X", p_fb_win_variant->has_osd_c);
-	pr_err("[INFO] has_osd_d:1: 0x%0X", p_fb_win_variant->has_osd_d);
-	pr_err("[INFO] has_osd_alpha:1: 0x%0X",
+	pr_err("[INFO] has_osd_c:1: 0x%0X\n", p_fb_win_variant->has_osd_c);
+	pr_err("[INFO] has_osd_d:1: 0x%0X\n", p_fb_win_variant->has_osd_d);
+	pr_err("[INFO] has_osd_alpha:1: 0x%0X\n",
 		p_fb_win_variant->has_osd_alpha);
-	pr_err("[INFO] palette_16bpp:1: 0x%0X",
+	pr_err("[INFO] palette_16bpp:1: 0x%0X\n",
 		p_fb_win_variant->palette_16bpp);
-	pr_err("[INFO] osd_size_off: 0x%0X", p_fb_win_variant->osd_size_off);
-	pr_err("[INFO] palette_sz: 0x%0X", p_fb_win_variant->palette_sz);
-	pr_err("[INFO] valid_bpp: 0x%0X", p_fb_win_variant->valid_bpp);
+	pr_err("[INFO] osd_size_off: 0x%0X\n", p_fb_win_variant->osd_size_off);
+	pr_err("[INFO] palette_sz: 0x%0X\n", p_fb_win_variant->palette_sz);
+	pr_err("[INFO] valid_bpp: 0x%0X\n", p_fb_win_variant->valid_bpp);
 }
 
 void dump_s3c_fb_win_variants(struct s3c_fb_win_variant p_fb_win_variant[],

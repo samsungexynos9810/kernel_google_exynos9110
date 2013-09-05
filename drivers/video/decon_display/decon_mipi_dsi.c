@@ -40,6 +40,7 @@
 
 #include <mach/map.h>
 
+#include "decon_display_driver.h"
 #include "decon_mipi_dsi_lowlevel.h"
 #include "decon_mipi_dsi.h"
 #include "regs-mipidsim.h"

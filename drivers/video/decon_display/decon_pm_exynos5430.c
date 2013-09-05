@@ -16,6 +16,8 @@
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
 
+#include <linux/platform_device.h>
+#include "decon_display_driver.h"
 #include "decon_fb.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
@@ -174,7 +176,7 @@ int enable_display_dsi_power_exynos5430(struct device *dev)
 	int id;
 	int ret = 0;
 
-	gpio_power = get_display_dsi_power_gpio();
+	gpio_power = get_display_dsi_reset_gpio();
 	id = gpio_request(gpio_power, "lcd_power");
 	if (id < 0) {
 		pr_err("Failed to get gpio number for the lcd power\n");
@@ -211,7 +213,7 @@ int disable_display_dsi_power_exynos5430(struct device *dev)
 	int id;
 	int ret = 0;
 
-	gpio_power = get_display_dsi_power_gpio();
+	gpio_power = get_display_dsi_reset_gpio();
 	id = gpio_request(gpio_power, "lcd_power");
 	if (id < 0) {
 		pr_err("Failed to get gpio number for the lcd power\n");

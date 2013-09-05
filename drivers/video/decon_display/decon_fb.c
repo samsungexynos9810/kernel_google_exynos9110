@@ -53,6 +53,7 @@
 #include <linux/exynos_iovmm.h>
 #endif
 
+#include "decon_display_driver.h"
 #include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
@@ -3310,7 +3311,6 @@ static void s3c_fb_debugfs_cleanup(struct s3c_fb *sfb)
 #else
 
 static int s3c_fb_debugfs_init(struct s3c_fb *sfb) { return 0; }
-static void s3c_fb_debugfs_cleanup(struct s3c_fb *sfb) { }
 
 #endif
 /*
@@ -3496,21 +3496,21 @@ static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 #endif
 #endif
 
-static int s3c_fb_probe(struct platform_device *pdev)
+int create_decon_display_controller(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
 	struct device *dev = &pdev->dev;
 	struct s3c_fb_platdata *pd;
 	struct s3c_fb *sfb;
-	struct resource *res;
 	struct fb_info *fbinfo;
+	struct display_driver *dispdrv;
 	int win;
 	int default_win;
 	int i;
 	int ret = 0;
 	u32 reg;
 
-	parse_display_dt(dev->of_node);
+	dispdrv = get_display_driver();
 
 	fbdrv = get_display_drvdata();
 	pd = get_display_platdata();
@@ -3560,46 +3560,32 @@ static int s3c_fb_probe(struct platform_device *pdev)
 #endif
 	pm_runtime_enable(sfb->dev);
 
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
-		dev_err(dev, "failed to find registers\n");
-		ret = -ENOENT;
-		goto resource_exception;
-	}
-
-	sfb->regs = devm_request_and_ioremap(dev, res);
+	sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
 	if (!sfb->regs) {
 		dev_err(dev, "failed to map registers\n");
 		ret = -ENXIO;
 		goto resource_exception;
 	}
+
 #ifndef CONFIG_FB_I80_COMMAND_MODE
-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
-	if (res == NULL) {
-		dev_err(dev, "getting video irq resource failed\n");
-		ret = -ENOENT;
-		goto resource_exception;
-	}
-	sfb->irq_no = res->start;
-	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
+	ret = devm_request_irq(dev, dispdrv->decon_driver.irq_no, s3c_fb_irq,
 			  0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "video irq request failed\n");
 		goto resource_exception;
 	}
 #endif
-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (res == NULL) {
-		dev_err(dev, "getting fifo irq resource failed\n");
-		ret = -ENOENT;
-		goto resource_exception;
-	}
-	sfb->irq_no = res->start;
-
-	ret = devm_request_irq(dev, sfb->irq_no, s3c_fb_irq,
-				0, "s3c_fb", sfb);
+	ret = devm_request_irq(dev, dispdrv->decon_driver.fifo_irq_no,
+	s3c_fb_irq, 0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "fifo irq request failed\n");
+		goto resource_exception;
+	}
+
+	ret = devm_request_irq(dev, dispdrv->decon_driver.i80_irq_no,
+		s3c_fb_irq, 0, "s3c_fb", sfb);
+	if (ret) {
+		dev_err(dev, "failed to request i80 framedone irq\n");
 		goto resource_exception;
 	}
 
@@ -3848,6 +3834,7 @@ err_sfb:
  * Shutdown and then release all the resources that the driver allocated
  * on initialisation.
  */
+#ifdef S3CFB_DEVICE_DRIVER_TYPE_ENABLE
 static int s3c_fb_remove(struct platform_device *pdev)
 {
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
@@ -3879,6 +3866,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 
 	return 0;
 }
+#endif
 
 static void decon_fb_direct_on_off(struct s3c_fb *sfb, bool enable)
 {
@@ -4219,31 +4207,6 @@ static const struct dev_pm_ops s3cfb_pm_ops = {
 	SET_RUNTIME_PM_OPS(s3c_fb_runtime_suspend, s3c_fb_runtime_resume,
 			   NULL)
 };
-
-static struct platform_driver s3c_fb_driver = {
-	.probe		= s3c_fb_probe,
-	.remove		= s3c_fb_remove,
-	/*.id_table	= s3c_fb_driver_ids,*/
-	.driver		= {
-		.name	= "s3c-fb",
-		.owner	= THIS_MODULE,
-		.pm	= &s3cfb_pm_ops,
-		.of_match_table = of_match_ptr(exynos5_decon),
-	},
-};
-
-static int __init s3c_fb_init(void)
-{
-	return platform_driver_register(&s3c_fb_driver);
-}
-
-static void __exit s3c_fb_cleanup(void)
-{
-	platform_driver_unregister(&s3c_fb_driver);
-}
-
-late_initcall(s3c_fb_init);
-module_exit(s3c_fb_cleanup);
 
 MODULE_AUTHOR("Ben Dooks <ben@simtec.co.uk>");
 MODULE_DESCRIPTION("Samsung S3C SoC Framebuffer driver");

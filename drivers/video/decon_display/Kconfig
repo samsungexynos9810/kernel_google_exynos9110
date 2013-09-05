@@ -28,6 +28,11 @@ choice
 
 endchoice
 
+config DECON_DISPLAY
+	bool "Samsung DECON DISPLAY driver"
+	depends on DECON
+	default y
+
 config DECON_MIPI_DSI
 	bool "Samsung DECON MIPI-DSI driver"
 	depends on DECON
