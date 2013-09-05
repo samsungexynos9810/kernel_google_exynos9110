@@ -13,6 +13,8 @@
 #ifndef __ASM_ARCH_NEW_ASV_H
 #define __ASM_ARCH_NEW_ASV_H __FILE__
 
+#include <linux/io.h>
+
 #define ASV_GRP_NR(_id)		_id##_ASV_GRP_NR
 #define DVFS_LEVEL_NR(_id)	_id##_DVFS_LEVEL_NR
 #define MAX_VOLT(_id)		_id##_MAX_VOLT
