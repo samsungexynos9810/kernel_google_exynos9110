@@ -522,8 +522,14 @@ int gsc_g_fmt_mplane(struct gsc_ctx *ctx, struct v4l2_format *f)
 	for (i = 0; i < pix_mp->num_planes; ++i) {
 		pix_mp->plane_fmt[i].bytesperline = (frame->f_width *
 			frame->fmt->depth[i]) / 8;
-		pix_mp->plane_fmt[i].sizeimage = pix_mp->plane_fmt[i].bytesperline *
-			frame->f_height;
+		if (is_AYV12(pix_mp->pixelformat))
+			pix_mp->plane_fmt[i].sizeimage =
+			(pix_mp->width * pix_mp->height) +
+			((ALIGN(pix_mp->width >> 1, 16) *
+			  (pix_mp->height >> 1) * 2));
+		else
+			pix_mp->plane_fmt[i].sizeimage =
+				pix_mp->plane_fmt[i].bytesperline * frame->f_height;
 	}
 
 	return 0;
