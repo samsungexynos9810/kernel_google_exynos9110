@@ -1249,9 +1249,9 @@
 		dmas = <&adma 0 &adma 2>;
 		dma-names = "tx", "rx";
 		interrupts = <0 70 0>;
-		clocks = <&clock 781>,		/* pclk_i2s */
-			 <&clock 781>,		/* pclk_i2s */
-			 <&clock 789>;		/* sclk_i2s */
+		clocks = <&clock 2006>,		/* gate_i2s */
+			 <&clock 2006>,		/* gate_i2s */
+			 <&clock 4150>;		/* dout_sclk_i2s */
 		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
 		samsung,supports-6ch;
 		samsung,supports-rstclr;
@@ -1275,9 +1275,9 @@
 		dmas = <&pdma 31 &pdma 30>;
 		dma-names = "tx", "rx";
 		interrupts = <0 435 0>;
-		clocks = <&clock 914>,		/* pclk_i2s1 */
-			 <&clock 914>,		/* pclk_i2s1 */
-			 <&clock 111>;		/* sclk_i2s1 */
+		clocks = <&clock 2424>,		/* gate_i2s1 */
+			 <&clock 2424>,		/* gate_i2s1 */
+			 <&clock 4053>;		/* dout_sclk_i2s1 */
 		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
 		samsung,supports-6ch;
 		samsung,supports-rstclr;
