@@ -49,6 +49,14 @@
 			interrupt-controller;
 			#interrupt-cells = <2>;
 		};
+
+		pmic_irq: pmic-irq {
+			samsung,pins = "gpa0-2";
+			samsung,pin-function = <0>;
+			samsung,pin-pud = <3>;
+			samsung,pin-drv = <3>;
+		};
+
 	};
 
 	pinctrl@114B0000 {
