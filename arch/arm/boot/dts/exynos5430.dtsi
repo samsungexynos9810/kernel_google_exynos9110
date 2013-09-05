@@ -1286,6 +1286,30 @@
 		status = "disabled";
 	};
 
+	pcm0: pcm@11450000 {
+		compatible = "samsung,pcm";
+		reg = <0x11450000 0x100>;
+		dmas = <&adma 3 &adma 4>;
+		dma-names = "tx", "rx";
+		interrupts = <0 71 0>;
+		clocks = <&clock 2005>,		/* gate_pcm */
+			 <&clock 4152>;		/* dout_sclk_pcm */
+		clock-names = "pcm", "sclk_pcm";
+		status = "disabled";
+	};
+
+	pcm1: pcm@14D80000 {
+		compatible = "samsung,pcm";
+		reg = <0x14D80000 0x100>;
+		dmas = <&pdma 28 &pdma 27>;
+		dma-names = "tx", "rx";
+		interrupts = <0 436 0>;
+		clocks = <&clock 2423>,		/* gate_pcm1 */
+			 <&clock 4052>;		/* dout_sclk_pcm1 */
+		clock-names = "pcm", "sclk_pcm";
+		status = "disabled";
+	};
+
 	spi_0: spi@14d20000 {
 		compatible = "samsung,exynos4210-spi";
 		reg = <0x14d20000 0x100>;
