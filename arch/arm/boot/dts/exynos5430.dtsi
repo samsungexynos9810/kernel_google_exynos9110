@@ -1283,8 +1283,6 @@
 		samsung,supports-rstclr;
 		samsung,supports-tdm;
 		samsung,supports-low-rfs;
-		pinctrl-names = "default";
-		pinctrl-0 = <&i2s1_bus>;
 		status = "disabled";
 	};
 
