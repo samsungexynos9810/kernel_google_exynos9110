@@ -98,6 +98,9 @@
 			gpios = <&gpa0 2 0xf>;
 			compatible = "samsung,s2mps13-pmic";
 			reg = <0x66>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pmic_irq>;
+			wtsr_smpl = <1>;
 
 			regulators {
 				buck1_reg: BUCK1 {
