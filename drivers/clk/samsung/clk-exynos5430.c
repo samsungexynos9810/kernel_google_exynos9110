@@ -2855,6 +2855,91 @@ static __initdata struct of_device_id ext_clk_match[] = {
 	{ },
 };
 
+struct samsung_pll_rate_table pll_egl_kfc_rate_table[] = {
+	/* rate		p	m	s	k */
+	{2500000000U,	6,	625,	0,	0},
+	{2400000000U,	5,	500,	0,	0},
+	{2300000000U,	6,	575,	0,	0},
+	{2200000000U,	6,	550,	0,	0},
+	{2100000000U,	4,	350,	0,	0},
+	{2000000000U,	6,	500,	0,	0},
+	{1900000000U,	6,	475,	0,	0},
+	{1800000000U,	5,	375,	0,	0},
+	{1700000000U,	6,	425,	0,	0},
+	{1600000000U,	6,	400,	0,	0},
+	{1500000000U,	4,	250,	0,	0},
+	{1400000000U,	6,	350,	0,	0},
+	{1300000000U,	6,	325,	0,	0},
+	{1200000000U,	5,	500,	1,	0},
+	{1100000000U,	6,	550,	1,	0},
+	{1000000000U,	6,	500,	1,	0},
+	{ 900000000U,	5,	375,	1,	0},
+	{ 800000000U,	6,	400,	1,	0},
+	{ 700000000U,	6,	350,	1,	0},
+	{ 600000000U,	5,	500,	2,	0},
+	{ 500000000U,	6,	500,	2,	0},
+	{ 400000000U,	6,	400,	2,	0},
+	{ 300000000U,	5,	500,	3,	0},
+	{ 200000000U,	6,	400,	3,	0},
+};
+
+struct samsung_pll_rate_table pll_g3d_rate_table[] = {
+	/* rate		p	m	s	k */
+	{ 700000000U,	6,	350,	1,	0},
+	{ 600000000U,	5,	500,	2,	0},
+	{ 533000000U,	6,	533,	2,	0},
+	{ 420000000U,	5,	350,	2,	0},
+	{ 350000000U,	6,	350,	2,	0},
+	{ 266000000U,	6,	532,	3,	0},
+
+};
+
+struct samsung_pll_rate_table pll_mif_rate_table[] = {
+	/* rate		p	m	s	k */
+	{1066000000U,	6,	533,	1,	0},
+	{ 933000000U,	4,	311,	0,	0},
+	{ 733000000U,	12,	733,	1,	0},
+	{ 667000000U,	12,	667,	1,	0},
+	{ 533000000U,	6,	533,	2,	0},
+	{ 333000000U,	4,	222,	2,	0},
+	{ 266000000U,	6,	532,	3,	0},
+	{ 200000000U,	6,	400,	3,	0},
+	{ 166000000U,	6,	332,	3,	0},
+	{ 133000000U,	6,	532,	4,	0},
+	{ 100000000U,	6,	400,	4,	0},
+};
+
+struct samsung_pll_rate_table pll_mfc_rate_table[] = {
+	/* rate		p	m	s	k */
+	{1332000000U,	4,	222,	0,	0},
+	{ 666000000U,	4,	222,	1,	0},
+};
+
+struct samsung_pll_rate_table pll_mphy_rate_table[] = {
+	/* rate		p	m	s	k */
+	{ 910000000U,	6,	455,	1,	0},
+	{ 598000000U,	6,	598,	2,	0},
+};
+
+struct samsung_pll_rate_table pll_isp_rate_table[] = {
+	/* rate		p	m	s	k */
+	{ 552000000U,	5,	460,	2,	0},
+	{ 444000000U,	5,	370,	2,	0},
+};
+
+struct samsung_pll_rate_table pll_aud_rate_table[] = {
+	/* rate		p	m	s	k */
+	{ 393216018U,	2,	131,	2,	4719},
+	{ 196608009U,	2,	131,	3,	4719},
+};
+
+struct samsung_pll_rate_table pll_bus_rate_table[] = {
+	/* rate		p	m	s	k */
+	{ 800000000U,	3,	100,	0,	0},
+	{ 400000000U,	3,	100,	1,	0},
+	{ 200000000U,	3,	100,	2,	0},
+};
+
 /* register exynos5430 clocks */
 void __init exynos5430_clk_init(struct device_node *np)
 {
@@ -2870,11 +2955,11 @@ void __init exynos5430_clk_init(struct device_node *np)
 
 	egl_pll = samsung_clk_register_pll35xx("fout_egl_pll", "fin_pll",
 			EXYNOS5430_EGL_PLL_LOCK,
-			EXYNOS5430_EGL_PLL_CON0, NULL, 0);
+			EXYNOS5430_EGL_PLL_CON0, pll_egl_kfc_rate_table, ARRAY_SIZE(pll_egl_kfc_rate_table));
 
 	kfc_pll = samsung_clk_register_pll35xx("fout_kfc_pll", "fin_pll",
 			EXYNOS5430_KFC_PLL_LOCK,
-			EXYNOS5430_KFC_PLL_CON0, NULL, 0);
+			EXYNOS5430_KFC_PLL_CON0, pll_egl_kfc_rate_table, ARRAY_SIZE(pll_egl_kfc_rate_table));
 
 	mem_pll = samsung_clk_register_pll35xx("fout_mem_pll", "fin_pll",
 			EXYNOS5430_MEM_PLL_LOCK,
@@ -2882,23 +2967,23 @@ void __init exynos5430_clk_init(struct device_node *np)
 
 	bus_pll = samsung_clk_register_pll35xx("fout_bus_pll", "fin_pll",
 			EXYNOS5430_BUS_PLL_LOCK,
-			EXYNOS5430_BUS_PLL_CON0, NULL, 0);
+			EXYNOS5430_BUS_PLL_CON0, pll_mif_rate_table, ARRAY_SIZE(pll_mif_rate_table));
 
 	bus_dpll = samsung_clk_register_pll35xx("fout_bus_dpll", "fin_pll",
 			EXYNOS5430_BUS_DPLL_LOCK,
-			EXYNOS5430_BUS_DPLL_CON0, NULL, 0);
+			EXYNOS5430_BUS_DPLL_CON0, pll_bus_rate_table, ARRAY_SIZE(pll_bus_rate_table));
 
 	mfc_pll = samsung_clk_register_pll35xx("fout_mfc_pll", "fin_pll",
 			EXYNOS5430_MFC_PLL_LOCK,
-			EXYNOS5430_MFC_PLL_CON0, NULL, 0);
+			EXYNOS5430_MFC_PLL_CON0, pll_mfc_rate_table, ARRAY_SIZE(pll_mfc_rate_table));
 
 	mphy_pll = samsung_clk_register_pll35xx("fout_mphy_pll", "fin_pll",
 			EXYNOS5430_MPHY_PLL_LOCK,
-			EXYNOS5430_MPHY_PLL_CON0, NULL, 0);
+			EXYNOS5430_MPHY_PLL_CON0, pll_mphy_rate_table, ARRAY_SIZE(pll_mphy_rate_table));
 
 	g3d_pll = samsung_clk_register_pll35xx("fout_g3d_pll", "fin_pll",
 			EXYNOS5430_G3D_PLL_LOCK,
-			EXYNOS5430_G3D_PLL_CON0, NULL, 0);
+			EXYNOS5430_G3D_PLL_CON0, pll_g3d_rate_table, ARRAY_SIZE(pll_g3d_rate_table));
 
 	disp_pll = samsung_clk_register_pll35xx("fout_disp_pll", "fin_pll",
 			EXYNOS5430_DISP_PLL_LOCK,
@@ -2906,11 +2991,11 @@ void __init exynos5430_clk_init(struct device_node *np)
 
 	isp_pll = samsung_clk_register_pll35xx("fout_isp_pll", "fin_pll",
 			EXYNOS5430_ISP_PLL_LOCK,
-			EXYNOS5430_ISP_PLL_CON0, NULL, 0);
+			EXYNOS5430_ISP_PLL_CON0, pll_isp_rate_table, ARRAY_SIZE(pll_isp_rate_table));
 
 	aud_pll = samsung_clk_register_pll36xx("fout_aud_pll", "fin_pll",
 			EXYNOS5430_AUD_PLL_LOCK,
-			EXYNOS5430_AUD_PLL_CON0, NULL, 0);
+			EXYNOS5430_AUD_PLL_CON0, pll_aud_rate_table, ARRAY_SIZE(pll_aud_rate_table));
 
 	samsung_clk_add_lookup(g3d_pll, fout_g3d_pll);
 
