@@ -84,6 +84,14 @@
 			samsung,pin-drv = <0>;
 		};
 
+		pcm0_bus: pcm0-bus {
+			samsung,pins = "gpz0-0", "gpz0-1", "gpz0-2", "gpz0-3",
+					"gpz0-4";
+			samsung,pin-function = <3>;
+			samsung,pin-pud = <1>;
+			samsung,pin-drv = <0>;
+		};
+
 		uart_aud_bus: uart-aud-bus {
 			samsung,pins = "gpz1-3", "gpz1-2", "gpz1-1", "gpz1-0";
 			samsung,pin-function = <2>;
@@ -573,6 +581,14 @@
 			samsung,pins = "gpd4-0", "gpd4-1", "gpd4-2",
 					"gpd4-3", "gpd4-4";
 			samsung,pin-function = <2>;
+			samsung,pin-pud = <1>;
+			samsung,pin-drv = <0>;
+		};
+
+		pcm1_bus: pcm1-bus {
+			samsung,pins = "gpd4-0", "gpd4-1", "gpd4-2",
+					"gpd4-3", "gpd4-4";
+			samsung,pin-function = <3>;
 			samsung,pin-pud = <1>;
 			samsung,pin-drv = <0>;
 		};
