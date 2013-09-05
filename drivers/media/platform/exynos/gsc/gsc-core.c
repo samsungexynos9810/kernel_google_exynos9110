@@ -585,8 +585,8 @@ int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr)
 
 	if (V4L2_TYPE_IS_OUTPUT(cr->type)) {
 		if (is_rotation) {
-			max_w = min(f->f_width, (u32)var->pix_max->rot_w);
-			max_h = min(f->f_height, (u32)var->pix_max->rot_h);
+			max_w = min(f->f_width, (u32)var->pix_max->target_w);
+			max_h = min(f->f_height, (u32)var->pix_max->target_h);
 			if (is_rgb(f->fmt->pixelformat)) {
 				min_w = min_h = var->pix_min->real_w / 2;
 				offset_w = offset_h = 2;
@@ -611,8 +611,8 @@ int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr)
 		}
 	} else {
 		if (is_rotation) {
-			max_w = min(f->f_width, (u32)var->pix_max->rot_w);
-			max_h = min(f->f_height, (u32)var->pix_max->rot_h);
+			max_w = min(f->f_width, (u32)var->pix_max->real_w);
+			max_h = min(f->f_height, (u32)var->pix_max->real_h);
 		} else {
 			max_w = min(f->f_width, (u32)var->pix_max->target_w);
 			max_h = min(f->f_height, (u32)var->pix_max->target_h);
@@ -653,6 +653,30 @@ int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr)
 
 	gsc_dbg("Aligned l:%d, t:%d, w:%d, h:%d, f_w: %d, f_h: %d",
 	    cr->c.left, cr->c.top, cr->c.width, cr->c.height, max_w, max_h);
+
+	return 0;
+}
+
+int gsc_check_rotation_size(struct gsc_ctx *ctx)
+{
+	struct gsc_dev *gsc = ctx->gsc_dev;
+	struct gsc_variant *var = gsc->variant;
+	struct exynos_platform_gscaler *pdata = gsc->pdata;
+	if (use_input_rotator) {
+		struct gsc_frame *s_frame = &ctx->s_frame;
+		if ((s_frame->crop.width > (u32)var->pix_max->rot_w) ||
+		(s_frame->crop.height > (u32)var->pix_max->rot_h)) {
+			gsc_err("Not supported source crop size");
+			return -EINVAL;
+		}
+	} else {
+		struct gsc_frame *d_frame = &ctx->d_frame;
+		if ((d_frame->crop.width > (u32)var->pix_max->rot_w) ||
+		(d_frame->crop.height > (u32)var->pix_max->rot_h)) {
+			gsc_err("Not supported source crop size");
+			return -EINVAL;
+		}
+	}
 
 	return 0;
 }

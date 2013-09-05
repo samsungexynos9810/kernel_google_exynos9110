@@ -209,6 +209,11 @@ static void gsc_m2m_device_run(void *priv)
 		else
 			gsc_hw_set_input_rotation(ctx);
 		gsc_hw_set_global_alpha(ctx);
+		if (is_rotation) {
+			ret = gsc_check_rotation_size(ctx);
+			if (ret < 0)
+				goto put_device;
+		}
 	}
 
 	gsc_hw_set_input_addr(gsc, &ctx->s_frame.addr, GSC_M2M_BUF_NUM);

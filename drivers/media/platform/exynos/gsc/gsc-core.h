@@ -646,6 +646,7 @@ int gsc_g_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr);
 int gsc_try_crop(struct gsc_ctx *ctx, struct v4l2_crop *cr);
 int gsc_cal_prescaler_ratio(struct gsc_variant *var, u32 src, u32 dst, u32 *ratio);
 void gsc_get_prescaler_shfactor(u32 hratio, u32 vratio, u32 *sh);
+int gsc_check_rotation_size(struct gsc_ctx *ctx);
 void gsc_check_src_scale_info(struct gsc_variant *var,
 		struct gsc_frame *s_frame, u32 *wratio,
 		u32 tx, u32 ty, u32 *hratio);
