@@ -19,6 +19,7 @@
 #include <linux/i2c.h>
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
+#include <linux/irqnr.h>
 #include <linux/interrupt.h>
 #include <linux/pm_runtime.h>
 #include <linux/mutex.h>
@@ -27,6 +28,7 @@
 #include <linux/mfd/samsung/irq.h>
 #include <linux/mfd/samsung/rtc.h>
 #include <linux/regmap.h>
+#include <mach/irqs.h>
 
 static struct mfd_cell s5m8751_devs[] = {
 	{
@@ -168,6 +170,9 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
 	}
 	dev->platform_data = pdata;
 
+	pdata->wtsr_smpl = of_get_property(np, "wtsr_smpl", NULL);
+	pdata->irq_base = IRQ_BOARD_START;
+
 	gpio = of_get_gpio(np, 0);
 	if (!gpio_is_valid(gpio)) {
 		dev_err(dev, "failed to get interrupt gpio\n");
@@ -232,6 +237,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 		sec_pmic->wakeup = pdata->wakeup;
 		sec_pmic->pdata = pdata;
 		sec_pmic->irq = i2c->irq;
+		sec_pmic->wtsr_smpl = pdata->wtsr_smpl;
 	}
 
 	sec_pmic->regmap = devm_regmap_init_i2c(i2c, &sec_regmap_config);

@@ -512,13 +512,13 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 
 	s2m = devm_kzalloc(&pdev->dev, sizeof(struct s2m_rtc_info),
 				GFP_KERNEL);
+
 	if (!s2m)
 		return -ENOMEM;
 
 	s2m->dev = &pdev->dev;
 	s2m->iodev = iodev;
-	s2m->irq = iodev->irq;
-
+	s2m->irq = iodev->irq_base + S2MPS13_IRQ_RTCA0;
 	s2m->wtsr_smpl = pdata->wtsr_smpl;
 
 	platform_set_drvdata(pdev, s2m);

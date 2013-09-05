@@ -25,70 +25,70 @@
 
 static struct regmap_irq s2mps13_irqs[] = {
 	[S2MPS13_IRQ_PWRONF] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_PWRONF_MASK,
 	},
 	[S2MPS13_IRQ_PWRONR] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_PWRONR_MASK,
 	},
 	[S2MPS13_IRQ_JIGONBF] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_JIGONBF_MASK,
 	},
 	[S2MPS13_IRQ_JIGONBR] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_JIGONBR_MASK,
 	},
 	[S2MPS13_IRQ_ACOKBF] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_ACOKBF_MASK,
 	},
 	[S2MPS13_IRQ_ACOKBR] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_ACOKBR_MASK,
 	},
 	[S2MPS13_IRQ_PWRON1S] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_PWRON1S_MASK,
 	},
 	[S2MPS13_IRQ_MRB] = {
-		.reg_offset = 1,
+		.reg_offset = 0,
 		.mask = S2MPS13_IRQ_MRB_MASK,
 	},
 	[S2MPS13_IRQ_RTC60S] = {
-		.reg_offset = 2,
+		.reg_offset = 1,
 		.mask = S2MPS13_IRQ_RTC60S_MASK,
 	},
 	[S2MPS13_IRQ_RTCA1] = {
-		.reg_offset = 2,
+		.reg_offset = 1,
 		.mask = S2MPS13_IRQ_RTCA1_MASK,
 	},
 	[S2MPS13_IRQ_RTCA0] = {
-		.reg_offset = 2,
+		.reg_offset = 1,
 		.mask = S2MPS13_IRQ_RTCA0_MASK,
 	},
 	[S2MPS13_IRQ_SMPL] = {
-		.reg_offset = 2,
+		.reg_offset = 1,
 	},
 	[S2MPS13_IRQ_RTC1S] = {
-		.reg_offset = 2,
+		.reg_offset = 1,
 		.mask = S2MPS13_IRQ_RTC1S_MASK,
 	},
 	[S2MPS13_IRQ_WTSR] = {
-		.reg_offset = 2,
+		.reg_offset = 1,
 		.mask = S2MPS13_IRQ_WTSR_MASK,
 	},
 	[S2MPS13_IRQ_INT120C] = {
-		.reg_offset = 3,
+		.reg_offset = 2,
 		.mask = S2MPS13_IRQ_INT120C_MASK,
 	},
 	[S2MPS13_IRQ_INT140C] = {
-		.reg_offset = 3,
+		.reg_offset = 2,
 		.mask = S2MPS13_IRQ_INT140C_MASK,
 	},
 	[S2MPS13_IRQ_TSD] = {
-		.reg_offset = 3,
+		.reg_offset = 2,
 		.mask = S2MPS13_IRQ_TSD_MASK,
 	},
 };
