@@ -220,6 +220,12 @@ static inline int devfreq_update_stats(struct devfreq *df)
 {
 	return df->profile->get_dev_status(df->dev.parent, &df->last_status);
 }
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND) || IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
+struct devfreq_notifier_block {
+	struct notifier_block nb;
+	struct devfreq *df;
+};
+#endif
 
 #if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 /**
@@ -238,6 +244,21 @@ static inline int devfreq_update_stats(struct devfreq *df)
 struct devfreq_simple_ondemand_data {
 	unsigned int upthreshold;
 	unsigned int downdifferential;
+	unsigned long cal_qos_max;
+	int pm_qos_class;
+	struct devfreq_notifier_block nb;
+};
+#endif
+
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
+struct devfreq_simple_usage_data {
+	unsigned int proportional;
+	unsigned int upthreshold;
+	unsigned int target_percentage;
+	int pm_qos_class;
+	unsigned long cal_qos_max;
+	bool en_monitoring;
+	struct devfreq_notifier_block nb;
 };
 #endif
 
