@@ -520,6 +520,7 @@ static __init int exynos_pm_domain_idle(void)
 	while(time_before(jiffies, j1))
 		schedule();
 
+	pr_info("PM DOMAIN: Power off unused power domains.\n");
 	pm_genpd_poweroff_unused();
 
 	return 0;
