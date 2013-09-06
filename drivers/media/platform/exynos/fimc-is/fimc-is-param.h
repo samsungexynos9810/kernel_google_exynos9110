@@ -1130,6 +1130,8 @@ enum dma_inut_format {
 	DMA_INPUT_FORMAT_YUV444		= 1,
 	DMA_INPUT_FORMAT_YUV422		= 2,
 	DMA_INPUT_FORMAT_YUV420		= 3,
+	DMA_INPUT_FORMAT_RGB		= 4,
+	DMA_INPUT_FORMAT_BAYER_PACKED12	= 5,
 };
 
 enum dma_input_bitwidth {
@@ -1228,7 +1230,8 @@ enum dma_output_format {
 	DMA_OUTPUT_FORMAT_YUV444	= 1,
 	DMA_OUTPUT_FORMAT_YUV422	= 2,
 	DMA_OUTPUT_FORMAT_YUV420	= 3,
-	DMA_OUTPUT_FORMAT_RGB		= 4
+	DMA_OUTPUT_FORMAT_RGB		= 4,
+	DMA_OUTPUT_FORMAT_BAYER_PACKED12= 5,
 };
 
 enum dma_output_bitwidth {
@@ -1697,10 +1700,9 @@ struct param_dma_input {
 	u32	wide_frame_gap;
 	u32	frame_gap;
 	u32	line_gap;
-	u32	memory_width_bits;
 	u32	binning_ratio_x;
 	u32	binning_ratio_y;
-	u32	reserved[PARAMETER_MAX_MEMBER-29];
+	u32	reserved[PARAMETER_MAX_MEMBER-28];
 	u32	err;
 };
 

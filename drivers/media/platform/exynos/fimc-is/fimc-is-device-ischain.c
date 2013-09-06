@@ -2974,11 +2974,11 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	taa_param->vdma1_input.line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		taa_param->vdma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_12BIT;
+		taa_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		taa_param->vdma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+		taa_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
 	} else {
-		taa_param->vdma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+		taa_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
 		mwarn("Invalid bayer format", device);
 	}
 
@@ -3016,10 +3016,19 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	taa_param->vdma4_output.buffer_number = 0;
 	taa_param->vdma4_output.buffer_address = 0;
 	taa_param->vdma4_output.dma_out_mask = 0;
-	taa_param->vdma4_output.format = DMA_OUTPUT_FORMAT_BAYER;
 	taa_param->vdma4_output.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
 	taa_param->vdma4_output.notify_dma_done
 		= DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		taa_param->vdma4_output.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		taa_param->vdma4_output.format = DMA_INPUT_FORMAT_BAYER;
+	} else {
+		taa_param->vdma4_output.format = DMA_INPUT_FORMAT_BAYER;
+		mwarn("Invalid bayer format", device);
+	}
+
 	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
 	(*indexes)++;
@@ -3031,10 +3040,19 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	taa_param->vdma2_output.buffer_number = 0;
 	taa_param->vdma2_output.buffer_address = 0;
 	taa_param->vdma2_output.dma_out_mask = 0;
-	taa_param->vdma2_output.format = DMA_OUTPUT_FORMAT_BAYER;
 	taa_param->vdma2_output.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
 	taa_param->vdma2_output.notify_dma_done
 		= DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		taa_param->vdma2_output.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		taa_param->vdma2_output.format = DMA_INPUT_FORMAT_BAYER;
+	} else {
+		taa_param->vdma2_output.format = DMA_INPUT_FORMAT_BAYER;
+		mwarn("Invalid bayer format", device);
+	}
+
 	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
 	(*indexes)++;
@@ -3082,7 +3100,7 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	isp_param->vdma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
 	isp_param->vdma1_input.line_gap = 50;
 	/* TODO: 12 or 16 */
-	isp_param->vdma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_12BIT;
+	isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	*lindex |= LOWBIT_OF(PARAM_ISP_VDMA1_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_ISP_VDMA1_INPUT);
 	(*indexes)++;
@@ -3240,11 +3258,11 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	isp_param->dma1_input.line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		isp_param->dma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_12BIT;
+		taa_param->dma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		isp_param->dma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+		isp_param->dma1_input.format = DMA_INPUT_MEMORY_WIDTH_16BIT;
 	} else {
-		isp_param->dma1_input.memory_width_bits = DMA_INPUT_MEMORY_WIDTH_16BIT;
+		isp_param->dma1_input.format = DMA_INPUT_MEMORY_WIDTH_16BIT;
 		mwarn("Invalid bayer format", device);
 	}
 
