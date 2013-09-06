@@ -1276,9 +1276,13 @@ int fimc_is_flite_stop(struct fimc_is_device_flite *flite, bool wait)
 
 	BUG_ON(!flite);
 
-	stop_fimc_lite(flite->regs);
+	/* for preventing invalid memory access */
+	flite_hw_set_unuse_buffer(flite->regs, FLITE_A_SLOT_VALID);
+	flite_hw_set_unuse_buffer(flite->regs, FLITE_B_SLOT_VALID);
+	flite_hw_set_output_dma(flite->regs, false, NULL);
+	flite_hw_set_output_local(flite->regs, false);
 
-	dbg_back("waiting last capture\n");
+	stop_fimc_lite(flite->regs);
 	if (wait) {
 		int timetowait;
 
@@ -1302,10 +1306,7 @@ int fimc_is_flite_stop(struct fimc_is_device_flite *flite, bool wait)
 		flite_hw_force_reset(flite->regs);
 	}
 
-	/* for preventing invalid memory access */
-	flite_hw_set_unuse_buffer(flite->regs, FLITE_A_SLOT_VALID);
-	flite_hw_set_unuse_buffer(flite->regs, FLITE_B_SLOT_VALID);
-	flite_hw_set_output_dma(flite->regs, false, NULL);
+	/* clr interrupt source */
 	flite_hw_clr_interrupt_source(flite->regs);
 
 	return ret;
