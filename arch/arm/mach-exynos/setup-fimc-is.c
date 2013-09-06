@@ -27,7 +27,7 @@
 #include <plat/gpio-cfg.h>
 #include <plat/map-s5p.h>
 #include <plat/cpu.h>
-#include <media/exynos_fimc_is.h>
+#include <mach/exynos-fimc-is.h>
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
 #endif

@@ -21,9 +21,9 @@
 #include <linux/delay.h>
 #include <linux/interrupt.h>
 #include <linux/pm_runtime.h>
+#include <mach/exynos-fimc-is.h>
 #include <media/v4l2-device.h>
 #include <media/v4l2-mediabus.h>
-#include <media/exynos_fimc_is.h>
 #include <media/v4l2-ioctl.h>
 #include <media/exynos_mc.h>
 #include <media/videobuf2-core.h>
