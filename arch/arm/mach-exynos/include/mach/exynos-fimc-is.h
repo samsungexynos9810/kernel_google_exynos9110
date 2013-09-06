@@ -20,9 +20,9 @@
 #endif
 
 #if defined(CONFIG_VIDEO_EXYNOS4_FIMC_IS)
-#define FIMC_IS_MODULE_NAME			"exynos4-fimc-is"
+#define FIMC_IS_DEV_NAME			"exynos4-fimc-is"
 #elif defined(CONFIG_VIDEO_EXYNOS5_FIMC_IS)
-#define FIMC_IS_MODULE_NAME			"exynos5-fimc-is"
+#define FIMC_IS_DEV_NAME			"exynos5-fimc-is"
 #endif
 
 #define FIMC_IS_MAX_CAMIF_CLIENTS	2
