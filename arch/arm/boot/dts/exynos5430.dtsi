@@ -40,6 +40,8 @@
 		spi0 = &spi_0;
 		spi1 = &spi_1;
 		spi2 = &spi_2;
+		scaler0 = &scaler_0;
+		scaler1 = &scaler_1;
 	};
 
 	chipid@10000000 {
@@ -1460,5 +1462,25 @@
 		io-channel-ranges;
 		clocks = <&clock 2428>;
 		clock-names = "gate_adcif";
+	};
+
+	scaler_0: scaler@15000000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x15000000 0x1300>;
+		interrupts = <0 402 0>;
+		clocks = <&clock 2394>;
+		clock-names = "gate_m2mscaler";
+		iommu = <&sysmmu_scaler0>;
+		samsung,power-domain = <&spd_mscl0>;
+	};
+
+	scaler_1: scaler@15010000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x15010000 0x1300>;
+		interrupts = <0 403 0>;
+		clocks = <&clock 2393>;
+		clock-names = "gate_m2mscaler";
+		iommu = <&sysmmu_scaler1>;
+		samsung,power-domain = <&spd_mscl1>;
 	};
 };
