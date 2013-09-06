@@ -1980,7 +1980,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				sfb->regs + VIDW_BUF_SIZE(i));
 			if (i)
 				writel(regs->blendeq[i - 1],
-				sfb->regs + BLENDEQ(i));
+				sfb->regs + BLENDEQ(i - 1));
 			sfb->windows[i]->dma_buf_data =
 				regs->dma_buf_data[i];
 		}
