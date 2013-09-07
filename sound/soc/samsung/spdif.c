@@ -13,6 +13,8 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/module.h>
+#include <linux/of.h>
+#include <linux/of_gpio.h>
 
 #include <sound/soc.h>
 #include <sound/pcm_params.h>
@@ -361,21 +363,25 @@ static const struct snd_soc_component_driver samsung_spdif_component = {
 	.name		= "samsung-spdif",
 };
 
-static int spdif_probe(struct platform_device *pdev)
+static int samsung_spdif_probe(struct platform_device *pdev)
 {
 	struct s3c_audio_pdata *spdif_pdata;
 	struct resource *mem_res, *dma_res;
 	struct samsung_spdif_info *spdif;
+	struct device_node *np = pdev->dev.of_node;
 	int ret;
 
 	spdif_pdata = pdev->dev.platform_data;
 
 	dev_dbg(&pdev->dev, "Entered %s\n", __func__);
 
-	dma_res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
-	if (!dma_res) {
-		dev_err(&pdev->dev, "Unable to get dma resource.\n");
-		return -ENXIO;
+	if (!np) {
+		dma_res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+		if (!dma_res) {
+			dev_err(&pdev->dev, "Unable to get dma resource.\n");
+			return -ENXIO;
+		}
+		spdif_stereo_out.channel = dma_res->start;
 	}
 
 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -435,10 +441,10 @@ static int spdif_probe(struct platform_device *pdev)
 		goto err4;
 	}
 
+	spdif_stereo_out.ch_name = "tx";
 	spdif_stereo_out.dma_size = 2;
 	spdif_stereo_out.client = &spdif_dma_client_out;
 	spdif_stereo_out.dma_addr = mem_res->start + DATA_OUTBUF;
-	spdif_stereo_out.channel = dma_res->start;
 
 	spdif->dma_playback = &spdif_stereo_out;
 
@@ -465,7 +471,7 @@ err0:
 	return ret;
 }
 
-static int spdif_remove(struct platform_device *pdev)
+static int samsung_spdif_remove(struct platform_device *pdev)
 {
 	struct samsung_spdif_info *spdif = &spdif_info;
 	struct resource *mem_res;
@@ -487,12 +493,28 @@ static int spdif_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static struct platform_device_id samsung_spdif_driver_ids[] = {
+	{ .name = "samsung-spdif", },
+	{},
+};
+MODULE_DEVICE_TABLE(platform, samsung_i2s_driver_ids);
+
+#ifdef CONFIG_OF
+static const struct of_device_id exynos_spdif_match[] = {
+	{ .compatible = "samsung,spdif", },
+	{},
+};
+MODULE_DEVICE_TABLE(of, exynos_spdif_match);
+#endif
+
 static struct platform_driver samsung_spdif_driver = {
-	.probe	= spdif_probe,
-	.remove	= spdif_remove,
+	.probe	= samsung_spdif_probe,
+	.remove	= samsung_spdif_remove,
+	.id_table = samsung_spdif_driver_ids,
 	.driver	= {
 		.name	= "samsung-spdif",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(exynos_spdif_match),
 	},
 };
 
