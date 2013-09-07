@@ -215,6 +215,7 @@ struct seiren_info {
 	void __iomem	*mailbox;
 	void __iomem	*mem;
 	struct clk	*clk_ca5;
+	struct clk	*opclk_ca5;
 	unsigned int	irq_ca5;
 
 	unsigned char	*bufmem;

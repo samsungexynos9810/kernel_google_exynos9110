@@ -898,6 +898,13 @@ static int esa_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+	si.opclk_ca5 = clk_get(dev, "ca5_opclk");
+	if (IS_ERR(si.opclk_ca5)) {
+		dev_err(dev, "ca5 opclk not found\n");
+		clk_put(si.clk_ca5);
+		return -ENODEV;
+	}
+
 	/* hold reset */
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 
@@ -905,6 +912,7 @@ static int esa_probe(struct platform_device *pdev)
 	esa_info("mailbox    = %08X\n", (u32)si.mailbox);
 	esa_info("bufmem_pa  = %08X\n", si.bufmem_pa);
 	esa_info("fwmem_pa   = %08X\n", si.fwmem_pa);
+	esa_info("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
 
 #ifdef FW_DOWNLOAD_TEST
 	for (n = 0; n < 0x5C; n += 4)
@@ -928,6 +936,7 @@ static int esa_remove(struct platform_device *pdev)
 		esa_err("Cannot deregister miscdev\n");
 
 	clk_put(si.clk_ca5);
+	clk_put(si.opclk_ca5);
 
 	return ret;
 }
