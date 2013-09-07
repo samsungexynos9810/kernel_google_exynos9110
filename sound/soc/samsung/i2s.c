@@ -94,6 +94,7 @@ struct i2s_dai {
 	u32	lrp_b;
 	u32	cdclk_b;
 	u32	slave_b;
+	u32	rclks_b;
 	u32	txr_sht;
 	u32	txr_msk;
 	u32	sdf_sht;
@@ -497,8 +498,8 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 		i2s->rfs = rfs;
 		break;
 
-	case SAMSUNG_I2S_RCLKSRC_0: /* clock corrsponding to IISMOD[10] := 0 */
-	case SAMSUNG_I2S_RCLKSRC_1: /* clock corrsponding to IISMOD[10] := 1 */
+	case SAMSUNG_I2S_RCLKSRC_0: /* clock corrsponding to RCLKSRC := 0 */
+	case SAMSUNG_I2S_RCLKSRC_1: /* clock corrsponding to RCLKSRC := 1 */
 		if ((i2s->quirks & QUIRK_NO_MUXPSR)
 				|| (clk_id == SAMSUNG_I2S_RCLKSRC_0))
 			clk_id = 0;
@@ -507,8 +508,8 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 
 		if (!any_active(i2s)) {
 			if (i2s->op_clk) {
-				if ((clk_id && !(mod & MOD_IMS_SYSMUX)) ||
-					(!clk_id && (mod & MOD_IMS_SYSMUX))) {
+				if ((clk_id && !(mod & i2s->rclks_b)) ||
+					(!clk_id && (mod & i2s->rclks_b))) {
 					clk_disable_unprepare(i2s->op_clk);
 					clk_put(i2s->op_clk);
 				} else {
@@ -532,8 +533,8 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 				other->op_clk = i2s->op_clk;
 				other->rclk_srcrate = i2s->rclk_srcrate;
 			}
-		} else if ((!clk_id && (mod & MOD_IMS_SYSMUX))
-				|| (clk_id && !(mod & MOD_IMS_SYSMUX))) {
+		} else if ((!clk_id && (mod & i2s->rclks_b))
+				|| (clk_id && !(mod & i2s->rclks_b))) {
 			dev_err(&i2s->pdev->dev,
 				"%s:%d Other DAI busy\n", __func__, __LINE__);
 			return -EAGAIN;
@@ -545,16 +546,15 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 		}
 
 		if (clk_id == 0)
-			mod &= ~MOD_IMS_SYSMUX;
+			mod &= ~i2s->rclks_b;
 		else
-			mod |= MOD_IMS_SYSMUX;
+			mod |= i2s->rclks_b;
 		break;
 
 	default:
 		dev_err(&i2s->pdev->dev, "We don't serve that!\n");
 		return -EINVAL;
 	}
-
 	writel(mod, i2s->addr + I2SMOD);
 
 	return 0;
@@ -609,10 +609,7 @@ static int i2s_set_fmt(struct snd_soc_dai *dai,
 		tmp |= i2s->slave_b;
 		break;
 	case SND_SOC_DAIFMT_CBS_CFS:
-		/* Set default source clock in Master mode */
-		if (i2s->rclk_srcrate == 0)
-			i2s_set_sysclk(dai, SAMSUNG_I2S_RCLKSRC_0,
-							0, SND_SOC_CLOCK_IN);
+		tmp &= ~i2s->slave_b;
 		break;
 	default:
 		dev_err(&i2s->pdev->dev, "master/slave format not supported\n");
@@ -933,6 +930,7 @@ static void i2s_init_bit_slice(struct i2s_dai *i2s)
 			i2s->lrp_b   = EXYNOS5430_MOD_LRP;
 			i2s->cdclk_b = EXYNOS5430_MOD_CDCLKCON;
 			i2s->slave_b = EXYNOS5430_MOD_SLAVE;
+			i2s->rclks_b = EXYNOS5430_MOD_RCLKSRC;
 			i2s->txr_sht = EXYNOS5430_MOD_TXR_SHIFT;
 			i2s->txr_msk = EXYNOS5430_MOD_TXR_MASK;
 			i2s->sdf_sht = EXYNOS5430_MOD_SDF_SHIFT;
@@ -944,6 +942,7 @@ static void i2s_init_bit_slice(struct i2s_dai *i2s)
 			i2s->lrp_b   = EXYNOS5420_MOD_LRP;
 			i2s->cdclk_b = EXYNOS5420_MOD_CDCLKCON;
 			i2s->slave_b = EXYNOS5420_MOD_SLAVE;
+			i2s->rclks_b = EXYNOS5420_MOD_RCLKSRC;
 			i2s->txr_sht = EXYNOS5420_MOD_TXR_SHIFT;
 			i2s->txr_msk = EXYNOS5420_MOD_TXR_MASK;
 			i2s->sdf_sht = EXYNOS5420_MOD_SDF_SHIFT;
@@ -956,6 +955,7 @@ static void i2s_init_bit_slice(struct i2s_dai *i2s)
 		i2s->lrp_b   = MOD_LRP;
 		i2s->cdclk_b = MOD_CDCLKCON;
 		i2s->slave_b = MOD_SLAVE;
+		i2s->rclks_b = MOD_RCLKSRC;
 		i2s->txr_sht = MOD_TXR_SHIFT;
 		i2s->txr_msk = MOD_TXR_MASK;
 		i2s->sdf_sht = MOD_SDF_SHIFT;
