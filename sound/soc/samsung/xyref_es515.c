@@ -216,7 +216,7 @@ static struct snd_soc_dai_link xyref_dai[] = {
 		.ops = &xyref_ops,
 	}, { /* HDMI DAI i/f */
 		.name = "HDMI",
-		.stream_name = "i2s1-pri",
+		.stream_name = "i2s1",
 		.codec_dai_name = "dummy-aif1",
 		.ops = &xyref_hdmi_ops,
 	}
@@ -241,10 +241,10 @@ static int xyref_audio_probe(struct platform_device *pdev)
 	for (n = 0; np && n < ARRAY_SIZE(xyref_dai); n++) {
 		if (!xyref_dai[n].cpu_dai_name) {
 			xyref_dai[n].cpu_of_node = of_parse_phandle(np,
-					"samsung,i2s-controller", n);
+					"samsung,audio-cpu", n);
 			if (!xyref_dai[n].cpu_of_node) {
-				dev_err(&pdev->dev,
-					"Property 'samsung,i2s-controller' missing or invalid\n");
+				dev_err(&pdev->dev, "Property "
+				"'samsung,audio-cpu' missing or invalid\n");
 				ret = -EINVAL;
 			}
 		}
