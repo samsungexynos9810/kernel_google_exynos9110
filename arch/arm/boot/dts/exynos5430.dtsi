@@ -1222,14 +1222,14 @@
 		compatible = "samsung,exynos5430-lpass";
 		reg = <0x11400000 0x100>,
 		      <0x03000000 0x48000>;
-		clocks = <&clock 771>,
-			 <&clock 772>,
-			 <&clock 779>,
-			 <&clock 780>,
-			 <&clock 785>,
-			 <&clock 786>,
-			 <&clock 787>,
-			 <&clock 788>;
+		clocks = <&clock 2012>,		/* gate_dmac */
+			 <&clock 2011>,		/* gate_sramc */
+			 <&clock 2008>,		/* gate_intr_ctrl */
+			 <&clock 2007>,		/* gate_timer */
+			 <&clock 2002>,		/* gate_sysreg_aud */
+			 <&clock 2001>,		/* gate_pmu_aud */
+			 <&clock 2000>,		/* gate_gpio_aud */
+			 <&clock 2013>;		/* gate_pclk_dbg */
 		clock-names = "dmac", "sramc", "intr", "timer",
 			      "sysreg", "pmu", "gpio", "dbg";
 		status = "ok";
