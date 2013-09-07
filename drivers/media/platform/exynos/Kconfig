@@ -5,7 +5,6 @@ config VIDEO_EXYNOS
 	bool "Exynos Multimedia Devices"
 	depends on ARCH_EXYNOS4 || ARCH_EXYNOS5
 	default y
-	select VIDEO_FIXED_MINOR_RANGES
 	help
 	  This is a representative exynos multimedia device.
 
