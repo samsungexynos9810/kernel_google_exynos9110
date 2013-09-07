@@ -1238,8 +1238,9 @@
 	seiren {
 		compatible = "samsung,exynos5430-seiren";
 		interrupts = <0 69 0>;
-		clocks = <&clock 770>;
-		clock-names = "ca5";
+		clocks = <&clock 2014>,		/* gate_ca5 */
+			 <&clock 4143>;		/* dout_aud_ca5 */
+		clock-names = "ca5", "ca5_opclk";
 		status = "ok";
 	};
 
