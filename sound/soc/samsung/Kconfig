@@ -253,7 +253,14 @@ config SND_SOC_SAMSUNG_XYREF_ES515
 	select SND_SOC_ES515_I2C
 	select SND_SOC_DUMMY_CODEC
 	help
-		Say Y if you want to add support for SoC audio on the SMDKs.
+	  Say Y if you want to add support for SoC audio on the XYREF.
+
+config SND_SOC_ES515_I2S_MASTER
+	bool "Enable Codec master mode for eS515 on XYREF"
+	depends on SND_SOC_SAMSUNG_XYREF_ES515
+	default y
+	help
+	  Say Y if you want to add support for SoC audio on the XYREF.
 
 # For support SEIREN audio
 source "sound/soc/samsung/seiren/Kconfig"

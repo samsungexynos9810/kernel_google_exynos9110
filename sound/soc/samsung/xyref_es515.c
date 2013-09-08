@@ -24,7 +24,8 @@
 #include "i2s-regs.h"
 
 /* XYREF use CLKOUT from AP */
-#define XYREF_MCLK_FREQ 24000000
+#define XYREF_MCLK_FREQ		24000000
+#define XYREF_AUD_PLL_FREQ	393216018
 
 static bool clkout_enabled;
 static struct snd_soc_card xyref;
@@ -50,15 +51,19 @@ static int set_aud_pll_rate(unsigned long rate)
 	if (rate == clk_get_rate(fout_aud_pll))
 		goto out;
 
+	rate += 20;		/* margin */
 	clk_set_rate(fout_aud_pll, rate);
+	pr_debug("%s: aud_pll rate = %ld\n",
+		__func__, clk_get_rate(fout_aud_pll));
 out:
 	clk_put(fout_aud_pll);
 
 	return 0;
 }
 
+#ifdef CONFIG_SND_SOC_ES515_I2S_MASTER
 /*
- * XYREF eS515 I2S DAI operations.
+ * XYREF eS515 I2S DAI operations. (Codec master)
  */
 static int xyref_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
@@ -97,7 +102,140 @@ static int xyref_hw_params(struct snd_pcm_substream *substream,
 
 	return 0;
 }
+#else
+/*
+ * XYREF eS515 I2S DAI operations. (AP master)
+ */
+static int xyref_hw_params(struct snd_pcm_substream *substream,
+	struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	int pll, div, sclk, bfs, psr, rfs, ret;
+	unsigned long rclk;
 
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_U24:
+	case SNDRV_PCM_FORMAT_S24:
+		bfs = 48;
+		break;
+	case SNDRV_PCM_FORMAT_U16_LE:
+	case SNDRV_PCM_FORMAT_S16_LE:
+		bfs = 32;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	switch (params_rate(params)) {
+	case 16000:
+	case 22050:
+	case 24000:
+	case 32000:
+	case 44100:
+	case 48000:
+	case 88200:
+	case 96000:
+		if (bfs == 48)
+			rfs = 384;
+		else
+			rfs = 256;
+		break;
+	case 64000:
+		rfs = 384;
+		break;
+	case 8000:
+	case 11025:
+	case 12000:
+		if (bfs == 48)
+			rfs = 768;
+		else
+			rfs = 512;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	rclk = params_rate(params) * rfs;
+
+	switch (rclk) {
+	case 4096000:
+	case 5644800:
+	case 6144000:
+	case 8467200:
+	case 9216000:
+		psr = 8;
+		break;
+	case 8192000:
+	case 11289600:
+	case 12288000:
+	case 16934400:
+	case 18432000:
+		psr = 4;
+		break;
+	case 22579200:
+	case 24576000:
+	case 33868800:
+	case 36864000:
+		psr = 2;
+		break;
+	case 67737600:
+	case 73728000:
+		psr = 1;
+		break;
+	default:
+		printk("Not yet supported!\n");
+		return -EINVAL;
+	}
+
+	/* Set AUD_PLL frequency */
+	sclk = rclk * psr;
+	for (div = 2; div <= 16; div++) {
+		if (sclk * div > XYREF_AUD_PLL_FREQ)
+			break;
+	}
+	pll = sclk * (div - 1);
+	set_aud_pll_rate(pll);
+
+	/* CLKOUT(XXTI) for eS515 MCLK */
+	xyref_enable_mclk(true);
+
+	/* Set Codec DAI configuration */
+	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S
+					 | SND_SOC_DAIFMT_NB_NF
+					 | SND_SOC_DAIFMT_CBS_CFS);
+	if (ret < 0)
+		return ret;
+
+	/* Set CPU DAI configuration */
+	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S
+					| SND_SOC_DAIFMT_NB_NF
+					| SND_SOC_DAIFMT_CBS_CFS);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_CDCLK,
+					0, SND_SOC_CLOCK_OUT);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_OPCLK,
+					0, MOD_OPCLK_PCLK);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_RCLKSRC_1, 0, 0);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_BCLK, bfs);
+	if (ret < 0)
+		return ret;
+
+	return 0;
+}
+#endif
 static struct snd_soc_ops xyref_ops = {
 	.hw_params = xyref_hw_params,
 };
