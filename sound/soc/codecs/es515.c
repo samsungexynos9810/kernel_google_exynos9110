@@ -19,7 +19,10 @@
 #include <mach/regs-pmu.h>
 
 #define ES515_DEBUG
+
+#ifdef CONFIG_SND_SOC_ES515_I2S_MASTER
 #define CONFIG_ES515_MASTER
+#endif
 
 #define FW_FILE		"/vendor/firmware/es515_fw.bin"
 #define USE_BUILTIN_FW
@@ -336,6 +339,12 @@ static struct es515_route_configs es515_def_route_configs[] = {
 			0x90, 0x4c, 0x00, 0x01,
 			/* preset mode 7: 16bits 48KHz headphone */
 			0x80, 0x31, 0x00, 0x07,
+#ifndef CONFIG_ES515_MASTER	/* Codec Slave */
+			/* Set param ID for  Port 0, clock control */
+			0x80, 0x0C, 0x0A, 0x09,
+			/* Port 0, Slave mode, 48KHz, */
+			0x80, 0x0D, 0x00, 0x30,
+#endif
 			/* set device param Id HP Left Gain */
 			0x90, 0x0C, 0x1C, 0x00,
 			/* -20 dB */
