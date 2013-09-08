@@ -119,28 +119,44 @@ static void top_clk_enable(void)
 	pr_info("Clock enables : TOP, MIF\n");
 }
 
-void clkout_init_clock(void)
+static void clkout_init_clock(void)
 {
-	/* CLKOUT is 19MHz from AUD_PLL (196.608MHz / 10) */
-	writel(49282, EXYNOS5430_VA_CMU_TOP + 0x0114);	/* AUD_PLL_CON1 (K) */
-	writel((1 << 31) | (459 << 16) | (7 << 8) | (3),
-		EXYNOS5430_VA_CMU_TOP + 0x0110);	/* AUD_PLL_CON0 */
+	/* ACLK_IMEM_200 / 10 */
+	writel(0x10907, EXYNOS5430_VA_CMU_TOP + 0x0C00);
+	writel(0x00700, EXYNOS_PMU_DEBUG);
+}
 
-	/* CMU_AUD */
-	writel(0x00520, EXYNOS5430_VA_CMU_AUD + 0x0600);/* CLK_DIV_AUD0 */
-	writel(0xF2BF7, EXYNOS5430_VA_CMU_AUD + 0x0604);/* CLK_DIV_AUD1 */
+static void aud_init_clock(void)
+{
+	/* Enable AUD_PLL (Default 393.216MHz)*/
+	writel((1 << 31) | readl(EXYNOS5430_AUD_PLL_CON0),
+					EXYNOS5430_AUD_PLL_CON0);
 
-	/* CLK_MUX_SEL_AUD0 */
+	/* AUD0 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
 	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+	exynos_set_rate("dout_aud_ca5", 393216020);
+	exynos_set_rate("dout_aclk_aud", 133000000);
+	exynos_set_rate("dout_aud_pclk_dbg", 133000000);
 
-	/* CLK_MUX_SEL_AUD1 */
+	/* AUD1 */
 	exynos_set_parent("mout_sclk_i2s_a", "mout_aud_pll_sub");
 	exynos_set_parent("mout_sclk_pcm_a", "mout_aud_pll_sub");
+	exynos_set_rate("dout_sclk_i2s", 49152004);
+	exynos_set_rate("dout_sclk_pcm", 2048002);
+	exynos_set_rate("dout_sclk_slimbus_aud", 24576002);
+	exynos_set_rate("dout_sclk_uart", 133000000);
 
-	writel(0x10901, EXYNOS5430_VA_CMU_TOP + 0x0C00); /* AUD_PLL / 10 */
-	writel(0x00700, EXYNOS_PMU_DEBUG);
+	/* TOP_PERIC1 */
+	exynos_set_parent("mout_sclk_audio0", "mout_aud_pll_user");
+	exynos_set_parent("mout_sclk_audio1", "mout_aud_pll_user");
+	exynos_set_parent("mout_sclk_spdif", "dout_sclk_audio1");
+	exynos_set_rate("dout_sclk_audio0", 49152004);
+	exynos_set_rate("dout_sclk_audio1", 49152004);
+	exynos_set_rate("dout_sclk_pcm1", 2048002);
+	exynos_set_rate("dout_sclk_i2s1", 49152004);
 }
 
 void mfc_init_clock(void)
@@ -274,6 +290,7 @@ void __init exynos5430_clock_init(void)
 	top_clk_enable();
 	mfc_init_clock();
 	clkout_init_clock();
+	aud_init_clock();
 	adma_init_clock();
 	cam0_init_clock();
 	cam1_init_clock();
