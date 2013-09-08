@@ -723,11 +723,11 @@
 	sound {
 		compatible = "samsung,xyref-es515";
 		samsung,audio-cpu = <&i2s0		/* primary */
-				     &i2s0		/* secondary */
-				     &i2s1>;		/* hdmi */
+				     &i2s0>;		/* secondary */
+		samsung,audio-cpu-hdmi = <&i2s1>;	/* hdmi */
 		samsung,audio-codec = <&audio_codec
 				       &audio_codec
 				       &audio_codec_dummy>;
-				       status = "okay";
+		status = "okay";
 	};
 };
