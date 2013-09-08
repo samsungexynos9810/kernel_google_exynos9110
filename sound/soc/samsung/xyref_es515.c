@@ -240,6 +240,7 @@ static struct snd_soc_ops xyref_ops = {
 	.hw_params = xyref_hw_params,
 };
 
+#ifdef CONFIG_SND_SAMSUNG_AUX_HDMI
 /*
  * XYREF HDMI I2S DAI operations.
  */
@@ -248,7 +249,7 @@ static int xyref_hdmi_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-	int bfs, psr, rfs, ret;
+	int pll, div, sclk, bfs, psr, rfs, ret;
 	unsigned long rclk;
 
 	switch (params_format(params)) {
@@ -265,29 +266,13 @@ static int xyref_hdmi_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	switch (params_rate(params)) {
-	case 16000:
-	case 22050:
-	case 24000:
-	case 32000:
-	case 44100:
 	case 48000:
-	case 88200:
 	case 96000:
+	case 192000:
 		if (bfs == 48)
 			rfs = 384;
 		else
 			rfs = 256;
-		break;
-	case 64000:
-		rfs = 384;
-		break;
-	case 8000:
-	case 11025:
-	case 12000:
-		if (bfs == 48)
-			rfs = 768;
-		else
-			rfs = 512;
 		break;
 	default:
 		return -EINVAL;
@@ -296,27 +281,15 @@ static int xyref_hdmi_hw_params(struct snd_pcm_substream *substream,
 	rclk = params_rate(params) * rfs;
 
 	switch (rclk) {
-	case 4096000:
-	case 5644800:
-	case 6144000:
-	case 8467200:
-	case 9216000:
-		psr = 8;
-		break;
-	case 8192000:
-	case 11289600:
 	case 12288000:
-	case 16934400:
 	case 18432000:
 		psr = 4;
 		break;
-	case 22579200:
 	case 24576000:
-	case 33868800:
 	case 36864000:
 		psr = 2;
 		break;
-	case 67737600:
+	case 49152000:
 	case 73728000:
 		psr = 1;
 		break;
@@ -325,7 +298,14 @@ static int xyref_hdmi_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	set_aud_pll_rate(rclk * psr);
+	/* Set AUD_PLL frequency */
+	sclk = rclk * psr;
+	for (div = 2; div <= 16; div++) {
+		if (sclk * div > XYREF_AUD_PLL_FREQ)
+			break;
+	}
+	pll = sclk * (div - 1);
+	set_aud_pll_rate(pll);
 
 	/* Set CPU DAI configuration */
 	ret = snd_soc_dai_set_fmt(cpu_dai, SND_SOC_DAIFMT_I2S
@@ -344,6 +324,10 @@ static int xyref_hdmi_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0)
 		return ret;
 
+	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_RCLKSRC_1, 0, 0);
+	if (ret < 0)
+		return ret;
+
 	ret = snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_BCLK, bfs);
 	if (ret < 0)
 		return ret;
@@ -354,6 +338,7 @@ static int xyref_hdmi_hw_params(struct snd_pcm_substream *substream,
 static struct snd_soc_ops xyref_hdmi_ops = {
 	.hw_params = xyref_hdmi_hw_params,
 };
+#endif
 
 static struct snd_soc_dai_link xyref_dai[] = {
 	{ /* Primary DAI i/f */
@@ -368,11 +353,13 @@ static struct snd_soc_dai_link xyref_dai[] = {
 		.platform_name = "samsung-i2s-sec",
 		.codec_dai_name = "es515-porta",
 		.ops = &xyref_ops,
-	}, { /* HDMI DAI i/f */
+#ifdef CONFIG_SND_SAMSUNG_AUX_HDMI
+	}, { /* Aux DAI i/f */
 		.name = "HDMI",
 		.stream_name = "i2s1",
 		.codec_dai_name = "dummy-aif1",
 		.ops = &xyref_hdmi_ops,
+#endif
 	}
 };
 
@@ -383,19 +370,29 @@ static struct snd_soc_card xyref = {
 	.num_links = ARRAY_SIZE(xyref_dai),
 };
 
-
 static int xyref_audio_probe(struct platform_device *pdev)
 {
 	int n, ret;
 	struct device_node *np = pdev->dev.of_node;
 	struct snd_soc_card *card = &xyref;
+	bool hdmi_avail = false;
 
+#ifdef CONFIG_SND_SAMSUNG_AUX_HDMI
+	hdmi_avail = true;
+#endif
 	card->dev = &pdev->dev;
 
 	for (n = 0; np && n < ARRAY_SIZE(xyref_dai); n++) {
 		if (!xyref_dai[n].cpu_dai_name) {
 			xyref_dai[n].cpu_of_node = of_parse_phandle(np,
 					"samsung,audio-cpu", n);
+
+			if (!xyref_dai[n].cpu_of_node && hdmi_avail) {
+				xyref_dai[n].cpu_of_node = of_parse_phandle(np,
+					"samsung,audio-cpu-hdmi", 0);
+				hdmi_avail = false;
+			}
+
 			if (!xyref_dai[n].cpu_of_node) {
 				dev_err(&pdev->dev, "Property "
 				"'samsung,audio-cpu' missing or invalid\n");
@@ -411,7 +408,7 @@ static int xyref_audio_probe(struct platform_device *pdev)
 				"samsung,audio-codec", n);
 		if (!xyref_dai[0].codec_of_node) {
 			dev_err(&pdev->dev,
-				"Property 'samsung,audio-codec' missing or invalid\n");
+			"Property 'samsung,audio-codec' missing or invalid\n");
 			ret = -EINVAL;
 		}
 	}
