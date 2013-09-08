@@ -10,11 +10,15 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/clk.h>
+#include <linux/io.h>
+#include <linux/module.h>
 
 #include <sound/soc.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/initval.h>
+
+#include <mach/regs-pmu.h>
 
 #include "i2s.h"
 #include "i2s-regs.h"
@@ -22,7 +26,16 @@
 /* XYREF use CLKOUT from AP */
 #define XYREF_MCLK_FREQ 24000000
 
+static bool clkout_enabled;
 static struct snd_soc_card xyref;
+
+static void xyref_enable_mclk(bool on)
+{
+	pr_debug("%s: %s\n", __func__, on ? "on" : "off");
+
+	clkout_enabled = on;
+	writel(on ? 0x1000 : 0x1001, EXYNOS_PMU_DEBUG);
+}
 
 static int set_aud_pll_rate(unsigned long rate)
 {
@@ -54,6 +67,9 @@ static int xyref_hw_params(struct snd_pcm_substream *substream,
 	struct snd_soc_dai *codec_dai = rtd->codec_dai;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
 	int ret;
+
+	/* CLKOUT(XXTI) for eS515 MCLK */
+	xyref_enable_mclk(true);
 
 	/* Set Codec DAI configuration */
 	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S
