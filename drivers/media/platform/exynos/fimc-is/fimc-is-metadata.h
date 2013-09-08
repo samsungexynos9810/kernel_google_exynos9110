@@ -937,6 +937,10 @@ struct camera2_flash_uctl {
 	struct camera2_flash_ctl ctl;
 };
 
+struct camera2_bayer_uctl {
+	struct camera2_scaler_ctl ctl;
+};
+
 struct camera2_bayer_udm {
 	uint32_t	width;
 	uint32_t	height;
@@ -971,6 +975,8 @@ struct camera2_uctl {
 	struct camera2_flash_uctl	flashUd;
 
 	struct camera2_scaler_uctl	scalerUd;
+	/** ispfw specific control(user-defined) of Bcrop1. */
+	struct camera2_bayer_uctl	bayerUd;
 };
 
 struct camera2_udm {
