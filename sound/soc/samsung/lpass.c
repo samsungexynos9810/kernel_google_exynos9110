@@ -21,9 +21,6 @@
 #include <linux/of_gpio.h>
 #include <linux/pm_runtime.h>
 
-#include <plat/clock.h>
-#include <plat/cpu.h>
-
 #include <mach/map.h>
 #include <mach/regs-pmu.h>
 #include <mach/regs-clock-exynos5430.h>
@@ -179,6 +176,7 @@ static void lpass_enable(void)
 	lpass_reg_restore();
 
 	/* CLK_MUX_SEL_AUD0 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
 	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
@@ -214,19 +212,12 @@ static void lpass_disable(void)
 	clk_disable_unprepare(lpass.clk_gpio);
 	clk_disable_unprepare(lpass.clk_dbg);
 
-	/* CLK_MUX_SEL_AUD0 @ FIN_PLL */
-	exynos_set_parent("mout_aud_pll_user", "fin_pll");
-	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
-
 	lpass_reg_save();
 }
 
 static int clk_set_heirachy(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-
-	/* PMU_DEBUG @ XXTI 24MHz */
-	writel(0x01000, EXYNOS_PMU_DEBUG);
 
 	lpass.clk_dmac = clk_get(dev, "dmac");
 	if (IS_ERR(lpass.clk_dmac)) {
@@ -276,25 +267,12 @@ static int clk_set_heirachy(struct platform_device *pdev)
 		goto err7;
 	}
 
-	/* CLK_MUX_SEL_AUD0 @ FIN_PLL */
-	exynos_set_parent("mout_aud_pll_user", "fin_pll");
-	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
-
-	/* AUD_PLL @ 393.216MHz */
-	writel(49282, EXYNOS5430_VA_CMU_TOP + 0x0114);	/* AUD_PLL_CON1 (K) */
-	writel((1 << 31) | (459 << 16) | (7 << 8) | (2),
-		EXYNOS5430_VA_CMU_TOP + 0x0110);	/* AUD_PLL_CON0 */
-
-	/* CMU_AUD */
-	writel(0x00520, EXYNOS5430_VA_CMU_AUD + 0x0600);/* CLK_DIV_AUD0 */
-	writel(0xF2BF7, EXYNOS5430_VA_CMU_AUD + 0x0604);/* CLK_DIV_AUD1 */
-
-	/* CLK_MUX_SEL_AUD0 */
+	/* AUD0 */
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
 	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
 
-	/* CLK_MUX_SEL_AUD1 */
+	/* AUD1 */
 	exynos_set_parent("mout_sclk_i2s_a", "mout_aud_pll_sub");
 	exynos_set_parent("mout_sclk_pcm_a", "mout_aud_pll_sub");
 
