@@ -152,8 +152,8 @@ static void aud_init_clock(void)
 	/* TOP_PERIC1 */
 	exynos_set_parent("mout_sclk_audio0", "mout_aud_pll_user");
 	exynos_set_parent("mout_sclk_audio1", "mout_aud_pll_user");
-	exynos_set_parent("mout_sclk_spdif", "dout_sclk_audio1");
-	exynos_set_rate("dout_sclk_audio0", 49152004);
+	exynos_set_parent("mout_sclk_spdif", "dout_sclk_audio0");
+	exynos_set_rate("dout_sclk_audio0", 24576002);
 	exynos_set_rate("dout_sclk_audio1", 49152004);
 	exynos_set_rate("dout_sclk_pcm1", 2048002);
 	exynos_set_rate("dout_sclk_i2s1", 49152004);
