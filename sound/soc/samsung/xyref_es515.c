@@ -22,6 +22,7 @@
 
 #include "i2s.h"
 #include "i2s-regs.h"
+#include "spdif.h"
 
 /* XYREF use CLKOUT from AP */
 #define XYREF_MCLK_FREQ		24000000
@@ -340,6 +341,70 @@ static struct snd_soc_ops xyref_hdmi_ops = {
 };
 #endif
 
+#ifdef CONFIG_SND_SAMSUNG_AUX_SPDIF
+static int set_sclk_spdif_rate(unsigned long audio_rate)
+{
+	struct clk *sclk_audio0;
+
+	sclk_audio0 = clk_get(xyref.dev, "dout_sclk_audio0");
+	if (IS_ERR(sclk_audio0)) {
+		printk(KERN_ERR "%s: failed to get sclk_audio0\n", __func__);
+		return -ENOENT;
+	}
+	clk_set_rate(sclk_audio0, audio_rate);
+	clk_put(sclk_audio0);
+
+	return 0;
+}
+
+/*
+ * XYREF S/PDIF DAI operations. (AP master)
+ */
+static int xyref_spdif_hw_params(struct snd_pcm_substream *substream,
+		struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	unsigned long rclk_rate;
+	int ret, ratio;
+
+	switch (params_rate(params)) {
+	case 48000:
+	case 96000:
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	/* set_aud_pll_rate(XYREF_AUD_PLL_FREQ); */
+
+	/* Setting ratio to 512fs helps to use S/PDIF with HDMI without
+	 * modify S/PDIF ASoC machine driver.
+	 */
+	ratio = 512;
+	rclk_rate = params_rate(params) * ratio;
+
+	/* Set audio source clock rates */
+	/* later...
+	ret = set_sclk_spdif_rate(rclk_rate);
+	if (ret < 0)
+		return ret;
+	*/
+
+	/* Set S/PDIF uses internal source clock */
+	ret = snd_soc_dai_set_sysclk(cpu_dai, SND_SOC_SPDIF_INT_MCLK,
+					rclk_rate, SND_SOC_CLOCK_IN);
+	if (ret < 0)
+		return ret;
+
+	return ret;
+}
+
+static struct snd_soc_ops xyref_spdif_ops = {
+	.hw_params = xyref_spdif_hw_params,
+};
+#endif
+
 static struct snd_soc_dai_link xyref_dai[] = {
 	{ /* Primary DAI i/f */
 		.name = "ES515 PRI",
@@ -360,6 +425,13 @@ static struct snd_soc_dai_link xyref_dai[] = {
 		.codec_dai_name = "dummy-aif1",
 		.ops = &xyref_hdmi_ops,
 #endif
+#ifdef CONFIG_SND_SAMSUNG_AUX_SPDIF
+	}, { /* Aux DAI i/f */
+		.name = "S/PDIF",
+		.stream_name = "spdif",
+		.codec_dai_name = "dummy-aif2",
+		.ops = &xyref_spdif_ops,
+#endif
 	}
 };
 
@@ -376,9 +448,13 @@ static int xyref_audio_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	struct snd_soc_card *card = &xyref;
 	bool hdmi_avail = false;
+	bool spdif_avail = false;
 
 #ifdef CONFIG_SND_SAMSUNG_AUX_HDMI
 	hdmi_avail = true;
+#endif
+#ifdef CONFIG_SND_SAMSUNG_AUX_SPDIF
+	spdif_avail = true;
 #endif
 	card->dev = &pdev->dev;
 
@@ -391,6 +467,12 @@ static int xyref_audio_probe(struct platform_device *pdev)
 				xyref_dai[n].cpu_of_node = of_parse_phandle(np,
 					"samsung,audio-cpu-hdmi", 0);
 				hdmi_avail = false;
+			}
+
+			if (!xyref_dai[n].cpu_of_node && spdif_avail) {
+				xyref_dai[n].cpu_of_node = of_parse_phandle(np,
+					"samsung,audio-cpu-spdif", 0);
+				spdif_avail = false;
 			}
 
 			if (!xyref_dai[n].cpu_of_node) {

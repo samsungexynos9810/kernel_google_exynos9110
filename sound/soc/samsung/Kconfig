@@ -269,6 +269,13 @@ config SND_SAMSUNG_AUX_HDMI
 	help
 	  Say Y if you want to add support for HDMI audio on the XYREF.
 
+config SND_SAMSUNG_AUX_SPDIF
+	tristate "S/PDIF Audio support on XYREF"
+	depends on SND_SOC_SAMSUNG_XYREF_ES515
+	select SND_SAMSUNG_SPDIF
+	help
+	  Say Y if you want to add support for S/PDIF audio on the XYREF.
+
 # For support SEIREN audio
 source "sound/soc/samsung/seiren/Kconfig"
 
