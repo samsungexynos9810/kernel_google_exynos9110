@@ -362,13 +362,14 @@ struct exynos5_fimc_is_sensor_info {
 };
 
 struct sensor_open_extended {
-	u32 I2CChannel;
+	struct sensor_protocol sensor_con;
 	struct sensor_protocol actuator_con;
 	struct sensor_protocol flash_con;
 	struct sensor_protocol from_con;
 
 	u32 mclk;
 	u32 mipi_lane_num;
+	u32 mipi_settle_line;
 	u32 mipi_speed;
 	/* Skip setfile loading when fast_open_sensor is not 0 */
 	u32 fast_open_sensor;
