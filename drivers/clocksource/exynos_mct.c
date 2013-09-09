@@ -24,6 +24,7 @@
 #include <linux/of_address.h>
 #include <linux/clocksource.h>
 
+#include <asm/sched_clock.h>
 #include <asm/localtimer.h>
 #include <asm/mach/time.h>
 
@@ -168,6 +169,22 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
 	}
 }
 
+static notrace u32 exynos4_read_sched_clock(void)
+{
+	unsigned int lo;
+	unsigned int try_cnt = 0xff;
+
+	do {
+		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+		try_cnt--;
+	} while (!lo && try_cnt > 0);
+
+	if (!try_cnt)
+		WARN_ON(!lo);
+
+	return lo;
+}
+
 static cycle_t exynos4_frc_read(struct clocksource *cs)
 {
 	cycle_t val;
@@ -216,6 +233,8 @@ static void __init exynos4_clocksource_init(void)
 
 	if (clocksource_register_hz(&mct_frc, clk_rate))
 		panic("%s: can't register clocksource\n", mct_frc.name);
+
+	setup_sched_clock(exynos4_read_sched_clock, 32, clk_rate);
 }
 
 static void exynos4_mct_comp0_stop(void)
