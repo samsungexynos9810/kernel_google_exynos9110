@@ -3989,37 +3989,27 @@ exit:
 #endif
 
 #ifdef BAYER_CROP_DZOOM
-#if defined(CONFIG_SOC_EXYNOS5430)
-static int fimc_is_ischain_s_3ax_size(struct fimc_is_device_ischain *device,
-	u32 crop_x, u32 crop_y,
-	u32 crop_width, u32 crop_height,
-	u32 bds_width, u32 bds_height)
+static int fimc_is_ischain_check_bcrop_size(struct fimc_is_device_ischain *device,
+	struct fimc_is_frame *frame)
 {
 	int ret = 0;
-	struct taa_param *taa_param;
-	struct isp_param *isp_param;
 	u32 min_width, max_width, min_height, max_height;
-
 	u32 sensor_width, sensor_height;
-	u32 indexes, lindex, hindex;
+	u32 crop_x, crop_y, crop_width, crop_height;
 
-	taa_param = &device->is_region->parameter.taa;
-	isp_param = &device->is_region->parameter.isp;
-	indexes = lindex = hindex = 0;
 	sensor_width = device->sensor->width - device->margin_width;
 	sensor_height = device->sensor->height - device->margin_height;
-	if ((crop_width < bds_width) ||
-		(crop_height < bds_height)) {
-		bds_width = crop_width;
-		bds_height = crop_height;
-	}
+	crop_x = frame->shot->uctl.bayerUd.ctl.cropRegion[0];
+	crop_y = frame->shot->uctl.bayerUd.ctl.cropRegion[1];
+	crop_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
+	crop_height = frame->shot->uctl.bayerUd.ctl.cropRegion[3];
 
 #ifdef PRINT_DZOOM
 	pr_info("[ISP:D:%d] request 3ax input size(%dx%d),\
-		Bcrop size(%dx%d), BDS size(%dx%d), zoom(%d)\n",
+		Bcrop size(%dx%d), zoom(%d), fcount(%d)\n",
 		device->instance, sensor_width, sensor_height,
-		crop_width, crop_height, bds_width, bds_height,
-		sensor_width * 1000 / crop_width);
+		crop_width, crop_height, sensor_width * 1000 / crop_width,
+		frame->fcount);
 #endif
 
 	/* Check length for center crop */
@@ -4033,223 +4023,29 @@ static int fimc_is_ischain_s_3ax_size(struct fimc_is_device_ischain *device,
 			Crop region(%d, %d, %d, %d) Input region(%d, %d)",
 			device, crop_x, crop_y, crop_width, crop_height,
 			sensor_width, sensor_height);
-		goto exit;
+		frame->shot->uctl.bayerUd.ctl.cropRegion[0] = 0;
+		frame->shot->uctl.bayerUd.ctl.cropRegion[1] = 0;
+		frame->shot->uctl.bayerUd.ctl.cropRegion[2] = sensor_width;
+		frame->shot->uctl.bayerUd.ctl.cropRegion[3] = sensor_height;
 	}
 
 	/* CHECK align */
-	if ((crop_width % 4) || (crop_height % 2)) {
-		mwarn("Input width or height align does not fit.(%d x %d)",
+	if (crop_width % 4) {
+		mwarn("Input width align does not fit.(%d x %d)",
 			device, crop_width, crop_height);
-		goto exit;
+		frame->shot->uctl.bayerUd.ctl.cropRegion[2] -= (crop_width % 4);
 	}
 
-	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		!IS_ISCHAIN_OTF(device)) {
-		/* 3AX DMA INPUT */
-		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-		taa_param->vdma1_input.width = sensor_width;
-		taa_param->vdma1_input.height = sensor_height;
-		taa_param->vdma1_input.dma_crop_width = sensor_width;
-		taa_param->vdma1_input.dma_crop_height = sensor_height;
-		taa_param->vdma1_input.bayer_crop_offset_x = crop_x;
-		taa_param->vdma1_input.bayer_crop_offset_y = crop_y;
-		taa_param->vdma1_input.bayer_crop_width = crop_width;
-		taa_param->vdma1_input.bayer_crop_height = crop_height;
-		taa_param->vdma1_input.bds_out_width = bds_width;
-		taa_param->vdma1_input.bds_out_height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
-		indexes++;
-	} else {
-		/* 3AX DMA INPUT */
-		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
-		taa_param->vdma1_input.width = sensor_width;
-		taa_param->vdma1_input.height = sensor_height;
-		taa_param->vdma1_input.dma_crop_width = sensor_width;
-		taa_param->vdma1_input.dma_crop_height = sensor_height;
-		taa_param->vdma1_input.bds_out_width = bds_width;
-		taa_param->vdma1_input.bds_out_height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-		indexes++;
-
-		/* 3AX OTF INPUT */
-		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
-		taa_param->otf_input.width = sensor_width;
-		taa_param->otf_input.height = sensor_height;
-		taa_param->otf_input.crop_offset_x = crop_x;
-		taa_param->otf_input.crop_offset_y = crop_y;
-		taa_param->otf_input.crop_width = crop_width;
-		taa_param->otf_input.crop_height = crop_height;
-		taa_param->otf_input.bds_out_width = bds_width;
-		taa_param->otf_input.bds_out_height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
-		indexes++;
+	if (crop_height % 2) {
+		mwarn("Input height align does not fit.(%d x %d)",
+			device, crop_width, crop_height);
+		frame->shot->uctl.bayerUd.ctl.cropRegion[3] -= (crop_height % 2);
 	}
 
-	/* 3AX Before BDS DMA OUTPUT */
-	taa_param->vdma4_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-	taa_param->vdma4_output.width = crop_width;
-	taa_param->vdma4_output.height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
-	indexes++;
-
-	/* 3AX After BDS DMA OUTPUT */
-	taa_param->vdma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-	taa_param->vdma2_output.width = bds_width;
-	taa_param->vdma2_output.height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device,
-		indexes, lindex, hindex);
-	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	device->sensor_width = sensor_width;
-	device->sensor_height = sensor_height;
-	device->dzoom_width = crop_width;
-
-exit:
+	device->dzoom_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
 
 	return ret;
 }
-#else
-static int fimc_is_ischain_s_3ax_size(struct fimc_is_device_ischain *device,
-	u32 crop_x, u32 crop_y,
-	u32 crop_width, u32 crop_height,
-	u32 bds_width, u32 bds_height)
-{
-	int ret = 0;
-	struct isp_param *isp_param;
-	u32 min_width, max_width, min_height, max_height;
-
-	u32 sensor_width, sensor_height;
-	u32 indexes, lindex, hindex;
-
-	isp_param = &device->is_region->parameter.isp;
-	indexes = lindex = hindex = 0;
-	sensor_width = device->sensor->width - device->margin_width;
-	sensor_height = device->sensor->height - device->margin_height;
-	if ((crop_width < bds_width) ||
-		(crop_height < bds_height)) {
-		bds_width = crop_width;
-		bds_height = crop_height;
-	}
-
-#ifdef PRINT_DZOOM
-	pr_info("[ISP:D:%d] request 3ax input size(%dx%d),\
-		Bcrop size(%dx%d), BDS size(%dx%d), zoom(%d)\n",
-		device->instance, sensor_width, sensor_height,
-		crop_width, crop_height, bds_width, bds_height,
-		sensor_width * 1000 / crop_width);
-#endif
-
-	/* Check length for center crop */
-	min_width = crop_width + crop_x;
-	max_width = crop_width + (crop_x << 1);
-	min_height = crop_height + crop_y;
-	max_height = crop_height + (crop_y << 1);
-	if ((min_width > sensor_width) || (max_width < sensor_width)
-	|| (min_height > sensor_height) || (max_height < sensor_height)) {
-		mwarn("Crop width or height is not valid.\
-			Crop region(%d, %d, %d, %d) Input region(%d, %d)",
-			device, crop_x, crop_y, crop_width, crop_height,
-			sensor_width, sensor_height);
-		goto exit;
-	}
-
-	/* CHECK align */
-	if ((crop_width % 4) || (crop_height % 2)) {
-		mwarn("Input width or height align does not fit.(%d x %d)",
-			device, crop_width, crop_height);
-		goto exit;
-	}
-
-	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
-		!IS_ISCHAIN_OTF(device)) {
-		/* 3AX DMA INPUT */
-		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-		isp_param->dma1_input.width = sensor_width;
-		isp_param->dma1_input.height = sensor_height;
-		isp_param->dma1_input.dma_crop_width = sensor_width;
-		isp_param->dma1_input.dma_crop_height = sensor_height;
-		isp_param->dma1_input.bayer_crop_offset_x = crop_x;
-		isp_param->dma1_input.bayer_crop_offset_y = crop_y;
-		isp_param->dma1_input.bayer_crop_width = crop_width;
-		isp_param->dma1_input.bayer_crop_height = crop_height;
-		isp_param->dma1_input.bds_out_width = bds_width;
-		isp_param->dma1_input.bds_out_height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-		indexes++;
-
-		/* 3AX DMA OUTPUT */
-		isp_param->dma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-		isp_param->dma2_output.width = bds_width;
-		isp_param->dma2_output.height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_ISP_DMA2_OUTPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_DMA2_OUTPUT);
-		indexes++;
-
-		/* ISP OTF OUTPUT */
-		isp_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
-		isp_param->otf_output.width = bds_width;
-		isp_param->otf_output.height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
-		indexes++;
-	} else {
-		/* 3AX DMA INPUT */
-		isp_param->dma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
-		isp_param->dma1_input.width = sensor_width;
-		isp_param->dma1_input.height = sensor_height;
-		isp_param->dma1_input.dma_crop_width = sensor_width;
-		isp_param->dma1_input.dma_crop_height = sensor_height;
-		isp_param->dma1_input.bds_out_width = bds_width;
-		isp_param->dma1_input.bds_out_height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-		indexes++;
-
-		/* 3AX OTF INPUT */
-		isp_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
-		isp_param->otf_input.width = sensor_width;
-		isp_param->otf_input.height = sensor_height;
-		isp_param->otf_input.crop_offset_x = crop_x;
-		isp_param->otf_input.crop_offset_y = crop_y;
-		isp_param->otf_input.crop_width = crop_width;
-		isp_param->otf_input.crop_height = crop_height;
-		isp_param->otf_input.bds_out_width = bds_width;
-		isp_param->otf_input.bds_out_height = bds_height;
-		lindex |= LOWBIT_OF(PARAM_ISP_OTF_INPUT);
-		hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
-		indexes++;
-	}
-
-	ret = fimc_is_itf_s_param(device,
-		indexes, lindex, hindex);
-	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	device->sensor_width = sensor_width;
-	device->sensor_height = sensor_height;
-	device->dzoom_width = crop_width;
-
-exit:
-
-	return ret;
-}
-#endif
 #endif
 
 #ifdef ENABLE_DRC
@@ -6718,32 +6514,23 @@ int fimc_is_ischain_3a0_callback(struct fimc_is_device_ischain *device,
 	}
 #endif
 
-#ifdef BAYER_CROP_DZOOM
-	crop_width = frame->shot->ctl.scaler.cropRegion[2];
-	if (crop_width && (crop_width != device->dzoom_width)) {
-		ret = fimc_is_ischain_s_3ax_size(device,
-			frame->shot->ctl.scaler.cropRegion[0],
-			frame->shot->ctl.scaler.cropRegion[1],
-			frame->shot->ctl.scaler.cropRegion[2],
-			frame->shot->ctl.scaler.cropRegion[3],
-			device->chain0_width, device->chain0_height);
-		if (ret) {
-			merr("fimc_is_ischain_s_3ax_size is fail:\
-				CROP(%d, %d, %d, %d), BDS(%d, %d), fcount(%d)\n",
-				device,
-				frame->shot->ctl.scaler.cropRegion[0],
-				frame->shot->ctl.scaler.cropRegion[1],
-				frame->shot->ctl.scaler.cropRegion[2],
-				frame->shot->ctl.scaler.cropRegion[3],
-				device->chain0_width, device->chain0_height,
-				frame->fcount);
-			ret = -EINVAL;
-			goto p_err;
-		}
-#ifdef PRINT_DZOOM
-		pr_info("[ISP:D:%d] fcount(%d)", device->instance, frame->fcount);
-#endif
+#ifdef ENABLE_FAST_SHOT
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state)) {
+		memcpy(&frame->shot->ctl.aa, &group->fast_ctl.aa,
+			sizeof(struct camera2_aa_ctl));
+		memcpy(&frame->shot->ctl.scaler, &group->fast_ctl.scaler,
+			sizeof(struct camera2_scaler_ctl));
 	}
+#endif
+
+#ifdef BAYER_CROP_DZOOM
+	memcpy(&frame->shot->uctl.bayerUd.ctl,
+		&frame->shot->ctl.scaler,
+		sizeof(struct camera2_scaler_ctl));
+
+	crop_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
+	if (crop_width && (crop_width != device->dzoom_width))
+		fimc_is_ischain_check_bcrop_size(device, frame);
 #endif
 
 	if (tax) {
@@ -6850,31 +6637,13 @@ int fimc_is_ischain_3a1_callback(struct fimc_is_device_ischain *device,
 #endif
 
 #ifdef BAYER_CROP_DZOOM
-	crop_width = frame->shot->ctl.scaler.cropRegion[2];
-	if (crop_width && (crop_width != device->dzoom_width)) {
-		ret = fimc_is_ischain_s_3ax_size(device,
-			frame->shot->ctl.scaler.cropRegion[0],
-			frame->shot->ctl.scaler.cropRegion[1],
-			frame->shot->ctl.scaler.cropRegion[2],
-			frame->shot->ctl.scaler.cropRegion[3],
-			device->chain0_width, device->chain0_height);
-		if (ret) {
-			merr("fimc_is_ischain_s_3ax_size is fail:\
-				CROP(%d, %d, %d, %d), BDS(%d, %d), fcount(%d)\n",
-				device,
-				frame->shot->ctl.scaler.cropRegion[0],
-				frame->shot->ctl.scaler.cropRegion[1],
-				frame->shot->ctl.scaler.cropRegion[2],
-				frame->shot->ctl.scaler.cropRegion[3],
-				device->chain0_width, device->chain0_height,
-				frame->fcount);
-			ret = -EINVAL;
-			goto p_err;
-		}
-#ifdef PRINT_DZOOM
-		pr_info("[ISP:D:%d] fcount(%d)", device->instance, frame->fcount);
-#endif
-	}
+	memcpy(&frame->shot->uctl.bayerUd.ctl,
+		&frame->shot->ctl.scaler,
+		sizeof(struct camera2_scaler_ctl));
+
+	crop_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
+	if (crop_width && (crop_width != device->dzoom_width))
+		fimc_is_ischain_check_bcrop_size(device, frame);
 #endif
 
 	if (tax) {
