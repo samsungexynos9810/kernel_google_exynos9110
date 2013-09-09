@@ -1446,7 +1446,6 @@ int fimc_is_sensor_front_start(struct fimc_is_device_sensor *device,
 {
 	int ret = 0;
 	struct fimc_is_frame_info frame;
-	struct fimc_is_device_flite *flite;
 
 	dbg_front("%s\n", __func__);
 
