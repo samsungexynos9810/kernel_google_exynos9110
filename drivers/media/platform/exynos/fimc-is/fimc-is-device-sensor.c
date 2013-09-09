@@ -943,6 +943,12 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 
 	ext = &enum_sensor[SENSOR_NAME_IMX135].ext;
 
+	ext->sensor_con.product_name = 0;
+	ext->sensor_con.peri_type = SE_I2C;
+	ext->sensor_con.peri_setting.i2c.channel = enum_sensor[SENSOR_NAME_S5K3L2].i2c_ch;
+	ext->sensor_con.peri_setting.i2c.slave_address = 0x34;
+	ext->sensor_con.peri_setting.i2c.speed = 400000;
+
 	ext->actuator_con.product_name = ACTUATOR_NAME_AK7345;
 	ext->actuator_con.peri_type = SE_I2C;
 	ext->actuator_con.peri_setting.i2c.channel
@@ -978,7 +984,6 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->mipi_speed = 0;
 	ext->fast_open_sensor = 0;
 	ext->self_calibration_mode = 0;
-	ext->I2CChannel = 0;
 	ext->I2CSclk = I2C_L0;
 
 	/* S5K6B2 */
@@ -1010,7 +1015,12 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext = &enum_sensor[SENSOR_NAME_S5K6B2].ext;
 	memset(ext, 0x0, sizeof(struct sensor_open_extended));
 
-	ext->I2CChannel = enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch;
+	ext->sensor_con.product_name = 0;
+	ext->sensor_con.peri_type = SE_I2C;
+	ext->sensor_con.peri_setting.i2c.channel = enum_sensor[SENSOR_NAME_S5K6B2].i2c_ch;
+	ext->sensor_con.peri_setting.i2c.slave_address = 0x20;
+	ext->sensor_con.peri_setting.i2c.speed = 400000;
+
 	ext->I2CSclk = I2C_L0;
 
 	/* 3L2 */
@@ -1028,6 +1038,13 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	enum_sensor[SENSOR_NAME_S5K3L2].settle_table = settle_3l2;
 
 	ext = &enum_sensor[SENSOR_NAME_S5K3L2].ext;
+	memset(ext, 0x0, sizeof(struct sensor_open_extended));
+
+	ext->sensor_con.product_name = 0;
+	ext->sensor_con.peri_type = SE_I2C;
+	ext->sensor_con.peri_setting.i2c.channel = enum_sensor[SENSOR_NAME_S5K3L2].i2c_ch;
+	ext->sensor_con.peri_setting.i2c.slave_address = 0x20;
+	ext->sensor_con.peri_setting.i2c.speed = 400000;
 
 	ext->actuator_con.product_name = ACTUATOR_NAME_DWXXXX;
 	ext->actuator_con.peri_type = SE_I2C;
@@ -1071,7 +1088,6 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->mipi_speed = 0;
 	ext->fast_open_sensor = 0;
 	ext->self_calibration_mode = 0;
-	ext->I2CChannel = 0;
 	ext->I2CSclk = I2C_L0;
 
 p_err:
