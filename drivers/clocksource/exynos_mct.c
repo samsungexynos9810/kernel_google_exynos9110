@@ -171,46 +171,23 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
 
 static notrace u32 exynos4_read_sched_clock(void)
 {
-	unsigned int lo;
-	unsigned int try_cnt = 0xff;
+	static u32 val;
+	static DEFINE_SPINLOCK(exynos_mct_spinlock);
+	unsigned long flags;
 
-	do {
-		lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-		try_cnt--;
-	} while (!lo && try_cnt > 0);
+	if (spin_trylock_irqsave(&exynos_mct_spinlock, flags)){
+		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+		spin_unlock_irqrestore(&exynos_mct_spinlock, flags);
+	} else {
+		spin_unlock_wait(&exynos_mct_spinlock);
+	}
 
-	if (!try_cnt)
-		WARN_ON(!lo);
-
-	return lo;
+	return val;
 }
 
 static cycle_t exynos4_frc_read(struct clocksource *cs)
 {
-	cycle_t val;
-
-	if (unlikely(cs->mask == CLOCKSOURCE_MASK(64))) {
-		/* 64bit supporting clocksource */
-		unsigned int hi, hi2, lo;
-		hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-		do {
-			hi = hi2;
-			lo = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-			hi2 = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_U);
-		} while (hi != hi2);
-		val = ((cycle_t)hi << 32) | lo;
-	} else {
-		/* 32bit supporting clocksource */
-		unsigned int try_cnt = 0xff;
-		do {
-			val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-			try_cnt--;
-		} while (!val && try_cnt > 0);
-
-		if (!try_cnt)
-			WARN_ON(!val);
-	}
-	return val;
+	return (cycle_t)exynos4_read_sched_clock();
 }
 
 static void exynos4_frc_resume(struct clocksource *cs)
