@@ -317,6 +317,34 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 				exynos_pd_power_post);
 }
 
+/* show_power_domain - show current power domain status.
+ *
+ * read the status of power domain and show it.
+ */
+static void show_power_domain(void)
+{
+	struct device_node *np;
+
+	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+		struct platform_device *pdev;
+		struct exynos_pm_domain *pd;
+
+		if (of_device_is_available(np)) {
+			pdev = of_find_device_by_node(np);
+			if (!pdev)
+				continue;
+			pd = platform_get_drvdata(pdev);
+			pr_info("   %-9s - %-3s\n", pd->genpd.name,
+					pd->check_status(pd) ? "on" : "off");
+		} else
+			pr_info("   %-9s - %s\n",
+						kstrdup(np->name, GFP_KERNEL),
+						"not registered");
+	}
+
+	return;
+}
+
 static void exynos_add_device_to_pd(struct exynos_pm_domain *pd,
 					 struct device *dev)
 {
@@ -495,6 +523,8 @@ static __init int exynos_pm_dt_parse_domains(void)
 	bus_register_notifier(&platform_bus_type, &platform_nb);
 
 	pr_info("EXYNOS5: PM Domain Initialize\n");
+	/* show information of power domain registration */
+	show_power_domain();
 
 	return 0;
 }
