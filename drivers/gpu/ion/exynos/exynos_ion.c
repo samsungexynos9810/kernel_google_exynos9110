@@ -514,7 +514,8 @@ static void ion_exynos_contig_heap_free(struct ion_buffer *buffer)
 		bool ret = dma_release_from_contiguous(
 			dev, buffer->priv_virt, buffer->size >> PAGE_SHIFT);
 		WARN(!ret, "%s: %#x@%#x is not allocated region by %s\n",
-			__func__, buffer->size, page_to_phys(buffer->priv_virt),
+			__func__, buffer->size,
+			page_to_phys((struct page *)buffer->priv_virt),
 			dev_name(dev));
 	}
 }
@@ -523,7 +524,7 @@ static int ion_exynos_contig_heap_phys(struct ion_heap *heap,
 				       struct ion_buffer *buffer,
 				       ion_phys_addr_t *addr, size_t *len)
 {
-	*addr = page_to_phys(buffer->priv_virt);
+	*addr = page_to_phys((struct page *)buffer->priv_virt);
 	*len = buffer->size;
 	return 0;
 }
@@ -558,7 +559,7 @@ static int ion_exynos_contig_heap_map_user(struct ion_heap *heap,
 				    struct ion_buffer *buffer,
 				    struct vm_area_struct *vma)
 {
-	unsigned long pfn = page_to_pfn(buffer->priv_virt);
+	unsigned long pfn = page_to_pfn((struct page *)buffer->priv_virt);
 
 	return remap_pfn_range(vma, vma->vm_start, pfn + vma->vm_pgoff,
 			       vma->vm_end - vma->vm_start,
