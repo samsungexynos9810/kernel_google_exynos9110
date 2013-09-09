@@ -902,7 +902,7 @@ static void ion_buffer_sync_for_cpu(struct ion_buffer *buffer,
 				buffer->sg_table->nents, i)
 			outer_inv_range(sg_phys(sg), sg_phys(sg) + sg->length);
 	} else {
-		dma_sync_sg_for_device(dev, buffer->sg_table->sgl,
+		dma_sync_sg_for_cpu(dev, buffer->sg_table->sgl,
 					buffer->sg_table->nents, dir);
 	}
 	mutex_unlock(&buffer->lock);
