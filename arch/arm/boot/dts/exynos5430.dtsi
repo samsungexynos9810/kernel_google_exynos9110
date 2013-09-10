@@ -1060,7 +1060,6 @@
 	pd_g2d: pd-g2d@105c4120 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4120 0x20>;
-		status = "disabled";
 	};
 
 	pd_isp: pd-isp@105c4140 {
@@ -1559,6 +1558,7 @@
 		clock-names = "gate_m2mscaler";
 		iommu = <&sysmmu_scaler1>;
 		samsung,power-domain = <&spd_mscl1>;
+	};
 
 	fimg2d_0: fimg2d@12400000 {
 		compatible = "samsung,s5p-fimg2d";
@@ -1566,10 +1566,11 @@
 		interrupts = <0 259 0>;
 		clocks = <&clock 2213>;
 		clock-names = "fimg2d";
-		ip_ver = <43>;
+		ip_ver = <0x43>;
 		cpu_min = <400000>;
 		mif_min = <667000>;
 		int_min = <333000>;
 		iommu = <&sysmmu_g2d>;
+		samsung,power-domain = <&pd_g2d>;
 	};
 };
