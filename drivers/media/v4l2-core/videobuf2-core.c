@@ -970,6 +970,7 @@ static int __fill_vb2_buffer(struct vb2_buffer *vb, const struct v4l2_buffer *b,
 	}
 
 	vb->v4l2_buf.field = b->field;
+	vb->v4l2_buf.reserved2 = b->reserved2;
 	vb->v4l2_buf.timestamp = b->timestamp;
 	vb->v4l2_buf.flags = b->flags & ~V4L2_BUFFER_MASK_FLAGS;
 
