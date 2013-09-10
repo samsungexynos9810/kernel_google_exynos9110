@@ -46,6 +46,9 @@ kbase_context *kbase_create_context(kbase_device *kbdev)
 
 	kctx->kbdev = kbdev;
 	kctx->as_nr = KBASEP_AS_NR_INVALID;
+#ifdef SLSI_INTEGRATION
+	kctx->ctx_status = CTX_UNINITIALIZED;
+#endif
 #ifdef CONFIG_MALI_TRACE_TIMELINE
 	kctx->timeline.owner_tgid = task_tgid_nr(current);
 #endif
@@ -103,6 +106,9 @@ kbase_context *kbase_create_context(kbase_device *kbdev)
 	atomic_set(&kctx->timeline.jd_atoms_in_flight, 0);
 #endif
 
+#ifdef SLSI_INTEGRATION
+	kctx->ctx_status = CTX_INITIALIZED;
+#endif
 	return kctx;
 
  free_osctx:
@@ -139,6 +145,13 @@ void kbase_destroy_context(kbase_context *kctx)
 {
 	kbase_device *kbdev;
 
+#ifdef SLSI_INTEGRATION
+	if (!kctx || kctx->ctx_status != CTX_INITIALIZED) {
+		printk("An uninitialized or destroyed context is tried to be destroyed\n");
+		printk("kctx: 0x%p, kctx->osctx->tgid: %d, kctx->ctx_status: 0x%x\n", kctx, kctx->osctx.tgid, kctx->ctx_status);
+		return ;
+	}
+#endif
 	KBASE_DEBUG_ASSERT(NULL != kctx);
 
 	kbdev = kctx->kbdev;
@@ -187,7 +200,14 @@ void kbase_destroy_context(kbase_context *kctx)
 
 	kbase_mem_allocator_term(&kctx->osalloc);
 	WARN_ON(atomic_read(&kctx->nonmapped_pages) != 0);
+#ifdef SLSI_INTEGRATION
+	kctx->ctx_status = CTX_DESTROYED;
+#endif
+
 	vfree(kctx);
+#ifdef SLSI_INTEGRATION
+	kctx = NULL;
+#endif
 }
 KBASE_EXPORT_SYMBOL(kbase_destroy_context)
 

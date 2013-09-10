@@ -150,6 +150,12 @@ typedef struct kbase_device kbase_device;
 #define KBASE_TRACE_SIZE (1 << KBASE_TRACE_SIZE_LOG2)
 #define KBASE_TRACE_MASK ((1 << KBASE_TRACE_SIZE_LOG2)-1)
 
+#ifdef SLSI_INTEGRATION
+#define CTX_UNINITIALIZED 0xffffffff
+#define CTX_INITIALIZED 0x1
+#define CTX_DESTROYED 0x2
+#endif
+
 #include "mali_kbase_js_defs.h"
 
 /**
@@ -765,6 +771,9 @@ struct kbase_context {
 
 #ifdef CONFIG_MALI_TRACE_TIMELINE
 	kbase_trace_kctx_timeline timeline;
+#endif
+#ifdef SLSI_INTEGRATION
+	int ctx_status;
 #endif
 };
 
