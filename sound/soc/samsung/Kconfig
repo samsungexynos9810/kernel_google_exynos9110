@@ -34,6 +34,9 @@ config SND_SAMSUNG_SPDIF
 config SND_SAMSUNG_I2S
 	tristate
 
+config SND_SAMSUNG_IDMA
+	tristate
+
 config SND_SAMSUNG_AUDSS
 	tristate
 
@@ -72,6 +75,7 @@ config SND_SOC_SAMSUNG_SMDK_WM8580
 	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDK6440 || MACH_SMDK6450 || MACH_SMDKV210 || MACH_SMDKC110)
 	select SND_SOC_WM8580
 	select SND_SAMSUNG_I2S
+	select SND_SAMSUNG_IDMA
 	help
 	  Say Y if you want to add support for SoC audio on the SMDKs.
 
@@ -82,6 +86,7 @@ config SND_SOC_SAMSUNG_SMDK_WM8994
 	select MFD_WM8994
 	select SND_SOC_WM8994
 	select SND_SAMSUNG_I2S
+	select SND_SAMSUNG_IDMA
 	help
 		Say Y if you want to add support for SoC audio on the SMDKs.
 

@@ -19,7 +19,7 @@ obj-$(CONFIG_SND_S3C_I2SV2_SOC) += snd-soc-s3c-i2s-v2.o
 obj-$(CONFIG_SND_SAMSUNG_SPDIF) += snd-soc-samsung-spdif.o
 obj-$(CONFIG_SND_SAMSUNG_PCM) += snd-soc-pcm.o
 obj-$(CONFIG_SND_SAMSUNG_I2S) += snd-soc-i2s.o
-obj-$(CONFIG_SND_SAMSUNG_I2S) += snd-soc-idma.o
+obj-$(CONFIG_SND_SAMSUNG_IDMA) += snd-soc-idma.o
 obj-$(CONFIG_SND_SAMSUNG_FAKEDMA) += snd-soc-fdma.o
 obj-$(CONFIG_SND_SAMSUNG_AUDSS) += snd-soc-lpass.o
 
