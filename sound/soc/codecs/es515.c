@@ -3921,12 +3921,14 @@ static int es515_i2c_probe(struct i2c_client *i2c,
 				__func__);
 		goto reset_gpio_request_error;
 	}
+#ifdef JANG_RHEA /* gpio setting for EINT has been set in mach */
 	rc = gpio_direction_input(pdata->int_gpio);
 	if (rc < 0) {
 		dev_err(&i2c->dev, "%s(): es515_gpioa direction failed",
 				__func__);
 		goto int_gpio_direction_error;
 	}
+#endif
 	rc = gpio_request(pdata->wakeup_gpio, "es515_wakeup_gpio");
 	if (rc < 0) {
 		dev_err(&i2c->dev, "%s(): es515_wakeup_gpio request failed",
@@ -3971,18 +3973,18 @@ static int es515_i2c_probe(struct i2c_client *i2c,
 #endif
 	dev_dbg(&i2c->dev, "%s(): rc = snd_soc_regsiter_codec() = %d\n",
 			__func__, rc);
-#if 0	/* yman, later */
+
 	rc = request_threaded_irq(
 			gpio_to_irq(es515_priv_glb.pdata->int_gpio),
 				NULL, es515_threaded_isr,
-				IRQF_DISABLED | IRQF_TRIGGER_RISING,
+				IRQF_DISABLED | IRQF_TRIGGER_RISING | IRQF_ONESHOT,
 				"es515_theaded_isr", es515);
 	if (rc < 0) {
 		pr_err("Error in setting interrupt mode :%d int_gpio:%d\n",
 				rc, es515_priv_glb.pdata->int_gpio);
 		return rc;
 	}
-#endif
+
 	es515_priv_glb.intr_type = ES515_POLLING;
 
 	return rc;
@@ -3994,7 +3996,9 @@ request_firmware_error:
 wakeup_gpio_direction_error:
 	gpio_free(pdata->wakeup_gpio);
 wakeup_gpio_request_error:
+#ifdef JANG_RHEA /* gpio setting for EINT has been set in mach */
 int_gpio_direction_error:
+#endif
 	gpio_free(pdata->int_gpio);
 reset_gpio_direction_error:
 	gpio_free(pdata->reset_gpio);
