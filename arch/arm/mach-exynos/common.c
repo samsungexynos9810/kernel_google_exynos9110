@@ -515,10 +515,13 @@ void exynos4_restart(char mode, const char *cmd)
 	__raw_writel(0x1, S5P_SWRESET);
 }
 
+#define INFORM_NONE		0x0
+#define INFORM_RECOVERY		0xf
+
 void exynos5_restart(char mode, const char *cmd)
 {
 	struct device_node *np;
-	u32 val;
+	u32 val, restart_inform;
 	void __iomem *addr;
 
 	val = 0x1;
@@ -536,6 +539,14 @@ void exynos5_restart(char mode, const char *cmd)
 
 		val = (val & 0xffff0000) | (status & 0xffff);
 	}
+
+	restart_inform = INFORM_NONE;
+
+	if (cmd) {
+		if (!strcmp((char *)cmd, "recovery"))
+			restart_inform = INFORM_RECOVERY;
+	}
+	__raw_writel(restart_inform, EXYNOS_INFORM4);
 
 	__raw_writel(val, addr);
 }
