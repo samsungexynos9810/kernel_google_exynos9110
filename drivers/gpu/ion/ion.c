@@ -917,6 +917,15 @@ int ion_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 	mutex_lock(&buffer->lock);
 	set_bit(vmf->pgoff, buffer->dirty);
 
+	/*
+	 * This function is called from page-fault handler.
+	 * vm_insert_page() must be called with mm->mmap_sem write-locked.
+	 * otherwise, vma->vm_flags must be have VM_MIXEDMAP.
+	 * page fault handler read-lock mm->mmap_sem and this function is
+	 * called from the fault handler.
+	 */
+	vma->vm_flags |= VM_MIXEDMAP;
+
 	for_each_sg(buffer->sg_table->sgl, sg, buffer->sg_table->nents, i) {
 		if (i != vmf->pgoff)
 			continue;
