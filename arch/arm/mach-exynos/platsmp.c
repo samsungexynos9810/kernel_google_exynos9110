@@ -35,6 +35,13 @@
 
 #include "common.h"
 
+struct exynos_cpu_power_ops {
+	void (*power_up)(unsigned int cpu_id);
+	unsigned int (*power_state)(unsigned int cpu_id);
+};
+
+static struct exynos_cpu_power_ops exynos_cpu;
+
 extern void exynos4_secondary_startup(void);
 
 static inline void __iomem *cpu_boot_reg_base(void)
@@ -98,39 +105,27 @@ static void __cpuinit exynos_secondary_init(unsigned int cpu)
 
 static int exynos_power_up_cpu(unsigned int phys_cpu)
 {
-	unsigned int core, cluster, cpu;
 	unsigned int timeout;
-	unsigned int val;
 
-	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
-	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
-	cpu = (cluster * 4) + core;
-
-	/* Checking already enabled core power */
-	if  ((__raw_readl(EXYNOS_ARM_CORE_STATUS(cpu)) & EXYNOS_CORE_PWR_EN)
-			== EXYNOS_CORE_PWR_EN) {
+	if (exynos_cpu.power_state(phys_cpu) == EXYNOS_CORE_PWR_EN) {
 		printk(KERN_WARNING "%s: Already enabled core power.\n",
 			 __func__);
 		return 0;
 	}
 
-	/* Local core power up and initiate wakeup*/
-	val = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu));
-	val |= EXYNOS_CORE_INIT_WAKEUP_FROM_LOWPWR | EXYNOS_CORE_PWR_EN;
-	__raw_writel(val, EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+	exynos_cpu.power_up(phys_cpu);
 
 	/* wait max 10 ms until cpu is on */
 	timeout = 10;
 	while (timeout) {
-		if  ((__raw_readl(EXYNOS_ARM_CORE_STATUS(cpu)) & EXYNOS_CORE_PWR_EN)
-				== EXYNOS_CORE_PWR_EN)
+		if (exynos_cpu.power_state(phys_cpu) == EXYNOS_CORE_PWR_EN)
 			break;
 
 		mdelay(1);
 		timeout--;
 
 		if (timeout == 0) {
-			printk(KERN_ERR "cpu%d power up failed", cpu);
+			printk(KERN_ERR "cpu%d power up failed\n", phys_cpu);
 			return -ETIMEDOUT;
 		}
 	}
@@ -160,7 +155,7 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct 
 	 */
 	write_pen_release(phys_cpu);
 
-	ret = exynos_power_up_cpu(phys_cpu);
+	ret = exynos_power_up_cpu(cpu);
 	if (ret) {
 		spin_unlock(&boot_lock);
 		return ret;
@@ -283,6 +278,11 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
 		do {
 			tmp = __raw_readl(noncpu_config_reg + 0x4);
 		} while ((tmp & 0xf) != 0xf);
+	}
+
+	if (of_machine_is_compatible("samsung,exynos5430")) {
+		exynos_cpu.power_up = exynos5430_secondary_up;
+		exynos_cpu.power_state = exynos5430_cpu_state;
 	}
 }
 
