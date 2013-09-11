@@ -28,7 +28,6 @@
 #include <linux/mfd/samsung/irq.h>
 #include <linux/mfd/samsung/rtc.h>
 #include <linux/regmap.h>
-#include <mach/irqs.h>
 
 static struct mfd_cell s5m8751_devs[] = {
 	{
@@ -171,7 +170,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
 	dev->platform_data = pdata;
 
 	pdata->wtsr_smpl = of_get_property(np, "wtsr_smpl", NULL);
-	pdata->irq_base = IRQ_BOARD_START;
+	pdata->irq_base = -1;
 
 	gpio = of_get_gpio(np, 0);
 	if (!gpio_is_valid(gpio)) {
