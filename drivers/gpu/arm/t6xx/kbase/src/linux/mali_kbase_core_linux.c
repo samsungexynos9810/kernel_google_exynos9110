@@ -2512,16 +2512,43 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 	struct kbase_os_device *osdev;
 	struct resource *reg_res;
 	kbase_attribute *platform_data;
-	kbase_platform_config *config;
-	int attribute_count;
-	struct resource resources[PLATFORM_CONFIG_RESOURCE_COUNT];
-
 	int err;
 	int i;
 	struct mali_base_gpu_core_props *core_props;
 #ifdef CONFIG_MALI_NO_MALI
 	mali_error mali_err;
 #endif /* CONFIG_MALI_NO_MALI */
+#if defined(SLSI_INTEGRATION) && defined(CONFIG_MALI_PLATFORM_FAKE)
+	kbase_platform_config *config;
+	int attribute_count;
+
+	config = kbasep_get_platform_config();
+	if (config == NULL)
+	{
+		printk(KERN_ERR KBASE_DRV_NAME "couldn't get platform config\n");
+		return -ENODEV;
+	}
+	attribute_count = kbasep_get_config_attribute_count(config->attributes);
+
+	err = platform_device_add_data(pdev, config->attributes,
+			attribute_count * sizeof(config->attributes[0]));
+	if (err) {
+		platform_device_unregister(pdev);
+		return err;
+	}
+#else
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
+	/* Call any hooks required for platform initialization at this stage */
+	err = kbase_platform_early_init(pdev);
+	if (err)
+		return err;
+#else
+	/* Call any hooks required for platform initialization at this stage */
+	err = kbase_platform_early_init();
+	if (err)
+		return err;
+#endif
+#endif
 
 	kbdev = kbase_device_alloc();
 	if (!kbdev) {
@@ -2540,25 +2567,20 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 
 	osdev = &kbdev->osdev;
 	osdev->dev = &pdev->dev;
+	platform_data = (kbase_attribute *) osdev->dev->platform_data;
 
-	config = kbasep_get_platform_config();
-	if (config == NULL)
-	{
-		printk(KERN_ERR KBASE_DRV_NAME "couldn't get platform config\n");
-		return -ENODEV;
-	}
-	attribute_count = kbasep_get_config_attribute_count(config->attributes);
-
-	kbasep_config_parse_io_resources(config->io_resources, resources);
-	err = platform_device_add_resources(pdev, resources, PLATFORM_CONFIG_RESOURCE_COUNT);
-	if (err) {
-			printk("error add resource!!\n");
+	if (NULL == platform_data) {
+		dev_err(osdev->dev, "Platform data not specified\n");
+		err = -ENOENT;
+		goto out_free_dev;
 	}
 
-	err = platform_device_add_data(pdev, config->attributes, attribute_count * sizeof(config->attributes[0]));
-	if (err) {
-		platform_device_unregister(pdev);
+	if (MALI_TRUE != kbasep_validate_configuration_attributes(kbdev, platform_data)) {
+		dev_err(osdev->dev, "Configuration attributes failed to validate\n");
+		err = -EINVAL;
+		goto out_free_dev;
 	}
+	kbdev->config_attributes = platform_data;
 
 	/* 3 IRQ resources */
 	for (i = 0; i < 3; i++) {
@@ -2574,33 +2596,6 @@ static int kbase_platform_device_probe(struct platform_device *pdev)
 		osdev->irqs[i].irq = irq_res->start;
 		osdev->irqs[i].flags = (irq_res->flags & IRQF_TRIGGER_MASK);
 	}
-/*
-	platform_data = NULL;
-	if (pdev->dev.of_node) {
-		const struct of_device_id *match;
-		match = of_match_node(exynos_mali_match, pdev->dev.of_node);
-		if (match)
-		{
-			platform_data = (kbase_attribute *) match->data;
-		}
-	} else {
-		platform_data = (kbase_attribute *) osdev->dev->platform_data;
-	}
-*/
-	platform_data = (kbase_attribute *) osdev->dev->platform_data;
-
-	if (NULL == platform_data) {
-		dev_err(osdev->dev, "Platform data not specified\n");
-		err = -ENOENT;
-		goto out_free_dev;
-	}
-
-	if (MALI_TRUE != kbasep_validate_configuration_attributes(kbdev, platform_data)) {
-		dev_err(osdev->dev, "Configuration attributes failed to validate\n");
-		err = -EINVAL;
-		goto out_free_dev;
-	}
-	kbdev->config_attributes = platform_data;
 
 	/* the first memory resource is the physical address of the GPU registers */
 	reg_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);

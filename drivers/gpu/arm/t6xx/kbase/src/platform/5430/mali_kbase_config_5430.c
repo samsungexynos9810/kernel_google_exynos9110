@@ -33,6 +33,7 @@ static struct notifier_block mali_pm_nb = {
 	.notifier_call = mali_pm_notifier
 };
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 static kbase_io_resources io_resources = {
 	.job_irq_number   = JOB_IRQ_NUMBER,
 	.mmu_irq_number   = MMU_IRQ_NUMBER,
@@ -42,6 +43,7 @@ static kbase_io_resources io_resources = {
 		.end   = EXYNOS5_PA_G3D + (4096 * 5) - 1
 	}
 };
+#endif
 
 int get_cpu_clock_speed(u32 *cpu_clock)
 {
@@ -264,10 +266,27 @@ static kbase_attribute config_attributes[] = {
 
 kbase_platform_config platform_config = {
 		.attributes                = config_attributes,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 		.io_resources              = &io_resources,
+#endif
 		.midgard_type              = KBASE_MALI_T604
 };
 #ifndef CONFIG_MALI_PLATFORM_FAKE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
+int kbase_platform_early_init(struct platform_device *pdev)
+{
+	kbase_platform_config *config;
+	int attribute_count;
+
+	config = &platform_config;
+	attribute_count = kbasep_get_config_attribute_count(config->attributes);
+
+	return platform_device_add_data(
+		pdev,
+		config->attributes,
+		attribute_count * sizeof(config->attributes[0]));
+}
+#else
 int kbase_platform_early_init(void)
 {
 	kbase_platform_config *config;
@@ -281,4 +300,5 @@ int kbase_platform_early_init(void)
 		config->attributes,
 		attribute_count * sizeof(config->attributes[0]));
 }
+#endif
 #endif

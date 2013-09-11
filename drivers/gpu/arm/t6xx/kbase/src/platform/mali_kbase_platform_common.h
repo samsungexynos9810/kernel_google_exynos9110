@@ -23,4 +23,8 @@
  *
  * @return Zero to indicate success non-zero for failure.
  */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
+int kbase_platform_early_init(struct platform_device *pdev);
+#else
 int kbase_platform_early_init(void);
+#endif
