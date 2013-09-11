@@ -90,13 +90,20 @@ static inline void cpu_leave_lowpower(void)
 	  : "cc");
 }
 
+extern unsigned int boot_cluster;
+void (*power_down)(unsigned int cpu_id);
+
+void exynos_power_down_cpu(unsigned int cpu)
+{
+	power_down(cpu);
+}
+
 static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 {
 	for (;;) {
 
-		/* make cpu1 to be turned off at next WFI command */
-		if (cpu == 1)
-			__raw_writel(0, EXYNOS_ARM_CORE1_CONFIGURATION);
+		/* make secondary cpus to be turned off at next WFI command */
+		exynos_power_down_cpu(cpu);
 
 		/*
 		 * here's the WFI
@@ -157,3 +164,13 @@ void __ref exynos_cpu_die(unsigned int cpu)
 	if (spurious)
 		pr_warn("CPU%u: %u spurious wakeup calls\n", cpu, spurious);
 }
+
+static int __init exynos_cpu_power_ops_register(void)
+{
+	if (of_machine_is_compatible("samsung,exynos5430"))
+		power_down = exynos5430_cpu_down;
+
+	return 0;
+}
+
+core_initcall(exynos_cpu_power_ops_register);
