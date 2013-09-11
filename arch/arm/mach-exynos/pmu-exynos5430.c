@@ -202,6 +202,69 @@ void clear_boot_flag(unsigned int cpu, unsigned int mode)
 	__raw_writel(tmp, addr);
 }
 
+void exynos5430_secondary_up(unsigned int cpu_id)
+{
+	unsigned int phys_cpu = cpu_logical_map(cpu_id);
+	unsigned int tmp, core, cluster;
+	void __iomem *addr;
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+
+	addr = EXYNOS_ARM_CORE_CONFIGURATION(core + (1 << cluster));
+
+	tmp = __raw_readl(addr);
+	tmp |= EXYNOS_CORE_INIT_WAKEUP_FROM_LOWPWR | EXYNOS_CORE_PWR_EN;
+
+	__raw_writel(tmp, addr);
+}
+
+void exynos5430_cpu_up(unsigned int cpu_id)
+{
+	unsigned int phys_cpu = cpu_logical_map(cpu_id);
+	unsigned int tmp, core, cluster;
+	void __iomem *addr;
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+
+	addr = EXYNOS_ARM_CORE_CONFIGURATION(core + (1 << cluster));
+
+	tmp = __raw_readl(addr);
+	tmp &= EXYNOS_CORE_PWR_EN;
+	__raw_writel(tmp, addr);
+}
+
+void exynos5430_cpu_down(unsigned int cpu_id)
+{
+	unsigned int phys_cpu = cpu_logical_map(cpu_id);
+	unsigned int tmp, core, cluster;
+	void __iomem *addr;
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+
+	addr = EXYNOS_ARM_CORE_CONFIGURATION(core + (1 << cluster));
+
+	tmp = __raw_readl(addr);
+	tmp &= ~(EXYNOS_CORE_PWR_EN);
+	__raw_writel(tmp, addr);
+}
+
+unsigned int exynos5430_cpu_state(unsigned int cpu_id)
+{
+	unsigned int phys_cpu = cpu_logical_map(cpu_id);
+	unsigned int core, cluster, ret;
+
+	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
+	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+
+	ret = __raw_readl(EXYNOS_ARM_CORE_STATUS(core + (1 << cluster)))
+							& EXYNOS_CORE_PWR_EN;
+
+	return ret;
+}
+
 static void exynos_use_feedback(void)
 {
 	unsigned int i;
