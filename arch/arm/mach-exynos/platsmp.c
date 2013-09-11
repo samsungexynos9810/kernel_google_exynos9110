@@ -30,6 +30,7 @@
 #include <mach/hardware.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-pmu.h>
+#include <mach/pmu.h>
 
 #include <plat/cpu.h>
 
@@ -95,6 +96,8 @@ static void __cpuinit exynos_secondary_init(unsigned int cpu)
 	 * pen, then head off into the C entry point
 	 */
 	write_pen_release(-1);
+
+	clear_boot_flag(cpu, HOTPLUG);
 
 	/*
 	 * Synchronise with the boot thread.

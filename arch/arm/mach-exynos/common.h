@@ -79,6 +79,9 @@ void combiner_init(void __iomem *combiner_base, struct device_node *np,
 extern struct smp_operations exynos_smp_ops;
 extern void exynos_cpu_die(unsigned int cpu);
 
+extern void set_boot_flag(unsigned int cpu, unsigned int mode);
+extern void clear_boot_flag(unsigned int cpu, unsigned int mode);
+
 #ifdef CONFIG_SOC_EXYNOS5430
 extern void exynos5430_secondary_up(unsigned int cpu_id);
 extern unsigned int exynos5430_cpu_state(unsigned int cpu_id);

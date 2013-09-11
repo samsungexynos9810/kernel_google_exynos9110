@@ -20,6 +20,7 @@
 #include <asm/smp_plat.h>
 
 #include <mach/regs-pmu.h>
+#include <mach/pmu.h>
 #include <plat/cpu.h>
 
 #include "common.h"
@@ -95,6 +96,7 @@ void (*power_down)(unsigned int cpu_id);
 
 void exynos_power_down_cpu(unsigned int cpu)
 {
+	set_boot_flag(cpu, HOTPLUG);
 	power_down(cpu);
 }
 
