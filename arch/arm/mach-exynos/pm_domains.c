@@ -102,10 +102,12 @@ static int exynos_pd_status(struct exynos_pm_domain *pd)
 	if (unlikely(!pd))
 		return -EINVAL;
 
+	mutex_lock(&pd->access_lock);
 	if (likely(pd->base)) {
 		/* check STATUS register */
 		pd->status = (__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN);
 	}
+	mutex_unlock(&pd->access_lock);
 
 	return pd->status;
 }
@@ -117,6 +119,7 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 	if (unlikely(!pd))
 		return -EINVAL;
 
+	mutex_lock(&pd->access_lock);
 	if (likely(pd->base)) {
 		/* sc_feedback to OPTION register */
 		__raw_writel(pd->pd_option, pd->base+0x8);
@@ -144,6 +147,8 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 		}
 	}
 	pd->status = power_flags;
+	mutex_unlock(&pd->access_lock);
+
 	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
 				pd->genpd.name, pd->base,
 				__raw_readl(pd->base),
@@ -312,6 +317,8 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	INIT_LIST_HEAD(&pd->cb_post_off);
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
+
+	mutex_init(&pd->access_lock);
 
 	pm_genpd_init(&pd->genpd, NULL, !pd->status);
 

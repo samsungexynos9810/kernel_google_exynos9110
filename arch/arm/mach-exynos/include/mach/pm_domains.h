@@ -79,6 +79,8 @@ struct exynos_pm_domain {
 	int (*check_status)(struct exynos_pm_domain *pd);
 	unsigned int status;
 	unsigned int pd_option;
+
+	struct mutex access_lock;
 };
 
 #endif /* __ASM_ARCH_PM_RUNTIME_H */
