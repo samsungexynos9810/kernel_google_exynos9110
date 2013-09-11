@@ -41,6 +41,8 @@
 #include "rndis.c"
 #include "u_ether.c"
 
+#include <plat/cpu.h>
+
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
 MODULE_LICENSE("GPL");
@@ -1434,7 +1436,8 @@ static int android_bind(struct usb_composite_dev *cdev)
 	/* Default strings - should be updated by userspace */
 	strncpy(manufacturer_string, "Android", sizeof(manufacturer_string)-1);
 	strncpy(product_string, "Android", sizeof(product_string) - 1);
-	strncpy(serial_string, "0123456789ABCDEF", sizeof(serial_string) - 1);
+	snprintf(serial_string, CHIPID_SIZE + 1, "%04x%08x", samsung_chip_id[1],
+			samsung_chip_id[0]);
 
 	id = usb_string_id(cdev);
 	if (id < 0)
