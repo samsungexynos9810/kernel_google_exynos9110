@@ -55,6 +55,12 @@ static ssize_t store_power_domain_test(struct device *dev, struct device_attribu
 	struct device_node *np;
 	char device_name[32];
 	int ret;
+	struct gpd_timing_data gpd_td = {
+		.stop_latency_ns = 50000,
+		.start_latency_ns = 50000,
+		.save_state_latency_ns = 500000,
+		.restore_state_latency_ns = 500000,
+	};
 
 	sscanf(buf, "%s", device_name);
 
@@ -81,7 +87,7 @@ static ssize_t store_power_domain_test(struct device *dev, struct device_attribu
 		}
 
 		while (1) {
-			ret = pm_genpd_add_device(&pd->genpd, dev);
+			ret = __pm_genpd_add_device(&pd->genpd, dev, &gpd_td);
 			if (ret != -EAGAIN)
 				break;
 			cond_resched();

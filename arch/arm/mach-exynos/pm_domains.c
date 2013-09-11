@@ -299,6 +299,10 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	pd->genpd.power_off = exynos_genpd_power_off;
 	pd->genpd.power_on = exynos_genpd_power_on;
 
+	/* pd power on/off latency is less than 1ms */
+	pd->genpd.power_on_latency_ns = 1000000;
+	pd->genpd.power_off_latency_ns = 1000000;
+
 	INIT_LIST_HEAD(&pd->clk_list);
 	INIT_LIST_HEAD(&pd->reg_before_list);
 	INIT_LIST_HEAD(&pd->reg_after_list);
@@ -309,7 +313,7 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
 
-	pm_genpd_init(&pd->genpd, NULL, false);
+	pm_genpd_init(&pd->genpd, NULL, !pd->status);
 
 	exynos_pd_add_callback(pd, EXYNOS_PROCESS_BEFORE, EXYNOS_PROCESS_ONOFF,
 				exynos_pd_power_pre);
@@ -345,6 +349,18 @@ static void show_power_domain(void)
 	return;
 }
 
+/* when latency is over pre-defined value warning message will be shown.
+ * default values are:
+ * start/stop latency - 50us
+ * state save/restore latency - 500us
+ */
+static struct gpd_timing_data gpd_td = {
+	.stop_latency_ns = 50000,
+	.start_latency_ns = 50000,
+	.save_state_latency_ns = 500000,
+	.restore_state_latency_ns = 500000,
+};
+
 static void exynos_add_device_to_pd(struct exynos_pm_domain *pd,
 					 struct device *dev)
 {
@@ -363,7 +379,7 @@ static void exynos_add_device_to_pd(struct exynos_pm_domain *pd,
 	DEBUG_PRINT_INFO("adding %s to power domain %s\n", dev_name(dev), pd->genpd.name);
 
 	while (1) {
-		ret = pm_genpd_add_device(&pd->genpd, dev);
+		ret = __pm_genpd_add_device(&pd->genpd, dev, &gpd_td);
 		if (ret != -EAGAIN)
 			break;
 		cond_resched();
