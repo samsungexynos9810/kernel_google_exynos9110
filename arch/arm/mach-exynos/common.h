@@ -81,11 +81,15 @@ extern void exynos_cpu_die(unsigned int cpu);
 
 extern void set_boot_flag(unsigned int cpu, unsigned int mode);
 extern void clear_boot_flag(unsigned int cpu, unsigned int mode);
+extern void cci_snoop_disable(unsigned int sif);
 
 #ifdef CONFIG_SOC_EXYNOS5430
 extern void exynos5430_secondary_up(unsigned int cpu_id);
 extern unsigned int exynos5430_cpu_state(unsigned int cpu_id);
 extern void exynos5430_cpu_down(unsigned int cpu_id);
+extern unsigned int exynos5430_cluster_state(unsigned int cluster);
+extern void exynos5430_l2_down(unsigned int cluster);
+extern bool exynos5430_is_last_core(unsigned int cpu);
 #endif
 
 #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
