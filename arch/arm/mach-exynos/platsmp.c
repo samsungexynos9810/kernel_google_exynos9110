@@ -39,6 +39,7 @@
 struct exynos_cpu_power_ops {
 	void (*power_up)(unsigned int cpu_id);
 	unsigned int (*power_state)(unsigned int cpu_id);
+	void (*power_l2_up)(unsigned int cluster);
 };
 
 static struct exynos_cpu_power_ops exynos_cpu;
@@ -109,12 +110,18 @@ static void __cpuinit exynos_secondary_init(unsigned int cpu)
 static int exynos_power_up_cpu(unsigned int phys_cpu)
 {
 	unsigned int timeout;
+	/* HACK : This code is used only before enable auto power gating for L2 */
+	u32 boot_cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(0), 1);
 
 	if (exynos_cpu.power_state(phys_cpu) == EXYNOS_CORE_PWR_EN) {
 		printk(KERN_WARNING "%s: Already enabled core power.\n",
 			 __func__);
 		return 0;
 	}
+
+	/* HACK : This code is used only before enable auto power gating for L2 */
+	if (phys_cpu > 3)
+		exynos_cpu.power_l2_up(!boot_cluster);
 
 	exynos_cpu.power_up(phys_cpu);
 
@@ -286,6 +293,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
 	if (of_machine_is_compatible("samsung,exynos5430")) {
 		exynos_cpu.power_up = exynos5430_secondary_up;
 		exynos_cpu.power_state = exynos5430_cpu_state;
+		exynos_cpu.power_l2_up = exynos5430_l2_up;
 	}
 }
 

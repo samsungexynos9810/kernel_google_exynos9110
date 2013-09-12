@@ -89,6 +89,7 @@ extern unsigned int exynos5430_cpu_state(unsigned int cpu_id);
 extern void exynos5430_cpu_down(unsigned int cpu_id);
 extern unsigned int exynos5430_cluster_state(unsigned int cluster);
 extern void exynos5430_l2_down(unsigned int cluster);
+extern void exynos5430_l2_up(unsigned int cluster);
 extern bool exynos5430_is_last_core(unsigned int cpu);
 #endif
 
