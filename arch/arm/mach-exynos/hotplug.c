@@ -91,13 +91,24 @@ static inline void cpu_leave_lowpower(void)
 	  : "cc");
 }
 
-extern unsigned int boot_cluster;
-void (*power_down)(unsigned int cpu_id);
+struct exynos_pmu_ops {
+	void (*power_down)(unsigned int cpu_id);
+	void (*cluster_down)(unsigned int cluster);
+	unsigned int (*cluster_state)(unsigned int cluster);
+	bool (*is_last_core)(unsigned int cpu);
+};
+
+static struct exynos_pmu_ops pmu_ops;
 
 void exynos_power_down_cpu(unsigned int cpu)
 {
 	set_boot_flag(cpu, HOTPLUG);
-	power_down(cpu);
+
+
+	if (pmu_ops.is_last_core(cpu))
+		flush_cache_all();
+
+	pmu_ops.power_down(cpu);
 }
 
 static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
@@ -169,8 +180,12 @@ void __ref exynos_cpu_die(unsigned int cpu)
 
 static int __init exynos_cpu_power_ops_register(void)
 {
-	if (of_machine_is_compatible("samsung,exynos5430"))
-		power_down = exynos5430_cpu_down;
+	if (of_machine_is_compatible("samsung,exynos5430")) {
+		pmu_ops.power_down = exynos5430_cpu_down;
+		pmu_ops.cluster_down = exynos5430_l2_down;
+		pmu_ops.cluster_state = exynos5430_cluster_state;
+		pmu_ops.is_last_core = exynos5430_is_last_core;
+	}
 
 	return 0;
 }
