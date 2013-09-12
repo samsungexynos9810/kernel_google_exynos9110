@@ -337,6 +337,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2575>, <&clock 2532>;
 		samsung,power-domain = <&pd_cam0>;
+		prop-map {
+			iomap = "w";
+		};
 	};
 
 	sysmmu_flite_b: sysmmu@0x12160000 {
@@ -346,6 +349,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2574>, <&clock 2531>;
 		samsung,power-domain = <&pd_cam0>;
+		prop-map {
+			iomap = "w";
+		};
 	};
 
 	sysmmu_flite_d: sysmmu@0x12170000 {
@@ -355,6 +361,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2573>, <&clock 2530>;
 		samsung,power-domain = <&pd_cam0>;
+		prop-map {
+			iomap = "w";
+		};
 	};
 
 	sysmmu_3aa0: sysmmu@0x12180000 {
@@ -391,6 +400,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2125>, <&clock 2114>;
 		samsung,power-domain = <&spd_decon>;
+		prop-map {
+			winmap = <0xe>;
+		};
 	};
 
 	sysmmu_decon1x: sysmmu@0x13A10000 {
@@ -400,6 +412,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2124>, <&clock 2114>;
 		samsung,power-domain = <&spd_decon>;
+		prop-map {
+			winmap = <0x11>;
+		};
 	};
 
 	sysmmu_tv0x: sysmmu@0x13A20000 {
@@ -409,6 +424,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2123>, <&clock 2111>;
 		samsung,power-domain = <&spd_decon_tv>;
+		prop-map {
+			winmap = <0xF>;
+		};
 	};
 
 	sysmmu_tv1x: sysmmu@0x13A30000 {
@@ -452,6 +470,9 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 2671>, <&clock 2635>;
 		samsung,power-domain = <&pd_cam1>;
+		prop-map {
+			iomap = "w";
+		};
 	};
 
 	sysmmu_fimc_fd: sysmmu@0x142C0000 {
