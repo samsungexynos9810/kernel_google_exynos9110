@@ -716,6 +716,11 @@
 		status = "okay";
 	};
 
+	usb@15510000 {
+		samsung,vbus-gpio = <&gph1 3 0>;
+		samsung,boost5v-gpio = <&gpf2 2 0>;
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		#address-cells = <1>;
