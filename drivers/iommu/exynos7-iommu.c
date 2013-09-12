@@ -163,15 +163,20 @@ static sysmmu_pte_t *page_entry(sysmmu_pte_t *sent, unsigned long iova)
 				lv2ent_offset(iova);
 }
 
-enum exynos_sysmmu_inttype {
-	SYSMMU_PTW_ACCESS,
-	SYSMMU_PAGEFAULT,
-	SYSMMU_L1TLB_MULTIHIT,
-	SYSMMU_ACCESS,
-	SYSMMU_SECURITY,
-	SYSMMU_FAULT_UNKNOWN,
-	SYSMMU_FAULTS_NUM
-};
+#define SYSMMU_FAULT_BITS	4
+#define SYSMMU_FAULT_SHIFT	16
+#define SYSMMU_FAULT_MASK	((1 << SYSMMU_FAULT_BITS) - 1)
+#define SYSMMU_FAULT_FLAG(id) (((id) & SYSMMU_FAULT_MASK) << SYSMMU_FAULT_SHIFT)
+#define SYSMMU_FAULT_ID(fg)   (((fg) >> SYSMMU_FAULT_SHIFT) & SYSMMU_FAULT_MASK)
+
+#define SYSMMU_FAULT_PTW_ACCESS   0
+#define SYSMMU_FAULT_PAGE_FAULT   1
+#define SYSMMU_FAULT_TLB_MULTIHIT 2
+#define SYSMMU_FAULT_ACCESS       3
+#define SYSMMU_FAULT_SECURITY     4
+#define SYSMMU_FAULT_UNKNOWN      5
+
+#define SYSMMU_FAULTS_NUM         (SYSMMU_FAULT_UNKNOWN + 1)
 
 static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
 	"PTW ACCESS FAULT",
@@ -732,8 +737,8 @@ static int default_fault_handler(struct iommu_domain *domain,
 	struct exynos_iommu_domain *priv = domain->priv;
 	struct exynos_iommu_owner *owner = dev->archdata.iommu;
 	sysmmu_pte_t *ent;
-	int write = (flags >> SYSMMU_FAULTS_NUM);
-	int itype = flags & ~SYSMMU_FAULT_WRITE;
+	int write = (flags & IOMMU_FAULT_WRITE);
+	int itype = SYSMMU_FAULT_ID(flags);
 
 	pr_err("%s (W=%d) occured at 0x%lx by '%s'(Page table base: 0x%lx)\n",
 		sysmmu_fault_name[itype], write, fault_addr,
@@ -753,6 +758,8 @@ static int default_fault_handler(struct iommu_domain *domain,
 
 	return 0;
 }
+
+#define REG_INT_STATUS_WRITE_BIT 16
 
 static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
 {
@@ -789,18 +796,18 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
 	} else {
 		itype =  __ffs(__raw_readl(
 				drvdata->sfrbases[i] + REG_INT_STATUS));
-		if (itype > 15) {
-			itype -= 16;
-			flags = SYSMMU_FAULT_WRITE;
+		if (itype >= REG_INT_STATUS_WRITE_BIT) {
+			itype -= REG_INT_STATUS_WRITE_BIT;
+			flags = IOMMU_FAULT_WRITE;
 		}
 
 		if (WARN_ON(!(itype < SYSMMU_FAULT_UNKNOWN)))
 			itype = SYSMMU_FAULT_UNKNOWN;
 		else
 			addr = __raw_readl(drvdata->sfrbases[i] +
-					((flags & SYSMMU_FAULT_WRITE) ?
+					((flags & IOMMU_FAULT_WRITE) ?
 					 REG_FAULT_AW_ADDR : REG_FAULT_AR_ADDR));
-		flags |= itype;
+		flags |= SYSMMU_FAULT_FLAG(itype);
 	}
 
 	if (drvdata->domain) /* owner is always set if drvdata->domain exists */
@@ -814,8 +821,10 @@ static irqreturn_t exynos_sysmmu_irq(int irq, void *dev_id)
 	}
 
 	if (!ret && (itype != SYSMMU_FAULT_UNKNOWN)) {
-		if (itype == SYSMMU_L1TLB_MULTIHIT)
+		if (itype == SYSMMU_FAULT_TLB_MULTIHIT)
 			debug_sysmmu_l1tlb_show(drvdata->sfrbases[i]);
+		if (flags & IOMMU_FAULT_WRITE)
+			itype += REG_INT_STATUS_WRITE_BIT;
 		__raw_writel(1 << itype, drvdata->sfrbases[i] + REG_INT_CLEAR);
 	} else {
 		dev_dbg(owner ? owner->dev : drvdata->sysmmu,
