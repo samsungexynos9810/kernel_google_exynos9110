@@ -89,13 +89,16 @@ enum jpeg_frame_format {
 	YCRCB_444_2P,
 	YCBCR_444_2P,
 	YCBCR_444_3P,
-	YCBYCR_422_1P,
-	YCRYCB_422_1P,
-	CBYCRY_422_1P,
-	CRYCBY_422_1P,
+	YCRCB_444_3P,
+	YCBCR_422_1P,
+	YCRCB_422_1P,
+	CBCRY_422_1P,
+	CRCBY_422_1P,
 	YCBCR_422_2P,
 	YCRCB_422_2P,
-	YCBYCR_422_3P,
+	YCBCR_422_3P,
+	YCBCR_422V_2P,
+	YCBCR_422V_3P,
 	YCBCR_420_3P,
 	YCRCB_420_3P,
 	YCBCR_420_2P,
@@ -103,8 +106,11 @@ enum jpeg_frame_format {
 	YCBCR_420_2P_M,
 	YCRCB_420_2P_M,
 	RGB_565,
+	BGR_565,
 	RGB_888,
 	BGR_888,
+	ARGB_8888,
+	ABGR_8888,
 	GRAY,
 };
 
@@ -112,8 +118,9 @@ enum jpeg_frame_format {
 enum jpeg_stream_format {
 	JPEG_422,	/* decode input, encode output */
 	JPEG_420,	/* decode input, encode output */
-	JPEG_444,	/* decode input*/
-	JPEG_GRAY,	/* decode input*/
+	JPEG_444,	/* decode input, encode output */
+	JPEG_422V,	/* decode input, encode output */
+	JPEG_GRAY,	/* decode input, encode output */
 	JPEG_RESERVED,
 };
 

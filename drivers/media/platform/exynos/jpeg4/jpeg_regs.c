@@ -76,6 +76,10 @@ void jpeg_set_dec_in_fmt(void __iomem *base,
 			reg = reg | S5P_JPEG_FMT_YUV_420;
 			break;
 
+		case JPEG_422V:
+			reg = reg | S5P_JPEG_FMT_YUV_422V;
+			break;
+
 		default:
 			break;
 	}
@@ -92,103 +96,133 @@ void jpeg_set_dec_out_fmt(void __iomem *base,
 	/* set jpeg deocde ouput format register */
 	switch (out_fmt) {
 	case GRAY:
-		reg = S5P_JPEG_DEC_GRAY_IMG  |
-				S5P_JPEG_GRAY_IMG_IP;
+		reg = reg | S5P_JPEG_DEC_GRAY_IMG | S5P_JPEG_GRAY_IMG_IP;
+		break;
+
+	case ARGB_8888:
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_32BIT_IMG |
+			S5P_JPEG_ENC_FMT_RGB;
+		break;
+
+	case ABGR_8888:
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_32BIT_IMG |
+			S5P_JPEG_ENC_FMT_BGR;
 		break;
 
 	case RGB_888:
-		reg = S5P_JPEG_DEC_RGB_IMG |
-			S5P_JPEG_RGB_IP_RGB_32BIT_IMG
-				| S5P_JPEG_ENC_FMT_RGB;
-		break;
-
-	case RGB_565:
-		reg = S5P_JPEG_DEC_RGB_IMG |
-				S5P_JPEG_RGB_IP_RGB_16BIT_IMG;
-		break;
-
-	case YCRCB_444_2P:
-		reg = S5P_JPEG_DEC_YUV_444_IMG |
-				S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CrCb;
-		break;
-
-	case YCBCR_444_2P:
-		reg = S5P_JPEG_DEC_YUV_444_IMG |
-				S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CbCr;
-		break;
-
-	case YCBCR_444_3P:
-		reg = S5P_JPEG_DEC_YUV_444_IMG |
-			S5P_JPEG_YUV_444_IP_YUV_444_3P_IMG;
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_24BIT_IMG |
+			S5P_JPEG_ENC_FMT_RGB;
 		break;
 
 	case BGR_888:
-		reg = S5P_JPEG_DEC_RGB_IMG |
-			S5P_JPEG_RGB_IP_RGB_32BIT_IMG
-				|S5P_JPEG_ENC_FMT_BGR;
-			break;
-
-	case CRYCBY_422_1P:
-		reg = S5P_JPEG_DEC_YUV_422_IMG |
-			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
-				S5P_JPEG_ENC_FMT_VYUY;
-			break;
-
-	case CBYCRY_422_1P:
-		reg = S5P_JPEG_DEC_YUV_422_IMG |
-			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
-				S5P_JPEG_ENC_FMT_UYVY;
-			break;
-	case YCRYCB_422_1P:
-			reg = S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
-				S5P_JPEG_ENC_FMT_YVYU;
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_24BIT_IMG |
+			S5P_JPEG_ENC_FMT_BGR;
 		break;
-	case YCBYCR_422_1P:
-		reg = S5P_JPEG_DEC_YUV_422_IMG |
+
+	case RGB_565:
+		reg = reg | S5P_JPEG_ENC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_16BIT_IMG |
+			S5P_JPEG_ENC_FMT_RGB;
+		break;
+
+	case BGR_565:
+		reg = reg | S5P_JPEG_ENC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_16BIT_IMG |
+			S5P_JPEG_ENC_FMT_BGR;
+		break;
+
+	case YCRCB_444_2P:
+		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
+			S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CrCb;
+		break;
+
+	case YCBCR_444_2P:
+		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
+			S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CbCr;
+		break;
+
+	case YCBCR_444_3P:
+		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
+			S5P_JPEG_YUV_444_IP_YUV_444_3P_IMG;
+		break;
+
+	case CRCBY_422_1P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
+			S5P_JPEG_ENC_FMT_VYUY;
+		break;
+	case CBCRY_422_1P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
+			S5P_JPEG_ENC_FMT_UYVY;
+		break;
+
+	case YCRCB_422_1P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
+			S5P_JPEG_ENC_FMT_YVYU;
+		break;
+
+	case YCBCR_422_1P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
 			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
 			S5P_JPEG_ENC_FMT_YUYV;
 		break;
 
+	case YCBCR_422V_2P:
+		reg = reg | S5P_JPEG_DEC_YUV_422V_IMG |
+			S5P_JPEG_YUV_422V_IP_YUV_422V_2P_IMG;
+		break;
+
+	case YCBCR_422V_3P:
+		reg = reg | S5P_JPEG_DEC_YUV_422V_IMG |
+			S5P_JPEG_YUV_422V_IP_YUV_422V_3P_IMG;
+		break;
+
 	case YCRCB_422_2P:
-		reg = S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CrCb;
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CrCb;
 		break;
 
 	case YCBCR_422_2P:
-		reg = S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CbCr;
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CbCr;
 		break;
 
-	case YCBYCR_422_3P:
-		reg = S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_3P_IMG;
+	case YCBCR_422_3P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_3P_IMG;
 		break;
 
 	case YCRCB_420_2P:
-		reg = S5P_JPEG_DEC_YUV_420_IMG |
-				S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CrCb;
+		reg = reg | S5P_JPEG_DEC_YUV_420_IMG |
+			S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CrCb;
 		break;
 
 	case YCBCR_420_2P:
-		reg = S5P_JPEG_DEC_YUV_420_IMG |
-				S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CbCr;
+		reg = reg | S5P_JPEG_DEC_YUV_420_IMG |
+			S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CbCr;
 		break;
 
 	case YCBCR_420_3P:
 	case YCRCB_420_3P:
-		reg = S5P_JPEG_DEC_YUV_420_IMG |
-				S5P_JPEG_YUV_420_IP_YUV_420_3P_IMG;
+		reg = reg | S5P_JPEG_DEC_YUV_420_IMG |
+			S5P_JPEG_YUV_420_IP_YUV_420_3P_IMG;
 		break;
 
 	default:
 		break;
+
 	}
 
 	writel(reg, base + S5P_JPEG_IMG_FMT_REG);
@@ -207,93 +241,125 @@ void jpeg_set_enc_in_fmt(void __iomem *base,
 		reg = reg | S5P_JPEG_ENC_GRAY_IMG | S5P_JPEG_GRAY_IMG_IP;
 		break;
 
-	case RGB_565:
-		reg = reg | S5P_JPEG_ENC_RGB_IMG |
-				S5P_JPEG_RGB_IP_RGB_16BIT_IMG;
+	case ARGB_8888:
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_32BIT_IMG |
+			S5P_JPEG_ENC_FMT_RGB;
 		break;
 
-	case YCRCB_444_2P:
-		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
-				S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CrCb;
-		break;
-
-	case YCBCR_444_2P:
-		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
-				S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CbCr;
-		break;
-
-	case YCBCR_444_3P:
-		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
-				S5P_JPEG_YUV_444_IP_YUV_444_3P_IMG;
+	case ABGR_8888:
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_32BIT_IMG |
+			S5P_JPEG_ENC_FMT_BGR;
 		break;
 
 	case RGB_888:
 		reg = reg | S5P_JPEG_DEC_RGB_IMG |
-				S5P_JPEG_RGB_IP_RGB_32BIT_IMG
-				|S5P_JPEG_ENC_FMT_RGB;
-		break;
-	case BGR_888:
-		reg = reg | S5P_JPEG_DEC_RGB_IMG |
-				S5P_JPEG_RGB_IP_RGB_32BIT_IMG
-				|S5P_JPEG_ENC_FMT_BGR;
-		break;
-	case CRYCBY_422_1P:
-		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
-				S5P_JPEG_ENC_FMT_VYUY;
-		break;
-	case CBYCRY_422_1P:
-		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
-				S5P_JPEG_ENC_FMT_UYVY;
+			S5P_JPEG_RGB_IP_RGB_24BIT_IMG |
+			S5P_JPEG_ENC_FMT_RGB;
 		break;
 
-	case YCRYCB_422_1P:
+	case BGR_888:
+		reg = reg | S5P_JPEG_DEC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_24BIT_IMG |
+			S5P_JPEG_ENC_FMT_BGR;
+		break;
+
+	case RGB_565:
+		reg = reg | S5P_JPEG_ENC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_16BIT_IMG |
+			S5P_JPEG_ENC_FMT_RGB;
+		break;
+
+	case BGR_565:
+		reg = reg | S5P_JPEG_ENC_RGB_IMG |
+			S5P_JPEG_RGB_IP_RGB_16BIT_IMG |
+			S5P_JPEG_ENC_FMT_BGR;
+		break;
+
+	case YCRCB_444_2P:
+		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
+			S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CrCb;
+		break;
+
+	case YCBCR_444_2P:
+		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
+			S5P_JPEG_YUV_444_IP_YUV_444_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CbCr;
+		break;
+
+	case YCBCR_444_3P:
+		reg = reg | S5P_JPEG_ENC_YUV_444_IMG |
+			S5P_JPEG_YUV_444_IP_YUV_444_3P_IMG;
+		break;
+
+	case CRCBY_422_1P:
 		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
+			S5P_JPEG_ENC_FMT_VYUY;
+		break;
+	case CBCRY_422_1P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
+			S5P_JPEG_ENC_FMT_UYVY;
+		break;
+
+	case YCRCB_422_1P:
+		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
+			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
 			S5P_JPEG_ENC_FMT_YVYU;
 		break;
-	case YCBYCR_422_1P:
+
+	case YCBCR_422_1P:
 		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
 			S5P_JPEG_YUV_422_IP_YUV_422_1P_IMG |
 			S5P_JPEG_ENC_FMT_YUYV;
 		break;
 
+	case YCBCR_422V_2P:
+		reg = reg | S5P_JPEG_DEC_YUV_422V_IMG |
+			S5P_JPEG_YUV_422V_IP_YUV_422V_2P_IMG;
+		break;
+
+	case YCBCR_422V_3P:
+		reg = reg | S5P_JPEG_DEC_YUV_422V_IMG |
+			S5P_JPEG_YUV_422V_IP_YUV_422V_3P_IMG;
+		break;
+
 	case YCRCB_422_2P:
 		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CrCb;
+			S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CrCb;
 		break;
 
 	case YCBCR_422_2P:
 		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CbCr;
+			S5P_JPEG_YUV_422_IP_YUV_422_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CbCr;
 		break;
 
-	case YCBYCR_422_3P:
+	case YCBCR_422_3P:
 		reg = reg | S5P_JPEG_DEC_YUV_422_IMG |
-				S5P_JPEG_YUV_422_IP_YUV_422_3P_IMG;
+			S5P_JPEG_YUV_422_IP_YUV_422_3P_IMG;
 		break;
 
 	case YCRCB_420_2P:
 		reg = reg | S5P_JPEG_DEC_YUV_420_IMG |
-				S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CrCb;
+			S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CrCb;
 		break;
 
 	case YCBCR_420_2P:
 		reg = reg | S5P_JPEG_DEC_YUV_420_IMG |
-				S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
-				S5P_JPEG_SWAP_CHROMA_CbCr;
+			S5P_JPEG_YUV_420_IP_YUV_420_2P_IMG |
+			S5P_JPEG_SWAP_CHROMA_CbCr;
 		break;
 
 	case YCBCR_420_3P:
 	case YCRCB_420_3P:
 		reg = reg | S5P_JPEG_DEC_YUV_420_IMG |
-				S5P_JPEG_YUV_420_IP_YUV_420_3P_IMG;
+			S5P_JPEG_YUV_420_IP_YUV_420_3P_IMG;
 		break;
 
 	default:
@@ -328,6 +394,10 @@ void jpeg_set_enc_out_fmt(void __iomem *base,
 
 	case JPEG_420:
 		reg = reg | S5P_JPEG_FMT_YUV_420;
+		break;
+
+	case JPEG_422V:
+		reg = reg | S5P_JPEG_FMT_YUV_422V;
 		break;
 
 	default:
@@ -610,11 +680,13 @@ void jpeg_set_frame_buf_address(void __iomem *base,
 	case GRAY:
 	case RGB_565:
 	case RGB_888:
-	case YCRYCB_422_1P:
-	case YCBYCR_422_1P:
 	case BGR_888:
-	case CBYCRY_422_1P:
-	case CRYCBY_422_1P:
+	case YCRCB_422_1P:
+	case YCBCR_422_1P:
+	case CBCRY_422_1P:
+	case CRCBY_422_1P:
+	case ARGB_8888:
+	case ABGR_8888:
 		writel(address, base + S5P_JPEG_IMG_BA_PLANE_1_REG);
 		writel(0, base + S5P_JPEG_IMG_BA_PLANE_2_REG);
 		writel(0, base + S5P_JPEG_IMG_BA_PLANE_3_REG);
@@ -625,6 +697,7 @@ void jpeg_set_frame_buf_address(void __iomem *base,
 	case YCBCR_422_2P:
 	case YCBCR_420_2P:
 	case YCRCB_420_2P:
+	case YCBCR_422V_2P:
 		writel(address, base + S5P_JPEG_IMG_BA_PLANE_1_REG);
 		writel(address + (width * height), base + S5P_JPEG_IMG_BA_PLANE_2_REG);
 		writel(0, base + S5P_JPEG_IMG_BA_PLANE_3_REG);
@@ -634,7 +707,8 @@ void jpeg_set_frame_buf_address(void __iomem *base,
 		writel(address + (width * height), base + S5P_JPEG_IMG_BA_PLANE_2_REG);
 		writel(address + (width * height * 2), base + S5P_JPEG_IMG_BA_PLANE_3_REG);
 		break;
-	case YCBYCR_422_3P:
+	case YCBCR_422_3P:
+	case YCBCR_422V_3P:
 		writel(address, base + S5P_JPEG_IMG_BA_PLANE_1_REG);
 		writel(address + (width * height), base + S5P_JPEG_IMG_BA_PLANE_2_REG);
 		writel(address + (width * height +  (width * height / 2)), base + S5P_JPEG_IMG_BA_PLANE_3_REG);
