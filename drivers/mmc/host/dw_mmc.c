@@ -2508,6 +2508,15 @@ static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
 }
 #endif /* CONFIG_OF */
 
+static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
+{
+	struct dw_mci *host = dev_id;
+
+	queue_work(host->card_workqueue, &host->card_work);
+
+	return IRQ_HANDLED;
+}
+
 static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
@@ -2633,6 +2642,9 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 			goto err_setup_bus;
 		}
 	}
+
+	if (host->pdata->init)
+		host->pdata->init(id, dw_mci_detect_interrupt, host);
 
 	if (dw_mci_get_cd(mmc))
 		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
