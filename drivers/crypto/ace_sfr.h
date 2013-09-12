@@ -92,7 +92,7 @@ extern "C" {
 #define ACE_AES_CONTROL		(ACE_AES_OFFSET + 0x00)
 #define ACE_AES_STATUS		(ACE_AES_OFFSET + 0x04)
 
-#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1)
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 #define ACE_AES_MSGSIZE_LOW	(ACE_AES_OFFSET + 0x08)
 #define ACE_AES_MSGSIZE_HIGH	(ACE_AES_OFFSET + 0x0C)
 #endif
@@ -117,7 +117,7 @@ extern "C" {
 #define ACE_AES_CNT3		(ACE_AES_OFFSET + 0x48)
 #define ACE_AES_CNT4		(ACE_AES_OFFSET + 0x4C)
 
-#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1)
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 #define ACE_AES_KEY11		(ACE_AES_OFFSET + 0x60)
 #define ACE_AES_KEY12		(ACE_AES_OFFSET + 0x64)
 #define ACE_AES_KEY13		(ACE_AES_OFFSET + 0x68)
@@ -526,6 +526,7 @@ extern "C" {
 #define ACE_AES_OPERMODE_ECB		(0 << 1)
 #define ACE_AES_OPERMODE_CBC		(1 << 1)
 #define ACE_AES_OPERMODE_CTR		(2 << 1)
+#define ACE_AES_OPERMODE_XTS		(3 << 1)
 #define ACE_AES_FIFO_MASK		(1 << 3)
 #define ACE_AES_FIFO_OFF		(0 << 3)	/* CPU mode */
 #define ACE_AES_FIFO_ON			(1 << 3)	/* FIFO mode */

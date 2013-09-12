@@ -61,6 +61,7 @@
 #define _MODE_ECB_		0x10
 #define _MODE_CBC_		0x20
 #define _MODE_CTR_		0x30
+#define _MODE_XTS_		0x40
 
 /* block cipher: padding method */
 #define _PAD_NO_		0x00
@@ -84,6 +85,8 @@
 						_MODE_CTR_ | _PAD_NO_)
 #define MI_AES_CTR_PAD		_MECH_ID_(_TYPE_BC_, _NAME_AES_, \
 						_MODE_CTR_ | _PAD_PKCS7_)
+#define MI_AES_XTS		_MECH_ID_(_TYPE_BC_, _NAME_AES_, \
+						_MODE_XTS_ | _PAD_NO_)
 
 /* hash: algorithm (8-bits) */
 #define _NAME_HASH_SHA1_	0x01

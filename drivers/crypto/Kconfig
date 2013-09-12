@@ -303,7 +303,7 @@ config CRYPTO_S5P_DEV_ACE
 	select S5P_DEV_ACE
 	select CRYPTO_ALGAPI
 	help
-	  Use ACE for AES (ECB, CBC, CTR) and SHA1/SHA256.
+	  Use ACE for AES (ECB, CBC, CTR, XTS) and SHA1/SHA256.
 	  Available in EXYNOS4/S5PV210/S5PC110 and newer CPUs.
 
 choice
@@ -329,16 +329,17 @@ config ACE_USE_SLIMSSS_VER_1
 endchoice
 
 config ACE_BC
-	bool "Support for AES block cipher (ECB, CBC, CTR mode)"
+	bool "Support for AES block cipher (ECB, CBC, CTR, XTS mode)"
 	depends on CRYPTO_S5P_DEV_ACE
 	select CRYPTO_AES
 	select CRYPTO_BLKCIPHER
 	select CRYPTO_ECB
 	select CRYPTO_CTR
 	select CRYPTO_CBC
+	select CRYPTO_XTS
 	default y
 	help
-	  Use ACE for ACE (ECB, CBC, CTR) for Samsung Hardware Crypto engine.
+	  Use ACE for ACE (ECB, CBC, CTR, XTS) for Samsung Hardware Crypto engine.
 
 config ACE_BC_ASYNC
 	bool "Support for AES async mode"

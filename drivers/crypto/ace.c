@@ -247,7 +247,7 @@ struct s5p_ace_aes_ctx {
 	u32		keylen;
 
 	u32		sfr_ctrl;
-	u8		sfr_key[AES_MAX_KEY_SIZE];
+	u8		sfr_key[AES_MAX_KEY_SIZE * 2];
 	u8		sfr_semikey[AES_BLOCK_SIZE];
 
 	struct crypto_blkcipher		*fallback_bc;
@@ -369,6 +369,9 @@ static int s5p_ace_aes_set_cipher(struct s5p_ace_aes_ctx *sctx,
 	case _MODE_CTR_:
 		new_status |= ACE_AES_OPERMODE_CTR;
 		break;
+	case _MODE_XTS_:
+		new_status |= ACE_AES_OPERMODE_XTS;
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -419,6 +422,7 @@ static int s5p_ace_aes_update_semikey(struct s5p_ace_aes_ctx *sctx,
 
 	switch (sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) {
 	case ACE_AES_OPERMODE_ECB:
+	case ACE_AES_OPERMODE_XTS:
 		break;
 	case ACE_AES_OPERMODE_CBC:
 		if ((sctx->sfr_ctrl & ACE_AES_MODE_MASK) == ACE_AES_MODE_ENC)
@@ -463,6 +467,13 @@ static int s5p_ace_aes_write_sfr(struct s5p_ace_aes_ctx *sctx)
 		s5p_ace_write_sfr(ACE_AES_KEY6, addr[1]);
 		s5p_ace_write_sfr(ACE_AES_KEY7, addr[2]);
 		s5p_ace_write_sfr(ACE_AES_KEY8, addr[3]);
+		if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
+		ACE_AES_OPERMODE_XTS) {
+			s5p_ace_write_sfr(ACE_AES_KEY15, addr[4]);
+			s5p_ace_write_sfr(ACE_AES_KEY16, addr[5]);
+			s5p_ace_write_sfr(ACE_AES_KEY17, addr[6]);
+			s5p_ace_write_sfr(ACE_AES_KEY18, addr[7]);
+		}
 		break;
 	case 24:
 		s5p_ace_write_sfr(ACE_AES_KEY3, addr[0]);
@@ -481,6 +492,17 @@ static int s5p_ace_aes_write_sfr(struct s5p_ace_aes_ctx *sctx)
 		s5p_ace_write_sfr(ACE_AES_KEY6, addr[5]);
 		s5p_ace_write_sfr(ACE_AES_KEY7, addr[6]);
 		s5p_ace_write_sfr(ACE_AES_KEY8, addr[7]);
+		if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
+		ACE_AES_OPERMODE_XTS) {
+			s5p_ace_write_sfr(ACE_AES_KEY11, addr[8]);
+			s5p_ace_write_sfr(ACE_AES_KEY12, addr[9]);
+			s5p_ace_write_sfr(ACE_AES_KEY13, addr[10]);
+			s5p_ace_write_sfr(ACE_AES_KEY14, addr[11]);
+			s5p_ace_write_sfr(ACE_AES_KEY15, addr[12]);
+			s5p_ace_write_sfr(ACE_AES_KEY16, addr[13]);
+			s5p_ace_write_sfr(ACE_AES_KEY17, addr[14]);
+			s5p_ace_write_sfr(ACE_AES_KEY18, addr[15]);
+		}
 		break;
 	default:
 		return -EINVAL;
@@ -491,6 +513,7 @@ static int s5p_ace_aes_write_sfr(struct s5p_ace_aes_ctx *sctx)
 	case ACE_AES_OPERMODE_ECB:
 		break;
 	case ACE_AES_OPERMODE_CBC:
+	case ACE_AES_OPERMODE_XTS:
 		s5p_ace_write_sfr(ACE_AES_IV1, addr[0]);
 		s5p_ace_write_sfr(ACE_AES_IV2, addr[1]);
 		s5p_ace_write_sfr(ACE_AES_IV3, addr[2]);
@@ -546,6 +569,13 @@ static int s5p_ace_aes_engine_start(struct s5p_ace_aes_ctx *sctx,
 	reg = s5p_ace_read_sfr(ACE_FC_FIFOCTRL);
 	reg = (reg & ~ACE_FC_SELBC_MASK) | ACE_FC_SELBC_AES;
 	s5p_ace_write_sfr(ACE_FC_FIFOCTRL, reg);
+
+	if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
+	ACE_AES_OPERMODE_XTS) {
+		/* Set message length */
+		s5p_ace_write_sfr(ACE_AES_MSGSIZE_LOW, len);
+		s5p_ace_write_sfr(ACE_AES_MSGSIZE_HIGH, 0);
+	}
 
 	/* Stop flushing BRDMA and BTDMA */
 	reg = ACE_FC_BRDMACFLUSH_OFF;
@@ -685,20 +715,29 @@ static int s5p_ace_aes_crypt_unaligned(struct s5p_ace_aes_ctx *sctx,
 	desc.info = sctx->sfr_semikey;
 	desc.flags = 0;
 
-	s5p_ace_sg_set_from_sg(in_sg, sctx->in_sg, 2);
-	in_sg->length -= sctx->in_ofs;
-	in_sg->offset += sctx->in_ofs;
+	if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) == ACE_AES_OPERMODE_XTS) {
+		if ((sctx->sfr_ctrl & ACE_AES_MODE_MASK) == ACE_AES_MODE_ENC)
+			ret = crypto_blkcipher_encrypt_iv(
+					&desc, sctx->out_sg, sctx->in_sg, size);
+		else
+			ret = crypto_blkcipher_decrypt_iv(
+					&desc, sctx->out_sg, sctx->in_sg, size);
+	} else {
+		s5p_ace_sg_set_from_sg(in_sg, sctx->in_sg, 2);
+		in_sg->length -= sctx->in_ofs;
+		in_sg->offset += sctx->in_ofs;
 
-	s5p_ace_sg_set_from_sg(out_sg, sctx->out_sg, 2);
-	out_sg->length -= sctx->out_ofs;
-	out_sg->offset += sctx->out_ofs;
+		s5p_ace_sg_set_from_sg(out_sg, sctx->out_sg, 2);
+		out_sg->length -= sctx->out_ofs;
+		out_sg->offset += sctx->out_ofs;
 
-	if ((sctx->sfr_ctrl & ACE_AES_MODE_MASK) == ACE_AES_MODE_ENC)
-		ret = crypto_blkcipher_encrypt_iv(
-				&desc, out_sg, in_sg, size);
-	else
-		ret = crypto_blkcipher_decrypt_iv(
-				&desc, out_sg, in_sg, size);
+		if ((sctx->sfr_ctrl & ACE_AES_MODE_MASK) == ACE_AES_MODE_ENC)
+			ret = crypto_blkcipher_encrypt_iv(
+					&desc, out_sg, in_sg, size);
+		else
+			ret = crypto_blkcipher_decrypt_iv(
+					&desc, out_sg, in_sg, size);
+	}
 
 	sctx->dma_size = 0;
 	sctx->total -= size;
@@ -738,12 +777,17 @@ static int s5p_ace_aes_crypt_dma_start(struct s5p_ace_device *dev)
 				sctx->out_sg->offset, sg_dma_len(sctx->out_sg),
 				sctx->out_ofs);
 
-		if (count > ACE_AES_MIN_BLOCK_SIZE)
-			break;
-
-		count = min(sctx->total, (size_t)ACE_AES_MIN_BLOCK_SIZE);
-		if (count & (AES_BLOCK_SIZE - 1))
-			printk(KERN_ERR "%s - Invalid count\n", __func__);
+		if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) == ACE_AES_OPERMODE_XTS) {
+			if (sctx->total == count)
+				break;
+			count = sctx->total;
+		} else {
+			if (count > ACE_AES_MIN_BLOCK_SIZE)
+				break;
+			count = min(sctx->total, (size_t)ACE_AES_MIN_BLOCK_SIZE);
+			if (count & (AES_BLOCK_SIZE - 1))
+				printk(KERN_ERR "%s - Invalid count\n", __func__);
+		}
 		ret = s5p_ace_aes_crypt_unaligned(sctx, count);
 		if (!sctx->total) {
 #if defined(ACE_DEBUG_HEARTBEAT) || defined(ACE_DEBUG_WATCHDOG)
@@ -1216,6 +1260,14 @@ static int s5p_ace_ctr_aes_set_key(struct crypto_ablkcipher *tfm, const u8 *key,
 	return s5p_ace_aes_set_key(sctx, key, key_len);
 }
 
+static int s5p_ace_xts_aes_set_key(struct crypto_ablkcipher *tfm, const u8 *key,
+		unsigned int key_len)
+{
+	struct s5p_ace_aes_ctx *sctx = crypto_ablkcipher_ctx(tfm);
+	s5p_ace_aes_set_cipher(sctx, MI_AES_XTS, key_len * 4);
+	return s5p_ace_aes_set_key(sctx, key, key_len);
+}
+
 static int s5p_ace_ecb_aes_encrypt(struct ablkcipher_request *req)
 {
 	return s5p_ace_aes_crypt(req, BC_MODE_ENC);
@@ -1245,6 +1297,16 @@ static int s5p_ace_ctr_aes_decrypt(struct ablkcipher_request *req)
 {
 	return s5p_ace_aes_crypt(req, BC_MODE_DEC);
 }
+
+static int s5p_ace_xts_aes_encrypt(struct ablkcipher_request *req)
+{
+	return s5p_ace_aes_crypt(req, BC_MODE_ENC);
+}
+
+static int s5p_ace_xts_aes_decrypt(struct ablkcipher_request *req)
+{
+	return s5p_ace_aes_crypt(req, BC_MODE_DEC);
+}
 #else
 static int s5p_ace_ecb_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
 		unsigned int key_len)
@@ -1267,6 +1329,14 @@ static int s5p_ace_ctr_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
 {
 	struct s5p_ace_aes_ctx *sctx = crypto_tfm_ctx(tfm);
 	s5p_ace_aes_set_cipher(sctx, MI_AES_CTR, key_len * 8);
+	return s5p_ace_aes_set_key(sctx, key, key_len);
+}
+
+static int s5p_ace_xts_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
+		unsigned int key_len)
+{
+	struct s5p_ace_aes_ctx *sctx = crypto_tfm_ctx(tfm);
+	s5p_ace_aes_set_cipher(sctx, MI_AES_XTS, key_len * 4);
 	return s5p_ace_aes_set_key(sctx, key, key_len);
 }
 
@@ -1306,6 +1376,20 @@ static int s5p_ace_ctr_aes_encrypt(struct blkcipher_desc *desc,
 }
 
 static int s5p_ace_ctr_aes_decrypt(struct blkcipher_desc *desc,
+			   struct scatterlist *dst, struct scatterlist *src,
+			   unsigned int nbytes)
+{
+	return s5p_ace_aes_crypt(desc, dst, src, nbytes, BC_MODE_DEC);
+}
+
+static int s5p_ace_xts_aes_encrypt(struct blkcipher_desc *desc,
+			   struct scatterlist *dst, struct scatterlist *src,
+			   unsigned int nbytes)
+{
+	return s5p_ace_aes_crypt(desc, dst, src, nbytes, BC_MODE_ENC);
+}
+
+static int s5p_ace_xts_aes_decrypt(struct blkcipher_desc *desc,
 			   struct scatterlist *dst, struct scatterlist *src,
 			   unsigned int nbytes)
 {
@@ -1457,6 +1541,40 @@ static struct crypto_alg algs_bc[] = {
 			.setkey		= s5p_ace_ctr_aes_set_key,
 			.encrypt	= s5p_ace_ctr_aes_encrypt,
 			.decrypt	= s5p_ace_ctr_aes_decrypt,
+		}
+	},
+	{
+		.cra_name		= "xts(aes)",
+		.cra_driver_name	= "xts-aes-s5p-ace",
+		.cra_priority		= 300,
+#ifdef CONFIG_ACE_BC_ASYNC
+		.cra_flags		= CRYPTO_ALG_TYPE_ABLKCIPHER
+					 | CRYPTO_ALG_ASYNC,
+#else
+		.cra_flags		= CRYPTO_ALG_TYPE_BLKCIPHER,
+#endif
+		.cra_blocksize		= AES_BLOCK_SIZE,
+		.cra_ctxsize		= sizeof(struct s5p_ace_aes_ctx),
+		.cra_alignmask		= 0,
+#ifdef CONFIG_ACE_BC_ASYNC
+		.cra_type		= &crypto_ablkcipher_type,
+#else
+		.cra_type		= &crypto_blkcipher_type,
+#endif
+		.cra_module		= THIS_MODULE,
+		.cra_init		= s5p_ace_cra_init_tfm,
+		.cra_exit		= s5p_ace_cra_exit_tfm,
+#ifdef CONFIG_ACE_BC_ASYNC
+		.cra_ablkcipher = {
+#else
+		.cra_blkcipher = {
+#endif
+			.min_keysize	= AES_MIN_KEY_SIZE * 2,
+			.max_keysize	= AES_MAX_KEY_SIZE * 2,
+			.ivsize		= AES_BLOCK_SIZE,
+			.setkey		= s5p_ace_xts_aes_set_key,
+			.encrypt	= s5p_ace_xts_aes_encrypt,
+			.decrypt	= s5p_ace_xts_aes_decrypt,
 		}
 	}
 };
