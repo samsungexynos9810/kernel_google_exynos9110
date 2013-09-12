@@ -163,19 +163,6 @@ static sysmmu_pte_t *page_entry(sysmmu_pte_t *sent, unsigned long iova)
 				lv2ent_offset(iova);
 }
 
-#define SYSMMU_FAULT_BITS	4
-#define SYSMMU_FAULT_SHIFT	16
-#define SYSMMU_FAULT_MASK	((1 << SYSMMU_FAULT_BITS) - 1)
-#define SYSMMU_FAULT_FLAG(id) (((id) & SYSMMU_FAULT_MASK) << SYSMMU_FAULT_SHIFT)
-#define SYSMMU_FAULT_ID(fg)   (((fg) >> SYSMMU_FAULT_SHIFT) & SYSMMU_FAULT_MASK)
-
-#define SYSMMU_FAULT_PTW_ACCESS   0
-#define SYSMMU_FAULT_PAGE_FAULT   1
-#define SYSMMU_FAULT_TLB_MULTIHIT 2
-#define SYSMMU_FAULT_ACCESS       3
-#define SYSMMU_FAULT_SECURITY     4
-#define SYSMMU_FAULT_UNKNOWN      5
-
 #define SYSMMU_FAULTS_NUM         (SYSMMU_FAULT_UNKNOWN + 1)
 
 static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
