@@ -637,27 +637,6 @@
 			samsung,max_bpp = <32>;
 			samsung,default_bpp = <24>;
 
-			fb_info {
-				vidcon0 = <0x00>;
-				vidcon1 = <0x80>;
-				default_win = <0>;
-			};
-			fb_win_info {
-				left_margin = <20>;
-				right_margin = <20>;
-				upper_margin = <2>;
-				lower_margin = <20>;
-				hsync_len = <20>;
-				vsync_len = <2>;
-				xres = <1080>;
-				yres = <1920>;
-				virtual_x = <1080>;
-				virtual_y = <1920>;
-				width = <71>;
-				height = <114>;
-				max_bpp = <32>;
-				default_bpp = <24>;
-			};
 			fb_driver_data {
 				fb_win_variant_0 {
 					has_osd_c = <1>;
