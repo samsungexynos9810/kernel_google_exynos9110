@@ -1258,12 +1258,24 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 
 	regs = mci_readl(slot->host, UHS_REG);
 
-	if (ios->timing == MMC_TIMING_UHS_DDR50)
-		regs |= ((SDMMC_UHS_DDR_MODE << slot->id) << 16);
-	else
+	if (ios->timing == MMC_TIMING_UHS_DDR50 ||
+	    ios->timing == MMC_TIMING_MMC_HS200_DDR) {
+		if (!mmc->tuning_progress)
+			regs |= ((SDMMC_UHS_DDR_MODE << slot->id) << 16);
+	} else
 		regs &= ~((SDMMC_UHS_DDR_MODE << slot->id) << 16);
 
+	if (slot->host->pdata->caps &
+				(MMC_CAP_UHS_SDR12 | MMC_CAP_UHS_SDR25 |
+				 MMC_CAP_UHS_SDR50 | MMC_CAP_UHS_SDR104 |
+				 MMC_CAP_UHS_DDR50))
+		regs |= (0x1 << slot->id);
+
 	mci_writel(slot->host, UHS_REG, regs);
+
+	if (ios->timing == MMC_TIMING_MMC_HS200_DDR)
+		if (!mmc->tuning_progress)
+			mci_writel(slot->host, CDTHRCTL, 512 << 16 | 1);
 
 	if (ios->clock) {
 		/*
