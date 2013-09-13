@@ -406,10 +406,6 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 
 	mdelay(12);
 
-	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(12);
 #else
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
 			(unsigned int)D29,

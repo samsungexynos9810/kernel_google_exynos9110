@@ -53,7 +53,10 @@
 #include <linux/exynos_iovmm.h>
 #endif
 
+#include <video/mipi_display.h>
+
 #include "decon_display_driver.h"
+#include "decon_mipi_dsi.h"
 #include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
@@ -3762,6 +3765,10 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
 	s3c_fb_activate_window_dma(sfb, default_win);
+	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
+		0x29, 0);
+
+	msleep(12);
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 0);
 	ret = iovmm_activate(&pdev->dev);
@@ -4028,6 +4035,10 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
+	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
+		0x29, 0);
+
+	msleep(12);
 	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
@@ -4155,6 +4166,10 @@ int s3c_fb_resume(struct device *dev)
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
 
+	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
+		0x29, 0);
+
+	msleep(12);
 	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
