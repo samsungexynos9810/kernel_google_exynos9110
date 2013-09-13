@@ -641,70 +641,47 @@ static int jpeg_probe(struct platform_device *pdev)
 	struct resource *res;
 	int ret;
 
-	/* global structure */
-	jpeg = kzalloc(sizeof(struct jpeg_dev), GFP_KERNEL);
+	jpeg = devm_kzalloc(&pdev->dev, sizeof(struct jpeg_dev), GFP_KERNEL);
 	if (!jpeg) {
-		dev_err(&pdev->dev, "%s: not enough memory\n",
-			__func__);
-		ret = -ENOMEM;
-		goto err_alloc;
+		dev_err(&pdev->dev, "%s: not enough memory\n", __func__);
+		return -ENOMEM;
 	}
-
 	jpeg->plat_dev = pdev;
 
 	/* Init lock and wait queue */
 	mutex_init(&jpeg->lock);
 	init_waitqueue_head(&jpeg->wq);
 
-	/* memory region */
+	/* Get memory resource and map SFR region. */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
+	jpeg->reg_base = devm_request_and_ioremap(&pdev->dev, res);
+	if (jpeg->reg_base == NULL) {
+		dev_err(&pdev->dev, "failed to claim register region\n");
+		return -ENOENT;
+	}
+
+	/* Get IRQ resource and register IRQ handler. */
+	jpeg->irq_no = platform_get_irq(pdev, 0);
+	if (jpeg->irq_no < 0) {
 		jpeg_err("failed to get jpeg memory region resource\n");
-		ret = -ENOENT;
-		goto err_res;
+		return jpeg->irq_no;
 	}
 
-	res = request_mem_region(res->start, resource_size(res),
-				pdev->name);
-	if (!res) {
-		jpeg_err("failed to request jpeg io memory region\n");
-		ret = -ENOMEM;
-		goto err_region;
-	}
-
-	/* ioremap */
-	jpeg->reg_base = ioremap(res->start, resource_size(res));
-	if (!jpeg->reg_base) {
-		jpeg_err("failed to remap jpeg io region\n");
-		ret = -ENOENT;
-		goto err_map;
-	}
-
-	/* irq */
-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (!res) {
-		jpeg_err("failed to request jpeg irq resource\n");
-		ret = -ENOENT;
-		goto err_irq;
-	}
-
-	jpeg->irq_no = res->start;
-	ret = request_irq(jpeg->irq_no, (void *)jpeg_irq,
-			IRQF_DISABLED, pdev->name, jpeg);
-	if (ret != 0) {
-		jpeg_err("failed to jpeg request irq\n");
-		ret = -ENOENT;
-		goto err_irq;
+	/* Get memory resource and map SFR region. */
+	ret = devm_request_irq(&pdev->dev, res->start, (void *)jpeg_irq, 0,
+			pdev->name, jpeg);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to install irq\n");
+		return ret;
 	}
 
 	/* clock */
-	jpeg->clk = clk_get(&pdev->dev, "jpeg");
+	jpeg->clk = devm_clk_get(&pdev->dev, "jpeg");
 	if (IS_ERR(jpeg->clk)) {
 		jpeg_err("failed to find jpeg clock source\n");
-		ret = -ENOENT;
-		goto err_clk;
+		return -ENOMEM;
 	}
-	jpeg->sclk_clk = clk_get(&pdev->dev, "sclk_jpeg");
+	jpeg->sclk_clk = devm_clk_get(&pdev->dev, "sclk_jpeg");
 	if (IS_ERR(jpeg->sclk_clk)) {
 		jpeg_err("failed to find jpeg clock source for sclk_jpeg\n");
 		ret = -ENOENT;
@@ -823,18 +800,6 @@ err_v4l2:
 	clk_put(jpeg->clk);
 err_sclk_clk:
 	clk_put(jpeg->clk);
-err_clk:
-	free_irq(jpeg->irq_no, NULL);
-err_irq:
-	iounmap(jpeg->reg_base);
-err_map:
-err_region:
-	kfree(res);
-err_res:
-	mutex_destroy(&jpeg->lock);
-err_setup:
-	kfree(jpeg);
-err_alloc:
 	return ret;
 
 }
