@@ -963,7 +963,6 @@
 	pd_mscl: pd-mscl@105c4040 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4040 0x20>;
-		status = "disabled";
 
 		spd_mscl0: spd-mscl0@105c4040 {
 			compatible = "samsung,exynos5430-spd";
