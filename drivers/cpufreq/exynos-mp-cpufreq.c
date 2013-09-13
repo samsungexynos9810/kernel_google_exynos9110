@@ -62,10 +62,6 @@ static unsigned int freq_max[CA_END] __read_mostly;	/* Maximum (Big/Little) cloc
 #define ENABLE_MIN_COLD		1
 #define LIMIT_COLD_VOLTAGE	1250000
 #define MIN_COLD_VOLTAGE	950000
-
-#define CA7_L2_STATUS		EXYNOS5430_KFC_L2_STATUS
-#define CA15_L2_STATUS		EXYNOS5430_EAGLE_L2_STATUS
-#define L2_LOCAL_PWR_EN		0x7
 #endif
 
 static struct exynos_dvfs_info *exynos_info[CA_END];
@@ -196,14 +192,6 @@ static void set_boot_freq(void)
 	}
 }
 
-static bool is_alive(unsigned int cluster)
-{
-	unsigned int tmp;
-	tmp = __raw_readl(cluster == CA15 ? CA15_L2_STATUS : CA7_L2_STATUS) & L2_LOCAL_PWR_EN;
-
-	return tmp ? true : false;
-}
-
 static void cluster_onoff_monitor(struct work_struct *work)
 {
 	struct cpufreq_frequency_table *CA15_freq_table = exynos_info[CA15]->freq_table;
@@ -212,11 +200,11 @@ static void cluster_onoff_monitor(struct work_struct *work)
 	unsigned int freq;
 	int i;
 
-	if (exynos_info[CA15]->bus_table) {
-		if (!is_alive(CA15) && CA15_cluster_on) {
+	if (exynos_info[CA15]->bus_table && exynos_info[CA15]->is_alive) {
+		if (!exynos_info[CA15]->is_alive() && CA15_cluster_on) {
 			pm_qos_update_request(&exynos_mif_qos_CA15, 0);
 			CA15_cluster_on = false;
-		} else if (is_alive(CA15) && !CA15_cluster_on) {
+		} else if (exynos_info[CA15]->is_alive() && !CA15_cluster_on) {
 			for (i = 0; (CA15_freq_table[i].frequency != CPUFREQ_TABLE_END); i++) {
 				freq = CA15_freq_table[i].frequency;
 				if (freq == CPUFREQ_ENTRY_INVALID)
@@ -233,11 +221,11 @@ static void cluster_onoff_monitor(struct work_struct *work)
 		}
 	}
 
-	if (exynos_info[CA7]->bus_table) {
-		if (!is_alive(CA7) && CA7_cluster_on) {
+	if (exynos_info[CA7]->bus_table && exynos_info[CA7]->is_alive) {
+		if (!exynos_info[CA7]->is_alive() && CA7_cluster_on) {
 			pm_qos_update_request(&exynos_mif_qos_CA7, 0);
 			CA7_cluster_on = false;
-		} else if (is_alive(CA7) && !CA7_cluster_on) {
+		} else if (exynos_info[CA7]->is_alive() && !CA7_cluster_on) {
 			for (i = 0; (CA7_freq_table[i].frequency != CPUFREQ_TABLE_END); i++) {
 				freq = CA7_freq_table[i].frequency;
 				if (freq == CPUFREQ_ENTRY_INVALID)
