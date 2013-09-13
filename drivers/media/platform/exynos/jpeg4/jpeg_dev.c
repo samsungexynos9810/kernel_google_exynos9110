@@ -359,21 +359,9 @@ static int jpeg_m2m_open(struct file *file)
 	}
 
 #ifdef CONFIG_PM_RUNTIME
-	clk_enable(jpeg->clk);
-
-	jpeg->vb2->resume(jpeg->alloc_ctx);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_lock(jpeg->bus_dev, &jpeg->plat_dev->dev, BUSFREQ_400MHZ);
-#endif
 	pm_runtime_get_sync(&jpeg->plat_dev->dev);
 #else
-	clk_enable(jpeg->clk);
 	jpeg->vb2->resume(jpeg->alloc_ctx);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_lock(jpeg->bus_dev, &jpeg->plat_dev->dev, BUSFREQ_400MHZ);
-#endif
 #endif
 
 	return 0;
@@ -390,20 +378,9 @@ static int jpeg_m2m_release(struct file *file)
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
 #ifdef CONFIG_PM_RUNTIME
-	ctx->dev->vb2->suspend(ctx->dev->alloc_ctx);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* Unlock bus frequency */
-	dev_unlock(ctx->dev->bus_dev, &ctx->dev->plat_dev->dev);
-#endif
-	clk_disable(ctx->dev->clk);
 	pm_runtime_put_sync(&ctx->dev->plat_dev->dev);
 #else
 	ctx->dev->vb2->suspend(ctx->dev->alloc_ctx);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* Unlock bus frequency */
-	dev_unlock(ctx->dev->bus_dev, &ctx->dev->plat_dev->dev);
-#endif
-	clk_disable(ctx->dev->clk);
 #endif
 
 	kfree(ctx);
@@ -732,19 +709,6 @@ static int jpeg_probe(struct platform_device *pdev)
 		jpeg_err("failed to find jpeg clock source\n");
 		return -ENOMEM;
 	}
-	jpeg->sclk_clk = devm_clk_get(&pdev->dev, "sclk_jpeg");
-	if (IS_ERR(jpeg->sclk_clk)) {
-		jpeg_err("failed to find jpeg clock source for sclk_jpeg\n");
-		ret = -ENOENT;
-		goto err_sclk_clk;
-	}
-#ifdef CONFIG_PM_RUNTIME
-	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get_sync(&pdev->dev);
-#endif
-
-	/* clock enable */
-	clk_enable(jpeg->clk);
 
 	ret = v4l2_device_register(&pdev->dev, &jpeg->v4l2_dev);
 	if (ret) {
@@ -833,8 +797,9 @@ static int jpeg_probe(struct platform_device *pdev)
 	jpeg->bus_dev = dev_get("exynos-busfreq");
 #endif
 
-	/* clock disable */
-	clk_disable(jpeg->clk);
+#ifdef CONFIG_PM_RUNTIME
+	pm_runtime_enable(&pdev->dev);
+#endif
 
 	return 0;
 
@@ -851,9 +816,6 @@ err_m2m_init_enc:
 err_vd_alloc_enc:
 	v4l2_device_unregister(&jpeg->v4l2_dev);
 err_v4l2:
-	clk_disable(jpeg->clk);
-	clk_put(jpeg->clk);
-err_sclk_clk:
 	clk_put(jpeg->clk);
 	return ret;
 
@@ -879,147 +841,52 @@ static int jpeg_remove(struct platform_device *pdev)
 
 	clk_put(jpeg->clk);
 #ifdef CONFIG_PM_RUNTIME
-	pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_unlock(jpeg->bus_dev, &pdev->dev);
-#endif
-#else
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_unlock(jpeg->bus_dev, &pdev->dev);
-#endif
 #endif
 	kfree(jpeg);
 	return 0;
 }
 
-static int jpeg_suspend(struct platform_device *pdev, pm_message_t state)
-{
-#ifdef CONFIG_PM_RUNTIME
-	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
-
-	if (jpeg->ctx) {
-		jpeg->vb2->suspend(jpeg->alloc_ctx);
-		clk_disable(jpeg->clk);
-	}
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_unlock(jpeg->bus_dev, &pdev->dev);
-#endif
-	pm_runtime_put_sync(&pdev->dev);
-#else
-	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
-
-	if (jpeg->ctx) {
-		jpeg->vb2->suspend(jpeg->alloc_ctx);
-		clk_disable(jpeg->clk);
-	}
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_unlock(jpeg->bus_dev, &pdev->dev);
-#endif
-#endif
-	return 0;
-}
-
-static int jpeg_resume(struct platform_device *pdev)
-{
-#ifdef CONFIG_PM_RUNTIME
-	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
-
-	if (jpeg->ctx) {
-		clk_enable(jpeg->clk);
-		jpeg->vb2->resume(jpeg->alloc_ctx);
-	}
-	pm_runtime_get_sync(&pdev->dev);
-#else
-	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
-
-	if (jpeg->ctx) {
-		clk_enable(jpeg->clk);
-		jpeg->vb2->resume(jpeg->alloc_ctx);
-	}
-#endif
-	return 0;
-}
-
-int jpeg_suspend_pd(struct device *dev)
-{
-	struct platform_device *pdev;
-	int ret;
-	pm_message_t state;
-
-	state.event = 0;
-	pdev = to_platform_device(dev);
-	ret = jpeg_suspend(pdev, state);
-
-	return 0;
-}
-
-int jpeg_resume_pd(struct device *dev)
-{
-	struct platform_device *pdev;
-	int ret;
-
-	pdev = to_platform_device(dev);
-	ret = jpeg_resume(pdev);
-
-	return 0;
-}
-
-#ifdef CONFIG_PM_RUNTIME
-static int jpeg_runtime_suspend(struct device *dev)
+int jpeg_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_unlock(jpeg->bus_dev, dev);
-#endif
-	jpeg->vb2->suspend(jpeg->alloc_ctx);
-	/* clock disable */
-	clk_disable(jpeg->clk);
+
+	if (jpeg->ctx) {
+		clk_disable(jpeg->clk);
+		clk_unprepare(jpeg->clk);
+	}
+
 	return 0;
 }
 
-static int jpeg_runtime_resume(struct device *dev)
+int jpeg_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
-#ifdef CONFIG_BUSFREQ_OPP
-	/* lock bus frequency */
-	dev_lock(jpeg->bus_dev, &jpeg->plat_dev->dev, BUSFREQ_400MHZ);
-#endif
-	clk_enable(jpeg->clk);
-	jpeg->vb2->resume(jpeg->alloc_ctx);
+
+	if (jpeg->ctx) {
+		clk_prepare(jpeg->clk);
+		clk_enable(jpeg->clk);
+	}
+
 	return 0;
 }
-#endif
 
 static const struct dev_pm_ops jpeg_pm_ops = {
-	.suspend	= jpeg_suspend_pd,
-	.resume		= jpeg_resume_pd,
-#ifdef CONFIG_PM_RUNTIME
-	.runtime_suspend = jpeg_runtime_suspend,
-	.runtime_resume = jpeg_runtime_resume,
-#endif
+	.suspend	= jpeg_suspend,
+	.resume		= jpeg_resume,
+	.runtime_suspend = jpeg_suspend,
+	.runtime_resume = jpeg_resume,
 };
+
 static struct platform_driver jpeg_driver = {
 	.probe		= jpeg_probe,
 	.remove		= jpeg_remove,
-#ifndef CONFIG_PM_RUNTIME
-	.suspend	= jpeg_suspend,
-	.resume		= jpeg_resume,
-#endif
 	.driver		= {
 		.owner	= THIS_MODULE,
 		.name	= JPEG_NAME,
-#ifdef CONFIG_PM_RUNTIME
 		.pm = &jpeg_pm_ops,
-		.pm = NULL,
-#endif
 		.of_match_table = exynos_jpeg_match,
 	},
 };
