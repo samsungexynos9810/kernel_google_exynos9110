@@ -99,6 +99,16 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 	return 0;
 }
 
+/* exynos_genpd_power_on - power-on callback function for genpd.
+ * @genpd: generic power domain.
+ *
+ * main function of power on sequence.
+ * 1. clock on
+ * 2. reconfiguration of clock
+ * 3. pd power on
+ * 4. set bts configuration
+ * 5. restore clock sources.
+ */
 static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 {
 	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
@@ -113,6 +123,7 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 	if (pd->cb && pd->cb->on_pre)
 		pd->cb->on_pre(pd);
 
+	/* power domain on */
 	ret = pd->on(pd, EXYNOS_INT_LOCAL_PWR_EN);
 	if (unlikely(ret)) {
 		pr_err(PM_DOMAIN_PREFIX "%s makes error at power on!\n", genpd->name);
@@ -131,6 +142,15 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 	return 0;
 }
 
+/* exynos_genpd_power_off - power-off callback function for genpd.
+ * @genpd: generic power domain.
+ *
+ * main function of power off sequence.
+ * 1. clock on
+ * 2. reset IPs when necessary
+ * 3. pd power off
+ * 4. change clock sources to OSC.
+ */
 static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 {
 	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
