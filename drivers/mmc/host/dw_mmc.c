@@ -2988,6 +2988,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "supports-hs200-mode", NULL))
 		pdata->caps2 |= MMC_CAP2_HS200;
 
+	if (of_find_property(np, "supports-ddr200-mode", NULL))
+		pdata->caps2 |= MMC_CAP2_HS200_DDR;
+
 	return pdata;
 }
 
