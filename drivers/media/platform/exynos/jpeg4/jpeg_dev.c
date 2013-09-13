@@ -513,7 +513,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	}
 
 	/* Get memory resource and map SFR region. */
-	ret = devm_request_irq(&pdev->dev, res->start, (void *)jpeg_irq, 0,
+	ret = devm_request_irq(&pdev->dev, jpeg->irq_no, (void *)jpeg_irq, 0,
 			pdev->name, jpeg);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to install irq\n");
