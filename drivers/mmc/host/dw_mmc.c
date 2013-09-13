@@ -2591,6 +2591,10 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 			dev_dbg(&slot->mmc->class_dev, "card %s\n",
 				present ? "inserted" : "removed");
 
+			/* Power up slot (before spin_lock, may sleep) */
+			if (present != 0 && host->pdata->setpower)
+				host->pdata->setpower(slot->id, mmc->ocr_avail);
+
 			spin_lock_bh(&host->lock);
 
 			/* Card change detected */
@@ -2669,6 +2673,10 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 			}
 
 			spin_unlock_bh(&host->lock);
+
+			/* Power down slot (after spin_unlock, may sleep) */
+			if (present == 0 && host->pdata->setpower)
+				host->pdata->setpower(slot->id, 0);
 
 			present = dw_mci_get_cd(mmc);
 		}
