@@ -57,7 +57,7 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 	mutex_lock(&pd->access_lock);
 	if (likely(pd->base)) {
 		/* sc_feedback to OPTION register */
-		__raw_writel(pd->pd_option, pd->base+0x8);
+		__raw_writel(0x0102, pd->base+0x8);
 
 		/* on/off value to CONFIGURATION register */
 		__raw_writel(power_flags, pd->base);
@@ -334,13 +334,6 @@ static __init int exynos_pm_dt_parse_domains(void)
 		pd->on = exynos_pd_power;
 		pd->off = exynos_pd_power;
 		pd->cb = exynos_pd_find_callback(pd);
-
-		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
-		if (ret)
-			pd->pd_option = 0x0102;
-		else
-			pd->pd_option = val;
-
 
 		platform_set_drvdata(pdev, pd);
 
