@@ -925,7 +925,7 @@ static int g2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	struct g2d_ctx *ctx;
 	struct g2d_frame *d_frame;
 
-	g2d_dbg("ctrl ID:%d, value:%d\n", ctrl->id, ctrl->val);
+	g2d_dbg("ctrl ID:%d, value:0x%x\n", ctrl->id, ctrl->val);
 	ctx = container_of(ctrl->handler, struct g2d_ctx, ctrl_handler);
 
 	switch (ctrl->id) {
@@ -969,7 +969,7 @@ static int g2d_s_ctrl(struct v4l2_ctrl *ctrl)
 		ctx->scale.mode = ctrl->val;
 		break;
 	case V4L2_CID_2D_SCALE_WIDTH:
-		ctx->scale.src_w = (ctrl->val >> 15) & (0xFFFF);
+		ctx->scale.src_w = (ctrl->val >> 16) & (0xFFFF);
 		ctx->scale.dst_w = (ctrl->val) & (0xFFFF);
 
 		if ((ctx->scale.src_w > 8000) || (ctx->scale.dst_w > 8000)) {
@@ -983,7 +983,7 @@ static int g2d_s_ctrl(struct v4l2_ctrl *ctrl)
 				, ctx->scale.src_w, ctx->scale.dst_w);
 		break;
 	case V4L2_CID_2D_SCALE_HEIGHT:
-		ctx->scale.src_h = (ctrl->val >> 15) & (0xFFFF);
+		ctx->scale.src_h = (ctrl->val >> 16) & (0xFFFF);
 		ctx->scale.dst_h = (ctrl->val) & (0xFFFF);
 
 		if ((ctx->scale.src_h > 8000) || (ctx->scale.dst_h > 8000)) {
@@ -1013,9 +1013,25 @@ static int g2d_s_ctrl(struct v4l2_ctrl *ctrl)
 				, d_frame->clip.width, d_frame->clip.height);
 		} else
 			d_frame->clip_enable = 0;
+
 		break;
 	case V4L2_CID_2D_REPEAT:
 		ctx->rep.mode = ctrl->val;
+		break;
+	case V4L2_CID_2D_BLUESCREEN:
+		ctx->bluesc.mode = ctrl->val;
+		break;
+	case V4L2_CID_2D_BG_COLOR:
+		ctx->bluesc.bg_color = ctrl->val;
+		break;
+	case V4L2_CID_CSC_EQ_MODE:
+		ctx->csc.csc_mode = ctrl->val;
+		break;
+	case V4L2_CID_CSC_EQ:
+		ctx->csc.csc_eq = ctrl->val;
+		break;
+	case V4L2_CID_CSC_RANGE:
+		ctx->csc.csc_range = ctrl->val;
 		break;
 	}
 	return 0;
@@ -1055,7 +1071,7 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.step = 1,
 		.min = 0,
 		.max = BLIT_OP_ADD,
-		.def = 0,
+		.def = BLIT_OP_SRC,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_COLOR_FILL,
@@ -1076,7 +1092,7 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.step = 0,
 		.max = 0xffffffff,
 		.min = 0,
-		.def = 1,
+		.def = 0,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_DITH,
@@ -1096,7 +1112,7 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.step = 0,
 		.max = 0xffffffff,
 		.min = 0,
-		.def = 1,
+		.def = 0,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_SCALE_MODE,
@@ -1106,7 +1122,7 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.step = 1,
 		.min = 0,
 		.max = SCALING_BILINEAR,
-		.def = SCALING_NEAREST,
+		.def = 0,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_SCALE_WIDTH,
@@ -1130,13 +1146,13 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_REPEAT,
-		.name = "set scale",
-		.type = V4L2_CTRL_TYPE_BITMASK,
+		.name = "set repeat mode",
+		.type = V4L2_CTRL_TYPE_INTEGER,
 		.flags = V4L2_CTRL_FLAG_SLIDER,
-		.step = 0,
-		.max = 0xffffffff,
-		.min = 0,
-		.def = 1,
+		.step = 1,
+		.max = REPEAT_CLAMP,
+		.min = NO_REPEAT,
+		.def = NO_REPEAT,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_FMT_PREMULTI,
@@ -1146,17 +1162,17 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.step = 1,
 		.min = false,
 		.max = true,
-		.def = false,
+		.def = true,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_CSC_EQ_MODE,
 		.name = "Set CSC equation mode",
 		.type = V4L2_CTRL_TYPE_BOOLEAN,
 		.flags = V4L2_CTRL_FLAG_SLIDER,
-		.max = true,
-		.min = false,
 		.step = 1,
-		.def = true,
+		.min = false,
+		.max = true,
+		.def = false,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_CSC_EQ,
@@ -1177,6 +1193,27 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.min = false,
 		.max = G2D_CSC_WIDE,
 		.def = G2D_CSC_NARROW,
+	}, {
+		.ops = &g2d_ctrl_ops,
+		.id = V4L2_CID_2D_BLUESCREEN,
+		.name = "set bluescreen mode",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.flags = V4L2_CTRL_FLAG_SLIDER,
+		.step = 1,
+		.min = 0,		/* OPAQUE */
+		.max = (BS_END - 1),	/* BLUSCR */
+		.def = 0,		/* OPAQUE */
+	}, {
+		.ops = &g2d_ctrl_ops,
+		.id = V4L2_CID_2D_BG_COLOR,
+		.name = "set bluescreen BG color",
+		.type = V4L2_CTRL_TYPE_BITMASK,
+		.flags = V4L2_CTRL_FLAG_SLIDER,
+		/* 'step' mush be 0 for V4L2_CTRL_TYPE_BITMASK */
+		.step = 0,
+		.max = 0xffffffff,
+		.min = 0,
+		.def = 0,
 	}
 };
 
@@ -1563,9 +1600,6 @@ static void g2d_m2m_device_run(void *priv)
 		return;
 	}
 
-	/* src and dst select */
-	srcsel = dstsel = IMG_MEMORY;
-
 #ifdef CONFIG_PM_RUNTIME
 	if (in_irq())
 		pm_runtime_get(g2d->dev);
@@ -1590,15 +1624,6 @@ static void g2d_m2m_device_run(void *priv)
 	/* FIMG2D_DST_COLOR_MODE_REG */
 	g2d_hwset_dst_image_format(g2d, d_frame->g2d_fmt->pixelformat);
 
-	/* FIMG2D_BITBLT_COMMAND_REG */
-	if (ctx->pre_multi)
-		g2d_hwset_pre_multi_format(g2d);
-
-	/* FIMG2D_SRC_SELECT_REG */
-	g2d_hwset_src_type(g2d, srcsel);
-	/* FIMG2D_DST_SELECT_REG */
-	g2d_hwset_dst_type(g2d, dstsel);
-
 	/* FIMG2D_SRC_BASE_ADDR_REG */
 	/* FIMG2D_SRC_STRIDE_REG */
 	/* FIMG2D_SRC_PLANE2_BASE_ADDR_REG */
@@ -1618,6 +1643,13 @@ static void g2d_m2m_device_run(void *priv)
 	if (d_frame->clip_enable) {
 		g2d_v4l2_s_clip(ctx, &d_frame->clip);
 		g2d_hwset_enable_clipping(g2d, &d_frame->clip);
+	} else {
+		d_frame->clip_enable = 1;
+		d_frame->clip.left = 0;
+		d_frame->clip.width  = d_frame->pix_mp.width;
+		d_frame->clip.height = d_frame->pix_mp.height;
+		g2d_v4l2_s_clip(ctx, &d_frame->clip);
+		g2d_hwset_enable_clipping(g2d, &d_frame->clip);
 	}
 
 	if (ctx->rep.mode)
@@ -1626,14 +1658,20 @@ static void g2d_m2m_device_run(void *priv)
 	if (ctx->scale.mode)
 		g2d_hwset_src_scaling(g2d, &ctx->scale, &ctx->rep);
 
+	if (ctx->bluesc.mode) {
+		g2d_hwset_bluescreen(g2d, &ctx->bluesc);
+	}
+
+	g2d_hwset_rotation(g2d, ctx->flip, ctx->rotation);
+	if (ctx->dith)
+		g2d_hwset_enable_dithering(g2d);
+
 	g2d_dbg("ctx->op:%d\n", ctx->op);
 
+	/* src and dst select */
+	srcsel = dstsel = IMG_MEMORY;
+
 	switch (ctx->op) {
-	case BLIT_OP_SOLID_FILL:
-		srcsel = dstsel = IMG_FGCOLOR;
-		/* FIMG2D_FG_COLOR_REG */
-		g2d_hwset_fgcolor(g2d, ctx->solid_color);
-		break;
 	case BLIT_OP_CLR:
 		srcsel = dstsel = IMG_FGCOLOR;
 		/* FIMG2D_BITBLT_COMMAND_REG */
@@ -1645,13 +1683,14 @@ static void g2d_m2m_device_run(void *priv)
 		srcsel = dstsel = IMG_FGCOLOR;
 		break;
 	default:
-#if 0
-		if (!src->addr.type) {
+		if (ctx->color_fill) {
 			srcsel = IMG_FGCOLOR;
+			g2d_dbg("srcsel:%d, ctx->color:%d\n"
+					, srcsel, ctx->color);
 			/* FIMG2D_FG_COLOR_REG */
-			g2d_hwset_fgcolor(g2d, ctx->solid_color);
+			g2d_hwset_fgcolor(g2d, ctx->color);
 		}
-#endif
+
 		if (ctx->op == BLIT_OP_SRC)
 			dstsel = IMG_FGCOLOR;
 
@@ -1663,25 +1702,15 @@ static void g2d_m2m_device_run(void *priv)
 		/* FIMG2D_ROUND_MODE_REG */
 		g2d_hwset_alpha_composite(g2d, ctx->op, ctx->g_alpha);
 
-		if (ctx->pre_multi)
+		if (!ctx->pre_multi)
 			/* FIMG2D_BITBLT_COMMAND_REG */
 			g2d_hwset_premultiplied(g2d);
 	}
 
-
-	/* g2d_hwset_bluescreen(g2d, struct fimg2d_bluscr *bluscr) */
-	g2d_hwset_rotation(g2d, ctx->flip, ctx->rotation);
-	if (ctx->dith)
-		g2d_hwset_enable_dithering(g2d);
-/*
-	if (ctx->bl_op)
-		g2d_hwset_blend(g2d, ctx->bl_op, ctx->pre_multi);
-*/
-	if (ctx->color_fill) {
-		g2d_dbg("color_fill:%d, ctx->color:%d\n"
-				, ctx->color_fill, ctx->color);
-		g2d_hwset_color_fill(g2d, ctx->color);
-	}
+	/* FIMG2D_SRC_SELECT_REG */
+	g2d_hwset_src_type(g2d, srcsel);
+	/* FIMG2D_DST_SELECT_REG */
+	g2d_hwset_dst_type(g2d, dstsel);
 
 	g2d_hwset_int_enable(g2d);
 
@@ -1691,7 +1720,8 @@ static void g2d_m2m_device_run(void *priv)
 	set_bit(CTX_RUN, &ctx->flags);
 
 	g2d_dbg("before g2d_hwset_start blt()\n");
-	/* g2d_hwset_dump_regs(g2d); */
+	if (g2d_log_level)
+		g2d_hwset_dump_regs(g2d);
 
 #ifdef G2D_PERF
 	g2d->start_time = sched_clock();

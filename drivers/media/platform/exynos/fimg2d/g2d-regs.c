@@ -734,7 +734,7 @@ void g2d_hwset_src_rect(struct g2d_dev *g2d, struct v4l2_rect *rect)
 	cfg = FIMG2D_OFFSET(rect->left, rect->top);
 	writel(cfg, g2d->regs + FIMG2D_SRC_LEFT_TOP_REG);
 
-	cfg = FIMG2D_OFFSET(rect->width, rect->height);
+	cfg = FIMG2D_OFFSET((rect->left + rect->width), (rect->top + rect->height));
 	writel(cfg, g2d->regs + FIMG2D_SRC_RIGHT_BOTTOM_REG);
 }
 
@@ -748,7 +748,7 @@ void g2d_hwset_dst_rect(struct g2d_dev *g2d, struct v4l2_rect *rect)
 	cfg = FIMG2D_OFFSET(rect->left, rect->top);
 	writel(cfg, g2d->regs + FIMG2D_DST_LEFT_TOP_REG);
 
-	cfg = FIMG2D_OFFSET(rect->width, rect->height);
+	cfg = FIMG2D_OFFSET((rect->left + rect->width), (rect->top + rect->height));
 	writel(cfg, g2d->regs + FIMG2D_DST_RIGHT_BOTTOM_REG);
 }
 /* fimg2d4x_set_dst_image() */

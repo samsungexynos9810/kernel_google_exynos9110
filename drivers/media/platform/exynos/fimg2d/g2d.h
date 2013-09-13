@@ -465,6 +465,7 @@ enum bluescreen {
 	OPAQUE,
 	TRANSP,
 	BLUSCR,
+	BS_END,
 };
 
 /**
@@ -717,6 +718,7 @@ struct g2d_wdt {
 };
 
 struct g2d_csc {
+	bool			csc_mode;
 	bool			csc_eq;
 	bool			csc_range;
 };
@@ -807,6 +809,7 @@ struct g2d_ctx {
 	struct list_head		fence_wait_list;
 	struct fimg2d_repeat		rep;
 	struct fimg2d_scale		scale;
+	struct fimg2d_bluscr		bluesc;
 	int				rotation;
 	u32				flip;
 	/* enum g2d_blend_op		bl_op; */
@@ -895,6 +898,7 @@ void g2d_hwset_src_stride(struct g2d_dev *g2d, int stride);
 void g2d_hwset_dst_stride(struct g2d_dev *g2d, int stride);
 void g2d_hwset_src_rect(struct g2d_dev *g2d, struct v4l2_rect *rect);
 void g2d_hwset_dst_rect(struct g2d_dev *g2d, struct v4l2_rect *rect);
+void g2d_hwset_bluescreen(struct g2d_dev *g2d, struct fimg2d_bluscr *bluscr);
 void g2d_hwset_enable_clipping(struct g2d_dev *g2d, struct v4l2_rect *clip);
 void g2d_hwset_enable_dithering(struct g2d_dev *g2d);
 void g2d_hwset_src_repeat(struct g2d_dev *g2d, struct fimg2d_repeat *rep);
