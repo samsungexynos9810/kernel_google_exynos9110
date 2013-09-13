@@ -14,8 +14,8 @@
 #define __JPEG_DEV_H__
 
 #define JPEG_NAME		"fimp_v4"
-#define JPEG_ENC_NAME		"video12"
-#define JPEG_DEC_NAME		"video11"
+#define JPEG_NODE_NAME		"video12"
+#define EXYNOS_VIDEONODE_JPEG	12
 
 #if defined(CONFIG_BUSFREQ_OPP)
 #define BUSFREQ_400MHZ	400266

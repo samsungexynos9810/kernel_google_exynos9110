@@ -55,35 +55,7 @@
 #include "jpeg_regs.h"
 #include "regs_jpeg_v4_x.h"
 
-static int jpeg_dec_queue_setup(struct vb2_queue *vq,
-					const struct v4l2_format *fmt, unsigned int *num_buffers,
-					unsigned int *num_planes, unsigned int sizes[],
-					void *allocators[])
-{
-	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
-
-	int i;
-
-	if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		*num_planes = ctx->param.dec_param.in_plane;
-		for (i = 0; i < ctx->param.dec_param.in_plane; i++) {
-			sizes[i] = ctx->param.dec_param.mem_size;
-			allocators[i] = ctx->dev->alloc_ctx;
-		}
-	} else if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		*num_planes = ctx->param.dec_param.out_plane;
-		for (i = 0; i < ctx->param.dec_param.out_plane; i++) {
-			sizes[i] = (ctx->param.dec_param.out_width *
-				ctx->param.dec_param.out_height *
-				ctx->param.dec_param.out_depth[i]) / 8;
-			allocators[i] = ctx->dev->alloc_ctx;
-		}
-	}
-
-	return 0;
-}
-
-static int jpeg_dec_buf_prepare(struct vb2_buffer *vb)
+static int jpeg_buf_prepare(struct vb2_buffer *vb)
 {
 	int i;
 	int num_plane = 0;
@@ -91,11 +63,11 @@ static int jpeg_dec_buf_prepare(struct vb2_buffer *vb)
 	struct jpeg_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
 
 	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		num_plane = ctx->param.dec_param.in_plane;
-		ctx->dev->vb2->buf_prepare(vb);
+		num_plane = ctx->param.in_plane;
+		ctx->jpeg_dev->vb2->buf_prepare(vb);
 	} else if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		num_plane = ctx->param.dec_param.out_plane;
-		ctx->dev->vb2->buf_prepare(vb);
+		num_plane = ctx->param.out_plane;
+		ctx->jpeg_dev->vb2->buf_prepare(vb);
 	}
 
 	for (i = 0; i < num_plane; i++)
@@ -104,20 +76,20 @@ static int jpeg_dec_buf_prepare(struct vb2_buffer *vb)
 	return 0;
 }
 
-static int jpeg_dec_buf_finish(struct vb2_buffer *vb)
+static int jpeg_buf_finish(struct vb2_buffer *vb)
 {
 	struct jpeg_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
 
 	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		ctx->dev->vb2->buf_finish(vb);
+		ctx->jpeg_dev->vb2->buf_finish(vb);
 	} else if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		ctx->dev->vb2->buf_finish(vb);
+		ctx->jpeg_dev->vb2->buf_finish(vb);
 	}
 
 	return 0;
 }
 
-static void jpeg_dec_buf_queue(struct vb2_buffer *vb)
+static void jpeg_buf_queue(struct vb2_buffer *vb)
 {
 	struct jpeg_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
 
@@ -125,140 +97,61 @@ static void jpeg_dec_buf_queue(struct vb2_buffer *vb)
 		v4l2_m2m_buf_queue(ctx->m2m_ctx, vb);
 }
 
-static void jpeg_dec_lock(struct vb2_queue *vq)
-{
-	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
-	mutex_lock(&ctx->dev->lock);
-}
-
-static void jpeg_dec_unlock(struct vb2_queue *vq)
-{
-	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
-	mutex_unlock(&ctx->dev->lock);
-}
-
-static int jpeg_enc_queue_setup(struct vb2_queue *vq,
+static int jpeg_queue_setup(struct vb2_queue *vq,
 					const struct v4l2_format *fmt, unsigned int *num_buffers,
 					unsigned int *num_planes, unsigned int sizes[],
 					void *allocators[])
 {
 	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
-
+	struct jpeg_dev *dev = ctx->jpeg_dev;
+	struct jpeg_frame *frame;
 	int i;
-	if (vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		*num_planes = ctx->param.enc_param.in_plane;
-		for (i = 0; i < ctx->param.enc_param.in_plane; i++) {
-			sizes[i] = (ctx->param.enc_param.in_width *
-				ctx->param.enc_param.in_height *
-				ctx->param.enc_param.in_depth[i]) / 8;
-			allocators[i] = ctx->dev->alloc_ctx;
+
+	frame = ctx_get_frame(ctx, vq->type);
+	if (IS_ERR(frame))
+		return PTR_ERR(frame);
+
+	/* Get number of planes from format_list in driver */
+	*num_planes = frame->jpeg_fmt->memplanes;
+	for (i = 0; i < frame->jpeg_fmt->memplanes; i++) {
+		if (dev->mode == ENCODING &&  vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
+			sizes[i] = (frame->width * frame->height *
+					frame->jpeg_fmt->depth[i] * 2) >> 3;
+		} else if (dev->mode == DECODING && vq->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
+			sizes[i] = (frame->width * frame->height *
+					frame->jpeg_fmt->depth[i] * 2) >> 3;
+		} else {
+			sizes[i] = (frame->width * frame->height *
+					frame->jpeg_fmt->depth[i]) >> 3;
 		}
-
-	} else if (vq->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		*num_planes = ctx->param.enc_param.out_plane;
-		for (i = 0; i < ctx->param.enc_param.in_plane; i++) {
-			sizes[i] = (ctx->param.enc_param.out_width *
-				ctx->param.enc_param.out_height *
-				ctx->param.enc_param.out_depth * 2) / 8;
-			allocators[i] = ctx->dev->alloc_ctx;
-		}
+		allocators[i] = ctx->jpeg_dev->alloc_ctx;
 	}
 
 	return 0;
 }
 
-static int jpeg_enc_buf_prepare(struct vb2_buffer *vb)
-{
-	int i;
-	int num_plane = 0;
-
-	struct jpeg_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
-
-	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		num_plane = ctx->param.enc_param.in_plane;
-		ctx->dev->vb2->buf_prepare(vb);
-	} else if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		num_plane = ctx->param.enc_param.out_plane;
-		ctx->dev->vb2->buf_prepare(vb);
-	}
-
-	for (i = 0; i < num_plane; i++)
-		vb2_set_plane_payload(vb, i, ctx->payload[i]);
-
-	return 0;
-}
-
-static int jpeg_enc_buf_finish(struct vb2_buffer *vb)
-{
-	struct jpeg_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
-
-	if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE) {
-		ctx->dev->vb2->buf_finish(vb);
-	} else if (vb->vb2_queue->type == V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE) {
-		ctx->dev->vb2->buf_finish(vb);
-	}
-
-	return 0;
-}
-
-static void jpeg_enc_buf_queue(struct vb2_buffer *vb)
-{
-	struct jpeg_ctx *ctx = vb2_get_drv_priv(vb->vb2_queue);
-
-	if (ctx->m2m_ctx)
-		v4l2_m2m_buf_queue(ctx->m2m_ctx, vb);
-}
-
-static void jpeg_enc_lock(struct vb2_queue *vq)
+static void jpeg_lock(struct vb2_queue *vq)
 {
 	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
-	mutex_lock(&ctx->dev->lock);
+	mutex_lock(&ctx->jpeg_dev->lock);
 }
 
-static void jpeg_enc_unlock(struct vb2_queue *vq)
+static void jpeg_unlock(struct vb2_queue *vq)
 {
 	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
-	mutex_unlock(&ctx->dev->lock);
+	mutex_unlock(&ctx->jpeg_dev->lock);
 }
 
-static struct vb2_ops jpeg_enc_vb2_qops = {
-	.queue_setup		= jpeg_enc_queue_setup,
-	.buf_prepare		= jpeg_enc_buf_prepare,
-	.buf_finish		= jpeg_enc_buf_finish,
-	.buf_queue		= jpeg_enc_buf_queue,
-	.wait_prepare		= jpeg_enc_unlock,
-	.wait_finish		= jpeg_enc_lock,
+static struct vb2_ops jpeg_vb2_qops = {
+	.queue_setup		= jpeg_queue_setup,
+	.buf_prepare		= jpeg_buf_prepare,
+	.buf_finish		= jpeg_buf_finish,
+	.buf_queue		= jpeg_buf_queue,
+	.wait_prepare		= jpeg_unlock,
+	.wait_finish		= jpeg_lock,
 };
 
-static struct vb2_ops jpeg_dec_vb2_qops = {
-	.queue_setup		= jpeg_dec_queue_setup,
-	.buf_prepare		= jpeg_dec_buf_prepare,
-	.buf_finish		= jpeg_dec_buf_finish,
-	.buf_queue		= jpeg_dec_buf_queue,
-	.wait_prepare		= jpeg_dec_unlock,
-	.wait_finish		= jpeg_dec_lock,
-};
-
-static inline enum jpeg_node_type jpeg_get_node_type(struct file *file)
-{
-	struct video_device *vdev = video_devdata(file);
-
-	if (!vdev) {
-		jpeg_err("failed to get video_device\n");
-		return JPEG_NODE_INVALID;
-	}
-
-	jpeg_dbg("video_device index: %d\n", vdev->num);
-
-	if (vdev->num == JPEG_NODE_DECODER)
-		return JPEG_NODE_DECODER;
-	else if (vdev->num == JPEG_NODE_ENCODER)
-		return JPEG_NODE_ENCODER;
-	else
-		return JPEG_NODE_INVALID;
-}
-
-static int queue_init_dec(void *priv, struct vb2_queue *src_vq,
+static int queue_init(void *priv, struct vb2_queue *src_vq,
 		      struct vb2_queue *dst_vq)
 {
 	struct jpeg_ctx *ctx = priv;
@@ -269,8 +162,8 @@ static int queue_init_dec(void *priv, struct vb2_queue *src_vq,
 	src_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	src_vq->drv_priv = ctx;
 	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
-	src_vq->ops = &jpeg_dec_vb2_qops;
-	src_vq->mem_ops = ctx->dev->vb2->ops;
+	src_vq->ops = &jpeg_vb2_qops;
+	src_vq->mem_ops = ctx->jpeg_dev->vb2->ops;
 	src_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 
 	ret = vb2_queue_init(src_vq);
@@ -282,80 +175,36 @@ static int queue_init_dec(void *priv, struct vb2_queue *src_vq,
 	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
 	dst_vq->drv_priv = ctx;
 	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
-	dst_vq->ops = &jpeg_dec_vb2_qops;
-	dst_vq->mem_ops = ctx->dev->vb2->ops;
+	dst_vq->ops = &jpeg_vb2_qops;
+	dst_vq->mem_ops = ctx->jpeg_dev->vb2->ops;
 	dst_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 
 	return vb2_queue_init(dst_vq);
 }
 
-static int queue_init_enc(void *priv, struct vb2_queue *src_vq,
-		      struct vb2_queue *dst_vq)
-{
-	struct jpeg_ctx *ctx = priv;
-	int ret;
-
-	memset(src_vq, 0, sizeof(*src_vq));
-	src_vq->type = V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE;
-	src_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
-	src_vq->drv_priv = ctx;
-	src_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
-	src_vq->ops = &jpeg_enc_vb2_qops;
-	src_vq->mem_ops = ctx->dev->vb2->ops;
-	src_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
-
-	ret = vb2_queue_init(src_vq);
-	if (ret)
-		return ret;
-
-	memset(dst_vq, 0, sizeof(*dst_vq));
-	dst_vq->type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
-	dst_vq->io_modes = VB2_MMAP | VB2_USERPTR | VB2_DMABUF;
-	dst_vq->drv_priv = ctx;
-	dst_vq->buf_struct_size = sizeof(struct v4l2_m2m_buffer);
-	dst_vq->ops = &jpeg_enc_vb2_qops;
-	dst_vq->mem_ops = ctx->dev->vb2->ops;
-	dst_vq->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
-
-	return vb2_queue_init(dst_vq);
-}
 static int jpeg_m2m_open(struct file *file)
 {
 	struct jpeg_dev *jpeg = video_drvdata(file);
 	struct jpeg_ctx *ctx = NULL;
 	int ret = 0;
-	enum jpeg_node_type node;
-
-	node = jpeg_get_node_type(file);
-
-	if (node == JPEG_NODE_INVALID) {
-		jpeg_err("cannot specify node type\n");
-		ret = -ENOENT;
-		goto err_node_type;
-	}
 
 	ctx = kzalloc(sizeof *ctx, GFP_KERNEL);
 	if (!ctx)
 		return -ENOMEM;
 
 	file->private_data = ctx;
-	ctx->dev = jpeg;
+	ctx->jpeg_dev = jpeg;
 
 	spin_lock_init(&ctx->slock);
 
-	if (node == JPEG_NODE_DECODER)
-		ctx->m2m_ctx =
-			v4l2_m2m_ctx_init(jpeg->m2m_dev_dec, ctx,
-				queue_init_dec);
-	else
-		ctx->m2m_ctx =
-			v4l2_m2m_ctx_init(jpeg->m2m_dev_enc, ctx,
-				queue_init_enc);
+	ctx->m2m_ctx =
+		v4l2_m2m_ctx_init(jpeg->m2m_dev, ctx,
+			queue_init);
 
 	if (IS_ERR(ctx->m2m_ctx)) {
-		int err = PTR_ERR(ctx->m2m_ctx);
+		ret = PTR_ERR(ctx->m2m_ctx);
 		kfree(ctx);
-		return err;
+		return ret;
 	}
 
 #ifdef CONFIG_PM_RUNTIME
@@ -365,10 +214,6 @@ static int jpeg_m2m_open(struct file *file)
 #endif
 
 	return 0;
-
-err_node_type:
-	kfree(ctx);
-	return ret;
 }
 
 static int jpeg_m2m_release(struct file *file)
@@ -378,9 +223,9 @@ static int jpeg_m2m_release(struct file *file)
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
 #ifdef CONFIG_PM_RUNTIME
-	pm_runtime_put_sync(&ctx->dev->plat_dev->dev);
+	pm_runtime_put_sync(&ctx->jpeg_dev->plat_dev->dev);
 #else
-	ctx->dev->vb2->suspend(ctx->dev->alloc_ctx);
+	ctx->jpeg_dev->vb2->suspend(ctx->jpeg_dev->alloc_ctx);
 #endif
 
 	kfree(ctx);
@@ -413,148 +258,102 @@ static const struct v4l2_file_operations jpeg_fops = {
 	.mmap		= jpeg_m2m_mmap,
 };
 
-static struct video_device jpeg_enc_videodev = {
-	.name = JPEG_ENC_NAME,
+static struct video_device jpeg_videodev = {
+	.name = JPEG_NAME,
 	.fops = &jpeg_fops,
-	.minor = 12,
+	.minor = EXYNOS_VIDEONODE_JPEG,
 	.release = video_device_release,
 };
 
-static struct video_device jpeg_dec_videodev = {
-	.name = JPEG_DEC_NAME,
-	.fops = &jpeg_fops,
-	.minor = 11,
-	.release = video_device_release,
-};
-
-static void jpeg_device_enc_run(void *priv)
+static void jpeg_device_run(void *priv)
 {
 	struct jpeg_ctx *ctx = priv;
-	struct jpeg_dev *jpeg = ctx->dev;
-	struct jpeg_enc_param enc_param;
-	struct vb2_buffer *vb = NULL;
-	unsigned long flags;
-
-	jpeg = ctx->dev;
-	spin_lock_irqsave(&ctx->slock, flags);
-
-	jpeg->mode = ENCODING;
-	enc_param = ctx->param.enc_param;
-
-	jpeg_sw_reset(jpeg->reg_base);
-	jpeg_set_interrupt(jpeg->reg_base);
-	jpeg_set_huf_table_enable(jpeg->reg_base, 1);
-	jpeg_set_enc_tbl(jpeg->reg_base, enc_param.quality);
-	jpeg_set_encode_tbl_select(jpeg->reg_base, enc_param.quality);
-	jpeg_set_stream_size(jpeg->reg_base,
-		enc_param.in_width, enc_param.in_height);
-	jpeg_set_enc_out_fmt(jpeg->reg_base, enc_param.out_fmt);
-	jpeg_set_enc_in_fmt(jpeg->reg_base, enc_param.in_fmt);
-	vb = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
-	jpeg_set_stream_buf_address(jpeg->reg_base, jpeg->vb2->plane_addr(vb, 0));
-
-	vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
-	jpeg_set_frame_buf_address(jpeg->reg_base,
-	enc_param.in_fmt, jpeg->vb2->plane_addr(vb, 0), enc_param.in_width, enc_param.in_height);
-
-	jpeg_set_encode_hoff_cnt(jpeg->reg_base, enc_param.out_fmt);
-
-	jpeg_set_timer_count(jpeg->reg_base, enc_param.in_width * enc_param.in_height * 32 + 0xff);
-	jpeg_set_enc_dec_mode(jpeg->reg_base, ENCODING);
-
-	spin_unlock_irqrestore(&ctx->slock, flags);
-}
-
-static void jpeg_device_dec_run(void *priv)
-{
-	struct jpeg_ctx *ctx = priv;
-	struct jpeg_dev *jpeg = ctx->dev;
+	struct jpeg_dev *jpeg = ctx->jpeg_dev;
 	struct exynos_platform_jpeg *pdata = jpeg->pdata;
-	struct jpeg_dec_param dec_param;
+	struct jpeg_param param;
 	struct vb2_buffer *vb = NULL;
 	unsigned long flags;
 	unsigned int component;
 	unsigned int ret = 0;
 
-	jpeg = ctx->dev;
-
 	spin_lock_irqsave(&ctx->slock, flags);
 
-	jpeg->mode = DECODING;
-	dec_param = ctx->param.dec_param;
-
+	param = ctx->param;
 	jpeg_sw_reset(jpeg->reg_base);
 	jpeg_set_interrupt(jpeg->reg_base);
 
 	jpeg_set_huf_table_enable(jpeg->reg_base, true);
-	jpeg_set_enc_tbl(jpeg->reg_base, 0);
-
-	jpeg_set_encode_tbl_select(jpeg->reg_base, 0);
-
+	jpeg_set_enc_tbl(jpeg->reg_base, param.quality);
+	jpeg_set_encode_tbl_select(jpeg->reg_base, param.quality);
 	jpeg_set_stream_size(jpeg->reg_base,
-			dec_param.in_width, dec_param.in_height);
-	jpeg_set_dec_in_fmt(jpeg->reg_base, dec_param.in_fmt);
-	jpeg_set_dec_out_fmt(jpeg->reg_base, dec_param.out_fmt);
-	jpeg_alpha_value_set(jpeg->reg_base, 0xff);
+			param.in_width, param.in_height);
 
-	vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
-	jpeg_set_stream_buf_address(jpeg->reg_base, jpeg->vb2->plane_addr(vb, 0));
+	if (jpeg->mode == ENCODING) {
+		jpeg_set_enc_out_fmt(jpeg->reg_base, param.out_fmt);
+		jpeg_set_enc_in_fmt(jpeg->reg_base, param.in_fmt);
+		vb = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
+		jpeg_set_stream_buf_address(jpeg->reg_base, jpeg->vb2->plane_addr(vb, 0));
 
-	vb = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
-	jpeg_set_frame_buf_address(jpeg->reg_base,
-	dec_param.out_fmt, jpeg->vb2->plane_addr(vb, 0), dec_param.out_width, dec_param.out_height);
+		vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
+		jpeg_set_frame_buf_address(jpeg->reg_base,
+				param.in_fmt, jpeg->vb2->plane_addr(vb, 0), param.in_width, param.in_height);
+		jpeg_set_encode_hoff_cnt(jpeg->reg_base, param.out_fmt);
+	} else if (jpeg->mode == DECODING) {
+		jpeg_set_dec_in_fmt(jpeg->reg_base, param.in_fmt);
+		jpeg_set_dec_out_fmt(jpeg->reg_base, param.out_fmt);
+		jpeg_alpha_value_set(jpeg->reg_base, 0xff);
 
-	if (dec_param.out_width > 0 && dec_param.out_height > 0) {
-		if ((dec_param.out_width == dec_param.in_width / 2) &&
-			(dec_param.out_height == dec_param.in_height / 2))
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_2);
-		else if ((dec_param.out_width == dec_param.in_width / 4) &&
-			(dec_param.out_height == dec_param.in_height / 4))
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_4);
-		else if (is_ver_5h && (dec_param.out_width == dec_param.in_width / 8) &&
-			(dec_param.out_height == dec_param.in_height / 8))
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_8);
+		vb = v4l2_m2m_next_src_buf(ctx->m2m_ctx);
+		jpeg_set_stream_buf_address(jpeg->reg_base, jpeg->vb2->plane_addr(vb, 0));
+
+		vb = v4l2_m2m_next_dst_buf(ctx->m2m_ctx);
+		jpeg_set_frame_buf_address(jpeg->reg_base,
+				param.out_fmt, jpeg->vb2->plane_addr(vb, 0), param.out_width, param.out_height);
+
+		if (param.out_width > 0 && param.out_height > 0) {
+			if ((param.out_width == param.in_width / 2) &&
+				(param.out_height == param.in_height / 2))
+				jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_2);
+			else if ((param.out_width == param.in_width / 4) &&
+				(param.out_height == param.in_height / 4))
+				jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_4);
+			else if (is_ver_5h && (param.out_width == param.in_width / 8) &&
+				(param.out_height == param.in_height / 8))
+				jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_8);
+			else
+				jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_NORMAL);
+		}
+
+		if (param.top_margin != 0 || param.left_margin != 0 ||
+				param.bottom_margin != 0 || param.right_margin != 0) {
+			jpeg_set_window_margin(jpeg->reg_base, param.top_margin, param.bottom_margin,
+					param.left_margin, param.right_margin);
+		}
+
+		if (param.in_fmt == JPEG_GRAY)
+			component = 1;
 		else
-			jpeg_set_dec_scaling(jpeg->reg_base, JPEG_SCALE_NORMAL);
+			component = 3;
+		if ((ret = jpeg_set_number_of_component(jpeg->reg_base, component)))
+			printk(KERN_ERR "component is incorrect\n");
+
+		if (((jpeg->vb2->plane_addr(vb, 0) + 0x23f) + param.size) % 16 == 0) {
+			jpeg_set_dec_bitstream_size(jpeg->reg_base, param.size / 16);
+		} else {
+			jpeg_set_dec_bitstream_size(jpeg->reg_base, (param.size / 16) + 1);
+		}
 	}
-
-	if (dec_param.top_margin != 0 || dec_param.left_margin != 0 ||
-			dec_param.bottom_margin != 0 || dec_param.right_margin != 0) {
-		jpeg_set_window_margin(jpeg->reg_base, dec_param.top_margin, dec_param.bottom_margin,
-				dec_param.left_margin, dec_param.right_margin);
-	}
-
-	if (dec_param.in_fmt == JPEG_GRAY)
-		component = 1;
-	else
-		component = 3;
-	if ((ret = jpeg_set_number_of_component(jpeg->reg_base, component)))
-		printk(KERN_ERR "component is incorrect\n");
-
-	if (((jpeg->vb2->plane_addr(vb, 0) + 0x23f) + dec_param.size) % 16 == 0) {
-		jpeg_set_dec_bitstream_size(jpeg->reg_base, dec_param.size / 16);
-	} else {
-		jpeg_set_dec_bitstream_size(jpeg->reg_base, (dec_param.size / 16) + 1);
-	}
-
-	jpeg_set_timer_count(jpeg->reg_base, dec_param.in_width * dec_param.in_height * 8 + 0xff);
-	jpeg_set_enc_dec_mode(jpeg->reg_base, DECODING);
+	jpeg_set_timer_count(jpeg->reg_base, param.in_width * param.in_height * 8 + 0xff);
+	jpeg_set_enc_dec_mode(jpeg->reg_base, jpeg->mode);
 
 	spin_unlock_irqrestore(&ctx->slock, flags);
 }
 
-static void jpeg_job_enc_abort(void *priv) { }
+static void jpeg_job_abort(void *priv) { }
 
-static void jpeg_job_dec_abort(void *priv) { }
-
-static struct v4l2_m2m_ops jpeg_m2m_enc_ops = {
-	.device_run	= jpeg_device_enc_run,
-	.job_abort	= jpeg_job_enc_abort,
-};
-
-static struct v4l2_m2m_ops jpeg_m2m_dec_ops = {
-	.device_run	= jpeg_device_dec_run,
-	.job_abort	= jpeg_job_dec_abort,
+static struct v4l2_m2m_ops jpeg_m2m_ops = {
+	.device_run	= jpeg_device_run,
+	.job_abort	= jpeg_job_abort,
 };
 
 int jpeg_int_pending(struct jpeg_dev *ctrl)
@@ -577,11 +376,7 @@ static irqreturn_t jpeg_irq(int irq, void *priv)
 
 	jpeg_clean_interrupt(ctrl->reg_base);
 
-	if (ctrl->mode == ENCODING)
-		ctx = v4l2_m2m_get_curr_priv(ctrl->m2m_dev_enc);
-	else
-		ctx = v4l2_m2m_get_curr_priv(ctrl->m2m_dev_dec);
-
+	ctx = v4l2_m2m_get_curr_priv(ctrl->m2m_dev);
 	if (ctx == 0) {
 		printk(KERN_ERR "ctx is null.\n");
 		jpeg_sw_reset(ctrl->reg_base);
@@ -635,10 +430,7 @@ static irqreturn_t jpeg_irq(int irq, void *priv)
 		v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_ERROR);
 	}
 
-	if (ctrl->mode == ENCODING)
-		v4l2_m2m_job_finish(ctrl->m2m_dev_enc, ctx->m2m_ctx);
-	else
-		v4l2_m2m_job_finish(ctrl->m2m_dev_dec, ctx->m2m_ctx);
+	v4l2_m2m_job_finish(ctrl->m2m_dev, ctx->m2m_ctx);
 
 	spin_unlock(&ctx->slock);
 ctx_err:
@@ -748,67 +540,38 @@ static int jpeg_probe(struct platform_device *pdev)
 		goto err_v4l2;
 	}
 
-	/* encoder */
+	/* encoder & decoder */
 	vfd = video_device_alloc();
 	if (!vfd) {
 		v4l2_err(&jpeg->v4l2_dev, "Failed to allocate video device\n");
 		ret = -ENOMEM;
-		goto err_vd_alloc_enc;
+		goto err_vd_alloc;
 	}
 
-	*vfd = jpeg_enc_videodev;
-	vfd->ioctl_ops = get_jpeg_enc_v4l2_ioctl_ops();
+	*vfd = jpeg_videodev;
+	vfd->ioctl_ops = get_jpeg_v4l2_ioctl_ops();
 	vfd->lock	= &jpeg->lock;
 	vfd->vfl_dir    = VFL_DIR_M2M;
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER, 12);
+	ret = video_register_device(vfd, VFL_TYPE_GRABBER,
+			EXYNOS_VIDEONODE_JPEG);
+
 	if (ret) {
 		v4l2_err(&jpeg->v4l2_dev,
 			 "%s(): failed to register video device\n", __func__);
 		video_device_release(vfd);
-		goto err_vd_alloc_enc;
+		goto err_vd_alloc;
 	}
 	v4l2_info(&jpeg->v4l2_dev,
 		"JPEG driver is registered to /dev/video%d\n", vfd->num);
 
-	jpeg->vfd_enc = vfd;
-	jpeg->m2m_dev_enc = v4l2_m2m_init(&jpeg_m2m_enc_ops);
-	if (IS_ERR(jpeg->m2m_dev_enc)) {
+	jpeg->vfd = vfd;
+	jpeg->m2m_dev = v4l2_m2m_init(&jpeg_m2m_ops);
+	jpeg->m2m_ops = &jpeg_m2m_ops;
+	if (IS_ERR(jpeg->m2m_dev)) {
 		v4l2_err(&jpeg->v4l2_dev,
 			"failed to initialize v4l2-m2m device\n");
-		ret = PTR_ERR(jpeg->m2m_dev_enc);
-		goto err_m2m_init_enc;
-	}
-	video_set_drvdata(vfd, jpeg);
-
-	/* decoder */
-	vfd = video_device_alloc();
-	if (!vfd) {
-		v4l2_err(&jpeg->v4l2_dev, "Failed to allocate video device\n");
-		ret = -ENOMEM;
-		goto err_vd_alloc_dec;
-	}
-
-	*vfd = jpeg_dec_videodev;
-	vfd->ioctl_ops = get_jpeg_dec_v4l2_ioctl_ops();
-	vfd->lock	= &jpeg->lock;
-	vfd->vfl_dir    = VFL_DIR_M2M;
-	ret = video_register_device(vfd, VFL_TYPE_GRABBER, 11);
-	if (ret) {
-		v4l2_err(&jpeg->v4l2_dev,
-			 "%s(): failed to register video device\n", __func__);
-		video_device_release(vfd);
-		goto err_vd_alloc_dec;
-	}
-	v4l2_info(&jpeg->v4l2_dev,
-		"JPEG driver is registered to /dev/video%d\n", vfd->num);
-
-	jpeg->vfd_dec = vfd;
-	jpeg->m2m_dev_dec = v4l2_m2m_init(&jpeg_m2m_dec_ops);
-	if (IS_ERR(jpeg->m2m_dev_dec)) {
-		v4l2_err(&jpeg->v4l2_dev,
-			"failed to initialize v4l2-m2m device\n");
-		ret = PTR_ERR(jpeg->m2m_dev_dec);
-		goto err_m2m_init_dec;
+		ret = PTR_ERR(jpeg->m2m_dev);
+		goto err_m2m_init;
 	}
 	video_set_drvdata(vfd, jpeg);
 
@@ -837,16 +600,12 @@ static int jpeg_probe(struct platform_device *pdev)
 	return 0;
 
 err_video_reg:
-	v4l2_m2m_release(jpeg->m2m_dev_dec);
-err_m2m_init_dec:
-	video_unregister_device(jpeg->vfd_dec);
-	video_device_release(jpeg->vfd_dec);
-err_vd_alloc_dec:
-	v4l2_m2m_release(jpeg->m2m_dev_enc);
-err_m2m_init_enc:
-	video_unregister_device(jpeg->vfd_enc);
-	video_device_release(jpeg->vfd_enc);
-err_vd_alloc_enc:
+	v4l2_m2m_release(jpeg->m2m_dev);
+err_m2m_init:
+	video_unregister_device(jpeg->vfd);
+	video_device_release(jpeg->vfd);
+err_vd_alloc:
+	v4l2_m2m_release(jpeg->m2m_dev);
 	v4l2_device_unregister(&jpeg->v4l2_dev);
 err_v4l2:
 	clk_put(jpeg->clk);
@@ -858,11 +617,8 @@ static int jpeg_remove(struct platform_device *pdev)
 {
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
-	v4l2_m2m_release(jpeg->m2m_dev_enc);
-	video_unregister_device(jpeg->vfd_enc);
-
-	v4l2_m2m_release(jpeg->m2m_dev_dec);
-	video_unregister_device(jpeg->vfd_dec);
+	v4l2_m2m_release(jpeg->m2m_dev);
+	video_unregister_device(jpeg->vfd);
 
 	v4l2_device_unregister(&jpeg->v4l2_dev);
 

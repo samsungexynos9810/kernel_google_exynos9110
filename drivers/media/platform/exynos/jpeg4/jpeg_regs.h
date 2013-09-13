@@ -22,11 +22,12 @@ void jpeg_set_dec_out_fmt(void __iomem *base,
 void jpeg_set_enc_in_fmt(void __iomem *base,
 					enum jpeg_frame_format in_fmt);
 void jpeg_set_enc_out_fmt(void __iomem *base,
-					enum jpeg_stream_format out_fmt);
-void jpeg_set_dec_in_fmt(void __iomem *base, enum jpeg_stream_format in_fmt);
+					enum jpeg_frame_format out_fmt);
+void jpeg_set_dec_in_fmt(void __iomem *base, enum jpeg_frame_format in_fmt);
+
 void jpeg_set_dec_out_fmt(void __iomem *base, enum jpeg_frame_format out_fmt);
 void jpeg_set_enc_in_fmt(void __iomem *base, enum jpeg_frame_format in_fmt);
-void jpeg_set_enc_out_fmt(void __iomem *base, enum jpeg_stream_format out_fmt);
+void jpeg_set_enc_out_fmt(void __iomem *base, enum jpeg_frame_format out_fmt);
 void jpeg_set_enc_tbl(void __iomem *base,
 		enum jpeg_img_quality_level level);
 void jpeg_set_interrupt(void __iomem *base);
@@ -41,14 +42,14 @@ void jpeg_set_stream_size(void __iomem *base,
 void jpeg_set_frame_buf_address(void __iomem *base, enum jpeg_frame_format fmt, unsigned int address, unsigned int width, unsigned int height);
 void jpeg_set_encode_tbl_select(void __iomem *base,
 		enum jpeg_img_quality_level level);
-void jpeg_set_encode_hoff_cnt(void __iomem *base, enum jpeg_stream_format fmt);
+void jpeg_set_encode_hoff_cnt(void __iomem *base, enum jpeg_frame_format fmt);
 void jpeg_set_dec_bitstream_size(void __iomem *base, unsigned int size);
 void jpeg_set_timer_count(void __iomem *base, unsigned int size);
 unsigned int jpeg_get_stream_size(void __iomem *base);
 void jpeg_get_frame_size(void __iomem *base,
 			unsigned int *width, unsigned int *height);
 int jpeg_set_number_of_component(void __iomem *base, unsigned int num_component);
-enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base);
+enum jpeg_frame_format jpeg_get_frame_fmt(void __iomem *base);
 void jpeg_alpha_value_set(void __iomem *base, unsigned int alpha);
 void jpeg_dec_window_ctrl(void __iomem *base, unsigned int is_start);
 void jpeg_set_window_margin(void __iomem *base, unsigned int top, unsigned int bottom,

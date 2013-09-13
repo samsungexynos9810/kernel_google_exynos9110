@@ -84,8 +84,8 @@ enum  jpeg_img_quality_level {
 	QUALITY_LEVEL_4,	/* low */
 };
 
-/* raw data image format */
 enum jpeg_frame_format {
+/* raw data image format */
 	YCRCB_444_2P,
 	YCBCR_444_2P,
 	YCBCR_444_3P,
@@ -112,10 +112,7 @@ enum jpeg_frame_format {
 	ARGB_8888,
 	ABGR_8888,
 	GRAY,
-};
-
 /* jpeg data format */
-enum jpeg_stream_format {
 	JPEG_422,	/* decode input, encode output */
 	JPEG_420,	/* decode input, encode output */
 	JPEG_444,	/* decode input, encode output */
@@ -136,12 +133,6 @@ enum jpeg_interface {
 	M2M_CAPTURE,
 };
 
-enum jpeg_node_type {
-	JPEG_NODE_INVALID = -1,
-	JPEG_NODE_DECODER = 11,
-	JPEG_NODE_ENCODER = 12,
-};
-
 struct jpeg_fmt {
 	char			*name;
 	unsigned int			fourcc;
@@ -152,52 +143,44 @@ struct jpeg_fmt {
 	enum jpeg_interface	types;
 };
 
-struct jpeg_dec_param {
+struct jpeg_param {
 	unsigned int in_width;
 	unsigned int in_height;
 	unsigned int out_width;
 	unsigned int out_height;
+	unsigned int color;
 	unsigned int size;
 	unsigned int mem_size;
 	unsigned int in_plane;
 	unsigned int out_plane;
-	unsigned int in_depth;
+	unsigned int in_depth[JPEG_MAX_PLANE];
 	unsigned int out_depth[JPEG_MAX_PLANE];
 	unsigned int top_margin;
 	unsigned int left_margin;
 	unsigned int bottom_margin;
 	unsigned int right_margin;
 
-	enum jpeg_stream_format in_fmt;
+	enum jpeg_frame_format in_fmt;
 	enum jpeg_frame_format out_fmt;
+	enum jpeg_img_quality_level quality;
 };
 
-struct jpeg_enc_param {
-	unsigned int in_width;
-	unsigned int in_height;
-	unsigned int out_width;
-	unsigned int out_height;
-	unsigned int size;
-	unsigned int in_plane;
-	unsigned int out_plane;
-	unsigned int in_depth[JPEG_MAX_PLANE];
-	unsigned int out_depth;
-
-	enum jpeg_frame_format in_fmt;
-	enum jpeg_stream_format out_fmt;
-	enum jpeg_img_quality_level quality;
+struct jpeg_frame {
+	struct jpeg_fmt		*jpeg_fmt;
+	unsigned int		width;
+	unsigned int		height;
+	__u32			pixelformat;
+	unsigned long		byteused[VIDEO_MAX_PLANES];
 };
 
 struct jpeg_ctx {
 	spinlock_t			slock;
-	struct jpeg_dev		*dev;
+	struct jpeg_dev		*jpeg_dev;
 	struct v4l2_m2m_ctx	*m2m_ctx;
 
-	union {
-		struct jpeg_dec_param	dec_param;
-		struct jpeg_enc_param	enc_param;
-	} param;
-
+	struct jpeg_frame	s_frame;
+	struct jpeg_frame	d_frame;
+	struct jpeg_param	param;
 	int			index;
 	unsigned long		payload[VIDEO_MAX_PLANES];
 };
@@ -220,10 +203,9 @@ struct jpeg_vb2 {
 struct jpeg_dev {
 	spinlock_t			slock;
 	struct v4l2_device	v4l2_dev;
-	struct video_device	*vfd_enc;
-	struct video_device	*vfd_dec;
-	struct v4l2_m2m_dev	*m2m_dev_enc;
-	struct v4l2_m2m_dev	*m2m_dev_dec;
+	struct video_device	*vfd;
+	struct v4l2_m2m_dev	*m2m_dev;
+	struct v4l2_m2m_ops	*m2m_ops;
 	struct jpeg_ctx		*ctx;
 	struct vb2_alloc_ctx	*alloc_ctx;
 
@@ -257,6 +239,25 @@ enum jpeg_log {
 	JPEG_LOG_WARN		= 0x0010,
 	JPEG_LOG_ERR		= 0x0001,
 };
+
+static inline struct jpeg_frame *ctx_get_frame(struct jpeg_ctx *ctx,
+						enum v4l2_buf_type type)
+{
+	struct jpeg_frame *frame;
+
+	if (V4L2_TYPE_IS_MULTIPLANAR(type)) {
+		if (type == V4L2_BUF_TYPE_VIDEO_OUTPUT_MPLANE)
+			frame = &ctx->s_frame;
+		else
+			frame = &ctx->d_frame;
+	} else {
+		dev_err(ctx->jpeg_dev->bus_dev,
+				"Wrong V4L2 buffer type %d\n", type);
+		return ERR_PTR(-EINVAL);
+	}
+
+	return frame;
+}
 
 /* debug macro */
 #define JPEG_LOG_DEFAULT       (JPEG_LOG_WARN | JPEG_LOG_ERR)
@@ -299,6 +300,7 @@ enum jpeg_log {
 /*=====================================================================*/
 const struct v4l2_ioctl_ops *get_jpeg_dec_v4l2_ioctl_ops(void);
 const struct v4l2_ioctl_ops *get_jpeg_enc_v4l2_ioctl_ops(void);
+const struct v4l2_ioctl_ops *get_jpeg_v4l2_ioctl_ops(void);
 
 int jpeg_int_pending(struct jpeg_dev *ctrl);
 

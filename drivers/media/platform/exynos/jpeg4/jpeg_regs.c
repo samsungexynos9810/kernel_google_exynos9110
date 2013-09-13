@@ -51,7 +51,7 @@ void jpeg_set_enc_dec_mode(void __iomem *base, enum jpeg_mode mode)
 }
 
 void jpeg_set_dec_in_fmt(void __iomem *base,
-		enum jpeg_stream_format in_fmt)
+		enum jpeg_frame_format in_fmt)
 {
 	unsigned int reg = 0;
 
@@ -372,7 +372,7 @@ void jpeg_set_enc_in_fmt(void __iomem *base,
 }
 
 void jpeg_set_enc_out_fmt(void __iomem *base,
-					enum jpeg_stream_format out_fmt)
+					enum jpeg_frame_format out_fmt)
 {
 	unsigned int reg;
 
@@ -772,7 +772,7 @@ void jpeg_set_encode_tbl_select(void __iomem *base,
 	writel(reg, base + S5P_JPEG_TBL_SEL_REG);
 }
 
-void jpeg_set_encode_hoff_cnt(void __iomem *base, enum jpeg_stream_format fmt)
+void jpeg_set_encode_hoff_cnt(void __iomem *base, enum jpeg_frame_format fmt)
 {
 	if (fmt == JPEG_GRAY)
 		writel(0xd2, base + S5P_JPEG_HUFF_CNT_REG);
@@ -806,10 +806,10 @@ void jpeg_get_frame_size(void __iomem *base,
 			& S5P_JPEG_Y_SIZE_MASK);
 }
 
-enum jpeg_stream_format jpeg_get_frame_fmt(void __iomem *base)
+enum jpeg_frame_format jpeg_get_frame_fmt(void __iomem *base)
 {
 	unsigned int	reg;
-	enum jpeg_stream_format out_format;
+	enum jpeg_frame_format out_format;
 
 	reg = readl(base + S5P_JPEG_IMG_FMT_REG);
 
