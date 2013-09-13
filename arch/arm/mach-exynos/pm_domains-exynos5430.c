@@ -15,18 +15,6 @@
 
 #include <mach/pm_domains.h>
 
-#define PM_DOMAIN_PREFIX	"PM DOMAIN: "
-
-#ifndef pr_fmt
-#define pr_fmt(fmt) fmt
-#endif
-
-#ifdef PM_DOMAIN_DEBUG
-#define DEBUG_PRINT_INFO(fmt, ...) printk(PM_DOMAIN_PREFIX pr_fmt(fmt), ##__VA_ARGS__)
-#else
-#define DEBUG_PRINT_INFO(fmt, ...)
-#endif
-
 #ifdef CONFIG_SOC_EXYNOS5430
 /* exynos_pd_maudio_power_on_post - callback after power on.
  * @pd: power domain.

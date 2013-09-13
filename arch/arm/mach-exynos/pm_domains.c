@@ -18,16 +18,6 @@
 
 #include <mach/pm_domains.h>
 
-#ifndef pr_fmt
-#define pr_fmt(fmt) fmt
-#endif
-
-#ifdef PM_DOMAIN_DEBUG
-#define DEBUG_PRINT_INFO(fmt, ...) printk(pr_fmt(fmt), ##__VA_ARGS__)
-#else
-#define DEBUG_PRINT_INFO(fmt, ...)
-#endif
-
 #ifdef CONFIG_OF
 
 /* Sub-domain does not have power on/off features.
@@ -36,8 +26,7 @@
 static inline int exynos_pd_power_dummy(struct exynos_pm_domain *pd,
 					int power_flags)
 {
-
-	DEBUG_PRINT_INFO("%s: dummy power on/off: %d\n", pd->genpd.name, power_flags);
+	DEBUG_PRINT_INFO("%s: dummy power %s\n", pd->genpd.name, power_flags ? "on":"off");
 	pd->status = power_flags;
 
 	return 0;
@@ -84,12 +73,21 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 						__raw_readl(pd->base),
 						__raw_readl(pd->base+4),
 						__raw_readl(pd->base+8));
-				pr_err("PM DOMAIN: %s can't control power, timeout\n", pd->genpd.name);
+				pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
 				return -ETIMEDOUT;
 			}
 			--timeout;
 			cpu_relax();
 			usleep_range(8, 10);
+		}
+		if (unlikely(timeout < 50)) {
+			pr_warn(PM_DOMAIN_PREFIX "long delay found during %s is %s\n", pd->name, power_flags ? "on":"off");
+			pr_warn("%s@%p: %08x, %08x, %08x\n",
+					pd->name,
+					pd->base,
+					__raw_readl(pd->base),
+					__raw_readl(pd->base+4),
+					__raw_readl(pd->base+8));
 		}
 	}
 	pd->status = power_flags;
@@ -110,7 +108,7 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 	int ret;
 
 	if (unlikely(!pd->on)) {
-		pr_err("PM DOMAIN: %s can't support power on!\n", genpd->name);
+		pr_err(PM_DOMAIN_PREFIX "%s cannot support power on\n", pd->name);
 		return -EINVAL;
 	}
 
@@ -120,7 +118,7 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 
 	ret = pd->on(pd, EXYNOS_INT_LOCAL_PWR_EN);
 	if (unlikely(ret)) {
-		pr_err("PM DOMAIN: %s makes error at power on!\n", genpd->name);
+		pr_err(PM_DOMAIN_PREFIX "%s makes error at power on!\n", genpd->name);
 		return ret;
 	}
 
@@ -136,7 +134,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 	int ret;
 
 	if (unlikely(!pd->off)) {
-		pr_err("PM DOMAIN: %s can't support power off!\n", genpd->name);
+		pr_err(PM_DOMAIN_PREFIX "%s can't support power off!\n", genpd->name);
 		return -EINVAL;
 	}
 
@@ -146,7 +144,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 
 	ret = pd->off(pd, 0);
 	if (unlikely(ret)) {
-		pr_err("PM DOMAIN: %s occur error at power off!\n", genpd->name);
+		pr_err(PM_DOMAIN_PREFIX "%s occur error at power off!\n", genpd->name);
 		return ret;
 	}
 
@@ -195,7 +193,7 @@ static void show_power_domain(void)
 		} else
 			pr_info("   %-9s - %s\n",
 						kstrdup(np->name, GFP_KERNEL),
-						"not registered");
+						"on,  always");
 	}
 
 	return;
@@ -219,12 +217,12 @@ static void exynos_add_device_to_pd(struct exynos_pm_domain *pd,
 	int ret;
 
 	if (unlikely(!pd)) {
-		pr_err("PM DOMAIN: can't add device, domain is empty\n");
+		pr_err(PM_DOMAIN_PREFIX "can't add device, domain is empty\n");
 		return;
 	}
 
 	if (unlikely(!dev)) {
-		pr_err("PM DOMAIN: can't add device, device is empty\n");
+		pr_err(PM_DOMAIN_PREFIX "can't add device, device is empty\n");
 		return;
 	}
 
@@ -239,9 +237,9 @@ static void exynos_add_device_to_pd(struct exynos_pm_domain *pd,
 
 	if (!ret) {
 		pm_genpd_dev_need_restore(dev, true);
-		pr_info("PM DOMAIN: %s, Device : %s Registered\n", pd->genpd.name, dev_name(dev));
+		pr_info(PM_DOMAIN_PREFIX "%s, Device : %s Registered\n", pd->genpd.name, dev_name(dev));
 	} else
-		pr_err("PM DOMAIN: %s can't add device %s\n", pd->genpd.name, dev_name(dev));
+		pr_err(PM_DOMAIN_PREFIX "%s can't add device %s\n", pd->genpd.name, dev_name(dev));
 }
 
 static void exynos_remove_device_from_pd(struct device *dev)
@@ -324,7 +322,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 
 		pd = kzalloc(sizeof(*pd), GFP_KERNEL);
 		if (!pd) {
-			pr_err("%s: failed to allocate memory for domain\n",
+			pr_err(PM_DOMAIN_PREFIX "%s: failed to allocate memory for domain\n",
 					__func__);
 			return -ENOMEM;
 		}
@@ -361,7 +359,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 
 			sub_pd = kzalloc(sizeof(*sub_pd), GFP_KERNEL);
 			if (!sub_pd) {
-				pr_err("%s: failed to allocate memory for domain\n",
+				pr_err("%s: failed to allocate memory for power domain\n",
 						__func__);
 				return -ENOMEM;
 			}
@@ -378,7 +376,8 @@ static __init int exynos_pm_dt_parse_domains(void)
 			if (!sub_pdev)
 				sub_pdev = of_platform_device_create(children, NULL, &pdev->dev);
 			if (!sub_pdev) {
-				pr_err("sub domain allocation failed: %s\n", kstrdup(children->name, GFP_KERNEL));
+				pr_err(PM_DOMAIN_PREFIX "sub domain allocation failed: %s\n",
+							kstrdup(children->name, GFP_KERNEL));
 				continue;
 			}
 			platform_set_drvdata(sub_pdev, sub_pd);
@@ -407,7 +406,7 @@ static int __init exynos5_pm_domain_init(void)
 		return exynos_pm_dt_parse_domains();
 #endif
 
-	pr_err("EXYNOS5: PM Domain works along with Device Tree\n");
+	pr_err(PM_DOMAIN_PREFIX "PM Domain works along with Device Tree\n");
 	return -EPERM;
 }
 arch_initcall(exynos5_pm_domain_init);
@@ -420,7 +419,7 @@ static __init int exynos_pm_domain_idle(void)
 	while(time_before(jiffies, j1))
 		schedule();
 
-	pr_info("PM DOMAIN: Power off unused power domains.\n");
+	pr_info(PM_DOMAIN_PREFIX "Power off unused power domains.\n");
 	pm_genpd_poweroff_unused();
 
 	return 0;

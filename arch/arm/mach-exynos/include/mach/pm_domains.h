@@ -33,6 +33,18 @@
 
 #include <plat/devs.h>
 
+#define PM_DOMAIN_PREFIX	"PM DOMAIN: "
+
+#ifndef pr_fmt
+#define pr_fmt(fmt) fmt
+#endif
+
+#ifdef PM_DOMAIN_DEBUG
+#define DEBUG_PRINT_INFO(fmt, ...) printk(PM_DOMAIN_PREFIX pr_fmt(fmt), ##__VA_ARGS__)
+#else
+#define DEBUG_PRINT_INFO(fmt, ...)
+#endif
+
 struct exynos_pm_domain;
 
 struct exynos_pd_callback {
