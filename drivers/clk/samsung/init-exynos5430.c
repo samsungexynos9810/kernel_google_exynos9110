@@ -352,6 +352,21 @@ void g2d_init_clock(void)
 			, __func__, __LINE__, clk_rate1, clk_rate2);
 }
 
+void jpeg_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_jpeg_a", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_jpeg_b", "mout_sclk_jpeg_a");
+	exynos_set_parent("mout_sclk_jpeg_c", "mout_sclk_jpeg_b");
+	exynos_set_parent("dout_sclk_jpeg", "mout_sclk_jpeg_c");
+	exynos_set_parent("sclk_jpeg_top", "dout_sclk_jpeg");
+	exynos_set_parent("mout_sclk_jpeg_user", "sclk_jpeg_top");
+	exynos_set_parent("sclk_jpeg", "mout_sclk_jpeg_user");
+
+	exynos_set_rate("dout_sclk_jpeg", 400 * 1000000);
+
+	pr_debug("jpeg: sclk_jpeg %d\n", exynos_get_rate("sclk_jpeg"));
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -369,4 +384,5 @@ void __init exynos5430_clock_init(void)
 	usb_init_clock();
 	mscl_init_clock();
 	g2d_init_clock();
+	jpeg_init_clock();
 }
