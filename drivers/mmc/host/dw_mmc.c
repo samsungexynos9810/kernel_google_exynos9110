@@ -1694,6 +1694,9 @@ static void dw_mci_tasklet_func(unsigned long priv)
 			}
 
 			if (data && cmd->error && cmd != data->stop) {
+				/* To avoid fifo full condition */
+				dw_mci_fifo_reset(host->dev, host);
+
 				if (host->mrq->data->stop)
 					send_stop_cmd(host, host->mrq->data);
 				else {
@@ -1725,6 +1728,10 @@ static void dw_mci_tasklet_func(unsigned long priv)
 					       &host->pending_events)) {
 				set_bit(EVENT_XFER_COMPLETE,
 						&host->pending_events);
+
+				/* To avoid fifo full condition */
+				dw_mci_fifo_reset(host->dev, host);
+
 				if (data->stop)
 					send_stop_cmd(host, data);
 				else {
@@ -1809,8 +1816,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 				 */
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
-				dw_mci_wait_reset(host->dev, host,
-						SDMMC_CTRL_FIFO_RESET);
+				dw_mci_fifo_reset(host->dev, host);
 
 		} else {
 				data->bytes_xfered = data->blocks * data->blksz;
@@ -1851,8 +1857,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 				dw_mci_stop_dma(host);
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
-				dw_mci_wait_reset(host->dev, host,
-						SDMMC_CTRL_FIFO_RESET);
+				dw_mci_fifo_reset(host->dev, host);
 			}
 
 			host->cmd = NULL;
@@ -2618,8 +2623,7 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
 
-				dw_mci_wait_reset(host->dev, host,
-						SDMMC_CTRL_FIFO_RESET);
+				dw_mci_fifo_reset(host->dev, host);
 #ifdef CONFIG_MMC_DW_IDMAC
 				dw_mci_idma_reset_dma(host);
 #endif
