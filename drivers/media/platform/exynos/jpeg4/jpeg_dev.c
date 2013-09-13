@@ -471,7 +471,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	}
 
 	if (!dev->platform_data) {
-		jpeg->id = of_alias_get_id(pdev->dev.of_node, "jpeg");
+		jpeg->id = of_alias_get_id(pdev->dev.of_node, "fimp_v4");
 	} else {
 		jpeg->id = pdev->id;
 		pdata = dev->platform_data;
