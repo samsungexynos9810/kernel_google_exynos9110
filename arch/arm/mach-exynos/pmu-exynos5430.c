@@ -384,7 +384,7 @@ static void exynos_cpu_reset_assert_ctrl(bool on, enum cpu_type cluster)
 		cpu_f = CPUS_PER_CLUSTER - 1;
 	}
 
-	for (i = cpu_s; i < cpu_f; i++) {
+	for (i = cpu_s; i <= cpu_f; i++) {
 		option = __raw_readl(EXYNOS_ARM_CORE_OPTION(i));
 		option = on ? (option | EXYNOS_USE_DELAYED_RESET_ASSERTION) :
 				   (option & ~EXYNOS_USE_DELAYED_RESET_ASSERTION);
