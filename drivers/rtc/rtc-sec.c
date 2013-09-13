@@ -508,6 +508,7 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
 	struct sec_platform_data *pdata = dev_get_platdata(iodev->dev);
 	struct s2m_rtc_info *s2m;
+	int irq_base;
 	int ret;
 
 	s2m = devm_kzalloc(&pdev->dev, sizeof(struct s2m_rtc_info),
@@ -516,9 +517,15 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	if (!s2m)
 		return -ENOMEM;
 
+	irq_base = regmap_irq_chip_get_base(iodev->irq_data);
+	if (!irq_base) {
+		dev_err(&pdev->dev, "Failed to get irq base %d\n", irq_base);
+		return -ENODEV;
+	}
+
 	s2m->dev = &pdev->dev;
 	s2m->iodev = iodev;
-	s2m->irq = iodev->irq_base + S2MPS13_IRQ_RTCA0;
+	s2m->irq = irq_base + S2MPS13_IRQ_RTCA0;
 	s2m->wtsr_smpl = pdata->wtsr_smpl;
 
 	platform_set_drvdata(pdev, s2m);
