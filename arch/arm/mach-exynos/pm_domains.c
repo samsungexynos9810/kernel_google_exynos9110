@@ -15,8 +15,6 @@
 
 #include <mach/pm_domains.h>
 
-#ifdef CONFIG_OF
-
 /* Sub-domain does not have power on/off features.
  * dummy power on/off function is required.
  */
@@ -181,6 +179,8 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 
 	return 0;
 }
+
+#ifdef CONFIG_OF
 
 #ifdef CONFIG_EXYNOS5430_BTS
 /**
