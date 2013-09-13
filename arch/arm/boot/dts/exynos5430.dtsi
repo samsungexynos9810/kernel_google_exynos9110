@@ -202,6 +202,12 @@
 		};
 	};
 
+	clock_pwm: pwm-clock-controller@14DD0000 {
+		compatible = "samsung,exynos-pwm-clock";
+		reg = <0x14DD0000 0x50>;
+		#clock-cells = <1>;
+	};
+
 	serial@14C10000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x14C10000 0x100>;
@@ -296,6 +302,25 @@
 		compatible = "samsung,exynos5430-pinctrl";
 		reg = <0x14CE0000 0x1100>;
 		interrupts = <0 442 0>;
+	};
+
+	sec_pwm: pwm@14dd0000 {
+		compatible = "samsung,s3c6400-pwm";
+		reg = <0x14dd0000 0x1000>;
+		#pwm-cells = <3>;
+		clocks = <&clock 918>, <&clock 2421>,
+		       <&clock_pwm 1>, <&clock_pwm 2>,
+		       <&clock_pwm 5>, <&clock_pwm 6>,
+		       <&clock_pwm 7>, <&clock_pwm 8>,
+		       <&clock_pwm 10>, <&clock_pwm 11>,
+		       <&clock_pwm 12>, <&clock_pwm 13>;
+		clock-names = "timers", "gate_timers",
+			"pwm-scaler0", "pwm-scaler1",
+			"pwm-tdiv0", "pwm-tdiv1",
+			"pwm-tdiv2", "pwm-tdiv3",
+			"pwm-tin0", "pwm-tin1",
+			"pwm-tin2", "pwm-tin3";
+		status = "ok";
 	};
 
 	dwmmc_0: dwmmc0@15540000 {
