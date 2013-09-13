@@ -49,12 +49,11 @@ static ssize_t show_power_domain(struct device *dev, struct device_attribute *at
 	return ret;
 }
 
-static ssize_t store_power_domain_test(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+static int exynos_pd_power_on(struct device *dev, const char * device_name)
 {
 	struct platform_device *pdev;
 	struct device_node *np;
-	char device_name[32];
-	int ret;
+	int ret = 0;
 	struct gpd_timing_data gpd_td = {
 		.stop_latency_ns = 50000,
 		.start_latency_ns = 50000,
@@ -62,7 +61,102 @@ static ssize_t store_power_domain_test(struct device *dev, struct device_attribu
 		.restore_state_latency_ns = 500000,
 	};
 
-	sscanf(buf, "%s", device_name);
+	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+		struct exynos_pm_domain *pd;
+
+		/* skip unmanaged power domain */
+		if (!of_device_is_available(np))
+			continue;
+
+		pdev = of_find_device_by_node(np);
+		if (!pdev)
+			continue;
+		pd = platform_get_drvdata(pdev);
+
+		if (strcmp(pd->name, device_name))
+			continue;
+
+		if (pd->check_status(pd)) {
+			pr_err("PM DOMAIN: %s is already on.\n", pd->name);
+			break;
+		}
+
+		while (1) {
+			ret = __pm_genpd_add_device(&pd->genpd, dev, &gpd_td);
+			if (ret != -EAGAIN)
+				break;
+			cond_resched();
+		}
+		if (!ret) {
+			pm_genpd_dev_need_restore(dev, true);
+			pr_info("PM DOMAIN: %s, Device : %s Registered\n", pd->name, dev_name(dev));
+		} else
+			pr_err("PM DOMAIN: %s cannot add device %s\n", pd->name, dev_name(dev));
+
+		pm_runtime_enable(dev);
+		pm_runtime_get_sync(dev);
+		pr_info("%s: power on.\n", pd->name);
+	}
+
+	return ret;
+
+}
+
+static int exynos_pd_power_off(struct device *dev, const char * device_name)
+{
+	struct platform_device *pdev;
+	struct device_node *np;
+	int ret = 0;
+
+	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+		struct exynos_pm_domain *pd;
+
+		/* skip unmanaged power domain */
+		if (!of_device_is_available(np))
+			continue;
+
+		pdev = of_find_device_by_node(np);
+		if (!pdev)
+			continue;
+		pd = platform_get_drvdata(pdev);
+
+		if (strcmp(pd->name, device_name))
+			continue;
+
+		if (!pd->check_status(pd)) {
+			pr_err("PM DOMAIN: %s is already off.\n", pd->name);
+			break;
+		}
+
+		pm_runtime_put_sync(dev);
+		pm_runtime_disable(dev);
+
+		while (1) {
+			ret = pm_genpd_remove_device(&pd->genpd, dev);
+			if (ret != -EAGAIN)
+				break;
+			cond_resched();
+		}
+		if (ret)
+			pr_err("PM DOMAIN: %s cannot remove device %s\n", pd->name, dev_name(dev));
+		pr_info("%s: power off.\n", pd->name);
+	}
+
+	return ret;
+
+}
+
+static int exynos_pd_longrun_test(struct device *dev, const char * device_name)
+{
+	struct platform_device *pdev;
+	struct device_node *np;
+	int ret = 0;
+	struct gpd_timing_data gpd_td = {
+		.stop_latency_ns = 50000,
+		.start_latency_ns = 50000,
+		.save_state_latency_ns = 500000,
+		.restore_state_latency_ns = 500000,
+	};
 
 	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
 		struct exynos_pm_domain *pd;
@@ -77,9 +171,8 @@ static ssize_t store_power_domain_test(struct device *dev, struct device_attribu
 			continue;
 		pd = platform_get_drvdata(pdev);
 
-		if (strcmp(pd->genpd.name, device_name)) {
+		if (strcmp(pd->name, device_name))
 			continue;
-		}
 
 		if (pd->check_status(pd)) {
 			pr_err("PM DOMAIN: %s is working. Stop testing\n", pd->genpd.name);
@@ -116,7 +209,33 @@ static ssize_t store_power_domain_test(struct device *dev, struct device_attribu
 			cond_resched();
 		}
 		if (ret)
-			pr_err("PM DOMAIN: %s cannot remove device %s\n", pd->genpd.name, dev_name(dev));
+			pr_err("PM DOMAIN: %s cannot remove device %s\n", pd->name, dev_name(dev));
+	}
+
+	return ret;
+}
+
+static ssize_t store_power_domain_test(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	char device_name[32], test_name[32];
+
+	sscanf(buf, "%s %s", device_name, test_name);
+
+	switch (test_name[0]) {
+	case '1':
+		exynos_pd_power_on(dev, device_name);
+		break;
+
+	case '0':
+		exynos_pd_power_off(dev, device_name);
+		break;
+
+	case 't':
+		exynos_pd_longrun_test(dev, device_name);
+		break;
+
+	default:
+		printk("echo \"device\" \"test\" > control\n");
 	}
 
 	return count;
