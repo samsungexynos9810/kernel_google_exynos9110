@@ -34,6 +34,8 @@
 #include <linux/vmalloc.h>
 #include <linux/workqueue.h>
 
+#include <linux/of.h>
+#include <linux/exynos_iovmm.h>
 #include <asm/page.h>
 
 #include <mach/irqs.h>
@@ -633,11 +635,38 @@ static irqreturn_t jpeg_irq(int irq, void *priv)
 ctx_err:
 	return IRQ_HANDLED;
 }
+#ifdef CONFIG_OF
+static void jpeg_parse_dt(struct device_node *np, struct jpeg_dev *jpeg)
+{
+	struct exynos_platform_jpeg *pdata = jpeg->pdata;
+
+	if (!np)
+		return;
+
+	of_property_read_u32(np, "ip_ver", &pdata->ip_ver);
+}
+#else
+static void jpeg_parse_dt(struct device_node *np, struct gsc_dev *gsc)
+{
+	return;
+}
+#endif
+
+static const struct of_device_id exynos_jpeg_match[] = {
+	{
+		.compatible = "samsung,fimp_v4",
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(of, exynos_jpeg_match);
 
 static int jpeg_probe(struct platform_device *pdev)
 {
 	struct jpeg_dev *jpeg;
 	struct video_device *vfd;
+	struct device *dev = &pdev->dev;
+	struct exynos_platform_jpeg *pdata = NULL;
+
 	struct resource *res;
 	int ret;
 
@@ -646,7 +675,29 @@ static int jpeg_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "%s: not enough memory\n", __func__);
 		return -ENOMEM;
 	}
+
+	if (!dev->platform_data) {
+		jpeg->id = of_alias_get_id(pdev->dev.of_node, "jpeg");
+	} else {
+		jpeg->id = pdev->id;
+		pdata = dev->platform_data;
+		if (!pdata) {
+			dev_err(&pdev->dev, "no platform data\n");
+			return -EINVAL;
+		}
+	}
+
 	jpeg->plat_dev = pdev;
+	jpeg->pdata = devm_kzalloc(&pdev->dev, sizeof(struct exynos_platform_jpeg), GFP_KERNEL);
+	if (!jpeg->pdata) {
+		dev_err(&pdev->dev, "no memory for state\n");
+		return -ENOMEM;
+	}
+
+	if (pdata)
+		memcpy(jpeg->pdata, pdata, sizeof(*pdata));
+	else
+		jpeg_parse_dt(dev->of_node, jpeg);
 
 	/* Init lock and wait queue */
 	mutex_init(&jpeg->lock);
@@ -965,6 +1016,7 @@ static struct platform_driver jpeg_driver = {
 		.pm = &jpeg_pm_ops,
 		.pm = NULL,
 #endif
+		.of_match_table = exynos_jpeg_match,
 	},
 };
 

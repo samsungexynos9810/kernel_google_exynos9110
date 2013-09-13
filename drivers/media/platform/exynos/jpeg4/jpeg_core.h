@@ -36,6 +36,22 @@
 #define JPEG_NUM_INST		4
 #define JPEG_MAX_PLANE		3
 
+/*
+ * struct exynos_platform_jpeg
+ */
+
+enum jpeg_ip_version {
+	IP_VER_JPEG_5G,
+	IP_VER_JPEG_5A,
+	IP_VER_JPEG_5H,
+};
+
+struct exynos_platform_jpeg {
+	u32 ip_ver;
+	u32 mif_min;
+	u32 int_min;
+};
+
 enum jpeg_state {
 	JPEG_IDLE,
 	JPEG_SRC_ADDR,
@@ -204,6 +220,7 @@ struct jpeg_dev {
 
 	struct mutex		lock;
 
+	int			id;
 	int			irq_no;
 	enum jpeg_result	irq_ret;
 	wait_queue_head_t	 wq;
@@ -217,6 +234,7 @@ struct jpeg_dev {
 	struct workqueue_struct	*watchdog_workqueue;
 	struct work_struct	watchdog_work;
 	struct device			*bus_dev;
+	struct exynos_platform_jpeg	*pdata;
 };
 
 enum jpeg_log {
