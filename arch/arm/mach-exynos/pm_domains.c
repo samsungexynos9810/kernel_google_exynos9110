@@ -304,12 +304,10 @@ static __init int exynos_pm_dt_parse_domains(void)
 {
 	struct platform_device *pdev = NULL;
 	struct device_node *np = NULL;
-	int ret;
 
 	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
 		struct exynos_pm_domain *pd;
 		struct device_node *children;
-		unsigned int val;
 
 		/* skip unmanaged power domain */
 		if (!of_device_is_available(np))
