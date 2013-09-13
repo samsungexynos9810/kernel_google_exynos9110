@@ -206,13 +206,9 @@ static int jpeg_m2m_open(struct file *file)
 		kfree(ctx);
 		return ret;
 	}
-
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&jpeg->plat_dev->dev);
-#else
-	jpeg->vb2->resume(jpeg->alloc_ctx);
 #endif
-
 	return 0;
 }
 
@@ -224,10 +220,7 @@ static int jpeg_m2m_release(struct file *file)
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&ctx->jpeg_dev->plat_dev->dev);
-#else
-	ctx->jpeg_dev->vb2->suspend(ctx->jpeg_dev->alloc_ctx);
 #endif
-
 	kfree(ctx);
 
 	return 0;
@@ -588,6 +581,7 @@ static int jpeg_probe(struct platform_device *pdev)
 	}
 
 	exynos_create_iovmm(&pdev->dev, 2, 2);
+	jpeg->vb2->resume(jpeg->alloc_ctx);
 #ifdef CONFIG_BUSFREQ_OPP
 	/* To lock bus frequency in OPP mode */
 	jpeg->bus_dev = dev_get("exynos-busfreq");
@@ -596,7 +590,6 @@ static int jpeg_probe(struct platform_device *pdev)
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
 #endif
-
 	return 0;
 
 err_video_reg:
@@ -632,6 +625,8 @@ static int jpeg_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
 #endif
+	jpeg->vb2->suspend(jpeg->alloc_ctx);
+
 	kfree(jpeg);
 	return 0;
 }
@@ -641,7 +636,7 @@ int jpeg_suspend(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
-	if (jpeg->ctx) {
+	if (!IS_ERR(jpeg->clk)) {
 		clk_disable(jpeg->clk);
 		clk_unprepare(jpeg->clk);
 	}
@@ -654,7 +649,7 @@ int jpeg_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
-	if (jpeg->ctx) {
+	if (!IS_ERR(jpeg->clk)) {
 		clk_prepare(jpeg->clk);
 		clk_enable(jpeg->clk);
 	}

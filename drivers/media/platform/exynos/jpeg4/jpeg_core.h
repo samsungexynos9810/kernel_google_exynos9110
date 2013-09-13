@@ -206,7 +206,6 @@ struct jpeg_dev {
 	struct video_device	*vfd;
 	struct v4l2_m2m_dev	*m2m_dev;
 	struct v4l2_m2m_ops	*m2m_ops;
-	struct jpeg_ctx		*ctx;
 	struct vb2_alloc_ctx	*alloc_ctx;
 
 	struct platform_device	*plat_dev;
