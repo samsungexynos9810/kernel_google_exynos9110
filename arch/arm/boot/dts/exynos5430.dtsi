@@ -43,6 +43,7 @@
 		scaler0 = &scaler_0;
 		scaler1 = &scaler_1;
 		fimg2d0 = &fimg2d_0;
+		jpeg0 = &jpeg_0;
 	};
 
 	chipid@10000000 {
@@ -918,6 +919,16 @@
 		iommu = <&sysmmu_hevc0>, <&sysmmu_hevc1>;
 		status = "ok";
 		samsung,power-domain = <&pd_hevc>;
+	};
+
+	jpeg_0: jpeg0@15020000 {
+		compatible = "samsung,fimp_v4";
+		reg = <0x15020000 0x10000>;
+		interrupts = <0 411 0>;
+		clock-names = "jpeg";
+		clocks = <&clock 87>;
+		iommu = <&sysmmu_jpeg>;
+		ip_ver = <2>;
 	};
 
 	mali {
