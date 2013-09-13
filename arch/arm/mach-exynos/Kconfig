@@ -79,7 +79,6 @@ config SOC_EXYNOS5430
 	select PM_GENERIC_DOMAINS if PM
 	select S5P_PM if PM
 	select S5P_SLEEP if SUSPEND
-	select EXYNOS5430_PM if PM
 	select SAMSUNG_DMADEV
 	help
 	  Enable EXYNOS5430 SoC support
