@@ -254,7 +254,6 @@ int enable_display_decon_clocks_exynos5430(struct device *dev)
 {
 	int ret = 0;
 
-#if 0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
 		mout_bus_pll_sub);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_disp_pll, fout_disp_pll);
@@ -276,9 +275,8 @@ int enable_display_decon_clocks_exynos5430(struct device *dev)
 	DISPLAY_INLINE_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
 
 	additional_clock_setup();
+#if 0
 #endif
-	check_display_clocks();
-
 	return ret;
 }
 
@@ -295,6 +293,8 @@ int enable_display_dsi_clocks_exynos5430(struct device *dev)
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_bitclkdiv8_user,
 		phyclk_mipidphy_bitclkdiv8_phy);
 #endif
+
+	check_display_clocks();
 
 	return ret;
 }

@@ -59,15 +59,37 @@ static int s5p_decon_disp_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static int display_driver_runtime_suspend(struct device *dev)
+{
+	return s3c_fb_runtime_suspend(dev);
+}
+
+static int display_driver_runtime_resume(struct device *dev)
+{
+	return s3c_fb_runtime_resume(dev);
+}
+
+#ifdef CONFIG_PM_SLEEP
+static int display_driver_resume(struct device *dev)
+{
+	return s3c_fb_resume(dev);
+}
+
+static int display_driver_suspend(struct device *dev)
+{
+	return s3c_fb_suspend(dev);
+}
+#endif
+
 static const struct dev_pm_ops s5p_decon_disp_ops = {
-#if 0
+#ifdef CONFIG_PM_SLEEP
 #ifndef CONFIG_HAS_EARLYSUSPEND
-	.suspend = s5p_mipi_dsi_suspend,
-	.resume = s5p_mipi_dsi_resume,
+	.suspend = display_driver_suspend,
+	.resume = display_driver_resume,
 #endif
-	.runtime_suspend	= s5p_mipi_dsi_runtime_suspend,
-	.runtime_resume		= s5p_mipi_dsi_runtime_resume,
 #endif
+	.runtime_suspend	= display_driver_runtime_suspend,
+	.runtime_resume		= display_driver_runtime_resume,
 };
 
 /* get_display_driver - for returning reference of display

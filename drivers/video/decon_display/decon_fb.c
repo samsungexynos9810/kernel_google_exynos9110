@@ -4041,7 +4041,7 @@ err:
 }
 
 #ifdef CONFIG_PM_SLEEP
-static int s3c_fb_suspend(struct device *dev)
+int s3c_fb_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
@@ -4088,7 +4088,7 @@ static int s3c_fb_suspend(struct device *dev)
 	return ret;
 }
 
-static int s3c_fb_resume(struct device *dev)
+int s3c_fb_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
@@ -4169,7 +4169,7 @@ err:
 #endif
 
 #ifdef CONFIG_PM_RUNTIME
-static int s3c_fb_runtime_suspend(struct device *dev)
+int s3c_fb_runtime_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
@@ -4180,7 +4180,7 @@ static int s3c_fb_runtime_suspend(struct device *dev)
 	return 0;
 }
 
-static int s3c_fb_runtime_resume(struct device *dev)
+int s3c_fb_runtime_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_fb *sfb = platform_get_drvdata(pdev);
