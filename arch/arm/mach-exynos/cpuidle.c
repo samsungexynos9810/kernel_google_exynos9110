@@ -73,9 +73,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 				 struct cpuidle_driver *drv,
 				 int index);
 #endif
-static int exynos_enter_lowpower(struct cpuidle_device *dev,
-				struct cpuidle_driver *drv,
-				int index);
 
 struct check_reg_lpa {
 	void __iomem	*check_reg;
@@ -544,25 +541,6 @@ early_wakeup:
 	return index;
 }
 
-static int exynos_enter_lowpower(struct cpuidle_device *dev,
-				struct cpuidle_driver *drv,
-				int index)
-{
-	int new_index = index;
-
-	/* This mode only can be entered when other core's are offline */
-	if (num_online_cpus() > 1)
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-		return exynos_enter_c2(dev, drv, (new_index - 1));
-#else
-		return exynos_enter_idle(dev, drv, (new_index - 2));
-#endif
-	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
-		return exynos_enter_core0_aftr(dev, drv, new_index);
-	else
-		return exynos_enter_core0_lpa(dev, drv, new_index);
-	return 0;
-}
 #endif
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
