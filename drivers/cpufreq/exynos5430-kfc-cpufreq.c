@@ -23,6 +23,7 @@
 #include <mach/asv-exynos.h>
 
 #define CPUFREQ_LEVEL_END_CA7	(L18 + 1)
+#define L2_LOCAL_PWR_EN		0x7
 
 #undef PRINT_DIV_VAL
 #undef ENABLE_CLKOUT
@@ -464,6 +465,14 @@ static void __init set_volt_table_CA7(void)
 	min_support_idx_CA7 = L18;
 }
 
+static bool exynos5430_is_alive_CA7(void)
+{
+	unsigned int tmp;
+	tmp = __raw_readl(EXYNOS5430_KFC_L2_STATUS) & L2_LOCAL_PWR_EN;
+
+	return tmp ? true : false;
+}
+
 int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 {
 	int i;
@@ -560,6 +569,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->freq_table = exynos5430_freq_table_CA7;
 	info->set_freq = exynos5430_set_frequency_CA7;
 	info->need_apll_change = exynos5430_pms_change_CA7;
+	info->is_alive = exynos5430_is_alive_CA7;
 
 #ifdef ENABLE_CLKOUT
 	/* dividing KFC_CLK to 1/16 */

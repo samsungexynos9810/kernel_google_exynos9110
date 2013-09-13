@@ -23,6 +23,7 @@
 #include <mach/asv-exynos.h>
 
 #define CPUFREQ_LEVEL_END_CA15	(L23 + 1)
+#define L2_LOCAL_PWR_EN		0x7
 
 #undef PRINT_DIV_VAL
 #undef ENABLE_CLKOUT
@@ -538,6 +539,14 @@ static void __init set_volt_table_CA15(void)
 	exynos5430_freq_table_CA15[L23].frequency = CPUFREQ_ENTRY_INVALID;
 }
 
+static bool exynos5430_is_alive_CA15(void)
+{
+	unsigned int tmp;
+	tmp = __raw_readl(EXYNOS5430_EAGLE_L2_STATUS) & L2_LOCAL_PWR_EN;
+
+	return tmp ? true : false;
+}
+
 int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 {
 	int i;
@@ -645,6 +654,7 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->freq_table = exynos5430_freq_table_CA15;
 	info->set_freq = exynos5430_set_frequency_CA15;
 	info->need_apll_change = exynos5430_pms_change_CA15;
+	info->is_alive = exynos5430_is_alive_CA15;
 
 #ifdef ENABLE_CLKOUT
 	/* dividing EGL_CLK to 1/16 */
