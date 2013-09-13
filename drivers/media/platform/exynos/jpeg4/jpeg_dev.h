@@ -13,7 +13,7 @@
 #ifndef __JPEG_DEV_H__
 #define __JPEG_DEV_H__
 
-#define JPEG_NAME		"s5p-jpeg"
+#define JPEG_NAME		"fimp_v4"
 #define JPEG_ENC_NAME		"video12"
 #define JPEG_DEC_NAME		"video11"
 
