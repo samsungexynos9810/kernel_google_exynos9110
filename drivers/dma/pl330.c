@@ -2150,6 +2150,15 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 	struct pl330_info *pi = pl330->pinfo;
 	int chans = pi->pcfg.num_chan;
 	int ret;
+	dma_addr_t addr;
+
+	if (pi->dev->of_node) {
+		addr = of_dma_get_mcode_addr(pi->dev->of_node);
+		if (addr) {
+			set_dma_ops(pi->dev, &arm_exynos_dma_mcode_ops);
+			pl330->mcode_bus = addr;
+		}
+	}
 
 	/*
 	 * Alloc MicroCode buffer for 'chans' Channel threads.
