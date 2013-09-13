@@ -102,11 +102,25 @@ static struct exynos_pmu_ops pmu_ops;
 
 void exynos_power_down_cpu(unsigned int cpu)
 {
-	set_boot_flag(cpu, HOTPLUG);
+	/*
+	 * HACK : This code is used only before enabling auto power gating of L2
+	 * cpu 4 is not boot_cluster's cpu.
+	 */
+	u32 non_boot_cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(4), 1);
 
+	set_boot_flag(cpu, HOTPLUG);
 
 	if (pmu_ops.is_last_core(cpu))
 		flush_cache_all();
+
+	/*
+	 * HACK : This code is used only before enabling auto power gating of L2
+	 */
+	if (!pmu_ops.cluster_state(!non_boot_cluster)) {
+		unsigned int sif = non_boot_cluster ? 4 : 3;
+		cci_snoop_disable(sif);
+		pmu_ops.cluster_down(non_boot_cluster);
+	}
 
 	pmu_ops.power_down(cpu);
 }
