@@ -54,6 +54,7 @@ struct exynos_dvfs_info {
 	void (*set_freq)(unsigned int, unsigned int);
 	void (*set_ema)(unsigned int);
 	bool (*need_apll_change)(unsigned int, unsigned int);
+	bool (*is_alive)(void);
 };
 
 struct cpufreq_clkdiv {
