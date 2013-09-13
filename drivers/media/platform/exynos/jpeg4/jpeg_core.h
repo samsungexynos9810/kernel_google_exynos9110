@@ -35,6 +35,8 @@
 
 #define JPEG_NUM_INST		4
 #define JPEG_MAX_PLANE		3
+#define is_ver_5a (pdata->ip_ver == IP_VER_JPEG_5A)
+#define is_ver_5h (pdata->ip_ver == IP_VER_JPEG_5H)
 
 /*
  * struct exynos_platform_jpeg
