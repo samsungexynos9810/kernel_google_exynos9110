@@ -15,6 +15,7 @@
 #define _DW_MMC_H_
 
 #define DW_MMC_240A		0x240a
+#define DW_MMC_260A		0x260a
 
 #define SDMMC_CTRL		0x000
 #define SDMMC_PWREN		0x004

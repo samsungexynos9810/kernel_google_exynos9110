@@ -274,14 +274,31 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	return 0;
 }
 
+static void dw_mci_set_quirk_endbit(struct dw_mci *host, s8 mid)
+{
+	u32 clksel, phase;
+	u32 shift;
+
+	clksel = mci_readl(host, CLKSEL);
+	phase = (((clksel >> 24) & 0x7) + 1) << 1;
+	shift = 360 / phase;
+
+	if (host->verid < DW_MMC_260A && (shift * mid) % 360 >= 225)
+		host->quirks |= DW_MCI_QUIRK_NO_DETECT_EBIT;
+	else
+		host->quirks &= ~DW_MCI_QUIRK_NO_DETECT_EBIT;
+}
+
 /* initialize the clock sample to given value */
-static void dw_mci_exynos_set_sample(struct dw_mci *host, u32 sample)
+static void dw_mci_exynos_set_sample(struct dw_mci *host, u32 sample, bool tuning)
 {
 	u32 clksel;
 
 	clksel = mci_readl(host, CLKSEL);
 	clksel = (clksel & ~0x7) | SDMMC_CLKSEL_CCLK_SAMPLE(sample);
 	mci_writel(host, CLKSEL, clksel);
+	if (!tuning)
+		dw_mci_set_quirk_endbit(host, clksel);
 }
 
 /* read current clock sample offset */
@@ -355,7 +372,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 
 	/* Short circuit: don't tune again if we already did. */
 	if (host->pdata->tuned) {
-		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl);
+		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
 		mci_writel(host, CDTHRCTL, host->cd_rd_thr << 16 | 1);
 		return 0;
 	}
@@ -411,7 +428,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		mrq.data = &data;
 		host->mrq = &mrq;
 
-		dw_mci_exynos_set_sample(host, test_sample);
+		dw_mci_exynos_set_sample(host, test_sample, true);
 		dw_mci_set_timeout(host);
 
 		mmc_wait_for_req(mmc, &mrq);
@@ -440,13 +457,13 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	if (best_sample >= 0) {
 		host->pdata->clk_smpl = best_sample;
 		host->pdata->tuned = true;
-		dw_mci_exynos_set_sample(host, best_sample);
+		dw_mci_exynos_set_sample(host, best_sample, false);
 		return 0;
 	}
 
 	/* Failed. Just restore and return error */
 	mci_writel(host, CDTHRCTL, 0 << 16 | 0);
-	dw_mci_exynos_set_sample(host, orig_sample);
+	dw_mci_exynos_set_sample(host, orig_sample, false);
 	return -EIO;
 }
 
@@ -455,7 +472,7 @@ static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_cont
 	u8 sample = host->pdata->clk_smpl;
 	switch (control) {
 	case CTRL_SET_CLK_SAMPLE:
-		dw_mci_exynos_set_sample(host, sample);
+		dw_mci_exynos_set_sample(host, sample, false);
 		break;
 	default:
 		dev_err(host->dev, "dw_mmc exynos: wrong case\n");

@@ -270,6 +270,10 @@ struct dw_mci_dma_ops {
 #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
 /* Bypass the security management unit */
 #define DW_MCI_QUIRK_BYPASS_SMU			BIT(4)
+/* No detect end bit during read */
+#define DW_MCI_QUIRK_NO_DETECT_EBIT		BIT(5)
+/* No use voltage switch interrupt */
+#define DW_MMC_QUIRK_NO_VOLSW_INT		BIT(6)
 /* Use S/W data timeout */
 #define DW_MMC_QUIRK_SW_DATA_TIMEOUT		BIT(8)
 

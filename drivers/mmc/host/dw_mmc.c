@@ -22,6 +22,7 @@
 #include <linux/ioport.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/ratelimit.h>
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/stat.h>
@@ -389,7 +390,8 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 	cmdr = cmd->opcode;
 	argr = ((cmd->arg >> 9) & 0x1FFFF);
 
-	if (cmdr == SD_SWITCH_VOLTAGE)
+	if (!(host->quirks & DW_MMC_QUIRK_NO_VOLSW_INT) &&
+				cmdr == SD_SWITCH_VOLTAGE)
 		cmdr |= SDMMC_VOLT_SWITCH;
 
 	if (cmdr == MMC_STOP_TRANSMISSION)
@@ -433,10 +435,26 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 static void dw_mci_start_command(struct dw_mci *host,
 				 struct mmc_command *cmd, u32 cmd_flags)
 {
+	struct mmc_data *data;
+	u32 mask;
+
 	host->cmd = cmd;
+	data = cmd->data;
+	mask = mci_readl(host, INTMASK);
+
 	dev_vdbg(host->dev,
 		 "start command: ARGR=0x%08x CMDR=0x%08x\n",
 		 cmd->arg, cmd_flags);
+
+	if ((host->quirks & DW_MCI_QUIRK_NO_DETECT_EBIT) &&
+			data && (data->flags & MMC_DATA_READ)) {
+		mask &= ~SDMMC_INT_EBE;
+	} else {
+		mask |= SDMMC_INT_EBE;
+		mci_writel(host, RINTSTS, SDMMC_INT_EBE);
+	}
+
+	mci_writel(host, INTMASK, mask);
 
 	mci_writel(host, CMDARG, cmd->arg);
 	wmb();
@@ -1007,6 +1025,7 @@ static void __dw_mci_start_request(struct dw_mci *host,
 	host->pending_events = 0;
 	host->completed_events = 0;
 	host->data_status = 0;
+	host->dir_status = 0;
 
 	if (host->pdata->tp_mon_tbl)
 		host->cmd_cnt++;
@@ -1333,6 +1352,7 @@ static int dw_mci_start_signal_voltage_switch(struct mmc_host *mmc,
 		struct mmc_ios *ios)
 {
 	struct dw_mci_slot *slot = mmc_priv(mmc);
+	struct dw_mci *host = slot->host;
 
 	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
 		return dw_mci_3_3v_signal_voltage_switch(slot);
@@ -1493,6 +1513,12 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	state = host->state;
 	data = host->data;
 
+	if (host->cmd_status & SDMMC_INT_HLE) {
+		clear_bit(EVENT_CMD_COMPLETE, &host->pending_events);
+		dev_err(host->dev, "hardware locked write error\n");
+		goto unlock;
+	}
+
 	do {
 		prev_state = state;
 
@@ -1572,6 +1598,8 @@ static void dw_mci_tasklet_func(unsigned long priv)
 
 			if (status & DW_MCI_DATA_ERROR_FLAGS) {
 				if (status & SDMMC_INT_DTO) {
+					dev_err(host->dev,
+						"data timeout error\n");
 					data->error = -ETIMEDOUT;
 					host->mrq->cmd->error = -ETIMEDOUT;
 					if (!(host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT)) {
@@ -1581,17 +1609,33 @@ static void dw_mci_tasklet_func(unsigned long priv)
 					}
 
 				} else if (status & SDMMC_INT_DCRC) {
+					dev_err(host->dev,
+						"data CRC error\n");
 					data->error = -EILSEQ;
-				} else if (status & SDMMC_INT_EBE &&
-					   host->dir_status ==
-							DW_MCI_SEND_STATUS) {
-					/*
-					 * No data CRC status was returned.
-					 * The number of bytes transferred will
-					 * be exaggerated in PIO mode.
-					 */
-					data->bytes_xfered = 0;
-					data->error = -ETIMEDOUT;
+				} else if (status & SDMMC_INT_EBE) {
+					if (host->dir_status ==
+									DW_MCI_SEND_STATUS) {
+						/*
+						 * No data CRC status was returned.
+						 * The number of bytes transferred will
+						 * be exaggerated in PIO mode.
+						 */
+						data->bytes_xfered = 0;
+						data->error = -ETIMEDOUT;
+						dev_err(host->dev,
+							"Write no CRC\n");
+					} else {
+						data->error = -EIO;
+						dev_err(host->dev,
+							"End bit error\n");
+					}
+
+				} else if (status & SDMMC_INT_SBE) {
+					dev_err(host->dev,
+						"Start bit error "
+						"(status=%08x)\n",
+						status);
+					data->error = -EIO;
 				} else {
 					dev_err(host->dev,
 						"data FIFO error "
@@ -2103,9 +2147,11 @@ static void dw_mci_cmd_interrupt(struct dw_mci *host, u32 status)
 static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 {
 	struct dw_mci *host = dev_id;
-	u32 pending;
+	u32 status, pending;
 	int i;
+	int ret = IRQ_NONE;
 
+	status = mci_readl(host, RINTSTS);
 	pending = mci_readl(host, MINTSTS); /* read-only mask reg */
 
 	if (pending) {
@@ -2120,11 +2166,34 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 				pending |= SDMMC_INT_DATA_OVER;
 		}
 
+		if (host->quirks & DW_MMC_QUIRK_NO_VOLSW_INT &&
+						pending & SDMMC_INT_CMD_DONE) {
+			u32 cmd = mci_readl(host, CMD) & 0x3f;
+			if (cmd == SD_SWITCH_VOLTAGE &&
+				!(mci_readl(host, STATUS) & SDMMC_DATA_BUSY)) {
+					pending |= SDMMC_INT_RTO;
+			}
+		}
+
+		if (host->quirks & DW_MCI_QUIRK_NO_DETECT_EBIT &&
+				host->dir_status == DW_MCI_RECV_STATUS) {
+			if (status & SDMMC_INT_EBE)
+				mci_writel(host, RINTSTS, SDMMC_INT_EBE);
+		}
+
+		if (pending & SDMMC_INT_HLE) {
+			mci_writel(host, RINTSTS, SDMMC_INT_HLE);
+			host->cmd_status = pending;
+			tasklet_schedule(&host->tasklet);
+			ret = IRQ_HANDLED;
+		}
+
 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
 			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
 			host->cmd_status = pending;
 			smp_wmb();
 			set_bit(EVENT_CMD_COMPLETE, &host->pending_events);
+			ret = IRQ_HANDLED;
 		}
 
 		if (pending & SDMMC_INT_VOLT_SW) {
@@ -2141,7 +2210,11 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			host->data_status = pending;
 			smp_wmb();
 			set_bit(EVENT_DATA_ERROR, &host->pending_events);
+			if (pending & SDMMC_INT_SBE)
+				set_bit(EVENT_DATA_COMPLETE,
+					&host->pending_events);
 			tasklet_schedule(&host->tasklet);
+			ret = IRQ_HANDLED;
 		}
 
 		if (pending & SDMMC_INT_DATA_OVER) {
@@ -2155,23 +2228,27 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			}
 			set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
 			tasklet_schedule(&host->tasklet);
+			ret = IRQ_HANDLED;
 		}
 
 		if (pending & SDMMC_INT_RXDR) {
 			mci_writel(host, RINTSTS, SDMMC_INT_RXDR);
 			if (host->dir_status == DW_MCI_RECV_STATUS && host->sg)
 				dw_mci_read_data_pio(host, false);
+			ret = IRQ_HANDLED;
 		}
 
 		if (pending & SDMMC_INT_TXDR) {
 			mci_writel(host, RINTSTS, SDMMC_INT_TXDR);
 			if (host->dir_status == DW_MCI_SEND_STATUS && host->sg)
 				dw_mci_write_data_pio(host);
+			ret = IRQ_HANDLED;
 		}
 
 		if (pending & SDMMC_INT_CMD_DONE) {
 			mci_writel(host, RINTSTS, SDMMC_INT_CMD_DONE);
 			dw_mci_cmd_interrupt(host, pending);
+			ret = IRQ_HANDLED;
 		}
 
 		if (pending & SDMMC_INT_CD) {
@@ -2185,6 +2262,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			if (pending & SDMMC_INT_SDIO(i)) {
 				mci_writel(host, RINTSTS, SDMMC_INT_SDIO(i));
 				mmc_signal_sdio_irq(slot->mmc);
+				ret = IRQ_HANDLED;
 			}
 		}
 
@@ -2197,10 +2275,17 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_TI | SDMMC_IDMAC_INT_RI);
 		mci_writel(host, IDSTS, SDMMC_IDMAC_INT_NI);
 		host->dma_ops->complete(host);
+		ret = IRQ_HANDLED;
 	}
 #endif
 
-	return IRQ_HANDLED;
+	if (ret == IRQ_NONE)
+		pr_warn_ratelimited("%s: no interrupts handled, pending %08x %08x\n",
+				dev_name(host->dev),
+				mci_readl(host, MINTSTS),
+				mci_readl(host, IDSTS));
+
+	return ret;
 }
 
 static void dw_mci_timeout_timer(unsigned long data)
