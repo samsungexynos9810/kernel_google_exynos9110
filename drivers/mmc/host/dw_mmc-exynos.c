@@ -217,11 +217,17 @@ static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 	u32 ciu_rate = clk_get_rate(host->ciu_clk);
 	u32 ciu_div = priv->ciu_div + 1;	/* aka DIVRATIO */
 	int clkerr = 0;
+	struct clk *adiv = clk_get(host->dev, "dout_mmc0_a");
+	struct clk *bdiv = clk_get(host->dev, "dout_mmc0_b");
 
 	/* Try to set the upstream clock rate */
 	if (ciu_rate != (want_bus_hz * ciu_div)) {
 		ciu_rate = want_bus_hz * ciu_div;
-		clkerr = clk_set_rate(host->ciu_clk, ciu_rate);
+		clkerr = clk_set_rate(adiv, ciu_rate);
+		if (clkerr)
+			dev_warn(host->dev, "Couldn't set rate to %u\n",
+				 ciu_rate);
+		clkerr = clk_set_rate(bdiv, ciu_rate);
 		if (clkerr)
 			dev_warn(host->dev, "Couldn't set rate to %u\n",
 				 ciu_rate);
