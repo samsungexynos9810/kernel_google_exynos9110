@@ -15,6 +15,7 @@
 extern struct dma_map_ops arm_dma_ops;
 extern struct dma_map_ops arm_coherent_dma_ops;
 extern struct dma_map_ops arm_exynos_dma_ops;
+extern struct dma_map_ops arm_exynos_dma_mcode_ops;
 
 static inline struct dma_map_ops *get_dma_ops(struct device *dev)
 {
