@@ -176,8 +176,6 @@ static int exynos_pm_suspend(void)
 
 static void exynos_pm_prepare(void)
 {
-	unsigned int tmp;
-
 	/* Set value of power down register for sleep mode */
 	exynos_sys_powerdown_conf(SYS_SLEEP);
 
