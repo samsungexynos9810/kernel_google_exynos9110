@@ -19,6 +19,7 @@
 #include <linux/err.h>
 #include <linux/delay.h>
 #include <linux/of_address.h>
+#include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/pm_domain.h>
 #include <linux/pm_runtime.h>
@@ -26,6 +27,7 @@
 #include <linux/clk.h>
 #include <linux/spinlock.h>
 #include <linux/clk-private.h>
+#include <linux/sched.h>
 
 #include <mach/regs-clock.h>
 #include <mach/regs-pmu.h>
