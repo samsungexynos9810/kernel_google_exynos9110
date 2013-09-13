@@ -10,6 +10,8 @@
  * published by the Free Software Foundation.
 */
 
+#include <linux/notifier.h>
+
 enum cpufreq_level_index {
 	L0, L1, L2, L3, L4,
 	L5, L6, L7, L8, L9,
@@ -97,6 +99,24 @@ extern int exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *);
 #endif
 extern void exynos_thermal_throttle(void);
 extern void exynos_thermal_unthrottle(void);
+
+/* CPUFREQ init events */
+#define CPUFREQ_INIT_COMPLETE	0x0001
+
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || defined(CONFIG_ARM_EXYNOS_CPUFREQ)
+extern int exynos_cpufreq_init_register_notifier(struct notifier_block *nb);
+extern int exynos_cpufreq_init_unregister_notifier(struct notifier_block *nb);
+#else
+static inline int exynos_cpufreq_init_register_notifier(struct notifier_block *nb)
+{
+	return 0;
+}
+
+static inline int exynos_cpufreq_init_unregister_notifier(struct notifier_block *nb)
+{
+	return 0;
+}
+#endif
 
 #if defined(CONFIG_ARCH_EXYNOS5)
 typedef enum {
