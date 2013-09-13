@@ -278,6 +278,7 @@ static const unsigned int asv_voltage_5430_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	 950000,	/* L18  200 */
 };
 
+#if 0
 /* Minimum memory throughput in megabytes per second */
 static int exynos5430_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	400000,	/* 2.0 GHz */
@@ -300,6 +301,7 @@ static int exynos5430_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	0,	/* 300 MHz */
 	0,	/* 200 MHz */
 };
+#endif
 
 static void exynos5430_set_clkdiv_CA7(unsigned int div_index)
 {
@@ -562,7 +564,9 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L12;
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
+#if 0
 	info->bus_table = exynos5430_bus_table_CA7;
+#endif
 	info->cpu_clk = fout_kfc_pll;
 
 	info->volt_table = exynos5430_volt_table_CA7;
