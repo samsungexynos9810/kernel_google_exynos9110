@@ -119,6 +119,12 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 		return ret;
 	}
 
+#ifdef CONFIG_EXYNOS5430_BTS
+	/* enable bts features if exists */
+	if (pd->bts)
+		bts_initialize(pd->name, true);
+#endif
+
 	if (pd->cb && pd->cb->on_post)
 		pd->cb->on_post(pd);
 
@@ -138,6 +144,11 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 	if (pd->cb && pd->cb->off_pre)
 		pd->cb->off_pre(pd);
 
+#ifdef CONFIG_EXYNOS5430_BTS
+	/* disable bts features if exists */
+	if (pd->bts)
+		bts_initialize(pd->name, false);
+#endif
 
 	ret = pd->off(pd, 0);
 	if (unlikely(ret)) {
@@ -151,6 +162,33 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 	return 0;
 }
 
+#ifdef CONFIG_EXYNOS5430_BTS
+/**
+ *  of_device_bts_is_available - check if bts feature is enabled or not
+ *
+ *  @device: Node to check for availability, with locks already held
+ *
+ *  Returns 1 if the status property is "enabled" or "ok",
+ *  0 otherwise
+ */
+static int of_device_bts_is_available(const struct device_node *device)
+{
+	const char *status;
+	int statlen;
+
+	status = of_get_property(device, "bts-status", &statlen);
+	if (status == NULL)
+		return 0;
+
+	if (statlen > 0) {
+		if (!strcmp(status, "enabled") || !strcmp(status, "ok"))
+			return 1;
+	}
+
+	return 0;
+}
+#endif
+
 static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 {
 	pd->genpd.power_off = exynos_genpd_power_off;
@@ -162,6 +200,20 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
+
+#ifdef CONFIG_EXYNOS5430_BTS
+	do {
+		int ret;
+
+		/* bts feature is enabled if exists */
+		ret = of_device_bts_is_available(pd->genpd.of_node);
+		if (ret) {
+			pd->bts = 1;
+			bts_initialize(pd->name, true);
+			DEBUG_PRINT_INFO("%s - bts feature is enabled\n", pd->name);
+		}
+	} while(0);
+#endif
 
 	mutex_init(&pd->access_lock);
 
