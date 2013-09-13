@@ -106,6 +106,30 @@ static struct delayed_work monitor_cluster_on;
 static bool CA7_cluster_on = false;
 static bool CA15_cluster_on = false;
 
+/*
+ * CPUFREQ init notifier
+ */
+static BLOCKING_NOTIFIER_HEAD(exynos_cpufreq_init_notifier_list);
+
+int exynos_cpufreq_init_register_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_register(&exynos_cpufreq_init_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos_cpufreq_init_register_notifier);
+
+int exynos_cpufreq_init_unregister_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_unregister(&exynos_cpufreq_init_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos_cpufreq_init_unregister_notifier);
+
+static int exynos_cpufreq_init_notify_call_chain(unsigned long val)
+{
+	int ret = blocking_notifier_call_chain(&exynos_cpufreq_init_notifier_list, val, NULL);
+
+	return notifier_to_errno(ret);
+}
+
 static unsigned int get_limit_voltage(unsigned int voltage)
 {
 	BUG_ON(!voltage);
@@ -1327,6 +1351,7 @@ static int __init exynos_cpufreq_init(void)
 	}
 
 	exynos_cpufreq_init_done = true;
+	exynos_cpufreq_init_notify_call_chain(CPUFREQ_INIT_COMPLETE);
 
 	return 0;
 
