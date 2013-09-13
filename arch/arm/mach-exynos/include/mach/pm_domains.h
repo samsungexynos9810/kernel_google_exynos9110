@@ -33,55 +33,31 @@
 
 #include <plat/devs.h>
 
-enum EXYNOS_PROCESS_ORDER {
-	EXYNOS_PROCESS_BEFORE	=	0x1,
-	EXYNOS_PROCESS_AFTER	=	0x2,
-};
-
-enum EXYNOS_PROCESS_TYPE {
-	EXYNOS_PROCESS_ON	=	0x1,
-	EXYNOS_PROCESS_OFF	=	0x2,
-	EXYNOS_PROCESS_ONOFF	=	EXYNOS_PROCESS_ON | EXYNOS_PROCESS_OFF,
-};
-
-struct exynos_pm_clk {
-	struct list_head node;
-	struct clk *clk;
-};
-
-struct exynos_pm_reg {
-	struct list_head node;
-	enum EXYNOS_PROCESS_TYPE reg_type;
-	void __iomem *reg;
-	unsigned int value;
-};
-
 struct exynos_pm_domain;
 
-struct exynos_pm_callback {
-	struct list_head node;
-	int (*callback)(struct exynos_pm_domain *domain);
+struct exynos_pd_callback {
+	const char *name;
+	int (*on_pre)(struct exynos_pm_domain *pd);
+	int (*on_post)(struct exynos_pm_domain *pd);
+	int (*off_pre)(struct exynos_pm_domain *pd);
+	int (*off_post)(struct exynos_pm_domain *pd);
+	unsigned int status;
 };
 
 struct exynos_pm_domain {
 	struct generic_pm_domain genpd;
 	char const *name;
 	void __iomem *base;
-	struct list_head clk_list;
-	struct list_head reg_before_list;
-	struct list_head reg_after_list;
-	struct list_head cb_pre_on;
 	int (*on)(struct exynos_pm_domain *pd, int power_flags);
-	struct list_head cb_post_on;
-	struct list_head cb_pre_off;
 	int (*off)(struct exynos_pm_domain *pd, int power_flags);
-	struct list_head cb_post_off;
-	spinlock_t interrupt_lock;
 	int (*check_status)(struct exynos_pm_domain *pd);
+	struct exynos_pd_callback *cb;
 	unsigned int status;
 	unsigned int pd_option;
 
 	struct mutex access_lock;
 };
+
+struct exynos_pd_callback * exynos_pd_find_callback(struct exynos_pm_domain *pd);
 
 #endif /* __ASM_ARCH_PM_RUNTIME_H */

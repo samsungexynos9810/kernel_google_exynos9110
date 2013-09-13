@@ -29,60 +29,6 @@
 #endif
 
 #ifdef CONFIG_OF
-static void exynos_pd_add_callback(struct exynos_pm_domain *pd,
-				enum EXYNOS_PROCESS_ORDER cb_order,
-				enum EXYNOS_PROCESS_TYPE cb_type,
-				int (*callback)(struct exynos_pm_domain *pd))
-{
-	struct exynos_pm_callback *cb_on = NULL;
-	struct exynos_pm_callback *cb_off = NULL;
-
-	if (!pd) {
-		pr_err("PM DOMAIN: can't add callback, pd is empty\n");
-		return;
-	}
-
-	if (!callback) {
-		pr_err("PM DOMAIN: can't add callback, callback is empty\n");
-		return;
-	}
-
-	if (cb_type & EXYNOS_PROCESS_ON) {
-		cb_on = kzalloc(sizeof(struct exynos_pm_callback), GFP_KERNEL);
-		if (cb_on == NULL) {
-			pr_err("PM DOMAIN: can't allocation callback, no free memory\n");
-			return;
-		}
-
-		cb_on->callback = callback;
-
-		if (cb_order & EXYNOS_PROCESS_BEFORE)
-			list_add_tail(&cb_on->node, &pd->cb_pre_on);
-
-		if (cb_order & EXYNOS_PROCESS_AFTER)
-			list_add_tail(&cb_on->node, &pd->cb_post_on);
-	}
-
-	if (cb_type & EXYNOS_PROCESS_OFF) {
-		cb_off = kzalloc(sizeof(struct exynos_pm_callback), GFP_KERNEL);
-		if (cb_off == NULL) {
-			pr_err("PM DOMAIN: can't allocation callback, no free memory\n");
-			goto err;
-		}
-
-		cb_off->callback = callback;
-
-		if (cb_order & EXYNOS_PROCESS_BEFORE)
-			list_add_tail(&cb_off->node, &pd->cb_pre_off);
-
-		if (cb_order & EXYNOS_PROCESS_AFTER)
-			list_add_tail(&cb_off->node, &pd->cb_post_off);
-	}
-
-	return;
-err:
-	kfree(cb_on);
-}
 
 /* Sub-domain does not have power on/off features.
  * dummy power on/off function is required.
@@ -161,8 +107,6 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 {
 	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
-	struct exynos_pm_callback *exynos_callback;
-	struct exynos_pm_reg *exynos_reg;
 	int ret;
 
 	if (unlikely(!pd->on)) {
@@ -170,18 +114,9 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 		return -EINVAL;
 	}
 
-	list_for_each_entry(exynos_callback, &pd->cb_pre_on, node) {
-		ret = exynos_callback->callback(pd);
-		if (unlikely(ret)) {
-			pr_err("PM DOMAIN: %s makes error at pre power on!\n", genpd->name);
-			return ret;
-		}
-	}
-
-	list_for_each_entry(exynos_reg, &pd->reg_before_list, node) {
-		if (exynos_reg->reg_type & EXYNOS_PROCESS_ON)
-			__raw_writel(exynos_reg->value, exynos_reg->reg);
-	}
+	/* clock enable before pd on */
+	if (pd->cb && pd->cb->on_pre)
+		pd->cb->on_pre(pd);
 
 	ret = pd->on(pd, EXYNOS_INT_LOCAL_PWR_EN);
 	if (unlikely(ret)) {
@@ -189,18 +124,8 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 		return ret;
 	}
 
-	list_for_each_entry(exynos_reg, &pd->reg_after_list, node) {
-		if (exynos_reg->reg_type & EXYNOS_PROCESS_ON)
-			__raw_writel(exynos_reg->value, exynos_reg->reg);
-	}
-
-	list_for_each_entry(exynos_callback, &pd->cb_post_on, node) {
-		ret = exynos_callback->callback(pd);
-		if (unlikely(ret)) {
-			pr_err("PM DOMAIN: %s makes error at post power on!\n", genpd->name);
-			return ret;
-		}
-	}
+	if (pd->cb && pd->cb->on_post)
+		pd->cb->on_post(pd);
 
 	return 0;
 }
@@ -208,8 +133,6 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 {
 	struct exynos_pm_domain *pd = container_of(genpd, struct exynos_pm_domain, genpd);
-	struct exynos_pm_callback *exynos_callback;
-	struct exynos_pm_reg *exynos_reg;
 	int ret;
 
 	if (unlikely(!pd->off)) {
@@ -217,18 +140,9 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 		return -EINVAL;
 	}
 
-	list_for_each_entry(exynos_callback, &pd->cb_pre_off, node) {
-		ret = exynos_callback->callback(pd);
-		if (unlikely(ret)) {
-			pr_err("PM DOMAIN: %s occur error at pre power off!\n", genpd->name);
-			return ret;
-		}
-	}
+	if (pd->cb && pd->cb->off_pre)
+		pd->cb->off_pre(pd);
 
-	list_for_each_entry(exynos_reg, &pd->reg_before_list, node) {
-		if (exynos_reg->reg_type & EXYNOS_PROCESS_OFF)
-			__raw_writel(exynos_reg->value, exynos_reg->reg);
-	}
 
 	ret = pd->off(pd, 0);
 	if (unlikely(ret)) {
@@ -236,65 +150,8 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 		return ret;
 	}
 
-	list_for_each_entry(exynos_reg, &pd->reg_after_list, node) {
-		if (exynos_reg->reg_type & EXYNOS_PROCESS_OFF)
-			__raw_writel(exynos_reg->value, exynos_reg->reg);
-	}
-
-	list_for_each_entry(exynos_callback, &pd->cb_post_off, node) {
-		ret = exynos_callback->callback(pd);
-		if (unlikely(ret)) {
-			pr_err("PM DOMAIN: %s occur error at post power off!\n", genpd->name);
-			return ret;
-		}
-	}
-
-	return 0;
-}
-
-static int exynos_pd_power_post(struct exynos_pm_domain *pd)
-{
-	struct exynos_pm_domain *sub_pd;
-	struct exynos_pm_clk *pclk;
-	struct gpd_link *domain_link;
-
-	list_for_each_entry(domain_link, &pd->genpd.master_links, master_node) {
-		sub_pd = container_of(domain_link->slave, struct exynos_pm_domain, genpd);
-		exynos_pd_power_post(sub_pd);
-	}
-
-	list_for_each_entry(pclk, &pd->clk_list, node)
-		clk_disable(pclk->clk);
-
-	return 0;
-}
-
-static int exynos_pd_power_pre(struct exynos_pm_domain *pd)
-{
-	struct exynos_pm_domain *sub_pd;
-	struct exynos_pm_clk *pclk;
-	struct gpd_link *domain_link;
-
-	list_for_each_entry(pclk, &pd->clk_list, node) {
-		if (clk_enable(pclk->clk)) {
-			list_for_each_entry_continue_reverse(pclk, &pd->clk_list, node)
-				clk_disable(pclk->clk);
-			return -EINVAL;
-		}
-	}
-
-	list_for_each_entry(domain_link, &pd->genpd.master_links, master_node) {
-		sub_pd = container_of(domain_link->slave, struct exynos_pm_domain, genpd);
-		if (exynos_pd_power_pre(sub_pd)) {
-			list_for_each_entry_continue_reverse(domain_link, &pd->genpd.master_links, master_node) {
-				sub_pd = container_of(domain_link->slave, struct exynos_pm_domain, genpd);
-				exynos_pd_power_post(sub_pd);
-			}
-			list_for_each_entry(pclk, &pd->clk_list, node)
-				clk_disable(pclk->clk);
-			return -EINVAL;
-		}
-	}
+	if (pd->cb && pd->cb->off_post)
+		pd->cb->off_post(pd);
 
 	return 0;
 }
@@ -308,24 +165,12 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	pd->genpd.power_on_latency_ns = 1000000;
 	pd->genpd.power_off_latency_ns = 1000000;
 
-	INIT_LIST_HEAD(&pd->clk_list);
-	INIT_LIST_HEAD(&pd->reg_before_list);
-	INIT_LIST_HEAD(&pd->reg_after_list);
-	INIT_LIST_HEAD(&pd->cb_pre_on);
-	INIT_LIST_HEAD(&pd->cb_post_on);
-	INIT_LIST_HEAD(&pd->cb_pre_off);
-	INIT_LIST_HEAD(&pd->cb_post_off);
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
 
 	mutex_init(&pd->access_lock);
 
 	pm_genpd_init(&pd->genpd, NULL, !pd->status);
-
-	exynos_pd_add_callback(pd, EXYNOS_PROCESS_BEFORE, EXYNOS_PROCESS_ONOFF,
-				exynos_pd_power_pre);
-	exynos_pd_add_callback(pd, EXYNOS_PROCESS_AFTER, EXYNOS_PROCESS_ONOFF,
-				exynos_pd_power_post);
 }
 
 /* show_power_domain - show current power domain status.
@@ -490,6 +335,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 		pd->base = of_iomap(np, 0);
 		pd->on = exynos_pd_power;
 		pd->off = exynos_pd_power;
+		pd->cb = exynos_pd_find_callback(pd);
 
 		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
 		if (ret)
@@ -525,6 +371,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 			sub_pd->genpd.of_node = children;
 			sub_pd->on = exynos_pd_power_dummy;
 			sub_pd->off = exynos_pd_power_dummy;
+			sub_pd->cb = NULL;
 
 			/* kernel does not create sub-domain pdev. */
 			sub_pdev = of_find_device_by_node(children);
