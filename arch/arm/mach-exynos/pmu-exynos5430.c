@@ -20,6 +20,7 @@
 #include <mach/pmu.h>
 #include <asm/cputype.h>
 #include <asm/smp_plat.h>
+#include <asm/topology.h>
 
 #define REG_CPU_STATE_ADDR     (S5P_VA_SYSRAM_NS + 0x28)
 
@@ -263,6 +264,87 @@ unsigned int exynos5430_cpu_state(unsigned int cpu_id)
 							& EXYNOS_CORE_PWR_EN;
 
 	return ret;
+}
+
+unsigned int exynos5430_cluster_state(unsigned int cluster)
+{
+	unsigned int cpu_start, cpu_end, ret;
+
+	BUG_ON(cluster > 2);
+
+	cpu_start = (cluster) ? 4 : 0;
+	cpu_end = cpu_start + 4;
+
+	for (;cpu_start < cpu_end; cpu_start++) {
+		ret = exynos5430_cpu_state(cpu_start);
+		if (ret)
+			break;
+	}
+
+	return ret ? 1 : 0;
+}
+
+extern struct cpumask hmp_slow_cpu_mask;
+extern struct cpumask hmp_fast_cpu_mask;
+
+#define cpu_online_hmp(cpu, mask)      cpumask_test_cpu((cpu), mask)
+
+bool exynos5430_is_last_core(unsigned int cpu)
+{
+	unsigned int cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
+	unsigned int cpu_id;
+	struct cpumask mask, mask_and_online;
+
+	if (cluster)
+		cpumask_copy(&mask, &hmp_slow_cpu_mask);
+	else
+		cpumask_copy(&mask, &hmp_fast_cpu_mask);
+
+	cpumask_and(&mask_and_online, &mask, cpu_online_mask);
+
+	for_each_cpu(cpu_id, &mask) {
+		if (cpu_id == cpu)
+			continue;
+		if (cpu_online_hmp(cpu_id, &mask_and_online))
+			return false;
+	}
+
+	return true;
+}
+
+unsigned int exynos5430_l2_status(unsigned int cluster)
+{
+	unsigned int state;
+
+	BUG_ON(cluster > 2);
+
+	state = __raw_readl(EXYNOS_L2_STATUS(cluster));
+
+	return state & EXYNOS_L2_PWR_EN;
+}
+
+void exynos5430_l2_up(unsigned int cluster)
+{
+	unsigned int tmp = (EXYNOS_L2_PWR_EN << 8) | EXYNOS_L2_PWR_EN;
+
+	if (exynos5430_l2_status(cluster))
+		return;
+
+	tmp |= __raw_readl(EXYNOS_L2_CONFIGURATION(cluster));
+	__raw_writel(tmp, EXYNOS_L2_CONFIGURATION(cluster));
+
+	/* wait for turning on */
+	while (exynos5430_l2_status(cluster));
+}
+
+void exynos5430_l2_down(unsigned int cluster)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(EXYNOS_L2_CONFIGURATION(cluster));
+	tmp &= ~(EXYNOS_L2_PWR_EN);
+
+	__raw_writel(tmp, EXYNOS_L2_CONFIGURATION(cluster));
 }
 
 static void exynos_use_feedback(void)
