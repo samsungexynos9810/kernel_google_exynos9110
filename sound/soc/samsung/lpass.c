@@ -507,7 +507,11 @@ static struct platform_driver lpass_driver = {
 	},
 };
 
-module_platform_driver(lpass_driver);
+static int __init lpass_driver_init(void)
+{
+	return platform_driver_register(&lpass_driver);
+}
+subsys_initcall(lpass_driver_init);
 
 /* Module information */
 MODULE_AUTHOR("Yeongman Seo, <yman.seo@samsung.com>");
