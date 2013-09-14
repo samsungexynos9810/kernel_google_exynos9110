@@ -850,6 +850,7 @@ static const char banner[] =
 static int esa_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+	struct device_node *np = pdev->dev.of_node;
 	struct resource *res;
 	int ret = 0;
 #ifdef FW_DOWNLOAD_TEST
@@ -922,6 +923,11 @@ static int esa_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+	if (np) {
+		if (of_find_property(np, "samsung,lpass-subip", NULL))
+			lpass_register_subip(&pdev->dev, "ca5");
+	}
+
 	/* hold reset */
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 
@@ -965,6 +971,7 @@ static int esa_runtime_suspend(struct device *dev)
 	esa_debug("%s entered\n", __func__);
 
 	clk_disable_unprepare(si.clk_ca5);
+	lpass_put_sync(dev);
 
 	return 0;
 }
@@ -973,6 +980,7 @@ static int esa_runtime_resume(struct device *dev)
 {
 	esa_debug("%s entered\n", __func__);
 
+	lpass_get_sync(dev);
 	clk_prepare_enable(si.clk_ca5);
 
 	return 0;
