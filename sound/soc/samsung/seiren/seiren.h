@@ -217,6 +217,7 @@ struct audio_eq_band_info_t {
 };
 
 struct seiren_info {
+	struct platform_device *pdev;
 	spinlock_t	lock;
 	void __iomem	*regs;
 	void __iomem	*mailbox;

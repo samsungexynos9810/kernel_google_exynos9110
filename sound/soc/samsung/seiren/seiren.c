@@ -28,15 +28,10 @@
 #include <linux/vmalloc.h>
 #include <linux/delay.h>
 #include <linux/sched.h>
-#include <linux/dma-mapping.h>
 #include <linux/io.h>
 #include <linux/irq.h>
 #include <linux/uaccess.h>
-
-#include <mach/hardware.h>
-#include <mach/irqs.h>
-#include <mach/map.h>
-#include <plat/cpu.h>
+#include <linux/pm_runtime.h>
 
 #include "../lpass.h"
 #include "seiren.h"
@@ -746,6 +741,8 @@ static int esa_open(struct inode *inode, struct file *file)
 	rtd->obuf0_filled = false;
 	rtd->obuf1_filled = false;
 
+	pm_runtime_get_sync(&si.pdev->dev);
+
 	if (si.rtd_cnt == 1) {
 		/* power on */
 		esa_debug("Turn on CA5...\n");
@@ -799,6 +796,9 @@ static int esa_release(struct inode *inode, struct file *file)
 		esa_debug("Turn off CA5...\n");
 		lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	}
+
+	pm_runtime_put_sync(&si.pdev->dev);
+
 	return 0;
 }
 
@@ -859,6 +859,8 @@ static int esa_probe(struct platform_device *pdev)
 	printk(banner);
 
 	spin_lock_init(&si.lock);
+
+	si.pdev = pdev;
 
 	ret = misc_register(&esa_miscdev);
 	if (ret) {
@@ -923,11 +925,11 @@ static int esa_probe(struct platform_device *pdev)
 	/* hold reset */
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 
-	esa_info("regs       = %08X\n", (u32)si.regs);
-	esa_info("mailbox    = %08X\n", (u32)si.mailbox);
-	esa_info("bufmem_pa  = %08X\n", si.bufmem_pa);
-	esa_info("fwmem_pa   = %08X\n", si.fwmem_pa);
-	esa_info("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
+	esa_debug("regs       = %08X\n", (u32)si.regs);
+	esa_debug("mailbox    = %08X\n", (u32)si.mailbox);
+	esa_debug("bufmem_pa  = %08X\n", si.bufmem_pa);
+	esa_debug("fwmem_pa   = %08X\n", si.fwmem_pa);
+	esa_debug("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
 
 #ifdef FW_DOWNLOAD_TEST
 	for (n = 0; n < 0x5C; n += 4)
@@ -938,6 +940,7 @@ static int esa_probe(struct platform_device *pdev)
 	for (n = 0; n < 0x80; n += 4)
 		esa_info("mailbox %02X = %08X\n", n, readl(si.mailbox + n));
 #endif
+	pm_runtime_enable(&pdev->dev);
 
 	return 0;
 }
@@ -961,12 +964,16 @@ static int esa_runtime_suspend(struct device *dev)
 {
 	esa_debug("%s entered\n", __func__);
 
+	clk_disable_unprepare(si.clk_ca5);
+
 	return 0;
 }
 
 static int esa_runtime_resume(struct device *dev)
 {
 	esa_debug("%s entered\n", __func__);
+
+	clk_prepare_enable(si.clk_ca5);
 
 	return 0;
 }
