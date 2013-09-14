@@ -1079,7 +1079,7 @@
 	pd_maudio: pd-maudio@105c40c0 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c40c0 0x20>;
-		status = "disabled";
+		status = "ok";
 	};
 
 	pd_fsys: pd-fsys@105c40e0 {
