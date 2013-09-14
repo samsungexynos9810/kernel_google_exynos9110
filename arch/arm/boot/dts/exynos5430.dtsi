@@ -1347,7 +1347,7 @@
 		status = "disabled";
 	};
 
-	lpass: lpass-controller@11400000 {
+	lpass: lpass@11400000 {
 		compatible = "samsung,exynos5430-lpass";
 		reg = <0x11400000 0x100>,
 		      <0x03000000 0x48000>;
@@ -1361,6 +1361,7 @@
 			 <&clock 2013>;		/* gate_pclk_dbg */
 		clock-names = "dmac", "sramc", "intr", "timer",
 			      "sysreg", "pmu", "gpio", "dbg";
+		samsung,power-domain = <&pd_maudio>;
 		status = "ok";
 	};
 
