@@ -62,7 +62,15 @@ struct aud_reg {
 	struct list_head	node;
 };
 
+struct subip_info {
+	struct device		*dev;
+	const char		*name;
+	atomic_t		use_cnt;
+	struct list_head	node;
+};
+
 static LIST_HEAD(reg_list);
+static LIST_HEAD(subip_list);
 
 extern int exynos_set_parent(const char *child, const char *parent);
 
@@ -135,11 +143,57 @@ void lpass_reset(int ip, int op)
 void lpass_reset_toggle(int ip)
 {
 	pr_debug("%s: %d\n", __func__, ip);
-	lpass_reset(ip, LPASS_OP_NORMAL);
-	udelay(100);
+
 	lpass_reset(ip, LPASS_OP_RESET);
 	udelay(100);
 	lpass_reset(ip, LPASS_OP_NORMAL);
+}
+
+int lpass_register_subip(struct device *ip_dev, const char *ip_name)
+{
+	struct device *dev = &lpass.pdev->dev;
+	struct subip_info *si;
+
+	si = devm_kzalloc(dev, sizeof(struct subip_info), GFP_KERNEL);
+	if (!si)
+		return -1;
+
+	si->dev = ip_dev;
+	si->name = ip_name;
+	atomic_set(&si->use_cnt, 0);
+	list_add(&si->node, &subip_list);
+
+	pr_info("%s: %s(%p) registered\n", __func__, ip_name, ip_dev);
+
+	return 0;
+}
+
+void lpass_get_sync(struct device *ip_dev)
+{
+	struct subip_info *si;
+
+	list_for_each_entry(si, &subip_list, node) {
+		if (si->dev == ip_dev) {
+			atomic_inc(&si->use_cnt);
+			pr_debug("%s: %s (use:%d)\n", __func__,
+				si->name, atomic_read(&si->use_cnt));
+			pm_runtime_get_sync(&lpass.pdev->dev);
+		}
+	}
+}
+
+void lpass_put_sync(struct device *ip_dev)
+{
+	struct subip_info *si;
+
+	list_for_each_entry(si, &subip_list, node) {
+		if (si->dev == ip_dev) {
+			atomic_dec(&si->use_cnt);
+			pr_debug("%s: %s (use:%d)\n", __func__,
+				si->name, atomic_read(&si->use_cnt));
+			pm_runtime_put_sync(&lpass.pdev->dev);
+		}
+	}
 }
 
 static void lpass_reg_save(void)
@@ -166,6 +220,12 @@ static void lpass_reg_restore(void)
 	return;
 }
 
+static void lpass_release_pad(void)
+{
+	/* Release PAD retention */
+	writel(1 << 28, EXYNOS_PAD_RET_MAUDIO_OPTION);
+}
+
 static void lpass_enable(void)
 {
 	if (!lpass.valid) {
@@ -173,6 +233,7 @@ static void lpass_enable(void)
 		return;
 	}
 
+	lpass_release_pad();
 	lpass_reg_restore();
 
 	/* CLK_MUX_SEL_AUD0 */
@@ -190,7 +251,6 @@ static void lpass_enable(void)
 	clk_prepare_enable(lpass.clk_gpio);
 	clk_prepare_enable(lpass.clk_dbg);
 
-	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
 	lpass_reset_toggle(LPASS_IP_DMA);
@@ -213,6 +273,19 @@ static void lpass_disable(void)
 	clk_disable_unprepare(lpass.clk_dbg);
 
 	lpass_reg_save();
+
+	/* CLK_MUX_SEL_AUD0 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
+	exynos_set_parent("mout_aud_pll_user", "fin_pll");
+	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
+	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+
+	/* Enable clocks */
+	writel(0x000007FF, EXYNOS5430_ENABLE_PCLK_AUD);
+	writel(0x00000003, EXYNOS5430_ENABLE_SCLK_AUD0);
+	writel(0x0000003F, EXYNOS5430_ENABLE_SCLK_AUD1);
+	writel(0x00003FFF, EXYNOS5430_ENABLE_IP_AUD0);
+	writel(0x0000003F, EXYNOS5430_ENABLE_IP_AUD1);
 }
 
 static int clk_set_heirachy(struct platform_device *pdev)
@@ -320,7 +393,7 @@ static void lpass_init_reg_list(void)
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD2);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD3);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD4);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_ACLK_AUD);
+	/* lpass_add_suspend_reg(EXYNOS5430_ENABLE_ACLK_AUD); */
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_PCLK_AUD);
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD1);
@@ -416,7 +489,6 @@ static int lpass_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
-	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
 	lpass_reset_toggle(LPASS_IP_DMA);
@@ -450,7 +522,7 @@ static int lpass_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_RUNTIME
 static int lpass_runtime_suspend(struct device *dev)
 {
-	pr_info("%s entered\n", __func__);
+	pr_debug("%s entered\n", __func__);
 
 	lpass_disable();
 
@@ -459,7 +531,7 @@ static int lpass_runtime_suspend(struct device *dev)
 
 static int lpass_runtime_resume(struct device *dev)
 {
-	pr_info("%s entered\n", __func__);
+	pr_debug("%s entered\n", __func__);
 
 	lpass_enable();
 

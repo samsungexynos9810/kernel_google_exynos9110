@@ -74,5 +74,8 @@ extern void lpass_reg_dump(void);
 extern void lpass_reset(int ip, int op);
 extern void lpass_reset_toggle(int ip);
 
+extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
+extern void lpass_get_sync(struct device *ip_dev);
+extern void lpass_put_sync(struct device *ip_dev);
 
 #endif /* __SND_SOC_SAMSUNG_LPASS_H */
