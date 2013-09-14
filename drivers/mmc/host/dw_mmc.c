@@ -1521,7 +1521,6 @@ static int dw_mci_start_signal_voltage_switch(struct mmc_host *mmc,
 		struct mmc_ios *ios)
 {
 	struct dw_mci_slot *slot = mmc_priv(mmc);
-	struct dw_mci *host = slot->host;
 
 	if (ios->signal_voltage == MMC_SIGNAL_VOLTAGE_330)
 		return dw_mci_3_3v_signal_voltage_switch(slot);
@@ -1675,7 +1674,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	struct mmc_command *cmd;
 	enum dw_mci_state state;
 	enum dw_mci_state prev_state;
-	u32 status, ctrl;
+	u32 status;
 
 	spin_lock(&host->lock);
 
@@ -2571,7 +2570,6 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 		struct mmc_host *mmc = slot->mmc;
 		struct mmc_request *mrq;
 		int present;
-		u32 ctrl;
 
 		present = dw_mci_get_cd(mmc);
 		while (present != slot->last_detect_state) {
