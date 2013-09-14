@@ -89,6 +89,10 @@ struct i2s_dai {
 	u32	suspend_i2smod;
 	u32	suspend_i2scon;
 	u32	suspend_i2spsr;
+#ifdef CONFIG_SND_SAMSUNG_IDMA
+	u32	suspend_i2sahb[((I2SSTR1 - I2SAHB) >> 2) + 1];
+#endif
+	u32	suspend_i2stdm;
 	unsigned long gpios[7];	/* i2s gpio line numbers */
 	/* MOD bit slice */
 	u32	lrp_b;
@@ -720,13 +724,61 @@ static int i2s_hw_params(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+static void i2s_reg_save(struct i2s_dai *i2s)
+{
+#ifdef CONFIG_SND_SAMSUNG_IDMA
+	u32 n, offset;
+#endif
+	i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
+	i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
+	i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
+#ifdef CONFIG_SND_SAMSUNG_IDMA
+	if (i2s->quirks & QUIRK_IDMA) {
+		for (n = 0, offset = I2SAHB; offset <= I2SSTR1; offset += 4)
+			i2s->suspend_i2sahb[n++] = readl(i2s->addr + offset);
+	}
+#endif
+	if (i2s->quirks & QUIRK_SUPPORTS_TDM)
+		i2s->suspend_i2stdm = readl(i2s->addr + I2STDM);
+
+	dev_dbg(&i2s->pdev->dev, "Registers of I2S are saved\n");
+
+	return;
+}
+
+static void i2s_reg_restore(struct i2s_dai *i2s)
+{
+#ifdef CONFIG_SND_SAMSUNG_IDMA
+	u32 n, offset;
+#endif
+	writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
+	writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
+	writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
+#ifdef CONFIG_SND_SAMSUNG_IDMA
+	if (i2s->quirks & QUIRK_IDMA) {
+		for (n = 0, offset = I2SAHB; offset <= I2SSTR1; offset += 4)
+			writel(i2s->suspend_i2sahb[n++], i2s->addr + offset);
+	}
+#endif
+	if (i2s->quirks & QUIRK_SUPPORTS_TDM)
+		writel(i2s->suspend_i2stdm, i2s->addr + I2STDM);
+
+	dev_dbg(&i2s->pdev->dev, "Registers of I2S are restored\n");
+
+	return;
+}
+
 /* We set constraints on the substream acc to the version of I2S */
 static int i2s_startup(struct snd_pcm_substream *substream,
 	  struct snd_soc_dai *dai)
 {
 	struct i2s_dai *i2s = to_info(dai);
 	struct i2s_dai *other = i2s->pri_dai ? : i2s->sec_dai;
+	struct platform_device *pdev = NULL;
 	unsigned long flags;
+
+	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
+	pm_runtime_get_sync(&pdev->dev);
 
 	spin_lock_irqsave(&lock, flags);
 
@@ -753,6 +805,7 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 {
 	struct i2s_dai *i2s = to_info(dai);
 	struct i2s_dai *other = i2s->pri_dai ? : i2s->sec_dai;
+	struct platform_device *pdev = NULL;
 	unsigned long flags;
 
 	spin_lock_irqsave(&lock, flags);
@@ -773,6 +826,9 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 	if (!is_opened(other))
 		i2s_set_sysclk(dai, SAMSUNG_I2S_CDCLK,
 				0, SND_SOC_CLOCK_IN);
+
+	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
+	pm_runtime_put_sync(&pdev->dev);
 }
 
 static int config_setup(struct i2s_dai *i2s)
@@ -1010,11 +1066,8 @@ static int i2s_suspend(struct snd_soc_dai *dai)
 {
 	struct i2s_dai *i2s = to_info(dai);
 
-	if (dai->active) {
-		i2s->suspend_i2smod = readl(i2s->addr + I2SMOD);
-		i2s->suspend_i2scon = readl(i2s->addr + I2SCON);
-		i2s->suspend_i2spsr = readl(i2s->addr + I2SPSR);
-	}
+	if (dai->active)
+		i2s_reg_save(i2s);
 
 	return 0;
 }
@@ -1023,11 +1076,8 @@ static int i2s_resume(struct snd_soc_dai *dai)
 {
 	struct i2s_dai *i2s = to_info(dai);
 
-	if (dai->active) {
-		writel(i2s->suspend_i2scon, i2s->addr + I2SCON);
-		writel(i2s->suspend_i2smod, i2s->addr + I2SMOD);
-		writel(i2s->suspend_i2spsr, i2s->addr + I2SPSR);
-	}
+	if (dai->active)
+		i2s_reg_restore(i2s);
 
 	return 0;
 }
@@ -1197,6 +1247,9 @@ static int i2s_runtime_suspend(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
 
+	pr_debug("%s entered\n", __func__);
+
+	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
 
 	return 0;
@@ -1206,7 +1259,10 @@ static int i2s_runtime_resume(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
 
+	pr_debug("%s entered\n", __func__);
+
 	clk_prepare_enable(i2s->clk);
+	i2s_reg_restore(i2s);
 
 	return 0;
 }
