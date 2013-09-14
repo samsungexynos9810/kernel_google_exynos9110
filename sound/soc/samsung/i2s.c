@@ -1253,6 +1253,7 @@ static int i2s_runtime_suspend(struct device *dev)
 	pinctrl = devm_pinctrl_get_select(dev, "idle");
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
+	lpass_put_sync(dev);
 
 	return 0;
 }
@@ -1264,6 +1265,7 @@ static int i2s_runtime_resume(struct device *dev)
 
 	pr_debug("%s entered\n", __func__);
 
+	lpass_get_sync(dev);
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
 	pinctrl = devm_pinctrl_get_select(dev, "default");
@@ -1373,6 +1375,8 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 			}
 		}
 #endif
+		if (of_find_property(np, "samsung,lpass-subip", NULL))
+			lpass_register_subip(&pdev->dev, "i2s");
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
