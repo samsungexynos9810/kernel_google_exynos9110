@@ -450,6 +450,21 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	return -EIO;
 }
 
+static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_control control)
+{
+	u8 sample = host->pdata->clk_smpl;
+	switch (control) {
+	case CTRL_SET_CLK_SAMPLE:
+		dw_mci_exynos_set_sample(host, sample);
+		break;
+	default:
+		dev_err(host->dev, "dw_mmc exynos: wrong case\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
 /* Common capabilities of Exynos4/Exynos5 SoC */
 static unsigned long exynos_dwmmc_caps[4] = {
 	MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR |
@@ -469,6 +484,7 @@ static const struct dw_mci_drv_data exynos_drv_data = {
 	.parse_dt		= dw_mci_exynos_parse_dt,
 	.cfg_smu		= dw_mci_exynos_cfg_smu,
 	.execute_tuning		= dw_mci_exynos_execute_tuning,
+	.misc_control		= dw_mci_exynos_misc_control,
 };
 
 static const struct of_device_id dw_mci_exynos_match[] = {
