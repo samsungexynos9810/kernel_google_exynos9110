@@ -1388,8 +1388,9 @@
 		samsung,supports-secdai;
 		samsung,supports-tdm;
 		samsung,supports-low-rfs;
-		pinctrl-names = "default";
+		pinctrl-names = "default", "idle";
 		pinctrl-0 = <&i2s0_bus>;
+		pinctrl-1 = <&pcm0_bus>;
 		status = "disabled";
 		i2s-sec {
 			dmas = <&adma 1>;
