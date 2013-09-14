@@ -3083,7 +3083,7 @@ static int es515_i2s_startup(struct snd_pcm_substream *substream,
 	/* struct snd_soc_codec *codec = dai->codec; */
 	/* int ret; */
 
-	pr_info("%s(): dai->name = %s, dai->id = %d\n", __func__,
+	pr_debug("%s(): dai->name = %s, dai->id = %d\n", __func__,
 			dai->name, dai->id);
 
 	return 0;
@@ -3094,7 +3094,7 @@ static void es515_i2s_shutdown(struct snd_pcm_substream *substream,
 {
 	/* struct snd_soc_codec *codec = dai->codec; */
 
-	pr_info("%s(): dai->name = %s, dai->id = %d\n", __func__,
+	pr_debug("%s(): dai->name = %s, dai->id = %d\n", __func__,
 			dai->name, dai->id);
 }
 
