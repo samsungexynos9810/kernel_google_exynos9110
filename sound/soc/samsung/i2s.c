@@ -1246,9 +1246,11 @@ static inline int samsung_i2s_get_driver_data(struct platform_device *pdev)
 static int i2s_runtime_suspend(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
+	struct pinctrl *pinctrl;
 
 	pr_debug("%s entered\n", __func__);
 
+	pinctrl = devm_pinctrl_get_select(dev, "idle");
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
 
@@ -1258,11 +1260,13 @@ static int i2s_runtime_suspend(struct device *dev)
 static int i2s_runtime_resume(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
+	struct pinctrl *pinctrl;
 
 	pr_debug("%s entered\n", __func__);
 
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
+	pinctrl = devm_pinctrl_get_select(dev, "default");
 
 	return 0;
 }
@@ -1279,6 +1283,7 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 	u32 idma_addr;
 #endif
 	struct device_node *np = pdev->dev.of_node;
+	struct pinctrl *pinctrl;
 	enum samsung_dai_type samsung_dai_type;
 	int ret = 0;
 
@@ -1443,6 +1448,8 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 			ret = -EINVAL;
 			goto err;
 		}
+	} else {
+		pinctrl = devm_pinctrl_get_select(&pdev->dev, "idle");
 	}
 
 	snd_soc_register_component(&pri_dai->pdev->dev, &samsung_i2s_component,
