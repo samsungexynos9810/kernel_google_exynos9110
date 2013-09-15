@@ -1542,6 +1542,15 @@
 				<&clock 341>,
 				<&clock 342>,
 
+				<&clock 1210>,
+				<&clock 1211>,
+
+				<&clock 1220>,
+				<&clock 1221>,
+
+				<&clock 1230>,
+				<&clock 1231>,
+
 				<&clock 3010>,
 
 				<&clock 3063>,
@@ -1838,6 +1847,15 @@
 				"aclk_cam1_552",
 				"aclk_cam1_400",
 				"aclk_cam1_333",
+
+				"aclk_csis1", /* 1210 */
+				"aclk_csis0",
+
+				"pclk_csis1", /* 1220 */
+				"pclk_csis0",
+
+				"sclk_phyclk_rxbyteclkhs0_s4", /* 1230 */
+				"sclk_phyclk_rxbyteclkhs0_s2a",
 
 				"mout_bus_pll_user", /* 3010 */
 
