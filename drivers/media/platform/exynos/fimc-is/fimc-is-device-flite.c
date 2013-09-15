@@ -38,6 +38,7 @@
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
+#include <mach/irqs.h>
 
 #include "fimc-is-time.h"
 #include "fimc-is-core.h"
