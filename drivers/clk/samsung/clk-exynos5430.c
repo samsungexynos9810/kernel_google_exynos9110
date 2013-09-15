@@ -252,6 +252,11 @@ enum exynos5430_clks {
 	pclk_qe_mdma0, pclk_ppmu_llix, pclk_smmu_mdma0,
 	sclk_lli_cmn_cfg, sclk_lli_tx0_cfg, sclk_lli_rx0_cfg,
 
+	/* cam0 gate */
+	aclk_csis1 = 1210, aclk_csis0,
+	pclk_csis1 = 1220, pclk_csis0,
+	sclk_phyclk_rxbyteclkhs0_s4 = 1230, sclk_phyclk_rxbyteclkhs0_s2a,
+
 	/* aud0 ip gate */
 	gate_gpio_aud = 2000, gate_pmu_aud, gate_sysreg_aud, gate_slimbus_aud,
 	gate_uart, gate_pcm, gate_i2s, gate_timer, gate_intr_ctrl,
@@ -2200,6 +2205,14 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_lli_cmn_cfg, "sclk_lli_cmn_cfg", "aclk_cpif_200", EXYNOS5430_ENABLE_SCLK_CPIF, 0, 0, 0),
 	CGTE(sclk_lli_tx0_cfg, "sclk_lli_tx0_cfg", "aclk_cpif_200", EXYNOS5430_ENABLE_SCLK_CPIF, 1, 0, 0),
 	CGTE(sclk_lli_rx0_cfg, "sclk_lli_rx0_cfg", "aclk_cpif_200", EXYNOS5430_ENABLE_SCLK_CPIF, 2, 0, 0),
+
+	/* CAM0 */
+	CGTE(aclk_csis1, "aclk_csis1", NULL, EXYNOS5430_ENABLE_ACLK_CAM00, 6, 0, 0),
+	CGTE(aclk_csis0, "aclk_csis0", NULL, EXYNOS5430_ENABLE_ACLK_CAM00, 5, 0, 0),
+	CGTE(pclk_csis1, "pclk_csis1", NULL, EXYNOS5430_ENABLE_PCLK_CAM0, 6, 0, 0),
+	CGTE(pclk_csis0, "pclk_csis0", NULL, EXYNOS5430_ENABLE_PCLK_CAM0, 5, 0, 0),
+	CGTE(sclk_phyclk_rxbyteclkhs0_s4, "sclk_phyclk_rxbyteclkhs0_s4", NULL, EXYNOS5430_ENABLE_SCLK_CAM0, 8, 0, 0),
+	CGTE(sclk_phyclk_rxbyteclkhs0_s2a, "sclk_phyclk_rxbyteclkhs0_s2a", NULL, EXYNOS5430_ENABLE_SCLK_CAM0, 7, 0, 0),
 
 	/* IP Gate */
 	/* AUD0 */
