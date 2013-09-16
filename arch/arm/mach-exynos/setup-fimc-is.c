@@ -233,7 +233,7 @@ unsigned int  fimc_is_get_rate(const char *conid)
 	}
 
 	rate_target = clk_get_rate(target);
-	pr_info("%s : %d\n", conid, rate_target);
+	pr_debug("%s : %d\n", conid, rate_target);
 
 	return rate_target;
 }
@@ -320,7 +320,7 @@ unsigned int  fimc_is_get_rate_dt(struct platform_device *pdev,
 	}
 
 	rate_target = clk_get_rate(target);
-	pr_info("%s : %d\n", conid, rate_target);
+	pr_debug("%s : %d\n", conid, rate_target);
 
 	return rate_target;
 }
