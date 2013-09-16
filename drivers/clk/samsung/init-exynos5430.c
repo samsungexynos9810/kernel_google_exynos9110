@@ -392,6 +392,12 @@ void cpif_init_clock(void)
 			  "phyclk_lli_rx0_symbol");
 }
 
+void crypto_init_clock(void)
+{
+	exynos_set_rate("dout_aclk_imem_266", 267*1000000);
+	exynos_set_rate("dout_aclk_imem_200", 200*1000000);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -411,4 +417,5 @@ void __init exynos5430_clock_init(void)
 	g2d_init_clock();
 	jpeg_init_clock();
 	cpif_init_clock();
+	crypto_init_clock();
 }
