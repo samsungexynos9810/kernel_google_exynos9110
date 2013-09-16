@@ -1103,7 +1103,7 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
 					"Source clock is needed to change\n");
 				reset_div = true;
 				slot->mmc->ios.timing = MMC_TIMING_LEGACY;
-				host->drv_data->set_ios(host, &slot->mmc->ios);
+				host->drv_data->set_ios(host, 0, &slot->mmc->ios);
 			} else
 				reset_div = false;
 		} while (reset_div);
@@ -1315,7 +1315,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 
 	if (drv_data && drv_data->set_ios) {
-		drv_data->set_ios(slot->host, ios);
+		drv_data->set_ios(slot->host, mmc->tuning_progress, ios);
 
 		/* Reset the min/max in case the set_ios() changed bus_hz */
 		mmc->f_min = DIV_ROUND_UP(slot->host->bus_hz, 510);

@@ -25,7 +25,7 @@
 
 #define NUM_PINS(x)			(x + 2)
 
-#define SDMMC_CLKSEL			0x09C
+#define DWMCI_CLKSEL			0x09C	/* Ken : need to unify definition */
 #define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 7) << 0)
 #define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 7) << 16)
 #define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 7) << 24)
@@ -36,6 +36,31 @@
 					SDMMC_CLKSEL_CCLK_DIVIDER(z))
 
 #define SDMMC_CMD_USE_HOLD_REG		BIT(29)
+
+/*
+ * DDR200 dependent
+ */
+#define DWMCI_DDR200_RDDQS_EN		0x110
+#define DWMCI_DDR200_ASYNC_FIFO_CTRL	0x114
+#define DWMCI_DDR200_DLINE_CTRL		0x118
+/* DDR200 RDDQS Enable*/
+#define DWMCI_TXDT_CRC_TIMER_FASTLIMIT(x)	(((x) & 0xFF) << 16)
+#define DWMCI_TXDT_CRC_TIMER_INITVAL(x)		(((x) & 0xFF) << 8)
+#define DWMCI_AXI_NON_BLOCKING_WRITE		BIT(7)
+#define DWMCI_BUSY_CHK_CLK_STOP_EN		BIT(2)
+#define DWMCI_RXDATA_START_BIT_SEL		BIT(1)
+#define DWMCI_RDDQS_EN				BIT(0)
+#define DWMCI_DDR200_RDDQS_EN_DEF	DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0x12) | \
+					DWMCI_TXDT_CRC_TIMER_INITVAL(0x14)
+#define DWMCI_DDR200_DLINE_CTRL_DEF	DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | \
+					DWMCI_RD_DQS_DELAY_CTRL(0x40)
+
+/* DDR200 Async FIFO Control */
+#define DWMCI_ASYNC_FIFO_RESET		BIT(0)
+
+/* DDR200 DLINE Control */
+#define DWMCI_FIFO_CLK_DELAY_CTRL(x)	(((x) & 0x3) << 16)
+#define DWMCI_RD_DQS_DELAY_CTRL(x)	((x) & 0x3FF)
 
 /* Block number in eMMC */
 #define DWMCI_BLOCK_NUM			0xFFFFFFFF
@@ -240,19 +265,58 @@ static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 	host->bus_hz = ciu_rate / ciu_div;
 }
 
-static void dw_mci_exynos_set_ios(struct dw_mci *host, struct mmc_ios *ios)
+static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, struct mmc_ios *ios)
 {
 	struct dw_mci_exynos_priv_data *priv = host->priv;
+	struct dw_mci_board *pdata = host->pdata;
+	u32 *clk_tbl = priv->ref_clk;
+	u32 clksel, rddqs, dline;
+	u32 cclkin;
+	unsigned char timing = ios->timing;
 
-	if (ios->timing == MMC_TIMING_UHS_DDR50) {
-		mci_writel(host, CLKSEL, priv->ddr_timing);
-		/* Exynos wants 2x clock input only for DDR timing */
-		dw_mci_exynos_set_bus_hz(host, 2 * 50 * 1000 * 1000);
-	} else if (ios->timing == MMC_TIMING_MMC_HS200) {
-		/* We'll keep the timing from earlier calls to set_ios */
-		dw_mci_exynos_set_bus_hz(host, 200 * 1000 * 1000);
+	if (timing > MMC_TIMING_MMC_HS200_DDR) {
+		pr_err("%s: timing(%d): not suppored\n", __func__, timing);
+		return;
+	}
+
+	cclkin = clk_tbl[timing];
+	rddqs = DWMCI_DDR200_RDDQS_EN_DEF;
+	dline = DWMCI_DDR200_DLINE_CTRL_DEF;
+	clksel = __raw_readl(host->regs + DWMCI_CLKSEL);
+
+	if (host->bus_hz != cclkin) {
+		dw_mci_exynos_set_bus_hz(host, cclkin);
+		host->bus_hz = cclkin;
+		host->current_speed = 0;
+	}
+
+	if (timing == MMC_TIMING_MMC_HS200_DDR) {
+		clksel = ((priv->ddr200_timing & 0xfffffff8) | pdata->clk_smpl);
+
+		if (!tuning) {
+			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
+			dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | DWMCI_RD_DQS_DELAY_CTRL(90);
+			host->quirks &= ~DW_MCI_QUIRK_NO_DETECT_EBIT;
+		}
+	} else if (timing == MMC_TIMING_MMC_HS200 ||
+			timing == MMC_TIMING_UHS_SDR104) {
+		clksel = (clksel & 0xfff8ffff) | (priv->ciu_div << 16);
+	} else if (timing == MMC_TIMING_UHS_SDR50) {
+		clksel = (clksel & 0xfff8ffff) | (priv->ciu_div << 16);
+	} else if (timing == MMC_TIMING_UHS_DDR50) {
+		clksel = priv->ddr_timing;
 	} else {
-		mci_writel(host, CLKSEL, priv->sdr_timing);
+		clksel = priv->sdr_timing;
+	}
+
+	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
+
+	if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430) {
+		__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN + 0x70);
+		__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL + 0x70);
+	} else {
+		__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN);
+		__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL);
 	}
 }
 
