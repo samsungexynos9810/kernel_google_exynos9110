@@ -88,8 +88,11 @@ struct fb_monspecs {
 	__u8  revision;			/* ...and revision */
 	__u8  max_x;			/* Maximum horizontal size (cm) */
 	__u8  max_y;			/* Maximum vertical size (cm) */
+	struct fb_video *videodb;	/* video database */
+	__u32 videodb_len;		/* video database length */
 	struct fb_audio *audiodb;	/* audio database */
 	__u32 audiodb_len;		/* audio database length */
+	struct fb_vendor *vsdb;		/* video specific database */
 };
 
 struct fb_cmap_user {
@@ -795,11 +798,37 @@ struct fb_videomode {
 #define FB_AUDIO_20BIT	(1 << 1)
 #define FB_AUDIO_16BIT	(1 << 0)
 
+struct fb_video {
+	u8 vic_idx;
+	u32 refresh;
+	u32 xres;
+	u32 yres;
+	u32 vmode;
+};
+
 struct fb_audio {
 	u8 format;
 	u8 channel_count;
 	u8 sample_rates;
 	u8 bit_rates;
+};
+
+struct fb_vendor {
+	u32 ieee_reg;
+	u32 phy_addr;
+	u8 video_present;
+	u8 i_latency_field;
+	u8 latency_field;
+	u8 s3d_present;
+	u8 s3d_multi_present;
+	u8 vic_len;
+	u8 s3d_len;
+	u32 s3d_structure_all;
+	u32 s3d_structure_mask;
+	u8 s3d_field;
+	u8 vic_order[16];
+	u8 s3d_structure[16];
+	u8 s3d_detail[16];
 };
 
 extern const char *fb_mode_option;

@@ -311,6 +311,86 @@ static void parse_vendor_block(unsigned char *block, struct fb_monspecs *specs)
 	DPRINTK("   Year: %u Week %u\n", specs->year, specs->week);
 }
 
+static void parse_vendor_specific_block(struct fb_vendor *vsdb,
+					unsigned char *svsdb)
+{
+	unsigned int offset = 0;
+	int i;
+
+	DPRINTK("========================================\n");
+	DPRINTK("Vendor Specific Data Block (VSDB)\n");
+	DPRINTK("========================================\n");
+	vsdb->ieee_reg = svsdb[offset + 1]
+			| (svsdb[offset + 2] << 8)
+			| (svsdb[offset + 3] << 16);
+	vsdb->phy_addr = svsdb[offset + 4] << 8;
+	vsdb->phy_addr |= svsdb[offset + 5];
+	vsdb->video_present = (svsdb[offset + 8] & VSDB_VIDEO_PRESENT_MASK)
+					>> VSDB_VIDEO_PRESENT;
+	vsdb->i_latency_field = (svsdb[offset + 8] & VSDB_I_LATENCY_FIELD_MASK)
+					>> VSDB_I_LATENCY_FIELD;
+	vsdb->latency_field = (svsdb[offset + 8] & VSDB_LATENCY_FIELD_MASK)
+					>> VSDB_LATENCY_FIELD;
+
+	offset += (vsdb->latency_field * 2 + vsdb->i_latency_field * 2);
+
+	vsdb->s3d_present = (svsdb[offset + 9] & VSDB_3D_PRESENT_MASK)
+					>> VSDB_3D_PRESENT;
+	vsdb->s3d_multi_present = (svsdb[offset + 9] & VSDB_3D_MT_PRESENT_MASK)
+					>> VSDB_3D_MT_PRESENT;
+	vsdb->vic_len = (svsdb[offset + 10] & VSDB_VIC_LEN_MASK)
+					>> VSDB_VIC_LEN;
+	vsdb->s3d_len = svsdb[offset + 10] & VSDB_3D_LEN_MASK;
+
+	DPRINTK("   ieee_reg: 0x%06x\n", vsdb->ieee_reg);
+	DPRINTK("   physical address: 0x%08x\n", vsdb->phy_addr);
+	DPRINTK("   video present: %d\n", vsdb->video_present);
+	DPRINTK("   HDMI VIC LEN: %d\n", vsdb->vic_len);
+	DPRINTK("   HDMI 3D LEN: %d\n", vsdb->s3d_len);
+	DPRINTK("   3D present: %d\n", vsdb->s3d_present);
+	DPRINTK("   3D multi present: %d\n", vsdb->s3d_multi_present);
+
+	offset += vsdb->vic_len;
+	if (vsdb->s3d_multi_present) {
+		vsdb->s3d_structure_all = svsdb[offset + 11] << 8;
+		vsdb->s3d_structure_all |= svsdb[offset + 12];
+		DPRINTK("   3D structure all: 0x%08x\n",
+				vsdb->s3d_structure_all);
+		offset += 2;
+		vsdb->s3d_field = vsdb->s3d_len - 2;
+		if (vsdb->s3d_multi_present == VSDB_3D_MASK) {
+			vsdb->s3d_structure_mask = svsdb[offset + 11] << 8;
+			vsdb->s3d_structure_mask |= svsdb[offset + 12];
+			DPRINTK("   3D structure mask: 0x%08x\n",
+					vsdb->s3d_structure_mask);
+			offset += 2;
+			vsdb->s3d_field = vsdb->s3d_field - 2;
+		}
+	}
+
+	/*
+	 * s3d_field is used to indicate that
+	 * additional blocks are present in the VSDB.
+	 */
+	if (vsdb->s3d_field) {
+		for (i = 0; i < vsdb->s3d_field; i++, offset++) {
+			vsdb->vic_order[i] =
+				(svsdb[offset + 11] & VSDB_VIC_ORDER_MASK)
+						>> VSDB_VIC_ORDER;
+			vsdb->s3d_structure[i] =
+				svsdb[offset + 11] & VSDB_3D_STRUCTURE_MASK;
+			DPRINTK("   2D vic order[%d]: %d\n",
+					i, vsdb->vic_order[i]);
+			DPRINTK("   3D structure[%d]: %d\n",
+					i, vsdb->s3d_structure[i]);
+			if (vsdb->s3d_structure[i] > 7)
+				offset++;
+		}
+	}
+
+	DPRINTK("========================================\n");
+}
+
 static void get_dpms_capabilities(unsigned char flags,
 				  struct fb_monspecs *specs)
 {
@@ -1059,11 +1139,13 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 	unsigned char *block;
 	struct fb_videomode *m;
+	struct fb_video *videodb;
 	struct fb_audio *audiodb;
+	struct fb_vendor *vsdb;
 	int num = 0, i;
-	u8 sad[128 - 5], svd[64];
+	u8 sad[128 - 5], svd[64], svsdb[128 - 5];
 	u8 edt[(128 - 4) / DETAILED_TIMING_DESCRIPTION_SIZE];
-	u8 pos = 4, sad_n = 0, svd_n = 0;
+	u8 pos = 4, sad_n = 0, svd_n = 0, svsdb_n = 0;
 
 	if (!edid)
 		return;
@@ -1106,11 +1188,9 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 					 edid[i] & 0x80 ? "" : "on-n", idx);
 			}
 		} else if (type == 3 && len >= 3) {
-			/* Vendor block */
-			u32 ieee_reg = edid[pos] | (edid[pos + 1] << 8) |
-				(edid[pos + 2] << 16);
-			if (ieee_reg == 0x000c03)
-				specs->misc |= FB_MISC_HDMI;
+			/* Vendor Specific Data Block */
+			for (i = pos; i < pos + len; i++)
+				svsdb[++svsdb_n] = edid[i];
 		}
 
 		pos += len;
@@ -1139,6 +1219,42 @@ void fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 	} else {
 		kfree(specs->audiodb);
 		specs->audiodb_len = 0;
+	}
+
+	if (svd_n > 0) {
+		videodb = kzalloc(svd_n * sizeof(struct fb_video), GFP_KERNEL);
+		if (!videodb)
+			return;
+
+		for (i = 0; i < svd_n; i++) {
+			videodb[i].vic_idx = svd[i];
+			videodb[i].xres = cea_modes[svd[i]].xres;
+			videodb[i].yres = cea_modes[svd[i]].yres;
+			videodb[i].refresh = cea_modes[svd[i]].refresh;
+			videodb[i].vmode = cea_modes[svd[i]].vmode;
+		}
+
+		kfree(specs->videodb);
+		specs->videodb = videodb;
+		specs->videodb_len = svd_n;
+	} else {
+		kfree(specs->videodb);
+		specs->videodb_len = 0;
+	}
+
+	if (svsdb_n > 0) {
+		vsdb = kzalloc(sizeof(struct fb_vendor), GFP_KERNEL);
+		if (!vsdb)
+			return;
+
+		parse_vendor_specific_block(vsdb, svsdb);
+		if (vsdb->ieee_reg == 0x000c03)
+			specs->misc |= FB_MISC_HDMI;
+
+		kfree(specs->vsdb);
+		specs->vsdb = vsdb;
+	} else {
+		kfree(specs->vsdb);
 	}
 
 	block = edid + edid[2];
