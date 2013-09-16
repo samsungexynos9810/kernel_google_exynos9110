@@ -127,6 +127,10 @@ typedef enum {
 } cluster_type;
 
 #ifdef CONFIG_ARM_EXYNOS5430_CPUFREQ
+#define COLD_VOLT_OFFSET	37500
+#define ENABLE_MIN_COLD		1
+#define LIMIT_COLD_VOLTAGE	1250000
+#define MIN_COLD_VOLTAGE	950000
 #define NR_CA7			4
 #define NR_CA15			4
 #endif

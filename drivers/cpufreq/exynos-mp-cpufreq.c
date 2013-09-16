@@ -52,18 +52,6 @@ static struct lpj_info global_lpj_ref;
 static unsigned int freq_min[CA_END] __read_mostly;	/* Minimum (Big/Little) clock frequency */
 static unsigned int freq_max[CA_END] __read_mostly;	/* Maximum (Big/Little) clock frequency */
 
-/*
- * This value is based on the difference between the dmips value of A15/A7
- * It is used to revise cpu frequency when changing cluster
- */
-#ifdef CONFIG_ARM_EXYNOS5430_CPUFREQ
-#define STEP_LEVEL_CA7_MAX	650000
-#define COLD_VOLT_OFFSET	37500
-#define ENABLE_MIN_COLD		1
-#define LIMIT_COLD_VOLTAGE	1250000
-#define MIN_COLD_VOLTAGE	950000
-#endif
-
 static struct exynos_dvfs_info *exynos_info[CA_END];
 static struct exynos_dvfs_info exynos_info_CA7;
 static struct exynos_dvfs_info exynos_info_CA15;
