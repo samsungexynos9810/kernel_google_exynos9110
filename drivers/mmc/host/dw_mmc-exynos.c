@@ -69,10 +69,12 @@ enum dw_mci_exynos_type {
 
 /* Exynos implementation specific driver private data */
 struct dw_mci_exynos_priv_data {
-	enum dw_mci_exynos_type		ctrl_type;
-	u8				ciu_div;
-	u32				sdr_timing;
-	u32				ddr_timing;
+	enum dw_mci_exynos_type ctrl_type;
+	u8			ciu_div;
+	u32			sdr_timing;
+	u32			ddr_timing;
+	u32			ddr200_timing;
+	u32			*ref_clk;
 };
 
 /*
@@ -146,6 +148,7 @@ static int dw_mci_exynos_priv_init(struct dw_mci *host)
 	}
 
 	host->priv = priv;
+
 	return 0;
 }
 
@@ -253,13 +256,21 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, struct mmc_ios *ios)
 	}
 }
 
+#ifndef MHZ
+#define MHZ (1000*1000)
+#endif
 static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 {
 	struct dw_mci_exynos_priv_data *priv = host->priv;
-	struct device_node *np = host->dev->of_node;
 	u32 timing[2];
 	u32 div = 0;
-	int ret;
+
+	struct device_node *np = host->dev->of_node;
+	int ref_clk_size;
+	u32 *ref_clk;
+	u32 *ciu_clkin_values = NULL;
+	int idx_ref;
+	int ret = 0;
 
 	of_property_read_u32(np, "samsung,dw-mshc-ciu-div", &div);
 	priv->ciu_div = div;
@@ -277,7 +288,52 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 		return ret;
 
 	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], div);
-	return 0;
+
+	/*
+	 * Reference clock values for speed mode change are extracted from DT.
+	 * Now, a number of reference clock values should be defined in DT
+	 * We will be able to get reference clock values by using just one function
+	 * when DT support to get tables with many columns.
+	*/
+	if (of_property_read_u32(np, "num-ref-clks", &ref_clk_size)) {
+		dev_err(host->dev, "Getting a number of referece clock failed\n");
+		ret = -ENODEV;
+		goto err_ref_clk;
+	}
+
+	ref_clk = devm_kzalloc(host->dev, ref_clk_size * sizeof(*ref_clk),
+					GFP_KERNEL);
+	if (!ref_clk) {
+		dev_err(host->dev, "Mem alloc failed for reference clock table\n");
+		ret = -ENOMEM;
+		goto err_ref_clk;
+	}
+
+	ciu_clkin_values = devm_kzalloc(host->dev,
+			ref_clk_size * sizeof(*ciu_clkin_values), GFP_KERNEL);
+
+	if (!ciu_clkin_values) {
+		dev_err(host->dev, "Mem alloc failed for temporary clock values\n");
+		ret = -ENOMEM;
+		goto err_ref_clk;
+	}
+	if (of_property_read_u32_array(np, "ciu_clkin", ciu_clkin_values, ref_clk_size)) {
+		dev_err(host->dev, "Getting ciu_clkin values faild\n");
+		ret = -ENOMEM;
+		goto err_ref_clk;
+	}
+
+	for (idx_ref = 0; idx_ref < ref_clk_size; idx_ref++, ref_clk++, ciu_clkin_values++) {
+		*(ref_clk) = (*ciu_clkin_values) * MHZ;
+	}
+
+	ref_clk -= ref_clk_size;
+	ciu_clkin_values -= ref_clk_size;
+	priv->ref_clk = ref_clk;
+
+err_ref_clk:
+
+	return ret;
 }
 
 static void dw_mci_set_quirk_endbit(struct dw_mci *host, s8 mid)
