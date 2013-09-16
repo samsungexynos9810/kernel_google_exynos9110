@@ -1245,7 +1245,6 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
 		dw_mci_qos_put(host);
-		spin_unlock_bh(&host->lock);
 		mrq->cmd->error = -ENOMEDIUM;
 		mmc_request_done(mmc, mrq);
 		return;
