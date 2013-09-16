@@ -2886,13 +2886,17 @@ p_err:
 }
 
 #if defined(CONFIG_SOC_EXYNOS5430)
-static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
-	u32 *lindex, u32 *hindex, u32 *indexes, struct fimc_is_queue *queue)
+static int fimc_is_ischain_s_taa_size(struct fimc_is_device_ischain *device,
+	u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	int ret = 0;
 	struct taa_param *taa_param;
 	struct isp_param *isp_param;
 	struct fimc_is_device_sensor *sensor;
+	struct fimc_is_group *group_3ax = NULL;
+	struct fimc_is_subdev *leader = NULL;
+	struct fimc_is_video_ctx *vctx = NULL;
+	struct fimc_is_queue *queue = NULL;
 	u32 active_sensor_width, active_sensor_height, binning;
 
 	BUG_ON(!device);
@@ -2904,6 +2908,34 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	taa_param = &device->is_region->parameter.taa;
 	isp_param = &device->is_region->parameter.isp;
 	sensor = device->sensor;
+
+	group_3ax = &device->group_3ax;
+	if (!group_3ax) {
+		merr("get gourp_3ax fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	leader = &group_3ax->leader;
+	if (!leader) {
+		merr("get leader fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	vctx = leader->vctx;
+	if (!vctx) {
+		merr("get vctx fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	queue = GET_SRC_QUEUE(vctx);
+	if (!queue) {
+		merr("get queue fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
 
 	dbg_ischain("request otf size : %dx%d\n",
 		device->sensor_width, device->sensor_height);
@@ -3063,6 +3095,7 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
 	(*indexes)++;
 
+exit:
 	pr_info("[ISC:D:%d] otf size(%d x %d)",
 		device->instance, device->sensor_width, device->sensor_height);
 
@@ -3076,6 +3109,10 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	struct isp_param *isp_param;
 	struct drc_param *drc_param;
 	struct scalerc_param *scc_param;
+	struct fimc_is_group *group_isp = NULL;
+	struct fimc_is_subdev *leader = NULL;
+	struct fimc_is_video_ctx *vctx = NULL;
+	struct fimc_is_queue *queue = NULL;
 	u32 chain0_width, chain0_height;
 
 	BUG_ON(!device);
@@ -3088,6 +3125,34 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	scc_param = &device->is_region->parameter.scalerc;
 	chain0_width = width;
 	chain0_height = height;
+
+	group_isp = &device->group_isp;
+	if (!group_isp) {
+		merr("get gourp_isp fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	leader = &group_isp->leader;
+	if (!leader) {
+		merr("get leader fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	vctx = leader->vctx;
+	if (!vctx) {
+		merr("get vctx fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	queue = GET_SRC_QUEUE(vctx);
+	if (!queue) {
+		merr("get queue fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
 
 	dbg_ischain("request chain0 size : %dx%d\n",
 		chain0_width, chain0_height);
@@ -3105,8 +3170,16 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	isp_param->vdma1_input.height = chain0_height;
 	isp_param->vdma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
 	isp_param->vdma1_input.line_gap = 50;
-	/* TODO: 12 or 16 */
-	isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
+	} else {
+		isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
+		mwarn("Invalid bayer format", device);
+	}
+
 	*lindex |= LOWBIT_OF(PARAM_ISP_VDMA1_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_ISP_VDMA1_INPUT);
 	(*indexes)++;
@@ -3159,18 +3232,23 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	device->bds_width = width;
 	device->bds_height = height;
 
+exit:
 	pr_info("[ISC:D:%d] chain0 size(%d x %d)",
 		device->instance, chain0_width, chain0_height);
 
 	return ret;
 }
 #else
-static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
-	u32 *lindex, u32 *hindex, u32 *indexes, struct fimc_is_queue *queue)
+static int fimc_is_ischain_s_taa_size(struct fimc_is_device_ischain *device,
+	u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	int ret = 0;
 	struct isp_param *isp_param;
 	struct fimc_is_device_sensor *sensor;
+	struct fimc_is_group *group_3ax = NULL;
+	struct fimc_is_subdev *leader = NULL;
+	struct fimc_is_video_ctx *vctx = NULL;
+	struct fimc_is_queue *queue = NULL;
 	u32 active_sensor_width, active_sensor_height, binning;
 
 	BUG_ON(!device);
@@ -3181,6 +3259,34 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 
 	isp_param = &device->is_region->parameter.isp;
 	sensor = device->sensor;
+
+	group_3ax = &device->group_3ax;
+	if (!group_3ax) {
+		merr("get gourp_3ax fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	leader = &group_3ax->leader;
+	if (!leader) {
+		merr("get leader fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	vctx = leader->vctx;
+	if (!vctx) {
+		merr("get vctx fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	queue = GET_SRC_QUEUE(vctx);
+	if (!queue) {
+		merr("get queue fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
 
 	dbg_ischain("request otf size : %dx%d\n",
 		device->sensor_width, device->sensor_height);
@@ -3290,6 +3396,7 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
 	(*indexes)++;
 
+exit:
 	pr_info("[ISC:D:%d] otf size(%d x %d)",
 		device->instance, device->sensor_width, device->sensor_height);
 
@@ -5117,8 +5224,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		device->chain2_height = chain1_hmin;
 	}
 #endif
-	fimc_is_ischain_s_otf_size(device,
-		&lindex, &hindex, &indexes, queue);
+	fimc_is_ischain_s_taa_size(device,
+		&lindex, &hindex, &indexes);
 
 	fimc_is_ischain_s_chain0_size(device,
 		device->chain0_width, device->chain0_height, &lindex, &hindex, &indexes);
