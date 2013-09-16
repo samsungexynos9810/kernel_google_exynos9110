@@ -3012,15 +3012,6 @@ static int fimc_is_ischain_s_otf_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
 	(*indexes)++;
 
-	/* OTF output: will be removed */
-	taa_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
-	taa_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444;
-	taa_param->otf_output.bitwidth = OTF_OUTPUT_BIT_WIDTH_12BIT;
-	taa_param->otf_output.order = OTF_INPUT_ORDER_BAYER_GR_BG;
-	*lindex |= LOWBIT_OF(PARAM_3AA_OTF_OUTPUT);
-	*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_OUTPUT);
-	(*indexes)++;
-
 	/* Befor BDS */
 	taa_param->vdma4_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
 	taa_param->vdma4_output.width = device->sensor_width;
