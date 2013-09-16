@@ -333,8 +333,8 @@
 			<&clock 3050>, <&clock 3051>, <&clock 3052>, <&clock 3053>,
 			<&clock 4070>, <&clock 4071>;
 		clock-names = "biu", "gate_ciu",
-			"mout_sclk_mmc0_a", "mout_sclk_mmc0_b", "mout_sclk_mmc0_c", "mout_sclk_mmc0_d",
-			"dout_mmc0_a", "dout_mmc0_b";
+			"mout_sclk_mmc_a", "mout_sclk_mmc_b", "mout_sclk_mmc_c", "mout_sclk_mmc_d",
+			"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
 	};
 
@@ -348,8 +348,8 @@
 			<&clock 3054>, <&clock 3055>,
 			<&clock 4072>, <&clock 4073>;
 		clock-names = "biu", "gate_ciu",
-			"mout_sclk_mmc1_a", "mout_sclk_mmc1_b",
-			"dout_mmc1_a", "dout_mmc1_b";
+			"mout_sclk_mmc_a", "mout_sclk_mmc_b",
+			"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
 	};
 
@@ -363,8 +363,8 @@
 			<&clock 3056>, <&clock 3057>,
 			<&clock 4074>, <&clock 4075>;
 		clock-names = "biu", "gate_ciu",
-			"mout_sclk_mmc2_a", "mout_sclk_mmc2_b",
-			"dout_mmc2_a", "dout_mmc2_b";
+			"mout_sclk_mmc_a", "mout_sclk_mmc_b",
+			"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
 	};
 
