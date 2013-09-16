@@ -5583,11 +5583,7 @@ int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device)
 	scp_param = &device->is_region->parameter.scalerp;
 	scp_param->dma_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
 	scp_param->dma_output.buffer_number = queue->buf_maxcount;
-#ifdef USE_FRAME_SYNC
 	scp_param->dma_output.plane = queue->framecfg.format.num_planes - 1;
-#else
-	scp_param->dma_output.plane = queue->framecfg.format.num_planes;
-#endif
 	scp_param->dma_output.buffer_address =
 		device->imemory.dvaddr_shared + 400 * sizeof(u32);
 
