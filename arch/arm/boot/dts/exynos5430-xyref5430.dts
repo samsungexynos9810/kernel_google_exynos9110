@@ -36,6 +36,7 @@
 		num-slots = <1>;
 		broken-cd;
 		bypass-smu;
+		fixed_volt;
 		supports-highspeed;
 		supports-hs200-mode;
 		fifo-depth = <0x80>;
@@ -59,6 +60,7 @@
 	dwmmc1@15550000 {
 		status = "okay";
 		num-slots = <1>;
+		fixed_volt;
 		supports-highspeed;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
