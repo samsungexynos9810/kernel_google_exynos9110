@@ -57,6 +57,7 @@
 #define VB2ION_CTX_KVA_STATIC	(1 << (ION_NUM_HEAPS + 3))
 #define VB2ION_CTX_KVA_ONDEMAND	(1 << (ION_NUM_HEAPS + 4))
 #define VB2ION_CTX_KVA_DEFAULT	(1 << (ION_NUM_HEAPS + 5))
+#define VB2ION_CTX_COHERENT	(1 << (ION_NUM_HEAPS + 6))
 
 #define VB2ION_CTX_GENKADDR	(1 << (ION_NUM_HEAPS + 3))
 /* Kernal address is generated on call to vb2_plane_vaddr() */
@@ -71,7 +72,7 @@
 #define VB2ION_HEAP_NUM
 
 /* below 5 is the above vb2-ion flags (ION_NUM_HEAPS + 1 ~ 5) */
-#if (BITS_PER_LONG <= (VB2ION_DRM_HEAP_FLAG_NUM + VB2ION_HEAP_NUM + 5))
+#if (BITS_PER_LONG <= (VB2ION_DRM_HEAP_FLAG_NUM + VB2ION_HEAP_NUM + 6))
 #error "Bits are too small to express all flags"
 #endif
 

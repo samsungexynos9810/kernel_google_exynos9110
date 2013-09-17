@@ -63,6 +63,7 @@ struct vb2_ion_buf {
 
 #define ctx_cached(ctx) (!(ctx->flags & VB2ION_CTX_UNCACHED))
 #define ctx_iommu(ctx) (!!(ctx->flags & VB2ION_CTX_IOMMU))
+#define ctx_coherent(ctx) (!!(ctx->flags & VB2ION_CTX_COHERENT))
 #define need_kaddr(ctx, size, cached)					\
 			(!!(ctx->flags & VB2ION_CTX_KVA_STATIC)) ||	\
 			(!(ctx->flags & VB2ION_CTX_KVA_ONDEMAND) &&	\
@@ -415,7 +416,7 @@ static int vb2_ion_map_dmabuf(void *mem_priv, int plane)
 
 	/* get the associated scatterlist for this buffer */
 	buf->cookie.sgt = dma_buf_map_attachment(buf->attachment,
-		buf->direction);
+		ctx_coherent(ctx) ? DMA_COHERENT : buf->direction);
 	if (IS_ERR_OR_NULL(buf->cookie.sgt)) {
 		pr_err("Error getting dmabuf scatterlist\n");
 		return -EINVAL;
@@ -457,8 +458,8 @@ static void vb2_ion_unmap_dmabuf(void *mem_priv)
 		return;
 	}
 
-	dma_buf_unmap_attachment(buf->attachment,
-		buf->cookie.sgt, buf->direction);
+	dma_buf_unmap_attachment(buf->attachment, buf->cookie.sgt,
+		ctx_coherent(buf->ctx) ? DMA_COHERENT : buf->direction);
 	buf->cookie.sgt = NULL;
 }
 
@@ -1027,6 +1028,9 @@ void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 	struct vb2_ion_buf *buf =
 			container_of(cookie, struct vb2_ion_buf, cookie);
 
+	if (ctx_coherent(buf->ctx))
+		return;
+
 	if ((offset + size) > buf->size)
 		size -= offset + size - buf->size;
 
@@ -1081,6 +1085,9 @@ void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 {
 	struct vb2_ion_buf *buf =
 			container_of(cookie, struct vb2_ion_buf, cookie);
+
+	if (ctx_coherent(buf->ctx))
+		return;
 
 	if ((offset + size) > buf->size)
 		size -= offset + size - buf->size;
@@ -1141,6 +1148,9 @@ int vb2_ion_buf_prepare(struct vb2_buffer *vb)
 
 	for (i = 0; i < vb->num_planes; i++) {
 		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
+
+		if (ctx_coherent(buf->ctx))
+			return 0;
 
 		if (buf->attachment && !buf->vma) /* dma-buf type */
 			return 0;
@@ -1239,6 +1249,9 @@ int vb2_ion_buf_finish(struct vb2_buffer *vb)
 
 	for (i = 0; i < vb->num_planes; i++) {
 		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
+
+		if (ctx_coherent(buf->ctx))
+			return 0;
 
 		if (buf->attachment && !buf->vma) /* dma-buf type */
 			return 0;
