@@ -65,17 +65,13 @@
 #include <linux/debugfs.h>
 #endif
 
-#if	defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) ||   \
-	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
-#define CONFIG_FIMD_USE_BUS_DEVFREQ
+#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
+#define CONFIG_DECON_DEVFREQ
+#include <mach/devfreq.h>
+#include <mach/bts.h>
+static int prev_overlap_cnt = 0;
+static int prev_gsc_local_cnt = 0;
 #endif
-
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-#include <linux/pm_qos.h>
-static struct pm_qos_request exynos5_mif_qos;
-static struct pm_qos_request exynos5_int_qos;
-#endif
-
 
 /* This driver will export a number of framebuffer interfaces depending
  * on the configuration passed in via the platform data. Each fb instance
@@ -624,6 +620,93 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	writel(data, sfb->regs + DECON_UPDATE);
 }
 
+#ifdef CONFIG_DECON_DEVFREQ
+static bool s3c_fb_intersect(struct s3c_fb_rect *r1, struct s3c_fb_rect *r2)
+{
+	return !(r1->left > r2->right || r1->right < r2->left ||
+		r1->top > r2->bottom || r1->bottom < r2->top);
+}
+
+static int s3c_fb_intersection(struct s3c_fb_rect *r1,
+				struct s3c_fb_rect *r2, struct s3c_fb_rect *r3)
+{
+	r3->top = max(r1->top, r2->top);
+	r3->bottom = min(r1->bottom, r2->bottom);
+	r3->left = max(r1->left, r2->left);
+	r3->right = min(r1->right, r2->right);
+	return 0;
+}
+
+static int s3c_fb_get_overlap_cnt(struct s3c_fb *sfb, struct s3c_fb_win_config *win_config)
+{
+	struct s3c_fb_rect overlaps2[10];
+	struct s3c_fb_rect overlaps3[6];
+	struct s3c_fb_rect overlaps4[3];
+	struct s3c_fb_rect r1, r2;
+	struct s3c_fb_win_config *win_cfg1, *win_cfg2;
+	int overlaps2_cnt = 0;
+	int overlaps3_cnt = 0;
+	int overlaps4_cnt = 0;
+	int i, j;
+
+	int overlap_max_cnt = 1;
+
+	for (i = 1; i < sfb->variant.nr_windows; i++) {
+		win_cfg1 = &win_config[i];
+		if (win_cfg1->state == S3C_FB_WIN_STATE_DISABLED)
+			continue;
+		r1.left = win_cfg1->x;
+		r1.top = win_cfg1->y;
+		r1.right = r1.left + win_cfg1->w - 1;
+		r1.bottom = r1.top + win_cfg1->h - 1;
+		for (j = 0; j < overlaps4_cnt; j++) {
+			/* 5 window overlaps */
+			if (s3c_fb_intersect(&r1, &overlaps4[j])) {
+				overlap_max_cnt = 5;
+				break;
+			}
+		}
+		for (j = 0; (j < overlaps3_cnt) && (overlaps4_cnt < 3); j++) {
+			/* 4 window overlaps */
+			if (s3c_fb_intersect(&r1, &overlaps3[j])) {
+				s3c_fb_intersection(&r1, &overlaps3[j], &overlaps4[overlaps4_cnt]);
+				overlaps4_cnt++;
+			}
+		}
+		for (j = 0; (j < overlaps2_cnt) && (overlaps3_cnt < 6); j++) {
+			/* 3 window overlaps */
+			if (s3c_fb_intersect(&r1, &overlaps2[j])) {
+				s3c_fb_intersection(&r1, &overlaps2[j], &overlaps3[overlaps3_cnt]);
+				overlaps3_cnt++;
+			}
+		}
+		for (j = 0; (j < i) && (overlaps2_cnt < 10); j++) {
+			win_cfg2 = &win_config[j];
+			if (win_cfg2->state == S3C_FB_WIN_STATE_DISABLED)
+				continue;
+			r2.left = win_cfg2->x;
+			r2.top = win_cfg2->y;
+			r2.right = r2.left + win_cfg2->w - 1;
+			r2.bottom = r2.top + win_cfg2->h - 1;
+			/* 2 window overlaps */
+			if (s3c_fb_intersect(&r1, &r2)) {
+				s3c_fb_intersection(&r1, &r2, &overlaps2[overlaps2_cnt]);
+				overlaps2_cnt++;
+			}
+		}
+	}
+
+	if (overlaps4_cnt > 0)
+		overlap_max_cnt = max(overlap_max_cnt, 4);
+	else if (overlaps3_cnt > 0)
+		overlap_max_cnt = max(overlap_max_cnt, 3);
+	else if (overlaps2_cnt > 0)
+		overlap_max_cnt = max(overlap_max_cnt, 2);
+
+	return overlap_max_cnt;
+}
+#endif
+
 static unsigned int s3c_fb_calc_bandwidth(u32 w, u32 h, u32 bits_per_pixel, int fps)
 {
 	unsigned int bw = w * h;
@@ -923,14 +1006,20 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_NORMAL:
 		ret = s3c_fb_disable(sfb);
 		s5p_mipi_dsi_disable(dsim_for_decon);
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-		pm_qos_update_request(&exynos5_mif_qos, 0);
+#if defined(CONFIG_DECON_DEVFREQ)
+		exynos5_update_media_layers(TYPE_DECON, 0);
+		exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
+		prev_overlap_cnt = 0;
+		prev_gsc_local_cnt = 0;
 #endif
 		break;
 
 	case FB_BLANK_UNBLANK:
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-		pm_qos_update_request(&exynos5_mif_qos, 200000);
+#if defined(CONFIG_DECON_DEVFREQ)
+		exynos5_update_media_layers(TYPE_DECON, 1);
+		exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
+		prev_overlap_cnt = 1;
+		prev_gsc_local_cnt = 0;
 #endif
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
@@ -1898,6 +1987,10 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	dev_dbg(sfb->dev, "Total BW = %d Mbits, Max BW per window = %d Mbits\n",
 			bw / (1024 * 1024), MAX_BW_PER_WINDOW / (1024 * 1024));
 
+#ifdef CONFIG_DECON_DEVFREQ
+	regs->win_overlap_cnt = s3c_fb_get_overlap_cnt(sfb, win_config);
+#endif
+
 	if (ret) {
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
 			if (!sfb->windows[i]->local) {
@@ -2018,6 +2111,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	struct s3c_dma_buf_data old_dma_bufs[S3C_FB_MAX_WIN];
 	bool wait_for_vsync;
 	int count = 10;
+	int local_cnt = 0;
 	int i;
 
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
@@ -2042,14 +2136,17 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 			if (regs->dma_buf_data[i].fence)
 				s3c_fd_fence_wait(sfb,
 					regs->dma_buf_data[i].fence);
+		} else {
+			local_cnt++;
 		}
 	}
 
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-	if (regs->bandwidth > FHD_MAX_BW_PER_WINDOW) {
-		pm_qos_update_request(&exynos5_mif_qos, 400000);
-		pm_qos_update_request(&exynos5_int_qos, 100000);
-		bts_set_bw(regs->bandwidth);
+#if defined(CONFIG_DECON_DEVFREQ)
+	if (prev_overlap_cnt < regs->win_overlap_cnt)
+		exynos5_update_media_layers(TYPE_DECON, regs->win_overlap_cnt);
+	if (prev_gsc_local_cnt < local_cnt) {
+		exynos5_update_media_layers(TYPE_GSCL_LOCAL, local_cnt);
+		bts_initialize("gscl-local", true);
 	}
 #endif
 
@@ -2088,12 +2185,16 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		if (!sfb->windows[i]->local)
 			s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
 
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-	if (regs->bandwidth <= FHD_MAX_BW_PER_WINDOW) {
-		bts_set_bw(regs->bandwidth);
-		pm_qos_update_request(&exynos5_mif_qos, 0);
-		pm_qos_update_request(&exynos5_int_qos, 0);
+#if defined(CONFIG_DECON_DEVFREQ)
+	if (prev_gsc_local_cnt > local_cnt) {
+		if (local_cnt == 0)
+			bts_initialize("gsc-local", false);
+		exynos5_update_media_layers(TYPE_GSCL_LOCAL, local_cnt);
 	}
+	if (prev_overlap_cnt > regs->win_overlap_cnt)
+		exynos5_update_media_layers(TYPE_DECON, regs->win_overlap_cnt);
+	prev_overlap_cnt = regs->win_overlap_cnt;
+	prev_gsc_local_cnt = local_cnt;
 #endif
 }
 
@@ -3672,10 +3773,17 @@ int create_decon_display_controller(struct platform_device *pdev)
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	s3c_fb_configure_trigger(sfb);
 #endif
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
-	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, 200000);
-	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
+
+#if defined(CONFIG_DECON_DEVFREQ)
+#if defined(CONFIG_DECON_LCD_S6E3FA0)
+	exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_FULLHD);
 #endif
+	exynos5_update_media_layers(TYPE_DECON, 1);
+	exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
+	prev_overlap_cnt = 1;
+	prev_gsc_local_cnt = 0;
+#endif
+
 	/* we have the register setup, start allocating framebuffers */
 	for (i = 0; i < fbdrv->variant.nr_windows; i++) {
 		win = i;

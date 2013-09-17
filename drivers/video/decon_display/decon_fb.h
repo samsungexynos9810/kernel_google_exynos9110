@@ -229,6 +229,7 @@ struct s3c_reg_data {
 	u32			vidw_buf_size[S3C_FB_MAX_WIN];
 	struct s3c_dma_buf_data	dma_buf_data[S3C_FB_MAX_WIN];
 	unsigned int		bandwidth;
+	u32			win_overlap_cnt;
 };
 #endif
 
@@ -362,7 +363,12 @@ struct s3c_fb {
 	struct exynos5_bus_int_handle *fb_int_handle;
 };
 
-
+struct s3c_fb_rect {
+	int	left;
+	int	top;
+	int	right;
+	int	bottom;
+};
 
 struct s3c_fb_user_window {
 	int x;
