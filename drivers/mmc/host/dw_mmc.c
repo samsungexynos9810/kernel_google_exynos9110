@@ -2948,31 +2948,33 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	if (host->align_size)
 		mmc->align_size = host->align_size;
 
-	host->vmmc = devm_regulator_get(mmc_dev(mmc), "vmmc");
-	if (IS_ERR(host->vmmc)) {
-		pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
-		host->vmmc = NULL;
-	} else {
-		pr_info("%s: vmmc regulator found\n", mmc_hostname(mmc));
-		ret = regulator_enable(host->vmmc);
-		if (ret) {
-			dev_err(host->dev,
-				"failed to enable vmmc regulator: %d\n", ret);
-			goto err_setup_bus;
+	if (!(host->quirks & DW_MMC_QUIRK_FIXED_VOLTAGE)) {
+		host->vmmc = devm_regulator_get(mmc_dev(mmc), "vmmc");
+		if (IS_ERR(host->vmmc)) {
+			pr_info("%s: no vmmc regulator found\n", mmc_hostname(mmc));
+			host->vmmc = NULL;
+		} else {
+			pr_info("%s: vmmc regulator found\n", mmc_hostname(mmc));
+			ret = regulator_enable(host->vmmc);
+			if (ret) {
+				dev_err(host->dev,
+					"failed to enable vmmc regulator: %d\n", ret);
+				goto err_setup_bus;
+			}
 		}
-	}
 
-	host->vqmmc = devm_regulator_get(mmc_dev(mmc), "vqmmc");
-	if (IS_ERR(host->vqmmc)) {
-		pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
-		host->vqmmc = NULL;
-	} else {
-		pr_info("%s: vqmmc regulator found\n", mmc_hostname(mmc));
-		ret = regulator_enable(host->vqmmc);
-		if (ret) {
-			dev_err(host->dev,
-				"failed to enable vqmmc regulator: %d\n", ret);
-			goto err_setup_bus;
+		host->vqmmc = devm_regulator_get(mmc_dev(mmc), "vqmmc");
+		if (IS_ERR(host->vqmmc)) {
+			pr_info("%s: no vqmmc regulator found\n", mmc_hostname(mmc));
+			host->vqmmc = NULL;
+		} else {
+			pr_info("%s: vqmmc regulator found\n", mmc_hostname(mmc));
+			ret = regulator_enable(host->vqmmc);
+			if (ret) {
+				dev_err(host->dev,
+					"failed to enable vqmmc regulator: %d\n", ret);
+				goto err_setup_bus;
+			}
 		}
 	}
 
@@ -3106,6 +3108,9 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk	= "bypass-smu",
 		.id	= DW_MCI_QUIRK_BYPASS_SMU,
+	}, {
+		.quirk	= "fixed_volt",
+		.id	= DW_MMC_QUIRK_FIXED_VOLTAGE,
 	},
 };
 
