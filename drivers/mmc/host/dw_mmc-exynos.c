@@ -98,6 +98,7 @@ struct dw_mci_exynos_priv_data {
 	u8			ciu_div;
 	u32			sdr_timing;
 	u32			ddr_timing;
+	u32			hs200_timing;
 	u32			ddr200_timing;
 	u32			*ref_clk;
 };
@@ -240,13 +241,15 @@ static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
  */
 static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 {
-	struct dw_mci_exynos_priv_data *priv = host->priv;
-
 	u32 ciu_rate = clk_get_rate(host->ciu_clk);
-	u32 ciu_div = priv->ciu_div + 1;	/* aka DIVRATIO */
+	u32 ciu_div;
+	u32 tmp_reg;
 	int clkerr = 0;
 	struct clk *adiv = devm_clk_get(host->dev, "dout_mmc_a");
 	struct clk *bdiv = devm_clk_get(host->dev, "dout_mmc_b");
+
+	tmp_reg = mci_readl(host, CLKSEL);
+	ciu_div = SDMMC_CLKSEL_GET_DIVRATIO(tmp_reg);
 
 	/* Try to set the upstream clock rate */
 	if (ciu_rate != (want_bus_hz * ciu_div)) {
@@ -326,7 +329,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 {
 	struct dw_mci_exynos_priv_data *priv = host->priv;
-	u32 timing[2];
+	u32 timing[3];
 	u32 div = 0;
 
 	struct device_node *np = host->dev->of_node;
@@ -335,23 +338,7 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	u32 *ciu_clkin_values = NULL;
 	int idx_ref;
 	int ret = 0;
-
-	of_property_read_u32(np, "samsung,dw-mshc-ciu-div", &div);
-	priv->ciu_div = div;
-
-	ret = of_property_read_u32_array(np,
-			"samsung,dw-mshc-sdr-timing", timing, 2);
-	if (ret)
-		return ret;
-
-	priv->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], div);
-
-	ret = of_property_read_u32_array(np,
-			"samsung,dw-mshc-ddr-timing", timing, 2);
-	if (ret)
-		return ret;
-
-	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], div);
+	int id = 0;
 
 	/*
 	 * Reference clock values for speed mode change are extracted from DT.
@@ -394,6 +381,51 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	ref_clk -= ref_clk_size;
 	ciu_clkin_values -= ref_clk_size;
 	priv->ref_clk = ref_clk;
+
+	of_property_read_u32(np, "samsung,dw-mshc-ciu-div", &div);
+	priv->ciu_div = div;
+
+	ret = of_property_read_u32_array(np,
+			"samsung,dw-mshc-sdr-timing", timing, 3);
+	if (ret)
+		return ret;
+
+	priv->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+
+	ret = of_property_read_u32_array(np,
+			"samsung,dw-mshc-ddr-timing", timing, 3);
+	if (ret)
+		goto err_ref_clk;
+
+	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+
+	id = of_alias_get_id(host->dev->of_node, "mshc");
+	switch (id) {
+	/* dwmmc0 : eMMC    */
+	case 0:
+		ret = of_property_read_u32_array(np,
+			"samsung,dw-mshc-hs200-timing", timing, 3);
+		if (ret)
+			goto err_ref_clk;
+
+		priv->hs200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+
+		ret = of_property_read_u32_array(np,
+			"samsung,dw-mshc-ddr200-timing", timing, 3);
+		if (ret)
+			goto err_ref_clk;
+
+		priv->ddr200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+		break;
+	/* dwmmc1 : SDIO    */
+	case 1:
+		break;
+	/* dwmmc2 : SD Card */
+	case 2:
+		break;
+	default:
+		ret = -ENODEV;
+	}
 
 err_ref_clk:
 
@@ -455,6 +487,22 @@ static int find_median_of_5bits(unsigned int map)
 		if ((testbits & FIVEBITS) == FIVEBITS)
 			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
 	}
+
+/* Middle is bit 1. */
+#define THREEBITS 0x7
+
+	for (i = 1; i < (8 + 1); i++, testbits >>= 1) {
+		if ((testbits & THREEBITS) == THREEBITS)
+			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+	}
+/* Middle is bit 0. */
+#define ONEBITS 0x1
+
+	for (i = 0; i < (8 + 0); i++, testbits >>= 1) {
+		if ((testbits & ONEBITS) == ONEBITS)
+			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+	}
+
 
 	return -1;
 }
@@ -580,6 +628,8 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	 * that worked.
 	 */
 	best_sample = find_median_of_5bits(sample_good);
+	dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
+			sample_good, best_sample);
 	if (best_sample >= 0) {
 		host->pdata->clk_smpl = best_sample;
 		host->pdata->tuned = true;
