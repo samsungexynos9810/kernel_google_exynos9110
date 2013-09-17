@@ -872,7 +872,7 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 	struct ion_vma_list *vma_list;
 	int pages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
 
-	if (!ion_buffer_cached(buffer))
+	if (!ion_buffer_cached(buffer) || (dir == DMA_COHERENT))
 		return;
 
 	pr_debug("%s: syncing for device %s\n", __func__,
@@ -931,7 +931,7 @@ static void ion_buffer_sync_for_cpu(struct ion_buffer *buffer,
 	int i;
 	struct scatterlist *sg;
 
-	if (!ion_buffer_cached(buffer))
+	if (!ion_buffer_cached(buffer) || (dir == DMA_COHERENT))
 		return;
 
 	pr_debug("%s: syncing for cpu against %s\n", __func__,
