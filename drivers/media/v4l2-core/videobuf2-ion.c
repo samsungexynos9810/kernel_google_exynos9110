@@ -491,7 +491,7 @@ static void *vb2_ion_attach_dmabuf(void *alloc_ctx, struct dma_buf *dbuf,
 	struct dma_buf_attachment *attachment;
 
 	if (dbuf->size < size) {
-		pr_err("dbuf->size(%d) is smaller than size(%ld)\n",
+		WARN(1, "dbuf->size(%d) is smaller than size(%ld)\n",
 				dbuf->size, size);
 		return ERR_PTR(-EFAULT);
 	}
