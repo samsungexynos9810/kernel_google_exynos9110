@@ -189,25 +189,87 @@ enum exynos5_sensor_position {
 	SENSOR_POSITION_REAR = 0,
 	SENSOR_POSITION_FRONT
 };
+
 enum exynos5_sensor_id {
 	SENSOR_NAME_NOTHING		 = 0,
 	SENSOR_NAME_S5K3H2		 = 1,
 	SENSOR_NAME_S5K6A3		 = 2,
-	SENSOR_NAME_S5K4E5		 = 3,
-	SENSOR_NAME_S5K3H5		 = 4,
-	SENSOR_NAME_S5K3H7		 = 5,
-	SENSOR_NAME_S5K3H7_SUNNY	 = 6,
-	SENSOR_NAME_S5K3H7_SUNNY_2M	 = 7,
-	SENSOR_NAME_IMX135		 = 8,
-	SENSOR_NAME_S5K6B2		 = 9,
-	SENSOR_NAME_IMX135_FHD60	 = 10,
-	SENSOR_NAME_IMX135_HD120	 = 11,
-	SENSOR_NAME_IMX135_FHD30	 = 12,
-	SENSOR_NAME_S5K3L2		 = 13,
-	SENSOR_NAME_S5K3L2_FHD60	 = 14,
-	SENSOR_NAME_S5K3L2_HD120	 = 15,
-	SENSOR_NAME_CUSTOM		 = 100,
-	SENSOR_NAME_END
+	SENSOR_NAME_S5K3H5		 = 3,
+	SENSOR_NAME_S5K3H7		 = 4,
+	SENSOR_NAME_S5K3H7_SUNNY	 = 5,
+	SENSOR_NAME_S5K3H7_SUNNY_2M	 = 6,
+	SENSOR_NAME_S5K6B2		 = 7,
+	SENSOR_NAME_S5K3L2		 = 8,
+	SENSOR_NAME_S5K4E5		 = 9,
+	SENSOR_NAME_S5K2P2		 = 10,
+
+	SENSOR_NAME_IMX135		 = 101, /* 101 ~ 200 Sony sensors */
+
+	SENSOR_NAME_SR261		 = 201, /* 201 ~ 300 Other vendor sensors */
+
+	SENSOR_NAME_END,
+	SENSOR_NAME_CUSTOM		 = 301,
+};
+
+/* Sensor configurations are decided through JA, HA, VA projects with TANGO. */
+enum is_s5k3h2_config_enum {
+	S5K3H2_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k6a3_config_enum{
+	S5K6A3_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k3h5_config_enum{
+	S5K3H5_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k3h7_config_enum{
+	S5K3H7_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k3h7sunny_config_enum{
+	S5K3H7_SUNNY_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k3h7sunny2m_config_enum {
+	S5K3H7_SUNNY_2M_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k6b2_config_enum {
+	S5K6B2_CONFIG_1936X1090_30 = 0,
+	S5K6B2_CONFIG_1936X1090_24 = 1,
+	S5K6B2_CONFIG_BINNING_2X2 = 2,
+};
+
+enum is_s5k3l2_config_enum{/* Below configurations are decided through JA, HA, VA projects with TANGO. */
+	S5K3L2_CONFIG_4144X3106_30 = 0, /*  4:3 Single still preview/capture, Single video (snapshot), Dual still capture */
+	S5K3L2_CONFIG_4144X2332_30 = 1, /*  16:9 Single still preview/capture, Single video (snapshot), Dual still capture */
+	S5K3L2_CONFIG_2072X1554_24 = 2, /*  4:3 Dual still preview, Dual video */
+	S5K3L2_CONFIG_2072X1166_24 = 3, /*  16:9 Dual still preview, Dual video */
+	S5K3L2_CONFIG_1040X584_120 = 4, /*  Slow video motion 1/4, 1/8 */
+	S5K3L2_CONFIG_2072X1166_60 = 5, /*  Slow video motion 1/2, FHD recording 60fps, Golf shot 60fps */
+};
+
+enum is_s5k4e5_config_enum{
+	S5K4E5_CONFIG_DEFAULT = 0,
+};
+
+enum is_s5k2p2_config_enum{
+	S5K2P2_CONFIG_DEFAULT = 0,
+};
+
+enum is_imx135_config_enum{
+	IMX135_CONFIG_4144X3106_30 = 0, /* 4:3 Single still preview/capture, Single video (snapshot), Dual still capture */
+	IMX135_CONFIG_4144X2332_30 = 1, /* 16:9 Single still preview/capture, Single video (snapshot), Dual still capture */
+	IMX135_CONFIG_1936X1450_24 = 2, /* 4:3 Dual still preview, Dual video */
+	IMX135_CONFIG_1936X1090_24 = 3, /* 16:9 Dual still preview, Dual video */
+	IMX135_CONFIG_1024X576_120 = 4, /* Slow video motion 1/4, 1/8 */
+	IMX135_CONFIG_2072X1166_60 = 5, /* Slow video motion 1/2, FHD recording 60fps, Golf shot 60fps */
+};
+
+enum is_sr261_config_enum{
+	SR261_CONFIG_DEFAULT = 0,
 };
 
 struct exynos5_sensor_power_info {
