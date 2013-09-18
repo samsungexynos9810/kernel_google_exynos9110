@@ -502,6 +502,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	struct timeval before, after;
 	int idle_time, ret = 0;
 	unsigned int cpuid = smp_processor_id(), cpu_offset = 0;
+	unsigned int temp;
 
 	local_irq_disable();
 	do_gettimeofday(&before);
@@ -513,11 +514,16 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	cpu_pm_enter();
 
 	cpu_offset = cpuid ^ 0x4;
-	__raw_writel(0x0, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+	temp = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+	temp &= 0xfffffff0;
+	__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
 	ret = cpu_suspend(0, c2_finisher);
-	if (ret)
-		__raw_writel(0xf, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+	if (ret) {
+		temp = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+		temp |= 0xf;
+		__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+	}
 
 	clear_boot_flag(cpuid, C2_STATE);
 	cpu_pm_exit();
