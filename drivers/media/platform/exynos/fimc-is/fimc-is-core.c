@@ -94,7 +94,11 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 #ifdef ENABLE_TDNR
 				SIZE_DNR_INTERNAL_BUF * NUM_DNR_INTERNAL_BUF +
 #endif
+#if defined(CONFIG_ARCH_EXYNOS4)
+				0);
+#else
 				0, 1, 0);
+#endif
 
 	if (IS_ERR(fw_cookie)) {
 		err("Allocating bitprocessor buffer failed");
