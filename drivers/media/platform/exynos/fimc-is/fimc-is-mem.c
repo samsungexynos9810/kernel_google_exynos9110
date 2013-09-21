@@ -88,7 +88,11 @@ int fimc_is_mem_probe(struct fimc_is_mem *this,
 		ret = PTR_ERR(this->alloc_ctx);
 		goto p_err;
 	}
+#if defined(CONFIG_ARCH_EXYNOS4)
+	exynos_create_iovmm(&pdev->dev);
+#else
 	exynos_create_iovmm(&pdev->dev, 1, 4);
+#endif
 
 p_err:
 	return ret;
