@@ -182,6 +182,11 @@ struct exynos_sensor_power_info {
 	char cam_io_myself[FIMC_IS_MAX_NAME_LEN];
 	char cam_io_peer[FIMC_IS_MAX_NAME_LEN];
 	char cam_af[FIMC_IS_MAX_NAME_LEN];
+
+	char core[FIMC_IS_MAX_NAME_LEN];
+	char io[FIMC_IS_MAX_NAME_LEN];
+	char analog[FIMC_IS_MAX_NAME_LEN];
+	char af[FIMC_IS_MAX_NAME_LEN];
 };
 
 enum actuator_name {
@@ -279,6 +284,11 @@ struct exynos_sensor_gpio_info {
 	struct gpio_set reset_myself;
 	struct gpio_set reset_peer;
 	struct gpio_set power;
+
+	struct gpio_set power_core;
+	struct gpio_set power_io;
+	struct gpio_set power_analog;
+	struct gpio_set power_af;
 };
 
 struct fimc_is_gpio_info {
