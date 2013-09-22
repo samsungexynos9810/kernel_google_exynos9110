@@ -361,6 +361,9 @@
 #if defined(CONFIG_SOC_EXYNOS5430)
 #define PA_FIMC_IS_GIC_C			(0x141E0000)
 #define PA_FIMC_IS_GIC_D			(0x141F0000)
+#elif defined(CONFIG_SOC_EXYNOS3470)
+#define PA_FIMC_IS_GIC_C			(0x121E0000)
+#define PA_FIMC_IS_GIC_D			(0x121F0000)
 #else
 #define PA_FIMC_IS_GIC_C			(0x131E0000)
 #define PA_FIMC_IS_GIC_D			(0x131F0000)
