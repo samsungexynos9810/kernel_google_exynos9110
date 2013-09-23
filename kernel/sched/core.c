@@ -2057,6 +2057,13 @@ unsigned long nr_running(void)
 	return sum;
 }
 
+#ifdef CONFIG_SCHED_HMP
+unsigned long nr_running_cpu(unsigned int cpu)
+{
+	return cpu_rq(cpu)->nr_running;
+}
+#endif
+
 unsigned long long nr_context_switches(void)
 {
 	int i;
