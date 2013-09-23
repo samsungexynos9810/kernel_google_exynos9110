@@ -440,7 +440,7 @@ static int ion_handle_add(struct ion_client *client, struct ion_handle *handle)
 
 	idr_preload(GFP_KERNEL);
 	do {
-		handle->id = idr_alloc(&client->idr, handle, 0, 0, GFP_KERNEL);
+		handle->id = idr_alloc(&client->idr, handle, 1, 0, GFP_KERNEL);
 	} while (handle->id == -EAGAIN);
 	idr_preload_end();
 
