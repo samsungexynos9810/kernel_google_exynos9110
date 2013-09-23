@@ -337,8 +337,9 @@ static struct es515_route_configs es515_def_route_configs[] = {
 			0xB0, 0x5C, 0x00, 0x04,
 			/* Algo rate = 16 kHz  */
 			0x90, 0x4c, 0x00, 0x01,
-			/* preset mode 7: 16bits 48KHz headphone */
-			0x80, 0x31, 0x00, 0x07,
+			/* preset mode 74:
+			   16bits 48KHz headphone playback + MIC1 capture */
+			0x80, 0x31, 0x00, 0x4A,
 #ifndef CONFIG_ES515_MASTER	/* Codec Slave */
 			/* Set param ID for  Port 0, clock control */
 			0x80, 0x0C, 0x0A, 0x09,
@@ -353,6 +354,14 @@ static struct es515_route_configs es515_def_route_configs[] = {
 			0x90, 0x0C, 0x1C, 0x03,
 			/* -20 dB */
 			0x90, 0x0D, 0x00, 0x09,
+			/* set device param Id MIC1 Gain */
+			0x90, 0x0C, 0x10, 0x00,
+			/* 30 dB */
+			0x90, 0x0D, 0x00, 0x14,
+			/* set device param Id MIC2 Gain */
+			0x90, 0x0C, 0x11, 0x00,
+			/* 30 dB */
+			0x90, 0x0D, 0x00, 0x14,
 			0xff,
 		},
 /*		.active_out_codec_port = ES515_CODEC_PORT_SPEAKER,*/
