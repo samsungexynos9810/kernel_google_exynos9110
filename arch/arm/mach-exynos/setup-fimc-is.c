@@ -64,14 +64,10 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 
 	if (flag_on == false) {
 		if (channel == CSI_ID_A) {
-			gpio_request_one(_gpio_info->gpio_main_sda, GPIOF_IN, "MAIN_CAM_SDA");
-			gpio_free(_gpio_info->gpio_main_sda);
-
-			gpio_request_one(_gpio_info->gpio_main_scl, GPIOF_IN, "MAIN_CAM_SCL");
-			gpio_free(_gpio_info->gpio_main_scl);
-
-			gpio_request_one(_gpio_info->gpio_main_mclk, GPIOF_IN, "MAIN_CAM_MCLK");
-			gpio_free(_gpio_info->gpio_main_mclk);
+			/* UART(GPC0-7, GPC1-1) */
+			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
+			if (IS_ERR(pinctrl_uart))
+				pr_err("%s: main cam uart pins are not configured\n", __func__);
 
 			usleep_range(1000, 1000);
 			__gpio_set_value(_gpio_info->gpio_main_rst, 0);
@@ -81,14 +77,10 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 			gpio_free(_gpio_info->gpio_main_rst);
 			goto exit;
 		} else if (channel == CSI_ID_B) {
-			gpio_request_one(_gpio_info->gpio_vt_sda, GPIOF_IN, "VT_CAM_SDA");
-			gpio_free(_gpio_info->gpio_vt_sda);
-
-			gpio_request_one(_gpio_info->gpio_vt_scl, GPIOF_IN, "VT_CAM_SCL");
-			gpio_free(_gpio_info->gpio_vt_scl);
-
-			gpio_request_one(_gpio_info->gpio_vt_mclk, GPIOF_IN, "VT_CAM_MCLK");
-			gpio_free(_gpio_info->gpio_vt_mclk);
+			/* UART(GPC0-7, GPC1-1) */
+			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
+			if (IS_ERR(pinctrl_uart))
+				pr_err("%s: main cam uart pins are not configured\n", __func__);
 
 			usleep_range(1000, 1000);
 			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
