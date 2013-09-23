@@ -434,7 +434,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
 	dma_cap_mask_t mask;
 	int ret;
 
-	if (sci->dma_mode == DMA_MODE) {
+	if (sci->dma_mode != DMA_MODE) {
 		ret = pm_runtime_get_sync(&sdd->pdev->dev);
 		if (ret < 0) {
 			dev_err(dev, "Failed to enable device: %d\n", ret);
