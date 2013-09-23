@@ -220,6 +220,12 @@ static void dw_mci_exynos_register_dump(struct dw_mci *host)
 		__raw_readl(host->regs + DWMCI_MPSEND0));
 	dev_err(host->dev, ": DWMCI_MPSCTRL0:	0x%08x\n",
 		__raw_readl(host->regs + DWMCI_MPSCTRL0));
+	dev_err(host->dev, ": DWMCI_DDR200_RDDQS_EN:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_DDR200_RDDQS_EN + 0x70));
+	dev_err(host->dev, ": DWMCI_DDR200_ASYNC_FIFO_CTRL:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_DDR200_ASYNC_FIFO_CTRL + 0x70));
+	dev_err(host->dev, ": DWMCI_DDR200_DLINE_CTRL:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_DDR200_DLINE_CTRL + 0x70));
 }
 static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
 {
