@@ -51,23 +51,27 @@ static struct hdmi_device *sd_to_hdmi_dev(struct v4l2_subdev *sd)
 	return container_of(sd, struct hdmi_device, sd);
 }
 
-static const struct hdmi_preset_conf *hdmi_preset2conf(u32 preset)
+static const struct hdmi_timings *hdmi_timing2conf(struct v4l2_dv_timings *timings)
 {
 	int i;
 
 	for (i = 0; i < hdmi_pre_cnt; ++i)
-		if (hdmi_conf[i].preset == preset)
+		if (v4l_match_dv_timings(&hdmi_conf[i].dv_timings,
+					timings, 0))
 			return  hdmi_conf[i].conf;
+
 	return NULL;
 }
 
-const struct hdmi_3d_info *hdmi_preset2info(u32 preset)
+const struct hdmi_3d_info *hdmi_timing2info(struct v4l2_dv_timings *timings)
 {
 	int i;
 
 	for (i = 0; i < hdmi_pre_cnt; ++i)
-		if (hdmi_conf[i].preset == preset)
+		if (v4l_match_dv_timings(&hdmi_conf[i].dv_timings,
+					timings, 0))
 			return  hdmi_conf[i].info;
+
 	return NULL;
 }
 
@@ -92,7 +96,7 @@ static int hdmi_set_infoframe(struct hdmi_device *hdev)
 	struct hdmi_infoframe infoframe;
 	const struct hdmi_3d_info *info;
 
-	info = hdmi_preset2info(hdev->cur_preset);
+	info = hdmi_timing2info(&hdev->cur_timings);
 
 	if (info->is_3d == HDMI_VIDEO_FORMAT_3D) {
 		infoframe.type = HDMI_PACKET_TYPE_VSI;
@@ -342,20 +346,18 @@ int hdmi_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 	return 0;
 }
 
-static int hdmi_s_dv_preset(struct v4l2_subdev *sd,
-	struct v4l2_dv_preset *preset)
+static int hdmi_s_dv_timings(struct v4l2_subdev *sd,
+	struct v4l2_dv_timings *timings)
 {
 	struct hdmi_device *hdev = sd_to_hdmi_dev(sd);
 	struct device *dev = hdev->dev;
-	const struct hdmi_preset_conf *conf;
 
-	conf = hdmi_preset2conf(preset->preset);
-	if (conf == NULL) {
-		dev_err(dev, "preset (%u) not supported\n", preset->preset);
+	hdev->cur_conf = hdmi_timing2conf(timings);
+	if (hdev->cur_conf == NULL) {
+		dev_err(dev, "timings not supported\n");
 		return -EINVAL;
 	}
-	hdev->cur_conf = conf;
-	hdev->cur_preset = preset->preset;
+	hdev->cur_timings = *timings;
 
 	if (hdev->streaming == HDMI_STREAMING) {
 		hdmi_streamoff(hdev);
@@ -366,11 +368,20 @@ static int hdmi_s_dv_preset(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int hdmi_g_dv_preset(struct v4l2_subdev *sd,
-	struct v4l2_dv_preset *preset)
+static int hdmi_g_dv_timings(struct v4l2_subdev *sd,
+	struct v4l2_dv_timings *timings)
 {
-	memset(preset, 0, sizeof(*preset));
-	preset->preset = sd_to_hdmi_dev(sd)->cur_preset;
+	*timings = sd_to_hdmi_dev(sd)->cur_timings;
+	return 0;
+}
+
+static int hdmi_enum_dv_timings(struct v4l2_subdev *sd,
+	struct v4l2_enum_dv_timings *timings)
+{
+	if (timings->index >= hdmi_pre_cnt)
+		return -EINVAL;
+	timings->timings = hdmi_conf[timings->index].dv_timings;
+
 	return 0;
 }
 
@@ -402,18 +413,6 @@ static int hdmi_s_mbus_fmt(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int hdmi_enum_dv_presets(struct v4l2_subdev *sd,
-	struct v4l2_dv_enum_preset *enum_preset)
-{
-	struct hdmi_device *hdev = sd_to_hdmi_dev(sd);
-	u32 preset = edid_enum_presets(hdev, enum_preset->index);
-
-	if (preset == V4L2_DV_INVALID)
-		return -EINVAL;
-
-	return v4l_fill_dv_preset_info(preset, enum_preset);
-}
-
 static const struct v4l2_subdev_core_ops hdmi_sd_core_ops = {
 	.s_power = hdmi_s_power,
 	.s_ctrl = hdmi_s_ctrl,
@@ -421,9 +420,9 @@ static const struct v4l2_subdev_core_ops hdmi_sd_core_ops = {
 };
 
 static const struct v4l2_subdev_video_ops hdmi_sd_video_ops = {
-	.s_dv_preset = hdmi_s_dv_preset,
-	.g_dv_preset = hdmi_g_dv_preset,
-	.enum_dv_presets = hdmi_enum_dv_presets,
+	.s_dv_timings = hdmi_s_dv_timings,
+	.g_dv_timings = hdmi_g_dv_timings,
+	.enum_dv_timings = hdmi_enum_dv_timings,
 	.g_mbus_fmt = hdmi_g_mbus_fmt,
 	.s_mbus_fmt = hdmi_s_mbus_fmt,
 	.s_stream = hdmi_s_stream,
@@ -646,7 +645,7 @@ irqreturn_t hdmi_irq_handler_ext(int irq, void *dev_data)
 
 static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 {
-	u32 preset;
+	struct v4l2_dv_timings timings;
 	int ret;
 
 	if (state == switch_get_state(&hdev->hpd_switch))
@@ -659,13 +658,9 @@ static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 			return;
 		}
 
-		preset = edid_preferred_preset(hdev);
-		if (preset == V4L2_DV_INVALID)
-			preset = HDMI_DEFAULT_PRESET;
-
 		hdev->dvi_mode = !edid_supports_hdmi(hdev);
-		hdev->cur_preset = preset;
-		hdev->cur_conf = hdmi_preset2conf(preset);
+		hdev->cur_timings = edid_preferred_preset(hdev);
+		hdev->cur_conf = hdmi_timing2conf(&timings);
 	}
 
 	switch_set_state(&hdev->hpd_switch, state);
@@ -834,9 +829,10 @@ static int hdmi_probe(struct platform_device *pdev)
 		goto fail_ext;
 	}
 
-	hdmi_dev->cur_preset = HDMI_DEFAULT_PRESET;
+	hdmi_dev->cur_timings =
+		hdmi_conf[HDMI_DEFAULT_TIMINGS_IDX].dv_timings;
 	/* FIXME: missing fail preset is not supported */
-	hdmi_dev->cur_conf = hdmi_preset2conf(hdmi_dev->cur_preset);
+	hdmi_dev->cur_conf = hdmi_conf[HDMI_DEFAULT_TIMINGS_IDX].conf;
 
 	/* default audio configuration : disable audio */
 	hdmi_dev->audio_enable = 0;

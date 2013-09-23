@@ -10,6 +10,7 @@
  * option) any later version.
  */
 
+#include <uapi/linux/v4l2-dv-timings.h>
 #include "hdmi.h"
 
 static const u8 hdmiphy_conf27[32] = {
@@ -55,40 +56,30 @@ static const u8 hdmiphy_conf148_5[32] = {
 };
 
 const struct hdmiphy_conf hdmiphy_conf[] = {
-	{ V4L2_DV_480P59_94, hdmiphy_conf27 },
-	{ V4L2_DV_480P60, hdmiphy_conf27_027 },
-	{ V4L2_DV_576P50, hdmiphy_conf27 },
-	{ V4L2_DV_720P50, hdmiphy_conf74_25 },
-	{ V4L2_DV_720P59_94, hdmiphy_conf74_175 },
-	{ V4L2_DV_720P60, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080I50, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080I59_94, hdmiphy_conf74_175 },
-	{ V4L2_DV_1080I60, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P24, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P25, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P30, hdmiphy_conf74_175 },
-	{ V4L2_DV_1080P50, hdmiphy_conf148_5 },
-	{ V4L2_DV_1080P59_94, hdmiphy_conf148_352 },
-	{ V4L2_DV_1080P60, hdmiphy_conf148_5 },
-	{ V4L2_DV_720P60_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_720P60_TB, hdmiphy_conf74_25 },
-	{ V4L2_DV_720P59_94_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_720P59_94_TB, hdmiphy_conf74_25 },
-	{ V4L2_DV_720P50_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_720P50_TB, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P24_FP, hdmiphy_conf148_5 },
-	{ V4L2_DV_1080P24_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P24_TB, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P23_98_FP, hdmiphy_conf148_5 },
-	{ V4L2_DV_1080P23_98_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P23_98_TB, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080I60_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080I59_94_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080I50_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P60_SB_HALF, hdmiphy_conf148_5 },
-	{ V4L2_DV_1080P60_TB, hdmiphy_conf148_5 },
-	{ V4L2_DV_1080P30_SB_HALF, hdmiphy_conf74_25 },
-	{ V4L2_DV_1080P30_TB, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_720X480P59_94, hdmiphy_conf27 },
+	{ V4L2_DV_BT_CEA_720X576P50, hdmiphy_conf27 },
+	{ V4L2_DV_BT_CEA_1280X720P50, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1280X720P60, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080I50, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080I60, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P24, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P25, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P30, hdmiphy_conf74_175 },
+	{ V4L2_DV_BT_CEA_1920X1080P50, hdmiphy_conf148_5 },
+	{ V4L2_DV_BT_CEA_1920X1080P60, hdmiphy_conf148_5 },
+	{ V4L2_DV_BT_CEA_1280X720P60_SB_HALF, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1280X720P60_TB, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1280X720P50_SB_HALF, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1280X720P50_TB, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P24_FP, hdmiphy_conf148_5 },
+	{ V4L2_DV_BT_CEA_1920X1080P24_SB_HALF, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P24_TB, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080I60_SB_HALF, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080I50_SB_HALF, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P60_SB_HALF, hdmiphy_conf148_5 },
+	{ V4L2_DV_BT_CEA_1920X1080P60_TB, hdmiphy_conf148_5 },
+	{ V4L2_DV_BT_CEA_1920X1080P30_SB_HALF, hdmiphy_conf74_25 },
+	{ V4L2_DV_BT_CEA_1920X1080P30_TB, hdmiphy_conf74_25 },
 };
 
 const int hdmiphy_conf_cnt = ARRAY_SIZE(hdmiphy_conf);

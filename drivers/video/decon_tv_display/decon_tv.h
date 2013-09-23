@@ -184,15 +184,13 @@ void dex_reg_dump(struct dex_device *dex);
 struct exynos_hdmi_data {
 	enum {
 		EXYNOS_HDMI_STATE_PRESET = 0,
+		EXYNOS_HDMI_STATE_ENUM_PRESET,
 		EXYNOS_HDMI_STATE_CEC_ADDR,
 		EXYNOS_HDMI_STATE_HDCP,
 		EXYNOS_HDMI_STATE_AUDIO,
 	} state;
-	__u32	xres;
-	__u32	yres;
-	__u32	pixclock;
-	__u32	s3d;
-	__u32	vmode;
+	struct	v4l2_dv_timings timings;
+	struct	v4l2_enum_dv_timings etimings;
 	__u32	cec_addr;
 	__u32	audio_info;
 	int	hdcp;

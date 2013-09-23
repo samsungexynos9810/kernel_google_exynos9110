@@ -176,6 +176,7 @@ static int dex_get_hdmi_config(struct dex_device *dex,
 	struct v4l2_subdev *hdmi_sd;
 	struct v4l2_control ctrl;
 	int ret = 0;
+	dex_dbg("state : %d\n", hdmi_data->state);
 
 	/* find sink pad of output via enabled link*/
 	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
@@ -186,7 +187,20 @@ static int dex_get_hdmi_config(struct dex_device *dex,
 
 	switch (hdmi_data->state) {
 	case EXYNOS_HDMI_STATE_PRESET:
+		ret = v4l2_subdev_call(hdmi_sd, video, g_dv_timings, &hdmi_data->timings);
+		if (ret)
+			dex_err("failed to get current timings\n");
+		dex_dbg("%dx%d@%s %lldHz %s(%#x)\n", hdmi_data->timings.bt.width,
+			hdmi_data->timings.bt.height,
+			hdmi_data->timings.bt.interlaced ? "I" : "P",
+			hdmi_data->timings.bt.pixelclock,
+			hdmi_data->timings.type ? "S3D" : "2D",
+			hdmi_data->timings.type);
 		break;
+	case EXYNOS_HDMI_STATE_ENUM_PRESET:
+		ret = v4l2_subdev_call(hdmi_sd, video, enum_dv_timings, &hdmi_data->etimings);
+		if (ret)
+			dex_err("failed to enumerate timings\n");
 	case EXYNOS_HDMI_STATE_CEC_ADDR:
 		ctrl.id = V4L2_CID_TV_SOURCE_PHY_ADDR;
 		ret = v4l2_subdev_call(hdmi_sd, core, g_ctrl, &ctrl);
@@ -214,6 +228,7 @@ static int dex_set_hdmi_config(struct dex_device *dex,
 	struct v4l2_subdev *hdmi_sd;
 	struct v4l2_control ctrl;
 	int ret = 0;
+	dex_dbg("state : %d\n", hdmi_data->state);
 
 	/* find sink pad of output via enabled link*/
 	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
@@ -224,6 +239,15 @@ static int dex_set_hdmi_config(struct dex_device *dex,
 
 	switch (hdmi_data->state) {
 	case EXYNOS_HDMI_STATE_PRESET:
+		ret = v4l2_subdev_call(hdmi_sd, video, g_dv_timings, &hdmi_data->timings);
+		if (ret)
+			dex_err("failed to set timings newly\n");
+		dex_dbg("%dx%d@%s %lldHz %s(%#x)\n", hdmi_data->timings.bt.width,
+			hdmi_data->timings.bt.height,
+			hdmi_data->timings.bt.interlaced ? "I" : "P",
+			hdmi_data->timings.bt.pixelclock,
+			hdmi_data->timings.type ? "S3D" : "2D",
+			hdmi_data->timings.type);
 		break;
 	case EXYNOS_HDMI_STATE_HDCP:
 		ctrl.id = V4L2_CID_TV_HDCP_ENABLE;

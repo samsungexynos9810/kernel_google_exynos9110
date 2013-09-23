@@ -24,6 +24,7 @@
 #include <linux/mutex.h>
 #include <linux/regulator/consumer.h>
 #include <linux/switch.h>
+#include <uapi/linux/v4l2-dv-timings.h>
 
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-device.h>
@@ -31,7 +32,7 @@
 #define INFOFRAME_CNT          2
 
 /* default preset configured on probe */
-#define HDMI_DEFAULT_PRESET	V4L2_DV_1080P60
+#define HDMI_DEFAULT_TIMINGS_IDX (0)
 
 #define HDMI_VSI_VERSION	0x01
 #define HDMI_AVI_VERSION	0x02
@@ -262,7 +263,7 @@ struct hdmi_3d_info {
 	enum HDMI_3D_FORMAT fmt_3d;
 };
 
-struct hdmi_preset_conf {
+struct hdmi_timings {
 	struct hdmi_core_regs core;
 	struct hdmi_tg_regs tg;
 	struct v4l2_mbus_framefmt mbus_fmt;
@@ -311,9 +312,9 @@ struct hdmi_device {
 	/** subdev of HDMIPHY interface */
 	struct v4l2_subdev *phy_sd;
 	/** configuration of current graphic mode */
-	const struct hdmi_preset_conf *cur_conf;
+	const struct hdmi_timings *cur_conf;
 	/** current preset */
-	u32 cur_preset;
+	struct v4l2_dv_timings cur_timings;
 	/** other resources */
 	struct hdmi_resources res;
 	/** supported HDMI InfoFrame */
@@ -362,22 +363,21 @@ struct hdmi_device {
 };
 
 struct hdmi_conf {
-	u32 preset;
-	const struct hdmi_preset_conf *conf;
+	const struct v4l2_dv_timings dv_timings;
+	const struct hdmi_timings *conf;
 	const struct hdmi_3d_info *info;
 };
 extern const struct hdmi_conf hdmi_conf[];
 
 struct hdmiphy_conf {
-	u32 preset;
+	const struct v4l2_dv_timings dv_timings;
 	const u8 *data;
 };
 extern const struct hdmiphy_conf hdmiphy_conf[];
 extern const int hdmi_pre_cnt;
 extern const int hdmiphy_conf_cnt;
-extern const u8 *hdmiphy_preset2conf(u32 preset);
 
-const struct hdmi_3d_info *hdmi_preset2info(u32 preset);
+const struct hdmi_3d_info *hdmi_timing2info(struct v4l2_dv_timings *timings);
 
 void s5p_v4l2_int_src_hdmi_hpd(struct hdmi_device *hdev);
 void s5p_v4l2_int_src_ext_hpd(struct hdmi_device *hdev);
@@ -430,8 +430,7 @@ int hdcp_i2c_write(struct hdmi_device *hdev, u8 offset, int bytes, u8 *buf);
 
 /** EDID functions */
 int edid_update(struct hdmi_device *hdev);
-u32 edid_enum_presets(struct hdmi_device *hdev, int index);
-u32 edid_preferred_preset(struct hdmi_device *hdev);
+struct v4l2_dv_timings edid_preferred_preset(struct hdmi_device *hdev);
 bool edid_supports_hdmi(struct hdmi_device *hdev);
 int edid_max_audio_channels(struct hdmi_device *hdev);
 int edid_source_phy_addr(struct hdmi_device *hdev);

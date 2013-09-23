@@ -17,6 +17,7 @@
 #include <linux/sched.h>
 #include <linux/workqueue.h>
 #include <linux/module.h>
+#include <uapi/linux/v4l2-dv-timings.h>
 
 #include "hdmi.h"
 
@@ -39,23 +40,23 @@ static struct i2c_client *edid_client;
 
 /* Structure for Checking 3D Mandatory Format in EDID */
 static const struct edid_3d_mandatory_preset {
-	u32 preset;
+	struct v4l2_dv_timings dv_timings;
 	u16 xres;
 	u16 yres;
 	u16 refresh;
 	u32 vmode;
 	u32 s3d;
 } edid_3d_mandatory_presets[] = {
-	{ V4L2_DV_720P60_FP,	1280, 720, 60, FB_VMODE_NONINTERLACED, EDID_3D_FP },
-	{ V4L2_DV_720P60_TB,	1280, 720, 60, FB_VMODE_NONINTERLACED, EDID_3D_TB },
-	{ V4L2_DV_720P50_FP,	1280, 720, 50, FB_VMODE_NONINTERLACED, EDID_3D_FP },
-	{ V4L2_DV_720P50_TB,	1280, 720, 50, FB_VMODE_NONINTERLACED, EDID_3D_TB },
-	{ V4L2_DV_1080P24_FP,	1920, 1080, 24, FB_VMODE_NONINTERLACED, EDID_3D_FP },
-	{ V4L2_DV_1080P24_TB,	1920, 1080, 24, FB_VMODE_NONINTERLACED, EDID_3D_TB },
+	{ V4L2_DV_BT_CEA_1280X720P60_FP,	1280, 720, 60, FB_VMODE_NONINTERLACED, EDID_3D_FP },
+	{ V4L2_DV_BT_CEA_1280X720P60_TB,	1280, 720, 60, FB_VMODE_NONINTERLACED, EDID_3D_TB },
+	{ V4L2_DV_BT_CEA_1280X720P50_FP,	1280, 720, 50, FB_VMODE_NONINTERLACED, EDID_3D_FP },
+	{ V4L2_DV_BT_CEA_1280X720P50_TB,	1280, 720, 50, FB_VMODE_NONINTERLACED, EDID_3D_TB },
+	{ V4L2_DV_BT_CEA_1920X1080P24_FP,	1920, 1080, 24, FB_VMODE_NONINTERLACED, EDID_3D_FP },
+	{ V4L2_DV_BT_CEA_1920X1080P24_TB,	1920, 1080, 24, FB_VMODE_NONINTERLACED, EDID_3D_TB },
 };
 
 static struct edid_preset {
-	u32 preset;
+	struct v4l2_dv_timings dv_timings;
 	u16 xres;
 	u16 yres;
 	u16 refresh;
@@ -63,25 +64,21 @@ static struct edid_preset {
 	char *name;
 	bool supported;
 } edid_presets[] = {
-	{ V4L2_DV_480P59_94,	720,  480,  59, FB_VMODE_NONINTERLACED, "480p@59.94" },
-	{ V4L2_DV_480P60,	720,  480,  60, FB_VMODE_NONINTERLACED, "480p@60" },
-	{ V4L2_DV_576P50,	720,  576,  50, FB_VMODE_NONINTERLACED, "576p@50" },
-	{ V4L2_DV_720P50,	1280, 720,  50, FB_VMODE_NONINTERLACED, "720p@50" },
-	{ V4L2_DV_720P59_94,	1280, 720,  59, FB_VMODE_NONINTERLACED, "720p@59.94" },
-	{ V4L2_DV_720P60,	1280, 720,  60, FB_VMODE_NONINTERLACED, "720p@60" },
-	{ V4L2_DV_1080P24,	1920, 1080, 24, FB_VMODE_NONINTERLACED, "1080p@24" },
-	{ V4L2_DV_1080P25,	1920, 1080, 25, FB_VMODE_NONINTERLACED, "1080p@25" },
-	{ V4L2_DV_1080P30,	1920, 1080, 30, FB_VMODE_NONINTERLACED, "1080p@30" },
-	{ V4L2_DV_1080P50,	1920, 1080, 50, FB_VMODE_NONINTERLACED, "1080p@50" },
-	{ V4L2_DV_1080P59_94,	1920, 1080, 59, FB_VMODE_NONINTERLACED, "1080p@59.94" },
-	{ V4L2_DV_1080P60,	1920, 1080, 60, FB_VMODE_NONINTERLACED, "1080p@60" },
-	{ V4L2_DV_1080I50,	1920, 1080, 50, FB_VMODE_INTERLACED, "1080i@50" },
-	{ V4L2_DV_1080I59_94,	1920, 1080, 59, FB_VMODE_INTERLACED, "1080i@59.94" },
-	{ V4L2_DV_1080I60,	1920, 1080, 60, FB_VMODE_INTERLACED, "1080i@60" },
+	{ V4L2_DV_BT_CEA_720X480P59_94,	720,  480,  59, FB_VMODE_NONINTERLACED, "480p@59.94" },
+	{ V4L2_DV_BT_CEA_720X576P50,	720,  576,  50, FB_VMODE_NONINTERLACED, "576p@50" },
+	{ V4L2_DV_BT_CEA_1280X720P50,	1280, 720,  50, FB_VMODE_NONINTERLACED, "720p@50" },
+	{ V4L2_DV_BT_CEA_1280X720P60,	1280, 720,  60, FB_VMODE_NONINTERLACED, "720p@60" },
+	{ V4L2_DV_BT_CEA_1920X1080P24,	1920, 1080, 24, FB_VMODE_NONINTERLACED, "1080p@24" },
+	{ V4L2_DV_BT_CEA_1920X1080P25,	1920, 1080, 25, FB_VMODE_NONINTERLACED, "1080p@25" },
+	{ V4L2_DV_BT_CEA_1920X1080P30,	1920, 1080, 30, FB_VMODE_NONINTERLACED, "1080p@30" },
+	{ V4L2_DV_BT_CEA_1920X1080P50,	1920, 1080, 50, FB_VMODE_NONINTERLACED, "1080p@50" },
+	{ V4L2_DV_BT_CEA_1920X1080P60,	1920, 1080, 60, FB_VMODE_NONINTERLACED, "1080p@60" },
+	{ V4L2_DV_BT_CEA_1920X1080I50,	1920, 1080, 50, FB_VMODE_INTERLACED, "1080i@50" },
+	{ V4L2_DV_BT_CEA_1920X1080I60,	1920, 1080, 60, FB_VMODE_INTERLACED, "1080i@60" },
 };
 
 static struct edid_3d_preset {
-	u32 preset;
+	struct v4l2_dv_timings dv_timings;
 	u16 xres;
 	u16 yres;
 	u16 refresh;
@@ -90,47 +87,35 @@ static struct edid_3d_preset {
 	char *name;
 	bool supported;
 } edid_3d_presets[] = {
-	{ V4L2_DV_720P60_SB_HALF,	1280, 720, 60, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "720p@60_SBS" },
-	{ V4L2_DV_720P60_TB,		1280, 720, 60, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "720p@60_TB" },
-	{ V4L2_DV_720P59_94_SB_HALF,	1280, 720, 59, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "720p@59.94_SBS" },
-	{ V4L2_DV_720P59_94_TB,		1280, 720, 59, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "720p@59.94_TB" },
-	{ V4L2_DV_720P50_SB_HALF,	1280, 720, 50, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "720p@50_SBS" },
-	{ V4L2_DV_720P50_TB,		1280, 720, 50, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "720p@50_TB" },
-	{ V4L2_DV_1080P24_FP,		1920, 1080, 24, FB_VMODE_NONINTERLACED,
-					EDID_3D_FP, "1080p@24_FP" },
-	{ V4L2_DV_1080P24_SB_HALF,	1920, 1080, 24, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "1080p@24_SBS" },
-	{ V4L2_DV_1080P24_TB,		1920, 1080, 24, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "1080p@24_TB" },
-	{ V4L2_DV_1080P23_98_FP,	1920, 1080, 23, FB_VMODE_NONINTERLACED,
-					EDID_3D_FP, "1080p@23.98_FP" },
-	{ V4L2_DV_1080P23_98_SB_HALF,	1920, 1080, 23, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "1080p@23.98_SBS" },
-	{ V4L2_DV_1080P23_98_TB,	1920, 1080, 23, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "1080p@23.98_TB" },
-	{ V4L2_DV_1080I60_SB_HALF,      1920, 1080, 60, FB_VMODE_INTERLACED,
-					EDID_3D_SBS, "1080i@60_SBS" },
-	{ V4L2_DV_1080I59_94_SB_HALF,   1920, 1080, 59, FB_VMODE_INTERLACED,
-					EDID_3D_SBS, "1080i@59.94_SBS" },
-	{ V4L2_DV_1080I50_SB_HALF,      1920, 1080, 50, FB_VMODE_INTERLACED,
-					EDID_3D_SBS, "1080i@50_SBS" },
-	{ V4L2_DV_1080P60_SB_HALF,	1920, 1080, 60, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "1080p@60_SBS" },
-	{ V4L2_DV_1080P60_TB,		1920, 1080, 60, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "1080p@60_TB" },
-	{ V4L2_DV_1080P30_SB_HALF,	1920, 1080, 30, FB_VMODE_NONINTERLACED,
-					EDID_3D_SBS, "1080p@30_SBS" },
-	{ V4L2_DV_1080P30_TB,		1920, 1080, 30, FB_VMODE_NONINTERLACED,
-					EDID_3D_TB, "1080p@30_TB" },
+	{ V4L2_DV_BT_CEA_1280X720P60_SB_HALF,	1280, 720, 60,
+		FB_VMODE_NONINTERLACED, EDID_3D_SBS, "720p@60_SBS" },
+	{ V4L2_DV_BT_CEA_1280X720P60_TB,	1280, 720, 60,
+		FB_VMODE_NONINTERLACED, EDID_3D_TB, "720p@60_TB" },
+	{ V4L2_DV_BT_CEA_1280X720P50_SB_HALF,	1280, 720, 50,
+		FB_VMODE_NONINTERLACED, EDID_3D_SBS, "720p@50_SBS" },
+	{ V4L2_DV_BT_CEA_1280X720P50_TB,	1280, 720, 50,
+		FB_VMODE_NONINTERLACED, EDID_3D_TB, "720p@50_TB" },
+	{ V4L2_DV_BT_CEA_1920X1080P24_FP,	1920, 1080, 24,
+		FB_VMODE_NONINTERLACED, EDID_3D_FP, "1080p@24_FP" },
+	{ V4L2_DV_BT_CEA_1920X1080P24_SB_HALF,	1920, 1080, 24,
+		FB_VMODE_NONINTERLACED, EDID_3D_SBS, "1080p@24_SBS" },
+	{ V4L2_DV_BT_CEA_1920X1080P24_TB,	1920, 1080, 24,
+		FB_VMODE_NONINTERLACED, EDID_3D_TB, "1080p@24_TB" },
+	{ V4L2_DV_BT_CEA_1920X1080I60_SB_HALF,	1920, 1080, 60,
+		FB_VMODE_INTERLACED, EDID_3D_SBS, "1080i@60_SBS" },
+	{ V4L2_DV_BT_CEA_1920X1080I50_SB_HALF,	1920, 1080, 50,
+		FB_VMODE_INTERLACED, EDID_3D_SBS, "1080i@50_SBS" },
+	{ V4L2_DV_BT_CEA_1920X1080P60_SB_HALF,	1920, 1080, 60,
+		FB_VMODE_NONINTERLACED, EDID_3D_SBS, "1080p@60_SBS" },
+	{ V4L2_DV_BT_CEA_1920X1080P60_TB,	1920, 1080, 60,
+		FB_VMODE_NONINTERLACED, EDID_3D_TB, "1080p@60_TB" },
+	{ V4L2_DV_BT_CEA_1920X1080P30_SB_HALF,	1920, 1080, 30,
+		FB_VMODE_NONINTERLACED, EDID_3D_SBS, "1080p@30_SBS" },
+	{ V4L2_DV_BT_CEA_1920X1080P30_TB,	1920, 1080, 30,
+		FB_VMODE_NONINTERLACED, EDID_3D_TB, "1080p@30_TB" },
 };
 
-static u32 preferred_preset = HDMI_DEFAULT_PRESET;
+static struct v4l2_dv_timings preferred_preset;
 static u32 edid_misc;
 static int max_audio_channels;
 static u32 source_phy_addr = 0;
@@ -356,10 +341,11 @@ static void edid_use_default_preset(void)
 {
 	int i;
 
-	preferred_preset = HDMI_DEFAULT_PRESET;
+	preferred_preset = hdmi_conf[HDMI_DEFAULT_TIMINGS_IDX].dv_timings;
 	for (i = 0; i < ARRAY_SIZE(edid_presets); i++)
 		edid_presets[i].supported =
-			(edid_presets[i].preset == preferred_preset);
+			v4l_match_dv_timings(&edid_presets[i].dv_timings,
+					&preferred_preset, 0);
 	max_audio_channels = 2;
 }
 
@@ -437,7 +423,7 @@ int edid_update(struct hdmi_device *hdev)
 			goto out;
 	}
 
-	preferred_preset = V4L2_DV_INVALID;
+	preferred_preset = hdmi_conf[HDMI_DEFAULT_TIMINGS_IDX].dv_timings;
 	for (i = 0; i < ARRAY_SIZE(edid_presets); i++)
 		edid_presets[i].supported = false;
 	for (i = 0; i < ARRAY_SIZE(edid_3d_presets); i++)
@@ -452,7 +438,7 @@ int edid_update(struct hdmi_device *hdev)
 				preset->supported = true;
 			}
 			if (first) {
-				preferred_preset = preset->preset;
+				preferred_preset = preset->dv_timings;
 				first = false;
 			}
 		}
@@ -495,28 +481,7 @@ out:
 	return block_cnt;
 }
 
-u32 edid_enum_presets(struct hdmi_device *hdev, int index)
-{
-	int i, j = 0;
-
-	for (i = 0; i < ARRAY_SIZE(edid_presets); i++) {
-		if (edid_presets[i].supported) {
-			if (j++ == index)
-				return edid_presets[i].preset;
-		}
-	}
-
-	for (i = 0; i < ARRAY_SIZE(edid_3d_presets); i++) {
-		if (edid_3d_presets[i].supported) {
-			if (j++ == index)
-				return edid_3d_presets[i].preset;
-		}
-	}
-
-	return V4L2_DV_INVALID;
-}
-
-u32 edid_preferred_preset(struct hdmi_device *hdev)
+struct v4l2_dv_timings edid_preferred_preset(struct hdmi_device *hdev)
 {
 	return preferred_preset;
 }
@@ -536,7 +501,7 @@ int edid_source_phy_addr(struct hdmi_device *hdev)
 	return source_phy_addr;
 }
 
-static int __devinit edid_probe(struct i2c_client *client,
+static int edid_probe(struct i2c_client *client,
 				const struct i2c_device_id *dev_id)
 {
 	edid_client = client;
