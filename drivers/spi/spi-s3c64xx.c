@@ -1543,9 +1543,13 @@ static int s3c64xx_spi_suspend(struct device *dev)
 
 	spi_master_suspend(master);
 
-	/* Disable the clock */
-	clk_disable_unprepare(sdd->src_clk);
-	clk_disable_unprepare(sdd->clk);
+	if (sdd->port_id < MAX_SPI_PORTS) {
+		if (!pm_runtime_enabled(dev)) {
+			/* Disable the clock */
+			clk_disable_unprepare(sdd->src_clk);
+			clk_disable_unprepare(sdd->clk);
+		}
+	}
 
 	sdd->cur_speed = 0; /* Output Clock is stopped */
 
@@ -1561,11 +1565,19 @@ static int s3c64xx_spi_resume(struct device *dev)
 	if (sci->cfg_gpio)
 		sci->cfg_gpio();
 
-	/* Enable the clock */
-	clk_prepare_enable(sdd->src_clk);
-	clk_prepare_enable(sdd->clk);
+	if (sdd->port_id < MAX_SPI_PORTS) {
+		/* Enable the clock */
+		clk_prepare_enable(sdd->src_clk);
+		clk_prepare_enable(sdd->clk);
 
-	s3c64xx_spi_hwinit(sdd, sdd->port_id);
+		s3c64xx_spi_hwinit(sdd, sdd->port_id);
+
+		if (pm_runtime_enabled(dev)) {
+			/* Disable the clock */
+			clk_disable_unprepare(sdd->src_clk);
+			clk_disable_unprepare(sdd->clk);
+		}
+	}
 
 	spi_master_resume(master);
 
