@@ -96,7 +96,7 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	}
 
 	/* Un-set LL_INIT REMAP Address */
-	writel(0x0, lli->regs + EXYNOS_IAL_LL_INIT_ADDR_REMAP);
+	writel(remap_addr, lli->regs + EXYNOS_IAL_LL_INIT_ADDR_REMAP);
 	/* Set BE_INIT REMAP Address */
 	writel(remap_addr, lli->regs + EXYNOS_IAL_BE_INIT_ADDR_REMAP);
 
@@ -130,7 +130,7 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	writel(0x20, lli->regs + EXYNOS_PA_NACK_RTT);
 	writel(0x1, lli->regs + EXYNOS_PA_MK0_INSERTION_ENABLE);
 	/* Set Scrambler enable */
-	writel(0, lli->regs + EXYNOS_PA_USR_SCRAMBLER_ENABLE);
+	writel(1, lli->regs + EXYNOS_PA_USR_SCRAMBLER_ENABLE);
 
 	/* MPHY configuration */
 	if (phy->init)
@@ -241,6 +241,14 @@ static int exynos_lli_read_signal(struct mipi_lli *lli)
 	return intr_lsb;
 }
 
+static void exynos_mipi_lli_set_automode(struct mipi_lli *lli, bool is_auto)
+{
+	if (is_auto)
+		writel(CSA_AUTO_MODE, lli->regs + EXYNOS_PA_CSA_PA_SET);
+	else
+		writel(CSA_AUTO_MODE, lli->regs + EXYNOS_PA_CSA_PA_CLR);
+}
+
 const struct lli_driver exynos_lli_driver = {
 	.init = exynos_lli_init,
 	.set_master = exynos_lli_set_master,
@@ -263,10 +271,18 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 		writel(LLI_MOUNT_CTRL, lli->regs + EXYNOS_DME_CSA_SYSTEM_SET);
 
 	if (status & INTR_LLI_MOUNT_DONE)
-		dev_vdbg(dev, "Mount\n");
+		dev_dbg(dev, "Mount\n");
 
 	if (status & INTR_LLI_UNMOUNT_DONE)
-		dev_vdbg(dev, "Unmount\n");
+		dev_dbg(dev, "Unmount\n");
+
+	if (status & INTR_PA_PLU_DETECTED)
+		dev_dbg(dev, "PLU_DETECT\n");
+
+	if (status & INTR_PA_PLU_DONE) {
+		dev_dbg(dev, "PLU_DONE\n");
+		exynos_mipi_lli_set_automode(lli, true);
+	}
 
 	if ((status & INTR_RESET_ON_ERROR_DETECTED)) {
 		dev_err(dev, "Error detected\n");

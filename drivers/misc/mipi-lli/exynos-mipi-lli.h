@@ -238,4 +238,10 @@
 #define LLI_REMAP_BASE_ADDR_SHIFT		(8)
 #define LLI_REMAP_ENABLE			(1 << 7)
 
+#define CSA_AUTO_MODE				(1 << 0)
+#define CSA_LINKUPDATECONFIG			(1 << 1)
+#define CSA_TESTMODE				(1 << 2)
+#define CSA_PA_HIBERNATE			(1 << 3)
+#define CSA_PA_PLU_RECEIVED			(1 << 4)
+
 #endif /* __DRIVERS_EXYNOS_MIPI_LLI_H */
