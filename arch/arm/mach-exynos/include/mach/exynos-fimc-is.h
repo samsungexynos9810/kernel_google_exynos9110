@@ -405,9 +405,10 @@ struct platform_device;
   *			       interace configuration.
  */
 struct exynos5_fimc_is_sensor_info {
-	char sensor_name[FIMC_IS_MAX_NAME_LEN];
+	const char *sensor_name;
 	enum exynos5_sensor_position sensor_position;
 	enum exynos5_sensor_id sensor_id;
+	enum exynos5_csi_id clk_src;
 	enum exynos5_csi_id csi_id;
 	enum exynos5_flite_id flite_id;
 	enum exynos5_sensor_channel i2c_channel;
@@ -421,6 +422,13 @@ struct exynos5_fimc_is_sensor_info {
 	int mipi_lanes;     /* MIPI data lanes */
 	int mipi_settle;    /* MIPI settle */
 	int mipi_align;     /* MIPI data align: 24/32 */
+
+	u32 sensor_slave_address;
+	enum actuator_name actuator_id;
+	enum exynos5_sensor_channel actuator_i2c;
+	enum flash_drv_name flash_id;
+	u32 flash_first_gpio;
+	u32 flash_second_gpio;
 };
 
 struct sensor_open_extended {
