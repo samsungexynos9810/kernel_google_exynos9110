@@ -1278,6 +1278,8 @@ static struct platform_driver fimc_is_driver = {
 		.of_match_table = exynos_fimc_is_match,
 	}
 };
+
+module_platform_driver(fimc_is_driver);
 #else
 static struct platform_driver fimc_is_driver = {
 	.probe		= fimc_is_probe,
@@ -1304,8 +1306,6 @@ static void __exit fimc_is_exit(void)
 module_init(fimc_is_init);
 module_exit(fimc_is_exit);
 #endif
-
-module_platform_driver(fimc_is_driver);
 
 MODULE_AUTHOR("Jiyoung Shin<idon.shin@samsung.com>");
 MODULE_DESCRIPTION("Exynos FIMC_IS2 driver");
