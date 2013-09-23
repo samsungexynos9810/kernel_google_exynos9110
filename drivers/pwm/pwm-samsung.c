@@ -159,6 +159,8 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	} else
 		tin_ns = NS_IN_HZ / clk_get_rate(s3c->clk);
 
+	s3c->duty_ns = duty_ns;
+
 	/* Note, counters count down */
 
 	tcmp = duty_ns / tin_ns;
@@ -298,8 +300,8 @@ static int s3c_pwm_suspend(struct device *dev)
 	 * Otherwise driver leaves PWM unconfigured if same values
 	 * passed to pwm_config
 	 */
-	s3c->period_ns = 0;
-	s3c->duty_ns = 0;
+	s3c->period_ns = -1;
+	s3c->duty_ns = -1;
 
 	return 0;
 }
