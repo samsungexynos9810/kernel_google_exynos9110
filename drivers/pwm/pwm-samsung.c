@@ -25,6 +25,7 @@
 
 #include <mach/map.h>
 
+#include <plat/cpu.h>
 #include <plat/regs-timer.h>
 
 struct s3c_chip {
@@ -132,12 +133,6 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	    duty_ns == s3c->duty_ns)
 		return 0;
 
-	/* The TCMP and TCNT can be read without a lock, they're not
-	 * shared between the timers. */
-
-	tcmp = __raw_readl(S3C2410_TCMPB(s3c->pwm_id));
-	tcnt = __raw_readl(S3C2410_TCNTB(s3c->pwm_id));
-
 	period = NS_IN_HZ / period_ns;
 
 	pwm_dbg(s3c, "duty_ns=%d, period_ns=%d (%lu)\n",
@@ -145,37 +140,53 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	/* Check to see if we are changing the clock rate of the PWM */
 
-	if (s3c->period_ns != period_ns) {
-		if (pwm_is_tdiv(s3c)) {
-			tin_rate = pwm_calc_tin(s3c, period);
-			clk_set_rate(s3c->clk_div, tin_rate);
-		} else
-			tin_rate = clk_get_rate(s3c->clk);
-
-		s3c->period_ns = period_ns;
+	if (s3c->period_ns != period_ns && pwm_is_tdiv(s3c)) {
+		tin_rate = pwm_calc_tin(s3c, period);
+		clk_set_rate(s3c->clk_div, tin_rate);
 
 		pwm_dbg(s3c, "tin_rate=%lu\n", tin_rate);
-
-		tin_ns = NS_IN_HZ / tin_rate;
-		tcnt = period_ns / tin_ns;
-	} else
-		tin_ns = NS_IN_HZ / clk_get_rate(s3c->clk);
-
-	s3c->duty_ns = duty_ns;
+	} else {
+		tin_rate = clk_get_rate(s3c->clk);
+	}
 
 	/* Note, counters count down */
 
-	tcmp = duty_ns / tin_ns;
+	tin_ns = NS_IN_HZ / tin_rate;
+
+	tcnt = DIV_ROUND_CLOSEST(period_ns, tin_ns);
+	tcmp = DIV_ROUND_CLOSEST(duty_ns, tin_ns);
+
+	if (tcnt <= 1) {
+		/* Too small to generate a pulse */
+		return -ERANGE;
+	}
+
+	pwm_dbg(s3c, "duty_ns=%d, period_ns=%d (%lu)\n",
+		duty_ns, period_ns, period);
+
 	tcmp = tcnt - tcmp;
 	/* the pwm hw only checks the compare register after a decrement,
 	   so the pin never toggles if tcmp = tcnt */
 	if (tcmp == tcnt)
 		tcmp--;
 
+	/*
+	 * PWM counts 1 hidden tick at the end of each period on S3C64XX and
+	 * EXYNOS series, so tcmp and tcnt should be subtracted 1.
+	 */
+	if (!soc_is_s3c24xx()) {
+		tcnt--;
+		/*
+		 * tcmp can be -1. It appears 100% duty cycle and PWM never
+		 * toggles when TCMPB is set to 0xFFFFFFFF (-1).
+		 */
+		tcmp--;
+	}
+
 	pwm_dbg(s3c, "tin_ns=%lu, tcmp=%ld/%lu\n", tin_ns, tcmp, tcnt);
 
-	if (tcmp < 0)
-		tcmp = 0;
+	s3c->duty_ns = duty_ns;
+	s3c->period_ns = period_ns;
 
 	/* Update the PWM register block. */
 
