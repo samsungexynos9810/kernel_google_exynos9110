@@ -21,6 +21,7 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/pwm.h>
+#include <linux/spinlock.h>
 
 #include <mach/map.h>
 
@@ -46,6 +47,7 @@ struct s3c_chip {
 #define pwm_dbg(_pwm, msg...) dev_dbg(&(_pwm)->pdev->dev, msg)
 
 static struct clk *clk_scaler[2];
+static spinlock_t pwm_spinlock;
 
 static inline int pwm_is_tdiv(struct s3c_chip *chip)
 {
@@ -63,13 +65,13 @@ static int s3c_pwm_enable(struct pwm_chip *chip, struct pwm_device *pwm)
 	unsigned long flags;
 	unsigned long tcon;
 
-	local_irq_save(flags);
+	spin_lock_irqsave(&pwm_spinlock, flags);
 
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_start(s3c);
 	__raw_writel(tcon, S3C2410_TCON);
 
-	local_irq_restore(flags);
+	spin_unlock_irqrestore(&pwm_spinlock, flags);
 
 	return 0;
 }
@@ -80,13 +82,13 @@ static void s3c_pwm_disable(struct pwm_chip *chip, struct pwm_device *pwm)
 	unsigned long flags;
 	unsigned long tcon;
 
-	local_irq_save(flags);
+	spin_lock_irqsave(&pwm_spinlock, flags);
 
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon &= ~pwm_tcon_start(s3c);
 	__raw_writel(tcon, S3C2410_TCON);
 
-	local_irq_restore(flags);
+	spin_unlock_irqrestore(&pwm_spinlock, flags);
 }
 
 static unsigned long pwm_calc_tin(struct s3c_chip *s3c, unsigned long freq)
@@ -177,7 +179,7 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 
 	/* Update the PWM register block. */
 
-	local_irq_save(flags);
+	spin_lock_irqsave(&pwm_spinlock, flags);
 
 	__raw_writel(tcmp, S3C2410_TCMPB(s3c->pwm_id));
 	__raw_writel(tcnt, S3C2410_TCNTB(s3c->pwm_id));
@@ -190,7 +192,7 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	tcon &= ~pwm_tcon_manulupdate(s3c);
 	__raw_writel(tcon, S3C2410_TCON);
 
-	local_irq_restore(flags);
+	spin_unlock_irqrestore(&pwm_spinlock, flags);
 
 	return 0;
 }
@@ -245,13 +247,13 @@ static int s3c_pwm_probe(struct platform_device *pdev)
 	clk_enable(s3c->clk);
 	clk_enable(s3c->clk_div);
 
-	local_irq_save(flags);
+	spin_lock_irqsave(&pwm_spinlock, flags);
 
 	tcon = __raw_readl(S3C2410_TCON);
 	tcon |= pwm_tcon_invert(s3c);
 	__raw_writel(tcon, S3C2410_TCON);
 
-	local_irq_restore(flags);
+	spin_unlock_irqrestore(&pwm_spinlock, flags);
 
 	ret = pwmchip_add(&s3c->chip);
 	if (ret < 0) {
@@ -336,6 +338,8 @@ static struct platform_driver s3c_pwm_driver = {
 static int __init pwm_init(void)
 {
 	int ret;
+
+	spin_lock_init(&pwm_spinlock);
 
 	clk_scaler[0] = clk_get(NULL, "pwm-scaler0");
 	clk_scaler[1] = clk_get(NULL, "pwm-scaler1");
