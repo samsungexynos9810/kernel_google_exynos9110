@@ -826,22 +826,10 @@
 	};
 
 	fimc_is@14000000 {
-		gpios =	<&gpc0 1 0x1 /* MAINCAM_RESET */
-			&gpc2 0 0x2 /* MAINCAM_SDA_1.8V */
-			&gpc2 1 0x2 /* MAINCAM_SCL_1.8V */
-			&gpd7 0 0x2 /* MAINCAM_MCLK(CIS_CLK0) */
-			&gpc0 2 0x1 /* CAM_FLASH_EN */
-			&gpc0 3 0x1 /* CAM_FLASH_TORCH */
-			&gpc0 4 0x1 /* VTCAM_RESET */
-			&gpc2 2 0x2 /* VTCAM_SDA_1.8V */
-			&gpc2 3 0x2 /* VTCAM_SCL_1.8V */
-			&gpd7 1 0x2 /* VTCAM_MCLK(CIS_CLK1) */
-			&gpc3 0 0x2 /* MAINCAM_SPI_CLK */
-			&gpc3 1 0x2 /* MAINCAM_SPI_CSN */
-			&gpc3 2 0x2 /* MAINCAM_SPI_MISO */
-			&gpc3 3 0x2 /* MAINCAM_SPI_MOSI */
-			&gpc0 7 0x3 /* ISP_UART_TXD */
-			&gpc1 1 0x3>; /* ISP_UART_RXD */
+		gpios_main_reset = <&gpc0 1 0x1>; /* MAINCAM_RESET */
+		gpios_vt_reset = <&gpc0 4 0x1>; /* VTCAM_RESET */
+		gpios_flash_en = <&gpc0 2 0x1>; /* CAM_FLASH_EN */
+		gpios_flash_torch = <&gpc0 3 0x1>; /* CAM_FLASH_TORCH */
 		platform_data: fimc_is_ctrl {
 			fimc_is_sensor {
 				rear_sensor_name = "3l2";
