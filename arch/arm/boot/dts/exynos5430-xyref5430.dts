@@ -842,5 +842,43 @@
 			&gpc3 3 0x2 /* MAINCAM_SPI_MOSI */
 			&gpc0 7 0x3 /* ISP_UART_TXD */
 			&gpc1 1 0x3>; /* ISP_UART_RXD */
+		platform_data: fimc_is_ctrl {
+			fimc_is_sensor {
+				rear_sensor_name = "3l2";
+				rear_sensor_position = <0>;
+				rear_sensor_id = <8>;
+				rear_clk_src = <0>;
+				rear_csis_id = <0>;
+				rear_flite_id = <0>;
+				rear_i2c_channel = <0>;
+				rear_max_width = <4128>;
+				rear_max_height = <3096>;
+				rear_max_frame_rate = <120>;
+				rear_mipi_lanes = <4>;
+				rear_mipi_settle = <0x18>;
+				rear_mipi_align = <32>;
+				rear_sensor_slave_address = <0x20>;
+				rear_actuator_id = <2>;
+				rear_actuator_i2c = <0>;
+				rear_flash_id = <100>;
+				rear_flash_first_gpio = <2>;
+				rear_flash_second_gpio = <3>;
+
+				front_sensor_name = "6b2";
+				front_sensor_position = <1>;
+				front_sensor_id = <7>;
+				front_clk_src = <1>;
+				front_csis_id = <1>;
+				front_flite_id = <1>;
+				front_i2c_channel = <1>;
+				front_max_width = <1920>;
+				front_max_height = <1080>;
+				front_max_frame_rate = <30>;
+				front_mipi_lanes = <2>;
+				front_mipi_settle = <0x18>;
+				front_mipi_align = <32>;
+				front_sensor_slave_address = <0x20>;
+			};
+		};
 	};
 };
