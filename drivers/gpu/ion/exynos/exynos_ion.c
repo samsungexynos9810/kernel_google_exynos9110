@@ -843,22 +843,24 @@ static int ion_device_register(void)
 	return 0;
 }
 #else
+static struct ion_platform_heap exynos_ion_heaps[] __initconst = {
+	{	.type = ION_HEAP_TYPE_SYSTEM,
+		.name = "ion_noncontig_heap",
+		.id = EXYNOS_ION_HEAP_SYSTEM_ID,
+	},
+	{	.type = ION_HEAP_TYPE_EXYNOS,
+		.name = "exynos_noncontig_heap",
+		.id = EXYNOS_ION_HEAP_EXYNOS_ID,
+	},
+	{	.type = ION_HEAP_TYPE_EXYNOS_CONTIG,
+		.name = "exynos_contig_heap",
+		.id = EXYNOS_ION_HEAP_EXYNOS_CONTIG_ID,
+	},
+};
+
 static struct ion_platform_data exynos_ion_pdata __initconst = {
-	.nr = 3,
-	.heaps = {
-		{	.type = ION_HEAP_TYPE_SYSTEM,
-			.name = "ion_noncontig_heap",
-			.id = EXYNOS_ION_HEAP_SYSTEM_ID,
-		},
-		{	.type = ION_HEAP_TYPE_EXYNOS,
-			.name = "exynos_noncontig_heap",
-			.id = EXYNOS_ION_HEAP_EXYNOS_ID,
-		},
-		{	.type = ION_HEAP_TYPE_EXYNOS_CONTIG,
-			.name = "exynos_contig_heap",
-			.id = EXYNOS_ION_HEAP_EXYNOS_CONTIG_ID,
-		},
-	}
+	.nr = ARRAY_SIZE(exynos_ion_heaps),
+	.heaps = exynos_ion_heaps,
 };
 
 struct platform_device exynos_device_ion __refdata = {
