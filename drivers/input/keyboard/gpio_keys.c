@@ -342,6 +342,13 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	struct input_dev *input = bdata->input;
 	unsigned int type = button->type ?: EV_KEY;
 	int state = gpio_get_value_cansleep(button->gpio);
+	struct irq_desc *desc = irq_to_desc(gpio_to_irq(button->gpio));
+
+	if (!desc) {
+		dev_err(input->dev.parent, "irq_desc is null! (gpio=%d)\n",
+				button->gpio);
+		return;
+	}
 
 	if (state < 0) {
 		dev_err(input->dev.parent, "failed to get gpio state\n");
@@ -353,7 +360,8 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
-		input_event(input, type, button->code, !!state);
+		input_event(input, type, button->code,
+				irqd_is_wakeup_set(&desc->irq_data) ? 1 : !!state);
 	}
 	input_sync(input);
 }
@@ -539,6 +547,9 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 	 */
 	if (!button->can_disable)
 		irqflags |= IRQF_SHARED;
+
+	if (button->wakeup)
+		irqflags |= IRQF_NO_SUSPEND;
 
 	error = devm_request_any_context_irq(&pdev->dev, bdata->irq,
 					     isr, irqflags, desc, bdata);
