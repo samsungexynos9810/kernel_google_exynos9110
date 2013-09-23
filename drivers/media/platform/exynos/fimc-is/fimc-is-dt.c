@@ -128,99 +128,27 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 		return ERR_PTR(-ENOMEM);
 	}
 
-	gpio_info->gpio_main_rst = of_get_gpio(np, 0);
+	gpio_info->gpio_main_rst = of_get_named_gpio(np, "gpios_main_reset", 0);
 	if (!gpio_is_valid(gpio_info->gpio_main_rst)) {
 		dev_err(dev, "failed to get main reset gpio\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	gpio_info->gpio_main_sda = of_get_gpio(np, 1);
-	if (!gpio_is_valid(gpio_info->gpio_main_sda)) {
-		dev_err(dev, "failed to get main sda gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_main_scl = of_get_gpio(np, 2);
-	if (!gpio_is_valid(gpio_info->gpio_main_scl)) {
-		dev_err(dev, "failed to get main scl gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_main_mclk = of_get_gpio(np, 3);
-	if (!gpio_is_valid(gpio_info->gpio_main_mclk)) {
-		dev_err(dev, "failed to get main mclk gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_main_flash_en = of_get_gpio(np, 4);
-	if (!gpio_is_valid(gpio_info->gpio_main_flash_en)) {
-		dev_err(dev, "failed to get main flash_en gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_main_flash_torch = of_get_gpio(np, 5);
-	if (!gpio_is_valid(gpio_info->gpio_main_flash_torch)) {
-		dev_err(dev, "failed to get main flash_torch gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_vt_rst = of_get_gpio(np, 6);
+	gpio_info->gpio_vt_rst = of_get_named_gpio(np, "gpios_vt_reset", 0);
 	if (!gpio_is_valid(gpio_info->gpio_vt_rst)) {
 		dev_err(dev, "failed to get vt reset gpio\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	gpio_info->gpio_vt_sda = of_get_gpio(np, 7);
-	if (!gpio_is_valid(gpio_info->gpio_vt_sda)) {
-		dev_err(dev, "failed to get vt sda gpio\n");
+	gpio_info->gpio_main_flash_en = of_get_named_gpio(np, "gpios_flash_en", 0);
+	if (!gpio_is_valid(gpio_info->gpio_main_flash_en)) {
+		dev_err(dev, "failed to get main flash_en gpio\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	gpio_info->gpio_vt_scl = of_get_gpio(np, 8);
-	if (!gpio_is_valid(gpio_info->gpio_vt_scl)) {
-		dev_err(dev, "failed to get vt scl gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_vt_mclk = of_get_gpio(np, 9);
-	if (!gpio_is_valid(gpio_info->gpio_vt_mclk)) {
-		dev_err(dev, "failed to get vt mclk gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_spi_clk = of_get_gpio(np, 10);
-	if (!gpio_is_valid(gpio_info->gpio_spi_clk)) {
-		dev_err(dev, "failed to get spi clk gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_spi_csn = of_get_gpio(np, 11);
-	if (!gpio_is_valid(gpio_info->gpio_spi_csn)) {
-		dev_err(dev, "failed to get spi csn gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_spi_miso = of_get_gpio(np, 12);
-	if (!gpio_is_valid(gpio_info->gpio_spi_miso)) {
-		dev_err(dev, "failed to get spi miso gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_spi_mosi = of_get_gpio(np, 13);
-	if (!gpio_is_valid(gpio_info->gpio_spi_mosi)) {
-		dev_err(dev, "failed to get spi mosi gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_uart_txd = of_get_gpio(np, 14);
-	if (!gpio_is_valid(gpio_info->gpio_uart_txd)) {
-		dev_err(dev, "failed to get uart txd gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_uart_rxd = of_get_gpio(np, 15);
-	if (!gpio_is_valid(gpio_info->gpio_uart_rxd)) {
-		dev_err(dev, "failed to get uart rxd gpio\n");
+	gpio_info->gpio_main_flash_torch = of_get_named_gpio(np, "gpios_flash_torch", 0);
+	if (!gpio_is_valid(gpio_info->gpio_main_flash_torch)) {
+		dev_err(dev, "failed to get main flash_torch gpio\n");
 		return ERR_PTR(-EINVAL);
 	}
 
