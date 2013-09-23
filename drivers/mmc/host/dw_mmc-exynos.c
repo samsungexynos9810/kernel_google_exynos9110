@@ -612,8 +612,12 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 			 * Verify the "tuning block" arrived (to host) intact.
 			 * If yes, remember this sample value works.
 			 */
-			if (!memcmp(tuning_blk_pattern, tuning_blk, blksz))
+			if (host->use_dma == 1) {
 				sample_good |= (1 << test_sample);
+			} else {
+				if (!memcmp(tuning_blk_pattern, tuning_blk, blksz))
+					sample_good |= (1 << test_sample);
+			}
 		} else {
 			dev_dbg(&mmc->class_dev,
 				"Tuning error: cmd.error:%d, data.error:%d\n",
