@@ -68,6 +68,10 @@ struct idmac_desc {
 	u32		des2;	/* buffer 1 physical address */
 
 	u32		des3;	/* buffer 2 physical address */
+	u32		des4;	/* Dummy Descriptor */
+	u32		des5;	/* Dummy Descriptor */
+	u32		des6;	/* Dummy Descriptor */
+	u32		des7;	/* Dummy Descriptor */
 };
 #endif /* CONFIG_MMC_DW_IDMAC */
 
@@ -374,6 +378,7 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 		desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC | IDMAC_DES0_CH;
 
 		/* Buffer length */
+		desc->des1 = length;
 		IDMAC_SET_BUFFER1_SIZE(desc, length);
 
 		/* Physical address to DMA to/from */
@@ -536,6 +541,9 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
 	/* If we don't have a channel, we can't do DMA */
 	if (!host->use_dma)
 		return -ENODEV;
+
+	if (host->use_dma && host->dma_ops->init)
+		host->dma_ops->init(host);
 
 	sg_len = dw_mci_pre_dma_transfer(host, data, 0);
 	if (sg_len < 0) {
