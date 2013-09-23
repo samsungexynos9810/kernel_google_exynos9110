@@ -12,5 +12,19 @@
 #ifndef FIMC_IS_DT_H
 #define FIMC_IS_DT_H
 
+#define DT_READ_U32(node, key, value) do {\
+		pprop = key; \
+		if (of_property_read_u32((node), key, &temp)) \
+			goto p_err; \
+		(value) = temp; \
+	} while (0)
+
+#define DT_READ_STR(node, key, value) do {\
+		pprop = key; \
+		if (of_property_read_string((node), key, &name)) \
+			goto p_err; \
+		(value) = name; \
+	} while (0)
+
 struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev);
 #endif

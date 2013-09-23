@@ -999,26 +999,12 @@ static int fimc_is_probe(struct platform_device *pdev)
 
 	/* device entity - sensor0 */
 	fimc_is_sensor_probe(&core->sensor[0],
-		0,
-		CSI_ID_A,
-		FLITE_ID_A);
+		pdata->sensor_info[0]);
 
 	/* device entity - sensor1 */
-#if defined(CONFIG_SOC_EXYNOS5420)
 	fimc_is_sensor_probe(&core->sensor[1],
-#if defined(CONFIG_MACH_SMDK5420)
-		1,
-#else
-		2,
-#endif
-		CSI_ID_B,
-		FLITE_ID_B);
-#else
-	fimc_is_sensor_probe(&core->sensor[1],
-		1,
-		CSI_ID_B,
-		FLITE_ID_B);
-#endif
+		pdata->sensor_info[1]);
+
 
 	/* device entity - ischain0 */
 	fimc_is_ischain_probe(&core->ischain[0],

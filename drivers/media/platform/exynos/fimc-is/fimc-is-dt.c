@@ -21,6 +21,81 @@
 #include "fimc-is-dt.h"
 
 #ifdef CONFIG_OF
+static int parse_sensor_info(struct exynos5_platform_fimc_is *pdata, struct device_node *np)
+{
+	u32 i;
+	u32 temp;
+	char *pprop;
+	const char *name;
+
+	for (i = 0; i < FIMC_IS_MAX_CAMIF_CLIENTS; i++) {
+		pdata->sensor_info[i] = kzalloc(sizeof(struct exynos5_fimc_is_sensor_info), GFP_KERNEL);
+		if (!pdata->sensor_info[i]) {
+			printk(KERN_ERR "%s: no memory for sensor_info[%d]\n", __func__, i);
+			return -EINVAL;
+		}
+	}
+
+	DT_READ_STR(np, "rear_sensor_name", pdata->sensor_info[SENSOR_POSITION_REAR]->sensor_name);
+	DT_READ_U32(np, "rear_sensor_position", pdata->sensor_info[SENSOR_POSITION_REAR]->sensor_position);
+	DT_READ_U32(np, "rear_sensor_id", pdata->sensor_info[SENSOR_POSITION_REAR]->sensor_id);
+	DT_READ_U32(np, "rear_clk_src", pdata->sensor_info[SENSOR_POSITION_REAR]->clk_src);
+	DT_READ_U32(np, "rear_csis_id", pdata->sensor_info[SENSOR_POSITION_REAR]->csi_id);
+	DT_READ_U32(np, "rear_flite_id", pdata->sensor_info[SENSOR_POSITION_REAR]->flite_id);
+	DT_READ_U32(np, "rear_i2c_channel", pdata->sensor_info[SENSOR_POSITION_REAR]->i2c_channel);
+	DT_READ_U32(np, "rear_sensor_slave_address", pdata->sensor_info[SENSOR_POSITION_REAR]->sensor_slave_address);
+	DT_READ_U32(np, "rear_actuator_id", pdata->sensor_info[SENSOR_POSITION_REAR]->actuator_id);
+	DT_READ_U32(np, "rear_actuator_i2c", pdata->sensor_info[SENSOR_POSITION_REAR]->actuator_i2c);
+	DT_READ_U32(np, "rear_flash_id", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_id);
+	DT_READ_U32(np, "rear_flash_first_gpio", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_first_gpio);
+	DT_READ_U32(np, "rear_flash_second_gpio", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_second_gpio);
+
+	DT_READ_STR(np, "front_sensor_name", pdata->sensor_info[SENSOR_POSITION_FRONT]->sensor_name);
+	DT_READ_U32(np, "front_sensor_position", pdata->sensor_info[SENSOR_POSITION_FRONT]->sensor_position);
+	DT_READ_U32(np, "front_sensor_id", pdata->sensor_info[SENSOR_POSITION_FRONT]->sensor_id);
+	DT_READ_U32(np, "front_clk_src", pdata->sensor_info[SENSOR_POSITION_FRONT]->clk_src);
+	DT_READ_U32(np, "front_csis_id", pdata->sensor_info[SENSOR_POSITION_FRONT]->csi_id);
+	DT_READ_U32(np, "front_flite_id", pdata->sensor_info[SENSOR_POSITION_FRONT]->flite_id);
+	DT_READ_U32(np, "front_i2c_channel", pdata->sensor_info[SENSOR_POSITION_FRONT]->i2c_channel);
+	DT_READ_U32(np, "front_sensor_slave_address", pdata->sensor_info[SENSOR_POSITION_FRONT]->sensor_slave_address);
+
+	return 0;
+
+p_err:
+	pr_err("%s: no property in the node, sensor_info.\n", pprop);
+	return -EINVAL;
+}
+
+static int fimc_is_parse_ctrl_dt(struct exynos5_platform_fimc_is *pdata, struct device_node *np)
+{
+	int ret = 0;
+	struct device_node *sensor_np;
+
+	if (!np) {
+		pr_err("%s: no devicenode given\n", of_node_full_name(np));
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	sensor_np = of_find_node_by_name(np, "fimc_is_sensor");
+	if (!sensor_np) {
+		pr_err("%s: could not find fimc_is_sensor node\n",
+			of_node_full_name(np));
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = parse_sensor_info(pdata, sensor_np);
+	if (ret < 0) {
+		pr_err("parsing sensor_data is failed.\n");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+p_err:
+	return ret;
+}
+
 struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 {
 	struct exynos5_platform_fimc_is *pdata;
@@ -150,6 +225,15 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	}
 
 	pdata->_gpio_info = gpio_info;
+
+	ctrl_np = of_get_child_by_name(np, "fimc_is_ctrl");
+	if (!ctrl_np) {
+		pr_err("device tree errror : empty dt node\n");
+		return ERR_PTR(-EINVAL);
+	}
+
+	fimc_is_parse_ctrl_dt(pdata, ctrl_np);
+
 	dev->platform_data = pdata;
 
 	return pdata;
