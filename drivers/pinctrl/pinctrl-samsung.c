@@ -1074,6 +1074,30 @@ static struct samsung_pin_ctrl *samsung_pinctrl_get_soc_data(
 	return ctrl;
 }
 
+/* set pdn registers to the previous state */
+static void samsung_pinctrl_init_pdn_regs(
+			 struct samsung_pinctrl_drv_data *drvdata)
+{
+	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+	void __iomem *virt_base = drvdata->virt_base;
+	int i;
+
+	for (i = 0; i < ctrl->nr_banks; i++) {
+		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+		void __iomem *reg = virt_base + bank->pctl_offset;
+
+		u8 *offs = bank->type->reg_offset;
+		u8 *widths = bank->type->fld_width;
+
+		if (!widths[PINCFG_TYPE_CON_PDN])
+			continue;
+
+		/* set previous state */
+		writel(0x3, reg + offs[PINCFG_TYPE_CON_PDN]);
+		writel(0x3, reg + offs[PINCFG_TYPE_PUD_PDN]);
+	}
+}
+
 static int samsung_pinctrl_probe(struct platform_device *pdev)
 {
 	struct samsung_pinctrl_drv_data *drvdata;
@@ -1125,6 +1149,8 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
 		ctrl->eint_gpio_init(drvdata);
 	if (ctrl->eint_wkup_init)
 		ctrl->eint_wkup_init(drvdata);
+
+	samsung_pinctrl_init_pdn_regs(drvdata);
 
 	platform_set_drvdata(pdev, drvdata);
 
@@ -1242,6 +1268,8 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 					writel(bank->pm_save[type],
 							reg + offs[type]);
 	}
+
+	samsung_pinctrl_init_pdn_regs(drvdata);
 }
 
 /**
