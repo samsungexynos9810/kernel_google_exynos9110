@@ -6835,6 +6835,13 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 #ifdef BAYER_CROP_DZOOM
 	bds_width = frame->shot->udm.bayer.width;
 	bds_height = frame->shot->udm.bayer.height;
+	/* HACK: udm is not invalide for 3AA capture.
+	 * in the future, meta data will be modified
+	 */
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		bds_width = frame->shot->ctl.scaler.cropRegion[2];
+		bds_height = frame->shot->ctl.scaler.cropRegion[3];
+	}
 	if (bds_width && bds_height
 	&& (bds_width <= device->chain0_width)
 	&& ((bds_width != device->bds_width) || (bds_height != device->bds_height))) {
