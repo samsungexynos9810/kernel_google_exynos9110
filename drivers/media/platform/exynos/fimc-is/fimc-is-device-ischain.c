@@ -4820,7 +4820,6 @@ int fimc_is_ischain_3a1_s_format(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue;
 
 	BUG_ON(!device);
-	BUG_ON(!device->sensor);
 
 	group = &device->group_3ax;
 	leader = &group->leader;
