@@ -3581,7 +3581,6 @@ static struct synaptics_rmi4_platform_data *synaptics_rmi_parse_dt(struct i2c_cl
 	struct device *dev = &client->dev;
 	struct synaptics_rmi4_platform_data *pdata;
 	struct device_node *np = dev->of_node;
-	int gpio;
 
 	if (!np)
 		return ERR_PTR(-ENOENT);
@@ -3592,13 +3591,6 @@ static struct synaptics_rmi4_platform_data *synaptics_rmi_parse_dt(struct i2c_cl
 		return ERR_PTR(-ENOMEM);
 	}
 	dev->platform_data = pdata;
-
-	gpio = of_get_gpio(np, 0);
-	if (!gpio_is_valid(gpio)) {
-		dev_err(dev, "failed to get interrupt gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-	client->irq = gpio_to_irq(gpio);
 
 	if (of_property_read_u32(np, "sensor_max_x", &pdata->sensor_max_x)) {
 		dev_err(dev, "failed to get sensor_max_x property\n");
