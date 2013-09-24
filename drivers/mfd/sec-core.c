@@ -158,9 +158,7 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
 					struct device *dev)
 {
 	struct sec_platform_data *pdata;
-	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
 	struct device_node *np = dev->of_node;
-	int gpio;
 
 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
@@ -171,13 +169,6 @@ static struct sec_platform_data *sec_pmic_i2c_parse_dt_pdata(
 
 	pdata->wtsr_smpl = of_get_property(np, "wtsr_smpl", NULL);
 	pdata->irq_base = -1;
-
-	gpio = of_get_gpio(np, 0);
-	if (!gpio_is_valid(gpio)) {
-		dev_err(dev, "failed to get interrupt gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-	i2c->irq = gpio_to_irq(gpio);
 
 	return pdata;
 }
