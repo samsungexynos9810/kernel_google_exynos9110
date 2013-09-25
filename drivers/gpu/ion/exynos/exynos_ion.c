@@ -1015,7 +1015,7 @@ static struct exynos_ion_contig_region
 #if defined(CONFIG_ION_EXYNOS_SIZE_COMMON) &&  \
 	(CONFIG_ION_EXYNOS_SIZE_COMMON > 0)
 	{
-		.name = "mfc_sh",
+		.name = "common",
 		.id = ION_EXYNOS_ID_COMMON,
 		.size = PAGE_ALIGN(CONFIG_ION_EXYNOS_SIZE_COMMON * SZ_1K),
 	},
