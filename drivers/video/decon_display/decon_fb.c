@@ -3299,11 +3299,13 @@ static int s3c_fb_debugfs_init(struct s3c_fb *sfb)
 	return 0;
 }
 
+#ifdef S3CFB_DEVICE_DRIVER_TYPE_ENABLE
 static void s3c_fb_debugfs_cleanup(struct s3c_fb *sfb)
 {
 	if (sfb->debug_dentry)
 		debugfs_remove(sfb->debug_dentry);
 }
+#endif
 
 #else
 
