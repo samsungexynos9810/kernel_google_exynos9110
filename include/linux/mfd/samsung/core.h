@@ -132,7 +132,7 @@ extern int sec_reg_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
 extern int sec_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf);
 extern int sec_reg_write(struct sec_pmic_dev *sec_pmic, u32 reg, u32 value);
 extern int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf);
-extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u8 val, u32 mask);
+extern int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val, u32 mask);
 
 extern int sec_rtc_read(struct sec_pmic_dev *sec_pmic, u32 reg, void *dest);
 extern int sec_rtc_bulk_read(struct sec_pmic_dev *sec_pmic, u32 reg, int count,
@@ -176,9 +176,9 @@ struct sec_opmode_data {
 
 enum sec_opmode {
 	SEC_OPMODE_OFF,
-	SEC_OPMODE_ON,
-	SEC_OPMODE_LOWPOWER,
 	SEC_OPMODE_SUSPEND,
+	SEC_OPMODE_LOWPOWER,
+	SEC_OPMODE_ON,
 };
 
 #endif /*  __LINUX_MFD_SEC_CORE_H */

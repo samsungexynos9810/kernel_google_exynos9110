@@ -109,7 +109,7 @@ int sec_bulk_write(struct sec_pmic_dev *sec_pmic, u32 reg, int count, u8 *buf)
 }
 EXPORT_SYMBOL_GPL(sec_bulk_write);
 
-int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u8 val, u32 mask)
+int sec_reg_update(struct sec_pmic_dev *sec_pmic, u32 reg, u32 val, u32 mask)
 {
 	return regmap_update_bits(sec_pmic->regmap, reg, mask, val);
 }
@@ -224,7 +224,7 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 		sec_pmic->device_type = pdata->device_type;
 		sec_pmic->ono = pdata->ono;
 		sec_pmic->irq_base = pdata->irq_base;
-		sec_pmic->wakeup = pdata->wakeup;
+		sec_pmic->wakeup = true;
 		sec_pmic->pdata = pdata;
 		sec_pmic->irq = i2c->irq;
 		sec_pmic->wtsr_smpl = pdata->wtsr_smpl;
@@ -299,6 +299,8 @@ static int sec_pmic_remove(struct i2c_client *i2c)
 
 	mfd_remove_devices(sec_pmic->dev);
 	sec_irq_exit(sec_pmic);
+	regmap_exit(sec_pmic->rtc_regmap);
+	regmap_exit(sec_pmic->regmap);
 	i2c_unregister_device(sec_pmic->rtc);
 	return 0;
 }
@@ -309,11 +311,46 @@ static const struct i2c_device_id sec_pmic_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, sec_pmic_id);
 
+#ifdef CONFIG_PM
+static int sec_suspend(struct device *dev)
+{
+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+	struct sec_pmic_dev *sec_pmic = i2c_get_clientdata(i2c);
+
+	if (sec_pmic->wakeup)
+		enable_irq_wake(sec_pmic->irq);
+
+	disable_irq(sec_pmic->irq);
+	return 0;
+}
+
+static int sec_resume(struct device *dev)
+{
+	struct i2c_client *i2c = container_of(dev, struct i2c_client, dev);
+	struct sec_pmic_dev *sec_pmic = i2c_get_clientdata(i2c);
+
+	if (sec_pmic->wakeup)
+		disable_irq_wake(sec_pmic->irq);
+
+	enable_irq(sec_pmic->irq);
+	return 0;
+}
+#else
+#define sec_suspend	NULL
+#define sec_resume	NULL
+#endif /* CONFIG_PM */
+
+const struct dev_pm_ops sec_pmic_apm = {
+	.suspend = sec_suspend,
+	.resume = sec_resume,
+};
+
 static struct i2c_driver sec_pmic_driver = {
 	.driver = {
 		   .name = "sec_pmic",
 		   .owner = THIS_MODULE,
 		   .of_match_table = of_match_ptr(sec_dt_match),
+		   .pm = &sec_pmic_apm,
 	},
 	.probe = sec_pmic_probe,
 	.remove = sec_pmic_remove,
@@ -334,5 +371,5 @@ static void __exit sec_pmic_exit(void)
 module_exit(sec_pmic_exit);
 
 MODULE_AUTHOR("Sangbeom Kim <sbkim73@samsung.com>");
-MODULE_DESCRIPTION("Core support for the S5M MFD");
+MODULE_DESCRIPTION("Core support for the SAMSUNG MFD");
 MODULE_LICENSE("GPL");
