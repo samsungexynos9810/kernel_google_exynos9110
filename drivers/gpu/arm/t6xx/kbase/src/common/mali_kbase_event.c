@@ -23,10 +23,23 @@ STATIC base_jd_udata kbase_event_process(kbase_context *kctx, kbase_jd_atom *kat
 {
 	base_jd_udata data;
 
-	KBASE_DEBUG_ASSERT(kctx != NULL);
-	KBASE_DEBUG_ASSERT(katom != NULL);
-	KBASE_DEBUG_ASSERT(katom->status == KBASE_JD_ATOM_STATE_COMPLETED);
+#ifdef SLSI_INTEGRATION
+	pgd_t *pgd;
+	struct mm_struct *mm = katom->kctx->process_mm;
 
+	if (!kctx || !katom || (katom->status != KBASE_JD_ATOM_STATE_COMPLETED)) {
+		printk("Abnormal situation\n");
+		printk("kctx: 0x%p, katom: 0x%p, katom->status: 0x%x\n", kctx, katom, katom->status);
+		return data;
+	}
+
+	pgd = pgd_offset(mm, (unsigned long)&katom->completed);
+	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
+		printk("Abnormal katom\n");
+		printk("katom->kctx: 0x%p, katom->kctx->osctx.tgid: %d, katom->kctx->process_mm: 0x%p, pgd: 0x%px\n", katom->kctx, katom->kctx->osctx.tgid, katom->kctx->process_mm, pgd);
+		return data;
+	}
+#endif
 	data = katom->udata;
 
 	KBASE_TIMELINE_ATOMS_IN_FLIGHT(kctx, atomic_sub_return(1, &kctx->timeline.jd_atoms_in_flight));
