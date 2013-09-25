@@ -361,25 +361,25 @@ int sec_irq_init(struct sec_pmic_dev *sec_pmic)
 	switch (type) {
 	case S5M8763X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 				  sec_pmic->irq_base, &s5m8763_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
 	case S5M8767X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 				  sec_pmic->irq_base, &s5m8767_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
 	case S2MPS11X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 				  sec_pmic->irq_base, &s2mps11_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
 	case S2MPS13X:
 		ret = regmap_add_irq_chip(sec_pmic->regmap, sec_pmic->irq,
-				  IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+				  IRQF_TRIGGER_LOW | IRQF_ONESHOT,
 				  sec_pmic->irq_base, &s2mps13_irq_chip,
 				  &sec_pmic->irq_data);
 		break;
