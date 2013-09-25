@@ -2524,6 +2524,11 @@ static void dw_mci_timeout_timer(unsigned long data)
 	if (host && host->mrq) {
 		mrq = host->mrq;
 
+		dev_err(host->dev,
+			"Timeout waiting for hardware interrupt."
+			" state = %d\n", host->state);
+		dw_mci_reg_dump(host);
+
 		spin_lock(&host->lock);
 
 		host->sg = NULL;
@@ -2554,10 +2559,6 @@ static void dw_mci_timeout_timer(unsigned long data)
 		}
 
 		spin_unlock(&host->lock);
-		dev_err(host->dev,
-			"Timeout waiting for hardware interrupt."
-			" state = %d\n", host->state);
-		dw_mci_reg_dump(host);
 		dw_mci_fifo_reset(host->dev, host);
 		dw_mci_ciu_reset(host->dev, host);
 		spin_lock(&host->lock);
