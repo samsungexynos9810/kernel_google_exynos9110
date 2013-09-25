@@ -479,6 +479,9 @@ static int exynos_target(struct cpufreq_policy *policy,
 	if (exynos_info[cur]->blocked)
 		goto out;
 
+	if (target_freq == 0)
+		target_freq = policy->min;
+
 	/* verify old frequency */
 	BUG_ON(freqs[cur]->old != exynos_getspeed(policy->cpu));
 
