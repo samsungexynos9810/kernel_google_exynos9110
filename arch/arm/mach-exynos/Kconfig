@@ -129,6 +129,40 @@ config SOC_EXYNOS5440
 	help
 	  Enable EXYNOS5440 SoC support
 
+config EXYNOS_SNAPSHOT
+	bool "Enable SnapShot of exynos for debugging"
+	default y
+
+config EXYNOS_SNAPSHOT_REG
+	bool "Enable debugging of register access by exynos-snapshot log"
+	depends on EXYNOS_SNAPSHOT
+	default y
+
+config EXYNOS_SNAPSHOT_HRTIMER
+	bool "Enable debugging of hrtimer by exynos-snapshot log"
+	depends on EXYNOS_SNAPSHOT
+	default n
+
+config EXYNOS_SNAPSHOT_SOFTIRQ
+	bool "Enable debugging of softirq by exynos-snapshot log"
+	depends on EXYNOS_SNAPSHOT
+	default n
+
+config EXYNOS_SNAPSHOT_HOOK_LOGGER
+	bool "Enable hooking android platform log for ramdump"
+	depends on EXYNOS_SNAPSHOT
+	default y
+
+config EXYNOS_SNAPSHOT_PANIC_REBOOT
+	bool "Enable forced reboot after panic for ramdump"
+	depends on EXYNOS_SNAPSHOT
+	default y
+
+config EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
+	bool "Enable forced ramdump mode when reboot, this is usually used for test"
+	depends on EXYNOS_SNAPSHOT
+	default n
+
 config EXYNOS_ATAGS
 	bool "ATAGS based boot for EXYNOS (deprecated)"
 	depends on !ARCH_MULTIPLATFORM

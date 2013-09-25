@@ -82,6 +82,7 @@
 #include <asm/paravirt.h>
 #endif
 
+#include <mach/exynos-ss.h>
 #include "sched.h"
 #include "../workqueue_internal.h"
 #include "../smpboot.h"
@@ -3033,6 +3034,7 @@ need_resched:
 	} else
 		raw_spin_unlock_irq(&rq->lock);
 
+	exynos_ss_task(cpu, rq->curr);
 	post_schedule(rq);
 
 	sched_preempt_enable_no_resched();

@@ -49,6 +49,7 @@
 #include <linux/uaccess.h>
 
 #include "workqueue_internal.h"
+#include <mach/exynos-ss.h>
 
 enum {
 	/*
@@ -2170,6 +2171,7 @@ __acquires(&pool->lock)
 	lock_map_acquire_read(&pwq->wq->lockdep_map);
 	lock_map_acquire(&lockdep_map);
 	trace_workqueue_execute_start(work);
+	exynos_ss_work(worker, work, work->func);
 	worker->current_func(work);
 	/*
 	 * While we must be careful to not use "work" after this, the trace

@@ -46,6 +46,7 @@
 #include <asm/virt.h>
 #include <asm/mach/arch.h>
 
+#include <mach/exynos-ss.h>
 /*
  * as from 2.5, kernels no longer have an init_tasks structure
  * so we need some other way of telling a new secondary core
@@ -578,6 +579,9 @@ static void ipi_cpu_stop(unsigned int cpu)
 		raw_spin_lock(&stop_lock);
 		printk(KERN_CRIT "CPU%u: stopping\n", cpu);
 		dump_stack();
+#ifdef CONFIG_EXYNOS_SNAPSHOT
+		exynos_ss_save_context();
+#endif
 		raw_spin_unlock(&stop_lock);
 	}
 

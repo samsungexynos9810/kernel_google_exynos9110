@@ -22,6 +22,7 @@
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/fs.h>
+#include <linux/time.h>
 #include <linux/miscdevice.h>
 #include <linux/uaccess.h>
 #include <linux/poll.h>
@@ -409,6 +410,41 @@ static void fix_up_readers(struct logger_log *log, size_t len)
 			reader->r_off = get_next_entry(log, reader->r_off, len);
 }
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT
+#define ESS_MAX_BUF_SIZE	4096
+#define ESS_MAX_TIMEBUF_SIZE	20
+static char ess_buf[ESS_MAX_BUF_SIZE];
+static int ess_size;
+static void (*func_hook_logger)(const char *name, const char *buf, size_t size);
+void register_hook_logger(void (*func)(const char *name, const char *buf, size_t size))
+{
+	func_hook_logger = func;
+}
+EXPORT_SYMBOL(register_hook_logger);
+
+static int reparse_hook_logger_header(struct logger_entry *entry)
+{
+	struct tm tmBuf;
+	char prioChar;
+	char timeBuf[ESS_MAX_TIMEBUF_SIZE];
+	static const char* kPrioChars = "!.VDIWEFS";
+	unsigned char prio = entry->msg[0];
+
+	prioChar = (prio < strlen(kPrioChars) ? kPrioChars[prio] : '?');
+	time_to_tm(entry->sec, 0, &tmBuf);
+
+	snprintf(timeBuf, sizeof(timeBuf), "%02d-%02d %02d:%02d:%02d",
+			tmBuf.tm_mon+1, tmBuf.tm_mday,
+			tmBuf.tm_hour, tmBuf.tm_min, tmBuf.tm_sec);
+
+	snprintf(ess_buf, sizeof(ess_buf), "%s.%03d %5d %5d %c ",
+			timeBuf, entry->nsec / 1000000, entry->pid, entry->tid,
+			prioChar);
+
+	return strlen(ess_buf);
+}
+#endif
+
 /*
  * do_write_log - writes 'len' bytes from 'buf' to 'log'
  *
@@ -424,6 +460,10 @@ static void do_write_log(struct logger_log *log, const void *buf, size_t count)
 	if (count != len)
 		memcpy(log->buffer, buf + len, count - len);
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT
+	if (func_hook_logger)
+		ess_size = reparse_hook_logger_header((struct logger_entry *)buf);
+#endif
 	log->w_off = logger_offset(log, log->w_off + count);
 
 }
@@ -455,6 +495,12 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
 			 */
 			return -EFAULT;
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT
+	if (func_hook_logger && ess_size < ESS_MAX_BUF_SIZE) {
+		memcpy(ess_buf + ess_size, log->buffer + log->w_off, len);
+		ess_size += count;
+	}
+#endif
 	log->w_off = logger_offset(log, log->w_off + count);
 
 	return count;
@@ -520,7 +566,17 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
 		iov++;
 		ret += nr;
 	}
-
+#ifdef CONFIG_EXYNOS_SNAPSHOT
+	if (func_hook_logger && ess_size < ESS_MAX_BUF_SIZE) {
+		char *eatnl = ess_buf + ess_size - 1;
+		*eatnl = '\n';
+		while (--eatnl >= ess_buf) {
+			if (*eatnl == '\n')
+				*eatnl = '\0';
+		};
+		func_hook_logger(log->misc.name, ess_buf, ess_size);
+	}
+#endif
 	mutex_unlock(&log->mutex);
 
 	/* wake up any blocked readers */
