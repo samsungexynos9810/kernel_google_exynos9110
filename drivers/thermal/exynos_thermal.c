@@ -40,6 +40,11 @@
 #include <linux/of.h>
 #include <linux/delay.h>
 #include <mach/tmu.h>
+#include <mach/cpufreq.h>
+
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+static struct cpumask mp_cluster_cpus[CA_END];
+#endif
 
 /* Exynos generic registers */
 #define EXYNOS_TMU_REG_TRIMINFO		0x0
@@ -204,6 +209,27 @@ struct exynos_thermal_zone {
 static struct exynos_thermal_zone *th_zone;
 static void exynos_unregister_thermal(void);
 static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf);
+
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+static void __init init_mp_cpumask_set(void)
+{
+	 unsigned int i;
+
+	 for_each_cpu(i, cpu_possible_mask) {
+		 if (exynos_boot_cluster == CA7) {
+			 if (i >= NR_CA7)
+				 cpumask_set_cpu(i, &mp_cluster_cpus[CA15]);
+			 else
+				 cpumask_set_cpu(i, &mp_cluster_cpus[CA7]);
+		 } else {
+			 if (i >= NR_CA15)
+				 cpumask_set_cpu(i, &mp_cluster_cpus[CA7]);
+			 else
+				 cpumask_set_cpu(i, &mp_cluster_cpus[CA15]);
+		 }
+	 }
+}
+#endif
 
 /* Get mode callback functions for thermal zone */
 static int exynos_get_mode(struct thermal_zone_device *thermal,
@@ -1054,18 +1080,30 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.freq_tab[0] = {
 		.freq_clip_max = 900 * 1000,
 		.temp_level = 85,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
 	},
 	.freq_tab[1] = {
 		.freq_clip_max = 800 * 1000,
 		.temp_level = 90,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
 	},
 	.freq_tab[2] = {
 		.freq_clip_max = 700 * 1000,
 		.temp_level = 95,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
 	},
 	.freq_tab[3] = {
 		.freq_clip_max = 600 * 1000,
 		.temp_level = 100,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
 	},
 	.size[THERMAL_TRIP_ACTIVE] = 1,
 	.size[THERMAL_TRIP_PASSIVE] = 3,
@@ -1126,6 +1164,9 @@ static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
 #ifdef CONFIG_OF
 	if (pdev->dev.of_node) {
 		const struct of_device_id *match;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		init_mp_cpumask_set();
+#endif
 		match = of_match_node(exynos_tmu_match, pdev->dev.of_node);
 		if (!match)
 			return NULL;
