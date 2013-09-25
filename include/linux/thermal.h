@@ -171,6 +171,7 @@ struct thermal_zone_device {
 	int last_temperature;
 	int emul_temperature;
 	int passive;
+	bool cooling_dev_en;
 	unsigned int forced_passive;
 	const struct thermal_zone_device_ops *ops;
 	const struct thermal_zone_params *tzp;
