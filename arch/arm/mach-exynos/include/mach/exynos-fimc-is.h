@@ -368,6 +368,25 @@ struct sensor_open_extended {
 	u32 I2CSclk;
 };
 
+/*
+ * struct exynos_fimc_is_subip_info
+ *   This info describes what and how many subip fimc-is has.
+ *   In machine data, this info should be defined.
+ */
+struct exynos_fimc_is_subip_info {
+	/* You can add more new subip */
+	u32 num_of_3a0;
+	u32 num_of_3a1;
+	u32 num_of_isp;
+	u32 num_of_drc;
+	u32 num_of_scc;
+	u32 num_of_odc;
+	u32 num_of_dis;
+	u32 num_of_3dnr;
+	u32 num_of_scp;
+	u32 num_of_fd;
+};
+
 /**
 * struct exynos_platform_fimc_is - camera host interface platform data
 *
@@ -378,6 +397,7 @@ struct exynos_platform_fimc_is {
 	struct exynos_fimc_is_sensor_info *sensor_info[FIMC_IS_MAX_CAMIF_CLIENTS];
 	struct exynos_sensor_gpio_info *gpio_info;
 	struct fimc_is_gpio_info *_gpio_info;
+	struct exynos_fimc_is_subip_info *subip_info;
 	int	flag_power_on[FLITE_ID_END];
 	int	(*cfg_gpio)(struct platform_device *pdev, int channel, bool flag_on);
 	int	(*clk_cfg)(struct platform_device *pdev);
