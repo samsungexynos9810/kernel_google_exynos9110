@@ -20,6 +20,7 @@ obj-$(CONFIG_SUSPEND)		+= pm-exynos5430.o
 obj-$(CONFIG_PM_RUNTIME)	+= pm_domains.o pm_domains-exynos5430.o
 obj-$(CONFIG_PM_RUNTIME_TEST_SYSFS)	+= pm_domains_sysfs.o
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+obj-$(CONFIG_CPU_IDLE)		+= exynos-pm.o
 
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
 
