@@ -1601,7 +1601,7 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 
 	ret = fimc_is_hw_a_param(device->interface,
 		device->instance,
-		group,
+		(group & GROUP_ID_PARM_MASK),
 		setfile);
 
 	return ret;
@@ -2187,7 +2187,7 @@ static int fimc_is_itf_init_process_start(struct fimc_is_device_ischain *device)
 
 	ret = fimc_is_hw_process_on(device->interface,
 		device->instance,
-		group);
+		(group & GROUP_ID_PARM_MASK));
 
 	return ret;
 }
@@ -2208,7 +2208,7 @@ static int fimc_is_itf_init_process_stop(struct fimc_is_device_ischain *device)
 	group |= GROUP_ID(device->group_isp.id);
 
 	ret = fimc_is_hw_process_off(device->interface,
-		device->instance, group, 0);
+		device->instance, (group & GROUP_ID_PARM_MASK), 0);
 
 	return ret;
 }
@@ -2481,6 +2481,8 @@ int fimc_is_ischain_probe(struct fimc_is_device_ischain *device,
 	device->dzoom_width	= 0;
 	device->force_down	= false;
 	device->is_region	= NULL;
+
+	device->group_3ax.id = GROUP_ID_INVALID;
 
 	device->group_3ax.leader.entry = ENTRY_ISP;
 	device->group_isp.leader.entry = ENTRY_ISP;
@@ -4987,6 +4989,7 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 {
 	int ret = 0;
 	struct sensor_param *sensor_param;
+	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_subdev *leader_3ax;
 	struct fimc_is_device_sensor *sensor;
 	struct fimc_is_groupmgr *groupmgr;
@@ -5013,7 +5016,11 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 
 	groupmgr = device->groupmgr;
 	group = &device->group_isp;
-	leader_3ax = &device->group_3ax.leader;
+	framemgr = &queue->framemgr;
+	if (device->group_3ax.id == GROUP_ID_INVALID)
+		leader_3ax = NULL;
+	else
+		leader_3ax = &device->group_3ax.leader;
 	sensor = device->sensor;
 	sensor_param = &device->is_region->parameter.sensor;
 
@@ -5027,14 +5034,14 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	device->sensor_width = sensor->width - device->margin_width;
 	device->sensor_height = sensor->height - device->margin_height;
 
-	if (leader_3ax->output.width != leader->input.width) {
+	if (leader_3ax && leader_3ax->output.width != leader->input.width) {
 		merr("width size is invalid(%d != %d)", device,
 			leader_3ax->output.width, leader->input.width);
 		ret = -EINVAL;
 		goto p_err;
 	}
 
-	if (leader_3ax->output.height != leader->input.height) {
+	if (leader_3ax && leader_3ax->output.height != leader->input.height) {
 		merr("height size is invalid(%d != %d)", device,
 			leader_3ax->output.height, leader->input.height);
 		ret = -EINVAL;

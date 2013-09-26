@@ -663,11 +663,14 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		group->subdev[ENTRY_TDNR] = NULL;
 		group->subdev[ENTRY_SCALERP] = NULL;
 		group->subdev[ENTRY_LHFD] = NULL;
+
+		group->next->prev = group;
+
 		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	case GROUP_ID_ISP:
 		/* path configuration */
-		group->prev = &device->group_3ax;
+		group->prev = NULL;
 		group->next = NULL;
 		group->subdev[ENTRY_SCALERC] = &device->scc;
 		/* dis is not included to any group initially */
@@ -1367,7 +1370,6 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	BUG_ON(!group->leader.vctx);
 	BUG_ON(!group->start_callback);
 	BUG_ON(!group->device);
-	BUG_ON(!group->next && !group->prev);
 	BUG_ON(!ldr_frame);
 	BUG_ON(group->instance >= FIMC_IS_MAX_NODES);
 	BUG_ON(group->id >= GROUP_ID_MAX);
@@ -1580,9 +1582,43 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		fimc_is_gframe_trans_grp_to_grp(group, group_next, gframe);
 		spin_unlock_irq(&gframemgr->frame_slock);
 	} else {
-		err("X -> %d -> X", group->id);
-		ret = -EINVAL;
-		goto p_err;
+			/* single */
+		group->fcount++;
+		spin_lock_irq(&gframemgr->frame_slock);
+		fimc_is_gframe_free_head(gframemgr, &gframe);
+		if (!gframe) {
+			spin_unlock_irq(&gframemgr->frame_slock);
+			merr("g%dframe is NULL2", group, group->id);
+			warn("GRP%d(res %d, rcnt %d), GRP2(res %d, rcnt %d)",
+				device->group_3ax.id,
+				groupmgr->group_smp_res[device->group_3ax.id].count,
+				atomic_read(&device->group_3ax.rcount),
+				groupmgr->group_smp_res[device->group_isp.id].count,
+				atomic_read(&device->group_isp.rcount));
+			fimc_is_gframe_print_free(gframemgr);
+			fimc_is_gframe_print_group(group_next);
+			ret = -EINVAL;
+			goto p_err;
+		}
+
+		if (!test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) &&
+			(ldr_frame->fcount != group->fcount)) {
+			if (ldr_frame->fcount > group->fcount) {
+				warn("grp%d shot mismatch(%d != %d)", group->id,
+					ldr_frame->fcount, group->fcount);
+				group->fcount = ldr_frame->fcount;
+			} else {
+				spin_unlock_irq(&gframemgr->frame_slock);
+				err("grp%d shot mismatch(%d, %d)", group->id,
+					ldr_frame->fcount, group->fcount);
+				group->fcount--;
+				ret = -EINVAL;
+				goto p_err;
+			}
+		}
+
+		gframe->fcount = ldr_frame->fcount;
+		spin_unlock_irq(&gframemgr->frame_slock);
 	}
 
 #ifdef DEBUG_AA

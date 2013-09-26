@@ -546,7 +546,8 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 		goto p_err;
 	}
 
-	if (!test_bit(FIMC_IS_GROUP_OPEN, &device->group_3ax.state)) {
+	if (!rep_stream &&
+		!test_bit(FIMC_IS_GROUP_OPEN, &device->group_3ax.state)) {
 		merr("group%d is not opened", vctx, group_id);
 		ret = -EINVAL;
 		goto p_err;

@@ -25,7 +25,8 @@
 #define GROUP_ID_ISP		2 /* hardware : CH1 */
 #define GROUP_ID_DIS		3
 #define GROUP_ID_MAX		4
-#define GROUP_ID_INVALID	(0xFF)
+#define GROUP_ID_INVALID	5
+#define GROUP_ID_PARM_MASK	(0xF)
 #define GROUP_ID_SHIFT		(16)
 #define GROUP_ID_MASK		(0xFFFF)
 #define GROUP_ID(id)		(1 << id)
