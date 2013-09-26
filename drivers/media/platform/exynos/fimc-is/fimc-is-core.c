@@ -60,6 +60,8 @@ extern int fimc_is_scc_video_probe(void *data);
 extern int fimc_is_scp_video_probe(void *data);
 extern int fimc_is_vdc_video_probe(void *data);
 extern int fimc_is_vdo_video_probe(void *data);
+extern int fimc_is_3a0c_video_probe(void *data);
+extern int fimc_is_3a1c_video_probe(void *data);
 
 struct pm_qos_request exynos5_isp_qos_dev;
 struct pm_qos_request exynos5_isp_qos_mem;
@@ -1060,8 +1062,14 @@ static int fimc_is_probe(struct platform_device *pdev)
 	/* video entity - 3a0 */
 	fimc_is_3a0_video_probe(core);
 
+	/* video entity - 3a0 capture */
+	fimc_is_3a0c_video_probe(core);
+
 	/* video entity - 3a1 */
 	fimc_is_3a1_video_probe(core);
+
+	/* video entity - 3a1 capture */
+	fimc_is_3a1c_video_probe(core);
 
 	/* video entity - isp */
 	fimc_is_isp_video_probe(core);

@@ -852,7 +852,8 @@ enum is_entry {
 	ENTRY_DIS,
 	ENTRY_TDNR,
 	ENTRY_SCALERP,
-	ENTRY_LHFD, /* 10 */
+	ENTRY_LHFD,
+	ENTRY_3AXC,
 	ENTRY_END
 };
 

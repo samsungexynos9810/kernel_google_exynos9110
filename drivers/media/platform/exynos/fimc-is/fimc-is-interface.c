@@ -648,6 +648,24 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->ihc_param3);
 		msg->parameter4 = readl(&com_regs->ihc_param4);
 		break;
+	case INTR_3A0C_FDONE:
+		msg->id = 0;
+		msg->command = IHC_FRAME_DONE;
+		msg->instance = readl(&com_regs->taa0c_sensor_id);
+		msg->parameter1 = readl(&com_regs->taa0c_param1);
+		msg->parameter2 = readl(&com_regs->taa0c_param2);
+		msg->parameter3 = readl(&com_regs->taa0c_param3);
+		msg->parameter4 = 0;
+		break;
+	case INTR_3A1C_FDONE:
+		msg->id = 0;
+		msg->command = IHC_FRAME_DONE;
+		msg->instance = readl(&com_regs->taa1c_sensor_id);
+		msg->parameter1 = readl(&com_regs->taa1c_param1);
+		msg->parameter2 = readl(&com_regs->taa1c_param2);
+		msg->parameter3 = readl(&com_regs->taa1c_param3);
+		msg->parameter4 = 0;
+		break;
 	case INTR_SCC_FDONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -1009,6 +1027,17 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 		out_flag = OUT_SCP_FRAME;
 		name = 'P';
 		break;
+
+	case FIMC_IS_VIDEO_3A0C_NUM:
+		out_flag = OUT_3AXC_FRAME;
+		name = '0';
+		break;
+
+	case FIMC_IS_VIDEO_3A1C_NUM:
+		out_flag = OUT_3AXC_FRAME;
+		name = '1';
+		break;
+
 	default:
 		err("video node is invalid(%d)", sub_vctx->video->id);
 		return;
@@ -1066,6 +1095,90 @@ done:
 
 p_err:
 	framemgr_x_barrier_irqr(sub_framemgr, 0, flags);
+}
+
+static void wq_func_3a0c(struct work_struct *data)
+{
+	u32 instance, fcount, rcount, status;
+	struct fimc_is_interface *itf;
+	struct fimc_is_device_ischain *device;
+	struct fimc_is_subdev *leader, *subdev;
+	struct fimc_is_work *work;
+	struct fimc_is_msg *msg;
+
+	itf = container_of(data, struct fimc_is_interface,
+		work_wq[INTR_3A0C_FDONE]);
+
+	get_req_work(&itf->work_list[INTR_3A0C_FDONE], &work);
+	while (work) {
+		msg = &work->msg;
+		instance = msg->instance;
+		fcount = msg->parameter1;
+		status = msg->parameter2;
+		rcount = msg->parameter3;
+
+		if (instance >= FIMC_IS_MAX_NODES) {
+			err("instance is invalid(%d)", instance);
+			goto p_err;
+		}
+
+		device = &((struct fimc_is_core *)itf->core)->ischain[instance];
+		if (!device) {
+			err("device is NULL");
+			goto p_err;
+		}
+
+		subdev = &device->taxc;
+		leader = subdev->leader;
+
+		wq_func_subdev(leader, subdev, fcount, rcount, status, instance);
+
+p_err:
+		set_free_work(&itf->work_list[INTR_3A0C_FDONE], work);
+		get_req_work(&itf->work_list[INTR_3A0C_FDONE], &work);
+	}
+}
+
+static void wq_func_3a1c(struct work_struct *data)
+{
+	u32 instance, fcount, rcount, status;
+	struct fimc_is_interface *itf;
+	struct fimc_is_device_ischain *device;
+	struct fimc_is_subdev *leader, *subdev;
+	struct fimc_is_work *work;
+	struct fimc_is_msg *msg;
+
+	itf = container_of(data, struct fimc_is_interface,
+		work_wq[INTR_3A1C_FDONE]);
+
+	get_req_work(&itf->work_list[INTR_3A1C_FDONE], &work);
+	while (work) {
+		msg = &work->msg;
+		instance = msg->instance;
+		fcount = msg->parameter1;
+		status = msg->parameter2;
+		rcount = msg->parameter3;
+
+		if (instance >= FIMC_IS_MAX_NODES) {
+			err("instance is invalid(%d)", instance);
+			goto p_err;
+		}
+
+		device = &((struct fimc_is_core *)itf->core)->ischain[instance];
+		if (!device) {
+			err("device is NULL");
+			goto p_err;
+		}
+
+		subdev = &device->taxc;
+		leader = subdev->leader;
+
+		wq_func_subdev(leader, subdev, fcount, rcount, status, instance);
+
+p_err:
+		set_free_work(&itf->work_list[INTR_3A1C_FDONE], work);
+		get_req_work(&itf->work_list[INTR_3A1C_FDONE], &work);
+	}
 }
 
 static void wq_func_scc(struct work_struct *data)
@@ -1949,6 +2062,42 @@ static irqreturn_t interface_isr(int irq, void *data)
 		fimc_is_clr_intr(itf, INTR_GENERAL);
 	}
 
+	if (status & (1<<INTR_3A0C_FDONE)) {
+		work_wq = &itf->work_wq[INTR_3A0C_FDONE];
+		work_list = &itf->work_list[INTR_3A0C_FDONE];
+
+		get_free_work_irq(work_list, &work);
+		if (work) {
+			fimc_is_get_cmd(itf, &work->msg, INTR_3A0C_FDONE);
+			set_req_work_irq(work_list, work);
+
+			if (!work_pending(work_wq))
+				wq_func_schedule(itf, work_wq);
+		} else
+			err("free work item is empty2");
+
+		status &= ~(1<<INTR_3A0C_FDONE);
+		fimc_is_clr_intr(itf, INTR_3A0C_FDONE);
+	}
+
+	if (status & (1<<INTR_3A1C_FDONE)) {
+		work_wq = &itf->work_wq[INTR_3A1C_FDONE];
+		work_list = &itf->work_list[INTR_3A1C_FDONE];
+
+		get_free_work_irq(work_list, &work);
+		if (work) {
+			fimc_is_get_cmd(itf, &work->msg, INTR_3A1C_FDONE);
+			set_req_work_irq(work_list, work);
+
+			if (!work_pending(work_wq))
+				wq_func_schedule(itf, work_wq);
+		} else
+			err("free work item is empty2");
+
+		status &= ~(1<<INTR_3A1C_FDONE);
+		fimc_is_clr_intr(itf, INTR_3A1C_FDONE);
+	}
+
 	if (status & (1<<INTR_SCC_FDONE)) {
 		work_wq = &itf->work_wq[INTR_SCC_FDONE];
 		work_list = &itf->work_list[INTR_SCC_FDONE];
@@ -2034,6 +2183,8 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 		warn("failed to alloc own workqueue, will be use global one");
 
 	INIT_WORK(&this->work_wq[INTR_GENERAL], wq_func_general);
+	INIT_WORK(&this->work_wq[INTR_3A0C_FDONE], wq_func_3a0c);
+	INIT_WORK(&this->work_wq[INTR_3A1C_FDONE], wq_func_3a1c);
 	INIT_WORK(&this->work_wq[INTR_SCC_FDONE], wq_func_scc);
 	INIT_WORK(&this->work_wq[INTR_DIS_FDONE], wq_func_dis);
 	INIT_WORK(&this->work_wq[INTR_SCP_FDONE], wq_func_scp);
@@ -2071,6 +2222,10 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 		TRACE_WORK_ID_CAMCTRL, MAX_NBLOCKING_COUNT);
 	init_work_list(&this->work_list[INTR_GENERAL],
 		TRACE_WORK_ID_GENERAL, MAX_WORK_COUNT);
+	init_work_list(&this->work_list[INTR_3A0C_FDONE],
+		TRACE_WORK_ID_3A0C, MAX_WORK_COUNT);
+	init_work_list(&this->work_list[INTR_3A1C_FDONE],
+		TRACE_WORK_ID_3A1C, MAX_WORK_COUNT);
 	init_work_list(&this->work_list[INTR_SCC_FDONE],
 		TRACE_WORK_ID_SCC, MAX_WORK_COUNT);
 	init_work_list(&this->work_list[INTR_DIS_FDONE],

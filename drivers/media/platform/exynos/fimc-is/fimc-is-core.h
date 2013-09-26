@@ -317,6 +317,18 @@
 
 #define mdbgv_vdo(fmt, this, args...) \
 	mdbg_common("[VDO:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_3a0c(fmt, args...) \
+	printk(KERN_INFO "[3A0C] " fmt, ##args)
+
+#define dbg_3a1c(fmt, args...) \
+	printk(KERN_INFO "[3A1C] " fmt, ##args)
+
+#define mdbgv_3a0c(fmt, this, args...) \
+	mdbg_common("[3A0C:V:%d] ", fmt, this->instance, ##args)
+
+#define mdbgv_3a1c(fmt, this, args...) \
+	mdbg_common("[3A1C:V:%d] ", fmt, this->instance, ##args)
 #else
 #define dbg(fmt, args...)
 
@@ -337,6 +349,10 @@
 #define mdbgv_vdc(fmt, this, args...)
 #define dbg_vdiso(fmt, args...)
 #define mdbgv_vdo(fmt, this, args...)
+#define dbg_3a0c(fmt, args...)
+#define mdbgv_3a0c(fmt, this, args...)
+#define dbg_3a1c(fmt, args...)
+#define mdbgv_3a1c(fmt, this, args...)
 #endif
 
 #if (defined(DEBUG) && defined(DBG_DEVICE))
@@ -503,6 +519,8 @@ struct fimc_is_core {
 	struct fimc_is_video			video_scp;
 	struct fimc_is_video			video_vdc;
 	struct fimc_is_video			video_vdo;
+	struct fimc_is_video			video_3a0c;
+	struct fimc_is_video			video_3a1c;
 
 	spinlock_t				slock_clock_gate;
 

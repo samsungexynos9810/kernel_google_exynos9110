@@ -14,24 +14,26 @@
 #ifndef FIMC_IS_FRAME_MGR_H
 #define FIMC_IS_FRAME_MGR_H
 
-#define FRAMEMGR_ID_INVALID	0x00000
-#define FRAMEMGR_ID_SS0		0x00100
-#define FRAMEMGR_ID_SS1		0x00200
-#define FRAMEMGR_ID_3A0_GRP	0x00400
-#define FRAMEMGR_ID_3A0		0x00800
-#define FRAMEMGR_ID_3A1_GRP	0x01000
-#define FRAMEMGR_ID_3A1		0x02000
-#define FRAMEMGR_ID_ISP_GRP	0x04000
-#define FRAMEMGR_ID_SCC		0x08000
-#define FRAMEMGR_ID_DIS		0x10000
-#define FRAMEMGR_ID_DIS_GRP	0x20000
-#define FRAMEMGR_ID_SCP		0x40000
+#define FRAMEMGR_ID_INVALID	0x000000
+#define FRAMEMGR_ID_SS0		0x000100
+#define FRAMEMGR_ID_SS1		0x000200
+#define FRAMEMGR_ID_3A0_GRP	0x000400
+#define FRAMEMGR_ID_3A0		0x000800
+#define FRAMEMGR_ID_3A1_GRP	0x001000
+#define FRAMEMGR_ID_3A1		0x002000
+#define FRAMEMGR_ID_ISP_GRP	0x004000
+#define FRAMEMGR_ID_SCC		0x008000
+#define FRAMEMGR_ID_DIS		0x010000
+#define FRAMEMGR_ID_DIS_GRP	0x020000
+#define FRAMEMGR_ID_SCP		0x040000
+#define FRAMEMGR_ID_3A0C	0x080000
+#define FRAMEMGR_ID_3A1C	0x100000
 #define FRAMEMGR_ID_SHOT	(FRAMEMGR_ID_SS0 | FRAMEMGR_ID_SS1 | \
 				FRAMEMGR_ID_3A0_GRP | FRAMEMGR_ID_3A1_GRP | \
 				FRAMEMGR_ID_ISP_GRP | FRAMEMGR_ID_DIS_GRP)
 #define FRAMEMGR_ID_STREAM	(FRAMEMGR_ID_3A0 | FRAMEMGR_ID_3A1 | \
 				FRAMEMGR_ID_SCC | FRAMEMGR_ID_DIS | \
-				FRAMEMGR_ID_SCP)
+				FRAMEMGR_ID_SCP | FRAMEMGR_ID_3A0C | FRAMEMGR_ID_3A1C)
 /* #define TRACE_FRAME */
 #define TRACE_ID		(FRAMEMGR_ID_SHOT | FRAMEMGR_ID_STREAM)
 
@@ -57,6 +59,10 @@
 #define FMGR_IDX_8		(0x90)
 /*scp callback*/
 #define FMGR_IDX_9		(0xA0)
+/*3a0c callback*/
+#define FMGR_IDX_10		(0xB0)
+/*3a1c callback*/
+#define FMGR_IDX_11		(0xC0)
 
 #define framemgr_e_barrier_irqs(this, index, flag) \
 	spin_lock_irqsave(&this->slock, flag)
@@ -101,7 +107,9 @@ enum fimc_is_frame_output {
 	/* DIS frame done */
 	OUT_DIS_FRAME,
 	/* SCP frame done */
-	OUT_SCP_FRAME
+	OUT_SCP_FRAME,
+	/* 3AXC frame done */
+	OUT_3AXC_FRAME
 };
 
 enum fimc_is_frame_mem {

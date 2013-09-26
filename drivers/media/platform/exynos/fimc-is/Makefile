@@ -14,5 +14,6 @@ fimc-is-objs	:= fimc-is-core.o \
 		fimc-is-device-ischain.o \
 		fimc-is-interface.o fimc-is-time.o fimc-is-dvfs.o \
 		fimc-is-dt.o \
+		fimc-is-video-3a0c.o fimc-is-video-3a1c.o \
 
 obj-$(CONFIG_VIDEO_EXYNOS5_FIMC_IS) += fimc-is.o

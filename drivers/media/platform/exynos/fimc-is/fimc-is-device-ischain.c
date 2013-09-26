@@ -2493,6 +2493,7 @@ int fimc_is_ischain_probe(struct fimc_is_device_ischain *device,
 	device->dnr.entry = ENTRY_TDNR;
 	device->scp.entry = ENTRY_SCALERP;
 	device->fd.entry = ENTRY_LHFD;
+	device->taxc.entry = ENTRY_3AXC;
 
 	clear_bit(FIMC_IS_ISCHAIN_OPEN, &device->state);
 	clear_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
@@ -6336,6 +6337,222 @@ p_err:
 	return ret;
 }
 
+int fimc_is_ischain_3a0c_start(struct fimc_is_device_ischain *device)
+{
+	int ret = 0;
+	struct fimc_is_subdev *taxc;
+	struct fimc_is_video_ctx *vctx;
+	struct fimc_is_queue *queue;
+
+	taxc = &device->taxc;
+	vctx = taxc->vctx;
+	queue = &vctx->q_dst;
+
+	mdbgd_ischain("%s(%dx%d)\n", device, __func__,
+		queue->framecfg.width,
+		queue->framecfg.height);
+
+	if (!ret)
+		set_bit(FIMC_IS_ISDEV_DSTART, &taxc->state);
+	else
+		merr("fimc_is_itf_s_param is fail", device);
+
+	return ret;
+}
+
+int fimc_is_ischain_3a0c_stop(struct fimc_is_device_ischain *device)
+{
+	int ret = 0;
+	struct fimc_is_subdev *taxc;
+
+	dbg_ischain("%s\n", __func__);
+
+	taxc = &device->taxc;
+
+	if (!ret)
+		clear_bit(FIMC_IS_ISDEV_DSTART, &taxc->state);
+	else
+		merr("fimc_is_itf_s_param is fail", device);
+
+	return ret;
+}
+
+int fimc_is_ischain_3a0c_s_format(struct fimc_is_device_ischain *this,
+	u32 width, u32 height)
+{
+	int ret = 0;
+	return ret;
+}
+
+int fimc_is_ischain_3a0c_tag(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *grp_frame)
+{
+	int ret = 0;
+	unsigned long flags;
+	struct fimc_is_framemgr *framemgr;
+	struct fimc_is_frame *frame;
+
+	BUG_ON(!device);
+	BUG_ON(!subdev);
+	BUG_ON(!grp_frame);
+
+	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
+	if (!framemgr) {
+		merr("framemgr is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (grp_frame->shot_ext->request_taac) {
+		if (!test_bit(FIMC_IS_ISDEV_DSTART, &subdev->state)) {
+			ret = fimc_is_ischain_3a0c_start(device);
+			if (ret) {
+				merr("3a0c_start is fail", device);
+				goto p_err;
+			}
+		}
+
+		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_10, flags);
+
+		fimc_is_frame_request_head(framemgr, &frame);
+		if (frame) {
+			grp_frame->shot->uctl.scalerUd.taacTargetAddress[0]
+				= frame->dvaddr_buffer[0];
+			frame->stream->findex = grp_frame->index;
+			set_bit(OUT_3AXC_FRAME, &grp_frame->out_flag);
+			set_bit(REQ_FRAME, &frame->req_flag);
+			fimc_is_frame_trans_req_to_pro(framemgr, frame);
+		} else {
+			grp_frame->shot->uctl.scalerUd.taacTargetAddress[0]
+				= 0;
+			grp_frame->shot_ext->request_taac = 0;
+			mwarn("3a0c %d frame drop", device, grp_frame->fcount);
+		}
+		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_10, flags);
+	} else {
+		if (test_bit(FIMC_IS_ISDEV_DSTART, &subdev->state)) {
+			ret = fimc_is_ischain_3a0c_stop(device);
+			if (ret) {
+				merr("3a0c_stop is fail", device);
+				goto p_err;
+			}
+		}
+		grp_frame->shot->uctl.scalerUd.taacTargetAddress[0] = 0;
+		grp_frame->shot_ext->request_taac = 0;
+	}
+p_err:
+	return ret;
+}
+
+int fimc_is_ischain_3a1c_start(struct fimc_is_device_ischain *device)
+{
+	int ret = 0;
+	struct fimc_is_subdev *taxc;
+	struct fimc_is_video_ctx *vctx;
+	struct fimc_is_queue *queue;
+
+	taxc = &device->taxc;
+	vctx = taxc->vctx;
+	queue = &vctx->q_dst;
+
+	mdbgd_ischain("%s(%dx%d)\n", device, __func__,
+		queue->framecfg.width,
+		queue->framecfg.height);
+
+	if (!ret)
+		set_bit(FIMC_IS_ISDEV_DSTART, &taxc->state);
+	else
+		merr("fimc_is_itf_s_param is fail", device);
+
+	return ret;
+}
+
+int fimc_is_ischain_3a1c_stop(struct fimc_is_device_ischain *device)
+{
+	int ret = 0;
+	struct fimc_is_subdev *taxc;
+
+	dbg_ischain("%s\n", __func__);
+
+	taxc = &device->taxc;
+
+	if (!ret)
+		clear_bit(FIMC_IS_ISDEV_DSTART, &taxc->state);
+	else
+		merr("fimc_is_itf_s_param is fail", device);
+
+	return ret;
+}
+
+int fimc_is_ischain_3a1c_s_format(struct fimc_is_device_ischain *this,
+	u32 width, u32 height)
+{
+	int ret = 0;
+	return ret;
+}
+
+int fimc_is_ischain_3a1c_tag(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *grp_frame)
+{
+	int ret = 0;
+	unsigned long flags;
+	struct fimc_is_framemgr *framemgr;
+	struct fimc_is_frame *frame;
+
+	BUG_ON(!device);
+	BUG_ON(!subdev);
+	BUG_ON(!grp_frame);
+
+	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
+	if (!framemgr) {
+		merr("framemgr is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (grp_frame->shot_ext->request_taac) {
+		if (!test_bit(FIMC_IS_ISDEV_DSTART, &subdev->state)) {
+			ret = fimc_is_ischain_3a1c_start(device);
+			if (ret) {
+				merr("3a1c_start is fail", device);
+				goto p_err;
+			}
+		}
+
+		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_11, flags);
+
+		fimc_is_frame_request_head(framemgr, &frame);
+		if (frame) {
+			grp_frame->shot->uctl.scalerUd.taacTargetAddress[0]
+				= frame->dvaddr_buffer[0];
+			frame->stream->findex = grp_frame->index;
+			set_bit(OUT_3AXC_FRAME, &grp_frame->out_flag);
+			set_bit(REQ_FRAME, &frame->req_flag);
+			fimc_is_frame_trans_req_to_pro(framemgr, frame);
+		} else {
+			grp_frame->shot->uctl.scalerUd.taacTargetAddress[0]
+				= 0;
+			grp_frame->shot_ext->request_taac = 0;
+			mwarn("3a1c %d frame drop", device, grp_frame->fcount);
+		}
+		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_11, flags);
+	} else {
+		if (test_bit(FIMC_IS_ISDEV_DSTART, &subdev->state)) {
+			ret = fimc_is_ischain_3a1c_stop(device);
+			if (ret) {
+				merr("3a1c_stop is fail", device);
+				goto p_err;
+			}
+		}
+		grp_frame->shot->uctl.scalerUd.taacTargetAddress[0] = 0;
+		grp_frame->shot_ext->request_taac = 0;
+	}
+p_err:
+	return ret;
+}
+
 int fimc_is_subdev_s_format(struct fimc_is_subdev *subdev,
 	u32 width, u32 height)
 {
@@ -6492,10 +6709,12 @@ int fimc_is_ischain_3a0_callback(struct fimc_is_device_ischain *device,
 	u32 crop_width;
 	unsigned long flags;
 	struct fimc_is_group *group;
+	struct fimc_is_groupmgr *groupmgr;
+	struct fimc_is_core *core;
 	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_subdev *tax;
+	struct fimc_is_subdev *tax, *taxc;
 
 #ifdef DBG_STREAMING
 	dbg_ischain("%s\n", __func__);
@@ -6504,8 +6723,11 @@ int fimc_is_ischain_3a0_callback(struct fimc_is_device_ischain *device,
 	BUG_ON(!device);
 	BUG_ON(!check_frame);
 
+	groupmgr = device->groupmgr;
 	group = &device->group_3ax;
+	core = (struct fimc_is_core *)device->interface->core;
 	tax = &group->leader;
+	taxc = group->subdev[ENTRY_3AXC];
 	vctx = tax->vctx;
 	if (!vctx) {
 		merr("vctx is NULL, critical error", device);
@@ -6582,6 +6804,13 @@ int fimc_is_ischain_3a0_callback(struct fimc_is_device_ischain *device,
 		}
 	}
 
+	if (taxc) {
+		ret = fimc_is_ischain_3a0c_tag(device, taxc, frame);
+		if (ret) {
+			merr("3a0c_tag fail(%d)", device, ret);
+			goto p_err;
+		}
+	}
 p_err:
 	if (ret) {
 		merr("shot(index : %d) is skipped(error : %d)", device,
@@ -6608,7 +6837,7 @@ int fimc_is_ischain_3a1_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_subdev *tax;
+	struct fimc_is_subdev *tax, *taxc;
 
 #ifdef DBG_STREAMING
 	dbg_ischain("%s\n", __func__);
@@ -6619,6 +6848,7 @@ int fimc_is_ischain_3a1_callback(struct fimc_is_device_ischain *device,
 
 	group = &device->group_3ax;
 	tax = &group->leader;
+	taxc = group->subdev[ENTRY_3AXC];
 	vctx = tax->vctx;
 	if (!vctx) {
 		merr("vctx is NULL, critical error", device);
@@ -6691,6 +6921,14 @@ int fimc_is_ischain_3a1_callback(struct fimc_is_device_ischain *device,
 		ret = fimc_is_ischain_3ax_tag(device, tax, frame);
 		if (ret) {
 			merr("fimc_is_ischain_3ax_tag is fail(%d)", device, ret);
+			goto p_err;
+		}
+	}
+
+	if (taxc) {
+		ret = fimc_is_ischain_3a1c_tag(device, taxc, frame);
+		if (ret) {
+			merr("3a1c_tag fail(%d)", device, ret);
 			goto p_err;
 		}
 	}

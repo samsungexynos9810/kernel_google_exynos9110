@@ -663,9 +663,12 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		group->subdev[ENTRY_TDNR] = NULL;
 		group->subdev[ENTRY_SCALERP] = NULL;
 		group->subdev[ENTRY_LHFD] = NULL;
+		group->subdev[ENTRY_3AXC] = &device->taxc;
 
 		group->next->prev = group;
 
+		device->taxc.leader = leader;
+		device->taxc.group = group;
 		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	case GROUP_ID_ISP:
@@ -678,6 +681,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		group->subdev[ENTRY_TDNR] = &device->dnr;
 		group->subdev[ENTRY_SCALERP] = &device->scp;
 		group->subdev[ENTRY_LHFD] = &device->fd;
+		group->subdev[ENTRY_3AXC] = NULL;
 
 		device->scc.leader = leader;
 		device->dis.leader = leader;
@@ -701,6 +705,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		group->subdev[ENTRY_TDNR] = NULL;
 		group->subdev[ENTRY_SCALERP] = NULL;
 		group->subdev[ENTRY_LHFD] = NULL;
+		group->subdev[ENTRY_3AXC] = NULL;
 		clear_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	default:
@@ -1157,8 +1162,8 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_device_ischain *device;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_subdev *leader, *scc, *dis, *scp;
-	struct fimc_is_queue *scc_queue, *dis_queue, *scp_queue;
+	struct fimc_is_subdev *leader, *scc, *dis, *scp, *taxc;
+	struct fimc_is_queue *scc_queue, *dis_queue, *scp_queue, *taxc_queue;
 
 	BUG_ON(!groupmgr);
 	BUG_ON(!group);
@@ -1175,9 +1180,11 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 	scc = group->subdev[ENTRY_SCALERC];
 	dis = group->subdev[ENTRY_DIS];
 	scp = group->subdev[ENTRY_SCALERP];
+	taxc = group->subdev[ENTRY_3AXC];
 	scc_queue = GET_SUBDEV_QUEUE(scc);
 	dis_queue = GET_SUBDEV_QUEUE(dis);
 	scp_queue = GET_SUBDEV_QUEUE(scp);
+	taxc_queue = GET_SUBDEV_QUEUE(taxc);
 	framemgr = &queue->framemgr;
 
 	/* 1. check frame validation */
@@ -1225,6 +1232,11 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 			clear_bit(OUT_SCP_FRAME, &frame->out_flag);
 		}
 
+		if (test_bit(OUT_3AXC_FRAME, &frame->out_flag)) {
+			merr("3axc output is not generated", group);
+			clear_bit(OUT_3AXC_FRAME, &frame->out_flag);
+		}
+
 		if (scc_queue && frame->shot_ext->request_scc &&
 			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &scc_queue->state)) {
 			frame->shot_ext->request_scc = 0;
@@ -1241,6 +1253,12 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &scp_queue->state)) {
 			frame->shot_ext->request_scp = 0;
 			merr("scp %d frame is drop2", group, frame->fcount);
+		}
+
+		if (taxc_queue && frame->shot_ext->request_taac &&
+			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &taxc_queue->state)) {
+			frame->shot_ext->request_taac = 0;
+			merr("3axc %d frame is drop2", group, frame->fcount);
 		}
 
 		if (!test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state) &&
