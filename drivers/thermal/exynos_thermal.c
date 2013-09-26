@@ -131,6 +131,7 @@
 #define EXYNOS_ZONE_COUNT	1
 #define EXYNOS_TMU_COUNT	5
 #define EXYSNO_CLK_COUNT	2
+#define TRIP_EN_COUNT		4
 #define EXYNOS_GPU_NUMBER	2
 #define EXYNOS_ISP_NUMBER	4
 
@@ -1124,7 +1125,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 {
 	struct exynos_tmu_data *data;
 	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
-	int ret, i;
+	int ret, i, count = 0;
+	int trigger_level_en[TRIP_EN_COUNT];
 
 	is_suspending = false;
 
@@ -1209,9 +1211,18 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 			pdata->trigger_level1_en + pdata->trigger_level2_en +
 			pdata->trigger_level3_en;
 
-	for (i = 0; i < exynos_sensor_conf.trip_data.trip_count; i++)
-		exynos_sensor_conf.trip_data.trip_val[i] =
-			pdata->threshold + pdata->trigger_levels[i];
+	trigger_level_en[0] = pdata->trigger_level0_en;
+	trigger_level_en[1] = pdata->trigger_level1_en;
+	trigger_level_en[2] = pdata->trigger_level2_en;
+	trigger_level_en[3] = pdata->trigger_level3_en;
+
+	for (i = 0; i < TRIP_EN_COUNT; i++) {
+		if (trigger_level_en[i]) {
+			exynos_sensor_conf.trip_data.trip_val[count] =
+				pdata->threshold + pdata->trigger_levels[i];
+			count++;
+		}
+	}
 
 	exynos_sensor_conf.trip_data.trigger_falling = pdata->threshold_falling;
 
