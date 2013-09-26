@@ -2806,7 +2806,7 @@ static int s3c_fb_me_link_setup(struct media_entity *entity,
 				win->use = 1;
 	}
 
-	dev_info(sfb->dev, "MC link set up between Window[%d] and Gscaler: \
+	dev_dbg(sfb->dev, "MC link set up between Window[%d] and Gscaler: \
 			flag - %d\n", win->index, flags);
 	return 0;
 }
