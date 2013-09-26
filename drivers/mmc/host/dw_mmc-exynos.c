@@ -557,7 +557,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		return 0;
 	}
 
-	tuning_blk = kmalloc(blksz, GFP_KERNEL);
+	tuning_blk = kmalloc(2 * blksz, GFP_KERNEL);
 	if (!tuning_blk)
 		return -ENOMEM;
 
