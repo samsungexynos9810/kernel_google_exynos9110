@@ -216,7 +216,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 	prtd->dram_used = runtime->dma_addr < SRAM_END ? false : true;
 	spin_unlock_irq(&prtd->lock);
 
-	pr_info("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d #Prds=%d dma_area=0x%x\n",
+	pr_debug("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d #Prds=%d dma_area=0x%x\n",
 		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? "P" : "C",
 		prtd->dma_start, runtime->dma_bytes,
 		params_period_bytes(params), params_periods(params),
