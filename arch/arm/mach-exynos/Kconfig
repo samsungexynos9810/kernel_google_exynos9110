@@ -83,6 +83,14 @@ config SOC_EXYNOS5430
 	help
 	  Enable EXYNOS5430 SoC support
 
+config EXYNOS5430_BTS
+	bool "Bus traffic shaper support"
+	default y
+	depends on SOC_EXYNOS5430
+	help
+	  Enable BTS (Bus traffic shaper) support
+
+
 config SOC_EXYNOS5440
 	bool "SAMSUNG EXYNOS5440"
 	default y
