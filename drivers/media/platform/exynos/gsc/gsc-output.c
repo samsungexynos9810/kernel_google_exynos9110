@@ -831,7 +831,7 @@ static int gsc_out_link_setup(struct media_entity *entity,
 				gsc->pipeline.disp = sd;
 				if (!strcmp(sd->name, name)) {
 					gsc->out.ctx->out_path = GSC_FIMD;
-					gsc_info("link enable");
+					gsc_dbg("link enable");
 				} else {
 					gsc->out.ctx->out_path = GSC_MIXER;
 				}
@@ -840,7 +840,7 @@ static int gsc_out_link_setup(struct media_entity *entity,
 		} else if (!(flags & ~MEDIA_LNK_FL_ENABLED)) {
 			if (gsc->pipeline.disp != NULL) {
 				if (gsc->out.ctx->out_path == GSC_FIMD)
-					gsc_info("link disable");
+					gsc_dbg("link disable");
 				gsc->pipeline.disp = NULL;
 				gsc->out.ctx->out_path = 0;
 			} else
