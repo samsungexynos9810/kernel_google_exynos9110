@@ -48,6 +48,7 @@ struct s5p_ehci_hcd {
 	struct usb_phy *phy;
 	struct usb_otg *otg;
 	struct s5p_ehci_platdata *pdata;
+	int power_on;
 };
 
 #define to_s5p_ehci(hcd)      (struct s5p_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
@@ -81,6 +82,123 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
 
 	gpio_set_value(gpio_boost5v, 1);
 	gpio_set_value(gpio, 1);
+}
+
+static int s5p_ehci_configurate(struct usb_hcd *hcd)
+{
+	int delay_count = 0;
+
+	/* This is for waiting phy before ehci configuration */
+	do {
+		if (readl(hcd->regs))
+			break;
+		udelay(1);
+		++delay_count;
+	} while (delay_count < 200);
+	if (delay_count)
+		dev_info(hcd->self.controller, "phy delay count = %d\n",
+			delay_count);
+
+	return 0;
+}
+
+static void s5p_ehci_phy_init(struct platform_device *pdev)
+{
+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
+
+	if (s5p_ehci->phy) {
+		usb_phy_init(s5p_ehci->phy);
+	} else if (s5p_ehci->pdata->phy_init) {
+		s5p_ehci->pdata->phy_init(pdev, USB_PHY_TYPE_HOST);
+	} else {
+		dev_err(&pdev->dev, "Failed to init ehci phy\n");
+		return;
+	}
+
+	s5p_ehci_configurate(hcd);
+}
+
+static ssize_t show_ehci_power(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct usb_hcd *hcd = dev_get_drvdata(dev);
+	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
+
+	return snprintf(buf, PAGE_SIZE, "EHCI Power %s\n",
+			(s5p_ehci->power_on) ? "on" : "off");
+}
+
+static ssize_t store_ehci_power(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct usb_hcd *hcd = dev_get_drvdata(dev);
+	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
+	int power_on;
+	int irq;
+	int retval;
+
+	if (sscanf(buf, "%d", &power_on) != 1)
+		return -EINVAL;
+
+	device_lock(dev);
+
+	if (!power_on && s5p_ehci->power_on) {
+		dev_info(dev, "EHCI turn off\n");
+		pm_runtime_forbid(dev);
+		s5p_ehci->power_on = 0;
+		usb_remove_hcd(hcd);
+
+		if (s5p_ehci->phy)
+			usb_phy_shutdown(s5p_ehci->phy);
+		else if (s5p_ehci->pdata->phy_exit)
+			s5p_ehci->pdata->phy_exit(pdev, USB_PHY_TYPE_HOST);
+	} else if (power_on) {
+		dev_info(dev, "EHCI turn on\n");
+		if (s5p_ehci->power_on) {
+			pm_runtime_forbid(dev);
+			usb_remove_hcd(hcd);
+		} else {
+			s5p_ehci_phy_init(pdev);
+		}
+
+		irq = platform_get_irq(pdev, 0);
+		retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+		if (retval < 0) {
+			dev_err(dev, "Power On Fail\n");
+			goto exit;
+		}
+
+		/*
+		 * EHCI root hubs are expected to handle remote wakeup.
+		 * So, wakeup flag init defaults for root hubs.
+		 */
+		device_wakeup_enable(&hcd->self.root_hub->dev);
+
+		s5p_ehci->power_on = 1;
+		pm_runtime_allow(dev);
+	}
+exit:
+	device_unlock(dev);
+	return count;
+}
+
+static DEVICE_ATTR(ehci_power, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP,
+	show_ehci_power, store_ehci_power);
+
+static inline int create_ehci_sys_file(struct ehci_hcd *ehci)
+{
+	return device_create_file(ehci_to_hcd(ehci)->self.controller,
+			&dev_attr_ehci_power);
+}
+
+static inline void remove_ehci_sys_file(struct ehci_hcd *ehci)
+{
+	device_remove_file(ehci_to_hcd(ehci)->self.controller,
+			&dev_attr_ehci_power);
 }
 
 static int s5p_ehci_probe(struct platform_device *pdev)
@@ -185,6 +303,11 @@ static int s5p_ehci_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, hcd);
 
+	if (create_ehci_sys_file(ehci))
+		dev_err(&pdev->dev, "Failed to create ehci sys file\n");
+
+	s5p_ehci->power_on = 1;
+
 	return 0;
 
 fail_add_hcd:
@@ -204,6 +327,8 @@ static int s5p_ehci_remove(struct platform_device *pdev)
 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
 
+	s5p_ehci->power_on = 0;
+	remove_ehci_sys_file(hcd_to_ehci(hcd));
 	usb_remove_hcd(hcd);
 
 	if (s5p_ehci->otg)
