@@ -70,6 +70,7 @@
 
 
 #define INSTANCE_MAX		(1)
+#define SRAM_FW_MAX		(0x3E000)
 #define BUF_SIZE_MAX		(0x50000)
 
 #define SAMPLE_RATE_MIN		(8000)

@@ -104,7 +104,7 @@ static void esa_fw_download(void)
 	esa_debug("%s: firmware size = %d\n", __func__, fw_bin_size);
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
-	memset(si.mem, 0, 288 * 1024);
+	memset(si.mem, 0, SRAM_FW_MAX);
 	memset(si.mailbox, 0, 128);
 
 	memcpy(si.mem, fw_bin, fw_bin_size);
