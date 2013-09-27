@@ -727,6 +727,11 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&id_irq>;
 		status = "okay";
+
+		dwc3 {
+			maximum-speed = "super-speed";
+			dr_mode = "otg";
+		};
 	};
 
 	usb@15510000 {
