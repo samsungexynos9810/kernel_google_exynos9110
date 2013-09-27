@@ -106,7 +106,7 @@ static void esa_fw_download(void)
 	int n;
 #endif
 
-	esa_info("%s: firmware size = %d\n", __func__, fw_bin_size);
+	esa_debug("%s: firmware size = %d\n", __func__, fw_bin_size);
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	memset(si.mem, 0, 288 * 1024);
@@ -117,12 +117,13 @@ static void esa_fw_download(void)
 	writel(0x03000000, si.regs + LPASS_CA5_BOOTADDR);
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_NORMAL);
 
-	esa_info("%s: CA5 startup...\n", __func__);
+	esa_debug("%s: CA5 startup...\n", __func__);
 #ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
 	for (n = 0; n < 64; n += 4)
 		esa_info("%s: FW code 0x%08X = %08x\n",
 			__func__, n, readl(si.mem + n));
 #endif
+	msleep(50);
 }
 
 static void esa_buffer_init(struct file *file)
@@ -540,7 +541,7 @@ static int esa_get_params(struct file *file, unsigned int param,
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
 		esa_send_cmd((param << 16) | CMD_GET_PARAMS);
 		val = readl(si.mailbox + RETURN_CMD);
-		esa_info("%s: sampling rate:%ld\n", __func__, val);
+		esa_debug("%s: sampling rate:%ld\n", __func__, val);
 
 		if (val >= SAMPLE_RATE_MIN) {
 			esa_debug("SAMPLE_RATE: SUCCESS: arg:%ld\n", arg);
@@ -553,7 +554,7 @@ static int esa_get_params(struct file *file, unsigned int param,
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
 		esa_send_cmd((param << 16) | CMD_GET_PARAMS);
 		val = readl(si.mailbox + RETURN_CMD);
-		esa_info("%s: Channel:%ld\n", __func__, val);
+		esa_debug("%s: Channel:%ld\n", __func__, val);
 
 		if (val >= CH_NUM_MIN) {
 			esa_debug("PCM_CONFIG_NUM_CH: SUCCESS: arg:%ld\n", arg);
@@ -731,11 +732,11 @@ static int esa_open(struct inode *inode, struct file *file)
 	/* alloc rtd */
 	rtd = esa_alloc_rtd();
 	if (!rtd) {
-		esa_err("%s: Not enough memory\n", __func__);
+		esa_debug("%s: Not enough memory\n", __func__);
 		return -EFAULT;
 	}
 
-	esa_info("%s: idx:%d\n", __func__, rtd->idx);
+	esa_debug("%s: idx:%d\n", __func__, rtd->idx);
 
 	/* initialize */
 	file->private_data = rtd;
@@ -747,7 +748,7 @@ static int esa_open(struct inode *inode, struct file *file)
 
 	if (si.rtd_cnt == 1) {
 		/* power on */
-		esa_info("Turn on CA5...\n");
+		esa_debug("Turn on CA5...\n");
 		esa_fw_download();
 
 		ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
@@ -760,7 +761,7 @@ static int esa_open(struct inode *inode, struct file *file)
 		esa_send_cmd(SYS_GET_STATUS);
 		dec_ver = readl(si.mailbox) & 0xFF00;
 		dec_ver = dec_ver >> 8;
-		esa_info("Decoder version : %x\n", dec_ver);
+		esa_debug("Decoder version : %x\n", dec_ver);
 		for (i = 0; i < 15; i++)
 			esa_debug("[%d]%x \n", 4*i, readl(si.mailbox + 4*i));
 	}
@@ -773,7 +774,7 @@ static int esa_release(struct inode *inode, struct file *file)
 	struct esa_rtd *rtd = file->private_data;
 	u32 cnt;
 
-	esa_info("%s: idx:%d\n", __func__, rtd->idx);
+	esa_debug("%s: idx:%d\n", __func__, rtd->idx);
 
 	/* de-initialize */
 	file->private_data = NULL;
@@ -784,18 +785,18 @@ static int esa_release(struct inode *inode, struct file *file)
 		/* check idle */
 		esa_send_cmd(SYS_GET_STATUS);
 
-		cnt = msecs_to_loops(1);
+		cnt = msecs_to_loops(100);
 		while (--cnt) {
 			if (readl(si.regs + CA5_STATUS) & CA5_STATUS_WFI)
 				break;
 			cpu_relax();
 		}
-		esa_info("CA5_STATUS: %X\n", readl(si.regs + CA5_STATUS));
+		esa_debug("CA5_STATUS: %X\n", readl(si.regs + CA5_STATUS));
 
 		free_irq(si.irq_ca5, 0);
 
 		/* power off */
-		esa_info("Turn off CA5...\n");
+		esa_debug("Turn off CA5...\n");
 		lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	}
 	return 0;
