@@ -39,6 +39,7 @@
 #include <linux/cpu_cooling.h>
 #include <linux/of.h>
 #include <linux/delay.h>
+#include <mach/tmu.h>
 
 /* Exynos generic registers */
 #define EXYNOS_TMU_REG_TRIMINFO		0x0
@@ -135,6 +136,14 @@
 
 #define MIN_TEMP	20
 #define MAX_TEMP	125
+
+static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
+static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
+static enum mif_noti_state_t mif_old_state = MIF_TH_LV1;
+static bool is_suspending;
+
+static BLOCKING_NOTIFIER_HEAD(exynos_tmu_notifier);
+static BLOCKING_NOTIFIER_HEAD(exynos_gpu_notifier);
 
 struct exynos_tmu_data {
 	struct exynos_tmu_platform_data *pdata;
@@ -350,6 +359,100 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
 		}
 	}
 	return ret;
+}
+
+int exynos_tmu_add_notifier(struct notifier_block *n)
+{
+	return blocking_notifier_chain_register(&exynos_tmu_notifier, n);
+}
+
+void exynos_tmu_call_notifier(enum tmu_noti_state_t cur_state)
+{
+	if (is_suspending)
+		cur_state = TMU_COLD;
+
+	if (cur_state != tmu_old_state) {
+		if (cur_state == TMU_COLD || cur_state == TMU_NORMAL)
+			blocking_notifier_call_chain(&exynos_tmu_notifier, TMU_COLD, &cur_state);
+		else
+			blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &tmu_old_state);
+
+		tmu_old_state = cur_state;
+	}
+}
+
+int exynos_gpu_add_notifier(struct notifier_block *n)
+{
+	return blocking_notifier_chain_register(&exynos_gpu_notifier, n);
+}
+
+void exynos_gpu_call_notifier(enum gpu_noti_state_t cur_state)
+{
+	if (is_suspending)
+		cur_state = GPU_COLD;
+
+	if (cur_state!=gpu_old_state) {
+		blocking_notifier_call_chain(&exynos_gpu_notifier, cur_state, &cur_state);
+		gpu_old_state = cur_state;
+	}
+}
+
+static void exynos_check_tmu_noti_state(int temp)
+{
+	enum tmu_noti_state_t cur_state;
+
+	/* check current temperature state */
+	if (temp > HOT_CRITICAL_TEMP)
+		cur_state = TMU_CRITICAL;
+	else if (temp > HOT_NORMAL_TEMP && temp <= HOT_CRITICAL_TEMP)
+		cur_state = TMU_HOT;
+	else if (temp > COLD_TEMP && temp <= HOT_NORMAL_TEMP)
+		cur_state = TMU_NORMAL;
+	else
+		cur_state = TMU_COLD;
+
+	exynos_tmu_call_notifier(cur_state);
+}
+
+static void exynos_check_mif_noti_state(int temp)
+{
+	enum mif_noti_state_t cur_state;
+
+	/* check current temperature state */
+	if (temp < MIF_TH_TEMP1)
+		cur_state = MIF_TH_LV1;
+	else if (temp >= MIF_TH_TEMP1 && temp < MIF_TH_TEMP2)
+		cur_state = MIF_TH_LV2;
+	else
+		cur_state = MIF_TH_LV3;
+
+	if (cur_state != mif_old_state) {
+		blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &mif_old_state);
+		mif_old_state = cur_state;
+	}
+}
+
+static void exynos_check_gpu_noti_state(int temp)
+{
+	enum gpu_noti_state_t cur_state;
+
+	/* check current temperature state */
+	if (temp >= GPU_TH_TEMP5)
+		cur_state = GPU_TRIPPING;
+	else if (temp >= GPU_TH_TEMP4 && temp < GPU_TH_TEMP5)
+		cur_state = GPU_THROTTLING4;
+	else if (temp >= GPU_TH_TEMP3 && temp < GPU_TH_TEMP4)
+		cur_state = GPU_THROTTLING3;
+	else if (temp >= GPU_TH_TEMP2 && temp < GPU_TH_TEMP3)
+		cur_state = GPU_THROTTLING2;
+	else if (temp >= GPU_TH_TEMP1 && temp < GPU_TH_TEMP2)
+		cur_state = GPU_THROTTLING1;
+	else if (temp > COLD_TEMP && temp < GPU_TH_TEMP1)
+		cur_state = GPU_NORMAL;
+	else
+		cur_state = GPU_COLD;
+
+	exynos_gpu_call_notifier(cur_state);
 }
 
 /* Get temperature callback functions for thermal zone */
@@ -761,6 +864,9 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 		}
 
 	}
+	exynos_check_tmu_noti_state(max);
+	exynos_check_mif_noti_state(max);
+	exynos_check_gpu_noti_state(gpu_temp);
 
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
@@ -1019,6 +1125,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	struct exynos_tmu_data *data;
 	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
 	int ret, i;
+
+	is_suspending = false;
 
 	if (!pdata)
 		pdata = exynos_get_driver_data(pdev);

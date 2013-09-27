@@ -19,6 +19,17 @@
 #define TMU_DC_VALUE 25
 #define UNUSED_THRESHOLD 0xFF
 
+#define COLD_TEMP		25
+#define HOT_NORMAL_TEMP		95
+#define HOT_CRITICAL_TEMP	110
+#define MIF_TH_TEMP1		85
+#define MIF_TH_TEMP2		95
+#define GPU_TH_TEMP1		90
+#define GPU_TH_TEMP2		95
+#define GPU_TH_TEMP3		100
+#define GPU_TH_TEMP4		105
+#define GPU_TH_TEMP5		110
+
 enum tmu_status_t {
 	TMU_STATUS_INIT = 0,
 	TMU_STATUS_NORMAL,
@@ -27,9 +38,9 @@ enum tmu_status_t {
 };
 
 enum mif_noti_state_t {
-	MEM_TH_LV1 = 4,
-	MEM_TH_LV2,
-	MEM_TH_LV3,
+	MIF_TH_LV1 = 4,
+	MIF_TH_LV2,
+	MIF_TH_LV3,
 };
 
 enum tmu_noti_state_t {
