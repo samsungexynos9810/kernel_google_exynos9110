@@ -238,7 +238,7 @@
 #define EXYNOS_USBPHY_ENABLE			(0x1 << 0)
 #define EXYNOS_USB20PHY_CFG_HOST_LINK		(0x1 << 0)
 
-#define EXYNOS5_USB2PHY_CTRL_OFFSET		(0x0)
+#define EXYNOS5_USB2PHY_CTRL_OFFSET		(0x8)
 
 enum samsung_cpu_type {
 	TYPE_S3C64XX,
@@ -269,8 +269,10 @@ struct samsung_usbphy_drvdata {
 	int cpu_type;
 	int devphy_en_mask;
 	int hostphy_en_mask;
+	int hsicphy_en_mask;
 	u32 devphy_reg_offset;
 	u32 hostphy_reg_offset;
+	u32 hsicphy_reg_offset;
 };
 
 /*
@@ -298,6 +300,7 @@ struct samsung_usbphy {
 	void __iomem	*pmuregs;
 	void __iomem	*sysreg;
 	int		ref_clk_freq;
+	int		has_hsic_pmureg;
 	const struct samsung_usbphy_drvdata *drv_data;
 	enum samsung_usb_phy_type phy_type;
 	atomic_t	phy_usage;
@@ -324,6 +327,7 @@ static inline const struct samsung_usbphy_drvdata
 
 extern int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy);
 extern void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on);
+extern void samsung_hsicphy_set_isolation(struct samsung_usbphy *sphy, bool on);
 extern void samsung_usbphy_cfg_sel(struct samsung_usbphy *sphy);
 extern int samsung_usbphy_set_type(struct usb_phy *phy,
 					enum samsung_usb_phy_type phy_type);

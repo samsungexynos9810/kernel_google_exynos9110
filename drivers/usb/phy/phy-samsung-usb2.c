@@ -282,10 +282,13 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 	}
 
 	/* Disable phy isolation */
-	if (sphy->plat && sphy->plat->pmu_isolation)
+	if (sphy->plat && sphy->plat->pmu_isolation) {
 		sphy->plat->pmu_isolation(false);
-	else
+	} else {
 		samsung_usbphy_set_isolation(sphy, false);
+		if (sphy->has_hsic_pmureg == true)
+			samsung_hsicphy_set_isolation(sphy, false);
+	}
 
 	/* Selecting Host/OTG mode; After reset USB2.0PHY_CFG: HOST */
 	samsung_usbphy_cfg_sel(sphy);
@@ -342,10 +345,13 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 		samsung_usb2phy_disable(sphy);
 
 	/* Enable phy isolation */
-	if (sphy->plat && sphy->plat->pmu_isolation)
+	if (sphy->plat && sphy->plat->pmu_isolation) {
 		sphy->plat->pmu_isolation(true);
-	else
+	} else {
 		samsung_usbphy_set_isolation(sphy, true);
+		if (sphy->has_hsic_pmureg == true)
+			samsung_hsicphy_set_isolation(sphy, true);
+	}
 
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
@@ -416,6 +422,16 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
 	sphy->phy.otg		= otg;
 	sphy->phy.otg->phy	= &sphy->phy;
 	sphy->phy.otg->set_host = samsung_usbphy_set_host;
+
+	if (of_property_read_u32(sphy->dev->of_node,
+		"samsung,hsicphy_en_mask", (u32 *)&drv_data->hsicphy_en_mask))
+		dev_dbg(dev, "Failed to get hsicphy_en_mask\n");
+	else if (of_property_read_u32(sphy->dev->of_node,
+		"samsung,hsicphy_reg_offset",
+		(u32 *)&drv_data->hsicphy_reg_offset))
+		dev_dbg(dev, "Failed to get hsicphy_en_mask\n");
+	else
+		sphy->has_hsic_pmureg = true;
 
 	spin_lock_init(&sphy->lock);
 

@@ -124,6 +124,43 @@ void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on)
 }
 EXPORT_SYMBOL_GPL(samsung_usbphy_set_isolation);
 
+void samsung_hsicphy_set_isolation(struct samsung_usbphy *sphy, bool on)
+{
+	void __iomem *reg = NULL;
+	u32 reg_val;
+	u32 en_mask = 0;
+
+	if (!sphy->pmuregs) {
+		dev_warn(sphy->dev, "Can't set pmu isolation\n");
+		return;
+	}
+
+	switch (sphy->drv_data->cpu_type) {
+	case TYPE_EXYNOS5:
+		if (sphy->phy_type == USB_PHY_TYPE_HOST) {
+			reg = sphy->pmuregs +
+				sphy->drv_data->hsicphy_reg_offset;
+			en_mask = sphy->drv_data->hsicphy_en_mask;
+		} else {
+			dev_err(sphy->dev, "Invalid phy type\n");
+		}
+		break;
+	default:
+		dev_dbg(sphy->dev, "It is not needed in this SoC type");
+		return;
+	}
+
+	reg_val = readl(reg);
+
+	if (on)
+		reg_val &= ~en_mask;
+	else
+		reg_val |= en_mask;
+
+	writel(reg_val, reg);
+}
+EXPORT_SYMBOL_GPL(samsung_hsicphy_set_isolation);
+
 /*
  * Configure the mode of working of usb-phy here: HOST/DEVICE.
  */
