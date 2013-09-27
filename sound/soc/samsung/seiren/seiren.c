@@ -51,6 +51,8 @@
 
 /* #define FW_DOWNLOAD_TEST */
 
+#define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
+
 static DEFINE_MUTEX(esa_mutex);
 static DECLARE_WAIT_QUEUE_HEAD(esa_wq);
 
@@ -769,6 +771,7 @@ static int esa_open(struct inode *inode, struct file *file)
 static int esa_release(struct inode *inode, struct file *file)
 {
 	struct esa_rtd *rtd = file->private_data;
+	u32 cnt;
 
 	esa_info("%s: idx:%d\n", __func__, rtd->idx);
 
@@ -778,6 +781,17 @@ static int esa_release(struct inode *inode, struct file *file)
 	esa_free_rtd(rtd);
 
 	if (si.rtd_cnt == 0) {
+		/* check idle */
+		esa_send_cmd(SYS_GET_STATUS);
+
+		cnt = msecs_to_loops(1);
+		while (--cnt) {
+			if (readl(si.regs + CA5_STATUS) & CA5_STATUS_WFI)
+				break;
+			cpu_relax();
+		}
+		esa_info("CA5_STATUS: %X\n", readl(si.regs + CA5_STATUS));
+
 		free_irq(si.irq_ca5, 0);
 
 		/* power off */

@@ -2,12 +2,19 @@
 #define __SEIREN_H
 
 /* Register offset */
+#define CA5_BOOTADDR		(0x0020)
+#define CA5_WAKEUP		(0x0028)
+#define CA5_STATUS		(0x002C)
+#define CA5_DBG			(0x0030)
 #define SW_INTR_CA5		(0x0040)
 #define INTR_CA5_STATUS		(0x0044)
 #define INTR_CA5_MASK		(0x0048)
 #define SW_INTR_CPU		(0x0050)
 #define INTR_CPU_STATUS		(0x0054)
 #define INTR_CPU_MASK		(0x0058)
+
+#define CA5_STATUS_WFI		(1 << 2)
+#define CA5_STATUS_WFE		(1 << 1)
 
 /* Mailbox between driver and firmware */
 #define VIRSION_ID		(0x0000)
