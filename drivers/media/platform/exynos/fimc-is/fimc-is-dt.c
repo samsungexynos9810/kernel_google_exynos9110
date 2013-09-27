@@ -21,6 +21,36 @@
 #include "fimc-is-dt.h"
 
 #ifdef CONFIG_OF
+static int board_rev = 0;
+static int get_board_rev(struct device *dev)
+{
+	int ret = 0;
+	int board_rev_pin0, board_rev_pin1;
+	struct device_node *np = dev->of_node;
+
+	board_rev_pin0 = of_get_named_gpio(np, "gpios_board_rev", 0);
+	if (!gpio_is_valid(board_rev_pin0)) {
+		dev_err(dev, "failed to get main board_rev_pin0\n");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	board_rev_pin1 = of_get_named_gpio(np, "gpios_board_rev", 1);
+	if (!gpio_is_valid(board_rev_pin1)) {
+		dev_err(dev, "failed to get main board_rev_pin1\n");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	gpio_request_one(board_rev_pin0, GPIOF_IN, "BOARD_REV_PIN0");
+	gpio_request_one(board_rev_pin1, GPIOF_IN, "BOARD_REV_PIN1");
+	ret = __gpio_get_value(board_rev_pin0) << 0;
+	ret |= __gpio_get_value(board_rev_pin1) << 1;
+
+p_err:
+	return ret;
+}
+
 static int parse_sensor_info(struct exynos5_platform_fimc_is *pdata, struct device_node *np)
 {
 	u32 i;
@@ -58,6 +88,14 @@ static int parse_sensor_info(struct exynos5_platform_fimc_is *pdata, struct devi
 	DT_READ_U32(np, "front_flite_id", pdata->sensor_info[SENSOR_POSITION_FRONT]->flite_id);
 	DT_READ_U32(np, "front_i2c_channel", pdata->sensor_info[SENSOR_POSITION_FRONT]->i2c_channel);
 	DT_READ_U32(np, "front_sensor_slave_address", pdata->sensor_info[SENSOR_POSITION_FRONT]->sensor_slave_address);
+
+	/* Xyref5430 board revision config */
+	if (board_rev) {
+		pdata->sensor_info[SENSOR_POSITION_FRONT]->clk_src = 2;
+		pdata->sensor_info[SENSOR_POSITION_FRONT]->csi_id = 2;
+		pdata->sensor_info[SENSOR_POSITION_FRONT]->flite_id = 2;
+		pdata->sensor_info[SENSOR_POSITION_FRONT]->i2c_channel = 2;
+	}
 
 	return 0;
 
@@ -105,6 +143,10 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 
 	if (!np)
 		return ERR_PTR(-ENOENT);
+
+	board_rev = get_board_rev(dev);
+	if (board_rev < 0)
+		pr_warn("%s: Failed to get_board_rev\n", __func__);
 
 	pdata = kzalloc(sizeof(struct exynos5_platform_fimc_is), GFP_KERNEL);
 	if (!pdata) {
