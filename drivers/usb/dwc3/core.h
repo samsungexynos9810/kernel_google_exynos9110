@@ -191,6 +191,9 @@
 #define DWC3_GHWPARAMS4_HIBER_SCRATCHBUFS(n)	(((n) & (0x0f << 13)) >> 13)
 #define DWC3_MAX_HIBER_SCRATCHBUFS		15
 
+/* Global HWPARAMS6 Register */
+#define DWC3_GHWPARAMS6_SRP_SUPPORT	(1 << 10)
+
 /* Device Configuration Register */
 #define DWC3_DCFG_DEVADDR(addr)	((addr) << 3)
 #define DWC3_DCFG_DEVADDR_MASK	DWC3_DCFG_DEVADDR(0x7f)
@@ -344,6 +347,20 @@
 #define DWC3_DEPCMD_TYPE_ISOC		1
 #define DWC3_DEPCMD_TYPE_BULK		2
 #define DWC3_DEPCMD_TYPE_INTR		3
+
+/* OTG Control Register */
+#define DWC3_OTG_OCTL_PERIMODE         (1 << 6)
+#define DWC3_OTG_OCTL_PORTPWR          (1 << 5)
+
+/* OTG Events Register */
+#define DWC3_OEVT_DEVICEMODE			(1 << 31)
+#define DWC3_OEVT_CLEAR_ALL			(~DWC3_OEVT_DEVICEMODE)
+#define DWC3_OEVTEN_OTGCONIDSTSCHNGEVNT		(1 << 24)
+#define DWC3_OEVTEN_OTGBDEVVBUSCHNGEVNT		(1 << 8)
+
+/* OTG Status Register */
+#define DWC3_OTG_OSTS_BSESVALID		(1 << 2)
+#define DWC3_OTG_OSTS_CONIDSTS		(1 << 0)
 
 /* Structures */
 
@@ -602,6 +619,7 @@ struct dwc3_scratchpad_array {
  * @dev: pointer to our struct device
  * @xhci: pointer to our xHCI child
  * @event_buffer_list: a list of event buffers
+ * @dotg: pointer to OTG
  * @gadget: device side representation of the peripheral controller
  * @gadget_driver: pointer to the gadget driver
  * @regs: base address for our registers
@@ -623,6 +641,7 @@ struct dwc3_scratchpad_array {
  * @setup_packet_pending: true when there's a Setup Packet in FIFO. Workaround
  * @needs_fifo_resize: not all users might want fifo resizing, flag it
  * @resize_fifos: tells us it's ok to reconfigure our TxFIFO sizes.
+ * @ready: true when controller is set up and ready to run
  * @isoch_delay: wValue from Set Isochronous Delay request;
  * @u2sel: parameter from Set SEL request.
  * @u2pel: parameter from Set SEL request.
@@ -637,6 +656,8 @@ struct dwc3_scratchpad_array {
  * @mem: points to start of memory which is used for this struct.
  * @hwparams: copy of hwparams registers
  * @root: debugfs root folder pointer
+ * @vbus_session: Indicates if the gadget was powered by the otg driver
+ * @softconnect: Indicates if pullup was issued by the usb_gadget_driver
  */
 struct dwc3 {
 	struct usb_ctrlrequest	*ctrl_req;
@@ -658,6 +679,8 @@ struct dwc3 {
 
 	struct dwc3_event_buffer **ev_buffs;
 	struct dwc3_ep		*eps[DWC3_ENDPOINTS_NUM];
+
+	struct dwc3_otg		*dotg;
 
 	struct usb_gadget	gadget;
 	struct usb_gadget_driver *gadget_driver;
@@ -706,6 +729,7 @@ struct dwc3 {
 	unsigned		needs_fifo_resize:1;
 	unsigned		resize_fifos:1;
 	unsigned		pullups_connected:1;
+	unsigned		ready:1;
 
 	enum dwc3_ep0_next	ep0_next_event;
 	enum dwc3_ep0_state	ep0state;
@@ -730,6 +754,9 @@ struct dwc3 {
 
 	u8			test_mode;
 	u8			test_mode_nr;
+
+	bool			vbus_session;
+	bool			softconnect;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -867,6 +894,10 @@ union dwc3_event {
 /* prototypes */
 void dwc3_set_mode(struct dwc3 *dwc, u32 mode);
 int dwc3_gadget_resize_tx_fifos(struct dwc3 *dwc);
+int dwc3_otg_init(struct dwc3 *dwc);
+void dwc3_otg_exit(struct dwc3 *dwc);
+int dwc3_core_init(struct dwc3 *dwc);
+int dwc3_event_buffers_setup(struct dwc3 *dwc);
 
 #if IS_ENABLED(CONFIG_USB_DWC3_HOST) || IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
 int dwc3_host_init(struct dwc3 *dwc);

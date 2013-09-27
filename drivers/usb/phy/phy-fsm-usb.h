@@ -43,6 +43,8 @@
 
 /* OTG state machine according to the OTG spec */
 struct otg_fsm {
+	int reset;
+
 	/* Input */
 	int a_bus_resume;
 	int a_bus_suspend;
