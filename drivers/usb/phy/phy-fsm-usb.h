@@ -146,6 +146,20 @@ static inline void otg_del_timer(struct otg_fsm *fsm, void *timer)
 	fsm->ops->del_timer(timer);
 }
 
+static inline int otg_start_host(struct otg_fsm *fsm, int on)
+{
+	if (!fsm->ops->start_host)
+		return -EOPNOTSUPP;
+	return fsm->ops->start_host(fsm, on);
+}
+
+static inline int otg_start_gadget(struct otg_fsm *fsm, int on)
+{
+	if (!fsm->ops->start_gadget)
+		return -EOPNOTSUPP;
+	return fsm->ops->start_gadget(fsm, on);
+}
+
 int otg_statemachine(struct otg_fsm *fsm);
 
 /* Defined by device specific driver, for different timer implementation */
