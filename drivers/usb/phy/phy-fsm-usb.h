@@ -91,7 +91,7 @@ struct otg_fsm {
 
 struct otg_fsm_ops {
 	void	(*chrg_vbus)(int on);
-	void	(*drv_vbus)(int on);
+	void	(*drv_vbus)(struct otg_fsm *fsm, int on);
 	void	(*loc_conn)(int on);
 	void	(*loc_sof)(int on);
 	void	(*start_pulse)(void);
@@ -111,7 +111,7 @@ static inline void otg_drv_vbus(struct otg_fsm *fsm, int on)
 {
 	if (fsm->drv_vbus != on) {
 		fsm->drv_vbus = on;
-		fsm->ops->drv_vbus(on);
+		fsm->ops->drv_vbus(fsm, on);
 	}
 }
 
