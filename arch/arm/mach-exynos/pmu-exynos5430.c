@@ -216,7 +216,7 @@ void exynos5430_cpu_up(unsigned int cpu_id)
 	addr = EXYNOS_ARM_CORE_CONFIGURATION(core + (4 * cluster));
 
 	tmp = __raw_readl(addr);
-	tmp &= EXYNOS_CORE_PWR_EN;
+	tmp |= EXYNOS_CORE_PWR_EN;
 	__raw_writel(tmp, addr);
 }
 
