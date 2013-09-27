@@ -40,6 +40,12 @@ config SND_SAMSUNG_IDMA
 config SND_SAMSUNG_AUDSS
 	tristate
 
+config SND_SAMSUNG_IOMMU
+	tristate "IOMMU support for Samsung Audio sub system"
+	depends on SND_SOC_SAMSUNG && SND_SAMSUNG_AUDSS
+	help
+		Say Y if you want to add support for iommu.
+
 config SND_SAMSUNG_FAKEDMA
 	tristate "Use Fake-DMA for Samsung I2S"
 	depends on SND_SOC_SAMSUNG
