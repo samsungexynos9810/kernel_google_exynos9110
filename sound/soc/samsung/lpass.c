@@ -20,6 +20,8 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/pm_runtime.h>
+#include <linux/iommu.h>
+#include <linux/dma-mapping.h>
 
 #include <sound/exynos.h>
 
@@ -48,6 +50,7 @@ struct lpass_info {
 	struct platform_device	*pdev;
 	void __iomem		*regs;
 	void __iomem		*mem;
+	struct iommu_domain	*domain;
 	struct clk		*clk_dmac;
 	struct clk		*clk_sramc;
 	struct clk		*clk_intr;
@@ -81,6 +84,11 @@ void __iomem *lpass_get_regs(void)
 void __iomem *lpass_get_mem(void)
 {
 	return lpass.mem;
+}
+
+struct iommu_domain *lpass_get_iommu_domain(void)
+{
+	return lpass.domain;
 }
 
 void lpass_reset(int ip, int op)
@@ -448,13 +456,13 @@ static int lpass_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
 	if (!res) {
-		dev_err(&pdev->dev, "Unable to get LPASS SRAM\n");
+		dev_err(dev, "Unable to get LPASS SRAM\n");
 		return -ENXIO;
 	}
 
 	lpass.mem = devm_request_and_ioremap(&pdev->dev, res);
 	if (!lpass.mem) {
-		dev_err(&pdev->dev, "SRAM ioremap failed\n");
+		dev_err(dev, "SRAM ioremap failed\n");
 		return -ENOMEM;
 	}
 	pr_debug("%s: sram_base = %08X (%08X bytes)\n",
@@ -463,9 +471,24 @@ static int lpass_probe(struct platform_device *pdev)
 	/* Set clock hierarchy for audio subsystem */
 	ret = clk_set_heirachy(pdev);
 	if (ret) {
-		dev_err(&pdev->dev, "failed to set clock hierachy\n");
+		dev_err(dev, "failed to set clock hierachy\n");
 		return -ENXIO;
 	}
+
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+	lpass.domain = iommu_domain_alloc(pdev->dev.bus);
+	if (!lpass.domain) {
+		dev_err(dev, "Unable to alloc iommu domain\n");
+		return -ENOMEM;
+	}
+
+	ret = iommu_attach_device(lpass.domain, dev);
+	if (ret) {
+		dev_err(dev, "Unable to attach iommu device: %d\n", ret);
+		iommu_domain_free(lpass.domain);
+		return ret;
+	}
+#endif
 
 	spin_lock_init(&lpass.lock);
 	lpass_init_reg_list();
@@ -490,6 +513,9 @@ static int lpass_probe(struct platform_device *pdev)
 
 static int lpass_remove(struct platform_device *pdev)
 {
+	iommu_detach_device(lpass.domain, &pdev->dev);
+	iommu_domain_free(lpass.domain);
+
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
 #else

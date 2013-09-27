@@ -51,6 +51,8 @@
 
 extern void __iomem *lpass_get_regs(void);
 extern void __iomem *lpass_get_mem(void);
+extern struct iommu_domain *lpass_get_iommu_domain(void);
+
 extern struct clk *lpass_get_i2s_opclk(int clk_id);
 extern void lpass_reg_dump(void);
 
