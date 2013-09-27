@@ -20,6 +20,7 @@
 #include <linux/of.h>
 #include <linux/delay.h>
 #include <linux/kthread.h>
+#include <linux/iommu.h>
 
 #include <sound/soc.h>
 #include <sound/pcm_params.h>
@@ -30,6 +31,7 @@
 #include <mach/dma.h>
 #include <mach/map.h>
 
+#include "lpass.h"
 #include "dma.h"
 
 #define ST_RUNNING		(1<<0)
@@ -419,6 +421,13 @@ static const char *dma_prop_size[2] = {
 	[SNDRV_PCM_STREAM_PLAYBACK] = "samsung,tx-size",
 	[SNDRV_PCM_STREAM_CAPTURE]  = "samsung,rx-size"
 };
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+static const char *dma_prop_iommu[2] = {
+	[SNDRV_PCM_STREAM_PLAYBACK] = "samsung,tx-iommu",
+	[SNDRV_PCM_STREAM_CAPTURE]  = "samsung,rx-iommu"
+};
+#endif
+
 static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
 					struct device_node *np)
 {
@@ -426,7 +435,11 @@ static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
 	struct snd_dma_buffer *buf = &substream->dma_buffer;
 	dma_addr_t dma_addr;
 	size_t size;
-
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+	struct iommu_domain *domain = lpass_get_iommu_domain();
+	dma_addr_t dma_buf_pa;
+	int ret;
+#endif
 	pr_debug("Entered %s\n", __func__);
 
 	if (of_property_read_u32(np, dma_prop_addr[stream], &dma_addr))
@@ -439,7 +452,29 @@ static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
 	buf->dev.dev = pcm->card->dev;
 	buf->private_data = NULL;
 	buf->addr = dma_addr;
+
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+	if (of_find_property(np, dma_prop_iommu[stream], NULL)) {
+		buf->area = dma_alloc_writecombine(pcm->card->dev, size,
+					   &dma_buf_pa, GFP_KERNEL);
+		if (!buf->area)
+			return -ENOMEM;
+
+		ret = iommu_map(domain, dma_addr, dma_buf_pa, size, 0);
+		if (ret) {
+			dma_free_writecombine(pcm->card->dev, size,
+						buf->area, dma_buf_pa);
+			pr_err("%s: Failed to iommu_map: %d\n", __func__, ret);
+			return -ENOMEM;
+		}
+		pr_info("%s: DmaAddr-iommu %08X dma_buf_pa %08X\n",
+				__func__, dma_addr, dma_buf_pa);
+	} else {
+		buf->area = ioremap(buf->addr, size);
+	}
+#else
 	buf->area = ioremap(buf->addr, size);
+#endif
 
 	if (!buf->area)
 		return -ENOMEM;
