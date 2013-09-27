@@ -615,29 +615,43 @@
 			samsung,pin-drv = <0>;
 		};
 
-		fimc_is_main_i2c: fimc-is-main-i2c {
+		fimc_is_ch0_i2c: fimc-is-ch0_i2c {
 			samsung,pins = "gpc2-1", "gpc2-0";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 		};
 
-		fimc_is_main_mclk: fimc-is-main-mclk {
+		fimc_is_ch0_mclk: fimc-is-ch0_mclk {
 			samsung,pins = "gpd7-0";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 		};
 
-		fimc_is_vt_i2c: fimc-is-vt-i2c {
+		fimc_is_ch1_i2c: fimc-is-ch1-i2c {
 			samsung,pins = "gpc2-3", "gpc2-2";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 		};
 
-		fimc_is_vt_mclk: fimc-is-vt-mclk {
+		fimc_is_ch1_mclk: fimc-is-ch1-mclk {
 			samsung,pins = "gpd7-1";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_ch2_i2c: fimc-is-ch2-i2c {
+			samsung,pins = "gpc2-5", "gpc2-4";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_ch2_mclk: fimc-is-ch2-mclk {
+			samsung,pins = "gpd7-2";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
