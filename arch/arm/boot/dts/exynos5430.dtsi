@@ -1166,6 +1166,7 @@
 			#dma-cells = <1>;
 			#dma-channels = <6>;
 			#dma-requests = <16>;
+			#dma-mcode-addr = <0x03046000>;
 		};
 
 		mdma0: mdma@10F80000 {
