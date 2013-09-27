@@ -89,6 +89,19 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "VT_CAM_RESET");
 			gpio_free(_gpio_info->gpio_vt_rst);
 			goto exit;
+		} else if (channel == CSI_ID_C) {
+			/* UART(GPC0-7, GPC1-1) */
+			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
+			if (IS_ERR(pinctrl_uart))
+				pr_err("%s: main cam uart pins are not configured\n", __func__);
+
+			usleep_range(1000, 1000);
+			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
+			usleep_range(1000, 1000);
+			__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
+			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "VT_CAM_RESET");
+			gpio_free(_gpio_info->gpio_vt_rst);
+			goto exit;
 		} else {
 			pr_err("%s: could not find close sensor\n", __func__);
 			goto exit;
@@ -109,15 +122,15 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 				pr_err("%s: main cam uart pins are not configured\n", __func__);
 
 			/* I2C(GPC2) */
-			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"main-i2c");
+			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch0-i2c");
 			if (IS_ERR(pinctrl_i2c))
-				pr_err("%s: main cam i2c pins are not configured\n", __func__);
+				pr_err("%s: ch0 cam i2c pins are not configured\n", __func__);
 			usleep_range(1000, 1000);
 
 			/* CIS_CLK(GPD7) */
-			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"main-mclk");
+			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"ch0-mclk");
 			if (IS_ERR(pinctrl_mclk))
-				pr_err("%s: main cam mclk pin is not configured\n", __func__);
+				pr_err("%s: ch0 cam mclk pin is not configured\n", __func__);
 			usleep_range(1000, 1000);
 			goto exit;
 		} else if (channel == CSI_ID_B) {
@@ -135,15 +148,41 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 				pr_err("%s: main cam uart pins are not configured\n", __func__);
 
 			/* I2C(GPC2) */
-			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"vt-i2c");
+			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch1-i2c");
 			if (IS_ERR(pinctrl_i2c))
-				pr_err("%s: vt cam i2c pins are not configured\n", __func__);
+				pr_err("%s: ch1 cam i2c pins are not configured\n", __func__);
 			usleep_range(1000, 1000);
 
 			/* CIS_CLK(GPD7) */
-			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"vt-mclk");
+			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"ch1-mclk");
 			if (IS_ERR(pinctrl_mclk))
-				pr_err("%s: vt cam mclk pin is not configured\n", __func__);
+				pr_err("%s: ch1 cam mclk pin is not configured\n", __func__);
+			usleep_range(1000, 1000);
+			goto exit;
+		} else if (channel == CSI_ID_C) {
+			/* RESET(GPC0) */
+			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_OUT_INIT_HIGH, "VT_CAM_RESET");
+			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
+			usleep_range(1000, 1000);
+			__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
+			usleep_range(1000, 1000);
+			gpio_free(_gpio_info->gpio_vt_rst);
+
+			/* UART(GPC0-7, GPC1-1) */
+			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
+			if (IS_ERR(pinctrl_uart))
+				pr_err("%s: main cam uart pins are not configured\n", __func__);
+
+			/* I2C(GPC2) */
+			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch2-i2c");
+			if (IS_ERR(pinctrl_i2c))
+				pr_err("%s: ch2 cam i2c pins are not configured\n", __func__);
+			usleep_range(1000, 1000);
+
+			/* CIS_CLK(GPD7) */
+			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"ch2-mclk");
+			if (IS_ERR(pinctrl_mclk))
+				pr_err("%s: ch2 cam mclk pin is not configured\n", __func__);
 			usleep_range(1000, 1000);
 			goto exit;
 		} else {
