@@ -86,7 +86,7 @@ struct otg_fsm {
 
 	/* Current usb protocol used: 0:undefine; 1:host; 2:client */
 	int protocol;
-	spinlock_t lock;
+	struct mutex lock;
 };
 
 struct otg_fsm_ops {
