@@ -116,7 +116,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define MAX_COOLING_DEVICE 4
 #define MAX_THRESHOLD_LEVS 4
 
-#define ACTIVE_INTERVAL 100
+#define PASSIVE_INTERVAL	100
+#define ACTIVE_INTERVAL		300
 #define IDLE_INTERVAL 1000
 #define MCELSIUS	1000
 
@@ -129,7 +130,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #endif /* CONFIG_THERMAL_EMULATION */
 
 /* CPU Zone information */
-#define PANIC_ZONE      4
+#define PANIC_ZONE      5
 #define WARN_ZONE       3
 #define MONITOR_ZONE    2
 #define SAFE_ZONE       1
@@ -276,17 +277,18 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
 static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
 				 enum thermal_trip_type *type)
 {
-	switch (GET_ZONE(trip)) {
-	case MONITOR_ZONE:
-	case WARN_ZONE:
+	unsigned int cur_zone;
+	cur_zone = GET_ZONE(trip);
+
+	if (cur_zone >= MONITOR_ZONE && cur_zone < WARN_ZONE)
 		*type = THERMAL_TRIP_ACTIVE;
-		break;
-	case PANIC_ZONE:
+	else if (cur_zone >= WARN_ZONE && cur_zone < PANIC_ZONE)
+		*type = THERMAL_TRIP_PASSIVE;
+	else if (cur_zone >= PANIC_ZONE)
 		*type = THERMAL_TRIP_CRITICAL;
-		break;
-	default:
+	else
 		return -EINVAL;
-	}
+
 	return 0;
 }
 
@@ -321,6 +323,7 @@ static int exynos_bind(struct thermal_zone_device *thermal,
 	int ret = 0, i, tab_size, level;
 	struct freq_clip_table *tab_ptr, *clip_data;
 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
+	enum thermal_trip_type type = 0;
 
 	tab_ptr = (struct freq_clip_table *)data->cooling_data.freq_data;
 	tab_size = data->cooling_data.freq_clip_count;
@@ -345,9 +348,10 @@ static int exynos_bind(struct thermal_zone_device *thermal,
 			thermal->cooling_dev_en = false;
 			return 0;
 		}
-		switch (GET_ZONE(i)) {
-		case MONITOR_ZONE:
-		case WARN_ZONE:
+		exynos_get_trip_type(th_zone->therm_dev, i, &type);
+		switch (type) {
+		case THERMAL_TRIP_ACTIVE:
+		case THERMAL_TRIP_PASSIVE:
 			if (thermal_zone_bind_cooling_device(thermal, i, cdev,
 								level, 0)) {
 				pr_err("error binding cdev inst %d\n", i);
@@ -618,12 +622,11 @@ static void exynos_report_trigger(void)
 			break;
 	}
 
-	if (th_zone->mode == THERMAL_DEVICE_ENABLED &&
-		!th_zone->sensor_conf->trip_data.trigger_falling) {
-		if (i > 0)
-			th_zone->therm_dev->polling_delay = ACTIVE_INTERVAL;
+	if (th_zone->mode == THERMAL_DEVICE_ENABLED) {
+		if (GET_ZONE(i) > WARN_ZONE)
+			th_zone->therm_dev->passive_delay = PASSIVE_INTERVAL;
 		else
-			th_zone->therm_dev->polling_delay = IDLE_INTERVAL;
+			th_zone->therm_dev->passive_delay = ACTIVE_INTERVAL;
 	}
 
 	snprintf(data, sizeof(data), "%u", i);
@@ -661,9 +664,8 @@ static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
 	th_zone->cool_dev_size = count;
 
 	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
-			th_zone->sensor_conf->trip_data.trip_count, 0, NULL, &exynos_dev_ops, NULL, 0,
-			sensor_conf->trip_data.trigger_falling ?
-			0 : IDLE_INTERVAL);
+			th_zone->sensor_conf->trip_data.trip_count, 0, NULL, &exynos_dev_ops, NULL, PASSIVE_INTERVAL,
+			IDLE_INTERVAL);
 
 	if (IS_ERR(th_zone->therm_dev)) {
 		pr_err("Failed to register thermal zone device\n");
@@ -1092,6 +1094,7 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 
 #if defined(CONFIG_SOC_EXYNOS5430)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
+	.threshold_falling = 2,
 	.trigger_levels[0] = 85,
 	.trigger_levels[1] = 90,
 	.trigger_levels[2] = 95,
