@@ -805,6 +805,12 @@ static void wq_func_general(struct work_struct *data)
 					sizeof(struct fimc_is_msg));
 				testnclr_wakeup(itf, msg->parameter1);
 				break;
+			case HIC_CLOSE_SENSOR:
+				dbg_interface("close done\n");
+				memcpy(&itf->reply, msg,
+					sizeof(struct fimc_is_msg));
+				testnclr_wakeup(itf, msg->parameter1);
+				break;
 			case HIC_GET_SET_FILE_ADDR:
 				dbg_interface("saddr(%p) done\n",
 					(void *)msg->parameter2);
@@ -2215,8 +2221,6 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 	clear_bit(IS_IF_STATE_OPEN, &this->state);
 	clear_bit(IS_IF_STATE_START, &this->state);
 	clear_bit(IS_IF_STATE_BUSY, &this->state);
-	clear_bit(IS_IF_STATE_SENSOR_OPENED, &this->state);
-	clear_bit(IS_IF_STATE_SENSOR_CLOSED, &this->state);
 
 	init_work_list(&this->nblk_cam_ctrl,
 		TRACE_WORK_ID_CAMCTRL, MAX_NBLOCKING_COUNT);
@@ -2273,8 +2277,6 @@ int fimc_is_interface_open(struct fimc_is_interface *this)
 	atomic_set(&this->lock_pid, 0);
 	clear_bit(IS_IF_STATE_START, &this->state);
 	clear_bit(IS_IF_STATE_BUSY, &this->state);
-	clear_bit(IS_IF_STATE_SENSOR_OPENED, &this->state);
-	clear_bit(IS_IF_STATE_SENSOR_CLOSED, &this->state);
 
 	init_timer(&this->timer);
 	this->timer.expires = jiffies +
@@ -2542,6 +2544,28 @@ int fimc_is_hw_open(struct fimc_is_interface *this,
 
 	*mwidth = reply.parameter2;
 	*mheight = reply.parameter3;
+
+	return ret;
+}
+
+int fimc_is_hw_close(struct fimc_is_interface *this,
+	u32 instance)
+{
+	int ret;
+	struct fimc_is_msg msg, reply;
+
+	dbg_interface("close sensor(instance:%d)\n", instance);
+
+	msg.id = 0;
+	msg.command = HIC_CLOSE_SENSOR;
+	msg.instance = instance;
+	msg.group = 0;
+	msg.parameter1 = 0;
+	msg.parameter2 = 0;
+	msg.parameter3 = 0;
+	msg.parameter4 = 0;
+
+	ret = fimc_is_set_cmd(this, &msg, &reply);
 
 	return ret;
 }
