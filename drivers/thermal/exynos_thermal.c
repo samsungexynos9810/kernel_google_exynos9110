@@ -1288,6 +1288,13 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 					pdata->freq_tab[i].freq_clip_max;
 		exynos_sensor_conf.cooling_data.freq_data[i].temp_level =
 					pdata->freq_tab[i].temp_level;
+		exynos_sensor_conf.cooling_data.size[i] = pdata->size[i];
+		if (pdata->freq_tab[i].mask_val)
+			exynos_sensor_conf.cooling_data.freq_data[i].mask_val =
+				pdata->freq_tab[i].mask_val;
+		else
+			exynos_sensor_conf.cooling_data.freq_data[i].mask_val =
+				cpu_all_mask;
 	}
 
 	ret = exynos_register_thermal(&exynos_sensor_conf);
