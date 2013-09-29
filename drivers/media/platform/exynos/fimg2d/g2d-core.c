@@ -27,7 +27,7 @@
 
 #include "g2d.h"
 
-int g2d_log_level = 0;
+int g2d_log_level;
 module_param_named(g2d_log_level, g2d_log_level, uint, 0644);
 
 
@@ -604,11 +604,12 @@ static int g2d_v4l2_reqbufs(struct file *file, void *fh,
 			    struct v4l2_requestbuffers *reqbufs)
 {
 	struct g2d_ctx *ctx = fh_to_g2d_ctx(fh);
-	struct g2d_dev *g2d = ctx->g2d_dev;
 
-	g2d->vb2->set_cacheable(g2d->alloc_ctx, ctx->cacheable);
 
 	g2d_dbg("call.\n");
+
+	if (reqbufs->count == 0)
+		ctx->cci_on = G2D_CCI_OFF;
 
 	return v4l2_m2m_reqbufs(file, ctx->m2m_ctx, reqbufs);
 }
@@ -716,6 +717,7 @@ static int g2d_vb2_queue_setup(struct vb2_queue *vq,
 	struct g2d_frame *frame;
 	int i;
 	int ret;
+	unsigned int total = 0;
 
 	frame = ctx_get_frame(ctx, vq->type);
 	if (IS_ERR(frame))
@@ -726,8 +728,30 @@ static int g2d_vb2_queue_setup(struct vb2_queue *vq,
 	for (i = 0; i < frame->g2d_fmt->num_planes; i++) {
 		sizes[i] = (frame->pix_mp.width * frame->pix_mp.height *
 				frame->g2d_fmt->bitperpixel[i]) >> 3;
+		total = total + sizes[i];
+	}
+
+#if defined(CONFIG_FIMG2D_CCI_SNOOP)
+	if ((is_cci_on(ctx, total)) | (ctx->cci_on)) { /* cci on */
+		for (i = 0; i < frame->g2d_fmt->num_planes; i++)
+			allocators[i] = ctx->g2d_dev->alloc_ctx_cci;
+		ctx->cci_on = G2D_CCI_ON;
+		/* printk("[%s:%d] set as alloc_ctx_cci, total:%d\n"
+				, __func__, __LINE__, total); */
+	} else {	/* cci off */
+		for (i = 0; i < frame->g2d_fmt->num_planes; i++)
+			allocators[i] = ctx->g2d_dev->alloc_ctx;
+		ctx->cci_on = G2D_CCI_OFF;
+		/* printk("[%s:%d] set as alloc_ctx(do not cci), total:%d\n"
+				, __func__, __LINE__, total); */
+	}
+#else
+	for (i = 0; i < frame->g2d_fmt->num_planes; i++) {
 		allocators[i] = ctx->g2d_dev->alloc_ctx;
 	}
+	ctx->cci_on = G2D_CCI_OFF;
+#endif
+
 	ret = vb2_queue_init(vq);
 	if (ret) {
 		g2d_dbg("failed to init vb2_queue");
@@ -1298,6 +1322,26 @@ static void g2d_clock_gating(struct g2d_dev *g2d, enum g2d_clk_status status)
 	}
 }
 
+#ifdef CONFIG_FIMG2D_CCI_SNOOP
+static void g2d_set_cci_snoop(struct g2d_ctx *ctx)
+{
+	enum g2d_shared_val val;
+	enum g2d_shared_sel sel;
+
+	if (ctx->cci_on) {
+		/* G2D CCI on */
+		val = SHAREABLE_PATH;
+		sel = SHARED_FROM_SYSMMU;
+		g2d_cci_snoop_control(val, sel);
+	} else {
+		/* G2D CCI off */
+		val = NON_SHAREABLE_PATH;
+		sel = SHARED_FROM_SYSMMU;
+		g2d_cci_snoop_control(val, sel);
+	}
+}
+#endif
+
 static void g2d_watchdog(unsigned long arg)
 {
 }
@@ -1517,6 +1561,13 @@ static void g2d_m2m_device_run(void *priv)
 
 	s_frame = &ctx->s_frame;
 	d_frame = &ctx->d_frame;
+
+	g2d_hwset_init(g2d);
+
+#ifdef CONFIG_FIMG2D_CCI_SNOOP
+	g2d_set_cci_snoop(ctx);
+	g2d_hwset_cci_on(g2d);
+#endif
 
 	/* FIMG2D_SRC_COLOR_MODE_REG */
 	g2d_hwset_src_image_format(g2d, s_frame->g2d_fmt->pixelformat);
@@ -1911,15 +1962,23 @@ static int g2d_probe(struct platform_device *pdev)
 	g2d->vb2 = &g2d_vb2_ion;
 #endif
 
-	g2d->alloc_ctx = g2d->vb2->init(g2d);
+	g2d->alloc_ctx = g2d->vb2->init(g2d, G2D_CCI_OFF);
 	if (IS_ERR_OR_NULL(g2d->alloc_ctx)) {
 		ret = PTR_ERR(g2d->alloc_ctx);
 		dev_err(&pdev->dev, "failed to alloc_ctx\n");
 		goto err_clk_put;
 	}
 
+	g2d->alloc_ctx_cci = g2d->vb2->init(g2d, G2D_CCI_ON);
+	if (IS_ERR_OR_NULL(g2d->alloc_ctx_cci)) {
+		ret = PTR_ERR(g2d->alloc_ctx_cci);
+		dev_err(&pdev->dev, "failed to alloc_ctx_cci\n");
+		goto err_clk_put;
+	}
+
 	exynos_create_iovmm(&pdev->dev, 3, 3);
 	g2d->vb2->resume(g2d->alloc_ctx);
+	g2d->vb2->resume(g2d->alloc_ctx_cci);
 
 	platform_set_drvdata(pdev, g2d);
 
@@ -1936,6 +1995,13 @@ static int g2d_probe(struct platform_device *pdev)
 
 	g2d_clock_gating(g2d, G2D_CLK_ON);
 	g2d_clock_gating(g2d, G2D_CLK_OFF);
+#ifdef CONFIG_FIMG2D_CCI_SNOOP
+	ret = g2d_cci_snoop_init();
+	if (ret) {
+		dev_err(&pdev->dev, "failed to init g2d cci snoop\n");
+		goto err_clk_put;
+	}
+#endif
 	g2d->variant = &variant;
 
 	dev_info(&pdev->dev, "G2D registered successfully\n");
@@ -1954,11 +2020,17 @@ static int g2d_remove(struct platform_device *pdev)
 		(struct g2d_dev *)platform_get_drvdata(pdev);
 
 	g2d->vb2->cleanup(g2d->alloc_ctx);
+	g2d->vb2->cleanup(g2d->alloc_ctx_cci);
+
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
 #endif
 	g2d_clk_put(g2d);
+#ifdef CONFIG_FIMG2D_CCI_SNOOP
+	g2d_cci_snoop_remove();
+#endif
 	g2d->vb2->suspend(g2d->alloc_ctx);
+	g2d->vb2->suspend(g2d->alloc_ctx_cci);
 
 	if (timer_pending(&g2d->wdt.timer))
 		del_timer(&g2d->wdt.timer);

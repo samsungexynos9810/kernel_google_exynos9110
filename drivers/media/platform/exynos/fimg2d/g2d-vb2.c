@@ -35,10 +35,21 @@ const struct g2d_vb2 g2d_vb2_cma = {
 };
 
 #elif defined(CONFIG_VIDEOBUF2_ION)
-void *g2d_ion_init(struct g2d_dev *g2d)
+void *g2d_ion_init(struct g2d_dev *g2d, bool is_use_cci)
 {
-	return vb2_ion_create_context(g2d->dev, SZ_4K,
-		VB2ION_CTX_VMCONTIG | VB2ION_CTX_IOMMU | VB2ION_CTX_UNCACHED);
+	long flags = 0;
+
+#if defined(CONFIG_FIMG2D_CCI_SNOOP)
+	if (is_use_cci)
+		flags = (VB2ION_CTX_COHERENT | VB2ION_CTX_VMCONTIG
+				| VB2ION_CTX_IOMMU | VB2ION_CTX_UNCACHED);
+	else
+		flags = (VB2ION_CTX_VMCONTIG | VB2ION_CTX_IOMMU
+				| VB2ION_CTX_UNCACHED);
+#else
+	flags = (VB2ION_CTX_VMCONTIG | VB2ION_CTX_IOMMU | VB2ION_CTX_UNCACHED);
+#endif
+	return vb2_ion_create_context(g2d->dev, SZ_4K, flags);
 }
 
 static unsigned long g2d_vb2_plane_addr(struct vb2_buffer *vb, u32 plane_no)

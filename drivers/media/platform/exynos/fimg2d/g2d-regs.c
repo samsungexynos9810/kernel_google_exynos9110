@@ -789,7 +789,7 @@ int g2d_hwset_blit_done_status(struct g2d_dev *g2d)
 
 	/* read twice */
 	cfg = readl(g2d->regs + FIMG2D_FIFO_STAT_REG);
-        cfg = readl(g2d->regs + FIMG2D_FIFO_STAT_REG);
+	cfg = readl(g2d->regs + FIMG2D_FIFO_STAT_REG);
 	cfg &= FIMG2D_BLIT_FINISHED;
 
 	return (int)cfg;
@@ -862,6 +862,18 @@ void g2d_hwset_init(struct g2d_dev *g2d)
 	writel(cfg, g2d->regs + FIMG2D_SRC_REPEAT_MODE_REG);
 	cfg = FIMG2D_MSK_REPEAT_REFLECT;
 	writel(cfg, g2d->regs + FIMG2D_MSK_REPEAT_MODE_REG);
+}
+
+void g2d_hwset_cci_on(struct g2d_dev *g2d)
+{
+	unsigned long cfg;
+
+	cfg = readl(g2d->regs + FIMG2D_AXI_MODE_REG);
+	cfg |= (0xf << FIMG2D_AXI_AWCACHE_SHIFT) |
+		(0xf << FIMG2D_AXI_ARCACHE_SHIFT);
+	writel(cfg, g2d->regs + FIMG2D_AXI_MODE_REG);
+
+	/* printk("[%s:%d] done g2d cci setting!!!\n", __func__, __LINE__); */
 }
 
 /**

@@ -24,6 +24,9 @@
 #include <media/v4l2-mem2mem.h>
 #include <media/v4l2-ctrls.h>
 #include <linux/exynos_iovmm.h>
+#include <linux/sizes.h>
+
+#include <plat/fimg2d.h>
 
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
 #include <media/videobuf2-cma-phys.h>
@@ -86,6 +89,9 @@ extern int g2d_log_level;
 #define G2D_CSC_601	0
 #define G2D_CSC_709	1
 
+/* G2D CCI enable/disable */
+#define G2D_CCI_OFF	0
+#define G2D_CCI_ON	1
 
 #define fh_to_g2d_ctx(__fh)	container_of(__fh, struct g2d_ctx, fh)
 
@@ -743,6 +749,7 @@ struct g2d_dev {
 	wait_queue_head_t		wait;
 	unsigned long			state;
 	struct vb2_alloc_ctx		*alloc_ctx;
+	struct vb2_alloc_ctx		*alloc_ctx_cci;
 	const struct g2d_vb2		*vb2;
 	spinlock_t			slock;
 	struct mutex			lock;
@@ -805,11 +812,12 @@ struct g2d_ctx {
 	enum scaling			scale_mode;
 	enum repeat			repeat_mode;
 	unsigned long			pad_color;
+	bool				cci_on;
 };
 
 struct g2d_vb2 {
 	const struct vb2_mem_ops *ops;
-	void *(*init)(struct g2d_dev *g2d);
+	void *(*init)(struct g2d_dev *g2d, bool cacheable);
 	void (*cleanup)(void *alloc_ctx);
 
 	unsigned long (*plane_addr)(struct vb2_buffer *vb, u32 plane_no);
@@ -841,10 +849,26 @@ static inline struct g2d_frame *ctx_get_frame(struct g2d_ctx *ctx,
 	return frame;
 }
 
+static inline int g2d_ip_ver(struct g2d_dev *g2d)
+{
+	int ver = 0;
+
+	ver = g2d->pdata->ip_ver;
+
+	return ver;
+}
+
+static inline bool is_cci_on(struct g2d_ctx *ctx, unsigned int size)
+{
+	return (size >= SZ_1M * 0) ? true : false;
+}
+
 void g2d_hwset_int_enable(struct g2d_dev *g2d);
 void g2d_hwset_int_disable(struct g2d_dev *g2d);
 void g2d_hwset_int_clear(struct g2d_dev *g2d);
 void g2d_hwset_soft_reset(struct g2d_dev *g2d);
+void g2d_hwset_init(struct g2d_dev *g2d);
+void g2d_hwset_cci_on(struct g2d_dev *g2d);
 void g2d_hwset_start_blit(struct g2d_dev *g2d);
 int g2d_hwset_src_image_format(struct g2d_dev *g2d, u32 pixelformat);
 int g2d_hwset_dst_image_format(struct g2d_dev *g2d, u32 pixelformat);
