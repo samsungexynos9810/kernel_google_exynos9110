@@ -14,7 +14,7 @@ config VIDEO_EXYNOS_FIMG2D
 
 config FIMG2D_CCI_SNOOP
 	bool "Enables CCI snoop control"
-	depends on VIDEO_EXYNOS_FIMG2D && EXYNOS5_CCI
+	depends on VIDEO_EXYNOS_FIMG2D
 	default n
 	---help---
 	  This enables a CCI snoop control for cache coherency.
