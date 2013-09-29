@@ -25,6 +25,21 @@ enum fimg2d_ip_version {
 	IP_VER_G2D_5G,
 	IP_VER_G2D_5A,
 	IP_VER_G2D_5AR,
+	IP_VER_G2D_5R,
+	IP_VER_G2D_5V,
+	IP_VER_G2D_5H,
+};
+
+enum g2d_shared_val {
+	NON_SHAREABLE_PATH = 0,
+	SHAREABLE_PATH,
+	SHAREABLE_VAL_END,
+};
+
+enum g2d_shared_sel {
+	SHARED_FROM_SYSMMU = 0,
+	SHARED_G2D_SEL,
+	SHAREABLE_SEL_END,
 };
 
 struct fimg2d_platdata {
@@ -40,5 +55,8 @@ struct fimg2d_platdata {
 };
 
 extern void __init s5p_fimg2d_set_platdata(struct fimg2d_platdata *pd);
+extern int g2d_cci_snoop_init(void);
+extern void g2d_cci_snoop_remove(void);
+extern int g2d_cci_snoop_control(enum g2d_shared_val val, enum g2d_shared_sel sel);
 
 #endif /* __ASM_ARCH_FIMG2D_H */
