@@ -965,6 +965,9 @@ static int g2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_2D_DITH:
 		ctx->dith = ctrl->val;
 		break;
+	case V4L2_CID_2D_SCALE_MODE:
+		ctx->scale.mode = ctrl->val;
+		break;
 	case V4L2_CID_2D_SCALE_WIDTH:
 		ctx->scale.src_w = (ctrl->val >> 15) & (0xFFFF);
 		ctx->scale.dst_w = (ctrl->val) & (0xFFFF);
@@ -982,10 +985,6 @@ static int g2d_s_ctrl(struct v4l2_ctrl *ctrl)
 	case V4L2_CID_2D_SCALE_HEIGHT:
 		ctx->scale.src_h = (ctrl->val >> 15) & (0xFFFF);
 		ctx->scale.dst_h = (ctrl->val) & (0xFFFF);
-		if ((ctx->scale.src_h == 0) && (ctx->scale.dst_h == 0))
-			ctx->scale.mode = NO_SCALING;
-		else
-			ctx->scale.mode = SCALING_BILINEAR;
 
 		if ((ctx->scale.src_h > 8000) || (ctx->scale.dst_h > 8000)) {
 			v4l2_err(&ctx->g2d_dev->m2m.v4l2_dev,
@@ -1098,6 +1097,16 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 		.max = 0xffffffff,
 		.min = 0,
 		.def = 1,
+	}, {
+		.ops = &g2d_ctrl_ops,
+		.id = V4L2_CID_2D_SCALE_MODE,
+		.name = "set scale mode",
+		.type = V4L2_CTRL_TYPE_INTEGER,
+		.flags = V4L2_CTRL_FLAG_SLIDER,
+		.step = 1,
+		.min = 0,
+		.max = SCALING_BILINEAR,
+		.def = SCALING_NEAREST,
 	}, {
 		.ops = &g2d_ctrl_ops,
 		.id = V4L2_CID_2D_SCALE_WIDTH,
