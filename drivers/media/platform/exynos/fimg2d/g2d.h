@@ -299,6 +299,14 @@ enum g2d_clk_status {
 	G2D_CLK_OFF,
 };
 
+enum g2d_clocks {
+	G2D_GATE_CLK,
+	G2D_CHLD1_CLK,
+	G2D_PARN1_CLK,
+	G2D_CHLD2_CLK,
+	G2D_PARN2_CLK,
+};
+
 enum g2d_color_fmt {
 	G2D_COLOR_RGB = 0x10,
 	G2D_COLOR_YUV = 0x20,
@@ -744,6 +752,10 @@ struct g2d_dev {
 	int				id;
 	int				ver;
 	struct clk			*clk;
+	struct clk			*clk_parn1;
+	struct clk			*clk_chld1;
+	struct clk			*clk_parn2;
+	struct clk			*clk_chld2;
 	void __iomem			*regs;
 	struct resource			*regs_res;
 	wait_queue_head_t		wait;

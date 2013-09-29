@@ -1342,6 +1342,13 @@ static void g2d_set_cci_snoop(struct g2d_ctx *ctx)
 }
 #endif
 
+static void g2d_clock_resume(struct g2d_dev *g2d)
+{
+	clk_set_parent(g2d->clk_chld1, g2d->clk_parn1);
+	clk_set_parent(g2d->clk_chld2, g2d->clk_parn2);
+	g2d_dbg("clock resume\n");
+}
+
 static void g2d_watchdog(unsigned long arg)
 {
 }
@@ -1775,8 +1782,13 @@ static int g2d_runtime_suspend(struct device *dev)
 
 static int g2d_runtime_resume(struct device *dev)
 {
+	struct g2d_dev *g2d = dev_get_drvdata(dev);
+
 	g2d_dbg("[%s:%d] @@@@@@@@@@@@@@@@@@@@@\n",
 			__func__, __LINE__);
+
+	g2d_clock_resume(g2d);
+
 	return 0;
 }
 
@@ -1817,6 +1829,49 @@ static void g2d_clk_put(struct g2d_dev *g2d)
 static int g2d_clk_get(struct g2d_dev *g2d)
 {
 	int ret;
+	char *parn1_clkname, *chld1_clkname;
+	char *parn2_clkname, *chld2_clkname;
+	char *gate_clkname;
+
+	of_property_read_string_index(g2d->dev->of_node,
+		"clock-names", G2D_GATE_CLK, (const char **)&gate_clkname);
+	of_property_read_string_index(g2d->dev->of_node,
+		"clock-names", G2D_PARN1_CLK, (const char **)&parn1_clkname);
+	of_property_read_string_index(g2d->dev->of_node,
+		"clock-names", G2D_CHLD1_CLK, (const char **)&chld1_clkname);
+	of_property_read_string_index(g2d->dev->of_node,
+		"clock-names", G2D_PARN2_CLK, (const char **)&parn2_clkname);
+	of_property_read_string_index(g2d->dev->of_node,
+		"clock-names", G2D_CHLD2_CLK, (const char **)&chld2_clkname);
+
+
+	g2d_dbg("clknames: parent1 %s, child1 %s, parent2 %s, child2 %s, gate %s\n"
+			, parn1_clkname, chld1_clkname
+			, parn2_clkname, chld2_clkname, gate_clkname);
+
+	g2d->clk_parn1 = clk_get(g2d->dev, parn1_clkname);
+	if (IS_ERR(g2d->clk_parn1)) {
+		dev_err(g2d->dev, "failed to get parent1 clk\n");
+		goto err_clk_get_parn1;
+	}
+
+	g2d->clk_chld1 = clk_get(g2d->dev, chld1_clkname);
+	if (IS_ERR(g2d->clk_chld1)) {
+		dev_err(g2d->dev, "failed to get child1 clk\n");
+		goto err_clk_get_chld1;
+	}
+
+	g2d->clk_parn2 = clk_get(g2d->dev, parn2_clkname);
+	if (IS_ERR(g2d->clk_parn2)) {
+		dev_err(g2d->dev, "failed to get parent2 clk\n");
+		goto err_clk_get_parn2;
+	}
+
+	g2d->clk_chld2 = clk_get(g2d->dev, chld2_clkname);
+	if (IS_ERR(g2d->clk_chld2)) {
+		dev_err(g2d->dev, "failed to get child2 clk\n");
+		goto err_clk_get_chld2;
+	}
 
 	/* clock for gating */
 	g2d->clk = clk_get(g2d->dev, "fimg2d");
@@ -1837,6 +1892,14 @@ static int g2d_clk_get(struct g2d_dev *g2d)
 err_clk_prepare:
 	clk_put(g2d->clk);
 err_clk_get:
+	clk_put(g2d->clk_chld2);
+err_clk_get_chld2:
+	clk_put(g2d->clk_parn2);
+err_clk_get_parn2:
+	clk_put(g2d->clk_chld1);
+err_clk_get_chld1:
+	clk_put(g2d->clk_parn1);
+err_clk_get_parn1:
 	return -ENXIO;
 }
 
