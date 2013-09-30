@@ -110,11 +110,11 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D power */
-	__raw_writel(0xf, EXYNOS5430_G3D_CONFIGURATION);
+	__raw_writel(EXYNOS_INT_LOCAL_PWR_EN, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability for 1ms */
 	timeout = 10;
-	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) != 0xf) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != EXYNOS_INT_LOCAL_PWR_EN) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d power\n");
@@ -203,7 +203,7 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 
 int kbase_platform_is_power_on(void)
 {
-	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) == 0xf) ? 1 : 0;
+	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) == EXYNOS_INT_LOCAL_PWR_EN) ? 1 : 0;
 }
 
 static int kbase_platform_power_on(void)
@@ -211,12 +211,12 @@ static int kbase_platform_power_on(void)
 	int timeout;
 
 	/* Turn on G3D  */
-	__raw_writel(0xf, EXYNOS5430_G3D_CONFIGURATION);
+	__raw_writel(EXYNOS_INT_LOCAL_PWR_EN, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) != 0xf) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != EXYNOS_INT_LOCAL_PWR_EN) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d via g3d_configuration\n");
@@ -239,7 +239,7 @@ static int kbase_platform_power_off(void)
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while (__raw_readl(EXYNOS5430_G3D_STATUS) & 0xf) {
+	while (__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN ) {
 		if (timeout == 0) {
 			/* need to call panic */
 			panic("failed to turn off g3d via g3d_configuration\n");
