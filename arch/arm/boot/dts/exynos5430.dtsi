@@ -1516,6 +1516,7 @@
 		interrupts = <0 165 0>, /* ARMISP_GIC */
 			     <0 166 0>; /* ISP_GIC */
 		pinctrl-names = "fimc-is-uart",
+				"fimc-is-flash",
 				"ch0-i2c",
 				"ch0-mclk",
 				"ch1-i2c",
@@ -1524,13 +1525,14 @@
 				"ch2-mclk",
 				"fimc-is-spi0";
 		pinctrl-0 = <&fimc_is_uart>;
-		pinctrl-1 = <&fimc_is_uart &fimc_is_ch0_i2c>;
-		pinctrl-2 = <&fimc_is_uart &fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
-		pinctrl-3 = <&fimc_is_uart &fimc_is_ch1_i2c>;
-		pinctrl-4 = <&fimc_is_uart &fimc_is_ch1_i2c &fimc_is_ch1_mclk>;
-		pinctrl-5 = <&fimc_is_uart &fimc_is_ch2_i2c>;
-		pinctrl-6 = <&fimc_is_uart &fimc_is_ch2_i2c &fimc_is_ch2_mclk>;
-		pinctrl-7 = <&fimc_is_spi0>;
+		pinctrl-1 = <&fimc_is_uart &fimc_is_flash>;
+		pinctrl-2 = <&fimc_is_uart &fimc_is_flash &fimc_is_ch0_i2c>;
+		pinctrl-3 = <&fimc_is_uart &fimc_is_flash &fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
+		pinctrl-4 = <&fimc_is_uart &fimc_is_ch1_i2c>;
+		pinctrl-5 = <&fimc_is_uart &fimc_is_ch1_i2c &fimc_is_ch1_mclk>;
+		pinctrl-6 = <&fimc_is_uart &fimc_is_ch2_i2c>;
+		pinctrl-7 = <&fimc_is_uart &fimc_is_ch2_i2c &fimc_is_ch2_mclk>;
+		pinctrl-8 = <&fimc_is_spi0>;
 		clocks =	<&clock 30>,
 				<&clock 31>,
 				<&clock 32>,
