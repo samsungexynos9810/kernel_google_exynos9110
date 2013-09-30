@@ -3229,6 +3229,13 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
 	(*indexes)++;
 
+	/* SCC DMA OUT(unscaled size) */
+	scc_param->dma_output.width = chain0_width;
+	scc_param->dma_output.height = chain0_height;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	(*indexes)++;
+
 	device->bds_width = width;
 	device->bds_height = height;
 
@@ -3572,12 +3579,6 @@ static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 	scc_param->otf_output.height = chain1_height;
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
-	(*indexes)++;
-
-	scc_param->dma_output.width = chain0_width;
-	scc_param->dma_output.height = chain0_height;
-	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
 	(*indexes)++;
 
 	/* ODC */
