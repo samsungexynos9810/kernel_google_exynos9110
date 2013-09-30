@@ -49,6 +49,7 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 	struct pinctrl *pinctrl_mclk;
 	struct pinctrl *pinctrl_i2c;
 	struct pinctrl *pinctrl_uart;
+	struct pinctrl *pinctrl_flash;
 	struct exynos5_platform_fimc_is *pdata;
 	struct fimc_is_gpio_info *_gpio_info;
 
@@ -120,6 +121,11 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
 			if (IS_ERR(pinctrl_uart))
 				pr_err("%s: main cam uart pins are not configured\n", __func__);
+
+			/* FLASH(GPC0-2, GPC0-3) */
+			pinctrl_flash = devm_pinctrl_get_select(&pdev->dev,"fimc-is-flash");
+			if (IS_ERR(pinctrl_flash))
+				pr_err("%s: main cam flash pins are not configured\n", __func__);
 
 			/* I2C(GPC2) */
 			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch0-i2c");
