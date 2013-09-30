@@ -30,7 +30,7 @@
 #include <linux/spinlock.h>
 #include <linux/err.h>
 
-#include "pinctrl-samsung.h"
+#include <mach/pinctrl-samsung.h>
 #include "pinctrl-exynos.h"
 
 /* bank type for non-alive type (DRV bit field: 2) */
