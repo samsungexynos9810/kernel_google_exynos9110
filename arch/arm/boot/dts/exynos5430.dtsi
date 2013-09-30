@@ -1036,6 +1036,7 @@
 
 		spd_decon: spd-decon@105c4080 {
 			compatible = "samsung,exynos5430-spd";
+			bts-status = "enabled";
 		};
 
 		spd_mipi_dsi: spd-mipi-dsi@105c4080 {
