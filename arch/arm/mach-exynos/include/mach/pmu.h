@@ -23,6 +23,7 @@ enum sys_powerdown {
 	SYS_AFTR,
 	SYS_LPA,
 #else
+	SYS_AFTR,
 	SYS_LPD,
 	SYS_LPA,
 	SYS_ALPA,
