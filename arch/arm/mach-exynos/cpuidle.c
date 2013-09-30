@@ -68,6 +68,9 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 				 struct cpuidle_driver *drv,
 				 int index);
 #endif
+static int exynos_enter_lowpower(struct cpuidle_device *dev,
+				struct cpuidle_driver *drv,
+				int index);
 
 struct check_reg_lpa {
 	void __iomem	*check_reg;
@@ -215,8 +218,8 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.name			= "C1",
 		.desc			= "ARM clock gating(WFI)",
 	},
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 	[1] = {
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 		.enter                  = exynos_enter_c2,
 		.exit_latency           = 30,
 		.target_residency       = 1000,
@@ -224,7 +227,15 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.name                   = "C2",
 		.desc                   = "ARM power down",
 	},
+	[2] = {
 #endif
+		.enter                  = exynos_enter_lowpower,
+		.exit_latency           = 300,
+		.target_residency       = 3000,
+		.flags                  = CPUIDLE_FLAG_TIME_VALID,
+		.name                   = "C3",
+		.desc                   = "ARM power down",
+	},
 };
 
 static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
@@ -237,10 +248,20 @@ static struct cpuidle_driver exynos_idle_driver = {
 /* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
 static void exynos_set_wakeupmask(void)
 {
-	__raw_writel(0x40003ffe, EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0x1010fe06, EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK1);
+	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK2);
 }
 
-#ifndef CONFIG_APPLY_ARM_TRUSTZONE
+#if defined(CONFIG_APPLY_ARM_TRUSTZONE) || defined(CONFIG_SOC_EXYNOS5430)
+static void save_cpu_arch_register(void)
+{
+}
+
+static void restore_cpu_arch_register(void)
+{
+}
+#else
 static unsigned int g_pwr_ctrl, g_diag_reg;
 
 static void save_cpu_arch_register(void)
@@ -259,14 +280,6 @@ static void restore_cpu_arch_register(void)
 	/*write diagnostic register*/
 	asm("mcr p15, 0, %0, c15, c0, 1" : : "r"(g_diag_reg) : "cc");
 	return;
-}
-#else
-static void save_cpu_arch_register(void)
-{
-}
-
-static void restore_cpu_arch_register(void)
-{
 }
 #endif
 
@@ -309,8 +322,7 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	exynos_set_wakeupmask();
 
 	/* Set value of power down register for aftr mode */
-/* MUST MODIFY TO AFTR */
-	exynos_sys_powerdown_conf(SYS_LPA);
+	exynos_sys_powerdown_conf(SYS_AFTR);
 
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
@@ -347,7 +359,9 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 #endif
 
 	/* Clear wakeup state register */
-	__raw_writel(0x0, EXYNOS_WAKEUP_STAT);
+	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT);
+	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT1);
+	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT2);
 
 	do_gettimeofday(&after);
 
@@ -471,6 +485,26 @@ early_wakeup:
 
 	dev->last_residency = idle_time;
 	return index;
+}
+
+static int exynos_enter_lowpower(struct cpuidle_device *dev,
+				struct cpuidle_driver *drv,
+				int index)
+{
+	int new_index = index;
+
+	/* This mode only can be entered when other core's are offline */
+	if (num_online_cpus() > 1)
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+		return exynos_enter_c2(dev, drv, (new_index - 1));
+#else
+		return exynos_enter_idle(dev, drv, (new_index - 2));
+#endif
+
+	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
+		return exynos_enter_core0_aftr(dev, drv, new_index);
+	else
+		return exynos_enter_core0_aftr(dev, drv, new_index);
 }
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
