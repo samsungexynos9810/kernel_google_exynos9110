@@ -407,8 +407,13 @@ static struct regulator_ops s2mps13_buck_ops_rev1 = {
 	.enable_mask	= S2MPS13_ENABLE_MASK			\
 }
 
+enum regulator_desc_type {
+	S2MPS13_DESC_TYPE0 = 0,
+	S2MPS13_DESC_TYPE1,
+};
+
 static struct regulator_desc regulators[][S2MPS13_REGULATOR_MAX] = {
-	{
+	[S2MPS13_DESC_TYPE0] = {
 		/* for s2mps13 rev0 */
 		regulator_desc_ldo2(1),
 		regulator_desc_ldo4(2),
@@ -462,8 +467,9 @@ static struct regulator_desc regulators[][S2MPS13_REGULATOR_MAX] = {
 		regulator_desc_buck89(9),
 		regulator_desc_buck10(0,0),
 		regulator_desc_bb1,
-	}, {
-		/* for s2mps13 rev1 */
+	},
+	[S2MPS13_DESC_TYPE1] = {
+		/* for s2mps13 rev1 and others*/
 		regulator_desc_ldo2(1),
 		regulator_desc_ldo4(2),
 		regulator_desc_ldo3(3),
@@ -525,7 +531,7 @@ static int s2mps13_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
 {
 	struct device_node *pmic_np, *regulators_np, *reg_np;
 	struct sec_regulator_data *rdata;
-	unsigned int i;
+	unsigned int i, s2mps13_desc_type;
 
 	pmic_np = iodev->dev->of_node;
 	if (!pmic_np) {
@@ -554,13 +560,14 @@ static int s2mps13_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
 	}
 
 	pdata->regulators = rdata;
+	s2mps13_desc_type = iodev->rev_num ? S2MPS13_DESC_TYPE1 : S2MPS13_DESC_TYPE0;
 	for_each_child_of_node(regulators_np, reg_np) {
-		for (i = 0; i < ARRAY_SIZE(regulators[iodev->rev_num]); i++)
+		for (i = 0; i < ARRAY_SIZE(regulators[s2mps13_desc_type]); i++)
 			if (!of_node_cmp(reg_np->name,
-					regulators[iodev->rev_num][i].name))
+					regulators[s2mps13_desc_type][i].name))
 				break;
 
-		if (i == ARRAY_SIZE(regulators[iodev->rev_num])) {
+		if (i == ARRAY_SIZE(regulators[s2mps13_desc_type])) {
 			dev_warn(iodev->dev,
 			"don't know how to configure regulator %s\n",
 			reg_np->name);
@@ -591,10 +598,12 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 	struct regulator_config config = { };
 	struct s2mps13_info *s2mps13;
 	int i, ret;
+	unsigned int s2mps13_desc_type;
 
 	ret = sec_reg_read(iodev, S2MPS13_REG_ID, &iodev->rev_num);
 	if (ret < 0)
 		return ret;
+	s2mps13_desc_type = iodev->rev_num ? S2MPS13_DESC_TYPE1 : S2MPS13_DESC_TYPE0;
 
 	if (iodev->dev->of_node) {
 		ret = s2mps13_pmic_dt_parse_pdata(iodev, pdata);
@@ -621,10 +630,10 @@ static int s2mps13_pmic_probe(struct platform_device *pdev)
 		config.init_data = pdata->regulators[i].initdata;
 		config.driver_data = s2mps13;
 		config.of_node = pdata->regulators[i].reg_node;
-		s2mps13->opmode[id] = regulators[iodev->rev_num][id].enable_mask;
+		s2mps13->opmode[id] = regulators[s2mps13_desc_type][id].enable_mask;
 
 		s2mps13->rdev[i] = regulator_register(
-				&regulators[iodev->rev_num][id], &config);
+				&regulators[s2mps13_desc_type][id], &config);
 		if (IS_ERR(s2mps13->rdev[i])) {
 			ret = PTR_ERR(s2mps13->rdev[i]);
 			dev_err(&pdev->dev, "regulator init failed for %d\n",
