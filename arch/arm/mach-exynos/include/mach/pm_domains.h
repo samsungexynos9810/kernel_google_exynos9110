@@ -29,6 +29,7 @@
 
 #include <mach/regs-clock.h>
 #include <mach/regs-pmu.h>
+#include <mach/bts.h>
 
 #include <plat/devs.h>
 
