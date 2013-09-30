@@ -807,8 +807,6 @@
 	fimc_is@14000000 {
 		gpios_main_reset = <&gpc0 1 0x1>; /* MAINCAM_RESET */
 		gpios_vt_reset = <&gpc0 4 0x1>; /* VTCAM_RESET */
-		gpios_flash_en = <&gpc0 2 0x1>; /* CAM_FLASH_EN */
-		gpios_flash_torch = <&gpc0 3 0x1>; /* CAM_FLASH_TORCH */
 		gpios_board_rev =<&gpf3 2 0x1 /* BOARD_REVIRION */
 				&gpf3 3 0x1>; /* BOARD_REVIRION */
 		platform_data: fimc_is_ctrl {
