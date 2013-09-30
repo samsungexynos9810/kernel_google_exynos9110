@@ -181,18 +181,6 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 		return ERR_PTR(-EINVAL);
 	}
 
-	gpio_info->gpio_main_flash_en = of_get_named_gpio(np, "gpios_flash_en", 0);
-	if (!gpio_is_valid(gpio_info->gpio_main_flash_en)) {
-		dev_err(dev, "failed to get main flash_en gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
-	gpio_info->gpio_main_flash_torch = of_get_named_gpio(np, "gpios_flash_torch", 0);
-	if (!gpio_is_valid(gpio_info->gpio_main_flash_torch)) {
-		dev_err(dev, "failed to get main flash_torch gpio\n");
-		return ERR_PTR(-EINVAL);
-	}
-
 	pdata->_gpio_info = gpio_info;
 
 	ctrl_np = of_get_child_by_name(np, "fimc_is_ctrl");
