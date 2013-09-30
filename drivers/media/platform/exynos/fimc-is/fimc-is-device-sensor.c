@@ -244,6 +244,8 @@ static struct fimc_is_settle settle_imx135[] = {
 	FIMC_IS_SETTLE(1936, 1090, 15, 7),
 };
 
+/* TODO: This code will be moved machine part */
+#if !defined(CONFIG_SOC_EXYNOS5430)
 static struct fimc_is_settle settle_imx134[] = {
 	/* 3280x2458@30fps */
 	FIMC_IS_SETTLE(3280, 2458, 30, 15),
@@ -260,6 +262,7 @@ static struct fimc_is_settle settle_imx134[] = {
 	/* 816x460@120fps */
 	FIMC_IS_SETTLE(816, 460, 120, 7),
 };
+#endif
 
 static struct fimc_is_settle settle_6b2[] = {
 	/* 1456x1090@24fps */
