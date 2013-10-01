@@ -560,7 +560,6 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	}
 
 	info->mpll_freq_khz = rate;
-	info->pm_lock_idx = L0;
 	info->pll_safe_idx = L12;
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
