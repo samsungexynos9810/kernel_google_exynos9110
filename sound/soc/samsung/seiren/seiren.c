@@ -55,6 +55,9 @@ static DECLARE_WAIT_QUEUE_HEAD(esa_wq);
 
 static struct seiren_info si;
 
+static int esa_send_cmd(u32 cmd_code);
+static irqreturn_t esa_isr(int irqno, void *id);
+
 static struct esa_rtd *esa_alloc_rtd(void)
 {
 	struct esa_rtd *rtd = NULL;
@@ -105,8 +108,9 @@ static void esa_fw_download(void)
 
 	esa_debug("%s: firmware size = %d\n", __func__, fw_bin_size);
 
-	si.fw_ready = false;
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
+	udelay(100);
+
 	memset(si.mem, 0, SRAM_FW_MAX);
 	memset(si.mailbox, 0, 128);
 
@@ -121,6 +125,69 @@ static void esa_fw_download(void)
 		esa_info("%s: FW code 0x%08X = %08x\n",
 			__func__, n, readl(si.mem + n));
 #endif
+}
+
+static int esa_fw_startup(void)
+{
+	unsigned int dec_ver;
+	int ret;
+#ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
+	int i;
+#endif
+	if (si.fw_ready)
+		return 0;
+
+	ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
+	if (ret < 0) {
+		esa_err("Failed to claim CA5 irq\n");
+		return -EFAULT;
+	}
+
+	/* power on */
+	esa_debug("Turn on CA5...\n");
+	esa_fw_download();
+
+	/* wait for fw ready */
+	ret = wait_event_interruptible_timeout(esa_wq, si.fw_ready, HZ / 2);
+	if (!ret) {
+		esa_err("%s: fw not ready!!!\n", __func__);
+		return -EBUSY;
+	}
+
+	/* check decoder version */
+	esa_send_cmd(SYS_GET_STATUS);
+	dec_ver = readl(si.mailbox) & 0xFF00;
+	dec_ver = dec_ver >> 8;
+	esa_debug("Decoder version : %x\n", dec_ver);
+
+#ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
+	for (i = 0; i < 15; i++)
+		esa_debug("[%d]%x \n", 4*i, readl(si.mailbox + 4*i));
+#endif
+	return 0;
+}
+
+static void esa_fw_shutdown(void)
+{
+	u32 cnt;
+
+	/* check idle */
+	esa_send_cmd(SYS_GET_STATUS);
+
+	cnt = msecs_to_loops(100);
+	while (--cnt) {
+		if (readl(si.regs + CA5_STATUS) & CA5_STATUS_WFI)
+			break;
+		cpu_relax();
+	}
+	esa_debug("CA5_STATUS: %X\n", readl(si.regs + CA5_STATUS));
+
+	free_irq(si.irq_ca5, 0);
+
+	/* power off */
+	esa_debug("Turn off CA5...\n");
+	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
+	si.fw_ready = false;
 }
 
 static void esa_buffer_init(struct file *file)
@@ -731,8 +798,6 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 static int esa_open(struct inode *inode, struct file *file)
 {
 	struct esa_rtd *rtd;
-	unsigned int dec_ver;
-	int ret, i;
 
 	/* alloc rtd */
 	rtd = esa_alloc_rtd();
@@ -751,37 +816,23 @@ static int esa_open(struct inode *inode, struct file *file)
 	rtd->obuf0_filled = false;
 	rtd->obuf1_filled = false;
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&si.pdev->dev);
+#else
+	esa_fw_startup();
+#endif
 
-	if (si.rtd_cnt == 1) {
-		ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
-		if (ret < 0) {
-			esa_err("Failed to claim CA5 irq\n");
-			return -EFAULT;
-		}
+	if (!si.fw_ready) {
+		/* de-initialize */
+		file->private_data = NULL;
+		esa_free_rtd(rtd);
 
-		/* power on */
-		esa_debug("Turn on CA5...\n");
-		esa_fw_download();
-
-		/* wait for fw ready */
-		ret = wait_event_interruptible_timeout(esa_wq, si.fw_ready, HZ / 2);
-		if (!ret) {
-			esa_err("%s: fw not ready!!!\n", __func__);
-			esa_free_rtd(rtd);
-			free_irq(si.irq_ca5, 0);
-			lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
-
-			return -EBUSY;
-		}
-
-		/* check decoder version */
-		esa_send_cmd(SYS_GET_STATUS);
-		dec_ver = readl(si.mailbox) & 0xFF00;
-		dec_ver = dec_ver >> 8;
-		esa_debug("Decoder version : %x\n", dec_ver);
-		for (i = 0; i < 15; i++)
-			esa_debug("[%d]%x \n", 4*i, readl(si.mailbox + 4*i));
+#ifdef CONFIG_PM_RUNTIME
+		pm_runtime_put_sync(&si.pdev->dev);
+#else
+		esa_fw_shutdown();
+#endif
+		return -EBUSY;
 	}
 
 	return 0;
@@ -790,7 +841,6 @@ static int esa_open(struct inode *inode, struct file *file)
 static int esa_release(struct inode *inode, struct file *file)
 {
 	struct esa_rtd *rtd = file->private_data;
-	u32 cnt;
 
 	esa_debug("%s: idx:%d\n", __func__, rtd->idx);
 
@@ -799,27 +849,11 @@ static int esa_release(struct inode *inode, struct file *file)
 
 	esa_free_rtd(rtd);
 
-	if (si.rtd_cnt == 0) {
-		/* check idle */
-		esa_send_cmd(SYS_GET_STATUS);
-
-		cnt = msecs_to_loops(100);
-		while (--cnt) {
-			if (readl(si.regs + CA5_STATUS) & CA5_STATUS_WFI)
-				break;
-			cpu_relax();
-		}
-		esa_debug("CA5_STATUS: %X\n", readl(si.regs + CA5_STATUS));
-
-		free_irq(si.irq_ca5, 0);
-
-		/* power off */
-		esa_debug("Turn off CA5...\n");
-		lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
-	}
-
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&si.pdev->dev);
-
+#else
+	esa_fw_shutdown();
+#endif
 	return 0;
 }
 
@@ -991,6 +1025,7 @@ static int esa_runtime_suspend(struct device *dev)
 {
 	esa_debug("%s entered\n", __func__);
 
+	esa_fw_shutdown();
 	clk_disable_unprepare(si.clk_ca5);
 	lpass_put_sync(dev);
 
@@ -1003,6 +1038,7 @@ static int esa_runtime_resume(struct device *dev)
 
 	lpass_get_sync(dev);
 	clk_prepare_enable(si.clk_ca5);
+	esa_fw_startup();
 
 	return 0;
 }
