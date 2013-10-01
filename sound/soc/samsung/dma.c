@@ -31,7 +31,6 @@
 #include <mach/dma.h>
 #include <mach/map.h>
 
-#include "lpass.h"
 #include "dma.h"
 
 #define ST_RUNNING		(1<<0)
