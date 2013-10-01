@@ -21,7 +21,7 @@
 #include "fimc-is-device-ischain.h"
 #include "fimc-is-device-flite.h"
 
-#define SENSOR_MAX_ENUM			100
+#define SENSOR_MAX_ENUM			200
 #define SENSOR_DEFAULT_FRAMERATE	30
 
 #define SENSOR_SSTREAM_MASK		0x0000000F
