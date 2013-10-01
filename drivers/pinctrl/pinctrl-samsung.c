@@ -1093,8 +1093,8 @@ static void samsung_pinctrl_init_pdn_regs(
 			continue;
 
 		/* set previous state */
-		writel(0x3, reg + offs[PINCFG_TYPE_CON_PDN]);
-		writel(0x3, reg + offs[PINCFG_TYPE_PUD_PDN]);
+		writel(0x33333333, reg + offs[PINCFG_TYPE_CON_PDN]);
+		writel(0x33333333, reg + offs[PINCFG_TYPE_PUD_PDN]);
 	}
 }
 
