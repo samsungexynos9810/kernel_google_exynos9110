@@ -39,7 +39,6 @@ struct apll_freq {
 struct exynos_dvfs_info {
 	unsigned long	mpll_freq_khz;
 	unsigned int	pll_safe_idx;
-	unsigned int	pm_lock_idx;
 	unsigned int	max_support_idx;
 	unsigned int	min_support_idx;
 	unsigned int	cluster_num;
