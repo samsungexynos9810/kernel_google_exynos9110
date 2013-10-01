@@ -648,6 +648,8 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L17;
 	info->max_support_idx = max_support_idx_CA15;
 	info->min_support_idx = min_support_idx_CA15;
+	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L15].frequency;
+	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L15].frequency;
 #if 0
 	info->bus_table = exynos5430_bus_table_CA15;
 #endif
