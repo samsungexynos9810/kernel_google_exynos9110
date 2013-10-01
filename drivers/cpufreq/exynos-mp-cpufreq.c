@@ -75,7 +75,10 @@ static struct cpumask cluster_cpus[CA_END];
 
 DEFINE_PER_CPU(cluster_type, cpu_cur_cluster);
 
-static struct pm_qos_request boot_cpu_qos;
+static struct pm_qos_request boot_min_cpu_qos;
+static struct pm_qos_request boot_max_cpu_qos;
+static struct pm_qos_request boot_min_kfc_qos;
+static struct pm_qos_request boot_max_kfc_qos;
 static struct pm_qos_request min_cpu_qos;
 static struct pm_qos_request max_cpu_qos;
 static struct pm_qos_request min_kfc_qos;
@@ -1298,8 +1301,33 @@ static int __init exynos_cpufreq_init(void)
 	}
 #endif
 
-	pm_qos_add_request(&boot_cpu_qos, PM_QOS_CPU_FREQ_MIN, 0);
-	pm_qos_update_request_timeout(&boot_cpu_qos, 1000000, 40000 * 1000);
+	if (exynos_info[CA7]->boot_cpu_min_qos) {
+		pm_qos_add_request(&boot_min_kfc_qos, PM_QOS_KFC_FREQ_MIN,
+					PM_QOS_KFC_FREQ_MIN_DEFAULT_VALUE);
+		pm_qos_update_request_timeout(&boot_min_kfc_qos,
+					exynos_info[CA7]->boot_cpu_min_qos, 40000 * 1000);
+	}
+
+	if (exynos_info[CA7]->boot_cpu_max_qos) {
+		pm_qos_add_request(&boot_max_kfc_qos, PM_QOS_KFC_FREQ_MAX,
+					PM_QOS_KFC_FREQ_MAX_DEFAULT_VALUE);
+		pm_qos_update_request_timeout(&boot_max_kfc_qos,
+					exynos_info[CA7]->boot_cpu_max_qos, 40000 * 1000);
+	}
+
+	if (exynos_info[CA15]->boot_cpu_min_qos) {
+		pm_qos_add_request(&boot_min_cpu_qos, PM_QOS_CPU_FREQ_MIN,
+					PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+		pm_qos_update_request_timeout(&boot_min_cpu_qos,
+					exynos_info[CA15]->boot_cpu_min_qos, 40000 * 1000);
+	}
+
+	if (exynos_info[CA15]->boot_cpu_max_qos) {
+		pm_qos_add_request(&boot_max_cpu_qos, PM_QOS_CPU_FREQ_MAX,
+					PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
+		pm_qos_update_request_timeout(&boot_max_cpu_qos,
+					exynos_info[CA15]->boot_cpu_max_qos, 40000 * 1000);
+	}
 
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_add_request(&exynos_mif_qos_CA7, PM_QOS_BUS_THROUGHPUT, 0);
@@ -1329,7 +1357,15 @@ err_workqueue:
 		pm_qos_remove_request(&exynos_mif_qos_CA15);
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_remove_request(&exynos_mif_qos_CA7);
-	pm_qos_remove_request(&boot_cpu_qos);
+
+	if (pm_qos_request_active(&boot_max_cpu_qos))
+		pm_qos_remove_request(&boot_max_cpu_qos);
+	if (pm_qos_request_active(&boot_min_cpu_qos))
+		pm_qos_remove_request(&boot_min_cpu_qos);
+	if (pm_qos_request_active(&boot_max_kfc_qos))
+		pm_qos_remove_request(&boot_max_kfc_qos);
+	if (pm_qos_request_active(&boot_min_kfc_qos))
+		pm_qos_remove_request(&boot_min_kfc_qos);
 #ifdef CONFIG_PM
 err_kfc_max_limit:
 	sysfs_remove_file(power_kobj, &cpufreq_kfc_min_limit.attr);
