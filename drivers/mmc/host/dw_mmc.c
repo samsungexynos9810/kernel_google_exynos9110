@@ -2572,6 +2572,7 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 		if (pending & SDMMC_INT_CD) {
 			mci_writel(host, RINTSTS, SDMMC_INT_CD);
 			queue_work(host->card_workqueue, &host->card_work);
+			ret = IRQ_HANDLED;
 		}
 
 		/* Handle SDIO Interrupts */
