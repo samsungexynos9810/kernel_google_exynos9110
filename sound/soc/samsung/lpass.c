@@ -21,6 +21,8 @@
 #include <linux/of_gpio.h>
 #include <linux/pm_runtime.h>
 
+#include <sound/exynos.h>
+
 #include <mach/map.h>
 #include <mach/regs-pmu.h>
 #include <mach/regs-clock-exynos5430.h>

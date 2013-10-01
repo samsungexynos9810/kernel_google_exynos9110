@@ -33,6 +33,8 @@
 #include <linux/uaccess.h>
 #include <linux/pm_runtime.h>
 
+#include <sound/exynos.h>
+
 #include "../lpass.h"
 #include "seiren.h"
 #include "seiren_ioctl.h"
@@ -109,7 +111,7 @@ static void esa_fw_download(void)
 
 	memcpy(si.mem, fw_bin, fw_bin_size);
 
-	writel(0x03000000, si.regs + LPASS_CA5_BOOTADDR);
+	writel(0x03000000, si.regs + CA5_BOOTADDR);
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_NORMAL);
 
 	esa_debug("%s: CA5 startup...\n", __func__);

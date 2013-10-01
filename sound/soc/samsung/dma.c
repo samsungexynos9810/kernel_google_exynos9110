@@ -23,6 +23,7 @@
 
 #include <sound/soc.h>
 #include <sound/pcm_params.h>
+#include <sound/exynos.h>
 
 #include <asm/dma.h>
 #include <mach/hardware.h>

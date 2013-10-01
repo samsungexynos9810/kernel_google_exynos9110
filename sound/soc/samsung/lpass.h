@@ -49,33 +49,9 @@
 #define LPASS_INTR_UART		(1 << 1)
 #define LPASS_INTR_SFR		(1 << 0)
 
-/* Sub IPs of LPASS */
-enum {
-	LPASS_IP_DMA = 0,
-	LPASS_IP_MEM,
-	LPASS_IP_TIMER,
-	LPASS_IP_I2S,
-	LPASS_IP_PCM,
-	LPASS_IP_UART,
-	LPASS_IP_SLIMBUS,
-	LPASS_IP_CA5
-};
-
-enum {
-	LPASS_OP_RESET = 0,
-	LPASS_OP_NORMAL,
-};
-
 extern void __iomem *lpass_get_regs(void);
 extern void __iomem *lpass_get_mem(void);
 extern struct clk *lpass_get_i2s_opclk(int clk_id);
 extern void lpass_reg_dump(void);
-
-extern void lpass_reset(int ip, int op);
-extern void lpass_reset_toggle(int ip);
-
-extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
-extern void lpass_get_sync(struct device *ip_dev);
-extern void lpass_put_sync(struct device *ip_dev);
 
 #endif /* __SND_SOC_SAMSUNG_LPASS_H */
