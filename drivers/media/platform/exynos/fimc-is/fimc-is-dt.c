@@ -44,8 +44,8 @@ static int get_board_rev(struct device *dev)
 
 	gpio_request_one(board_rev_pin0, GPIOF_IN, "BOARD_REV_PIN0");
 	gpio_request_one(board_rev_pin1, GPIOF_IN, "BOARD_REV_PIN1");
-	ret = __gpio_get_value(board_rev_pin0) << 0;
-	ret |= __gpio_get_value(board_rev_pin1) << 1;
+	board_rev = __gpio_get_value(board_rev_pin0) << 0;
+	board_rev |= __gpio_get_value(board_rev_pin1) << 1;
 
 p_err:
 	return ret;
@@ -144,8 +144,7 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	if (!np)
 		return ERR_PTR(-ENOENT);
 
-	board_rev = get_board_rev(dev);
-	if (board_rev < 0)
+	if (get_board_rev(dev) < 0)
 		pr_warn("%s: Failed to get_board_rev\n", __func__);
 
 	pdata = kzalloc(sizeof(struct exynos5_platform_fimc_is), GFP_KERNEL);
