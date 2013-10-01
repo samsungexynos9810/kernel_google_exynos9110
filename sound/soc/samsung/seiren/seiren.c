@@ -43,7 +43,7 @@
 
 #define USE_SRAM_ONLY
 #ifdef USE_SRAM_ONLY
-#define SRAM_BUF_OFFSET		0x28000
+#define SRAM_BUF_OFFSET		0x2C000
 #endif
 
 /* #define FW_DOWNLOAD_TEST */
@@ -105,6 +105,7 @@ static void esa_fw_download(void)
 
 	esa_debug("%s: firmware size = %d\n", __func__, fw_bin_size);
 
+	si.fw_ready = false;
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	memset(si.mem, 0, SRAM_FW_MAX);
 	memset(si.mailbox, 0, 128);
@@ -120,7 +121,6 @@ static void esa_fw_download(void)
 		esa_info("%s: FW code 0x%08X = %08x\n",
 			__func__, n, readl(si.mem + n));
 #endif
-	msleep(50);
 }
 
 static void esa_buffer_init(struct file *file)
@@ -619,13 +619,18 @@ static int esa_get_params(struct file *file, unsigned int param,
 static irqreturn_t esa_isr(int irqno, void *id)
 {
 	unsigned int fw_stat, log_size, val;
+	bool wakeup = false;
 
 	fw_stat = readl(si.mailbox + RETURN_CMD) >> 16;
 	switch (fw_stat) {
 	case INTR_WAKEUP:	/* handle wakeup interrupt from firmware  */
 		si.isr_done = 1;
-		if (waitqueue_active(&esa_wq))
-			wake_up_interruptible(&esa_wq);
+		wakeup = true;
+		break;
+	case INTR_READY:
+		pr_debug("FW is ready!\n");
+		si.fw_ready = true;
+		wakeup = true;
 		break;
 	case INTR_FW_LOG:	/* print debug message from firmware */
 		log_size = readl(si.mailbox + RETURN_CMD) & 0x00FF;
@@ -647,6 +652,9 @@ static irqreturn_t esa_isr(int irqno, void *id)
 						__func__, fw_stat);
 		break;
 	}
+
+	if (wakeup && waitqueue_active(&esa_wq))
+		wake_up_interruptible(&esa_wq);
 
 	writel(0, si.regs + SW_INTR_CPU);
 
@@ -746,14 +754,25 @@ static int esa_open(struct inode *inode, struct file *file)
 	pm_runtime_get_sync(&si.pdev->dev);
 
 	if (si.rtd_cnt == 1) {
-		/* power on */
-		esa_debug("Turn on CA5...\n");
-		esa_fw_download();
-
 		ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
 		if (ret < 0) {
 			esa_err("Failed to claim CA5 irq\n");
 			return -EFAULT;
+		}
+
+		/* power on */
+		esa_debug("Turn on CA5...\n");
+		esa_fw_download();
+
+		/* wait for fw ready */
+		ret = wait_event_interruptible_timeout(esa_wq, si.fw_ready, HZ / 2);
+		if (!ret) {
+			esa_err("%s: fw not ready!!!\n", __func__);
+			esa_free_rtd(rtd);
+			free_irq(si.irq_ca5, 0);
+			lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
+
+			return -EBUSY;
 		}
 
 		/* check decoder version */

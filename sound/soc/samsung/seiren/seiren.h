@@ -47,6 +47,7 @@
 
 /* Interrupt type */
 #define INTR_WAKEUP		(0x0)
+#define INTR_READY		(0x1000)
 #define INTR_FW_LOG		(0xFFFF)
 
 
@@ -238,6 +239,7 @@ struct seiren_info {
 
 	unsigned char	fw_log[FW_LOG_MAX];
 	unsigned int	fw_log_pos;
+	bool		fw_ready;
 };
 
 struct esa_rtd {
