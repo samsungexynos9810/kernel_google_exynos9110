@@ -203,12 +203,12 @@ enum exynos5_sensor_id {
 	SENSOR_NAME_S5K4E5		 = 9,
 	SENSOR_NAME_S5K2P2		 = 10,
 
-	SENSOR_NAME_IMX135		 = 11, /* 101 ~ 200 Sony sensors */
+	SENSOR_NAME_IMX135		 = 101, /* 101 ~ 200 Sony sensors */
 
-	SENSOR_NAME_SR261		 = 12, /* 201 ~ 300 Other vendor sensors */
+	SENSOR_NAME_SR261		 = 201, /* 201 ~ 300 Other vendor sensors */
 
 	SENSOR_NAME_END,
-	SENSOR_NAME_CUSTOM		 = 100,
+	SENSOR_NAME_CUSTOM		 = 301,
 };
 
 /* Sensor configurations are decided through JA, HA, VA projects with TANGO. */
