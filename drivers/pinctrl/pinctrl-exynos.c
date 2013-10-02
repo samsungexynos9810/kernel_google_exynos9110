@@ -883,13 +883,6 @@ struct samsung_pin_ctrl exynos4x12_pin_ctrl[] = {
 		/* pin-controller instance 2 data */
 		.pin_banks	= exynos4x12_pin_banks2,
 		.nr_banks	= ARRAY_SIZE(exynos4x12_pin_banks2),
-		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
-		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
-		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
-		.svc		= EXYNOS_SVC_OFFSET,
-		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos4x12-gpio-ctrl2",
 	}, {
 		/* pin-controller instance 3 data */
@@ -1011,13 +1004,6 @@ struct samsung_pin_ctrl exynos5250_pin_ctrl[] = {
 		/* pin-controller instance 3 data */
 		.pin_banks	= exynos5250_pin_banks3,
 		.nr_banks	= ARRAY_SIZE(exynos5250_pin_banks3),
-		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
-		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
-		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
-		.svc		= EXYNOS_SVC_OFFSET,
-		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5250-gpio-ctrl3",
 	},
 };
@@ -1114,13 +1100,6 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		/* pin-controller instance 1 data */
 		.pin_banks	= exynos5430_pin_banks1,
 		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks1),
-		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
-		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
-		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
-		.svc		= EXYNOS_SVC_OFFSET,
-		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl1",
 	}, {
 		/* pin-controller instance 2 data */
