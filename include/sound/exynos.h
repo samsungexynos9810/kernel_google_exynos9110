@@ -32,6 +32,7 @@ enum {
 extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
 extern void lpass_get_sync(struct device *ip_dev);
 extern void lpass_put_sync(struct device *ip_dev);
+extern struct iommu_domain *lpass_get_iommu_domain(void);
 
 extern void lpass_reset(int ip, int op);
 extern void lpass_reset_toggle(int ip);
