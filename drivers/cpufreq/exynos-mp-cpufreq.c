@@ -527,8 +527,8 @@ static int exynos_cpufreq_suspend(struct cpufreq_policy *policy)
 
 static int exynos_cpufreq_resume(struct cpufreq_policy *policy)
 {
-	freqs[CA7]->old = get_boot_freq(CA7);
-	freqs[CA15]->old = get_boot_freq(CA15);
+	freqs[CA7]->old = exynos_getspeed_cluster(CA7);
+	freqs[CA15]->old = exynos_getspeed_cluster(CA15);
 	return 0;
 }
 #endif
