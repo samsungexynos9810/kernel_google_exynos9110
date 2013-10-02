@@ -204,6 +204,8 @@ enum gsc_yuv_fmt {
 	(((ctx->gsc_ctrls.rotate->val == 90) ||\
 	 (ctx->gsc_ctrls.rotate->val == 270)) &&\
 	 ((!ctx->scaler.is_scaled_down) || (!is_ver_5h)))
+#define is_flip(ctx) \
+	((ctx->gsc_ctrls.hflip->val == 1) || (ctx->gsc_ctrls.vflip->val == 1))
 #define is_csc_eq_709 \
 	(ctx->gsc_ctrls.csc_eq->val == V4L2_COLORSPACE_REC709)
 #define gsc_m2m_run(dev) test_bit(ST_M2M_RUN, &(dev)->state)

@@ -847,7 +847,7 @@ void gsc_hw_set_mainscaler(struct gsc_ctx *ctx)
 	cfg = GSC_MAIN_V_RATIO_VALUE(sc->main_vratio);
 	writel(cfg, dev->regs + GSC_MAIN_V_RATIO);
 
-	if ((!is_tiled(ctx->s_frame.fmt)) &&
+	if ((!is_tiled(ctx->s_frame.fmt)) && (!is_flip(ctx)) &&
 			(sc->main_hratio > GSC_SC_UP_MAX_RATIO) &&
 			(sc->main_vratio > GSC_SC_UP_MAX_RATIO))
 		sc->is_scaled_down = true;
