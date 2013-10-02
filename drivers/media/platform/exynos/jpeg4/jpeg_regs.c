@@ -517,6 +517,58 @@ void jpeg_set_enc_tbl(void __iomem *base,
 		}
 		break;
 
+	case QUALITY_LEVEL_5:
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[8][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ (i*0x04));
+		}
+
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[9][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ 0x40 + (i*0x04));
+		}
+
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[8][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ 0x80 + (i*0x04));
+		}
+
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[9][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ 0xc0 + (i*0x04));
+		}
+		break;
+
+	case QUALITY_LEVEL_6:
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[10][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ (i*0x04));
+		}
+
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[11][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ 0x40 + (i*0x04));
+		}
+
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[10][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ 0x80 + (i*0x04));
+		}
+
+		for (i = 0; i < 16; i++) {
+			writel((unsigned int)ITU_Q_tbl[11][i],
+				base + S5P_JPEG_QUAN_TBL_ENTRY_REG
+				+ 0xc0 + (i*0x04));
+		}
+		break;
+
 	default:
 		for (i = 0; i < 16; i++) {
 			writel((unsigned int)ITU_Q_tbl[0][i],
@@ -757,6 +809,20 @@ void jpeg_set_encode_tbl_select(void __iomem *base,
 	case QUALITY_LEVEL_4:
 		reg = S5P_JPEG_Q_TBL_COMP1_2 | S5P_JPEG_Q_TBL_COMP2_3 |
 			S5P_JPEG_Q_TBL_COMP3_3 |
+			S5P_JPEG_HUFF_TBL_COMP1_AC_0_DC_0 |
+			S5P_JPEG_HUFF_TBL_COMP2_AC_1_DC_1 |
+			S5P_JPEG_HUFF_TBL_COMP3_AC_1_DC_1;
+		break;
+	case QUALITY_LEVEL_5:
+		reg = S5P_JPEG_Q_TBL_COMP1_0 | S5P_JPEG_Q_TBL_COMP2_0 |
+			S5P_JPEG_Q_TBL_COMP3_0 |
+			S5P_JPEG_HUFF_TBL_COMP1_AC_0_DC_0 |
+			S5P_JPEG_HUFF_TBL_COMP2_AC_1_DC_1 |
+			S5P_JPEG_HUFF_TBL_COMP3_AC_1_DC_1;
+		break;
+	case QUALITY_LEVEL_6:
+		reg = S5P_JPEG_Q_TBL_COMP1_0 | S5P_JPEG_Q_TBL_COMP2_0 |
+			S5P_JPEG_Q_TBL_COMP3_1 |
 			S5P_JPEG_HUFF_TBL_COMP1_AC_0_DC_0 |
 			S5P_JPEG_HUFF_TBL_COMP2_AC_1_DC_1 |
 			S5P_JPEG_HUFF_TBL_COMP3_AC_1_DC_1;

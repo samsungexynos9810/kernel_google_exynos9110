@@ -81,7 +81,9 @@ enum  jpeg_img_quality_level {
 	QUALITY_LEVEL_1 = 0,	/* high */
 	QUALITY_LEVEL_2,
 	QUALITY_LEVEL_3,
-	QUALITY_LEVEL_4,	/* low */
+	QUALITY_LEVEL_4,
+	QUALITY_LEVEL_5,
+	QUALITY_LEVEL_6,	/* low */
 };
 
 enum jpeg_frame_format {
