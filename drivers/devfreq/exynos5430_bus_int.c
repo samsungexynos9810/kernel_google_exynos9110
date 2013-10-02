@@ -416,12 +416,12 @@ static int exynos5_devfreq_int_set_freq(struct devfreq_data_int *data,
 
 			if (clk_info->freq != 0)
 				clk_set_rate(devfreq_int_clk[devfreq_clk_int_info_idx[i]].clk, clk_info->freq);
-		}
 
 #ifdef CONFIG_PM_RUNTIME
 			if (pm_domain != NULL)
 				mutex_unlock(&pm_domain->access_lock);
 #endif
+		}
 	}
 
 	return 0;
