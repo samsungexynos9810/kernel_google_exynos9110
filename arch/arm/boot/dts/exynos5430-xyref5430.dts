@@ -505,27 +505,6 @@
 
 	};
 
-	i2c@6b {
-		compatible = "i2c-gpio";
-		gpios = <&gpf0 2 0 /* sda */
-			 &gpf0 3 0 /* scl */
-			>;
-		i2c-gpio,delay-us = <2>;	/* ~100kHz */
-		#address-cells = <1>;
-		#size-cells = <0>;
-		status = "okay";
-
-		bq24160_charger@6b {
-			compatible = "ti,bq24160";
-			reg = <0x6b>;
-			gpios = <&gpa0 0 0xf>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&chg_irq>;
-			dev_name = "bq24160";
-			support_boot_charging = <0>;
-		};
-	};
-
 	hsi2c_1: hsi2c@14E50000 {
 		compatible = "samsung,exynos5-hsi2c";
 		clock-frequency = <400000>;	/* 400KHz */
