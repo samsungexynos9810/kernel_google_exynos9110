@@ -636,7 +636,7 @@ enum devfreq_isp_clk devfreq_clk_isp_info_idx[] = {
 	DOUT_ACLK_LITE_C,
 	DOUT_ACLK_ISP_400,
 	DOUT_ACLK_ISP_DIS_400,
-	-1,
+	MOUT_SCLK_LITE_FREECNT_C,
 };
 
 #ifdef CONFIG_PM_RUNTIME
