@@ -154,7 +154,7 @@ static int exynos5_devfreq_disp_set_freq(struct devfreq_data_disp *data,
 	struct devfreq_clk_info *clk_info;
 	struct devfreq_clk_states *clk_states;
 
-	if (target_idx > old_idx) {
+	if (target_idx < old_idx) {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_disp_info_list); ++i) {
 			clk_info = &devfreq_clk_disp_info_list[i][target_idx];
 			clk_states = clk_info->states;

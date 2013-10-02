@@ -355,7 +355,7 @@ static int exynos5_devfreq_int_set_freq(struct devfreq_data_int *data,
 	struct exynos_pm_domain *pm_domain;
 #endif
 
-	if (target_idx > old_idx) {
+	if (target_idx < old_idx) {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_int_info_list); ++i) {
 			clk_info = &devfreq_clk_int_info_list[i][target_idx];
 			clk_states = clk_info->states;

@@ -1011,7 +1011,7 @@ static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 	tmp |= aclk_clk2x_list[target_idx]->set_value;
 	__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
 
-	if (target_idx > old_idx) {
+	if (target_idx < old_idx) {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_mif_info_list); ++i) {
 			clk_info = &devfreq_clk_mif_info_list[i][target_idx];
 			clk_states = clk_info->states;
