@@ -1175,6 +1175,9 @@ static void samsung_pinctrl_suspend_dev(
 	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
+	if (!ctrl->suspend)
+		return;
+
 	for (i = 0; i < ctrl->nr_banks; i++) {
 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
 		void __iomem *reg = virt_base + bank->pctl_offset;
@@ -1209,8 +1212,7 @@ static void samsung_pinctrl_suspend_dev(
 
 	pinctrl_force_sleep(pctl_dev);
 
-	if (ctrl->suspend)
-		ctrl->suspend(drvdata);
+	ctrl->suspend(drvdata);
 }
 
 /**
@@ -1228,8 +1230,10 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
-	if (ctrl->resume)
-		ctrl->resume(drvdata);
+	if (!ctrl->resume)
+		return;
+
+	ctrl->resume(drvdata);
 
 	pinctrl_force_default(pctl_dev);
 
