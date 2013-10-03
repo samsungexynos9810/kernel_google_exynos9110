@@ -666,7 +666,7 @@ struct devfreq_pm_domain_link devfreq_isp_pm_domain[] = {
 	{"pd-cam1",},
 	{NULL,},
 	{NULL,},
-	{NULL,},
+	{"pd-cam0",},
 };
 #endif
 
