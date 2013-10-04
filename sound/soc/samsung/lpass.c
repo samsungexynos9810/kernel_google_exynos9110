@@ -56,6 +56,7 @@ struct lpass_info {
 	struct clk		*clk_pmu;
 	struct clk		*clk_gpio;
 	struct clk		*clk_dbg;
+	bool			rpm_enabled;
 } lpass;
 
 struct aud_reg {
@@ -166,6 +167,12 @@ int lpass_register_subip(struct device *ip_dev, const char *ip_name)
 	list_add(&si->node, &subip_list);
 
 	pr_info("%s: %s(%p) registered\n", __func__, ip_name, ip_dev);
+
+	if (!lpass.rpm_enabled &&
+		(!strncmp(ip_name, "i2s", 3) || !strncmp(ip_name, "ca5", 3))) {
+		lpass.rpm_enabled = true;
+		pm_runtime_enable(&lpass.pdev->dev);
+	}
 
 	return 0;
 }
@@ -490,7 +497,6 @@ static int lpass_probe(struct platform_device *pdev)
 	lpass.valid = true;
 
 #ifdef CONFIG_PM_RUNTIME
-	pm_runtime_enable(&pdev->dev);
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
 	lpass_reset_toggle(LPASS_IP_DMA);
