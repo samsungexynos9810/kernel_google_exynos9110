@@ -899,6 +899,39 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->self_calibration_mode = 0;
 	ext->I2CSclk = I2C_L0;
 
+	/* S5K3H7_SUNNY */
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].sensor = SENSOR_NAME_S5K3H7_SUNNY;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].pixel_width = 3248 + 16;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].pixel_height = 2438 + 10;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].active_width = 3248;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].active_height = 2438;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].max_framerate = 30;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].csi_ch = 0;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].flite_ch = FLITE_ID_B;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].i2c_ch = 0;
+	enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].setfile_name =
+			"setfile_3h7.bin";
+
+	ext = &enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].ext;
+
+	ext->actuator_con.product_name = ACTUATOR_NAME_NOTHING;
+	ext->actuator_con.peri_type = SE_I2C;
+	ext->actuator_con.peri_setting.i2c.channel
+		= SENSOR_CONTROL_I2C0;
+
+	ext->flash_con.product_name = FLADRV_NAME_NOTHING;
+	ext->flash_con.peri_type = SE_GPIO;
+	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
+
+	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
+	ext->mclk = 0;
+	ext->mipi_lane_num = 0;
+	ext->mipi_speed = 0;
+	ext->fast_open_sensor = 0;
+	ext->self_calibration_mode = 0;
+	ext->I2CSclk = I2C_L0;
+
 	/* IMX135 */
 	enum_sensor[SENSOR_NAME_IMX135].sensor = SENSOR_NAME_IMX135;
 	enum_sensor[SENSOR_NAME_IMX135].pixel_width = 4128 + 16;
