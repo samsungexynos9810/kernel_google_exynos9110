@@ -427,6 +427,7 @@ struct exynos5_fimc_is_sensor_info {
 	enum actuator_name actuator_id;
 	enum exynos5_sensor_channel actuator_i2c;
 	enum flash_drv_name flash_id;
+	enum sensor_peri_type flash_peri_type;
 	u32 flash_first_gpio;
 	u32 flash_second_gpio;
 };
