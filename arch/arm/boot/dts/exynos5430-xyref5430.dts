@@ -828,6 +828,7 @@
 				rear_actuator_id = <2>;
 				rear_actuator_i2c = <0>;
 				rear_flash_id = <4>;
+				rear_flash_peri_type = <0>; /* I2C */
 				rear_flash_first_gpio = <2>;
 				rear_flash_second_gpio = <3>;
 
