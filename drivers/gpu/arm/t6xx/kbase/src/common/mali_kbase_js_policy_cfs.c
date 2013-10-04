@@ -736,6 +736,7 @@ static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 					/* Job has been scheduled for at least js_devdata->gpu_reset_ticks_ss ticks.
 					 * It should have left the GPU by now. Signal that the GPU needs to be reset.
 					 */
+					KBASE_DEBUG_PRINT_ERROR(KBASE_JM, "JS: the GPU will be tried to reset because the gpu_reset_ticks_ss is reached. Please check that the process #%d is normal", atom->kctx->osctx.tgid);
 					reset_needed = MALI_TRUE;
 				}
 #else 				/* !CINSTR_DUMPING_ENABLED */
@@ -759,6 +760,7 @@ static enum hrtimer_restart timer_callback(struct hrtimer *timer)
 					/* Job has been scheduled for at least js_devdata->gpu_reset_ticks_nss ticks.
 					 * It should have left the GPU by now. Signal that the GPU needs to be reset.
 					 */
+					KBASE_DEBUG_PRINT_ERROR(KBASE_JM, "JS: the GPU will be tried to reset because the gpu_reset_ticks_nss is reached. Please check that the process #%d is normal", atom->kctx->osctx.tgid);
 					reset_needed = MALI_TRUE;
 				}
 #endif				/* !CINSTR_DUMPING_ENABLED */
