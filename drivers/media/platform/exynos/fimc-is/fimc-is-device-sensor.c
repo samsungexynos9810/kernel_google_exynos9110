@@ -977,7 +977,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->actuator_con.peri_setting.i2c.channel = sensor_info->actuator_i2c;
 
 	ext->flash_con.product_name = sensor_info->flash_id;
-	ext->flash_con.peri_type = SE_GPIO;
+	ext->flash_con.peri_type = sensor_info->flash_peri_type;
 	ext->flash_con.peri_setting.gpio.first_gpio_port_no = sensor_info->flash_first_gpio;
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = sensor_info->flash_second_gpio;
 

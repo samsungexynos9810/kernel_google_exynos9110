@@ -77,6 +77,7 @@ static int parse_sensor_info(struct exynos5_platform_fimc_is *pdata, struct devi
 	DT_READ_U32(np, "rear_actuator_id", pdata->sensor_info[SENSOR_POSITION_REAR]->actuator_id);
 	DT_READ_U32(np, "rear_actuator_i2c", pdata->sensor_info[SENSOR_POSITION_REAR]->actuator_i2c);
 	DT_READ_U32(np, "rear_flash_id", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_id);
+	DT_READ_U32(np, "rear_flash_peri_type", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_peri_type);
 	DT_READ_U32(np, "rear_flash_first_gpio", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_first_gpio);
 	DT_READ_U32(np, "rear_flash_second_gpio", pdata->sensor_info[SENSOR_POSITION_REAR]->flash_second_gpio);
 
