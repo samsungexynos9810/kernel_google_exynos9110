@@ -3540,19 +3540,11 @@ int dw_mci_suspend(struct dw_mci *host)
 		if (!slot)
 			continue;
 		if (slot->mmc) {
-			int ciu_clk_disabled;
-			spin_lock(&host->ciu_clk_lock);
-			ciu_clk_disabled = !atomic_read(&host->ciu_clk_cnt);
-			if (ciu_clk_disabled)
-				dw_mci_ciu_clk_en(host);
 			clkena = mci_readl(host, CLKENA);
 			clkena &= ~((SDMMC_CLKEN_LOW_PWR) << slot->id);
 			mci_writel(host, CLKENA, clkena);
 			mci_send_cmd(slot,
 				SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
-			if (ciu_clk_disabled)
-				dw_mci_ciu_clk_dis(host);
-			spin_unlock(&host->ciu_clk_lock);
 
 			slot->mmc->pm_flags |= slot->mmc->pm_caps;
 			ret = mmc_suspend_host(slot->mmc);
@@ -3586,7 +3578,7 @@ int dw_mci_resume(struct dw_mci *host)
 {
 	const struct dw_mci_drv_data *drv_data = host->drv_data;
 
-	int i, ret, ciu_clk_disabled;
+	int i, ret;
 
 	if (host->vmmc) {
 		ret = regulator_enable(host->vmmc);
@@ -3597,22 +3589,10 @@ int dw_mci_resume(struct dw_mci *host)
 		}
 	}
 
-	spin_lock(&host->ciu_clk_lock);
-	ciu_clk_disabled = !atomic_read(&host->ciu_clk_cnt);
-	if (ciu_clk_disabled)
-		dw_mci_ciu_clk_en(host);
-
 	if (!mci_wait_reset(host->dev, host)) {
-		if (ciu_clk_disabled)
-			dw_mci_ciu_clk_dis(host);
-		spin_unlock(&host->ciu_clk_lock);
 		ret = -ENODEV;
 		return ret;
 	}
-
-	if (ciu_clk_disabled)
-		dw_mci_ciu_clk_dis(host);
-	spin_unlock(&host->ciu_clk_lock);
 
 	if (host->use_dma && host->dma_ops->init)
 		host->dma_ops->init(host);
@@ -3646,10 +3626,6 @@ int dw_mci_resume(struct dw_mci *host)
 			ios.timing = MMC_TIMING_LEGACY;
 			dw_mci_set_ios(slot->mmc, &ios);
 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
-			spin_lock(&host->ciu_clk_lock);
-			ciu_clk_disabled = !atomic_read(&host->ciu_clk_cnt);
-			if (ciu_clk_disabled)
-				dw_mci_ciu_clk_en(host);
 			dw_mci_setup_bus(slot, true);
 			if (host->pdata->tuned) {
 				if (drv_data && drv_data->misc_control)
@@ -3657,9 +3633,6 @@ int dw_mci_resume(struct dw_mci *host)
 				mci_writel(host, CDTHRCTL,
 						host->cd_rd_thr << 16 | 1);
 			}
-			if (ciu_clk_disabled)
-				dw_mci_ciu_clk_dis(host);
-			spin_unlock(&host->ciu_clk_lock);
 		}
 
 		if (dw_mci_get_cd(slot->mmc))
