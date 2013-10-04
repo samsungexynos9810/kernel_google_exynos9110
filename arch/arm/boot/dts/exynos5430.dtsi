@@ -254,6 +254,7 @@
 		pinctrl-0 = <&uart_aud_bus>;
 		clocks = <&clock 4156>, <&clock 2004>;
 		clock-names = "sclk_uart3", "gate_uart3";
+		samsung,lpass-subip;
 	};
 
 	pinctrl_0: pinctrl@10580000 {
