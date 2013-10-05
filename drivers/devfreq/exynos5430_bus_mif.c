@@ -1009,12 +1009,12 @@ static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 	struct devfreq_clk_states *clk_states;
 	unsigned int tmp;
 
-	tmp = __raw_readl(data->base_mif + aclk_clk2x_list[target_idx]->reg);
-	tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
-	tmp |= aclk_clk2x_list[target_idx]->set_value;
-	__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
-
 	if (target_idx < old_idx) {
+		tmp = __raw_readl(data->base_mif + aclk_clk2x_list[target_idx]->reg);
+		tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
+		tmp |= aclk_clk2x_list[target_idx]->set_value;
+		__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
+
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_mif_info_list); ++i) {
 			clk_info = &devfreq_clk_mif_info_list[i][target_idx];
 			clk_states = clk_info->states;
@@ -1046,6 +1046,11 @@ static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 			if (clk_info->freq != 0)
 				clk_set_rate(devfreq_mif_clk[devfreq_clk_mif_info_idx[i]].clk, clk_info->freq);
 		}
+
+		tmp = __raw_readl(data->base_mif + aclk_clk2x_list[target_idx]->reg);
+		tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
+		tmp |= aclk_clk2x_list[target_idx]->set_value;
+		__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
 	}
 
 	return 0;
@@ -1344,10 +1349,10 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 		goto err_data;
 	}
 
-	clk_set_rate(devfreq_mif_clk[DOUT_MFC_PLL_DIV3].clk,
-		clk_get_rate(devfreq_mif_clk[MOUT_MFC_PLL].clk) / 2);
 	clk_set_rate(devfreq_mif_clk[FOUT_MEM_PLL].clk,
 		1066000000);
+	clk_set_rate(devfreq_mif_clk[DOUT_MFC_PLL_DIV3].clk,
+		clk_get_rate(devfreq_mif_clk[MOUT_MFC_PLL].clk) / 2);
 	clk_set_parent(devfreq_mif_clk[MOUT_CLKM_PHY_C].clk, devfreq_mif_clk[DOUT_MEM_PLL].clk);
 
 	data = kzalloc(sizeof(struct devfreq_data_mif), GFP_KERNEL);
