@@ -620,14 +620,9 @@ static int cpufreq_interactive_eagle_speedchange_task(void *data)
 			}
 
 			if (max_freq != pcpu->policy->cur)
-#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-				cpufreq_driver_target(pcpu->policy,
-						max_freq, CPUFREQ_RELATION_H);
-#else
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
 							CPUFREQ_RELATION_H);
-#endif
 			trace_cpufreq_interactive_eagle_setspeed(cpu,
 						     pcpu->target_freq,
 						     pcpu->policy->cur);
