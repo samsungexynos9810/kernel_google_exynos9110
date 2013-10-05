@@ -1357,13 +1357,8 @@
 		clocks = <&clock 2012>,		/* gate_dmac */
 			 <&clock 2011>,		/* gate_sramc */
 			 <&clock 2008>,		/* gate_intr_ctrl */
-			 <&clock 2007>,		/* gate_timer */
-			 <&clock 2002>,		/* gate_sysreg_aud */
-			 <&clock 2001>,		/* gate_pmu_aud */
-			 <&clock 2000>,		/* gate_gpio_aud */
-			 <&clock 2013>;		/* gate_pclk_dbg */
-		clock-names = "dmac", "sramc", "intr", "timer",
-			      "sysreg", "pmu", "gpio", "dbg";
+			 <&clock 2007>;		/* gate_timer */
+		clock-names = "dmac", "sramc", "intr", "timer";
 		samsung,power-domain = <&pd_maudio>;
 		status = "ok";
 	};
