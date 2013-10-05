@@ -100,6 +100,7 @@
 #define EXYNOS_MUX_ADDR_SHIFT		20
 #define EXYNOS_TMU_TRIP_MODE_SHIFT	13
 #define EXYNOS_THERM_TRIP_EN		(1 << 12)
+#define EXYNOS_MUX_ADDR			0x600000
 
 #define EFUSE_MIN_VALUE 40
 #define EFUSE_MAX_VALUE 100
@@ -840,6 +841,9 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 		interrupt_en = 0; /* Disable all interrupts */
 	}
 	con |= EXYNOS_THERM_TRIP_EN;
+	if (id == EXYNOS_GPU_NUMBER)
+		con |= EXYNOS_MUX_ADDR;
+
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
 	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
