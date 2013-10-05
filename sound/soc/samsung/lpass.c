@@ -52,10 +52,6 @@ struct lpass_info {
 	struct clk		*clk_sramc;
 	struct clk		*clk_intr;
 	struct clk		*clk_timer;
-	struct clk		*clk_sysreg;
-	struct clk		*clk_pmu;
-	struct clk		*clk_gpio;
-	struct clk		*clk_dbg;
 	bool			rpm_enabled;
 } lpass;
 
@@ -255,10 +251,6 @@ static void lpass_enable(void)
 	clk_prepare_enable(lpass.clk_sramc);
 	clk_prepare_enable(lpass.clk_intr);
 	clk_prepare_enable(lpass.clk_timer);
-	clk_prepare_enable(lpass.clk_sysreg);
-	clk_prepare_enable(lpass.clk_pmu);
-	clk_prepare_enable(lpass.clk_gpio);
-	clk_prepare_enable(lpass.clk_dbg);
 
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
@@ -276,10 +268,6 @@ static void lpass_disable(void)
 	clk_disable_unprepare(lpass.clk_sramc);
 	clk_disable_unprepare(lpass.clk_intr);
 	clk_disable_unprepare(lpass.clk_timer);
-	clk_disable_unprepare(lpass.clk_sysreg);
-	clk_disable_unprepare(lpass.clk_pmu);
-	clk_disable_unprepare(lpass.clk_gpio);
-	clk_disable_unprepare(lpass.clk_dbg);
 
 	lpass_reg_save();
 
@@ -325,30 +313,6 @@ static int clk_set_heirachy(struct platform_device *pdev)
 		goto err3;
 	}
 
-	lpass.clk_sysreg = clk_get(dev, "sysreg");
-	if (IS_ERR(lpass.clk_sysreg)) {
-		dev_err(dev, "sysreg clk not found\n");
-		goto err4;
-	}
-
-	lpass.clk_pmu = clk_get(dev, "pmu");
-	if (IS_ERR(lpass.clk_pmu)) {
-		dev_err(dev, "pmu clk not found\n");
-		goto err5;
-	}
-
-	lpass.clk_gpio = clk_get(dev, "gpio");
-	if (IS_ERR(lpass.clk_gpio)) {
-		dev_err(dev, "gpio clk not found\n");
-		goto err6;
-	}
-
-	lpass.clk_dbg = clk_get(dev, "dbg");
-	if (IS_ERR(lpass.clk_dbg)) {
-		dev_err(dev, "dbg clk not found\n");
-		goto err7;
-	}
-
 	/* AUD0 */
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
 	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
@@ -360,14 +324,6 @@ static int clk_set_heirachy(struct platform_device *pdev)
 
 	return 0;
 
-err7:
-	clk_put(lpass.clk_gpio);
-err6:
-	clk_put(lpass.clk_pmu);
-err5:
-	clk_put(lpass.clk_sysreg);
-err4:
-	clk_put(lpass.clk_timer);
 err3:
 	clk_put(lpass.clk_intr);
 err2:
@@ -519,10 +475,6 @@ static int lpass_remove(struct platform_device *pdev)
 	clk_put(lpass.clk_sramc);
 	clk_put(lpass.clk_intr);
 	clk_put(lpass.clk_timer);
-	clk_put(lpass.clk_sysreg);
-	clk_put(lpass.clk_pmu);
-	clk_put(lpass.clk_gpio);
-	clk_put(lpass.clk_dbg);
 
 	return 0;
 }
