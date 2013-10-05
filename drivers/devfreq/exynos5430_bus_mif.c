@@ -457,10 +457,10 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 			[3]	= 0x0010060C,
 		},
 	}, {	/* 266Mhz */
-		.timing_row	= 0x12243247,
+		.timing_row	= 0x12244247,
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x1C130225,
-		.rd_fetch	= 0x00000001,
+		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000808,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
@@ -473,7 +473,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 		.timing_row	= 0x112331C5,
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x140E0225,
-		.rd_fetch	= 0x00000001,
+		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000606,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
@@ -483,10 +483,10 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 			[3]	= 0x0010060C,
 		},
 	}, {	/* 160Mhz */
-		.timing_row	= 0x11222184,
+		.timing_row	= 0x11223185,
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x100C0225,
-		.rd_fetch	= 0x00000001,
+		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000505,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
@@ -499,7 +499,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 		.timing_row	= 0x11222144,
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x100A0225,
-		.rd_fetch	= 0x00000001,
+		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000404,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
@@ -512,7 +512,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 		.timing_row	= 0x11222103,
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x10070225,
-		.rd_fetch	= 0x00000001,
+		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000303,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
@@ -871,40 +871,42 @@ static int exynos5_devfreq_mif_set_timing_set(struct devfreq_data_mif *data,
 	cur_parameter = &dmc_timing_parameter[2];
 
 	if (use_mif_timing_set_0) {
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex0 + 0x50);
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x50);
+		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0xE4);
+		__raw_writel(cur_parameter->timing_data, data->base_drex0 + 0xE8);
+		__raw_writel(cur_parameter->timing_power, data->base_drex0 + 0xEC);
 		tmp = __raw_readl(data->base_drex0 + 0x20);
 		tmp &= ~(TIMING_RFCPB_MASK << 8);
 		tmp |= (cur_parameter->timing_rfcpb & (TIMING_RFCPB_MASK << 8));
 		__raw_writel(tmp, data->base_drex0 + 0x20);
+		__raw_writel(cur_parameter->rd_fetch, data->base_drex0 + 0x50);
+
+		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0xE4);
+		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0xE8);
+		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0xEC);
 		tmp = __raw_readl(data->base_drex1 + 0x20);
 		tmp &= ~(TIMING_RFCPB_MASK << 8);
 		tmp |= (cur_parameter->timing_rfcpb & (TIMING_RFCPB_MASK << 8));
 		__raw_writel(tmp, data->base_drex1 + 0x20);
-		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0xE4);
-		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0xE4);
-		__raw_writel(cur_parameter->timing_data, data->base_drex0 + 0xE8);
-		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0xE8);
-		__raw_writel(cur_parameter->timing_power, data->base_drex0 + 0xEC);
-		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0xEC);
+		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x50);
 	} else {
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex0 + 0x4C);
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x4C);
+		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0x34);
+		__raw_writel(cur_parameter->timing_data, data->base_drex0 + 0x38);
+		__raw_writel(cur_parameter->timing_power, data->base_drex0 + 0x3C);
 		tmp = __raw_readl(data->base_drex0 + 0x20);
 		tmp &= ~(TIMING_RFCPB_MASK);
 		tmp |= (cur_parameter->timing_rfcpb & TIMING_RFCPB_MASK);
 		__raw_writel(tmp, data->base_drex0 + 0x20);
+		__raw_writel(cur_parameter->rd_fetch, data->base_drex0 + 0x4C);
+
+		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0x34);
+		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0x38);
+		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0x3C);
 		__raw_writel(cur_parameter->timing_rfcpb, data->base_drex0 + 0x20);
 		tmp = __raw_readl(data->base_drex1 + 0x20);
 		tmp &= ~(TIMING_RFCPB_MASK);
 		tmp |= (cur_parameter->timing_rfcpb & TIMING_RFCPB_MASK);
 		__raw_writel(tmp, data->base_drex1 + 0x20);
-		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0x34);
-		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0x34);
-		__raw_writel(cur_parameter->timing_data, data->base_drex0 + 0x38);
-		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0x38);
-		__raw_writel(cur_parameter->timing_power, data->base_drex0 + 0x3C);
-		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0x3C);
+		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x4C);
 	}
 
 	return 0;
@@ -1130,8 +1132,8 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_timeout(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_set_timing_set(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_set_phy(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_directcmd(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
+		exynos5_devfreq_mif_set_directcmd(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_set_freq(mif_data, mif_data->restore_idx_dll_on, old_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, old_volt, mif_data->restore_idx_dll_on);
 
@@ -1143,15 +1145,15 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
-		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
+		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 	} else {
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
-		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
+		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_idx, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
@@ -1303,7 +1305,7 @@ static int exynos5_devfreq_mif_init_parameter(struct devfreq_data_mif *data)
 
 	/* Configuring Automatic Direct Command Operation */
 	tmp = __raw_readl(data->base_sysreg_mif + 0x1020);
-	tmp = 0x81030010;
+	tmp = 0x80030010;
 	__raw_writel(tmp, data->base_sysreg_mif + 0x1020);
 
 	/* Decision for Timing Parameter Set Switch Control */
@@ -1336,7 +1338,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	struct devfreq_data_mif *data;
 	struct devfreq_notifier_block *devfreq_nb;
 	struct exynos_devfreq_platdata *plat_data;
-
 
 	if (exynos5_devfreq_mif_init_clock()) {
 		ret = -EINVAL;
