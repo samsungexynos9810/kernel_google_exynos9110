@@ -1292,6 +1292,33 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		pm_runtime_put_sync(dev);
 		dbg_ischain("pm_runtime_suspended = %d\n",
 					pm_runtime_suspended(dev));
+
+		timeout = 1000;
+		while ((readl(PMUREG_ISP_STATUS) & 0x1) && timeout) {
+			timeout--;
+			usleep_range(1000, 1000);
+		}
+		if (timeout == 0)
+			err("ISP power down failed(0x%08x)\n",
+				readl(PMUREG_ISP_STATUS));
+
+		timeout = 1000;
+		while ((readl(PMUREG_CAM0_STATUS) & 0x1) && timeout) {
+			timeout--;
+			usleep_range(1000, 1000);
+		}
+		if (timeout == 0)
+			err("CAM0 power down failed(0x%08x)\n",
+				readl(PMUREG_CAM0_STATUS));
+
+		timeout = 1000;
+		while ((readl(PMUREG_CAM1_STATUS) & 0x1) && timeout) {
+			timeout--;
+			usleep_range(1000, 1000);
+		}
+		if (timeout == 0)
+			err("CAM1 power down failed(CAM1:0x%08x, A5:0x%08x)\n",
+				readl(PMUREG_CAM1_STATUS), readl(PMUREG_ISP_ARM_STATUS));
 #else
 		/* A5 power off*/
 		timeout = 1000;
