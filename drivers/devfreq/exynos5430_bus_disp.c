@@ -94,6 +94,14 @@ enum devfreq_disp_clk devfreq_clk_disp_info_idx[] = {
 	DOUT_SCLK_DSD,
 };
 
+#ifdef CONFIG_PM_RUNTIME
+struct devfreq_pm_domain_link devfreq_disp_pm_domain[] = {
+	{"pd-disp",},
+	{"pd-disp",},
+	{"pd-disp",},
+};
+#endif
+
 static struct devfreq_simple_ondemand_data exynos5_devfreq_disp_governor_data = {
 	.pm_qos_class		= PM_QOS_DISPLAY_THROUGHPUT,
 	.upthreshold		= 95,
@@ -153,11 +161,25 @@ static int exynos5_devfreq_disp_set_freq(struct devfreq_data_disp *data,
 	int i, j;
 	struct devfreq_clk_info *clk_info;
 	struct devfreq_clk_states *clk_states;
+#ifdef CONFIG_PM_RUNTIME
+	struct exynos_pm_domain *pm_domain;
+#endif
 
 	if (target_idx < old_idx) {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_disp_info_list); ++i) {
 			clk_info = &devfreq_clk_disp_info_list[i][target_idx];
 			clk_states = clk_info->states;
+#ifdef CONFIG_PM_RUNTIME
+			pm_domain = devfreq_disp_pm_domain[i].pm_domain;
+
+			if (pm_domain != NULL) {
+				mutex_lock(&pm_domain->access_lock);
+				if ((__raw_readl(pm_domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN) == 0) {
+					mutex_unlock(&pm_domain->access_lock);
+					continue;
+				}
+			}
+#endif
 			if (clk_states) {
 				for (j = 0; j < clk_states->state_count; ++j) {
 					clk_set_parent(devfreq_disp_clk[clk_states->state[j].clk_idx].clk,
@@ -167,12 +189,26 @@ static int exynos5_devfreq_disp_set_freq(struct devfreq_data_disp *data,
 
 			if (clk_info->freq != 0)
 				clk_set_rate(devfreq_disp_clk[devfreq_clk_disp_info_idx[i]].clk, clk_info->freq);
+#ifdef CONFIG_PM_RUNTIME
+			if (pm_domain != NULL)
+				mutex_unlock(&pm_domain->access_lock);
+#endif
 		}
 	} else {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_disp_info_list); ++i) {
 			clk_info = &devfreq_clk_disp_info_list[i][target_idx];
 			clk_states = clk_info->states;
+#ifdef CONFIG_PM_RUNTIME
+			pm_domain = devfreq_disp_pm_domain[i].pm_domain;
 
+			if (pm_domain != NULL) {
+				mutex_lock(&pm_domain->access_lock);
+				if ((__raw_readl(pm_domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN) == 0) {
+					mutex_unlock(&pm_domain->access_lock);
+					continue;
+				}
+			}
+#endif
 			if (clk_info->freq != 0)
 				clk_set_rate(devfreq_disp_clk[devfreq_clk_disp_info_idx[i]].clk, clk_info->freq);
 
@@ -185,6 +221,10 @@ static int exynos5_devfreq_disp_set_freq(struct devfreq_data_disp *data,
 
 			if (clk_info->freq != 0)
 				clk_set_rate(devfreq_disp_clk[devfreq_clk_disp_info_idx[i]].clk, clk_info->freq);
+#ifdef CONFIG_PM_RUNTIME
+			if (pm_domain != NULL)
+				mutex_unlock(&pm_domain->access_lock);
+#endif
 		}
 	}
 
@@ -288,6 +328,35 @@ static int exynos5_devfreq_disp_init_clock(void)
 	return 0;
 }
 
+#ifdef CONFIG_PM_RUNTIME
+static int exynos5_devfreq_disp_init_pm_domain(void)
+{
+	struct platform_device *pdev = NULL;
+	struct device_node *np = NULL;
+	int i;
+
+	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+		struct exynos_pm_domain *pd;
+
+		if (!of_device_is_available(np))
+			continue;
+
+		pdev = of_find_device_by_node(np);
+		pd = platform_get_drvdata(pdev);
+
+		for (i = 0; i < ARRAY_SIZE(devfreq_disp_pm_domain); ++i) {
+			if (devfreq_disp_pm_domain[i].pm_domain_name == NULL)
+				continue;
+
+			if (!strcmp(devfreq_disp_pm_domain[i].pm_domain_name, pd->genpd.name))
+				devfreq_disp_pm_domain[i].pm_domain = pd;
+		}
+	}
+
+	return 0;
+}
+#endif
+
 static int exynos5_init_disp_table(struct device *dev)
 {
 	unsigned int i;
@@ -339,6 +408,13 @@ static int exynos5_devfreq_disp_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_data;
 	}
+
+#ifdef CONFIG_PM_RUNTIME
+	if (exynos5_devfreq_disp_init_pm_domain()) {
+		ret = -EINVAL;
+		goto err_data;
+	}
+#endif
 
 	data = kzalloc(sizeof(struct devfreq_data_disp), GFP_KERNEL);
 	if (data == NULL) {

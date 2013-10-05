@@ -291,11 +291,11 @@ enum devfreq_int_clk devfreq_clk_int_info_idx[] = {
 
 #ifdef CONFIG_PM_RUNTIME
 struct devfreq_pm_domain_link devfreq_int_pm_domain[] = {
-	{NULL,},
-	{NULL,},
-	{NULL,},
-	{NULL,},
-	{NULL,},
+	{"pd-bus1",},
+	{"pd-bus2",},
+	{"pd-g2d",},
+	{"pd-g2d",},
+	{"pd-gscl",},
 	{"pd-mscl",},
 	{"pd-mscl",},
 	{"pd-mfc0",},
