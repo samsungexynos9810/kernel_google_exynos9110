@@ -100,11 +100,12 @@ struct freq_clip_table {
 struct exynos_tmu_platform_data {
 	u8 threshold;
 	u8 threshold_falling;
-	u8 trigger_levels[4];
+	u8 trigger_levels[8];
 	bool trigger_level0_en;
 	bool trigger_level1_en;
 	bool trigger_level2_en;
 	bool trigger_level3_en;
+	bool trigger_level4_en;
 	char clk_name[2][100];
 
 	u8 gain;
@@ -114,7 +115,7 @@ struct exynos_tmu_platform_data {
 
 	enum calibration_type cal_type;
 	enum soc_type type;
-	struct freq_clip_table freq_tab[4];
+	struct freq_clip_table freq_tab[8];
 	int size[THERMAL_TRIP_CRITICAL + 1];
 	unsigned int freq_tab_count;
 	unsigned int clock_count;

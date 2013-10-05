@@ -113,8 +113,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 /* In-kernel thermal framework related macros & definations */
 #define SENSOR_NAME_LEN	16
 #define MAX_TRIP_COUNT	8
-#define MAX_COOLING_DEVICE 4
-#define MAX_THRESHOLD_LEVS 4
+#define MAX_COOLING_DEVICE 5
+#define MAX_THRESHOLD_LEVS 5
 
 #define PASSIVE_INTERVAL	100
 #define ACTIVE_INTERVAL		300
@@ -130,7 +130,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #endif /* CONFIG_THERMAL_EMULATION */
 
 /* CPU Zone information */
-#define PANIC_ZONE      5
+#define PANIC_ZONE      6
 #define WARN_ZONE       3
 #define MONITOR_ZONE    2
 #define SAFE_ZONE       1
@@ -1098,11 +1098,13 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.trigger_levels[0] = 85,
 	.trigger_levels[1] = 90,
 	.trigger_levels[2] = 95,
-	.trigger_levels[3] = 110,
+	.trigger_levels[3] = 100,
+	.trigger_levels[4] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
+	.trigger_level4_en = 1,
 	.gain = 5,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
@@ -1138,7 +1140,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	},
 	.size[THERMAL_TRIP_ACTIVE] = 1,
 	.size[THERMAL_TRIP_PASSIVE] = 3,
-	.freq_tab_count = 4,
+	.freq_tab_count = 5,
 	.type = SOC_ARCH_EXYNOS,
 	.clock_count = 2,
 	.clk_name[0] = "pclk_tmu0_apbif",
@@ -1299,12 +1301,13 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	(&exynos_sensor_conf)->private_data = data;
 	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
 			pdata->trigger_level1_en + pdata->trigger_level2_en +
-			pdata->trigger_level3_en;
+			pdata->trigger_level3_en + pdata->trigger_level4_en;
 
 	trigger_level_en[0] = pdata->trigger_level0_en;
 	trigger_level_en[1] = pdata->trigger_level1_en;
 	trigger_level_en[2] = pdata->trigger_level2_en;
 	trigger_level_en[3] = pdata->trigger_level3_en;
+	trigger_level_en[4] = pdata->trigger_level4_en;
 
 	for (i = 0; i < TRIP_EN_COUNT; i++) {
 		if (trigger_level_en[i]) {
@@ -1323,7 +1326,6 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 					pdata->freq_tab[i].freq_clip_max;
 		exynos_sensor_conf.cooling_data.freq_data[i].temp_level =
 					pdata->freq_tab[i].temp_level;
-		exynos_sensor_conf.cooling_data.size[i] = pdata->size[i];
 		if (pdata->freq_tab[i].mask_val)
 			exynos_sensor_conf.cooling_data.freq_data[i].mask_val =
 				pdata->freq_tab[i].mask_val;
