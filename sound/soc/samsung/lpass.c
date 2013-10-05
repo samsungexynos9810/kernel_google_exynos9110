@@ -225,6 +225,27 @@ static void lpass_reg_restore(void)
 	return;
 }
 
+static void lpass_pll_enable(bool on)
+{
+	u32 pll_con0 = __raw_readl(EXYNOS5430_AUD_PLL_CON0);
+
+#define PLL_CON0_ENABLE		(1 << 31)
+#define PLL_CON0_LOCKED		(1 << 29)
+
+	pll_con0 &= ~PLL_CON0_ENABLE;
+	pll_con0 |= on ? PLL_CON0_ENABLE : 0;
+	__raw_writel(pll_con0, EXYNOS5430_AUD_PLL_CON0);
+
+
+	if (on) {
+		/* wait_lock_time */
+		do {
+			cpu_relax();
+			pll_con0 = __raw_readl(EXYNOS5430_AUD_PLL_CON0);
+		} while (!(pll_con0 & PLL_CON0_LOCKED));
+	}
+}
+
 static void lpass_release_pad(void)
 {
 	/* Release PAD retention */
@@ -237,6 +258,9 @@ static void lpass_enable(void)
 		pr_debug("%s: LPASS is not available", __func__);
 		return;
 	}
+
+	/* Enable AUD_PLL */
+	lpass_pll_enable(true);
 
 	lpass_release_pad();
 	lpass_reg_restore();
@@ -283,6 +307,9 @@ static void lpass_disable(void)
 	writel(0x0000003F, EXYNOS5430_ENABLE_SCLK_AUD1);
 	writel(0x00003FFF, EXYNOS5430_ENABLE_IP_AUD0);
 	writel(0x0000003F, EXYNOS5430_ENABLE_IP_AUD1);
+
+	/* Disable AUD_PLL */
+	lpass_pll_enable(false);
 }
 
 static int clk_set_heirachy(struct platform_device *pdev)
@@ -349,8 +376,6 @@ static void lpass_add_suspend_reg(void __iomem *reg)
 
 static void lpass_init_reg_list(void)
 {
-	lpass_add_suspend_reg(EXYNOS5430_SRC_SEL_AUD0);
-	lpass_add_suspend_reg(EXYNOS5430_SRC_SEL_AUD1);
 	lpass_add_suspend_reg(EXYNOS5430_SRC_ENABLE_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_SRC_ENABLE_AUD1);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD0);
