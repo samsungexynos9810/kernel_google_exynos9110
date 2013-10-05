@@ -16,7 +16,8 @@
 #include <linux/platform_device.h>
 
 #if	defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) ||	\
-	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
+	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ) ||	\
+	defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
 #define CONFIG_MFC_USE_BUS_DEVFREQ
 #endif
 
