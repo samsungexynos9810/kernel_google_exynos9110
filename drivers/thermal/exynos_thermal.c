@@ -1241,37 +1241,49 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		data->irq[i] = platform_get_irq(pdev, i);
 		if (data->irq[i] < 0) {
+			ret = data->irq[i];
 			dev_err(&pdev->dev, "Failed to get platform irq\n");
-			return data->irq[i];
+			goto err_get_irq;
 		}
 
 		ret = request_irq(data->irq[i], exynos_tmu_irq,
 				IRQF_TRIGGER_RISING, "exynos_tmu", data);
 		if (ret) {
 			dev_err(&pdev->dev, "Failed to request irq: %d\n", data->irq[i]);
-			goto err_irq;
+			goto err_request_irq;
 		}
 
 		data->mem[i] = platform_get_resource(pdev, IORESOURCE_MEM, i);
+		if (!data->mem[i]) {
+			ret = -ENOENT;
+			dev_err(&pdev->dev, "Failed to get platform resource\n");
+			goto err_get_resource;
+		}
+
 		data->base[i] = devm_request_and_ioremap(&pdev->dev, data->mem[i]);
-		if (IS_ERR(data->base[i]))
-			return PTR_ERR(data->base[i]);
+		if (IS_ERR(data->base[i])) {
+			ret = PTR_ERR(data->base[i]);
+			dev_err(&pdev->dev, "Failed to ioremap memory\n");
+			goto err_io_remap;
+		}
 	}
 
 	for (i = 0; i < pdata->clock_count; i++) {
 		data->clk[i] = devm_clk_get(&pdev->dev, pdata->clk_name[i]);
 		if (IS_ERR(data->clk[i])) {
+			ret = PTR_ERR(data->clk);
 			dev_err(&pdev->dev, "Failed to get clock\n");
-			return  PTR_ERR(data->clk);
+			goto err_clk;
 		}
 	}
 
-	ret = clk_prepare(data->clk[0]);
-	if (ret)
-		return ret;
-	ret = clk_prepare(data->clk[1]);
-	if (ret)
-		return ret;
+	for (i = 0; i < pdata->clock_count; i++) {
+		ret = clk_prepare(data->clk[i]);
+		if (ret) {
+			dev_err(&pdev->dev, "Failed to prepare clk\n");
+			goto err_prepare_clk;
+		}
+	}
 
 	if (pdata->type == SOC_ARCH_EXYNOS ||
 				pdata->type == SOC_ARCH_EXYNOS4210)
@@ -1279,7 +1291,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	else {
 		ret = -EINVAL;
 		dev_err(&pdev->dev, "Platform not supported\n");
-		goto err_clk;
+		goto err_soc_type;
 	}
 
 	data->pdata = pdata;
@@ -1291,7 +1303,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		ret = exynos_tmu_initialize(pdev, i);
 		if (ret) {
 			dev_err(&pdev->dev, "Failed to initialize TMU\n");
-			goto err_clk;
+			goto err_tmu;
 		}
 
 		exynos_tmu_control(pdev, i, true);
@@ -1341,15 +1353,26 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	}
 
 	return 0;
+
 err_register:
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 	exynos_cpufreq_init_unregister_notifier(&exynos_cpufreq_nb);
 #endif
-err_clk:
+err_tmu:
 	platform_set_drvdata(pdev, NULL);
-	clk_unprepare(data->clk[0]);
-	clk_unprepare(data->clk[1]);
-err_irq:
+err_soc_type:
+	for (i = 0; i < pdata->clock_count; i++)
+		clk_unprepare(data->clk[i]);
+err_prepare_clk:
+err_clk:
+err_io_remap:
+err_get_resource:
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+		if (data->irq[i])
+			free_irq(data->irq[i], data);
+	}
+err_request_irq:
+err_get_irq:
 	kfree(data);
 
 	return ret;
