@@ -2249,4 +2249,25 @@
 			reg = <0x10F20000 0x4000>;
 		};
 	};
+
+	tmu@10060000 {
+		compatible = "samsung,exynos5430-tmu";
+		reg = <0x10060000 0x100>,
+		      <0x10068000 0x100>,
+		      <0x10070000 0x100>,
+		      <0x10078000 0x100>,
+		      <0x1007C000 0x100>;
+		interrupts = <0 95 0>,
+			     <0 97 0>,
+			     <0 99 0>,
+			     <0 115 0>,
+			     <0 94 0>;
+		clocks = <&clock 875>,
+		         <&clock 875>,
+			 <&clock 876>,
+			 <&clock 876>,
+			 <&clock 876>;
+		clock-names = "pclk_tmu0_apbif", "pclk_tmu0_apbif",
+			"pclk_tmu1_apbif", "pclk_tmu1_apbif", "pclk_tmu1_apbif";
+	};
 };
