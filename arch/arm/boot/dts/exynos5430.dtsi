@@ -1363,6 +1363,7 @@
 			 <&clock 2008>,		/* gate_intr_ctrl */
 			 <&clock 2007>;		/* gate_timer */
 		clock-names = "dmac", "sramc", "intr", "timer";
+		iommu = <&sysmmu_aud>;
 		samsung,power-domain = <&pd_maudio>;
 		status = "ok";
 	};
@@ -1393,6 +1394,12 @@
 		samsung,supports-tdm;
 		samsung,supports-low-rfs;
 		samsung,lpass-subip;
+		samsung,tx-iommu;
+		samsung,tx-buf = <0x40000000>;
+		samsung,tx-size = <0x80000>;
+		samsung,rx-iommu;
+		samsung,rx-buf = <0x41000000>;
+		samsung,rx-size = <0x80000>;
 		pinctrl-names = "default", "idle";
 		pinctrl-0 = <&i2s0_bus>;
 		pinctrl-1 = <&pcm0_bus>;
@@ -1419,6 +1426,7 @@
 		samsung,supports-rstclr;
 		samsung,supports-tdm;
 		samsung,supports-low-rfs;
+		samsung,lpass-subip;
 		status = "disabled";
 	};
 
@@ -1431,6 +1439,7 @@
 		clocks = <&clock 2005>,		/* gate_pcm */
 			 <&clock 4152>;		/* dout_sclk_pcm */
 		clock-names = "pcm", "sclk_pcm";
+		samsung,lpass-subip;
 		status = "disabled";
 	};
 
@@ -1443,6 +1452,7 @@
 		clocks = <&clock 2423>,		/* gate_pcm1 */
 			 <&clock 4052>;		/* dout_sclk_pcm1 */
 		clock-names = "pcm", "sclk_pcm";
+		samsung,lpass-subip;
 		status = "disabled";
 	};
 
@@ -1455,6 +1465,7 @@
 		clocks = <&clock 2422>,		/* gate_spdif */
 		         <&clock 3045>;		/* mout_sclk_spdif */
 		clock-names = "spdif", "sclk_spdif";
+		samsung,lpass-subip;
 		pinctrl-names = "default";
 		pinctrl-0 = <&spdif_bus>;
 		status = "disabled";
