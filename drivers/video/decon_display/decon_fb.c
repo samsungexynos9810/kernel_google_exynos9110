@@ -3629,12 +3629,14 @@ static void decon_fb_reset(struct s3c_fb *sfb)
 	writel(~VIDCON0_SWRESET, regs);
 }
 
-static void decon_fb_set_clkgate_mode(struct s3c_fb *sfb, u32 se, u32 sfr, u32 mem)
+static void decon_fb_set_clkgate_mode(struct s3c_fb *sfb, u32 enable)
 {
-	u32 data = (se << DECON_CMU_CLKGATE_MODE_SE_F_SHIFT) |
-			(sfr << DECON_CMU_CLKGATE_MODE_SFR_F_SHIFT) |
-			(mem << DECON_CMU_CLKGATE_MODE_MEM_F_SHIFT);
-	writel(data, sfb->regs + DECON_CMU);
+	void __iomem *regs = sfb->regs + DECON_CMU;
+	u32 data = readl(regs);
+
+	data &= ~DECON_CMU_ALL_CLKGATE_ENABLE;
+	data |= enable;
+	writel(data, regs);
 }
 
 static void decon_fb_blending_bit_count_option(struct s3c_fb *sfb, u32 mode)
@@ -3897,7 +3899,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
-	decon_fb_set_clkgate_mode(sfb, 1, 1, 1);
+	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, 1);
 	decon_fb_set_vidout(sfb, 1);
 	decon_fb_enable_interrupt(sfb, 1);
@@ -4307,7 +4309,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
-	decon_fb_set_clkgate_mode(sfb, 1, 1, 1);
+	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, 1);
 	decon_fb_set_vidout(sfb, 1);
 	decon_fb_enable_interrupt(sfb, 1);
@@ -4451,7 +4453,7 @@ int s3c_fb_resume(struct device *dev)
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
-	decon_fb_set_clkgate_mode(sfb, 1, 1, 1);
+	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, 1);
 	decon_fb_set_vidout(sfb, 1);
 	decon_fb_enable_interrupt(sfb, 1);
