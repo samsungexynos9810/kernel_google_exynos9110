@@ -34,6 +34,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/iommu.h>
 #include <linux/dma-mapping.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 #include <sound/exynos.h>
 
@@ -53,6 +55,19 @@ static struct seiren_info si;
 
 static int esa_send_cmd(u32 cmd_code);
 static irqreturn_t esa_isr(int irqno, void *id);
+
+static void esa_dump_fw_log(void)
+{
+	char log[256];
+	char *addr = si.fw_log_buf;
+	int n;
+
+	esa_info("fw log:\n");
+	for (n = 0; n < FW_LOG_LINE; n++, addr += 128) {
+		memcpy(log, addr, 128);
+		esa_info("%s", log);
+	}
+}
 
 static struct esa_rtd *esa_alloc_rtd(void)
 {
@@ -260,6 +275,7 @@ static int esa_send_cmd(u32 cmd_code)
 	if (!ret) {
 		esa_err("%s: CMD(%08X) timed out!!!\n",
 					__func__, cmd_code);
+		esa_dump_fw_log();
 		return -EBUSY;
 	}
 
@@ -873,6 +889,39 @@ static struct miscdevice esa_miscdev = {
 	.fops		= &esa_fops,
 };
 
+static int esa_proc_show(struct seq_file *m, void *v)
+{
+	char log[256];
+	char *addr = si.fw_log_buf;
+	int n;
+
+	seq_printf(m, "fw is %s\n", si.fw_ready ? "ready" : "off");
+	seq_printf(m, "rtd cnt: %d\n", si.rtd_cnt);
+
+	if (si.fw_ready) {
+		seq_printf(m, "fw_log:\n");
+		for (n = 0; n < FW_LOG_LINE; n++, addr += 128) {
+			memcpy(log, addr, 128);
+			seq_printf(m, "%s", log);
+		}
+	}
+
+	return 0;
+}
+
+static int esa_proc_open(struct inode *inode, struct  file *file)
+{
+	return single_open(file, esa_proc_show, NULL);
+}
+
+static const struct file_operations esa_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = esa_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 #ifdef CONFIG_PM
 static int esa_suspend(struct platform_device *pdev, pm_message_t state)
 {
@@ -1023,6 +1072,13 @@ static int esa_probe(struct platform_device *pdev)
 	goto err;
 #endif
 
+	si.fw_log_buf = si.fwarea[0] + FW_LOG_ADDR;
+
+#ifdef CONFIG_PROC_FS
+	si.proc_file = proc_create("driver/seiren", 0, NULL, &esa_proc_fops);
+	if (!si.proc_file)
+		esa_info("Failed to register /proc/driver/seiren\n");
+#endif
 	/* hold reset */
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 

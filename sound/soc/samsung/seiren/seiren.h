@@ -81,6 +81,8 @@
 #define CH_NUM_MIN		(1)
 #define BAND_NUM_MAX		(16)
 
+#define FW_LOG_ADDR		(0x147800)
+#define FW_LOG_LINE		(16)
 #define FW_LOG_MAX		(80)
 
 /* For Debugging */
@@ -230,6 +232,7 @@ struct seiren_info {
 	struct clk	*clk_ca5;
 	struct clk	*opclk_ca5;
 	unsigned int	irq_ca5;
+	struct proc_dir_entry	*proc_file;
 #ifdef CONFIG_SND_SAMSUNG_IOMMU
 	struct iommu_domain	*domain;
 #endif
@@ -246,6 +249,7 @@ struct seiren_info {
 
 	unsigned char	fw_log[FW_LOG_MAX];
 	unsigned int	fw_log_pos;
+	char		*fw_log_buf;
 	bool		fw_ready;
 	bool		fw_suspended;
 };
