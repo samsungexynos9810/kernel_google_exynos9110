@@ -22,6 +22,8 @@
 #include <linux/pm_runtime.h>
 #include <linux/iommu.h>
 #include <linux/dma-mapping.h>
+#include <linux/proc_fs.h>
+#include <linux/seq_file.h>
 
 #include <sound/exynos.h>
 
@@ -47,10 +49,12 @@
 struct lpass_info {
 	spinlock_t		lock;
 	bool			valid;
+	bool			enabled;
 	struct platform_device	*pdev;
 	void __iomem		*regs;
 	void __iomem		*mem;
 	struct iommu_domain	*domain;
+	struct proc_dir_entry	*proc_file;
 	struct clk		*clk_dmac;
 	struct clk		*clk_sramc;
 	struct clk		*clk_intr;
@@ -287,6 +291,8 @@ static void lpass_enable(void)
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
 	lpass_reset_toggle(LPASS_IP_DMA);
+
+	lpass.enabled = true;
 }
 
 static void lpass_disable(void)
@@ -295,6 +301,8 @@ static void lpass_disable(void)
 		pr_debug("%s: LPASS is not available", __func__);
 		return;
 	}
+
+	lpass.enabled = false;
 
 	clk_disable_unprepare(lpass.clk_dmac);
 	clk_disable_unprepare(lpass.clk_sramc);
@@ -402,6 +410,31 @@ static void lpass_init_reg_list(void)
 	lpass_add_suspend_reg(lpass.regs + LPASS_INTR_CPU_MASK);
 }
 
+static int lpass_proc_show(struct seq_file *m, void *v) {
+	struct subip_info *si;
+
+	seq_printf(m, "power: %s\n", lpass.enabled ? "on" : "off");
+
+	list_for_each_entry(si, &subip_list, node) {
+		seq_printf(m, "subip: %s (%d)\n",
+				si->name, atomic_read(&si->use_cnt));
+	}
+
+	return 0;
+}
+
+static int lpass_proc_open(struct inode *inode, struct  file *file) {
+	return single_open(file, lpass_proc_show, NULL);
+}
+
+static const struct file_operations lpass_proc_fops = {
+	.owner = THIS_MODULE,
+	.open = lpass_proc_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 #ifdef CONFIG_PM
 static int lpass_suspend(struct platform_device *pdev, pm_message_t state)
 {
@@ -489,6 +522,11 @@ static int lpass_probe(struct platform_device *pdev)
 		return ret;
 	}
 #endif
+
+	lpass.proc_file = proc_create("driver/lpass", 0,
+					NULL, &lpass_proc_fops);
+	if (!lpass.proc_file)
+		pr_info("Failed to register /proc/driver/lpadd\n");
 
 	spin_lock_init(&lpass.lock);
 	lpass_init_reg_list();
