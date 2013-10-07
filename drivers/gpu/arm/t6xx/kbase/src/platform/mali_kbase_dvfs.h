@@ -34,6 +34,7 @@
 //helsinki touch here
 #define MALI_DVFS_START_FREQ 266
 #define MALI_DVFS_BL_CONFIG_FREQ 350
+#define IS_ASV_ENABLED
 #else
 #define MALI_DVFS_START_FREQ 450
 #define MALI_DVFS_BL_CONFIG_FREQ 533
@@ -98,7 +99,7 @@ int mali_get_dvfs_table(char *buf, size_t buf_size);
 int mali_get_dvfs_current_level(void);
 int mali_get_dvfs_upper_locked_freq(void);
 int mali_get_dvfs_under_locked_freq(void);
-#ifdef CONFIG_SOC_EXYNOS5420
+#if (defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430))
 int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock);
 void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock);
 int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock);
