@@ -1,0 +1,29 @@
+/*
+ * SAMSUNG SMDK5422 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *             http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/dts-v1/;
+#include "exynos5422.dtsi"
+
+/ {
+	model = "Samsung SMDK5422 board based on EXYNOS5422";
+	compatible = "samsung,SMDK5422", "samsung,exynos5422";
+
+	chosen {
+		bootargs = "root=/dev/ram0 rw ramdisk=8192 initrd=0x21000000,8M console=ttySAC2,115200 init=/linuxrc clk_ignore_unused";
+	};
+
+	fixed-rate-clocks {
+		oscclk {
+			compatible = "samsung,exynos5422-oscclk";
+			clock-frequency = <24000000>;
+		};
+	};
+};
