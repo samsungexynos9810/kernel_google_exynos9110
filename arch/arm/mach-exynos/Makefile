@@ -48,6 +48,8 @@ obj-$(CONFIG_MACH_SMDK4412)		+= mach-smdk4x12.o
 obj-$(CONFIG_MACH_EXYNOS4_DT)		+= mach-exynos4-dt.o
 obj-$(CONFIG_MACH_EXYNOS5_DT)		+= mach-exynos5-dt.o
 
+obj-$(CONFIG_MACH_SMDK5422)		+= mach-smdk5422.o
+
 obj-$(CONFIG_MACH_XYREF5430)		+= mach-xyref5430.o
 obj-$(CONFIG_MACH_XYREF5430)		+= mach-xyref5430-pinctrl.o
 
