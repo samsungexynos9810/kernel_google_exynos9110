@@ -1006,6 +1006,7 @@
 	pd_cam0: pd-cam0@105c4020 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4020 0x20>;
+		parent = <&pd_disp>;
 	};
 
 	pd_mscl: pd-mscl@105c4040 {
