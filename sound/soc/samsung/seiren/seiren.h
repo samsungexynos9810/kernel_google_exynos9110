@@ -52,8 +52,11 @@
 
 
 /* Memory size */
-#define BASEMEM_SIZE		(0x200000)
 #define FWMEM_SIZE		(0x200000)
+#define BASEMEM_OFFSET		(0x300000)
+#define FWAREA_SIZE		(0x400000)
+#define FWAREA_NUM		(3)
+#define FWAREA_IOVA		(0x50000000)
 
 /* Buffer Information - decode */
 #define DEC_IBUF_SIZE		(0x800)
@@ -70,7 +73,7 @@
 #define SP_OBUF_NUM		(0x1)
 
 
-#define INSTANCE_MAX		(1)
+#define INSTANCE_MAX		(20)
 #define SRAM_FW_MAX		(0x3E000)
 #define BUF_SIZE_MAX		(0x50000)
 
@@ -223,11 +226,15 @@ struct seiren_info {
 	spinlock_t	lock;
 	void __iomem	*regs;
 	void __iomem	*mailbox;
-	void __iomem	*mem;
+	void __iomem	*sram;
 	struct clk	*clk_ca5;
 	struct clk	*opclk_ca5;
 	unsigned int	irq_ca5;
-
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+	struct iommu_domain	*domain;
+#endif
+	unsigned char	*fwarea[FWAREA_NUM];
+	phys_addr_t	fwarea_pa[FWAREA_NUM];
 	unsigned char	*bufmem;
 	unsigned int	bufmem_pa;
 	unsigned char	*fwmem;
@@ -240,6 +247,7 @@ struct seiren_info {
 	unsigned char	fw_log[FW_LOG_MAX];
 	unsigned int	fw_log_pos;
 	bool		fw_ready;
+	bool		fw_suspended;
 };
 
 struct esa_rtd {

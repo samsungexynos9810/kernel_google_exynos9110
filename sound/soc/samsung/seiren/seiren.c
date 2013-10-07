@@ -32,6 +32,8 @@
 #include <linux/irq.h>
 #include <linux/uaccess.h>
 #include <linux/pm_runtime.h>
+#include <linux/iommu.h>
+#include <linux/dma-mapping.h>
 
 #include <sound/exynos.h>
 
@@ -41,12 +43,6 @@
 #include "seiren_error.h"
 #include "seiren_fw.h"
 
-#define USE_SRAM_ONLY
-#ifdef USE_SRAM_ONLY
-#define SRAM_BUF_OFFSET		0x2C000
-#endif
-
-/* #define FW_DOWNLOAD_TEST */
 
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
 
@@ -102,29 +98,30 @@ static void esa_free_rtd(struct esa_rtd *rtd)
 
 static void esa_fw_download(void)
 {
-#ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
 	int n;
-#endif
 
 	esa_debug("%s: firmware size = %d\n", __func__, fw_bin_size);
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	udelay(100);
 
-	memset(si.mem, 0, SRAM_FW_MAX);
 	memset(si.mailbox, 0, 128);
 
-	memcpy(si.mem, fw_bin, fw_bin_size);
+	if (si.fw_suspended) {
+		esa_debug("%s: resume\n", __func__);
+	} else {
+		esa_debug("%s: intialize\n", __func__);
+		for (n = 0; n < FWAREA_NUM; n++)
+			memset(si.fwarea[n], 0, FWAREA_SIZE);
 
-	writel(0x03000000, si.regs + CA5_BOOTADDR);
+		memset(si.sram, 0, SRAM_FW_MAX);
+		memcpy(si.fwarea[0], si.fwmem, fw_bin_size);
+	}
+
+	writel(FWAREA_IOVA, si.regs + CA5_BOOTADDR);
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_NORMAL);
 
 	esa_debug("%s: CA5 startup...\n", __func__);
-#ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
-	for (n = 0; n < 64; n += 4)
-		esa_info("%s: FW code 0x%08X = %08x\n",
-			__func__, n, readl(si.mem + n));
-#endif
 }
 
 static int esa_fw_startup(void)
@@ -169,18 +166,25 @@ static int esa_fw_startup(void)
 
 static void esa_fw_shutdown(void)
 {
-	u32 cnt;
+	u32 cnt, val;
+
+	if (!si.fw_ready)
+		return;
 
 	/* check idle */
 	esa_send_cmd(SYS_GET_STATUS);
 
+	si.fw_suspended = false;
 	cnt = msecs_to_loops(100);
 	while (--cnt) {
-		if (readl(si.regs + CA5_STATUS) & CA5_STATUS_WFI)
+		val = readl(si.regs + CA5_STATUS);
+		if (val & CA5_STATUS_WFI) {
+			/* si.fw_suspended = true; */
 			break;
+		}
 		cpu_relax();
 	}
-	esa_debug("CA5_STATUS: %X\n", readl(si.regs + CA5_STATUS));
+	esa_debug("CA5_STATUS: %X\n", val);
 
 	free_irq(si.irq_ca5, 0);
 
@@ -309,14 +313,8 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	/* later... flush ibuf cache */
 
 	writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-#ifdef USE_SRAM_ONLY
-	memcpy(si.mem + SRAM_BUF_OFFSET, ibuf, size);
-	writel(0, si.mailbox + PHY_ADDR_INBUF);
-	writel(rtd->ibuf_size * rtd->ibuf_count, si.mailbox + PHY_ADDR_OUTBUF);
-#else
 	writel(ibuf - si.bufmem, si.mailbox + PHY_ADDR_INBUF);
 	writel(obuf - si.bufmem, si.mailbox + PHY_ADDR_OUTBUF);
-#endif
 	writel(size, si.mailbox + SIZE_OF_INDATA);
 	esa_send_cmd(CMD_EXE);
 
@@ -385,11 +383,6 @@ static ssize_t esa_read(struct file *file, char *buffer,
 	rtd->select_obuf = !rtd->select_obuf;
 
 	/* later... invalidate obuf cache */
-
-#ifdef USE_SRAM_ONLY
-	memcpy(obuf, si.mem + SRAM_BUF_OFFSET
-		+ (rtd->ibuf_size * rtd->ibuf_count), *obuf_filled_size);
-#endif
 
 	/* send pcm data to user */
 	if (copy_to_user((void *)buffer, obuf, *obuf_filled_size)) {
@@ -899,6 +892,61 @@ static int esa_resume(struct platform_device *pdev)
 #define esa_resume	NULL
 #endif
 
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+static int esa_prepare_buffer(struct device *dev)
+{
+	unsigned long iova;
+	int n, ret;
+
+	/* Original firmware */
+	si.fwmem = devm_kzalloc(dev, FWMEM_SIZE, GFP_KERNEL);
+	if (!si.fwmem) {
+		esa_err("Failed to alloc fwmem\n");
+		goto err;
+	}
+	si.fwmem_pa = virt_to_phys(si.fwmem);
+	memcpy(si.fwmem, fw_bin, fw_bin_size);
+
+	for (n = 0; n < FWAREA_NUM; n++) {
+		si.fwarea[n] = dma_alloc_writecombine(dev, FWAREA_SIZE,
+					&si.fwarea_pa[n], GFP_KERNEL);
+		if (!si.fwarea[n]) {
+			esa_err("Failed to alloc fwarea\n");
+			goto err0;
+		}
+	}
+
+	for (n = 0, iova = FWAREA_IOVA; n < FWAREA_NUM;
+				n++, iova += FWAREA_SIZE) {
+		ret = iommu_map(si.domain, iova,
+				si.fwarea_pa[n], FWAREA_SIZE, 0);
+		if (ret) {
+			esa_err("Failed to map iommu\n");
+			goto err1;
+		}
+	}
+
+	/* Base address for IBUF and OBUF */
+	si.bufmem = si.fwarea[0] + BASEMEM_OFFSET;
+	si.bufmem_pa = si.fwarea_pa[0] + BASEMEM_OFFSET;
+
+	return 0;
+err1:
+	for (n = 0, iova = FWAREA_IOVA; n < FWAREA_NUM;
+				n++, iova += FWAREA_SIZE) {
+		iommu_unmap(si.domain, iova, FWAREA_SIZE);
+	}
+err0:
+	for (n = 0; n < FWAREA_NUM; n++) {
+		if (si.fwarea[n])
+			dma_free_writecombine(dev, FWAREA_SIZE,
+					si.fwarea[n], si.fwarea_pa[n]);
+	}
+err:
+	return -ENOMEM;
+}
+#endif
+
 static const char banner[] =
 	KERN_INFO "Exynos Seiren Audio driver, (c)2013 Samsung Electronics\n";
 
@@ -908,9 +956,6 @@ static int esa_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	struct resource *res;
 	int ret = 0;
-#ifdef FW_DOWNLOAD_TEST
-	int n;
-#endif
 
 	printk(banner);
 
@@ -930,41 +975,21 @@ static int esa_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	si.mem = lpass_get_mem();
-	if (!si.mem) {
-		esa_err("Failed to get lpass mem\n");
+	si.sram = lpass_get_mem();
+	if (!si.sram) {
+		esa_err("Failed to get lpass sram\n");
 		return -ENODEV;
 	}
 
-	/* CA5 irq no. */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (!res) {
-		dev_err(&pdev->dev, "Failed to get irq resource\n");
+		dev_err(dev, "Failed to get irq resource\n");
 		return -ENXIO;
 	}
 	si.irq_ca5 = res->start;
 
-	/* base address for IBUF and OBUF */
-	si.bufmem = devm_kzalloc(dev, BASEMEM_SIZE, GFP_KERNEL);
-	if (!si.bufmem) {
-		esa_err("Failed to alloc bufmem\n");
-		return -ENOMEM;
-	}
-
-	/* fw address for TEXT/DATA */
-	si.fwmem = devm_kzalloc(dev, FWMEM_SIZE, GFP_KERNEL);
-	if (!si.fwmem) {
-		esa_err("Failed to alloc fwmem\n");
-		return -ENOMEM;
-	}
-
-	/* mailbox init */
 	si.mailbox = si.regs + 0x80;
 
-	si.bufmem_pa = virt_to_phys(si.bufmem);
-	si.fwmem_pa = virt_to_phys(si.fwmem);
-
-	/* CA5 clock */
 	si.clk_ca5 = clk_get(dev, "ca5");
 	if (IS_ERR(si.clk_ca5)) {
 		dev_err(dev, "ca5 clk not found\n");
@@ -980,8 +1005,23 @@ static int esa_probe(struct platform_device *pdev)
 
 	if (np) {
 		if (of_find_property(np, "samsung,lpass-subip", NULL))
-			lpass_register_subip(&pdev->dev, "ca5");
+			lpass_register_subip(dev, "ca5");
 	}
+
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
+	si.domain = lpass_get_iommu_domain();
+	if (!si.domain) {
+		dev_err(dev, "iommu not available\n");
+		goto err;
+	}
+
+	/* prepare buffer */
+	if (esa_prepare_buffer(dev))
+		goto err;
+#else
+	dev_err(dev, "iommu not available\n");
+	goto err;
+#endif
 
 	/* hold reset */
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
@@ -992,18 +1032,16 @@ static int esa_probe(struct platform_device *pdev)
 	esa_debug("fwmem_pa   = %08X\n", si.fwmem_pa);
 	esa_debug("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
 
-#ifdef FW_DOWNLOAD_TEST
-	for (n = 0; n < 0x5C; n += 4)
-		esa_info("regs_%02X = %08X\n", n, readl(si.regs + n));
-
-	esa_fw_download();
-
-	for (n = 0; n < 0x80; n += 4)
-		esa_info("mailbox %02X = %08X\n", n, readl(si.mailbox + n));
-#endif
-	pm_runtime_enable(&pdev->dev);
+	pm_runtime_enable(dev);
+	pm_runtime_get_sync(dev);
+	pm_runtime_put_sync(dev);
 
 	return 0;
+
+err:
+	clk_put(si.opclk_ca5);
+	clk_put(si.clk_ca5);
+	return -ENODEV;
 }
 
 static int esa_remove(struct platform_device *pdev)
