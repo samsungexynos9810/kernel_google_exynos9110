@@ -420,12 +420,10 @@ static const char *dma_prop_size[2] = {
 	[SNDRV_PCM_STREAM_PLAYBACK] = "samsung,tx-size",
 	[SNDRV_PCM_STREAM_CAPTURE]  = "samsung,rx-size"
 };
-#ifdef CONFIG_SND_SAMSUNG_IOMMU
 static const char *dma_prop_iommu[2] = {
 	[SNDRV_PCM_STREAM_PLAYBACK] = "samsung,tx-iommu",
 	[SNDRV_PCM_STREAM_CAPTURE]  = "samsung,rx-iommu"
 };
-#endif
 
 static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
 					struct device_node *np)
@@ -472,7 +470,10 @@ static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
 		buf->area = ioremap(buf->addr, size);
 	}
 #else
-	buf->area = ioremap(buf->addr, size);
+	if (of_find_property(np, dma_prop_iommu[stream], NULL))
+		return -ENOMEM;
+	else
+		buf->area = ioremap(buf->addr, size);
 #endif
 
 	if (!buf->area)
