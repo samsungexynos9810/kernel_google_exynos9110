@@ -1300,6 +1300,7 @@
 
 	hsi2c_0: hsi2c@14E40000 {
 		compatible = "samsung,exynos5-hsi2c";
+		samsung,polling-mode;
 		reg = <0x14E40000 0x1000>;
 		interrupts = <0 428 0>;
 		#address-cells = <1>;
@@ -1313,6 +1314,7 @@
 
 	hsi2c_1: hsi2c@14E50000 {
 		compatible = "samsung,exynos5-hsi2c";
+		samsung,polling-mode;
 		reg = <0x14E50000 0x1000>;
 		interrupts = <0 429 0>;
 		#address-cells = <1>;
@@ -1326,6 +1328,7 @@
 
 	hsi2c_2: hsi2c@14E60000 {
 		compatible = "samsung,exynos5-hsi2c";
+		samsung,polling-mode;
 		reg = <0x14E60000 0x1000>;
 		interrupts = <0 430 0>;
 		#address-cells = <1>;
@@ -1339,6 +1342,7 @@
 
 	hsi2c_3: hsi2c@14E70000 {
 		compatible = "samsung,exynos5-hsi2c";
+		samsung,polling-mode;
 		reg = <0x14E70000 0x1000>;
 		interrupts = <0 431 0>;
 		#address-cells = <1>;
