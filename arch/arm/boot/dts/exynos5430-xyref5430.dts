@@ -308,11 +308,11 @@
 				};
 
 				ldo17_reg: LDO17 {
-					regulator-name = "vdd_ldo17";
+					regulator-name = "vdd_vmmc";
 					regulator-min-microvolt = <1400000>;
 					regulator-max-microvolt = <3400000>;
 					regulator-always-on;
-					regulator-initial-mode = <3>;
+					regulator-initial-mode = <1>;
 				};
 
 				ldo18_reg: LDO18 {
