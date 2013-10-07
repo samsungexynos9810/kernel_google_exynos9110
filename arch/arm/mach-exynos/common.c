@@ -66,6 +66,7 @@ static const char name_exynos4210[] = "EXYNOS4210";
 static const char name_exynos4212[] = "EXYNOS4212";
 static const char name_exynos4412[] = "EXYNOS4412";
 static const char name_exynos5250[] = "EXYNOS5250";
+static const char name_exynos5422[] = "EXYNOS5422";
 static const char name_exynos5430[] = "EXYNOS5430";
 static const char name_exynos5440[] = "EXYNOS5440";
 
@@ -106,6 +107,12 @@ static struct cpu_table cpu_ids[] __initdata = {
 		.map_io		= exynos5_map_io,
 		.init		= exynos_init,
 		.name		= name_exynos5250,
+	}, {
+		.idcode		= EXYNOS5422_SOC_ID,
+		.idmask		= EXYNOS5_SOC_MASK,
+		.map_io		= exynos5_map_io,
+		.init		= exynos_init,
+		.name		= name_exynos5422,
 	}, {
 		.idcode		= EXYNOS5430_SOC_ID,
 		.idmask		= EXYNOS5_SOC_MASK,
