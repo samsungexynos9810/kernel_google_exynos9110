@@ -248,7 +248,8 @@ static int __init combiner_of_init(struct device_node *np,
 {
 	void __iomem *combiner_base;
 	unsigned int max_nr = 20;
-	int irq_base = -1;
+	unsigned int irq_base = 0;
+	int ret = 0;
 
 	combiner_base = of_iomap(np, 0);
 	if (!combiner_base) {
@@ -267,7 +268,13 @@ static int __init combiner_of_init(struct device_node *np,
 	 * get their IRQ from DT, remove this in order to get dynamic
 	 * allocation.
 	 */
-	irq_base = 160;
+	ret = of_property_read_u32(np, "samsung,combiner-irqbase", &irq_base);
+	if (ret) {
+		irq_base = 160;
+		pr_info("%s: irq base not specified, "
+			"setting default as %d.\n",
+			__func__, irq_base);
+	}
 
 	combiner_init(combiner_base, np, max_nr, irq_base);
 
