@@ -30,6 +30,10 @@
 		};
 	};
 
+	combiner:interrupt-controller@10440000 {
+		samsung,combiner-irqbase = <256>;
+	};
+
 	clock: clock-controller@0x10010000 {
 		compatible = "samsung,exynos5422-clock";
 		reg = <0x10010000 0x30000>;
