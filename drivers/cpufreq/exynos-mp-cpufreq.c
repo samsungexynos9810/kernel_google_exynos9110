@@ -1011,7 +1011,7 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 
 	policy = cpufreq_cpu_get(cpu);
 
-	if (!policy)
+	if (!policy || !policy->governor)
 		goto bad;
 
 #if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
@@ -1052,7 +1052,7 @@ static int exynos_cpu_max_qos_handler(struct notifier_block *b, unsigned long va
 
 	policy = cpufreq_cpu_get(cpu);
 
-	if (!policy)
+	if (!policy || !policy->governor)
 		goto bad;
 
 #if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
@@ -1088,7 +1088,7 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 
 	policy = cpufreq_cpu_get(cpu);
 
-	if (!policy)
+	if (!policy || !policy->governor)
 		goto bad;
 
 #if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
@@ -1129,7 +1129,7 @@ static int exynos_kfc_max_qos_handler(struct notifier_block *b, unsigned long va
 
 	policy = cpufreq_cpu_get(cpu);
 
-	if (!policy)
+	if (!policy || !policy->governor)
 		goto bad;
 
 #if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
