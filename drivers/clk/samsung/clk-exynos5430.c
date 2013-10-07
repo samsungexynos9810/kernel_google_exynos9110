@@ -269,7 +269,7 @@ enum exynos5430_clks {
 
 	/* bus ip gate */
 	gate_bus1srvnd_133 = 2030, gate_ahb2apb_bus1p, gate_bus1np_133,
-	gate_bus1nd_400,
+	gate_bus1nd_400, gate_pmu_bus1, gate_sysreg_bus1,
 
 	gate_pmu_bus2, gate_sysreg_bus2,
 
@@ -653,6 +653,7 @@ enum exynos5430_clks {
 	mout_sclk_mmc0_user, mout_sclk_mmc1_user, mout_sclk_mmc2_user,
 	mout_sclk_ufsunipro_user, mout_mphy_pll_26m_user,
 	mout_phyclk_lli_mphy_to_ufs_user,
+	mout_sclk_mphy_fsys,
 	mout_phyclk_usbdrd30_udrd30_phyclock = 3150,
 	mout_phyclk_usbdrd30_udrd30_pipe_pclk,
 	mout_phyclk_usbhost20_phy_freeclk,
@@ -802,6 +803,7 @@ enum exynos5430_clks {
 	ioclk_audiocdclk0,
 	ioclk_audiocdclk1,
 	ioclk_spdif_extclk,
+	sclk_mphy_pll_26m,
 
 	nr_clks,
 };
@@ -939,7 +941,7 @@ PNAME(mout_bus_dpll_p)		= { "fin_pll", "fout_bus_dpll" };
 PNAME(mout_mem_pll_p)		= { "fin_pll", "fout_mem_pll" };
 PNAME(mout_bus_pll_p)		= { "fin_pll", "fout_bus_pll" };
 PNAME(mout_mfc_pll_p)		= { "fin_pll", "fout_mfc_pll" };
-PNAME(mout_bus_pll_sub_p)	= { "mout_bus_dpll", "mout_bus_pll" };
+PNAME(mout_bus_pll_sub_p)	= { "mout_bus_dpll", "dout_bus_pll" };
 PNAME(mout_aclk_mif_400_a_p)	= { "mout_bus_pll_sub", "dout_mfc_pll_div3" };
 PNAME(mout_aclk_mif_400_b_p)	= { "dout_bus_pll", "mout_aclk_mif_400_a" };
 PNAME(mout_clkm_phy_a_p)	= { "mout_bus_pll_sub", "dout_mfc_pll" };
@@ -1017,6 +1019,7 @@ PNAME(mout_sclk_mmc1_user_p) = { "oscclk", "sclk_mmc1_top" };
 PNAME(mout_sclk_mmc2_user_p) = { "oscclk", "sclk_mmc2_top" };
 PNAME(mout_sclk_ufsunipro_user_p) = { "oscclk", "sclk_ufsunipro_top" };
 PNAME(mout_mphy_pll_26m_user_p) = { "oscclk", "sclk_mphy_pll_26m" };
+PNAME(mout_sclk_mphy_fsys_p) = { "mout_mphy_pll_26m_user", "mout_phyclk_lli_mphy_to_ufs_user" };
 PNAME(mout_phyclk_lli_mphy_to_ufs_user_p) = { "oscclk", "phyclk_lli_mphy_to_ufs" };
 PNAME(mout_phyclk_usbdrd30_udrd30_phyclock_p) = { "oscclk", "phyclk_usbdrd30_udrd30_phyclock_phy" };
 PNAME(mout_phyclk_usbdrd30_udrd30_pipe_pclk_p) = { "oscclk", "phyclk_usbdrd30_udrd30_pipe_pclk_phy" };
@@ -1062,9 +1065,9 @@ PNAME(mout_aclk_csis0_b_p) = { "mout_aclk_csis0_a", "mout_aclk_cam0_333_user" };
 PNAME(mout_aclk_csis1_a_p) = { "mout_aclk_cam0_552_user", "mout_aclk_cam0_400_user" };
 PNAME(mout_aclk_csis1_b_p) = { "mout_aclk_csis1_a", "mout_aclk_cam0_333_user" };
 PNAME(mout_aclk_cam0_400_p) = { "mout_aclk_cam0_400_user", "mout_aclk_cam0_333_user" };
-PNAME(mout_sclk_lite_freecnt_a_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b", "dout_pclk_pixelasync_lite_c", "dout_pclk_lite_d" };
-PNAME(mout_sclk_lite_freecnt_b_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b", "dout_pclk_pixelasync_lite_c", "dout_pclk_lite_d" };
-PNAME(mout_sclk_lite_freecnt_c_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b", "dout_pclk_pixelasync_lite_c", "dout_pclk_lite_d" };
+PNAME(mout_sclk_lite_freecnt_a_p) = { "dout_pclk_lite_a", "dout_pclk_lite_b" };
+PNAME(mout_sclk_lite_freecnt_b_p) = { "mout_sclk_lite_freecnt_a", "dout_pclk_pixelasync_lite_c" };
+PNAME(mout_sclk_lite_freecnt_c_p) = { "mout_sclk_lite_freecnt_b", "dout_pclk_lite_d" };
 
 /* CAM1 */
 PNAME(mout_sclk_isp_spi0_user_p) = { "oscclk", "sclk_isp_spi0_top" };
@@ -1112,6 +1115,7 @@ struct samsung_fixed_rate_clock exynos5430_fixed_rate_clks[] __initdata = {
 
 	CFRATE(phyclk_ufs_mphy_to_lli, NULL, CLK_IS_ROOT, 26000000),
 	CFRATE(phyclk_lli_mphy_to_ufs, NULL, CLK_IS_ROOT, 26000000),
+	CFRATE(sclk_mphy_pll_26m, NULL, CLK_IS_ROOT, 26000000),
 
 	CFRATE(ioclk_audiocdclk0, NULL, CLK_IS_ROOT, 83400000),
 	CFRATE(ioclk_audiocdclk1, NULL, CLK_IS_ROOT, 83400000),
@@ -1271,6 +1275,7 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMUX(mout_phyclk_ufs_tx1_symbol_user, EXYNOS5430_SRC_SEL_FSYS3, 8, 1),
 	CMUX(mout_phyclk_ufs_rx0_symbol_user, EXYNOS5430_SRC_SEL_FSYS3, 12, 1),
 	CMUX(mout_phyclk_ufs_rx1_symbol_user, EXYNOS5430_SRC_SEL_FSYS3, 16, 1),
+	CMUX(mout_sclk_mphy_fsys, EXYNOS5430_SRC_SEL_FSYS4, 0, 1),
 
 	CMUX(mout_aud_pll_user, EXYNOS5430_SRC_SEL_AUD0, 0, 1),
 	CMUX(mout_aud_dpll_user, EXYNOS5430_SRC_SEL_AUD0, 4, 1),
@@ -1344,7 +1349,7 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_egl_pll, "mout_egl2", EXYNOS5430_DIV_EGL1, 0, 3),
 	CDIV(dout_kfc1, "mout_kfc", EXYNOS5430_DIV_KFC0, 0, 3),
 	CDIV(dout_kfc2, "dout_kfc1", EXYNOS5430_DIV_KFC0, 4, 3),
-	CDIV(dout_aclk_kfc, "dout_kfc2", EXYNOS5430_DIV_KFC0, 10, 3),
+	CDIV(dout_aclk_kfc, "dout_kfc2", EXYNOS5430_DIV_KFC0, 8, 3),
 	CDIV(dout_atclk_kfc, "dout_kfc2", EXYNOS5430_DIV_KFC0, 16, 3),
 	CDIV(dout_pclk_dbg_kfc, "dout_kfc2", EXYNOS5430_DIV_KFC0, 20, 3),
 	CDIV(dout_pclk_kfc, "dout_kfc2", EXYNOS5430_DIV_KFC0, 12, 3),
@@ -2243,6 +2248,9 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_audnd_133, "gate_audnd_133", NULL, EXYNOS5430_ENABLE_IP_AUD1, 0, 0, 0),
 
 	/* BUS */
+	CGTE(gate_pmu_bus1, "gate_pmu_bus1", NULL, EXYNOS5430_ENABLE_IP_BUS10, 1, 0, 0),
+	CGTE(gate_sysreg_bus1, "gate_sysreg_bus1", NULL, EXYNOS5430_ENABLE_IP_BUS10, 0, 0, 0),
+
 	CGTE(gate_bus1srvnd_133, "gate_bus1srvnd_133", NULL, EXYNOS5430_ENABLE_IP_BUS11, 3, 0, 0),
 	CGTE(gate_ahb2apb_bus1p, "gate_ahb2apb_bus1p", NULL, EXYNOS5430_ENABLE_IP_BUS11, 2, 0, 0),
 	CGTE(gate_bus1np_133, "gate_bus1np_133", NULL, EXYNOS5430_ENABLE_IP_BUS11, 1, 0, 0),
