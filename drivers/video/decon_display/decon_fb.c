@@ -3641,10 +3641,7 @@ static void decon_fb_set_clkgate_mode(struct s3c_fb *sfb, u32 enable)
 
 static void decon_fb_blending_bit_count_option(struct s3c_fb *sfb, u32 mode)
 {
-	if (mode)
-		writel(BLENDCON_NEW_8BIT_ALPHA_VALUE, sfb->regs + BLENDCON);
-	else
-		writel(BLENDCON_NEW_4BIT_ALPHA_VALUE, sfb->regs + BLENDCON);
+	writel(mode, sfb->regs + BLENDCON);
 }
 
 static void decon_fb_set_vidout(struct s3c_fb *sfb, u32 enable)
@@ -3900,7 +3897,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	decon_fb_reset(sfb);
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
-	decon_fb_blending_bit_count_option(sfb, 1);
+	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_set_vidout(sfb, 1);
 	decon_fb_enable_interrupt(sfb, 1);
 	decon_fb_enable_crc(sfb, 1);
@@ -4310,7 +4307,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	decon_fb_reset(sfb);
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
-	decon_fb_blending_bit_count_option(sfb, 1);
+	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_set_vidout(sfb, 1);
 	decon_fb_enable_interrupt(sfb, 1);
 	decon_fb_enable_crc(sfb, 1);
@@ -4454,7 +4451,7 @@ int s3c_fb_resume(struct device *dev)
 
 	decon_fb_reset(sfb);
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
-	decon_fb_blending_bit_count_option(sfb, 1);
+	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_set_vidout(sfb, 1);
 	decon_fb_enable_interrupt(sfb, 1);
 	decon_fb_enable_crc(sfb, 1);
