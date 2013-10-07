@@ -854,8 +854,9 @@ static int s5p_mipi_dsi_suspend(struct device *dev)
 
 	disable_display_dsi_power(dev);
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-
+	/*
 	pm_runtime_put_sync(dev);
+	*/
 
 	return 0;
 }
@@ -937,8 +938,9 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 
 	disable_display_dsi_power(dsim->dev);
-
+	/*
 	pm_runtime_put_sync(dsim->dev);
+	*/
 
 	return 0;
 }
