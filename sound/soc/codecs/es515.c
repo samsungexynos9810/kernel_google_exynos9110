@@ -3747,7 +3747,7 @@ static irqreturn_t es515_threaded_isr(int irq, void *data)
 #endif
 
 	value = es515_read(NULL, ES515_GET_SYS_INTERRUPT_STATUS);
-	pr_info("%s:%d Reading System Interrupt Status value %d\n",
+	pr_debug("%s:%d Reading System Interrupt Status value %d\n",
 		__func__, __LINE__, value);
 
 	if (value < 0) {
