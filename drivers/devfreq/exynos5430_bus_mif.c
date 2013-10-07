@@ -18,6 +18,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/platform_device.h>
 
+#include <mach/tmu.h>
 #include <mach/devfreq.h>
 #include <mach/asv-exynos.h>
 #include <mach/regs-clock-exynos5430.h>
@@ -1270,6 +1271,7 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 {
 	struct devfreq_data_mif *data = container_of(nb, struct devfreq_data_mif,
 							tmu_notifier);
+
 	return NOTIFY_OK;
 }
 #endif

@@ -20,6 +20,7 @@
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 
+#include <mach/tmu.h>
 #include <mach/asv-exynos.h>
 #include <mach/pm_domains.h>
 #include <mach/regs-clock-exynos5430.h>
@@ -480,7 +481,7 @@ static int exynos5_devfreq_int_target(struct device *dev,
 	*target_freq = opp_get_freq(target_opp);
 	target_volt = opp_get_voltage(target_opp);
 #ifdef CONFIG_EXYNOS_THERMAL
-	target_volt = get_limit_voltage(target_volt, data->volt_offset);
+	target_volt = get_limit_voltage(target_volt, int_data->volt_offset);
 #endif
 	rcu_read_unlock();
 

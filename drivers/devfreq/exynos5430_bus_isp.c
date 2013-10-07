@@ -20,6 +20,7 @@
 #include <linux/of_address.h>
 #include <linux/of_platform.h>
 
+#include <mach/tmu.h>
 #include <mach/asv-exynos.h>
 
 #include "exynos5430_ppmu.h"
@@ -97,6 +98,8 @@ struct devfreq_data_isp {
 	struct regulator *vdd_isp;
 	unsigned long old_volt;
 	unsigned long volt_offset;
+
+	struct notifier_block tmu_notifier;
 };
 
 struct devfreq_clk_list devfreq_isp_clk[CLK_COUNT] = {
@@ -777,7 +780,7 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 }
 
 #ifdef CONFIG_EXYNOS_THERMAL
-static unsigned int get_limit_voltage(unsigned isp voltage, unsigned isp volt_offset)
+static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_offset)
 {
 	if (voltage > LIMIT_COLD_VOLTAGE)
 		return voltage;
@@ -816,7 +819,7 @@ static int exynos5_devfreq_isp_target(struct device *dev,
 	*target_freq = opp_get_freq(target_opp);
 	target_volt = opp_get_voltage(target_opp);
 #ifdef CONFIG_EXYNOS_THERMAL
-	target_volt = get_limit_voltage(target_volt, data->volt_offset);
+	target_volt = get_limit_voltage(target_volt, isp_data->volt_offset);
 #endif
 	rcu_read_unlock();
 
