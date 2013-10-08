@@ -3693,19 +3693,6 @@ static void decon_fb_set_vidoutif(struct s3c_fb *sfb, u32 mode)
 	writel(data, regs);
 }
 
-static void decon_fb_enable_interrupt(struct s3c_fb *sfb, u32 enable)
-{
-	void __iomem *regs = sfb->regs + VIDINTCON0;
-	u32 data = readl(regs);
-
-	if (enable)
-		data |= VIDINTCON0_INT_ENABLE;
-	else
-		data &= ~VIDINTCON0_INT_ENABLE;
-
-	writel(data, regs);
-}
-
 #ifdef CONFIG_FB_EXYNOS_FIMD_V8
 static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 {
@@ -3899,7 +3886,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	decon_fb_enable_interrupt(sfb, 1);
+	s3c_fb_enable_irq(sfb);
 	decon_fb_enable_crc(sfb, 1);
 	decon_fb_enable_crc_clk(sfb, 1);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
@@ -4309,7 +4296,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	decon_fb_enable_interrupt(sfb, 1);
+	s3c_fb_enable_irq(sfb);
 	decon_fb_enable_crc(sfb, 1);
 	decon_fb_enable_crc_clk(sfb, 1);
 
@@ -4453,7 +4440,7 @@ int s3c_fb_resume(struct device *dev)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	decon_fb_enable_interrupt(sfb, 1);
+	s3c_fb_enable_irq(sfb);
 	decon_fb_enable_crc(sfb, 1);
 	decon_fb_enable_crc_clk(sfb, 1);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
