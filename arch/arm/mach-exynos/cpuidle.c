@@ -37,6 +37,7 @@
 #include <mach/regs-clock.h>
 #include <mach/pmu.h>
 #include <mach/smc.h>
+#include <mach/exynos-pm.h>
 #if 0
 #include <mach/asv.h>
 #include <mach/asv.h>
@@ -89,11 +90,17 @@ struct check_reg_lpa {
  */
 
 static struct check_reg_lpa exynos5_power_domain[] = {
-	{.check_reg = EXYNOS5430_GSCL_STATUS,	.check_bit = 0x7},
-	{.check_reg = EXYNOS5430_MFC0_STATUS,	.check_bit = 0x7},
-	{.check_reg = EXYNOS5430_MFC1_STATUS,	.check_bit = 0x7},
-	{.check_reg = EXYNOS5430_G3D_STATUS,	.check_bit = 0x7},
-	{.check_reg = EXYNOS5430_DISP_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5430_GSCL_STATUS,	.check_bit = 0x7},	/* 0x4004 */
+	{.check_reg = EXYNOS5430_ISP_STATUS,	.check_bit = 0x7},	/* 0x4144 */
+	{.check_reg = EXYNOS5430_CAM0_STATUS,	.check_bit = 0x7},	/* 0x4024 */
+	{.check_reg = EXYNOS5430_CAM1_STATUS,	.check_bit = 0x7},	/* 0x40A4 */
+	{.check_reg = EXYNOS5430_MFC0_STATUS,	.check_bit = 0x7},	/* 0x4184 */
+	{.check_reg = EXYNOS5430_MFC1_STATUS,	.check_bit = 0x7},	/* 0x41A4 */
+	{.check_reg = EXYNOS5430_HEVC_STATUS,	.check_bit = 0x7},	/* 0x41C4 */
+#if 0
+	{.check_reg = EXYNOS5430_G3D_STATUS,	.check_bit = 0x7},	/* 0x4064 */
+#endif
+	{.check_reg = EXYNOS5430_DISP_STATUS,	.check_bit = 0x7},	/* 0x4084 */
 };
 
 /*
@@ -102,16 +109,6 @@ static struct check_reg_lpa exynos5_power_domain[] = {
  */
 
 static struct check_reg_lpa exynos5_clock_gating[] = {
-	{.check_reg = EXYNOS5430_ENABLE_IP_DISP0,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_DISP1,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_MFC00,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_MFC01,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_MFC10,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_MFC11,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_ACLK_FSYS0,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_ACLK_FSYS1,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_PERIC0,	.check_bit = 0x00000000},
-	{.check_reg = EXYNOS5430_ENABLE_IP_PERIC1,	.check_bit = 0x00000000},
 };
 
 #if defined(CONFIG_EXYNOS_DEV_DWMCI)
@@ -464,10 +461,92 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 static struct sleep_save exynos5_lpa_save[] = {
 	/* CMU side */
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_TOP),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_FSYS0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_PERIC0),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_PERIC1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_EGL1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_KFC1),
+
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MIF1),
+
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP0),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP1),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP2),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP3),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_MSCL),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_CAM1),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_DISP),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_FSYS0),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_FSYS1),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_PERIC0),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_PERIC1),
+
+	SAVE_ITEM(EXYNOS5430_ISP_PLL_CON0),
+	SAVE_ITEM(EXYNOS5430_ISP_PLL_CON1),
+	SAVE_ITEM(EXYNOS5430_AUD_PLL_CON0),
+	SAVE_ITEM(EXYNOS5430_AUD_PLL_CON1),
+	SAVE_ITEM(EXYNOS5430_AUD_PLL_CON2),
+	SAVE_ITEM(EXYNOS5430_AUD_DPLL_CON0),
+	SAVE_ITEM(EXYNOS5430_AUD_DPLL_CON1),
+	SAVE_ITEM(EXYNOS5430_AUD_DPLL_CON2),
+
+	SAVE_ITEM(EXYNOS5430_DIV_TOP0),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP1),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP2),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP3),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_MSCL),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_CAM10),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_CAM11),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_FSYS0),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_FSYS1),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_FSYS2),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_PERIC0),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_PERIC1),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_PERIC2),
+	SAVE_ITEM(EXYNOS5430_DIV_TOP_PERIC3),
+
+	SAVE_ITEM(EXYNOS5430_BUS_PLL_CON0),
+	SAVE_ITEM(EXYNOS5430_BUS_PLL_CON1),
+	SAVE_ITEM(EXYNOS5430_MEM_PLL_CON0),
+	SAVE_ITEM(EXYNOS5430_MEM_PLL_CON1),
+	SAVE_ITEM(EXYNOS5430_MFC_PLL_CON0),
+	SAVE_ITEM(EXYNOS5430_MFC_PLL_CON1),
+	SAVE_ITEM(EXYNOS5430_BUS_DPLL_CON0),
+	SAVE_ITEM(EXYNOS5430_BUS_DPLL_CON1),
+	SAVE_ITEM(EXYNOS5430_BUS_DPLL_CON2),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF0),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF1),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF2),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF3),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF4),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF5),
+	SAVE_ITEM(EXYNOS5430_DIV_MIF0),
+	SAVE_ITEM(EXYNOS5430_DIV_MIF1),
+	SAVE_ITEM(EXYNOS5430_DIV_MIF2),
+	SAVE_ITEM(EXYNOS5430_DIV_MIF3),
+	SAVE_ITEM(EXYNOS5430_DIV_MIF4),
+
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MIF0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MIF1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MIF2),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MIF3),
+
+	SAVE_ITEM(EXYNOS5430_DIV_KFC0),
+	SAVE_ITEM(EXYNOS5430_DIV_KFC1),
+	SAVE_ITEM(EXYNOS5430_SRC_SEL_KFC0),
+	SAVE_ITEM(EXYNOS5430_DIV_BUS1),
+	SAVE_ITEM(EXYNOS5430_DIV_BUS2),
 };
 
 static struct sleep_save exynos5_set_clksrc[] = {
-	{ .reg = EXYNOS5_CLKSRC_MASK_TOP		, .val = 0xffffffff, },
+	{ .reg = EXYNOS5430_ENABLE_IP_FSYS0		, .val = 0x00007dfb, },
+	{ .reg = EXYNOS5430_ENABLE_IP_PERIC0		, .val = 0x1fffffff, },
+	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1		, .val = 0x00000033, },
+
+	{ .reg = EXYNOS5430_ENABLE_IP_EGL1		, .val = 0x00000fff, },
+	{ .reg = EXYNOS5430_ENABLE_IP_KFC1		, .val = 0x00000fff, },
+
+	{ .reg = EXYNOS5430_ENABLE_IP_MIF1		, .val = 0x01fffff7, },
 };
 
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
@@ -478,6 +557,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	int idle_time, ret = 0;
 	unsigned long tmp;
 	unsigned int cpuid = smp_processor_id();
+	unsigned int cpu_offset;
 
 	/*
 	 * Before enter central sequence mode, clock src register have to set
@@ -492,7 +572,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	/*
 	 * Unmasking all wakeup source.
 	 */
-	__raw_writel(0x7FFFE000, EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK1);
+	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK2);
 
 	/* Configure GPIO Power down control register */
 #ifdef MUST_MODIFY
@@ -512,6 +594,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	save_cpu_arch_register();
 
 	/* Setting Central Sequence Register for power down mode */
+	cpu_offset = cpuid ^ 0x4;
 	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
 	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
 	__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
@@ -523,6 +606,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	set_boot_flag(cpuid, C2_STATE);
 
 	cpu_pm_enter();
+	exynos_lpa_enter();
 
 	ret = cpu_suspend(0, idle_finisher);
 	if (ret) {
@@ -532,25 +616,30 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 
 		goto early_wakeup;
 	}
-#ifdef CONFIG_SMP
-#ifndef CONFIG_APPLY_ARM_TRUSTZONE
-	scu_enable(S5P_VA_SCU);
-#endif
-#endif
+
 	/* For release retention */
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_GPIO_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_UART_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCA_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCB_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCC_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_SPI_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_EBIA_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_EBIB_OPTION);
+	__raw_writel((1 << 28), EXYNOS_PAD_RET_DRAM_OPTION);
+	__raw_writel((1 << 28), EXYNOS_PAD_RET_MAUDIO_OPTION);
+	__raw_writel((1 << 28), EXYNOS_PAD_RET_JTAG_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_MMC2_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_TOP_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_UART_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_MMC0_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_MMC1_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_EBIA_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_EBIB_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_SPI_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_MIF_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_USBXTI_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_BOOTLDO_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_UFS_OPTION);
+	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_FSYSGENIO_OPTION);
 
 early_wakeup:
 
 	clear_boot_flag(cpuid, C2_STATE);
 
+	exynos_lpa_exit();
 	cpu_pm_exit();
 
 	restore_cpu_arch_register();
@@ -563,7 +652,9 @@ early_wakeup:
 			       ARRAY_SIZE(exynos5_lpa_save));
 
 	/* Clear wakeup state register */
-	__raw_writel(0x0, EXYNOS_WAKEUP_STAT);
+	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT);
+	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT1);
+	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT2);
 
 	do_gettimeofday(&after);
 
@@ -592,7 +683,7 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
 		return exynos_enter_core0_aftr(dev, drv, new_index);
 	else
-		return exynos_enter_core0_aftr(dev, drv, new_index);
+		return exynos_enter_core0_lpa(dev, drv, new_index);
 }
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
