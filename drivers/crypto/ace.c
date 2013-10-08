@@ -46,10 +46,6 @@
 #include <mach/secmem.h>
 #endif
 
-#ifdef CONFIG_EXYNOS5_CCI
-#include <plat/cci.h>
-#endif
-
 #include "ace.h"
 #include "ace_sfr.h"
 
@@ -67,9 +63,12 @@
 #define ACE_AWCACHE			0xA
 #endif
 
-#ifdef CONFIG_EXYNOS5_CCI
-#define ACE_ARCACHE			0xf
-#define ACE_AWCACHE			0xf
+#ifdef CONFIG_ACE_USE_CCI
+#define PA_IMEM_USER_CON_SHARED		0x11051004
+#define CONTROL_BY_SFR			0x3
+#define SHARED_SSS_SLIMSSS		(0x3 << 4)
+#define ACE_ARCACHE			0x1
+#define ACE_AWCACHE			0x1
 #endif
 
 #undef ACE_DEBUG_HEARTBEAT
@@ -142,6 +141,9 @@ struct s5p_ace_device {
 #endif
 #ifdef ACE_USE_ACP
 	void __iomem			*sss_usercon;
+#endif
+#ifdef CONFIG_ACE_USE_CCI
+	void __iomem			*sys_usercon;
 #endif
 	spinlock_t			lock;
 	spinlock_t			sw_lock;
@@ -331,8 +333,9 @@ static void s5p_ace_resume_device(struct s5p_ace_device *dev)
 		writel(0x101, dev->sss_usercon
 			+ (PA_SSS_USER_CON & (PAGE_SIZE - 1)));
 #endif
-#ifdef CONFIG_EXYNOS5_CCI
-		dev_cci_snoop_control(SSS, ENABLE_BY_SFR);
+#ifdef CONFIG_ACE_USE_CCI
+		writel(CONTROL_BY_SFR | SHARED_SSS_SLIMSSS | readl(dev->sys_usercon),
+			dev->sys_usercon);
 #endif
 	}
 }
@@ -582,7 +585,7 @@ static int s5p_ace_aes_engine_start(struct s5p_ace_aes_ctx *sctx,
 	if (s5p_ace_dev.ipver == SSS_VER_4)
 		reg |= ACE_FC_BRDMACSWAP_ON;
 
-#if defined(ACE_USE_ACP) || defined(CONFIG_EXYNOS5_CCI)
+#if defined(ACE_USE_ACP) || defined(CONFIG_ACE_USE_CCI)
 	reg |= ACE_ARCACHE << ACE_FC_BRDMACARCACHE_OFS;
 #endif
 	s5p_ace_write_sfr(ACE_FC_BRDMAC, reg);
@@ -590,7 +593,7 @@ static int s5p_ace_aes_engine_start(struct s5p_ace_aes_ctx *sctx,
 	if (s5p_ace_dev.ipver == SSS_VER_4)
 		reg |= ACE_FC_BTDMACSWAP_ON;
 
-#if defined(ACE_USE_ACP) || defined(CONFIG_EXYNOS5_CCI)
+#if defined(ACE_USE_ACP) || defined(CONFIG_ACE_USE_CCI)
 	reg |= ACE_AWCACHE << ACE_FC_BTDMACAWCACHE_OFS;
 #endif
 	s5p_ace_write_sfr(ACE_FC_BTDMAC, reg);
@@ -831,7 +834,7 @@ static int s5p_ace_aes_crypt_dma_start(struct s5p_ace_device *dev)
 		memcpy(sctx->tbuf, sctx->src_addr + count - AES_BLOCK_SIZE,
 			AES_BLOCK_SIZE);
 
-#if !defined(ACE_USE_ACP) && !defined(CONFIG_EXYNOS5_CCI)
+#if !defined(ACE_USE_ACP) && !defined(CONFIG_ACE_USE_CCI)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
 	dmac_clean_range((void *)sctx->src_addr,
 		(void *)sctx->src_addr + count);
@@ -915,7 +918,7 @@ static int s5p_ace_aes_crypt_dma_wait(struct s5p_ace_device *dev)
 	s5p_ace_aes_engine_wait(sctx, dst, src, sctx->dma_size);
 #endif
 
-#if !defined(ACE_USE_ACP) && !defined(CONFIG_EXYNOS5_CCI)
+#if !defined(ACE_USE_ACP) && !defined(CONFIG_ACE_USE_CCI)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
 	dmac_inv_range((void *)sctx->dst_addr,
 		(void *)sctx->dst_addr + sctx->dma_size);
@@ -1670,7 +1673,7 @@ static int s5p_ace_sha_engine(struct s5p_ace_hash_ctx *sctx,
 	if (s5p_ace_dev.ipver == SSS_VER_4)
 		reg |= ACE_FC_HRDMACSWAP_ON;
 
-#if defined(ACE_USE_ACP) || defined(CONFIG_EXYNOS5_CCI)
+#if defined(ACE_USE_ACP) || defined(CONFIG_ACE_USE_CCI)
 	reg |= ACE_ARCACHE << ACE_FC_HRDMACARCACHE_OFS;
 #endif
 	s5p_ace_write_sfr(ACE_FC_HRDMAC, reg);
@@ -1713,7 +1716,7 @@ static int s5p_ace_sha_engine(struct s5p_ace_hash_ctx *sctx,
 	s5p_ace_write_sfr(ACE_HASH_FIFO_MODE, ACE_HASH_FIFO_ON);
 
 	/* Clean data cache */
-#if !defined(ACE_USE_ACP) && !defined(CONFIG_EXYNOS5_CCI)
+#if !defined(ACE_USE_ACP) && !defined(CONFIG_ACE_USE_CCI)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 35)
 	dmac_clean_range((void *)in, (void *)in + len);
 #else
@@ -2504,12 +2507,16 @@ static int s5p_ace_probe(struct platform_device *pdev)
 		+ (PA_SSS_USER_CON & (PAGE_SIZE - 1)));
 #endif
 
-#if defined(CONFIG_EXYNOS5_CCI)
-	ret = dev_cci_snoop_control(SSS, ENABLE_BY_SFR);
-	if (ret) {
-		dev_err(&pdev->dev, "failed to enable snoop, CCI\n");
+#if defined(CONFIG_ACE_USE_CCI)
+	s5p_adt->sys_usercon = ioremap(PA_IMEM_USER_CON_SHARED, SZ_4K);
+	if (s5p_adt->sys_usercon == NULL) {
+		dev_err(&pdev->dev, "failed to remap register SSS_USER_CON\n");
+		ret = -EBUSY;
 		goto err_cci;
 	}
+
+	writel(CONTROL_BY_SFR | SHARED_SSS_SLIMSSS | readl(s5p_adt->sys_usercon),
+		s5p_adt->sys_usercon);
 #endif
 	spin_lock_init(&s5p_adt->lock);
 	spin_lock_init(&s5p_adt->sw_lock);
@@ -2640,7 +2647,9 @@ err_reg_bc:
 #ifdef CONFIG_ACE_HASH_ASYNC
 	tasklet_kill(&s5p_adt->task_hash);
 #endif
-#ifdef CONFIG_EXYNOS5_CCI
+#ifdef CONFIG_ACE_USE_CCI
+	iounmap(s5p_adt->sys_usercon);
+	s5p_adt->sys_usercon = NULL;
 err_cci:
 #endif
 #ifdef ACE_USE_ACP
@@ -2689,6 +2698,13 @@ static int s5p_ace_remove(struct platform_device *dev)
 		iounmap(s5p_adt->ace_base);
 		s5p_adt->ace_base = NULL;
 	}
+
+#ifdef CONFIG_ACE_USE_CCI
+	if (s5p_adt->sys_usercon) {
+		iounmap(s5p_adt->sys_usercon);
+		s5p_adt->sys_usercon = NULL;
+	}
+#endif
 
 #ifdef ACE_USE_ACP
 	if (s5p_adt->sss_usercon) {
