@@ -62,7 +62,7 @@ struct devfreq_opp_table devfreq_disp_opp_list[] = {
 };
 
 struct devfreq_clk_info aclk_disp_333[] = {
-	{LV0,	334000000,	0,	NULL},
+	{LV0,	333000000,	0,	NULL},
 	{LV1,	222000000,	0,	NULL},
 	{LV2,	167000000,	0,	NULL},
 	{LV3,	134000000,	0,	NULL},
@@ -76,9 +76,9 @@ struct devfreq_clk_info aclk_disp_222[] = {
 };
 
 struct devfreq_clk_info sclk_dsd[] = {
-	{LV0,	334000000,	0,	NULL},
-	{LV1,	334000000,	0,	NULL},
-	{LV2,	334000000,	0,	NULL},
+	{LV0,	333000000,	0,	NULL},
+	{LV1,	333000000,	0,	NULL},
+	{LV2,	333000000,	0,	NULL},
 	{LV3,	 84000000,	0,	NULL},
 };
 
