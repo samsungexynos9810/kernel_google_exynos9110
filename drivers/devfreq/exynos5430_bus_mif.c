@@ -17,6 +17,7 @@
 #include <linux/clk-provider.h>
 #include <linux/regulator/consumer.h>
 #include <linux/platform_device.h>
+#include <linux/workqueue.h>
 
 #include <mach/tmu.h>
 #include <mach/devfreq.h>
@@ -39,6 +40,10 @@
 #define TIMING_RFCPB_MASK	(0x3F)
 
 #define DLL_ON_BASE_VOLT	(900000)
+
+#define MRSTATUS_THERMAL_BIT_SHIFT	(7)
+#define MRSTATUS_THERMAL_BIT_MASK	(1)
+#define MRSTATUS_THERMAL_LV_MASK	(0x7)
 
 enum devfreq_mif_idx {
 	LV0,
@@ -76,6 +81,17 @@ enum devfreq_mif_clk {
 	CLK_COUNT,
 };
 
+enum devfreq_mif_thermal_autorate {
+	RATE_ONE = 0x000B005D,
+	RATE_HALF = 0x0005002E,
+	RATE_QUARTER = 0x00030017,
+};
+
+enum devfreq_mif_thermal_channel {
+	THERMAL_CHANNEL0,
+	THERMAL_CHANNEL1,
+};
+
 struct devfreq_data_mif {
 	struct device *dev;
 	struct devfreq *devfreq;
@@ -105,6 +121,14 @@ struct devfreq_mif_timing_parameter {
 	unsigned int timing_rfcpb;
 	unsigned int dvfs_con1;
 	unsigned int mif_drex_mr_data[4];
+};
+
+struct devfreq_thermal_work {
+	struct delayed_work devfreq_mif_thermal_work;
+	enum devfreq_mif_thermal_channel channel;
+	struct workqueue_struct *work_queue;
+	unsigned int polling_period;
+	unsigned long max_freq;
 };
 
 struct devfreq_clk_list devfreq_mif_clk[CLK_COUNT] = {
@@ -523,6 +547,18 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 		},
 	},
 };
+
+static struct workqueue_struct *devfreq_mif_thermal_wq_ch0;
+static struct workqueue_struct *devfreq_mif_thermal_wq_ch1;
+static struct devfreq_thermal_work devfreq_mif_ch0_work = {
+	.channel = THERMAL_CHANNEL0,
+	.polling_period = 1000,
+};
+static struct devfreq_thermal_work devfreq_mif_ch1_work = {
+	.channel = THERMAL_CHANNEL1,
+	.polling_period = 1000,
+};
+struct devfreq_data_mif *data_mif;
 
 static struct pm_qos_request exynos5_mif_qos;
 static struct pm_qos_request boot_mif_qos;
@@ -1114,6 +1150,10 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 #endif
 	rcu_read_unlock();
 
+	*target_freq = min3(*target_freq,
+				devfreq_mif_ch0_work.max_freq,
+				devfreq_mif_ch1_work.max_freq);
+
 	target_idx = exynos5_devfreq_mif_get_idx(devfreq_mif_opp_list,
 						ARRAY_SIZE(devfreq_mif_opp_list),
 						*target_freq);
@@ -1337,6 +1377,99 @@ static int exynos5_devfreq_mif_init_parameter(struct devfreq_data_mif *data)
 	return 0;
 }
 
+static void exynos5_devfreq_thermal_event(struct devfreq_thermal_work *work)
+{
+	if (work->polling_period == 0)
+		return;
+
+	queue_delayed_work(work->work_queue,
+				&work->devfreq_mif_thermal_work,
+				msecs_to_jiffies(work->polling_period));
+}
+
+static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
+{
+	struct delayed_work *d_work = container_of(work, struct delayed_work, work);
+	struct devfreq_thermal_work *thermal_work =
+			container_of(d_work, struct devfreq_thermal_work, devfreq_mif_thermal_work);
+	unsigned int mrstatus, tmp_thermal_level, max_thermal_level = 0;
+	unsigned int timingaref_value = RATE_ONE;
+	unsigned long max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
+	bool throttling = false;
+	void __iomem *base_drex = NULL;
+
+	if (thermal_work->channel == THERMAL_CHANNEL0) {
+		base_drex = data_mif->base_drex0;
+	} else if (thermal_work->channel == THERMAL_CHANNEL1) {
+		base_drex = data_mif->base_drex1;
+	}
+
+	__raw_writel(0x09001000, base_drex + 0x10);
+	mrstatus = __raw_readl(base_drex + 0x54);
+	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
+	if (tmp_thermal_level > max_thermal_level)
+		max_thermal_level = tmp_thermal_level;
+
+	__raw_writel(0x09101000, base_drex + 0x10);
+	mrstatus = __raw_readl(base_drex + 0x54);
+	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
+	if (tmp_thermal_level > max_thermal_level)
+		max_thermal_level = tmp_thermal_level;
+
+	switch (max_thermal_level) {
+	case 0:
+	case 1:
+	case 2:
+	case 3:
+		timingaref_value = RATE_ONE;
+		thermal_work->polling_period = 1000;
+		break;
+	case 4:
+		timingaref_value = RATE_HALF;
+		thermal_work->polling_period = 300;
+		break;
+	case 6:
+		throttling = true;
+	case 5:
+		timingaref_value = RATE_QUARTER;
+		thermal_work->polling_period = 100;
+		break;
+	default:
+		pr_err("DEVFREQ(MIF) : can't support memory thermal level\n");
+		return;
+	}
+
+	if (throttling)
+		max_freq = devfreq_mif_opp_list[LV7].freq;
+
+	if (thermal_work->max_freq != max_freq) {
+		thermal_work->max_freq = max_freq;
+		mutex_lock(&data_mif->devfreq->lock);
+		update_devfreq(data_mif->devfreq);
+		mutex_unlock(&data_mif->devfreq->lock);
+	}
+
+	__raw_writel(timingaref_value, base_drex + 0x30);
+	exynos5_devfreq_thermal_event(thermal_work);
+}
+
+static void exynos5_devfreq_init_thermal(void)
+{
+	devfreq_mif_thermal_wq_ch0 = create_freezable_workqueue("devfreq_thermal_wq_ch0");
+	devfreq_mif_thermal_wq_ch1 = create_freezable_workqueue("devfreq_thermal_wq_ch1");
+
+	INIT_DELAYED_WORK(&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
+			exynos5_devfreq_thermal_monitor);
+	INIT_DELAYED_WORK(&devfreq_mif_ch1_work.devfreq_mif_thermal_work,
+			exynos5_devfreq_thermal_monitor);
+
+	devfreq_mif_ch0_work.work_queue = devfreq_mif_thermal_wq_ch0;
+	devfreq_mif_ch1_work.work_queue = devfreq_mif_thermal_wq_ch1;
+
+	exynos5_devfreq_thermal_event(&devfreq_mif_ch0_work);
+	exynos5_devfreq_thermal_event(&devfreq_mif_ch1_work);
+}
+
 static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -1348,6 +1481,8 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_data;
 	}
+
+	exynos5_devfreq_init_thermal();
 
 	clk_set_rate(devfreq_mif_clk[FOUT_MEM_PLL].clk,
 		1066000000);
@@ -1383,6 +1518,7 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	data->base_idx_dll_on = -1;
 
 	platform_set_drvdata(pdev, data);
+	data_mif = data;
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
@@ -1409,6 +1545,8 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 
 	data->devfreq->min_freq = plat_data->default_qos;
 	data->devfreq->max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
+	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
+	devfreq_mif_ch1_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
@@ -1442,6 +1580,11 @@ static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
 	iounmap(data->base_drex1);
 	iounmap(data->base_lpddr_phy0);
 	iounmap(data->base_lpddr_phy1);
+
+	flush_workqueue(devfreq_mif_thermal_wq_ch0);
+	destroy_workqueue(devfreq_mif_thermal_wq_ch0);
+	flush_workqueue(devfreq_mif_thermal_wq_ch1);
+	destroy_workqueue(devfreq_mif_thermal_wq_ch1);
 
 	devfreq_remove_device(data->devfreq);
 
