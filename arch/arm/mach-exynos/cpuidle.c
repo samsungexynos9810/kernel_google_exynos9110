@@ -626,6 +626,9 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	unsigned int cpuid = smp_processor_id(), cpu_offset = 0;
 	unsigned int temp;
 
+	if (!(cpuid & 0x4))
+		return exynos_enter_idle(dev, drv, (index - 1));
+
 	local_irq_disable();
 	do_gettimeofday(&before);
 
