@@ -3683,6 +3683,12 @@ static void decon_fb_enable_crc_clk(struct s3c_fb *sfb, u32 enable)
 	writel(data, regs);
 }
 
+static void decon_fb_set_crc(struct s3c_fb *sfb)
+{
+	decon_fb_enable_crc(sfb, true);
+	decon_fb_enable_crc_clk(sfb, true);
+}
+
 static void decon_fb_set_vidoutif(struct s3c_fb *sfb, u32 mode)
 {
 	void __iomem *regs = sfb->regs + VIDOUTCON0;
@@ -3887,8 +3893,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
 	s3c_fb_enable_irq(sfb);
-	decon_fb_enable_crc(sfb, 1);
-	decon_fb_enable_crc_clk(sfb, 1);
+	decon_fb_set_crc(sfb);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	decon_fb_set_vidoutif(sfb, 2);
 #else
@@ -4297,9 +4302,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
 	s3c_fb_enable_irq(sfb);
-	decon_fb_enable_crc(sfb, 1);
-	decon_fb_enable_crc_clk(sfb, 1);
-
+	decon_fb_set_crc(sfb);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	decon_fb_set_vidoutif(sfb, 2);
 #else
@@ -4441,8 +4444,7 @@ int s3c_fb_resume(struct device *dev)
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
 	s3c_fb_enable_irq(sfb);
-	decon_fb_enable_crc(sfb, 1);
-	decon_fb_enable_crc_clk(sfb, 1);
+	decon_fb_set_crc(sfb);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	decon_fb_set_vidoutif(sfb, 2);
 #else
