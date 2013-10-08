@@ -28,8 +28,8 @@
 /* VIDOUTCON0 */
 #define VIDOUTCON0				(0x10)
 
-#define VIDOUTCON0_LCD_F			(0x1 << 24)
-#define VIDOUTCON0_LCD_F_SHIFT			(24)
+#define VIDOUTCON0_LCD_ON_F			(0x1 << 24)
+#define VIDOUTCON0_LCD_OFF_F			(0x0 << 24)
 #define VIDOUTCON0_IF_SHIFT			(20)
 #define VIDOUTCON0_IF_MASK			(0x3 << 20)
 #define VIDOUTCON0_RGBIF_F			(0x0 << 20)
