@@ -77,6 +77,8 @@ struct devfreq_data_int {
 	unsigned long old_volt;
 	unsigned long volt_offset;
 
+	struct mutex lock;
+
 	struct notifier_block tmu_notifier;
 };
 
@@ -470,6 +472,8 @@ static int exynos5_devfreq_int_target(struct device *dev,
 	unsigned long target_volt;
 	unsigned long old_freq;
 
+	mutex_lock(&int_data->lock);
+
 	rcu_read_lock();
 	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
 	if (IS_ERR(target_opp)) {
@@ -507,6 +511,8 @@ static int exynos5_devfreq_int_target(struct device *dev,
 		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
 	}
 out:
+	mutex_unlock(&int_data->lock);
+
 	return ret;
 }
 
@@ -631,6 +637,52 @@ static int exynos5_devfreq_int_tmu_notifier(struct notifier_block *nb, unsigned 
 						void *v)
 {
 	struct devfreq_data_int *data = container_of(nb, struct devfreq_data_int, tmu_notifier);
+	unsigned int prev_volt, set_volt;
+	unsigned int *on = v;
+
+	if (event == TMU_COLD) {
+		if (pm_qos_request_active(&exynos5_int_qos))
+			pm_qos_update_request(&exynos5_int_qos,
+					exynos5_devfreq_int_profile.initial_freq);
+
+		if (*on) {
+			mutex_lock(&data->lock);
+
+			prev_volt = regulator_get_voltage(data->vdd_int);
+
+			if (data->volt_offset != COLD_VOLT_OFFSET) {
+				data->volt_offset = COLD_VOLT_OFFSET;
+			} else {
+				mutex_unlock(&data->lock);
+				return NOTIFY_OK;
+			}
+
+			set_volt = get_limit_voltage(prev_volt, data->volt_offset);
+			regulator_set_voltage(data->vdd_int, set_volt, set_volt + VOLT_STEP);
+
+			mutex_unlock(&data->lock);
+		} else {
+			mutex_lock(&data->lock);
+
+			prev_volt = regulator_get_voltage(data->vdd_int);
+
+			if (data->volt_offset != 0) {
+				data->volt_offset = 0;
+			} else {
+				mutex_unlock(&data->lock);
+				return NOTIFY_OK;
+			}
+
+			set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
+			regulator_set_voltage(data->vdd_int, set_volt, set_volt + VOLT_STEP);
+
+			mutex_unlock(&data->lock);
+		}
+
+		if (pm_qos_request_active(&exynos5_int_qos))
+			pm_qos_update_request(&exynos5_int_qos,
+					exynos5430_qos_int.default_qos);
+	}
 
 	return NOTIFY_OK;
 }
@@ -674,6 +726,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 		goto err_inittable;
 
 	platform_set_drvdata(pdev, data);
+	mutex_init(&data->lock);
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;

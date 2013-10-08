@@ -99,6 +99,8 @@ struct devfreq_data_isp {
 	unsigned long old_volt;
 	unsigned long volt_offset;
 
+	struct mutex lock;
+
 	struct notifier_block tmu_notifier;
 };
 
@@ -779,6 +781,19 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 	return 0;
 }
 
+static int exynos5_devfreq_isp_set_volt(struct devfreq_data_isp *data,
+		unsigned long volt,
+		unsigned long volt_range)
+{
+	if (data->old_volt == volt)
+		goto out;
+
+	regulator_set_voltage(data->vdd_isp, volt, volt_range);
+	data->old_volt = volt;
+out:
+	return 0;
+}
+
 #ifdef CONFIG_EXYNOS_THERMAL
 static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_offset)
 {
@@ -807,6 +822,8 @@ static int exynos5_devfreq_isp_target(struct device *dev,
 	int target_idx, old_idx;
 	unsigned long target_volt;
 	unsigned long old_freq;
+
+	mutex_lock(&isp_data->lock);
 
 	rcu_read_lock();
 	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
@@ -837,8 +854,16 @@ static int exynos5_devfreq_isp_target(struct device *dev,
 	if (old_freq == *target_freq)
 		goto out;
 
-	exynos5_devfreq_isp_set_freq(isp_data, target_idx, old_idx);
+	if (old_freq < *target_freq) {
+		exynos5_devfreq_isp_set_volt(isp_data, target_volt, target_volt + VOLT_STEP);
+		exynos5_devfreq_isp_set_freq(isp_data, target_idx, old_idx);
+	} else {
+		exynos5_devfreq_isp_set_freq(isp_data, target_idx, old_idx);
+		exynos5_devfreq_isp_set_volt(isp_data, target_volt, target_volt + VOLT_STEP);
+	}
 out:
+	mutex_unlock(&isp_data->lock);
+
 	return ret;
 }
 
@@ -951,6 +976,52 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 						void *v)
 {
 	struct devfreq_data_isp *data = container_of(nb, struct devfreq_data_isp, tmu_notifier);
+	unsigned int prev_volt, set_volt;
+	unsigned int *on = v;
+
+	if (event == TMU_COLD) {
+		if (pm_qos_request_active(&exynos5_isp_qos))
+			pm_qos_update_request(&exynos5_isp_qos,
+					exynos5_devfreq_isp_profile.initial_freq);
+
+		if (*on) {
+			mutex_lock(&data->lock);
+
+			prev_volt = regulator_get_voltage(data->vdd_isp);
+
+			if (data->volt_offset != COLD_VOLT_OFFSET) {
+				data->volt_offset = COLD_VOLT_OFFSET;
+			} else {
+				mutex_unlock(&data->lock);
+				return NOTIFY_OK;
+			}
+
+			set_volt = get_limit_voltage(prev_volt, data->volt_offset);
+			regulator_set_voltage(data->vdd_isp, set_volt, set_volt + VOLT_STEP);
+
+			mutex_unlock(&data->lock);
+		} else {
+			mutex_lock(&data->lock);
+
+			prev_volt = regulator_get_voltage(data->vdd_isp);
+
+			if (data->volt_offset != 0) {
+				data->volt_offset = 0;
+			} else {
+				mutex_unlock(&data->lock);
+				return NOTIFY_OK;
+			}
+
+			set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
+			regulator_set_voltage(data->vdd_isp, set_volt, set_volt + VOLT_STEP);
+
+			mutex_unlock(&data->lock);
+		}
+
+		if (pm_qos_request_active(&exynos5_isp_qos))
+			pm_qos_update_request(&exynos5_isp_qos,
+					exynos5430_qos_isp.default_qos);
+	}
 
 	return NOTIFY_OK;
 }
@@ -994,10 +1065,11 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 		goto err_inittable;
 
 	platform_set_drvdata(pdev, data);
+	mutex_init(&data->lock);
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
-	data->vdd_isp = regulator_get(NULL, "vdd_isp/cam0");
+	data->vdd_isp = regulator_get(NULL, "vdd_disp/cam0");
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_isp_profile,
 						"simple_ondemand",
