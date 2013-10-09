@@ -300,6 +300,8 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 	else
 		samsung_usb2phy_enable(sphy);
 
+	sphy->active = true;
+
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */
@@ -353,9 +355,18 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 			samsung_hsicphy_set_isolation(sphy, true);
 	}
 
+	sphy->active = false;
+
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	clk_disable_unprepare(sphy->clk);
+}
+
+static bool samsung_usb2phy_is_active(struct usb_phy *phy)
+{
+	struct samsung_usbphy *sphy = phy_to_sphy(phy);
+
+	return sphy->active;
 }
 
 static int samsung_usb2phy_probe(struct platform_device *pdev)
@@ -417,6 +428,7 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
 	sphy->phy.label		= "samsung-usb2phy";
 	sphy->phy.init		= samsung_usb2phy_init;
 	sphy->phy.shutdown	= samsung_usb2phy_shutdown;
+	sphy->phy.is_active	= samsung_usb2phy_is_active;
 	sphy->ref_clk_freq	= samsung_usbphy_get_refclk_freq(sphy);
 
 	sphy->phy.otg		= otg;

@@ -96,9 +96,10 @@ struct usb_phy {
 	/* to support controllers that have multiple transceivers */
 	struct list_head	head;
 
-	/* initialize/shutdown the OTG controller */
+	/* initialize/shutdown/get status of the OTG controller */
 	int	(*init)(struct usb_phy *x);
 	void	(*shutdown)(struct usb_phy *x);
+	bool	(*is_active)(struct usb_phy *x);
 
 	/* enable/disable VBUS */
 	int	(*set_vbus)(struct usb_phy *x, int on);
@@ -170,6 +171,16 @@ usb_phy_shutdown(struct usb_phy *x)
 {
 	if (x->shutdown)
 		x->shutdown(x);
+}
+
+static inline bool
+usb_phy_is_active(struct usb_phy *x)
+{
+	if (x->is_active)
+		return x->is_active(x);
+
+	/* Always active by default */
+	return true;
 }
 
 static inline int

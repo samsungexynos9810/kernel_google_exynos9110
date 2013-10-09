@@ -189,6 +189,8 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
 	/* Initialize usb phy registers */
 	samsung_exynos5_usb3phy_enable(sphy);
 
+	sphy->active = true;
+
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */
@@ -223,9 +225,18 @@ static void samsung_usb3phy_shutdown(struct usb_phy *phy)
 	/* Enable phy isolation */
 	samsung_usbphy_set_isolation(sphy, true);
 
+	sphy->active = false;
+
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	clk_disable_unprepare(sphy->clk);
+}
+
+static bool samsung_usb3phy_is_active(struct usb_phy *phy)
+{
+	struct samsung_usbphy *sphy = phy_to_sphy(phy);
+
+	return sphy->active;
 }
 
 static int samsung_usb3phy_probe(struct platform_device *pdev)
@@ -273,6 +284,7 @@ static int samsung_usb3phy_probe(struct platform_device *pdev)
 	sphy->phy.label		= "samsung-usb3phy";
 	sphy->phy.init		= samsung_usb3phy_init;
 	sphy->phy.shutdown	= samsung_usb3phy_shutdown;
+	sphy->phy.is_active	= samsung_usb3phy_is_active;
 	sphy->drv_data		= samsung_usbphy_get_driver_data(pdev);
 	sphy->ref_clk_freq	= samsung_usbphy_get_refclk_freq(sphy);
 
