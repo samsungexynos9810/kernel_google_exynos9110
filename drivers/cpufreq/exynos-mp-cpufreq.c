@@ -502,6 +502,9 @@ static int exynos_target(struct cpufreq_policy *policy,
 		goto out;
 	}
 
+	if (freq_table[index].frequency != target_freq)
+		target_freq = freq_table[index].frequency;
+
 	pr_debug("%s[%d]: new_freq[%d], index[%d]\n",
 				__func__, cur, target_freq, index);
 
