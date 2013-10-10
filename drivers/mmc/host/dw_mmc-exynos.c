@@ -73,6 +73,22 @@ static int dw_mci_exynos_priv_init(struct dw_mci *host)
 	return 0;
 }
 
+int dw_mci_exynos_request_status(void)
+{
+	int ret = DW_MMC_REQ_BUSY, i;
+
+	for (i = 0;i < dw_mci_host_count; i++) {
+		struct dw_mci *host = dw_mci_lpa_host[i];
+		if (host->req_state == DW_MMC_REQ_BUSY) {
+			ret = DW_MMC_REQ_BUSY;
+			break;
+		} else
+			ret = DW_MMC_REQ_IDLE;
+	}
+
+	return ret;
+}
+
 /*
  * MSHC SFR save/restore
  */

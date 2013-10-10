@@ -1213,6 +1213,8 @@ static void dw_mci_start_request(struct dw_mci *host,
 	struct mmc_request *mrq = slot->mrq;
 	struct mmc_command *cmd;
 
+	host->req_state = DW_MMC_REQ_BUSY;
+
 	cmd = mrq->sbc ? mrq->sbc : mrq->cmd;
 	__dw_mci_start_request(host, slot, cmd);
 }
@@ -1575,6 +1577,8 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
 	WARN_ON(host->cmd || host->data);
 
 	del_timer(&host->timer);
+
+	host->req_state = DW_MMC_REQ_IDLE;
 
 	host->cur_slot->mrq = NULL;
 	host->mrq = NULL;
