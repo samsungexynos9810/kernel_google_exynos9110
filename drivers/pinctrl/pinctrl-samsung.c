@@ -1151,7 +1151,7 @@ static void samsung_pinctrl_suspend_dev(
 		if (!widths[PINCFG_TYPE_CON_PDN])
 			continue;
 
-		for (type = 0; type <= PINCFG_TYPE_DRV; type++)
+		for (type = 0; type < PINCFG_TYPE_NUM; type++)
 			if (widths[type])
 				bank->pm_save[type] = readl(reg + offs[type]);
 
@@ -1226,7 +1226,7 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 		writel(bank->pm_save[PINCFG_TYPE_FUNC], reg + offs[PINCFG_TYPE_FUNC]);
 		writel(bank->pm_save[PINCFG_TYPE_DAT] & bank->dat_mask,
 				reg + offs[PINCFG_TYPE_DAT]);
-		for (type = PINCFG_TYPE_PUD; type <= PINCFG_TYPE_DRV; type++)
+		for (type = PINCFG_TYPE_PUD; type < PINCFG_TYPE_NUM; type++)
 			if (widths[type])
 				writel(bank->pm_save[type], reg + offs[type]);
 	}
