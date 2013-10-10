@@ -1132,7 +1132,6 @@ static void samsung_pinctrl_suspend_dev(
 	struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
-	struct pinctrl_dev *pctl_dev = drvdata->pctl_dev;
 	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
@@ -1169,8 +1168,6 @@ static void samsung_pinctrl_suspend_dev(
 		}
 	}
 
-	pinctrl_force_sleep(pctl_dev);
-
 	ctrl->suspend(drvdata);
 }
 
@@ -1185,7 +1182,6 @@ static void samsung_pinctrl_suspend_dev(
 static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
-	struct pinctrl_dev *pctl_dev = drvdata->pctl_dev;
 	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
@@ -1193,8 +1189,6 @@ static void samsung_pinctrl_resume_dev(struct samsung_pinctrl_drv_data *drvdata)
 		return;
 
 	ctrl->resume(drvdata);
-
-	pinctrl_force_default(pctl_dev);
 
 	for (i = 0; i < ctrl->nr_banks; i++) {
 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
