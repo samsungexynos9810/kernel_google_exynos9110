@@ -1216,7 +1216,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		}
 		set_bit(FIMC_IS_ISCHAIN_LOADED, &this->state);
 
-#if !defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5410) || defined(CONFIG_SOC_EXYNOS5420)
 		/* 3. S/W reset pixel async bridge */
 		if (soc_is_exynos5410() || soc_is_exynos5420())
 			tdnr_s3d_pixel_async_sw_reset(this);
