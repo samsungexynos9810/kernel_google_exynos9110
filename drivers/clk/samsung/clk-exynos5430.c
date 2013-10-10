@@ -1494,9 +1494,9 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_pclk_fd, "dout_aclk_fd", EXYNOS5430_DIV_CAM11, 12, 2),
 
 	CDIV(dout_aclk_isp_c_200, "mout_aclk_isp_400_user", EXYNOS5430_DIV_ISP, 0, 3),
-	CDIV(dout_aclk_isp_d_200, "mout_aclk_isp_400_user", EXYNOS5430_DIV_CAM10, 4, 3),
-	CDIV(dout_pclk_isp, "mout_aclk_isp_400_user", EXYNOS5430_DIV_CAM10, 8, 3),
-	CDIV(dout_pclk_isp_dis, "mout_aclk_isp_dis_400_user", EXYNOS5430_DIV_CAM10, 12, 3),
+	CDIV(dout_aclk_isp_d_200, "mout_aclk_isp_400_user", EXYNOS5430_DIV_ISP, 4, 3),
+	CDIV(dout_pclk_isp, "mout_aclk_isp_400_user", EXYNOS5430_DIV_ISP, 8, 3),
+	CDIV(dout_pclk_isp_dis, "mout_aclk_isp_dis_400_user", EXYNOS5430_DIV_ISP, 12, 3),
 };
 
 #define CGTE(_id, cname, pname, o, b, f, gf) \
