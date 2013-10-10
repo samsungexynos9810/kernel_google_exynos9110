@@ -149,12 +149,12 @@ struct devfreq_clk_list devfreq_isp_clk[CLK_COUNT] = {
 };
 
 struct devfreq_opp_table devfreq_isp_opp_list[] = {
-	{LV0,	666000,	1000000},
-	{LV1,	555000,	1000000},
-	{LV2,	444000,	1000000},
-	{LV3,	333000, 1000000},
-	{LV4,	222000,	1000000},
-	{LV5,	111000,	1000000},
+	{LV0,	666000,	950000},
+	{LV1,	555000,	950000},
+	{LV2,	444000,	950000},
+	{LV3,	333000, 950000},
+	{LV4,	222000,	950000},
+	{LV5,	111000,	950000},
 };
 
 struct devfreq_clk_state mux_sclk_pixelasync_lite_c[] = {
