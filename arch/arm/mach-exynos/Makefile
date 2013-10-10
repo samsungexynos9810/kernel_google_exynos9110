@@ -13,7 +13,7 @@ obj-				:=
 # Core
 
 obj-$(CONFIG_ARCH_EXYNOS)	+= common.o
-obj-$(CONFIG_SOC_EXYNOS5430)	+= asv-exynos.o
+obj-$(CONFIG_SOC_EXYNOS5430)	+= asv-exynos.o asv-exynos5430.o
 
 obj-$(CONFIG_EXYNOS5430_BTS)	+= bts-exynos5430.o
 obj-$(CONFIG_SUSPEND)		+= pm-exynos5430.o

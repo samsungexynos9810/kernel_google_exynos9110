@@ -203,6 +203,10 @@ config EXYNOS_SETUP_SPI
 	help
 	  Common setup code for SPI GPIO configurations.
 
+config ASV_MARGIN_TEST
+	bool "Enable margin test"
+	default n
+
 # machine support
 
 if ARCH_EXYNOS4

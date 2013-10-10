@@ -145,8 +145,7 @@ static int __init asv_init(void)
 
 	/* Define init function for each SoC types */
 	if (soc_is_exynos5430()) {
-		/* FIXME: should be implement soc driver */
-		//ret = exynos5430_init_asv(exynos_asv_common);
+		ret = exynos5430_init_asv(exynos_asv_common);
 	} else {
 		pr_err("ASV : Unknown SoC type\n");
 		ret = -EINVAL;
