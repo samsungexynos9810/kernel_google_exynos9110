@@ -989,6 +989,45 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->self_calibration_mode = 0;
 	ext->I2CSclk = I2C_L0;
 
+	/* 2P2 */
+	enum_sensor[SENSOR_NAME_S5K2P2].sensor = SENSOR_NAME_S5K2P2;
+	enum_sensor[SENSOR_NAME_S5K2P2].pixel_width = 5312 + 16;
+	enum_sensor[SENSOR_NAME_S5K2P2].pixel_height = 2990 + 10;
+	enum_sensor[SENSOR_NAME_S5K2P2].active_width = 5312;
+	enum_sensor[SENSOR_NAME_S5K2P2].active_height = 2990;
+	enum_sensor[SENSOR_NAME_S5K2P2].max_framerate = 120;
+	enum_sensor[SENSOR_NAME_S5K2P2].csi_ch = sensor_info->csi_id;
+	enum_sensor[SENSOR_NAME_S5K2P2].flite_ch = sensor_info->flite_id;
+	enum_sensor[SENSOR_NAME_S5K2P2].i2c_ch = sensor_info->i2c_channel;
+	enum_sensor[SENSOR_NAME_S5K2P2].setfile_name = "setfile_2p2.bin";
+	enum_sensor[SENSOR_NAME_S5K2P2].settles = ARRAY_SIZE(settle_imx135);
+	enum_sensor[SENSOR_NAME_S5K2P2].settle_table = settle_imx135;
+
+	ext = &enum_sensor[SENSOR_NAME_S5K2P2].ext;
+
+	ext->sensor_con.product_name = 0;
+	ext->sensor_con.peri_type = SE_I2C;
+	ext->sensor_con.peri_setting.i2c.channel = sensor_info->i2c_channel;
+	ext->sensor_con.peri_setting.i2c.slave_address = sensor_info->sensor_slave_address;
+	ext->sensor_con.peri_setting.i2c.speed = 200000;
+
+	ext->actuator_con.product_name = ACTUATOR_NAME_AK7345;
+	ext->actuator_con.peri_type = SE_I2C;
+	ext->actuator_con.peri_setting.i2c.channel = sensor_info->actuator_i2c;
+
+	ext->flash_con.product_name = sensor_info->flash_id;
+	ext->flash_con.peri_type = sensor_info->flash_peri_type;
+	ext->flash_con.peri_setting.gpio.first_gpio_port_no = sensor_info->flash_first_gpio;
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = sensor_info->flash_second_gpio;
+
+	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
+	ext->mclk = 0;
+	ext->mipi_lane_num = 0;
+	ext->mipi_speed = 0;
+	ext->fast_open_sensor = 0;
+	ext->self_calibration_mode = 0;
+	ext->I2CSclk = I2C_L0;
+
 p_err:
 	return ret;
 }
