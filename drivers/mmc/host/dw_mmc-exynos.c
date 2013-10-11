@@ -18,6 +18,7 @@
 #include <linux/mmc/dw_mmc.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <linux/gpio.h>
 #include <linux/slab.h>	/* for kmalloc/kfree prototype */
 
 #include "dw_mmc.h"
@@ -345,6 +346,19 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	int idx_ref;
 	int ret = 0;
 	int id = 0;
+	int dev_pwr = 0;
+
+	/*
+	 * This GPIOs is for eMMC device 2.8 volt supply control
+	*/
+	if (of_get_property(np, "gpios", NULL) != NULL) {
+		dev_pwr = of_get_gpio(np, 0);
+		if (gpio_request(dev_pwr, "dev-pwr")) {
+			ret = -ENODEV;
+			goto err_ref_clk;
+		} else
+			gpio_direction_output(dev_pwr, 1);
+	}
 
 	/*
 	 * Reference clock values for speed mode change are extracted from DT.
