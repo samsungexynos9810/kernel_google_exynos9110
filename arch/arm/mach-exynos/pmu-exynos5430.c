@@ -441,6 +441,7 @@ void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type)
 
 static int __init exynos_pmu_init(void)
 {
+	unsigned int tmp;
 	/*
 	 * Set measure power on/off duration
 	 * Use SC_USE_FEEDBACK
@@ -452,6 +453,15 @@ static int __init exynos_pmu_init(void)
 			EXYNOS_CENTRAL_SEQ_OPTION);
 
 	exynos_cpu_reset_assert_ctrl(true, ARM);
+
+	/* L2 use retention disable */
+	tmp = __raw_readl(EXYNOS_L2_OPTION(0));
+	tmp &= ~USE_RETENTION;
+	__raw_writel(tmp, EXYNOS_L2_OPTION(0));
+
+	tmp = __raw_readl(EXYNOS_L2_OPTION(1));
+	tmp &= ~USE_RETENTION;
+	__raw_writel(tmp, EXYNOS_L2_OPTION(1));
 
 	exynos_pmu_config = exynos5430_pmu_config;
 
