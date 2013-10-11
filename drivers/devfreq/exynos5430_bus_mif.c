@@ -1492,6 +1492,8 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 
 	if (throttling)
 		max_freq = devfreq_mif_opp_list[LV7].freq;
+	else
+		max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 
 	if (thermal_work->max_freq != max_freq) {
 		thermal_work->max_freq = max_freq;
