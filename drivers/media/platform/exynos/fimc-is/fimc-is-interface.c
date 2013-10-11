@@ -2521,6 +2521,12 @@ int fimc_is_hw_open(struct fimc_is_interface *this,
 	int ret;
 	struct fimc_is_msg msg, reply;
 
+	/* HACK: 2P2 + companion */
+	if (module == SENSOR_NAME_S5K2P2) {
+		module = 1000;
+		pr_info("open(module(%d))\n", module);
+	}
+
 	dbg_interface("open(%d,%d,%08X)\n", module, group, flag);
 
 	msg.id = 0;
