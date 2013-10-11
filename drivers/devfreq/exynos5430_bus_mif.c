@@ -939,7 +939,6 @@ static int exynos5_devfreq_mif_set_timing_set(struct devfreq_data_mif *data,
 		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0x34);
 		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0x38);
 		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0x3C);
-		__raw_writel(cur_parameter->timing_rfcpb, data->base_drex0 + 0x20);
 		tmp = __raw_readl(data->base_drex1 + 0x20);
 		tmp &= ~(TIMING_RFCPB_MASK);
 		tmp |= (cur_parameter->timing_rfcpb & TIMING_RFCPB_MASK);
