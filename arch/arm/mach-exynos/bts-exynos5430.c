@@ -296,10 +296,12 @@ static void set_bts_ip_table(struct bts_info *bts, bool on)
 
 	BTS_DBG("[BTS] bts set: %s, on/off: %d\n", bts->name, on);
 
+#if 0
 	if (bts->clk) {
 		clk_prepare(bts->clk);
 		clk_enable(bts->clk);
 	}
+#endif
 
 	for (i = 0; i < table_num; i++) {
 		__raw_writel(table->val, bts->va_base + table->reg);
@@ -307,10 +309,12 @@ static void set_bts_ip_table(struct bts_info *bts, bool on)
 		table++;
 	}
 
+#if 0
 	if (bts->clk) {
 		clk_disable(bts->clk);
 		clk_unprepare(bts->clk);
 	}
+#endif
 }
 
 void bts_initialize(const char *pd_name, bool on)
@@ -584,6 +588,7 @@ static int __init exynos5_bts_init(void)
 		exynos5_bts[i].va_base
 			= ioremap(exynos5_bts[i].pa_base, SZ_4K);
 
+#if 0
 		if (exynos5_bts[i].clk_name) {
 			clk = __clk_lookup(exynos5_bts[i].clk_name);
 			if (IS_ERR(clk))
@@ -592,6 +597,7 @@ static int __init exynos5_bts_init(void)
 			else
 				exynos5_bts[i].clk = clk;
 		}
+#endif
 
 		list_add(&exynos5_bts[i].list, &bts_list);
 	}
