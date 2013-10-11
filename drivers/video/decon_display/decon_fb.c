@@ -3695,7 +3695,7 @@ static void decon_fb_set_vidoutif(struct s3c_fb *sfb, u32 mode)
 	u32 data = readl(regs);
 
 	data &= ~VIDOUTCON0_IF_MASK;
-	data |= (mode << VIDOUTCON0_IF_SHIFT);
+	data |= mode;
 	writel(data, regs);
 }
 
@@ -3895,9 +3895,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
-	decon_fb_set_vidoutif(sfb, 2);
+	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 #else
-	decon_fb_set_vidoutif(sfb, 0);
+	decon_fb_set_vidoutif(sfb, VIDOUTCON0_RGBIF_F);
 #endif
 
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
@@ -4304,9 +4304,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
-	decon_fb_set_vidoutif(sfb, 2);
+	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 #else
-	decon_fb_set_vidoutif(sfb, 0);
+	decon_fb_set_vidoutif(sfb, VIDOUTCON0_RGBIF_F);
 #endif
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
 
@@ -4446,9 +4446,9 @@ int s3c_fb_resume(struct device *dev)
 	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
-	decon_fb_set_vidoutif(sfb, 2);
+	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 #else
-	decon_fb_set_vidoutif(sfb, 0);
+	decon_fb_set_vidoutif(sfb, VIDOUTCON0_RGBIF_F);
 #endif
 
 	pd->vidcon1 |= VIDCON1_VCLK_HOLD;
