@@ -151,6 +151,117 @@ static struct vb2_ops jpeg_vb2_qops = {
 	.wait_finish		= jpeg_lock,
 };
 
+static int jpeg_clk_get(struct jpeg_dev *jpeg)
+{
+	int ret;
+	char *parn1_clkname, *chld1_clkname;
+	char *parn2_clkname, *chld2_clkname;
+	char *gate_clkname;
+	struct device *dev = &jpeg->plat_dev->dev;
+
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_PARN1_CLK, (const char **)&parn1_clkname);
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_CHLD1_CLK, (const char **)&chld1_clkname);
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_PARN2_CLK, (const char **)&parn2_clkname);
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_CHLD2_CLK, (const char **)&chld2_clkname);
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_GATE_CLK, (const char **)&gate_clkname);
+
+	jpeg_dbg("clknames: parent1 %s child1 %s parent2 %s child2 %s gate %s\n",
+		parn1_clkname, chld1_clkname,
+		parn2_clkname, chld2_clkname, gate_clkname);
+
+	jpeg->clk_parn1 = clk_get(dev, parn1_clkname);
+	if (IS_ERR(jpeg->clk_parn1)) {
+		dev_err(dev, "failed to get parent1 clk\n");
+		goto err_clk_get_parn1;
+	}
+
+	jpeg->clk_chld1 = clk_get(dev, chld1_clkname);
+	if (IS_ERR(jpeg->clk_chld1)) {
+		dev_err(dev, "failed to get child1 clk\n");
+		goto err_clk_get_chld1;
+	}
+
+	jpeg->clk_parn2 = clk_get(dev, parn2_clkname);
+	if (IS_ERR(jpeg->clk_parn2)) {
+		dev_err(dev, "failed to get parent2 clk\n");
+		goto err_clk_get_parn2;
+	}
+
+	jpeg->clk_chld2 = clk_get(dev, chld2_clkname);
+	if (IS_ERR(jpeg->clk_chld2)) {
+		dev_err(dev, "failed to get child2 clk\n");
+		goto err_clk_get_chld2;
+	}
+
+	/* clock for gating */
+	jpeg->clk = clk_get(dev, gate_clkname);
+	if (IS_ERR(jpeg->clk)) {
+		dev_err(dev, "failed to get gate clk\n");
+		goto err_clk_get;
+	}
+
+	ret = clk_prepare(jpeg->clk);
+	if (ret < 0) {
+		dev_err(dev, "failed to prepare gate clk\n");
+		goto err_clk_prepare;
+	}
+
+	jpeg_dbg("Done clk_jpeg\n");
+	return 0;
+
+err_clk_prepare:
+	clk_put(jpeg->clk);
+err_clk_get:
+	clk_put(jpeg->clk_chld2);
+err_clk_get_chld2:
+	clk_put(jpeg->clk_parn2);
+err_clk_get_parn2:
+	clk_put(jpeg->clk_chld1);
+err_clk_get_chld1:
+	clk_put(jpeg->clk_parn1);
+err_clk_get_parn1:
+	return -ENXIO;
+}
+
+static void jpeg_clk_put(struct jpeg_dev *jpeg)
+{
+	clk_unprepare(jpeg->clk);
+	clk_put(jpeg->clk);
+	clk_put(jpeg->clk_chld1);
+	clk_put(jpeg->clk_parn1);
+	clk_put(jpeg->clk_chld2);
+	clk_put(jpeg->clk_parn2);
+}
+
+#ifdef CONFIG_PM_RUNTIME
+static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status)
+{
+	if (status == JPEG_CLK_ON) {
+		atomic_inc(&jpeg->clk_cnt);
+		clk_set_parent(jpeg->clk_chld1, jpeg->clk_parn1);
+		clk_set_parent(jpeg->clk_chld2, jpeg->clk_parn2);
+		clk_enable(jpeg->clk);
+		jpeg_dbg("clock enabled\n");
+	} else if (status == JPEG_CLK_OFF) {
+		int clk_cnt = atomic_dec_return(&jpeg->clk_cnt);
+		if (clk_cnt < 0) {
+			jpeg_err("JPEG clock control is wrong!!\n");
+			atomic_set(&jpeg->clk_cnt, 0);
+		} else {
+			clk_disable(jpeg->clk);
+			jpeg_dbg("clock disabled\n");
+		}
+	}
+}
+#else
+#define jpeg_clock_gating(jpeg, on)
+#endif
+
 static int queue_init(void *priv, struct vb2_queue *src_vq,
 		      struct vb2_queue *dst_vq)
 {
@@ -440,7 +551,7 @@ static void jpeg_parse_dt(struct device_node *np, struct jpeg_dev *jpeg)
 	of_property_read_u32(np, "ip_ver", &pdata->ip_ver);
 }
 #else
-static void jpeg_parse_dt(struct device_node *np, struct gsc_dev *gsc)
+static void jpeg_parse_dt(struct device_node *np, struct jpeg_dev *jpeg)
 {
 	return;
 }
@@ -521,11 +632,9 @@ static int jpeg_probe(struct platform_device *pdev)
 	}
 
 	/* clock */
-	jpeg->clk = devm_clk_get(&pdev->dev, "jpeg");
-	if (IS_ERR(jpeg->clk)) {
-		jpeg_err("failed to find jpeg clock source\n");
-		return -ENOMEM;
-	}
+	ret = jpeg_clk_get(jpeg);
+	if (ret)
+		return ret;
 
 	ret = v4l2_device_register(&pdev->dev, &jpeg->v4l2_dev);
 	if (ret) {
@@ -580,7 +689,7 @@ static int jpeg_probe(struct platform_device *pdev)
 		goto err_video_reg;
 	}
 
-	exynos_create_iovmm(&pdev->dev, 2, 2);
+	exynos_create_iovmm(&pdev->dev, 3, 3);
 	jpeg->vb2->resume(jpeg->alloc_ctx);
 #ifdef CONFIG_BUSFREQ_OPP
 	/* To lock bus frequency in OPP mode */
@@ -589,6 +698,8 @@ static int jpeg_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
+#else
+	jpeg_clock_gating(jpeg, SC_CLK_ON);
 #endif
 	return 0;
 
@@ -601,7 +712,7 @@ err_vd_alloc:
 	v4l2_m2m_release(jpeg->m2m_dev);
 	v4l2_device_unregister(&jpeg->v4l2_dev);
 err_v4l2:
-	clk_put(jpeg->clk);
+	jpeg_clk_put(jpeg);
 	return ret;
 
 }
@@ -621,38 +732,32 @@ static int jpeg_remove(struct platform_device *pdev)
 	mutex_destroy(&jpeg->lock);
 	iounmap(jpeg->reg_base);
 
-	clk_put(jpeg->clk);
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
 #endif
 	jpeg->vb2->suspend(jpeg->alloc_ctx);
+	jpeg_clk_put(jpeg);
 
 	kfree(jpeg);
 	return 0;
 }
 
-int jpeg_suspend(struct device *dev)
+static int jpeg_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
-	if (!IS_ERR(jpeg->clk)) {
-		clk_disable(jpeg->clk);
-		clk_unprepare(jpeg->clk);
-	}
+	jpeg_clock_gating(jpeg, JPEG_CLK_OFF);
 
 	return 0;
 }
 
-int jpeg_resume(struct device *dev)
+static int jpeg_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
-	if (!IS_ERR(jpeg->clk)) {
-		clk_prepare(jpeg->clk);
-		clk_enable(jpeg->clk);
-	}
+	jpeg_clock_gating(jpeg, JPEG_CLK_ON);
 
 	return 0;
 }

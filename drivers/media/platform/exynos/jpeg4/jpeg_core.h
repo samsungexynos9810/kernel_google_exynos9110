@@ -42,6 +42,19 @@
  * struct exynos_platform_jpeg
  */
 
+enum jpeg_clk_status {
+	JPEG_CLK_ON,
+	JPEG_CLK_OFF,
+};
+
+enum jpeg_clocks {
+	JPEG_GATE_CLK,
+	JPEG_CHLD1_CLK,
+	JPEG_PARN1_CLK,
+	JPEG_CHLD2_CLK,
+	JPEG_PARN2_CLK,
+};
+
 enum jpeg_ip_version {
 	IP_VER_JPEG_5G,
 	IP_VER_JPEG_5A,
@@ -214,6 +227,11 @@ struct jpeg_dev {
 
 	struct clk		*clk;
 	struct clk		*sclk_clk;
+	struct clk		*clk_parn1;
+	struct clk		*clk_chld1;
+	struct clk		*clk_parn2;
+	struct clk		*clk_chld2;
+	atomic_t		clk_cnt;
 
 	struct mutex		lock;
 
@@ -263,21 +281,21 @@ static inline struct jpeg_frame *ctx_get_frame(struct jpeg_ctx *ctx,
 /* debug macro */
 #define JPEG_LOG_DEFAULT       (JPEG_LOG_WARN | JPEG_LOG_ERR)
 
-#define JPEG_DEBUG(fmt, ...)						\
+#define jpeg_dbg(fmt, ...)						\
 	do {								\
 		if (JPEG_LOG_DEFAULT & JPEG_LOG_DEBUG)			\
 			printk(KERN_DEBUG "%s: "			\
 				fmt, __func__, ##__VA_ARGS__);		\
 	} while (0)
 
-#define JPEG_INFO(fmt, ...)						\
+#define jpeg_info(fmt, ...)						\
 	do {								\
 		if (JPEG_LOG_DEFAULT & JPEG_LOG_INFO)			\
 			printk(KERN_INFO "%s: "				\
 				fmt, __func__, ##__VA_ARGS__);		\
 	} while (0)
 
-#define JPEG_WARN(fmt, ...)						\
+#define jpeg_warn(fmt, ...)						\
 	do {								\
 		if (JPEG_LOG_DEFAULT & JPEG_LOG_WARN)			\
 			printk(KERN_WARNING "%s: "			\
@@ -285,18 +303,12 @@ static inline struct jpeg_frame *ctx_get_frame(struct jpeg_ctx *ctx,
 	} while (0)
 
 
-#define JPEG_ERROR(fmt, ...)						\
+#define jpeg_err(fmt, ...)						\
 	do {								\
 		if (JPEG_LOG_DEFAULT & JPEG_LOG_ERR)			\
 			printk(KERN_ERR "%s: "				\
 				fmt, __func__, ##__VA_ARGS__);		\
 	} while (0)
-
-
-#define jpeg_dbg(fmt, ...)		JPEG_DEBUG(fmt, ##__VA_ARGS__)
-#define jpeg_info(fmt, ...)		JPEG_INFO(fmt, ##__VA_ARGS__)
-#define jpeg_warn(fmt, ...)		JPEG_WARN(fmt, ##__VA_ARGS__)
-#define jpeg_err(fmt, ...)		JPEG_ERROR(fmt, ##__VA_ARGS__)
 
 /*=====================================================================*/
 const struct v4l2_ioctl_ops *get_jpeg_dec_v4l2_ioctl_ops(void);
