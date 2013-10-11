@@ -26,6 +26,25 @@
 
 #define MALI_DVFS_CURRENT_FREQ 0
 
+#if SOC_NAME == 5430
+typedef struct _mali_dvfs_info{
+	unsigned int voltage;
+	unsigned int clock;
+	int min_threshold;
+	int	max_threshold;
+	unsigned long long time;
+	int mem_freq;
+	int int_freq;
+	int cpu_freq;
+} mali_dvfs_info;
+
+static mali_dvfs_info mali_dvfs_infotbl[] = {
+	{975000, 266, 53, 90, 0, 160000, 83000, 250000},
+	{1000000, 350, 60, 90, 0, 400000, 222000, 250000},
+	{1050000, 420, 70, 90, 0, 667000, 333000, 250000},
+};
+#endif
+
 #if SOC_NAME == 5420
 #define MALI_DVFS_START_FREQ 177
 #define MALI_DVFS_BL_CONFIG_FREQ 350
@@ -73,6 +92,7 @@ int kbase_platform_regulator_disable(void);
 int kbase_platform_regulator_enable(void);
 int kbase_platform_get_voltage(struct device *dev, int *vol);
 int kbase_platform_set_voltage(struct device *dev, int vol);
+void kbase_platform_dvfs_set_vol(unsigned int vol);
 void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq);
 int kbase_platform_dvfs_sprint_avs_table(char *buf, size_t buf_size);
 int kbase_platform_dvfs_set(int enable);
@@ -99,6 +119,7 @@ int mali_get_dvfs_table(char *buf, size_t buf_size);
 int mali_get_dvfs_current_level(void);
 int mali_get_dvfs_upper_locked_freq(void);
 int mali_get_dvfs_under_locked_freq(void);
+#ifdef CONFIG_MALI_T6XX_DVFS
 #if (defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430))
 int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock);
 void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock);
@@ -111,6 +132,7 @@ int mali_dvfs_freq_under_lock(int level);
 void mali_dvfs_freq_under_unlock(void);
 int mali_dvfs_freq_min_lock(int level);
 void mali_dvfs_freq_min_unlock(void);
+#endif
 #endif
 
 int mali_get_dvfs_max_locked_freq(void);

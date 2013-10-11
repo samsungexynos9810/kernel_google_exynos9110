@@ -112,25 +112,6 @@ static struct pm_qos_request exynos5_g3d_cpu_qos;
 /*  This table and variable are using the check time share of GPU Clock  */
 /***********************************************************/
 
-typedef struct _mali_dvfs_info{
-	unsigned int voltage;
-	unsigned int clock;
-	int min_threshold;
-	int	max_threshold;
-	unsigned long long time;
-	int mem_freq;
-	int int_freq;
-	int cpu_freq;
-} mali_dvfs_info;
-
-static mali_dvfs_info mali_dvfs_infotbl[] = {
-	{975000, 160, 0, 90, 0, 160000, 83000, 250000},
-	{975000, 266, 53, 90, 0, 160000, 83000, 250000},
-	{1000000, 350, 60, 90, 0, 400000, 222000, 250000},
-	{1050000, 420, 70, 90, 0, 667000, 333000, 250000},
-	{1100000, 533, 78, 100, 0, 800000, 400000, 250000},
-};
-
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
 
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -160,7 +141,7 @@ static void update_time_in_state(int level);
 /*dvfs status*/
 static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
-static const unsigned int mali_dvfs_vol_default[] = { 812500, 862500, 912500, 962500, 1000000, 1037500};
+static const unsigned int mali_dvfs_vol_default[] = { 975000, 1000000, 1050000 };
 
 
 static int mali_dvfs_update_asv(int cmd)
@@ -228,6 +209,7 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 		} else {
 #endif
 			dvfs_status->step++;
+			if (dvfs_status->step >= MALI_DVFS_STEP) dvfs_status->step=0;
 			DVFS_ASSERT(dvfs_status->step < MALI_DVFS_STEP);
 #ifdef PLATFORM_UTILIZATION
 		}
@@ -844,23 +826,38 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (g3d_rate != g3d_rate_prev) {
+		/*for stable clock input.*/
+		ret = exynos_set_rate("fout_g3d_pll", 266000000 );
+		if (ret < 0) {
+			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [fout_g3d_pll]\n");
+			return;
+		}
+		ret = exynos_set_parent("mout_g3d_pll", "fin_pll");
+		if (ret < 0) {
+			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
+			return;
+		}
+
+		/*change g3d pll*/
+		ret = exynos_set_rate("fout_g3d_pll", g3d_rate);
+		if (ret < 0) {
+			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [fout_g3d_pll]\n");
+			return;
+		}
+		/*restore parent*/
 		/*change here for future stable clock changing*/
 		ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
 		if (ret < 0) {
 			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
 			return;
 		}
-	/*
-		//enable this for stable gpu
-		ret = exynos_set_parent("mout_ged_pll", "fout_g3d_pll");
-		if (ret < 0) {
-			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
-			return;
-		}
-	*/
 		g3d_rate_prev = g3d_rate;
 	}
-//	exynos_set_rate("dout_aclk_g3d", g3d_rate);
+	ret = exynos_set_rate("dout_aclk_g3d", g3d_rate);
+	if (ret < 0) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [dout_aclk_g3d]\n");
+		return;
+	}
 
 	/* Waiting for clock is stable */
 	do {
@@ -868,13 +865,14 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 	} while (tmp & 0x1);
 
 #ifdef MALI_DEBUG
-	DEBUG_PRINT_INFO("===clock set: %ld\n", aclk_rate);
-	DEBUG_PRINT_INFO("===clock get: %ld\n", clk_get_rate(platform->aclk_g3d));
+	printk("===clock set: %ld\n", g3d_rate);
+	printk("===clock fout_g3d_pll get: %u\n", exynos_get_rate("fout_g3d_pll"));
+	printk("===clock mout_g3d_pll get: %u\n", exynos_get_rate("mout_g3d_pll"));
 #endif
 	return;
 }
 
-static void kbase_platform_dvfs_set_vol(unsigned int vol)
+void kbase_platform_dvfs_set_vol(unsigned int vol)
 {
 	static int _vol = -1;
 
