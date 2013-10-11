@@ -914,7 +914,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 
 	ext = &enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].ext;
 
-	ext->actuator_con.product_name = ACTUATOR_NAME_NOTHING;
+	ext->actuator_con.product_name = ACTUATOR_NAME_DWXXXX;
 	ext->actuator_con.peri_type = SE_I2C;
 	ext->actuator_con.peri_setting.i2c.channel
 		= SENSOR_CONTROL_I2C0;
