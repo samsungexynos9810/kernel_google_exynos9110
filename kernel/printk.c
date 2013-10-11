@@ -872,14 +872,6 @@ static bool printk_core_num = 0;
 #endif
 module_param_named(core_num, printk_core_num, bool, S_IRUGO | S_IWUSR);
 
-static size_t print_core_num(char *buf)
-{
-	if (!printk_core_num || !buf)
-		return 0;
-
-	return sprintf(buf, "[c%d] ", smp_processor_id());
-}
-
 #if defined(CONFIG_PRINTK_TIME)
 static bool printk_time = 1;
 #else
@@ -923,7 +915,6 @@ static size_t print_prefix(const struct log *msg, bool syslog, char *buf)
 	}
 
 	len += print_time(msg->ts_nsec, buf ? buf + len : NULL);
-	len += print_core_num(buf ? buf + len : NULL);
 	return len;
 }
 
@@ -1570,7 +1561,20 @@ asmlinkage int vprintk_emit(int facility, int level,
 	 * The printf needs to come first; we need the syslog
 	 * prefix which might be passed-in as a parameter.
 	 */
-	text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+	if (printk_core_num) {
+		static char tempbuf[LOG_LINE_MAX];
+		char *temp = tempbuf;
+
+		vscnprintf(temp, sizeof(tempbuf), fmt, args);
+		if (printk_get_level(tempbuf))
+			text_len = snprintf(text, sizeof(textbuf), "%c[c%d] %s",
+					tempbuf[0], this_cpu, &tempbuf[2]);
+		else
+			text_len = snprintf(text, sizeof(textbuf), "[c%d] %s",
+					this_cpu, &tempbuf[0]);
+	} else {
+		text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
+	}
 
 #ifdef	CONFIG_DEBUG_LL
 	printascii(text);
