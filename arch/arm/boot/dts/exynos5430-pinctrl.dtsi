@@ -636,8 +636,15 @@
 			samsung,pin-drv = <0>;
 		};
 
-		fimc_is_spi0: fimc-is-spi0 {
+		fimc_is_spi_pin0: fimc-is-spi-pin0 {
 			samsung,pins = "gpc3-3", "gpc3-2", "gpc3-1", "gpc3-0";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
+
+		fimc_is_spi_pin1: fimc-is-spi-pin1 {
+			samsung,pins = "gpc3-7", "gpc3-6", "gpc3-5", "gpc3-4";
 			samsung,pin-function = <2>;
 			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;

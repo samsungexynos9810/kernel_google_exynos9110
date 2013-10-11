@@ -836,6 +836,14 @@
 		status = "okay";
 	};
 
+	spi_3: spi@141a0000 {
+		status = "disabled";
+	};
+
+	spi_4: spi@141b0000 {
+		status = "disabled";
+	};
+
 	fimc_is@14000000 {
 		gpios_main_reset = <&gpc0 1 0x1>; /* MAINCAM_RESET */
 		gpios_vt_reset = <&gpc0 4 0x1>; /* VTCAM_RESET */

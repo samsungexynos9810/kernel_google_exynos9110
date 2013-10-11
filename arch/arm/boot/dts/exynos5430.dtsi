@@ -40,6 +40,8 @@
 		spi0 = &spi_0;
 		spi1 = &spi_1;
 		spi2 = &spi_2;
+		spi3 = &spi_3;
+		spi4 = &spi_4;
 		scaler0 = &scaler_0;
 		scaler1 = &scaler_1;
 		fimg2d0 = &fimg2d_0;
@@ -1642,6 +1644,32 @@
 		pinctrl-0 = <&spi2_bus>;
 	};
 
+	spi_3: spi@141a0000 {
+		compatible = "samsung,exynos4210-spi";
+		reg = <0x141a0000 0x100>;
+		interrupts = <0 164 0>; /* NON */
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2626>, <&clock 4081>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_spi_pin0>;
+	};
+
+	spi_4: spi@141b0000 {
+		compatible = "samsung,exynos4210-spi";
+		reg = <0x141b0000 0x100>;
+		interrupts = <0 175 0>; /* NON */
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2625>, <&clock 4083>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_spi_pin1>;
+	};
+
 	fimc_is@14000000 {
 		compatible = "samsung,exynos5-fimc-is";
 		reg = <0x14000000 0x1A0000>;
@@ -1654,8 +1682,7 @@
 				"ch1-i2c",
 				"ch1-mclk",
 				"ch2-i2c",
-				"ch2-mclk",
-				"fimc-is-spi0";
+				"ch2-mclk";
 		pinctrl-0 = <&fimc_is_uart>;
 		pinctrl-1 = <&fimc_is_uart &fimc_is_flash>;
 		pinctrl-2 = <&fimc_is_uart &fimc_is_flash &fimc_is_ch0_i2c>;
@@ -1664,7 +1691,6 @@
 		pinctrl-5 = <&fimc_is_uart &fimc_is_ch1_i2c &fimc_is_ch1_mclk>;
 		pinctrl-6 = <&fimc_is_uart &fimc_is_ch2_i2c>;
 		pinctrl-7 = <&fimc_is_uart &fimc_is_ch2_i2c &fimc_is_ch2_mclk>;
-		pinctrl-8 = <&fimc_is_spi0>;
 		clocks =	<&clock 30>,
 				<&clock 31>,
 				<&clock 32>,
