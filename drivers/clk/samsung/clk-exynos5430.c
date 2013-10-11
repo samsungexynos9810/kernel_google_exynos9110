@@ -1610,7 +1610,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(ioclk_spi2_clk, "ioclk_spi2_clk", NULL, EXYNOS5430_ENABLE_SCLK_PERIC, 13, 0, 0),
 	CGTE(ioclk_slimbus_clk, "ioclk_slimbus_clk", NULL, EXYNOS5430_ENABLE_SCLK_PERIC, 14, 0, 0),
 
-#if 0
 	/* MSCL */
 	CGTE(sclk_jpeg, "sclk_jpeg", "mout_sclk_jpeg_user", EXYNOS5430_ENABLE_SCLK_MSCL, 0, 0, 0),
 
@@ -1619,7 +1618,6 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_isp_spi1, "sclk_isp_spi1", "mout_sclk_isp_spi1_user", EXYNOS5430_ENABLE_SCLK_CAM1, 5, 0, 0),
 	CGTE(sclk_isp_uart, "sclk_isp_uart", "mout_sclk_isp_uart_user", EXYNOS5430_ENABLE_SCLK_CAM1, 6, 0, 0),
 	CGTE(sclk_isp_mtcadc, "sclk_isp_mtcadc", NULL, EXYNOS5430_ENABLE_SCLK_CAM1, 7, 0, 0),
-#endif
 
 	/* FSYS */
 	CGTE(sclk_usbdrd30, "sclk_usbdrd30", "mout_sclk_usbdrd30_user", EXYNOS5430_ENABLE_SCLK_FSYS, 0, 0, 0),
