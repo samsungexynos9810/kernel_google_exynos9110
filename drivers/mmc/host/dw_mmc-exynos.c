@@ -213,12 +213,15 @@ static int dw_mmc_exynos_notifier2(struct notifier_block *self,
 static struct notifier_block dw_mmc_exynos_notifier_block[3] = {
 	[0] = {
 		.notifier_call = dw_mmc_exynos_notifier0,
+		.priority = 2,
 	},
 	[1] = {
 		.notifier_call = dw_mmc_exynos_notifier1,
+		.priority = 2,
 	},
 	[2] = {
 		.notifier_call = dw_mmc_exynos_notifier2,
+		.priority = 2,
 	},
 };
 
