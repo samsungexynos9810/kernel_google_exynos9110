@@ -580,7 +580,9 @@ static void bts_drex_init(void)
 static int __init exynos5_bts_init(void)
 {
 	int i;
+#if 0
 	struct clk *clk;
+#endif
 
 	BTS_DBG("[BTS][%s] bts init\n", __func__);
 
