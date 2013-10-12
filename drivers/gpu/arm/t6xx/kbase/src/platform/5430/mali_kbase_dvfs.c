@@ -674,18 +674,18 @@ void kbase_set_power_margin(int volt_offset)
 		if (volt_offset != gpu_voltage_margin) {
 			if (getVol-gpu_voltage_margin+volt_offset <= COLD_MINIMUM_VOL) {
 				kbase_platform_set_voltage(NULL, COLD_MINIMUM_VOL);
-				pr_info("we set the voltage : %d\n", COLD_MINIMUM_VOL);
+				pr_debug("we set the voltage : %d\n", COLD_MINIMUM_VOL);
 			}
 			else {
 				kbase_platform_set_voltage(NULL, getVol-gpu_voltage_margin+volt_offset);
-				pr_info("we set the voltage : %d\n", getVol-gpu_voltage_margin+volt_offset);
+				pr_debug("we set the voltage : %d\n", getVol-gpu_voltage_margin+volt_offset);
 			}
 			gpu_voltage_margin = volt_offset;
 		}
 	} else {
 		if (gpu_voltage_margin) {
 			kbase_platform_set_voltage(NULL, getVol-gpu_voltage_margin);
-			pr_info("we set the voltage : %d\n", getVol-gpu_voltage_margin);
+			pr_debug("we set the voltage : %d\n", getVol-gpu_voltage_margin);
 			gpu_voltage_margin = 0;
 		}
 	}
