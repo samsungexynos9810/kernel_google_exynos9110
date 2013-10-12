@@ -157,14 +157,6 @@ static int exynos_pm_suspend(void)
 	unsigned long tmp;
 	unsigned int cluster_id;
 
-	cluster_id = read_cpuid(CPUID_MPIDR) >> 8 & 0xf;
-	if (!cluster_id)
-		__raw_writel(EXYNOS5_USE_STANDBYWFI_ARM_CORE0,
-			     EXYNOS_CENTRAL_SEQ_OPTION);
-	else
-		__raw_writel(EXYNOS5_USE_STANDBYWFI_KFC_CORE0,
-			     EXYNOS_CENTRAL_SEQ_OPTION);
-
 	/* Setting Central Sequence Register for power down mode */
 	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
 	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
@@ -206,9 +198,6 @@ static void exynos_pm_prepare(void)
 static void exynos_pm_resume(void)
 {
 	unsigned long tmp;
-
-	__raw_writel(EXYNOS5_USE_STANDBY_WFI_ALL,
-				EXYNOS_CENTRAL_SEQ_OPTION);
 
 	/*
 	 * If PMU failed while entering sleep mode, WFI will be
