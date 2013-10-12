@@ -654,6 +654,7 @@ static struct notifier_block exynos_cpufreq_nb = {
 	.notifier_call = exynos_cpufreq_pm_notifier,
 };
 
+#if 0
 #ifdef CONFIG_EXYNOS_THERMAL
 static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 				       unsigned long event, void *v)
@@ -710,6 +711,7 @@ out:
 static struct notifier_block exynos_tmu_nb = {
 	.notifier_call = exynos_cpufreq_tmu_notifier,
 };
+#endif
 #endif
 
 static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
