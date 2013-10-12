@@ -97,9 +97,7 @@ static struct check_reg_lpa exynos5_power_domain[] = {
 	{.check_reg = EXYNOS5430_MFC0_STATUS,	.check_bit = 0x7},	/* 0x4184 */
 	{.check_reg = EXYNOS5430_MFC1_STATUS,	.check_bit = 0x7},	/* 0x41A4 */
 	{.check_reg = EXYNOS5430_HEVC_STATUS,	.check_bit = 0x7},	/* 0x41C4 */
-#if 0
 	{.check_reg = EXYNOS5430_G3D_STATUS,	.check_bit = 0x7},	/* 0x4064 */
-#endif
 	{.check_reg = EXYNOS5430_DISP_STATUS,	.check_bit = 0x7},	/* 0x4084 */
 };
 
@@ -111,48 +109,18 @@ static struct check_reg_lpa exynos5_power_domain[] = {
 static struct check_reg_lpa exynos5_clock_gating[] = {
 };
 
-#if defined(CONFIG_EXYNOS_DEV_DWMCI)
-enum hc_type {
-	HC_SDHC,
-	HC_MSHC,
-};
-
-struct check_device_op {
-	void __iomem		*base;
-	struct platform_device	*pdev;
-	enum hc_type		type;
-};
-
-static struct check_device_op chk_sdhc_op[] = {
-	{.base = 0, .pdev = &exynos5_device_dwmci0, .type = HC_MSHC},
-	{.base = 0, .pdev = &exynos5_device_dwmci1, .type = HC_MSHC},
-	{.base = 0, .pdev = &exynos5_device_dwmci2, .type = HC_MSHC},
-};
-
-static int sdmmc_dev_num;
-/* If SD/MMC interface is working: return = 1 or not 0 */
-static int check_sdmmc_op(unsigned int ch)
+#if defined(CONFIG_MMC_DW)
+extern int dw_mci_exynos_request_status(void);
+#endif
+#ifdef CONFIG_DEBUG_CPUIDLE
+static inline void show_core_regs(int cpuid)
 {
-	if (unlikely(ch >= sdmmc_dev_num)) {
-		pr_err("Invalid ch[%d] for SD/MMC\n", ch);
-		return 0;
-	}
-
-	return (__raw_readl(EXYNOS5_CLKSRC_MASK_FSYS) & (1 << ((ch * 4) + 8))) ? 1 : 0;
-}
-
-/* Check all sdmmc controller */
-static int loop_sdmmc_check(void)
-{
-	unsigned int iter;
-
-	for (iter = 0; iter < sdmmc_dev_num; iter++) {
-		if (check_sdmmc_op(iter)) {
-			pr_debug("SDMMC [%d] working\n", iter);
-			return 1;
-		}
-	}
-	return 0;
+	unsigned int val_conf, val_stat, val_opt;
+	val_conf = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpuid^0x4));
+	val_stat = __raw_readl(EXYNOS_ARM_CORE_STATUS(cpuid^0x4));
+	val_opt = __raw_readl(EXYNOS_ARM_CORE_OPTION(cpuid^0x4));
+	printk("[%d] config(%x) status(%x) option(%x)\n",
+			cpuid, val_conf, val_stat, val_opt);
 }
 #endif
 
@@ -170,6 +138,9 @@ static int __ref __cpu_hotplug(bool out_flag)
 				break;
 			}
 			pr_info("hotplug out : %d\n", i);
+#ifdef CONFIG_DEBUG_CPUIDLE
+			show_core_regs(i);
+#endif
 		}
 	} else {
 		for(i = 1; i < NR_CPUS; i++) {
@@ -180,6 +151,9 @@ static int __ref __cpu_hotplug(bool out_flag)
 				break;
 			}
 			pr_info("hotplug in : %d\n", i);
+#ifdef CONFIG_DEBUG_CPUIDLE
+			show_core_regs(i);
+#endif
 		}
 	}
 
@@ -224,7 +198,6 @@ static int fb_state_change(struct notifier_block *nb,
 		 * turned on.
 		 */
 		lcd_is_on = true;
-		cancel_delayed_work_sync(&work_hotplug);
 		schedule_delayed_work_on(0, &work_hotplug, 0);
 		break;
 	default:
@@ -281,8 +254,8 @@ static int __maybe_unused exynos_check_enter_mode(void)
 			    ARRAY_SIZE(exynos5_clock_gating)))
 		return EXYNOS_CHECK_DIDLE;
 
-#if defined(CONFIG_EXYNOS_DEV_DWMCI)
-	if (loop_sdmmc_check())
+#if defined(CONFIG_MMC_DW)
+	if (dw_mci_exynos_request_status())
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
@@ -781,10 +754,6 @@ static int __init exynos_init_cpuidle(void)
 	int i, cpu_id, ret;
 	struct cpuidle_device *device;
 
-#if defined(CONFIG_EXYNOS_DEV_DWMCI)
-	struct platform_device *pdev;
-	struct resource *res;
-#endif
 	exynos_idle_driver.state_count = ARRAY_SIZE(exynos5_cpuidle_set);
 
 	for (i = 0; i < exynos_idle_driver.state_count; i++) {
@@ -812,27 +781,7 @@ static int __init exynos_init_cpuidle(void)
 			return -EIO;
 		}
 	}
-#if defined(CONFIG_EXYNOS_DEV_DWMCI)
-	sdmmc_dev_num = ARRAY_SIZE(chk_sdhc_op);
 
-	for (i = 0; i < sdmmc_dev_num; i++) {
-
-		pdev = chk_sdhc_op[i].pdev;
-
-		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-		if (!res) {
-			pr_err("failed to get iomem region\n");
-			return -EINVAL;
-		}
-
-		chk_sdhc_op[i].base = ioremap(res->start, resource_size(res));
-
-		if (!chk_sdhc_op[i].base) {
-			pr_err("failed to map io region\n");
-			return -EINVAL;
-		}
-	}
-#endif
 	lcd_is_on = true;
 	fb_register_client(&fb_block);
 
