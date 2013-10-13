@@ -1466,8 +1466,9 @@
 		         <&clock 3045>;		/* mout_sclk_spdif */
 		clock-names = "spdif", "sclk_spdif";
 		samsung,lpass-subip;
-		pinctrl-names = "default";
+		pinctrl-names = "default", "idle";
 		pinctrl-0 = <&spdif_bus>;
+		pinctrl-1 = <&pcm1_bus>;
 		status = "disabled";
 	};
 
