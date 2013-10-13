@@ -47,6 +47,9 @@
 #include <plat/sysmmu.h>
 #endif
 
+struct spi_device *spi0 = NULL;
+struct spi_device *spi1 = NULL;
+
 struct fimc_is_from_info *sysfs_finfo = NULL;
 struct fimc_is_from_info *sysfs_pinfo = NULL;
 static struct device *is_dev = NULL;
@@ -937,6 +940,11 @@ static int fimc_is_probe(struct platform_device *pdev)
 
 	pr_info("%s\n", __func__);
 
+	if ((pdev->dev.init_name == NULL) && (spi0 == NULL || spi1 == NULL)) {
+		pdev->dev.init_name = FIMC_IS_DRV_NAME;
+		return -EPROBE_DEFER;
+	}
+
 	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
 		pdata = fimc_is_parse_dt(&pdev->dev);
@@ -954,6 +962,8 @@ static int fimc_is_probe(struct platform_device *pdev)
 	core->pdata = pdata;
 	core->id = pdev->id;
 	core->debug_cnt = 0;
+	core->spi0 = spi0;
+	core->spi1 = spi1;
 	device_init_wakeup(&pdev->dev, true);
 
 	/* for mideaserver force down */
@@ -1126,14 +1136,74 @@ static const struct dev_pm_ops fimc_is_pm_ops = {
 	.runtime_resume		= fimc_is_runtime_resume,
 };
 
+static int fimc_is_spi_probe(struct spi_device *spi)
+{
+	int ret = 0;
+
+	dbg_core("%s\n", __func__);
+
+	/* spi->bits_per_word = 16; */
+	if (spi_setup(spi)) {
+		pr_err("failed to setup spi for fimc_is_spi\n");
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	if (!strncmp(spi->modalias, "fimc_is_spi0", 12))
+		spi0 = spi;
+
+	if (!strncmp(spi->modalias, "fimc_is_spi1", 12))
+		spi1 = spi;
+
+exit:
+	return ret;
+}
+
+static int fimc_is_spi_remove(struct spi_device *spi)
+{
+	return 0;
+}
+
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_fimc_is_match[] = {
 	{
 		.compatible = "samsung,exynos5-fimc-is",
 	},
+	{
+		.compatible = "samsung,fimc_is_spi0",
+	},
+	{
+		.compatible = "samsung,fimc_is_spi1",
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_fimc_is_match);
+
+static struct spi_driver fimc_is_spi0_driver = {
+	.driver = {
+		.name = "fimc_is_spi0",
+		.bus = &spi_bus_type,
+		.owner = THIS_MODULE,
+		.of_match_table = exynos_fimc_is_match,
+	},
+	.probe 	= fimc_is_spi_probe,
+	.remove = fimc_is_spi_remove,
+};
+
+module_spi_driver(fimc_is_spi0_driver);
+
+static struct spi_driver fimc_is_spi1_driver = {
+	.driver = {
+		.name = "fimc_is_spi1",
+		.bus = &spi_bus_type,
+		.owner = THIS_MODULE,
+		.of_match_table = exynos_fimc_is_match,
+	},
+	.probe 	= fimc_is_spi_probe,
+	.remove = fimc_is_spi_remove,
+};
+
+module_spi_driver(fimc_is_spi1_driver);
 
 static struct platform_driver fimc_is_driver = {
 	.probe		= fimc_is_probe,

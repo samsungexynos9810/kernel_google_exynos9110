@@ -521,6 +521,10 @@ struct fimc_is_core {
 	struct fimc_is_video			video_3a0c;
 	struct fimc_is_video			video_3a1c;
 
+	/* spi */
+	struct spi_device			*spi0;
+	struct spi_device			*spi1;
+
 	spinlock_t				slock_clock_gate;
 
 	struct fimc_is_dvfs_ctrl		dvfs_ctrl;
