@@ -342,21 +342,6 @@ static struct snd_soc_ops xyref_hdmi_ops = {
 #endif
 
 #ifdef CONFIG_SND_SAMSUNG_AUX_SPDIF
-static int set_sclk_spdif_rate(unsigned long audio_rate)
-{
-	struct clk *sclk_audio0;
-
-	sclk_audio0 = clk_get(xyref.dev, "dout_sclk_audio0");
-	if (IS_ERR(sclk_audio0)) {
-		printk(KERN_ERR "%s: failed to get sclk_audio0\n", __func__);
-		return -ENOENT;
-	}
-	clk_set_rate(sclk_audio0, audio_rate);
-	clk_put(sclk_audio0);
-
-	return 0;
-}
-
 /*
  * XYREF S/PDIF DAI operations. (AP master)
  */
@@ -365,8 +350,8 @@ static int xyref_spdif_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
-	unsigned long rclk_rate;
-	int ret, ratio;
+	unsigned long rclk;
+	int ret, ratio, pll, div, sclk;
 
 	switch (params_rate(params)) {
 	case 48000:
@@ -376,24 +361,24 @@ static int xyref_spdif_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
-	/* set_aud_pll_rate(XYREF_AUD_PLL_FREQ); */
-
 	/* Setting ratio to 512fs helps to use S/PDIF with HDMI without
 	 * modify S/PDIF ASoC machine driver.
 	 */
 	ratio = 512;
-	rclk_rate = params_rate(params) * ratio;
+	rclk = params_rate(params) * ratio;
 
-	/* Set audio source clock rates */
-	/* later...
-	ret = set_sclk_spdif_rate(rclk_rate);
-	if (ret < 0)
-		return ret;
-	*/
+	/* Set AUD_PLL frequency */
+	sclk = rclk;
+	for (div = 2; div <= 16; div++) {
+		if (sclk * div > XYREF_AUD_PLL_FREQ)
+			break;
+	}
+	pll = sclk * (div - 1);
+	set_aud_pll_rate(pll);
 
 	/* Set S/PDIF uses internal source clock */
 	ret = snd_soc_dai_set_sysclk(cpu_dai, SND_SOC_SPDIF_INT_MCLK,
-					rclk_rate, SND_SOC_CLOCK_IN);
+					rclk, SND_SOC_CLOCK_IN);
 	if (ret < 0)
 		return ret;
 
