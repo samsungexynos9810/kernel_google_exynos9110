@@ -43,6 +43,7 @@
 #include <mach/asv.h>
 #include <mach/devfreq.h>
 #endif
+#include <linux/usb/dwc3.h>
 
 #include <plat/pm.h>
 #include <plat/cpu.h>
@@ -259,7 +260,7 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
-	if (exynos_check_usb_op())
+	if (samsung_usbphy_check_op())
 		return EXYNOS_CHECK_DIDLE;
 
 	return EXYNOS_CHECK_LPA;
