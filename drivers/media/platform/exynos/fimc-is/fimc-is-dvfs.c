@@ -10,6 +10,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/slab.h>
 #include "fimc-is-dvfs.h"
 
 extern struct pm_qos_request exynos_isp_qos_dev;
