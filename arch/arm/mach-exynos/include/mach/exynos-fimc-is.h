@@ -396,6 +396,8 @@ struct fimc_is_gpio_info {
 
 	int gpio_uart_txd;
 	int gpio_uart_rxd;
+	int gpio_comp_en;
+	int gpio_comp_rst;
 };
 
 struct platform_device;

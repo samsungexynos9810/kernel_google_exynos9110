@@ -182,6 +182,14 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 		return ERR_PTR(-EINVAL);
 	}
 
+	gpio_info->gpio_comp_en = of_get_named_gpio(np, "gpios_comp_en", 0);
+	if (!gpio_is_valid(gpio_info->gpio_comp_en))
+		dev_err(dev, "failed to get main comp en gpio\n");
+
+	gpio_info->gpio_comp_rst = of_get_named_gpio(np, "gpios_comp_reset", 0);
+	if (!gpio_is_valid(gpio_info->gpio_comp_rst))
+		dev_err(dev, "failed to get main comp reset gpio\n");
+
 	pdata->_gpio_info = gpio_info;
 
 	ctrl_np = of_get_child_by_name(np, "fimc_is_ctrl");

@@ -109,6 +109,22 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 		}
 	} else {
 		if (channel == CSI_ID_A) {
+			/* COMP_RESET(GPG1, GPF5)*/
+			if (gpio_is_valid(_gpio_info->gpio_comp_en)) {
+				gpio_request_one(_gpio_info->gpio_comp_en,
+					GPIOF_OUT_INIT_HIGH, "COMP_EN");
+				__gpio_set_value(_gpio_info->gpio_comp_en, 1);
+				usleep_range(1000, 1000);
+			}
+
+			if (gpio_is_valid(_gpio_info->gpio_comp_rst)) {
+				gpio_request_one(_gpio_info->gpio_comp_rst,
+					GPIOF_OUT_INIT_HIGH, "COMP_RST");
+				__gpio_set_value(_gpio_info->gpio_comp_rst, 0);
+				usleep_range(1000, 1000);
+				__gpio_set_value(_gpio_info->gpio_comp_rst, 1);
+			}
+
 			/* RESET(GPC0)*/
 			gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_OUT_INIT_HIGH, "MAIN_CAM_RESET");
 			__gpio_set_value(_gpio_info->gpio_main_rst, 0);
