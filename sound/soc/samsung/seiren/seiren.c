@@ -143,9 +143,7 @@ static int esa_fw_startup(void)
 {
 	unsigned int dec_ver;
 	int ret;
-#ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
-	int i;
-#endif
+
 	if (si.fw_ready)
 		return 0;
 
@@ -172,10 +170,6 @@ static int esa_fw_startup(void)
 	dec_ver = dec_ver >> 8;
 	esa_debug("Decoder version : %x\n", dec_ver);
 
-#ifdef CONFIG_SND_SAMSUNG_SEIREN_DEBUG
-	for (i = 0; i < 15; i++)
-		esa_debug("[%d]%x \n", 4*i, readl(si.mailbox + 4*i));
-#endif
 	return 0;
 }
 
@@ -825,11 +819,13 @@ static int esa_open(struct inode *inode, struct file *file)
 	rtd->obuf0_filled = false;
 	rtd->obuf1_filled = false;
 
+	mutex_lock(&esa_mutex);
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&si.pdev->dev);
 #else
 	esa_fw_startup();
 #endif
+	mutex_unlock(&esa_mutex);
 
 	if (!si.fw_ready) {
 		/* de-initialize */
@@ -858,11 +854,14 @@ static int esa_release(struct inode *inode, struct file *file)
 
 	esa_free_rtd(rtd);
 
+	mutex_lock(&esa_mutex);
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&si.pdev->dev);
 #else
 	esa_fw_shutdown();
 #endif
+	mutex_unlock(&esa_mutex);
+
 	return 0;
 }
 
