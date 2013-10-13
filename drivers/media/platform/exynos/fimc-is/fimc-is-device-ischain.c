@@ -56,6 +56,7 @@
 #include "fimc-is-video.h"
 #include "fimc-is-groupmgr.h"
 #include "fimc-is-device-ischain.h"
+#include "fimc-is-peri.h"
 
 #define SDCARD_FW
 #define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
@@ -2783,6 +2784,8 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 	char *setfile_name;
 	struct sensor_open_extended *ext_info;
 	struct fimc_is_device_sensor *sensor;
+	struct fimc_is_core *core
+		= (struct fimc_is_core *)platform_get_drvdata(device->pdev);
 
 	BUG_ON(!device);
 	BUG_ON(!device->sensor);
@@ -2813,6 +2816,22 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 				err("loadcalb fail");
 				goto p_err;
 			}
+		}
+	}
+
+	/* FW loading of peripheral device */
+	if ((sensor->id_position == SENSOR_POSITION_REAR)
+		&& (device->instance == 0)) {
+		ret = fimc_is_peri_loadfirm(core);
+		if (ret) {
+			err("fimc_is_peri_loadfirm() fail");
+			goto p_err;
+		}
+
+		ret = fimc_is_peri_loadsetf(core);
+		if (ret) {
+			err("fimc_is_peri_loadsetf() fail");
+			goto p_err;
 		}
 	}
 
