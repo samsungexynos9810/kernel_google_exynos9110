@@ -15,9 +15,11 @@
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <linux/pm_runtime.h>
 
 #include <sound/soc.h>
 #include <sound/pcm_params.h>
+#include <sound/exynos.h>
 
 #include <linux/platform_data/asoc-s3c.h>
 #include <mach/dma.h>
@@ -282,6 +284,17 @@ err:
 	return -EINVAL;
 }
 
+static int spdif_startup(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct samsung_spdif_info *spdif = to_info(rtd->cpu_dai);
+
+	pm_runtime_get_sync(spdif->dev);
+
+	return 0;
+}
+
 static void spdif_shutdown(struct snd_pcm_substream *substream,
 				struct snd_soc_dai *dai)
 {
@@ -299,6 +312,8 @@ static void spdif_shutdown(struct snd_pcm_substream *substream,
 	cpu_relax();
 
 	writel(clkcon & ~CLKCTL_PWR_ON, regs + CLKCON);
+
+	pm_runtime_put_sync(spdif->dev);
 }
 
 #ifdef CONFIG_PM
@@ -309,12 +324,14 @@ static int spdif_suspend(struct snd_soc_dai *cpu_dai)
 
 	dev_dbg(spdif->dev, "Entered %s\n", __func__);
 
-	spdif->saved_clkcon = readl(spdif->regs	+ CLKCON) & CLKCTL_MASK;
-	spdif->saved_con = readl(spdif->regs + CON) & CON_MASK;
-	spdif->saved_cstas = readl(spdif->regs + CSTAS) & CSTAS_MASK;
+	if (cpu_dai->active) {
+		spdif->saved_clkcon = readl(spdif->regs	+ CLKCON) & CLKCTL_MASK;
+		spdif->saved_con = readl(spdif->regs + CON) & CON_MASK;
+		spdif->saved_cstas = readl(spdif->regs + CSTAS) & CSTAS_MASK;
 
-	writel(con | CON_SW_RESET, spdif->regs + CON);
-	cpu_relax();
+		writel(con | CON_SW_RESET, spdif->regs + CON);
+		cpu_relax();
+	}
 
 	return 0;
 }
@@ -325,9 +342,11 @@ static int spdif_resume(struct snd_soc_dai *cpu_dai)
 
 	dev_dbg(spdif->dev, "Entered %s\n", __func__);
 
-	writel(spdif->saved_clkcon, spdif->regs	+ CLKCON);
-	writel(spdif->saved_con, spdif->regs + CON);
-	writel(spdif->saved_cstas, spdif->regs + CSTAS);
+	if (cpu_dai->active) {
+		writel(spdif->saved_clkcon, spdif->regs	+ CLKCON);
+		writel(spdif->saved_con, spdif->regs + CON);
+		writel(spdif->saved_cstas, spdif->regs + CSTAS);
+	}
 
 	return 0;
 }
@@ -340,6 +359,7 @@ static const struct snd_soc_dai_ops spdif_dai_ops = {
 	.set_sysclk	= spdif_set_sysclk,
 	.trigger	= spdif_trigger,
 	.hw_params	= spdif_hw_params,
+	.startup	= spdif_startup,
 	.shutdown	= spdif_shutdown,
 };
 
@@ -363,6 +383,40 @@ static const struct snd_soc_component_driver samsung_spdif_component = {
 	.name		= "samsung-spdif",
 };
 
+#ifdef CONFIG_PM_RUNTIME
+static int spdif_runtime_suspend(struct device *dev)
+{
+	struct samsung_spdif_info *spdif = &spdif_info;
+	struct pinctrl *pinctrl;
+
+	pr_debug("%s entered\n", __func__);
+
+	pinctrl = devm_pinctrl_get_select(dev, "idle");
+	spdif->saved_clkcon = readl(spdif->regs	+ CLKCON) & CLKCTL_MASK;
+	spdif->saved_con = readl(spdif->regs + CON) & CON_MASK;
+	spdif->saved_cstas = readl(spdif->regs + CSTAS) & CSTAS_MASK;
+	lpass_put_sync(dev);
+
+	return 0;
+}
+
+static int spdif_runtime_resume(struct device *dev)
+{
+	struct samsung_spdif_info *spdif = &spdif_info;
+	struct pinctrl *pinctrl;
+
+	pr_debug("%s entered\n", __func__);
+
+	lpass_get_sync(dev);
+	writel(spdif->saved_clkcon, spdif->regs	+ CLKCON);
+	writel(spdif->saved_con, spdif->regs + CON);
+	writel(spdif->saved_cstas, spdif->regs + CSTAS);
+	pinctrl = devm_pinctrl_get_select(dev, "default");
+
+	return 0;
+}
+#endif /* CONFIG_PM_RUNTIME */
+
 static int samsung_spdif_probe(struct platform_device *pdev)
 {
 	struct s3c_audio_pdata *spdif_pdata;
@@ -382,6 +436,9 @@ static int samsung_spdif_probe(struct platform_device *pdev)
 			return -ENXIO;
 		}
 		spdif_stereo_out.channel = dma_res->start;
+	} else {
+		if (of_find_property(np, "samsung,lpass-subip", NULL))
+			lpass_register_subip(&pdev->dev, "spdif");
 	}
 
 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -454,6 +511,8 @@ static int samsung_spdif_probe(struct platform_device *pdev)
 		goto err5;
 	}
 
+	pm_runtime_enable(&pdev->dev);
+
 	return 0;
 err5:
 	snd_soc_unregister_component(&pdev->dev);
@@ -507,6 +566,11 @@ static const struct of_device_id exynos_spdif_match[] = {
 MODULE_DEVICE_TABLE(of, exynos_spdif_match);
 #endif
 
+static const struct dev_pm_ops samsung_spdif_pm = {
+	SET_RUNTIME_PM_OPS(spdif_runtime_suspend,
+				spdif_runtime_resume, NULL)
+};
+
 static struct platform_driver samsung_spdif_driver = {
 	.probe	= samsung_spdif_probe,
 	.remove	= samsung_spdif_remove,
@@ -515,6 +579,7 @@ static struct platform_driver samsung_spdif_driver = {
 		.name	= "samsung-spdif",
 		.owner	= THIS_MODULE,
 		.of_match_table = of_match_ptr(exynos_spdif_match),
+		.pm = &samsung_spdif_pm,
 	},
 };
 
