@@ -486,6 +486,10 @@ static int start_mipi_csi(u32 channel,
 	else if (channel == CSI_ID_C)
 		base_reg = (unsigned long)MIPICSI2_REG_BASE;
 
+	/* HACK: This should be removed. */
+	if (is_readl(base_reg + S5PCSIS_DPHYCTRL) & 0x1f)
+		goto exit;
+
 	s5pcsis_reset(base_reg);
 
 	settle = get_hsync_settle(settle_table, settles, width, height, framerate);
@@ -496,6 +500,7 @@ static int start_mipi_csi(u32 channel,
 	s5pcsis_system_enable(base_reg, true);
 	s5pcsis_enable_interrupts(base_reg, true);
 
+exit:
 	return 0;
 }
 
@@ -1127,6 +1132,9 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	fimc_is_sensor_back_stop(device);
 	fimc_is_sensor_front_stop(device);
 
+	/* HACK: Move to fimc_is_sensor_front_stop() */
+	stop_mipi_csi(device->active_sensor->csi_ch);
+
 	ret = fimc_is_flite_close(&device->flite);
 	if (ret != 0) {
 		merr("fimc_is_flite_close(%d) fail",
@@ -1491,7 +1499,6 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 		goto exit;
 	}
 
-	stop_mipi_csi(device->active_sensor->csi_ch);
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 
 exit:
