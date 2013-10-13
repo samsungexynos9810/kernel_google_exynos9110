@@ -913,6 +913,13 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 			"setfile_3h7.bin";
 
 	ext = &enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].ext;
+	memset(ext, 0x0, sizeof(struct sensor_open_extended));
+
+	ext->sensor_con.product_name = 0;
+	ext->sensor_con.peri_type = SE_I2C;
+	ext->sensor_con.peri_setting.i2c.channel = enum_sensor[SENSOR_NAME_S5K3H7_SUNNY].i2c_ch;
+	ext->sensor_con.peri_setting.i2c.slave_address = 0x20;
+	ext->sensor_con.peri_setting.i2c.speed = 400000;
 
 	ext->actuator_con.product_name = ACTUATOR_NAME_DWXXXX;
 	ext->actuator_con.peri_type = SE_I2C;
