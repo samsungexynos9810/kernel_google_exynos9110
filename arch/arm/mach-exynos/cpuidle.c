@@ -189,7 +189,7 @@ static int fb_state_change(struct notifier_block *nb,
 		pr_info("LCD is off\n");
 		delay = msecs_to_jiffies(C3_HOTPLUG_DELAY);
 		delay -= jiffies % delay;
-		schedule_delayed_work_on(0, &work_hotplug, C3_HOTPLUG_DELAY);
+		schedule_delayed_work_on(0, &work_hotplug, delay);
 		break;
 	case FB_BLANK_UNBLANK:
 		/*
