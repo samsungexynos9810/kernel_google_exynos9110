@@ -149,9 +149,13 @@ static void aud_init_clock(void)
 	exynos_set_rate("dout_sclk_slimbus_aud", 24576002);
 	exynos_set_rate("dout_sclk_uart", 133000000);
 
+	/* TOP1 */
+	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
+	exynos_set_parent("mout_aud_dpll_user_top", "fin_pll");
+
 	/* TOP_PERIC1 */
-	exynos_set_parent("mout_sclk_audio0", "mout_aud_pll_user");
-	exynos_set_parent("mout_sclk_audio1", "mout_aud_pll_user");
+	exynos_set_parent("mout_sclk_audio0", "mout_aud_pll_user_top");
+	exynos_set_parent("mout_sclk_audio1", "mout_aud_pll_user_top");
 	exynos_set_parent("mout_sclk_spdif", "dout_sclk_audio0");
 	exynos_set_rate("dout_sclk_audio0", 24576002);
 	exynos_set_rate("dout_sclk_audio1", 49152004);
