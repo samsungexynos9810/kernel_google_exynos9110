@@ -133,12 +133,6 @@ static int __ref __cpu_hotplug(bool out_flag)
 	if (out_flag) {
 		for(i = NR_CPUS-1; i > 0; i--) {
 			ret = cpu_down(i);
-			if (ret) {
-				pr_err("%s : hotplug out failed [%d]\n"
-					, __func__, i);
-				break;
-			}
-			pr_info("hotplug out : %d\n", i);
 #ifdef CONFIG_DEBUG_CPUIDLE
 			show_core_regs(i);
 #endif
@@ -146,12 +140,6 @@ static int __ref __cpu_hotplug(bool out_flag)
 	} else {
 		for(i = 1; i < NR_CPUS; i++) {
 			ret = cpu_up(i);
-			if (ret) {
-				pr_err("%s : hotplug in failed [%d]\n"
-					, __func__, i);
-				break;
-			}
-			pr_info("hotplug in : %d\n", i);
 #ifdef CONFIG_DEBUG_CPUIDLE
 			show_core_regs(i);
 #endif
