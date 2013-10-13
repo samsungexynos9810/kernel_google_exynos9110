@@ -586,6 +586,7 @@ enum exynos5430_clks {
 	mout_bus_pll_user = 3010,
 	mout_mfc_pll_user, mout_mphy_pll_user,
 	mout_isp_pll, mout_aud_pll, mout_aud_dpll,
+	mout_aud_pll_user_top, mout_aud_dpll_user_top,
 
 	mout_aclk_g2d_400_a = 3020, mout_aclk_g2d_400_b,
 	mout_aclk_gscl_333,
@@ -884,6 +885,8 @@ PNAME(mout_kfc_p)		= { "mout_kfc_pll", "mout_bus_pll_user_kfc" };
 PNAME(mout_bus_pll_user_p) = { "fin_pll", "mout_bus_pll_sub" };
 PNAME(mout_mfc_pll_user_p) = { "fin_pll", "dout_mfc_pll" };
 PNAME(mout_mphy_pll_user_p) = { "fin_pll", "mout_mphy_pll" };
+PNAME(mout_aud_pll_user_top_p) = { "fin_pll", "mout_aud_pll" };
+PNAME(mout_aud_dpll_user_top_p) = { "fin_pll", "mout_aud_dpll" };
 PNAME(mout_isp_pll_p) = { "fin_pll", "fout_isp_pll" };
 PNAME(mout_aud_pll_p) = { "fin_pll", "fout_aud_pll" };
 PNAME(mout_aud_dpll_p) = { "fin_pll", "fout_aud_dpll" };
@@ -899,8 +902,8 @@ PNAME(mout_aclk_isp_400_p)	= { "mout_bus_pll_user", "mout_mfc_pll_user" };
 PNAME(mout_aclk_isp_dis_400_p)	= { "mout_bus_pll_user", "mout_mfc_pll_user" };
 PNAME(mout_aclk_cam1_552_a_p)	= { "mout_isp_pll", "mout_bus_pll_user" };
 PNAME(mout_aclk_cam1_552_b_p)	= { "mout_aclk_cam1_552_a", "mout_mfc_pll_user" };
-PNAME(mout_sclk_audio0_p)	= { "ioclk_audiocdclk0", "oscclk", "mout_aud_pll_user", "mout_aud_dpll_user" };
-PNAME(mout_sclk_audio1_p)	= { "ioclk_audiocdclk1", "oscclk", "mout_aud_pll_user", "mout_aud_dpll_user" };
+PNAME(mout_sclk_audio0_p)	= { "ioclk_audiocdclk0", "oscclk", "mout_aud_pll_user_top", "mout_aud_dpll_user_top" };
+PNAME(mout_sclk_audio1_p)	= { "ioclk_audiocdclk1", "oscclk", "mout_aud_pll_user_top", "mout_aud_dpll_user_top" };
 PNAME(mout_sclk_spi0_p)		= { "oscclk", "mout_bus_pll_user" };
 PNAME(mout_sclk_spi1_p)		= { "oscclk", "mout_bus_pll_user" };
 PNAME(mout_sclk_spi2_p)		= { "oscclk", "mout_bus_pll_user" };
@@ -1135,6 +1138,8 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMUX(mout_bus_pll_user, EXYNOS5430_SRC_SEL_TOP1, 0, 1),
 	CMUX(mout_mfc_pll_user, EXYNOS5430_SRC_SEL_TOP1, 4, 1),
 	CMUX(mout_mphy_pll_user, EXYNOS5430_SRC_SEL_TOP1, 8, 1),
+	CMUX(mout_aud_pll_user_top, EXYNOS5430_SRC_SEL_TOP1, 12, 1),
+	CMUX(mout_aud_dpll_user_top, EXYNOS5430_SRC_SEL_TOP1, 16, 1),
 	CMUX(mout_isp_pll, EXYNOS5430_SRC_SEL_TOP0, 0, 1),
 	CMUX(mout_aud_pll, EXYNOS5430_SRC_SEL_TOP0, 4, 1),
 	CMUX(mout_aud_dpll, EXYNOS5430_SRC_SEL_TOP0, 8, 1),
