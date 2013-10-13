@@ -259,10 +259,8 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
-#ifdef MUST_MODIFY
 	if (exynos_check_usb_op())
 		return EXYNOS_CHECK_DIDLE;
-#endif
 
 	return EXYNOS_CHECK_LPA;
 }
