@@ -141,7 +141,7 @@ static void update_time_in_state(int level);
 /*dvfs status*/
 static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
-static const unsigned int mali_dvfs_vol_default[] = { 975000, 1000000, 1050000 };
+static const unsigned int mali_dvfs_vol_default[] = { 975000, 975000, 1000000, 1050000, 1100000 };
 
 
 static int mali_dvfs_update_asv(int cmd)
