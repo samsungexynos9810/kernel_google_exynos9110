@@ -73,11 +73,11 @@
 #endif
 
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
-#define GPU_MAX_CLK 420
+#define GPU_MAX_CLK 480
 #endif
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_LOCK_MAX 420
+#define GPU_THROTTLING_LOCK_MAX 480
 #define GPU_THROTTLING_LOCK1 5
 #define GPU_THROTTLING_LOCK2 4
 #define GPU_THROTTLING_LOCK3 3
@@ -191,13 +191,6 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 	}
 #endif
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
-
-#ifdef CONFIG_EXYNOS_THERMAL
-	if (dvfs_status->step == kbase_platform_dvfs_get_level(GPU_THROTTLING_LOCK_MAX)) {
-		dvfs_status->step--;
-		goto skip;
-	}
-#endif
 
 	if (dvfs_status->utilisation > mali_dvfs_infotbl[dvfs_status->step].max_threshold) {
 #ifdef PLATFORM_UTILIZATION
@@ -355,6 +348,13 @@ int kbase_platform_dvfs_enable(bool enable, int freq)
 		dvfs_status->step = kbase_platform_dvfs_get_level(freq);
 		spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+		if (freq == MALI_DVFS_START_FREQ) {
+			if (dvfs_status->min_lock != -1)
+				dvfs_status->step = MAX(dvfs_status->min_lock, dvfs_status->step);
+			if (dvfs_status->max_lock != -1)
+				dvfs_status->step = MIN(dvfs_status->max_lock, dvfs_status->step);
+		}
+
 		kbase_platform_dvfs_set_level(dvfs_status->kbdev, dvfs_status->step);
 	}
 
@@ -397,6 +397,7 @@ int kbase_platform_dvfs_enable(bool enable, int freq)
 int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 {
 	unsigned long flags;
+	int i;
 	/*default status
 	  add here with the right function to get initilization value.
 	 */
@@ -421,6 +422,10 @@ int kbase_platform_dvfs_init(struct kbase_device *kbdev)
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	mali_dvfs_status_current.max_lock = -1;
 	mali_dvfs_status_current.min_lock = -1;
+	for (i = 0; i < NUMBER_LOCK; i++) {
+		mali_dvfs_status_current.user_max_lock[i] = -1;
+		mali_dvfs_status_current.user_min_lock[i] = -1;
+	}
 #endif
 #ifdef MALI_DVFS_ASV_ENABLE
 	mali_dvfs_status_current.asv_status = ASV_STATUS_NOT_INIT;
@@ -556,9 +561,8 @@ void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock)
 		mali_dvfs_status_current.max_lock = -1;
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
-#endif
-
 	printk("[G3D] Unlock max clk\n");
+#endif
 }
 
 int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
@@ -625,8 +629,8 @@ void mali_dvfs_freq_min_unlock(gpu_lock_type user_lock)
 		mali_dvfs_status_current.min_lock = -1;
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
-#endif
 	printk("[G3D] Unlock min clk\n");
+#endif
 }
 
 int kbase_platform_regulator_init(void)
