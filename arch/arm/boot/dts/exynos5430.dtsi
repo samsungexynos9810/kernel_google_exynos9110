@@ -1594,7 +1594,7 @@
 	};
 
 	spi_0: spi@14d20000 {
-		compatible = "samsung,exynos4210-spi";
+		compatible = "samsung,exynos5410-spi";
 		reg = <0x14d20000 0x100>;
 		interrupts = <0 432 0>;
 		dma-mode;
@@ -1611,7 +1611,7 @@
 	};
 
 	spi_1: spi@14d30000 {
-		compatible = "samsung,exynos4210-spi";
+		compatible = "samsung,exynos5410-spi";
 		reg = <0x14d30000 0x100>;
 		interrupts = <0 433 0>;
 		dma-mode;
@@ -1628,7 +1628,7 @@
 	};
 
 	spi_2: spi@14d40000 {
-		compatible = "samsung,exynos4210-spi";
+		compatible = "samsung,exynos5410-spi";
 		reg = <0x14d40000 0x100>;
 		interrupts = <0 434 0>;
 		dma-mode;
@@ -1645,7 +1645,7 @@
 	};
 
 	spi_3: spi@141a0000 {
-		compatible = "samsung,exynos4210-spi";
+		compatible = "samsung,exynos5410-spi";
 		reg = <0x141a0000 0x100>;
 		interrupts = <0 164 0>; /* NON */
 		swap-mode;
@@ -1658,7 +1658,7 @@
 	};
 
 	spi_4: spi@141b0000 {
-		compatible = "samsung,exynos4210-spi";
+		compatible = "samsung,exynos5410-spi";
 		reg = <0x141b0000 0x100>;
 		interrupts = <0 175 0>; /* NON */
 		swap-mode;
