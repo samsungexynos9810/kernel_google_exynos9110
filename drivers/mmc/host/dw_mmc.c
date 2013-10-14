@@ -1834,6 +1834,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 						"data FIFO error "
 						"(status=%08x)\n",
 						status);
+					dw_mci_reg_dump(host);
 					data->error = -EIO;
 				}
 				/*
