@@ -790,8 +790,7 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 	else
 		lock_level = GPU_TRIPPING_LOCK;
 
-	kbase_platform_dvfs_set_level(kbdev, lock_level);
-	mali_dvfs_freq_lock(lock_level);
+	mali_dvfs_freq_max_lock(kbase_platform_dvfs_get_level(lock_level), TMU_LOCK);
 #endif
 	return 0;
 }
@@ -799,7 +798,7 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 void kbase_tmu_normal_work(void)
 {
 #ifdef CONFIG_MALI_T6XX_DVFS
-	mali_dvfs_freq_unlock();
+	mali_dvfs_freq_max_unlock(TMU_LOCK);
 #endif
 }
 #endif
