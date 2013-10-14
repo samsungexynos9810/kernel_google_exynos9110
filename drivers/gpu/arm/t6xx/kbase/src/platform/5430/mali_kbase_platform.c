@@ -994,16 +994,16 @@ static ssize_t show_power_state(struct device *dev, struct device_attribute *att
 DEVICE_ATTR(clock, S_IRUGO|S_IWUSR, show_clock, set_clock);
 DEVICE_ATTR(fbdev, S_IRUGO, show_fbdev, NULL);
 DEVICE_ATTR(dtlb, S_IRUGO|S_IWUSR, show_dtlb, set_dtlb);
-DEVICE_ATTR(vol, S_IRUGO|S_IWUSR, show_vol, NULL);
+DEVICE_ATTR(vol, S_IRUGO, show_vol, NULL);
 DEVICE_ATTR(dvfs, S_IRUGO|S_IWUSR, show_dvfs, set_dvfs);
 DEVICE_ATTR(dvfs_max_lock, S_IRUGO|S_IWUSR, show_max_lock_dvfs, set_max_lock_dvfs);
 DEVICE_ATTR(dvfs_min_lock, S_IRUGO|S_IWUSR, show_min_lock_dvfs, set_min_lock_dvfs);
 DEVICE_ATTR(asv, S_IRUGO|S_IWUSR, show_asv, set_asv);
 DEVICE_ATTR(time_in_state, S_IRUGO|S_IWUSR, show_time_in_state, set_time_in_state);
 DEVICE_ATTR(tmu, S_IRUGO|S_IWUSR, show_tmu, set_tmu_control);
-DEVICE_ATTR(utilization, S_IRUGO|S_IWUSR, show_utilization, NULL);
-DEVICE_ATTR(dvfs_table, S_IRUGO|S_IWUSR, show_dvfs_table, NULL);
-DEVICE_ATTR(power_state, S_IRUGO|S_IWUSR, show_power_state, NULL);
+DEVICE_ATTR(utilization, S_IRUGO, show_utilization, NULL);
+DEVICE_ATTR(dvfs_table, S_IRUGO, show_dvfs_table, NULL);
+DEVICE_ATTR(power_state, S_IRUGO, show_power_state, NULL);
 
 int kbase_platform_create_sysfs_file(struct device *dev)
 {
