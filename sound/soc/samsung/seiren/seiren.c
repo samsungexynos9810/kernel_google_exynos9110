@@ -290,8 +290,7 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 
 	if (rtd->obuf0_filled && rtd->obuf1_filled) {
 		esa_err("%s: There is no unfilled obuf\n", __func__);
-		mutex_unlock(&esa_mutex);
-		return -EFAULT;
+		goto err;
 	}
 
 	/* select IBUF0 or IBUF1 */
@@ -312,8 +311,7 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	/* receive stream data from user */
 	if (copy_from_user(ibuf, buffer, size)) {
 		esa_err("%s: failed to copy_from_user\n", __func__);
-		mutex_unlock(&esa_mutex);
-		return -EFAULT;
+		goto err;
 	}
 
 	/* select IBUF0 or IBUF1 for next writing */
@@ -352,6 +350,9 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 			*obuf_filled_size, !rtd->select_ibuf);
 
 	return consumed_size;
+err:
+	mutex_unlock(&esa_mutex);
+	return -EFAULT;
 }
 
 static ssize_t esa_read(struct file *file, char *buffer,
@@ -397,15 +398,14 @@ static ssize_t esa_read(struct file *file, char *buffer,
 	/* send pcm data to user */
 	if (copy_to_user((void *)buffer, obuf, *obuf_filled_size)) {
 		esa_err("%s: failed to copy_to_user\n", __func__);
-		mutex_unlock(&esa_mutex);
-		return -EFAULT;
+		goto err;
 	}
 
 	/* if meet eos, it sholud also collect data of another buff */
 	if (rtd->get_eos && *obuf_filled_) {
 		if (copy_to_user((void *)(buffer + *obuf_filled_size), obuf_,
 				*obuf_filled_size_))
-			return -EFAULT;
+			goto err;
 		*obuf_filled_size += *obuf_filled_size_;
 		*obuf_filled_size_ = 0;
 		*obuf_filled_ = false;
@@ -419,6 +419,9 @@ static ssize_t esa_read(struct file *file, char *buffer,
 	mutex_unlock(&esa_mutex);
 
 	return *obuf_filled_size;
+err:
+	mutex_unlock(&esa_mutex);
+	return -EFAULT;
 }
 
 static int esa_exe(struct file *file, unsigned int param,
@@ -431,11 +434,13 @@ static int esa_exe(struct file *file, unsigned int param,
 	unsigned char *obuf = rtd->obuf0;
 	int ret = 0;
 
+	mutex_lock(&esa_mutex);
+
 	/* receive ibuf_info from user */
 	if (copy_from_user(&ibuf_info, (struct audio_mem_info_t *)arg,
 					sizeof(struct audio_mem_info_t))) {
 		esa_err("%s: failed to copy_from_user ibuf_info\n", __func__);
-		return -EFAULT;
+		goto err;
 	}
 
 	/* receive obuf_info from user */
@@ -443,14 +448,14 @@ static int esa_exe(struct file *file, unsigned int param,
 	if (copy_from_user(&obuf_info, (struct audio_mem_info_t *)arg,
 					sizeof(struct audio_mem_info_t))) {
 		esa_err("%s: failed to copy_from_user obuf_info\n", __func__);
-		return -EFAULT;
+		goto err;
 	}
 
 	/* receive pcm data from user */
 	if (copy_from_user(ibuf, (void *)ibuf_info.virt_addr,
 					ibuf_info.mem_size)) {
 		esa_err("%s: failed to copy_from_user\n", __func__);
-		return -EFAULT;
+		goto err;
 	}
 
 	/* send instruction to FW for decoding */
@@ -477,7 +482,7 @@ static int esa_exe(struct file *file, unsigned int param,
 					obuf, obuf_filled_size)) {
 			esa_err("%s: failed to copy_to_user obuf pcm\n",
 					__func__);
-			return -EFAULT;
+			goto err;
 		}
 	} else {
 		esa_debug("%s: cmd_exe Fail: %d\n", __func__, response);
@@ -487,6 +492,9 @@ static int esa_exe(struct file *file, unsigned int param,
 			__func__, rtd->handle_id, rtd->idx, obuf_filled_size);
 
 	return ret;
+err:
+	mutex_unlock(&esa_mutex);
+	return -EFAULT;
 }
 
 static int esa_set_params(struct file *file, unsigned int param,
