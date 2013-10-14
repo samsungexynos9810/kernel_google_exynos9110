@@ -1390,8 +1390,11 @@ static void g2d_set_cci_snoop(struct g2d_ctx *ctx)
 
 static void g2d_clock_resume(struct g2d_dev *g2d)
 {
-	clk_set_parent(g2d->clk_chld1, g2d->clk_parn1);
-	clk_set_parent(g2d->clk_chld2, g2d->clk_parn2);
+	if (clk_set_parent(g2d->clk_chld1, g2d->clk_parn1))
+		dev_err(g2d->dev, "Unable to set chld1, parn1 clock\n");
+	if (clk_set_parent(g2d->clk_chld2, g2d->clk_parn2))
+		dev_err(g2d->dev, "Unable to set chld2, parn2 clock\n");
+
 	g2d_dbg("clock resume\n");
 }
 
