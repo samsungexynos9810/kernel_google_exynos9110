@@ -38,7 +38,7 @@
 #include <mach/dma.h>
 #endif
 
-#define MAX_SPI_PORTS		3
+#define MAX_SPI_PORTS		5
 
 /* Registers and bit-fields */
 
@@ -1543,12 +1543,10 @@ static int s3c64xx_spi_suspend(struct device *dev)
 
 	spi_master_suspend(master);
 
-	if (sdd->port_id < MAX_SPI_PORTS) {
-		if (!pm_runtime_enabled(dev)) {
-			/* Disable the clock */
-			clk_disable_unprepare(sdd->src_clk);
-			clk_disable_unprepare(sdd->clk);
-		}
+	if (!pm_runtime_enabled(dev)) {
+		/* Disable the clock */
+		clk_disable_unprepare(sdd->src_clk);
+		clk_disable_unprepare(sdd->clk);
 	}
 
 	sdd->cur_speed = 0; /* Output Clock is stopped */
@@ -1565,18 +1563,16 @@ static int s3c64xx_spi_resume(struct device *dev)
 	if (sci->cfg_gpio)
 		sci->cfg_gpio();
 
-	if (sdd->port_id < MAX_SPI_PORTS) {
-		/* Enable the clock */
-		clk_prepare_enable(sdd->src_clk);
-		clk_prepare_enable(sdd->clk);
+	/* Enable the clock */
+	clk_prepare_enable(sdd->src_clk);
+	clk_prepare_enable(sdd->clk);
 
-		s3c64xx_spi_hwinit(sdd, sdd->port_id);
+	s3c64xx_spi_hwinit(sdd, sdd->port_id);
 
-		if (pm_runtime_enabled(dev)) {
-			/* Disable the clock */
-			clk_disable_unprepare(sdd->src_clk);
-			clk_disable_unprepare(sdd->clk);
-		}
+	if (pm_runtime_enabled(dev)) {
+		/* Disable the clock */
+		clk_disable_unprepare(sdd->src_clk);
+		clk_disable_unprepare(sdd->clk);
 	}
 
 	spi_master_resume(master);
@@ -1656,6 +1652,14 @@ static struct s3c64xx_spi_port_config exynos4_spi_port_config = {
 	.clk_from_cmu	= true,
 };
 
+static struct s3c64xx_spi_port_config exynos5_spi_port_config = {
+	.fifo_lvl_mask	= { 0x1ff, 0x7F, 0x7F, 0x1ff, 0x1ff },
+	.rx_lvl_offset	= 15,
+	.tx_st_done	= 25,
+	.high_speed	= true,
+	.clk_from_cmu	= true,
+};
+
 static struct platform_device_id s3c64xx_spi_driver_ids[] = {
 	{
 		.name		= "s3c2443-spi",
@@ -1675,6 +1679,9 @@ static struct platform_device_id s3c64xx_spi_driver_ids[] = {
 	}, {
 		.name		= "exynos4210-spi",
 		.driver_data	= (kernel_ulong_t)&exynos4_spi_port_config,
+	}, {
+		.name		= "exynos5410-spi",
+		.driver_data	= (kernel_ulong_t)&exynos5_spi_port_config,
 	},
 	{ },
 };
@@ -1683,6 +1690,9 @@ static struct platform_device_id s3c64xx_spi_driver_ids[] = {
 static const struct of_device_id s3c64xx_spi_dt_match[] = {
 	{ .compatible = "samsung,exynos4210-spi",
 			.data = (void *)&exynos4_spi_port_config,
+	},
+	{ .compatible = "samsung,exynos5410-spi",
+			.data = (void *)&exynos5_spi_port_config,
 	},
 	{ },
 };
