@@ -34,6 +34,7 @@
 #include <linux/bug.h>
 #include <linux/v4l2-mediabus.h>
 #include <linux/exynos_iovmm.h>
+#include <mach/devfreq.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"
@@ -42,6 +43,7 @@
 #include "fimc-is-err.h"
 #include "fimc-is-framemgr.h"
 #include "fimc-is-dt.h"
+
 
 #ifdef USE_OWN_FAULT_HANDLER
 #include <plat/sysmmu.h>
@@ -673,8 +675,10 @@ int fimc_is_runtime_suspend(struct device *dev)
 		vb2_ion_detach_iommu(core->mem.alloc_ctx);
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5420)
+#if defined(CONFIG_PM_DEVFREQ)
+#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	 exynos5_update_media_layers(TYPE_FIMC_LITE, 0);
+#endif
 #endif
 
 #if defined(CONFIG_MACH_SMDK5410) || defined(CONFIG_MACH_SMDK5420)
@@ -741,8 +745,10 @@ int fimc_is_runtime_resume(struct device *dev)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5420)
+#if defined(CONFIG_PM_DEVFREQ)
+#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	exynos5_update_media_layers(TYPE_FIMC_LITE, 1);
+#endif
 #endif
 	pr_info("FIMC-IS runtime resume out\n");
 
