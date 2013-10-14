@@ -906,7 +906,7 @@ static int exynos5_devfreq_mif_set_timing_set(struct devfreq_data_mif *data,
 	struct devfreq_mif_timing_parameter *cur_parameter;
 	unsigned int tmp;
 
-	cur_parameter = &dmc_timing_parameter[2];
+	cur_parameter = &dmc_timing_parameter[target_idx];
 
 	if (use_mif_timing_set_0) {
 		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0xE4);
@@ -956,7 +956,7 @@ static int exynos5_devfreq_mif_set_phy(struct devfreq_data_mif *data,
 	struct devfreq_mif_timing_parameter *cur_parameter;
 	unsigned int tmp;
 
-	cur_parameter = &dmc_timing_parameter[2];
+	cur_parameter = &dmc_timing_parameter[target_idx];
 
 	if (use_mif_timing_set_0) {
 		tmp = __raw_readl(data->base_lpddr_phy0 + 0xBC);
@@ -988,7 +988,7 @@ static int exynos5_devfreq_mif_set_directcmd(struct devfreq_data_mif *data,
 {
 	struct devfreq_mif_timing_parameter *cur_parameter;
 
-	cur_parameter = &dmc_timing_parameter[2];
+	cur_parameter = &dmc_timing_parameter[target_idx];
 
 	__raw_writel(cur_parameter->mif_drex_mr_data[0], data->base_sysreg_mif + 0x1030);
 	__raw_writel(cur_parameter->mif_drex_mr_data[1], data->base_sysreg_mif + 0x1034);
