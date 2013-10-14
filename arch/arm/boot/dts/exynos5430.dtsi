@@ -1128,6 +1128,7 @@
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c4020 0x20>;
 		parent = <&pd_disp>;
+		bts-status = "enabled";
 	};
 
 	pd_mscl: pd-mscl@105c4040 {
@@ -1197,6 +1198,7 @@
 	pd_cam1: pd-cam1@105c40a0 {
 		compatible = "samsung,exynos5430-pd";
 		reg = <0x105c40a0 0x20>;
+		bts-status = "enabled";
 	};
 
 	pd_maudio: pd-maudio@105c40c0 {
