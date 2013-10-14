@@ -328,25 +328,25 @@ void g2d_init_clock(void)
 	int clk_rate2;
 
 	if (exynos_set_parent("mout_aclk_g2d_400_a", "mout_bus_pll_user"))
-		pr_err("Unable to set parent %s of clock %s\n"
-				,"mout_bus_pll_user", "mout_aclk_g2d_400_a");
+		pr_err("Unable to set clock %s's parent %s\n"
+				,"mout_aclk_g2d_400_a", "mout_bus_pll_user");
 
 	if (exynos_set_parent("mout_aclk_g2d_400_b", "mout_aclk_g2d_400_a"))
-		pr_err("Unable to set parent %s of clock %s\n"
-				,"mout_aclk_g2d_400_a", "mout_aclk_g2d_400_b");
+		pr_err("Unable to set clock %s's parent %s\n"
+				,"mout_aclk_g2d_400_b", "mout_aclk_g2d_400_a");
 
-	if (exynos_set_parent("mout_aclk_g2d_400_user", "dout_aclk_g2d_400"))
-		pr_err("Unable to set parent %s of clock %s\n"
-				, "dout_aclk_g2d_400", "mout_aclk_g2d_400_user");
+	if (exynos_set_parent("mout_aclk_g2d_400_user", "aclk_g2d_400"))
+		pr_err("Unable to set clock %s's parent %s\n"
+				,"mout_aclk_g2d_400_user", "aclk_g2d_400");
 
-	if (exynos_set_parent("mout_aclk_g2d_266_user", "dout_aclk_g2d_266"))
-		pr_err("Unable to set parent %s of clock %s\n"
-				, "dout_aclk_g2d_266", "mout_aclk_g2d_266_user");
+	if (exynos_set_parent("mout_aclk_g2d_266_user", "aclk_g2d_266"))
+		pr_err("Unable to set clock %s's parent %s\n"
+				, "mout_aclk_g2d_266_user", "aclk_g2d_266");
 
-	if (exynos_set_rate("dout_aclk_g2d_400", 400000000))
+	if (exynos_set_rate("dout_aclk_g2d_400", 400 * 1000000))
 		pr_err("Can't set %s clock rate\n", "dout_aclk_g2d_400");
 
-	if (exynos_set_rate("dout_aclk_g2d_266", 267000000))
+	if (exynos_set_rate("dout_aclk_g2d_266", 267 * 1000000))
 		pr_err("Can't set %s clock rate\n", "dout_aclk_g2d_266");
 
 	clk_rate1 = exynos_get_rate("aclk_g2d_400");
