@@ -155,7 +155,6 @@ static int exynos_cpu_suspend(unsigned long arg)
 static int exynos_pm_suspend(void)
 {
 	unsigned long tmp;
-	unsigned int cluster_id;
 
 	/* Setting Central Sequence Register for power down mode */
 	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
