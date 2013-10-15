@@ -878,10 +878,8 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
 
-	if (data->soc == SOC_ARCH_EXYNOS) {
+	if (data->soc == SOC_ARCH_EXYNOS)
 		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
-		con |= (EXYNOS_MUX_ADDR_VALUE << EXYNOS_MUX_ADDR_SHIFT);
-	}
 
 	if (on) {
 		con |= (EXYNOS_TMU_CORE_ON | EXYNOS_THERM_TRIP_EN);
@@ -902,6 +900,8 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
 	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
+	pr_debug("[TMU]reg_con[%d] = 0x%x\n", id, con);
 
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
@@ -1105,7 +1105,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
 	.trigger_level4_en = 1,
-	.gain = 5,
+	.gain = 8,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
@@ -1308,6 +1308,19 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 
 		exynos_tmu_control(pdev, i, true);
 	}
+
+	mutex_lock(&data->lock);
+	clk_enable(data->clk[0]);
+	clk_enable(data->clk[1]);
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+		unsigned int temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
+		int temp = code_to_temp(data, temp_code, i);
+		pr_info("[TMU]temp[%d] : %d\n", i, temp);
+	}
+	clk_disable(data->clk[0]);
+	clk_disable(data->clk[1]);
+	mutex_unlock(&data->lock);
+
 
 	/* Register the sensor with thermal management interface */
 	(&exynos_sensor_conf)->private_data = data;
