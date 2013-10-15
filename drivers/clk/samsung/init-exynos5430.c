@@ -193,7 +193,7 @@ void cam0_init_clock(void)
 	exynos_set_rate("dout_aclk_cam0_552", 552 * 1000000);
 
 	/* ACLK_CAM0_400 */
-	exynos_set_rate("dout_aclk_cam0_400", 400 * 1000000);
+	exynos_set_rate("dout_aclk_cam0_400_top", 400 * 1000000);
 
 	/* ACLK_CAM0_333 */
 	exynos_set_rate("dout_aclk_cam0_333", 333 * 1000000);
