@@ -358,23 +358,23 @@ void jpeg_init_clock(void)
 {
 	if (exynos_set_parent("mout_sclk_jpeg_a", "mout_bus_pll_user"))
 		pr_err("Unable to set parent %s of clock %s\n",
-				"mout_sclk_jpeg_a", "mout_bus_pll_user");
+				"mout_bus_pll_user", "mout_sclk_jpeg_a");
 
 	if (exynos_set_parent("mout_sclk_jpeg_b", "mout_sclk_jpeg_a"))
 		pr_err("Unable to set parent %s of clock %s\n",
-				"mout_sclk_jpeg_b", "mout_sclk_jpog_a");
+				"mout_sclk_jpog_a", "mout_sclk_jpeg_b");
 
 	if (exynos_set_parent("mout_sclk_jpeg_c", "mout_sclk_jpeg_b"))
 		pr_err("Unable to set parent %s of clock %s\n",
-				"mout_sclk_jpeg_c", "mout_sclk_jpeg_b");
+				"mout_sclk_jpeg_b", "mout_sclk_jpeg_c");
 
 	if (exynos_set_parent("dout_sclk_jpeg", "mout_sclk_jpeg_c"))
 		pr_err("Unable to set parent %s of clock %s\n",
-				"dout_sclk_jpeg", "mout_sclk_jpeg_c");
+				"mout_sclk_jpeg_c", "dout_sclk_jpeg");
 
 	if (exynos_set_parent("mout_sclk_jpeg_user", "dout_sclk_jpeg"))
 		pr_err("Unable to set parent %s of clock %s\n",
-				"mout_sclk_jpeg_user", "dout_sclk_jpeg");
+				"dout_sclk_jpeg", "mout_sclk_jpeg_user");
 
 	if (exynos_set_rate("dout_sclk_jpeg", 400 * 1000000))
 		pr_err("Can't set %s clock rate\n", "dout_sclk_jpeg");
