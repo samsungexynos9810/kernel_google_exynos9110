@@ -112,6 +112,14 @@ static struct pm_qos_request exynos5_g3d_cpu_qos;
 /*  This table and variable are using the check time share of GPU Clock  */
 /***********************************************************/
 
+mali_dvfs_info mali_dvfs_infotbl[] = {
+       {975000, 160, 0, 90, 0, 160000, 83000, 250000},
+       {975000, 266, 53, 90, 0, 160000, 83000, 250000},
+       {1000000, 350, 60, 90, 0, 400000, 222000, 250000},
+       {1050000, 420, 70, 90, 0, 667000, 333000, 250000},
+       {1100000, 480, 78, 100, 0, 800000, 400000, 250000},
+};
+
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
 
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -213,9 +221,6 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 		DVFS_ASSERT(dvfs_status->step > 0);
 		dvfs_status->step--;
 	}
-#ifdef CONFIG_EXYNOS_THERMAL
-skip:
-#endif
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 	if ((dvfs_status->max_lock >= 0) && (dvfs_status->step > dvfs_status->max_lock)) {
 		dvfs_status->step = dvfs_status->max_lock;
