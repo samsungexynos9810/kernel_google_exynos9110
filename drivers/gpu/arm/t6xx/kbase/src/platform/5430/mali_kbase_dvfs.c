@@ -186,7 +186,6 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 	struct exynos_context *platform;
 
 	if (!kbase_platform_dvfs_get_enable_status()) {
-		mutex_unlock(&mali_enable_clock_lock);
 		return;
 	}
 
@@ -835,7 +834,7 @@ void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (g3d_rate != g3d_rate_prev) {
 		/*for stable clock input.*/
-		ret = exynos_set_rate("fout_g3d_pll", 266000000 );
+		ret = exynos_set_rate("fout_g3d_pll", 100000000 );
 		if (ret < 0) {
 			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [fout_g3d_pll]\n");
 			return;
