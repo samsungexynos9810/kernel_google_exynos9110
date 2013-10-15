@@ -1014,7 +1014,7 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->sensor_con.peri_type = SE_I2C;
 	ext->sensor_con.peri_setting.i2c.channel = sensor_info->i2c_channel;
 	ext->sensor_con.peri_setting.i2c.slave_address = sensor_info->sensor_slave_address;
-	ext->sensor_con.peri_setting.i2c.speed = 200000;
+	ext->sensor_con.peri_setting.i2c.speed = 400000;
 
 	ext->actuator_con.product_name = ACTUATOR_NAME_AK7345;
 	ext->actuator_con.peri_type = SE_I2C;
