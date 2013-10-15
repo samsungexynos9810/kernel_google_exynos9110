@@ -73,19 +73,18 @@
 #endif
 
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
-#define GPU_MAX_CLK 480
+#define GPU_MAX_CLK 350
 #endif
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_LOCK_MAX 480
-#define GPU_THROTTLING_LOCK1 5
-#define GPU_THROTTLING_LOCK2 4
-#define GPU_THROTTLING_LOCK3 3
-#define GPU_THROTTLING_LOCK4 1
-#define GPU_TRIPPING_LOCK 1
+#define GPU_THROTTLING_90_95 350
+#define GPU_THROTTLING_95_100 266
+#define GPU_THROTTLING_100_105 266
+#define GPU_THROTTLING_105_110 266
+#define GPU_TRIPPING_110 160
 #endif
 
-#define COLD_MINIMUM_VOL 950000
+#define COLD_MINIMUM_VOL 975000
 
 #ifdef CONFIG_REGULATOR
 static struct regulator *g3d_regulator;
@@ -533,7 +532,9 @@ int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock)
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
-	printk("[G3D] Lock max clk: %d\n", mali_dvfs_infotbl[level].clock);
+#ifdef FREQ_LOCK_MSG
+	printk("[G3D] Lock max level: %d, user_lock: %d, clk: %d, current clk: %d\n", level, user_lock, mali_dvfs_infotbl[level].clock, mali_get_dvfs_current_level());
+#endif
 #endif
 	return 0;
 }
@@ -565,7 +566,9 @@ void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock)
 		mali_dvfs_status_current.max_lock = -1;
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+#ifdef FREQ_LOCK_MSG
 	printk("[G3D] Unlock max clk\n");
+#endif
 #endif
 }
 
@@ -601,7 +604,9 @@ int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
 
+#ifdef FREQ_LOCK_MSG
 	printk("[G3D] Lock min clk: %d\n", mali_dvfs_infotbl[level].clock);
+#endif
 #endif
 	return 0;
 }
@@ -633,7 +638,9 @@ void mali_dvfs_freq_min_unlock(gpu_lock_type user_lock)
 		mali_dvfs_status_current.min_lock = -1;
 
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
+#ifdef FREQ_LOCK_MSG
 	printk("[G3D] Unlock min clk\n");
+#endif
 #endif
 }
 
@@ -787,16 +794,29 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 
 	clkrate = clk_get_rate(platform->aclk_g3d);
 
-	if (event == GPU_THROTTLING1)
-		lock_level = GPU_THROTTLING_LOCK1;
-	else if (event == GPU_THROTTLING2)
-		lock_level = GPU_THROTTLING_LOCK2;
-	else if (event == GPU_THROTTLING3)
-		lock_level = GPU_THROTTLING_LOCK3;
-	else if (event == GPU_THROTTLING4)
-		lock_level = GPU_THROTTLING_LOCK4;
-	else
-		lock_level = GPU_TRIPPING_LOCK;
+	switch(event) {
+		case GPU_THROTTLING1:
+			lock_level = GPU_THROTTLING_90_95;
+			//printk("[G3D] GPU_THROTTLING_90_95\n");
+			break;
+		case GPU_THROTTLING2:
+			lock_level = GPU_THROTTLING_95_100;
+			//printk("[G3D] GPU_THROTTLING_95_100\n");
+			break;
+		case GPU_THROTTLING3:
+			lock_level = GPU_THROTTLING_100_105;
+			//printk("[G3D] GPU_THROTTLING_100_105\n");
+			break;
+		case GPU_THROTTLING4:
+			lock_level = GPU_THROTTLING_105_110;
+			//printk("[G3D] GPU_THROTTLING_105_110\n");
+			break;
+		case GPU_TRIPPING:
+			lock_level = GPU_TRIPPING_110;
+			//printk("[G3D] GPU_THROTTLING_110\n");
+		default:
+			return 0;
+	}
 
 	mali_dvfs_freq_max_lock(kbase_platform_dvfs_get_level(lock_level), TMU_LOCK);
 #endif
