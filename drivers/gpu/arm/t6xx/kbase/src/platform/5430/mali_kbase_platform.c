@@ -1119,15 +1119,15 @@ mali_error kbase_platform_init(struct kbase_device *kbdev)
 
 	spin_lock_init(&platform->cmu_pmu_lock);
 
-	if (kbase_platform_power_clock_init(kbdev)) {
-		goto clock_init_fail;
-	}
-
 #ifdef CONFIG_REGULATOR
 	if (kbase_platform_regulator_init()) {
 		goto regulator_init_fail;
 	}
 #endif /* CONFIG_REGULATOR */
+
+	if (kbase_platform_power_clock_init(kbdev)) {
+		goto clock_init_fail;
+	}
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	kbase_platform_dvfs_init(kbdev);
