@@ -1381,18 +1381,11 @@ static int exynos5_devfreq_mif_update_timingset(struct devfreq_data_mif *data)
 	return 0;
 }
 
-static int exynos5_devfreq_mif_init_parameter(struct devfreq_data_mif *data)
+static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 {
 	unsigned int tmp;
 
-	data->base_mif = ioremap(0x105B0000, SZ_64K);
-	data->base_sysreg_mif = ioremap(0x105E0000, SZ_64K);
-	data->base_drex0 = ioremap(0x10400000, SZ_64K);
-	data->base_drex1 = ioremap(0x10440000, SZ_64K);
-	data->base_lpddr_phy0 = ioremap(0x10420000, SZ_64K);
-	data->base_lpddr_phy1 = ioremap(0x10460000, SZ_64K);
-
-	exynos5_devfreq_mif_update_timingset(data);
+	mutex_lock(&data->lock);
 
 	/* Pause Enable */
 	tmp = __raw_readl(data->base_mif + 0x1008);
@@ -1424,6 +1417,23 @@ static int exynos5_devfreq_mif_init_parameter(struct devfreq_data_mif *data)
 	else
 		tmp |= (0x2 << 24);
 	__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
+
+	mutex_unlock(&data->lock);
+
+	return 0;
+}
+
+static int exynos5_devfreq_mif_init_parameter(struct devfreq_data_mif *data)
+{
+	data->base_mif = ioremap(0x105B0000, SZ_64K);
+	data->base_sysreg_mif = ioremap(0x105E0000, SZ_64K);
+	data->base_drex0 = ioremap(0x10400000, SZ_64K);
+	data->base_drex1 = ioremap(0x10440000, SZ_64K);
+	data->base_lpddr_phy0 = ioremap(0x10420000, SZ_64K);
+	data->base_lpddr_phy1 = ioremap(0x10460000, SZ_64K);
+
+	exynos5_devfreq_mif_update_timingset(data);
+	exynos5_devfreq_mif_init_dvfs(data);
 
 	return 0;
 }
@@ -1550,6 +1560,9 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 		goto err_data;
 	}
 
+	data_mif = data;
+	mutex_init(&data->lock);
+
 	if (exynos5_devfreq_mif_init_parameter(data)) {
 		ret = -EINVAL;
 		goto err_data;
@@ -1571,8 +1584,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	data->base_idx_dll_on = -1;
 
 	platform_set_drvdata(pdev, data);
-	data_mif = data;
-	mutex_init(&data->lock);
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
@@ -1665,6 +1676,8 @@ static int exynos5_devfreq_mif_suspend(struct device *dev)
 static int exynos5_devfreq_mif_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
+
+	exynos5_devfreq_mif_init_dvfs(data_mif);
 
 	if (pm_qos_request_active(&exynos5_mif_qos))
 		pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
