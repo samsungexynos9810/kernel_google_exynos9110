@@ -283,6 +283,10 @@ static void lpass_enable(void)
 	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
 
+	/* TOP1 */
+	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
+	exynos_set_parent("mout_aud_dpll_user_top", "fin_pll");
+
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_sramc);
 	clk_prepare_enable(lpass.clk_intr);
@@ -310,6 +314,10 @@ static void lpass_disable(void)
 	clk_disable_unprepare(lpass.clk_timer);
 
 	lpass_reg_save();
+
+	/* TOP1 */
+	exynos_set_parent("mout_aud_pll_user_top", "fin_pll");
+	exynos_set_parent("mout_aud_dpll_user_top", "fin_pll");
 
 	/* CLK_MUX_SEL_AUD0 */
 	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
