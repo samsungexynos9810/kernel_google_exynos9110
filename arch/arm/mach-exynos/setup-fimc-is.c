@@ -76,6 +76,22 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 			__gpio_set_value(_gpio_info->gpio_main_rst, 1);
 			gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_IN, "MAIN_CAM_RESET");
 			gpio_free(_gpio_info->gpio_main_rst);
+
+			/* COMP_RESET(GPG1, GPF5)*/
+			if (gpio_is_valid(_gpio_info->gpio_comp_rst)) {
+				__gpio_set_value(_gpio_info->gpio_comp_rst, 0);
+				gpio_request_one(_gpio_info->gpio_comp_rst,
+					GPIOF_IN, "COMP_RST");
+				gpio_free(_gpio_info->gpio_comp_rst);
+			}
+
+			if (gpio_is_valid(_gpio_info->gpio_comp_en)) {
+				usleep_range(10, 10);
+				__gpio_set_value(_gpio_info->gpio_comp_en, 0);
+				gpio_request_one(_gpio_info->gpio_comp_en,
+					GPIOF_IN, "COMP_EN");
+				gpio_free(_gpio_info->gpio_comp_en);
+			}
 			goto exit;
 		} else if (channel == CSI_ID_B) {
 			/* UART(GPC0-7, GPC1-1) */
@@ -115,20 +131,20 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 					GPIOF_OUT_INIT_HIGH, "COMP_EN");
 				__gpio_set_value(_gpio_info->gpio_comp_en, 1);
 				usleep_range(1000, 1000);
+				gpio_free(_gpio_info->gpio_comp_en);
 			}
 
 			if (gpio_is_valid(_gpio_info->gpio_comp_rst)) {
 				gpio_request_one(_gpio_info->gpio_comp_rst,
 					GPIOF_OUT_INIT_HIGH, "COMP_RST");
-				__gpio_set_value(_gpio_info->gpio_comp_rst, 0);
-				usleep_range(1000, 1000);
 				__gpio_set_value(_gpio_info->gpio_comp_rst, 1);
+				gpio_free(_gpio_info->gpio_comp_rst);
 			}
 
 			/* RESET(GPC0)*/
 			gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_OUT_INIT_HIGH, "MAIN_CAM_RESET");
 			__gpio_set_value(_gpio_info->gpio_main_rst, 0);
-			usleep_range(1000, 1000);
+			usleep_range(5000, 5000);
 			__gpio_set_value(_gpio_info->gpio_main_rst, 1);
 			usleep_range(1000, 1000);
 			gpio_free(_gpio_info->gpio_main_rst);
