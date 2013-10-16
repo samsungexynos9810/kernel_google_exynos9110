@@ -220,12 +220,13 @@ static void mali_dvfs_decide_next_level(mali_dvfs_status *dvfs_status)
 		dvfs_status->step--;
 	}
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
-	if ((dvfs_status->max_lock >= 0) && (dvfs_status->step > dvfs_status->max_lock)) {
-		dvfs_status->step = dvfs_status->max_lock;
-	}
 	if (dvfs_status->min_lock > 0) {
 		if (dvfs_status->step < dvfs_status->min_lock)
 			dvfs_status->step = dvfs_status->min_lock;
+	}
+
+	if ((dvfs_status->max_lock >= 0) && (dvfs_status->step > dvfs_status->max_lock)) {
+		dvfs_status->step = dvfs_status->max_lock;
 	}
 #endif
 	spin_unlock_irqrestore(&mali_dvfs_spinlock, flags);
