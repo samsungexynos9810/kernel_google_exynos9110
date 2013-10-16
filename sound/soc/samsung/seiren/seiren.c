@@ -181,14 +181,14 @@ static void esa_fw_shutdown(void)
 		return;
 
 	/* check idle */
-	esa_send_cmd(SYS_GET_STATUS);
+	esa_send_cmd(SYS_SUSPEND);
 
 	si.fw_suspended = false;
 	cnt = msecs_to_loops(100);
 	while (--cnt) {
 		val = readl(si.regs + CA5_STATUS);
 		if (val & CA5_STATUS_WFI) {
-			/* si.fw_suspended = true; */
+			si.fw_suspended = true;
 			break;
 		}
 		cpu_relax();
@@ -287,6 +287,7 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	int response, consumed_size = 0;
 
 	mutex_lock(&esa_mutex);
+	pm_runtime_get_sync(&si.pdev->dev);
 
 	if (rtd->obuf0_filled && rtd->obuf1_filled) {
 		esa_err("%s: There is no unfilled obuf\n", __func__);
@@ -343,6 +344,8 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 		esa_err("%s: decoding fail. response:%x\n", __func__, response);
 	}
 
+	pm_runtime_mark_last_busy(&si.pdev->dev);
+	pm_runtime_put_sync_autosuspend(&si.pdev->dev);
 	mutex_unlock(&esa_mutex);
 
 	esa_debug("%s: handle_id[%x], idx:[%d], consumed:[%d], filled_size:[%d], ibuf:[%d]\n",
@@ -351,6 +354,8 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 
 	return consumed_size;
 err:
+	pm_runtime_mark_last_busy(&si.pdev->dev);
+	pm_runtime_put_sync_autosuspend(&si.pdev->dev);
 	mutex_unlock(&esa_mutex);
 	return -EFAULT;
 }
@@ -368,6 +373,7 @@ static ssize_t esa_read(struct file *file, char *buffer,
 	bool *obuf_filled_;
 
 	mutex_lock(&esa_mutex);
+	pm_runtime_get_sync(&si.pdev->dev);
 
 	/* select OBUF0 or OBUF1 */
 	if (rtd->select_obuf == 0) {
@@ -416,10 +422,14 @@ static ssize_t esa_read(struct file *file, char *buffer,
 			(u32)*obuf_filled_size);
 	*obuf_filled = false;
 
+	pm_runtime_mark_last_busy(&si.pdev->dev);
+	pm_runtime_put_sync_autosuspend(&si.pdev->dev);
 	mutex_unlock(&esa_mutex);
 
 	return *obuf_filled_size;
 err:
+	pm_runtime_mark_last_busy(&si.pdev->dev);
+	pm_runtime_put_sync_autosuspend(&si.pdev->dev);
 	mutex_unlock(&esa_mutex);
 	return -EFAULT;
 }
@@ -751,6 +761,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				rtd->idx, param, cmd);
 
 	mutex_lock(&esa_mutex);
+	pm_runtime_get_sync(&si.pdev->dev);
 
 	switch (cmd) {
 	case SEIREN_IOCTL_CH_CREATE:
@@ -801,6 +812,8 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	}
 
+	pm_runtime_mark_last_busy(&si.pdev->dev);
+	pm_runtime_put_sync_autosuspend(&si.pdev->dev);
 	mutex_unlock(&esa_mutex);
 
 	return ret;
@@ -827,27 +840,6 @@ static int esa_open(struct inode *inode, struct file *file)
 	rtd->obuf0_filled = false;
 	rtd->obuf1_filled = false;
 
-	mutex_lock(&esa_mutex);
-#ifdef CONFIG_PM_RUNTIME
-	pm_runtime_get_sync(&si.pdev->dev);
-#else
-	esa_fw_startup();
-#endif
-	mutex_unlock(&esa_mutex);
-
-	if (!si.fw_ready) {
-		/* de-initialize */
-		file->private_data = NULL;
-		esa_free_rtd(rtd);
-
-#ifdef CONFIG_PM_RUNTIME
-		pm_runtime_put_sync(&si.pdev->dev);
-#else
-		esa_fw_shutdown();
-#endif
-		return -EBUSY;
-	}
-
 	return 0;
 }
 
@@ -861,14 +853,6 @@ static int esa_release(struct inode *inode, struct file *file)
 	file->private_data = NULL;
 
 	esa_free_rtd(rtd);
-
-	mutex_lock(&esa_mutex);
-#ifdef CONFIG_PM_RUNTIME
-	pm_runtime_put_sync(&si.pdev->dev);
-#else
-	esa_fw_shutdown();
-#endif
-	mutex_unlock(&esa_mutex);
 
 	return 0;
 }
@@ -1095,6 +1079,8 @@ static int esa_probe(struct platform_device *pdev)
 	esa_debug("fwmem_pa   = %08X\n", si.fwmem_pa);
 	esa_debug("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
 
+	pm_runtime_use_autosuspend(dev);
+	pm_runtime_set_autosuspend_delay(dev, 300);
 	pm_runtime_enable(dev);
 	pm_runtime_get_sync(dev);
 	pm_runtime_put_sync(dev);
