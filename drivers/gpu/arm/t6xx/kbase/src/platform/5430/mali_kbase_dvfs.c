@@ -73,14 +73,14 @@
 #endif
 
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
-#define GPU_MAX_CLK 350
+#define GPU_MAX_CLK 266
 #endif
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_90_95 350
+#define GPU_THROTTLING_90_95 266
 #define GPU_THROTTLING_95_100 266
-#define GPU_THROTTLING_100_105 266
-#define GPU_THROTTLING_105_110 266
+#define GPU_THROTTLING_100_105 160
+#define GPU_THROTTLING_105_110 160
 #define GPU_TRIPPING_110 160
 #endif
 
@@ -113,10 +113,10 @@ static struct pm_qos_request exynos5_g3d_cpu_qos;
 
 mali_dvfs_info mali_dvfs_infotbl[] = {
        {975000, 160, 0, 90, 0, 160000, 83000, 250000},
-       {975000, 266, 53, 90, 0, 160000, 83000, 250000},
-       {1000000, 350, 60, 90, 0, 400000, 222000, 250000},
-       {1050000, 420, 70, 90, 0, 667000, 333000, 250000},
-       {1100000, 480, 78, 100, 0, 800000, 400000, 250000},
+       {975000, 266, 53, 100, 0, 160000, 83000, 250000},
+//       {1000000, 350, 60, 90, 0, 400000, 222000, 250000},
+//       {1050000, 420, 70, 90, 0, 667000, 333000, 250000},
+//       {1100000, 480, 78, 100, 0, 800000, 400000, 250000},
 };
 
 #define MALI_DVFS_STEP	ARRAY_SIZE(mali_dvfs_infotbl)
@@ -148,7 +148,7 @@ static void update_time_in_state(int level);
 /*dvfs status*/
 static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
-static const unsigned int mali_dvfs_vol_default[] = { 975000, 975000, 1000000, 1050000, 1100000 };
+static const unsigned int mali_dvfs_vol_default[] = { 975000, 975000 }; //, 1000000, 1050000, 1100000 };
 
 
 static int mali_dvfs_update_asv(int cmd)

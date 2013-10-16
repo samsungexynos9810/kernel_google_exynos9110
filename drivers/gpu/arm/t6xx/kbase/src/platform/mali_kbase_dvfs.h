@@ -46,7 +46,7 @@ typedef struct _mali_dvfs_info{
 #elif SOC_NAME == 5430
 //helsinki touch here
 #define MALI_DVFS_START_FREQ 266
-#define MALI_DVFS_BL_CONFIG_FREQ 350
+#define MALI_DVFS_BL_CONFIG_FREQ 266
 #define IS_ASV_ENABLED
 #else
 #define MALI_DVFS_START_FREQ 450
