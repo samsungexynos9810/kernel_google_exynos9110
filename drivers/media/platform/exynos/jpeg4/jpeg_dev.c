@@ -153,7 +153,6 @@ static struct vb2_ops jpeg_vb2_qops = {
 
 static int jpeg_clk_get(struct jpeg_dev *jpeg)
 {
-	int ret;
 	char *parn1_clkname, *chld1_clkname;
 	char *parn2_clkname, *chld2_clkname;
 	char *gate_clkname;
@@ -205,17 +204,9 @@ static int jpeg_clk_get(struct jpeg_dev *jpeg)
 		goto err_clk_get;
 	}
 
-	ret = clk_prepare(jpeg->clk);
-	if (ret < 0) {
-		dev_err(dev, "failed to prepare gate clk\n");
-		goto err_clk_prepare;
-	}
-
 	jpeg_dbg("Done clk_jpeg\n");
 	return 0;
 
-err_clk_prepare:
-	clk_put(jpeg->clk);
 err_clk_get:
 	clk_put(jpeg->clk_chld2);
 err_clk_get_chld2:
@@ -245,6 +236,7 @@ static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status
 		atomic_inc(&jpeg->clk_cnt);
 		clk_set_parent(jpeg->clk_chld1, jpeg->clk_parn1);
 		clk_set_parent(jpeg->clk_chld2, jpeg->clk_parn2);
+		clk_prepare(jpeg->clk);
 		clk_enable(jpeg->clk);
 		jpeg_dbg("clock enabled\n");
 	} else if (status == JPEG_CLK_OFF) {
@@ -254,6 +246,7 @@ static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status
 			atomic_set(&jpeg->clk_cnt, 0);
 		} else {
 			clk_disable(jpeg->clk);
+			clk_unprepare(jpeg->clk);
 			jpeg_dbg("clock disabled\n");
 		}
 	}
@@ -306,6 +299,7 @@ static int jpeg_m2m_open(struct file *file)
 	file->private_data = ctx;
 	ctx->jpeg_dev = jpeg;
 
+	init_waitqueue_head(&jpeg->wait);
 	spin_lock_init(&ctx->slock);
 
 	ctx->m2m_ctx =
@@ -380,6 +374,21 @@ static void jpeg_device_run(void *priv)
 	unsigned int component;
 	unsigned int ret = 0;
 
+	if (test_bit(DEV_RUN, &jpeg->state)) {
+		dev_err(&jpeg->plat_dev->dev, "JPEG is already in progress\n");
+		return;
+	}
+
+	if (test_bit(DEV_SUSPEND, &jpeg->state)) {
+		dev_err(&jpeg->plat_dev->dev, "JPEG is in suspend state\n");
+		return;
+	}
+
+	if (test_bit(CTX_ABORT, &ctx->flags)) {
+		dev_err(&jpeg->plat_dev->dev, "aborted JPEG device run\n");
+		return;
+	}
+
 	spin_lock_irqsave(&ctx->slock, flags);
 
 	param = ctx->param;
@@ -447,6 +456,9 @@ static void jpeg_device_run(void *priv)
 			jpeg_set_dec_bitstream_size(jpeg->reg_base, (param.size / 16) + 1);
 		}
 	}
+	set_bit(DEV_RUN, &jpeg->state);
+	set_bit(CTX_RUN, &ctx->flags);
+
 	jpeg_set_timer_count(jpeg->reg_base, param.in_width * param.in_height * 8 + 0xff);
 	jpeg_set_enc_dec_mode(jpeg->reg_base, jpeg->mode);
 
@@ -460,11 +472,11 @@ static struct v4l2_m2m_ops jpeg_m2m_ops = {
 	.job_abort	= jpeg_job_abort,
 };
 
-int jpeg_int_pending(struct jpeg_dev *ctrl)
+int jpeg_int_pending(struct jpeg_dev *jpeg)
 {
 	unsigned int	int_status;
 
-	int_status = jpeg_get_int_status(ctrl->reg_base);
+	int_status = jpeg_get_int_status(jpeg->reg_base);
 	jpeg_dbg("state(%d)\n", int_status);
 
 	return int_status;
@@ -474,67 +486,76 @@ static irqreturn_t jpeg_irq(int irq, void *priv)
 {
 	unsigned int int_status;
 	struct vb2_buffer *src_vb, *dst_vb;
-	struct jpeg_dev *ctrl = priv;
+	struct jpeg_dev *jpeg = priv;
 	struct jpeg_ctx *ctx;
 	unsigned long payload_size = 0;
 
-	jpeg_clean_interrupt(ctrl->reg_base);
+	jpeg_clean_interrupt(jpeg->reg_base);
 
-	ctx = v4l2_m2m_get_curr_priv(ctrl->m2m_dev);
+	ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev);
 	if (ctx == 0) {
 		printk(KERN_ERR "ctx is null.\n");
-		jpeg_sw_reset(ctrl->reg_base);
+		jpeg_sw_reset(jpeg->reg_base);
 		goto ctx_err;
 	}
 
 	spin_lock(&ctx->slock);
 
+	clear_bit(DEV_RUN, &jpeg->state);
+	clear_bit(CTX_RUN, &ctx->flags);
 	src_vb = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
 	dst_vb = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
 
-	int_status = jpeg_int_pending(ctrl);
+	int_status = jpeg_int_pending(jpeg);
 
 	if (int_status) {
 		switch (int_status & 0x1ff) {
 		case 0x1:
-			ctrl->irq_ret = ERR_PROT;
+			jpeg->irq_ret = ERR_PROT;
 			break;
 		case 0x2:
-			ctrl->irq_ret = OK_ENC_OR_DEC;
+			jpeg->irq_ret = OK_ENC_OR_DEC;
 			break;
 		case 0x4:
-			ctrl->irq_ret = ERR_DEC_INVALID_FORMAT;
+			jpeg->irq_ret = ERR_DEC_INVALID_FORMAT;
 			break;
 		case 0x8:
-			ctrl->irq_ret = ERR_MULTI_SCAN;
+			jpeg->irq_ret = ERR_MULTI_SCAN;
 			break;
 		case 0x10:
-			ctrl->irq_ret = ERR_FRAME;
+			jpeg->irq_ret = ERR_FRAME;
 			break;
 		case 0x20:
-			ctrl->irq_ret = ERR_TIME_OUT;
+			jpeg->irq_ret = ERR_TIME_OUT;
 			break;
 		default:
-			ctrl->irq_ret = ERR_UNKNOWN;
+			jpeg->irq_ret = ERR_UNKNOWN;
 			break;
 		}
 	} else {
-		ctrl->irq_ret = ERR_UNKNOWN;
+		jpeg->irq_ret = ERR_UNKNOWN;
 	}
 
-	if (ctrl->irq_ret == OK_ENC_OR_DEC) {
-		if (ctrl->mode == ENCODING) {
-			payload_size = jpeg_get_stream_size(ctrl->reg_base);
-			vb2_set_plane_payload(dst_vb, 0, payload_size);
+	if (src_vb && dst_vb) {
+		if (jpeg->irq_ret == OK_ENC_OR_DEC) {
+			if (jpeg->mode == ENCODING) {
+				payload_size = jpeg_get_stream_size(jpeg->reg_base);
+				vb2_set_plane_payload(dst_vb, 0, payload_size);
+			}
+			v4l2_m2m_buf_done(src_vb, VB2_BUF_STATE_DONE);
+			v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_DONE);
+		} else {
+			v4l2_m2m_buf_done(src_vb, VB2_BUF_STATE_ERROR);
+			v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_ERROR);
 		}
-		v4l2_m2m_buf_done(src_vb, VB2_BUF_STATE_DONE);
-		v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_DONE);
-	} else {
-		v4l2_m2m_buf_done(src_vb, VB2_BUF_STATE_ERROR);
-		v4l2_m2m_buf_done(dst_vb, VB2_BUF_STATE_ERROR);
-	}
 
-	v4l2_m2m_job_finish(ctrl->m2m_dev, ctx->m2m_ctx);
+		if (test_bit(DEV_SUSPEND, &jpeg->state)) {
+			jpeg_dbg("wake up blocked process by suspend\n");
+			wake_up(&jpeg->wait);
+		} else {
+			v4l2_m2m_job_finish(jpeg->m2m_dev, ctx->m2m_ctx);
+		}
+	}
 
 	spin_unlock(&ctx->slock);
 ctx_err:
@@ -606,7 +627,6 @@ static int jpeg_probe(struct platform_device *pdev)
 
 	/* Init lock and wait queue */
 	mutex_init(&jpeg->lock);
-	init_waitqueue_head(&jpeg->wq);
 
 	/* Get memory resource and map SFR region. */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
@@ -744,6 +764,30 @@ static int jpeg_remove(struct platform_device *pdev)
 
 static int jpeg_suspend(struct device *dev)
 {
+	struct jpeg_dev *jpeg = dev_get_drvdata(dev);
+	int ret;
+
+	set_bit(DEV_SUSPEND, &jpeg->state);
+
+	ret = wait_event_timeout(jpeg->wait,
+			!test_bit(DEV_RUN, &jpeg->state), JPEG_TIMEOUT);
+	if (ret == 0)
+		dev_err(&jpeg->plat_dev->dev, "wait timeout\n");
+
+	return 0;
+}
+
+static int jpeg_resume(struct device *dev)
+{
+	struct jpeg_dev *jpeg = dev_get_drvdata(dev);
+
+	clear_bit(DEV_SUSPEND, &jpeg->state);
+
+	return 0;
+}
+
+static int jpeg_runtime_suspend(struct device *dev)
+{
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
 
@@ -752,7 +796,7 @@ static int jpeg_suspend(struct device *dev)
 	return 0;
 }
 
-static int jpeg_resume(struct device *dev)
+static int jpeg_runtime_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct jpeg_dev *jpeg = platform_get_drvdata(pdev);
@@ -765,8 +809,8 @@ static int jpeg_resume(struct device *dev)
 static const struct dev_pm_ops jpeg_pm_ops = {
 	.suspend	= jpeg_suspend,
 	.resume		= jpeg_resume,
-	.runtime_suspend = jpeg_suspend,
-	.runtime_resume = jpeg_resume,
+	.runtime_suspend = jpeg_runtime_suspend,
+	.runtime_resume = jpeg_runtime_resume,
 };
 
 static struct platform_driver jpeg_driver = {

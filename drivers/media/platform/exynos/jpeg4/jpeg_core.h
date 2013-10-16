@@ -38,6 +38,21 @@
 #define is_ver_5a (pdata->ip_ver == IP_VER_JPEG_5A)
 #define is_ver_5h (pdata->ip_ver == IP_VER_JPEG_5H)
 
+#define JPEG_TIMEOUT		(2 * HZ)	/* 2 seconds */
+
+/* JPEG hardware device state */
+#define DEV_RUN		1
+#define DEV_SUSPEND	2
+
+/* JPEG m2m context state */
+#define CTX_PARAMS	1
+#define CTX_STREAMING	2
+#define CTX_RUN		3
+#define CTX_ABORT	4
+#define CTX_SRC_FMT	5
+#define CTX_DST_FMT	6
+#define CTX_INT_FRAME	7 /* intermediate frame available */
+
 /*
  * struct exynos_platform_jpeg
  */
@@ -198,6 +213,7 @@ struct jpeg_ctx {
 	struct jpeg_param	param;
 	int			index;
 	unsigned long		payload[VIDEO_MAX_PLANES];
+	unsigned long		flags;
 };
 
 struct jpeg_vb2 {
@@ -238,7 +254,8 @@ struct jpeg_dev {
 	int			id;
 	int			irq_no;
 	enum jpeg_result	irq_ret;
-	wait_queue_head_t	 wq;
+	wait_queue_head_t	wait;
+	unsigned long		state;
 	void __iomem		*reg_base;	/* register i/o */
 	enum jpeg_mode		mode;
 	const struct jpeg_vb2	*vb2;
