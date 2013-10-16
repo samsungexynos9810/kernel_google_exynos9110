@@ -9,6 +9,10 @@
 #ifndef __DECON_DISPLAY_HEADER__
 #define __DECON_DISPLAY_HEADER__
 
+int disp_pm_runtime_enable(struct display_driver *dispdrv);
+int disp_pm_runtime_get_sync(struct display_driver *dispdrv);
+int disp_pm_runtime_put_sync(struct display_driver *dispdrv);
+
 #ifdef CONFIG_SOC_EXYNOS5430
 int init_display_decon_clocks_exynos5430(struct device *dev);
 int enable_display_decon_clocks_exynos5430(struct device *dev);

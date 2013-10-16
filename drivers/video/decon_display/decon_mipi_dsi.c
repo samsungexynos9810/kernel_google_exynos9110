@@ -1003,7 +1003,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	 * only in case of MIPI Video mode.
 	 */
 	dsim->irq = dispdrv->dsi_driver.dsi_irq_no;
-	dev_info(&pdev->dev, "%s: DSI IRQ NO: 0x%08X\n", __func__, dsim->irq);
 	if (request_irq(dsim->irq, s5p_mipi_dsi_interrupt_handler,
 			IRQF_DISABLED, "mipi-dsi", dsim)) {
 		dev_err(&pdev->dev, "request_irq failed.\n");

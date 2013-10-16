@@ -13,6 +13,7 @@
 #include <linux/clk.h>
 #include <linux/of.h>
 #include <linux/fb.h>
+#include <linux/pm_runtime.h>
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
 
@@ -42,6 +43,12 @@ static struct clk *g_phyclk_mipidphy_rxclkesc0_phy,
 	*g_mout_phyclk_mipidphy_rxclkesc0_user;
 static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
 	*g_mout_phyclk_mipidphy_bitclkdiv8_user;
+
+#define DISP_RUNTIME_PM_DEBUG
+
+#ifdef DISP_RUNTIME_PM_DEBUG
+static int g_debug_pm_count;
+#endif
 
 #define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
 	g_##child = clk_get(dev, #child); \
@@ -96,6 +103,8 @@ static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
 	data |= ((value & mask) << (bits)); \
 	writel(data, regs); \
 	} while (0)
+
+#define pm_debug(params, ...) pr_err("[DISP:PM] " params, ##__VA_ARGS__)
 
 static void additional_clock_setup(void)
 {
@@ -323,4 +332,32 @@ int disable_display_decon_runtimepm_exynos5430(struct device *dev)
 {
 	return 0;
 }
+
+int disp_pm_runtime_enable(struct display_driver *dispdrv)
+{
+#ifdef DISP_RUNTIME_PM_DEBUG
+	pm_debug("runtime pm for disp-driver enabled\n");
+#endif
+	pm_runtime_enable(dispdrv->display_driver);
+	return 0;
+}
+
+int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
+{
+	pm_runtime_get_sync(dispdrv->display_driver);
+	return 0;
+}
+
+int disp_pm_runtime_put_sync(struct display_driver *dispdrv)
+{
+	pm_runtime_put_sync(dispdrv->display_driver);
+	return 0;
+}
+
+#ifdef DISP_RUNTIME_PM_DEBUG
+void disp_debug_power_info(void)
+{
+	pm_debug("pm count : %d\n", g_debug_pm_count);
+}
+#endif
 
