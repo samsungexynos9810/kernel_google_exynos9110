@@ -552,6 +552,22 @@
 			gpios = <&gpg3 4 0	/* reset */
 				 &gpg3 5 0	/* wakeup */
 				 &gpa0 5 0xF>;	/* interrupt */
+			pinctrl-names = "default";
+			pinctrl-0 = <&codec_ctl &codec_irq>;
+		};
+	};
+
+	pinctrl@14CC0000 {
+		codec_ctl: codec-ctl {
+			samsung,pins = "gpg3-4", "gpg3-5";
+			samsung,pin-con-pdn = <3>;
+		};
+	};
+
+	pinctrl@10580000 {
+		codec_irq: codec-irq {
+			samsung,pins = "gpa0-5";
+			samsung,pin-con-pdn = <3>;
 		};
 	};
 
