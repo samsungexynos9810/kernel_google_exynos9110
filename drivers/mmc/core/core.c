@@ -3168,6 +3168,24 @@ int mmc_pm_notify(struct notifier_block *notify_block,
 }
 #endif
 
+#define MIN_WAIT_MS	5
+static int mmc_wait_trans_state(struct mmc_card *card, unsigned int wait_ms)
+{
+	int waited = 0;
+	int status = 0;
+
+	mmc_send_status(card, &status);
+
+	while (R1_CURRENT_STATE(status) != R1_STATE_TRAN) {
+		if (waited > wait_ms)
+			return 0;
+		mdelay(MIN_WAIT_MS);
+		waited += MIN_WAIT_MS;
+		mmc_send_status(card, &status);
+	}
+	return waited;
+}
+
 /*
  * Turn the bkops mode ON/OFF.
  */
@@ -3176,7 +3194,7 @@ int mmc_bkops_enable(struct mmc_host *host, u8 value)
 	struct mmc_card *card = host->card;
 	unsigned long flags;
 	int err = 0;
-	u8 ext_csd[512], bkops_en;
+	u8 ext_csd[512];
 
 	if (!card)
 		return err;
@@ -3186,23 +3204,36 @@ int mmc_bkops_enable(struct mmc_host *host, u8 value)
 	/* read ext_csd to get EXT_CSD_BKOPS_EN field value */
 	err = mmc_send_ext_csd(card, ext_csd);
 	if (err) {
-		pr_err("%s: error %d sending ext_csd\n",
-				mmc_hostname(card->host), err);
-		goto bkops_out;
+		mmc_wait_trans_state(card, 100);
+		err = mmc_send_ext_csd(card, ext_csd);
+		if (err) {
+			pr_err("%s: error %d sending ext_csd\n",
+					mmc_hostname(card->host), err);
+			goto bkops_out;
+		}
 	}
 
 	/* set value to put EXT_CSD_BKOPS_EN field */
-	bkops_en = ext_csd[EXT_CSD_BKOPS_EN] & 0x1;
-	value |= bkops_en;
+	value |= ext_csd[EXT_CSD_BKOPS_EN] & 0x1;
 	err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 			 EXT_CSD_BKOPS_EN, value,
 			 card->ext_csd.generic_cmd6_time);
+	if (err) {
+		pr_err("%s: bkops mode error %d\n", mmc_hostname(host), err);
+		goto bkops_out;
+	}
+
+	/* read ext_csd again to get EXT_CSD_BKOPS_EN field value */
+	mmc_wait_trans_state(card, 20);
+	err = mmc_send_ext_csd(card, ext_csd);
+
 	if (!err) {
 		spin_lock_irqsave(&card->bkops_lock, flags);
-		card->bkops_enable = value;
+		card->bkops_enable = ext_csd[EXT_CSD_BKOPS_EN];
 		spin_unlock_irqrestore(&card->bkops_lock, flags);
 	} else {
-		pr_err("%s: bkops mode error %d\n", mmc_hostname(host), err);
+		pr_err("%s: error %d confirming ext_csd value\n",
+				mmc_hostname(card->host), err);
 	}
 
 bkops_out:
