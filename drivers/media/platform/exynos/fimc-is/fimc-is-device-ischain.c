@@ -56,7 +56,7 @@
 #include "fimc-is-video.h"
 #include "fimc-is-groupmgr.h"
 #include "fimc-is-device-ischain.h"
-#include "fimc-is-peri.h"
+#include "fimc-is-companion.h"
 
 #define SDCARD_FW
 #define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
@@ -2819,18 +2819,18 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 		}
 	}
 
-	/* FW loading of peripheral device */
+	/* FW loading of companion */
 	if ((sensor->id_position == SENSOR_POSITION_REAR)
 		&& (device->instance == 0)) {
-		ret = fimc_is_peri_loadfirm(core);
+		ret = fimc_is_comp_loadfirm(core);
 		if (ret) {
-			err("fimc_is_peri_loadfirm() fail");
+			err("fimc_is_comp_loadfirm() fail");
 			goto p_err;
 		}
 
-		ret = fimc_is_peri_loadsetf(core);
+		ret = fimc_is_comp_loadsetf(core);
 		if (ret) {
-			err("fimc_is_peri_loadsetf() fail");
+			err("fimc_is_comp_loadsetf() fail");
 			goto p_err;
 		}
 	}

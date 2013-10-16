@@ -11,8 +11,9 @@
  */
 
 #include <linux/vmalloc.h>
+#include <linux/firmware.h>
 
 #include "fimc-is-core.h"
 
-int fimc_is_peri_loadfirm(struct fimc_is_core *core);
-int fimc_is_peri_loadsetf(struct fimc_is_core *core);
+int fimc_is_comp_loadfirm(struct fimc_is_core *core);
+int fimc_is_comp_loadsetf(struct fimc_is_core *core);
