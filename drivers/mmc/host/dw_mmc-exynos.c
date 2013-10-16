@@ -97,7 +97,7 @@ void dw_mci_exynos_save_host_base(struct dw_mci *host)
 	dw_mci_lpa_host[dw_mci_host_count] = host;
 	dw_mci_host_count++;
 }
-
+#ifdef CONFIG_CPU_IDLE
 static void exynos_sfr_save(unsigned int i)
 {
 	struct dw_mci *host = dw_mci_lpa_host[i];
@@ -243,6 +243,7 @@ void dw_mci_exynos_unregister_notifier(struct dw_mci *host)
 			exynos_pm_unregister_notifier(&(dw_mmc_exynos_notifier_block[i]));
 	}
 }
+#endif
 
 /*
  * By-pass Security Management Unit
@@ -780,8 +781,10 @@ static const struct dw_mci_drv_data exynos_drv_data = {
 	.cfg_smu		= dw_mci_exynos_cfg_smu,
 	.execute_tuning		= dw_mci_exynos_execute_tuning,
 	.misc_control		= dw_mci_exynos_misc_control,
+#ifdef	CONFIG_CPU_IDLE
 	.register_notifier	= dw_mci_exynos_register_notifier,
 	.unregister_notifier	= dw_mci_exynos_unregister_notifier,
+#endif
 };
 
 static const struct of_device_id dw_mci_exynos_match[] = {
