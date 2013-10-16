@@ -458,7 +458,7 @@ int mali_get_dvfs_max_locked_freq(void)
 {
 	int locked_level = -1;
 
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 	if (mali_dvfs_status_current.max_lock < 0)
 		return locked_level;
@@ -475,7 +475,7 @@ int mali_get_dvfs_min_locked_freq(void)
 {
 	int locked_level = -1;
 
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 	if (mali_dvfs_status_current.min_lock < 0)
 		return locked_level;
@@ -491,7 +491,7 @@ int mali_get_dvfs_current_level(void)
 {
 	int current_level = -1;
 
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);
@@ -503,7 +503,7 @@ int mali_get_dvfs_current_level(void)
 
 int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock)
 {
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 	int i, step = 0;
 
@@ -541,7 +541,7 @@ int mali_dvfs_freq_max_lock(int level, gpu_lock_type user_lock)
 }
 void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock)
 {
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 	int i;
 	bool dirty = false;
@@ -575,7 +575,7 @@ void mali_dvfs_freq_max_unlock(gpu_lock_type user_lock)
 
 int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
 {
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 	int i, step = 0;
 
@@ -613,7 +613,7 @@ int mali_dvfs_freq_min_lock(int level, gpu_lock_type user_lock)
 }
 void mali_dvfs_freq_min_unlock(gpu_lock_type user_lock)
 {
-#ifdef CONFIG_MALI_T6XX_FREQ_LOCK
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(CONFIG_MALI_T6XX_FREQ_LOCK)
 	unsigned long flags;
 	int i;
 	bool dirty = false;
@@ -1003,7 +1003,7 @@ int kbase_platform_dvfs_sprint_avs_table(char *buf, size_t buf_size)
 
 int kbase_platform_dvfs_set(int enable)
 {
-#ifdef MALI_DVFS_ASV_ENABLE
+#if defined(CONFIG_MALI_T6XX_DVFS) && defined(MALI_DVFS_ASV_ENABLE)
 	unsigned long flags;
 
 	spin_lock_irqsave(&mali_dvfs_spinlock, flags);

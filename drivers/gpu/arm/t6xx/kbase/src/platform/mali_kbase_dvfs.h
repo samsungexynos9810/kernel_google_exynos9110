@@ -53,7 +53,6 @@ typedef struct _mali_dvfs_info{
 #define MALI_DVFS_BL_CONFIG_FREQ 533
 #endif
 
-#ifdef CONFIG_MALI_T6XX_DVFS
 #define CONFIG_MALI_T6XX_FREQ_LOCK
 typedef enum gpu_lock_type{
 	TMU_LOCK = 0,
@@ -64,7 +63,6 @@ typedef enum gpu_lock_type{
 /* This define should be updated after ASV is enabled */
 #ifdef IS_ASV_ENABLED
 #define MALI_DVFS_ASV_ENABLE
-#endif
 #endif
 #endif
 

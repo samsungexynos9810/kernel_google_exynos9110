@@ -103,7 +103,7 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
-	int timeout, level;
+	int timeout;
 	struct exynos_context *platform;
 
 	platform = (struct exynos_context *) kbdev->platform_context;
@@ -139,10 +139,6 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 
 	g3d_init_clock();
 
-	level = kbase_platform_dvfs_get_level(MALI_DVFS_START_FREQ);
-	kbase_platform_dvfs_set_vol(mali_dvfs_infotbl[level].voltage);
-	kbase_platform_dvfs_set_clock(kbdev, mali_dvfs_infotbl[level].clock);
-
 	(void) clk_enable(clk_g3d);
 
 	clk_g3d_status = 1;
@@ -159,7 +155,6 @@ out:
 
 int kbase_platform_clock_on(struct kbase_device *kbdev)
 {
-	int level;
 	struct exynos_context *platform;
 	if (!kbdev)
 		return -ENODEV;
@@ -172,10 +167,6 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 		return 0;
 
 	g3d_init_clock();
-
-	level=kbase_platform_dvfs_get_level(MALI_DVFS_START_FREQ);
-	kbase_platform_dvfs_set_vol(mali_dvfs_infotbl[level].voltage);
-	kbase_platform_dvfs_set_clock(kbdev, mali_dvfs_infotbl[level].clock);
 
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
