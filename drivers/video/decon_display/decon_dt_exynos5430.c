@@ -21,6 +21,7 @@
 #include "decon_dt.h"
 
 #define DISP_CTRL_NAME	"decon_ctrl"
+#define MIPI_DSI_NAME	"mipi_dsi"
 
 #define DT_READ_U32(node, key, value) do {\
 		pprop = key; \
@@ -67,16 +68,20 @@ struct mipi_dsim_config g_dsim_config = {
 #define DISPLAY_DRIVER_REG_INDEX	1
 
 static unsigned int g_dsi_power_gpio_num;
+struct mipi_dsim_lcd_config g_lcd_config;
 
 static int parse_decon_platdata(struct device_node *np)
 {
 	u32 temp;
 	char *pprop;
+
+	/* parse for display controller */
 #ifndef CONFIG_FB_I80_COMMAND_MODE
 	DT_READ_U32(np, "samsung,vidcon1", g_decon_platdata.vidcon1);
 #endif
 	DT_READ_U32(np, "samsung,default_win", g_decon_platdata.default_win);
-	DT_READ_U32(np, "samsung,left_margin", g_fb_win0.win_mode.left_margin);
+	DT_READ_U32(np, "samsung,left_margin",
+		g_fb_win0.win_mode.left_margin);
 	DT_READ_U32(np, "samsung,right_margin",
 		g_fb_win0.win_mode.right_margin);
 	DT_READ_U32(np, "samsung,upper_margin",
@@ -99,6 +104,16 @@ static int parse_decon_platdata(struct device_node *np)
 	g_decon_platdata.win[2] = &g_fb_win0;
 	g_decon_platdata.win[3] = &g_fb_win0;
 	g_decon_platdata.win[4] = &g_fb_win0;
+
+	/* parse for mipi-dsi driver */
+	g_lcd_config.rgb_timing.left_margin = g_fb_win0.win_mode.left_margin;
+	g_lcd_config.rgb_timing.right_margin = g_fb_win0.win_mode.right_margin;
+	g_lcd_config.rgb_timing.upper_margin = g_fb_win0.win_mode.upper_margin;
+	g_lcd_config.rgb_timing.lower_margin = g_fb_win0.win_mode.lower_margin;
+	g_lcd_config.rgb_timing.hsync_len = g_fb_win0.win_mode.hsync_len;
+	g_lcd_config.rgb_timing.vsync_len = g_fb_win0.win_mode.vsync_len;
+	g_lcd_config.lcd_size.width = g_fb_win0.win_mode.xres;
+	g_lcd_config.lcd_size.height = g_fb_win0.win_mode.yres;
 
 	return 0;
 
@@ -202,7 +217,7 @@ static int parse_display_dt_exynos5430(struct device_node *np)
 	ret = parse_decon_platdata(np);
 	if (ret < 0) {
 		pr_err("parsing decon platdata is failed.\n");
-		goto end;
+		return -EINVAL;
 	}
 
 	decon_np = of_find_node_by_name(np, "fb_variant");
@@ -214,34 +229,19 @@ static int parse_display_dt_exynos5430(struct device_node *np)
 	ret = parse_fb_variant(decon_np);
 	if (ret < 0) {
 		pr_err("parsing fb_variant is failed.\n");
-		goto end;
+		return -EINVAL;
 	}
 	ret = parse_fb_win_variants(np);
 	if (ret < 0) {
 		pr_err("parsing fb_win_variant is failed.\n");
-		goto end;
+		return -EINVAL;
 	}
 	g_fb_drvdata.win[0] = &g_fb_win_variant[0];
 	g_fb_drvdata.win[1] = &g_fb_win_variant[1];
 	g_fb_drvdata.win[2] = &g_fb_win_variant[2];
 	g_fb_drvdata.win[3] = &g_fb_win_variant[3];
 	g_fb_drvdata.win[4] = &g_fb_win_variant[4];
-end:
-	return 0;
-}
 
-/* parse_all_dt_exynos5430 -
- * this function is for parsing TOP device tree of the display subsystem */
-static int parse_all_dt_exynos5430(struct device_node *parent)
-{
-	int ret = 0;
-	struct device_node *decon;
-	decon = of_get_child_by_name(parent, DISP_CTRL_NAME);
-	if (!decon) {
-		pr_err("device tree errror : empty dt node\n");
-		return -EINVAL;
-	}
-	parse_display_dt_exynos5430(decon);
 	return ret;
 }
 
@@ -273,37 +273,12 @@ static int parse_interrupt_dt_exynos5430(struct platform_device *pdev,
 	}
 	ddp->decon_driver.i80_irq_no = res->start;
 
-	return ret;
-}
-
-/* parse_display_driver_dt_exynos5430
- * for creating all display device tree data & set up H/W info like as
- * base address and IRQ numbers of all display system IPs. */
-int parse_display_driver_dt_exynos5430(struct platform_device *pdev,
-	struct display_driver *ddp)
-{
-	int ret = 0;
-	struct device *dev = &pdev->dev;
-
-	ddp->display_driver = dev;
-
-	ddp->decon_driver.regs = platform_get_resource(pdev,
-		IORESOURCE_MEM, DISPLAY_CONTROLLER_REG_INDEX);
-	if (!ddp->decon_driver.regs) {
-		pr_err("failed to find registers for DECON\n");
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
+	if (res == NULL) {
+		pr_err("failed to get mipi-dsi irq resource\n");
 		return -ENOENT;
 	}
-	ret = parse_interrupt_dt_exynos5430(pdev, ddp);
-	if (ret < 0) {
-		pr_err("interrupt parse error system\n");
-		return -EINVAL;
-	}
-
-	ret = parse_all_dt_exynos5430(dev->of_node);
-	if (ret < 0) {
-		pr_err("device tree parse error system\n");
-		return -EINVAL;
-	}
+	ddp->dsi_driver.dsi_irq_no = res->start;
 
 	return ret;
 }
@@ -321,6 +296,11 @@ struct s3c_fb_platdata *get_display_platdata_exynos5430(void)
 struct mipi_dsim_config *get_display_dsi_drvdata_exynos5430(void)
 {
 	return &g_dsim_config;
+}
+
+struct mipi_dsim_lcd_config *get_display_lcd_drvdata_exynos5430(void)
+{
+	return &g_lcd_config;
 }
 
 static int parse_dsi_drvdata(struct device_node *np)
@@ -378,6 +358,80 @@ int parse_display_dsi_dt_exynos5430(struct device_node *np)
 	}
 end:
 	return 0;
+}
+
+/* parse_all_dt_exynos5430 -
+ * this function is for parsing TOP device tree of the display subsystem */
+static int parse_all_dt_exynos5430(struct device_node *parent)
+{
+	int ret = 0;
+	struct device_node *node;
+
+	/* display controller parsing */
+	node = of_get_child_by_name(parent, DISP_CTRL_NAME);
+	if (!node) {
+		pr_err("device tree errror : empty display controller dt\n");
+		return -EINVAL;
+	}
+	ret = parse_display_dt_exynos5430(node);
+	if (ret < 0) {
+		pr_err("parsing for display controller was failed.\n");
+		return ret;
+	}
+	/* mipi dsi parsing */
+	node = of_get_child_by_name(parent, MIPI_DSI_NAME);
+	if (!node) {
+		pr_err("device tree errror : empty mipi dsi dt\n");
+		return -EINVAL;
+	}
+	ret = parse_display_dsi_dt_exynos5430(node);
+	if (ret < 0) {
+		pr_err("parsing for display controller was failed.\n");
+		return ret;
+	}
+
+	return ret;
+}
+
+/* parse_display_driver_dt_exynos5430
+ * for creating all display device tree data & set up H/W info like as
+ * base address and IRQ numbers of all display system IPs. */
+int parse_display_driver_dt_exynos5430(struct platform_device *pdev,
+	struct display_driver *ddp)
+{
+	int ret = 0;
+	struct device *dev = &pdev->dev;
+
+	ddp->display_driver = dev;
+
+	/* now get display controller resources */
+	ddp->decon_driver.regs = platform_get_resource(pdev,
+		IORESOURCE_MEM, DISPLAY_CONTROLLER_REG_INDEX);
+	if (!ddp->decon_driver.regs) {
+		pr_err("failed to find registers for DECON\n");
+		return -ENOENT;
+	}
+	ddp->dsi_driver.regs = platform_get_resource(pdev,
+		IORESOURCE_MEM, DISPLAY_DRIVER_REG_INDEX);
+	if (!ddp->dsi_driver.regs) {
+		pr_err("failed to find registers for MIPI-DSI\n");
+		return -ENOENT;
+	}
+
+	/* starts to parse device tree */
+	ret = parse_interrupt_dt_exynos5430(pdev, ddp);
+	if (ret < 0) {
+		pr_err("interrupt parse error system\n");
+		return -EINVAL;
+	}
+
+	ret = parse_all_dt_exynos5430(dev->of_node);
+	if (ret < 0) {
+		pr_err("device tree parse error system\n");
+		return -EINVAL;
+	}
+
+	return ret;
 }
 
 void dump_s3c_fb_variant(struct s3c_fb_variant *p_fb_variant)
