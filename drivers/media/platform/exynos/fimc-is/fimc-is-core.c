@@ -70,6 +70,8 @@ extern int fimc_is_3a1c_video_probe(void *data);
 
 struct pm_qos_request exynos5_isp_qos_dev;
 struct pm_qos_request exynos5_isp_qos_mem;
+struct pm_qos_request exynos5_isp_qos_cam;
+struct pm_qos_request exynos5_isp_qos_disp;
 
 /* sysfs global variable for debug */
 struct fimc_is_sysfs_debug sysfs_debug;
@@ -564,18 +566,9 @@ int fimc_is_resource_get(struct fimc_is_core *core)
 		atomic_read(&core->rsccount));
 
 	if (!atomic_read(&core->rsccount)) {
-		int int_qos, mif_qos;
 		/* 1. interface open */
 		fimc_is_interface_open(&core->interface);
 
-		int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, FIMC_IS_SN_MAX);
-		mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, FIMC_IS_SN_MAX);
-
-		/* 2. bus lock */
-		pr_info("[RSC] %s: DVFS LOCK(%d, %d)\n",
-			__func__, int_qos, mif_qos);
-		pm_qos_add_request(&exynos5_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, int_qos);
-		pm_qos_add_request(&exynos5_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
 #if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
 		exynos5_mif_bpll_register_notifier(&exynos_mif_nb);
 #endif
@@ -630,10 +623,14 @@ int fimc_is_resource_put(struct fimc_is_core *core)
 		if (ret)
 			err("fimc_is_interface_close is failed");
 
+#if defined(CONFIG_PM_DEVFREQ)
 		/* 4. bus release */
 		pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
 		pm_qos_remove_request(&exynos5_isp_qos_dev);
 		pm_qos_remove_request(&exynos5_isp_qos_mem);
+		pm_qos_remove_request(&exynos5_isp_qos_cam);
+		pm_qos_remove_request(&exynos5_isp_qos_disp);
+#endif
 
 #if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
 		exynos5_mif_bpll_unregister_notifier(&exynos_mif_nb);
@@ -715,12 +712,32 @@ int fimc_is_runtime_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
+#if defined(CONFIG_PM_DEVFREQ)
+	int int_qos, mif_qos, cam_qos, disp_qos;
+#endif
 
 	pm_stay_awake(dev);
 	pr_info("FIMC_IS runtime resume in\n");
 
 	/* Enable MIPI */
 	enable_mipi();
+
+	/* HACK: DVFS lock sequence is change.
+	 * DVFS level should be locked after power on.
+	 */
+#if defined(CONFIG_PM_DEVFREQ)
+	int_qos = 667000;
+	mif_qos = 800000;
+	cam_qos = 666000;
+	disp_qos = 333000;
+	pm_qos_add_request(&exynos5_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, int_qos);
+	pm_qos_add_request(&exynos5_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
+	pm_qos_add_request(&exynos5_isp_qos_cam, PM_QOS_CAM_THROUGHPUT, cam_qos);
+	pm_qos_add_request(&exynos5_isp_qos_disp, PM_QOS_DISPLAY_THROUGHPUT, disp_qos);
+
+	pr_info("[RSC] %s: DVFS LOCK(int(%d), mif(%d), cam(%d), disp(%d))\n",
+		__func__, int_qos, mif_qos, cam_qos, disp_qos);
+#endif
 
 	/* Low clock setting */
 	if (core->pdata->clk_cfg) {
@@ -730,6 +747,13 @@ int fimc_is_runtime_resume(struct device *dev)
 		ret = -EINVAL;
 		goto p_err;
 	}
+
+#if defined(CONFIG_PM_DEVFREQ)
+	pm_qos_update_request(&exynos5_isp_qos_dev, int_qos);
+	pm_qos_update_request(&exynos5_isp_qos_mem, mif_qos);
+	pm_qos_update_request(&exynos5_isp_qos_cam, cam_qos);
+	pm_qos_update_request(&exynos5_isp_qos_disp, disp_qos);
+#endif
 
 	/* Clock on */
 	if (core->pdata->clk_on) {
