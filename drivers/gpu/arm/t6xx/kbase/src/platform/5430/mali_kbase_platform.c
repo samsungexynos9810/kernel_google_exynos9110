@@ -68,8 +68,6 @@ bool tmu_on_off;
 
 static struct clk *clk_g3d = NULL;
 
-extern mali_dvfs_info mali_dvfs_infotbl[];
-
 static int clk_g3d_status = 0;
 
 #if defined(CONFIG_EXYNOS_THERMAL)
@@ -103,7 +101,7 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
-	int timeout, level;
+	int timeout;
 	struct exynos_context *platform;
 
 	platform = (struct exynos_context *) kbdev->platform_context;
@@ -139,9 +137,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 
 	g3d_init_clock();
 
-	level = kbase_platform_dvfs_get_level(MALI_DVFS_START_FREQ);
-	kbase_platform_dvfs_set_vol(mali_dvfs_infotbl[level].voltage);
-	kbase_platform_dvfs_set_clock(kbdev, mali_dvfs_infotbl[level].clock);
+	exynos_set_rate("dout_aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
 
 	(void) clk_enable(clk_g3d);
 
@@ -159,7 +155,7 @@ out:
 
 int kbase_platform_clock_on(struct kbase_device *kbdev)
 {
-	int level;
+
 	struct exynos_context *platform;
 	if (!kbdev)
 		return -ENODEV;
@@ -173,9 +169,7 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 
 	g3d_init_clock();
 
-	level=kbase_platform_dvfs_get_level(MALI_DVFS_START_FREQ);
-	kbase_platform_dvfs_set_vol(mali_dvfs_infotbl[level].voltage);
-	kbase_platform_dvfs_set_clock(kbdev, mali_dvfs_infotbl[level].clock);
+	exynos_set_rate("dout_aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
 
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
@@ -996,16 +990,16 @@ static ssize_t show_power_state(struct device *dev, struct device_attribute *att
 DEVICE_ATTR(clock, S_IRUGO|S_IWUSR, show_clock, set_clock);
 DEVICE_ATTR(fbdev, S_IRUGO, show_fbdev, NULL);
 DEVICE_ATTR(dtlb, S_IRUGO|S_IWUSR, show_dtlb, set_dtlb);
-DEVICE_ATTR(vol, S_IRUGO, show_vol, NULL);
+DEVICE_ATTR(vol, S_IRUGO|S_IWUSR, show_vol, NULL);
 DEVICE_ATTR(dvfs, S_IRUGO|S_IWUSR, show_dvfs, set_dvfs);
 DEVICE_ATTR(dvfs_max_lock, S_IRUGO|S_IWUSR, show_max_lock_dvfs, set_max_lock_dvfs);
 DEVICE_ATTR(dvfs_min_lock, S_IRUGO|S_IWUSR, show_min_lock_dvfs, set_min_lock_dvfs);
 DEVICE_ATTR(asv, S_IRUGO|S_IWUSR, show_asv, set_asv);
 DEVICE_ATTR(time_in_state, S_IRUGO|S_IWUSR, show_time_in_state, set_time_in_state);
 DEVICE_ATTR(tmu, S_IRUGO|S_IWUSR, show_tmu, set_tmu_control);
-DEVICE_ATTR(utilization, S_IRUGO, show_utilization, NULL);
-DEVICE_ATTR(dvfs_table, S_IRUGO, show_dvfs_table, NULL);
-DEVICE_ATTR(power_state, S_IRUGO, show_power_state, NULL);
+DEVICE_ATTR(utilization, S_IRUGO|S_IWUSR, show_utilization, NULL);
+DEVICE_ATTR(dvfs_table, S_IRUGO|S_IWUSR, show_dvfs_table, NULL);
+DEVICE_ATTR(power_state, S_IRUGO|S_IWUSR, show_power_state, NULL);
 
 int kbase_platform_create_sysfs_file(struct device *dev)
 {
@@ -1119,15 +1113,15 @@ mali_error kbase_platform_init(struct kbase_device *kbdev)
 
 	spin_lock_init(&platform->cmu_pmu_lock);
 
+	if (kbase_platform_power_clock_init(kbdev)) {
+		goto clock_init_fail;
+	}
+
 #ifdef CONFIG_REGULATOR
 	if (kbase_platform_regulator_init()) {
 		goto regulator_init_fail;
 	}
 #endif /* CONFIG_REGULATOR */
-
-	if (kbase_platform_power_clock_init(kbdev)) {
-		goto clock_init_fail;
-	}
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	kbase_platform_dvfs_init(kbdev);
