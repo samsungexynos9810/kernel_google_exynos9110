@@ -779,8 +779,6 @@
 
 	usb@15400000 {
 		vbus-supply = <&dwc3_vbus>;
-		samsung,vbus-gpio = <&gph1 1 0>;
-		samsung,boost5v-gpio = <&gpf2 2 0>;
 		samsung,bsess-gpio = <&gpa1 0 0xf>;
 		samsung,id-gpio = <&gpa1 1 0xf>;
 		pinctrl-names = "default";
