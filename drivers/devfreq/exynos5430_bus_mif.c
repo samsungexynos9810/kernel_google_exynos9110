@@ -585,11 +585,11 @@ struct devfreq_distriction_level {
 
 struct devfreq_distriction_level distriction_fullhd[] = {
 	{LV10,	LV3},
+	{LV10,	LV3},
 	{LV9,	LV3},
-	{LV7,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
+	{LV8,	LV2},
+	{LV7,	LV2},
+	{LV6,	LV2},
 };
 
 unsigned int timeout_fullhd[][2] = {
@@ -660,9 +660,9 @@ struct devfreq_distriction_level distriction_fullhd_camera[] = {
 	{LV5,	LV3},
 	{LV5,	LV3},
 	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
+	{LV5,	LV2},
+	{LV5,	LV2},
+	{LV5,	LV2},
 };
 
 unsigned int timeout_fullhd_camera[][2] = {
@@ -684,7 +684,7 @@ struct devfreq_distriction_level distriction_wqhd[] = {
 	{LV8,	LV1},
 	{LV6,	LV1},
 	{LV5,	LV1},
-	{LV4,	LV1},
+	{LV4,	LV0},
 };
 
 unsigned int timeout_wqhd[][2] = {

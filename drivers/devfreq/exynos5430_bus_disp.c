@@ -129,6 +129,8 @@ static struct pm_qos_request exynos5_disp_qos;
 static struct pm_qos_request boot_disp_qos;
 static struct pm_qos_request min_disp_thermal_qos;
 
+extern void exynos5_update_district_int_level(int aclk_disp_333_freq);
+
 void exynos5_update_district_disp_level(unsigned int idx)
 {
 	if (!pm_qos_request_active(&exynos5_disp_qos))
@@ -268,7 +270,13 @@ static int exynos5_devfreq_disp_target(struct device *dev,
 	if (old_freq == *target_freq)
 		goto out;
 
-	exynos5_devfreq_disp_set_freq(disp_data, target_idx, old_idx);
+	if (old_freq < *target_freq) {
+		exynos5_update_district_int_level(target_idx);
+		exynos5_devfreq_disp_set_freq(disp_data, target_idx, old_idx);
+	} else {
+		exynos5_devfreq_disp_set_freq(disp_data, target_idx, old_idx);
+		exynos5_update_district_int_level(target_idx);
+	}
 out:
 	return ret;
 }

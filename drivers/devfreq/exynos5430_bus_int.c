@@ -357,6 +357,29 @@ static struct pm_qos_request exynos5_int_qos;
 static struct pm_qos_request boot_int_qos;
 static struct pm_qos_request min_int_thermal_qos;
 
+int district_level_by_disp_333[] = {
+	LV0,
+	LV2,
+	LV3,
+	LV5,
+};
+
+void exynos5_update_district_int_level(int aclk_disp_333_idx)
+{
+	int int_qos = LV6;
+
+	if (aclk_disp_333_idx < 0 ||
+		ARRAY_SIZE(district_level_by_disp_333) <= aclk_disp_333_idx) {
+		pr_err("DEVFREQ(INT) : can't update distriction of int level by aclk_disp_333\n");
+		return;
+	}
+
+	int_qos = district_level_by_disp_333[aclk_disp_333_idx];
+
+	if (pm_qos_request_active(&exynos5_int_qos))
+		pm_qos_update_request(&exynos5_int_qos, devfreq_int_opp_list[int_qos].freq);
+}
+
 static inline int exynos5_devfreq_int_get_idx(struct devfreq_opp_table *table,
 				unsigned int size,
 				unsigned long freq)
