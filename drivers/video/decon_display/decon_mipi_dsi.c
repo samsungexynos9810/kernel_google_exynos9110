@@ -85,13 +85,9 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	void __iomem *reg;
 	reg = ioremap(0x105C0710, 0x10);
 	writel(0x1, reg);
-	writel(0x1, reg + 0x4);
-	writel(0x1, reg + 0x8);
-	writel(0x1, reg + 0x10);
 	iounmap(reg);
 
 	reg = ioremap(0x13B80000, 0x4);
-	writel(0x0, reg);
 	writel(0x1, reg);
 	iounmap(reg);
 #else
@@ -722,7 +718,6 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 	id = dsim->id;
 	switch (dsim->state) {
 	case DSIM_STATE_INIT:
-		s5p_mipi_dsi_sw_reset(dsim);
 		s5p_mipi_dsi_init_fifo_pointer(dsim, 0x1f);
 
 		/* dsi configuration */
