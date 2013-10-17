@@ -48,6 +48,7 @@ static void top_clk_enable(void)
 {
 	struct clk_enabler *ce;
 
+	add_enabler("aclk_g3d");
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
 		clk_enable(ce->clk);
