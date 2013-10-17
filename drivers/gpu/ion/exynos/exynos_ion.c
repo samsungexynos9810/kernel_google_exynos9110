@@ -30,6 +30,7 @@
 #include <linux/seq_file.h>
 #include <linux/of.h>
 #include <linux/of_fdt.h>
+#include <linux/plist.h>
 
 #include <asm/pgtable.h>
 
@@ -461,6 +462,43 @@ static int ion_cma_device_id_match(struct device *dev, void *data)
 
 	return (*id == cmadata->id) ? -1 : 0;
 }
+
+int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size)
+{
+	struct device *dev_ion, *dev;
+	struct cma_info info;
+	struct ion_exynos_cmadata *cmadata;
+
+	dev_ion = bus_find_device(&platform_bus_type,
+				  NULL, ion_exynos, ion_exynos_dev_match);
+	if (!dev_ion) {
+		pr_err("%s: Unable to find device for ION\n", __func__);
+		return 0;
+	}
+
+	dev = device_find_child(dev_ion, &region_id, ion_cma_device_id_match);
+	if (!dev) {
+		pr_err("%s: Unable to find contiguous region of ID %d\n",
+			__func__, region_id);
+		return -ENODEV;
+	}
+
+
+	if (dma_contiguous_info(dev, &info)) {
+		cmadata = dev_get_drvdata(dev);
+		pr_err("%s: Unable to find region, '%s(%d)' from CMA\n",
+			__func__, cmadata->name, region_id);
+		return -ENODEV;
+	}
+
+	if (phys)
+		*phys = info.base;
+	if (size)
+		*size = info.size;
+
+	return 0;
+}
+EXPORT_SYMBOL(ion_exynos_contig_heap_info);
 
 static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 					   struct ion_buffer *buffer,

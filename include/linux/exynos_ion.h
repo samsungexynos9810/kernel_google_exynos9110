@@ -93,10 +93,17 @@ enum {
 
 #ifdef CONFIG_ION_EXYNOS
 unsigned int ion_exynos_contig_region_mask(char *region_name);
+int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size);
 #else
 static inline int ion_exynos_contig_region_mask(char *region_name)
 {
 	return 0;
+}
+
+static int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys,
+					size_t *size)
+{
+	return -ENODEV;
 }
 #endif
 
