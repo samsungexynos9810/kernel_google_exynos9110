@@ -68,8 +68,6 @@ bool tmu_on_off;
 
 static struct clk *clk_g3d = NULL;
 
-extern mali_dvfs_info mali_dvfs_infotbl[];
-
 static int clk_g3d_status = 0;
 
 #if defined(CONFIG_EXYNOS_THERMAL)

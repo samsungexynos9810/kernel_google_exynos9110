@@ -26,19 +26,6 @@
 
 #define MALI_DVFS_CURRENT_FREQ 0
 
-#if SOC_NAME == 5430
-typedef struct _mali_dvfs_info{
-	unsigned int voltage;
-	unsigned int clock;
-	int min_threshold;
-	int	max_threshold;
-	unsigned long long time;
-	int mem_freq;
-	int int_freq;
-	int cpu_freq;
-} mali_dvfs_info;
-#endif
-
 #if SOC_NAME == 5420
 #define MALI_DVFS_START_FREQ 177
 #define MALI_DVFS_BL_CONFIG_FREQ 350
@@ -84,7 +71,6 @@ int kbase_platform_regulator_disable(void);
 int kbase_platform_regulator_enable(void);
 int kbase_platform_get_voltage(struct device *dev, int *vol);
 int kbase_platform_set_voltage(struct device *dev, int vol);
-void kbase_platform_dvfs_set_vol(unsigned int vol);
 void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq);
 int kbase_platform_dvfs_sprint_avs_table(char *buf, size_t buf_size);
 int kbase_platform_dvfs_set(int enable);
