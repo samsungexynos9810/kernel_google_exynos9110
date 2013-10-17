@@ -58,7 +58,7 @@
 		interrupts = <0 0>, <1 0>, <2 0>, <3 0>,
 			     <4 0>, <5 0>, <6 0>, <7 0>,
 			     <8 0>, <9 0>, <10 0>, <11 0>;
-		clocks = <&clock 1>, <&clock 2>;
+		clocks = <&clock 1>, <&clock 465>;
 		clock-names = "fin_pll", "mct";
 
 		mct_map: mct-map {
@@ -81,22 +81,22 @@
 	};
 
 	serial@12C00000 {
-		clocks = <&clock 10>, <&clock 14>;
+		clocks = <&clock 81>, <&clock 1081>;
 		clock-names = "sclk_uart0", "gate_uart0";
 	};
 
 	serial@12C10000 {
-		clocks = <&clock 11>, <&clock 15>;
+		clocks = <&clock 81>, <&clock 1082>;
 		clock-names = "sclk_uart1", "gate_uart1";
 	};
 
 	serial@12C20000 {
-		clocks = <&clock 12>, <&clock 16>;
+		clocks = <&clock 82>, <&clock 1083>;
 		clock-names = "sclk_uart2", "gate_uart2";
 	};
 
 	serial@12C30000 {
-		clocks = <&clock 13>, <&clock 17>;
+		clocks = <&clock 83>, <&clock 1084>;
 		clock-names = "sclk_uart3", "gate_uart3";
 	};
 
@@ -133,5 +133,11 @@
 		compatible = "samsung,exynos5422-pinctrl";
 		reg = <0x03860000 0x1000>;
 		interrupts = <0 47 0>;
+	};
+
+	mali {
+		compatible = "arm,mali";
+		reg = <0x11800000 0x5000>;
+		interrupts = <0 117 0>, <0 219 0>, <0 74 0>;
 	};
 };
