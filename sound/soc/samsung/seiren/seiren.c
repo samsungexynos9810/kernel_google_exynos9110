@@ -341,7 +341,10 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	} else {
 		if (consumed_size <= 0)
 			consumed_size = response;
-		esa_err("%s: decoding fail. response:%x\n", __func__, response);
+		if (rtd->need_config)
+			rtd->need_config = false;
+		else
+			esa_err("%s: decoding fail. response:%x\n", __func__, response);
 	}
 
 	pm_runtime_mark_last_busy(&si.pdev->dev);
@@ -810,6 +813,10 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		rtd->obuf0_filled = false;
 		rtd->obuf1_filled = false;
 		break;
+	case SEIREN_IOCTL_CH_CONFIG:
+		esa_debug("CH_CONFIG\n");
+		rtd->need_config = true;
+		break;
 	}
 
 	pm_runtime_mark_last_busy(&si.pdev->dev);
@@ -835,6 +842,7 @@ static int esa_open(struct inode *inode, struct file *file)
 	/* initialize */
 	file->private_data = rtd;
 	rtd->get_eos = false;
+	rtd->need_config = false;
 	rtd->select_ibuf = 0;
 	rtd->select_obuf = 0;
 	rtd->obuf0_filled = false;

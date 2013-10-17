@@ -287,6 +287,7 @@ struct esa_rtd {
 	unsigned int	ip_type;
 	unsigned int	handle_id;
 	unsigned int	get_eos;
+	bool	need_config;
 
 	/* multi-instance */
 	unsigned int	idx;
