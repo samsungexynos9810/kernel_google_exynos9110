@@ -43,7 +43,6 @@
 #include <mach/asv.h>
 #include <mach/devfreq.h>
 #endif
-#include <linux/usb/dwc3.h>
 
 #include <plat/pm.h>
 #include <plat/cpu.h>
@@ -110,6 +109,10 @@ static struct check_reg_lpa exynos5_power_domain[] = {
 
 static struct check_reg_lpa exynos5_clock_gating[] = {
 };
+
+#ifdef CONFIG_SAMSUNG_USBPHY
+extern int samsung_usbphy_check_op(void);
+#endif
 
 #if defined(CONFIG_MMC_DW)
 extern int dw_mci_exynos_request_status(void);
@@ -249,8 +252,10 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
+#ifdef CONFIG_SAMSUNG_USBPHY
 	if (samsung_usbphy_check_op())
 		return EXYNOS_CHECK_DIDLE;
+#endif
 
 	return EXYNOS_CHECK_LPA;
 }
