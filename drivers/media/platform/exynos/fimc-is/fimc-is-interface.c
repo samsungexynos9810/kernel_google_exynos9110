@@ -983,7 +983,7 @@ static void wq_func_general(struct work_struct *data)
 			fimc_is_hw_logdump(itf);
 			break;
 		case IHC_REPORT_ERR:
-			err("IHC_NOT_READY is occured");
+			err("IHC_REPORT_ERR is occured");
 			fimc_is_hw_logdump(itf);
 			break;
 		default:
