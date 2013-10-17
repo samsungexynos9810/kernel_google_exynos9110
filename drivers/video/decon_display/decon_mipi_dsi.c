@@ -92,7 +92,6 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 
 	reg = ioremap(0x13B80000, 0x4);
 	writel(0x0, reg);
-	mdelay(5);
 	writel(0x1, reg);
 	iounmap(reg);
 #else
@@ -733,8 +732,6 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 
 		/* set clock configuration */
 		s5p_mipi_dsi_set_clock(dsim, dsim->dsim_config->e_byte_clk, 1);
-
-		msleep(100);
 
 		/* check clock and data lane state are stop state */
 		while (!(s5p_mipi_dsi_is_lane_state(dsim))) {
