@@ -88,6 +88,9 @@ enum {
 #define ION_EXYNOS_VIDEO_MASK	     MAKE_CONTIG_FLAG(ION_EXYNOS_ID_VIDEO)
 #define ION_EXYNOS_MFC_NFW_MASK	     MAKE_CONTIG_FLAG(ION_EXYNOS_ID_MFC_NFW)
 
+/* return value of ion_exynos_contig_region_mask() that indicates error */
+#define EXYNOS_CONTIG_REGION_NOMASK ~0
+
 #ifdef CONFIG_ION_EXYNOS
 unsigned int ion_exynos_contig_region_mask(char *region_name);
 #else

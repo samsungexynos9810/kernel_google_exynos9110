@@ -418,10 +418,9 @@ struct ion_exynos_cmadata {
 
 static int ion_cma_device_name_match(struct device *dev, void *data)
 {
-	int *id = data;
 	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
 
-	return (*id == cmadata->id) ? -1 : 0;
+	return (strncmp(data, cmadata->name, MAX_CONTIG_NAME) == 0) ? -1 : 0;
 }
 
 static int ion_exynos_dev_match(struct device *dev, void *data)
@@ -438,7 +437,7 @@ unsigned int ion_exynos_contig_region_mask(char *region_name)
 				  NULL, ion_exynos, ion_exynos_dev_match);
 	if (!dev_ion) {
 		pr_err("%s: Unable to find device for ION\n", __func__);
-		return 0;
+		return EXYNOS_CONTIG_REGION_NOMASK;
 	}
 
 	dev = device_find_child(dev_ion, region_name,
@@ -446,13 +445,14 @@ unsigned int ion_exynos_contig_region_mask(char *region_name)
 	if (!dev) {
 		pr_err("%s: Unable to find CMA region '%s'\n",
 			__func__, region_name);
-		return 0;
+		return EXYNOS_CONTIG_REGION_NOMASK;
 	}
 
 	cmadata = dev_get_drvdata(dev);
 
 	return MAKE_CONTIG_FLAG(cmadata->id);
 }
+EXPORT_SYMBOL(ion_exynos_contig_region_mask);
 
 static int ion_cma_device_id_match(struct device *dev, void *data)
 {
