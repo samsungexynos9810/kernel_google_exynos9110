@@ -1954,7 +1954,7 @@ static void cgroup_task_migrate(struct cgroup *oldcgrp,
 static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
 			      bool threadgroup)
 {
-	int retval, i, group_size, nr_threads;
+	int retval, i, group_size;
 	struct cgroup_subsys *ss, *failed_ss = NULL;
 	struct cgroupfs_root *root = cgrp->root;
 	/* threadgroup list cursor and array */
@@ -1970,9 +1970,8 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
 	 * group - group_rwsem prevents new threads from appearing, and if
 	 * threads exit, this will just be an over-estimate.
 	 */
-	nr_threads = get_nr_threads(tsk);
 	if (threadgroup)
-		group_size = nr_threads;
+		group_size = get_nr_threads(tsk);
 	else
 		group_size = 1;
 	/* flex_array supports very large thread-groups better than kmalloc. */
@@ -1993,8 +1992,6 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
 	rcu_read_lock();
 	do {
 		struct task_and_cgroup ent;
-
-		nr_threads --;
 
 		/* @tsk either already exited or can't exit until the end */
 		if (tsk->flags & PF_EXITING)
@@ -2017,7 +2014,7 @@ static int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk,
 
 		if (!threadgroup)
 			break;
-	} while ((tsk = next_thread(tsk)) != leader && nr_threads);
+	} while_each_thread(leader, tsk);
 	rcu_read_unlock();
 	/* remember the number of threads in the array for later. */
 	group_size = i;
