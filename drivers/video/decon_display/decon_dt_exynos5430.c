@@ -19,9 +19,16 @@
 #include "decon_fb.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
+#ifdef CONFIG_DECON_MIC
+#include "decon_mic.h"
+#endif
 
 #define DISP_CTRL_NAME	"decon_ctrl"
 #define MIPI_DSI_NAME	"mipi_dsi"
+
+#ifdef CONFIG_DECON_MIC
+#define MIC_NAME	"decon_mic"
+#endif
 
 #define DT_READ_U32(node, key, value) do {\
 		pprop = key; \
@@ -64,8 +71,16 @@ struct mipi_dsim_config g_dsim_config = {
 #endif
 };
 
+#ifdef CONFIG_DECON_MIC
+struct mic_config g_mic_config;
+#endif
+
 #define DISPLAY_CONTROLLER_REG_INDEX	0
 #define DISPLAY_DRIVER_REG_INDEX	1
+
+#ifdef CONFIG_DECON_MIC
+#define DISPLAY_MIC_REG_INDEX		2
+#endif
 
 static unsigned int g_dsi_power_gpio_num;
 struct mipi_dsim_lcd_config g_lcd_config;
@@ -303,6 +318,13 @@ struct mipi_dsim_lcd_config *get_display_lcd_drvdata_exynos5430(void)
 	return &g_lcd_config;
 }
 
+#ifdef CONFIG_DECON_MIC
+struct mic_config *get_display_mic_config_exynos5430(void)
+{
+	return &g_mic_config;
+}
+#endif
+
 static int parse_dsi_drvdata(struct device_node *np)
 {
 	u32 temp;
@@ -360,6 +382,18 @@ end:
 	return 0;
 }
 
+#ifdef CONFIG_DECON_MIC
+int parse_decon_mic_dt_exynos5430(struct device_node *np)
+{
+	u32 temp;
+
+	DT_READ_U32_OPTIONAL(np, "sysreg1", g_mic_config.sysreg1);
+	DT_READ_U32_OPTIONAL(np, "sysreg2", g_mic_config.sysreg2);
+
+	return 0;
+}
+#endif
+
 /* parse_all_dt_exynos5430 -
  * this function is for parsing TOP device tree of the display subsystem */
 static int parse_all_dt_exynos5430(struct device_node *parent)
@@ -390,6 +424,19 @@ static int parse_all_dt_exynos5430(struct device_node *parent)
 		return ret;
 	}
 
+#ifdef CONFIG_DECON_MIC
+	node = of_get_child_by_name(parent, MIC_NAME);
+	if (!node) {
+		pr_err("device tree errror : empty mic dt\n");
+		return -EINVAL;
+	}
+	ret = parse_decon_mic_dt_exynos5430(node);
+	if (ret < 0) {
+		pr_err("parsing for MIC failed.\n");
+		return ret;
+	}
+#endif
+
 	return ret;
 }
 
@@ -418,6 +465,14 @@ int parse_display_driver_dt_exynos5430(struct platform_device *pdev,
 		return -ENOENT;
 	}
 
+#ifdef CONFIG_DECON_MIC
+	ddp->mic_driver.regs = platform_get_resource(pdev,
+		IORESOURCE_MEM, DISPLAY_MIC_REG_INDEX);
+	if (!ddp->mic_driver.regs) {
+		pr_err("failed to find registers for MIC\n");
+		return -ENOENT;
+	}
+#endif
 	/* starts to parse device tree */
 	ret = parse_interrupt_dt_exynos5430(pdev, ddp);
 	if (ret < 0) {

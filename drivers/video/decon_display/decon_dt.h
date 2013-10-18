@@ -23,6 +23,9 @@ struct s3c_fb_driverdata *get_display_drvdata_exynos5430(void);
 struct s3c_fb_platdata *get_display_platdata_exynos5430(void);
 struct mipi_dsim_config *get_display_dsi_drvdata_exynos5430(void);
 struct mipi_dsim_lcd_config *get_display_lcd_drvdata_exynos5430(void);
+#ifdef CONFIG_DECON_MIC
+struct mic_config *get_display_mic_config_exynos5430(void);
+#endif
 
 int parse_display_dsi_dt_exynos5430(struct device_node *np);
 int get_display_dsi_reset_gpio_exynos5430(void);
@@ -35,6 +38,9 @@ int get_display_dsi_reset_gpio_exynos5430(void);
 #define get_display_platdata() get_display_platdata_exynos5430()
 #define get_display_dsi_drvdata() get_display_dsi_drvdata_exynos5430()
 #define get_display_lcd_drvdata() get_display_lcd_drvdata_exynos5430()
+#ifdef CONFIG_DECON_MIC
+#define get_display_mic_config() get_display_mic_config_exynos5430()
+#endif
 
 /* Temporary code for parsinng DSI device tree */
 #define parse_display_dsi_dt(node) parse_display_dsi_dt_exynos5430(node)

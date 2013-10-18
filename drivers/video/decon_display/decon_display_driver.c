@@ -47,6 +47,14 @@ static int create_disp_components(struct platform_device *pdev)
 {
 	int ret = 0;
 
+#ifdef CONFIG_DECON_MIC
+	ret = create_decon_mic(pdev);
+	if (ret < 0) {
+		pr_err("display error: MIC create failed.");
+		return ret;
+	}
+#endif
+
 	/* IMPORTANT: MIPI-DSI component should be 1'st created. */
 	ret = create_mipi_dsi_controller(pdev);
 	if (ret < 0) {
