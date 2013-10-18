@@ -810,14 +810,14 @@
 
 		/* Clocks for the DECON driver */
 		/* Clocks for the MIPI-DSI driver */
-		clock-names = "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll",
+		clock-names = "mout_sclk_dsd_a", "dout_mfc_pll", "mout_sclk_decon_eclk_a", "mout_bus_pll_sub", "mout_disp_pll",
 			"aclk_disp_333", "aclk_disp_222", "sclk_decon_eclk_mif",
 			"sclk_decon_vclk_mif", "sclk_dsd_mif",
 			"mout_aclk_disp_333_user", "mout_aclk_disp_222_user",
 			"mout_sclk_decon_eclk_user", "mout_sclk_decon_vclk_user",
 			"mout_sclk_dsd_user", "mout_sclk_decon_eclk_disp",
 			"dout_aclk_disp_333", "dout_sclk_decon_eclk";
-		clocks = <&clock 3092>, <&clock 3075>, <&clock 3124>,
+		clocks = <&clock 3100>, <&clock 4102>, <&clock 3092>, <&clock 3075>, <&clock 3124>,
 			 <&clock 321>, <&clock 322>, <&clock 81>, <&clock 82>, <&clock 83>,
 			 <&clock 3125>, <&clock 3126>, <&clock 3130>, <&clock 3132>,
 			 <&clock 3134>, <&clock 3131>, <&clock 4116>, <&clock 4122>;

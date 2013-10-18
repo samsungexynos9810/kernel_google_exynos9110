@@ -36,6 +36,8 @@ static struct clk *g_mout_sclk_decon_eclk_user, *g_mout_sclk_decon_eclk_disp;
 static struct clk *g_dout_aclk_disp_333;
 static struct clk *g_dout_sclk_decon_eclk;
 
+static struct clk *g_mout_sclk_dsd_a, *g_dout_mfc_pll;
+
 static struct clk *g_phyclk_mipidphy_rxclkesc0_phy,
 	*g_mout_phyclk_mipidphy_rxclkesc0_user;
 static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
@@ -139,6 +141,9 @@ int init_display_decon_clocks_exynos5430(struct device *dev)
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_disp,
 		mout_sclk_decon_eclk_user);
 
+	/* setup dsd clock for MFC */
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
+
 	DISPLAY_SET_RATE(dout_aclk_disp_333, 222*MHZ);
 	DISPLAY_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
 
@@ -232,6 +237,7 @@ int disable_display_dsi_power_exynos5430(struct device *dev)
 	return ret;
 }
 
+#ifdef FAST_CMU_CLOCK_RECOVER
 static void temporary_cmu_restore(void)
 {
 	void __iomem *regs;
@@ -249,6 +255,7 @@ static void temporary_cmu_restore(void)
 	TEMPORARY_RECOVER_CMU(0x13B90208, 0x1100, 0, 0x1100);
 	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x1);
 }
+#endif
 
 int enable_display_decon_clocks_exynos5430(struct device *dev)
 {
@@ -271,21 +278,24 @@ int enable_display_decon_clocks_exynos5430(struct device *dev)
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_disp,
 		mout_sclk_decon_eclk_user);
 
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
+
 	DISPLAY_INLINE_SET_RATE(dout_aclk_disp_333, 222*MHZ);
 	DISPLAY_INLINE_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
 
 	additional_clock_setup();
-#if 0
-#endif
 	return ret;
 }
 
 int enable_display_dsi_clocks_exynos5430(struct device *dev)
 {
 	int ret = 0;
-#if 1
+	void __iomem *regs;
+	u32 data;
+#ifdef FAST_CMU_CLOCK_RECOVER
 	temporary_cmu_restore();
 #else
+	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
 	enable_display_decon_clocks_exynos5430(NULL);
 
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
