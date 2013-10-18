@@ -1,0 +1,41 @@
+#ifndef __DECON_MIC_H__
+#define __DECON_MIC_H__
+
+struct mic_config {
+	u32 sysreg1;
+	u32 sysreg2;
+};
+
+/* MIC Register Map */
+#define DECON_MIC_OP		0x00
+#define DECON_MIC_UPDATE_REG	(1 << 31)
+#define DECON_MIC_ON_REG	(1 << 30)
+#define DECON_MIC_NEW_CORE	(0 << 2)
+#define DECON_MIC_OLD_CORE	(1 << 2)
+#define DECON_MIC_VIDEO_MODE	(0 << 1)
+#define DECON_MIC_COMMAND_MODE	(1 << 1)
+#define DECON_MIC_CORE_ENABLE	(1 << 0)
+#define DECON_MIC_CORE_DISABLE	(0 << 0)
+
+#define DECON_MIC_VER		0x04
+#define DECON_MIC_V_TIMING_0	0x08
+#define DECON_MIC_V_TIMING_1	0x0C
+
+#define DECON_MIC_IMG_SIZE	0x10
+#define DECON_MIC_IMG_V_SIZE_SHIFT	16
+#define DECON_MIC_IMG_H_SIZE_SHIFT	0
+
+#define DECON_MIC_INPUT_TIMING_0	0x14
+#define DECON_MIC_INPUT_TIMING_1	0x18
+#define DECON_MIC_2D_OUTPUT_TIMING_0	0x1C
+#define DECON_MIC_2D_OUTPUT_TIMING_1	0x20
+#define DECON_MIC_2D_OUTPUT_TIMING_2	0x24
+#define DECON_MIC_3D_OUTPUT_TIMING_0	0x28
+#define DECON_MIC_3D_OUTPUT_TIMING_1	0x2C
+#define DECON_MIC_3D_OUTPUT_TIMING_2	0x30
+#define DECON_MIC_ALG_PARA_0	0x34
+#define DECON_MIC_ALG_PARA_1	0x38
+#define DECON_MIC_CRC_CTRL	0x40
+#define DECON_MIC_CRC_DATA	0x44
+
+#endif

@@ -11,6 +11,11 @@ config DECON_FB
 	depends on DECON
 	default y
 
+config DECON_MIC
+	bool "Samsung MIC driver"
+	depends on DECON_FB
+	default n
+
 config FB_I80_COMMAND_MODE
 	bool "DECON FB I80 MODE"
 	depends on DECON_FB
