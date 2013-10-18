@@ -26,6 +26,9 @@
 		pinctrl2 = &pinctrl_2;
 		pinctrl3 = &pinctrl_3;
 		pinctrl4 = &pinctrl_4;
+		mshc0 = &dwmmc_0;
+		mshc1 = &dwmmc_1;
+		mshc2 = &dwmmc_2;
 	};
 
 	cpus {
@@ -133,6 +136,39 @@
 		compatible = "samsung,exynos5422-pinctrl";
 		reg = <0x03860000 0x1000>;
 		interrupts = <0 47 0>;
+	};
+
+	dwmmc_0: dwmmc0@12200000 {
+		compatible = "samsung,exynos5422-dw-mshc";
+		reg = <0x12200000 0x2000>;
+		interrupts = <0 75 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 262>, <&clock 44>, <&clock 4110>;
+		clock-names = "biu", "gate_ciu", "dout_mmc_a";
+		status = "disabled";
+	};
+
+	dwmmc_1: dwmmc1@12210000 {
+		compatible = "samsung,exynos5422-dw-mshc";
+		reg = <0x12210000 0x2000>;
+		interrupts = <0 76 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 263>, <&clock 45>, <&clock 4111>;
+		clock-names = "biu", "gate_ciu", "dout_mmc_a";
+		status = "disabled";
+	};
+
+	dwmmc_2: dwmmc2@12220000 {
+		compatible = "samsung,exynos5422-dw-mshc";
+		reg = <0x12220000 0x2000>;
+		interrupts = <0 77 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 264>, <&clock 46>, <&clock 4112>;
+		clock-names = "biu", "gate_ciu", "dout_mmc_a";
+		status = "disabled";
 	};
 
 	mali {
