@@ -735,6 +735,11 @@
 			/* lp rx timeout 0 ~ 0xffff */
 			rx_timeout = <0xffff>;
 		};
+
+		decon_mic: decon_mic {
+			sysreg1 = <0x13B81004>;
+			sysreg2 = <0x13B81048>;
+		};
 	};
 
 

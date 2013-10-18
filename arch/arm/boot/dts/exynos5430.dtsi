@@ -780,7 +780,7 @@
 	decon_fb: decon_fb {
 		compatible = "samsung,exynos5-disp_driver";
 
-		reg = <0x13800000 0x40000>, <0x13900000 0x40000>;
+		reg = <0x13800000 0x40000>, <0x13900000 0x40000>, <0x13930000 0x48>;
 
 		iommu = <&sysmmu_decon0x>, <&sysmmu_decon1x>;
 
