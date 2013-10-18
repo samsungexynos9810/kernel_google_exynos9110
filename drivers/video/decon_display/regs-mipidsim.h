@@ -62,8 +62,12 @@
 /* Display image resolution register */
 #define S5P_DSIM_MDRESOL	(0x20)
 #define DSIM_MAIN_STAND_BY		(1 << 31)
-#define DSIM_MAIN_VRESOL(x)		(((x) & 0x7ff) << 16)
-#define DSIM_MAIN_HRESOL(x)		(((x) & 0X7ff) << 0)
+#define DSIM_MAIN_HRESOL_SHIFT		(0)
+#define DSIM_MAIN_VRESOL_SHIFT		(16)
+#define DSIM_MAIN_VRESOL(x)		(((x) & 0xfff) << DSIM_MAIN_VRESOL_SHIFT)
+#define DSIM_MAIN_HRESOL(x)		(((x) & 0Xfff) << DSIM_MAIN_HRESOL_SHIFT)
+#define DSIM_MAIN_HRESOL_MASK		(0xfff << DSIM_MAIN_HRESOL_SHIFT)
+#define DSIM_MAIN_VRESOL_MASK		(0xfff << DSIM_MAIN_VRESOL_SHIFT)
 
 #define S5P_DSIM_MVPORCH	(0x24)	/* Main display Vporch register */
 #define DSIM_CMD_ALLOW_SHIFT		(28)
@@ -105,6 +109,7 @@
 #define S5P_DSIM_PROPRIETARY_3D	(0x58)	/* Proprietary 3D register */
 
 #define S5P_DSIM_MIC		(0x5c)	/* MIC control register */
+#define DSIM_MIC_EN		(1 << 1)
 
 #define S5P_DSIM_PRO_ON_MIC_OFF_H	(0x60)
 #define S5P_DSIM_PRO_OFF_MIC_ON_H	(0x64)

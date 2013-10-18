@@ -104,6 +104,14 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	return 0;
 }
 
+#ifdef CONFIG_DECON_MIC
+static void decon_mipi_dsi_config_mic(struct mipi_dsim_device *dsim)
+{
+	s5p_mipi_dsi_enable_mic(dsim, true);
+	s5p_mipi_dsi_set_3d_off_mic_on_h_size(dsim);
+}
+#endif
+
 static void s5p_mipi_dsi_set_packet_ctrl(struct mipi_dsim_device *dsim)
 {
 	writel(0xffff, dsim->reg_base + S5P_DSIM_MULTI_PKT);
@@ -705,7 +713,9 @@ int s5p_mipi_dsi_set_display_mode(struct mipi_dsim_device *dsim,
 				vsync_len,
 				hsync_len);
 	}
-
+#ifdef CONFIG_DECON_MIC
+	width = s5p_mipi_dsi_calc_bs_size(dsim);
+#endif
 	s5p_mipi_dsi_set_main_disp_resol(dsim, height, width);
 	s5p_mipi_dsi_display_config(dsim);
 	return 0;
@@ -883,6 +893,9 @@ static int s5p_mipi_dsi_resume(struct device *dev)
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
 	dsim->enabled = true;
+#ifdef CONFIG_DECON_MIC
+	decon_mipi_dsi_config_mic(dsim);
+#endif
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
@@ -921,9 +934,15 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_init_link(dsim);
 	dsim->enabled = true;
 
+#ifdef CONFIG_DECON_MIC
+	decon_mipi_dsi_config_mic(dsim);
+#endif
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
+#ifdef CONFIG_DECON_MIC
+	usleep_range(1000, 1500);
+#endif
 	dsim->dsim_lcd_drv->displayon(dsim);
 
 	return 0;
@@ -1015,6 +1034,10 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	enable_display_dsi_power(&pdev->dev);
 
 	dsim->enabled = true;
+#ifdef CONFIG_DECON_MIC
+	dsim->lcd_info = decon_get_lcd_info();
+	decon_mipi_dsi_config_mic(dsim);
+#endif
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);

@@ -19,6 +19,8 @@
 
 #include <linux/regulator/consumer.h>
 
+#include "decon_display_driver.h"
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 #include <linux/earlysuspend.h>
 #endif
@@ -270,6 +272,7 @@ struct mipi_dsim_device {
 #endif
 	struct lcd_device	*lcd;
 	unsigned int enabled;
+	struct decon_lcd	*lcd_info;
 };
 
 /**

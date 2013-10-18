@@ -30,6 +30,46 @@
 
 extern struct mipi_dsim_config g_dsim_config;
 
+#ifdef CONFIG_DECON_MIC
+unsigned int s5p_mipi_dsi_calc_bs_size(struct mipi_dsim_device *dsim)
+{
+	struct decon_lcd *lcd_info;
+	u32 temp1, temp2, bs_size;
+
+	lcd_info = dsim->lcd_info;
+
+	temp1 = (lcd_info->xres / 4) * 2;
+	temp2 = (lcd_info->xres % 4);
+
+	bs_size = temp1 + temp2;
+
+	return bs_size;
+}
+
+void s5p_mipi_dsi_enable_mic(struct mipi_dsim_device *dsim, bool enable)
+{
+	void __iomem *regs = dsim->reg_base + S5P_DSIM_MIC;
+	u32 data = readl(regs);
+
+	if (enable)
+		data |= DSIM_MIC_EN;
+	else
+		data &= ~DSIM_MIC_EN;
+
+	writel(data, regs);
+}
+
+void s5p_mipi_dsi_set_3d_off_mic_on_h_size(struct mipi_dsim_device *dsim)
+{
+	void __iomem *regs = dsim->reg_base + S5P_DSIM_PRO_OFF_MIC_ON_H;
+	u32 bs_size;
+
+	bs_size = s5p_mipi_dsi_calc_bs_size(dsim);
+
+	writel(bs_size, regs);
+}
+#endif
+
 void s5p_mipi_dsi_func_reset(struct mipi_dsim_device *dsim)
 {
 	unsigned int reg;
@@ -89,7 +129,7 @@ void s5p_mipi_dsi_set_main_disp_resol(struct mipi_dsim_device *dsim,
 		~(DSIM_MAIN_STAND_BY);
 	writel(reg, dsim->reg_base + S5P_DSIM_MDRESOL);
 
-	reg &= ~(0xfff << 16) & ~(0xfff << 0);
+	reg &= ~(DSIM_MAIN_VRESOL_MASK) & ~(DSIM_MAIN_HRESOL_MASK);
 	reg |= DSIM_MAIN_VRESOL(vert_resol) | DSIM_MAIN_HRESOL(hori_resol);
 
 	reg |= DSIM_MAIN_STAND_BY;

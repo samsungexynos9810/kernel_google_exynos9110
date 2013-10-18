@@ -15,6 +15,11 @@
 
 #include "decon_mipi_dsi.h"
 
+#ifdef CONFIG_DECON_MIC
+unsigned int s5p_mipi_dsi_calc_bs_size(struct mipi_dsim_device *dsim);
+void s5p_mipi_dsi_enable_mic(struct mipi_dsim_device *dsim, bool enable);
+void s5p_mipi_dsi_set_3d_off_mic_on_h_size(struct mipi_dsim_device *dsim);
+#endif
 void s5p_mipi_dsi_func_reset(struct mipi_dsim_device *dsim);
 void s5p_mipi_dsi_sw_reset(struct mipi_dsim_device *dsim);
 void s5p_mipi_dsi_set_interrupt_mask(struct mipi_dsim_device *dsim,
