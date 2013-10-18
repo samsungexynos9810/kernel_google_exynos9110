@@ -46,6 +46,9 @@ static struct dw_mci_exynos_compatible {
 		.compatible	= "samsung,exynos5250-dw-mshc",
 		.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
 	}, {
+		.compatible	= "samsung,exynos5422-dw-mshc",
+		.ctrl_type	= DW_MCI_TYPE_EXYNOS5422,
+	}, {
 		.compatible	= "samsung,exynos5430-dw-mshc",
 		.ctrl_type	= DW_MCI_TYPE_EXYNOS5430,
 	},
@@ -265,6 +268,7 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 
 	if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5250 ||
+		priv->ctrl_type == DW_MCI_TYPE_EXYNOS5422 ||
 		priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430)
 		host->bus_hz /= (priv->ciu_div + 1);
 	else if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS4412)
@@ -314,6 +318,7 @@ static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
  */
 static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 {
+	struct dw_mci_exynos_priv_data *priv = host->priv;
 	u32 ciu_rate = clk_get_rate(host->ciu_clk);
 	u32 ciu_div;
 	u32 tmp_reg;
@@ -331,11 +336,14 @@ static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 		if (clkerr)
 			dev_warn(host->dev, "Couldn't set rate to %u\n",
 				 ciu_rate);
-		clkerr = clk_set_rate(bdiv, ciu_rate);
-		if (clkerr)
-			dev_warn(host->dev, "Couldn't set rate to %u\n",
-				 ciu_rate);
-		ciu_rate = clk_get_rate(host->ciu_clk);
+
+		if (priv->ctrl_type != DW_MCI_TYPE_EXYNOS5422) {
+			clkerr = clk_set_rate(bdiv, ciu_rate);
+			if (clkerr)
+				dev_warn(host->dev, "Couldn't set rate to %u\n",
+					 ciu_rate);
+			ciu_rate = clk_get_rate(host->ciu_clk);
+		}
 	}
 
 	host->bus_hz = ciu_rate / ciu_div;
@@ -387,7 +395,8 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 
 	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
 
-	if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430) {
+	if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5422 ||
+		priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430) {
 		__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN + 0x70);
 		__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL + 0x70);
 	} else {
@@ -461,7 +470,10 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	}
 
 	for (idx_ref = 0; idx_ref < ref_clk_size; idx_ref++, ref_clk++, ciu_clkin_values++) {
-		*(ref_clk) = (*ciu_clkin_values) * MHZ;
+		if (*ciu_clkin_values > MHZ)
+			*(ref_clk) = (*ciu_clkin_values);
+		else
+			*(ref_clk) = (*ciu_clkin_values) * MHZ;
 	}
 
 	ref_clk -= ref_clk_size;
@@ -791,6 +803,8 @@ static const struct of_device_id dw_mci_exynos_match[] = {
 	{ .compatible = "samsung,exynos4412-dw-mshc",
 			.data = &exynos_drv_data, },
 	{ .compatible = "samsung,exynos5250-dw-mshc",
+			.data = &exynos_drv_data, },
+	{ .compatible = "samsung,exynos5422-dw-mshc",
 			.data = &exynos_drv_data, },
 	{ .compatible = "samsung,exynos5430-dw-mshc",
 			.data = &exynos_drv_data, },
