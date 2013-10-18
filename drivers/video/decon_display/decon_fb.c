@@ -109,6 +109,11 @@ static struct dma_buf *g_framebuf;
 extern struct mipi_dsim_device *dsim_for_decon;
 extern int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim);
 extern int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim);
+#ifdef CONFIG_DECON_MIC
+extern struct decon_mic *mic_for_decon;
+extern int decon_mic_enable(struct decon_mic *mic);
+extern int decon_mic_disable(struct decon_mic *mic);
+#endif
 #ifdef CONFIG_ION_EXYNOS
 extern struct ion_device *ion_exynos;
 #endif
@@ -1032,6 +1037,9 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_NORMAL:
 		ret = s3c_fb_disable(sfb);
 		s5p_mipi_dsi_disable(dsim_for_decon);
+#ifdef CONFIG_DECON_MIC
+		decon_mic_disable(mic_for_decon);
+#endif
 #if defined(CONFIG_DECON_DEVFREQ)
 		exynos5_update_media_layers(TYPE_DECON, 0);
 		exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
@@ -1046,6 +1054,9 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
 		prev_overlap_cnt = 1;
 		prev_gsc_local_cnt = 0;
+#endif
+#ifdef CONFIG_DECON_MIC
+		decon_mic_enable(mic_for_decon);
 #endif
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
@@ -3786,6 +3797,20 @@ static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 #endif
 #endif
 
+#ifdef CONFIG_DECON_MIC
+static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
+{
+	void __iomem *regs = sfb->regs + DECON_MIC_3D_CTRL;
+	u32 data = readl(regs);
+
+	if (enable)
+		data |= 1;
+	else
+		data &= ~1;
+	writel(data, regs);
+}
+#endif
+
 int create_decon_display_controller(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
@@ -3894,6 +3919,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
 	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
+#ifdef CONFIG_DECON_MIC
+	s3c_fb_set_mic_enable(sfb, true);
+#endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 #else
@@ -4303,6 +4331,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
 	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
+#ifdef CONFIG_DECON_MIC
+	s3c_fb_set_mic_enable(sfb, true);
+#endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 #else
@@ -4445,6 +4476,9 @@ int s3c_fb_resume(struct device *dev)
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
 	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
+#ifdef CONFIG_DECON_MIC
+	s3c_fb_set_mic_enable(sfb, true);
+#endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 #else

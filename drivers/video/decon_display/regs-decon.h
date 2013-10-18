@@ -476,3 +476,5 @@
 #define WINCON_SHADOW(x)			(WINCON(x) + 0x4000)
 #define DECON_UPDATE_SHADOW			(DECON_UPDATE + 0x4000)
 #endif /* _REGS_DECON_H */
+
+#define DECON_MIC_3D_CTRL			(0x20D0)
