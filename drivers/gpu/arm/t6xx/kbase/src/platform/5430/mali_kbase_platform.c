@@ -69,6 +69,7 @@ bool tmu_on_off;
 static struct clk *clk_g3d = NULL;
 
 static int clk_g3d_status = 0;
+static int global_store_clk = 0;
 
 #if defined(CONFIG_EXYNOS_THERMAL)
 static int exynos5_g3d_tmu_notifier(struct notifier_block *notifier,
@@ -99,9 +100,10 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 };
 #endif
 
+extern int pm_callback_power_on(kbase_device *kbdev);
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
-	int timeout;
+	int ret;
 	struct exynos_context *platform;
 
 	platform = (struct exynos_context *) kbdev->platform_context;
@@ -110,19 +112,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D power */
-	__raw_writel(EXYNOS_INT_LOCAL_PWR_EN, EXYNOS5430_G3D_CONFIGURATION);
-
-	/* Wait for G3D power stability for 1ms */
-	timeout = 10;
-	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != EXYNOS_INT_LOCAL_PWR_EN) {
-		if (timeout == 0) {
-			/* need to call panic  */
-			panic("failed to turn on g3d power\n");
-			goto out;
-		}
-		timeout--;
-		udelay(100);
-	}
+	pm_callback_power_on(kbdev);
 
 	/* Turn on G3D clock */
 	clk_g3d = __clk_lookup("dout_aclk_g3d");
@@ -135,7 +125,25 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 		platform->aclk_g3d = clk_g3d;
 	}
 
-	g3d_init_clock();
+	ret = exynos_set_rate("fout_g3d_pll", MALI_T6XX_DEFAULT_CLOCK);
+	if (ret < 0) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [fout_g3d_pll]\n");
+		return ret;
+	}
+	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
+	if (ret < 0) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
+		return ret;
+	}
+
+	while (__raw_readl(EXYNOS5430_SRC_STAT_G3D) < 4)
+		break;
+
+	ret = exynos_set_rate("aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
+	if (ret < 0) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [fout_g3d_pll]\n");
+		return ret;
+	}
 
 	(void) clk_enable(clk_g3d);
 
@@ -153,7 +161,9 @@ out:
 
 int kbase_platform_clock_on(struct kbase_device *kbdev)
 {
+	int ret, tmpclk;
 	struct exynos_context *platform;
+
 	if (!kbdev)
 		return -ENODEV;
 
@@ -164,7 +174,23 @@ int kbase_platform_clock_on(struct kbase_device *kbdev)
 	if (clk_g3d_status == 1)
 		return 0;
 
-	g3d_init_clock();
+	tmpclk = exynos_get_rate("fout_g3d_pll");
+	if (global_store_clk != tmpclk) {
+		ret = exynos_set_rate("fout_g3d_pll", global_store_clk);
+		if (ret < 0) {
+			KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_rate [fout_g3d_pll]\n");
+			return ret;
+		}
+	}
+
+	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
+	if (ret < 0) {
+		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [mout_g3d_pll]\n");
+		return ret;
+	}
+
+	while (__raw_readl(EXYNOS5430_SRC_STAT_G3D) < 4)
+		break;
 
 	if (clk_g3d) {
 		(void) clk_enable(clk_g3d);
@@ -184,6 +210,8 @@ int kbase_platform_clock_off(struct kbase_device *kbdev)
 	platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
+
+	global_store_clk = exynos_get_rate("fout_g3d_pll");
 
 	if (clk_g3d_status == 0)
 		return 0;
@@ -1125,7 +1153,7 @@ mali_error kbase_platform_init(struct kbase_device *kbdev)
 	mali_devfreq_add(kbdev);
 #endif
 	/* Enable power */
-	kbase_platform_cmu_pmu_control(kbdev, 1);
+	//kbase_platform_cmu_pmu_control(kbdev, 1);
 #if defined(CONFIG_EXYNOS_THERMAL)
 	gpu_voltage_margin = 0;
 #endif
@@ -1154,7 +1182,7 @@ void kbase_platform_term(kbase_device *kbdev)
 	mali_devfreq_remove();
 #endif
 	/* Disable power */
-	kbase_platform_cmu_pmu_control(kbdev, 0);
+	//kbase_platform_cmu_pmu_control(kbdev, 0);
 #ifdef CONFIG_REGULATOR
 	kbase_platform_regulator_disable();
 #endif /* CONFIG_REGULATOR */

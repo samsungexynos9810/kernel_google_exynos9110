@@ -116,7 +116,7 @@ kbase_platform_funcs_conf platform_funcs = {
 };
 
 #ifdef CONFIG_MALI_T6XX_RT_PM
-static int pm_callback_power_on(kbase_device *kbdev)
+int pm_callback_power_on(kbase_device *kbdev)
 {
 	int result;
 	int ret_val;
@@ -145,7 +145,7 @@ static int pm_callback_power_on(kbase_device *kbdev)
 	return ret_val;
 }
 
-static void pm_callback_power_off(kbase_device *kbdev)
+void pm_callback_power_off(kbase_device *kbdev)
 {
 	struct kbase_os_device *osdev = &kbdev->osdev;
 	pm_schedule_suspend(osdev->dev, RUNTIME_PM_DELAY_TIME);
@@ -163,10 +163,8 @@ void kbase_device_runtime_disable(struct kbase_device *kbdev)
 	pm_runtime_disable(kbdev->osdev.dev);
 }
 
-static int pm_callback_runtime_on(kbase_device *kbdev)
+int pm_callback_runtime_on(kbase_device *kbdev)
 {
-	int ret;
-
 	pr_debug("g3d turn on\n");
 
 	kbase_platform_clock_on(kbdev);
@@ -174,24 +172,10 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 	if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
 		return -EPERM;
 #endif
-
-	ret = exynos_set_parent("dout_aclk_g3d", "mout_g3d_pll");
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_patent [mout_g3d_pll]\n");
-		return 0;
-	}
-/*
-	//enalbe this for stable gpu
-	ret = exynos_set_parent("mout_g3d_pll", "fout_g3d_pll");
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to exynos_set_parent [fout_g3d_pll]\n");
-		return 0;
-	}
-*/
 	return 0;
 }
 
-static void pm_callback_runtime_off(kbase_device *kbdev)
+void pm_callback_runtime_off(kbase_device *kbdev)
 {
 	pr_debug("g3d turn off\n");
 	kbase_platform_clock_off(kbdev);
