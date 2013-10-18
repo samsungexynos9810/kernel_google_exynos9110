@@ -19,10 +19,30 @@
 
 #include "s6e3fa0_gamma.h"
 
+#include "decon_display_driver.h"
+
 #define GAMMA_PARAM_SIZE 26
 #define MAX_BRIGHTNESS 255
 #define MIN_BRIGHTNESS 0
 #define DEFAULT_BRIGHTNESS 0
+
+struct decon_lcd s6e3fa0_lcd_info = {
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	.mode = COMMAND_MODE,
+#else
+	.mode = VIDEO_MODE,
+#endif
+	.vfp = 1,
+	.vbp = 10,
+	.hfp = 1,
+	.hbp = 1,
+
+	.vsa = 1,
+	.hsa = 1,
+
+	.xres = 1080,
+	.yres = 1920,
+};
 
 static struct mipi_dsim_device *dsim_base;
 static struct backlight_device *bd;
@@ -169,6 +189,12 @@ static const unsigned char SEQ_DISPCTL[] = {
 	0xF2,
 	0x02, 0x03, 0xC, 0xA0, 0x01, 0x48
 };
+
+struct decon_lcd * decon_get_lcd_info()
+{
+	return &s6e3fa0_lcd_info;
+}
+EXPORT_SYMBOL(decon_get_lcd_info);
 
 static int s6e3fa0_get_brightness(struct backlight_device *bd)
 {
@@ -325,6 +351,67 @@ static int s6e3fa0_probe(struct mipi_dsim_device *dsim)
 	return 1;
 }
 
+#ifdef CONFIG_DECON_MIC
+int init_lcd_mic(struct mipi_dsim_device *dsim)
+{
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+		(unsigned int)SEQ_TEST_KEY_ON_F0,
+			ARRAY_SIZE(SEQ_TEST_KEY_ON_F0)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_F0 command.\n");
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)SEQ_TEST_KEY_ON_F1,
+				ARRAY_SIZE(SEQ_TEST_KEY_ON_F1)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_FC command.\n");
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)SEQ_TEST_KEY_ON_FC,
+				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_ON_FC command.\n");
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)ED,
+				ARRAY_SIZE(ED)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_TOUCHKEY_OFF command.\n");
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)FD,
+				ARRAY_SIZE(FD)) == -1)
+		dev_err(dsim->dev, "fail to send FD command.\n");
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+		0xF6, 0x08);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x35, 0x0);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+		0xF9, 0x2B);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x11, 0);
+
+	msleep(120);
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)EB,
+				ARRAY_SIZE(EB)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_TEST_KEY_OFF_FC command.\n");
+
+	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
+			(unsigned int)C0,
+				ARRAY_SIZE(C0)) == -1)
+		dev_err(dsim->dev, "fail to send SEQ_DISPCTL command.\n");
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x29, 0);
+
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+		0x35, 0x0);
+
+	return 1;
+}
+#else
 static void init_lcd(struct mipi_dsim_device *dsim)
 {
 	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
@@ -372,6 +459,11 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 
 	msleep(120);
 #endif
+#ifdef CONFIG_DECON_MIC
+	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+		0xF9, 0x2B);
+#endif
+	mdelay(20);
 	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
 		0x11, 0);
 
@@ -418,10 +510,15 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 
 	dev_info(dsim->dev, "is displaying in VIDEO(RGB) mode\n");
 }
+#endif
 
 static int s6e3fa0_displayon(struct mipi_dsim_device *dsim)
 {
+#ifdef CONFIG_DECON_MIC
+	init_lcd_mic(dsim);
+#else
 	init_lcd(dsim);
+#endif
 	return 1;
 }
 
