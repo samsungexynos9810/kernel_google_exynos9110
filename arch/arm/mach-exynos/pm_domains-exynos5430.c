@@ -33,8 +33,27 @@ static int exynos_pd_maudio_power_on_post(struct exynos_pm_domain *pd)
 
 static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
+	unsigned long timeout;
+
 	DEBUG_PRINT_INFO("EXYNOS5430_DIV_G3D: %08x\n", __raw_readl(EXYNOS5430_DIV_G3D));
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
+
+	__raw_writel((((__raw_readl(EXYNOS5430_G3D_PLL_CON0) & 0x3F00)>>8)*200+1),EXYNOS5430_G3D_PLL_LOCK);
+	__raw_writel(__raw_readl(EXYNOS5430_G3D_PLL_CON0) | (0xe << 28) , EXYNOS5430_G3D_PLL_CON0);
+
+	/* Wait max 1ms */
+	timeout = 100;
+	while(__raw_readl(EXYNOS5430_G3D_PLL_CON0) & (0x1 << 29)) {
+		if (timeout == 0) {
+			pr_err(PM_DOMAIN_PREFIX "exynos_pd_g3d_power_on_post, timeout\n");
+			return -ETIMEDOUT;
+		}
+		--timeout;
+		cpu_relax();
+		usleep_range(8, 10);
+	}
+
+	DEBUG_PRINT_INFO("EXYNOS5430_G3d_PLL_LOCK: %08x\n", __raw_readl(EXYNOS5430_G3D_PLL_LOCK));
 
 	return 0;
 }
