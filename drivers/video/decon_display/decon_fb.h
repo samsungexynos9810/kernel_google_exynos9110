@@ -230,6 +230,11 @@ struct s3c_reg_data {
 	struct s3c_dma_buf_data	dma_buf_data[S3C_FB_MAX_WIN];
 	unsigned int		bandwidth;
 	u32			win_overlap_cnt;
+	int 			otf_state[S3C_FB_MAX_WIN];
+	u32 			x[S3C_FB_MAX_WIN];
+	u32			y[S3C_FB_MAX_WIN];
+	u32 			w[S3C_FB_MAX_WIN];
+	u32 			h[S3C_FB_MAX_WIN];
 };
 #endif
 
@@ -268,7 +273,7 @@ struct s3c_fb_win {
 	struct v4l2_subdev sd; /* Take a window as a v4l2_subdevice */
 #endif
 	int local; /* use of local path gscaler to window in fimd */
-	bool ready_to_dma;
+	unsigned long state;
 };
 
 /**
@@ -411,6 +416,13 @@ enum s3c_fb_blending {
 	S3C_FB_BLENDING_MAX = 3,
 };
 
+enum otf_status {
+	S3C_FB_DMA,
+	S3C_FB_LOCAL,
+	S3C_FB_STOP_DMA,
+	S3C_FB_READY_TO_LOCAL,
+};
+
 struct s3c_fb_win_config {
 	enum {
 		S3C_FB_WIN_STATE_DISABLED = 0,
@@ -435,6 +447,12 @@ struct s3c_fb_win_config {
 	int	y;
 	__u32	w;
 	__u32	h;
+	int otf_state;
+};
+
+enum {
+	DMA,
+	OTF,
 };
 
 struct s3c_fb_win_config_data {
