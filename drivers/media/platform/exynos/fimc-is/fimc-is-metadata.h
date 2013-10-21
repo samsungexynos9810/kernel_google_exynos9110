@@ -578,7 +578,15 @@ enum aa_scene_mode {
 	AA_SCENE_MODE_DUAL,
 	AA_SCENE_MODE_DRAMA,
 	AA_SCENE_MODE_ANIMATED,
-	AA_SCENE_MODE_PANAROMA
+	AA_SCENE_MODE_PANORAMA,
+	AA_SCENE_MODE_GOLF,
+	AA_SCENE_MODE_PREVIEW,
+	AA_SCENE_MODE_VIDEO,
+	AA_SCENE_MODE_SLOWMOTION_2,
+	AA_SCENE_MODE_SLOWMOTION_4_8,
+	AA_SCENE_MODE_DUAL_PREVIEW,
+	AA_SCENE_MODE_DUAL_VIDEO,
+	AA_SCENE_MODE_120_PREVIEW
 };
 
 enum aa_effect_mode {
@@ -642,17 +650,23 @@ enum aa_awbmode {
 };
 
 enum aa_afmode {
+	/* These modes are adjusted immediatly */
 	AA_AFMODE_OFF = 1,
-	AA_AFMODE_AUTO,
-	AA_AFMODE_MACRO,
-	AA_AFMODE_CONTINUOUS_VIDEO,
-	AA_AFMODE_CONTINUOUS_PICTURE,
+	AA_AFMODE_SLEEP,
 	AA_AFMODE_INFINITY,
+
+	/* Single AF. These modes are adjusted when afTrigger is changed from 0 to 1 */
+	AA_AFMODE_AUTO = 11,
+	AA_AFMODE_MACRO,
 	AA_AFMODE_AUTO_VIDEO,
 	AA_AFMODE_AUTO_FACE,
+
+	/* Continuous AF. These modes are adjusted when afTrigger is changed from 0 to 1 */
+	AA_AFMODE_CONTINUOUS_PICTURE = 21,
+	AA_AFMODE_CONTINUOUS_VIDEO,
 	AA_AFMODE_CONTINUOUS_PICTURE_FACE,
-	AA_AFMODE_SLEEP,
-	AA_AFMODE_EDOF
+
+	AA_AFMODE_EDOF = 31,
 };
 
 enum aa_afstate {
@@ -832,8 +846,12 @@ struct camera2_sm {
 struct camera2_lens_uctl {
 	struct camera2_lens_ctl ctl;
 
-	/** It depends by af algorithm(normally 255 or 1023) */
-	uint32_t        maxPos;
+	/** It depends by posSize */
+	uint32_t        pos;
+	/** It depends by af algorithm(AF pos bit. normally 8 or 9 or 10) */
+	uint32_t        posSize;
+	/** It depends by af algorithm */
+	uint32_t        direction;
 	/** Some actuator support slew rate control. */
 	uint32_t        slewRate;
 };
@@ -842,8 +860,12 @@ struct camera2_lens_uctl {
 	User-defined metadata for lens.
 */
 struct camera2_lens_udm {
-	/** It depends by af algorithm(normally 255 or 1023) */
-	uint32_t        maxPos;
+	/** It depends by posSize */
+	uint32_t        pos;
+	/** It depends by af algorithm(AF pos bit. normally 8 or 9 or 10) */
+	uint32_t        posSize;
+	/** It depends by af algorithm */
+	uint32_t        direction;
 	/** Some actuator support slew rate control. */
 	uint32_t        slewRate;
 };
