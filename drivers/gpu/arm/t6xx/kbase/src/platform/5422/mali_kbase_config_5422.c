@@ -165,49 +165,15 @@ void kbase_device_runtime_disable(struct kbase_device *kbdev)
 
 static int pm_callback_runtime_on(kbase_device *kbdev)
 {
-	int ret;
-	struct clk *mout_vpll = NULL, *aclk_g3d_sw = NULL, *aclk_g3d_dout = NULL;
-	struct device *dev =  kbdev->osdev.dev;
-	struct exynos_context * platform = (struct exynos_context *) kbdev->platform_context;
-
 	pr_debug("g3d turn on\n");
-
 	kbase_platform_clock_on(kbdev);
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
 		return -EPERM;
 #endif
-	mout_vpll = clk_get(dev, "mout_vpll");
-	if (IS_ERR(mout_vpll)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [mout_vpll]\n");
-		return 0;
-	}
-	aclk_g3d_dout = clk_get(dev, "aclk_g3d_dout");
-	if (IS_ERR(aclk_g3d_dout)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d_dout]\n");
-		return 0;
-	}
-	aclk_g3d_sw = clk_get(dev, "aclk_g3d_sw");
-	if (IS_ERR(aclk_g3d_sw)) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_get [aclk_g3d_sw]\n");
-		return 0;
-	}
-
-	ret = clk_set_parent(platform->aclk_g3d, aclk_g3d_sw);
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [platform->aclk_g3d]\n");
-		return 0;
-	}
-	ret = clk_set_parent(aclk_g3d_sw, aclk_g3d_dout);
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d_sw]\n");
-		return 0;
-	}
-	ret = clk_set_parent(aclk_g3d_dout, mout_vpll);
-	if (ret < 0) {
-		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "failed to clk_set_parent [aclk_g3d_dout]\n");
-		return 0;
-	}
+	exynos_set_parent("mout_aclk_g3d_user", "mout_aclk_g3d_sw");
+	exynos_set_parent("mout_aclk_g3d_sw", "dout_aclk_g3d");
+	exynos_set_parent("mout_aclk_g3d", "sclk_vpll");
 
 	return 0;
 }
