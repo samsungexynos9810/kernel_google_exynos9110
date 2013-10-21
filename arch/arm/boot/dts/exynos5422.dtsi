@@ -138,6 +138,12 @@
 	mali {
 		compatible = "arm,mali";
 		reg = <0x11800000 0x5000>;
-		interrupts = <0 117 0>, <0 219 0>, <0 74 0>;
+		interrupts = <0 219 0>, <0 74 0>, <0 117 0>;
+		samsung,power-domain = <&pd_g3d>;
 	};
+
+	pd_g3d: pd-g3d@0x10044080 {
+        compatible = "samsung,exynos5422-pd";
+        reg = <0x10044080 0x20>;
+    };
 };
