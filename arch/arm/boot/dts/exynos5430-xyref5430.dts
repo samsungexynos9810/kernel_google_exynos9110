@@ -182,7 +182,7 @@
 				};
 
 				buck5_reg: BUCK5 {
-					regulator-name = "vdd_disp/cam0";
+					regulator-name = "vdd_disp_cam0";
 					regulator-min-microvolt = <600000>;
 					regulator-max-microvolt = <1500000>;
 					regulator-always-on;
