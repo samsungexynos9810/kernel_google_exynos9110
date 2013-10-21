@@ -41,7 +41,6 @@ int gsc_out_hw_reset_off(struct gsc_dev *gsc)
 int gsc_out_hw_set(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *gsc = ctx->gsc_dev;
-	struct gsc_pipeline *p = &gsc->pipeline;
 	int ret = 0;
 
 	ret = gsc_set_scaler_info(ctx);
@@ -80,30 +79,11 @@ int gsc_out_hw_set(struct gsc_ctx *ctx)
 	gsc_hw_set_v_coef(ctx);
 	gsc_hw_set_input_rotation(ctx);
 
-	ret = v4l2_subdev_call(p->disp, core, ioctl,
-			S3CFB_SHADOW_PROTECT, (void*)true);
-	if (ret) {
-		gsc_err("Decon subdev ioctl failed");
-		return ret;
-	}
-
 	gsc_hw_enable_localout(ctx, true);
 	ret = gsc_wait_operating(gsc);
 	if (ret < 0) {
 		gsc_err("wait operation timeout");
 		return -EINVAL;
-	}
-
-	gsc_pipeline_s_stream(gsc, true);
-
-	ret = v4l2_subdev_call(p->disp, core, ioctl,
-			S3CFB_SHADOW_PROTECT, (void*)false);
-	if (!ret)
-		ret = v4l2_subdev_call(p->disp, core, ioctl,
-				S3CFB_STAND_ALONE_UPDATE, NULL);
-	if (ret) {
-		gsc_err("Decon subdev ioctl failed");
-		return ret;
 	}
 
 	return 0;
@@ -250,7 +230,9 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 	struct v4l2_rect *r;
 	struct gsc_frame *f;
 
-	gsc_dbg("(%d,%d)/%dx%d", crop->rect.left, crop->rect.top, crop->rect.width, crop->rect.height);
+	gsc_dbg("id(%d), rot(%d)(%d,%d)/%dx%d", gsc->id,
+		ctx->gsc_ctrls.rotate->val, crop->rect.left,
+		crop->rect.top, crop->rect.width, crop->rect.height);
 
 	if (crop->pad == GSC_PAD_SINK) {
 		gsc_err("Sink pad set_fmt is not supported\n");
@@ -264,7 +246,6 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 		r->width = crop->rect.width;
 		r->height = crop->rect.height;
 	} else {
-		struct gsc_pipeline *p = &gsc->pipeline;
 		int ret = 0;
 		f = &ctx->d_frame;
 		f->crop.left = crop->rect.left;
@@ -273,12 +254,6 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 		f->crop.height = crop->rect.height;
 
 		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
-			ret = v4l2_subdev_call(p->disp, core, ioctl,
-				S3CFB_SHADOW_PROTECT, (void*)true);
-			if (ret) {
-				gsc_err("Decon subdev ioctl failed");
-				return ret;
-			}
 			ret = gsc_set_scaler_info(ctx);
 			if (ret) {
 				gsc_err("Scaler setup error");
@@ -287,32 +262,15 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 			gsc_hw_set_out_size(ctx);
 			gsc_hw_set_prescaler(ctx);
 			gsc_hw_set_mainscaler(ctx);
+			gsc_hw_set_h_coef(ctx);
+			gsc_hw_set_v_coef(ctx);
+			gsc_hw_set_input_rotation(ctx);
 
 			gsc_hw_set_smart_if_pix_num(ctx);
 			gsc_hw_set_smart_if_con(gsc, true);
 			gsc_hw_set_sfr_update(ctx);
-			ret = v4l2_subdev_call(p->disp, pad, set_crop,
-				fh, crop);
-			if (ret) {
-				gsc_err("Decon subdev ioctl failed");
-				return ret;
-			}
-			ret = v4l2_subdev_call(p->disp, core, ioctl,
-				S3CFB_SHADOW_PROTECT, (void*)false);
-			if (!ret) {
-				ret = v4l2_subdev_call(p->disp, core,
-					ioctl, S3CFB_SYNC_SLAVE_UPDATE,
-					NULL);
-				if (ret) {
-					gsc_err("Decon subdev ioctl failed");
-					return ret;
-				}
-			}
 		}
 	}
-
-	gsc_dbg("pad%d: (%d,%d)/%dx%d", crop->pad, crop->rect.left, crop->rect.top,
-	    crop->rect.width, crop->rect.height);
 
 	return 0;
 }
@@ -462,6 +420,7 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 			    struct v4l2_requestbuffers *reqbufs)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
+	struct gsc_pipeline *p = &gsc->pipeline;
 	struct gsc_output_device *out = &gsc->out;
 	struct gsc_frame *frame;
 	int ret;
@@ -478,6 +437,17 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 	frame = ctx_get_frame(out->ctx, reqbufs->type);
 	frame->cacheable = out->ctx->gsc_ctrls.cacheable->val;
 	gsc->vb2->set_cacheable(gsc->alloc_ctx, frame->cacheable);
+
+	if (reqbufs->count == 0) {
+		ret = v4l2_subdev_call(p->disp, core, ioctl,
+				S3CFB_FLUSH_WORKQUEUE, NULL);
+		if (ret) {
+			gsc_err("Decon subdev ioctl failed");
+			return ret;
+		}
+		return 0;
+	}
+
 	ret = vb2_reqbufs(&out->vbq, reqbufs);
 	if (ret)
 		return ret;
@@ -502,17 +472,10 @@ static int gsc_output_streamon(struct file *file, void *priv,
 	struct gsc_output_device *out = &gsc->out;
 	struct media_pad *sink_pad;
 	int ret;
-
 	sink_pad = media_entity_remote_source(&out->sd_pads[GSC_PAD_SOURCE]);
 	if (IS_ERR(sink_pad)) {
 		gsc_err("No sink pad conncted with a gscaler source pad");
 		return PTR_ERR(sink_pad);
-	}
-
-	ret = gsc_out_link_validate(&out->sd_pads[GSC_PAD_SOURCE], sink_pad);
-	if (ret) {
-		gsc_err("Output link validation is failed");
-		return ret;
 	}
 
 	ret = media_entity_pipeline_start(&out->vfd->entity,
@@ -650,61 +613,19 @@ static const struct v4l2_ioctl_ops gsc_output_ioctl_ops = {
 	.vidioc_cropcap			= gsc_output_cropcap,
 };
 
-static int gsc_out_video_s_stream(struct gsc_dev *gsc, int enable)
-{
-	struct gsc_output_device *out = &gsc->out;
-	struct media_pad *sink_pad;
-	struct v4l2_subdev *sd;
-	int ret = 0;
-
-	sink_pad = media_entity_remote_source(&out->vd_pad);
-	if (IS_ERR(sink_pad)) {
-		gsc_err("No sink pad conncted with a gscaler video source pad");
-		return PTR_ERR(sink_pad);
-	}
-	sd = media_entity_to_v4l2_subdev(sink_pad->entity);
-	ret = v4l2_subdev_call(sd, video, s_stream, enable);
-	if (ret)
-		gsc_err("G-Scaler subdev s_stream[%d] failed", enable);
-
-	return ret;
-}
-
 static int gsc_out_start_streaming(struct vb2_queue *q, unsigned int count)
 {
-	struct gsc_ctx *ctx = q->drv_priv;
-	struct gsc_dev *gsc = ctx->gsc_dev;
-
-	return gsc_out_video_s_stream(gsc, 1);
+	return 0;
 }
 
 static int gsc_out_stop_streaming(struct vb2_queue *q)
 {
 	struct gsc_ctx *ctx = q->drv_priv;
 	struct gsc_dev *gsc = ctx->gsc_dev;
-	struct gsc_pipeline *p = &gsc->pipeline;
-	int ret = 0;
-
-	ret = v4l2_subdev_call(p->disp, core, ioctl,
-			S3CFB_SHADOW_PROTECT, (void*)true);
-	if (ret) {
-		gsc_err("Decon subdev ioctl failed");
-		return ret;
-	}
-
-	ret = gsc_pipeline_s_stream(gsc, false);
-	if (ret)
-		return ret;
-
-	ret = gsc_out_video_s_stream(gsc, 0);
-	if (ret) {
-		gsc_err("G-Scaler video s_stream off failed");
-		return ret;
-	}
 
 	media_entity_pipeline_stop(&gsc->out.vfd->entity);
 
-	return ret;
+	return 0;
 }
 
 static int gsc_out_queue_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
@@ -791,8 +712,8 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 			spin_unlock_irqrestore(&gsc->slock, flags);
 			return;
 		}
-		gsc_hw_set_in_pingpong_update(gsc);
 		gsc_hw_set_input_buf_masking(gsc, vb->v4l2_buf.index, false);
+		gsc_hw_set_sfr_update(ctx);
 		spin_unlock_irqrestore(&gsc->slock, flags);
 	} else {
 		gsc_err("All requested buffers have been queued already");
@@ -831,7 +752,8 @@ static int gsc_out_link_setup(struct media_entity *entity,
 				gsc->pipeline.disp = sd;
 				if (!strcmp(sd->name, name)) {
 					gsc->out.ctx->out_path = GSC_FIMD;
-					gsc_dbg("link enable");
+					gsc_info("LINK Enable(%d)",
+							gsc->id);
 				} else {
 					gsc->out.ctx->out_path = GSC_MIXER;
 				}
@@ -840,7 +762,8 @@ static int gsc_out_link_setup(struct media_entity *entity,
 		} else if (!(flags & ~MEDIA_LNK_FL_ENABLED)) {
 			if (gsc->pipeline.disp != NULL) {
 				if (gsc->out.ctx->out_path == GSC_FIMD)
-					gsc_dbg("link disable");
+					gsc_info("LINK Disable(%d)",
+							gsc->id);
 				gsc->pipeline.disp = NULL;
 				gsc->out.ctx->out_path = 0;
 			} else
@@ -1134,8 +1057,7 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 	if (ret)
 		goto err_sd_reg;
 
-	gsc_info("gsc output driver registered as /dev/video%d, ctx(0x%08x)",
-		vfd->num, (u32)ctx);
+	gsc_dbg("gsc output driver registered as /dev/video%d, ctx(0x%08x)", vfd->num, (u32)ctx);
 	return 0;
 
 err_sd_reg:
