@@ -31,7 +31,6 @@ static int exynos_pd_status(struct exynos_pm_domain *pd)
 {
 	if (unlikely(!pd))
 		return -EINVAL;
-
 	mutex_lock(&pd->access_lock);
 	if (likely(pd->base)) {
 		/* check STATUS register */
@@ -51,9 +50,6 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 
 	mutex_lock(&pd->access_lock);
 	if (likely(pd->base)) {
-		/* sc_feedback to OPTION register */
-		__raw_writel(0x0102, pd->base+0x8);
-
 		/* on/off value to CONFIGURATION register */
 		__raw_writel(power_flags, pd->base);
 
@@ -62,12 +58,11 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 		/* check STATUS register */
 		while ((__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) != power_flags) {
 			if (timeout == 0) {
-				pr_err("%s@%p: %08x, %08x, %08x\n",
+				pr_err("%s@%p: %08x, %08x\n",
 						pd->genpd.name,
 						pd->base,
 						__raw_readl(pd->base),
-						__raw_readl(pd->base+4),
-						__raw_readl(pd->base+8));
+						__raw_readl(pd->base+4));
 				pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
 				return -ETIMEDOUT;
 			}
@@ -77,22 +72,20 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 		}
 		if (unlikely(timeout < 50)) {
 			pr_warn(PM_DOMAIN_PREFIX "long delay found during %s is %s\n", pd->name, power_flags ? "on":"off");
-			pr_warn("%s@%p: %08x, %08x, %08x\n",
+			pr_warn("%s@%p: %08x, %08x\n",
 					pd->name,
 					pd->base,
 					__raw_readl(pd->base),
-					__raw_readl(pd->base+4),
-					__raw_readl(pd->base+8));
+					__raw_readl(pd->base+4));
 		}
 	}
 	pd->status = power_flags;
 	mutex_unlock(&pd->access_lock);
 
-	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
+	DEBUG_PRINT_INFO("%s@%p: %08x, %08x\n",
 				pd->genpd.name, pd->base,
 				__raw_readl(pd->base),
-				__raw_readl(pd->base+4),
-				__raw_readl(pd->base+8));
+				__raw_readl(pd->base+4));
 
 	return 0;
 }
@@ -128,7 +121,7 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 		return ret;
 	}
 
-#ifdef CONFIG_EXYNOS5430_BTS
+#ifdef CONFIG_EXYNOS5422_BTS
 	/* enable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, true);
@@ -162,7 +155,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 	if (pd->cb && pd->cb->off_pre)
 		pd->cb->off_pre(pd);
 
-#ifdef CONFIG_EXYNOS5430_BTS
+#ifdef CONFIG_EXYNOS5422_BTS
 	/* disable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, false);
@@ -182,7 +175,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 
 #ifdef CONFIG_OF
 
-#ifdef CONFIG_EXYNOS5430_BTS
+#ifdef CONFIG_EXYNOS5422_BTS
 /**
  *  of_device_bts_is_available - check if bts feature is enabled or not
  *
@@ -221,7 +214,7 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
 
-#ifdef CONFIG_EXYNOS5430_BTS
+#ifdef CONFIG_EXYNOS5422_BTS
 	do {
 		int ret;
 
@@ -248,7 +241,7 @@ static void show_power_domain(void)
 {
 	struct device_node *np;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
 		struct platform_device *pdev;
 		struct exynos_pm_domain *pd;
 
@@ -377,7 +370,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 	struct platform_device *pdev = NULL;
 	struct device_node *np = NULL;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
 		struct exynos_pm_domain *pd;
 		struct device_node *children;
 
@@ -450,7 +443,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 	}
 
 	/* EXCEPTION: add physical sub-pd to master pd using device tree */
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
 		struct exynos_pm_domain *parent_pd, *child_pd;
 		struct device_node *parent;
 		struct platform_device *parent_pd_pdev, *child_pd_pdev;
