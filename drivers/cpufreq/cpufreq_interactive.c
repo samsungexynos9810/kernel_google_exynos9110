@@ -1352,10 +1352,6 @@ static int __init cpufreq_interactive_init(void)
 
 	sched_setscheduler_nocheck(speedchange_task, SCHED_FIFO, &param);
 	get_task_struct(speedchange_task);
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-	if (exynos_boot_cluster == CA15)
-		kthread_bind(speedchange_task, NR_CA15);
-#endif
 
 	/* NB: wake up so the thread does not look hung to the freezer */
 	wake_up_process(speedchange_task);
