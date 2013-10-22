@@ -200,7 +200,11 @@ struct devfreq_clk_state aclk_isp_400_mfc_pll[] = {
 	{MOUT_ACLK_ISP_400,	MOUT_MFC_PLL_USER},
 };
 
-struct devfreq_clk_state mux_aclk_isp_dis_400[] = {
+struct devfreq_clk_state mux_aclk_isp_dis_400_bus_pll[] = {
+	{MOUT_ACLK_ISP_DIS_400,	MOUT_BUS_PLL_USER},
+};
+
+struct devfreq_clk_state mux_aclk_isp_dis_400_mfc_pll[] = {
 	{MOUT_ACLK_ISP_DIS_400,	MOUT_MFC_PLL_USER},
 };
 
@@ -254,9 +258,14 @@ struct devfreq_clk_states aclk_isp_400_mfc_pll_list = {
 	.state_count = ARRAY_SIZE(aclk_isp_400_mfc_pll),
 };
 
-struct devfreq_clk_states aclk_isp_dis_400_list = {
-	.state = mux_aclk_isp_dis_400,
-	.state_count = ARRAY_SIZE(mux_aclk_isp_dis_400),
+struct devfreq_clk_states aclk_isp_dis_400_bus_pll_list = {
+	.state = mux_aclk_isp_dis_400_bus_pll,
+	.state_count = ARRAY_SIZE(mux_aclk_isp_dis_400_bus_pll),
+};
+
+struct devfreq_clk_states aclk_isp_dis_400_mfc_pll_list = {
+	.state = mux_aclk_isp_dis_400_mfc_pll,
+	.state_count = ARRAY_SIZE(mux_aclk_isp_dis_400_mfc_pll),
 };
 
 struct devfreq_clk_info isp_pll[] = {
@@ -521,21 +530,12 @@ struct devfreq_clk_info aclk_cam1_333[] = {
 };
 
 struct devfreq_clk_info aclk_fd_400[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
-	{LV0,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV1,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV2,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV3,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV4,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV5,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
 	{LV0,	400000000,	0,	&aclk_fd_400_bus_pll_list},
 	{LV1,	167000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV2,	334000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV3,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV4,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV5,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-#endif
 };
 
 struct devfreq_clk_info aclk_csis2_333[] = {
@@ -557,30 +557,21 @@ struct devfreq_clk_info aclk_lite_c[] = {
 };
 
 struct devfreq_clk_info aclk_isp_400[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV1,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV2,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV3,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV4,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV5,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV1,	167000000,	0,	&aclk_isp_400_mfc_pll_list},
+	{LV1,	160000000,	0,	&aclk_isp_400_bus_pll_list},
 	{LV2,	334000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV3,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV4,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV5,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-#endif
 };
 
 struct devfreq_clk_info aclk_isp_dis_400[] = {
-	{LV0,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV1,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV2,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV3,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV4,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV5,	 84000000,	0,	&aclk_isp_dis_400_list},
+	{LV0,	400000000,	0,	&aclk_isp_dis_400_bus_pll_list},
+	{LV1,	160000000,	0,	&aclk_isp_dis_400_bus_pll_list},
+	{LV2,	334000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV3,	 84000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV4,	 84000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV5,	 84000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 };
 
 struct devfreq_clk_info sclk_lite_freecnt_c[] = {
@@ -604,7 +595,7 @@ struct devfreq_clk_info *devfreq_clk_isp_info_list[] = {
 	aclk_csis1,
 	aclk_lite_b,
 	aclk_3aa1,
-	aclk_lite_c,
+	aclk_lite_d,
 	sclk_pixel_init_552,
 	sclk_pixel_333,
 	aclk_cam1_552,
