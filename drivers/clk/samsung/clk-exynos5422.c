@@ -383,6 +383,8 @@ enum exynos5422_clks {
 	mout_fimd1_opt,
 	mout_fimd1,
 	mout_fimd1_final,
+	mout_mdnie1,
+	mout_fimd1_mdnie1,
 	mout_hdmi,
 
 		/* MAU */
@@ -668,7 +670,7 @@ PNAME(group3_p)		= { "sclk_rpll", "sclk_spll" };
 PNAME(group4_p)		= { "sclk_ipll", "sclk_dpll", "sclk_mpll" };
 PNAME(group5_p)		= { "sclk_vpll", "sclk_dpll" };
 
-
+PNAME(mout_fimd1_mdnie1_p) = { "mout_fimd1", "mout_mdnie1" };
 PNAME(mout_aclk_66_sw_p)	= { "dout_aclk66", "sclk_spll" };
 PNAME(mout_aclk_66_peric_user_p)	= { "fin_pll", "mout_sw_aclk66" };
 
@@ -700,8 +702,8 @@ PNAME(mout_aclk_300_gscl_user_p)	= { "fin_pll", "mout_aclk_300_gscl_sw" };
 
 PNAME(mout_aclk_200_disp1_user_p)	= { "fin_pll", "mout_aclk_200_disp1_sw" };
 
-PNAME(mout_aclk_300_disp1_sw_p) = { "dout_aclk_200_disp1", "sclk_spll"};
-PNAME(mout_aclk_300_disp1_user_p)	= { "fin_pll", "mout_aclk_200_disp1_sw" };
+PNAME(mout_aclk_300_disp1_sw_p) = { "dout_aclk_300_disp1", "sclk_spll"};
+PNAME(mout_aclk_300_disp1_user_p)	= { "fin_pll", "mout_aclk_300_disp1_sw" };
 
 PNAME(mout_aclk_300_jpeg_sw_p) = { "dout_aclk_300_jpeg", "sclk_spll"};
 PNAME(mout_aclk_300_jpeg_user_p)	= { "fin_pll", "mout_aclk_300_jpeg_sw" };
@@ -832,6 +834,8 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 
 
 	CMX(mout_fimd1, "mout_fimd1", group3_p, EXYNOS5_CLK_SRC_DISP10, 4, 1),
+	CMX(mout_mdnie1, "mout_mdine1", group2_p, EXYNOS5_CLK_SRC_DISP10, 8, 3),
+	CMX(mout_fimd1_mdnie1, "mout_fimd1_mdnie1", mout_fimd1_mdnie1_p, EXYNOS5_CLKSRC_CMUTOP_SPARE2, 8, 1),
 	CMX(mout_mipi1, "mout_mipi1", group2_p, EXYNOS5_CLK_SRC_DISP10, 16, 3),
 	CMX(mout_dp1_ext_mst_vid, "mout_dp1_ext_mst_vid", group2_p, EXYNOS5_CLK_SRC_DISP10, 20, 3),
 	CMX(mout_pixel, "mout_pixel", group2_p, EXYNOS5_CLK_SRC_DISP10, 24, 3),
@@ -904,7 +908,7 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_aclk_300_gscl, "mout_aclk_300_gscl", EXYNOS5_CLK_DIV_TOP2, 28, 3),
 
 	/* DISP1 Block */
-	CDIV(dout_fimd1, "mout_fimd1", EXYNOS5_CLK_DIV_DISP10, 0, 4),
+	CDIV(dout_fimd1, "mout_fimd1_mdnie1", EXYNOS5_CLK_DIV_DISP10, 0, 4),
 	CDIV(dout_mipi1, "mout_mipi1", EXYNOS5_CLK_DIV_DISP10, 16, 8),
 	CDIV(dout_dp1_ext_mst_vid, "mout_dp1_ext_mst_vid", EXYNOS5_CLK_DIV_DISP10, 24, 4),
 	CDIV(dout_hdmi_pixel, "mout_pixel", EXYNOS5_CLK_DIV_DISP10, 28, 4),
@@ -1163,7 +1167,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(fimc_lite3, "fimc_lite3", "aclk_333_432_gscl",
 			EXYNOS5_CLK_GATE_IP_GSCL1, 17, 0, 0),
 
-	CGATE(fimd1, "fimd1", "aclk_300_disp1", EXYNOS5_CLK_GATE_IP_DISP1, 0, 0, 0),
+	CGATE(fimd1, "fimd1", "mout_aclk_300_disp1_user", EXYNOS5_CLK_GATE_IP_DISP1, 0, 0, 0),
 	CGATE(dsim1, "dsim1", "aclk_200_disp1", EXYNOS5_CLK_GATE_IP_DISP1, 3, 0, 0),
 	CGATE(dp1, "dp1", "aclk_200_disp1", EXYNOS5_CLK_GATE_IP_DISP1, 4, 0, 0),
 	CGATE(mixer, "mixer", "aclk_166", EXYNOS5_CLK_GATE_IP_DISP1, 5, 0, 0),
