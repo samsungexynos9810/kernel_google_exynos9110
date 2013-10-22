@@ -123,8 +123,8 @@ typedef struct _mali_dvfs_info{
 } mali_dvfs_info;
 
 mali_dvfs_info mali_dvfs_infotbl[] = {
-//       {975000, 160, 0, 160, 0, 160000, 83000, 250000},
-       {975000, 266, 0, 100, 0, 160000, 83000, 250000},
+       {975000, 160, 0, 90, 0, 160000, 83000, 250000},
+       {975000, 266, 54, 100, 0, 160000, 83000, 250000},
        {1000000, 350, 60, 90, 0, 400000, 222000, 250000},
        {1050000, 420, 70, 90, 0, 667000, 333000, 250000},
        {1100000, 480, 78, 100, 0, 800000, 400000, 250000},
@@ -159,7 +159,7 @@ static void update_time_in_state(int level);
 /*dvfs status*/
 static mali_dvfs_status mali_dvfs_status_current;
 #ifdef MALI_DVFS_ASV_ENABLE
-static const unsigned int mali_dvfs_vol_default[] = { 975000, 1000000, 1050000, 1100000 };
+static const unsigned int mali_dvfs_vol_default[] = { 975000, 975000, 1000000, 1050000, 1100000 };
 
 
 static int mali_dvfs_update_asv(int cmd)
