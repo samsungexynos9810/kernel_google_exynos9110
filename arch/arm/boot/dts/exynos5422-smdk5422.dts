@@ -17,7 +17,7 @@
 	compatible = "samsung,SMDK5422", "samsung,exynos5422";
 
 	chosen {
-		bootargs = "root=/dev/ram0 rw ramdisk=8192 initrd=0x21000000,8M console=ttySAC2,115200 init=/linuxrc clk_ignore_unused";
+		bootargs = "console=ttySAC2,115200 vmalloc=512M clk_ignore_unused";
 	};
 
 	fixed-rate-clocks {
