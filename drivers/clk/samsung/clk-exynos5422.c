@@ -14,7 +14,7 @@
 #include <linux/clk-provider.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#include <mach/regs-clock-exynos5422.h>
+#include <mach/regs-clock.h>
 
 #include "clk.h"
 #include "clk-pll.h"
