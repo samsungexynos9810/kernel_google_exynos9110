@@ -743,31 +743,21 @@ static int gsc_out_link_setup(struct media_entity *entity,
 		struct v4l2_subdev *sd;
 		if (flags & MEDIA_LNK_FL_ENABLED) {
 			if (gsc->pipeline.disp == NULL) {
-				/* Gscaler 0 --> Winwow 0, Gscaler 1 --> Window 1,
-				   Gscaler 2 --> Window 2, Gscaler 3 --> Window 2 */
-				char name[FIMD_NAME_SIZE];
-				snprintf(name, FIMD_NAME_SIZE, "%s%d",
-				FIMD_ENTITY_NAME, get_win_num(gsc));
 				sd = media_entity_to_v4l2_subdev(remote->entity);
 				gsc->pipeline.disp = sd;
-				if (!strcmp(sd->name, name)) {
-					gsc->out.ctx->out_path = GSC_FIMD;
-					gsc_info("LINK Enable(%d)",
-							gsc->id);
-				} else {
-					gsc->out.ctx->out_path = GSC_MIXER;
-				}
-			} else
+				gsc->out.ctx->out_path = GSC_FIMD;
+				gsc_dbg("LINK Enable(%d)", gsc->id);
+			} else {
 				gsc_err("G-Scaler source pad was linked already");
+			}
 		} else if (!(flags & ~MEDIA_LNK_FL_ENABLED)) {
 			if (gsc->pipeline.disp != NULL) {
-				if (gsc->out.ctx->out_path == GSC_FIMD)
-					gsc_info("LINK Disable(%d)",
-							gsc->id);
+				gsc_dbg("LINK Disable(%d)", gsc->id);
 				gsc->pipeline.disp = NULL;
 				gsc->out.ctx->out_path = 0;
-			} else
+			} else {
 				gsc_err("G-Scaler source pad was unlinked already");
+			}
 		}
 	}
 
@@ -910,6 +900,7 @@ static int gsc_create_subdev(struct gsc_dev *gsc)
 
 	gsc->out.sd_pads[GSC_PAD_SINK].flags = MEDIA_PAD_FL_SINK;
 	gsc->out.sd_pads[GSC_PAD_SOURCE].flags = MEDIA_PAD_FL_SOURCE;
+	sd->grp_id = gsc->id;
 	ret = media_entity_init(&sd->entity, GSC_PADS_NUM,
 				gsc->out.sd_pads, 0);
 	if (ret) {

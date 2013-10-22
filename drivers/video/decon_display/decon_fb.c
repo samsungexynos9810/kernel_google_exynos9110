@@ -2030,12 +2030,10 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			enabled = 1;
 			color_map = 0;
 		}
-		if (enabled) {
+		if (enabled)
 			regs->wincon[i] |= WINCONx_ENWIN;
-		}
-		else {
+		else
 			regs->wincon[i] &= ~WINCONx_ENWIN;
-		}
 
 		/*
 		 * Because BURSTLEN field does not have shadow register,
@@ -2112,6 +2110,7 @@ static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 {
 	struct v4l2_subdev_crop crop;
 	int ret = 0;
+	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
 
 	if (enable) {
 		crop.rect.left = regs->x[i];
@@ -2120,14 +2119,14 @@ static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 		crop.rect.height = regs->h[i];
 		crop.pad = GSC_OUT_PAD_SOURCE;
 		crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
-		ret = v4l2_subdev_call(sfb->md->gsc_sd[0],
+		ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id],
 				pad, set_crop, NULL, &crop);
 		if (ret) {
 			dev_err(sfb->dev, "Gsc set_crop failed\n");
 			goto err;
 		}
 	}
-	ret = v4l2_subdev_call(sfb->md->gsc_sd[0], video,
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id], video,
 				s_stream, enable);
 	if (ret) {
 		dev_err(sfb->dev, "GSC s_stream(%d) failed\n", enable);
@@ -2162,6 +2161,7 @@ static int s3c_fb_change_frame(struct s3c_fb *sfb,
 	struct v4l2_subdev_crop crop;
 	int ret = 0;
 	u32 data = 0;
+	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
 
 	crop.rect.left = regs->x[i];
 	crop.rect.top = regs->y[i];
@@ -2170,7 +2170,7 @@ static int s3c_fb_change_frame(struct s3c_fb *sfb,
 	crop.pad = GSC_OUT_PAD_SOURCE;
 	crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
 
-	ret = v4l2_subdev_call(sfb->md->gsc_sd[0],
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id],
 			pad, set_crop, NULL, &crop);
 	if (ret) {
 		dev_err(sfb->dev, "Gscaler set_crop failed\n");
@@ -2230,9 +2230,9 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	unsigned int data;
 	int ret = 0;
 
-	for (i = 0; i < sfb->variant.nr_windows; i++) {
+	for (i = 0; i < sfb->variant.nr_windows; i++)
 		shadow_protect_win(sfb->windows[i], 1);
-	}
+
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (regs->otf_state[i] == DMA) {
 			set_reg_data(sfb, i, regs);
@@ -2268,20 +2268,24 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 			}
 		}
 	}
-	for (i = 0; i < sfb->variant.nr_windows; i++) {
+	for (i = 0; i < sfb->variant.nr_windows; i++)
 		shadow_protect_win(sfb->windows[i], 0);
-	}
+
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 
-	/* temporaly localpath window is 0 */
-	if (test_bit(S3C_FB_STOP_DMA, &sfb->windows[0]->state)) {
-		data |= DECON_UPDATE_SLAVE_SYNC;
-		clear_bit(S3C_FB_STOP_DMA, &sfb->windows[0]->state);
-	} else if (test_bit(S3C_FB_LOCAL, &sfb->windows[0]->state)) {
-		data |= DECON_UPDATE_SLAVE_SYNC;
+#ifndef DECON_EVT1
+	for (i = 0; i < sfb->variant.nr_windows; i++) {
+		if (test_bit(S3C_FB_STOP_DMA, &sfb->windows[i]->state)) {
+			data |= DECON_UPDATE_SLAVE_SYNC;
+			clear_bit(S3C_FB_STOP_DMA,
+					&sfb->windows[i]->state);
+		} else if (test_bit(S3C_FB_LOCAL,
+				&sfb->windows[i]->state)) {
+			data |= DECON_UPDATE_SLAVE_SYNC;
+		}
 	}
-
+#endif
 	if (readl(sfb->regs + DECON_UPDATE_SHADOW) & (1<<0))
 		pr_err("Error:0x%x\n",
 				readl(sfb->regs + DECON_UPDATE_SHADOW));
@@ -3164,10 +3168,6 @@ static int s3c_fb_register_mc_components(struct s3c_fb_win *win)
 	struct exynos_md *md;
 	struct s3c_fb *sfb = win->parent;
 
-	/* Local paths have been set up only between Gscaler0~2 and Window0~2 */
-	if (win->index >= 3)
-		return -ENODEV;
-
 	if (sfb->md == NULL) {
 		md = (struct exynos_md *)module_name_to_driver_data(MDEV_MODULE_NAME);
 
@@ -3216,6 +3216,7 @@ static int s3c_fb_create_mc_links(struct s3c_fb_win *win)
 	char err[80];
 	struct exynos_md *md;
 	struct s3c_fb *sfb = win->parent;
+	int i;
 
 	if (win->use)
 		flags = MEDIA_LNK_FL_ENABLED;
@@ -3225,19 +3226,17 @@ static int s3c_fb_create_mc_links(struct s3c_fb_win *win)
 	/* link creation between pads: Gscaler[1] -> Window[0] */
 	md = (struct exynos_md *)module_name_to_driver_data(MDEV_MODULE_NAME);
 
-	/* Gscaler 0 --> Winwow 0, Gscaler 1 --> Winow 1,
-	   Gscaler 2 --> Window 2, Gscaler 3 --> Window 3 */
-	if (md->gsc_sd[win->index] != NULL) {
-		ret = media_entity_create_link(&md->gsc_sd[win->index]->entity,
-			GSC_OUT_PAD_SOURCE,
-			&win->sd.entity,
-			FIMD_PAD_SINK_FROM_GSCALER_SRC, 0);
+	for (i = 0; i < MAX_GSC_SUBDEV; i++) {
+		ret = media_entity_create_link(&md->gsc_sd[i]->entity,
+				GSC_OUT_PAD_SOURCE, &win->sd.entity,
+				FIMD_PAD_SINK_FROM_GSCALER_SRC, 0);
 		if (ret) {
 			sprintf(err, "%s --> %s",
-				md->gsc_sd[win->index]->entity.name,
+				md->gsc_sd[i]->entity.name,
 				win->sd.entity.name);
 				goto mc_link_create_fail;
 		}
+
 	}
 
 	dev_dbg(sfb->dev, "A link between Gscaler and window[%d] is created \
@@ -4000,10 +3999,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 		decon_fb_set_buffer_mode(sfb, win, 1, 0);
 #ifdef CONFIG_FB_EXYNOS_FIMD_MC
-		/* local path is only supported for windows 0-2 */
-		if (win > 2)
-			continue;
-
 		/* register a window subdev as entity */
 		ret = s3c_fb_register_mc_components(sfb->windows[win]);
 		if (ret) {

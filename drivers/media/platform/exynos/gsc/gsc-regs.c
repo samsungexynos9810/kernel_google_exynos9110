@@ -60,7 +60,7 @@ void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable)
 	u32 cfg = 0;
 
 	if (enable) {
-		gsc_info("GSC start(%d)\n", dev->id);
+		gsc_dbg("GSC start(%d)\n", dev->id);
 		/* realtime effort */
 		cfg = readl(dev->regs + GSC_BUSCON);
 		cfg |= GSC_BUSCON_REAL_TIME_ACCESS_EN;
@@ -79,7 +79,7 @@ void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable)
 		cfg |= GSC_ENABLE_QOS_ENABLE;
 		writel(cfg, dev->regs + GSC_ENABLE);
 	} else {
-		gsc_info("GSC stop(%d)\n", dev->id);
+		gsc_dbg("GSC stop(%d)\n", dev->id);
 		gsc_hw_set_smart_if_con(dev, false);
 		cfg = readl(dev->regs + GSC_ENABLE);
 		cfg &= ~GSC_ENABLE_ON;
