@@ -62,16 +62,8 @@ static int mali_pm_notifier(struct notifier_block *nb, unsigned long event, void
 	int err = NOTIFY_OK;
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (kbase_platform_dvfs_enable(false, MALI_DVFS_CURRENT_FREQ) != MALI_TRUE)
-			err = NOTIFY_BAD;
-#endif
 		break;
 	case PM_POST_SUSPEND:
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (kbase_platform_dvfs_enable(true, MALI_DVFS_START_FREQ) != MALI_TRUE)
-			err = NOTIFY_BAD;
-#endif
 		break;
 	default:
 		break;
