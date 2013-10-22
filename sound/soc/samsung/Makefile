@@ -47,7 +47,7 @@ snd-soc-tobermory-objs := tobermory.o
 snd-soc-lowland-objs := lowland.o
 snd-soc-littlemill-objs := littlemill.o
 snd-soc-bells-objs := bells.o
-snd-soc-xyref-es515-objs := xyref_es515.o
+snd-soc-xyref5430-es515-objs := xyref5430_es515.o
 
 obj-$(CONFIG_SND_SOC_SAMSUNG_JIVE_WM8750) += snd-soc-jive-wm8750.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_NEO1973_WM8753) += snd-soc-neo1973-wm8753.o
@@ -72,6 +72,6 @@ obj-$(CONFIG_SND_SOC_TOBERMORY) += snd-soc-tobermory.o
 obj-$(CONFIG_SND_SOC_LOWLAND) += snd-soc-lowland.o
 obj-$(CONFIG_SND_SOC_LITTLEMILL) += snd-soc-littlemill.o
 obj-$(CONFIG_SND_SOC_BELLS) += snd-soc-bells.o
-obj-$(CONFIG_SND_SOC_SAMSUNG_XYREF_ES515) += snd-soc-xyref-es515.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_XYREF5430_ES515) += snd-soc-xyref5430-es515.o
 
 obj-$(CONFIG_SND_SAMSUNG_SEIREN) += seiren/

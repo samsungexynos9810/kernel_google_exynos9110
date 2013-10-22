@@ -52,6 +52,9 @@ config SND_SAMSUNG_FAKEDMA
 	help
 		Say Y if you want to add support for fake-dma.
 
+config SND_SAMSUNG_XYREF
+	tristate
+
 config SND_SOC_ES515_I2C
 	tristate
 
@@ -249,36 +252,37 @@ config SND_SOC_LITTLEMILL
 	select MFD_WM8994
 	select SND_SOC_WM8994
 
-config SND_SOC_SAMSUNG_XYREF_ES515
-	tristate "SoC I2S Audio support for eS515 on XYREF"
+config SND_SOC_SAMSUNG_XYREF5430_ES515
+	tristate "SoC I2S Audio support for eS515 on XYREF5430"
 	depends on SND_SOC_SAMSUNG
 	select SND_SAMSUNG_I2S
 	select SND_SAMSUNG_AUDSS
 	select SND_SAMSUNG_IOMMU
+	select SND_SAMSUNG_XYREF
 	select SND_SOC_ES515
 	select SND_SOC_ES515_I2S
 	select SND_SOC_ES515_I2C
 	select SND_SOC_DUMMY_CODEC
 	help
-	  Say Y if you want to add support for SoC audio on the XYREF.
+	  Say Y if you want to add support for SoC audio on the XYREF5430.
 
 config SND_SOC_ES515_I2S_MASTER
 	bool "Enable Codec master mode for eS515 on XYREF"
-	depends on SND_SOC_SAMSUNG_XYREF_ES515
+	depends on SND_SAMSUNG_XYREF && SND_SOC_ES515
 	default y
 	help
 	  Say Y if you want to add support for SoC audio on the XYREF.
 
 config SND_SAMSUNG_AUX_HDMI
 	tristate "HDMI Audio support on XYREF"
-	depends on SND_SOC_SAMSUNG_XYREF_ES515
+	depends on SND_SAMSUNG_XYREF
 	default y
 	help
 	  Say Y if you want to add support for HDMI audio on the XYREF.
 
 config SND_SAMSUNG_AUX_SPDIF
 	tristate "S/PDIF Audio support on XYREF"
-	depends on SND_SOC_SAMSUNG_XYREF_ES515
+	depends on SND_SAMSUNG_XYREF
 	select SND_SAMSUNG_SPDIF
 	help
 	  Say Y if you want to add support for S/PDIF audio on the XYREF.
