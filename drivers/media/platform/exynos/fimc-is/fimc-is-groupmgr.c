@@ -1136,7 +1136,13 @@ check_completion:
 			ret = -EINVAL;
 		}
 	} else {
-		ret = fimc_is_itf_process_stop(device, GROUP_ID(group->id));
+		u32 group_id = group->id;
+		/* if there's only one group of isp, send group id by 3a0 */
+		if ((group_id == GROUP_ID_ISP) &&
+				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+			group_id = GROUP_ID(GROUP_ID_3A0);
+		ret = fimc_is_itf_process_stop(device, group_id);
 		if (ret) {
 			merr("fimc_is_itf_process_stop is fail", group);
 			ret = -EINVAL;
