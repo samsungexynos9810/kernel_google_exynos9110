@@ -64,6 +64,7 @@ static inline void cpu_enter_lowpower_a15(void)
 	/*
 	* Turn off coherency
 	*/
+	"       clrex\n"
 	"	mrc	p15, 0, %0, c1, c0, 1\n"
 	"	bic	%0, %0, %1\n"
 	"	mcr	p15, 0, %0, c1, c0, 1\n"
@@ -165,7 +166,8 @@ void __ref exynos_cpu_die(unsigned int cpu)
 	 * appropriate sequence for entering low power.
 	 */
 	asm("mrc p15, 0, %0, c0, c0, 0" : "=r"(primary_part) : : "cc");
-	if ((primary_part & 0xfff0) == 0xc0f0)
+	primary_part &= 0xfff0;
+	if ((primary_part == 0xc0f0) || (primary_part == 0xc070))
 		cpu_enter_lowpower_a15();
 	else
 		cpu_enter_lowpower_a9();
