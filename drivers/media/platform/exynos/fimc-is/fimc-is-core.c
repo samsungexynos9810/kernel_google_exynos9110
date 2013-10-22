@@ -606,6 +606,16 @@ int fimc_is_resource_put(struct fimc_is_core *core)
                __func__, atomic_read(&core->rsccount));
 
 	if (!atomic_read(&core->rsccount)) {
+		/* HACK: This will be moved to runtime suspend */
+#if defined(CONFIG_PM_DEVFREQ)
+		/* 4. bus release */
+		pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
+		pm_qos_remove_request(&exynos5_isp_qos_dev);
+		pm_qos_remove_request(&exynos5_isp_qos_mem);
+		pm_qos_remove_request(&exynos5_isp_qos_cam);
+		pm_qos_remove_request(&exynos5_isp_qos_disp);
+#endif
+
 		if (test_bit(FIMC_IS_ISCHAIN_POWER_ON, &core->state)) {
 			/* 1. Stop a5 and other devices operation */
 			ret = fimc_is_itf_power_down(&core->interface);
@@ -622,15 +632,6 @@ int fimc_is_resource_put(struct fimc_is_core *core)
 		ret = fimc_is_interface_close(&core->interface);
 		if (ret)
 			err("fimc_is_interface_close is failed");
-
-#if defined(CONFIG_PM_DEVFREQ)
-		/* 4. bus release */
-		pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
-		pm_qos_remove_request(&exynos5_isp_qos_dev);
-		pm_qos_remove_request(&exynos5_isp_qos_mem);
-		pm_qos_remove_request(&exynos5_isp_qos_cam);
-		pm_qos_remove_request(&exynos5_isp_qos_disp);
-#endif
 
 #if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
 		exynos5_mif_bpll_unregister_notifier(&exynos_mif_nb);
