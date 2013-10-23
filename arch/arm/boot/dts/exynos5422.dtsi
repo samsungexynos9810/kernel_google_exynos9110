@@ -154,7 +154,233 @@
 		interrupts = <0 47 0>;
 	};
 
-	sysmmu_fimd0x: sysmmu@0x13A00000 {
+	sysmmu_flite_a: sysmmu@0x13C40000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13C40000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <3 4>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_flite_b: sysmmu@0x13C50000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13C50000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <24 1>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_flite_d: sysmmu@0x13D50000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13D50000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <2 4>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_3aa: sysmmu@0x13CC0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13CC0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <23 6>;
+	};
+
+	sysmmu_g2d: sysmmu@0x10A60000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x10A60000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <24 5>;
+		prop-map {
+			iomap = "r";
+		};
+	};
+
+	sysmmu_g2d_wr: sysmmu@0x10A70000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x10A70000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <22 2>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_tv: sysmmu@0x14650000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x14650000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <7 4>;
+	};
+
+	sysmmu_gscl0: sysmmu@0x13E80000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13E80000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <2 0>;
+	};
+
+	sysmmu_gscl1: sysmmu@0x13E90000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13E90000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <2 2>;
+	};
+
+	sysmmu_fimc_fd: sysmmu@0x132A0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x132A0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <5 0>;
+	};
+
+	sysmmu_fimc_cpu: sysmmu@0x132B0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x132B0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <5 4>;
+	};
+
+	sysmmu_fimc_isp: sysmmu@0x13260000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13260000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <10 6>;
+	};
+
+	sysmmu_fimc_drc: sysmmu@0x13270000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13270000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <4 6>;
+	};
+
+	sysmmu_fimc_scc: sysmmu@0x13280000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13280000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <5 2>;
+	};
+
+	sysmmu_fimc_dis0: sysmmu@0x132D0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x132D0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <10 4>;
+	};
+
+	sysmmu_fimc_dis1: sysmmu@0x132E0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x132E0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <9 4>;
+	};
+
+	sysmmu_fimc_scp: sysmmu@0x13290000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13290000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <3 6>;
+	};
+
+	sysmmu_fimc_3dnr: sysmmu@0x132F0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x132F0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <5 6>;
+	};
+
+	sysmmu_scaler0r: sysmmu@0x12880000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x12880000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <22 4>;
+		prop-map {
+			iomap = "r";
+		};
+	};
+
+	sysmmu_scaler1r: sysmmu@0x12890000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x12890000 0x1000>;
+		interrupts = <0 186 0>;
+		prop-map {
+			iomap = "r";
+		};
+	};
+
+	sysmmu_scaler2r: sysmmu@0x128A0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x128A0000 0x1000>;
+		interrupts = <0 188 0>;
+		prop-map {
+			iomap = "r";
+		};
+	};
+
+	sysmmu_scaler0w: sysmmu@0x128C0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x128C0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <27 2>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_scaler1w: sysmmu@0x128D0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x128D0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <22 6>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_scaler2w: sysmmu@0x128E0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x128E0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <19 6>;
+		prop-map {
+			iomap = "w";
+		};
+	};
+
+	sysmmu_jpeg: sysmmu@0x11F10000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11F10000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <4 2>;
+	};
+
+	sysmmu_jpeg2: sysmmu@0x11F20000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11F20000 0x1000>;
+		interrupts = <0 169 0>;
+	};
+
+	sysmmu_mfc0_0: sysmmu@0x11200000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11200000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <6 2>;
+	};
+
+	sysmmu_mfc0_1: sysmmu@0x11210000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11210000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <8 5>;
+	};
+
+	sysmmu_fimd0x: sysmmu@0x14640000 {
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x14640000 0x1000>;
 		interrupt-parent = <&combiner>;
@@ -164,7 +390,7 @@
 		};
 	};
 
-	sysmmu_fimd1x: sysmmu@0x13A10000 {
+	sysmmu_fimd1x: sysmmu@0x14680000 {
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x14680000 0x1000>;
 		interrupt-parent = <&combiner>;
