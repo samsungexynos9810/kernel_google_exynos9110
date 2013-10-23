@@ -730,7 +730,7 @@ p_err:
 }
 
 int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
-	struct exynos5_fimc_is_sensor_info *sensor_info)
+	struct exynos_fimc_is_sensor_info *sensor_info)
 {
 	int ret = 0;
 	struct sensor_open_extended *ext;

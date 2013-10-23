@@ -26,5 +26,5 @@
 		(value) = name; \
 	} while (0)
 
-struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev);
+struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev);
 #endif

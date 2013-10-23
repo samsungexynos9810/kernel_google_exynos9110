@@ -51,7 +51,7 @@ p_err:
 	return ret;
 }
 
-static int parse_sensor_info(struct exynos5_platform_fimc_is *pdata, struct device_node *np)
+static int parse_sensor_info(struct exynos_platform_fimc_is *pdata, struct device_node *np)
 {
 	u32 i;
 	u32 temp;
@@ -59,7 +59,7 @@ static int parse_sensor_info(struct exynos5_platform_fimc_is *pdata, struct devi
 	const char *name;
 
 	for (i = 0; i < FIMC_IS_MAX_CAMIF_CLIENTS; i++) {
-		pdata->sensor_info[i] = kzalloc(sizeof(struct exynos5_fimc_is_sensor_info), GFP_KERNEL);
+		pdata->sensor_info[i] = kzalloc(sizeof(struct exynos_fimc_is_sensor_info), GFP_KERNEL);
 		if (!pdata->sensor_info[i]) {
 			printk(KERN_ERR "%s: no memory for sensor_info[%d]\n", __func__, i);
 			return -EINVAL;
@@ -105,7 +105,7 @@ p_err:
 	return -EINVAL;
 }
 
-static int fimc_is_parse_ctrl_dt(struct exynos5_platform_fimc_is *pdata, struct device_node *np)
+static int fimc_is_parse_ctrl_dt(struct exynos_platform_fimc_is *pdata, struct device_node *np)
 {
 	int ret = 0;
 	struct device_node *sensor_np;
@@ -135,9 +135,9 @@ p_err:
 	return ret;
 }
 
-struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
+struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 {
-	struct exynos5_platform_fimc_is *pdata;
+	struct exynos_platform_fimc_is *pdata;
 	struct device_node *np = dev->of_node;
 	struct fimc_is_gpio_info *gpio_info;
 	struct device_node *ctrl_np;
@@ -148,7 +148,7 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	if (get_board_rev(dev) < 0)
 		pr_warn("%s: Failed to get_board_rev\n", __func__);
 
-	pdata = kzalloc(sizeof(struct exynos5_platform_fimc_is), GFP_KERNEL);
+	pdata = kzalloc(sizeof(struct exynos_platform_fimc_is), GFP_KERNEL);
 	if (!pdata) {
 		printk(KERN_ERR "%s: no memory for platform data\n", __func__);
 		return ERR_PTR(-ENOMEM);
@@ -205,7 +205,7 @@ struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	return pdata;
 }
 #else
-struct exynos5_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
+struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 {
 	return ERR_PTR(-EINVAL);
 }

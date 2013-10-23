@@ -102,7 +102,7 @@ struct fimc_is_device_sensor {
 };
 
 int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
-	struct exynos5_fimc_is_sensor_info *sensor_info);
+	struct exynos_fimc_is_sensor_info *sensor_info);
 int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 	struct fimc_is_video_ctx *vctx);
 int fimc_is_sensor_close(struct fimc_is_device_sensor *device);

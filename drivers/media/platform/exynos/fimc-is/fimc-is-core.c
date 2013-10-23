@@ -960,7 +960,7 @@ static struct attribute_group fimc_is_debug_attr_group = {
 
 static int fimc_is_probe(struct platform_device *pdev)
 {
-	struct exynos5_platform_fimc_is *pdata;
+	struct exynos_platform_fimc_is *pdata;
 	struct resource *mem_res;
 	struct resource *regs_res;
 	struct fimc_is_core *core;

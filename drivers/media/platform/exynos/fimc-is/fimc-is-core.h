@@ -494,7 +494,7 @@ struct fimc_is_core {
 	unsigned long				state;
 
 	/* depended on isp */
-	struct exynos5_platform_fimc_is		*pdata;
+	struct exynos_platform_fimc_is		*pdata;
 
 	struct fimc_is_groupmgr			groupmgr;
 	struct fimc_is_clock			clock;

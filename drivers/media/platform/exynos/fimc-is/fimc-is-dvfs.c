@@ -379,7 +379,7 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 
 int fimc_is_get_qos(struct fimc_is_core *core, u32 type, u32 scenario_id)
 {
-	struct exynos5_platform_fimc_is	*pdata;
+	struct exynos_platform_fimc_is	*pdata;
 	int qos = 0;
 
 	pdata = core->pdata;
