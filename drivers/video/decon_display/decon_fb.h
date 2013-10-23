@@ -447,6 +447,7 @@ int s3c_fb_runtime_suspend(struct device *dev);
 int s3c_fb_runtime_resume(struct device *dev);
 int s3c_fb_resume(struct device *dev);
 int s3c_fb_suspend(struct device *dev);
+void decon_dump_registers(struct display_driver *pdispdrv);
 
 #define VALID_BPP(x) (1 << ((x) - 1))
 #define VALID_BPP124 (VALID_BPP(1) | VALID_BPP(2) | VALID_BPP(4))

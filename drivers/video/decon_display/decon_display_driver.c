@@ -18,6 +18,7 @@
 #include <linux/pm_runtime.h>
 #include <linux/lcd.h>
 #include <linux/gpio.h>
+#include <linux/exynos_iovmm.h>
 
 #include "decon_display_driver.h"
 #ifdef CONFIG_SOC_EXYNOS5430
@@ -61,6 +62,28 @@ static int create_disp_components(struct platform_device *pdev)
 	return ret;
 }
 
+/* disp_driver_fault_handler - fault handler for display device driver */
+int disp_driver_fault_handler(struct iommu_domain *iodmn, struct device *dev,
+	unsigned long addr, int id, void *param)
+{
+	struct display_driver *dispdrv;
+
+	dispdrv = (struct display_driver*)param;
+	decon_dump_registers(dispdrv);
+	return 0;
+}
+
+/* register_debug_features - for registering debug features.
+ * currently registered features are like as follows...
+ * - iovmm falult handler
+ * - ... */
+static void register_debug_features(void)
+{
+	/* 1. fault handler registration */
+	iovmm_set_fault_handler(g_display_driver.display_driver,
+		disp_driver_fault_handler, &g_display_driver);
+}
+
 /* s5p_decon_disp_probe - probe function of the display driver */
 static int s5p_decon_disp_probe(struct platform_device *pdev)
 {
@@ -74,6 +97,8 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 	init_display_decon_clocks(&pdev->dev);
 
 	create_disp_components(pdev);
+
+	register_debug_features();
 
 	return ret;
 }
