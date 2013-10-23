@@ -804,24 +804,25 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 	switch(event) {
 		case GPU_THROTTLING1:
 			lock_level = GPU_THROTTLING_90_95;
-			//printk("[G3D] GPU_THROTTLING_90_95\n");
+			printk("[G3D] GPU_THROTTLING_90_95\n");
 			break;
 		case GPU_THROTTLING2:
 			lock_level = GPU_THROTTLING_95_100;
-			//printk("[G3D] GPU_THROTTLING_95_100\n");
+			printk("[G3D] GPU_THROTTLING_95_100\n");
 			break;
 		case GPU_THROTTLING3:
 			lock_level = GPU_THROTTLING_100_105;
-			//printk("[G3D] GPU_THROTTLING_100_105\n");
+			printk("[G3D] GPU_THROTTLING_100_105\n");
 			break;
 		case GPU_THROTTLING4:
 			lock_level = GPU_THROTTLING_105_110;
-			//printk("[G3D] GPU_THROTTLING_105_110\n");
+			printk("[G3D] GPU_THROTTLING_105_110\n");
 			break;
 		case GPU_TRIPPING:
 			lock_level = GPU_TRIPPING_110;
-			//printk("[G3D] GPU_THROTTLING_110\n");
+			printk("[G3D] GPU_THROTTLING_110\n");
 		default:
+			printk("[G3D] Wrong event in the kbase_tmu_hot_check_and_work function\n");
 			return 0;
 	}
 
