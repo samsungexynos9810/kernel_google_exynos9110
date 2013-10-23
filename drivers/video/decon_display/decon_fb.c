@@ -103,6 +103,8 @@ static int prev_gsc_local_cnt = 0;
 
 struct s3c_fb;
 
+static struct dma_buf *g_framebuf;
+
 extern struct mipi_dsim_device *dsim_for_decon;
 extern int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim);
 extern int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim);
@@ -2412,10 +2414,8 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 #ifdef CONFIG_ION_EXYNOS
-	struct s3c_fb_win *win = info->par;
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-
-	return dma_buf_mmap(win->dma_buf_data.dma_buf, vma, 0);
+	return dma_buf_mmap(g_framebuf, vma, 0);
 #else
 	return 0;
 #endif
@@ -2523,7 +2523,7 @@ static int s3c_fb_alloc_memory(struct s3c_fb *sfb,
 		return -ENOMEM;
 	}
 
-	buf = ion_share_dma_buf(sfb->fb_ion_client, handle);
+	g_framebuf = buf = ion_share_dma_buf(sfb->fb_ion_client, handle);
 	if (IS_ERR_OR_NULL(buf)) {
 		dev_err(sfb->dev, "ion_share_dma_buf() failed\n");
 		goto err_share_dma_buf;
