@@ -388,4 +388,44 @@
 		};
 	};
 
+	pinctrl@13400000 {
+		id0_irq: id0-irq {
+			samsung,pins = "gpx1-7";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;
+		};
+
+		id1_irq: id1-irq {
+			samsung,pins = "gpx2-4";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;
+		};
+	};
+
+	usb@12000000 {
+		samsung,bsess-gpio = <&gpx0 6 0xf>;
+		samsung,id-gpio = <&gpx1 7 0xf>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&id0_irq>;
+		status = "okay";
+
+		dwc3 {
+			maximum-speed = "super-speed";
+			dr_mode = "otg";
+		};
+	};
+
+	usb@12400000 {
+		samsung,bsess-gpio = <&gpx2 3 0xf>;
+		samsung,id-gpio = <&gpx2 4 0xf>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&id1_irq>;
+		status = "okay";
+
+		dwc3 {
+			maximum-speed = "super-speed";
+			dr_mode = "otg";
+		};
+	};
+
 };
