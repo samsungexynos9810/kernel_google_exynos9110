@@ -650,7 +650,8 @@ static void fimc_is_sensor_dtp(unsigned long data)
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 	set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_3ax.state);
 	set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_isp.state);
-	up(&ischain->group_3ax.smp_trigger);
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &ischain->group_3ax.state))
+		up(&ischain->group_3ax.smp_trigger);
 
 	framemgr_e_barrier_irqs(framemgr, 0, flags);
 

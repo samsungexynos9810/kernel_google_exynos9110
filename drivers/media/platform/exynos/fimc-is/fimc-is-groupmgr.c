@@ -805,10 +805,13 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 
 		/* flush semaphore shot */
 		atomic_inc(&group->smp_shot_count);
-		up(&group->smp_shot);
+		if (test_bit(FIMC_IS_GROUP_SMP_INIT, &group->state))
+			up(&group->smp_shot);
 
 		/* flush semaphore resource */
-		up(&groupmgr->group_smp_res[group->id]);
+		if (test_bit(FIMC_IS_GGROUP_SMP_INIT,
+				&groupmgr->group_state[group->id]))
+			up(&groupmgr->group_smp_res[group->id]);
 
 		/* flush semaphore trigger */
 		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state))
