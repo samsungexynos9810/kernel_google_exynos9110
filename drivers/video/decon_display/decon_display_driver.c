@@ -20,10 +20,15 @@
 #include <linux/gpio.h>
 
 #include "decon_display_driver.h"
+#ifdef CONFIG_SOC_EXYNOS5430
 #include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
-
+#else
+#include "fimd_fb.h"
+#include "fimd_dt.h"
+#include "fimd_pm.h"
+#endif
 #ifdef CONFIG_OF
 static const struct of_device_id decon_disp_device_table[] = {
 	{ .compatible = "samsung,exynos5-disp_driver" },
@@ -39,15 +44,34 @@ static struct display_driver g_display_driver;
 static int create_disp_components(struct platform_device *pdev)
 {
 	int ret = 0;
+
+	/* IMPORTANT: MIPI-DSI component should be 1'st created. */
+	ret = create_mipi_dsi_controller(pdev);
+	if (ret < 0) {
+		pr_err("display error: mipi-dsi controller create failed.");
+		return ret;
+	}
+
 	ret = create_decon_display_controller(pdev);
+	if (ret < 0) {
+		pr_err("display error: display controller create failed.");
+		return ret;
+	}
+
 	return ret;
 }
 
+/* s5p_decon_disp_probe - probe function of the display driver */
 static int s5p_decon_disp_probe(struct platform_device *pdev)
 {
 	int ret = -1;
 
+	/* parse display driver device tree & convers it to objects
+	 * for each platform device */
 	ret = parse_display_driver_dt(pdev, &g_display_driver);
+
+	init_display_dsi_clocks(&pdev->dev);
+	init_display_decon_clocks(&pdev->dev);
 
 	create_disp_components(pdev);
 
@@ -61,12 +85,20 @@ static int s5p_decon_disp_remove(struct platform_device *pdev)
 
 static int display_driver_runtime_suspend(struct device *dev)
 {
+#ifdef CONFIG_PM_RUNTIME
 	return s3c_fb_runtime_suspend(dev);
+#else
+	return 0;
+#endif
 }
 
 static int display_driver_runtime_resume(struct device *dev)
 {
+#ifdef CONFIG_PM_RUNTIME
 	return s3c_fb_runtime_resume(dev);
+#else
+	return 0;
+#endif
 }
 
 #ifdef CONFIG_PM_SLEEP

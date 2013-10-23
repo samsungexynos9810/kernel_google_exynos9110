@@ -44,9 +44,16 @@
 #include "decon_mipi_dsi_lowlevel.h"
 #include "decon_mipi_dsi.h"
 #include "regs-mipidsim.h"
+#ifdef CONFIG_SOC_EXYNOS5430
 #include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
+#else
+#include <mach/regs-pmu.h>
+#include "fimd_fb.h"
+#include "fimd_dt.h"
+#include "fimd_pm.h"
+#endif
 
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_wr_comp);
@@ -73,8 +80,9 @@ EXPORT_SYMBOL(dsim_for_decon);
 
 int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
-	void __iomem *reg;
-
+	
+#ifdef CONFIG_SOC_EXYNOS5430
+        void __iomem *reg;
 	reg = ioremap(0x105C0710, 0x10);
 	writel(0x1, reg);
 	writel(0x1, reg + 0x4);
@@ -87,7 +95,17 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	mdelay(5);
 	writel(0x1, reg);
 	iounmap(reg);
+#else
+        unsigned int reg;
 
+        reg = readl(S5P_MIPI_DPHY_CONTROL(1)) & ~(1 << 0);
+        reg |= (enable << 0);
+        writel(reg, S5P_MIPI_DPHY_CONTROL(1));
+
+        reg = readl(S5P_MIPI_DPHY_CONTROL(1)) & ~(1 << 2);
+        reg |= (enable << 2);
+        writel(reg, S5P_MIPI_DPHY_CONTROL(1));
+#endif
 	return 0;
 }
 
@@ -661,30 +679,24 @@ int s5p_mipi_dsi_enable_frame_done_int(struct mipi_dsim_device *dsim,
 	return 0;
 }
 
-#define DT_READ_U32(node, key, value) { \
-	u32 temp; \
-	if (of_property_read_u32((node), "samsung," key, &temp)) { \
-		printk(KERN_ERR "Fail to get %s value.\n", key); \
-		return -1; \
-	} \
-	(value) = temp; \
-	}
-
 int s5p_mipi_dsi_set_display_mode(struct mipi_dsim_device *dsim,
 	struct mipi_dsim_config *dsim_config)
 {
 	struct s3c_fb_pd_win *pd;
 	unsigned int width = 0, height = 0;
+	struct mipi_dsim_lcd_config *lcd_config;
 	u32 umg, lmg, rmg, vsync_len, hsync_len;
 	pd = (struct s3c_fb_pd_win *)dsim->dsim_config->lcd_panel_info;
 
-	DT_READ_U32(dsim->dev->of_node, "xres", width);
-	DT_READ_U32(dsim->dev->of_node, "yres", height);
-	DT_READ_U32(dsim->dev->of_node, "upper_margin", umg);
-	DT_READ_U32(dsim->dev->of_node, "left_margin", lmg);
-	DT_READ_U32(dsim->dev->of_node, "right_margin", rmg);
-	DT_READ_U32(dsim->dev->of_node, "vsync_len", vsync_len);
-	DT_READ_U32(dsim->dev->of_node, "hsync_len", hsync_len);
+	lcd_config = get_display_lcd_drvdata();
+
+	width = lcd_config->lcd_size.width;
+	height = lcd_config->lcd_size.height;
+	umg = lcd_config->rgb_timing.upper_margin;
+	lmg = lcd_config->rgb_timing.left_margin;
+	rmg = lcd_config->rgb_timing.right_margin;
+	vsync_len = lcd_config->rgb_timing.hsync_len;
+	hsync_len = lcd_config->rgb_timing.vsync_len;
 
 	/* in case of VIDEO MODE (RGB INTERFACE) */
 	if (dsim->dsim_config->e_interface == (u32) DSIM_VIDEO) {
@@ -706,6 +718,7 @@ int s5p_mipi_dsi_set_display_mode(struct mipi_dsim_device *dsim,
 
 int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 {
+	u32 dsi_ver;
 	unsigned int time_out = 100;
 	unsigned int id;
 	id = dsim->id;
@@ -715,6 +728,10 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 		s5p_mipi_dsi_init_fifo_pointer(dsim, 0x1f);
 
 		/* dsi configuration */
+dsi_ver = readl(dsim->reg_base + S5P_DSIM_VERSION);
+printk( "[DEBUG] ==================================\n");
+printk( "       lane no: 0x%08X\n", dsim->data_lane);
+printk( "[DEBUG] ==================================\n");
 		s5p_mipi_dsi_init_config(dsim);
 		s5p_mipi_dsi_enable_lane(dsim, DSIM_LANE_CLOCK, 1);
 		s5p_mipi_dsi_enable_lane(dsim, dsim->data_lane, 1);
@@ -840,7 +857,7 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-#ifdef CONFIG_PM
+#if 0
 static int s5p_mipi_dsi_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -908,9 +925,9 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	if (dsim->enabled == true)
 		return 0;
 
-	pm_runtime_get_sync(dsim->dev);
+	//pm_runtime_get_sync(dsim->dev);
 
-	enable_display_dsi_clocks_exynos5430(dsim->dev);
+	enable_display_dsi_clocks(dsim->dev);
 	enable_display_dsi_power(dsim->dev);
 
 	if (dsim->dsim_lcd_drv->resume)
@@ -938,9 +955,6 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 
 	disable_display_dsi_power(dsim->dev);
-	/*
-	pm_runtime_put_sync(dsim->dev);
-	*/
 
 	return 0;
 }
@@ -962,14 +976,14 @@ struct lcd_ops s5p_mipi_dsi_lcd_ops = {
 	.set_power = s5p_mipi_dsi_set_power,
 };
 
-static int s5p_mipi_dsi_probe(struct platform_device *pdev)
+int create_mipi_dsi_controller(struct platform_device *pdev)
 {
-	struct resource *res;
 	struct mipi_dsim_device *dsim = NULL;
+	struct display_driver *dispdrv;
 	int ret = -1;
 
-	parse_display_dsi_dt(pdev->dev.of_node);
-	init_display_dsi_clocks(&pdev->dev);
+	/* get a reference of the display driver */
+	dispdrv = get_display_driver();
 
 	if (!dsim)
 		dsim = kzalloc(sizeof(struct mipi_dsim_device),
@@ -982,28 +996,13 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	dsim->dev = &pdev->dev;
 	dsim->id = pdev->id;
 
-	pm_runtime_enable(&pdev->dev);
+	//pm_runtime_enable(&pdev->dev);
 
 	dsim->dsim_config = get_display_dsi_drvdata();
 
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	if (!res) {
-		dev_err(&pdev->dev, "failed to get io memory region\n");
-		ret = -EINVAL;
-		goto err_platform_get;
-	}
-	res = request_mem_region(res->start, resource_size(res),
-					dev_name(&pdev->dev));
-	if (!res) {
-		dev_err(&pdev->dev, "failed to request io memory region\n");
-		ret = -EINVAL;
-		goto err_mem_region;
-	}
-
-	dsim->res = res;
-	dsim->reg_base = ioremap(res->start, resource_size(res));
+	dsim->reg_base = devm_request_and_ioremap(&pdev->dev, dispdrv->dsi_driver.regs);
 	if (!dsim->reg_base) {
-		dev_err(&pdev->dev, "failed to remap io region\n");
+		dev_err(&pdev->dev, "mipi-dsi: failed to remap io region\n");
 		ret = -EINVAL;
 		goto err_mem_region;
 	}
@@ -1012,13 +1011,10 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 	 * it uses frame done interrupt handler
 	 * only in case of MIPI Video mode.
 	 */
-	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (res == NULL) {
-		dev_err(&pdev->dev, "getting dsi irq resource failed\n");
-		ret = -ENOENT;
-		goto err_irq;
-	}
-	dsim->irq = res->start;
+	dsim->irq = dispdrv->dsi_driver.dsi_irq_no;
+printk( "[DEBUG] ============================\n");
+printk( "        DSI IRQ NO: 0x%08X\n",dsim->irq );
+printk( "[DEBUG] ============================\n");
 	if (request_irq(dsim->irq, s5p_mipi_dsi_interrupt_handler,
 			IRQF_DISABLED, "mipi-dsi", dsim)) {
 		dev_err(&pdev->dev, "request_irq failed.\n");
@@ -1031,17 +1027,13 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "dsim_config is NULL.\n");
 		goto err_dsim_config;
 	}
-	platform_set_drvdata(pdev, dsim);
-	pm_runtime_get_sync(&pdev->dev);
+	//platform_set_drvdata(pdev, dsim);
+	//pm_runtime_get_sync(&pdev->dev);
 
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
 	dsim->dsim_lcd_drv->probe(dsim);
 
-	/*
-	if (dsim->pd->mipi_power)
-		dsim->pd->mipi_power(dsim, 1);
-	*/
 	enable_display_dsi_power(&pdev->dev);
 
 	dsim->enabled = true;
@@ -1059,26 +1051,28 @@ static int s5p_mipi_dsi_probe(struct platform_device *pdev)
 
 err_dsim_config:
 err_irq:
-	release_resource(dsim->res);
-	kfree(dsim->res);
+	release_resource(dispdrv->dsi_driver.regs);
+	kfree(dispdrv->dsi_driver.regs);
 
 	iounmap((void __iomem *) dsim->reg_base);
 
 err_mem_region:
-err_platform_get:
 	clk_disable(dsim->clock);
 	clk_put(dsim->clock);
 
-/*err_clock_get:*/
 	kfree(dsim);
-	pm_runtime_put_sync(&pdev->dev);
 	return ret;
 
 }
 
+#ifdef DECON_OLD_STYLE
 static int s5p_mipi_dsi_remove(struct platform_device *pdev)
 {
 	struct mipi_dsim_device *dsim = platform_get_drvdata(pdev);
+	struct display_driver *dispdrv;
+
+	/* get a reference of the display driver */
+	dispdrv = get_display_driver();
 
 	if (dsim->dsim_config->e_interface == DSIM_VIDEO)
 		free_irq(dsim->irq, dsim);
@@ -1088,8 +1082,8 @@ static int s5p_mipi_dsi_remove(struct platform_device *pdev)
 	clk_disable(dsim->clock);
 	clk_put(dsim->clock);
 
-	release_resource(dsim->res);
-	kfree(dsim->res);
+	release_resource(dispdrv->dsi_driver.regs);
+	kfree(dispdrv->dsi_driver.regs);
 
 	kfree(dsim);
 
@@ -1112,7 +1106,7 @@ static void s5p_mipi_dsi_shutdown(struct platform_device *pdev)
 
 		disable_display_dsi_power(&pdev->dev);
 
-		pm_runtime_put_sync(&pdev->dev);
+		//pm_runtime_put_sync(&pdev->dev);
 	}
 }
 
@@ -1150,6 +1144,7 @@ static void s5p_mipi_dsi_unregister(void)
 }
 late_initcall(s5p_mipi_dsi_register);
 module_exit(s5p_mipi_dsi_unregister);
+#endif
 
 MODULE_AUTHOR("Haowei li <haowei.li@samsung.com>");
 MODULE_DESCRIPTION("Samusung MIPI-DSI driver");

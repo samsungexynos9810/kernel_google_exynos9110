@@ -15,13 +15,15 @@ struct display_component_decon {
 	struct resource *regs;
 	int irq_no;
 	int fifo_irq_no;
-       int i80_irq_no;
+	int i80_irq_no;
+	struct s3c_fb *sfb;
 };
 
 /* display_component_dsi - This structure is abstraction of the
  * MIPI-DSI device drvier. */
 struct display_component_dsi {
 	struct resource *regs;
+	int dsi_irq_no;
 };
 
 /* display_driver - Abstraction for display driver controlling
@@ -37,5 +39,6 @@ struct platform_device;
 
 struct display_driver *get_display_driver(void);
 int create_decon_display_controller(struct platform_device *pdev);
+int create_mipi_dsi_controller(struct platform_device *pdev);
 
 #endif

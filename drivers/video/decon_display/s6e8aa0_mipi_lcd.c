@@ -14,13 +14,7 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <video/mipi_display.h>
-
-#include <plat/dsim.h>
-#ifdef CONFIG_HAS_EARLYSUSPEND
-#include <linux/earlysuspend.h>
-#endif
-#include <plat/mipi_dsi.h>
-
+#include "decon_mipi_dsi.h"
 #include "s6e8aa0_gamma.h"
 
 #define GAMMA_PARAM_SIZE 26
