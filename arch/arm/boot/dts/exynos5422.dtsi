@@ -620,4 +620,70 @@
 			reg = <0x10040704 0xC>;
 		};
 	};
+
+	usb@12000000 {
+		compatible = "samsung,exynos5-dwusb3";
+		clocks = <&clock 40>, <&clock 1040>;
+		clock-names = "sclk_usbdrd30", "usbdrd30";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		status = "disabled";
+
+		dwc3 {
+			compatible = "synopsys,dwc3";
+			reg = <0x12000000 0x10000>;
+			interrupts = <0 72 0>;
+			usb-phy = <&dwc3_usb2_phy &dwc3_usb3_phy_0>;
+		};
+	};
+
+	usb@12400000 {
+		compatible = "samsung,exynos5-dwusb3";
+		clocks = <&clock 41>, <&clock 1041>;
+		clock-names = "sclk_usbdrd30", "usbdrd30";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+		status = "disabled";
+
+		dwc3 {
+			compatible = "synopsys,dwc3";
+			reg = <0x12400000 0x10000>;
+			interrupts = <0 73 0>;
+			usb-phy = <&dwc3_usb2_phy &dwc3_usb3_phy_1>;
+		};
+	};
+
+	dwc3_usb2_phy: usbphy {
+		compatible = "samsung,exynos5-usb2phy-dummy";
+	};
+
+	dwc3_usb3_phy_0: usbphy@12100000 {
+		compatible = "samsung,exynos5-usb3phy";
+		reg = <0x12100000 0x100>;
+		clocks = <&clock 1>, <&clock 1040>;
+		clock-names = "ext_xtal", "usbdrd30";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		usbphy-sys {
+			reg = <0x10040704 0x4>;
+		};
+	};
+
+	dwc3_usb3_phy_1: usbphy@12500000 {
+		compatible = "samsung,exynos5-usb3phy";
+		reg = <0x12500000 0x100>;
+		clocks = <&clock 1>, <&clock 1041>;
+		clock-names = "ext_xtal", "usbdrd30";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		usbphy-sys {
+			reg = <0x10040708 0x4>;
+		};
+	};
 };
