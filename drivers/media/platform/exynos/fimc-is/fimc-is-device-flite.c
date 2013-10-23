@@ -1086,7 +1086,11 @@ int fimc_is_flite_probe(struct fimc_is_device_flite *flite, u32 data)
 	} else if (flite->channel == FLITE_ID_B) {
 		flite->regs = (unsigned long)S5P_VA_FIMCLITE1;
 	} else if (flite->channel == FLITE_ID_C) {
+#if defined(CONFIG_ARCH_EXYNOS4)
+		flite->regs = (unsigned long)S5P_VA_FIMCLITE1;
+#else
 		flite->regs = (unsigned long)S5P_VA_FIMCLITE2;
+#endif
 	} else
 		err("unresolved channel input");
 
@@ -1126,11 +1130,19 @@ int fimc_is_flite_open(struct fimc_is_device_flite *flite,
 		if (ret)
 			err("request_irq(L1) failed\n");
 	} else if (flite->channel == FLITE_ID_C) {
+#if defined(CONFIG_ARCH_EXYNOS4)
+		ret = request_irq(IRQ_FIMC_LITE1,
+			fimc_is_flite_irq_handler,
+			IRQF_SHARED,
+			"fimc-lite2",
+			flite);
+#else
 		ret = request_irq(IRQ_FIMC_LITE2,
 			fimc_is_flite_irq_handler,
 			IRQF_SHARED,
 			"fimc-lite2",
 			flite);
+#endif
 		if (ret)
 			err("request_irq(L2) failed\n");
 	} else
@@ -1148,7 +1160,11 @@ int fimc_is_flite_close(struct fimc_is_device_flite *this)
 	} else if (this->channel == FLITE_ID_B) {
 		free_irq(IRQ_FIMC_LITE1, this);
 	} else if (this->channel == FLITE_ID_C) {
+#if defined(CONFIG_ARCH_EXYNOS4)
+		free_irq(IRQ_FIMC_LITE1, this);
+#else
 		free_irq(IRQ_FIMC_LITE2, this);
+#endif
 	} else {
 		err("FLITE%d is invalid", this->channel);
 		ret = -EINVAL;
