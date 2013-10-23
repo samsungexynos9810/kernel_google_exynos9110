@@ -7,4 +7,5 @@ obj-$(CONFIG_DEVFREQ_GOV_USERSPACE)	+= governor_userspace.o
 
 # DEVFREQ Drivers
 obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)	+= exynos4_bus.o
+obj-$(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)	+= exynos5422_bus_mif.o exynos5422_bus_int.o exynos5422_bus_disp.o exynos5422_bus_isp.o exynos5422_ppmu.o exynos_ppmu2.o
 obj-$(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)	+= exynos5430_bus_mif.o exynos5430_bus_int.o exynos5430_bus_disp.o exynos5430_bus_isp.o exynos5430_ppmu.o exynos_ppmu2.o
