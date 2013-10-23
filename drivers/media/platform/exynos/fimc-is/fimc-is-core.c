@@ -666,9 +666,11 @@ static int fimc_is_resume(struct device *dev)
 int fimc_is_runtime_suspend(struct device *dev)
 {
 	int ret = 0;
+	int i = 0;
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
+	struct fimc_is_device_sensor *sensor = &core->sensor[0];
 
 	pr_info("FIMC_IS runtime suspend in\n");
 
@@ -702,6 +704,15 @@ int fimc_is_runtime_suspend(struct device *dev)
 		goto p_err;
 	}
 
+	/* Sensor power off */
+	if (core->pdata->sensor_power_off) {
+		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
+			if (!(test_bit(FIMC_IS_SENSOR_OPEN, &sensor[i].state)))
+				continue;
+			pr_info("sensor[%d] power_off\n", i);
+			core->pdata->sensor_power_off(core->pdev, i);
+		}
+	}
 	pr_info("FIMC_IS runtime suspend out\n");
 
 p_err:
@@ -712,9 +723,11 @@ p_err:
 int fimc_is_runtime_resume(struct device *dev)
 {
 	int ret = 0;
+	int i = 0;
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
+	struct fimc_is_device_sensor *sensor = &core->sensor[0];
 #if defined(CONFIG_PM_DEVFREQ)
 	int int_qos, mif_qos, cam_qos, disp_qos;
 #endif
@@ -757,6 +770,16 @@ int fimc_is_runtime_resume(struct device *dev)
 	pm_qos_update_request(&exynos5_isp_qos_cam, cam_qos);
 	pm_qos_update_request(&exynos5_isp_qos_disp, disp_qos);
 #endif
+
+	/* Sensor power on */
+	if (core->pdata->sensor_power_on) {
+		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
+			if (!(test_bit(FIMC_IS_SENSOR_OPEN, &sensor[i].state)))
+				continue;
+			pr_info("sensor[%d] power_on\n", i);
+			core->pdata->sensor_power_on(core->pdev, i);
+		}
+	}
 
 	/* Clock on */
 	if (core->pdata->clk_on) {
