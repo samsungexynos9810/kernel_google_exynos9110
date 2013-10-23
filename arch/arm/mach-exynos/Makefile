@@ -14,7 +14,7 @@ obj-				:=
 
 obj-$(CONFIG_ARCH_EXYNOS)	+= common.o
 obj-$(CONFIG_SOC_EXYNOS5430)	+= asv-exynos.o asv-exynos5430.o pm_domains-exynos5430.o
-obj-$(CONFIG_SOC_EXYNOS5422)	+= pm_domains-exynos5422.o
+obj-$(CONFIG_SOC_EXYNOS5422)	+= asv-exynos.o asv-exynos5422.o pm_domains-exynos5422.o
 
 obj-$(CONFIG_EXYNOS5430_BTS)	+= bts-exynos5430.o
 obj-$(CONFIG_SUSPEND)		+= pm-exynos5430.o
