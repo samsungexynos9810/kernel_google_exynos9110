@@ -587,4 +587,37 @@
 			#dma-requests = <16>;
 		};
 	};
+
+	usb@12110000 {
+		compatible = "samsung,exynos5-ehci";
+		reg = <0x12110000 0x100>;
+		interrupts = <0 71 0>;
+		clocks = <&clock 1502>;
+		clock-names = "usbhost";
+		status = "ok";
+		usb-phy = <&usb2_phy>;
+	};
+
+	usb@12120000 {
+		compatible = "samsung,exynos5-ohci";
+		reg = <0x12120000 0x100>;
+		interrupts = <0 71 0>;
+		clocks = <&clock 1502>;
+		clock-names = "usbhost";
+		status = "ok";
+		usb-phy = <&usb2_phy>;
+	};
+
+	usb2_phy: usb2phy@12130000 {
+		compatible = "samsung,exynos5-usb2phy";
+		reg = <0x12130000 0x100>;
+		/* TODO: add clock info */
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		usbphy-sys {
+			reg = <0x10040704 0xC>;
+		};
+	};
 };
