@@ -391,7 +391,7 @@ struct exynos_platform_fimc_is {
 extern void exynos_fimc_is_set_platdata(struct exynos_platform_fimc_is *pd);
 
 /* defined by architecture to configure gpio */
-extern int exynos_fimc_is_cfg_gpio(struct platform_device *pdev,
+extern int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 					int channel, bool flag_on);
 
 /* platform specific clock functions */

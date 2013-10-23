@@ -50,7 +50,7 @@ int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
 	struct pinctrl *pinctrl_i2c;
 	struct pinctrl *pinctrl_uart;
 	struct pinctrl *pinctrl_flash;
-	struct exynos5_platform_fimc_is *pdata;
+	struct exynos_platform_fimc_is *pdata;
 	struct fimc_is_gpio_info *_gpio_info;
 
 	pdata = dev_get_platdata(&pdev->dev);
