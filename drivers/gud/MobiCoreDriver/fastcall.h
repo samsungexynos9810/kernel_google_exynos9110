@@ -39,6 +39,7 @@
 #define MC_FC_POWER		-3
 #define MC_FC_DUMP		-4
 #define MC_FC_NWD_TRACE		-31 /* Mem trace setup fastcall */
+#define MC_FC_SWITCH_CORE   0x84000005
 
 
 /*
@@ -96,6 +97,21 @@ union mc_fc_info {
 	} as_out;
 };
 
+/* fast call switch Core parameters */
+union mc_fc_swich_core {
+	union fc_generic as_generic;
+	struct {
+		uint32_t cmd;
+		uint32_t CoreId;
+		uint32_t rfu[2];
+	} as_in;
+	struct {
+		uint32_t resp;
+		uint32_t ret;
+		uint32_t state;
+		uint32_t ext_info;
+	} as_out;
+};
 /*
  * _smc() - fast call to MobiCore
  *
@@ -104,23 +120,22 @@ union mc_fc_info {
 static inline long _smc(void *data)
 {
 	int ret = 0;
-	union fc_generic fc_generic;
 
 	if (data == NULL)
 		return -EPERM;
 
 #ifdef MC_SMC_FASTCALL
 	{
-		ret = smc_fastcall(data, sizeof(fc_generic));
+		ret = smc_fastcall(data, sizeof(union fc_generic));
 	}
 #else
-	memcpy(&fc_generic, data, sizeof(union fc_generic));
 	{
-		/* SVC expect values in r0-r3 */
-		register u32 reg0 __asm__("r0") = fc_generic.as_in.cmd;
-		register u32 reg1 __asm__("r1") = fc_generic.as_in.param[0];
-		register u32 reg2 __asm__("r2") = fc_generic.as_in.param[1];
-		register u32 reg3 __asm__("r3") = fc_generic.as_in.param[2];
+		union fc_generic *fc_generic = data;
+		/* SMC expect values in r0-r3 */
+		register u32 reg0 __asm__("r0") = fc_generic->as_in.cmd;
+		register u32 reg1 __asm__("r1") = fc_generic->as_in.param[0];
+		register u32 reg2 __asm__("r2") = fc_generic->as_in.param[1];
+		register u32 reg3 __asm__("r3") = fc_generic->as_in.param[2];
 
 		__asm__ volatile (
 #ifdef MC_ARCH_EXTENSION_SEC
@@ -131,13 +146,20 @@ static inline long _smc(void *data)
 			"smc 0\n"
 			: "+r"(reg0), "+r"(reg1), "+r"(reg2), "+r"(reg3)
 		);
+#ifdef __ARM_VE_A9X4_QEMU__
+		__asm__ volatile (
+		    "nop\n"
+		    "nop\n"
+		    "nop\n"
+		    "nop"
+		 );
+#endif
 
 		/* set response */
-		fc_generic.as_out.resp     = reg0;
-		fc_generic.as_out.ret      = reg1;
-		fc_generic.as_out.param[0] = reg2;
-		fc_generic.as_out.param[1] = reg3;
-		memcpy(data, &fc_generic, sizeof(union fc_generic));
+		fc_generic->as_out.resp     = reg0;
+		fc_generic->as_out.ret      = reg1;
+		fc_generic->as_out.param[0] = reg2;
+		fc_generic->as_out.param[1] = reg3;
 	}
 #endif
 	return ret;

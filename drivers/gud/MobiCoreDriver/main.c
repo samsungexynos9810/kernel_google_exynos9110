@@ -47,7 +47,7 @@
 
 /* Define a MobiCore device structure for use with dev_debug() etc */
 struct device_driver mcd_debug_name = {
-	.name = "mcdrvkmod"
+	.name = "MobiCore"
 };
 
 struct device mcd_debug_subname = {
@@ -55,6 +55,8 @@ struct device mcd_debug_subname = {
 };
 
 struct device *mcd = &mcd_debug_subname;
+uint32_t activeCpu = 0;
+uint32_t activeCpuNew = 0;
 
 /* We need 2 devices for admin and user interface*/
 #define MC_DEV_MAX 2
@@ -502,7 +504,7 @@ void *get_mci_base_phys(unsigned int len)
  * or user space virtual memory
  */
 int mc_register_wsm_l2(struct mc_instance *instance,
-	uint32_t buffer, uint32_t len,
+	void *buffer, uint32_t len,
 	uint32_t *handle, uint32_t *phys)
 {
 	int ret = 0;
@@ -518,12 +520,12 @@ int mc_register_wsm_l2(struct mc_instance *instance,
 		return -EINVAL;
 	}
 
-	MCDRV_DBG_VERBOSE(mcd, "buffer: %p, len=%08x", (void *)buffer, len);
+	MCDRV_DBG_VERBOSE(mcd, "buffer: %p, len=%08x", buffer, len);
 
-	if (!mc_find_cont_wsm_addr(instance, (void *)buffer, &kbuff, len))
+	if (!mc_find_cont_wsm_addr(instance, buffer, &kbuff, len))
 		table = mc_alloc_l2_table(instance, NULL, (void *)kbuff, len);
 	else
-		table = mc_alloc_l2_table(instance, task, (void *)buffer, len);
+		table = mc_alloc_l2_table(instance, task, buffer, len);
 
 	if (IS_ERR(table)) {
 		MCDRV_DBG_ERROR(mcd, "new_used_l2_table() failed");
@@ -772,7 +774,7 @@ static long mc_fd_user_ioctl(struct file *file, unsigned int cmd,
 		if (copy_from_user(&reg, uarg, sizeof(reg)))
 			return -EFAULT;
 
-		ret = mc_register_wsm_l2(instance, reg.buffer,
+		ret = mc_register_wsm_l2(instance, (void *)reg.buffer,
 			reg.len, &reg.handle, &reg.table_phys);
 		if (!ret) {
 			if (copy_to_user(uarg, &reg, sizeof(reg))) {
@@ -1062,6 +1064,26 @@ struct mc_instance *mc_alloc_instance(void)
 	return instance;
 }
 
+static ssize_t mc_fd_write(struct file *file, const char *buffer, size_t buffer_len, loff_t *x)
+{
+	uint32_t cpuNew;
+	struct mc_instance *instance = get_instance(file);
+
+	if (WARN(!instance, "No instance data available"))
+		return -EFAULT;
+	if (buffer[0] == 'n') {
+		mc_nsiq();
+	}
+	else {
+		cpuNew= buffer[0] - '0';
+		if (cpuNew <= 8 ) {
+			MCDRV_DBG_VERBOSE(mcd, "Set Active Cpu: %d\n", cpuNew);
+			mc_switchCore(cpuNew);
+		}
+	}
+	return buffer_len;
+}
+
 /*
  * Release a mobicore instance object and all objects related to it
  * @instance:	instance
@@ -1201,7 +1223,9 @@ static irqreturn_t mc_ssiq_isr(int intr, void *context)
 
 	/* signal the daemon */
 	complete(&ctx.isr_comp);
-
+#ifdef MC_MEM_TRACES
+    mobicore_log_read();
+#endif
 	return IRQ_HANDLED;
 }
 
@@ -1213,6 +1237,7 @@ static const struct file_operations mc_admin_fops = {
 	.unlocked_ioctl	= mc_fd_admin_ioctl,
 	.mmap		= mc_fd_mmap,
 	.read		= mc_fd_read,
+	.write          = mc_fd_write,
 };
 
 /* function table structure of this device driver. */
@@ -1222,6 +1247,7 @@ static const struct file_operations mc_user_fops = {
 	.release	= mc_fd_release,
 	.unlocked_ioctl	= mc_fd_user_ioctl,
 	.mmap		= mc_fd_mmap,
+        .write          = mc_fd_write,
 };
 
 static int create_devices(void)
@@ -1321,7 +1347,7 @@ static int __init mobicore_init(void)
 	/* initialize event counter for signaling of an IRQ to zero */
 	atomic_set(&ctx.isr_counter, 0);
 
-	/* set up S-SIQ interrupt handler */
+	/* set up S-SIQ interrupt handler ************************/
 	ret = request_irq(MC_INTR_SSIQ, mc_ssiq_isr, IRQF_TRIGGER_RISING,
 			MC_ADMIN_DEVNODE, &ctx);
 	if (ret != 0) {

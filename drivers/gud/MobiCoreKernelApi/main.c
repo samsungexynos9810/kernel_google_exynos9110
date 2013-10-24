@@ -24,6 +24,7 @@
 
 #define MC_DAEMON_NETLINK  17
 #define MC_NETLINK_COMPAT_V37
+
 struct mc_kernelapi_ctx {
 	struct sock *sk;
 	struct list_head peers;

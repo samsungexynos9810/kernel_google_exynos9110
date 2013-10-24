@@ -1,4 +1,4 @@
-/** Build tag created during build by ./Out/_build/_src/Scripts/trunk/00042692/Out/setBuildTag.sh.
+/** Build tag created during build by ./Out/_build/_src/Scripts/trunk/00044192/Out/setBuildTag.sh.
  * <-- Copyright Trustonic Limited 2013 -->
  *
  * Redistribution and use in source and binary forms, with or without
@@ -26,4 +26,4 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #define MOBICORE_COMPONENT_BUILD_TAG \
-		"*** SAMSUNG_Exynos5430_Release_tbase-200_V001 ###"
+		"*** Build by valman01@valman01-desktop, svn@r44904M ###"

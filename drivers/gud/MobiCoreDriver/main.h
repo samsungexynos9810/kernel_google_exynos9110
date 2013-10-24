@@ -133,7 +133,7 @@ int mc_release_instance(struct mc_instance *instance);
  * can be vmalloc or user space virtual memory
  */
 int mc_register_wsm_l2(struct mc_instance *instance,
-	uint32_t buffer, uint32_t len,
+	void *buffer, uint32_t len,
 	uint32_t *handle, uint32_t *phys);
 /* Unregister the buffer mapped above */
 int mc_unregister_wsm_l2(struct mc_instance *instance, uint32_t handle);

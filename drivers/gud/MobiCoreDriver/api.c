@@ -29,7 +29,7 @@
 int mobicore_map_vmem(struct mc_instance *instance, void *addr,
 	uint32_t len, uint32_t *handle, uint32_t *phys)
 {
-	return mc_register_wsm_l2(instance, (uint32_t)addr, len,
+	return mc_register_wsm_l2(instance, addr, len,
 		handle, phys);
 }
 EXPORT_SYMBOL(mobicore_map_vmem);
