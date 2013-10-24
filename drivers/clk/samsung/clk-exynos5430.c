@@ -454,6 +454,7 @@ enum exynos5430_clks {
 	gate_toprtc = 2510,
 	gate_custom_efuse, gate_custom_efuse_apbif,
 	gate_antirbk_cnt, gate_antirbk_cnt_apbif,
+	gate_rtc = 2515,
 
 	/* cam0 ip gate */
 	gate_pmu_cam0 = 2520, gate_sysreg_cam0,
@@ -577,6 +578,10 @@ enum exynos5430_clks {
 	gate_pixelasyncs_scalerp_local,
 	gate_pixelasyncm_ispd_local,
 	gate_pixelasync_ispc_local,
+
+	gate_top_cam1 = 2780, gate_top_cam0, gate_top_isp,
+
+	gate_disp_333 = 2790,
 
 	/* mux */
 	mout_egl_pll = 3000, mout_egl_dpll,
@@ -2224,6 +2229,11 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_phyclk_rxbyteclkhs0_s2a, "sclk_phyclk_rxbyteclkhs0_s2a", NULL, EXYNOS5430_ENABLE_SCLK_CAM0, 7, 0, 0),
 
 	/* IP Gate */
+	/* TOP */
+	CGTE(gate_top_cam1, "gate_top_cam1", NULL, EXYNOS5430_ENABLE_IP_TOP, 6, 0, 0),
+	CGTE(gate_top_cam0, "gate_top_cam0", NULL, EXYNOS5430_ENABLE_IP_TOP, 5, 0, 0),
+	CGTE(gate_top_isp, "gate_top_isp", NULL, EXYNOS5430_ENABLE_IP_TOP, 4, 0, 0),
+
 	/* AUD0 */
 	CGTE(gate_gpio_aud, "gate_gpio_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 13, 0, 0),
 	CGTE(gate_pmu_aud, "gate_pmu_aud", NULL, EXYNOS5430_ENABLE_IP_AUD0, 12, 0, 0),
@@ -2413,6 +2423,9 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_ahb2apb_g3dp, "gate_ahb2apb_g3dp", NULL, EXYNOS5430_ENABLE_IP_G3D1, 2, 0, 0),
 	CGTE(gate_g3dnp_150, "gate_g3dnp_150", NULL, EXYNOS5430_ENABLE_IP_G3D1, 1, 0, 0),
 	CGTE(gate_g3dnd_600, "gate_g3dnd_600", NULL, EXYNOS5430_ENABLE_IP_G3D1, 0, 0, 0),
+
+	/* MIF */
+	CGTE(gate_disp_333, "gate_disp_333", NULL, EXYNOS5430_ENABLE_IP_MIF3, 1, 0, 0),
 
 	/* GSCL */
 	CGTE(gate_pmu_gscl, "gate_pmu_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 5, 0, 0),
@@ -2635,6 +2648,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_chipid_apbif, "gate_chipid_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 0, 0, 0),
 
 	CGTE(gate_toprtc, "gate_toprtc", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TOPRTC, 0, 0, 0),
+	CGTE(gate_rtc, "gate_rtc", NULL, EXYNOS5430_ENABLE_IP_MIF_SECURE_RTC, 0, 0, 0),
 
 	CGTE(gate_custom_efuse, "gate_custom_efuse", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CUSTOM_EFUSE, 1, 0, 0),
 	CGTE(gate_custom_efuse_apbif, "gate_custom_efuse_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CUSTOM_EFUSE, 0, 0, 0),
