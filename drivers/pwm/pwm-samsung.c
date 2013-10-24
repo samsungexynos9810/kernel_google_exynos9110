@@ -417,7 +417,7 @@ static int s3c_pwm_clk_init(struct platform_device *pdev,
 	struct device *dev = &pdev->dev;
 	static struct clk *clk_scaler[2];
 
-	s3c->clk = devm_clk_get(dev, "timers");
+	s3c->clk = devm_clk_get(dev, "gate_timers");
 	if (IS_ERR(s3c->clk)) {
 		pr_err("no parent clock\n");
 		return -EINVAL;
