@@ -1717,19 +1717,13 @@ static int gsc_probe(struct platform_device *pdev)
 	ret = gsc_register_output_device(gsc);
 	if (ret)
 		goto err_m2m;
-#if 0
-	if (gsc->pdata)	{
-		ret = gsc_register_capture_device(gsc);
-		if (ret)
-			goto err_output;
-	}
-#endif
+
 	snprintf(workqueue_name, WORKQUEUE_NAME_SIZE,
 			"gsc%d_irq_wq_name", gsc->id);
 	gsc->irq_workqueue = create_singlethread_workqueue(workqueue_name);
 	if (gsc->irq_workqueue == NULL) {
 		dev_err(&pdev->dev, "failed to create workqueue for gsc\n");
-		goto err_m2m;
+		goto err_out;
 	}
 
 	gsc->alloc_ctx = gsc->vb2->init(gsc);
@@ -1746,12 +1740,8 @@ static int gsc_probe(struct platform_device *pdev)
 	gsc_info("gsc-%d registered successfully", gsc->id);
 
 	return 0;
-#if 0
-err_capture:
-	gsc_unregister_capture_device(gsc);
-err_output:
+err_out:
 	gsc_unregister_output_device(gsc);
-#endif
 err_m2m:
 	gsc_unregister_m2m_device(gsc);
 err_clk_put:
