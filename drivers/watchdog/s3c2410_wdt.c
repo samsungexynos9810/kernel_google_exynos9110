@@ -126,7 +126,8 @@ struct s3c2410_wdt_variant {
 
 struct s3c2410_wdt {
 	struct device		*dev;
-	struct clk		*clock;
+	struct clk		*rate_clock;
+	struct clk		*gate_clock;
 	void __iomem		*reg_base;
 	unsigned int		count;
 	spinlock_t		lock;
@@ -351,12 +352,7 @@ static inline int s3c2410wdt_is_running(struct s3c2410_wdt *wdt)
 
 static int s3c2410wdt_set_min_max_timeout(struct s3c2410_wdt *wdt)
 {
-	unsigned long freq = clk_get_rate(wdt->clock);
-
-	if(!freq) {
-		dev_err(wdt->dev, "failed to get clock\n");
-		return -EINVAL;
-	}
+	unsigned long freq = clk_get_rate(wdt->rate_clock);
 
 	wdt->wdt_device.min_timeout = 1;
 	wdt->wdt_device.max_timeout = S3C2410_WTCNT_MAX *
@@ -368,7 +364,7 @@ static int s3c2410wdt_set_min_max_timeout(struct s3c2410_wdt *wdt)
 static int s3c2410wdt_set_heartbeat(struct watchdog_device *wdd, unsigned timeout)
 {
 	struct s3c2410_wdt *wdt = watchdog_get_drvdata(wdd);
-	unsigned long freq = clk_get_rate(wdt->clock);
+	unsigned long freq = clk_get_rate(wdt->rate_clock);
 	unsigned int count;
 	unsigned int divisor = 1;
 	unsigned long wtcon;
@@ -662,16 +658,23 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 
 	DBG("probe: mapped reg_base=%p\n", wdt->reg_base);
 
-	wdt->clock = devm_clk_get(dev, "gate_watchdog");
-	if (IS_ERR(wdt->clock)) {
-		dev_err(dev, "failed to find watchdog clock source\n");
-		ret = PTR_ERR(wdt->clock);
+		wdt->rate_clock = devm_clk_get(dev, "rate_watchdog");
+	if (IS_ERR(wdt->rate_clock)) {
+		dev_err(dev, "failed to find watchdog rate clock source\n");
+		ret = PTR_ERR(wdt->rate_clock);
 		goto err;
 	}
 
-	ret = clk_prepare_enable(wdt->clock);
+	wdt->gate_clock = devm_clk_get(dev, "gate_watchdog");
+	if (IS_ERR(wdt->gate_clock)) {
+		dev_err(dev, "failed to find watchdog gate clock source\n");
+		ret = PTR_ERR(wdt->gate_clock);
+		goto err;
+	}
+
+	ret = clk_prepare_enable(wdt->gate_clock);
 	if (ret < 0) {
-		dev_err(dev, "failed to enable clock\n");
+		dev_err(dev, "failed to enable gate clock\n");
 		return ret;
 	}
 
@@ -777,8 +780,9 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 	s3c2410wdt_cpufreq_deregister(wdt);
 
  err_clk:
-	clk_disable_unprepare(wdt->clock);
-
+	clk_disable_unprepare(wdt->gate_clock);
+	wdt->rate_clock = NULL;
+	wdt->gate_clock = NULL;
  err:
 	return ret;
 }
@@ -798,7 +802,9 @@ static int s3c2410wdt_remove(struct platform_device *dev)
 
 	s3c2410wdt_cpufreq_deregister(wdt);
 
-	clk_disable_unprepare(wdt->clock);
+	clk_disable_unprepare(wdt->rate_clock);
+	wdt->rate_clock = NULL;
+	wdt->gate_clock = NULL;
 
 	return 0;
 }
