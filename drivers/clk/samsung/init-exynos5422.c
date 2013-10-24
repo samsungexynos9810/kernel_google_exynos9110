@@ -57,7 +57,16 @@ static void top_clk_enable(void)
 	pr_info("Clock enables : TOP, MIF\n");
 }
 
+static void uart_clock_init(void)
+{
+	exynos_set_rate("dout_uart0", 150000000);
+	exynos_set_rate("dout_uart1", 150000000);
+	exynos_set_rate("dout_uart2", 150000000);
+	exynos_set_rate("dout_uart3", 150000000);
+}
+
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
+	uart_clock_init();
 }
