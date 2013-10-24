@@ -396,6 +396,30 @@
 			interrupt-controller;
 			#interrupt-cells = <2>;
 		};
+
+		uart0_bus: uart0-bus {
+			samsung,pins = "gpa0-3", "gpa0-2", "gpa0-1", "gpa0-0";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+		};
+
+		uart1_bus: uart1-bus {
+			samsung,pins = "gpa0-7", "gpa0-6", "gpa0-5", "gpa0-4";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+		};
+
+		uart2_bus: uart2-bus {
+			samsung,pins = "gpa1-3", "gpa1-2", "gpa1-1", "gpa1-0";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+		};
+
+		uart3_bus: uart3-bus {
+			samsung,pins = "gpa1-5", "gpa1-4";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <0>;
+		};
 	};
 
 	pinctrl@03860000 {

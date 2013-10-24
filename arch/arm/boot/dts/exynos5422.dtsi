@@ -84,22 +84,38 @@
 	};
 
 	serial@12C00000 {
-		clocks = <&clock 81>, <&clock 1081>;
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x12C00000 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart0_bus>;
+		clocks = <&clock 4126>, <&clock 1081>;
 		clock-names = "sclk_uart0", "gate_uart0";
 	};
 
 	serial@12C10000 {
-		clocks = <&clock 81>, <&clock 1082>;
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x12C10000 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart1_bus>;
+		clocks = <&clock 4127>, <&clock 1082>;
 		clock-names = "sclk_uart1", "gate_uart1";
 	};
 
 	serial@12C20000 {
-		clocks = <&clock 82>, <&clock 1083>;
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x12C20000 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart2_bus>;
+		clocks = <&clock 4128>, <&clock 1083>;
 		clock-names = "sclk_uart2", "gate_uart2";
 	};
 
 	serial@12C30000 {
-		clocks = <&clock 83>, <&clock 1084>;
+		compatible = "samsung,exynos4210-uart";
+		reg = <0x12C30000 0x100>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart3_bus>;
+		clocks = <&clock 4129>, <&clock 1084>;
 		clock-names = "sclk_uart3", "gate_uart3";
 	};
 
