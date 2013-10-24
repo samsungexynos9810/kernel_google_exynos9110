@@ -1019,7 +1019,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 			EXYNOS5_CLK_GATE_BUS_TOP, 1, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_166, "aclk_166", "mout_aclk_166_user",
 			EXYNOS5_CLK_GATE_BUS_TOP, 14, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333, "aclk_333", "mout_aclk_333",
+	CGATE(aclk_333, "aclk_333", "mout_aclk_333_user",
 			EXYNOS5_CLK_GATE_BUS_TOP, 15, CLK_IGNORE_UNUSED, 0),
 
 	/* sclk */
