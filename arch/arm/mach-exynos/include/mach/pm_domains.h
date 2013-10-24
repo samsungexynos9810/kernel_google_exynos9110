@@ -40,7 +40,7 @@
 #ifndef pr_fmt
 #define pr_fmt(fmt) fmt
 #endif
-
+#define PM_DOMAIN_DEBUG
 #ifdef PM_DOMAIN_DEBUG
 #define DEBUG_PRINT_INFO(fmt, ...) printk(PM_DOMAIN_PREFIX pr_fmt(fmt), ##__VA_ARGS__)
 #else
@@ -67,6 +67,7 @@ struct exynos_pm_domain {
 	int (*check_status)(struct exynos_pm_domain *pd);
 	struct exynos_pd_callback *cb;
 	unsigned int status;
+	unsigned int pd_option;
 #ifdef CONFIG_EXYNOS5430_BTS
 	unsigned int bts;
 #endif

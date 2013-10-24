@@ -50,6 +50,9 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 
 	mutex_lock(&pd->access_lock);
 	if (likely(pd->base)) {
+		/* sc_feedback to OPTION register */
+		__raw_writel(pd->pd_option, pd->base+0x8);
+
 		/* on/off value to CONFIGURATION register */
 		__raw_writel(power_flags, pd->base);
 
@@ -58,11 +61,12 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 		/* check STATUS register */
 		while ((__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) != power_flags) {
 			if (timeout == 0) {
-				pr_err("%s@%p: %08x, %08x\n",
-						pd->genpd.name,
-						pd->base,
-						__raw_readl(pd->base),
-						__raw_readl(pd->base+4));
+				pr_err("%s@%p: %08x, %08x, %08x\n",
+					pd->genpd.name,
+					pd->base,
+					__raw_readl(pd->base),
+					__raw_readl(pd->base+4),
+					__raw_readl(pd->base+8));
 				pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
 				return -ETIMEDOUT;
 			}
@@ -72,20 +76,22 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 		}
 		if (unlikely(timeout < 50)) {
 			pr_warn(PM_DOMAIN_PREFIX "long delay found during %s is %s\n", pd->name, power_flags ? "on":"off");
-			pr_warn("%s@%p: %08x, %08x\n",
-					pd->name,
-					pd->base,
-					__raw_readl(pd->base),
-					__raw_readl(pd->base+4));
+			pr_warn("%s@%p: %08x, %08x, %08x\n",
+				pd->name,
+				pd->base,
+				__raw_readl(pd->base),
+				__raw_readl(pd->base+4),
+				__raw_readl(pd->base+8));
 		}
 	}
 	pd->status = power_flags;
 	mutex_unlock(&pd->access_lock);
 
-	DEBUG_PRINT_INFO("%s@%p: %08x, %08x\n",
-				pd->genpd.name, pd->base,
-				__raw_readl(pd->base),
-				__raw_readl(pd->base+4));
+	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
+	pd->genpd.name, pd->base,
+	__raw_readl(pd->base),
+	__raw_readl(pd->base+4),
+	__raw_readl(pd->base+8));
 
 	return 0;
 }
@@ -373,6 +379,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
 		struct exynos_pm_domain *pd;
 		struct device_node *children;
+		int ret, val;
 
 		/* skip unmanaged power domain */
 		if (!of_device_is_available(np))
@@ -394,6 +401,12 @@ static __init int exynos_pm_dt_parse_domains(void)
 		pd->on = exynos_pd_power;
 		pd->off = exynos_pd_power;
 		pd->cb = exynos_pd_find_callback(pd);
+
+		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
+		if (ret)
+			pd->pd_option = 0x0102;
+		else
+			pd->pd_option = val;
 
 		platform_set_drvdata(pdev, pd);
 
