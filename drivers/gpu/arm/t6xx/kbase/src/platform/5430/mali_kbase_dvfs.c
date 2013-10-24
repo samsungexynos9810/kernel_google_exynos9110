@@ -41,6 +41,7 @@
 #include <mach/map.h>
 #include <linux/fb.h>
 #include <linux/clk.h>
+#include <mach/pm_domains.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock.h>
 #include <../drivers/clk/samsung/clk.h>
@@ -98,7 +99,7 @@ static struct devfreq *mali_devfreq;
 #ifdef MALI_DEBUG
 #define DEBUG_PRINT_INFO printk
 #else
-#define DEBUG_PRINT_INFO
+//#define DEBUG_PRINT_INFO
 #endif
 
 #if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
@@ -839,6 +840,30 @@ void kbase_tmu_normal_work(void)
 }
 #endif
 
+#ifdef CONFIG_PM_RUNTIME
+struct exynos_pm_domain *kbase_platform_get_pm_domain(kbase_device *kbdev)
+{
+	struct platform_device *pdev = NULL;
+	struct device_node *np = NULL;
+	struct exynos_pm_domain *pd_temp, *pd = NULL;
+
+	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd")
+	{
+		if (!of_device_is_available(np))
+			continue;
+
+		pdev = of_find_device_by_node(np);
+		pd_temp = platform_get_drvdata(pdev);
+		if(!strcmp("pd-g3d", pd_temp->genpd.name)) {
+			pd = pd_temp;
+			break;
+		}
+	}
+
+	return pd;
+}
+#endif
+
 void kbase_platform_dvfs_set_clock(kbase_device *kbdev, int freq)
 {
 	static long g3d_rate_prev = -1;
@@ -945,6 +970,7 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 {
 	static int prev_level = -1;
 	int mif_qos, int_qos, cpu_qos;
+	struct exynos_pm_domain *pd = NULL;
 
 #ifdef MALI_DEBUG
 	printk(KERN_INFO "\n[mali_devfreq]dvfs level:%d\n", level);
@@ -955,6 +981,16 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 	if (WARN_ON((level >= MALI_DVFS_STEP) || (level < 0)))
 		panic("invalid level");
 
+#ifdef CONFIG_PM_RUNTIME
+	pd = kbase_platform_get_pm_domain(kbdev);
+	if (pd) mutex_lock(&pd->access_lock);
+#endif
+	if (!kbase_platform_is_power_on())
+	{
+		printk(KERN_INFO "kbase_platform_dvfs_set_level in the G3D power-off state!\n");
+		if (pd) mutex_unlock(&pd->access_lock);
+		return;
+	}
 #ifdef CONFIG_MALI_T6XX_DVFS
 	mutex_lock(&mali_set_clock_lock);
 #endif
@@ -988,6 +1024,9 @@ void kbase_platform_dvfs_set_level(kbase_device *kbdev, int level)
 	prev_level = level;
 #ifdef CONFIG_MALI_T6XX_DVFS
 	mutex_unlock(&mali_set_clock_lock);
+#endif
+#ifdef CONFIG_PM_RUNTIME
+	if (pd) mutex_unlock(&pd->access_lock);
 #endif
 }
 
