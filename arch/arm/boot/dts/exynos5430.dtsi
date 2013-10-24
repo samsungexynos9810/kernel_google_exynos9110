@@ -218,7 +218,7 @@
 		interrupts = <0 421 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart0_bus>;
-		clocks = <&clock 115>, <&clock 2437>;
+		clocks = <&clock 4060>, <&clock 2437>;
 		clock-names = "sclk_uart0", "gate_uart0";
 	};
 
@@ -230,7 +230,7 @@
 		interrupts = <0 422 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart1_bus>;
-		clocks = <&clock 116>, <&clock 2436>;
+		clocks = <&clock 4061>, <&clock 2436>;
 		clock-names = "sclk_uart1", "gate_uart1";
 	};
 
@@ -242,7 +242,7 @@
 		interrupts = <0 423 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart2_bus>;
-		clocks = <&clock 117>, <&clock 2435>;
+		clocks = <&clock 4062>, <&clock 2435>;
 		clock-names = "sclk_uart2", "gate_uart2";
 	};
 
