@@ -1406,8 +1406,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c0_bus>;
-		clocks = <&clock 893>;
-		clock-names = "i2c";
+		clocks = <&clock 893>, <&clock 2453>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1419,8 +1419,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c1_bus>;
-		clocks = <&clock 894>;
-		clock-names = "i2c";
+		clocks = <&clock 894>, <&clock 2452>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1432,8 +1432,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c2_bus>;
-		clocks = <&clock 895>;
-		clock-names = "i2c";
+		clocks = <&clock 895>, <&clock 2451>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1445,8 +1445,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c3_bus>;
-		clocks = <&clock 896>;
-		clock-names = "i2c";
+		clocks = <&clock 896>, <&clock 2450>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1458,8 +1458,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c4_bus>;
-		clocks = <&clock 897>;
-		clock-names = "i2c";
+		clocks = <&clock 897>, <&clock 2447>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1471,8 +1471,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c5_bus>;
-		clocks = <&clock 898>;
-		clock-names = "i2c";
+		clocks = <&clock 898>, <&clock 2446>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1484,8 +1484,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c6_bus>;
-		clocks = <&clock 899>;
-		clock-names = "i2c";
+		clocks = <&clock 899>, <&clock 2445>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
@@ -1497,8 +1497,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c7_bus>;
-		clocks = <&clock 900>;
-		clock-names = "i2c";
+		clocks = <&clock 900>, <&clock 2444>;
+		clock-names = "rate_i2c","gate_i2c";
 		status = "disabled";
 	};
 
