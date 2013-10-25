@@ -439,7 +439,7 @@ void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type)
 	return;
 }
 
-static int __init exynos_pmu_init(void)
+int __init exynos5430_pmu_init(void)
 {
 	unsigned int tmp;
 	/*
@@ -464,6 +464,8 @@ static int __init exynos_pmu_init(void)
 	__raw_writel(tmp, EXYNOS_L2_OPTION(1));
 
 	exynos_pmu_config = exynos5430_pmu_config;
+	exynos_cpu.power_up = exynos5430_secondary_up;
+	exynos_cpu.power_state = exynos5430_cpu_state;
 
 	if (exynos_pmu_config != NULL)
 		pr_info("EXYNOS5430 PMU Initialize\n");
@@ -472,4 +474,3 @@ static int __init exynos_pmu_init(void)
 
 	return 0;
 }
-arch_initcall(exynos_pmu_init);

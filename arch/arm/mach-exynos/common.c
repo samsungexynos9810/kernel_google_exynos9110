@@ -78,6 +78,7 @@ static void exynos4_init_uarts(struct s3c2410_uartcfg *cfg, int no);
 static int exynos_init(void);
 
 unsigned long xxti_f = 0, xusbxti_f = 0;
+struct exynos_cpu_power_ops exynos_cpu;
 
 static struct cpu_table cpu_ids[] __initdata = {
 	{
@@ -713,6 +714,9 @@ void __init exynos_init_time(void)
 			mct_init(S5P_VA_SYSTIMER, EXYNOS4_IRQ_MCT_G0,
 					EXYNOS4_IRQ_MCT_L0, EXYNOS4_IRQ_MCT_L1);
 	}
+
+	if(soc_is_exynos5430())
+		exynos5430_pmu_init();
 }
 
 static unsigned int max_combiner_nr(void)

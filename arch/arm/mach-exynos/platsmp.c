@@ -36,13 +36,6 @@
 
 #include "common.h"
 
-struct exynos_cpu_power_ops {
-	void (*power_up)(unsigned int cpu_id);
-	unsigned int (*power_state)(unsigned int cpu_id);
-};
-
-static struct exynos_cpu_power_ops exynos_cpu;
-
 extern void exynos4_secondary_startup(void);
 
 static inline void __iomem *cpu_boot_reg_base(void)
@@ -283,10 +276,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
 		} while ((tmp & 0xf) != 0xf);
 	}
 
-	if (of_machine_is_compatible("samsung,exynos5430")) {
-		exynos_cpu.power_up = exynos5430_secondary_up;
-		exynos_cpu.power_state = exynos5430_cpu_state;
-	}
+	BUG_ON(exynos_cpu.power_up == NULL);
 }
 
 struct smp_operations exynos_smp_ops __initdata = {
