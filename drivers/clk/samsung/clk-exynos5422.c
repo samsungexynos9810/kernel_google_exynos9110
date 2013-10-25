@@ -998,7 +998,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(aclk_400_isp, "aclk_400_isp", "mout_aclk_400_isp_user",
 			EXYNOS5_CLK_GATE_BUS_TOP, 16, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_66_peric, "aclk_66_peric", "mout_aclk_66_peric_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 11, 0, 0),
+			EXYNOS5_CLK_GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_66_psgen, "aclk_66_psgen", "mout_aclk_66_psgen_user",
 			EXYNOS5_CLK_GATE_BUS_TOP, 10, CLK_IGNORE_UNUSED, 0),
 	CGATE(pclk_66_gpio, "pclk_66_gpio", "mout_pclk_66_gpio_user",
