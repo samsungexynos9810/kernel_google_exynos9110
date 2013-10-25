@@ -486,6 +486,10 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 		return -EINVAL;
 	}
 
+	/* In order to avoid passing '0' to get_order() */
+	if (!align)
+		align = PAGE_SIZE;
+
 	buffer->priv_virt = dma_alloc_from_contiguous(dev, len >> PAGE_SHIFT,
 					      get_order(align));
 	if (buffer->priv_virt == NULL) {
