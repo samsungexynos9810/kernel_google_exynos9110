@@ -189,6 +189,10 @@
 		};
 	};
 
+	rtc {
+		status = "okay";
+	};
+
 	dwmmc0@12200000 {
 		status = "okay";
 		num-slots = <1>;
@@ -260,6 +264,14 @@
 		};
 	};
 
+	pinctrl@13400000 {
+		pmic_irq: pmic-irq {
+			samsung,pins = "gpx3-2";
+			samsung,pin-pud = <3>;
+			samsung,pin-drv = <3>;
+		};
+	};
+
 	hsi2c@12CA0000 {
 		samsung,hs-mode;
 		clock-frequency = <2500000>;
@@ -268,6 +280,10 @@
 		s2mps11_pmic@66 {
 			compatible = "samsung,s2mps11-pmic";
 			reg = <0x66>;
+			interrupts = <2 0 0>;
+			interrupt-parent = <&gpx3>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&pmic_irq>;
 			wtsr_smpl = <1>;
 
 			regulators {
