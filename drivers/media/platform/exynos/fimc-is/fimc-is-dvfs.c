@@ -12,8 +12,8 @@
 
 #include "fimc-is-dvfs.h"
 
-extern struct pm_qos_request exynos5_isp_qos_dev;
-extern struct pm_qos_request exynos5_isp_qos_mem;
+extern struct pm_qos_request exynos_isp_qos_dev;
+extern struct pm_qos_request exynos_isp_qos_mem;
 
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING);
@@ -446,7 +446,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 			}
 		}
 
-		pm_qos_update_request(&exynos5_isp_qos_dev, int_qos);
+		pm_qos_update_request(&exynos_isp_qos_dev, int_qos);
 		dvfs_ctrl->cur_int_qos = int_qos;
 		//ore->clock.dvfs_level = int_level;
 
@@ -463,7 +463,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 	}
 
 	if (dvfs_ctrl->cur_mif_qos != mif_qos) {
-		pm_qos_update_request(&exynos5_isp_qos_mem, mif_qos);
+		pm_qos_update_request(&exynos_isp_qos_mem, mif_qos);
 		dvfs_ctrl->cur_mif_qos = mif_qos;
 
 		pr_info("[RSC:%d] %s: DVFS MIF level(%d) \n", device->instance,

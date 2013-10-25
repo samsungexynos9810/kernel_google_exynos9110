@@ -68,10 +68,10 @@ extern int fimc_is_vdo_video_probe(void *data);
 extern int fimc_is_3a0c_video_probe(void *data);
 extern int fimc_is_3a1c_video_probe(void *data);
 
-struct pm_qos_request exynos5_isp_qos_dev;
-struct pm_qos_request exynos5_isp_qos_mem;
-struct pm_qos_request exynos5_isp_qos_cam;
-struct pm_qos_request exynos5_isp_qos_disp;
+struct pm_qos_request exynos_isp_qos_dev;
+struct pm_qos_request exynos_isp_qos_mem;
+struct pm_qos_request exynos_isp_qos_cam;
+struct pm_qos_request exynos_isp_qos_disp;
 
 /* sysfs global variable for debug */
 struct fimc_is_sysfs_debug sysfs_debug;
@@ -614,10 +614,10 @@ int fimc_is_resource_put(struct fimc_is_core *core)
 #if defined(CONFIG_PM_DEVFREQ)
 		/* 4. bus release */
 		pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
-		pm_qos_remove_request(&exynos5_isp_qos_dev);
-		pm_qos_remove_request(&exynos5_isp_qos_mem);
-		pm_qos_remove_request(&exynos5_isp_qos_cam);
-		pm_qos_remove_request(&exynos5_isp_qos_disp);
+		pm_qos_remove_request(&exynos_isp_qos_dev);
+		pm_qos_remove_request(&exynos_isp_qos_mem);
+		pm_qos_remove_request(&exynos_isp_qos_cam);
+		pm_qos_remove_request(&exynos_isp_qos_disp);
 #endif
 
 		if (test_bit(FIMC_IS_ISCHAIN_POWER_ON, &core->state)) {
@@ -746,10 +746,10 @@ int fimc_is_runtime_resume(struct device *dev)
 	mif_qos = 800000;
 	cam_qos = 666000;
 	disp_qos = 333000;
-	pm_qos_add_request(&exynos5_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, int_qos);
-	pm_qos_add_request(&exynos5_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
-	pm_qos_add_request(&exynos5_isp_qos_cam, PM_QOS_CAM_THROUGHPUT, cam_qos);
-	pm_qos_add_request(&exynos5_isp_qos_disp, PM_QOS_DISPLAY_THROUGHPUT, disp_qos);
+	pm_qos_add_request(&exynos_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, int_qos);
+	pm_qos_add_request(&exynos_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
+	pm_qos_add_request(&exynos_isp_qos_cam, PM_QOS_CAM_THROUGHPUT, cam_qos);
+	pm_qos_add_request(&exynos_isp_qos_disp, PM_QOS_DISPLAY_THROUGHPUT, disp_qos);
 
 	pr_info("[RSC] %s: DVFS LOCK(int(%d), mif(%d), cam(%d), disp(%d))\n",
 		__func__, int_qos, mif_qos, cam_qos, disp_qos);
@@ -765,10 +765,10 @@ int fimc_is_runtime_resume(struct device *dev)
 	}
 
 #if defined(CONFIG_PM_DEVFREQ)
-	pm_qos_update_request(&exynos5_isp_qos_dev, int_qos);
-	pm_qos_update_request(&exynos5_isp_qos_mem, mif_qos);
-	pm_qos_update_request(&exynos5_isp_qos_cam, cam_qos);
-	pm_qos_update_request(&exynos5_isp_qos_disp, disp_qos);
+	pm_qos_update_request(&exynos_isp_qos_dev, int_qos);
+	pm_qos_update_request(&exynos_isp_qos_mem, mif_qos);
+	pm_qos_update_request(&exynos_isp_qos_cam, cam_qos);
+	pm_qos_update_request(&exynos_isp_qos_disp, disp_qos);
 #endif
 
 	/* Sensor power on */
