@@ -822,8 +822,9 @@ int kbase_tmu_hot_check_and_work(unsigned long event)
 		case GPU_TRIPPING:
 			lock_level = GPU_TRIPPING_110;
 			printk("[G3D] GPU_THROTTLING_110\n");
+			break;
 		default:
-			printk("[G3D] Wrong event in the kbase_tmu_hot_check_and_work function\n");
+			printk("[G3D] Wrong event, %lu, in the kbase_tmu_hot_check_and_work function\n", event);
 			return 0;
 	}
 
