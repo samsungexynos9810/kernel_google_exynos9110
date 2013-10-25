@@ -284,6 +284,20 @@
 		status = "disabled";
 	};
 
+	hsi2c_0: hsi2c@12CA0000 {
+		compatible = "samsung,exynos5-hsi2c";
+		samsung,polling-mode;
+		reg = <0x12CA0000 0x1000>;
+		interrupts = <0 60 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&hs_i2c0_bus>;
+		clocks = <&clock 426>;
+		clock-names = "hsi2c";
+		status = "disabled";
+	};
+
 	mali {
 		compatible = "arm,mali";
 		reg = <0x11800000 0x5000>;
