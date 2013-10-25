@@ -60,7 +60,7 @@ do { if (x) break; \
 
 extern unsigned int gpu_voltage_margin;
 void kbase_set_power_margin(int);
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 int kbase_tmu_hot_check_and_work(unsigned long event);
 void kbase_tmu_normal_work(void);
 #endif

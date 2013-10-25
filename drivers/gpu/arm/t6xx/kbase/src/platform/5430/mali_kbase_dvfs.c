@@ -76,7 +76,7 @@
 #ifdef CONFIG_MALI_T6XX_FREQ_LOCK
 #define GPU_MAX_CLK 266
 #endif
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 #include <mach/tmu.h>
 #define GPU_THROTTLING_90_95 266
 #define GPU_THROTTLING_95_100 266
@@ -778,7 +778,7 @@ void kbase_set_power_margin(int volt_offset)
 #endif
 }
 
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 int kbase_tmu_hot_check_and_work(unsigned long event)
 {
 #ifdef CONFIG_MALI_T6XX_DVFS

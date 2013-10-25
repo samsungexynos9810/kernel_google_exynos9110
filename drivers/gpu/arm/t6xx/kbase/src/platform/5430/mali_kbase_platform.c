@@ -54,7 +54,7 @@
 
 #include <kbase/src/common/mali_kbase_gator.h>
 
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 #include <mach/tmu.h>
 #define VOLTAGE_OFFSET_MARGIN 37500
 #endif
@@ -71,7 +71,7 @@ static struct clk *clk_g3d = NULL;
 static int clk_g3d_status = 0;
 static int global_store_clk = 0;
 
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 static int exynos5_g3d_tmu_notifier(struct notifier_block *notifier,
 				unsigned long event, void *v)
 {
@@ -148,7 +148,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	(void) clk_enable(clk_g3d);
 
 	clk_g3d_status = 1;
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 	exynos_gpu_add_notifier(&exynos5_g3d_tmu_nb);
 	tmu_on_off = true;
 #else
@@ -1154,7 +1154,7 @@ mali_error kbase_platform_init(struct kbase_device *kbdev)
 #endif
 	/* Enable power */
 	//kbase_platform_cmu_pmu_control(kbdev, 1);
-#if defined(CONFIG_EXYNOS_THERMAL)
+#if defined(CONFIG_EXYNOS_THERMAL) && !defined(CONFIG_MACH_XYREF5430)
 	gpu_voltage_margin = 0;
 #endif
 	return MALI_ERROR_NONE;
