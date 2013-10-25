@@ -178,7 +178,7 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct 
 		if (call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr))
 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
 
-		if (soc_is_exynos5430()) {
+		if (soc_is_exynos5430() || soc_is_exynos5422()) {
 			dsb_sev();
 		} else {
 			call_firmware_op(cpu_boot, phys_cpu);

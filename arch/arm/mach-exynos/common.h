@@ -78,6 +78,12 @@ int exynos5430_pmu_init(void);
 #define exynos5430_pmu_init()
 #endif
 
+#ifdef CONFIG_SOC_EXYNOS5422
+int exynos5422_pmu_init(void);
+#else
+#define exynos5422_pmu_init()
+#endif
+
 struct device_node;
 void combiner_init(void __iomem *combiner_base, struct device_node *np,
 			unsigned int max_nr, int irq_base);

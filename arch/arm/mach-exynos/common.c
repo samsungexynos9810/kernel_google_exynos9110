@@ -269,6 +269,15 @@ static struct map_desc exynos5250_iodesc[] __initdata = {
 	},
 };
 
+static struct map_desc exynos5422_iodesc[] __initdata = {
+	{
+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn		= __phys_to_pfn(EXYNOS5422_PA_SYSRAM_NS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	},
+};
+
 static struct map_desc exynos5_iodesc[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_SYS,
@@ -666,6 +675,9 @@ static void __init exynos5_map_io(void)
 
 	if (soc_is_exynos5250())
 		iotable_init(exynos5250_iodesc, ARRAY_SIZE(exynos5250_iodesc));
+
+	if (soc_is_exynos5422())
+		iotable_init(exynos5422_iodesc, ARRAY_SIZE(exynos5422_iodesc));
 }
 
 static void __init exynos5430_map_io(void)
@@ -717,6 +729,8 @@ void __init exynos_init_time(void)
 
 	if(soc_is_exynos5430())
 		exynos5430_pmu_init();
+	if(soc_is_exynos5422())
+		exynos5422_pmu_init();
 }
 
 static unsigned int max_combiner_nr(void)

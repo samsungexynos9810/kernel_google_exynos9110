@@ -32,6 +32,7 @@ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-smc.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= firmware.o
 obj-$(CONFIG_SOC_EXYNOS5430)	+= pmu-exynos5430.o
+obj-$(CONFIG_SOC_EXYNOS5422)	+= pmu-exynos5422.o
 
 plus_sec := $(call as-instr,.arch_extension sec,+sec)
 AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
