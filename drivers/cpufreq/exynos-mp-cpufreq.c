@@ -37,6 +37,7 @@
 #include <mach/cpufreq.h>
 #include <mach/asv-exynos.h>
 #include <mach/regs-pmu.h>
+#include <mach/tmu.h>
 #include <plat/cpu.h>
 
 #ifdef CONFIG_SMP
@@ -654,7 +655,6 @@ static struct notifier_block exynos_cpufreq_nb = {
 	.notifier_call = exynos_cpufreq_pm_notifier,
 };
 
-#if 0
 #ifdef CONFIG_EXYNOS_THERMAL
 static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 				       unsigned long event, void *v)
@@ -662,10 +662,8 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 	int volt;
 	int *on = v;
 
-#if 0 /* FIXME */
 	if (event != TMU_COLD)
 		return NOTIFY_OK;
-#endif
 
 	mutex_lock(&cpufreq_lock);
 	if (*on) {
@@ -711,7 +709,6 @@ out:
 static struct notifier_block exynos_tmu_nb = {
 	.notifier_call = exynos_cpufreq_tmu_notifier,
 };
-#endif
 #endif
 
 static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
@@ -1248,10 +1245,8 @@ static int __init exynos_cpufreq_init(void)
 	register_hotcpu_notifier(&exynos_cpufreq_cpu_nb);
 	register_pm_notifier(&exynos_cpufreq_nb);
 	register_reboot_notifier(&exynos_cpufreq_reboot_notifier);
-#if 0 /* FIXME */
 #ifdef CONFIG_EXYNOS_THERMAL
 	exynos_tmu_add_notifier(&exynos_tmu_nb);
-#endif
 #endif
 
 	pm_qos_add_notifier(PM_QOS_CPU_FREQ_MIN, &exynos_cpu_min_qos_notifier);
