@@ -4153,7 +4153,7 @@ static int fimc_is_ischain_check_bcrop_size(struct fimc_is_device_ischain *devic
 	struct fimc_is_frame *frame)
 {
 	int ret = 0;
-	u32 min_width, max_width, min_height, max_height;
+	u32 min_width, min_height;
 	u32 sensor_width, sensor_height;
 	u32 crop_x, crop_y, crop_width, crop_height;
 
@@ -4174,11 +4174,8 @@ static int fimc_is_ischain_check_bcrop_size(struct fimc_is_device_ischain *devic
 
 	/* Check length for center crop */
 	min_width = crop_width + crop_x;
-	max_width = crop_width + (crop_x << 1);
 	min_height = crop_height + crop_y;
-	max_height = crop_height + (crop_y << 1);
-	if ((min_width > sensor_width) || (max_width < sensor_width)
-	|| (min_height > sensor_height) || (max_height < sensor_height)) {
+	if ((min_width > sensor_width) || (min_height > sensor_height)) {
 		mwarn("Crop width or height is not valid.\
 			Crop region(%d, %d, %d, %d) Input region(%d, %d)",
 			device, crop_x, crop_y, crop_width, crop_height,
