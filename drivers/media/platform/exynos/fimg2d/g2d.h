@@ -51,8 +51,6 @@ extern int g2d_log_level;
 
 /* #define G2D_PERF */
 
-/* rDW : Todo : change to exynos5-fimg2d */
-/* #define MODULE_NAME		"exynos5-g2d" */
 #define MODULE_NAME		"s5p-fimg2d"
 
 #define G2D_MAX_PBUF		2
@@ -359,7 +357,6 @@ enum g2d_blend_op {
 	BL_OP_SCREEN,
 	/* Saturate(S + D) */
 	BL_OP_ADD,
-	/* rDW */
 	BL_OP_SOLID_FILL,
 	/* TODO */
 	BL_OP_USER_COEFF,
@@ -769,10 +766,8 @@ struct g2d_dev {
 	struct mutex			lock;
 	struct g2d_wdt			wdt;
 	atomic_t			clk_cnt;
-#ifdef G2D_PERF
 	unsigned long long		start_time;
 	unsigned long long		end_time;
-#endif
 };
 
 /*

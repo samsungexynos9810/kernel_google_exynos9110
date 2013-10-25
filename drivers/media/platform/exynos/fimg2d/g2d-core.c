@@ -604,12 +604,14 @@ static int g2d_v4l2_reqbufs(struct file *file, void *fh,
 			    struct v4l2_requestbuffers *reqbufs)
 {
 	struct g2d_ctx *ctx = fh_to_g2d_ctx(fh);
-
+	struct g2d_dev *g2d = ctx->g2d_dev;
 
 	g2d_dbg("call.\n");
 
-	if (reqbufs->count == 0)
+	if (reqbufs->count == 0) {
 		ctx->cci_on = G2D_CCI_OFF;
+		reqbufs->reserved[1] = ((g2d->end_time)-(g2d->start_time));
+	}
 
 	return v4l2_m2m_reqbufs(file, ctx->m2m_ctx, reqbufs);
 }
@@ -620,6 +622,7 @@ static int g2d_v4l2_querybuf(struct file *file, void *fh,
 	struct g2d_ctx *ctx = fh_to_g2d_ctx(fh);
 	return v4l2_m2m_querybuf(file, ctx->m2m_ctx, buf);
 }
+
 static int g2d_v4l2_qbuf(struct file *file, void *fh,
 			 struct v4l2_buffer *buf)
 {
@@ -653,7 +656,6 @@ static int g2d_v4l2_streamoff(struct file *file, void *fh,
 	g2d_dbg("type:%d\n", type);
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
-
 
 static const struct v4l2_ioctl_ops g2d_v4l2_ioctl_ops = {
 	.vidioc_querycap		= g2d_v4l2_querycap,
@@ -1217,7 +1219,6 @@ static const struct v4l2_ctrl_config g2d_custom_ctrl[] = {
 	}
 };
 
-
 static int g2d_add_ctrls(struct g2d_ctx *ctx)
 {
 	int i;
@@ -1246,7 +1247,6 @@ static int g2d_add_ctrls(struct g2d_ctx *ctx)
 
 	return 0;
 }
-
 
 static int g2d_open(struct file *file)
 {
@@ -1408,10 +1408,10 @@ static irqreturn_t g2d_irq_handler(int irq, void *priv)
 	struct g2d_ctx *ctx;
 	struct vb2_buffer *src_vb, *dst_vb;
 
-#ifdef G2D_PERF
 	g2d->end_time = sched_clock();
+#ifdef G2D_PERF
 	printk("[%s:%d] OPERATION-TIME: %llu\n"
-			, __func__, __LINE__.
+			, __func__, __LINE__,
 			(g2d->end_time)-(g2d->start_time));
 #endif
 	g2d_dbg("start irq handler\n");
@@ -1726,9 +1726,8 @@ static void g2d_m2m_device_run(void *priv)
 	if (g2d_log_level)
 		g2d_hwset_dump_regs(g2d);
 
-#ifdef G2D_PERF
 	g2d->start_time = sched_clock();
-#endif
+
 	g2d_hwset_start_blit(g2d);
 	/* g2d->wdt.timer.expires = jiffies + G2D_TIMEOUT; */
 	/* add_timer(&g2d->wdt.timer); */
@@ -1744,12 +1743,10 @@ static void g2d_m2m_job_abort(void *priv)
 		dev_err(ctx->g2d_dev->dev, "wait timeout\n");
 }
 
-
 static struct v4l2_m2m_ops g2d_m2m_ops = {
 	.device_run	= g2d_m2m_device_run,
 	.job_abort	= g2d_m2m_job_abort,
 };
-
 
 static int g2d_register_m2m_device(struct g2d_dev *g2d)
 {
@@ -1853,7 +1850,6 @@ static int g2d_resume(struct device *dev)
 {
 	return 0;
 }
-
 
 static const struct dev_pm_ops g2d_pm_ops = {
 	.suspend		= g2d_suspend,
@@ -2164,4 +2160,3 @@ static struct platform_driver g2d_driver = {
 };
 
 module_platform_driver(g2d_driver);
-
