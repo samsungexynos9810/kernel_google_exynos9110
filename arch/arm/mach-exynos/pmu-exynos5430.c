@@ -239,15 +239,15 @@ void exynos5430_cpu_down(unsigned int cpu_id)
 unsigned int exynos5430_cpu_state(unsigned int cpu_id)
 {
 	unsigned int phys_cpu = cpu_logical_map(cpu_id);
-	unsigned int core, cluster, ret;
+	unsigned int core, cluster, val;
 
 	core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
 	cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
 
-	ret = __raw_readl(EXYNOS_ARM_CORE_STATUS(core + (4 * cluster)))
-							& EXYNOS_CORE_PWR_EN;
+	val = __raw_readl(EXYNOS_ARM_CORE_STATUS(core + (4 * cluster)))
+						& EXYNOS_CORE_PWR_EN;
 
-	return ret;
+	return val == EXYNOS_CORE_PWR_EN;
 }
 
 unsigned int exynos5430_cluster_state(unsigned int cluster)

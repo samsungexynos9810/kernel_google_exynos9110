@@ -103,7 +103,7 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 {
 	unsigned int timeout;
 
-	if (exynos_cpu.power_state(phys_cpu) == EXYNOS_CORE_PWR_EN) {
+	if (exynos_cpu.power_state(phys_cpu)) {
 		printk(KERN_WARNING "%s: Already enabled core power.\n",
 			 __func__);
 		return 0;
@@ -114,7 +114,7 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 	/* wait max 10 ms until cpu is on */
 	timeout = 10;
 	while (timeout) {
-		if (exynos_cpu.power_state(phys_cpu) == EXYNOS_CORE_PWR_EN)
+		if (exynos_cpu.power_state(phys_cpu))
 			break;
 
 		mdelay(1);
