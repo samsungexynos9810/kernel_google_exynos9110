@@ -1279,8 +1279,8 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x15610000 0x1000>;
 			interrupts = <0 228 0>;
-			clocks = <&clock 590>, <&clock 560>;
-			clock-names = "sysmmu", "apb_pclk";
+			clocks = <&clock 2174>;
+			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <8>;
 			#dma-requests = <32>;
@@ -1290,7 +1290,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x11420000 0x1000>;
 			interrupts = <0 73 0>;
-			clocks = <&clock 771>;
+			clocks = <&clock 2012>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <6>;
@@ -1302,7 +1302,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x10F80000 0x1000>;
 			interrupts = <0 182 0>;
-			clocks = <&clock 1180>;
+			clocks = <&clock 2075>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <2>;
@@ -1313,7 +1313,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x12500000 0x1000>;
 			interrupts = <0 271 0>;
-			clocks = <&clock 460>;
+			clocks = <&clock 2212>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <4>;
