@@ -57,6 +57,7 @@ static void top_clk_enable(void)
 	add_enabler("sclk_vpll");
 	add_enabler("sclk_epll");
 	add_enabler("sclk_rpll");
+	add_enabler("aclk_66_peric");
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
 		clk_enable(ce->clk);
