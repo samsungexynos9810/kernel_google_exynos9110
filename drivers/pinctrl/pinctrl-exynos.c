@@ -1061,7 +1061,7 @@ static struct samsung_pin_bank exynos5422_pin_banks3[] = {
 
 /* pin banks of exynos5422 pin-controller 4 (Audio) */
 static struct samsung_pin_bank exynos5422_pin_banks4[] = {
-	EXYNOS_PIN_BANK_EINTG(bank_type_0, 7, 0x000, "gpz", 0x04),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 7, 0x000, "gpz", 0x00),
 };
 
 /*
@@ -1125,13 +1125,6 @@ struct samsung_pin_ctrl exynos5422_pin_ctrl[] = {
 		/* pin-controller instance 4 data */
 		.pin_banks	= exynos5422_pin_banks4,
 		.nr_banks	= ARRAY_SIZE(exynos5422_pin_banks4),
-		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
-		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
-		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
-		.svc		= EXYNOS_SVC_OFFSET,
-		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl4",
 	},
 };
