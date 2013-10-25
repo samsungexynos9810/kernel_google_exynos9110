@@ -29,6 +29,7 @@
 		mshc0 = &dwmmc_0;
 		mshc1 = &dwmmc_1;
 		mshc2 = &dwmmc_2;
+		mfc0 = &mfc_0;
 	};
 
 	cpus {
@@ -685,5 +686,16 @@
 		usbphy-sys {
 			reg = <0x10040708 0x4>;
 		};
+	};
+
+	mfc_0: mfc@11000000 {
+		compatible = "samsung,mfc-v6";
+		reg = <0x11000000 0x10000>;
+		interrupts = <0 96 0>;
+		clock-names = "mfc", "aclk_333", "mout_aclk_333_user", "gate_ip_mfc", "mout_aclk_333_sw";
+		clocks = <&clock 341>, <&clock 340>, <&clock 2040>, <&clock 1234>, <&clock 2033>;
+		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
+		status = "ok";
+		ip_ver = <8>;
 	};
 };
