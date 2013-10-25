@@ -868,9 +868,8 @@ static int s5p_mipi_dsi_suspend(struct device *dev)
 
 	disable_display_dsi_power(dev);
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-	/*
+
 	pm_runtime_put_sync(dev);
-	*/
 
 	return 0;
 }
