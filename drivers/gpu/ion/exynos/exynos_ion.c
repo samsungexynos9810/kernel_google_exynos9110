@@ -1000,7 +1000,7 @@ int __init init_exynos_ion_contig_heap(void)
 				&exynos_ion_contig_region[i].dev,
 				exynos_ion_contig_region[i].size,
 				exynos_ion_contig_region[i].base,
-				0);
+				-1);
 			if (ret)
 				break;
 		}
@@ -1129,7 +1129,7 @@ int __init init_exynos_ion_contig_heap(void)
 		ret = dma_declare_contiguous(&exynos_ion_contig_region[i].dev,
 					     exynos_ion_contig_region[i].size,
 					     exynos_ion_contig_region[i].base,
-					     0);
+					     -1);
 		if (ret) {
 			pr_err("%s: Failed to reserve %#x bytes for %s\n",
 				__func__,
