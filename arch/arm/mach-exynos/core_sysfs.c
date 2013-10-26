@@ -26,6 +26,18 @@ static struct bus_type core_subsys = {
 
 unsigned int (*cpu_state)(unsigned int cpu_id);
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+extern unsigned int exynos5430_cpu_state(unsigned int cpu_id);
+#else
+unsigned int exynos5430_cpu_state(unsigned int cpu_id) { return 0; }
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS5422)
+extern unsigned int exynos5422_cpu_state(unsigned int cpu_id);
+#else
+unsigned int exynos5422_cpu_state(unsigned int cpu_id) { return 0; }
+#endif
+
 static ssize_t exynos5_core_status_show(struct kobject *kobj,
 			struct kobj_attribute *attr, char *buf)
 {
@@ -68,6 +80,9 @@ static int __init exynos5_core_sysfs_init(void)
 
 	if (of_machine_is_compatible("samsung,exynos5430"))
 		cpu_state = exynos5430_cpu_state;
+
+	if (of_machine_is_compatible("samsung,exynos5422"))
+		cpu_state = exynos5422_cpu_state;
 
 	return ret;
 }
