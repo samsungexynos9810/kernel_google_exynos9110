@@ -3428,8 +3428,15 @@ static int fimc_is_ischain_s_taa_size(struct fimc_is_device_ischain *device,
 	isp_param->otf_input.height = device->sensor_height;
 	isp_param->otf_input.crop_offset_x = 0;
 	isp_param->otf_input.crop_offset_y = 0;
-	isp_param->otf_input.crop_width = device->sensor_width;
-	isp_param->otf_input.crop_height = device->sensor_height;
+
+	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
+		isp_param->otf_input.crop_width = device->sensor_width;
+		isp_param->otf_input.crop_height = device->sensor_height;
+	} else {
+		isp_param->otf_input.crop_width = device->chain0_width;
+		isp_param->otf_input.crop_height = device->chain0_height;
+	}
+
 	isp_param->otf_input.bds_out_enable = ISP_BDS_COMMAND_ENABLE;
 	isp_param->otf_input.bds_out_width = device->chain0_width;
 	isp_param->otf_input.bds_out_height = device->chain0_height;
@@ -3452,10 +3459,19 @@ static int fimc_is_ischain_s_taa_size(struct fimc_is_device_ischain *device,
 	isp_param->dma1_input.dma_crop_offset_y = 0;
 	isp_param->dma1_input.dma_crop_width = device->sensor_width;
 	isp_param->dma1_input.dma_crop_height = device->sensor_height;
-	isp_param->dma1_input.bayer_crop_offset_x = 0;
-	isp_param->dma1_input.bayer_crop_offset_y = 0;
-	isp_param->dma1_input.bayer_crop_width = 0;
-	isp_param->dma1_input.bayer_crop_height = 0;
+
+	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
+		isp_param->dma1_input.bayer_crop_offset_x = 0;
+		isp_param->dma1_input.bayer_crop_offset_y = 0;
+		isp_param->dma1_input.bayer_crop_width = 0;
+		isp_param->dma1_input.bayer_crop_height = 0;
+	} else {
+		isp_param->dma1_input.bayer_crop_offset_x = 0;
+		isp_param->dma1_input.bayer_crop_offset_y = 0;
+		isp_param->dma1_input.bayer_crop_width = device->chain0_width;
+		isp_param->dma1_input.bayer_crop_height = device->chain0_height;
+	}
+
 	isp_param->dma1_input.bds_out_enable = ISP_BDS_COMMAND_ENABLE;
 	isp_param->dma1_input.bds_out_width = device->chain0_width;
 	isp_param->dma1_input.bds_out_height = device->chain0_height;
@@ -4144,7 +4160,7 @@ static int fimc_is_ischain_s_dzoom(struct fimc_is_device_ischain *this,
 		zoom_pre, crop_cx, crop_cy, crop_cwidth, crop_cheight);
 #endif
 
-#ifdef SCALER_PARALLER_MODE
+#ifdef SCALER_PARALLEL_MODE
 	scp_input_width = chain0_width;
 	scp_input_height = chain0_height;
 #else
@@ -4277,6 +4293,141 @@ static int fimc_is_ischain_check_bcrop_size(struct fimc_is_device_ischain *devic
 
 	device->dzoom_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
 
+	return ret;
+}
+#endif
+
+#ifdef BAYER_CROP_DZOOM
+static int fimc_is_ischain_s_isp_dzoom(struct fimc_is_device_ischain *device,
+		u32 crop_x, u32 crop_y,
+		u32 crop_width, u32 crop_height,
+		u32 bds_width, u32 bds_height)
+{
+	int ret = 0;
+	struct drc_param *drc_param;
+	struct scalerc_param *scc_param;
+	struct isp_param *isp_param;
+#ifdef SCALER_PARALLEL_MODE
+	struct scalerp_param *scp_param;
+#endif
+	u32 sensor_width, sensor_height;
+	u32 indexes, lindex, hindex;
+
+	drc_param = &device->is_region->parameter.drc;
+	scc_param = &device->is_region->parameter.scalerc;
+	isp_param = &device->is_region->parameter.isp;
+#ifdef SCALER_PARALLEL_MODE
+	scp_param = &device->is_region->parameter.scalerp;
+#endif
+	indexes = lindex = hindex = 0;
+	sensor_width = device->sensor->width - device->margin_width;
+	sensor_height = device->sensor->height - device->margin_height;
+
+#ifdef PRINT_DZOOM
+	pr_info("[ISP:D:%d] request isp dzoom : (%d/%d/%d/%d) %dx%d\n",
+			device->instance,
+			crop_x, crop_y,
+			crop_width, crop_height,
+			bds_width, bds_height);
+#endif
+	/* if there's only one group of isp, send group id by 3a0 */
+	/* 3AX DMA INPUT */
+	isp_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+	isp_param->vdma1_input.width = sensor_width;
+	isp_param->vdma1_input.height = sensor_height;
+	isp_param->vdma1_input.dma_crop_width = crop_width;//sensor_width;
+	isp_param->vdma1_input.dma_crop_height = crop_height;//sensor_height;
+	isp_param->vdma1_input.bayer_crop_offset_x = crop_x;
+	isp_param->vdma1_input.bayer_crop_offset_y = crop_y;
+	isp_param->vdma1_input.bayer_crop_width = crop_width;
+	isp_param->vdma1_input.bayer_crop_height = crop_height;
+	isp_param->vdma1_input.bds_out_enable = ISP_BDS_COMMAND_DISABLE;
+	isp_param->vdma1_input.bds_out_width = crop_width;
+	isp_param->vdma1_input.bds_out_height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
+	hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
+	indexes++;
+
+	/* ISP OTF OUTPUT */
+	isp_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
+	isp_param->otf_output.width = crop_width;
+	isp_param->otf_output.height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
+	indexes++;
+
+	/* DRC */
+	drc_param->otf_input.width = crop_width;
+	drc_param->otf_input.height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_DRC_OTF_INPUT);
+	hindex |= HIGHBIT_OF(PARAM_DRC_OTF_INPUT);
+	indexes++;
+
+	drc_param->otf_output.width = crop_width;
+	drc_param->otf_output.height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_DRC_OTF_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_DRC_OTF_OUTPUT);
+	indexes++;
+
+	/* SCC INPUT */
+	scc_param->otf_input.width = crop_width;
+	scc_param->otf_input.height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_INPUT);
+	hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
+	indexes++;
+
+	/* SCC INPUT CROP */
+	scc_param->input_crop.crop_width = crop_width;
+	scc_param->input_crop.crop_height = crop_height;
+	scc_param->input_crop.in_width = crop_width;
+	scc_param->input_crop.in_height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	indexes++;
+
+	/* SCC UNSCALED DMA OUT */
+	scc_param->dma_output.width = bds_width;
+	scc_param->dma_output.height = bds_height;
+	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	indexes++;
+
+#ifdef SCALER_PARALLEL_MODE
+	/* SCP INPUT */
+	scp_param->otf_input.width = crop_width;
+	scp_param->otf_input.height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_SCALERP_OTF_INPUT);
+	hindex |= HIGHBIT_OF(PARAM_SCALERP_OTF_INPUT);
+	indexes++;
+
+	/* SCP INPUT CROP */
+	scp_param->input_crop.crop_width = crop_width;
+	scp_param->input_crop.crop_height = crop_height;
+	scp_param->input_crop.in_width = crop_width;
+	scp_param->input_crop.in_height = crop_height;
+	lindex |= LOWBIT_OF(PARAM_SCALERP_INPUT_CROP);
+	hindex |= HIGHBIT_OF(PARAM_SCALERP_INPUT_CROP);
+	indexes++;
+
+	/* SCC UNSCALED DMA OUT */
+	scc_param->dma_output.width = device->chain3_width;
+	scc_param->dma_output.height = device->chain3_height;
+	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	indexes++;
+#endif
+	ret = fimc_is_itf_s_param(device,
+		indexes, lindex, hindex);
+	if (ret) {
+		merr("fimc_is_itf_s_param is fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	device->bds_width = bds_width;
+	device->bds_height = bds_height;
+
+exit:
 	return ret;
 }
 #endif
@@ -7207,6 +7358,7 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 #if defined(SCALER_CROP_DZOOM)
 	u32 crop_width;
 #elif defined(BAYER_CROP_DZOOM)
+	u32 crop_width;
 	u32 bds_width, bds_height;
 #endif
 	unsigned long flags;
@@ -7383,48 +7535,78 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 #endif
 
 #ifdef BAYER_CROP_DZOOM
-	bds_width = frame->shot->udm.bayer.width;
-	bds_height = frame->shot->udm.bayer.height;
-	/* HACK: udm is not invalide for 3AA capture.
-	 * in the future, meta data will be modified
-	 */
-	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-		bds_width = frame->shot->ctl.scaler.cropRegion[2];
-		bds_height = frame->shot->ctl.scaler.cropRegion[3];
-	}
-	if (bds_width && bds_height
-	&& (bds_width <= device->chain0_width)
-	&& ((bds_width != device->bds_width) || (bds_height != device->bds_height))) {
-		u32 lindex = 0;
-		u32 hindex = 0;
-		u32 indexes = 0;
-		ret = fimc_is_ischain_s_chain0_size(device,
-			bds_width, bds_height,
-			&lindex, &hindex, &indexes);
-		if (ret) {
-			merr("fimc_is_ischain_s_chain0_size is fail:\
-				BDS(%d, %d), fcount(%d)\n",
-				device,
-				frame->shot->udm.bayer.width,
-				frame->shot->udm.bayer.height,
-				frame->fcount);
-			ret = -EINVAL;
-			goto exit;
-		}
-
-		ret = fimc_is_itf_s_param(device,
-			indexes, lindex, hindex);
-		if (ret) {
-			merr("fimc_is_itf_s_param is fail", device);
-			ret = -EINVAL;
-			goto exit;
-		}
+	/* if there's only one group of isp, send group id by 3a0 */
+	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0) {
+		crop_width = frame->shot->ctl.scaler.cropRegion[2];
+		if (crop_width && (crop_width != device->dzoom_width)) {
+			ret = fimc_is_ischain_s_isp_dzoom(device,
+					frame->shot->ctl.scaler.cropRegion[0],
+					frame->shot->ctl.scaler.cropRegion[1],
+					frame->shot->ctl.scaler.cropRegion[2],
+					frame->shot->ctl.scaler.cropRegion[3],
+					device->chain0_width, device->chain0_height);
+			if (ret) {
+				merr("fimc_is_ischain_s_isp_dzoom is fail:\
+						CROP(%d, %d, %d, %d), BDS(%d, %d), fcount(%d)\n",
+						device,
+						frame->shot->ctl.scaler.cropRegion[0],
+						frame->shot->ctl.scaler.cropRegion[1],
+						frame->shot->ctl.scaler.cropRegion[2],
+						frame->shot->ctl.scaler.cropRegion[3],
+						device->chain0_width, device->chain0_height,
+						frame->fcount);
+				ret = -EINVAL;
+				goto exit;
+			}
+			device->dzoom_width = crop_width;
 #ifdef PRINT_DZOOM
-		pr_info("[ISP:D:%d] fcount(%d)", device->instance, frame->fcount);
+			pr_info("[%s][ISP:D:%d] fcount(%d)", __func__, device->instance, frame->fcount);
+#endif
+		}
+	} else {
+		bds_width = frame->shot->udm.bayer.width;
+		bds_height = frame->shot->udm.bayer.height;
+		/* HACK: udm is not invalide for 3AA capture.
+		 * in the future, meta data will be modified
+		 */
+		if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+			bds_width = frame->shot->ctl.scaler.cropRegion[2];
+			bds_height = frame->shot->ctl.scaler.cropRegion[3];
+		}
+
+		if (bds_width && bds_height
+				&& (bds_width <= device->chain0_width)
+				&& ((bds_width != device->bds_width) || (bds_height != device->bds_height))) {
+			u32 lindex = 0;
+			u32 hindex = 0;
+			u32 indexes = 0;
+			ret = fimc_is_ischain_s_chain0_size(device,
+					bds_width, bds_height,
+					&lindex, &hindex, &indexes);
+			if (ret) {
+				merr("fimc_is_ischain_s_chain0_size is fail:\
+						BDS(%d, %d), fcount(%d)\n",
+						device,
+						frame->shot->udm.bayer.width,
+						frame->shot->udm.bayer.height,
+						frame->fcount);
+				ret = -EINVAL;
+				goto exit;
+			}
+
+			ret = fimc_is_itf_s_param(device,
+					indexes, lindex, hindex);
+			if (ret) {
+				merr("fimc_is_itf_s_param is fail", device);
+				ret = -EINVAL;
+				goto exit;
+			}
+#ifdef PRINT_DZOOM
+			pr_info("[ISP:D:%d] fcount(%d)", device->instance, frame->fcount);
+#endif
+		}
 #endif
 	}
-#endif
-
 	if (scc) {
 		ret = fimc_is_ischain_scc_tag(device, scc, frame);
 		if (ret) {
