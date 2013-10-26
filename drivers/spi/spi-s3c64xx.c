@@ -1382,7 +1382,7 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 				ret);
 			goto err0;
 		}
-		sdd->port_id = ret;
+		pdev->id = sdd->port_id = ret;
 	} else {
 		sdd->port_id = pdev->id;
 	}
@@ -1538,15 +1538,18 @@ static int s3c64xx_spi_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_SLEEP
 static int s3c64xx_spi_suspend(struct device *dev)
 {
+	struct platform_device *pdev = to_platform_device(dev);
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
 
 	spi_master_suspend(master);
 
-	if (!pm_runtime_enabled(dev)) {
-		/* Disable the clock */
-		clk_disable_unprepare(sdd->src_clk);
-		clk_disable_unprepare(sdd->clk);
+	if (pdev->id < 3) {
+		if (!pm_runtime_enabled(dev)) {
+			/* Disable the clock */
+			clk_disable_unprepare(sdd->src_clk);
+			clk_disable_unprepare(sdd->clk);
+		}
 	}
 
 	sdd->cur_speed = 0; /* Output Clock is stopped */
@@ -1556,6 +1559,7 @@ static int s3c64xx_spi_suspend(struct device *dev)
 
 static int s3c64xx_spi_resume(struct device *dev)
 {
+	struct platform_device *pdev = to_platform_device(dev);
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
@@ -1563,16 +1567,18 @@ static int s3c64xx_spi_resume(struct device *dev)
 	if (sci->cfg_gpio)
 		sci->cfg_gpio();
 
-	/* Enable the clock */
-	clk_prepare_enable(sdd->src_clk);
-	clk_prepare_enable(sdd->clk);
+	if (pdev->id < 3) {
+		/* Enable the clock */
+		clk_prepare_enable(sdd->src_clk);
+		clk_prepare_enable(sdd->clk);
 
-	s3c64xx_spi_hwinit(sdd, sdd->port_id);
+		s3c64xx_spi_hwinit(sdd, sdd->port_id);
 
-	if (pm_runtime_enabled(dev)) {
-		/* Disable the clock */
-		clk_disable_unprepare(sdd->src_clk);
-		clk_disable_unprepare(sdd->clk);
+		if (pm_runtime_enabled(dev)) {
+			/* Disable the clock */
+			clk_disable_unprepare(sdd->src_clk);
+			clk_disable_unprepare(sdd->clk);
+		}
 	}
 
 	spi_master_resume(master);
