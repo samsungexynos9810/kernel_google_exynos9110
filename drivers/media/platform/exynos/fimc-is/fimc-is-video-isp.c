@@ -532,25 +532,32 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 		goto p_err;
 	}
 
-	/* 2. checking 3ax group to connect */
-	if (tax_vindex == FIMC_IS_VIDEO_3A0_NUM) {
-		group_id = GROUP_ID_3A0;
-		pr_info("[ISP:V:%d] <-> [3A0:V:X]\n", device->instance);
-	} else if (tax_vindex == FIMC_IS_VIDEO_3A1_NUM) {
-		group_id = GROUP_ID_3A1;
-		pr_info("[ISP:V:%d] <-> [3A1:V:X]\n", device->instance);
-	} else {
-		group_id = GROUP_ID_INVALID;
-		merr("group%d is invalid", device, group_id);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	/* if there's only one group of isp, defines group id to 3a0 connected */
+	if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3a0)
+			|| GET_FIMC_IS_NUM_OF_SUBIP(core, 3a1)) {
 
-	if (!rep_stream &&
-		!test_bit(FIMC_IS_GROUP_OPEN, &device->group_3ax.state)) {
-		merr("group%d is not opened", vctx, group_id);
-		ret = -EINVAL;
-		goto p_err;
+		/* 2. checking 3ax group to connect */
+		if (tax_vindex == FIMC_IS_VIDEO_3A0_NUM) {
+			group_id = GROUP_ID_3A0;
+			pr_info("[ISP:V:%d] <-> [3A0:V:X]\n", device->instance);
+		} else if (tax_vindex == FIMC_IS_VIDEO_3A1_NUM) {
+			group_id = GROUP_ID_3A1;
+			pr_info("[ISP:V:%d] <-> [3A1:V:X]\n", device->instance);
+		} else {
+			group_id = GROUP_ID_INVALID;
+			merr("group%d is invalid", device, group_id);
+			ret = -EINVAL;
+			goto p_err;
+		}
+
+		if (!rep_stream &&
+				!test_bit(FIMC_IS_GROUP_OPEN, &device->group_3ax.state)) {
+			merr("group%d is not opened", vctx, group_id);
+			ret = -EINVAL;
+			goto p_err;
+		}
+	} else {
+		group_id = GROUP_ID_3A0;
 	}
 
 	/* 3. checking reprocessing stream */

@@ -407,6 +407,10 @@
 
 #define is_readl(c)		readl((void __iomem *)(c))
 #define is_writel(v,c)		writel((v),(void __iomem *)(c))
+#define GET_FIMC_IS_NUM_OF_SUBIP(core, subip) \
+	( core->pdata->subip_info->num_of_ ## subip )
+#define GET_FIMC_IS_NUM_OF_SUBIP2(device, subip) \
+	( ((struct fimc_is_core *)device->interface->core)->pdata->subip_info->num_of_ ## subip )
 
 enum fimc_is_debug_device {
 	FIMC_IS_DEBUG_MAIN = 0,

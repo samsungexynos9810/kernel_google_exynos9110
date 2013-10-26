@@ -570,6 +570,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 {
 	int ret = 0, i;
 	char name[30];
+	struct fimc_is_core *core;
 	struct fimc_is_subdev *leader;
 	struct fimc_is_framemgr *framemgr;
 
@@ -582,6 +583,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 
 	leader = &group->leader;
 	framemgr = GET_SRC_FRAMEMGR(vctx);
+	core = (struct fimc_is_core *)device->interface->core;
 
 	mdbgd_ischain("%s(id %d)\n", device, __func__, id);
 
@@ -657,7 +659,10 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	case GROUP_ID_3A1:
 		/* path configuration */
 		group->prev = NULL;
-		group->next = &device->group_isp;
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, isp))
+			group->next = &device->group_isp;
+		else
+			group->next = NULL;
 		group->subdev[ENTRY_SCALERC] = NULL;
 		group->subdev[ENTRY_DIS] = NULL;
 		group->subdev[ENTRY_TDNR] = NULL;
@@ -675,12 +680,26 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		/* path configuration */
 		group->prev = NULL;
 		group->next = NULL;
-		group->subdev[ENTRY_SCALERC] = &device->scc;
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, scc))
+			group->subdev[ENTRY_SCALERC] = &device->scc;
+		else
+			group->subdev[ENTRY_SCALERC] = NULL;
 		/* dis is not included to any group initially */
 		group->subdev[ENTRY_DIS] = NULL;
-		group->subdev[ENTRY_TDNR] = &device->dnr;
-		group->subdev[ENTRY_SCALERP] = &device->scp;
-		group->subdev[ENTRY_LHFD] = &device->fd;
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3dnr))
+			group->subdev[ENTRY_TDNR] = &device->dnr;
+		else
+			group->subdev[ENTRY_TDNR] = NULL;
+
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, scp))
+			group->subdev[ENTRY_SCALERP] = &device->scp;
+		else
+			group->subdev[ENTRY_SCALERP] = NULL;
+
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, fd))
+			group->subdev[ENTRY_LHFD] = &device->fd;
+		else
+			group->subdev[ENTRY_LHFD] = NULL;
 		group->subdev[ENTRY_3AXC] = NULL;
 
 		device->scc.leader = leader;

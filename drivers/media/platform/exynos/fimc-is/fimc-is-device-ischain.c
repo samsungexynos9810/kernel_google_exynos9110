@@ -1644,7 +1644,6 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 	u32 navailable = 0;
 	struct is_region *region = device->is_region;
 #endif
-
 	mdbgd_ischain(" NAME          SIZE    BINNING    FRAMERATE\n", device);
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) ||
 		!IS_ISCHAIN_OTF(device))
@@ -1878,6 +1877,12 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 	group |= GROUP_ID(device->group_3ax.id);
 	group |= GROUP_ID(device->group_isp.id);
 
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group = GROUP_ID(GROUP_ID_3A0);
+
 	ret = fimc_is_hw_a_param(device->interface,
 		device->instance,
 		group,
@@ -2102,20 +2107,23 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 	group_isp = &device->group_isp;
 
 	/* 3ax, isp group should be started */
-	if (!test_bit(FIMC_IS_GROUP_READY, &group_3ax->state)) {
-		merr("group 3ax is not start", device);
-		goto p_err;
-	}
-
 	if (!test_bit(FIMC_IS_GROUP_READY, &group_isp->state)) {
 		merr("group isp is not start", device);
 		goto p_err;
 	}
 
-	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group_3ax->state)) {
-		while (--retry && (atomic_read(&group_3ax->scount) <
-			group_3ax->async_shots)) {
-			udelay(100);
+	if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3a0) ||
+			GET_FIMC_IS_NUM_OF_SUBIP(core, 3a1)) {
+		if (!test_bit(FIMC_IS_GROUP_READY, &group_3ax->state)) {
+			merr("group 3ax is not start", device);
+			goto p_err;
+		}
+
+		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group_3ax->state)) {
+			while (--retry && (atomic_read(&group_3ax->scount) <
+						group_3ax->async_shots)) {
+				udelay(100);
+			}
 		}
 	}
 
@@ -2180,7 +2188,6 @@ int fimc_is_itf_process_stop(struct fimc_is_device_ischain *device,
 	/* clock on */
 	fimc_is_clock_set(core, GROUP_ID_MAX, true);
 #endif
-
 	ret = fimc_is_hw_process_off(device->interface,
 		device->instance, group, 0);
 
@@ -2198,6 +2205,11 @@ int fimc_is_itf_force_stop(struct fimc_is_device_ischain *device,
 	/* clock on */
 	fimc_is_clock_set(core, GROUP_ID_MAX, true);
 #endif
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group = GROUP_ID(GROUP_ID_3A0);
 
 	ret = fimc_is_hw_process_off(device->interface,
 		device->instance, group, 1);
@@ -2212,6 +2224,12 @@ static int fimc_is_itf_init_process_start(struct fimc_is_device_ischain *device)
 
 	group |= GROUP_ID(device->group_3ax.id);
 	group |= GROUP_ID(device->group_isp.id);
+
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group = GROUP_ID(GROUP_ID_3A0);
 
 	ret = fimc_is_hw_process_on(device->interface,
 		device->instance,
@@ -2234,6 +2252,12 @@ static int fimc_is_itf_init_process_stop(struct fimc_is_device_ischain *device)
 
 	group |= GROUP_ID(device->group_3ax.id);
 	group |= GROUP_ID(device->group_isp.id);
+
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group = GROUP_ID(GROUP_ID_3A0);
 
 	ret = fimc_is_hw_process_off(device->interface,
 		device->instance, (group & GROUP_ID_PARM_MASK), 0);
@@ -2393,6 +2417,7 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *frame)
 {
 	int ret = 0;
+	u32 group_id = 0;
 #ifdef ENABLE_CLOCK_GATE
 	struct fimc_is_core *core = (struct fimc_is_core *)device->interface->core;
 #endif
@@ -2438,9 +2463,17 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	if (sysfs_debug.en_clk_gate)
 		fimc_is_clock_set(core, group->id, true);
 #endif
+	group_id = GROUP_ID(group->id);
+
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group_id & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group_id = GROUP_ID(GROUP_ID_3A0);
+
 	ret = fimc_is_hw_shot_nblk(device->interface,
 		device->instance,
-		GROUP_ID(group->id),
+		group_id,
 		frame->dvaddr_buffer[0],
 		frame->dvaddr_shot,
 		frame->fcount,
@@ -3494,7 +3527,10 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_OUTPUT);
 	(indexes)++;
 
-	isp_param->dma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0))
+		isp_param->dma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	else
+		isp_param->dma2_output.cmd = DMA_OUTPUT_COMMAND_DISABLE;
 	isp_param->dma2_output.width = chain0_width;
 	isp_param->dma2_output.height = chain0_height;
 	isp_param->dma2_output.format = DMA_OUTPUT_FORMAT_BAYER;
@@ -3905,6 +3941,13 @@ static int fimc_is_ischain_chg_setfile(struct fimc_is_device_ischain *device)
 
 	group_id |= GROUP_ID(device->group_3ax.id);
 	group_id |= GROUP_ID(device->group_isp.id);
+
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group_id & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group_id = GROUP_ID(GROUP_ID_3A0);
+
 	if (test_bit(FIMC_IS_GROUP_ACTIVE, &device->group_dis.state))
 		group_id |= GROUP_ID(device->group_dis.id);
 
@@ -4312,6 +4355,12 @@ static int fimc_is_ischain_fd_bypass(struct fimc_is_device_ischain *device,
 	group_id |= GROUP_ID(group->id);
 	fd_param = &device->is_region->parameter.fd;
 	indexes = lindex = hindex = 0;
+
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group_id & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group_id = GROUP_ID(GROUP_ID_3A0);
 
 	ret = fimc_is_itf_process_stop(device, group_id);
 	if (ret) {
@@ -4852,6 +4901,12 @@ static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
 	group_id |= GROUP_ID(device->group_3ax.id);
 	group_id |= GROUP_ID(device->group_isp.id);
 
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group_id & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group_id = GROUP_ID(GROUP_ID_3A0);
+
 	ret = fimc_is_itf_process_stop(device, group_id);
 	if (ret) {
 		merr("fimc_is_itf_process_stop is fail", device);
@@ -5188,18 +5243,21 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	device->sensor_width = sensor->width - device->margin_width;
 	device->sensor_height = sensor->height - device->margin_height;
 
-	if (leader_3ax && leader_3ax->output.width != leader->input.width) {
-		merr("width size is invalid(%d != %d)", device,
-			leader_3ax->output.width, leader->input.width);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	if (leader_3ax && (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) ||
+				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1))) {
+		if (leader_3ax->output.width != leader->input.width) {
+			merr("width size is invalid(%d != %d)", device,
+					leader_3ax->output.width, leader->input.width);
+			ret = -EINVAL;
+			goto p_err;
+		}
 
-	if (leader_3ax && leader_3ax->output.height != leader->input.height) {
-		merr("height size is invalid(%d != %d)", device,
-			leader_3ax->output.height, leader->input.height);
-		ret = -EINVAL;
-		goto p_err;
+		if (leader_3ax->output.height != leader->input.height) {
+			merr("height size is invalid(%d != %d)", device,
+					leader_3ax->output.height, leader->input.height);
+			ret = -EINVAL;
+			goto p_err;
+		}
 	}
 
 	device->chain0_width = leader->input.width;
@@ -7179,11 +7237,35 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	}
 
 	if (unlikely(frame->memory == FRAME_INI_MEM)) {
-		fimc_is_itf_map(device, GROUP_ID(group->id),
-			frame->dvaddr_shot, frame->shot_size);
+		/* if there's only one group of isp, send group id by 3a0 */
+		if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+			fimc_is_itf_map(device, GROUP_ID(GROUP_ID_3A0),
+					frame->dvaddr_shot, frame->shot_size);
+		else
+			fimc_is_itf_map(device, GROUP_ID(group->id),
+					frame->dvaddr_shot, frame->shot_size);
 		frame->memory = FRAME_MAP_MEM;
 	}
 
+	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0) {
+		framemgr_e_barrier_irqs(framemgr, 0, flags);
+
+		if (frame) {
+			frame->shot->uctl.scalerUd.taapTargetAddress[0] =
+				frame->dvaddr_buffer[0];
+			frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
+			frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
+		} else {
+			frame->shot->uctl.scalerUd.taapTargetAddress[0] = 0;
+			frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
+			frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
+			merr("ISP %d frame is drop", device, frame->fcount);
+		}
+
+		framemgr_x_barrier_irqr(framemgr, 0, flags);
+	}
 #ifdef ENABLE_DRC
 	if (frame->shot_ext->drc_bypass) {
 		if (test_bit(FIMC_IS_ISDEV_DSTART, &device->drc.state)) {

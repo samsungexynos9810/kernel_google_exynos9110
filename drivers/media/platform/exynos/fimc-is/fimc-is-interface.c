@@ -1754,8 +1754,14 @@ static void wq_func_shot(struct work_struct *data)
 
 		switch (group_id) {
 		case GROUP_ID(GROUP_ID_3A0):
-			req_flag = REQ_3A0_SHOT;
-			group = &device->group_3ax;
+			/* if there's no entry to 3a1 */
+			if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3a0)) {
+				req_flag = REQ_3A0_SHOT;
+				group = &device->group_3ax;
+			} else {
+				req_flag = REQ_ISP_SHOT;
+				group = &device->group_isp;
+			}
 			break;
 		case GROUP_ID(GROUP_ID_3A1):
 			req_flag = REQ_3A1_SHOT;
