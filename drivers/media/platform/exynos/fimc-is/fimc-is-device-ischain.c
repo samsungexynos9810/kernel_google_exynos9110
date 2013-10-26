@@ -46,6 +46,9 @@
 #include <mach/exynos5_bus.h>
 #include <plat/bts.h>
 #endif
+#if defined(CONFIG_SOC_EXYNOS3470)
+#include <mach/bts.h>
+#endif
 
 #include "fimc-is-time.h"
 #include "fimc-is-core.h"
@@ -1203,7 +1206,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		fimc_is_runtime_resume(dev);
 		pr_info("%s(%d) - fimc_is runtime resume complete\n", __func__, on);
 #endif
-
+#if defined(CONFIG_SOC_EXYNOS3470)
+		bts_initialize("pd-cam", true);
+#endif
 		snprintf(fw_name, sizeof(fw_name), "%s", FIMC_IS_FW);
 
 		/* 3. Load IS firmware */
@@ -1287,7 +1292,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on)
 		/* Check FW state for WFI of A5 */
 		debug = readl(this->interface->regs + ISSR6);
 		printk(KERN_INFO "%s: A5 state(0x%x)\n", __func__, debug);
-
+#if defined(CONFIG_SOC_EXYNOS3470)
+		bts_initialize("pd-cam", false);
+#endif
 		/* 2. FIMC-IS local power down */
 #if defined(CONFIG_PM_RUNTIME)
 		pm_runtime_put_sync(dev);
