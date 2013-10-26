@@ -94,6 +94,26 @@ static struct fimc_is_dvfs_scenario dynamic_scenarios[] = {
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE),
 	},
 };
+#else
+/*
+ * Default Scenario can not be seleted, this declaration is for static variable.
+ */
+static struct fimc_is_dvfs_scenario static_scenarios[] = {
+	[0] = {
+		.scenario_id		= FIMC_IS_SN_DEFAULT,
+		.scenario_nm		= NULL,
+		.keep_frame_tick	= 0,
+		.check_func		= NULL,
+	},
+};
+static struct fimc_is_dvfs_scenario dynamic_scenarios[] = {
+	[0] = {
+		.scenario_id		= FIMC_IS_SN_DEFAULT,
+		.scenario_nm		= NULL,
+		.keep_frame_tick	= 0,
+		.check_func		= NULL,
+	},
+};
 #endif
 
 static inline int fimc_is_get_open_sensor_cnt(struct fimc_is_core *core) {
@@ -264,13 +284,19 @@ int fimc_is_dvfs_init(struct fimc_is_core *core)
 	core->dvfs_ctrl.static_ctrl->cur_scenario_id	= -1;
 	core->dvfs_ctrl.static_ctrl->cur_scenario_idx	= -1;
 	core->dvfs_ctrl.static_ctrl->scenarios		= static_scenarios;
-	core->dvfs_ctrl.static_ctrl->scenario_cnt	= ARRAY_SIZE(static_scenarios);
+	if (static_scenarios[0].scenario_id == FIMC_IS_SN_DEFAULT)
+		core->dvfs_ctrl.static_ctrl->scenario_cnt	= 0;
+	else
+		core->dvfs_ctrl.static_ctrl->scenario_cnt	= ARRAY_SIZE(static_scenarios);
 
 	core->dvfs_ctrl.dynamic_ctrl->cur_scenario_id	= -1;
 	core->dvfs_ctrl.dynamic_ctrl->cur_scenario_idx	= -1;
 	core->dvfs_ctrl.dynamic_ctrl->cur_frame_tick	= -1;
 	core->dvfs_ctrl.dynamic_ctrl->scenarios		= dynamic_scenarios;
-	core->dvfs_ctrl.dynamic_ctrl->scenario_cnt	= ARRAY_SIZE(dynamic_scenarios);
+	if (static_scenarios[0].scenario_id == FIMC_IS_SN_DEFAULT)
+		core->dvfs_ctrl.dynamic_ctrl->scenario_cnt	= 0;
+	else
+		core->dvfs_ctrl.dynamic_ctrl->scenario_cnt	= ARRAY_SIZE(dynamic_scenarios);
 
 	return 0;
 }
@@ -301,6 +327,11 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 			return -EINVAL;
 		}
 
+		if (dynamic_ctrl->scenario_cnt == 0) {
+			pr_debug("dynamic_scenario's count is jero\n");
+			return -EINVAL;
+		}
+
 		scenarios = dynamic_ctrl->scenarios;
 		scenario_cnt = dynamic_ctrl->scenario_cnt;
 
@@ -320,6 +351,11 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 		/* static scenario */
 		if (!static_ctrl) {
 			err("static_dvfs_ctrl is NULL\n");
+			return -EINVAL;
+		}
+
+		if (static_ctrl->scenario_cnt == 0) {
+			pr_debug("static_scenario's count is jero\n");
 			return -EINVAL;
 		}
 
@@ -448,7 +484,6 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 
 		pm_qos_update_request(&exynos_isp_qos_dev, int_qos);
 		dvfs_ctrl->cur_int_qos = int_qos;
-		//ore->clock.dvfs_level = int_level;
 
 		if (!i2c_qos) {
 			/* i2c unlock */
