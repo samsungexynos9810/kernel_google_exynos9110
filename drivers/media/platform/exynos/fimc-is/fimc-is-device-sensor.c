@@ -1075,6 +1075,38 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	ext->self_calibration_mode = 0;
 	ext->I2CSclk = I2C_L0;
 
+	/* IMX134 */
+	enum_sensor[SENSOR_NAME_IMX134].sensor = SENSOR_NAME_IMX134;
+	enum_sensor[SENSOR_NAME_IMX134].pixel_width = 3264 + 16;
+	enum_sensor[SENSOR_NAME_IMX134].pixel_height = 2448 + 10;
+	enum_sensor[SENSOR_NAME_IMX134].active_width = 3264;
+	enum_sensor[SENSOR_NAME_IMX134].active_height = 2448;
+	enum_sensor[SENSOR_NAME_IMX134].max_framerate = 30;
+	enum_sensor[SENSOR_NAME_IMX134].csi_ch = 0;
+	enum_sensor[SENSOR_NAME_IMX134].flite_ch = FLITE_ID_A;
+	enum_sensor[SENSOR_NAME_IMX134].i2c_ch = 0;
+	enum_sensor[SENSOR_NAME_IMX134].setfile_name =
+			"setfile_imx134.bin";
+
+	ext = &enum_sensor[SENSOR_NAME_IMX134].ext;
+
+	ext->actuator_con.product_name = ACTUATOR_NAME_AK7345;
+	ext->actuator_con.peri_type = SE_I2C;
+	ext->actuator_con.peri_setting.i2c.channel
+		= SENSOR_CONTROL_I2C0;
+
+	ext->flash_con.product_name = FLADRV_NAME_NOTHING;
+	ext->flash_con.peri_type = SE_GPIO;
+	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 17;
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 16;
+
+	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
+	ext->mclk = 0;
+	ext->mipi_lane_num = 0;
+	ext->mipi_speed = 0;
+	ext->fast_open_sensor = 0;
+	ext->self_calibration_mode = 0;
+	ext->I2CSclk = I2C_L0;
 p_err:
 	return ret;
 }
