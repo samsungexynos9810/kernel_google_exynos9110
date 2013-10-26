@@ -336,14 +336,14 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	/* consumed size */
 	consumed_size = readl(si.mailbox + CONSUMED_BYTE_IN);
 
-	if (!response && *obuf_filled_size > 0) {
+	if (response == 0 && *obuf_filled_size > 0) {
 		*obuf_filled = true;
 	} else {
 		if (consumed_size <= 0)
 			consumed_size = response;
 		if (rtd->need_config)
 			rtd->need_config = false;
-		else
+		else if (size != 0)
 			esa_err("%s: decoding fail. response:%x\n", __func__, response);
 	}
 
