@@ -51,6 +51,38 @@ p_err:
 	return ret;
 }
 
+static int parse_subip_info(struct exynos_platform_fimc_is *pdata, struct device_node *np)
+{
+	u32 temp;
+	char *pprop;
+	struct exynos_fimc_is_subip_info *subip_info;
+
+	/* get subip of fimc-is info */
+	subip_info = kzalloc(sizeof(struct exynos_fimc_is_subip_info), GFP_KERNEL);
+	if (!subip_info) {
+		printk(KERN_ERR "%s: no memory for fimc_is subip_info\n", __func__);
+		return -EINVAL;
+	}
+
+	DT_READ_U32(np, "num_of_3a0", subip_info->num_of_3a0 );
+	DT_READ_U32(np, "num_of_3a1", subip_info->num_of_3a1 );
+	DT_READ_U32(np, "num_of_isp", subip_info->num_of_isp );
+	DT_READ_U32(np, "num_of_drc", subip_info->num_of_drc );
+	DT_READ_U32(np, "num_of_scc", subip_info->num_of_scc );
+	DT_READ_U32(np, "num_of_odc", subip_info->num_of_odc );
+	DT_READ_U32(np, "num_of_dis", subip_info->num_of_dis );
+	DT_READ_U32(np, "num_of_3dnr",subip_info->num_of_3dnr);
+	DT_READ_U32(np, "num_of_scp", subip_info->num_of_scp );
+	DT_READ_U32(np, "num_of_fd",  subip_info->num_of_fd  );
+
+	pdata->subip_info = subip_info;
+
+	return 0;
+
+p_err:
+	pr_err("%s: no property in the node, subip_info.\n", pprop);
+	return -EINVAL;
+}
 static int parse_sensor_info(struct exynos_platform_fimc_is *pdata, struct device_node *np)
 {
 	u32 i;
@@ -141,6 +173,7 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	struct device_node *np = dev->of_node;
 	struct fimc_is_gpio_info *gpio_info;
 	struct device_node *ctrl_np;
+	struct device_node *subip_info_np;
 
 	if (!np)
 		return ERR_PTR(-ENOENT);
@@ -191,6 +224,13 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 		dev_err(dev, "failed to get main comp reset gpio\n");
 
 	pdata->_gpio_info = gpio_info;
+
+	subip_info_np = of_find_node_by_name(np, "subip_info");
+	if (!subip_info_np) {
+		printk(KERN_ERR "%s: can't find fimc_is subip_info node\n", __func__);
+		return ERR_PTR(-ENOENT);
+	}
+	parse_subip_info(pdata, subip_info_np);
 
 	ctrl_np = of_get_child_by_name(np, "fimc_is_ctrl");
 	if (!ctrl_np) {
