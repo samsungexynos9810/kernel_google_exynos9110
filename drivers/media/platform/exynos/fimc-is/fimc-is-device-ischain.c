@@ -2101,7 +2101,10 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 #endif
 	struct fimc_is_group *group_3ax, *group_isp;
 	struct fimc_is_core *core;
-
+#ifdef SCALER_PARALLEL_MODE
+	int cfg = 0;
+	struct fimc_is_interface *itf = device->interface;
+#endif
 	core = (struct fimc_is_core *)device->interface->core;
 	group_3ax = &device->group_3ax;
 	group_isp = &device->group_isp;
@@ -2127,6 +2130,13 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 		}
 	}
 
+#ifdef SCALER_PARALLEL_MODE
+	cfg = readl(itf->regs + MCUCTL);
+	pr_debug("MCUCTL Crtl REG(0x%x)\n", cfg);
+	/* setting MCUCTL SERI_PARA_SEL[3]: Parallel connection */
+	cfg |= (1 << 3);
+	writel(cfg, itf->regs + MCUCTL);
+#endif
 	if (retry)
 		pr_info("[ISC:D:%d] stream on ready\n", device->instance);
 	else
@@ -3741,8 +3751,13 @@ static int fimc_is_ischain_s_chain2_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_TDNR_OTF_OUTPUT);
 	(*indexes)++;
 
+#ifdef SCALER_PARALLEL_MODE
+	scp_param->otf_input.width = device->chain0_width;
+	scp_param->otf_input.height = device->chain0_height;
+#else
 	scp_param->otf_input.width = chain2_width;
 	scp_param->otf_input.height = chain2_height;
+#endif
 	*lindex |= LOWBIT_OF(PARAM_SCALERP_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERP_OTF_INPUT);
 	(*indexes)++;
@@ -3783,8 +3798,13 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 
 	scp_crop_x = 0;
 	scp_crop_y = 0;
+#ifdef SCALER_PARALLEL_MODE
+	scp_crop_width = device->chain0_width;
+	scp_crop_height = device->chain0_height;
+#else
 	scp_crop_width = chain2_width;
 	scp_crop_height = chain2_height;
+#endif
 
 	dbg_ischain("request chain3 size : %dx%d\n", width, height);
 	dbg_ischain("current chain3 size : %dx%d\n",
@@ -3796,8 +3816,13 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 	scp_param->input_crop.pos_y = scp_crop_y;
 	scp_param->input_crop.crop_width = scp_crop_width;
 	scp_param->input_crop.crop_height = scp_crop_height;
+#ifdef SCALER_PARALLEL_MODE
+	scp_param->input_crop.in_width = device->chain0_width;
+	scp_param->input_crop.in_height = device->chain0_height;
+#else
 	scp_param->input_crop.in_width = chain2_width;
 	scp_param->input_crop.in_height = chain2_height;
+#endif
 	scp_param->input_crop.out_width = chain3_width;
 	scp_param->input_crop.out_height = chain3_height;
 	*lindex |= LOWBIT_OF(PARAM_SCALERP_INPUT_CROP);
@@ -4005,6 +4030,7 @@ static int fimc_is_ischain_s_dzoom(struct fimc_is_device_ischain *this,
 	u32 chain1_width, chain1_height;
 	u32 chain2_width, chain2_height;
 	u32 chain3_width, chain3_height;
+	u32 scp_input_width, scp_input_height;
 	struct scalerp_param *scp_param;
 
 	scc_param = &this->is_region->parameter.scalerc;
@@ -4118,20 +4144,27 @@ static int fimc_is_ischain_s_dzoom(struct fimc_is_device_ischain *this,
 		zoom_pre, crop_cx, crop_cy, crop_cwidth, crop_cheight);
 #endif
 
-	temp_width = (chain2_width * 1000) / zoom_post;
-	temp_height = (chain2_height * 1000) / zoom_post;
-	crop_px = (chain2_width - temp_width)>>1;
-	crop_py = (chain2_height - temp_height)>>1;
-	crop_pwidth = chain2_width - (crop_px<<1);
-	crop_pheight = chain2_height - (crop_py<<1);
+#ifdef SCALER_PARALLER_MODE
+	scp_input_width = chain0_width;
+	scp_input_height = chain0_height;
+#else
+	scp_input_width = chain2_width;
+	scp_input_height = chain2_height;
+#endif
+	temp_width = (scp_input_width * 1000) / zoom_post;
+	temp_height = (scp_input_height * 1000) / zoom_post;
+	crop_px = (scp_input_width - temp_width)>>1;
+	crop_py = (scp_input_height - temp_height)>>1;
+	crop_pwidth = scp_input_width - (crop_px<<1);
+	crop_pheight = scp_input_height - (crop_py<<1);
 
 	scp_param->input_crop.cmd = SCALER_CROP_COMMAND_ENABLE;
 	scp_param->input_crop.pos_x = crop_px;
 	scp_param->input_crop.pos_y = crop_py;
 	scp_param->input_crop.crop_width = crop_pwidth;
 	scp_param->input_crop.crop_height = crop_pheight;
-	scp_param->input_crop.in_width = chain2_width;
-	scp_param->input_crop.in_height = chain2_height;
+	scp_param->input_crop.in_width = scp_input_width;
+	scp_param->input_crop.in_height = scp_input_height;
 	scp_param->input_crop.out_width = chain3_width;
 	scp_param->input_crop.out_height = chain3_height;
 	lindex |= LOWBIT_OF(PARAM_SCALERP_INPUT_CROP);

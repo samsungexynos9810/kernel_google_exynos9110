@@ -218,6 +218,7 @@
 #define FW_DEBUG
 #define RESERVED_MEM
 #define BAYER_CROP_DZOOM
+/* #define SCALER_PARALLEL_MODE */
 /* #define SCALER_CROP_DZOOM */
 /* #define USE_ADVANCED_DZOOM */
 /* #define TASKLET_MSG */
