@@ -809,6 +809,7 @@ enum exynos5430_clks {
 };
 
 static __initdata void *exynos5430_clk_regs[] = {
+	EXYNOS5430_AUD_PLL_CON0,
 	EXYNOS5430_SRC_SEL_EGL0,
 	EXYNOS5430_SRC_SEL_EGL1,
 	EXYNOS5430_SRC_SEL_EGL2,
