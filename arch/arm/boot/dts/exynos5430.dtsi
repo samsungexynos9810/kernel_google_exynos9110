@@ -2405,6 +2405,18 @@
 					&pd_cam1
 					&pd_isp>;
 		status = "ok";
+		subip_info {
+			num_of_3a0 = <1>;
+			num_of_3a1 = <1>;
+			num_of_isp = <1>;
+			num_of_drc = <1>;
+			num_of_scc = <1>;
+			num_of_odc = <0>;
+			num_of_dis = <1>;
+			num_of_3dnr = <1>;
+			num_of_scp = <1>;
+			num_of_fd = <1>;
+		};
 	};
 
 	sss@11100000 {
