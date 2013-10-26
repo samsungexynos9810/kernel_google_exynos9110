@@ -194,3 +194,56 @@ static struct platform_driver cci_platform_driver = {
 };
 
 module_platform_driver(cci_platform_driver);
+
+/* HACK : temporary code */
+#if defined(CONFIG_SOC_EXYNOS5422) && (CONFIG_SCHED_HMP)
+#include <mach/smc.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+
+#define CCI_PA			0x10d20000
+#define SECURE_ACCESS_REG	0x8
+#define STATUS_REG		0xc
+
+static int __init hack_cci_init(void)
+{
+	void __iomem *cci_base;
+	exynos_smc(SMC_CMD_REG,
+		   SMC_REG_ID_SFR_W(CCI_PA + SECURE_ACCESS_REG),
+		   1,
+		   0);
+
+	cci_base = ioremap(CCI_PA, SZ_64K);
+	if (!cci_base)
+		panic("Not initialized CCI\n");
+
+	/*KFC CCI enable*/
+	writel(0x3, cci_base + 0x4000);
+	dsb();
+	while (readl(cci_base + STATUS_REG) & 0x1);
+
+	/*EAGLE CCI enable */
+	writel(0x3, cci_base + 0x5000);
+	dsb();
+	while (readl(cci_base + STATUS_REG) & 0x1);
+
+	iounmap(cci_base);
+
+	/* HACK CPU_STATE of IRAM */
+	if (of_have_populated_dt()) {
+		struct device_node *nd;
+		const __be32 *addr;
+		void __iomem *ns_base;
+
+		nd = of_find_compatible_node(NULL, NULL,
+				"samsung,secure-firmware");
+		addr = of_get_address(nd, 0, NULL, NULL);
+		ns_base = of_iomap(nd, 0);
+
+		__raw_writel(0x4, ns_base + 0x28);
+	}
+
+	return 0;
+}
+early_initcall(hack_cci_init);
+#endif
