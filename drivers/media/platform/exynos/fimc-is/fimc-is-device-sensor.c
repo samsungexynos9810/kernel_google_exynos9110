@@ -783,9 +783,9 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 	/* S5K6A3 */
 	enum_sensor[SENSOR_NAME_S5K6A3].sensor = SENSOR_NAME_S5K6A3;
 	enum_sensor[SENSOR_NAME_S5K6A3].pixel_width = 1392 + 16;
-	enum_sensor[SENSOR_NAME_S5K6A3].pixel_height = 1392 + 10;
+	enum_sensor[SENSOR_NAME_S5K6A3].pixel_height = 1402 + 10;
 	enum_sensor[SENSOR_NAME_S5K6A3].active_width = 1392;
-	enum_sensor[SENSOR_NAME_S5K6A3].active_height = 1392;
+	enum_sensor[SENSOR_NAME_S5K6A3].active_height = 1402;
 	enum_sensor[SENSOR_NAME_S5K6A3].max_framerate = 30;
 	enum_sensor[SENSOR_NAME_S5K6A3].csi_ch = sensor_info->csi_id;
 	enum_sensor[SENSOR_NAME_S5K6A3].flite_ch = sensor_info->flite_id;
@@ -795,6 +795,14 @@ int fimc_is_sensor_probe(struct fimc_is_device_sensor *device,
 
 	ext = &enum_sensor[SENSOR_NAME_S5K6A3].ext;
 	memset(ext, 0x0, sizeof(struct sensor_open_extended));
+
+	ext->sensor_con.product_name = 0;
+	ext->sensor_con.peri_type = SE_I2C;
+	ext->sensor_con.peri_setting.i2c.channel = sensor_info->i2c_channel;
+	ext->sensor_con.peri_setting.i2c.slave_address = sensor_info->sensor_slave_address;
+	ext->sensor_con.peri_setting.i2c.speed = 400000;
+
+	ext->I2CSclk = I2C_L0;
 
 	/* S5K4E5 */
 	enum_sensor[SENSOR_NAME_S5K4E5].sensor = SENSOR_NAME_S5K4E5;
