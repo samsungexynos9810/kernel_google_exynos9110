@@ -1136,7 +1136,7 @@ check_completion:
 			ret = -EINVAL;
 		}
 	} else {
-		u32 group_id = group->id;
+		u32 group_id = GROUP_ID(group->id);
 		/* if there's only one group of isp, send group id by 3a0 */
 		if ((group_id == GROUP_ID_ISP) &&
 				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
