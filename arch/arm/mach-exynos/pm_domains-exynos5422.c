@@ -39,8 +39,8 @@ void __iomem *hdmi_regs;
 
 #define GET_CLK(a) __clk_lookup(a)
 #define SET_PARENT(a, b) clk_set_parent(GET_CLK(a), GET_CLK(b))
-#define ENA_CLK(a, b) {if (!__clk_is_enabled(GET_CLK(a))) { clk_prepare(GET_CLK(a)); b = clk_enable(GET_CLK(a)); if (b) pr_err(" %s: failed\n %d", __func__, b); } };
-#define DIS_CLK(a) {if (__clk_is_enabled(GET_CLK(a))) { clk_disable(GET_CLK(a)); clk_unprepare(GET_CLK(a)); } };
+#define ENA_CLK(a, b) {if (!__clk_is_enabled(GET_CLK(a))) { b = clk_prepare_enable(GET_CLK(a)); if (b) pr_err(" %s: failed\n %d", __func__, b); } };
+#define DIS_CLK(a) {if (__clk_is_enabled(GET_CLK(a))) clk_disable_unprepare(GET_CLK(a)); };
 
 static int exynos5_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {

@@ -127,7 +127,7 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 		return ret;
 	}
 
-#ifdef CONFIG_EXYNOS5422_BTS
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 	/* enable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, true);
@@ -161,7 +161,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 	if (pd->cb && pd->cb->off_pre)
 		pd->cb->off_pre(pd);
 
-#ifdef CONFIG_EXYNOS5422_BTS
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 	/* disable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, false);
@@ -181,7 +181,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 
 #ifdef CONFIG_OF
 
-#ifdef CONFIG_EXYNOS5422_BTS
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 /**
  *  of_device_bts_is_available - check if bts feature is enabled or not
  *
@@ -220,7 +220,7 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
 
-#ifdef CONFIG_EXYNOS5422_BTS
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 	do {
 		int ret;
 
@@ -246,8 +246,7 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 static void show_power_domain(void)
 {
 	struct device_node *np;
-
-	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct platform_device *pdev;
 		struct exynos_pm_domain *pd;
 
@@ -376,7 +375,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 	struct platform_device *pdev = NULL;
 	struct device_node *np = NULL;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
 		struct device_node *children;
 		int ret, val;
@@ -456,7 +455,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 	}
 
 	/* EXCEPTION: add physical sub-pd to master pd using device tree */
-	for_each_compatible_node(np, NULL, "samsung,exynos5422-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *parent_pd, *child_pd;
 		struct device_node *parent;
 		struct platform_device *parent_pd_pdev, *child_pd_pdev;
