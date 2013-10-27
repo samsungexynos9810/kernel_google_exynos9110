@@ -17,4 +17,4 @@ fimc-is-objs	:= fimc-is-core.o \
 		fimc-is-video-3a0c.o fimc-is-video-3a1c.o \
 		fimc-is-companion.o \
 
-obj-$(CONFIG_VIDEO_EXYNOS5_FIMC_IS) += fimc-is.o
+obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS) += fimc-is.o
