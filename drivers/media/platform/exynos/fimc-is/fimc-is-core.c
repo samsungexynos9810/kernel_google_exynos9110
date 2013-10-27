@@ -679,8 +679,9 @@ int fimc_is_runtime_suspend(struct device *dev)
 		vb2_ion_detach_iommu(core->mem.alloc_ctx);
 #endif
 
-#ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
-	 exynos5_update_media_layers(TYPE_FIMC_LITE, 0);
+#if defined(CONFIG_PM_DEVFREQ)
+#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS5430)
+	 exynos5_update_media_layers(TYPE_FIMC_LITE, false);
 #endif
 
 #if defined(CONFIG_MACH_SMDK5410) || defined(CONFIG_MACH_SMDK5420)
@@ -795,8 +796,9 @@ int fimc_is_runtime_resume(struct device *dev)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);
 #endif
 
-#ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
-	exynos5_update_media_layers(TYPE_FIMC_LITE, 1);
+#if defined(CONFIG_PM_DEVFREQ)
+#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS5430)
+	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
 #endif
 
 	pr_info("FIMC-IS runtime resume out\n");
