@@ -74,7 +74,7 @@ config SOC_EXYNOS5250
 
 config SOC_EXYNOS5422
 	bool "SAMSUNG EXYNOS5422"
-	default y
+	default n
 	depends on ARCH_EXYNOS5
 	select PM_GENERIC_DOMAINS if PM
 	select S5P_PM if PM
@@ -85,7 +85,7 @@ config SOC_EXYNOS5422
 
 config SOC_EXYNOS5430
 	bool "SAMSUNG EXYNOS5430"
-	default y
+	default n
 	depends on ARCH_EXYNOS5
 	select PM_GENERIC_DOMAINS if PM
 	select S5P_PM if PM
