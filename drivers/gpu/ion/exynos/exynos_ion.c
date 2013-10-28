@@ -475,6 +475,10 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 
 	buffer->flags = flags;
 
+	/* fixup of old DRM flags */
+	if (flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK))
+		id = ION_EXYNOS_ID_VIDEO;
+
 	dev = device_find_child(contig_heap->dev, &id, ion_cma_device_id_match);
 	if (!dev) {
 		pr_err("%s: Unable to find contiguous region for flag %#lx\n",
@@ -507,6 +511,10 @@ static void ion_exynos_contig_heap_free(struct ion_buffer *buffer)
 	struct ion_exynos_contig_heap *contig_heap =
 		container_of(buffer->heap, struct ion_exynos_contig_heap, heap);
 	struct device *dev;
+
+	/* fixup of old DRM flags */
+	if (buffer->flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK))
+		id = ION_EXYNOS_ID_VIDEO;
 
 	dev = device_find_child(contig_heap->dev, &id, ion_cma_device_id_match);
 	if (!dev) {
