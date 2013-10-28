@@ -1110,7 +1110,7 @@
 	};
 
 	pd_gscl: pd-gscl@105c4000 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4000 0x20>;
 
 		spd_gscl0: spd-gscl0@105c4000 {
@@ -1127,14 +1127,14 @@
 	};
 
 	pd_cam0: pd-cam0@105c4020 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4020 0x20>;
 		parent = <&pd_disp>;
 		bts-status = "enabled";
 	};
 
 	pd_mscl: pd-mscl@105c4040 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4040 0x20>;
 
 		spd_mscl0: spd-mscl0@105c4040 {
@@ -1151,12 +1151,12 @@
 	};
 
 	pd_g3d: pd-g3d@105c4060 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4060 0x20>;
 	};
 
 	pd_disp: pd-disp@105c4080 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4080 0x20>;
 
 		spd_decon: spd-decon@105c4080 {
@@ -1198,19 +1198,19 @@
 	};
 
 	pd_cam1: pd-cam1@105c40a0 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c40a0 0x20>;
 		bts-status = "enabled";
 	};
 
 	pd_maudio: pd-maudio@105c40c0 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c40c0 0x20>;
 		status = "ok";
 	};
 
 	pd_fsys: pd-fsys@105c40e0 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c40e0 0x20>;
 		status = "disabled";
 
@@ -1236,33 +1236,33 @@
 	};
 
 	pd_bus2: pd-bus2@105c4100 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4100 0x20>;
 		status = "disabled";
 	};
 
 	pd_g2d: pd-g2d@105c4120 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4120 0x20>;
 	};
 
 	pd_isp: pd-isp@105c4140 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4140 0x20>;
 	};
 
 	pd_mfc0: pd-mfc0@105c4180 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c4180 0x20>;
 	};
 
 	pd_mfc1: pd-mfc1@105c41a0 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c41a0 0x20>;
 	};
 
 	pd_hevc: pd-hevc@105c41c0 {
-		compatible = "samsung,exynos5430-pd";
+		compatible = "samsung,exynos-pd";
 		reg = <0x105c41c0 0x20>;
 	};
 
