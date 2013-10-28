@@ -921,17 +921,25 @@ static const struct file_operations esa_proc_fops = {
 	.release = single_release,
 };
 
-#ifdef CONFIG_PM
-static int esa_suspend(struct platform_device *pdev, pm_message_t state)
+#if !defined(CONFIG_PM_RUNTIME) && defined(CONFIG_PM_SLEEP)
+static int esa_suspend(struct device *dev)
 {
 	esa_debug("%s: called\n", __func__);
+
+	esa_fw_shutdown();
+	clk_disable_unprepare(si.clk_ca5);
+	lpass_put_sync(dev);
 
 	return 0;
 }
 
-static int esa_resume(struct platform_device *pdev)
+static int esa_resume(struct device *dev)
 {
 	esa_debug("%s: called\n", __func__);
+
+	lpass_get_sync(dev);
+	clk_prepare_enable(si.clk_ca5);
+	esa_fw_startup();
 
 	return 0;
 }
@@ -1087,11 +1095,17 @@ static int esa_probe(struct platform_device *pdev)
 	esa_debug("fwmem_pa   = %08X\n", si.fwmem_pa);
 	esa_debug("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_use_autosuspend(dev);
 	pm_runtime_set_autosuspend_delay(dev, 300);
 	pm_runtime_enable(dev);
 	pm_runtime_get_sync(dev);
 	pm_runtime_put_sync(dev);
+#else
+	lpass_get_sync(dev);
+	clk_prepare_enable(si.clk_ca5);
+	esa_fw_startup();
+#endif
 
 	return 0;
 
@@ -1109,6 +1123,10 @@ static int esa_remove(struct platform_device *pdev)
 	if (ret)
 		esa_err("Cannot deregister miscdev\n");
 
+#ifndef CONFIG_PM_RUNTIME
+	clk_disable_unprepare(si.clk_ca5);
+	lpass_put_sync(&pdev->dev);
+#endif
 	clk_put(si.clk_ca5);
 	clk_put(si.opclk_ca5);
 
@@ -1158,6 +1176,10 @@ MODULE_DEVICE_TABLE(of, exynos_esa_match);
 #endif
 
 static const struct dev_pm_ops esa_pmops = {
+	SET_SYSTEM_SLEEP_PM_OPS(
+		esa_suspend,
+		esa_resume
+	)
 	SET_RUNTIME_PM_OPS(
 		esa_runtime_suspend,
 		esa_runtime_resume,
@@ -1168,8 +1190,6 @@ static const struct dev_pm_ops esa_pmops = {
 static struct platform_driver esa_driver = {
 	.probe		= esa_probe,
 	.remove		= esa_remove,
-	.suspend	= esa_suspend,
-	.resume		= esa_resume,
 	.id_table	= esa_driver_ids,
 	.driver		= {
 		.name	= "samsung-seiren",
