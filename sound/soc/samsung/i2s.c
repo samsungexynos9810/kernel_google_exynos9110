@@ -85,6 +85,9 @@ struct i2s_dai {
 #ifdef CONFIG_SND_SAMSUNG_IDMA
 	struct s3c_dma_params idma_playback;
 #endif
+#ifndef CONFIG_PM_RUNTIME
+	int enable_cnt;
+#endif
 	u32	quirks;
 	u32	suspend_i2smod;
 	u32	suspend_i2scon;
@@ -110,6 +113,11 @@ struct i2s_dai {
 
 /* Lock for cross i/f checks */
 static DEFINE_SPINLOCK(lock);
+
+#ifndef CONFIG_PM_RUNTIME
+static int i2s_disable(struct device *dev);
+static int i2s_enable(struct device *dev);
+#endif
 
 /* If this is the 'overlay' stereo DAI */
 static inline bool is_secondary(struct i2s_dai *i2s)
@@ -778,7 +786,11 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 	unsigned long flags;
 
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&pdev->dev);
+#else
+	i2s_enable(&pdev->dev);
+#endif
 
 	spin_lock_irqsave(&lock, flags);
 
@@ -828,7 +840,11 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 				0, SND_SOC_CLOCK_IN);
 
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&pdev->dev);
+#else
+	i2s_disable(&pdev->dev);
+#endif
 }
 
 static int config_setup(struct i2s_dai *i2s)
@@ -1264,6 +1280,48 @@ static int i2s_runtime_resume(struct device *dev)
 	struct pinctrl *pinctrl;
 
 	pr_debug("%s entered\n", __func__);
+
+	lpass_get_sync(dev);
+	clk_prepare_enable(i2s->clk);
+	i2s_reg_restore(i2s);
+	pinctrl = devm_pinctrl_get_select(dev, "default");
+
+	return 0;
+}
+#else
+static int i2s_disable(struct device *dev)
+{
+	struct i2s_dai *i2s = dev_get_drvdata(dev);
+	struct pinctrl *pinctrl;
+
+	spin_lock(&lock);
+	i2s->enable_cnt--;
+	if (i2s->enable_cnt) {
+		spin_unlock(&lock);
+		return 1;
+	}
+	spin_unlock(&lock);
+
+	pinctrl = devm_pinctrl_get_select(dev, "idle");
+	i2s_reg_save(i2s);
+	clk_disable_unprepare(i2s->clk);
+	lpass_put_sync(dev);
+
+	return 0;
+}
+
+static int i2s_enable(struct device *dev)
+{
+	struct i2s_dai *i2s = dev_get_drvdata(dev);
+	struct pinctrl *pinctrl;
+
+	spin_lock(&lock);
+	i2s->enable_cnt++;
+	if (i2s->enable_cnt > 1) {
+		spin_unlock(&lock);
+		return 1;
+	}
+	spin_unlock(&lock);
 
 	lpass_get_sync(dev);
 	clk_prepare_enable(i2s->clk);
