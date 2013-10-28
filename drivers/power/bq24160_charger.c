@@ -91,6 +91,7 @@
 #define MIN_MAX_CHARGE_VOLTAGE  4200
 #define MAX_MAX_CHARGE_VOLTAGE  MAX_CHARGE_VOLTAGE
 #define CHARGE_VOLTAGE_STEP     20
+#define XYREF5430_MAX_CHG_VOLT	4100
 
 /* Values in mA */
 #define MIN_CHARGE_CURRENT 275
@@ -106,6 +107,7 @@
 /* Values in mA */
 #define MIN_CHARGE_CURRENT_LIMIT_USB 100
 #define MIN_CHARGE_CURRENT_LIMIT_IN 1500
+#define XYREF5430_CURRENT_LIMIT_USB	900
 
 /* Vender Part Revision  */
 #define VENDOR_REV_23 0x05
@@ -115,6 +117,9 @@
 
 
 #define CURRENT_DEPEND_ON_PRODUCT USHRT_MAX
+
+/* Value in hour */
+#define XYREF5430_SAFETY_TIME	360
 
 /*
  * Delay time until enabling charge to prevent back boost.
@@ -302,11 +307,11 @@ static void bq24160_start_delayed_enable(struct bq24160_data *bd,
 static void bq24160_start_watchdog_reset(struct bq24160_data *bd);
 static void bq24160_stop_watchdog_reset(struct bq24160_data *bd);
 static int xyref5430_set_values(struct bq24160_data *bd);
+static int bq24160_set_input_current_limit_usb(struct bq24160_data *bd, u16 ma);
+static int bq24160_set_input_current_limit_in(struct bq24160_data *bd, u16 ma);
 
 #ifdef DEBUG_FS
 
-static int bq24160_set_input_current_limit_usb(struct bq24160_data *bd, u16 ma);
-static int bq24160_set_input_current_limit_in(struct bq24160_data *bd, u16 ma);
 
 static int read_sysfs_interface(const char *pbuf, s32 *pvalue, u8 base)
 {
@@ -1148,10 +1153,11 @@ static int xyref5430_set_values(struct bq24160_data *bd)
 		return rc;
 
 	/* Sets any charging relates registers */
-	(void)bq24160_set_charger_voltage(3800);
-	/*(void)bq24160_set_charger_current(0);*/
-	/*(void)bq24160_set_charger_termination_current(0);*/
-	(void)bq24160_set_charger_safety_timer(360);
+	(void)bq24160_set_charger_voltage(XYREF5430_MAX_CHG_VOLT);
+	(void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
+	(void)bq24160_set_input_current_limit_usb(bd, XYREF5430_CURRENT_LIMIT_USB);
+	(void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
+	(void)bq24160_set_charger_safety_timer(XYREF5430_SAFETY_TIME);
 
 	return 0;
 
