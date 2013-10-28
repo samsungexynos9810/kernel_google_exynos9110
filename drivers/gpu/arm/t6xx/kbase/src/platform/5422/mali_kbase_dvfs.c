@@ -453,7 +453,6 @@ void kbase_platform_dvfs_term(void)
 
 	mali_dvfs_wq = NULL;
 }
-#endif /*CONFIG_MALI_T6XX_DVFS*/
 
 int mali_get_dvfs_max_locked_freq(void)
 {
@@ -562,6 +561,7 @@ void mali_dvfs_freq_min_unlock(void)
 #endif
 	printk("[G3D] min Lock Unset\n");
 }
+#endif /*CONFIG_MALI_T6XX_DVFS*/
 
 int kbase_platform_regulator_init(void)
 {
