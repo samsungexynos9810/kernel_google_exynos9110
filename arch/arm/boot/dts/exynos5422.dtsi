@@ -533,7 +533,7 @@
 	};
 
 	pd_g3d: pd-g3d@0x10044080 {
-        compatible = "samsung,exynos5422-pd";
+        compatible = "samsung,exynos-pd";
         reg = <0x10044080 0x20>;
     };
 
