@@ -20,7 +20,8 @@
 #include <linux/gpio.h>
 #include <linux/suspend.h>
 #include <linux/clk.h>
-#include <linux/fb.h>
+#include <linux/tick.h>
+#include <linux/hrtimer.h>
 #include <linux/cpu.h>
 
 #include <asm/proc-fns.h>
@@ -64,11 +65,6 @@
 
 #define EXYNOS_CHECK_DIRECTGO	0xFCBA0D10
 #define EXYNOS_CHECK_LPA	0xABAD0000
-
-#define C3_HOTPLUG_DELAY	1000
-
-static bool lcd_is_on;
-static struct delayed_work work_hotplug;
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv,
@@ -130,81 +126,6 @@ static inline void show_core_regs(int cpuid)
 			cpuid, val_conf, val_stat, val_opt);
 }
 #endif
-
-static int __ref __cpu_hotplug(bool out_flag)
-{
-	int i = 0;
-	int ret = 0;
-
-	if (out_flag) {
-		for(i = NR_CPUS-1; i > 0; i--) {
-			ret = cpu_down(i);
-#ifdef CONFIG_DEBUG_CPUIDLE
-			show_core_regs(i);
-#endif
-		}
-	} else {
-		for(i = 1; i < NR_CPUS; i++) {
-			ret = cpu_up(i);
-#ifdef CONFIG_DEBUG_CPUIDLE
-			show_core_regs(i);
-#endif
-		}
-	}
-
-	return ret;
-}
-
-static void cpuidle_dm_hotplug(struct work_struct *work)
-{
-	if (lcd_is_on)
-		__cpu_hotplug(false);
-	else
-		__cpu_hotplug(true);
-
-	return;
-}
-
-/* Frame buffer powerdown notify */
-static int fb_state_change(struct notifier_block *nb,
-		unsigned long val, void *data)
-{
-	struct fb_event *evdata = data;
-	unsigned int blank;
-	int delay;
-
-	if (val != FB_EVENT_BLANK)
-		return 0;
-
-	blank = *(int *)evdata->data;
-
-	switch (blank) {
-	case FB_BLANK_POWERDOWN:
-		lcd_is_on = false;
-		pr_info("LCD is off\n");
-		delay = msecs_to_jiffies(C3_HOTPLUG_DELAY);
-		delay -= jiffies % delay;
-		schedule_delayed_work_on(0, &work_hotplug, delay);
-		break;
-	case FB_BLANK_UNBLANK:
-		/*
-		 * LCD blank CPU qos is set by exynos-ikcs-cpufreq
-		 * This line of code release max limit when LCD is
-		 * turned on.
-		 */
-		lcd_is_on = true;
-		schedule_delayed_work_on(0, &work_hotplug, 0);
-		break;
-	default:
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block fb_block = {
-	.notifier_call = fb_state_change,
-};
 
 static int exynos_check_reg_status(struct check_reg_lpa *reg_list,
 				    unsigned int list_cnt)
@@ -812,11 +733,6 @@ static int __init exynos_init_cpuidle(void)
 			return -EIO;
 		}
 	}
-
-	lcd_is_on = true;
-	fb_register_client(&fb_block);
-
-	INIT_DELAYED_WORK(&work_hotplug, cpuidle_dm_hotplug);
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
 	return 0;
