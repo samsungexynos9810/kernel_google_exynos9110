@@ -1394,6 +1394,10 @@ static int __init exynos_cpufreq_init(void)
 	exynos_cpufreq_init_done = true;
 	exynos_cpufreq_init_notify_call_chain(CPUFREQ_INIT_COMPLETE);
 
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+	dm_cpu_hotplug_init();
+#endif
+
 	return 0;
 
 err_workqueue:
