@@ -152,7 +152,6 @@ static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 	} else {
 		data &= WINCONx_DOUBLE_BUF_MODE;
 	}
-
 	writel(data, regs);
 }
 
@@ -376,12 +375,13 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 	}
 }
 
-static void patch_set_shadow_protect(struct s3c_fb_win *win, struct s3c_fb *sfb, int enable)
+static void patch_set_shadow_protect(struct s3c_fb_win *win,
+				struct s3c_fb *sfb, int enable)
 {
 	u32 data, timeout = 0;
 
 	if (enable) {
-		if ((readl(sfb->regs + WINCON_SHADOW(0))) & 0x1) {
+		if ((readl(sfb->regs + WINCON_SHADOW(win->index))) & 0x1) {
 			while(1) {
 				data = readl(sfb->regs + DECON_UPDATE_SHADOW);
 				if (!(data & 1))
@@ -1951,7 +1951,6 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	unsigned int bw = 0;
 
 	fd = get_unused_fd();
-
 	if (fd < 0)
 		return fd;
 
@@ -1976,7 +1975,8 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	}
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (!sfb->windows[i]->local) {
+		regs->otf_state[i] = win_config[i].otf_state;
+		if (regs->otf_state[i] == DMA) {
 			sfb->windows[i]->prev_fix =
 				sfb->windows[i]->fbinfo->fix;
 			sfb->windows[i]->prev_var =
@@ -1991,7 +1991,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		bool enabled = 0;
 		u32 color_map = WINxMAP_MAP | WINxMAP_MAP_COLOUR(0);
 
-		if (!sfb->windows[i]->local) {
+		if (regs->otf_state[i] == DMA) {
 			switch (config->state) {
 			case S3C_FB_WIN_STATE_DISABLED:
 				break;
@@ -2015,11 +2015,27 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 				ret = -EINVAL;
 				break;
 			}
+		} else {
+			unsigned short win_no = win->index;
+			regs->wincon[win_no] =
+				wincon(win->fbinfo->var.bits_per_pixel,
+			win->fbinfo->var.transp.length,
+			win->fbinfo->var.red.length);
+			regs->wincon[win_no] |=
+				s3c_fb_rgborder(win_config->format);
+			regs->x[i] = config->x;
+			regs->y[i] = config->y;
+			regs->w[i] = config->w;
+			regs->h[i] = config->h;
+			enabled = 1;
+			color_map = 0;
 		}
-		if (enabled)
+		if (enabled) {
 			regs->wincon[i] |= WINCONx_ENWIN;
-		else
+		}
+		else {
 			regs->wincon[i] &= ~WINCONx_ENWIN;
+		}
 
 		/*
 		 * Because BURSTLEN field does not have shadow register,
@@ -2047,7 +2063,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 
 	if (ret) {
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
-			if (!sfb->windows[i]->local) {
+			if (regs->otf_state[i] == DMA) {
 				sfb->windows[i]->fbinfo->fix =
 					sfb->windows[i]->prev_fix;
 				sfb->windows[i]->fbinfo->var =
@@ -2090,59 +2106,185 @@ err:
 	mutex_unlock(&sfb->output_lock);
 	return ret;
 }
+
+static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
+		struct s3c_reg_data *regs, bool enable)
+{
+	struct v4l2_subdev_crop crop;
+	int ret = 0;
+
+	if (enable) {
+		crop.rect.left = regs->x[i];
+		crop.rect.top = regs->y[i];
+		crop.rect.width = regs->w[i];
+		crop.rect.height = regs->h[i];
+		crop.pad = GSC_OUT_PAD_SOURCE;
+		crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+		ret = v4l2_subdev_call(sfb->md->gsc_sd[0],
+				pad, set_crop, NULL, &crop);
+		if (ret) {
+			dev_err(sfb->dev, "Gsc set_crop failed\n");
+			goto err;
+		}
+	}
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[0], video,
+				s_stream, enable);
+	if (ret) {
+		dev_err(sfb->dev, "GSC s_stream(%d) failed\n", enable);
+		goto err;
+	}
+	if (enable) {
+		crop.rect.left = regs->x[i];
+		crop.rect.top = regs->y[i];
+		crop.rect.width = regs->w[i];
+		crop.rect.height = regs->h[i];
+		crop.pad = FIMD_PAD_SINK_FROM_GSCALER_SRC;
+		crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+		ret = v4l2_subdev_call(&sfb->windows[i]->sd,
+				pad, set_crop, NULL, &crop);
+		if (ret) {
+			dev_err(sfb->dev, "Decon set_crop failed\n");
+			goto err;
+		}
+	}
+	ret = v4l2_subdev_call(&sfb->windows[i]->sd, video,
+				s_stream, enable);
+	if (ret) {
+		dev_err(sfb->dev, "Decon s_stream(%d) failed\n", enable);
+		goto err;
+	}
+err:
+	return ret;
+}
+static int s3c_fb_change_frame(struct s3c_fb *sfb,
+		struct s3c_reg_data *regs, int i)
+{
+	struct v4l2_subdev_crop crop;
+	int ret = 0;
+	u32 data = 0;
+
+	crop.rect.left = regs->x[i];
+	crop.rect.top = regs->y[i];
+	crop.rect.width = regs->w[i];
+	crop.rect.height = regs->h[i];
+	crop.pad = GSC_OUT_PAD_SOURCE;
+	crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[0],
+			pad, set_crop, NULL, &crop);
+	if (ret) {
+		dev_err(sfb->dev, "Gscaler set_crop failed\n");
+		goto err;
+	}
+
+	crop.pad = FIMD_PAD_SINK_FROM_GSCALER_SRC;
+	crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+	ret = v4l2_subdev_call(&sfb->windows[i]->sd,
+			pad, set_crop, NULL, &crop);
+	if (ret) {
+		dev_err(sfb->dev, "Decon set_crop failed\n");
+		goto err;
+	}
+	data = readl(sfb->regs + WINCON(i));
+	data &= ~(0x07 << 20); /* Masking */
+	data |=  (0x01 << 20); /* On GSC#0 and enable */
+	writel(data, sfb->regs + WINCON(i));
+
+	dev_dbg(sfb->dev, "(%d : %d,%d,%d,%d)\n", i, regs->x[i],
+				regs->y[i], regs->w[i], regs->h[i]);
+err:
+	return ret;
+}
+
+static void set_reg_data(struct s3c_fb *sfb, int i,
+				struct s3c_reg_data *regs)
+{
+	writel(regs->wincon[i], sfb->regs + WINCON(i));
+	writel(regs->winmap[i], sfb->regs + WINxMAP(i));
+	writel(regs->vidosd_a[i],
+		sfb->regs + VIDOSD_A(i));
+	writel(regs->vidosd_b[i],
+		sfb->regs + VIDOSD_B(i));
+	if (sfb->windows[i]->variant.has_osd_c)
+		writel(regs->vidosd_c[i],
+		sfb->regs + VIDOSD_C(i));
+	if (sfb->windows[i]->variant.has_osd_d)
+		writel(regs->vidosd_d[i],
+		sfb->regs + VIDOSD_D(i));
+	writel(regs->vidw_buf_start[i],
+		sfb->regs + VIDW_BUF_START(i));
+	writel(regs->vidw_buf_end[i],
+		sfb->regs + VIDW_BUF_END(i));
+	writel(regs->vidw_buf_size[i],
+		sfb->regs + VIDW_BUF_SIZE(i));
+	if (i)
+		writel(regs->blendeq[i - 1],
+		sfb->regs + BLENDEQ(i - 1));
+	sfb->windows[i]->dma_buf_data =
+		regs->dma_buf_data[i];
+}
+
 static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	unsigned short i;
 	unsigned int data;
-	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if ((!sfb->windows[i]->local) &&
-				(!sfb->windows[i]->ready_to_dma))
-			shadow_protect_win(sfb->windows[i], 1);
-	}
-	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (!sfb->windows[i]->local) {
-			writel(regs->wincon[i], sfb->regs + WINCON(i));
-			/*
-			writel(regs->win_rgborder[i],
-				sfb->regs + WIN_RGB_ORDER(i));
-			*/
-			writel(regs->winmap[i], sfb->regs + WINxMAP(i));
-			writel(regs->vidosd_a[i],
-				sfb->regs + VIDOSD_A(i));
-			writel(regs->vidosd_b[i],
-				sfb->regs + VIDOSD_B(i));
-			if (sfb->windows[i]->variant.has_osd_c)
-				writel(regs->vidosd_c[i],
-				sfb->regs + VIDOSD_C(i));
-			if (sfb->windows[i]->variant.has_osd_d)
-				writel(regs->vidosd_d[i],
-				sfb->regs + VIDOSD_D(i));
-			writel(regs->vidw_buf_start[i],
-				sfb->regs + VIDW_BUF_START(i));
-			writel(regs->vidw_buf_end[i],
-				sfb->regs + VIDW_BUF_END(i));
-			writel(regs->vidw_buf_size[i],
-				sfb->regs + VIDW_BUF_SIZE(i));
-			if (i)
-				writel(regs->blendeq[i - 1],
-				sfb->regs + BLENDEQ(i - 1));
-			sfb->windows[i]->dma_buf_data =
-				regs->dma_buf_data[i];
-		}
-	}
+	int ret = 0;
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (!sfb->windows[i]->local)
-			shadow_protect_win(sfb->windows[i], 0);
+		shadow_protect_win(sfb->windows[i], 1);
+	}
+	for (i = 0; i < sfb->variant.nr_windows; i++) {
+		if (regs->otf_state[i] == DMA) {
+			set_reg_data(sfb, i, regs);
+			set_bit(S3C_FB_READY_TO_LOCAL,
+					&sfb->windows[i]->state);
+			if (test_bit(S3C_FB_LOCAL,
+					&sfb->windows[i]->state)) {
+				ret = s3c_fb_enable_local_path(sfb, i,
+						regs, false);
+				if (ret)
+					pr_err("fail stop localpath\n");
+				clear_bit(S3C_FB_LOCAL,
+					&sfb->windows[i]->state);
+				set_bit(S3C_FB_STOP_DMA,
+					&sfb->windows[i]->state);
+			}
+		} else if (regs->otf_state[i] == OTF) {
+			set_reg_data(sfb, i, regs);
+			if (test_bit(S3C_FB_READY_TO_LOCAL,
+					&sfb->windows[i]->state)) {
+				ret = s3c_fb_enable_local_path(sfb, i,
+						regs, true);
+				if (ret)
+					pr_err("fail start localpath\n");
+				clear_bit(S3C_FB_READY_TO_LOCAL,
+					&sfb->windows[i]->state);
+			} else {
+				ret = s3c_fb_change_frame(sfb, regs, i);
+				if (ret)
+					pr_err("failed change frame\n");
+				set_bit(S3C_FB_LOCAL,
+					&sfb->windows[i]->state);
+			}
+		}
+	}
+	for (i = 0; i < sfb->variant.nr_windows; i++) {
+		shadow_protect_win(sfb->windows[i], 0);
 	}
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 
 	/* temporaly localpath window is 0 */
-	if (sfb->windows[0]->ready_to_dma) {
+	if (test_bit(S3C_FB_STOP_DMA, &sfb->windows[0]->state)) {
 		data |= DECON_UPDATE_SLAVE_SYNC;
-		sfb->windows[0]->ready_to_dma = false;
+		clear_bit(S3C_FB_STOP_DMA, &sfb->windows[0]->state);
+	} else if (test_bit(S3C_FB_LOCAL, &sfb->windows[0]->state)) {
+		data |= DECON_UPDATE_SLAVE_SYNC;
 	}
+
+	if (readl(sfb->regs + DECON_UPDATE_SHADOW) & (1<<0))
+		pr_err("Error:0x%x\n",
+				readl(sfb->regs + DECON_UPDATE_SHADOW));
 
 	writel(data, sfb->regs + DECON_UPDATE);
 }
@@ -2188,7 +2330,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 			return;
 		}
 #endif
-		if (!sfb->windows[i]->local) {
+		if (regs->otf_state[i] == DMA) {
 			old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
 			if (regs->dma_buf_data[i].fence)
 				s3c_fd_fence_wait(sfb,
@@ -2213,7 +2355,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		wait_for_vsync = false;
 
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
-			if (!sfb->windows[i]->local) {
+			if (regs->otf_state[i] == DMA) {
 				u32 new_start = regs->vidw_buf_start[i];
 				u32 shadow_start = readl(sfb->regs +
 						SHD_VIDW_BUF_START(i));
@@ -2227,7 +2369,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	if (wait_for_vsync) {
 		pr_err("%s: failed to update registers\n", __func__);
 		for (i = 0; i < sfb->variant.nr_windows; i++)
-			if (!sfb->windows[i]->local)
+			if (regs->otf_state[i] == DMA)
 				pr_err("window %d new value %08x register value %08x\n",
 				i, regs->vidw_buf_start[i],
 				readl(sfb->regs + SHD_VIDW_BUF_START(i)));
@@ -2239,7 +2381,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	while (readl(sfb->regs + DECON_UPDATE) & 0x1);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
-		if (!sfb->windows[i]->local)
+		if (regs->otf_state[i] == DMA)
 			s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
 
 #if defined(CONFIG_DECON_DEVFREQ)
@@ -2677,6 +2819,7 @@ static int s3c_fb_probe_win(struct s3c_fb *sfb, unsigned int win_no,
 	win->windata = windata;
 	win->index = win_no;
 	win->palette_buffer = (u32 *)(win + 1);
+	set_bit(S3C_FB_DMA, &win->state);
 #ifdef CONFIG_ION_EXYNOS
 	memset(&win->dma_buf_data, 0, sizeof(win->dma_buf_data));
 #endif
@@ -2808,29 +2951,25 @@ static int s3c_fb_sd_set_pad_crop(struct v4l2_subdev *sd, struct v4l2_subdev_fh 
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct fb_var_screeninfo *var = &win->fbinfo->var;
 	struct s3c_fb *sfb = win->parent;
-	struct s3c_fb_user_window user_window;
 	int win_no = win->index;
 	void __iomem *regs = sfb->regs;
 	u32 data;
 
-	/* (left, top) : (xoffset, yoffset) */
-	user_window.x = crop->rect.left;
-	user_window.y = crop->rect.top;
-
-	if (!s3c_fb_validate_x_alignment(sfb, user_window.x, crop->rect.width,
-			var->bits_per_pixel))
+	if (!s3c_fb_validate_x_alignment(sfb, crop->rect.left,
+			crop->rect.width, var->bits_per_pixel))
 		return -EINVAL;
 
 	/* write 'OSD' registers to control position of framebuffer */
-	data = vidosd_a(user_window.x, user_window.y);
+	data = vidosd_a(crop->rect.left, crop->rect.top);
 	writel(data, regs + VIDOSD_A(win_no));
 
-	data = vidosd_b(user_window.x, user_window.y, crop->rect.width,
-			crop->rect.height);
+	data = vidosd_b(crop->rect.left, crop->rect.top,
+			crop->rect.width, crop->rect.height);
 	writel(data, regs + VIDOSD_B(win_no));
 
-	dev_dbg(sfb->dev, "Set sd pad crop (x, y) : (%d, %d)\n",
-			crop->rect.left, crop->rect.top);
+	dev_dbg(sfb->dev, "pad crop (x, y, w, h) : (%d, %d, %d, %d)\n",
+			crop->rect.left, crop->rect.top,
+			crop->rect.width, crop->rect.height);
 	return 0;
 }
 
@@ -2861,19 +3000,19 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
 	if (enable) {
+		dev_dbg(sfb->dev, "Decon start(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
 		data &= ~(0x07 << 20); /* Masking */
 		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
 	} else {
+		dev_dbg(sfb->dev, "Decon stop(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
 		data &= ~(0x07 << 20); /* Masking == diable local path */
 		writel(data, sfb->regs + WINCON(win->index));
-		win->local = 0;
-		win->ready_to_dma = true;
 	}
-	dev_dbg(sfb->dev, "Get the window via local path started/stopped : %d\n",
-			enable);
+	dev_dbg(sfb->dev, "window via local path started/stopped : %d\n",
+		enable);
 	return 0;
 }
 
@@ -2909,6 +3048,13 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 		/* hw_trigger_mask_enable(win, false); */
 #endif
+		break;
+	case S3CFB_FLUSH_WORKQUEUE:
+		if (sfb->update_regs_wq) {
+			mutex_lock(&sfb->output_lock);
+			drain_workqueue(sfb->update_regs_wq);
+			mutex_unlock(&sfb->output_lock);
+		}
 		break;
 
 	default:
@@ -3093,8 +3239,6 @@ static int s3c_fb_create_mc_links(struct s3c_fb_win *win)
 				goto mc_link_create_fail;
 		}
 	}
-
-	win->ready_to_dma = false;
 
 	dev_dbg(sfb->dev, "A link between Gscaler and window[%d] is created \
 		successfully\n", win->index);
