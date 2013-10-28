@@ -724,7 +724,8 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 
 		if (bd->cached_status.stat != old_status.stat) {
 			if (bd->cached_status.stat == STAT_NO_VALID_SOURCE) {
-				if (old_status.stat == STAT_CHARGING_FROM_IN || old_status.stat == STAT_CHARGING_FROM_USB)
+				if (old_status.stat == STAT_CHARGING_FROM_IN || old_status.stat == STAT_CHARGING_FROM_USB
+						|| old_status.stat == STAT_IN_READY || old_status.stat == STAT_USB_READY)
 					bq24160_stop_watchdog_reset(bd);
 			} else if (bd->cached_status.stat == STAT_IN_READY || bd->cached_status.stat == STAT_USB_READY) {
 				if (old_status.stat == STAT_NO_VALID_SOURCE) {
@@ -808,6 +809,7 @@ static void bq24160_start_watchdog_reset(struct bq24160_data *bd)
 	MUTEX_UNLOCK(&bd->lock);
 
 	wake_lock(&bd->wake_lock);
+	dev_info(&bd->clientp->dev, "wake locked\n");
 
 	(void)queue_delayed_work(bd->wq, &bd->work, 0);
 }
@@ -836,6 +838,7 @@ static void bq24160_stop_watchdog_reset(struct bq24160_data *bd)
 	cancel_delayed_work(&bd->work);
 
 	wake_unlock(&bd->wake_lock);
+	dev_info(&bd->clientp->dev, "wake unlocked\n");
 }
 
 static void bq24160_reset_watchdog_worker(struct work_struct *work)
