@@ -1482,7 +1482,7 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 
 #if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
 	dma->sg_table = dma_buf_map_attachment(dma->attachment,
-			DMA_BIDIRECTIONAL);
+			DMA_TO_DEVICE);
 	if (IS_ERR_OR_NULL(dma->sg_table)) {
 		dev_err(sfb->dev, "dma_buf_map_attachment() failed: %ld\n",
 				PTR_ERR(dma->sg_table));
@@ -1506,7 +1506,7 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 
 err_iovmm_map:
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
-			DMA_BIDIRECTIONAL);
+			DMA_TO_DEVICE);
 err_buf_map_attachment:
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 err_buf_map_attach:
@@ -1526,7 +1526,7 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 	iovmm_unmap(sfb->dev, dma->dma_addr);
 
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
-			DMA_BIDIRECTIONAL);
+			DMA_TO_DEVICE);
 #endif
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 	dma_buf_put(dma->dma_buf);
