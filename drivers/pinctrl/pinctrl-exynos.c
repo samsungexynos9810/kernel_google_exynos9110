@@ -1125,7 +1125,7 @@ struct samsung_pin_ctrl exynos5422_pin_ctrl[] = {
 		/* pin-controller instance 4 data */
 		.pin_banks	= exynos5422_pin_banks4,
 		.nr_banks	= ARRAY_SIZE(exynos5422_pin_banks4),
-		.label		= "exynos5430-gpio-ctrl4",
+		.label		= "exynos5422-gpio-ctrl4",
 	},
 };
 
