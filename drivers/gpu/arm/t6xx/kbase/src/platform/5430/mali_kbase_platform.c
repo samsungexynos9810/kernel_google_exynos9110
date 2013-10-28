@@ -100,7 +100,9 @@ static struct notifier_block exynos5_g3d_tmu_nb = {
 };
 #endif
 
+#ifdef CONFIG_MALI_T6XX_RT_PM
 extern int pm_callback_power_on(kbase_device *kbdev);
+#endif
 static int kbase_platform_power_clock_init(kbase_device *kbdev)
 {
 	int ret;
@@ -111,8 +113,10 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 		panic("oops");
 	}
 
+#ifdef CONFIG_MALI_T6XX_RT_PM
 	/* Turn on G3D power */
 	pm_callback_power_on(kbdev);
+#endif
 
 	/* Turn on G3D clock */
 	clk_g3d = __clk_lookup("dout_aclk_g3d");
