@@ -80,6 +80,27 @@ static LIST_HEAD(subip_list);
 
 extern int exynos_set_parent(const char *child, const char *parent);
 
+extern int check_adma_status(void);
+extern int check_fdma_status(void);
+extern int check_esa_status(void);
+int exynos_check_aud_pwr(void)
+{
+	int dram_used = check_adma_status();
+
+#ifdef CONFIG_SND_SAMSUNG_FAKEDMA
+	dram_used |= check_fdma_status();
+#endif
+#ifdef CONFIG_SND_SAMSUNG_SEIREN
+	dram_used |= check_esa_status();
+#endif
+	if (!lpass.enabled)
+		return AUD_PWR_SLEEP;
+	else if (dram_used)
+		return AUD_PWR_ALPA;
+	else
+		return AUD_PWR_LPA;
+}
+
 void __iomem *lpass_get_regs(void)
 {
 	return lpass.regs;
@@ -420,8 +441,13 @@ static void lpass_init_reg_list(void)
 
 static int lpass_proc_show(struct seq_file *m, void *v) {
 	struct subip_info *si;
+	int pmode = exynos_check_aud_pwr();
 
 	seq_printf(m, "power: %s\n", lpass.enabled ? "on" : "off");
+	seq_printf(m, "canbe: %s\n",
+			(pmode == AUD_PWR_SLEEP) ? "sleep" :
+			(pmode == AUD_PWR_LPA) ? "lpa" :
+			(pmode == AUD_PWR_ALPA) ? "alpa" : "unknown");
 
 	list_for_each_entry(si, &subip_list, node) {
 		seq_printf(m, "subip: %s (%d)\n",

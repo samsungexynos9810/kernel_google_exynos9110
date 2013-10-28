@@ -29,6 +29,15 @@ enum {
 	LPASS_OP_NORMAL,
 };
 
+/* Availability of power mode */
+enum {
+	AUD_PWR_SLEEP = 0,
+	AUD_PWR_LPA,
+	AUD_PWR_ALPA,
+};
+
+extern int exynos_check_aud_pwr(void);
+
 extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
 extern void lpass_get_sync(struct device *ip_dev);
 extern void lpass_put_sync(struct device *ip_dev);
