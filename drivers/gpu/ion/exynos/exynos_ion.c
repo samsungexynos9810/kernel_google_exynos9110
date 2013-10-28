@@ -852,7 +852,7 @@ static int __exit exynos_ion_remove(struct platform_device *pdev)
 
 #ifdef CONFIG_ION_EXYNOS_OF
 static struct of_device_id exynos_ion_of_match[] __initconst = {
-	{ .compatible	= "samsung,android4.3-ion", },
+	{ .compatible	= "samsung,exynos5430-ion", },
 	{ },
 };
 
