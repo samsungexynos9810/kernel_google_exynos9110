@@ -443,8 +443,8 @@ static const struct file_operations lpass_proc_fops = {
 	.release = single_release,
 };
 
-#ifdef CONFIG_PM
-static int lpass_suspend(struct platform_device *pdev, pm_message_t state)
+#if !defined(CONFIG_PM_RUNTIME) && defined(CONFIG_PM_SLEEP)
+static int lpass_suspend(struct device *dev)
 {
 	pr_debug("%s entered\n", __func__);
 
@@ -453,7 +453,7 @@ static int lpass_suspend(struct platform_device *pdev, pm_message_t state)
 	return 0;
 }
 
-static int lpass_resume(struct platform_device *pdev)
+static int lpass_resume(struct device *dev)
 {
 	pr_debug("%s entered\n", __func__);
 
@@ -615,6 +615,10 @@ MODULE_DEVICE_TABLE(of, exynos_lpass_match);
 #endif
 
 static const struct dev_pm_ops lpass_pmops = {
+	SET_SYSTEM_SLEEP_PM_OPS(
+		lpass_suspend,
+		lpass_resume
+	)
 	SET_RUNTIME_PM_OPS(
 		lpass_runtime_suspend,
 		lpass_runtime_resume,
@@ -625,8 +629,6 @@ static const struct dev_pm_ops lpass_pmops = {
 static struct platform_driver lpass_driver = {
 	.probe		= lpass_probe,
 	.remove		= lpass_remove,
-	.suspend	= lpass_suspend,
-	.resume		= lpass_resume,
 	.id_table	= lpass_driver_ids,
 	.driver		= {
 		.name	= "samsung-lpass",
