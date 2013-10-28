@@ -56,6 +56,11 @@ static struct seiren_info si;
 static int esa_send_cmd(u32 cmd_code);
 static irqreturn_t esa_isr(int irqno, void *id);
 
+int check_esa_status(void)
+{
+	return si.fw_use_dram ? 1 : 0;
+}
+
 static void esa_dump_fw_log(void)
 {
 	char log[256];
@@ -154,6 +159,7 @@ static int esa_fw_startup(void)
 	}
 
 	/* power on */
+	si.fw_use_dram = true;
 	esa_debug("Turn on CA5...\n");
 	esa_fw_download();
 
@@ -161,6 +167,7 @@ static int esa_fw_startup(void)
 	ret = wait_event_interruptible_timeout(esa_wq, si.fw_ready, HZ / 2);
 	if (!ret) {
 		esa_err("%s: fw not ready!!!\n", __func__);
+		si.fw_use_dram = false;
 		return -EBUSY;
 	}
 
@@ -201,6 +208,7 @@ static void esa_fw_shutdown(void)
 	esa_debug("Turn off CA5...\n");
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	si.fw_ready = false;
+	si.fw_use_dram = false;
 }
 
 static void esa_buffer_init(struct file *file)

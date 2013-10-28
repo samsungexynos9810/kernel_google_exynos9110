@@ -252,6 +252,7 @@ struct seiren_info {
 	char		*fw_log_buf;
 	bool		fw_ready;
 	bool		fw_suspended;
+	bool		fw_use_dram;
 };
 
 struct esa_rtd {
