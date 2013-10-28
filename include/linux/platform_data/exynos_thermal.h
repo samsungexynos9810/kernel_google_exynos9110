@@ -45,8 +45,14 @@ enum soc_type {
  */
 struct freq_clip_table {
 	unsigned int freq_clip_max;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	unsigned int freq_clip_max_kfc;
+#endif
 	unsigned int temp_level;
 	const struct cpumask *mask_val;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	const struct cpumask *mask_val_kfc;
+#endif
 };
 
 /**

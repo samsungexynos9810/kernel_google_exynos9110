@@ -155,6 +155,10 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define MIN_TEMP	20
 #define MAX_TEMP	125
 
+#define CA7_POLICY_CORE		((exynos_boot_cluster == CA7) ? 0 : 4)
+#define CA15_POLICY_CORE 	((exynos_boot_cluster == CA15) ? 0 : 4)
+#define CS_POLICY_CORE		0
+
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
 static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
 static enum mif_noti_state_t mif_old_state = MIF_TH_LV1;
@@ -320,7 +324,10 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
 static int exynos_bind(struct thermal_zone_device *thermal,
 			struct thermal_cooling_device *cdev)
 {
-	int ret = 0, i, tab_size, level;
+	int ret = 0, i, tab_size, level = THERMAL_CSTATE_INVALID;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	int cluster_idx = 0;
+#endif
 	struct freq_clip_table *tab_ptr, *clip_data;
 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
 	enum thermal_trip_type type = 0;
@@ -333,8 +340,12 @@ static int exynos_bind(struct thermal_zone_device *thermal,
 
 	/* find the cooling device registered*/
 	for (i = 0; i < th_zone->cool_dev_size; i++)
-		if (cdev == th_zone->cool_dev[i])
+		if (cdev == th_zone->cool_dev[i]) {
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+			cluster_idx = i;
+#endif
 			break;
+		}
 
 	/* No matching cooling device */
 	if (i == th_zone->cool_dev_size)
@@ -343,7 +354,14 @@ static int exynos_bind(struct thermal_zone_device *thermal,
 	/* Bind the thermal zone to the cpufreq cooling device */
 	for (i = 0; i < tab_size; i++) {
 		clip_data = (struct freq_clip_table *)&(tab_ptr[i]);
-		level = cpufreq_cooling_get_level(0, clip_data->freq_clip_max);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		if (cluster_idx == CA7)
+			level = cpufreq_cooling_get_level(CA7_POLICY_CORE, clip_data->freq_clip_max_kfc);
+		else if (cluster_idx == CA15)
+			level = cpufreq_cooling_get_level(CA15_POLICY_CORE, clip_data->freq_clip_max);
+#else
+		level = cpufreq_cooling_get_level(CS_POLICY_CORE, clip_data->freq_clip_max);
+#endif
 		if (level == THERMAL_CSTATE_INVALID) {
 			thermal->cooling_dev_en = false;
 			return 0;
@@ -637,7 +655,10 @@ static void exynos_report_trigger(void)
 /* Register with the in-kernel thermal management */
 static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
 {
-	int ret, count;
+	int ret, count = 0;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	int i, j;
+#endif
 	struct cpumask mask_val;
 
 	if (!sensor_conf || !sensor_conf->read_temperature) {
@@ -650,8 +671,23 @@ static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
 		return -ENOMEM;
 
 	th_zone->sensor_conf = sensor_conf;
+	cpumask_clear(&mask_val);
 	cpumask_set_cpu(0, &mask_val);
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	for (i = 0; i < EXYNOS_ZONE_COUNT; i++) {
+		for (j = 0; j < CA_END; j++) {
+			th_zone->cool_dev[count] = cpufreq_cooling_register(&mp_cluster_cpus[count]);
+			if (IS_ERR(th_zone->cool_dev[count])) {
+				pr_err("Failed to register cpufreq cooling device\n");
+				ret = -EINVAL;
+				th_zone->cool_dev_size = count;
+				goto err_unregister;
+			}
+			count++;
+		}
+	}
+#else
 	for (count = 0; count < EXYNOS_ZONE_COUNT; count++) {
 		th_zone->cool_dev[count] = cpufreq_cooling_register(&mask_val);
 		if (IS_ERR(th_zone->cool_dev[count])) {
@@ -661,6 +697,7 @@ static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf)
 			 goto err_unregister;
 		 }
 	}
+#endif
 	th_zone->cool_dev_size = count;
 
 	th_zone->therm_dev = thermal_zone_device_register(sensor_conf->name,
@@ -1111,31 +1148,47 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 55,
 	.freq_tab[0] = {
-		.freq_clip_max = 900 * 1000,
+		.freq_clip_max = 1000 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1400 * 1000,
+#endif
 		.temp_level = 85,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 800 * 1000,
+		.freq_clip_max = 900 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1300 * 1000,
+#endif
 		.temp_level = 90,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.freq_tab[2] = {
-		.freq_clip_max = 700 * 1000,
+		.freq_clip_max = 800 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1200 * 1000,
+#endif
 		.temp_level = 95,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.freq_tab[3] = {
-		.freq_clip_max = 600 * 1000,
+		.freq_clip_max = 700 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1100 * 1000,
+#endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.size[THERMAL_TRIP_ACTIVE] = 1,
@@ -1349,12 +1402,20 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	for (i = 0; i < pdata->freq_tab_count; i++) {
 		exynos_sensor_conf.cooling_data.freq_data[i].freq_clip_max =
 					pdata->freq_tab[i].freq_clip_max;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		exynos_sensor_conf.cooling_data.freq_data[i].freq_clip_max_kfc =
+					pdata->freq_tab[i].freq_clip_max_kfc;
+#endif
 		exynos_sensor_conf.cooling_data.freq_data[i].temp_level =
 					pdata->freq_tab[i].temp_level;
-		if (pdata->freq_tab[i].mask_val)
+		if (pdata->freq_tab[i].mask_val) {
 			exynos_sensor_conf.cooling_data.freq_data[i].mask_val =
 				pdata->freq_tab[i].mask_val;
-		else
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+			exynos_sensor_conf.cooling_data.freq_data[i].mask_val_kfc =
+				pdata->freq_tab[i].mask_val_kfc;
+#endif
+		} else
 			exynos_sensor_conf.cooling_data.freq_data[i].mask_val =
 				cpu_all_mask;
 	}
