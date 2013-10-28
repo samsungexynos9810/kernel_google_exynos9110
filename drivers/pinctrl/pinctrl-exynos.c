@@ -1011,10 +1011,10 @@ struct samsung_pin_ctrl exynos5250_pin_ctrl[] = {
 /* pin banks of exynos5422 pin-controller 0 (Right) */
 static struct samsung_pin_bank exynos5422_pin_banks0[] = {
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x000, "gpy7", 0x00),
-	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc00, "gpx0", 0x04),
-	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc20, "gpx1", 0x08),
-	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc40, "gpx2", 0x0c),
-	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc60, "gpx3", 0x10),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc00, "gpx0", 0x00),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc20, "gpx1", 0x04),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc40, "gpx2", 0x08),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc60, "gpx3", 0x0c),
 };
 
 /* pin banks of exynos5422 pin-controller 1 (Top) */
