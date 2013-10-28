@@ -1899,7 +1899,6 @@ static void dw_mci_tasklet_func(unsigned long priv)
 						"data FIFO error "
 						"(status=%08x)\n",
 						status);
-					dw_mci_reg_dump(host);
 					data->error = -EIO;
 				}
 				/*
@@ -2489,14 +2488,22 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 		}
 
 		if (pending & SDMMC_INT_VOLT_SW) {
-			u32 cmd = mci_readl(host, CMD) & 0x3f;
-			if (cmd == SD_SWITCH_VOLTAGE) {
+			u32 cmd = mci_readl(host, CMD);
+			u32 cmd_up_clk = cmd;
+			cmd = cmd & 0x3f;
+			if ((cmd == SD_SWITCH_VOLTAGE) ||
+				(cmd_up_clk & SDMMC_CMD_UPD_CLK)) {
 				mci_writel(host, RINTSTS, SDMMC_INT_VOLT_SW);
+				pending &= ~(SDMMC_INT_VOLT_SW);
 				dw_mci_cmd_interrupt(host, pending);
+				ret = IRQ_HANDLED;
 			}
 		}
 
 		if (pending & DW_MCI_DATA_ERROR_FLAGS) {
+			if (mci_readl(host, RINTSTS) & SDMMC_INT_HTO)
+				dw_mci_reg_dump(host);
+
 			/* if there is an error report DATA_ERROR */
 			mci_writel(host, RINTSTS, DW_MCI_DATA_ERROR_FLAGS);
 			host->data_status = pending;
