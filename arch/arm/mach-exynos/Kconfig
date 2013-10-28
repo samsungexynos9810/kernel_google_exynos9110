@@ -163,6 +163,13 @@ config EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
 	depends on EXYNOS_SNAPSHOT
 	default n
 
+config EXYNOS5_DYNAMIC_CPU_HOTPLUG
+	bool "Dynamic CPU Hotplug support"
+	depends on SOC_EXYNOS5430
+	depends on CPU_FREQ
+	help
+		Enable Dynamic CPU Hotplug
+
 config EXYNOS_ATAGS
 	bool "ATAGS based boot for EXYNOS (deprecated)"
 	depends on !ARCH_MULTIPLATFORM

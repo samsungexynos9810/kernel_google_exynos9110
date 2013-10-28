@@ -158,4 +158,8 @@ struct cpu_info_alter {
 };
 
 extern cluster_type exynos_boot_cluster;
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+extern void dm_cpu_hotplug_init(void);
+extern int force_dynamic_hotplug(bool out_flag);
+#endif
 #endif
