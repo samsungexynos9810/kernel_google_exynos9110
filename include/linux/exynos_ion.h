@@ -34,16 +34,19 @@ enum {
 				(1 << EXYNOS_ION_HEAP_EXYNOS_CONTIG_ID)
 #define EXYNOS_ION_HEAP_EXYNOS_MASK	(1 << EXYNOS_ION_HEAP_EXYNOS_ID)
 
-#define ION_EXYNOS_ID_COMMON		0
-#define ION_EXYNOS_ID_MFC_SH		2
-#define ION_EXYNOS_ID_MSGBOX_SH		3
-#define ION_EXYNOS_ID_FIMD_VIDEO	4
-#define ION_EXYNOS_ID_GSC		5
-#define ION_EXYNOS_ID_MFC_OUTPUT	6
-#define ION_EXYNOS_ID_MFC_INPUT		7
-#define ION_EXYNOS_ID_MFC_FW		8
-#define ION_EXYNOS_ID_SECTBL		9
-#define ION_EXYNOS_ID_G2D_WFD		10
+enum {
+	ION_EXYNOS_ID_COMMON		= 0,
+	ION_EXYNOS_ID_MFC_SH		= 2,
+	ION_EXYNOS_ID_MSGBOX_SH		= 3,
+	ION_EXYNOS_ID_FIMD_VIDEO	= 4,
+	ION_EXYNOS_ID_GSC		= 5,
+	ION_EXYNOS_ID_MFC_OUTPUT	= 6,
+	ION_EXYNOS_ID_MFC_INPUT		= 7,
+	ION_EXYNOS_ID_MFC_FW		= 8,
+	ION_EXYNOS_ID_SECTBL		= 9,
+	ION_EXYNOS_ID_G2D_WFD		= 10,
+	EXYNOS_ION_CONTIG_ID_NUM,
+};
 
 #ifndef BITS_PER_BYTE
 #define BITS_PER_BYTE 8
@@ -53,16 +56,23 @@ enum {
 #define BITS_PER_INT (sizeof(int) * BITS_PER_BYTE)
 #endif
 
-/* contiguous region IDs are on top 4 bits ( 0 ~ 15) */
-#define EXYNOS_ION_CONTIG_ID_BITS     4
-#define EXYNOS_ION_CONTIG_ID_NUM      (1 << EXYNOS_ION_CONTIG_ID_BITS)
-#define EXYNOS_ION_CONTIG_ID_SHIFT    (BITS_PER_INT - EXYNOS_ION_CONTIG_ID_BITS)
-#define EXYNOS_ION_CONTIG_ID_MASK     ((EXYNOS_ION_CONTIG_ID_NUM - 1) << \
-					EXYNOS_ION_CONTIG_ID_SHIFT)
+#define EXYNOS_ION_CONTIG_MAX_ID      16
+#define EXYNOS_ION_CONTIG_ID_MASK	\
+	~((1 << (BITS_PER_LONG - EXYNOS_ION_CONTIG_ID_NUM)) - 1)
 
-#define MAKE_CONTIG_ID(flag)		(flag >> EXYNOS_ION_CONTIG_ID_SHIFT)
-#define MAKE_CONTIG_FLAG(id)		(id << EXYNOS_ION_CONTIG_ID_SHIFT)
+#define MAKE_CONTIG_ID(flag)	\
+	(BITS_PER_LONG - fls(flag & EXYNOS_ION_CONTIG_ID_MASK))
+#define MAKE_CONTIG_FLAG(id)	(1 << (BITS_PER_LONG - id))
 
+/*
+ * The highest 16 bits in the flag argument to ion_alloc() is allocated for
+ * mask values of region IDs of exynos_contig heap.
+ * All flag of exynos_contig regions have their own bit position.
+ * The bit positions of below masks are the same with the value
+ * of each ID in the reserse order.
+ * For example, mask value of ION_EXYNOS_ID_GSC is 0x08000000.
+ * Note that no bit position is assigned to ION_EXYNOS_ID_COMMON.
+ */
 #define ION_EXYNOS_MFC_SH_MASK	     MAKE_CONTIG_FLAG(ION_EXYNOS_ID_MFC_SH)
 #define ION_EXYNOS_MSGBOX_SH_MASK    MAKE_CONTIG_FLAG(ION_EXYNOS_ID_MSGBOX_SH)
 #define ION_EXYNOS_FIMD_VIDEO_MASK   MAKE_CONTIG_FLAG(ION_EXYNOS_ID_FIMD_VIDEO)
