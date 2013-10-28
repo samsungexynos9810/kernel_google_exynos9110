@@ -39,6 +39,7 @@
 #include <linux/cpu_cooling.h>
 #include <linux/of.h>
 #include <linux/delay.h>
+#include <linux/suspend.h>
 #include <mach/tmu.h>
 #include <mach/cpufreq.h>
 
@@ -1069,6 +1070,27 @@ static struct thermal_sensor_conf exynos_sensor_conf = {
 	.write_emul_temp	= exynos_tmu_set_emulation,
 };
 
+static int exynos_pm_notifier(struct notifier_block *notifier,
+		unsigned long pm_event, void *v)
+{
+	switch (pm_event) {
+		case PM_SUSPEND_PREPARE:
+			is_suspending = true;
+			exynos_tmu_call_notifier(TMU_COLD);
+			exynos_gpu_call_notifier(TMU_COLD);
+			break;
+		case PM_POST_SUSPEND:
+			is_suspending = false;
+			break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block exynos_pm_nb = {
+	.notifier_call = exynos_pm_notifier,
+};
+
 #if defined(CONFIG_CPU_EXYNOS4210)
 static struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
 	.threshold = 80,
@@ -1420,6 +1442,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 				cpu_all_mask;
 	}
 
+	register_pm_notifier(&exynos_pm_nb);
+
 	ret = exynos_register_thermal(&exynos_sensor_conf);
 	if (ret) {
 		dev_err(&pdev->dev, "Failed to register thermal interface\n");
@@ -1459,6 +1483,8 @@ static int exynos_tmu_remove(struct platform_device *pdev)
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
 		exynos_tmu_control(pdev, i, false);
+
+	unregister_pm_notifier(&exynos_pm_nb);
 
 	exynos_unregister_thermal();
 
