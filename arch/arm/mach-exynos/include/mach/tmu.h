@@ -19,15 +19,15 @@
 #define TMU_DC_VALUE 25
 #define UNUSED_THRESHOLD 0xFF
 
-#define COLD_TEMP		25
+#define COLD_TEMP		19
 #define HOT_NORMAL_TEMP		95
 #define HOT_CRITICAL_TEMP	110
 #define MIF_TH_TEMP1		85
 #define MIF_TH_TEMP2		95
-#define GPU_TH_TEMP1		90
-#define GPU_TH_TEMP2		95
-#define GPU_TH_TEMP3		100
-#define GPU_TH_TEMP4		105
+#define GPU_TH_TEMP1		85
+#define GPU_TH_TEMP2		90
+#define GPU_TH_TEMP3		95
+#define GPU_TH_TEMP4		100
 #define GPU_TH_TEMP5		110
 
 enum tmu_status_t {
