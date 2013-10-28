@@ -137,15 +137,15 @@ static void aud_init_clock(void)
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
 	exynos_set_rate("dout_aud_ca5", 393216020);
 	exynos_set_rate("dout_aclk_aud", 133000000);
-	exynos_set_rate("dout_aud_pclk_dbg", 133000000);
+	exynos_set_rate("dout_pclk_dbg_aud", 133000000);
 
 	/* AUD1 */
-	exynos_set_parent("mout_sclk_i2s_a", "mout_aud_pll_sub");
-	exynos_set_parent("mout_sclk_pcm_a", "mout_aud_pll_sub");
-	exynos_set_rate("dout_sclk_i2s", 49152004);
-	exynos_set_rate("dout_sclk_pcm", 2048002);
-	exynos_set_rate("dout_sclk_slimbus_aud", 24576002);
-	exynos_set_rate("dout_sclk_uart", 133000000);
+	exynos_set_parent("mout_sclk_i2s", "mout_aud_pll_user");
+	exynos_set_parent("mout_sclk_pcm", "mout_aud_pll_user");
+	exynos_set_rate("dout_sclk_aud_i2s", 49152004);
+	exynos_set_rate("dout_sclk_aud_pcm", 2048002);
+	exynos_set_rate("dout_sclk_aud_slimbus", 24576002);
+	exynos_set_rate("dout_sclk_aud_uart", 133000000);
 
 	/* TOP1 */
 	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
@@ -193,7 +193,7 @@ void cam0_init_clock(void)
 	exynos_set_rate("dout_aclk_cam0_552", 552 * 1000000);
 
 	/* ACLK_CAM0_400 */
-	exynos_set_rate("dout_aclk_cam0_400_top", 400 * 1000000);
+	exynos_set_rate("dout_aclk_cam0_400", 400 * 1000000);
 
 	/* ACLK_CAM0_333 */
 	exynos_set_rate("dout_aclk_cam0_333", 333 * 1000000);
