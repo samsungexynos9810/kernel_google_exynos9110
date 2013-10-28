@@ -28,6 +28,8 @@
 #define ST_RUNNING		(1<<0)
 #define ST_OPENED		(1<<1)
 
+static atomic_t dram_usage_cnt;
+
 static const struct snd_pcm_hardware dma_hardware = {
 	.info			= SNDRV_PCM_INFO_INTERLEAVED |
 				    SNDRV_PCM_INFO_BLOCK_TRANSFER |
@@ -63,6 +65,17 @@ struct runtime_data {
 };
 
 static struct samsung_fdma_cpu_ops *fdma_cpu_ops;
+
+/* check_fdma_status
+ *
+ * FDMA status is checked for AP Power mode.
+ * return 1 : FDMA use dram area and it is running.
+ * return 0 : FDMA has a fine condition to enter Low Power Mode.
+ */
+int check_fdma_status(void)
+{
+	return atomic_read(&dram_usage_cnt) ? 1 : 0;
+}
 
 #if defined(USE_TX_RECT_WAVE) || defined(USE_RX_RECT_WAVE)
 static u32 rect_wave[8] = {
@@ -263,10 +276,12 @@ static int dma_trigger(struct snd_pcm_substream *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 		prtd->state |= ST_RUNNING;
+		atomic_inc(&dram_usage_cnt);
 		break;
 
 	case SNDRV_PCM_TRIGGER_STOP:
 		prtd->state &= ~ST_RUNNING;
+		atomic_dec(&dram_usage_cnt);
 		break;
 
 	default:
