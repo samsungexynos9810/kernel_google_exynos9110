@@ -1100,6 +1100,22 @@ static struct exynos_ion_contig_region
 		.size = PAGE_ALIGN(CONFIG_ION_EXYNOS_SIZE_G2D_WFD * SZ_1K),
 	},
 #endif
+#if defined(CONFIG_ION_EXYNOS_SIZE_VIDEO) &&	\
+	(CONFIG_ION_EXYNOS_SIZE_VIDEO > 0)
+	{
+		.name = "video",
+		.id = ION_EXYNOS_ID_VIDEO,
+		.size = PAGE_ALIGN(CONFIG_ION_EXYNOS_SIZE_VIDEO * SZ_1K),
+	},
+#endif
+#if defined(CONFIG_ION_EXYNOS_SIZE_MFC_NFW) &&	\
+	(CONFIG_ION_EXYNOS_SIZE_MFC_NFW > 0)
+	{
+		.name = "mfc_nfw",
+		.id = ION_EXYNOS_ID_MFC_NFW,
+		.size = PAGE_ALIGN(CONFIG_ION_EXYNOS_SIZE_MFC_NFW * SZ_1K),
+	},
+#endif
 };
 
 int __init init_exynos_ion_contig_heap(void)
