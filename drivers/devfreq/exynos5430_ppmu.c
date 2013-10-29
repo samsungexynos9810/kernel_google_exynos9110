@@ -238,6 +238,7 @@ static int exynos5430_ppmu_suspend(struct device *dev)
 static int exynos5430_ppmu_resume(struct device *dev)
 {
 	exynos5430_ppmu_reset();
+	exynos5430_update_polling(100);
 
 	return 0;
 }
