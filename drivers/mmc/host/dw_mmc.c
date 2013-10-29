@@ -2485,8 +2485,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
 			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
 			host->cmd_status = pending;
-			smp_wmb();
-			set_bit(EVENT_CMD_COMPLETE, &host->pending_events);
 			ret = IRQ_HANDLED;
 		}
 
