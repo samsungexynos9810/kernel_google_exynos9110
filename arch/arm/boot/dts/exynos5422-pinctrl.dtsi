@@ -427,6 +427,13 @@
 			samsung,pin-pud = <3>;
 			samsung,pin-drv = <0>;
 		};
+
+		hs_i2c3_bus: hs-i2c3-bus {
+			samsung,pins = "gpb2-3", "gpb2-2";
+			samsung,pin-function = <3>;
+			samsung,pin-pud = <3>;
+			samsung,pin-drv = <0>;
+		};
 	};
 
 	pinctrl@03860000 {
