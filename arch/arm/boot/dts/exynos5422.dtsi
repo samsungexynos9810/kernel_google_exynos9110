@@ -84,6 +84,12 @@
 		};
 	};
 
+	clock_pwm: pwm-clock-controller@12dd0000 {
+		compatible = "samsung,exynos-pwm-clock";
+		reg = <0x12DD0000 0x50>;
+		#clock-cells = <1>;
+	};
+
 	serial@12C00000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x12C00000 0x100>;
@@ -720,5 +726,24 @@
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
 		status = "ok";
 		ip_ver = <8>;
+	};
+
+	sec_pwm: pwm@12dd0000 {
+		compatible = "samsung,s3c6400-pwm";
+		reg = <0x12dd0000 0x1000>;
+		#pwm-cells = <3>;
+		clocks = <&clock 444>,
+		       <&clock_pwm 1>, <&clock_pwm 2>,
+		       <&clock_pwm 5>, <&clock_pwm 6>,
+		       <&clock_pwm 7>, <&clock_pwm 8>,
+		       <&clock_pwm 10>, <&clock_pwm 11>,
+		       <&clock_pwm 12>, <&clock_pwm 13>;
+		clock-names = "timers",
+			"pwm-scaler0", "pwm-scaler1",
+			"pwm-tdiv0", "pwm-tdiv1",
+			"pwm-tdiv2", "pwm-tdiv3",
+			"pwm-tin0", "pwm-tin1",
+			"pwm-tin2", "pwm-tin3";
+		status = "ok";
 	};
 };
