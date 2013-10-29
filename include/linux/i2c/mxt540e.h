@@ -115,8 +115,8 @@ struct mxt540e_platform_data {
 	u8 atchfrccalratio_e;
 	const u8 *t48_config_batt_e;
 	const u8 *t48_config_chrg_e;
-	void (*power_on) (int gpio);
-	void (*power_off) (int gpio);
+	void (*power_on) (struct device *);
+	void (*power_off) (struct device *);
 	void (*power_on_with_oleddet) (void);
 	void (*power_off_with_oleddet) (void);
 	void (*register_cb) (void *);
@@ -151,17 +151,25 @@ static void tsp_read_ta_status(void *ta_status)
 	*(bool *)ta_status = is_cable_attached;
 }
 
-static void mxt540e_power_on(int gpio)
+static void mxt540e_power_on(struct device *dev)
 {
-	s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-	s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0xf));
+	struct pinctrl *pinctrl;
+
+	pinctrl = devm_pinctrl_get_select(dev, "tsp_on");
+	if (IS_ERR(pinctrl))
+		pr_err("touch pin not configured for power on\n");
 }
 
-static void mxt540e_power_off(int gpio)
+static void mxt540e_power_off(struct device *dev)
 {
-	s3c_gpio_cfgpin(gpio, S3C_GPIO_INPUT);
-	s3c_gpio_setpull(gpio, S3C_GPIO_PULL_DOWN);
-	gpio_direction_output(gpio, GPIO_LEVEL_LOW);
+	struct mxt540e_platform_data *pdata = dev->platform_data;
+	struct pinctrl *pinctrl;
+
+	pinctrl = devm_pinctrl_get_select(dev, "tsp_off");
+	if (IS_ERR(pinctrl))
+		pr_err("touch pin not configured for power off\n");
+
+	gpio_direction_output(pdata->gpio_read_done, GPIO_LEVEL_LOW);
 }
 
 #define MXT540E_MAX_MT_FINGERS          10

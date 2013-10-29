@@ -155,8 +155,8 @@ struct mxt540e_data {
 	u8 calcfg_charging_e;
 	u8 atchfrccalthr_e;
 	u8 atchfrccalratio_e;
-	void (*power_on) (int gpio);
-	void (*power_off) (int gpio);
+	void (*power_on) (struct device *);
+	void (*power_off) (struct device *);
 	void (*register_cb) (void *);
 	void (*read_ta_status) (void *);
 	int num_fingers;
@@ -721,7 +721,7 @@ static void resume_cal_err_func(struct mxt540e_data *data)
 	cancel_delayed_work(&data->config_dwork);
 	cancel_delayed_work(&data->resume_check_dwork);
 	cancel_delayed_work(&data->cal_check_dwork);
-	data->power_off(data->gpio_read_done);
+	data->power_off(&data->client->dev);
 
 	count = 0;
 	for (i = 0; i < data->num_fingers; i++) {
@@ -768,7 +768,7 @@ static void resume_cal_err_func(struct mxt540e_data *data)
 	touch_is_pressed = 0;
 
 	msleep(50);
-	data->power_on(data->gpio_read_done);
+	data->power_on(&data->client->dev);
 
 	ret = 0;
 	retry = 3;
@@ -778,9 +778,9 @@ static void resume_cal_err_func(struct mxt540e_data *data)
 			printk(KERN_DEBUG "[TSP] chip boot failed. retry(%d)\n",
 				retry);
 
-			data->power_off(data->gpio_read_done);
+			data->power_off(&data->client->dev);
 			msleep(200);
-			data->power_on(data->gpio_read_done);
+			data->power_on(&data->client->dev);
 
 			ret = read_mem(data, 0, sizeof(id), id);
 			if (ret == 0 || retry <= 0)
@@ -2549,7 +2549,7 @@ static int mxt540e_probe(struct i2c_client *client,
 
 	data->gpio_read_done = pdata->gpio_read_done;
 
-	data->power_on(data->gpio_read_done);
+	data->power_on(&data->client->dev);
 
 	copy_data = data;
 #if 0
@@ -2586,9 +2586,9 @@ static int mxt540e_probe(struct i2c_client *client,
 		printk(KERN_DEBUG
 			"[TSP] chip initialization failed. retry(%d)\n", retry);
 
-		data->power_off(data->gpio_read_done);
+		data->power_off(&data->client->dev);
 		msleep(300);
-		data->power_on(data->gpio_read_done);
+		data->power_on(&data->client->dev);
 	}
 
 	if (ret) {
@@ -2868,7 +2868,7 @@ static int mxt540e_remove(struct i2c_client *client)
 	free_irq(client->irq, data);
 	kfree(data->objects);
 	gpio_free(data->gpio_read_done);
-	data->power_off(data->gpio_read_done);
+	data->power_off(&data->client->dev);
 	input_unregister_device(data->input_dev);
 	kfree(data);
 
@@ -2917,9 +2917,9 @@ static void mxt540e_late_resume(struct early_suspend *h)
 				printk(KERN_DEBUG "[TSP] chip boot failed."
 					"retry(%d)\n", retry);
 
-				data->power_off(data->gpio_read_done);
+				data->power_off(&data->client->dev);
 				msleep(200);
-				data->power_on(data->gpio_read_done);
+				data->power_on(&data->client->dev);
 
 				ret = read_mem(data, 0, sizeof(id), id);
 				if (ret == 0 || retry <= 0)
