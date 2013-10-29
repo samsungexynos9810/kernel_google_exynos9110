@@ -1114,15 +1114,15 @@
 		reg = <0x105c4000 0x20>;
 
 		spd_gscl0: spd-gscl0@105c4000 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_gscl1: spd-gscl1@105c4000 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_gscl2: spd-gscl2@105c4000 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 	};
 
@@ -1138,15 +1138,15 @@
 		reg = <0x105c4040 0x20>;
 
 		spd_mscl0: spd-mscl0@105c4040 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_mscl1: spd-mscl1@105c4040 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_jpeg: spd-jpeg@105c4040 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 	};
 
@@ -1160,40 +1160,40 @@
 		reg = <0x105c4080 0x20>;
 
 		spd_decon: spd-decon@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 			bts-status = "enabled";
 		};
 
 		spd_mipi_dsi: spd-mipi-dsi@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_mic: spd-mic@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_mdnie: spd-mdnie@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_decon_tv: spd-decon-tv@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_hdmi: spd-hdmi@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_hdmi_phy: spd-hdmi-phy@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_mipi_dphy_m4s4: spd-mipi-dphy-m4s4@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_pll_disp: spd-pll-disp@105c4080 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 	};
 
@@ -1215,23 +1215,23 @@
 		status = "disabled";
 
 		spd_usbhost20: spd-usbhost20@105c40e0 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_usbdrd30: spd-usbdrd30@105c40e0 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_dwmmc0: spd-dwmmc0@105c40e0 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_dwmmc1: spd-dwmmc1@105c40e0 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 
 		spd_dwmmc2: spd-dwmmc2@105c40e0 {
-			compatible = "samsung,exynos5430-spd";
+			compatible = "samsung,exynos-spd";
 		};
 	};
 
