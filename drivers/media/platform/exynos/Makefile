@@ -1,4 +1,5 @@
 obj-$(CONFIG_EXYNOS_MEDIA_DEVICE)	+= mdev/
+obj-$(CONFIG_VIDEO_EXYNOS_GSCALER_1_3)	+= gsc_1.3/
 obj-$(CONFIG_VIDEO_EXYNOS_GSCALER)	+= gsc/
 obj-$(CONFIG_VIDEO_EXYNOS_MFC)		+= mfc/
 obj-$(CONFIG_VIDEO_EXYNOS_HEVC)		+= hevc/
