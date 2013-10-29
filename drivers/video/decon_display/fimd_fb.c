@@ -1444,9 +1444,7 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 		sync_fence_put(dma->fence);
 
 #if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
-#ifdef CONFIG_ARCH_EXYNOS4
 	iovmm_unmap(sfb->dev, dma->dma_addr);
-#endif
 
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_BIDIRECTIONAL);

@@ -82,7 +82,7 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
 	
 #ifdef CONFIG_SOC_EXYNOS5430
-        void __iomem *reg;
+	void __iomem *reg;
 	reg = ioremap(0x105C0710, 0x10);
 	writel(0x1, reg);
 	writel(0x1, reg + 0x4);
@@ -96,15 +96,15 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	writel(0x1, reg);
 	iounmap(reg);
 #else
-        unsigned int reg;
+	unsigned int reg;
 
-        reg = readl(S5P_MIPI_DPHY_CONTROL(1)) & ~(1 << 0);
-        reg |= (enable << 0);
-        writel(reg, S5P_MIPI_DPHY_CONTROL(1));
+	reg = readl(S5P_MIPI_DPHY_CONTROL(1)) & ~(1 << 0);
+	reg |= (enable << 0);
+	writel(reg, S5P_MIPI_DPHY_CONTROL(1));
 
-        reg = readl(S5P_MIPI_DPHY_CONTROL(1)) & ~(1 << 2);
-        reg |= (enable << 2);
-        writel(reg, S5P_MIPI_DPHY_CONTROL(1));
+	reg = readl(S5P_MIPI_DPHY_CONTROL(1)) & ~(1 << 2);
+	reg |= (enable << 2);
+	writel(reg, S5P_MIPI_DPHY_CONTROL(1));
 #endif
 	return 0;
 }
@@ -728,10 +728,10 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 		s5p_mipi_dsi_init_fifo_pointer(dsim, 0x1f);
 
 		/* dsi configuration */
-dsi_ver = readl(dsim->reg_base + S5P_DSIM_VERSION);
-printk( "[DEBUG] ==================================\n");
-printk( "       lane no: 0x%08X\n", dsim->data_lane);
-printk( "[DEBUG] ==================================\n");
+		dsi_ver = readl(dsim->reg_base + S5P_DSIM_VERSION);
+		printk( "[DEBUG] ==================================\n");
+		printk( "       lane no: 0x%08X\n", dsim->data_lane);
+		printk( "[DEBUG] ==================================\n");
 		s5p_mipi_dsi_init_config(dsim);
 		s5p_mipi_dsi_enable_lane(dsim, DSIM_LANE_CLOCK, 1);
 		s5p_mipi_dsi_enable_lane(dsim, dsim->data_lane, 1);
@@ -1012,9 +1012,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	 * only in case of MIPI Video mode.
 	 */
 	dsim->irq = dispdrv->dsi_driver.dsi_irq_no;
-printk( "[DEBUG] ============================\n");
-printk( "        DSI IRQ NO: 0x%08X\n",dsim->irq );
-printk( "[DEBUG] ============================\n");
+	printk( "[DEBUG] ============================\n");
+	printk( "        DSI IRQ NO: 0x%08X\n",dsim->irq );
+	printk( "[DEBUG] ============================\n");
 	if (request_irq(dsim->irq, s5p_mipi_dsi_interrupt_handler,
 			IRQF_DISABLED, "mipi-dsi", dsim)) {
 		dev_err(&pdev->dev, "request_irq failed.\n");
