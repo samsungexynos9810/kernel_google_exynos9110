@@ -229,7 +229,6 @@ static void jpeg_clk_put(struct jpeg_dev *jpeg)
 	clk_put(jpeg->clk_parn2);
 }
 
-#ifdef CONFIG_PM_RUNTIME
 static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status)
 {
 	if (status == JPEG_CLK_ON) {
@@ -251,9 +250,6 @@ static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status
 		}
 	}
 }
-#else
-#define jpeg_clock_gating(jpeg, on)
-#endif
 
 static int queue_init(void *priv, struct vb2_queue *src_vq,
 		      struct vb2_queue *dst_vq)
@@ -719,7 +715,7 @@ static int jpeg_probe(struct platform_device *pdev)
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
 #else
-	jpeg_clock_gating(jpeg, SC_CLK_ON);
+	jpeg_clock_gating(jpeg, JPEG_CLK_ON);
 #endif
 	return 0;
 
@@ -762,6 +758,7 @@ static int jpeg_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
 static int jpeg_suspend(struct device *dev)
 {
 	struct jpeg_dev *jpeg = dev_get_drvdata(dev);
@@ -785,7 +782,9 @@ static int jpeg_resume(struct device *dev)
 
 	return 0;
 }
+#endif
 
+#ifdef CONFIG_PM_RUNTIME
 static int jpeg_runtime_suspend(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
@@ -805,12 +804,12 @@ static int jpeg_runtime_resume(struct device *dev)
 
 	return 0;
 }
+#endif
 
 static const struct dev_pm_ops jpeg_pm_ops = {
-	.suspend	= jpeg_suspend,
-	.resume		= jpeg_resume,
-	.runtime_suspend = jpeg_runtime_suspend,
-	.runtime_resume = jpeg_runtime_resume,
+	SET_SYSTEM_SLEEP_PM_OPS(jpeg_suspend, jpeg_resume)
+	SET_RUNTIME_PM_OPS(jpeg_runtime_suspend, jpeg_runtime_resume,
+			   NULL)
 };
 
 static struct platform_driver jpeg_driver = {
