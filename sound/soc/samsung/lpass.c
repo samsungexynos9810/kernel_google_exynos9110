@@ -404,13 +404,13 @@ static void lpass_init_reg_list(void)
 	lpass_add_suspend_reg(EXYNOS5430_SRC_ENABLE_AUD1);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD1);
-	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD2);
-	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD3);
-	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD4);
+//	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD2);
+//	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD3);
+//	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD4);
 	/* lpass_add_suspend_reg(EXYNOS5430_ENABLE_ACLK_AUD); */
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_PCLK_AUD);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD0);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD1);
+//	lpass_add_suspend_reg(EXYNOS5430_ENABLE_PCLK_AUD);
+//	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD0);
+//	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD1);
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_IP_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_IP_AUD1);
 
