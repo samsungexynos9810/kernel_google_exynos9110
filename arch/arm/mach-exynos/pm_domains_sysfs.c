@@ -28,7 +28,7 @@ static ssize_t show_power_domain(struct device *dev, struct device_attribute *at
 	struct platform_device *pdev;
 	int ret = 0;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
 
 		/* skip unmanaged power domain */
@@ -61,7 +61,7 @@ static int exynos_pd_power_on(struct device *dev, const char * device_name)
 		.restore_state_latency_ns = 500000,
 	};
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
 
 		/* skip unmanaged power domain */
@@ -108,7 +108,7 @@ static int exynos_pd_power_off(struct device *dev, const char * device_name)
 	struct device_node *np;
 	int ret = 0;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
 
 		/* skip unmanaged power domain */
@@ -158,7 +158,7 @@ static int exynos_pd_longrun_test(struct device *dev, const char * device_name)
 		.restore_state_latency_ns = 500000,
 	};
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
 		int i;
 
