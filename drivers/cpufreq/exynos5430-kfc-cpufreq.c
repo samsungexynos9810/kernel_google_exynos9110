@@ -490,15 +490,15 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 		goto err_mout_kfc_pll;
 	}
 
-	sclk_bus_pll = __clk_lookup("mout_bus_pll_sub");
+	sclk_bus_pll = __clk_lookup("sclk_bus_pll");
 	if (!sclk_bus_pll) {
-		pr_err("failed get mout_bus_pll_sub clk\n");
+		pr_err("failed get sclk_bus_pll clk\n");
 		goto err_sclk_bus_pll;
 	}
 
-	mout_bus_pll_user = __clk_lookup("mout_bus_pll_user_kfc");
+	mout_bus_pll_user = __clk_lookup("mout_bus_pll_kfc_user");
 	if (!mout_bus_pll_user) {
-		pr_err("failed get mout_bus_pll_user_kfc clk\n");
+		pr_err("failed get mout_bus_pll_kfc_user clk\n");
 		goto err_mout_bus_pll_user;
 	}
 

@@ -31,8 +31,7 @@
 static int max_support_idx_CA15;
 static int min_support_idx_CA15 = (CPUFREQ_LEVEL_END_CA15 - 1);
 
-static struct clk *mout_egl2;
-static struct clk *mout_egl1;
+static struct clk *mout_egl;
 static struct clk *mout_egl_pll;
 static struct clk *sclk_bus_pll;
 static struct clk *mout_bus_pll_user;
@@ -78,76 +77,76 @@ static unsigned int clkdiv_cpu0_5430_CA15[CPUFREQ_LEVEL_END_CA15][6] = {
 	 */
 
 	/* ARM L0: 2.5GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L1: 2.4GMHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L2: 2.3GMHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L3: 2.2GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L4: 2.1GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L5: 2.0GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L6: 1.9GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L7: 1.8GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L8: 1.7GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L9: 1.6GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L10: 1.5GHz */
-	{ 0, 0, 2, 0, 7, 0 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L11: 1.4GHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L12: 1.3GHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L13: 1.2GHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L14: 1.1GHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L15: 1.0GHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L16: 900MHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L17: 800MHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L18: 700MHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L19: 600MHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L20: 500MHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L21: 400MHz */
-	{ 0, 0, 1, 0, 7, 0 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L22: 300MHz */
-	{ 0, 0, 0, 0, 7, 0 },
+	{ 0, 0, 0, 7, 7, 7 },
 
 	/* ARM L23: 200MHz */
-	{ 0, 0, 0, 0, 7, 0 },
+	{ 0, 0, 0, 7, 7, 7 },
 };
 
 static unsigned int clkdiv_cpu1_5430_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
@@ -401,15 +400,15 @@ static void exynos5430_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 	if ((new_index < L17) && (old_index < L17))
 		exynos5430_set_clkdiv_CA15(L17); /* pll_safe_idx of CA15 */
 
-	/* 2. CLKMUX_SEL_EGL2 = MOUT_BUS_PLL_USER, EGLCLK uses BUS_PLL_USER for lock time */
-	if (clk_set_parent(mout_egl2, mout_bus_pll_user))
+	/* 2. CLKMUX_SEL_EGL = MOUT_BUS_PLL_USER, EGLCLK uses BUS_PLL_USER for lock time */
+	if (clk_set_parent(mout_egl, mout_bus_pll_user))
 		pr_err("Unable to set parent %s of clock %s.\n",
-				mout_bus_pll_user->name, mout_egl2->name);
+				mout_bus_pll_user->name, mout_egl->name);
 	do {
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5430_SRC_STAT_EGL2);
-		tmp &= EXYNOS5430_SRC_STAT_EGL2_EGL2_MASK;
-		tmp >>= EXYNOS5430_SRC_STAT_EGL2_EGL2_SHIFT;
+		tmp &= EXYNOS5430_SRC_STAT_EGL2_EGL_MASK;
+		tmp >>= EXYNOS5430_SRC_STAT_EGL2_EGL_SHIFT;
 	} while (tmp != 0x2);
 
 	/* 3. Set EGL_PLL Lock time */
@@ -432,15 +431,15 @@ static void exynos5430_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 		tmp = __raw_readl(EXYNOS5430_EGL_PLL_CON0);
 	} while (!(tmp & (0x1 << EXYNOS5430_EGL_PLL_CON0_LOCKED_SHIFT)));
 
-	/* 6. CLKMUX_SEL_EGL2 = MOUT_EGL_PLL */
-	if (clk_set_parent(mout_egl2, mout_egl1))
+	/* 6. CLKMUX_SEL_EGL = MOUT_EGL_PLL */
+	if (clk_set_parent(mout_egl, mout_egl_pll))
 		pr_err("Unable to set parent %s of clock %s.\n",
-				mout_egl1->name, mout_egl2->name);
+				mout_egl_pll->name, mout_egl->name);
 	do {
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5430_SRC_STAT_EGL2);
-		tmp &= EXYNOS5430_SRC_STAT_EGL2_EGL2_MASK;
-		tmp >>= EXYNOS5430_SRC_STAT_EGL2_EGL2_SHIFT;
+		tmp &= EXYNOS5430_SRC_STAT_EGL2_EGL_MASK;
+		tmp >>= EXYNOS5430_SRC_STAT_EGL2_EGL_SHIFT;
 	} while (tmp != 0x1);
 
 	/* 7. restore original div value */
@@ -557,16 +556,10 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 
 	set_volt_table_CA15();
 
-	mout_egl2 = __clk_lookup("mout_egl2");
-	if (!mout_egl2) {
-		pr_err("failed get mout_egl2 clk\n");
+	mout_egl = __clk_lookup("mout_egl");
+	if (!mout_egl) {
+		pr_err("failed get mout_egl clk\n");
 		return -EINVAL;
-	}
-
-	mout_egl1 = __clk_lookup("mout_egl1");
-	if (!mout_egl1) {
-		pr_err("failed get mout_egl1 clk\n");
-		goto err_mout_egl1;
 	}
 
 	mout_egl_pll = __clk_lookup("mout_egl_pll");
@@ -575,21 +568,21 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 		goto err_mout_egl_pll;
 	}
 
-	if (clk_set_parent(mout_egl1, mout_egl_pll)) {
+	if (clk_set_parent(mout_egl, mout_egl_pll)) {
 		pr_err("Unable to set parent %s of clock %s.\n",
-				mout_egl_pll->name, mout_egl1->name);
+				mout_egl_pll->name, mout_egl->name);
 		goto err_clk_set_parent_egl;
 	}
 
-	sclk_bus_pll = __clk_lookup("mout_bus_pll_sub");
+	sclk_bus_pll = __clk_lookup("sclk_bus_pll");
 	if (!sclk_bus_pll) {
-		pr_err("failed get mout_bus_pll_sub clk\n");
+		pr_err("failed get sclk_bus_pll clk\n");
 		goto err_sclk_bus_pll;
 	}
 
-	mout_bus_pll_user = __clk_lookup("mout_bus_pll_user_egl");
+	mout_bus_pll_user = __clk_lookup("mout_bus_pll_egl_user");
 	if (!mout_bus_pll_user) {
-		pr_err("failed get mout_bus_pll_user_egl clk\n");
+		pr_err("failed get mout_bus_pll_egl_user clk\n");
 		goto err_mout_bus_pll_user;
 	}
 
@@ -608,7 +601,6 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	}
 
 	clk_put(sclk_bus_pll);
-	clk_put(mout_egl_pll);
 
 	for (i = L0; i < CPUFREQ_LEVEL_END_CA15; i++) {
 		exynos5430_clkdiv_table_CA15[i].index = i;
@@ -680,9 +672,7 @@ err_sclk_bus_pll:
 err_clk_set_parent_egl:
 	clk_put(mout_egl_pll);
 err_mout_egl_pll:
-	clk_put(mout_egl1);
-err_mout_egl1:
-	clk_put(mout_egl2);
+	clk_put(mout_egl);
 
 	pr_debug("%s: failed initialization\n", __func__);
 	return -EINVAL;
