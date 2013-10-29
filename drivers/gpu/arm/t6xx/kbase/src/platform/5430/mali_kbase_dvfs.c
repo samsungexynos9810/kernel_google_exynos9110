@@ -848,7 +848,7 @@ struct exynos_pm_domain *kbase_platform_get_pm_domain(kbase_device *kbdev)
 	struct device_node *np = NULL;
 	struct exynos_pm_domain *pd_temp, *pd = NULL;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd")
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd")
 	{
 		if (!of_device_is_available(np))
 			continue;
