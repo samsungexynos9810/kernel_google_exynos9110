@@ -76,8 +76,25 @@ static void uart_clock_init(void)
 	exynos_set_rate("dout_uart3", 150000000);
 }
 
+static void mscl_init_clock(void)
+{
+
+	exynos_set_parent("mout_aclk_400_mscl", "sclk_cpll");
+	exynos_set_parent("dout_aclk_400_mscl", "mout_aclk_400_mscl");
+	exynos_set_parent("mout_aclk_400_mscl_sw", "dout_aclk_400_mscl");
+	exynos_set_parent("mout_aclk_400_mscl_user", "mout_aclk_400_mscl_sw");
+	exynos_set_parent("aclk_400_mscl", "mout_aclk_400_mscl_user");
+
+	exynos_set_rate("dout_aclk_400_mscl", 400 * 1000000);
+
+	pr_info("scaler: dout_aclk_400_mscl %d aclk_400_mscl %d\n",
+			exynos_get_rate("dout_aclk_400_mscl"),
+			exynos_get_rate("aclk_400_mscl"));
+}
+
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
 	uart_clock_init();
+	mscl_init_clock();
 }
