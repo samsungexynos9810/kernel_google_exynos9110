@@ -669,6 +669,16 @@
 		};
 	};
 
+	adc@12D10000 {
+		compatible = "samsung,exynos-adc-v2";
+		reg = <0x12D10000 0x100>;
+		interrupts = <0 106 0>;
+		#io-channel-cells = <1>;
+		io-channel-ranges;
+		clocks = <&clock 446>;
+		clock-names = "gate_adcif";
+	};
+
 	dwc3_usb2_phy: usbphy {
 		compatible = "samsung,exynos5-usb2phy-dummy";
 	};
