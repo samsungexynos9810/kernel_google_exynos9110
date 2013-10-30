@@ -26,10 +26,6 @@
 
 #include <../drivers/clk/samsung/clk.h>
 
-//static struct clk *g_sclk_fimd1;
-//static struct clk *g_mout_fimd1;
-
-
 #define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
 	g_##child = clk_get(dev, #child); \
 	g_##parent = clk_get(dev, #parent); \
@@ -77,29 +73,23 @@
 	clk_set_rate(g_##node, target); \
 	} while (0)
 
-#define TEMPORARY_RECOVER_CMU(addr, mask, bits, value) do {\
-	regs = ioremap(addr, 0x4); \
-	data = readl(regs) & ~((mask) << (bits)); \
-	data |= ((value & mask) << (bits)); \
-	writel(data, regs); \
-	} while (0)
-
 int init_display_fimd_clocks_exynos(struct device *dev)
 {
 	int ret = 0;
 
-	ret= exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
-                if (ret < 0)
-                printk("DISPLAY_CLOCK_SET_PARENT: ret %d \n", ret);
-	ret= exynos_set_parent("mout_fimd1", "sclk_rpll");
-        if (ret < 0)
-                printk("DISPLAY_CLOCK_SET_PARENT: ret %d \n", ret);
-        ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
-        if (ret < 0)
-                printk("exynos_set_rate failed: ret %d \n", ret);
+	ret = exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
+	if (ret < 0)
+		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
 
-      
-printk("$$$$%s: clk_rate: %d \n", __func__,exynos_get_rate("sclk_fimd1"));
+	ret = exynos_set_parent("mout_fimd1", "sclk_rpll");
+	if (ret < 0)
+		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
+
+	ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
+	if (ret < 0)
+		pr_err("exynos_set_rate failed: ret %d\n", ret);
+
+	pr_info("%s: clk_rate: %d\n", __func__, exynos_get_rate("sclk_fimd1"));
 	return ret;
 }
 
@@ -114,12 +104,12 @@ void init_display_gpio_exynos(void)
 	unsigned int reg = 0;
 
 #if defined(CONFIG_S5P_DP)
-        unsigned gpio_dp_hotplug = 0;
+	unsigned gpio_dp_hotplug = 0;
 
-        gpio_dp_hotplug = get_display_dp_hotplug_gpio_exynos();
+	gpio_dp_hotplug = get_display_dp_hotplug_gpio_exynos();
 	/* Set Hotplug detect for DP */
 	gpio_request(gpio_dp_hotplug, "dp_hotplug");
-        /* TO DO */
+	/* TO DO */
 	s3c_gpio_cfgpin(gpio_dp_hotplug, S3C_GPIO_SFN(3));
 #endif
 
@@ -163,12 +153,12 @@ void init_display_gpio_exynos(void)
 int enable_display_dsi_power_exynos(struct device *dev)
 {
 	unsigned gpio_power;
-        unsigned int gpio_reset;               
+	unsigned int gpio_reset;
 
 	int ret = 0;
 
 	gpio_reset = get_display_dsi_lcd_reset_gpio_exynos();
-              gpio_request_one(gpio_reset,
+	gpio_request_one(gpio_reset,
 				GPIOF_OUT_INIT_HIGH, "lcd_reset");
 	usleep_range(5000, 6000);
 	gpio_set_value(gpio_reset, 0);
@@ -177,9 +167,8 @@ int enable_display_dsi_power_exynos(struct device *dev)
 	usleep_range(5000, 6000);
 	gpio_free(gpio_reset);
 
-        gpio_power = get_display_dsi_lcd_power_gpio_exynos();
-        gpio_request_one(gpio_power,
-	GPIOF_OUT_INIT_HIGH, "lcd_power");
+	gpio_power = get_display_dsi_lcd_power_gpio_exynos();
+	gpio_request_one(gpio_power, GPIOF_OUT_INIT_HIGH, "lcd_power");
 	usleep_range(5000, 6000);
 	gpio_free(gpio_power);
 
@@ -189,17 +178,17 @@ int enable_display_dsi_power_exynos(struct device *dev)
 int disable_display_dsi_power_exynos(struct device *dev)
 {
 	unsigned gpio_power;
-        unsigned int gpio_reset;
-        int ret = 0;
+	unsigned int gpio_reset;
+	int ret = 0;
 
-        /* Reset */
-        gpio_reset = get_display_dsi_lcd_reset_gpio_exynos();
-       	gpio_request_one(gpio_reset,
+	/* Reset */
+	gpio_reset = get_display_dsi_lcd_reset_gpio_exynos();
+	gpio_request_one(gpio_reset,
 				GPIOF_OUT_INIT_LOW, "lcd_reset");
 	usleep_range(5000, 6000);
 	gpio_free(gpio_reset);
 	/* Power */
-        gpio_power = get_display_dsi_lcd_power_gpio_exynos();
+	gpio_power = get_display_dsi_lcd_power_gpio_exynos();
 	gpio_request_one(gpio_power,
 			GPIOF_OUT_INIT_LOW, "lcd_power");
 	usleep_range(5000, 6000);
@@ -213,17 +202,17 @@ int enable_display_fimd_clocks_exynos(struct device *dev)
 	int ret = 0;
 #if 0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(sclk_fimd1, mout_fimd1);
- 	DISPLAY_INLINE_SET_RATE(sclk_fimd1, 67 * MHZ);
+	DISPLAY_INLINE_SET_RATE(sclk_fimd1, 67 * MHZ);
 #else
-                ret= exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
-                if (ret < 0)
-                printk("DISPLAY_CLOCK_SET_PARENT: ret %d \n", ret);
-	ret= exynos_set_parent("mout_fimd1", "sclk_rpll");
-        if (ret < 0)
-                printk("DISPLAY_CLOCK_SET_PARENT: ret %d \n", ret);
-        ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
-        if (ret < 0)
-                printk("exynos_set_rate failed: ret %d \n", ret);
+	ret = exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
+	if (ret < 0)
+		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
+	ret = exynos_set_parent("mout_fimd1", "sclk_rpll");
+	if (ret < 0)
+		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
+	ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
+	if (ret < 0)
+		pr_err("exynos_set_rate failed: ret %d\n", ret);
 #endif
 
 	return ret;

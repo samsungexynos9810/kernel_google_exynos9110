@@ -130,8 +130,6 @@
 		mipi_dsi: mipi_dsi {
 			gpios = <&gpj4 3 0x1>, <&gph0 0 0x1>;
 
-			interrupt-parent = <&gic>;
-			interrupts = <0 82 0>;
 			/* Interface definition: 0 - DSIM_COMMAND,
 						 1 - DSIM_VDEO */
 			e_interface = <1>;

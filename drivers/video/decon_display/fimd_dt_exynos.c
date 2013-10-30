@@ -227,7 +227,7 @@ static int parse_display_dt_exynos(struct device_node *np)
 		return -EINVAL;
 	}
 
-              g_dp_hotplug_gpio_num = of_get_gpio(np, 0);
+	g_dp_hotplug_gpio_num = of_get_gpio(np, 0);
 
 	decon_np = of_find_node_by_name(np, "fb_variant");
 	if (!decon_np) {
@@ -266,7 +266,7 @@ static int parse_interrupt_dt_exynos(struct platform_device *pdev,
 		return -ENOENT;
 	}
 	ddp->decon_driver.irq_no = res->start;
-	
+
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
 	if (res == NULL) {
 		pr_err("getting fifo irq resource failed\n");
@@ -281,18 +281,13 @@ static int parse_interrupt_dt_exynos(struct platform_device *pdev,
 	}
 	ddp->decon_driver.i80_irq_no = res->start;
 
-#if 0 //DT structure needs to be fixed for supporting different parent types.
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
 	if (res == NULL) {
 		pr_err("failed to get mipi-dsi irq resource\n");
 		return -ENOENT;
 	}
 	ddp->dsi_driver.dsi_irq_no = res->start;
-#else
-	//int-mipi-dsi0 = 113;
-	//int-mipi-dsi1 = 114;
-	ddp->dsi_driver.dsi_irq_no = 114; 
-#endif
+
 	return ret;
 }
 
@@ -359,12 +354,12 @@ int get_display_dsi_lcd_reset_gpio_exynos(void)
 
 int get_display_dsi_lcd_power_gpio_exynos(void)
 {
-        return g_dsi_power_gpio_num;
+	return g_dsi_power_gpio_num;
 }
 
 int get_display_dp_hotplug_gpio_exynos(void)
 {
-        return g_dp_hotplug_gpio_num;
+	return g_dp_hotplug_gpio_num;
 }
 
 int parse_display_dsi_dt_exynos(struct device_node *np)
@@ -441,7 +436,8 @@ int parse_display_driver_dt_exynos(struct platform_device *pdev,
 		pr_err("failed to find MIPI-DSI registers\n");
 		return -ENOENT;
 	}
-             printk("###%s: decon_driver.regs %x dsi_driver.regs %x \n\n\n", __func__, *(unsigned int*)ddp->decon_driver.regs, *(unsigned int*)ddp->dsi_driver.regs);
+	pr_info("%s: decon_driver.regs %x dsi_driver.regs %x\n", __func__,
+		*(unsigned int *)ddp->decon_driver.regs, *(unsigned int *)ddp->dsi_driver.regs);
 
 	/* starts to parse device tree */
 	ret = parse_interrupt_dt_exynos(pdev, ddp);
@@ -456,7 +452,7 @@ int parse_display_driver_dt_exynos(struct platform_device *pdev,
 		return -EINVAL;
 	}
 
-dump_driver_data();
+	dump_driver_data();
 	return ret;
 }
 

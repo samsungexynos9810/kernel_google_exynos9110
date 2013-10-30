@@ -26,7 +26,7 @@
 #include <linux/kthread.h>
 #include <linux/of_gpio.h>
 #include <linux/of.h>
-//#define CONFIG_FB_EXYNOS_FIMD_MC
+/*#define CONFIG_FB_EXYNOS_FIMD_MC*/
 #if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-common.h>
@@ -37,7 +37,6 @@
 #endif
 
 #include <mach/map.h>
-//#include <mach/regs-clock.h>
 #include <mach/regs-clock-exynos5422.h>
 #include <plat/cpu.h>
 
@@ -74,7 +73,7 @@
 #if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
 #define CONFIG_FIMD_USE_WIN_OVERLAP_CNT
 #include <mach/devfreq.h>
-static int prev_overlap_cnt = 0;
+static int prev_overlap_cnt;
 #endif
 
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ) || defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
@@ -488,7 +487,7 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 		else
 			data |= WINCON0_BPPMODE_16BPP_565;
 		data |= WINCONx_HAWSWP;
-#if 0 //TO DO
+#if 0 /* TO DO */
 		data |= soc_is_exynos5420() ? WINCONx_BURSTLEN_8WORD :
 						 WINCONx_BURSTLEN_16WORD;
 #else
@@ -513,7 +512,7 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 			data |= WINCON0_BPPMODE_24BPP_888;
 
 		data |= WINCONx_WSWP;
-#if 0 //TO DO
+#if 0 /* TO DO */
 		data |= soc_is_exynos5420() ? WINCONx_BURSTLEN_8WORD :
 						 WINCONx_BURSTLEN_16WORD;
 #else
@@ -1941,10 +1940,10 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			regs->wincon[i] |= WINCONx_ENWIN;
 		} else {
 			regs->wincon[i] &= ~WINCONx_ENWIN;
-#if 0   //TO DO
-        			if (soc_is_exynos5420())
+#if 0   /* TO DO */
+			if (soc_is_exynos5420())
 #else
-        			if (1)
+			if (1)
 #endif
 				regs->wincon[i] |= WINCONx_BURSTLEN_8WORD;
 		}
@@ -3293,7 +3292,6 @@ static int s3c_fb_wait_for_vsync_thread(void *data)
 			sfb->vsync_info.active);
 
 		if (!ret) {
-//			exynos5_ppmu_trace();
 			sysfs_notify(&sfb->dev->kobj, NULL, "vsync");
 		}
 	}
@@ -3319,8 +3317,8 @@ int s3c_fb_sysmmu_fault_handler(struct device *dev, const char *mmuname,
 		unsigned long fault_addr)
 {
 	struct s3c_fb *sfb;
-              struct display_driver *dispdrv;
-	
+	struct display_driver *dispdrv;
+
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
 
@@ -3491,12 +3489,12 @@ static void s3c_fb_debugfs_cleanup(struct s3c_fb *sfb) { }
 
 static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 {
-#if 0  //TO DO
+#if 0  /* TO DO */
 	struct s3c_fb_platdata *pd = sfb->pdata;
 
 	return pd->ip_version == EXYNOS5_813 ? 0 : 1;
 #else
-                return 1;
+	return 1;
 #endif
 }
 
@@ -3513,7 +3511,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	int i;
 	int ret = 0;
 	u32 reg;
-printk("###%s: Start \n", __func__);
+
 	dispdrv = get_display_driver();
 
 	fbdrv = get_display_drvdata();
@@ -3663,7 +3661,7 @@ printk("###%s: Start \n", __func__);
 	exynos_sysmmu_set_fault_handler(&pdev->dev,
 			s3c_fb_sysmmu_fault_handler);
 #else
-#if 0   //TO DO
+#if 0   /* TO DO */
 	exynos_sysmmu_set_fault_handler(&pdev->dev,
 			s3c_fb_sysmmu_fault_handler);
 #endif
@@ -3779,7 +3777,7 @@ printk("###%s: Start \n", __func__);
 	}
 
 #ifdef CONFIG_ION_EXYNOS
-#if 0// !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
+#if 0 /*!defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)*/
 	ret = s3c_fb_copy_bootloader_fb(pdev,
 			sfb->windows[default_win]->dma_buf_data.dma_buf);
 	if (ret < 0) {
@@ -3822,9 +3820,10 @@ printk("###%s: Start \n", __func__);
 	}
 
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
-
-//	bts_initialize("pd-disp1", true);
-printk("$$$$%s: End \n", __func__);
+#if 0
+	bts_initialize("pd-disp1", true);
+#endif
+	dev_info(sfb->dev, "%s: End \n", __func__);
 	return 0;
 
 err_fb:
@@ -4120,13 +4119,13 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 		s3c_clk_status = true;
 	}
 #endif
-#if 0 //TO DO
+#if 0 /* TO DO */
 	if (soc_is_exynos5420()) {
 #else
 	if (1) {
 #endif
-                            if (exynos_set_parent("aclk_400_disp1", "aclk_400_disp1_sw") < 0)
-                                pr_err("Unable to set parent for aclk_400_disp1 clock.\n");
+		if (exynos_set_parent("aclk_400_disp1", "aclk_400_disp1_sw") < 0)
+			pr_err("Unable to set parent for aclk_400_disp1 clock.\n");
 	}
 
 	mutex_lock(&sfb->output_lock);
@@ -4150,7 +4149,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
-#if 0 //TO DO
+#if 0 /* TO DO */
 	if (soc_is_exynos5420())
 #else
 	if (1)
@@ -4280,7 +4279,7 @@ int s3c_fb_resume(struct device *dev)
 	}
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(sfb->dev);
-#elif 0//!defined(CONFIG_FIMD_USE_BUS_DEVFREQ) && !defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+#elif 0 /*!defined(CONFIG_FIMD_USE_BUS_DEVFREQ) && !defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)*/
 	if (!sfb->fb_mif_handle) {
 		sfb->fb_mif_handle = exynos5_bus_mif_min(300000);
 		if (!sfb->fb_mif_handle)
@@ -4307,7 +4306,7 @@ int s3c_fb_resume(struct device *dev)
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
-#if 0   //TO DO        
+#if 0   /* TO DO */
 	if (soc_is_exynos5420())
 #else
 	if (1)
@@ -4405,7 +4404,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	}
 	pd = sfb->pdata;
 
-#if 0//!defined(CONFIG_FIMD_USE_BUS_DEVFREQ) && !defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+#if 0 /* !defined(CONFIG_FIMD_USE_BUS_DEVFREQ) && !defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)*/
 	if (!sfb->fb_mif_handle) {
 		sfb->fb_mif_handle = exynos5_bus_mif_min(300000);
 		if (!sfb->fb_mif_handle)

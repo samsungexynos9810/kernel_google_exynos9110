@@ -80,7 +80,7 @@ EXPORT_SYMBOL(dsim_for_decon);
 
 int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
-	
+
 #ifdef CONFIG_SOC_EXYNOS5430
 	void __iomem *reg;
 	reg = ioremap(0x105C0710, 0x10);
@@ -718,7 +718,6 @@ int s5p_mipi_dsi_set_display_mode(struct mipi_dsim_device *dsim,
 
 int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 {
-	u32 dsi_ver;
 	unsigned int time_out = 100;
 	unsigned int id;
 	id = dsim->id;
@@ -728,10 +727,6 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 		s5p_mipi_dsi_init_fifo_pointer(dsim, 0x1f);
 
 		/* dsi configuration */
-		dsi_ver = readl(dsim->reg_base + S5P_DSIM_VERSION);
-		printk( "[DEBUG] ==================================\n");
-		printk( "       lane no: 0x%08X\n", dsim->data_lane);
-		printk( "[DEBUG] ==================================\n");
 		s5p_mipi_dsi_init_config(dsim);
 		s5p_mipi_dsi_enable_lane(dsim, DSIM_LANE_CLOCK, 1);
 		s5p_mipi_dsi_enable_lane(dsim, dsim->data_lane, 1);
@@ -925,8 +920,6 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	if (dsim->enabled == true)
 		return 0;
 
-	//pm_runtime_get_sync(dsim->dev);
-
 	enable_display_dsi_clocks(dsim->dev);
 	enable_display_dsi_power(dsim->dev);
 
@@ -996,8 +989,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->dev = &pdev->dev;
 	dsim->id = pdev->id;
 
-	//pm_runtime_enable(&pdev->dev);
-
 	dsim->dsim_config = get_display_dsi_drvdata();
 
 	dsim->reg_base = devm_request_and_ioremap(&pdev->dev, dispdrv->dsi_driver.regs);
@@ -1012,9 +1003,7 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	 * only in case of MIPI Video mode.
 	 */
 	dsim->irq = dispdrv->dsi_driver.dsi_irq_no;
-	printk( "[DEBUG] ============================\n");
-	printk( "        DSI IRQ NO: 0x%08X\n",dsim->irq );
-	printk( "[DEBUG] ============================\n");
+	dev_info(&pdev->dev, "%s: DSI IRQ NO: 0x%08X\n", __func__, dsim->irq);
 	if (request_irq(dsim->irq, s5p_mipi_dsi_interrupt_handler,
 			IRQF_DISABLED, "mipi-dsi", dsim)) {
 		dev_err(&pdev->dev, "request_irq failed.\n");
@@ -1027,8 +1016,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 		dev_err(&pdev->dev, "dsim_config is NULL.\n");
 		goto err_dsim_config;
 	}
-	//platform_set_drvdata(pdev, dsim);
-	//pm_runtime_get_sync(&pdev->dev);
 
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
@@ -1106,7 +1093,6 @@ static void s5p_mipi_dsi_shutdown(struct platform_device *pdev)
 
 		disable_display_dsi_power(&pdev->dev);
 
-		//pm_runtime_put_sync(&pdev->dev);
 	}
 }
 
