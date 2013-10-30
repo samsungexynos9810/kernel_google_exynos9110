@@ -73,16 +73,16 @@
 #define VB2ION_CTX_DRM_MFCNFW	(EXYNOS_ION_HEAP_EXYNOS_CONTIG_MASK | \
 				ION_EXYNOS_MFC_NFW_MASK)
 
-#define VB2ION_DRM_HEAP_FLAG_NUM 10
-#define VB2ION_HEAP_NUM
-
-/* below 5 is the above vb2-ion flags (ION_NUM_HEAPS + 1 ~ 5) */
-#if (BITS_PER_LONG <= (VB2ION_DRM_HEAP_FLAG_NUM + VB2ION_HEAP_NUM + 6))
+#define VB2ION_CONTIG_ID_NUM	16
+#define VB2ION_NUM_HEAPS	8
+/* below 6 is the above vb2-ion flags (ION_NUM_HEAPS + 1 ~ 6) */
+#if (BITS_PER_LONG <= (VB2ION_CONTIG_ID_NUM + VB2ION_NUM_HEAPS + 6))
 #error "Bits are too small to express all flags"
 #endif
 
-#define VB2ION_CTX_MASK_ION_HEAP	((1 << ION_NUM_HEAPS) - 1)
-#define VB2ION_CTX_MASK_ION_FLAG	~((1 << (BITS_PER_LONG - 10)) - 1)
+#define VB2ION_CTX_MASK_ION_HEAP	((1 << VB2ION_NUM_HEAPS) - 1)
+#define VB2ION_CTX_MASK_ION_FLAG	~((1 << (BITS_PER_LONG - \
+					VB2ION_CONTIG_ID_NUM)) - 1)
 /* mask out all non-ion flags */
 #define ion_heapflag(flag)	(flag & VB2ION_CTX_MASK_ION_HEAP)
 #define ion_flag(flag)		(flag & VB2ION_CTX_MASK_ION_FLAG)
