@@ -35,6 +35,9 @@
 		mdev0 = &mdev_0;
 		jpeg0 = &jpeg_0;
 		jpeg1 = &jpeg_1;
+		scaler0 = &scaler_0;
+		scaler1 = &scaler_1;
+		scaler2 = &scaler_2;
 	};
 
 	cpus {
@@ -955,5 +958,32 @@
 			compatible = "samsung,exynos-spd";
 		        status = "disabled";
 		};
+	};
+
+	scaler_0: scaler@12800000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x12800000 0x1300>;
+		interrupts = <0 220 0>;
+		clocks = <&clock 301>;
+		clock-names = "gate_scaler";
+		iommu = <&sysmmu_scaler0r>, <&sysmmu_scaler0w>;
+	};
+
+	scaler_1: scaler@12810000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x12810000 0x1300>;
+		interrupts = <0 221 0>;
+		clocks = <&clock 302>;
+		clock-names = "gate_scaler";
+		iommu = <&sysmmu_scaler1r>, <&sysmmu_scaler1w>;
+	};
+
+	scaler_2: scaler@12820000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x12820000 0x1300>;
+		interrupts = <0 222 0>;
+		clocks = <&clock 303>;
+		clock-names = "gate_scaler";
+		iommu = <&sysmmu_scaler2r>, <&sysmmu_scaler2w>;
 	};
 };
