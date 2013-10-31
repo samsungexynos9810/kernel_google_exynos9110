@@ -1317,6 +1317,8 @@ static int g2d_release(struct file *file)
 	g2d_dbg("refcnt= %d", atomic_read(&g2d->m2m.in_use));
 
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
+	if (&ctx->fence_wq)
+		destroy_workqueue(ctx->fence_wq);
 	v4l2_ctrl_handler_free(&ctx->ctrl_handler);
 	v4l2_fh_del(&ctx->fh);
 	v4l2_fh_exit(&ctx->fh);
