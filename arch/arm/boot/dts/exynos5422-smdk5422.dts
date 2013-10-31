@@ -472,7 +472,27 @@
 		};
 	};
 
+	dwc3_vbus_0: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "VBUS0";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpg0 5 1>;
+		enable-active-high;
+	};
+
+	dwc3_vbus_1: fixedregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "VBUS1";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpg1 4 1>;
+		enable-active-high;
+		regulator-boot-on;
+	};
+
 	usb@12000000 {
+		dwc3-vbus-supply = <&dwc3_vbus_0>;
 		samsung,bsess-gpio = <&gpx0 6 0xf>;
 		samsung,id-gpio = <&gpx1 7 0xf>;
 		pinctrl-names = "default";
@@ -486,6 +506,7 @@
 	};
 
 	usb@12400000 {
+		dwc3-vbus-supply = <&dwc3_vbus_1>;
 		samsung,bsess-gpio = <&gpx2 3 0xf>;
 		samsung,id-gpio = <&gpx2 4 0xf>;
 		pinctrl-names = "default";
