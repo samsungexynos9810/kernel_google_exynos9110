@@ -1258,6 +1258,8 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 
 	if (!(gsc_irq & GSC_IRQ_STATUS_FRM_DONE)) {
 		gsc_err("Error interrupt(0x%x) occured", gsc_irq);
+		exynos_sysmmu_show_status(&gsc->pdev->dev);
+		gsc_hw_set_sw_reset(gsc);
 		return IRQ_HANDLED;
 	}
 
