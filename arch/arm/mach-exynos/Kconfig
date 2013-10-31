@@ -94,6 +94,20 @@ config SOC_EXYNOS5430
 	help
 	  Enable EXYNOS5430 SoC support
 
+choice
+	prompt "Revision Type"
+	depends on SOC_EXYNOS5430
+	help
+	  This option selects cpu revision number.
+
+config SOC_EXYNOS5430_REV_0
+	bool "Rev 0.0"
+
+config SOC_EXYNOS5430_REV_1
+	bool "Rev 1.0"
+
+endchoice
+
 config EXYNOS5430_BTS
 	bool "Bus traffic shaper support"
 	default y
