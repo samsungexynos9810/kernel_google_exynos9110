@@ -2388,7 +2388,7 @@
 		compatible = "samsung,s5p-fimg2d";
 		reg = <0x12400000 0x1000>;
 		interrupts = <0 259 0>;
-		clocks = <&clock 2213>, <&clock 3112>, <&clock 330>, <&clock 3113>, <&clock 331>;
+		clocks = <&clock 2213>, <&clock 3111>, <&clock 330>, <&clock 3112>, <&clock 331>;
 		clock-names = "fimg2d", "mout_aclk_g2d_400_user", "aclk_g2d_400", "mout_aclk_g2d_266_user", "aclk_g2d_266";
 		ip_ver = <0x43>;
 		cpu_min = <400000>;
