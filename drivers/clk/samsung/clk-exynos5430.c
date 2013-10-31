@@ -597,7 +597,8 @@ enum exynos5430_clks {
 	mout_aclk_mscl_400_a, mout_aclk_mscl_400_b,
 	mout_aclk_hevc_400,
 	mout_aclk_isp_400 = 3030, mout_aclk_isp_dis_400,
-	mout_aclk_cam1_552, mout_aclk_cam1_333,
+	mout_aclk_cam1_552_a, mout_aclk_cam1_552_b,
+	mout_aclk_cam1_333,
 	mout_sclk_audio0, mout_sclk_audio1,
 	mout_sclk_spi0, mout_sclk_spi1, mout_sclk_spi2,
 	mout_sclk_uart0 = 3040,
@@ -976,7 +977,8 @@ PNAME(mout_aclk_mfc1_333_b_p)	= { "mout_aclk_mfc1_333_a", "mout_bus_pll_user" };
 PNAME(mout_aclk_mfc1_333_c_p)	= { "mout_aclk_mfc1_333_b", "mout_mphy_pll_user" };
 PNAME(mout_aclk_isp_400_p)	= { "mout_bus_pll_user", "mout_mfc_pll_user" };
 PNAME(mout_aclk_isp_dis_400_p)	= { "mout_bus_pll_user", "mout_mfc_pll_user" };
-PNAME(mout_aclk_cam1_552_p)	= { "mout_isp_pll", "mout_bus_pll_user" };
+PNAME(mout_aclk_cam1_552_a_p)	= { "mout_isp_pll", "mout_bus_pll_user" };
+PNAME(mout_aclk_cam1_552_b_p)	= { "mout_aclk_cam1_552_a", "mout_mfc_pll_user" };
 PNAME(mout_aclk_cam1_333_p)	= { "mout_mfc_pll_user", "mout_bus_pll_user" };
 PNAME(mout_sclk_audio0_p)	= { "ioclk_audiocdclk0", "oscclk", "mout_aud_pll_user_top" };
 PNAME(mout_sclk_audio1_p)	= { "ioclk_audiocdclk1", "oscclk", "mout_aud_pll_user_top" };
@@ -1241,7 +1243,8 @@ struct samsung_mux_clock exynos5430_mux_clks[] __initdata = {
 	CMUX(mout_aclk_mfc1_333_c, EXYNOS5430_SRC_SEL_TOP4, 24, 1),
 	CMUX(mout_aclk_isp_400, EXYNOS5430_SRC_SEL_TOP2, 0, 1),
 	CMUX(mout_aclk_isp_dis_400, EXYNOS5430_SRC_SEL_TOP2, 4, 1),
-	CMUX(mout_aclk_cam1_552, EXYNOS5430_SRC_SEL_TOP2, 8, 1),
+	CMUX(mout_aclk_cam1_552_a, EXYNOS5430_SRC_SEL_TOP2, 8, 1),
+	CMUX(mout_aclk_cam1_552_b, EXYNOS5430_SRC_SEL_TOP2, 12, 1),
 	CMUX(mout_aclk_cam1_333, EXYNOS5430_SRC_SEL_TOP2, 16, 1),
 	CMUX(mout_sclk_audio0, EXYNOS5430_SRC_SEL_TOP_PERIC1, 0, 2),
 	CMUX(mout_sclk_audio1, EXYNOS5430_SRC_SEL_TOP_PERIC1, 4, 2),
@@ -1471,7 +1474,7 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_aclk_cam0_552, "mout_isp_pll", EXYNOS5430_DIV_TOP0, 8, 3),
 	CDIV(dout_aclk_cam0_400, "mout_bus_pll_user", EXYNOS5430_DIV_TOP0, 12, 3),
 	CDIV(dout_aclk_cam0_333, "mout_mfc_pll_user", EXYNOS5430_DIV_TOP0, 16, 3),
-	CDIV(dout_aclk_cam1_552, "mout_aclk_cam1_552", EXYNOS5430_DIV_TOP0, 20, 3),
+	CDIV(dout_aclk_cam1_552, "mout_aclk_cam1_552_b", EXYNOS5430_DIV_TOP0, 20, 3),
 	CDIV(dout_aclk_cam1_400, "mout_bus_pll_user", EXYNOS5430_DIV_TOP0, 24, 3),
 	CDIV(dout_aclk_cam1_333, "mout_aclk_cam1_333", EXYNOS5430_DIV_TOP0, 28, 3),
 	CDIV(dout_sclk_audio0, "mout_sclk_audio0", EXYNOS5430_DIV_TOP_PERIC3, 0, 4),
