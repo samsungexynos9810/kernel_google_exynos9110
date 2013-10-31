@@ -420,9 +420,23 @@ static struct snd_soc_dai_link xyref_dai[] = {
 	}
 };
 
+static int xyref_suspend_post(struct snd_soc_card *card)
+{
+	xyref_enable_mclk(false);
+	return 0;
+}
+
+static int xyref_resume_pre(struct snd_soc_card *card)
+{
+	xyref_enable_mclk(true);
+	return 0;
+}
+
 static struct snd_soc_card xyref = {
 	.name = "XYREF-I2S",
 	.owner = THIS_MODULE,
+	.suspend_post = xyref_suspend_post,
+	.resume_pre = xyref_resume_pre,
 	.dai_link = xyref_dai,
 	.num_links = ARRAY_SIZE(xyref_dai),
 };
@@ -509,6 +523,7 @@ static struct platform_driver xyref_audio_driver = {
 	.driver		= {
 		.name	= "xyref-audio",
 		.owner	= THIS_MODULE,
+		.pm = &snd_soc_pm_ops,
 		.of_match_table = of_match_ptr(samsung_es515_of_match),
 	},
 	.probe		= xyref_audio_probe,
