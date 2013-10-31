@@ -2364,6 +2364,54 @@
 			<&sysmmu_fimc_3dnr>;
 		samsung,power-domain = <&pd_isp>;
 		status = "ok";
+		/* This seq of declaration is very important.*/
+		/* It should be matched to enum FIMC_IS_CLK_GATE_IP */
+		clk_gate_enums =<0>, /* 3a1 */
+				<1>, /* isp */
+				<2>, /* drc */
+				<3>, /* scc */
+				<5>, /* dis */
+				<6>, /* 3dnr */
+				<7>, /* scp */
+				<8>, /* fd */
+				<9>; /* 3a0 */
+		clk_gate_strs =	"gate_3aa1",
+				"gate_isp",
+				"gate_drc",
+				"gate_scalerc",
+				"gate_dis",
+				"gate_3dnr",
+				"gate_scalerp",
+				"gate_fd",
+				"gate_3aa0";
+		clk_gate_ctrl {
+			/* 3a0 */
+			group0 {
+				mask_clk_on_org = <9>;
+				mask_clk_off_self_org = <9>;
+			};
+			/* 3a1 */
+			group1 {
+				/* not defined */
+			};
+			/* isp */
+			group2 {
+				mask_clk_on_org = 	<1>,
+							<2>,
+							<3>,
+							<5>,
+							<6>,
+							<7>,
+							<8>;
+				mask_clk_off_self_org =	<1>,
+							<2>,
+							<3>,
+							<5>,
+							<6>,
+							<7>,
+							<8>;
+			};
+		};
 		subip_info {
 			num_of_3a0 = <1>;
 			num_of_3a1 = <1>;
