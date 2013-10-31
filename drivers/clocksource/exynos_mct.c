@@ -28,6 +28,8 @@
 #include <asm/localtimer.h>
 #include <asm/mach/time.h>
 
+#include <plat/cpu.h>
+
 #define EXYNOS4_MCTREG(x)		(x)
 #define EXYNOS4_MCT_G_CNT_L		EXYNOS4_MCTREG(0x100)
 #define EXYNOS4_MCT_G_CNT_U		EXYNOS4_MCTREG(0x104)
@@ -175,11 +177,15 @@ static notrace u32 exynos4_read_sched_clock(void)
 	static DEFINE_SPINLOCK(exynos_mct_spinlock);
 	unsigned long flags;
 
-	if (spin_trylock_irqsave(&exynos_mct_spinlock, flags)){
-		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-		spin_unlock_irqrestore(&exynos_mct_spinlock, flags);
+	if (soc_is_exynos5430() && samsung_rev() == EXYNOS5430_REV_0) {
+		if (spin_trylock_irqsave(&exynos_mct_spinlock, flags)) {
+			val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
+			spin_unlock_irqrestore(&exynos_mct_spinlock, flags);
+		} else {
+			spin_unlock_wait(&exynos_mct_spinlock);
+		}
 	} else {
-		spin_unlock_wait(&exynos_mct_spinlock);
+		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
 	}
 
 	return val;
