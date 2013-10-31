@@ -2805,6 +2805,7 @@ static int es515_wakeup(struct es515_priv *es515)
 	}
 
 	msleep(30);
+	es515_fixed_config(es515);
 
 	return rc;
 }
@@ -2816,6 +2817,7 @@ static int es515_sleep(struct es515_priv *es515)
 	int value = 1; /* Sleep */
 	rc = es515_write(NULL, ES515_POWER_STATE, value);
 	msleep(20);
+	es515_power_state = ES515_POWER_STATE_SLEEP;
 
 	/* clocks off */
 
@@ -3890,7 +3892,7 @@ static int es515_i2c_probe(struct i2c_client *i2c,
 
 	/* Intialize globals. */
 	skip_debug = 0;
-	ES515_SR_BIT = 0;
+	ES515_SR_BIT = true;
 
 	dev_dbg(&i2c->dev, "%s()\n", __func__);
 
