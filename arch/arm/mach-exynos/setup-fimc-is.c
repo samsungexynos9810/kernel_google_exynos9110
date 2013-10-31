@@ -221,6 +221,88 @@ unsigned int  fimc_is_enable_dt(struct platform_device *pdev,
 	return clk_enable(target);
 }
 
+int exynos5430_fimc_is_clk_gate(u32 clk_gate_id, bool is_on)
+{
+	int cfg = 0;
+	u32 value = 0;
+
+	if (clk_gate_id == 0)
+		return 0;
+
+	/* CAM00 */
+	if (clk_gate_id & (1 << FIMC_IS_GATE_3AA1_IP))
+		value |= (1 << 4);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_3AA0_IP))
+		value |= (1 << 3);
+
+	if (value > 0) {
+		cfg = readl(EXYNOS5430_ENABLE_IP_CAM00);
+		if (is_on)
+			writel(cfg | value, EXYNOS5430_ENABLE_IP_CAM00);
+		else
+			writel(cfg & ~(value), EXYNOS5430_ENABLE_IP_CAM00);
+		pr_debug("%s :1 [%s] gate(%d) (0x%x) * (0x%x)\n", __func__,
+				is_on ? "ON" : "OFF",
+				clk_gate_id,
+				cfg,
+				value);
+	}
+
+
+	/* ISP 0 */
+	value = 0;
+	if (clk_gate_id & (1 << FIMC_IS_GATE_ISP_IP))
+		value |= (1 << 0);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_DRC_IP))
+		value |= (1 << 1);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_SCC_IP))
+		value |= (1 << 2);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_DIS_IP))
+		value |= (1 << 3);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_3DNR_IP))
+		value |= (1 << 4);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_SCP_IP))
+		value |= (1 << 5);
+
+	if (value > 0) {
+		cfg = readl(EXYNOS5430_ENABLE_IP_ISP0);
+		if (is_on)
+			writel(cfg | value, EXYNOS5430_ENABLE_IP_ISP0);
+		else
+			writel(cfg & ~(value), EXYNOS5430_ENABLE_IP_ISP0);
+		pr_debug("%s :2 [%s] gate(%d) (0x%x) * (0x%x)\n", __func__,
+				is_on ? "ON" : "OFF",
+				clk_gate_id,
+				cfg,
+				value);
+	}
+
+	/* CAM 10 */
+	value = 0;
+	if (clk_gate_id & (1 << FIMC_IS_GATE_FD_IP))
+		value |= (1 << 3);
+
+	if (value > 0) {
+		cfg = readl(EXYNOS5430_ENABLE_IP_CAM10);
+		if (is_on)
+			writel(cfg | value, EXYNOS5430_ENABLE_IP_CAM10);
+		else
+			writel(cfg & ~(value), EXYNOS5430_ENABLE_IP_CAM10);
+		pr_debug("%s :3 [%s] gate(%d) (0x%x) * (0x%x)\n", __func__,
+				is_on ? "ON" : "OFF",
+				clk_gate_id,
+				cfg,
+				value);
+	}
+/*
+	pr_info("%s : [%s] gate(%d) (0x%x)\n", __func__,
+			is_on ? "ON" : "OFF",
+			clk_gate_id,
+			cfg);
+*/
+	return 0;
+}
+
 /* utility function to disable with DT */
 void  fimc_is_disable_dt(struct platform_device *pdev,
 		const char *conid)
@@ -736,5 +818,44 @@ int exynos5_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor_id
 	pr_debug("%s\n", __func__);
 
 	return 0;
+}
+
+int exynos5430_fimc_is_set_user_clk_gate(u32 group_id,
+		bool is_on,
+		u32 user_scenario_id,
+		unsigned long msk_state,
+		struct exynos_fimc_is_clk_gate_info *gate_info) {
+	/* if you want to skip clock on/off, let this func return -1 */
+	int ret = -1;
+
+	switch (user_scenario_id) {
+	case CLK_GATE_NOT_FULL_BYPASS_SN:
+		if (is_on == true)
+			gate_info->groups[group_id].mask_clk_on_mod &=
+				~((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		else
+			gate_info->groups[group_id].mask_clk_on_mod |=
+				((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		ret = 0;
+		break;
+	case CLK_GATE_DIS_SN:
+		if (is_on == true)
+			gate_info->groups[group_id].mask_clk_on_mod |=
+				((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		else
+			gate_info->groups[group_id].mask_clk_on_mod &=
+				~((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		ret = 0;
+		break;
+	default:
+		ret = 0;
+		break;
+	}
+
+	return ret;
 }
 #endif
