@@ -38,6 +38,9 @@
 #include <mach/pmu.h>
 #include <mach/smc.h>
 #include <mach/exynos-pm.h>
+#ifdef CONFIG_SND_SAMSUNG_AUDSS
+#include <sound/exynos.h>
+#endif
 #if 0
 #include <mach/asv.h>
 #include <mach/asv.h>
@@ -543,7 +546,7 @@ static struct sleep_save exynos5_set_clksrc[] = {
 
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
-				int index)
+				int lp_mode, int index)
 {
 	struct timeval before, after;
 	int idle_time, ret = 0;
@@ -600,6 +603,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	cpu_pm_enter();
 	exynos_lpa_enter();
 
+	if (lp_mode == SYS_ALPA)
+		__raw_writel(0x1, EXYNOS5430_PMU_SYNC_CTRL);
+
 	ret = cpu_suspend(0, idle_finisher);
 	if (ret) {
 		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
@@ -628,6 +634,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_FSYSGENIO_OPTION);
 
 early_wakeup:
+
+	if (lp_mode == SYS_ALPA)
+		__raw_writel(0x0, EXYNOS5430_PMU_SYNC_CTRL);
 
 	clear_boot_flag(cpuid, C2_STATE);
 
@@ -674,8 +683,12 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 
 	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
 		return exynos_enter_core0_aftr(dev, drv, new_index);
+#ifdef CONFIG_SND_SAMSUNG_AUDSS
+	else if (exynos_check_aud_pwr() == AUD_PWR_ALPA)
+		return exynos_enter_core0_lpa(dev, drv, SYS_ALPA, new_index);
 	else
-		return exynos_enter_core0_lpa(dev, drv, new_index);
+#endif
+		return exynos_enter_core0_lpa(dev, drv, SYS_LPA, new_index);
 }
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
