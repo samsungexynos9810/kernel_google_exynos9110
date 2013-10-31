@@ -47,6 +47,9 @@
 #define DEBUG_PRINT_INFO(fmt, ...)
 #endif
 
+/* In Exynos, the number of MAX_POWER_DOMAIN is less than 15 */
+#define MAX_PARENT_POWER_DOMAIN	15
+
 struct exynos_pm_domain;
 
 struct exynos_pd_callback {

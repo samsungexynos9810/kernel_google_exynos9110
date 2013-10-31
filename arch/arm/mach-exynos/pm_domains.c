@@ -466,24 +466,41 @@ static __init int exynos_pm_dt_parse_domains(void)
 		struct exynos_pm_domain *parent_pd, *child_pd;
 		struct device_node *parent;
 		struct platform_device *parent_pd_pdev, *child_pd_pdev;
+		int i;
 
-		/* find parent pd if available */
-		parent = of_parse_phandle(np, "parent", 0);
-		if (!parent)
+		/* skip unmanaged power domain */
+		if (!of_device_is_available(np))
 			continue;
-
-		/* parent_pd_pdev should have value. */
-		parent_pd_pdev = of_find_device_by_node(parent);
-		parent_pd = platform_get_drvdata(parent_pd_pdev);
 
 		/* child_pd_pdev should have value. */
 		child_pd_pdev = of_find_device_by_node(np);
 		child_pd = platform_get_drvdata(child_pd_pdev);
 
-		if (pm_genpd_add_subdomain(&parent_pd->genpd, &child_pd->genpd))
-			pr_err("PM DOMAIN: %s can't add subdomain %s\n", parent_pd->name, child_pd->name);
-		else
-			pr_info(PM_DOMAIN_PREFIX "%s has a new child %s.\n", parent_pd->name, child_pd->name);
+		/* search parents in device tree */
+		for (i = 0; i < MAX_PARENT_POWER_DOMAIN; i++) {
+			/* find parent node if available */
+			parent = of_parse_phandle(np, "parent", i);
+			if (!parent)
+				break;
+
+			/* display error when parent is unmanaged. */
+			if (!of_device_is_available(parent)) {
+				pr_err(PM_DOMAIN_PREFIX "%s is not managed by runtime pm.\n",
+						kstrdup(parent->name, GFP_KERNEL));
+				continue;
+			}
+
+			/* parent_pd_pdev should have value. */
+			parent_pd_pdev = of_find_device_by_node(parent);
+			parent_pd = platform_get_drvdata(parent_pd_pdev);
+
+			if (pm_genpd_add_subdomain(&parent_pd->genpd, &child_pd->genpd))
+				pr_err(PM_DOMAIN_PREFIX "%s cannot add subdomain %s\n",
+						parent_pd->name, child_pd->name);
+			else
+				pr_info(PM_DOMAIN_PREFIX "%s has a new child %s.\n",
+						parent_pd->name, child_pd->name);
+		}
 	}
 
 	bus_register_notifier(&platform_bus_type, &platform_nb);
