@@ -480,7 +480,7 @@
 		clocks = <&clock 2123>, <&clock 2111>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
-			winmap = <0x5>;
+			winmap = <0xA>;
 		};
 	};
 
@@ -492,7 +492,7 @@
 		clocks = <&clock 2123>, <&clock 2111>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
-			winmap = <0xA>;
+			winmap = <0x14>;
 		};
 	};
 
@@ -861,6 +861,75 @@
 				};
 			};
 		};
+	};
+
+	/* decon_tv driver */
+	decon_tv@13880000 {
+		compatible = "samsung,exynos5-decon_tv_driver";
+		reg = <0x13880000 0x3000>;
+		iommu = <&sysmmu_tv0x>, <&sysmmu_tv1x>;
+		samsung,power-domain = <&spd_decon_tv>;
+
+		interrupts = <0 210 0>, <0 211 0>, <0 212 0>, <0 213 0>;
+
+		clock-names = "gate_tv_mixer";
+		clocks = <&clock 2111>;
+
+		ip_ver = <1>;
+	};
+
+	/* hdmi driver */
+	hdmi@13970000 {
+		compatible = "samsung,exynos5-hdmi_driver";
+		reg = <0x13970000 0x80000>,	/* hdmi */
+		      <0x13AF0000 0x8000>;	/* hdmi phy */
+		samsung,power-domain = <&spd_hdmi>;
+
+		interrupts = <0 208 0>;
+
+		gpios = <&gpa3 0 0xf>, <&gpb0 4 0x1>, <&gpv7 0 0x1>;
+
+		pinctrl-names = "hdmi_hdmi_hpd", "hdmi_ext_hpd";
+		pinctrl-0 = <&hdmi_hdmi_hpd>;
+		pinctrl-1 = <&hdmi_ext_hpd>;
+
+		clock-names = "phyclk_hdmiphy_pixel_clko_phy",
+			"phyclk_hdmiphy_tmds_clko_phy",
+			"mout_phyclk_hdmiphy_pixel_clko_user",
+			"mout_phyclk_hdmiphy_tmds_clko_user",
+			"phyclk_hdmi_pixel",
+			"phyclk_hdmiphy_tmds_clko",
+			"gate_hdmiphy", "gate_hdmi";
+
+		clocks = <&clock 5023>, <&clock 5024>,
+		       <&clock 3135>, <&clock 3136>,
+		       <&clock 371>, <&clock 372>,
+		       <&clock 2112>, <&clock 2113>;
+
+		ip_ver = <1>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		hdmiphy-sys {
+			reg = <0x105C0700 0xC>;
+		};
+	};
+
+	/* cec driver */
+	cec@101B0000 {
+		compatible = "samsung,exynos5-cec_driver";
+		reg = <0x101B0000 0x1000>;
+		interrupts = <0 19 0>;
+
+		gpios = <&gpa3 1 0xf>;
+		pinctrl-names = "hdmi_cec";
+		pinctrl-0 = <&hdmi_cec>;
+
+		clock-names = "pclk_hdmi_cec";
+
+		clocks = <&clock 867>;
 	};
 
 	watchdog@10020000 {

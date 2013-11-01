@@ -51,6 +51,27 @@
 			interrupt-controller;
 			#interrupt-cells = <2>;
 		};
+
+		hdmi_hdmi_hpd: hdmi_hdmi_hpd {
+			samsung,pins = "gpa3-0";
+			samsung,pin-function = <3>;
+			samsung,pin-pud = <1>;
+			samsung,pin-drv = <0>;
+		};
+
+		hdmi_ext_hpd: hdmi_ext_hpd {
+			samsung,pins = "gpa3-0";
+			samsung,pin-function = <15>;
+			samsung,pin-pud = <1>;
+			samsung,pin-drv = <0>;
+		};
+
+		hdmi_cec: hdmi_cec {
+			samsung,pins = "gpa3-1";
+			samsung,pin-function = <3>;
+			samsung,pin-pud = <0>;
+			samsung,pin-drv = <0>;
+		};
 	};
 
 	pinctrl@114B0000 {

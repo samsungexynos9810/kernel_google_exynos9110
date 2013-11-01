@@ -126,6 +126,21 @@
 		};
 	};
 
+	i2c@14EB0000 {
+		status = "okay";
+		/* hdmi edid dirver */
+		edid@50 {
+			compatible = "samsung,exynos5-edid_driver";
+			reg = <0x50>;
+		};
+
+		/* hdmi hdcp dirver */
+		hdcp@3A {
+			compatible = "samsung,exynos5-hdcp_driver";
+			reg = <0x3A>;
+		};
+	};
+
 	hsi2c@14E40000 {
 		samsung,hs-mode;
 		clock-frequency = <2500000>;
