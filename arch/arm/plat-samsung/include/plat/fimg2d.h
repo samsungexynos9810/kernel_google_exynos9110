@@ -20,6 +20,23 @@
 #define CONFIG_FIMG2D_USE_BUS_DEVFREQ
 #endif
 
+#define EXYNOS5260_PA_SYSREG_G2D                0x10A20000
+#define EXYNOS5422_PA_SYSREG_G2D		0x10CE0000
+#define EXYNOS5430_PA_SYSREG_G2D                0x124C0000
+
+#define EXYNOS5430_G2D_USER_CON                 0x1000
+#define EXYNOS5430_G2DX_SHARED_VAL_MASK         (1 << 8)
+#define EXYNOS5430_G2DX_SHARED_VAL_SHIFT        (8)
+#define EXYNOS5430_G2DX_SHARED_SEL_MASK         (1 << 0)
+#define EXYNOS5430_G2DX_SHARED_SEL_SHIFT        (0)
+
+#define EXYNOS5260_G2D_USER_CON                 0x0000
+#define EXYNOS5260_G2D_AXUSER_SEL               0x0004
+
+#define EXYNOS5260_G2D_ARUSER_SEL               (0x2)
+#define EXYNOS5260_G2D_AWUSER_SEL               (0x1)
+#define EXYNOS5260_G2D_SEL                      0x4000
+
 enum fimg2d_ip_version {
 	IP_VER_G2D_4P,
 	IP_VER_G2D_5G,
@@ -28,6 +45,7 @@ enum fimg2d_ip_version {
 	IP_VER_G2D_5R,
 	IP_VER_G2D_5V,
 	IP_VER_G2D_5H,
+	IP_VER_G2D_5AR2,
 };
 
 enum g2d_shared_val {
@@ -55,8 +73,8 @@ struct fimg2d_platdata {
 };
 
 extern void __init s5p_fimg2d_set_platdata(struct fimg2d_platdata *pd);
-extern int g2d_cci_snoop_init(void);
-extern void g2d_cci_snoop_remove(void);
-extern int g2d_cci_snoop_control(enum g2d_shared_val val, enum g2d_shared_sel sel);
-
+extern int g2d_cci_snoop_init(int ip_ver);
+extern void g2d_cci_snoop_remove(int ip_ver);
+extern int g2d_cci_snoop_control(int ip_ver
+		, enum g2d_shared_val val, enum g2d_shared_sel sel);
 #endif /* __ASM_ARCH_FIMG2D_H */
