@@ -23,6 +23,8 @@
 #include <media/videobuf2-core.h>
 #include <media/exynos_mc.h>
 
+#include <mach/exynos-tv.h>
+
 extern int dex_log_level;
 
 #define dex_dbg(fmt, args...)					\

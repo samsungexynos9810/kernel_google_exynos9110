@@ -17,7 +17,6 @@
 #include <linux/pm_runtime.h>
 #include <linux/seq_file.h>
 #include <plat/devs.h>
-#include <plat/tv-core.h>
 #include <plat/cpu.h>
 
 #include "regs-hdmi.h"
@@ -2360,12 +2359,22 @@ void hdmi_sw_reset(struct hdmi_device *hdev)
 	hdmi_write_mask(hdev, HDMI_CORE_RSTOUT, ~0, HDMI_CORE_SW_RSTOUT);
 }
 
+void hdmiphy_set_isolation(struct hdmi_device *hdev, int en)
+{
+	u32 val = 0;
+	u32 old = readl(hdev->pmu_regs);
+
+	val = (en & HDMI_ISOLATION_MASK) | (old & ~HDMI_ISOLATION_MASK);
+	writel(val, hdev->pmu_regs);
+}
+
 void hdmiphy_set_conf(struct hdmi_device *hdev, int en)
 {
-	if (en)
-		writel(HDMI_REFCLK_SEL_INT, hdev->sys_regs + SYSREG_DISP_PHYCLK_SEL);
-	else
-		writel(HDMI_REFCLK_SEL_OSC, hdev->sys_regs + SYSREG_DISP_PHYCLK_SEL);
+	u32 val = 0;
+	u32 old = readl(hdev->sys_regs + SYSREG_DISP_PHYCLK_SEL);
+
+	val = (en & HDMI_REFCLK_SEL_MASK) | (old & ~HDMI_REFCLK_SEL_MASK);
+	writel(val, hdev->sys_regs + SYSREG_DISP_PHYCLK_SEL);
 }
 
 void hdmiphy_set_mode(struct hdmi_device *hdev, int en)

@@ -18,7 +18,6 @@
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
-#include <linux/pm_qos.h>
 #include <linux/pm_runtime.h>
 #include <linux/clk.h>
 #include <linux/io.h>
@@ -36,6 +35,14 @@
 #include <linux/memblock.h>
 #include <plat/devs.h>
 #include <linux/exynos_iovmm.h>
+
+#ifdef CONFIG_OF
+static const struct of_device_id decon_tv_device_table[] = {
+	        { .compatible = "samsung,exynos5-decon_tv_driver" },
+		{},
+};
+MODULE_DEVICE_TABLE(of, decon_tv_device_table);
+#endif
 
 int dex_log_level = 5;
 module_param(dex_log_level, int, 0644);
@@ -1002,7 +1009,7 @@ static int dex_runtime_resume(struct device *dev)
 	dex_dbg("start\n");
 	mutex_lock(&dex->mutex);
 
-	clk_enable(res->decon_tv);
+	clk_prepare_enable(res->decon_tv);
 
 	dex_reg_reset(dex);
 
@@ -1021,7 +1028,7 @@ static int dex_runtime_suspend(struct device *dev)
 	dex_dbg("start\n");
 	mutex_lock(&dex->mutex);
 
-	clk_disable(res->decon_tv);
+	clk_disable_unprepare(res->decon_tv);
 
 	mutex_unlock(&dex->mutex);
 	dex_dbg("finished\n");
@@ -1283,45 +1290,83 @@ static void dex_release_windows(struct dex_device *dex, struct dex_win *win)
 /* --------- DRIVER INITIALIZATION ---------- */
 static int dex_probe(struct platform_device *pdev)
 {
+	struct device *dev = &pdev->dev;
+	struct s5p_dex_platdata *pdata = NULL;
 	struct dex_device *dex;
 	struct resource *res;
 	struct fb_info *fbinfo;
 	int i;
 	int ret = 0;
 
-	dev_info(&pdev->dev, "probe start\n");
+	dev_info(dev, "probe start\n");
 
-	dex = devm_kzalloc(&pdev->dev, sizeof(struct dex_device), GFP_KERNEL);
+	dex = devm_kzalloc(dev, sizeof(struct dex_device), GFP_KERNEL);
 	if (!dex) {
-		dev_err(&pdev->dev, "no memory for decon_tv device\n");
+		dev_err(dev, "no memory for decon_tv device\n");
 		return -ENOMEM;
 	}
 
-	dex->dev = &pdev->dev;
+	/* setup pointer to master device */
+	dex->dev = dev;
+
+	dex->pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+	if (!dex->pdata) {
+		dex_err("no memory for state\n");
+		return -ENOMEM;
+	}
+
+	/* store platform data ptr to decon_tv context */
+	if (dev->of_node) {
+		of_property_read_u32(dev->of_node, "ip_ver", &dex->pdata->ip_ver);
+		pdata = dex->pdata;
+	} else {
+		dex->pdata = dev->platform_data;
+		memcpy(dex->pdata, pdata, sizeof(*pdata));
+	}
+	dev_info(dev, "DECON-TV ip version %d\n", pdata->ip_ver);
 
 	/* Get memory resource and map SFR region. */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	dex->res.dex_regs = devm_request_and_ioremap(&pdev->dev, res);
+	dex->res.dex_regs = devm_request_and_ioremap(dev, res);
 	if (dex->res.dex_regs == NULL) {
-		dev_err(&pdev->dev, "failed to claim register region\n");
+		dex_err("failed to claim register region\n");
 		return -ENOENT;
 	}
 
 	/* Get IRQ resource and register IRQ handler. */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (!res) {
-		dev_err(&pdev->dev, "failed to get IRQ resource\n");
-		return -ENXIO;
-	}
-
-	ret = devm_request_irq(&pdev->dev, res->start, dex_irq_handler, 0,
+	ret = devm_request_irq(dev, res->start, dex_irq_handler, 0,
 			pdev->name, dex);
 	if (ret) {
-		dev_err(&pdev->dev, "failed to install irq\n");
+		dex_err("failed to install irq\n");
 		return ret;
 	}
 
-	dex->res.decon_tv = clk_get(dex->dev, "decon_tv");
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+	ret = devm_request_irq(dev, res->start, dex_irq_handler, 0,
+			pdev->name, dex);
+	if (ret) {
+		dex_err("failed to install irq\n");
+		return ret;
+	}
+
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 2);
+	ret = devm_request_irq(dev, res->start, dex_irq_handler, 0,
+			pdev->name, dex);
+	if (ret) {
+		dex_err("failed to install irq\n");
+		return ret;
+	}
+
+	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
+	ret = devm_request_irq(dev, res->start, dex_irq_handler, 0,
+			pdev->name, dex);
+	if (ret) {
+		dex_err("failed to install irq\n");
+		return ret;
+	}
+
+	dex->res.decon_tv = clk_get(dex->dev, "gate_tv_mixer");
 	if (IS_ERR_OR_NULL(dex->res.decon_tv)) {
 		dex_err("failed to get clock 'decon_tv'\n");
 		goto fail_clk;
@@ -1342,7 +1387,7 @@ static int dex_probe(struct platform_device *pdev)
 	if (IS_ERR(dex->update_thread)) {
 		ret = PTR_ERR(dex->update_thread);
 		dex->update_thread = NULL;
-		dev_err(&pdev->dev, "failed to run update_regs thread\n");
+		dex_err("failed to run update_regs thread\n");
 		return ret;
 	}
 	init_kthread_work(&dex->update_work, dex_update_handler);
@@ -1356,10 +1401,10 @@ static int dex_probe(struct platform_device *pdev)
 		goto fail_dex;
 	}
 
-	exynos_create_iovmm(&pdev->dev, 4, 0);
-	ret = iovmm_activate(&pdev->dev);
+	exynos_create_iovmm(dev, 4, 0);
+	ret = iovmm_activate(dev);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "failed to reactivate vmm\n");
+		dex_err("failed to reactivate vmm\n");
 		goto fail_dex;
 	}
 
@@ -1402,8 +1447,8 @@ static int dex_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, dex);
-	pm_runtime_enable(&pdev->dev);
-	dev_info(&pdev->dev, "decon_tv registered successfully");
+	pm_runtime_enable(dev);
+	dev_info(dev, "decon_tv registered successfully");
 
 	return 0;
 
@@ -1411,7 +1456,7 @@ fail_entity:
 	dex_unregister_entity(dex->windows[i]);
 
 fail_iovmm:
-	iovmm_deactivate(&pdev->dev);
+	iovmm_deactivate(dev);
 
 fail_dex:
 	if (!IS_ERR_OR_NULL(dex->res.decon_tv))
@@ -1431,7 +1476,7 @@ static int dex_remove(struct platform_device *pdev)
 	int i;
 
 	pm_runtime_disable(dev);
-	iovmm_deactivate(&pdev->dev);
+	iovmm_deactivate(dev);
 	unregister_framebuffer(dex->windows[0]->fbinfo);
 
 	if (dex->update_thread)
@@ -1453,12 +1498,24 @@ static struct platform_driver dex_driver __refdata = {
 		.name	= DEX_DRIVER_NAME,
 		.owner	= THIS_MODULE,
 		.pm	= &dex_pm_ops,
+		.of_match_table = of_match_ptr(decon_tv_device_table),
 	}
 };
 
-module_platform_driver(dex_driver);
+static int s5p_decon_tv_register(void)
+{
+	platform_driver_register(&dex_driver);
 
-MODULE_DEVICE_TABLE(of, exynos5_decon-tv);
+	return 0;
+}
+
+static void s5p_decon_tv_unregister(void)
+{
+	platform_driver_unregister(&dex_driver);
+}
+late_initcall(s5p_decon_tv_register);
+module_exit(s5p_decon_tv_unregister);
+
 MODULE_AUTHOR("Ayoung Sim <a.sim@samsung.com>");
 MODULE_DESCRIPTION("Samsung EXYNOS5 Soc series TVOUT driver");
 MODULE_LICENSE("GPL");

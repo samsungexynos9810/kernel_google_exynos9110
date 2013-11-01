@@ -10,7 +10,6 @@
  * published by the Free Software Foundation.
 */
 
-#include <linux/gpio.h>
 #include <linux/slab.h>
 #include <linux/uaccess.h>
 #include <linux/poll.h>
@@ -21,12 +20,18 @@
 #include <linux/interrupt.h>
 #include <linux/export.h>
 #include <linux/module.h>
-#include <mach/gpio.h>
-#include <plat/gpio-cfg.h>
 #include <plat/devs.h>
-#include <plat/tv-core.h>
+#include <mach/exynos-tv.h>
 
 #include "cec.h"
+
+#ifdef CONFIG_OF
+static const struct of_device_id cec_device_table[] = {
+	        { .compatible = "samsung,exynos5-cec_driver" },
+		{},
+};
+MODULE_DEVICE_TABLE(of, cec_device_table);
+#endif
 
 MODULE_AUTHOR("SangPil Moon");
 MODULE_DESCRIPTION("S5P CEC driver");
@@ -313,7 +318,6 @@ static int __devinit s5p_cec_probe(struct platform_device *pdev)
 	u8 *buffer;
 	int ret;
 	struct resource *res;
-	int gpio;
 
 	pdata = to_tvout_plat(&pdev->dev);
 
@@ -370,13 +374,6 @@ static int __devinit s5p_cec_probe(struct platform_device *pdev)
 		return -EIO;
 	}
 
-	ret = gpio_request(gpio, "hdmi-cec");
-	if (ret)
-		printk(KERN_ERR "failed to request HDMI-CEC\n");
-	gpio_direction_input(gpio);
-	s3c_gpio_cfgpin(gpio, S3C_GPIO_SFN(0x3));
-	s3c_gpio_setpull(gpio, S3C_GPIO_PULL_NONE);
-
 	cec_rx_struct.buffer = buffer;
 
 	cec_rx_struct.size   = 0;
@@ -415,6 +412,7 @@ static struct platform_driver s5p_cec_driver = {
 	.driver		= {
 		.name	= "s5p-tvout-cec",
 		.owner	= THIS_MODULE,
+		.of_match_table = of_match_ptr(cec_device_table),
 	},
 };
 

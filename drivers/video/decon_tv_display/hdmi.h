@@ -29,10 +29,12 @@
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-device.h>
 
+#include <mach/exynos-tv.h>
+
 #define INFOFRAME_CNT          2
 
 /* default preset configured on probe */
-#define HDMI_DEFAULT_TIMINGS_IDX (0)
+#define HDMI_DEFAULT_TIMINGS_IDX (10)
 
 #define HDMI_VSI_VERSION	0x01
 #define HDMI_AVI_VERSION	0x02
@@ -159,10 +161,10 @@ enum HDCP_STATE {
 
 struct hdmi_resources {
 	struct clk *hdmi;
-	struct clk *sclk_hdmi;
-	struct clk *sclk_pixel;
-	struct clk *sclk_hdmiphy;
-	int gpio;
+	struct clk *hdmiphy;
+	int gpio_hpd;
+	int gpio_ls;
+	int gpio_dcdc;
 };
 
 struct hdmi_tg_regs {
@@ -294,6 +296,7 @@ struct hdmi_device {
 	void __iomem *regs;
 	void __iomem *phy_regs;
 	void __iomem *sys_regs;
+	void __iomem *pmu_regs;
 
 	/** HDMI interrupt */
 	unsigned int int_irq;
@@ -409,6 +412,7 @@ void hdmi_sw_hpd_enable(struct hdmi_device *hdev, int en);
 void hdmi_sw_hpd_plug(struct hdmi_device *hdev, int en);
 void hdmi_phy_sw_reset(struct hdmi_device *hdev);
 void hdmi_sw_reset(struct hdmi_device *hdev);
+void hdmiphy_set_isolation(struct hdmi_device *hdev, int en);
 void hdmiphy_set_conf(struct hdmi_device *hdev, int en);
 void hdmi_dumpregs(struct hdmi_device *hdev, char *prefix);
 void hdmi_set_3d_info(struct hdmi_device *hdev);

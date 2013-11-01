@@ -64,6 +64,14 @@
 #define MAX_CASCADE_EXCEEDED		(0x1 << 3)
 #define MAX_DEVS_EXCEEDED		(0x1 << 7)
 
+#ifdef CONFIG_OF
+static const struct of_device_id hdcp_device_table[] = {
+	        { .compatible = "samsung,exynos5-hdcp_driver" },
+		{},
+};
+MODULE_DEVICE_TABLE(of, hdcp_device_table);
+#endif
+
 struct i2c_client *hdcp_client;
 
 int hdcp_i2c_read(struct hdmi_device *hdev, u8 offset, int bytes, u8 *buf)
@@ -197,6 +205,7 @@ static struct i2c_driver hdcp_driver = {
 	.driver = {
 		.name = "exynos_hdcp",
 		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(hdcp_device_table),
 	},
 	.id_table	= hdcp_idtable,
 	.probe		= hdcp_probe,

@@ -465,9 +465,10 @@
 
 /* System Register */
 /* SYSREG_DISP_PHYCLK_SEL */
-#define HDMI_REFCLK_SEL_INT		(1)
-#define HDMI_REFCLK_SEL_OSC		(0)
 #define HDMI_REFCLK_SEL_MASK		(1)
+
+/* PMU(HDMI_PHY_CONTROL) Register */
+#define HDMI_ISOLATION_MASK		(1)
 
 /* Control Register */
 

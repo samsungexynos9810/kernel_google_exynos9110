@@ -36,6 +36,14 @@
 #define EDID_3D_TB		6
 #define EDID_3D_SBS		8
 
+#ifdef CONFIG_OF
+static const struct of_device_id edid_device_table[] = {
+	        { .compatible = "samsung,exynos5-edid_driver" },
+		{},
+};
+MODULE_DEVICE_TABLE(of, edid_device_table);
+#endif
+
 static struct i2c_client *edid_client;
 
 /* Structure for Checking 3D Mandatory Format in EDID */
@@ -526,6 +534,7 @@ static struct i2c_driver edid_driver = {
 	.driver = {
 		.name = "exynos_edid",
 		.owner = THIS_MODULE,
+		.of_match_table = of_match_ptr(edid_device_table),
 	},
 	.id_table	= edid_idtable,
 	.probe		= edid_probe,
