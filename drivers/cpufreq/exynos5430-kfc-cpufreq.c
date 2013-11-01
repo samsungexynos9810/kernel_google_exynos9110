@@ -18,7 +18,12 @@
 #include <linux/clk-private.h>
 
 #include <mach/map.h>
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 #include <mach/regs-clock.h>
+#else
+#include <mach/regs-clock-exynos5430_evt0.h>
+#include <mach/regs-pmu.h>
+#endif
 #include <mach/cpufreq.h>
 #include <mach/asv-exynos.h>
 
@@ -64,6 +69,7 @@ static struct cpufreq_frequency_table exynos5430_freq_table_CA7[] = {
 
 static struct cpufreq_clkdiv exynos5430_clkdiv_table_CA7[CPUFREQ_LEVEL_END_CA7];
 
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	/*
 	 * Clock divider value for following
@@ -277,6 +283,221 @@ static const unsigned int asv_voltage_5430_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	 900000,	/* L17  300 */
 	 900000,	/* L18  200 */
 };
+#else
+static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
+	/*
+	 * Clock divider value for following
+	 * { KFC1, KFC2, ACLK_KFC, PCLK_KFC,
+	 *   ATCLK, PCLK_DBG_KFC, SCLK_CNTCLK }
+	 */
+
+	/* ARM L0: 2.0GHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L1: 1.9GMHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L2: 1.8GMHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L3: 1.7GHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L4: 1.6GHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L5: 1.5GMHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L6: 1.4GMHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L7: 1.3GHz */
+	{ 0, 0, 2, 7, 7, 7, 3 },
+
+	/* ARM L8: 1.2GHz */
+	{ 0, 0, 1, 7, 7, 7, 3 },
+
+	/* ARM L9: 1.1GHz */
+	{ 0, 0, 1, 7, 7, 7, 3 },
+
+	/* ARM L10: 1000MHz */
+	{ 0, 0, 1, 7, 7, 7, 3 },
+
+	/* ARM L11: 900MHz */
+	{ 0, 0, 1, 7, 7, 7, 3 },
+
+	/* ARM L12: 800MHz */
+	{ 0, 0, 1, 7, 7, 7, 3 },
+
+	/* ARM L13: 700MHz */
+	{ 0, 0, 1, 6, 6, 6, 3 },
+
+	/* ARM L14: 600MHz */
+	{ 0, 0, 1, 6, 6, 6, 3 },
+
+	/* ARM L15: 500MHz */
+	{ 0, 0, 1, 5, 5, 5, 3 },
+
+	/* ARM L16: 400MHz */
+	{ 0, 0, 1, 5, 5, 5, 3 },
+
+	/* ARM L17: 300MHz */
+	{ 0, 0, 1, 4, 4, 4, 3 },
+
+	/* ARM L18: 200MHz */
+	{ 0, 0, 0, 2, 2, 2, 3 },
+};
+
+static unsigned int clkdiv_cpu1_5430_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
+	/*
+	 * Clock divider value for following
+	 * { SCLK_KFC_PLL, SCLK_HPM_KFC }
+	 */
+
+	/* ARM L0: 2.0GHz */
+	{ 0, 7 },
+
+	/* ARM L1: 1.9GMHz */
+	{ 0, 7 },
+
+	/* ARM L2: 1.8GMHz */
+	{ 0, 7 },
+
+	/* ARM L3: 1.7GHz */
+	{ 0, 7 },
+
+	/* ARM L4: 1.6GHz */
+	{ 0, 7 },
+
+	/* ARM L5: 1.5GMHz */
+	{ 0, 7 },
+
+	/* ARM L6: 1.4GMHz */
+	{ 0, 7 },
+
+	/* ARM L7: 1.3GHz */
+	{ 0, 7 },
+
+	/* ARM L8: 1.2GHz */
+	{ 0, 7 },
+
+	/* ARM L9: 1.1GHz */
+	{ 0, 7 },
+
+	/* ARM L10: 1000MHz */
+	{ 0, 7 },
+
+	/* ARM L11: 900MHz */
+	{ 0, 7 },
+
+	/* ARM L12: 800MHz */
+	{ 0, 7 },
+
+	/* ARM L13: 700MHz */
+	{ 0, 7 },
+
+	/* ARM L14: 600MHz */
+	{ 0, 7 },
+
+	/* ARM L15: 500MHz */
+	{ 0, 7 },
+
+	/* ARM L16: 400MHz */
+	{ 0, 7 },
+
+	/* ARM L17: 300MHz */
+	{ 0, 7 },
+
+	/* ARM L18: 200MHz */
+	{ 0, 7 },
+};
+
+static unsigned int exynos5430_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
+	/* MDIV | PDIV | SDIV */
+	/* KPLL FOUT L0: 2.0GHz */
+	PLL2450X_PMS(500, 6, 0),
+
+	/* KPLL FOUT L1: 1.9GHz */
+	PLL2450X_PMS(475, 6, 0),
+
+	/* KPLL FOUT L2: 1.8GHz */
+	PLL2450X_PMS(375, 5, 0),
+
+	/* KPLL FOUT L3: 1.7GHz */
+	PLL2450X_PMS(425, 6, 0),
+
+	/* KPLL FOUT L4: 1.6GHz */
+	PLL2450X_PMS(400, 6, 0),
+
+	/* KPLL FOUT L5: 1.5GHz */
+	PLL2450X_PMS(250, 4, 0),
+
+	/* KPLL FOUT L6: 1.4GHz */
+	PLL2450X_PMS(350, 6, 0),
+
+	/* KPLL FOUT L7: 1.3GHz */
+	PLL2450X_PMS(325, 6, 0),
+
+	/* KPLL FOUT L8: 1.2GHz */
+	PLL2450X_PMS(500, 5, 1),
+
+	/* KPLL FOUT L9: 1.1GHz */
+	PLL2450X_PMS(550, 6, 1),
+
+	/* KPLL FOUT L10: 1000MHz */
+	PLL2450X_PMS(500, 6, 1),
+
+	/* KPLL FOUT L11: 900MHz */
+	PLL2450X_PMS(375, 5, 1),
+
+	/* KPLL FOUT L12: 800MHz */
+	PLL2450X_PMS(400, 6, 1),
+
+	/* KPLL FOUT L13: 700MHz */
+	PLL2450X_PMS(350, 6, 1),
+
+	/* KPLL FOUT L14: 600MHz */
+	PLL2450X_PMS(500, 5, 2),
+
+	/* KPLL FOUT L15: 500MHz */
+	PLL2450X_PMS(500, 6, 2),
+
+	/* KPLL FOUT L16: 400MHz */
+	PLL2450X_PMS(400, 6, 2),
+
+	/* KPLL FOUT L17: 300MHz */
+	PLL2450X_PMS(500, 5, 3),
+
+	/* KPLL FOUT L18: 200MHz */
+	PLL2450X_PMS(400, 6, 3),
+};
+
+/*
+ * ASV group voltage table
+ */
+static const unsigned int asv_voltage_5430_CA7[CPUFREQ_LEVEL_END_CA7] = {
+	1225000,	/* L0  2000 */
+	1225000,	/* L1  1900 */
+	1225000,	/* L2  1800 */
+	1225000,	/* L3  1700 */
+	1225000,	/* L4  1600 */
+	1225000,	/* L5  1500 */
+	1187500,	/* L6  1400 */
+	1150000,	/* L7  1300 */
+	1112500,	/* L8  1200 */
+	1075000,	/* L9  1100 */
+	1037500,	/* L10 1000 */
+	1000000,	/* L11  900 */
+	 962500,	/* L12  800 */
+	 925000,	/* L13  700 */
+	 900000,	/* L14  600 */
+	 900000,	/* L15  500 */
+	 900000,	/* L16  400 */
+	 900000,	/* L17  300 */
+	 900000,	/* L18  200 */
+};
+#endif
 
 #if 0
 /* Minimum memory throughput in megabytes per second */
@@ -453,6 +674,7 @@ static void __init set_volt_table_CA7(void)
 				exynos5430_volt_table_CA7[i]);
 	}
 
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	exynos5430_freq_table_CA7[L0].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA7[L1].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA7[L2].frequency = CPUFREQ_ENTRY_INVALID;
@@ -460,6 +682,15 @@ static void __init set_volt_table_CA7(void)
 	exynos5430_freq_table_CA7[L4].frequency = CPUFREQ_ENTRY_INVALID;
 	max_support_idx_CA7 = L5;
 	min_support_idx_CA7 = L18;
+#else
+	exynos5430_freq_table_CA7[L0].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L1].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L2].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L3].frequency = CPUFREQ_ENTRY_INVALID;
+	exynos5430_freq_table_CA7[L4].frequency = CPUFREQ_ENTRY_INVALID;
+	max_support_idx_CA7 = L5;
+	min_support_idx_CA7 = L18;
+#endif
 }
 
 static bool exynos5430_is_alive_CA7(void)
@@ -490,6 +721,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 		goto err_mout_kfc_pll;
 	}
 
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	sclk_bus_pll = __clk_lookup("sclk_bus_pll");
 	if (!sclk_bus_pll) {
 		pr_err("failed get sclk_bus_pll clk\n");
@@ -501,6 +733,19 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 		pr_err("failed get mout_bus_pll_kfc_user clk\n");
 		goto err_mout_bus_pll_user;
 	}
+#else
+	sclk_bus_pll = __clk_lookup("mout_bus_pll_sub");
+	if (!sclk_bus_pll) {
+		pr_err("failed get mout_bus_pll_sub clk\n");
+		goto err_sclk_bus_pll;
+	}
+
+	mout_bus_pll_user = __clk_lookup("mout_bus_pll_user_kfc");
+	if (!mout_bus_pll_user) {
+		pr_err("failed get mout_bus_pll_user_kfc clk\n");
+		goto err_mout_bus_pll_user;
+	}
+#endif
 
 	if (clk_set_parent(mout_bus_pll_user, sclk_bus_pll)) {
 		pr_err("Unable to set parent %s of clock %s.\n",
@@ -558,8 +803,13 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L12;
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L5].frequency;
 	info->boot_cpu_max_qos = exynos5430_freq_table_CA7[L5].frequency;
+#else
+	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L5].frequency;
+	info->boot_cpu_max_qos = exynos5430_freq_table_CA7[L5].frequency;
+#endif
 #if 0
 	info->bus_table = exynos5430_bus_table_CA7;
 #endif
