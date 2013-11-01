@@ -1615,6 +1615,17 @@ static void dw_mci_hw_reset(struct mmc_host *host)
 		brd->hw_reset(slot->id);
 }
 
+static int dw_mci_card_busy(struct mmc_host *host)
+{
+	struct dw_mci_slot *slot = mmc_priv(host);
+	u32 status, ret = -1;
+
+	status = mci_readl(slot->host, STATUS);
+	ret = (status & SDMMC_DATA_BUSY);
+
+	return ret;
+}
+
 static const struct mmc_host_ops dw_mci_ops = {
 	.request		= dw_mci_request,
 	.pre_req		= dw_mci_pre_req,
@@ -1626,6 +1637,7 @@ static const struct mmc_host_ops dw_mci_ops = {
 	.execute_tuning		= dw_mci_execute_tuning,
 	.start_signal_voltage_switch	= dw_mci_start_signal_voltage_switch,
 	.hw_reset		= dw_mci_hw_reset,
+	.card_busy		= dw_mci_card_busy,
 };
 
 static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
