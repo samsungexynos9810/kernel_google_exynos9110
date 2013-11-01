@@ -414,6 +414,29 @@ void crypto_init_clock(void)
 	exynos_set_rate("dout_aclk_imem_200", 200*1000000);
 }
 
+void pwm_init_clock(void)
+{
+	clk_register_fixed_factor(NULL, "pwm-clock",
+			"pclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
+}
+
+void decon_tv_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_decon_tv_eclk_a", "mout_bus_pll_div2");
+	exynos_set_parent("mout_sclk_decon_tv_eclk_b", "mout_sclk_decon_tv_eclk_a");
+	exynos_set_parent("mout_sclk_decon_tv_eclk_c", "mout_sclk_decon_tv_eclk_b");
+	exynos_set_parent("dout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_c");
+
+	exynos_set_rate("dout_sclk_decon_tv_eclk", 400 * 1000000);
+
+	exynos_set_parent("sclk_decon_tv_eclk_disp", "dout_sclk_decon_tv_eclk");
+	exynos_set_parent("mout_sclk_decon_tv_eclk_user", "sclk_decon_tv_eclk_disp");
+	exynos_set_parent("mout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_user");
+	exynos_set_parent("dout_sclk_decon_tv_eclk_disp", "mout_sclk_decon_tv_eclk");
+
+	exynos_set_rate("dout_sclk_decon_tv_eclk_disp", 400 * 1000000);
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -434,4 +457,6 @@ void __init exynos5430_clock_init(void)
 	jpeg_init_clock();
 	cpif_init_clock();
 	crypto_init_clock();
+	pwm_init_clock();
+	decon_tv_init_clock();
 }
