@@ -1455,6 +1455,13 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
 		present = (mci_readl(slot->host, CDETECT) & (1 << slot->id))
 			== 0 ? 1 : 0;
 
+	if (gpio_is_valid(brd->cd_gpio)) {
+		if (!gpio_get_value(brd->cd_gpio))
+			present = 1;
+		else
+			present = 0;
+	}
+
 	if (present)
 		dev_dbg(&mmc->class_dev, "card is present\n");
 	else
@@ -3223,6 +3230,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int idx, ret;
 	u32 clock_frequency;
+	int ext_cd_irq = 0;
 
 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
@@ -3317,6 +3325,26 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 				&pdata->cd_type))
 		pdata->cd_type = DW_MCI_CD_PERMANENT;
 
+
+	if (of_find_property(np, "supports-sdr104-mode", NULL))
+		pdata->caps |= MMC_CAP_UHS_SDR104;
+
+	pdata->cd_gpio = of_get_named_gpio(np, "cd-gpio", 0);
+
+	if (gpio_is_valid(pdata->cd_gpio) &&
+			!gpio_request(pdata->cd_gpio, "DWMCI_EXT_CD")) {
+		ext_cd_irq = gpio_to_irq(pdata->cd_gpio);
+		if (ext_cd_irq &&
+				devm_request_irq(host->dev, ext_cd_irq,
+					dw_mci_detect_interrupt,
+					IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
+					"tflash_det", host) == 0) {
+			dev_warn(host->dev, "success to request irq for card detect.\n");
+			enable_irq_wake(ext_cd_irq);
+		} else
+			dev_warn(host->dev, "cannot request irq for card detect.\n");
+
+	}
 
 	return pdata;
 }

@@ -399,6 +399,8 @@ struct dw_mci_board {
 	struct dw_mci_mon_table *tp_mon_tbl;
 	unsigned int sw_timeout;
 	bool use_gate_clock;
+
+	int cd_gpio;
 };
 
 #endif /* LINUX_MMC_DW_MMC_H */
