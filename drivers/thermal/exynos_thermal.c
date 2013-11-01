@@ -139,9 +139,11 @@ static struct cpumask mp_cluster_cpus[CA_END];
 /* Rising, Falling interrupt bit number*/
 #define RISE_LEVEL1_SHIFT	4
 #define RISE_LEVEL2_SHIFT	8
+#define RISE_LEVEL3_SHIFT	12
 #define FALL_LEVEL0_SHIFT	16
 #define FALL_LEVEL1_SHIFT	20
 #define FALL_LEVEL2_SHIFT	24
+#define FALL_LEVEL3_SHIFT	28
 
 #define GET_ZONE(trip) (trip + 2)
 #define GET_TRIP(zone) (zone - 2)
@@ -922,9 +924,11 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	if (on) {
 		con |= (EXYNOS_TMU_CORE_ON | EXYNOS_THERM_TRIP_EN);
 		interrupt_en =
+			pdata->trigger_level3_en << FALL_LEVEL3_SHIFT |
 			pdata->trigger_level2_en << FALL_LEVEL2_SHIFT |
 			pdata->trigger_level1_en << FALL_LEVEL1_SHIFT |
 			pdata->trigger_level0_en << FALL_LEVEL0_SHIFT |
+			pdata->trigger_level3_en << RISE_LEVEL3_SHIFT |
 			pdata->trigger_level2_en << RISE_LEVEL2_SHIFT |
 			pdata->trigger_level1_en << RISE_LEVEL1_SHIFT |
 			pdata->trigger_level0_en;
@@ -940,6 +944,7 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
 	pr_debug("[TMU]reg_con[%d] = 0x%x\n", id, con);
+	pr_debug("[TMU]reg_inten[%d] = 0x%x\n", id, interrupt_en);
 
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
@@ -980,6 +985,8 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
+
+	pr_debug("[TMU] CPU = %d, GPU = %d\n", max, gpu_temp);
 	return max;
 }
 
@@ -1156,23 +1163,21 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.threshold_falling = 2,
 	.trigger_levels[0] = 85,
 	.trigger_levels[1] = 90,
-	.trigger_levels[2] = 95,
-	.trigger_levels[3] = 100,
-	.trigger_levels[4] = 110,
+	.trigger_levels[2] = 100,
+	.trigger_levels[3] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
-	.trigger_level4_en = 1,
 	.gain = 8,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 55,
 	.freq_tab[0] = {
-		.freq_clip_max = 1000 * 1000,
+		.freq_clip_max = 1000 * 1000,	/* max frequency of Eagle is 1.0Ghz temporarily. */
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1400 * 1000,
+		.freq_clip_max_kfc = 1200 * 1000,
 #endif
 		.temp_level = 85,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1181,9 +1186,9 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #endif
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 900 * 1000,
+		.freq_clip_max = 1000 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1300 * 1000,
+		.freq_clip_max_kfc = 1000 * 1000,
 #endif
 		.temp_level = 90,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1194,7 +1199,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.freq_tab[2] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1200 * 1000,
+		.freq_clip_max_kfc = 800 * 1000,
 #endif
 		.temp_level = 95,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1203,9 +1208,9 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #endif
 	},
 	.freq_tab[3] = {
-		.freq_clip_max = 700 * 1000,
+		.freq_clip_max = 700 * 1000,	/* eagle need to be hotplugged-out */
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1100 * 1000,
+		.freq_clip_max_kfc = 1200 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1401,13 +1406,12 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	(&exynos_sensor_conf)->private_data = data;
 	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
 			pdata->trigger_level1_en + pdata->trigger_level2_en +
-			pdata->trigger_level3_en + pdata->trigger_level4_en;
+			pdata->trigger_level3_en;
 
 	trigger_level_en[0] = pdata->trigger_level0_en;
 	trigger_level_en[1] = pdata->trigger_level1_en;
 	trigger_level_en[2] = pdata->trigger_level2_en;
 	trigger_level_en[3] = pdata->trigger_level3_en;
-	trigger_level_en[4] = pdata->trigger_level4_en;
 
 	for (i = 0; i < TRIP_EN_COUNT; i++) {
 		if (trigger_level_en[i]) {

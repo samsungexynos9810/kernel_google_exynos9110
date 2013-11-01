@@ -465,6 +465,20 @@ int __init exynos5430_pmu_init(void)
 	tmp &= ~USE_RETENTION;
 	__raw_writel(tmp, EXYNOS_L2_OPTION(1));
 
+	/*
+	 * Set PSHOLD port for output high
+	 */
+	tmp = __raw_readl(EXYNOS_PS_HOLD_CONTROL);
+	tmp |= EXYNOS_PS_HOLD_OUTPUT_HIGH;
+	__raw_writel(tmp, EXYNOS_PS_HOLD_CONTROL);
+
+	/*
+	 * Enable signal for PSHOLD port
+	 */
+	tmp = __raw_readl(EXYNOS_PS_HOLD_CONTROL);
+	tmp |= EXYNOS_PS_HOLD_EN;
+	__raw_writel(tmp, EXYNOS_PS_HOLD_CONTROL);
+
 	exynos_pmu_config = exynos5430_pmu_config;
 	exynos_cpu.power_up = exynos5430_secondary_up;
 	exynos_cpu.power_state = exynos5430_cpu_state;
