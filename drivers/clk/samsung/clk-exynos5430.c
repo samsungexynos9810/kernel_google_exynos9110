@@ -3130,10 +3130,6 @@ void __init exynos5430_clk_init(struct device_node *np)
 	samsung_clk_register_gate(exynos5430_gate_clks,
 			ARRAY_SIZE(exynos5430_gate_clks));
 
-	/* Unmask cmu register */
-	__raw_writel(0x01111111, EXYNOS_CLKREG_TOP(0x308));
-	__raw_writel(0x11111, EXYNOS_CLKREG_TOP(0x30c));
-
 	exynos5430_clock_init();
 	pr_info("Exynos5430: clock setup completed\n");
 }
