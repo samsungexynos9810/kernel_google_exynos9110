@@ -602,11 +602,27 @@ static s8 exynos_dwmci_extra_tuning(u8 map)
 static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 {
 	unsigned int i, testbits;
+	u8 divratio;
 
 	/* replicate the map so "arithimetic shift right" shifts in
 	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
 	 */
 	testbits = map | (map << 8);
+
+	divratio = (mci_readl(host, CLKSEL) >> 24) & 0x7;
+
+	if (divratio == 1) {
+		map = map & (map >> 4);
+		goto median3;
+	}
+
+/* Middle is bit 3 */
+#define SEVENBITS 0x7f
+
+	for (i = 3; i < (8 + 3); i++, testbits >>= 1) {
+		if ((testbits & SEVENBITS) == SEVENBITS)
+			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+	}
 
 /* Middle is bit 2. */
 #define FIVEBITS 0x1f
@@ -616,6 +632,7 @@ static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
 	}
 
+median3:
 /* Middle is bit 1. */
 #define THREEBITS 0x7
 
