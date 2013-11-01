@@ -21,6 +21,7 @@
 #include <linux/exynos_iovmm.h>
 
 #include "decon_display_driver.h"
+#include "decon_debug.h"
 #ifdef CONFIG_SOC_EXYNOS5430
 #include "decon_fb.h"
 #include "decon_dt.h"
