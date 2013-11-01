@@ -1225,6 +1225,7 @@ struct mxr_layer *mxr_base_layer_create(struct mxr_device *mdev,
 
 	video_set_drvdata(&layer->vfd, layer);
 	layer->vfd.lock = &layer->mutex;
+	layer->vfd.vfl_dir = VFL_DIR_TX;
 
 	layer->vb_queue = (struct vb2_queue) {
 		.name = kstrdup(name, GFP_KERNEL),
