@@ -458,42 +458,42 @@ int parse_display_driver_dt_exynos(struct platform_device *pdev,
 
 void dump_s3c_fb_variant(struct s3c_fb_variant *p_fb_variant)
 {
-	pr_err("[INFO] is_2443:1: 0x%0X\n", p_fb_variant->is_2443);
-	pr_err("[INFO] nr_windows: 0x%0X\n", p_fb_variant->nr_windows);
-	pr_err("[INFO] vidtcon: 0x%0X\n", p_fb_variant->vidtcon);
-	pr_err("[INFO] wincon: 0x%0X\n", p_fb_variant->wincon);
-	pr_err("[INFO] winmap: 0x%0X\n", p_fb_variant->winmap);
-	pr_err("[INFO] keycon: 0x%0X\n", p_fb_variant->keycon);
-	pr_err("[INFO] buf_start: 0x%0X\n", p_fb_variant->buf_start);
-	pr_err("[INFO] buf_end: 0x%0X\n", p_fb_variant->buf_end);
-	pr_err("[INFO] buf_size: 0x%0X\n", p_fb_variant->buf_size);
-	pr_err("[INFO] osd: 0x%0X\n", p_fb_variant->osd);
-	pr_err("[INFO] osd_stride: 0x%0X\n", p_fb_variant->osd_stride);
-	pr_err("[INFO] palette[0]: 0x%0X\n", p_fb_variant->palette[0]);
-	pr_err("[INFO] palette[1]: 0x%0X\n", p_fb_variant->palette[1]);
-	pr_err("[INFO] palette[2]: 0x%0X\n", p_fb_variant->palette[2]);
-	pr_err("[INFO] palette[3]: 0x%0X\n", p_fb_variant->palette[3]);
-	pr_err("[INFO] palette[4]: 0x%0X\n", p_fb_variant->palette[4]);
+	pr_debug("[INFO] is_2443:1: 0x%0X\n", p_fb_variant->is_2443);
+	pr_debug("[INFO] nr_windows: 0x%0X\n", p_fb_variant->nr_windows);
+	pr_debug("[INFO] vidtcon: 0x%0X\n", p_fb_variant->vidtcon);
+	pr_debug("[INFO] wincon: 0x%0X\n", p_fb_variant->wincon);
+	pr_debug("[INFO] winmap: 0x%0X\n", p_fb_variant->winmap);
+	pr_debug("[INFO] keycon: 0x%0X\n", p_fb_variant->keycon);
+	pr_debug("[INFO] buf_start: 0x%0X\n", p_fb_variant->buf_start);
+	pr_debug("[INFO] buf_end: 0x%0X\n", p_fb_variant->buf_end);
+	pr_debug("[INFO] buf_size: 0x%0X\n", p_fb_variant->buf_size);
+	pr_debug("[INFO] osd: 0x%0X\n", p_fb_variant->osd);
+	pr_debug("[INFO] osd_stride: 0x%0X\n", p_fb_variant->osd_stride);
+	pr_debug("[INFO] palette[0]: 0x%0X\n", p_fb_variant->palette[0]);
+	pr_debug("[INFO] palette[1]: 0x%0X\n", p_fb_variant->palette[1]);
+	pr_debug("[INFO] palette[2]: 0x%0X\n", p_fb_variant->palette[2]);
+	pr_debug("[INFO] palette[3]: 0x%0X\n", p_fb_variant->palette[3]);
+	pr_debug("[INFO] palette[4]: 0x%0X\n", p_fb_variant->palette[4]);
 
-	pr_err("[INFO] has_prtcon:1: 0x%0X\n", p_fb_variant->has_prtcon);
-	pr_err("[INFO] has_shadowcon:1: 0x%0X\n", p_fb_variant->has_shadowcon);
-	pr_err("[INFO] has_blendcon:1: 0x%0X\n", p_fb_variant->has_blendcon);
-	pr_err("[INFO] has_alphacon:1: 0x%0X\n", p_fb_variant->has_alphacon);
-	pr_err("[INFO] has_clksel:1: 0x%0X\n", p_fb_variant->has_clksel);
-	pr_err("[INFO] has_fixvclk:1: 0x%0X\n", p_fb_variant->has_fixvclk);
+	pr_debug("[INFO] has_prtcon:1: 0x%0X\n", p_fb_variant->has_prtcon);
+	pr_debug("[INFO] has_shadowcon:1: 0x%0X\n", p_fb_variant->has_shadowcon);
+	pr_debug("[INFO] has_blendcon:1: 0x%0X\n", p_fb_variant->has_blendcon);
+	pr_debug("[INFO] has_alphacon:1: 0x%0X\n", p_fb_variant->has_alphacon);
+	pr_debug("[INFO] has_clksel:1: 0x%0X\n", p_fb_variant->has_clksel);
+	pr_debug("[INFO] has_fixvclk:1: 0x%0X\n", p_fb_variant->has_fixvclk);
 };
 
 void dump_s3c_fb_win_variant(struct s3c_fb_win_variant *p_fb_win_variant)
 {
-	pr_err("[INFO] has_osd_c:1: 0x%0X\n", p_fb_win_variant->has_osd_c);
-	pr_err("[INFO] has_osd_d:1: 0x%0X\n", p_fb_win_variant->has_osd_d);
-	pr_err("[INFO] has_osd_alpha:1: 0x%0X\n",
+	pr_debug("[INFO] has_osd_c:1: 0x%0X\n", p_fb_win_variant->has_osd_c);
+	pr_debug("[INFO] has_osd_d:1: 0x%0X\n", p_fb_win_variant->has_osd_d);
+	pr_debug("[INFO] has_osd_alpha:1: 0x%0X\n",
 		p_fb_win_variant->has_osd_alpha);
-	pr_err("[INFO] palette_16bpp:1: 0x%0X\n",
+	pr_debug("[INFO] palette_16bpp:1: 0x%0X\n",
 		p_fb_win_variant->palette_16bpp);
-	pr_err("[INFO] osd_size_off: 0x%0X\n", p_fb_win_variant->osd_size_off);
-	pr_err("[INFO] palette_sz: 0x%0X\n", p_fb_win_variant->palette_sz);
-	pr_err("[INFO] valid_bpp: 0x%0X\n", p_fb_win_variant->valid_bpp);
+	pr_debug("[INFO] osd_size_off: 0x%0X\n", p_fb_win_variant->osd_size_off);
+	pr_debug("[INFO] palette_sz: 0x%0X\n", p_fb_win_variant->palette_sz);
+	pr_debug("[INFO] valid_bpp: 0x%0X\n", p_fb_win_variant->valid_bpp);
 }
 
 void dump_s3c_fb_win_variants(struct s3c_fb_win_variant p_fb_win_variant[],
@@ -501,7 +501,7 @@ void dump_s3c_fb_win_variants(struct s3c_fb_win_variant p_fb_win_variant[],
 {
 	int i;
 	for (i = 0; i < num; ++i) {
-		pr_err("[INFO] -------- %d --------\n", i);
+		pr_debug("[INFO] -------- %d --------\n", i);
 		dump_s3c_fb_win_variant(&g_fb_win_variant[i]);
 	}
 }
