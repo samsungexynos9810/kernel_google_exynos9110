@@ -4209,7 +4209,7 @@ int s3c_fb_suspend(struct device *dev)
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 	int ret = 0;
-	u32 data;
+	u32 vidcon0;
 
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
