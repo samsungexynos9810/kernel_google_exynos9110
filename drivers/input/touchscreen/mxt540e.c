@@ -1110,10 +1110,6 @@ static void report_input_data(struct mxt540e_data *data)
 				data->fingers[i].z, data->fingers[i].w,
 				data->fingers[i].component);
 #else
-			if (data->fingers[i].z == 0)
-				printk(KERN_DEBUG "[TSP][%d] released\n", i);
-			else
-				printk(KERN_DEBUG "[TSP][%d] pressed\n", i);
 #endif
 		}
 
