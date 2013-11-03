@@ -559,6 +559,7 @@ static ssize_t store_en_dvfs(struct device *dev,
 				 struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
+#ifdef ENABLE_DVFS
 	struct fimc_is_core *core =
 		(struct fimc_is_core *)platform_get_drvdata(to_platform_device(dev));
 	struct fimc_is_resourcemgr *resourcemgr;
@@ -579,7 +580,7 @@ static ssize_t store_en_dvfs(struct device *dev,
 	} else {
 		sysfs_debug.en_dvfs = 0;
 		/* update dvfs lever to max */
-		mutex_lock(&resourcemgr->clock.lock);
+		mutex_lock(&resource->dvfs_ctrl.lock);
 		sysfs_debug.en_dvfs = value;
 		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
 			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state)))
@@ -587,9 +588,10 @@ static ssize_t store_en_dvfs(struct device *dev,
 		}
 		fimc_is_dvfs_init(resourcemgr);
 		resourcemgr->dvfs_ctrl.static_ctrl->cur_scenario_id = FIMC_IS_SN_MAX;
-		mutex_unlock(&resourcemgr->clock.lock);
+		mutex_unlock(&resourcemgr>dvfs_ctrl.lock);
 	}
 out:
+#endif
 	return count;
 }
 

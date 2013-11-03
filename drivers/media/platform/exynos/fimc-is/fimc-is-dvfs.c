@@ -261,6 +261,9 @@ int fimc_is_dvfs_init(struct fimc_is_resourcemgr *resourcemgr)
 	resourcemgr->dvfs_ctrl.cur_mif_qos = 0;
 	resourcemgr->dvfs_ctrl.cur_i2c_qos = 0;
 
+	/* init spin_lock for clock gating */
+	mutex_init(&resourcemgr->dvfs_ctrl.lock);
+
 	if (!(resourcemgr->dvfs_ctrl.static_ctrl))
 		resourcemgr->dvfs_ctrl.static_ctrl =
 			kzalloc(sizeof(struct fimc_is_dvfs_scenario_ctrl), GFP_KERNEL);

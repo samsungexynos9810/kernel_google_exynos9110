@@ -1696,7 +1696,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 #endif
 
 #ifdef ENABLE_DVFS
-	mutex_lock(&resourcemgr->clock.lock);
+	mutex_lock(&resourcemgr->dvfs_ctrl.lock);
 	if ((!pm_qos_request_active(&device->user_qos)) &&
 			(sysfs_debug.en_dvfs)) {
 		/* try to find dynamic scenario to apply */
@@ -1718,7 +1718,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 			fimc_is_set_dvfs(device, static_ctrl->cur_scenario_id);
 		}
 	}
-	mutex_unlock(&resourcemgr->clock.lock);
+	mutex_unlock(&resourcemgr->dvfs_ctrl.lock);
 #endif
 
 	PROGRAM_COUNT(6);
