@@ -331,7 +331,7 @@ endchoice
 config ACE_USE_CCI
 	bool "Use Cache Coherent Interface"
 	depends on CRYPTO_S5P_DEV_ACE && ACE_USE_SLIMSSS_VER_1
-	default y
+	default n
 
 config ACE_BC
 	bool "Support for AES block cipher (ECB, CBC, CTR, XTS mode)"
