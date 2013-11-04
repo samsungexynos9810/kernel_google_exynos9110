@@ -14,7 +14,7 @@
 #include <linux/clk-provider.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
-#include <mach/regs-clock-exynos5430_evt0.h>
+#include <mach/regs-clock-exynos5430.h>
 
 #include "clk.h"
 #include "clk-pll.h"
