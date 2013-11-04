@@ -732,24 +732,6 @@ static int exynos_cpufreq_cpu_init(struct cpufreq_policy *policy)
 		cpumask_copy(policy->related_cpus, &cluster_cpus[CA7]);
 	}
 
-	if (boot_cluster == CA7) {
-		if (policy->cpu >= NR_CA7) {
-#if defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE)
-			policy->governor = &cpufreq_gov_interactive_eagle;
-#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND)
-			policy->governor = &cpufreq_gov_ondemand_eagle;
-#endif
-		}
-	} else {
-		if (policy->cpu < NR_CA15) {
-#if defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE)
-			policy->governor = &cpufreq_gov_interactive_eagle;
-#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND)
-			policy->governor = &cpufreq_gov_ondemand_eagle;
-#endif
-		}
-	}
-
 	return cpufreq_frequency_table_cpuinfo(policy, exynos_info[cur]->freq_table);
 }
 
@@ -764,6 +746,7 @@ static struct cpufreq_driver exynos_driver = {
 	.suspend	= exynos_cpufreq_suspend,
 	.resume		= exynos_cpufreq_resume,
 #endif
+	.have_governor_per_policy = true,
 };
 
 /************************** sysfs interface ************************/
