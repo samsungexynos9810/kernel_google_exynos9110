@@ -865,6 +865,11 @@ static int hdmi_probe(struct platform_device *pdev)
 	INIT_WORK(&hdmi_dev->hpd_work, hdmi_hpd_work);
 	INIT_DELAYED_WORK(&hdmi_dev->hpd_work_ext, hdmi_hpd_work_ext);
 
+	/* setting the clocks */
+	ret = hdmi_resources_init(hdmi_dev);
+	if (ret)
+		goto fail_switch;
+
 	/* setting the GPIO */
 	if (of_get_property(dev->of_node, "gpios", NULL) != NULL) {
 		hdmi_dev->res.gpio = of_get_gpio(dev->of_node, 0);
@@ -898,11 +903,6 @@ static int hdmi_probe(struct platform_device *pdev)
 		goto fail_gpio;
 	}
 #endif
-
-	/* setting the clocks */
-	ret = hdmi_resources_init(hdmi_dev);
-	if (ret)
-		goto fail_switch;
 
 	mutex_init(&hdmi_dev->mutex);
 
