@@ -26,18 +26,6 @@ static struct bus_type core_subsys = {
 
 unsigned int (*cpu_state)(unsigned int cpu_id);
 
-#if defined(CONFIG_SOC_EXYNOS5430)
-extern unsigned int exynos5430_cpu_state(unsigned int cpu_id);
-#else
-unsigned int exynos5430_cpu_state(unsigned int cpu_id) { return 0; }
-#endif
-
-#if defined(CONFIG_SOC_EXYNOS5422)
-extern unsigned int exynos5422_cpu_state(unsigned int cpu_id);
-#else
-unsigned int exynos5422_cpu_state(unsigned int cpu_id) { return 0; }
-#endif
-
 static ssize_t exynos5_core_status_show(struct kobject *kobj,
 			struct kobj_attribute *attr, char *buf)
 {
@@ -45,9 +33,8 @@ static ssize_t exynos5_core_status_show(struct kobject *kobj,
 	int cpu;
 
 	for_each_possible_cpu(cpu) {
-		unsigned int v = cpu_state(cpu);
-		n += scnprintf(buf + n, 11, "cpu %d : %d\n", cpu,
-				v == EXYNOS_CORE_PWR_EN ? 1 : 0);
+		unsigned int v = exynos_cpu.power_state(cpu);
+		n += scnprintf(buf + n, 11, "cpu %d : %d\n", cpu, v);
 	}
 
 	return n;
@@ -77,12 +64,6 @@ static int __init exynos5_core_sysfs_init(void)
 	ret = subsys_system_register(&core_subsys, exynos5_core_sysfs_groups);
 	if (ret)
 		pr_err("Fail to register exynos5 core subsys\n");
-
-	if (of_machine_is_compatible("samsung,exynos5430"))
-		cpu_state = exynos5430_cpu_state;
-
-	if (of_machine_is_compatible("samsung,exynos5422"))
-		cpu_state = exynos5422_cpu_state;
 
 	return ret;
 }
