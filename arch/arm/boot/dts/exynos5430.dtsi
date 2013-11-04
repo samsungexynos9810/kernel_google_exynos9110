@@ -952,7 +952,7 @@
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
 		samsung,power-domain = <&pd_mfc0>;
 		status = "ok";
-		ip_ver = <8>;
+		ip_ver = <9>;
 		clock_rate = <333000000>;
 		min_rate = <84000>;
 		num_qos_steps = <4>;
@@ -1002,7 +1002,7 @@
 		iommu = <&sysmmu_mfc1_0>, <&sysmmu_mfc1_1>;
 		samsung,power-domain = <&pd_mfc1>;
 		status = "ok";
-		ip_ver = <8>;
+		ip_ver = <9>;
 		clock_rate = <333000000>;
 		min_rate = <84000>;
 		num_qos_steps = <4>;
