@@ -84,47 +84,25 @@ struct idmac_desc {
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
 
-static int dw_mci_ciu_clk_en(struct dw_mci *host)
+static int dw_mci_clk_en(struct dw_mci *host)
 {
 	int ret = 1;
 
-	if (!atomic_read(&host->ciu_clk_cnt)) {
-		ret = clk_prepare_enable(host->ciu_clk);
-		atomic_inc_return(&host->ciu_clk_cnt);
+	if (!atomic_read(&host->gate_clk_cnt)) {
+		ret = clk_prepare_enable(host->gate_clk);
+		atomic_inc_return(&host->gate_clk_cnt);
 		if (ret)
-			dev_err(host->dev, "failed to enable ciu clock\n");
+			dev_err(host->dev, "failed to enable clock\n");
 	}
 
 	return ret;
 }
 
-static void dw_mci_ciu_clk_dis(struct dw_mci *host)
+static void dw_mci_clk_dis(struct dw_mci *host)
 {
-	if (atomic_read(&host->ciu_clk_cnt)) {
-		clk_disable_unprepare(host->ciu_clk);
-		atomic_dec_return(&host->ciu_clk_cnt);
-	}
-}
-
-static int dw_mci_biu_clk_en(struct dw_mci *host)
-{
-	int ret = 1;
-
-	if (!atomic_read(&host->biu_clk_cnt)) {
-		ret = clk_prepare_enable(host->biu_clk);
-		atomic_inc_return(&host->biu_clk_cnt);
-		if (ret)
-			dev_err(host->dev, "failed to enable biu clock\n");
-	}
-
-	return ret;
-}
-
-static void dw_mci_biu_clk_dis(struct dw_mci *host)
-{
-	if (atomic_read(&host->biu_clk_cnt)) {
-		clk_disable_unprepare(host->biu_clk);
-		atomic_dec_return(&host->biu_clk_cnt);
+	if (atomic_read(&host->gate_clk_cnt)) {
+		clk_disable_unprepare(host->gate_clk);
+		atomic_dec_return(&host->gate_clk_cnt);
 	}
 }
 
@@ -361,8 +339,9 @@ void dw_mci_reg_dump(struct dw_mci *host)
 	dev_err(host->dev, ": pending_events:  0x%08lx\n", host->pending_events);
 	dev_err(host->dev, ": completed_events:0x%08lx\n", host->completed_events);
 	dev_err(host->dev, ": state:           %d\n", host->state);
-	dev_err(host->dev, ": ciu-clk:            %s\n",
-			      atomic_read(&host->ciu_clk_cnt) ? "enable" : "disable");
+	dev_err(host->dev, ": gate-clk:            %s\n",
+			      atomic_read(&host->gate_clk_cnt) ?
+			      "enable" : "disable");
 	dev_err(host->dev, ": ===========================================\n");
 }
 
@@ -3229,35 +3208,34 @@ int dw_mci_probe(struct dw_mci *host)
 	}
 
 	host->biu_clk = devm_clk_get(host->dev, "biu");
-	if (IS_ERR(host->biu_clk)) {
+	if (IS_ERR(host->biu_clk))
 		dev_dbg(host->dev, "biu clock not available\n");
-	} else {
-		ret = dw_mci_biu_clk_en(host);
-		if (ret) {
-			dev_err(host->dev, "failed to enable biu clock\n");
-			return ret;
-		}
-	}
 
 	host->ciu_clk = devm_clk_get(host->dev, "gate_ciu");
 	if (IS_ERR(host->ciu_clk)) {
 		dev_dbg(host->dev, "ciu clock not available\n");
 		host->bus_hz = host->pdata->bus_hz;
 	} else {
-		ret = dw_mci_ciu_clk_en(host);
-		if (ret) {
-			dev_err(host->dev, "failed to enable ciu clock\n");
-			goto err_clk_biu;
-		}
+		host->gate_clk = devm_clk_get(host->dev, "gate_mmc");
+		if (IS_ERR(host->gate_clk))
+			dev_dbg(host->dev, "clock for gating not available\n");
+		else {
+			ret = dw_mci_clk_en(host);
+			if (ret) {
+				dev_err(host->dev, "failed to enable clock\n");
+				goto err_clk_biu;
+			}
 
-		if (host->pdata->bus_hz) {
-			ret = clk_set_rate(host->ciu_clk, host->pdata->bus_hz);
-			if (ret)
-				dev_warn(host->dev,
-					 "Unable to set bus rate to %ul\n",
-					 host->pdata->bus_hz);
+			if (host->pdata->bus_hz) {
+				ret = clk_set_rate(host->ciu_clk,
+						host->pdata->bus_hz);
+				if (ret)
+					dev_warn(host->dev,
+						 "Unable to set bus rate to %ul\n",
+						 host->pdata->bus_hz);
+			}
+			host->bus_hz = clk_get_rate(host->ciu_clk);
 		}
-		host->bus_hz = clk_get_rate(host->ciu_clk);
 	}
 
 	if (drv_data && drv_data->setup_clock) {
@@ -3497,12 +3475,9 @@ err_dmaunmap:
 		regulator_disable(host->vmmc);
 
 err_clk_ciu:
-	if (!IS_ERR(host->ciu_clk))
-		dw_mci_ciu_clk_dis(host);
-
 err_clk_biu:
-	if (!IS_ERR(host->biu_clk))
-		dw_mci_biu_clk_dis(host);
+	if (!IS_ERR(host->gate_clk))
+		dw_mci_clk_dis(host);
 
 	return ret;
 }
@@ -3549,11 +3524,8 @@ void dw_mci_remove(struct dw_mci *host)
 	if (host->vmmc)
 		regulator_disable(host->vmmc);
 
-	if (!IS_ERR(host->ciu_clk))
-		dw_mci_ciu_clk_dis(host);
-
-	if (!IS_ERR(host->biu_clk))
-		dw_mci_biu_clk_dis(host);
+	if (!IS_ERR(host->gate_clk))
+		dw_mci_clk_dis(host);
 }
 EXPORT_SYMBOL(dw_mci_remove);
 

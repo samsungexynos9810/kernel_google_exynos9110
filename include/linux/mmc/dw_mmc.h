@@ -213,8 +213,8 @@ struct dw_mci {
 	void			*priv;
 	struct clk		*biu_clk;
 	struct clk		*ciu_clk;
-	atomic_t		biu_clk_cnt;
-	atomic_t		ciu_clk_cnt;
+	struct clk		*gate_clk;
+	atomic_t		gate_clk_cnt;
 	spinlock_t		ciu_clk_lock;
 	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
 
