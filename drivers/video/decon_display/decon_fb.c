@@ -1975,8 +1975,8 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	}
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		regs->otf_state[i] = win_config[i].otf_state;
-		if (regs->otf_state[i] == DMA) {
+		regs->otf_state[i] = win_config[i].state;
+		if (WIN_CONFIG_DMA(i)) {
 			sfb->windows[i]->prev_fix =
 				sfb->windows[i]->fbinfo->fix;
 			sfb->windows[i]->prev_var =
@@ -1991,7 +1991,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		bool enabled = 0;
 		u32 color_map = WINxMAP_MAP | WINxMAP_MAP_COLOUR(0);
 
-		if (regs->otf_state[i] == DMA) {
+		if (WIN_CONFIG_DMA(i)) {
 			switch (config->state) {
 			case S3C_FB_WIN_STATE_DISABLED:
 				break;
@@ -2061,7 +2061,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 
 	if (ret) {
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
-			if (regs->otf_state[i] == DMA) {
+			if (WIN_CONFIG_DMA(i)) {
 				sfb->windows[i]->fbinfo->fix =
 					sfb->windows[i]->prev_fix;
 				sfb->windows[i]->fbinfo->var =
@@ -2234,7 +2234,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		shadow_protect_win(sfb->windows[i], 1);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (regs->otf_state[i] == DMA) {
+		if (WIN_CONFIG_DMA(i)) {
 			set_reg_data(sfb, i, regs);
 			set_bit(S3C_FB_READY_TO_LOCAL,
 					&sfb->windows[i]->state);
@@ -2249,7 +2249,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				set_bit(S3C_FB_STOP_DMA,
 					&sfb->windows[i]->state);
 			}
-		} else if (regs->otf_state[i] == OTF) {
+		} else {
 			set_reg_data(sfb, i, regs);
 			if (test_bit(S3C_FB_READY_TO_LOCAL,
 					&sfb->windows[i]->state)) {
@@ -2334,7 +2334,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 			return;
 		}
 #endif
-		if (regs->otf_state[i] == DMA) {
+		if (WIN_CONFIG_DMA(i)) {
 			old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
 			if (regs->dma_buf_data[i].fence)
 				s3c_fd_fence_wait(sfb,
@@ -2359,7 +2359,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		wait_for_vsync = false;
 
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
-			if (regs->otf_state[i] == DMA) {
+			if (WIN_CONFIG_DMA(i)) {
 				u32 new_start = regs->vidw_buf_start[i];
 				u32 shadow_start = readl(sfb->regs +
 						SHD_VIDW_BUF_START(i));
@@ -2373,7 +2373,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	if (wait_for_vsync) {
 		pr_err("%s: failed to update registers\n", __func__);
 		for (i = 0; i < sfb->variant.nr_windows; i++)
-			if (regs->otf_state[i] == DMA)
+			if (WIN_CONFIG_DMA(i))
 				pr_err("window %d new value %08x register value %08x\n",
 				i, regs->vidw_buf_start[i],
 				readl(sfb->regs + SHD_VIDW_BUF_START(i)));
@@ -2385,7 +2385,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	while (readl(sfb->regs + DECON_UPDATE) & 0x1);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
-		if (regs->otf_state[i] == DMA)
+		if (WIN_CONFIG_DMA(i))
 			s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
 
 #if defined(CONFIG_DECON_DEVFREQ)
