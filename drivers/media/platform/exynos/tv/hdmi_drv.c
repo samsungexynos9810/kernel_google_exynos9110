@@ -633,7 +633,7 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
 			dev_err(dev, "failed to get clock 'mout_hdmi'\n");
 			goto fail;
 		}
-		clk_set_parent(res->mout_hdmi, res->sclk_hdmiphy);
+		clk_set_parent(res->sclk_hdmi, res->sclk_hdmiphy);
 	} else {
 		clk_set_parent(res->sclk_hdmi, res->sclk_hdmiphy);
 	}
