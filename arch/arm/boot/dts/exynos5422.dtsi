@@ -30,6 +30,9 @@
 		mshc1 = &dwmmc_1;
 		mshc2 = &dwmmc_2;
 		mfc0 = &mfc_0;
+		gsc0 = &gsc_0;
+		gsc1 = &gsc_1;
+		mdev0 = &mdev_0;
 	};
 
 	cpus {
@@ -884,5 +887,33 @@
 			"pwm-tin0", "pwm-tin1",
 			"pwm-tin2", "pwm-tin3";
 		status = "ok";
+	};
+
+	mdev_0: mdev_output {
+		compatible = "samsung,exynos5-mdev";
+	};
+
+	gsc_0: gsc@13E00000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13E00000 0x1000>;
+		interrupts = <0 85 0>;
+		clocks = <&clock 565>;
+		clock-names = "gate_gscl";
+		ip_ver = <1>;
+		mif_min = <160000>;
+		int_min = <111000>;
+		iommu = <&sysmmu_gscl0>;
+	};
+
+	gsc_1: gsc@0x13E10000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13E10000 0x1000>;
+		interrupts = <0 86 0>;
+		clocks = <&clock 566>;
+		clock-names = "gate_gscl";
+		ip_ver = <1>;
+		mif_min = <160000>;
+		int_min = <111000>;
+		iommu = <&sysmmu_gscl1>;
 	};
 };
