@@ -466,6 +466,10 @@ int __init exynos5430_pmu_init(void)
 	exynos_pmu_config = exynos5430_pmu_config;
 	exynos_cpu.power_up = exynos5430_secondary_up;
 	exynos_cpu.power_state = exynos5430_cpu_state;
+	exynos_cpu.power_down = exynos5430_cpu_down;
+	exynos_cpu.cluster_down = exynos5430_l2_down;
+	exynos_cpu.cluster_state = exynos5430_cluster_state;
+	exynos_cpu.is_last_core = exynos5430_is_last_core;
 
 	if (exynos_pmu_config != NULL)
 		pr_info("EXYNOS5430 PMU Initialize\n");

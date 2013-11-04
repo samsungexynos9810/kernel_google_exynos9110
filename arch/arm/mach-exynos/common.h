@@ -98,6 +98,10 @@ extern void cci_snoop_disable(unsigned int sif);
 struct exynos_cpu_power_ops {
 	void (*power_up)(unsigned int cpu_id);
 	unsigned int (*power_state)(unsigned int cpu_id);
+	void (*power_down)(unsigned int cpu_id);
+	void (*cluster_down)(unsigned int cluster);
+	unsigned int (*cluster_state)(unsigned int cluster);
+	bool (*is_last_core)(unsigned int cpu);
 };
 
 extern struct exynos_cpu_power_ops exynos_cpu;
