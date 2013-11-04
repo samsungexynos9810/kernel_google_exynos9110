@@ -115,11 +115,6 @@ enum HDMI_COLOR_RANGE {
 	HDMI_RGB709_16_235
 };
 
-enum HDMI_PROBE_STATE {
-	HDMI_PROBED,
-	HDMI_PROBING
-};
-
 enum HDMI_AUDIO_CODEC {
 	HDMI_AUDIO_PCM,
 	HDMI_AUDIO_AC3,
@@ -335,8 +330,6 @@ struct hdmi_device {
 	enum HDMI_COLOR_RANGE color_range;
 	/** HDMI is streaming or not */
 	enum HDMI_STREAMING_STATE streaming;
-	/** current probe state of hdmi driver */
-	enum HDMI_PROBE_STATE probe_state;
 	/** current audio codec type */
 	enum HDMI_AUDIO_CODEC audio_codec;
 	/** HDMI output format */
@@ -348,9 +341,6 @@ struct hdmi_device {
 	struct hdcp_info hdcp_info;
 	struct work_struct work;
 	struct workqueue_struct	*hdcp_wq;
-
-	/** delayed work queue for hdmiphy power off */
-	struct delayed_work hdmi_probe_work;
 
 	/* HPD releated */
 	struct work_struct hpd_work;

@@ -491,10 +491,8 @@ static int hdmi_runtime_suspend(struct device *dev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	if (hdev->probe_state == HDMI_PROBING) {
-		hdev->probe_state = HDMI_PROBED;
-		return 0;
-	}
+	/* TODO : Check the PHY power off is implemented at pm_domains
+	 * If not, PHY power off should be applied at here */
 
 	/* HDMI PHY off sequence
 	 * LINK off -> PHY off -> HDMI_PHY_CONTROL disable */
@@ -526,8 +524,8 @@ static int hdmi_runtime_resume(struct device *dev)
 
 	dev_info(dev, "%s\n", __func__);
 
-	if (hdev->probe_state == HDMI_PROBING)
-		return 0;
+	/* TODO : Check the PHY power off is implemented at pm_domains
+	 * If not, PHY power off should be applied at here */
 
 	/* power-on hdmiphy */
 	if (pdata->hdmiphy_enable)
@@ -779,46 +777,6 @@ static void hdmi_hpd_work(struct work_struct *work)
 	hdmi_hpd_changed(hdev, 0);
 }
 
-static void hdmiphy_poweroff_work(struct work_struct *work)
-{
-	struct hdmi_device *hdev = container_of(work, struct hdmi_device,
-						hdmi_probe_work.work);
-	struct platform_device *pdev = to_platform_device(hdev->dev);
-	struct s5p_hdmi_platdata *pdata = hdev->pdata;
-
-	/*
-	 * HDMI PHY power off
-	 * HDMI PHY is on as default configuration
-	 * So, HDMI PHY must be turned off if it's not used
-	 */
-	mutex_lock(&hdev->mutex);
-	if (!is_hdmi_streaming(hdev)) {
-		if (is_ip_ver_5a || is_ip_ver_5s || is_ip_ver_5s2) {
-			hdev->probe_state = HDMI_PROBING;
-#ifdef CONFIG_PM_RUNTIME
-			pm_runtime_get_sync(hdev->dev);
-#else
-			hdmi_runtime_resume(hdev->dev);
-#endif
-			clk_prepare_enable(hdev->res.hdmi);
-			hdmiphy_set_power(hdev, 0);
-			clk_disable_unprepare(hdev->res.hdmi);
-#ifdef CONFIG_PM_RUNTIME
-			pm_runtime_put_sync(hdev->dev);
-#else
-			hdmi_runtime_suspend(hdev->dev);
-#endif
-		} else if (is_ip_ver_5g) {
-			if (pdata->hdmiphy_enable)
-				pdata->hdmiphy_enable(pdev, 1);
-			v4l2_subdev_call(hdev->phy_sd, core, s_power, 0);
-			if (pdata->hdmiphy_enable)
-				pdata->hdmiphy_enable(pdev, 0);
-		}
-	}
-	mutex_unlock(&hdev->mutex);
-}
-
 static int hdmi_probe(struct platform_device *pdev)
 {
 	struct s5p_hdmi_platdata *pdata = NULL;
@@ -905,7 +863,6 @@ static int hdmi_probe(struct platform_device *pdev)
 	}
 
 	INIT_WORK(&hdmi_dev->hpd_work, hdmi_hpd_work);
-	INIT_DELAYED_WORK(&hdmi_dev->hdmi_probe_work, hdmiphy_poweroff_work);
 	INIT_DELAYED_WORK(&hdmi_dev->hpd_work_ext, hdmi_hpd_work_ext);
 
 	/* setting the GPIO */
@@ -1007,10 +964,6 @@ static int hdmi_probe(struct platform_device *pdev)
 		goto fail_clk;
 
 	/* work after booting */
-#if 0
-	queue_delayed_work(system_nrt_wq, &hdmi_dev->hdmi_probe_work,
-			msecs_to_jiffies(1500));
-#endif
 	queue_delayed_work(system_nrt_wq, &hdmi_dev->hpd_work_ext,
 					msecs_to_jiffies(1500));
 
