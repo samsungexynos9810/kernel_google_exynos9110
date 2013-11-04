@@ -302,8 +302,8 @@
 /* S5P_DSIM_MDRESOL */
 #define DSIM_MAIN_STAND_BY		(1 << 31)
 #define DSIM_MAIN_NOT_READY		(0 << 31)
-#define DSIM_MAIN_VRESOL(x)		(((x) & 0x7ff) << 16)
-#define DSIM_MAIN_HRESOL(x)		(((x) & 0X7ff) << 0)
+#define DSIM_MAIN_VRESOL(x)		(((x) & 0xfff) << 16)
+#define DSIM_MAIN_HRESOL(x)		(((x) & 0Xfff) << 0)
 
 /* S5P_DSIM_MVPORCH */
 #define DSIM_CMD_ALLOW_SHIFT		(28)
