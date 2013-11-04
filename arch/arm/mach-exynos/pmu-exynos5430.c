@@ -22,6 +22,8 @@
 #include <asm/smp_plat.h>
 #include <asm/topology.h>
 
+#include "common.h"
+
 #define REG_CPU_STATE_ADDR     (S5P_VA_SYSRAM_NS + 0x28)
 
 static struct exynos_pmu_conf *exynos_pmu_config;
