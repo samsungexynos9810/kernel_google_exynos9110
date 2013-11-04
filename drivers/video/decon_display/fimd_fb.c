@@ -3334,51 +3334,7 @@ int s3c_fb_sysmmu_fault_handler(struct device *dev, const char *mmuname,
 	return 0;
 }
 
-#if 0
-static int s3c_fb_copy_bootloader_fb(struct platform_device *pdev,
-		struct dma_buf *dest_buf)
-{
-	struct resource *res;
-	int ret = 0;
-	size_t i;
-              dispdrv = get_display_driver();
-
-	fbdrv = get_display_drvdata();
-	pd = get_display_platdata();
-
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-	if (!res || !res->start || !resource_size(res)) {
-		dev_warn(&pdev->dev, "failed to find bootloader framebuffer\n");
-		return -ENOENT;
-	}
-
-	ret = dma_buf_begin_cpu_access(dest_buf, 0, resource_size(res),
-			DMA_TO_DEVICE);
-	if (ret < 0) {
-		dev_warn(&pdev->dev, "dma_buf_begin_cpu_access() failed on bootloader framebuffer: %u\n",
-				ret);
-		goto err;
-	}
-	for (i = 0; i < resource_size(res); i += PAGE_SIZE) {
-		void *page = phys_to_page(res->start + i);
-		void *from_virt = kmap(page);
-		void *to_virt = dma_buf_kmap(dest_buf, i / PAGE_SIZE);
-		memcpy(to_virt, from_virt, PAGE_SIZE);
-		kunmap(page);
-		dma_buf_kunmap(dest_buf, i / PAGE_SIZE, to_virt);
-	}
-
-	dma_buf_end_cpu_access(dest_buf, 0, resource_size(res), DMA_TO_DEVICE);
-
-err:
-	if (memblock_free(res->start, resource_size(res)))
-		dev_warn(&pdev->dev, "failed to free bootloader framebuffer memblock\n");
-
-	return ret;
-}
-
-
-static int __devinit s3c_fb_clear_fb(struct s3c_fb *sfb,
+static int s3c_fb_clear_fb(struct s3c_fb *sfb,
 		struct dma_buf *dest_buf, size_t size)
 {
 	size_t i;
@@ -3400,7 +3356,6 @@ static int __devinit s3c_fb_clear_fb(struct s3c_fb *sfb,
 	dma_buf_end_cpu_access(dest_buf, 0, size, DMA_TO_DEVICE);
 	return 0;
 }
-#endif
 #endif
 
 #ifdef CONFIG_DEBUG_FS
@@ -3777,25 +3732,13 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 #ifdef CONFIG_ION_EXYNOS
-#if 0 /*!defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)*/
-	ret = s3c_fb_copy_bootloader_fb(pdev,
-			sfb->windows[default_win]->dma_buf_data.dma_buf);
-	if (ret < 0) {
-		struct s3c_fb_win *win = sfb->windows[default_win];
-		dev_warn(sfb->dev, "couldn't copy bootloader framebuffer into default window; clearing instead\n");
-		s3c_fb_clear_fb(sfb, win->dma_buf_data.dma_buf,
-				PAGE_ALIGN(win->fbinfo->fix.smem_len));
-	}
-#endif
+	s3c_fb_clear_fb(sfb, sfb->windows[default_win]->dma_buf_data.dma_buf,
+		PAGE_ALIGN(sfb->windows[default_win]->fbinfo->fix.smem_len));
 #endif
 
 	sfb->output_on = true;
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
 	s3c_fb_activate_window_dma(sfb, default_win);
-	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(12);
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 0);
 	ret = iovmm_activate(&pdev->dev);
@@ -4191,10 +4134,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
-	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(12);
 
 	sfb->output_on = true;
 
@@ -4352,10 +4291,6 @@ int s3c_fb_resume(struct device *dev)
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
 
-	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(12);
 	sfb->output_on = true;
 
 err:
