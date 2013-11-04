@@ -727,7 +727,6 @@ irqreturn_t hdmi_irq_handler_ext(int irq, void *dev_data)
 
 static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 {
-	struct v4l2_dv_timings timings;
 	int ret;
 
 	if (state == switch_get_state(&hdev->hpd_switch))
@@ -742,7 +741,7 @@ static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 
 		hdev->dvi_mode = !edid_supports_hdmi(hdev);
 		hdev->cur_timings = edid_preferred_preset(hdev);
-		hdev->cur_conf = hdmi_timing2conf(&timings);
+		hdev->cur_conf = hdmi_timing2conf(&hdev->cur_timings);
 	}
 
 	switch_set_state(&hdev->hpd_switch, state);
@@ -755,6 +754,8 @@ static void hdmi_hpd_work_ext(struct work_struct *work)
 	int state = 0;
 	struct hdmi_device *hdev = container_of(work, struct hdmi_device,
 						hpd_work_ext.work);
+	struct hdmi_resources *res = &hdev->res;
+
 	/* TODO: read GPIO */
 #if 0
 	state = s5p_v4l2_hpd_read_gpio();
@@ -764,7 +765,7 @@ static void hdmi_hpd_work_ext(struct work_struct *work)
 		return;
 	}
 #endif
-	state = gpio_get_value(hdev->res.gpio);
+	state = gpio_get_value(res->gpio);
 	/* gpio_free(hdev->res.gpio); */
 	hdmi_hpd_changed(hdev, state);
 }
@@ -878,7 +879,7 @@ static int hdmi_probe(struct platform_device *pdev)
 			ret = -ENODEV;
 			goto fail_vdev;
 		} else {
-			gpio_direction_output(hdmi_dev->res.gpio, 3);
+			gpio_direction_input(hdmi_dev->res.gpio);
 			s5p_v4l2_int_src_ext_hpd(hdmi_dev);
 			dev_info(dev, "success request GPIO for hdmi-hpd\n");
 		}
@@ -895,14 +896,12 @@ static int hdmi_probe(struct platform_device *pdev)
 		dev_info(dev, "success request hdmi-ext irq\n");
 	}
 
-#if 0
 	hdmi_dev->hpd_switch.name = "hdmi";
 	ret = switch_dev_register(&hdmi_dev->hpd_switch);
 	if (ret) {
 		dev_err(dev, "request switch class failed.\n");
 		goto fail_gpio;
 	}
-#endif
 
 	mutex_init(&hdmi_dev->mutex);
 

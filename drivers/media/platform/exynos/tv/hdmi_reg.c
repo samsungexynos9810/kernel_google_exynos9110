@@ -1801,8 +1801,7 @@ int hdmi_conf_apply(struct hdmi_device *hdmi_dev)
 	struct device *dev = hdmi_dev->dev;
 	const struct hdmi_timings *conf = hdmi_dev->cur_conf;
 	struct v4l2_dv_timings timings;
-	struct platform_device *pdev = to_platform_device(dev);
-	struct s5p_hdmi_platdata *pdata = pdev->dev.platform_data;
+	struct s5p_hdmi_platdata *pdata = hdmi_dev->pdata;
 	const u8 *data;
 	u8 buffer[32];
 	int ret, tries;

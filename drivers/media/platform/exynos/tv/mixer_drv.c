@@ -210,6 +210,7 @@ static int mxr_streamer_get(struct mxr_device *mdev, struct v4l2_subdev *sd)
 					sd->name);
 			goto out;
 		}
+
 		if (ctrl.value == (HDMI_STOP | HPD_HIGH)) {
 			ret = v4l2_subdev_call(sd, core, s_power, 1);
 			if (ret) {
