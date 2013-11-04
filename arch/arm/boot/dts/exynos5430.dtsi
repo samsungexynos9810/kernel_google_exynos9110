@@ -334,10 +334,10 @@
 		interrupts = <0 225 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 565>, <&clock 141>,
+		clocks = <&clock 565>, <&clock 141>, <&clock 2167>,
 			<&clock 3050>, <&clock 3051>, <&clock 3052>, <&clock 3053>,
 			<&clock 4070>, <&clock 4071>;
-		clock-names = "biu", "gate_ciu",
+		clock-names = "biu", "gate_ciu", "gate_mmc",
 			"mout_sclk_mmc_a", "mout_sclk_mmc_b", "mout_sclk_mmc_c", "mout_sclk_mmc_d",
 			"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
@@ -349,10 +349,10 @@
 		interrupts = <0 226 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 566>, <&clock 142>,
+		clocks = <&clock 566>, <&clock 142>, <&clock 2166>,
 			<&clock 3054>, <&clock 3055>,
 			<&clock 4072>, <&clock 4073>;
-		clock-names = "biu", "gate_ciu",
+		clock-names = "biu", "gate_ciu", "gate_mmc",
 			"mout_sclk_mmc_a", "mout_sclk_mmc_b",
 			"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
@@ -364,10 +364,10 @@
 		interrupts = <0 227 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 567>, <&clock 143>,
+		clocks = <&clock 567>, <&clock 143>, <&clock 2165>,
 			<&clock 3056>, <&clock 3057>,
 			<&clock 4074>, <&clock 4075>;
-		clock-names = "biu", "gate_ciu",
+		clock-names = "biu", "gate_ciu", "gate_mmc",
 			"mout_sclk_mmc_a", "mout_sclk_mmc_b",
 			"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
