@@ -118,6 +118,7 @@ struct cpufreq_interactive_tunables {
 
 /* For cases where we have single governor instance for system */
 struct cpufreq_interactive_tunables *common_tunables;
+static struct cpufreq_interactive_tunables *tuned_parameters[NR_CPUS] = {NULL, };
 
 static struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
 static struct attribute_group *get_sysfs_attr(void);
@@ -1198,17 +1199,22 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return rc;
 		}
 
+		if (!tuned_parameters[policy->cpu]) {
+			tunables->above_hispeed_delay = default_above_hispeed_delay;
+			tunables->nabove_hispeed_delay =
+				ARRAY_SIZE(default_above_hispeed_delay);
+			tunables->go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
+			tunables->target_loads = default_target_loads;
+			tunables->ntarget_loads = ARRAY_SIZE(default_target_loads);
+			tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
+			tunables->timer_rate = DEFAULT_TIMER_RATE;
+			tunables->boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
+			tunables->timer_slack_val = DEFAULT_TIMER_SLACK;
+		} else {
+			memcpy(tunables, tuned_parameters[policy->cpu], sizeof(*tunables));
+			kfree(tuned_parameters[policy->cpu]);
+		}
 		tunables->usage_count = 1;
-		tunables->above_hispeed_delay = default_above_hispeed_delay;
-		tunables->nabove_hispeed_delay =
-			ARRAY_SIZE(default_above_hispeed_delay);
-		tunables->go_hispeed_load = DEFAULT_GO_HISPEED_LOAD;
-		tunables->target_loads = default_target_loads;
-		tunables->ntarget_loads = ARRAY_SIZE(default_target_loads);
-		tunables->min_sample_time = DEFAULT_MIN_SAMPLE_TIME;
-		tunables->timer_rate = DEFAULT_TIMER_RATE;
-		tunables->boostpulse_duration_val = DEFAULT_MIN_SAMPLE_TIME;
-		tunables->timer_slack_val = DEFAULT_TIMER_SLACK;
 
 		spin_lock_init(&tunables->target_loads_lock);
 		spin_lock_init(&tunables->above_hispeed_delay_lock);
@@ -1235,6 +1241,13 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 			sysfs_remove_group(get_governor_parent_kobj(policy),
 					get_sysfs_attr());
+
+			tuned_parameters[policy->cpu] = kzalloc(sizeof(*tunables), GFP_KERNEL);
+			if (!tuned_parameters[policy->cpu]) {
+				pr_err("%s: POLICY_EXIT: kzalloc failed\n", __func__);
+				return -ENOMEM;
+			}
+			memcpy(tuned_parameters[policy->cpu], tunables, sizeof(*tunables));
 			kfree(tunables);
 			common_tunables = NULL;
 		}
