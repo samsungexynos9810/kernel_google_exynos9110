@@ -56,8 +56,6 @@ struct cpufreq_interactive_cpuinfo {
 
 static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
 
-/* realtime thread handles frequency scaling */
-static struct task_struct *speedchange_task;
 static cpumask_t speedchange_cpumask;
 static spinlock_t speedchange_cpumask_lock;
 static struct mutex gov_lock;
@@ -112,6 +110,10 @@ struct cpufreq_interactive_tunables {
 #define DEFAULT_TIMER_SLACK (4 * DEFAULT_TIMER_RATE)
 	int timer_slack_val;
 	bool io_is_busy;
+
+#define TASK_NAME_LEN 15
+	/* realtime thread handles frequency scaling */
+	struct task_struct *speedchange_task;
 };
 
 /* For cases where we have single governor instance for system */
@@ -477,7 +479,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
 	cpumask_set_cpu(data, &speedchange_cpumask);
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
-	wake_up_process(speedchange_task);
+	wake_up_process(tunables->speedchange_task);
 
 rearm_if_notmax:
 	/*
@@ -647,7 +649,7 @@ static void cpufreq_interactive_boost(void)
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 
 	if (anyboost)
-		wake_up_process(speedchange_task);
+		wake_up_process(tunables->speedchange_task);
 }
 
 static int cpufreq_interactive_notifier(
@@ -1163,6 +1165,8 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_frequency_table *freq_table;
 	struct cpufreq_interactive_tunables *tunables;
+	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+	char speedchange_task_name[TASK_NAME_LEN];
 
 	if (have_governor_per_policy())
 		tunables = policy->governor_data;
@@ -1263,6 +1267,23 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			up_write(&pcpu->enable_sem);
 		}
 
+		snprintf(speedchange_task_name, TASK_NAME_LEN, "cfinteractive%d\n",
+					policy->cpu);
+
+		tunables->speedchange_task =
+			kthread_create(cpufreq_interactive_speedchange_task, NULL,
+				       speedchange_task_name);
+		if (IS_ERR(tunables->speedchange_task)) {
+			mutex_unlock(&gov_lock);
+			return PTR_ERR(tunables->speedchange_task);
+		}
+
+		sched_setscheduler_nocheck(tunables->speedchange_task, SCHED_FIFO, &param);
+		get_task_struct(tunables->speedchange_task);
+
+		/* NB: wake up so the thread does not look hung to the freezer */
+		wake_up_process(tunables->speedchange_task);
+
 		mutex_unlock(&gov_lock);
 		break;
 
@@ -1276,6 +1297,9 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			del_timer_sync(&pcpu->cpu_slack_timer);
 			up_write(&pcpu->enable_sem);
 		}
+
+		kthread_stop(tunables->speedchange_task);
+		put_task_struct(tunables->speedchange_task);
 
 		mutex_unlock(&gov_lock);
 		break;
@@ -1337,7 +1361,6 @@ static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
 	struct cpufreq_interactive_cpuinfo *pcpu;
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
@@ -1353,17 +1376,6 @@ static int __init cpufreq_interactive_init(void)
 
 	spin_lock_init(&speedchange_cpumask_lock);
 	mutex_init(&gov_lock);
-	speedchange_task =
-		kthread_create(cpufreq_interactive_speedchange_task, NULL,
-			       "cfinteractive");
-	if (IS_ERR(speedchange_task))
-		return PTR_ERR(speedchange_task);
-
-	sched_setscheduler_nocheck(speedchange_task, SCHED_FIFO, &param);
-	get_task_struct(speedchange_task);
-
-	/* NB: wake up so the thread does not look hung to the freezer */
-	wake_up_process(speedchange_task);
 
 	return cpufreq_register_governor(&cpufreq_gov_interactive);
 }
@@ -1377,8 +1389,6 @@ module_init(cpufreq_interactive_init);
 static void __exit cpufreq_interactive_exit(void)
 {
 	cpufreq_unregister_governor(&cpufreq_gov_interactive);
-	kthread_stop(speedchange_task);
-	put_task_struct(speedchange_task);
 }
 
 module_exit(cpufreq_interactive_exit);
