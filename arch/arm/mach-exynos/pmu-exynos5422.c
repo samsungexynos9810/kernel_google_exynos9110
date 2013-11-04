@@ -128,10 +128,40 @@ unsigned int exynos5422_cpu_state(unsigned int cpu_id)
 	return val == EXYNOS_CORE_LOCAL_PWR_EN;
 }
 
+extern struct cpumask hmp_slow_cpu_mask;
+extern struct cpumask hmp_fast_cpu_mask;
+
+#define cpu_online_hmp(cpu, mask)      cpumask_test_cpu((cpu), mask)
+
+bool exynos5422_is_last_core(unsigned int cpu)
+{
+	unsigned int cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
+	unsigned int cpu_id;
+	struct cpumask mask, mask_and_online;
+
+	if (cluster)
+		cpumask_copy(&mask, &hmp_slow_cpu_mask);
+	else
+		cpumask_copy(&mask, &hmp_fast_cpu_mask);
+
+	cpumask_and(&mask_and_online, &mask, cpu_online_mask);
+
+	for_each_cpu(cpu_id, &mask) {
+		if (cpu_id == cpu)
+			continue;
+		if (cpu_online_hmp(cpu_id, &mask_and_online))
+			return false;
+	}
+
+	return true;
+}
+
 int __init exynos5422_pmu_init(void)
 {
 	exynos_cpu.power_up = exynos5422_secondary_up;
 	exynos_cpu.power_state = exynos5422_cpu_state;
+	exynos_cpu.power_down = exynos5422_cpu_down;
+	exynos_cpu.is_last_core = exynos5422_is_last_core;
 
 	if (exynos_pmu_config != NULL)
 		pr_info("EXYNOS5422 PMU Initialize\n");
