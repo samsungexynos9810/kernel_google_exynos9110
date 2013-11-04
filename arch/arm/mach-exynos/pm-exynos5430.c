@@ -156,6 +156,13 @@ static int exynos_pm_suspend(void)
 {
 	unsigned long tmp;
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+	/* Enable non retention flip-flop reset */
+	tmp = __raw_readl(EXYNOS_PMU_SPARE0);
+	tmp |= EXYNOS_EN_NONRET_RESET;
+	__raw_writel(tmp, EXYNOS_PMU_SPARE0);
+#endif
+
 	/* Setting Central Sequence Register for power down mode */
 	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
 	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
