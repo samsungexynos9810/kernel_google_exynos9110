@@ -325,6 +325,8 @@
 
 #define DECON_RRFRMID				(0x1418)
 
+#define DECON_UPDATE_SCHEME			(0x1438)
+
 /* VICON1 */
 #define VIDCON1					(0x2000)
 

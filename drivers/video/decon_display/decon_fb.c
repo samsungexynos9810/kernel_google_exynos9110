@@ -2270,18 +2270,19 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 
-#ifndef DECON_EVT1
-	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (test_bit(S3C_FB_STOP_DMA, &sfb->windows[i]->state)) {
-			data |= DECON_UPDATE_SLAVE_SYNC;
-			clear_bit(S3C_FB_STOP_DMA,
-					&sfb->windows[i]->state);
-		} else if (test_bit(S3C_FB_LOCAL,
+	if (soc_is_exynos5430() && (samsung_rev() == EXYNOS5430_REV_0)) {
+		for (i = 0; i < sfb->variant.nr_windows; i++) {
+			if (test_bit(S3C_FB_STOP_DMA,
 				&sfb->windows[i]->state)) {
-			data |= DECON_UPDATE_SLAVE_SYNC;
+				data |= DECON_UPDATE_SLAVE_SYNC;
+				clear_bit(S3C_FB_STOP_DMA,
+						&sfb->windows[i]->state);
+			} else if (test_bit(S3C_FB_LOCAL,
+					&sfb->windows[i]->state)) {
+				data |= DECON_UPDATE_SLAVE_SYNC;
+			}
 		}
 	}
-#endif
 	if (readl(sfb->regs + DECON_UPDATE_SHADOW) & (1<<0))
 		pr_err("Error:0x%x\n",
 				readl(sfb->regs + DECON_UPDATE_SHADOW));
@@ -3005,6 +3006,12 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		data &= ~(0x07 << 20); /* Masking */
 		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
+		if (soc_is_exynos5430() &&
+			(samsung_rev() == EXYNOS5430_REV_1_0)) {
+			data = readl(sfb->regs + DECON_UPDATE_SCHEME);
+			data |= (0x1 << 31);
+			writel(data, sfb->regs + DECON_UPDATE_SCHEME);
+		}
 	} else {
 		dev_dbg(sfb->dev, "Decon stop(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
