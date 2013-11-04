@@ -657,7 +657,8 @@ static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
 		if (bank->eint_type == EINT_TYPE_GPIO)
 			exynos_pinctrl_suspend_bank(drvdata, bank);
-		else if (bank->eint_type == EINT_TYPE_WKUP_MUX)
+		else if (bank->eint_type == EINT_TYPE_WKUP
+			|| bank->eint_type == EINT_TYPE_WKUP_MUX)
 			exynos_pinctrl_suspend_inttype(drvdata, bank);
 }
 
@@ -693,8 +694,9 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 	int i;
 
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
-		if (bank->eint_type == EINT_TYPE_GPIO ||
-			bank->eint_type == EINT_TYPE_WKUP_MUX)
+		if (bank->eint_type == EINT_TYPE_GPIO
+			|| bank->eint_type == EINT_TYPE_WKUP
+			|| bank->eint_type == EINT_TYPE_WKUP_MUX)
 			exynos_pinctrl_resume_bank(drvdata, bank);
 }
 
