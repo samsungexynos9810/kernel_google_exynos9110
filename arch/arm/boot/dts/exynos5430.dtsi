@@ -480,7 +480,7 @@
 		clocks = <&clock 2123>, <&clock 2111>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
-			winmap = <0xF>;
+			winmap = <0x5>;
 		};
 	};
 
@@ -488,7 +488,12 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13A30000 0x1000>;
 		interrupts = <0 216 0>;
-		status = "disabled";
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 2123>, <&clock 2111>;
+		samsung,power-domain = <&spd_decon_tv>;
+		prop-map {
+			winmap = <0xA>;
+		};
 	};
 
 	sysmmu_gscl0: sysmmu@0x13C80000 {
