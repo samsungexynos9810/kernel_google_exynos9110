@@ -102,7 +102,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 2, 7, 7, 7, 3 },
 
 	/* ARM L8: 1.2GHz */
-	{ 0, 0, 1, 7, 7, 7, 3 },
+	{ 0, 0, 2, 7, 7, 7, 3 },
 
 	/* ARM L9: 1.1GHz */
 	{ 0, 0, 1, 7, 7, 7, 3 },
@@ -132,7 +132,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 1, 4, 4, 4, 3 },
 
 	/* ARM L18: 200MHz */
-	{ 0, 0, 0, 2, 2, 2, 3 },
+	{ 0, 0, 1, 2, 2, 2, 3 },
 };
 
 static unsigned int clkdiv_cpu1_5430_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
@@ -275,13 +275,13 @@ static const unsigned int asv_voltage_5430_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	1075000,	/* L9  1100 */
 	1037500,	/* L10 1000 */
 	1000000,	/* L11  900 */
-	 962500,	/* L12  800 */
-	 925000,	/* L13  700 */
-	 900000,	/* L14  600 */
-	 900000,	/* L15  500 */
-	 900000,	/* L16  400 */
-	 900000,	/* L17  300 */
-	 900000,	/* L18  200 */
+	 975000,	/* L12  800 */
+	 950000,	/* L13  700 */
+	 925000,	/* L14  600 */
+	 925000,	/* L15  500 */
+	 925000,	/* L16  400 */
+	 925000,	/* L17  300 */
+	 925000,	/* L18  200 */
 };
 #else
 static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {

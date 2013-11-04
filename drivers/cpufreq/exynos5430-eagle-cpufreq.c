@@ -121,13 +121,13 @@ static unsigned int clkdiv_cpu0_5430_CA15[CPUFREQ_LEVEL_END_CA15][6] = {
 	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L11: 1.4GHz */
-	{ 0, 0, 1, 7, 7, 7 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L12: 1.3GHz */
-	{ 0, 0, 1, 7, 7, 7 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L13: 1.2GHz */
-	{ 0, 0, 1, 7, 7, 7 },
+	{ 0, 0, 2, 7, 7, 7 },
 
 	/* ARM L14: 1.1GHz */
 	{ 0, 0, 1, 7, 7, 7 },
@@ -154,10 +154,10 @@ static unsigned int clkdiv_cpu0_5430_CA15[CPUFREQ_LEVEL_END_CA15][6] = {
 	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L22: 300MHz */
-	{ 0, 0, 0, 7, 7, 7 },
+	{ 0, 0, 1, 7, 7, 7 },
 
 	/* ARM L23: 200MHz */
-	{ 0, 0, 0, 7, 7, 7 },
+	{ 0, 0, 1, 7, 7, 7 },
 };
 
 static unsigned int clkdiv_cpu1_5430_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
@@ -318,30 +318,30 @@ static unsigned int exynos5430_egl_pll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = 
  * ASV group voltage table
  */
 static const unsigned int asv_voltage_5430_CA15[CPUFREQ_LEVEL_END_CA15] = {
-	1275000,	/* LO  2500 */
-	1275000,	/* L1  2400 */
-	1275000,	/* L2  2300 */
-	1275000,	/* L3  2200 */
-	1275000,	/* L4  2100 */
-	1275000,	/* L5  2000 */
-	1275000,	/* L6  1900 */
-	1275000,	/* L7  1800 */
-	1275000,	/* L8  1700 */
-	1275000,	/* L9  1600 */
-	1275000,	/* L10 1500 */
-	1237500,	/* L11 1400 */
-	1200000,	/* L12 1300 */
-	1175000,	/* L13 1200 */
-	1150000,	/* L14 1100 */
-	1125000,	/* L15 1000 */
-	1100000,	/* L16  900 */
-	1075000,	/* L17  800 */
-	1050000,	/* L18  700 */
-	1025000,	/* L19  600 */
+	1225000,	/* LO  2500 */
+	1225000,	/* L1  2400 */
+	1225000,	/* L2  2300 */
+	1225000,	/* L3  2200 */
+	1225000,	/* L4  2100 */
+	1225000,	/* L5  2000 */
+	1225000,	/* L6  1900 */
+	1225000,	/* L7  1800 */
+	1225000,	/* L8  1700 */
+	1225000,	/* L9  1600 */
+	1225000,	/* L10 1500 */
+	1187500,	/* L11 1400 */
+	1150000,	/* L12 1300 */
+	1125000,	/* L13 1200 */
+	1100000,	/* L14 1100 */
+	1075000,	/* L15 1000 */
+	1050000,	/* L16  900 */
+	1025000,	/* L17  800 */
+	1025000,	/* L18  700 */
+	1000000,	/* L19  600 */
 	1000000,	/* L20  500 */
-	 950000,	/* L21  400 */
-	 900000,	/* L22  300 */
-	 900000,	/* L23  200 */
+	 975000,	/* L21  400 */
+	 925000,	/* L22  300 */
+	 925000,	/* L23  200 */
 };
 #else
 static unsigned int clkdiv_cpu0_5430_CA15[CPUFREQ_LEVEL_END_CA15][6] = {
@@ -829,12 +829,7 @@ static void __init set_volt_table_CA15(void)
 	exynos5430_freq_table_CA15[L7].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA15[L8].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA15[L9].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5430_freq_table_CA15[L10].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5430_freq_table_CA15[L11].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5430_freq_table_CA15[L12].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5430_freq_table_CA15[L13].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5430_freq_table_CA15[L14].frequency = CPUFREQ_ENTRY_INVALID;
-	max_support_idx_CA15 = L15;
+	max_support_idx_CA15 = L10;
 	min_support_idx_CA15 = L18;
 	exynos5430_freq_table_CA15[L19].frequency = CPUFREQ_ENTRY_INVALID;
 	exynos5430_freq_table_CA15[L20].frequency = CPUFREQ_ENTRY_INVALID;
@@ -1005,8 +1000,8 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->max_support_idx = max_support_idx_CA15;
 	info->min_support_idx = min_support_idx_CA15;
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L15].frequency;
-	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L15].frequency;
+	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L10].frequency;
+	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L10].frequency;
 #else
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L15].frequency;
 	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L15].frequency;
