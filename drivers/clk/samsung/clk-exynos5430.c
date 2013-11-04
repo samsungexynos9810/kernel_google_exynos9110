@@ -1073,7 +1073,7 @@ PNAME(mout_aclk_mfc0_333_user_p) = { "oscclk", "aclk_mfc0_333" };
 PNAME(mout_aclk_mfc1_333_user_p) = { "oscclk", "aclk_mfc1_333" };
 
 /* HEVC */
-PNAME(mout_aclk_hevc_400_user_p) = { "oscclk", "dout_aclk_hevc_400" };
+PNAME(mout_aclk_hevc_400_user_p) = { "oscclk", "aclk_hevc_400" };
 
 /* DISP1 */
 PNAME(mout_disp_pll_p)		= { "fin_pll", "fout_disp_pll" };
