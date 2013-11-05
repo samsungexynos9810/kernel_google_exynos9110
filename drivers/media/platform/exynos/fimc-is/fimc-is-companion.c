@@ -9,6 +9,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <linux/platform_device.h>
 #include "fimc-is-companion.h"
 
 #define COMP_FW				"companion_fw.bin"
@@ -134,6 +135,10 @@ static int fimc_is_comp_load_binary(struct fimc_is_core *core, char *name)
 	u8 *buf = NULL;
 	u32 data;
 	char version_str[60];
+
+	BUG_ON(!core);
+	BUG_ON(!core->pdev);
+	BUG_ON(!name);
 
 	old_fs = get_fs();
 	set_fs(KERNEL_DS);

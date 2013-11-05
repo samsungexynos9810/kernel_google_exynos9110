@@ -156,7 +156,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW)
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS)
 {
 	if ((device->module == SENSOR_NAME_IMX135) &&
-			(device->sensor->framerate > 30))
+			(fimc_is_sensor_g_framerate(device->sensor) > 30))
 		return 1;
 	else
 		return 0;
@@ -166,7 +166,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS)
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING)
 {
 	if ((device->module == SENSOR_NAME_IMX135) &&
-			(device->sensor->framerate <= 30) &&
+			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 == ISS_SUB_SCENARIO_VIDEO))
 		return 1;
@@ -178,7 +178,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING)
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW)
 {
 	if ((device->module == SENSOR_NAME_IMX135) &&
-			(device->sensor->framerate <= 30) &&
+			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 != ISS_SUB_SCENARIO_VIDEO))
 		return 1;
@@ -223,34 +223,31 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE)
 /* dis */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE)
 {
-	if (test_bit(FIMC_IS_ISDEV_DSTART, &device->dis.state))
+	if (test_bit(FIMC_IS_SUBDEV_START, &device->dis.state))
 		return 1;
 	else
 		return 0;
 }
 
-int fimc_is_dvfs_init(struct fimc_is_core *core)
+int fimc_is_dvfs_init(struct fimc_is_resourcemgr *resourcemgr)
 {
 	int i;
 	pr_info("%s\n",	__func__);
 
-	if (!core) {
-		err("core is NULL\n");
-		return -EINVAL;
-	}
+	BUG_ON(!resourcemgr);
 
-	core->dvfs_ctrl.cur_int_qos = 0;
-	core->dvfs_ctrl.cur_mif_qos = 0;
-	core->dvfs_ctrl.cur_i2c_qos = 0;
+	resourcemgr->dvfs_ctrl.cur_int_qos = 0;
+	resourcemgr->dvfs_ctrl.cur_mif_qos = 0;
+	resourcemgr->dvfs_ctrl.cur_i2c_qos = 0;
 
-	if (!(core->dvfs_ctrl.static_ctrl))
-		core->dvfs_ctrl.static_ctrl =
+	if (!(resourcemgr->dvfs_ctrl.static_ctrl))
+		resourcemgr->dvfs_ctrl.static_ctrl =
 			kzalloc(sizeof(struct fimc_is_dvfs_scenario_ctrl), GFP_KERNEL);
-	if (!(core->dvfs_ctrl.dynamic_ctrl))
-		core->dvfs_ctrl.dynamic_ctrl =
+	if (!(resourcemgr->dvfs_ctrl.dynamic_ctrl))
+		resourcemgr->dvfs_ctrl.dynamic_ctrl =
 			kzalloc(sizeof(struct fimc_is_dvfs_scenario_ctrl), GFP_KERNEL);
 
-	if (!core->dvfs_ctrl.static_ctrl || !core->dvfs_ctrl.dynamic_ctrl) {
+	if (!resourcemgr->dvfs_ctrl.static_ctrl || !resourcemgr->dvfs_ctrl.dynamic_ctrl) {
 		err("dvfs_ctrl alloc is failed!!\n");
 		return -ENOMEM;
 	}
@@ -261,27 +258,27 @@ int fimc_is_dvfs_init(struct fimc_is_core *core)
 	for (i = 0; i < ARRAY_SIZE(dynamic_scenarios); i++)
 		dynamic_scenarios[i].priority = i;
 
-	core->dvfs_ctrl.static_ctrl->cur_scenario_id	= -1;
-	core->dvfs_ctrl.static_ctrl->cur_scenario_idx	= -1;
-	core->dvfs_ctrl.static_ctrl->scenarios		= static_scenarios;
-	core->dvfs_ctrl.static_ctrl->scenario_cnt	= ARRAY_SIZE(static_scenarios);
+	resourcemgr->dvfs_ctrl.static_ctrl->cur_scenario_id	= -1;
+	resourcemgr->dvfs_ctrl.static_ctrl->cur_scenario_idx	= -1;
+	resourcemgr->dvfs_ctrl.static_ctrl->scenarios		= static_scenarios;
+	resourcemgr->dvfs_ctrl.static_ctrl->scenario_cnt	= ARRAY_SIZE(static_scenarios);
 
-	core->dvfs_ctrl.dynamic_ctrl->cur_scenario_id	= -1;
-	core->dvfs_ctrl.dynamic_ctrl->cur_scenario_idx	= -1;
-	core->dvfs_ctrl.dynamic_ctrl->cur_frame_tick	= -1;
-	core->dvfs_ctrl.dynamic_ctrl->scenarios		= dynamic_scenarios;
-	core->dvfs_ctrl.dynamic_ctrl->scenario_cnt	= ARRAY_SIZE(dynamic_scenarios);
+	resourcemgr->dvfs_ctrl.dynamic_ctrl->cur_scenario_id	= -1;
+	resourcemgr->dvfs_ctrl.dynamic_ctrl->cur_scenario_idx	= -1;
+	resourcemgr->dvfs_ctrl.dynamic_ctrl->cur_frame_tick	= -1;
+	resourcemgr->dvfs_ctrl.dynamic_ctrl->scenarios		= dynamic_scenarios;
+	resourcemgr->dvfs_ctrl.dynamic_ctrl->scenario_cnt	= ARRAY_SIZE(dynamic_scenarios);
 
 	return 0;
 }
 
 int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 {
-	struct fimc_is_core *core;
 	struct fimc_is_dvfs_ctrl *dvfs_ctrl;
 	struct fimc_is_dvfs_scenario_ctrl *static_ctrl, *dynamic_ctrl;
 	struct fimc_is_dvfs_scenario *scenarios;
 	struct fimc_is_dvfs_scenario *cur_scenario;
+	struct fimc_is_resourcemgr *resourcemgr;
 	int i, scenario_id, scenario_cnt;
 
 	if (device == NULL) {
@@ -289,8 +286,8 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 		return -EINVAL;
 	}
 
-	core = (struct fimc_is_core *)device->interface->core;
-	dvfs_ctrl = &(core->dvfs_ctrl);
+	resourcemgr = device->resourcemgr;
+	dvfs_ctrl = &(resourcemgr->dvfs_ctrl);
 	static_ctrl = dvfs_ctrl->static_ctrl;
 	dynamic_ctrl = dvfs_ctrl->dynamic_ctrl;
 
@@ -379,7 +376,7 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 
 int fimc_is_get_qos(struct fimc_is_core *core, u32 type, u32 scenario_id)
 {
-	struct exynos5_platform_fimc_is	*pdata;
+	struct exynos_platform_fimc_is	*pdata;
 	int qos = 0;
 
 	pdata = core->pdata;
@@ -411,6 +408,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 	int int_qos, mif_qos, i2c_qos = 0;
 	int refcount;
 	struct fimc_is_core *core;
+	struct fimc_is_resourcemgr *resourcemgr;
 	struct fimc_is_dvfs_ctrl *dvfs_ctrl;
 
 	if (device == NULL) {
@@ -419,7 +417,8 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 	}
 
 	core = (struct fimc_is_core *)device->interface->core;
-	dvfs_ctrl = &(core->dvfs_ctrl);
+	resourcemgr = device->resourcemgr;
+	dvfs_ctrl = &(resourcemgr->dvfs_ctrl);
 
 	refcount = atomic_read(&core->video_isp.refcount);
 	if (refcount < 0) {

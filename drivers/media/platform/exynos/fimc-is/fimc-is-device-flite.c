@@ -192,151 +192,154 @@
 
 #define FLITE_REG_CIFCNTSEQ				0x100
 
-static void flite_hw_set_cam_source_size(unsigned long flite_reg_base,
-	struct fimc_is_frame_info *f_frame)
+static void flite_hw_set_cam_source_size(unsigned long __iomem *base_reg,
+	struct fimc_is_image *image)
 {
 	u32 cfg = 0;
 
-	cfg |= FLITE_REG_CISRCSIZE_SIZE_H(f_frame->o_width);
-	cfg |= FLITE_REG_CISRCSIZE_SIZE_V(f_frame->o_height);
+	BUG_ON(!image);
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CISRCSIZE);
+	cfg |= FLITE_REG_CISRCSIZE_SIZE_H(image->window.o_width);
+	cfg |= FLITE_REG_CISRCSIZE_SIZE_V(image->window.o_height);
+
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CISRCSIZE));
 }
 
-static void flite_hw_set_dma_offset(unsigned long flite_reg_base,
-	struct fimc_is_frame_info *f_frame,
-	struct fimc_is_queue *queue)
+static void flite_hw_set_dma_offset(unsigned long __iomem *base_reg,
+	struct fimc_is_image *image)
 {
 	u32 cfg = 0;
 
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12)
-		cfg |= FLITE_REG_CIOCAN_OCAN_H(roundup(f_frame->o_width, 10));
+	BUG_ON(!image);
+
+	/* HACK */
+	if (image->format.pixelformat == V4L2_PIX_FMT_SBGGR12)
+		cfg |= FLITE_REG_CIOCAN_OCAN_H(roundup(image->window.o_width, 10));
 	else
-		cfg |= FLITE_REG_CIOCAN_OCAN_H(f_frame->o_width);
+		cfg |= FLITE_REG_CIOCAN_OCAN_H(image->window.o_width);
 
-	cfg |= FLITE_REG_CIOCAN_OCAN_V(f_frame->o_height);
+	cfg |= FLITE_REG_CIOCAN_OCAN_V(image->window.o_height);
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIOCAN);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIOCAN));
 }
 
-static void flite_hw_set_cam_channel(unsigned long flite_reg_base,
-	unsigned long otf_setting)
+static void flite_hw_set_cam_channel(unsigned long __iomem *base_reg,
+	u32 otf_setting)
 {
 	u32 cfg = 0;
 
 	cfg |= otf_setting;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGENERAL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGENERAL));
 }
 
-static void flite_hw_set_capture_start(unsigned long flite_reg_base)
+static void flite_hw_set_capture_start(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
 
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIIMGCPT);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIIMGCPT));
 	cfg |= FLITE_REG_CIIMGCPT_IMGCPTEN;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIIMGCPT);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIIMGCPT));
 }
 
-static void flite_hw_set_capture_stop(unsigned long flite_reg_base)
+static void flite_hw_set_capture_stop(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
 
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIIMGCPT);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIIMGCPT));
 	cfg &= ~FLITE_REG_CIIMGCPT_IMGCPTEN;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIIMGCPT);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIIMGCPT));
 }
 
-static int flite_hw_get_capture_status(unsigned long flite_reg_base)
-{
-	return (is_readl(flite_reg_base + FLITE_REG_CIIMGCPT)
-		& FLITE_REG_CIIMGCPT_IMGCPTEN) ? 1 : 0;
-}
-
-static int flite_hw_set_source_format(unsigned long flite_reg_base)
+static int flite_hw_set_source_format(unsigned long __iomem *base_reg, struct fimc_is_image *image)
 {
 	u32 cfg = 0;
 
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
-	cfg |= FLITE_REG_CIGCTRL_RAW10;
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	BUG_ON(!image);
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+
+	if (image->format.pixelformat == V4L2_PIX_FMT_SGRBG8)
+		cfg |= FLITE_REG_CIGCTRL_RAW8;
+	else
+		cfg |= FLITE_REG_CIGCTRL_RAW10;
+
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	return 0;
 }
 
-static void flite_hw_set_dma_fmt(unsigned long flite_reg_base,
-	struct fimc_is_queue *queue)
+static void flite_hw_set_dma_fmt(unsigned long __iomem *base_reg,
+	u32 pixelformat)
 {
 	u32 cfg = 0;
 
-	BUG_ON(!queue);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIODMAFMT));
 
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIODMAFMT);
-
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12)
+	if (pixelformat == V4L2_PIX_FMT_SBGGR12)
 		cfg |= FLITE_REG_CIODMAFMT_PACK12;
 	else
 		cfg |= FLITE_REG_CIODMAFMT_NORMAL;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIODMAFMT);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIODMAFMT));
 }
 
-static void flite_hw_set_output_dma(unsigned long flite_reg_base, bool enable,
-	struct fimc_is_queue *queue)
+static void flite_hw_set_output_dma(unsigned long __iomem *base_reg, bool enable,
+	u32 pixelformat)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	if (enable) {
 		cfg &= ~FLITE_REG_CIGCTRL_ODMA_DISABLE;
-		flite_hw_set_dma_fmt(flite_reg_base, queue);
+		flite_hw_set_dma_fmt(base_reg, pixelformat);
 	} else {
 		cfg |= FLITE_REG_CIGCTRL_ODMA_DISABLE;
 	}
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
-static void flite_hw_set_output_local(unsigned long flite_reg_base, bool enable)
+static void flite_hw_set_output_local(unsigned long __iomem *base_reg, bool enable)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	if (enable)
 		cfg &= ~FLITE_REG_CIGCTRL_OLOCAL_DISABLE;
 	else
 		cfg |= FLITE_REG_CIGCTRL_OLOCAL_DISABLE;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
 /* will use for pattern generation testing
 static void flite_hw_set_test_pattern_enable(void)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
 	cfg |= FLITE_REG_CIGCTRL_TEST_PATTERN_COLORBAR;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
 }
 */
 
-static void flite_hw_set_config_irq(unsigned long flite_reg_base)
+static void flite_hw_set_config_irq(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 	cfg &= ~(FLITE_REG_CIGCTRL_INVPOLPCLK | FLITE_REG_CIGCTRL_INVPOLVSYNC
 			| FLITE_REG_CIGCTRL_INVPOLHREF);
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
-static void flite_hw_set_interrupt_source(unsigned long flite_reg_base)
+static void flite_hw_set_interrupt_source(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	/* for checking stop complete */
 	cfg &= ~FLITE_REG_CIGCTRL_IRQ_LASTEN0_DISABLE;
@@ -350,13 +353,13 @@ static void flite_hw_set_interrupt_source(unsigned long flite_reg_base)
 	/* for checking overflow */
 	cfg &= ~FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
-static void flite_hw_clr_interrupt_source(unsigned long flite_reg_base)
+static void flite_hw_clr_interrupt_source(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	/* for checking stop complete */
 	cfg |= FLITE_REG_CIGCTRL_IRQ_LASTEN0_DISABLE;
@@ -370,207 +373,192 @@ static void flite_hw_clr_interrupt_source(unsigned long flite_reg_base)
 	/* for checking overflow */
 	cfg |= FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
-static void flite_hw_force_reset(unsigned long flite_reg_base)
+static void flite_hw_force_reset(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0, retry = 100;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	/* request sw reset */
 	cfg |= FLITE_REG_CIGCTRL_SWRST_REQ;
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	/* checking reset ready */
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 	while (retry-- && !(cfg & FLITE_REG_CIGCTRL_SWRST_RDY))
-		cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	if (!(cfg & FLITE_REG_CIGCTRL_SWRST_RDY))
 		warn("[CamIF] sw reset is not read but forcelly");
 
 	/* sw reset */
 	cfg |= FLITE_REG_CIGCTRL_SWRST;
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 	warn("[CamIF] sw reset");
 }
 
-static void flite_hw_set_camera_type(unsigned long flite_reg_base)
+static void flite_hw_set_camera_type(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIGCTRL);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
 	cfg |= FLITE_REG_CIGCTRL_SELCAM_MIPI;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
-static void flite_hw_set_window_offset(unsigned long flite_reg_base,
-					struct fimc_is_frame_info *f_frame)
+static void flite_hw_set_window_offset(unsigned long __iomem *base_reg,
+        struct fimc_is_image *image)
 {
 	u32 cfg = 0;
 	u32 hoff2, voff2;
 
-	cfg = is_readl(flite_reg_base + FLITE_REG_CIWDOFST);
+	BUG_ON(!image);
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIWDOFST));
 	cfg &= ~(FLITE_REG_CIWDOFST_HOROFF_MASK |
 		FLITE_REG_CIWDOFST_VEROFF_MASK);
 	cfg |= FLITE_REG_CIWDOFST_WINOFSEN |
-		FLITE_REG_CIWDOFST_WINHOROFST(f_frame->offs_h) |
-		FLITE_REG_CIWDOFST_WINVEROFST(f_frame->offs_v);
+		FLITE_REG_CIWDOFST_WINHOROFST(image->window.offs_h) |
+		FLITE_REG_CIWDOFST_WINVEROFST(image->window.offs_v);
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIWDOFST);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIWDOFST));
 
-	hoff2 = f_frame->o_width - f_frame->width - f_frame->offs_h;
-	voff2 = f_frame->o_height - f_frame->height - f_frame->offs_v;
+	hoff2 = image->window.o_width - image->window.width - image->window.offs_h;
+	voff2 = image->window.o_height - image->window.height - image->window.offs_v;
 	cfg = FLITE_REG_CIWDOFST2_WINHOROFST2(hoff2) |
 		FLITE_REG_CIWDOFST2_WINVEROFST2(voff2);
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CIWDOFST2);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIWDOFST2));
 }
 
-static void flite_hw_set_last_capture_end_clear(unsigned long flite_reg_base)
+static void flite_hw_set_last_capture_end_clear(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
 
-	cfg = is_readl(flite_reg_base + FLITE_REG_CISTATUS2);
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS2));
 	cfg &= ~FLITE_REG_CISTATUS2_LASTCAPEND;
 
-	is_writel(cfg, flite_reg_base + FLITE_REG_CISTATUS2);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS2));
 }
 
-int flite_hw_get_present_frame_buffer(unsigned long flite_reg_base)
+int flite_hw_get_present_frame_buffer(unsigned long __iomem *base_reg)
 {
 	u32 status = 0;
 
-	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS3);
+	status = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS3));
 	status &= FLITE_REG_CISTATUS3_PRESENT_MASK;
 
 	return status;
 }
 
-int flite_hw_get_status2(unsigned long flite_reg_base)
+int flite_hw_get_status2(unsigned long __iomem *base_reg)
 {
 	u32 status = 0;
 
-	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS2);
+	status = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS2));
 
 	return status;
 }
 
-void flite_hw_set_status1(unsigned long flite_reg_base, u32 val)
+void flite_hw_set_status1(unsigned long __iomem *base_reg, u32 val)
 {
-	is_writel(val, flite_reg_base + FLITE_REG_CISTATUS);
+	writel(val, base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS));
 }
 
-int flite_hw_get_status1(unsigned long flite_reg_base)
+int flite_hw_get_status1(unsigned long __iomem *base_reg)
 {
 	u32 status = 0;
 
-	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS);
+	status = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS));
 
 	return status;
 }
 
-int flite_hw_getnclr_status1(unsigned long flite_reg_base)
+int flite_hw_getnclr_status1(unsigned long __iomem *base_reg)
 {
 	u32 status = 0;
 
-	status = is_readl(flite_reg_base + FLITE_REG_CISTATUS);
-	is_writel(0, flite_reg_base + FLITE_REG_CISTATUS);
+	status = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS));
+	writel(0, base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS));
 
 	return status;
 }
 
-void flite_hw_set_status2(unsigned long flite_reg_base, u32 val)
+void flite_hw_set_status2(unsigned long __iomem *base_reg, u32 val)
 {
-	is_writel(val, flite_reg_base + FLITE_REG_CISTATUS2);
+	writel(val, base_reg + TO_WORD_OFFSET(FLITE_REG_CISTATUS2));
 }
 
-void flite_hw_set_start_addr(unsigned long flite_reg_base, u32 number, u32 addr)
+void flite_hw_set_start_addr(unsigned long __iomem *base_reg, u32 number, u32 addr)
 {
-	u32 target =0;
+	unsigned long __iomem *target_reg;
 
 	if (number == 0) {
-		target = flite_reg_base + 0x30;
+		target_reg = base_reg + TO_WORD_OFFSET(0x30);
 	} else {
 		number--;
-		target = flite_reg_base + 0x200 + (0x4*number);
+		target_reg = base_reg + TO_WORD_OFFSET(0x200 + (0x4*number));
 	}
 
-	is_writel(addr, target);
+	writel(addr, target_reg);
 }
 
-u32 flite_hw_get_start_addr(unsigned long flite_reg_base, u32 number)
-{
-	u32 target = 0;
-
-	if (number == 0) {
-		target = flite_reg_base + 0x30;
-	} else {
-		number--;
-		target = flite_reg_base + 0x200 + (0x4*number);
-	}
-
-	return is_readl(target);
-}
-
-void flite_hw_set_use_buffer(unsigned long flite_reg_base, u32 number)
+void flite_hw_set_use_buffer(unsigned long __iomem *base_reg, u32 number)
 {
 	u32 buffer;
-	buffer = is_readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	buffer = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 	buffer |= 1<<number;
-	is_writel(buffer, flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	writel(buffer, base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 }
 
-void flite_hw_set_unuse_buffer(unsigned long flite_reg_base, u32 number)
+void flite_hw_set_unuse_buffer(unsigned long __iomem *base_reg, u32 number)
 {
 	u32 buffer;
-	buffer = is_readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	buffer = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 	buffer &= ~(1<<number);
-	is_writel(buffer, flite_reg_base + FLITE_REG_CIFCNTSEQ);
+	writel(buffer, base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 }
 
-u32 flite_hw_get_buffer_seq(unsigned long flite_reg_base)
+u32 flite_hw_get_buffer_seq(unsigned long __iomem *base_reg)
 {
-	u32 buffer;
-	buffer = is_readl(flite_reg_base + FLITE_REG_CIFCNTSEQ);
-	return buffer;
+	return readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 }
 
-int init_fimc_lite(unsigned long mipi_reg_base)
+int init_fimc_lite(unsigned long __iomem *base_reg)
 {
 	int i;
 
-	is_writel(0, mipi_reg_base + FLITE_REG_CIFCNTSEQ);
+	writel(0, base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 
 	for (i = 0; i < 32; i++)
-		flite_hw_set_start_addr(mipi_reg_base , i, 0xffffffff);
+		flite_hw_set_start_addr(base_reg , i, 0xffffffff);
 
 	return 0;
 }
 
-int start_fimc_lite(unsigned long mipi_reg_base,
-	struct fimc_is_frame_info *f_frame,
-	struct fimc_is_queue *queue,
-	unsigned long otf_setting)
+static int start_fimc_lite(unsigned long __iomem *base_reg,
+	struct fimc_is_image *image,
+	u32 otf_setting)
 {
-	flite_hw_set_cam_channel(mipi_reg_base, otf_setting);
-	flite_hw_set_cam_source_size(mipi_reg_base, f_frame);
-	flite_hw_set_dma_offset(mipi_reg_base, f_frame, queue);
-	flite_hw_set_camera_type(mipi_reg_base);
-	flite_hw_set_source_format(mipi_reg_base);
+	flite_hw_set_cam_channel(base_reg, otf_setting);
+	flite_hw_set_cam_source_size(base_reg, image);
+	flite_hw_set_dma_offset(base_reg, image);
+	flite_hw_set_camera_type(base_reg);
+	flite_hw_set_source_format(base_reg, image);
 	/*flite_hw_set_output_dma(mipi_reg_base, false);
 	flite_hw_set_output_local(base_reg, false);*/
 
-	flite_hw_set_interrupt_source(mipi_reg_base);
+	flite_hw_set_interrupt_source(base_reg);
 	/*flite_hw_set_interrupt_starten0_disable(mipi_reg_base);*/
-	flite_hw_set_config_irq(mipi_reg_base);
-	flite_hw_set_window_offset(mipi_reg_base, f_frame);
+	flite_hw_set_config_irq(base_reg);
+	flite_hw_set_window_offset(base_reg, image);
 	/* flite_hw_set_test_pattern_enable(); */
 
-	flite_hw_set_last_capture_end_clear(mipi_reg_base);
-	flite_hw_set_capture_start(mipi_reg_base);
+	flite_hw_set_last_capture_end_clear(base_reg);
+	flite_hw_set_capture_start(base_reg);
 
 	/*dbg_front("lite config : %08X\n",
 		*((unsigned int*)(base_reg + FLITE_REG_CIFCNTSEQ)));*/
@@ -578,75 +566,63 @@ int start_fimc_lite(unsigned long mipi_reg_base,
 	return 0;
 }
 
-static inline void stop_fimc_lite(unsigned long mipi_reg_base)
+static inline void stop_fimc_lite(unsigned long __iomem *base_reg)
 {
-	flite_hw_set_capture_stop(mipi_reg_base);
-}
-
-void resize_fimc_lite(unsigned long flite_reg_base,
-	struct fimc_is_frame_info *f_frame,
-	struct fimc_is_queue *queue)
-{
-
-	flite_hw_set_cam_source_size(flite_reg_base, f_frame);
-	flite_hw_set_dma_offset(flite_reg_base, f_frame, queue);
-	flite_hw_set_window_offset(flite_reg_base, f_frame);
+	flite_hw_set_capture_stop(base_reg);
 }
 
 static inline void flite_s_buffer_addr(struct fimc_is_device_flite *device,
 	u32 bindex, u32 baddr)
 {
-	flite_hw_set_start_addr(device->regs, bindex, baddr);
+	flite_hw_set_start_addr(device->base_reg, bindex, baddr);
 }
 
-static inline int flite_s_use_buffer(struct fimc_is_device_flite *device,
+static inline int flite_s_use_buffer(struct fimc_is_device_flite *flite,
 	u32 bindex)
 {
 	int ret = 0;
-	struct fimc_is_queue *queue;
 
-	queue = GET_DST_QUEUE(device->vctx);
+	BUG_ON(!flite);
 
-	if (!atomic_read(&device->bcount)) {
-		if (flite_hw_get_status1(device->regs) && (7 << 20)) {
-			err("over vblank");
+	if (!atomic_read(&flite->bcount)) {
+		if (flite_hw_get_status1(flite->base_reg) && (7 << 20)) {
+			merr("over vblank", flite);
 			ret = -EINVAL;
 			goto p_err;
 		}
 
-		flite_hw_set_use_buffer(device->regs, bindex);
-		atomic_inc(&device->bcount);
-		flite_hw_set_output_dma(device->regs, true, queue);
+		flite_hw_set_use_buffer(flite->base_reg, bindex);
+		atomic_inc(&flite->bcount);
+		flite_hw_set_output_dma(flite->base_reg, true, flite->image.format.pixelformat);
 	} else {
-		flite_hw_set_use_buffer(device->regs, bindex);
-		atomic_inc(&device->bcount);
+		flite_hw_set_use_buffer(flite->base_reg, bindex);
+		atomic_inc(&flite->bcount);
 	}
 
 p_err:
 	return ret;
 }
 
-static inline int flite_s_unuse_buffer(struct fimc_is_device_flite *device,
+static inline int flite_s_unuse_buffer(struct fimc_is_device_flite *flite,
 	u32 bindex)
 {
 	int ret = 0;
-	struct fimc_is_queue *queue;
 
-	queue = GET_DST_QUEUE(device->vctx);
+	BUG_ON(!flite);
 
-	if (atomic_read(&device->bcount) == 1) {
-		if (flite_hw_get_status1(device->regs) && (7 << 20)) {
-			err("over vblank");
+	if (atomic_read(&flite->bcount) == 1) {
+		if (flite_hw_get_status1(flite->base_reg) && (7 << 20)) {
+			merr("over vblank", flite);
 			ret = -EINVAL;
 			goto p_err;
 		}
 
-		flite_hw_set_output_dma(device->regs, false, queue);
-		flite_hw_set_unuse_buffer(device->regs, bindex);
-		atomic_dec(&device->bcount);
+		flite_hw_set_output_dma(flite->base_reg, false, flite->image.format.pixelformat);
+		flite_hw_set_unuse_buffer(flite->base_reg, bindex);
+		atomic_dec(&flite->bcount);
 	} else {
-		flite_hw_set_unuse_buffer(device->regs, bindex);
-		atomic_dec(&device->bcount);
+		flite_hw_set_unuse_buffer(flite->base_reg, bindex);
+		atomic_dec(&flite->bcount);
 	}
 
 p_err:
@@ -657,26 +633,34 @@ static u32 g_print_cnt;
 #define LOG_INTERVAL_OF_DROPS 30
 static void tasklet_flite_str0(unsigned long data)
 {
+	struct v4l2_subdev *subdev;
 	struct fimc_is_device_flite *flite;
-	struct fimc_is_device_sensor *sensor;
+	struct fimc_is_device_sensor *device;
 	struct fimc_is_device_ischain *ischain;
-	struct fimc_is_framemgr *framemgr;
-	struct fimc_is_frame *frame;
 	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group_3ax, *group_isp;
+	struct fimc_is_group *group_3aa, *group_isp;
 	u32 bstart, fcount, present;
 
-	flite = (struct fimc_is_device_flite *)data;
-	present = flite_hw_get_present_frame_buffer(flite->regs) - 1;
-	sensor = (struct fimc_is_device_sensor *)flite->private_data;
-	ischain = sensor->ischain;
-	framemgr = GET_DST_FRAMEMGR(flite->vctx);
+	subdev = (struct v4l2_subdev *)data;
+	flite = v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		BUG();
+	}
 
+	device = v4l2_get_subdev_hostdata(subdev);
+	if (!device) {
+		err("device is NULL");
+		BUG();
+	}
+
+	present = flite_hw_get_present_frame_buffer(flite->base_reg) - 1;
 	bstart = flite->tasklet_param_str;
 	fcount = atomic_read(&flite->fcount);
+	ischain = device->ischain;
 
 #ifdef TASKLET_MSG
-	pr_info("S%d %d\n", bstart, fcount);
+	minfo("S%d %d\n", bstart, fcount);
 #endif
 
 	/* comparing sw state and hw state */
@@ -695,11 +679,10 @@ static void tasklet_flite_str0(unsigned long data)
 	}
 
 	groupmgr = ischain->groupmgr;
-	group_3ax = &ischain->group_3ax;
+	group_3aa = &ischain->group_3aa;
 	group_isp = &ischain->group_isp;
-	if (unlikely(list_empty(&group_3ax->smp_trigger.wait_list))) {
-		atomic_set(&group_3ax->sensor_fcount,
-				fcount + group_3ax->async_shots);
+	if (unlikely(list_empty(&group_3aa->smp_trigger.wait_list))) {
+		atomic_set(&group_3aa->sensor_fcount, fcount + group_3aa->async_shots);
 
 		/*
 		 * pcount : program count
@@ -707,69 +690,47 @@ static void tasklet_flite_str0(unsigned long data)
 		 */
 		if (((g_print_cnt % LOG_INTERVAL_OF_DROPS) == 0) ||
 			(g_print_cnt < LOG_INTERVAL_OF_DROPS)) {
-			printk(KERN_ERR "grp1(res %d, rcnt %d, scnt %d), "
+			minfo("grp1(res %d, rcnt %d, scnt %d), "
 				"grp2(res %d, rcnt %d, scnt %d), "
-				"fcount %d(%d, %d) pcount %d",
-				groupmgr->group_smp_res[group_3ax->id].count,
-				atomic_read(&group_3ax->rcount),
-				atomic_read(&group_3ax->scount),
+				"fcount %d(%d, %d) pcount %d\n",
+				groupmgr->group_smp_res[group_3aa->id].count,
+				atomic_read(&group_3aa->rcount),
+				atomic_read(&group_3aa->scount),
 				groupmgr->group_smp_res[group_isp->id].count,
 				atomic_read(&group_isp->rcount),
 				atomic_read(&group_isp->scount),
-				fcount + group_3ax->async_shots,
-				*last_fcount0, *last_fcount1, group_3ax->pcount);
+				fcount + group_3aa->async_shots,
+				*last_fcount0, *last_fcount1, group_3aa->pcount);
 		}
 		g_print_cnt++;
 	} else {
 		g_print_cnt = 0;
-		atomic_set(&group_3ax->sensor_fcount, fcount + group_3ax->async_shots);
-		up(&group_3ax->smp_trigger);
+		atomic_set(&group_3aa->sensor_fcount, fcount + group_3aa->async_shots);
+		up(&group_3aa->smp_trigger);
 	}
 
-	framemgr_e_barrier(framemgr, FMGR_IDX_0 + bstart);
-
-	fimc_is_frame_process_head(framemgr, &frame);
-	if (frame) {
-#ifdef MEASURE_TIME
-#ifdef EXTERNAL_TIME
-		do_gettimeofday(&frame->tzone[TM_FLITE_STR]);
-#endif
-#endif
-		frame->fcount = fcount;
-		fimc_is_ischain_camctl(ischain, frame, fcount);
-		fimc_is_ischain_tag(ischain, frame);
-	} else {
-		fimc_is_ischain_camctl(ischain, NULL, fcount);
-
-#ifdef TASKLET_MSG
-		merr("[SEN] process is empty", sensor);
-		fimc_is_frame_print_all(framemgr);
-#endif
-	}
-
-	framemgr_x_barrier(framemgr, FMGR_IDX_0 + bstart);
+	v4l2_subdev_notify(subdev, FLITE_NOTIFY_FSTART, &fcount);
 }
 
 static void tasklet_flite_str1(unsigned long data)
 {
+	struct v4l2_subdev *subdev;
 	struct fimc_is_device_flite *flite;
-	struct fimc_is_device_sensor *sensor;
-	struct fimc_is_device_ischain *ischain;
-	struct fimc_is_framemgr *framemgr;
-	struct fimc_is_frame *frame;
 	u32 bstart, fcount, present;
 
-	flite = (struct fimc_is_device_flite *)data;
-	present = flite_hw_get_present_frame_buffer(flite->regs) - 1;
-	sensor = (struct fimc_is_device_sensor *)flite->private_data;
-	ischain = sensor->ischain;
-	framemgr = GET_DST_FRAMEMGR(flite->vctx);
+	subdev = (struct v4l2_subdev *)data;
+	flite = v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		BUG();
+	}
 
+	present = flite_hw_get_present_frame_buffer(flite->base_reg) - 1;
 	bstart = flite->tasklet_param_str;
 	fcount = atomic_read(&flite->fcount);
 
 #ifdef TASKLET_MSG
-	pr_info("S%d %d\n", bstart, fcount);
+	minfo("S%d %d\n", bstart, fcount);
 #endif
 
 	/* comparing sw state and hw state */
@@ -787,52 +748,31 @@ static void tasklet_flite_str1(unsigned long data)
 		}
 	}
 
-	framemgr_e_barrier(framemgr, FMGR_IDX_0 + bstart);
-
-	fimc_is_frame_process_head(framemgr, &frame);
-	if (frame) {
-#ifdef MEASURE_TIME
-#ifdef EXTERNAL_TIME
-		do_gettimeofday(&frame->tzone[TM_FLITE_STR]);
-#endif
-#endif
-		frame->fcount = fcount;
-		fimc_is_ischain_camctl(ischain, frame, fcount);
-		fimc_is_ischain_tag(ischain, frame);
-	} else {
-		fimc_is_ischain_camctl(ischain, NULL, fcount);
-
-#ifdef TASKLET_MSG
-		merr("[SEN] process is empty", sensor);
-		fimc_is_frame_print_all(framemgr);
-#endif
-	}
-
-	framemgr_x_barrier(framemgr, FMGR_IDX_0 + bstart);
+	v4l2_subdev_notify(subdev, FLITE_NOTIFY_FSTART, &fcount);
 }
 
 static void tasklet_flite_end(unsigned long data)
 {
 	struct fimc_is_device_flite *flite;
-	struct fimc_is_device_sensor *sensor;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	u32 index, bdone;
+	struct fimc_is_frame *frame_done;
+	struct v4l2_subdev *subdev;
+	u32 bdone;
 
-	flite = (struct fimc_is_device_flite *)data;
-	sensor = (struct fimc_is_device_sensor *)flite->private_data;
-	framemgr = GET_DST_FRAMEMGR(flite->vctx);
+	frame_done = NULL;
+	subdev = (struct v4l2_subdev *)data;
+	flite = v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		BUG();
+	}
+
+	framemgr = flite->framemgr;
 	bdone = flite->tasklet_param_end;
 
 #ifdef TASKLET_MSG
-	pr_info("E%d %d\n", bdone, atomic_read(&flite->fcount));
-#endif
-
-#ifdef ENABLE_DTP
-	if (sensor->dtp_check) {
-		sensor->dtp_check = false;
-		del_timer(&sensor->dtp_timer);
-	}
+	minfo("E%d %d\n", bdone, atomic_read(&flite->fcount));
 #endif
 
 	framemgr_e_barrier(framemgr, FMGR_IDX_1 + bdone);
@@ -846,7 +786,7 @@ static void tasklet_flite_end(unsigned long data)
 #endif
 #endif
 			/* 1. current frame transition to completion */
-			index = frame->index;
+			frame_done = frame;
 			fimc_is_frame_trans_pro_to_com(framemgr, frame);
 
 			/* 2. next frame ready */
@@ -860,33 +800,27 @@ static void tasklet_flite_end(unsigned long data)
 				if (!flite_s_unuse_buffer(flite, bdone)) {
 					clear_bit(bdone, &flite->state);
 #ifdef TASKLET_MSG
-					merr("[SEN] request is empty0(%d slot)",
-						sensor, bdone);
+					merr("[SEN] request is empty0(%d slot)", flite, bdone);
 #endif
 				}
 			}
-
-			/* 3. current frame done */
-			buffer_done(flite->vctx, index);
 		} else {
 #ifdef TASKLET_MSG
-			merr("[SEN] process is empty(invalid state(%d, %ld))",
-				sensor, bdone, flite->state);
+			merr("[SEN] process is empty(%d, %ld)", flite, bdone, flite->state);
 			fimc_is_frame_print_all(framemgr);
 #endif
 		}
 	} else {
 		fimc_is_frame_request_head(framemgr, &frame);
 		if (frame) {
-			flite_s_buffer_addr(flite, bdone,
-				frame->dvaddr_buffer[0]);
+			flite_s_buffer_addr(flite, bdone, frame->dvaddr_buffer[0]);
 			if (!flite_s_use_buffer(flite, bdone)) {
 				set_bit(bdone, &flite->state);
 				fimc_is_frame_trans_req_to_pro(framemgr, frame);
 			}
 		} else {
 #ifdef TASKLET_MSG
-			merr("request is empty1(%d slot)", sensor, bdone);
+			merr("request is empty1(%d slot)", flite, bdone);
 			fimc_is_frame_print_all(framemgr);
 #endif
 		}
@@ -894,11 +828,7 @@ static void tasklet_flite_end(unsigned long data)
 
 	framemgr_x_barrier(framemgr, FMGR_IDX_1 + bdone);
 
-	if (sensor->instant_cnt) {
-		sensor->instant_cnt--;
-		if (sensor->instant_cnt <= 1)
-			wake_up(&sensor->instant_wait);
-	}
+	v4l2_subdev_notify(subdev, FLITE_NOTIFY_FEND, frame_done);
 }
 
 static inline void notify_fcount(u32 channel, u32 fcount)
@@ -913,33 +843,27 @@ static inline void notify_fcount(u32 channel, u32 fcount)
 		err("unresolved channel(%d)", channel);
 }
 
-static irqreturn_t fimc_is_flite_irq_handler(int irq, void *data)
+static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 {
 	u32 status, status1, status2, i;
 	struct fimc_is_device_flite *flite;
-	struct fimc_is_device_sensor *sensor;
-	int instance;
 
 	flite = data;
-	sensor = (struct fimc_is_device_sensor *)flite->private_data;
-	instance = sensor->instance;
-	status1 = flite_hw_getnclr_status1(flite->regs);
+	status1 = flite_hw_getnclr_status1(flite->base_reg);
 	status = status1 & (3 << 4);
 
-	if (test_bit(FIMC_IS_FLITE_LAST_CAPTURE, &flite->state)) {
+	if (test_bit(FLITE_LAST_CAPTURE, &flite->state)) {
 		if (status1) {
-			pr_info("[CamIF%d] last status1 : 0x%08X\n",
-				flite->channel, status1);
+			minfo("[CamIF%d] last status1 : 0x%08X\n", flite->instance, status1);
 			goto clear_status;
 		}
 
-		err("[CamIF%d] unintended intr is occured", flite->channel);
+		err("[CamIF%d] unintended intr is occured", flite->instance);
 
 		for (i = 0; i < 278; i += 4)
-			pr_info("REG[%X] : 0x%08X\n", i,
-				is_readl(flite->regs + i));
+			minfo("REG[%X] : 0x%08X\n", i, readl(flite->base_reg + i));
 
-		flite_hw_force_reset(flite->regs);
+		flite_hw_force_reset(flite->base_reg);
 
 		goto clear_status;
 	}
@@ -970,7 +894,7 @@ static irqreturn_t fimc_is_flite_irq_handler(int irq, void *data)
 					flite->sw_trigger = FLITE_B_SLOT_VALID;
 				flite->tasklet_param_str = flite->sw_trigger;
 				atomic_inc(&flite->fcount);
-				notify_fcount(flite->channel, atomic_read(&flite->fcount));
+				notify_fcount(flite->instance, atomic_read(&flite->fcount));
 				tasklet_schedule(&flite->tasklet_flite_str);
 			} else {
 #ifdef DBG_FLITEISR
@@ -984,7 +908,7 @@ static irqreturn_t fimc_is_flite_irq_handler(int irq, void *data)
 					flite->sw_trigger = FLITE_B_SLOT_VALID;
 				flite->tasklet_param_str = flite->sw_trigger;
 				atomic_inc(&flite->fcount);
-				notify_fcount(flite->channel, atomic_read(&flite->fcount));
+				notify_fcount(flite->instance, atomic_read(&flite->fcount));
 				tasklet_schedule(&flite->tasklet_flite_str);
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT ">");
@@ -1006,7 +930,7 @@ static irqreturn_t fimc_is_flite_irq_handler(int irq, void *data)
 				flite->sw_trigger = FLITE_B_SLOT_VALID;
 			flite->tasklet_param_str = flite->sw_trigger;
 			atomic_inc(&flite->fcount);
-			notify_fcount(flite->channel, atomic_read(&flite->fcount));
+			notify_fcount(flite->instance, atomic_read(&flite->fcount));
 			tasklet_schedule(&flite->tasklet_flite_str);
 		} else {
 #ifdef DBG_FLITEISR
@@ -1022,281 +946,281 @@ static irqreturn_t fimc_is_flite_irq_handler(int irq, void *data)
 clear_status:
 	if (status1 & (1 << 6)) {
 		/* Last Frame Capture Interrupt */
-		printk(KERN_INFO "[CamIF%d] Last Frame Capture(fcount : %d)\n",
-			instance, atomic_read(&flite->fcount));
+		minfo("[CamIF%d] Last Frame Capture(fcount : %d)\n",
+			flite->instance, atomic_read(&flite->fcount));
 
 		/* Clear LastCaptureEnd bit */
-		status2 = flite_hw_get_status2(flite->regs);
+		status2 = flite_hw_get_status2(flite->base_reg);
 		status2 &= ~(0x1 << 1);
-		flite_hw_set_status2(flite->regs, status2);
+		flite_hw_set_status2(flite->base_reg, status2);
 
 		/* Notify last capture */
-		set_bit(FIMC_IS_FLITE_LAST_CAPTURE, &flite->state);
+		set_bit(FLITE_LAST_CAPTURE, &flite->state);
 		wake_up(&flite->wait_queue);
 	}
 
 	if (status1 & (1 << 8)) {
 		u32 ciwdofst;
 
-		/* err("[CamIF_0]Overflow Cr\n"); */
-		pr_err("[CamIF%d] OFCR\n", instance);
-		ciwdofst = is_readl(flite->regs + 0x10);
+		pr_err("[CamIF%d] OFCR\n", flite->instance);
+		ciwdofst = readl(flite->base_reg + 0x10);
 		ciwdofst  |= (0x1 << 14);
-		is_writel(ciwdofst, flite->regs + 0x10);
+		writel(ciwdofst, flite->base_reg + 0x10);
 		ciwdofst  &= ~(0x1 << 14);
-		is_writel(ciwdofst, flite->regs + 0x10);
+		writel(ciwdofst, flite->base_reg + 0x10);
 	}
 
 	if (status1 & (1 << 9)) {
 		u32 ciwdofst;
 
-		/* err("[CamIF_0]Overflow Cb\n"); */
-		pr_err("[CamIF%d] OFCB\n", instance);
-		ciwdofst = is_readl(flite->regs + 0x10);
+		pr_err("[CamIF%d] OFCB\n", flite->instance);
+		ciwdofst = readl(flite->base_reg + 0x10);
 		ciwdofst  |= (0x1 << 15);
-		is_writel(ciwdofst, flite->regs + 0x10);
+		writel(ciwdofst, flite->base_reg + 0x10);
 		ciwdofst  &= ~(0x1 << 15);
-		is_writel(ciwdofst, flite->regs + 0x10);
+		writel(ciwdofst, flite->base_reg + 0x10);
 	}
 
 	if (status1 & (1 << 10)) {
 		u32 ciwdofst;
 
-		/* err("[CamIF_0]Overflow Y\n"); */
-		pr_err("[CamIF%d] OFY\n", instance);
-		ciwdofst = is_readl(flite->regs + 0x10);
+		pr_err("[CamIF%d] OFY\n", flite->instance);
+		ciwdofst = readl(flite->base_reg + 0x10);
 		ciwdofst  |= (0x1 << 30);
-		is_writel(ciwdofst, flite->regs + 0x10);
+		writel(ciwdofst, flite->base_reg + 0x10);
 		ciwdofst  &= ~(0x1 << 30);
-		is_writel(ciwdofst, flite->regs + 0x10);
+		writel(ciwdofst, flite->base_reg + 0x10);
 	}
 
 	return IRQ_HANDLED;
 }
 
-int fimc_is_flite_probe(struct fimc_is_device_flite *flite, u32 data)
+int fimc_is_flite_open(struct v4l2_subdev *subdev,
+	struct fimc_is_framemgr *framemgr)
 {
 	int ret = 0;
+	struct fimc_is_device_flite *flite;
 
-	flite->private_data = data;
-	init_waitqueue_head(&flite->wait_queue);
+	BUG_ON(!subdev);
+	BUG_ON(!framemgr);
 
-	if (flite->channel == FLITE_ID_A) {
-		flite->regs = (unsigned long)S5P_VA_FIMCLITE0;
-	} else if (flite->channel == FLITE_ID_B) {
-		flite->regs = (unsigned long)S5P_VA_FIMCLITE1;
-	} else if (flite->channel == FLITE_ID_C) {
-		flite->regs = (unsigned long)S5P_VA_FIMCLITE2;
-	} else
-		err("unresolved channel input");
+	flite = v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
 
-	return ret;
-}
-
-int fimc_is_flite_open(struct fimc_is_device_flite *flite,
-	struct fimc_is_video_ctx *vctx)
-{
-	int ret = 0;
-
-	BUG_ON(!flite);
-	BUG_ON(!vctx);
-
-	flite->vctx = vctx;
+	flite->group = 0;
+	flite->framemgr = framemgr;
 	atomic_set(&flite->fcount, 0);
 	atomic_set(&flite->bcount, 0);
 
-	clear_bit(FIMC_IS_FLITE_LAST_CAPTURE, &flite->state);
+	clear_bit(FLITE_OTF_WITH_3AA, &flite->state);
+	clear_bit(FLITE_LAST_CAPTURE, &flite->state);
 	clear_bit(FLITE_A_SLOT_VALID, &flite->state);
 	clear_bit(FLITE_B_SLOT_VALID, &flite->state);
 
-	if (flite->channel == FLITE_ID_A) {
+	switch(flite->instance) {
+	case FLITE_ID_A:
 		ret = request_irq(IRQ_FIMC_LITE0,
-			fimc_is_flite_irq_handler,
+			fimc_is_flite_isr,
 			IRQF_SHARED,
 			"fimc-lite0",
 			flite);
 		if (ret)
 			err("request_irq(L0) failed\n");
-	} else if (flite->channel == FLITE_ID_B) {
+		break;
+	case FLITE_ID_B:
 		ret = request_irq(IRQ_FIMC_LITE1,
-			fimc_is_flite_irq_handler,
+			fimc_is_flite_isr,
 			IRQF_SHARED,
 			"fimc-lite1",
 			flite);
 		if (ret)
 			err("request_irq(L1) failed\n");
-	} else if (flite->channel == FLITE_ID_C) {
+		break;
+	case FLITE_ID_C:
 		ret = request_irq(IRQ_FIMC_LITE2,
-			fimc_is_flite_irq_handler,
+			fimc_is_flite_isr,
 			IRQF_SHARED,
 			"fimc-lite2",
 			flite);
 		if (ret)
 			err("request_irq(L2) failed\n");
-	} else
-		err("unresolved channel input");
-
-	return ret;
-}
-
-int fimc_is_flite_close(struct fimc_is_device_flite *this)
-{
-	int ret = 0;
-
-	if (this->channel == FLITE_ID_A) {
-		free_irq(IRQ_FIMC_LITE0, this);
-	} else if (this->channel == FLITE_ID_B) {
-		free_irq(IRQ_FIMC_LITE1, this);
-	} else if (this->channel == FLITE_ID_C) {
-		free_irq(IRQ_FIMC_LITE2, this);
-	} else {
-		err("FLITE%d is invalid", this->channel);
+		break;
+	default:
+		err("instance is invalid(%d)", flite->instance);
 		ret = -EINVAL;
+		goto p_err;
 	}
 
+p_err:
 	return ret;
 }
 
-int fimc_is_flite_start(struct fimc_is_device_flite *flite,
-	struct fimc_is_frame_info *finfo,
-	struct fimc_is_video_ctx *vctx)
+
+int fimc_is_flite_close(struct v4l2_subdev *subdev)
 {
 	int ret = 0;
-	u32 buffer;
+	struct fimc_is_device_flite *flite;
+
+	BUG_ON(!subdev);
+
+	flite = v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	switch(flite->instance) {
+	case FLITE_ID_A:
+		free_irq(IRQ_FIMC_LITE0, flite);
+		break;
+	case FLITE_ID_B:
+		free_irq(IRQ_FIMC_LITE1, flite);
+		break;
+	case FLITE_ID_C:
+		free_irq(IRQ_FIMC_LITE2, flite);
+		break;
+	default:
+		err("instance is invalid(%d)", flite->instance);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+p_err:
+	return ret;
+}
+
+static int flite_stream_on(struct v4l2_subdev *subdev,
+	struct fimc_is_device_flite *flite)
+{
+	int ret = 0;
+	u32 otf_setting;
 	bool buffer_ready;
 	unsigned long flags;
-	unsigned long otf_setting = 0;
-	u32 group_id_3aa;
-	struct fimc_is_frame *item;
+	struct fimc_is_image *image;
 	struct fimc_is_framemgr *framemgr;
-	struct fimc_is_queue *queue;
-	struct fimc_is_device_sensor *sensor;
-
-	sensor = (struct fimc_is_device_sensor *)flite->private_data;
+	struct fimc_is_frame *frame;
 
 	BUG_ON(!flite);
-	BUG_ON(!finfo);
-	BUG_ON(!vctx);
+	BUG_ON(!flite->framemgr);
 
-	group_id_3aa = sensor->ischain->group_3ax.id;
-
-	if (IS_ISCHAIN_OTF(sensor->ischain)) {
-		tasklet_init(&flite->tasklet_flite_str,
-			tasklet_flite_str0,
-			(unsigned long)flite);
-
-		tasklet_init(&flite->tasklet_flite_end,
-			tasklet_flite_end,
-			(unsigned long)flite);
-	} else {
-		tasklet_init(&flite->tasklet_flite_str,
-			tasklet_flite_str1,
-			(unsigned long)flite);
-
-		tasklet_init(&flite->tasklet_flite_end,
-			tasklet_flite_end,
-			(unsigned long)flite);
-	}
-
-	if (IS_ISCHAIN_OTF(sensor->ischain)) {
-		dbg_sensor("Enabling OTF path. channel(%d), target 3aa(%d)",
-			flite->channel, group_id_3aa);
-		if (flite->channel == FLITE_ID_A) {
-			if (group_id_3aa == GROUP_ID_3A0)
-				otf_setting = FLITE_REG_CIGENERAL_CAM_A;
-			else if (group_id_3aa == GROUP_ID_3A1)
-				otf_setting = FLITE_REG_CIGENERAL_3AA1_CAM_A;
-			else
-				err("invalid OTF target 3AA");
-		} else if (flite->channel == FLITE_ID_B) {
-			if (group_id_3aa == GROUP_ID_3A0)
-				otf_setting = FLITE_REG_CIGENERAL_CAM_B;
-			else if (group_id_3aa == GROUP_ID_3A1)
-				otf_setting = FLITE_REG_CIGENERAL_3AA1_CAM_B;
-			else
-				err("invalid OTF target 3AA");
-		} else
-			err("invalid FLITE channel for OTF setting");
-	}
-
-	queue = GET_DST_QUEUE(vctx);
-	framemgr = GET_DST_FRAMEMGR(vctx);
-	buffer = 0;
+	otf_setting = 0;
 	buffer_ready = false;
+	framemgr = flite->framemgr;
+	image = &flite->image;
 
 	flite->sw_trigger = FLITE_B_SLOT_VALID;
 	flite->sw_checker = EXPECT_FRAME_START;
 	flite->tasklet_param_str = 0;
 	flite->tasklet_param_end = 0;
 	atomic_set(&flite->bcount, 0);
-	clear_bit(FIMC_IS_FLITE_LAST_CAPTURE, &flite->state);
+	clear_bit(FLITE_LAST_CAPTURE, &flite->state);
 	clear_bit(FLITE_A_SLOT_VALID, &flite->state);
 	clear_bit(FLITE_B_SLOT_VALID, &flite->state);
 
-	flite_hw_force_reset(flite->regs);
-	init_fimc_lite(flite->regs);
+	flite_hw_force_reset(flite->base_reg);
+	init_fimc_lite(flite->base_reg);
 
 	framemgr_e_barrier_irqs(framemgr, 0, flags);
 
 	if (framemgr->frame_req_cnt >= 1) {
-		buffer = queue->buf_dva[0][0];
-		buffer_ready = true;
+		fimc_is_frame_request_head(framemgr, &frame);
 		flite_s_use_buffer(flite, FLITE_A_SLOT_VALID);
-		flite_s_buffer_addr(flite, FLITE_A_SLOT_VALID, buffer);
+		flite_s_buffer_addr(flite, FLITE_A_SLOT_VALID, frame->dvaddr_buffer[0]);
 		set_bit(FLITE_A_SLOT_VALID, &flite->state);
-		fimc_is_frame_request_head(framemgr, &item);
-		fimc_is_frame_trans_req_to_pro(framemgr, item);
+		fimc_is_frame_trans_req_to_pro(framemgr, frame);
+		buffer_ready = true;
 	}
 
 	if (framemgr->frame_req_cnt >= 1) {
-		buffer = queue->buf_dva[1][0];
-		buffer_ready = true;
+		fimc_is_frame_request_head(framemgr, &frame);
 		flite_s_use_buffer(flite, FLITE_B_SLOT_VALID);
-		flite_s_buffer_addr(flite, FLITE_B_SLOT_VALID, buffer);
+		flite_s_buffer_addr(flite, FLITE_B_SLOT_VALID, frame->dvaddr_buffer[0]);
 		set_bit(FLITE_B_SLOT_VALID, &flite->state);
-		fimc_is_frame_request_head(framemgr, &item);
-		fimc_is_frame_trans_req_to_pro(framemgr, item);
+		fimc_is_frame_trans_req_to_pro(framemgr, frame);
+		buffer_ready = true;
 	}
 
 	framemgr_x_barrier_irqr(framemgr, 0, flags);
 
-	flite_hw_set_output_dma(flite->regs, buffer_ready, queue);
-	if (IS_ISCHAIN_OTF(sensor->ischain))
-		flite_hw_set_output_local(flite->regs, true);
-	else
-		flite_hw_set_output_local(flite->regs, false);
+	flite_hw_set_output_dma(flite->base_reg, buffer_ready, image->format.pixelformat);
 
-	start_fimc_lite(flite->regs, finfo, queue, otf_setting);
+	if (test_bit(FLITE_OTF_WITH_3AA, &flite->state)) {
+		tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str0, (unsigned long)subdev);
+		tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
 
+		mdbgd_back("Enabling OTF path. target 3aa(%d)", flite, flite->group);
+		if (flite->instance == FLITE_ID_A) {
+			if (flite->group == GROUP_ID_3A0)
+				otf_setting = FLITE_REG_CIGENERAL_CAM_A;
+			else
+				otf_setting = FLITE_REG_CIGENERAL_3AA1_CAM_A;
+		} else if (flite->instance == FLITE_ID_B) {
+			if (flite->group == GROUP_ID_3A0)
+				otf_setting = FLITE_REG_CIGENERAL_CAM_B;
+			else
+				otf_setting = FLITE_REG_CIGENERAL_3AA1_CAM_B;
+		} else {
+			merr("invalid FLITE channel for OTF setting", flite);
+			ret = -EINVAL;
+			goto p_err;
+		}
+
+		flite_hw_set_output_local(flite->base_reg, true);
+	} else {
+		tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str1, (unsigned long)subdev);
+		tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
+
+		flite_hw_set_output_local(flite->base_reg, false);
+	}
+
+	start_fimc_lite(flite->base_reg, image, otf_setting);
+
+p_err:
 	return ret;
 }
 
-int fimc_is_flite_stop(struct fimc_is_device_flite *flite, bool wait)
+static int flite_stream_off(struct v4l2_subdev *subdev,
+	struct fimc_is_device_flite *flite,
+	bool wait)
 {
 	int ret = 0;
+	unsigned long __iomem *base_reg;
+	unsigned long flags;
+	struct fimc_is_framemgr *framemgr;
+	struct fimc_is_frame *frame;
 
 	BUG_ON(!flite);
+	BUG_ON(!flite->base_reg);
+	BUG_ON(!flite->framemgr);
+
+	base_reg = flite->base_reg;
+	framemgr = flite->framemgr;
 
 	/* for preventing invalid memory access */
-	flite_hw_set_unuse_buffer(flite->regs, FLITE_A_SLOT_VALID);
-	flite_hw_set_unuse_buffer(flite->regs, FLITE_B_SLOT_VALID);
-	flite_hw_set_output_dma(flite->regs, false, NULL);
-	flite_hw_set_output_local(flite->regs, false);
+	flite_hw_set_unuse_buffer(base_reg, FLITE_A_SLOT_VALID);
+	flite_hw_set_unuse_buffer(base_reg, FLITE_B_SLOT_VALID);
+	flite_hw_set_output_dma(base_reg, false, flite->image.format.pixelformat);
+	flite_hw_set_output_local(base_reg, false);
 
-	stop_fimc_lite(flite->regs);
+	stop_fimc_lite(base_reg);
 	if (wait) {
-		int timetowait;
+		u32 timetowait;
 
 		timetowait = wait_event_timeout(flite->wait_queue,
-			test_bit(FIMC_IS_FLITE_LAST_CAPTURE, &flite->state),
+			test_bit(FLITE_LAST_CAPTURE, &flite->state),
 			FIMC_IS_FLITE_STOP_TIMEOUT);
 		if (!timetowait) {
 			/* forcely stop */
-			stop_fimc_lite(flite->regs);
-			set_bit(FIMC_IS_FLITE_LAST_CAPTURE, &flite->state);
+			stop_fimc_lite(base_reg);
+			set_bit(FLITE_LAST_CAPTURE, &flite->state);
 			err("last capture timeout:%s", __func__);
 			msleep(200);
-			flite_hw_force_reset(flite->regs);
+			flite_hw_force_reset(base_reg);
 			ret = -ETIME;
 		}
 	} else {
@@ -1304,39 +1228,171 @@ int fimc_is_flite_stop(struct fimc_is_device_flite *flite, bool wait)
 		 * DTP test can make iommu fault because senosr is streaming
 		 * therefore it need  force reset
 		 */
-		flite_hw_force_reset(flite->regs);
+		flite_hw_force_reset(base_reg);
 	}
 
 	/* clr interrupt source */
-	flite_hw_clr_interrupt_source(flite->regs);
+	flite_hw_clr_interrupt_source(base_reg);
+
+	framemgr_e_barrier_irqs(framemgr, FMGR_IDX_3, flags);
+
+	fimc_is_frame_complete_head(framemgr, &frame);
+	while (frame) {
+		fimc_is_frame_trans_com_to_fre(framemgr, frame);
+		fimc_is_frame_complete_head(framemgr, &frame);
+	}
+
+	fimc_is_frame_process_head(framemgr, &frame);
+	while (frame) {
+		fimc_is_frame_trans_pro_to_fre(framemgr, frame);
+		fimc_is_frame_process_head(framemgr, &frame);
+	}
+
+	fimc_is_frame_request_head(framemgr, &frame);
+	while (frame) {
+		fimc_is_frame_trans_req_to_fre(framemgr, frame);
+		fimc_is_frame_request_head(framemgr, &frame);
+	}
+
+	framemgr_x_barrier_irqr(framemgr, FMGR_IDX_3, flags);
 
 	return ret;
 }
 
-void fimc_is_flite_restart(struct fimc_is_device_flite *this,
-	struct fimc_is_frame_info *frame,
-	struct fimc_is_video_ctx *vctx)
+/*
+ * enable
+ * @X0 : disable
+ * @X1 : enable
+ * @1X : no waiting flag
+ * @0X : waiting flag
+ */
+static int flite_s_stream(struct v4l2_subdev *subdev, int enable)
 {
-	struct fimc_is_queue *queue = GET_DST_QUEUE(vctx);
-	int capturing = flite_hw_get_capture_status(this->regs);
+	int ret = 0;
+	bool nowait;
+	struct fimc_is_device_flite *flite;
 
-	if (capturing)
-		stop_fimc_lite(this->regs);
+	BUG_ON(!subdev);
 
-	resize_fimc_lite(this->regs, frame, queue);
+	nowait = (enable & FLITE_NOWAIT_MASK) >> FLITE_NOWAIT_SHIFT;
+	enable = enable & FLITE_ENABLE_MASK;
 
-	if (test_bit(FIMC_IS_FLITE_LAST_CAPTURE, &this->state)) {
-		/* need to check other device state & value */
-		this->sw_trigger = FLITE_B_SLOT_VALID;
-		this->sw_checker = EXPECT_FRAME_START;
-		this->tasklet_param_str = 0;
-		this->tasklet_param_end = 0;
-
-		clear_bit(FIMC_IS_FLITE_LAST_CAPTURE, &this->state);
+	flite = (struct fimc_is_device_flite *)v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		ret = -EINVAL;
+		goto p_err;
 	}
 
-	flite_hw_set_interrupt_source(this->regs);
-	flite_hw_set_output_dma(this->regs, true, queue);
-	flite_hw_set_last_capture_end_clear(this->regs);
-	flite_hw_set_capture_start(this->regs);
+	if (enable) {
+		ret = flite_stream_on(subdev, flite);
+		if (ret) {
+			err("flite_stream_on is fail(%d)", ret);
+			goto p_err;
+		}
+	} else {
+		ret = flite_stream_off(subdev, flite, nowait);
+		if (ret) {
+			err("flite_stream_off is fail(%d)", ret);
+			goto p_err;
+		}
+	}
+
+p_err:
+	mdbgd_back("%s(%d, %d)\n", flite, __func__, enable, ret);
+	return 0;
+}
+
+static int flite_s_format(struct v4l2_subdev *subdev, struct v4l2_mbus_framefmt *fmt)
+{
+	int ret = 0;
+	struct fimc_is_device_flite *flite;
+
+	BUG_ON(!subdev);
+	BUG_ON(!fmt);
+
+	flite = (struct fimc_is_device_flite *)v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	flite->image.window.offs_h = 0;
+	flite->image.window.offs_v = 0;
+	flite->image.window.width = fmt->width;
+	flite->image.window.height = fmt->height;
+	flite->image.window.o_width = fmt->width;
+	flite->image.window.o_height = fmt->height;
+	flite->image.format.pixelformat = fmt->code;
+
+p_err:
+	mdbgd_back("%s(%dx%d, %X)\n", flite, __func__, fmt->width, fmt->height, fmt->code);
+	return ret;
+}
+
+static const struct v4l2_subdev_video_ops video_ops = {
+	.s_stream = flite_s_stream,
+	.s_mbus_fmt = flite_s_format
+};
+
+static const struct v4l2_subdev_ops subdev_ops = {
+	.video = &video_ops
+};
+
+int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
+	u32 instance)
+{
+	int ret = 0;
+	struct v4l2_subdev *subdev_flite;
+	struct fimc_is_device_flite *flite;
+
+	BUG_ON(!device);
+
+	subdev_flite = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
+	if (!subdev_flite) {
+		merr("subdev_flite is NULL", device);
+		ret = -ENOMEM;
+		goto p_err;
+	}
+	device->subdev_flite = subdev_flite;
+
+	flite = kzalloc(sizeof(struct fimc_is_device_flite), GFP_KERNEL);
+	if (!flite) {
+		merr("flite is NULL", device);
+		ret = -ENOMEM;
+		goto p_err;
+	}
+
+	flite->instance = instance;
+	init_waitqueue_head(&flite->wait_queue);
+	switch(instance) {
+	case FLITE_ID_A:
+		flite->base_reg = (unsigned long *)S5P_VA_FIMCLITE0;
+		break;
+	case FLITE_ID_B:
+		flite->base_reg = (unsigned long *)S5P_VA_FIMCLITE1;
+		break;
+	case FLITE_ID_C:
+		flite->base_reg = (unsigned long *)S5P_VA_FIMCLITE2;
+		break;
+	default:
+		err("instance is invalid(%d)", instance);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	v4l2_subdev_init(subdev_flite, &subdev_ops);
+	v4l2_set_subdevdata(subdev_flite, (void *)flite);
+	v4l2_set_subdev_hostdata(subdev_flite, device);
+	snprintf(subdev_flite->name, V4L2_SUBDEV_NAME_SIZE, "flite-subdev.%d", instance);
+	ret = v4l2_device_register_subdev(&device->v4l2_dev, subdev_flite);
+	if (ret) {
+		merr("v4l2_device_register_subdev is fail(%d)", device, ret);
+		goto p_err;
+	}
+
+p_err:
+	minfo("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
+	return ret;
 }

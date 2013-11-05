@@ -12,6 +12,7 @@
 #ifndef FIMC_IS_GROUP_MGR_H
 #define FIMC_IS_GROUP_MGR_H
 
+#include "fimc-is-config.h"
 #include "fimc-is-time.h"
 #include "fimc-is-subdev-ctrl.h"
 #include "fimc-is-video.h"
@@ -38,19 +39,19 @@
 
 enum fimc_is_group_state {
 	FIMC_IS_GROUP_OPEN,
+	FIMC_IS_GROUP_INIT,
 	FIMC_IS_GROUP_READY,
 	FIMC_IS_GROUP_ACTIVE,
 	FIMC_IS_GROUP_RUN,
 	FIMC_IS_GROUP_REQUEST_FSTOP,
 	FIMC_IS_GROUP_FORCE_STOP,
-	FIMC_IS_GROUP_OTF_INPUT,
-	FIMC_IS_GROUP_SMP_INIT
+	FIMC_IS_GROUP_OTF_INPUT
 };
 
 enum fimc_is_global_group_state {
 	FIMC_IS_GGROUP_INIT,
-	FIMC_IS_GGROUP_SMP_INIT,
-	FIMC_IS_GGROUP_STOP
+	FIMC_IS_GGROUP_START,
+	FIMC_IS_GGROUP_REQUEST_STOP
 };
 
 struct fimc_is_frame;
@@ -123,20 +124,23 @@ struct fimc_is_groupmgr {
 	struct task_struct		*group_task[GROUP_ID_MAX];
 	struct semaphore		group_smp_res[GROUP_ID_MAX];
 	unsigned long			group_state[GROUP_ID_MAX];
-	atomic_t			group_cnt;
+	atomic_t			group_refcount[GROUP_ID_MAX];
 };
 
 int fimc_is_groupmgr_probe(struct fimc_is_groupmgr *groupmgr);
+int fimc_is_group_probe(struct fimc_is_groupmgr *groupmgr,
+	struct fimc_is_group *group,
+	u32 entry);
 int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group, u32 id, u32 instance,
 	struct fimc_is_video_ctx *vctx,
 	struct fimc_is_device_ischain *device,
 	fimc_is_start_callback start_callback);
-int fimc_is_group_sema_init(struct fimc_is_groupmgr *groupmgr,
-	struct fimc_is_group *group);
 int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
+	struct fimc_is_group *group);
+int fimc_is_group_init(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
-	struct fimc_is_video_ctx *vctx);
+	bool otf_input);
 int fimc_is_group_process_start(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
 	struct fimc_is_queue *queue);

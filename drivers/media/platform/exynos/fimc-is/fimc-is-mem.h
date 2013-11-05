@@ -12,6 +12,13 @@
 #ifndef FIMC_IS_MEM_H
 #define FIMC_IS_MEM_H
 
+#include <media/videobuf2-core.h>
+#if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
+#include <media/videobuf2-cma-phys.h>
+#elif defined(CONFIG_VIDEOBUF2_ION)
+#include <media/videobuf2-ion.h>
+#endif
+
 struct fimc_is_minfo {
 	dma_addr_t	base;		/* buffer base */
 	size_t		size;		/* total length */
