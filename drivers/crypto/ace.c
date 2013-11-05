@@ -1771,7 +1771,7 @@ static int s5p_ace_sha_engine(struct s5p_ace_hash_ctx *sctx,
 			/* Update pre-message length */
 			/* Note that the unit of pre-message length is a BIT! */
 			sctx->prelen_low += (len << 3);
-			if (sctx->prelen_low < len)
+			if (sctx->prelen_low < (len << 3))
 				sctx->prelen_high++;
 			sctx->prelen_high += (len >> 29);
 		} else {
