@@ -601,9 +601,9 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
 	memset(res, 0, sizeof *res);
 	/* get clocks, power */
 
-	res->hdmi = clk_get(dev, "hdmi");
+	res->hdmi = clk_get(dev, "clk_hdmi");
 	if (IS_ERR_OR_NULL(res->hdmi)) {
-		dev_err(dev, "failed to get clock 'hdmi'\n");
+		dev_err(dev, "failed to get clock 'clk_hdmi'\n");
 		goto fail;
 	}
 	res->sclk_hdmi = clk_get(dev, "sclk_hdmi");

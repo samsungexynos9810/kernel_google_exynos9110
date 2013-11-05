@@ -505,7 +505,7 @@ static int mxr_acquire_clocks(struct mxr_device *mdev)
 			goto fail;
 		}
 	}
-	res->mixer = clk_get(dev, "mixer");
+	res->mixer = clk_get(dev, "clk_mixer");
 	if (IS_ERR_OR_NULL(res->mixer)) {
 		mxr_err(mdev, "failed to get clock 'mixer'\n");
 		goto fail;
