@@ -385,7 +385,6 @@ static int gsc_output_s_fmt_mplane(struct file *file, void *fh,
 	struct v4l2_pix_format_mplane *pix;
 	int i, ret = 0;
 
-	gsc_info();
 	ret = gsc_output_try_fmt_mplane(file, fh, f);
 	if (ret) {
 		gsc_err("Invalid argument");
@@ -440,7 +439,6 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 	struct gsc_frame *frame;
 	int ret;
 
-	gsc_info();
 	if (reqbufs->count > gsc->variant->in_buf_cnt) {
 		gsc_err("Requested count exceeds maximun count of input buffer");
 		return -EINVAL;
@@ -514,7 +512,6 @@ static int gsc_output_qbuf(struct file *file, void *priv,
 	struct gsc_dev *gsc = video_drvdata(file);
 	struct gsc_output_device *out = &gsc->out;
 
-	gsc_info();
 	return vb2_qbuf(&out->vbq, buf);
 }
 
@@ -523,7 +520,6 @@ static int gsc_output_dqbuf(struct file *file, void *priv,
 {
 	struct gsc_dev *gsc = video_drvdata(file);
 
-	gsc_info();
 	return vb2_dqbuf(&gsc->out.vbq, buf,
 			 file->f_flags & O_NONBLOCK);
 }

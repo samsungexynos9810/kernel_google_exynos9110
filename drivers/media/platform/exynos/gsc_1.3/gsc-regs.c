@@ -591,21 +591,17 @@ void gsc_hw_set_out_image_format(struct gsc_ctx *ctx)
 	u32 i, depth = 0;
 	u32 cfg;
 
-	gsc_info();
 	cfg = readl(dev->regs + GSC_OUT_CON);
 	cfg &= ~(GSC_OUT_RGB_TYPE_MASK | GSC_OUT_YUV422_1P_ORDER_MASK |
 		 GSC_OUT_CHROMA_ORDER_MASK | GSC_OUT_FORMAT_MASK |
 		 GSC_OUT_CHROM_STRIDE_SEL_MASK | GSC_OUT_RB_SWAP_MASK);
 	writel(cfg, dev->regs + GSC_OUT_CON);
 
-	gsc_info();
 	if (is_rgb(frame->fmt->pixelformat)) {
-		gsc_info();
 		gsc_hw_set_out_image_rgb(ctx);
 		return;
 	}
 
-	gsc_info();
 	if (ctx->out_path != GSC_DMA) {
 		cfg |= GSC_OUT_YUV444;
 		goto end_set;

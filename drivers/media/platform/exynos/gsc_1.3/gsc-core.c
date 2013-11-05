@@ -1159,7 +1159,6 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 	gsc->end_time = sched_clock();
 	gsc_dbg("OPERATION-TIME: %llu\n", gsc->end_time - gsc->start_time);
 #endif
-	gsc_info();
 	gsc_irq = gsc_hw_get_irq_status(gsc);
 	gsc_hw_clear_irq(gsc, gsc_irq);
 
