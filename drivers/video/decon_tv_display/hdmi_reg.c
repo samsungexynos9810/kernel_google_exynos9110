@@ -1772,6 +1772,7 @@ void hdmi_timing_apply(struct hdmi_device *hdev,
 	hdmi_writeb(hdev, HDMI_TG_FIELD_BOT_HDMI_L, tg->field_bot_hdmi_l);
 	hdmi_writeb(hdev, HDMI_TG_FIELD_BOT_HDMI_H, tg->field_bot_hdmi_h);
 	hdmi_writeb(hdev, HDMI_TG_3D, tg->tg_3d);
+	hdmi_writeb(hdev, HDMI_TG_DECON_EN, 1);
 }
 
 const u8 *hdmiphy_timing2conf(struct v4l2_dv_timings timings)
@@ -2380,10 +2381,10 @@ void hdmiphy_set_conf(struct hdmi_device *hdev, int en)
 void hdmiphy_set_mode(struct hdmi_device *hdev, int en)
 {
 	if (en)
-		hdmiphy_write_mask(hdev, HDMI_PHY_REG7C, ~0,
+		hdmiphy_write_mask(hdev, HDMI_PHY_REG84, ~0,
 				HDMI_PHY_MODE_SET_DONE);
 	else
-		hdmiphy_write_mask(hdev, HDMI_PHY_REG7C, 0,
+		hdmiphy_write_mask(hdev, HDMI_PHY_REG84, 0,
 				HDMI_PHY_MODE_SET_DONE);
 }
 
@@ -2399,7 +2400,7 @@ void hdmiphy_conf_store(struct hdmi_device *hdev, const char *buf)
 {
 	int i;
 
-	for (i = 1; i < 32; i++)
+	for (i = 1; i < 30; i++)
 		writeb(buf[i], hdev->phy_regs + HDMI_PHY_REG00 + (i * 4));
 }
 
