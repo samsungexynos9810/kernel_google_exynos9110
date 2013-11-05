@@ -18,10 +18,8 @@
 #include <linux/clk-private.h>
 
 #include <mach/map.h>
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 #include <mach/regs-clock.h>
-#else
-#include <mach/regs-clock-exynos5430_evt0.h>
+#if !defined(CONFIG_SOC_EXYNOS5430_REV_1)
 #include <mach/regs-pmu.h>
 #endif
 #include <mach/cpufreq.h>
