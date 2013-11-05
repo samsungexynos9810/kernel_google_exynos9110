@@ -33,6 +33,8 @@
 		gsc0 = &gsc_0;
 		gsc1 = &gsc_1;
 		mdev0 = &mdev_0;
+		jpeg0 = &jpeg_0;
+		jpeg1 = &jpeg_1;
 	};
 
 	cpus {
@@ -915,5 +917,25 @@
 		mif_min = <160000>;
 		int_min = <111000>;
 		iommu = <&sysmmu_gscl1>;
+	};
+
+	jpeg_0: jpeg@11F50000 {
+		compatible = "samsung,jpeg-hx2";
+		reg = <0x11F50000 0x1000>;
+		interrupts = <0 89 0>;
+		clock-names = "jpeg";
+		clocks = <&clock 600>;
+		iommu = <&sysmmu_jpeg>;
+		ip_ver = <3>;
+	};
+
+	jpeg_1: jpeg@11F60000 {
+		compatible = "samsung,jpeg-hx2";
+		reg = <0x11F60000 0x1000>;
+		interrupts = <0 168 0>;
+		clock-names = "jpeg";
+		clocks = <&clock 600>;
+		iommu = <&sysmmu_jpeg2>;
+		ip_ver = <3>;
 	};
 };
