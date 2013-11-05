@@ -43,196 +43,6 @@ struct platform_device; /* don't need the contents */
 /*------------------------------------------------------*/
 /*		Exynos5 series - FIMC-IS		*/
 /*------------------------------------------------------*/
-int exynos5_fimc_is_cfg_gpio(struct platform_device *pdev,
-				int channel, bool flag_on)
-{
-	struct pinctrl *pinctrl_mclk;
-	struct pinctrl *pinctrl_i2c;
-	struct pinctrl *pinctrl_uart;
-	struct pinctrl *pinctrl_flash;
-	struct exynos5_platform_fimc_is *pdata;
-	struct fimc_is_gpio_info *_gpio_info;
-
-	pdata = dev_get_platdata(&pdev->dev);
-	if (!pdata)
-		return PTR_ERR(pdata);
-
-	_gpio_info = pdata->_gpio_info;
-	if (!_gpio_info)
-		return PTR_ERR(_gpio_info);
-
-	pr_debug("%s\n", __func__);
-
-	if (flag_on == false) {
-		if (channel == CSI_ID_A) {
-			/* UART(GPC0-7, GPC1-1) */
-			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
-			if (IS_ERR(pinctrl_uart))
-				pr_err("%s: main cam uart pins are not configured\n", __func__);
-
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_main_rst, 0);
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_main_rst, 1);
-			gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_IN, "MAIN_CAM_RESET");
-			gpio_free(_gpio_info->gpio_main_rst);
-
-			/* COMP_RESET(GPG1, GPF5)*/
-			if (gpio_is_valid(_gpio_info->gpio_comp_rst)) {
-				__gpio_set_value(_gpio_info->gpio_comp_rst, 0);
-				gpio_request_one(_gpio_info->gpio_comp_rst,
-					GPIOF_IN, "COMP_RST");
-				gpio_free(_gpio_info->gpio_comp_rst);
-			}
-
-			if (gpio_is_valid(_gpio_info->gpio_comp_en)) {
-				usleep_range(10, 10);
-				__gpio_set_value(_gpio_info->gpio_comp_en, 0);
-				gpio_request_one(_gpio_info->gpio_comp_en,
-					GPIOF_IN, "COMP_EN");
-				gpio_free(_gpio_info->gpio_comp_en);
-			}
-			goto exit;
-		} else if (channel == CSI_ID_B) {
-			/* UART(GPC0-7, GPC1-1) */
-			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
-			if (IS_ERR(pinctrl_uart))
-				pr_err("%s: main cam uart pins are not configured\n", __func__);
-
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
-			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "VT_CAM_RESET");
-			gpio_free(_gpio_info->gpio_vt_rst);
-			goto exit;
-		} else if (channel == CSI_ID_C) {
-			/* UART(GPC0-7, GPC1-1) */
-			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
-			if (IS_ERR(pinctrl_uart))
-				pr_err("%s: main cam uart pins are not configured\n", __func__);
-
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
-			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_IN, "VT_CAM_RESET");
-			gpio_free(_gpio_info->gpio_vt_rst);
-			goto exit;
-		} else {
-			pr_err("%s: could not find close sensor\n", __func__);
-			goto exit;
-		}
-	} else {
-		if (channel == CSI_ID_A) {
-			/* COMP_RESET(GPG1, GPF5)*/
-			if (gpio_is_valid(_gpio_info->gpio_comp_en)) {
-				gpio_request_one(_gpio_info->gpio_comp_en,
-					GPIOF_OUT_INIT_HIGH, "COMP_EN");
-				__gpio_set_value(_gpio_info->gpio_comp_en, 1);
-				usleep_range(1000, 1000);
-				gpio_free(_gpio_info->gpio_comp_en);
-			}
-
-			if (gpio_is_valid(_gpio_info->gpio_comp_rst)) {
-				gpio_request_one(_gpio_info->gpio_comp_rst,
-					GPIOF_OUT_INIT_HIGH, "COMP_RST");
-				__gpio_set_value(_gpio_info->gpio_comp_rst, 1);
-				gpio_free(_gpio_info->gpio_comp_rst);
-			}
-
-			/* RESET(GPC0)*/
-			gpio_request_one(_gpio_info->gpio_main_rst, GPIOF_OUT_INIT_HIGH, "MAIN_CAM_RESET");
-			__gpio_set_value(_gpio_info->gpio_main_rst, 0);
-			usleep_range(5000, 5000);
-			__gpio_set_value(_gpio_info->gpio_main_rst, 1);
-			usleep_range(1000, 1000);
-			gpio_free(_gpio_info->gpio_main_rst);
-
-			/* UART(GPC0-7, GPC1-1) */
-			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
-			if (IS_ERR(pinctrl_uart))
-				pr_err("%s: main cam uart pins are not configured\n", __func__);
-
-			/* FLASH(GPC0-2, GPC0-3) */
-			pinctrl_flash = devm_pinctrl_get_select(&pdev->dev,"fimc-is-flash");
-			if (IS_ERR(pinctrl_flash))
-				pr_err("%s: main cam flash pins are not configured\n", __func__);
-
-			/* I2C(GPC2) */
-			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch0-i2c");
-			if (IS_ERR(pinctrl_i2c))
-				pr_err("%s: ch0 cam i2c pins are not configured\n", __func__);
-			usleep_range(1000, 1000);
-
-			/* CIS_CLK(GPD7) */
-			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"ch0-mclk");
-			if (IS_ERR(pinctrl_mclk))
-				pr_err("%s: ch0 cam mclk pin is not configured\n", __func__);
-			usleep_range(1000, 1000);
-			goto exit;
-		} else if (channel == CSI_ID_B) {
-			/* RESET(GPC0) */
-			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_OUT_INIT_HIGH, "VT_CAM_RESET");
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
-			usleep_range(1000, 1000);
-			gpio_free(_gpio_info->gpio_vt_rst);
-
-			/* UART(GPC0-7, GPC1-1) */
-			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
-			if (IS_ERR(pinctrl_uart))
-				pr_err("%s: main cam uart pins are not configured\n", __func__);
-
-			/* I2C(GPC2) */
-			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch1-i2c");
-			if (IS_ERR(pinctrl_i2c))
-				pr_err("%s: ch1 cam i2c pins are not configured\n", __func__);
-			usleep_range(1000, 1000);
-
-			/* CIS_CLK(GPD7) */
-			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"ch1-mclk");
-			if (IS_ERR(pinctrl_mclk))
-				pr_err("%s: ch1 cam mclk pin is not configured\n", __func__);
-			usleep_range(1000, 1000);
-			goto exit;
-		} else if (channel == CSI_ID_C) {
-			/* RESET(GPC0) */
-			gpio_request_one(_gpio_info->gpio_vt_rst, GPIOF_OUT_INIT_HIGH, "VT_CAM_RESET");
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 0);
-			usleep_range(1000, 1000);
-			__gpio_set_value(_gpio_info->gpio_vt_rst, 1);
-			usleep_range(1000, 1000);
-			gpio_free(_gpio_info->gpio_vt_rst);
-
-			/* UART(GPC0-7, GPC1-1) */
-			pinctrl_uart = devm_pinctrl_get_select(&pdev->dev,"fimc-is-uart");
-			if (IS_ERR(pinctrl_uart))
-				pr_err("%s: main cam uart pins are not configured\n", __func__);
-
-			/* I2C(GPC2) */
-			pinctrl_i2c = devm_pinctrl_get_select(&pdev->dev,"ch2-i2c");
-			if (IS_ERR(pinctrl_i2c))
-				pr_err("%s: ch2 cam i2c pins are not configured\n", __func__);
-			usleep_range(1000, 1000);
-
-			/* CIS_CLK(GPD7) */
-			pinctrl_mclk = devm_pinctrl_get_select(&pdev->dev,"ch2-mclk");
-			if (IS_ERR(pinctrl_mclk))
-				pr_err("%s: ch2 cam mclk pin is not configured\n", __func__);
-			usleep_range(1000, 1000);
-			goto exit;
-		} else {
-			pr_err("%s: could not find open sensor\n", __func__);
-			goto exit;
-		}
-	}
-
-exit:
-	return 0;
-}
-
 int exynos5_fimc_is_print_cfg(struct platform_device *pdev, u32 channel)
 {
 	pr_debug("%s\n", __func__);
@@ -325,7 +135,7 @@ unsigned int  fimc_is_enable(const char *conid)
 
 /* utility function to set parent with DT */
 int fimc_is_set_parent_dt(struct platform_device *pdev,
-		const char *child, const char *parent)
+	const char *child, const char *parent)
 {
 	struct clk *p;
 	struct clk *c;
@@ -347,7 +157,7 @@ int fimc_is_set_parent_dt(struct platform_device *pdev,
 
 /* utility function to get parent with DT */
 struct clk *fimc_is_get_parent_dt(struct platform_device *pdev,
-		const char *child)
+	const char *child)
 {
 	struct clk *c;
 
@@ -362,7 +172,7 @@ struct clk *fimc_is_get_parent_dt(struct platform_device *pdev,
 
 /* utility function to set rate with DT */
 int fimc_is_set_rate_dt(struct platform_device *pdev,
-		const char *conid, unsigned int rate)
+	const char *conid, unsigned int rate)
 {
 	struct clk *target;
 
@@ -377,7 +187,7 @@ int fimc_is_set_rate_dt(struct platform_device *pdev,
 
 /* utility function to get rate with DT */
 unsigned int  fimc_is_get_rate_dt(struct platform_device *pdev,
-		const char *conid)
+	const char *conid)
 {
 	struct clk *target;
 	unsigned int rate_target;
@@ -908,50 +718,6 @@ int exynos5430_fimc_is_clk_on(struct platform_device *pdev)
 int exynos5430_fimc_is_clk_off(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
-
-	return 0;
-}
-
-int exynos5430_fimc_is_sensor_clk_on(struct platform_device *pdev, u32 source)
-{
-	char mux_name[30];
-	char div_a_name[30];
-	char div_b_name[30];
-	char sclk_name[30];
-
-	pr_debug("%s\n", __func__);
-
-	snprintf(mux_name, sizeof(mux_name), "mout_sclk_isp_sensor%d", source);
-	snprintf(div_a_name, sizeof(div_a_name), "dout_sclk_isp_sensor%d_a", source);
-	snprintf(div_b_name, sizeof(div_b_name), "dout_sclk_isp_sensor%d_b", source);
-	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", source);
-
-	fimc_is_set_parent_dt(pdev, mux_name, "oscclk");
-	fimc_is_set_rate_dt(pdev, div_a_name, 24 * 1000000);
-	fimc_is_set_rate_dt(pdev, div_b_name, 24 * 1000000);
-	fimc_is_get_rate_dt(pdev, sclk_name);
-
-	return 0;
-}
-
-int exynos5430_fimc_is_sensor_clk_off(struct platform_device *pdev, u32 source)
-{
-	char mux_name[30];
-	char div_a_name[30];
-	char div_b_name[30];
-	char sclk_name[30];
-
-	pr_debug("%s\n", __func__);
-
-	snprintf(mux_name, sizeof(mux_name), "mout_sclk_isp_sensor%d", source);
-	snprintf(div_a_name, sizeof(div_a_name), "dout_sclk_isp_sensor%d_a", source);
-	snprintf(div_b_name, sizeof(div_b_name), "dout_sclk_isp_sensor%d_b", source);
-	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", source);
-
-	fimc_is_set_parent_dt(pdev, mux_name, "oscclk");
-	fimc_is_set_rate_dt(pdev, div_a_name, 1);
-	fimc_is_set_rate_dt(pdev, div_b_name, 1);
-	fimc_is_get_rate_dt(pdev, sclk_name);
 
 	return 0;
 }
