@@ -568,6 +568,18 @@
 		};
 	};
 
+	i2c@14EA0000 {
+		gpios = <&gpg3 0 0 &gpg3 1 0 >;
+		status = "okay";
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+		status = "okay";
+		fimc-is-vision@20 {
+			compatible = "samsung,exynos5-fimc-is-sensor-6b2";
+			reg = <0x20>;
+		};
+	};
+
 	pinctrl@14CC0000 {
 		codec_ctl: codec-ctl {
 			samsung,pins = "gpg3-4", "gpg3-5";
@@ -876,58 +888,36 @@
 		status = "disabled";
 	};
 
-	fimc_is@14000000 {
-		gpios_main_reset = <&gpc0 1 0x1>; /* MAINCAM_RESET */
-		gpios_vt_reset = <&gpc0 4 0x1>; /* VTCAM_RESET */
+	fimc_is_sensor0: fimc_is_sensor@12100000 {
+		scenario = <0>;
+		gpio_reset = <&gpc0 1 0x1>;
+		id = <0>;
+		mclk_ch = <0>;
+		csi_ch = <0>;
+		flite_ch = <0>;
+		i2c_ch = <0x0>;
+		i2c_addr = <0x20>;
+		flash_first_gpio = <2>;
+		flash_second_gpio = <3>;
+		status = "okay";
+	};
+
+	fimc_is_sensor1: fimc_is_sensor@12110000 {
+		scenario = <0>;
+		gpio_reset = <&gpc0 4 0x1>;
+		gpio_standby = <&gpc0 0 0x1>;
 		gpios_board_rev =<&gpf3 2 0x1 /* BOARD_REVIRION */
 				&gpf3 3 0x1>; /* BOARD_REVIRION */
-		platform_data: fimc_is_ctrl {
-			fimc_is_sensor {
-				rear_sensor_name = "3l2";
-				rear_sensor_position = <0>;
-				rear_sensor_id = <8>;
-				rear_clk_src = <0>;
-				rear_csis_id = <0>;
-				rear_flite_id = <0>;
-				rear_i2c_channel = <0>;
-				rear_max_width = <4128>;
-				rear_max_height = <3096>;
-				rear_max_frame_rate = <120>;
-				rear_mipi_lanes = <4>;
-				rear_mipi_settle = <0x18>;
-				rear_mipi_align = <32>;
-				rear_sensor_slave_address = <0x20>;
-				rear_actuator_id = <2>;
-				rear_actuator_i2c = <0>;
-				rear_flash_id = <4>;
-				rear_flash_peri_type = <0>; /* I2C */
-				rear_flash_first_gpio = <2>;
-				rear_flash_second_gpio = <3>;
-
-				front_sensor_name = "6b2";
-				front_sensor_position = <1>;
-				front_sensor_id = <7>;
-				front_clk_src = <1>;
-				front_csis_id = <1>;
-				front_flite_id = <1>;
-				front_i2c_channel = <1>;
-				front_max_width = <1920>;
-				front_max_height = <1080>;
-				front_max_frame_rate = <30>;
-				front_mipi_lanes = <2>;
-				front_mipi_settle = <0x18>;
-				front_mipi_align = <32>;
-				front_sensor_slave_address = <0x20>;
-			};
-		};
+		id = <1>;
+		mclk_ch = <1>;
+		csi_ch = <1>;
+		flite_ch = <1>;
+		i2c_ch = <0x1>;
+		i2c_addr = <0x20>;
+		status = "okay";
 	};
+
 	pinctrl@14CC0000 {
-		fimc_is_ch0_i2c: fimc-is-ch0_i2c {
-			samsung,pins = "gpc2-1", "gpc2-0";
-			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
-			samsung,pin-drv = <0>;
-		};
 		fimc_is_flash: fimc-is-flash {
 			samsung,pins = "gpc0-3", "gpc0-2";
 			samsung,pin-function = <2>;
