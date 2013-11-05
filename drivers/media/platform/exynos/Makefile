@@ -7,4 +7,5 @@ obj-$(CONFIG_VIDEO_EXYNOS5_FIMC_IS)	+= fimc-is/
 obj-$(CONFIG_VIDEO_EXYNOS_SCALER)	+= scaler/
 obj-$(CONFIG_VIDEO_EXYNOS_FIMG2D)	+= fimg2d/
 obj-$(CONFIG_VIDEO_EXYNOS_JPEG)		+= jpeg4/
+obj-$(CONFIG_VIDEO_EXYNOS_HX_JPEG)	+= jpeg_hx/
 EXTRA_CLAGS += -Idrivers/media/video

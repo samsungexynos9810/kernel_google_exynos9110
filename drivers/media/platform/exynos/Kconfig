@@ -18,6 +18,7 @@ if VIDEO_EXYNOS
 	source "drivers/media/platform/exynos/scaler/Kconfig"
 	source "drivers/media/platform/exynos/fimg2d/Kconfig"
 	source "drivers/media/platform/exynos/jpeg4/Kconfig"
+	source "drivers/media/platform/exynos/jpeg_hx/Kconfig"
 endif
 
 config MEDIA_EXYNOS
