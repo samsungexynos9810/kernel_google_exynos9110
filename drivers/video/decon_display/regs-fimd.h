@@ -31,6 +31,7 @@
 /* VIDCON0 */
 
 #define VIDCON0					(0x00)
+#define VIDCON0_DSI_EN				(1 << 30)
 #define VIDCON0_INTERLACE			(1 << 29)
 #define VIDCON0_VIDOUT_MASK			(0x3 << 26)
 #define VIDCON0_VIDOUT_SHIFT			(26)
@@ -86,6 +87,7 @@
 #define VIDOUT_CON_F_MASK			(0x7 << 8)
 #define VIDOUT_CON_WB				(0x4 << 8)
 #define VIDOUT_CON_RGB				(0x0 << 8)
+#define VIDOUT_F_I80_LDI0			(0x2 << 8)
 
 #define VIDCON1_LINECNT_MASK			(0x7ff << 16)
 #define VIDCON1_LINECNT_SHIFT			(16)
@@ -373,7 +375,7 @@
 #define VIDINTCON0_INT_ENABLE			(1 << 0)
 
 #define VIDINTCON1				(0x134)
-#define VIDINTCON1_INT_I180			(1 << 2)
+#define VIDINTCON1_INT_I80			(1 << 2)
 #define VIDINTCON1_INT_FRAME			(1 << 1)
 #define VIDINTCON1_INT_FIFO			(1 << 0)
 
@@ -607,4 +609,19 @@
 /* IP's version */
 #define FIMD_VERSION_4X				(0x40000000)
 
+#define TRIGCON					(0x201A4)
+#define HWTRIGEN_PER_RGB			(0x1 << 31)
+#define HWTRG_UNMASK_I80_RGB			(0x1 << 4)
+#define HWTRGEN_I80_RGB				(0x1 << 3)
+#define SWTRGCMD_I80_RGB			(0x1 << 1)
+#define TRGMODE_I80_RGB				(0x1 << 0)
 
+#define I80IFCONA(_x)				(0x201B0 + (_x))
+#define I80IFCON_CS_SETUP(_x)			(((_x) & 0xf) << 16)
+#define I80IFCON_WR_SETUP(_x)			(((_x) & 0xf) << 12)
+#define I80IFCON_WR_ACT(_x)			(((_x) & 0xf) << 8)
+#define I80IFCON_WR_HOLD(_x)			(((_x) & 0xf) << 4)
+#define I80IFCON_RS_POL(_x)			((_x) << 2)
+#define I80IFCON_EN				(0x1 << 0)
+
+#define I80IFCONB(_x)				(0x201B8 + (_x))

@@ -85,7 +85,15 @@ int init_display_fimd_clocks_exynos(struct device *dev)
 	if (ret < 0)
 		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
 
+#ifdef CONFIG_DECON_LCD_S6E8AA0
 	ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
+#else
+        ret = exynos_set_rate("sclk_fimd1", 266 * MHZ);
+#endif
+        if (ret < 0)
+                printk("exynos_set_rate failed: ret %d \n", ret);
+
+        ret = exynos_set_rate("dout_aclk_300_disp1", 300 * MHZ);
 	if (ret < 0)
 		pr_err("exynos_set_rate failed: ret %d\n", ret);
 
@@ -147,6 +155,11 @@ void init_display_gpio_exynos(void)
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
 	reg |= (1 << 11);
 	__raw_writel(reg, S3C_VA_SYS + 0x0214);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	reg = __raw_readl(S3C_VA_SYS + 0x0214);
+	reg |= (1 << 24);
+	__raw_writel(reg, S3C_VA_SYS + 0x0214);
+#endif
 }
 
 
@@ -154,8 +167,15 @@ int enable_display_dsi_power_exynos(struct device *dev)
 {
 	unsigned gpio_power;
 	unsigned int gpio_reset;
-
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
+	struct pinctrl *pinctrl;
+#endif
 	int ret = 0;
+
+	gpio_power = get_display_dsi_lcd_power_gpio_exynos();
+	gpio_request_one(gpio_power, GPIOF_OUT_INIT_HIGH, "lcd_power");
+	usleep_range(5000, 6000);
+	gpio_free(gpio_power);
 
 	gpio_reset = get_display_dsi_lcd_reset_gpio_exynos();
 	gpio_request_one(gpio_reset,
@@ -167,11 +187,11 @@ int enable_display_dsi_power_exynos(struct device *dev)
 	usleep_range(5000, 6000);
 	gpio_free(gpio_reset);
 
-	gpio_power = get_display_dsi_lcd_power_gpio_exynos();
-	gpio_request_one(gpio_power, GPIOF_OUT_INIT_HIGH, "lcd_power");
-	usleep_range(5000, 6000);
-	gpio_free(gpio_power);
-
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
+	pinctrl = devm_pinctrl_get_select(dev, "turnon_tes");
+	if (IS_ERR(pinctrl))
+		pr_err("failed to get tes pinctrl - ON");
+#endif
 	return ret;
 }
 

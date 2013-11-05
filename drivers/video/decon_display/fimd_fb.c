@@ -114,6 +114,13 @@ bool s3c_clk_status = true;
 #define MAX_BW_PER_WINDOW	(2560 * 1600 * 4 * 60)
 #define FHD_MAX_BW_PER_WINDOW	(1080 * 1920 * 4 * 60)
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+enum trig_con_set {
+	TRIG_MASK = 0,
+	TRIG_UNMASK
+};
+#endif
+
 struct s3c_fb;
 
 extern struct mipi_dsim_device *dsim_for_decon;
@@ -131,6 +138,7 @@ static const struct of_device_id exynos5_fimd[] = {
 MODULE_DEVICE_TABLE(of, exynos5_fimd);
 #endif
 
+#if defined(CONFIG_ION_EXYNOS)
 static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 {
 #ifdef CONFIG_FB_EXYNOS_FIMD_V8
@@ -145,7 +153,7 @@ static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 			sfb->regs + 0x20000, 0x20, false);
 #endif
 }
-
+#endif
 
 static bool s3c_fb_validate_x_alignment(struct s3c_fb *sfb, int x, u32 w,
 		u32 bits_per_pixel)
@@ -281,9 +289,13 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 		dev_err(sfb->dev, "invalid bpp\n");
 	}
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	x = var->xres;
+	y = var->yres;
+#else
 	x = var->xres + var->left_margin + var->right_margin + var->hsync_len;
 	y = var->yres + var->upper_margin + var->lower_margin + var->vsync_len;
-
+#endif
 	hz = 1000000000000ULL;		/* 1e12 picoseconds per second */
 
 	hz += (x * y) / 2;
@@ -567,8 +579,61 @@ static inline u32 blendeq(enum s3c_fb_blending blending, u8 transp_length,
 			BLENDEQ_Q_FUNC(BLENDEQ_COEF_ZERO);
 }
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+static void s3c_fb_config_i80(struct s3c_fb *sfb,
+		struct s3c_fb_i80mode *win_mode)
+{
+	u32 data;
+
+	win_mode->cs_setup_time = 1;
+	win_mode->wr_setup_time = 0;
+	win_mode->wr_act_time = 1;
+	win_mode->wr_hold_time = 0;
+	win_mode->rs_pol = 0;
+
+	data = I80IFCON_CS_SETUP(win_mode->cs_setup_time - 1)
+			| I80IFCON_WR_SETUP(win_mode->wr_setup_time)
+			| I80IFCON_WR_ACT(win_mode->wr_act_time)
+			| I80IFCON_WR_HOLD(win_mode->wr_hold_time)
+			| I80IFCON_RS_POL(win_mode->rs_pol);
+	data |= I80IFCON_EN;
+	writel(data, sfb->regs + I80IFCONA(0));
+
+	data = readl(sfb->regs + VIDOUT_CON);
+	data &= ~VIDOUT_CON_F_MASK;
+	data |= VIDOUT_F_I80_LDI0;
+	writel(data, sfb->regs + VIDOUT_CON);
+
+	data = readl(sfb->regs + VIDCON0);
+	data |= VIDCON0_DSI_EN;
+	writel(data, sfb->regs + VIDCON0);
+
+	data = readl(sfb->regs + VIDCON0);
+	data |= VIDCON0_CLKVALUP;
+	writel(data, sfb->regs + VIDCON0);
+}
+
+void s3c_fb_hw_trigger_set(struct s3c_fb *sfb, enum trig_con_set mode)
+{
+	unsigned int data;
+
+	data = readl(sfb->regs + TRIGCON);
+	if (mode == TRIG_UNMASK) {
+		data &= ~(SWTRGCMD_I80_RGB | TRGMODE_I80_RGB);
+		data |= HWTRIGEN_PER_RGB | HWTRG_UNMASK_I80_RGB | HWTRGEN_I80_RGB;
+	} else {
+		data &= ~(HWTRG_UNMASK_I80_RGB);
+	}
+	writel(data, sfb->regs + TRIGCON);
+}
+#endif
+
 static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+		struct s3c_fb_i80mode *win_mode)
+#else
 		struct fb_videomode *win_mode)
+#endif
 {
 	int clkdiv = s3c_fb_calc_pixclk(sfb, win_mode->pixclock);
 	u32 data = 0;
@@ -613,8 +678,13 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	if (sfb->variant.is_2443)
 		data |= (1 << 5);
 
-	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
+	data &= ~VIDCON0_ENVID;
+        data &=	~VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_config_i80(sfb, win_mode);
+#endif
 }
 
 #ifdef CONFIG_FIMD_USE_WIN_OVERLAP_CNT
@@ -828,6 +898,20 @@ static int s3c_fb_set_par(struct fb_info *info)
 	return 0;
 }
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+void s3c_fb_i80mode_to_var(struct fb_var_screeninfo *var,
+		const struct s3c_fb_i80mode *mode)
+{
+	var->xres = mode->xres;
+	var->yres = mode->yres;
+	var->xres_virtual = mode->xres;
+	var->yres_virtual = mode->yres;
+	var->xoffset = 0;
+	var->yoffset = 0;
+	var->pixclock = mode->pixclock;
+}
+#endif
+
 /**
  * s3c_fb_update_palette() - set or schedule a palette update.
  * @sfb: The hardware information.
@@ -945,11 +1029,19 @@ static void s3c_fb_activate_window(struct s3c_fb *sfb, unsigned int index)
 
 static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 {
+	u32 data;
 	u32 shadowcon = readl(sfb->regs + SHADOWCON);
 	shadowcon |= SHADOWCON_CHx_ENABLE(index);
 	writel(shadowcon, sfb->regs + SHADOWCON);
 
 	writel(0, sfb->regs + WINxMAP(index));
+
+	data = readl(sfb->regs + VIDCON0);
+	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
+	writel(data, sfb->regs + VIDCON0);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
+#endif
 }
 
 static int s3c_fb_enable(struct s3c_fb *sfb);
@@ -1088,8 +1180,20 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	pm_runtime_get_sync(sfb->dev);
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
+	irq_ctrl_reg |= VIDINTCON0_INT_SYSMAINCON;
+	irq_ctrl_reg |= VIDINTCON0_INT_I80IFDONE;
+#else
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
 	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
+
+	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
+	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
+	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL1_MASK;
+	irq_ctrl_reg |= VIDINTCON0_FRAMESEL1_NONE;
+#endif
+
 #ifdef CONFIG_DEBUG_FS
 	irq_ctrl_reg &= ~VIDINTCON0_FIFOLEVEL_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FIFOLEVEL_EMPTY;
@@ -1101,14 +1205,43 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg |= VIDINTCON0_FIFIOSEL_WINDOW4;
 #endif
 
-	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
-	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
-	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL1_MASK;
-	irq_ctrl_reg |= VIDINTCON0_FRAMESEL1_NONE;
-
 	writel(irq_ctrl_reg, regs + VIDINTCON0);
 	pm_runtime_put_sync(sfb->dev);
 }
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
+{
+	struct s3c_fb *sfb = dev_id;
+	ktime_t timestamp = ktime_get();
+	int i = 10000;
+
+	spin_lock(&sfb->slock);
+	while(i)
+		i--;
+
+	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
+
+	sfb->vsync_info.timestamp = timestamp;
+	wake_up_interruptible_all(&sfb->vsync_info.wait);
+
+	spin_unlock(&sfb->slock);
+	return IRQ_HANDLED;
+}
+
+static int decon_fb_config_eint_for_te(struct s3c_fb *sfb)
+{
+	int ret, gpio;
+	struct device *dev = sfb->dev;
+
+	gpio = of_get_gpio(dev->of_node, 0);
+	sfb->irq_no = gpio_to_irq(gpio);
+	ret = devm_request_irq(dev, sfb->irq_no, decon_fb_isr_for_eint,
+			IRQF_TRIGGER_RISING, "s3c_fb", sfb);
+
+	return ret;
+}
+#endif
 
 /**
  * s3c_fb_disable_irq() - disable framebuffer interrupts
@@ -1206,6 +1339,8 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		writel(VIDINTCON1_INT_FIFO, regs + VIDINTCON1);
 		s3c_fb_log_fifo_underflow_locked(sfb, timestamp);
 	}
+	if (irq_sts_reg & VIDINTCON1_INT_I80)
+		writel(VIDINTCON1_INT_I80, regs + VIDINTCON1);
 
 	spin_unlock(&sfb->slock);
 	return IRQ_HANDLED;
@@ -1235,7 +1370,9 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 				!ktime_equal(timestamp,
 						sfb->vsync_info.timestamp));
 	}
+#ifndef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_deactivate_vsync(sfb);
+#endif
 
 	pm_runtime_put_sync(sfb->dev);
 
@@ -2078,6 +2215,9 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		if (!sfb->windows[i]->local)
 			shadow_protect_win(sfb->windows[i], 0);
 	}
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
+#endif
 }
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
@@ -2224,9 +2364,10 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	int ret;
 	u32 crtc;
 
+#ifdef CONFIG_ION_EXYNOS
 	struct fb_var_screeninfo *var = &info->var;
 	int offset;
-
+#endif
 	union {
 		struct s3c_fb_user_window user_window;
 		struct s3c_fb_user_plane_alpha user_alpha;
@@ -2382,6 +2523,20 @@ static struct fb_ops s3c_fb_ops = {
 	.fb_mmap	= s3c_fb_mmap,
 };
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+static void s3c_fb_missing_pixclock_for_i80(struct s3c_fb_i80mode *mode)
+{
+	u64 pixclk = 1000000000000ULL;
+	u32 div;
+
+	div  = mode->xres;
+	div *= mode->yres;
+	div *= mode->refresh ? : 60;
+
+	do_div(pixclk, div);
+	mode->pixclock = pixclk;
+}
+#else
 /**
  * s3c_fb_missing_pixclock() - calculates pixel clock
  * @mode: The video mode to change.
@@ -2406,7 +2561,7 @@ static void s3c_fb_missing_pixclock(struct fb_videomode *mode)
 
 	mode->pixclock = pixclk;
 }
-
+#endif
 /**
  * s3c_fb_alloc_memory() - allocate display memory for framebuffer window
  * @sfb: The base resources for the hardware.
@@ -2420,12 +2575,13 @@ static int s3c_fb_alloc_memory(struct s3c_fb *sfb,
 	struct s3c_fb_pd_win *windata = win->windata;
 	unsigned int real_size, virt_size, size;
 	struct fb_info *fbi = win->fbinfo;
+#if defined(CONFIG_ION_EXYNOS)
 	struct ion_handle *handle;
 	dma_addr_t map_dma;
 	struct dma_buf *buf;
 	void *vaddr;
 	unsigned int ret;
-
+#endif
 	dev_dbg(sfb->dev, "allocating memory for display\n");
 
 	real_size = windata->win_mode.xres * windata->win_mode.yres;
@@ -2555,7 +2711,11 @@ static int s3c_fb_probe_win(struct s3c_fb *sfb, unsigned int win_no,
 				      struct s3c_fb_win **res)
 {
 	struct fb_var_screeninfo *var;
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	struct s3c_fb_i80mode *initmode;
+#else
 	struct fb_videomode *initmode;
+#endif
 	struct s3c_fb_pd_win *windata;
 	struct s3c_fb_win *win;
 	struct fb_info *fbinfo;
@@ -2591,8 +2751,9 @@ static int s3c_fb_probe_win(struct s3c_fb *sfb, unsigned int win_no,
 	win->windata = windata;
 	win->index = win_no;
 	win->palette_buffer = (u32 *)(win + 1);
+#if defined(CONFIG_ION_EXYNOS)
 	memset(&win->dma_buf_data, 0, sizeof(win->dma_buf_data));
-
+#endif
 	ret = s3c_fb_alloc_memory(sfb, win);
 	if (ret) {
 		dev_err(sfb->dev, "failed to allocate display memory\n");
@@ -2619,9 +2780,12 @@ static int s3c_fb_probe_win(struct s3c_fb *sfb, unsigned int win_no,
 		win->palette.b.length = 8;
 	}
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_i80mode_to_var(&fbinfo->var, initmode);
+#else
 	/* setup the initial video mode from the window */
 	fb_videomode_to_var(&fbinfo->var, initmode);
-
+#endif
 	fbinfo->fix.type	= FB_TYPE_PACKED_PIXELS;
 	fbinfo->fix.accel	= FB_ACCEL_NONE;
 	fbinfo->var.activate	= FB_ACTIVATE_NOW;
@@ -3512,8 +3676,8 @@ int create_decon_display_controller(struct platform_device *pdev)
 	int ret = 0;
 	u32 reg;
 
+	printk("###%s: Start \n", __func__);
 	dispdrv = get_display_driver();
-
 	fbdrv = get_display_drvdata();
 	pd = get_display_platdata();
 #if 0
@@ -3573,14 +3737,29 @@ int create_decon_display_controller(struct platform_device *pdev)
 		ret = -ENXIO;
 		goto err_lcd_clk;
 	}
-
+#ifndef CONFIG_FB_I80_COMMAND_MODE
 	ret = devm_request_irq(dev, dispdrv->decon_driver.irq_no, s3c_fb_irq,
 			  0, "s3c_fb", sfb);
 	if (ret) {
 		dev_err(dev, "video irq request failed\n");
 		goto err_lcd_clk;
 	}
+#endif
+	ret = devm_request_irq(dev, dispdrv->decon_driver.fifo_irq_no,
+			s3c_fb_irq, 0, "s3c_fb", sfb);
+	if (ret) {
+		dev_err(dev, "fifo irq request failed\n");
+		goto err_lcd_clk;
+	}
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	ret = devm_request_irq(dev, dispdrv->decon_driver.i80_irq_no,
+			s3c_fb_irq, 0, "s3c_fb", sfb);
+	if (ret) {
+		dev_err(dev, "failed to request i80 framedone irq\n");
+		goto err_lcd_clk;
+	}
+#endif
 	sfb->bus_clk = clk_get(dev, "fimd1");
 	if (IS_ERR(sfb->bus_clk)) {
 		dev_err(dev, "failed to get bus clock\n");
@@ -3669,13 +3848,24 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 	exynos_create_iovmm(&pdev->dev, 5, 0);
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	ret = decon_fb_config_eint_for_te(sfb);
+	if (ret) {
+	dev_err(dev, "failed to request an external interrupt for TE signal\n");
+		goto err_pm_runtime;
+	}
+#endif
 	default_win = sfb->pdata->default_win;
 	for (win = 0; win < fbdrv->variant.nr_windows; win++) {
 		if (!pd->win[win])
 			continue;
 
 		if (!pd->win[win]->win_mode.pixclock)
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+			s3c_fb_missing_pixclock_for_i80(&pd->win[win]->win_mode);
+#else
 			s3c_fb_missing_pixclock(&pd->win[win]->win_mode);
+#endif
 	}
 
 	/* use platform specified window as the basis for the lcd timings */
@@ -4392,6 +4582,7 @@ int s3c_fb_runtime_suspend(struct device *dev)
 
 int s3c_fb_runtime_resume(struct device *dev)
 {
+#ifndef CONFIG_SOC_EXYNOS5422
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 	struct s3c_fb_platdata *pd;
@@ -4436,7 +4627,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
-
+#endif
 	return 0;
 }
 #endif
