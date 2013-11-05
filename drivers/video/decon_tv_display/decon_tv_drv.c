@@ -50,6 +50,56 @@ module_param(dex_log_level, int, 0644);
 static int dex_runtime_suspend(struct device *dev);
 static int dex_runtime_resume(struct device *dev);
 
+static const struct decon_tv_porch decon_tv_porchs[] =
+{
+	{"DECONTV_640x480", 640, 480, 43, 1, 1, 58, 10, 92, V4L2_FIELD_NONE},
+	{"DECONTV_720x480", 720, 480, 43, 1, 1,	92, 10,	36, V4L2_FIELD_NONE},
+	{"DECONTV_720x576", 720, 576, 47, 1, 1,	92, 10,	42, V4L2_FIELD_NONE},
+	{"DECONTV_1280x720", 1280, 720, 28, 1, 1, 192, 10, 168, V4L2_FIELD_NONE},
+	{"DECONTV_1920x1080", 1920, 1080, 43, 1, 1, 92, 10, 178, V4L2_FIELD_NONE},
+	{"DECONTV_1920x1080i", 1920, 540, 20, 1, 1, 92, 10, 178, V4L2_FIELD_INTERLACED},
+	{"DECONTV_3840x2160", 3840, 2160, 88, 1, 1, 458, 10, 92, V4L2_FIELD_NONE},
+	{"DECONTV_4096x2160", 4096, 2160, 88, 1, 1, 1302, 10, 92, V4L2_FIELD_NONE},
+};
+
+const struct decon_tv_porch *find_porch(u32 xres, u32 yres, u32 mode)
+{
+	const struct decon_tv_porch *porch;
+	unsigned int i;
+
+	for (i = 0; i < ARRAY_SIZE(decon_tv_porchs); ++i) {
+		porch = &decon_tv_porchs[i];
+		if ((mode == V4L2_FIELD_INTERLACED) && (mode == porch->vmode))
+			return porch;
+		if ((xres == porch->xres) && (yres == porch->yres))
+			return porch;
+	}
+
+	return &decon_tv_porchs[0];
+
+}
+static int dex_set_output(struct dex_device *dex)
+{
+	struct v4l2_subdev *hdmi_sd;
+	struct v4l2_mbus_framefmt mbus_fmt;
+	int ret;
+
+	/* find sink pad of output via enabled link*/
+	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
+	if (hdmi_sd == NULL)
+		return -EINVAL;
+
+	ret = v4l2_subdev_call(hdmi_sd, video, g_mbus_fmt, &mbus_fmt);
+	WARN(ret, "failed to get mbus_fmt for output %s\n", hdmi_sd->name);
+
+	dex->porch = find_porch(mbus_fmt.width, mbus_fmt.height, mbus_fmt.field);
+	if (!dex->porch)
+		return -EINVAL;
+
+	dex_reg_porch(dex);
+	return 0;
+}
+
 static int dex_enable(struct dex_device *dex)
 {
 	struct v4l2_subdev *hdmi_sd;
@@ -71,6 +121,11 @@ static int dex_enable(struct dex_device *dex)
 
 	dex_reg_streamon(dex);
 
+	/* get hdmi timing information for decon-tv porch */
+	ret = dex_set_output(dex);
+	if (ret)
+		dex_err("failed get HDMI information\n");
+
 	/* start hdmi */
 	ret = v4l2_subdev_call(hdmi_sd, core, s_power, 1);
 	if (ret)
@@ -78,6 +133,8 @@ static int dex_enable(struct dex_device *dex)
 	ret = v4l2_subdev_call(hdmi_sd, video, s_stream, 1);
 	if (ret)
 		dex_err("starting stream failed for HDMI\n");
+
+	dex_tv_update(dex);
 
 	dex->n_streamer++;
 	mutex_unlock(&dex->s_mutex);
@@ -107,12 +164,6 @@ static int dex_disable(struct dex_device *dex)
 	flush_kthread_worker(&dex->update_worker);
 
 	dex_reg_streamoff(dex);
-
-	ret = dex_reg_wait4update(dex);
-	if (ret) {
-		dex_err("failed to get vsync from HDMI\n");
-		return ret;
-	}
 
 	/* stop hdmi */
 	ret = v4l2_subdev_call(hdmi_sd, video, s_stream, 0);
@@ -669,7 +720,7 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		}
 	}
 
-	window_size = win_config->stride * (win_config->h);
+	window_size = win_config->stride * win_config->h * 4;
 	if (win_config->offset + window_size -
 	   (win_config->offset % win_config->stride) > buf_size) {
 		dex_err("window goes past end of buffer\n");
@@ -703,8 +754,8 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		alpha0 = 0xff;
 		alpha1 = 0xff;
 	} else {
-		alpha0 = 0;
-		alpha1 = 0xff;
+		alpha0 = 0xff;
+		alpha1 = 0x0;
 	}
 	pagewidth = (win_config->w * win->fbinfo->var.bits_per_pixel) >> 3;
 
@@ -729,8 +780,8 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 	regs->vidosd_d[idx] |= VIDOSDxD_ALPHA1_B_F(alpha1);
 	regs->buf_start[idx] = dma_buf_data.dma_addr + win_config->offset;
 	regs->buf_end[idx] = regs->buf_start[idx] + window_size;
-	regs->buf_size[idx] = VIDW_BUF_SIZE_OFFSET(win_config->stride - pagewidth);
-	regs->buf_size[idx] |= VIDW_BUF_SIZE_PAGEWIDTH(pagewidth);
+	regs->buf_size[idx] = VIDW_BUF_SIZE_PAGEWIDTH(pagewidth);
+
 	if (idx > 1) {
 		if ((win_config->plane_alpha > 0) && (win_config->plane_alpha < 0xFF)) {
 			if (win->fbinfo->var.transp.length) {
@@ -745,12 +796,6 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		regs->blendeq[idx - 1] = blendeq(win_config->blending,
 		win->fbinfo->var.transp.length, win_config->plane_alpha);
 	}
-
-	dex_dbg("WINDOW%d SETTING\n", idx);
-	dex_dbg("width(%d), height(%d)\n", win_config->w, win_config->h);
-	dex_dbg("x(%d), y(%d)\n", win_config->x, win_config->y);
-	dex_dbg("format(%d), blending %s\n", win_config->format,
-			win_config->blending ? "enable" : "disable");
 
 	return 0;
 
@@ -937,6 +982,8 @@ static void dex_update(struct dex_device *dex, struct dex_reg_data *regs)
 	bool wait_for_vsync;
 	int count = 100;
 	int i, ret = 0;
+
+	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
 
 	for (i = 1; i < DEX_MAX_WINDOWS; i++) {
 		if (!dex->windows[i]->local) {
@@ -1401,7 +1448,7 @@ static int dex_probe(struct platform_device *pdev)
 		goto fail_dex;
 	}
 
-	exynos_create_iovmm(dev, 4, 0);
+	exynos_create_iovmm(dev, 5, 0);
 	ret = iovmm_activate(dev);
 	if (ret < 0) {
 		dex_err("failed to reactivate vmm\n");

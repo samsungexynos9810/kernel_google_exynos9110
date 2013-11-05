@@ -30,7 +30,7 @@
 
 #define VIDOUTCON0_INTERLACE_EN_F		(0x1 << 28)
 #define VIDOUTCON0_PROGRESSIVE_EN_F		(0x0 << 28)
-#define VIDOUTCON0_TV_MASK			(0x11 << 24)
+#define VIDOUTCON0_MODE_MASK			(0x1 << 28)
 #define VIDOUTCON0_LCD_F			(0x1 << 24)
 #define VIDOUTCON0_LCD_F_SHIFT			(24)
 #define VIDOUTCON0_IF_SHIFT			(20)
@@ -377,37 +377,15 @@
 /* VIDTCON0 */
 #define VIDTCON0				(0x2020)
 
-#define VIDTCON0_VBPD_MASK			(0xff << 16)
-#define VIDTCON0_VBPD_SHIFT			(16)
-#define VIDTCON0_VBPD_LIMIT			(0xff)
-#define VIDTCON0_VBPD(_x)			((_x) << 16)
-
-#define VIDTCON0_VFPD_MASK			(0xff << 8)
-#define VIDTCON0_VFPD_SHIFT			(8)
-#define VIDTCON0_VFPD_LIMIT			(0xff)
-#define VIDTCON0_VFPD(_x)			((_x) << 8)
-
-#define VIDTCON0_VSPW_MASK			(0xff << 0)
-#define VIDTCON0_VSPW_SHIFT			(0)
-#define VIDTCON0_VSPW_LIMIT			(0xff)
+#define VIDTCON0_VBPD(_x)			((_x) << 20)
+#define VIDTCON0_VFPD(_x)			((_x) << 12)
 #define VIDTCON0_VSPW(_x)			((_x) << 0)
 
 /* VIDTCON1 */
 #define VIDTCON1				(0x2024)
 
-#define VIDTCON1_HBPD_MASK			(0xff << 16)
-#define VIDTCON1_HBPD_SHIFT			(16)
-#define VIDTCON1_HBPD_LIMIT			(0xff)
-#define VIDTCON1_HBPD(_x)			((_x) << 16)
-
-#define VIDTCON1_HFPD_MASK			(0xff << 8)
-#define VIDTCON1_HFPD_SHIFT			(8)
-#define VIDTCON1_HFPD_LIMIT			(0xff)
-#define VIDTCON1_HFPD(_x)			((_x) << 8)
-
-#define VIDTCON1_HSPW_MASK			(0xff << 0)
-#define VIDTCON1_HSPW_SHIFT			(0)
-#define VIDTCON1_HSPW_LIMIT			(0xff)
+#define VIDTCON1_HBPD(_x)			((_x) << 20)
+#define VIDTCON1_HFPD(_x)			((_x) << 12)
 #define VIDTCON1_HSPW(_x)			((_x) << 0)
 
 /* VIDTCON2 */
@@ -449,6 +427,7 @@
 #define TRIGCON_HWTRIG_INV_I80_RGB		(1 << 2)
 #define TRIGCON_SWTRIGCMD_I80_RGB		(1 << 1)
 #define TRIGCON_SWTRIGEN_I80_RGB		(1 << 0)
+#define TRIGCON_MASK				(0xC0000018)
 
 #define CRCRDATA				(0x20B0)
 

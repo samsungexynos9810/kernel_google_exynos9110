@@ -50,6 +50,11 @@ void dex_shadow_protect(struct dex_device *dex, int idx, int en)
 		dex_write_mask(dex, SHADOWCON, 0, SHADOWCON_WINx_PROTECT(idx));
 }
 
+void dex_tv_update(struct dex_device *dex)
+{
+	dex_write_mask(dex, DECON_UPDATE, ~0, DECON_UPDATE_STANDALONE_F);
+}
+
 void dex_reg_reset(struct dex_device *dex)
 {
 	u32 val;
@@ -69,15 +74,7 @@ void dex_reg_reset(struct dex_device *dex)
 	dex_write_mask(dex, BLENDCON, ~0, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 
 	/* set output on for HDMI */
-	val = VIDOUTCON0_LCD_F;
-	/*
-	 * TODO: if interlaced
-	if (interlaced)
-		val |= VIDOUTCON0_INTERLACE_EN_F;
-	else
-		val |= VIDOUTCON0_PROGRESSIVE_EN_F;
-	*/
-	dex_write_mask(dex, VIDOUTCON0, val, VIDOUTCON0_TV_MASK);
+	dex_write_mask(dex, VIDOUTCON0, ~0, VIDOUTCON0_LCD_F);
 
 	/* enable interrupts */
 	val = dex_read(dex, VIDINTCON0);
@@ -100,6 +97,12 @@ void dex_reg_reset(struct dex_device *dex)
 	val |= CRCCTRL_CRCCLKEN;
 	dex_write_mask(dex, CRCCTRL, val, CRCCTRL_MASK);
 
+	val = TRIGCON_TRIGEN_PER_I80_RGB_F;
+	val |= TRIGCON_TRIGEN_I80_RGB_F;
+	val |= TRIGCON_HWTRIGMASK_I80_RGB;
+	val |= TRIGCON_HWTRIGEN_I80_RGB;
+	dex_write_mask(dex, TRIGCON, val, TRIGCON_MASK);
+
 	spin_unlock_irqrestore(&dex->reg_slock, flags);
 }
 
@@ -107,7 +110,6 @@ void dex_update_regs(struct dex_device *dex, struct dex_reg_data *regs)
 {
 	unsigned short i;
 	unsigned long flags;
-	u32 val = 0;
 
 	spin_lock_irqsave(&dex->reg_slock, flags);
 
@@ -125,7 +127,7 @@ void dex_update_regs(struct dex_device *dex, struct dex_reg_data *regs)
 			dex_write(dex, VIDW_BUF_START(i), regs->buf_start[i]);
 			dex_write(dex, VIDW_BUF_END(i), regs->buf_end[i]);
 			dex_write(dex, VIDW_BUF_SIZE(i), regs->buf_size[i]);
-			dex_write(dex, BLENDEQ(i), regs->blendeq[i]);
+			dex_write(dex, BLENDEQ(i - 1), regs->blendeq[i - 1]);
 			dex->windows[i]->dma_buf_data =
 				regs->dma_buf_data[i];
 		}
@@ -135,10 +137,7 @@ void dex_update_regs(struct dex_device *dex, struct dex_reg_data *regs)
 		if (!dex->windows[i]->local)
 			dex_shadow_protect(dex, i, DEX_DISABLE);
 
-	/* TODO: SLAVE_SYMC and STADALONE_F */
-	val |= DECON_UPDATE_STANDALONE_F;
-	val |= DECON_UPDATE_SLAVE_SYNC;
-	dex_write_mask(dex, DECON_UPDATE, val, DECON_UPDATE_MASK);
+	dex_tv_update(dex);
 
 	spin_unlock_irqrestore(&dex->reg_slock, flags);
 }
@@ -235,6 +234,31 @@ int dex_reg_wait4update(struct dex_device *dex)
 
 	dex_warn("no vsync detected - timeout\n");
 	return -ETIME;
+}
+
+void dex_reg_porch(struct dex_device *dex)
+{
+	u32 val;
+
+	val = VIDTCON0_VBPD(dex->porch->vbp - 1)
+		| VIDTCON0_VFPD(dex->porch->vfp - 1)
+		| VIDTCON0_VSPW(dex->porch->vsa - 1);
+	dex_write(dex, VIDTCON0, val);
+
+	val = VIDTCON1_HBPD(dex->porch->hbp - 1)
+		| VIDTCON1_HFPD(dex->porch->hfp - 1)
+		| VIDTCON1_HSPW(dex->porch->hsa - 1);
+	dex_write(dex, VIDTCON1, val);
+
+	val = VIDTCON2_LINEVAL(dex->porch->yres - 1)
+		| VIDTCON2_HOZVAL(dex->porch->xres - 1);
+	dex_write(dex, VIDTCON2, val);
+
+	if (dex->porch->vmode == V4L2_FIELD_INTERLACED)
+		val = VIDOUTCON0_INTERLACE_EN_F;
+	else
+		val = VIDOUTCON0_PROGRESSIVE_EN_F;
+	dex_write_mask(dex, VIDOUTCON0, val, VIDOUTCON0_MODE_MASK);
 }
 
 static int dex_debugfs_show(struct seq_file *s, void *unused)

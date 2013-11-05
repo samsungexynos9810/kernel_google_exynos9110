@@ -71,6 +71,19 @@ extern int dex_log_level;
 struct display_driver;
 extern struct ion_device *ion_exynos;
 
+struct decon_tv_porch {
+	char *name;
+	u32 xres;
+	u32 yres;
+	u32 vbp;
+	u32 vfp;
+	u32 vsa;
+	u32 hbp;
+	u32 hfp;
+	u32 hsa;
+	u32 vmode;
+};
+
 enum s5p_decon_tv_rgb {
 	MIXER_RGB601_0_255,
 	MIXER_RGB601_16_235,
@@ -123,12 +136,13 @@ struct dex_win {
 };
 
 struct dex_device {
-	struct device		*dev;
-	struct v4l2_subdev	*hdmi_sd;
-	struct s5p_dex_platdata	*pdata;
-	struct dex_win		*windows[DEX_MAX_WINDOWS];
-	struct dex_resources	res;
-	enum s5p_decon_tv_rgb	color_range;
+	struct device			*dev;
+	struct v4l2_subdev		*hdmi_sd;
+	struct s5p_dex_platdata		*pdata;
+	const struct decon_tv_porch	*porch;
+	struct dex_win			*windows[DEX_MAX_WINDOWS];
+	struct dex_resources		res;
+	enum s5p_decon_tv_rgb		color_range;
 	int			n_streamer;
 	int			n_power;
 
@@ -173,6 +187,7 @@ static inline struct v4l2_subdev *dex_remote_subdev(struct dex_win *win)
 
 irqreturn_t dex_irq_handler(int irq, void *dev_data);
 void dex_shadow_protect(struct dex_device *dex, int idx, int en);
+void dex_tv_update(struct dex_device *dex);
 void dex_reg_reset(struct dex_device *dex);
 void dex_update_regs(struct dex_device *dex, struct dex_reg_data *regs);
 int dex_reg_compare(struct dex_device *dex, int i, dma_addr_t addr);
@@ -181,6 +196,7 @@ void dex_reg_local_off(struct dex_device *dex, int idx);
 void dex_reg_streamon(struct dex_device *dex);
 void dex_reg_streamoff(struct dex_device *dex);
 int dex_reg_wait4update(struct dex_device *dex);
+void dex_reg_porch(struct dex_device *dex);
 void dex_reg_dump(struct dex_device *dex);
 
 struct exynos_hdmi_data {
