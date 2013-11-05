@@ -45,24 +45,34 @@ const struct vb2_ops fimc_is_vdc_qops;
 int fimc_is_vdc_video_probe(void *data)
 {
 	int ret = 0;
-	struct fimc_is_core *core = (struct fimc_is_core *)data;
-	struct fimc_is_video *video = &core->video_vdc;
+	struct fimc_is_core *core;
+	struct fimc_is_video *video;
 
-	dbg_vdisc("%s\n", __func__);
+	BUG_ON(!data);
+
+	core = (struct fimc_is_core *)data;
+	video = &core->video_vdc;
+
+	if (!core->pdev) {
+		err("pdev is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
 
 	ret = fimc_is_video_probe(video,
-		data,
 		FIMC_IS_VIDEO_VDC_NAME,
 		FIMC_IS_VIDEO_VDC_NUM,
 		VFL_DIR_RX,
+		&core->mem,
+		&core->v4l2_dev,
 		&video->lock,
 		&fimc_is_vdc_video_fops,
 		&fimc_is_vdc_video_ioctl_ops);
+	if (ret)
+		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
-	if (ret != 0)
-		dev_err(&(core->pdev->dev),
-			"%s::Failed to fimc_is_video_probe()\n", __func__);
-
+p_err:
+	minfo("[VDC:V:X] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -70,10 +80,14 @@ static int fimc_is_vdc_video_open(struct file *file)
 {
 	int ret = 0;
 	u32 refcount;
-	struct fimc_is_core *core = video_drvdata(file);
-	struct fimc_is_video *video = &core->video_vdc;
-	struct fimc_is_video_ctx *vctx = NULL;
+	struct fimc_is_core *core;
+	struct fimc_is_video *video;
+	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_device_ischain *device;
+
+	vctx = NULL;
+	video = video_drvdata(file);
+	core = container_of(video, struct fimc_is_core, video_vdc);
 
 	ret = open_vctx(file, video, &vctx, FRAMEMGR_ID_INVALID, FRAMEMGR_ID_DIS);
 	if (ret) {
@@ -81,7 +95,7 @@ static int fimc_is_vdc_video_open(struct file *file)
 		goto p_err;
 	}
 
-	pr_info("[VDC:V:%d] %s\n", vctx->instance, __func__);
+	minfo("[VDC:V:%d] %s\n", vctx->instance, __func__);
 
 	refcount = atomic_read(&core->video_isp.refcount);
 	if (refcount > FIMC_IS_MAX_NODES) {
@@ -93,24 +107,23 @@ static int fimc_is_vdc_video_open(struct file *file)
 
 	device = &core->ischain[refcount - 1];
 
-	ret = fimc_is_ischain_sub_open(&device->dis, vctx, NULL);
+	ret = fimc_is_video_open(vctx,
+		device,
+		VIDEO_VDISC_READY_BUFFERS,
+		video,
+		FIMC_IS_VIDEO_TYPE_CAPTURE,
+		&fimc_is_vdc_qops,
+		NULL,
+		&fimc_is_ischain_sub_ops);
 	if (ret) {
-		err("fimc_is_ischain_sub_open is fail");
+		err("fimc_is_video_open is fail");
 		close_vctx(file, video, vctx);
 		goto p_err;
 	}
 
-	ret = fimc_is_video_open(vctx,
-		device,
-		VIDEO_VDISC_READY_BUFFERS,
-		&core->video_vdc,
-		FIMC_IS_VIDEO_TYPE_CAPTURE,
-		&fimc_is_vdc_qops,
-		NULL,
-		&fimc_is_ischain_sub_ops,
-		core->mem.vb2->ops);
+	ret = fimc_is_subdev_open(&device->dis, vctx, NULL);
 	if (ret) {
-		err("fimc_is_video_open is fail");
+		err("fimc_is_subdev_open is fail");
 		close_vctx(file, video, vctx);
 		goto p_err;
 	}
@@ -142,7 +155,7 @@ static int fimc_is_vdc_video_close(struct file *file)
 		goto p_err;
 	}
 
-	pr_info("[VDC:V:%d] %s\n", vctx->instance, __func__);
+	minfo("[VDC:V:%d] %s\n", vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {
@@ -151,7 +164,7 @@ static int fimc_is_vdc_video_close(struct file *file)
 		goto p_err;
 	}
 
-	fimc_is_ischain_sub_close(&device->dis);
+	fimc_is_subdev_close(&device->dis);
 	fimc_is_video_close(vctx);
 
 	ret = close_vctx(file, video, vctx);
@@ -287,7 +300,7 @@ static int fimc_is_vdc_video_reqbufs(struct file *file, void *priv,
 		goto p_err;
 	}
 
-	if (test_bit(FIMC_IS_ISDEV_DSTART, &leader->state)) {
+	if (test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
 		merr("leader still running, not applied", vctx);
 		ret = -EINVAL;
 		goto p_err;
@@ -383,25 +396,7 @@ static int fimc_is_vdc_video_streamoff(struct file *file, void *priv,
 static int fimc_is_vdc_video_enum_input(struct file *file, void *priv,
 	struct v4l2_input *input)
 {
-	struct fimc_is_core *isp = video_drvdata(file);
-	struct exynos5_fimc_is_sensor_info *sensor_info
-			= isp->pdata->sensor_info[input->index];
-
-	dbg("index(%d) sensor(%s)\n",
-		input->index, sensor_info->sensor_name);
-	dbg("pos(%d) sensor_id(%d)\n",
-		sensor_info->sensor_position, sensor_info->sensor_id);
-	dbg("csi_id(%d) flite_id(%d)\n",
-		sensor_info->csi_id, sensor_info->flite_id);
-	dbg("i2c_ch(%d)\n", sensor_info->i2c_channel);
-
-	if (input->index >= FIMC_IS_MAX_CAMIF_CLIENTS)
-		return -EINVAL;
-
-	input->type = V4L2_INPUT_TYPE_CAMERA;
-
-	strncpy(input->name, sensor_info->sensor_name,
-					FIMC_IS_MAX_SENSOR_NAME_LEN);
+	/* Todo : add to enum input control code */
 	return 0;
 }
 
@@ -538,20 +533,17 @@ static int fimc_is_vdc_queue_setup(struct vb2_queue *vbq,
 	struct fimc_is_video_ctx *vctx = vbq->drv_priv;
 	struct fimc_is_video *video;
 	struct fimc_is_queue *queue;
-	struct fimc_is_core *core;
-	void *alloc_ctx;
 
 	BUG_ON(!vctx);
+	BUG_ON(!vctx->video);
 
 	mdbgv_vdc("%s\n", vctx, __func__);
 
-	video = vctx->video;
 	queue = GET_DST_QUEUE(vctx);
-	core = video->core;
-	alloc_ctx = core->mem.alloc_ctx;
+	video = vctx->video;
 
 	ret = fimc_is_queue_setup(queue,
-		alloc_ctx,
+		video->alloc_ctx,
 		num_planes,
 		sizes,
 		allocators);

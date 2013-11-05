@@ -1,6 +1,13 @@
 #ifndef FIMC_IS_VIDEO_H
 #define FIMC_IS_VIDEO_H
 
+#include <media/v4l2-ioctl.h>
+#include "fimc-is-type.h"
+#include "fimc-is-mem.h"
+#include "fimc-is-framemgr.h"
+#include "fimc-is-metadata.h"
+#include "fimc-is-config.h"
+
 #define FIMC_IS_MAX_NODES			(3)
 #define FIMC_IS_MAX_BUFS			(12)
 #define FIMC_IS_MAX_PLANES			(4)
@@ -8,19 +15,19 @@
 
 #define VIDEO_SENSOR_READY_BUFFERS		0
 #define VIDEO_3AA_READY_BUFFERS			0
-#define VIDEO_3AA_OTF_MIN_BUFFERS		3
+#define VIDEO_3AAC_READY_BUFFERS		0
+#define VIDEO_3AAP_READY_BUFFERS		0
 #define VIDEO_ISP_READY_BUFFERS			0
 #define VIDEO_SCC_READY_BUFFERS			0
 #define VIDEO_SCP_READY_BUFFERS			0
 #define VIDEO_VDISC_READY_BUFFERS		1
 #define VIDEO_VDISO_READY_BUFFERS		0
-#define VIDEO_3A0C_READY_BUFFERS		0
-#define VIDEO_3A1C_READY_BUFFERS		0
 
-#define FIMC_IS_VIDEO_NAME(name)		(FIMC_IS_DRV_NAME"-"name)
-#define FIMC_IS_VIDEO_SEN_NAME(id)		FIMC_IS_VIDEO_NAME("sensor."#id)
+#define FIMC_IS_VIDEO_NAME(name)		("exynos-fimc-is-"name)
+#define FIMC_IS_VIDEO_SENSOR_NAME		FIMC_IS_VIDEO_NAME("sensor")
 #define FIMC_IS_VIDEO_3AA_NAME(id)		FIMC_IS_VIDEO_NAME("3aa."#id)
 #define FIMC_IS_VIDEO_3AAC_NAME(id)		FIMC_IS_VIDEO_NAME("3aa."#id"c")
+#define FIMC_IS_VIDEO_3AAP_NAME(id)		FIMC_IS_VIDEO_NAME("3aa."#id"p")
 #define FIMC_IS_VIDEO_ISP_NAME			FIMC_IS_VIDEO_NAME("isp")
 #define FIMC_IS_VIDEO_SCC_NAME			FIMC_IS_VIDEO_NAME("scalerc")
 #define FIMC_IS_VIDEO_SCP_NAME			FIMC_IS_VIDEO_NAME("scalerp")
@@ -63,13 +70,6 @@ enum fimc_is_queue_state {
 	FIMC_IS_QUEUE_STREAM_ON
 };
 
-struct fimc_is_fmt {
-	enum v4l2_mbus_pixelcode	mbus_code;
-	char				*name;
-	u32				pixelformat;
-	u32				num_planes;
-};
-
 struct fimc_is_frame_cfg {
 	struct fimc_is_fmt		format;
 	u32				width;
@@ -101,7 +101,6 @@ struct fimc_is_queue {
 	u32				buf_kva[FIMC_IS_MAX_BUFS][FIMC_IS_MAX_PLANES];
 
 	u32				id;
-	u32				instance;
 	unsigned long			state;
 };
 
@@ -120,14 +119,14 @@ struct fimc_is_video_ctx {
 };
 
 struct fimc_is_video {
+	u32				id;
+	atomic_t			refcount;
+	struct mutex			lock;
+
 	struct video_device		vd;
 	struct media_pad		pads;
 	const struct fimc_is_vb2	*vb2;
-	struct mutex			lock;
-	void				*core;
-
-	u32				id;
-	atomic_t			refcount;
+	void				*alloc_ctx;
 };
 
 struct fimc_is_core *fimc_is_video_ctx_2_core(struct fimc_is_video_ctx *vctx);
@@ -163,10 +162,11 @@ int fimc_is_queue_stop_streaming(struct fimc_is_queue *queue,
 
 /* video operation */
 int fimc_is_video_probe(struct fimc_is_video *video,
-	void *core_data,
 	char *video_name,
 	u32 video_number,
 	u32 vfl_dir,
+	struct fimc_is_mem *mem,
+	struct v4l2_device *v4l2_dev,
 	struct mutex *lock,
 	const struct v4l2_file_operations *fops,
 	const struct v4l2_ioctl_ops *ioctl_ops);
@@ -177,8 +177,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 	u32 video_type,
 	const struct vb2_ops *vb2_ops,
 	const struct fimc_is_queue_ops *src_qops,
-	const struct fimc_is_queue_ops *dst_qops,
-	const struct vb2_mem_ops *mem_ops);
+	const struct fimc_is_queue_ops *dst_qops);
 int fimc_is_video_close(struct fimc_is_video_ctx *vctx);
 u32 fimc_is_video_poll(struct file *file,
 	struct fimc_is_video_ctx *vctx,
