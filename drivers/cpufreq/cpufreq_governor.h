@@ -268,8 +268,4 @@ void od_register_powersave_bias_handler(unsigned int (*f)
 		(struct cpufreq_policy *, unsigned int, unsigned int),
 		unsigned int powersave_bias);
 void od_unregister_powersave_bias_handler(void);
-void od_register_powersave_bias_handler_eagle(unsigned int (*f)
-		(struct cpufreq_policy *, unsigned int, unsigned int),
-		unsigned int powersave_bias);
-void od_unregister_powersave_bias_handler_eagle(void);
 #endif /* _CPUFREQ_GOVERNOR_H */

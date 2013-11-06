@@ -170,27 +170,6 @@ config CPU_FREQ_GOV_ONDEMAND
 
 	  If in doubt, say N.
 
-config CPU_FREQ_GOV_ONDEMAND_EAGLE
-	tristate "'ondemand_egl' cpufreq policy governor for MP"
-	depends on ARM_EXYNOS_MP_CPUFREQ
-	depends on CPU_FREQ_GOV_ONDEMAND
-	select CPU_FREQ_TABLE
-	select CPU_FREQ_GOV_COMMON
-	help
-	  'ondemand_egl' - This driver adds a dynamic cpufreq policy governor.
-	  The governor does a periodic polling and
-	  changes frequency based on the CPU utilization.
-	  The support for this governor depends on CPU capability to
-	  do fast frequency switching (i.e, very low latency frequency
-	  transitions).
-
-	  To compile this driver as a module, choose M here: the
-	  module will be called cpufreq_ondemand.
-
-	  For details, take a look at linux/Documentation/cpu-freq.
-
-	  If in doubt, say N.
-
 config CPU_FREQ_GOV_INTERACTIVE
 	tristate "'interactive' cpufreq policy governor"
 	help
