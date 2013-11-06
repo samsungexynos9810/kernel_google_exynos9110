@@ -328,7 +328,6 @@
 					regulator-name = "vdd_ldo18";
 					regulator-min-microvolt = <1000000>;
 					regulator-max-microvolt = <2100000>;
-					regulator-always-on;
 					regulator-initial-mode = <3>;
 				};
 
