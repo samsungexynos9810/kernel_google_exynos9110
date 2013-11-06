@@ -1923,6 +1923,12 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 
 	fimc_is_ischain_region_flush(device);
 
+	if (test_bit(IS_IF_STATE_SENSOR_CLOSED, &itf->state)) {
+		merr("sensor close step already, cannot open sensor anymore", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
 	ret = fimc_is_hw_open(device->interface,
 		device->instance,
 		module,
@@ -1938,6 +1944,8 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 		ret = -EINVAL;
 		goto p_err;
 	}
+
+	set_bit(IS_IF_STATE_SENSOR_OPENED, &itf->state);
 
 	/* HACK */
 	device->margin_left = 8;
@@ -1986,9 +1994,9 @@ p_err:
 	return ret;
 }
 
-static int fimc_is_itf_close(struct fimc_is_device_ischain *device)
+static int fimc_is_itf_close(struct fimc_is_device_ischain *device,
+	u32 module, u32 info)
 {
-	int ret = 0;
 	struct fimc_is_interface *itf;
 
 	BUG_ON(!device);
@@ -1996,15 +2004,11 @@ static int fimc_is_itf_close(struct fimc_is_device_ischain *device)
 
 	itf = device->interface;
 
-	ret = fimc_is_hw_close(itf, device->instance);
-	if (ret) {
-		merr("fimc_is_hw_close is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	/* should be use CLOSE_SENSOR */
 
-p_err:
-	return ret;
+	set_bit(IS_IF_STATE_SENSOR_CLOSED, &itf->state);
+
+	return 0;
 }
 
 static int fimc_is_itf_setfile(struct fimc_is_device_ischain *this,
@@ -2749,12 +2753,10 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 	fimc_is_ischain_sub_close(&device->dnr);
 	fimc_is_ischain_sub_close(&device->fd);
 
-	/* CLOSE_SENSOR */
-	if (test_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state)) {
-		ret = fimc_is_itf_close(device);
-		if (ret)
-			merr("fimc_is_itf_close is fail", device);
-	}
+	/* it's not real CLOSE_SENSOR, also arguments are invalid */
+	ret = fimc_is_itf_close(device, 0, 0);
+	if (ret)
+		merr("fimc_is_itf_close is fail", device);
 
 	/* for mediaserver force close */
 	core = (struct fimc_is_core *)device->interface->core;

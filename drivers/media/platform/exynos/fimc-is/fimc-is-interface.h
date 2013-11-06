@@ -46,6 +46,8 @@ enum fimc_is_interface_state {
 	IS_IF_STATE_OPEN,
 	IS_IF_STATE_START,
 	IS_IF_STATE_BUSY,
+	IS_IF_STATE_SENSOR_OPENED,
+	IS_IF_STATE_SENSOR_CLOSED,
 };
 
 #if defined(CONFIG_SOC_EXYNOS5430)
@@ -187,8 +189,6 @@ int fimc_is_hw_enum(struct fimc_is_interface *this);
 int fimc_is_hw_open(struct fimc_is_interface *this,
 	u32 instance, u32 module, u32 info, u32 group, u32 flag,
 	u32 *mwidth, u32 *mheight);
-int fimc_is_hw_close(struct fimc_is_interface *this,
-	u32 instance);
 int fimc_is_hw_saddr(struct fimc_is_interface *interface,
 	u32 instance, u32 *setfile_addr);
 int fimc_is_hw_setfile(struct fimc_is_interface *interface,
