@@ -381,6 +381,7 @@
 /* Compatibility defines and inclusion */
 
 #include <mach/regs-pmu.h>
+#include <mach/regs-audss.h>
 
 #define S5P_EPLL_CON				EXYNOS4_EPLL_CON0
 
