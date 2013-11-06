@@ -1119,7 +1119,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 	unsigned int j;
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_frequency_table *freq_table;
-	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 	int primary_cpu = 0;
 #endif
@@ -1193,21 +1192,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return rc;
 		}
 #endif
-		speedchange_task =
-			kthread_create(cpufreq_interactive_speedchange_task, NULL,
-				       "cfinteractive");
-		if (IS_ERR(speedchange_task))
-			return PTR_ERR(speedchange_task);
-
-		sched_setscheduler_nocheck(speedchange_task, SCHED_FIFO, &param);
-		get_task_struct(speedchange_task);
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		if (exynos_boot_cluster == CA15)
-			kthread_bind(speedchange_task, NR_CA15);
-#endif
-
-		/* NB: wake up so the thread does not look hung to the freezer */
-		wake_up_process(speedchange_task);
 
 		idle_notifier_register(&cpufreq_interactive_idle_nb);
 		cpufreq_register_notifier(
@@ -1234,10 +1218,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		idle_notifier_unregister(&cpufreq_interactive_idle_nb);
-
-		kthread_stop(speedchange_task);
-		put_task_struct(speedchange_task);
-
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		if (exynos_boot_cluster == CA7) {
 			sysfs_remove_group(cpufreq_global_kobject,
