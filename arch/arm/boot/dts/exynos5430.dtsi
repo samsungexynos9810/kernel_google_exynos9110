@@ -334,6 +334,7 @@
 		interrupts = <0 225 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
+		clock-gate;
 		clocks = <&clock 565>, <&clock 141>, <&clock 2167>,
 			<&clock 3050>, <&clock 3051>, <&clock 3052>, <&clock 3053>,
 			<&clock 4070>, <&clock 4071>;
@@ -349,6 +350,7 @@
 		interrupts = <0 226 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
+		clock-gate;
 		clocks = <&clock 566>, <&clock 142>, <&clock 2166>,
 			<&clock 3054>, <&clock 3055>,
 			<&clock 4072>, <&clock 4073>;
@@ -364,6 +366,7 @@
 		interrupts = <0 227 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
+		clock-gate;
 		clocks = <&clock 567>, <&clock 143>, <&clock 2165>,
 			<&clock 3056>, <&clock 3057>,
 			<&clock 4074>, <&clock 4075>;
