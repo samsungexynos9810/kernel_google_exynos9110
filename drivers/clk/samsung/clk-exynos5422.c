@@ -843,6 +843,19 @@ enum exynos5422_clks {
 	atclk_atb_async,/* = pclk_dbg */
 	aclk_ace_async, /* = aclk_cpud_kfc */
 
+/* CLK_GATE_ASS */
+	gate_ass_niu_p = 1720,
+	gate_ass_niu,
+	gate_ass_adma,
+	gate_ass_timer,
+	gate_ass_uart,
+	gate_ass_gpio,
+	gate_ass_pcm_special,
+	gate_ass_pcm_bus,
+	gate_ass_i2s_special,
+	gate_ass_i2s_bus,
+	gate_ass_srp,
+
 /* MUX */
 	/* CMU_TOP - bus */
 	mout_bpll_ctrl_user = 2000, /*mout_bpll, sclk_bpll */
@@ -1008,6 +1021,10 @@ enum exynos5422_clks {
 
 	/* PSGEN */
 
+	/* ASS */
+	mout_ass_clk,
+	mout_ass_i2s,
+
 	/* etc */
 
 	mout_pclk_66_gpio_user,
@@ -1134,6 +1151,11 @@ enum exynos5422_clks {
 	/* PSGEN */
 	dout_gen_blk,
 	dout_jpg_blk,
+
+	/* ASS */
+	dout_ass_srp,
+	dout_ass_bus,
+	dout_ass_i2s,
 
 	/* etc */
 
@@ -1334,6 +1356,9 @@ PNAME(mout_mau_epll_clk_p) = { "mout_epll_ctrl", "mout_dpll_ctrl", "mout_mpll_ct
 PNAME(mout_aclk_400_disp1_sw_p) = { "dout_aclk_400_disp1", "mout_spll_ctrl"};
 PNAME(mout_aclk_400_disp1_user_p)	= { "fin_pll", "mout_aclk_400_disp1_sw" };
 
+PNAME(mout_ass_clk_p)	= { "fin_pll", "fout_epll" };
+PNAME(mout_ass_i2s_p)	= { "mout_ass_clk", "cdclk0", "sclk_mau_audio0" };
+
 #define CFRATE(_id, pname, f, rate) \
 		FRATE(_id, #_id, pname, f, rate)
 /* fixed rate clocks generated outside the soc */
@@ -1526,6 +1551,10 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 
 	/* TOP */
 	CMX(mout_mphy_refclk, "mout_mphy_refclk", group2_p, EXYNOS5_CLK_SRC_FSYS , 28, 3),
+
+	/* ASS */
+	CMX(mout_ass_clk, "mout_ass_clk", mout_ass_clk_p, EXYNOS_CLKSRC_AUDSS, 0, 1),
+	CMX(mout_ass_i2s, "mout_ass_i2s", mout_ass_i2s_p, EXYNOS_CLKSRC_AUDSS, 2, 3),
 };
 
 #define CDV(_id, cname, pname, o, s, w) \
@@ -1654,6 +1683,10 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_ispdiv2, "dout_ispdiv2", EXYNOS5_CLK_DIV_ISP0, 0, 3),
 	*/
 
+	/* ASS */
+	CDIV(dout_ass_srp, "mout_ass_clk", EXYNOS_CLKDIV_AUDSS, 0, 15),
+	CDIV(dout_ass_bus, "dout_ass_srp", EXYNOS_CLKDIV_AUDSS, 4, 15),
+	CDIV(dout_ass_i2s, "mout_ass_i2s", EXYNOS_CLKDIV_AUDSS, 8, 15),
 };
 
 #define CGATE(_id, cname, pname, o, b, f, gf) \
@@ -1909,6 +1942,19 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 
 	CGATE(clk2x_phy0, "clk2x_phy0", "dout_clk2x_phy0", EXYNOS5_CLK_GATE_BUS_CDREX, 0, 0, 0),
 	CGATE(clk2x_phy1, "clk2x_phy1", "dout_clk2x_phy0", EXYNOS5_CLK_GATE_BUS_CDREX, 1, 0, 0),
+
+	/* ASS */
+	CGATE(gate_ass_niu_p, "ass_niu_p", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 11, 0, 0),
+	CGATE(gate_ass_niu, "ass_niu", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 10, 0, 0),
+	CGATE(gate_ass_adma, "ass_adma", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 9, 0, 0),
+	CGATE(gate_ass_timer, "ass_timer", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 8, 0, 0),
+	CGATE(gate_ass_uart, "ass_uart", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 7, 0, 0),
+	CGATE(gate_ass_gpio, "ass_gpio", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 6, 0, 0),
+	CGATE(gate_ass_pcm_special, "ass_pcm_special", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 5, 0, 0),
+	CGATE(gate_ass_pcm_bus, "ass_pcm_bus", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 4, 0, 0),
+	CGATE(gate_ass_i2s_special, "ass_i2s_special", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 3, 0, 0),
+	CGATE(gate_ass_i2s_bus, "ass_i2s_bus", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 2, 0, 0),
+	CGATE(gate_ass_srp, "ass_srp", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 0, 0, 0),
 };
 
 static __initdata struct of_device_id ext_clk_match[] = {
