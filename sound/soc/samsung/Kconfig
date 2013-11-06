@@ -273,6 +273,17 @@ config SND_SOC_ES515_I2S_MASTER
 	help
 	  Say Y if you want to add support for SoC audio on the XYREF.
 
+config SND_SOC_SAMSUNG_SMDK5422_WM8994
+	tristate "SoC I2S Audio support for wm8994 on SMDK5422"
+	depends on SND_SOC_SAMSUNG
+	select MFD_WM8994
+	select SND_SOC_WM8994
+	select SND_SAMSUNG_I2S
+	select SND_SAMSUNG_AUDSS
+	select SND_SOC_DUMMY_CODEC
+	help
+	  Say Y if you want to add support for SoC audio on the XYREF5430.
+
 config SND_SAMSUNG_AUX_HDMI
 	tristate "HDMI Audio support on XYREF"
 	depends on SND_SAMSUNG_XYREF
