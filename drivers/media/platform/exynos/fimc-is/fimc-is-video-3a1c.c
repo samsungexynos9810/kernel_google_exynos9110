@@ -25,7 +25,6 @@
 #include <linux/firmware.h>
 #include <linux/dma-mapping.h>
 #include <linux/scatterlist.h>
-#include <linux/videodev2.h>
 #include <linux/videodev2_exynos_media.h>
 #include <linux/videodev2_exynos_camera.h>
 #include <linux/v4l2-mediabus.h>
@@ -38,28 +37,30 @@
 #include "fimc-is-err.h"
 #include "fimc-is-video.h"
 
-const struct v4l2_file_operations fimc_is_scp_video_fops;
-const struct v4l2_ioctl_ops fimc_is_scp_video_ioctl_ops;
-const struct vb2_ops fimc_is_scp_qops;
+const struct v4l2_file_operations fimc_is_3a1c_video_fops;
+const struct v4l2_ioctl_ops fimc_is_3a1c_video_ioctl_ops;
+const struct vb2_ops fimc_is_3a1c_qops;
 
-int fimc_is_scp_video_probe(void *data)
+int fimc_is_3a1c_video_probe(void *data)
 {
 	int ret = 0;
 	struct fimc_is_core *core = (struct fimc_is_core *)data;
-	struct fimc_is_video *video = &core->video_scp;
+	struct fimc_is_video *video = &core->video_3a1c;
+
+	dbg_3a1c("%s\n", __func__);
 
 	ret = fimc_is_video_probe(video,
 		data,
-		FIMC_IS_VIDEO_SCP_NAME,
-		FIMC_IS_VIDEO_SCP_NUM,
-		VFL_DIR_RX,
+		FIMC_IS_VIDEO_3AAC_NAME(1),
+		FIMC_IS_VIDEO_3A1C_NUM,
+		VFL_DIR_M2M,
 		&video->lock,
-		&fimc_is_scp_video_fops,
-		&fimc_is_scp_video_ioctl_ops);
+		&fimc_is_3a1c_video_fops,
+		&fimc_is_3a1c_video_ioctl_ops);
 
 	if (ret != 0)
 		dev_err(&(core->pdev->dev),
-		"%s::Failed to fimc_is_video_probe()\n", __func__);
+			"%s::Failed to fimc_is_video_probe()\n", __func__);
 
 	return ret;
 }
@@ -70,22 +71,24 @@ int fimc_is_scp_video_probe(void *data)
  * =============================================================================
  */
 
-static int fimc_is_scp_video_open(struct file *file)
+static int fimc_is_3a1c_video_open(struct file *file)
 {
 	int ret = 0;
 	u32 refcount;
 	struct fimc_is_core *core = video_drvdata(file);
-	struct fimc_is_video *video = &core->video_scp;
+	struct fimc_is_video *video = &core->video_3a1c;
 	struct fimc_is_video_ctx *vctx = NULL;
-	struct fimc_is_device_ischain *device;
+	struct fimc_is_device_ischain *device = NULL;
 
-	ret = open_vctx(file, video, &vctx, FRAMEMGR_ID_INVALID, FRAMEMGR_ID_SCP);
+	BUG_ON(!core);
+
+	ret = open_vctx(file, video, &vctx, FRAMEMGR_ID_INVALID, FRAMEMGR_ID_3A1C);
 	if (ret) {
 		err("open_vctx is fail(%d)", ret);
 		goto p_err;
 	}
 
-	pr_info("[SCP:V:%d] %s\n", vctx->instance, __func__);
+	pr_info("[3A1C:V:%d] %s\n", vctx->instance, __func__);
 
 	refcount = atomic_read(&core->video_isp.refcount);
 	if (refcount > FIMC_IS_MAX_NODES) {
@@ -97,33 +100,28 @@ static int fimc_is_scp_video_open(struct file *file)
 
 	device = &core->ischain[refcount - 1];
 
-	ret = fimc_is_ischain_sub_open(&device->scp, vctx, NULL);
+	ret = fimc_is_ischain_sub_open(&device->taxc, vctx, NULL);
 	if (ret) {
 		err("fimc_is_ischain_sub_open is fail");
 		close_vctx(file, video, vctx);
 		goto p_err;
 	}
 
-	ret = fimc_is_video_open(vctx,
+	fimc_is_video_open(vctx,
 		device,
-		VIDEO_SCP_READY_BUFFERS,
-		&(core->video_scp),
+		VIDEO_3A1C_READY_BUFFERS,
+		&(core->video_3a1c),
 		FIMC_IS_VIDEO_TYPE_CAPTURE,
-		&fimc_is_scp_qops,
+		&fimc_is_3a1c_qops,
 		NULL,
 		&fimc_is_ischain_sub_ops,
 		core->mem.vb2->ops);
-	if (ret) {
-		err("fimc_is_video_open is fail");
-		close_vctx(file, video, vctx);
-		goto p_err;
-	}
 
 p_err:
 	return ret;
 }
 
-static int fimc_is_scp_video_close(struct file *file)
+static int fimc_is_3a1c_video_close(struct file *file)
 {
 	int ret = 0;
 	struct fimc_is_video *video = NULL;
@@ -146,7 +144,7 @@ static int fimc_is_scp_video_close(struct file *file)
 		goto p_err;
 	}
 
-	pr_info("[SCP:V:%d] %s\n", vctx->instance, __func__);
+	pr_info("[3A1C:V:%d] %s\n", vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {
@@ -155,7 +153,7 @@ static int fimc_is_scp_video_close(struct file *file)
 		goto p_err;
 	}
 
-	fimc_is_ischain_sub_close(&device->scp);
+	fimc_is_ischain_sub_close(&device->taxc);
 	fimc_is_video_close(vctx);
 
 	ret = close_vctx(file, video, vctx);
@@ -166,7 +164,7 @@ p_err:
 	return ret;
 }
 
-static unsigned int fimc_is_scp_video_poll(struct file *file,
+static unsigned int fimc_is_3a1c_video_poll(struct file *file,
 	struct poll_table_struct *wait)
 {
 	u32 ret = 0;
@@ -177,7 +175,7 @@ static unsigned int fimc_is_scp_video_poll(struct file *file,
 	return ret;
 }
 
-static int fimc_is_scp_video_mmap(struct file *file,
+static int fimc_is_3a1c_video_mmap(struct file *file,
 	struct vm_area_struct *vma)
 {
 	int ret = 0;
@@ -190,13 +188,13 @@ static int fimc_is_scp_video_mmap(struct file *file,
 	return ret;
 }
 
-const struct v4l2_file_operations fimc_is_scp_video_fops = {
+const struct v4l2_file_operations fimc_is_3a1c_video_fops = {
 	.owner		= THIS_MODULE,
-	.open		= fimc_is_scp_video_open,
-	.release	= fimc_is_scp_video_close,
-	.poll		= fimc_is_scp_video_poll,
+	.open		= fimc_is_3a1c_video_open,
+	.release	= fimc_is_3a1c_video_close,
+	.poll		= fimc_is_3a1c_video_poll,
 	.unlocked_ioctl	= video_ioctl2,
-	.mmap		= fimc_is_scp_video_mmap,
+	.mmap		= fimc_is_3a1c_video_mmap,
 };
 
 /*
@@ -205,7 +203,7 @@ const struct v4l2_file_operations fimc_is_scp_video_fops = {
  * =============================================================================
  */
 
-static int fimc_is_scp_video_querycap(struct file *file, void *fh,
+static int fimc_is_3a1c_video_querycap(struct file *file, void *fh,
 	struct v4l2_capability *cap)
 {
 	struct fimc_is_core *core = video_drvdata(file);
@@ -223,112 +221,71 @@ static int fimc_is_scp_video_querycap(struct file *file, void *fh,
 	return 0;
 }
 
-static int fimc_is_scp_video_enum_fmt_mplane(struct file *file, void *priv,
+static int fimc_is_3a1c_video_enum_fmt_mplane(struct file *file, void *priv,
 	struct v4l2_fmtdesc *f)
 {
 	dbg("%s\n", __func__);
 	return 0;
 }
 
-static int fimc_is_scp_video_get_format_mplane(struct file *file, void *fh,
+static int fimc_is_3a1c_video_get_format_mplane(struct file *file, void *fh,
 	struct v4l2_format *format)
 {
 	dbg("%s\n", __func__);
 	return 0;
 }
 
-static int fimc_is_scp_video_set_format_mplane(struct file *file, void *fh,
+static int fimc_is_3a1c_video_set_format_mplane(struct file *file, void *fh,
 	struct v4l2_format *format)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
-	struct fimc_is_queue *queue;
-	struct fimc_is_device_ischain *ischain;
+	struct fimc_is_queue *queue = &vctx->q_dst;
+	struct fimc_is_device_ischain *ischain = vctx->device;
 
-	BUG_ON(!vctx);
-	BUG_ON(!format);
-
-	mdbgv_scp("%s\n", vctx, __func__);
-
-	queue = GET_DST_QUEUE(vctx);
-	ischain = vctx->device;
-	if (!ischain) {
-		merr("ischain is NULL", vctx);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	ret = fimc_is_video_set_format_mplane(file, vctx, format);
-	if (ret) {
+	if (ret)
 		merr("fimc_is_video_set_format_mplane is fail(%d)", vctx, ret);
-		goto p_err;
-	}
 
-	ret = fimc_is_ischain_scp_s_format(ischain,
-		queue->framecfg.format.pixelformat,
+	fimc_is_ischain_3a1c_s_format(ischain,
 		queue->framecfg.width,
 		queue->framecfg.height);
-	if (ret)
-		merr("fimc_is_ischain_scp_s_format is fail(%d)", vctx, ret);
 
-p_err:
 	return ret;
 }
 
-static int fimc_is_scp_video_try_format_mplane(struct file *file, void *fh,
+static int fimc_is_3a1c_video_try_format_mplane(struct file *file, void *fh,
 						struct v4l2_format *format)
 {
 	dbg("%s\n", __func__);
 	return 0;
 }
 
-static int fimc_is_scp_video_cropcap(struct file *file, void *fh,
-						struct v4l2_cropcap *cropcap)
+static int fimc_is_3a1c_video_cropcap(struct file *file, void *fh,
+	struct v4l2_cropcap *cropcap)
 {
 	dbg("%s\n", __func__);
 	return 0;
 }
 
-static int fimc_is_scp_video_get_crop(struct file *file, void *fh,
-						struct v4l2_crop *crop)
-{
-	dbg("%s\n", __func__);
-	return 0;
-}
-
-static int fimc_is_scp_video_set_crop(struct file *file, void *fh,
+static int fimc_is_3a1c_video_get_crop(struct file *file, void *fh,
 	struct v4l2_crop *crop)
 {
-	int ret = 0;
-	struct fimc_is_video_ctx *vctx = file->private_data;
-	struct fimc_is_queue *queue;
-	struct fimc_is_device_ischain *ischain;
-
-	BUG_ON(!vctx);
-
-	mdbgv_scp("%s\n", vctx, __func__);
-
-	queue = GET_DST_QUEUE(vctx);
-	ischain = vctx->device;
-	if (!ischain) {
-		merr("ischain is NULL", vctx);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	ret = fimc_is_ischain_scp_s_format(ischain,
-		queue->framecfg.format.pixelformat,
-		crop->c.width,
-		crop->c.height);
-	if (ret)
-		merr("fimc_is_ischain_scp_s_format is fail(%d)", vctx, ret);
-
-p_err:
-	return ret;
+	dbg("%s\n", __func__);
+	return 0;
 }
 
-static int fimc_is_scp_video_reqbufs(struct file *file, void *priv,
-					struct v4l2_requestbuffers *buf)
+static int fimc_is_3a1c_video_set_crop(struct file *file, void *fh,
+	struct v4l2_crop *crop)
+{
+	dbg("%s\n", __func__);
+	return 0;
+}
+
+static int fimc_is_3a1c_video_reqbufs(struct file *file, void *priv,
+	struct v4l2_requestbuffers *buf)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
@@ -338,10 +295,10 @@ static int fimc_is_scp_video_reqbufs(struct file *file, void *priv,
 
 	BUG_ON(!vctx);
 
-	mdbgv_scp("%s(buffers : %d)\n", vctx, __func__, buf->count);
+	mdbgv_3a1c("%s(buffers : %d)\n", vctx, __func__, buf->count);
 
 	device = vctx->device;
-	subdev = &device->scp;
+	subdev = &device->taxc;
 	leader = subdev->leader;
 
 	if (!leader) {
@@ -364,13 +321,13 @@ p_err:
 	return ret;
 }
 
-static int fimc_is_scp_video_querybuf(struct file *file, void *priv,
+static int fimc_is_3a1c_video_querybuf(struct file *file, void *priv,
 	struct v4l2_buffer *buf)
 {
 	int ret;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	ret = fimc_is_video_querybuf(file, vctx, buf);
 	if (ret)
@@ -379,47 +336,64 @@ static int fimc_is_scp_video_querybuf(struct file *file, void *priv,
 	return ret;
 }
 
-static int fimc_is_scp_video_qbuf(struct file *file, void *priv,
+static int fimc_is_3a1c_video_qbuf(struct file *file, void *priv,
 	struct v4l2_buffer *buf)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 
-#ifdef DBG_STREAMING
-	mdbgv_scp("%s(index : %d)\n", vctx, __func__, buf->index);
+#if 1 //def DBG_STREAMING
+	mdbgv_3a1c("%s(index : %d)\n", vctx, __func__, buf->index);
 #endif
 
 	ret = fimc_is_video_qbuf(file, vctx, buf);
+
 	if (ret)
 		merr("fimc_is_video_qbuf is fail(%d)", vctx, ret);
 
 	return ret;
 }
 
-static int fimc_is_scp_video_dqbuf(struct file *file, void *priv,
+static int fimc_is_3a1c_video_dqbuf(struct file *file, void *priv,
 	struct v4l2_buffer *buf)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
+#if 0
+    static int cnt = 0;
+    unsigned long addr = 0;
+    unsigned long addr1 = 0;    
+    addr = buf->m.userptr;
+    addr1 = buf->m.planes->m.userptr;
+    cnt++;
+#endif
 
-#ifdef DBG_STREAMING
-	mdbgv_scp("%s\n", vctx, __func__);
+#if 1 //def DBG_STREAMING
+	mdbgv_3a1c("%s\n", vctx, __func__);
 #endif
 
 	ret = fimc_is_video_dqbuf(file, vctx, buf);
 	if (ret)
 		merr("fimc_is_video_dqbuf is fail(%d)", vctx, ret);
-
+#if 0
+    if (cnt==2) {
+        printk("3a1c 2 buf addr %lx",addr);
+        printk("3a1c 2 buf addr1 %lx",addr1);
+    } else {
+        printk("3a1c buf addr1 %lx",addr1);
+        printk("3a1c buf addr %lx",addr);
+    } 
+#endif
 	return ret;
 }
 
-static int fimc_is_scp_video_streamon(struct file *file, void *priv,
+static int fimc_is_3a1c_video_streamon(struct file *file, void *priv,
 	enum v4l2_buf_type type)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	ret = fimc_is_video_streamon(file, vctx, type);
 	if (ret)
@@ -428,13 +402,13 @@ static int fimc_is_scp_video_streamon(struct file *file, void *priv,
 	return ret;
 }
 
-static int fimc_is_scp_video_streamoff(struct file *file, void *priv,
+static int fimc_is_3a1c_video_streamoff(struct file *file, void *priv,
 	enum v4l2_buf_type type)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	ret = fimc_is_video_streamoff(file, vctx, type);
 	if (ret)
@@ -443,7 +417,7 @@ static int fimc_is_scp_video_streamoff(struct file *file, void *priv,
 	return ret;
 }
 
-static int fimc_is_scp_video_enum_input(struct file *file, void *priv,
+static int fimc_is_3a1c_video_enum_input(struct file *file, void *priv,
 	struct v4l2_input *input)
 {
 	struct fimc_is_core *isp = video_drvdata(file);
@@ -468,20 +442,20 @@ static int fimc_is_scp_video_enum_input(struct file *file, void *priv,
 	return 0;
 }
 
-static int fimc_is_scp_video_g_input(struct file *file, void *priv,
+static int fimc_is_3a1c_video_g_input(struct file *file, void *priv,
 	unsigned int *input)
 {
 	dbg("%s\n", __func__);
 	return 0;
 }
 
-static int fimc_is_scp_video_s_input(struct file *file, void *priv,
+static int fimc_is_3a1c_video_s_input(struct file *file, void *priv,
 	unsigned int input)
 {
 	return 0;
 }
 
-static int fimc_is_scp_video_g_ctrl(struct file *file, void *priv,
+static int fimc_is_3a1c_video_g_ctrl(struct file *file, void *priv,
 	struct v4l2_control *ctrl)
 {
 	int ret = 0;
@@ -491,7 +465,7 @@ static int fimc_is_scp_video_g_ctrl(struct file *file, void *priv,
 	BUG_ON(!vctx);
 	BUG_ON(!ctrl);
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	framemgr = GET_DST_FRAMEMGR(vctx);
 
@@ -508,87 +482,56 @@ static int fimc_is_scp_video_g_ctrl(struct file *file, void *priv,
 	return ret;
 }
 
-static int fimc_is_scp_video_g_ext_ctrl(struct file *file, void *priv,
+static int fimc_is_3a1c_video_g_ext_ctrl(struct file *file, void *priv,
 	struct v4l2_ext_controls *ctrls)
 {
 	return 0;
 }
 
-static int fimc_is_scp_video_s_ctrl(struct file *file, void *priv,
+static int fimc_is_3a1c_video_s_ctrl(struct file *file, void *priv,
 	struct v4l2_control *ctrl)
 {
 	int ret = 0;
-	unsigned long flags;
 	struct fimc_is_video_ctx *vctx = file->private_data;
-	struct fimc_is_framemgr *framemgr;
-	struct fimc_is_frame *frame;
 
 	BUG_ON(!vctx);
 	BUG_ON(!ctrl);
 
-	mdbgv_scp("%s\n", vctx, __func__);
-
-	framemgr = GET_DST_FRAMEMGR(vctx);
-	frame = NULL;
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	switch (ctrl->id) {
-	case V4L2_CID_IS_FORCE_DONE:
-		if (framemgr->frame_pro_cnt) {
-			err("force done can be performed(process count %d)",
-				framemgr->frame_pro_cnt);
-			ret = -EINVAL;
-		} else if (!framemgr->frame_req_cnt) {
-			err("force done can be performed(request count %d)",
-				framemgr->frame_req_cnt);
-			ret = -EINVAL;
-		} else {
-			framemgr_e_barrier_irqs(framemgr, 0, flags);
-
-			fimc_is_frame_request_head(framemgr, &frame);
-			if (frame) {
-				fimc_is_frame_trans_req_to_com(framemgr, frame);
-				buffer_done(vctx, frame->index);
-			} else {
-				err("frame is NULL");
-				ret = -EINVAL;
-			}
-
-			framemgr_x_barrier_irqr(framemgr, 0, flags);
-		}
-		break;
 	default:
 		err("unsupported ioctl(%d)\n", ctrl->id);
 		ret = -EINVAL;
 		break;
 	}
-
 	return ret;
 }
 
-const struct v4l2_ioctl_ops fimc_is_scp_video_ioctl_ops = {
-	.vidioc_querycap		= fimc_is_scp_video_querycap,
-	.vidioc_enum_fmt_vid_cap_mplane	= fimc_is_scp_video_enum_fmt_mplane,
-	.vidioc_g_fmt_vid_cap_mplane	= fimc_is_scp_video_get_format_mplane,
-	.vidioc_s_fmt_vid_cap_mplane	= fimc_is_scp_video_set_format_mplane,
-	.vidioc_try_fmt_vid_cap_mplane	= fimc_is_scp_video_try_format_mplane,
-	.vidioc_cropcap			= fimc_is_scp_video_cropcap,
-	.vidioc_g_crop			= fimc_is_scp_video_get_crop,
-	.vidioc_s_crop			= fimc_is_scp_video_set_crop,
-	.vidioc_reqbufs			= fimc_is_scp_video_reqbufs,
-	.vidioc_querybuf		= fimc_is_scp_video_querybuf,
-	.vidioc_qbuf			= fimc_is_scp_video_qbuf,
-	.vidioc_dqbuf			= fimc_is_scp_video_dqbuf,
-	.vidioc_streamon		= fimc_is_scp_video_streamon,
-	.vidioc_streamoff		= fimc_is_scp_video_streamoff,
-	.vidioc_enum_input		= fimc_is_scp_video_enum_input,
-	.vidioc_g_input			= fimc_is_scp_video_g_input,
-	.vidioc_s_input			= fimc_is_scp_video_s_input,
-	.vidioc_g_ctrl			= fimc_is_scp_video_g_ctrl,
-	.vidioc_s_ctrl			= fimc_is_scp_video_s_ctrl,
-	.vidioc_g_ext_ctrls		= fimc_is_scp_video_g_ext_ctrl,
+const struct v4l2_ioctl_ops fimc_is_3a1c_video_ioctl_ops = {
+	.vidioc_querycap		= fimc_is_3a1c_video_querycap,
+	.vidioc_enum_fmt_vid_cap_mplane	= fimc_is_3a1c_video_enum_fmt_mplane,
+	.vidioc_g_fmt_vid_cap_mplane	= fimc_is_3a1c_video_get_format_mplane,
+	.vidioc_s_fmt_vid_cap_mplane	= fimc_is_3a1c_video_set_format_mplane,
+	.vidioc_try_fmt_vid_cap_mplane	= fimc_is_3a1c_video_try_format_mplane,
+	.vidioc_cropcap			= fimc_is_3a1c_video_cropcap,
+	.vidioc_g_crop			= fimc_is_3a1c_video_get_crop,
+	.vidioc_s_crop			= fimc_is_3a1c_video_set_crop,
+	.vidioc_reqbufs			= fimc_is_3a1c_video_reqbufs,
+	.vidioc_querybuf		= fimc_is_3a1c_video_querybuf,
+	.vidioc_qbuf			= fimc_is_3a1c_video_qbuf,
+	.vidioc_dqbuf			= fimc_is_3a1c_video_dqbuf,
+	.vidioc_streamon		= fimc_is_3a1c_video_streamon,
+	.vidioc_streamoff		= fimc_is_3a1c_video_streamoff,
+	.vidioc_enum_input		= fimc_is_3a1c_video_enum_input,
+	.vidioc_g_input			= fimc_is_3a1c_video_g_input,
+	.vidioc_s_input			= fimc_is_3a1c_video_s_input,
+	.vidioc_g_ctrl			= fimc_is_3a1c_video_g_ctrl,
+	.vidioc_s_ctrl			= fimc_is_3a1c_video_s_ctrl,
+	.vidioc_g_ext_ctrls		= fimc_is_3a1c_video_g_ext_ctrl,
 };
 
-static int fimc_is_scp_queue_setup(struct vb2_queue *vbq,
+static int fimc_is_3a1c_queue_setup(struct vb2_queue *vbq,
 	const struct v4l2_format *fmt,
 	unsigned int *num_buffers,
 	unsigned int *num_planes,
@@ -604,7 +547,7 @@ static int fimc_is_scp_queue_setup(struct vb2_queue *vbq,
 
 	BUG_ON(!vctx);
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	video = vctx->video;
 	queue = GET_DST_QUEUE(vctx);
@@ -622,22 +565,22 @@ static int fimc_is_scp_queue_setup(struct vb2_queue *vbq,
 	return ret;
 }
 
-static int fimc_is_scp_buffer_prepare(struct vb2_buffer *vb)
+static int fimc_is_3a1c_buffer_prepare(struct vb2_buffer *vb)
 {
 	return 0;
 }
 
-static inline void fimc_is_scp_wait_prepare(struct vb2_queue *vbq)
+static inline void fimc_is_3a1c_wait_prepare(struct vb2_queue *vbq)
 {
 	fimc_is_queue_wait_prepare(vbq);
 }
 
-static inline void fimc_is_scp_wait_finish(struct vb2_queue *vbq)
+static inline void fimc_is_3a1c_wait_finish(struct vb2_queue *vbq)
 {
 	fimc_is_queue_wait_finish(vbq);
 }
 
-static int fimc_is_scp_start_streaming(struct vb2_queue *q,
+static int fimc_is_3a1c_start_streaming(struct vb2_queue *q,
 	unsigned int count)
 {
 	int ret = 0;
@@ -648,11 +591,11 @@ static int fimc_is_scp_start_streaming(struct vb2_queue *q,
 
 	BUG_ON(!vctx);
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	queue = GET_DST_QUEUE(vctx);
 	device = vctx->device;
-	subdev = &device->scp;
+	subdev = &device->taxc;
 
 	ret = fimc_is_queue_start_streaming(queue, device, subdev, vctx);
 	if (ret)
@@ -661,7 +604,7 @@ static int fimc_is_scp_start_streaming(struct vb2_queue *q,
 	return ret;
 }
 
-static int fimc_is_scp_stop_streaming(struct vb2_queue *q)
+static int fimc_is_3a1c_stop_streaming(struct vb2_queue *q)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = q->drv_priv;
@@ -671,7 +614,7 @@ static int fimc_is_scp_stop_streaming(struct vb2_queue *q)
 
 	BUG_ON(!vctx);
 
-	mdbgv_scp("%s\n", vctx, __func__);
+	mdbgv_3a1c("%s\n", vctx, __func__);
 
 	queue = GET_DST_QUEUE(vctx);
 	device = vctx->device;
@@ -680,7 +623,7 @@ static int fimc_is_scp_stop_streaming(struct vb2_queue *q)
 		ret = -EINVAL;
 		goto p_err;
 	}
-	subdev = &device->scp;
+	subdev = &device->taxc;
 
 	ret = fimc_is_queue_stop_streaming(queue, device, subdev, vctx);
 	if (ret)
@@ -690,7 +633,7 @@ p_err:
 	return ret;
 }
 
-static void fimc_is_scp_buffer_queue(struct vb2_buffer *vb)
+static void fimc_is_3a1c_buffer_queue(struct vb2_buffer *vb)
 {
 	struct fimc_is_video_ctx *vctx = vb->vb2_queue->drv_priv;
 	struct fimc_is_queue *queue;
@@ -701,41 +644,41 @@ static void fimc_is_scp_buffer_queue(struct vb2_buffer *vb)
 	BUG_ON(!vctx);
 
 #ifdef DBG_STREAMING
-	dbg_scp("%s\n", __func__);
+	dbg_3a1c("%s\n", __func__);
 #endif
 
 	queue = GET_DST_QUEUE(vctx);
 	video = vctx->video;
 	device = vctx->device;
-	subdev = &device->scp;
+	subdev = &device->taxc;
 
 	fimc_is_queue_buffer_queue(queue, video->vb2, vb);
 	fimc_is_subdev_buffer_queue(subdev, vb->v4l2_buf.index);
 }
 
-static int fimc_is_scp_buffer_finish(struct vb2_buffer *vb)
+static int fimc_is_3a1c_buffer_finish(struct vb2_buffer *vb)
 {
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = vb->vb2_queue->drv_priv;
 	struct fimc_is_device_ischain *ischain = vctx->device;
-	struct fimc_is_subdev *scp = &ischain->scp;
+	struct fimc_is_subdev *subdev = &ischain->taxc;
 
 #ifdef DBG_STREAMING
-	dbg_scp("%s(%d)\n", __func__, vb->v4l2_buf.index);
+	dbg_3a1c("%s(%d)\n", __func__, vb->v4l2_buf.index);
 #endif
 
-	ret = fimc_is_subdev_buffer_finish(scp, vb->v4l2_buf.index);
+	ret = fimc_is_subdev_buffer_finish(subdev, vb->v4l2_buf.index);
 
 	return ret;
 }
 
-const struct vb2_ops fimc_is_scp_qops = {
-	.queue_setup		= fimc_is_scp_queue_setup,
-	.buf_prepare		= fimc_is_scp_buffer_prepare,
-	.buf_queue		= fimc_is_scp_buffer_queue,
-	.buf_finish		= fimc_is_scp_buffer_finish,
-	.wait_prepare		= fimc_is_scp_wait_prepare,
-	.wait_finish		= fimc_is_scp_wait_finish,
-	.start_streaming	= fimc_is_scp_start_streaming,
-	.stop_streaming		= fimc_is_scp_stop_streaming,
+const struct vb2_ops fimc_is_3a1c_qops = {
+	.queue_setup		= fimc_is_3a1c_queue_setup,
+	.buf_prepare		= fimc_is_3a1c_buffer_prepare,
+	.buf_queue		= fimc_is_3a1c_buffer_queue,
+	.buf_finish		= fimc_is_3a1c_buffer_finish,
+	.wait_prepare		= fimc_is_3a1c_wait_prepare,
+	.wait_finish		= fimc_is_3a1c_wait_finish,
+	.start_streaming	= fimc_is_3a1c_start_streaming,
+	.stop_streaming		= fimc_is_3a1c_stop_streaming,
 };

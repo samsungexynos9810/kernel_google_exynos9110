@@ -96,10 +96,6 @@ struct fimc_is_fmt fimc_is_formats[] = {
 		.pixelformat	= V4L2_PIX_FMT_YVU420M,
 		.num_planes	= 3 + SPARE_PLANE,
 	}, {
-		.name		= "BAYER 8 bit",
-		.pixelformat	= V4L2_PIX_FMT_SGRBG8,
-		.num_planes	= 1 + SPARE_PLANE,
-	}, {
 		.name		= "BAYER 10 bit",
 		.pixelformat	= V4L2_PIX_FMT_SBGGR10,
 		.num_planes	= 1 + SPARE_PLANE,
@@ -189,35 +185,34 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		sizes[2] = width[2]*frame->height/4;
 		sizes[3] = SPARE_SIZE;
 		break;
-	case V4L2_PIX_FMT_SGRBG8:
-		dbg("V4L2_PIX_FMT_SGRBG8(w:%d)(h:%d)\n", frame->width, frame->height);
-		sizes[0] = frame->width*frame->height;
-		sizes[1] = SPARE_SIZE;
-		break;
 	case V4L2_PIX_FMT_SBGGR10:
-		dbg("V4L2_PIX_FMT_SBGGR10(w:%d)(h:%d)\n", frame->width, frame->height);
+		dbg("V4L2_PIX_FMT_SBGGR10(w:%d)(h:%d)\n",
+				frame->width, frame->height);
 		sizes[0] = frame->width*frame->height*2;
 		if (frame->bytesperline[0]) {
-			if (frame->bytesperline[0] >= frame->width * 5 / 4) {
-				sizes[0] = frame->bytesperline[0] * frame->height;
-			} else {
-				err("Bytesperline too small\
-					(fmt(V4L2_PIX_FMT_SBGGR10), W(%d), Bytes(%d))",
+		    if (frame->bytesperline[0] >= frame->width * 5 / 4) {
+			sizes[0] = frame->bytesperline[0]
+			    * frame->height;
+		    } else {
+			err("Bytesperline too small\
+				(fmt(V4L2_PIX_FMT_SBGGR10), W(%d), Bytes(%d))",
 				frame->width,
 				frame->bytesperline[0]);
-			}
+		    }
 		}
 		sizes[1] = SPARE_SIZE;
 		break;
 	case V4L2_PIX_FMT_SBGGR16:
-		dbg("V4L2_PIX_FMT_SBGGR16(w:%d)(h:%d)\n", frame->width, frame->height);
+		dbg("V4L2_PIX_FMT_SBGGR16(w:%d)(h:%d)\n",
+				frame->width, frame->height);
 		sizes[0] = frame->width*frame->height*2;
 		if (frame->bytesperline[0]) {
 			if (frame->bytesperline[0] >= frame->width * 2) {
-				sizes[0] = frame->bytesperline[0] * frame->height;
+				sizes[0] = frame->bytesperline[0]
+						* frame->height;
 			} else {
 				err("Bytesperline too small\
-					(fmt(V4L2_PIX_FMT_SBGGR16), W(%d), Bytes(%d))",
+				(fmt(V4L2_PIX_FMT_SBGGR16), W(%d), Bytes(%d))",
 				frame->width,
 				frame->bytesperline[0]);
 			}
@@ -230,7 +225,8 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		sizes[0] = get_plane_size_flite(frame->width,frame->height);
 		if (frame->bytesperline[0]) {
 			if (frame->bytesperline[0] >= frame->width * 3 / 2) {
-				sizes[0] = frame->bytesperline[0] * frame->height;
+				sizes[0] = frame->bytesperline[0]
+						* frame->height;
 			} else {
 				err("Bytesperline too small\
 				(fmt(V4L2_PIX_FMT_SBGGR12), W(%d), Bytes(%d))",
@@ -244,6 +240,11 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		err("unknown pixelformat\n");
 		break;
 	}
+}
+
+struct fimc_is_core * fimc_is_video_ctx_2_core(struct fimc_is_video_ctx *vctx)
+{
+	return (struct fimc_is_core *)vctx->video->core;
 }
 
 static inline void vref_init(struct fimc_is_video *video)
@@ -288,7 +289,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		ret = vb2_queue_init(vbq_src);
 		if (ret) {
 			err("vb2_queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		vctx->q_src.vbq = vbq_src;
 	} else if (vctx->type == FIMC_IS_VIDEO_TYPE_CAPTURE) {
@@ -303,7 +304,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		ret = vb2_queue_init(vbq_dst);
 		if (ret) {
 			err("vb2_queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		vctx->q_dst.vbq = vbq_dst;
 	} else if (vctx->type == FIMC_IS_VIDEO_TYPE_M2M) {
@@ -319,7 +320,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		ret = vb2_queue_init(vbq_src);
 		if (ret) {
 			err("vb2_queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		vctx->q_src.vbq = vbq_src;
 
@@ -332,7 +333,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		ret = vb2_queue_init(vbq_dst);
 		if (ret) {
 			err("vb2_queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		vctx->q_dst.vbq = vbq_dst;
 	} else {
@@ -340,7 +341,7 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		ret = -EINVAL;
 	}
 
-p_err:
+err_queue_init:
 	return ret;
 }
 
@@ -370,7 +371,9 @@ int open_vctx(struct file *file,
 
 	(*vctx)->instance = vref_get(video);
 	(*vctx)->q_src.id = id_src;
+	(*vctx)->q_src.instance = (*vctx)->instance;
 	(*vctx)->q_dst.id = id_dst;
+	(*vctx)->q_dst.instance = (*vctx)->instance;
 
 	file->private_data = *vctx;
 
@@ -474,19 +477,13 @@ int fimc_is_queue_setup(struct fimc_is_queue *queue,
 	u32 ret = 0;
 	u32 plane;
 
-	BUG_ON(!queue);
-	BUG_ON(!alloc_ctx);
-	BUG_ON(!num_planes);
-	BUG_ON(!sizes);
-	BUG_ON(!allocators);
-
 	*num_planes = (unsigned int)(queue->framecfg.format.num_planes);
 	fimc_is_set_plane_size(&queue->framecfg, sizes);
 
 	for (plane = 0; plane < *num_planes; plane++) {
 		allocators[plane] = alloc_ctx;
 		queue->framecfg.size[plane] = sizes[plane];
-		mdbgv_vid("queue[%d] size : %d\n", plane, sizes[plane]);
+		mdbgv_vid("queue[%d] size : %d\n", queue, plane, sizes[plane]);
 	}
 
 	return ret;
@@ -725,35 +722,38 @@ p_err:
 }
 
 int fimc_is_video_probe(struct fimc_is_video *video,
+	void *core_data,
 	char *video_name,
 	u32 video_number,
 	u32 vfl_dir,
-	struct fimc_is_mem *mem,
-	struct v4l2_device *v4l2_dev,
 	struct mutex *lock,
 	const struct v4l2_file_operations *fops,
 	const struct v4l2_ioctl_ops *ioctl_ops)
 {
 	int ret = 0;
+	struct fimc_is_core *core = core_data;
 
 	vref_init(video);
+
 	mutex_init(&video->lock);
-	snprintf(video->vd.name, sizeof(video->vd.name), "%s", video_name);
+	snprintf(video->vd.name, sizeof(video->vd.name),
+		"%s", video_name);
+
 	video->id		= video_number;
-	video->vb2		= mem->vb2;
-	video->alloc_ctx	= mem->alloc_ctx;
-	video->vd.vfl_dir	= vfl_dir;
-	video->vd.v4l2_dev	= v4l2_dev;
+	video->core		= core;
+	video->vb2		= core->mem.vb2;
 	video->vd.fops		= fops;
 	video->vd.ioctl_ops	= ioctl_ops;
+	video->vd.v4l2_dev	= &core->v4l2_dev_is;
 	video->vd.minor		= -1;
 	video->vd.release	= video_device_release;
 	video->vd.lock		= lock;
-	video_set_drvdata(&video->vd, video);
+	video->vd.vfl_dir	= vfl_dir;
+	video_set_drvdata(&video->vd, core);
 
 	ret = video_register_device(&video->vd,
-		VFL_TYPE_GRABBER,
-		(EXYNOS_VIDEONODE_FIMC_IS + video_number));
+				VFL_TYPE_GRABBER,
+				(EXYNOS_VIDEONODE_FIMC_IS + video_number));
 	if (ret) {
 		err("Failed to register video device");
 		goto p_err;
@@ -770,14 +770,15 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 	u32 video_type,
 	const struct vb2_ops *vb2_ops,
 	const struct fimc_is_queue_ops *src_qops,
-	const struct fimc_is_queue_ops *dst_qops)
+	const struct fimc_is_queue_ops *dst_qops,
+	const struct vb2_mem_ops *mem_ops)
 {
 	int ret = 0;
 	struct fimc_is_queue *q_src, *q_dst;
 
 	BUG_ON(!video);
-	BUG_ON(!video->vb2);
 	BUG_ON(!vb2_ops);
+	BUG_ON(!mem_ops);
 
 	q_src = &vctx->q_src;
 	q_dst = &vctx->q_dst;
@@ -790,7 +791,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 	vctx->device		= device;
 	vctx->video		= video;
 	vctx->vb2_ops		= vb2_ops;
-	vctx->mem_ops		= video->vb2->ops;
+	vctx->mem_ops		= mem_ops;
 	mutex_init(&vctx->lock);
 
 	switch (video_type) {
@@ -801,7 +802,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 		ret = queue_init(vctx, q_src->vbq, NULL);
 		if (ret) {
 			err("queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		break;
 	case FIMC_IS_VIDEO_TYPE_CAPTURE:
@@ -811,7 +812,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 		ret = queue_init(vctx, NULL, q_dst->vbq);
 		if (ret) {
 			err("queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		break;
 	case FIMC_IS_VIDEO_TYPE_M2M:
@@ -823,7 +824,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 		ret = queue_init(vctx, q_src->vbq, q_dst->vbq);
 		if (ret) {
 			err("queue_init fail");
-			goto p_err;
+			goto err_queue_init;
 		}
 		break;
 	default:
@@ -832,7 +833,7 @@ int fimc_is_video_open(struct fimc_is_video_ctx *vctx,
 		break;
 	}
 
-p_err:
+err_queue_init:
 	return ret;
 }
 
@@ -1014,7 +1015,10 @@ int fimc_is_video_set_format_mplane(struct file *file,
 
 	ret = fimc_is_queue_set_format_mplane(queue, format);
 
-	mdbgv_vid("set_format(%d x %d)\n", queue->framecfg.width, queue->framecfg.height);
+	mdbgv_vid("set_format(%d x %d)\n", vctx,
+		queue->framecfg.width,
+		queue->framecfg.height);
+
 	return ret;
 }
 
@@ -1074,10 +1078,6 @@ int fimc_is_video_qbuf(struct file *file,
 	}
 
 	ret = vb2_qbuf(queue->vbq, buf);
-	if (ret) {
-		merr("vb2_qbuf is fail(index : %d, %d)", vctx, buf->index, ret);
-		goto p_err;
-	}
 
 p_err:
 	return ret;

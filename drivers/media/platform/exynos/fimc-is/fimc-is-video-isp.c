@@ -48,37 +48,29 @@ extern struct fimc_is_from_info		*sysfs_finfo;
 extern struct fimc_is_from_info		*sysfs_pinfo;
 extern bool is_dumped_fw_loading_needed;
 
+
+
 int fimc_is_isp_video_probe(void *data)
 {
 	int ret = 0;
-	struct fimc_is_core *core;
-	struct fimc_is_video *video;
+	struct fimc_is_core *core = (struct fimc_is_core *)data;
+	struct fimc_is_video *video = &core->video_isp;
 
-	BUG_ON(!data);
-
-	core = (struct fimc_is_core *)data;
-	video = &core->video_isp;
-
-	if (!core->pdev) {
-		err("pdev is NULL");
-		ret = -EINVAL;
-		goto p_err;
-	}
+	dbg_isp("%s\n", __func__);
 
 	ret = fimc_is_video_probe(video,
+		data,
 		FIMC_IS_VIDEO_ISP_NAME,
 		FIMC_IS_VIDEO_ISP_NUM,
 		VFL_DIR_M2M,
-		&core->mem,
-		&core->v4l2_dev,
 		&video->lock,
 		&fimc_is_isp_video_fops,
 		&fimc_is_isp_video_ioctl_ops);
-	if (ret)
-		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
-p_err:
-	minfo("[ISP:V:X] %s(%d)\n", __func__, ret);
+	if (ret != 0)
+		dev_err(&(core->pdev->dev),
+			"%s::Failed to fimc_is_video_probe()\n", __func__);
+
 	return ret;
 }
 
@@ -91,14 +83,10 @@ p_err:
 static int fimc_is_isp_video_open(struct file *file)
 {
 	int ret = 0;
-	struct fimc_is_core *core;
-	struct fimc_is_video *video;
-	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_device_ischain *device;
-
-	vctx = NULL;
-	video = video_drvdata(file);
-	core = container_of(video, struct fimc_is_core, video_isp);
+	struct fimc_is_core *core = video_drvdata(file);
+	struct fimc_is_video *video = &core->video_isp;
+	struct fimc_is_video_ctx *vctx = NULL;
+	struct fimc_is_device_ischain *device = NULL;
 
 	ret = open_vctx(file, video, &vctx, FRAMEMGR_ID_ISP_GRP, FRAMEMGR_ID_INVALID);
 	if (ret) {
@@ -106,27 +94,42 @@ static int fimc_is_isp_video_open(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[ISP:V:%d] %s\n", vctx->instance, __func__);
+	pr_info("[ISP:V:%d] %s\n", vctx->instance, __func__);
 
 	device = &core->ischain[vctx->instance];
 
-	ret = fimc_is_video_open(vctx,
-		device,
-		VIDEO_ISP_READY_BUFFERS,
-		video,
-		FIMC_IS_VIDEO_TYPE_OUTPUT,
-		&fimc_is_isp_qops,
-		&fimc_is_ischain_isp_ops,
-		NULL);
-	if (ret) {
-		err("fimc_is_video_open is fail");
-		close_vctx(file, video, vctx);
-		goto p_err;
+	/* for resource manager */
+	if (vctx->instance == 0) {
+		core->debug_cnt = 0;
+		memset(&core->clock.msk_cnt[0], 0, sizeof(int[GROUP_ID_MAX]));
+		core->clock.msk_state = 0;
+		core->clock.state_3a0 = 0;
+		core->clock.dvfs_level = DVFS_L0;
+#if defined(CONFIG_SOC_EXYNOS5420)
+		core->clock.dvfs_mif_level = DVFS_MIF_L2;
+#endif
+		core->clock.dvfs_skipcnt = 0;
+		core->clock.dvfs_state = 0;
 	}
 
 	ret = fimc_is_ischain_open(device, vctx, &core->minfo);
 	if (ret) {
 		err("fimc_is_ischain_open is fail");
+		close_vctx(file, video, vctx);
+		goto p_err;
+	}
+
+	ret = fimc_is_video_open(vctx,
+		device,
+		VIDEO_ISP_READY_BUFFERS,
+		&core->video_isp,
+		FIMC_IS_VIDEO_TYPE_OUTPUT,
+		&fimc_is_isp_qops,
+		&fimc_is_ischain_isp_ops,
+		NULL,
+		core->mem.vb2->ops);
+	if (ret) {
+		err("fimc_is_video_open is fail");
 		close_vctx(file, video, vctx);
 		goto p_err;
 	}
@@ -158,7 +161,7 @@ static int fimc_is_isp_video_close(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[ISP:V:%d] %s\n", video->id, __func__);
+	pr_info("[ISP:V:%d] %s\n", vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {
@@ -412,7 +415,7 @@ static int fimc_is_isp_video_streamon(struct file *file, void *priv,
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 
-	mdbgv_isp("%s\n", vctx, __func__);
+	dbg_isp("%s\n", __func__);
 
 	ret = fimc_is_video_streamon(file, vctx, type);
 	if (ret)
@@ -427,7 +430,7 @@ static int fimc_is_isp_video_streamoff(struct file *file, void *priv,
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 
-	mdbgv_isp("%s\n", vctx, __func__);
+	dbg_isp("%s\n", __func__);
 
 	ret = fimc_is_video_streamoff(file, vctx, type);
 	if (ret)
@@ -439,7 +442,26 @@ static int fimc_is_isp_video_streamoff(struct file *file, void *priv,
 static int fimc_is_isp_video_enum_input(struct file *file, void *priv,
 						struct v4l2_input *input)
 {
-	/* Todo : add to enum input control code */
+	struct fimc_is_core *isp = video_drvdata(file);
+	struct exynos5_fimc_is_sensor_info *sensor_info;
+
+	sensor_info = isp->pdata->sensor_info[input->index];
+
+	dbg_isp("index(%d) sensor(%s)\n",
+		input->index, sensor_info->sensor_name);
+	dbg_isp("pos(%d) sensor_id(%d)\n",
+		sensor_info->sensor_position, sensor_info->sensor_id);
+	dbg_isp("csi_id(%d) flite_id(%d)\n",
+		sensor_info->csi_id, sensor_info->flite_id);
+	dbg_isp("i2c_ch(%d)\n", sensor_info->i2c_channel);
+
+	if (input->index >= FIMC_IS_MAX_CAMIF_CLIENTS)
+		return -EINVAL;
+
+	input->type = V4L2_INPUT_TYPE_CAMERA;
+
+	strncpy(input->name, sensor_info->sensor_name,
+					FIMC_IS_MAX_SENSOR_NAME_LEN);
 	return 0;
 }
 
@@ -458,14 +480,12 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	u32 flag;
 	u32 group_id;
 	u32 module, ssx_vindex, tax_vindex, rep_stream;
-	struct fimc_is_video *video;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 	struct fimc_is_core *core;
 	struct fimc_is_device_ischain *device, *temp;
 	struct fimc_is_device_sensor *sensor;
 
 	BUG_ON(!vctx);
-	BUG_ON(!vctx->video);
 
 	mdbgv_isp("%s(input : %08X)\n", vctx, __func__, input);
 
@@ -473,12 +493,17 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	temp = NULL;
 	device = NULL;
 	sensor = NULL;
-	video = vctx->video;
-	core = container_of(video, struct fimc_is_core, video_isp);
 	module = input & MODULE_MASK;
 	ssx_vindex = (input & SSX_VINDEX_MASK) >> SSX_VINDEX_SHIFT;
 	tax_vindex = (input & TAX_VINDEX_MASK) >> TAX_VINDEX_SHIFT;
 	rep_stream = (input & REPROCESSING_MASK) >> REPROCESSING_SHIFT;
+
+	core = vctx->video->core;
+	if (!core) {
+		merr("core is NULL", vctx);
+		ret = -EINVAL;
+		goto p_err;
+	}
 
 	device = vctx->device;
 	if (!device) {
@@ -490,10 +515,10 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	/* 1. checking sensor video node to connect */
 	if (ssx_vindex == FIMC_IS_VIDEO_SS0_NUM) {
 		sensor = &core->sensor[0];
-		minfo("[ISP:V:%d] <-> [SS0:V:0]\n", vctx->instance);
+		pr_info("[ISP:V:%d] <-> [SEN:V:0]\n", vctx->instance);
 	} else if (ssx_vindex == FIMC_IS_VIDEO_SS1_NUM) {
 		sensor = &core->sensor[1];
-		minfo("[ISP:V:%d] <-> [SS1:V:0]\n", vctx->instance);
+		pr_info("[ISP:V:%d] <-> [SEN:V:1]\n", vctx->instance);
 	} else {
 		sensor = NULL;
 		merr("sensor is not matched", vctx);
@@ -510,13 +535,20 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	/* 2. checking 3ax group to connect */
 	if (tax_vindex == FIMC_IS_VIDEO_3A0_NUM) {
 		group_id = GROUP_ID_3A0;
-		minfo("[ISP:V:%d] <-> [3A0:V:0]\n", device->instance);
+		pr_info("[ISP:V:%d] <-> [3A0:V:X]\n", device->instance);
 	} else if (tax_vindex == FIMC_IS_VIDEO_3A1_NUM) {
 		group_id = GROUP_ID_3A1;
-		minfo("[ISP:V:%d] <-> [3A1:V:0]\n", device->instance);
+		pr_info("[ISP:V:%d] <-> [3A1:V:X]\n", device->instance);
 	} else {
 		group_id = GROUP_ID_INVALID;
 		merr("group%d is invalid", device, group_id);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (!rep_stream &&
+		!test_bit(FIMC_IS_GROUP_OPEN, &device->group_3ax.state)) {
+		merr("group%d is not opened", vctx, group_id);
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -538,7 +570,7 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 			}
 
 #ifdef DEBUG
-			minfo("device.module(%08X) != ischain[%d].module(%08X)\n", module,
+			pr_info("device.module(%08X) != ischain[%d].module(%08X)\n", module,
 				dindex, temp->module);
 #endif
 		}
@@ -565,6 +597,8 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	if (ret)
 		merr("fimc_is_device_init(%d, %d, %d) is fail", vctx, module, group_id, rep_stream);
 
+	fimc_is_ischain_isp_s_input(device, input);
+
 p_err:
 	return ret;
 }
@@ -574,22 +608,28 @@ static int fimc_is_isp_video_s_ctrl(struct file *file, void *priv,
 {
 	int ret = 0;
 	int i2c_clk;
-	struct fimc_is_video *video;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 	struct fimc_is_device_ischain *device;
 	struct fimc_is_core *core;
 
 	BUG_ON(!vctx);
-	BUG_ON(!vctx->device);
-	BUG_ON(!vctx->video);
 
 	dbg_isp("%s\n", __func__);
 
 	device = vctx->device;
-	video = vctx->video;
-	core = container_of(video, struct fimc_is_core, video_isp);
+	if (!device) {
+		merr("device is NULL", vctx);
+		ret = -EINVAL;
+		goto p_err;
+	}
 
-	if (core->resourcemgr.clock.dvfs_level == DVFS_L0)
+	core = vctx->video->core;
+	if (!core) {
+		merr("core is NULL", vctx);
+		ret = -EINVAL;
+		goto p_err;
+	}
+	if (core->clock.dvfs_level == DVFS_L0)
 		i2c_clk = I2C_L0;
 	else
 		i2c_clk = I2C_L1;
@@ -637,6 +677,7 @@ static int fimc_is_isp_video_s_ctrl(struct file *file, void *priv,
 		break;
 	}
 
+p_err:
 	return ret;
 }
 
@@ -726,17 +767,20 @@ static int fimc_is_isp_queue_setup(struct vb2_queue *vbq,
 	struct fimc_is_video_ctx *vctx = vbq->drv_priv;
 	struct fimc_is_video *video;
 	struct fimc_is_queue *queue;
+	struct fimc_is_core *core;
+	void *alloc_ctx;
 
 	BUG_ON(!vctx);
-	BUG_ON(!vctx->video);
 
 	mdbgv_isp("%s\n", vctx, __func__);
 
-	queue = GET_SRC_QUEUE(vctx);
 	video = vctx->video;
+	queue = GET_SRC_QUEUE(vctx);
+	core = video->core;
+	alloc_ctx = core->mem.alloc_ctx;
 
 	ret = fimc_is_queue_setup(queue,
-		video->alloc_ctx,
+		alloc_ctx,
 		num_planes,
 		sizes,
 		allocators);
