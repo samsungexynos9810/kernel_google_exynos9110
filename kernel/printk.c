@@ -1565,6 +1565,7 @@ asmlinkage int vprintk_emit(int facility, int level,
 	unsigned long flags;
 	int this_cpu;
 	int printed_len = 0;
+	static bool prev_new_line = true;
 
 	boot_delay_msec(level);
 	printk_delay();
@@ -1610,8 +1611,8 @@ asmlinkage int vprintk_emit(int facility, int level,
 	 * The printf needs to come first; we need the syslog
 	 * prefix which might be passed-in as a parameter.
 	 */
-	if (printk_core_num) {
-		static char tempbuf[LOG_LINE_MAX];
+	if (printk_core_num && prev_new_line) {
+		char tempbuf[LOG_LINE_MAX];
 		char *temp = tempbuf;
 
 		vscnprintf(temp, sizeof(tempbuf), fmt, args);
@@ -1633,6 +1634,9 @@ asmlinkage int vprintk_emit(int facility, int level,
 	if (text_len && text[text_len-1] == '\n') {
 		text_len--;
 		lflags |= LOG_NEWLINE;
+		prev_new_line = true;
+	} else {
+		prev_new_line = false;
 	}
 
 	/* strip kernel syslog prefix and extract log level or control flags */
