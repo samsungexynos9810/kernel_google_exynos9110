@@ -43,9 +43,6 @@
 #include <trace/events/cpufreq_interactive.h>
 
 static int active_count;
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-static bool interactive_attr_removed = true;
-#endif
 
 struct cpufreq_interactive_cpuinfo {
 	struct timer_list cpu_timer;
@@ -1174,24 +1171,12 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return 0;
 		}
 
-#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-		if (interactive_attr_removed) {
-			rc = sysfs_create_group(cpufreq_global_kobject,
-					&interactive_attr_group);
-			if (rc) {
-				mutex_unlock(&gov_lock);
-				return rc;
-			}
-			interactive_attr_removed = false;
-		}
-#else
 		rc = sysfs_create_group(cpufreq_global_kobject,
 				&interactive_attr_group);
 		if (rc) {
 			mutex_unlock(&gov_lock);
 			return rc;
 		}
-#endif
 
 		idle_notifier_register(&cpufreq_interactive_idle_nb);
 		cpufreq_register_notifier(
@@ -1218,16 +1203,8 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		idle_notifier_unregister(&cpufreq_interactive_idle_nb);
-#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-		if (exynos_boot_cluster == CA15) {
-			sysfs_remove_group(cpufreq_global_kobject,
-					&interactive_attr_group);
-			interactive_attr_removed = true;
-		}
-#else
 		sysfs_remove_group(cpufreq_global_kobject,
 				&interactive_attr_group);
-#endif
 		mutex_unlock(&gov_lock);
 
 		break;
