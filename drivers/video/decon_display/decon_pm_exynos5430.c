@@ -25,19 +25,36 @@
 
 #include <../drivers/clk/samsung/clk.h>
 
-static struct clk *g_mout_sclk_decon_eclk_a, *g_mout_bus_pll_sub;
+static struct clk *g_mout_sclk_decon_eclk_a;
 static struct clk *g_mout_disp_pll, *g_fout_disp_pll;
+static struct clk *g_mout_sclk_decon_eclk_user;
+static struct clk *g_mout_sclk_decon_vclk_user;
+static struct clk *g_mout_sclk_dsd_user;
 static struct clk *g_aclk_disp_333, *g_mout_aclk_disp_333_user;
+static struct clk *g_mout_sclk_decon_eclk_user;
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+static struct clk *g_mout_bus_pll_sub;
+static struct clk *g_sclk_decon_eclk_mif;
+static struct clk *g_sclk_decon_vclk_mif;
+static struct clk *g_sclk_dsd_mif;
 static struct clk *g_aclk_disp_222, *g_mout_aclk_disp_222_user;
-static struct clk *g_sclk_decon_eclk_mif, *g_mout_sclk_decon_eclk_user;
-static struct clk *g_sclk_decon_vclk_mif, *g_mout_sclk_decon_vclk_user;
-static struct clk *g_sclk_dsd_mif, *g_mout_sclk_dsd_user;
-static struct clk *g_mout_sclk_decon_eclk_user, *g_mout_sclk_decon_eclk_disp;
+static struct clk *g_mout_sclk_decon_eclk_disp;
+#else
+static struct clk *g_mout_bus_pll_div2;
+static struct clk *g_sclk_decon_eclk_disp;
+static struct clk *g_sclk_decon_vclk_disp;
+static struct clk *g_sclk_dsd_disp;
+static struct clk *g_mout_sclk_decon_eclk;
+#endif
 
 static struct clk *g_dout_aclk_disp_333;
 static struct clk *g_dout_sclk_decon_eclk;
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
 static struct clk *g_mout_sclk_dsd_a, *g_dout_mfc_pll;
+#else
+static struct clk *g_mout_sclk_dsd_a, *g_mout_mfc_pll_div2;
+#endif
 
 static struct clk *g_phyclk_mipidphy_rxclkesc0_phy,
 	*g_mout_phyclk_mipidphy_rxclkesc0_user;
@@ -128,7 +145,7 @@ static void check_display_clocks(void)
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00011111);
 #else
-	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00011101);
+	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00001101);
 #endif
 	DISPLAY_CHECK_REGS(0x13B90208, 0x00001100, 0x00001100);
 	DISPLAY_CHECK_REGS(0x13B9020C, 0x00000001, 0x00000001);
@@ -145,22 +162,38 @@ int init_display_decon_clocks_exynos5430(struct device *dev)
 	u32 data;
 #endif
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_a, mout_bus_pll_sub);
-	DISPLAY_CLOCK_SET_PARENT(mout_disp_pll, fout_disp_pll);
-
-	DISPLAY_CLOCK_SET_PARENT(mout_aclk_disp_333_user, aclk_disp_333);
 	DISPLAY_CLOCK_SET_PARENT(mout_aclk_disp_222_user, aclk_disp_222);
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_user,
 		sclk_decon_eclk_mif);
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_vclk_user,
 		sclk_decon_vclk_mif);
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_mif);
-
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_disp,
 		mout_sclk_decon_eclk_user);
+#else
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_a, mout_bus_pll_div2);
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_user,
+		sclk_decon_eclk_disp);
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_vclk_user,
+		sclk_decon_vclk_disp);
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_disp);
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk,
+		mout_sclk_decon_eclk_user);
+#endif
+
+	DISPLAY_CLOCK_SET_PARENT(mout_disp_pll, fout_disp_pll);
+
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_disp_333_user, aclk_disp_333);
+
 
 	/* setup dsd clock for MFC */
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
+#else
+	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_a, mout_mfc_pll_div2);
+#endif
 
 	DISPLAY_SET_RATE(dout_aclk_disp_333, 222*MHZ);
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
@@ -292,24 +325,39 @@ int enable_display_decon_clocks_exynos5430(struct device *dev)
 	u32 data;
 #endif
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
 		mout_bus_pll_sub);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_disp_pll, fout_disp_pll);
-
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_disp_333_user,
-		aclk_disp_333);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_disp_222_user,
-		aclk_disp_222);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_user,
 		sclk_decon_eclk_mif);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_vclk_user,
 		sclk_decon_vclk_mif);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_mif);
-
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_disp,
 		mout_sclk_decon_eclk_user);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_disp_222_user,
+		aclk_disp_222);
+#else
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
+		mout_bus_pll_div2);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_user,
+		sclk_decon_eclk_disp);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_vclk_user,
+		sclk_decon_vclk_disp);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_disp);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk,
+		mout_sclk_decon_eclk_user);
+#endif
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_disp_pll, fout_disp_pll);
 
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_disp_333_user,
+		aclk_disp_333);
+
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
+#else
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_a, mout_mfc_pll_div2);
+#endif
 
 	DISPLAY_INLINE_SET_RATE(dout_aclk_disp_333, 222*MHZ);
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
