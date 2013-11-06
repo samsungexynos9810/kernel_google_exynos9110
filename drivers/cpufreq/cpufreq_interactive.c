@@ -1193,11 +1193,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return rc;
 		}
 #endif
-
-		idle_notifier_register(&cpufreq_interactive_idle_nb);
-		cpufreq_register_notifier(
-			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
-
 		speedchange_task =
 			kthread_create(cpufreq_interactive_speedchange_task, NULL,
 				       "cfinteractive");
@@ -1214,6 +1209,9 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		/* NB: wake up so the thread does not look hung to the freezer */
 		wake_up_process(speedchange_task);
 
+		idle_notifier_register(&cpufreq_interactive_idle_nb);
+		cpufreq_register_notifier(
+			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		mutex_unlock(&gov_lock);
 		break;
 
@@ -1233,12 +1231,12 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return 0;
 		}
 
-		kthread_stop(speedchange_task);
-		put_task_struct(speedchange_task);
-
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		idle_notifier_unregister(&cpufreq_interactive_idle_nb);
+
+		kthread_stop(speedchange_task);
+		put_task_struct(speedchange_task);
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		if (exynos_boot_cluster == CA7) {
