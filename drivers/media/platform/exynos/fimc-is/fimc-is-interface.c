@@ -20,6 +20,7 @@
 #include "fimc-is-groupmgr.h"
 
 #include "fimc-is-interface.h"
+#include "fimc-is-clk-gate.h"
 
 u32 __iomem *notify_fcount_sen0;
 u32 __iomem *notify_fcount_sen1;
@@ -1801,6 +1802,7 @@ static void wq_func_shot(struct work_struct *data)
 		framemgr_e_barrier_irqs(grp_framemgr, FMGR_IDX_7, flags);
 
 		fimc_is_frame_process_head(grp_framemgr, &frame);
+
 		if (frame) {
 #ifdef MEASURE_TIME
 #ifdef INTERNAL_TIME
@@ -1817,11 +1819,11 @@ static void wq_func_shot(struct work_struct *data)
 					device, group->id, (u32)frame->req_flag);
 
 #ifdef ENABLE_CLOCK_GATE
-			if (sysfs_debug.en_clk_gate)
-				/* dynamic clock off */
-				fimc_is_clock_set(core, group->id, false);
+			/* dynamic clock off */
+			if (sysfs_debug.en_clk_gate &&
+					sysfs_debug.clk_gate_mode == 0)
+				fimc_is_clk_gate_set(core, group->id, false, false);
 #endif
-
 			wq_func_group(groupmgr, group, grp_framemgr, frame,
 				vctx, status1, status2, fcount);
 		} else {
@@ -1831,7 +1833,12 @@ static void wq_func_shot(struct work_struct *data)
 		}
 
 		framemgr_x_barrier_irqr(grp_framemgr, FMGR_IDX_7, flags);
-
+#ifdef ENABLE_CLOCK_GATE
+		if (fcount == 1 &&
+				sysfs_debug.en_clk_gate &&
+				sysfs_debug.clk_gate_mode == 0)
+			fimc_is_clk_gate_lock_set(core, instance, false);
+#endif
 remain:
 		set_free_work(work_list, work);
 		get_req_work(work_list, &work);

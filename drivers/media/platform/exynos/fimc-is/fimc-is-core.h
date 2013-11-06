@@ -228,6 +228,7 @@ enum fimc_is_front_state {
 struct fimc_is_sysfs_debug {
 	unsigned int en_dvfs;
 	unsigned int en_clk_gate;
+	unsigned int clk_gate_mode; /* 0:Host, 1:F/W clk gate */
 };
 
 struct fimc_is_core {

@@ -768,8 +768,6 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		goto p_err;
 	}
 
-	fimc_is_clock_set(device->resourcemgr, GROUP_ID_MAX, true);
-
 	/* 5. Update Group Manager */
 	groupmgr->group[instance][id] = group;
 	atomic_inc(&groupmgr->group_refcount[id]);

@@ -20,6 +20,9 @@
 /* #define ENABLE_TDNR */
 #define ENABLE_FD
 #define ENABLE_CLOCK_GATE
+/* #define HAS_FW_CLOCK_GATE */
+#define CLOCK_GATE_MODE 0 /* 0:Host , 1:FW */
+#define ENABLE_DVFS
 /* #define ENABLE_CACHE */
 #define ENABLE_FULL_BYPASS
 #define ENABLE_FAST_SHOT
@@ -40,7 +43,6 @@
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS5430)
-#undef ENABLE_CLOCK_GATE
 #undef ENABLE_DVFS
 #undef USE_OWN_FAULT_HANDLER
 #define CONFIG_ARM_TRUSTZONE

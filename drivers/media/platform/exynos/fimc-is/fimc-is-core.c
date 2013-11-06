@@ -44,6 +44,7 @@
 #include "fimc-is-framemgr.h"
 #include "fimc-is-dt.h"
 #include "fimc-is-resourcemgr.h"
+#include "fimc-is-clk-gate.h"
 
 #include "sensor/fimc-is-device-6b2.h"
 #include "sensor/fimc-is-device-imx135.h"
@@ -491,6 +492,33 @@ static int fimc_is_fault_handler(struct device *dev, const char *mmuname,
 }
 #endif
 
+static ssize_t show_clk_gate_mode(struct device *dev, struct device_attribute *attr,
+				  char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", sysfs_debug.clk_gate_mode);
+}
+
+static ssize_t store_clk_gate_mode(struct device *dev,
+				 struct device_attribute *attr,
+				 const char *buf, size_t count)
+{
+#ifdef HAS_FW_CLOCK_GATE
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	if (value > 0)
+		sysfs_debug.clk_gate_mode = 1;
+	else
+		sysfs_debug.clk_gate_mode = 0;
+out:
+#endif
+	return count;
+}
+
 static ssize_t show_en_clk_gate(struct device *dev, struct device_attribute *attr,
 				  char *buf)
 {
@@ -501,8 +529,7 @@ static ssize_t store_en_clk_gate(struct device *dev,
 				 struct device_attribute *attr,
 				 const char *buf, size_t count)
 {
-	struct fimc_is_core *core =
-		(struct fimc_is_core *)platform_get_drvdata(to_platform_device(dev));
+#ifdef ENABLE_CLOCK_GATE
 	unsigned int value;
 	int ret;
 
@@ -510,13 +537,15 @@ static ssize_t store_en_clk_gate(struct device *dev,
 	if (ret != 1)
 		goto out;
 
-	if (value > 0)
-		sysfs_debug.en_clk_gate = value;
-	else {
+	if (value > 0) {
+		sysfs_debug.en_clk_gate = 1;
+		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE;
+	} else {
 		sysfs_debug.en_clk_gate = 0;
-		fimc_is_clock_set(&core->resourcemgr, GROUP_ID_MAX, true);
+		sysfs_debug.clk_gate_mode = 0;
 	}
 out:
+#endif
 	return count;
 }
 
@@ -565,10 +594,12 @@ out:
 }
 
 static DEVICE_ATTR(en_clk_gate, 0644, show_en_clk_gate, store_en_clk_gate);
+static DEVICE_ATTR(clk_gate_mode, 0644, show_clk_gate_mode, store_clk_gate_mode);
 static DEVICE_ATTR(en_dvfs, 0644, show_en_dvfs, store_en_dvfs);
 
 static struct attribute *fimc_is_debug_entries[] = {
 	&dev_attr_en_clk_gate.attr,
+	&dev_attr_clk_gate_mode.attr,
 	&dev_attr_en_dvfs.attr,
 	NULL,
 };
@@ -774,10 +805,28 @@ static int fimc_is_probe(struct platform_device *pdev)
 	dbg("%s : fimc_is_front_%d probe success\n", __func__, pdev->id);
 
 	/* set sysfs for debuging */
-	sysfs_debug.en_clk_gate = 1;
+	sysfs_debug.en_clk_gate = 0;
 	sysfs_debug.en_dvfs = 1;
+#ifdef ENABLE_CLOCK_GATE
+	sysfs_debug.en_clk_gate = 1;
+#ifdef HAS_FW_CLOCK_GATE
+	sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE;
+#endif
+#endif
 	ret = sysfs_create_group(&core->pdev->dev.kobj, &fimc_is_debug_attr_group);
 
+#ifdef ENABLE_DVFS
+	/* dvfs controller init */
+	ret = fimc_is_dvfs_init(core);
+	if (ret)
+		err("%s: fimc_is_dvfs_init failed!\n", __func__);
+#endif
+#ifdef ENABLE_CLOCK_GATE
+	/* clock gate init */
+	ret = fimc_is_clk_gate_init(core);
+	if (ret)
+		err("%s: fimc_is_clk_gate_init failed!\n", __func__);
+#endif
 	return 0;
 
 p_err3:

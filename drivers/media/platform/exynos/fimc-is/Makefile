@@ -26,5 +26,6 @@ fimc-is-objs	:= fimc-is-core.o \
 		sensor/fimc-is-device-imx135.o \
 		sensor/fimc-is-device-3l2.o \
 		sensor/fimc-is-device-2p2.o \
+		fimc-is-clk-gate.o \
 
 obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS) += fimc-is.o
