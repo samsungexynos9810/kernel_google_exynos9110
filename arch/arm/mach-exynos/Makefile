@@ -64,7 +64,6 @@ obj-$(CONFIG_MACH_XYREF5430)		+= mach-xyref5430.o
 obj-$(CONFIG_MACH_XYREF5430)		+= mach-xyref5430-pinctrl.o
 
 obj-$(CONFIG_VIDEO_EXYNOS5_FIMC_IS)    += setup-fimc-is.o
-obj-$(CONFIG_VIDEO_EXYNOS5_FIMC_IS)    += setup-fimc-is-sensor.o
 
 # device support
 
