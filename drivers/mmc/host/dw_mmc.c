@@ -3475,58 +3475,44 @@ int dw_mci_probe(struct dw_mci *host)
 
 	host->fifo_depth = fifo_size;
 
-	/*
-	 * Quoting the Samsung Docs about MSize:
-	 * "Value should be sub-multiple of
-	 *	(RX_WMark + 1) / (F_DATA_WIDTH/H_DATA_WIDTH)
-	 * and
-	 *	(FIFO_DEPTH – TX_WMark) / (F_DATA_WIDTH/ H_DATA_WIDTH)"
-	 *
-	 * Or phrased differently in the Synopsys docs:
-	 *	"for all DMA modes the RX Watermark (RX_Wmark) chosen
-	 *	must be a multiple of the chosen MSIZE."
-	 *
-	 * Additionally DMA setup code has to enforce this constraint:
-	 *	"One data-transfer requirement between the FIFO and host
-	 *	is that the number of transfers should be a multiple of
-	 *	the FIFO data width (F_DATA_WIDTH)."
-	 *
-	 */
 	WARN_ON(fifo_size < 8);
-	msize = fifo_size/4;
 
 	/*
-	 * Synopsys recommended FIFO threshold settings:
-	 *	Rx_WMark = fifo_size / 2 - 1,
-	 *	Tx_WMark = fifo_size / 2
+	 *	HCON[9:7] -> H_DATA_WIDTH
+	 *	000 16 bits
+	 *	001 32 bits
+	 *	010 64 bits
 	 *
-	 * See sections:
-	 *	"6.2.20 FIFOTH" (FIFOTH register details)
-	 *	"7.2.14 Card Read Threshold" and in particular
-	 *	"7.2.14.2 Card Read Threshold Programming Sequence"
+	 *	FIFOTH[30:28] -> DW_DMA_Mutiple_Transaction_Size
+	 *	msize:
+	 *	000  1 transfers
+	 *	001  4
+	 *	010  8
+	 *	011  16
+	 *	100  32
+	 *	101  64
+	 *	110  128
+	 *	111  256
 	 *
-	 * Synopsys "Design Ware" dwc_mobile_storage_db.pdf document.
-	 * Version 2.40a, December 2010
+	 *	AHB Master can support 1/4/8/16 burst in DMA.
+	 *	So, Max support burst spec is 16 burst.
 	 *
-	 * HS200 burst rate can fill the FIFO faster. We buy more time
-	 * for the SoC to move data out of the FIFO by setting the RX_WMark
-	 * lower than reccomended.
+	 *	msize <= 011(16 burst)
+	 *	Transaction_Size = msize * H_DATA_WIDTH;
+	 *	rx_wmark = Transaction_Size - 1;
+	 *	tx_wmark = fifo_size - Transaction_Size;
 	 */
-	rx_wmark = (msize - 1) & 0x7ff;	/* 11 bits */
-	tx_wmark = (msize * 2) & 0xfff;	/* 12 bits */
-
-	/*
-	 * fls() get order of magnitude: returns 1-32
-	 *  "- 1" once for "divide by 2"
-	 *  "- 1" again to convert range to 0-31.
-	 */
-	msize = fls(msize) - 1 - 1;
-	msize &= 7;		/* 0=1 xfer, 1=4, ...,, 7=256 transfers */
+	msize = host->data_shift;
+	msize &= 7;
+	rx_wmark = ((1 << (msize + 1)) - 1) & 0xfff;
+	tx_wmark = (fifo_size - (1 << (msize + 1))) & 0xfff;
 
 	host->fifoth_val = msize << SDMMC_FIFOTH_DMA_MULTI_TRANS_SIZE;
 	host->fifoth_val |= (rx_wmark << SDMMC_FIFOTH_RX_WMARK) | tx_wmark;
 
 	mci_writel(host, FIFOTH, host->fifoth_val);
+
+	dev_info(host->dev, "FIFOTH: 0x %08x", mci_readl(host, FIFOTH));
 
 	/* disable clock to CIU */
 	mci_writel(host, CLKENA, 0);
