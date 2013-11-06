@@ -544,4 +544,73 @@
 		};
 
 	};
+
+	vdd:fixed-regulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "vdd-supply";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		regulator-always-on;
+	};
+
+	dbvdd:fixed-regulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "dbvdd-supply";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+
+	spkvdd:fixed-regulator@2 {
+		compatible = "regulator-fixed";
+		regulator-name = "spkvdd-supply";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		regulator-always-on;
+	};
+
+	i2c@12C70000 {
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <100000>;
+		status = "okay";
+		audio_codec: codec@1a {
+			compatible = "wlf,wm8994";
+			reg = <0x1a>;
+
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			AVDD2-supply = <&vdd>;
+			CPVDD-supply = <&vdd>;
+			DBVDD-supply = <&dbvdd>;
+			SPKVDD1-supply = <&spkvdd>;
+			SPKVDD2-supply = <&spkvdd>;
+		};
+	};
+
+	i2s0: i2s@03830000 {
+		status = "okay";
+	};
+
+	spdif: spdif@12DB0000 {
+		status = "okay";
+	};
+
+	audio_codec_dummy: dummy-codec {
+		compatible = "samsung,dummy-codec";
+		status = "okay";
+	};
+
+	sound {
+		compatible = "samsung,smdk-wm8994";
+		samsung,audio-cpu = <&i2s0		/* primary */
+				     &i2s0>;		/* secondary */
+		samsung,audio-cpu-spdif = <&spdif>;	/* spdif */
+		samsung,audio-codec = <&audio_codec
+				       &audio_codec
+				       &audio_codec_dummy
+				       &audio_codec_dummy>;
+		status = "okay";
+	};
+
 };
