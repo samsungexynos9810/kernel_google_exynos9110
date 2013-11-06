@@ -126,7 +126,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	}
 
 	/* Turn on G3D clock */
-	clk_g3d = __clk_lookup("aclk_g3d");
+	clk_g3d = __clk_lookup("clk_g3d_ip");
 	clk_prepare(clk_g3d);
 	if (IS_ERR(clk_g3d)) {
 		clk_g3d = NULL;
@@ -139,7 +139,7 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 	exynos_set_parent("mout_aclk_g3d_user", "mout_aclk_g3d_sw");
 	exynos_set_parent("mout_aclk_g3d_sw", "dout_aclk_g3d");
 	exynos_set_parent("mout_aclk_g3d", "sclk_vpll");
-	exynos_set_rate("aclk_g3d", MALI_T6XX_DEFAULT_CLOCK);
+	exynos_set_rate("clk_g3d_ip", MALI_T6XX_DEFAULT_CLOCK);
 
 	clk_enable(clk_g3d);
 
