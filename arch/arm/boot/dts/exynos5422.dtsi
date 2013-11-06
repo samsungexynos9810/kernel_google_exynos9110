@@ -134,7 +134,7 @@
 		interrupts = <0 0>, <1 0>, <2 0>, <3 0>,
 			     <4 0>, <5 0>, <6 0>, <7 0>,
 			     <8 0>, <9 0>, <10 0>, <11 0>;
-		clocks = <&clock 1>, <&clock 465>;
+		clocks = <&clock 1>, <&clock 964>;
 		clock-names = "fin_pll", "mct";
 
 		mct_map: mct-map {
@@ -167,7 +167,7 @@
 		reg = <0x12C00000 0x100>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart0_bus>;
-		clocks = <&clock 4126>, <&clock 1081>;
+		clocks = <&clock 1165>, <&clock 889>;
 		clock-names = "sclk_uart0", "gate_uart0";
 	};
 
@@ -176,7 +176,7 @@
 		reg = <0x12C10000 0x100>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart1_bus>;
-		clocks = <&clock 4127>, <&clock 1082>;
+		clocks = <&clock 1164>, <&clock 888>;
 		clock-names = "sclk_uart1", "gate_uart1";
 	};
 
@@ -185,7 +185,7 @@
 		reg = <0x12C20000 0x100>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart2_bus>;
-		clocks = <&clock 4128>, <&clock 1083>;
+		clocks = <&clock 1163>, <&clock 887>;
 		clock-names = "sclk_uart2", "gate_uart2";
 	};
 
@@ -194,7 +194,7 @@
 		reg = <0x12C30000 0x100>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart3_bus>;
-		clocks = <&clock 4129>, <&clock 1084>;
+		clocks = <&clock 1162>, <&clock 886>;
 		clock-names = "sclk_uart3", "gate_uart3";
 	};
 
@@ -500,29 +500,34 @@
 
 		/* Clocks for the DECON driver */
 		/* Clocks for the MIPI-DSI driver */
-		clocks = <&clock 22>, <&clock 23>, <&clock 24>, <&clock 25>,
-			<&clock 2104>, <&clock 280>, <&clock 281>, <&clock 282>,
-			<&clock 580>, <&clock 581>, <&clock 680>,
-			<&clock 1022>, <&clock 1023>, <&clock 1024>, <&clock 1025>,
-			<&clock 1210>, <&clock 1214>, <&clock 1224>, <&clock 1233>,
-			<&clock 2037>, <&clock 2053>, <&clock 2058>, <&clock 2067>,
-			<&clock 2072>, <&clock 2077>, <&clock 2082>,
-			<&clock 2100>, <&clock 2101>, <&clock 2102>,
-			<&clock 2103>, /*<&clock 2104>,*/ <&clock 2105>,
-			<&clock 4016>, <&clock 4021>,
-			<&clock 4101>, <&clock 4102>, <&clock 4103>;
-		clock-names = "sclk_pixel", "sclk_dp1_ext_mst_vid", "sclk_mipi1", "sclk_fimd1",
-			"mout_fimd1", "aclk_200_disp1", "dsim1", "dp1",
-			"aclk_300_disp1", "fimd1","aclk_400_disp1", "gate_pixel",
-			"gate_dp1_ext_mst_vid", "gate_mipi1", "gate_fimd1",
-			"gate_sclk_disp1", "gate_bus_disp1", "gate_top_sclk_disp1",
-			"gate_ip_disp1", "mout_aclk_200_disp1_user", "mout_aclk_300_disp1",
-			"mout_aclk_400_disp1", "mout_aclk_300_disp1_sw",
-			"mout_aclk_400_disp1_sw", "mout_aclk_300_disp1_user",
-			"mout_aclk_400_disp1_user", "mout_pixel", "mout_dp1_ext_mst_vid",
-			"mout_mipi1", "mout_fimd1_opt", /*"mout_fimd1",*/ "mout_fimd1_final",
-			"dout_aclk_300_disp1", "dout_aclk_400_disp1",
-			"dout_dp1_ext_mst_vid", "dout_mipi1", "dout_fimd1";
+
+			clocks = <&clock 1058>, <&clock 1057>, <&clock 1060>, <&clock 1061>,
+                       /*<&clock 2104>*/ <&clock 483>, <&clock 26>, <&clock 25>,
+                       <&clock 580>, <&clock 581>, <&clock 680>,
+                       <&clock 1022>, <&clock 1023>, <&clock 1024>, <&clock 1025>,
+                       <&clock 1210>, <&clock 1214>, <&clock 1224>, <&clock 1233>,
+                       <&clock 2037>, <&clock 2053>, <&clock 2058>, <&clock 2067>,
+                       <&clock 2072>, <&clock 2077>, <&clock 2082>,
+                       <&clock 2100>, <&clock 2101>, <&clock 2102>,
+                       <&clock 2103>, /*<&clock 2104>,*/ <&clock 2105>,
+                       <&clock 4016>, <&clock 4021>,
+                       <&clock 4101>, <&clock 4102> ,<&clock 2006>,
+						<&clock 2104>, <&clock 2005>, <&clock 2107>, <&clock 4103>, <&clock 2002>;
+               clock-names = "sclk_pixel", "sclk_dp1_ext_mst_vid", "sclk_mipi1", "sclk_fimd1",
+                       /*"mout_fimd1"*/ "aclk_200_disp1", "dsim1", "dp1",
+                       "aclk_300_disp1", "fimd1","aclk_400_disp1", "gate_pixel",
+                       "gate_dp1_ext_mst_vid", "gate_mipi1", "gate_fimd1",
+                       "gate_sclk_disp1", "gate_bus_disp1", "gate_top_sclk_disp1",
+                       "gate_ip_disp1", "mout_aclk_200_disp1_user", "mout_aclk_300_disp1",
+                       "mout_aclk_400_disp1", "mout_aclk_300_disp1_sw",
+                       "mout_aclk_400_disp1_sw", "mout_aclk_300_disp1_user",
+                       "mout_aclk_400_disp1_user", "mout_pixel", "mout_dp1_ext_mst_vid",
+                       "mout_mipi1", "mout_fimd1_opt", /*"mout_fimd1",*/ "mout_fimd1_final",
+                       "dout_aclk_300_disp1", "dout_aclk_400_disp1",
+                       "dout_dp1_ext_mst_vid", "dout_mipi1", "mout_spll_ctrl",
+						"mout_fimd1", "mout_rpll_ctrl", "mout_fimd1_mdnie1", "dout_fimd1", "mout_dpll_ctrl";
+
+
 
 		fimd_fb_int_map: fimd_fb_int_map {
 			#interrupt-cells = <2>;
@@ -571,7 +576,7 @@
 		interrupts = <0 75 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 262>, <&clock 44>, <&clock 4110>;
+		clocks = <&clock 746>, <&clock 1126>, <&clock 4110>;
 		clock-names = "biu", "gate_ciu", "dout_mmc_a";
 		status = "disabled";
 	};
@@ -582,7 +587,7 @@
 		interrupts = <0 76 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 263>, <&clock 45>, <&clock 4111>;
+		clocks = <&clock 745>, <&clock 1125>, <&clock 4111>;
 		clock-names = "biu", "gate_ciu", "dout_mmc_a";
 		status = "disabled";
 	};
@@ -593,7 +598,7 @@
 		interrupts = <0 77 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 264>, <&clock 46>, <&clock 4112>;
+		clocks = <&clock 744>, <&clock 1124>, <&clock 4112>;
 		clock-names = "biu", "gate_ciu", "dout_mmc_a";
 		status = "disabled";
 	};
@@ -606,7 +611,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c0_bus>;
-		clocks = <&clock 421>;
+		clocks = <&clock 884>;
 		clock-names = "i2c";
 		status = "disabled";
 	};
@@ -619,7 +624,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c1_bus>;
-		clocks = <&clock 422>;
+		clocks = <&clock 883>;
 		clock-names = "i2c";
 		status = "disabled";
 	};
@@ -632,7 +637,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c2_bus>;
-		clocks = <&clock 423>;
+		clocks = <&clock 882>;
 		clock-names = "i2c";
 		status = "disabled";
 	};
@@ -645,7 +650,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c3_bus>;
-		clocks = <&clock 424>;
+		clocks = <&clock 881>;
 		clock-names = "i2c";
 		status = "disabled";
 	};
@@ -659,7 +664,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c0_bus>;
-		clocks = <&clock 426>;
+		clocks = <&clock 880>;
 		clock-names = "hsi2c";
 		status = "disabled";
 	};
@@ -672,7 +677,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c3_bus>;
-		clocks = <&clock 429>;
+		clocks = <&clock 877>;
 		clock-names = "hsi2c";
 		status = "disabled";
 	};
@@ -701,7 +706,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x10800000 0x1000>;
 			interrupts = <0 33 0>;
-			clocks = <&clock 643>;
+			clocks = <&clock 216>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <8>;
@@ -712,7 +717,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x121A0000 1000>;
 			interrupts = <0 34 0>;
-			clocks = <&clock 102>;
+			clocks = <&clock 755>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <8>;
@@ -723,7 +728,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x121B0000 0x1000>;
 			interrupts = <0 35 0>;
-			clocks = <&clock 103>;
+			clocks = <&clock 754>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <8>;
@@ -734,6 +739,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x03880000 0x1000>;
 			interrupts = <0 110 0>;
+			clocks = <&clock 1089>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <6>;
@@ -745,7 +751,7 @@
 		compatible = "samsung,exynos5-ehci";
 		reg = <0x12110000 0x100>;
 		interrupts = <0 71 0>;
-		clocks = <&clock 1502>;
+		clocks = <&clock 1607>;
 		clock-names = "usbhost";
 		status = "ok";
 		usb-phy = <&usb2_phy>;
@@ -755,7 +761,7 @@
 		compatible = "samsung,exynos5-ohci";
 		reg = <0x12120000 0x100>;
 		interrupts = <0 71 0>;
-		clocks = <&clock 1502>;
+		clocks = <&clock 1607>;
 		clock-names = "usbhost";
 		status = "ok";
 		usb-phy = <&usb2_phy>;
@@ -776,7 +782,7 @@
 
 	usb@12000000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 40>, <&clock 1040>;
+		clocks = <&clock 1121>, <&clock 736>;
 		clock-names = "sclk_usbdrd30", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -793,7 +799,7 @@
 
 	usb@12400000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 41>, <&clock 1041>;
+		clocks = <&clock 1120>, <&clock 741>;
 		clock-names = "sclk_usbdrd30", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -814,7 +820,7 @@
 		interrupts = <0 106 0>;
 		#io-channel-cells = <1>;
 		io-channel-ranges;
-		clocks = <&clock 446>;
+		clocks = <&clock 875>;
 		clock-names = "gate_adcif";
 	};
 
@@ -825,7 +831,7 @@
 	dwc3_usb3_phy_0: usbphy@12100000 {
 		compatible = "samsung,exynos5-usb3phy";
 		reg = <0x12100000 0x100>;
-		clocks = <&clock 1>, <&clock 1040>;
+		clocks = <&clock 1>, <&clock 1120>;
 		clock-names = "ext_xtal", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -839,7 +845,7 @@
 	dwc3_usb3_phy_1: usbphy@12500000 {
 		compatible = "samsung,exynos5-usb3phy";
 		reg = <0x12500000 0x100>;
-		clocks = <&clock 1>, <&clock 1041>;
+		clocks = <&clock 1>, <&clock 1121>;
 		clock-names = "ext_xtal", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -855,7 +861,7 @@
 		reg = <0x11000000 0x10000>;
 		interrupts = <0 96 0>;
 		clock-names = "mfc", "aclk_333", "mout_aclk_333_user", "gate_ip_mfc", "mout_aclk_333_sw";
-		clocks = <&clock 341>, <&clock 340>, <&clock 2040>, <&clock 1234>, <&clock 2033>;
+		clocks = <&clock 1350>, <&clock 486>, <&clock 2040>, <&clock 1234>, <&clock 2033>;
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
 		status = "ok";
 		ip_ver = <8>;
@@ -865,7 +871,7 @@
 		compatible = "samsung,s3c6400-pwm";
 		reg = <0x12dd0000 0x1000>;
 		#pwm-cells = <3>;
-		clocks = <&clock 444>,
+		clocks = <&clock 866>,
 		       <&clock_pwm 1>, <&clock_pwm 2>,
 		       <&clock_pwm 5>, <&clock_pwm 6>,
 		       <&clock_pwm 7>, <&clock_pwm 8>,
