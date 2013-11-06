@@ -12,60 +12,68 @@
 #ifndef FIMC_IS_DEVICE_FLITE_H
 #define FIMC_IS_DEVICE_FLITE_H
 
-#include "fimc-is-type.h"
-
 #define EXPECT_FRAME_START	0
 #define EXPECT_FRAME_END	1
 
-#define FLITE_NOTIFY_FSTART	0
-#define FLITE_NOTIFY_FEND	1
-
-#define FLITE_ENABLE_FLAG	1
-#define FLITE_ENABLE_MASK	0xFFFF
-#define FLITE_ENABLE_SHIFT	0
-
-#define FLITE_NOWAIT_FLAG	1
-#define FLITE_NOWAIT_MASK	0xFFFF0000
-#define FLITE_NOWAIT_SHIFT	16
-
-struct fimc_is_device_sensor;
+struct fimc_is_frame_info {
+	u32 o_width;
+	u32 o_height;
+	u32 width;
+	u32 height;
+	u32 offs_h;
+	u32 offs_v;
+};
 
 enum fimc_is_flite_state {
 	/* buffer state*/
 	FLITE_A_SLOT_VALID = 0,
 	FLITE_B_SLOT_VALID,
-	/* finish state */
-	FLITE_LAST_CAPTURE,
-	/* one the fly output */
-	FLITE_OTF_WITH_3AA,
+	/* global state */
+	FIMC_IS_FLITE_LAST_CAPTURE
 };
 
 struct fimc_is_device_flite {
-	u32				instance;
-	unsigned long __iomem		*base_reg;
-	unsigned long			state;
-	wait_queue_head_t		wait_queue;
-
-	struct fimc_is_image		image;
-	struct fimc_is_framemgr		*framemgr;
-
-	/* which 3aa gorup is connected when otf is enable */
-	u32				group;
-	u32				sw_checker;
-	u32				sw_trigger;
 	atomic_t			bcount;
 	atomic_t			fcount;
+	wait_queue_head_t		wait_queue;
+
+	unsigned long			state;
+	unsigned long			clk_state;
+
+	struct fimc_is_video_ctx	*vctx;
 	u32				tasklet_param_str;
 	struct tasklet_struct		tasklet_flite_str;
 	u32				tasklet_param_end;
 	struct tasklet_struct		tasklet_flite_end;
+
+	u32				channel;
+	u32				regs;
+
+	u32				sw_checker;
+	u32				sw_trigger;
+
+	u32				private_data;
 };
 
-int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
-	u32 instance);
-int fimc_is_flite_open(struct v4l2_subdev *subdev,
-	struct fimc_is_framemgr *framemgr);
-int fimc_is_flite_close(struct v4l2_subdev *subdev);
+int fimc_is_flite_probe(struct fimc_is_device_flite *flite, u32 data);
+int fimc_is_flite_open(struct fimc_is_device_flite *flite,
+	struct fimc_is_video_ctx *vctx);
+int fimc_is_flite_close(struct fimc_is_device_flite *this);
+
+int fimc_is_flite_start(struct fimc_is_device_flite *this,
+	struct fimc_is_frame_info *frame,
+	struct fimc_is_video_ctx *vctx);
+int fimc_is_flite_stop(struct fimc_is_device_flite *this, bool wait);
+void fimc_is_flite_restart(struct fimc_is_device_flite *this,
+	struct fimc_is_frame_info *frame,
+	struct fimc_is_video_ctx *vctx);
+
+int fimc_is_flite_set_clk(int channel,
+	struct fimc_is_core *core,
+	struct fimc_is_device_flite *device_flite);
+int fimc_is_flite_put_clk(int channel,
+	struct fimc_is_core *core,
+	struct fimc_is_device_flite *device_flite);
 
 extern u32 __iomem *notify_fcount_sen0;
 extern u32 __iomem *notify_fcount_sen1;

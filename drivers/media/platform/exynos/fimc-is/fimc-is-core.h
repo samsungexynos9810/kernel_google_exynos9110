@@ -25,17 +25,17 @@
 #include <media/v4l2-device.h>
 #include <media/v4l2-mediabus.h>
 #include <media/v4l2-ioctl.h>
+#include <media/exynos_mc.h>
 #include <media/videobuf2-core.h>
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
 #include <media/videobuf2-cma-phys.h>
 #elif defined(CONFIG_VIDEOBUF2_ION)
 #include <media/videobuf2-ion.h>
 #endif
-
 #include "fimc-is-param.h"
+
 #include "fimc-is-interface.h"
 #include "fimc-is-framemgr.h"
-#include "fimc-is-resourcemgr.h"
 #include "fimc-is-device-sensor.h"
 #include "fimc-is-device-ischain.h"
 #include "fimc-is-dvfs.h"
@@ -162,6 +162,251 @@
 #define I2C_L2				(21600000)
 #define DVFS_SKIP_FRAME_NUM		(5)
 #endif
+/* configuration - default post processing */
+#define ENABLE_SETFILE
+/* #define ENABLE_DRC */
+/* #define ENABLE_ODC */
+/* #define ENABLE_VDIS */
+/* #define ENABLE_TDNR */
+#define ENABLE_FD
+#define ENABLE_CLOCK_GATE
+#define ENABLE_DVFS
+/* #define ENABLE_CACHE */
+#define ENABLE_FULL_BYPASS
+#define ENABLE_FAST_SHOT
+#define USE_OWN_FAULT_HANDLER
+/* #define ENABLE_MIF_400 */
+#define ENABLE_DTP
+
+#if defined(ENABLE_FULL_BYPASS) && defined(CONFIG_SOC_EXYNOS5410)
+#undef ENABLE_FULL_BYPASS
+#endif
+
+#if defined(ENABLE_ODC) && defined(CONFIG_SOC_EXYNOS5420)
+#undef ENABLE_ODC
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS5430)
+#undef ENABLE_CLOCK_GATE
+#undef ENABLE_DVFS
+#undef USE_OWN_FAULT_HANDLER
+#define CONFIG_ARM_TRUSTZONE
+#endif
+
+/*
+ * -----------------------------------------------------------------------------
+ * Debug Message Configuration
+ * -----------------------------------------------------------------------------
+ */
+
+/* #define DEBUG */
+#define DBG_VIDEO
+#define DBG_DEVICE
+/* #define DBG_STREAMING */
+#define DEBUG_INSTANCE 0xF
+#define BUG_ON_ENABLE
+/* #define FIXED_FPS_DEBUG */
+#define FIXED_FPS_VALUE 10
+/* #define DBG_FLITEISR */
+#define FW_DEBUG
+#define RESERVED_MEM
+#define BAYER_CROP_DZOOM
+/* #define SCALER_CROP_DZOOM */
+/* #define USE_ADVANCED_DZOOM */
+/* #define TASKLET_MSG */
+/* #define PRINT_CAPABILITY */
+/* #define PRINT_BUFADDR */
+/* #define PRINT_DZOOM */
+#define ISDRV_VERSION 244
+
+#if (defined(BAYER_CROP_DZOOM) && defined(SCALER_CROP_DZOOM))
+#error BAYER_CROP_DZOOM and SCALER_CROP_DZOOM can''t be enable together
+#endif
+
+/*
+ * driver version extension
+ */
+#ifdef ENABLE_CLOCK_GATE
+#define get_drv_clock_gate() 0x1
+#else
+#define get_drv_clock_gate() 0x0
+#endif
+#ifdef ENABLE_DVFS
+#define get_drv_dvfs() 0x2
+#else
+#define get_drv_dvfs() 0x0
+#endif
+
+#ifdef err
+#undef err
+#endif
+#define err(fmt, args...) \
+	printk(KERN_ERR "[ERR]%s:%d: " fmt "\n", __func__, __LINE__, ##args)
+
+#define merr(fmt, this, args...) \
+	printk(KERN_ERR "[ERR:%d]%s:%d: " fmt "\n", \
+		this->instance, __func__, __LINE__, ##args)
+
+#ifdef warn
+#undef warn
+#endif
+#define warn(fmt, args...) \
+	printk(KERN_WARNING "[WRN] " fmt "\n", ##args)
+
+#define mwarn(fmt, this, args...) \
+	printk(KERN_WARNING "[WRN:%d] " fmt "\n", this->instance, ##args)
+
+#define mdbg_common(prefix, fmt, instance, args...)			\
+	do {								\
+		if ((1<<instance) & DEBUG_INSTANCE)			\
+			printk(KERN_INFO prefix fmt, instance, ##args);	\
+	} while (0)
+
+#if (defined(DEBUG) && defined(DBG_VIDEO))
+#define dbg(fmt, args...)
+
+#define dbg_warning(fmt, args...) \
+	printk(KERN_INFO "%s[WAR] Warning! " fmt, __func__, ##args)
+
+/* debug message for video node */
+#define mdbgv_vid(fmt, this, args...) \
+	mdbg_common("[COM:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_sensor(fmt, args...) \
+	printk(KERN_INFO "[SEN] " fmt, ##args)
+
+#define mdbgv_ss0(fmt, this, args...) \
+	mdbg_common("[SS0:V:%d] ", fmt, this->instance, ##args)
+
+#define mdbgv_ss1(fmt, this, args...) \
+	mdbg_common("[SS1:V:%d] ", fmt, this->instance, ##args)
+
+#define mdbgv_3a0(fmt, this, args...) \
+	mdbg_common("[3A0:V:%d] ", fmt, this->instance, ##args)
+
+#define mdbgv_3a1(fmt, this, args...) \
+	mdbg_common("[3A1:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_isp(fmt, args...) \
+	printk(KERN_INFO "[ISP] " fmt, ##args)
+
+#define mdbgv_isp(fmt, this, args...) \
+	mdbg_common("[ISP:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_scp(fmt, args...) \
+	printk(KERN_INFO "[SCP] " fmt, ##args)
+
+#define mdbgv_scp(fmt, this, args...) \
+	mdbg_common("[SCP:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_scc(fmt, args...) \
+	printk(KERN_INFO "[SCC] " fmt, ##args)
+
+#define mdbgv_scc(fmt, this, args...) \
+	mdbg_common("[SCC:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_vdisc(fmt, args...) \
+	printk(KERN_INFO "[VDC] " fmt, ##args)
+
+#define mdbgv_vdc(fmt, this, args...) \
+	mdbg_common("[VDC:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_vdiso(fmt, args...) \
+	printk(KERN_INFO "[VDO] " fmt, ##args)
+
+#define mdbgv_vdo(fmt, this, args...) \
+	mdbg_common("[VDO:V:%d] ", fmt, this->instance, ##args)
+
+#define dbg_3a0c(fmt, args...) \
+	printk(KERN_INFO "[3A0C] " fmt, ##args)
+
+#define dbg_3a1c(fmt, args...) \
+	printk(KERN_INFO "[3A1C] " fmt, ##args)
+
+#define mdbgv_3a0c(fmt, this, args...) \
+	mdbg_common("[3A0C:V:%d] ", fmt, this->instance, ##args)
+
+#define mdbgv_3a1c(fmt, this, args...) \
+	mdbg_common("[3A1C:V:%d] ", fmt, this->instance, ##args)
+#else
+#define dbg(fmt, args...)
+
+/* debug message for video node */
+#define mdbgv_vid(fmt, this, args...)
+#define dbg_sensor(fmt, args...)
+#define mdbgv_ss0(fmt, this, args...)
+#define mdbgv_ss1(fmt, this, args...)
+#define mdbgv_3a0(fmt, this, args...)
+#define mdbgv_3a1(fmt, this, args...)
+#define dbg_isp(fmt, args...)
+#define mdbgv_isp(fmt, this, args...)
+#define dbg_scp(fmt, args...)
+#define mdbgv_scp(fmt, this, args...)
+#define dbg_scc(fmt, args...)
+#define mdbgv_scc(fmt, this, args...)
+#define dbg_vdisc(fmt, args...)
+#define mdbgv_vdc(fmt, this, args...)
+#define dbg_vdiso(fmt, args...)
+#define mdbgv_vdo(fmt, this, args...)
+#define dbg_3a0c(fmt, args...)
+#define mdbgv_3a0c(fmt, this, args...)
+#define dbg_3a1c(fmt, args...)
+#define mdbgv_3a1c(fmt, this, args...)
+#endif
+
+#if (defined(DEBUG) && defined(DBG_DEVICE))
+/* debug message for device */
+#define mdbgd_sensor(fmt, this, args...) \
+	mdbg_common("[SEN:D:%d] ", fmt, this->instance, ##args)
+
+#define dbg_front(fmt, args...) \
+	printk(KERN_INFO "[FRT] " fmt, ##args)
+
+#define dbg_back(fmt, args...) \
+	printk(KERN_INFO "[BAK] " fmt, ##args)
+
+#define mdbgd_3a0(fmt, this, args...) \
+	printk(KERN_INFO "[3A0:D:%d] " fmt, this->instance, ##args)
+
+#define mdbgd_3a1(fmt, this, args...) \
+	printk(KERN_INFO "[3A1:D:%d] " fmt, this->instance, ##args)
+
+#define mdbgd_isp(fmt, this, args...) \
+	printk(KERN_INFO "[ISP:D:%d] " fmt, this->instance, ##args)
+
+#define dbg_ischain(fmt, args...) \
+	printk(KERN_INFO "[ISC] " fmt, ##args)
+
+#define mdbgd_ischain(fmt, this, args...) \
+	printk(KERN_INFO "[ISC:D:%d] " fmt, this->instance, ##args)
+
+#define dbg_core(fmt, args...) \
+	printk(KERN_INFO "[COR] " fmt, ##args)
+#else
+/* debug message for device */
+#define mdbgd_sensor(fmt, this, args...)
+#define dbg_front(fmt, args...)
+#define dbg_back(fmt, args...)
+#define mdbgd_isp(fmt, this, args...)
+#define dbg_ischain(fmt, args...)
+#define mdbgd_ischain(fmt, this, args...)
+#define dbg_core(fmt, args...)
+#define dbg_interface(fmt, args...)
+#define dbg_frame(fmt, args...)
+#endif
+
+#if (defined(DEBUG) && defined(DBG_STREAMING))
+#define dbg_interface(fmt, args...) \
+	printk(KERN_INFO "[ITF] " fmt, ##args)
+#define dbg_frame(fmt, args...) \
+	printk(KERN_INFO "[FRM] " fmt, ##args)
+#else
+#define dbg_interface(fmt, args...)
+#define dbg_frame(fmt, args...)
+#endif
+
+#define is_readl(c)		readl((void __iomem *)(c))
+#define is_writel(v,c)		writel((v),(void __iomem *)(c))
 
 enum fimc_is_debug_device {
 	FIMC_IS_DEBUG_MAIN = 0,
@@ -213,9 +458,29 @@ enum fimc_is_front_state {
 	FIMC_IS_FRONT_ST_SUSPENDED,
 };
 
+struct fimc_is_clock {
+	struct mutex				lock;
+	unsigned long				msk_state;
+	u32					msk_cnt[GROUP_ID_MAX];
+	bool					state_3a0;
+	int					dvfs_level;
+	int					dvfs_mif_level;
+	int					dvfs_skipcnt;
+	unsigned long				dvfs_state;
+};
+
 struct fimc_is_sysfs_debug {
 	unsigned int en_dvfs;
 	unsigned int en_clk_gate;
+};
+
+struct fimc_is_dvfs_ctrl {
+	int cur_int_qos;
+	int cur_mif_qos;
+	int cur_i2c_qos;
+
+	struct fimc_is_dvfs_scenario_ctrl *static_ctrl;
+	struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl;
 };
 
 struct fimc_is_core {
@@ -229,10 +494,10 @@ struct fimc_is_core {
 	unsigned long				state;
 
 	/* depended on isp */
-	struct exynos_platform_fimc_is		*pdata;
+	struct exynos5_platform_fimc_is		*pdata;
 
-	struct fimc_is_resourcemgr		resourcemgr;
 	struct fimc_is_groupmgr			groupmgr;
+	struct fimc_is_clock			clock;
 
 	struct fimc_is_minfo                    minfo;
 	struct fimc_is_mem			mem;
@@ -241,9 +506,11 @@ struct fimc_is_core {
 	struct fimc_is_device_sensor		sensor[FIMC_IS_MAX_NODES];
 	struct fimc_is_device_ischain		ischain[FIMC_IS_MAX_NODES];
 
-	struct v4l2_device			v4l2_dev;
+	struct v4l2_device			v4l2_dev_is;
 
 	/* 0-bayer, 1-scalerC, 2-3DNR, 3-scalerP */
+	struct fimc_is_video			video_ss0;
+	struct fimc_is_video			video_ss1;
 	struct fimc_is_video			video_3a0;
 	struct fimc_is_video			video_3a1;
 	struct fimc_is_video			video_isp;
@@ -257,6 +524,10 @@ struct fimc_is_core {
 	/* spi */
 	struct spi_device			*spi0;
 	struct spi_device			*spi1;
+
+	spinlock_t				slock_clock_gate;
+
+	struct fimc_is_dvfs_ctrl		dvfs_ctrl;
 };
 
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
@@ -265,8 +536,6 @@ extern const struct fimc_is_vb2 fimc_is_vb2_cma;
 extern const struct fimc_is_vb2 fimc_is_vb2_ion;
 #endif
 
-extern struct device *fimc_is_dev;
-
 void fimc_is_mem_suspend(void *alloc_ctxes);
 void fimc_is_mem_resume(void *alloc_ctxes);
 void fimc_is_mem_cache_clean(const void *start_addr, unsigned long size);
@@ -274,6 +543,9 @@ void fimc_is_mem_cache_inv(const void *start_addr, unsigned long size);
 int fimc_is_init_set(struct fimc_is_core *dev , u32 val);
 int fimc_is_load_fw(struct fimc_is_core *dev);
 int fimc_is_load_setfile(struct fimc_is_core *dev);
+int fimc_is_clock_set(struct fimc_is_core *dev,	int group_id, bool on);
+int fimc_is_resource_get(struct fimc_is_core *core);
+int fimc_is_resource_put(struct fimc_is_core *core);
 int fimc_is_otf_close(struct fimc_is_device_ischain *ischain);
 int fimc_is_spi_reset(void *buf, u32 rx_addr, size_t size);
 int fimc_is_spi_read(void *buf, u32 rx_addr, size_t size);

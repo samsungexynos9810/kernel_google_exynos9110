@@ -853,8 +853,7 @@ enum is_entry {
 	ENTRY_TDNR,
 	ENTRY_SCALERP,
 	ENTRY_LHFD,
-	ENTRY_3AAC,
-	ENTRY_3AAP,
+	ENTRY_3AXC,
 	ENTRY_END
 };
 
@@ -1578,11 +1577,6 @@ enum scaler_flip_error {
 	SCALER_FLIP_ERROR_NO			= 0 /* flip setting is done */
 };
 
-enum scaler_output_yuv_range {
-	SCALER_OUTPUT_YUV_RANGE_FULL = 0,
-	SCALER_OUTPUT_YUV_RANGE_NARROW = 1,
-};
-
 /* --------------------------  3DNR  ----------------------------------- */
 enum tdnr_1st_frame_command {
 	TDNR_1ST_FRAME_COMMAND_NOPROCESSING	= 0,
@@ -1860,11 +1854,8 @@ struct param_isp_afc {
 };
 
 struct param_scaler_imageeffect {
-	u32 	cmd;
-	u32	arbitrary_cb;
-	u32	arbitrary_cr;
-	u32	yuv_range;
-	u32	reserved[PARAMETER_MAX_MEMBER-5];
+	u32	cmd;
+	u32	reserved[PARAMETER_MAX_MEMBER-2];
 	u32	err;
 };
 
