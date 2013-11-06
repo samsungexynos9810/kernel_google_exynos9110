@@ -96,7 +96,7 @@ static struct exynos_pmu_conf exynos5430_pmu_config[] = {
 	{ EXYNOS5430_PAD_ISOLATION_MIF_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0} }, /* 1250 */
 #else
 	{ EXYNOS5_PAD_ISOLATION_SYS_PWR_REG,			{ 0x1, 0x0, 0x0, 0x0, 0x1} }, /* 1240 */
-	{ EXYNOS5430_PAD_ISOLATION_MIF_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x1} }, /* 1250 */
+	{ EXYNOS5430_PAD_ISOLATION_MIF_SYS_PWR_REG,		{ 0x1, 0x1, 0x0, 0x0, 0x1} }, /* 1250 */
 #endif
 	{ EXYNOS5430_PAD_RETENTION_USBXTI_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0} }, /* 1244 */
 	{ EXYNOS5430_PAD_RETENTION_BOOTLDO_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0} }, /* 1248 */
