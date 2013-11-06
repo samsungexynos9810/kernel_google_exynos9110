@@ -1,5 +1,5 @@
 /*
- * drivers/cpufreq/cpufreq_interactive_eagle.c
+ * drivers/cpufreq/cpufreq_interactive.c
  *
  * Copyright (C) 2010 Google, Inc.
  *
@@ -40,14 +40,14 @@
 #endif
 
 #define CREATE_TRACE_POINTS
-#include <trace/events/cpufreq_interactive_eagle.h>
+#include <trace/events/cpufreq_interactive.h>
 
 static int active_count;
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-static bool interactive_eagle_attr_removed = true;
+static bool interactive_attr_removed = true;
 #endif
 
-struct cpufreq_interactive_eagle_cpuinfo {
+struct cpufreq_interactive_cpuinfo {
 	struct timer_list cpu_timer;
 	struct timer_list cpu_slack_timer;
 	spinlock_t load_lock; /* protects the next 4 fields */
@@ -65,7 +65,7 @@ struct cpufreq_interactive_eagle_cpuinfo {
 	int governor_enabled;
 };
 
-static DEFINE_PER_CPU(struct cpufreq_interactive_eagle_cpuinfo, cpuinfo);
+static DEFINE_PER_CPU(struct cpufreq_interactive_cpuinfo, cpuinfo);
 
 /* realtime thread handles frequency scaling */
 static struct task_struct *speedchange_task;
@@ -126,7 +126,7 @@ static int timer_slack_val = DEFAULT_TIMER_SLACK;
 
 static bool io_is_busy;
 
-static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
+static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event);
 
 #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE
@@ -134,7 +134,7 @@ static
 #endif
 struct cpufreq_governor cpufreq_gov_interactive_eagle = {
 	.name = "interactive_egl",
-	.governor = cpufreq_governor_interactive_eagle,
+	.governor = cpufreq_governor_interactive,
 	.max_transition_latency = 10000000,
 	.owner = THIS_MODULE,
 };
@@ -175,8 +175,8 @@ static inline cputime64_t get_cpu_idle_time(unsigned int cpu,
 	return idle_time;
 }
 
-static void cpufreq_interactive_eagle_timer_resched(
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu)
+static void cpufreq_interactive_timer_resched(
+	struct cpufreq_interactive_cpuinfo *pcpu)
 {
 	unsigned long expires;
 	unsigned long flags;
@@ -202,9 +202,9 @@ static void cpufreq_interactive_eagle_timer_resched(
  * The cpu_timer and cpu_slack_timer must be deactivated when calling this
  * function.
  */
-static void cpufreq_interactive_eagle_timer_start(int cpu)
+static void cpufreq_interactive_timer_start(int cpu)
 {
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
+	struct cpufreq_interactive_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
 	unsigned long expires = jiffies + usecs_to_jiffies(timer_rate);
 	unsigned long flags;
 
@@ -264,7 +264,7 @@ static unsigned int freq_to_targetload(unsigned int freq)
  */
 
 static unsigned int choose_freq(
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu, unsigned int loadadjfreq)
+	struct cpufreq_interactive_cpuinfo *pcpu, unsigned int loadadjfreq)
 {
 	unsigned int freq = pcpu->policy->cur;
 	unsigned int prevfreq, freqmin, freqmax;
@@ -350,7 +350,7 @@ static unsigned int choose_freq(
 
 static u64 update_load(int cpu)
 {
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
+	struct cpufreq_interactive_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
 	u64 now;
 	u64 now_idle;
 	unsigned int delta_idle;
@@ -373,13 +373,13 @@ static u64 update_load(int cpu)
 	return now;
 }
 
-static void cpufreq_interactive_eagle_timer(unsigned long data)
+static void cpufreq_interactive_timer(unsigned long data)
 {
 	u64 now;
 	unsigned int delta_time;
 	u64 cputime_speedadj;
 	int cpu_load;
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu =
+	struct cpufreq_interactive_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, data);
 	unsigned int new_freq;
 	unsigned int loadadjfreq;
@@ -423,7 +423,7 @@ static void cpufreq_interactive_eagle_timer(unsigned long data)
 	    new_freq > pcpu->target_freq &&
 	    now - pcpu->hispeed_validate_time <
 	    freq_to_above_hispeed_delay(pcpu->target_freq)) {
-		trace_cpufreq_interactive_eagle_notyet(
+		trace_cpufreq_interactive_notyet(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
 		goto rearm;
@@ -444,7 +444,7 @@ static void cpufreq_interactive_eagle_timer(unsigned long data)
 	 */
 	if (new_freq < pcpu->floor_freq) {
 		if (now - pcpu->floor_validate_time < min_sample_time) {
-			trace_cpufreq_interactive_eagle_notyet(
+			trace_cpufreq_interactive_notyet(
 				data, cpu_load, pcpu->target_freq,
 				pcpu->policy->cur, new_freq);
 			goto rearm;
@@ -465,13 +465,13 @@ static void cpufreq_interactive_eagle_timer(unsigned long data)
 	}
 
 	if (pcpu->target_freq == new_freq) {
-		trace_cpufreq_interactive_eagle_already(
+		trace_cpufreq_interactive_already(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
 		goto rearm_if_notmax;
 	}
 
-	trace_cpufreq_interactive_eagle_target(data, cpu_load, pcpu->target_freq,
+	trace_cpufreq_interactive_target(data, cpu_load, pcpu->target_freq,
 					 pcpu->policy->cur, new_freq);
 
 	pcpu->target_freq = new_freq;
@@ -490,16 +490,16 @@ rearm_if_notmax:
 
 rearm:
 	if (!timer_pending(&pcpu->cpu_timer))
-		cpufreq_interactive_eagle_timer_resched(pcpu);
+		cpufreq_interactive_timer_resched(pcpu);
 
 exit:
 	up_read(&pcpu->enable_sem);
 	return;
 }
 
-static void cpufreq_interactive_eagle_idle_start(void)
+static void cpufreq_interactive_idle_start(void)
 {
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu =
+	struct cpufreq_interactive_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, smp_processor_id());
 	int pending;
 
@@ -532,15 +532,15 @@ static void cpufreq_interactive_eagle_idle_start(void)
 		 * the CPUFreq driver.
 		 */
 		if (!pending)
-			cpufreq_interactive_eagle_timer_resched(pcpu);
+			cpufreq_interactive_timer_resched(pcpu);
 	}
 
 	up_read(&pcpu->enable_sem);
 }
 
-static void cpufreq_interactive_eagle_idle_end(void)
+static void cpufreq_interactive_idle_end(void)
 {
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu =
+	struct cpufreq_interactive_cpuinfo *pcpu =
 		&per_cpu(cpuinfo, smp_processor_id());
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -562,22 +562,22 @@ static void cpufreq_interactive_eagle_idle_end(void)
 
 	/* Arm the timer for 1-2 ticks later if not already. */
 	if (!timer_pending(&pcpu->cpu_timer)) {
-		cpufreq_interactive_eagle_timer_resched(pcpu);
+		cpufreq_interactive_timer_resched(pcpu);
 	} else if (time_after_eq(jiffies, pcpu->cpu_timer.expires)) {
 		del_timer(&pcpu->cpu_timer);
 		del_timer(&pcpu->cpu_slack_timer);
-		cpufreq_interactive_eagle_timer(smp_processor_id());
+		cpufreq_interactive_timer(smp_processor_id());
 	}
 
 	up_read(&pcpu->enable_sem);
 }
 
-static int cpufreq_interactive_eagle_speedchange_task(void *data)
+static int cpufreq_interactive_speedchange_task(void *data)
 {
 	unsigned int cpu;
 	cpumask_t tmp_mask;
 	unsigned long flags;
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu;
+	struct cpufreq_interactive_cpuinfo *pcpu;
 
 	while (1) {
 		set_current_state(TASK_INTERRUPTIBLE);
@@ -612,7 +612,7 @@ static int cpufreq_interactive_eagle_speedchange_task(void *data)
 			}
 
 			for_each_cpu(j, pcpu->policy->cpus) {
-				struct cpufreq_interactive_eagle_cpuinfo *pjcpu =
+				struct cpufreq_interactive_cpuinfo *pjcpu =
 					&per_cpu(cpuinfo, j);
 
 				if (pjcpu->target_freq > max_freq)
@@ -623,7 +623,7 @@ static int cpufreq_interactive_eagle_speedchange_task(void *data)
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
 							CPUFREQ_RELATION_H);
-			trace_cpufreq_interactive_eagle_setspeed(cpu,
+			trace_cpufreq_interactive_setspeed(cpu,
 						     pcpu->target_freq,
 						     pcpu->policy->cur);
 
@@ -634,12 +634,12 @@ static int cpufreq_interactive_eagle_speedchange_task(void *data)
 	return 0;
 }
 
-static void cpufreq_interactive_eagle_boost(void)
+static void cpufreq_interactive_boost(void)
 {
 	int i;
 	int anyboost = 0;
 	unsigned long flags;
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu;
+	struct cpufreq_interactive_cpuinfo *pcpu;
 
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
 
@@ -679,11 +679,11 @@ static void cpufreq_interactive_eagle_boost(void)
 		wake_up_process(speedchange_task);
 }
 
-static int cpufreq_interactive_eagle_notifier(
+static int cpufreq_interactive_notifier(
 	struct notifier_block *nb, unsigned long val, void *data)
 {
 	struct cpufreq_freqs *freq = data;
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu;
+	struct cpufreq_interactive_cpuinfo *pcpu;
 	int cpu;
 	unsigned long flags;
 
@@ -707,7 +707,7 @@ static int cpufreq_interactive_eagle_notifier(
 		}
 
 		for_each_cpu(cpu, pcpu->policy->cpus) {
-			struct cpufreq_interactive_eagle_cpuinfo *pjcpu =
+			struct cpufreq_interactive_cpuinfo *pjcpu =
 				&per_cpu(cpuinfo, cpu);
 			if (cpu != freq->cpu) {
 				if (!down_read_trylock(&pjcpu->enable_sem))
@@ -730,7 +730,7 @@ static int cpufreq_interactive_eagle_notifier(
 }
 
 static struct notifier_block cpufreq_notifier_block = {
-	.notifier_call = cpufreq_interactive_eagle_notifier,
+	.notifier_call = cpufreq_interactive_notifier,
 };
 
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
@@ -997,10 +997,10 @@ static ssize_t store_boost(struct kobject *kobj, struct attribute *attr,
 	boost_val = val;
 
 	if (boost_val) {
-		trace_cpufreq_interactive_eagle_boost("on");
-		cpufreq_interactive_eagle_boost();
+		trace_cpufreq_interactive_boost("on");
+		cpufreq_interactive_boost();
 	} else {
-		trace_cpufreq_interactive_eagle_unboost("off");
+		trace_cpufreq_interactive_unboost("off");
 	}
 
 	return count;
@@ -1019,8 +1019,8 @@ static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
 		return ret;
 
 	boostpulse_endtime = ktime_to_us(ktime_get()) + boostpulse_duration_val;
-	trace_cpufreq_interactive_eagle_boost("pulse");
-	cpufreq_interactive_eagle_boost();
+	trace_cpufreq_interactive_boost("pulse");
+	cpufreq_interactive_boost();
 	return count;
 }
 
@@ -1072,7 +1072,7 @@ static ssize_t store_io_is_busy(struct kobject *kobj,
 static struct global_attr io_is_busy_attr = __ATTR(io_is_busy, 0644,
 		show_io_is_busy, store_io_is_busy);
 
-static struct attribute *interactive_eagle_attributes[] = {
+static struct attribute *interactive_attributes[] = {
 	&target_loads_attr.attr,
 	&above_hispeed_delay_attr.attr,
 	&hispeed_freq_attr.attr,
@@ -1087,37 +1087,37 @@ static struct attribute *interactive_eagle_attributes[] = {
 	NULL,
 };
 
-static struct attribute_group interactive_eagle_attr_group = {
-	.attrs = interactive_eagle_attributes,
+static struct attribute_group interactive_attr_group = {
+	.attrs = interactive_attributes,
 	.name = "interactive_eagle",
 };
 
-static int cpufreq_interactive_eagle_idle_notifier(struct notifier_block *nb,
+static int cpufreq_interactive_idle_notifier(struct notifier_block *nb,
 					     unsigned long val,
 					     void *data)
 {
 	switch (val) {
 	case IDLE_START:
-		cpufreq_interactive_eagle_idle_start();
+		cpufreq_interactive_idle_start();
 		break;
 	case IDLE_END:
-		cpufreq_interactive_eagle_idle_end();
+		cpufreq_interactive_idle_end();
 		break;
 	}
 
 	return 0;
 }
 
-static struct notifier_block cpufreq_interactive_eagle_idle_nb = {
-	.notifier_call = cpufreq_interactive_eagle_idle_notifier,
+static struct notifier_block cpufreq_interactive_idle_nb = {
+	.notifier_call = cpufreq_interactive_idle_notifier,
 };
 
-static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
+static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event)
 {
 	int rc;
 	unsigned int j;
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu;
+	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_frequency_table *freq_table;
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 	int primary_cpu = 0;
@@ -1154,12 +1154,12 @@ static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 			if (exynos_boot_cluster != CA15) {
 				if (j == primary_cpu)
-					cpufreq_interactive_eagle_timer_start(j);
+					cpufreq_interactive_timer_start(j);
 			} else {
-				cpufreq_interactive_eagle_timer_start(j);
+				cpufreq_interactive_timer_start(j);
 			}
 #else
-			cpufreq_interactive_eagle_timer_start(j);
+			cpufreq_interactive_timer_start(j);
 #endif
 			pcpu->governor_enabled = 1;
 			up_write(&pcpu->enable_sem);
@@ -1175,25 +1175,25 @@ static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
 		}
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-		if (interactive_eagle_attr_removed) {
+		if (interactive_attr_removed) {
 			rc = sysfs_create_group(cpufreq_global_kobject,
-					&interactive_eagle_attr_group);
+					&interactive_attr_group);
 			if (rc) {
 				mutex_unlock(&gov_lock);
 				return rc;
 			}
-			interactive_eagle_attr_removed = false;
+			interactive_attr_removed = false;
 		}
 #else
 		rc = sysfs_create_group(cpufreq_global_kobject,
-				&interactive_eagle_attr_group);
+				&interactive_attr_group);
 		if (rc) {
 			mutex_unlock(&gov_lock);
 			return rc;
 		}
 #endif
 
-		idle_notifier_register(&cpufreq_interactive_eagle_idle_nb);
+		idle_notifier_register(&cpufreq_interactive_idle_nb);
 		cpufreq_register_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
 		mutex_unlock(&gov_lock);
@@ -1217,16 +1217,16 @@ static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
 
 		cpufreq_unregister_notifier(
 			&cpufreq_notifier_block, CPUFREQ_TRANSITION_NOTIFIER);
-		idle_notifier_unregister(&cpufreq_interactive_eagle_idle_nb);
+		idle_notifier_unregister(&cpufreq_interactive_idle_nb);
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		if (exynos_boot_cluster == CA15) {
 			sysfs_remove_group(cpufreq_global_kobject,
-					&interactive_eagle_attr_group);
-			interactive_eagle_attr_removed = true;
+					&interactive_attr_group);
+			interactive_attr_removed = true;
 		}
 #else
 		sysfs_remove_group(cpufreq_global_kobject,
-				&interactive_eagle_attr_group);
+				&interactive_attr_group);
 #endif
 		mutex_unlock(&gov_lock);
 
@@ -1266,12 +1266,12 @@ static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 			if (exynos_boot_cluster != CA15) {
 				if (j == primary_cpu)
-					cpufreq_interactive_eagle_timer_start(j);
+					cpufreq_interactive_timer_start(j);
 			} else {
-				cpufreq_interactive_eagle_timer_start(j);
+				cpufreq_interactive_timer_start(j);
 			}
 #else
-			cpufreq_interactive_eagle_timer_start(j);
+			cpufreq_interactive_timer_start(j);
 #endif
 			up_write(&pcpu->enable_sem);
 		}
@@ -1280,14 +1280,14 @@ static int cpufreq_governor_interactive_eagle(struct cpufreq_policy *policy,
 	return 0;
 }
 
-static void cpufreq_interactive_eagle_nop_timer(unsigned long data)
+static void cpufreq_interactive_nop_timer(unsigned long data)
 {
 }
 
-static int __init cpufreq_interactive_eagle_init(void)
+static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
-	struct cpufreq_interactive_eagle_cpuinfo *pcpu;
+	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 	unsigned int boot_cluster;
@@ -1310,10 +1310,10 @@ static int __init cpufreq_interactive_eagle_init(void)
 #endif
 		pcpu = &per_cpu(cpuinfo, i);
 		init_timer_deferrable(&pcpu->cpu_timer);
-		pcpu->cpu_timer.function = cpufreq_interactive_eagle_timer;
+		pcpu->cpu_timer.function = cpufreq_interactive_timer;
 		pcpu->cpu_timer.data = i;
 		init_timer(&pcpu->cpu_slack_timer);
-		pcpu->cpu_slack_timer.function = cpufreq_interactive_eagle_nop_timer;
+		pcpu->cpu_slack_timer.function = cpufreq_interactive_nop_timer;
 		spin_lock_init(&pcpu->load_lock);
 		init_rwsem(&pcpu->enable_sem);
 	}
@@ -1323,7 +1323,7 @@ static int __init cpufreq_interactive_eagle_init(void)
 	spin_lock_init(&above_hispeed_delay_lock);
 	mutex_init(&gov_lock);
 	speedchange_task =
-		kthread_create(cpufreq_interactive_eagle_speedchange_task, NULL,
+		kthread_create(cpufreq_interactive_speedchange_task, NULL,
 			       "cfinteractive_eagle");
 	if (IS_ERR(speedchange_task))
 		return PTR_ERR(speedchange_task);
@@ -1338,19 +1338,19 @@ static int __init cpufreq_interactive_eagle_init(void)
 }
 
 #ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE
-fs_initcall(cpufreq_interactive_eagle_init);
+fs_initcall(cpufreq_interactive_init);
 #else
-module_init(cpufreq_interactive_eagle_init);
+module_init(cpufreq_interactive_init);
 #endif
 
-static void __exit cpufreq_interactive_eagle_exit(void)
+static void __exit cpufreq_interactive_exit(void)
 {
 	cpufreq_unregister_governor(&cpufreq_gov_interactive_eagle);
 	kthread_stop(speedchange_task);
 	put_task_struct(speedchange_task);
 }
 
-module_exit(cpufreq_interactive_eagle_exit);
+module_exit(cpufreq_interactive_exit);
 
 MODULE_AUTHOR("Mike Chan <mike@android.com>");
 MODULE_DESCRIPTION("'cpufreq_interactive_eagle' - A cpufreq governor for "
