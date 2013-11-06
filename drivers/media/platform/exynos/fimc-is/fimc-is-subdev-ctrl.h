@@ -13,21 +13,24 @@
 #ifndef FIMC_IS_SUBDEV_H
 #define FIMC_IS_SUBDEV_H
 
+#include "fimc-is-param.h"
+#include "fimc-is-video.h"
+
 struct fimc_is_group;
+struct fimc_is_device_ischain;
 
 enum fimc_is_subdev_state {
-	FIMC_IS_ISDEV_DOPEN,
-	FIMC_IS_ISDEV_DSTART
+	FIMC_IS_SUBDEV_OPEN,
+	FIMC_IS_SUBDEV_START
 };
 
 struct fimc_is_subdev_path {
 	u32					width;
 	u32					height;
-	u32					is_otf;
 };
 
 struct fimc_is_subdev {
-	enum is_entry				entry;
+	u32					entry;
 	unsigned long				state;
 	struct mutex				mutex_state;
 
@@ -48,6 +51,24 @@ struct fimc_is_subdev {
 	(((leader) && (leader)->vctx) ? (&(leader)->vctx->q_src) : NULL)
 #define GET_SUBDEV_QUEUE(subdev) \
 	(((subdev) && (subdev)->vctx) ? (&(subdev)->vctx->q_dst) : NULL)
+
+/*common subdev*/
+int fimc_is_subdev_open(struct fimc_is_subdev *subdev,
+	struct fimc_is_video_ctx *vctx,
+	const struct param_control *init_ctl);
+int fimc_is_subdev_close(struct fimc_is_subdev *subdev);
+int fimc_is_subdev_start(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_queue *queue);
+int fimc_is_subdev_stop(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_queue *queue);
+int fimc_is_subdev_s_format(struct fimc_is_subdev *subdev,
+	u32 width, u32 height);
+int fimc_is_subdev_buffer_queue(struct fimc_is_subdev *subdev,
+	u32 index);
+int fimc_is_subdev_buffer_finish(struct fimc_is_subdev *subdev,
+	u32 index);
 
 void fimc_is_subdev_dis_start(struct fimc_is_device_ischain *device,
 	struct dis_param *param, u32 *lindex, u32 *hindex, u32 *indexes);

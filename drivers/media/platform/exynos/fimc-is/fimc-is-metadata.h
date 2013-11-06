@@ -1047,8 +1047,8 @@ struct camera2_shot_ext {
 		[0] disable stream out
 		[1] enable stream out
 	*/
-	uint32_t		request_taap; /* 3AA preview DMA */
-	uint32_t		request_taac; /* 3AA capture DMA */
+	uint32_t		request_3aap; /* 3AA preview DMA */
+	uint32_t		request_3aac; /* 3AA capture DMA */
 	uint32_t		request_isp;
 	uint32_t		request_scc;
 	uint32_t		request_dis;

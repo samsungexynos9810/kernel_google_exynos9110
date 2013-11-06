@@ -63,7 +63,7 @@ struct fimc_is_dvfs_scenario_ctrl {
 	struct fimc_is_dvfs_scenario *scenarios;
 };
 
-int fimc_is_dvfs_init(struct fimc_is_core *core);
+int fimc_is_dvfs_init(struct fimc_is_resourcemgr *resourcemgr);
 int fimc_is_dvfs_sel_scenario(u32 type,	struct fimc_is_device_ischain *device);
 int fimc_is_get_qos(struct fimc_is_core *core, u32 type, u32 scenario_id);
 int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id);

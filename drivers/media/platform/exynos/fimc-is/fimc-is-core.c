@@ -43,21 +43,26 @@
 #include "fimc-is-err.h"
 #include "fimc-is-framemgr.h"
 #include "fimc-is-dt.h"
+#include "fimc-is-resourcemgr.h"
 
+#include "sensor/fimc-is-device-6b2.h"
+#include "sensor/fimc-is-device-imx135.h"
+#include "sensor/fimc-is-device-3l2.h"
+#include "sensor/fimc-is-device-2p2.h"
 
 #ifdef USE_OWN_FAULT_HANDLER
 #include <plat/sysmmu.h>
 #endif
 
-struct spi_device *spi0 = NULL;
-struct spi_device *spi1 = NULL;
-
 struct fimc_is_from_info *sysfs_finfo = NULL;
 struct fimc_is_from_info *sysfs_pinfo = NULL;
-static struct device *is_dev = NULL;
+struct device *fimc_is_dev = NULL;
 
-extern int fimc_is_ss0_video_probe(void *data);
-extern int fimc_is_ss1_video_probe(void *data);
+extern struct pm_qos_request exynos_isp_qos_dev;
+extern struct pm_qos_request exynos_isp_qos_mem;
+extern struct pm_qos_request exynos_isp_qos_cam;
+extern struct pm_qos_request exynos_isp_qos_disp;
+
 extern int fimc_is_3a0_video_probe(void *data);
 extern int fimc_is_3a1_video_probe(void *data);
 extern int fimc_is_isp_video_probe(void *data);
@@ -68,11 +73,6 @@ extern int fimc_is_vdo_video_probe(void *data);
 extern int fimc_is_3a0c_video_probe(void *data);
 extern int fimc_is_3a1c_video_probe(void *data);
 
-struct pm_qos_request exynos_isp_qos_dev;
-struct pm_qos_request exynos_isp_qos_mem;
-struct pm_qos_request exynos_isp_qos_cam;
-struct pm_qos_request exynos_isp_qos_disp;
-
 /* sysfs global variable for debug */
 struct fimc_is_sysfs_debug sysfs_debug;
 
@@ -81,7 +81,7 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 	int ret = 0;
 	void *fw_cookie;
 
-	dbg_ischain("Allocating memory for FIMC-IS firmware.\n");
+	dbg_core("Allocating memory for FIMC-IS firmware.\n");
 
 	fw_cookie = vb2_ion_private_alloc(this->mem.alloc_ctx,
 				FIMC_IS_A5_MEM_SIZE +
@@ -116,7 +116,7 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 		ret = -EIO;
 		goto exit;
 	}
-	dbg_ischain("Device vaddr = %08x , size = %08x\n",
+	dbg_core("Device vaddr = %08x , size = %08x\n",
 		this->minfo.dvaddr, FIMC_IS_A5_MEM_SIZE);
 
 	this->minfo.kvaddr = (u32)vb2_ion_private_vaddr(fw_cookie);
@@ -130,7 +130,7 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 	}
 
 exit:
-	dbg_ischain("Virtual address for FW: %08lx\n",
+	dbg_core("Virtual address for FW: %08lx\n",
 		(long unsigned int)this->minfo.kvaddr);
 	this->minfo.fw_cookie = fw_cookie;
 
@@ -142,7 +142,7 @@ static int fimc_is_ishcain_initmem(struct fimc_is_core *this)
 	int ret = 0;
 	u32 offset;
 
-	dbg_ischain("fimc_is_init_mem - ION\n");
+	dbg_core("fimc_is_init_mem - ION\n");
 
 	ret = fimc_is_ischain_allocmem(this);
 	if (ret) {
@@ -187,313 +187,9 @@ static int fimc_is_ishcain_initmem(struct fimc_is_core *this)
 	this->minfo.kvaddr_3dnr = 0;
 #endif
 
-	dbg_ischain("fimc_is_init_mem done\n");
+	dbg_core("fimc_is_init_mem done\n");
 
 exit:
-	return ret;
-}
-
-static int fimc_is_set_group_state(struct fimc_is_core *this,
-					int group_id, bool on)
-{
-	int ret = 0;
-
-	if (on) {
-		if (!test_and_set_bit(group_id, &this->clock.msk_state)) {
-			goto exit;
-		} else {
-			this->clock.msk_cnt[group_id]++;
-		}
-	} else {
-		if (this->clock.msk_cnt[group_id]) {
-			this->clock.msk_cnt[group_id]--;
-			goto exit;
-		} else {
-			clear_bit(group_id, &this->clock.msk_state);
-		}
-	}
-exit:
-	return ret;
-}
-
-
-#define ISP_CLK_ON 1
-#define ISP_CLK_OFF 0
-#define ISP_CLK_ISP_ON 1
-#define ISP_CLK_ISP_OFF 0
-#define ISP_DIS_ON 1
-#define ISP_DIS_OFF 2
-static inline int isp_clock_onoff(int onoff, int isp, int dis)
-{
-	int timeout = 1000;
-	int isp0_on_mask = ((0x1 << GATE_IP_ISP) | (0x1 << GATE_IP_DRC) | \
-		(0x1 << GATE_IP_SCC) | (0x1 << GATE_IP_SCP));
-#ifndef ENABLE_FULL_BYPASS
-	int isp1_on_mask = ((0x1 << GATE_IP_ODC) | (0x1 << GATE_IP_DIS) | \
-		(0x1 << GATE_IP_DNR));
-#endif
-	int isp0_off_mask = ((0x1 << GATE_IP_DRC) | (0x1 << GATE_IP_SCC) | \
-		(0x1 << GATE_IP_SCP));
-#ifndef ENABLE_FULL_BYPASS
-	int isp1_off_mask = ((0x1 << GATE_IP_ODC) | (0x1 << GATE_IP_DIS) | \
-		(0x1 << GATE_IP_DNR));
-#endif
-	int cfg;
-
-	if (onoff == ISP_CLK_ON) {
-		timeout = 1000;
-		do
-		{
-			cfg = readl(EXYNOS5_CLKGATE_IP_ISP0);
-			cfg |= (0x1 << GATE_IP_ISP);
-			cfg |= (0x1 << GATE_IP_DRC);
-			cfg |= (0x1 << GATE_IP_SCC);
-			cfg |= (0x1 << GATE_IP_SCP);
-			writel(cfg, EXYNOS5_CLKGATE_IP_ISP0);
-			timeout--;
-			if (!timeout)
-				break;
-		} while ((readl(EXYNOS5_CLKGATE_IP_ISP0) & isp0_on_mask) != \
-			isp0_on_mask);
-
-		if (!timeout) {
-			pr_err("%s can never turn on the clocks #1\n", __func__);
-			return 0;
-		}
-
-#ifndef ENABLE_FULL_BYPASS
-		timeout = 1000;
-		do
-		{
-			cfg = readl(EXYNOS5_CLKGATE_IP_ISP1);
-			cfg |= (0x1 << GATE_IP_ODC);
-			cfg |= (0x1 << GATE_IP_DIS);
-			cfg |= (0x1 << GATE_IP_DNR);
-			writel(cfg, EXYNOS5_CLKGATE_IP_ISP1);
-			timeout--;
-			if (!timeout)
-				break;
-		} while ((readl(EXYNOS5_CLKGATE_IP_ISP1) & isp1_on_mask) != \
-			isp1_on_mask);
-
-		if (!timeout) {
-			pr_err("%s can never turn on the clocks #2\n", __func__);
-			return 0;
-		}
-#endif
-	} else {
-		if (isp == ISP_CLK_ISP_ON) {
-			timeout = 1000;
-			do
-			{
-				cfg = readl(EXYNOS5_CLKGATE_IP_ISP0);
-				cfg |= (0x1 << GATE_IP_ISP);
-				writel(cfg, EXYNOS5_CLKGATE_IP_ISP0);
-				timeout--;
-				if (!timeout)
-					break;
-			} while (!(readl(EXYNOS5_CLKGATE_IP_ISP0) & \
-				(0x1 << GATE_IP_ISP)));
-		} else {
-			timeout = 1000;
-			do
-			{
-				cfg = readl(EXYNOS5_CLKGATE_IP_ISP0);
-				cfg &= ~(0x1 << GATE_IP_ISP);
-				writel(cfg, EXYNOS5_CLKGATE_IP_ISP0);
-				timeout--;
-				if (!timeout)
-					break;
-			} while (readl(EXYNOS5_CLKGATE_IP_ISP0) & \
-				(0x1 << GATE_IP_ISP));
-		}
-		if (!timeout) {
-			pr_err("%s can never turn on the clocks #3\n", __func__);
-			return 0;
-		}
-
-		timeout = 1000;
-		do
-		{
-			cfg = readl(EXYNOS5_CLKGATE_IP_ISP0);
-			cfg &= ~(0x1<<GATE_IP_DRC);
-			cfg &= ~(0x1<<GATE_IP_SCC);
-			cfg &= ~(0x1<<GATE_IP_SCP);
-			writel(cfg, EXYNOS5_CLKGATE_IP_ISP0);
-			timeout--;
-			if (!timeout)
-				break;
-		} while (readl(EXYNOS5_CLKGATE_IP_ISP0) & isp0_off_mask);
-
-		if (!timeout) {
-			pr_err("%s can never turn on the clocks #4\n", __func__);
-			return 0;
-		}
-
-#ifndef ENABLE_FULL_BYPASS
-		timeout = 1000;
-		if (dis == ISP_DIS_OFF) {
-			do
-			{
-				cfg = readl(EXYNOS5_CLKGATE_IP_ISP1);
-
-				cfg &= ~(0x1<<GATE_IP_ODC);
-				cfg &= ~(0x1<<GATE_IP_DIS);
-				cfg &= ~(0x1<<GATE_IP_DNR);
-				writel(cfg, EXYNOS5_CLKGATE_IP_ISP1);
-				timeout--;
-				if (!timeout)
-					break;
-			} while (readl(EXYNOS5_CLKGATE_IP_ISP1) & \
-				isp1_off_mask);
-		}
-		if (!timeout) {
-			pr_err("%s can never turn on the clocks #5\n", __func__);
-			return 0;
-		}
-#endif
-	}
-	return 1;
-}
-
-int fimc_is_clock_set(struct fimc_is_core *this,
-			int group_id, bool on)
-{
-	int ret = 0;
-	int state;
-	u32 cfg;
-	int refcount;
-	int i;
-
-	spin_lock(&this->slock_clock_gate);
-
-	if (!test_bit(FIMC_IS_ISCHAIN_POWER_ON, &this->state)) {
-		if (group_id != GROUP_ID_MAX)
-			err("power down state, accessing register is not allowd");
-		goto exit;
-	}
-
-	refcount = atomic_read(&this->video_isp.refcount);
-	if (refcount < 0) {
-		err("invalid ischain refcount");
-		goto exit;
-	}
-
-	for (i = 0; i < refcount; i++)
-		if (IS_ISCHAIN_OTF(&this->ischain[i]))
-			goto exit;
-
-	if (refcount >= 3)
-		group_id = GROUP_ID_MAX;
-
-	if ((!on) && (group_id != GROUP_ID_MAX)) {
-		for (i=0; i<FIMC_IS_MAX_NODES; i++) {
-			unsigned long *ta_state, *isp_state, *dis_state;
-
-			ta_state = &this->ischain[i].group_3ax.state;
-			isp_state = &this->ischain[i].group_isp.state;
-			dis_state = &this->ischain[i].group_dis.state;
-
-			/*
-			 *  if a group state is OPEN without READY, this
-			 *  means the group is under init.
-			 *  DO NOT turn the clock off.
-			 */
-			if (test_bit(FIMC_IS_GROUP_OPEN, ta_state) && \
-				!test_bit(FIMC_IS_GROUP_READY, ta_state)) {
-				warn("don't turn the clock off #1 !\n");
-				goto exit;
-			}
-			if (test_bit(FIMC_IS_GROUP_OPEN, isp_state) && \
-				!test_bit(FIMC_IS_GROUP_READY, isp_state)) {
-				warn("don't turn the clock off #2 !\n");
-				goto exit;
-			}
-			if (test_bit(FIMC_IS_GROUP_OPEN, dis_state) && \
-				!test_bit(FIMC_IS_GROUP_READY, dis_state)) {
-				warn("don't turn the clock off #3 !\n");
-				goto exit;
-			}
-		}
-	}
-
-	if (group_id == GROUP_ID_MAX) {
-		/* ALL ON */
-		isp_clock_onoff(ISP_CLK_ON, ISP_CLK_ISP_ON, ISP_DIS_OFF);
-		/* for debugging */
-		writel(0x5A5A5A5A, this->ischain[0].interface->regs + ISSR53);
-		goto exit;
-	}
-
-	fimc_is_set_group_state(this, group_id, on);
-	state = this->clock.msk_state;
-
-	if (!test_bit(FIMC_IS_ISDEV_DSTART, &this->ischain[0].dis.state)) {
-		if (on || (state & (1<<GROUP_ID_ISP))) {
-			/* ON */
-			this->clock.state_3a0 = false;
-			isp_clock_onoff(ISP_CLK_ON, ISP_CLK_ISP_ON, ISP_DIS_OFF);
-
-			writel(0x5A5A5A5A, this->ischain[0].\
-				interface->regs + ISSR53);
-		} else if (!on) {
-			/* OFF */
-			if (state & (1<<GROUP_ID_3A0))
-				writel(0x5A5A5F5F, this->ischain[0]. \
-					interface->regs + ISSR53);
-			else
-				writel(0x5F5F5F5F, this->ischain[0]. \
-					interface->regs + ISSR53);
-
-			cfg = readl(EXYNOS5_CLKGATE_IP_ISP0);
-			if (state & (1<<GROUP_ID_3A0)) {
-				/* ON */
-				isp_clock_onoff(ISP_CLK_OFF, ISP_CLK_ISP_ON, \
-					ISP_DIS_OFF);
-			} else {
-				if (this->clock.state_3a0 == false)
-				/* OFF */
-					isp_clock_onoff(ISP_CLK_OFF, \
-						ISP_CLK_ISP_OFF, ISP_DIS_OFF);
-				else
-					isp_clock_onoff(ISP_CLK_OFF, \
-						ISP_CLK_ISP_ON, ISP_DIS_OFF);
-			}
-		} else {
-			pr_err("%s should not be here.!!\n", __func__);
-			isp_clock_onoff(ISP_CLK_ON, ISP_CLK_ISP_ON, \
-				ISP_DIS_OFF);
-		}
-	} else {
-		if (state & (1<<GROUP_ID_ISP)) {
-			this->clock.state_3a0 = false;
-
-			isp_clock_onoff(ISP_CLK_ON, ISP_CLK_ISP_ON, \
-				ISP_DIS_ON);
-
-			writel(0x5A5A5A5A, this->ischain[0].\
-				interface->regs + ISSR53);
-		} else {
-			if (state & (1<<GROUP_ID_3A0))
-				writel(0x5A5A5F5F, this->ischain[0].\
-					interface->regs + ISSR53);
-			else
-				writel(0x5F5F5F5F, this->ischain[0].\
-					interface->regs + ISSR53);
-
-			cfg = readl(EXYNOS5_CLKGATE_IP_ISP0);
-			if (state & (1<<GROUP_ID_3A0)) {
-				isp_clock_onoff(ISP_CLK_OFF, ISP_CLK_ISP_ON, \
-				ISP_DIS_ON);
-			} else {
-				isp_clock_onoff(ISP_CLK_OFF, ISP_CLK_ISP_OFF, \
-				ISP_DIS_ON);
-			}
-		}
-	}
-
-exit:
-	spin_unlock(&this->slock_clock_gate);
 	return ret;
 }
 
@@ -560,97 +256,6 @@ static struct notifier_block exynos_mif_nb = {
 };
 #endif
 
-int fimc_is_resource_get(struct fimc_is_core *core)
-{
-	int ret = 0;
-
-	BUG_ON(!core);
-
-	pr_info("[RSC] %s: rsccount = %d\n", __func__,
-		atomic_read(&core->rsccount));
-
-	if (!atomic_read(&core->rsccount)) {
-		/* 1. interface open */
-		fimc_is_interface_open(&core->interface);
-
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
-		exynos5_mif_bpll_register_notifier(&exynos_mif_nb);
-#endif
-	}
-
-	atomic_inc(&core->rsccount);
-
-	if (atomic_read(&core->rsccount) > 5) {
-		err("[RSC] %s: Invalid rsccount(%d)\n", __func__,
-			atomic_read(&core->rsccount));
-		ret = -EMFILE;
-	}
-
-	return ret;
-}
-
-int fimc_is_resource_put(struct fimc_is_core *core)
-{
-	int ret = 0;
-
-	BUG_ON(!core);
-
-	if ((atomic_read(&core->rsccount) == 0) ||
-		(atomic_read(&core->rsccount) > 5)) {
-		err("[RSC] %s: Invalid rsccount(%d)\n", __func__,
-			atomic_read(&core->rsccount));
-		ret = -EMFILE;
-
-		goto exit;
-	}
-
-	atomic_dec(&core->rsccount);
-
-	 pr_info("[RSC] %s: rsccount = %d\n",
-               __func__, atomic_read(&core->rsccount));
-
-	if (!atomic_read(&core->rsccount)) {
-		/* HACK: This will be moved to runtime suspend */
-#if defined(CONFIG_PM_DEVFREQ)
-		/* 4. bus release */
-		pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
-		pm_qos_remove_request(&exynos_isp_qos_dev);
-		pm_qos_remove_request(&exynos_isp_qos_mem);
-		pm_qos_remove_request(&exynos_isp_qos_cam);
-		pm_qos_remove_request(&exynos_isp_qos_disp);
-#endif
-
-		if (test_bit(FIMC_IS_ISCHAIN_POWER_ON, &core->state)) {
-			/* 1. Stop a5 and other devices operation */
-			ret = fimc_is_itf_power_down(&core->interface);
-			if (ret)
-				err("power down is failed, retry forcelly");
-
-			/* 2. Power down */
-			ret = fimc_is_ischain_power(&core->ischain[0], 0);
-			if (ret)
-				err("fimc_is_ischain_power is failed");
-		}
-
-		/* 3. Deinit variables */
-		ret = fimc_is_interface_close(&core->interface);
-		if (ret)
-			err("fimc_is_interface_close is failed");
-
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
-		exynos5_mif_bpll_unregister_notifier(&exynos_mif_nb);
-#endif
-
-#ifndef RESERVED_MEM
-		/* 5. Dealloc memroy */
-		fimc_is_ishcain_deinitmem(&core->ischain[0]);
-#endif
-	}
-
-exit:
-	return ret;
-}
-
 static int fimc_is_suspend(struct device *dev)
 {
 	pr_debug("FIMC_IS Suspend\n");
@@ -666,11 +271,9 @@ static int fimc_is_resume(struct device *dev)
 int fimc_is_runtime_suspend(struct device *dev)
 {
 	int ret = 0;
-	int i = 0;
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
-	struct fimc_is_device_sensor *sensor = &core->sensor[0];
 
 	pr_info("FIMC_IS runtime suspend in\n");
 
@@ -704,16 +307,6 @@ int fimc_is_runtime_suspend(struct device *dev)
 		ret = -EINVAL;
 		goto p_err;
 	}
-
-	/* Sensor power off */
-	if (core->pdata->sensor_power_off) {
-		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
-			if (!(test_bit(FIMC_IS_SENSOR_OPEN, &sensor[i].state)))
-				continue;
-			pr_info("sensor[%d] power_off\n", i);
-			core->pdata->sensor_power_off(core->pdev, i);
-		}
-	}
 	pr_info("FIMC_IS runtime suspend out\n");
 
 p_err:
@@ -724,20 +317,15 @@ p_err:
 int fimc_is_runtime_resume(struct device *dev)
 {
 	int ret = 0;
-	int i = 0;
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
-	struct fimc_is_device_sensor *sensor = &core->sensor[0];
 #if defined(CONFIG_PM_DEVFREQ)
 	int int_qos, mif_qos, cam_qos, disp_qos;
 #endif
 
 	pm_stay_awake(dev);
 	pr_info("FIMC_IS runtime resume in\n");
-
-	/* Enable MIPI */
-	enable_mipi();
 
 	/* HACK: DVFS lock sequence is change.
 	 * DVFS level should be locked after power on.
@@ -771,17 +359,6 @@ int fimc_is_runtime_resume(struct device *dev)
 	pm_qos_update_request(&exynos_isp_qos_cam, cam_qos);
 	pm_qos_update_request(&exynos_isp_qos_disp, disp_qos);
 #endif
-
-	/* Sensor power on */
-	if (core->pdata->sensor_power_on) {
-		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
-			if (!(test_bit(FIMC_IS_SENSOR_OPEN, &sensor[i].state)))
-				continue;
-			pr_info("sensor[%d] power_on\n", i);
-			core->pdata->sensor_power_on(core->pdev, i);
-		}
-	}
-
 	/* Clock on */
 	if (core->pdata->clk_on) {
 		core->pdata->clk_on(core->pdev);
@@ -929,7 +506,7 @@ static ssize_t store_en_clk_gate(struct device *dev,
 		sysfs_debug.en_clk_gate = value;
 	else {
 		sysfs_debug.en_clk_gate = 0;
-		fimc_is_clock_set(core, GROUP_ID_MAX, true);
+		fimc_is_clock_set(&core->resourcemgr, GROUP_ID_MAX, true);
 	}
 out:
 	return count;
@@ -947,8 +524,13 @@ static ssize_t store_en_dvfs(struct device *dev,
 {
 	struct fimc_is_core *core =
 		(struct fimc_is_core *)platform_get_drvdata(to_platform_device(dev));
+	struct fimc_is_resourcemgr *resourcemgr;
 	unsigned int value;
 	int i, ret;
+
+	BUG_ON(!core);
+
+	resourcemgr = &core->resourcemgr;
 
 	ret = sscanf(buf, "%u", &value);
 	if (ret != 1)
@@ -960,15 +542,15 @@ static ssize_t store_en_dvfs(struct device *dev,
 	} else {
 		sysfs_debug.en_dvfs = 0;
 		/* update dvfs lever to max */
-		mutex_lock(&core->clock.lock);
+		mutex_lock(&resourcemgr->clock.lock);
 		sysfs_debug.en_dvfs = value;
 		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
 			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state)))
 				fimc_is_set_dvfs(&(core->ischain[i]), FIMC_IS_SN_MAX);
 		}
-		fimc_is_dvfs_init(core);
-		core->dvfs_ctrl.static_ctrl->cur_scenario_id = FIMC_IS_SN_MAX;
-		mutex_unlock(&core->clock.lock);
+		fimc_is_dvfs_init(resourcemgr);
+		resourcemgr->dvfs_ctrl.static_ctrl->cur_scenario_id = FIMC_IS_SN_MAX;
+		mutex_unlock(&resourcemgr->clock.lock);
 	}
 out:
 	return count;
@@ -995,12 +577,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	struct fimc_is_core *core;
 	int ret = -ENODEV;
 
-	pr_info("%s\n", __func__);
-
-	if ((pdev->dev.init_name == NULL) && (spi0 == NULL || spi1 == NULL)) {
-		pdev->dev.init_name = FIMC_IS_DRV_NAME;
-		return -EPROBE_DEFER;
-	}
+	minfo("%s\n", __func__);
 
 	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
@@ -1010,17 +587,22 @@ static int fimc_is_probe(struct platform_device *pdev)
 	}
 
 	core = kzalloc(sizeof(struct fimc_is_core), GFP_KERNEL);
-	if (!core)
+	if (!core) {
+		err("core is NULL");
 		return -ENOMEM;
+	}
 
-	is_dev = &pdev->dev;
+	fimc_is_dev = &pdev->dev;
+	ret = dev_set_drvdata(fimc_is_dev, core);
+	if (ret) {
+		err("dev_set_drvdata is fail(%d)", ret);
+		return ret;
+	}
 
 	core->pdev = pdev;
 	core->pdata = pdata;
 	core->id = pdev->id;
 	core->debug_cnt = 0;
-	core->spi0 = spi0;
-	core->spi1 = spi1;
 	device_init_wakeup(&pdev->dev, true);
 
 	/* for mideaserver force down */
@@ -1061,21 +643,47 @@ static int fimc_is_probe(struct platform_device *pdev)
 		core->irq,
 		core);
 
+	fimc_is_resource_probe(&core->resourcemgr, core);
+
 	/* group initialization */
 	fimc_is_groupmgr_probe(&core->groupmgr);
 
-	/* device entity - sensor0 */
-	fimc_is_sensor_probe(&core->sensor[0],
-		pdata->sensor_info[0]);
+#ifndef SENSOR_S5K6B2_DRIVING
+	ret = sensor_6b2_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_6b2_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
 
-	/* device entity - sensor1 */
-	fimc_is_sensor_probe(&core->sensor[1],
-		pdata->sensor_info[1]);
+#ifndef SENSOR_IMX135_DRIVING
+	ret = sensor_imx135_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_imx135_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
 
+#ifndef SENSOR_3L2_DRIVING
+	ret = sensor_3l2_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_3l2_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_2P2_DRIVING
+	ret = sensor_2p2_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_2p2_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
 
 	/* device entity - ischain0 */
 	fimc_is_ischain_probe(&core->ischain[0],
 		&core->interface,
+		&core->resourcemgr,
 		&core->groupmgr,
 		&core->mem,
 		core->pdev,
@@ -1085,6 +693,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	/* device entity - ischain1 */
 	fimc_is_ischain_probe(&core->ischain[1],
 		&core->interface,
+		&core->resourcemgr,
 		&core->groupmgr,
 		&core->mem,
 		core->pdev,
@@ -1094,23 +703,18 @@ static int fimc_is_probe(struct platform_device *pdev)
 	/* device entity - ischain2 */
 	fimc_is_ischain_probe(&core->ischain[2],
 		&core->interface,
+		&core->resourcemgr,
 		&core->groupmgr,
 		&core->mem,
 		core->pdev,
 		2,
 		(u32)core->regs);
 
-	ret = v4l2_device_register(&pdev->dev, &core->v4l2_dev_is);
+	ret = v4l2_device_register(&pdev->dev, &core->v4l2_dev);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to register fimc-is v4l2 device\n");
 		goto p_err3;
 	}
-
-	/* video entity - sensor0 */
-	fimc_is_ss0_video_probe(core);
-
-	/* video entity - sensor1 */
-	fimc_is_ss1_video_probe(core);
 
 	/* video entity - 3a0 */
 	if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3a0))
@@ -1156,27 +760,16 @@ static int fimc_is_probe(struct platform_device *pdev)
 #endif
 
 #ifdef USE_OWN_FAULT_HANDLER
-	if (!dev_set_drvdata(is_dev, core))
-		exynos_sysmmu_set_fault_handler(is_dev, fimc_is_fault_handler);
+	exynos_sysmmu_set_fault_handler(fimc_is_dev, fimc_is_fault_handler);
 #endif
 
 	dbg("%s : fimc_is_front_%d probe success\n", __func__, pdev->id);
-
-	/* init spin_lock for clock gating */
-	spin_lock_init(&core->slock_clock_gate);
-	mutex_init(&core->clock.lock);
 
 	/* set sysfs for debuging */
 	sysfs_debug.en_clk_gate = 1;
 	sysfs_debug.en_dvfs = 1;
 	ret = sysfs_create_group(&core->pdev->dev.kobj, &fimc_is_debug_attr_group);
 
-#ifdef ENABLE_DVFS
-	/* dvfs controller init */
-	ret = fimc_is_dvfs_init(core);
-	if (ret)
-		err("%s: fimc_is_dvfs_init failed!\n", __func__);
-#endif
 	return 0;
 
 p_err3:
@@ -1204,8 +797,17 @@ static const struct dev_pm_ops fimc_is_pm_ops = {
 static int fimc_is_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
+	struct fimc_is_core *core;
+
+	BUG_ON(!fimc_is_dev);
 
 	dbg_core("%s\n", __func__);
+
+	core = (struct fimc_is_core *)dev_get_drvdata(fimc_is_dev);
+	if (!core) {
+		err("core device is not yet probed");
+		return -EPROBE_DEFER;
+	}
 
 	/* spi->bits_per_word = 16; */
 	if (spi_setup(spi)) {
@@ -1215,10 +817,10 @@ static int fimc_is_spi_probe(struct spi_device *spi)
 	}
 
 	if (!strncmp(spi->modalias, "fimc_is_spi0", 12))
-		spi0 = spi;
+		core->spi0 = spi;
 
 	if (!strncmp(spi->modalias, "fimc_is_spi1", 12))
-		spi1 = spi;
+		core->spi1 = spi;
 
 exit:
 	return ret;

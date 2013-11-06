@@ -348,7 +348,7 @@ static int waiting_is_ready(struct fimc_is_interface *interface)
 		cfg = readl(interface->regs + INTMSR0);
 		status = INTMSR0_GET_INTMSD0(cfg);
 		udelay(100);
-		pr_warn("Retry to read INTMSR0(%d)", try_count);
+		pr_warn("Retry to read INTMSR0(%d)\n", try_count);
 
 		if (--try_count == 0) {
 			err("INTMSR0's 0 bit is not cleared.");
@@ -789,7 +789,7 @@ static void wq_func_general(struct work_struct *data)
 		msg = &work->msg;
 		switch (msg->command) {
 		case IHC_GET_SENSOR_NUMBER:
-			pr_info("IS version: %d.%d [0x%02x]\n",
+			minfo("IS Version: %d.%d [0x%02x]\n",
 				ISDRV_VERSION, msg->parameter1,
 				get_drv_clock_gate() |
 				get_drv_dvfs());
@@ -1027,17 +1027,14 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 		out_flag = OUT_SCP_FRAME;
 		name = 'P';
 		break;
-
 	case FIMC_IS_VIDEO_3A0C_NUM:
-		out_flag = OUT_3AXC_FRAME;
+		out_flag = OUT_3AAC_FRAME;
 		name = '0';
 		break;
-
 	case FIMC_IS_VIDEO_3A1C_NUM:
-		out_flag = OUT_3AXC_FRAME;
+		out_flag = OUT_3AAC_FRAME;
 		name = '1';
 		break;
-
 	default:
 		err("video node is invalid(%d)", sub_vctx->video->id);
 		return;
@@ -1128,7 +1125,7 @@ static void wq_func_3a0c(struct work_struct *data)
 			goto p_err;
 		}
 
-		subdev = &device->taxc;
+		subdev = &device->taac;
 		leader = subdev->leader;
 
 		wq_func_subdev(leader, subdev, fcount, rcount, status, instance);
@@ -1170,7 +1167,7 @@ static void wq_func_3a1c(struct work_struct *data)
 			goto p_err;
 		}
 
-		subdev = &device->taxc;
+		subdev = &device->taac;
 		leader = subdev->leader;
 
 		wq_func_subdev(leader, subdev, fcount, rcount, status, instance);
@@ -1328,7 +1325,7 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 	if (status != ISR_DONE) {
 		pr_err("[3A0:D:%d] GRP0 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
-		ldr_frame->shot_ext->request_taap = 0;
+		ldr_frame->shot_ext->request_3aap = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
@@ -1388,7 +1385,7 @@ static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 	if (status != ISR_DONE) {
 		pr_err("[3A1:D:%d] GRP1 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
-		ldr_frame->shot_ext->request_taap = 0;
+		ldr_frame->shot_ext->request_3aap = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
@@ -1590,7 +1587,6 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 			 * this correction is repeated
 			 */
 			if (fcount != ldr_frame->fcount) {
-
 				while (ldr_frame) {
 					if (fcount == ldr_frame->fcount) {
 						status1 = ISR_DONE;
@@ -1686,23 +1682,19 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 		break;
 	case GROUP_ID_ISP:
 		if (fcount != ldr_frame->fcount) {
-			err("cause : mismatch(%d != %d)", fcount,
-				ldr_frame->fcount);
+			err("cause : mismatch(%d != %d)", fcount, ldr_frame->fcount);
 			status1 = ISR_NDONE;
 		}
 
-		wq_func_group_isp(groupmgr, group, ldr_framemgr, ldr_frame,
-			vctx, status1);
+		wq_func_group_isp(groupmgr, group, ldr_framemgr, ldr_frame, vctx, status1);
 		break;
 	case GROUP_ID_DIS:
 		if (fcount != ldr_frame->fcount) {
-			err("cause : mismatch(%d != %d)", fcount,
-				ldr_frame->fcount);
+			err("cause : mismatch(%d != %d)", fcount, ldr_frame->fcount);
 			status1 = ISR_NDONE;
 		}
 
-		wq_func_group_dis(groupmgr, group, ldr_framemgr, ldr_frame,
-			vctx, status1);
+		wq_func_group_dis(groupmgr, group, ldr_framemgr, ldr_frame, vctx, status1);
 		break;
 	default:
 		err("unresolved group id %d", group->id);
@@ -1756,16 +1748,16 @@ static void wq_func_shot(struct work_struct *data)
 		case GROUP_ID(GROUP_ID_3A0):
 			/* if there's no entry to 3a1 */
 			if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3a0)) {
-				req_flag = REQ_3A0_SHOT;
-				group = &device->group_3ax;
+				req_flag = REQ_3AA_SHOT;
+				group = &device->group_3aa;
 			} else {
 				req_flag = REQ_ISP_SHOT;
 				group = &device->group_isp;
 			}
 			break;
 		case GROUP_ID(GROUP_ID_3A1):
-			req_flag = REQ_3A1_SHOT;
-			group = &device->group_3ax;
+			req_flag = REQ_3AA_SHOT;
+			group = &device->group_3aa;
 			break;
 		case GROUP_ID(GROUP_ID_ISP):
 			req_flag = REQ_ISP_SHOT;
@@ -1896,8 +1888,8 @@ static void interface_timer(unsigned long data)
 			}
 			spin_unlock_irq(&itf->shot_check_lock);
 
-			if (test_bit(FIMC_IS_GROUP_ACTIVE, &device->group_3ax.state)) {
-				framemgr = GET_GROUP_FRAMEMGR(&device->group_3ax);
+			if (test_bit(FIMC_IS_GROUP_ACTIVE, &device->group_3aa.state)) {
+				framemgr = GET_GROUP_FRAMEMGR(&device->group_3aa);
 				framemgr_e_barrier_irqs(framemgr, 0, flags);
 				scount_3ax = framemgr->frame_pro_cnt;
 				shot_count += scount_3ax;
@@ -1933,7 +1925,7 @@ static void interface_timer(unsigned long data)
 
 			pr_err("\n### 3ax framemgr info ###\n");
 			if (scount_3ax) {
-				framemgr = GET_GROUP_FRAMEMGR(&device->group_3ax);
+				framemgr = GET_GROUP_FRAMEMGR(&device->group_3aa);
 				fimc_is_frame_print_all(framemgr);
 			}
 
@@ -1987,11 +1979,11 @@ static void interface_timer(unsigned long data)
 		if (!test_bit(FIMC_IS_SENSOR_FRONT_START, &sensor->state))
 			continue;
 
-		fcount = atomic_read(&sensor->flite.fcount);
+		fcount = fimc_is_sensor_g_fcount(sensor);
 		if (fcount == atomic_read(&itf->sensor_check[i])) {
 			atomic_inc(&itf->sensor_timeout[i]);
-			pr_err ("sensor timer[%d] is increased to %d\n", i,
-				atomic_read(&itf->sensor_timeout[i]));
+			pr_err ("sensor timer[%d] is increased to %d(fcount : %d)\n", i,
+				atomic_read(&itf->sensor_timeout[i]), fcount);
 		} else {
 			atomic_set(&itf->sensor_timeout[i], 0);
 			atomic_set(&itf->sensor_check[i], fcount);
@@ -2517,7 +2509,7 @@ int fimc_is_hw_setfile(struct fimc_is_interface *this,
 
 int fimc_is_hw_open(struct fimc_is_interface *this,
 	u32 instance,
-	u32 module,
+	u32 module_id,
 	u32 info,
 	u32 group,
 	u32 flag,
@@ -2528,18 +2520,18 @@ int fimc_is_hw_open(struct fimc_is_interface *this,
 	struct fimc_is_msg msg, reply;
 
 	/* HACK: 2P2 + companion */
-	if (module == SENSOR_NAME_S5K2P2) {
-		module = 1000;
-		pr_info("open(module(%d))\n", module);
+	if (module_id == SENSOR_NAME_S5K2P2) {
+		module_id = 1000;
+		pr_info("open(module(%d))\n", module_id);
 	}
 
-	dbg_interface("open(%d,%d,%08X)\n", module, group, flag);
+	dbg_interface("open(%d,%d,%08X)\n", module_id, group, flag);
 
 	msg.id = 0;
 	msg.command = HIC_OPEN_SENSOR;
 	msg.instance = instance;
 	msg.group = 0;
-	msg.parameter1 = module;
+	msg.parameter1 = module_id;
 	msg.parameter2 = info;
 	msg.parameter3 = group;
 	msg.parameter4 = flag;

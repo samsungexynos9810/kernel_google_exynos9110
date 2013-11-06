@@ -26,5 +26,10 @@
 		(value) = name; \
 	} while (0)
 
+#define SET_PIN(p, id1, id2, n, _pin, _act) \
+		p->pin_ctrls[id1][id2][n].pin = _pin; \
+		p->pin_ctrls[id1][id2][n].act = _act;
+
 struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev);
+int fimc_is_sensor_parse_dt(struct platform_device *pdev);
 #endif

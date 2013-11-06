@@ -15,7 +15,9 @@
 #include <linux/pm_qos.h>
 
 #include "fimc-is-mem.h"
+#include "fimc-is-subdev-ctrl.h"
 #include "fimc-is-groupmgr.h"
+#include "fimc-is-resourcemgr.h"
 
 #define SENSOR_MAX_CTL			0x10
 #define SENSOR_MAX_CTL_MASK		(SENSOR_MAX_CTL-1)
@@ -118,6 +120,7 @@ struct fimc_is_device_ischain {
 	struct exynos_platform_fimc_is		*pdata;
 	void __iomem				*regs;
 
+	struct fimc_is_resourcemgr		*resourcemgr;
 	struct fimc_is_groupmgr			*groupmgr;
 	struct fimc_is_interface		*interface;
 	struct fimc_is_mem			*mem;
@@ -154,7 +157,10 @@ struct fimc_is_device_ischain {
 	u32					margin_height;
 
 	/* chain0 : isp ~ scc */
-	struct fimc_is_group			group_3ax;
+	struct fimc_is_group			group_3aa;
+	struct fimc_is_subdev			taac;
+	struct fimc_is_subdev			taap;
+
 	struct fimc_is_group			group_isp;
 	u32					chain0_width;
 	u32					chain0_height;
@@ -184,8 +190,6 @@ struct fimc_is_device_ischain {
 	u32					chain3_height;
 	struct fimc_is_subdev			fd;
 
-	struct fimc_is_subdev			taxc;
-
 	u32					private_data;
 	struct fimc_is_device_sensor		*sensor;
 	struct pm_qos_request			user_qos;
@@ -194,6 +198,7 @@ struct fimc_is_device_ischain {
 /*global function*/
 int fimc_is_ischain_probe(struct fimc_is_device_ischain *device,
 	struct fimc_is_interface *interface,
+	struct fimc_is_resourcemgr *resourcemgr,
 	struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_mem *mem,
 	struct platform_device *pdev,
@@ -205,58 +210,35 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 	struct fimc_is_video_ctx *vctx);
 int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
-	u32 module,
+	u32 module_id,
 	u32 group_id,
-	u32 rep_stream);
+	u32 flag);
 int fimc_is_ischain_g_capability(struct fimc_is_device_ischain *this,
 	u32 user_ptr);
 int fimc_is_ischain_print_status(struct fimc_is_device_ischain *this);
 void fimc_is_ischain_meta_invalid(struct fimc_is_frame *frame);
 
-/* 3A0 subdev */
-int fimc_is_ischain_3a0_open(struct fimc_is_device_ischain *device,
+/* 3AA subdev */
+int fimc_is_ischain_3aa_open(struct fimc_is_device_ischain *device,
 	struct fimc_is_video_ctx *vctx);
-int fimc_is_ischain_3a0_close(struct fimc_is_device_ischain *device,
+int fimc_is_ischain_3aa_close(struct fimc_is_device_ischain *device,
 	struct fimc_is_video_ctx *vctx);
-int fimc_is_ischain_3a0_start(struct fimc_is_device_ischain *this,
-	struct fimc_is_subdev *subdev,
-	struct fimc_is_queue *queue);
-int fimc_is_ischain_3a0_stop(struct fimc_is_device_ischain *this,
-	struct fimc_is_subdev *subdev,
-	struct fimc_is_queue *queue);
-int fimc_is_ischain_3a0_reqbufs(struct fimc_is_device_ischain *device,
-	u32 count);
-int fimc_is_ischain_3a0_s_format(struct fimc_is_device_ischain *this,
-	u32 width, u32 height);
-int fimc_is_ischain_3a0_s_input(struct fimc_is_device_ischain *this,
+int fimc_is_ischain_3aa_s_input(struct fimc_is_device_ischain *device,
 	u32 input);
-int fimc_is_ischain_3a0_buffer_queue(struct fimc_is_device_ischain *device,
+int fimc_is_ischain_3aa_start(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_queue *queue);
+int fimc_is_ischain_3aa_stop(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_queue *queue);
+int fimc_is_ischain_3aa_reqbufs(struct fimc_is_device_ischain *device,
+	u32 count);
+int fimc_is_ischain_3aa_s_format(struct fimc_is_device_ischain *device,
+	u32 width, u32 height);
+int fimc_is_ischain_3aa_buffer_queue(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue,
 	u32 index);
-int fimc_is_ischain_3a0_buffer_finish(struct fimc_is_device_ischain *this,
-	u32 index);
-
-/* 3A1 subdev */
-int fimc_is_ischain_3a1_open(struct fimc_is_device_ischain *device,
-	struct fimc_is_video_ctx *vctx);
-int fimc_is_ischain_3a1_close(struct fimc_is_device_ischain *device,
-	struct fimc_is_video_ctx *vctx);
-int fimc_is_ischain_3a1_start(struct fimc_is_device_ischain *this,
-	struct fimc_is_subdev *subdev,
-	struct fimc_is_queue *queue);
-int fimc_is_ischain_3a1_stop(struct fimc_is_device_ischain *this,
-	struct fimc_is_subdev *subdev,
-	struct fimc_is_queue *queue);
-int fimc_is_ischain_3a1_reqbufs(struct fimc_is_device_ischain *device,
-	u32 count);
-int fimc_is_ischain_3a1_s_format(struct fimc_is_device_ischain *this,
-	u32 width, u32 height);
-int fimc_is_ischain_3a1_s_input(struct fimc_is_device_ischain *this,
-	u32 input);
-int fimc_is_ischain_3a1_buffer_queue(struct fimc_is_device_ischain *device,
-	struct fimc_is_queue *queue,
-	u32 index);
-int fimc_is_ischain_3a1_buffer_finish(struct fimc_is_device_ischain *this,
+int fimc_is_ischain_3aa_buffer_finish(struct fimc_is_device_ischain *device,
 	u32 index);
 
 /* isp subdev */
@@ -279,12 +261,7 @@ int fimc_is_ischain_isp_buffer_finish(struct fimc_is_device_ischain *this,
 	u32 index);
 
 /*scc subdev*/
-int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *this);
-int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *this);
-
 /*scp subdev*/
-int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *this);
-int fimc_is_ischain_scp_stop(struct fimc_is_device_ischain *this);
 int fimc_is_ischain_scp_s_format(struct fimc_is_device_ischain *device,
 	u32 pixelformat, u32 width, u32 height);
 
@@ -314,54 +291,8 @@ int fimc_is_ischain_vdo_buffer_queue(struct fimc_is_device_ischain *device,
 int fimc_is_ischain_vdo_buffer_finish(struct fimc_is_device_ischain *this,
 	u32 index);
 
-/* 3a0 capture subdev */
-int fimc_is_ischain_3a0c_start(struct fimc_is_device_ischain *device);
-int fimc_is_ischain_3a0c_stop(struct fimc_is_device_ischain *device);
-int fimc_is_ischain_3a0c_reqbufs(struct fimc_is_device_ischain *device,
-	u32 count);
-int fimc_is_ischain_3a0c_s_format(struct fimc_is_device_ischain *this,
-	u32 width, u32 height);
-int fimc_is_ischain_3a0c_buffer_queue(struct fimc_is_device_ischain *device,
-	struct fimc_is_queue *queue,
-	u32 index);
-int fimc_is_ischain_3a0c_buffer_finish(struct fimc_is_device_ischain *this,
-	u32 index);
-
-/* 3a1 capture subdev */
-int fimc_is_ischain_3a1c_start(struct fimc_is_device_ischain *device);
-int fimc_is_ischain_3a1c_stop(struct fimc_is_device_ischain *device);
-int fimc_is_ischain_3a1c_reqbufs(struct fimc_is_device_ischain *device,
-	u32 count);
-int fimc_is_ischain_3a1c_s_format(struct fimc_is_device_ischain *this,
-	u32 width, u32 height);
-int fimc_is_ischain_3a1c_buffer_queue(struct fimc_is_device_ischain *device,
-	struct fimc_is_queue *queue,
-	u32 index);
-int fimc_is_ischain_3a1c_buffer_finish(struct fimc_is_device_ischain *this,
-	u32 index);
-
-/*common subdev*/
-int fimc_is_ischain_sub_open(struct fimc_is_subdev *subdev,
-	struct fimc_is_video_ctx *vctx,
-	const struct param_control *init_ctl);
-int fimc_is_ischain_sub_close(struct fimc_is_subdev *subdev);
-int fimc_is_ischain_sub_start(struct fimc_is_device_ischain *device,
-	struct fimc_is_subdev *subdev,
-	struct fimc_is_queue *queue);
-int fimc_is_ischain_sub_stop(struct fimc_is_device_ischain *device,
-	struct fimc_is_subdev *subdev,
-	struct fimc_is_queue *queue);
-int fimc_is_subdev_s_format(struct fimc_is_subdev *subdev,
-	u32 width, u32 height);
-int fimc_is_subdev_buffer_queue(struct fimc_is_subdev *subdev,
-	u32 index);
-int fimc_is_subdev_buffer_finish(struct fimc_is_subdev *this,
-	u32 index);
-
 /*special api for sensor*/
-int fimc_is_ischain_3a0_callback(struct fimc_is_device_ischain *device,
-	struct fimc_is_frame *frame);
-int fimc_is_ischain_3a1_callback(struct fimc_is_device_ischain *device,
+int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *frame);
 int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *frame);
@@ -386,8 +317,7 @@ int fimc_is_itf_map(struct fimc_is_device_ischain *device,
 int fimc_is_itf_i2c_lock(struct fimc_is_device_ischain *this,
 			int i2c_clk, bool lock);
 
-extern const struct fimc_is_queue_ops fimc_is_ischain_3a0_ops;
-extern const struct fimc_is_queue_ops fimc_is_ischain_3a1_ops;
+extern const struct fimc_is_queue_ops fimc_is_ischain_3aa_ops;
 extern const struct fimc_is_queue_ops fimc_is_ischain_isp_ops;
 extern const struct fimc_is_queue_ops fimc_is_ischain_vdo_ops;
 extern const struct fimc_is_queue_ops fimc_is_ischain_sub_ops;
@@ -396,6 +326,6 @@ int fimc_is_itf_power_down(struct fimc_is_interface *interface);
 int fimc_is_ischain_power(struct fimc_is_device_ischain *this, int on);
 void fimc_is_ischain_savefirm(struct fimc_is_device_ischain *this);
 
-#define IS_ISCHAIN_OTF(device)	((device)->group_3ax.leader.input.is_otf)
+#define IS_ISCHAIN_OTF(device) (test_bit(FIMC_IS_GROUP_OTF_INPUT, &(device)->group_3aa.state))
 
 #endif
