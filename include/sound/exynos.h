@@ -34,6 +34,7 @@ enum {
 	AUD_PWR_SLEEP = 0,
 	AUD_PWR_LPA,
 	AUD_PWR_ALPA,
+	AUD_PWR_AFTR,
 };
 
 extern int exynos_check_aud_pwr(void);
