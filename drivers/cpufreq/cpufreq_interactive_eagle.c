@@ -33,10 +33,6 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-#include <mach/cpufreq.h>
-#endif
-
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 
@@ -1074,14 +1070,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 	unsigned int j;
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_frequency_table *freq_table;
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-	int primary_cpu = 0;
-#endif
-
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-	if (exynos_boot_cluster == CA7)
-		primary_cpu = NR_CA7;
-#endif
 
 	switch (event) {
 	case CPUFREQ_GOV_START:
@@ -1106,16 +1094,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			pcpu->hispeed_validate_time =
 				pcpu->floor_validate_time;
 			down_write(&pcpu->enable_sem);
-#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-			if (exynos_boot_cluster != CA15) {
-				if (j == primary_cpu)
-					cpufreq_interactive_timer_start(j);
-			} else {
-				cpufreq_interactive_timer_start(j);
-			}
-#else
 			cpufreq_interactive_timer_start(j);
-#endif
 			pcpu->governor_enabled = 1;
 			up_write(&pcpu->enable_sem);
 		}
@@ -1198,16 +1177,7 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			 */
 			del_timer_sync(&pcpu->cpu_timer);
 			del_timer_sync(&pcpu->cpu_slack_timer);
-#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
-			if (exynos_boot_cluster != CA15) {
-				if (j == primary_cpu)
-					cpufreq_interactive_timer_start(j);
-			} else {
-				cpufreq_interactive_timer_start(j);
-			}
-#else
 			cpufreq_interactive_timer_start(j);
-#endif
 			up_write(&pcpu->enable_sem);
 		}
 		break;
