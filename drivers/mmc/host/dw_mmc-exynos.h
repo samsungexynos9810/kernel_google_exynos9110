@@ -37,8 +37,8 @@
 #define DWMCI_BUSY_CHK_CLK_STOP_EN		BIT(2)
 #define DWMCI_RXDATA_START_BIT_SEL		BIT(1)
 #define DWMCI_RDDQS_EN				BIT(0)
-#define DWMCI_DDR200_RDDQS_EN_DEF	DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0x12) | \
-					DWMCI_TXDT_CRC_TIMER_INITVAL(0x14)
+#define DWMCI_DDR200_RDDQS_EN_DEF	DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0x13) | \
+					DWMCI_TXDT_CRC_TIMER_INITVAL(0x15)
 #define DWMCI_DDR200_DLINE_CTRL_DEF	DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | \
 					DWMCI_RD_DQS_DELAY_CTRL(0x40)
 
@@ -75,6 +75,9 @@
 #define EXYNOS4210_FIXED_CIU_CLK_DIV	2
 #define EXYNOS4412_FIXED_CIU_CLK_DIV	4
 
+#define MAX_TUNING_LOOP		50
+#define MAX_TUNING_RETRIES	6
+
 /* Variations in Exynos specific dw-mshc controller */
 enum dw_mci_exynos_type {
 	DW_MCI_TYPE_EXYNOS4210,
@@ -93,6 +96,11 @@ struct dw_mci_exynos_priv_data {
 	u32			hs200_timing;
 	u32			ddr200_timing;
 	u32			*ref_clk;
+	const char		*drv_str_pin;
+	const char		*drv_str_addr;
+	int			drv_str_val;
+	int			drv_str_base_val;
+	u32			drv_str_num;
 };
 
 /*

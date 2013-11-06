@@ -21,7 +21,10 @@
 #include <linux/gpio.h>
 #include <linux/slab.h>	/* for kmalloc/kfree prototype */
 
+#include <plat/gpio-cfg.h>
+
 #include <mach/exynos-pm.h>
+#include <mach/pinctrl-samsung.h>
 
 #include "dw_mmc.h"
 #include "dw_mmc-pltfm.h"
@@ -198,7 +201,7 @@ static int dw_mmc_exynos_notifier1(struct notifier_block *self,
 }
 
 static int dw_mmc_exynos_notifier2(struct notifier_block *self,
-									unsigned long cmd, void *v)
+					unsigned long cmd, void *v)
 {
 	switch (cmd) {
 	case LPA_ENTER:
@@ -513,6 +516,15 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 
 	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
 
+	priv->drv_str_pin = of_get_property(np, "clk_pin", NULL);
+	priv->drv_str_addr = of_get_property(np, "clk_addr", NULL);
+	of_property_read_u32(np, "clk_val", &priv->drv_str_val);
+	priv->drv_str_base_val = priv->drv_str_val;
+	of_property_read_u32(np, "clk_str_num", &priv->drv_str_num);
+	dev_info(host->dev, "Clock pin control Pin:%s Addr:%s Val:%d Num:%d",
+		priv->drv_str_pin, priv->drv_str_addr,
+		priv->drv_str_val, priv->drv_str_num);
+
 	id = of_alias_get_id(host->dev->of_node, "mshc");
 	switch (id) {
 	/* dwmmc0 : eMMC    */
@@ -561,6 +573,19 @@ static void dw_mci_set_quirk_endbit(struct dw_mci *host, s8 mid)
 		host->quirks &= ~DW_MCI_QUIRK_NO_DETECT_EBIT;
 }
 
+static u8 dw_mci_tuning_sampling(struct dw_mci *host)
+{
+	u32 clksel;
+	u8 sample;
+
+	clksel = mci_readl(host, CLKSEL);
+	sample = (clksel + 1) & 0x7;
+	clksel = (clksel & 0xfffffff8) | sample;
+	mci_writel(host, CLKSEL, clksel);
+
+	return sample;
+}
+
 /* initialize the clock sample to given value */
 static void dw_mci_exynos_set_sample(struct dw_mci *host, u32 sample, bool tuning)
 {
@@ -578,6 +603,44 @@ static u32 dw_mci_exynos_get_sample(struct dw_mci *host)
 {
 	u32 clksel = mci_readl(host, CLKSEL);
 	return SDMMC_CLKSEL_CCLK_SAMPLE(clksel);
+}
+
+static void exynos_dwmci_restore_drv_st(struct dw_mci *host)
+{
+	struct dw_mci_exynos_priv_data *priv = host->priv;
+
+	pin_config_set(priv->drv_str_addr, priv->drv_str_pin,
+		PINCFG_PACK(PINCFG_TYPE_DRV, priv->drv_str_val));
+}
+
+#define DRV_STR_LV1 0x0
+#define DRV_STR_LV2 0x1
+#define DRV_STR_LV3 0x2
+#define DRV_STR_LV4 0x3
+#define DRV_STR_LV5 0x4
+#define DRV_STR_LV6 0x6
+
+static void exynos_dwmci_tuning_drv_st(struct dw_mci *host)
+{
+	struct dw_mci_exynos_priv_data *priv = host->priv;
+	u32 drv_str[] = {DRV_STR_LV1,   /* LV1 -> LV2 */
+		DRV_STR_LV2,
+		DRV_STR_LV3,
+		DRV_STR_LV4,
+		DRV_STR_LV5,
+		DRV_STR_LV6
+	};
+
+	priv->drv_str_val++;
+
+	if (priv->drv_str_val == priv->drv_str_num)
+		priv->drv_str_val = 0x0;
+
+	dev_info(host->dev, "Clock GPIO Drive Strength Value: 0x%x\n",
+			priv->drv_str_val);
+
+	pin_config_set(priv->drv_str_addr, priv->drv_str_pin,
+			PINCFG_PACK(PINCFG_TYPE_DRV, drv_str[priv->drv_str_val]));
 }
 
 static s8 exynos_dwmci_extra_tuning(u8 map)
@@ -601,53 +664,64 @@ static s8 exynos_dwmci_extra_tuning(u8 map)
  */
 static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 {
-	unsigned int i, testbits;
+	unsigned int i, testbits, orig_bits;
 	u8 divratio;
+	int sel = -1;
 
 	/* replicate the map so "arithimetic shift right" shifts in
 	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
 	 */
-	testbits = map | (map << 8);
+	if (map == 0xFF)
+		return sel;
 
+	testbits = orig_bits = map | (map << 8);
 	divratio = (mci_readl(host, CLKSEL) >> 24) & 0x7;
 
 	if (divratio == 1) {
-		map = map & (map >> 4);
-		goto median3;
-	}
-
-/* Middle is bit 3 */
-#define SEVENBITS 0x7f
-
-	for (i = 3; i < (8 + 3); i++, testbits >>= 1) {
-		if ((testbits & SEVENBITS) == SEVENBITS)
-			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
-	}
-
-/* Middle is bit 2. */
-#define FIVEBITS 0x1f
-
-	for (i = 2; i < (8 + 2); i++, testbits >>= 1) {
-		if ((testbits & FIVEBITS) == FIVEBITS)
-			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
-	}
-
-median3:
-/* Middle is bit 1. */
+		testbits = orig_bits = map & (map >> 4);
+		dev_info(host->dev, "divratio: %d map: 0x %08x\n",
+					divratio, testbits);
 #define THREEBITS 0x7
+		/* Middle is bit 1. */
+		for (i = 1; i < (8 + 1); i++, testbits >>= 1) {
+			if ((testbits & THREEBITS) == THREEBITS)
+				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+		}
 
-	for (i = 1; i < (8 + 1); i++, testbits >>= 1) {
-		if ((testbits & THREEBITS) == THREEBITS)
-			return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+		/* Select one of two. */
+		if (host->pdata->extra_tuning) {
+			testbits = orig_bits;
+			sel = exynos_dwmci_extra_tuning(testbits);
+			dev_info(host->dev, "Extra Tuning %d\n", sel);
+			if (sel >= 0)
+				return SDMMC_CLKSEL_CCLK_SAMPLE(sel);
+		}
+	} else {
+#define SEVENBITS 0x7f
+		/* Middle is bit 3 */
+		for (i = 3; i < (8 + 3); i++, testbits >>= 1) {
+			if ((testbits & SEVENBITS) == SEVENBITS)
+				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+		}
+
+#define FIVEBITS 0x1f
+		/* Middle is bit 2. */
+		testbits = orig_bits;
+		for (i = 2; i < (8 + 2); i++, testbits >>= 1) {
+			if ((testbits & FIVEBITS) == FIVEBITS)
+				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+		}
+
+#define THREEBITS 0x7
+		/* Middle is bit 1. */
+		testbits = orig_bits;
+		for (i = 1; i < (8 + 1); i++, testbits >>= 1) {
+			if ((testbits & THREEBITS) == THREEBITS)
+				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+		}
 	}
 
-	if (host->pdata->extra_tuning) {
-		dev_info(host->dev, "Extra Tuning\n");
-		i = exynos_dwmci_extra_tuning(map);
-		return SDMMC_CLKSEL_CCLK_SAMPLE(i);
-	}
-
-	return -1;
+	return sel;
 }
 
 /*
@@ -658,14 +732,19 @@ median3:
 static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 {
 	struct dw_mci_slot *slot = host->cur_slot;
+	struct dw_mci_exynos_priv_data *priv = host->priv;
 	struct mmc_host *mmc = slot->mmc;
 	struct mmc_ios *ios = &(mmc->ios);
+	unsigned int tuning_loop = MAX_TUNING_LOOP;
+	unsigned int retries = MAX_TUNING_RETRIES;
 	const u8 *tuning_blk_pattern;	/* data pattern we expect */
+	bool tuned = 0;
+	int ret = 0;
 	u8 *tuning_blk;			/* data read from device */
 	unsigned int blksz;
 	unsigned int sample_good = 0;	/* bit map of clock sample (0-7) */
-	u32 test_sample, orig_sample;
-	int best_sample;
+	u32 test_sample = -1, orig_sample;
+	int best_sample = 0;
 
 	if (opcode == MMC_SEND_TUNING_BLOCK_HS200) {
 		if (ios->bus_width == MMC_BUS_WIDTH_8) {
@@ -702,18 +781,24 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	host->cd_rd_thr = 512;
 	mci_writel(host, CDTHRCTL, host->cd_rd_thr << 16 | 1);
 
+	/* Restore Base Drive Strength */
+	priv->drv_str_val = priv->drv_str_base_val;
+
 	/*
 	 * eMMC 4.5 spec section 6.6.7.1 says the device is guaranteed to
 	 * complete 40 iteration of CMD21 in 150ms. So this shouldn't take
 	 * longer than about 30ms or so....at least assuming most values
 	 * work and don't time out.
 	 */
-	for (test_sample = 0; test_sample < 8; test_sample++) {
+	do {
 		struct mmc_request mrq;
 		struct mmc_command cmd;
 		struct mmc_command stop;
 		struct mmc_data data;
 		struct scatterlist sg;
+
+		if (!tuning_loop)
+			break;
 
 		memset(&cmd, 0, sizeof(cmd));
 		cmd.opcode = opcode;
@@ -745,7 +830,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		mrq.data = &data;
 		host->mrq = &mrq;
 
-		dw_mci_exynos_set_sample(host, test_sample, true);
+		test_sample = dw_mci_tuning_sampling(host);
 		dw_mci_set_timeout(host);
 
 		mmc_wait_for_req(mmc, &mrq);
@@ -762,33 +847,56 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 					sample_good |= (1 << test_sample);
 			}
 		} else {
-			dev_dbg(&mmc->class_dev,
+			dev_info(&mmc->class_dev,
 				"Tuning error: cmd.error:%d, data.error:%d\n",
 				cmd.error, data.error);
 		}
-	}
 
-	kfree(tuning_blk);
+		if (orig_sample == test_sample) {
 
-	/*
-	 * Get at middle clock sample values.
-	 */
-	best_sample = find_median_of_bits(host, sample_good);
+			/*
+			 * Get at middle clock sample values.
+			 */
+			best_sample = find_median_of_bits(host, sample_good);
 
-	dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
-			sample_good, best_sample);
-	if (best_sample >= 0) {
+			dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
+					sample_good, best_sample);
+
+			retries--;
+			if (best_sample >= 0) {
+				if (sample_good != 0xff || !retries) {
+					tuned = true;
+					break;
+				}
+			}
+
+			if (retries) {
+				if (priv->drv_str_pin)
+					exynos_dwmci_tuning_drv_st(host);
+				sample_good = 0;
+			}
+		}
+		tuning_loop--;
+	} while (!tuned && retries);
+
+	if (priv->drv_str_pin)
+		exynos_dwmci_restore_drv_st(host);
+
+	if (tuned) {
 		host->pdata->clk_smpl = best_sample;
 		if (host->pdata->only_once_tune)
 			host->pdata->tuned = true;
 		dw_mci_exynos_set_sample(host, best_sample, false);
-		return 0;
+	} else {
+		/* Failed. Just restore and return error */
+		mci_writel(host, CDTHRCTL, 0 << 16 | 0);
+		dw_mci_exynos_set_sample(host, orig_sample, false);
+		ret = -EIO;
 	}
 
-	/* Failed. Just restore and return error */
-	mci_writel(host, CDTHRCTL, 0 << 16 | 0);
-	dw_mci_exynos_set_sample(host, orig_sample, false);
-	return -EIO;
+	kfree(tuning_blk);
+
+	return ret;
 }
 
 static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_control control)
