@@ -84,6 +84,50 @@ struct idmac_desc {
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
 
+static int dw_mci_ciu_clk_en(struct dw_mci *host)
+{
+	int ret = 1;
+
+	if (!atomic_read(&host->ciu_clk_cnt)) {
+		ret = clk_prepare_enable(host->ciu_clk);
+		atomic_inc_return(&host->ciu_clk_cnt);
+		if (ret)
+			dev_err(host->dev, "failed to enable ciu clock\n");
+	}
+
+	return ret;
+}
+
+static void dw_mci_ciu_clk_dis(struct dw_mci *host)
+{
+	if (atomic_read(&host->ciu_clk_cnt)) {
+		clk_disable_unprepare(host->ciu_clk);
+		atomic_dec_return(&host->ciu_clk_cnt);
+	}
+}
+
+static int dw_mci_biu_clk_en(struct dw_mci *host)
+{
+	int ret = 1;
+
+	if (!atomic_read(&host->biu_clk_cnt)) {
+		ret = clk_prepare_enable(host->biu_clk);
+		atomic_inc_return(&host->biu_clk_cnt);
+		if (ret)
+			dev_err(host->dev, "failed to enable biu clock\n");
+	}
+
+	return ret;
+}
+
+static void dw_mci_biu_clk_dis(struct dw_mci *host)
+{
+	if (atomic_read(&host->biu_clk_cnt)) {
+		clk_disable_unprepare(host->biu_clk);
+		atomic_dec_return(&host->biu_clk_cnt);
+	}
+}
+
 static int dw_mci_clk_en(struct dw_mci *host)
 {
 	int ret = 1;
@@ -3176,6 +3220,10 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "supports-ddr200-mode", NULL))
 		pdata->caps2 |= MMC_CAP2_HS200_DDR;
 
+	if (of_find_property(np, "clock-gate", NULL))
+		pdata->use_gate_clock = true;
+
+
 	return pdata;
 }
 
@@ -3192,6 +3240,7 @@ int dw_mci_probe(struct dw_mci *host)
 	int width, i, ret = 0;
 	u32 fifo_size, msize, tx_wmark, rx_wmark;
 	int init_slots = 0;
+	bool clock_enabled = false;
 
 	if (!host->pdata) {
 		host->pdata = dw_mci_parse_dt(host);
@@ -3208,14 +3257,34 @@ int dw_mci_probe(struct dw_mci *host)
 	}
 
 	host->biu_clk = devm_clk_get(host->dev, "biu");
-	if (IS_ERR(host->biu_clk))
+	if (IS_ERR(host->biu_clk)) {
 		dev_dbg(host->dev, "biu clock not available\n");
+	} else if (!host->pdata->use_gate_clock) {
+		ret = dw_mci_biu_clk_en(host);
+		if (ret) {
+			dev_err(host->dev, "failed to enable biu clock\n");
+			return ret;
+		}
+	}
 
 	host->ciu_clk = devm_clk_get(host->dev, "gate_ciu");
 	if (IS_ERR(host->ciu_clk)) {
 		dev_dbg(host->dev, "ciu clock not available\n");
 		host->bus_hz = host->pdata->bus_hz;
+	} else if (!host->pdata->use_gate_clock) {
+		/*
+		 * in case of using CIU clock to gate
+		 */
+		ret = dw_mci_ciu_clk_en(host);
+		if (ret) {
+			dev_err(host->dev, "failed to enable ciu clock\n");
+			goto err_clk_biu;
+		} else
+			clock_enabled = true;
 	} else {
+		/*
+		 * in case of using an additional clock to gate
+		 */
 		host->gate_clk = devm_clk_get(host->dev, "gate_mmc");
 		if (IS_ERR(host->gate_clk))
 			dev_dbg(host->dev, "clock for gating not available\n");
@@ -3224,18 +3293,21 @@ int dw_mci_probe(struct dw_mci *host)
 			if (ret) {
 				dev_err(host->dev, "failed to enable clock\n");
 				goto err_clk_biu;
-			}
-
-			if (host->pdata->bus_hz) {
-				ret = clk_set_rate(host->ciu_clk,
-						host->pdata->bus_hz);
-				if (ret)
-					dev_warn(host->dev,
-						 "Unable to set bus rate to %ul\n",
-						 host->pdata->bus_hz);
-			}
-			host->bus_hz = clk_get_rate(host->ciu_clk);
+			} else
+				clock_enabled = true;
 		}
+	}
+
+	if (clock_enabled) {
+		if (host->pdata->bus_hz) {
+			ret = clk_set_rate(host->ciu_clk,
+					host->pdata->bus_hz);
+			if (ret)
+				dev_warn(host->dev,
+					 "Unable to set bus rate to %ul\n",
+					 host->pdata->bus_hz);
+		}
+		host->bus_hz = clk_get_rate(host->ciu_clk);
 	}
 
 	if (drv_data && drv_data->setup_clock) {
@@ -3475,8 +3547,12 @@ err_dmaunmap:
 		regulator_disable(host->vmmc);
 
 err_clk_ciu:
+	if (!IS_ERR(host->ciu_clk) && (!host->pdata->use_gate_clock))
+		dw_mci_ciu_clk_dis(host);
 err_clk_biu:
-	if (!IS_ERR(host->gate_clk))
+	if (!IS_ERR(host->biu_clk) && (!host->pdata->use_gate_clock))
+		dw_mci_biu_clk_dis(host);
+	if (!IS_ERR(host->gate_clk) && host->pdata->use_gate_clock)
 		dw_mci_clk_dis(host);
 
 	return ret;

@@ -214,6 +214,8 @@ struct dw_mci {
 	struct clk		*biu_clk;
 	struct clk		*ciu_clk;
 	struct clk		*gate_clk;
+	atomic_t		biu_clk_cnt;
+	atomic_t		ciu_clk_cnt;
 	atomic_t		gate_clk_cnt;
 	spinlock_t		ciu_clk_lock;
 	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
@@ -393,6 +395,7 @@ struct dw_mci_board {
 	struct block_settings *blk_settings;
 	struct dw_mci_mon_table *tp_mon_tbl;
 	unsigned int sw_timeout;
+	bool use_gate_clock;
 };
 
 #endif /* LINUX_MMC_DW_MMC_H */
