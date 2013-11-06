@@ -1328,7 +1328,6 @@
 	pd_isp: pd-isp@105c4140 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x105c4140 0x20>;
-		parent = <&pd_cam1 &pd_cam0>;
 	};
 
 	pd_mfc0: pd-mfc0@105c4180 {
@@ -1754,96 +1753,33 @@
 		pinctrl-0 = <&fimc_is_spi_pin1>;
 	};
 
-	fimc_is_sensor0: fimc_is_sensor@12100000 {
-		compatible = "samsung,exynos5-fimc-is-sensor";
-		reg = <0x12100000 0x10000>, <0x12120000 0x10000>;
-		interrupts = <0 140 0>;
-		pinctrl-names =	"ch0";
-		pinctrl-0 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
-		iommu = <&sysmmu_flite_a>,
-			<&sysmmu_flite_d>;
-		samsung,power-domain = <&pd_cam0>;
-		clock-names = "sclk_isp_sensor0", /* 33 */
-				"sclk_isp_sensor1",
-				"sclk_isp_sensor2",
-
-				"mout_sclk_isp_sensor0", /* 3066*/
-				"mout_sclk_isp_sensor1",
-				"mout_sclk_isp_sensor2",
-
-				"dout_sclk_isp_sensor0_a", /* 4090 */
-				"dout_sclk_isp_sensor0_b",
-				"dout_sclk_isp_sensor1_a",
-				"dout_sclk_isp_sensor1_b",
-				"dout_sclk_isp_sensor2_a",
-				"dout_sclk_isp_sensor2_b";
-		clocks = <&clock 33>,
-				<&clock 34>,
-				<&clock 35>,
-
-				<&clock 3066>,
-				<&clock 3067>,
-				<&clock 3068>,
-
-				<&clock 4090>,
-				<&clock 4091>,
-				<&clock 4092>,
-				<&clock 4093>,
-				<&clock 4094>,
-				<&clock 4095>;
-	};
-
-	fimc_is_sensor1: fimc_is_sensor@12110000 {
-		compatible = "samsung,exynos5-fimc-is-sensor";
-		reg = <0x12110000 0x40000>, <0x12130000 0x10000>;
-		interrupts = <0 141 0>;
-		pinctrl-names =	"ch1",
-				"ch2";
-		pinctrl-0 = <&fimc_is_ch1_i2c &fimc_is_ch1_mclk>;
-		pinctrl-1 = <&fimc_is_ch2_i2c &fimc_is_ch2_mclk>;
-		iommu = <&sysmmu_flite_b>,
-			<&sysmmu_flite_c>;
-		samsung,power-domain = <&pd_cam1>;
-		clock-names = "sclk_isp_sensor0", /* 33 */
-				"sclk_isp_sensor1",
-				"sclk_isp_sensor2",
-
-				"mout_sclk_isp_sensor0", /* 3066*/
-				"mout_sclk_isp_sensor1",
-				"mout_sclk_isp_sensor2",
-
-				"dout_sclk_isp_sensor0_a", /* 4090 */
-				"dout_sclk_isp_sensor0_b",
-				"dout_sclk_isp_sensor1_a",
-				"dout_sclk_isp_sensor1_b",
-				"dout_sclk_isp_sensor2_a",
-				"dout_sclk_isp_sensor2_b";
-		clocks = <&clock 33>,
-				<&clock 34>,
-				<&clock 35>,
-
-				<&clock 3066>,
-				<&clock 3067>,
-				<&clock 3068>,
-
-				<&clock 4090>,
-				<&clock 4091>,
-				<&clock 4092>,
-				<&clock 4093>,
-				<&clock 4094>,
-				<&clock 4095>;
-	};
-
 	fimc_is@14000000 {
 		compatible = "samsung,exynos5-fimc-is";
 		reg = <0x14000000 0x1A0000>;
 		interrupts = <0 165 0>, /* ARMISP_GIC */
 			     <0 166 0>; /* ISP_GIC */
-		pinctrl-names = "default";
-		pinctrl-0 = <&fimc_is_uart &fimc_is_flash>;
+		pinctrl-names = "fimc-is-uart",
+				"fimc-is-flash",
+				"ch0-i2c",
+				"ch0-mclk",
+				"ch1-i2c",
+				"ch1-mclk",
+				"ch2-i2c",
+				"ch2-mclk";
+		pinctrl-0 = <&fimc_is_uart>;
+		pinctrl-1 = <&fimc_is_uart &fimc_is_flash>;
+		pinctrl-2 = <&fimc_is_uart &fimc_is_flash &fimc_is_ch0_i2c>;
+		pinctrl-3 = <&fimc_is_uart &fimc_is_flash &fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
+		pinctrl-4 = <&fimc_is_uart &fimc_is_ch1_i2c>;
+		pinctrl-5 = <&fimc_is_uart &fimc_is_ch1_i2c &fimc_is_ch1_mclk>;
+		pinctrl-6 = <&fimc_is_uart &fimc_is_ch2_i2c>;
+		pinctrl-7 = <&fimc_is_uart &fimc_is_ch2_i2c &fimc_is_ch2_mclk>;
 		clocks =	<&clock 30>,
 				<&clock 31>,
 				<&clock 32>,
+				<&clock 33>,
+				<&clock 34>,
+				<&clock 35>,
 
 				<&clock 130>,
 				<&clock 131>,
@@ -1872,6 +1808,9 @@
 				<&clock 3063>,
 				<&clock 3064>,
 				<&clock 3065>,
+				<&clock 3066>,
+				<&clock 3067>,
+				<&clock 3068>,
 
 				<&clock 3175>,
 				<&clock 3176>,
@@ -1936,6 +1875,13 @@
 				<&clock 4082>,
 				<&clock 4083>,
 				<&clock 4084>,
+
+				<&clock 4090>,
+				<&clock 4091>,
+				<&clock 4092>,
+				<&clock 4093>,
+				<&clock 4094>,
+				<&clock 4095>,
 
 				<&clock 4160>,
 				<&clock 4161>,
@@ -2137,6 +2083,9 @@
 		clock-names =	"sclk_isp_spi0_top", /* 30 */
 				"sclk_isp_spi1_top",
 				"sclk_isp_uart_top",
+				"sclk_isp_sensor0",
+				"sclk_isp_sensor1",
+				"sclk_isp_sensor2",
 
 				"sclk_isp_spi0", /* 130 */
 				"sclk_isp_spi1",
@@ -2165,6 +2114,9 @@
 				"mout_sclk_isp_spi0", /* 3063 */
 				"mout_sclk_isp_spi1",
 				"mout_sclk_isp_uart",
+				"mout_sclk_isp_sensor0",
+				"mout_sclk_isp_sensor1",
+				"mout_sclk_isp_sensor2",
 
 				"mout_phyclk_rxbyteclkhs0_s4", /* 3175 */
 				"mout_phyclk_rxbyteclkhs0_s2a",
@@ -2229,6 +2181,13 @@
 				"dout_sclk_isp_spi1_a",
 				"dout_sclk_isp_spi1_b",
 				"dout_sclk_isp_uart",
+
+				"dout_sclk_isp_sensor0_a", /* 4090 */
+				"dout_sclk_isp_sensor0_b",
+				"dout_sclk_isp_sensor1_a",
+				"dout_sclk_isp_sensor1_b",
+				"dout_sclk_isp_sensor2_a",
+				"dout_sclk_isp_sensor2_b",
 
 				"dout_aclk_lite_a", /* 4160 */
 				"dout_aclk_lite_b",
@@ -2427,7 +2386,11 @@
 				"gate_lite_c_freecnt_local",
 				"gate_pixelasyncm_fd_local",
 				"gate_pixelasyncs_lite_c_local";
-		iommu = <&sysmmu_3aa0>,
+		iommu = <&sysmmu_flite_a>,
+			<&sysmmu_flite_b>,
+			<&sysmmu_flite_c>,
+			<&sysmmu_flite_d>,
+			<&sysmmu_3aa0>,
 			<&sysmmu_3aa1>,
 			<&sysmmu_fimc_fd>,
 			<&sysmmu_fimc_cpu>,
@@ -2438,7 +2401,9 @@
 			<&sysmmu_fimc_dis1>,
 			<&sysmmu_fimc_scp>,
 			<&sysmmu_fimc_3dnr>;
-		samsung,power-domain = <&pd_isp>;
+		samsung,power-domain = <&pd_cam0
+					&pd_cam1
+					&pd_isp>;
 		status = "ok";
 	};
 
