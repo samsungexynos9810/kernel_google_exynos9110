@@ -927,6 +927,7 @@
 		clocks = <&clock 600>;
 		iommu = <&sysmmu_jpeg>;
 		ip_ver = <3>;
+		samsung,power-domain = <&spd_jpeg1>;
 	};
 
 	jpeg_1: jpeg@11F60000 {
@@ -937,5 +938,22 @@
 		clocks = <&clock 600>;
 		iommu = <&sysmmu_jpeg2>;
 		ip_ver = <3>;
+		samsung,power-domain = <&spd_jpeg2>;
+	};
+
+	pd_psgen: pd-psgen@10044180 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044180 0x20>;
+		status = "disabled";
+
+		spd_jpeg1: spd-jpeg1@10044180 {
+			compatible = "samsung,exynos-spd";
+			status = "disabled";
+		};
+
+		spd_jpeg2: spd-jpeg2@10044180 {
+			compatible = "samsung,exynos-spd";
+		        status = "disabled";
+		};
 	};
 };
