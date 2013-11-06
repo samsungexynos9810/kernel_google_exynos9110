@@ -77,11 +77,11 @@ int init_display_fimd_clocks_exynos(struct device *dev)
 {
 	int ret = 0;
 
-	ret = exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
+	ret = exynos_set_parent("mout_fimd1", "mout_rpll_ctrl");
 	if (ret < 0)
 		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
 
-	ret = exynos_set_parent("mout_fimd1", "sclk_rpll");
+	ret = exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
 	if (ret < 0)
 		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
 

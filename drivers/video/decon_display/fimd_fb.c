@@ -4067,8 +4067,12 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #else
 	if (1) {
 #endif
-		if (exynos_set_parent("aclk_400_disp1", "aclk_400_disp1_sw") < 0)
-			pr_err("Unable to set parent for aclk_400_disp1 clock.\n");
+		if (exynos_set_parent("mout_aclk_400_disp1_user", "aclk_400_disp1_sw") < 0)
+			pr_err("Unable to set parent for mout_aclk_400_disp1_user\n");
+		if (exynos_set_parent("mout_aclk_400_disp1_sw", "dout_aclk_400_disp1") < 0)
+			pr_err("Unable to set parent for mout_aclk_400_disp1_sw.\n");
+		if (exynos_set_parent("mout_aclk_400_disp1", "mout_dpll_ctrl") < 0)
+			pr_err("Unable to set parent for mout_aclk_400_disp1.\n");
 	}
 
 	mutex_lock(&sfb->output_lock);
