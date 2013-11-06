@@ -288,4 +288,6 @@ enum v4l2_mpeg_mfc51_video_frame_type {
 					(V4L2_CID_MPEG_MFC_BASE + 95)
 #define V4L2_CID_MPEG_MFC_SET_USER_SHARED_HANDLE		\
 					(V4L2_CID_MPEG_MFC_BASE + 96)
+#define V4L2_CID_MPEG_MFC_GET_EXT_INFO				\
+					(V4L2_CID_MPEG_MFC_BASE + 97)
 #endif /* __LINUX_VIDEODEV2_EXYNOS_MEDIA_H */
