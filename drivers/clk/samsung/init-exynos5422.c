@@ -47,17 +47,19 @@ static inline void add_enabler(const char *name)
 static void top_clk_enable(void)
 {
 	struct clk_enabler *ce;
-	add_enabler("sclk_apll");
-	add_enabler("sclk_bpll");
-	add_enabler("sclk_cpll");
-	add_enabler("sclk_dpll");
-	add_enabler("sclk_ipll");
-	add_enabler("sclk_mpll");
-	add_enabler("sclk_spll");
-	add_enabler("sclk_vpll");
-	add_enabler("sclk_epll");
-	add_enabler("sclk_rpll");
+	add_enabler("fout_apll");
+	add_enabler("fout_bpll");
+	add_enabler("fout_cpll");
+	add_enabler("fout_dpll");
+	add_enabler("fout_ipll");
+	add_enabler("fout_mpll");
+	add_enabler("fout_spll");
+	add_enabler("fout_vpll");
+	add_enabler("fout_epll");
+	add_enabler("fout_rpll");
 	add_enabler("aclk_66_peric");
+	add_enabler("aclk_66_psgen");
+	add_enabler("aclk_300_jpeg");
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
 		clk_enable(ce->clk);
