@@ -125,7 +125,11 @@ static void check_display_clocks(void)
 	/* Now check mux values */
 	DISPLAY_CHECK_REGS(0x105B0210, 0x00000001, 0x00000001);
 	DISPLAY_CHECK_REGS(0x13B90200, 0x00000001, 0x00000001);
-	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00011101); // changed in EVT1
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00011111);
+#else
+	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00011101);
+#endif
 	DISPLAY_CHECK_REGS(0x13B90208, 0x00001100, 0x00001100);
 	DISPLAY_CHECK_REGS(0x13B9020C, 0x00000001, 0x00000001);
 
@@ -136,8 +140,10 @@ static void check_display_clocks(void)
 int init_display_decon_clocks_exynos5430(struct device *dev)
 {
 	int ret = 0;
+#ifndef CONFIG_SOC_EXYNOS5430_REV_0
 	void __iomem *regs;
 	u32 data;
+#endif
 
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_a, mout_bus_pll_sub);
 	DISPLAY_CLOCK_SET_PARENT(mout_disp_pll, fout_disp_pll);
@@ -157,12 +163,18 @@ int init_display_decon_clocks_exynos5430(struct device *dev)
 	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
 
 	DISPLAY_SET_RATE(dout_aclk_disp_333, 222*MHZ);
-	DISPLAY_SET_RATE(dout_sclk_decon_eclk, 200*MHZ);
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	DISPLAY_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
+#else
+ 	DISPLAY_SET_RATE(dout_sclk_decon_eclk, 200*MHZ);
+#endif
 
 	additional_clock_setup();
 
+#ifndef CONFIG_SOC_EXYNOS5430_REV_0
 	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x0101);
 	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
+#endif
 
 	check_display_clocks();
 	return ret;
@@ -275,6 +287,10 @@ static void temporary_cmu_restore(void)
 int enable_display_decon_clocks_exynos5430(struct device *dev)
 {
 	int ret = 0;
+#ifndef CONFIG_SOC_EXYNOS5430_REV_0
+	void __iomem *regs;
+	u32 data;
+#endif
 
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
 		mout_bus_pll_sub);
@@ -296,9 +312,18 @@ int enable_display_decon_clocks_exynos5430(struct device *dev)
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
 
 	DISPLAY_INLINE_SET_RATE(dout_aclk_disp_333, 222*MHZ);
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	DISPLAY_INLINE_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
+#else
 	DISPLAY_INLINE_SET_RATE(dout_sclk_decon_eclk, 200*MHZ);
+#endif
 
 	additional_clock_setup();
+
+#ifndef CONFIG_SOC_EXYNOS5430_REV_0
+	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x0101);
+	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
+#endif
 	return ret;
 }
 
