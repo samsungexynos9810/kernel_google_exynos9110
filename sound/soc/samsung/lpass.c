@@ -28,6 +28,7 @@
 #include <sound/exynos.h>
 
 #include <mach/map.h>
+#include <mach/regs-audss.h>
 #include <mach/regs-pmu.h>
 #include <mach/regs-clock-exynos5430.h>
 
@@ -46,10 +47,21 @@
 
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
 
+/* Audio subsystem version */
+enum {
+	LPASS_VER_000100 = 0,		/* pega/carmen */
+	LPASS_VER_010100,		/* hudson */
+	LPASS_VER_100100 = 16,		/* gaia/adonis */
+	LPASS_VER_110100,		/* ares */
+	LPASS_VER_370100 = 32,		/* rhea/helsinki */
+	LPASS_VER_MAX
+};
+
 struct lpass_info {
 	spinlock_t		lock;
 	bool			valid;
 	bool			enabled;
+	int			ver;
 	struct platform_device	*pdev;
 	void __iomem		*regs;
 	void __iomem		*mem;
@@ -83,6 +95,17 @@ extern int exynos_set_parent(const char *child, const char *parent);
 extern int check_adma_status(void);
 extern int check_fdma_status(void);
 extern int check_esa_status(void);
+
+static inline bool is_old_ass(void)
+{
+	return lpass.ver < LPASS_VER_370100 ? true : false;
+}
+
+static inline bool is_new_ass(void)
+{
+	return lpass.ver >= LPASS_VER_370100 ? true : false;
+}
+
 int exynos_check_aud_pwr(void)
 {
 	int dram_used = check_adma_status();
@@ -95,10 +118,13 @@ int exynos_check_aud_pwr(void)
 #endif
 	if (!lpass.enabled)
 		return AUD_PWR_SLEEP;
-	else if (dram_used)
+	else if (!dram_used)
+		return AUD_PWR_LPA;
+
+	if (is_new_ass())
 		return AUD_PWR_ALPA;
 	else
-		return AUD_PWR_LPA;
+		return AUD_PWR_AFTR;
 }
 
 void __iomem *lpass_get_regs(void)
@@ -116,9 +142,21 @@ struct iommu_domain *lpass_get_iommu_domain(void)
 	return lpass.domain;
 }
 
+void ass_reset(int ip, int op)
+{
+	spin_lock(&lpass.lock);
+
+	spin_unlock(&lpass.lock);
+}
+
 void lpass_reset(int ip, int op)
 {
 	u32 reg, val, bit;
+
+	if (is_old_ass()) {
+		ass_reset(ip, op);
+		return;
+	}
 
 	spin_lock(&lpass.lock);
 	reg = LPASS_CORE_SW_RESET;
@@ -260,15 +298,15 @@ static void lpass_reg_restore(void)
 
 static void lpass_pll_enable(bool on)
 {
-	u32 pll_con0 = __raw_readl(EXYNOS5430_AUD_PLL_CON0);
+	u32 pll_con0;
 
 #define PLL_CON0_ENABLE		(1 << 31)
 #define PLL_CON0_LOCKED		(1 << 29)
 
+	pll_con0 = __raw_readl(EXYNOS5430_AUD_PLL_CON0);
 	pll_con0 &= ~PLL_CON0_ENABLE;
 	pll_con0 |= on ? PLL_CON0_ENABLE : 0;
 	__raw_writel(pll_con0, EXYNOS5430_AUD_PLL_CON0);
-
 
 	if (on) {
 		/* wait_lock_time */
@@ -285,10 +323,27 @@ static void lpass_release_pad(void)
 	writel(1 << 28, EXYNOS_PAD_RET_MAUDIO_OPTION);
 }
 
+static void ass_enable(void)
+{
+	lpass.enabled = true;
+
+	lpass_reg_restore();
+
+	/* ASS_MUX_SEL */
+	exynos_set_parent("mout_ass_clk_p", "fout_epll");
+
+	clk_prepare_enable(lpass.clk_dmac);
+}
+
 static void lpass_enable(void)
 {
 	if (!lpass.valid) {
 		pr_debug("%s: LPASS is not available", __func__);
+		return;
+	}
+
+	if (is_old_ass()) {
+		ass_enable();
 		return;
 	}
 
@@ -320,10 +375,27 @@ static void lpass_enable(void)
 	lpass.enabled = true;
 }
 
+static void ass_disable(void)
+{
+	lpass.enabled = false;
+
+	clk_disable_unprepare(lpass.clk_dmac);
+
+	lpass_reg_save();
+
+	/* ASS_MUX_SEL */
+	exynos_set_parent("mout_ass_clk_p", "fin_pll");
+}
+
 static void lpass_disable(void)
 {
 	if (!lpass.valid) {
 		pr_debug("%s: LPASS is not available", __func__);
+		return;
+	}
+
+	if (is_old_ass()) {
+		ass_disable();
 		return;
 	}
 
@@ -357,9 +429,28 @@ static void lpass_disable(void)
 	lpass_pll_enable(false);
 }
 
+static int clk_set_heirachy_ass(struct platform_device *pdev)
+{
+	struct device *dev = &pdev->dev;
+
+	lpass.clk_dmac = clk_get(dev, "dmac");
+	if (IS_ERR(lpass.clk_dmac)) {
+		dev_err(dev, "dmac clk not found\n");
+		goto err0;
+	}
+
+	return 0;
+
+err0:
+	return -1;
+}
+
 static int clk_set_heirachy(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
+
+	if (is_old_ass())
+		return clk_set_heirachy_ass(pdev);
 
 	lpass.clk_dmac = clk_get(dev, "dmac");
 	if (IS_ERR(lpass.clk_dmac)) {
@@ -406,6 +497,24 @@ err0:
 	return -1;
 }
 
+static void clk_put_all_ass(void)
+{
+	clk_put(lpass.clk_dmac);
+}
+
+static void clk_put_all(void)
+{
+	if (is_old_ass()) {
+		clk_put_all_ass();
+		return;
+	}
+
+	clk_put(lpass.clk_dmac);
+	clk_put(lpass.clk_sramc);
+	clk_put(lpass.clk_intr);
+	clk_put(lpass.clk_timer);
+}
+
 static void lpass_add_suspend_reg(void __iomem *reg)
 {
 	struct device *dev = &lpass.pdev->dev;
@@ -419,19 +528,33 @@ static void lpass_add_suspend_reg(void __iomem *reg)
 	list_add(&ar->node, &reg_list);
 }
 
+static void lpass_init_reg_list_ass(void)
+{
+	lpass_add_suspend_reg(EXYNOS_CLKGATE_AUDSS);
+	lpass_add_suspend_reg(EXYNOS_CLKDIV_AUDSS);
+	lpass_add_suspend_reg(EXYNOS_CLKSRC_AUDSS);
+}
+
 static void lpass_init_reg_list(void)
 {
+	if (is_old_ass()) {
+		lpass_init_reg_list_ass();
+		return;
+	}
+
 	lpass_add_suspend_reg(EXYNOS5430_SRC_ENABLE_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_SRC_ENABLE_AUD1);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD1);
-//	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD2);
-//	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD3);
-//	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD4);
-	/* lpass_add_suspend_reg(EXYNOS5430_ENABLE_ACLK_AUD); */
-//	lpass_add_suspend_reg(EXYNOS5430_ENABLE_PCLK_AUD);
-//	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD0);
-//	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD1);
+	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD2);
+#if 0
+	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD3);
+	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD4);
+	lpass_add_suspend_reg(EXYNOS5430_ENABLE_ACLK_AUD);
+	lpass_add_suspend_reg(EXYNOS5430_ENABLE_PCLK_AUD);
+	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD0);
+	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD1);
+#endif
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_IP_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_IP_AUD1);
 
@@ -447,7 +570,8 @@ static int lpass_proc_show(struct seq_file *m, void *v) {
 	seq_printf(m, "canbe: %s\n",
 			(pmode == AUD_PWR_SLEEP) ? "sleep" :
 			(pmode == AUD_PWR_LPA) ? "lpa" :
-			(pmode == AUD_PWR_ALPA) ? "alpa" : "unknown");
+			(pmode == AUD_PWR_ALPA) ? "alpa" :
+			(pmode == AUD_PWR_AFTR) ? "aftr" : "unknown");
 
 	list_for_each_entry(si, &subip_list, node) {
 		seq_printf(m, "subip: %s (%d)\n",
@@ -492,6 +616,30 @@ static int lpass_resume(struct device *dev)
 #define lpass_resume  NULL
 #endif
 
+#ifdef CONFIG_OF
+static const struct of_device_id exynos_lpass_match[];
+
+static int lpass_get_ver(struct device_node *np)
+{
+	const struct of_device_id *match;
+	int ver;
+
+	if (np) {
+		match = of_match_node(exynos_lpass_match, np);
+		ver = *(int *)(match->data);
+	} else {
+		ver = LPASS_VER_000100;
+	}
+
+	return ver;
+}
+#else
+static int lpass_get_ver(struct device_node *np)
+{
+	return LPASS_VER_000100;
+}
+#endif
+
 static char banner[] =
 	KERN_INFO "Samsung Low Power Audio Subsystem driver, "\
 		  "(c)2013 Samsung Electronics\n";
@@ -500,7 +648,7 @@ static int lpass_probe(struct platform_device *pdev)
 {
 	struct resource *res;
 	struct device *dev = &pdev->dev;
-	/* struct device_node *np = pdev->dev.of_node; */
+	struct device_node *np = pdev->dev.of_node;
 	int ret = 0;
 
 	printk(banner);
@@ -534,6 +682,9 @@ static int lpass_probe(struct platform_device *pdev)
 	}
 	pr_debug("%s: sram_base = %08X (%08X bytes)\n",
 		__func__, res->start, resource_size(res));
+
+	/* LPASS version */
+	lpass.ver = lpass_get_ver(np);
 
 	/* Set clock hierarchy for audio subsystem */
 	ret = clk_set_heirachy(pdev);
@@ -585,19 +736,16 @@ static int lpass_probe(struct platform_device *pdev)
 
 static int lpass_remove(struct platform_device *pdev)
 {
+#ifdef CONFIG_SND_SAMSUNG_IOMMU
 	iommu_detach_device(lpass.domain, &pdev->dev);
 	iommu_domain_free(lpass.domain);
-
+#endif
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
 #else
 	lpass_disable();
 #endif
-
-	clk_put(lpass.clk_dmac);
-	clk_put(lpass.clk_sramc);
-	clk_put(lpass.clk_intr);
-	clk_put(lpass.clk_timer);
+	clk_put_all();
 
 	return 0;
 }
@@ -622,20 +770,32 @@ static int lpass_runtime_resume(struct device *dev)
 }
 #endif
 
+static const int lpass_ver_data[] = {
+	[LPASS_VER_000100] = LPASS_VER_000100,
+	[LPASS_VER_010100] = LPASS_VER_010100,
+	[LPASS_VER_100100] = LPASS_VER_100100,
+	[LPASS_VER_110100] = LPASS_VER_110100,
+	[LPASS_VER_370100] = LPASS_VER_370100,
+};
+
 static struct platform_device_id lpass_driver_ids[] = {
 	{
 		.name	= "samsung-lpass",
-	},
-	{},
+	}, {
+		.name	= "samsung-audss",
+	}, {},
 };
 MODULE_DEVICE_TABLE(platform, lpass_driver_ids);
 
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_lpass_match[] = {
 	{
-		.compatible = "samsung,exynos5430-lpass",
-	},
-	{},
+		.compatible	= "samsung,exynos5430-lpass",
+		.data		= &lpass_ver_data[LPASS_VER_370100],
+	}, {
+		.compatible	= "samsung,exynos5-audss",
+		.data		= &lpass_ver_data[LPASS_VER_110100],
+	}, {},
 };
 MODULE_DEVICE_TABLE(of, exynos_lpass_match);
 #endif
