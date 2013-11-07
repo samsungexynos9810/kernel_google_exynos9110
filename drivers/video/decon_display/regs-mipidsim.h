@@ -307,8 +307,12 @@
 /* S5P_DSIM_MDRESOL */
 #define DSIM_MAIN_STAND_BY		(1 << 31)
 #define DSIM_MAIN_NOT_READY		(0 << 31)
-#define DSIM_MAIN_VRESOL(x)		(((x) & 0xfff) << 16)
-#define DSIM_MAIN_HRESOL(x)		(((x) & 0Xfff) << 0)
+#define DSIM_MAIN_HRESOL_SHIFT         (0)
+#define DSIM_MAIN_VRESOL_SHIFT         (16)
+#define DSIM_MAIN_VRESOL(x)            (((x) & 0xfff) << DSIM_MAIN_VRESOL_SHIFT)
+#define DSIM_MAIN_HRESOL(x)            (((x) & 0Xfff) << DSIM_MAIN_HRESOL_SHIFT)
+#define DSIM_MAIN_HRESOL_MASK          (0xfff << DSIM_MAIN_HRESOL_SHIFT)
+#define DSIM_MAIN_VRESOL_MASK          (0xfff << DSIM_MAIN_VRESOL_SHIFT)
 
 /* S5P_DSIM_MVPORCH */
 #define DSIM_CMD_ALLOW_SHIFT		(28)
