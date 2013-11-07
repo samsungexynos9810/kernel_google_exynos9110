@@ -322,6 +322,16 @@
 			interrupt-controller;
 			#interrupt-cells = <2>;
 		};
+
+		disp_teson: disp_teson {
+			samsung,pins = "gpj4-0";
+			samsung,pin-function = <2>;
+		};
+
+		disp_tesoff: disp_tesoff {
+			samsung,pins = "gpj4-0";
+			samsung,pin-function = <0>;
+		};
 	};
 
 	pinctrl@14010000 {
