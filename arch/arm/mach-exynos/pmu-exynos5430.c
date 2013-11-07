@@ -363,6 +363,14 @@ static void exynos_use_feedback(void)
 void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 {
 	unsigned int i;
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+	unsigned int tmp;
+
+	/* Enable non retention flip-flop reset */
+	tmp = __raw_readl(EXYNOS_PMU_SPARE0);
+	tmp |= EXYNOS_EN_NONRET_RESET;
+	__raw_writel(tmp, EXYNOS_PMU_SPARE0);
+#endif
 
 	for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
 		__raw_writel(exynos_pmu_config[i].val[mode],
