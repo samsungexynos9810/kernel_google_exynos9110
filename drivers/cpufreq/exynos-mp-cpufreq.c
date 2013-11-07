@@ -1028,7 +1028,9 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 	if (ret < 0)
 		goto bad;
 
+#if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
 good:
+#endif
 	return NOTIFY_OK;
 bad:
 	return NOTIFY_BAD;
@@ -1105,7 +1107,9 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 	if (ret < 0)
 		goto bad;
 
+#if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
 good:
+#endif
 	return NOTIFY_OK;
 bad:
 	return NOTIFY_BAD;
