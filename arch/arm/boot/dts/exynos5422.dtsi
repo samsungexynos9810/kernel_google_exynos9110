@@ -509,31 +509,30 @@
 		/* Clocks for the DECON driver */
 		/* Clocks for the MIPI-DSI driver */
 
-			clocks = <&clock 1058>, <&clock 1057>, <&clock 1060>, <&clock 1061>,
-                       /*<&clock 2104>*/ <&clock 483>, <&clock 26>, <&clock 25>,
-                       <&clock 580>, <&clock 581>, <&clock 680>,
-                       <&clock 1022>, <&clock 1023>, <&clock 1024>, <&clock 1025>,
-                       <&clock 1210>, <&clock 1214>, <&clock 1224>, <&clock 1233>,
-                       <&clock 2037>, <&clock 2053>, <&clock 2058>, <&clock 2067>,
-                       <&clock 2072>, <&clock 2077>, <&clock 2082>,
-                       <&clock 2100>, <&clock 2101>, <&clock 2102>,
-                       <&clock 2103>, /*<&clock 2104>,*/ <&clock 2105>,
-                       <&clock 4016>, <&clock 4021>,
-                       <&clock 4101>, <&clock 4102> ,<&clock 2006>,
-						<&clock 2104>, <&clock 2005>, <&clock 2107>, <&clock 4103>, <&clock 2002>;
-               clock-names = "sclk_pixel", "sclk_dp1_ext_mst_vid", "sclk_mipi1", "sclk_fimd1",
-                       /*"mout_fimd1"*/ "aclk_200_disp1", "dsim1", "dp1",
-                       "aclk_300_disp1", "fimd1","aclk_400_disp1", "gate_pixel",
-                       "gate_dp1_ext_mst_vid", "gate_mipi1", "gate_fimd1",
-                       "gate_sclk_disp1", "gate_bus_disp1", "gate_top_sclk_disp1",
-                       "gate_ip_disp1", "mout_aclk_200_disp1_user", "mout_aclk_300_disp1",
-                       "mout_aclk_400_disp1", "mout_aclk_300_disp1_sw",
-                       "mout_aclk_400_disp1_sw", "mout_aclk_300_disp1_user",
-                       "mout_aclk_400_disp1_user", "mout_pixel", "mout_dp1_ext_mst_vid",
-                       "mout_mipi1", "mout_fimd1_opt", /*"mout_fimd1",*/ "mout_fimd1_final",
-                       "dout_aclk_300_disp1", "dout_aclk_400_disp1",
-                       "dout_dp1_ext_mst_vid", "dout_mipi1", "mout_spll_ctrl",
-					   "mout_fimd1", "mout_rpll_ctrl", "mout_fimd1_mdnie1", "dout_fimd1", "mout_dpll_ctrl";
+		clocks = <&clock 1058>, <&clock 1057>, <&clock 1060>, <&clock 1061>,
+			   /*<&clock 2104>*/ <&clock 483>, <&clock 26>, <&clock 25>,
+			   <&clock 580>, <&clock 581>, <&clock 680>, <&clock 1022>,
+			   <&clock 1023>, <&clock 1024>, <&clock 1025>, <&clock 1210>,
+			   <&clock 1214>, <&clock 1224>, <&clock 1233>,  <&clock 2037>,
+			   <&clock 2054>, <&clock 2058>, <&clock 2068>,  <&clock 2072>,
+			   <&clock 2078>, <&clock 2082>,   <&clock 2100>, <&clock 2101>,
+			   <&clock 2102>,   <&clock 2103>, /*<&clock 2104>,*/ <&clock 2105>,
+			   <&clock 4016>, <&clock 4021>,   <&clock 4101>, <&clock 4102> ,
+			   <&clock 2006>,	<&clock 2104>, <&clock 2005>, <&clock 2107>,
+			   <&clock 4103>, <&clock 2002>;
+
+		clock-names = "sclk_pixel", "sclk_dp1_ext_mst_vid", "sclk_mipi1", "sclk_fimd1",
+			/*"mout_fimd1"*/ "aclk_200_disp1", "dsim1", "dp1",
+			"aclk_300_disp1", "fimd1","aclk_400_disp1", "gate_pixel",
+			"gate_dp1_ext_mst_vid", "gate_mipi1", "gate_fimd1","gate_sclk_disp1",
+			"gate_bus_disp1", "gate_top_sclk_disp1",  "gate_ip_disp1", "mout_aclk_200_disp1_user",
+			"mout_aclk_300_disp1",  "mout_aclk_400_disp1", "mout_aclk_300_disp1_sw",  "mout_aclk_400_disp1_sw",
+
+			"mout_aclk_300_disp1_user", "mout_aclk_400_disp1_user", "mout_pixel", "mout_dp1_ext_mst_vid",
+			"mout_mipi1", "mout_fimd1_opt", /*"mout_fimd1",*/ "mout_fimd1_final",
+			"dout_aclk_300_disp1", "dout_aclk_400_disp1",    "dout_dp1_ext_mst_vid", "dout_mipi1",
+			"mout_spll_ctrl",	"mout_fimd1", "mout_rpll_ctrl", "mout_fimd1_mdnie1",
+			"dout_fimd1", "mout_dpll_ctrl";
 
 			   pinctrl-names = "turnon_tes", "turnoff_tes";
 			   pinctrl-0 = <&disp_teson>;
