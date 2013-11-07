@@ -129,6 +129,13 @@ MODULE_DEVICE_TABLE(of, exynos5_decon);
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
 #endif
 
+#define DECON_DUMMY_WIN_DISPLAY
+#ifdef DECON_DUMMY_WIN_DISPLAY
+static dma_addr_t g_fb_dummy_buf;
+#define DUMMY_WIDTH     64
+#define DUMMY_HEIGHT    16
+#endif
+
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 			u32 win_no, u32 bufmode, u32 bufsel)
 {
@@ -1723,6 +1730,35 @@ static u32 s3c_fb_rgborder(int format)
 	}
 }
 
+#ifdef DECON_DUMMY_WIN_DISPLAY
+static int s3c_fb_set_win_buffer_dummy(struct s3c_fb *sfb,
+		struct s3c_fb_win *win, struct s3c_reg_data *regs)
+{
+	u8 alpha0, alpha1;
+        unsigned short win_no = win->index;
+
+	regs->vidw_buf_start[win_no] = g_fb_dummy_buf;
+	regs->vidw_buf_end[win_no] = regs->vidw_buf_start[win_no] +
+			DUMMY_WIDTH * DUMMY_HEIGHT * 4;
+	regs->vidw_buf_size[win_no] = vidw_buf_size(DUMMY_WIDTH,
+			DUMMY_WIDTH * 4, 32);
+	regs->vidosd_a[win_no] = vidosd_a(16, 16 + DUMMY_HEIGHT * win_no);
+	regs->vidosd_b[win_no] = vidosd_b(16, 16 + DUMMY_HEIGHT * win_no,
+			DUMMY_WIDTH, DUMMY_HEIGHT);
+	alpha0 = 0;
+	alpha1 = 0xff;
+	regs->vidosd_c[win_no] = vidosd_c(alpha0, alpha0, alpha0);
+	regs->vidosd_d[win_no] = vidosd_d(alpha1, alpha1, alpha1);
+	regs->wincon[win_no] = wincon(32, 8, 8);
+	regs->wincon[win_no] |= s3c_fb_rgborder(S3C_FB_PIXEL_FORMAT_RGBA_8888);
+
+	if (win_no)
+		regs->blendeq[win_no - 1] = blendeq(S3C_FB_BLENDING_NONE, 8, 255);
+
+	return 0;
+}
+#endif
+
 static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 		struct s3c_fb_win_config *win_config, struct s3c_reg_data *regs)
 {
@@ -1991,6 +2027,13 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		if (WIN_CONFIG_DMA(i)) {
 			switch (config->state) {
 			case S3C_FB_WIN_STATE_DISABLED:
+#ifdef DECON_DUMMY_WIN_DISPLAY
+			if (win_config[0].state != S3C_FB_WIN_STATE_DISABLED) {
+				s3c_fb_set_win_buffer_dummy(sfb, win, regs);
+				enabled = 1;
+				color_map = 0;
+			}
+#endif
 				break;
 			case S3C_FB_WIN_STATE_COLOR:
 				enabled = 1;
@@ -2320,10 +2363,10 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	disp_pm_runtime_get_sync(dispdrv);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
+#if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE) && !defined(DECON_DUMMY_WIN_DISPLAY)
 		u32 new_start = regs->vidw_buf_start[i];
 		u32 shadow_start = readl(sfb->regs +
 				SHD_VIDW_BUF_START(i));
-#if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
 		if (new_start && (new_start == shadow_start)) {
 			pr_err("%s: 0x%08x is already unmapped \
 					address\n", __func__, new_start);
@@ -2645,6 +2688,62 @@ static void s3c_fb_missing_pixclock(struct fb_videomode *mode)
 	mode->pixclock = pixclk;
 }
 #endif
+
+#ifdef DECON_DUMMY_WIN_DISPLAY
+static int s3c_fb_clear_fb(struct s3c_fb *sfb,
+		struct dma_buf *dest_buf, size_t size)
+{
+	size_t i;
+
+	int ret = dma_buf_begin_cpu_access(dest_buf, 0, dest_buf->size,
+			DMA_TO_DEVICE);
+	if (ret < 0) {
+		dev_warn(sfb->dev, "dma_buf_begin_cpu_access() failed while clearing framebuffer: %u\n",
+				ret);
+		return ret;
+	}
+
+	for (i = 0; i < dest_buf->size / PAGE_SIZE; i++) {
+		void *to_virt = dma_buf_kmap(dest_buf, i);
+		memset(to_virt, 0, PAGE_SIZE);
+		dma_buf_kunmap(dest_buf, i, to_virt);
+	}
+
+	dma_buf_end_cpu_access(dest_buf, 0, size, DMA_TO_DEVICE);
+	return 0;
+}
+static int s3c_fb_dummy_buf_alloc_memory(struct s3c_fb *sfb)
+{
+        size_t size;
+        struct ion_handle *handle;
+        struct dma_buf *buf;
+        struct s3c_dma_buf_data dma_buf_data;
+        unsigned int ret;
+
+        size = DUMMY_WIDTH * DUMMY_HEIGHT * 4;
+        handle = ion_alloc(sfb->fb_ion_client, (size_t)size, 0,
+					ION_HEAP_SYSTEM_MASK, 0);
+	if (IS_ERR(handle)) {
+		dev_err(sfb->dev, "failed to ion_alloc\n");
+		return -ENOMEM;
+	}
+
+	buf = ion_share_dma_buf(sfb->fb_ion_client, handle);
+	if (IS_ERR_OR_NULL(buf)) {
+		dev_err(sfb->dev, "%s: ion_share_dma_buf() failed\n", __func__);
+		return -1;
+	}
+
+        ret = s3c_fb_map_ion_handle(sfb, &dma_buf_data, handle, buf, 0);
+	if (!ret)
+		return -1;
+	g_fb_dummy_buf = dma_buf_data.dma_addr;
+
+        s3c_fb_clear_fb(sfb, dma_buf_data.dma_buf, size);
+	return 0;
+}
+#endif
+
 /**
  * s3c_fb_alloc_memory() - allocate display memory for framebuffer window
  * @sfb: The base resources for the hardware.
@@ -4052,6 +4151,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 		}
 #endif
 	}
+#ifdef DECON_DUMMY_WIN_DISPLAY
+        s3c_fb_dummy_buf_alloc_memory(sfb);
+#endif
 
 #ifdef CONFIG_FB_EXYNOS_FIMD_MC
 	ret = s3c_fb_register_mc_subdev_nodes(sfb);
