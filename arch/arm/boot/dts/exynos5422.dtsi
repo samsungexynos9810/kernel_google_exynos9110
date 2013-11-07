@@ -987,4 +987,74 @@
 		clock-names = "gate_scaler";
 		iommu = <&sysmmu_scaler2r>, <&sysmmu_scaler2w>;
 	};
+
+	lpass: lpass@03810000 {
+		compatible = "samsung,exynos5-audss";
+		reg = <0x03810000 0x100>,
+		      <0x03000000 0x49000>;
+		clocks = <&clock 1722>,		/* gate_ass_adma */
+			 <&clock 1723>,		/* gate_ass_timer */
+			 <&clock 1725>,		/* gate_ass_gpio */
+			 <&clock 1730>;		/* gate_ass_srp */
+		clock-names = "dmac", "timer", "gpio", "srp";
+		/* samsung,power-domain = <&pd_maudio>; */
+		status = "ok";
+	};
+
+	i2s0: i2s@03830000 {
+		compatible = "samsung,i2s-v5";
+		reg = <0x03830000 0x100>;
+		dmas = <&adma 0 &adma 2>;
+		dma-names = "tx", "rx";
+		interrupts = <0 115 0>;
+		clocks = <&clock 1728>,		/* gate_ass_i2s_special */
+			 <&clock 4182>,		/* dout_ass_bus */
+			 <&clock 4183>;		/* dout_ass_i2s */
+		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
+		samsung,supports-6ch;
+		samsung,supports-rstclr;
+		samsung,supports-secdai;
+		samsung,supports-tdm;
+		samsung,lpass-subip;
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&i2s0_bus>;
+		pinctrl-1 = <&pcm0_bus>;
+		status = "disabled";
+		i2s-sec {
+			dmas = <&adma 1>;
+			dma-names = "tx-sec";
+			samsung,tx-buf = <0x03000000>;
+			samsung,tx-size = <0x8000>;
+		};
+	};
+
+	pcm0: pcm@03840000 {
+		compatible = "samsung,pcm";
+		reg = <0x03840000 0x100>;
+		dmas = <&adma 3 &adma 4>;
+		dma-names = "tx", "rx";
+		interrupts = <0 116 0>;
+		clocks = <&clock 1726>,		/* gate_ass_pcm_special */
+			 <&clock 4105>;		/* dout_mau_pcm0 */
+		clock-names = "pcm", "sclk_pcm";
+		samsung,lpass-subip;
+		status = "disabled";
+	};
+
+	spdif@12DB0000 {
+		compatible = "samsung,spdif";
+		reg = <0x12DB0000 0x100>;
+		dmas = <&pdma1 7>;
+		dma-names = "tx";
+		interrupts = <0 105 0>;
+		clocks = <&clock 1476>,		/* clk_spdif */
+		         <&clock 1157>;		/* sclk_spdif */
+		clock-names = "spdif", "sclk_spdif";
+		samsung,lpass-subip;
+		pinctrl-names = "default", "idle";
+		pinctrl-0 = <&spdif_bus>;
+		pinctrl-1 = <&pcm2_bus>;
+		status = "disabled";
+	};
+
 };
