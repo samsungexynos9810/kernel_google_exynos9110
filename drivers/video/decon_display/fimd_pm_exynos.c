@@ -88,16 +88,30 @@ int init_display_fimd_clocks_exynos(struct device *dev)
 #ifdef CONFIG_DECON_LCD_S6E8AA0
 	ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
 #else
-        ret = exynos_set_rate("sclk_fimd1", 266 * MHZ);
+	ret = exynos_set_rate("sclk_fimd1", 266 * MHZ);
 #endif
-        if (ret < 0)
-                printk("exynos_set_rate failed: ret %d \n", ret);
+	if (ret < 0)
+		printk("exynos_set_rate failed: ret %d \n", ret);
 
-        ret = exynos_set_rate("dout_aclk_300_disp1", 300 * MHZ);
+	ret = exynos_set_parent("mout_aclk_300_disp1_user", "mout_aclk_300_disp1_sw");
+	if (ret < 0)
+		pr_err("exynos_set_rate failed: ret %d\n", ret);
+
+	ret = exynos_set_parent("mout_aclk_300_disp1_sw", "dout_aclk_300_disp1");
+	if (ret < 0)
+		pr_err("exynos_set_rate failed: ret %d\n", ret);
+
+	ret = exynos_set_parent("mout_aclk_300_disp1", "mout_dpll_ctrl");
+	if (ret < 0)
+		pr_err("exynos_set_rate failed: ret %d\n", ret);
+
+	ret = exynos_set_rate("dout_aclk_300_disp1", 300 * MHZ);
 	if (ret < 0)
 		pr_err("exynos_set_rate failed: ret %d\n", ret);
 
 	pr_info("%s: clk_rate: %d\n", __func__, exynos_get_rate("sclk_fimd1"));
+	pr_info("%s: clk_rate: %d\n", __func__, exynos_get_rate("dout_aclk_300_disp1"));
+
 	return ret;
 }
 
