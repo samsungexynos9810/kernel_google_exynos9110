@@ -57,6 +57,7 @@ static void top_clk_enable(void)
 	add_enabler("fout_vpll");
 	add_enabler("fout_epll");
 	add_enabler("fout_rpll");
+	add_enabler("fout_kpll");
 	add_enabler("aclk_66_peric");
 	add_enabler("aclk_66_psgen");
 	add_enabler("aclk_300_jpeg");

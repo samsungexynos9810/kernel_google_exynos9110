@@ -20,6 +20,13 @@
 #include "clk-pll.h"
 #include "clk-exynos5422.h"
 
+#undef MUX
+#define MUX(_id, cname, pnames, o, s, w)                       \
+	__MUX(_id, NULL, cname, pnames, o, s, w, CLK_GET_RATE_NOCACHE, 0, NULL)
+
+#undef DIV
+#define DIV(_id, cname, pname, o, s, w)                                \
+	__DIV(_id, NULL, cname, pname, o, s, w, CLK_GET_RATE_NOCACHE, 0, NULL)
 
 enum exynos5422_clks {
 	none,
@@ -2035,7 +2042,48 @@ struct samsung_pll_rate_table bpll_rate_table[] = {
 
 struct samsung_pll_rate_table apll_rate_table[] = {
 	/* rate		p	m	s	k */
-	{  66000000U,   4,  352,    5,  0},
+	{2400000000U,   2,  200,    0,  0},
+	{2300000000U,   6,  575,    0,  0},
+	{2200000000U,   3,  275,    0,  0},
+	{2100000000U,   2,  175,    0,  0},
+	{2000000000U,   3,  250,    0,  0},
+	{1900000000U,   6,  475,    0,  0},
+	{1800000000U,   3,  225,    0,  0},
+	{1700000000U,   6,  425,    0,  0},
+	{1600000000U,   3,  200,    0,  0},
+	{1500000000U,   4,  250,    0,  0},
+	{1400000000U,   3,  175,    0,  0},
+	{1300000000U,   6,  325,    0,  0},
+	{1200000000U,   2,  200,    1,  0},
+	{1100000000U,   3,  275,    1,  0},
+	{1000000000U,   3,  250,    1,  0},
+	{ 900000000U,   2,  150,    1,  0},
+	{ 800000000U,   3,  200,    1,  0},
+	{ 700000000U,   3,  175,    1,  0},
+	{ 600000000U,   2,  100,    1,  0},
+	{ 500000000U,   3,  250,    2,  0},
+	{ 400000000U,   3,  200,    2,  0},
+	{ 300000000U,   2,  100,    2,  0},
+	{ 200000000U,   3,  200,    3,  0},
+};
+
+struct samsung_pll_rate_table kpll_rate_table[] = {
+	/* rate     p   m   s   k */
+	{1600000000U,   3,  200,    0,  0},
+	{1500000000U,   4,  250,    0,  0},
+	{1400000000U,   3,  175,    0,  0},
+	{1300000000U,   6,  325,    0,  0},
+	{1200000000U,   2,  200,    1,  0},
+	{1100000000U,   3,  275,    1,  0},
+	{1000000000U,   3,  250,    1,  0},
+	{ 900000000U,   2,  150,    1,  0},
+	{ 800000000U,   3,  200,    1,  0},
+	{ 700000000U,   3,  175,    1,  0},
+	{ 600000000U,   2,  100,    1,  0},
+	{ 500000000U,   3,  250,    2,  0},
+	{ 400000000U,   3,  200,    2,  0},
+	{ 300000000U,   2,  100,    2,  0},
+	{ 200000000U,   3,  200,    3,  0},
 };
 
 struct samsung_pll_rate_table dpll_rate_table[] = {
@@ -2047,7 +2095,7 @@ struct samsung_pll_rate_table dpll_rate_table[] = {
 void __init exynos5422_clk_init(struct device_node *np)
 {
 	struct clk *apll, *bpll, *cpll, *dpll, *ipll, *mpll, *spll, *vpll;
-	struct clk *epll, *rpll;
+	struct clk *epll, *rpll, *kpll;
 
 	samsung_clk_init(np, 0, nr_clks, (unsigned long *) exynos5422_clk_regs,
 			ARRAY_SIZE(exynos5422_clk_regs), NULL, 0);
@@ -2069,7 +2117,10 @@ void __init exynos5422_clk_init(struct device_node *np)
 
 	ipll = samsung_clk_register_pll35xx("fout_ipll", "fin_pll",
 			EXYNOS5_IPLL_LOCK, EXYNOS5_IPLL_CON0, ipll_rate_table, ARRAY_SIZE(ipll_rate_table));
-	/* KPLL WILL BE INITIALIZED HERE */
+
+	kpll = samsung_clk_register_pll35xx("fout_kpll", "fin_pll",
+			EXYNOS5_KPLL_LOCK, EXYNOS5_KPLL_CON0, kpll_rate_table, ARRAY_SIZE(kpll_rate_table));
+
 	mpll = samsung_clk_register_pll35xx("fout_mpll", "fin_pll",
 			EXYNOS5_MPLL_LOCK, EXYNOS5_MPLL_CON0, mpll_rate_table, ARRAY_SIZE(mpll_rate_table));
 
