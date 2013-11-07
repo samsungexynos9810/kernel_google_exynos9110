@@ -842,6 +842,8 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	/* Save trimming info in order to perform calibration */
 	trim_info = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
 	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
+	if (data->temp_error1[id] == 0)
+		data->temp_error1[id] = 75;
 	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
 	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) ||
