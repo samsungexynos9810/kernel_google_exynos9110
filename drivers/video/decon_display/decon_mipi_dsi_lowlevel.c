@@ -129,7 +129,7 @@ void s5p_mipi_dsi_set_main_disp_resol(struct mipi_dsim_device *dsim,
 		~(DSIM_MAIN_STAND_BY);
 	writel(reg, dsim->reg_base + S5P_DSIM_MDRESOL);
 
-	reg &= ~(0xfff << 16) & ~(0xfff << 0);
+	reg &= ~(DSIM_MAIN_VRESOL_MASK) & ~(DSIM_MAIN_HRESOL_MASK);
 	reg |= DSIM_MAIN_VRESOL(vert_resol) | DSIM_MAIN_HRESOL(hori_resol);
 
 	reg |= DSIM_MAIN_STAND_BY;
