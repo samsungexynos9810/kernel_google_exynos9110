@@ -4525,9 +4525,6 @@ int s3c_fb_resume(struct device *dev)
 	/* use platform specified window as the basis for the lcd timings */
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	s3c_fb_configure_trigger(sfb);
-#endif
 
 	mutex_lock(&sfb->vsync_info.irq_lock);
 	if (sfb->vsync_info.irq_refcount)
