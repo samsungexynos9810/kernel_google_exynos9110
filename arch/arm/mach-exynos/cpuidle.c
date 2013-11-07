@@ -99,7 +99,6 @@ static struct check_reg_lpa exynos5_power_domain[] = {
 	{.check_reg = EXYNOS5430_HEVC_STATUS,	.check_bit = 0x7},	/* 0x41C4 */
 	{.check_reg = EXYNOS5430_G3D_STATUS,	.check_bit = 0x7},	/* 0x4064 */
 	{.check_reg = EXYNOS5430_DISP_STATUS,	.check_bit = 0x7},	/* 0x4084 */
-	{.check_reg = EXYNOS5430_AUD_STATUS,	.check_bit = 0x7},	/* 0x40C4 */
 };
 
 /*
