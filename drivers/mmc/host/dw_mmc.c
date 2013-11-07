@@ -3248,6 +3248,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 				"value of FIFOTH register as default\n");
 
 	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
+	of_property_read_u32(np, "qos_int_level", &pdata->qos_int_level);
 
 	if (!of_property_read_u32(np, "clock-frequency", &clock_frequency))
 		pdata->bus_hz = clock_frequency;
