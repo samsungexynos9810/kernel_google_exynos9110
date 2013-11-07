@@ -413,7 +413,7 @@ static void lpass_disable(void)
 	exynos_set_parent("mout_aud_dpll_user_top", "fin_pll");
 
 	/* CLK_MUX_SEL_AUD0 */
-	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
+	exynos_set_parent("mout_aud_pll", "fin_pll");
 	exynos_set_parent("mout_aud_pll_user", "fin_pll");
 	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
@@ -546,15 +546,6 @@ static void lpass_init_reg_list(void)
 	lpass_add_suspend_reg(EXYNOS5430_SRC_ENABLE_AUD1);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD1);
-	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD2);
-#if 0
-	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD3);
-	lpass_add_suspend_reg(EXYNOS5430_DIV_AUD4);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_ACLK_AUD);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_PCLK_AUD);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD0);
-	lpass_add_suspend_reg(EXYNOS5430_ENABLE_SCLK_AUD1);
-#endif
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_IP_AUD0);
 	lpass_add_suspend_reg(EXYNOS5430_ENABLE_IP_AUD1);
 
