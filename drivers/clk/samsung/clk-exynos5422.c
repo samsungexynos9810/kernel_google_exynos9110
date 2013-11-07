@@ -1482,7 +1482,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_300_gscl_sw, EXYNOS5_CLK_SRC_TOP12, 28, 1),
 	CMUX(mout_aclk_300_gscl_user, EXYNOS5_CLK_SRC_TOP5, 28, 1),
 
-	CMX(mout_aclk_300_disp1, "mout_aclk_300_disp1", group1_p, EXYNOS5_CLK_SRC_TOP1, 24, 2),
+	CMX(mout_aclk_300_disp1, "mout_aclk_300_disp1", group1_p, EXYNOS5_CLK_SRC_TOP2, 24, 2),
 	CMUX(mout_aclk_300_disp1_sw, EXYNOS5_CLK_SRC_TOP12, 24, 1),
 	CMUX(mout_aclk_300_disp1_user, EXYNOS5_CLK_SRC_TOP5, 24, 1),
 
@@ -1525,7 +1525,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 
 	/* AUDIO */
 	CMUX(mout_mau_audio0, EXYNOS5_CLK_SRC_MAUDIO, 28, 3),
-	CMUX(mout_mclk_cdrex, EXYNOS5_CLK_SRC_PERIC1, 28, 3),
+	CMUX(mout_mclk_cdrex, EXYNOS5_CLK_SRC_CDREX, 4, 1),
 
 	/* FSYS_BLK */
 	CMX(mout_usbdrd301, "mout_usbdrd301", group2_p, EXYNOS5_CLK_SRC_FSYS, 4, 3),
@@ -1794,8 +1794,10 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 		EXYNOS5_CLK_GATE_TOP_SCLK_FSYS, 7, CLK_SET_RATE_PARENT, 0),
 	CGATE(sclk_usbphy300, "sclk_usbphy300", "dout_usbphy300",
 		EXYNOS5_CLK_GATE_TOP_SCLK_FSYS, 8, CLK_SET_RATE_PARENT, 0),
-	CGATE(sclk_usbdrd301, "sclk_unipro", "dout_unipro",
-		EXYNOS5_CLK_SRC_MASK_FSYS, 24, CLK_SET_RATE_PARENT, 0),
+	CGATE(sclk_usbdrd300, "sclk_usbdrd300", "dout_usbdrd300",
+		EXYNOS5_CLK_GATE_TOP_SCLK_FSYS, 9, CLK_SET_RATE_PARENT, 0),
+	CGATE(sclk_usbdrd301, "sclk_usbdrd301", "dout_usbdrd301",
+		EXYNOS5_CLK_GATE_TOP_SCLK_FSYS, 10, CLK_SET_RATE_PARENT, 0),
 
 	CGATE(sclk_gscl_wrap_a, "sclk_gscl_wrap_a", "aclK333_432_gscl",
 		EXYNOS5_CLK_GATE_TOP_SCLK_GSCL, 6, CLK_SET_RATE_PARENT, 0),
@@ -1833,9 +1835,9 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(hclk_sdmmc1, "hclk_sdmmc1", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 13, 0, 0),
 	CGATE(hclk_sdmmc2, "hclk_sdmmc2", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 14, 0, 0),
 	CGATE(hclk_sromc, "hclk_sromc", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 19, CLK_IGNORE_UNUSED, 0),
-	CGATE(sclk_usbdrd300, "sclk_usbdrd300", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 21, 0, 0),
-	CGATE(sclk_usbdrd301, "sclk_usbdrd301", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 28, 0, 0),
 	CGATE(clk_usbhost20, "clk_usbhost20", "aclk_noc_fsys", EXYNOS5_CLK_GATE_IP_FSYS, 18, 0, 0),
+	CGATE(hclk_usbdrd300, "hclk_usbdrd300", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 21, 0, 0),
+	CGATE(hclk_usbdrd301, "hclk_usbdrd301", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 28, 0, 0),
 
 	/* UART */
 	CGATE(pclk_uart0, "pclk_uart0", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 4, 0, 0),
@@ -2037,7 +2039,6 @@ struct samsung_pll_rate_table bpll_rate_table[] = {
 	{ 266000000U,   3,  266,    3,  0},
 	{ 200000000U,   3,  200,    3,  0},
 	{ 160000000U,   3,  160,    3,  0},
-	{ 133000000U,   3,  266,    4,  0},
 };
 
 struct samsung_pll_rate_table apll_rate_table[] = {

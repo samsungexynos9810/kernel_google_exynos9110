@@ -47,6 +47,10 @@ static inline void add_enabler(const char *name)
 static void top_clk_enable(void)
 {
 	struct clk_enabler *ce;
+#if defined(CMU_PRINT_PLL)
+	unsigned long tmp;
+	struct clk *clk;
+#endif
 	add_enabler("fout_apll");
 	add_enabler("fout_bpll");
 	add_enabler("fout_cpll");
@@ -61,11 +65,53 @@ static void top_clk_enable(void)
 	add_enabler("aclk_66_peric");
 	add_enabler("aclk_66_psgen");
 	add_enabler("aclk_300_jpeg");
+
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
 		clk_enable(ce->clk);
 	}
 
+#if defined(CMU_PRINT_PLL)
+	clk = __clk_lookup("fout_apll");
+	tmp = clk_get_rate(clk);
+	pr_info("apll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_bpll");
+	tmp = clk_get_rate(clk);
+	pr_info("bpll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_cpll");
+	tmp = clk_get_rate(clk);
+	pr_info("cpll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_dpll");
+	tmp = clk_get_rate(clk);
+	pr_info("dpll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_epll");
+	tmp = clk_get_rate(clk);
+	pr_info("epll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_rpll");
+	tmp = clk_get_rate(clk);
+	pr_info("rpll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_ipll");
+	tmp = clk_get_rate(clk);
+	pr_info("ipll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_spll");
+	tmp = clk_get_rate(clk);
+	pr_info("spll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_vpll");
+	tmp = clk_get_rate(clk);
+	pr_info("vpll %ld\n", tmp);
+
+	clk = __clk_lookup("fout_mpll");
+	tmp = clk_get_rate(clk);
+	pr_info("mpll %ld\n", tmp);
+#endif
 	pr_info("Clock enables : TOP, MIF\n");
 }
 
