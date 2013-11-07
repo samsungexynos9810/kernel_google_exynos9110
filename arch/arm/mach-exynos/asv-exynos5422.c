@@ -14,7 +14,7 @@
 #include <linux/types.h>
 #include <linux/kernel.h>
 #include <linux/err.h>
-#include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/io.h>
 #include <linux/slab.h>
 
@@ -550,11 +550,12 @@ int exynos5422_init_asv(struct asv_common *asv_info)
 	is_speedgroup = false;
 
 	/* enable abb clock */
-	clk_abb = clk_get(NULL, "clk_abb_apbif");
+	clk_abb = __clk_lookup("clk_abb_apbif");
 	if (IS_ERR(clk_abb)) {
 		pr_err("EXYNOS5422 ASV : cannot find abb clock!\n");
 		return -EINVAL;
 	}
+	clk_prepare(clk_abb);
 	clk_enable(clk_abb);
 
 	chip_id3_value = __raw_readl(CHIP_ID3_REG);
