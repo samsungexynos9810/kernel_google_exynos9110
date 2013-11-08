@@ -685,8 +685,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c0_bus>;
-		clocks = <&clock 880>;
-		clock-names = "hsi2c";
+		clocks = <&clock 880>, <&clock 880>;
+		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
 
@@ -698,8 +698,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c3_bus>;
-		clocks = <&clock 877>;
-		clock-names = "hsi2c";
+		clocks = <&clock 880>, <&clock 880>;
+		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
 
