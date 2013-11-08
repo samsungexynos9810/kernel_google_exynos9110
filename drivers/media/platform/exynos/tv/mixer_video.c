@@ -534,6 +534,21 @@ static int mxr_g_dv_timings(struct file *file, void *fh,
 	return ret ? -EINVAL : 0;
 }
 
+static int mxr_enum_dv_timings(struct file *file, void *fh,
+	struct v4l2_enum_dv_timings *timings)
+{
+	struct mxr_layer *layer = video_drvdata(file);
+	struct mxr_device *mdev = layer->mdev;
+	int ret;
+
+	/* lock protects from changing sd_out */
+	mutex_lock(&mdev->mutex);
+	ret = v4l2_subdev_call(to_outsd(mdev), video, enum_dv_timings, timings);
+	mutex_unlock(&mdev->mutex);
+
+	return ret ? -EINVAL : 0;
+}
+
 static int mxr_reqbufs(struct file *file, void *priv,
 			  struct v4l2_requestbuffers *p)
 {
@@ -649,6 +664,7 @@ static const struct v4l2_ioctl_ops mxr_ioctl_ops = {
 	/* Preset functions */
 	.vidioc_s_dv_timings = mxr_s_dv_timings,
 	.vidioc_g_dv_timings = mxr_g_dv_timings,
+	.vidioc_enum_dv_timings = mxr_enum_dv_timings,
 	/* Crop ioctls */
 	.vidioc_g_crop = mxr_g_crop,
 	.vidioc_s_crop = mxr_s_crop,
