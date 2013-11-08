@@ -760,7 +760,7 @@
 		compatible = "samsung,exynos5-ehci";
 		reg = <0x12110000 0x100>;
 		interrupts = <0 71 0>;
-		clocks = <&clock 1607>;
+		clocks = <&clock 1449>;
 		clock-names = "usbhost";
 		status = "ok";
 		usb-phy = <&usb2_phy>;
@@ -770,7 +770,7 @@
 		compatible = "samsung,exynos5-ohci";
 		reg = <0x12120000 0x100>;
 		interrupts = <0 71 0>;
-		clocks = <&clock 1607>;
+		clocks = <&clock 1449>;
 		clock-names = "usbhost";
 		status = "ok";
 		usb-phy = <&usb2_phy>;
@@ -791,7 +791,7 @@
 
 	usb@12000000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 1121>, <&clock 736>;
+		clocks = <&clock 1121>, <&clock 741>;
 		clock-names = "sclk_usbdrd30", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -808,7 +808,7 @@
 
 	usb@12400000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 1120>, <&clock 741>;
+		clocks = <&clock 1120>, <&clock 736>;
 		clock-names = "sclk_usbdrd30", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -840,7 +840,7 @@
 	dwc3_usb3_phy_0: usbphy@12100000 {
 		compatible = "samsung,exynos5-usb3phy";
 		reg = <0x12100000 0x100>;
-		clocks = <&clock 1>, <&clock 1120>;
+		clocks = <&clock 1>, <&clock 741>;
 		clock-names = "ext_xtal", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
@@ -854,7 +854,7 @@
 	dwc3_usb3_phy_1: usbphy@12500000 {
 		compatible = "samsung,exynos5-usb3phy";
 		reg = <0x12500000 0x100>;
-		clocks = <&clock 1>, <&clock 1121>;
+		clocks = <&clock 1>, <&clock 736>;
 		clock-names = "ext_xtal", "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
