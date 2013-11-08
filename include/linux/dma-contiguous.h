@@ -83,6 +83,10 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 				 int count);
 
 int dma_contiguous_info(struct device *dev, struct cma_info *info);
+
+int dma_contiguous_isolate(struct device *dev);
+
+void dma_contiguous_deisolate(struct device *dev);
 #else
 
 #define MAX_CMA_AREAS	(0)
@@ -114,6 +118,14 @@ int dma_contiguous_info(struct device *dev, struct cma_info *info)
 {
 	return -ENOSYS;
 }
+
+static inline
+int dma_contiguous_isolate(struct device *dev)
+{
+	return -ENOSYS
+}
+
+#define dma_contiguous_deisolate(dev) do { } while (0)
 
 #endif
 
