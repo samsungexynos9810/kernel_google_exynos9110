@@ -1,7 +1,8 @@
 /*
- * Copyright (C) 2013 Samsung Electronics
- *               http://www.samsung.com/
- *               Sangkyu Kim <skwith.kim@samsung.com>
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com/
+ *
+ * EXYNOS5422 - PPMU support
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -11,46 +12,18 @@
 #ifndef __DEVFREQ_EXYNOS5422_PPMU_H
 #define __DEVFREQ_EXYNOS5422_PPMU_H __FILE__
 
-#include <linux/notifier.h>
-
-#include "exynos_ppmu2.h"
-
-enum DEVFREQ_TYPE {
-	MIF,
-	INT,
-	DEVFREQ_TYPE_COUNT,
+enum exynos_ppmu_sets {
+	PPMU_SET_DDR,
+	PPMU_SET_TOP,
 };
 
-enum DEVFREQ_PPMU {
-	PPMU_D0_CPU,
-	PPMU_D0_GEN,
-	PPMU_D0_RT,
-	PPMU_D1_CPU,
-	PPMU_D1_GEN,
-	PPMU_D1_RT,
-	PPMU_COUNT,
-};
+struct exynos5_ppmu_handle;
 
-enum DEVFREQ_PPMU_ADDR {
-	PPMU_D0_CPU_ADDR = 0x10480000,
-	PPMU_D0_GEN_ADDR = 0x10490000,
-	PPMU_D0_RT_ADDR = 0x104A0000,
-	PPMU_D1_CPU_ADDR = 0x104B0000,
-	PPMU_D1_GEN_ADDR = 0x104C0000,
-	PPMU_D1_RT_ADDR = 0x104D0000,
-};
-
-struct devfreq_exynos {
-	struct list_head node;
-	struct ppmu_info *ppmu_list;
-	unsigned int ppmu_count;
-	unsigned long val_ccnt;
-	unsigned long val_pmcnt;
-};
-
-int exynos5422_devfreq_init(struct devfreq_exynos *de);
-int exynos5422_devfreq_register(struct devfreq_exynos *de);
-int exynos5422_ppmu_register_notifier(enum DEVFREQ_TYPE type, struct notifier_block *nb);
-int exynos5422_ppmu_unregister_notifier(enum DEVFREQ_TYPE type, struct notifier_block *nb);
+struct exynos5_ppmu_handle *exynos5_ppmu_get(void);
+void exynos5_ppmu_put(struct exynos5_ppmu_handle *handle);
+int exynos5_ppmu_get_busy(struct exynos5_ppmu_handle *handle,
+	enum exynos_ppmu_sets filter, unsigned int *ccnt,
+	unsigned long *pmcnt);
+void exynos5_ppmu_trace(void);
 
 #endif /* __DEVFREQ_EXYNOS5422_PPMU_H */

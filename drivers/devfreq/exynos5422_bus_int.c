@@ -1,471 +1,469 @@
 /*
  * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  *              http://www.samsung.com
- *		Sangkyu Kim(skwith.kim@samsung.com)
+ *		Jiyun Kim(jiyun83.kim@samsung.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
 
-#include <linux/init.h>
+#include <linux/io.h>
 #include <linux/slab.h>
-#include <linux/pm_qos.h>
-#include <linux/devfreq.h>
-#include <linux/reboot.h>
-#include <linux/clk.h>
+#include <linux/mutex.h>
+#include <linux/suspend.h>
+#include <linux/opp.h>
 #include <linux/clk-provider.h>
+#include <linux/list.h>
+#include <linux/device.h>
+#include <linux/devfreq.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
-#include <linux/of_address.h>
-#include <linux/of_platform.h>
+#include <linux/module.h>
+#include <linux/pm_qos.h>
+#include <linux/reboot.h>
+#include <linux/kobject.h>
 
-#include <mach/tmu.h>
-#include <mach/asv-exynos.h>
-#include <mach/pm_domains.h>
 #include <mach/regs-clock.h>
+#include <mach/devfreq.h>
+#include <mach/asv-exynos.h>
+#include <mach/tmu.h>
+
+#include "devfreq_exynos.h"
+#include <plat/pll.h>
 
 #include "exynos5422_ppmu.h"
-#include "exynos_ppmu2.h"
-#include "devfreq_exynos.h"
-#include "governor.h"
-
-#define DEVFREQ_INITIAL_FREQ	(400000)
-#define DEVFREQ_POLLING_PERIOD	(0)
 
 #define INT_VOLT_STEP		12500
 #define COLD_VOLT_OFFSET	37500
 #define LIMIT_COLD_VOLTAGE	1250000
 #define MIN_COLD_VOLTAGE	950000
 
-enum devfreq_int_idx {
-	LV0_A,
-	LV0_B,
-	LV0,
-	LV1,
-	LV2,
-	LV3,
-	LV4,
-	LV5,
-	LV6,
-	LV_COUNT,
-};
-
-enum devfreq_int_clk {
-	DOUT_ACLK_BUS1_400,
-	DOUT_ACLK_BUS2_400,
-	MOUT_BUS_PLL_USER,
-	MOUT_MFC_PLL_USER,
-	MOUT_ACLK_G2D_400_A,
-	DOUT_ACLK_G2D_400,
-	DOUT_ACLK_G2D_266,
-	DOUT_ACLK_GSCL_333,
-	MOUT_ACLK_MSCL_400_A,
-	DOUT_ACLK_MSCL_400,
-	MOUT_SCLK_JPEG_A,
-	MOUT_SCLK_JPEG_B,
-	DOUT_SCLK_JPEG,
-	DOUT_ACLK_MFC0_333,
-	DOUT_ACLK_MFC1_333,
-	DOUT_ACLK_HEVC_400,
-	CLK_COUNT,
-};
-
-struct devfreq_data_int {
-	struct device *dev;
-	struct devfreq *devfreq;
-
-	struct regulator *vdd_int;
-	unsigned long old_volt;
-	unsigned long volt_offset;
-
-	struct mutex lock;
-
-	struct notifier_block tmu_notifier;
-};
-
-struct devfreq_clk_list devfreq_int_clk[CLK_COUNT] = {
-	{"dout_aclk_bus1_400",},
-	{"dout_aclk_bus2_400",},
-	{"mout_bus_pll_user",},
-	{"mout_mfc_pll_user",},
-	{"mout_aclk_g2d_400_a",},
-	{"dout_aclk_g2d_400",},
-	{"dout_aclk_g2d_266",},
-	{"dout_aclk_gscl_333",},
-	{"mout_aclk_mscl_400_a",},
-	{"dout_aclk_mscl_400", },
-	{"mout_sclk_jpeg_a",},
-	{"mout_sclk_jpeg_b",},
-	{"dout_sclk_jpeg",},
-	{"dout_aclk_mfc0_333",},
-	{"dout_aclk_mfc1_333",},
-	{"dout_aclk_hevc_400",},
-};
-
-struct devfreq_opp_table devfreq_int_opp_list[] = {
-	{LV0_A,	667000,	1175000},
-	{LV0_B,	533000,	1075000},
-	{LV0,	400000,	1000000},
-	{LV1,	333000,	1000000},
-	{LV2,	266000,	1000000},
-	{LV3,	200000,	1000000},
-	{LV4,	160000,	1000000},
-	{LV5,	133000,	1000000},
-	{LV6,	100000,	1000000},
-};
-
-struct devfreq_clk_state aclk_g2d_mfc_pll[] = {
-	{MOUT_ACLK_G2D_400_A,	MOUT_MFC_PLL_USER},
-};
-
-struct devfreq_clk_state aclk_g2d_bus_pll[] = {
-	{MOUT_ACLK_G2D_400_A,	MOUT_BUS_PLL_USER},
-};
-
-struct devfreq_clk_state aclk_mscl_mfc_pll[] = {
-	{MOUT_ACLK_MSCL_400_A,	MOUT_MFC_PLL_USER},
-};
-
-struct devfreq_clk_state aclk_mscl_bus_pll[] = {
-	{MOUT_ACLK_MSCL_400_A,	MOUT_BUS_PLL_USER},
-};
-
-struct devfreq_clk_state sclk_jpeg_mfc_pll[] = {
-	{MOUT_SCLK_JPEG_B,	MOUT_MFC_PLL_USER},
-};
-
-struct devfreq_clk_state sclk_jpeg_bus_pll[] = {
-	{MOUT_SCLK_JPEG_B,	MOUT_SCLK_JPEG_A},
-};
-
-struct devfreq_clk_states aclk_g2d_mfc_pll_list = {
-	.state = aclk_g2d_mfc_pll,
-	.state_count = ARRAY_SIZE(aclk_g2d_mfc_pll),
-};
-
-struct devfreq_clk_states aclk_g2d_bus_pll_list = {
-	.state = aclk_g2d_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_g2d_bus_pll),
-};
-
-struct devfreq_clk_states aclk_mscl_mfc_pll_list = {
-	.state = aclk_mscl_mfc_pll,
-	.state_count = ARRAY_SIZE(aclk_mscl_mfc_pll),
-};
-
-struct devfreq_clk_states aclk_mscl_bus_pll_list = {
-	.state = aclk_mscl_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_mscl_bus_pll),
-};
-
-struct devfreq_clk_states sclk_jpeg_mfc_pll_list = {
-	.state = sclk_jpeg_mfc_pll,
-	.state_count = ARRAY_SIZE(sclk_jpeg_mfc_pll),
-};
-
-struct devfreq_clk_states sclk_jpeg_bus_pll_list = {
-	.state = sclk_jpeg_bus_pll,
-	.state_count = ARRAY_SIZE(sclk_jpeg_bus_pll),
-};
-
-struct devfreq_clk_info aclk_bus1_400[] = {
-	{LV0_A,	400000000,	0,	NULL},
-	{LV0_B,	400000000,	0,	NULL},
-	{LV0,	400000000,	0,	NULL},
-	{LV1,	267000000,	0,	NULL},
-	{LV2,	267000000,	0,	NULL},
-	{LV3,	200000000,	0,	NULL},
-	{LV4,	160000000,	0,	NULL},
-	{LV5,	134000000,	0,	NULL},
-	{LV6,	100000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_bus2_400[] = {
-	{LV0_A,	400000000,	0,	NULL},
-	{LV0_B,	400000000,	0,	NULL},
-	{LV0,	400000000,	0,	NULL},
-	{LV1,	267000000,	0,	NULL},
-	{LV2,	267000000,	0,	NULL},
-	{LV3,	200000000,	0,	NULL},
-	{LV4,	160000000,	0,	NULL},
-	{LV5,	134000000,	0,	NULL},
-	{LV6,	100000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_g2d_400[] = {
-	{LV0_A,	400000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV0_B,	400000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV0,	400000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV1,	334000000,	0,	&aclk_g2d_mfc_pll_list},
-	{LV2,	267000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV3,	200000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV4,	160000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV5,	134000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV6,	100000000,	0,	&aclk_g2d_bus_pll_list},
-};
-
-struct devfreq_clk_info aclk_g2d_266[] = {
-	{LV0_A,	267000000,	0,	NULL},
-	{LV0_B,	267000000,	0,	NULL},
-	{LV0,	267000000,	0,	NULL},
-	{LV1,	267000000,	0,	NULL},
-	{LV2,	200000000,	0,	NULL},
-	{LV3,	160000000,	0,	NULL},
-	{LV4,	134000000,	0,	NULL},
-	{LV5,	100000000,	0,	NULL},
-	{LV6,	100000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_gscl_333[] = {
-	{LV0_A,	334000000,	0,	NULL},
-	{LV0_B,	334000000,	0,	NULL},
-	{LV0,	334000000,	0,	NULL},
-	{LV1,	334000000,	0,	NULL},
-	{LV2,	334000000,	0,	NULL},
-	{LV3,	334000000,	0,	NULL},
-	{LV4,	334000000,	0,	NULL},
-	{LV5,	167000000,	0,	NULL},
-	{LV6,	167000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_mscl[] = {
-	{LV0_A,	400000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV0_B,	400000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV0,	400000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV1,	334000000,	0,	&aclk_mscl_mfc_pll_list},
-	{LV2,	267000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV3,	200000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV4,	160000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV5,	134000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV6,	100000000,	0,	&aclk_mscl_bus_pll_list},
-};
-
-struct devfreq_clk_info sclk_jpeg[] = {
-	{LV0_A,	400000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV0_B,	400000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV0,	400000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV1,	334000000,	0,	&sclk_jpeg_mfc_pll_list},
-	{LV2,	267000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV3,	200000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV4,	160000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV5,	134000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV6,	100000000,	0,	&sclk_jpeg_bus_pll_list},
-};
-
-struct devfreq_clk_info aclk_mfc0_333[] = {
-	{LV0_A,	334000000,	0,	NULL},
-	{LV0_B,	334000000,	0,	NULL},
-	{LV0,	334000000,	0,	NULL},
-	{LV1,	222000000,	0,	NULL},
-	{LV2,	222000000,	0,	NULL},
-	{LV3,	222000000,	0,	NULL},
-	{LV4,	167000000,	0,	NULL},
-	{LV5,	111000000,	0,	NULL},
-	{LV6,	 83000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_mfc1_333[] = {
-	{LV0_A,	334000000,	0,	NULL},
-	{LV0_B,	334000000,	0,	NULL},
-	{LV0,	334000000,	0,	NULL},
-	{LV1,	222000000,	0,	NULL},
-	{LV2,	222000000,	0,	NULL},
-	{LV3,	222000000,	0,	NULL},
-	{LV4,	167000000,	0,	NULL},
-	{LV5,	111000000,	0,	NULL},
-	{LV6,	 83000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_hevc_400[] = {
-	{LV0_A,	400000000,	0,	NULL},
-	{LV0_B,	400000000,	0,	NULL},
-	{LV0,	400000000,	0,	NULL},
-	{LV1,	267000000,	0,	NULL},
-	{LV2,	267000000,	0,	NULL},
-	{LV3,	200000000,	0,	NULL},
-	{LV4,	160000000,	0,	NULL},
-	{LV5,	134000000,	0,	NULL},
-	{LV6,	100000000,	0,	NULL},
-};
-
-struct devfreq_clk_info *devfreq_clk_int_info_list[] = {
-	aclk_bus1_400,
-	aclk_bus2_400,
-	aclk_g2d_400,
-	aclk_g2d_266,
-	aclk_gscl_333,
-	aclk_mscl,
-	sclk_jpeg,
-	aclk_mfc0_333,
-	aclk_mfc1_333,
-	aclk_hevc_400,
-};
-
-enum devfreq_int_clk devfreq_clk_int_info_idx[] = {
-	DOUT_ACLK_BUS1_400,
-	DOUT_ACLK_BUS2_400,
-	DOUT_ACLK_G2D_400,
-	DOUT_ACLK_G2D_266,
-	DOUT_ACLK_GSCL_333,
-	DOUT_ACLK_MSCL_400,
-	DOUT_SCLK_JPEG,
-	DOUT_ACLK_MFC0_333,
-	DOUT_ACLK_MFC1_333,
-	DOUT_ACLK_HEVC_400,
-};
-
-#ifdef CONFIG_PM_RUNTIME
-struct devfreq_pm_domain_link devfreq_int_pm_domain[] = {
-	{"pd-bus1",},
-	{"pd-bus2",},
-	{"pd-g2d",},
-	{"pd-g2d",},
-	{"pd-gscl",},
-	{"pd-mscl",},
-	{"pd-mscl",},
-	{"pd-mfc0",},
-	{"pd-mfc1",},
-	{"pd-hevc",},
-};
-#endif
-
-static struct devfreq_simple_ondemand_data exynos5_devfreq_int_governor_data = {
-	.pm_qos_class		= PM_QOS_DEVICE_THROUGHPUT,
-	.upthreshold		= 95,
-	.cal_qos_max		= 667000,
-};
-
-static struct exynos_devfreq_platdata exynos5422_qos_int = {
-	.default_qos		= 133000,
-};
-
-static struct ppmu_info ppmu_int[] = {
-	{
-		.base = (void __iomem *)PPMU_D0_GEN_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D1_GEN_ADDR,
-	},
-};
-
-static struct devfreq_exynos devfreq_int_exynos = {
-	.ppmu_list = ppmu_int,
-	.ppmu_count = ARRAY_SIZE(ppmu_int),
-};
-
 static struct pm_qos_request exynos5_int_qos;
 static struct pm_qos_request boot_int_qos;
-static struct pm_qos_request min_int_thermal_qos;
 
-static inline int exynos5_devfreq_int_get_idx(struct devfreq_opp_table *table,
-				unsigned int size,
-				unsigned long freq)
-{
-	int i;
+cputime64_t int_pre_time;
 
-	for (i = 0; i < size; ++i) {
-		if (table[i].freq == freq)
-			return i;
-	}
 
-	return -1;
+enum int_bus_idx {
+	LV_0 = 0,
+	LV_1,
+	LV_1_1,
+	LV_1_2,
+	LV_1_3,
+	LV_2,
+	LV_3,
+	LV_4,
+	LV_5,
+	LV_6,
+	LV_END,
+};
+
+enum int_bus_pll {
+	SW_MUX = 0,
+	C_PLL,
+	D_PLL,
+	M_PLL,
+	I_PLL,
+};
+
+struct int_bus_opp_table {
+	unsigned int idx;
+	unsigned long freq;
+	unsigned long volt;
+	cputime64_t time_in_state;
+};
+
+struct int_bus_opp_table int_bus_opp_list[] = {
+	{LV_0,   600000, 1075000, 0},	/* ISP Special Level */
+	{LV_1,   500000,  987500, 0},	/* ISP Special Level */
+	{LV_1_1, 480000,  987500, 0},	/* ISP Special Level */
+	{LV_1_2, 460000,  987500, 0},	/* ISP Special Level */
+	{LV_1_3, 440000,  987500, 0},	/* ISP Special Level */
+	{LV_2,   400000,  987500, 0},
+	{LV_3,   333000,  950000, 0},
+	{LV_4,   222000,  950000, 0},
+	{LV_5,   111000,  950000, 0},
+	{LV_6,    83000,  925000, 0},
+};
+
+struct int_clk_info {
+	unsigned int idx;
+	unsigned long target_freq;
+	enum int_bus_pll src_pll;
+};
+
+struct int_pm_clks {
+	struct list_head node;
+	const char *clk_name;
+	struct clk *clk;
+	const char *parent_clk_name;
+	struct clk *parent_clk;
+	const char *p_parent_clk_name;
+	struct clk *p_parent_clk;
+	struct int_clk_info *clk_info;
+};
+
+struct busfreq_data_int {
+	struct list_head list;
+	struct device *dev;
+	struct devfreq *devfreq;
+	struct opp *curr_opp;
+	struct mutex lock;
+
+	struct clk *mout_mpll; /* mout_mpll_ctrl */
+	struct clk *mout_dpll; /* mout_dpll_ctrl */
+	struct clk *mout_cpll; /* mout_cpll_ctrl */
+	struct clk *mout_spll; /* mout_spll_ctrl */
+	struct clk *fout_spll; /* fout_spll */
+	struct clk *fout_ipll; /* fout_ipll */
+	struct clk *fin_ipll; /* fin_pll */
+	struct clk *ipll; /* mout_ipll_ctrl */
+
+	bool spll_enabled;
+	bool ipll_enabled;
+	unsigned int volt_offset;
+	struct regulator *vdd_int;
+	struct exynos5_ppmu_handle *ppmu;
+
+	struct notifier_block tmu_notifier;
+	int busy;
+};
+
+/* TOP 0 */
+struct int_clk_info aclk_200_fsys[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   200000, D_PLL},
+	{LV_1,   200000, D_PLL},
+	{LV_1_1, 200000, D_PLL},
+	{LV_1_2, 200000, D_PLL},
+	{LV_1_3, 200000, D_PLL},
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   150000, D_PLL},
+	{LV_5,   100000, D_PLL},
+	{LV_6,   100000, D_PLL},
+};
+
+struct int_clk_info pclk_200_fsys[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   200000, D_PLL},
+	{LV_1,   200000, D_PLL},
+	{LV_1_1, 200000, D_PLL},
+	{LV_1_2, 200000, D_PLL},
+	{LV_1_3, 200000, D_PLL},
+	{LV_2,   200000, D_PLL},
+	{LV_3,   150000, D_PLL},
+	{LV_4,   150000, D_PLL},
+	{LV_5,   100000, D_PLL},
+	{LV_6,   100000, D_PLL},
+};
+
+struct int_clk_info aclk_100_noc[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   100000, D_PLL},
+	{LV_1,   100000, D_PLL},
+	{LV_1_1, 100000, D_PLL},
+	{LV_1_2, 100000, D_PLL},
+	{LV_1_3, 100000, D_PLL},
+	{LV_2,   100000, D_PLL},
+	{LV_3,    86000, D_PLL},
+	{LV_4,    75000, D_PLL},
+	{LV_5,    67000, M_PLL},
+	{LV_6,    67000, M_PLL},
+};
+
+struct int_clk_info aclk_400_wcore[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   400000, SW_MUX},
+	{LV_1,   400000, SW_MUX},
+	{LV_1_1, 400000, SW_MUX},
+	{LV_1_2, 400000, SW_MUX},
+	{LV_1_3, 400000, SW_MUX},
+	{LV_2,   400000, SW_MUX},
+	{LV_3,   333000, C_PLL},
+	{LV_4,   222000, C_PLL},
+	{LV_5,   111000, C_PLL},
+	{LV_6,    84000, C_PLL},
+};
+
+struct int_clk_info aclk_200_fsys2[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   200000, D_PLL},
+	{LV_1,   200000, D_PLL},
+	{LV_1_1, 200000, D_PLL},
+	{LV_1_2, 200000, D_PLL},
+	{LV_1_3, 200000, D_PLL},
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   150000, D_PLL},
+	{LV_5,   100000, D_PLL},
+	{LV_6,   100000, D_PLL},
+};
+
+struct int_clk_info aclk_200_disp1[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   200000, D_PLL},
+	{LV_1,   200000, D_PLL},
+	{LV_1_1, 200000, D_PLL},
+	{LV_1_2, 200000, D_PLL},
+	{LV_1_3, 200000, D_PLL},
+	{LV_2,   200000, D_PLL},
+	{LV_3,   150000, D_PLL},
+	{LV_4,   150000, D_PLL},
+	{LV_5,   100000, D_PLL},
+	{LV_6,   100000, D_PLL},
+};
+
+struct int_clk_info aclk_400_mscl[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   400000, SW_MUX},
+	{LV_1,   400000, SW_MUX},
+	{LV_1_1, 400000, SW_MUX},
+	{LV_1_2, 400000, SW_MUX},
+	{LV_1_3, 400000, SW_MUX},
+	{LV_2,   400000, SW_MUX},
+	{LV_3,   333000, C_PLL},
+	{LV_4,   222000, C_PLL},
+	{LV_5,   167000, C_PLL},
+	{LV_6,    84000, C_PLL},
+};
+
+struct int_clk_info aclk_400_isp[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   400000, SW_MUX},
+	{LV_1,   400000, SW_MUX},
+	{LV_1_1, 400000, SW_MUX},
+	{LV_1_2, 400000, SW_MUX},
+	{LV_1_3, 400000, SW_MUX},
+	{LV_2,    67000, M_PLL},
+	{LV_3,    67000, M_PLL},
+	{LV_4,    67000, M_PLL},
+	{LV_5,    67000, M_PLL},
+	{LV_6,    67000, M_PLL},
+};
+
+/* TOP 1 */
+struct int_clk_info aclk_166[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   167000, C_PLL},
+	{LV_1,   167000, C_PLL},
+	{LV_1_1, 167000, C_PLL},
+	{LV_1_2, 167000, C_PLL},
+	{LV_1_3, 167000, C_PLL},
+	{LV_2,   167000, C_PLL},
+	{LV_3,   134000, C_PLL},
+	{LV_4,   111000, C_PLL},
+	{LV_5,    84000, C_PLL},
+	{LV_6,    84000, C_PLL},
+};
+
+struct int_clk_info aclk_266[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   266000, M_PLL},
+	{LV_1,   133000, M_PLL},
+	{LV_1_1, 178000, M_PLL},
+	{LV_1_2,  76000, M_PLL},
+	{LV_1_3,  76000, M_PLL},
+	{LV_2,   266000, M_PLL},
+	{LV_3,   178000, M_PLL},
+	{LV_4,   133000, M_PLL},
+	{LV_5,   133000, M_PLL},
+	{LV_6,    89000, M_PLL},
+};
+
+struct int_clk_info aclk_66[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,    67000, C_PLL},
+	{LV_1,    67000, C_PLL},
+	{LV_1_1,  67000, C_PLL},
+	{LV_1_2,  67000, C_PLL},
+	{LV_1_3,  67000, C_PLL},
+	{LV_2,    67000, C_PLL},
+	{LV_3,    67000, C_PLL},
+	{LV_4,    67000, C_PLL},
+	{LV_5,    67000, C_PLL},
+	{LV_6,    67000, C_PLL},
+};
+
+struct int_clk_info aclk_333_432_isp0[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   432000, I_PLL},
+	{LV_1,   144000, I_PLL},
+	{LV_1_1, 216000, I_PLL},
+	{LV_1_2,  87000, I_PLL},
+	{LV_1_3,  87000, I_PLL},
+	{LV_2,     3000, I_PLL},
+	{LV_3,     3000, I_PLL},
+	{LV_4,     3000, I_PLL},
+	{LV_5,     3000, I_PLL},
+	{LV_6,     3000, I_PLL},
+};
+
+struct int_clk_info aclk_333_432_isp[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   432000, I_PLL},
+	{LV_1,   144000, I_PLL},
+	{LV_1_1, 216000, I_PLL},
+	{LV_1_2,  87000, I_PLL},
+	{LV_1_3,  87000, I_PLL},
+	{LV_2,     3000, I_PLL},
+	{LV_3,     3000, I_PLL},
+	{LV_4,     3000, I_PLL},
+	{LV_5,     3000, I_PLL},
+	{LV_6,     3000, I_PLL},
+};
+
+struct int_clk_info aclk_333_432_gscl[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   432000, I_PLL},
+	{LV_1,   432000, I_PLL},
+	{LV_1_1, 216000, I_PLL},
+	{LV_1_2, 432000, I_PLL},
+	{LV_1_3,  87000, I_PLL},
+	{LV_2,     3000, I_PLL},
+	{LV_3,     3000, I_PLL},
+	{LV_4,     3000, I_PLL},
+	{LV_5,     3000, I_PLL},
+	{LV_6,     3000, I_PLL},
+};
+
+/* TOP 2 */
+struct int_clk_info aclk_300_gscl[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   300000, D_PLL},
+	{LV_1,   300000, D_PLL},
+	{LV_1_1, 300000, D_PLL},
+	{LV_1_2, 300000, D_PLL},
+	{LV_1_3, 300000, D_PLL},
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   200000, D_PLL},
+	{LV_5,   150000, D_PLL},
+	{LV_6,    75000, D_PLL},
+};
+
+struct int_clk_info aclk_300_disp1[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   200000, D_PLL},
+	{LV_1,   200000, D_PLL},
+	{LV_1_1, 200000, D_PLL},
+	{LV_1_2, 200000, D_PLL},
+	{LV_1_3, 200000, D_PLL},
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   200000, D_PLL},
+	{LV_5,   200000, D_PLL},
+	{LV_6,   120000, D_PLL},
+};
+
+struct int_clk_info aclk_400_disp1[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   300000, D_PLL},
+	{LV_1,   300000, D_PLL},
+	{LV_1_1, 300000, D_PLL},
+	{LV_1_2, 300000, D_PLL},
+	{LV_1_3, 300000, D_PLL},
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   200000, D_PLL},
+	{LV_5,   200000, D_PLL},
+	{LV_6,   120000, D_PLL},
+};
+
+struct int_clk_info aclk_300_jpeg[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   300000, D_PLL},
+	{LV_1,   300000, D_PLL},
+	{LV_1_1, 300000, D_PLL},
+	{LV_1_2, 300000, D_PLL},
+	{LV_1_3, 300000, D_PLL},
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   200000, D_PLL},
+	{LV_5,   150000, D_PLL},
+	{LV_6,    75000, D_PLL},
+};
+
+struct int_clk_info aclk_266_g2d[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   266000, M_PLL},
+	{LV_1,   266000, M_PLL},
+	{LV_1_1, 266000, M_PLL},
+	{LV_1_2, 266000, M_PLL},
+	{LV_1_3, 266000, M_PLL},
+	{LV_2,   266000, M_PLL},
+	{LV_3,   266000, M_PLL},
+	{LV_4,   178000, M_PLL},
+	{LV_5,   133000, M_PLL},
+	{LV_6,    67000, M_PLL},
+};
+
+struct int_clk_info aclk_333_g2d[] = {
+	/* Level, Freq, Parent_Pll */
+	{LV_0,   333000, C_PLL},
+	{LV_1,   333000, C_PLL},
+	{LV_1_1, 333000, C_PLL},
+	{LV_1_2, 333000, C_PLL},
+	{LV_1_3, 333000, C_PLL},
+	{LV_2,   333000, C_PLL},
+	{LV_3,   222000, C_PLL},
+	{LV_4,   222000, C_PLL},
+	{LV_5,   167000, C_PLL},
+	{LV_6,    84000, C_PLL},
+};
+
+#define EXYNOS5_INT_PM_CLK(NAME, CLK, PCLK, P_PCLK, CLK_INFO)		\
+static struct int_pm_clks int_pm_clks_##NAME = {	\
+	.clk_name = CLK,					\
+	.parent_clk_name = PCLK,				\
+	.p_parent_clk_name = P_PCLK,				\
+	.clk_info = CLK_INFO,					\
 }
 
-static int exynos5_devfreq_int_set_freq(struct devfreq_data_int *data,
-					int target_idx,
-					int old_idx)
-{
-	int i, j;
-	struct devfreq_clk_info *clk_info;
-	struct devfreq_clk_states *clk_states;
-#ifdef CONFIG_PM_RUNTIME
-	struct exynos_pm_domain *pm_domain;
-#endif
+EXYNOS5_INT_PM_CLK(aclk_200_fsys	,	"mout_aclk_200_fsys_user"		, "mout_aclk_200_fsys_sw"		, "dout_aclk_200_fsys"		, aclk_200_fsys);
+EXYNOS5_INT_PM_CLK(pclk_200_fsys	,	"mout_pclk_200_fsys_user"		, "mout_pclk_200_fsys_sw"		, "dout_pclk_200_fsys"		, pclk_200_fsys);
+EXYNOS5_INT_PM_CLK(aclk_100_noc		,	"mout_aclk_100_noc_user"		, "mout_aclk_100_noc_sw"		, "dout_aclk_100_noc"		, aclk_100_noc);
+EXYNOS5_INT_PM_CLK(aclk_400_wcore	, 	"mout_aclk_400_wcore_user"		, "mout_aclk_400_wcore_sw"		, "dout_aclk_400_wcore"		, aclk_400_wcore);
+EXYNOS5_INT_PM_CLK(aclk_200_fsys2	, 	"mout_aclk_200_fsys2_user"		, "mout_aclk_200_fsys2_sw"		, "dout_aclk_200_fsys2"		, aclk_200_fsys2);
+EXYNOS5_INT_PM_CLK(aclk_200_disp1	, 	"mout_aclk_200_user"			, "mout_aclk_200_sw"			, "dout_aclk_200_disp1"		, aclk_200_disp1);
+EXYNOS5_INT_PM_CLK(aclk_400_mscl	, 	"mout_aclk_400_mscl_user"		, "mout_aclk_400_mscl_sw"		, "dout_aclk_400_mscl"		, aclk_400_mscl);
+EXYNOS5_INT_PM_CLK(aclk_400_isp		,	"mout_aclk_400_isp_user"		, "mout_aclk_400_isp_sw"		, "dout_aclk_400_isp"		, aclk_400_isp);
+EXYNOS5_INT_PM_CLK(aclk_166			,	"mout_aclk_166_user"			, "mout_aclk_166_sw"			, "dout_aclk_166"			, aclk_166);
+EXYNOS5_INT_PM_CLK(aclk_266			,	"mout_aclk_266_user"			, "mout_aclk_266_sw"			, "dout_aclk_266"			, aclk_266);
+EXYNOS5_INT_PM_CLK(aclk_66			, 	"mout_aclk_66_user"				, "mout_aclk_66_sw"				, "dout_aclk_66"			, aclk_66);
+EXYNOS5_INT_PM_CLK(aclk_333_432_isp	,	"mout_aclk_333_432_isp_user"	, "mout_aclk_333_432_isp_sw"	, "dout_aclk_333_432_isp"	, aclk_333_432_isp);
+EXYNOS5_INT_PM_CLK(aclk_333_432_isp0,	"mout_aclk_333_432_isp0_user"	, "mout_aclk_333_432_isp0_sw"	, "dout_aclk_333_432_isp0"	, aclk_333_432_isp0);
+EXYNOS5_INT_PM_CLK(aclk_333_432_gscl, 	"mout_aclk_333_432_gscl_user"	, "mout_aclk_333_432_gscl_sw"	, "dout_aclk_333_432_gscl"	, aclk_333_432_gscl);
+EXYNOS5_INT_PM_CLK(aclk_300_gscl	, 	"mout_aclk_300_gscl_user"		, "mout_aclk_300_gscl_sw"		, "dout_aclk_300_gscl"		, aclk_300_gscl);
+EXYNOS5_INT_PM_CLK(aclk_300_disp1	, 	"mout_aclk_300_disp1_user"		, "mout_aclk_300_disp1_sw"		, "dout_aclk_300_disp1"		, aclk_300_disp1);
+EXYNOS5_INT_PM_CLK(aclk_300_jpeg	, 	"mout_aclk_300_jpeg_user"		, "mout_aclk_300_jpeg_sw"		, "dout_aclk_300_jpeg"		, aclk_300_jpeg);
+EXYNOS5_INT_PM_CLK(aclk_266_g2d		, 	"mout_aclk_266_g2d_user"		, "mout_aclk_266_g2d_sw"		, "dout_aclk_266_g2d"		, aclk_266_g2d);
+EXYNOS5_INT_PM_CLK(aclk_333_g2d		, 	"mout_aclk_333_g2d_user"		, "mout_aclk_333_g2d_sw"		, "dout_aclk_333_g2d"		, aclk_333_g2d);
+EXYNOS5_INT_PM_CLK(aclk_400_disp1	, 	"mout_aclk_400_disp1_user"		, "mout_aclk_400_disp1_sw"		, "dout_aclk_400_disp1"		, aclk_400_disp1);
 
-	if (target_idx < old_idx) {
-		for (i = 0; i < ARRAY_SIZE(devfreq_clk_int_info_list); ++i) {
-			clk_info = &devfreq_clk_int_info_list[i][target_idx];
-			clk_states = clk_info->states;
-
-#ifdef CONFIG_PM_RUNTIME
-			pm_domain = devfreq_int_pm_domain[i].pm_domain;
-
-			if (pm_domain != NULL) {
-				mutex_lock(&pm_domain->access_lock);
-				if ((__raw_readl(pm_domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN) == 0) {
-					mutex_unlock(&pm_domain->access_lock);
-					continue;
-				}
-			}
-#endif
-
-			if (clk_states) {
-				for (j = 0; j < clk_states->state_count; ++j) {
-					clk_set_parent(devfreq_int_clk[clk_states->state[j].clk_idx].clk,
-						devfreq_int_clk[clk_states->state[j].parent_clk_idx].clk);
-				}
-			}
-
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_int_clk[devfreq_clk_int_info_idx[i]].clk, clk_info->freq);
-
-#ifdef CONFIG_PM_RUNTIME
-			if (pm_domain != NULL)
-				mutex_unlock(&pm_domain->access_lock);
-#endif
-		}
-	} else {
-		for (i = 0; i < ARRAY_SIZE(devfreq_clk_int_info_list); ++i) {
-			clk_info = &devfreq_clk_int_info_list[i][target_idx];
-			clk_states = clk_info->states;
-
-#ifdef CONFIG_PM_RUNTIME
-			pm_domain = devfreq_int_pm_domain[i].pm_domain;
-
-			if (pm_domain != NULL) {
-				mutex_lock(&pm_domain->access_lock);
-				if ((__raw_readl(pm_domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN) == 0) {
-					mutex_unlock(&pm_domain->access_lock);
-					continue;
-				}
-			}
-#endif
-
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_int_clk[devfreq_clk_int_info_idx[i]].clk, clk_info->freq);
-
-			if (clk_states) {
-				for (j = 0; j < clk_states->state_count; ++j) {
-					clk_set_parent(devfreq_int_clk[clk_states->state[j].clk_idx].clk,
-						devfreq_int_clk[clk_states->state[j].parent_clk_idx].clk);
-				}
-			}
-
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_int_clk[devfreq_clk_int_info_idx[i]].clk, clk_info->freq);
-
-#ifdef CONFIG_PM_RUNTIME
-			if (pm_domain != NULL)
-				mutex_unlock(&pm_domain->access_lock);
-#endif
-		}
-	}
-
-	return 0;
-}
-
-static int exynos5_devfreq_int_set_volt(struct devfreq_data_int *data,
-					unsigned long volt,
-					unsigned long volt_range)
-{
-	if (data->old_volt == volt)
-		goto out;
-
-	regulator_set_voltage(data->vdd_int, volt, volt_range);
-	data->old_volt = volt;
-out:
-	return 0;
-}
+static struct int_pm_clks *exynos5_int_pm_clks[] = {
+	&int_pm_clks_aclk_200_fsys,
+	&int_pm_clks_pclk_200_fsys,
+	&int_pm_clks_aclk_100_noc,
+	&int_pm_clks_aclk_400_wcore,
+	&int_pm_clks_aclk_200_fsys2,
+	&int_pm_clks_aclk_200_disp1,
+	&int_pm_clks_aclk_400_mscl,
+	&int_pm_clks_aclk_400_isp,
+	&int_pm_clks_aclk_166,
+	&int_pm_clks_aclk_266,
+	&int_pm_clks_aclk_66,
+	&int_pm_clks_aclk_333_432_isp,
+	&int_pm_clks_aclk_333_432_isp0,
+	&int_pm_clks_aclk_333_432_gscl,
+	&int_pm_clks_aclk_300_gscl,
+	&int_pm_clks_aclk_300_disp1,
+	&int_pm_clks_aclk_300_jpeg,
+	&int_pm_clks_aclk_266_g2d,
+	&int_pm_clks_aclk_333_g2d,
+	&int_pm_clks_aclk_400_disp1,
+};
 
 #ifdef CONFIG_EXYNOS_THERMAL
 static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_offset)
@@ -483,331 +481,620 @@ static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_of
 }
 #endif
 
-static int exynos5_devfreq_int_target(struct device *dev,
-					unsigned long *target_freq,
-					u32 flags)
+static struct clk *exynos5_change_pll(struct busfreq_data_int *data,
+					enum int_bus_pll target_pll)
 {
-	int ret = 0;
-	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
-	struct devfreq_data_int *int_data = platform_get_drvdata(pdev);
-	struct devfreq *devfreq_int = int_data->devfreq;
-	struct opp *target_opp;
-	int target_idx, old_idx;
-	unsigned long target_volt;
-	unsigned long old_freq;
+	struct clk *target_src_clk = NULL;
 
-	mutex_lock(&int_data->lock);
-
-	rcu_read_lock();
-	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
-	if (IS_ERR(target_opp)) {
-		rcu_read_unlock();
-		dev_err(dev, "DEVFREQ(INT) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+	switch (target_pll) {
+	case SW_MUX:
+		target_src_clk = data->mout_spll;
+		break;
+	case C_PLL:
+		target_src_clk = data->mout_cpll;
+		break;
+	case M_PLL:
+		target_src_clk = data->mout_mpll;
+		break;
+	case D_PLL:
+		target_src_clk = data->mout_dpll;
+	default:
+		break;
 	}
 
-	*target_freq = opp_get_freq(target_opp);
-	target_volt = opp_get_voltage(target_opp);
-#ifdef CONFIG_EXYNOS_THERMAL
-	target_volt = get_limit_voltage(target_volt, int_data->volt_offset);
-#endif
-	rcu_read_unlock();
+	return target_src_clk;
+}
 
-	target_idx = exynos5_devfreq_int_get_idx(devfreq_int_opp_list,
-						ARRAY_SIZE(devfreq_int_opp_list),
-						*target_freq);
-	old_idx = exynos5_devfreq_int_get_idx(devfreq_int_opp_list,
-						ARRAY_SIZE(devfreq_int_opp_list),
-						devfreq_int->previous_freq);
-	old_freq = devfreq_int->previous_freq;
+static void exynos5_int_set_freq(struct busfreq_data_int *data,
+					unsigned long target_freq, unsigned long pre_freq)
+{
+	unsigned int i;
+	int target_idx = -EINVAL;
+	int pre_idx = -EINVAL;
+	struct int_pm_clks *int_clk;
+	struct clk *temp_clk;
 
-	if (target_idx < 0)
-		goto out;
-
-	if (old_freq == *target_freq)
-		goto out;
-
-	if (old_freq < *target_freq) {
-		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
-		exynos5_devfreq_int_set_freq(int_data, target_idx, old_idx);
-	} else {
-		exynos5_devfreq_int_set_freq(int_data, target_idx, old_idx);
-		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
+	/* Find setting value with target and previous frequency */
+	for (i = 0; i < LV_END; i++) {
+		if (int_bus_opp_list[i].freq == target_freq)
+			target_idx = int_bus_opp_list[i].idx;
+		if (int_bus_opp_list[i].freq == pre_freq)
+			pre_idx = int_bus_opp_list[i].idx;
 	}
-out:
-	mutex_unlock(&int_data->lock);
 
-	return ret;
-}
+	if (target_idx <= LV_2 && !data->spll_enabled) {
+		clk_enable(data->fout_spll);
+		data->spll_enabled = true;
+	}
 
-static int exynos5_devfreq_int_get_dev_status(struct device *dev,
-						struct devfreq_dev_status *stat)
-{
-	struct devfreq_data_int *data = dev_get_drvdata(dev);
+	if (target_idx < LV_2 && !data->ipll_enabled) {
+		clk_set_parent(data->fout_ipll, data->ipll);
+		data->ipll_enabled = true;
+	}
 
-	stat->current_frequency = data->devfreq->previous_freq;
-	stat->busy_time = devfreq_int_exynos.val_pmcnt;
-	stat->total_time = devfreq_int_exynos.val_ccnt;
+	list_for_each_entry(int_clk, &data->list, node) {
 
-	return 0;
-}
+		if (int_clk->clk_info[pre_idx].src_pll !=
+			int_clk->clk_info[target_idx].src_pll) {
 
-static struct devfreq_dev_profile exynos5_devfreq_int_profile = {
-	.initial_freq	= DEVFREQ_INITIAL_FREQ,
-	.polling_ms	= DEVFREQ_POLLING_PERIOD,
-	.target		= exynos5_devfreq_int_target,
-	.get_dev_status	= exynos5_devfreq_int_get_dev_status,
-	.max_state	= LV_COUNT,
-};
-
-#ifdef CONFIG_PM_RUNTIME
-static int exynos5_devfreq_int_init_pm_domain(void)
-{
-	struct platform_device *pdev = NULL;
-	struct device_node *np = NULL;
-	int i;
-
-	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
-		struct exynos_pm_domain *pd;
-
-		if (!of_device_is_available(np))
-			continue;
-
-		pdev = of_find_device_by_node(np);
-		pd = platform_get_drvdata(pdev);
-
-		for (i = 0; i < ARRAY_SIZE(devfreq_int_pm_domain); ++i) {
-			if (devfreq_int_pm_domain[i].pm_domain_name == NULL)
+			if (int_clk->clk_info[pre_idx].target_freq ==
+				int_clk->clk_info[target_idx].target_freq)
 				continue;
 
-			if (!strcmp(devfreq_int_pm_domain[i].pm_domain_name, pd->genpd.name))
-				devfreq_int_pm_domain[i].pm_domain = pd;
+			temp_clk = exynos5_change_pll(data,
+					int_clk->clk_info[target_idx].src_pll);
+
+			if (int_clk->clk_info[target_idx].src_pll == SW_MUX) {
+				clk_set_parent(int_clk->clk, temp_clk);
+					continue;
+			}
+
+			if (pre_freq > target_freq) {
+				if (int_clk->p_parent_clk)
+					clk_set_parent(int_clk->p_parent_clk, temp_clk);
+				else
+					clk_set_parent(int_clk->parent_clk, temp_clk);
+				clk_set_parent(int_clk->clk, int_clk->parent_clk);
+				clk_set_rate(int_clk->parent_clk,
+						int_clk->clk_info[target_idx].target_freq * 1000);
+			} else {
+				clk_set_rate(int_clk->parent_clk,
+						int_clk->clk_info[target_idx].target_freq * 1000);
+				clk_set_parent(int_clk->clk, int_clk->parent_clk);
+				if (int_clk->p_parent_clk)
+					clk_set_parent(int_clk->p_parent_clk, temp_clk);
+				else
+					clk_set_parent(int_clk->parent_clk, temp_clk);
+				/*
+				 * If the clock rate is set before setting the parent clock,
+				 * the clock rate is incorrect after setting the parent clock
+				 * by divider value. So, re-setting clock rate.
+				 */
+				clk_set_rate(int_clk->parent_clk,
+						int_clk->clk_info[target_idx].target_freq * 1000);
+			}
+		} else {
+			/* No need to change pll */
+			clk_set_rate(int_clk->parent_clk,
+				int_clk->clk_info[target_idx].target_freq * 1000);
 		}
 	}
 
-	return 0;
+	if (target_idx >= LV_2 && data->ipll_enabled) {
+		clk_set_parent(data->fout_ipll, data->fin_ipll);
+		data->ipll_enabled = false;
+	}
+
+	if (target_idx > LV_2 && data->spll_enabled) {
+		clk_disable(data->fout_spll);
+		data->spll_enabled = false;
+	}
 }
+
+static void exynos5_int_update_state(unsigned int target_freq)
+{
+	cputime64_t cur_time = get_jiffies_64();
+	cputime64_t tmp_cputime;
+	unsigned int target_idx = LV_0;
+	unsigned int i;
+
+	/*
+	 * Find setting value with target frequency
+	 */
+	for (i = LV_0; i < LV_END; i++) {
+		if (int_bus_opp_list[i].freq == target_freq)
+			target_idx = int_bus_opp_list[i].idx;
+	}
+
+	tmp_cputime = cur_time - int_pre_time;
+
+	int_bus_opp_list[target_idx].time_in_state =
+		int_bus_opp_list[target_idx].time_in_state + tmp_cputime;
+
+	int_pre_time = cur_time;
+}
+
+static int exynos5_int_busfreq_target(struct device *dev,
+				      unsigned long *_freq, u32 flags)
+{
+	int err = 0;
+	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
+	struct busfreq_data_int *data = platform_get_drvdata(pdev);
+	struct opp *opp;
+	unsigned long freq;
+	unsigned long old_freq;
+	unsigned long target_volt;
+
+	mutex_lock(&data->lock);
+
+	/* get available opp information */
+	rcu_read_lock();
+	opp = devfreq_recommended_opp(dev, _freq, flags);
+	if (IS_ERR(opp)) {
+		rcu_read_unlock();
+		dev_err(dev, "%s: Invalid OPP.\n", __func__);
+		mutex_unlock(&data->lock);
+		return PTR_ERR(opp);
+	}
+
+	freq = opp_get_freq(opp);
+	target_volt = opp_get_voltage(opp);
+	rcu_read_unlock();
+
+	/* get olg opp information */
+	rcu_read_lock();
+	old_freq = opp_get_freq(data->curr_opp);
+	rcu_read_unlock();
+
+	exynos5_int_update_state(old_freq);
+
+	if (old_freq == freq)
+		goto out;
+
+#ifdef CONFIG_EXYNOS_THERMAL
+	if (data->volt_offset)
+		target_volt = get_limit_voltage(target_volt, data->volt_offset);
 #endif
 
-static int exynos5_devfreq_int_init_clock(void)
-{
-	int i;
+	/*
+	 * If target freq is higher than old freq
+	 * after change voltage, setting freq ratio
+	 */
+	pr_debug("%s old_freq %ld, freq %ld", __func__, old_freq, freq);
+	if (old_freq < freq) {
+		regulator_set_voltage(data->vdd_int, target_volt, target_volt + INT_VOLT_STEP);
 
-	for (i = 0; i < ARRAY_SIZE(devfreq_int_clk); ++i) {
-		devfreq_int_clk[i].clk = __clk_lookup(devfreq_int_clk[i].clk_name);
-		if (IS_ERR_OR_NULL(devfreq_int_clk[i].clk)) {
-			pr_err("DEVFREQ(INT) : %s can't get clock\n", devfreq_int_clk[i].clk_name);
-			return -EINVAL;
-		}
+		exynos5_int_set_freq(data, freq, old_freq);
+	} else {
+		exynos5_int_set_freq(data, freq, old_freq);
+
+		regulator_set_voltage(data->vdd_int, target_volt, target_volt + INT_VOLT_STEP);
 	}
+
+	data->curr_opp = opp;
+out:
+	mutex_unlock(&data->lock);
+
+	return err;
+}
+
+static int exynos5_int_bus_get_dev_status(struct device *dev,
+				      struct devfreq_dev_status *stat)
+{
+	struct busfreq_data_int *data = dev_get_drvdata(dev);
+	unsigned long busy_data;
+	unsigned int int_ccnt = 0;
+	unsigned long int_pmcnt = 0;
+
+
+	rcu_read_lock();
+	stat->current_frequency = opp_get_freq(data->curr_opp);
+	rcu_read_unlock();
+
+	/*
+	 * Bandwidth of memory interface is 128bits
+	 * So bus can transfer 16bytes per cycle
+	 */
+
+	busy_data = exynos5_ppmu_get_busy(data->ppmu, PPMU_SET_TOP,
+					&int_ccnt, &int_pmcnt);
+
+	stat->total_time = int_ccnt;
+	stat->busy_time = int_pmcnt;
 
 	return 0;
 }
-static int exynos5_init_int_table(struct device *dev)
+
+#if defined(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
+static struct devfreq_simple_ondemand_data exynos5_int_governor_data = {
+	.pm_qos_class		= PM_QOS_DEVICE_THROUGHPUT,
+	.upthreshold		= 95,
+	.cal_qos_max		= 400000,
+};
+#endif
+
+static struct devfreq_dev_profile exynos5_int_devfreq_profile = {
+	.initial_freq	= 400000,
+	.polling_ms	= 100,
+	.target		= exynos5_int_busfreq_target,
+	.get_dev_status	= exynos5_int_bus_get_dev_status,
+	.max_state = LV_END,
+};
+
+static int exynos5422_init_int_table(struct busfreq_data_int *data)
 {
 	unsigned int i;
 	unsigned int ret;
-	unsigned int freq;
-	unsigned int volt;
+	unsigned int asv_volt;
 
-	for (i = 0; i < ARRAY_SIZE(devfreq_int_opp_list); ++i) {
-		freq = devfreq_int_opp_list[i].freq;
-		volt = get_match_volt(ID_INT, freq);
-		if (!volt)
-			volt = devfreq_int_opp_list[i].volt;
+	/* will add code for ASV information setting function in here */
 
-		exynos5_devfreq_int_profile.freq_table[i] = freq;
+	for (i = 0; i < ARRAY_SIZE(int_bus_opp_list); i++) {
+		asv_volt = get_match_volt(ID_INT, int_bus_opp_list[i].freq);
 
-		ret = opp_add(dev, freq, volt);
+		if (!asv_volt)
+			asv_volt = int_bus_opp_list[i].volt;
+
+		pr_info("INT %luKhz ASV is %duV\n", int_bus_opp_list[i].freq, asv_volt);
+
+		ret = opp_add(data->dev, int_bus_opp_list[i].freq, asv_volt);
+
 		if (ret) {
-			pr_err("DEVFREQ(INT) : Failed to add opp entries %uKhz, %uV\n", freq, volt);
+			dev_err(data->dev, "Fail to add opp entries.\n");
 			return ret;
-		} else {
-			pr_info("DEVFREQ(INT) : %uKhz, %uV\n", freq, volt);
 		}
 	}
 
 	return 0;
 }
 
-static int exynos5_devfreq_int_notifier(struct notifier_block *nb, unsigned long val,
-						void *v)
+static ssize_t int_show_state(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct devfreq_notifier_block *devfreq_nb;
+	unsigned int i;
+	ssize_t len = 0;
+	ssize_t write_cnt = (ssize_t)((PAGE_SIZE / LV_END) - 2);
 
-	devfreq_nb = container_of(nb, struct devfreq_notifier_block, nb);
+	for (i = LV_0; i < LV_END; i++)
+		len += snprintf(buf + len, write_cnt, "%ld %llu\n", int_bus_opp_list[i].freq,
+				(unsigned long long)int_bus_opp_list[i].time_in_state);
 
-	mutex_lock(&devfreq_nb->df->lock);
-	update_devfreq(devfreq_nb->df);
-	mutex_unlock(&devfreq_nb->df->lock);
-
-	return NOTIFY_OK;
+	return len;
 }
 
-static int exynos5_devfreq_int_reboot_notifier(struct notifier_block *nb, unsigned long val,
-						void *v)
+static DEVICE_ATTR(int_time_in_state, 0644, int_show_state, NULL);
+
+
+static struct attribute *devfreq_int_entries[] = {
+	&dev_attr_int_time_in_state.attr,
+	NULL,
+};
+static struct attribute_group devfreq_int_attr_group = {
+	.name	= "time_in_state",
+	.attrs	= devfreq_int_entries,
+};
+
+static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pm_qos_update_request(&exynos5_int_qos, exynos5_devfreq_int_profile.initial_freq);
+	int i, count = 0;
+	struct opp *opp;
+	ssize_t write_cnt = (ssize_t)((PAGE_SIZE / ARRAY_SIZE(int_bus_opp_list)) - 2);
+	struct device *int_dev = dev->parent;
+
+	if (!unlikely(int_dev)) {
+		pr_err("%s: device is not probed\n", __func__);
+		return -ENODEV;
+	}
+
+	rcu_read_lock();
+	for (i = 0; i < ARRAY_SIZE(int_bus_opp_list); i++) {
+		opp = opp_find_freq_exact(int_dev, int_bus_opp_list[i].freq, true);
+		if (!IS_ERR_OR_NULL(opp))
+			count += snprintf(&buf[count], write_cnt, "%lu ", opp_get_freq(opp));
+	}
+	rcu_read_unlock();
+
+	count += snprintf(&buf[count], 2, "\n");
+	return count;
+}
+
+static DEVICE_ATTR(freq_table, S_IRUGO, show_freq_table, NULL);
+
+
+static struct exynos_devfreq_platdata default_qos_int_pd = {
+	.default_qos = 400000,
+};
+
+static int exynos5_int_reboot_notifier_call(struct notifier_block *this,
+				   unsigned long code, void *_cmd)
+{
+	pm_qos_update_request(&exynos5_int_qos,
+			exynos5_int_devfreq_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
 
 static struct notifier_block exynos5_int_reboot_notifier = {
-	.notifier_call = exynos5_devfreq_int_reboot_notifier,
+	.notifier_call = exynos5_int_reboot_notifier_call,
 };
 
 #ifdef CONFIG_EXYNOS_THERMAL
-static int exynos5_devfreq_int_tmu_notifier(struct notifier_block *nb, unsigned long event,
-						void *v)
+static int exynos5_int_devfreq_tmu_notifier(struct notifier_block *notifier,
+						unsigned long event, void *v)
 {
-	struct devfreq_data_int *data = container_of(nb, struct devfreq_data_int, tmu_notifier);
+	struct busfreq_data_int *data = container_of(notifier, struct busfreq_data_int,
+								tmu_notifier);
 	unsigned int prev_volt, set_volt;
 	unsigned int *on = v;
 
-	if (event == TMU_COLD) {
-		if (pm_qos_request_active(&exynos5_int_qos))
-			pm_qos_update_request(&exynos5_int_qos,
-					exynos5_devfreq_int_profile.initial_freq);
+	if (event != TMU_COLD)
+		return NOTIFY_OK;
 
-		if (*on) {
-			mutex_lock(&data->lock);
+	mutex_lock(&data->lock);
 
-			prev_volt = regulator_get_voltage(data->vdd_int);
+	prev_volt = regulator_get_voltage(data->vdd_int);
 
-			if (data->volt_offset != COLD_VOLT_OFFSET) {
-				data->volt_offset = COLD_VOLT_OFFSET;
-			} else {
-				mutex_unlock(&data->lock);
-				return NOTIFY_OK;
-			}
-
-			set_volt = get_limit_voltage(prev_volt, data->volt_offset);
-			regulator_set_voltage(data->vdd_int, set_volt, set_volt + VOLT_STEP);
-
-			mutex_unlock(&data->lock);
+	if (*on) {
+		if (data->volt_offset != COLD_VOLT_OFFSET) {
+			data->volt_offset = COLD_VOLT_OFFSET;
 		} else {
-			mutex_lock(&data->lock);
-
-			prev_volt = regulator_get_voltage(data->vdd_int);
-
-			if (data->volt_offset != 0) {
-				data->volt_offset = 0;
-			} else {
-				mutex_unlock(&data->lock);
-				return NOTIFY_OK;
-			}
-
-			set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
-			regulator_set_voltage(data->vdd_int, set_volt, set_volt + VOLT_STEP);
-
 			mutex_unlock(&data->lock);
+			return NOTIFY_OK;
 		}
 
-		if (pm_qos_request_active(&exynos5_int_qos))
-			pm_qos_update_request(&exynos5_int_qos,
-					exynos5422_qos_int.default_qos);
+		/* setting voltage for INT about cold temperature */
+		set_volt = get_limit_voltage(prev_volt, data->volt_offset);
+		regulator_set_voltage(data->vdd_int, set_volt, set_volt + INT_VOLT_STEP);
+	} else {
+		if (data->volt_offset != 0) {
+			data->volt_offset = 0;
+		} else {
+			mutex_unlock(&data->lock);
+			return NOTIFY_OK;
+		}
+
+		/* restore voltage for INT */
+		set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
+		regulator_set_voltage(data->vdd_int, set_volt, set_volt + INT_VOLT_STEP);
 	}
+
+	mutex_unlock(&data->lock);
 
 	return NOTIFY_OK;
 }
 #endif
 
+#define aclk_get(a, b) __clk_lookup(b)
 static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 {
-	int ret = 0;
-	struct devfreq_data_int *data;
-	struct devfreq_notifier_block *devfreq_nb;
-	struct exynos_devfreq_platdata *plat_data;
+	struct busfreq_data_int *data;
+	struct opp *opp;
+	struct device *dev = &pdev->dev;
+	struct exynos_devfreq_platdata *pdata;
+	int err = 0;
+	int nr_clk;
+	struct clk *tmp_clk = NULL, *tmp_parent_clk = NULL, *tmp_p_parent_clk = NULL;
+	struct int_pm_clks *int_clk;
 
-	if (exynos5_devfreq_int_init_clock()) {
-		ret = -EINVAL;
-		goto err_data;
-	}
+	data = kzalloc(sizeof(struct busfreq_data_int), GFP_KERNEL);
 
-#ifdef CONFIG_PM_RUNTIME
-	if (exynos5_devfreq_int_init_pm_domain()) {
-		ret = -EINVAL;
-		goto err_data;
-	}
-#endif
-
-	data = kzalloc(sizeof(struct devfreq_data_int), GFP_KERNEL);
 	if (data == NULL) {
-		pr_err("DEVFREQ(INT) : Failed to allocate private data\n");
-		ret = -ENOMEM;
-		goto err_data;
+		dev_err(dev, "Cannot allocate memory for INT.\n");
+		return -ENOMEM;
 	}
 
-	exynos5_devfreq_int_profile.freq_table = kzalloc(sizeof(int) * LV_COUNT, GFP_KERNEL);
-	if (exynos5_devfreq_int_profile.freq_table == NULL) {
-		pr_err("DEVFREQ(INT) : Failed to allocate freq table\n");
-		ret = -ENOMEM;
-		goto err_freqtable;
-	}
-
-	ret = exynos5_init_int_table(&pdev->dev);
-	if (ret)
-		goto err_inittable;
-
-	platform_set_drvdata(pdev, data);
+	data->dev = dev;
+	INIT_LIST_HEAD(&data->list);
 	mutex_init(&data->lock);
 
-	data->volt_offset = 0;
-	data->dev = &pdev->dev;
-	data->vdd_int = regulator_get(NULL, "vdd_int");
-	data->devfreq = devfreq_add_device(data->dev,
-						&exynos5_devfreq_int_profile,
-						"simple_ondemand",
-						&exynos5_devfreq_int_governor_data);
+	/* Setting table for int */
+	exynos5422_init_int_table(data);
 
-	devfreq_nb = kzalloc(sizeof(struct devfreq_data_int), GFP_KERNEL);
-	if (devfreq_nb == NULL) {
-		pr_err("DEVFREQ(INT) : Failed to allocate notifier block\n");
-		ret = -ENOMEM;
-		goto err_nb;
+	data->vdd_int = regulator_get(dev, "vdd_int");
+	if (IS_ERR(data->vdd_int)) {
+		dev_err(dev, "Cannot get the regulator \"vdd_int\"\n");
+		err = PTR_ERR(data->vdd_int);
+		goto err_regulator;
 	}
 
-	devfreq_nb->df = data->devfreq;
-	devfreq_nb->nb.notifier_call = exynos5_devfreq_int_notifier;
+	data->fout_spll = aclk_get(dev, "fout_spll");
+	if (IS_ERR(data->fout_spll) || data->fout_spll == NULL) {
+		dev_err(dev, "Cannot get clock \"fout_spll\"\n");
+		err = PTR_ERR(data->fout_spll);
+		goto err_fout_spll;
+	}
 
-	exynos5422_devfreq_register(&devfreq_int_exynos);
-	exynos5422_ppmu_register_notifier(INT, &devfreq_nb->nb);
+	data->fout_ipll = aclk_get(dev, "fout_ipll");
+	if (IS_ERR(data->fout_ipll) || data->fout_ipll == NULL) {
+		dev_err(dev, "Cannot get clock \"fout_ipll\"\n");
+		err = PTR_ERR(data->fout_ipll);
+		goto err_fout_ipll;
+	}
 
-	plat_data = data->dev->platform_data;
+	data->ipll = aclk_get(dev, "mout_ipll_ctrl");
+	if (IS_ERR(data->ipll) || data->ipll == NULL) {
+		dev_err(dev, "Cannot get clock \"ipll\"\n");
+		err = PTR_ERR(data->ipll);
+		goto err_ipll;
+	}
 
-	data->devfreq->min_freq = plat_data->default_qos;
-	data->devfreq->max_freq = exynos5_devfreq_int_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_int_thermal_qos, PM_QOS_DEVICE_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_int_qos, PM_QOS_DEVICE_THROUGHPUT, plat_data->default_qos);
+	data->fin_ipll = aclk_get(dev, "fin_pll");
+	if (IS_ERR(data->fin_ipll) || data->fin_ipll == NULL) {
+		dev_err(dev, "Cannot get clock \"fin_ipll\"\n");
+		err = PTR_ERR(data->fin_ipll);
+		goto err_fin_ipll;
+	}
+
+	data->mout_mpll = aclk_get(dev, "mout_mpll_ctrl");
+	if (IS_ERR(data->mout_mpll) || data->mout_mpll == NULL) {
+		dev_err(dev, "Cannot get clock \"mout_mpll\"\n");
+		err = PTR_ERR(data->mout_mpll);
+		goto err_mout_mpll;
+	}
+
+	data->mout_dpll = aclk_get(dev, "mout_dpll_ctrl");
+	if (IS_ERR(data->mout_dpll) || data->mout_dpll == NULL) {
+		dev_err(dev, "Cannot get clock \"mout_dpll\"\n");
+		err = PTR_ERR(data->mout_dpll);
+		goto err_mout_dpll;
+	}
+
+	data->mout_spll = aclk_get(dev, "mout_spll_ctrl");
+	if (IS_ERR(data->mout_spll) || data->mout_spll == NULL) {
+		dev_err(dev, "Cannot get clock \"mout_spll\"\n");
+		err = PTR_ERR(data->mout_spll);
+		goto err_mout_spll;
+	}
+
+	data->mout_cpll = aclk_get(dev, "mout_cpll_ctrl");
+	if (IS_ERR(data->mout_cpll) || data->mout_cpll == NULL) {
+		dev_err(dev, "Cannot get clock \"mout_cpll\"\n");
+		err = PTR_ERR(data->mout_cpll);
+		goto err_mout_cpll;
+	}
+
+	/* Register and add int clocks to list */
+	for (nr_clk = 0; nr_clk < ARRAY_SIZE(exynos5_int_pm_clks); nr_clk++) {
+		int_clk = exynos5_int_pm_clks[nr_clk];
+
+		tmp_clk = aclk_get(dev, int_clk->clk_name);
+		tmp_parent_clk = aclk_get(dev, int_clk->parent_clk_name);
+		if (int_clk->p_parent_clk_name)
+			tmp_p_parent_clk = aclk_get(dev, int_clk->p_parent_clk_name);
+		else
+			tmp_p_parent_clk = NULL;
+
+		if ((!IS_ERR(tmp_clk)) && (!IS_ERR(tmp_parent_clk))) {
+			int_clk->clk = tmp_clk;
+			int_clk->parent_clk = tmp_parent_clk;
+			if (int_clk->p_parent_clk_name) {
+				if (!IS_ERR(tmp_p_parent_clk)) {
+					int_clk->p_parent_clk = tmp_p_parent_clk;
+				} else {
+					dev_err(dev, "Failed to get %s clock\n", tmp_p_parent_clk->name);
+					goto err_int_clk;
+				}
+			}
+			list_add_tail(&int_clk->node, &data->list);
+		} else {
+			dev_err(dev, "Failed to get %s clock\n", tmp_clk->name);
+			goto err_int_clk;
+		}
+	}
+
+	rcu_read_lock();
+	opp = opp_find_freq_floor(dev, &exynos5_int_devfreq_profile.initial_freq);
+	if (IS_ERR(opp)) {
+		rcu_read_unlock();
+		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
+			       exynos5_int_devfreq_profile.initial_freq);
+		err = PTR_ERR(opp);
+		goto err_opp_add;
+	}
+	rcu_read_unlock();
+
+	int_pre_time = get_jiffies_64();
+
+	data->curr_opp = opp;
+	data->volt_offset = 0;
+	data->spll_enabled = false;
+
+	data->ipll_enabled = false;
+#ifdef CONFIG_EXYNOS_THERMAL
+	data->tmu_notifier.notifier_call = exynos5_int_devfreq_tmu_notifier;
+#endif
+
+	platform_set_drvdata(pdev, data);
+
+	data->ppmu = exynos5_ppmu_get();
+	if (!data->ppmu)
+		goto err_opp_add;
+
+#if defined(CONFIG_DEVFREQ_GOV_USERSPACE)
+	data->devfreq = devfreq_add_device(dev, &exynos5_int_devfreq_profile,
+			"userspace", NULL);
+#endif
+#if defined(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
+	data->devfreq = devfreq_add_device(dev, &exynos5_int_devfreq_profile,
+			"simple_ondemand", &exynos5_int_governor_data);
+#endif
+	if (IS_ERR(data->devfreq)) {
+		err = PTR_ERR(data->devfreq);
+		goto err_opp_add;
+	}
+
+	devfreq_register_opp_notifier(dev, data->devfreq);
+
+	/* Create file for time_in_state */
+	err = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_int_attr_group);
+
+	/* Add sysfs for freq_table */
+	err = device_create_file(&data->devfreq->dev, &dev_attr_freq_table);
+	if (err)
+		pr_err("%s: Fail to create sysfs file\n", __func__);
+
+	pdata = pdev->dev.platform_data;
+	if (!pdata)
+		pdata = &default_qos_int_pd;
+
+	clk_enable(data->fout_spll);
+	data->spll_enabled = true;
+
+	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
+	pm_qos_add_request(&boot_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
 	pm_qos_update_request_timeout(&boot_int_qos,
-					exynos5_devfreq_int_profile.initial_freq, 40000 * 1000);
+			exynos5_int_devfreq_profile.initial_freq, 40000 * 1000);
 
 	register_reboot_notifier(&exynos5_int_reboot_notifier);
 
 #ifdef CONFIG_EXYNOS_THERMAL
-	data->tmu_notifier.notifier_call = exynos5_devfreq_int_tmu_notifier;
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
-	return ret;
-err_nb:
-	devfreq_remove_device(data->devfreq);
-err_inittable:
-	kfree(exynos5_devfreq_int_profile.freq_table);
-err_freqtable:
+
+	return 0;
+
+err_opp_add:
+err_int_clk:
+	clk_put(tmp_clk);
+	clk_put(tmp_parent_clk);
+	clk_put(data->mout_cpll);
+err_mout_cpll:
+	clk_put(data->mout_spll);
+err_mout_spll:
+	clk_put(data->mout_dpll);
+err_mout_dpll:
+	clk_put(data->mout_mpll);
+err_mout_mpll:
+	clk_put(data->fin_ipll);
+err_fin_ipll:
+	clk_put(data->ipll);
+err_ipll:
+	clk_put(data->fout_ipll);
+err_fout_ipll:
+	clk_put(data->fout_spll);
+err_fout_spll:
+	regulator_put(data->vdd_int);
+err_regulator:
 	kfree(data);
-err_data:
-	return ret;
+
+	return err;
 }
 
 static int exynos5_devfreq_int_remove(struct platform_device *pdev)
 {
-	struct devfreq_data_int *data = platform_get_drvdata(pdev);
+	struct busfreq_data_int *data = platform_get_drvdata(pdev);
 
 	devfreq_remove_device(data->devfreq);
 
-	pm_qos_remove_request(&min_int_thermal_qos);
 	pm_qos_remove_request(&exynos5_int_qos);
+
+	clk_put(data->mout_cpll);
+	clk_put(data->mout_spll);
+	clk_put(data->mout_dpll);
+	clk_put(data->mout_mpll);
+	clk_put(data->fin_ipll);
+	clk_put(data->ipll);
+	clk_put(data->fout_ipll);
+	clk_put(data->fout_spll);
 
 	regulator_put(data->vdd_int);
 
@@ -821,7 +1108,7 @@ static int exynos5_devfreq_int_remove(struct platform_device *pdev)
 static int exynos5_devfreq_int_suspend(struct device *dev)
 {
 	if (pm_qos_request_active(&exynos5_int_qos))
-		pm_qos_update_request(&exynos5_int_qos, exynos5_devfreq_int_profile.initial_freq);
+		pm_qos_update_request(&exynos5_int_qos, exynos5_int_devfreq_profile.initial_freq);
 
 	return 0;
 }
@@ -860,7 +1147,7 @@ static int __init exynos5_devfreq_int_init(void)
 {
 	int ret;
 
-	exynos5_devfreq_int_device.dev.platform_data = &exynos5422_qos_int;
+	exynos5_devfreq_int_device.dev.platform_data = &default_qos_int_pd;
 
 	ret = platform_device_register(&exynos5_devfreq_int_device);
 	if (ret)

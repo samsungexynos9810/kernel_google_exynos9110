@@ -1,596 +1,88 @@
 /*
  * Copyright (c) 2013 Samsung Electronics Co., Ltd.
- *              http://www.samsung.com
- *		Sangkyu Kim(skwith.kim@samsung.com)
+ *		http://www.samsung.com
+ *		Jiyun Kim(jiyun83.kim@samsung.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
 
-#include <linux/init.h>
+#include <linux/io.h>
 #include <linux/slab.h>
-#include <linux/pm_qos.h>
+#include <linux/mutex.h>
+#include <linux/suspend.h>
+#include <linux/opp.h>
+#include <linux/list.h>
+#include <linux/device.h>
 #include <linux/devfreq.h>
-#include <linux/reboot.h>
-#include <linux/clk.h>
-#include <linux/clk-provider.h>
-#include <linux/regulator/consumer.h>
 #include <linux/platform_device.h>
-#include <linux/workqueue.h>
+#include <linux/regulator/consumer.h>
+#include <linux/module.h>
+#include <linux/pm_qos.h>
+#include <linux/reboot.h>
+#include <linux/kobject.h>
+#include <linux/delay.h>
 
-#include <mach/tmu.h>
-#include <mach/devfreq.h>
-#include <mach/asv-exynos.h>
+#include <linux/clk.h>
+#include <linux/clkdev.h>
+#include <../drivers/clk/samsung/clk.h>
+
+#include <mach/regs-clock-exynos5422.h>
 #include <mach/regs-clock.h>
-
-#include "exynos5422_ppmu.h"
-#include "exynos_ppmu2.h"
+#include <mach/regs-pmu.h>
+#include <mach/devfreq.h>
 #include "devfreq_exynos.h"
-#include "governor.h"
+#include "regs-mem.h"
+#include <mach/asv-exynos.h>
+#include <mach/smc.h>
+#include <mach/tmu.h>
 
-#define DEVFREQ_INITIAL_FREQ	(800000)
-#define DEVFREQ_POLLING_PERIOD	(0)
+#include <plat/pll.h>
+#include "noc_probe.h"
 
-#define MIF_VOLT_STEP		(12500)
-#define COLD_VOLT_OFFSET	(37500)
-#define LIMIT_COLD_VOLTAGE	(1250000)
-#define MIN_COLD_VOLTAGE	(950000)
+#define SET_DREX_TIMING
 
-#define TIMING_RFCPB_MASK	(0x3F)
+#define MIF_VOLT_STEP		12500
+#define COLD_VOLT_OFFSET	37500
+#define LIMIT_COLD_VOLTAGE	1250000
+#define MIN_COLD_VOLTAGE	950000
 
-#define DLL_ON_BASE_VOLT	(900000)
+static bool en_profile;
 
-#define MRSTATUS_THERMAL_BIT_SHIFT	(7)
-#define MRSTATUS_THERMAL_BIT_MASK	(1)
-#define MRSTATUS_THERMAL_LV_MASK	(0x7)
+#define AREF_CRITICAL		0x17
+#define AREF_HOT		0x2E
+#define AREF_NORMAL		0x5D
 
-enum devfreq_mif_idx {
-	LV0,
-	LV1,
-	LV2,
-	LV3,
-	LV4,
-	LV5,
-	LV6,
-	LV7,
-	LV8,
-	LV9,
-	LV10,
-	LV_COUNT,
-};
+#define BP_CONTORL_ENABLE	0x1
+#define BRBRSVCON_ENABLE	0x33
+#define QOS_TIMEOUT_VAL0	0x80
+#define QOS_TIMEOUT_VAL1	0xFFF
 
-enum devfreq_mif_clk {
-	DOUT_MEM_PLL,
-	DOUT_BUS_PLL,
-	MOUT_BUS_PLL_SUB,
-	DOUT_MFC_PLL,
-	MOUT_MFC_PLL,
-	DOUT_MFC_PLL_DIV3,
-	MOUT_ACLK_MIF_400_A,
-	MOUT_ACLK_MIF_400_B,
-	DOUT_ACLK_MIF_400,
-	DOUT_ACLK_MIF_200,
-	DOUT_ACLK_MIFNM_200,
-	DOUT_ACLK_MIFND_133,
-	DOUT_ACLK_MIF_133,
-	DOUT_ACLK_CPIF_200,
-	DOUT_SCLK_HPM_MIF,
-	FOUT_MEM_PLL,
-	MOUT_CLKM_PHY_C,
-	CLK_COUNT,
-};
+#define SET_0			0
+#define SET_1			1
 
-enum devfreq_mif_thermal_autorate {
-	RATE_ONE = 0x000B005D,
-	RATE_HALF = 0x0005002E,
-	RATE_QUARTER = 0x00030017,
-};
+#ifdef CONFIG_EXYNOS_THERMAL
+bool mif_is_probed;
+#endif
 
-enum devfreq_mif_thermal_channel {
-	THERMAL_CHANNEL0,
-	THERMAL_CHANNEL1,
-};
-
-struct devfreq_data_mif {
-	struct device *dev;
-	struct devfreq *devfreq;
-
-	struct regulator *vdd_mif;
-	unsigned long old_volt;
-	unsigned long volt_offset;
-
-	struct mutex lock;
-
-	struct notifier_block tmu_notifier;
-
-	int restore_idx_dll_on;
-	int base_idx_dll_on;
-
-	void __iomem *base_mif;
-	void __iomem *base_sysreg_mif;
-	void __iomem *base_drex0;
-	void __iomem *base_drex1;
-	void __iomem *base_lpddr_phy0;
-	void __iomem *base_lpddr_phy1;
-};
-
-struct devfreq_mif_timing_parameter {
-	unsigned int timing_row;
-	unsigned int timing_data;
-	unsigned int timing_power;
-	unsigned int rd_fetch;
-	unsigned int timing_rfcpb;
-	unsigned int dvfs_con1;
-	unsigned int mif_drex_mr_data[4];
-};
-
-struct devfreq_thermal_work {
-	struct delayed_work devfreq_mif_thermal_work;
-	enum devfreq_mif_thermal_channel channel;
-	struct workqueue_struct *work_queue;
-	unsigned int polling_period;
-	unsigned long max_freq;
-};
-
-struct devfreq_clk_list devfreq_mif_clk[CLK_COUNT] = {
-	{"dout_mem_pll",},
-	{"dout_bus_pll",},
-	{"mout_bus_pll_sub",},
-	{"dout_mfc_pll",},
-	{"mout_mfc_pll",},
-	{"dout_mfc_pll_div3",},
-	{"mout_aclk_mif_400_a",},
-	{"mout_aclk_mif_400_b",},
-	{"dout_aclk_mif_400",},
-	{"dout_aclk_mif_200",},
-	{"dout_aclk_mifnm_200",},
-	{"dout_aclk_mifnd_133",},
-	{"dout_aclk_mif_133",},
-	{"dout_aclk_cpif_200",},
-	{"dout_sclk_hpm_mif",},
-	{"fout_mem_pll",},
-	{"mout_clkm_phy_c",},
-};
-
-struct devfreq_opp_table devfreq_mif_opp_list[] = {
-	{LV0,	1066000,	1100000},
-	{LV1,	 933000,	1100000},
-	{LV2,	 800000,	1100000},
-	{LV3,	 667000,	1100000},
-	{LV4,	 533000,	1100000},
-	{LV5,	 400000,	1100000},
-	{LV6,	 266000,	1100000},
-	{LV7,	 200000,	1100000},
-	{LV8,	 160000,	1100000},
-	{LV9,	 133000,	1100000},
-	{LV10,	 100000,	1100000},
-};
-
-struct devfreq_clk_value aclk_clk2x_1066[] = {
-	{0x1000, 0, ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_933[] = {
-	{0x1000, (0x1 << 20), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_800[] = {
-	{0x1000, ((0x1 << 20) | (0x1 << 16)), ((0xF << 28) | 0x1 << 12)},
-};
-
-struct devfreq_clk_value aclk_clk2x_667[] = {
-	{0x1000, ((0x1 << 20) | (0x1 << 16) | (0x1 << 12)), (0xF << 28)},
-};
-
-struct devfreq_clk_value aclk_clk2x_533[] = {
-	{0x1000, (0x1 << 28), ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_400[] = {
-	{0x1000, ((0x1 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_267[] = {
-	{0x1000, ((0x2 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_200[] = {
-	{0x1000, ((0x3 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_160[] = {
-	{0x1000, ((0x4 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_133[] = {
-	{0x1000, ((0x5 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value aclk_clk2x_100[] = {
-	{0x1000, ((0x7 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
-};
-
-struct devfreq_clk_value *aclk_clk2x_list[] = {
-	aclk_clk2x_1066,
-	aclk_clk2x_933,
-	aclk_clk2x_800,
-	aclk_clk2x_667,
-	aclk_clk2x_533,
-	aclk_clk2x_400,
-	aclk_clk2x_267,
-	aclk_clk2x_200,
-	aclk_clk2x_160,
-	aclk_clk2x_133,
-	aclk_clk2x_100,
-};
-
-struct devfreq_clk_state aclk_mif_400_bus_pll[] = {
-	{MOUT_ACLK_MIF_400_B,	DOUT_BUS_PLL},
-};
-
-struct devfreq_clk_state aclk_mif_400_bus_dpll[] = {
-	{MOUT_ACLK_MIF_400_A,	MOUT_BUS_PLL_SUB},
-	{MOUT_ACLK_MIF_400_B,	MOUT_ACLK_MIF_400_A},
-};
-
-struct devfreq_clk_state aclk_mif_400_mfc_pll[] = {
-	{MOUT_ACLK_MIF_400_A,	DOUT_MFC_PLL_DIV3},
-	{MOUT_ACLK_MIF_400_B,	MOUT_ACLK_MIF_400_A},
-};
-
-struct devfreq_clk_states aclk_mif_400_bus_pll_list = {
-	.state = aclk_mif_400_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_mif_400_bus_pll),
-};
-
-struct devfreq_clk_states aclk_mif_400_bus_dpll_list = {
-	.state = aclk_mif_400_bus_dpll,
-	.state_count = ARRAY_SIZE(aclk_mif_400_bus_dpll),
-};
-
-struct devfreq_clk_states aclk_mif_400_mfc_pll_list = {
-	.state = aclk_mif_400_mfc_pll,
-	.state_count = ARRAY_SIZE(aclk_mif_400_mfc_pll),
-};
-
-struct devfreq_clk_info aclk_mif_400[] = {
-	{LV0,	467000000,	0,	&aclk_mif_400_bus_pll_list},
-	{LV1,	467000000,	0,	&aclk_mif_400_bus_pll_list},
-	{LV2,	400000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV3,	334000000,	0,	&aclk_mif_400_mfc_pll_list},
-	{LV4,	267000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV5,	200000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV6,	160000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV7,	160000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV8,	134000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV9,	134000000,	0,	&aclk_mif_400_bus_dpll_list},
-	{LV10,	100000000,	0,	&aclk_mif_400_bus_dpll_list},
-};
-
-struct devfreq_clk_info aclk_mif_200[] = {
-	{LV0,	234000000,	0,	NULL},
-	{LV1,	234000000,	0,	NULL},
-	{LV2,	200000000,	0,	NULL},
-	{LV3,	167000000,	0,	NULL},
-	{LV4,	134000000,	0,	NULL},
-	{LV5,	100000000,	0,	NULL},
-	{LV6,	 80000000,	0,	NULL},
-	{LV7,	 80000000,	0,	NULL},
-	{LV8,	 67000000,	0,	NULL},
-	{LV9,	 67000000,	0,	NULL},
-	{LV10,	 50000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_mifnm[] = {
-	{LV0,	200000000,	0,	NULL},
-	{LV1,	160000000,	0,	NULL},
-	{LV2,	134000000,	0,	NULL},
-	{LV3,	134000000,	0,	NULL},
-	{LV4,	134000000,	0,	NULL},
-	{LV5,	134000000,	0,	NULL},
-	{LV6,	100000000,	0,	NULL},
-	{LV7,	100000000,	0,	NULL},
-	{LV8,	100000000,	0,	NULL},
-	{LV9,	100000000,	0,	NULL},
-	{LV10,	100000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_mifnd[] = {
-	{LV0,	134000000,	0,	NULL},
-	{LV1,	100000000,	0,	NULL},
-	{LV2,	 89000000,	0,	NULL},
-	{LV3,	 89000000,	0,	NULL},
-	{LV4,	 89000000,	0,	NULL},
-	{LV5,	 89000000,	0,	NULL},
-	{LV6,	 67000000,	0,	NULL},
-	{LV7,	 67000000,	0,	NULL},
-	{LV8,	 67000000,	0,	NULL},
-	{LV9,	 67000000,	0,	NULL},
-	{LV10,	 67000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_mif_133[] = {
-	{LV0,	134000000,	0,	NULL},
-	{LV1,	100000000,	0,	NULL},
-	{LV2,	 80000000,	0,	NULL},
-	{LV3,	 67000000,	0,	NULL},
-	{LV4,	 67000000,	0,	NULL},
-	{LV5,	 67000000,	0,	NULL},
-	{LV6,	 67000000,	0,	NULL},
-	{LV7,	 67000000,	0,	NULL},
-	{LV8,	 67000000,	0,	NULL},
-	{LV9,	 67000000,	0,	NULL},
-	{LV10,	 67000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_cpif_200[] = {
-	{LV0,	200000000,	0,	NULL},
-	{LV1,	200000000,	0,	NULL},
-	{LV2,	160000000,	0,	NULL},
-	{LV3,	160000000,	0,	NULL},
-	{LV4,	134000000,	0,	NULL},
-	{LV5,	100000000,	0,	NULL},
-	{LV6,	100000000,	0,	NULL},
-	{LV7,	100000000,	0,	NULL},
-	{LV8,	100000000,	0,	NULL},
-	{LV9,	100000000,	0,	NULL},
-	{LV10,	100000000,	0,	NULL},
-};
-
-struct devfreq_clk_info sclk_hpm_mif[] = {
-	{LV0,	200000000,	0,	NULL},
-	{LV1,	200000000,	0,	NULL},
-	{LV2,	200000000,	0,	NULL},
-	{LV3,	200000000,	0,	NULL},
-	{LV4,	200000000,	0,	NULL},
-	{LV5,	200000000,	0,	NULL},
-	{LV6,	200000000,	0,	NULL},
-	{LV7,	200000000,	0,	NULL},
-	{LV8,	200000000,	0,	NULL},
-	{LV9,	200000000,	0,	NULL},
-	{LV10,	200000000,	0,	NULL},
-};
-
-struct devfreq_clk_info *devfreq_clk_mif_info_list[] = {
-	aclk_mif_400,
-	aclk_mif_200,
-	aclk_mifnm,
-	aclk_mifnd,
-	aclk_mif_133,
-	aclk_cpif_200,
-	sclk_hpm_mif,
-};
-
-enum devfreq_mif_clk devfreq_clk_mif_info_idx[] = {
-	DOUT_ACLK_MIF_400,
-	DOUT_ACLK_MIF_200,
-	DOUT_ACLK_MIFNM_200,
-	DOUT_ACLK_MIFND_133,
-	DOUT_ACLK_MIF_133,
-	DOUT_ACLK_CPIF_200,
-	DOUT_SCLK_HPM_MIF,
-};
-
-static struct devfreq_simple_ondemand_data exynos5_devfreq_mif_governor_data = {
-	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
-	.upthreshold		= 95,
-	.cal_qos_max		= 800000,
-};
-
-static struct exynos_devfreq_platdata exynos5422_qos_mif = {
-	.default_qos		= 266000,
-};
-
-static struct ppmu_info ppmu_mif[] = {
-	{
-		.base = (void __iomem *)PPMU_D0_CPU_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D0_RT_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D0_GEN_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D1_CPU_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D1_RT_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D1_GEN_ADDR,
-	},
-};
-
-static struct devfreq_exynos devfreq_mif_exynos = {
-	.ppmu_list = ppmu_mif,
-	.ppmu_count = ARRAY_SIZE(ppmu_mif),
-};
-
-struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
-	{	/* 1066Mhz */
-		.timing_row	= 0x467DC919,
-		.timing_data	= 0x48460860,
-		.timing_power	= 0x6C4B0448,
-		.rd_fetch	= 0x00000003,
-		.timing_rfcpb	= 0x00002020,
-		.dvfs_con1	= 0x10102121,
-		.mif_drex_mr_data = {
-			[0]	= 0x00000878,
-			[1]	= 0x00100878,
-			[2]	= 0x0000070C,
-			[3]	= 0x0010070C,
-		},
-	}, {	/* 933Mhz */
-		.timing_row	= 0x3D6BA816,
-		.timing_data	= 0x4742086E,
-		.timing_power	= 0x60420447,
-		.rd_fetch	= 0x00000003,
-		.timing_rfcpb	= 0x00001D1D,
-		.dvfs_con1	= 0x0E0E2121,
-		.mif_drex_mr_data = {
-			[0]	= 0x00000870,
-			[1]	= 0x00100870,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	}, {	/* 800Mhz */
-		.timing_row	= 0x345A96D3,
-		.timing_data	= 0x3630065C,
-		.timing_power	= 0x50380336,
-		.rd_fetch	= 0x00000003,
-		.timing_rfcpb	= 0x00001818,
-		.dvfs_con1	= 0x0C0C2121,
-		.mif_drex_mr_data = {
-			[0]	= 0x00000868,
-			[1]	= 0x00100868,
-			[2]	= 0x0000050C,
-			[3]	= 0x0010050C,
-		},
-	}, {	/* 667Mhz */
-		.timing_row	= 0x2C4885D0,
-		.timing_data	= 0x3630064A,
-		.timing_power	= 0x442F0335,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00001414,
-		.dvfs_con1	= 0x0A0A2121,
-		.mif_drex_mr_data = {
-			[0]	= 0x00000860,
-			[1]	= 0x00100860,
-			[2]	= 0x0000040C,
-			[3]	= 0x0010040C,
-		},
-	}, {	/* 533Mhz */
-		.timing_row	= 0x2347648D,
-		.timing_data	= 0x24200539,
-		.timing_power	= 0x38260225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00001010,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000070C,
-			[3]	= 0x0010070C,
-		},
-	}, {	/* 400Mhz */
-		.timing_row	= 0x1A35538A,
-		.timing_data	= 0x23200539,
-		.timing_power	= 0x281C0225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000C0C,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	}, {	/* 266Mhz */
-		.timing_row	= 0x12244247,
-		.timing_data	= 0x23200529,
-		.timing_power	= 0x1C130225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000808,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	}, {	/* 200Mhz */
-		.timing_row	= 0x112331C5,
-		.timing_data	= 0x23200529,
-		.timing_power	= 0x140E0225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000606,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	}, {	/* 160Mhz */
-		.timing_row	= 0x11223185,
-		.timing_data	= 0x23200529,
-		.timing_power	= 0x100C0225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000505,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	}, {	/* 133Mhz */
-		.timing_row	= 0x11222144,
-		.timing_data	= 0x23200529,
-		.timing_power	= 0x100A0225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000404,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	}, {	/* 100Mhz */
-		.timing_row	= 0x11222103,
-		.timing_data	= 0x23200529,
-		.timing_power	= 0x10070225,
-		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000303,
-		.dvfs_con1	= 0x09092121,
-		.mif_drex_mr_data = {
-			[0]	= 0x0000081C,
-			[1]	= 0x0010081C,
-			[2]	= 0x0000060C,
-			[3]	= 0x0010060C,
-		},
-	},
-};
-
-static struct workqueue_struct *devfreq_mif_thermal_wq_ch0;
-static struct workqueue_struct *devfreq_mif_thermal_wq_ch1;
-static struct devfreq_thermal_work devfreq_mif_ch0_work = {
-	.channel = THERMAL_CHANNEL0,
-	.polling_period = 1000,
-};
-static struct devfreq_thermal_work devfreq_mif_ch1_work = {
-	.channel = THERMAL_CHANNEL1,
-	.polling_period = 1000,
-};
-struct devfreq_data_mif *data_mif;
+static bool mif_transition_disabled;
+static unsigned int enabled_fimc_lite;
+static unsigned int num_mixer_layers;
+static unsigned int num_fimd1_layers;
 
 static struct pm_qos_request exynos5_mif_qos;
 static struct pm_qos_request boot_mif_qos;
+static struct pm_qos_request media_mif_qos;
 static struct pm_qos_request min_mif_thermal_qos;
+cputime64_t mif_pre_time;
 
-static bool use_mif_timing_set_0;
+static struct pm_qos_request exynos5_int_qos;
+extern struct pm_qos_request exynos5_cpu_mif_qos;
 
+/* NoC list for MIF block */
+static LIST_HEAD(mif_noc_list);
 static DEFINE_MUTEX(media_mutex);
-static unsigned int media_enabled_fimc_lite;
-static unsigned int media_enabled_gscl_local;
-static unsigned int media_enabled_tv;
-static unsigned int media_num_mixer_layer;
-static unsigned int media_num_decon_layer;
-static enum devfreq_media_resolution media_resolution;
-
-static unsigned int (*timeout_table)[2];
-
-struct devfreq_distriction_level {
-	int mif_level;
-	int disp_level;
-};
-
-struct devfreq_distriction_level distriction_fullhd[] = {
-	{LV10,	LV3},
-	{LV9,	LV3},
-	{LV7,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-};
 
 unsigned int timeout_fullhd[][2] = {
 	{0x0FFF0FFF,	0x00000000},
@@ -607,504 +99,231 @@ unsigned int timeout_fullhd[][2] = {
 	{0x00800080,	0x000000FF},
 };
 
-struct devfreq_distriction_level distriction_fullhd_gscl[] = {
-	{LV8,	LV2},
-	{LV7,	LV2},
-	{LV7,	LV2},
-	{LV6,	LV2},
-	{LV6,	LV2},
-	{LV10,	LV3},
+struct busfreq_data_mif {
+	struct device *dev;
+	struct devfreq *devfreq;
+	struct opp *curr_opp;
+	struct mutex lock;
+
+	struct clk *mclk_cdrex;
+	struct clk *mx_mspll_ccore;
+	struct clk *mout_bpll;
+	struct clk *fout_spll;
+	struct clk *mout_spll;
+	struct clk *sclk_cdrex;
+	struct clk *fout_bpll;
+	struct clk *clkm_phy0;
+	struct clk *clkm_phy1;
+
+	bool bp_enabled;
+	bool changed_timeout;
+	unsigned int volt_offset;
+	struct regulator *vdd_mif;
+	unsigned long mspll_freq;
+	unsigned long mspll_volt;
+
+	struct notifier_block tmu_notifier;
+	int busy;
 };
 
-unsigned int timeout_fullhd_gscl[][2] = {
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
+enum mif_bus_idx {
+	LV_0 = 0,
+	LV_1,
+	LV_2,
+	LV_3,
+	LV_4,
+	LV_5,
+	LV_6,
+	LV_7,
+	LV_8,
+	LV_END,
 };
 
-struct devfreq_distriction_level distriction_fullhd_tv[] = {
-	{LV6,	LV1},
-	{LV6,	LV1},
-	{LV6,	LV1},
-	{LV6,	LV1},
-	{LV6,	LV1},
-	{LV5,	LV1},
+struct mif_bus_opp_table {
+	unsigned int idx;
+	unsigned long clk;
+	unsigned long volt;
+	cputime64_t time_in_state;
 };
 
-unsigned int timeout_fullhd_tv[][2] = {
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
+struct mif_bus_opp_table mif_bus_opp_list[] = {
+	{LV_0, 800000, 1050000, 0},
+	{LV_1, 733000, 1037500, 0},
+	{LV_2, 667000, 1012500, 0},
+	{LV_3, 533000,  937500, 0},
+	{LV_4, 400000,  887500, 0},
+	{LV_5, 266000,  875000, 0},
+	{LV_6, 200000,  875000, 0},
+	{LV_7, 160000,  875000, 0},
+	{LV_8, 133000,  875000, 0},
 };
 
-
-struct devfreq_distriction_level distriction_fullhd_camera[] = {
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
-	{LV5,	LV3},
+#if defined(SET_DREX_TIMING)
+static unsigned int exynos5422_dram_param[][3] = {
+	/* timiningRow, timingData, timingPower */
+	{0x345A96D3, 0x3630065C, 0x50380336},	/* 800Mhz */
+	{0x30598651, 0x3630065C, 0x4C340336},	/* 733Mhz */
+	{0x2C4885D0, 0x3630065C, 0x442F0335},	/* 667Mhz */
+	{0x2347648D, 0x2620065C, 0x38260225},	/* 533Mhz */
+	{0x1A35538A, 0x2620065C, 0x281C0225},	/* 400Mhz */
+	{0x12244247, 0x2620065C, 0x1C130225},	/* 266Mhz */
+	{0x112331C5, 0x2620065C, 0x140E0225},	/* 200Mhz */
+	{0x11223185, 0x2620065C, 0x100C0225},	/* 160Mhz */
+	{0x11222144, 0x2620065C, 0x100C0225},	/* 133Mhz */
 };
+#endif
+/*
+ * MIF devfreq notifier
+ */
+static struct srcu_notifier_head exynos5_mif_transition_notifier_list;
 
-unsigned int timeout_fullhd_camera[][2] = {
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-};
+static int __init exynos5_mif_transition_notifier_list_init(void)
+{
+	srcu_init_notifier_head(&exynos5_mif_transition_notifier_list);
 
-struct devfreq_distriction_level distriction_wqhd[] = {
-	{LV10,	LV1},
-	{LV9,	LV1},
-	{LV8,	LV1},
-	{LV6,	LV1},
-	{LV5,	LV1},
-	{LV4,	LV1},
-};
+	return 0;
+}
+pure_initcall(exynos5_mif_transition_notifier_list_init);
 
-unsigned int timeout_wqhd[][2] = {
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x02000200,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00400040,	0x000000FF},
-	{0x00400040,	0x000000FF},
-	{0x00000000,	0x000000FF},
-};
+int exynos5_mif_register_notifier(struct notifier_block *nb)
+{
+	return srcu_notifier_chain_register(&exynos5_mif_transition_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos5_mif_register_notifier);
 
-struct devfreq_distriction_level distriction_wqhd_tv[] = {
-	{LV10,	LV1},
-	{LV7,	LV1},
-	{LV6,	LV1},
-	{LV5,	LV1},
-	{LV4,	LV0},
-	{LV3,	LV0},
-};
+int exynos5_mif_unregister_notifier(struct notifier_block *nb)
+{
+	return srcu_notifier_chain_unregister(&exynos5_mif_transition_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos5_mif_unregister_notifier);
 
-unsigned int timeout_wqhd_tv[][2] = {
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x02000200,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00400040,	0x000000FF},
-	{0x00400040,	0x000000FF},
-	{0x00000000,	0x000000FF},
-};
+int exynos5_mif_notify_transition(struct devfreq_info *info, unsigned int state)
+{
+	BUG_ON(irqs_disabled());
 
-struct devfreq_distriction_level distriction_wqhd_camera[] = {
-	{LV5,	LV1},
-	{LV5,	LV1},
-	{LV5,	LV1},
-	{LV5,	LV1},
-	{LV5,	LV1},
-	{LV5,	LV0},
-};
+	return srcu_notifier_call_chain(&exynos5_mif_transition_notifier_list, state, info);
+}
+EXPORT_SYMBOL_GPL(exynos5_mif_notify_transition);
 
-unsigned int timeout_wqhd_camera[][2] = {
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
-};
+/*
+ * MIF devfreq BPLL change notifier
+ */
+static struct srcu_notifier_head exynos5_mif_bpll_transition_notifier_list;
 
-extern void exynos5_update_district_disp_level(unsigned int idx);
+static int __init exynos5_mif_bpll_transition_notifier_list_init(void)
+{
+	srcu_init_notifier_head(&exynos5_mif_bpll_transition_notifier_list);
+
+	return 0;
+}
+pure_initcall(exynos5_mif_bpll_transition_notifier_list_init);
+
+int exynos5_mif_bpll_register_notifier(struct notifier_block *nb)
+{
+	return srcu_notifier_chain_register(&exynos5_mif_bpll_transition_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos5_mif_bpll_register_notifier);
+
+int exynos5_mif_bpll_unregister_notifier(struct notifier_block *nb)
+{
+	return srcu_notifier_chain_unregister(&exynos5_mif_bpll_transition_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos5_mif_bpll_unregister_notifier);
+
+int exynos5_mif_bpll_transition_notify(struct devfreq_info *info, unsigned int state)
+{
+	BUG_ON(irqs_disabled());
+
+	return srcu_notifier_call_chain(&exynos5_mif_bpll_transition_notifier_list, state, info);
+}
+EXPORT_SYMBOL_GPL(exynos5_mif_bpll_transition_notify);
+
+/* restore noc probe */
+void exynos5_mif_nocp_resume(void)
+{
+	resume_nocp(&mif_noc_list);
+}
+EXPORT_SYMBOL_GPL(exynos5_mif_nocp_resume);
+
+void exynos5_mif_transition_disable(bool disable)
+{
+	mif_transition_disabled = disable;
+}
+EXPORT_SYMBOL_GPL(mif_transition_disabled);
 
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value)
 {
-	unsigned int total_layer_count = 0;
-	int disp_qos = LV3;
-	int mif_qos = LV10;
+	unsigned int num_total_layers;
+	unsigned long media_qos_freq = 0;
 
 	mutex_lock(&media_mutex);
 
-	switch (media_type) {
-	case TYPE_FIMC_LITE:
-		media_enabled_fimc_lite = value;
-		break;
-	case TYPE_MIXER:
-		media_num_mixer_layer = value;
-		break;
-	case TYPE_DECON:
-		media_num_decon_layer = value;
-		break;
-	case TYPE_GSCL_LOCAL:
-		media_enabled_gscl_local = value;
-		break;
-	case TYPE_TV:
-		media_enabled_tv = value;
-		break;
-	case TYPE_RESOLUTION:
-		media_resolution = value;
-		mutex_unlock(&media_mutex);
-		return;
+	if (media_type == TYPE_FIMC_LITE)
+		enabled_fimc_lite = value;
+	else if (media_type == TYPE_MIXER)
+		num_mixer_layers = value;
+	else if (media_type == TYPE_FIMD1)
+		num_fimd1_layers = value;
+
+	num_total_layers = num_mixer_layers + num_fimd1_layers;
+
+	pr_debug("%s: fimc_lite = %s, num_mixer_layers = %u, num_fimd1_layers = %u, "
+			"num_total_layers = %u\n", __func__,
+			enabled_fimc_lite ? "enabled" : "disabled",
+			num_mixer_layers, num_fimd1_layers, num_total_layers);
+
+	if (!enabled_fimc_lite && num_mixer_layers) {
+		media_qos_freq = mif_bus_opp_list[LV_4].clk;
+		goto out;
 	}
 
-	total_layer_count = media_num_mixer_layer + media_num_decon_layer;
-
-	if (total_layer_count < 0 ||
-		5 < total_layer_count) {
-		pr_err("DEVFREQ(MIF) : total window count should be between 1 and 5\n");
-		return;
-	}
-
-	if (media_resolution == RESOLUTION_FULLHD) {
-		if (media_enabled_fimc_lite) {
-			if (mif_qos > distriction_fullhd_camera[total_layer_count].mif_level)
-				mif_qos = distriction_fullhd_camera[total_layer_count].mif_level;
-			timeout_table = timeout_fullhd_camera;
-		}
-		if (media_enabled_gscl_local) {
-			if (total_layer_count == NUM_LAYER_5) {
-				pr_err("DEVFREQ(MIF) : can't support mif and disp distriction. using gscl local with 5 windows.\n");
-				return;
-			}
-			if (mif_qos > distriction_fullhd_gscl[total_layer_count].mif_level)
-				mif_qos = distriction_fullhd_gscl[total_layer_count].mif_level;
-			if (disp_qos > distriction_fullhd_gscl[total_layer_count].disp_level)
-				disp_qos = distriction_fullhd_gscl[total_layer_count].disp_level;
-			timeout_table = timeout_fullhd_gscl;
-		}
-		if (media_enabled_tv) {
-			if (mif_qos > distriction_fullhd_tv[total_layer_count].mif_level)
-				mif_qos = distriction_fullhd_tv[total_layer_count].mif_level;
-			if (disp_qos > distriction_fullhd_tv[total_layer_count].disp_level)
-				disp_qos = distriction_fullhd_tv[total_layer_count].disp_level;
-			timeout_table = timeout_fullhd_tv;
-		}
-		if (!media_enabled_fimc_lite && !media_enabled_gscl_local && !media_enabled_tv)
-			timeout_table = timeout_fullhd;
-		if (mif_qos > distriction_fullhd[total_layer_count].mif_level)
-			mif_qos = distriction_fullhd[total_layer_count].mif_level;
-		if (disp_qos > distriction_fullhd[total_layer_count].disp_level)
-			disp_qos = distriction_fullhd[total_layer_count].disp_level;
-	} else if (media_resolution == RESOLUTION_WQHD) {
-		if (media_enabled_fimc_lite) {
-			if (mif_qos > distriction_wqhd_camera[total_layer_count].mif_level)
-				mif_qos = distriction_wqhd_camera[total_layer_count].mif_level;
-			timeout_table = timeout_wqhd_camera;
-		}
-		if (media_enabled_tv) {
-			if (mif_qos > distriction_wqhd_tv[total_layer_count].mif_level)
-				mif_qos = distriction_wqhd_tv[total_layer_count].mif_level;
-			if (disp_qos > distriction_wqhd_tv[total_layer_count].disp_level)
-				disp_qos = distriction_wqhd_tv[total_layer_count].disp_level;
-			timeout_table = timeout_wqhd_tv;
-
-			if (total_layer_count == NUM_LAYER_5)
-				mif_qos = LV3;
-		}
-		if (!media_enabled_fimc_lite && !media_enabled_gscl_local && !media_enabled_tv)
-			timeout_table = timeout_wqhd;
-		if (mif_qos > distriction_wqhd[total_layer_count].mif_level)
-			mif_qos = distriction_wqhd[total_layer_count].mif_level;
-		if (disp_qos > distriction_wqhd[total_layer_count].disp_level)
-			disp_qos = distriction_wqhd[total_layer_count].disp_level;
-	}
-
-	if (pm_qos_request_active(&exynos5_mif_qos)) {
-		if (mif_qos != LV10)
-			pm_qos_update_request(&exynos5_mif_qos, devfreq_mif_opp_list[mif_qos].freq);
+	switch (num_total_layers) {
+	case NUM_LAYER_6:
+		if (enabled_fimc_lite)
+			media_qos_freq = mif_bus_opp_list[LV_0].clk;
+		break;
+	case NUM_LAYER_5:
+		if (enabled_fimc_lite)
+			media_qos_freq = mif_bus_opp_list[LV_2].clk;
+		break;
+	case NUM_LAYER_4:
+		if (enabled_fimc_lite)
+			media_qos_freq = mif_bus_opp_list[LV_2].clk;
 		else
-			pm_qos_update_request(&exynos5_mif_qos, exynos5422_qos_mif.default_qos);
+			media_qos_freq = mif_bus_opp_list[LV_4].clk;
+		break;
+	case NUM_LAYER_3:
+		if (enabled_fimc_lite)
+			media_qos_freq = mif_bus_opp_list[LV_3].clk;
+		else
+			media_qos_freq = mif_bus_opp_list[LV_5].clk;
+		break;
+	case NUM_LAYER_2:
+		if (enabled_fimc_lite)
+			media_qos_freq = mif_bus_opp_list[LV_3].clk;
+		else
+			media_qos_freq = mif_bus_opp_list[LV_7].clk;
+		break;
+	case NUM_LAYER_1:
+	case NUM_LAYER_0:
+		if (enabled_fimc_lite) {
+			if (num_mixer_layers == 0 && num_fimd1_layers < 2)
+				media_qos_freq = mif_bus_opp_list[LV_4].clk;
+			else
+				media_qos_freq = mif_bus_opp_list[LV_3].clk;
+		} else {
+			media_qos_freq = mif_bus_opp_list[LV_8].clk;
+		}
+		break;
 	}
 
-	exynos5_update_district_disp_level(disp_qos);
+out:
+	if (pm_qos_request_active(&media_mif_qos))
+		pm_qos_update_request(&media_mif_qos, media_qos_freq);
+
 	mutex_unlock(&media_mutex);
 }
-
-static inline int exynos5_devfreq_mif_get_idx(struct devfreq_opp_table *table,
-				unsigned int size,
-				unsigned long freq)
-{
-	int i;
-
-	for (i = 0; i < size; ++i) {
-		if (table[i].freq == freq)
-			return i;
-	}
-
-	return -1;
-}
-
-static int exynos5_devfreq_mif_change_timing_set(struct devfreq_data_mif *data)
-{
-	unsigned int tmp;
-
-	if (use_mif_timing_set_0) {
-		tmp = __raw_readl(data->base_mif + 0x1004);
-		tmp |= 0x1;
-		__raw_writel(tmp, data->base_mif + 0x1004);
-
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x2 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x2 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB8);
-	} else {
-		tmp = __raw_readl(data->base_mif + 0x1004);
-		tmp &= ~0x1;
-		__raw_writel(tmp, data->base_mif + 0x1004);
-
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x1 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x1 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB8);
-	}
-
-	use_mif_timing_set_0 = !use_mif_timing_set_0;
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_set_timing_set(struct devfreq_data_mif *data,
-							int target_idx)
-{
-	struct devfreq_mif_timing_parameter *cur_parameter;
-	unsigned int tmp;
-
-	cur_parameter = &dmc_timing_parameter[target_idx];
-
-	if (use_mif_timing_set_0) {
-		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0xE4);
-		__raw_writel(cur_parameter->timing_data, data->base_drex0 + 0xE8);
-		__raw_writel(cur_parameter->timing_power, data->base_drex0 + 0xEC);
-		tmp = __raw_readl(data->base_drex0 + 0x20);
-		tmp &= ~(TIMING_RFCPB_MASK << 8);
-		tmp |= (cur_parameter->timing_rfcpb & (TIMING_RFCPB_MASK << 8));
-		__raw_writel(tmp, data->base_drex0 + 0x20);
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex0 + 0x50);
-
-		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0xE4);
-		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0xE8);
-		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0xEC);
-		tmp = __raw_readl(data->base_drex1 + 0x20);
-		tmp &= ~(TIMING_RFCPB_MASK << 8);
-		tmp |= (cur_parameter->timing_rfcpb & (TIMING_RFCPB_MASK << 8));
-		__raw_writel(tmp, data->base_drex1 + 0x20);
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x50);
-	} else {
-		__raw_writel(cur_parameter->timing_row, data->base_drex0 + 0x34);
-		__raw_writel(cur_parameter->timing_data, data->base_drex0 + 0x38);
-		__raw_writel(cur_parameter->timing_power, data->base_drex0 + 0x3C);
-		tmp = __raw_readl(data->base_drex0 + 0x20);
-		tmp &= ~(TIMING_RFCPB_MASK);
-		tmp |= (cur_parameter->timing_rfcpb & TIMING_RFCPB_MASK);
-		__raw_writel(tmp, data->base_drex0 + 0x20);
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex0 + 0x4C);
-
-		__raw_writel(cur_parameter->timing_row, data->base_drex1 + 0x34);
-		__raw_writel(cur_parameter->timing_data, data->base_drex1 + 0x38);
-		__raw_writel(cur_parameter->timing_power, data->base_drex1 + 0x3C);
-		tmp = __raw_readl(data->base_drex1 + 0x20);
-		tmp &= ~(TIMING_RFCPB_MASK);
-		tmp |= (cur_parameter->timing_rfcpb & TIMING_RFCPB_MASK);
-		__raw_writel(tmp, data->base_drex1 + 0x20);
-		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x4C);
-	}
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_set_phy(struct devfreq_data_mif *data,
-					int target_idx)
-{
-	struct devfreq_mif_timing_parameter *cur_parameter;
-	unsigned int tmp;
-
-	cur_parameter = &dmc_timing_parameter[target_idx];
-
-	if (use_mif_timing_set_0) {
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xBC);
-		tmp &= ~(0x1F << 24);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 24));
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xBC);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xBC);
-		tmp &= ~(0x1F << 24);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 24));
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xBC);
-	} else {
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xBC);
-		tmp &= ~(0x1F << 16);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 16));
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xBC);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xBC);
-		tmp &= ~(0x1F << 16);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 16));
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xBC);
-	}
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_set_directcmd(struct devfreq_data_mif *data,
-						int target_idx)
-{
-	struct devfreq_mif_timing_parameter *cur_parameter;
-
-	cur_parameter = &dmc_timing_parameter[target_idx];
-
-	__raw_writel(cur_parameter->mif_drex_mr_data[0], data->base_sysreg_mif + 0x1030);
-	__raw_writel(cur_parameter->mif_drex_mr_data[1], data->base_sysreg_mif + 0x1034);
-	__raw_writel(cur_parameter->mif_drex_mr_data[2], data->base_sysreg_mif + 0x1038);
-	__raw_writel(cur_parameter->mif_drex_mr_data[3], data->base_sysreg_mif + 0x103C);
-
-	return 0;
-}
-
-/*static int exynos5_devfreq_mif_set_dll(struct devfreq_data_mif *data,
-					unsigned long target_volt,
-					int target_idx)
-{
-	unsigned int tmp;
-
-	if (target_volt >= DLL_ON_BASE_VOLT) {
-		tmp = __raw_readl(data->base_mif + 0x304);
-		tmp |= (0x1 << 12);
-		__raw_writel(tmp, data->base_mif + 0x304);
-	} else {
-		tmp = __raw_readl(data->base_mif + 0x304);
-		tmp &= ~(0x1 << 12);
-		__raw_writel(tmp, data->base_mif + 0x304);
-	}
-
-	return 0;
-}*/
-
-static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
-					int target_idx)
-{
-	if (timeout_table == NULL) {
-		pr_err("DEVFREQ(MIF) : can't setting timeout value\n");
-		return -EINVAL;
-	}
-
-	__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
-	__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC8);
-	__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC0);
-	__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
-
-	__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
-	__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC8);
-	__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC0);
-	__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
-					int target_idx,
-					int old_idx)
-{
-	int i, j;
-	struct devfreq_clk_info *clk_info;
-	struct devfreq_clk_states *clk_states;
-	unsigned int tmp;
-
-	if (target_idx < old_idx) {
-		tmp = __raw_readl(data->base_mif + aclk_clk2x_list[target_idx]->reg);
-		tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
-		tmp |= aclk_clk2x_list[target_idx]->set_value;
-		__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
-
-		for (i = 0; i < ARRAY_SIZE(devfreq_clk_mif_info_list); ++i) {
-			clk_info = &devfreq_clk_mif_info_list[i][target_idx];
-			clk_states = clk_info->states;
-			if (clk_states) {
-				for (j = 0; j < clk_states->state_count; ++j) {
-					clk_set_parent(devfreq_mif_clk[clk_states->state[j].clk_idx].clk,
-						devfreq_mif_clk[clk_states->state[j].parent_clk_idx].clk);
-				}
-			}
-
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_mif_clk[devfreq_clk_mif_info_idx[i]].clk, clk_info->freq);
-		}
-	} else {
-		for (i = 0; i < ARRAY_SIZE(devfreq_clk_mif_info_list); ++i) {
-			clk_info = &devfreq_clk_mif_info_list[i][target_idx];
-			clk_states = clk_info->states;
-
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_mif_clk[devfreq_clk_mif_info_idx[i]].clk, clk_info->freq);
-
-			if (clk_states) {
-				for (j = 0; j < clk_states->state_count; ++j) {
-					clk_set_parent(devfreq_mif_clk[clk_states->state[j].clk_idx].clk,
-						devfreq_mif_clk[clk_states->state[j].parent_clk_idx].clk);
-				}
-			}
-
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_mif_clk[devfreq_clk_mif_info_idx[i]].clk, clk_info->freq);
-		}
-
-		tmp = __raw_readl(data->base_mif + aclk_clk2x_list[target_idx]->reg);
-		tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
-		tmp |= aclk_clk2x_list[target_idx]->set_value;
-		__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
-	}
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_set_volt(struct devfreq_data_mif *data,
-					unsigned long volt,
-					unsigned long volt_range)
-{
-	if (data->old_volt == volt)
-		goto out;
-
-	regulator_set_voltage(data->vdd_mif, volt, volt_range);
-	data->old_volt = volt;
-out:
-	return 0;
-}
+EXPORT_SYMBOL_GPL(exynos5_update_media_layers);
 
 #ifdef CONFIG_EXYNOS_THERMAL
 static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_offset)
@@ -1122,214 +341,598 @@ static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_of
 }
 #endif
 
-static int exynos5_devfreq_mif_target(struct device *dev,
-					unsigned long *target_freq,
-					u32 flags)
+#ifdef SET_DREX_TIMING
+static void exynos5_set_dmc_timing(int target_idx)
 {
-	int ret = 0;
-	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
-	struct devfreq_data_mif *mif_data = platform_get_drvdata(pdev);
-	struct devfreq *devfreq_mif = mif_data->devfreq;
-	struct opp *target_opp;
-	int target_idx, old_idx;
-	unsigned long target_volt;
-	unsigned long old_freq;
-	unsigned long old_volt;
+	unsigned int set_timing_row, set_timing_data, set_timing_power;
 
-	mutex_lock(&mif_data->lock);
+	set_timing_row = exynos5422_dram_param[target_idx][0];
+	set_timing_data = exynos5422_dram_param[target_idx][1];
+	set_timing_power = exynos5422_dram_param[target_idx][2];
 
-	rcu_read_lock();
-	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
-	if (IS_ERR(target_opp)) {
-		rcu_read_unlock();
-		dev_err(dev, "DEVFREQ(MIF) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+	/* set drex timing parameters for target frequency */
+	__raw_writel(set_timing_row, EXYNOS5_DREXI_0_TIMINGROW0);
+	__raw_writel(set_timing_row, EXYNOS5_DREXI_1_TIMINGROW0);
+	__raw_writel(set_timing_data, EXYNOS5_DREXI_0_TIMINGDATA0);
+	__raw_writel(set_timing_data, EXYNOS5_DREXI_1_TIMINGDATA0);
+	__raw_writel(set_timing_power, EXYNOS5_DREXI_0_TIMINGPOWER0);
+	__raw_writel(set_timing_power, EXYNOS5_DREXI_1_TIMINGPOWER0);
+}
+
+static void exynos5_set_spll_timing(void)
+{
+	unsigned int spll_timing_row, spll_timing_data, spll_timing_power;
+
+	spll_timing_row = exynos5422_dram_param[LV_4][0];
+	spll_timing_data = exynos5422_dram_param[LV_4][1];
+	spll_timing_power = exynos5422_dram_param[LV_4][2];
+
+	/* set drex timing parameters for SPLL(400MHz) switching */
+	__raw_writel(spll_timing_row, EXYNOS5_DREXI_0_TIMINGROW1);
+	__raw_writel(spll_timing_row, EXYNOS5_DREXI_1_TIMINGROW1);
+	__raw_writel(spll_timing_data, EXYNOS5_DREXI_0_TIMINGDATA1);
+	__raw_writel(spll_timing_data, EXYNOS5_DREXI_1_TIMINGDATA1);
+	__raw_writel(spll_timing_power, EXYNOS5_DREXI_0_TIMINGPOWER1);
+	__raw_writel(spll_timing_power, EXYNOS5_DREXI_1_TIMINGPOWER1);
+}
+
+static void exynos5_switch_timing(bool set)
+{
+	unsigned int reg;
+
+	reg = __raw_readl(EXYNOS5_LPDDR3PHY_CON3);
+
+	if (set == SET_0)
+		reg &= ~EXYNOS5_TIMING_SET_SWI;
+	else
+		reg |= EXYNOS5_TIMING_SET_SWI;
+
+	__raw_writel(reg, EXYNOS5_LPDDR3PHY_CON3);
+}
+#else
+static inline void exynos5_set_dmc_timing(int target_idx)
+{
+	return;
+}
+
+static inline void exynos5_set_spll_timing(void)
+{
+	return;
+}
+
+static inline void exynos5_switch_timing(bool set)
+{
+	return;
+}
+#endif
+
+static void exynos5_back_pressure_enable(bool enable)
+{
+	if (enable) {
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_0_BP_CONTROL0);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_0_BP_CONTROL1);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_0_BP_CONTROL2);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_0_BP_CONTROL3);
+		__raw_writel(BRBRSVCON_ENABLE, EXYNOS5_DREXI_0_BRBRSVCONTROL);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_1_BP_CONTROL0);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_1_BP_CONTROL1);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_1_BP_CONTROL2);
+		__raw_writel(BP_CONTORL_ENABLE, EXYNOS5_DREXI_1_BP_CONTROL3);
+		__raw_writel(BRBRSVCON_ENABLE, EXYNOS5_DREXI_1_BRBRSVCONTROL);
+	} else {
+		__raw_writel(0x0, EXYNOS5_DREXI_0_BP_CONTROL0);
+		__raw_writel(0x0, EXYNOS5_DREXI_0_BP_CONTROL1);
+		__raw_writel(0x0, EXYNOS5_DREXI_0_BP_CONTROL2);
+		__raw_writel(0x0, EXYNOS5_DREXI_0_BP_CONTROL3);
+		__raw_writel(0x0, EXYNOS5_DREXI_0_BRBRSVCONTROL);
+		__raw_writel(0x0, EXYNOS5_DREXI_1_BP_CONTROL0);
+		__raw_writel(0x0, EXYNOS5_DREXI_1_BP_CONTROL1);
+		__raw_writel(0x0, EXYNOS5_DREXI_1_BP_CONTROL2);
+		__raw_writel(0x0, EXYNOS5_DREXI_1_BP_CONTROL3);
+		__raw_writel(0x0, EXYNOS5_DREXI_1_BRBRSVCONTROL);
+	}
+}
+
+static void exynos5_change_timeout(bool change)
+{
+	if (change) {
+		__raw_writel(QOS_TIMEOUT_VAL0, EXYNOS5_DREXI_0_QOSCONTROL8);
+		__raw_writel(QOS_TIMEOUT_VAL0, EXYNOS5_DREXI_1_QOSCONTROL8);
+	} else {
+		__raw_writel(QOS_TIMEOUT_VAL1, EXYNOS5_DREXI_0_QOSCONTROL8);
+		__raw_writel(QOS_TIMEOUT_VAL1, EXYNOS5_DREXI_1_QOSCONTROL8);
+	}
+}
+
+static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
+		unsigned long old_freq, unsigned long target_freq)
+{
+	unsigned int tmp;
+	int i, target_idx = LV_0;
+
+	pr_debug("%s: oldfreq %ld, freq %ld \n", __func__, old_freq, target_freq);
+
+	/*
+	 * Find setting value with target frequency
+	 */
+	for (i = LV_0; i < LV_END; i++) {
+		if (mif_bus_opp_list[i].clk == target_freq) {
+			target_idx = mif_bus_opp_list[i].idx;
+			break;
+		}
 	}
 
-	*target_freq = opp_get_freq(target_opp);
-	target_volt = opp_get_voltage(target_opp);
-#ifdef CONFIG_EXYNOS_THERMAL
-	target_volt = get_limit_voltage(target_volt, mif_data->volt_offset);
-#endif
+	if (target_idx <= LV_4) {
+		if (!pm_qos_request_active(&exynos5_int_qos))
+			pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, 111000);
+	} else {
+		if (pm_qos_request_active(&exynos5_int_qos))
+			pm_qos_remove_request(&exynos5_int_qos);
+	}
+
+	if (target_freq <= mif_bus_opp_list[LV_4].clk && !data->bp_enabled) {
+		exynos5_back_pressure_enable(true);
+		data->bp_enabled = true;
+	}
+
+	if (target_freq > mif_bus_opp_list[LV_5].clk && data->changed_timeout) {
+		exynos5_change_timeout(false);
+		data->changed_timeout = false;
+	}
+
+	clk_prepare(data->fout_spll);
+	clk_enable(data->fout_spll);
+	exynos5_set_spll_timing();
+	exynos5_switch_timing(SET_1);
+
+	/* MUX_CORE_SEL = MX_MSPLL_CCORE */
+	if (clk_set_parent(data->mclk_cdrex, data->mx_mspll_ccore)) {
+		pr_err("Unable to set parent mx_mspll_ccore of clock mclk_cdrex.\n");
+	}
+	do {
+		cpu_relax();
+		tmp = (__raw_readl(EXYNOS5_CLK_MUX_STAT_CDREX)
+				>> EXYNOS5_CLKSRC_MCLK_CDREX_SEL_SHIFT);
+		tmp &= 0x7;
+	} while (tmp != 0x2);
+
+	exynos5_set_dmc_timing(target_idx);
+
+	/* Change bpll MPS values*/
+	clk_set_rate(data->fout_bpll, target_freq * 1000);
+
+	exynos5_switch_timing(SET_0);
+
+	/* MUX_CORE_SEL = BPLL */
+	if (clk_set_parent(data->mclk_cdrex, data->mout_bpll)) {
+		pr_err("Unable to set parent mout_bpll of clock mclk_cdrex.\n");
+	}
+	do {
+		cpu_relax();
+		tmp = (__raw_readl(EXYNOS5_CLK_MUX_STAT_CDREX)
+				>> EXYNOS5_CLKSRC_MCLK_CDREX_SEL_SHIFT);
+		tmp &= 0x7;
+	} while (tmp != 0x1);
+
+	clk_disable(data->fout_spll);
+	clk_unprepare(data->fout_spll);
+
+	if (target_freq <= mif_bus_opp_list[LV_5].clk && !data->changed_timeout) {
+		exynos5_change_timeout(true);
+		data->changed_timeout = true;
+	}
+
+	if (target_freq > mif_bus_opp_list[LV_4].clk && data->bp_enabled) {
+		exynos5_back_pressure_enable(false);
+		data->bp_enabled = false;
+	}
+}
+
+static void exynos5_mif_update_state(unsigned int target_freq)
+{
+	cputime64_t cur_time = get_jiffies_64();
+	cputime64_t tmp_cputime;
+	unsigned int target_idx = -EINVAL;
+	unsigned int i;
+
+	/*
+	 * Find setting value with target frequency
+	 */
+	for (i = LV_0; i < LV_END; i++) {
+		if (mif_bus_opp_list[i].clk == target_freq)
+			target_idx = mif_bus_opp_list[i].idx;
+	}
+
+	tmp_cputime = cur_time - mif_pre_time;
+
+	mif_bus_opp_list[target_idx].time_in_state =
+		mif_bus_opp_list[target_idx].time_in_state + tmp_cputime;
+
+	mif_pre_time = cur_time;
+}
+
+unsigned long curr_mif_freq;
+static int exynos5_mif_busfreq_target(struct device *dev,
+		unsigned long *_freq, u32 flags)
+{
+	int err = 0;
+	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
+	struct busfreq_data_mif *data = platform_get_drvdata(pdev);
+	struct opp *opp;
+	struct devfreq_info info;
+	unsigned long freq;
+	unsigned long old_freq;
+	unsigned long target_volt;
+
+	if (mif_transition_disabled)
+		return 0;
+
+	mutex_lock(&data->lock);
+
+	/* Get available opp information */
+	rcu_read_lock();
+	opp = devfreq_recommended_opp(dev, _freq, flags);
+	if (IS_ERR(opp)) {
+		rcu_read_unlock();
+		dev_err(dev, "%s: Invalid OPP.\n", __func__);
+		mutex_unlock(&data->lock);
+		return PTR_ERR(opp);
+	}
+	freq = opp_get_freq(opp);
+	target_volt = opp_get_voltage(opp);
 	rcu_read_unlock();
 
-	*target_freq = min3(*target_freq,
-				devfreq_mif_ch0_work.max_freq,
-				devfreq_mif_ch1_work.max_freq);
+	/* get olg opp information */
+	rcu_read_lock();
+	old_freq = opp_get_freq(data->curr_opp);
+	rcu_read_unlock();
 
-	target_idx = exynos5_devfreq_mif_get_idx(devfreq_mif_opp_list,
-						ARRAY_SIZE(devfreq_mif_opp_list),
-						*target_freq);
-	old_idx = exynos5_devfreq_mif_get_idx(devfreq_mif_opp_list,
-						ARRAY_SIZE(devfreq_mif_opp_list),
-						devfreq_mif->previous_freq);
-	old_freq = devfreq_mif->previous_freq;
+	exynos5_mif_update_state(old_freq);
 
-	if (target_idx < 0)
+	if (old_freq == freq)
 		goto out;
 
-	if (old_freq == *target_freq)
-		goto out;
+	info.old = old_freq;
+	info.new = freq;
 
-	if (mif_data->restore_idx_dll_on != -1 &&
-		target_idx < mif_data->base_idx_dll_on) {
-		old_freq = devfreq_mif_opp_list[mif_data->restore_idx_dll_on].freq;
-		old_volt = devfreq_mif_opp_list[mif_data->restore_idx_dll_on].volt;
+#ifdef CONFIG_EXYNOS_THERMAL
+	if (data->volt_offset)
+		target_volt = get_limit_voltage(target_volt, data->volt_offset);
+#endif
 
-		exynos5_devfreq_mif_set_volt(mif_data, old_volt, old_volt + VOLT_STEP);
-		exynos5_devfreq_mif_set_timeout(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_timing_set(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_phy(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_directcmd(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_freq(mif_data, mif_data->restore_idx_dll_on, old_idx);
-		/*exynos5_devfreq_mif_set_dll(mif_data, old_volt, mif_data->restore_idx_dll_on);*/
+	/*
+	 * If target freq is higher than old freq
+	 * after change voltage, setting freq ratio
+	 */
+	if (old_freq < freq) {
+		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
+			regulator_set_voltage(data->vdd_mif, data->mspll_volt,
+					data->mspll_volt + MIF_VOLT_STEP);
+		else
+			regulator_set_voltage(data->vdd_mif, target_volt,
+					target_volt + MIF_VOLT_STEP);
 
-		mif_data->restore_idx_dll_on = -1;
-	}
+		exynos5_mif_set_freq(data, old_freq, freq);
 
-	if (old_freq < *target_freq) {
-		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
-		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
-		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
-		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
-		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
-		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
-		/*exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);*/
-	} else {
-		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
-		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
-		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
-		/*exynos5_devfreq_mif_set_dll(mif_data, target_idx, target_idx);*/
-		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
-		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
-		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
+		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
+			regulator_set_voltage(data->vdd_mif, target_volt,
+					target_volt + MIF_VOLT_STEP);
 
-		if (mif_data->base_idx_dll_on != -1 &&
-			mif_data->restore_idx_dll_on == -1 &&
-			target_idx >= mif_data->base_idx_dll_on) {
-			mif_data->restore_idx_dll_on = target_idx;
+		if (freq == mif_bus_opp_list[LV_0].clk)	{
+			clk_prepare(data->clkm_phy0);
+			clk_prepare(data->clkm_phy1);
+			clk_enable(data->clkm_phy0);
+			clk_enable(data->clkm_phy1);
 		}
+	} else {
+		if (old_freq == mif_bus_opp_list[LV_0].clk)	{
+			clk_disable(data->clkm_phy0);
+			clk_disable(data->clkm_phy1);
+			clk_unprepare(data->clkm_phy0);
+			clk_unprepare(data->clkm_phy1);
+		}
+		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
+			regulator_set_voltage(data->vdd_mif, data->mspll_volt,
+					data->mspll_volt + MIF_VOLT_STEP);
+
+		exynos5_mif_set_freq(data, old_freq, freq);
+
+		regulator_set_voltage(data->vdd_mif, target_volt, target_volt + MIF_VOLT_STEP);
 	}
 
+	curr_mif_freq = freq;
+	data->curr_opp = opp;
 out:
-	mutex_unlock(&mif_data->lock);
+	mutex_unlock(&data->lock);
 
-	return ret;
+	return err;
 }
 
-static int exynos5_devfreq_mif_get_dev_status(struct device *dev,
-						struct devfreq_dev_status *stat)
+static int exynos5_mif_bus_get_dev_status(struct device *dev,
+		struct devfreq_dev_status *stat)
 {
-	struct devfreq_data_mif *data = dev_get_drvdata(dev);
+	struct nocp_cnt tmp_nocp_cnt;
+	struct busfreq_data_mif *data = dev_get_drvdata(dev);
+	nocp_get_aver_cnt(&mif_noc_list, &tmp_nocp_cnt);
 
-	stat->current_frequency = data->devfreq->previous_freq;
-	stat->busy_time = devfreq_mif_exynos.val_pmcnt;
-	stat->total_time = devfreq_mif_exynos.val_ccnt;
+	rcu_read_lock();
+	stat->current_frequency = opp_get_freq(data->curr_opp);
+	rcu_read_unlock();
+
+	/*
+	 * Bandwidth of memory interface is 128bits
+	 * So bus can transfer 16bytes per cycle
+	 */
+	tmp_nocp_cnt.total_byte_cnt >>= 4;
+
+	stat->total_time = tmp_nocp_cnt.cycle_cnt;
+	stat->busy_time = tmp_nocp_cnt.total_byte_cnt;
+
+	if (en_profile)
+		pr_info("%lu,%lu\n", tmp_nocp_cnt.total_byte_cnt, tmp_nocp_cnt.cycle_cnt);
 
 	return 0;
 }
 
-static struct devfreq_dev_profile exynos5_devfreq_mif_profile = {
-	.initial_freq	= DEVFREQ_INITIAL_FREQ,
-	.polling_ms	= DEVFREQ_POLLING_PERIOD,
-	.target		= exynos5_devfreq_mif_target,
-	.get_dev_status	= exynos5_devfreq_mif_get_dev_status,
-	.max_state	= LV_COUNT,
+static struct devfreq_dev_profile exynos5_mif_devfreq_profile = {
+	.initial_freq	= 800000,
+	.polling_ms	= 100,
+	.target		= exynos5_mif_busfreq_target,
+	.get_dev_status	= exynos5_mif_bus_get_dev_status,
+	.max_state = LV_END,
 };
 
-static int exynos5_devfreq_mif_init_clock(void)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(devfreq_mif_clk); ++i) {
-		devfreq_mif_clk[i].clk = __clk_lookup(devfreq_mif_clk[i].clk_name);
-		if (IS_ERR_OR_NULL(devfreq_mif_clk[i].clk)) {
-			pr_err("DEVFREQ(MIF) : %s can't get clock\n", devfreq_mif_clk[i].clk_name);
-			return -EINVAL;
-		}
-	}
-
-	return 0;
-}
-
-static int exynos5_init_mif_table(struct device *dev,
-				struct devfreq_data_mif *data)
+static int exynos5422_mif_table(struct busfreq_data_mif *data)
 {
 	unsigned int i;
 	unsigned int ret;
-	unsigned int freq;
-	unsigned int volt;
-	bool checked_volt_over900mv = false;
+	unsigned int asv_volt;
 
-	for (i = 0; i < ARRAY_SIZE(devfreq_mif_opp_list); ++i) {
-		freq = devfreq_mif_opp_list[i].freq;
-		volt = get_match_volt(ID_MIF, freq);
-		if (!volt)
-			volt = devfreq_mif_opp_list[i].volt;
+	/* will add code for ASV information setting function in here */
 
-		exynos5_devfreq_mif_profile.freq_table[i] = freq;
+	for (i = 0; i < ARRAY_SIZE(mif_bus_opp_list); i++) {
+		asv_volt = get_match_volt(ID_MIF, mif_bus_opp_list[i].clk);
 
-		if (!checked_volt_over900mv) {
-			if (volt < DLL_ON_BASE_VOLT) {
-				data->base_idx_dll_on = i;
-				checked_volt_over900mv = true;
-			}
-		}
+		if (!asv_volt)
+			asv_volt = mif_bus_opp_list[i].volt;
 
-		ret = opp_add(dev, freq, volt);
+		pr_info("MIF %luKhz ASV is %duV\n", mif_bus_opp_list[i].clk, asv_volt);
+
+		ret = opp_add(data->dev, mif_bus_opp_list[i].clk, asv_volt);
+
 		if (ret) {
-			pr_err("DEVFREQ(MIF) : Failed to add opp entries %uKhz, %uV\n", freq, volt);
+			dev_err(data->dev, "Fail to add opp entries.\n");
 			return ret;
-		} else {
-			pr_info("DEVFREQ(MIF) : %uKhz, %uV\n", freq, volt);
 		}
 	}
 
 	return 0;
 }
 
-static int exynos5_devfreq_mif_notifier(struct notifier_block *nb, unsigned long val,
-						void *v)
+struct nocp_info nocp_mem0_0 = {
+	.name		= "mem0_0",
+	.id		= MEM0_0,
+	.pa_base	= NOCP_BASE(MEM0_0),
+};
+
+struct nocp_info nocp_mem0_1 = {
+	.name		= "mem0_1",
+	.id		= MEM0_1,
+	.pa_base	= NOCP_BASE(MEM0_1),
+	.weight		= 5,
+};
+
+struct nocp_info nocp_mem1_0 = {
+	.name		= "mem1_0",
+	.id		= MEM1_0,
+	.pa_base	= NOCP_BASE(MEM1_0),
+};
+
+struct nocp_info nocp_mem1_1 = {
+	.name		= "mem1_1",
+	.id		= MEM1_1,
+	.pa_base	= NOCP_BASE(MEM1_1),
+	.weight		= 5,
+};
+
+struct nocp_info *exynos5_mif_nocp_list[] = {
+	&nocp_mem0_0,
+	&nocp_mem0_1,
+	&nocp_mem1_0,
+	&nocp_mem1_1,
+};
+
+#if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
+static struct devfreq_simple_usage_data exynos5_mif_governor_data = {
+	.upthreshold		= 85,
+	.target_percentage	= 80,
+	.proportional		= 100,
+	.cal_qos_max		= 667000,
+	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
+};
+#endif
+
+static ssize_t mif_show_state(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	struct devfreq_notifier_block *devfreq_nb;
+	unsigned int i;
+	ssize_t len = 0;
+	ssize_t write_cnt = (ssize_t)((PAGE_SIZE / LV_END) - 2);
 
-	devfreq_nb = container_of(nb, struct devfreq_notifier_block, nb);
+	for (i = LV_0; i < LV_END; i++)
+		len += snprintf(buf + len, write_cnt, "%ld %llu\n", mif_bus_opp_list[i].clk,
+				(unsigned long long)mif_bus_opp_list[i].time_in_state);
 
-	mutex_lock(&devfreq_nb->df->lock);
-	update_devfreq(devfreq_nb->df);
-	mutex_unlock(&devfreq_nb->df->lock);
-
-	return NOTIFY_OK;
+	return len;
 }
 
-static int exynos5_devfreq_mif_reboot_notifier(struct notifier_block *nb, unsigned long val,
-						void *v)
+static DEVICE_ATTR(mif_time_in_state, 0644, mif_show_state, NULL);
+
+static ssize_t show_upthreshold(struct device *dev, struct device_attribute *attr, char *buf)
 {
-	pm_qos_update_request(&exynos5_mif_qos, exynos5_devfreq_mif_profile.initial_freq);
+	return snprintf(buf, PAGE_SIZE, "%d\n", exynos5_mif_governor_data.upthreshold);
+}
+
+static ssize_t store_upthreshold(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	exynos5_mif_governor_data.upthreshold = value;
+out:
+	return count;
+}
+
+static DEVICE_ATTR(upthreshold, S_IRUGO | S_IWUSR, show_upthreshold, store_upthreshold);
+
+static ssize_t show_target_percentage(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", exynos5_mif_governor_data.target_percentage);
+}
+
+static ssize_t store_target_percentage(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	exynos5_mif_governor_data.target_percentage = value;
+out:
+	return count;
+}
+
+static DEVICE_ATTR(target_percentage, S_IRUGO | S_IWUSR, show_target_percentage, store_target_percentage);
+
+static ssize_t show_proportional(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%d\n", exynos5_mif_governor_data.proportional);
+}
+
+static ssize_t store_proportional(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	exynos5_mif_governor_data.proportional = value;
+out:
+	return count;
+}
+
+static DEVICE_ATTR(proportional, S_IRUGO | S_IWUSR, show_proportional, store_proportional);
+
+static ssize_t show_en_profile(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%s\n", en_profile ? "true" : "false");
+}
+
+static ssize_t store_en_profile(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		goto out;
+
+	if (value)
+		en_profile = true;
+	else
+		en_profile = false;
+
+out:
+	return count;
+}
+
+static DEVICE_ATTR(en_profile, S_IRUGO | S_IWUSR, show_en_profile, store_en_profile);
+
+static struct attribute *busfreq_mif_entries[] = {
+	&dev_attr_mif_time_in_state.attr,
+	&dev_attr_upthreshold.attr,
+	&dev_attr_target_percentage.attr,
+	&dev_attr_proportional.attr,
+	&dev_attr_en_profile.attr,
+	NULL,
+};
+
+static struct attribute_group devfreq_attr_group = {
+	.name	= "time_in_state",
+	.attrs	= busfreq_mif_entries,
+};
+
+static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	int i, count = 0;
+	struct opp *opp;
+	ssize_t write_cnt = (ssize_t)((PAGE_SIZE / ARRAY_SIZE(mif_bus_opp_list)) - 2);
+	struct device *mif_dev = dev->parent;
+
+	if (!unlikely(mif_dev)) {
+		pr_err("%s: device is not probed\n", __func__);
+		return -ENODEV;
+	}
+
+	rcu_read_lock();
+	for (i = 0; i < ARRAY_SIZE(mif_bus_opp_list); i++) {
+		opp = opp_find_freq_exact(mif_dev, mif_bus_opp_list[i].clk, true);
+		if (!IS_ERR_OR_NULL(opp))
+			count += snprintf(&buf[count], write_cnt, "%lu ", opp_get_freq(opp));
+	}
+	rcu_read_unlock();
+
+	count += snprintf(&buf[count], 2, "\n");
+	return count;
+}
+
+static DEVICE_ATTR(freq_table, S_IRUGO, show_freq_table, NULL);
+
+static struct exynos_devfreq_platdata exynos5422_qos_mif = {
+	.default_qos = 160000,
+};
+
+static int exynos5_mif_reboot_notifier_call(struct notifier_block *this,
+				   unsigned long code, void *_cmd)
+{
+	pm_qos_update_request(&exynos5_mif_qos, exynos5_mif_devfreq_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
 
 static struct notifier_block exynos5_mif_reboot_notifier = {
-	.notifier_call = exynos5_devfreq_mif_reboot_notifier,
+	.notifier_call = exynos5_mif_reboot_notifier_call,
 };
 
 #ifdef CONFIG_EXYNOS_THERMAL
-static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned long event,
-						void *v)
+static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
+		unsigned long event, void *v)
 {
-	struct devfreq_data_mif *data = container_of(nb, struct devfreq_data_mif,
-							tmu_notifier);
+	struct busfreq_data_mif *data = container_of(notifier, struct busfreq_data_mif,
+			tmu_notifier);
+	struct exynos_devfreq_platdata *pdata = data->dev->platform_data;
 	unsigned int prev_volt, set_volt;
 	unsigned int *on = v;
 
 	if (event == TMU_COLD) {
 		if (pm_qos_request_active(&exynos5_mif_qos))
 			pm_qos_update_request(&exynos5_mif_qos,
-					exynos5_devfreq_mif_profile.initial_freq);
+					exynos5_mif_devfreq_profile.initial_freq);
 
 		if (*on) {
 			mutex_lock(&data->lock);
@@ -1343,8 +946,9 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 				return NOTIFY_OK;
 			}
 
+			/* setting voltage for MIF about cold temperature */
 			set_volt = get_limit_voltage(prev_volt, data->volt_offset);
-			regulator_set_voltage(data->vdd_mif, set_volt, set_volt + VOLT_STEP);
+			regulator_set_voltage(data->vdd_mif, set_volt, set_volt + MIF_VOLT_STEP);
 
 			mutex_unlock(&data->lock);
 		} else {
@@ -1359,302 +963,312 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 				return NOTIFY_OK;
 			}
 
+			/* restore voltage for MIF */
 			set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
-			regulator_set_voltage(data->vdd_mif, set_volt, set_volt + VOLT_STEP);
+			regulator_set_voltage(data->vdd_mif, set_volt, set_volt + MIF_VOLT_STEP);
 
 			mutex_unlock(&data->lock);
 		}
 
 		if (pm_qos_request_active(&exynos5_mif_qos))
-			pm_qos_update_request(&exynos5_mif_qos,
-					exynos5422_qos_mif.default_qos);
+			pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
+	}
+
+	switch (event) {
+	case MEM_TH_LV1:
+		__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_0_TIMINGAREF);
+		__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_1_TIMINGAREF);
+
+		if (pm_qos_request_active(&min_mif_thermal_qos))
+			pm_qos_update_request(&min_mif_thermal_qos, pdata->default_qos);
+
+		break;
+	case MEM_TH_LV2:
+		/*
+		 * In case of temperature increment, set MIF level 266Mhz as minimum
+		 * before changing dram refresh counter.
+		 */
+		if (*on < MEM_TH_LV2) {
+			if (pm_qos_request_active(&min_mif_thermal_qos))
+				pm_qos_update_request(&min_mif_thermal_qos,
+						mif_bus_opp_list[LV_5].clk);
+		}
+
+		__raw_writel(AREF_HOT, EXYNOS5_DREXI_0_TIMINGAREF);
+		__raw_writel(AREF_HOT, EXYNOS5_DREXI_1_TIMINGAREF);
+
+		/*
+		 * In case of temperature decrement, set MIF level 266Mhz as minimum
+		 * after changing dram refresh counter.
+		 */
+		if (*on > MEM_TH_LV2) {
+			if (pm_qos_request_active(&min_mif_thermal_qos))
+				pm_qos_update_request(&min_mif_thermal_qos,
+						mif_bus_opp_list[LV_5].clk);
+		}
+
+		break;
+	case MEM_TH_LV3:
+		if (pm_qos_request_active(&min_mif_thermal_qos))
+			pm_qos_update_request(&min_mif_thermal_qos, mif_bus_opp_list[LV_4].clk);
+
+		__raw_writel(AREF_CRITICAL, EXYNOS5_DREXI_0_TIMINGAREF);
+		__raw_writel(AREF_CRITICAL, EXYNOS5_DREXI_1_TIMINGAREF);
+
+		break;
 	}
 
 	return NOTIFY_OK;
 }
 #endif
 
-static int exynos5_devfreq_mif_update_timingset(struct devfreq_data_mif *data)
+#define clk_get(a, b) __clk_lookup(b)
+static int exynos5_devfreq_probe(struct platform_device *pdev)
 {
-	use_mif_timing_set_0 = ((__raw_readl(data->base_mif + 0x1004) & 0x1) == 0);
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
-{
+	struct busfreq_data_mif *data;
+	struct opp *opp, *mspll_opp;
+	struct device *dev = &pdev->dev;
 	unsigned int tmp;
+	unsigned long tmpfreq;
+	struct exynos_devfreq_platdata *pdata;
+	int err = 0;
 
-	mutex_lock(&data->lock);
+	data = kzalloc(sizeof(struct busfreq_data_mif), GFP_KERNEL);
 
-	/* Pause Enable */
-	tmp = __raw_readl(data->base_mif + 0x1008);
-	tmp |= 0x1;
-	__raw_writel(tmp, data->base_mif + 0x1008);
-
-	/* Configuring Automatic Direct Command Operation */
-	tmp = __raw_readl(data->base_sysreg_mif + 0x1020);
-	tmp = 0x80030010;
-	__raw_writel(tmp, data->base_sysreg_mif + 0x1020);
-
-	/* Decision for Timing Parameter Set Switch Control */
-	tmp = __raw_readl(data->base_drex0 + 0xE0);
-	tmp &= ~0x1;
-	__raw_writel(tmp, data->base_drex0 + 0xE0);
-	tmp = __raw_readl(data->base_drex1 + 0xE0);
-	tmp &= ~0x1;
-	__raw_writel(tmp, data->base_drex1 + 0xE0);
-
-	/* Setting DVFS Mode Control of PHY */
-	__raw_writel(0x0C0C2121, data->base_lpddr_phy0 + 0xBC);
-	__raw_writel(0x0C0C2121, data->base_lpddr_phy1 + 0xBC);
-
-	/* Setting DVFS Mode */
-	tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-	tmp &= ~(0x3 << 24);
-	if (use_mif_timing_set_0)
-		tmp |= (0x1 << 24);
-	else
-		tmp |= (0x2 << 24);
-	__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
-
-	mutex_unlock(&data->lock);
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_init_parameter(struct devfreq_data_mif *data)
-{
-	data->base_mif = ioremap(0x105B0000, SZ_64K);
-	data->base_sysreg_mif = ioremap(0x105E0000, SZ_64K);
-	data->base_drex0 = ioremap(0x10400000, SZ_64K);
-	data->base_drex1 = ioremap(0x10440000, SZ_64K);
-	data->base_lpddr_phy0 = ioremap(0x10420000, SZ_64K);
-	data->base_lpddr_phy1 = ioremap(0x10460000, SZ_64K);
-
-	exynos5_devfreq_mif_update_timingset(data);
-	exynos5_devfreq_mif_init_dvfs(data);
-
-	return 0;
-}
-
-static void exynos5_devfreq_thermal_event(struct devfreq_thermal_work *work)
-{
-	if (work->polling_period == 0)
-		return;
-
-	queue_delayed_work(work->work_queue,
-				&work->devfreq_mif_thermal_work,
-				msecs_to_jiffies(work->polling_period));
-}
-
-static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
-{
-	struct delayed_work *d_work = container_of(work, struct delayed_work, work);
-	struct devfreq_thermal_work *thermal_work =
-			container_of(d_work, struct devfreq_thermal_work, devfreq_mif_thermal_work);
-	unsigned int mrstatus, tmp_thermal_level, max_thermal_level = 0;
-	unsigned int timingaref_value = RATE_ONE;
-	unsigned long max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	bool throttling = false;
-	void __iomem *base_drex = NULL;
-
-	if (thermal_work->channel == THERMAL_CHANNEL0) {
-		base_drex = data_mif->base_drex0;
-	} else if (thermal_work->channel == THERMAL_CHANNEL1) {
-		base_drex = data_mif->base_drex1;
-	}
-
-	__raw_writel(0x09001000, base_drex + 0x10);
-	mrstatus = __raw_readl(base_drex + 0x54);
-	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
-	if (tmp_thermal_level > max_thermal_level)
-		max_thermal_level = tmp_thermal_level;
-
-	__raw_writel(0x09101000, base_drex + 0x10);
-	mrstatus = __raw_readl(base_drex + 0x54);
-	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
-	if (tmp_thermal_level > max_thermal_level)
-		max_thermal_level = tmp_thermal_level;
-
-	switch (max_thermal_level) {
-	case 0:
-	case 1:
-	case 2:
-	case 3:
-		timingaref_value = RATE_ONE;
-		thermal_work->polling_period = 1000;
-		break;
-	case 4:
-		timingaref_value = RATE_HALF;
-		thermal_work->polling_period = 300;
-		break;
-	case 6:
-		throttling = true;
-	case 5:
-		timingaref_value = RATE_QUARTER;
-		thermal_work->polling_period = 100;
-		break;
-	default:
-		pr_err("DEVFREQ(MIF) : can't support memory thermal level\n");
-		return;
-	}
-
-	if (throttling)
-		max_freq = devfreq_mif_opp_list[LV7].freq;
-	else
-		max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-
-	if (thermal_work->max_freq != max_freq) {
-		thermal_work->max_freq = max_freq;
-		mutex_lock(&data_mif->devfreq->lock);
-		update_devfreq(data_mif->devfreq);
-		mutex_unlock(&data_mif->devfreq->lock);
-	}
-
-	__raw_writel(timingaref_value, base_drex + 0x30);
-	exynos5_devfreq_thermal_event(thermal_work);
-}
-
-static void exynos5_devfreq_init_thermal(void)
-{
-	devfreq_mif_thermal_wq_ch0 = create_freezable_workqueue("devfreq_thermal_wq_ch0");
-	devfreq_mif_thermal_wq_ch1 = create_freezable_workqueue("devfreq_thermal_wq_ch1");
-
-	INIT_DELAYED_WORK(&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
-			exynos5_devfreq_thermal_monitor);
-	INIT_DELAYED_WORK(&devfreq_mif_ch1_work.devfreq_mif_thermal_work,
-			exynos5_devfreq_thermal_monitor);
-
-	devfreq_mif_ch0_work.work_queue = devfreq_mif_thermal_wq_ch0;
-	devfreq_mif_ch1_work.work_queue = devfreq_mif_thermal_wq_ch1;
-
-	exynos5_devfreq_thermal_event(&devfreq_mif_ch0_work);
-	exynos5_devfreq_thermal_event(&devfreq_mif_ch1_work);
-}
-
-static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
-{
-	int ret = 0;
-	struct devfreq_data_mif *data;
-	struct devfreq_notifier_block *devfreq_nb;
-	struct exynos_devfreq_platdata *plat_data;
-
-	if (exynos5_devfreq_mif_init_clock()) {
-		ret = -EINVAL;
-		goto err_data;
-	}
-
-	exynos5_devfreq_init_thermal();
-
-	clk_set_rate(devfreq_mif_clk[FOUT_MEM_PLL].clk,
-		1066000000);
-	clk_set_rate(devfreq_mif_clk[DOUT_MFC_PLL_DIV3].clk,
-		clk_get_rate(devfreq_mif_clk[MOUT_MFC_PLL].clk) / 2);
-	clk_set_parent(devfreq_mif_clk[MOUT_CLKM_PHY_C].clk, devfreq_mif_clk[DOUT_MEM_PLL].clk);
-
-	data = kzalloc(sizeof(struct devfreq_data_mif), GFP_KERNEL);
 	if (data == NULL) {
-		pr_err("DEVFREQ(MIF) : Failed to allocate private data\n");
-		ret = -ENOMEM;
-		goto err_data;
+		dev_err(dev, "Failed to allocate memory for MIF\n");
+		return -ENOMEM;
 	}
 
-	data_mif = data;
+	/* Enable pause function for DREX2 DVFS */
+	tmp = __raw_readl(EXYNOS5_DMC_PAUSE_CTRL);
+	tmp |= EXYNOS5_DMC_PAUSE_ENABLE;
+	__raw_writel(tmp, EXYNOS5_DMC_PAUSE_CTRL);
+
+	exynos5_set_spll_timing();
+
+	data->dev = dev;
 	mutex_init(&data->lock);
 
-	if (exynos5_devfreq_mif_init_parameter(data)) {
-		ret = -EINVAL;
-		goto err_data;
+	/* Setting table for MIF*/
+	exynos5422_mif_table(data);
+
+	data->vdd_mif = regulator_get(dev, "vdd_mif");
+	if (IS_ERR(data->vdd_mif)) {
+		dev_err(dev, "Cannot get the regulator \"vdd_mif\"\n");
+		err = PTR_ERR(data->vdd_mif);
+		goto err_regulator;
 	}
 
-	exynos5_devfreq_mif_profile.freq_table = kzalloc(sizeof(int) * LV_COUNT, GFP_KERNEL);
-	if (exynos5_devfreq_mif_profile.freq_table == NULL) {
-		pr_err("DEVFREQ(MIF) : Failed to allocate freq table\n");
-		ret = -ENOMEM;
-		goto err_freqtable;
+	/* Get clock */
+	data->mclk_cdrex = clk_get(dev, "mout_mclk_cdrex");
+	if (IS_ERR(data->mclk_cdrex)) {
+		dev_err(dev, "Cannot get clock \"mclk_cdrex\"\n");
+		err = PTR_ERR(data->mclk_cdrex);
+		goto err_mout_mclk_cdrex;
 	}
 
-	ret = exynos5_init_mif_table(&pdev->dev, data);
-	if (ret)
-		goto err_inittable;
+	data->mx_mspll_ccore = clk_get(dev, "mout_mx_mspll_ccore");
+	if (IS_ERR(data->mx_mspll_ccore)) {
+		dev_err(dev, "Cannot get clock \"mx_mspll_ccore\"\n");
+		err = PTR_ERR(data->mx_mspll_ccore);
+		goto err_mx_mspll_ccore;
+	}
 
-	/* Setting non-exist index with restore of dll on */
-	data->restore_idx_dll_on = -1;
-	data->base_idx_dll_on = -1;
+	data->mout_spll = clk_get(dev, "mout_spll_ctrl");
+	if (IS_ERR(data->mout_spll)) {
+		dev_err(dev, "Cannot get clock \"mout_spll\"\n");
+		err = PTR_ERR(data->mout_spll);
+		goto err_mout_spll;
+	}
 
-	platform_set_drvdata(pdev, data);
+	clk_set_parent(data->mx_mspll_ccore, data->mout_spll);
+	clk_put(data->mout_spll);
 
+	data->fout_spll = clk_get(dev, "fout_spll");
+	if (IS_ERR(data->fout_spll)) {
+		dev_err(dev, "Cannot get clock \"fout_spll\"\n");
+		err = PTR_ERR(data->fout_spll);
+		goto err_fout_spll;
+	}
+
+	data->mout_bpll = clk_get(dev, "mout_bpll_ctrl_user");
+	if (IS_ERR(data->mout_bpll)) {
+		dev_err(dev, "Cannot get clock \"mout_bpll\"\n");
+		err = PTR_ERR(data->mout_bpll);
+		goto err_mout_bpll;
+	}
+
+	data->fout_bpll = clk_get(dev, "fout_bpll");
+	if (IS_ERR(data->fout_bpll)) {
+		dev_err(dev, "Cannot get clock \"fout_bpll\"\n");
+		err = PTR_ERR(data->fout_bpll);
+		goto err_fout_bpll;
+	}
+
+	data->clkm_phy0 = clk_get(dev, "clkm_phy0");
+	if (IS_ERR(data->clkm_phy0)) {
+		dev_err(dev, "Cannot get clock \"clkm_phy0\"\n");
+		err = PTR_ERR(data->clkm_phy0);
+		goto err_clkm_phy;
+	}
+	data->clkm_phy1 = clk_get(dev, "clkm_phy1");
+	if (IS_ERR(data->clkm_phy1)) {
+		dev_err(dev, "Cannot get clock \"clkm_phy1\"\n");
+		err = PTR_ERR(data->clkm_phy1);
+		goto err_clkm_phy;
+	}
+
+	clk_prepare(data->clkm_phy0);
+	clk_prepare(data->clkm_phy1);
+	clk_enable(data->clkm_phy0);
+	clk_enable(data->clkm_phy1);
+
+	/* Initialization NoC for MIF block */
+	regist_nocp(&mif_noc_list, exynos5_mif_nocp_list,
+			ARRAY_SIZE(exynos5_mif_nocp_list), NOCP_USAGE_MIF);
+
+	rcu_read_lock();
+	opp = opp_find_freq_floor(dev, &exynos5_mif_devfreq_profile.initial_freq);
+	if (IS_ERR(opp)) {
+		rcu_read_unlock();
+		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
+				exynos5_mif_devfreq_profile.initial_freq);
+		err = PTR_ERR(opp);
+		goto err_opp_add;
+	}
+	rcu_read_unlock();
+
+	mif_pre_time = get_jiffies_64();
+
+	data->curr_opp = opp;
 	data->volt_offset = 0;
-	data->dev = &pdev->dev;
-	data->vdd_mif = regulator_get(NULL, "vdd_mif");
-	data->devfreq = devfreq_add_device(data->dev,
-						&exynos5_devfreq_mif_profile,
-						"simple_ondemand",
-						&exynos5_devfreq_mif_governor_data);
+	data->bp_enabled = false;
+	data->changed_timeout = false;
 
-	devfreq_nb = kzalloc(sizeof(struct devfreq_data_mif), GFP_KERNEL);
-	if (devfreq_nb == NULL) {
-		pr_err("DEVFREQ(MIF) : Failed to allocate notifier block\n");
-		ret = -ENOMEM;
-		goto err_nb;
+#ifdef CONFIG_EXYNOS_THERMAL
+	data->tmu_notifier.notifier_call = exynos5_bus_mif_tmu_notifier;
+#endif
+	platform_set_drvdata(pdev, data);
+#if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
+	data->devfreq = devfreq_add_device(dev, &exynos5_mif_devfreq_profile,
+			"simple_usage", &exynos5_mif_governor_data);
+#endif
+#if defined(CONFIG_DEVFREQ_GOV_USERSPACE)
+	data->devfreq = devfreq_add_device(dev, &exynos5_mif_devfreq_profile, "user_space", NULL);
+#endif
+	if (IS_ERR(data->devfreq)) {
+		err = PTR_ERR(data->devfreq);
+		goto err_opp_add;
 	}
 
-	devfreq_nb->df = data->devfreq;
-	devfreq_nb->nb.notifier_call = exynos5_devfreq_mif_notifier;
+	/* set mspll frequency and voltage information for devfreq */
+	tmpfreq = clk_get_rate(data->mx_mspll_ccore) / 1000;
 
-	exynos5422_devfreq_register(&devfreq_mif_exynos);
-	exynos5422_ppmu_register_notifier(MIF, &devfreq_nb->nb);
+	rcu_read_lock();
+	mspll_opp = devfreq_recommended_opp(dev, &tmpfreq, 0);
+	if (IS_ERR(mspll_opp)) {
+		rcu_read_unlock();
+		dev_err(dev, "%s: Invalid OPP.\n", __func__);
+		err = PTR_ERR(mspll_opp);
 
-	plat_data = data->dev->platform_data;
+		goto err_opp_add;
+	}
+	data->mspll_freq = opp_get_freq(mspll_opp);
+	data->mspll_volt = opp_get_voltage(mspll_opp);
+	rcu_read_unlock();
 
-	data->devfreq->min_freq = plat_data->default_qos;
-	data->devfreq->max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	devfreq_mif_ch1_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
+	/* Set Max information for devfreq */
+	tmpfreq = ULONG_MAX;
+
+	rcu_read_lock();
+	opp = opp_find_freq_floor(dev, &tmpfreq);
+	if (IS_ERR(opp)) {
+		rcu_read_unlock();
+		dev_err(dev, "%s: Invalid OPP.\n", __func__);
+		err = PTR_ERR(opp);
+
+		goto err_opp_add;
+	}
+	data->devfreq->max_freq = opp_get_freq(opp);
+	rcu_read_unlock();
+
+	devfreq_register_opp_notifier(dev, data->devfreq);
+
+	/* Create file for time_in_state */
+	err = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_attr_group);
+
+	/* Add sysfs for freq_table */
+	err = device_create_file(&data->devfreq->dev, &dev_attr_freq_table);
+	if (err)
+		pr_err("%s: Fail to create sysfs file\n", __func__);
+
+	bw_monitor_create_sysfs(&data->devfreq->dev.kobj);
+
+	pdata = pdev->dev.platform_data;
+	if (!pdata)
+		pdata = &exynos5422_qos_mif;
+
+	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+	pm_qos_add_request(&media_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_update_request_timeout(&boot_mif_qos,
-					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
+			exynos5_mif_devfreq_profile.initial_freq, 40000 * 1000);
+	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+#ifdef CONFIG_ARM_EXYNOS5422_CPUFREQ
+	pm_qos_add_request(&exynos5_cpu_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+#endif
 
 	register_reboot_notifier(&exynos5_mif_reboot_notifier);
 
 #ifdef CONFIG_EXYNOS_THERMAL
-	data->tmu_notifier.notifier_call = exynos5_devfreq_mif_tmu_notifier;
 	exynos_tmu_add_notifier(&data->tmu_notifier);
+	mif_is_probed = true;
 #endif
-	return ret;
-err_nb:
-	devfreq_remove_device(data->devfreq);
-err_inittable:
-	kfree(exynos5_devfreq_mif_profile.freq_table);
-err_freqtable:
+	return 0;
+
+err_opp_add:
+	clk_put(data->clkm_phy0);
+	clk_put(data->clkm_phy1);
+err_clkm_phy:
+	clk_put(data->fout_bpll);
+err_fout_bpll:
+	clk_put(data->mout_bpll);
+err_mout_bpll:
+	clk_put(data->mx_mspll_ccore);
+err_mx_mspll_ccore:
+	clk_put(data->mclk_cdrex);
+err_mout_mclk_cdrex:
+	clk_put(data->fout_spll);
+err_fout_spll:
+	clk_put(data->mout_spll);
+err_mout_spll:
+	regulator_put(data->vdd_mif);
+err_regulator:
 	kfree(data);
-err_data:
-	return ret;
+
+	return err;
 }
 
-static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
+static int exynos5_devfreq_remove(struct platform_device *pdev)
 {
-	struct devfreq_data_mif *data = platform_get_drvdata(pdev);
-
-	iounmap(data->base_mif);
-	iounmap(data->base_sysreg_mif);
-	iounmap(data->base_drex0);
-	iounmap(data->base_drex1);
-	iounmap(data->base_lpddr_phy0);
-	iounmap(data->base_lpddr_phy1);
-
-	flush_workqueue(devfreq_mif_thermal_wq_ch0);
-	destroy_workqueue(devfreq_mif_thermal_wq_ch0);
-	flush_workqueue(devfreq_mif_thermal_wq_ch1);
-	destroy_workqueue(devfreq_mif_thermal_wq_ch1);
+	struct busfreq_data_mif *data = platform_get_drvdata(pdev);
 
 	devfreq_remove_device(data->devfreq);
 
+#ifdef CONFIG_ARM_EXYNOS5422_CPUFREQ
+	pm_qos_remove_request(&exynos5_cpu_mif_qos);
+#endif
 	pm_qos_remove_request(&min_mif_thermal_qos);
 	pm_qos_remove_request(&exynos5_mif_qos);
+
+	clk_put(data->mclk_cdrex);
+	clk_put(data->mx_mspll_ccore);
+	clk_put(data->mout_bpll);
+	clk_put(data->fout_spll);
+	clk_put(data->mout_spll);
+	clk_put(data->clkm_phy0);
+	clk_put(data->clkm_phy1);
 
 	regulator_put(data->vdd_mif);
 
@@ -1665,19 +1279,29 @@ static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int exynos5_devfreq_mif_suspend(struct device *dev)
+static int exynos5_devfreq_suspend(struct device *dev)
 {
 	if (pm_qos_request_active(&exynos5_mif_qos))
-		pm_qos_update_request(&exynos5_mif_qos, exynos5_devfreq_mif_profile.initial_freq);
+		pm_qos_update_request(&exynos5_mif_qos, exynos5_mif_devfreq_profile.initial_freq);
 
 	return 0;
 }
 
-static int exynos5_devfreq_mif_resume(struct device *dev)
+static int exynos5_devfreq_resume(struct device *dev)
 {
+	unsigned int tmp;
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
-	exynos5_devfreq_mif_init_dvfs(data_mif);
+	/* Enable pause function for DREX2 DVFS */
+	tmp = __raw_readl(EXYNOS5_DMC_PAUSE_CTRL);
+	tmp |= EXYNOS5_DMC_PAUSE_ENABLE;
+	__raw_writel(tmp, EXYNOS5_DMC_PAUSE_CTRL);
+
+	resume_nocp(&mif_noc_list);
+
+	exynos5_set_spll_timing();
+	exynos5_back_pressure_enable(false);
+	exynos5_change_timeout(false);
 
 	if (pm_qos_request_active(&exynos5_mif_qos))
 		pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
@@ -1685,18 +1309,18 @@ static int exynos5_devfreq_mif_resume(struct device *dev)
 	return 0;
 }
 
-static struct dev_pm_ops exynos5_devfreq_mif_pm = {
-	.suspend	= exynos5_devfreq_mif_suspend,
-	.resume		= exynos5_devfreq_mif_resume,
+static const struct dev_pm_ops exynos5_devfreq_pm = {
+	.suspend = exynos5_devfreq_suspend,
+	.resume	= exynos5_devfreq_resume,
 };
 
 static struct platform_driver exynos5_devfreq_mif_driver = {
-	.probe	= exynos5_devfreq_mif_probe,
-	.remove	= exynos5_devfreq_mif_remove,
-	.driver	= {
+	.probe	= exynos5_devfreq_probe,
+	.remove	= exynos5_devfreq_remove,
+	.driver = {
 		.name	= "exynos5-devfreq-mif",
 		.owner	= THIS_MODULE,
-		.pm	= &exynos5_devfreq_mif_pm,
+		.pm	= &exynos5_devfreq_pm,
 	},
 };
 
@@ -1705,17 +1329,9 @@ static struct platform_device exynos5_devfreq_mif_device = {
 	.id	= -1,
 };
 
-static int __init exynos5_devfreq_mif_init(void)
+static int __init exynos5_devfreq_init(void)
 {
 	int ret;
-
-	timeout_table = timeout_fullhd;
-	media_enabled_fimc_lite = false;
-	media_enabled_gscl_local = false;
-	media_enabled_tv = false;
-	media_num_mixer_layer = false;
-	media_num_decon_layer = false;
-	media_resolution = RESOLUTION_FULLHD;
 
 	exynos5_devfreq_mif_device.dev.platform_data = &exynos5422_qos_mif;
 
@@ -1725,11 +1341,11 @@ static int __init exynos5_devfreq_mif_init(void)
 
 	return platform_driver_register(&exynos5_devfreq_mif_driver);
 }
-late_initcall(exynos5_devfreq_mif_init);
+late_initcall(exynos5_devfreq_init);
 
-static void __exit exynos5_devfreq_mif_exit(void)
+static void __exit exynos5_devfreq_exit(void)
 {
 	platform_driver_unregister(&exynos5_devfreq_mif_driver);
 	platform_device_unregister(&exynos5_devfreq_mif_device);
 }
-module_exit(exynos5_devfreq_mif_exit);
+module_exit(exynos5_devfreq_exit);
