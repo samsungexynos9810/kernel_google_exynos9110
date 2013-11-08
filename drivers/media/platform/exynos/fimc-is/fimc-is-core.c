@@ -54,6 +54,16 @@
 #include <plat/sysmmu.h>
 #endif
 
+#if defined(CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+
 struct fimc_is_from_info *sysfs_finfo = NULL;
 struct fimc_is_from_info *sysfs_pinfo = NULL;
 struct device *fimc_is_dev = NULL;
@@ -282,8 +292,7 @@ int fimc_is_runtime_suspend(struct device *dev)
 		vb2_ion_detach_iommu(core->mem.alloc_ctx);
 #endif
 
-#if defined(CONFIG_PM_DEVFREQ)
-#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
 	 exynos5_update_media_layers(TYPE_FIMC_LITE, false);
 #endif
 
@@ -373,8 +382,7 @@ int fimc_is_runtime_resume(struct device *dev)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);
 #endif
 
-#if defined(CONFIG_PM_DEVFREQ)
-#if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
 	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
 #endif
 
