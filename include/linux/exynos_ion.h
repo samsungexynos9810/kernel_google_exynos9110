@@ -94,6 +94,8 @@ enum {
 #ifdef CONFIG_ION_EXYNOS
 unsigned int ion_exynos_contig_region_mask(char *region_name);
 int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size);
+int ion_exynos_contig_heap_isolate(int region_id);
+void ion_exynos_contig_heap_deisolate(int region_id);
 #else
 static inline int ion_exynos_contig_region_mask(char *region_name)
 {
@@ -105,6 +107,14 @@ static int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys,
 {
 	return -ENODEV;
 }
+
+static inline int ion_exynos_contig_heap_isolate(int region_id)
+{
+	return -ENOSYS;
+}
+
+#define ion_exynos_contig_heap_deisolate(region_id) do { } while (0);
+
 #endif
 
 #if defined(CONFIG_ION_EXYNOS)

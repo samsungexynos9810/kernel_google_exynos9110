@@ -463,26 +463,36 @@ static int ion_cma_device_id_match(struct device *dev, void *data)
 	return (*id == cmadata->id) ? -1 : 0;
 }
 
-int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size)
+static struct device *ion_exynos_contig_dev(int region_id)
 {
-	struct device *dev_ion, *dev;
-	struct cma_info info;
-	struct ion_exynos_cmadata *cmadata;
+	struct device *dev;
 
-	dev_ion = bus_find_device(&platform_bus_type,
-				  NULL, ion_exynos, ion_exynos_dev_match);
-	if (!dev_ion) {
+	dev = bus_find_device(&platform_bus_type,
+				NULL, ion_exynos, ion_exynos_dev_match);
+	if (!dev) {
 		pr_err("%s: Unable to find device for ION\n", __func__);
-		return 0;
+		return NULL;
 	}
 
-	dev = device_find_child(dev_ion, &region_id, ion_cma_device_id_match);
+	dev = device_find_child(dev, &region_id, ion_cma_device_id_match);
 	if (!dev) {
 		pr_err("%s: Unable to find contiguous region of ID %d\n",
 			__func__, region_id);
-		return -ENODEV;
+		return NULL;
 	}
 
+	return dev;
+}
+
+int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size)
+{
+	struct device *dev;
+	struct cma_info info;
+	struct ion_exynos_cmadata *cmadata;
+
+	dev = ion_exynos_contig_dev(region_id);
+	if (!dev)
+		return -ENODEV;
 
 	if (dma_contiguous_info(dev, &info)) {
 		cmadata = dev_get_drvdata(dev);
@@ -499,6 +509,22 @@ int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size)
 	return 0;
 }
 EXPORT_SYMBOL(ion_exynos_contig_heap_info);
+
+int ion_exynos_contig_heap_isolate(int region_id)
+{
+	struct device *dev = ion_exynos_contig_dev(region_id);
+	if (!dev)
+		return -ENODEV;
+
+	return dma_contiguous_isolate(dev);
+}
+
+void ion_exynos_contig_heap_deisolate(int region_id)
+{
+	struct device *dev = ion_exynos_contig_dev(region_id);
+	if (dev)
+		dma_contiguous_deisolate(dev);
+}
 
 static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 					   struct ion_buffer *buffer,
