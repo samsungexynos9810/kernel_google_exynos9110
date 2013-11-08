@@ -141,6 +141,7 @@ int sensor_3l2_probe(struct i2c_client *client,
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
  
+	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
 #ifdef DEFAULT_IMX135_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);

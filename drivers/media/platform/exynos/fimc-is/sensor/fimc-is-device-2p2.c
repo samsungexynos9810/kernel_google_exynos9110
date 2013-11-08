@@ -122,7 +122,7 @@ int sensor_2p2_probe(struct i2c_client *client,
 	ext = &module->ext;
 	ext->I2CSclk = I2C_L0;
 
-	ext->sensor_con.product_name = SENSOR_NAME_S5K3L2;
+	ext->sensor_con.product_name = SENSOR_NAME_S5K2P2;
 	ext->sensor_con.peri_type = SE_I2C;
 	ext->sensor_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C0;
 	ext->sensor_con.peri_setting.i2c.slave_address = 0x5A;
@@ -140,7 +140,19 @@ int sensor_2p2_probe(struct i2c_client *client,
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 2;
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
- 
+
+	ext->companion_con.product_name = COMPANION_NAME_73C1;
+	ext->companion_con.peri_info0.valid = true;
+	ext->companion_con.peri_info0.peri_type = SE_SPI;
+	ext->companion_con.peri_info0.peri_setting.spi.channel = 1;
+	ext->companion_con.peri_info1.valid = true;
+	ext->companion_con.peri_info1.peri_type = SE_I2C;
+	ext->companion_con.peri_info1.peri_setting.i2c.channel = 0;
+	ext->companion_con.peri_info1.peri_setting.i2c.slave_address = 0x38;
+	ext->companion_con.peri_info1.peri_setting.i2c.speed = 400000;
+	ext->companion_con.peri_info2.valid = true;
+	ext->companion_con.peri_info2.peri_type = SE_FIMC_LITE;
+	ext->companion_con.peri_info2.peri_setting.fimc_lite.channel = FLITE_ID_D;
 
 #ifdef DEFAULT_IMX135_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);

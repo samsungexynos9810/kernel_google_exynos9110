@@ -169,6 +169,8 @@ int sensor_imx135_probe(struct i2c_client *client,
 	ext->self_calibration_mode = 0;
 	ext->I2CSclk = I2C_L0;
 
+	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
+
 #ifdef DEFAULT_IMX135_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
 #else
