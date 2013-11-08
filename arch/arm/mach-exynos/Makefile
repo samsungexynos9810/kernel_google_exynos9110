@@ -23,6 +23,7 @@ obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
 endif
 
 ifeq ($(CONFIG_SOC_EXYNOS5422),y)
+obj-$(CONFIG_SUSPEND)		+= pm-exynos5422.o
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle-exynos5422.o
 endif
 obj-$(CONFIG_CPU_IDLE)		+= exynos-pm.o
