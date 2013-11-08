@@ -28,10 +28,6 @@ struct dwc3_ext_otg_ops {
 	void	(*exit)(struct device *dev);
 	int	(*start) (struct device *dev);
 	void	(*stop)(struct device *dev);
-	/* FIXME: must be removed, use regulator framework instead */
-#if IS_ENABLED(CONFIG_USB_DWC3_EXYNOS)
-	void	(*drv_vbus)(struct device *dev, int on);
-#endif
 };
 
 /**
@@ -94,18 +90,6 @@ static inline int dwc3_ext_otg_stop(struct dwc3_otg *dotg)
 	return 0;
 }
 
-#if IS_ENABLED(CONFIG_USB_DWC3_EXYNOS)
-static inline int dwc3_ext_otg_drv_vbus(struct dwc3_otg *dotg, int on)
-{
-	struct device *dev = dotg->dwc->dev->parent;
-
-	if (!dotg->ext_otg_ops->drv_vbus)
-		return -EOPNOTSUPP;
-	dotg->ext_otg_ops->drv_vbus(dev, on);
-	return 0;
-}
-#endif
-
 /* prototypes */
 #if IS_ENABLED(CONFIG_USB_DWC3_EXYNOS)
 bool dwc3_exynos_rsw_available(struct device *dev);
@@ -113,7 +97,6 @@ int dwc3_exynos_rsw_setup(struct device *dev, struct otg_fsm *fsm);
 void dwc3_exynos_rsw_exit(struct device *dev);
 int dwc3_exynos_rsw_start(struct device *dev);
 void dwc3_exynos_rsw_stop(struct device *dev);
-void dwc3_exynos_rsw_drv_vbus(struct device *dev, int on);
 #endif
 
 #endif /* __LINUX_USB_DWC3_OTG_H */
