@@ -275,7 +275,38 @@ static struct map_desc exynos5422_iodesc[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS5422_PA_SYSRAM_NS),
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
+	}, {
+		.virtual    = (unsigned long)S5P_VA_PPMU_DREX0_0,
+		.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX0_0),
+		.length     = SZ_8K,
+		.type       = MT_DEVICE,
+	}, {
+		.virtual    = (unsigned long)S5P_VA_PPMU_DREX0_1,
+		.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX0_1),
+		.length     = SZ_8K,
+		.type       = MT_DEVICE,
+	}, {
+		.virtual    = (unsigned long)S5P_VA_PPMU_DREX1_0,
+		.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX1_0),
+		.length     = SZ_8K,
+		.type       = MT_DEVICE,
+	}, {
+		.virtual    = (unsigned long)S5P_VA_PPMU_DREX1_1,
+			.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX1_1),
+			.length     = SZ_8K,
+			.type       = MT_DEVICE,
+	}, {
+		.virtual    = (unsigned long)S5P_VA_DREXI_0,
+			.pfn        = __phys_to_pfn(EXYNOS5_PA_DREXI_0),
+			.length     = SZ_64K,
+			.type       = MT_DEVICE,
+	}, {
+		.virtual    = (unsigned long)S5P_VA_DREXI_1,
+			.pfn        = __phys_to_pfn(EXYNOS5_PA_DREXI_1),
+			.length     = SZ_64K,
+			.type       = MT_DEVICE,
 	},
+
 };
 
 static struct map_desc exynos5_iodesc[] __initdata = {
