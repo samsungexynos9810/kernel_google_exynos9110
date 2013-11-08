@@ -752,12 +752,16 @@ void gsc_hw_set_out_image_rgb(struct gsc_ctx *ctx)
 			cfg |= GSC_OUT_RGB_SD_NARROW;
 	}
 
-	if (frame->fmt->pixelformat == V4L2_PIX_FMT_RGB565)
-		cfg |= GSC_OUT_RGB565;
-	else if (frame->fmt->pixelformat == V4L2_PIX_FMT_BGR32)
+	if (ctx->out_path != GSC_DMA) {
 		cfg |= GSC_OUT_XRGB8888;
-	else if (frame->fmt->pixelformat == V4L2_PIX_FMT_RGB32)
-		cfg |= GSC_OUT_XRGB8888 | GSC_OUT_RB_SWAP;
+	} else {
+		if (frame->fmt->pixelformat == V4L2_PIX_FMT_RGB565)
+			cfg |= GSC_OUT_RGB565;
+		else if (frame->fmt->pixelformat == V4L2_PIX_FMT_BGR32)
+			cfg |= GSC_OUT_XRGB8888;
+		else if (frame->fmt->pixelformat == V4L2_PIX_FMT_RGB32)
+			cfg |= GSC_OUT_XRGB8888 | GSC_OUT_RB_SWAP;
+	}
 
 	writel(cfg, dev->regs + GSC_OUT_CON);
 }
@@ -775,12 +779,7 @@ void gsc_hw_set_out_image_format(struct gsc_ctx *ctx)
 		 GSC_OUT_CHROM_STRIDE_SEL_MASK | GSC_OUT_RB_SWAP_MASK);
 	writel(cfg, dev->regs + GSC_OUT_CON);
 
-	if (ctx->out_path != GSC_DMA) {
-		cfg |= GSC_OUT_XRGB8888;
-		goto end_set;
-	}
-
-	if (is_rgb(frame->fmt->pixelformat)) {
+	if (ctx->out_path != GSC_DMA || is_rgb(frame->fmt->pixelformat)) {
 		gsc_hw_set_out_image_rgb(ctx);
 		return;
 	}
@@ -819,7 +818,7 @@ void gsc_hw_set_out_image_format(struct gsc_ctx *ctx)
 		cfg |= GSC_OUT_CHROM_STRIDE_SEPAR;
 		gsc_hw_set_out_chrom_stride(ctx);
 	}
-end_set:
+
 	writel(cfg, dev->regs + GSC_OUT_CON);
 }
 
