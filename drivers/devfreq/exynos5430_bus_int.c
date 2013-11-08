@@ -647,7 +647,7 @@ static int exynos5_devfreq_int_init_pm_domain(void)
 	struct device_node *np = NULL;
 	int i;
 
-	for_each_compatible_node(np, NULL, "samsung,exynos5430-pd") {
+	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
 
 		if (!of_device_is_available(np))
