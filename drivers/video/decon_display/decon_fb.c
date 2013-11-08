@@ -1301,6 +1301,9 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		queue_delayed_work(system_nrt_wq, &g_underrun_dwork, 0);
 #endif
 	}
+	if (irq_sts_reg & VIDINTCON1_INT_I80) {
+		writel(VIDINTCON1_INT_I80, regs + VIDINTCON1);
+	}
 	spin_unlock(&sfb->slock);
 	return IRQ_HANDLED;
 }
@@ -3783,7 +3786,6 @@ static int decon_fb_config_eint_for_te(struct s3c_fb *sfb)
 
 	return ret;
 }
-
 #ifdef CONFIG_FB_I80_SW_TRIGGER
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb)
 {
@@ -4089,7 +4091,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 
-	msleep(12);
+	msleep(120);
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 0);
 	ret = iovmm_activate(&pdev->dev);
