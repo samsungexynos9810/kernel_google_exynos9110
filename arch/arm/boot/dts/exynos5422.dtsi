@@ -632,8 +632,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c0_bus>;
-		clocks = <&clock 884>;
-		clock-names = "i2c";
+		clocks = <&clock 884>, <&clock 884>;
+		clock-names = "rate_i2c", "gate_i2c";
 		status = "disabled";
 	};
 
@@ -645,8 +645,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c1_bus>;
-		clocks = <&clock 883>;
-		clock-names = "i2c";
+		clocks = <&clock 883>, <&clock 883>;
+		clock-names = "rate_i2c", "gate_i2c";
 		status = "disabled";
 	};
 
@@ -658,8 +658,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c2_bus>;
-		clocks = <&clock 882>;
-		clock-names = "i2c";
+		clocks = <&clock 882>, <&clock 882>;
+		clock-names = "rate_i2c", "gate_i2c";
 		status = "disabled";
 	};
 
@@ -671,8 +671,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c3_bus>;
-		clocks = <&clock 881>;
-		clock-names = "i2c";
+		clocks = <&clock 881>, <&clock 881>;
+		clock-names = "rate_i2c", "gate_i2c";
 		status = "disabled";
 	};
 
