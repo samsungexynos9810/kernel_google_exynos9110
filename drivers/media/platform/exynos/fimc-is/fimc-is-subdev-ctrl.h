@@ -82,4 +82,10 @@ void fimc_is_subdev_dnr_stop(struct fimc_is_device_ischain *device,
 	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
 void fimc_is_subdev_dnr_bypass(struct fimc_is_device_ischain *device,
 	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
+void fimc_is_subdev_drc_start(struct fimc_is_device_ischain *device,
+	struct drc_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
+void fimc_is_subdev_drc_stop(struct fimc_is_device_ischain *device,
+	struct drc_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
+void fimc_is_subdev_drc_bypass(struct fimc_is_device_ischain *device,
+	struct drc_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
 #endif

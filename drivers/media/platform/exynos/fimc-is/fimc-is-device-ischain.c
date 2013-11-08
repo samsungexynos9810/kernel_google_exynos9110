@@ -4042,6 +4042,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 	u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	int ret = 0;
+	struct drc_param *drc_param;
 	struct scalerc_param *scc_param;
 	struct odc_param *odc_param;
 	struct dis_param *dis_param;
@@ -4053,6 +4054,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
+	drc_param = &device->is_region->parameter.drc;
 	scc_param = &device->is_region->parameter.scalerc;
 	odc_param = &device->is_region->parameter.odc;
 	dis_param = &device->is_region->parameter.dis;
@@ -4070,6 +4072,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 		*hindex |= HIGHBIT_OF(PARAM_ODC_CONTROL);
 		(*indexes)++;
 
+		fimc_is_subdev_drc_bypass(device, drc_param, lindex, hindex, indexes);
 		fimc_is_subdev_dis_stop(device, dis_param, lindex, hindex, indexes);
 		fimc_is_subdev_dnr_stop(device, dnr_param, lindex, hindex, indexes);
 
@@ -4088,6 +4091,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 		*hindex |= HIGHBIT_OF(PARAM_ODC_CONTROL);
 		(*indexes)++;
 
+		fimc_is_subdev_drc_bypass(device, drc_param, lindex, hindex, indexes);
 		fimc_is_subdev_dis_bypass(device, dis_param, lindex, hindex, indexes);
 		fimc_is_subdev_dnr_bypass(device, dnr_param, lindex, hindex, indexes);
 
@@ -4679,26 +4683,54 @@ static int fimc_is_ischain_drc_bypass(struct fimc_is_device_ischain *device,
 	bool bypass)
 {
 	int ret = 0;
-	struct drc_param *drc_param;
+	struct drc_param *param;
 	u32 indexes, lindex, hindex;
+	u32 group_id = 0;
+	struct fimc_is_group *group;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
-	drc_param = &device->is_region->parameter.drc;
+	group = &device->group_isp;
+	if (!group) {
+		merr("group is NULL", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	group_id |= GROUP_ID(group->id);
+
+	param = &device->is_region->parameter.drc;
 	indexes = lindex = hindex = 0;
 
-	if (bypass)
-		drc_param->control.bypass = CONTROL_BYPASS_ENABLE;
-	else
-		drc_param->control.bypass = CONTROL_BYPASS_DISABLE;
+	ret = fimc_is_itf_process_stop(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_process_stop is fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
 
-	lindex |= LOWBIT_OF(PARAM_DRC_CONTROL);
-	hindex |= HIGHBIT_OF(PARAM_DRC_CONTROL);
-	indexes++;
+	if (bypass)
+		fimc_is_subdev_drc_bypass(device, param, &lindex, &hindex, &indexes);
+	else
+		fimc_is_subdev_drc_start(device, param, &lindex, &hindex, &indexes);
 
 	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
 	if (ret) {
 		err("fimc_is_itf_s_param is fail\n");
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	ret = fimc_is_itf_a_param(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_a_param is fail", device);
+		ret = -EINVAL;
+		goto exit;
+	}
+
+	ret = fimc_is_itf_process_start(device, group_id);
+	if (ret) {
+		merr("fimc_is_itf_process_start is fail", device);
 		ret = -EINVAL;
 		goto exit;
 	}
