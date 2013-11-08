@@ -1836,7 +1836,7 @@
 
 	fimc_is@14000000 {
 		compatible = "samsung,exynos5-fimc-is";
-		reg = <0x14000000 0x1A0000>;
+		reg = <0x14180000 0x10000>;
 		interrupts = <0 165 0>, /* ARMISP_GIC */
 			     <0 166 0>; /* ISP_GIC */
 		pinctrl-names = "default";
