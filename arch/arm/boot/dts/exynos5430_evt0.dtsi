@@ -1435,8 +1435,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c0_bus>;
-		clocks = <&clock 901>;
-		clock-names = "hsi2c";
+		clocks = <&clock 901>, <&clock 2443>;
+		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
 
@@ -1449,8 +1449,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c1_bus>;
-		clocks = <&clock 902>;
-		clock-names = "hsi2c";
+		clocks = <&clock 902>, <&clock 2442>;
+		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
 
@@ -1463,8 +1463,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c2_bus>;
-		clocks = <&clock 903>;
-		clock-names = "hsi2c";
+		clocks = <&clock 903>, <&clock 2441>;
+		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
 
@@ -1477,8 +1477,8 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c3_bus>;
-		clocks = <&clock 903>;
-		clock-names = "hsi2c";
+		clocks = <&clock 904>, <&clock 2440>;
+		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
 
