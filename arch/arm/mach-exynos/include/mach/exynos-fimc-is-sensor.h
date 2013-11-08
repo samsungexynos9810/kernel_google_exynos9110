@@ -29,7 +29,15 @@ enum exynos_flite_id {
 	FLITE_ID_A = 0,
 	FLITE_ID_B = 1,
 	FLITE_ID_C = 2,
-	FLITE_ID_END = 3,
+	FLITE_ID_D = 3,
+	FLITE_ID_END,
+	FLITE_ID_NOTHING = 100,
+};
+
+enum exynos_sensor_channel {
+	SENSOR_CONTROL_I2C0	 = 0,
+	SENSOR_CONTROL_I2C1	 = 1,
+	SENSOR_CONTROL_I2C2	 = 2
 };
 
 enum exynos_sensor_position {
@@ -75,8 +83,11 @@ enum flash_drv_name {
 	FLADRV_NAME_AAT1290A	= 2,
 	FLADRV_NAME_MAX77693	= 3,
 	FLADRV_NAME_AS3643	= 4,
+	FLADRV_NAME_KTD2692	= 5,
+	FLADRV_NAME_LM3560	= 6,
+	FLADRV_NAME_SKY81296	= 7,
+	FLADRV_NAME_END,
 	FLADRV_NAME_NOTHING	= 100,
-	FLADRV_NAME_END
 };
 
 enum from_name {
@@ -85,13 +96,20 @@ enum from_name {
 	FROMDRV_NAME_NOTHING	= 100,
 };
 
+enum companion_name {
+	COMPANION_NAME_73C1	= 1,	/* SPI, I2C, FIMC Lite */
+	COMPANION_NAME_END,
+	COMPANION_NAME_NOTHING	= 100,
+};
+
 enum sensor_peri_type {
-	SE_I2C,
-	SE_SPI,
-	SE_GPIO,
-	SE_MPWM,
-	SE_ADC,
-	SE_NULL
+	SE_NULL		= 0,
+	SE_I2C		= 1,
+	SE_SPI		= 2,
+	SE_GPIO		= 3,
+	SE_MPWM		= 4,
+	SE_ADC		= 5,
+	SE_FIMC_LITE	= 6,
 };
 
 struct i2c_type {
@@ -109,22 +127,36 @@ struct gpio_type {
 	u32 second_gpio_port_no;
 };
 
+struct fimc_lite_type {
+	u32 channel;
+};
+
 union sensor_peri_format {
 	struct i2c_type i2c;
 	struct spi_type spi;
 	struct gpio_type gpio;
+	struct fimc_lite_type fimc_lite;
 };
 
 struct sensor_protocol {
 	u32 product_name;
 	enum sensor_peri_type peri_type;
 	union sensor_peri_format peri_setting;
+	u32 reserved[4];
 };
 
-enum exynos_sensor_channel {
-	SENSOR_CONTROL_I2C0	 = 0,
-	SENSOR_CONTROL_I2C1	 = 1,
-	SENSOR_CONTROL_I2C2	 = 2
+struct sensor_peri_info {
+	bool valid;
+	enum sensor_peri_type peri_type;
+	union sensor_peri_format peri_setting;
+};
+
+struct sensor_companion {
+	u32 product_name;	/* enum companion_name */
+	struct sensor_peri_info peri_info0;
+	struct sensor_peri_info peri_info1;
+	struct sensor_peri_info peri_info2;
+	struct sensor_peri_info reserved[2];
 };
 
 struct sensor_open_extended {
@@ -132,6 +164,7 @@ struct sensor_open_extended {
 	struct sensor_protocol actuator_con;
 	struct sensor_protocol flash_con;
 	struct sensor_protocol from_con;
+	struct sensor_companion companion_con;
 
 	u32 mclk;
 	u32 mipi_lane_num;
