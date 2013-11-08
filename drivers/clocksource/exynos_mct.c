@@ -178,12 +178,14 @@ static notrace u32 exynos4_read_sched_clock(void)
 	unsigned long flags;
 
 	if (soc_is_exynos5430() && samsung_rev() == EXYNOS5430_REV_0) {
-		if (spin_trylock_irqsave(&exynos_mct_spinlock, flags)) {
+		local_irq_save(flags);
+		if (spin_trylock(&exynos_mct_spinlock)) {
 			val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-			spin_unlock_irqrestore(&exynos_mct_spinlock, flags);
+			spin_unlock(&exynos_mct_spinlock);
 		} else {
 			spin_unlock_wait(&exynos_mct_spinlock);
 		}
+		local_irq_restore(flags);
 	} else {
 		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
 	}
