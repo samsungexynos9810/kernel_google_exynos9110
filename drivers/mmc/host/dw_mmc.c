@@ -3270,11 +3270,44 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "enable-sdio-wakeup", NULL))
 		pdata->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
 
+	if (of_find_property(np, "enable-cache-control", NULL))
+		pdata->caps2 |= MMC_CAP2_CACHE_CTRL;
+
+	if (of_find_property(np, "supports-poweroff-notification", NULL))
+		pdata->caps2 |= MMC_CAP2_POWEROFF_NOTIFY;
+
+	if (of_find_property(np, "enable-no-sleep-cmd", NULL))
+		pdata->caps2 |= MMC_CAP2_NO_SLEEP_CMD;
+
+	if (of_find_property(np, "supports-hs200-1-8v-mode", NULL))
+		pdata->caps2 |= MMC_CAP2_HS200_1_8V_SDR;
+
+	if (of_find_property(np, "supports-hs200-1-2v-mode", NULL))
+		pdata->caps2 |= MMC_CAP2_HS200_1_2V_SDR;
+
 	if (of_find_property(np, "supports-hs200-mode", NULL))
 		pdata->caps2 |= MMC_CAP2_HS200;
 
+	if (of_find_property(np, "supports-ddr200-1-8v-mode", NULL))
+		pdata->caps2 |= MMC_CAP2_HS200_1_8V_DDR;
+
+	if (of_find_property(np, "supports-ddr200-1-2v-mode", NULL))
+		pdata->caps2 |= MMC_CAP2_HS200_1_2V_DDR;
+
 	if (of_find_property(np, "supports-ddr200-mode", NULL))
 		pdata->caps2 |= MMC_CAP2_HS200_DDR;
+
+	if (of_find_property(np, "use-broken-voltage", NULL))
+		pdata->caps2 |= MMC_CAP2_BROKEN_VOLTAGE;
+
+	if (of_find_property(np, "enable-packed-rd", NULL))
+		pdata->caps2 |= MMC_CAP2_PACKED_RD;
+
+	if (of_find_property(np, "enable-packed-wr", NULL))
+		pdata->caps2 |= MMC_CAP2_PACKED_WR;
+
+	if (of_find_property(np, "enable-packed-CMD", NULL))
+		pdata->caps2 |= MMC_CAP2_PACKED_CMD;
 
 	if (of_find_property(np, "clock-gate", NULL))
 		pdata->use_gate_clock = true;
