@@ -16,6 +16,7 @@
 #include <linux/slab.h>
 #include <linux/cpufreq.h>
 #include <linux/clk-private.h>
+#include <linux/pm_qos.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
@@ -38,6 +39,7 @@ static struct clk *mout_cpu_kfc;
 static struct clk *mout_kpll_ctrl;
 static struct clk *mout_mx_mspll_kfc;
 
+extern struct pm_qos_request exynos5_cpu_mif_qos;
 static unsigned int exynos5422_volt_table_CA7[CPUFREQ_LEVEL_END_CA7];
 
 static struct cpufreq_frequency_table exynos5422_freq_table_CA7[] = {
@@ -247,28 +249,25 @@ static const unsigned int asv_voltage_5422_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	 900000,    /* L14 200 */
 };
 
-#if 0
+#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 /* Minimum memory throughput in megabytes per second */
 static int exynos5422_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
-	400000,	/* 2.0 GHz */
-	400000,	/* 1.9 GHz */
-	400000,	/* 1.8 GHz */
-	400000,	/* 1.7 GHz */
-	266000,	/* 1.6 GHz */
-	266000,	/* 1.5 GHz */
-	266000,	/* 1.4 GHz */
-	266000,	/* 1.3 GHz */
-	200000,	/* 1.2 GHz */
-	200000,	/* 1.1 GHz */
-	200000,	/* 1.0 GHz */
-	160000,	/* 900 MHz */
-	160000,	/* 800 MHz */
-	160000,	/* 700 MHz */
-	133000,	/* 600 MHz */
-	133000,	/* 500 MHz */
-	0,	/* 400 MHz */
-	0,	/* 300 MHz */
-	0,	/* 200 MHz */
+	266000, /* 1.6 GHz */
+	266000, /* 1.5 GHz */
+	266000, /* 1.4 GHz */
+	266000, /* 1.3 GHz */
+	266000, /* 1.2 GHz */
+	266000, /* 1.1 GHz */
+	266000, /* 1.0 GHz */
+	160000, /* 900 MHz */
+	160000, /* 800 MHz */
+	160000, /* 700 MHz */
+	133000, /* 600 MHz */
+	133000, /* 500 MHz */
+	0,  /* 400 MHz */
+	0,  /* 300 MHz */
+	0,  /* 200 MHz */
+
 };
 #endif
 
