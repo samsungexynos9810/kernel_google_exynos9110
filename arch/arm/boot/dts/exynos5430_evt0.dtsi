@@ -2351,8 +2351,8 @@
 		compatible = "samsung,s3c6410-rtc";
 		reg = <0x10590000 0x100>;
 		interrupts = <0 385 0>, <0 386 0>;
-		clocks = <&clock 1041>;
-		clock-names = "rtc";
+		clocks = <&clock 1041>, <&clock 2515>;
+		clock-names = "rate_rtc", "gate_rtc";
 	};
 
 	adc@14D10000 {
