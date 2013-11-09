@@ -270,6 +270,7 @@
 			compatible = "samsung,exynos4210-wakeup-eint";
 			interrupt-parent = <&gic>;
 			interrupts = <0 16 0>;
+			samsung,eint-flt-conf;
 		};
 	};
 
