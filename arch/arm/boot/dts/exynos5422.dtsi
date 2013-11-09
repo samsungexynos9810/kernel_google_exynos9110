@@ -38,6 +38,7 @@
 		scaler0 = &scaler_0;
 		scaler1 = &scaler_1;
 		scaler2 = &scaler_2;
+		fimg2d0 = &fimg2d_0;
 	};
 
 	cpus {
@@ -1007,6 +1008,19 @@
 		clocks = <&clock 303>;
 		clock-names = "gate_scaler";
 		iommu = <&sysmmu_scaler2r>, <&sysmmu_scaler2w>;
+	};
+
+	fimg2d_0: fimg2d@10850000 {
+		  compatible = "samsung,s5p-fimg2d";
+		  reg = <0x10850000 0x1000>;
+		  interrupts = <0 91 0>;
+		  clocks = <&clock 660>;
+		  clock-names = "fimg2d";
+		  ip_ver = <7>; /* IP_VER_G2D_5AR2 */
+		  cpu_min = <400000>;
+		  mif_min = <667000>;
+		  int_min = <333000>;
+		  iommu = <&sysmmu_g2d>, <&sysmmu_g2d_wr>;
 	};
 
 	lpass: lpass@03810000 {
