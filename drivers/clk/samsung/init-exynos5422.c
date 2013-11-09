@@ -139,9 +139,35 @@ static void mscl_init_clock(void)
 			exynos_get_rate("aclk_400_mscl"));
 }
 
+void g2d_init_clock(void)
+{
+	int clk_rate1;
+
+	if (exynos_set_parent("mout_aclk_333_g2d", "mout_cpll_ctrl"))
+		pr_err("Unable to set clock %s's parent %s\n"
+				, "mout_aclk_333_g2d", "mout_cpll_ctrl");
+
+	if (exynos_set_parent("mout_aclk_333_g2d_sw", "dout_aclk_333_g2d"))
+		pr_err("Unable to set clock %s's parent %s\n"
+				, "mout_aclk_333_g2d_sw", "dout_aclk_333_g2d");
+
+	if (exynos_set_parent("mout_aclk_333_g2d_user", "mout_aclk_333_g2d_sw"))
+		pr_err("Unable to set clock %s's parent %s\n"
+				, "mout_aclk_333_g2d_user", "mout_aclk_333_g2d_sw");
+
+	if(exynos_set_rate("dout_aclk_333_g2d", 333 * 1000000))
+		pr_err("Can't set %s clock rate\n", "dout_aclk_g2d_400");
+
+	clk_rate1 = exynos_get_rate("dout_aclk_333_g2d");
+
+	pr_info("[%s:%d] aclk_333_g2d:%d\n"
+			, __func__, __LINE__, clk_rate1);
+}
+
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
 	uart_clock_init();
 	mscl_init_clock();
+	g2d_init_clock();
 }
