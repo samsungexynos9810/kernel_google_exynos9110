@@ -162,6 +162,7 @@ struct samsung_pin_bank {
  * @geint_mask: offset of the ext-gpio interrupt mask registers.
  * @geint_pend: offset of the ext-gpio interrupt pending registers.
  * @weint_con: offset of the ext-wakeup controller registers.
+ * @weint_fltcon: offset of the ext-wakeup filter controller registers.
  * @weint_mask: offset of the ext-wakeup interrupt mask registers.
  * @weint_pend: offset of the ext-wakeup interrupt pending registers.
  * @svc: offset of the interrupt service register.
@@ -183,6 +184,7 @@ struct samsung_pin_ctrl {
 	u32		geint_pend;
 
 	u32		weint_con;
+	u32		weint_fltcon;
 	u32		weint_mask;
 	u32		weint_pend;
 
@@ -209,6 +211,7 @@ struct samsung_pin_ctrl {
  * @nr_groups: number of such pin groups.
  * @pmx_functions: list of pin functions available to the driver.
  * @nr_function: number of such pin functions.
+ * @eint_flt_config: flags to configure external interrupt filter.
  */
 struct samsung_pinctrl_drv_data {
 	struct list_head		node;
@@ -224,6 +227,7 @@ struct samsung_pinctrl_drv_data {
 	unsigned int			nr_groups;
 	const struct samsung_pmx_func	*pmx_functions;
 	unsigned int			nr_functions;
+	bool				eint_flt_config;
 };
 
 /**
