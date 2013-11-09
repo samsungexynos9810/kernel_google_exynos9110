@@ -511,6 +511,37 @@ static const struct irq_domain_ops exynos_wkup_irqd_ops = {
 	.xlate	= irq_domain_xlate_twocell,
 };
 
+static void exynos_eint_flt_config(int en, int sel, int width,
+				   struct samsung_pinctrl_drv_data *d,
+				   struct samsung_pin_bank *bank)
+{
+	unsigned int flt_reg, flt_con;
+	unsigned int val, shift;
+	int i, j;
+
+	flt_con = 0;
+
+	if (en)
+		flt_con |= EXYNOS_EINT_FLTCON_EN;
+
+	if (sel)
+		flt_con |= EXYNOS_EINT_FLTCON_SEL;
+
+	flt_con |= EXYNOS_EINT_FLTCON_WIDTH(width);
+
+	for (i = 0; i < d->ctrl->nr_banks; ++i, ++bank) {
+		flt_reg = d->ctrl->weint_fltcon + 2 * bank->eint_offset;
+		for (j = 0; j < bank->nr_pins >> 1; j++) {
+			shift = j * EXYNOS_EINT_FLTCON_LEN;
+			val = readl(d->virt_base + flt_reg);
+			val &= ~(EXYNOS_EINT_FLTCON_MASK << shift);
+			val |= (flt_con << shift);
+			writel(val, d->virt_base + flt_reg);
+			writel(val, d->virt_base + flt_reg + 0x4);
+		}
+	}
+};
+
 /*
  * exynos_eint_wkup_init() - setup handling of external wakeup interrupts.
  * @d: driver data of samsung pinctrl driver.
@@ -535,6 +566,11 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 	}
 	if (!wkup_np)
 		return -ENODEV;
+
+	if (of_property_read_bool(wkup_np, "samsung,eint-flt-conf")) {
+		pr_info("%s: Need to configure eint filter\n", __func__);
+		d->eint_flt_config = true;
+	}
 
 	bank = d->ctrl->pin_banks;
 	for (i = 0; i < d->ctrl->nr_banks; ++i, ++bank) {
@@ -611,6 +647,12 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 	}
 	muxed_data->nr_banks = muxed_banks;
 
+	if (d->eint_flt_config) {
+		bank = d->ctrl->pin_banks;
+		exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN, EXYNOS_EINT_FLTCON_SEL,
+				       0, d, bank);
+	}
+
 	return 0;
 }
 
@@ -643,10 +685,6 @@ static void exynos_pinctrl_suspend_inttype(
 
 	writel(0x0, regs + EXYNOS_GPIO_ECON_OFFSET
 						+ bank->eint_offset);
-	writel(0x0, regs + EXYNOS_GPIO_EFLTCON_OFFSET
-						+ 2 * bank->eint_offset);
-	writel(0x0, regs + EXYNOS_GPIO_EFLTCON_OFFSET
-						+ 2 * bank->eint_offset + 4);
 }
 
 static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
@@ -1213,6 +1251,7 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.weint_con	= EXYNOS5430_WKUP_ECON_OFFSET,
 		.weint_mask	= EXYNOS5430_WKUP_EMASK_OFFSET,
 		.weint_pend	= EXYNOS5430_WKUP_EPEND_OFFSET,
+		.weint_fltcon	= EXYNOS5430_WKUP_EFLTCON_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
 		.eint_wkup_init = exynos_eint_wkup_init,
