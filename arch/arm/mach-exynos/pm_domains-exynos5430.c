@@ -219,6 +219,7 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 	reg |= (1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
+#if 0
 	np = of_find_node_by_name(NULL, "decon_fb");
 	decon_addr = of_iomap(np, 0);
 
@@ -227,6 +228,10 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 	else
 		DEBUG_PRINT_INFO("decon con0: %08x\n", __raw_readl(decon_addr));
 	iounmap(decon_addr);
+#else
+	np = NULL;
+	decon_addr = NULL;
+#endif
 	return 0;
 }
 
