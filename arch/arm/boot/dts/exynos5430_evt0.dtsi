@@ -1672,7 +1672,7 @@
 		swap-mode;
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clocks = <&clock 2625>, <&clock 4083>;
+		clocks = <&clock 2626>, <&clock 4081>;
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&fimc_is_spi_pin1>;
