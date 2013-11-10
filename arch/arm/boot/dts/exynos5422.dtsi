@@ -895,6 +895,26 @@
 		status = "ok";
 	};
 
+	tmu@10060000 {
+		compatible = "samsung,exynos5422-tmu";
+		reg = <0x10060000 0x100>,
+			<0x10064000 0x100>,
+			<0x10068000 0x100>,
+			<0x1006c000 0x100>,
+			<0x100a0000 0x100>;
+		interrupts = <0 65 0>,
+			   <0 183 0>,
+			   <0 184 0>,
+			   <0 185 0>,
+			   <0 215 0>;
+		clocks = <&clock 468>,
+			<&clock 468>,
+			<&clock 468>,
+			<&clock 468>,
+			<&clock 469>;
+		clock-names = "tmu", "tmu", "tmu", "tmu", "tmu_gpu";
+	};
+
 	mdev_0: mdev_output {
 		compatible = "samsung,exynos5-mdev";
 	};

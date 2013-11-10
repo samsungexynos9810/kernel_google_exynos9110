@@ -692,12 +692,12 @@ void kbase_set_power_margin(int volt_offset)
 #if defined(CONFIG_EXYNOS_THERMAL)
 int kbase_tmu_hot_check_and_work(unsigned long event)
 {
+#ifdef CONFIG_MALI_T6XX_DVFS
 	struct kbase_device *kbdev;
 	mali_dvfs_status *dvfs_status;
 	struct exynos_context *platform;
 	unsigned int clkrate;
 	int lock_level;
-#ifdef CONFIG_MALI_T6XX_DVFS
 	dvfs_status = &mali_dvfs_status_current;
 	kbdev = dvfs_status->kbdev;
 

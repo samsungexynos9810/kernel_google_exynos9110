@@ -939,8 +939,12 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 		interrupt_en = 0; /* Disable all interrupts */
 	}
 	con |= EXYNOS_THERM_TRIP_EN;
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if (id == EXYNOS_GPU_NUMBER)
 		con |= EXYNOS_MUX_ADDR;
+#elif defined(CONFIG_SOC_EXYNOS5422)
+	con |= EXYNOS_MUX_ADDR;
+#endif
 
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
 	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
@@ -1163,9 +1167,9 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 #if defined(CONFIG_SOC_EXYNOS5430)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.threshold_falling = 2,
-	.trigger_levels[0] = 55,
-	.trigger_levels[1] = 60,
-	.trigger_levels[2] = 65,
+	.trigger_levels[0] = 85,
+	.trigger_levels[1] = 90,
+	.trigger_levels[2] = 100,
 	.trigger_levels[3] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
@@ -1181,7 +1185,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1200 * 1000,
 #endif
-		.temp_level = 55,
+		.temp_level = 85,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1192,7 +1196,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1000 * 1000,
 #endif
-		.temp_level = 60,
+		.temp_level = 90,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1203,7 +1207,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 800 * 1000,
 #endif
-		.temp_level = 65,
+		.temp_level = 95,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1212,9 +1216,9 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.freq_tab[3] = {
 		.freq_clip_max = 700 * 1000,	/* eagle need to be hotplugged-out */
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1200 * 1000,
+		.freq_clip_max_kfc = 700 * 1000,
 #endif
-		.temp_level = 70,
+		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1231,6 +1235,63 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #define EXYNOS5430_TMU_DRV_DATA (&exynos5_tmu_data)
 #else
 #define EXYNOS5430_TMU_DRV_DATA (NULL)
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS5422)
+static struct exynos_tmu_platform_data const exynos5_tmu_data = {
+	.threshold_falling = 2,
+	.trigger_levels[0] = 80,
+	.trigger_levels[1] = 90,
+	.trigger_levels[2] = 95,
+	.trigger_levels[3] = 110,
+	.trigger_level0_en = 1,
+	.trigger_level1_en = 1,
+	.trigger_level2_en = 1,
+	.trigger_level3_en = 1,
+	.gain = 5,
+	.reference_voltage = 16,
+	.noise_cancel_mode = 4,
+	.cal_type = TYPE_ONE_POINT_TRIMMING,
+	.efuse_value = 55,
+	.freq_tab[0] = {
+		.freq_clip_max = 1800 * 1000,
+		.temp_level = 80,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
+	},
+	.freq_tab[1] = {
+		.freq_clip_max = 1700 * 1000,
+		.temp_level = 90,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
+	},
+	.freq_tab[2] = {
+		.freq_clip_max = 1200 * 1000,
+		.temp_level = 95,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
+	},
+	.freq_tab[3] = {
+		.freq_clip_max = 800 * 1000,
+		.temp_level = 100,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+#endif
+	},
+	.size[THERMAL_TRIP_ACTIVE] = 1,
+	.size[THERMAL_TRIP_PASSIVE] = 3,
+	.freq_tab_count = 4,
+	.type = SOC_ARCH_EXYNOS,
+	.clock_count = 2,
+	.clk_name[0] = "tmu",
+	.clk_name[1] = "tmu_gpu",
+};
+#define EXYNOS5422_TMU_DRV_DATA (&exynos5_tmu_data)
+#else
+#define EXYNOS5422_TMU_DRV_DATA (NULL)
 #endif
 
 #ifdef CONFIG_OF
@@ -1251,6 +1312,10 @@ static const struct of_device_id exynos_tmu_match[] = {
 		.compatible = "samsung,exynos5430-tmu",
 		.data = (void *)EXYNOS5430_TMU_DRV_DATA,
 	},
+	{
+		.compatible = "samsung,exynos5422-tmu",
+		.data = (void *)EXYNOS5422_TMU_DRV_DATA,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_tmu_match);
@@ -1268,6 +1333,10 @@ static struct platform_device_id exynos_tmu_driver_ids[] = {
 	{
 		.name		= "exynos5430-tmu",
 		.driver_data	= (kernel_ulong_t)EXYNOS5430_TMU_DRV_DATA,
+	},
+	{
+		.name		= "exynos5422-tmu",
+		.driver_data	= (kernel_ulong_t)EXYNOS5422_TMU_DRV_DATA,
 	},
 	{ },
 };
@@ -1291,6 +1360,36 @@ static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
 	return (struct exynos_tmu_platform_data *)
 			platform_get_device_id(pdev)->driver_data;
 }
+
+static void exynos_tmu_regdump(struct platform_device *pdev, int id)
+{
+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+	unsigned int reg_data;
+
+	mutex_lock(&data->lock);
+	clk_enable(data->clk[0]);
+	clk_enable(data->clk[1]);
+
+	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
+	pr_info("TRIMINFO[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CONTROL);
+	pr_info("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CURRENT_TEMP);
+	pr_info("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE);
+	pr_info("THRESHOLD_TEMP_RISE[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL);
+	pr_info("THRESHOLD_TEMP_FALL[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTEN);
+	pr_info("INTEN[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
+	pr_info("INTCLEAR[%d] = 0x%x\n", id, reg_data);
+
+	clk_disable(data->clk[0]);
+	clk_disable(data->clk[1]);
+	mutex_unlock(&data->lock);
+}
+
 static int exynos_tmu_probe(struct platform_device *pdev)
 {
 	struct exynos_tmu_data *data;
@@ -1389,6 +1488,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		}
 
 		exynos_tmu_control(pdev, i, true);
+		exynos_tmu_regdump(pdev, i);
 	}
 
 	mutex_lock(&data->lock);
@@ -1418,7 +1518,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	for (i = 0; i < TRIP_EN_COUNT; i++) {
 		if (trigger_level_en[i]) {
 			exynos_sensor_conf.trip_data.trip_val[count] =
-				pdata->threshold + pdata->trigger_levels[i];
+				pdata->threshold + pdata->freq_tab[i].temp_level;
 			count++;
 		}
 	}

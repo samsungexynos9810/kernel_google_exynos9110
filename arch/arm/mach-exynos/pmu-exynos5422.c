@@ -204,6 +204,22 @@ void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type)
 
 int __init exynos5422_pmu_init(void)
 {
+	unsigned int tmp;
+
+	/*
+	 * Set PSHOLD port for output high
+	 */
+	tmp = __raw_readl(EXYNOS_PS_HOLD_CONTROL);
+	tmp |= EXYNOS_PS_HOLD_OUTPUT_HIGH;
+	__raw_writel(tmp, EXYNOS_PS_HOLD_CONTROL);
+
+	/*
+	 * Enable signal for PSHOLD port
+	 */
+	tmp = __raw_readl(EXYNOS_PS_HOLD_CONTROL);
+	tmp |= EXYNOS_PS_HOLD_EN;
+	__raw_writel(tmp, EXYNOS_PS_HOLD_CONTROL);
+
 	exynos_cpu.power_up = exynos5422_secondary_up;
 	exynos_cpu.power_state = exynos5422_cpu_state;
 	exynos_cpu.power_down = exynos5422_cpu_down;
