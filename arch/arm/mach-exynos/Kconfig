@@ -174,6 +174,13 @@ config EXYNOS_ATAGS
 	  the traditional ATAGS boot format.
 	  Note that this option is not available for multiplatform builds.
 
+config EXYNOS5_SETUP_MIPIPHY
+	bool
+	depends on (VIDEO_EXYNOS_FIMC_IS)
+	default y
+	help
+	  Compile in common setup code for MIPI-CSIS devices
+
 if EXYNOS_ATAGS
 
 config EXYNOS_DEV_DMA
