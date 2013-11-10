@@ -173,6 +173,14 @@
 		V4L2_DV_FL_CAN_REDUCE_FPS) \
 }
 
+#define V4L2_DV_BT_CEA_3840X2160P24 { \
+	.type = V4L2_DV_BT_656_1120, \
+	V4L2_INIT_BT_TIMINGS(3840, 2160, 0, \
+		V4L2_DV_HSYNC_POS_POL | V4L2_DV_VSYNC_POS_POL, \
+		297000000, 1276, 58, 326, 8, 10, 72, 0, 0, 0, \
+		V4L2_DV_BT_STD_DMT | V4L2_DV_BT_STD_CEA861, \
+		V4L2_DV_FL_CAN_REDUCE_FPS) \
+}
 
 /* VESA Discrete Monitor Timings as per version 1.0, revision 12 */
 
