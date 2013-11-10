@@ -55,6 +55,13 @@ static const u8 hdmiphy_conf148_5[32] = {
 	0x08, 0x10, 0x01, 0x01, 0x48, 0x4a, 0x01, 0x00,
 };
 
+static const u8 hdmiphy_conf297[32] = {
+	0x01, 0x51, 0x3E, 0x05, 0x40, 0xF0, 0x88, 0xC2,
+	0x52, 0x53, 0x44, 0x9C, 0x27, 0x0F, 0x7C, 0xA0,
+	0xD6, 0x2B, 0x67, 0x00, 0x00, 0x04, 0x00, 0x30,
+	0x08, 0x10, 0x01, 0x01, 0x48, 0x40, 0x01, 0x80,
+};
+
 const struct hdmiphy_conf hdmiphy_conf[] = {
 	{ V4L2_DV_BT_CEA_720X480P59_94, hdmiphy_conf27 },
 	{ V4L2_DV_BT_CEA_720X576P50, hdmiphy_conf27 },
@@ -67,6 +74,7 @@ const struct hdmiphy_conf hdmiphy_conf[] = {
 	{ V4L2_DV_BT_CEA_1920X1080P30, hdmiphy_conf74_175 },
 	{ V4L2_DV_BT_CEA_1920X1080P50, hdmiphy_conf148_5 },
 	{ V4L2_DV_BT_CEA_1920X1080P60, hdmiphy_conf148_5 },
+	{ V4L2_DV_BT_CEA_3840X2160P24, hdmiphy_conf297 },
 	{ V4L2_DV_BT_CEA_1280X720P60_SB_HALF, hdmiphy_conf74_25 },
 	{ V4L2_DV_BT_CEA_1280X720P60_TB, hdmiphy_conf74_25 },
 	{ V4L2_DV_BT_CEA_1280X720P50_SB_HALF, hdmiphy_conf74_25 },
