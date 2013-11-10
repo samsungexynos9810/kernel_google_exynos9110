@@ -156,6 +156,52 @@ bool exynos5422_is_last_core(unsigned int cpu)
 	return true;
 }
 
+void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type)
+{
+	unsigned int value;
+	unsigned int wdt_auto_reset_dis;
+	unsigned int wdt_reset_mask;
+
+	/*
+	 * When SYS_WDTRESET is set, watchdog timer reset request is ignored
+	 * by power management unit.
+	 */
+	if (pmu_wdt_reset_type == PMU_WDT_RESET_TYPE0) {
+		wdt_auto_reset_dis = EXYNOS_SYS_WDTRESET;
+		wdt_reset_mask = EXYNOS_SYS_WDTRESET;
+	} else if (pmu_wdt_reset_type == PMU_WDT_RESET_TYPE1) {
+		wdt_auto_reset_dis = EXYNOS5422_SYS_WDTRESET;
+		wdt_reset_mask = EXYNOS5422_SYS_WDTRESET;
+	} else if (pmu_wdt_reset_type == PMU_WDT_RESET_TYPE2) {
+		wdt_auto_reset_dis = EXYNOS5430_SYS_WDTRESET_EGL |
+			EXYNOS5430_SYS_WDTRESET_KFC;
+		wdt_reset_mask = EXYNOS5430_SYS_WDTRESET_EGL;
+	} else if (pmu_wdt_reset_type == PMU_WDT_RESET_TYPE3) {
+		wdt_auto_reset_dis = EXYNOS5430_SYS_WDTRESET_EGL |
+			EXYNOS5430_SYS_WDTRESET_KFC;
+		wdt_reset_mask = EXYNOS5430_SYS_WDTRESET_KFC;
+	} else {
+		pr_err("Failed to %s pmu wdt reset\n",
+				on ? "enable" : "disable");
+		return;
+	}
+
+	value = __raw_readl(EXYNOS_AUTOMATIC_WDT_RESET_DISABLE);
+	if (on)
+		value &= ~wdt_auto_reset_dis;
+	else
+		value |= wdt_auto_reset_dis;
+	__raw_writel(value, EXYNOS_AUTOMATIC_WDT_RESET_DISABLE);
+	value = __raw_readl(EXYNOS_MASK_WDT_RESET_REQUEST);
+	if (on)
+		value &= ~wdt_reset_mask;
+	else
+		value |= wdt_reset_mask;
+	__raw_writel(value, EXYNOS_MASK_WDT_RESET_REQUEST);
+
+	return;
+}
+
 int __init exynos5422_pmu_init(void)
 {
 	exynos_cpu.power_up = exynos5422_secondary_up;
