@@ -531,9 +531,11 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 		break;
 	case 16:
 		if (transp_length == 1)
-			data |= WINCONx_BPPMODE_16BPP_A1555;
+			data |= WINCONx_BPPMODE_16BPP_A1555
+				| WINCONx_BLD_PIX;
 		else if (transp_length == 4)
-			data |= WINCONx_BPPMODE_16BPP_A4444;
+			data |= WINCONx_BPPMODE_16BPP_A4444
+				| WINCONx_BLD_PIX;
 		else
 			data |= WINCONx_BPPMODE_16BPP_565;
 		data |= WINCONx_HAWSWP;
@@ -546,16 +548,21 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 			else
 				data |= WINCONx_BPPMODE_18BPP_666;
 		} else if (transp_length == 1)
-			data |= WINCONx_BPPMODE_25BPP_A1888;
+			data |= WINCONx_BPPMODE_25BPP_A1888
+				| WINCONx_BLD_PIX;
 		else if ((transp_length == 4) ||
 			(transp_length == 8))
-			data |= WINCONx_BPPMODE_32BPP_A8888;
+			data |= WINCONx_BPPMODE_32BPP_A8888
+				| WINCONx_BLD_PIX;
 		else
 			data |= WINCONx_BPPMODE_24BPP_888;
 
 		data |= WINCONx_WSWP;
 		break;
 	}
+
+	if (transp_length != 1)
+		data |= WINCONx_ALPHA_SEL;
 
 	return data;
 }
@@ -720,7 +727,7 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		}
 	}
 
-	window_size = win_config->stride * win_config->h * 4;
+	window_size = win_config->stride * win_config->h;
 	if (win_config->offset + window_size -
 	   (win_config->offset % win_config->stride) > buf_size) {
 		dex_err("window goes past end of buffer\n");
@@ -754,8 +761,8 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		alpha0 = 0xff;
 		alpha1 = 0xff;
 	} else {
-		alpha0 = 0xff;
-		alpha1 = 0x0;
+		alpha0 = 0x0;
+		alpha1 = 0xff;
 	}
 	pagewidth = (win_config->w * win->fbinfo->var.bits_per_pixel) >> 3;
 
