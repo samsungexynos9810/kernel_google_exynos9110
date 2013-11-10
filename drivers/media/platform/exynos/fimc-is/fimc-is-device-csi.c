@@ -18,6 +18,7 @@
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>
+#include <mach/exynos5-mipiphy.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-device-csi.h"
@@ -334,8 +335,6 @@ static int csi_s_power(struct v4l2_subdev *subdev,
 	int on)
 {
 	int ret = 0;
-	void __iomem *addr;
-	u32 cfg;
 	struct fimc_is_device_csi *csi;
 
 	BUG_ON(!subdev);
@@ -349,48 +348,11 @@ static int csi_s_power(struct v4l2_subdev *subdev,
 	if (on == 0)
 		goto p_err;
 
-	addr = S5P_MIPI_DPHY_CONTROL(0);
-
-	cfg = __raw_readl(addr);
-	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
-	__raw_writel(cfg, addr);
-
-	if (1) {
-		cfg |= S5P_MIPI_DPHY_ENABLE;
-	} else if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN)
-			& (~S5P_MIPI_DPHY_SRESETN))) {
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
+	ret = exynos5_csis_phy_enable(csi->instance, on);
+	if (ret) {
+		err("fail to csi%d power on", csi->instance);
+		goto p_err;
 	}
-
-	__raw_writel(cfg, addr);
-
-
-	addr = S5P_MIPI_DPHY_CONTROL(1);
-
-	cfg = __raw_readl(addr);
-	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
-	__raw_writel(cfg, addr);
-
-	if (1) {
-		cfg |= S5P_MIPI_DPHY_ENABLE;
-	} else if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN)
-			& (~S5P_MIPI_DPHY_SRESETN))) {
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
-	}
-
-	__raw_writel(cfg, addr);
-
-	addr = S5P_MIPI_DPHY_CONTROL(2);
-
-	cfg = __raw_readl(addr);
-	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
-	__raw_writel(cfg, addr);
-
-	cfg |= S5P_MIPI_DPHY_ENABLE;
-	if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN) & (~S5P_MIPI_DPHY_SRESETN)))
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
-
-	__raw_writel(cfg, addr);
 
 p_err:
 	mdbgd_front("%s(%d, %d)\n", csi, __func__, on, ret);
