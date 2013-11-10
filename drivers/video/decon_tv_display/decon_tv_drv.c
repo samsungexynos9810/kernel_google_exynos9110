@@ -315,7 +315,6 @@ static int dex_set_hdmi_config(struct dex_device *dex,
 			dex_err("failed to enable HDCP\n");
 		dex_dbg("HDCP %s\n", ctrl.value ? "enabled" : "disabled");
 		break;
-		break;
 	case EXYNOS_HDMI_STATE_AUDIO:
 		break;
 	default:

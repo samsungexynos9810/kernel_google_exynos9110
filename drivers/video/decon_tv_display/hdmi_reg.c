@@ -1667,6 +1667,8 @@ irqreturn_t hdmi_irq_handler(int irq, void *dev_data)
 		intc_flag = hdmi_read(hdev, HDMI_INTC_FLAG_0);
 		/* clearing flags for HPD plug/unplug */
 		if (intc_flag & HDMI_INTC_FLAG_HPD_UNPLUG) {
+			if (hdev->hdcp_info.hdcp_enable)
+				hdcp_stop(hdev);
 			hdmi_write_mask(hdev, HDMI_INTC_FLAG_0, ~0,
 					HDMI_INTC_FLAG_HPD_UNPLUG);
 			queue_work(system_nrt_wq, &hdev->hpd_work);
@@ -1674,6 +1676,13 @@ irqreturn_t hdmi_irq_handler(int irq, void *dev_data)
 		if (intc_flag & HDMI_INTC_FLAG_HPD_PLUG) {
 			hdmi_write_mask(hdev, HDMI_INTC_FLAG_0, ~0,
 					HDMI_INTC_FLAG_HPD_PLUG);
+		}
+
+		if (intc_flag & HDMI_INTC_FLAG_HDCP) {
+			pr_debug("%s: hdcp interrupt occur\n", __func__);
+			hdcp_irq_handler(hdev);
+			hdmi_write_mask(hdev, HDMI_INTC_FLAG_0, ~0,
+					HDMI_INTC_FLAG_HDCP);
 		}
 	}
 
@@ -1685,6 +1694,8 @@ void hdmi_reg_init(struct hdmi_device *hdev)
 	/* enable HPD interrupts */
 	hdmi_write_mask(hdev, HDMI_INTC_CON_0, ~0, HDMI_INTC_EN_GLOBAL |
 		HDMI_INTC_EN_HPD_PLUG | HDMI_INTC_EN_HPD_UNPLUG);
+	/* hdcp interrupt must be prohibitted before starting hdcp */
+	hdmi_write_mask(hdev, HDMI_INTC_CON_0, 0, HDMI_INTC_EN_HDCP);
 	/* choose HDMI mode */
 	hdmi_write_mask(hdev, HDMI_MODE_SEL,
 		HDMI_MODE_HDMI_EN, HDMI_MODE_MASK);
