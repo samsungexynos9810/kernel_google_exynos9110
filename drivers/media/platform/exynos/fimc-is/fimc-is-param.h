@@ -1116,6 +1116,11 @@ enum otf_input_order {
 	OTF_INPUT_ORDER_BAYER_GB_RG	= 3
 };
 
+enum otf_input_path {
+	OTF_INPUT_SERIAL_PATH = 0,
+	OTF_INPUT_PARAL_PATH = 1
+};
+
 enum otf_intput_error {
 	OTF_INPUT_ERROR_NO		= 0 /* Input setting is done */
 };
@@ -1677,7 +1682,8 @@ struct param_otf_input {
 	u32	frametime_max;
 	u32	binning_ratio_x;
 	u32	binning_ratio_y;
-	u32	reserved[PARAMETER_MAX_MEMBER-18];
+	u32	scaler_path_sel;
+	u32	reserved[PARAMETER_MAX_MEMBER-19];
 	u32	err;
 };
 
