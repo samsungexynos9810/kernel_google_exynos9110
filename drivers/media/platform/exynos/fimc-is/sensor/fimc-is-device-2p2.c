@@ -34,6 +34,7 @@
 
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
+#include "../fimc-is-resourcemgr.h"
 #include "fimc-is-device-2p2.h"
 
 #define SENSOR_NAME "S5K2P2"
@@ -102,7 +103,8 @@ int sensor_2p2_probe(struct i2c_client *client,
 		goto p_err;
 	}
 
-	module = &device->module_enum[SENSOR_NAME_S5K2P2];
+	module = &device->module_enum[atomic_read(&core->resourcemgr.rsccount_module)];
+	atomic_inc(&core->resourcemgr.rsccount_module);
 	module->id = SENSOR_NAME_S5K2P2;
 	module->subdev = subdev_module;
 	module->device = SENSOR_2P2_INSTANCE;

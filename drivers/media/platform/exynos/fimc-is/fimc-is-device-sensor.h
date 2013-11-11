@@ -22,7 +22,7 @@
 struct fimc_is_video_ctx;
 struct fimc_is_device_ischain;
 
-#define SENSOR_MAX_ENUM			100
+#define SENSOR_MAX_ENUM			10
 #define SENSOR_DEFAULT_FRAMERATE	30
 
 #define SENSOR_DRIVING_MASK		0xF0000000

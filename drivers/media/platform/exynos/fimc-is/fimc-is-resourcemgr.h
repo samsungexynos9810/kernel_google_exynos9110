@@ -43,6 +43,7 @@ struct fimc_is_resourcemgr {
 	atomic_t				rsccount;
 	atomic_t				rsccount_sensor;
 	atomic_t				rsccount_ischain;
+	atomic_t				rsccount_module; /* sensor module */
 
 	struct fimc_is_dvfs_ctrl		dvfs_ctrl;
 	struct fimc_is_clk_gate_ctrl		clk_gate_ctrl;

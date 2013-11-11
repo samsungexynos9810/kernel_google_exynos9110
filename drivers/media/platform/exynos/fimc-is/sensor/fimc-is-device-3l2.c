@@ -34,6 +34,7 @@
 
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
+#include "../fimc-is-resourcemgr.h"
 #include "fimc-is-device-3l2.h"
 
 #define SENSOR_NAME "IMX135"
@@ -102,7 +103,8 @@ int sensor_3l2_probe(struct i2c_client *client,
 		goto p_err;
 	}
 
-	module = &device->module_enum[SENSOR_NAME_S5K3L2];
+	module = &device->module_enum[atomic_read(&core->resourcemgr.rsccount_module)];
+	atomic_inc(&core->resourcemgr.rsccount_module);
 	module->id = SENSOR_NAME_S5K3L2;
 	module->subdev = subdev_module;
 	module->device = SENSOR_3L2_INSTANCE;

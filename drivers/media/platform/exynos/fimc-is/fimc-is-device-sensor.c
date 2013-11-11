@@ -918,20 +918,23 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	struct fimc_is_module_enum *module;
 	u32 sensor_ch, actuator_ch;
 	u32 sensor_addr, actuator_addr;
+	u32 i;
 
 	BUG_ON(!device);
 	BUG_ON(!device->pdata);
 	BUG_ON(!device->subdev_csi);
-	BUG_ON(input >= SENSOR_MAX_ENUM);
+	BUG_ON(input >= SENSOR_NAME_END);
 
-	module = &device->module_enum[input];
-	if (!module) {
-		merr("module is not probed", device);
-		ret = -EINVAL;
-		goto p_err;
+
+	for (i = 0; i < SENSOR_MAX_ENUM; i++) {
+		if (&device->module_enum[i] &&
+		device->module_enum[i].id == input) {
+			module = &device->module_enum[i];
+			break;
+		}
 	}
 
-	if (!module->id) {
+	if (i == SENSOR_MAX_ENUM) {
 		merr("module is not probed", device);
 		ret = -EINVAL;
 		goto p_err;
