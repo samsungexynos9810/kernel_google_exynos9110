@@ -1272,5 +1272,5 @@ reloc_code_end:
 
 		.align
 		.section ".stack", "aw", %nobits
-.L_user_stack:	.space	4096
+.L_user_stack:	.space	8192
 .L_user_stack_end:
