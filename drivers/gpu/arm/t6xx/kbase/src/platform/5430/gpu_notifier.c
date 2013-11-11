@@ -60,23 +60,23 @@ static int gpu_tmu_hot_check_and_work(struct kbase_device *kbdev, unsigned long 
 	switch (event) {
 	case GPU_THROTTLING1:
 		lock_clock = GPU_THROTTLING_90_95;
-		GPU_LOG(DVFS_INFO, "[G3D] GPU_THROTTLING_90_95\n");
+		GPU_LOG(DVFS_DEBUG, "[G3D] GPU_THROTTLING_90_95\n");
 		break;
 	case GPU_THROTTLING2:
 		lock_clock = GPU_THROTTLING_95_100;
-		GPU_LOG(DVFS_INFO, "[G3D] GPU_THROTTLING_95_100\n");
+		GPU_LOG(DVFS_DEBUG, "[G3D] GPU_THROTTLING_95_100\n");
 		break;
 	case GPU_THROTTLING3:
 		lock_clock = GPU_THROTTLING_100_105;
-		GPU_LOG(DVFS_INFO, "[G3D] GPU_THROTTLING_100_105\n");
+		GPU_LOG(DVFS_DEBUG, "[G3D] GPU_THROTTLING_100_105\n");
 		break;
 	case GPU_THROTTLING4:
 		lock_clock = GPU_THROTTLING_105_110;
-		GPU_LOG(DVFS_INFO, "[G3D] GPU_THROTTLING_105_110\n");
+		GPU_LOG(DVFS_DEBUG, "[G3D] GPU_THROTTLING_105_110\n");
 		break;
 	case GPU_TRIPPING:
 		lock_clock = GPU_TRIPPING_110;
-		GPU_LOG(DVFS_INFO, "[G3D] GPU_THROTTLING_110\n");
+		GPU_LOG(DVFS_DEBUG, "[G3D] GPU_THROTTLING_110\n");
 		break;
 	default:
 		GPU_LOG(DVFS_ERROR, "[G3D] Wrong event, %lu,  in the kbase_tmu_hot_check_and_work function\n", event);
@@ -210,7 +210,7 @@ static void gpu_device_runtime_disable(struct kbase_device *kbdev)
 
 static int pm_callback_runtime_on(kbase_device *kbdev)
 {
-	GPU_LOG(DVFS_INFO, "g3d turn on\n");
+	GPU_LOG(DVFS_DEBUG, "g3d turn on\n");
 
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON, 0);
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -223,7 +223,7 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 
 static void pm_callback_runtime_off(kbase_device *kbdev)
 {
-	GPU_LOG(DVFS_INFO, "g3d turn off\n");
+	GPU_LOG(DVFS_DEBUG, "g3d turn off\n");
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_OFF, 0);
 #ifdef CONFIG_MALI_T6XX_DVFS
 	if (gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_OFF, 0) < 0)
