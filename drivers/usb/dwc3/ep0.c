@@ -780,6 +780,9 @@ static void dwc3_ep0_complete_data(struct dwc3 *dwc,
 		return;
 	}
 
+	if (dwc->ep0_zlp_sent)
+		goto finish_zlp;
+
 	length = trb->size & DWC3_TRB_SIZE_MASK;
 
 	if (dwc->ep0_bounced) {
@@ -800,14 +803,23 @@ static void dwc3_ep0_complete_data(struct dwc3 *dwc,
 		/* for some reason we did not get everything out */
 
 		dwc3_ep0_stall_and_restart(dwc);
-	} else {
-		/*
-		 * handle the case where we have to send a zero packet. This
-		 * seems to be case when req.length > maxpacket. Could it be?
-		 */
-		if (r)
-			dwc3_gadget_giveback(ep0, r, 0);
+		return;
 	}
+
+	/* handle the case where we have to send a zero packet */
+	if ((epnum & 1) && ur->zero &&
+	    (ur->length % ep0->endpoint.maxpacket == 0)) {
+		int ret;
+
+		ret = dwc3_ep0_start_trans(dwc, epnum, dwc->ctrl_req_addr, 0,
+				DWC3_TRBCTL_CONTROL_DATA);
+		WARN_ON(ret < 0);
+		dwc->ep0_zlp_sent = 1;
+		return;
+	}
+
+finish_zlp:
+	dwc3_gadget_giveback(ep0, r, 0);
 }
 
 static void dwc3_ep0_complete_status(struct dwc3 *dwc,
