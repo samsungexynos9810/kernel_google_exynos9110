@@ -51,8 +51,8 @@
 #define SMC_POWERSTATE_SWITCH   0x2
 
 #ifndef __ASSEMBLY__
-extern void exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
-extern void exynos_smc_readsfr(u32 addr, u32 *val);
+extern int exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
+extern int exynos_smc_readsfr(u32 addr, u32 *val);
 #endif
 
 #endif
