@@ -225,7 +225,7 @@ request_fw:
 		memcpy(version_str, buf + offset, COMP_SETFILE_VIRSION_SIZE);
 		version_str[COMP_SETFILE_VIRSION_SIZE] = '\0';
 
-		pr_info("%s version : %s\n", name, version_str);
+		info("%s version : %s\n", name, version_str);
 	}
 
 p_err:

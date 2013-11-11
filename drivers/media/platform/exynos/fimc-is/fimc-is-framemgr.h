@@ -93,16 +93,16 @@ enum fimc_is_frame_reqeust {
 };
 
 enum fimc_is_frame_output {
-	/* 3AX frame done */
-	OUT_3AX_FRAME,
+	/* 3AAC frame done */
+	OUT_3AAC_FRAME,
+	/* 3AAP frame done */
+	OUT_3AAP_FRAME,
 	/* SCC frame done */
 	OUT_SCC_FRAME,
 	/* DIS frame done */
 	OUT_DIS_FRAME,
 	/* SCP frame done */
-	OUT_SCP_FRAME,
-	/* 3AXC frame done */
-	OUT_3AAC_FRAME
+	OUT_SCP_FRAME
 };
 
 enum fimc_is_frame_mem {

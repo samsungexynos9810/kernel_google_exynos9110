@@ -44,6 +44,17 @@
 /* sysfs variable for debug */
 extern struct fimc_is_sysfs_debug sysfs_debug;
 
+static void fimc_is_gframe_s_info(struct fimc_is_group_frame *item,
+	u32 group_id, struct fimc_is_frame *frame)
+{
+	BUG_ON(!item);
+	BUG_ON(!frame);
+	BUG_ON(!frame->shot_ext);
+
+	memcpy(&item->group_cfg[group_id], &frame->shot_ext->node_group,
+		sizeof(struct camera2_node_group));
+}
+
 static void fimc_is_gframe_free_head(struct fimc_is_group_framemgr *framemgr,
 	struct fimc_is_group_frame **item)
 {
@@ -148,6 +159,7 @@ static int fimc_is_gframe_trans_grp_to_grp(struct fimc_is_group *prev,
 	struct fimc_is_group_frame *item)
 {
 	int ret = 0;
+	u32 *input_crop, *output_crop;
 
 	BUG_ON(!prev);
 	BUG_ON(!next);
@@ -156,7 +168,7 @@ static int fimc_is_gframe_trans_grp_to_grp(struct fimc_is_group *prev,
 	if (!prev->frame_group_cnt) {
 		err("frame_group_cnt is zero");
 		ret = -EFAULT;
-		goto exit;
+		goto p_err;
 	}
 
 	list_del(&item->list);
@@ -164,7 +176,31 @@ static int fimc_is_gframe_trans_grp_to_grp(struct fimc_is_group *prev,
 
 	fimc_is_gframe_s_group(next, item);
 
-exit:
+	if (item->group_cfg[prev->id].capture[0].vid == next->source_vid) {
+		output_crop = item->group_cfg[prev->id].capture[0].output.cropRegion;
+		input_crop = item->group_cfg[next->id].leader.input.cropRegion;
+	} else if (item->group_cfg[prev->id].capture[1].vid == next->source_vid) {
+		output_crop = item->group_cfg[prev->id].capture[1].output.cropRegion;
+		input_crop = item->group_cfg[next->id].leader.input.cropRegion;
+	} else {
+		merr("vid(%d) is invalid", prev, next->source_vid);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if ((output_crop[0] != input_crop[0]) || (output_crop[1] != input_crop[1]) ||
+		(output_crop[2] != input_crop[2]) || (output_crop[3] != input_crop[3])) {
+		mwarn("GRP%d & GRP%d is incoincidence((%d,%d,%d,%d) != (%d,%d,%d,%d))",
+			prev, prev->id, next->id,
+			output_crop[0], output_crop[1], output_crop[2], output_crop[3],
+			input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
+		input_crop[0] = output_crop[0];
+		input_crop[1] = output_crop[1];
+		input_crop[2] = output_crop[2];
+		input_crop[3] = output_crop[3];
+	}
+
+p_err:
 	return ret;
 }
 
@@ -292,86 +328,42 @@ int fimc_is_gframe_flush(struct fimc_is_groupmgr *groupmgr,
 
 static void fimc_is_group_3a0_cancel(struct fimc_is_framemgr *ldr_framemgr,
 	struct fimc_is_frame *ldr_frame,
-	struct fimc_is_framemgr *sub_framemgr,
 	struct fimc_is_video_ctx *vctx,
 	u32 instance)
 {
-	u32 done_state = VB2_BUF_STATE_DONE;
-	unsigned long flags;
-	struct fimc_is_queue *src_queue, *dst_queue;
-	struct fimc_is_frame *sub_frame;
+	struct fimc_is_queue *queue;
 
 	BUG_ON(!vctx);
 	BUG_ON(!ldr_framemgr);
 	BUG_ON(!ldr_frame);
-	BUG_ON(!sub_framemgr);
 
 	pr_err("[3A0:D:%d] GRP0 CANCEL(%d, %d)\n", instance,
 		ldr_frame->fcount, ldr_frame->index);
-	ldr_frame->shot_ext->request_3aap = 0;
 
-	src_queue = GET_SRC_QUEUE(vctx);
-	dst_queue = GET_DST_QUEUE(vctx);
-
-	framemgr_e_barrier_irqs(sub_framemgr, 0, flags);
-
-	fimc_is_frame_request_head(sub_framemgr, &sub_frame);
-	if (sub_frame) {
-		sub_frame->stream->fvalid = 0;
-		sub_frame->stream->fcount = ldr_frame->fcount;
-		sub_frame->stream->rcount = ldr_frame->rcount;
-
-		fimc_is_frame_trans_req_to_com(sub_framemgr, sub_frame);
-		queue_done(vctx, dst_queue, sub_frame->index, done_state);
-	} else
-		warn("subframe is empty(%p, %d)", sub_frame, ldr_frame->fcount);
-
-	framemgr_x_barrier_irqr(sub_framemgr, 0, flags);
+	queue = GET_SRC_QUEUE(vctx);
 
 	fimc_is_frame_trans_req_to_com(ldr_framemgr, ldr_frame);
-	queue_done(vctx, src_queue, ldr_frame->index, done_state);
+	queue_done(vctx, queue, ldr_frame->index, VB2_BUF_STATE_ERROR);
 }
 
 static void fimc_is_group_3a1_cancel(struct fimc_is_framemgr *ldr_framemgr,
 	struct fimc_is_frame *ldr_frame,
-	struct fimc_is_framemgr *sub_framemgr,
 	struct fimc_is_video_ctx *vctx,
 	u32 instance)
 {
-	u32 done_state = VB2_BUF_STATE_DONE;
-	unsigned long flags;
-	struct fimc_is_queue *src_queue, *dst_queue;
-	struct fimc_is_frame *sub_frame;
+	struct fimc_is_queue *queue;
 
 	BUG_ON(!vctx);
 	BUG_ON(!ldr_framemgr);
 	BUG_ON(!ldr_frame);
-	BUG_ON(!sub_framemgr);
 
 	pr_err("[3A1:D:%d] GRP1 CANCEL(%d, %d)\n", instance,
 		ldr_frame->fcount, ldr_frame->index);
-	ldr_frame->shot_ext->request_3aap = 0;
 
-	src_queue = GET_SRC_QUEUE(vctx);
-	dst_queue = GET_DST_QUEUE(vctx);
-
-	framemgr_e_barrier_irqs(sub_framemgr, 0, flags);
-
-	fimc_is_frame_request_head(sub_framemgr, &sub_frame);
-	if (sub_frame) {
-		sub_frame->stream->fvalid = 0;
-		sub_frame->stream->fcount = ldr_frame->fcount;
-		sub_frame->stream->rcount = ldr_frame->rcount;
-
-		fimc_is_frame_trans_req_to_com(sub_framemgr, sub_frame);
-		queue_done(vctx, dst_queue, sub_frame->index, done_state);
-	} else
-		warn("subframe is empty(%p, %d)", sub_frame, ldr_frame->fcount);
-
-	framemgr_x_barrier_irqr(sub_framemgr, 0, flags);
+	queue = GET_SRC_QUEUE(vctx);
 
 	fimc_is_frame_trans_req_to_com(ldr_framemgr, ldr_frame);
-	queue_done(vctx, src_queue, ldr_frame->index, done_state);
+	queue_done(vctx, queue, ldr_frame->index, VB2_BUF_STATE_ERROR);
 }
 
 static void fimc_is_group_isp_cancel(struct fimc_is_framemgr *framemgr,
@@ -379,7 +371,6 @@ static void fimc_is_group_isp_cancel(struct fimc_is_framemgr *framemgr,
 	struct fimc_is_video_ctx *vctx,
 	u32 instance)
 {
-	u32 done_state = VB2_BUF_STATE_DONE;
 	struct fimc_is_queue *queue;
 
 	BUG_ON(!framemgr);
@@ -387,12 +378,11 @@ static void fimc_is_group_isp_cancel(struct fimc_is_framemgr *framemgr,
 
 	pr_err("[ISP:D:%d] GRP2 CANCEL(%d, %d)\n", instance,
 		frame->fcount, frame->index);
-	frame->shot_ext->request_isp = 0;
 
 	queue = GET_SRC_QUEUE(vctx);
 
 	fimc_is_frame_trans_req_to_com(framemgr, frame);
-	queue_done(vctx, queue, frame->index, done_state);
+	queue_done(vctx, queue, frame->index, VB2_BUF_STATE_ERROR);
 }
 
 static void fimc_is_group_dis_cancel(struct fimc_is_framemgr *framemgr,
@@ -400,7 +390,6 @@ static void fimc_is_group_dis_cancel(struct fimc_is_framemgr *framemgr,
 	struct fimc_is_video_ctx *vctx,
 	u32 instance)
 {
-	u32 done_state = VB2_BUF_STATE_DONE;
 	struct fimc_is_queue *queue;
 
 	BUG_ON(!framemgr);
@@ -408,12 +397,11 @@ static void fimc_is_group_dis_cancel(struct fimc_is_framemgr *framemgr,
 
 	pr_err("[DIS:D:%d] GRP3 CANCEL(%d, %d)\n", instance,
 		frame->fcount, frame->index);
-	frame->shot_ext->request_dis = 0;
 
 	queue = GET_SRC_QUEUE(vctx);
 
 	fimc_is_frame_trans_req_to_com(framemgr, frame);
-	queue_done(vctx, queue, frame->index, done_state);
+	queue_done(vctx, queue, frame->index, VB2_BUF_STATE_ERROR);
 }
 
 static void fimc_is_group_cancel(struct fimc_is_group *group,
@@ -421,7 +409,7 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 {
 	unsigned long flags;
 	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_framemgr *ldr_framemgr, *sub_framemgr;
+	struct fimc_is_framemgr *ldr_framemgr;
 
 	BUG_ON(!group);
 	BUG_ON(!ldr_frame);
@@ -442,14 +430,12 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 
 	switch (group->id) {
 	case GROUP_ID_3A0:
-		sub_framemgr = GET_DST_FRAMEMGR(vctx);
 		fimc_is_group_3a0_cancel(ldr_framemgr, ldr_frame,
-			sub_framemgr, vctx, group->instance);
+			vctx, group->instance);
 		break;
 	case GROUP_ID_3A1:
-		sub_framemgr = GET_DST_FRAMEMGR(vctx);
 		fimc_is_group_3a1_cancel(ldr_framemgr, ldr_frame,
-			sub_framemgr, vctx, group->instance);
+			vctx, group->instance);
 		break;
 	case GROUP_ID_ISP:
 		fimc_is_group_isp_cancel(ldr_framemgr, ldr_frame,
@@ -652,6 +638,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	group->device = device;
 	group->id = id;
 	group->instance = instance;
+	group->source_vid = 0;
 	group->fcount = 0;
 	group->pcount = 0;
 	atomic_set(&group->scount, 0);
@@ -707,6 +694,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 
 		device->taac.group = group;
 		device->taap.group = group;
+
 		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	case GROUP_ID_ISP:
@@ -747,6 +735,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		device->dnr.group = group;
 		device->scp.group = group;
 		device->fd.group = group;
+
 		set_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	case GROUP_ID_DIS:
@@ -760,6 +749,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		group->subdev[ENTRY_LHFD] = NULL;
 		group->subdev[ENTRY_3AAC] = NULL;
 		group->subdev[ENTRY_3AAP] = NULL;
+
 		clear_bit(FIMC_IS_GROUP_ACTIVE, &group->state);
 		break;
 	default:
@@ -856,7 +846,8 @@ p_err:
 
 int fimc_is_group_init(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
-	bool otf_input)
+	bool otf_input,
+	u32 video_id)
 {
 	int ret = 0;
 
@@ -871,6 +862,8 @@ int fimc_is_group_init(struct fimc_is_groupmgr *groupmgr,
 		/* ret = -EINVAL; */
 		goto p_err;
 	}
+
+	group->source_vid = video_id;
 
 	if (!test_bit(FIMC_IS_GGROUP_INIT, &groupmgr->group_state[group->id])) {
 		if (otf_input)
@@ -921,10 +914,10 @@ int fimc_is_group_change(struct fimc_is_groupmgr *groupmgr,
 	leader_dis = &group_dis->leader;
 	leader_isp = &group_isp->leader;
 
-	if (frame->shot_ext->request_dis) {
+	if (frame->shot->ctl.aa.videoStabilizationMode) {
 		if (!test_bit(FIMC_IS_GROUP_READY, &group_dis->state)) {
 			merr("DIS group is not ready", group_dis);
-			frame->shot_ext->request_dis = 0;
+			frame->shot->dm.aa.videoStabilizationMode = 0;
 			ret = -EINVAL;
 			goto p_err;
 		}
@@ -965,6 +958,8 @@ int fimc_is_group_change(struct fimc_is_groupmgr *groupmgr,
 
 			set_bit(FIMC_IS_GROUP_ACTIVE, &group_dis->state);
 		}
+
+		frame->shot->dm.aa.videoStabilizationMode = 1;
 	} else {
 		if (test_bit(FIMC_IS_GROUP_ACTIVE, &group_dis->state)) {
 			pr_info("[GRP%d] Change Off\n", group_isp->id);
@@ -998,6 +993,8 @@ int fimc_is_group_change(struct fimc_is_groupmgr *groupmgr,
 
 			clear_bit(FIMC_IS_GROUP_ACTIVE, &group_dis->state);
 		}
+
+		frame->shot->dm.aa.videoStabilizationMode = 0;
 	}
 
 p_err:
@@ -1062,7 +1059,7 @@ int fimc_is_group_process_start(struct fimc_is_groupmgr *groupmgr,
 		atomic_set(&group->backup_fcount, sensor_fcount - 1);
 		group->fcount = sensor_fcount - 1;
 
-		minfo("[OTF] framerate: %d, async shots: %d, shot resource: %d\n",
+		info("[OTF] framerate: %d, async shots: %d, shot resource: %d\n",
 				fimc_is_sensor_g_framerate(sensor),
 				group->async_shots,
 				shot_resource);
@@ -1148,7 +1145,7 @@ int fimc_is_group_process_stop(struct fimc_is_groupmgr *groupmgr,
 check_completion:
 	retry = 150;
 	while (--retry && framemgr->frame_req_cnt) {
-		pr_warn("%d frame reqs waiting...\n", framemgr->frame_req_cnt);
+		warn("%d frame reqs waiting...\n", framemgr->frame_req_cnt);
 		msleep(20);
 	}
 
@@ -1179,7 +1176,7 @@ check_completion:
 
 	retry = 10;
 	while (--retry && framemgr->frame_pro_cnt) {
-		pr_warn("%d frame pros waiting...\n", framemgr->frame_pro_cnt);
+		warn("%d frame pros waiting...\n", framemgr->frame_pro_cnt);
 		msleep(20);
 	}
 
@@ -1218,8 +1215,6 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_device_ischain *device;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_subdev *leader, *scc, *dis, *scp, *taac;
-	struct fimc_is_queue *scc_queue, *dis_queue, *scp_queue, *taac_queue;
 
 	BUG_ON(!groupmgr);
 	BUG_ON(!group);
@@ -1232,15 +1227,6 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 
 	device = group->device;
 	sensor = device->sensor;
-	leader = &group->leader;
-	scc = group->subdev[ENTRY_SCALERC];
-	dis = group->subdev[ENTRY_DIS];
-	scp = group->subdev[ENTRY_SCALERP];
-	taac = group->subdev[ENTRY_3AAC];
-	scc_queue = GET_SUBDEV_QUEUE(scc);
-	dis_queue = GET_SUBDEV_QUEUE(dis);
-	scp_queue = GET_SUBDEV_QUEUE(scp);
-	taac_queue = GET_SUBDEV_QUEUE(taac);
 	framemgr = &queue->framemgr;
 
 	/* 1. check frame validation */
@@ -1289,32 +1275,8 @@ int fimc_is_group_buffer_queue(struct fimc_is_groupmgr *groupmgr,
 		}
 
 		if (test_bit(OUT_3AAC_FRAME, &frame->out_flag)) {
-			merr("3axc output is not generated", group);
+			merr("3aac output is not generated", group);
 			clear_bit(OUT_3AAC_FRAME, &frame->out_flag);
-		}
-
-		if (scc_queue && frame->shot_ext->request_scc &&
-			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &scc_queue->state)) {
-			frame->shot_ext->request_scc = 0;
-			merr("scc %d frame is drop2", group, frame->fcount);
-		}
-
-		if (dis_queue && frame->shot_ext->request_dis &&
-			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &dis_queue->state)) {
-			frame->shot_ext->request_dis = 0;
-			merr("dis %d frame is drop2", group, frame->fcount);
-		}
-
-		if (scp_queue && frame->shot_ext->request_scp &&
-			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &scp_queue->state)) {
-			frame->shot_ext->request_scp = 0;
-			merr("scp %d frame is drop2", group, frame->fcount);
-		}
-
-		if (taac_queue && frame->shot_ext->request_3aac &&
-			!test_bit(FIMC_IS_QUEUE_STREAM_ON, &taac_queue->state)) {
-			frame->shot_ext->request_3aac = 0;
-			merr("3axc %d frame is drop2", group, frame->fcount);
 		}
 
 		if (!test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state) &&
@@ -1579,6 +1541,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 			}
 		}
 
+		fimc_is_gframe_s_info(gframe, group->id, ldr_frame);
 		fimc_is_gframe_trans_grp_to_fre(group, gframemgr, gframe);
 		spin_unlock_irq(&gframemgr->frame_slock);
 	} else if (!group_prev && group_next) {
@@ -1618,6 +1581,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		}
 
 		gframe->fcount = ldr_frame->fcount;
+		fimc_is_gframe_s_info(gframe, group->id, ldr_frame);
 		fimc_is_gframe_trans_fre_to_grp(gframemgr, group_next, gframe);
 		spin_unlock_irq(&gframemgr->frame_slock);
 	} else if (group_prev && group_next) {
@@ -1650,6 +1614,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 			}
 		}
 
+		fimc_is_gframe_s_info(gframe, group->id, ldr_frame);
 		fimc_is_gframe_trans_grp_to_grp(group, group_next, gframe);
 		spin_unlock_irq(&gframemgr->frame_slock);
 	} else {
@@ -1704,7 +1669,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 
 		if (scenario_id > 0) {
 			struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl = resourcemgr->dvfs_ctrl.dynamic_ctrl;
-			minfo("%s: GRP:%d dynamic scenario(%d)-[%s]\n",
+			info("%s: GRP:%d dynamic scenario(%d)-[%s]\n",
 				__func__, group->id, scenario_id,
 				dynamic_ctrl->scenarios[dynamic_ctrl->cur_scenario_idx].scenario_nm);
 			fimc_is_set_dvfs(device, scenario_id);
@@ -1712,7 +1677,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 
 		if ((scenario_id < 0) && (resourcemgr->dvfs_ctrl.dynamic_ctrl->cur_frame_tick == 0)) {
 			struct fimc_is_dvfs_scenario_ctrl *static_ctrl = resourcemgr->dvfs_ctrl.static_ctrl;
-			minfo("%s: GRP:%d restore static scenario(%d)-[%s]\n",
+			info("%s: GRP:%d restore static scenario(%d)-[%s]\n",
 				__func__, group->id, static_ctrl->cur_scenario_id,
 				static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
 			fimc_is_set_dvfs(device, static_ctrl->cur_scenario_id);

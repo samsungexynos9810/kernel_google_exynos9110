@@ -349,7 +349,7 @@ static int waiting_is_ready(struct fimc_is_interface *interface)
 		cfg = readl(interface->regs + INTMSR0);
 		status = INTMSR0_GET_INTMSD0(cfg);
 		udelay(100);
-		pr_warn("Retry to read INTMSR0(%d)\n", try_count);
+		info("Retry to read INTMSR0(%d)\n", try_count);
 
 		if (--try_count == 0) {
 			err("INTMSR0's 0 bit is not cleared.");
@@ -790,7 +790,7 @@ static void wq_func_general(struct work_struct *data)
 		msg = &work->msg;
 		switch (msg->command) {
 		case IHC_GET_SENSOR_NUMBER:
-			minfo("IS Version: %d.%d [0x%02x]\n",
+			info("IS Version: %d.%d [0x%02x]\n",
 				ISDRV_VERSION, msg->parameter1,
 				get_drv_clock_gate() |
 				get_drv_dvfs());
@@ -1000,13 +1000,14 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 	struct fimc_is_subdev *subdev,
 	u32 fcount, u32 rcount, u32 status, u32 instance)
 {
-	u32 findex;
-	u32 out_flag;
+	u32 findex, out_flag;
+	u32 capture_vid, capture_id;
 	char name;
 	unsigned long flags;
 	struct fimc_is_video_ctx *ldr_vctx, *sub_vctx;
 	struct fimc_is_framemgr *ldr_framemgr, *sub_framemgr;
 	struct fimc_is_frame *ldr_frame, *sub_frame;
+	struct camera2_node *capture;
 
 	BUG_ON(!leader);
 	BUG_ON(!subdev);
@@ -1031,7 +1032,8 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 	ldr_framemgr = GET_SRC_FRAMEMGR(ldr_vctx);
 	sub_framemgr = GET_DST_FRAMEMGR(sub_vctx);
 
-	switch (sub_vctx->video->id) {
+	capture_vid = sub_vctx->video->id;
+	switch (capture_vid) {
 	case FIMC_IS_VIDEO_SCC_NUM:
 		out_flag = OUT_SCC_FRAME;
 		name = 'C';
@@ -1063,7 +1065,7 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 	if (sub_frame && test_bit(REQ_FRAME, &sub_frame->req_flag)) {
 
 #ifdef DBG_STREAMING
-		pr_info("[%c:D:%d] %d(%d,%d)\n", name, instance,
+		info("[%c:D:%d] %d(%d,%d)\n", name, instance,
 			sub_frame->index, fcount, rcount);
 #endif
 
@@ -1081,7 +1083,7 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 		}
 
 		if (status) {
-			pr_err("[%c:D:%d] FRM%d NOT DONE(%d)\n", name,
+			info("[%c:D:%d] FRM%d NOT DONE(%d)\n", name,
 				instance, fcount, status);
 			sub_frame->stream->fvalid = 0;
 			goto done;
@@ -1095,6 +1097,25 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 		} else {
 			sub_frame->stream->fvalid = 1;
 			clear_bit(out_flag, &ldr_frame->out_flag);
+		}
+
+		for (capture_id = 0; capture_id < CAPTURE_NODE_MAX; ++capture_id) {
+			capture = &ldr_frame->shot_ext->node_group.capture[capture_id];
+			if (capture_vid == capture->vid) {
+				sub_frame->stream->crop_region[0] = capture->output.cropRegion[0];
+				sub_frame->stream->crop_region[1] = capture->output.cropRegion[1];
+				sub_frame->stream->crop_region[2] = capture->output.cropRegion[2];
+				sub_frame->stream->crop_region[3] = capture->output.cropRegion[3];
+				break;
+			}
+		}
+
+		if (capture_id >= CAPTURE_NODE_MAX) {
+			err("can't find capture stream(%d > %d)", capture_id, CAPTURE_NODE_MAX);
+			sub_frame->stream->crop_region[0] = 0;
+			sub_frame->stream->crop_region[1] = 0;
+			sub_frame->stream->crop_region[2] = 0;
+			sub_frame->stream->crop_region[3] = 0;
 		}
 
 done:
@@ -1340,15 +1361,14 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 	BUG_ON(!sub_framemgr);
 
 	if (status != ISR_DONE) {
-		pr_err("[3A0:D:%d] GRP0 NOT DONE(%d, %d)\n", group->instance,
+		info("[3A0:D:%d] GRP0 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
-		ldr_frame->shot_ext->request_3aap = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
 	if (status == ISR_DONE)
-		pr_info("[3A0:D:%d] GRP0 DONE(%d)\n", group->instance,
+		info("[3A0:D:%d] GRP0 DONE(%d)\n", group->instance,
 			ldr_frame->fcount);
 #endif
 
@@ -1400,15 +1420,14 @@ static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 	BUG_ON(!sub_framemgr);
 
 	if (status != ISR_DONE) {
-		pr_err("[3A1:D:%d] GRP1 NOT DONE(%d, %d)\n", group->instance,
+		info("[3A1:D:%d] GRP1 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
-		ldr_frame->shot_ext->request_3aap = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
 	if (status == ISR_DONE)
-		pr_info("[3A1:D:%d] GRP1 DONE(%d)\n", group->instance,
+		info("[3A1:D:%d] GRP1 DONE(%d)\n", group->instance,
 			ldr_frame->fcount);
 #endif
 
@@ -1463,15 +1482,14 @@ static void wq_func_group_isp(struct fimc_is_groupmgr *groupmgr,
 	BUG_ON(!frame);
 
 	if (status != ISR_DONE) {
-		pr_err("[ISP:D:%d] GRP2 NOT DONE(%d, %d)\n", group->instance,
+		info("[ISP:D:%d] GRP2 NOT DONE(%d, %d)\n", group->instance,
 			frame->fcount, frame->index);
-		frame->shot_ext->request_isp = 0;
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
 	if (status == ISR_DONE)
-		pr_info("[ISP:D:%d] GRP2 DONE(%d)\n", group->instance,
+		info("[ISP:D:%d] GRP2 DONE(%d)\n", group->instance,
 			frame->fcount);
 #endif
 
@@ -1544,14 +1562,14 @@ static void wq_func_group_dis(struct fimc_is_groupmgr *groupmgr,
 	BUG_ON(!frame);
 
 	if (status != ISR_DONE) {
-		pr_err("[DIS:D:%d] GRP3 NOT DONE(%d, %d)\n", group->instance,
+		info("[DIS:D:%d] GRP3 NOT DONE(%d, %d)\n", group->instance,
 			frame->fcount, frame->index);
 		done_state = VB2_BUF_STATE_ERROR;
 	}
 
 #ifdef DBG_STREAMING
 	if (status == ISR_DONE)
-		pr_info("[DIS:D:%d] GRP3 DONE(%d)\n", group->instance,
+		info("[DIS:D:%d] GRP3 DONE(%d)\n", group->instance,
 			frame->fcount);
 #endif
 
@@ -1572,6 +1590,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_video_ctx *vctx,
 	u32 status1, u32 status2, u32 fcount)
 {
+	u32 lindex, hindex;
 	struct fimc_is_framemgr *sub_framemgr;
 
 	BUG_ON(!groupmgr);
@@ -1585,11 +1604,18 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 	 * buffer is queued or overflow can be occured
 	 */
 	if (ldr_framemgr->frame_com_cnt >= 2)
-		warn("remained completes is %d(%X)",
-			(ldr_framemgr->frame_com_cnt + 1), group->id);
+		warn("remained completes is %d(%X)", (ldr_framemgr->frame_com_cnt + 1), group->id);
 
-	if (status2 != IS_SHOT_SUCCESS)
-		err("cause : %d", status2);
+	if (status2 != IS_SHOT_SUCCESS) {
+		lindex = ldr_frame->shot->ctl.entry.lowIndexParam;
+		lindex &= ~ldr_frame->shot->dm.entry.lowIndexParam;
+		hindex = ldr_frame->shot->ctl.entry.highIndexParam;
+		hindex &= ~ldr_frame->shot->dm.entry.highIndexParam;
+		if (lindex || hindex)
+			err("cause : invalid parameter(%08X %08X)", lindex, hindex);
+		else
+			err("cause : %d", status2);
+	}
 
 	switch (group->id) {
 	case GROUP_ID_3A0:
@@ -1635,8 +1661,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 			}
 		} else {
 			if (fcount != ldr_frame->fcount) {
-				err("cause : mismatch(%d != %d)", fcount,
-					ldr_frame->fcount);
+				err("cause : mismatch(%d != %d)", fcount, ldr_frame->fcount);
 				status1 = ISR_NDONE;
 			}
 
@@ -1687,8 +1712,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 			}
 		} else {
 			if (fcount != ldr_frame->fcount) {
-				err("cause : mismatch(%d != %d)", fcount,
-					ldr_frame->fcount);
+				err("cause : mismatch(%d != %d)", fcount, ldr_frame->fcount);
 				status1 = ISR_NDONE;
 			}
 
@@ -2694,7 +2718,7 @@ int fimc_is_hw_i2c_lock(struct fimc_is_interface *this,
 }
 
 int fimc_is_hw_s_param(struct fimc_is_interface *this,
-	u32 instance, u32 indexes, u32 lindex, u32 hindex)
+	u32 instance, u32 lindex, u32 hindex, u32 indexes)
 {
 	int ret;
 	struct fimc_is_msg msg, reply;

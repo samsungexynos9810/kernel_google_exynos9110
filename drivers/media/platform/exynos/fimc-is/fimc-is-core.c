@@ -53,7 +53,7 @@
 #include "sensor/fimc-is-device-2p2.h"
 
 #ifdef USE_OWN_FAULT_HANDLER
-#include <plat/sysmmu.h>
+#include <linux/exynos_iovmm.h>
 #endif
 
 #if defined(CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ)
@@ -142,10 +142,8 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 	}
 
 exit:
-	dbg_core("Virtual address for FW: %08lx\n",
-		(long unsigned int)this->minfo.kvaddr);
+	info("[COR] Device virtual for internal: %08x\n", this->minfo.kvaddr);
 	this->minfo.fw_cookie = fw_cookie;
-
 	return ret;
 }
 
@@ -398,64 +396,19 @@ p_err:
 }
 
 #ifdef USE_OWN_FAULT_HANDLER
-#define SECT_ORDER 20
-#define LPAGE_ORDER 16
-#define SPAGE_ORDER 12
-
-#define lv1ent_page(sent) ((*(sent) & 3) == 1)
-
-#define lv1ent_offset(iova) ((iova) >> SECT_ORDER)
-#define lv2ent_offset(iova) (((iova) & 0xFF000) >> SPAGE_ORDER)
-#define lv2table_base(sent) (*(sent) & 0xFFFFFC00)
-
-static unsigned long *section_entry(unsigned long *pgtable, unsigned long iova)
-{
-	return pgtable + lv1ent_offset(iova);
-}
-
-static unsigned long *page_entry(unsigned long *sent, unsigned long iova)
-{
-	return (unsigned long *)__va(lv2table_base(sent)) + lv2ent_offset(iova);
-}
-
-static char *sysmmu_fault_name[SYSMMU_FAULTS_NUM] = {
-	"PAGE FAULT",
-	"AR MULTI-HIT FAULT",
-	"AW MULTI-HIT FAULT",
-	"BUS ERROR",
-	"AR SECURITY PROTECTION FAULT",
-	"AR ACCESS PROTECTION FAULT",
-	"AW SECURITY PROTECTION FAULT",
-	"AW ACCESS PROTECTION FAULT",
-	"UNKNOWN FAULT"
-};
-
-static int fimc_is_fault_handler(struct device *dev, const char *mmuname,
-					enum exynos_sysmmu_inttype itype,
-					unsigned long pgtable_base,
-					unsigned long fault_addr)
+static int fimc_is_fault_handler(struct iommu_domain *domain,
+	struct device *dev,
+	unsigned long fault_addr,
+	int fault_flag,
+	void *token)
 {
 	u32 i;
-	unsigned long *ent;
 	struct fimc_is_core *core;
 	struct fimc_is_device_sensor *sensor;
 	struct fimc_is_framemgr *framemgr;
 
-	if ((itype >= SYSMMU_FAULTS_NUM) || (itype < SYSMMU_PAGEFAULT))
-		itype = SYSMMU_FAULT_UNKNOWN;
-
-	pr_err("%s occured at 0x%lx by '%s'(Page table base: 0x%lx)\n",
-		sysmmu_fault_name[itype], fault_addr, mmuname, pgtable_base);
-
-	ent = section_entry(__va(pgtable_base), fault_addr);
-	pr_err("\tLv1 entry: 0x%lx\n", *ent);
-
-	if (lv1ent_page(ent)) {
-		ent = page_entry(ent, fault_addr);
-		pr_err("\t Lv2 entry: 0x%lx\n", *ent);
-	}
-
-	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
+	pr_err("<FIMC-IS FAULT HANDLER>\n");
+	pr_err("Device virtual(0x%X) is invalid access\n", (u32)fault_addr);
 
 	core = dev_get_drvdata(dev);
 	if (!core)
@@ -487,9 +440,7 @@ static int fimc_is_fault_handler(struct device *dev, const char *mmuname,
 		}
 	}
 
-	BUG();
-
-	return 0;
+	return -EINVAL;
 }
 #endif
 
@@ -619,7 +570,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	struct fimc_is_core *core;
 	int ret = -ENODEV;
 
-	minfo("%s\n", __func__);
+	info("%s\n", __func__);
 
 	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
@@ -810,7 +761,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 #endif
 
 #ifdef USE_OWN_FAULT_HANDLER
-	exynos_sysmmu_set_fault_handler(fimc_is_dev, fimc_is_fault_handler);
+	iovmm_set_fault_handler(fimc_is_dev, fimc_is_fault_handler, NULL);
 #endif
 
 	dbg("%s : fimc_is_front_%d probe success\n", __func__, pdev->id);

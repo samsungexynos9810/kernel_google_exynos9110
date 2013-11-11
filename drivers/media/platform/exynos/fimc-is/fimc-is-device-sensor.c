@@ -109,7 +109,7 @@ int fimc_is_sensor_write(struct i2c_client *client,
 	wbuf[1] = array[0];
 	wbuf[2] = val;
 
-	minfo("I2CW(%d) [%d][%d] : %d\n", client->addr, array[1], array[0], val);
+	info("I2CW(%d) [%d][%d] : %d\n", client->addr, array[1], array[0], val);
 
 	ret = i2c_transfer(client->adapter, msg, 1);
 	if (ret < 0) {
@@ -535,7 +535,7 @@ static void fimc_is_sensor_control(struct work_struct *data)
 	csensor_ctl = &device->sensor_ctl;
 
 	if (rsensor_ctl->exposureTime != csensor_ctl->exposureTime) {
-		minfo("exposure request : %d %d\n", (u32)rsensor_ctl->exposureTime, (u32)csensor_ctl->exposureTime);
+		info("exposure request : %d %d\n", (u32)rsensor_ctl->exposureTime, (u32)csensor_ctl->exposureTime);
 		CALL_MOPS(module, s_exposure, subdev_module, rsensor_ctl->exposureTime);
 		csensor_ctl->exposureTime = rsensor_ctl->exposureTime;
 	}
@@ -669,7 +669,7 @@ static void fimc_is_sensor_instanton(struct work_struct *data)
 	if (device->dtp_check) {
 		setup_timer(&device->dtp_timer, fimc_is_sensor_dtp, (unsigned long)device);
 		mod_timer(&device->dtp_timer, jiffies +  msecs_to_jiffies(300));
-		minfo("DTP checking...\n");
+		info("DTP checking...\n");
 	}
 #endif
 
@@ -688,7 +688,7 @@ static void fimc_is_sensor_instanton(struct work_struct *data)
 		fimc_is_sensor_front_stop(device);
 
 		timetoelapse = (jiffies_to_msecs(timeout) - jiffies_to_msecs(timetowait));
-		minfo("[FRT:D:%d] instant off(fcount : %d, time : %dms)", device->instance,
+		info("[FRT:D:%d] instant off(fcount : %d, time : %dms)", device->instance,
 			device->instant_cnt,
 			timetoelapse);
 	}
@@ -798,7 +798,7 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 	}
 
 p_err:
-	minfo("[SEN:D:%d] %s(%d)\n", instance, __func__, ret);
+	info("[SEN:D:%d] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }
 
@@ -806,7 +806,7 @@ static int fimc_is_sensor_remove(struct platform_device *pdev)
 {
 	int ret = 0;
 
-	minfo("%s\n", __func__);
+	info("%s\n", __func__);
 
 	return ret;
 }
@@ -869,7 +869,7 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 	set_bit(FIMC_IS_SENSOR_OPEN, &device->state);
 
 p_err:
-	minfo("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -893,7 +893,7 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	if (ischain) {
 		group_3aa = &ischain->group_3aa;
 		if (test_bit(FIMC_IS_GROUP_READY, &group_3aa->state)) {
-			minfo("media server is dead, 3ax forcely done\n");
+			info("media server is dead, 3ax forcely done\n");
 			set_bit(FIMC_IS_GROUP_REQUEST_FSTOP, &group_3aa->state);
 		}
 	}
@@ -936,7 +936,7 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	clear_bit(FIMC_IS_SENSOR_OPEN, &device->state);
 
 p_err:
-	minfo("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -1027,7 +1027,7 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 
 	if(test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
 		device->pdata->scenario = SENSOR_SCENARIO_VISION;
-		minfo("[SEN:D:%d] vision sensor mode\n", device->instance);
+		info("[SEN:D:%d] vision sensor mode\n", device->instance);
 	}
 
 	/* configuration clock control */
@@ -1061,7 +1061,7 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	device->subdev_module = subdev_module;
 
 p_err:
-	minfo("[SEN:D:%d] %s(%d, %d, %d)\n", device->instance, __func__, input, drive, ret);
+	info("[SEN:D:%d] %s(%d, %d, %d)\n", device->instance, __func__, input, drive, ret);
 	return ret;
 }
 
@@ -1153,7 +1153,7 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	cp = &param->parm.capture;
 	tpf = &cp->timeperframe;
 
-	minfo("[SEN:D:%d] framerate: req@%d fps, cur@%d fps\n", device->instance,
+	info("[SEN:D:%d] framerate: req@%d fps, cur@%d fps\n", device->instance,
 		framerate, device->image.framerate);
 
 	module = (struct fimc_is_module_enum *)v4l2_get_subdevdata(subdev_module);
@@ -1428,7 +1428,7 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 	set_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 
 p_err:
-	minfo("[BAK:D:%d] %s(%dx%d, %d)\n", device->instance, __func__,
+	info("[BAK:D:%d] %s(%dx%d, %d)\n", device->instance, __func__,
 		device->image.window.width, device->image.window.height, ret);
 	return ret;
 }
@@ -1464,7 +1464,7 @@ int fimc_is_sensor_back_stop(struct fimc_is_device_sensor *device)
 	clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 
 p_err:
-	minfo("[BAK:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[BAK:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -1557,11 +1557,14 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 	 * 	merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
 	 */
 
+	/* HACK */
+	set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
+
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
 
 p_err:
-	minfo("[FRT:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[FRT:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -1569,7 +1572,7 @@ static int fimc_is_sensor_suspend(struct device *dev)
 {
 	int ret = 0;
 
-	minfo("%s\n", __func__);
+	info("%s\n", __func__);
 
 	return ret;
 }
@@ -1578,7 +1581,7 @@ static int fimc_is_sensor_resume(struct device *dev)
 {
 	int ret = 0;
 
-	minfo("%s\n", __func__);
+	info("%s\n", __func__);
 
 	return ret;
 }
@@ -1590,7 +1593,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 	struct fimc_is_device_sensor *device;
 	struct v4l2_subdev *subdev_csi;
 
-	minfo("%s\n", __func__);
+	info("%s\n", __func__);
 
 	device = (struct fimc_is_device_sensor *)platform_get_drvdata(pdev);
 	if (!device) {
@@ -1639,7 +1642,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 	}
 
 p_err:
-	minfo("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -1684,7 +1687,7 @@ int fimc_is_sensor_runtime_resume(struct device *dev)
 #endif
 
 p_err:
-	minfo("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 

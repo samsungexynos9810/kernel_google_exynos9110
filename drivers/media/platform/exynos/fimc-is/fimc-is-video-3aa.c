@@ -79,7 +79,7 @@ int fimc_is_3a0_video_probe(void *data)
 		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[3A0:V:X] %s(%d)\n", __func__, ret);
+	info("[3A0:V:X] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -113,7 +113,7 @@ int fimc_is_3a1_video_probe(void *data)
 		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[3A1:V:X] %s(%d)\n", __func__, ret);
+	info("[3A1:V:X] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -146,7 +146,7 @@ static int fimc_is_3aa_video_open(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[3A%d:V:%d] %s\n", GET_3AA_ID(video), vctx->instance, __func__);
+	info("[3A%d:V:%d] %s\n", GET_3AA_ID(video), vctx->instance, __func__);
 
 	refcount = atomic_read(&core->video_isp.refcount);
 	if (refcount > FIMC_IS_MAX_NODES) {
@@ -206,7 +206,7 @@ static int fimc_is_3aa_video_close(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[3A%d:V:%d] %s\n", GET_3AA_ID(video), vctx->instance, __func__);
+	info("[3A%d:V:%d] %s\n", GET_3AA_ID(video), vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {
@@ -654,17 +654,24 @@ static int fimc_is_3aa_start_streaming(struct vb2_queue *vbq,
 	struct fimc_is_video_ctx *vctx = vbq->drv_priv;
 	struct fimc_is_queue *queue;
 	struct fimc_is_device_ischain *device;
-	struct fimc_is_subdev *leader;
+	struct fimc_is_subdev *subdev;
 
 	BUG_ON(!vctx);
+	BUG_ON(!vctx->device);
 
 	mdbgv_3aa("%s\n", vctx, __func__);
 
-	queue = GET_VCTX_QUEUE(vctx, vbq);
 	device = vctx->device;
-	leader = &device->group_3aa.leader;
 
-	ret = fimc_is_queue_start_streaming(queue, device, leader, vctx);
+	if (V4L2_TYPE_IS_OUTPUT(vbq->type)) {
+		queue = GET_SRC_QUEUE(vctx);
+		subdev = &device->group_3aa.leader;
+	} else {
+		queue = GET_DST_QUEUE(vctx);
+		subdev = &device->taap;
+	}
+
+	ret = fimc_is_queue_start_streaming(queue, device, subdev, vctx);
 	if (ret)
 		merr("fimc_is_queue_start_streaming is fail(%d)", vctx, ret);
 
@@ -677,26 +684,27 @@ static int fimc_is_3aa_stop_streaming(struct vb2_queue *vbq)
 	struct fimc_is_video_ctx *vctx = vbq->drv_priv;
 	struct fimc_is_queue *queue;
 	struct fimc_is_device_ischain *device;
-	struct fimc_is_subdev *leader;
+	struct fimc_is_subdev *subdev;
 
 	BUG_ON(!vctx);
+	BUG_ON(!vctx->device);
 
 	mdbgv_3aa("%s\n", vctx, __func__);
 
-	queue = GET_VCTX_QUEUE(vctx, vbq);
 	device = vctx->device;
-	if (!device) {
-		err("device is NULL");
-		ret = -EINVAL;
-		goto p_err;
-	}
-	leader = &device->group_3aa.leader;
 
-	ret = fimc_is_queue_stop_streaming(queue, device, leader, vctx);
+	if (V4L2_TYPE_IS_OUTPUT(vbq->type)) {
+		queue = GET_SRC_QUEUE(vctx);
+		subdev = &device->group_3aa.leader;
+	} else {
+		queue = GET_DST_QUEUE(vctx);
+		subdev = &device->taap;
+	}
+
+	ret = fimc_is_queue_stop_streaming(queue, device, subdev, vctx);
 	if (ret)
 		merr("fimc_is_queue_stop_streaming is fail(%d)", vctx, ret);
 
-p_err:
 	return ret;
 }
 

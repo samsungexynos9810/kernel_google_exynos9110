@@ -30,6 +30,7 @@ struct fimc_is_subdev_path {
 };
 
 struct fimc_is_subdev {
+	u32					id;
 	u32					entry;
 	unsigned long				state;
 	struct mutex				mutex_state;
@@ -77,9 +78,13 @@ void fimc_is_subdev_dis_stop(struct fimc_is_device_ischain *device,
 void fimc_is_subdev_dis_bypass(struct fimc_is_device_ischain *device,
 	struct dis_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
 void fimc_is_subdev_dnr_start(struct fimc_is_device_ischain *device,
-	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes);
 void fimc_is_subdev_dnr_stop(struct fimc_is_device_ischain *device,
-	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes);
 void fimc_is_subdev_dnr_bypass(struct fimc_is_device_ischain *device,
-	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes);
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes);
+void fimc_is_subdev_drc_start(struct fimc_is_device_ischain *device,
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes);
+void fimc_is_subdev_drc_bypass(struct fimc_is_device_ischain *device,
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes);
 #endif

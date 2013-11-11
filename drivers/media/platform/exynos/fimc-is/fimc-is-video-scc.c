@@ -74,7 +74,7 @@ int fimc_is_scc_video_probe(void *data)
 		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[SCC:V:X] %s(%d)\n", __func__, ret);
+	info("[SCC:V:X] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -103,7 +103,7 @@ static int fimc_is_scc_video_open(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[SCC:V:%d] %s\n", vctx->instance, __func__);
+	info("[SCC:V:%d] %s\n", vctx->instance, __func__);
 
 	refcount = atomic_read(&core->video_isp.refcount);
 	if (refcount > FIMC_IS_MAX_NODES) {
@@ -163,7 +163,7 @@ static int fimc_is_scc_video_close(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[SCC:V:%d] %s\n", vctx->instance, __func__);
+	info("[SCC:V:%d] %s\n", vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {

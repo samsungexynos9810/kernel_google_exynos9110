@@ -43,7 +43,6 @@
 
 #if defined(CONFIG_SOC_EXYNOS5430)
 #undef ENABLE_DVFS
-#undef USE_OWN_FAULT_HANDLER
 #define CONFIG_ARM_TRUSTZONE
 #endif
 
@@ -58,13 +57,12 @@
 #define DBG_DEVICE
 /* #define DBG_STREAMING */
 #define DEBUG_INSTANCE 0xF
-#define BUG_ON_ENABLE
+/* #define BUG_ON_ENABLE */
 /* #define FIXED_FPS_DEBUG */
 #define FIXED_FPS_VALUE 10
 /* #define DBG_FLITEISR */
 #define FW_DEBUG
 #define RESERVED_MEM
-#define BAYER_CROP_DZOOM
 /* #define SCALER_CROP_DZOOM */
 /* #define USE_ADVANCED_DZOOM */
 /* #define TASKLET_MSG */
@@ -100,8 +98,13 @@
 #define err(fmt, args...) \
 	pr_err("[@][ERR]%s:%d: " fmt "\n", __func__, __LINE__, ##args)
 
-#define merr(fmt, this, args...) \
-	pr_err("[@][ERR:%d]%s:%d: " fmt "\n", this->instance, __func__, __LINE__, ##args)
+/* multi-stream */
+#define merr(fmt, object, args...) \
+	pr_err("[@][%d][ERR]%s:%d: " fmt "\n", object->instance, __func__, __LINE__, ##args)
+
+/* multi-stream & runtime error */
+#define mrerr(fmt, object, frame, args...) \
+	pr_err("[@][%d:F%d][ERR]%s:%d: " fmt "\n", object->instance, frame->fcount, __func__, __LINE__, ##args)
 
 #ifdef warn
 #undef warn
@@ -110,10 +113,16 @@
 	pr_warning("[@][WRN] " fmt "\n", ##args)
 
 #define mwarn(fmt, this, args...) \
-	pr_warning("[@][WRN:%d] " fmt "\n", this->instance, ##args)
+	pr_warning("[@][%d][WRN] " fmt "\n", this->instance, ##args)
 
-#define minfo(fmt, args...) \
+#define info(fmt, args...) \
 	pr_info("[@]" fmt, ##args)
+
+#define minfo(fmt, object, args...) \
+	pr_info("[@][%d]" fmt, object->instance, ##args)
+
+#define mrinfo(fmt, object, frame, args...) \
+	pr_info("[@][%d:F%d]" fmt, object->instance, frame->fcount,  ##args)
 
 #define mdbg_common(prefix, fmt, instance, args...)				\
 	do {									\
@@ -132,43 +141,43 @@
 	pr_info("[@][COM:V] " fmt, ##args)
 
 #define mdbgv_sensor(fmt, this, args...) \
-	mdbg_common("[SS%d:V:%d] ", fmt, this->video->id, this->instance, ##args)
+	mdbg_common("[%d][SS%d:V] ", fmt, this->video->id, this->instance, ##args)
 
 #define mdbgv_3aa(fmt, this, args...) \
-	mdbg_common("[3A%d:V:%d] ", fmt, GET_3AA_ID(this->video), this->instance, ##args)
+	mdbg_common("[%d][3A%d:V] ", fmt, GET_3AA_ID(this->video), this->instance, ##args)
 
 #define mdbgv_3aac(fmt, this, args...) \
-	mdbg_common("[3A%dC:V:%d] ", fmt, GET_3AAC_ID(this->video), this->instance, ##args)
+	mdbg_common("[%d][3A%dC:V] ", fmt, GET_3AAC_ID(this->video), this->instance, ##args)
 
 #define dbg_isp(fmt, args...) \
 	printk(KERN_INFO "[ISP] " fmt, ##args)
 
 #define mdbgv_isp(fmt, this, args...) \
-	mdbg_common("[ISP:V:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][ISP:V] ", fmt, this->instance, ##args)
 
 #define dbg_scp(fmt, args...) \
 	printk(KERN_INFO "[SCP] " fmt, ##args)
 
 #define mdbgv_scp(fmt, this, args...) \
-	mdbg_common("[SCP:V:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][SCP:V] ", fmt, this->instance, ##args)
 
 #define dbg_scc(fmt, args...) \
 	printk(KERN_INFO "[SCC] " fmt, ##args)
 
 #define mdbgv_scc(fmt, this, args...) \
-	mdbg_common("[SCC:V:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][SCC:V] ", fmt, this->instance, ##args)
 
 #define dbg_vdisc(fmt, args...) \
 	printk(KERN_INFO "[VDC] " fmt, ##args)
 
 #define mdbgv_vdc(fmt, this, args...) \
-	mdbg_common("[VDC:V:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][VDC:V] ", fmt, this->instance, ##args)
 
 #define dbg_vdiso(fmt, args...) \
 	printk(KERN_INFO "[VDO] " fmt, ##args)
 
 #define mdbgv_vdo(fmt, this, args...) \
-	mdbg_common("[VDO:V:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][VDO:V] ", fmt, this->instance, ##args)
 #else
 #define dbg(fmt, args...)
 
@@ -193,28 +202,28 @@
 #if (defined(DEBUG) && defined(DBG_DEVICE))
 /* debug message for device */
 #define mdbgd_sensor(fmt, this, args...) \
-	mdbg_common("[SEN:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][SEN:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_front(fmt, this, args...) \
-	mdbg_common("[FRT:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][FRT:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_back(fmt, this, args...) \
-	mdbg_common("[BAK:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][BAK:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_3a0(fmt, this, args...) \
-	mdbg_common("[3A0:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][3A0:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_3a1(fmt, this, args...) \
-	mdbg_common("[3A1:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][3A1:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_isp(fmt, this, args...) \
-	mdbg_common("[ISP:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][ISP:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_ischain(fmt, this, args...) \
-	mdbg_common("[ISC:D:%d] ", fmt, this->instance, ##args)
+	mdbg_common("[%d][ISC:D] ", fmt, this->instance, ##args)
 
 #define mdbgd_group(fmt, group, args...) \
-	mdbg_common("[GP%d:D:%d] ", fmt, group->id, group->device->instance, ##args)
+	mdbg_common("[%d][GP%d:D] ", fmt, group->device->instance, group->id, ##args)
 
 #define dbg_core(fmt, args...) \
 	pr_info("[@][COR] " fmt, ##args)

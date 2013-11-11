@@ -55,7 +55,7 @@ enum fimc_is_video_dev_num {
 	FIMC_IS_VIDEO_VDC_NUM	= 40,
 	FIMC_IS_VIDEO_VDO_NUM	= 41,
 	FIMC_IS_VIDEO_FD_NUM	= 46,
-	FIMC_IS_VIDEO_MAX_NUM	= 49,
+	FIMC_IS_VIDEO_MAX_NUM	= 49
 };
 
 enum fimc_is_video_type {

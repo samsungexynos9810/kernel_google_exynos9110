@@ -202,7 +202,7 @@ int fimc_is_hw_stream_on(struct fimc_is_interface *interface,
 int fimc_is_hw_stream_off(struct fimc_is_interface *interface,
 	u32 instance);
 int fimc_is_hw_s_param(struct fimc_is_interface *interface,
-	u32 instance, u32 indexes, u32 lindex, u32 hindex);
+	u32 instance, u32 lindex, u32 hindex, u32 indexes);
 int fimc_is_hw_a_param(struct fimc_is_interface *this,
 	u32 instance, u32 group, u32 sub_mode);
 int fimc_is_hw_g_capability(struct fimc_is_interface *this,

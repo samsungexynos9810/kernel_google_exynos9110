@@ -1583,6 +1583,12 @@ enum scaler_flip_error {
 	SCALER_FLIP_ERROR_NO			= 0 /* flip setting is done */
 };
 
+enum scaler_dma_out_sel {
+	SCALER_DMA_OUT_IMAGE_EFFECT		= 0,
+	SCALER_DMA_OUT_SCALED			= 1,
+	SCALER_DMA_OUT_UNSCALED			= 2
+};
+
 enum scaler_output_yuv_range {
 	SCALER_OUTPUT_YUV_RANGE_FULL = 0,
 	SCALER_OUTPUT_YUV_RANGE_NARROW = 1,
@@ -2057,11 +2063,11 @@ struct is_param_region {
 #endif
 	struct isp_param		isp;
 	struct drc_param		drc;
-	struct scalerc_param	scalerc;
+	struct scalerc_param		scalerc;
 	struct odc_param		odc;
 	struct dis_param		dis;
 	struct tdnr_param		tdnr;
-	struct scalerp_param	scalerp;
+	struct scalerp_param		scalerp;
 	struct fd_param			fd;
 };
 

@@ -48,7 +48,7 @@ int fimc_is_resource_probe(struct fimc_is_resourcemgr *resourcemgr,
 		err("%s: fimc_is_dvfs_init failed!\n", __func__);
 #endif
 
-	minfo("%s\n", __func__);
+	info("%s\n", __func__);
 	return ret;
 }
 
@@ -61,7 +61,7 @@ int fimc_is_resource_get(struct fimc_is_resourcemgr *resourcemgr)
 
 	core = (struct fimc_is_core *)resourcemgr->private_data;
 
-	minfo("[RSC] %s: rsccount = %d\n", __func__, atomic_read(&core->rsccount));
+	info("[RSC] %s: rsccount = %d\n", __func__, atomic_read(&core->rsccount));
 
 	if (!atomic_read(&core->rsccount)) {
 		core->debug_cnt = 0;

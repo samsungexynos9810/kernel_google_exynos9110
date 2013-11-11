@@ -425,7 +425,7 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 		csi->image.window.height,
 		csi->image.framerate);
 
-	minfo("[CSI:D:%d] settle(%dx%d@%d) = %d\n",
+	info("[CSI:D:%d] settle(%dx%d@%d) = %d\n",
 		csi->instance,
 		csi->image.window.width,
 		csi->image.window.height,
@@ -597,6 +597,6 @@ int fimc_is_csi_probe(struct fimc_is_device_sensor *device,
 	}
 
 p_err:
-	minfo("[FRT:D:%d] %s(%d)\n", instance, __func__, ret);
+	info("[FRT:D:%d] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }

@@ -76,7 +76,7 @@ int fimc_is_sen_video_probe(void *data)
 		dev_err(&device->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[SS%d:V:X] %s(%d)\n", number, __func__, ret);
+	info("[SS%d:V:X] %s(%d)\n", number, __func__, ret);
 	return ret;
 }
 
@@ -103,7 +103,7 @@ static int fimc_is_sen_video_open(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[SS%d:V:%d] %s\n", video->id, vctx->instance, __func__);
+	info("[SS%d:V:%d] %s\n", video->id, vctx->instance, __func__);
 
 	ret = fimc_is_video_open(vctx,
 		device,
@@ -153,7 +153,7 @@ static int fimc_is_sen_video_close(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[SS0:V:%d] %s\n", vctx->instance, __func__);
+	info("[SS0:V:%d] %s\n", vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {
@@ -410,7 +410,7 @@ static int fimc_is_sen_video_enum_input(struct file *file, void *priv,
 	struct v4l2_input *input)
 {
 	/* Todo: add to enumerate input code */
-	minfo("%s is calld\n", __func__);
+	info("%s is calld\n", __func__);
 	return 0;
 }
 

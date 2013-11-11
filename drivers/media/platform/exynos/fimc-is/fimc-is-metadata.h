@@ -61,6 +61,7 @@ struct rational {
 #define CAMERA2_MAX_AVAILABLE_MODE	21
 #define CAMERA2_MAX_FACES		16
 #define CAMERA2_MAX_VENDER_LENGTH	400
+#define CAPTURE_NODE_MAX		2
 
 #define OPEN_MAGIC_NUMBER		0x01020304
 #define SHOT_MAGIC_NUMBER		0x23456789
@@ -81,15 +82,32 @@ struct camera2_request_ctl {
 	enum metadata_mode	metadataMode;
 	uint8_t			outputStreams[16];
 	uint32_t		frameCount;
+        uint32_t		requestCount;
 };
 
 struct camera2_request_dm {
 	uint32_t		id;
 	enum metadata_mode	metadataMode;
 	uint32_t		frameCount;
+        uint32_t		requestCount;
 };
 
+struct camera2_entry_ctl {
+	/** \brief
+		per-frame control for entry control
+		\remarks
+		low parameter is 0bit ~ 31bit flag
+		high parameter is 32bit ~ 63bit flag
+	*/
+	uint32_t		lowIndexParam;
+	uint32_t		highIndexParam;
+	uint32_t		parameter[2048];
+};
 
+struct camera2_entry_dm {
+	uint32_t		lowIndexParam;
+	uint32_t		highIndexParam;
+};
 
 /* android.lens */
 
@@ -802,6 +820,7 @@ struct camera2_ctl {
 	struct camera2_jpeg_ctl			jpeg;
 	struct camera2_stats_ctl		stats;
 	struct camera2_aa_ctl			aa;
+	struct camera2_entry_ctl		entry;
 };
 
 struct camera2_dm {
@@ -821,6 +840,7 @@ struct camera2_dm {
 	struct camera2_jpeg_dm			jpeg;
 	struct camera2_stats_dm			stats;
 	struct camera2_aa_dm			aa;
+	struct camera2_entry_dm			entry;
 };
 
 struct camera2_sm {
@@ -1030,6 +1050,67 @@ struct camera2_shot {
 	uint32_t		magicNumber;
 };
 
+struct camera2_node_input {
+	/**	\brief
+		intput crop region
+		\remarks
+		[0] x axis
+		[1] y axie
+		[2] width
+		[3] height
+	*/
+	uint32_t	cropRegion[4];
+};
+
+struct camera2_node_output {
+	/**	\brief
+		output crop region
+		\remarks
+		[0] x axis
+		[1] y axie
+		[2] width
+		[3] height
+	*/
+	uint32_t	cropRegion[4];
+};
+
+struct camera2_node {
+	/**	\brief
+		video node id
+		\remarks
+		[x] video node id
+	*/
+	uint32_t			vid;
+
+	/**	\brief
+		stream control
+		\remarks
+		[0] disable stream out
+		[1] enable stream out
+	*/
+	uint32_t			request;
+
+	struct camera2_node_input	input;
+	struct camera2_node_output	output;
+};
+
+struct camera2_node_group {
+	/**	\brief
+		output device node
+		\remarks
+		this node can pull in image
+	*/
+	struct camera2_node		leader;
+
+	/**	\brief
+		capture node list
+		\remarks
+		this node can get out image
+		3AAC, 3AAP, SCC, SCP, VDISC
+	*/
+	struct camera2_node		capture[CAPTURE_NODE_MAX];
+};
+
 /** \brief
 	Structure for interfacing between HAL and driver.
 */
@@ -1045,20 +1126,14 @@ struct camera2_shot_ext {
 		\remarks
 		[x] mode for setfile
 	*/
-	uint32_t		setfile;
+	uint32_t			setfile;
 
 	/**	\brief
-		stream control
+		node group control
 		\remarks
-		[0] disable stream out
-		[1] enable stream out
+		per frame control
 	*/
-	uint32_t		request_3aap; /* 3AA preview DMA */
-	uint32_t		request_3aac; /* 3AA capture DMA */
-	uint32_t		request_isp;
-	uint32_t		request_scc;
-	uint32_t		request_dis;
-	uint32_t		request_scp;
+	struct camera2_node_group	node_group;
 
 	/**	\brief
 		post processing control(DRC)
@@ -1066,7 +1141,7 @@ struct camera2_shot_ext {
 		[0] bypass off
 		[1] bypass on
 	*/
-	uint32_t		drc_bypass;
+	uint32_t			drc_bypass;
 
 	/**	\brief
 		post processing control(DIS)
@@ -1074,7 +1149,7 @@ struct camera2_shot_ext {
 		[0] bypass off
 		[1] bypass on
 	*/
-	uint32_t		dis_bypass;
+	uint32_t			dis_bypass;
 
 	/**	\brief
 		post processing control(3DNR)
@@ -1082,7 +1157,7 @@ struct camera2_shot_ext {
 		[0] bypass off
 		[1] bypass on
 	*/
-	uint32_t		dnr_bypass;
+	uint32_t			dnr_bypass;
 
 	/**	\brief
 		post processing control(FD)
@@ -1090,7 +1165,7 @@ struct camera2_shot_ext {
 		[0] bypass off
 		[1] bypass on
 	*/
-	uint32_t		fd_bypass;
+	uint32_t			fd_bypass;
 
 	/*
 	 * ---------------------------------------------------------------------
@@ -1105,13 +1180,13 @@ struct camera2_shot_ext {
 		\remarks
 		[X] count
 	*/
-	uint32_t		free_cnt;
-	uint32_t		request_cnt;
-	uint32_t		process_cnt;
-	uint32_t		complete_cnt;
+	uint32_t			free_cnt;
+	uint32_t			request_cnt;
+	uint32_t			process_cnt;
+	uint32_t			complete_cnt;
 
 	/* reserved for future */
-	uint32_t		reserved[15];
+	uint32_t			reserved[15];
 
 	/**	\brief
 		processing time debugging
@@ -1123,7 +1198,7 @@ struct camera2_shot_ext {
 		[3][x] DRV Shot done
 		[4][x] DRV Meta done
 	*/
-	uint32_t		timeZone[10][2];
+	uint32_t			timeZone[10][2];
 
 	/*
 	 * ---------------------------------------------------------------------
@@ -1131,7 +1206,7 @@ struct camera2_shot_ext {
 	 * ---------------------------------------------------------------------
 	 */
 
-	struct camera2_shot	shot;
+	struct camera2_shot		shot;
 };
 
 /** \brief
@@ -1176,6 +1251,17 @@ struct camera2_stream {
 		[X] frame valid
 	*/
 	uint32_t		fvalid;
+
+	/**	\brief
+		output crop region
+		this value mean the output image places the axis of  memory space
+		\remarks
+		[0] crop x axis
+		[1] crop y axis
+		[2] width
+		[3] height
+	*/
+	uint32_t		crop_region[4];
 };
 
 #define CAM_LENS_CMD		(0x1 << 0x0)
@@ -1189,6 +1275,8 @@ typedef struct camera2_request_ctl camera2_request_ctl_t;
 typedef struct camera2_request_dm camera2_request_dm_t;
 typedef enum optical_stabilization_mode optical_stabilization_mode_t;
 typedef enum lens_facing lens_facing_t;
+typedef struct camera2_entry_ctl camera2_entry_ctl_t;
+typedef struct camera2_entry_dm camera2_entry_dm_t;
 typedef struct camera2_lens_ctl camera2_lens_ctl_t;
 typedef struct camera2_lens_dm camera2_lens_dm_t;
 typedef struct camera2_lens_sm camera2_lens_sm_t;

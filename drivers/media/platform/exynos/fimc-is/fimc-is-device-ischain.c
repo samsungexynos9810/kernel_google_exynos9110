@@ -195,7 +195,7 @@ static int isfw_debug_read(struct file *file, char __user *user_buf,
 		core->debug_cnt = count2;
 	}
 
-	minfo("FW_READ : Origin(%d), New(%d) - Length(%d)\n",
+	info("FW_READ : Origin(%d), New(%d) - Length(%d)\n",
 		backup_cnt,
 		core->debug_cnt,
 		(buf_len - buf_count));
@@ -254,6 +254,10 @@ static const struct taa_param init_taa_param = {
 		.bitwidth = 0,
 		.plane = 0,
 		.order = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.buffer_number = 0,
 		.buffer_address = 0,
 		.binning_ratio_x = 1000,
@@ -552,7 +556,7 @@ static const struct scalerc_param init_scalerc_param = {
 		.err = 0,
 	},
 	.input_crop = {
-		.cmd = OTF_INPUT_COMMAND_ENABLE,
+		.cmd = OTF_INPUT_COMMAND_DISABLE,
 		.pos_x = 0,
 		.pos_y = 0,
 		.crop_width = DEFAULT_CAPTURE_STILL_CROP_WIDTH,
@@ -594,7 +598,7 @@ static const struct scalerc_param init_scalerc_param = {
 		.buffer_number = 0,
 		.buffer_address = 0,
 		.dma_out_mask = 0xffff,
-		.reserved[0] = 2, /* unscaled*/
+		.reserved[0] = SCALER_DMA_OUT_UNSCALED,
 		.err = DMA_OUTPUT_ERROR_NO,
 	},
 };
@@ -923,7 +927,8 @@ static void fimc_is_ischain_version(struct fimc_is_device_ischain *this, char *n
 		memcpy(pinfo->setfile_ver, &version_str[17], 4);
 		pinfo->setfile_ver[4] = '\0';
 	}
-	printk(KERN_INFO "%s version : %s\n", name, version_str);
+
+	info("%s version : %s\n", name, version_str);
 }
 
 void fimc_is_ischain_savefirm(struct fimc_is_device_ischain *this)
@@ -1030,7 +1035,7 @@ out:
 	if (ret)
 		err("firmware loading is fail");
 	else
-		minfo("Camera: the %s FW were applied successfully.\n",
+		info("Camera: the %s FW were applied successfully.\n",
 			((cam_id == CAMERA_SINGLE_REAR) &&
 				is_dumped_fw_loading_needed) ? "dumped" : "default");
 
@@ -1068,7 +1073,7 @@ static int fimc_is_ischain_loadsetf(struct fimc_is_device_ischain *device,
 	location = 1;
 	fw_requested = 0;
 	fsize = fp->f_path.dentry->d_inode->i_size;
-	minfo("start, file path %s, size %ld Bytes\n",
+	info("start, file path %s, size %ld Bytes\n",
 		setfile_path, fsize);
 	buf = vmalloc(fsize);
 	if (!buf) {
@@ -1147,7 +1152,7 @@ out:
 	if (ret)
 		err("setfile loading is fail");
 	else
-		minfo("Camera: the %s Setfile were applied successfully.\n",
+		info("Camera: the %s Setfile were applied successfully.\n",
 			((cam_id == CAMERA_SINGLE_REAR) &&
 				is_dumped_fw_loading_needed) ? "dumped" : "default");
 
@@ -1211,13 +1216,13 @@ static int fimc_is_ischain_loadcalb(struct fimc_is_device_ischain *device,
 		goto out;
 	}
 
-	minfo("CAL DATA : MAP ver : %c%c%c%c\n", buf[0x60], buf[0x61],
+	info("CAL DATA : MAP ver : %c%c%c%c\n", buf[0x60], buf[0x61],
 		buf[0x62], buf[0x63]);
 
 	/* CRC check */
 	if (CRC32_CHECK == true) {
 		memcpy((void *)(cal_ptr) ,(void *)buf, nread);
-		minfo("Camera : the dumped Cal. data was applied successfully.\n");
+		info("Camera : the dumped Cal. data was applied successfully.\n");
 	} else {
 		if (CRC32_HEADER_CHECK == true) {
 			pr_err("Camera : CRC32 error but only header section is no problem.\n");
@@ -1299,7 +1304,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		pm_runtime_get_sync(dev);
 #else
 		fimc_is_runtime_resume(dev);
-		minfo("%s(%d) - fimc_is runtime resume complete\n", __func__, on);
+		info("%s(%d) - fimc_is runtime resume complete\n", __func__, on);
 #endif
 #if defined(CONFIG_SOC_EXYNOS3470)
 		bts_initialize("pd-cam", true);
@@ -1322,7 +1327,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			tdnr_s3d_pixel_async_sw_reset(device);
 #endif
 
-		minfo("%s(%d) - async bridge\n", __func__, on);
+		info("%s(%d) - async bridge\n", __func__, on);
 
 		/* 4. A5 start address setting */
 		mdbgd_ischain("imemory.base(dvaddr) : 0x%08x\n", device, device->imemory.dvaddr);
@@ -1352,7 +1357,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		/* 5. A5 power on*/
 		writel(0x1, PMUREG_ISP_ARM_CONFIGURATION);
 
-		minfo("%s(%d) - A5 Power on\n", __func__, on);
+		info("%s(%d) - A5 Power on\n", __func__, on);
 
 		/* 6. enable A5 */
 		writel(0x00018000, PMUREG_ISP_ARM_OPTION);
@@ -1440,26 +1445,102 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 	}
 
 exit:
-	minfo("%s(%d)\n", __func__, test_bit(FIMC_IS_ISCHAIN_POWER_ON, &device->state));
+	info("%s(%d)\n", __func__, test_bit(FIMC_IS_ISCHAIN_POWER_ON, &device->state));
 	return ret;
 }
 
-static int fimc_is_itf_s_param(struct fimc_is_device_ischain *this,
-	u32 indexes, u32 lindex, u32 hindex)
+static int fimc_is_itf_s_param(struct fimc_is_device_ischain *device,
+	struct fimc_is_frame *frame,
+	u32 lindex,
+	u32 hindex,
+	u32 indexes)
 {
 	int ret = 0;
+	u32 flag, index;
+	u32 dst_base, src_base;
 
-	fimc_is_ischain_region_flush(this);
+	BUG_ON(!device);
 
-	if (lindex || hindex) {
-		ret = fimc_is_hw_s_param(this->interface,
-			this->instance,
-			indexes,
-			lindex,
-			hindex);
+	if (frame) {
+		if (!test_bit(FIMC_IS_ISHCAIN_START, &device->state)) {
+			merr("s_param is fail, device already is stopped", device);
+			BUG();
+		}
+
+		dst_base = (u32)&device->is_region->parameter;
+		src_base = (u32)frame->shot->ctl.entry.parameter;
+
+		for (index = 0; lindex && (index < 32); index++) {
+			flag = 1 << index;
+			if (lindex & flag) {
+				memcpy((u32 *)(dst_base + (index * PARAMETER_MAX_SIZE)),
+					(u32 *)(src_base + (index * PARAMETER_MAX_SIZE)),
+					PARAMETER_MAX_SIZE);
+				lindex &= ~flag;
+			}
+		}
+
+		for (index = 0; hindex && (index < 32); index++) {
+			flag = 1 << index;
+			if (hindex & flag) {
+				memcpy((u32 *)(dst_base + ((32 + index) * PARAMETER_MAX_SIZE)),
+					(u32 *)(src_base + ((32 + index) * PARAMETER_MAX_SIZE)),
+					PARAMETER_MAX_SIZE);
+				hindex &= ~flag;
+			}
+		}
+
+		fimc_is_ischain_region_flush(device);
+	} else {
+		if ( test_bit(FIMC_IS_ISHCAIN_START, &device->state)) {
+			merr("s_param is fail, device already is started", device);
+			BUG();
+		}
+
+		fimc_is_ischain_region_flush(device);
+
+		if (lindex || hindex) {
+			ret = fimc_is_hw_s_param(device->interface,
+				device->instance,
+				lindex,
+				hindex,
+				indexes);
+		}
 	}
 
 	return ret;
+}
+
+static void * fimc_is_itf_g_param(struct fimc_is_device_ischain *device,
+	struct fimc_is_frame *frame,
+	u32 index)
+{
+	u32 dst_base, src_base, dst_param, src_param;
+
+	BUG_ON(!device);
+
+	if (frame) {
+		if (!test_bit(FIMC_IS_ISHCAIN_START, &device->state)) {
+			merr("s_param is fail, device already is stopped", device);
+			BUG();
+		}
+
+		dst_base = (u32)&frame->shot->ctl.entry.parameter[0];
+		dst_param = (dst_base + (index * PARAMETER_MAX_SIZE));
+		src_base = (u32)&device->is_region->parameter;
+		src_param = (src_base + (index * PARAMETER_MAX_SIZE));
+		memcpy((u32 *)dst_param, (u32 *)src_param, PARAMETER_MAX_SIZE);
+	} else {
+		if ( test_bit(FIMC_IS_ISHCAIN_START, &device->state)) {
+			merr("s_param is fail, device already is started", device);
+			BUG();
+		}
+
+		dst_base = (u32)&device->is_region->parameter;
+		dst_param = (dst_base + (index * PARAMETER_MAX_SIZE));
+	}
+
+	return (void *)dst_param;
 }
 
 static int fimc_is_itf_a_param(struct fimc_is_device_ischain *device,
@@ -1512,6 +1593,14 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			region->parameter.sensor.frame_rate.frame_rate
 			);
 	mdbgd_ischain(" NAME    ON  BYPASS PATH        SIZE FORMAT\n", device);
+	mdbgd_ischain("3AX OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.taa.control.cmd,
+		region->parameter.taa.control.bypass,
+		region->parameter.taa.otf_input.cmd,
+		region->parameter.taa.otf_input.width,
+		region->parameter.taa.otf_input.height,
+		region->parameter.taa.otf_input.format
+		);
 	mdbgd_ischain("3AX DI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
 		region->parameter.taa.control.cmd,
 		region->parameter.taa.control.bypass,
@@ -1528,14 +1617,6 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 		region->parameter.taa.vdma2_output.height,
 		region->parameter.taa.vdma2_output.format
 		);
-	mdbgd_ischain("ISP DI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
-		region->parameter.isp.control.cmd,
-		region->parameter.isp.control.bypass,
-		region->parameter.isp.vdma1_input.cmd,
-		region->parameter.isp.vdma1_input.width,
-		region->parameter.isp.vdma1_input.height,
-		region->parameter.isp.vdma1_input.format
-		);
 	mdbgd_ischain("ISP OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
 		region->parameter.isp.control.cmd,
 		region->parameter.isp.control.bypass,
@@ -1543,6 +1624,14 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 		region->parameter.isp.otf_input.width,
 		region->parameter.isp.otf_input.height,
 		region->parameter.isp.otf_input.format
+		);
+	mdbgd_ischain("ISP DI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
+		region->parameter.isp.control.cmd,
+		region->parameter.isp.control.bypass,
+		region->parameter.isp.vdma1_input.cmd,
+		region->parameter.isp.vdma1_input.width,
+		region->parameter.isp.vdma1_input.height,
+		region->parameter.isp.vdma1_input.format
 		);
 	mdbgd_ischain("ISP OO : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
 		region->parameter.isp.control.cmd,
@@ -2235,7 +2324,7 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 	writel(cfg, itf->regs + MCUCTL);
 #endif
 	if (retry)
-		minfo("[ISC:D:%d] stream on ready\n", device->instance);
+		info("[ISC:D:%d] stream on ready\n", device->instance);
 	else
 		pr_err("[ISC:D:%d] stream on NOT ready\n", device->instance);
 
@@ -2268,7 +2357,7 @@ int fimc_is_itf_stream_off(struct fimc_is_device_ischain *device)
 {
 	int ret = 0;
 
-	minfo("[ISC:D:%d] stream off ready\n", device->instance);
+	info("[ISC:D:%d] stream off ready\n", device->instance);
 
 	ret = fimc_is_hw_stream_off(device->interface, device->instance);
 
@@ -2581,15 +2670,15 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 
 #ifdef DBG_STREAMING
 	if (group->id == GROUP_ID_3A0)
-		minfo("[3A0:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
+		info("[3A0:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
 	else if (group->id == GROUP_ID_3A1)
-		minfo("[3A1:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
+		info("[3A1:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
 	else if (group->id == GROUP_ID_ISP)
-		minfo("[ISP:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
+		info("[ISP:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
 	else if (group->id == GROUP_ID_DIS)
-		minfo("[DIS:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
+		info("[DIS:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
 	else
-		minfo("[ERR:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
+		info("[ERR:D:%d] GRP%d SHOT(%d)\n", device->instance, group->id, frame->fcount);
 #endif
 
 #ifdef MEASURE_TIME
@@ -2785,6 +2874,7 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 	clear_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
 	clear_bit(FIMC_IS_ISCHAIN_POWER_ON, &device->state);
 	clear_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state);
+	clear_bit(FIMC_IS_ISHCAIN_START, &device->state);
 	clear_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state);
 
 	/* 2. Init variables */
@@ -2898,7 +2988,7 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 	}
 #endif
 p_err:
-	minfo("[ISC:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[ISC:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -2986,6 +3076,7 @@ exit:
 int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 	u32 module_id,
 	u32 group_id,
+	u32 video_id,
 	u32 flag)
 {
 	int ret = 0;
@@ -3024,7 +3115,7 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	ret = fimc_is_ischain_isp_s_input(device, 0);
+	ret = fimc_is_ischain_isp_s_input(device, video_id);
 	if (ret) {
 		merr("fimc_is_ischain_isp_s_input is fail(%d)", device, ret);
 		goto p_err;
@@ -3126,7 +3217,7 @@ static int fimc_is_ischain_s_setfile(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	minfo("[ISC:D:%d] setfile is %08X\n", device->instance, setfile);
+	info("[ISC:D:%d] setfile is %08X\n", device->instance, setfile);
 
 	if ((setfile & FIMC_IS_SETFILE_MASK) >= ISS_SUB_END) {
 		merr("setfile id(%08X) is invalid", device, setfile);
@@ -3155,15 +3246,20 @@ p_err:
 
 #if defined(CONFIG_SOC_EXYNOS5430)
 static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
-	u32 *lindex, u32 *hindex, u32 *indexes)
+	struct fimc_is_frame *frame,
+	u32 *input_crop,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
 	struct taa_param *taa_param;
-	struct isp_param *isp_param;
-	struct fimc_is_group *group_3aa = NULL;
-	struct fimc_is_subdev *leader = NULL;
-	struct fimc_is_video_ctx *vctx = NULL;
-	struct fimc_is_queue *queue = NULL;
+	struct fimc_is_group *group_3aa;
+	struct fimc_is_subdev *leader;
+	struct fimc_is_queue *queue;
+	struct param_control *taa_control;
+	struct param_otf_input *taa_otf_input;
+	struct param_dma_input *taa_dma_input;
 	u32 binning;
 
 	BUG_ON(!device);
@@ -3173,189 +3269,120 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	BUG_ON(!device->sensor);
 
 	taa_param = &device->is_region->parameter.taa;
-	isp_param = &device->is_region->parameter.isp;
 	binning = fimc_is_sensor_g_bratio(device->sensor);
 
 	group_3aa = &device->group_3aa;
-	if (!group_3aa) {
-		merr("get gourp_3ax fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
 	leader = &group_3aa->leader;
-	if (!leader) {
-		merr("get leader fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	vctx = leader->vctx;
-	if (!vctx) {
-		merr("get vctx fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	queue = GET_SRC_QUEUE(vctx);
+	queue = GET_LEADER_QUEUE(leader);
 	if (!queue) {
 		merr("get queue fail", device);
 		ret = -EINVAL;
-		goto exit;
+		goto p_err;
 	}
 
-	mdbgd_ischain("request otf size : %dx%d\n", device,
-		device->sensor_width, device->sensor_height);
-
-	taa_param->control.cmd = CONTROL_COMMAND_START;
-	taa_param->control.bypass = CONTROL_BYPASS_DISABLE;
-	taa_param->control.run_mode = 1;
+	taa_control = fimc_is_itf_g_param(device, frame, PARAM_3AA_CONTROL);
+	taa_control->cmd = CONTROL_COMMAND_START;
+	taa_control->bypass = CONTROL_BYPASS_DISABLE;
+	taa_control->run_mode = 1;
 	*lindex |= LOWBIT_OF(PARAM_3AA_CONTROL);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_CONTROL);
 	(*indexes)++;
 
+	taa_otf_input = fimc_is_itf_g_param(device, frame, PARAM_3AA_OTF_INPUT);
 
-	if (IS_ISCHAIN_OTF(device))
-		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &device->group_3aa.state))
+		taa_otf_input->cmd = OTF_INPUT_COMMAND_ENABLE;
 	else
-		taa_param->otf_input.cmd = OTF_INPUT_COMMAND_DISABLE;
-	taa_param->otf_input.format = OTF_INPUT_FORMAT_BAYER;
-	taa_param->otf_input.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
-	taa_param->otf_input.order = OTF_INPUT_ORDER_BAYER_GR_BG;
-	taa_param->otf_input.frametime_min = 0;
-	taa_param->otf_input.frametime_max = 1000000;
-	taa_param->otf_input.width = device->sensor_width;
-	taa_param->otf_input.height = device->sensor_height;
-	taa_param->otf_input.crop_offset_x = 0;
-	taa_param->otf_input.crop_offset_y = 0;
-	taa_param->otf_input.crop_width = device->sensor_width;
-	taa_param->otf_input.crop_height = device->sensor_height;
-	taa_param->otf_input.bds_out_enable = ISP_BDS_COMMAND_ENABLE;
-	taa_param->otf_input.bds_out_width = device->chain0_width;
-	taa_param->otf_input.bds_out_height = device->chain0_height;
-	taa_param->otf_input.binning_ratio_x = binning;
-	taa_param->otf_input.binning_ratio_y = binning;
+		taa_otf_input->cmd = OTF_INPUT_COMMAND_DISABLE;
+
+	taa_otf_input->width = device->sensor_width;
+	taa_otf_input->height = device->sensor_height;
+	taa_otf_input->crop_offset_x = input_crop[0];
+	taa_otf_input->crop_offset_y = input_crop[1];
+	taa_otf_input->crop_width = input_crop[2];
+	taa_otf_input->crop_height = input_crop[3];
+	taa_otf_input->binning_ratio_x = binning;
+	taa_otf_input->binning_ratio_y = binning;
+	taa_otf_input->format = OTF_INPUT_FORMAT_BAYER;
+	taa_otf_input->bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
+	taa_otf_input->order = OTF_INPUT_ORDER_BAYER_GR_BG;
+	taa_otf_input->frametime_min = 0;
+	taa_otf_input->frametime_max = 1000000;
 	*lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
 	(*indexes)++;
 
-	/* DMA input */
-	if (IS_ISCHAIN_OTF(device))
-		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
+	taa_dma_input = fimc_is_itf_g_param(device, frame, PARAM_3AA_VDMA1_INPUT);
+
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &device->group_3aa.state))
+		taa_dma_input->cmd = DMA_INPUT_COMMAND_DISABLE;
 	else
-		taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-	taa_param->vdma1_input.width = device->sensor_width;
-	taa_param->vdma1_input.height = device->sensor_height;
-	taa_param->vdma1_input.dma_crop_offset_x = 0;
-	taa_param->vdma1_input.dma_crop_offset_y = 0;
-	taa_param->vdma1_input.dma_crop_width = device->sensor_width;
-	taa_param->vdma1_input.dma_crop_height = device->sensor_height;
-	taa_param->vdma1_input.bayer_crop_offset_x = 0;
-	taa_param->vdma1_input.bayer_crop_offset_y = 0;
-	taa_param->vdma1_input.bayer_crop_width = 0;
-	taa_param->vdma1_input.bayer_crop_height = 0;
-	taa_param->vdma1_input.bds_out_enable = ISP_BDS_COMMAND_ENABLE;
-	taa_param->vdma1_input.bds_out_width = device->chain0_width;
-	taa_param->vdma1_input.bds_out_height = device->chain0_height;
-	taa_param->vdma1_input.user_min_frame_time = 0;
-	taa_param->vdma1_input.user_max_frame_time = 1000000;
-	taa_param->vdma1_input.wide_frame_gap = 1;
-	taa_param->vdma1_input.frame_gap = 0;
-	taa_param->vdma1_input.line_gap = 50;
+		taa_dma_input->cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+
+	taa_dma_input->width = device->sensor_width;
+	taa_dma_input->height = device->sensor_height;
+	taa_dma_input->dma_crop_offset_x = 0;
+	taa_dma_input->dma_crop_offset_y = 0;
+	taa_dma_input->dma_crop_width = device->sensor_width;
+	taa_dma_input->dma_crop_height = device->sensor_height;
+	taa_dma_input->bayer_crop_offset_x = input_crop[0];
+	taa_dma_input->bayer_crop_offset_y = input_crop[1];
+	taa_dma_input->bayer_crop_width = input_crop[2];
+	taa_dma_input->bayer_crop_height = input_crop[3];
+	taa_dma_input->user_min_frame_time = 0;
+	taa_dma_input->user_max_frame_time = 1000000;
+	taa_dma_input->wide_frame_gap = 1;
+	taa_dma_input->frame_gap = 0;
+	taa_dma_input->line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		taa_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+		taa_dma_input->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		taa_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
+		taa_dma_input->format = DMA_INPUT_FORMAT_BAYER;
 	} else {
-		taa_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
-		mwarn("Invalid bayer format", device);
+		merr("Invalid bayer format(%d)", device, queue->framecfg.format.pixelformat);
+		ret = -EINVAL;
+		goto p_err;
 	}
 
-	taa_param->vdma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
-	taa_param->vdma1_input.order = DMA_INPUT_ORDER_GR_BG;
-	taa_param->vdma1_input.plane = 1;
-	taa_param->vdma1_input.buffer_number = 0;
-	taa_param->vdma1_input.buffer_address = 0;
-	taa_param->vdma1_input.binning_ratio_x = binning;
-	taa_param->vdma1_input.binning_ratio_y = binning;
+	taa_dma_input->bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
+	taa_dma_input->order = DMA_INPUT_ORDER_GR_BG;
+	taa_dma_input->plane = 1;
+	taa_dma_input->buffer_number = 0;
+	taa_dma_input->buffer_address = 0;
+	taa_dma_input->binning_ratio_x = binning;
+	taa_dma_input->binning_ratio_y = binning;
 	/*
 	 * hidden spec
 	 *     [0] : sensor size is dma input size
 	 *     [X] : sensor size is reserved field
 	 */
-	taa_param->vdma1_input.reserved[1] = 0;
-	taa_param->vdma1_input.reserved[2] = 0;
+	taa_dma_input->reserved[1] = 0;
+	taa_dma_input->reserved[2] = 0;
 	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
 	(*indexes)++;
 
-	/* Befor BDS */
-	taa_param->vdma4_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-	taa_param->vdma4_output.width = device->sensor_width;
-	taa_param->vdma4_output.height = device->sensor_height;
-	taa_param->vdma4_output.buffer_number = 0;
-	taa_param->vdma4_output.buffer_address = 0;
-	taa_param->vdma4_output.dma_out_mask = 0;
-	taa_param->vdma4_output.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
-	taa_param->vdma4_output.notify_dma_done
-		= DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
-
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		taa_param->vdma4_output.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
-	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		taa_param->vdma4_output.format = DMA_INPUT_FORMAT_BAYER;
-	} else {
-		taa_param->vdma4_output.format = DMA_INPUT_FORMAT_BAYER;
-		mwarn("Invalid bayer format", device);
-	}
-
-	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
-	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
-	(*indexes)++;
-
-	/* After BDS */
-	taa_param->vdma2_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-	taa_param->vdma2_output.width = device->chain0_width;
-	taa_param->vdma2_output.height = device->chain0_height;
-	taa_param->vdma2_output.buffer_number = 0;
-	taa_param->vdma2_output.buffer_address = 0;
-	taa_param->vdma2_output.dma_out_mask = 0;
-	taa_param->vdma2_output.bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
-	taa_param->vdma2_output.notify_dma_done
-		= DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
-
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		taa_param->vdma2_output.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
-	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		taa_param->vdma2_output.format = DMA_INPUT_FORMAT_BAYER;
-	} else {
-		taa_param->vdma2_output.format = DMA_INPUT_FORMAT_BAYER;
-		mwarn("Invalid bayer format", device);
-	}
-
-	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
-	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
-	(*indexes)++;
-
-exit:
-	minfo("[ISC:D:%d] otf size(%d x %d)\n",
-		device->instance, device->sensor_width, device->sensor_height);
-
+p_err:
 	return ret;
 }
 
 static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
-	u32 width, u32 height, u32 *lindex, u32 *hindex, u32 *indexes)
+	struct fimc_is_frame *frame,
+	u32 width,
+	u32 height,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
-	struct isp_param *isp_param;
-	struct drc_param *drc_param;
-	struct scalerc_param *scc_param;
-	struct fimc_is_group *group_isp = NULL;
-	struct fimc_is_subdev *leader = NULL;
-	struct fimc_is_video_ctx *vctx = NULL;
-	struct fimc_is_queue *queue = NULL;
+	struct fimc_is_group *group_isp;
+	struct fimc_is_subdev *leader;
+	struct fimc_is_queue *queue;
+	struct param_otf_input *otf_input;
+	struct param_dma_input *dma_input;
+	struct param_otf_output *otf_output;
+	struct param_scaler_input_crop *input_crop;
 	u32 chain0_width, chain0_height;
 
 	BUG_ON(!device);
@@ -3363,9 +3390,6 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	isp_param = &device->is_region->parameter.isp;
-	drc_param = &device->is_region->parameter.drc;
-	scc_param = &device->is_region->parameter.scalerc;
 	chain0_width = width;
 	chain0_height = height;
 
@@ -3383,106 +3407,91 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	vctx = leader->vctx;
-	if (!vctx) {
-		merr("get vctx fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	queue = GET_SRC_QUEUE(vctx);
+	queue = GET_LEADER_QUEUE(leader);
 	if (!queue) {
 		merr("get queue fail", device);
 		ret = -EINVAL;
 		goto p_err;
 	}
 
-	mdbgd_ischain("request chain0 size : %dx%d\n",device, chain0_width, chain0_height);
+	mdbgd_ischain("request chain0 size : %dx%d\n", device, chain0_width, chain0_height);
 
 	/* ISP */
-	isp_param->control.cmd = CONTROL_COMMAND_START;
-	isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
-	isp_param->control.run_mode = 1;
-	*lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
-	*hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
-	(*indexes)++;
-
-	isp_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-	isp_param->vdma1_input.width = chain0_width;
-	isp_param->vdma1_input.height = chain0_height;
-	isp_param->vdma1_input.bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
-	isp_param->vdma1_input.line_gap = 50;
+	dma_input = fimc_is_itf_g_param(device, frame, PARAM_ISP_VDMA1_INPUT);
+	dma_input->cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+	dma_input->width = chain0_width;
+	dma_input->height = chain0_height;
+	dma_input->bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
+	dma_input->line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
-		isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+		dma_input->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
-		isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
+		dma_input->format = DMA_INPUT_FORMAT_BAYER;
 	} else {
-		isp_param->vdma1_input.format = DMA_INPUT_FORMAT_BAYER;
-		mwarn("Invalid bayer format", device);
+		merr("Invalid bayer format(%d)", device, queue->framecfg.format.pixelformat);
+		ret = -EINVAL;
+		goto p_err;
 	}
 
 	*lindex |= LOWBIT_OF(PARAM_ISP_VDMA1_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_ISP_VDMA1_INPUT);
 	(*indexes)++;
 
-	isp_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
-	isp_param->otf_output.width = chain0_width;
-	isp_param->otf_output.height = chain0_height;
-	isp_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444;
-	isp_param->otf_output.bitwidth = OTF_OUTPUT_BIT_WIDTH_12BIT;
-	isp_param->otf_output.order = OTF_INPUT_ORDER_BAYER_GR_BG;
+	otf_output = fimc_is_itf_g_param(device, frame, PARAM_ISP_OTF_OUTPUT);
+	otf_output->cmd = OTF_OUTPUT_COMMAND_ENABLE;
+	otf_output->width = chain0_width;
+	otf_output->height = chain0_height;
+	otf_output->format = OTF_OUTPUT_FORMAT_YUV444;
+	otf_output->bitwidth = OTF_OUTPUT_BIT_WIDTH_12BIT;
+	otf_output->order = OTF_INPUT_ORDER_BAYER_GR_BG;
 	*lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
 	(*indexes)++;
 
 	/* DRC */
-	drc_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
-	drc_param->otf_input.width = chain0_width;
-	drc_param->otf_input.height = chain0_height;
+	otf_input = fimc_is_itf_g_param(device, frame, PARAM_DRC_OTF_INPUT);
+	otf_input->cmd = OTF_INPUT_COMMAND_ENABLE;
+	otf_input->width = chain0_width;
+	otf_input->height = chain0_height;
 	*lindex |= LOWBIT_OF(PARAM_DRC_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_DRC_OTF_INPUT);
 	(*indexes)++;
 
-	drc_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
-	drc_param->otf_output.width = chain0_width;
-	drc_param->otf_output.height = chain0_height;
+	otf_output = fimc_is_itf_g_param(device, frame, PARAM_DRC_OTF_OUTPUT);
+	otf_output->cmd = OTF_OUTPUT_COMMAND_ENABLE;
+	otf_output->width = chain0_width;
+	otf_output->height = chain0_height;
 	*lindex |= LOWBIT_OF(PARAM_DRC_OTF_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_DRC_OTF_OUTPUT);
 	(*indexes)++;
 
 	/* SCC */
-	scc_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
-	scc_param->otf_input.width = chain0_width;
-	scc_param->otf_input.height = chain0_height;
+	otf_input = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_INPUT);
+	otf_input->cmd = OTF_INPUT_COMMAND_ENABLE;
+	otf_input->width = chain0_width;
+	otf_input->height = chain0_height;
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
 	(*indexes)++;
 
 	/* SCC CROP */
-	scc_param->input_crop.cmd = SCALER_CROP_COMMAND_ENABLE;
-	scc_param->input_crop.pos_x = 0;
-	scc_param->input_crop.pos_y = 0;
-	scc_param->input_crop.crop_width = chain0_width;
-	scc_param->input_crop.crop_height = chain0_height;
-	scc_param->input_crop.in_width = chain0_width;
-	scc_param->input_crop.in_height = chain0_height;
+	input_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_INPUT_CROP);
+	input_crop->pos_x = 0;
+	input_crop->pos_y = 0;
+	input_crop->crop_width = chain0_width;
+	input_crop->crop_height = chain0_height;
+	input_crop->in_width = chain0_width;
+	input_crop->in_height = chain0_height;
+
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
-	(*indexes)++;
-
-	/* SCC DMA OUT(unscaled size) */
-	scc_param->dma_output.width = chain0_width;
-	scc_param->dma_output.height = chain0_height;
-	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
 	(*indexes)++;
 
 	device->bds_width = width;
 	device->bds_height = height;
 
 p_err:
-	minfo("[ISC:D:%d] chain0 size(%d x %d)\n", device->instance, chain0_width, chain0_height);
 	return ret;
 }
 #else
@@ -3754,7 +3763,7 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	device->bds_width = width;
 	device->bds_height = height;
 
-	minfo("[ISC:D:%d] chain0 size(%d x %d)\n", device->instance, chain0_width, chain0_height);
+	info("[ISC:D:%d] chain0 size(%d x %d)\n", device->instance, chain0_width, chain0_height);
 	return ret;
 }
 #endif
@@ -3773,6 +3782,9 @@ static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
+
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state))
+		return 0;
 
 	scc_param = &device->is_region->parameter.scalerc;
 	odc_param = &device->is_region->parameter.odc;
@@ -3857,9 +3869,6 @@ static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_DIS_OTF_INPUT);
 	(*indexes)++;
 
-	minfo("[ISC:D:%d] chain1 size(%d x %d)\n",
-		device->instance, chain1_width, chain1_height);
-
 exit:
 	return ret;
 }
@@ -3877,6 +3886,9 @@ static int fimc_is_ischain_s_chain2_size(struct fimc_is_device_ischain *device,
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
+
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state))
+		return 0;
 
 	mdbgd_ischain("request chain2 size : %dx%d\n", device, width, height);
 	mdbgd_ischain("current chain2 size : %dx%d\n",
@@ -3926,9 +3938,6 @@ static int fimc_is_ischain_s_chain2_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_SCALERP_OTF_INPUT);
 	(*indexes)++;
 
-	minfo("[ISC:D:%d] chain2 size(%d x %d)\n",
-		device->instance, chain2_width, chain2_height);
-
 	return ret;
 }
 
@@ -3949,6 +3958,9 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
+
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state))
+		return 0;
 
 	scp_param = &device->is_region->parameter.scalerp;
 	fd_param = &device->is_region->parameter.fd;
@@ -4042,9 +4054,6 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 	*hindex |= HIGHBIT_OF(PARAM_FD_OTF_INPUT);
 	(*indexes)++;
 
-	minfo("[ISC:D:%d] chain3 size(%d x %d)\n",
-		device->instance, chain3_width, chain3_height);
-
 	return ret;
 }
 
@@ -4052,6 +4061,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 	u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	int ret = 0;
+	struct isp_param *isp_param;
 	struct scalerc_param *scc_param;
 	struct odc_param *odc_param;
 	struct dis_param *dis_param;
@@ -4063,11 +4073,19 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
+	isp_param = &device->is_region->parameter.isp;
 	scc_param = &device->is_region->parameter.scalerc;
 	odc_param = &device->is_region->parameter.odc;
 	dis_param = &device->is_region->parameter.dis;
 	dnr_param = &device->is_region->parameter.tdnr;
 	scp_param = &device->is_region->parameter.scalerp;
+
+	isp_param->control.cmd = CONTROL_COMMAND_START;
+	isp_param->control.bypass = CONTROL_BYPASS_DISABLE;
+	isp_param->control.run_mode = 1;
+	*lindex |= LOWBIT_OF(PARAM_ISP_CONTROL);
+	*hindex |= HIGHBIT_OF(PARAM_ISP_CONTROL);
+	(*indexes)++;
 
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
 		scc_param->otf_output.cmd = OTF_OUTPUT_COMMAND_DISABLE;
@@ -4081,7 +4099,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 		(*indexes)++;
 
 		fimc_is_subdev_dis_stop(device, dis_param, lindex, hindex, indexes);
-		fimc_is_subdev_dnr_stop(device, dnr_param, lindex, hindex, indexes);
+		fimc_is_subdev_dnr_stop(device, &dnr_param->control, lindex, hindex, indexes);
 
 		scp_param->control.cmd = CONTROL_COMMAND_STOP;
 		*lindex |= LOWBIT_OF(PARAM_SCALERP_CONTROL);
@@ -4099,7 +4117,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 		(*indexes)++;
 
 		fimc_is_subdev_dis_bypass(device, dis_param, lindex, hindex, indexes);
-		fimc_is_subdev_dnr_bypass(device, dnr_param, lindex, hindex, indexes);
+		fimc_is_subdev_dnr_bypass(device, &dnr_param->control, lindex, hindex, indexes);
 
 		scp_param->control.cmd = CONTROL_COMMAND_START;
 		*lindex |= LOWBIT_OF(PARAM_SCALERP_CONTROL);
@@ -4150,7 +4168,7 @@ static int fimc_is_ischain_chg_setfile(struct fimc_is_device_ischain *device)
 	if (ret)
 		merr("fimc_is_ischain_s_setfile is fail", device);
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	ret = fimc_is_itf_s_param(device, NULL, lindex, hindex, indexes);
 	if (ret) {
 		merr("fimc_is_itf_s_param is fail", device);
 		ret = -EINVAL;
@@ -4167,110 +4185,6 @@ static int fimc_is_ischain_chg_setfile(struct fimc_is_device_ischain *device)
 	ret = fimc_is_itf_process_start(device, group_id);
 	if (ret) {
 		merr("fimc_is_itf_process_start fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-p_err:
-	return ret;
-}
-
-static int fimc_is_ischain_s_scalable(struct fimc_is_device_ischain *device,
-	struct fimc_is_subdev *leader,
-	struct fimc_is_queue *queue)
-
-{
-	int ret = 0;
-	struct taa_param *taa_param;
-	struct sensor_param *sensor_param;
-	u32 group_id = 0;
-	u32 sensor_width, sensor_height, binning;
-	u32 indexes, lindex, hindex;
-
-	BUG_ON(!device);
-	BUG_ON(!device->sensor);
-
-	mdbgd_ischain("%s()\n", device, __func__);
-
-	sensor_param = &device->is_region->parameter.sensor;
-	taa_param = &device->is_region->parameter.taa;
-	sensor_width = fimc_is_sensor_g_width(device->sensor);
-	sensor_height = fimc_is_sensor_g_height(device->sensor);
-	binning = fimc_is_sensor_g_bratio(device->sensor);
-	indexes = lindex = hindex = 0;
-
-	group_id |= GROUP_ID(device->group_3aa.id);
-	group_id |= GROUP_ID(device->group_isp.id);
-
-	ret = fimc_is_itf_process_stop(device, group_id);
-	if (ret) {
-		merr("fimc_is_itf_process_stop is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	device->sensor_width = sensor_width - device->margin_width;
-	device->sensor_height = sensor_height - device->margin_height;
-	minfo("scalable sensor input: %dx%d\n", device->sensor_width, device->sensor_height);
-
-#ifdef FIXED_FPS_DEBUG
-	sensor_param->frame_rate.frame_rate = FIXED_FPS_VALUE;
-#else
-	sensor_param->frame_rate.frame_rate = fimc_is_sensor_g_framerate(device->sensor);
-#endif
-	lindex |= LOWBIT_OF(PARAM_SENSOR_FRAME_RATE);
-	hindex |= HIGHBIT_OF(PARAM_SENSOR_FRAME_RATE);
-	indexes++;
-
-	sensor_param->dma_output.width = sensor_width;
-	sensor_param->dma_output.height = sensor_height;
-	lindex |= LOWBIT_OF(PARAM_SENSOR_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SENSOR_DMA_OUTPUT);
-	indexes++;
-
-	/* 3AA DMA INPUT */
-	taa_param->vdma1_input.cmd = DMA_INPUT_COMMAND_DISABLE;
-	taa_param->vdma1_input.width = device->sensor_width;
-	taa_param->vdma1_input.height = device->sensor_height;
-	taa_param->vdma1_input.dma_crop_width = device->sensor_width;
-	taa_param->vdma1_input.dma_crop_height = device->sensor_height;
-	taa_param->vdma1_input.binning_ratio_x = binning;
-	taa_param->vdma1_input.binning_ratio_y = binning;
-	lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
-	indexes++;
-
-	/* 3AA OTF INPUT */
-	taa_param->otf_input.cmd = OTF_INPUT_COMMAND_ENABLE;
-	taa_param->otf_input.width = device->sensor_width;
-	taa_param->otf_input.height = device->sensor_height;
-	taa_param->otf_input.crop_offset_x = 0;
-	taa_param->otf_input.crop_offset_y = 0;
-	taa_param->otf_input.crop_width = device->sensor_width;
-	taa_param->otf_input.crop_height = device->sensor_height;
-	taa_param->otf_input.binning_ratio_x = binning;
-	taa_param->otf_input.binning_ratio_y = binning;
-	lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
-	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	ret = fimc_is_itf_a_param(device, group_id);
-	if (ret) {
-		merr("fimc_is_itf_a_param is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	ret = fimc_is_itf_process_start(device, group_id);
-	if (ret) {
-		merr("fimc_is_itf_process_start is fail", device);
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -4492,276 +4406,78 @@ exit:
 }
 #endif
 
-#ifdef BAYER_CROP_DZOOM
-static int fimc_is_ischain_check_bcrop_size(struct fimc_is_device_ischain *device,
-	struct fimc_is_frame *frame)
-{
-	int ret = 0;
-	u32 min_width, min_height;
-	u32 sensor_active_width, sensor_active_height;
-	u32 crop_x, crop_y, crop_width, crop_height;
-
-	sensor_active_width = fimc_is_sensor_g_width(device->sensor) - device->margin_width;
-	sensor_active_height = fimc_is_sensor_g_height(device->sensor) - device->margin_height;
-	crop_x = frame->shot->uctl.bayerUd.ctl.cropRegion[0];
-	crop_y = frame->shot->uctl.bayerUd.ctl.cropRegion[1];
-	crop_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
-	crop_height = frame->shot->uctl.bayerUd.ctl.cropRegion[3];
-
-#ifdef PRINT_DZOOM
-	pr_info("[ISP:D:%d] request 3ax input size(%dx%d),\
-		Bcrop size(%dx%d), zoom(%d), fcount(%d)\n",
-		device->instance, sensor_active_width, sensor_active_height,
-		crop_width, crop_height, sensor_active_width * 1000 / crop_width,
-		frame->fcount);
-#endif
-
-	/* Check length for center crop */
-	min_width = crop_width + crop_x;
-	min_height = crop_height + crop_y;
-	if ((min_width > sensor_active_width) || (min_height > sensor_active_height)) {
-		mwarn("Crop width or height is not valid.\
-			Crop region(%d, %d, %d, %d) Input region(%d, %d)",
-			device, crop_x, crop_y, crop_width, crop_height,
-			sensor_active_width, sensor_active_height);
-		frame->shot->uctl.bayerUd.ctl.cropRegion[0] = 0;
-		frame->shot->uctl.bayerUd.ctl.cropRegion[1] = 0;
-		frame->shot->uctl.bayerUd.ctl.cropRegion[2] = sensor_active_width;
-		frame->shot->uctl.bayerUd.ctl.cropRegion[3] = sensor_active_height;
-	}
-
-	/* CHECK align */
-	if (crop_width % 4) {
-		mwarn("Input width align does not fit.(%d x %d)",
-			device, crop_width, crop_height);
-		frame->shot->uctl.bayerUd.ctl.cropRegion[2] -= (crop_width % 4);
-	}
-
-	if (crop_height % 2) {
-		mwarn("Input height align does not fit.(%d x %d)",
-			device, crop_width, crop_height);
-		frame->shot->uctl.bayerUd.ctl.cropRegion[3] -= (crop_height % 2);
-	}
-
-	device->dzoom_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
-
-	return ret;
-}
-#endif
-
-#ifdef BAYER_CROP_DZOOM
-static int fimc_is_ischain_s_isp_dzoom(struct fimc_is_device_ischain *device,
-		u32 crop_x, u32 crop_y,
-		u32 crop_width, u32 crop_height,
-		u32 bds_width, u32 bds_height)
-{
-	int ret = 0;
-	struct drc_param *drc_param;
-	struct scalerc_param *scc_param;
-	struct isp_param *isp_param;
-#ifdef SCALER_PARALLEL_MODE
-	struct scalerp_param *scp_param;
-#endif
-	u32 sensor_width, sensor_height;
-	u32 indexes, lindex, hindex;
-
-	drc_param = &device->is_region->parameter.drc;
-	scc_param = &device->is_region->parameter.scalerc;
-	isp_param = &device->is_region->parameter.isp;
-#ifdef SCALER_PARALLEL_MODE
-	scp_param = &device->is_region->parameter.scalerp;
-#endif
-	indexes = lindex = hindex = 0;
-	sensor_width = fimc_is_sensor_g_width(device->sensor) - device->margin_width;
-	sensor_height = fimc_is_sensor_g_height(device->sensor) - device->margin_height;
-
-#ifdef PRINT_DZOOM
-	pr_info("[ISP:D:%d] request isp dzoom : (%d/%d/%d/%d) %dx%d\n",
-			device->instance,
-			crop_x, crop_y,
-			crop_width, crop_height,
-			bds_width, bds_height);
-#endif
-	/* if there's only one group of isp, send group id by 3a0 */
-	/* 3AX DMA INPUT */
-	isp_param->vdma1_input.cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-	isp_param->vdma1_input.width = sensor_width;
-	isp_param->vdma1_input.height = sensor_height;
-	isp_param->vdma1_input.dma_crop_width = crop_width;//sensor_width;
-	isp_param->vdma1_input.dma_crop_height = crop_height;//sensor_height;
-	isp_param->vdma1_input.bayer_crop_offset_x = crop_x;
-	isp_param->vdma1_input.bayer_crop_offset_y = crop_y;
-	isp_param->vdma1_input.bayer_crop_width = crop_width;
-	isp_param->vdma1_input.bayer_crop_height = crop_height;
-	isp_param->vdma1_input.bds_out_enable = ISP_BDS_COMMAND_DISABLE;
-	isp_param->vdma1_input.bds_out_width = crop_width;
-	isp_param->vdma1_input.bds_out_height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_ISP_DMA1_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_ISP_DMA1_INPUT);
-	indexes++;
-
-	/* ISP OTF OUTPUT */
-	isp_param->otf_output.cmd = OTF_OUTPUT_COMMAND_ENABLE;
-	isp_param->otf_output.width = crop_width;
-	isp_param->otf_output.height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
-	indexes++;
-
-	/* DRC */
-	drc_param->otf_input.width = crop_width;
-	drc_param->otf_input.height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_DRC_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_DRC_OTF_INPUT);
-	indexes++;
-
-	drc_param->otf_output.width = crop_width;
-	drc_param->otf_output.height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_DRC_OTF_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_DRC_OTF_OUTPUT);
-	indexes++;
-
-	/* SCC INPUT */
-	scc_param->otf_input.width = crop_width;
-	scc_param->otf_input.height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_INPUT);
-	indexes++;
-
-	/* SCC INPUT CROP */
-	scc_param->input_crop.crop_width = crop_width;
-	scc_param->input_crop.crop_height = crop_height;
-	scc_param->input_crop.in_width = crop_width;
-	scc_param->input_crop.in_height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
-	indexes++;
-
-	/* SCC UNSCALED DMA OUT */
-	scc_param->dma_output.width = bds_width;
-	scc_param->dma_output.height = bds_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	indexes++;
-
-#ifdef SCALER_PARALLEL_MODE
-	/* SCP INPUT */
-	scp_param->otf_input.width = crop_width;
-	scp_param->otf_input.height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERP_OTF_INPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERP_OTF_INPUT);
-	indexes++;
-
-	/* SCP INPUT CROP */
-	scp_param->input_crop.crop_width = crop_width;
-	scp_param->input_crop.crop_height = crop_height;
-	scp_param->input_crop.in_width = crop_width;
-	scp_param->input_crop.in_height = crop_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERP_INPUT_CROP);
-	hindex |= HIGHBIT_OF(PARAM_SCALERP_INPUT_CROP);
-	indexes++;
-
-	/* SCC UNSCALED DMA OUT */
-	scc_param->dma_output.width = device->chain3_width;
-	scc_param->dma_output.height = device->chain3_height;
-	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	indexes++;
-#endif
-	ret = fimc_is_itf_s_param(device,
-		indexes, lindex, hindex);
-	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	device->bds_width = bds_width;
-	device->bds_height = bds_height;
-
-exit:
-	return ret;
-}
-#endif
-
 #ifdef ENABLE_DRC
 static int fimc_is_ischain_drc_bypass(struct fimc_is_device_ischain *device,
+	struct fimc_is_frame *frame,
 	bool bypass)
 {
 	int ret = 0;
-	struct drc_param *drc_param;
-	u32 indexes, lindex, hindex;
+	u32 lindex, hindex, indexes;
+	struct param_control *ctl_param;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
-	drc_param = &device->is_region->parameter.drc;
-	indexes = lindex = hindex = 0;
+	lindex = hindex = indexes = 0;
+	ctl_param = fimc_is_itf_g_param(device, frame, PARAM_DRC_CONTROL);
 
 	if (bypass)
-		drc_param->control.bypass = CONTROL_BYPASS_ENABLE;
+		fimc_is_subdev_drc_bypass(device, ctl_param, &lindex, &hindex, &indexes);
 	else
-		drc_param->control.bypass = CONTROL_BYPASS_DISABLE;
+		fimc_is_subdev_drc_start(device, ctl_param, &lindex, &hindex, &indexes);
 
-	lindex |= LOWBIT_OF(PARAM_DRC_CONTROL);
-	hindex |= HIGHBIT_OF(PARAM_DRC_CONTROL);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	frame->shot->ctl.entry.lowIndexParam |= lindex;
+	frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, frame, lindex, hindex, indexes);
 	if (ret) {
-		err("fimc_is_itf_s_param is fail\n");
-		ret = -EINVAL;
-		goto exit;
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, frame, ret);
+		goto p_err;
 	}
 
-	if (bypass) {
+	if (bypass)
 		clear_bit(FIMC_IS_SUBDEV_START, &device->drc.state);
-		mdbgd_ischain("DRC off\n", device);
-	} else {
+	else
 		set_bit(FIMC_IS_SUBDEV_START, &device->drc.state);
-		mdbgd_ischain("DRC on\n", device);
-	}
 
-exit:
+p_err:
+	mrinfo("[DRC] bypass : %d\n", device, frame, bypass);
 	return ret;
 }
 #endif
 
 #ifdef ENABLE_TDNR
 static int fimc_is_ischain_dnr_bypass(struct fimc_is_device_ischain *device,
+	struct fimc_is_frame *frame,
 	bool bypass)
 {
 	int ret = 0;
-	struct fimc_is_subdev *subdev;
-	struct tdnr_param *param;
-	u32 indexes, lindex, hindex;
+	u32 lindex, hindex, indexes;
+	struct param_control *ctl_param;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
-	subdev = &device->dnr;
-	param = &device->is_region->parameter.tdnr;
-	indexes = lindex = hindex = 0;
+	lindex = hindex = indexes = 0;
+	ctl_param = fimc_is_itf_g_param(device, frame, PARAM_TDNR_CONTROL);
 
 	if (bypass)
-		fimc_is_subdev_dnr_bypass(device, param, &lindex, &hindex, &indexes);
+		fimc_is_subdev_dnr_bypass(device, ctl_param, &lindex, &hindex, &indexes);
 	else
-		fimc_is_subdev_dnr_start(device, param, &lindex, &hindex, &indexes);
+		fimc_is_subdev_dnr_start(device, ctl_param, &lindex, &hindex, &indexes);
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	frame->shot->ctl.entry.lowIndexParam |= lindex;
+	frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, frame, lindex, hindex, indexes);
 	if (ret) {
-		merr("fimc_is_itf_s_param is fail", device);
-		ret = -EINVAL;
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, frame, ret);
 		goto p_err;
 	}
 
-	if (bypass) {
-		clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
-		mdbgd_ischain("TDNR off\n", device);
-	} else {
-		set_bit(FIMC_IS_SUBDEV_START, &subdev->state);
-		mdbgd_ischain("TNDR on\n", device);
-	}
+	if (bypass)
+		clear_bit(FIMC_IS_SUBDEV_START, &device->dnr.state);
+	else
+		set_bit(FIMC_IS_SUBDEV_START, &device->dnr.state);
 
 p_err:
+	mrinfo("[DNR] bypass : %d\n", device, frame, bypass);
 	return ret;
 }
 #endif
@@ -4823,7 +4539,7 @@ static int fimc_is_ischain_fd_bypass(struct fimc_is_device_ischain *device,
 	hindex |= HIGHBIT_OF(PARAM_FD_OTF_INPUT);
 	indexes++;
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	ret = fimc_is_itf_s_param(device, NULL, lindex, hindex, indexes);
 	if (ret) {
 		merr("fimc_is_itf_s_param is fail", device);
 		ret = -EINVAL;
@@ -4849,243 +4565,6 @@ p_err:
 	return ret;
 }
 
-#if 0
-int fimc_is_ischain_3a0_open(struct fimc_is_device_ischain *device,
-	struct fimc_is_video_ctx *vctx)
-{
-	int ret = 0;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group;
-
-	BUG_ON(!device);
-
-	groupmgr = device->groupmgr;
-	group = &device->group_3aa;
-
-	ret = fimc_is_group_open(groupmgr, group, GROUP_ID_3A0,
-		device->instance, vctx, device, fimc_is_ischain_3a0_callback);
-	if (ret)
-		merr("fimc_is_group_open is fail", device);
-
-	return ret;
-}
-
-int fimc_is_ischain_3a0_close(struct fimc_is_device_ischain *device,
-	struct fimc_is_video_ctx *vctx)
-{
-	int ret = 0;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group;
-	struct fimc_is_subdev *leader;
-	struct fimc_is_queue *queue;
-
-	BUG_ON(!device);
-
-	groupmgr = device->groupmgr;
-	group = &device->group_3aa;
-	leader = &group->leader;
-	queue = GET_SRC_QUEUE(vctx);
-
-	ret = fimc_is_ischain_3a0_stop(device, leader, queue);
-	if (ret)
-		merr("fimc_is_ischain_3a0_stop is fail", device);
-
-	ret = fimc_is_group_close(groupmgr, group, vctx);
-	if (ret)
-		merr("fimc_is_group_close is fail", device);
-
-	return ret;
-}
-
-int fimc_is_ischain_3a0_start(struct fimc_is_device_ischain *device,
-	struct fimc_is_subdev *leader,
-	struct fimc_is_queue *queue)
-{
-	int ret = 0;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group;
-
-	BUG_ON(!device);
-	BUG_ON(!leader);
-
-	groupmgr = device->groupmgr;
-	group = &device->group_3aa;
-
-	if (test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-		merr("already start", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	ret = fimc_is_group_process_start(groupmgr, group, queue);
-	if (ret) {
-		merr("fimc_is_group_process_start is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	set_bit(FIMC_IS_SUBDEV_START, &leader->state);
-
-p_err:
-	return ret;
-}
-
-int fimc_is_ischain_3a0_stop(struct fimc_is_device_ischain *device,
-	struct fimc_is_subdev *leader,
-	struct fimc_is_queue *queue)
-{
-	int ret = 0;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group;
-
-	BUG_ON(!device);
-	BUG_ON(!leader);
-
-	groupmgr = device->groupmgr;
-	group = &device->group_3aa;
-
-	if (!test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-		mwarn("already stop", device);
-		goto p_err;
-	}
-
-	ret = fimc_is_group_process_stop(groupmgr, group, queue);
-	if (ret) {
-		merr("fimc_is_group_process_stop is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	clear_bit(FIMC_IS_SUBDEV_START, &leader->state);
-
-p_err:
-	pr_info("[3A0:D:%d] %s(%d, %d)\n", device->instance, __func__,
-		ret, atomic_read(&group->scount));
-	return ret;
-}
-
-int fimc_is_ischain_3a0_reqbufs(struct fimc_is_device_ischain *device,
-	u32 count)
-{
-	int ret = 0;
-	struct fimc_is_group *group;
-
-	BUG_ON(!device);
-
-	group = &device->group_3aa;
-
-	if (!count) {
-		ret = fimc_is_itf_unmap(device, GROUP_ID(group->id));
-		if (ret)
-			merr("fimc_is_itf_unmap is fail(%d)", device, ret);
-	}
-
-	return ret;
-}
-
-int fimc_is_ischain_3a0_s_format(struct fimc_is_device_ischain *device,
-	u32 width, u32 height)
-{
-	int ret = 0;
-	struct fimc_is_group *group;
-	struct fimc_is_subdev *subdev;
-
-	BUG_ON(!device);
-
-	group = &device->group_3aa;
-	subdev = &group->leader;
-
-	subdev->input.width = width;
-	subdev->input.height = height;
-
-	return ret;
-}
-
-int fimc_is_ischain_3a0_s_input(struct fimc_is_device_ischain *device,
-	u32 input)
-{
-	int ret = 0;
-	struct fimc_is_group *group;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_subdev *subdev;
-
-	BUG_ON(!device);
-
-	group = &device->group_3aa;
-	groupmgr = device->groupmgr;
-	subdev = &group->leader;
-
-	subdev->input.is_otf = (input & OTF_3AA_MASK) >> OTF_3AA_SHIFT;
-
-	dbg_ischain("%s() calling fimc_is_group_init\n", __func__);
-
-	ret = fimc_is_group_init(groupmgr, group);
-	if (ret) {
-		merr("fimc_is_group_init is fail", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-p_err:
-	return ret;
-}
-
-int fimc_is_ischain_3a0_buffer_queue(struct fimc_is_device_ischain *device,
-	struct fimc_is_queue *queue,
-	u32 index)
-{
-	int ret = 0;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group;
-
-	BUG_ON(!device);
-	BUG_ON(!test_bit(FIMC_IS_ISCHAIN_OPEN, &device->state));
-
-#ifdef DBG_STREAMING
-	mdbgd_ischain("%s\n", device, __func__);
-#endif
-
-	groupmgr = device->groupmgr;
-	group = &device->group_3aa;
-
-	ret = fimc_is_group_buffer_queue(groupmgr, group, queue, index);
-	if (ret) {
-		merr("fimc_is_group_buffer_queue is fail(%d)", device, ret);
-		goto p_err;
-	}
-
-p_err:
-	return ret;
-}
-
-int fimc_is_ischain_3a0_buffer_finish(struct fimc_is_device_ischain *device,
-	u32 index)
-{
-	int ret = 0;
-	struct fimc_is_groupmgr *groupmgr;
-	struct fimc_is_group *group;
-
-	BUG_ON(!device);
-
-#ifdef DBG_STREAMING
-	mdbgd_ischain("%s\n", device, __func__);
-#endif
-
-	groupmgr = device->groupmgr;
-	group = &device->group_3aa;
-
-	ret = fimc_is_group_buffer_finish(groupmgr, group, index);
-	if (ret)
-		merr("fimc_is_group_buffer_finish is fail(%d)", device, ret);
-
-	return ret;
-}
-
-const struct fimc_is_queue_ops fimc_is_ischain_3a0_ops = {
-	.start_streaming	= fimc_is_ischain_3a0_start,
-	.stop_streaming		= fimc_is_ischain_3a0_stop
-};
-#endif
 int fimc_is_ischain_3aa_open(struct fimc_is_device_ischain *device,
 	struct fimc_is_video_ctx *vctx)
 {
@@ -5204,7 +4683,7 @@ int fimc_is_ischain_3aa_stop(struct fimc_is_device_ischain *device,
 	clear_bit(FIMC_IS_SUBDEV_START, &leader->state);
 
 p_err:
-	minfo("[3A%d:D:%d] %s(%d, %d)\n", group->id, device->instance, __func__,
+	info("[3A%d:D:%d] %s(%d, %d)\n", group->id, device->instance, __func__,
 		ret, atomic_read(&group->scount));
 	return ret;
 }
@@ -5234,7 +4713,6 @@ int fimc_is_ischain_3aa_s_format(struct fimc_is_device_ischain *device,
 	int ret = 0;
 	struct fimc_is_group *group;
 	struct fimc_is_subdev *leader;
-	struct fimc_is_queue *queue;
 
 	BUG_ON(!device);
 
@@ -5244,15 +4722,6 @@ int fimc_is_ischain_3aa_s_format(struct fimc_is_device_ischain *device,
 	leader->input.width = width;
 	leader->input.height = height;
 
-	if (test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
-		ret = fimc_is_ischain_s_scalable(device, leader, queue);
-		if (ret) {
-			err("fimc_is_ischain_s_scalable is fail");
-			goto p_err;
-		}
-	}
-
-p_err:
 	return ret;
 }
 
@@ -5272,7 +4741,7 @@ int fimc_is_ischain_3aa_s_input(struct fimc_is_device_ischain *device,
 
 	mdbgd_ischain("%s() calling fimc_is_group_init\n", device, __func__);
 
-	ret = fimc_is_group_init(groupmgr, group, otf_input);
+	ret = fimc_is_group_init(groupmgr, group, otf_input, 0);
 	if (ret) {
 		merr("fimc_is_group_init is fail", device);
 		ret = -EINVAL;
@@ -5331,60 +4800,77 @@ int fimc_is_ischain_3aa_buffer_finish(struct fimc_is_device_ischain *device,
 	return ret;
 }
 
-static int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
+int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
-	struct fimc_is_frame *ldr_frame)
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
 {
 	int ret = 0;
-	unsigned long flags;
-	struct fimc_is_framemgr *framemgr;
-	struct fimc_is_frame *frame;
+	struct taa_param *taa_param;
+	u32 lindex, hindex, indexes;
+	u32 crop_x, crop_y, crop_width, crop_height;
+	u32 *input_crop;
 
 	BUG_ON(!device);
+	BUG_ON(!device->is_region);
 	BUG_ON(!subdev);
 	BUG_ON(!ldr_frame);
-	BUG_ON(!ldr_frame->shot_ext);
+	BUG_ON(!ldr_frame->shot);
+	BUG_ON(!node);
 
-	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
-	if (!framemgr) {
-		merr("framemgr is NULL", device);
-		ret = -EINVAL;
-		goto p_err;
+#ifdef DBG_STREAMING
+	mdbgd_ischain("3AA TAG(request %d)\n", device, node->request);
+#endif
+
+	lindex = hindex = indexes = 0;
+	taa_param = &device->is_region->parameter.taa;
+	input_crop = node->input.cropRegion;
+
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &device->group_3aa.state)) {
+		crop_x = taa_param->otf_input.crop_offset_x;
+		crop_y = taa_param->otf_input.crop_offset_y;
+		crop_width = taa_param->otf_input.crop_width;
+		crop_height = taa_param->otf_input.crop_height;
+	} else {
+		crop_x = taa_param->vdma1_input.bayer_crop_offset_x;
+		crop_y = taa_param->vdma1_input.bayer_crop_offset_y;
+		crop_width = taa_param->vdma1_input.bayer_crop_width;
+		crop_height = taa_param->vdma1_input.bayer_crop_height;
 	}
 
-	/* HACK */
-	if (1 /* grp_frame->shot_ext->request_3ax */) {
-		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_8, flags);
+	if (!input_crop[0] && !input_crop[1] &&
+		!input_crop[2] && !input_crop[3]) {
+		input_crop[0] = crop_x;
+		input_crop[1] = crop_y;
+		input_crop[2] = crop_width;
+		input_crop[3] = crop_height;
+	}
 
-		fimc_is_frame_request_head(framemgr, &frame);
-		if (frame) {
-			if (!frame->stream) {
-				framemgr_x_barrier_irqr(framemgr, 0, flags);
-				merr("frame->stream is NULL", device);
-				ret = -EINVAL;
-				goto p_err;
-			}
-
-			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[0] =
-				frame->dvaddr_buffer[0];
-			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
-			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
-			frame->stream->findex = ldr_frame->index;
-			set_bit(OUT_3AX_FRAME, &ldr_frame->out_flag);
-			set_bit(REQ_FRAME, &frame->req_flag);
-			fimc_is_frame_trans_req_to_pro(framemgr, frame);
-		} else {
-			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[0] = 0;
-			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
-			ldr_frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
-			merr("3ax %d frame is drop", device, ldr_frame->fcount);
+	if ((input_crop[0] != crop_x) ||
+		(input_crop[1] != crop_y) ||
+		(input_crop[2] != crop_width) ||
+		(input_crop[3] != crop_height)) {
+		ret = fimc_is_ischain_s_3aa_size(device,
+			ldr_frame,
+			input_crop,
+			&lindex,
+			&hindex,
+			&indexes);
+		if (ret) {
+			merr("fimc_is_ischain_3aa_size is fail(%d)", device, ret);
+			goto p_err;
 		}
 
-		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_8, flags);
-	} else {
-		ldr_frame->shot->uctl.scalerUd.taapTargetAddress[0] = 0;
-		ldr_frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
-		ldr_frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
+		mrinfo("[3AA] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
+	}
+
+	ldr_frame->shot->ctl.entry.lowIndexParam |= lindex;
+	ldr_frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, ldr_frame, lindex, hindex, 0);
+	if (ret) {
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, ldr_frame, ret);
+		goto p_err;
 	}
 
 p_err:
@@ -5396,53 +4882,358 @@ const struct fimc_is_queue_ops fimc_is_ischain_3aa_ops = {
 	.stop_streaming		= fimc_is_ischain_3aa_stop
 };
 
-static int fimc_is_ischain_3aac_start(struct fimc_is_device_ischain *device)
+static int fimc_is_ischain_3aap_start(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	struct fimc_is_queue *queue,
+	struct taa_param *taa_param,
+	u32 *output_crop,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
-	struct fimc_is_subdev *taac;
-	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_queue *queue;
+	struct param_dma_output *taa_vdma2_output;
 
-	taac = &device->taac;
-	vctx = taac->vctx;
-	queue = &vctx->q_dst;
+	if ((output_crop[2] > taa_param->otf_input.crop_width) ||
+		(output_crop[3] > taa_param->otf_input.crop_height)) {
+		mrerr("bds output size is invalid((%d, %d) > (%d, %d))", device, frame,
+			output_crop[2],
+			output_crop[3],
+			taa_param->otf_input.crop_width,
+			taa_param->otf_input.crop_height);
+		ret = -EINVAL;
+		goto p_err;
+	}
 
-	mdbgd_ischain("%s(%dx%d)\n", device, __func__,
-		queue->framecfg.width,
-		queue->framecfg.height);
+	/* HACK */
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &device->group_3aa.state)) {
+		struct param_otf_input *taa_otf_input;
 
-	set_bit(FIMC_IS_SUBDEV_START, &taac->state);
+		taa_otf_input = fimc_is_itf_g_param(device, frame, PARAM_3AA_OTF_INPUT);
+		taa_otf_input->bds_out_enable = ISP_BDS_COMMAND_ENABLE;
+		taa_otf_input->bds_out_width = output_crop[2];
+		taa_otf_input->bds_out_height = output_crop[3];
+		*lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
+		*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
+		(*indexes)++;
+	} else {
+		struct param_dma_input *taa_dma_input;
 
+		taa_dma_input = fimc_is_itf_g_param(device, frame, PARAM_3AA_VDMA1_INPUT);
+		taa_dma_input->bds_out_enable = ISP_BDS_COMMAND_ENABLE;
+		taa_dma_input->bds_out_width = output_crop[2];
+		taa_dma_input->bds_out_height = output_crop[3];
+		*lindex |= LOWBIT_OF(PARAM_3AA_VDMA1_INPUT);
+		*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA1_INPUT);
+		(*indexes)++;
+	}
+
+	taa_vdma2_output = fimc_is_itf_g_param(device, frame, PARAM_3AA_VDMA2_OUTPUT);
+	taa_vdma2_output->cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	taa_vdma2_output->width = output_crop[2];
+	taa_vdma2_output->height = output_crop[3];
+	taa_vdma2_output->buffer_number = 0;
+	taa_vdma2_output->buffer_address = 0;
+	taa_vdma2_output->dma_out_mask = 0;
+	taa_vdma2_output->bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
+	taa_vdma2_output->notify_dma_done = DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		taa_vdma2_output->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		taa_vdma2_output->format = DMA_INPUT_FORMAT_BAYER;
+	} else {
+		mwarn("Invalid bayer format", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	(*indexes)++;
+
+	set_bit(FIMC_IS_SUBDEV_START, &subdev->state);
+
+p_err:
 	return ret;
 }
 
-static int fimc_is_ischain_3aac_stop(struct fimc_is_device_ischain *device)
+
+static int fimc_is_ischain_3aap_stop(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
-	struct fimc_is_subdev *taac;
+	struct param_dma_output *taa_vdma2_output;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
-	taac = &device->taac;
+	taa_vdma2_output = fimc_is_itf_g_param(device, frame, PARAM_3AA_VDMA2_OUTPUT);
+	taa_vdma2_output->cmd = DMA_OUTPUT_COMMAND_DISABLE;
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA2_OUTPUT);
+	(*indexes)++;
 
-	clear_bit(FIMC_IS_SUBDEV_START, &taac->state);
+	clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 	return ret;
 }
 
-int fimc_is_ischain_3aac_tag(struct fimc_is_device_ischain *device,
+static int fimc_is_ischain_3aap_tag(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
-	struct fimc_is_frame *grp_frame)
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
 {
 	int ret = 0;
 	unsigned long flags;
+	struct fimc_is_queue *queue;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
+	struct camera2_scaler_uctl *scalerUd;
+	struct taa_param *taa_param;
+	u32 lindex, hindex, indexes;
+	u32 *output_crop;
+
+	BUG_ON(!device);
+	BUG_ON(!device->is_region);
+	BUG_ON(!subdev);
+	BUG_ON(!ldr_frame);
+	BUG_ON(!ldr_frame->shot);
+	BUG_ON(!node);
+
+#ifdef DBG_STREAMING
+	mdbgd_ischain("3AAP TAG(request %d)\n", device, node->request);
+#endif
+
+	lindex = hindex = indexes = 0;
+	taa_param = &device->is_region->parameter.taa;
+	scalerUd = &ldr_frame->shot->uctl.scalerUd;
+	/* HACK */
+	framemgr = GET_SUBDEV_FRAMEMGR(subdev->leader);
+	if (!framemgr) {
+		merr("framemgr is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	/* HACK */
+	queue = GET_SUBDEV_QUEUE(subdev->leader);
+	if (!queue) {
+		merr("queue is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (node->request) {
+		output_crop = node->output.cropRegion;
+
+		if (output_crop[0] || output_crop[1]) {
+			mwarn("crop pos(%d, %d) is ignored", device,
+				output_crop[0],
+				output_crop[1]);
+			output_crop[0] = 0;
+			output_crop[1] = 0;
+		}
+
+		if (!output_crop[0] && !output_crop[1] &&
+			!output_crop[2] && !output_crop[3]) {
+			output_crop[0] = 0;
+			output_crop[1] = 0;
+			output_crop[2] = taa_param->vdma2_output.width;
+			output_crop[3] = taa_param->vdma2_output.height;
+		}
+
+		if ((output_crop[2] != taa_param->vdma2_output.width) ||
+			(output_crop[3] != taa_param->vdma2_output.height) ||
+			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+			ret = fimc_is_ischain_3aap_start(device,
+				subdev,
+				ldr_frame,
+				queue,
+				taa_param,
+				output_crop,
+				&lindex,
+				&hindex,
+				&indexes);
+			if (ret) {
+				merr("fimc_is_ischain_3aap_start is fail(%d)", device, ret);
+				goto p_err;
+			}
+
+			mrinfo("[3AP] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
+		}
+
+		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_8, flags);
+
+		fimc_is_frame_request_head(framemgr, &frame);
+		if (frame) {
+			if (!frame->stream) {
+				framemgr_x_barrier_irqr(framemgr, 0, flags);
+				merr("frame->stream is NULL", device);
+				ret = -EINVAL;
+				goto p_err;
+			}
+
+			scalerUd->taapTargetAddress[0] = frame->dvaddr_buffer[0];
+			scalerUd->taapTargetAddress[1] = 0;
+			scalerUd->taapTargetAddress[2] = 0;
+			frame->stream->findex = ldr_frame->index;
+			set_bit(OUT_3AAP_FRAME, &ldr_frame->out_flag);
+			set_bit(REQ_FRAME, &frame->req_flag);
+			fimc_is_frame_trans_req_to_pro(framemgr, frame);
+		} else {
+			mwarn("3aap %d frame is drop", device, ldr_frame->fcount);
+			scalerUd->taapTargetAddress[0] = 0;
+			scalerUd->taapTargetAddress[1] = 0;
+			scalerUd->taapTargetAddress[2] = 0;
+			node->request = 0;
+		}
+
+		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_8, flags);
+	} else {
+		if (test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+			ret = fimc_is_ischain_3aap_stop(device,
+				subdev,
+				ldr_frame,
+				&lindex,
+				&hindex,
+				&indexes);
+			if (ret) {
+				merr("fimc_is_ischain_3aap_stop is fail(%d)", device, ret);
+				goto p_err;
+			}
+
+			info("[3AP:D:%d] off, %d\n", device->instance, ldr_frame->fcount);
+		}
+
+		mwarn("3aap request is 0", device);
+		scalerUd->taapTargetAddress[0] = 0;
+		scalerUd->taapTargetAddress[1] = 0;
+		scalerUd->taapTargetAddress[2] = 0;
+		node->request = 0;
+	}
+
+	ldr_frame->shot->ctl.entry.lowIndexParam |= lindex;
+	ldr_frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, ldr_frame, lindex, hindex, 0);
+	if (ret) {
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, ldr_frame, ret);
+		goto p_err;
+	}
+
+p_err:
+	return ret;
+}
+
+static int fimc_is_ischain_3aac_start(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	struct fimc_is_queue *queue,
+	struct taa_param *taa_param,
+	u32 *output_crop,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
+{
+	int ret = 0;
+	struct param_dma_output *taa_vdma4_output;
+
+	if ((output_crop[2] != taa_param->otf_input.crop_width) ||
+		(output_crop[3] != taa_param->otf_input.crop_height)) {
+		merr("bds output size is invalid((%d, %d) != (%d, %d))", device,
+			output_crop[2],
+			output_crop[3],
+			taa_param->otf_input.crop_width,
+			taa_param->otf_input.crop_height);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	taa_vdma4_output = fimc_is_itf_g_param(device, frame, PARAM_3AA_VDMA4_OUTPUT);
+	taa_vdma4_output->cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	taa_vdma4_output->width = output_crop[2];
+	taa_vdma4_output->height = output_crop[3];
+	taa_vdma4_output->buffer_number = 0;
+	taa_vdma4_output->buffer_address = 0;
+	taa_vdma4_output->dma_out_mask = 0;
+	taa_vdma4_output->bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
+	taa_vdma4_output->notify_dma_done = DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
+
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		taa_vdma4_output->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
+	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
+		taa_vdma4_output->format = DMA_INPUT_FORMAT_BAYER;
+	} else {
+		mwarn("Invalid bayer format", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	(*indexes)++;
+
+	set_bit(FIMC_IS_SUBDEV_START, &subdev->state);
+
+p_err:
+	return ret;
+}
+
+static int fimc_is_ischain_3aac_stop(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
+{
+	int ret = 0;
+	struct param_dma_output *taa_vdma4_output;
+
+	mdbgd_ischain("%s\n", device, __func__);
+
+	taa_vdma4_output = fimc_is_itf_g_param(device, frame, PARAM_3AA_VDMA4_OUTPUT);
+	taa_vdma4_output->cmd = DMA_OUTPUT_COMMAND_DISABLE;
+	*lindex |= LOWBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_3AA_VDMA4_OUTPUT);
+	(*indexes)++;
+
+	clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
+
+	return ret;
+}
+
+static int fimc_is_ischain_3aac_tag(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
+{
+	int ret = 0;
+	unsigned long flags;
+	struct fimc_is_queue *queue;
+	struct fimc_is_framemgr *framemgr;
+	struct fimc_is_frame *frame;
+	struct camera2_scaler_uctl *scalerUd;
+	struct taa_param *taa_param;
+	u32 lindex, hindex, indexes;
+	u32 *output_crop;
 
 	BUG_ON(!device);
 	BUG_ON(!subdev);
-	BUG_ON(!grp_frame);
+	BUG_ON(!ldr_frame);
+	BUG_ON(!ldr_frame->shot);
 
+#ifdef DBG_STREAMING
+	mdbgd_ischain("3AAC TAG(request %d)\n", device, node->request);
+#endif
+
+	lindex = hindex = indexes = 0;
+	taa_param = &device->is_region->parameter.taa;
+	scalerUd = &ldr_frame->shot->uctl.scalerUd;
 	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
 	if (!framemgr) {
 		merr("framemgr is NULL", device);
@@ -5450,42 +5241,90 @@ int fimc_is_ischain_3aac_tag(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	if (grp_frame->shot_ext->request_3aac) {
+	queue = GET_SUBDEV_QUEUE(subdev);
+	if (!queue) {
+		merr("queue is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (node->request) {
+		output_crop = node->output.cropRegion;
+
+		output_crop[0] = 0;
+		output_crop[1] = 0;
+		output_crop[2] = taa_param->otf_input.crop_width;
+		output_crop[3] = taa_param->otf_input.crop_height;
+
 		if (!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-			ret = fimc_is_ischain_3aac_start(device);
+			ret = fimc_is_ischain_3aac_start(device,
+				subdev,
+				ldr_frame,
+				queue,
+				taa_param,
+				output_crop,
+				&lindex,
+				&hindex,
+				&indexes);
 			if (ret) {
-				merr("3aac_start is fail", device);
+				merr("fimc_is_ischain_3aac_start is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			mrinfo("[3AC] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
 		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_10, flags);
 
 		fimc_is_frame_request_head(framemgr, &frame);
 		if (frame) {
-			grp_frame->shot->uctl.scalerUd.taacTargetAddress[0]
-				= frame->dvaddr_buffer[0];
-			frame->stream->findex = grp_frame->index;
-			set_bit(OUT_3AAC_FRAME, &grp_frame->out_flag);
+			scalerUd->taacTargetAddress[0] = frame->dvaddr_buffer[0];
+			scalerUd->taacTargetAddress[1] = 0;
+			scalerUd->taacTargetAddress[2] = 0;
+			frame->stream->findex = ldr_frame->index;
+			set_bit(OUT_3AAC_FRAME, &ldr_frame->out_flag);
 			set_bit(REQ_FRAME, &frame->req_flag);
 			fimc_is_frame_trans_req_to_pro(framemgr, frame);
 		} else {
-			grp_frame->shot->uctl.scalerUd.taacTargetAddress[0] = 0;
-			grp_frame->shot_ext->request_3aac = 0;
-			mwarn("3aac %d frame is drop", device, grp_frame->fcount);
+			mwarn("3aac %d frame is drop", device, ldr_frame->fcount);
+			scalerUd->taacTargetAddress[0] = 0;
+			scalerUd->taacTargetAddress[1] = 0;
+			scalerUd->taacTargetAddress[2] = 0;
+			node->request = 0;
 		}
+
 		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_10, flags);
 	} else {
 		if (test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-			ret = fimc_is_ischain_3aac_stop(device);
+			ret = fimc_is_ischain_3aac_stop(device,
+				subdev,
+				ldr_frame,
+				&lindex,
+				&hindex,
+				&indexes);
 			if (ret) {
-				merr("3aac_stop is fail", device);
+				merr("fimc_is_ischain_3aac_stop is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			info("[3AC:D:%d] off, %d\n", device->instance, ldr_frame->fcount);
 		}
-		grp_frame->shot->uctl.scalerUd.taacTargetAddress[0] = 0;
-		grp_frame->shot_ext->request_3aac = 0;
+
+		scalerUd->taacTargetAddress[0] = 0;
+		scalerUd->taacTargetAddress[1] = 0;
+		scalerUd->taacTargetAddress[2] = 0;
+		node->request = 0;
 	}
+
+	ldr_frame->shot->ctl.entry.lowIndexParam |= lindex;
+	ldr_frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, ldr_frame, lindex, hindex, 0);
+	if (ret) {
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, ldr_frame, ret);
+		goto p_err;
+	}
+
 p_err:
 	return ret;
 }
@@ -5507,6 +5346,7 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	u32 chain3_width, chain3_height, chain3_ratio;
 	u32 chain1_wmin, chain1_hmin;
 #endif
+	u32 input_crop[4];
 	u32 sensor_width, sensor_height;
 	u32 framerate;
 	u32 lindex = 0;
@@ -5635,11 +5475,16 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	 * In case of dirty bayer capture, reprocessing instance does not use 3aa.
 	 * In this case, ischain device has no 3aa group.
 	 */
-	if (test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state))
-		fimc_is_ischain_s_3aa_size(device, &lindex, &hindex, &indexes);
+	if (test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state)) {
+		input_crop[0] = 0;
+		input_crop[1] = 0;
+		input_crop[2] = device->sensor_width;
+		input_crop[3] = device->sensor_height;
+		fimc_is_ischain_s_3aa_size(device, NULL, input_crop, &lindex, &hindex, &indexes);
+	}
 
 	fimc_is_ischain_s_chain0_size(device,
-		device->chain0_width, device->chain0_height, &lindex, &hindex, &indexes);
+		NULL, device->chain0_width, device->chain0_height, &lindex, &hindex, &indexes);
 
 	fimc_is_ischain_s_chain1_size(device,
 		device->chain1_width, device->chain1_height, &lindex, &hindex, &indexes);
@@ -5649,6 +5494,17 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 
 	fimc_is_ischain_s_chain3_size(device,
 		device->chain3_width, device->chain3_height, &lindex, &hindex, &indexes);
+
+	info("[3AA:D:%d] 3aa size(%d x %d)\n", device->instance, input_crop[2], input_crop[3]);
+	info("[ISC:D:%d] chain0 size(%d x %d)\n", device->instance,
+		device->chain0_width, device->chain0_height);
+	info("[ISC:D:%d] chain1 size(%d x %d)\n", device->instance,
+		device->chain1_width, device->chain1_height);
+	info("[ISC:D:%d] chain2 size(%d x %d)\n", device->instance,
+		device->chain2_width, device->chain2_height);
+	info("[ISC:D:%d] chain3 size(%d x %d)\n", device->instance,
+		device->chain3_width, device->chain3_height);
+
 
 	fimc_is_ischain_s_path(device, &lindex, &hindex, &indexes);
 
@@ -5678,7 +5534,7 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	hindex = 0xFFFFFFFF;
 	indexes = 64;
 
-	ret = fimc_is_itf_s_param(device , indexes, lindex, hindex);
+	ret = fimc_is_itf_s_param(device , NULL, lindex, hindex, indexes);
 	if (ret) {
 		merr("fimc_is_itf_s_param is fail", device);
 		ret = -EINVAL;
@@ -5733,9 +5589,10 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 #endif
 
 	set_bit(FIMC_IS_SUBDEV_START, &leader->state);
+	set_bit(FIMC_IS_ISHCAIN_START, &device->state);
 
 p_err:
-	minfo("[ISP:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	info("[ISP:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
 }
 
@@ -5784,9 +5641,10 @@ int fimc_is_ischain_isp_stop(struct fimc_is_device_ischain *device,
 	}
 
 	clear_bit(FIMC_IS_SUBDEV_START, &leader->state);
+	clear_bit(FIMC_IS_ISHCAIN_START, &device->state);
 
 p_err:
-	minfo("[ISP:D:%d] %s(%d, %d)\n", device->instance, __func__,
+	info("[ISP:D:%d] %s(%d, %d)\n", device->instance, __func__,
 		ret, atomic_read(&group->scount));
 	return ret;
 }
@@ -5842,7 +5700,7 @@ int fimc_is_ischain_isp_s_input(struct fimc_is_device_ischain *device,
 
 	mdbgd_ischain("%s() calling fimc_is_group_init\n", device, __func__);
 
-	ret = fimc_is_group_init(groupmgr, group, false);
+	ret = fimc_is_group_init(groupmgr, group, false, input);
 	if (ret) {
 		merr("fimc_is_group_init is fail", device);
 		ret = -EINVAL;
@@ -5902,36 +5760,121 @@ int fimc_is_ischain_isp_buffer_finish(struct fimc_is_device_ischain *device,
 	return ret;
 }
 
+int fimc_is_ischain_isp_tag(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
+{
+	int ret = 0;
+	struct isp_param *isp_param;
+	u32 lindex, hindex, indexes;
+	u32 *input_crop;
+
+	BUG_ON(!device);
+	BUG_ON(!device->is_region);
+	BUG_ON(!subdev);
+	BUG_ON(!ldr_frame);
+	BUG_ON(!ldr_frame->shot);
+	BUG_ON(!node);
+
+#ifdef DBG_STREAMING
+	mdbgd_ischain("ISP TAG(request %d)\n", device, node->request);
+#endif
+
+	lindex = hindex = indexes = 0;
+	isp_param = &device->is_region->parameter.isp;
+	input_crop = node->input.cropRegion;
+
+	if (!input_crop[0] && !input_crop[1] &&
+		!input_crop[2] && !input_crop[3]) {
+		input_crop[0] = 0;
+		input_crop[1] = 0;
+		input_crop[2] = isp_param->vdma1_input.width;
+		input_crop[3] = isp_param->vdma1_input.height;
+	}
+
+	if ((input_crop[2] != isp_param->vdma1_input.width) ||
+		(input_crop[3] != isp_param->vdma1_input.height)) {
+		ret = fimc_is_ischain_s_chain0_size(device,
+			ldr_frame,
+			input_crop[2],
+			input_crop[3],
+			&lindex,
+			&hindex,
+			&indexes);
+		if (ret) {
+			merr("fimc_is_ischain_s_chain0_size is fail(%d)", device, ret);
+			goto p_err;
+		}
+
+		mrinfo("[ISP] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
+	}
+
+	ldr_frame->shot->ctl.entry.lowIndexParam |= lindex;
+	ldr_frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, ldr_frame, lindex, hindex, 0);
+	if (ret) {
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, ldr_frame, ret);
+		goto p_err;
+	}
+
+p_err:
+	return ret;
+}
+
 const struct fimc_is_queue_ops fimc_is_ischain_isp_ops = {
 	.start_streaming	= fimc_is_ischain_isp_start,
 	.stop_streaming		= fimc_is_ischain_isp_stop
 };
 
-static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device)
+static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	struct fimc_is_queue *queue,
+	struct scalerc_param *scc_param,
+	u32 *input_crop,
+	u32 *output_crop,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
 	u32 planes, i, j, buf_index;
-	u32 indexes, lindex, hindex;
-	struct scalerc_param *scc_param;
-	struct fimc_is_subdev *scc;
-	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_queue *queue;
+	struct param_dma_output *scc_dma_output;
+	struct param_otf_output *scc_otf_output;
+	struct param_scaler_input_crop *scc_input_crop;
+	struct param_scaler_output_crop *scc_output_crop;
 
-	scc = &device->scc;
-	vctx = scc->vctx;
-	queue = &vctx->q_dst;
+	if (output_crop[2] > scc_param->otf_input.width * 4) {
+		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
+			device, scc_param->otf_input.width, output_crop[2]);
+		output_crop[2] = scc_param->otf_input.width * 4;
+	}
 
-	mdbgd_ischain("%s(%dx%d)\n", device, __func__,
-		queue->framecfg.width,
-		queue->framecfg.height);
+	if (output_crop[3] > scc_param->otf_input.height * 4) {
+		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
+			device, scc_param->otf_input.height, output_crop[3]);
+		output_crop[3] = scc_param->otf_input.height * 4;
+	}
+
+	if (output_crop[2] < (scc_param->otf_input.width + 15) / 16) {
+		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
+			device, scc_param->otf_input.width, output_crop[2]);
+		output_crop[2] = (scc_param->otf_input.width + 15) / 16;
+	}
+
+	if (output_crop[3] < (scc_param->otf_input.height + 15) / 16) {
+		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
+			device, scc_param->otf_input.height, output_crop[3]);
+		output_crop[3] = (scc_param->otf_input.height + 15) / 16;
+	}
 
 	planes = queue->framecfg.format.num_planes;
 	for (i = 0; i < queue->buf_maxcount; i++) {
 		for (j = 0; j < planes; j++) {
 			buf_index = i*planes + j;
-
-			device->is_region->shared[447+buf_index] =
-				queue->buf_dva[i][j];
+			device->is_region->shared[447+buf_index] = queue->buf_dva[i][j];
 		}
 	}
 
@@ -5941,103 +5884,159 @@ static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device)
 		queue->framecfg.format.num_planes,
 		device->imemory.kvaddr_shared + 447 * sizeof(u32));
 
-	indexes = 0;
-	lindex = hindex = 0;
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		/* setting for always scaled output setting on reprocessing */
+		scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
+		scc_otf_output->width = output_crop[2];
+		scc_otf_output->height = output_crop[3];
+		*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
+		*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
+		(*indexes)++;
+	}
 
-	scc_param = &device->is_region->parameter.scalerc;
-	scc_param->dma_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-	scc_param->dma_output.buffer_number = queue->buf_maxcount;
-	scc_param->dma_output.plane = queue->framecfg.format.num_planes - 1;
-	scc_param->dma_output.buffer_address =
-		device->imemory.dvaddr_shared + 447*sizeof(u32);
+	scc_input_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_INPUT_CROP);
+	scc_input_crop->cmd = SCALER_CROP_COMMAND_ENABLE;
+	scc_input_crop->pos_x = input_crop[0];
+	scc_input_crop->pos_y = input_crop[1];
+	scc_input_crop->crop_width = input_crop[2];
+	scc_input_crop->crop_height = input_crop[3];
+	scc_input_crop->in_width = scc_param->otf_input.width;
+	scc_input_crop->in_height = scc_param->otf_input.height;
+	scc_input_crop->out_width = output_crop[2];
+	scc_input_crop->out_height = output_crop[3];
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
+	(*indexes)++;
 
-	scc_param->dma_output.width = queue->framecfg.width;
-	scc_param->dma_output.height = queue->framecfg.height;
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		scc_output_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OUTPUT_CROP);
+		scc_output_crop->cmd = SCALER_CROP_COMMAND_ENABLE;
+		scc_output_crop->pos_x = output_crop[0];
+		scc_output_crop->pos_y = output_crop[1];
+		scc_output_crop->crop_width = output_crop[2];
+		scc_output_crop->crop_height = output_crop[3];
+		*lindex |= LOWBIT_OF(PARAM_SCALERC_OUTPUT_CROP);
+		*hindex |= HIGHBIT_OF(PARAM_SCALERC_OUTPUT_CROP);
+		(*indexes)++;
+
+		scc_dma_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_DMA_OUTPUT);
+		scc_dma_output->cmd = DMA_OUTPUT_COMMAND_ENABLE;
+		scc_dma_output->buffer_number = queue->buf_maxcount;
+		scc_dma_output->plane = queue->framecfg.format.num_planes - 1;
+		scc_dma_output->buffer_address = device->imemory.dvaddr_shared + 447*sizeof(u32);
+		scc_dma_output->width = output_crop[2];
+		scc_dma_output->height = output_crop[3];
+		scc_dma_output->reserved[0] = SCALER_DMA_OUT_SCALED;
+	} else {
+		scc_output_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OUTPUT_CROP);
+		scc_output_crop->cmd = SCALER_CROP_COMMAND_DISABLE;
+		scc_output_crop->pos_x = output_crop[0];
+		scc_output_crop->pos_y = output_crop[1];
+		scc_output_crop->crop_width = output_crop[2];
+		scc_output_crop->crop_height = output_crop[3];
+		*lindex |= LOWBIT_OF(PARAM_SCALERC_OUTPUT_CROP);
+		*hindex |= HIGHBIT_OF(PARAM_SCALERC_OUTPUT_CROP);
+		(*indexes)++;
+
+		scc_dma_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_DMA_OUTPUT);
+		scc_dma_output->cmd = DMA_OUTPUT_COMMAND_ENABLE;
+		scc_dma_output->buffer_number = queue->buf_maxcount;
+		scc_dma_output->plane = queue->framecfg.format.num_planes - 1;
+		scc_dma_output->buffer_address = device->imemory.dvaddr_shared + 447*sizeof(u32);
+		scc_dma_output->width = output_crop[2];
+		scc_dma_output->height = output_crop[3];
+		scc_dma_output->reserved[0] = SCALER_DMA_OUT_UNSCALED;
+	}
 
 	switch (queue->framecfg.format.pixelformat) {
 	case V4L2_PIX_FMT_YUYV:
-		scc_param->dma_output.format = DMA_OUTPUT_FORMAT_YUV422,
-		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_1;
-		scc_param->dma_output.order = DMA_OUTPUT_ORDER_CrYCbY;
+		scc_dma_output->format = DMA_OUTPUT_FORMAT_YUV422,
+		scc_dma_output->plane = DMA_OUTPUT_PLANE_1;
+		scc_dma_output->order = DMA_OUTPUT_ORDER_CrYCbY;
 		break;
 	case V4L2_PIX_FMT_NV21M:
 	case V4L2_PIX_FMT_NV21:
-		scc_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
-		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_2;
-		scc_param->dma_output.order = DMA_OUTPUT_ORDER_CbCr;
+		scc_dma_output->format = OTF_OUTPUT_FORMAT_YUV420,
+		scc_dma_output->plane = DMA_OUTPUT_PLANE_2;
+		scc_dma_output->order = DMA_OUTPUT_ORDER_CbCr;
 		break;
 	case V4L2_PIX_FMT_NV12M:
 	case V4L2_PIX_FMT_NV12:
-		scc_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
-		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_2;
-		scc_param->dma_output.order = DMA_OUTPUT_ORDER_CrCb;
+		scc_dma_output->format = OTF_OUTPUT_FORMAT_YUV420,
+		scc_dma_output->plane = DMA_OUTPUT_PLANE_2;
+		scc_dma_output->order = DMA_OUTPUT_ORDER_CrCb;
 		break;
 	case V4L2_PIX_FMT_YUV420M:
 	case V4L2_PIX_FMT_YVU420M:
-		scc_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
-		scc_param->dma_output.plane = DMA_OUTPUT_PLANE_3;
-		scc_param->dma_output.order = DMA_OUTPUT_ORDER_NO;
+		scc_dma_output->format = OTF_OUTPUT_FORMAT_YUV420,
+		scc_dma_output->plane = DMA_OUTPUT_PLANE_3;
+		scc_dma_output->order = DMA_OUTPUT_ORDER_NO;
 		break;
 	default:
 		mwarn("unknown preview pixelformat", device);
 		break;
 	}
 
-	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	indexes++;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	(*indexes)++;
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
-	if (!ret)
-		set_bit(FIMC_IS_SUBDEV_START, &scc->state);
-	else
-		merr("fimc_is_itf_s_param is fail", device);
+	set_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 	return ret;
 }
 
-static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device)
+static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	struct scalerc_param *scc_param,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
-	u32 indexes, lindex, hindex;
-	struct scalerc_param *scc_param;
-	struct fimc_is_subdev *scc;
+	struct param_dma_output *scc_dma_output;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
-	indexes = 0;
-	lindex = hindex = 0;
-	scc = &device->scc;
+	scc_dma_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_DMA_OUTPUT);
+	scc_dma_output->cmd = DMA_OUTPUT_COMMAND_DISABLE;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
+	(*indexes)++;
 
-	scc_param = &device->is_region->parameter.scalerc;
-	scc_param->dma_output.cmd = DMA_OUTPUT_COMMAND_DISABLE;
-
-	lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
-	if (!ret)
-		clear_bit(FIMC_IS_SUBDEV_START, &scc->state);
-	else
-		merr("fimc_is_itf_s_param is fail", device);
+	clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 	return ret;
 }
 
 static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
-	struct fimc_is_frame *ldr_frame)
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
 {
 	int ret = 0;
 	unsigned long flags;
+	struct fimc_is_queue *queue;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
+	struct camera2_scaler_uctl *scalerUd;
+	struct scalerc_param *scc_param;
+	u32 lindex, hindex, indexes;
+	u32 *input_crop, *output_crop;
 
 	BUG_ON(!device);
 	BUG_ON(!subdev);
 	BUG_ON(!ldr_frame);
+	BUG_ON(!ldr_frame->shot);
 
+#ifdef DBG_STREAMING
+	mdbgd_ischain("scc_tag(request %d)\n", device, node->request);
+#endif
+
+	lindex = hindex = indexes = 0;
+	scc_param = &device->is_region->parameter.scalerc;
+	scalerUd = &ldr_frame->shot->uctl.scalerUd;
 	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
 	if (!framemgr) {
 		merr("framemgr is NULL", device);
@@ -6045,13 +6044,61 @@ static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	if (ldr_frame->shot_ext->request_scc) {
-		if (!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-			ret = fimc_is_ischain_scc_start(device);
+	queue = GET_SUBDEV_QUEUE(subdev);
+	if (!queue) {
+		merr("queue is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (node->request) {
+		input_crop = node->input.cropRegion;
+		output_crop = node->output.cropRegion;
+
+		if (!input_crop[0] && !input_crop[1] &&
+			!input_crop[2] && !input_crop[3]) {
+			input_crop[0] = scc_param->input_crop.pos_x;
+			input_crop[1] = scc_param->input_crop.pos_y;
+			input_crop[2] = scc_param->input_crop.crop_width;
+			input_crop[3] = scc_param->input_crop.crop_height;
+		}
+
+		if (!output_crop[0] && !output_crop[1] &&
+			!output_crop[2] && !output_crop[3]) {
+			output_crop[0] = scc_param->output_crop.pos_x;
+			output_crop[1] = scc_param->output_crop.pos_y;
+			output_crop[2] = scc_param->output_crop.crop_width;
+			output_crop[3] = scc_param->output_crop.crop_height;
+		}
+
+		if ((input_crop[0] != scc_param->input_crop.pos_x) ||
+			(input_crop[1] != scc_param->input_crop.pos_y) ||
+			(input_crop[2] != scc_param->input_crop.crop_width) ||
+			(input_crop[3] != scc_param->input_crop.crop_height) ||
+			(output_crop[0] != scc_param->output_crop.pos_x) ||
+			(output_crop[1] != scc_param->output_crop.pos_y) ||
+			(output_crop[2] != scc_param->output_crop.crop_width) ||
+			(output_crop[3] != scc_param->output_crop.crop_height) ||
+			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+			ret = fimc_is_ischain_scc_start(device,
+				subdev,
+				ldr_frame,
+				queue,
+				scc_param,
+				input_crop,
+				output_crop,
+				&lindex,
+				&hindex,
+				&indexes);
 			if (ret) {
-				merr("scc_start is fail", device);
+				merr("fimc_is_ischain_scc_start is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			mrinfo("[SCC] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
+			mrinfo("[SCC] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
 		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_8, flags);
@@ -6065,67 +6112,103 @@ static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			ldr_frame->shot->uctl.scalerUd.sccTargetAddress[0] =
-				frame->dvaddr_buffer[0];
-			ldr_frame->shot->uctl.scalerUd.sccTargetAddress[1] =
-				frame->dvaddr_buffer[1];
-			ldr_frame->shot->uctl.scalerUd.sccTargetAddress[2] =
-				frame->dvaddr_buffer[2];
+			scalerUd->sccTargetAddress[0] = frame->dvaddr_buffer[0];
+			scalerUd->sccTargetAddress[1] = frame->dvaddr_buffer[1];
+			scalerUd->sccTargetAddress[2] = frame->dvaddr_buffer[2];
 			frame->stream->findex = ldr_frame->index;
 			set_bit(OUT_SCC_FRAME, &ldr_frame->out_flag);
 			set_bit(REQ_FRAME, &frame->req_flag);
 			fimc_is_frame_trans_req_to_pro(framemgr, frame);
 		} else {
-			ldr_frame->shot->uctl.scalerUd.sccTargetAddress[0] = 0;
-			ldr_frame->shot->uctl.scalerUd.sccTargetAddress[1] = 0;
-			ldr_frame->shot->uctl.scalerUd.sccTargetAddress[2] = 0;
-			ldr_frame->shot_ext->request_scc = 0;
 			mwarn("scc %d frame is drop", device, ldr_frame->fcount);
+			scalerUd->sccTargetAddress[0] = 0;
+			scalerUd->sccTargetAddress[1] = 0;
+			scalerUd->sccTargetAddress[2] = 0;
+			node->request = 0;
 		}
 
 		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_8, flags);
 	} else {
 		if (test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-			ret = fimc_is_ischain_scc_stop(device);
+			ret = fimc_is_ischain_scc_stop(device,
+				subdev,
+				ldr_frame,
+				scc_param,
+				&lindex,
+				&hindex,
+				&indexes);
 			if (ret) {
-				merr("scc_stop is fail", device);
+				merr("fimc_is_ischain_scc_stop is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			info("[SCC:D:%d] off, %d\n", device->instance, ldr_frame->fcount);
 		}
 
-		ldr_frame->shot->uctl.scalerUd.sccTargetAddress[0] = 0;
-		ldr_frame->shot->uctl.scalerUd.sccTargetAddress[1] = 0;
-		ldr_frame->shot->uctl.scalerUd.sccTargetAddress[2] = 0;
-		ldr_frame->shot_ext->request_scc = 0;
+		scalerUd->sccTargetAddress[0] = 0;
+		scalerUd->sccTargetAddress[1] = 0;
+		scalerUd->sccTargetAddress[2] = 0;
+		node->request = 0;
+	}
+
+	ldr_frame->shot->ctl.entry.lowIndexParam |= lindex;
+	ldr_frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, ldr_frame, lindex, hindex, 0);
+	if (ret) {
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, ldr_frame, ret);
+		goto p_err;
 	}
 
 p_err:
 	return ret;
 }
 
-static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device)
+static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	struct fimc_is_queue *queue,
+	struct scalerp_param *scp_param,
+	u32 *input_crop,
+	u32 *output_crop,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
 	u32 planes, i, j, buf_index;
-	u32 indexes, lindex, hindex;
-	struct scalerp_param *scp_param;
-	struct fimc_is_subdev *scp;
-	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_queue *queue;
+	struct param_dma_output *scp_dma_output;
+	struct param_scaler_input_crop *scp_input_crop;
+	struct param_scaler_output_crop	 *scp_output_crop;
 
-	mdbgd_ischain("%s\n", device, __func__);
+	if (output_crop[2] > scp_param->otf_input.width * 4) {
+		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
+			device, scp_param->otf_input.width, output_crop[2]);
+		output_crop[2] = scp_param->otf_input.width * 4;
+	}
 
-	scp = &device->scp;
-	vctx = scp->vctx;
-	queue = &vctx->q_dst;
+	if (output_crop[3] > scp_param->otf_input.height * 4) {
+		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
+			device, scp_param->otf_input.height, output_crop[3]);
+		output_crop[3] = scp_param->otf_input.height * 4;
+	}
+
+	if (output_crop[2] < (scp_param->otf_input.width + 15) / 16) {
+		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
+			device, scp_param->otf_input.width, output_crop[2]);
+		output_crop[2] = (scp_param->otf_input.width + 15) / 16;
+	}
+
+	if (output_crop[3] < (scp_param->otf_input.height + 15) / 16) {
+		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
+			device, scp_param->otf_input.height, output_crop[3]);
+		output_crop[3] = (scp_param->otf_input.height + 15) / 16;
+	}
 
 	planes = queue->framecfg.format.num_planes;
 	for (i = 0; i < queue->buf_maxcount; i++) {
 		for (j = 0; j < planes; j++) {
 			buf_index = i*planes + j;
-
-			device->is_region->shared[400 + buf_index] =
-				queue->buf_dva[i][j];
+			device->is_region->shared[400 + buf_index] = queue->buf_dva[i][j];
 		}
 	}
 
@@ -6135,75 +6218,99 @@ static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device)
 		queue->framecfg.format.num_planes,
 		device->imemory.kvaddr_shared + 400 * sizeof(u32));
 
-	indexes = 0;
-	lindex = hindex = 0;
+	scp_input_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERP_INPUT_CROP);
+	scp_input_crop->cmd = SCALER_CROP_COMMAND_ENABLE;
+	scp_input_crop->pos_x = input_crop[0];
+	scp_input_crop->pos_y = input_crop[1];
+	scp_input_crop->crop_width = input_crop[2];
+	scp_input_crop->crop_height = input_crop[3];
+	scp_input_crop->in_width = scp_param->otf_input.width;
+	scp_input_crop->in_height = scp_param->otf_input.height;
+	scp_input_crop->out_width = scp_param->otf_output.width;
+	scp_input_crop->out_height = scp_param->otf_output.height;
+	*lindex |= LOWBIT_OF(PARAM_SCALERP_INPUT_CROP);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERP_INPUT_CROP);
+	(*indexes)++;
 
-	scp_param = &device->is_region->parameter.scalerp;
-	scp_param->dma_output.cmd = DMA_OUTPUT_COMMAND_ENABLE;
-	scp_param->dma_output.buffer_number = queue->buf_maxcount;
-	scp_param->dma_output.plane = queue->framecfg.format.num_planes - 1;
-	scp_param->dma_output.buffer_address =
-		device->imemory.dvaddr_shared + 400 * sizeof(u32);
+	/*
+	 * scaler can't apply stride to each plane, only y plane.
+	 * basically cb, cr plane should be half of y plane,
+	 * and it's automatically set
+	 *
+	 * 3 plane : all plane should be 8 or 16 stride
+	 * 2 plane : y plane should be 32, 16 stride, others should be half stride of y
+	 * 1 plane : all plane should be 8 stride
+	 */
+	/*
+	 * limitation of output_crop.pos_x and pos_y
+	 * YUV422 3P, YUV420 3P : pos_x and pos_y should be x2
+	 * YUV422 1P : pos_x should be x2
+	 */
+	scp_output_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERP_OUTPUT_CROP);
+	scp_output_crop->cmd = SCALER_CROP_COMMAND_ENABLE;
+	scp_output_crop->pos_x = output_crop[0];
+	scp_output_crop->pos_y = output_crop[1];
+	scp_output_crop->crop_width = output_crop[2];
+	scp_output_crop->crop_height = output_crop[3];
+	*lindex |= LOWBIT_OF(PARAM_SCALERP_OUTPUT_CROP);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERP_OUTPUT_CROP);
+	(*indexes)++;
 
-	scp_param->dma_output.width = queue->framecfg.width;
-	scp_param->dma_output.height = queue->framecfg.height;
+	scp_dma_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERP_DMA_OUTPUT);
+	scp_dma_output->cmd = DMA_OUTPUT_COMMAND_ENABLE;
+	scp_dma_output->buffer_number = queue->buf_maxcount;
+	scp_dma_output->plane = queue->framecfg.format.num_planes - 1;
+	scp_dma_output->buffer_address = device->imemory.dvaddr_shared + 400 * sizeof(u32);
+	scp_dma_output->width = output_crop[2];
+	scp_dma_output->height = output_crop[3];
 
 	switch (queue->framecfg.format.pixelformat) {
 	case V4L2_PIX_FMT_YUV420M:
 	case V4L2_PIX_FMT_YVU420M:
-		scp_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
-		scp_param->dma_output.plane = DMA_OUTPUT_PLANE_3;
-		scp_param->dma_output.order = DMA_OUTPUT_ORDER_NO;
+		scp_dma_output->format = OTF_OUTPUT_FORMAT_YUV420,
+		scp_dma_output->plane = DMA_OUTPUT_PLANE_3;
+		scp_dma_output->order = DMA_OUTPUT_ORDER_NO;
 		break;
 	case V4L2_PIX_FMT_NV21M:
 	case V4L2_PIX_FMT_NV21:
-		scp_param->dma_output.format = OTF_OUTPUT_FORMAT_YUV420,
-		scp_param->dma_output.plane = DMA_OUTPUT_PLANE_2;
-		scp_param->dma_output.order = DMA_OUTPUT_ORDER_CbCr;
+		scp_dma_output->format = OTF_OUTPUT_FORMAT_YUV420,
+		scp_dma_output->plane = DMA_OUTPUT_PLANE_2;
+		scp_dma_output->order = DMA_OUTPUT_ORDER_CbCr;
 		break;
 	default:
 		mwarn("unknown preview pixelformat", device);
 		break;
 	}
 
-	lindex |= LOWBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
-	indexes++;
+	*lindex |= LOWBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
+	(*indexes)++;
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
-	if (!ret)
-		set_bit(FIMC_IS_SUBDEV_START, &scp->state);
-	else
-		merr("fimc_is_itf_s_param is fail", device);
+	set_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 	return ret;
 }
 
-static int fimc_is_ischain_scp_stop(struct fimc_is_device_ischain *device)
+static int fimc_is_ischain_scp_stop(struct fimc_is_device_ischain *device,
+	struct fimc_is_subdev *subdev,
+	struct fimc_is_frame *frame,
+	struct scalerp_param *scp_param,
+	u32 *lindex,
+	u32 *hindex,
+	u32 *indexes)
 {
 	int ret = 0;
-	u32 indexes, lindex, hindex;
-	struct scalerp_param *scp_param;
-	struct fimc_is_subdev *scp;
+	struct param_dma_output *scp_dma_output;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
-	indexes = 0;
-	lindex = hindex = 0;
-	scp = &device->scp;
+	scp_dma_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERP_DMA_OUTPUT);
+	scp_dma_output->cmd = DMA_OUTPUT_COMMAND_DISABLE;
+	*lindex |= LOWBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
+	(*indexes)++;
 
-	scp_param = &device->is_region->parameter.scalerp;
-	scp_param->dma_output.cmd = DMA_OUTPUT_COMMAND_DISABLE;
-
-	lindex |= LOWBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
-	hindex |= HIGHBIT_OF(PARAM_SCALERP_DMA_OUTPUT);
-	indexes++;
-
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
-	if (!ret)
-		clear_bit(FIMC_IS_SUBDEV_START, &scp->state);
-	else
-		merr("fimc_is_itf_s_param is fail", device);
+	clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 	return ret;
 }
@@ -6269,17 +6376,31 @@ p_err:
 
 static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
-	struct fimc_is_frame *ldr_frame)
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
 {
 	int ret = 0;
 	unsigned long flags;
+	struct fimc_is_queue *queue;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
+	struct camera2_scaler_uctl *scalerUd;
+	struct scalerp_param *scp_param;
+	u32 lindex, hindex, indexes;
+	u32 *input_crop, *output_crop;
 
 	BUG_ON(!device);
 	BUG_ON(!subdev);
 	BUG_ON(!ldr_frame);
+	BUG_ON(!ldr_frame->shot);
 
+#ifdef DBG_STREAMING
+	mdbgd_ischain("scp_tag(request %d)\n", device, node->request);
+#endif
+
+	lindex = hindex = indexes = 0;
+	scp_param = &device->is_region->parameter.scalerp;
+	scalerUd = &ldr_frame->shot->uctl.scalerUd;
 	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
 	if (!framemgr) {
 		merr("framemgr is NULL", device);
@@ -6287,13 +6408,61 @@ static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	if (ldr_frame->shot_ext->request_scp) {
-		if (!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-			ret = fimc_is_ischain_scp_start(device);
+	queue = GET_SUBDEV_QUEUE(subdev);
+	if (!queue) {
+		merr("queue is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (node->request) {
+		input_crop = node->input.cropRegion;
+		output_crop = node->output.cropRegion;
+
+		if (!input_crop[0] && !input_crop[1] &&
+			!input_crop[2] && !input_crop[3]) {
+			input_crop[0] = scp_param->input_crop.pos_x;
+			input_crop[1] = scp_param->input_crop.pos_y;
+			input_crop[2] = scp_param->input_crop.crop_width;
+			input_crop[3] = scp_param->input_crop.crop_height;
+		}
+
+		if (!output_crop[0] && !output_crop[1] &&
+			!output_crop[2] && !output_crop[3]) {
+			output_crop[0] = scp_param->output_crop.pos_x;
+			output_crop[1] = scp_param->output_crop.pos_y;
+			output_crop[2] = scp_param->output_crop.crop_width;
+			output_crop[3] = scp_param->output_crop.crop_height;
+		}
+
+		if ((input_crop[0] != scp_param->input_crop.pos_x) ||
+			(input_crop[1] != scp_param->input_crop.pos_y) ||
+			(input_crop[2] != scp_param->input_crop.crop_width) ||
+			(input_crop[3] != scp_param->input_crop.crop_height) ||
+			(output_crop[0] != scp_param->output_crop.pos_x) ||
+			(output_crop[1] != scp_param->output_crop.pos_y) ||
+			(output_crop[2] != scp_param->output_crop.crop_width) ||
+			(output_crop[3] != scp_param->output_crop.crop_height) ||
+			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+			ret = fimc_is_ischain_scp_start(device,
+				subdev,
+				ldr_frame,
+				queue,
+				scp_param,
+				input_crop,
+				output_crop,
+				&lindex,
+				&hindex,
+				&indexes);
 			if (ret) {
-				merr("scp_start is fail", device);
+				merr("fimc_is_ischain_scp_start is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			mrinfo("[SCP] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
+			mrinfo("[SCP] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
 		framemgr_e_barrier_irqs(framemgr, FMGR_IDX_9, flags);
@@ -6307,38 +6476,51 @@ static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			ldr_frame->shot->uctl.scalerUd.scpTargetAddress[0] =
-				frame->dvaddr_buffer[0];
-			ldr_frame->shot->uctl.scalerUd.scpTargetAddress[1] =
-				frame->dvaddr_buffer[1];
-			ldr_frame->shot->uctl.scalerUd.scpTargetAddress[2] =
-				frame->dvaddr_buffer[2];
+			scalerUd->scpTargetAddress[0] = frame->dvaddr_buffer[0];
+			scalerUd->scpTargetAddress[1] = frame->dvaddr_buffer[1];
+			scalerUd->scpTargetAddress[2] = frame->dvaddr_buffer[2];
 			frame->stream->findex = ldr_frame->index;
 			set_bit(OUT_SCP_FRAME, &ldr_frame->out_flag);
 			set_bit(REQ_FRAME, &frame->req_flag);
 			fimc_is_frame_trans_req_to_pro(framemgr, frame);
 		} else {
-			ldr_frame->shot->uctl.scalerUd.scpTargetAddress[0] = 0;
-			ldr_frame->shot->uctl.scalerUd.scpTargetAddress[1] = 0;
-			ldr_frame->shot->uctl.scalerUd.scpTargetAddress[2] = 0;
-			ldr_frame->shot_ext->request_scp = 0;
 			mwarn("scp %d frame is drop", device, ldr_frame->fcount);
+			scalerUd->scpTargetAddress[0] = 0;
+			scalerUd->scpTargetAddress[1] = 0;
+			scalerUd->scpTargetAddress[2] = 0;
+			node->request = 0;
 		}
 
 		framemgr_x_barrier_irqr(framemgr, FMGR_IDX_9, flags);
 	} else {
 		if (test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
-			ret = fimc_is_ischain_scp_stop(device);
+			ret = fimc_is_ischain_scp_stop(device,
+				subdev,
+				ldr_frame,
+				scp_param,
+				&lindex,
+				&hindex,
+				&indexes);
 			if (ret) {
-				merr("scp_stop is fail", device);
+				merr("fimc_is_ischain_scp_stop is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			info("[SCP:D:%d] off, %d\n", device->instance, ldr_frame->fcount);
 		}
 
-		ldr_frame->shot->uctl.scalerUd.scpTargetAddress[0] = 0;
-		ldr_frame->shot->uctl.scalerUd.scpTargetAddress[1] = 0;
-		ldr_frame->shot->uctl.scalerUd.scpTargetAddress[2] = 0;
-		ldr_frame->shot_ext->request_scp = 0;
+		scalerUd->scpTargetAddress[0] = 0;
+		scalerUd->scpTargetAddress[1] = 0;
+		scalerUd->scpTargetAddress[2] = 0;
+		node->request = 0;
+	}
+
+	ldr_frame->shot->ctl.entry.lowIndexParam |= lindex;
+	ldr_frame->shot->ctl.entry.highIndexParam |= hindex;
+	ret = fimc_is_itf_s_param(device, ldr_frame, lindex, hindex, 0);
+	if (ret) {
+		mrerr("fimc_is_itf_s_param is fail(%d)", device, ldr_frame, ret);
+		goto p_err;
 	}
 
 p_err:
@@ -6373,7 +6555,7 @@ int fimc_is_ischain_dis_start(struct fimc_is_device_ischain *device,
 
 	mdbgd_ischain("%s() calling fimc_is_group_init\n", device, __func__);
 
-	ret = fimc_is_group_init(groupmgr, group, false);
+	ret = fimc_is_group_init(groupmgr, group, false, 0);
 	if (ret) {
 		merr("fimc_is_group_init is fail", device);
 		ret = -EINVAL;
@@ -6397,7 +6579,7 @@ int fimc_is_ischain_dis_start(struct fimc_is_device_ischain *device,
 		fimc_is_subdev_dis_start(device,
 			dis_param, &lindex, &hindex, &indexes);
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	ret = fimc_is_itf_s_param(device, NULL, lindex, hindex, indexes);
 	if (ret) {
 		merr("fimc_is_itf_s_param is fail", device);
 		ret = -EINVAL;
@@ -6458,7 +6640,7 @@ int fimc_is_ischain_dis_stop(struct fimc_is_device_ischain *device)
 	fimc_is_subdev_dis_bypass(device,
 		dis_param, &lindex, &hindex, &indexes);
 
-	ret = fimc_is_itf_s_param(device, indexes, lindex, hindex);
+	ret = fimc_is_itf_s_param(device, NULL, lindex, hindex, indexes);
 	if (ret) {
 		merr("fimc_is_itf_s_param is fail", device);
 		ret = -EINVAL;
@@ -6492,16 +6674,21 @@ p_err:
 
 int fimc_is_ischain_dis_tag(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
-	struct fimc_is_frame *ldr_frame)
+	struct fimc_is_frame *ldr_frame,
+	struct camera2_node *node)
 {
 	int ret = 0;
 	unsigned long flags;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
+	struct camera2_scaler_uctl *scalerUd;
 
 	BUG_ON(!device);
 	BUG_ON(!subdev);
 	BUG_ON(!ldr_frame);
+	BUG_ON(!ldr_frame->shot);
+
+	scalerUd = &ldr_frame->shot->uctl.scalerUd;
 
 	framemgr = GET_SUBDEV_FRAMEMGR(subdev);
 	if (!framemgr) {
@@ -6510,7 +6697,7 @@ int fimc_is_ischain_dis_tag(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-	if (ldr_frame->shot_ext->request_dis) {
+	if (node->request) {
 		if (!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
 			ret = fimc_is_ischain_dis_start(device,
 				ldr_frame->shot_ext->dis_bypass);
@@ -6524,24 +6711,21 @@ int fimc_is_ischain_dis_tag(struct fimc_is_device_ischain *device,
 
 		fimc_is_frame_request_head(framemgr, &frame);
 		if (frame) {
-			ldr_frame->shot->uctl.scalerUd.disTargetAddress[0] =
-				frame->dvaddr_buffer[0];
-			ldr_frame->shot->uctl.scalerUd.disTargetAddress[1] =
-				frame->dvaddr_buffer[1];
-			ldr_frame->shot->uctl.scalerUd.disTargetAddress[2] =
-				frame->dvaddr_buffer[2];
+			scalerUd->disTargetAddress[0] = frame->dvaddr_buffer[0];
+			scalerUd->disTargetAddress[1] = frame->dvaddr_buffer[1];
+			scalerUd->disTargetAddress[2] = frame->dvaddr_buffer[2];
 			frame->stream->findex = ldr_frame->index;
 			set_bit(OUT_DIS_FRAME, &ldr_frame->out_flag);
 			set_bit(REQ_FRAME, &frame->req_flag);
 			fimc_is_frame_trans_req_to_pro(framemgr, frame);
 		} else {
+			mwarn("dis %d frame is drop", device, ldr_frame->fcount);
 			ldr_frame->shot->uctl.scalerUd.disTargetAddress[0] = 0;
 			ldr_frame->shot->uctl.scalerUd.disTargetAddress[1] = 0;
 			ldr_frame->shot->uctl.scalerUd.disTargetAddress[2] = 0;
-			ldr_frame->shot_ext->request_dis = 0;
+			node->request = 0;
 			fimc_is_gframe_cancel(device->groupmgr,
 				&device->group_dis, ldr_frame->fcount);
-			mwarn("dis %d frame is drop", device, ldr_frame->fcount);
 		}
 
 		framemgr_x_barrier_irqr(framemgr, 0, flags);
@@ -6553,10 +6737,11 @@ int fimc_is_ischain_dis_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 		}
-		ldr_frame->shot->uctl.scalerUd.disTargetAddress[0] = 0;
-		ldr_frame->shot->uctl.scalerUd.disTargetAddress[1] = 0;
-		ldr_frame->shot->uctl.scalerUd.disTargetAddress[2] = 0;
-		ldr_frame->shot_ext->request_dis = 0;
+
+		scalerUd->disTargetAddress[0] = 0;
+		scalerUd->disTargetAddress[1] = 0;
+		scalerUd->disTargetAddress[2] = 0;
+		node->request = 0;
 	}
 
 p_err:
@@ -6692,7 +6877,7 @@ int fimc_is_ischain_vdo_stop(struct fimc_is_device_ischain *device,
 	clear_bit(FIMC_IS_SUBDEV_START, &leader->state);
 
 p_err:
-	minfo("[DIS:D:%d] %s(%d, %d)\n", device->instance, __func__,
+	info("[DIS:D:%d] %s(%d, %d)\n", device->instance, __func__,
 		ret, atomic_read(&group->scount));
 	return ret;
 }
@@ -6798,13 +6983,13 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 {
 	int ret = 0;
 	u32 setfile_save;
-	u32 crop_width;
+	u32 capture_id;
 	unsigned long flags;
 	struct fimc_is_group *group;
-	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_subdev *leader, *taac;
+	struct fimc_is_subdev *leader, *taac, *taap, *scc, *dis, *scp;
+	struct camera2_node *node, *leader_node;
 
 #ifdef DBG_STREAMING
 	mdbgd_ischain("%s()\n", device, __func__);
@@ -6815,15 +7000,7 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 
 	group = &device->group_3aa;
 	leader = &group->leader;
-	taac = group->subdev[ENTRY_3AAC];
-	vctx = leader->vctx;
-	if (!vctx) {
-		merr("vctx is NULL, critical error", device);
-		ret = -EINVAL;
-		return ret;
-	}
-
-	framemgr = GET_SRC_FRAMEMGR(vctx);
+	framemgr = GET_LEADER_FRAMEMGR(leader);
 
 	fimc_is_frame_request_head(framemgr, &frame);
 
@@ -6851,6 +7028,12 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 		frame->memory = FRAME_MAP_MEM;
 	}
 
+	frame->shot->ctl.entry.lowIndexParam = 0;
+	frame->shot->ctl.entry.highIndexParam = 0;
+	frame->shot->dm.entry.lowIndexParam = 0;
+	frame->shot->dm.entry.highIndexParam = 0;
+	leader_node = &frame->shot_ext->node_group.leader;
+
 #ifdef ENABLE_SETFILE
 	if (frame->shot_ext->setfile != device->setfile) {
 		setfile_save = device->setfile;
@@ -6874,36 +7057,86 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 	}
 #endif
 
-#ifdef BAYER_CROP_DZOOM
-	memcpy(&frame->shot->uctl.bayerUd.ctl,
-		&frame->shot->ctl.scaler,
-		sizeof(struct camera2_scaler_ctl));
-
-	crop_width = frame->shot->uctl.bayerUd.ctl.cropRegion[2];
-	if (crop_width && (crop_width != device->dzoom_width))
-		fimc_is_ischain_check_bcrop_size(device, frame);
-#endif
-
-	if (leader) {
-		ret = fimc_is_ischain_3aa_tag(device, leader, frame);
-		if (ret) {
-			merr("fimc_is_ischain_3ax_tag is fail(%d)", device, ret);
-			goto p_err;
-		}
+	ret = fimc_is_ischain_3aa_tag(device, leader, frame, leader_node);
+	if (ret) {
+		merr("fimc_is_ischain_3aa_tag is fail(%d)", device, ret);
+		goto p_err;
 	}
 
-	if (taac) {
-		ret = fimc_is_ischain_3aac_tag(device, taac, frame);
-		if (ret) {
-			merr("3a1c_tag fail(%d)", device, ret);
+	for (capture_id = 0; capture_id < CAPTURE_NODE_MAX; ++capture_id) {
+		node = &frame->shot_ext->node_group.capture[capture_id];
+		taac = taap = scc = dis = scp = NULL;
+
+		switch(node->vid) {
+		case 0:
+			break;
+		case FIMC_IS_VIDEO_3A0C_NUM:
+		case FIMC_IS_VIDEO_3A1C_NUM:
+			taac = group->subdev[ENTRY_3AAC];
+			break;
+		case FIMC_IS_VIDEO_3A0P_NUM:
+		case FIMC_IS_VIDEO_3A1P_NUM:
+			taap = group->subdev[ENTRY_3AAP];
+			break;
+		case FIMC_IS_VIDEO_SCC_NUM:
+                        scc = group->subdev[ENTRY_SCALERC];
+                        break;
+                case FIMC_IS_VIDEO_VDC_NUM:
+                        dis = group->subdev[ENTRY_DIS];
+                        break;
+                case FIMC_IS_VIDEO_SCP_NUM:
+                        scp = group->subdev[ENTRY_SCALERP];
+                        break;
+		default:
+			merr("capture0 vid(%d) is invalid", device, node->vid);
+			ret = -EINVAL;
 			goto p_err;
+		}
+
+		if (taac) {
+			ret = fimc_is_ischain_3aac_tag(device, taac, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_3aac_tag is fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+
+		if (taap) {
+			ret = fimc_is_ischain_3aap_tag(device, taap, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_3aap_tag is fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+
+		if (scc) {
+			ret = fimc_is_ischain_scc_tag(device, scc, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_scc_tag fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+
+		if (dis) {
+			ret = fimc_is_ischain_dis_tag(device, dis, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_dis_tag fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+
+		if (scp) {
+			ret = fimc_is_ischain_scp_tag(device, scp, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_scp_tag fail(%d)", device, ret);
+				goto p_err;
+			}
 		}
 	}
 
 p_err:
 	if (ret) {
-		merr("shot(index : %d) is skipped(error : %d)", device,
-			frame->index, ret);
+		merr("3aa shot(index : %d) is skipped(error : %d)", device, frame->index, ret);
 	} else {
 		framemgr_e_barrier_irqs(framemgr, 0, flags);
 		fimc_is_frame_trans_req_to_pro(framemgr, frame);
@@ -6919,21 +7152,14 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *check_frame)
 {
 	int ret = 0;
-#if defined(SCALER_CROP_DZOOM)
-	u32 crop_width;
-#elif defined(BAYER_CROP_DZOOM)
-	u32 crop_width;
-	u32 bds_width, bds_height;
-#endif
+	u32 capture_id;
 	unsigned long flags;
-	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_groupmgr *groupmgr;
 	struct fimc_is_group *group;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_subdev *isp, *scc, *dis, *dnr, *scp, *fd;
-	struct fimc_is_core *core;
-	struct fimc_is_device_sensor *sensor;
+	struct fimc_is_subdev *leader, *scc, *dis, *dnr, *scp, *fd;
+	struct camera2_node *node, *leader_node;
 
 	BUG_ON(!device);
 	BUG_ON(!check_frame);
@@ -6945,16 +7171,10 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 
 	groupmgr = device->groupmgr;
 	group = &device->group_isp;
-	core = (struct fimc_is_core *)device->interface->core;
-	sensor = &core->sensor[device->instance_sensor];
-	isp = &group->leader;
-	scc = group->subdev[ENTRY_SCALERC];
-	dis = group->subdev[ENTRY_DIS];
+	leader = &group->leader;
 	dnr = group->subdev[ENTRY_TDNR];
-	scp = group->subdev[ENTRY_SCALERP];
 	fd = group->subdev[ENTRY_LHFD];
-	vctx = isp->vctx;
-	framemgr = GET_SRC_FRAMEMGR(vctx);
+	framemgr = GET_LEADER_FRAMEMGR(leader);
 
 	/*
 	   BE CAREFUL WITH THIS
@@ -6976,13 +7196,13 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 		merr("frame checking is fail(%X != %X)", device,
 			(u32)frame, (u32)check_frame);
 		ret = -EINVAL;
-		goto exit;
+		goto p_err;
 	}
 
 	if (unlikely(!frame->shot)) {
 		merr("frame->shot is NULL", device);
 		ret = -EINVAL;
-		goto exit;
+		goto p_err;
 	}
 
 	if (unlikely(frame->memory == FRAME_INI_MEM)) {
@@ -7015,21 +7235,28 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 
 		framemgr_x_barrier_irqr(framemgr, 0, flags);
 	}
+
+	frame->shot->ctl.entry.lowIndexParam = 0;
+	frame->shot->ctl.entry.highIndexParam = 0;
+	frame->shot->dm.entry.lowIndexParam = 0;
+	frame->shot->dm.entry.highIndexParam = 0;
+	leader_node = &frame->shot_ext->node_group.leader;
+
 #ifdef ENABLE_DRC
 	if (frame->shot_ext->drc_bypass) {
 		if (test_bit(FIMC_IS_SUBDEV_START, &device->drc.state)) {
-			ret = fimc_is_ischain_drc_bypass(device, true);
+			ret = fimc_is_ischain_drc_bypass(device, frame, true);
 			if (ret) {
 				err("fimc_is_ischain_drc_bypass(1) is fail");
-				goto exit;
+				goto p_err;
 			}
 		}
 	} else {
 		if (!test_bit(FIMC_IS_SUBDEV_START, &device->drc.state)) {
-			ret = fimc_is_ischain_drc_bypass(device, false);
+			ret = fimc_is_ischain_drc_bypass(device, frame, false);
 			if (ret) {
 				err("fimc_is_ischain_drc_bypass(0) is fail");
-				goto exit;
+				goto p_err;
 			}
 		}
 	}
@@ -7039,18 +7266,18 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	if (dnr) {
 		if (frame->shot_ext->dnr_bypass) {
 			if (test_bit(FIMC_IS_SUBDEV_START, &dnr->state)) {
-				ret = fimc_is_ischain_dnr_bypass(device, true);
+				ret = fimc_is_ischain_dnr_bypass(device, frame, true);
 				if (ret) {
 					merr("dnr_bypass(1) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		} else {
 			if (!test_bit(FIMC_IS_SUBDEV_START, &dnr->state)) {
-				ret = fimc_is_ischain_dnr_bypass(device, false);
+				ret = fimc_is_ischain_dnr_bypass(device, frame, false);
 				if (ret) {
 					merr("dnr_bypass(0) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		}
@@ -7064,7 +7291,7 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 				ret = fimc_is_ischain_fd_bypass(device, true);
 				if (ret) {
 					merr("fd_bypass(1) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		} else {
@@ -7072,13 +7299,12 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 				ret = fimc_is_ischain_fd_bypass(device, false);
 				if (ret) {
 					merr("fd_bypass(0) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		}
 	}
 #endif
-
 
 #ifdef SCALER_CROP_DZOOM
 	crop_width = frame->shot->ctl.scaler.cropRegion[2];
@@ -7098,107 +7324,66 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	}
 #endif
 
-#ifdef BAYER_CROP_DZOOM
-	/* if there's only one group of isp, send group id by 3a0 */
-	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0) {
-		crop_width = frame->shot->ctl.scaler.cropRegion[2];
-		if (crop_width && (crop_width != device->dzoom_width)) {
-			ret = fimc_is_ischain_s_isp_dzoom(device,
-					frame->shot->ctl.scaler.cropRegion[0],
-					frame->shot->ctl.scaler.cropRegion[1],
-					frame->shot->ctl.scaler.cropRegion[2],
-					frame->shot->ctl.scaler.cropRegion[3],
-					device->chain0_width, device->chain0_height);
-			if (ret) {
-				merr("fimc_is_ischain_s_isp_dzoom is fail:\
-						CROP(%d, %d, %d, %d), BDS(%d, %d), fcount(%d)\n",
-						device,
-						frame->shot->ctl.scaler.cropRegion[0],
-						frame->shot->ctl.scaler.cropRegion[1],
-						frame->shot->ctl.scaler.cropRegion[2],
-						frame->shot->ctl.scaler.cropRegion[3],
-						device->chain0_width, device->chain0_height,
-						frame->fcount);
-				ret = -EINVAL;
-				goto exit;
-			}
-			device->dzoom_width = crop_width;
-#ifdef PRINT_DZOOM
-			minfo("[%s][ISP:D:%d] fcount(%d)", __func__, device->instance, frame->fcount);
-#endif
-		}
-	} else {
-		bds_width = frame->shot->udm.bayer.width;
-		bds_height = frame->shot->udm.bayer.height;
-		/* HACK: udm is not invalide for 3AA capture.
-		 * in the future, meta data will be modified
-		 */
-		if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-			bds_width = frame->shot->ctl.scaler.cropRegion[2];
-			bds_height = frame->shot->ctl.scaler.cropRegion[3];
-		}
-
-		if (bds_width && bds_height
-				&& (bds_width <= device->chain0_width)
-				&& ((bds_width != device->bds_width) || (bds_height != device->bds_height))) {
-			u32 lindex = 0;
-			u32 hindex = 0;
-			u32 indexes = 0;
-			ret = fimc_is_ischain_s_chain0_size(device,
-					bds_width, bds_height,
-					&lindex, &hindex, &indexes);
-			if (ret) {
-				merr("fimc_is_ischain_s_chain0_size is fail:\
-						BDS(%d, %d), fcount(%d)\n",
-						device,
-						frame->shot->udm.bayer.width,
-						frame->shot->udm.bayer.height,
-						frame->fcount);
-				ret = -EINVAL;
-				goto exit;
-			}
-
-			ret = fimc_is_itf_s_param(device,
-					indexes, lindex, hindex);
-			if (ret) {
-				merr("fimc_is_itf_s_param is fail", device);
-				ret = -EINVAL;
-				goto exit;
-			}
-#ifdef PRINT_DZOOM
-			pr_info("[ISP:D:%d] fcount(%d)", device->instance, frame->fcount);
-#endif
-		}
-#endif
-	}
-	if (scc) {
-		ret = fimc_is_ischain_scc_tag(device, scc, frame);
-		if (ret) {
-			merr("scc_tag fail(%d)", device, ret);
-			goto exit;
-		}
-	}
-
-	if (dis) {
-		ret = fimc_is_ischain_dis_tag(device, dis, frame);
-		if (ret) {
-			merr("vdc_tag fail(%d)", device, ret);
-			goto exit;
-		}
-	}
-
-	if (scp) {
-		ret = fimc_is_ischain_scp_tag(device, scp, frame);
-		if (ret) {
-			merr("scp_tag fail(%d)", device, ret);
-			goto exit;
-		}
-	}
-
-exit:
+	ret = fimc_is_ischain_isp_tag(device, leader, frame, leader_node);
 	if (ret) {
-		merr("GRP%d shot(index : %d) is skipped(error : %d)",
-			device, group->id, frame->index, ret);
+		merr("fimc_is_ischain_isp_tag is fail(%d)", device, ret);
+		goto p_err;
+	}
+
+	for (capture_id = 0; capture_id < CAPTURE_NODE_MAX; ++capture_id) {
+                node = &frame->shot_ext->node_group.capture[capture_id];
+                scc = dis = scp = NULL;
+
+                switch(node->vid) {
+                case 0:
+                        break;
+                case FIMC_IS_VIDEO_SCC_NUM:
+                        scc = group->subdev[ENTRY_SCALERC];
+                        break;
+                case FIMC_IS_VIDEO_VDC_NUM:
+                        dis = group->subdev[ENTRY_DIS];
+                        break;
+                case FIMC_IS_VIDEO_SCP_NUM:
+                        scp = group->subdev[ENTRY_SCALERP];
+                        break;
+                case FIMC_IS_VIDEO_3A0C_NUM:
+                case FIMC_IS_VIDEO_3A1C_NUM:
+                case FIMC_IS_VIDEO_3A0P_NUM:
+                case FIMC_IS_VIDEO_3A1P_NUM:
+                default:
+                        merr("capture0 vid(%d) is invalid", device, node->vid);
+			ret = -EINVAL;
+			goto p_err;
+                }
+
+		if (scc) {
+			ret = fimc_is_ischain_scc_tag(device, scc, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_scc_tag fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+
+		if (dis) {
+			ret = fimc_is_ischain_dis_tag(device, dis, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_dis_tag fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+
+		if (scp) {
+			ret = fimc_is_ischain_scp_tag(device, scp, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_scp_tag fail(%d)", device, ret);
+				goto p_err;
+			}
+		}
+	}
+
+p_err:
+	if (ret) {
+		merr("isp shot(index : %d) is skipped(error : %d)", device, frame->index, ret);
 	} else {
 		framemgr_e_barrier_irqs(framemgr, 0, flags);
 		fimc_is_frame_trans_req_to_pro(framemgr, frame);
@@ -7215,12 +7400,14 @@ int fimc_is_ischain_dis_callback(struct fimc_is_device_ischain *device,
 {
 	int ret = 0;
 	unsigned long flags;
+	u32 capture_id;
 	bool dis_req, scp_req;
 	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_framemgr *ldr_framemgr;
-	struct fimc_is_frame *ldr_frame;
-	struct fimc_is_subdev *leader, *dnr, *scp, *fd;
 	struct fimc_is_group *group;
+	struct fimc_is_framemgr *framemgr;
+	struct fimc_is_frame *frame;
+	struct fimc_is_subdev *leader, *dnr, *scp, *fd;
+	struct camera2_node *node;
 
 #ifdef DBG_STREAMING
 	mdbgd_ischain("%s()\n", device, __func__);
@@ -7231,37 +7418,41 @@ int fimc_is_ischain_dis_callback(struct fimc_is_device_ischain *device,
 
 	group = &device->group_dis;
 	vctx = group->leader.vctx;
-	ldr_framemgr = GET_SRC_FRAMEMGR(vctx);
+	framemgr = GET_SRC_FRAMEMGR(vctx);
 	dis_req = scp_req = false;
 	leader = &group->leader;
 	dnr = group->subdev[ENTRY_TDNR];
-	scp = group->subdev[ENTRY_SCALERP];
 	fd = group->subdev[ENTRY_LHFD];
 
-	fimc_is_frame_request_head(ldr_framemgr, &ldr_frame);
+	fimc_is_frame_request_head(framemgr, &frame);
 
-	if (ldr_frame != check_frame) {
+	if (frame != check_frame) {
 		merr("grp_frame is invalid(%X != %X)", device,
-			(u32)ldr_frame, (u32)check_frame);
+			(u32)frame, (u32)check_frame);
 		return -EINVAL;
 	}
 
+	frame->shot->ctl.entry.lowIndexParam = 0;
+	frame->shot->ctl.entry.highIndexParam = 0;
+	frame->shot->dm.entry.lowIndexParam = 0;
+	frame->shot->dm.entry.highIndexParam = 0;
+
 #ifdef ENABLE_TDNR
 	if (dnr) {
-		if (ldr_frame->shot_ext->dnr_bypass) {
+		if (frame->shot_ext->dnr_bypass) {
 			if (test_bit(FIMC_IS_SUBDEV_START, &dnr->state)) {
-				ret = fimc_is_ischain_dnr_bypass(device, true);
+				ret = fimc_is_ischain_dnr_bypass(device, frame, true);
 				if (ret) {
 					merr("dnr_bypass(1) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		} else {
 			if (!test_bit(FIMC_IS_SUBDEV_START, &dnr->state)) {
-				ret = fimc_is_ischain_dnr_bypass(device, false);
+				ret = fimc_is_ischain_dnr_bypass(device, frame, false);
 				if (ret) {
 					merr("dnr_bypass(0) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		}
@@ -7270,12 +7461,12 @@ int fimc_is_ischain_dis_callback(struct fimc_is_device_ischain *device,
 
 #ifdef ENABLE_FD
 	if (fd) {
-		if (ldr_frame->shot_ext->fd_bypass) {
+		if (frame->shot_ext->fd_bypass) {
 			if (test_bit(FIMC_IS_SUBDEV_START, &fd->state)) {
 				ret = fimc_is_ischain_fd_bypass(device, true);
 				if (ret) {
 					merr("fd_bypass(1) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		} else {
@@ -7283,31 +7474,53 @@ int fimc_is_ischain_dis_callback(struct fimc_is_device_ischain *device,
 				ret = fimc_is_ischain_fd_bypass(device, false);
 				if (ret) {
 					merr("fd_bypass(0) is fail", device);
-					goto exit;
+					goto p_err;
 				}
 			}
 		}
 	}
 #endif
 
-	if (scp) {
-		ret = fimc_is_ischain_scp_tag(device, scp, ldr_frame);
-		if (ret) {
-			merr("scp_tag fail(%d)", device, ret);
-			goto exit;
+	for (capture_id = 0; capture_id < CAPTURE_NODE_MAX; ++capture_id) {
+		node = &frame->shot_ext->node_group.capture[capture_id];
+		scp = NULL;
+
+		switch(node->vid) {
+		case 0:
+			break;
+		case FIMC_IS_VIDEO_SCP_NUM:
+			scp = group->subdev[ENTRY_SCALERP];
+			break;
+		case FIMC_IS_VIDEO_SCC_NUM:
+		case FIMC_IS_VIDEO_VDC_NUM:
+		case FIMC_IS_VIDEO_3A0C_NUM:
+		case FIMC_IS_VIDEO_3A1C_NUM:
+		case FIMC_IS_VIDEO_3A0P_NUM:
+		case FIMC_IS_VIDEO_3A1P_NUM:
+		default:
+			merr("capture0 vid(%d) is invalid", device, node->vid);
+			ret = -EINVAL;
+			goto p_err;
+		}
+
+		if (scp) {
+			ret = fimc_is_ischain_scp_tag(device, scp, frame, node);
+			if (ret) {
+				merr("fimc_is_ischain_scp_tag fail(%d)", device, ret);
+				goto p_err;
+			}
 		}
 	}
 
-exit:
+p_err:
 	if (ret) {
-		err("shot(index : %d) is skipped(error : %d)",
-			ldr_frame->index, ret);
+		err("dis shot(index : %d) is skipped(error : %d)", frame->index, ret);
 	} else {
-		framemgr_e_barrier_irqs(ldr_framemgr, 0, flags);
-		fimc_is_frame_trans_req_to_pro(ldr_framemgr, ldr_frame);
-		framemgr_x_barrier_irqr(ldr_framemgr, 0, flags);
-		set_bit(REQ_DIS_SHOT, &ldr_frame->req_flag);
-		fimc_is_itf_grp_shot(device, group, ldr_frame);
+		framemgr_e_barrier_irqs(framemgr, 0, flags);
+		fimc_is_frame_trans_req_to_pro(framemgr, frame);
+		framemgr_x_barrier_irqr(framemgr, 0, flags);
+		set_bit(REQ_DIS_SHOT, &frame->req_flag);
+		fimc_is_itf_grp_shot(device, group, frame);
 	}
 
 	return ret;

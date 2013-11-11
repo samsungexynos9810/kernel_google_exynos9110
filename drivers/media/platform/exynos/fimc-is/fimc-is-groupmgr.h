@@ -62,6 +62,7 @@ typedef int (*fimc_is_start_callback)(struct fimc_is_device_ischain *device,
 struct fimc_is_group_frame {
 	struct list_head		list;
 	u32				fcount;
+	struct camera2_node_group	group_cfg[GROUP_ID_MAX];
 };
 
 struct fimc_is_group_framemgr {
@@ -91,6 +92,7 @@ struct fimc_is_group {
 
 	u32				id; /* group id */
 	u32				instance; /* device instance */
+	u32				source_vid; /* source video id */
 	u32				pcount; /* program count */
 	u32				fcount; /* frame count */
 	atomic_t			scount; /* shot count */
@@ -140,7 +142,8 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group);
 int fimc_is_group_init(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
-	bool otf_input);
+	bool otf_input,
+	u32 video_id);
 int fimc_is_group_process_start(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
 	struct fimc_is_queue *queue);

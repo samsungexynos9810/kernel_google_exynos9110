@@ -71,7 +71,7 @@ int fimc_is_3a0c_video_probe(void *data)
 		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[3AC0:V:X] %s(%d)\n", __func__, ret);
+	info("[3AC0:V:X] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -105,7 +105,7 @@ int fimc_is_3a1c_video_probe(void *data)
 		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[3AC1:V:1] %s(%d)\n", __func__, ret);
+	info("[3AC1:V:1] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -138,7 +138,7 @@ static int fimc_is_3aac_video_open(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[3A%dC:V:%d] %s\n", GET_3AAC_ID(video), vctx->instance, __func__);
+	info("[3A%dC:V:%d] %s\n", GET_3AAC_ID(video), vctx->instance, __func__);
 
 	refcount = atomic_read(&core->video_isp.refcount);
 	if (refcount > FIMC_IS_MAX_NODES) {
@@ -198,7 +198,7 @@ static int fimc_is_3aac_video_close(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[3A%dC:V:%d] %s\n", GET_3AAC_ID(video), vctx->instance, __func__);
+	info("[3A%dC:V:%d] %s\n", GET_3AAC_ID(video), vctx->instance, __func__);
 
 	device = vctx->device;
 	if (!device) {

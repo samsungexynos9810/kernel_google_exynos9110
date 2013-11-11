@@ -43,7 +43,7 @@
 #include "fimc-is-video.h"
 #include "fimc-is-mem.h"
 
-#define FIMC_IS_DRV_NAME		"exynos-fimc-is"
+#define FIMC_IS_DRV_NAME			"exynos-fimc-is"
 
 #define FIMC_IS_COMMAND_TIMEOUT			(3*HZ)
 #define FIMC_IS_STARTUP_TIMEOUT			(3*HZ)

@@ -156,6 +156,6 @@ int sensor_2p2_probe(struct i2c_client *client,
 	snprintf(subdev_module->name, V4L2_SUBDEV_NAME_SIZE, "sensor-subdev.%d", module->id);
 
 p_err:
-	minfo("%s(%d)\n", __func__, ret);
+	info("%s(%d)\n", __func__, ret);
 	return ret;
 }

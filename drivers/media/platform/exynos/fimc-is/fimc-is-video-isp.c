@@ -78,7 +78,7 @@ int fimc_is_isp_video_probe(void *data)
 		dev_err(&core->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	minfo("[ISP:V:X] %s(%d)\n", __func__, ret);
+	info("[ISP:V:X] %s(%d)\n", __func__, ret);
 	return ret;
 }
 
@@ -106,7 +106,7 @@ static int fimc_is_isp_video_open(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[ISP:V:%d] %s\n", vctx->instance, __func__);
+	info("[ISP:V:%d] %s\n", vctx->instance, __func__);
 
 	device = &core->ischain[vctx->instance];
 
@@ -158,7 +158,7 @@ static int fimc_is_isp_video_close(struct file *file)
 		goto p_err;
 	}
 
-	minfo("[ISP:V:%d] %s\n", video->id, __func__);
+	info("[ISP:V:%d] %s\n", video->id, __func__);
 
 	device = vctx->device;
 	if (!device) {
@@ -490,10 +490,10 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	/* 1. checking sensor video node to connect */
 	if (ssx_vindex == FIMC_IS_VIDEO_SS0_NUM) {
 		sensor = &core->sensor[0];
-		minfo("[ISP:V:%d] <-> [SS0:V:0]\n", vctx->instance);
+		info("[ISP:V:%d] <-> [SS0:V:0]\n", vctx->instance);
 	} else if (ssx_vindex == FIMC_IS_VIDEO_SS1_NUM) {
 		sensor = &core->sensor[1];
-		minfo("[ISP:V:%d] <-> [SS1:V:0]\n", vctx->instance);
+		info("[ISP:V:%d] <-> [SS1:V:0]\n", vctx->instance);
 	} else {
 		sensor = NULL;
 		merr("sensor is not matched", vctx);
@@ -512,12 +512,14 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 			|| GET_FIMC_IS_NUM_OF_SUBIP(core, 3a1)) {
 
 		/* 2. checking 3ax group to connect */
-		if (tax_vindex == FIMC_IS_VIDEO_3A0_NUM) {
+		if ((tax_vindex == FIMC_IS_VIDEO_3A0C_NUM) ||
+			(tax_vindex == FIMC_IS_VIDEO_3A0P_NUM)) {
 			group_id = GROUP_ID_3A0;
-			minfo("[ISP:V:%d] <-> [3A0:V:0]\n", device->instance);
-		} else if (tax_vindex == FIMC_IS_VIDEO_3A1_NUM) {
+			info("[ISP:V:%d] <-> [3A0:V:0]\n", device->instance);
+		} else if ((tax_vindex == FIMC_IS_VIDEO_3A1C_NUM) ||
+			(tax_vindex == FIMC_IS_VIDEO_3A1P_NUM)) {
 			group_id = GROUP_ID_3A1;
-			minfo("[ISP:V:%d] <-> [3A1:V:0]\n", device->instance);
+			info("[ISP:V:%d] <-> [3A1:V:0]\n", device->instance);
 		} else {
 			group_id = GROUP_ID_INVALID;
 			merr("group%d is invalid", device, group_id);
@@ -545,7 +547,7 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 			}
 
 #ifdef DEBUG
-			minfo("device.module(%08X) != ischain[%d].module(%08X)\n", module,
+			info("device.module(%08X) != ischain[%d].module(%08X)\n", module,
 				dindex, temp->module);
 #endif
 		}
@@ -568,7 +570,7 @@ static int fimc_is_isp_video_s_input(struct file *file, void *priv,
 	device->sensor = sensor;
 
 	/* 5. init ischain */
-	ret = fimc_is_ischain_init(device, module, group_id, flag);
+	ret = fimc_is_ischain_init(device, module, group_id, tax_vindex, flag);
 	if (ret)
 		merr("fimc_is_device_init(%d, %d, %d) is fail", vctx, module, group_id, rep_stream);
 

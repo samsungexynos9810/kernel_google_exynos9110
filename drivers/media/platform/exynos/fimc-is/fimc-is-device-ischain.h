@@ -47,6 +47,7 @@ enum fimc_is_ischain_state {
 	FIMC_IS_ISCHAIN_LOADED,
 	FIMC_IS_ISCHAIN_POWER_ON,
 	FIMC_IS_ISCHAIN_OPEN_SENSOR,
+	FIMC_IS_ISHCAIN_START,
 	FIMC_IS_ISCHAIN_REPROCESSING,
 };
 
@@ -212,6 +213,7 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 	u32 module_id,
 	u32 group_id,
+	u32 video_id,
 	u32 flag);
 int fimc_is_ischain_g_capability(struct fimc_is_device_ischain *this,
 	u32 user_ptr);

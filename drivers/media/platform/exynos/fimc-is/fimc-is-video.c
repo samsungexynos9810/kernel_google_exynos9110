@@ -49,7 +49,7 @@
 #if defined(CONFIG_SOC_EXYNOS3470) || defined(CONFIG_SOC_EXYNOS5260)
 #define SPARE_SIZE (20 * 1024)
 #else
-#define SPARE_SIZE (16 * 1024)
+#define SPARE_SIZE (24 * 1024)
 #endif
 
 struct fimc_is_fmt fimc_is_formats[] = {

@@ -660,7 +660,7 @@ static void tasklet_flite_str0(unsigned long data)
 	ischain = device->ischain;
 
 #ifdef TASKLET_MSG
-	minfo("S%d %d\n", bstart, fcount);
+	info("S%d %d\n", bstart, fcount);
 #endif
 
 	/* comparing sw state and hw state */
@@ -690,7 +690,7 @@ static void tasklet_flite_str0(unsigned long data)
 		 */
 		if (((g_print_cnt % LOG_INTERVAL_OF_DROPS) == 0) ||
 			(g_print_cnt < LOG_INTERVAL_OF_DROPS)) {
-			minfo("grp1(res %d, rcnt %d, scnt %d), "
+			info("grp1(res %d, rcnt %d, scnt %d), "
 				"grp2(res %d, rcnt %d, scnt %d), "
 				"fcount %d(%d, %d) pcount %d\n",
 				groupmgr->group_smp_res[group_3aa->id].count,
@@ -730,7 +730,7 @@ static void tasklet_flite_str1(unsigned long data)
 	fcount = atomic_read(&flite->fcount);
 
 #ifdef TASKLET_MSG
-	minfo("S%d %d\n", bstart, fcount);
+	info("S%d %d\n", bstart, fcount);
 #endif
 
 	/* comparing sw state and hw state */
@@ -772,7 +772,7 @@ static void tasklet_flite_end(unsigned long data)
 	bdone = flite->tasklet_param_end;
 
 #ifdef TASKLET_MSG
-	minfo("E%d %d\n", bdone, atomic_read(&flite->fcount));
+	info("E%d %d\n", bdone, atomic_read(&flite->fcount));
 #endif
 
 	framemgr_e_barrier(framemgr, FMGR_IDX_1 + bdone);
@@ -854,14 +854,14 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 
 	if (test_bit(FLITE_LAST_CAPTURE, &flite->state)) {
 		if (status1) {
-			minfo("[CamIF%d] last status1 : 0x%08X\n", flite->instance, status1);
+			info("[CamIF%d] last status1 : 0x%08X\n", flite->instance, status1);
 			goto clear_status;
 		}
 
 		err("[CamIF%d] unintended intr is occured", flite->instance);
 
 		for (i = 0; i < 278; i += 4)
-			minfo("REG[%X] : 0x%08X\n", i, readl(flite->base_reg + i));
+			info("REG[%X] : 0x%08X\n", i, readl(flite->base_reg + i));
 
 		flite_hw_force_reset(flite->base_reg);
 
@@ -946,7 +946,7 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 clear_status:
 	if (status1 & (1 << 6)) {
 		/* Last Frame Capture Interrupt */
-		minfo("[CamIF%d] Last Frame Capture(fcount : %d)\n",
+		info("[CamIF%d] Last Frame Capture(fcount : %d)\n",
 			flite->instance, atomic_read(&flite->fcount));
 
 		/* Clear LastCaptureEnd bit */
@@ -1164,7 +1164,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 		tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str0, (unsigned long)subdev);
 		tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
 
-		mdbgd_back("Enabling OTF path. target 3aa(%d)", flite, flite->group);
+		mdbgd_back("Enabling OTF path. target 3aa(%d)\n", flite, flite->group);
 		if (flite->instance == FLITE_ID_A) {
 			if (flite->group == GROUP_ID_3A0)
 				otf_setting = FLITE_REG_CIGENERAL_CAM_A;
@@ -1404,6 +1404,6 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	}
 
 p_err:
-	minfo("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
+	info("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }

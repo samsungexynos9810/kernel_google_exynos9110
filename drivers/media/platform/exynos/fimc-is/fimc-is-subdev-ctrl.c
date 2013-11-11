@@ -83,6 +83,13 @@ int fimc_is_subdev_stop(struct fimc_is_device_ischain *device,
 
 	framemgr = &queue->framemgr;
 
+/*
+	if (!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+		mwarn("already stop", device);
+		goto p_err;
+	}
+*/
+
 	framemgr_e_barrier_irqs(framemgr, FMGR_IDX_4, flags);
 
 	if (framemgr->frame_pro_cnt > 0) {
@@ -105,6 +112,8 @@ int fimc_is_subdev_stop(struct fimc_is_device_ischain *device,
 	}
 
 	framemgr_x_barrier_irqr(framemgr, FMGR_IDX_4, flags);
+
+//	clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 p_err:
 	return ret;
@@ -293,18 +302,18 @@ void fimc_is_subdev_dis_bypass(struct fimc_is_device_ischain *device,
 }
 
 void fimc_is_subdev_dnr_start(struct fimc_is_device_ischain *device,
-	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes)
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	BUG_ON(!device);
-	BUG_ON(!param);
+	BUG_ON(!ctl_param);
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	param->control.cmd = CONTROL_COMMAND_START;
-	param->control.bypass = CONTROL_BYPASS_DISABLE;
-	param->control.buffer_number = SIZE_DNR_INTERNAL_BUF * NUM_DNR_INTERNAL_BUF;
-	param->control.buffer_address = device->imemory.dvaddr_shared + 350 * sizeof(u32);
+	ctl_param->cmd = CONTROL_COMMAND_START;
+	ctl_param->bypass = CONTROL_BYPASS_DISABLE;
+	ctl_param->buffer_number = SIZE_DNR_INTERNAL_BUF * NUM_DNR_INTERNAL_BUF;
+	ctl_param->buffer_address = device->imemory.dvaddr_shared + 350 * sizeof(u32);
 	device->is_region->shared[350] = device->imemory.dvaddr_3dnr;
 
 	*lindex |= LOWBIT_OF(PARAM_TDNR_CONTROL);
@@ -313,16 +322,16 @@ void fimc_is_subdev_dnr_start(struct fimc_is_device_ischain *device,
 }
 
 void fimc_is_subdev_dnr_stop(struct fimc_is_device_ischain *device,
-	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes)
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	BUG_ON(!device);
-	BUG_ON(!param);
+	BUG_ON(!ctl_param);
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	param->control.cmd = CONTROL_COMMAND_STOP;
-	param->control.bypass = CONTROL_BYPASS_DISABLE;
+	ctl_param->cmd = CONTROL_COMMAND_STOP;
+	ctl_param->bypass = CONTROL_BYPASS_DISABLE;
 
 	*lindex |= LOWBIT_OF(PARAM_TDNR_CONTROL);
 	*hindex |= HIGHBIT_OF(PARAM_TDNR_CONTROL);
@@ -330,22 +339,54 @@ void fimc_is_subdev_dnr_stop(struct fimc_is_device_ischain *device,
 }
 
 void fimc_is_subdev_dnr_bypass(struct fimc_is_device_ischain *device,
-	struct tdnr_param *param, u32 *lindex, u32 *hindex, u32 *indexes)
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes)
 {
 	BUG_ON(!device);
-	BUG_ON(!param);
+	BUG_ON(!ctl_param);
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
 #ifdef ENABLE_FULL_BYPASS
-	param->control.cmd = CONTROL_COMMAND_STOP;
+	ctl_param->cmd = CONTROL_COMMAND_STOP;
 #else
-	param->control.cmd = CONTROL_COMMAND_START;
+	ctl_param->cmd = CONTROL_COMMAND_START;
 #endif
-	param->control.bypass = CONTROL_BYPASS_ENABLE;
+	ctl_param->bypass = CONTROL_BYPASS_ENABLE;
 
 	*lindex |= LOWBIT_OF(PARAM_TDNR_CONTROL);
 	*hindex |= HIGHBIT_OF(PARAM_TDNR_CONTROL);
+	(*indexes)++;
+}
+
+void fimc_is_subdev_drc_start(struct fimc_is_device_ischain *device,
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes)
+{
+	BUG_ON(!device);
+	BUG_ON(!ctl_param);
+	BUG_ON(!lindex);
+	BUG_ON(!hindex);
+	BUG_ON(!indexes);
+
+	ctl_param->cmd = CONTROL_COMMAND_START;
+	ctl_param->bypass = CONTROL_BYPASS_DISABLE;
+	*lindex |= LOWBIT_OF(PARAM_DRC_CONTROL);
+	*hindex |= HIGHBIT_OF(PARAM_DRC_CONTROL);
+	(*indexes)++;
+}
+
+void fimc_is_subdev_drc_bypass(struct fimc_is_device_ischain *device,
+	struct param_control *ctl_param, u32 *lindex, u32 *hindex, u32 *indexes)
+{
+	BUG_ON(!device);
+	BUG_ON(!ctl_param);
+	BUG_ON(!lindex);
+	BUG_ON(!hindex);
+	BUG_ON(!indexes);
+
+	ctl_param->cmd = CONTROL_COMMAND_START;
+	ctl_param->bypass = CONTROL_BYPASS_ENABLE;
+	*lindex |= LOWBIT_OF(PARAM_DRC_CONTROL);
+	*hindex |= HIGHBIT_OF(PARAM_DRC_CONTROL);
 	(*indexes)++;
 }
