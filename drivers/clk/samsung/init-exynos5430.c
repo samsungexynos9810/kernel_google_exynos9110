@@ -163,12 +163,28 @@ static void aud_init_clock(void)
 
 void mfc_init_clock(void)
 {
+	exynos_set_parent("mout_aclk_mfc0_333_a", "mout_mfc_pll_user");
+	exynos_set_parent("mout_aclk_mfc0_333_b", "mout_aclk_mfc0_333_a");
+	exynos_set_parent("mout_aclk_mfc0_333_c", "mout_aclk_mfc0_333_b");
+
+	exynos_set_parent("mout_aclk_mfc1_333_a", "mout_mfc_pll_user");
+	exynos_set_parent("mout_aclk_mfc1_333_b", "mout_aclk_mfc1_333_a");
+	exynos_set_parent("mout_aclk_mfc1_333_c", "mout_aclk_mfc1_333_b");
+
 	exynos_set_parent("mout_aclk_mfc0_333_user", "aclk_mfc0_333");
 	exynos_set_parent("mout_aclk_mfc1_333_user", "aclk_mfc1_333");
+
+	exynos_set_parent("mout_aclk_hevc_400", "mout_bus_pll_user");
 	exynos_set_parent("mout_aclk_hevc_400_user", "aclk_hevc_400");
 
-	exynos_set_parent("mout_mfc_pll_user", "dout_mfc_pll");
-	exynos_set_parent("mout_bus_pll_user", "dout_bus_pll");
+	exynos_set_rate("dout_aclk_mfc0_333", 333*1000000);
+	exynos_set_rate("dout_aclk_mfc1_333", 333*1000000);
+	exynos_set_rate("dout_aclk_hevc_400", 400*1000000);
+
+	pr_debug("mfc: aclk_mfc0_333 %d aclk_mfc1_333 %d aclk_hevc_400 %d\n",
+			exynos_get_rate("aclk_mfc0_333"),
+			exynos_get_rate("aclk_mfc1_333"),
+			exynos_get_rate("aclk_hevc_400"));
 }
 
 void adma_init_clock(void)
