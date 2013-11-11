@@ -950,8 +950,8 @@
 		compatible = "samsung,mfc-v6";
 		reg = <0x152E0000 0x10000>;
 		interrupts = <0 358 0>;
-		clock-names = "gate_mfc0", "mout_aclk_mfc0_333_user", "aclk_mfc0_333", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_bus_pll";
-		clocks = <&clock 2352>, <&clock 3121>, <&clock 332>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4101>;
+		clock-names = "gate_mfc0", "mout_aclk_mfc0_333_user", "aclk_mfc0_333", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_aclk_mfc0_333";
+		clocks = <&clock 2352>, <&clock 3121>, <&clock 332>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4034>;
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
 		samsung,power-domain = <&pd_mfc0>;
 		status = "ok";
@@ -1000,8 +1000,8 @@
 		compatible = "samsung,mfc-v6";
 		reg = <0x153E0000 0x10000>;
 		interrupts = <0 366 0>;
-		clock-names = "gate_mfc1", "mout_aclk_mfc1_333_user", "aclk_mfc1_333", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_bus_pll";
-		clocks = <&clock 2372>, <&clock 3122>, <&clock 333>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4101>;
+		clock-names = "gate_mfc1", "mout_aclk_mfc1_333_user", "aclk_mfc1_333", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_aclk_mfc1_333";
+		clocks = <&clock 2372>, <&clock 3122>, <&clock 333>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4035>;
 		iommu = <&sysmmu_mfc1_0>, <&sysmmu_mfc1_1>;
 		samsung,power-domain = <&pd_mfc1>;
 		status = "ok";
