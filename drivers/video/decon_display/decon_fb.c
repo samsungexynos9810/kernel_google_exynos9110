@@ -4075,7 +4075,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	msleep(120);
 #ifdef CONFIG_ION_EXYNOS
-	s3c_fb_wait_for_vsync(sfb, 0);
+	s3c_fb_wait_for_vsync(sfb, 3000);
 	ret = iovmm_activate(&pdev->dev);
 	if (ret < 0) {
 		dev_err(sfb->dev, "failed to activate vmm\n");
