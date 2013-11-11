@@ -126,13 +126,12 @@ static void uart_clock_init(void)
 static void mscl_init_clock(void)
 {
 
-	exynos_set_parent("mout_aclk_400_mscl", "sclk_cpll");
-	exynos_set_parent("dout_aclk_400_mscl", "mout_aclk_400_mscl");
+	exynos_set_parent("mout_aclk_400_mscl", "fout_cpll");
 	exynos_set_parent("mout_aclk_400_mscl_sw", "dout_aclk_400_mscl");
 	exynos_set_parent("mout_aclk_400_mscl_user", "mout_aclk_400_mscl_sw");
 	exynos_set_parent("aclk_400_mscl", "mout_aclk_400_mscl_user");
 
-	exynos_set_rate("dout_aclk_400_mscl", 400 * 1000000);
+	exynos_set_rate("dout_aclk_400_mscl", 333 * 1000000);
 
 	pr_info("scaler: dout_aclk_400_mscl %d aclk_400_mscl %d\n",
 			exynos_get_rate("dout_aclk_400_mscl"),
