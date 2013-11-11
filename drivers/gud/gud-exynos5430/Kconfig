@@ -4,7 +4,7 @@
 config MOBICORE_DRIVER
 	tristate "MobiCore Driver"
 	default y
-	#depends on ARM_TRUSTZONE
+	depends on ARM_TRUSTZONE
 	---help---
 	  Enable Linux Kernel MobiCore Support
 
@@ -27,6 +27,7 @@ config MOBICORE_VERBOSE
 
 config MOBICORE_API
     tristate "Linux MobiCore API"
+    default y
     depends on MOBICORE_DRIVER
     ---help---
       Enable Linux Kernel MobiCore API

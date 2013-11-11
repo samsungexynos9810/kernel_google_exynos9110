@@ -23,9 +23,7 @@
 #include "common.h"
 
 #define MC_DAEMON_NETLINK  17
-#ifdef ARM_TRUSTZOE
 #define MC_NETLINK_COMPAT_V37
-#endif
 
 struct mc_kernelapi_ctx {
 	struct sock *sk;
