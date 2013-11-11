@@ -70,7 +70,8 @@
 #define CONFIG_FIMD_USE_BUS_DEVFREQ
 #endif
 
-#if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ) ||\
+	defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 #define CONFIG_FIMD_USE_WIN_OVERLAP_CNT
 #include <mach/devfreq.h>
 static int prev_overlap_cnt;
