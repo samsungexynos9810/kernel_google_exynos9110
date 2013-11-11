@@ -975,7 +975,7 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 	}
 
 	switch (event) {
-	case MEM_TH_LV1:
+	case MIF_TH_LV1:
 		__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_0_TIMINGAREF);
 		__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_1_TIMINGAREF);
 
@@ -983,12 +983,12 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 			pm_qos_update_request(&min_mif_thermal_qos, pdata->default_qos);
 
 		break;
-	case MEM_TH_LV2:
+	case MIF_TH_LV2:
 		/*
 		 * In case of temperature increment, set MIF level 266Mhz as minimum
 		 * before changing dram refresh counter.
 		 */
-		if (*on < MEM_TH_LV2) {
+		if (*on < MIF_TH_LV2) {
 			if (pm_qos_request_active(&min_mif_thermal_qos))
 				pm_qos_update_request(&min_mif_thermal_qos,
 						mif_bus_opp_list[LV_5].clk);
@@ -1001,14 +1001,14 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 		 * In case of temperature decrement, set MIF level 266Mhz as minimum
 		 * after changing dram refresh counter.
 		 */
-		if (*on > MEM_TH_LV2) {
+		if (*on > MIF_TH_LV2) {
 			if (pm_qos_request_active(&min_mif_thermal_qos))
 				pm_qos_update_request(&min_mif_thermal_qos,
 						mif_bus_opp_list[LV_5].clk);
 		}
 
 		break;
-	case MEM_TH_LV3:
+	case MIF_TH_LV3:
 		if (pm_qos_request_active(&min_mif_thermal_qos))
 			pm_qos_update_request(&min_mif_thermal_qos, mif_bus_opp_list[LV_4].clk);
 
