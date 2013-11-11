@@ -938,6 +938,12 @@ struct camera2_sensor_uctl {
 	uint64_t        dynamicFrameDuration;
 	uint32_t	analogGain;
 	uint32_t	digitalGain;
+	uint64_t	longExposureTime; /* For supporting WDR */
+	uint64_t	shortExposureTime;
+	uint32_t	longAnalogGain;
+	uint32_t	shortAnalogGain;
+	uint32_t	longDigitalGain;
+	uint32_t	shortDigitalGain;
 };
 
 struct camera2_scaler_uctl {
