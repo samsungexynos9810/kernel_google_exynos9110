@@ -335,6 +335,23 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+/* exynos_pd_isp_power_off_pre - setup before power off.
+ * @pd: power domain.
+ *
+ * enable IP_ISP1 clk.
+ */
+static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
+{
+	unsigned int reg;
+
+	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
+	reg = __raw_readl(EXYNOS5430_ENABLE_IP_ISP1);
+	reg |= (1 << 12 | 1 << 11);
+	__raw_writel(reg, EXYNOS5430_ENABLE_IP_ISP1);
+
+	return 0;
+}
+
 /* exynos_pd_isp_power_off_post - clean up after power off.
  * @pd: power domain.
  *
@@ -365,6 +382,23 @@ static int exynos_pd_cam0_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<5);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+/* exynos_pd_cam0_power_off_pre - setup before power off.
+ * @pd: power domain.
+ *
+ * enable IP_CAM01 clk.
+ */
+static int exynos_pd_cam0_power_off_pre(struct exynos_pm_domain *pd)
+{
+	unsigned int reg;
+
+	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
+	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM01);
+	reg |= (1 << 12);
+	__raw_writel(reg, EXYNOS5430_ENABLE_IP_CAM01);
 
 	return 0;
 }
@@ -403,6 +437,23 @@ static int exynos_pd_cam1_power_on_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+/* exynos_pd_cam1_power_off_pre - setup before power off.
+ * @pd: power domain.
+ *
+ * enable IP_CAM11 clk.
+ */
+static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
+{
+	unsigned int reg;
+
+	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
+	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM11);
+	reg |= (1 << 19);
+	__raw_writel(reg, EXYNOS5430_ENABLE_IP_CAM11);
+
+	return 0;
+}
+
 /* exynos_pd_cam1_power_off_post - clean up after power off.
  * @pd: power domain.
  *
@@ -420,6 +471,136 @@ static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+/* helpers for special power-off sequence with LPI control */
+#define __set_mask(name) __raw_writel(name##_ALL, name)
+#define __clr_mask(name) __raw_writel(~(name##_ALL), name)
+
+static int lpi_disable(const char *name)
+{
+
+	if (strncmp(name, "pd-cam0", 7) == 0) {
+		__set_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
+		__set_mask(EXYNOS5430_LPI_MASK_CAM0_ASYNCBRIDGE);
+		__set_mask(EXYNOS5430_LPI_MASK_CAM0_NOCBUS);
+	} else if (strncmp(name, "pd-cam1", 7) == 0) {
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
+	} else if (strncmp(name, "pd-isp", 6) == 0) {
+		__set_mask(EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
+		__set_mask(EXYNOS5430_LPI_MASK_ISP_ASYNCBRIDGE);
+		__set_mask(EXYNOS5430_LPI_MASK_ISP_NOCBUS);
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int lpi_enable(const char *name)
+{
+	if (strncmp(name, "pd-cam0", 7) == 0) {
+		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
+		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_ASYNCBRIDGE);
+		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_NOCBUS);
+	} else if (strncmp(name, "pd-cam1", 7) == 0) {
+		__clr_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
+		__clr_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
+		__clr_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
+	} else if (strncmp(name, "pd-isp", 6) == 0) {
+		__clr_mask(EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
+		__clr_mask(EXYNOS5430_LPI_MASK_ISP_ASYNCBRIDGE);
+		__clr_mask(EXYNOS5430_LPI_MASK_ISP_NOCBUS);
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static unsigned int check_power_status(struct exynos_pm_domain *pd, int power_flags,
+					unsigned int timeout)
+{
+	/* check STATUS register */
+	while ((__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) != power_flags) {
+		if (timeout == 0) {
+			pr_err("%s@%p: %08x, %08x, %08x\n",
+					pd->genpd.name,
+					pd->base,
+					__raw_readl(pd->base),
+					__raw_readl(pd->base+4),
+					__raw_readl(pd->base+8));
+			return 0;
+		}
+		--timeout;
+		cpu_relax();
+		usleep_range(8, 10);
+	}
+
+	return timeout;
+}
+
+#define TIMEOUT_COUNT	100 /* about 1ms, based on 10us */
+static int exynos_pd_power_off_with_lpi(struct exynos_pm_domain *pd, int power_flags)
+{
+	unsigned long timeout;
+
+	if (unlikely(!pd))
+		return -EINVAL;
+
+	mutex_lock(&pd->access_lock);
+	if (likely(pd->base)) {
+		/* sc_feedback to OPTION register */
+		__raw_writel(0x0102, pd->base+0x8);
+
+		/* on/off value to CONFIGURATION register */
+		__raw_writel(power_flags, pd->base);
+
+		timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+
+		if (unlikely(!timeout)) {
+			pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
+
+			if (lpi_disable(pd->name))
+				pr_warn("%s: failed to disable LPI mask\n", pd->name);
+
+			timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+
+			if (lpi_enable(pd->name))
+				pr_warn("%s: failed to enable LPI mask\n", pd->name);
+
+			if (unlikely(!timeout)) {
+				pr_err(PM_DOMAIN_PREFIX "%s can't control power with LPI masking, timeout\n",
+						pd->name);
+				mutex_lock(&pd->access_lock);
+				return -ETIMEDOUT;
+			} else {
+				pr_warn(PM_DOMAIN_PREFIX "%s force power down success\n", pd->name);
+			}
+		}
+
+		if (unlikely(timeout < (TIMEOUT_COUNT >> 1))) {
+			pr_warn("%s@%p: %08x, %08x, %08x\n",
+					pd->name,
+					pd->base,
+					__raw_readl(pd->base),
+					__raw_readl(pd->base+4),
+					__raw_readl(pd->base+8));
+			pr_warn(PM_DOMAIN_PREFIX "long delay found during %s is %s\n",
+					pd->name, power_flags ? "on":"off");
+		}
+	}
+	pd->status = power_flags;
+	mutex_unlock(&pd->access_lock);
+
+	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
+				pd->genpd.name, pd->base,
+				__raw_readl(pd->base),
+				__raw_readl(pd->base+4),
+				__raw_readl(pd->base+8));
+
+	return 0;
+}
 static struct exynos_pd_callback pd_callback_list[] = {
 	{
 		.name = "pd-maudio",
@@ -459,14 +640,20 @@ static struct exynos_pd_callback pd_callback_list[] = {
 	}, {
 		.name = "pd-isp",
 		.on_pre = exynos_pd_isp_power_on_pre,
+		.off_pre = exynos_pd_isp_power_off_pre,
+		.off = exynos_pd_power_off_with_lpi,
 		.off_post = exynos_pd_isp_power_off_post,
 	}, {
 		.name = "pd-cam0",
 		.on_pre = exynos_pd_cam0_power_on_pre,
+		.off_pre = exynos_pd_cam0_power_off_pre,
+		.off = exynos_pd_power_off_with_lpi,
 		.off_post = exynos_pd_cam0_power_off_post,
 	}, {
 		.name = "pd-cam1",
 		.on_pre = exynos_pd_cam1_power_on_pre,
+		.off_pre = exynos_pd_cam1_power_off_pre,
+		.off = exynos_pd_power_off_with_lpi,
 		.off_post = exynos_pd_cam1_power_off_post,
 	},
 };
