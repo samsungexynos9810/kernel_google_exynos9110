@@ -2421,8 +2421,8 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 			return;
 		}
 #endif
+		old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
 		if (WIN_CONFIG_DMA(i)) {
-			old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
 			if (regs->dma_buf_data[i].fence)
 				s3c_fd_fence_wait(sfb,
 					regs->dma_buf_data[i].fence);
@@ -2472,8 +2472,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	while (readl(sfb->regs + DECON_UPDATE) & 0x1);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
-		if (WIN_CONFIG_DMA(i))
-			s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
+		s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
 
 #if defined(CONFIG_DECON_DEVFREQ)
 	if (prev_gsc_local_cnt > local_cnt) {
@@ -3275,11 +3274,7 @@ static int s3c_fb_me_link_setup(struct media_entity *entity,
 
 	if (flags & MEDIA_LNK_FL_ENABLED) {
 		win->use = 1;
-		if (local->index == FIMD_PAD_SINK_FROM_GSCALER_SRC)
-			win->local = 1;
 	} else {
-		if (local->index == FIMD_PAD_SINK_FROM_GSCALER_SRC)
-			win->local = 0;
 		win->use = 0;
 
 		for (i = 0; i < entity->num_links; ++i)
