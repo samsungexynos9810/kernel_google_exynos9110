@@ -407,6 +407,13 @@ static __init int exynos_pm_dt_parse_domains(void)
 		else
 			pd->pd_option = val;
 
+		if (pd->cb) {
+			if (pd->cb->on)
+				pd->on = pd->cb->on;
+			if (pd->cb->off)
+				pd->off = pd->cb->off;
+		}
+
 		platform_set_drvdata(pdev, pd);
 
 		exynos_pm_powerdomain_init(pd);
