@@ -284,6 +284,7 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 	clip_freq = get_cpu_frequency(cpu, cooling_state);
 	if (!clip_freq)
 		return -EINVAL;
+	pr_info("%s)CPU Frequency limited to : %u\n", __func__, clip_freq);
 
 	cpufreq_device->cpufreq_state = cooling_state;
 	cpufreq_device->cpufreq_val = clip_freq;

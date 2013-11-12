@@ -467,7 +467,7 @@ void exynos_tmu_call_notifier(enum tmu_noti_state_t cur_state)
 			blocking_notifier_call_chain(&exynos_tmu_notifier, TMU_COLD, &cur_state);
 		else
 			blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &tmu_old_state);
-
+		pr_info("tmu temperature state %d to %d\n", tmu_old_state, cur_state);
 		tmu_old_state = cur_state;
 	}
 }
@@ -483,6 +483,7 @@ void exynos_gpu_call_notifier(enum gpu_noti_state_t cur_state)
 		cur_state = GPU_COLD;
 
 	if (cur_state!=gpu_old_state) {
+		pr_info("gpu temperature state %d to %d\n", gpu_old_state, cur_state);
 		blocking_notifier_call_chain(&exynos_gpu_notifier, cur_state, &cur_state);
 		gpu_old_state = cur_state;
 	}
@@ -518,6 +519,7 @@ static void exynos_check_mif_noti_state(int temp)
 		cur_state = MIF_TH_LV3;
 
 	if (cur_state != mif_old_state) {
+		pr_info("tmu temperature state %d to %d\n", mif_old_state, cur_state);
 		blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &mif_old_state);
 		mif_old_state = cur_state;
 	}
@@ -1240,9 +1242,9 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #if defined(CONFIG_SOC_EXYNOS5422)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.threshold_falling = 2,
-	.trigger_levels[0] = 80,
-	.trigger_levels[1] = 90,
-	.trigger_levels[2] = 95,
+	.trigger_levels[0] = 60,
+	.trigger_levels[1] = 70,
+	.trigger_levels[2] = 80,
 	.trigger_levels[3] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
@@ -1254,29 +1256,29 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 55,
 	.freq_tab[0] = {
-		.freq_clip_max = 1800 * 1000,
-		.temp_level = 80,
+		.freq_clip_max = 1200 * 1000,
+		.temp_level = 60,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 #endif
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 1700 * 1000,
-		.temp_level = 90,
+		.freq_clip_max = 1100 * 1000,
+		.temp_level = 70,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 #endif
 	},
 	.freq_tab[2] = {
-		.freq_clip_max = 1200 * 1000,
-		.temp_level = 95,
+		.freq_clip_max = 900 * 1000,
+		.temp_level = 80,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 #endif
 	},
 	.freq_tab[3] = {
 		.freq_clip_max = 800 * 1000,
-		.temp_level = 100,
+		.temp_level = 90,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 #endif
