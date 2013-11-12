@@ -500,12 +500,8 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 		else
 			data |= WINCON0_BPPMODE_16BPP_565;
 		data |= WINCONx_HAWSWP;
-#if 0 /* TO DO */
-		data |= soc_is_exynos5420() ? WINCONx_BURSTLEN_8WORD :
+		data |= soc_is_exynos5422() ? WINCONx_BURSTLEN_8WORD :
 						 WINCONx_BURSTLEN_16WORD;
-#else
-		data |= WINCONx_BURSTLEN_8WORD;
-#endif
 		break;
 	case 24:
 	case 32:
@@ -525,12 +521,9 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 			data |= WINCON0_BPPMODE_24BPP_888;
 
 		data |= WINCONx_WSWP;
-#if 0 /* TO DO */
-		data |= soc_is_exynos5420() ? WINCONx_BURSTLEN_8WORD :
+
+		data |= soc_is_exynos5422() ? WINCONx_BURSTLEN_8WORD :
 						 WINCONx_BURSTLEN_16WORD;
-#else
-		data |= WINCONx_BURSTLEN_8WORD;
-#endif
 		break;
 	}
 
@@ -2086,11 +2079,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			regs->wincon[i] |= WINCONx_ENWIN;
 		} else {
 			regs->wincon[i] &= ~WINCONx_ENWIN;
-#if 0   /* TO DO */
-			if (soc_is_exynos5420())
-#else
-			if (1)
-#endif
+			if (soc_is_exynos5422())
 				regs->wincon[i] |= WINCONx_BURSTLEN_8WORD;
 		}
 		regs->winmap[i] = color_map;
@@ -3999,11 +3988,14 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	sfb->output_on = true;
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
+
 	s3c_fb_activate_window_dma(sfb, default_win);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 
 	msleep(12);
+#endif
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 0);
 	ret = iovmm_activate(&pdev->dev);
@@ -4216,25 +4208,25 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	int default_win;
 	int ret = 0;
 	u32 reg;
-#if defined(CONFIG_SOC_EXYNOS5260)
-	struct clk *clk_child, *clk_parent;
-#endif
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
 
-#if defined(CONFIG_SOC_EXYNOS5260)
-	struct clk *mout_mediatop_bpll, *mout_cpll;
-	struct clk *aclk_disp_333, *aclk_disp_222;
-	struct clk *sclk_disp_pixel_user, *sclk_disp_pixel;
-	struct clk *aclk_disp_333_nogate, *aclk_disp_222_nogate;
-	struct clk *sclk_disp_128_extclkpll;
-#endif
 #if !defined(CONFIG_SOC_EXYNOS5260)
 	reg = __raw_readl(EXYNOS5_CLK_SRC_TOP5);
 	reg |= (1 << 24);
 	__raw_writel(reg, EXYNOS5_CLK_SRC_TOP5);
 #endif
+
+	if (soc_is_exynos5422()) {
+		if (exynos_set_parent("mout_aclk_400_disp1_user", "aclk_400_disp1_sw") < 0)
+			pr_err("Unable to set parent for mout_aclk_400_disp1_user\n");
+		if (exynos_set_parent("mout_aclk_400_disp1_sw", "dout_aclk_400_disp1") < 0)
+			pr_err("Unable to set parent for mout_aclk_400_disp1_sw.\n");
+		if (exynos_set_parent("mout_aclk_400_disp1", "mout_dpll_ctrl") < 0)
+			pr_err("Unable to set parent for mout_aclk_400_disp1.\n");
+	}
+
 	mutex_lock(&sfb->output_lock);
 	if (sfb->output_on) {
 		ret = -EBUSY;
@@ -4251,16 +4243,12 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 		clk_enable(sfb->lcd_clk);
 
 	/* setup gpio and output polarity controls */
-	pd->setup_gpio();
+	init_display_gpio_exynos();
 
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
-#if 0 /* TO DO */
-	if (soc_is_exynos5420())
-#else
-	if (1)
-#endif
+	if (soc_is_exynos5422())
 		writel(0x3, sfb->regs + REG_CLKGATE_MODE);
 	else
 		writel(REG_CLKGATE_MODE_NON_CLOCK_GATE,
@@ -4298,11 +4286,12 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
+#ifdef CONFIG_FB_I80_COMMAND_MODE
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 
 	msleep(12);
-
+#endif
 	sfb->output_on = true;
 
 err:
@@ -4413,11 +4402,7 @@ int s3c_fb_resume(struct device *dev)
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
-#if 0   /* TO DO */
-	if (soc_is_exynos5420())
-#else
-	if (1)
-#endif
+	if (soc_is_exynos5422())
 		writel(0x3, sfb->regs + REG_CLKGATE_MODE);
 	else
 		writel(REG_CLKGATE_MODE_NON_CLOCK_GATE,
@@ -4455,11 +4440,12 @@ int s3c_fb_resume(struct device *dev)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
-
+#ifdef CONFIG_FB_I80_COMMAND_MODE
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 
 	msleep(12);
+#endif
 	sfb->output_on = true;
 
 err:
