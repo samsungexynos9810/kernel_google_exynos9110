@@ -158,6 +158,7 @@ enum pt_status fimg2d_check_pagetable(struct mm_struct *mm,
 					pgd, *lv1d, vaddr);
 			return PT_FAULT;
 		}
+		dmac_flush_range(lv1d, lv1d + 1);
 
 		lv2d = (unsigned long *)phys_to_virt(*lv1d & ~LV2_BASE_MASK) +
 				((vaddr & LV2_PT_MASK) >> LV2_SHIFT);
@@ -174,6 +175,8 @@ enum pt_status fimg2d_check_pagetable(struct mm_struct *mm,
 					pgd, *lv2d, vaddr);
 			return PT_FAULT;
 		}
+
+		dmac_flush_range(lv2d, lv2d + 1);
 
 		vaddr += PAGE_SIZE;
 		size -= PAGE_SIZE;
