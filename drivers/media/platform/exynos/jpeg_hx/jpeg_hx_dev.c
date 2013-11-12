@@ -546,6 +546,9 @@ static void jpeg_hx_device_enc_run(void *priv)
 	jpeg_hx_set_timer(jpeg->reg_base, 0x10000000);
 	jpeg_hx_start(jpeg->reg_base);
 
+#ifdef JPEG_PERF
+	jpeg->start_time = sched_clock();
+#endif
 err_device_run:
 	spin_unlock_irqrestore(&ctx->slock, flags);
 }
@@ -624,6 +627,9 @@ static void jpeg_hx_device_dec_run(void *priv)
 	jpeg_hx_set_timer(jpeg->reg_base, 0x10000000);
 	jpeg_hx_start(jpeg->reg_base);
 
+#ifdef JPEG_PERF
+	jpeg->start_time = sched_clock();
+#endif
 err_device_run:
 	spin_unlock_irqrestore(&ctx->slock, flags);
 }
@@ -660,6 +666,10 @@ static irqreturn_t jpeg_hx_irq(int irq, void *priv)
 	struct jpeg_ctx *ctx;
 	unsigned long payload_size = 0;
 
+#ifdef JPEG_PERF
+	jpeg->end_time = sched_clock();
+	jpeg_dbg("OPERATION-TIME: %llu\n", jpeg->end_time - jpeg->start_time);
+#endif
 	int_status = jpeg_hx_get_timer_status(jpeg);
 	if (int_status & JPEG_TIMER_INT_STAT) {
 		dev_err(&jpeg->plat_dev->dev, "%s: time out\n",	__func__);
