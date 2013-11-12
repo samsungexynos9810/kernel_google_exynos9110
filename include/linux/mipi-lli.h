@@ -36,6 +36,7 @@ struct mipi_lli {
 	void __iomem		*regs;		/* device memory/io */
 	void __iomem		*remote_regs;	/* device memory/io */
 	void __iomem		*sys_regs;	/* device memory/io */
+	void __iomem		*pmu_regs;	/* device memory/io */
 
 	struct mutex		*lli_mutex;
 	struct spin_lock	*lock;

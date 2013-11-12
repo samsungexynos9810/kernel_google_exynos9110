@@ -81,6 +81,8 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	u32 remap_addr;
 
 	exynos_lli_system_config(lli);
+	/* enable LLI_PHY_CONTROL */
+	writel(1, lli->pmu_regs);
 	/* software reset */
 	writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
 
@@ -326,7 +328,7 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 	struct device_node *node = dev->of_node;
 	struct mipi_lli *lli;
 	struct resource *res;
-	void __iomem *regs, *remote_regs, *sysregs;
+	void __iomem *regs, *remote_regs, *sysregs, *pmuregs;
 	int irq, irq_sig;
 	int ret = 0;
 
@@ -366,6 +368,18 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 		return -EADDRNOTAVAIL;
 	}
 
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 3);
+	if (!res) {
+		dev_err(dev, "cannot find register resource 3\n");
+		return -ENXIO;
+	}
+
+	pmuregs = devm_request_and_ioremap(dev, res);
+	if (!pmuregs) {
+		dev_err(dev, "cannot request_and_map registers\n");
+		return -EADDRNOTAVAIL;
+	}
+
 	/* Request LLI IRQ */
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
@@ -389,6 +403,7 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 	lli->regs = regs;
 	lli->remote_regs = remote_regs;
 	lli->sys_regs = sysregs;
+	lli->pmu_regs = pmuregs;
 	lli->is_master = false;
 
 	ret = request_irq(irq, exynos_mipi_lli_irq, 0, dev_name(dev), dev);
