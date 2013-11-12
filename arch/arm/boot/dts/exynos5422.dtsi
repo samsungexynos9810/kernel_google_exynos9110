@@ -779,7 +779,8 @@
 	usb2_phy: usb2phy@12130000 {
 		compatible = "samsung,exynos5-usb2phy";
 		reg = <0x12130000 0x100>;
-		/* TODO: add clock info */
+		clocks = <&clock 1>, <&clock 1449>;
+		clock-names = "ext_xtal", "usbhost";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
