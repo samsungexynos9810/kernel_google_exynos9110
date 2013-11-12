@@ -21,9 +21,13 @@
 
 #include <mach/regs-pmu.h>
 #include <mach/pmu.h>
+#include <mach/smc.h>
 #include <plat/cpu.h>
 
 #include "common.h"
+
+#define L2_CCI_OFF (1 << 1)
+#define CHECK_CCI_SNOOP (1 << 7)
 
 static inline void cpu_enter_lowpower_a9(void)
 {
@@ -94,17 +98,32 @@ static inline void cpu_leave_lowpower(void)
 
 void exynos_power_down_cpu(unsigned int cpu)
 {
-	u32 non_boot_cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(4), 1);
-	unsigned int sif = non_boot_cluster ? 4 : 3;
+	if (soc_is_exynos5422()) {
+		struct cpumask mask;
+		int cluster_id = (read_cpuid_mpidr() >> 8) & 0xff;
 
-	set_boot_flag(cpu, HOTPLUG);
+		exynos_cpu.power_down(cpu);
 
-	if (exynos_cpu.is_last_core(cpu)) {
-		flush_cache_all();
-		cci_snoop_disable(sif);
+		if (cluster_id == 0) {
+			set_boot_flag(cpu, CHECK_CCI_SNOOP);
+			if (!cpumask_and(&mask, cpu_online_mask, cpu_coregroup_mask(cpu))) {
+				__raw_writel(0, EXYNOS_COMMON_CONFIGURATION(cluster_id));
+				exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, L2_CCI_OFF);
+			}
+		}
+	} else {
+		u32 non_boot_cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(4), 1);
+		unsigned int sif = non_boot_cluster ? 4 : 3;
+
+		set_boot_flag(cpu, HOTPLUG);
+
+		if (exynos_cpu.is_last_core(cpu)) {
+			flush_cache_all();
+			cci_snoop_disable(sif);
+		}
+
+		exynos_cpu.power_down(cpu);
 	}
-
-	exynos_cpu.power_down(cpu);
 }
 
 static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
