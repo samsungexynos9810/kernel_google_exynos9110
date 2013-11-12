@@ -2,6 +2,8 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <mach/map.h>
+#include <linux/platform_device.h>
+#include <linux/delay.h>
 
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi.h"
@@ -27,12 +29,32 @@
 	val = readl(regs+(off)); \
 	pr_err("[UNDERRUN DUMP] " #s "	0x%08X\n", val);
 
+
 #ifdef CONFIG_SOC_EXYNOS5430
+
+static int g_silent;
+static struct delayed_work g_clear_silent;
+
+static void clear_silent_work(struct work_struct *ws)
+{
+	msleep(100);
+	g_silent = 1;
+}
+
+
 static void decon_dump_underrun_exynos5430(struct display_driver *pdispdrv)
 {
 	void __iomem *regs;
 	u32 val;
 #ifdef CONFIG_SOC_EXYNOS5430
+
+	if (g_silent == 0)
+		INIT_DELAYED_WORK(&g_clear_silent, clear_silent_work);;
+	if (g_silent++ > 1)
+		return;
+
+	queue_delayed_work(system_nrt_wq, &g_clear_silent, 0);
+
 	/* dump SysMMU control & status */
 	regs = ioremap(0x13A00000, 0x10);
 	DUMP_UNDERRUN_REGISTER(SYSMMU_A, 0x00);
