@@ -138,8 +138,8 @@ static int kbase_platform_power_clock_init(kbase_device *kbdev)
 
 	exynos_set_parent("mout_aclk_g3d_user", "mout_aclk_g3d_sw");
 	exynos_set_parent("mout_aclk_g3d_sw", "dout_aclk_g3d");
-	exynos_set_parent("mout_aclk_g3d", "sclk_vpll");
-	exynos_set_rate("clk_g3d_ip", MALI_T6XX_DEFAULT_CLOCK);
+	exynos_set_parent("mout_aclk_g3d", "mout_vpll_ctrl");
+	exynos_set_rate("fout_vpll", MALI_T6XX_DEFAULT_CLOCK);
 
 	clk_enable(clk_g3d);
 
