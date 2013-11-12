@@ -513,7 +513,7 @@
 
 		iommu = <&sysmmu_fimd0x>, <&sysmmu_fimd1x>;
 
-		/*samsung,power-domain = <&spd_decon>;*/
+		samsung,power-domain = <&pd_disp1>;
 		interrupt-controller;
 		#interrups-cells = <2>;
 		interrupt-parent = <&fimd_fb_int_map>;
@@ -597,6 +597,11 @@
 			};
 		};
 
+	pd_disp1: pd-disp1@0x100440c0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x100440c0 0x20>;
+	};
+
 	dwmmc_0: dwmmc0@12200000 {
 		compatible = "samsung,exynos5422-dw-mshc";
 		reg = <0x12200000 0x2000>;
@@ -607,7 +612,6 @@
 		clock-names = "biu", "gate_ciu", "dout_mmc_a";
 		status = "disabled";
 	};
-
 	dwmmc_1: dwmmc1@12210000 {
 		compatible = "samsung,exynos5422-dw-mshc";
 		reg = <0x12210000 0x2000>;
