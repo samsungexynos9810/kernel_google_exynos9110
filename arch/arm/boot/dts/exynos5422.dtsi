@@ -1078,4 +1078,52 @@
 		status = "disabled";
 	};
 
+	/* TVOUT : mixer driver */
+	mixer@14450000 {
+		compatible = "samsung,exynos5-mixer_driver";
+		reg = <0x14450000 0x4000>;
+		iommu = <&sysmmu_tv>;
+		interrupts = <0 94 0>;
+
+		clock-names = "clk_mixer", "sclk_hdmi";
+
+		clocks = <&clock 1324>, <&clock 1059>;
+
+		ip_ver = <5>;
+	};
+
+	/* TVOUT : hdmi driver */
+	hdmi@14530000 {
+		compatible = "samsung,exynos5-hdmi_driver";
+		reg = <0x14530000 0x80000>,	/* hdmi */
+		      <0x145D0000 0x8000>;	/* hdmi phy */
+		interrupts = <0 95 0>;
+
+		gpios = <&gpx3 7 0xf>;
+
+		pinctrl-names = "hdmi_hdmi_hpd", "hdmi_ext_hpd";
+		pinctrl-0 = <&hdmi_hdmi_hpd>;
+		pinctrl-1 = <&hdmi_ext_hpd>;
+
+		clock-names = "mout_hdmi", "sclk_hdmiphy", "sclk_hdmi", "sclk_pixel", "clk_hdmi";
+
+		clocks = <&clock 2108>, <&clock 28>, <&clock 1059>, <&clock 1058>, <&clock 1323>;
+
+		ip_ver = <5>;
+	};
+
+	/* TVOUT : cec driver */
+	cec@101B0000 {
+		compatible = "samsung,exynos5-cec_driver";
+		reg = <0x101B0000 0x1000>;
+		interrupts = <0 114 0>;
+
+		gpios = <&gpx3 6 0xf>;
+		pinctrl-names = "hdmi_cec";
+		pinctrl-0 = <&hdmi_cec>;
+
+		clock-names = "pclk_hdmi_cec";
+		clocks = <&clock 961>;
+	};
+
 };
