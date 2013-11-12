@@ -427,14 +427,14 @@ void decon_tv_init_clock(void)
 	exynos_set_parent("mout_sclk_decon_tv_eclk_c", "mout_sclk_decon_tv_eclk_b");
 	exynos_set_parent("dout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_c");
 
-	exynos_set_rate("dout_sclk_decon_tv_eclk", 400 * 1000000);
+	exynos_set_rate("dout_sclk_decon_tv_eclk", 413 * 1000000);
 
 	exynos_set_parent("sclk_decon_tv_eclk_disp", "dout_sclk_decon_tv_eclk");
 	exynos_set_parent("mout_sclk_decon_tv_eclk_user", "sclk_decon_tv_eclk_disp");
 	exynos_set_parent("mout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_user");
 	exynos_set_parent("dout_sclk_decon_tv_eclk_disp", "mout_sclk_decon_tv_eclk");
 
-	exynos_set_rate("dout_sclk_decon_tv_eclk_disp", 400 * 1000000);
+	exynos_set_rate("dout_sclk_decon_tv_eclk_disp", 413 * 1000000);
 }
 
 void __init exynos5430_clock_init(void)
