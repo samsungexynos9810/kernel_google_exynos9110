@@ -215,6 +215,8 @@ struct exynos_thermal_zone {
 };
 
 static struct exynos_thermal_zone *th_zone;
+static struct platform_device *exynos_tmu_pdev;
+static struct exynos_tmu_data *tmudata;
 static void exynos_unregister_thermal(void);
 static int exynos_register_thermal(struct thermal_sensor_conf *sensor_conf);
 static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigned long event, void *v);
@@ -432,25 +434,6 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
 	return ret;
 }
 
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigned long event, void *v)
-{
-	int ret = 0, i;
-
-	switch (event) {
-	case CPUFREQ_INIT_COMPLETE:
-		if (!th_zone->therm_dev->cooling_dev_en) {
-			for (i = 0; i < th_zone->cool_dev_size; i++) {
-				if (!th_zone->cool_dev[i])
-					continue;
-				exynos_bind(th_zone->therm_dev,th_zone->cool_dev[i]);
-			}
-		}
-		break;
-	}
-	return ret;
-}
-#endif
 
 int exynos_tmu_add_notifier(struct notifier_block *n)
 {
@@ -1392,6 +1375,39 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	mutex_unlock(&data->lock);
 }
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigned long event, void *v)
+{
+	int ret = 0, i;
+	struct exynos_tmu_platform_data *pdata = exynos_tmu_pdev->dev.platform_data;
+
+	switch (event) {
+	case CPUFREQ_INIT_COMPLETE:
+		ret = exynos_register_thermal(&exynos_sensor_conf);
+
+		if (ret) {
+			dev_err(&exynos_tmu_pdev->dev, "Failed to register thermal interface\n");
+			unregister_pm_notifier(&exynos_pm_nb);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+			exynos_cpufreq_init_unregister_notifier(&exynos_cpufreq_nb);
+#endif
+			platform_set_drvdata(exynos_tmu_pdev, NULL);
+			for (i = 0; i < pdata->clock_count; i++)
+				clk_unprepare(tmudata->clk[i]);
+			for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+				if (tmudata->irq[i])
+					free_irq(tmudata->irq[i], tmudata);
+			}
+			kfree(tmudata);
+
+			return ret;
+		}
+		break;
+	}
+	return 0;
+}
+#endif
+
 static int exynos_tmu_probe(struct platform_device *pdev)
 {
 	struct exynos_tmu_data *data;
@@ -1399,6 +1415,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	int ret, i, count = 0;
 	int trigger_level_en[TRIP_EN_COUNT];
 
+	exynos_tmu_pdev = pdev;
 	is_suspending = false;
 
 	if (!pdata)
@@ -1478,6 +1495,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	}
 
 	data->pdata = pdata;
+	tmudata = data;
 	platform_set_drvdata(pdev, data);
 	mutex_init(&data->lock);
 
@@ -1552,18 +1570,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 
 	register_pm_notifier(&exynos_pm_nb);
 
-	ret = exynos_register_thermal(&exynos_sensor_conf);
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to register thermal interface\n");
-		goto err_register;
-	}
-
 	return 0;
 
-err_register:
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-	exynos_cpufreq_init_unregister_notifier(&exynos_cpufreq_nb);
-#endif
 err_tmu:
 	platform_set_drvdata(pdev, NULL);
 err_soc_type:
