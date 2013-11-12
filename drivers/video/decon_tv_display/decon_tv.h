@@ -188,6 +188,7 @@ static inline struct v4l2_subdev *dex_remote_subdev(struct dex_win *win)
 irqreturn_t dex_irq_handler(int irq, void *dev_data);
 void dex_shadow_protect(struct dex_device *dex, int idx, int en);
 void dex_tv_update(struct dex_device *dex);
+void dex_set_background(struct dex_device *dex);
 void dex_reg_reset(struct dex_device *dex);
 void dex_update_regs(struct dex_device *dex, struct dex_reg_data *regs);
 int dex_reg_compare(struct dex_device *dex, int i, dma_addr_t addr);

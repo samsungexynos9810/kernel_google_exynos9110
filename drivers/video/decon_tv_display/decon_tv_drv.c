@@ -78,6 +78,7 @@ const struct decon_tv_porch *find_porch(u32 xres, u32 yres, u32 mode)
 	return &decon_tv_porchs[0];
 
 }
+
 static int dex_set_output(struct dex_device *dex)
 {
 	struct v4l2_subdev *hdmi_sd;

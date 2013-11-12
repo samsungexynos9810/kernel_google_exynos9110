@@ -55,6 +55,25 @@ void dex_tv_update(struct dex_device *dex)
 	dex_write_mask(dex, DECON_UPDATE, ~0, DECON_UPDATE_STANDALONE_F);
 }
 
+void dex_set_background(struct dex_device *dex)
+{
+	int i = 0;
+	u32 vidosd_b = 0;
+	dex_dbg("only background is outputted\n");
+
+	dex_write(dex, WINCON(i), 0x1);
+	dex_write(dex, WINCON(1), 0);
+	dex_write(dex, WINCON(2), 0);
+	dex_write(dex, WINCON(3), 0);
+	dex_write(dex, WINCON(4), 0);
+	dex_write(dex, WINxMAP(i), 0x1ff8000);
+	vidosd_b = VIDOSDxB_BOTRIGHT_X(dex->porch->xres - 1);
+	vidosd_b |= VIDOSDxB_BOTRIGHT_Y(dex->porch->yres - 1);
+	dex_write(dex, VIDOSD_B(i), vidosd_b);
+
+	dex_tv_update(dex);
+}
+
 void dex_reg_reset(struct dex_device *dex)
 {
 	u32 val;
