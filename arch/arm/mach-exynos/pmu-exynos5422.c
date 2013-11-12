@@ -437,12 +437,7 @@ void exynos_reset_assert_ctrl(bool on)
 
 void exynos_set_core_flag(void)
 {
-	int cluster_id = (read_cpuid_mpidr() >> 8) & 0xf;
-
-	if (cluster_id)
-		__raw_writel(ARM, EXYNOS_IROM_DATA2);
-	else
-		__raw_writel(KFC, EXYNOS_IROM_DATA2);
+	__raw_writel(KFC, EXYNOS_IROM_DATA2);
 }
 
 static void exynos54xx_init_pmu(void)
@@ -540,6 +535,11 @@ int __init exynos5422_pmu_init(void)
 	__raw_writel(SPREAD_ENABLE, EXYNOS5_ARM_INTR_SPREAD_ENABLE);
 	__raw_writel(SPREAD_USE_STANDWFI, EXYNOS5_ARM_INTR_SPREAD_USE_STANDBYWFI);
 	__raw_writel(0x1, EXYNOS5_UP_SCHEDULER);
+
+	/* PMU setting to use L2 auto-power gating */
+	value = __raw_readl(EXYNOS_COMMON_OPTION(0));
+	value |= (1 << 30) | (1 << 29) | (1 << 9);
+	__raw_writel(value, EXYNOS_COMMON_OPTION(0));
 
 	exynos_reset_assert_ctrl(false);
 
