@@ -66,6 +66,11 @@
 
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
 
+#define CCI_PA			0x10d20000
+#define SECURE_ACCESS_REG	0x8
+#define CHECK_CCI_SNOOP		(1 << 7)
+extern void cci_snoop_enable(unsigned int sif);
+
 static unsigned int read_mpidr(void)
 {
 	unsigned int id;
@@ -238,6 +243,15 @@ static void exynos_pm_resume(void)
 
 	__raw_writel(EXYNOS5410_USE_STANDBY_WFI_ALL,
 		EXYNOS_CENTRAL_SEQ_OPTION);
+
+	/* HACK */
+	exynos_smc(SMC_CMD_REG,
+		   SMC_REG_ID_SFR_W(CCI_PA + SECURE_ACCESS_REG),
+		   1,
+		   0);
+	cci_snoop_enable(3);
+	for_each_cpu(i, cpu_coregroup_mask(4))
+		__raw_writel(HOTPLUG | CHECK_CCI_SNOOP, S5P_VA_SYSRAM_NS + 0x18 + 4 * i);
 
 	/*
 	 * If PMU failed while entering sleep mode, WFI will be
