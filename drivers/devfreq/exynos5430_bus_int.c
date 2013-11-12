@@ -232,10 +232,10 @@ struct devfreq_clk_info aclk_bus1_400[] = {
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	275000000,	0,	NULL},
-	{LV3,	206000000,	0,	NULL},
+	{LV3,	207000000,	0,	NULL},
 	{LV4,	165000000,	0,	NULL},
 	{LV5,	138000000,	0,	NULL},
-	{LV6,	103000000,	0,	NULL},
+	{LV6,	104000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_bus2_400[] = {
@@ -244,10 +244,10 @@ struct devfreq_clk_info aclk_bus2_400[] = {
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	275000000,	0,	NULL},
-	{LV3,	206000000,	0,	NULL},
+	{LV3,	207000000,	0,	NULL},
 	{LV4,	165000000,	0,	NULL},
 	{LV5,	138000000,	0,	NULL},
-	{LV6,	103000000,	0,	NULL},
+	{LV6,	104000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_g2d_400[] = {
@@ -256,10 +256,10 @@ struct devfreq_clk_info aclk_g2d_400[] = {
 	{LV0,	413000000,	0,	&aclk_g2d_bus_pll_list},
 	{LV1,	317000000,	0,	&aclk_g2d_mfc_pll_list},
 	{LV2,	275000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV3,	206000000,	0,	&aclk_g2d_bus_pll_list},
+	{LV3,	207000000,	0,	&aclk_g2d_bus_pll_list},
 	{LV4,	165000000,	0,	&aclk_g2d_bus_pll_list},
 	{LV5,	138000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV6,	103000000,	0,	&aclk_g2d_bus_pll_list},
+	{LV6,	104000000,	0,	&aclk_g2d_bus_pll_list},
 };
 
 struct devfreq_clk_info aclk_g2d_266[] = {
@@ -267,11 +267,11 @@ struct devfreq_clk_info aclk_g2d_266[] = {
 	{LV0_B,	275000000,	0,	NULL},
 	{LV0,	275000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
-	{LV2,	206000000,	0,	NULL},
+	{LV2,	207000000,	0,	NULL},
 	{LV3,	165000000,	0,	NULL},
 	{LV4,	138000000,	0,	NULL},
-	{LV5,	103000000,	0,	NULL},
-	{LV6,	103000000,	0,	NULL},
+	{LV5,	104000000,	0,	NULL},
+	{LV6,	104000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_gscl_333[] = {
@@ -282,8 +282,8 @@ struct devfreq_clk_info aclk_gscl_333[] = {
 	{LV2,	317000000,	0,	NULL},
 	{LV3,	317000000,	0,	NULL},
 	{LV4,	317000000,	0,	NULL},
-	{LV5,	158000000,	0,	NULL},
-	{LV6,	158000000,	0,	NULL},
+	{LV5,	159000000,	0,	NULL},
+	{LV6,	159000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_mscl[] = {
@@ -292,10 +292,10 @@ struct devfreq_clk_info aclk_mscl[] = {
 	{LV0,	413000000,	0,	&aclk_mscl_bus_pll_list},
 	{LV1,	317000000,	0,	&aclk_mscl_mfc_pll_list},
 	{LV2,	275000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV3,	206000000,	0,	&aclk_mscl_bus_pll_list},
+	{LV3,	207000000,	0,	&aclk_mscl_bus_pll_list},
 	{LV4,	165000000,	0,	&aclk_mscl_bus_pll_list},
 	{LV5,	138000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV6,	103000000,	0,	&aclk_mscl_bus_pll_list},
+	{LV6,	104000000,	0,	&aclk_mscl_bus_pll_list},
 };
 
 struct devfreq_clk_info sclk_jpeg[] = {
@@ -304,10 +304,10 @@ struct devfreq_clk_info sclk_jpeg[] = {
 	{LV0,	413000000,	0,	&sclk_jpeg_bus_pll_list},
 	{LV1,	317000000,	0,	&sclk_jpeg_mfc_pll_list},
 	{LV2,	275000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV3,	206000000,	0,	&sclk_jpeg_bus_pll_list},
+	{LV3,	207000000,	0,	&sclk_jpeg_bus_pll_list},
 	{LV4,	165000000,	0,	&sclk_jpeg_bus_pll_list},
 	{LV5,	138000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV6,	103000000,	0,	&sclk_jpeg_bus_pll_list},
+	{LV6,	104000000,	0,	&sclk_jpeg_bus_pll_list},
 };
 
 struct devfreq_clk_info aclk_mfc0_333[] = {
@@ -318,7 +318,7 @@ struct devfreq_clk_info aclk_mfc0_333[] = {
 	{LV2,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV3,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV4,	211000000,	0,	&aclk_mfc0_333_mfc_pll_list},
-	{LV5,	158000000,	0,	&aclk_mfc0_333_mfc_pll_list},
+	{LV5,	159000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV6,	 80000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 };
 
@@ -340,10 +340,10 @@ struct devfreq_clk_info aclk_hevc_400[] = {
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	275000000,	0,	NULL},
-	{LV3,	206000000,	0,	NULL},
+	{LV3,	207000000,	0,	NULL},
 	{LV4,	165000000,	0,	NULL},
 	{LV5,	138000000,	0,	NULL},
-	{LV6,	103000000,	0,	NULL},
+	{LV6,	104000000,	0,	NULL},
 };
 
 struct devfreq_clk_info *devfreq_clk_int_info_list[] = {
@@ -394,7 +394,7 @@ static struct devfreq_simple_ondemand_data exynos5_devfreq_int_governor_data = {
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_int = {
-	.default_qos		= 100000,
+	.default_qos		= 103000,
 };
 
 static struct ppmu_info ppmu_int[] = {

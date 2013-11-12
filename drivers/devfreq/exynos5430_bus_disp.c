@@ -26,7 +26,7 @@
 #include "devfreq_exynos.h"
 #include "governor.h"
 
-#define DEVFREQ_INITIAL_FREQ	(333000)
+#define DEVFREQ_INITIAL_FREQ	(317000)
 #define DEVFREQ_POLLING_PERIOD	(100)
 
 enum devfreq_disp_idx {
@@ -54,24 +54,24 @@ struct devfreq_clk_list devfreq_disp_clk[CLK_COUNT] = {
 };
 
 struct devfreq_opp_table devfreq_disp_opp_list[] = {
-	{LV0,	333000,	0},
-	{LV1,	222000,	0},
-	{LV2,	167000, 0},
-	{LV3,	133000,	0},
+	{LV0,	317000,	0},
+	{LV1,	211000,	0},
+	{LV2,	159000, 0},
+	{LV3,	127000,	0},
 };
 
 struct devfreq_clk_info aclk_disp_333[] = {
-	{LV0,	333000000,	0,	NULL},
-	{LV1,	222000000,	0,	NULL},
-	{LV2,	167000000,	0,	NULL},
-	{LV3,	134000000,	0,	NULL},
+	{LV0,	317000000,	0,	NULL},
+	{LV1,	211000000,	0,	NULL},
+	{LV2,	159000000,	0,	NULL},
+	{LV3,	127000000,	0,	NULL},
 };
 
 struct devfreq_clk_info sclk_dsd[] = {
-	{LV0,	333000000,	0,	NULL},
-	{LV1,	333000000,	0,	NULL},
-	{LV2,	333000000,	0,	NULL},
-	{LV3,	 84000000,	0,	NULL},
+	{LV0,	317000000,	0,	NULL},
+	{LV1,	317000000,	0,	NULL},
+	{LV2,	317000000,	0,	NULL},
+	{LV3,	317000000,	0,	NULL},
 };
 
 struct devfreq_clk_info *devfreq_clk_disp_info_list[] = {
@@ -94,11 +94,11 @@ struct devfreq_pm_domain_link devfreq_disp_pm_domain[] = {
 static struct devfreq_simple_ondemand_data exynos5_devfreq_disp_governor_data = {
 	.pm_qos_class		= PM_QOS_DISPLAY_THROUGHPUT,
 	.upthreshold		= 95,
-	.cal_qos_max		= 333000,
+	.cal_qos_max		= 317000,
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_disp = {
-	.default_qos		= 133000,
+	.default_qos		= 127000,
 };
 
 static struct ppmu_info ppmu_disp[] = {
