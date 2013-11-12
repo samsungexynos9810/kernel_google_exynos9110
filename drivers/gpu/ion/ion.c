@@ -849,20 +849,6 @@ struct ion_vma_list {
 	struct vm_area_struct *vma;
 };
 
-static void __flush_dcache_all(void *arg)
-{
-	flush_cache_louis();
-}
-
-/* This it not applicable to MP scheduling */
-static void flush_all_cpu_caches(void)
-{
-	preempt_disable();
-	smp_call_function(__flush_dcache_all, NULL, 1);
-	flush_cache_all();
-	preempt_enable();
-}
-
 static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 				       struct device *dev,
 				       enum dma_data_direction dir)
