@@ -825,7 +825,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* setting the clocks */
 	ret = hdmi_resources_init(hdmi_dev);
 	if (ret)
-		goto fail_extcon;
+		goto fail_vdev;
 
 	/* setting the GPIO */
 	if (of_get_property(dev->of_node, "gpios", NULL) != NULL) {
@@ -833,7 +833,7 @@ static int hdmi_probe(struct platform_device *pdev)
 		if (gpio_request(hdmi_dev->res.gpio, "hdmi-hpd")) {
 			dev_err(dev, "failed to request HPD-plug\n");
 			ret = -ENODEV;
-			goto fail_vdev;
+			goto fail_clk;
 		} else {
 			gpio_direction_input(hdmi_dev->res.gpio);
 			s5p_v4l2_int_src_ext_hpd(hdmi_dev);
@@ -870,7 +870,7 @@ static int hdmi_probe(struct platform_device *pdev)
 		if (phy_adapter == NULL) {
 			dev_err(dev, "adapter request failed\n");
 			ret = -ENXIO;
-			goto fail_clk;
+			goto fail_extcon;
 		}
 
 		hdmi_dev->phy_sd = v4l2_i2c_new_subdev_board(&hdmi_dev->v4l2_dev,
@@ -880,7 +880,7 @@ static int hdmi_probe(struct platform_device *pdev)
 		if (hdmi_dev->phy_sd == NULL) {
 			dev_err(dev, "missing subdev for hdmiphy\n");
 			ret = -ENODEV;
-			goto fail_clk;
+			goto fail_extcon;
 		}
 	}
 
@@ -907,7 +907,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* register hdmi subdev as entity */
 	ret = hdmi_register_entity(hdmi_dev);
 	if (ret)
-		goto fail_clk;
+		goto fail_extcon;
 
 	hdmi_entity_info_print(hdmi_dev);
 
@@ -916,7 +916,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* initialize hdcp resource */
 	ret = hdcp_prepare(hdmi_dev);
 	if (ret)
-		goto fail_clk;
+		goto fail_extcon;
 
 	/* work after booting */
 	queue_delayed_work(system_nrt_wq, &hdmi_dev->hpd_work_ext,
@@ -930,13 +930,15 @@ static int hdmi_probe(struct platform_device *pdev)
 
 	return 0;
 
-fail_clk:
-	hdmi_resources_cleanup(hdmi_dev);
+fail_extcon:
+	extcon_dev_unregister(&hdmi_dev->hpd_extcon);
 	mutex_destroy(&hdmi_dev->mutex);
 
-fail_extcon:
 fail_gpio:
 	gpio_free(hdmi_dev->res.gpio);
+
+fail_clk:
+	hdmi_resources_cleanup(hdmi_dev);
 
 fail_vdev:
 	v4l2_device_unregister(&hdmi_dev->v4l2_dev);
