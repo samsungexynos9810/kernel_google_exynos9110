@@ -4292,6 +4292,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	msleep(12);
 #endif
+	reg = readl(sfb->regs + VIDCON0);
+	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
+	writel(reg, sfb->regs + VIDCON0);
 	sfb->output_on = true;
 
 err:
@@ -4446,6 +4449,9 @@ int s3c_fb_resume(struct device *dev)
 
 	msleep(12);
 #endif
+	reg = readl(sfb->regs + VIDCON0);
+	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
+	writel(reg, sfb->regs + VIDCON0);
 	sfb->output_on = true;
 
 err:
@@ -4478,7 +4484,6 @@ int s3c_fb_runtime_suspend(struct device *dev)
 
 int s3c_fb_runtime_resume(struct device *dev)
 {
-#ifndef CONFIG_SOC_EXYNOS5422
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 	struct s3c_fb_platdata *pd;
@@ -4523,7 +4528,6 @@ int s3c_fb_runtime_resume(struct device *dev)
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
-#endif
 	return 0;
 }
 #endif
