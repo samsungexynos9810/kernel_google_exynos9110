@@ -159,7 +159,6 @@ struct hdmi_resources {
 	struct clk *sclk_hdmi;
 	struct clk *sclk_pixel;
 	struct clk *sclk_hdmiphy;
-	struct clk *mout_hdmi;
 	int gpio;
 };
 

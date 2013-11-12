@@ -119,10 +119,6 @@ void s5p_v4l2_int_src_hdmi_hpd(struct hdmi_device *hdev)
 	pinctrl = devm_pinctrl_get_select(hdev->dev, "hdmi_hdmi_hpd");
 	if (IS_ERR(pinctrl))
 		dev_err(hdev->dev, "failed to set hdmi hpd interrupt");
-#if 0
-	s3c_gpio_cfgpin(res->gpio, S3C_GPIO_SFN(0x3));
-	s3c_gpio_setpull(res->gpio, S3C_GPIO_PULL_DOWN);
-#endif
 }
 
 void s5p_v4l2_int_src_ext_hpd(struct hdmi_device *hdev)
@@ -132,11 +128,6 @@ void s5p_v4l2_int_src_ext_hpd(struct hdmi_device *hdev)
 	pinctrl = devm_pinctrl_get_select(hdev->dev, "hdmi_ext_hpd");
 	if (IS_ERR(pinctrl))
 		dev_err(hdev->dev, "failed to set external hpd interrupt");
-
-#if 0
-	s3c_gpio_cfgpin(res->gpio, S3C_GPIO_SFN(0xf));
-	s3c_gpio_setpull(res->gpio, S3C_GPIO_PULL_DOWN);
-#endif
 }
 
 static int hdmi_set_infoframe(struct hdmi_device *hdev)
@@ -491,9 +482,6 @@ static int hdmi_runtime_suspend(struct device *dev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	/* TODO : Check the PHY power off is implemented at pm_domains
-	 * If not, PHY power off should be applied at here */
-
 	/* HDMI PHY off sequence
 	 * LINK off -> PHY off -> HDMI_PHY_CONTROL disable */
 
@@ -523,9 +511,6 @@ static int hdmi_runtime_resume(struct device *dev)
 	int ret = 0;
 
 	dev_info(dev, "%s\n", __func__);
-
-	/* TODO : Check the PHY power off is implemented at pm_domains
-	 * If not, PHY power off should be applied at here */
 
 	/* power-on hdmiphy */
 	if (pdata->hdmiphy_enable)
@@ -572,7 +557,6 @@ static const struct dev_pm_ops hdmi_pm_ops = {
 static void hdmi_resources_cleanup(struct hdmi_device *hdev)
 {
 	struct hdmi_resources *res = &hdev->res;
-	struct s5p_hdmi_platdata *pdata = hdev->pdata;
 
 	dev_info(hdev->dev, "HDMI resource cleanup\n");
 	/* put clocks */
@@ -584,9 +568,6 @@ static void hdmi_resources_cleanup(struct hdmi_device *hdev)
 		clk_put(res->sclk_hdmi);
 	if (!IS_ERR_OR_NULL(res->hdmi))
 		clk_put(res->hdmi);
-	if (is_ip_ver_5s2)
-		if (!IS_ERR_OR_NULL(res->mout_hdmi))
-			clk_put(res->mout_hdmi);
 	memset(res, 0, sizeof *res);
 }
 
@@ -594,13 +575,11 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
 {
 	struct device *dev = hdev->dev;
 	struct hdmi_resources *res = &hdev->res;
-	struct s5p_hdmi_platdata *pdata = hdev->pdata;
 
 	dev_info(dev, "HDMI resource init\n");
 
 	memset(res, 0, sizeof *res);
 	/* get clocks, power */
-
 	res->hdmi = clk_get(dev, "clk_hdmi");
 	if (IS_ERR_OR_NULL(res->hdmi)) {
 		dev_err(dev, "failed to get clock 'clk_hdmi'\n");
@@ -622,21 +601,8 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
 		dev_err(dev, "failed to get clock 'sclk_hdmiphy'\n");
 		goto fail;
 	}
-	res->sclk_hdmiphy = __clk_lookup("sclk_hdmiphy");
-	if (IS_ERR_OR_NULL(res->sclk_hdmiphy)) {
-		dev_err(dev, "failed to get clock 'sclk_hdmiphy'\n");
-		goto fail;
-	}
-	if (is_ip_ver_5s2) {
-		res->mout_hdmi = clk_get(dev, "mout_hdmi");
-		if (IS_ERR_OR_NULL(res->mout_hdmi)) {
-			dev_err(dev, "failed to get clock 'mout_hdmi'\n");
-			goto fail;
-		}
-		clk_set_parent(res->sclk_hdmi, res->sclk_hdmiphy);
-	} else {
-		clk_set_parent(res->sclk_hdmi, res->sclk_hdmiphy);
-	}
+
+	clk_set_parent(res->sclk_hdmi, res->sclk_hdmiphy);
 
 	return 0;
 fail:
@@ -756,17 +722,7 @@ static void hdmi_hpd_work_ext(struct work_struct *work)
 						hpd_work_ext.work);
 	struct hdmi_resources *res = &hdev->res;
 
-	/* TODO: read GPIO */
-#if 0
-	state = s5p_v4l2_hpd_read_gpio();
-	id = gpio_request(hdev->res.gpio, "hpd-plug");
-	if (id < 0) {
-		dev_err(hdev->dev, "Failed to get gpio number for the hpd-plug\n");
-		return;
-	}
-#endif
 	state = gpio_get_value(res->gpio);
-	/* gpio_free(hdev->res.gpio); */
 	hdmi_hpd_changed(hdev, state);
 }
 
@@ -965,6 +921,8 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* work after booting */
 	queue_delayed_work(system_nrt_wq, &hdmi_dev->hpd_work_ext,
 					msecs_to_jiffies(1500));
+	/* TODO : Check the PHY power off is implemented at pm_domains
+	 * If not, PHY power off should be applied at here */
 
 	dev_info(dev, "probe sucessful\n");
 
@@ -1032,7 +990,6 @@ static int __init hdmi_init(void)
 		"(c) 2010-2011 Samsung Electronics Co., Ltd.\n";
 	printk(banner);
 
-	printk("s5p_hdmi_register is called!!!!!!\n");
 	ret = platform_driver_register(&hdmi_driver);
 	if (ret)
 		printk(KERN_ERR "HDMI platform driver register failed\n");
@@ -1043,7 +1000,6 @@ module_init(hdmi_init);
 
 static void __exit hdmi_exit(void)
 {
-	printk("s5p_hdmi_unregister is called!!!!!!\n");
 	platform_driver_unregister(&hdmi_driver);
 }
 module_exit(hdmi_exit);
