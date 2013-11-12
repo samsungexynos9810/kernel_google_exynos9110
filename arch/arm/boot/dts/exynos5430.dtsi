@@ -2587,7 +2587,8 @@
 		compatible = "samsung,exynos-mipi-lli";
 		reg = <0x10F24000 0x4000>,
 		      <0x10F34000 0x4000>,
-		      <0x10FD0000 0x2000>;
+		      <0x10FD0000 0x2000>,
+		      <0x105C0720 0x4>;
 		interrupts = <0 184 0>, <0 185 0>;
 		#address-cells = <1>;
 		#size-cells = <1>;
