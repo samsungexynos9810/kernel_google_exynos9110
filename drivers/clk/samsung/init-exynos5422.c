@@ -65,6 +65,7 @@ static void top_clk_enable(void)
 	add_enabler("aclk_66_peric");
 	add_enabler("aclk_66_psgen");
 	add_enabler("aclk_300_jpeg");
+	add_enabler("aclk_200_disp1");
 
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
