@@ -679,10 +679,16 @@ static void exynos_pinctrl_suspend_inttype(
 				struct samsung_pin_bank *bank)
 {
 	void __iomem *regs = drvdata->virt_base;
+	unsigned int eint_con;
+	unsigned int mask_eint_con = 0x55555555;
 
 	exynos_pinctrl_suspend_bank(drvdata, bank);
 
-	writel(0x0, regs + EXYNOS_GPIO_ECON_OFFSET
+	/* set inttype from falling/rising to level_low/level_high */
+	eint_con = readl(regs + EXYNOS_GPIO_ECON_OFFSET
+						+ bank->eint_offset);
+	eint_con &= mask_eint_con;
+	writel(eint_con, regs + EXYNOS_GPIO_ECON_OFFSET
 						+ bank->eint_offset);
 }
 
