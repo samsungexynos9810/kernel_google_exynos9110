@@ -129,20 +129,6 @@ MODULE_DEVICE_TABLE(of, exynos5_decon);
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
 #endif
 
-#define DUMP_UNDERRUN_REGISTERS
-
-#ifdef DUMP_UNDERRUN_REGISTERS
-static struct delayed_work g_underrun_dwork;
-
-static void underrun_delayed_work(struct work_struct *ws)
-{
-	struct display_driver *dispdrv;
-
-	dispdrv = get_display_driver();
-	decon_dump_underrun(dispdrv);
-}
-#endif
-
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 			u32 win_no, u32 bufmode, u32 bufsel)
 {
@@ -1294,12 +1280,8 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
 	if (irq_sts_reg & VIDINTCON1_INT_FIFO) {
-		dev_err(sfb->dev, "DECON FIFO underrun\n");
 		writel(VIDINTCON1_INT_FIFO, regs + VIDINTCON1);
 		s3c_fb_log_fifo_underflow_locked(sfb, timestamp);
-#ifdef DUMP_UNDERRUN_REGISTERS
-		queue_delayed_work(system_nrt_wq, &g_underrun_dwork, 0);
-#endif
 	}
 	if (irq_sts_reg & VIDINTCON1_INT_I80) {
 		writel(VIDINTCON1_INT_I80, regs + VIDINTCON1);
@@ -4115,10 +4097,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 		goto err_fb;
 	}
 
-#ifdef DUMP_UNDERRUN_REGISTERS
-	INIT_DELAYED_WORK(&g_underrun_dwork, underrun_delayed_work);;
-#endif
-
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
 
 	return 0;
@@ -4261,15 +4239,9 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 #else
 	decon_fb_perframeoff(sfb);
 #endif
-
-#ifdef DUMP_UNDERRUN_REGISTERS
-	flush_delayed_work(&g_underrun_dwork);
-#endif
-
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 	writel(data, sfb->regs + DECON_UPDATE);
-
 
 	do {
 		data = readl(sfb->regs + VIDCON0);
