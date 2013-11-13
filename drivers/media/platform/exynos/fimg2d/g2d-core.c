@@ -1380,12 +1380,12 @@ static void g2d_set_cci_snoop(struct g2d_ctx *ctx)
 		/* G2D CCI on */
 		val = SHAREABLE_PATH;
 		sel = SHARED_FROM_SYSMMU;
-		g2d_cci_snoop_control(val, sel);
+		g2d_cci_snoop_control(IP_VER_G2D_5H, val, sel);
 	} else {
 		/* G2D CCI off */
 		val = NON_SHAREABLE_PATH;
 		sel = SHARED_FROM_SYSMMU;
-		g2d_cci_snoop_control(val, sel);
+		g2d_cci_snoop_control(IP_VER_G2D_5H, val, sel);
 	}
 }
 #endif
@@ -2099,7 +2099,7 @@ static int g2d_probe(struct platform_device *pdev)
 	g2d_clock_gating(g2d, G2D_CLK_ON);
 	g2d_clock_gating(g2d, G2D_CLK_OFF);
 #ifdef CONFIG_FIMG2D_CCI_SNOOP
-	ret = g2d_cci_snoop_init();
+	ret = g2d_cci_snoop_init(IP_VER_G2D_5H);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to init g2d cci snoop\n");
 		goto err_clk_put;
@@ -2130,7 +2130,7 @@ static int g2d_remove(struct platform_device *pdev)
 #endif
 	g2d_clk_put(g2d);
 #ifdef CONFIG_FIMG2D_CCI_SNOOP
-	g2d_cci_snoop_remove();
+	g2d_cci_snoop_remove(IP_VER_G2D_5H);
 #endif
 	g2d->vb2->suspend(g2d->alloc_ctx);
 	g2d->vb2->suspend(g2d->alloc_ctx_cci);
