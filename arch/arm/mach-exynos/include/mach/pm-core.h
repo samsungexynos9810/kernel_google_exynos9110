@@ -41,6 +41,9 @@ static inline void s3c_pm_arch_prepare_irqs(void)
 
 	__raw_writel(eintmask, EXYNOS5430_EINT_WAKEUP_MASK);
 	__raw_writel(s3c_irqwake_intmask & ~(1 << 31), EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK1);
+	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK2);
+
 }
 
 static inline void s3c_pm_arch_stop_clocks(void)
