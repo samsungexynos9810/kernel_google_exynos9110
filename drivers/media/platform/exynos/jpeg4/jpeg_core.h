@@ -267,6 +267,10 @@ struct jpeg_dev {
 	struct work_struct	watchdog_work;
 	struct device			*bus_dev;
 	struct exynos_platform_jpeg	*pdata;
+#ifdef JPEG_PERF
+	unsigned long long start_time;
+	unsigned long long end_time;
+#endif
 };
 
 enum jpeg_log {

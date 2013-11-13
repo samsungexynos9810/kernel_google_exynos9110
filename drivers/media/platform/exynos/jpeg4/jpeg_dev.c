@@ -509,7 +509,9 @@ static void jpeg_device_run(void *priv)
 
 	jpeg_set_timer_count(jpeg->reg_base, param.in_width * param.in_height * 8 + 0xff);
 	jpeg_set_enc_dec_mode(jpeg->reg_base, jpeg->mode);
-
+#ifdef JPEG_PERF
+	jpeg->start_time = sched_clock();
+#endif
 	spin_unlock_irqrestore(&ctx->slock, flags);
 }
 
@@ -538,6 +540,10 @@ static irqreturn_t jpeg_irq(int irq, void *priv)
 	struct jpeg_ctx *ctx;
 	unsigned long payload_size = 0;
 
+#ifdef JPEG_PERF
+	jpeg->end_time = sched_clock();
+	jpeg_dbg("OPERATION-TIME: %llu\n", jpeg->end_time - jpeg->start_time);
+#endif
 	jpeg_clean_interrupt(jpeg->reg_base);
 
 	ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev);
