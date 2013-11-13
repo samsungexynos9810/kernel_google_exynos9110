@@ -44,7 +44,7 @@
 #define jpeg_ver_is_hx(jpeg)		((jpeg)->ver == 0x75)
 #define jpeg_ver_is_hx2(jpeg)		((jpeg)->ver == 0x7b || (jpeg)->ver == 0x7c)
 
-#define JPEG_TIMEOUT		(2 * HZ)	/* 2 seconds */
+#define JPEG_TIMEOUT		((200 * HZ) / 1000)	/* 200 ms */
 
 /* JPEG hardware device state */
 #define DEV_RUN		1

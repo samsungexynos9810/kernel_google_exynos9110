@@ -188,6 +188,59 @@ static void jpeg_hx_unlock(struct vb2_queue *vq)
 	mutex_unlock(&ctx->jpeg_dev->lock);
 }
 
+static int jpeg_hx_start_streaming(struct vb2_queue *vq, unsigned int count)
+{
+	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
+	set_bit(CTX_STREAMING, &ctx->flags);
+
+	return 0;
+}
+
+static int jpeg_ctx_stop_req(struct jpeg_ctx *ctx)
+{
+	struct jpeg_ctx *curr_ctx;
+	struct jpeg_dev *jpeg = ctx->jpeg_dev;
+	int ret = 0;
+	unsigned long flags;
+
+	if (jpeg->mode == ENCODING)
+		curr_ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev_enc);
+	else
+		curr_ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev_dec);
+
+	if (!test_bit(CTX_RUN, &ctx->flags) || (curr_ctx != ctx))
+		return 0;
+
+	spin_lock_irqsave(&ctx->slock, flags);
+	set_bit(CTX_ABORT, &ctx->flags);
+	spin_unlock_irqrestore(&ctx->slock, flags);
+
+	ret = wait_event_timeout(jpeg->wait,
+			!test_bit(CTX_RUN, &ctx->flags), JPEG_TIMEOUT);
+	if (!ret) {
+		dev_err(&jpeg->plat_dev->dev, "device failed to stop request\n");
+		ret = -EBUSY;
+	}
+
+	return ret;
+}
+
+static int jpeg_hx_stop_streaming(struct vb2_queue *q)
+{
+	struct jpeg_ctx *ctx = q->drv_priv;
+	struct jpeg_dev *jpeg = ctx->jpeg_dev;
+	int ret;
+
+	vb2_wait_for_all_buffers(q);
+	ret = jpeg_ctx_stop_req(ctx);
+	if (ret < 0)
+		dev_err(&jpeg->plat_dev->dev, "wait timeout : %s\n", __func__);
+
+	clear_bit(CTX_STREAMING, &ctx->flags);
+
+	return 0;
+}
+
 static struct vb2_ops jpeg_hx_enc_vb2_qops = {
 	.queue_setup		= jpeg_hx_enc_queue_setup,
 	.buf_prepare		= jpeg_hx_enc_buf_prepare,
@@ -195,6 +248,8 @@ static struct vb2_ops jpeg_hx_enc_vb2_qops = {
 	.buf_queue		= jpeg_hx_buf_queue,
 	.wait_prepare		= jpeg_hx_unlock,
 	.wait_finish		= jpeg_hx_lock,
+	.start_streaming	= jpeg_hx_start_streaming,
+	.stop_streaming		= jpeg_hx_stop_streaming,
 };
 
 static struct vb2_ops jpeg_hx_dec_vb2_qops = {
@@ -204,6 +259,8 @@ static struct vb2_ops jpeg_hx_dec_vb2_qops = {
 	.buf_queue		= jpeg_hx_buf_queue,
 	.wait_prepare		= jpeg_hx_unlock,
 	.wait_finish		= jpeg_hx_lock,
+	.start_streaming	= jpeg_hx_start_streaming,
+	.stop_streaming		= jpeg_hx_stop_streaming,
 };
 
 static int jpeg_clk_get(struct jpeg_dev *jpeg)
@@ -604,8 +661,13 @@ static irqreturn_t jpeg_hx_irq(int irq, void *priv)
 	unsigned long payload_size = 0;
 
 	int_status = jpeg_hx_get_timer_status(jpeg);
-	if (int_status & JPEG_TIMER_INT_STAT)
+	if (int_status & JPEG_TIMER_INT_STAT) {
 		dev_err(&jpeg->plat_dev->dev, "%s: time out\n",	__func__);
+		printk("dumping registers\n");
+		print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4, jpeg->reg_base,
+			0x0280, false);
+		printk("End of JPEG_SFR DUMP\n");
+	}
 
 	if (jpeg->mode == ENCODING)
 		ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev_enc);
@@ -672,6 +734,12 @@ static irqreturn_t jpeg_hx_irq(int irq, void *priv)
 			else
 				v4l2_m2m_job_finish(jpeg->m2m_dev_dec, ctx->m2m_ctx);
 		}
+
+		/* Wake up from CTX_ABORT state */
+		if (test_and_clear_bit(CTX_ABORT, &ctx->flags))
+			wake_up(&jpeg->wait);
+	} else {
+		dev_err(&jpeg->plat_dev->dev, "failed to get the buffer done\n");
 	}
 	spin_unlock(&ctx->slock);
 ctx_err:
