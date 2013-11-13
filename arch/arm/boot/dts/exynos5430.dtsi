@@ -2445,8 +2445,8 @@
 		compatible = "samsung,exynos5-scaler";
 		reg = <0x15000000 0x1300>;
 		interrupts = <0 402 0>;
-		clocks = <&clock 2394>, <&clock 3116>, <&clock 346>;
-		clock-names = "gate_m2mscaler", "mout_aclk_mscl_400_user", "aclk_mscl_400";
+		clock-names = "gate", "mux_user", "mux_src";
+		clocks = <&clock 2394>, <&clock 3115>, <&clock 346>;
 		iommu = <&sysmmu_scaler0>;
 		samsung,power-domain = <&spd_mscl0>;
 	};
@@ -2455,8 +2455,8 @@
 		compatible = "samsung,exynos5-scaler";
 		reg = <0x15010000 0x1300>;
 		interrupts = <0 403 0>;
-		clocks = <&clock 2393>, <&clock 3116>, <&clock 346>;
-		clock-names = "gate_m2mscaler", "mout_aclk_mscl_400_user", "aclk_mscl_400";
+		clock-names = "gate", "mux_user", "mux_src";
+		clocks = <&clock 2393>, <&clock 3115>, <&clock 346>;
 		iommu = <&sysmmu_scaler1>;
 		samsung,power-domain = <&spd_mscl1>;
 	};
