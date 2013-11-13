@@ -421,9 +421,6 @@ int edid_update(struct hdmi_device *hdev)
 	if (block_cnt < 0)
 		goto out;
 
-	print_hex_dump_bytes("EDID: ", DUMP_PREFIX_OFFSET, edid,
-						block_cnt * EDID_BLOCK_SIZE);
-
 	fb_edid_to_monspecs(edid, &specs);
 	for (i = 1; i < block_cnt; i++) {
 		ret = fb_edid_add_monspecs(edid + i * EDID_BLOCK_SIZE, &specs);
