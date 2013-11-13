@@ -875,7 +875,7 @@
 		clock-names = "gate_tv_mixer";
 		clocks = <&clock 2111>;
 
-		ip_ver = <1>;
+		ip_ver = <4>;
 	};
 
 	/* hdmi driver */
@@ -906,7 +906,7 @@
 		       <&clock 371>, <&clock 372>,
 		       <&clock 2112>, <&clock 2113>;
 
-		ip_ver = <1>;
+		ip_ver = <4>;
 
 		#address-cells = <1>;
 		#size-cells = <1>;
