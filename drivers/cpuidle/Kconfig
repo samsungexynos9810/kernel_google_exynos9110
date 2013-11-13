@@ -38,6 +38,13 @@ config EXYNOS_CPUIDLE_C2
 	help
 	  Enable C2 state on cpuidle
 
+config EXYNOS_IDLE_CLOCK_DOWN
+	bool "EXYNOS core idle clock down"
+	depends on CPU_IDLE
+	default y
+	help
+	  Enable core idle clock down
+
 if CPU_IDLE
 
 config CPU_IDLE_CALXEDA

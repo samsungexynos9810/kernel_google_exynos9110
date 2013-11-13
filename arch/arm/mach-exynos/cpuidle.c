@@ -300,6 +300,62 @@ static int c2_finisher(unsigned long flags)
 }
 #endif
 
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+void exynos_idle_clock_down(bool on, enum cpu_type cluster)
+{
+	void __iomem *reg_pwr_ctrl1, *reg_pwr_ctrl2;
+	unsigned int tmp;
+
+	if (cluster == KFC) {
+		reg_pwr_ctrl1 = EXYNOS5430_KFC_PWR_CTRL;
+		reg_pwr_ctrl2 = EXYNOS5430_KFC_PWR_CTRL2;
+	} else {
+		reg_pwr_ctrl1 = EXYNOS5430_EGL_PWR_CTRL;
+		reg_pwr_ctrl2 = EXYNOS5430_EGL_PWR_CTRL2;
+	}
+
+	if (on) {
+		/*
+		 * EGL_PWR_CTRL and KFC_PWR_CTRL, both register's
+		 * control bits are same. So even in the case of the KFC,
+		 * use the EGL_PWR_CTRL register definition.
+		 */
+		tmp = __raw_readl(reg_pwr_ctrl1);
+		tmp &= ~(EXYNOS5430_USE_EGL_CLAMPCOREOUT |
+			EXYNOS5430_USE_STANDBYWFIL2_EGL);
+		tmp |= (EXYNOS5430_EGL2_RATIO |
+			EXYNOS5430_EGL1_RATIO |
+			EXYNOS5430_DIVEGL2_DOWN_ENABLE |
+			EXYNOS5430_DIVEGL1_DOWN_ENABLE);
+		__raw_writel(tmp, reg_pwr_ctrl1);
+
+		tmp = __raw_readl(reg_pwr_ctrl2);
+		tmp &= ~(EXYNOS5430_DUR_STANDBY2 |
+			EXYNOS5430_DUR_STANDBY1);
+		tmp |= (EXYNOS5430_DUR_STANDBY2_VALUE |
+			EXYNOS5430_DUR_STANDBY1_VALUE |
+			EXYNOS5430_UP_EGL2_RATIO |
+			EXYNOS5430_UP_EGL1_RATIO |
+			EXYNOS5430_DIVEGL2_UP_ENABLE |
+			EXYNOS5430_DIVEGL1_UP_ENABLE);
+		__raw_writel(tmp, reg_pwr_ctrl2);
+	} else {
+		tmp = __raw_readl(reg_pwr_ctrl1);
+		tmp &= ~(EXYNOS5430_DIVEGL2_DOWN_ENABLE |
+			EXYNOS5430_DIVEGL1_DOWN_ENABLE);
+		__raw_writel(tmp, reg_pwr_ctrl1);
+
+		tmp = __raw_readl(reg_pwr_ctrl1);
+		tmp &= ~(EXYNOS5430_DIVEGL2_UP_ENABLE |
+			EXYNOS5430_DIVEGL1_UP_ENABLE);
+		__raw_writel(tmp, reg_pwr_ctrl1);
+	}
+
+	pr_debug("%s idle clock down is %s\n", (cluster == KFC ? "KFC" : "EAGLE"),
+					(on ? "enabled" : "disabled"));
+}
+#endif
+
 static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
@@ -321,9 +377,11 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
-#ifdef CONFIG_IDLE_CLOCK_DOWN
-	exynos_disable_idle_clock_down(KFC);
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_idle_clock_down(false, ARM);
+	exynos_idle_clock_down(false, KFC);
 #endif
+
 	save_cpu_arch_register();
 
 	/* Setting Central Sequence Register for power down mode */
@@ -348,8 +406,9 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 
 	restore_cpu_arch_register();
 
-#ifdef CONFIG_IDLE_CLOCK_DOWN
-	exynos_enable_idle_clock_down(KFC);
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_idle_clock_down(true, ARM);
+	exynos_idle_clock_down(true, KFC);
 #endif
 
 	/* Clear wakeup state register */
@@ -525,8 +584,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	else
 		exynos_sys_powerdown_conf(SYS_DSTOP);
 
-#ifdef CONFIG_IDLE_CLOCK_DOWN
-	exynos_disable_idle_clock_down(KFC);
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_idle_clock_down(false, ARM);
+	exynos_idle_clock_down(false, KFC);
 #endif
 
 	save_cpu_arch_register();
@@ -588,8 +648,9 @@ early_wakeup:
 
 	restore_cpu_arch_register();
 
-#ifdef CONFIG_IDLE_CLOCK_DOWN
-	exynos_enable_idle_clock_down(KFC);
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_idle_clock_down(true, ARM);
+	exynos_idle_clock_down(true, KFC);
 #endif
 
 	s3c_pm_do_restore_core(exynos5_lpa_save,
@@ -825,6 +886,11 @@ static int __init exynos_init_cpuidle(void)
 		cluster_off_time_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
+#endif
+
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_idle_clock_down(true, ARM);
+	exynos_idle_clock_down(true, KFC);
 #endif
 
 	return 0;
