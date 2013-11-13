@@ -25,17 +25,6 @@
 static DEFINE_SPINLOCK(clk_div2_ratio0_lock);
 
 static struct clk *clk_g3d_parent;
-static struct clk *clk_300_disp1_parent;
-static struct clk *clk_200_disp1_parent;
-static struct clk *clk_fimd1_parent;
-static struct clk *clk_mdnie1_parent;
-static struct clk *clk_dp1_ext_mst_vid_parent;
-static struct clk *clk_mipi1_parent;
-static struct clk *clk_mdnie_pwm1_parent;
-static struct clk *clk_hdmi_parent;
-#ifdef CONFIG_FB_MIPI_DSIM
-void __iomem *hdmi_regs;
-#endif
 
 #define GET_CLK(a) __clk_lookup(a)
 #define SET_PARENT(a, b) clk_set_parent(GET_CLK(a), GET_CLK(b))
@@ -87,18 +76,7 @@ static int exynos5_pd_maudio_power_on_post(struct exynos_pm_domain *pd)
 	__raw_writel(0x10000000, EXYNOS_PAD_RET_MAUDIO_OPTION);
 	return 0;
 }
-#ifdef CONFIG_FB_MIPI_DSIM
-static int exynos5_pd_disp1_post_power_control(struct exynos_pm_domain *pd)
-{
-	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	ENA_CLK("hdmi", ret);
-	__raw_writel(0x1, hdmi_regs  + 0x30);
-	pr_info("HDMI phy power off : %x\n", __raw_readl(hdmi_regs + 0x30));
-	DIS_CLK("hdmi");
 
-	return 0;
-}
-#endif
 
 #ifdef CONFIG_EXYNOS5_DEV_FIMC_IS
 static int exynos5_pd_isp_power_control(struct exynos_pm_domain *pd, int power_flag)
@@ -221,40 +199,6 @@ static void exynos5_pd_set_fake_rate(void __iomem *regs, unsigned int shift_val)
 	__raw_writel(clk_div2_ratio0_value, regs);
 }
 
-static int exynos5_pd_disp1_power_on_post(struct exynos_pm_domain *pd)
-{
-	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	spin_lock(&clk_div2_ratio0_lock);
-	exynos5_pd_set_fake_rate(EXYNOS5_CLK_DIV2_RATIO0, SHIFT_DISP1_BLK_DIV);
-	spin_unlock(&clk_div2_ratio0_lock);
-
-	clk_set_parent(GET_CLK("sclk_300_disp1"), clk_300_disp1_parent);
-	clk_set_parent(GET_CLK("sclk_200_disp1"), clk_200_disp1_parent);
-	clk_set_parent(GET_CLK("sclk_fimd1"), clk_fimd1_parent);
-	clk_set_parent(GET_CLK("sclk_mdnie1"), clk_mdnie1_parent);
-	clk_set_parent(GET_CLK("sclk_dp1_ext_mst_vid"), clk_dp1_ext_mst_vid_parent);
-	clk_set_parent(GET_CLK("sclk_mipi1"), clk_mipi1_parent);
-	clk_set_parent(GET_CLK("sclk_mdnie_pwm1"), clk_mdnie_pwm1_parent);
-	clk_set_parent(GET_CLK("sclk_hdmi"), clk_hdmi_parent);
-
-	return 0;
-}
-
-static int exynos5_pd_disp1_power_off_pre(struct exynos_pm_domain *pd)
-{
-	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	clk_300_disp1_parent = clk_get_parent(GET_CLK("sclk_300_disp1"));
-	clk_200_disp1_parent = clk_get_parent(GET_CLK("sclk_200_disp1"));
-	clk_fimd1_parent = clk_get_parent(GET_CLK("mout_fimd1"));
-	clk_mdnie1_parent = clk_get_parent(GET_CLK("mout_mdnie1"));
-	clk_dp1_ext_mst_vid_parent = clk_get_parent(GET_CLK("sclk_dp1_ext_mst_vid"));
-	clk_mipi1_parent = clk_get_parent(GET_CLK("sclk_mipi1"));
-	clk_mdnie_pwm1_parent = clk_get_parent(GET_CLK("sclk_mdnie_pwm1"));
-	clk_hdmi_parent = clk_get_parent(GET_CLK("sclk_hdmi"));
-
-	return 0;
-}
-
 static int exynos5_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
@@ -321,13 +265,7 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_pre = exynos5_pd_maudio_power_off_pre,
 		.off_post = exynos5_pd_maudio_power_off_post,
 	} , {
-#ifdef CONFIG_FB_MIPI_DSIM
-		.on_post = exynos5_pd_disp1_post_power_control,
-#else
-		.on_post = exynos5_pd_disp1_power_on_post,
-#endif
 		.name = "pd-disp1",
-		.off_pre = exynos5_pd_disp1_power_off_pre,
 	} , {
 		.on_post = exynos5_pd_gscl_power_on_post,
 		.name = "pd-gscl",
