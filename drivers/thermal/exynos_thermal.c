@@ -1152,9 +1152,9 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 #if defined(CONFIG_SOC_EXYNOS5430)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.threshold_falling = 2,
-	.trigger_levels[0] = 85,
-	.trigger_levels[1] = 90,
-	.trigger_levels[2] = 100,
+	.trigger_levels[0] = 55,
+	.trigger_levels[1] = 60,
+	.trigger_levels[2] = 65,
 	.trigger_levels[3] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
@@ -1170,7 +1170,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1200 * 1000,
 #endif
-		.temp_level = 85,
+		.temp_level = 55,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1181,7 +1181,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1000 * 1000,
 #endif
-		.temp_level = 90,
+		.temp_level = 60,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1192,7 +1192,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 800 * 1000,
 #endif
-		.temp_level = 95,
+		.temp_level = 65,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1203,7 +1203,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 700 * 1000,
 #endif
-		.temp_level = 100,
+		.temp_level = 70,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
