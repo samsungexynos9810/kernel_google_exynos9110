@@ -340,7 +340,7 @@ struct devfreq_clk_info aclk_mif_133[] = {
 	{LV6,    69000000,      0,      NULL},
 	{LV7,    69000000,      0,      NULL},
 	{LV8,    69000000,      0,      NULL},
-	{LV9,    52000000,      0,      NULL},
+	{LV9,    69000000,      0,      NULL},
 	{LV10,   52000000,      0,      NULL},
 };
 
@@ -587,6 +587,7 @@ struct devfreq_data_mif *data_mif;
 static struct pm_qos_request exynos5_mif_qos;
 static struct pm_qos_request boot_mif_qos;
 static struct pm_qos_request min_mif_thermal_qos;
+static struct pm_qos_request exynos5_mif_bts_qos;
 
 static bool use_mif_timing_set_0;
 
@@ -859,11 +860,11 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 			disp_qos = distriction_wqhd[total_layer_count].disp_level;
 	}
 
-	if (pm_qos_request_active(&exynos5_mif_qos)) {
+	if (pm_qos_request_active(&exynos5_mif_bts_qos)) {
 		if (mif_qos != LV10)
-			pm_qos_update_request(&exynos5_mif_qos, devfreq_mif_opp_list[mif_qos].freq);
+			pm_qos_update_request(&exynos5_mif_bts_qos, devfreq_mif_opp_list[mif_qos].freq);
 		else
-			pm_qos_update_request(&exynos5_mif_qos, exynos5430_qos_mif.default_qos);
+			pm_qos_update_request(&exynos5_mif_bts_qos, exynos5430_qos_mif.default_qos);
 	}
 
 	exynos5_update_district_disp_level(disp_qos);
@@ -1345,7 +1346,7 @@ static int exynos5_devfreq_mif_notifier(struct notifier_block *nb, unsigned long
 static int exynos5_devfreq_mif_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&exynos5_mif_qos, exynos5_devfreq_mif_profile.initial_freq);
+	pm_qos_update_request(&boot_mif_qos, exynos5_devfreq_mif_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -1364,8 +1365,8 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 	unsigned int *on = v;
 
 	if (event == TMU_COLD) {
-		if (pm_qos_request_active(&exynos5_mif_qos))
-			pm_qos_update_request(&exynos5_mif_qos,
+		if (pm_qos_request_active(&min_mif_thermal_qos))
+			pm_qos_update_request(&min_mif_thermal_qos,
 					exynos5_devfreq_mif_profile.initial_freq);
 
 		if (*on) {
@@ -1402,8 +1403,8 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 			mutex_unlock(&data->lock);
 		}
 
-		if (pm_qos_request_active(&exynos5_mif_qos))
-			pm_qos_update_request(&exynos5_mif_qos,
+		if (pm_qos_request_active(&min_mif_thermal_qos))
+			pm_qos_update_request(&min_mif_thermal_qos,
 					exynos5430_qos_mif.default_qos);
 	}
 
@@ -1646,6 +1647,7 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
+	pm_qos_add_request(&exynos5_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_update_request_timeout(&boot_mif_qos,
 					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
 
@@ -1686,6 +1688,8 @@ static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_mif_thermal_qos);
 	pm_qos_remove_request(&exynos5_mif_qos);
+	pm_qos_remove_request(&boot_mif_qos);
+	pm_qos_remove_request(&exynos5_mif_bts_qos);
 
 	regulator_put(data->vdd_mif);
 
@@ -2333,6 +2337,7 @@ struct devfreq_data_mif *data_mif;
 static struct pm_qos_request exynos5_mif_qos;
 static struct pm_qos_request boot_mif_qos;
 static struct pm_qos_request min_mif_thermal_qos;
+static struct pm_qos_request exynos5_mif_bts_qos;
 
 static bool use_mif_timing_set_0;
 
@@ -2604,11 +2609,11 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 			disp_qos = distriction_wqhd[total_layer_count].disp_level;
 	}
 
-	if (pm_qos_request_active(&exynos5_mif_qos)) {
+	if (pm_qos_request_active(&exynos5_mif_bts_qos)) {
 		if (mif_qos != LV10)
-			pm_qos_update_request(&exynos5_mif_qos, devfreq_mif_opp_list[mif_qos].freq);
+			pm_qos_update_request(&exynos5_mif_bts_qos, devfreq_mif_opp_list[mif_qos].freq);
 		else
-			pm_qos_update_request(&exynos5_mif_qos, exynos5430_qos_mif.default_qos);
+			pm_qos_update_request(&exynos5_mif_bts_qos, exynos5430_qos_mif.default_qos);
 	}
 
 	exynos5_update_district_disp_level(disp_qos);
@@ -3076,7 +3081,7 @@ static int exynos5_devfreq_mif_notifier(struct notifier_block *nb, unsigned long
 static int exynos5_devfreq_mif_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&exynos5_mif_qos, exynos5_devfreq_mif_profile.initial_freq);
+	pm_qos_update_request(&boot_mif_qos, exynos5_devfreq_mif_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -3095,8 +3100,8 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 	unsigned int *on = v;
 
 	if (event == TMU_COLD) {
-		if (pm_qos_request_active(&exynos5_mif_qos))
-			pm_qos_update_request(&exynos5_mif_qos,
+		if (pm_qos_request_active(&min_mif_thermal_qos))
+			pm_qos_update_request(&min_mif_thermal_qos,
 					exynos5_devfreq_mif_profile.initial_freq);
 
 		if (*on) {
@@ -3133,8 +3138,8 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 			mutex_unlock(&data->lock);
 		}
 
-		if (pm_qos_request_active(&exynos5_mif_qos))
-			pm_qos_update_request(&exynos5_mif_qos,
+		if (pm_qos_request_active(&min_mif_thermal_qos))
+			pm_qos_update_request(&min_mif_thermal_qos,
 					exynos5430_qos_mif.default_qos);
 	}
 
@@ -3383,6 +3388,7 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
+	pm_qos_add_request(&exynos5_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
 	pm_qos_update_request_timeout(&boot_mif_qos,
 					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
 
@@ -3423,6 +3429,8 @@ static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_mif_thermal_qos);
 	pm_qos_remove_request(&exynos5_mif_qos);
+	pm_qos_remove_request(&boot_mif_qos);
+	pm_qos_remove_request(&exynos5_mif_bts_qos);
 
 	regulator_put(data->vdd_mif);
 

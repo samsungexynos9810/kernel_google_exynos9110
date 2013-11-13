@@ -954,7 +954,7 @@ static int exynos5_init_isp_table(struct device *dev)
 static int exynos5_devfreq_isp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&exynos5_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
+	pm_qos_update_request(&boot_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -972,8 +972,8 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 	unsigned int *on = v;
 
 	if (event == TMU_COLD) {
-		if (pm_qos_request_active(&exynos5_isp_qos))
-			pm_qos_update_request(&exynos5_isp_qos,
+		if (pm_qos_request_active(&min_isp_thermal_qos))
+			pm_qos_update_request(&min_isp_thermal_qos,
 					exynos5_devfreq_isp_profile.initial_freq);
 
 		if (*on) {
@@ -1010,8 +1010,8 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 			mutex_unlock(&data->lock);
 		}
 
-		if (pm_qos_request_active(&exynos5_isp_qos))
-			pm_qos_update_request(&exynos5_isp_qos,
+		if (pm_qos_request_active(&min_isp_thermal_qos))
+			pm_qos_update_request(&min_isp_thermal_qos,
 					exynos5430_qos_isp.default_qos);
 	}
 
@@ -1107,6 +1107,7 @@ static int exynos5_devfreq_isp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_isp_thermal_qos);
 	pm_qos_remove_request(&exynos5_isp_qos);
+	pm_qos_remove_request(&boot_isp_qos);
 
 	regulator_put(data->vdd_isp);
 
@@ -2131,7 +2132,7 @@ static int exynos5_init_isp_table(struct device *dev)
 static int exynos5_devfreq_isp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&exynos5_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
+	pm_qos_update_request(&boot_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -2149,8 +2150,8 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 	unsigned int *on = v;
 
 	if (event == TMU_COLD) {
-		if (pm_qos_request_active(&exynos5_isp_qos))
-			pm_qos_update_request(&exynos5_isp_qos,
+		if (pm_qos_request_active(&min_isp_thermal_qos))
+			pm_qos_update_request(&min_isp_thermal_qos,
 					exynos5_devfreq_isp_profile.initial_freq);
 
 		if (*on) {
@@ -2187,8 +2188,8 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 			mutex_unlock(&data->lock);
 		}
 
-		if (pm_qos_request_active(&exynos5_isp_qos))
-			pm_qos_update_request(&exynos5_isp_qos,
+		if (pm_qos_request_active(&min_isp_thermal_qos))
+			pm_qos_update_request(&min_isp_thermal_qos,
 					exynos5430_qos_isp.default_qos);
 	}
 
@@ -2284,6 +2285,7 @@ static int exynos5_devfreq_isp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_isp_thermal_qos);
 	pm_qos_remove_request(&exynos5_isp_qos);
+	pm_qos_remove_request(&boot_isp_qos);
 
 	regulator_put(data->vdd_isp);
 
