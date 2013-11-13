@@ -23,7 +23,7 @@
 #include <linux/interrupt.h>
 #include <linux/mutex.h>
 #include <linux/regulator/consumer.h>
-#include <linux/switch.h>
+#include <linux/extcon.h>
 #include <uapi/linux/v4l2-dv-timings.h>
 
 #include <media/v4l2-subdev.h>
@@ -356,7 +356,7 @@ struct hdmi_device {
 	/* HPD releated */
 	struct work_struct hpd_work;
 	struct delayed_work hpd_work_ext;
-	struct switch_dev hpd_switch;
+	struct extcon_dev hpd_extcon;
 
 	/* choose DVI or HDMI mode */
 	int dvi_mode;
