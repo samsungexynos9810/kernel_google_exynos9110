@@ -387,12 +387,12 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_EGL,
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_EGL),
-		.length		= SZ_4K,
+		.length		= SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_KFC,
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_KFC),
-		.length		= SZ_4K,
+		.length		= SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_AUD,
