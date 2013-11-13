@@ -38,7 +38,7 @@
 #define is_ver_5a (pdata->ip_ver == IP_VER_JPEG_5A)
 #define is_ver_5h (pdata->ip_ver == IP_VER_JPEG_5H)
 
-#define JPEG_TIMEOUT		(2 * HZ)	/* 2 seconds */
+#define JPEG_TIMEOUT		((200 * HZ) / 1000)	/* 200 ms */
 
 /* JPEG hardware device state */
 #define DEV_RUN		1

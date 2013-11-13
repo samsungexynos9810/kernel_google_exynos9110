@@ -142,6 +142,56 @@ static void jpeg_unlock(struct vb2_queue *vq)
 	mutex_unlock(&ctx->jpeg_dev->lock);
 }
 
+static int jpeg_start_streaming(struct vb2_queue *vq, unsigned int count)
+{
+	struct jpeg_ctx *ctx = vb2_get_drv_priv(vq);
+	set_bit(CTX_STREAMING, &ctx->flags);
+
+	return 0;
+}
+
+static int jpeg_ctx_stop_req(struct jpeg_ctx *ctx)
+{
+	struct jpeg_ctx *curr_ctx;
+	struct jpeg_dev *jpeg = ctx->jpeg_dev;
+	int ret = 0;
+	unsigned long flags;
+
+	curr_ctx = v4l2_m2m_get_curr_priv(jpeg->m2m_dev);
+
+	if (!test_bit(CTX_RUN, &ctx->flags) || (curr_ctx != ctx))
+		return 0;
+
+	spin_lock_irqsave(&ctx->slock, flags);
+	set_bit(CTX_ABORT, &ctx->flags);
+	spin_unlock_irqrestore(&ctx->slock, flags);
+
+	ret = wait_event_timeout(jpeg->wait,
+			!test_bit(CTX_RUN, &ctx->flags), JPEG_TIMEOUT);
+	if (!ret) {
+		dev_err(&jpeg->plat_dev->dev, "device failed to stop request\n");
+		ret = -EBUSY;
+	}
+
+	return ret;
+}
+
+static int jpeg_stop_streaming(struct vb2_queue *q)
+{
+	struct jpeg_ctx *ctx = q->drv_priv;
+	struct jpeg_dev *jpeg = ctx->jpeg_dev;
+	int ret;
+
+	vb2_wait_for_all_buffers(q);
+	ret = jpeg_ctx_stop_req(ctx);
+	if (ret < 0)
+		dev_err(&jpeg->plat_dev->dev, "wait timeout : %s\n", __func__);
+
+	clear_bit(CTX_STREAMING, &ctx->flags);
+
+	return 0;
+}
+
 static struct vb2_ops jpeg_vb2_qops = {
 	.queue_setup		= jpeg_queue_setup,
 	.buf_prepare		= jpeg_buf_prepare,
@@ -149,6 +199,8 @@ static struct vb2_ops jpeg_vb2_qops = {
 	.buf_queue		= jpeg_buf_queue,
 	.wait_prepare		= jpeg_unlock,
 	.wait_finish		= jpeg_lock,
+	.start_streaming	= jpeg_start_streaming,
+	.stop_streaming		= jpeg_stop_streaming,
 };
 
 static int jpeg_clk_get(struct jpeg_dev *jpeg)
@@ -551,6 +603,12 @@ static irqreturn_t jpeg_irq(int irq, void *priv)
 		} else {
 			v4l2_m2m_job_finish(jpeg->m2m_dev, ctx->m2m_ctx);
 		}
+
+		/* Wake up from CTX_ABORT state */
+		if (test_and_clear_bit(CTX_ABORT, &ctx->flags))
+			wake_up(&jpeg->wait);
+	} else {
+		dev_err(&jpeg->plat_dev->dev, "failed to get the buffer done\n");
 	}
 
 	spin_unlock(&ctx->slock);
