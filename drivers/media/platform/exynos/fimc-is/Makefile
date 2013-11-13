@@ -23,6 +23,7 @@ fimc-is-objs	:= fimc-is-core.o \
 		fimc-is-dt.o \
 		fimc-is-companion.o \
 		sensor/fimc-is-device-6b2.o \
+		sensor/fimc-is-device-8b1.o \
 		sensor/fimc-is-device-imx135.o \
 		sensor/fimc-is-device-3l2.o \
 		sensor/fimc-is-device-2p2.o \

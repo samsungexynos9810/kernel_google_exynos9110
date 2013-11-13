@@ -47,6 +47,7 @@
 #include "fimc-is-clk-gate.h"
 
 #include "sensor/fimc-is-device-6b2.h"
+#include "sensor/fimc-is-device-8b1.h"
 #include "sensor/fimc-is-device-imx135.h"
 #include "sensor/fimc-is-device-3l2.h"
 #include "sensor/fimc-is-device-2p2.h"
@@ -693,6 +694,14 @@ static int fimc_is_probe(struct platform_device *pdev)
 	ret = sensor_6b2_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_6b2_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_S5K8B1_DRIVING
+	ret = sensor_8b1_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_8b1_probe is fail(%d)", ret);
 		goto p_err3;
 	}
 #endif
