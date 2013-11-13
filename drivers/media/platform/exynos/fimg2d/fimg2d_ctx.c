@@ -427,6 +427,7 @@ static void inner_flush_clip_range(struct fimg2d_bltcmd *cmd)
 	}
 }
 
+#if 0
 static void inner_touch_range(struct fimg2d_bltcmd *cmd)
 {
 	struct fimg2d_image *img;
@@ -457,6 +458,7 @@ static void inner_touch_range(struct fimg2d_bltcmd *cmd)
 		fimg2d_touch_range(c->addr, c->cached);
 	}
 }
+#endif
 #endif
 
 #ifdef CONFIG_OUTER_CACHE
