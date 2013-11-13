@@ -15,6 +15,7 @@
 
 extern struct pm_qos_request exynos_isp_qos_dev;
 extern struct pm_qos_request exynos_isp_qos_mem;
+extern struct pm_qos_request exynos_isp_qos_cam;
 
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING);
@@ -176,7 +177,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW)
 /* high speed fps */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS)
 {
-	if ((device->module == SENSOR_NAME_IMX135) &&
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) > 30))
 		return 1;
 	else
@@ -186,7 +187,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS)
 /* rear camcording */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING)
 {
-	if ((device->module == SENSOR_NAME_IMX135) &&
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 == ISS_SUB_SCENARIO_VIDEO))
@@ -198,7 +199,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING)
 /* rear preview */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW)
 {
-	if ((device->module == SENSOR_NAME_IMX135) &&
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 != ISS_SUB_SCENARIO_VIDEO))
@@ -210,7 +211,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW)
 /* front vt1 */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1)
 {
-	if ((device->module == SENSOR_NAME_S5K6B2) &&
+	if ((device->sensor->pdev->id == SENSOR_POSITION_FRONT) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 == ISS_SUB_SCENARIO_FRONT_VT1))
 		return 1;
@@ -221,7 +222,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1)
 /* front preview */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW)
 {
-	if ((device->module == SENSOR_NAME_S5K6B2) &&
+	if ((device->sensor->pdev->id == SENSOR_POSITION_FRONT) &&
 			!(((device->setfile & FIMC_IS_SETFILE_MASK) \
 					== ISS_SUB_SCENARIO_FRONT_VT1) ||
 				((device->setfile & FIMC_IS_SETFILE_MASK) \
@@ -234,7 +235,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW)
 /* rear capture */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE)
 {
-	if ((device->module == SENSOR_NAME_IMX135) &&
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)))
 		return 1;
 	else
@@ -259,6 +260,7 @@ int fimc_is_dvfs_init(struct fimc_is_resourcemgr *resourcemgr)
 
 	resourcemgr->dvfs_ctrl.cur_int_qos = 0;
 	resourcemgr->dvfs_ctrl.cur_mif_qos = 0;
+	resourcemgr->dvfs_ctrl.cur_cam_qos = 0;
 	resourcemgr->dvfs_ctrl.cur_i2c_qos = 0;
 
 	if (!(resourcemgr->dvfs_ctrl.static_ctrl))
@@ -394,8 +396,6 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 				static_ctrl->cur_scenario_idx = i;
 				static_ctrl->cur_frame_tick = scenarios[i].keep_frame_tick;
 			}
-			pr_info("%s: [%d] type:%d selected scenario[%d]\n",
-					__func__, device->instance, type, scenario_id);
 
 			return scenario_id;
 		}
@@ -413,15 +413,17 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 
 int fimc_is_get_qos(struct fimc_is_core *core, u32 type, u32 scenario_id)
 {
-	struct exynos_platform_fimc_is	*pdata;
+	struct exynos_platform_fimc_is	*pdata = NULL;
 	int qos = 0;
 
 	pdata = core->pdata;
-
-	if (!pdata->get_int_qos || !pdata->get_mif_qos) {
-		err("qos func in platform data is NULL\n");
+	if (pdata == NULL) {
+		err("pdata is NULL\n");
 		return -EINVAL;
 	}
+
+	if (!pdata->get_int_qos || !pdata->get_mif_qos)
+		goto struct_qos;
 
 	switch (type) {
 		case FIMC_IS_DVFS_INT:
@@ -435,14 +437,29 @@ int fimc_is_get_qos(struct fimc_is_core *core, u32 type, u32 scenario_id)
 				qos = pdata->get_i2c_qos(scenario_id);
 			break;
 	}
+	goto exit;
 
+struct_qos:
+	if (!pdata->dvfs_data) {
+		err("qos structure in platform data is NULL\n");
+		return -EINVAL;
+	}
+
+	if (max(0, (int)type) >= FIMC_IS_DVFS_END) {
+		err("Cannot find DVFS value");
+		return -EINVAL;
+	}
+
+	qos = pdata->dvfs_data[scenario_id][type];
+
+exit:
 	return qos;
 }
 
 int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 {
 	int ret = 0;
-	int int_qos, mif_qos, i2c_qos = 0;
+	int int_qos, mif_qos, i2c_qos, cam_qos = 0;
 	int refcount;
 	struct fimc_is_core *core;
 	struct fimc_is_resourcemgr *resourcemgr;
@@ -465,15 +482,16 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 
 	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, scenario_id);
 	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, scenario_id);
+	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, scenario_id);
 	i2c_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_I2C, scenario_id);
 
-	if (int_qos < 0 || mif_qos < 0 || i2c_qos < 0) {
+	if (int_qos < 0 || mif_qos < 0 || i2c_qos < 0 || cam_qos < 0) {
 		err("getting qos value is failed!!\n");
 		return -EINVAL;
 	}
 
 	/* check current qos */
-	if (dvfs_ctrl->cur_int_qos != int_qos) {
+	if (int_qos && dvfs_ctrl->cur_int_qos != int_qos) {
 		if (!i2c_qos) {
 			ret = fimc_is_itf_i2c_lock(device, i2c_qos, true);
 			if (ret) {
@@ -493,20 +511,20 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 				goto exit;
 			}
 		}
-		pr_info("[RSC:%d] %s: DVFS INT level(%d) i2c(%d) \n", device->instance,
-				__func__, int_qos, i2c_qos);
 	}
 
-	if (dvfs_ctrl->cur_mif_qos != mif_qos) {
+	if (mif_qos && dvfs_ctrl->cur_mif_qos != mif_qos) {
 		pm_qos_update_request(&exynos_isp_qos_mem, mif_qos);
 		dvfs_ctrl->cur_mif_qos = mif_qos;
-
-		pr_info("[RSC:%d] %s: DVFS MIF level(%d) \n", device->instance,
-				__func__, mif_qos);
 	}
 
-	dbg("[RSC:%d] %s: DVFS scenario_id(%d) level(%d), MIF level (%d), I2C clock(%d)\n",
-			device->instance, __func__, scenario_id, int_qos, mif_qos, i2c_qos);
+	if (cam_qos && dvfs_ctrl->cur_cam_qos != cam_qos) {
+		pm_qos_update_request(&exynos_isp_qos_cam, cam_qos);
+		dvfs_ctrl->cur_cam_qos = cam_qos;
+	}
+
+	dbg("[RSC:%d] DVFS INT(%d), MIF(%d), CAM(%d), I2C(%d)\n",
+			device->instance, int_qos, mif_qos, cam_qos, i2c_qos);
 exit:
 	return ret;
 }

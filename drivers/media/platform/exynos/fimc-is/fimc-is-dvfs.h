@@ -39,12 +39,6 @@ enum FIMC_IS_DVFS_SCENARIO_TYPE {
 	FIMC_IS_DYNAMIC_SN,
 };
 
-enum FIMC_IS_DVFS_QOS_TYPE {
-	FIMC_IS_DVFS_INT,
-	FIMC_IS_DVFS_MIF,
-	FIMC_IS_DVFS_I2C,
-};
-
 struct fimc_is_dvfs_scenario {
 	u32 scenario_id;	/* scenario_id */
 	char *scenario_nm;	/* string of scenario_id */

@@ -120,16 +120,6 @@ int fimc_is_resource_put(struct fimc_is_resourcemgr *resourcemgr)
                __func__, atomic_read(&core->rsccount));
 
 	if (!atomic_read(&core->rsccount)) {
-		/* HACK: This will be moved to runtime suspend */
-#if defined(CONFIG_PM_DEVFREQ)
-		/* 4. bus release */
-		pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
-		pm_qos_remove_request(&exynos_isp_qos_dev);
-		pm_qos_remove_request(&exynos_isp_qos_mem);
-		pm_qos_remove_request(&exynos_isp_qos_cam);
-		pm_qos_remove_request(&exynos_isp_qos_disp);
-#endif
-
 		if (test_bit(FIMC_IS_ISCHAIN_POWER_ON, &core->state)) {
 			/* 1. Stop a5 and other devices operation */
 			ret = fimc_is_itf_power_down(&core->interface);
