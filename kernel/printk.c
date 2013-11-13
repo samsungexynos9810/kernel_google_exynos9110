@@ -1617,11 +1617,12 @@ asmlinkage int vprintk_emit(int facility, int level,
 
 		vscnprintf(temp, sizeof(tempbuf), fmt, args);
 		if (printk_get_level(tempbuf))
-			text_len = snprintf(text, sizeof(textbuf), "%c[c%d] %s",
-					tempbuf[0], this_cpu, &tempbuf[2]);
+			text_len = snprintf(text, sizeof(textbuf),
+					    "%c%c[c%d] %s", tempbuf[0],
+					    tempbuf[1], this_cpu, &tempbuf[2]);
 		else
 			text_len = snprintf(text, sizeof(textbuf), "[c%d] %s",
-					this_cpu, &tempbuf[0]);
+					    this_cpu, &tempbuf[0]);
 	} else {
 		text_len = vscnprintf(text, sizeof(textbuf), fmt, args);
 	}
