@@ -48,115 +48,164 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #endif
 
 /* Exynos generic registers */
-#define EXYNOS_TMU_REG_TRIMINFO		0x0
-#define EXYNOS_TMU_REG_CONTROL		0x20
-#define EXYNOS_TMU_REG_STATUS		0x28
-#define EXYNOS_TMU_REG_CURRENT_TEMP	0x40
+#define EXYNOS_TMU_REG_TRIMINFO			0x0
+#define EXYNOS_TMU_REG_CONTROL			0x20
+#define EXYNOS_TMU_REG_STATUS			0x28
+#define EXYNOS_TMU_REG_CURRENT_TEMP		0x40
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
 /* Exynos5430 specific registers */
-#define EXYNOS_THD_TEMP_RISE		0x50
-#define EXYNOS_THD_TEMP_FALL		0x60
+#define EXYNOS_THD_TEMP_RISE			0x50
+#define EXYNOS_THD_TEMP_FALL			0x60
 #define EXYNOS_TMU_REG_INTEN			0xB0
 #define EXYNOS_TMU_REG_INTSTAT			0xB4
 #define EXYNOS_TMU_REG_INTCLEAR			0xB8
+#elif defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#define EXYNOS_THD_TEMP_RISE			0x50
+#define EXYNOS_THD_TEMP_FALL			0x60
+#define EXYNOS_THD_TEMP_RISE3_0			0x50
+#define EXYNOS_THD_TEMP_RISE7_4			0x54
+#define EXYNOS_THD_TEMP_FALL3_0			0x60
+#define EXYNOS_THD_TEMP_FALL7_4			0x64
+#define EXYNOS_TMU_REG_INTEN			0xC0
+#define EXYNOS_TMU_REG_INTCLEAR			0xC8
 #else
-#define EXYNOS_THD_TEMP_RISE            0x50
-#define EXYNOS_THD_TEMP_FALL            0x54
-#define EXYNOS_TMU_REG_INTEN		0x70
-#define EXYNOS_TMU_REG_INTSTAT		0x74
-#define EXYNOS_TMU_REG_INTCLEAR		0x78
+#define EXYNOS_THD_TEMP_RISE            	0x50
+#define EXYNOS_THD_TEMP_FALL            	0x54
+#define EXYNOS_TMU_REG_INTEN			0x70
+#define EXYNOS_TMU_REG_INTSTAT			0x74
+#define EXYNOS_TMU_REG_INTCLEAR			0x78
 #endif
 
-#define EXYNOS_TMU_TRIM_TEMP_MASK	0xff
-#define EXYNOS_TMU_GAIN_SHIFT		8
-#define EXYNOS_TMU_REF_VOLTAGE_SHIFT	24
-#define EXYNOS_TMU_CORE_ON		3
-#define EXYNOS_TMU_CORE_OFF		2
+#define EXYNOS_TMU_TRIM_TEMP_MASK		0xff
+#define EXYNOS_TMU_GAIN_SHIFT			8
+#define EXYNOS_TMU_REF_VOLTAGE_SHIFT		24
+#define EXYNOS_TMU_CORE_ON			3
+#define EXYNOS_TMU_CORE_OFF			2
 #define EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET	50
 
 /* Exynos4210 specific registers */
 #define EXYNOS4210_TMU_REG_THRESHOLD_TEMP	0x44
-#define EXYNOS4210_TMU_REG_TRIG_LEVEL0	0x50
-#define EXYNOS4210_TMU_REG_TRIG_LEVEL1	0x54
-#define EXYNOS4210_TMU_REG_TRIG_LEVEL2	0x58
-#define EXYNOS4210_TMU_REG_TRIG_LEVEL3	0x5C
-#define EXYNOS4210_TMU_REG_PAST_TEMP0	0x60
-#define EXYNOS4210_TMU_REG_PAST_TEMP1	0x64
-#define EXYNOS4210_TMU_REG_PAST_TEMP2	0x68
-#define EXYNOS4210_TMU_REG_PAST_TEMP3	0x6C
+#define EXYNOS4210_TMU_REG_TRIG_LEVEL0		0x50
+#define EXYNOS4210_TMU_REG_TRIG_LEVEL1		0x54
+#define EXYNOS4210_TMU_REG_TRIG_LEVEL2		0x58
+#define EXYNOS4210_TMU_REG_TRIG_LEVEL3		0x5C
+#define EXYNOS4210_TMU_REG_PAST_TEMP0		0x60
+#define EXYNOS4210_TMU_REG_PAST_TEMP1		0x64
+#define EXYNOS4210_TMU_REG_PAST_TEMP2		0x68
+#define EXYNOS4210_TMU_REG_PAST_TEMP3		0x6C
 
-#define EXYNOS4210_TMU_TRIG_LEVEL0_MASK	0x1
-#define EXYNOS4210_TMU_TRIG_LEVEL1_MASK	0x10
-#define EXYNOS4210_TMU_TRIG_LEVEL2_MASK	0x100
-#define EXYNOS4210_TMU_TRIG_LEVEL3_MASK	0x1000
-#define EXYNOS4210_TMU_INTCLEAR_VAL	0x1111
+#define EXYNOS4210_TMU_TRIG_LEVEL0_MASK		0x1
+#define EXYNOS4210_TMU_TRIG_LEVEL1_MASK		0x10
+#define EXYNOS4210_TMU_TRIG_LEVEL2_MASK		0x100
+#define EXYNOS4210_TMU_TRIG_LEVEL3_MASK		0x1000
+#define EXYNOS4210_TMU_INTCLEAR_VAL		0x1111
 
 /* Exynos5250 and Exynos4412 specific registers */
-#define EXYNOS_TRIMINFO_RELOAD1		0x01
-#define EXYNOS_TRIMINFO_RELOAD2		0x11
-#define EXYNOS_TRIMINFO_CONFIG		0x10
-#define EXYNOS_TRIMINFO_CONTROL		0x14
-#define EXYNOS_EMUL_CON		0x80
+#define EXYNOS_TRIMINFO_RELOAD1			0x01
+#define EXYNOS_TRIMINFO_RELOAD2			0x11
+#define EXYNOS_TRIMINFO_CONFIG			0x10
+#define EXYNOS_TRIMINFO_CONTROL			0x14
+#define EXYNOS_EMUL_CON				0x80
 
-#define EXYNOS_TRIMINFO_RELOAD		0x1
-#define EXYNOS_TMU_CLEAR_RISE_INT	0x111
-#define EXYNOS_TMU_CLEAR_FALL_INT	(0x111 << 12)
-#define EXYNOS_MUX_ADDR_VALUE		6
-#define EXYNOS_MUX_ADDR_SHIFT		20
-#define EXYNOS_TMU_TRIP_MODE_SHIFT	13
-#define EXYNOS_THERM_TRIP_EN		(1 << 12)
-#define EXYNOS_MUX_ADDR			0x600000
+#define EXYNOS_TRIMINFO_RELOAD			0x1
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#define EXYNOS_TMU_CLEAR_RISE_INT      		0xff
+#define EXYNOS_TMU_CLEAR_FALL_INT      		0xff << 16
+#else
+#define EXYNOS_TMU_CLEAR_RISE_INT		0x111
+#define EXYNOS_TMU_CLEAR_FALL_INT		(0x111 << 12)
+#endif
+#define EXYNOS_MUX_ADDR_VALUE			6
+#define EXYNOS_MUX_ADDR_SHIFT			20
+#define EXYNOS_TMU_TRIP_MODE_SHIFT		13
+#define EXYNOS_THERM_TRIP_EN			(1 << 12)
+#define EXYNOS_MUX_ADDR				0x600000
 
-#define EFUSE_MIN_VALUE 40
-#define EFUSE_MAX_VALUE 100
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#define EFUSE_MIN_VALUE				0
+#define EFUSE_MAX_VALUE				255
+#else
+#define EFUSE_MIN_VALUE 			40
+#define EFUSE_MAX_VALUE 			100
+#endif
 
 /* In-kernel thermal framework related macros & definations */
-#define SENSOR_NAME_LEN	16
-#define MAX_TRIP_COUNT	8
-#define MAX_COOLING_DEVICE 5
-#define MAX_THRESHOLD_LEVS 4
+#define SENSOR_NAME_LEN				16
+#define MAX_TRIP_COUNT				9
+#define MAX_COOLING_DEVICE 			5
+#define MAX_THRESHOLD_LEVS 			8
 
-#define PASSIVE_INTERVAL	100
-#define ACTIVE_INTERVAL		300
-#define IDLE_INTERVAL 1000
-#define MCELSIUS	1000
+#define PASSIVE_INTERVAL			100
+#define ACTIVE_INTERVAL				300
+#define IDLE_INTERVAL 				1000
+#define MCELSIUS				1000
 
 #ifdef CONFIG_THERMAL_EMULATION
-#define EXYNOS_EMUL_TIME	0x57F0
-#define EXYNOS_EMUL_TIME_SHIFT	16
-#define EXYNOS_EMUL_DATA_SHIFT	8
-#define EXYNOS_EMUL_DATA_MASK	0xFF
-#define EXYNOS_EMUL_ENABLE	0x1
+#define EXYNOS_EMUL_TIME			0x57F0
+#define EXYNOS_EMUL_TIME_SHIFT			16
+#define EXYNOS_EMUL_DATA_SHIFT			8
+#define EXYNOS_EMUL_DATA_MASK			0xFF
+#define EXYNOS_EMUL_ENABLE			0x1
 #endif /* CONFIG_THERMAL_EMULATION */
 
 /* CPU Zone information */
-#define PANIC_ZONE      6
-#define WARN_ZONE       3
-#define MONITOR_ZONE    2
-#define SAFE_ZONE       1
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#define PANIC_ZONE      			10
+#else
+#define PANIC_ZONE      			6
+#endif
+#define WARN_ZONE       			3
+#define MONITOR_ZONE    			2
+#define SAFE_ZONE       			1
 
 /* Rising, Falling interrupt bit number*/
-#define RISE_LEVEL1_SHIFT	4
-#define RISE_LEVEL2_SHIFT	8
-#define RISE_LEVEL3_SHIFT	12
-#define FALL_LEVEL0_SHIFT	16
-#define FALL_LEVEL1_SHIFT	20
-#define FALL_LEVEL2_SHIFT	24
-#define FALL_LEVEL3_SHIFT	28
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#define RISE_LEVEL1_SHIFT      			1
+#define RISE_LEVEL2_SHIFT      			2
+#define RISE_LEVEL3_SHIFT			3
+#define RISE_LEVEL4_SHIFT      			4
+#define RISE_LEVEL5_SHIFT      			5
+#define RISE_LEVEL6_SHIFT      			6
+#define RISE_LEVEL7_SHIFT      			7
+#define FALL_LEVEL0_SHIFT      			16
+#define FALL_LEVEL1_SHIFT      			17
+#define FALL_LEVEL2_SHIFT      			18
+#define FALL_LEVEL3_SHIFT      			19
+#define FALL_LEVEL4_SHIFT      			20
+#define FALL_LEVEL5_SHIFT      			21
+#define FALL_LEVEL6_SHIFT      			22
+#define FALL_LEVEL7_SHIFT      			23
+#else
+#define RISE_LEVEL1_SHIFT			4
+#define RISE_LEVEL2_SHIFT			8
+#define RISE_LEVEL3_SHIFT			12
+#define RISE_LEVEL4_SHIFT      			32
+#define RISE_LEVEL5_SHIFT      			32
+#define RISE_LEVEL6_SHIFT      			32
+#define RISE_LEVEL7_SHIFT      			32
+#define FALL_LEVEL0_SHIFT			16
+#define FALL_LEVEL1_SHIFT			20
+#define FALL_LEVEL2_SHIFT			24
+#define FALL_LEVEL3_SHIFT			28
+#define FALL_LEVEL4_SHIFT      			32
+#define FALL_LEVEL5_SHIFT      			32
+#define FALL_LEVEL6_SHIFT      			32
+#define FALL_LEVEL7_SHIFT      			32
+#endif
 
 #define GET_ZONE(trip) (trip + 2)
 #define GET_TRIP(zone) (zone - 2)
 
-#define EXYNOS_ZONE_COUNT	1
-#define EXYNOS_TMU_COUNT	5
-#define EXYSNO_CLK_COUNT	2
-#define TRIP_EN_COUNT		4
-#define EXYNOS_GPU_NUMBER	2
-#define EXYNOS_ISP_NUMBER	4
+#define EXYNOS_ZONE_COUNT			1
+#define EXYNOS_TMU_COUNT			5
+#define EXYSNO_CLK_COUNT			2
+#define TRIP_EN_COUNT				8
+#define EXYNOS_GPU_NUMBER			2
+#define EXYNOS_ISP_NUMBER			4
 
-#define MIN_TEMP	20
-#define MAX_TEMP	125
+#define MIN_TEMP				20
+#define MAX_TEMP				125
 
 #define CA7_POLICY_CORE		((exynos_boot_cluster == CA7) ? 0 : 4)
 #define CA15_POLICY_CORE 	((exynos_boot_cluster == CA15) ? 0 : 4)
@@ -796,6 +845,9 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	unsigned int status, trim_info;
 	unsigned int rising_threshold = 0, falling_threshold = 0;
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	unsigned int rising_threshold7_4 = 0, falling_threshold7_4 = 0;
+#endif
 	int ret = 0, threshold_code, i, trigger_levs = 0, timeout = 5;
 
 	mutex_lock(&data->lock);
@@ -813,15 +865,15 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 				data->base[id] + EXYNOS_TRIMINFO_CONFIG);
 		__raw_writel(EXYNOS_TRIMINFO_RELOAD2,
 				data->base[id] + EXYNOS_TRIMINFO_CONTROL);
-	}
-	while (readl(data->base[id] + EXYNOS_TRIMINFO_CONTROL) & EXYNOS_TRIMINFO_RELOAD1) {
-		if(!timeout) {
-			pr_err("Thermal TRIMINFO register reload failed\n");
-			break;
+		while (readl(data->base[id] + EXYNOS_TRIMINFO_CONTROL) & EXYNOS_TRIMINFO_RELOAD1) {
+			if(!timeout) {
+				pr_err("Thermal TRIMINFO register reload failed\n");
+				break;
+			}
+			timeout--;
+			cpu_relax();
+			usleep_range(5,10);
 		}
-		timeout--;
-		cpu_relax();
-		usleep_range(5,10);
 	}
 
 	/* Save trimming info in order to perform calibration */
@@ -876,13 +928,45 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 			}
 		}
 
+		writel(rising_threshold, data->base[id] + EXYNOS_THD_TEMP_RISE);
+		writel(falling_threshold, data->base[id] + EXYNOS_THD_TEMP_FALL);
+		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT, data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
+	} else if (data->soc == SOC_ARCH_EXYNOS5430) {
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+		for (i = 0; i < trigger_levs; i++) {
+			threshold_code = temp_to_code(data,
+					pdata->trigger_levels[i], id);
+			if (threshold_code < 0) {
+				ret = threshold_code;
+				goto out;
+			}
+			if (i < 4)
+				rising_threshold |= threshold_code << (8 * i);
+			else
+				rising_threshold7_4 |= threshold_code << (8 * (i - 4));
+			if (pdata->threshold_falling) {
+				threshold_code = temp_to_code(data,
+						pdata->trigger_levels[i] -
+						pdata->threshold_falling, id);
+				if (threshold_code > 0) {
+					if (i < 4)
+						falling_threshold |= threshold_code << (8 * i);
+					else
+						falling_threshold7_4 |= threshold_code << (8 * (i - 4));
+				}
+			}
+		}
 		writel(rising_threshold,
-				data->base[id] + EXYNOS_THD_TEMP_RISE);
+				data->base[id] + EXYNOS_THD_TEMP_RISE3_0);
+		writel(rising_threshold7_4,
+				data->base[id] + EXYNOS_THD_TEMP_RISE7_4);
 		writel(falling_threshold,
-				data->base[id] + EXYNOS_THD_TEMP_FALL);
-
+				data->base[id] + EXYNOS_THD_TEMP_FALL3_0);
+		writel(falling_threshold7_4,
+				data->base[id] + EXYNOS_THD_TEMP_FALL7_4);
 		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
 				data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
+#endif
 	}
 out:
 	clk_disable(data->clk[0]);
@@ -905,16 +989,24 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
 
-	if (data->soc == SOC_ARCH_EXYNOS)
+	if (data->soc != SOC_ARCH_EXYNOS4210)
 		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
 
 	if (on) {
 		con |= (EXYNOS_TMU_CORE_ON | EXYNOS_THERM_TRIP_EN);
 		interrupt_en =
+			pdata->trigger_level7_en << FALL_LEVEL7_SHIFT |
+			pdata->trigger_level6_en << FALL_LEVEL6_SHIFT |
+			pdata->trigger_level5_en << FALL_LEVEL5_SHIFT |
+			pdata->trigger_level4_en << FALL_LEVEL4_SHIFT |
 			pdata->trigger_level3_en << FALL_LEVEL3_SHIFT |
 			pdata->trigger_level2_en << FALL_LEVEL2_SHIFT |
 			pdata->trigger_level1_en << FALL_LEVEL1_SHIFT |
 			pdata->trigger_level0_en << FALL_LEVEL0_SHIFT |
+			pdata->trigger_level7_en << RISE_LEVEL7_SHIFT |
+			pdata->trigger_level6_en << RISE_LEVEL6_SHIFT |
+			pdata->trigger_level5_en << RISE_LEVEL5_SHIFT |
+			pdata->trigger_level4_en << RISE_LEVEL4_SHIFT |
 			pdata->trigger_level3_en << RISE_LEVEL3_SHIFT |
 			pdata->trigger_level2_en << RISE_LEVEL2_SHIFT |
 			pdata->trigger_level1_en << RISE_LEVEL1_SHIFT |
@@ -934,9 +1026,6 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
 	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
-	pr_debug("[TMU]reg_con[%d] = 0x%x\n", id, con);
-	pr_debug("[TMU]reg_inten[%d] = 0x%x\n", id, interrupt_en);
-
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
@@ -945,7 +1034,8 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 static int exynos_tmu_read(struct exynos_tmu_data *data)
 {
 	u8 temp_code;
-	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0, isp_temp = 0;;
+	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0, isp_temp = 0;
+	int alltemp[EXYNOS_TMU_COUNT] = {0, };
 
 	mutex_lock(&data->lock);
 	clk_enable(data->clk[0]);
@@ -954,6 +1044,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
 		temp = code_to_temp(data, temp_code, i);
+		alltemp[i] = temp;
 
 		if (i == EXYNOS_GPU_NUMBER) {
 			gpu_temp = temp;
@@ -977,7 +1068,8 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 
-	pr_debug("[TMU] CPU = %d, GPU = %d\n", max, gpu_temp);
+	pr_debug("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
+			alltemp[0], alltemp[1], alltemp[2], alltemp[3], alltemp[4], max, gpu_temp);
 	return max;
 }
 
@@ -1035,7 +1127,7 @@ static void exynos_tmu_work(struct work_struct *work)
 	mutex_lock(&data->lock);
 	clk_enable(data->clk[0]);
 	clk_enable(data->clk[1]);
-	if (data->soc == SOC_ARCH_EXYNOS)
+	if (data->soc != SOC_ARCH_EXYNOS4210)
 		for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
 				data->base[i] + EXYNOS_TMU_REG_INTCLEAR);
@@ -1055,6 +1147,8 @@ static irqreturn_t exynos_tmu_irq(int irq, void *id)
 {
 	struct exynos_tmu_data *data = id;
 	int i;
+
+	pr_debug("[TMUIRQ] irq = %d\n", irq);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
 		disable_irq_nosync(data->irq[i]);
@@ -1099,6 +1193,10 @@ static struct exynos_tmu_platform_data const exynos4210_default_tmu_data = {
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 0,
+	.trigger_level4_en = 0,
+	.trigger_level5_en = 0,
+	.trigger_level6_en = 0,
+	.trigger_level7_en = 0,
 	.gain = 15,
 	.reference_voltage = 7,
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
@@ -1128,6 +1226,10 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 0,
+	.trigger_level4_en = 0,
+	.trigger_level5_en = 0,
+	.trigger_level6_en = 0,
+	.trigger_level7_en = 0,
 	.gain = 8,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
@@ -1160,6 +1262,10 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
+	.trigger_level4_en = 0,
+	.trigger_level5_en = 0,
+	.trigger_level6_en = 0,
+	.trigger_level7_en = 0,
 	.gain = 8,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
@@ -1217,7 +1323,121 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.clk_name[0] = "pclk_tmu0_apbif",
 	.clk_name[1] = "pclk_tmu1_apbif",
 };
-#define EXYNOS5430_TMU_DRV_DATA (&exynos5_tmu_data)
+#define EXYNOS5430_EVT0_TMU_DRV_DATA (&exynos5430_evt0_tmu_data)
+#else
+#define EXYNOS5430_EVT0_TMU_DRV_DATA (NULL)
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
+	.threshold_falling = 2,
+	.trigger_levels[0] = 50,
+	.trigger_levels[1] = 55,
+	.trigger_levels[2] = 60,
+	.trigger_levels[3] = 65,
+	.trigger_levels[4] = 70,
+	.trigger_levels[5] = 75,
+	.trigger_levels[6] = 80,
+	.trigger_levels[7] = 110,
+	.trigger_level0_en = 1,
+	.trigger_level1_en = 1,
+	.trigger_level2_en = 1,
+	.trigger_level3_en = 1,
+	.trigger_level4_en = 1,
+	.trigger_level5_en = 1,
+	.trigger_level6_en = 1,
+	.trigger_level7_en = 1,
+	.gain = 8,
+	.reference_voltage = 16,
+	.noise_cancel_mode = 4,
+	.cal_type = TYPE_ONE_POINT_TRIMMING,
+	.efuse_value = 55,
+	.freq_tab[0] = {
+		.freq_clip_max = 1400 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1400 * 1000,
+#endif
+		.temp_level = 50,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[1] = {
+		.freq_clip_max = 1300 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1300 * 1000,
+#endif
+		.temp_level = 55,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[2] = {
+		.freq_clip_max = 1200 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1200 * 1000,
+#endif
+		.temp_level = 60,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[3] = {
+		.freq_clip_max = 1100 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1100 * 1000,
+#endif
+		.temp_level = 65,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[4] = {
+		.freq_clip_max = 1000 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1000 * 1000,
+#endif
+		.temp_level = 70,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[5] = {
+		.freq_clip_max = 900 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 900 * 1000,
+#endif
+		.temp_level = 75,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[6] = {
+		.freq_clip_max = 700 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 700 * 1000,
+#endif
+		.temp_level = 80,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.size[THERMAL_TRIP_ACTIVE] = 1,
+	.size[THERMAL_TRIP_PASSIVE] = 6,
+	.freq_tab_count = 7,
+	.type = SOC_ARCH_EXYNOS5430,
+	.clock_count = 2,
+	.clk_name[0] = "pclk_tmu0_apbif",
+	.clk_name[1] = "pclk_tmu1_apbif",
+};
+#define EXYNOS5430_TMU_DRV_DATA (&exynos5430_tmu_data)
 #else
 #define EXYNOS5430_TMU_DRV_DATA (NULL)
 #endif
@@ -1295,7 +1515,11 @@ static const struct of_device_id exynos_tmu_match[] = {
 	},
 	{
 		.compatible = "samsung,exynos5430-tmu",
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
+		.data = (void *)EXYNOS5430_EVT0_TMU_DRV_DATA,
+#else
 		.data = (void *)EXYNOS5430_TMU_DRV_DATA,
+#endif
 	},
 	{
 		.compatible = "samsung,exynos5422-tmu",
@@ -1317,7 +1541,11 @@ static struct platform_device_id exynos_tmu_driver_ids[] = {
 	},
 	{
 		.name		= "exynos5430-tmu",
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
+		.driver_data	= (kernel_ulong_t)EXYNOS5430_EVT0_TMU_DRV_DATA,
+#else
 		.driver_data	= (kernel_ulong_t)EXYNOS5430_TMU_DRV_DATA,
+#endif
 	},
 	{
 		.name		= "exynos5422-tmu",
@@ -1356,19 +1584,30 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	clk_enable(data->clk[1]);
 
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
-	pr_info("TRIMINFO[%d] = 0x%x\n", id, reg_data);
+	pr_debug("TRIMINFO[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CONTROL);
-	pr_info("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
+	pr_debug("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CURRENT_TEMP);
-	pr_info("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
+	pr_debug("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE3_0);
+	pr_debug("THRESHOLD_TEMP_RISE3_0[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE7_4);
+	pr_debug("THRESHOLD_TEMP_RISE7_4[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL3_0);
+	pr_debug("THRESHOLD_TEMP_FALL3_0[%d] = 0x%x\n", id, reg_data);
+	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL7_4);
+	pr_debug("THRESHOLD_TEMP_FALL7_4[%d] = 0x%x\n", id, reg_data);
+#else
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE);
-	pr_info("THRESHOLD_TEMP_RISE[%d] = 0x%x\n", id, reg_data);
+	pr_debug("THRESHOLD_TEMP_RISE[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL);
-	pr_info("THRESHOLD_TEMP_FALL[%d] = 0x%x\n", id, reg_data);
+	pr_debug("THRESHOLD_TEMP_FALL[%d] = 0x%x\n", id, reg_data);
+#endif
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTEN);
-	pr_info("INTEN[%d] = 0x%x\n", id, reg_data);
+	pr_debug("INTEN[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
-	pr_info("INTCLEAR[%d] = 0x%x\n", id, reg_data);
+	pr_debug("INTCLEAR[%d] = 0x%x\n", id, reg_data);
 
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
@@ -1485,8 +1724,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (pdata->type == SOC_ARCH_EXYNOS ||
-				pdata->type == SOC_ARCH_EXYNOS4210)
+	if (pdata->type == SOC_ARCH_EXYNOS || pdata->type == SOC_ARCH_EXYNOS4210 ||
+			pdata->type == SOC_ARCH_EXYNOS5430)
 		data->soc = pdata->type;
 	else {
 		ret = -EINVAL;
@@ -1517,7 +1756,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		unsigned int temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
 		int temp = code_to_temp(data, temp_code, i);
-		pr_info("[TMU]temp[%d] : %d\n", i, temp);
+		pr_debug("[TMU]temp[%d] : %d\n", i, temp);
 	}
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
@@ -1528,12 +1767,18 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	(&exynos_sensor_conf)->private_data = data;
 	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
 			pdata->trigger_level1_en + pdata->trigger_level2_en +
-			pdata->trigger_level3_en;
+			pdata->trigger_level3_en + pdata->trigger_level4_en +
+			pdata->trigger_level5_en + pdata->trigger_level6_en +
+			pdata->trigger_level7_en;
 
 	trigger_level_en[0] = pdata->trigger_level0_en;
 	trigger_level_en[1] = pdata->trigger_level1_en;
 	trigger_level_en[2] = pdata->trigger_level2_en;
 	trigger_level_en[3] = pdata->trigger_level3_en;
+	trigger_level_en[4] = pdata->trigger_level4_en;
+	trigger_level_en[5] = pdata->trigger_level5_en;
+	trigger_level_en[6] = pdata->trigger_level6_en;
+	trigger_level_en[7] = pdata->trigger_level7_en;
 
 	for (i = 0; i < TRIP_EN_COUNT; i++) {
 		if (trigger_level_en[i]) {

@@ -32,6 +32,7 @@ enum calibration_type {
 enum soc_type {
 	SOC_ARCH_EXYNOS4210 = 1,
 	SOC_ARCH_EXYNOS,
+	SOC_ARCH_EXYNOS5430,
 };
 /**
  * struct freq_clip_table
@@ -112,6 +113,10 @@ struct exynos_tmu_platform_data {
 	bool trigger_level2_en;
 	bool trigger_level3_en;
 	bool trigger_level4_en;
+	bool trigger_level5_en;
+	bool trigger_level6_en;
+	bool trigger_level7_en;
+
 	char clk_name[2][100];
 
 	u8 gain;
