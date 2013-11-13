@@ -20,6 +20,9 @@
 
 #define MAX_MCI_SLOTS	2
 
+#define DW_MMC_BYPASS_SECTOR		0
+#define DW_MMC_ENCRYPTION_SECTOR	1
+
 enum dw_mci_state {
 	STATE_IDLE = 0,
 	STATE_SENDING_CMD,
