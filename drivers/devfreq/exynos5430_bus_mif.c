@@ -1751,7 +1751,6 @@ static int __init exynos5_devfreq_mif_init(void)
 	media_num_mixer_layer = false;
 	media_num_decon_layer = false;
 	wqhd_tv_window5 = false;
-	media_resolution = RESOLUTION_FULLHD;
 
 	exynos5_devfreq_mif_device.dev.platform_data = &exynos5430_qos_mif;
 
@@ -3491,7 +3490,6 @@ static int __init exynos5_devfreq_mif_init(void)
 	media_enabled_tv = false;
 	media_num_mixer_layer = false;
 	media_num_decon_layer = false;
-	media_resolution = RESOLUTION_FULLHD;
 
 	exynos5_devfreq_mif_device.dev.platform_data = &exynos5430_qos_mif;
 
