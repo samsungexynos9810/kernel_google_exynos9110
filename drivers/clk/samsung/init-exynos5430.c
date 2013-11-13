@@ -329,7 +329,7 @@ void mscl_init_clock(void)
 	exynos_set_parent("aclk_jpeg", "mout_aclk_mscl_400_user");
 	exynos_set_parent("pclk_jpeg", "dout_pclk_mscl");
 
-	exynos_set_rate("dout_aclk_mscl_400", 400 * 1000000);
+	exynos_set_rate("dout_aclk_mscl_400", 413 * 1000000);
 	exynos_set_rate("dout_pclk_mscl", 100 * 1000000);
 
 	pr_debug("scaler_0: aclk_m2mscaler0 %d pclk_m2mscaler0 %d\n",
