@@ -499,9 +499,9 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 	if (clock == prev_clock)
 		return 0;
 
-	if (WARN_ON((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock))) {
-		GPU_LOG(DVFS_ERROR, "invalid clock error (%d)\n", clock);
-		panic("invalid clock");
+	if ((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock)) {
+		GPU_LOG(DVFS_ERROR, "Mismatch clock error (%d)\n", clock);
+		return 0;
 	}
 
 	if (clock > prev_clock) {
@@ -546,8 +546,12 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 #ifdef CONFIG_MALI_T6XX_DVFS
 		if (ret == 0) {
 			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
+			ret = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
 			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
+			if (ret >= 0)
+				platform->step = ret;
+			else
+				GPU_LOG(DVFS_ERROR, "Invalid dvfs level returned [%d]\n", GPU_CONTROL_CLOCK_ON);
 		}
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		ret = gpu_clock_on(platform);
@@ -580,10 +584,15 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 		mutex_lock(&platform->gpu_set_clock_lock);
 		ret = gpu_set_clk_vol(kbdev, param, gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_VOLTAGE, param));
 #ifdef CONFIG_MALI_T6XX_DVFS
-		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-		if (ret == 0)
-			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
-		spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
+		if (ret == 0) {
+			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
+			ret = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
+			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
+			if (ret >= 0)
+				platform->step = ret;
+			else
+				GPU_LOG(DVFS_ERROR, "Invalid dvfs level returned [%d]\n", GPU_CONTROL_CHANGE_CLK_VOL);
+		}
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		mutex_unlock(&platform->gpu_set_clock_lock);
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -600,8 +609,12 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 #ifdef CONFIG_MALI_T6XX_DVFS
 		if (ret == 0) {
 			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
+			ret = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
 			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
+			if (ret >= 0)
+				platform->step = ret;
+			else
+				GPU_LOG(DVFS_ERROR, "Invalid dvfs level returned [%d]\n", GPU_CONTROL_CMU_PMU_ON);
 		}
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		ret = gpu_clock_on(platform);
