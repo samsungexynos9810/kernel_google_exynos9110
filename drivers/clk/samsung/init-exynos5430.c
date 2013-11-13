@@ -388,6 +388,8 @@ void cpif_init_clock(void)
 			  "phyclk_lli_tx0_symbol");
 	exynos_set_parent("mout_phyclk_lli_rx0_symbol_user",
 			  "phyclk_lli_rx0_symbol");
+	exynos_set_parent("mout_mphy_pll",
+			  "fout_mphy_pll");
 }
 
 void crypto_init_clock(void)
