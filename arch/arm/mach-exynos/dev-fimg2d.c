@@ -78,7 +78,7 @@ int g2d_cci_snoop_init(int ip_ver)
 		break;
 
 	case IP_VER_G2D_5H:
-		sysreg_g2d_base = ioremap(EXYNOS5430_PA_SYSREG_G2D, 0x1000);
+		sysreg_g2d_base = ioremap(EXYNOS5430_PA_SYSREG_G2D, 0x2000);
 		if (!sysreg_g2d_base) {
 			pr_err("syrreg_g2d_base ioremap is failed\n");
 			return -ENOMEM;
@@ -153,7 +153,7 @@ int g2d_cci_snoop_control(int ip_ver
 
 		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_USER_CON;
 
-	cfg = readl(control_reg);
+		cfg = readl(control_reg);
 		cfg &= ~EXYNOS5430_G2DX_SHARED_VAL_MASK;
 		cfg |= val << EXYNOS5430_G2DX_SHARED_VAL_SHIFT;
 
