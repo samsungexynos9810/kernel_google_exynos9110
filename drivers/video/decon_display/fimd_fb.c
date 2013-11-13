@@ -3773,8 +3773,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 		ret = PTR_ERR(sfb->bus_clk);
 		goto err_sfb;
 	}
-	clk_prepare(sfb->bus_clk);
-	clk_enable(sfb->bus_clk);
+	clk_prepare_enable(sfb->bus_clk);
 
 #if !defined(CONFIG_SOC_EXYNOS5260)
 	if (!s3c_fb_inquire_version(sfb)) {
@@ -3784,7 +3783,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 			ret = PTR_ERR(sfb->axi_disp1);
 			goto err_bus_clk;
 		}
-		clk_enable(sfb->axi_disp1);
+		clk_prepare_enable(sfb->axi_disp1);
 	}
 #endif
 
@@ -3795,8 +3794,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 			ret = PTR_ERR(sfb->lcd_clk);
 			goto err_axi_clk;
 		}
-		clk_prepare(sfb->lcd_clk);
-		clk_enable(sfb->lcd_clk);
+		clk_prepare_enable(sfb->lcd_clk);
 	}
 
 	dev_dbg(dev, "got resources (regs %p), probing windows\n", sfb->regs);
@@ -4054,19 +4052,19 @@ err_lcd_clk:
 	pm_runtime_disable(sfb->dev);
 
 	if (!sfb->variant.has_clksel) {
-		clk_disable(sfb->lcd_clk);
+		clk_disable_unprepare(sfb->lcd_clk);
 		clk_put(sfb->lcd_clk);
 	}
 
 err_axi_clk:
 #if !defined(CONFIG_SOC_EXYNOS5260)
 	if (!s3c_fb_inquire_version(sfb)) {
-		clk_disable(sfb->axi_disp1);
+		clk_disable_unprepare(sfb->axi_disp1);
 		clk_put(sfb->axi_disp1);
 	}
 err_bus_clk:
 #endif
-	clk_disable(sfb->bus_clk);
+	clk_disable_unprepare(sfb->bus_clk);
 	clk_put(sfb->bus_clk);
 err_sfb:
 #ifdef CONFIG_ION_EXYNOS
@@ -4111,14 +4109,14 @@ static int s3c_fb_remove(struct platform_device *pdev)
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
 	if (!sfb->variant.has_clksel) {
-		clk_disable(sfb->lcd_clk);
+		clk_disable_unprepare(sfb->lcd_clk);
 		clk_put(sfb->lcd_clk);
 	}
 
 	if (!s3c_fb_inquire_version(sfb))
-		clk_disable(sfb->axi_disp1);
+		clk_disable_unprepare(sfb->axi_disp1);
 
-	clk_disable(sfb->bus_clk);
+	clk_disable_unprepare(sfb->bus_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
 		clk_put(sfb->axi_disp1);
@@ -4179,12 +4177,12 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	sfb->power_state = POWER_DOWN;
 
 	if (!sfb->variant.has_clksel)
-		clk_disable(sfb->lcd_clk);
+		clk_disable_unprepare(sfb->lcd_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
-		clk_disable(sfb->axi_disp1);
+		clk_disable_unprepare(sfb->axi_disp1);
 
-	clk_disable(sfb->bus_clk);
+	clk_disable_unprepare(sfb->bus_clk);
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
 #endif
@@ -4234,13 +4232,13 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	}
 
 	pm_runtime_get_sync(sfb->dev);
-	clk_enable(sfb->bus_clk);
+	clk_prepare_enable(sfb->bus_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
-		clk_enable(sfb->axi_disp1);
+		clk_prepare_enable(sfb->axi_disp1);
 
 	if (!sfb->variant.has_clksel)
-		clk_enable(sfb->lcd_clk);
+		clk_prepare_enable(sfb->lcd_clk);
 
 	/* setup gpio and output polarity controls */
 	init_display_gpio_exynos();
@@ -4339,12 +4337,12 @@ int s3c_fb_suspend(struct device *dev)
 			dev_warn(sfb->dev, "ENVID not set while disabling fb");
 
 		if (!sfb->variant.has_clksel)
-			clk_disable(sfb->lcd_clk);
+			clk_disable_unprepare(sfb->lcd_clk);
 
 		if (!s3c_fb_inquire_version(sfb))
-			clk_disable(sfb->axi_disp1);
+			clk_disable_unprepare(sfb->axi_disp1);
 
-		clk_disable(sfb->bus_clk);
+		clk_disable_unprepare(sfb->bus_clk);
 #ifdef CONFIG_ION_EXYNOS
 		iovmm_deactivate(dev);
 #endif
@@ -4391,13 +4389,13 @@ int s3c_fb_resume(struct device *dev)
 			dev_err(sfb->dev, "failed to request min_freq for int\n");
 	}
 #endif
-	clk_enable(sfb->bus_clk);
+	clk_prepare_enable(sfb->bus_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
-		clk_enable(sfb->axi_disp1);
+		clk_prepare_enable(sfb->axi_disp1);
 
 	if (!sfb->variant.has_clksel)
-		clk_enable(sfb->lcd_clk);
+		clk_prepare_enable(sfb->lcd_clk);
 
 	/* setup gpio and output polarity controls */
 	init_display_gpio_exynos();
@@ -4472,12 +4470,12 @@ int s3c_fb_runtime_suspend(struct device *dev)
 	sfb->power_state = POWER_DOWN;
 
 	if (!sfb->variant.has_clksel)
-		clk_disable(sfb->lcd_clk);
+		clk_disable_unprepare(sfb->lcd_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
-		clk_disable(sfb->axi_disp1);
+		clk_disable_unprepare(sfb->axi_disp1);
 
-	clk_disable(sfb->bus_clk);
+	clk_disable_unprepare(sfb->bus_clk);
 
 	return 0;
 }
@@ -4513,13 +4511,13 @@ int s3c_fb_runtime_resume(struct device *dev)
 			dev_err(sfb->dev, "failed to request min_freq for int\n");
 	}
 #endif
-	clk_enable(sfb->bus_clk);
+	clk_prepare_enable(sfb->bus_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
-		clk_enable(sfb->axi_disp1);
+		clk_prepare_enable(sfb->axi_disp1);
 
 	if (!sfb->variant.has_clksel)
-		clk_enable(sfb->lcd_clk);
+		clk_prepare_enable(sfb->lcd_clk);
 
 	/* setup gpio and output polarity controls */
 	init_display_gpio_exynos();
