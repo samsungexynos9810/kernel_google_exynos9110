@@ -31,6 +31,9 @@
 /* For Accessing CP15/SFR (General) */
 #define SMC_CMD_REG		(-101)
 
+/* For FMP Ctrl */
+#define SMC_CMD_FMP		(0x81000020)
+
 /* MACRO for SMC_CMD_REG */
 #define SMC_REG_CLASS_CP15	(0x0 << 30)
 #define SMC_REG_CLASS_SFR_W	(0x1 << 30)
@@ -49,6 +52,11 @@
 #define SMC_POWERSTATE_SLEEP    0x0
 #define SMC_POWERSTATE_IDLE     0x1
 #define SMC_POWERSTATE_SWITCH   0x2
+
+/* For FMP Ctrl */
+#define FMP_MMC_KEY_SET		0x0
+#define FMP_MMC_SUSPEND		0x1
+#define FMP_MMC_RESUME		0x2
 
 #ifndef __ASSEMBLY__
 extern int exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
