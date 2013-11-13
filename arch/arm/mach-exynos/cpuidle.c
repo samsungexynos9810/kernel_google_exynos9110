@@ -536,7 +536,6 @@ static struct sleep_save exynos5_set_clksrc[] = {
 	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1		, .val = 0x00000033, },
 #else
 	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1		, .val = 0x00000011, },
-	{ .reg = EXYNOS5430_SRC_SEL_AUD1		, .val = 0x00000000, },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_EGL1		, .val = 0x00000fff, },
 	{ .reg = EXYNOS5430_ENABLE_IP_KFC1		, .val = 0x00000fff, },
