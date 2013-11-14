@@ -17,11 +17,9 @@
 #include <linux/videodev2_exynos_media.h>
 #include <linux/irqreturn.h>
 #include <linux/stddef.h>
+#include <linux/of_address.h>
 
-#include <mach/regs-clock.h>
-#include <mach/regs-clock.h>
-#include <mach/regs-cec.h>
-
+#include "regs-cec.h"
 #include "cec.h"
 
 #undef tvout_dbg
@@ -41,8 +39,8 @@
 #define CEC_MESSAGE_BROADCAST		0x0F
 #define CEC_FILTER_THRESHOLD		0x15
 
-static struct resource	*cec_mem;
 void __iomem		*cec_base;
+void __iomem		*pmu_regs;
 
 struct cec_rx_struct cec_rx_struct;
 struct cec_tx_struct cec_tx_struct;
@@ -53,10 +51,9 @@ void s5p_cec_set_divider(void)
 
 	div_ratio  = S5P_HDMI_FIN / CEC_DIV_RATIO - 1;
 
-	reg = readl(EXYNOS_HDMI_PHY_CONTROL);
+	reg = readl(pmu_regs);
 	reg = (reg & ~(0x3FF << 16)) | (div_ratio << 16);
-
-	writel(reg, EXYNOS_HDMI_PHY_CONTROL);
+	writel(reg, pmu_regs);
 
 	div_val = CEC_DIV_RATIO * 0.00005 - 1;
 
@@ -226,53 +223,35 @@ void s5p_cec_get_rx_buf(u32 size, u8 *buffer)
 
 int s5p_cec_mem_probe(struct platform_device *pdev)
 {
+	struct device_node *hdmiphy_sys;
 	struct resource *res;
-	size_t	size;
 	int	ret = 0;
 
 	dev_dbg(&pdev->dev, "%s\n", __func__);
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-
-	if (res == NULL) {
+	if (!res) {
 		dev_err(&pdev->dev,
 			"failed to get memory region resource for cec\n");
-		return -ENOENT;
+		return -ENXIO;
 	}
-
-	size = (res->end - res->start) + 1;
-	cec_mem = request_mem_region(res->start, size, pdev->name);
-
-	if (cec_mem == NULL) {
-		dev_err(&pdev->dev,
-			"failed to get memory region for cec\n");
-		return -ENOENT;
-	}
-
-	cec_base = ioremap(res->start, size);
-
+	cec_base = devm_request_and_ioremap(&pdev->dev, res);
 	if (cec_base == NULL) {
 		dev_err(&pdev->dev,
-			"failed to ioremap address region for cec\n");
+			"failed to claim register region for hdmicec\n");
 		return -ENOENT;
+	}
+
+	hdmiphy_sys = of_get_child_by_name(pdev->dev.of_node, "hdmiphy-sys");
+	if (!hdmiphy_sys) {
+		dev_err(&pdev->dev, "No sys-controller interface for hdmiphy\n");
+		return -ENODEV;
+	}
+	pmu_regs = of_iomap(hdmiphy_sys, 0);
+	if (pmu_regs == NULL) {
+		dev_err(&pdev->dev, "Can't get hdmiphy pmu control register\n");
+		return -ENOMEM;
 	}
 
 	return ret;
-}
-
-int __init s5p_cec_mem_release(struct platform_device *pdev)
-{
-	iounmap(cec_base);
-
-	if (cec_mem != NULL) {
-		if (release_resource(cec_mem))
-			dev_err(&pdev->dev,
-				"Can't remove tvout drv !!\n");
-
-		kfree(cec_mem);
-
-		cec_mem = NULL;
-	}
-
-	return 0;
 }
