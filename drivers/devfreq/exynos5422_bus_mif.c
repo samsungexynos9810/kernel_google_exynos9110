@@ -52,7 +52,7 @@ static bool en_profile;
 
 #define AREF_CRITICAL		0x17
 #define AREF_HOT		0x2E
-#define AREF_NORMAL		0x5D
+#define AREF_NORMAL		0x2E
 
 #define BP_CONTORL_ENABLE	0x1
 #define BRBRSVCON_ENABLE	0x33
