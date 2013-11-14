@@ -52,12 +52,6 @@ static inline void s5p_mixer_setname(char *name)
 #endif
 }
 
-struct s5p_platform_cec {
-#ifdef CONFIG_S5P_DEV_TV
-	void    (*cfg_gpio)(struct platform_device *pdev);
-#endif
-};
-
 struct s5p_hdmi_platdata {
 	enum tv_ip_version ip_ver;
 	void (*hdmiphy_enable)(struct platform_device *pdev, int en);
