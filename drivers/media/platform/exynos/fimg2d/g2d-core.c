@@ -1379,7 +1379,7 @@ static void g2d_set_cci_snoop(struct g2d_ctx *ctx)
 	if (ctx->cci_on) {
 		/* G2D CCI on */
 		val = SHAREABLE_PATH;
-		sel = SHARED_FROM_SYSMMU;
+		sel = SHARED_G2D_SEL;
 		g2d_cci_snoop_control(IP_VER_G2D_5H, val, sel);
 	} else {
 		/* G2D CCI off */
