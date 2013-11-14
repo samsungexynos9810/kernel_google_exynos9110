@@ -372,6 +372,10 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 	BUG_ON(!csi);
 	BUG_ON(!csi->settle_table);
 
+	/* HACK: This should be removed. */
+	if (readl(csi->base_reg + S5PCSIS_DPHYCTRL) & 0x1f)
+		goto exit;
+
 	s5pcsis_reset(csi->base_reg);
 
 	settle = get_hsync_settle(
@@ -393,6 +397,7 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 	s5pcsis_system_enable(csi->base_reg, true);
 	s5pcsis_enable_interrupts(csi->base_reg, true);
 
+exit:
 	return ret;
 }
 
