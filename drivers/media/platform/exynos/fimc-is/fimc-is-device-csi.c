@@ -36,7 +36,7 @@
 #define S5PCSIS_CTRL_DPDN_SWAP_DATA			(1 << 30)
 #define S5PCSIS_CTRL_INTERLEAVE_MODE(x)			((x & 0x3) << 22)
 #define S5PCSIS_CTRL_ALIGN_32BIT			(1 << 20)
-#define S5PCSIS_CTRL_UPDATE_SHADOW(x)			(x << 16)
+#define S5PCSIS_CTRL_UPDATE_SHADOW(x)			((1 << (x)) << 16)
 #define S5PCSIS_CTRL_WCLK_EXTCLK			(1 << 8)
 #define S5PCSIS_CTRL_RESET				(1 << 4)
 #define S5PCSIS_CTRL_NUMOFDATALANE(x)			(x << 2)
@@ -50,6 +50,9 @@
 
 /* Configuration */
 #define S5PCSIS_CONFIG					(0x08)
+#define S5PCSIS_CONFIG_CH1				(0x40)
+#define S5PCSIS_CONFIG_CH2				(0x50)
+#define S5PCSIS_CONFIG_CH3				(0x60)
 #define S5PCSIS_CFG_LINE_INTERVAL(x)			(x << 26)
 #define S5PCSIS_CFG_START_INTERVAL(x)			(x << 20)
 #define S5PCSIS_CFG_END_INTERVAL(x)			(x << 8)
@@ -64,7 +67,7 @@
 
 /* Interrupt mask. */
 #define S5PCSIS_INTMSK					(0x10)
-#define S5PCSIS_INTMSK_EN_ALL				(0xf1101117)
+#define S5PCSIS_INTMSK_EN_ALL				(0xf1111117)
 #define S5PCSIS_INTMSK_EVEN_BEFORE			(1 << 31)
 #define S5PCSIS_INTMSK_EVEN_AFTER			(1 << 30)
 #define S5PCSIS_INTMSK_ODD_BEFORE			(1 << 29)
@@ -168,12 +171,27 @@ static u32 get_hsync_settle(struct fimc_is_settle *settle_table,
 	return settle;
 }
 
-static void s5pcsis_enable_interrupts(unsigned long __iomem *base_reg, bool on)
+static void s5pcsis_enable_interrupts(unsigned long __iomem *base_reg,
+	struct fimc_is_image *image, bool on)
 {
 	u32 val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_INTMSK));
 
 	val = on ? val | S5PCSIS_INTMSK_EN_ALL :
 		   val & ~S5PCSIS_INTMSK_EN_ALL;
+
+	val = on ? val | S5PCSIS_INTMSK_EN_ALL :
+		   val & ~S5PCSIS_INTMSK_EN_ALL;
+
+	if (image->format.field == V4L2_FIELD_INTERLACED) {
+		if (on) {
+			val |= S5PCSIS_INTMSK_FRAME_START_CH2;
+			val |= S5PCSIS_INTMSK_FRAME_END_CH2;
+		} else {
+			val &= ~S5PCSIS_INTMSK_FRAME_START_CH2;
+			val &= ~S5PCSIS_INTMSK_FRAME_END_CH2;
+		}
+	}
+
 	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_INTMSK));
 }
 
@@ -228,13 +246,22 @@ static void __s5pcsis_set_format(unsigned long __iomem *base_reg,
 		val = (val & ~S5PCSIS_CFG_FMT_MASK) | S5PCSIS_CFG_FMT_RAW10;
 
 #if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
-	val |= S5PCSIS_CFG_START_INTERVAL(1);
+	val |= S5PCSIS_CFG_END_INTERVAL(1);
 #endif
 	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG));
 
 	/* Pixel resolution */
 	val = (image->window.o_width << 16) | image->window.o_height;
 	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_RESOL));
+
+	/* Output channel2 for DT */
+	if (image->format.field == V4L2_FIELD_INTERLACED) {
+		val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG_CH2));
+		val |= S5PCSIS_CFG_VIRTUAL_CH(2);
+		val |= S5PCSIS_CFG_END_INTERVAL(1);
+		val = (val & ~S5PCSIS_CFG_FMT_MASK) | S5PCSIS_CFG_FMT_USER(1);
+		writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG_CH2));
+	}
 }
 
 static void s5pcsis_set_hsync_settle(unsigned long __iomem *base_reg, int settle)
@@ -268,6 +295,13 @@ static void s5pcsis_set_params(unsigned long __iomem *base_reg,
 	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
 	val &= ~S5PCSIS_CTRL_ALIGN_32BIT;
 
+	/* Interleaved data */
+	if (image->format.field == V4L2_FIELD_INTERLACED) {
+		pr_info("set DT only\n");
+		val |= S5PCSIS_CTRL_INTERLEAVE_MODE(1); /* DT only */
+		val |= S5PCSIS_CTRL_UPDATE_SHADOW(2); /* ch2 shadow reg */
+	}
+
 	/* Not using external clock. */
 	val &= ~S5PCSIS_CTRL_WCLK_EXTCLK;
 
@@ -275,7 +309,7 @@ static void s5pcsis_set_params(unsigned long __iomem *base_reg,
 
 	/* Update the shadow register. */
 	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
-	writel(val | S5PCSIS_CTRL_UPDATE_SHADOW(1), base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
+	writel(val | S5PCSIS_CTRL_UPDATE_SHADOW(0), base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
 }
 
 int fimc_is_csi_open(struct v4l2_subdev *subdev)
@@ -395,7 +429,7 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 	s5pcsis_set_hsync_settle(csi->base_reg, settle);
 	s5pcsis_set_params(csi->base_reg, &csi->image);
 	s5pcsis_system_enable(csi->base_reg, true);
-	s5pcsis_enable_interrupts(csi->base_reg, true);
+	s5pcsis_enable_interrupts(csi->base_reg, &csi->image, true);
 
 exit:
 	return ret;
@@ -405,7 +439,7 @@ static int csi_stream_off(struct fimc_is_device_csi *csi)
 {
 	BUG_ON(!csi);
 
-	s5pcsis_enable_interrupts(csi->base_reg, false);
+	s5pcsis_enable_interrupts(csi->base_reg, &csi->image, false);
 	s5pcsis_system_enable(csi->base_reg, false);
 
 	return 0;
@@ -488,6 +522,7 @@ static int csi_s_format(struct v4l2_subdev *subdev, struct v4l2_mbus_framefmt *f
 	csi->image.window.o_width = fmt->width;
 	csi->image.window.o_height = fmt->height;
 	csi->image.format.pixelformat = fmt->code;
+	csi->image.format.field = fmt->field;
 
 	mdbgd_front("%s(%dx%d, %X)\n", csi, __func__, fmt->width, fmt->height, fmt->code);
 	return ret;

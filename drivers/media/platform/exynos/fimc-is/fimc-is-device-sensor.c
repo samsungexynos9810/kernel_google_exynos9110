@@ -971,6 +971,13 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 		module->ext.actuator_con.peri_setting.i2c.slave_address = actuator_addr;
 	}
 
+	/* Data Type For Comapnion:
+	 * Companion use user defined data type.
+	 */
+	if (module->ext.companion_con.product_name &&
+	module->ext.companion_con.product_name != COMPANION_NAME_NOTHING)
+		device->image.format.field = V4L2_FIELD_INTERLACED;
+
 	subdev_csi = device->subdev_csi;
 	device->image.framerate = min_t(u32, SENSOR_DEFAULT_FRAMERATE, module->max_framerate);
 	device->image.window.width = module->pixel_width;
@@ -1049,6 +1056,12 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 	subdev_csi = device->subdev_csi;
 	subdev_flite = device->subdev_flite;
 
+	/* Data Type For Comapnion:
+	 * Companion use user defined data type.
+	 */
+	if (device->image.format.field == V4L2_FIELD_INTERLACED)
+		format->field = V4L2_FIELD_INTERLACED;
+
 	device->image.format = *format;
 	device->image.window.offs_h = 0;
 	device->image.window.offs_v = 0;
@@ -1058,6 +1071,7 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 	device->image.window.o_height = height;
 
 	subdev_format.code = format->pixelformat;
+	subdev_format.field = format->field;
 	subdev_format.width = width;
 	subdev_format.height = height;
 
