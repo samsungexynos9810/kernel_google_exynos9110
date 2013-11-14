@@ -11,8 +11,10 @@
 
 MALI_CUSTOMER_RELEASE = 1
 
-obj-y += mali_kbase_config_5422.o
-
 obj-$(CONFIG_MALI_T6XX) += mali_kbase_platform.o
-obj-$(CONFIG_MALI_T6XX) += mali_kbase_dvfs.o
+obj-$(CONFIG_MALI_T6XX) += gpu_notifier.o
+obj-$(CONFIG_MALI_T6XX) += gpu_control.o
+obj-$(CONFIG_MALI_T6XX) += gpu_dvfs_handler.o
+obj-$(CONFIG_MALI_T6XX) += gpu_dvfs_governor.o
+obj-$(CONFIG_MALI_T6XX) += gpu_custom_interface.o
 
