@@ -1181,6 +1181,7 @@ static int __init exynos_init_irq_eint(void)
 		{ .compatible = "samsung,exynos4x12-pinctrl", },
 		{ .compatible = "samsung,exynos5250-pinctrl", },
 		{ .compatible = "samsung,exynos5422-pinctrl", },
+		{ .compatible = "samsung,exynos5430-evt0-pinctrl", },
 		{ .compatible = "samsung,exynos5430-pinctrl", },
 	};
 	struct device_node *pctrl_np, *wkup_np;

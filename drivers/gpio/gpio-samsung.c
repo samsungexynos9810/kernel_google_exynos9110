@@ -3032,6 +3032,7 @@ static __init int samsung_gpiolib_init(void)
 		{ .compatible = "samsung,exynos4x12-pinctrl", },
 		{ .compatible = "samsung,exynos5250-pinctrl", },
 		{ .compatible = "samsung,exynos5422-pinctrl", },
+		{ .compatible = "samsung,exynos5430-evt0-pinctrl", },
 		{ .compatible = "samsung,exynos5430-pinctrl", },
 		{ .compatible = "samsung,exynos5440-pinctrl", },
 		{ }

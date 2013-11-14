@@ -692,7 +692,7 @@ static void exynos_pinctrl_suspend_inttype(
 						+ bank->eint_offset);
 }
 
-static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
+static void exynos5430_evt0_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
@@ -706,6 +706,16 @@ static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN, 0,
 				       0, drvdata, bank);
 		}
+}
+
+static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
+{
+	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+	struct samsung_pin_bank *bank = ctrl->pin_banks;
+	int i;
+	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
+		if (bank->eint_type == EINT_TYPE_GPIO)
+			exynos_pinctrl_suspend_bank(drvdata, bank);
 }
 
 static void exynos_pinctrl_resume_bank(
@@ -733,7 +743,7 @@ static void exynos_pinctrl_resume_bank(
 						+ 2 * bank->eint_offset + 4);
 }
 
-static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
+static void exynos5430_evt0_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
@@ -743,6 +753,17 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 		if (bank->eint_type == EINT_TYPE_GPIO
 			|| bank->eint_type == EINT_TYPE_WKUP
 			|| bank->eint_type == EINT_TYPE_WKUP_MUX)
+			exynos_pinctrl_resume_bank(drvdata, bank);
+}
+
+static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
+{
+	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+	struct samsung_pin_bank *bank = ctrl->pin_banks;
+	int i;
+
+	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
+		if (bank->eint_type == EINT_TYPE_GPIO)
 			exynos_pinctrl_resume_bank(drvdata, bank);
 }
 
@@ -1242,6 +1263,96 @@ static struct samsung_pin_bank exynos5430_pin_banks5[] = {
 /* pin banks of exynos5430 pin-controller 6 (TOUCH) */
 static struct samsung_pin_bank exynos5430_pin_banks6[] = {
 	EXYNOS_PIN_BANK_EINTG(bank_type_2, 3, 0x000, "gpj1", 0x00),
+};
+
+/*
+ * Samsung pinctrl driver data for Exynos5430 evt0 SoC. Exynos5430 SoC includes
+ * four gpio/pin-mux/pinconfig controllers.
+ */
+struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
+	{
+		/* pin-controller instance 0 data */
+		.pin_banks	= exynos5430_pin_banks0,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks0),
+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
+		.weint_con	= EXYNOS5430_WKUP_ECON_OFFSET,
+		.weint_mask	= EXYNOS5430_WKUP_EMASK_OFFSET,
+		.weint_pend	= EXYNOS5430_WKUP_EPEND_OFFSET,
+		.weint_fltcon	= EXYNOS5430_WKUP_EFLTCON_OFFSET,
+		.svc		= EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.eint_wkup_init = exynos_eint_wkup_init,
+		.suspend	= exynos5430_evt0_pinctrl_suspend,
+		.resume		= exynos5430_evt0_pinctrl_resume,
+		.label		= "exynos5430-gpio-ctrl0",
+	}, {
+		/* pin-controller instance 1 data */
+		.pin_banks	= exynos5430_pin_banks1,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks1),
+		.label		= "exynos5430-gpio-ctrl1",
+	}, {
+		/* pin-controller instance 2 data */
+		.pin_banks	= exynos5430_pin_banks2,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks2),
+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
+		.svc		= EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos5430_evt0_pinctrl_suspend,
+		.resume		= exynos5430_evt0_pinctrl_resume,
+		.label		= "exynos5430-gpio-ctrl2",
+	}, {
+		/* pin-controller instance 3 data */
+		.pin_banks	= exynos5430_pin_banks3,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks3),
+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
+		.svc		= EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos5430_evt0_pinctrl_suspend,
+		.resume		= exynos5430_evt0_pinctrl_resume,
+		.label		= "exynos5430-gpio-ctrl3",
+	}, {
+		/* pin-controller instance 4 data */
+		.pin_banks	= exynos5430_pin_banks4,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks4),
+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
+		.svc		= EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos5430_evt0_pinctrl_suspend,
+		.resume		= exynos5430_evt0_pinctrl_resume,
+		.label		= "exynos5430-gpio-ctrl4",
+	}, {
+		/* pin-controller instance 5 data */
+		.pin_banks	= exynos5430_pin_banks5,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks5),
+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
+		.svc		= EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos5430_evt0_pinctrl_suspend,
+		.resume		= exynos5430_evt0_pinctrl_resume,
+		.label		= "exynos5430-gpio-ctrl5",
+	}, {
+		/* pin-controller instance 6 data */
+		.pin_banks	= exynos5430_pin_banks6,
+		.nr_banks	= ARRAY_SIZE(exynos5430_pin_banks6),
+		.geint_con	= EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask	= EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
+		.svc		= EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend	= exynos5430_evt0_pinctrl_suspend,
+		.resume		= exynos5430_evt0_pinctrl_resume,
+		.label		= "exynos5430-gpio-ctrl6",
+	},
 };
 
 /*
