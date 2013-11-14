@@ -27,6 +27,8 @@
 #define EDID_SEGMENT(x)		((x) >> 1)
 #define EDID_OFFSET(x)		(((x) & 1) * EDID_BLOCK_SIZE)
 #define EDID_EXTENSION_FLAG	0x7E
+#define EDID_NATIVE_FORMAT	0x83
+#define EDID_BASIC_AUDIO	(1 << 6)
 #define EDID_3D_STRUCTURE_ALL	0x1
 #define EDID_3D_STRUCTURE_MASK	0x2
 #define EDID_3D_FP_MASK		(1)
@@ -230,6 +232,8 @@ static int edid_read(struct hdmi_device *hdev, u8 **data)
 		ret = edid_read_block(hdev, block,
 				edid + block * EDID_BLOCK_SIZE,
 					       EDID_BLOCK_SIZE);
+		if ((edid[EDID_NATIVE_FORMAT] & EDID_BASIC_AUDIO) >> 6)
+			edid_misc = FB_MISC_HDMI;
 		if (ret) {
 			kfree(edid);
 			return ret;
@@ -455,7 +459,8 @@ int edid_update(struct hdmi_device *hdev)
 	if (block_cnt > 1)
 		edid_extension_update(&specs);
 
-	edid_misc = specs.misc;
+	if (!edid_misc)
+		edid_misc = specs.misc;
 	pr_info("EDID: misc flags %08x", edid_misc);
 
 	for (i = 0; i < specs.audiodb_len; i++) {
@@ -493,6 +498,9 @@ out:
 	/* No supported preset found, use default */
 	if (first)
 		edid_use_default_preset();
+
+	if (block_cnt == -EPROTO)
+		edid_misc = FB_MISC_HDMI;
 
 	kfree(edid);
 	return block_cnt;
