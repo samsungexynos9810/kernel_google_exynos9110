@@ -700,9 +700,9 @@
 	};
 
 	pd_g3d: pd-g3d@0x10044080 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x10044080 0x20>;
-    };
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044080 0x20>;
+	};
 
 	amba {
 		#address-cells = <1>;
@@ -1014,13 +1014,20 @@
 		  compatible = "samsung,s5p-fimg2d";
 		  reg = <0x10850000 0x1000>;
 		  interrupts = <0 91 0>;
-		  clocks = <&clock 660>;
+		  clocks = <&clock 498>;
 		  clock-names = "fimg2d";
 		  ip_ver = <7>; /* IP_VER_G2D_5AR2 */
 		  cpu_min = <400000>;
 		  mif_min = <667000>;
 		  int_min = <333000>;
 		  iommu = <&sysmmu_g2d>, <&sysmmu_g2d_wr>;
+		  samsung,power-domain = <&pd_g2d>;
+	};
+
+	pd_g2d: pd-g2d@0x10044100 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044100 0x20>;
+		status = "disabled";
 	};
 
 	lpass: lpass@03810000 {
