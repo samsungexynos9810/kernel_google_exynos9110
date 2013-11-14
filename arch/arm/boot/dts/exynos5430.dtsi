@@ -1576,7 +1576,7 @@
 		compatible = "samsung,exynos5430-seiren";
 		interrupts = <0 69 0>;
 		clocks = <&clock 2014>,		/* gate_ca5 */
-			 <&clock 4143>;		/* dout_aud_ca5 */
+			 <&clock 4145>;		/* dout_aud_ca5 */
 		clock-names = "ca5", "ca5_opclk";
 		samsung,lpass-subip;
 		status = "ok";
@@ -1589,8 +1589,8 @@
 		dma-names = "tx", "rx";
 		interrupts = <0 70 0>;
 		clocks = <&clock 2006>,		/* gate_i2s */
-			 <&clock 4144>,		/* dout_aclk_aud */
-			 <&clock 4150>;		/* dout_sclk_i2s */
+			 <&clock 4146>,		/* dout_aclk_aud */
+			 <&clock 4150>;		/* dout_sclk_aud_i2s */
 		clock-names = "iis", "i2s_opclk0", "i2s_opclk1";
 		samsung,supports-6ch;
 		samsung,supports-rstclr;
@@ -1667,7 +1667,7 @@
 		dma-names = "tx";
 		interrupts = <0 437 0>;
 		clocks = <&clock 2422>,		/* gate_spdif */
-		         <&clock 3045>;		/* mout_sclk_spdif */
+		         <&clock 3044>;		/* mout_sclk_spdif */
 		clock-names = "spdif", "sclk_spdif";
 		samsung,lpass-subip;
 		pinctrl-names = "default", "idle";
