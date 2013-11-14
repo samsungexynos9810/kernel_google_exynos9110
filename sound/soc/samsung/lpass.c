@@ -353,15 +353,17 @@ static void lpass_enable(void)
 	lpass_release_pad();
 	lpass_reg_restore();
 
-	/* CLK_MUX_SEL_AUD0 */
-	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	/* AUD0 */
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
-	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
-
+#else
+	/* AUD0 */
+	exynos_set_parent("mout_aud_pll_user", "fout_aud_pll");
+#endif
 	/* TOP1 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
 	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
-	exynos_set_parent("mout_aud_dpll_user_top", "fin_pll");
 
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_sramc);
@@ -409,14 +411,17 @@ static void lpass_disable(void)
 	lpass_reg_save();
 
 	/* TOP1 */
-	exynos_set_parent("mout_aud_pll_user_top", "fin_pll");
-	exynos_set_parent("mout_aud_dpll_user_top", "fin_pll");
-
-	/* CLK_MUX_SEL_AUD0 */
 	exynos_set_parent("mout_aud_pll", "fin_pll");
+	exynos_set_parent("mout_aud_pll_user_top", "fin_pll");
+
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	/* AUD0 */
 	exynos_set_parent("mout_aud_pll_user", "fin_pll");
-	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+#else
+	/* AUD0 */
+	exynos_set_parent("mout_aud_pll_user", "fin_pll");
+#endif
 
 	/* Enable clocks */
 	writel(0x000007FF, EXYNOS5430_ENABLE_PCLK_AUD);
@@ -476,14 +481,16 @@ static int clk_set_heirachy(struct platform_device *pdev)
 		goto err3;
 	}
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	/* AUD0 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
-	exynos_set_parent("mout_aud_dpll_user", "fin_pll");
 	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
-
-	/* AUD1 */
-	exynos_set_parent("mout_sclk_i2s_a", "mout_aud_pll_sub");
-	exynos_set_parent("mout_sclk_pcm_a", "mout_aud_pll_sub");
+#else
+	/* AUD0 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
+	exynos_set_parent("mout_aud_pll_user", "fout_aud_pll");
+#endif
 
 	return 0;
 
