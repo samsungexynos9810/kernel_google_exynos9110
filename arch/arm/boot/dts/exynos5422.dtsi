@@ -515,7 +515,7 @@
 			   <&clock 1023>, <&clock 1024>, <&clock 1025>, <&clock 1210>,
 			   <&clock 1214>, <&clock 1224>, <&clock 1233>,  <&clock 2037>,
 			   <&clock 2054>, <&clock 2058>, <&clock 2068>,  <&clock 2072>,
-			   <&clock 2078>, <&clock 2082>,   <&clock 2100>, <&clock 2101>,
+			   <&clock 2078>, <&clock 2083>,   <&clock 2100>, <&clock 2101>,
 			   <&clock 2102>,   <&clock 2103>, /*<&clock 2104>,*/ <&clock 2105>,
 			   <&clock 4016>, <&clock 4021>,   <&clock 4101>, <&clock 4102> ,
 			   <&clock 2006>,	<&clock 2104>, <&clock 2005>, <&clock 2107>,
@@ -549,7 +549,7 @@
 		};
 
 		fimd: fimd_ctrl {
-			samsung,vidcon0 = <0x00>;
+			samsung,vidcon0 = <0x8000>;
 			samsung,vidcon1 = <0x80>;
 			samsung,default_win = <0>;
 			fb_driver_data {
