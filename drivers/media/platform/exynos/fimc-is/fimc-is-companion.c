@@ -15,6 +15,7 @@
 #define COMP_FW				"companion_fw.bin"
 #define COMP_SETFILE_MASTER		"companion_master_setfile.bin"
 #define COMP_SETFILE_MODE		"companion_mode_setfile.bin"
+#define COMP_SETFILE_VIRSION_SIZE	16
 
 static int fimc_is_comp_spi_read(struct spi_device *spi,
 		void *buf, u32 rx_addr, size_t size)
@@ -206,12 +207,9 @@ request_fw:
 			goto p_err;
 		}
 	} else {
-		memcpy(version_str, buf, 16);
-		version_str[16] = '\0';
+		u32 offset = size - COMP_SETFILE_VIRSION_SIZE;
 
-		pr_info("%s version : %s\n", name, version_str);
-
-		for (i = 16; i < size; i += 4) {
+		for (i = 0; i < offset; i += 4) {
 			data =	*(buf + i + 0) << 24 |
 				*(buf + i + 1) << 16 |
 				*(buf + i + 2) << 8 |
@@ -223,6 +221,11 @@ request_fw:
 				break;
 			}
 		}
+
+		memcpy(version_str, buf + offset, COMP_SETFILE_VIRSION_SIZE);
+		version_str[COMP_SETFILE_VIRSION_SIZE] = '\0';
+
+		pr_info("%s version : %s\n", name, version_str);
 	}
 
 p_err:
