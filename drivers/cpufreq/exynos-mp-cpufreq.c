@@ -497,14 +497,13 @@ static int exynos_target(struct cpufreq_policy *policy,
 		target_freq = min((unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MAX), target_freq);
 	}
 
-	if (exynos5_frequency_table_target(policy, freq_table,
+	if (cpufreq_frequency_table_target(policy, freq_table,
 				target_freq, relation, &index)) {
 		ret = -EINVAL;
 		goto out;
 	}
 
-	if (freq_table[index].frequency != target_freq)
-		target_freq = freq_table[index].frequency;
+	target_freq = freq_table[index].frequency;
 
 	pr_debug("%s[%d]: new_freq[%d], index[%d]\n",
 				__func__, cur, target_freq, index);
