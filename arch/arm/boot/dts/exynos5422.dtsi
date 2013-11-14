@@ -892,11 +892,48 @@
 		compatible = "samsung,mfc-v6";
 		reg = <0x11000000 0x10000>;
 		interrupts = <0 96 0>;
-		clock-names = "mfc", "aclk_333", "mout_aclk_333_user", "gate_ip_mfc", "mout_aclk_333_sw";
-		clocks = <&clock 1350>, <&clock 486>, <&clock 2040>, <&clock 1234>, <&clock 2033>;
+		clock-names = "mfc", "aclk_333", "mout_aclk_333_user", "gate_ip_mfc", "mout_aclk_333_sw", "dout_aclk_333";
+		clocks = <&clock 1350>, <&clock 486>, <&clock 2040>, <&clock 1234>, <&clock 2033>, <&clock 4008>;
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
 		status = "ok";
 		ip_ver = <8>;
+		clock_rate = <333000000>;
+		min_rate = <84000>;
+		num_qos_steps = <4>;
+		mfc_qos_table {
+			mfc_qos_variant_0 {
+				thrd_mb = <0>;
+				freq_mfc = <111000>;
+				freq_int = <111000>;
+				freq_mif = <200000>;
+				freq_cpu = <0>;
+				freq_kfc = <0>;
+			};
+			mfc_qos_variant_1 {
+				thrd_mb = <163200>;
+				freq_mfc = <167000>;
+				freq_int = <222000>;
+				freq_mif = <266000>;
+				freq_cpu = <0>;
+				freq_kfc = <0>;
+			};
+			mfc_qos_variant_2 {
+				thrd_mb = <244800>;
+				freq_mfc = <222000>;
+				freq_int = <333000>;
+				freq_mif = <266000>;
+				freq_cpu = <0>;
+				freq_kfc = <400000>;
+			};
+			mfc_qos_variant_3 {
+				thrd_mb = <326400>;
+				freq_mfc = <333000>;
+				freq_int = <400000>;
+				freq_mif = <400000>;
+				freq_cpu = <0>;
+				freq_kfc = <400000>;
+			};
+		};
 	};
 
 	sec_pwm: pwm@12dd0000 {
