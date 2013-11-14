@@ -513,7 +513,7 @@
 
 		iommu = <&sysmmu_fimd0x>, <&sysmmu_fimd1x>;
 
-		samsung,power-domain = <&pd_disp1>;
+		samsung,power-domain = <&spd_fimd>;
 		interrupt-controller;
 		#interrups-cells = <2>;
 		interrupt-parent = <&fimd_fb_int_map>;
@@ -600,6 +600,21 @@
 	pd_disp1: pd-disp1@0x100440c0 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x100440c0 0x20>;
+
+		spd_fimd: spd-fimd@100440c0 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+
+		spd_mixer: spd-mixer@100440c0 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+
+		spd_hdmi: spd-hdmi@100440c0 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "disabled";
+		};
 	};
 
 	dwmmc_0: dwmmc0@12200000 {
@@ -1233,6 +1248,7 @@
 		reg = <0x14450000 0x4000>;
 		iommu = <&sysmmu_tv>;
 		interrupts = <0 94 0>;
+		samsung,power-domain = <&spd_mixer>;
 
 		clock-names = "clk_mixer", "sclk_hdmi";
 
@@ -1247,6 +1263,7 @@
 		reg = <0x14530000 0x80000>,	/* hdmi */
 		      <0x145D0000 0x8000>;	/* hdmi phy */
 		interrupts = <0 95 0>;
+		samsung,power-domain = <&spd_hdmi>;
 
 		gpios = <&gpx3 7 0xf>;
 
