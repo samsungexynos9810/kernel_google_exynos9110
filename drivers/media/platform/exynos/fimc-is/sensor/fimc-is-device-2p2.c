@@ -40,18 +40,8 @@
 #define SENSOR_NAME "S5K2P2"
 
 static struct fimc_is_settle settle_2p2[] = {
-	/* 4144x3106@30fps */
-	FIMC_IS_SETTLE(4144, 3106, 30, 23),
-	/* 4144x2332@30fps */
-	FIMC_IS_SETTLE(4144, 2332, 30, 23),
-	/* 1024x584@120fps */
-	FIMC_IS_SETTLE(1024, 584, 120, 17),
-	/* 2072x1166@60fps */
-	FIMC_IS_SETTLE(2072, 1162, 60, 9),
-	/* 2072x1166@24fps */
-	FIMC_IS_SETTLE(2072, 1166, 24, 5),
-	/* 2072x1154@24fps */
-	FIMC_IS_SETTLE(2072, 1154, 24, 5),
+	/* 5328x3000@30fps */
+	FIMC_IS_SETTLE(5328, 3000, 30, 30),
 };
 
 static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
