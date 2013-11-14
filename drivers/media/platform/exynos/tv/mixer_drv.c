@@ -35,6 +35,11 @@ static const struct of_device_id mixer_device_table[] = {
 MODULE_DEVICE_TABLE(of, mixer_device_table);
 #endif
 
+#if defined(CONFIG_TV_USE_BUS_DEVFREQ)
+static struct pm_qos_request exynos5_tv_mif_qos;
+static struct pm_qos_request exynos5_tv_int_qos;
+#endif
+
 static struct mxr_output_conf mxr_output_conf[] = {
 	{
 		.output_name = "S5P HDMI connector",

@@ -33,13 +33,9 @@
 #include "regs-mixer.h"
 
 #if	defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) ||   \
-	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
+	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ) ||	\
+	defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 #define CONFIG_TV_USE_BUS_DEVFREQ
-#endif
-
-#if defined(CONFIG_TV_USE_BUS_DEVFREQ)
-struct pm_qos_request exynos5_tv_mif_qos;
-struct pm_qos_request exynos5_tv_int_qos;
 #endif
 
 /** maximum number of output interfaces */

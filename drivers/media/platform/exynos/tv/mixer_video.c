@@ -1049,7 +1049,7 @@ static int start_streaming(struct vb2_queue *vq, unsigned int count)
 
 	/* Informing BTS of the number of layers turned on */
 #if defined(CONFIG_TV_USE_BUS_DEVFREQ)
-	if (is_ip_ver_5s) {
+	if (is_ip_ver_5s || is_ip_ver_5s2) {
 		n_layer = mdev->layer_en.graph0 + mdev->layer_en.graph1
 			+ mdev->layer_en.graph2 + mdev->layer_en.graph3;
 		exynos5_update_media_layers(TYPE_MIXER, n_layer);
@@ -1125,7 +1125,7 @@ static int stop_streaming(struct vb2_queue *vq)
 
 #if defined(CONFIG_TV_USE_BUS_DEVFREQ)
 	/* Informing BTS of the number of layers turned on */
-	if (is_ip_ver_5s) {
+	if (is_ip_ver_5s || is_ip_ver_5s2) {
 		n_layer = mdev->layer_en.graph0 + mdev->layer_en.graph1
 			+ mdev->layer_en.graph2 + mdev->layer_en.graph3;
 		exynos5_update_media_layers(TYPE_MIXER, n_layer);
