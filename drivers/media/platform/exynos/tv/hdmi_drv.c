@@ -32,6 +32,7 @@
 #include <linux/videodev2_exynos_media.h>
 #include <linux/sched.h>
 #include <linux/of_gpio.h>
+#include <linux/fb.h>
 #include <plat/devs.h>
 #include <plat/cpu.h>
 #include <plat/gpio-cfg.h>
@@ -164,6 +165,52 @@ static int hdmi_set_packets(struct hdmi_device *hdev)
 {
 	hdmi_reg_set_acr(hdev);
 	return 0;
+}
+
+static void hdmi_audio_information(struct hdmi_device *hdev, u32 value)
+{
+	struct device *dev = hdev->dev;
+	u8 ch = 0;
+	u8 br = 0;
+	u8 sr = 0;
+	int cnt;
+
+	ch = value & AUDIO_CHANNEL_MASK;
+	br = (value & AUDIO_BIT_RATE_MASK) >> 16;
+	sr = (value & AUDIO_SAMPLE_RATE_MASK) >> 19;
+
+	for (cnt = 0; cnt < 8; cnt++) {
+		if (ch & (1 << cnt))
+			hdev->audio_channel_count = cnt + 1;
+	}
+	if (br & FB_AUDIO_16BIT)
+		hdev->bits_per_sample = 16;
+	else if (br & FB_AUDIO_20BIT)
+		hdev->bits_per_sample = 20;
+	else if (br & FB_AUDIO_24BIT)
+		hdev->bits_per_sample = 24;
+	else
+		dev_err(dev, "invalid bit per sample\n");
+
+	if (sr & FB_AUDIO_32KHZ)
+		hdev->sample_rate = 32000;
+	else if (sr & FB_AUDIO_44KHZ)
+		hdev->sample_rate = 44100;
+	else if (sr & FB_AUDIO_48KHZ)
+		hdev->sample_rate = 48000;
+	else if (sr & FB_AUDIO_88KHZ)
+		hdev->sample_rate = 88000;
+	else if (sr & FB_AUDIO_96KHZ)
+		hdev->sample_rate = 96000;
+	else if (sr & FB_AUDIO_176KHZ)
+		hdev->sample_rate = 176000;
+	else if (sr & FB_AUDIO_192KHZ)
+		hdev->sample_rate = 192000;
+	else
+		dev_err(dev, "invalid sample rate\n");
+
+	dev_info(dev, "HDMI audio : %d-ch, %dHz, %dbit\n",
+			ch, hdev->sample_rate, hdev->bits_per_sample);
 }
 
 static int hdmi_streamon(struct hdmi_device *hdev)
@@ -327,15 +374,11 @@ int hdmi_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		break;
 	case V4L2_CID_TV_SET_NUM_CHANNELS:
 		mutex_lock(&hdev->mutex);
-		if ((ctrl->value == 2) || (ctrl->value == 6) ||
-							(ctrl->value == 8)) {
-			hdev->audio_channel_count = ctrl->value;
-		} else {
-			dev_err(dev, "invalid channel count\n");
-			hdev->audio_channel_count = 2;
-		}
-		if (is_hdmi_streaming(hdev))
+		hdmi_audio_information(hdev, ctrl->value);
+		if (is_hdmi_streaming(hdev)) {
 			hdmi_set_infoframe(hdev);
+			hdmi_reg_i2s_audio_init(hdev);
+		}
 		mutex_unlock(&hdev->mutex);
 		break;
 	case V4L2_CID_TV_SET_COLOR_RANGE:
@@ -372,7 +415,7 @@ int hdmi_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 				switch_get_state(&hdev->hpd_switch));
 		break;
 	case V4L2_CID_TV_MAX_AUDIO_CHANNELS:
-		ctrl->value = edid_max_audio_channels(hdev);
+		ctrl->value = edid_audio_informs(hdev);
 		break;
 	case V4L2_CID_TV_SOURCE_PHY_ADDR:
 		ctrl->value = edid_source_phy_addr(hdev);
@@ -893,7 +936,6 @@ static int hdmi_probe(struct platform_device *pdev)
 	hdmi_dev->audio_enable = 0;
 	hdmi_dev->audio_channel_count = 2;
 	hdmi_dev->sample_rate = DEFAULT_SAMPLE_RATE;
-	hdmi_dev->sample_size = DEFAULT_SAMPLE_SIZE;
 	hdmi_dev->color_range = HDMI_RGB709_0_255;
 	hdmi_dev->bits_per_sample = DEFAULT_BITS_PER_SAMPLE;
 	hdmi_dev->audio_codec = DEFAULT_AUDIO_CODEC;

@@ -53,9 +53,11 @@
 #define AVI_ITU709			(2 << 6)
 
 /* HDMI audio configuration value */
-#define DEFAULT_SAMPLE_RATE	44100
-#define DEFAULT_BITS_PER_SAMPLE	16
-#define DEFAULT_SAMPLE_SIZE	24
+#define DEFAULT_SAMPLE_RATE		44100
+#define DEFAULT_BITS_PER_SAMPLE		16
+#define AUDIO_CHANNEL_MASK		(0xFF)
+#define AUDIO_BIT_RATE_MASK		(0x7 << 16)
+#define AUDIO_SAMPLE_RATE_MASK		(0x7F << 19)
 
 /* HDMI pad definitions */
 #define HDMI_PAD_SINK		0
@@ -422,7 +424,7 @@ int hdcp_i2c_write(struct hdmi_device *hdev, u8 offset, int bytes, u8 *buf);
 int edid_update(struct hdmi_device *hdev);
 struct v4l2_dv_timings edid_preferred_preset(struct hdmi_device *hdev);
 bool edid_supports_hdmi(struct hdmi_device *hdev);
-int edid_max_audio_channels(struct hdmi_device *hdev);
+u32 edid_audio_informs(struct hdmi_device *hdev);
 int edid_source_phy_addr(struct hdmi_device *hdev);
 
 static inline
