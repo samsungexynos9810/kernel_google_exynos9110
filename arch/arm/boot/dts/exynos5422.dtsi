@@ -1267,7 +1267,15 @@
 		pinctrl-0 = <&hdmi_cec>;
 
 		clock-names = "pclk_hdmi_cec";
-		clocks = <&clock 961>;
+		clocks = <&clock 966>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		hdmiphy-sys {
+			reg = <0x10040700 0x4>;
+		};
 	};
 
     pd_gscl: pd-gscl@10044000 {
