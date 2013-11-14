@@ -109,8 +109,18 @@ int init_display_fimd_clocks_exynos(struct device *dev)
 	if (ret < 0)
 		pr_err("exynos_set_rate failed: ret %d\n", ret);
 
-	pr_info("%s: clk_rate: %d\n", __func__, exynos_get_rate("sclk_fimd1"));
-	pr_info("%s: clk_rate: %d\n", __func__, exynos_get_rate("dout_aclk_300_disp1"));
+	if (exynos_set_parent("mout_aclk_400_disp1_user", "mout_aclk_400_disp1_sw") < 0)
+		pr_err("Unable to set parent for mout_aclk_400_disp1_user\n");
+
+	if (exynos_set_parent("mout_aclk_400_disp1_sw", "dout_aclk_400_disp1") < 0)
+		pr_err("Unable to set parent for mout_aclk_400_disp1_sw.\n");
+
+	if (exynos_set_parent("mout_aclk_400_disp1", "mout_dpll_ctrl") < 0)
+		pr_err("Unable to set parent for mout_aclk_400_disp1.\n");
+
+	pr_info("%s: pixel_clk_rate: %d\n", __func__, exynos_get_rate("sclk_fimd1"));
+	pr_info("%s: aclk300_clk_rate: %d\n", __func__, exynos_get_rate("mout_aclk_300_disp1_user"));
+	pr_info("%s: aclk400_clk_rate: %d\n", __func__, exynos_get_rate("mout_aclk_400_disp1_user"));
 
 	return ret;
 }

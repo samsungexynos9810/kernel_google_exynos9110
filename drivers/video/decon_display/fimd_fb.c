@@ -1092,6 +1092,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 1;
 #endif
+		init_display_fimd_clocks_exynos(sfb->dev);
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
 		break;
@@ -4225,111 +4226,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	reg |= (1 << 24);
 	__raw_writel(reg, EXYNOS5_CLK_SRC_TOP5);
 #endif
-
-#if defined(CONFIG_SOC_EXYNOS5260)
-	if (soc_is_exynos5260() && (s3c_clk_status == false)) {
-		mout_mediatop_bpll = clk_get(NULL, "sclk_mediatop_pll");
-		mout_cpll = clk_get(NULL, "sclk_cpll");
-		aclk_disp_333 = clk_get(NULL, "aclk_disp_333");
-		aclk_disp_222 = clk_get(NULL, "aclk_disp_222");
-		sclk_disp_pixel_user = clk_get(NULL, "sclk_disp_pixel_user");
-		sclk_disp_pixel = clk_get(NULL, "sclk_disp_pixel");
-		aclk_disp_333_nogate = clk_get(NULL, "aclk_disp_333_nogate");
-		aclk_disp_222_nogate = clk_get(NULL, "aclk_disp_222_nogate");
-		sclk_disp_128_extclkpll = clk_get(NULL, "sclk_fimd1_128_extclkpl");
-
-		if (clk_set_parent(mout_mediatop_bpll, mout_cpll)) {
-			clk_put(mout_cpll);
-			clk_put(mout_mediatop_bpll);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					mout_cpll->name, mout_mediatop_bpll->name);
-			return -EINVAL;
-		}
-
-		if (clk_set_parent(aclk_disp_333, mout_mediatop_bpll)) {
-			clk_put(mout_mediatop_bpll);
-			clk_put(aclk_disp_333);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					mout_mediatop_bpll->name, aclk_disp_333->name);
-			return -EINVAL;
-		}
-
-		if (clk_set_parent(aclk_disp_222, mout_mediatop_bpll)) {
-			clk_put(mout_mediatop_bpll);
-			clk_put(aclk_disp_222);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					mout_mediatop_bpll->name, aclk_disp_222->name);
-			return -EINVAL;
-		}
-
-		if (clk_set_parent(sclk_disp_pixel_user, sclk_disp_pixel)) {
-			clk_put(sclk_disp_pixel);
-			clk_put(sclk_disp_pixel_user);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					sclk_disp_pixel->name, sclk_disp_pixel_user->name);
-			return -EINVAL;
-		}
-
-		if (clk_set_parent(sclk_disp_128_extclkpll, sclk_disp_pixel_user)) {
-			clk_put(sclk_disp_pixel_user);
-			clk_put(sclk_disp_128_extclkpll);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					sclk_disp_pixel_user->name, sclk_disp_128_extclkpll->name);
-			return -EINVAL;
-		}
-
-		clk_set_rate(aclk_disp_333, 333 * MHZ);
-		clk_set_rate(aclk_disp_222, 222 * MHZ);
-		clk_set_rate(sclk_disp_128_extclkpll, 266 * MHZ);
-
-		if (clk_set_parent(aclk_disp_333_nogate, aclk_disp_333)) {
-			clk_put(aclk_disp_333);
-			clk_put(aclk_disp_333_nogate);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					aclk_disp_333->name, aclk_disp_333_nogate->name);
-			return -EINVAL;
-		}
-
-		if (clk_set_parent(aclk_disp_222_nogate, aclk_disp_222)) {
-			clk_put(aclk_disp_222);
-			clk_put(aclk_disp_222_nogate);
-
-			pr_err("Unable to set parent %s of clock %s.\n",
-					aclk_disp_222->name, aclk_disp_222_nogate->name);
-			return -EINVAL;
-		}
-
-		clk_put(mout_mediatop_bpll);
-		clk_put(mout_cpll);
-		clk_put(aclk_disp_333);
-		clk_put(aclk_disp_222);
-		clk_put(sclk_disp_pixel_user);
-		clk_put(sclk_disp_pixel);
-		clk_put(aclk_disp_333_nogate);
-		clk_put(aclk_disp_222_nogate);
-		clk_put(sclk_disp_128_extclkpll);
-		s3c_clk_status = true;
-	}
-#endif
-#if 0 /* TO DO */
-	if (soc_is_exynos5420()) {
-#else
-	if (1) {
-#endif
-		if (exynos_set_parent("mout_aclk_400_disp1_user", "aclk_400_disp1_sw") < 0)
-			pr_err("Unable to set parent for mout_aclk_400_disp1_user\n");
-		if (exynos_set_parent("mout_aclk_400_disp1_sw", "dout_aclk_400_disp1") < 0)
-			pr_err("Unable to set parent for mout_aclk_400_disp1_sw.\n");
-		if (exynos_set_parent("mout_aclk_400_disp1", "mout_dpll_ctrl") < 0)
-			pr_err("Unable to set parent for mout_aclk_400_disp1.\n");
-	}
-
 	mutex_lock(&sfb->output_lock);
 	if (sfb->output_on) {
 		ret = -EBUSY;

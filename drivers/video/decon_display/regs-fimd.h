@@ -67,6 +67,7 @@
 #define VIDCON0_PNRMODE_SERIAL_BGR		(0x3 << 17)
 
 #define VIDCON0_CLKVALUP			(1 << 16)
+#define VIDCON0_HIVCLK                          (1 << 15)
 #define VIDCON0_CLKVAL_F_MASK			(0xff << 6)
 #define VIDCON0_CLKVAL_F_SHIFT			(6)
 #define VIDCON0_CLKVAL_F_LIMIT			(0xff)
