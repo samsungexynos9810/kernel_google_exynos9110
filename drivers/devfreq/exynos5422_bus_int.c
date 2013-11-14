@@ -801,7 +801,7 @@ static DEVICE_ATTR(freq_table, S_IRUGO, show_freq_table, NULL);
 
 
 static struct exynos_devfreq_platdata default_qos_int_pd = {
-	.default_qos = 400000,
+	.default_qos = 83000,
 };
 
 static int exynos5_int_reboot_notifier_call(struct notifier_block *this,
@@ -1039,10 +1039,10 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	clk_enable(data->fout_spll);
 	data->spll_enabled = true;
 
-	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&boot_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
 	pm_qos_update_request_timeout(&boot_int_qos,
 			exynos5_int_devfreq_profile.initial_freq, 40000 * 1000);
+	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
 
 	register_reboot_notifier(&exynos5_int_reboot_notifier);
 
