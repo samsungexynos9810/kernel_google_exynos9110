@@ -430,8 +430,8 @@ static void exynos5422_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 	} while (!(tmp & (0x1 << EXYNOS5_APLLCON0_LOCKED_SHIFT)));
 #else
 	pdiv = 0;
-	clk_set_rate(__clk_lookup("fout_apll"), exynos5422_freq_table_CA15[new_index].frequency*1000);
-	pr_debug("apll set_rate:%ld\n", clk_get_rate(__clk_lookup("fout_apll")));
+	clk_set_rate(fout_apll, exynos5422_freq_table_CA15[new_index].frequency*1000);
+	pr_debug("apll set_rate:%ld\n", clk_get_rate(fout_apll));
 #endif
 	/* 5. MUX_CORE_SEL = APLL */
 	if (clk_set_parent(mout_cpu, mout_apll))
@@ -641,11 +641,7 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L12;
 	info->max_support_idx = max_support_idx_CA15;
 	info->min_support_idx = min_support_idx_CA15;
-#ifdef SUPPORT_APLL_BYPASS
 	info->cpu_clk = fout_apll;
-#else
-	info->cpu_clk = dout_cpu;
-#endif
 	/* info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
 
 	info->volt_table = exynos5422_volt_table_CA15;

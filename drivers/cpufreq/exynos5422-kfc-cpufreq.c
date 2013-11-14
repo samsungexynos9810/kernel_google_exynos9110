@@ -32,6 +32,7 @@
 static int max_support_idx_CA7;
 static int min_support_idx_CA7 = (CPUFREQ_LEVEL_END_CA7 - 1);
 
+static struct clk *fout_kpll;
 static struct clk *dout_cpu_kfc;
 static struct clk *dout_hpm_kfc;
 static struct clk *mout_hpm_kfc;
@@ -335,8 +336,8 @@ static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 	} while (!(tmp & (0x1 << EXYNOS5_KPLLCON0_LOCKED_SHIFT)));
 #else
 	pdiv = 0;
-	clk_set_rate(__clk_lookup("fout_kpll"), exynos5422_freq_table_CA7[new_index].frequency*1000);
-	pr_debug("kpll set_rate:%ld\n", clk_get_rate(__clk_lookup("fout_kpll")));
+	clk_set_rate(fout_kpll, exynos5422_freq_table_CA7[new_index].frequency*1000);
+	pr_debug("kpll set_rate:%ld\n", clk_get_rate(fout_kpll));
 #endif
 
 	/* 5. CLKMUX_CPU_KFC = KPLL */
@@ -496,7 +497,11 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	if (IS_ERR(mout_kpll_ctrl))
 		goto err_get_clock;
 
-	clk_set_parent(mout_kpll_ctrl, __clk_lookup("fout_kpll"));
+	fout_kpll = __clk_lookup("fout_kpll");
+	if (IS_ERR(mout_kpll_ctrl))
+		goto err_get_clock;
+
+	clk_set_parent(mout_kpll_ctrl, fout_kpll);
 	clk_set_parent(mout_cpu_kfc, mout_kpll_ctrl);
 	clk_set_parent(mout_hpm_kfc, mout_kpll_ctrl);
 
@@ -528,7 +533,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L5;
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
-	info->cpu_clk = dout_cpu_kfc;
+	info->cpu_clk = fout_kpll;
 
 	/*info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
 
