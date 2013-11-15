@@ -1005,8 +1005,10 @@ static void run_delta_read(void);
 static void run_abscap_read(void);
 static void run_absdelta_read(void);
 static void run_trx_short_test(void);
+#ifdef PROXIMITY
 static void hover_enable(void);
 static void hover_no_sleep_enable(void);
+#endif
 #ifdef CONFIG_GLOVE_TOUCH
 static void glove_mode(void);
 static void clear_cover_mode(void);
@@ -1043,8 +1045,10 @@ struct ft_cmd ft_cmds[] = {
 	{FT_CMD("run_abscap_read", run_abscap_read),},
 	{FT_CMD("run_absdelta_read", run_absdelta_read),},
 	{FT_CMD("run_trx_short_test", run_trx_short_test),},
+#ifdef PROXIMITY
 	{FT_CMD("hover_enable", hover_enable),},
 	{FT_CMD("hover_no_sleep_enable", hover_no_sleep_enable),},
+#endif
 #ifdef CONFIG_GLOVE_TOUCH
 	{FT_CMD("glove_mode", glove_mode),},
 	{FT_CMD("clear_cover_mode", clear_cover_mode),},
@@ -3022,6 +3026,7 @@ exit:
 	return;
 }
 
+#ifdef PROXIMITY
 static void hover_enable(void)
 {
 	struct factory_data *data = f54->factory_data;
@@ -3096,6 +3101,7 @@ static void hover_no_sleep_enable(void)
 
 	return;
 }
+#endif
 
 #ifdef CONFIG_GLOVE_TOUCH
 #define GLOVE_MODE_EN (1 << 0)

@@ -32,6 +32,7 @@
 #define TOUCH_BOOSTER_OFF_TIME	300
 #define TOUCH_BOOSTER_CHG_TIME	200
 #endif
+/*#define PROXIMITY*/
 
 /*#define SECURE_TSP*/
 

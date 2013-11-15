@@ -32,7 +32,6 @@
 
 #define DRIVER_NAME "synaptics_rmi4_i2c"
 
-#define PROXIMITY
 #define TYPE_B_PROTOCOL
 #ifdef SURFACE_TOUCH
 #define EDGE_SWIPE
@@ -3039,6 +3038,7 @@ out:
 	kfree(f51);
 	f51 = NULL;
 #endif
+	return;
 }
 
 static int synaptics_rmi4_set_input_device
