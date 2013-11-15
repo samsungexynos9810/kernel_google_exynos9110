@@ -536,24 +536,12 @@ static void __init set_volt_table_CA15(void)
 		exynos5422_volt_table_CA15[i]);
 	}
 
-	exynos5422_freq_table_CA15[L0].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L1].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L2].frequency = CPUFREQ_ENTRY_INVALID;
 #ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
 	max_support_idx_CA15 = L3;
 #else
-	exynos5422_freq_table_CA15[L3].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L4].frequency = CPUFREQ_ENTRY_INVALID;
 	max_support_idx_CA15 = L5;
 #endif
-
 	min_support_idx_CA15 = L16;
-	exynos5422_freq_table_CA15[L17].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L18].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L19].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L20].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L21].frequency = CPUFREQ_ENTRY_INVALID;
-	exynos5422_freq_table_CA15[L22].frequency = CPUFREQ_ENTRY_INVALID;
 }
 
 static bool exynos5422_is_alive_CA15(void)
