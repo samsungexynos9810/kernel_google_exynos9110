@@ -581,8 +581,9 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 		if (sdd->tgl_spi != spi) { /* if last mssg on diff device */
 			/* Deselect the last toggled device */
 			cs = sdd->tgl_spi->controller_data;
-			gpio_set_value(cs->line,
-				spi->mode & SPI_CS_HIGH ? 0 : 1);
+			if(cs->line != (unsigned)NULL)
+				gpio_set_value(cs->line,
+					spi->mode & SPI_CS_HIGH ? 0 : 1);
 			/* Quiese the signals */
 			writel(spi->mode & SPI_CS_HIGH ?
 				0 : S3C64XX_SPI_SLAVE_SIG_INACT,
@@ -592,7 +593,8 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 	}
 
 	cs = spi->controller_data;
-	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
+	if(cs->line != (unsigned)NULL)
+		gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
 	/* Start the signals */
 	writel(spi->mode & SPI_CS_HIGH ? S3C64XX_SPI_SLAVE_SIG_INACT : 0,
 	       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
@@ -681,7 +683,8 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 	if (sdd->tgl_spi == spi)
 		sdd->tgl_spi = NULL;
 
-	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
+	if(cs->line != (unsigned)NULL)
+		gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
 	/* Quiese the signals */
 	writel(spi->mode & SPI_CS_HIGH ? 0 : S3C64XX_SPI_SLAVE_SIG_INACT,
 	       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
@@ -1054,12 +1057,8 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 	}
 
 	cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
-	if (!gpio_is_valid(cs->line)) {
-		dev_err(&spi->dev, "chip select gpio is not specified or invalid\n");
-		kfree(cs);
-		of_node_put(data_np);
-		return ERR_PTR(-EINVAL);
-	}
+	if (!gpio_is_valid(cs->line))
+		cs->line = (unsigned)NULL;
 
 	of_property_read_u32(data_np, "samsung,spi-feedback-delay", &fb_delay);
 	cs->fb_delay = fb_delay;
@@ -1094,13 +1093,15 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 	}
 
 	if (!spi_get_ctldata(spi)) {
-		err = gpio_request_one(cs->line, GPIOF_OUT_INIT_HIGH,
-				       dev_name(&spi->dev));
-		if (err) {
-			dev_err(&spi->dev,
-				"Failed to get /CS gpio [%d]: %d\n",
-				cs->line, err);
-			goto err_gpio_req;
+		if(cs->line != (unsigned)NULL) {
+			err = gpio_request_one(cs->line, GPIOF_OUT_INIT_HIGH,
+					       dev_name(&spi->dev));
+			if (err) {
+				dev_err(&spi->dev,
+					"Failed to get /CS gpio [%d]: %d\n",
+					cs->line, err);
+				goto err_gpio_req;
+			}
 		}
 		spi_set_ctldata(spi, cs);
 	}
