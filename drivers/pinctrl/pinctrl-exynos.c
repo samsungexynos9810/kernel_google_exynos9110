@@ -517,7 +517,7 @@ static void exynos_eint_flt_config(int en, int sel, int width,
 {
 	unsigned int flt_reg, flt_con;
 	unsigned int val, shift;
-	int i, j;
+	int i;
 
 	flt_con = 0;
 
@@ -529,16 +529,14 @@ static void exynos_eint_flt_config(int en, int sel, int width,
 
 	flt_con |= EXYNOS_EINT_FLTCON_WIDTH(width);
 
-	for (i = 0; i < d->ctrl->nr_banks; ++i, ++bank) {
-		flt_reg = d->ctrl->weint_fltcon + 2 * bank->eint_offset;
-		for (j = 0; j < bank->nr_pins >> 1; j++) {
-			shift = j * EXYNOS_EINT_FLTCON_LEN;
-			val = readl(d->virt_base + flt_reg);
-			val &= ~(EXYNOS_EINT_FLTCON_MASK << shift);
-			val |= (flt_con << shift);
-			writel(val, d->virt_base + flt_reg);
-			writel(val, d->virt_base + flt_reg + 0x4);
-		}
+	flt_reg = d->ctrl->weint_fltcon + 2 * bank->eint_offset;
+	for (i = 0; i < bank->nr_pins >> 1; i++) {
+		shift = i * EXYNOS_EINT_FLTCON_LEN;
+		val = readl(d->virt_base + flt_reg);
+		val &= ~(EXYNOS_EINT_FLTCON_MASK << shift);
+		val |= (flt_con << shift);
+		writel(val, d->virt_base + flt_reg);
+		writel(val, d->virt_base + flt_reg + 0x4);
 	}
 };
 
@@ -649,8 +647,9 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 
 	if (d->eint_flt_config) {
 		bank = d->ctrl->pin_banks;
-		exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN, EXYNOS_EINT_FLTCON_SEL,
-				       0, d, bank);
+		for (i = 0; i < d->ctrl->nr_banks; ++i, ++bank)
+			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+				 EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
 	}
 
 	return 0;
@@ -696,8 +695,11 @@ static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 		if (bank->eint_type == EINT_TYPE_GPIO)
 			exynos_pinctrl_suspend_bank(drvdata, bank);
 		else if (bank->eint_type == EINT_TYPE_WKUP
-			|| bank->eint_type == EINT_TYPE_WKUP_MUX)
+			|| bank->eint_type == EINT_TYPE_WKUP_MUX) {
 			exynos_pinctrl_suspend_inttype(drvdata, bank);
+			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN, 0,
+				       0, drvdata, bank);
+		}
 }
 
 static void exynos_pinctrl_resume_bank(
