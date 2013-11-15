@@ -1684,8 +1684,7 @@
 		interrupts = <0 140 0>;
 		pinctrl-names =	"ch0";
 		pinctrl-0 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
-		iommu = <&sysmmu_flite_a>,
-			<&sysmmu_flite_d>;
+		iommu = <&sysmmu_flite_a>;
 		samsung,power-domain = <&pd_cam0>;
 		clock-names = "sclk_isp_sensor0", /* 33 */
 				"sclk_isp_sensor1",
@@ -2361,7 +2360,8 @@
 			<&sysmmu_fimc_dis0>,
 			<&sysmmu_fimc_dis1>,
 			<&sysmmu_fimc_scp>,
-			<&sysmmu_fimc_3dnr>;
+			<&sysmmu_fimc_3dnr>,
+			<&sysmmu_flite_d>;
 		samsung,power-domain = <&pd_isp>;
 		status = "ok";
 		/* This seq of declaration is very important.*/
