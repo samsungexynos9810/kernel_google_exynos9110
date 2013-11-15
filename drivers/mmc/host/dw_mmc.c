@@ -3313,6 +3313,10 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "clock-gate", NULL))
 		pdata->use_gate_clock = true;
 
+	if (of_property_read_u32(dev->of_node, "cd-type",
+				&pdata->cd_type))
+		pdata->cd_type = DW_MCI_CD_PERMANENT;
+
 
 	return pdata;
 }
