@@ -115,21 +115,19 @@ static struct devfreq_exynos devfreq_disp_exynos = {
 };
 
 static struct pm_qos_request exynos5_disp_qos;
-static struct pm_qos_request boot_disp_qos;
 static struct pm_qos_request min_disp_thermal_qos;
-static struct pm_qos_request exynos5_disp_bts_qos;
 
 extern void exynos5_update_district_int_level(int aclk_disp_333_freq);
 
 void exynos5_update_district_disp_level(unsigned int idx)
 {
-	if (!pm_qos_request_active(&exynos5_disp_bts_qos))
+	if (!pm_qos_request_active(&exynos5_disp_qos))
 		return;
 
 	if (idx != LV3)
-		pm_qos_update_request(&exynos5_disp_bts_qos, devfreq_disp_opp_list[idx].freq);
+		pm_qos_update_request(&exynos5_disp_qos, devfreq_disp_opp_list[idx].freq);
 	else
-		pm_qos_update_request(&exynos5_disp_bts_qos, exynos5430_qos_disp.default_qos);
+		pm_qos_update_request(&exynos5_disp_qos, exynos5430_qos_disp.default_qos);
 }
 
 static inline int exynos5_devfreq_disp_get_idx(struct devfreq_opp_table *table,
@@ -223,6 +221,7 @@ static int exynos5_devfreq_disp_set_freq(struct devfreq_data_disp *data,
 	return 0;
 }
 
+static unsigned long cur_freq;
 static int exynos5_devfreq_disp_target(struct device *dev,
 					unsigned long *target_freq,
 					u32 flags)
@@ -268,7 +267,13 @@ static int exynos5_devfreq_disp_target(struct device *dev,
 		exynos5_update_district_int_level(target_idx);
 	}
 out:
+	cur_freq = *target_freq;
 	return ret;
+}
+
+unsigned long get_disp_freq(void)
+{
+	return cur_freq;
 }
 
 static int exynos5_devfreq_disp_get_dev_status(struct device *dev,
@@ -381,7 +386,7 @@ static int exynos5_init_disp_table(struct device *dev)
 static int exynos5_devfreq_disp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&boot_disp_qos, exynos5_devfreq_disp_profile.initial_freq);
+	pm_qos_update_request(&exynos5_disp_qos, exynos5_devfreq_disp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -453,9 +458,7 @@ static int exynos5_devfreq_disp_probe(struct platform_device *pdev)
 	data->devfreq->max_freq = exynos5_devfreq_disp_governor_data.cal_qos_max;
 	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
-	pm_qos_update_request_timeout(&boot_disp_qos,
+	pm_qos_update_request_timeout(&exynos5_disp_qos,
 					exynos5_devfreq_disp_profile.initial_freq, 40000 * 1000);
 
 	register_reboot_notifier(&exynos5_disp_reboot_notifier);
@@ -479,8 +482,6 @@ static int exynos5_devfreq_disp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_disp_thermal_qos);
 	pm_qos_remove_request(&exynos5_disp_qos);
-	pm_qos_remove_request(&boot_disp_qos);
-	pm_qos_remove_request(&exynos5_disp_bts_qos);
 
 	kfree(data);
 
@@ -689,21 +690,19 @@ static struct devfreq_exynos devfreq_disp_exynos = {
 };
 
 static struct pm_qos_request exynos5_disp_qos;
-static struct pm_qos_request boot_disp_qos;
 static struct pm_qos_request min_disp_thermal_qos;
-static struct pm_qos_request exynos5_disp_bts_qos;
 
 extern void exynos5_update_district_int_level(int aclk_disp_333_freq);
 
 void exynos5_update_district_disp_level(unsigned int idx)
 {
-	if (!pm_qos_request_active(&exynos5_disp_bts_qos))
+	if (!pm_qos_request_active(&exynos5_disp_qos))
 		return;
 
 	if (idx != LV3)
-		pm_qos_update_request(&exynos5_disp_bts_qos, devfreq_disp_opp_list[idx].freq);
+		pm_qos_update_request(&exynos5_disp_qos, devfreq_disp_opp_list[idx].freq);
 	else
-		pm_qos_update_request(&exynos5_disp_bts_qos, exynos5430_qos_disp.default_qos);
+		pm_qos_update_request(&exynos5_disp_qos, exynos5430_qos_disp.default_qos);
 }
 
 static inline int exynos5_devfreq_disp_get_idx(struct devfreq_opp_table *table,
@@ -955,7 +954,7 @@ static int exynos5_init_disp_table(struct device *dev)
 static int exynos5_devfreq_disp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&boot_disp_qos, exynos5_devfreq_disp_profile.initial_freq);
+	pm_qos_update_request(&exynos5_disp_qos, exynos5_devfreq_disp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -1027,9 +1026,7 @@ static int exynos5_devfreq_disp_probe(struct platform_device *pdev)
 	data->devfreq->max_freq = exynos5_devfreq_disp_governor_data.cal_qos_max;
 	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_DISPLAY_THROUGHPUT, plat_data->default_qos);
-	pm_qos_update_request_timeout(&boot_disp_qos,
+	pm_qos_update_request_timeout(&exynos5_disp_qos,
 					exynos5_devfreq_disp_profile.initial_freq, 40000 * 1000);
 
 	register_reboot_notifier(&exynos5_disp_reboot_notifier);
@@ -1053,8 +1050,6 @@ static int exynos5_devfreq_disp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_disp_thermal_qos);
 	pm_qos_remove_request(&exynos5_disp_qos);
-	pm_qos_remove_request(&boot_disp_qos);
-	pm_qos_remove_request(&exynos5_disp_bts_qos);
 
 	kfree(data);
 

@@ -675,7 +675,6 @@ static struct exynos_devfreq_platdata exynos5430_qos_isp = {
 };
 
 static struct pm_qos_request exynos5_isp_qos;
-static struct pm_qos_request boot_isp_qos;
 static struct pm_qos_request min_isp_thermal_qos;
 
 static inline int exynos5_devfreq_isp_get_idx(struct devfreq_opp_table *table,
@@ -954,7 +953,7 @@ static int exynos5_init_isp_table(struct device *dev)
 static int exynos5_devfreq_isp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&boot_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
+	pm_qos_update_request(&exynos5_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -1080,7 +1079,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	data->devfreq->max_freq = exynos5_devfreq_isp_governor_data.cal_qos_max;
 	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 
 	register_reboot_notifier(&exynos5_isp_reboot_notifier);
 
@@ -1107,7 +1105,6 @@ static int exynos5_devfreq_isp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_isp_thermal_qos);
 	pm_qos_remove_request(&exynos5_isp_qos);
-	pm_qos_remove_request(&boot_isp_qos);
 
 	regulator_put(data->vdd_isp);
 
@@ -1853,7 +1850,6 @@ static struct exynos_devfreq_platdata exynos5430_qos_isp = {
 };
 
 static struct pm_qos_request exynos5_isp_qos;
-static struct pm_qos_request boot_isp_qos;
 static struct pm_qos_request min_isp_thermal_qos;
 
 static inline int exynos5_devfreq_isp_get_idx(struct devfreq_opp_table *table,
@@ -2132,7 +2128,7 @@ static int exynos5_init_isp_table(struct device *dev)
 static int exynos5_devfreq_isp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&boot_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
+	pm_qos_update_request(&exynos5_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -2258,7 +2254,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	data->devfreq->max_freq = exynos5_devfreq_isp_governor_data.cal_qos_max;
 	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 
 	register_reboot_notifier(&exynos5_isp_reboot_notifier);
 
@@ -2285,7 +2280,6 @@ static int exynos5_devfreq_isp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_isp_thermal_qos);
 	pm_qos_remove_request(&exynos5_isp_qos);
-	pm_qos_remove_request(&boot_isp_qos);
 
 	regulator_put(data->vdd_isp);
 
