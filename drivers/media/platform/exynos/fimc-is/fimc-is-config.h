@@ -14,7 +14,7 @@
 
 /* configuration - default post processing */
 #define ENABLE_SETFILE
-#define ENABLE_DRC
+/* #define ENABLE_DRC */
 /* #define ENABLE_ODC */
 /* #define ENABLE_VDIS */
 /* #define ENABLE_TDNR */
