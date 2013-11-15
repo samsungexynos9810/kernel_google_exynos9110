@@ -583,12 +583,19 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 			cs = sdd->tgl_spi->controller_data;
 			gpio_set_value(cs->line,
 				spi->mode & SPI_CS_HIGH ? 0 : 1);
+			/* Quiese the signals */
+			writel(spi->mode & SPI_CS_HIGH ?
+				0 : S3C64XX_SPI_SLAVE_SIG_INACT,
+				sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 		}
 		sdd->tgl_spi = NULL;
 	}
 
 	cs = spi->controller_data;
 	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
+	/* Start the signals */
+	writel(spi->mode & SPI_CS_HIGH ? S3C64XX_SPI_SLAVE_SIG_INACT : 0,
+	       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 }
 
 static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
@@ -675,6 +682,9 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 		sdd->tgl_spi = NULL;
 
 	gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
+	/* Quiese the signals */
+	writel(spi->mode & SPI_CS_HIGH ? 0 : S3C64XX_SPI_SLAVE_SIG_INACT,
+	       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 }
 
 static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
@@ -939,16 +949,10 @@ try_transfer:
 		/* Slave Select */
 		enable_cs(sdd, spi);
 
-		/* Start the signals */
-		writel(0, sdd->regs + S3C64XX_SPI_SLAVE_SEL);
-
 		spin_unlock_irqrestore(&sdd->lock, flags);
 
 		status = wait_for_xfer(sdd, xfer, use_dma);
 
-		/* Quiese the signals */
-		writel(S3C64XX_SPI_SLAVE_SIG_INACT,
-		       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 
 		if (status) {
 			dev_err(&spi->dev, "I/O Error: rx-%d tx-%d res:rx-%c tx-%c len-%d\n",
