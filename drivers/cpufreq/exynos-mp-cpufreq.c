@@ -253,8 +253,13 @@ static unsigned int get_freq_volt(int cluster, unsigned int target_freq)
 		}
 	}
 
-	if (table[i].frequency == CPUFREQ_TABLE_END)
-		return -EINVAL;
+	if (table[i].frequency == CPUFREQ_TABLE_END) {
+		if (exynos_info[cluster]->boot_freq_idx != -1 &&
+			target_freq == exynos_info[cluster]->boot_freq)
+			index = exynos_info[cluster]->boot_freq_idx;
+		else
+			return -EINVAL;
+	}
 
 	return exynos_info[cluster]->volt_table[index];
 }
@@ -342,8 +347,14 @@ int exynos5_frequency_table_target(struct cpufreq_policy *policy,
 		}
 	}
 
-	if (table[i].frequency == CPUFREQ_TABLE_END)
-		return -EINVAL;
+	if (table[i].frequency == CPUFREQ_TABLE_END) {
+		unsigned int cur = get_cur_cluster(policy->cpu);
+		if (exynos_info[cur]->boot_freq_idx != -1 &&
+			target_freq == exynos_info[cur]->boot_freq)
+			*index = exynos_info[cur]->boot_freq_idx;
+		else
+			return -EINVAL;
+	}
 
 	return 0;
 }
@@ -1144,7 +1155,9 @@ static struct notifier_block exynos_kfc_max_qos_notifier = {
 
 static int __init exynos_cpufreq_init(void)
 {
-	int ret = -EINVAL;
+	int i, ret = -EINVAL;
+	cluster_type cluster;
+	struct cpufreq_frequency_table *freq_table;
 
 	boot_cluster = 0;
 
@@ -1227,6 +1240,29 @@ static int __init exynos_cpufreq_init(void)
 	/* set initial old frequency */
 	freqs[CA7]->old = exynos_getspeed_cluster(CA7);
 	freqs[CA15]->old = exynos_getspeed_cluster(CA15);
+
+	/*
+	 * boot freq index is needed if minimum supported frequency
+	 * greater than boot freq
+	 */
+	for (cluster = 0; cluster < CA_END; cluster++) {
+		freq_table = exynos_info[cluster]->freq_table;
+		exynos_info[cluster]->boot_freq_idx = -1;
+		pr_debug("%s Core Max-Min frequency[%d - %d]KHz\n",
+			cluster ? "CA15" : "CA7", freq_max[cluster], freq_min[cluster]);
+
+		for (i = L0; (freq_table[i].frequency != CPUFREQ_TABLE_END); i++) {
+			if (exynos_info[cluster]->boot_freq == freq_table[i].frequency) {
+				exynos_info[cluster]->boot_freq_idx = i;
+				pr_debug("boot frequency[%d] index %d\n",
+						exynos_info[cluster]->boot_freq, i);
+			}
+
+			if (freq_table[i].frequency > freq_max[cluster] ||
+				freq_table[i].frequency < freq_min[cluster])
+				freq_table[i].frequency = CPUFREQ_ENTRY_INVALID;
+		}
+	}
 
 	register_hotcpu_notifier(&exynos_cpufreq_cpu_nb);
 	register_pm_notifier(&exynos_cpufreq_nb);

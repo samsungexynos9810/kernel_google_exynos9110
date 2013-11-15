@@ -45,6 +45,7 @@ struct exynos_dvfs_info {
 	unsigned int	boot_freq;
 	unsigned int	boot_cpu_min_qos;
 	unsigned int	boot_cpu_max_qos;
+	int		boot_freq_idx;
 	int		*bus_table;
 	bool		blocked;
 	struct clk	*cpu_clk;
