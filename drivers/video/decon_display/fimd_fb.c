@@ -1771,13 +1771,20 @@ static u32 s3c_fb_rgborder(int format)
 	case S3C_FB_PIXEL_FORMAT_RGBX_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_5551:
+#ifdef CONFIG_MACH_SMDK5422
 		return WIN_RGB_ORDER_RGB;
+#else
+		return WIN_RGB_ORDER_BGR;
+#endif
 
 	case S3C_FB_PIXEL_FORMAT_RGB_565:
 	case S3C_FB_PIXEL_FORMAT_BGRA_8888:
 	case S3C_FB_PIXEL_FORMAT_BGRX_8888:
+#ifdef CONFIG_MACH_SMDK5422
 		return WIN_RGB_ORDER_BGR;
-
+#else
+		return WIN_RGB_ORDER_RGB;
+#endif
 	default:
 		pr_warn("s3c-fb: unrecognized pixel format %u\n", format);
 		return 0;
