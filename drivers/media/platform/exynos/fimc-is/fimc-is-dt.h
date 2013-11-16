@@ -14,15 +14,16 @@
 
 #define DT_READ_U32(node, key, value) do {\
 		pprop = key; \
+		temp = 0; \
 		if (of_property_read_u32((node), key, &temp)) \
-			goto p_err; \
+			pr_warn("%s: no property in the node.\n", pprop);\
 		(value) = temp; \
 	} while (0)
 
 #define DT_READ_STR(node, key, value) do {\
 		pprop = key; \
 		if (of_property_read_string((node), key, &name)) \
-			goto p_err; \
+			pr_warn("%s: no property in the node.\n", pprop);\
 		(value) = name; \
 	} while (0)
 
