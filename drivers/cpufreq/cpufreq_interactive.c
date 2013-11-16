@@ -114,6 +114,9 @@ struct cpufreq_interactive_tunables {
 #define TASK_NAME_LEN 15
 	/* realtime thread handles frequency scaling */
 	struct task_struct *speedchange_task;
+
+	/* handle for get cpufreq_policy */
+	unsigned int *policy;
 };
 
 /* For cases where we have single governor instance for system */
@@ -616,17 +619,23 @@ static int cpufreq_interactive_speedchange_task(void *data)
 	return 0;
 }
 
-static void cpufreq_interactive_boost(void)
+static void cpufreq_interactive_boost(const struct cpufreq_policy *policy)
 {
 	int i;
 	int anyboost = 0;
 	unsigned long flags;
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_interactive_tunables *tunables;
+	struct cpumask boost_mask;
 
 	spin_lock_irqsave(&speedchange_cpumask_lock, flags);
 
-	for_each_online_cpu(i) {
+	if (have_governor_per_policy())
+		cpumask_copy(&boost_mask, policy->cpus);
+	else
+		cpumask_copy(&boost_mask, cpu_online_mask);
+
+	for_each_cpu(i, &boost_mask) {
 		pcpu = &per_cpu(cpuinfo, i);
 		tunables = pcpu->policy->governor_data;
 
@@ -930,6 +939,8 @@ static ssize_t store_boost(struct cpufreq_interactive_tunables *tunables,
 {
 	int ret;
 	unsigned long val;
+	struct cpufreq_policy *policy = container_of(tunables->policy,
+						struct cpufreq_policy, policy);
 
 	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
@@ -939,7 +950,7 @@ static ssize_t store_boost(struct cpufreq_interactive_tunables *tunables,
 
 	if (tunables->boost_val) {
 		trace_cpufreq_interactive_boost("on");
-		cpufreq_interactive_boost();
+		cpufreq_interactive_boost(policy);
 	} else {
 		trace_cpufreq_interactive_unboost("off");
 	}
@@ -952,6 +963,8 @@ static ssize_t store_boostpulse(struct cpufreq_interactive_tunables *tunables,
 {
 	int ret;
 	unsigned long val;
+	struct cpufreq_policy *policy = container_of(tunables->policy,
+						struct cpufreq_policy, policy);
 
 	ret = kstrtoul(buf, 0, &val);
 	if (ret < 0)
@@ -960,7 +973,7 @@ static ssize_t store_boostpulse(struct cpufreq_interactive_tunables *tunables,
 	tunables->boostpulse_endtime = ktime_to_us(ktime_get()) +
 		tunables->boostpulse_duration_val;
 	trace_cpufreq_interactive_boost("pulse");
-	cpufreq_interactive_boost();
+	cpufreq_interactive_boost(policy);
 	return count;
 }
 
@@ -1215,6 +1228,9 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			kfree(tuned_parameters[policy->cpu]);
 		}
 		tunables->usage_count = 1;
+
+		/* update handle for get cpufreq_policy */
+		tunables->policy = &policy->policy;
 
 		spin_lock_init(&tunables->target_loads_lock);
 		spin_lock_init(&tunables->above_hispeed_delay_lock);
