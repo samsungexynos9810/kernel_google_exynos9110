@@ -2220,15 +2220,12 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
 {
-	int err = sync_fence_wait(fence, 1000);
+	int err = sync_fence_wait(fence, 900);
 	if (err >= 0)
 		return;
 
-	if (err == -ETIME)
-		err = sync_fence_wait(fence, 10 * MSEC_PER_SEC);
-
 	if (err < 0)
-		dev_warn(sfb->dev, "error waiting on fence: %d\n", err);
+		dev_warn(sfb->dev, "error waiting on acquire fence: %d\n", err);
 }
 
 static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
