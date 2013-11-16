@@ -171,7 +171,7 @@ void s3c_pm_do_save(struct sleep_save *ptr, int count)
 {
 	for (; count > 0; count--, ptr++) {
 		ptr->val = __raw_readl(ptr->reg);
-		S3C_PMDBG("saved %p value %08lx\n", ptr->reg, ptr->val);
+		pr_debug("saved %p value %08lx\n", ptr->reg, ptr->val);
 	}
 }
 
