@@ -566,9 +566,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	/*
 	 * Unmasking all wakeup source.
 	 */
-	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK);
-	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK1);
-	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK2);
+	__raw_writel(0x00001000, EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK1);
+	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK2);
 
 	/* Configure GPIO Power down control register */
 #ifdef MUST_MODIFY
