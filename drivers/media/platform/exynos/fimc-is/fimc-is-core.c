@@ -581,7 +581,7 @@ static ssize_t store_en_dvfs(struct device *dev,
 	} else {
 		sysfs_debug.en_dvfs = 0;
 		/* update dvfs lever to max */
-		mutex_lock(&resource->dvfs_ctrl.lock);
+		mutex_lock(&resourcemgr->dvfs_ctrl.lock);
 		sysfs_debug.en_dvfs = value;
 		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
 			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state)))
@@ -589,7 +589,7 @@ static ssize_t store_en_dvfs(struct device *dev,
 		}
 		fimc_is_dvfs_init(resourcemgr);
 		resourcemgr->dvfs_ctrl.static_ctrl->cur_scenario_id = FIMC_IS_SN_MAX;
-		mutex_unlock(&resourcemgr>dvfs_ctrl.lock);
+		mutex_unlock(&resourcemgr->dvfs_ctrl.lock);
 	}
 out:
 #endif
@@ -827,10 +827,14 @@ static int fimc_is_probe(struct platform_device *pdev)
 	ret = sysfs_create_group(&core->pdev->dev.kobj, &fimc_is_debug_attr_group);
 
 #ifdef ENABLE_DVFS
-	/* dvfs controller init */
-	ret = fimc_is_dvfs_init(core);
-	if (ret)
-		err("%s: fimc_is_dvfs_init failed!\n", __func__);
+	{
+		struct fimc_is_resourcemgr *resourcemgr;
+		resourcemgr = &core->resourcemgr;
+		/* dvfs controller init */
+		ret = fimc_is_dvfs_init(resourcemgr);
+		if (ret)
+			err("%s: fimc_is_dvfs_init failed!\n", __func__);
+	}
 #endif
 #ifdef ENABLE_CLOCK_GATE
 	/* clock gate init */
