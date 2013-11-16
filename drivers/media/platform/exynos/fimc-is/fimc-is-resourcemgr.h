@@ -18,6 +18,7 @@ struct fimc_is_dvfs_ctrl {
 	struct mutex lock;
 	int cur_int_qos;
 	int cur_mif_qos;
+	int cur_cam_qos;
 	int cur_i2c_qos;
 
 	struct fimc_is_dvfs_scenario_ctrl *static_ctrl;
