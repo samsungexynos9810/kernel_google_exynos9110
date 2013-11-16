@@ -874,6 +874,20 @@
 		status = "okay";
 	};
 
+	fimc_is@14000000 {
+		fimc_is_dvfs {
+			default_int = <667000>; /* L0 */
+			default_cam = <666000>; /* L0 */
+			default_mif = <800000>; /* L0 */
+			default_i2c = <0>;
+
+			max_int = <667000>; /* L0 */
+			max_cam = <666000>; /* L0 */
+			max_mif = <800000>; /* L0 */
+			max_i2c = <0>;
+		};
+	};
+
 	pinctrl@14CC0000 {
 		fimc_is_flash: fimc-is-flash {
 			samsung,pins = "gpc0-3", "gpc0-2";
