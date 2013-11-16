@@ -899,6 +899,12 @@ static void wq_func_general(struct work_struct *data)
 					sizeof(struct fimc_is_msg));
 				testnclr_wakeup(itf, msg->parameter1);
 				break;
+			case HIC_SENSOR_MODE_CHANGE:
+				dbg_interface("sensor mode change done\n");
+				memcpy(&itf->reply, msg,
+					sizeof(struct fimc_is_msg));
+				testnclr_wakeup(itf, msg->parameter1);
+				break;
 			/*non-blocking command*/
 			case HIC_SHOT:
 				err("shot done is not acceptable\n");
@@ -974,6 +980,10 @@ static void wq_func_general(struct work_struct *data)
 			break;
 		case IHC_NOT_READY:
 			err("IHC_NOT_READY is occured, need reset");
+			fimc_is_hw_logdump(itf);
+			break;
+		case IHC_REPORT_ERR:
+			err("IHC_NOT_READY is occured");
 			fimc_is_hw_logdump(itf);
 			break;
 		default:
@@ -2836,6 +2846,28 @@ int fimc_is_hw_sys_ctl(struct fimc_is_interface *this,
 	msg.group = 0;
 	msg.parameter1 = cmd;
 	msg.parameter2 = val;
+	msg.parameter3 = 0;
+	msg.parameter4 = 0;
+
+	ret = fimc_is_set_cmd(this, &msg, &reply);
+
+	return ret;
+}
+
+int fimc_is_hw_sensor_mode(struct fimc_is_interface *this,
+	u32 instance, int cfg)
+{
+	int ret;
+	struct fimc_is_msg msg, reply;
+
+	dbg_interface("sensor mode(%d): %d\n", instance, cfg);
+
+	msg.id = 0;
+	msg.command = HIC_SENSOR_MODE_CHANGE;
+	msg.instance = instance;
+	msg.group = 0;
+	msg.parameter1 = cfg;
+	msg.parameter2 = 0;
 	msg.parameter3 = 0;
 	msg.parameter4 = 0;
 

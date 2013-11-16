@@ -39,45 +39,45 @@
 
 #define SENSOR_NAME "IMX135"
 
-static struct fimc_is_settle settle_imx135[] = {
+static struct fimc_is_sensor_cfg config_imx135[] = {
 	/* 1936x1090@24fps */
-	FIMC_IS_SETTLE(1936, 1090, 24, 7),
+	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 7, 3),
 	/* 1936x1090@30fps */
-	FIMC_IS_SETTLE(1936, 1090, 30, 5),
+	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 5, -1),
 	/* 1936x1450@24fps */
-	FIMC_IS_SETTLE(1936, 1450, 24, 9),
+	FIMC_IS_SENSOR_CFG(1936, 1450, 24, 9, 2),
 	/* 2064x1162@24fps */
-	FIMC_IS_SETTLE(2064, 1162, 24, 8),
+	FIMC_IS_SENSOR_CFG(2064, 1162, 24, 8, -1),
 	/* 1936x1090@60fps */
-	FIMC_IS_SETTLE(1936, 1090, 60, 9),
+	FIMC_IS_SENSOR_CFG(1936, 1090, 60, 9, -1),
 	/* 816x460@60fps */
-	FIMC_IS_SETTLE(816, 460, 60, 9),
+	FIMC_IS_SENSOR_CFG(816, 460, 60, 9, -1),
 	/* 736x490@120fps */
-	FIMC_IS_SETTLE(736, 490, 120, 11),
+	FIMC_IS_SENSOR_CFG(736, 490, 120, 11, -1),
 	/* 1296x730@120fps */
-	FIMC_IS_SETTLE(1296, 730, 120, 11),
+	FIMC_IS_SENSOR_CFG(1296, 730, 120, 11, -1),
 	/* 4112x2314@24ps */
-	FIMC_IS_SETTLE(4112, 2314, 24, 14),
+	FIMC_IS_SENSOR_CFG(4112, 2314, 24, 14, -1),
 	/* 816x460@120fps */
-	FIMC_IS_SETTLE(816, 460, 120, 18),
+	FIMC_IS_SENSOR_CFG(816, 460, 120, 18, -1),
 	/* 4144x2332@24fps */
-	FIMC_IS_SETTLE(4144, 2332, 24, 19),
+	FIMC_IS_SENSOR_CFG(4144, 2332, 24, 19, -1),
 	/* 4144x2332@30fps */
-	FIMC_IS_SETTLE(4144, 2332, 30, 18),
+	FIMC_IS_SENSOR_CFG(4144, 2332, 30, 18, 1),
 	/* 4112x3082@24fps */
-	FIMC_IS_SETTLE(4112, 3082, 24, 19),
+	FIMC_IS_SENSOR_CFG(4112, 3082, 24, 19, -1),
 	/* 4144x3106@24fps */
-	FIMC_IS_SETTLE(4144, 3106, 24, 23),
+	FIMC_IS_SENSOR_CFG(4144, 3106, 24, 23, -1),
 	/* 4144x3106@30fps */
-	FIMC_IS_SETTLE(4144, 3106, 30, 23),
+	FIMC_IS_SENSOR_CFG(4144, 3106, 30, 23, 0),
 	/* 2048x1152@60fps */
-	FIMC_IS_SETTLE(2048, 1152, 60, 9),
+	FIMC_IS_SENSOR_CFG(2048, 1152, 60, 9, -1),
 	/* 1024x576@120fps */
-	FIMC_IS_SETTLE(1024, 576, 120, 9),
+	FIMC_IS_SENSOR_CFG(1024, 576, 120, 9, 4),
 	/* 1024x576@60fps */
-	FIMC_IS_SETTLE(1024, 576, 60, 9),
+	FIMC_IS_SENSOR_CFG(1024, 576, 60, 9, -1),
 	/* 1936x1090@15fps */
-	FIMC_IS_SETTLE(1936, 1090, 15, 7),
+	FIMC_IS_SENSOR_CFG(1936, 1090, 15, 7, -1),
 };
 
 static int sensor_imx135_init(struct v4l2_subdev *subdev, u32 val)
@@ -142,8 +142,8 @@ int sensor_imx135_probe(struct i2c_client *client,
 	module->active_height = 3096;
 	module->max_framerate = 120;
 	module->setfile_name = "setfile_imx135.bin";
-	module->settle_max = ARRAY_SIZE(settle_imx135);
-	module->settle_table = settle_imx135;
+	module->cfgs = ARRAY_SIZE(config_imx135);
+	module->cfg = config_imx135;
 	module->private_data = NULL;
 
 	ext = &module->ext;

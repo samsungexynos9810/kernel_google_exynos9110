@@ -39,9 +39,9 @@
 
 #define SENSOR_NAME "S5K2P2"
 
-static struct fimc_is_settle settle_2p2[] = {
+static struct fimc_is_sensor_cfg config_2p2[] = {
 	/* 5328x3000@30fps */
-	FIMC_IS_SETTLE(5328, 3000, 30, 30),
+	FIMC_IS_SENSOR_CFG(5328, 3000, 30, 30, 0),
 };
 
 static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
@@ -106,8 +106,8 @@ int sensor_2p2_probe(struct i2c_client *client,
 	module->max_framerate = 120;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_2p2.bin";
-	module->settle_max = ARRAY_SIZE(settle_2p2);
-	module->settle_table = settle_2p2;
+	module->cfgs = ARRAY_SIZE(config_2p2);
+	module->cfg = config_2p2;
 	module->ops = NULL;
 	module->private_data = NULL;
 

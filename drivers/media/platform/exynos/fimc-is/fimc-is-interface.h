@@ -217,6 +217,8 @@ int fimc_is_hw_i2c_lock(struct fimc_is_interface *interface,
 	u32 instance, int clk, bool lock);
 int fimc_is_hw_sys_ctl(struct fimc_is_interface *this,
 	u32 instance, int cmd, int val);
+int fimc_is_hw_sensor_mode(struct fimc_is_interface *this,
+	u32 instance, int cfg);
 
 int fimc_is_hw_shot_nblk(struct fimc_is_interface *this,
 	u32 instance, u32 group, u32 bayer, u32 shot, u32 fcount, u32 rcount);

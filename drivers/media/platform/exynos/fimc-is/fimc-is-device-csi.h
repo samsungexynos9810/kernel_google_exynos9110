@@ -2,24 +2,16 @@
 #define FIMC_IS_DEVICE_CSI_H
 
 #include "fimc-is-type.h"
-
-struct fimc_is_device_sensor;
-
-struct fimc_is_settle {
-	u32 width;
-	u32 height;
-	u32 framerate;
-	u32 settle;
-};
+#include "fimc-is-device-sensor.h"
 
 struct fimc_is_device_csi {
 	/* channel information */
 	u32				instance;
 	unsigned long __iomem		*base_reg;
 
-	/* settle time */
-	u32				settle_max;
-	struct fimc_is_settle		*settle_table;
+	/* for settle time */
+	u32				sensor_cfgs;
+	struct fimc_is_sensor_cfg	*sensor_cfg;
 
 	/* image configuration */
 	struct fimc_is_image		image;

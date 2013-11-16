@@ -2546,6 +2546,15 @@ int fimc_is_itf_sys_ctl(struct fimc_is_device_ischain *this,
 	return ret;
 }
 
+int fimc_is_itf_sensor_mode(struct fimc_is_device_ischain *ischain)
+{
+	struct fimc_is_device_sensor *sensor = ischain->sensor;
+
+	return fimc_is_hw_sensor_mode(ischain->interface,
+			ischain->instance,
+			((sensor->mode << 16) | (ischain->module & 0xFFFF)));
+}
+
 static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	struct fimc_is_group *group,
 	struct fimc_is_frame *frame)
@@ -3057,7 +3066,8 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 		}
 	}
 
-	ret = fimc_is_itf_open(device, module_id, group_id, flag, &module->ext);
+	ret = fimc_is_itf_open(device, ((sensor->mode << 16) | (module_id & 0xFFFF)),
+			group_id, flag, &module->ext);
 	if (ret) {
 		merr("open fail", device);
 		goto p_err;
@@ -5653,6 +5663,9 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		device->setfile |= ISS_SUB_SCENARIO_STILL_PREVIEW;
 	}
 	fimc_is_ischain_s_setfile(device, device->setfile, &lindex, &hindex, &indexes);
+
+	if (test_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state))
+		fimc_is_itf_sensor_mode(device);
 
 #ifdef FIXED_FPS_DEBUG
 	sensor_param->frame_rate.frame_rate = FIXED_FPS_VALUE;

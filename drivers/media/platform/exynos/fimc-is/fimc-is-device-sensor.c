@@ -120,6 +120,33 @@ int fimc_is_sensor_write(struct i2c_client *client,
 	return 0;
 }
 
+static int get_sensor_mode(struct fimc_is_sensor_cfg *cfg,
+	u32 cfgs, u32 width, u32 height, u32 framerate)
+{
+	int mode = -1;
+	u32 i;
+
+	for (i = 0; i < cfgs; i++) {
+		if ((cfg[i].width == width) &&
+		    (cfg[i].height == height) &&
+		    (cfg[i].framerate == framerate)) {
+			mode = cfg[i].mode;
+			break;
+		}
+	}
+
+	if (mode < 0) {
+		warn("could not find proper sensor mode: %dx%d@%dfps",
+			width, height, framerate);
+
+		mode = 0;
+	}
+
+	pr_info("sensor mode(%dx%d@%d) = %d\n", width, height, framerate, mode);
+
+	return mode;
+}
+
 static int fimc_is_sensor_mclk_on(struct fimc_is_device_sensor *device)
 {
 	int ret = 0;
@@ -1046,12 +1073,20 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 	int ret = 0;
 	struct v4l2_subdev *subdev_csi;
 	struct v4l2_subdev *subdev_flite;
+	struct fimc_is_module_enum *module;
 	struct v4l2_mbus_framefmt subdev_format;
 
 	BUG_ON(!device);
 	BUG_ON(!device->subdev_csi);
 	BUG_ON(!device->subdev_flite);
+	BUG_ON(!device->subdev_module);
 	BUG_ON(!format);
+
+	module = (struct fimc_is_module_enum *)v4l2_get_subdevdata(device->subdev_module);
+	if (!module) {
+		merr("module is NULL", device);
+		goto p_err;
+	}
 
 	subdev_csi = device->subdev_csi;
 	subdev_flite = device->subdev_flite;
@@ -1086,6 +1121,10 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 		merr("v4l2_flite_call(s_param) is fail(%d)", device, ret);
 		goto p_err;
 	}
+
+	device->mode = get_sensor_mode(module->cfg, module->cfgs,
+			device->image.window.width, device->image.window.height,
+			device->image.framerate);
 
 p_err:
 	return ret;
@@ -1170,6 +1209,10 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	}
 
 	device->image.framerate = framerate;
+
+	device->mode = get_sensor_mode(module->cfg, module->cfgs,
+			device->image.window.width, device->image.window.height,
+			framerate);
 
 p_err:
 	return ret;

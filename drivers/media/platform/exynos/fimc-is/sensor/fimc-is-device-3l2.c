@@ -37,21 +37,21 @@
 #include "../fimc-is-resourcemgr.h"
 #include "fimc-is-device-3l2.h"
 
-#define SENSOR_NAME "IMX135"
+#define SENSOR_NAME "S5K3L2"
 
-static struct fimc_is_settle settle_3l2[] = {
+static struct fimc_is_sensor_cfg config_3l2[] = {
 	/* 4144x3106@30fps */
-	FIMC_IS_SETTLE(4144, 3106, 30, 23),
+	FIMC_IS_SENSOR_CFG(4144, 3106, 30, 23, 0),
 	/* 4144x2332@30fps */
-	FIMC_IS_SETTLE(4144, 2332, 30, 23),
+	FIMC_IS_SENSOR_CFG(4144, 2332, 30, 23, 1),
 	/* 1024x584@120fps */
-	FIMC_IS_SETTLE(1024, 584, 120, 17),
+	FIMC_IS_SENSOR_CFG(1040, 584, 120, 17, 4),
 	/* 2072x1166@60fps */
-	FIMC_IS_SETTLE(2072, 1162, 60, 9),
+	FIMC_IS_SENSOR_CFG(2072, 1162, 60, 9, 5),
 	/* 2072x1166@24fps */
-	FIMC_IS_SETTLE(2072, 1166, 24, 5),
+	FIMC_IS_SENSOR_CFG(2072, 1166, 24, 5, 3),
 	/* 2072x1154@24fps */
-	FIMC_IS_SETTLE(2072, 1154, 24, 5),
+	FIMC_IS_SENSOR_CFG(2072, 1154, 24, 5, 2),
 };
 
 static int sensor_3l2_init(struct v4l2_subdev *subdev, u32 val)
@@ -116,8 +116,8 @@ int sensor_3l2_probe(struct i2c_client *client,
 	module->max_framerate = 120;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_3l2.bin";
-	module->settle_max = ARRAY_SIZE(settle_3l2);
-	module->settle_table = settle_3l2;
+	module->cfgs = ARRAY_SIZE(config_3l2);
+	module->cfg = config_3l2;
 	module->ops = NULL;
 	module->private_data = NULL;
 

@@ -47,17 +47,25 @@ struct fimc_is_device_ischain;
 #define ACTUATOR_I2C_ADDR_MASK		0xFF00
 #define ACTUATOR_I2C_ADDR_SHIFT		8
 
-#define FIMC_IS_SETTLE(w, h, f, s)      {       \
-        .width          = w,                    \
-        .height         = h,                    \
-        .framerate      = f,                    \
-        .settle         = s,                    \
+#define FIMC_IS_SENSOR_CFG(w, h, f, s, m) {	\
+	.width		= w,			\
+	.height		= h,			\
+	.framerate	= f,			\
+	.settle		= s,			\
+	.mode		= m,			\
 }
-
 
 enum fimc_is_sensor_output_entity {
 	FIMC_IS_SENSOR_OUTPUT_NONE = 0,
 	FIMC_IS_SENSOR_OUTPUT_FRONT,
+};
+
+struct fimc_is_sensor_cfg {
+	u32 width;
+	u32 height;
+	u32 framerate;
+	u32 settle;
+	int mode;
 };
 
 struct fimc_is_sensor_ops {
@@ -90,9 +98,9 @@ struct fimc_is_module_enum {
 	u32				active_width;
 	u32				active_height;
 	u32				max_framerate;
-	u32				settle_max;
 	u32				position;
-	struct fimc_is_settle		*settle_table;
+	u32				cfgs;
+	struct fimc_is_sensor_cfg	*cfg;
 	struct i2c_client		*client;
 	struct sensor_open_extended	ext;
 	struct fimc_is_sensor_ops	*ops;
@@ -145,6 +153,8 @@ struct fimc_is_device_sensor {
 	struct v4l2_subdev				*subdev_module;
 	struct v4l2_subdev				*subdev_csi;
 	struct v4l2_subdev				*subdev_flite;
+
+	int						mode;
 
 	/* ENABLE_DTP */
 	bool						dtp_check;

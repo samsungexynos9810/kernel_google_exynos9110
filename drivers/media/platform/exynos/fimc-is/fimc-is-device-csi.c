@@ -22,6 +22,7 @@
 
 #include "fimc-is-core.h"
 #include "fimc-is-device-csi.h"
+#include "fimc-is-device-sensor.h"
 
 /* PMU for FIMC-IS*/
 #define MIPICSI0_REG_BASE	(S5P_VA_MIPICSI0)   /* phy : 0x13c2_0000 */
@@ -121,8 +122,8 @@
 #define S5PCSIS_RESO_MAX_PIX_WIDTH			(0xffff)
 #define S5PCSIS_RESO_MAX_PIX_HEIGHT			(0xffff)
 
-static u32 get_hsync_settle(struct fimc_is_settle *settle_table,
-	u32 settle_max, u32 width, u32 height, u32 framerate)
+static u32 get_hsync_settle(struct fimc_is_sensor_cfg *cfg,
+	u32 cfgs, u32 width, u32 height, u32 framerate)
 {
 	u32 settle;
 	u32 max_settle;
@@ -134,23 +135,23 @@ static u32 get_hsync_settle(struct fimc_is_settle *settle_table,
 	proximity_framerate = 0;
 	proximity_settle = 0;
 
-	for (i = 0; i < settle_max; i++) {
-		if ((settle_table[i].width == width) &&
-		    (settle_table[i].height == height) &&
-		    (settle_table[i].framerate == framerate)) {
-			settle = settle_table[i].settle;
+	for (i = 0; i < cfgs; i++) {
+		if ((cfg[i].width == width) &&
+		    (cfg[i].height == height) &&
+		    (cfg[i].framerate == framerate)) {
+			settle = cfg[i].settle;
 			break;
 		}
 
-		if ((settle_table[i].width == width) &&
-		    (settle_table[i].height == height) &&
-		    (settle_table[i].framerate > proximity_framerate)) {
-			proximity_settle = settle_table[i].settle;
-			proximity_framerate = settle_table[i].framerate;
+		if ((cfg[i].width == width) &&
+		    (cfg[i].height == height) &&
+		    (cfg[i].framerate > proximity_framerate)) {
+			proximity_settle = cfg[i].settle;
+			proximity_framerate = cfg[i].framerate;
 		}
 
-		if (settle_table[i].settle > max_settle)
-			max_settle = settle_table[i].settle;
+		if (cfg[i].settle > max_settle)
+			max_settle = cfg[i].settle;
 	}
 
 	if (!settle) {
@@ -264,7 +265,7 @@ static void __s5pcsis_set_format(unsigned long __iomem *base_reg,
 	}
 }
 
-static void s5pcsis_set_hsync_settle(unsigned long __iomem *base_reg, int settle)
+static void s5pcsis_set_hsync_settle(unsigned long __iomem *base_reg, u32 settle)
 {
 	u32 val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
 
@@ -326,8 +327,8 @@ int fimc_is_csi_open(struct v4l2_subdev *subdev)
 		goto p_err;
 	}
 
-	csi->settle_max = 0;
-	csi->settle_table = NULL;
+	csi->sensor_cfgs = 0;
+	csi->sensor_cfg = NULL;
 	memset(&csi->image, 0, sizeof(struct fimc_is_image));
 
 p_err:
@@ -357,8 +358,8 @@ static int csi_init(struct v4l2_subdev *subdev, u32 value)
 	}
 
 	module = (struct fimc_is_module_enum *)value;
-	csi->settle_max = module->settle_max;
-	csi->settle_table = module->settle_table;
+	csi->sensor_cfgs = module->cfgs;
+	csi->sensor_cfg = module->cfg;
 	csi->image.framerate = SENSOR_DEFAULT_FRAMERATE; /* default frame rate */
 
 p_err:
@@ -404,7 +405,7 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 	u32 settle;
 
 	BUG_ON(!csi);
-	BUG_ON(!csi->settle_table);
+	BUG_ON(!csi->sensor_cfg);
 
 	/* HACK: This should be removed. */
 	if (readl(csi->base_reg + S5PCSIS_DPHYCTRL) & 0x1f)
@@ -413,8 +414,8 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 	s5pcsis_reset(csi->base_reg);
 
 	settle = get_hsync_settle(
-		csi->settle_table,
-		csi->settle_max,
+		csi->sensor_cfg,
+		csi->sensor_cfgs,
 		csi->image.window.width,
 		csi->image.window.height,
 		csi->image.framerate);
