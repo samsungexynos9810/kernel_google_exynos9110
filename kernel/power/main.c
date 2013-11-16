@@ -16,6 +16,8 @@
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
 
+#include <plat/cpu.h>
+
 #include "power.h"
 
 DEFINE_MUTEX(pm_mutex);
@@ -638,7 +640,8 @@ static int __init pm_init(void)
 	if (error)
 		return error;
 	pm_print_times_init();
-	pm_wake_lock("aa");
+	if (!soc_is_exynos5422())
+		pm_wake_lock("aa");
 	return pm_autosleep_init();
 }
 
