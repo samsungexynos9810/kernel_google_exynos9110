@@ -65,6 +65,7 @@
 
 #define EXYNOS_CHECK_DIRECTGO	0xFCBA0D10
 #define EXYNOS_CHECK_LPA	0xABAD0000
+#define EXYNOS_CHECK_DSTOP	0xABAE0000
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv,
@@ -98,6 +99,10 @@ static struct check_reg_lpa exynos5_power_domain[] = {
 	{.check_reg = EXYNOS5430_HEVC_STATUS,	.check_bit = 0x7},	/* 0x41C4 */
 	{.check_reg = EXYNOS5430_G3D_STATUS,	.check_bit = 0x7},	/* 0x4064 */
 	{.check_reg = EXYNOS5430_DISP_STATUS,	.check_bit = 0x7},	/* 0x4084 */
+};
+
+static struct check_reg_lpa exynos5_dstop_power_domain[] = {
+	{.check_reg = EXYNOS5430_AUD_STATUS,	.check_bit = 0xF},	/* 0x40C4 */
 };
 
 /*
@@ -180,7 +185,12 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
-	return EXYNOS_CHECK_LPA;
+	/* Check power domain for DSTOP */
+	if (exynos_check_reg_status(exynos5_dstop_power_domain,
+			    ARRAY_SIZE(exynos5_dstop_power_domain)))
+		return EXYNOS_CHECK_LPA;
+
+	return EXYNOS_CHECK_DSTOP;
 }
 
 static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
@@ -466,7 +476,7 @@ static struct sleep_save exynos5_set_clksrc[] = {
 
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
-				int lp_mode, int index)
+				int lp_mode, int index, int enter_mode)
 {
 	struct timeval before, after;
 	int idle_time, ret = 0;
@@ -500,7 +510,10 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
 	/* Set value of power down register for aftr mode */
-	exynos_sys_powerdown_conf(SYS_LPA);
+	if (enter_mode == EXYNOS_CHECK_LPA)
+		exynos_sys_powerdown_conf(SYS_LPA);
+	else
+		exynos_sys_powerdown_conf(SYS_DSTOP);
 
 #ifdef CONFIG_IDLE_CLOCK_DOWN
 	exynos_disable_idle_clock_down(KFC);
@@ -592,6 +605,7 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 				int index)
 {
 	int new_index = index;
+	int enter_mode;
 
 	/* This mode only can be entered when other core's are offline */
 	if (num_online_cpus() > 1)
@@ -601,14 +615,15 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 		return exynos_enter_idle(dev, drv, (new_index - 2));
 #endif
 
-	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
+	enter_mode = exynos_check_enter_mode();
+	if (enter_mode == EXYNOS_CHECK_DIDLE)
 		return exynos_enter_core0_aftr(dev, drv, new_index);
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 	else if (exynos_check_aud_pwr() == AUD_PWR_ALPA)
-		return exynos_enter_core0_lpa(dev, drv, SYS_ALPA, new_index);
+		return exynos_enter_core0_lpa(dev, drv, SYS_ALPA, new_index, enter_mode);
 	else
 #endif
-		return exynos_enter_core0_lpa(dev, drv, SYS_LPA, new_index);
+		return exynos_enter_core0_lpa(dev, drv, SYS_LPA, new_index, enter_mode);
 }
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
