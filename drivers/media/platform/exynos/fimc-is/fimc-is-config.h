@@ -22,7 +22,6 @@
 #define ENABLE_CLOCK_GATE
 #define HAS_FW_CLOCK_GATE
 #define CLOCK_GATE_MODE 1 /* 0:Host , 1:FW */
-#define ENABLE_DVFS
 /* #define ENABLE_CACHE */
 #define ENABLE_FULL_BYPASS
 #define ENABLE_FAST_SHOT
