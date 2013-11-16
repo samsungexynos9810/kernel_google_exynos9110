@@ -67,6 +67,15 @@ enum FIMC_IS_SCENARIO_ID {
 	FIMC_IS_SN_HIGH_SPEED_FPS,
 	FIMC_IS_SN_DIS_ENABLE,
 	FIMC_IS_SN_MAX,
+	FIMC_IS_SN_END,
+};
+
+enum FIMC_IS_DVFS_QOS_TYPE {
+	FIMC_IS_DVFS_INT,
+	FIMC_IS_DVFS_MIF,
+	FIMC_IS_DVFS_I2C,
+	FIMC_IS_DVFS_CAM,
+	FIMC_IS_DVFS_END,
 };
 
 enum FIMC_IS_CLK_GATE {
@@ -174,6 +183,7 @@ struct exynos_platform_fimc_is {
 	int	(*get_int_qos)(int scenario_id);
 	int	(*get_mif_qos)(int scenario_id);
 	int	(*get_i2c_qos)(int scenario_id);
+	u32	dvfs_data[FIMC_IS_SN_END][FIMC_IS_DVFS_END];
 
 	/* For host clock gating */
 	struct exynos_fimc_is_clk_gate_info *gate_info;
