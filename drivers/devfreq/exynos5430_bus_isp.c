@@ -1078,9 +1078,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 
 	data->devfreq->min_freq = plat_data->default_qos;
 	data->devfreq->max_freq = exynos5_devfreq_isp_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 
 	register_reboot_notifier(&exynos5_isp_reboot_notifier);
 
@@ -1155,6 +1152,16 @@ static struct platform_device exynos5_devfreq_isp_device = {
 	.name	= "exynos5-devfreq-isp",
 	.id	= -1,
 };
+
+static int exynos5_devfreq_isp_qos_init(void)
+{
+	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+
+	return 0;
+}
+device_initcall(exynos5_devfreq_isp_qos_init);
 
 static int __init exynos5_devfreq_isp_init(void)
 {
@@ -2256,9 +2263,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 
 	data->devfreq->min_freq = plat_data->default_qos;
 	data->devfreq->max_freq = exynos5_devfreq_isp_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 
 	register_reboot_notifier(&exynos5_isp_reboot_notifier);
 
@@ -2333,6 +2337,16 @@ static struct platform_device exynos5_devfreq_isp_device = {
 	.name	= "exynos5-devfreq-isp",
 	.id	= -1,
 };
+
+static int exynos5_devfreq_isp_qos_init(void)
+{
+	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+
+	return 0;
+}
+device_initcall(exynos5_devfreq_isp_qos_init);
 
 static int __init exynos5_devfreq_isp_init(void)
 {

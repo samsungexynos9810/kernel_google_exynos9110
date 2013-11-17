@@ -1644,12 +1644,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	data->devfreq->max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 	devfreq_mif_ch1_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&exynos5_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_update_request_timeout(&boot_mif_qos,
-					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
 
 	register_reboot_notifier(&exynos5_mif_reboot_notifier);
 
@@ -1739,6 +1733,19 @@ static struct platform_device exynos5_devfreq_mif_device = {
 	.name	= "exynos5-devfreq-mif",
 	.id	= -1,
 };
+
+static int exynos5_devfreq_mif_qos_init(void)
+{
+	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_add_request(&exynos5_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_update_request_timeout(&boot_mif_qos,
+					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
+
+	return 0;
+}
+device_initcall(exynos5_devfreq_mif_qos_init);
 
 static int __init exynos5_devfreq_mif_init(void)
 {
@@ -3384,12 +3391,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	data->devfreq->max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 	devfreq_mif_ch1_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&exynos5_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, plat_data->default_qos);
-	pm_qos_update_request_timeout(&boot_mif_qos,
-					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
 
 	register_reboot_notifier(&exynos5_mif_reboot_notifier);
 
@@ -3479,6 +3480,19 @@ static struct platform_device exynos5_devfreq_mif_device = {
 	.name	= "exynos5-devfreq-mif",
 	.id	= -1,
 };
+
+static int exynos5_devfreq_mif_qos_init(void)
+{
+	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_add_request(&exynos5_mif_bts_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_mif.default_qos);
+	pm_qos_update_request_timeout(&boot_mif_qos,
+					exynos5_devfreq_mif_profile.initial_freq, 40000 * 1000);
+
+	return 0;
+}
+device_initcall(exynos5_devfreq_mif_qos_init);
 
 static int __init exynos5_devfreq_mif_init(void)
 {
