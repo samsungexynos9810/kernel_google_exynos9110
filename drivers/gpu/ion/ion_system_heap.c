@@ -24,13 +24,12 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <asm/tlbflush.h>
 #include "ion_priv.h"
 
-static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO |
-					    __GFP_NOWARN | __GFP_NORETRY) &
-					   ~__GFP_WAIT;
-static unsigned int low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_ZERO |
-					 __GFP_NOWARN);
+static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_NOWARN |
+						__GFP_NORETRY) & ~__GFP_WAIT;
+static unsigned int low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_NOWARN);
 static const unsigned int orders[] = {8, 4, 0};
 static const int num_orders = ARRAY_SIZE(orders);
 static int order_to_index(unsigned int order)
@@ -48,9 +47,15 @@ static unsigned int order_to_size(int order)
 	return PAGE_SIZE << order;
 }
 
+#define VM_PAGE_COUNT_WIDTH 4	/* 8 slots stack */
+#define VM_PAGE_COUNT 4		/* value range 0 ~ 3 */
 struct ion_system_heap {
 	struct ion_heap heap;
 	struct ion_page_pool **pools;
+	struct semaphore vm_sem;
+	atomic_t page_idx; /* Max. value is the count of vm_sem */
+	struct vm_struct *reserved_vm_area; /* PAGE_SIZE * VM_PAGE_COUNT*/
+	pte_t **pte; /* pte for reserved_vm_area */
 };
 
 struct page_info {
@@ -75,11 +80,6 @@ static struct page *alloc_buffer_page(struct ion_system_heap *heap,
 		if (order > 4)
 			gfp_flags = high_order_gfp_flags;
 		page = ion_heap_alloc_pages(buffer, gfp_flags, order);
-		if (!page)
-			return 0;
-		arm_dma_ops.sync_single_for_device(NULL,
-			pfn_to_dma(NULL, page_to_pfn(page)),
-			PAGE_SIZE << order, DMA_BIDIRECTIONAL);
 	}
 	if (!page)
 		return 0;
@@ -136,6 +136,86 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 	return NULL;
 }
 
+static void ion_clean_and_unmap(unsigned long vaddr, pte_t *ptep,
+				size_t size, bool memory_zero)
+{
+	int i;
+
+	flush_cache_vmap(vaddr, vaddr + size);
+
+	if (memory_zero)
+		memset((void *)vaddr, 0, size);
+
+	dmac_flush_range((void *)vaddr, (void *)vaddr + size);
+
+	for (i = 0; i < (size / PAGE_SIZE); i++)
+		pte_clear(&init_mm, (void *)vaddr + (i * PAGE_SIZE), ptep + i);
+
+	flush_cache_vunmap(vaddr, vaddr + size);
+	flush_tlb_kernel_range(vaddr, vaddr + size);
+}
+
+static void ion_clean_and_init_allocated_pages(
+		struct ion_system_heap *heap, struct scatterlist *sgl,
+		int nents, bool memory_zero)
+{
+	int i;
+	struct scatterlist *sg;
+	size_t sum = 0;
+	int page_idx;
+	unsigned long vaddr;
+	pte_t *ptep;
+
+	down(&heap->vm_sem);
+
+	page_idx = atomic_pop(&heap->page_idx, VM_PAGE_COUNT_WIDTH);
+	BUG_ON((page_idx < 0) || (page_idx >= VM_PAGE_COUNT));
+
+	ptep = heap->pte[page_idx * (SZ_1M / PAGE_SIZE)];
+	vaddr = (unsigned long)heap->reserved_vm_area->addr +
+				(SZ_1M * page_idx);
+
+	for_each_sg(sgl, sg, nents, i) {
+		int j;
+
+		if (!PageHighMem(sg_page(sg))) {
+			memset(page_address(sg_page(sg)), 0, sg_dma_len(sg));
+			continue;
+		}
+
+		for (j = 0; j < (sg_dma_len(sg) / PAGE_SIZE); j++) {
+			set_pte_at(&init_mm, vaddr, ptep,
+					mk_pte(sg_page(sg) + j, PAGE_KERNEL));
+			ptep++;
+			vaddr += PAGE_SIZE;
+
+		}
+
+		sum += j * PAGE_SIZE;
+		if (sum == SZ_1M) {
+			ptep = heap->pte[page_idx * (SZ_1M / PAGE_SIZE)];
+			vaddr = (unsigned long)heap->reserved_vm_area->addr +
+						(SZ_1M * page_idx);
+
+			ion_clean_and_unmap(vaddr, ptep, sum, memory_zero);
+
+			sum = 0;
+		}
+	}
+
+	if (sum != 0) {
+		ion_clean_and_unmap(
+			(unsigned long)heap->reserved_vm_area->addr +
+				(SZ_1M * page_idx),
+			heap->pte[page_idx * (SZ_1M / PAGE_SIZE)],
+			sum, memory_zero);
+	}
+
+	atomic_push(&heap->page_idx, page_idx, VM_PAGE_COUNT_WIDTH);
+
+	up(&heap->vm_sem);
+}
+
 static int ion_system_heap_allocate(struct ion_heap *heap,
 				     struct ion_buffer *buffer,
 				     unsigned long size, unsigned long align,
@@ -173,6 +253,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		goto err1;
 
 	sg = table->sgl;
+
 	list_for_each_entry_safe(info, tmp_info, &pages, list) {
 		struct page *page = info->page;
 		sg_set_page(sg, page, (1 << info->order) * PAGE_SIZE, 0);
@@ -180,6 +261,9 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		list_del(&info->list);
 		kfree(info);
 	}
+
+	ion_clean_and_init_allocated_pages(
+			sys_heap, table->sgl, table->orig_nents, true);
 
 	buffer->priv_virt = table;
 	return 0;
@@ -328,6 +412,24 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 		if (!pool)
 			goto err_create_pool;
 		heap->pools[i] = pool;
+	}
+
+	atomic_set(&heap->page_idx, -1);
+	for (i = VM_PAGE_COUNT - 1; i >= 0; i--) {
+		BUG_ON(i >= (1 << VM_PAGE_COUNT_WIDTH));
+		atomic_push(&heap->page_idx, i, VM_PAGE_COUNT_WIDTH);
+	}
+
+	sema_init(&heap->vm_sem, VM_PAGE_COUNT);
+	heap->pte = page_address(
+			alloc_pages(GFP_KERNEL,
+				get_order(((SZ_1M / PAGE_SIZE) * VM_PAGE_COUNT)
+					* sizeof(*heap->pte))));
+	heap->reserved_vm_area = alloc_vm_area(SZ_1M * VM_PAGE_COUNT,
+				heap->pte);
+	if (!heap->reserved_vm_area) {
+		pr_err("%s: Failed to allocate vm area\n", __func__);
+		goto err_create_pool;
 	}
 
 	heap->heap.shrinker.shrink = ion_system_heap_shrink;
