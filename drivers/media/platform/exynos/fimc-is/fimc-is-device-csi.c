@@ -383,6 +383,11 @@ static int csi_s_power(struct v4l2_subdev *subdev,
 	if (on == 0)
 		goto p_err;
 
+	/* HACK: CSI #1 phy should be enabled when CSI #2 phy is eanbled. */
+	if (csi->instance == CSI_ID_C) {
+		ret = exynos5_csis_phy_enable(CSI_ID_B, on);
+	}
+
 	ret = exynos5_csis_phy_enable(csi->instance, on);
 	if (ret) {
 		err("fail to csi%d power on", csi->instance);
