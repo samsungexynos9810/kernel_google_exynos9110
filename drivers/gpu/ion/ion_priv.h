@@ -122,15 +122,6 @@ struct ion_heap_ops {
 			 struct vm_area_struct *vma);
 };
 
-/*
- * set once the buffer mapped for CPU without fault user mapping
- * cleared if the buffer has no mapping for CPU
- */
-#define ION_FLAG_CPUMAPPED  __ION_FLAG_CPUMAPPED_DO_NOT_USE__INTERNAL_USE_ONLY__
-
-#define __KVA_PRESERVE_HIGHLIMIT SZ_8M
-#define __KVA_PRESERVE_LOWLIMIT SZ_256K
-
 /**
  * heap flags - flags between the heaps and core ion code
  */

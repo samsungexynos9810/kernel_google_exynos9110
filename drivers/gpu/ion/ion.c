@@ -108,29 +108,6 @@ struct ion_handle {
 	int id;
 };
 
-static bool ion_buffer_need_kmap(struct ion_buffer *buffer)
-{
-	return ion_buffer_cached(buffer) &&
-		(buffer->flags & ION_FLAG_PRESERVE_KMAP) &&
-		(buffer->size < __KVA_PRESERVE_HIGHLIMIT) &&
-		(buffer->size >= __KVA_PRESERVE_LOWLIMIT);
-}
-
-static bool ion_buffer_need_flush_all(struct ion_buffer *buffer)
-{
-	return buffer->size >= __KVA_PRESERVE_HIGHLIMIT;
-}
-
-static void ion_buffer_set_cpumapped(struct ion_buffer *buffer)
-{
-	buffer->flags |= ION_FLAG_CPUMAPPED;
-}
-
-static bool ion_buffer_cpumapped(struct ion_buffer *buffer)
-{
-	return !!(buffer->flags & ION_FLAG_CPUMAPPED);
-}
-
 static inline struct page *ion_buffer_page(struct page *page)
 {
 	return (struct page *)((unsigned long)page & ~(1UL));
@@ -281,17 +258,15 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 	struct ion_iovm_map *iovm_map;
 	struct ion_iovm_map *tmp;
 
-	if (buffer->kmap_cnt > 0) {
-		WARN((buffer->kmap_cnt > 1) || !ion_buffer_cpumapped(buffer),
-		     "kmap_cnt %d, ion_buffer_cpumapped %d",
-		     buffer->kmap_cnt, ion_buffer_cpumapped(buffer));
+	if (WARN_ON(buffer->kmap_cnt > 0))
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
-	}
+
 	list_for_each_entry_safe(iovm_map, tmp, &buffer->iovas, list) {
 		iovmm_unmap(iovm_map->dev, iovm_map->iova);
 		list_del(&iovm_map->list);
 		kfree(iovm_map);
 	}
+
 	buffer->heap->ops->unmap_dma(buffer->heap, buffer);
 	buffer->heap->ops->free(buffer);
 	if (buffer->pages)
@@ -989,16 +964,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	vma->vm_page_prot = pte_mkdirty(vma->vm_page_prot);
 
 	mutex_lock(&buffer->lock);
-	if (ion_buffer_need_kmap(buffer) && (buffer->kmap_cnt == 0)) {
-		void *vaddr = ion_buffer_kmap_get(buffer);
-		if (!IS_ERR_OR_NULL(vaddr))
-			ion_buffer_set_cpumapped(buffer);
-	}
-	/*
-	 * now map it to userspace
-	 * No need to cancel the call to ion_buffer_kmap_get()
-	 * since it will be unmapped when the buffer is destroyed.
-	 */
+	/* now map it to userspace */
 	ret = buffer->heap->ops->map_user(buffer->heap, buffer, vma);
 	mutex_unlock(&buffer->lock);
 
