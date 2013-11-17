@@ -17,7 +17,7 @@
 	compatible = "samsung,XYREF5430", "samsung,exynos5430";
 
 	chosen {
-		bootargs = "console=ttySAC2,115200 vmalloc=512M clk_ignore_unused";
+		bootargs = "console=ttySAC2,115200 vmalloc=512M clk_ignore_unused ess_setup=0x26000000";
 	};
 
 	fixed-rate-clocks {
