@@ -5632,11 +5632,10 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 #endif
 
 	/*
-	 * 3aa can not be used if this stream is reprocessing and
-	 * 3aa video node is not open. ischain device has no 3aa group
+	 * In case of dirty bayer capture, reprocessing instance does not use 3aa.
+	 * In this case, ischain device has no 3aa group.
 	 */
-	if (!test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state) &&
-		test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state))
+	if (test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state))
 		fimc_is_ischain_s_3aa_size(device, &lindex, &hindex, &indexes);
 
 	fimc_is_ischain_s_chain0_size(device,
