@@ -1745,7 +1745,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 						"simple_ondemand",
 						&exynos5_devfreq_int_governor_data);
 
-	devfreq_nb = kzalloc(sizeof(struct devfreq_data_int), GFP_KERNEL);
+	devfreq_nb = kzalloc(sizeof(struct devfreq_notifier_block), GFP_KERNEL);
 	if (devfreq_nb == NULL) {
 		pr_err("DEVFREQ(INT) : Failed to allocate notifier block\n");
 		ret = -ENOMEM;
