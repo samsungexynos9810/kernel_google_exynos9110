@@ -164,10 +164,17 @@ void g2d_init_clock(void)
 			, __func__, __LINE__, clk_rate1);
 }
 
+void pwm_init_clock(void)
+{
+	clk_register_fixed_factor(NULL, "pwm-clock",
+			"pclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
+}
+
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
 	uart_clock_init();
 	mscl_init_clock();
 	g2d_init_clock();
+	pwm_init_clock();
 }
