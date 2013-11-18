@@ -1261,7 +1261,8 @@ struct camera2_stream {
 		[2] width
 		[3] height
 	*/
-	uint32_t		crop_region[4];
+	uint32_t		input_crop_region[4];
+	uint32_t		output_crop_region[4];
 };
 
 #define CAM_LENS_CMD		(0x1 << 0x0)

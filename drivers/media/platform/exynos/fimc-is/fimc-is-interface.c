@@ -1102,20 +1102,25 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 		for (capture_id = 0; capture_id < CAPTURE_NODE_MAX; ++capture_id) {
 			capture = &ldr_frame->shot_ext->node_group.capture[capture_id];
 			if (capture_vid == capture->vid) {
-				sub_frame->stream->crop_region[0] = capture->output.cropRegion[0];
-				sub_frame->stream->crop_region[1] = capture->output.cropRegion[1];
-				sub_frame->stream->crop_region[2] = capture->output.cropRegion[2];
-				sub_frame->stream->crop_region[3] = capture->output.cropRegion[3];
+				sub_frame->stream->output_crop_region[0] = capture->output.cropRegion[0];
+				sub_frame->stream->output_crop_region[1] = capture->output.cropRegion[1];
+				sub_frame->stream->output_crop_region[2] = capture->output.cropRegion[2];
+				sub_frame->stream->output_crop_region[3] = capture->output.cropRegion[3];
+
+				sub_frame->stream->input_crop_region[0] = capture->input.cropRegion[0];
+				sub_frame->stream->input_crop_region[1] = capture->input.cropRegion[1];
+				sub_frame->stream->input_crop_region[2] = capture->input.cropRegion[2];
+				sub_frame->stream->input_crop_region[3] = capture->input.cropRegion[3];
 				break;
 			}
 		}
 
 		if (capture_id >= CAPTURE_NODE_MAX) {
 			err("can't find capture stream(%d > %d)", capture_id, CAPTURE_NODE_MAX);
-			sub_frame->stream->crop_region[0] = 0;
-			sub_frame->stream->crop_region[1] = 0;
-			sub_frame->stream->crop_region[2] = 0;
-			sub_frame->stream->crop_region[3] = 0;
+			sub_frame->stream->output_crop_region[0] = 0;
+			sub_frame->stream->output_crop_region[1] = 0;
+			sub_frame->stream->output_crop_region[2] = 0;
+			sub_frame->stream->output_crop_region[3] = 0;
 		}
 
 done:
