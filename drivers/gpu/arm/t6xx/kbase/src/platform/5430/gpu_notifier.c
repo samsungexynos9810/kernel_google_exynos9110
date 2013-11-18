@@ -113,7 +113,7 @@ static int gpu_tmu_notifier(struct notifier_block *notifier,
 
 	if (event == GPU_COLD) {
 		platform->voltage_margin = VOLTAGE_OFFSET_MARGIN;
-	} else if (event == TMU_NORMAL) {
+	} else if (event == GPU_NORMAL) {
 		gpu_tmu_normal_work(pkbdev);
 	} else if (event >= GPU_THROTTLING1 && event <= GPU_TRIPPING) {
 		if (gpu_tmu_hot_check_and_work(pkbdev, event))

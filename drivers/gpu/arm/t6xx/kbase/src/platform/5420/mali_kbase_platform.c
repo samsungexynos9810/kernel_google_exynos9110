@@ -76,7 +76,7 @@ static int exynos5_g3d_tmu_notifier(struct notifier_block *notifier,
 
 	if (event == GPU_COLD) {
 		volt_offset = VOLTAGE_OFFSET_MARGIN;
-	} else if (event == TMU_NORMAL) {
+	} else if (event == GPU_NORMAL) {
 		kbase_tmu_normal_work();
 	} else if (event >= GPU_THROTTLING1 && event <= GPU_TRIPPING) {
 		if (kbase_tmu_hot_check_and_work(event))
