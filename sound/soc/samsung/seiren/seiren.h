@@ -75,14 +75,17 @@
 
 #define INSTANCE_MAX		(20)
 #define SRAM_FW_MAX		(0x3E000)
+#define SRAM_IO_BUF		(0x28000)
+#define SRAM_IBUF_OFFSET	(0)
+#define SRAM_OBUF_OFFSET	(DEC_IBUF_SIZE * DEC_IBUF_NUM)
 #define BUF_SIZE_MAX		(0x50000)
 
 #define SAMPLE_RATE_MIN		(8000)
 #define CH_NUM_MIN		(1)
 #define BAND_NUM_MAX		(16)
 
-#define FW_LOG_ADDR		(0x147800)
-#define FW_LOG_LINE		(16)
+#define FW_LOG_ADDR		(0x3D000)
+#define FW_LOG_LINE		(30)
 #define FW_LOG_MAX		(80)
 
 /* For Debugging */
@@ -242,6 +245,7 @@ struct seiren_info {
 	unsigned int	bufmem_pa;
 	unsigned char	*fwmem;
 	unsigned int	fwmem_pa;
+	unsigned char	*fwmem_sram_bak;
 	volatile bool	isr_done;
 
 	int		rtd_cnt;
@@ -261,6 +265,7 @@ struct esa_rtd {
 	struct audio_mem_info_t	obuf_info;
 	struct audio_pcm_config_info_t	pcm_info;
 	unsigned long	buf_maxsize;	/* IBUF + OBUF */
+	bool		use_sram;
 
 	/* IBUF informaion */
 	unsigned char	*ibuf0;
@@ -281,14 +286,14 @@ struct esa_rtd {
 	unsigned int	obuf0_filled_size;
 	unsigned int	obuf1_filled_size;
 	unsigned int	select_obuf;
-	bool	obuf0_filled;
-	bool	obuf1_filled;
+	bool		obuf0_filled;
+	bool		obuf1_filled;
 
 	/* status information */
 	unsigned int	ip_type;
 	unsigned int	handle_id;
 	unsigned int	get_eos;
-	bool	need_config;
+	bool		need_config;
 
 	/* multi-instance */
 	unsigned int	idx;

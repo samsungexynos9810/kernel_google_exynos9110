@@ -53,8 +53,11 @@ static DECLARE_WAIT_QUEUE_HEAD(esa_wq);
 
 static struct seiren_info si;
 
-static int esa_send_cmd(u32 cmd_code);
+static int esa_send_cmd_(u32 cmd_code, bool sram_only);
 static irqreturn_t esa_isr(int irqno, void *id);
+
+#define esa_send_cmd_sram(cmd)	esa_send_cmd_(cmd, true)
+#define esa_send_cmd(cmd)	esa_send_cmd_(cmd, false)
 
 int check_esa_status(void)
 {
@@ -116,11 +119,55 @@ static void esa_free_rtd(struct esa_rtd *rtd)
 	kfree(rtd);
 }
 
+static int esa_send_cmd_exe(struct esa_rtd *rtd, unsigned char *ibuf,
+				unsigned char *obuf, size_t size)
+{
+	u32 ibuf_ca5_pa, obuf_ca5_pa;
+	u32 ibuf_offset, obuf_offset;
+	int out_size;
+	int response;
+
+	if (rtd->use_sram) {	/* SRAM buffer */
+		ibuf_offset = SRAM_IO_BUF + SRAM_IBUF_OFFSET;
+		obuf_offset = SRAM_IO_BUF + SRAM_OBUF_OFFSET;
+		ibuf_ca5_pa = ibuf_offset;
+		obuf_ca5_pa = obuf_offset;
+		memcpy(si.sram + ibuf_offset, ibuf, size);
+	} else {		/* DRAM buffer */
+		ibuf_offset = ibuf - si.bufmem;
+		obuf_offset = obuf - si.bufmem;
+		ibuf_ca5_pa = ibuf_offset + BASEMEM_OFFSET + SRAM_FW_MAX;
+		obuf_ca5_pa = obuf_offset + BASEMEM_OFFSET + SRAM_FW_MAX;
+	}
+
+	writel(rtd->handle_id, si.mailbox + HANDLE_ID);
+	writel(size, si.mailbox + SIZE_OF_INDATA);
+	writel(ibuf_ca5_pa, si.mailbox + PHY_ADDR_INBUF);
+	writel(obuf_ca5_pa, si.mailbox + PHY_ADDR_OUTBUF);
+
+	if (rtd->use_sram)
+		esa_send_cmd_sram(CMD_EXE);
+	else
+		esa_send_cmd(CMD_EXE);
+
+	/* check response of FW */
+	response = readl(si.mailbox + RETURN_CMD);
+
+	if (rtd->use_sram) {
+		out_size = readl(si.mailbox + SIZE_OUT_DATA);
+		if ((response == 0) && (out_size > 0))
+			memcpy(obuf, si.sram + obuf_offset, out_size);
+	}
+
+	return response;
+}
+
 static void esa_fw_download(void)
 {
 	int n;
 
-	esa_debug("%s: firmware size = %d\n", __func__, fw_bin_size);
+	esa_debug("%s: fw size = sram(%d) dram(%d)\n", __func__,
+			fw_sram_bin_size, fw_dram_bin_size);
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	udelay(100);
@@ -129,13 +176,17 @@ static void esa_fw_download(void)
 
 	if (si.fw_suspended) {
 		esa_debug("%s: resume\n", __func__);
+		/* Restore SRAM */
+		memcpy(si.sram, si.fwmem_sram_bak, SRAM_FW_MAX);
 	} else {
 		esa_debug("%s: intialize\n", __func__);
 		for (n = 0; n < FWAREA_NUM; n++)
 			memset(si.fwarea[n], 0, FWAREA_SIZE);
 
-		memset(si.sram, 0, SRAM_FW_MAX);
-		memcpy(si.fwarea[0], si.fwmem, fw_bin_size);
+		memset(si.sram, 0, SRAM_FW_MAX);	/* for ZI area */
+		memcpy(si.sram, si.fwmem, fw_sram_bin_size);
+		memcpy(si.fwarea[0], si.fwmem + fw_sram_bin_size,
+					fw_dram_bin_size);
 	}
 
 	writel(FWAREA_IOVA, si.regs + CA5_BOOTADDR);
@@ -151,12 +202,6 @@ static int esa_fw_startup(void)
 
 	if (si.fw_ready)
 		return 0;
-
-	ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
-	if (ret < 0) {
-		esa_err("Failed to claim CA5 irq\n");
-		return -EFAULT;
-	}
 
 	/* power on */
 	si.fw_use_dram = true;
@@ -187,7 +232,7 @@ static void esa_fw_shutdown(void)
 	if (!si.fw_ready)
 		return;
 
-	/* check idle */
+	/* SUSPEND & IDLE */
 	esa_send_cmd(SYS_SUSPEND);
 
 	si.fw_suspended = false;
@@ -202,7 +247,8 @@ static void esa_fw_shutdown(void)
 	}
 	esa_debug("CA5_STATUS: %X\n", val);
 
-	free_irq(si.irq_ca5, 0);
+	/* Backup SRAM */
+	memcpy(si.fwmem_sram_bak, si.sram, SRAM_FW_MAX);
 
 	/* power off */
 	esa_debug("Turn off CA5...\n");
@@ -217,11 +263,18 @@ static void esa_buffer_init(struct file *file)
 	unsigned long ibuf_size, obuf_size;
 	unsigned int ibuf_count, obuf_count;
 	unsigned char *buf;
+	bool use_sram = false;
 
 	esa_debug("iptype: %d", rtd->ip_type);
 
 	switch (rtd->ip_type) {
 	case ADEC_MP3:
+		ibuf_size = DEC_IBUF_SIZE;
+		obuf_size = DEC_OBUF_SIZE;
+		ibuf_count = DEC_IBUF_NUM;
+		obuf_count = DEC_OBUF_NUM;
+		use_sram = true;
+		break;
 	case ADEC_AAC:
 		ibuf_size = DEC_IBUF_SIZE;
 		obuf_size = DEC_OBUF_SIZE;
@@ -252,6 +305,7 @@ static void esa_buffer_init(struct file *file)
 	rtd->obuf_size = obuf_size;
 	rtd->ibuf_count = ibuf_count;
 	rtd->obuf_count = obuf_count;
+	rtd->use_sram = use_sram;
 
 	buf = si.bufmem + rtd->idx * BUF_SIZE_MAX;
 	rtd->ibuf0 = buf;
@@ -266,20 +320,33 @@ static void esa_buffer_init(struct file *file)
 	rtd->obuf1 = buf;
 }
 
-static int esa_send_cmd(u32 cmd_code)
+static int esa_send_cmd_(u32 cmd_code, bool sram_only)
 {
+	u32 cnt, val;
 	int ret;
 
 	si.isr_done = 0;
 	writel(cmd_code, si.mailbox + CMD_CODE);	/* command */
 	writel(1, si.regs + SW_INTR_CA5);		/* trigger ca5 */
+
+	si.fw_use_dram = sram_only ? false : true;
 	ret = wait_event_interruptible_timeout(esa_wq, si.isr_done, HZ / 2);
 	if (!ret) {
 		esa_err("%s: CMD(%08X) timed out!!!\n",
 					__func__, cmd_code);
 		esa_dump_fw_log();
+		si.fw_use_dram = true;
 		return -EBUSY;
 	}
+
+	cnt = msecs_to_loops(10);
+	while (--cnt) {
+		val = readl(si.regs + CA5_STATUS);
+		if (val & CA5_STATUS_WFI)
+			break;
+		cpu_relax();
+	}
+	si.fw_use_dram = false;
 
 	return 0;
 }
@@ -326,17 +393,8 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 	/* select IBUF0 or IBUF1 for next writing */
 	rtd->select_ibuf = !rtd->select_ibuf;
 
-	/* send instruction to FW for decoding */
-	/* later... flush ibuf cache */
-
-	writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-	writel(ibuf - si.bufmem, si.mailbox + PHY_ADDR_INBUF);
-	writel(obuf - si.bufmem, si.mailbox + PHY_ADDR_OUTBUF);
-	writel(size, si.mailbox + SIZE_OF_INDATA);
-	esa_send_cmd(CMD_EXE);
-
-	/* check response of FW */
-	response = readl(si.mailbox + RETURN_CMD);
+	/* send execute command to FW for decoding */
+	response = esa_send_cmd_exe(rtd, ibuf, obuf, size);
 
 	/* filled size in OBUF */
 	*obuf_filled_size = readl(si.mailbox + SIZE_OUT_DATA);
@@ -479,17 +537,8 @@ static int esa_exe(struct file *file, unsigned int param,
 		goto err;
 	}
 
-	/* send instruction to FW for decoding */
-	/* later... flush ibuf cache */
-
-	writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-	writel(ibuf - si.bufmem, si.mailbox + PHY_ADDR_INBUF);
-	writel(obuf - si.bufmem, si.mailbox + PHY_ADDR_OUTBUF);
-	writel(ibuf_info.mem_size, si.mailbox + SIZE_OF_INDATA);
-	esa_send_cmd(CMD_EXE);
-
-	/* check response of FW */
-	response = readl(si.mailbox + RETURN_CMD);
+	/* send execute command to FW for decoding */
+	response = esa_send_cmd_exe(rtd, ibuf, obuf, ibuf_info.mem_size);
 
 	/* filled size in OBUF */
 	obuf_filled_size = readl(si.mailbox + SIZE_OUT_DATA);
@@ -929,11 +978,8 @@ static const struct file_operations esa_proc_fops = {
 	.release = single_release,
 };
 
-#if !defined(CONFIG_PM_RUNTIME) && defined(CONFIG_PM_SLEEP)
-static int esa_suspend(struct device *dev)
+static int esa_do_suspend(struct device *dev)
 {
-	esa_debug("%s: called\n", __func__);
-
 	esa_fw_shutdown();
 	clk_disable_unprepare(si.clk_ca5);
 	lpass_put_sync(dev);
@@ -941,15 +987,28 @@ static int esa_suspend(struct device *dev)
 	return 0;
 }
 
-static int esa_resume(struct device *dev)
+static int esa_do_resume(struct device *dev)
 {
-	esa_debug("%s: called\n", __func__);
-
 	lpass_get_sync(dev);
 	clk_prepare_enable(si.clk_ca5);
 	esa_fw_startup();
 
 	return 0;
+}
+
+#if !defined(CONFIG_PM_RUNTIME) && defined(CONFIG_PM_SLEEP)
+static int esa_suspend(struct device *dev)
+{
+	esa_debug("%s entered\n", __func__);
+
+	return esa_do_suspend(dev);
+}
+
+static int esa_resume(struct device *dev)
+{
+	esa_debug("%s entered\n", __func__);
+
+	return esa_do_resume(dev);
 }
 #else
 #define esa_suspend	NULL
@@ -969,8 +1028,17 @@ static int esa_prepare_buffer(struct device *dev)
 		goto err;
 	}
 	si.fwmem_pa = virt_to_phys(si.fwmem);
-	memcpy(si.fwmem, fw_bin, fw_bin_size);
+	memcpy(si.fwmem, fw_sram_bin, fw_sram_bin_size);
+	memcpy(si.fwmem + fw_sram_bin_size, fw_dram_bin, fw_dram_bin_size);
 
+	/* Firmware backup for SRAM */
+	si.fwmem_sram_bak = devm_kzalloc(dev, SRAM_FW_MAX, GFP_KERNEL);
+	if (!si.fwmem) {
+		esa_err("Failed to alloc fwmem\n");
+		goto err;
+	}
+
+	/* Firmware for DRAM */
 	for (n = 0; n < FWAREA_NUM; n++) {
 		si.fwarea[n] = dma_alloc_writecombine(dev, FWAREA_SIZE,
 					&si.fwarea_pa[n], GFP_KERNEL);
@@ -980,8 +1048,14 @@ static int esa_prepare_buffer(struct device *dev)
 		}
 	}
 
-	for (n = 0, iova = FWAREA_IOVA; n < FWAREA_NUM;
-				n++, iova += FWAREA_SIZE) {
+	ret = iommu_map(si.domain, FWAREA_IOVA, 0x03000000, SRAM_FW_MAX, 0);
+	if (ret) {
+		esa_err("Failed to map iommu\n");
+		goto err0;
+	}
+
+	for (n = 0, iova = FWAREA_IOVA + SRAM_FW_MAX;
+			n < FWAREA_NUM; n++, iova += FWAREA_SIZE) {
 		ret = iommu_map(si.domain, iova,
 				si.fwarea_pa[n], FWAREA_SIZE, 0);
 		if (ret) {
@@ -990,14 +1064,15 @@ static int esa_prepare_buffer(struct device *dev)
 		}
 	}
 
-	/* Base address for IBUF and OBUF */
+	/* Base address for IBUF, OBUF and FW LOG  */
 	si.bufmem = si.fwarea[0] + BASEMEM_OFFSET;
-	si.bufmem_pa = si.fwarea_pa[0] + BASEMEM_OFFSET;
+	si.bufmem_pa = si.fwarea_pa[0];
+	si.fw_log_buf = si.sram + FW_LOG_ADDR;
 
 	return 0;
 err1:
-	for (n = 0, iova = FWAREA_IOVA; n < FWAREA_NUM;
-				n++, iova += FWAREA_SIZE) {
+	for (n = 0, iova = FWAREA_IOVA + SRAM_FW_MAX;
+			n < FWAREA_NUM; n++, iova += FWAREA_SIZE) {
 		iommu_unmap(si.domain, iova, FWAREA_SIZE);
 	}
 err0:
@@ -1087,7 +1162,11 @@ static int esa_probe(struct platform_device *pdev)
 	goto err;
 #endif
 
-	si.fw_log_buf = si.fwarea[0] + FW_LOG_ADDR;
+	ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
+	if (ret < 0) {
+		esa_err("Failed to claim CA5 irq\n");
+		goto err;
+	}
 
 #ifdef CONFIG_PROC_FS
 	si.proc_file = proc_create("driver/seiren", 0, NULL, &esa_proc_fops);
@@ -1110,9 +1189,7 @@ static int esa_probe(struct platform_device *pdev)
 	pm_runtime_get_sync(dev);
 	pm_runtime_put_sync(dev);
 #else
-	lpass_get_sync(dev);
-	clk_prepare_enable(si.clk_ca5);
-	esa_fw_startup();
+	esa_do_resume(dev);
 #endif
 
 	return 0;
@@ -1127,6 +1204,7 @@ static int esa_remove(struct platform_device *pdev)
 {
 	int ret = 0;
 
+	free_irq(si.irq_ca5, 0);
 	ret = misc_deregister(&esa_miscdev);
 	if (ret)
 		esa_err("Cannot deregister miscdev\n");
@@ -1146,22 +1224,14 @@ static int esa_runtime_suspend(struct device *dev)
 {
 	esa_debug("%s entered\n", __func__);
 
-	esa_fw_shutdown();
-	clk_disable_unprepare(si.clk_ca5);
-	lpass_put_sync(dev);
-
-	return 0;
+	return esa_do_suspend(dev);
 }
 
 static int esa_runtime_resume(struct device *dev)
 {
 	esa_debug("%s entered\n", __func__);
 
-	lpass_get_sync(dev);
-	clk_prepare_enable(si.clk_ca5);
-	esa_fw_startup();
-
-	return 0;
+	return esa_do_resume(dev);
 }
 #endif
 
