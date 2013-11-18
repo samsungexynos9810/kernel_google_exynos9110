@@ -19,11 +19,17 @@
 #include <linux/wait.h>
 #include <linux/kthread.h>
 #include <linux/videodev2_exynos_media.h>
+#include <linux/pm_qos.h>
 #include <media/v4l2-device.h>
 #include <media/videobuf2-core.h>
 #include <media/exynos_mc.h>
+#include <mach/devfreq.h>
 
 #include <mach/exynos-tv.h>
+
+#if	defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
+#define CONFIG_DECONTV_USE_BUS_DEVFREQ
+#endif
 
 extern int dex_log_level;
 

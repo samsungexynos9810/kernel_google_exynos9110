@@ -44,6 +44,10 @@ static const struct of_device_id decon_tv_device_table[] = {
 MODULE_DEVICE_TABLE(of, decon_tv_device_table);
 #endif
 
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+struct pm_qos_request exynos5_decon_tv_int_qos;
+#endif
+
 int dex_log_level = 5;
 module_param(dex_log_level, int, 0644);
 
@@ -196,6 +200,10 @@ static int dex_blank(int blank_mode, struct fb_info *info)
 			dex_err("fail to disable decon_tv");
 			return ret;
 		}
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+		pm_qos_remove_request(&exynos5_decon_tv_int_qos);
+		exynos5_update_media_layers(TYPE_TV, 0);
+#endif
 #ifdef CONFIG_PM_RUNTIME
 		ret = pm_runtime_put_sync(dex->dev);
 		if (ret < 0) {
@@ -221,6 +229,10 @@ static int dex_blank(int blank_mode, struct fb_info *info)
 			dex_err("fail to enable decon_tv");
 			return ret;
 		}
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+		pm_qos_add_request(&exynos5_decon_tv_int_qos, PM_QOS_DEVICE_THROUGHPUT, 400000);
+		exynos5_update_media_layers(TYPE_TV, 1);
+#endif
 		break;
 	default:
 		ret = -EINVAL;
