@@ -68,7 +68,7 @@
 
 /* Interrupt mask. */
 #define S5PCSIS_INTMSK					(0x10)
-#define S5PCSIS_INTMSK_EN_ALL				(0xf1111117)
+#define S5PCSIS_INTMSK_EN_ALL				(0xf1101117)
 #define S5PCSIS_INTMSK_EVEN_BEFORE			(1 << 31)
 #define S5PCSIS_INTMSK_EVEN_AFTER			(1 << 30)
 #define S5PCSIS_INTMSK_ODD_BEFORE			(1 << 29)
