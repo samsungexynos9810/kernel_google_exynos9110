@@ -1492,10 +1492,14 @@ static int fimc_is_itf_s_param(struct fimc_is_device_ischain *device,
 
 		fimc_is_ischain_region_flush(device);
 	} else {
-		if ( test_bit(FIMC_IS_ISHCAIN_START, &device->state)) {
-			merr("s_param is fail, device already is started", device);
-			BUG();
-		}
+		/*
+		 * this check code is commented until per-frame control is worked fully
+		 *
+		 * if ( test_bit(FIMC_IS_ISHCAIN_START, &device->state)) {
+		 *	merr("s_param is fail, device already is started", device);
+		 *	BUG();
+		 * }
+		 */
 
 		fimc_is_ischain_region_flush(device);
 
