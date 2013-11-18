@@ -1879,6 +1879,7 @@ static int mxt540e_load_fw(struct device *dev, const char *fn)
 	return ret;
 }
 
+#if 0
 static int mxt540e_load_fw_bootmode(struct device *dev, const char *fn)
 {
 	struct i2c_client *client = copy_data->client;
@@ -1966,6 +1967,7 @@ static int mxt540e_load_fw_bootmode(struct device *dev, const char *fn)
 #endif
 	return ret;
 }
+#endif
 
 static ssize_t set_refer0_mode_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -2556,12 +2558,14 @@ static int mxt540e_probe(struct i2c_client *client,
 
 	printk("Client add : 0x%x\n", client->addr);
 #endif
+#if 0
 	ret = mxt540e_check_bootloader(client, MXT540E_WAITING_BOOTLOAD_CMD);
 	if (ret >= 0) {
 		printk(KERN_DEBUG "[TSP] boot mode. firm update excute\n");
 		mxt540e_load_fw_bootmode(NULL, MXT540E_FW_NAME);
 		msleep(MXT540E_SW_RESET_TIME);
 	}
+#endif
 #if 0
 	else {
 		if (client->addr == MXT540E_BOOT_LOW)
