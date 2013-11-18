@@ -97,10 +97,10 @@ int kbase_platform_dvfs_event(struct kbase_device *kbdev, u32 utilisation)
 	spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_WEIGHT)
-	atomic_set(&kbdev->pm.metrics.cnt_compute_jobs, 0);
-	atomic_set(&kbdev->pm.metrics.cnt_vertex_jobs, 0);
-	atomic_set(&kbdev->pm.metrics.cnt_fragment_jobs, 0);
+#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+	atomic_set(&kbdev->pm.metrics.time_compute_jobs, 0);
+	atomic_set(&kbdev->pm.metrics.time_vertex_jobs, 0);
+	atomic_set(&kbdev->pm.metrics.time_fragment_jobs, 0);
 #endif
 
 	if (platform->dvfs_wq)
