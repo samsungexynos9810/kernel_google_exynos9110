@@ -852,8 +852,8 @@
 		mclk_ch = <0>;
 		csi_ch = <0>;
 		flite_ch = <0>;
-		i2c_ch = <0x0>;
-		i2c_addr = <0x20>;
+		i2c_ch = <0x0000>;
+		i2c_addr = <0x2020>;
 		flash_first_gpio = <2>;
 		flash_second_gpio = <3>;
 		status = "okay";
