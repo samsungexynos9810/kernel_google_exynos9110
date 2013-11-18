@@ -725,7 +725,7 @@
 
 		pdma0: pdma@121A0000{
 			compatible = "arm,pl330", "arm,primecell";
-			reg = <0x121A0000 1000>;
+			reg = <0x121A0000 0x1000>;
 			interrupts = <0 34 0>;
 			clocks = <&clock 755>;
 			clock-names = "apb_pclk";
