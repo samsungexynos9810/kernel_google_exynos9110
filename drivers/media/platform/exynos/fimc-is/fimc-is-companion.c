@@ -16,6 +16,7 @@
 #define COMP_SETFILE_MASTER		"companion_master_setfile.bin"
 #define COMP_SETFILE_MODE		"companion_mode_setfile.bin"
 #define COMP_SETFILE_VIRSION_SIZE	16
+#define COMP_MAGIC_NUMBER		(0x73c1)
 
 static int fimc_is_comp_spi_read(struct spi_device *spi,
 		void *buf, u32 rx_addr, size_t size)
@@ -235,10 +236,34 @@ p_err:
 	return ret;
 }
 
-int fimc_is_comp_loadfirm(struct fimc_is_core *core)
+int fimc_is_comp_is_valid(struct fimc_is_core *core)
 {
 	int ret = 0;
 	u8 read_data[2];
+	u16 _read_data;
+	u32 read_addr;
+
+	if (!core->spi1) {
+		pr_info("spi1 device is not available");
+		goto exit;
+	}
+
+	/* check validation(Read data must be 0x73C1) */
+	read_addr = 0x0;
+	fimc_is_comp_spi_read(core->spi1, (void *)read_data, read_addr, 2);
+	_read_data = read_data[0] << 8 | read_data[1] << 0;
+	pr_info("Companion vaildation: 0x%04x\n", _read_data);
+
+	if (_read_data != COMP_MAGIC_NUMBER)
+		ret = -EINVAL;
+
+exit:
+	return ret;
+}
+
+int fimc_is_comp_loadfirm(struct fimc_is_core *core)
+{
+	int ret = 0;
 
 	if (!core->spi1) {
 		pr_debug("spi1 device is not available");
@@ -258,10 +283,12 @@ int fimc_is_comp_loadfirm(struct fimc_is_core *core)
 
 	fimc_is_comp_spi_single_write(core->spi1, 0x60140001);
 
-	/* check validation(Read data must be 0x73C1) */
 	usleep_range(1000, 1000);
-	fimc_is_comp_spi_read(core->spi1, (void *)read_data, 0x0000, 2);
-	pr_info("Companion FW loaded: 0x%02x%02x\n", read_data[0], read_data[1]);
+	ret = fimc_is_comp_is_valid(core);
+	if (ret) {
+		err("fimc_is_comp_load_binary(%s) fail", COMP_FW);
+		goto p_err;
+	}
 
 p_err:
 	return ret;

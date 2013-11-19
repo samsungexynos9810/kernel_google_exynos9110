@@ -3140,16 +3140,18 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 	/* FW loading of peripheral device */
 	if ((module->position == SENSOR_POSITION_REAR)
 		&& (device->instance == 0)) {
-		ret = fimc_is_comp_loadfirm(core);
-		if (ret) {
-			err("fimc_is_comp_loadfirm() fail");
-			goto p_err;
-		}
+		if (fimc_is_comp_is_valid(core) == 0) {
+			ret = fimc_is_comp_loadfirm(core);
+			if (ret) {
+				err("fimc_is_comp_loadfirm() fail");
+				goto p_err;
+			}
 
-		ret = fimc_is_comp_loadsetf(core);
-		if (ret) {
-			err("fimc_is_comp_loadsetf() fail");
-			goto p_err;
+			ret = fimc_is_comp_loadsetf(core);
+			if (ret) {
+				err("fimc_is_comp_loadsetf() fail");
+				goto p_err;
+			}
 		}
 	}
 
