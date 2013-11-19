@@ -765,9 +765,27 @@
 		};
 	};
 
+	dwc3_boost5v: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "VUSB_BOOST_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpf2 2 1>;
+		enable-active-high;
+	};
+
+	dwc3_vbus: fixedregulator@1 {
+		compatible = "regulator-fixed";
+		regulator-name = "VUSB_DRD_CON_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gph1 1 1>;
+		enable-active-high;
+		vin-supply = <&dwc3_boost5v>;
+	};
+
 	usb@15400000 {
-		samsung,vbus-gpio = <&gph1 1 0>;
-		samsung,boost5v-gpio = <&gpf2 2 0>;
+		dwc3-vbus-supply = <&dwc3_vbus>;
 		samsung,bsess-gpio = <&gpa1 0 0xf>;
 		samsung,id-gpio = <&gpa1 1 0xf>;
 		pinctrl-names = "default";
