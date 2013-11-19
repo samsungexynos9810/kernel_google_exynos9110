@@ -394,6 +394,11 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 		pdata->i2c_ch = 2;
 	}
 
+	if ((id == SENSOR_POSITION_REAR) && (board_rev == 2)) {
+		pdata->i2c_ch = 0x0100;
+		pdata->i2c_addr = 0x5A5A;
+	}
+
 	pdev->id = id;
 
 	dev->platform_data = pdata;
