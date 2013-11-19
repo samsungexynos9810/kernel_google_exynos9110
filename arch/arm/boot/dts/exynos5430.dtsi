@@ -1758,8 +1758,9 @@
 		compatible = "samsung,exynos5-fimc-is-sensor";
 		reg = <0x12100000 0x10000>, <0x12120000 0x10000>;
 		interrupts = <0 140 0>;
-		pinctrl-names =	"ch0";
+		pinctrl-names =	"ch0", "af0";
 		pinctrl-0 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
+		pinctrl-1 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk &fimc_is_ch1_i2c>;
 		iommu = <&sysmmu_flite_a>;
 		samsung,power-domain = <&pd_cam0>;
 		clock-names = "sclk_isp_sensor0", /* 33 */
