@@ -30,7 +30,7 @@
 #include "devfreq_exynos.h"
 #include "governor.h"
 
-#define DEVFREQ_INITIAL_FREQ	(921000)
+#define DEVFREQ_INITIAL_FREQ	(825000)
 #define DEVFREQ_POLLING_PERIOD	(0)
 
 #define MIF_VOLT_STEP		(12500)
@@ -397,7 +397,7 @@ enum devfreq_mif_clk devfreq_clk_mif_info_idx[] = {
 static struct devfreq_simple_ondemand_data exynos5_devfreq_mif_governor_data = {
 	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
 	.upthreshold		= 95,
-	.cal_qos_max		= 921000,
+	.cal_qos_max		= 825000,
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_mif = {
@@ -427,11 +427,11 @@ static struct devfreq_exynos devfreq_mif_exynos = {
 
 struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 	{	/* 921Mhz */
-		.timing_row	= 0x3D6BA815,
-		.timing_data	= 0x4742086E,
-		.timing_power	= 0x60420447,
+		.timing_row	= 0x3C6BA7D5,
+		.timing_data	= 0x4740086E,
+		.timing_power	= 0x60410447,
 		.rd_fetch	= 0x00000003,
-		.timing_rfcpb	= 0x00001D1D,
+		.timing_rfcpb	= 0x00001C1C,
 		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x00000870,
@@ -440,24 +440,24 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 			[3]	= 0x0010060C,
 		},
 	}, {	/* 825Mhz */
-		.timing_row	= 0x345A96D3,
-		.timing_data	= 0x3630065C,
-		.timing_power	= 0x50380336,
+		.timing_row	= 0x365A9713,
+		.timing_data	= 0x4740085E,
+		.timing_power	= 0x543A0446,
 		.rd_fetch	= 0x00000003,
-		.timing_rfcpb	= 0x00001818,
+		.timing_rfcpb	= 0x00001919,
 		.dvfs_con1	= 0x0C0C2121,
 		.mif_drex_mr_data = {
-			[0]	= 0x00000868,
-			[1]	= 0x00100868,
-			[2]	= 0x0000050C,
-			[3]	= 0x0010050C,
+			[0]	= 0x00000870,
+			[1]	= 0x00100870,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
 		},
 	}, {	/* 633Mhz */
-		.timing_row	= 0x2C4885D0,
-		.timing_data	= 0x3630064A,
-		.timing_power	= 0x442F0335,
+		.timing_row	= 0x2A48758F,
+		.timing_data	= 0x3530064A,
+		.timing_power	= 0x402D0335,
 		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00001414,
+		.timing_rfcpb	= 0x00001313,
 		.dvfs_con1	= 0x0A0A2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x00000860,
@@ -466,24 +466,24 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 			[3]	= 0x0010040C,
 		},
 	}, {	/* 543Mhz */
-		.timing_row	= 0x2347648D,
-		.timing_data	= 0x24200539,
-		.timing_power	= 0x38260225,
+		.timing_row	= 0x244764CD,
+		.timing_data	= 0x35300549,
+		.timing_power	= 0x38270335,
 		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00001010,
+		.timing_rfcpb	= 0x00001111,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
-			[2]	= 0x0000070C,
-			[3]	= 0x0010070C,
+			[2]	= 0x0000078C,
+			[3]	= 0x0010078C,
 		},
 	}, {	/* 413Mhz */
-		.timing_row	= 0x1A35538A,
-		.timing_data	= 0x23200539,
-		.timing_power	= 0x281C0225,
+		.timing_row	= 0x1B35538A,
+		.timing_data	= 0x24200539,
+		.timing_power	= 0x2C1D0225,
 		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000C0C,
+		.timing_rfcpb	= 0x00000D0D,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
@@ -492,11 +492,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 			[3]	= 0x0010060C,
 		},
 	}, {	/* 275Mhz */
-		.timing_row	= 0x12244247,
+		.timing_row	= 0x12244287,
 		.timing_data	= 0x23200529,
-		.timing_power	= 0x1C130225,
+		.timing_power	= 0x1C140225,
 		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000808,
+		.timing_rfcpb	= 0x00000909,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
@@ -505,11 +505,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 			[3]	= 0x0010060C,
 		},
 	}, {	/* 206Mhz */
-		.timing_row	= 0x112331C5,
+		.timing_row	= 0x112331C6,
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x140E0225,
 		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000606,
+		.timing_rfcpb	= 0x00000707,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
@@ -520,7 +520,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 	}, {	/* 165Mhz */
 		.timing_row	= 0x11223185,
 		.timing_data	= 0x23200529,
-		.timing_power	= 0x100C0225,
+		.timing_power	= 0x140C0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000505,
 		.dvfs_con1	= 0x09092121,
@@ -535,7 +535,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 		.timing_data	= 0x23200529,
 		.timing_power	= 0x100A0225,
 		.rd_fetch	= 0x00000002,
-		.timing_rfcpb	= 0x00000404,
+		.timing_rfcpb	= 0x00000505,
 		.dvfs_con1	= 0x09092121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
@@ -546,7 +546,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 	}, {	/* 103Mhz */
 		.timing_row	= 0x11222103,
 		.timing_data	= 0x23200529,
-		.timing_power	= 0x10070225,
+		.timing_power	= 0x10080225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000303,
 		.dvfs_con1	= 0x09092121,
