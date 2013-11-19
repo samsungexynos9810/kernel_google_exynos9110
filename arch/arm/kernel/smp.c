@@ -759,16 +759,16 @@ static void flush_all_cluster_cache(void *info)
 
 void flush_all_cpu_caches(void)
 {
-        unsigned int cpu = smp_processor_id();
-	unsigned int cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
-	unsigned int target_cpu;
+        unsigned int cpu, cluster, target_cpu;
+
+	preempt_disable();
+	cpu = smp_processor_id();
+	cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
 
 	if (!cluster)
 		target_cpu = first_cpu(hmp_slow_cpu_mask);
 	else
 		target_cpu = first_cpu(hmp_fast_cpu_mask);
-
-	preempt_disable();
 
 	smp_call_function(flush_all_cpu_cache, NULL, 1);
 	smp_call_function_single(target_cpu, flush_all_cluster_cache, NULL, 1);
