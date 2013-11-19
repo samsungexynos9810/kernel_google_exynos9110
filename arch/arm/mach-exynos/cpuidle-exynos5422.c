@@ -183,10 +183,12 @@ static int exynos_cpuidle_notifier_event(struct notifier_block *this,
 {
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
+		cpu_idle_poll_ctrl(true);
 		pr_debug("PM_SUSPEND_PREPARE for CPUIDLE\n");
 		return NOTIFY_OK;
 	case PM_POST_RESTORE:
 	case PM_POST_SUSPEND:
+		cpu_idle_poll_ctrl(false);
 		pr_debug("PM_POST_SUSPEND for CPUIDLE\n");
 		return NOTIFY_OK;
 	}
