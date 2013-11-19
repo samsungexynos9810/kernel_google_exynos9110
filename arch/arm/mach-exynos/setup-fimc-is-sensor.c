@@ -44,9 +44,8 @@ static int exynos_fimc_is_sensor_pin_control(struct platform_device *pdev,
 	char ch_name[30];
 	struct pinctrl *pinctrl_ch;
 
-	pr_info("%s(pin(%d), act(%d), ch(%d))\n", __func__, pin, act, channel);
-
-	snprintf(ch_name, sizeof(ch_name), "ch%d", channel);
+	snprintf(ch_name, sizeof(ch_name), "%s%d", name, channel);
+	pr_info("%s(pin(%d), act(%d), ch(%s))\n", __func__, pin, act, ch_name);
 
 	switch (act) {
 	case PIN_PULL_NONE:
