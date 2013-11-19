@@ -282,6 +282,11 @@ static int dex_get_hdmi_config(struct dex_device *dex,
 					hdmi_data->cec_addr);
 		break;
 	case EXYNOS_HDMI_STATE_AUDIO:
+		ctrl.id = V4L2_CID_TV_MAX_AUDIO_CHANNELS;
+		ret = v4l2_subdev_call(hdmi_sd, core, g_ctrl, &ctrl);
+		if (ret)
+			dex_err("failed to get hdmi audio information\n");
+		hdmi_data->audio_info = ctrl.value;
 		break;
 	default:
 		dex_warn("unrecongnized state %u", hdmi_data->state);
@@ -329,6 +334,11 @@ static int dex_set_hdmi_config(struct dex_device *dex,
 		dex_dbg("HDCP %s\n", ctrl.value ? "enabled" : "disabled");
 		break;
 	case EXYNOS_HDMI_STATE_AUDIO:
+		ctrl.id = V4L2_CID_TV_SET_NUM_CHANNELS;
+		ctrl.value = hdmi_data->audio_info;
+		ret = v4l2_subdev_call(hdmi_sd, core, s_ctrl, &ctrl);
+		if (ret)
+			dex_err("failed to set hdmi audio information\n");
 		break;
 	default:
 		dex_warn("unrecongnized state %u", hdmi_data->state);
