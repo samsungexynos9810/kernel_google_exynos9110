@@ -166,8 +166,13 @@
 #define MUTEX_UNLOCK(x) mutex_unlock(x)
 #endif /* DEBUG */
 
-#define FAKE_BAT_LEVEL 50
+#define FAKE_BAT_LEVEL 80
 #define FAKE_BAT_TEMP 0
+
+#define SAMSUNG_BAT_NUM		0
+#define SAMSUNG_USB_NUM		1
+#define SAMSUNG_AC_NUM		2
+
 
 enum bq24160_status {
 	STAT_NO_VALID_SOURCE,
@@ -275,6 +280,8 @@ static atomic_t bq24160_init_ok = ATOMIC_INIT(0);
 
 struct bq24160_data {
 	struct power_supply bat_ps;
+	struct power_supply usb_ps;
+	struct power_supply ac_ps;
 	struct i2c_client *clientp;
 	struct delayed_work work;
 	struct delayed_work enable_work;
@@ -750,8 +757,8 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 			}
 		}
 		bq24160_update_power_supply(bd);
+		bq24160_dump_registers(bd);
 	}
-	bq24160_dump_registers(bd);
 
 	return IRQ_HANDLED;
 }
@@ -996,6 +1003,55 @@ static int bq24160_bat_get_property(struct power_supply *bat_ps,
 	return 0;
 }
 
+static int samsung_usb_get_property(struct power_supply *usb_ps,
+				enum power_supply_property psp,
+				union power_supply_propval *val)
+{
+	struct bq24160_data *bd =
+		container_of(usb_ps, struct bq24160_data, usb_ps);
+	s32 data;
+
+	data = bq24160_i2c_read_byte(bd->clientp, REG_BR_STATUS);
+	if (data < 0)
+		return data;
+
+	MUTEX_LOCK(&bd->lock);
+	switch (psp) {
+		case POWER_SUPPLY_PROP_ONLINE:
+			val->intval = ((data & 0x30) ? 0 : 1);
+			break;
+		default:
+			MUTEX_UNLOCK(&bd->lock);
+			return -EINVAL;
+	}
+	MUTEX_UNLOCK(&bd->lock);
+	return 0;
+}
+
+static int samsung_ac_get_property(struct power_supply *ac_ps,
+				enum power_supply_property psp,
+				union power_supply_propval *val)
+{
+	struct bq24160_data *bd =
+		container_of(ac_ps, struct bq24160_data, ac_ps);
+	s32 data;
+
+	data = bq24160_i2c_read_byte(bd->clientp, REG_BR_STATUS);
+	if (data < 0)
+		return data;
+
+	MUTEX_LOCK(&bd->lock);
+	switch (psp) {
+		case POWER_SUPPLY_PROP_ONLINE:
+			val->intval = ((data & 0xc0) ? 0 : 1);
+			break;
+		default:
+			MUTEX_UNLOCK(&bd->lock);
+			return -EINVAL;
+	}
+	MUTEX_UNLOCK(&bd->lock);
+	return 0;
+}
 
 int bq24160_set_input_voltage_dpm_usb(u8 usb_compliant)
 {
@@ -1757,6 +1813,40 @@ static enum power_supply_property bq24160_bat_main_props[] = {
 	POWER_SUPPLY_PROP_TEMP,
 };
 
+static enum power_supply_property samsung_power_supply_props[] ={
+	POWER_SUPPLY_PROP_ONLINE,
+};
+
+static char *supply_list[] = {
+	BQ24160_NAME,
+};
+
+static struct power_supply samsung_power_supplies[] = {
+	{
+		.name = BQ24160_NAME,
+		.type = POWER_SUPPLY_TYPE_BATTERY,
+		.properties = bq24160_bat_main_props,
+		.num_properties = ARRAY_SIZE(bq24160_bat_main_props),
+		.get_property = bq24160_bat_get_property,
+	}, {
+		.name = "usb",
+		.type = POWER_SUPPLY_TYPE_USB,
+		.supplied_to = supply_list,
+		.num_supplicants = ARRAY_SIZE(supply_list),
+		.properties = samsung_power_supply_props,
+		.num_properties = ARRAY_SIZE(samsung_power_supply_props),
+		.get_property = samsung_usb_get_property,
+	}, {
+		.name = "ac",
+		.type = POWER_SUPPLY_TYPE_MAINS,
+		.supplied_to = supply_list,
+		.num_supplicants = ARRAY_SIZE(supply_list),
+		.properties = samsung_power_supply_props,
+		.num_properties = ARRAY_SIZE(samsung_power_supply_props),
+		.get_property = samsung_ac_get_property,
+	},
+};
+
 #ifdef CONFIG_OF
 static struct bq24160_platform_data *bq24160_parse_dt(struct device *dev)
 {
@@ -1842,12 +1932,9 @@ static int bq24160_probe(struct i2c_client *client,
 		goto probe_exit_hw_deinit;
 	}
 
-	bd->bat_ps.name = BQ24160_NAME;
-	bd->bat_ps.type = POWER_SUPPLY_TYPE_BATTERY;
-	bd->bat_ps.properties = bq24160_bat_main_props;
-	bd->bat_ps.num_properties = ARRAY_SIZE(bq24160_bat_main_props);
-	bd->bat_ps.get_property = bq24160_bat_get_property;
-	bd->bat_ps.use_for_apm = 1;
+	bd->bat_ps = samsung_power_supplies[SAMSUNG_BAT_NUM];
+	bd->usb_ps = samsung_power_supplies[SAMSUNG_USB_NUM];
+	bd->ac_ps = samsung_power_supplies[SAMSUNG_AC_NUM];
 	bd->clientp = client;
 	bd->ext_status = -1;
 	bd->vendor_rev = buf & REG_VENDOR_REV_MASK;
@@ -1878,6 +1965,18 @@ static int bq24160_probe(struct i2c_client *client,
 				bq24160_delayed_enable_worker);
 
 	rc = power_supply_register(&client->dev, &bd->bat_ps);
+	if (rc) {
+		dev_err(&client->dev,
+			"Failed registering to power_supply class\n");
+		goto probe_exit_work_queue;
+	}
+	rc = power_supply_register(&client->dev, &bd->usb_ps);
+	if (rc) {
+		dev_err(&client->dev,
+			"Failed registering to power_supply class\n");
+		goto probe_exit_work_queue;
+	}
+	rc = power_supply_register(&client->dev, &bd->ac_ps);
 	if (rc) {
 		dev_err(&client->dev,
 			"Failed registering to power_supply class\n");
