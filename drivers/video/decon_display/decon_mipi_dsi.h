@@ -384,6 +384,7 @@ enum {
 /* DSIM Interrupt Sources */
 #define SFR_PL_FIFO_EMPTY	(1 << 29)
 #define SFR_PH_FIFO_EMPTY	(1 << 28)
+#define MIPI_FRAME_DONE		(1 << 24)
 #define RX_DAT_DONE		(1 << 18)
 #define ERR_RX_ECC		(1 << 15)
 

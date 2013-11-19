@@ -184,18 +184,41 @@ MODULE_DEVICE_TABLE(of, exynos5_dsim);
 struct mipi_dsim_device *dsim_for_decon;
 EXPORT_SYMBOL(dsim_for_decon);
 
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv);
+int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv);
+#endif
+
 int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
 
 #ifdef CONFIG_SOC_EXYNOS5430
-	void __iomem *reg;
-	reg = ioremap(0x105C0710, 0x10);
-	writel(0x1, reg);
-	iounmap(reg);
+	void __iomem *base;
+	unsigned int reg = 0;
 
-	reg = ioremap(0x13B80000, 0x4);
-	writel(0x1, reg);
-	iounmap(reg);
+	base = ioremap(0x105C0710, 0x4);
+	if (enable) {
+		reg |= (1 << 0);
+		writel(reg, base);
+	} else {
+		reg &= ~(1 << 0);
+		writel(reg, base);
+	}
+	iounmap(base);
+
+	/* D-PHY reset */
+	base = ioremap(0x13B8100c, 0x4);
+	if (enable) {
+		reg &= ~(1 << 0);
+		writel(reg, base);
+		reg |= (1 << 0);
+		writel(reg, base);
+	} else {
+		reg &= ~(1 << 0);
+		writel(reg, base);
+	}
+	iounmap(base);
 #else
 	unsigned int reg;
 
@@ -1016,6 +1039,7 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 
 int s5p_mipi_dsi_set_hs_enable(struct mipi_dsim_device *dsim)
 {
+	unsigned int time_out = 1000;
 	if (dsim->state == DSIM_STATE_STOP) {
 		if (dsim->e_clk_src != DSIM_EXT_CLK_BYPASS) {
 			dsim->state = DSIM_STATE_HSCLKEN;
@@ -1025,6 +1049,16 @@ int s5p_mipi_dsi_set_hs_enable(struct mipi_dsim_device *dsim)
 			s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 0);
 
 			s5p_mipi_dsi_enable_hs_clock(dsim, 1);
+
+			while (!(s5p_mipi_dsi_is_hs_state(dsim))) {
+				time_out--;
+				if (time_out == 0) {
+					dev_err(dsim->dev,
+							"DSI Master is not HS state.\n");
+					return -EBUSY;
+				}
+				usleep_range(10, 10);
+			}
 
 			return 0;
 		} else
@@ -1075,6 +1109,8 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 {
 	unsigned int int_src;
 	struct mipi_dsim_device *dsim = dev_id;
+	int framedone = 0;
+	struct display_driver *dispdrv;
 
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 1);
 	int_src = readl(dsim->reg_base + S5P_DSIM_INTSRC);
@@ -1084,11 +1120,22 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 		complete(&dsim_wr_comp);
 	if (int_src & RX_DAT_DONE)
 		complete(&dsim_rd_comp);
+	if (int_src & MIPI_FRAME_DONE) {
+		dispdrv = get_display_driver();
+		framedone = 1;
+	}
 	if (int_src & ERR_RX_ECC)
 		dev_err(dsim->dev, "RX ECC Multibit error was detected!\n");
 	s5p_mipi_dsi_clear_interrupt(dsim, int_src);
 
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 0);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	/* tiggering power event for PM */
+	if (framedone)
+		disp_pm_dec_refcount(dispdrv);
+#endif
+
 	return IRQ_HANDLED;
 }
 
@@ -1140,6 +1187,156 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 
 	return 0;
 }
+
+int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim)
+{
+	struct display_driver *dispdrv;
+	/* get a reference of the display driver */
+	dispdrv = get_display_driver();
+
+	dsim->enabled = false;
+	dsim->dsim_lcd_drv->suspend(dsim);
+	dsim->state = DSIM_STATE_SUSPEND;
+
+	GET_DISPDRV_OPS(dispdrv).disable_display_driver_power(dsim->dev);
+
+	return 0;
+}
+
+int s5p_mipi_dsi_ulps_enable(struct mipi_dsim_device *dsim,
+	unsigned int mode)
+{
+	int ret = 0;
+	unsigned int time_out = 1000;
+
+	if (mode == false) {
+		if (dsim->state == DSIM_STATE_STOP)
+			return ret;
+
+		/* Exit ULPS clock and data lane */
+		s5p_mipi_dsi_enable_ulps_exit_clk_data(dsim, 1);
+
+		/* Check ULPS Exit request for data lane */
+		while (!(s5p_mipi_dsi_is_ulps_lane_state(dsim, 0))) {
+			time_out--;
+			if (time_out == 0) {
+				dev_err(dsim->dev,
+					"%s: DSI Master is not stop state.\n", __func__);
+				return -EBUSY;
+			}
+			usleep_range(10, 10);
+		}
+
+		/* Clear ULPS enter & exit state */
+		s5p_mipi_dsi_enable_ulps_exit_clk_data(dsim, 0);
+
+               dsim->state = DSIM_STATE_STOP;
+	} else {
+               if (dsim->state == DSIM_STATE_ULPS)
+                       return ret;
+
+		/* Disable TxRequestHsClk */
+		s5p_mipi_dsi_enable_hs_clock(dsim, 0);
+
+		/* Enable ULPS clock and data lane */
+		s5p_mipi_dsi_enable_ulps_clk_data(dsim, 1);
+
+		/* Check ULPS request for data lane */
+		while (!(s5p_mipi_dsi_is_ulps_lane_state(dsim, 1))) {
+			time_out--;
+			if (time_out == 0) {
+				dev_err(dsim->dev,
+					"%s: DSI Master is not ULPS state.\n", __func__);
+
+				/* Enable ULPS clock and data lane */
+				s5p_mipi_dsi_enable_ulps_clk_data(dsim, 1);
+
+				/* Disable TxRequestHsClk */
+				s5p_mipi_dsi_enable_hs_clock(dsim, 0);
+				return -EBUSY;
+			}
+			usleep_range(10, 10);
+		}
+
+		/* Clear ULPS enter & exit state */
+		s5p_mipi_dsi_enable_ulps_clk_data(dsim, 0);
+
+		dsim->state = DSIM_STATE_ULPS;
+	}
+
+	return ret;
+}
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv)
+{
+	struct mipi_dsim_device *dsim = dispdrv->dsi_driver.dsim;
+	if (dsim->enabled == true)
+		return 0;
+
+	GET_DISPDRV_OPS(dispdrv).enable_display_driver_clocks(dsim->dev);
+
+	/* PPI signal disable + D-PHY reset */
+	s5p_mipi_dsi_d_phy_onoff(dsim, 1);
+
+	/* Enable PHY PLL */
+	s5p_mipi_dsi_pll_on(dsim, 1);
+
+	/* Exit ULPS mode clk & data */
+	s5p_mipi_dsi_ulps_enable(dsim, false);
+
+	s5p_mipi_dsi_init_dsim(dsim);
+	s5p_mipi_dsi_init_link(dsim);
+	dsim->enabled = true;
+
+#ifdef CONFIG_DECON_MIC
+	decon_mipi_dsi_config_mic(dsim);
+#endif
+	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
+	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
+	s5p_mipi_dsi_set_hs_enable(dsim);
+
+	return 0;
+}
+
+int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv)
+{
+	struct mipi_dsim_device *dsim = dispdrv->dsi_driver.dsim;
+	if (dsim->enabled == false)
+		return 0;
+
+	/* Enter ULPS mode clk & data */
+	s5p_mipi_dsi_ulps_enable(dsim, true);
+
+	/* DSIM STOP SEQUENCE */
+	/* Set main stand-by off */
+	s5p_mipi_dsi_enable_main_standby(dsim, 0);
+
+	/* CLK and LANE disable */
+	s5p_mipi_dsi_enable_lane(dsim, DSIM_LANE_CLOCK, 0);
+	s5p_mipi_dsi_enable_lane(dsim, dsim->data_lane, 0);
+
+	/* escape clock on lane */
+	s5p_mipi_dsi_enable_esc_clk_on_lane(dsim,
+			(DSIM_LANE_CLOCK | dsim->data_lane), 0);
+
+	/* Disable byte clock */
+	s5p_mipi_dsi_enable_byte_clock(dsim, 0);
+
+	/* Disable PHY PLL */
+	s5p_mipi_dsi_pll_on(dsim, 0);
+
+	/* S/W reset */
+	s5p_mipi_dsi_sw_reset(dsim);
+
+	/* PPI signal disable + D-PHY reset */
+	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
+
+	dsim->enabled = false;
+
+	return 0;
+}
+#endif
 
 int create_mipi_dsi_controller(struct platform_device *pdev)
 {
@@ -1207,6 +1404,13 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dev_info(&pdev->dev, "mipi-dsi driver(%s mode) has been probed.\n",
 		(dsim->dsim_config->e_interface == DSIM_COMMAND) ?
 			"CPU" : "RGB");
+
+	dispdrv->dsi_driver.dsim = dsim;
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	dispdrv->dsi_driver.ops->pwr_on = s5p_mipi_dsi_hibernation_power_on;
+	dispdrv->dsi_driver.ops->pwr_off = s5p_mipi_dsi_hibernation_power_off;
+#endif
 
 	mutex_init(&dsim_rd_wr_mutex);
 	return 0;

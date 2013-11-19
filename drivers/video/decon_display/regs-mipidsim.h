@@ -15,7 +15,9 @@
 #ifdef CONFIG_SOC_EXYNOS5430
 #define S5P_DSIM_STATUS		(0x4)	/* Status register */
 #define DSIM_STOP_STATE_DAT(x)	(((x) & 0xf) << 0)
+#define DSIM_ULPS_DAT(x)	(((x) & 0xf) << 4)
 #define DSIM_STOP_STATE_CLK	(1 << 8)
+#define DSIM_ULPS_CLK		(1 << 9)
 #define DSIM_TX_READY_HS_CLK	(1 << 10)
 
 #define S5P_DSIM_SWRST		(0xc)	/* Software reset register */
@@ -52,6 +54,10 @@
 #define DSIM_NUM_OF_DATA_LANE(x)	((x) << DSIM_NUM_OF_DATALANE_SHIFT)
 
 #define S5P_DSIM_ESCMODE	(0x1c)	/* Escape mode register */
+#define DSIM_TX_ULPS_CLK_EXIT		(1 << 0)
+#define DSIM_TX_ULPS_CLK		(1 << 1)
+#define DSIM_TX_ULPS_DATA_EXIT		(1 << 2)
+#define DSIM_TX_ULPS_DATA		(1 << 3)
 #define DSIM_TX_LPDT_SHIFT		(6)
 #define DSIM_CMD_LPDT_SHIFT		(7)
 #define DSIM_TX_LPDT_LP			(1 << DSIM_TX_LPDT_SHIFT)
@@ -139,7 +145,9 @@
 #else
 #define S5P_DSIM_STATUS		(0x0)	/* Status register */
 #define DSIM_STOP_STATE_DAT(x)	(((x) & 0xf) << 0)
+#define DSIM_ULPS_DAT(x)	(((x) & 0xf) << 4)
 #define DSIM_STOP_STATE_CLK	(1 << 8)
+#define DSIM_ULPS_CLK		(1 << 9)
 #define DSIM_TX_READY_HS_CLK	(1 << 10)
 
 
@@ -157,6 +165,10 @@
 
 
 #define S5P_DSIM_ESCMODE	(0x14)	/* Escape mode register */
+#define DSIM_TX_ULPS_CLK_EXIT		(1 << 0)
+#define DSIM_TX_ULPS_CLK		(1 << 1)
+#define DSIM_TX_ULPS_DATA_EXIT		(1 << 2)
+#define DSIM_TX_ULPS_DATA		(1 << 3)
 #define DSIM_TX_LPDT_SHIFT		(6)
 #define DSIM_CMD_LPDT_SHIFT		(7)
 #define DSIM_TX_LPDT_LP		(1 << DSIM_TX_LPDT_SHIFT)
