@@ -10,6 +10,7 @@ struct mic_config {
 #define DECON_MIC_OP		0x00
 #define DECON_MIC_UPDATE_REG	(1 << 31)
 #define DECON_MIC_ON_REG	(1 << 30)
+#define DECON_MIC_SW_RST	(1 << 4)
 #define DECON_MIC_NEW_CORE	(0 << 2)
 #define DECON_MIC_OLD_CORE	(1 << 2)
 #define DECON_MIC_VIDEO_MODE	(0 << 1)

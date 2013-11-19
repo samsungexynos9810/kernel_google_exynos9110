@@ -49,6 +49,11 @@ struct decon_mic {
 struct decon_mic *mic_for_decon;
 EXPORT_SYMBOL(mic_for_decon);
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+int decon_mic_hibernation_power_on(struct display_driver *dispdrv);
+int decon_mic_hibernation_power_off(struct display_driver *dispdrv);
+#endif
+
 static int decon_mic_set_sys_reg(struct decon_mic *mic, bool enable)
 {
 	u32 data;
@@ -175,6 +180,12 @@ int create_decon_mic(struct platform_device *pdev)
 
 	mic->decon_mic_on = true;
 
+	dispdrv->mic_driver.mic = mic;
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	dispdrv->mic_driver.ops->pwr_on = decon_mic_hibernation_power_on;
+	dispdrv->mic_driver.ops->pwr_off = decon_mic_hibernation_power_off;
+#endif
+
 	dev_info(dev, "MIC driver has been probed\n");
 	return 0;
 }
@@ -213,6 +224,47 @@ int decon_mic_disable(struct decon_mic *mic)
 
 	return 0;
 }
+
+int decon_mic_sw_reset(struct decon_mic *mic)
+{
+	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
+
+	u32 data = readl(regs);
+
+	data |= DECON_MIC_SW_RST;
+	writel(data, regs);
+
+	return 0;
+}
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+int decon_mic_hibernation_power_on(struct display_driver *dispdrv)
+{
+	struct decon_mic *mic = dispdrv->mic_driver.mic;
+
+	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
+	decon_mic_set_image_size(mic);
+	decon_mic_set_2d_bit_stream_size(mic);
+	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
+
+	mic->decon_mic_on = true;
+
+	return 0;
+}
+
+int decon_mic_hibernation_power_off(struct display_driver *dispdrv)
+{
+	struct decon_mic *mic = dispdrv->mic_driver.mic;
+
+	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
+	decon_mic_sw_reset(mic);
+	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
+
+	mic->decon_mic_on = false;
+
+	return 0;
+}
+#endif
 
 MODULE_AUTHOR("Haowei Li <Haowei.li@samsung.com>");
 MODULE_DESCRIPTION("Samsung MIC driver");
