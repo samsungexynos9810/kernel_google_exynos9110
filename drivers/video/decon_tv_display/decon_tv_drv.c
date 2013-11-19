@@ -619,6 +619,25 @@ static inline u32 blendeq(enum s3c_fb_blending blending, u8 transp_length,
 			BLENDEQ_Q_FUNC(BLENDEQ_COEF_ZERO);
 }
 
+static bool dex_validate_x_alignment(struct dex_device *dex, int x, u32 w,
+		u32 bits_per_pixel)
+{
+	uint8_t pixel_alignment = 32 / bits_per_pixel;
+
+	if (x % pixel_alignment) {
+		dex_err("left X coordinate not properly aligned to %u-pixel boundary (bpp = %u, x = %u)\n",
+				pixel_alignment, bits_per_pixel, x);
+		return 0;
+	}
+	if ((x + w) % pixel_alignment) {
+		dex_err("right X coordinate not properly aligned to %u-pixel boundary (bpp = %u, x = %u, w = %u)\n",
+				pixel_alignment, bits_per_pixel, x, w);
+		return 0;
+	}
+
+	return 1;
+}
+
 static unsigned int dex_map_ion_handle(struct dex_device *dex,
 		struct dex_dma_buf_data *dma, struct ion_handle *ion_handle,
 		struct dma_buf *buf, int idx)
@@ -707,10 +726,49 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		return -EINVAL;
 	}
 
+	/* component calculation according to the format */
+	win->fbinfo->var.red.length = dex_red_length(win_config->format);
+	win->fbinfo->var.red.offset = dex_red_offset(win_config->format);
+	win->fbinfo->var.green.length = dex_green_length(win_config->format);
+	win->fbinfo->var.green.offset = dex_green_offset(win_config->format);
+	win->fbinfo->var.blue.length = dex_blue_length(win_config->format);
+	win->fbinfo->var.blue.offset = dex_blue_offset(win_config->format);
+	win->fbinfo->var.transp.length = dex_transp_length(win_config->format);
+	win->fbinfo->var.transp.offset = dex_transp_offset(win_config->format);
+	win->fbinfo->var.bits_per_pixel = win->fbinfo->var.red.length +
+					win->fbinfo->var.green.length +
+					win->fbinfo->var.blue.length +
+					win->fbinfo->var.transp.length +
+					dex_padding(win_config->format);
+
+	if (win_config->w * win->fbinfo->var.bits_per_pixel / 8 < 128) {
+		dex_err("window must be at least 128 bytes wide (width = %u, bpp = %u)\n",
+				win_config->w, win->fbinfo->var.bits_per_pixel);
+		ret = -EINVAL;
+		goto fail;
+	}
+
+	if (win_config->stride <
+			win_config->w * win->fbinfo->var.bits_per_pixel / 8) {
+		dex_err("stride shorter than buffer width (stride = %u, width = %u, bpp = %u)\n",
+				win_config->stride, win_config->w,
+				win->fbinfo->var.bits_per_pixel);
+		ret = -EINVAL;
+		goto fail;
+	}
+
+	if (!dex_validate_x_alignment(dex, win_config->x, win_config->w,
+			win->fbinfo->var.bits_per_pixel)) {
+		ret = -EINVAL;
+		goto fail;
+	}
+
+
 	handle = ion_import_dma_buf(dex->ion_client, win_config->fd);
 	if (IS_ERR(handle)) {
 		dex_err("failed to import fd\n");
 		ret = PTR_ERR(handle);
+		goto fail;
 	}
 
 	buf = dma_buf_get(win_config->fd);
@@ -749,22 +807,6 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		ret = -EINVAL;
 		goto fail_sync;
 	}
-
-	/* component calculation according to the format */
-	win->fbinfo->var.red.length = dex_red_length(win_config->format);
-	win->fbinfo->var.red.offset = dex_red_offset(win_config->format);
-	win->fbinfo->var.green.length = dex_green_length(win_config->format);
-	win->fbinfo->var.green.offset = dex_green_offset(win_config->format);
-	win->fbinfo->var.blue.length = dex_blue_length(win_config->format);
-	win->fbinfo->var.blue.offset = dex_blue_offset(win_config->format);
-	win->fbinfo->var.transp.length = dex_transp_length(win_config->format);
-	win->fbinfo->var.transp.offset = dex_transp_offset(win_config->format);
-	win->fbinfo->var.bits_per_pixel = win->fbinfo->var.red.length +
-					win->fbinfo->var.green.length +
-					win->fbinfo->var.blue.length +
-					win->fbinfo->var.transp.length +
-					dex_padding(win_config->format);
-
 	if ((win_config->plane_alpha > 0) && (win_config->plane_alpha < 0xFF)) {
 		alpha0 = win_config->plane_alpha;
 		alpha1 = 0;
@@ -799,7 +841,8 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 	regs->vidosd_d[idx] |= VIDOSDxD_ALPHA1_B_F(alpha1);
 	regs->buf_start[idx] = dma_buf_data.dma_addr + win_config->offset;
 	regs->buf_end[idx] = regs->buf_start[idx] + window_size;
-	regs->buf_size[idx] = VIDW_BUF_SIZE_PAGEWIDTH(pagewidth);
+	regs->buf_size[idx] = VIDW_BUF_SIZE_OFFSET(win_config->stride - pagewidth) |
+				VIDW_BUF_SIZE_PAGEWIDTH(pagewidth);
 
 	if (idx > 1) {
 		if ((win_config->plane_alpha > 0) && (win_config->plane_alpha < 0xFF)) {
@@ -828,6 +871,8 @@ fail_map:
 fail_buf:
 	if (handle)
 		ion_free(dex->ion_client, handle);
+
+fail:
 	dex_err("failed save window configuration\n");
 	return ret;
 }
