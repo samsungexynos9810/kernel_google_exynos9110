@@ -127,7 +127,9 @@ static struct edid_3d_preset {
 static struct v4l2_dv_timings preferred_preset;
 static u32 edid_misc;
 static int max_audio_channels;
-static u32 source_phy_addr = 0;
+static int audio_bit_rates;
+static int audio_sample_rates;
+static u32 source_phy_addr;
 
 static int edid_i2c_read(struct hdmi_device *hdev, u8 segment, u8 offset,
 						   u8 *buf, size_t len)
@@ -411,7 +413,7 @@ int edid_update(struct hdmi_device *hdev)
 	struct edid_preset *preset;
 	bool first = true;
 	u8 *edid = NULL;
-	int channels_max = 0;
+	int channels_max = 0, support_bit_rates = 0, support_sample_rates = 0;
 	int block_cnt = 0;
 	int ret = 0;
 	int i;
@@ -460,17 +462,27 @@ int edid_update(struct hdmi_device *hdev)
 	for (i = 0; i < specs.audiodb_len; i++) {
 		if (specs.audiodb[i].format != FB_AUDIO_LPCM)
 			continue;
-		if (specs.audiodb[i].channel_count > channels_max)
+		if (specs.audiodb[i].channel_count > channels_max) {
 			channels_max = specs.audiodb[i].channel_count;
+			support_sample_rates = specs.audiodb[i].sample_rates;
+			support_bit_rates = specs.audiodb[i].bit_rates;
+		}
 	}
 
 	if (edid_misc & FB_MISC_HDMI) {
-		if (channels_max)
+		if (channels_max) {
 			max_audio_channels = channels_max;
-		else
+			audio_sample_rates = support_sample_rates;
+			audio_bit_rates = support_bit_rates;
+		} else {
 			max_audio_channels = 2;
+			audio_sample_rates = FB_AUDIO_44KHZ; /*default audio info*/
+			audio_bit_rates = FB_AUDIO_16BIT;
+		}
 	} else {
 		max_audio_channels = 0;
+		audio_sample_rates = 0;
+		audio_bit_rates = 0;
 	}
 	pr_info("EDID: Audio channels %d", max_audio_channels);
 
@@ -497,9 +509,17 @@ bool edid_supports_hdmi(struct hdmi_device *hdev)
 	return edid_misc & FB_MISC_HDMI;
 }
 
-int edid_max_audio_channels(struct hdmi_device *hdev)
+u32 edid_audio_informs(struct hdmi_device *hdev)
 {
-	return max_audio_channels;
+	u32 value = 0, ch_info = 0;
+
+	if (max_audio_channels > 0)
+		ch_info |= (1 << (max_audio_channels - 1));
+	if (max_audio_channels > 6)
+		ch_info |= (1 << 5);
+	value = ((audio_sample_rates << 19) | (audio_bit_rates << 16) |
+			ch_info);
+	return value;
 }
 
 int edid_source_phy_addr(struct hdmi_device *hdev)

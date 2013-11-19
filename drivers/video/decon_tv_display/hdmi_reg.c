@@ -2073,24 +2073,6 @@ void hdmi_reg_infoframe(struct hdmi_device *hdev,
 			hdmi_writeb(hdev, HDMI_AUI_BYTE(1), HDMI_AUI_DATA_CC_2CH);
 			hdmi_writeb(hdev, HDMI_AUI_BYTE(4), HDMI_AUI_DATA_CA_2CH);
 		}
-		/* AUI_BYTE(3)[7:0] : Should Be Zero */
-		hdmi_writeb(hdev, HDMI_AUI_BYTE(3), 0x00);
-		/* AUI_BYTE(2)[4:2] : Sampling Frequency */
-		if (hdev->sample_rate == 32000)
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SF_32);
-		else if (hdev->sample_rate == 48000)
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SF_48);
-		else if (hdev->sample_rate == 96000)
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SF_96);
-		else
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SF_44_1);
-		/* AUI_BYTE(2)[1:0] : Sample Size */
-		if (hdev->sample_size == 16)
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SS_16BIT);
-		else if (hdev->sample_size == 20)
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SS_20BIT);
-		else
-			hdmi_writeb(hdev, HDMI_AUI_BYTE(2), HDMI_AUI_DATA_SS_24BIT);
 		chksum = hdmi_chksum(hdev, HDMI_AUI_BYTE(1), infoframe->len, hdr_sum);
 		dev_dbg(dev, "AUI checksum = 0x%x\n", chksum);
 		hdmi_writeb(hdev, HDMI_AUI_CHECK_SUM, chksum);
@@ -2260,6 +2242,8 @@ void hdmi_reg_i2s_audio_init(struct hdmi_device *hdev)
 		sample_frq = 0x2;
 	else if (sample_rate == 96000)
 		sample_frq = 0xa;
+	else if (sample_rate == 192000)
+		sample_frq = 0xe;
 	else
 		sample_frq = 0;
 
@@ -2303,18 +2287,9 @@ void hdmi_reg_i2s_audio_init(struct hdmi_device *hdev)
 	val = HDMI_I2S_CLK_ACCUR_LEVEL_1 |
 		HDMI_I2S_SET_SAMPLING_FREQ(sample_frq);
 	hdmi_write(hdev, HDMI_I2S_CH_ST_3, val);
-	if (hdev->sample_size == 16)
-		val = HDMI_I2S_ORG_SAMPLING_FREQ_44_1 |
-			HDMI_I2S_WORD_LENGTH_MAX20_16BITS |
-			HDMI_I2S_WORD_LENGTH_MAX_20BITS;
-	else if (hdev->sample_size == 20)
-		val = HDMI_I2S_ORG_SAMPLING_FREQ_44_1 |
-			HDMI_I2S_WORD_LENGTH_MAX24_20BITS |
-			HDMI_I2S_WORD_LENGTH_MAX_24BITS;
-	else
-		val = HDMI_I2S_ORG_SAMPLING_FREQ_44_1 |
-			HDMI_I2S_WORD_LENGTH_MAX24_24BITS |
-			HDMI_I2S_WORD_LENGTH_MAX_24BITS;
+	val = HDMI_I2S_ORG_SAMPLING_FREQ_44_1 |
+		HDMI_I2S_WORD_LENGTH_NOT_DEFINE |
+		HDMI_I2S_WORD_LENGTH_MAX_24BITS;
 	hdmi_write(hdev, HDMI_I2S_CH_ST_4, val);
 
 	hdmi_write(hdev, HDMI_I2S_CH_ST_CON, HDMI_I2S_CH_STATUS_RELOAD);
