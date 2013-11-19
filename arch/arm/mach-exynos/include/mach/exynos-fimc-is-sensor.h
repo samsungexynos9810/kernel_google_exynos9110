@@ -205,7 +205,7 @@ enum pin_act {
 struct exynos_sensor_pin {
 	int pin;
 	u32 value;
-	char name[FIMC_IS_PINNAME_LEN];
+	char *name;
 	enum pin_act act;
 };
 
