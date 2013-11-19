@@ -29,9 +29,10 @@
 #define SYSREG_GSCLBLK_CFG	(S3C_VA_SYS + 0x0224)
 #endif
 
-enum {
-	POWER_ON,
-	POWER_DOWN,
+enum s3c_fb_pm_status {
+	POWER_ON = 0,
+	POWER_DOWN = 1,
+	POWER_HIBER_DOWN = 2,
 };
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
@@ -335,7 +336,7 @@ struct s3c_fb {
 
 	int			 irq_no;
 	struct s3c_fb_vsync	 vsync_info;
-	bool			power_state;
+	enum s3c_fb_pm_status	 power_state;
 
 #ifdef CONFIG_ION_EXYNOS
 	struct ion_client	*fb_ion_client;
@@ -462,6 +463,8 @@ int s3c_fb_runtime_suspend(struct device *dev);
 int s3c_fb_runtime_resume(struct device *dev);
 int s3c_fb_resume(struct device *dev);
 int s3c_fb_suspend(struct device *dev);
+int disp_pm_power_on(struct s3c_fb *sfb);
+int disp_pm_power_off(struct s3c_fb *sfb);
 
 #define VALID_BPP(x) (1 << ((x) - 1))
 #define VALID_BPP124 (VALID_BPP(1) | VALID_BPP(2) | VALID_BPP(4))
