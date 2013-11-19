@@ -16,8 +16,10 @@
 #include <linux/pm_runtime.h>
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
+#include <linux/clk-private.h>
 
 #include <linux/platform_device.h>
+#include "regs-decon.h"
 #include "decon_display_driver.h"
 #include "decon_fb.h"
 #include "decon_mipi_dsi.h"
@@ -60,12 +62,6 @@ static struct clk *g_phyclk_mipidphy_rxclkesc0_phy,
 	*g_mout_phyclk_mipidphy_rxclkesc0_user;
 static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
 	*g_mout_phyclk_mipidphy_bitclkdiv8_user;
-
-#define DISP_RUNTIME_PM_DEBUG
-
-#ifdef DISP_RUNTIME_PM_DEBUG
-static int g_debug_pm_count;
-#endif
 
 #define DISPLAY_GET_CLOCK1(node) do {\
 	g_##node = clk_get(dev, #node); \
@@ -142,8 +138,6 @@ static int g_debug_pm_count;
 	writel(data, regs); \
 	iounmap(regs); \
 	} while (0)
-
-#define pm_debug(params, ...) pr_err("[DISP:PM] " params, ##__VA_ARGS__)
 
 static void additional_clock_setup(void)
 {
@@ -350,6 +344,10 @@ int disable_display_driver_power(struct device *dev)
 
 	dispdrv = get_display_driver();
 
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	dispdrv->pm_status.ops->clk_off(dispdrv);
+#endif
+
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
 	id = gpio_request(gpio->id[0], "lcd_reset");
 	if (id < 0) {
@@ -426,31 +424,86 @@ int disable_display_decon_runtimepm(struct device *dev)
 	return 0;
 }
 
-int disp_pm_runtime_enable(struct display_driver *dispdrv)
+void set_default_hibernation_mode(struct display_driver *dispdrv)
 {
-#ifdef DISP_RUNTIME_PM_DEBUG
-	pm_debug("runtime pm for disp-driver enabled\n");
+	dispdrv->pm_status.clock_gating_on = true;
+	dispdrv->pm_status.power_gating_on = true;
+	dispdrv->pm_status.hotplug_gating_on = false;
+}
+
+void decon_clock_on(struct display_driver *dispdrv)
+{
+	if (!dispdrv->decon_driver.clk) {
+		dispdrv->decon_driver.clk = __clk_lookup("gate_decon");
+		if (IS_ERR(dispdrv->decon_driver.clk)) {
+			pr_err("Failed to clk_get - gate_decon\n");
+			return;
+		}
+	}
+	clk_prepare(dispdrv->decon_driver.clk);
+	clk_enable(dispdrv->decon_driver.clk);
+}
+
+void mic_clock_on(struct display_driver *dispdrv)
+{
+#ifdef CONFIG_DECON_MIC
+	if (!dispdrv->mic_driver.clk) {
+		dispdrv->mic_driver.clk = __clk_lookup("gate_mic");
+		if (IS_ERR(dispdrv->mic_driver.clk)) {
+			pr_err("Failed to clk_get - gate_mic\n");
+			return;
+		}
+	}
+	clk_prepare(dispdrv->mic_driver.clk);
+	clk_enable(dispdrv->mic_driver.clk);
 #endif
-	pm_runtime_enable(dispdrv->display_driver);
-	return 0;
 }
 
-int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
+void dsi_clock_on(struct display_driver *dispdrv)
 {
-	pm_runtime_get_sync(dispdrv->display_driver);
-	return 0;
+	if (!dispdrv->dsi_driver.clk) {
+		dispdrv->dsi_driver.clk = __clk_lookup("gate_dsim0");
+		if (IS_ERR(dispdrv->dsi_driver.clk)) {
+			pr_err("Failed to clk_get - gate_dsi\n");
+			return;
+		}
+	}
+	clk_prepare(dispdrv->dsi_driver.clk);
+	clk_enable(dispdrv->dsi_driver.clk);
 }
 
-int disp_pm_runtime_put_sync(struct display_driver *dispdrv)
+void decon_clock_off(struct display_driver *dispdrv)
 {
-	pm_runtime_put_sync(dispdrv->display_driver);
-	return 0;
+	clk_disable(dispdrv->decon_driver.clk);
+	clk_unprepare(dispdrv->decon_driver.clk);
 }
 
-#ifdef DISP_RUNTIME_PM_DEBUG
-void disp_debug_power_info(void)
+void dsi_clock_off(struct display_driver *dispdrv)
 {
-	pm_debug("pm count : %d\n", g_debug_pm_count);
+	clk_disable(dispdrv->dsi_driver.clk);
+	clk_unprepare(dispdrv->dsi_driver.clk);
 }
+
+void mic_clock_off(struct display_driver *dispdrv)
+{
+#ifdef CONFIG_DECON_MIC
+	clk_disable(dispdrv->mic_driver.clk);
+	clk_unprepare(dispdrv->mic_driver.clk);
 #endif
+}
+
+struct pm_ops decon_pm_ops = {
+	.clk_on		= decon_clock_on,
+	.clk_off 	= decon_clock_off,
+};
+#ifdef CONFIG_DECON_MIC
+struct pm_ops mic_pm_ops = {
+	.clk_on		= mic_clock_on,
+	.clk_off 	= mic_clock_off,
+};
+#endif
+struct pm_ops dsi_pm_ops = {
+	.clk_on		= dsi_clock_on,
+	.clk_off 	= dsi_clock_off,
+};
 
