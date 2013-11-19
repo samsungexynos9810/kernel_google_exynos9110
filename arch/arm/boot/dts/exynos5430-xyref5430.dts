@@ -90,6 +90,7 @@
 		status = "okay";
 		num-slots = <1>;
 		supports-highspeed;
+		cd-type = <0>;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
