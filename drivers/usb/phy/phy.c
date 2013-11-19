@@ -82,6 +82,54 @@ static int devm_usb_phy_match(struct device *dev, void *res, void *match_data)
 }
 
 /**
+ * usb_phy_check_op - check all USB PHYs operation
+ *
+ * Returns true if at least one PHY is active.
+ */
+bool usb_phy_check_op(void)
+{
+	struct usb_phy	*phy = NULL;
+	unsigned long	flags;
+	bool		op = false;
+
+	spin_lock_irqsave(&phy_lock, flags);
+
+	list_for_each_entry(phy, &phy_list, head) {
+		/* First check whether OTG is available */
+		if (phy->otg && phy->state != OTG_STATE_UNDEFINED) {
+			if (phy->state == OTG_STATE_B_PERIPHERAL ||
+			    phy->state == OTG_STATE_A_HOST) {
+				op = true;
+				break;
+			} else {
+				continue;
+			}
+		}
+
+		/*
+		 * FIXME: this is used for DWC3 DRD controller and
+		 * should be removed once proper power management is
+		 * implemented.
+		 */
+		if (phy->type == USB_PHY_TYPE_USB3)
+			continue;
+
+		/*
+		 * FIXME: this is used for USB2.0 host controller and
+		 * should be replaced with usb_phy_is_active() call
+		 * once proper power management is implemented.
+		 */
+		if (phy->type == USB_PHY_TYPE_USB2)
+			continue;
+	}
+
+	spin_unlock_irqrestore(&phy_lock, flags);
+
+	return op;
+}
+EXPORT_SYMBOL_GPL(usb_check_phy_active);
+
+/**
  * devm_usb_get_phy - find the USB PHY
  * @dev - device that requests this phy
  * @type - the type of the phy the controller requires

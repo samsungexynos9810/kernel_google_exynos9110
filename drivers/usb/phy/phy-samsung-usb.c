@@ -277,24 +277,6 @@ EXPORT_SYMBOL_GPL(samsung_usbphy_get_refclk_freq);
 
 int samsung_usbphy_check_op(void)
 {
-	struct usb_phy *usb2_phy, *usb3_phy;
-	bool active = false;
-
-	usb2_phy = usb_get_phy(USB_PHY_TYPE_USB2);
-	usb3_phy = usb_get_phy(USB_PHY_TYPE_USB3);
-
-	if (!IS_ERR(usb3_phy)) {
-		active = usb_phy_is_active(usb3_phy);
-		if (active)
-			goto exit;
-	}
-
-	if (!IS_ERR(usb2_phy))
-		active = usb_phy_is_active(usb2_phy);
-exit:
-	usb_put_phy(usb2_phy);
-	usb_put_phy(usb3_phy);
-
-	return active;
+	return usb_phy_check_op();
 }
 EXPORT_SYMBOL_GPL(samsung_usbphy_check_op);

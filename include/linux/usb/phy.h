@@ -203,6 +203,7 @@ usb_phy_vbus_off(struct usb_phy *x)
 
 /* for usb host and peripheral controller drivers */
 #if IS_ENABLED(CONFIG_USB_PHY)
+extern bool usb_phy_check_op(void);
 extern struct usb_phy *usb_get_phy(enum usb_phy_type type);
 extern struct usb_phy *devm_usb_get_phy(struct device *dev,
 	enum usb_phy_type type);
@@ -215,6 +216,11 @@ extern void devm_usb_put_phy(struct device *dev, struct usb_phy *x);
 extern int usb_bind_phy(const char *dev_name, u8 index,
 				const char *phy_dev_name);
 #else
+static inline bool usb_phy_check_op(void)
+{
+	return false;
+}
+
 static inline struct usb_phy *usb_get_phy(enum usb_phy_type type)
 {
 	return ERR_PTR(-ENXIO);
