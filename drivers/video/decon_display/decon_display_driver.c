@@ -153,6 +153,8 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 
 	init_display_operations();
 
+	init_display_pm(&g_display_driver);
+
 	/* parse display driver device tree & convers it to objects
 	 * for each platform device */
 	ret = g_display_driver.dt_ops.parse_display_driver_dt(pdev, &g_display_driver);
