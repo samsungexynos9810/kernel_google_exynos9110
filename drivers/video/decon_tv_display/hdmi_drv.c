@@ -910,7 +910,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	hdmi_dev->cur_conf = hdmi_conf[HDMI_DEFAULT_TIMINGS_IDX].conf;
 
 	/* default audio configuration : disable audio */
-	hdmi_dev->audio_enable = 0;
+	hdmi_dev->audio_enable = 1;
 	hdmi_dev->audio_channel_count = 2;
 	hdmi_dev->sample_rate = DEFAULT_SAMPLE_RATE;
 	hdmi_dev->sample_size = DEFAULT_SAMPLE_SIZE;
