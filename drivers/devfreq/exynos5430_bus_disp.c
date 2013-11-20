@@ -536,10 +536,10 @@ static struct platform_device exynos5_devfreq_disp_device = {
 
 static int __init exynos5_devfreq_disp_qos_init(void)
 {
-	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&boot_disp_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&boot_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
 	pm_qos_update_request_timeout(&exynos5_disp_qos,
 					exynos5_devfreq_disp_profile.initial_freq, 40000 * 1000);
 
@@ -1117,10 +1117,10 @@ static struct platform_device exynos5_devfreq_disp_device = {
 
 static int __init exynos5_devfreq_disp_qos_init(void)
 {
-	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&boot_disp_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_BUS_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&boot_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
 	pm_qos_update_request_timeout(&exynos5_disp_qos,
 					exynos5_devfreq_disp_profile.initial_freq, 40000 * 1000);
 
