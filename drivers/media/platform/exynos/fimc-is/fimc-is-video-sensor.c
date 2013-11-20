@@ -455,6 +455,7 @@ static int fimc_is_sen_video_s_ctrl(struct file *file, void *priv,
 	int ret = 0;
 	struct fimc_is_video_ctx *vctx = file->private_data;
 	struct fimc_is_device_sensor *device;
+	struct v4l2_subdev *subdev_flite;
 
 	BUG_ON(!ctrl);
 	BUG_ON(!vctx);
@@ -462,6 +463,13 @@ static int fimc_is_sen_video_s_ctrl(struct file *file, void *priv,
 	device = vctx->device;
 	if (!device) {
 		err("device is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	subdev_flite = device->subdev_flite;
+	if (!subdev_flite) {
+		err("subdev_flite is NULL");
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -494,6 +502,30 @@ static int fimc_is_sen_video_s_ctrl(struct file *file, void *priv,
 			}
 		}
 		break;
+	case V4L2_CID_IS_S_BNS:
+		if (device->pdata->flite_ch != FLITE_ID_A) {
+			merr("Can`t support BNS at FIMC-LITE CH%d",
+				device, device->pdata->flite_ch);
+			ret = -EINVAL;
+			goto p_err;
+		}
+
+		ret = fimc_is_sensor_s_bns(device, ctrl->value);
+		if (ret) {
+			merr("fimc_is_sensor_s_bns is fail(%d)", device, ret);
+			goto p_err;
+		}
+
+		ret = v4l2_subdev_call(subdev_flite, core, s_ctrl, ctrl);
+		if (ret) {
+			merr("v4l2_flite_call(s_ctrl) is fail(%d)", device, ret);
+			goto p_err;
+		}
+		break;
+	default:
+		err("unsupported ioctl(%d)\n", ctrl->id);
+		ret = -EINVAL;
+		break;
 	}
 
 p_err:
@@ -524,6 +556,16 @@ static int fimc_is_sen_video_g_ctrl(struct file *file, void *priv,
 		else
 			ctrl->value = (test_bit(FIMC_IS_SENSOR_FRONT_START, &sensor->state) ?
 				IS_ENABLE_STREAM : IS_DISABLE_STREAM);
+		break;
+	case V4L2_CID_IS_G_BNS_SIZE:
+		{
+			u32 width, height;
+
+			width = fimc_is_sensor_g_bns_width(sensor);
+			height = fimc_is_sensor_g_bns_height(sensor);
+
+			ctrl->value = (width << 16) | height;
+		}
 		break;
 	default:
 		err("unsupported ioctl(%d)\n", ctrl->id);

@@ -13,6 +13,8 @@ struct fimc_is_window {
 	u32 height;
 	u32 offs_h;
 	u32 offs_v;
+	u32 otf_width;
+	u32 otf_height;
 };
 
 struct fimc_is_fmt {

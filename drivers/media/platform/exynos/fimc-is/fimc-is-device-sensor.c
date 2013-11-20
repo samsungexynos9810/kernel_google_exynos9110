@@ -49,7 +49,7 @@
 
 extern int fimc_is_sen_video_probe(void *data);
 
-#define BINNING(x, y) ((1 << (((x) / (y)) >> 1)) * 1000)
+#define BINNING(x, y) roundup((x) * 1000 / (y), 250)
 
 int fimc_is_sensor_read(struct i2c_client *client,
 	u32 addr, u8 *val)
@@ -1219,6 +1219,35 @@ p_err:
 	return ret;
 }
 
+int fimc_is_sensor_s_bns(struct fimc_is_device_sensor *device,
+	u32 ratio)
+{
+	int ret = 0;
+	struct v4l2_subdev *subdev_flite;
+	u32 sensor_width, sensor_height;
+
+	BUG_ON(!device);
+	BUG_ON(!device->subdev_flite);
+
+	subdev_flite = device->subdev_flite;
+
+	sensor_width = fimc_is_sensor_g_width(device);
+	sensor_height = fimc_is_sensor_g_height(device);
+	if (!sensor_width || !sensor_height) {
+		merr("Sensor size is zero. Sensor set_format first.\n", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	device->image.window.otf_width
+		= rounddown((sensor_width * 1000 / ratio), 4);
+	device->image.window.otf_height
+		= rounddown((sensor_height * 1000 / ratio), 2);
+
+p_err:
+	return ret;
+}
+
 int fimc_is_sensor_g_instance(struct fimc_is_device_sensor *device)
 {
 	BUG_ON(!device);
@@ -1247,6 +1276,37 @@ int fimc_is_sensor_g_height(struct fimc_is_device_sensor *device)
 {
 	BUG_ON(!device);
 	return device->image.window.height;
+}
+
+int fimc_is_sensor_g_bns_width(struct fimc_is_device_sensor *device)
+{
+	BUG_ON(!device);
+
+	if (device->image.window.otf_width)
+		return device->image.window.otf_width;
+
+	return device->image.window.width;
+}
+
+int fimc_is_sensor_g_bns_height(struct fimc_is_device_sensor *device)
+{
+	BUG_ON(!device);
+	if (device->image.window.otf_height)
+		return device->image.window.otf_height;
+
+	return device->image.window.height;
+}
+
+int fimc_is_sensor_g_bns_ratio(struct fimc_is_device_sensor *device)
+{
+	int binning = 0;
+
+	BUG_ON(!device);
+
+	binning = min(BINNING(device->image.window.width, device->image.window.otf_width),
+		BINNING(device->image.window.height, device->image.window.otf_height));
+
+	return binning;
 }
 
 int fimc_is_sensor_g_bratio(struct fimc_is_device_sensor *device)

@@ -188,12 +188,17 @@ int fimc_is_sensor_back_stop(struct fimc_is_device_sensor *device);
 
 int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	struct v4l2_streamparm *param);
+int fimc_is_sensor_s_bns(struct fimc_is_device_sensor *device,
+	u32 reatio);
 
 int fimc_is_sensor_g_instance(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_framerate(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_fcount(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_width(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_height(struct fimc_is_device_sensor *device);
+int fimc_is_sensor_g_bns_width(struct fimc_is_device_sensor *device);
+int fimc_is_sensor_g_bns_height(struct fimc_is_device_sensor *device);
+int fimc_is_sensor_g_bns_ratio(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_bratio(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_module(struct fimc_is_device_sensor *device,
 	struct fimc_is_module_enum **module);

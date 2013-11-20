@@ -192,6 +192,149 @@
 
 #define FLITE_REG_CIFCNTSEQ				0x100
 
+/* BNS */
+#define FLITE_REG_BINNINGON				(0x120)
+#define FLITE_REG_BINNINGON_CLKGATE_ON(x)		(~(x) << 1)
+#define FLITE_REG_BINNINGON_EN(x)			((x) << 0)
+
+#define FLITE_REG_BINNINGCTRL				(0x124)
+#define FLITE_REG_BINNINGCTRL_FACTOR_Y(x)		((x) << 22)
+#define FLITE_REG_BINNINGCTRL_FACTOR_X(x)		((x) << 17)
+#define FLITE_REG_BINNINGCTRL_SHIFT_UP_Y(x)		((x) << 15)
+#define FLITE_REG_BINNINGCTRL_SHIFT_UP_X(x)		((x) << 13)
+#define FLITE_REG_BINNINGCTRL_PRECISION_BITS(x)		((x) << 10)
+#define FLITE_REG_BINNINGCTRL_BITTAGE(x)		((x) << 5)
+#define FLITE_REG_BINNINGCTRL_UNITY_SIZE(x)		((x) << 0)
+
+#define FLITE_REG_PEDESTAL				(0x128)
+#define FLITE_REG_PEDESTAL_OUT(x)			((x) << 12)
+#define FLITE_REG_PEDESTAL_IN(x)			((x) << 0)
+
+#define FLITE_REG_BINNINGTOTAL				(0x12C)
+#define FLITE_REG_BINNINGTOTAL_HEIGHT(x)		((x) << 16)
+#define FLITE_REG_BINNINGTOTAL_WIDTH(x)			((x) << 0)
+
+#define FLITE_REG_BINNINGINPUT				(0x130)
+#define FLITE_REG_BINNINGINPUT_HEIGHT(x)		((x) << 16)
+#define FLITE_REG_BINNINGINPUT_WIDTH(x)			((x) << 0)
+
+#define FLITE_REG_BINNINGMARGIN				(0x134)
+#define FLITE_REG_BINNINGMARGIN_TOP(x)			((x) << 16)
+#define FLITE_REG_BINNINGMARGIN_LEFT(x)			((x) << 0)
+
+#define FLITE_REG_BINNINGOUTPUT				(0x138)
+#define FLITE_REG_BINNINGOUTPUT_HEIGHT(x)		((x) << 16)
+#define FLITE_REG_BINNINGOUTPUT_WIDTH(x)		((x) << 0)
+
+#define FLITE_REG_WEIGHTX01				(0x13C)
+#define FLITE_REG_WEIGHTX01_1(x)			((x) << 16)
+#define FLITE_REG_WEIGHTX01_0(x)			((x) << 0)
+
+#define FLITE_REG_WEIGHTY01				(0x15C)
+#define FLITE_REG_WEIGHTY01_1(x)			((x) << 16)
+#define FLITE_REG_WEIGHTY01_0(x)			((x) << 0)
+
+static void flite_hw_enable_bns(unsigned long __iomem *base_reg, bool enable)
+{
+	u32 cfg = 0;
+
+	/* enable */
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGON));
+	cfg |= FLITE_REG_BINNINGON_CLKGATE_ON(enable);
+	cfg |= FLITE_REG_BINNINGON_EN(enable);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGON));
+}
+
+static void flite_hw_s_coeff_bns(unsigned long __iomem *base_reg,
+	u32 factor_x, u32 factor_y)
+{
+	u32 cfg = 0;
+
+	/* control */
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGCTRL));
+	cfg |= FLITE_REG_BINNINGCTRL_FACTOR_Y(factor_y);
+	cfg |= FLITE_REG_BINNINGCTRL_FACTOR_X(factor_x);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGCTRL));
+
+	/* coefficient */
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
+	cfg |= FLITE_REG_WEIGHTX01_1(0x40);
+	cfg |= FLITE_REG_WEIGHTX01_0(0xC0);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+	cfg |= FLITE_REG_WEIGHTY01_1(0x40);
+	cfg |= FLITE_REG_WEIGHTY01_0(0xC0);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+}
+
+static void flite_hw_s_size_bns(unsigned long __iomem *base_reg,
+	u32 width, u32 height, u32 otf_width, u32 otf_height)
+{
+	u32 cfg = 0;
+
+	/* size */
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGTOTAL));
+	cfg |= FLITE_REG_BINNINGTOTAL_HEIGHT(height);
+	cfg |= FLITE_REG_BINNINGTOTAL_WIDTH(width);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGTOTAL));
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGINPUT));
+	cfg |= FLITE_REG_BINNINGINPUT_HEIGHT(height);
+	cfg |= FLITE_REG_BINNINGINPUT_WIDTH(width);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGINPUT));
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGMARGIN));
+	cfg |= FLITE_REG_BINNINGMARGIN_TOP(0);
+	cfg |= FLITE_REG_BINNINGMARGIN_LEFT(0);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGMARGIN));
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGOUTPUT));
+	cfg |= FLITE_REG_BINNINGOUTPUT_HEIGHT(otf_height);
+	cfg |= FLITE_REG_BINNINGOUTPUT_WIDTH(otf_width);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGOUTPUT));
+}
+
+static int flite_hw_set_bns(unsigned long __iomem *base_reg,
+        struct fimc_is_image *image)
+{
+	int ret = 0;
+	u32 width, height;
+	u32 otf_width, otf_height;
+	u32 factor_x, factor_y;
+
+	BUG_ON(!image);
+
+	width = image->window.width;
+	height = image->window.height;
+	otf_width = image->window.otf_width;
+	otf_height = image->window.otf_height;
+
+	if (otf_width == width && otf_height == height) {
+		info("input & output sizes are same(%d, %d)\n", otf_width, otf_height);
+		goto exit;
+	}
+
+	if (otf_width == 0 || otf_height == 0) {
+		warn("bns size is zero. s_ctrl(V4L2_CID_IS_S_BNS) first\n");
+		goto exit;
+	}
+
+	factor_x = 2 * width / otf_width;
+	factor_y = 2 * height / otf_height;
+
+	flite_hw_s_size_bns(base_reg, width, height, otf_width, otf_height);
+
+	flite_hw_s_coeff_bns(base_reg, factor_x, factor_y);
+
+	flite_hw_enable_bns(base_reg, true);
+
+	info("BNS in(%d, %d), BNS out(%d, %d), ratio(%d, %d)\n",
+	width, height, otf_width, otf_height, factor_x, factor_y);
+exit:
+	return ret;
+}
+
 static void flite_hw_set_cam_source_size(unsigned long __iomem *base_reg,
 	struct fimc_is_image *image)
 {
@@ -556,6 +699,8 @@ static int start_fimc_lite(unsigned long __iomem *base_reg,
 	flite_hw_set_config_irq(base_reg);
 	flite_hw_set_window_offset(base_reg, image);
 	/* flite_hw_set_test_pattern_enable(); */
+
+	flite_hw_set_bns(base_reg, image);
 
 	flite_hw_set_last_capture_end_clear(base_reg);
 	flite_hw_set_capture_start(base_reg);
@@ -1342,12 +1487,57 @@ p_err:
 	return ret;
 }
 
+static int flite_s_ctrl(struct v4l2_subdev *subdev, struct v4l2_control *ctrl)
+{
+	int ret = 0;
+	struct fimc_is_device_flite *flite;
+
+	BUG_ON(!subdev);
+	BUG_ON(!ctrl);
+
+	flite = (struct fimc_is_device_flite *)v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	switch (ctrl->id) {
+	case V4L2_CID_IS_S_BNS:
+		{
+			u32 width, height, ratio;
+
+			width = flite->image.window.width;
+			height = flite->image.window.height;
+			ratio = ctrl->value;
+
+			flite->image.window.otf_width
+				= rounddown((width * 1000 / ratio), 4);
+			flite->image.window.otf_height
+				= rounddown((height * 1000 / ratio), 2);
+		}
+		break;
+	default:
+		err("unsupported ioctl(%d)\n", ctrl->id);
+		ret = -EINVAL;
+		break;
+	}
+
+p_err:
+	return ret;
+}
+
+static const struct v4l2_subdev_core_ops core_ops = {
+	.s_ctrl = flite_s_ctrl,
+};
+
 static const struct v4l2_subdev_video_ops video_ops = {
 	.s_stream = flite_s_stream,
 	.s_mbus_fmt = flite_s_format
 };
 
 static const struct v4l2_subdev_ops subdev_ops = {
+	.core = &core_ops,
 	.video = &video_ops
 };
 
