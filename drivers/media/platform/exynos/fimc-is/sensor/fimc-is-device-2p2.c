@@ -140,7 +140,7 @@ int sensor_2p2_probe(struct i2c_client *client,
 	ext->companion_con.peri_info1.valid = true;
 	ext->companion_con.peri_info1.peri_type = SE_I2C;
 	ext->companion_con.peri_info1.peri_setting.i2c.channel = 0;
-	ext->companion_con.peri_info1.peri_setting.i2c.slave_address = 0x38;
+	ext->companion_con.peri_info1.peri_setting.i2c.slave_address = 0x7A;
 	ext->companion_con.peri_info1.peri_setting.i2c.speed = 400000;
 	ext->companion_con.peri_info2.valid = true;
 	ext->companion_con.peri_info2.peri_type = SE_FIMC_LITE;
