@@ -43,7 +43,6 @@
 
 #if defined(CONFIG_SOC_EXYNOS5430)
 #undef ENABLE_DVFS
-#define CONFIG_ARM_TRUSTZONE
 #endif
 
 /*
