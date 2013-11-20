@@ -300,7 +300,7 @@ struct dw_mci_dma_ops {
 #define DW_MCI_SLOT_QUIRK_NO_WRITE_PROTECT	BIT(0)
 
 enum dw_mci_cd_types {
-	DW_MCI_CD_INTERNAL,	/* use mmc internal CD line */
+	DW_MCI_CD_INTERNAL = 1,	/* use mmc internal CD line */
 	DW_MCI_CD_EXTERNAL,	/* use external callback */
 	DW_MCI_CD_GPIO,		/* use external gpio pin for CD line */
 	DW_MCI_CD_NONE,		/* no CD line, use polling to detect card */
