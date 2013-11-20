@@ -163,7 +163,7 @@
 #define VIDW_BUF_SIZE_OFFSET_MASK		(0x3fff << 14)
 #define VIDW_BUF_SIZE_OFFSET_SHIFT		(14)
 #define VIDW_BUF_SIZE_OFFSET_LIMIT		(0x3fff)
-#define VIDW_BUF_SIZE_OFFSET(_x)		(((_x) & 0x3fff) << 14)
+#define VIDW_BUF_SIZE_OFFSET(_x)		(((_x) & 0x3fff) << 15)
 
 #define VIDW_BUF_SIZE_PAGEWIDTH_MASK		(0x3fff << 0)
 #define VIDW_BUF_SIZE_PAGEWIDTH_SHIFT		(0)
