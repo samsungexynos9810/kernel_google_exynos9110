@@ -2305,12 +2305,12 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				readl(sfb->regs + SHD_VIDW_BUF_START(i)));
 	}
 
-	pm_runtime_put_sync(sfb->dev);
-	sw_sync_timeline_inc(sfb->timeline, 1);
-
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		if (!sfb->windows[i]->local)
 			s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
+
+	pm_runtime_put_sync(sfb->dev);
+	sw_sync_timeline_inc(sfb->timeline, 1);
 
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 	if (regs->bandwidth <= FHD_MAX_BW_PER_WINDOW) {
