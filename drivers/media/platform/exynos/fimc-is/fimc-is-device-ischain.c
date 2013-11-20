@@ -3139,7 +3139,7 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 
 	/* FW loading of peripheral device */
 	if ((module->position == SENSOR_POSITION_REAR)
-		&& (device->instance == 0)) {
+		&& !test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
 		if (fimc_is_comp_is_valid(core) == 0) {
 			ret = fimc_is_comp_loadfirm(core);
 			if (ret) {
