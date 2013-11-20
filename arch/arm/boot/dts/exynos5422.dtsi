@@ -326,6 +326,7 @@
 		reg = <0x13E80000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 0>;
+		samsung,power-domain = <&spd_gscl0>;
 	};
 
 	sysmmu_gscl1: sysmmu@0x13E90000 {
@@ -333,6 +334,7 @@
 		reg = <0x13E90000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 2>;
+		samsung,power-domain = <&spd_gscl1>;
 	};
 
 	sysmmu_fimc_fd: sysmmu@0x132A0000 {
@@ -474,6 +476,7 @@
 		reg = <0x11200000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <6 2>;
+		samsung,power-domain = <&pd_mfc0>;
 	};
 
 	sysmmu_mfc0_1: sysmmu@0x11210000 {
@@ -481,6 +484,7 @@
 		reg = <0x11210000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <8 5>;
+		samsung,power-domain = <&pd_mfc0>;
 	};
 
 	sysmmu_fimd0x: sysmmu@0x14640000 {
@@ -489,6 +493,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <3 2>;
 		qos = <15>;
+		samsung,power-domain = <&pd_disp1>;
 		prop-map {
 			winmap = <0x11>;
 		};
@@ -500,6 +505,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <3 0>;
 		qos = <15>;
+		samsung,power-domain = <&pd_disp1>;
 		prop-map {
 			winmap = <0xe>;
 		};
@@ -596,26 +602,6 @@
 				};
 			};
 		};
-
-	pd_disp1: pd-disp1@0x100440c0 {
-		compatible = "samsung,exynos-pd";
-		reg = <0x100440c0 0x20>;
-
-		spd_fimd: spd-fimd@100440c0 {
-			compatible = "samsung,exynos-spd";
-			bts-status = "enabled";
-		};
-
-		spd_mixer: spd-mixer@100440c0 {
-			compatible = "samsung,exynos-spd";
-			bts-status = "enabled";
-		};
-
-		spd_hdmi: spd-hdmi@100440c0 {
-			compatible = "samsung,exynos-spd";
-			bts-status = "disabled";
-		};
-	};
 
 	dwmmc_0: dwmmc0@12200000 {
 		compatible = "samsung,exynos5422-dw-mshc";
@@ -813,10 +799,6 @@
 		samsung,power-domain = <&pd_g3d>;
 	};
 
-	pd_g3d: pd-g3d@0x10044080 {
-		compatible = "samsung,exynos-pd";
-		reg = <0x10044080 0x20>;
-	};
 
 	amba {
 		#address-cells = <1>;
@@ -988,6 +970,7 @@
 		clock-names = "mfc", "aclk_333", "mout_aclk_333_user", "gate_ip_mfc", "mout_aclk_333_sw", "dout_aclk_333";
 		clocks = <&clock 1350>, <&clock 486>, <&clock 2040>, <&clock 1234>, <&clock 2033>, <&clock 4008>;
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
+		samsung,power-domain = <&pd_mfc0>;
 		status = "ok";
 		ip_ver = <8>;
 		clock_rate = <333000000>;
@@ -1082,6 +1065,7 @@
 		mif_min = <160000>;
 		int_min = <111000>;
 		iommu = <&sysmmu_gscl0>;
+		samsung,power-domain = <&spd_gscl0>;
 	};
 
 	gsc_1: gsc@0x13E10000 {
@@ -1094,6 +1078,7 @@
 		mif_min = <160000>;
 		int_min = <111000>;
 		iommu = <&sysmmu_gscl1>;
+		samsung,power-domain = <&spd_gscl1>;
 	};
 
 	jpeg_0: jpeg@11F50000 {
@@ -1116,22 +1101,6 @@
 		iommu = <&sysmmu_jpeg2>;
 		ip_ver = <3>;
 		samsung,power-domain = <&spd_jpeg2>;
-	};
-
-	pd_psgen: pd-psgen@10044180 {
-		compatible = "samsung,exynos-pd";
-		reg = <0x10044180 0x20>;
-		status = "disabled";
-
-		spd_jpeg1: spd-jpeg1@10044180 {
-			compatible = "samsung,exynos-spd";
-			status = "disabled";
-		};
-
-		spd_jpeg2: spd-jpeg2@10044180 {
-			compatible = "samsung,exynos-spd";
-		        status = "disabled";
-		};
 	};
 
 	scaler_0: scaler@12800000 {
@@ -1175,12 +1144,6 @@
 		  samsung,power-domain = <&pd_g2d>;
 	};
 
-	pd_g2d: pd-g2d@0x10044100 {
-		compatible = "samsung,exynos-pd";
-		reg = <0x10044100 0x20>;
-		status = "disabled";
-	};
-
 	lpass: lpass@03810000 {
 		compatible = "samsung,exynos5-audss";
 		reg = <0x03810000 0x100>,
@@ -1190,7 +1153,7 @@
 			 <&clock 1725>,		/* gate_ass_gpio */
 			 <&clock 1730>;		/* gate_ass_srp */
 		clock-names = "dmac", "timer", "gpio", "srp";
-		/* samsung,power-domain = <&pd_maudio>; */
+		samsung,power-domain = <&pd_maudio>;
 		status = "ok";
 	};
 
@@ -1298,6 +1261,113 @@
 
 		clock-names = "pclk_hdmi_cec";
 		clocks = <&clock 961>;
+	};
+
+    pd_gscl: pd-gscl@10044000 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x10044000 0x20>;
+
+        spd_gscl0: spd-gscl0@10044000 {
+            compatible = "samsung,exynos-spd";
+        };
+
+        spd_gscl1: spd-gscl1@10044000 {
+            compatible = "samsung,exynos-spd";
+        };
+    };
+
+    pd_mfc0: pd-mfc@10044060 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x10044060 0x20>;
+    };
+
+	pd_g3d: pd-g3d@0x10044080 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044080 0x20>;
+	};
+
+	pd_disp1: pd-disp1@0x100440c0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x100440c0 0x20>;
+
+		spd_fimd: spd-fimd@100440c0 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+
+		spd_mixer: spd-mixer@100440c0 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+
+		spd_hdmi: spd-hdmi@100440c0 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "disabled";
+		};
+	};
+
+
+	pd_maudio: pd-maudio@100440e0 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x100440e0 0x20>;
+    };
+
+	pd_g2d: pd-g2d@0x10044100 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044100 0x20>;
+		status = "disabled";
+	};
+
+	pd_mscl: pd-mscl@10044120 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x10044120 0x20>;
+		status = "disabled";
+    };
+
+	pd_fsys: pd-fsys@10044140 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x10044140 0x20>;
+		status = "disabled";
+
+        spd_usbdrd30: spd-usbdrd30@10044140 {
+            compatible = "samsung,exynos-spd";
+        };
+
+        spd_pdma: spd-pdma@10044140 {
+            compatible = "samsung,exynos-spd";
+        };
+
+		spd_usbhost20: spd-usbhost20@10044140 {
+            compatible = "samsung,exynos-spd";
+        };
+    };
+
+	pd_fsys2: pd-fsys2@10044160 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x10044160 0x20>;
+		status = "disabled";
+	};
+
+	pd_psgen: pd-psgen@10044180 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044180 0x20>;
+		status = "disabled";
+
+		spd_jpeg1: spd-jpeg1@10044180 {
+			compatible = "samsung,exynos-spd";
+			status = "disabled";
+		};
+
+		spd_jpeg2: spd-jpeg2@10044180 {
+			compatible = "samsung,exynos-spd";
+		        status = "disabled";
+		};
+	};
+
+	pd_peric: pd-peric@100441A0 {
+        compatible = "samsung,exynos-pd";
+        reg = <0x100441A0 0x20>;
+		status = "disabled";
 	};
 
 };
