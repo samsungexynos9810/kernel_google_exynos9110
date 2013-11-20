@@ -39,8 +39,14 @@
 #include <linux/workqueue.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
+#include <mach/smc.h>
+#include <plat/map-s5p.h>
 
 #include "dw_mmc.h"
+
+#ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
+#include "../card/queue.h"
+#endif
 
 /* Common flag combinations */
 #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DTO | SDMMC_INT_DCRC | \
@@ -72,10 +78,10 @@ struct idmac_desc {
 	u32		des2;	/* buffer 1 physical address */
 
 	u32		des3;	/* buffer 2 physical address */
-	u32		des4;	/* Dummy Descriptor */
-	u32		des5;	/* Dummy Descriptor */
-	u32		des6;	/* Dummy Descriptor */
-	u32		des7;	/* Dummy Descriptor */
+	u32		des4;	/* Sector Key */
+	u32		des5;	/* Application Key 0 */
+	u32		des6;	/* Application Key 1 */
+	u32		des7;	/* Application Key 2 */
 };
 #endif /* CONFIG_MMC_DW_IDMAC */
 
@@ -724,14 +730,34 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 	int i, j;
 	int desc_cnt = 0;
 	struct idmac_desc *desc = host->sg_cpu;
+	unsigned int rw_size = DW_MMC_MAX_TRANSFER_SIZE;
+#ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
+	unsigned int sector = 0;
+	unsigned int sector_key = DW_MMC_BYPASS_SECTOR;
+	struct mmc_blk_request *brq = NULL;
+	struct mmc_queue_req *mq_rq = NULL;
 
+	if (data->mrq->host) {
+		/* it means this request comes from block i/o */
+		brq = container_of(data, struct mmc_blk_request, data);
+		if (brq) {
+			mq_rq = container_of(brq, struct mmc_queue_req, brq);
+			sector = mq_rq->req->bio->bi_sector;
+			rw_size = (mq_rq->req->bio->bi_sensitive_data == 1) ?
+				DW_MMC_SECTOR_SIZE : DW_MMC_MAX_TRANSFER_SIZE;
+			sector_key = (mq_rq->req->bio->bi_sensitive_data == 1) ?
+				DW_MMC_ENCRYPTION_SECTOR : DW_MMC_BYPASS_SECTOR;
+			mq_rq->req->bio->bi_sensitive_data = 0;
+		}
+	}
+#endif
 	for (i = 0; i < sg_len; i++) {
 		unsigned int length = sg_dma_len(&data->sg[i]);
 		unsigned int sz_per_desc;
-		int left = (int)length;
+		unsigned int left = length;
 		u32 mem_addr = sg_dma_address(&data->sg[i]);
 
-		for (j = 0; j < (length + 4096 - 1) / 4096; j++) {
+		for (j = 0; j < (length + rw_size - 1) / rw_size; j++) {
 			/*
 			 * Set the OWN bit
 			 * and disable interrupts for this descriptor
@@ -740,13 +766,24 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 					IDMAC_DES0_CH;
 
 			/* Buffer length */
-			sz_per_desc = min(left, 4096);
+			sz_per_desc = min(left, rw_size);
 			desc->des1 = length;
 			IDMAC_SET_BUFFER1_SIZE(desc, sz_per_desc);
 
 			/* Physical address to DMA to/from */
 			desc->des2 = mem_addr;
-
+#ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
+			if (sector_key == DW_MMC_ENCRYPTION_SECTOR) {
+				desc->des4 = sector;
+				desc->des5 = 0;
+				desc->des6 = 0;
+				desc->des7 = 0;
+			} else
+				desc->des4 = DW_MMC_BYPASS_SECTOR;
+			sector += rw_size / DW_MMC_SECTOR_SIZE;
+#else
+			desc->des4 = DW_MMC_BYPASS_SECTOR;
+#endif
 			desc++;
 			desc_cnt++;
 			mem_addr += sz_per_desc;
@@ -798,7 +835,8 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 	host->ring_size = host->desc_sz * PAGE_SIZE / sizeof(struct idmac_desc);
 
 	/* Forward link the descriptor list */
-	for (i = 0, p = host->sg_cpu; i < host->ring_size - 1; i++, p++)
+	for (i = 0, p = host->sg_cpu; i < host->ring_size *
+		MMC_DW_IDMAC_MULTIPLIER - 1; i++, p++)
 		p->des3 = host->sg_dma + (sizeof(struct idmac_desc) * (i + 1));
 
 	/* Set the last descriptor as the end-of-ring descriptor */
@@ -3064,8 +3102,9 @@ static void dw_mci_init_dma(struct dw_mci *host)
 		host->desc_sz = 1;
 
 	/* Alloc memory for sg translation */
-	host->sg_cpu = dmam_alloc_coherent(host->dev, host->desc_sz * PAGE_SIZE,
-					  &host->sg_dma, GFP_KERNEL);
+	host->sg_cpu = dmam_alloc_coherent(host->dev,
+			host->desc_sz * PAGE_SIZE * MMC_DW_IDMAC_MULTIPLIER,
+			&host->sg_dma, GFP_KERNEL);
 	if (!host->sg_cpu) {
 		dev_err(host->dev, "%s: could not alloc DMA memory\n",
 			__func__);
@@ -3680,6 +3719,12 @@ int dw_mci_resume(struct dw_mci *host)
 
 	if (host->pdata->quirks & DW_MCI_QUIRK_BYPASS_SMU)
 		drv_data->cfg_smu(host);
+
+#ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
+	ret = exynos_smc(SMC_CMD_FMP, FMP_MMC_RESUME, 0, 0);
+	if (ret == (u32)-1)
+		return -ENODEV;
+#endif
 
 	/* Restore the old value at FIFOTH register */
 	mci_writel(host, FIFOTH, host->fifoth_val);

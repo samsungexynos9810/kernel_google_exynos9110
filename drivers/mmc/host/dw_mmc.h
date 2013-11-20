@@ -14,6 +14,16 @@
 #ifndef _DW_MMC_H_
 #define _DW_MMC_H_
 
+#define DW_MMC_MAX_TRANSFER_SIZE	4096
+#define DW_MMC_SECTOR_SIZE		512
+
+#ifdef MMC_DW_FMP_DM_CRYPT
+#define MMC_DW_IDMAC_MULTIPLIER	\
+	(DW_MMC_MAX_TRANSFER_SIZE / DW_MMC_SECTOR_SIZE)
+#else
+#define MMC_DW_IDMAC_MULTIPLIER	1
+#endif
+
 #define DW_MMC_240A		0x240a
 #define DW_MMC_260A		0x260a
 
