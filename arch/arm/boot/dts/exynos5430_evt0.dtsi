@@ -1048,8 +1048,8 @@
 		compatible = "samsung,hevc";
 		reg = <0x14FE0000 0x10000>;
 		interrupts = <0 448 0>;
-		clock-names = "gate_hevc", "mout_aclk_hevc_400_user", "aclk_hevc_400", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_bus_pll";
-		clocks = <&clock 2292>, <&clock 3123>, <&clock 334>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4101>;
+		clock-names = "gate_hevc", "mout_aclk_hevc_400_user", "aclk_hevc_400", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_aclk_hevc_400";
+		clocks = <&clock 2292>, <&clock 3123>, <&clock 334>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4036>;
 		iommu = <&sysmmu_hevc0>, <&sysmmu_hevc1>;
 		status = "ok";
 		samsung,power-domain = <&pd_hevc>;
