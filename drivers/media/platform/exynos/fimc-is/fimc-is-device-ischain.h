@@ -147,6 +147,10 @@ struct fimc_is_device_ischain {
 	struct camera2_uctl			cur_peri_ctl;
 	struct camera2_uctl			peri_ctls[SENSOR_MAX_CTL];
 
+	/*fimc bns*/
+	u32					bns_width;
+	u32					bns_height;
+
 	/*isp margin*/
 	u32					sensor_width;
 	u32					sensor_height;

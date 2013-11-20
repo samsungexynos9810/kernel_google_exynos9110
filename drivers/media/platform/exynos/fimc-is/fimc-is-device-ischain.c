@@ -236,14 +236,14 @@ static const struct taa_param init_taa_param = {
 		.format = OTF_INPUT_FORMAT_BAYER,
 		.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT,
 		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
-		.crop_offset_x = 0,
-		.crop_offset_y = 0,
-		.crop_width = 0,
-		.crop_height = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.frametime_min = 0,
 		.frametime_max = 33333,
-		.binning_ratio_x = 1000,
-		.binning_ratio_y = 1000,
+		.sensor_binning_ratio_x = 1000,
+		.sensor_binning_ratio_y = 1000,
 		.err = OTF_INPUT_ERROR_NO,
 	},
 	.vdma1_input = {
@@ -260,8 +260,8 @@ static const struct taa_param init_taa_param = {
 		.bayer_crop_height = 0,
 		.buffer_number = 0,
 		.buffer_address = 0,
-		.binning_ratio_x = 1000,
-		.binning_ratio_y = 1000,
+		.sensor_binning_ratio_x = 1000,
+		.sensor_binning_ratio_y = 1000,
 		.err = 0,
 	},
 	.ddma_input = {
@@ -320,8 +320,8 @@ static const struct isp_param init_isp_param = {
 		.order = 0,
 		.buffer_number = 0,
 		.buffer_address = 0,
-		.binning_ratio_x = 1000,
-		.binning_ratio_y = 1000,
+		.sensor_binning_ratio_x = 1000,
+		.sensor_binning_ratio_y = 1000,
 		.err = 0,
 	},
 	.vdma3_input = {
@@ -359,14 +359,14 @@ static const struct isp_param init_isp_param = {
 		.format = OTF_INPUT_FORMAT_BAYER,
 		.bitwidth = OTF_INPUT_BIT_WIDTH_10BIT,
 		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
-		.crop_offset_x = 0,
-		.crop_offset_y = 0,
-		.crop_width = 0,
-		.crop_height = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.frametime_min = 0,
 		.frametime_max = 33333,
-		.binning_ratio_x = 1000,
-		.binning_ratio_y = 1000,
+		.sensor_binning_ratio_x = 1000,
+		.sensor_binning_ratio_y = 1000,
 		.err = OTF_INPUT_ERROR_NO,
 	},
 	.dma1_input = {
@@ -379,8 +379,8 @@ static const struct isp_param init_isp_param = {
 		.order = 0,
 		.buffer_number = 0,
 		.buffer_address = 0,
-		.binning_ratio_x = 1000,
-		.binning_ratio_y = 1000,
+		.sensor_binning_ratio_x = 1000,
+		.sensor_binning_ratio_y = 1000,
 		.err = 0,
 	},
 	.dma2_input = {
@@ -393,8 +393,8 @@ static const struct isp_param init_isp_param = {
 		.order = 0,
 		.buffer_number = 0,
 		.buffer_address = 0,
-		.binning_ratio_x = 1000,
-		.binning_ratio_y = 1000,
+		.sensor_binning_ratio_x = 1000,
+		.sensor_binning_ratio_y = 1000,
 		.err = 0,
 	},
 	.aa = {
@@ -542,10 +542,10 @@ static const struct scalerc_param init_scalerc_param = {
 		.format = OTF_INPUT_FORMAT_YUV444,
 		.bitwidth = OTF_INPUT_BIT_WIDTH_12BIT,
 		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
-		.crop_offset_x = 0,
-		.crop_offset_y = 0,
-		.crop_width = 0,
-		.crop_height = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.err = OTF_INPUT_ERROR_NO,
 	},
 	.effect = {
@@ -616,10 +616,10 @@ static const struct odc_param init_odc_param = {
 		.format = OTF_INPUT_FORMAT_YUV444,
 		.bitwidth = OTF_INPUT_BIT_WIDTH_8BIT,
 		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
-		.crop_offset_x = 0,
-		.crop_offset_y = 0,
-		.crop_width = 0,
-		.crop_height = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.err = OTF_INPUT_ERROR_NO,
 	},
 	.otf_output = {
@@ -652,10 +652,10 @@ static const struct dis_param init_dis_param = {
 		.format = OTF_INPUT_FORMAT_YUV422,
 		.bitwidth = OTF_INPUT_BIT_WIDTH_8BIT,
 		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
-		.crop_offset_x = 0,
-		.crop_offset_y = 0,
-		.crop_width = 0,
-		.crop_height = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.err = OTF_INPUT_ERROR_NO,
 	},
 	.otf_output = {
@@ -732,10 +732,10 @@ static const struct scalerp_param init_scalerp_param = {
 		.format = OTF_INPUT_FORMAT_YUV444,
 		.bitwidth = OTF_INPUT_BIT_WIDTH_8BIT,
 		.order = OTF_INPUT_ORDER_BAYER_GR_BG,
-		.crop_offset_x = 0,
-		.crop_offset_y = 0,
-		.crop_width = 0,
-		.crop_height = 0,
+		.bayer_crop_offset_x = 0,
+		.bayer_crop_offset_y = 0,
+		.bayer_crop_width = 0,
+		.bayer_crop_height = 0,
 		.err = OTF_INPUT_ERROR_NO,
 	},
 	.effect = {
@@ -1583,8 +1583,8 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			device,
 			region->parameter.taa.vdma1_input.width + device->margin_width,
 			region->parameter.taa.vdma1_input.height + device->margin_height,
-			(region->parameter.taa.vdma1_input.binning_ratio_x / 1000),
-			(region->parameter.taa.vdma1_input.binning_ratio_y / 1000),
+			(region->parameter.taa.vdma1_input.sensor_binning_ratio_x / 1000),
+			(region->parameter.taa.vdma1_input.sensor_binning_ratio_y / 1000),
 			region->parameter.sensor.frame_rate.frame_rate
 			);
 	else
@@ -1592,8 +1592,8 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			device,
 			region->parameter.sensor.dma_output.width,
 			region->parameter.sensor.dma_output.height,
-			(region->parameter.taa.otf_input.binning_ratio_x / 1000),
-			(region->parameter.taa.otf_input.binning_ratio_y / 1000),
+			(region->parameter.taa.otf_input.sensor_binning_ratio_x / 1000),
+			(region->parameter.taa.otf_input.sensor_binning_ratio_y / 1000),
 			region->parameter.sensor.frame_rate.frame_rate
 			);
 	mdbgd_ischain(" NAME    ON  BYPASS PATH        SIZE FORMAT\n", device);
@@ -1841,8 +1841,8 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			device,
 			region->parameter.isp.dma1_input.width + device->margin_width,
 			region->parameter.isp.dma1_input.height + device->margin_height,
-			(region->parameter.isp.dma1_input.binning_ratio_x / 1000),
-			(region->parameter.isp.dma1_input.binning_ratio_y / 1000),
+			(region->parameter.isp.dma1_input.sensor_binning_ratio_x / 1000),
+			(region->parameter.isp.dma1_input.sensor_binning_ratio_y / 1000),
 			region->parameter.sensor.frame_rate.frame_rate
 			);
 	else
@@ -1850,8 +1850,8 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			device,
 			region->parameter.sensor.dma_output.width,
 			region->parameter.sensor.dma_output.height,
-			(region->parameter.isp.otf_input.binning_ratio_x / 1000),
-			(region->parameter.isp.otf_input.binning_ratio_y / 1000),
+			(region->parameter.isp.otf_input.sensor_binning_ratio_x / 1000),
+			(region->parameter.isp.otf_input.sensor_binning_ratio_y / 1000),
 			region->parameter.sensor.frame_rate.frame_rate
 			);
 	mdbgd_ischain(" NAME    ON  BYPASS PATH        SIZE FORMAT\n", device);
@@ -3267,6 +3267,7 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	struct param_otf_input *taa_otf_input;
 	struct param_dma_input *taa_dma_input;
 	u32 binning;
+	u32 bns_binning;
 
 	BUG_ON(!device);
 	BUG_ON(!lindex);
@@ -3276,6 +3277,7 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 
 	taa_param = &device->is_region->parameter.taa;
 	binning = fimc_is_sensor_g_bratio(device->sensor);
+	bns_binning = fimc_is_sensor_g_bns_ratio(device->sensor);
 
 	group_3aa = &device->group_3aa;
 	leader = &group_3aa->leader;
@@ -3300,20 +3302,31 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 		taa_otf_input->cmd = OTF_INPUT_COMMAND_ENABLE;
 	else
 		taa_otf_input->cmd = OTF_INPUT_COMMAND_DISABLE;
-
 	taa_otf_input->width = device->sensor_width;
 	taa_otf_input->height = device->sensor_height;
-	taa_otf_input->crop_offset_x = input_crop[0];
-	taa_otf_input->crop_offset_y = input_crop[1];
-	taa_otf_input->crop_width = input_crop[2];
-	taa_otf_input->crop_height = input_crop[3];
-	taa_otf_input->binning_ratio_x = binning;
-	taa_otf_input->binning_ratio_y = binning;
+	taa_otf_input->bayer_crop_enable = 1;
+	taa_otf_input->bayer_crop_offset_x = input_crop[0];
+	taa_otf_input->bayer_crop_offset_y = input_crop[1];
+	taa_otf_input->bayer_crop_width = input_crop[2];
+	taa_otf_input->bayer_crop_height = input_crop[3];
+	taa_otf_input->sensor_binning_ratio_x = binning;
+	taa_otf_input->sensor_binning_ratio_y = binning;
+
+	taa_otf_input->bns_binning_enable = 1;
+	taa_otf_input->bns_binning_ratio_x = bns_binning;
+	taa_otf_input->bns_binning_ratio_y = bns_binning;
+	taa_otf_input->bns_margin_left = 0;
+	taa_otf_input->bns_margin_top = 0;
+	taa_otf_input->bns_output_width = device->bns_width;
+	taa_otf_input->bns_output_height = device->bns_height;
+
 	taa_otf_input->format = OTF_INPUT_FORMAT_BAYER;
 	taa_otf_input->bitwidth = OTF_INPUT_BIT_WIDTH_10BIT;
 	taa_otf_input->order = OTF_INPUT_ORDER_BAYER_GR_BG;
 	taa_otf_input->frametime_min = 0;
 	taa_otf_input->frametime_max = 1000000;
+
+
 	*lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
 	(*indexes)++;
@@ -3324,22 +3337,20 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 		taa_dma_input->cmd = DMA_INPUT_COMMAND_DISABLE;
 	else
 		taa_dma_input->cmd = DMA_INPUT_COMMAND_BUF_MNGR;
-
 	taa_dma_input->width = device->sensor_width;
 	taa_dma_input->height = device->sensor_height;
 	taa_dma_input->dma_crop_offset_x = 0;
 	taa_dma_input->dma_crop_offset_y = 0;
 	taa_dma_input->dma_crop_width = device->sensor_width;
 	taa_dma_input->dma_crop_height = device->sensor_height;
+	taa_dma_input->bayer_crop_enable = 1;
 	taa_dma_input->bayer_crop_offset_x = input_crop[0];
 	taa_dma_input->bayer_crop_offset_y = input_crop[1];
 	taa_dma_input->bayer_crop_width = input_crop[2];
 	taa_dma_input->bayer_crop_height = input_crop[3];
+
 	taa_dma_input->user_min_frame_time = 0;
 	taa_dma_input->user_max_frame_time = 1000000;
-	taa_dma_input->wide_frame_gap = 1;
-	taa_dma_input->frame_gap = 0;
-	taa_dma_input->line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 		taa_dma_input->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
@@ -3356,8 +3367,8 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	taa_dma_input->plane = 1;
 	taa_dma_input->buffer_number = 0;
 	taa_dma_input->buffer_address = 0;
-	taa_dma_input->binning_ratio_x = binning;
-	taa_dma_input->binning_ratio_y = binning;
+	taa_dma_input->sensor_binning_ratio_x = binning;
+	taa_dma_input->sensor_binning_ratio_y = binning;
 	/*
 	 * hidden spec
 	 *     [0] : sensor size is dma input size
@@ -3428,7 +3439,6 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 	dma_input->width = chain0_width;
 	dma_input->height = chain0_height;
 	dma_input->bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
-	dma_input->line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 		dma_input->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
@@ -3592,22 +3602,23 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	isp_param->otf_input.frametime_max = 1000000;
 	isp_param->otf_input.width = device->sensor_width;
 	isp_param->otf_input.height = device->sensor_height;
-	isp_param->otf_input.crop_offset_x = 0;
-	isp_param->otf_input.crop_offset_y = 0;
+	isp_param->otf_input.bayer_crop_enable = 1;
+	isp_param->otf_input.bayer_crop_offset_x = 0;
+	isp_param->otf_input.bayer_crop_offset_y = 0;
 
 	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
-		isp_param->otf_input.crop_width = device->sensor_width;
-		isp_param->otf_input.crop_height = device->sensor_height;
+		isp_param->otf_input.bayer_crop_width = device->sensor_width;
+		isp_param->otf_input.bayer_crop_height = device->sensor_height;
 	} else {
-		isp_param->otf_input.crop_width = device->chain0_width;
-		isp_param->otf_input.crop_height = device->chain0_height;
+		isp_param->otf_input.bayer_crop_width = device->chain0_width;
+		isp_param->otf_input.bayer_crop_height = device->chain0_height;
 	}
 
 	isp_param->otf_input.bds_out_enable = ISP_BDS_COMMAND_ENABLE;
 	isp_param->otf_input.bds_out_width = device->chain0_width;
 	isp_param->otf_input.bds_out_height = device->chain0_height;
-	isp_param->otf_input.binning_ratio_x = binning;
-	isp_param->otf_input.binning_ratio_y = binning;
+	isp_param->otf_input.sensor_binning_ratio_x = binning;
+	isp_param->otf_input.sensor_binning_ratio_y = binning;
 	*lindex |= LOWBIT_OF(PARAM_ISP_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_INPUT);
 	(*indexes)++;
@@ -3623,15 +3634,17 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	isp_param->dma1_input.height = device->sensor_height;
 	isp_param->dma1_input.dma_crop_offset_x = 0;
 	isp_param->dma1_input.dma_crop_offset_y = 0;
-	isp_param->dma1_input.dma_crop_width = device->sensor_width;
-	isp_param->dma1_input.dma_crop_height = device->sensor_height;
+	isp_param->dma1_input.dma_crop_width = 0;
+	isp_param->dma1_input.dma_crop_height = 0;
 
 	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
+		isp_param->dma1_input.bayer_crop_enable = 1;
 		isp_param->dma1_input.bayer_crop_offset_x = 0;
 		isp_param->dma1_input.bayer_crop_offset_y = 0;
-		isp_param->dma1_input.bayer_crop_width = 0;
-		isp_param->dma1_input.bayer_crop_height = 0;
+		isp_param->dma1_input.bayer_crop_width = device->sensor_width;
+		isp_param->dma1_input.bayer_crop_height = device->sensor_height;
 	} else {
+		isp_param->dma1_input.bayer_crop_enable = 1;
 		isp_param->dma1_input.bayer_crop_offset_x = 0;
 		isp_param->dma1_input.bayer_crop_offset_y = 0;
 		isp_param->dma1_input.bayer_crop_width = device->chain0_width;
@@ -3643,9 +3656,6 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	isp_param->dma1_input.bds_out_height = device->chain0_height;
 	isp_param->dma1_input.user_min_frame_time = 0;
 	isp_param->dma1_input.user_max_frame_time = 1000000;
-	isp_param->dma1_input.wide_frame_gap = 1;
-	isp_param->dma1_input.frame_gap = 0;
-	isp_param->dma1_input.line_gap = 50;
 
 	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 		taa_param->dma1_input.format = DMA_INPUT_FORMAT_BAYER_PACKED12;
@@ -3661,8 +3671,8 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	isp_param->dma1_input.plane = 1;
 	isp_param->dma1_input.buffer_number = 0;
 	isp_param->dma1_input.buffer_address = 0;
-	isp_param->dma1_input.binning_ratio_x = binning;
-	isp_param->dma1_input.binning_ratio_y = binning;
+	isp_param->dma1_input.sensor_binning_ratio_x = binning;
+	isp_param->dma1_input.sensor_binning_ratio_y = binning;
 	/*
 	 * hidden spec
 	 *     [0] : sensor size is dma input size
@@ -4833,10 +4843,10 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 	input_crop = node->input.cropRegion;
 
 	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &device->group_3aa.state)) {
-		crop_x = taa_param->otf_input.crop_offset_x;
-		crop_y = taa_param->otf_input.crop_offset_y;
-		crop_width = taa_param->otf_input.crop_width;
-		crop_height = taa_param->otf_input.crop_height;
+		crop_x = taa_param->otf_input.bayer_crop_offset_x;
+		crop_y = taa_param->otf_input.bayer_crop_offset_y;
+		crop_width = taa_param->otf_input.bayer_crop_width;
+		crop_height = taa_param->otf_input.bayer_crop_height;
 	} else {
 		crop_x = taa_param->vdma1_input.bayer_crop_offset_x;
 		crop_y = taa_param->vdma1_input.bayer_crop_offset_y;
@@ -4901,13 +4911,13 @@ static int fimc_is_ischain_3aap_start(struct fimc_is_device_ischain *device,
 	int ret = 0;
 	struct param_dma_output *taa_vdma2_output;
 
-	if ((output_crop[2] > taa_param->otf_input.crop_width) ||
-		(output_crop[3] > taa_param->otf_input.crop_height)) {
+	if ((output_crop[2] > taa_param->otf_input.bayer_crop_width) ||
+		(output_crop[3] > taa_param->otf_input.bayer_crop_height)) {
 		mrerr("bds output size is invalid((%d, %d) > (%d, %d))", device, frame,
 			output_crop[2],
 			output_crop[3],
-			taa_param->otf_input.crop_width,
-			taa_param->otf_input.crop_height);
+			taa_param->otf_input.bayer_crop_width,
+			taa_param->otf_input.bayer_crop_height);
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -5149,13 +5159,13 @@ static int fimc_is_ischain_3aac_start(struct fimc_is_device_ischain *device,
 	int ret = 0;
 	struct param_dma_output *taa_vdma4_output;
 
-	if ((output_crop[2] != taa_param->otf_input.crop_width) ||
-		(output_crop[3] != taa_param->otf_input.crop_height)) {
+	if ((output_crop[2] != taa_param->otf_input.bayer_crop_width) ||
+		(output_crop[3] != taa_param->otf_input.bayer_crop_height)) {
 		merr("bds output size is invalid((%d, %d) != (%d, %d))", device,
 			output_crop[2],
 			output_crop[3],
-			taa_param->otf_input.crop_width,
-			taa_param->otf_input.crop_height);
+			taa_param->otf_input.bayer_crop_width,
+			taa_param->otf_input.bayer_crop_height);
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -5259,8 +5269,8 @@ static int fimc_is_ischain_3aac_tag(struct fimc_is_device_ischain *device,
 
 		output_crop[0] = 0;
 		output_crop[1] = 0;
-		output_crop[2] = taa_param->otf_input.crop_width;
-		output_crop[3] = taa_param->otf_input.crop_height;
+		output_crop[2] = taa_param->otf_input.bayer_crop_width;
+		output_crop[3] = taa_param->otf_input.bayer_crop_height;
 
 		if (!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
 			ret = fimc_is_ischain_3aac_start(device,
@@ -5354,6 +5364,7 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 #endif
 	u32 input_crop[4];
 	u32 sensor_width, sensor_height;
+	u32 bns_width, bns_height;
 	u32 framerate;
 	u32 lindex = 0;
 	u32 hindex = 0;
@@ -5377,6 +5388,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	sensor_param = &device->is_region->parameter.sensor;
 	sensor_width = fimc_is_sensor_g_width(device->sensor);
 	sensor_height = fimc_is_sensor_g_height(device->sensor);
+	bns_width = fimc_is_sensor_g_bns_width(device->sensor);
+	bns_height = fimc_is_sensor_g_bns_height(device->sensor);
 	framerate = fimc_is_sensor_g_framerate(device->sensor);
 
 	if (test_bit(FIMC_IS_SUBDEV_START, &leader->state)) {
@@ -5388,6 +5401,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	/* 1. check chain size */
 	device->sensor_width = sensor_width - device->margin_width;
 	device->sensor_height = sensor_height - device->margin_height;
+	device->bns_width = bns_width;
+	device->bns_height = bns_height;
 
 	if (leader_3aa && (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) ||
 				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1))) {

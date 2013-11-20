@@ -1672,55 +1672,63 @@ struct param_control {
 
 struct param_otf_input {
 	u32	cmd;
-	u32	width;
-	u32	height;
+	u32	width; /* with margin */
+	u32	height; /* with margine */
 	u32	format;
 	u32	bitwidth;
 	u32	order;
-	u32	crop_offset_x;
-	u32	crop_offset_y;
-	u32	crop_width;
-	u32	crop_height;
+	u32	sensor_binning_ratio_x; /* ex(x1: 1000, x0.5: 2000) */
+	u32	sensor_binning_ratio_y; /* ex(x1: 1000, x0.5: 2000) */
+	u32	bns_binning_enable;
+	u32	bns_binning_ratio_x; /* ex(x1: 1000, x0.5: 2000) */
+	u32	bns_binning_ratio_y; /* ex(x1: 1000, x0.5: 2000) */
+	u32	bns_margin_left;
+	u32	bns_margin_top;
+	u32	bns_output_width; /* with margin */
+	u32	bns_output_height; /* with margin */
+	u32	bayer_crop_enable;
+	u32	bayer_crop_offset_x;
+	u32	bayer_crop_offset_y;
+	u32	bayer_crop_width; /* without margin */
+	u32	bayer_crop_height; /* without margin */
 	u32	bds_out_enable;
-	u32	bds_out_width;
-	u32	bds_out_height;
+	u32	bds_out_width; /* without margin */
+	u32	bds_out_height; /* without margin */
 	u32	frametime_min;
 	u32	frametime_max;
-	u32	binning_ratio_x;
-	u32	binning_ratio_y;
-	u32	scaler_path_sel;
-	u32	reserved[PARAMETER_MAX_MEMBER-19];
+	u32	scaler_path_sel; /* parallel or serial for SCC*/
+	u32	reserved[PARAMETER_MAX_MEMBER-27];
 	u32	err;
 };
 
 struct param_dma_input {
 	u32	cmd;
-	u32	width;
-	u32	height;
+	u32	width; /* with margin */
+	u32	height; /* with margin */
 	u32	format;
 	u32	bitwidth;
 	u32	plane;
 	u32	order;
 	u32	buffer_number;
 	u32	buffer_address;
+	u32	sensor_binning_ratio_x; /* ex(x1: 1000, x0.5: 2000) */
+	u32	sensor_binning_ratio_y; /* ex(x1: 1000, x0.5: 2000) */
+	u32	dma_crop_enable; /* should be 0 */
+	u32	dma_crop_offset_x; /* not supported yet */
+	u32	dma_crop_offset_y; /* not supported yet */
+	u32	dma_crop_width; /* not supported yet */
+	u32	dma_crop_height; /* not supported yet */
+	u32	bayer_crop_enable;
 	u32	bayer_crop_offset_x;
 	u32	bayer_crop_offset_y;
-	u32	bayer_crop_width;
-	u32	bayer_crop_height;
-	u32	dma_crop_offset_x;
-	u32	dma_crop_offset_y;
-	u32	dma_crop_width;
-	u32	dma_crop_height;
+	u32	bayer_crop_width; /* without margine */
+	u32	bayer_crop_height; /* without margine */
 	u32	bds_out_enable;
-	u32	bds_out_width;
-	u32	bds_out_height;
+	u32	bds_out_width; /* without margine */
+	u32	bds_out_height; /* without margine */
 	u32	user_min_frame_time;
 	u32	user_max_frame_time;
-	u32	wide_frame_gap;
-	u32	frame_gap;
-	u32	line_gap;
-	u32	binning_ratio_x;
-	u32	binning_ratio_y;
+	u32	scaler_path_sel; /* parallel or serial for SCC*/
 	u32	reserved[PARAMETER_MAX_MEMBER-28];
 	u32	err;
 };
