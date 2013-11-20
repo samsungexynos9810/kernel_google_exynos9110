@@ -1528,6 +1528,7 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 	dma_buf_put(dma->dma_buf);
 	ion_free(sfb->fb_ion_client, dma->ion_handle);
 	memset(dma, 0, sizeof(struct s3c_dma_buf_data));
+	g_framebuf = NULL;
 }
 
 static u32 s3c_fb_red_length(int format)
@@ -2580,7 +2581,11 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 #ifdef CONFIG_ION_EXYNOS
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-	return dma_buf_mmap(g_framebuf, vma, 0);
+
+	if(g_framebuf == NULL)
+		return 0;
+	else
+		return dma_buf_mmap(g_framebuf, vma, 0);
 #else
 	return 0;
 #endif
