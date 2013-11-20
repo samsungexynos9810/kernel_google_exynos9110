@@ -2466,13 +2466,13 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				readl(sfb->regs + SHD_VIDW_BUF_START(i)));
 	}
 
-	disp_pm_runtime_put_sync(dispdrv);
-	sw_sync_timeline_inc(sfb->timeline, 1);
-
 	while (readl(sfb->regs + DECON_UPDATE) & 0x1);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
+
+	disp_pm_runtime_put_sync(dispdrv);
+	sw_sync_timeline_inc(sfb->timeline, 1);
 
 #if defined(CONFIG_DECON_DEVFREQ)
 	if (prev_gsc_local_cnt > local_cnt) {
