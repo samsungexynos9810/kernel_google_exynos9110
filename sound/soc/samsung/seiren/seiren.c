@@ -835,7 +835,12 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		rtd->ip_type = (unsigned int) arg;
 		arg = arg << 16;
 		writel(arg, si.mailbox + IP_TYPE);
-		esa_send_cmd(CMD_CREATE);
+		ret = esa_send_cmd(CMD_CREATE);
+		if (ret == -EBUSY)
+			break;
+		ret = readl(si.mailbox + RETURN_CMD);
+		if (ret != 0)
+			break;
 		rtd->handle_id = readl(si.mailbox + IP_ID);
 		esa_buffer_init(file);
 		esa_debug("CH_CREATE: ret_val:%x, handle_id:%x\n",
@@ -844,7 +849,12 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case SEIREN_IOCTL_CH_DESTROY:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
-		esa_send_cmd(CMD_DESTROY);
+		ret = esa_send_cmd(CMD_DESTROY);
+		if (ret == -EBUSY)
+			break;
+		ret = readl(si.mailbox + RETURN_CMD);
+		if (ret != 0)
+			break;
 		esa_debug("CH_DESTROY: ret_val:%x, handle_id:%x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
