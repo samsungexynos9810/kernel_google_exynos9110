@@ -1212,6 +1212,8 @@
 		compatible = "arm,mali";
 		reg = <0x14AC0000 0x5000>;
 		interrupts = <0 282 0>, <0 283 0>, <0 281 0>;
+		clocks = <&clock 1>, <&clock 10>, <&clock 1000>, <&clock 3120>, <&clock 4132>;
+		clock-names = "fin_pll", "fout_g3d_pll", "aclk_g3d", "mout_g3d_pll", "dout_aclk_g3d";
 		samsung,power-domain = <&pd_g3d>;
 	};
 
