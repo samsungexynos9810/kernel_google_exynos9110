@@ -3341,8 +3341,8 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	taa_dma_input->height = device->sensor_height;
 	taa_dma_input->dma_crop_offset_x = 0;
 	taa_dma_input->dma_crop_offset_y = 0;
-	taa_dma_input->dma_crop_width = device->sensor_width;
-	taa_dma_input->dma_crop_height = device->sensor_height;
+	taa_dma_input->dma_crop_width = device->sensor_width - device->margin_width;
+	taa_dma_input->dma_crop_height = device->sensor_height - device->margin_height;
 	taa_dma_input->bayer_crop_enable = 1;
 	taa_dma_input->bayer_crop_offset_x = input_crop[0];
 	taa_dma_input->bayer_crop_offset_y = input_crop[1];
@@ -5399,8 +5399,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	}
 
 	/* 1. check chain size */
-	device->sensor_width = sensor_width - device->margin_width;
-	device->sensor_height = sensor_height - device->margin_height;
+	device->sensor_width = sensor_width;
+	device->sensor_height = sensor_height;
 	device->bns_width = bns_width;
 	device->bns_height = bns_height;
 
@@ -5499,8 +5499,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	if (test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state)) {
 		input_crop[0] = 0;
 		input_crop[1] = 0;
-		input_crop[2] = device->sensor_width;
-		input_crop[3] = device->sensor_height;
+		input_crop[2] = device->bns_width - device->margin_width;
+		input_crop[3] = device->bns_height - device->margin_height;
 		fimc_is_ischain_s_3aa_size(device, NULL, input_crop, &lindex, &hindex, &indexes);
 	}
 
