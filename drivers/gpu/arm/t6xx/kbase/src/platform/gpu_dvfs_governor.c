@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5430/gpu_dvfs_governor.c
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_dvfs_governor.c
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
@@ -23,30 +23,53 @@
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
 #include "gpu_dvfs_governor.h"
+#include "gpu_control.h"
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 typedef void (*GET_NEXT_FREQ)(struct kbase_device *kbdev, int utilization);
 GET_NEXT_FREQ gpu_dvfs_get_next_freq;
 
-static char *governor_list[G3D_MAX_GOVERNOR_NUM] = {"Default", "Static"};
+static char *governor_list[G3D_MAX_GOVERNOR_NUM] = {"Default", "Static", "Booster"};
 #endif /* CONFIG_MALI_T6XX_DVFS */
 
 #define GPU_DVFS_TABLE_SIZE(X)  ARRAY_SIZE(X)
 
 static gpu_dvfs_info gpu_dvfs_infotbl_default[] = {
 /*  vol,clk,min,max,down stay, pm_qos mem, pm_qos int, pm_qos cpu */
-	{1000000,  160,  0,  90, 3, 0, 138000, 165000,  400000},
-	{1000000,  266, 54, 100, 3, 0, 206000, 165000,  400000},
-	{1025000,  350, 60,  90, 3, 0, 413000, 206000,  400000},
-	{1025000,  420, 70,  90, 2, 0, 543000, 275000,  400000},
-	{1075000,  500, 78, 100, 1, 0, 633000, 317000,  1500000},
-	{1125000,  550, 78, 100, 1, 0, 825000, 413000,  1500000},
-	{1150000,  600, 78, 100, 1, 0, 825000, 413000,  1500000},
+#if SOC_NAME == 5422
+	{812500,  100,  0,  90, 3, 0, 160000,  83000,  250000},
+	{812500,  177, 53,  90, 2, 0, 160000,  83000,  250000},
+	{862500,  266, 60,  90, 1, 0, 400000, 222000,  250000},
+	{912500,  350, 70,  90, 1, 0, 667000, 667000,  250000},
+	{962500,  420, 78,  99, 1, 0, 800000, 800000,  250000},
+	{1000000, 480, 98, 100, 1, 0, 800000, 400000,  650000},
+	{1037500, 533, 99, 100, 1, 0, 800000, 400000, 1200000},
+#elif SOC_NAME == 5430
+	{1000000, 160,  0,  90, 3, 0, 138000, 165000,  400000},
+	{1000000, 266, 54, 100, 3, 0, 206000, 165000,  400000},
+	{1025000, 350, 60,  90, 3, 0, 413000, 206000,  400000},
+	{1025000, 420, 70,  90, 2, 0, 543000, 275000,  400000},
+	{1075000, 500, 78, 100, 1, 0, 633000, 317000, 1500000},
+	{1125000, 550, 78, 100, 1, 0, 825000, 413000, 1500000},
+	{1150000, 600, 78, 100, 1, 0, 825000, 413000, 1500000},
+#elif SOC_NAME == 5260
+	{900000,  160,  0,  90, 3, 0, 103000, 100000,       0},
+	{900000,  266, 53,  90, 3, 0, 165000, 100000,       0},
+	{950000,  350, 60,  90, 3, 0, 333000, 266000,       0},
+	{1000000, 450, 70,  90, 2, 0, 413000, 333000,       0},
+	{1075000, 560, 78, 100, 1, 0, 667000, 400000, 1000000},
+	{1175000, 667, 98, 100, 1, 0, 667000, 400000, 1000000},
+#else
+#error SOC_NAME should be specified.
+#endif
 };
 
-#ifdef CONFIG_MALI_T6XX_DVFS
 
-#define G3D_GOVERNOR_DEFAULT_CLOCK_DEFAULT		266
+#if SOC_NAME == 5260
+static int gpu_abb_infobl_default[] = {900000, 900000, 950000, 1000000, 1075000, 1175000};
+#endif /* SOC_NAME */
+
+#ifdef CONFIG_MALI_T6XX_DVFS
 static int gpu_dvfs_governor_default(struct kbase_device *kbdev, int utilization)
 {
 	struct exynos_context *platform;
@@ -74,8 +97,6 @@ static int gpu_dvfs_governor_default(struct kbase_device *kbdev, int utilization
 	return 0;
 }
 
-#define G3D_GOVERNOR_DEFAULT_CLOCK_STATIC		266
-#define G3D_GOVERNOR_STATIC_PERIOD				10
 static int gpu_dvfs_governor_static(struct kbase_device *kbdev, int utilization)
 {
 	struct exynos_context *platform;
@@ -108,13 +129,69 @@ static int gpu_dvfs_governor_static(struct kbase_device *kbdev, int utilization)
 
 	return 0;
 }
+
+static int gpu_dvfs_governor_booster(struct kbase_device *kbdev, int utilization)
+{
+	struct exynos_context *platform;
+	static int weight;
+	int cur_weight, booster_threshold, dvfs_table_lock, i;
+
+	platform = (struct exynos_context *) kbdev->platform_context;
+	if (!platform)
+		return -ENODEV;
+
+	cur_weight = platform->cur_clock*utilization;
+	/* booster_threshold = current clock * set the percentage of utilization */
+	booster_threshold = platform->cur_clock * 50;
+
+	dvfs_table_lock = platform->table_size-1;
+	for (i = platform->table_size-1; i >= 0; i--)
+		if (platform->table[i].max_threshold == 100)
+			dvfs_table_lock = i;
+
+	if ((platform->step < dvfs_table_lock-2) &&
+			((cur_weight - weight) > booster_threshold)) {
+		platform->step += 2;
+		platform->down_requirement = platform->table[platform->step].stay_count;
+		GPU_LOG(DVFS_WARNING, "[G3D_booster] increase G3D level 2 step\n");
+		DVFS_ASSERT(platform->step < platform->table_size);
+	} else if ((platform->step < platform->table_size-1) &&
+			(utilization > platform->table[platform->step].max_threshold)) {
+		platform->step++;
+		platform->down_requirement = platform->table[platform->step].stay_count;
+		DVFS_ASSERT(platform->step < platform->table_size);
+	} else if ((platform->step > 0) && (utilization < platform->table[platform->step].min_threshold)) {
+		DVFS_ASSERT(platform->step > 0);
+		platform->down_requirement--;
+		if (platform->down_requirement == 0) {
+			platform->step--;
+			platform->down_requirement = platform->table[platform->step].stay_count;
+		}
+	} else {
+		platform->down_requirement = platform->table[platform->step].stay_count;
+	}
+	weight = cur_weight;
+
+	return 0;
+}
 #endif /* CONFIG_MALI_T6XX_DVFS */
 
 static int gpu_dvfs_update_asv_table(struct exynos_context *platform, int governor_type)
 {
 	int i, voltage;
-
+#if SOC_NAME == 5260
+	unsigned int asv_abb = 0;
+#endif /* SOC_NAME */
 	for (i = 0; i < platform->table_size; i++) {
+#if SOC_NAME == 5260
+		asv_abb = get_match_abb(ID_G3D, platform->table[i].clock*1000);
+		if (!asv_abb) {
+			platform->devfreq_g3d_asv_abb[i] = ABB_BYPASS;
+		} else {
+			platform->devfreq_g3d_asv_abb[i] = asv_abb;
+		}
+		GPU_LOG(DVFS_INFO, "DEVFREQ(G3D) : %uKhz, ABB %u\n", platform->table[i].clock*1000, platform->devfreq_g3d_asv_abb[i]);
+#endif /* SOC_NAME */
 		voltage = get_match_volt(ID_G3D, platform->table[i].clock*1000);
 		if (voltage > 0)
 			platform->table[i].voltage = voltage;
@@ -141,19 +218,37 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_default;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
+#if SOC_NAME == 5260
+		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
+#endif /* SOC_NAME */
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_DEFAULT);
 		break;
 	case G3D_DVFS_GOVERNOR_STATIC:
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_static;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
+#if SOC_NAME == 5260
+		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
+#endif /* SOC_NAME */
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_STATIC);
+		break;
+	case G3D_DVFS_GOVERNOR_BOOSTER:
+		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_booster;
+		platform->table = gpu_dvfs_infotbl_default;
+		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
+#if SOC_NAME == 5260
+		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
+#endif /* SOC_NAME */
+		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_BOOSTER);
 		break;
 	default:
 		GPU_LOG(DVFS_WARNING, "[gpu_dvfs_governor_init] invalid governor type\n");
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_default;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
+#if SOC_NAME == 5260
+		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
+#endif /* SOC_NAME */
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_DEFAULT);
 		break;
 	}
@@ -181,6 +276,9 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 #else
 	platform->table = gpu_dvfs_infotbl_default;
 	platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
+#if SOC_NAME == 5260
+	platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
+#endif /* SOC_NAME */
 	platform->step = gpu_dvfs_get_level(platform, MALI_DVFS_START_FREQ);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 

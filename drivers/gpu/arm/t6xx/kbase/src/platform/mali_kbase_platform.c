@@ -71,7 +71,7 @@ static mali_bool kbase_platform_exynos5_init(kbase_device *kbdev)
 	platform->cmu_pmu_status = 0;
 	platform->dvfs_wq = NULL;
 	platform->polling_speed = 100;
-	gpu_debug_level = DVFS_INFO;
+	gpu_debug_level = DVFS_WARNING;
 
 	spin_lock_init(&platform->gpu_dvfs_spinlock);
 
@@ -166,12 +166,12 @@ static kbase_attribute config_attributes[] = {
 	},
 	{
 		KBASE_CONFIG_ATTR_GPU_FREQ_KHZ_MAX,
-		480000
+		G3D_MAX_FREQ
 	},
 
 	{
 		KBASE_CONFIG_ATTR_GPU_FREQ_KHZ_MIN,
-		160000
+		G3D_MIN_FREQ
 	},
 	{
 		KBASE_CONFIG_ATTR_JS_RESET_TIMEOUT_MS,

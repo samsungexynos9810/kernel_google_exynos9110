@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5422/gpu_control.c
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_control_eyxnos5430.c
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
@@ -11,7 +11,7 @@
  */
 
 /**
- * @file gpu_control.c
+ * @file gpu_control_exynos5430.c
  * DVFS
  */
 
@@ -23,9 +23,8 @@
 #include <linux/delay.h>
 #include <linux/regulator/driver.h>
 
-#include <mach/regs-pmu.h>
+#include <mach/regs-clock.h>
 #include <mach/asv-exynos.h>
-#include <mach/regs-clock-exynos5422.h>
 #include <mach/pm_domains.h>
 
 #include <../drivers/clk/samsung/clk.h>
@@ -33,11 +32,6 @@
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
 #include "gpu_control.h"
-
-#define COLD_MINIMUM_VOL		950000
-#define GPU_DEFAULT_VOLTAGE		1037500
-
-#define MALI_T6XX_DEFAULT_CLOCK (MALI_DVFS_START_FREQ*MHZ)
 
 struct kbase_device *pkbdev;
 
@@ -79,7 +73,7 @@ int get_cpu_clock_speed(u32 *cpu_clock)
 
 static int gpu_is_power_on(void)
 {
-	return ((__raw_readl(EXYNOS5422_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) == EXYNOS_INT_LOCAL_PWR_EN) ? 1 : 0;
+	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) == EXYNOS_INT_LOCAL_PWR_EN) ? 1 : 0;
 }
 
 static int gpu_power_on(void)
@@ -87,12 +81,12 @@ static int gpu_power_on(void)
 	int timeout;
 
 	/* Turn on G3D  */
-	__raw_writel(EXYNOS_INT_LOCAL_PWR_EN, EXYNOS5422_G3D_CONFIGURATION);
+	__raw_writel(EXYNOS_INT_LOCAL_PWR_EN, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while ((__raw_readl(EXYNOS5422_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != EXYNOS_INT_LOCAL_PWR_EN) {
+	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != EXYNOS_INT_LOCAL_PWR_EN) {
 		if (timeout == 0) {
 			/* need to call panic  */
 			panic("failed to turn on g3d via g3d_configuration\n");
@@ -110,12 +104,12 @@ static int gpu_power_off(void)
 	int timeout;
 
 	/* Turn off G3D  */
-	__raw_writel(0x0, EXYNOS5422_G3D_CONFIGURATION);
+	__raw_writel(0x0, EXYNOS5430_G3D_CONFIGURATION);
 
 	/* Wait for G3D power stability */
 	timeout = 1000;
 
-	while (__raw_readl(EXYNOS5422_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) {
+	while (__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) {
 		if (timeout == 0) {
 			/* need to call panic */
 			panic("failed to turn off g3d via g3d_configuration\n");
@@ -137,12 +131,12 @@ static int gpu_power_init(void)
 
 static int gpu_update_clock(struct exynos_context *platform)
 {
-	if (!platform->clk_g3d_ip) {
-		GPU_LOG(DVFS_ERROR, "clk_g3d_ip is not initialized\n");
+	if (!platform->aclk_g3d) {
+		GPU_LOG(DVFS_ERROR, "aclk_g3d is not initialized\n");
 		return -1;
 	}
 
-	platform->cur_clock = clk_get_rate(platform->clk_g3d_ip)/MHZ;
+	platform->cur_clock = clk_get_rate(platform->aclk_g3d)/MHZ;
 	return 0;
 }
 
@@ -159,8 +153,8 @@ static int gpu_clock_on(struct exynos_context *platform)
 	if (platform->clk_g3d_status == 1)
 		return 0;
 
-	if (platform->clk_g3d_ip)
-		(void) clk_prepare_enable(platform->clk_g3d_ip);
+	if (platform->aclk_g3d)
+		(void) clk_prepare_enable(platform->aclk_g3d);
 
 	platform->clk_g3d_status = 1;
 
@@ -175,8 +169,8 @@ static int gpu_clock_off(struct exynos_context *platform)
 	if (platform->clk_g3d_status == 0)
 		return 0;
 
-	if (platform->clk_g3d_ip)
-		(void)clk_disable_unprepare(platform->clk_g3d_ip);
+	if (platform->aclk_g3d)
+		(void)clk_disable_unprepare(platform->aclk_g3d);
 
 	platform->clk_g3d_status = 0;
 
@@ -190,7 +184,7 @@ static int gpu_set_clock(struct exynos_context *platform, int freq)
 	unsigned long tmp = 0;
 	int ret;
 
-	if (platform->clk_g3d_ip == 0)
+	if (platform->aclk_g3d == 0)
 		return -1;
 
 #ifdef CONFIG_PM_RUNTIME
@@ -204,35 +198,40 @@ static int gpu_set_clock(struct exynos_context *platform, int freq)
 		goto err;
 	}
 
-	g3d_rate_prev = clk_get_rate(platform->clk_g3d_ip)/MHZ;
+	g3d_rate_prev = clk_get_rate(platform->fout_g3d_pll);
 
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (g3d_rate != g3d_rate_prev) {
 		/*for stable clock input.*/
-		ret = clk_set_rate(platform->dout_aclk_g3d, 100000);
+		ret = clk_set_rate(platform->fout_g3d_pll, 100000000);
 		if (ret < 0) {
-			GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [dout_aclk_g3d]\n");
+			GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [fout_g3d_pll]\n");
+			goto err;
+		}
+
+		if (!(__raw_readl(EXYNOS5430_G3D_PLL_CON0) & (0x1 << 29))) {
+			GPU_LOG(DVFS_ERROR, "failed EXYNOS5430_G3D_PLL_CON0 is not enabled\n");
 			goto err;
 		}
 
 		/*change here for future stable clock changing*/
-		ret = clk_set_parent(platform->mout_aclk_g3d, platform->mout_dpll_ctrl);
+		ret = clk_set_parent(platform->mout_g3d_pll, platform->fin_pll);
 		if (ret < 0) {
-			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_aclk_g3d]\n");
+			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_g3d_pll]\n");
 			goto err;
 		}
 
 		/*change g3d pll*/
-		ret = clk_set_rate(platform->fout_vpll, g3d_rate);
+		ret = clk_set_rate(platform->fout_g3d_pll, g3d_rate);
 		if (ret < 0) {
-			GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [fout_vpll]\n");
+			GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [fout_g3d_pll]\n");
 			goto err;
 		}
 
 		/*restore parent*/
-		clk_set_parent(platform->mout_aclk_g3d, platform->mout_vpll_ctrl);
+		ret = clk_set_parent(platform->mout_g3d_pll, platform->fout_g3d_pll);
 		if (ret < 0) {
-			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_aclk_g3d]\n");
+			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_g3d_pll]\n");
 			goto err;
 		}
 
@@ -247,8 +246,8 @@ static int gpu_set_clock(struct exynos_context *platform, int freq)
 
 	/* Waiting for clock is stable */
 	do {
-		tmp = __raw_readl(EXYNOS5_CLK_DIV_STAT_TOP2);
-	} while (tmp & 0x10000);
+		tmp = __raw_readl(EXYNOS5430_DIV_STAT_G3D);
+	} while (tmp & 0x1);
 
 	gpu_update_clock(platform);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock set: %ld\n", g3d_rate / MHZ);
@@ -263,64 +262,39 @@ err:
 
 static int gpu_get_clock(kbase_device *kbdev)
 {
-	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
-	/*
-	 * EXYNOS5422 3D clock description
-	 * normal usage: mux(vpll) -> divider -> mux_sw -> mux_user -> aclk_g3d
-	 * on clock changing: mux(dpll) -> divider(3) -> mux_sw -> mux_user -> aclk_g3d
-	 */
-
-	platform->fout_vpll = clk_get(NULL, "fout_vpll");
-	if (IS_ERR(platform->fout_vpll)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [fout_vpll]\n");
+	platform->fin_pll = clk_get(kbdev->osdev.dev, "fin_pll");
+	if (IS_ERR(platform->fin_pll)  || (platform->fin_pll == NULL)) {
+		GPU_LOG(DVFS_ERROR, "failed to clk_get [fin_pll]\n");
 		return -1;
 	}
 
-	platform->mout_vpll_ctrl = clk_get(kbdev->osdev.dev, "mout_vpll_ctrl"); /* same as sclk_vpll */
-	if (IS_ERR(platform->mout_vpll_ctrl)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_vpll_ctrl]\n");
+	platform->fout_g3d_pll = clk_get(NULL, "fout_g3d_pll");
+	if (IS_ERR(platform->fout_g3d_pll)) {
+		GPU_LOG(DVFS_ERROR, "failed to clk_get [fout_g3d_pll]\n");
 		return -1;
 	}
 
-	platform->mout_dpll_ctrl = clk_get(kbdev->osdev.dev, "mout_dpll_ctrl"); /* same as sclk_dpll */
-	if (IS_ERR(platform->mout_dpll_ctrl)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_dpll_ctrl]\n");
+	platform->aclk_g3d = clk_get(kbdev->osdev.dev, "aclk_g3d");
+	if (IS_ERR(platform->aclk_g3d)) {
+		GPU_LOG(DVFS_ERROR, "failed to clk_get [aclk_g3d]\n");
 		return -1;
 	}
 
-	platform->mout_aclk_g3d = clk_get(kbdev->osdev.dev, "mout_aclk_g3d"); /* set parents v or d pll */
-	if (IS_ERR(platform->mout_aclk_g3d)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_aclk_g3d]\n");
-		return -1;
-	}
-
-	platform->dout_aclk_g3d = clk_get(kbdev->osdev.dev, "dout_aclk_g3d"); /* divider usage */
+	platform->dout_aclk_g3d = clk_get(kbdev->osdev.dev, "dout_aclk_g3d");
 	if (IS_ERR(platform->dout_aclk_g3d)) {
 		GPU_LOG(DVFS_ERROR, "failed to clk_get [dout_aclk_g3d]\n");
 		return -1;
 	}
 
-	platform->mout_aclk_g3d_sw = clk_get(kbdev->osdev.dev, "mout_aclk_g3d_sw");
-	if (IS_ERR(platform->mout_aclk_g3d_sw)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_aclk_g3d_sw]\n");
-		return -1;
-	}
-
-	platform->mout_aclk_g3d_user = clk_get(kbdev->osdev.dev, "mout_aclk_g3d_user");
-	if (IS_ERR(platform->mout_aclk_g3d_user)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_aclk_g3d_user]\n");
-		return -1;
-	}
-
-	platform->clk_g3d_ip = clk_get(kbdev->osdev.dev, "clk_g3d_ip");
-	clk_prepare_enable(platform->clk_g3d_ip);
-	if (IS_ERR(platform->clk_g3d_ip)) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_get [clk_g3d_ip]\n");
+	platform->mout_g3d_pll = clk_get(kbdev->osdev.dev, "mout_g3d_pll");
+	if (IS_ERR(platform->mout_g3d_pll)) {
+		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_g3d_pll]\n");
 		return -1;
 	}
 
@@ -492,16 +466,16 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 #ifdef CONFIG_PM_RUNTIME
 	struct exynos_pm_domain *pd = NULL;
 #endif
-	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
 
 	if (clock == prev_clock)
 		return 0;
 
-	if ((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock)) {
-		GPU_LOG(DVFS_ERROR, "Mismatch clock error (%d)\n", clock);
-		return 0;
+	if (WARN_ON((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock))) {
+		GPU_LOG(DVFS_ERROR, "invalid clock error (%d)\n", clock);
+		panic("invalid clock");
 	}
 
 	if (clock > prev_clock) {
@@ -546,12 +520,8 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 #ifdef CONFIG_MALI_T6XX_DVFS
 		if (ret == 0) {
 			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			ret = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
+			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
 			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-			if (ret >= 0)
-				platform->step = ret;
-			else
-				GPU_LOG(DVFS_ERROR, "Invalid dvfs level returned [%d]\n", GPU_CONTROL_CLOCK_ON);
 		}
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		ret = gpu_clock_on(platform);
@@ -584,15 +554,10 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 		mutex_lock(&platform->gpu_set_clock_lock);
 		ret = gpu_set_clk_vol(kbdev, param, gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_VOLTAGE, param));
 #ifdef CONFIG_MALI_T6XX_DVFS
-		if (ret == 0) {
-			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			ret = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
-			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-			if (ret >= 0)
-				platform->step = ret;
-			else
-				GPU_LOG(DVFS_ERROR, "Invalid dvfs level returned [%d]\n", GPU_CONTROL_CHANGE_CLK_VOL);
-		}
+		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
+		if (ret == 0)
+			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
+		spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		mutex_unlock(&platform->gpu_set_clock_lock);
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -605,20 +570,16 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 			mutex_unlock(&platform->gpu_set_clock_lock);
 			ret = -1;
 		}
+		gpu_power_on();
 		ret = gpu_set_clock(platform, platform->cur_clock);
 #ifdef CONFIG_MALI_T6XX_DVFS
 		if (ret == 0) {
 			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			ret = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
+			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
 			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-			if (ret >= 0)
-				platform->step = ret;
-			else
-				GPU_LOG(DVFS_ERROR, "Invalid dvfs level returned [%d]\n", GPU_CONTROL_CMU_PMU_ON);
 		}
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		ret = gpu_clock_on(platform);
-		gpu_power_on();
 		platform->cmu_pmu_status = 1;
 		mutex_unlock(&platform->gpu_set_clock_lock);
 		break;
@@ -628,8 +589,8 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 			mutex_unlock(&platform->gpu_set_clock_lock);
 			ret = -1;
 		}
-		gpu_power_off();
 		gpu_clock_off(platform);
+		gpu_power_off();
 		platform->cmu_pmu_status = 0;
 		mutex_unlock(&platform->gpu_set_clock_lock);
 		break;

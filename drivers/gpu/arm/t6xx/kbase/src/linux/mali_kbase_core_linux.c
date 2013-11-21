@@ -57,7 +57,7 @@
 #endif
 #include <kbase/src/common/mali_kbase_8401_workaround.h>
 #include <kbase/src/common/mali_kbase_hw.h>
-#include <kbase/src/platform/mali_kbase_platform_common.h>
+#include <kbase/src/platform/mali_kbase_platform.h>
 #ifdef CONFIG_SYNC
 #include <kbase/src/linux/mali_kbase_sync.h>
 #endif /* CONFIG_SYNC */

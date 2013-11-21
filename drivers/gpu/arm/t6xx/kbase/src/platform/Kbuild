@@ -12,9 +12,13 @@
 #
 #
 
+MALI_CUSTOMER_RELEASE = 1
 
-ifeq ($(CONFIG_MALI_PLATFORM_THIRDPARTY),y)
-# remove begin and end quotes from the Kconfig string type
-	platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
-	obj-y += $(platform_name)/
-endif
+platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
+
+obj-$(CONFIG_MALI_T6XX) += mali_kbase_platform.o
+obj-$(CONFIG_MALI_T6XX) += gpu_notifier.o
+obj-$(CONFIG_MALI_T6XX) += gpu_control_exynos$(platform_name).o
+obj-$(CONFIG_MALI_T6XX) += gpu_dvfs_handler.o
+obj-$(CONFIG_MALI_T6XX) += gpu_dvfs_governor.o
+obj-$(CONFIG_MALI_T6XX) += gpu_custom_interface.o

@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5422/gpu_custom_interface.h
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_custom_interface.h
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea

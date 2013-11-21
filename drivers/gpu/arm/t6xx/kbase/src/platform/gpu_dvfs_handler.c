@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5422/gpu_dvfs_handler.c
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_dvfs_handler.c
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
@@ -121,6 +121,9 @@ int gpu_dvfs_handler_init(struct kbase_device *kbdev)
 	if (!platform->dvfs_wq)
 		platform->dvfs_wq = create_singlethread_workqueue("g3d_dvfs");
 
+	if (!platform->dvfs_status)
+		platform->dvfs_status = true;
+
 	GPU_LOG(DVFS_INFO, "g3d dvfs handler initialized\n");
 #endif /* CONFIG_MALI_T6XX_DVFS */
 	return 0;
@@ -128,7 +131,7 @@ int gpu_dvfs_handler_init(struct kbase_device *kbdev)
 
 int gpu_dvfs_handler_deinit(struct kbase_device *kbdev)
 {
-	int ret = 0;
+#ifdef CONFIG_MALI_T6XX_DVFS
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
@@ -137,8 +140,12 @@ int gpu_dvfs_handler_deinit(struct kbase_device *kbdev)
 		destroy_workqueue(platform->dvfs_wq);
 	platform->dvfs_wq = NULL;
 
+	if (platform->dvfs_status)
+		platform->dvfs_status = false;
+
 	GPU_LOG(DVFS_INFO, "g3d dvfs handler de-initialized\n");
-	return ret;
+#endif /* CONFIG_MALI_T6XX_DVFS */
+	return 0;
 }
 
 #ifdef CONFIG_MALI_T6XX_DVFS
@@ -174,7 +181,6 @@ static int gpu_dvfs_on_off(struct kbase_device *kbdev, bool enable)
 				platform->dvfs_status, enable);
 		return -1;
 	}
-
 	return 0;
 }
 #endif /* CONFIG_MALI_T6XX_DVFS */

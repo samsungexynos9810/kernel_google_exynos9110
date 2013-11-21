@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5422/gpu_notifier.c
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_notifier.c
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
@@ -26,18 +26,7 @@
 
 #if defined(CONFIG_EXYNOS_THERMAL)
 #include <mach/tmu.h>
-#define GPU_THROTTLING_90_95 480
-#define GPU_THROTTLING_95_100 420
-#define GPU_THROTTLING_100_105 350
-#define GPU_THROTTLING_105_110 177
-#define GPU_TRIPPING_110 100
-
-#define VOLTAGE_OFFSET_MARGIN 37500
 #endif /* CONFIG_EXYNOS_THERMAL */
-
-#ifdef CONFIG_MALI_T6XX_RT_PM
-#define RUNTIME_PM_DELAY_TIME 100
-#endif /* CONFIG_MALI_T6XX_RT_PM */
 
 extern struct kbase_device *pkbdev;
 
@@ -52,9 +41,6 @@ static int gpu_tmu_hot_check_and_work(struct kbase_device *kbdev, unsigned long 
 
 	platform = (struct exynos_context *)kbdev->platform_context;
 	if (!platform)
-		return -ENODEV;
-
-	if (!platform->clk_g3d_ip)
 		return -ENODEV;
 
 	switch (event) {

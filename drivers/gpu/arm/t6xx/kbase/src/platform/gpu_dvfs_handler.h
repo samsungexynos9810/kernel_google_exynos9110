@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5430/gpu_dvfs_handler.h
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_dvfs_handler.h
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
@@ -17,17 +17,6 @@
 
 #ifndef _GPU_DVFS_HANDLER_H_
 #define _GPU_DVFS_HANDLER_H_
-
-#if SOC_NAME == 5430
-#define MALI_DVFS_START_FREQ 266
-#define MALI_DVFS_BL_CONFIG_FREQ 266
-#endif
-
-#ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
-#define CONFIG_BUS_DEVFREQ
-#endif
-
-#define GPU_DVFS_FREQUENCY		100
 
 #define DVFS_ASSERT(x) \
 do { if (x) break; \

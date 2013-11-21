@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/5430/gpu_notifier.h
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_notifier.h
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
