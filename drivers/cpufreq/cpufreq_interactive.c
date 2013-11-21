@@ -1396,6 +1396,24 @@ static void cpufreq_interactive_nop_timer(unsigned long data)
 {
 }
 
+void cpufreq_interactive_update_target_freq(unsigned int target_freq, int cpu)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu = &per_cpu(cpuinfo, cpu);
+
+	if (!down_write_trylock(&pcpu->enable_sem))
+		return;
+	if (!pcpu->governor_enabled) {
+		up_write(&pcpu->enable_sem);
+		return;
+	}
+
+	pr_debug("%s: cpu%u\n", __func__, cpu);
+
+	pcpu->target_freq = pcpu->policy->cur;
+
+	up_write(&pcpu->enable_sem);
+}
+
 static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
