@@ -37,7 +37,8 @@ enum {
 	EVENT_XFER_COMPLETE,
 	EVENT_DATA_COMPLETE,
 	EVENT_DATA_ERROR,
-	EVENT_XFER_ERROR
+	EVENT_XFER_ERROR,
+	EVENT_QUEUE_READY
 };
 
 struct mmc_data;
@@ -68,6 +69,7 @@ struct dw_mci_slot {
 	u32			ctype;
 
 	struct mmc_request	*mrq;
+	struct list_head	mrq_list;
 	struct list_head	queue_node;
 
 	unsigned int		clock;
@@ -168,8 +170,12 @@ struct dw_mci {
 
 	struct dw_mci_slot	*cur_slot;
 	struct mmc_request	*mrq;
+	struct mmc_request	*mrq_cmd;
+	struct mmc_request	*mrq_dat;
 	struct mmc_command	*cmd;
 	struct mmc_data		*data;
+	struct mmc_data		*data_cmd;
+	struct mmc_data		*data_dat;
 	struct mmc_command	stop;
 	bool			stop_snd;
 	struct workqueue_struct	*card_workqueue;
@@ -190,17 +196,19 @@ struct dw_mci {
 	unsigned int		align_size;
 
 	struct pm_qos_request	pm_qos_int;
-	struct delayed_work	qos_work;
 
 	u32			cmd_status;
 	u32			data_status;
 	u32			stop_cmdr;
 	u32			dir_status;
 	struct tasklet_struct	tasklet;
+	u32			tasklet_state;
 	struct work_struct	card_work;
 	unsigned long		pending_events;
 	unsigned long		completed_events;
 	enum dw_mci_state	state;
+	enum dw_mci_state	state_cmd;
+	enum dw_mci_state	state_dat;
 	struct list_head	queue;
 
 	u32			bus_hz;

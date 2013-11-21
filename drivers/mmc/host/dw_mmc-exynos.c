@@ -832,7 +832,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		mrq.cmd = &cmd;
 		mrq.stop = &stop;
 		mrq.data = &data;
-		host->mrq = &mrq;
+		host->mrq_cmd = &mrq;
 
 		test_sample = dw_mci_tuning_sampling(host);
 		dw_mci_set_timeout(host);

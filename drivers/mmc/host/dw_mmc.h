@@ -69,6 +69,11 @@
 #define SDMMC_CDTHRCTL		0x100
 #define SDMMC_DATA(x)		(x)
 
+#define SDMMC_SHA_CMD_IE	0x190
+#define SDMMC_SHA_CMD_IS	0x194
+#define QRDY_INT_EN		BIT(3)
+#define QRDY_INT		BIT(3)
+
 /*
  * Data offset is difference according to Version
  * Lower than 2.40a : data register offest is 0x100
