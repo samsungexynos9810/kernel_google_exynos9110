@@ -66,6 +66,7 @@ struct fimg2d_platdata {
 	const char *parent_clkname;
 	const char *clkname;
 	const char *gate_clkname;
+	const char *gate_clkname2;
 	unsigned long clkrate;
 	int  cpu_min;
 	int  mif_min;
