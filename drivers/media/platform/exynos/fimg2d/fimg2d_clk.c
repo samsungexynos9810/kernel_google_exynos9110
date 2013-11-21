@@ -23,13 +23,37 @@
 
 void fimg2d_clk_on(struct fimg2d_control *ctrl)
 {
-	clk_enable(ctrl->clock);
+	if (ip_is_g2d_5ar2()) {
+		if (clk_prepare(ctrl->clock))
+			dev_err(ctrl->dev, "failed to prepare gate clk\n");
+
+		if (clk_prepare(ctrl->qe_clock))
+			dev_err(ctrl->dev, "failed to prepare gate clk2\n");
+	}
+
+	if (ip_is_g2d_5ar2()) {
+		clk_enable(ctrl->clock);
+		clk_enable(ctrl->qe_clock);
+	} else
+		clk_enable(ctrl->clock);
+
 	fimg2d_debug("%s : clock enable\n", __func__);
 }
 
 void fimg2d_clk_off(struct fimg2d_control *ctrl)
 {
-	clk_disable(ctrl->clock);
+	if (ip_is_g2d_5ar2()) {
+		clk_disable(ctrl->clock);
+		clk_disable(ctrl->qe_clock);
+	} else
+		clk_disable(ctrl->clock);
+
+	if (ip_is_g2d_5ar2()) {
+		clk_unprepare(ctrl->clock);
+		clk_unprepare(ctrl->qe_clock);
+	} else
+		clk_unprepare(ctrl->clock);
+
 	fimg2d_debug("%s : clock disable\n", __func__);
 }
 
@@ -46,7 +70,6 @@ int fimg2d_clk_setup(struct fimg2d_control *ctrl)
 	pdata = to_fimg2d_plat(ctrl->dev);
 #endif
 
-
 	if (ip_is_g2d_5g() || ip_is_g2d_5a()) {
 		fimg2d_info("aclk_acp(%lu) pclk_acp(%lu)\n",
 				clk_get_rate(clk_get(NULL, "aclk_acp")),
@@ -54,13 +77,16 @@ int fimg2d_clk_setup(struct fimg2d_control *ctrl)
 	} else if (ip_is_g2d_5ar2()) {
 		of_property_read_string_index(ctrl->dev->of_node,
 				"clock-names", 0, &(pdata->gate_clkname));
+		of_property_read_string_index(ctrl->dev->of_node,
+				"clock-names", 1, &(pdata->gate_clkname2));
 
-		ctrl->clock = clk_get(ctrl->dev, pdata->gate_clkname);
-		if (IS_ERR(ctrl->clock)) {
+		ctrl->qe_clock = clk_get(ctrl->dev, pdata->gate_clkname2);
+		if (IS_ERR(ctrl->qe_clock)) {
 			dev_err(ctrl->dev, "failed to get clk_get():%s\n",
-					pdata->gate_clkname);
+					pdata->gate_clkname2);
 			ret = -ENOENT;
-			goto err_clk1;
+			goto err_clk2;
+
 		}
 	} else {
 		sclk = clk_get(ctrl->dev, pdata->clkname);
@@ -80,15 +106,6 @@ int fimg2d_clk_setup(struct fimg2d_control *ctrl)
 		goto err_clk2;
 	}
 
-	if (ip_is_g2d_5ar2()) {
-		ret = clk_prepare(ctrl->clock);
-		if (ret < 0) {
-			dev_err(ctrl->dev, "failed to prepare gate clk\n");
-			ret = -ENOENT;
-			goto err_clk2;
-		}
-	}
-
 	fimg2d_info("gate clk: %s\n", pdata->gate_clkname);
 
 	return ret;
@@ -98,6 +115,8 @@ err_clk2:
 		clk_put(sclk);
 	if (ctrl->clock)
 		clk_put(ctrl->clock);
+	if (ctrl->qe_clock)
+		clk_put(ctrl->qe_clock);
 
 err_clk1:
 	return ret;
@@ -106,6 +125,10 @@ err_clk1:
 void fimg2d_clk_release(struct fimg2d_control *ctrl)
 {
 	clk_put(ctrl->clock);
+
+	if (ip_is_g2d_5ar2())
+		clk_put(ctrl->qe_clock);
+
 	if (ip_is_g2d_4p()) {
 		struct fimg2d_platdata *pdata;
 #ifdef CONFIG_OF

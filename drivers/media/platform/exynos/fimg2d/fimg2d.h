@@ -505,6 +505,7 @@ struct fimg2d_bltcmd {
 */
 struct fimg2d_control {
 	struct clk *clock;
+	struct clk *qe_clock;
 	struct device *dev;
 	struct resource *mem;
 	void __iomem *regs;
