@@ -21,6 +21,8 @@
 #ifndef __LINUX_USB_DWC3_OTG_H
 #define __LINUX_USB_DWC3_OTG_H
 
+#include <linux/wakelock.h>
+
 #include "../phy/phy-fsm-usb.h"
 
 struct dwc3_ext_otg_ops {
@@ -37,6 +39,8 @@ struct dwc3_ext_otg_ops {
  * @dwc: pointer to our controller context structure.
  * @irq: IRQ number assigned for HSUSB controller.
  * @regs: ioremapped register base address.
+ * @wakelock: prevents the system from entering suspend while
+ * 	      host or peripheral mode is active.
  * @vbus_reg: Vbus regulator.
  * @ext_otg_ops: external OTG engine ops.
  */
@@ -46,6 +50,7 @@ struct dwc3_otg {
 	struct dwc3             *dwc;
 	int                     irq;
 	void __iomem            *regs;
+	struct wake_lock	wakelock;
 
 	struct regulator	*vbus_reg;
 
