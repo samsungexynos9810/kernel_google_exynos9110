@@ -76,6 +76,9 @@ static struct cpumask cluster_cpus[CA_END];
 
 DEFINE_PER_CPU(cluster_type, cpu_cur_cluster);
 
+static struct pm_qos_constraints max_cpu_qos_const;
+static struct pm_qos_constraints max_kfc_qos_const;
+
 static struct pm_qos_request boot_min_cpu_qos;
 static struct pm_qos_request boot_max_cpu_qos;
 static struct pm_qos_request boot_min_kfc_qos;
@@ -1317,6 +1320,15 @@ static int __init exynos_cpufreq_init(void)
 	exynos_tmu_add_notifier(&exynos_tmu_nb);
 #endif
 
+	/* setup default qos constraints */
+	max_cpu_qos_const.target_value = freq_max[CA15];
+	max_cpu_qos_const.default_value = freq_max[CA15];
+	pm_qos_update_constraints(PM_QOS_CPU_FREQ_MAX, &max_cpu_qos_const);
+
+	max_kfc_qos_const.target_value = freq_max[CA7];
+	max_kfc_qos_const.default_value = freq_max[CA7];
+	pm_qos_update_constraints(PM_QOS_KFC_FREQ_MAX, &max_kfc_qos_const);
+
 	pm_qos_add_notifier(PM_QOS_CPU_FREQ_MIN, &exynos_cpu_min_qos_notifier);
 	pm_qos_add_notifier(PM_QOS_CPU_FREQ_MAX, &exynos_cpu_max_qos_notifier);
 	pm_qos_add_notifier(PM_QOS_KFC_FREQ_MIN, &exynos_kfc_min_qos_notifier);
@@ -1380,14 +1392,14 @@ static int __init exynos_cpufreq_init(void)
 
 	if (exynos_info[CA7]->boot_cpu_max_qos) {
 		pm_qos_add_request(&boot_max_kfc_qos, PM_QOS_KFC_FREQ_MAX,
-					PM_QOS_KFC_FREQ_MAX_DEFAULT_VALUE);
+					max_kfc_qos_const.default_value);
 		pm_qos_update_request_timeout(&boot_max_kfc_qos,
 					exynos_info[CA7]->boot_cpu_max_qos, 40000 * 1000);
 	}
 
 	if (exynos_info[CA15]->boot_cpu_min_qos) {
 		pm_qos_add_request(&boot_min_cpu_qos, PM_QOS_CPU_FREQ_MIN,
-					PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+					max_cpu_qos_const.default_value);
 		pm_qos_update_request_timeout(&boot_min_cpu_qos,
 					exynos_info[CA15]->boot_cpu_min_qos, 40000 * 1000);
 	}
