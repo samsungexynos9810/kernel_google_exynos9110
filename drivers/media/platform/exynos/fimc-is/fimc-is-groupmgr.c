@@ -836,8 +836,10 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 		}
 	}
 
+	group->id = GROUP_ID_INVALID;
 	clear_bit(FIMC_IS_GROUP_INIT, &group->state);
 	clear_bit(FIMC_IS_GROUP_OPEN, &group->state);
+	clear_bit(FIMC_IS_SUBDEV_OPEN, &group->leader.state);
 
 p_err:
 	mdbgd_group("%s(ref %d, %d)", group, __func__, (refcount - 1), ret);
