@@ -22,6 +22,9 @@
 
 #include <linux/debugfs.h>
 #include <linux/seq_file.h>
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+#include <linux/sched.h>
+#endif
 
 #include <kbase/src/common/mali_kbase.h>
 #include <kbase/src/common/mali_kbase_defs.h>
@@ -49,7 +52,11 @@ STATIC CONST char *kbasep_trace_code_string[] = {
 };
 #endif
 
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+#define DEBUG_MESSAGE_SIZE KBASE_TRACE_SIZE /* MALI_SEC */
+#else
 #define DEBUG_MESSAGE_SIZE 256
+#endif
 
 STATIC mali_error kbasep_trace_init(kbase_device *kbdev);
 STATIC void kbasep_trace_term(kbase_device *kbdev);
@@ -416,9 +423,9 @@ void kbase_gpu_interrupt(kbase_device *kbdev, u32 val)
  * Device trace functions
  */
 #if KBASE_TRACE_ENABLE != 0
-
 STATIC mali_error kbasep_trace_init(kbase_device *kbdev)
 {
+#ifndef CONFIG_MALI_EXYNOS_TRACE /* MALI_SEC */
 	void *rbuf;
 
 	rbuf = kmalloc(sizeof(kbase_trace) * KBASE_TRACE_SIZE, GFP_KERNEL);
@@ -427,6 +434,7 @@ STATIC mali_error kbasep_trace_init(kbase_device *kbdev)
 		return MALI_ERROR_FUNCTION_FAILED;
 
 	kbdev->trace_rbuf = rbuf;
+#endif
 	spin_lock_init(&kbdev->trace_lock);
 	kbasep_trace_debugfs_init(kbdev);
 	return MALI_ERROR_NONE;
@@ -434,7 +442,9 @@ STATIC mali_error kbasep_trace_init(kbase_device *kbdev)
 
 STATIC void kbasep_trace_term(kbase_device *kbdev)
 {
+#ifndef CONFIG_MALI_EXYNOS_TRACE /* MALI_SEC */
 	kfree(kbdev->trace_rbuf);
+#endif
 }
 
 void kbasep_trace_format_msg(kbase_trace *trace_msg, char *buffer, int len)
@@ -476,10 +486,47 @@ void kbasep_trace_dump_msg(kbase_trace *trace_msg)
 	KBASE_DEBUG_PRINT(KBASE_CORE, "%s", buffer);
 }
 
+/* MALI_SEC */
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+bool check_trace_code(kbase_trace_code code)
+{
+	unsigned int temp = code;
+	switch(temp) {
+		case KBASE_TRACE_CODE(CORE_CTX_DESTROY):
+		case KBASE_TRACE_CODE(CORE_GPU_IRQ):
+		case KBASE_TRACE_CODE(CORE_GPU_IRQ_CLEAR):
+		case KBASE_TRACE_CODE(CORE_GPU_IRQ_DONE):
+		case KBASE_TRACE_CODE(CORE_GPU_SOFT_RESET):
+		case KBASE_TRACE_CODE(CORE_GPU_HARD_RESET):
+		case KBASE_TRACE_CODE(JM_SOFTSTOP):
+		case KBASE_TRACE_CODE(JM_HARDSTOP):
+		case KBASE_TRACE_CODE(LSI_GPU_ON):
+		case KBASE_TRACE_CODE(LSI_GPU_OFF):
+		case KBASE_TRACE_CODE(LSI_SUSPEND):
+		case KBASE_TRACE_CODE(LSI_RESUME):
+		case KBASE_TRACE_CODE(LSI_CLOCK_VALUE):
+		case KBASE_TRACE_CODE(LSI_TMU_VALUE):
+			return true;
+		default:
+			return false;
+	}
+	return true;
+}
+#endif
+
 void kbasep_trace_add(kbase_device *kbdev, kbase_trace_code code, void *ctx, kbase_jd_atom *katom, u64 gpu_addr, u8 flags, int refcount, int jobslot, u32 info_val)
 {
 	unsigned long irqflags;
 	kbase_trace *trace_msg;
+
+/* MALI_SEC */
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	u64 time;
+	unsigned long rem_nsec;
+
+	if (!check_trace_code(code))
+		return;
+#endif
 
 	spin_lock_irqsave(&kbdev->trace_lock, irqflags);
 
@@ -488,8 +535,15 @@ void kbasep_trace_add(kbase_device *kbdev, kbase_trace_code code, void *ctx, kba
 	/* Fill the message */
 	trace_msg->thread_id = task_pid_nr(current);
 	trace_msg->cpu = task_cpu(current);
-
+/* MALI_SEC */
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	time = local_clock();
+	rem_nsec = do_div(time, 1000000000);
+	trace_msg->timestamp.tv_sec = time;
+	trace_msg->timestamp.tv_nsec = rem_nsec;
+#else
 	getnstimeofday(&trace_msg->timestamp);
+#endif
 
 	trace_msg->code = code;
 	trace_msg->ctx = ctx;
@@ -537,7 +591,6 @@ void kbasep_trace_dump(kbase_device *kbdev)
 	spin_lock_irqsave(&kbdev->trace_lock, flags);
 	start = kbdev->trace_first_out;
 	end = kbdev->trace_next_in;
-
 	while (start != end) {
 		kbase_trace *trace_msg = &kbdev->trace_rbuf[start];
 		kbasep_trace_dump_msg(trace_msg);
@@ -582,8 +635,13 @@ void *kbasep_trace_seq_next(struct seq_file *s, void *data, loff_t *pos)
 {
 	struct trace_seq_state *state = s->private;
 	int i = (state->start + *pos) & KBASE_TRACE_MASK;
-	if (i == state->end)
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	if (i == state->end || (state->start < state->end && i >= state->end)) {
+#else
+	if (i == state->end) {
+#endif
 		return NULL;
+	}
 
 	(*pos)++;
 

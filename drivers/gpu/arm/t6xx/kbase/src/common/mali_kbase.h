@@ -320,6 +320,10 @@ static INLINE int kbase_jd_atom_id(kbase_context *kctx, kbase_jd_atom *katom)
 	kbasep_trace_add(kbdev, KBASE_TRACE_CODE(code), ctx, katom, gpu_addr, \
 			0, 0, 0, info_val)
 
+#define KBASE_TRACE_ADD_EXYNOS(kbdev, code, ctx, katom, gpu_addr, info_val)     \
+	kbasep_trace_add(kbdev, KBASE_TRACE_CODE(code), ctx, katom, gpu_addr, \
+			0, 0, 0, info_val)
+
 /** Clear the trace */
 #define KBASE_TRACE_CLEAR(kbdev) \
 	kbasep_trace_clear(kbdev)
@@ -408,6 +412,17 @@ void kbasep_trace_clear(kbase_device *kbdev);
 	} while (0)
 
 #define KBASE_TRACE_ADD(kbdev, code, subcode, ctx, katom, val)\
+	do {\
+		CSTD_UNUSED(kbdev);\
+		CSTD_NOP(code);\
+		CSTD_UNUSED(subcode);\
+		CSTD_UNUSED(ctx);\
+		CSTD_UNUSED(katom);\
+		CSTD_UNUSED(val);\
+		CSTD_NOP(0);\
+	}while(0)
+
+#define KBASE_TRACE_ADD_EXYNOS(kbdev, code, subcode, ctx, katom, val)\
 	do {\
 		CSTD_UNUSED(kbdev);\
 		CSTD_NOP(code);\

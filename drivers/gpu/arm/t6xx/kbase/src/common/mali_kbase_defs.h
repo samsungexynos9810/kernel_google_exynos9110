@@ -46,7 +46,7 @@
 /** Enable SW tracing when set */
 #ifdef CONFIG_MALI_T6XX_ENABLE_TRACE
 #define KBASE_TRACE_ENABLE 1
-#endif
+#endif /* CONFIG_MALI_T6XX_ENABLE_TRACE */
 
 #ifndef KBASE_TRACE_ENABLE
 #ifdef CONFIG_MALI_DEBUG
@@ -145,8 +145,12 @@ typedef struct kbase_device kbase_device;
 
 #define KBASE_LOCK_REGION_MAX_SIZE (63)
 #define KBASE_LOCK_REGION_MIN_SIZE (11)
-
-#define KBASE_TRACE_SIZE_LOG2 8	/* 256 entries */
+/* MALI_SEC */
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+#define KBASE_TRACE_SIZE_LOG2 10	/* 1024 entries */
+#else
+#define KBASE_TRACE_SIZE_LOG2 8		/* 256 entries */
+#endif
 #define KBASE_TRACE_SIZE (1 << KBASE_TRACE_SIZE_LOG2)
 #define KBASE_TRACE_MASK ((1 << KBASE_TRACE_SIZE_LOG2)-1)
 
@@ -464,7 +468,11 @@ typedef struct kbase_trace {
 	u64 atom_udata[2];
 	u64 gpu_addr;
 	u32 info_val;
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	kbase_trace_code code;
+#else
 	u8 code;
+#endif
 	u8 jobslot;
 	u8 refcount;
 	u8 flags;
@@ -676,7 +684,11 @@ struct kbase_device {
 	spinlock_t              trace_lock;
 	u16                     trace_first_out;
 	u16                     trace_next_in;
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	kbase_trace            trace_rbuf[KBASE_TRACE_SIZE];
+#else
 	kbase_trace            *trace_rbuf;
+#endif
 #endif
 
 #if MALI_CUSTOMER_RELEASE == 0
