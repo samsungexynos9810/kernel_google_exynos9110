@@ -133,6 +133,10 @@ struct mmc_request {
 	struct completion	completion;
 	void			(*done)(struct mmc_request *);/* completion function */
 	struct mmc_host		*host;
+	struct mmc_async_req	*areq;
+	int			flags;
+	struct list_head	link;
+	struct list_head	hlist;
 };
 
 struct mmc_card;

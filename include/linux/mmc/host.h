@@ -148,6 +148,7 @@ struct device;
 
 struct mmc_async_req {
 	/* active mmc request */
+	struct mmc_request	*mrq_que;
 	struct mmc_request	*mrq;
 	/*
 	 * Check error status of completed mmc request.
@@ -196,6 +197,9 @@ struct mmc_supply {
 	struct regulator *vmmc;		/* Card power supply */
 	struct regulator *vqmmc;	/* Optional Vccq supply */
 };
+
+#define EMMC_MAX_QUEUE_DEPTH		(16)
+#define EMMC_MIN_RT_CLASS_TAG_COUNT	(1)
 
 struct mmc_host {
 	struct device		*parent;
@@ -292,6 +296,8 @@ struct mmc_host {
 #define MMC_CAP2_HS200_1_2V_DDR	(1 << 13)	/* can support */
 #define MMC_CAP2_HS200_DDR	(MMC_CAP2_HS200_1_8V_DDR | \
 				 MMC_CAP2_HS200_1_2V_SDR)
+#define MMC_CAP2_CMDQ		(MMC_CAP2_CACHE_CTRL | \
+				(1 << 15))	/* Allow command queuing */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
@@ -371,6 +377,26 @@ struct mmc_host {
 	struct mmc_async_req	*areq;		/* active async req */
 	struct mmc_context_info	context_info;	/* async synchronization info */
 
+	struct mmc_async_req	*areq_que[EMMC_MAX_QUEUE_DEPTH];
+	struct mmc_async_req	*areq_cur;
+	atomic_t		areq_cnt;
+
+	spinlock_t		que_lock;
+	struct list_head	cmd_que;
+	struct list_head	dat_que;
+	unsigned long		state;
+#define MMC_CMDQ_IDLE		(0)
+#define MMC_CMDQ_CMD		(1 << 0)
+#define MMC_CMDQ_DAT		(1 << 1)
+#define MMC_CMDQ_QRDY		(1 << 2)
+	wait_queue_head_t	cmp_que;
+	struct mmc_request	*busy_mrq;
+	struct mmc_request	*done_mrq;
+	struct mmc_command	chk_cmd;
+	struct mmc_request	chk_mrq;
+	struct mmc_command	que_cmd;
+	struct mmc_request	que_mrq;
+
 #ifdef CONFIG_FAIL_MMC_REQUEST
 	struct fault_attr	fail_mmc_request;
 #endif
@@ -436,6 +462,9 @@ int mmc_power_restore_host(struct mmc_host *host);
 
 void mmc_detect_change(struct mmc_host *, unsigned long delay);
 void mmc_request_done(struct mmc_host *, struct mmc_request *);
+void mmc_handle_queued_request(struct mmc_host *host);
+int mmc_blk_end_queued_req(struct mmc_host *host,
+		struct mmc_async_req *areq, int index, int status);
 
 int mmc_cache_ctrl(struct mmc_host *, u8);
 

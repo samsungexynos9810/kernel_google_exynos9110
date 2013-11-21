@@ -104,6 +104,14 @@ struct mmc_ext_csd {
 	u8			raw_trim_mult;		/* 232 */
 	u8			raw_bkops_status;	/* 246 */
 	u8			raw_sectors[4];		/* 212 - 4 bytes */
+#define MMC_CMDQ_MODE_EN	(1)
+	u8			cmdq_support;
+	u8			cmdq_mode_en;
+	u8			cmdq_status;
+	u8			cmdq_depth;
+	u8			cmdq_config;
+	u8			qrdy_support;
+	u8			qrdy_function;
 
 	unsigned int            feature_support;
 #define MMC_DISCARD_FEATURE	BIT(0)                  /* CMD38 feature */
