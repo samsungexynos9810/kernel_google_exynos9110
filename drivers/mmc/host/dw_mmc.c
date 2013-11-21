@@ -421,6 +421,9 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 	if (cmd->flags & MMC_RSP_CRC)
 		cmdr |= SDMMC_CMD_RESP_CRC;
 
+	if (host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT)
+		cmdr |= SDMMC_CMD_CEATA_RD;
+
 	data = cmd->data;
 	if (data) {
 		cmdr |= SDMMC_CMD_DAT_EXP;
@@ -428,8 +431,6 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 			cmdr |= SDMMC_CMD_STRM_MODE;
 		if (data->flags & MMC_DATA_WRITE)
 			cmdr |= SDMMC_CMD_DAT_WR;
-		if (host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT)
-			cmdr |= SDMMC_CMD_CEATA_RD;
 	}
 
 	if (drv_data && drv_data->prepare_command)
@@ -1719,7 +1720,8 @@ static void dw_mci_dto_timer(unsigned long data)
 		return;
 
 	/* Check Data trasnfer Done */
-	if (host->pending_events & EVENT_DATA_COMPLETE)
+	if (host->pending_events & EVENT_DATA_COMPLETE ||
+			host->completed_events & EVENT_DATA_COMPLETE)
 		done = true;
 
 	/* Check Data Transfer start */
@@ -1729,8 +1731,6 @@ static void dw_mci_dto_timer(unsigned long data)
 		done = true;
 
 	if (done == true) {
-		/* Remove quirks for Data Timeout */
-		host->quirks &= ~DW_MMC_QUIRK_SW_DATA_TIMEOUT;
 		dev_info(host->dev,
 		"Done, S/W timer for data timeout %d ms fifo count %d\n",
 		 host->dto_cnt, fifo_cnt);
@@ -1744,6 +1744,7 @@ static void dw_mci_dto_timer(unsigned long data)
 	} else {
 		/* data timeout */
 		host->data_status |= SDMMC_INT_DTO;
+		set_bit(EVENT_DATA_ERROR, &host->pending_events);
 		tasklet_schedule(&host->tasklet);
 	}
 }
@@ -1823,6 +1824,15 @@ static int dw_mci_tasklet_cmd(struct dw_mci *host)
 			}
 
 			prev_state = state = STATE_SENDING_DATA;
+			if (host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT) {
+				if (cmd->data &&
+					(cmd->data->flags & MMC_DATA_READ)) {
+					host->dto_cnt = 0;
+					mod_timer(&host->dto_timer,
+						jiffies + msecs_to_jiffies(DRTO_MON_PERIOD));
+				}
+			}
+
 			break;
 
 		case STATE_SENDING_STOP:
@@ -1932,12 +1942,6 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 						"data timeout error\n");
 					data->error = -ETIMEDOUT;
 					host->mrq->cmd->error = -ETIMEDOUT;
-					if (!(host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT)) {
-						host->mrq->cmd->retries = DATA_RETRY;
-						host->quirks |= DW_MMC_QUIRK_SW_DATA_TIMEOUT;
-						host->dto_cnt = 0;
-					}
-
 				} else if (status & SDMMC_INT_DCRC) {
 					dev_err(host->dev,
 						"data CRC error\n");
@@ -1989,13 +1993,9 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 				data->error = 0;
 			}
 
-			if ((host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT) &&
-				(host->mrq->cmd->retries == 0)) {
+			if (host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT &&
+					(data->flags & MMC_DATA_READ))
 				del_timer(&host->dto_timer);
-				host->quirks &= ~DW_MMC_QUIRK_SW_DATA_TIMEOUT;
-				dev_info(host->dev,
-				"Done, S/W timer for data timeout by Data transfer Done\n");
-			}
 
 			host->data = NULL;
 
@@ -3402,6 +3402,9 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk	= "fixed_volt",
 		.id	= DW_MMC_QUIRK_FIXED_VOLTAGE,
+	}, {
+		.quirk	= "sw_data_timeout",
+		.id	= DW_MMC_QUIRK_SW_DATA_TIMEOUT,
 	},
 };
 
