@@ -998,8 +998,11 @@ static struct notifier_block exynos_cpufreq_reboot_notifier = {
 static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long val, void *v)
 {
 	int ret;
+	unsigned long freq;
 	struct cpufreq_policy *policy;
 	int cpu = boot_cluster ? 0 : NR_CA7;
+
+	freq = exynos_getspeed(cpu);
 
 	policy = cpufreq_cpu_get(cpu);
 
@@ -1087,8 +1090,11 @@ static struct notifier_block exynos_cpu_max_qos_notifier = {
 static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long val, void *v)
 {
 	int ret;
+	unsigned long freq;
 	struct cpufreq_policy *policy;
 	int cpu = boot_cluster ? NR_CA15 : 0;
+
+	freq = exynos_getspeed(cpu);
 
 	policy = cpufreq_cpu_get(cpu);
 
