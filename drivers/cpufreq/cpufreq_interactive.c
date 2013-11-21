@@ -604,10 +604,20 @@ static int cpufreq_interactive_speedchange_task(void *data)
 					max_freq = pjcpu->target_freq;
 			}
 
-			if (max_freq != pcpu->policy->cur)
+			if (max_freq != pcpu->policy->cur) {
 				__cpufreq_driver_target(pcpu->policy,
 							max_freq,
 							CPUFREQ_RELATION_H);
+				/*
+				 * If frequency value changed as another value
+				 * in target function, the frequency values of
+				 * target_freq and current frequency differenced.
+				 * So, update real current frequency after called
+				 * target function
+				 */
+				pcpu->target_freq = pcpu->policy->cur;
+			}
+
 			trace_cpufreq_interactive_setspeed(cpu,
 						     pcpu->target_freq,
 						     pcpu->policy->cur);
