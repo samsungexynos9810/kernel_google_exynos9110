@@ -203,6 +203,7 @@
 		supports-hs200-1-8v-mode;
 		supports-ddr200-1-8v-mode;
 		enable-cache-control;
+		sw_data_timeout;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
