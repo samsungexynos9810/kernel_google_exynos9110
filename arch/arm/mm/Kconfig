@@ -600,6 +600,7 @@ comment "Processor Features"
 config ARM_TRUSTZONE
 	bool "Support TrustZone-enabled Trusted Execution Environment"
 	default y
+	depends on SOC_EXYNOS5430
 	help
 	  Select if you want a kernel to be executed at non-secure world.
 	  This option should be used with related secure bootloader and
