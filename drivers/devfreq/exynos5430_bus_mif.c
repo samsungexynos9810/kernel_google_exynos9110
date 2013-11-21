@@ -1707,6 +1707,7 @@ static int exynos5_devfreq_mif_resume(struct device *dev)
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
 	exynos5_devfreq_mif_init_dvfs(data_mif);
+	exynos5_devfreq_mif_update_timingset(data_mif);
 
 	if (pm_qos_request_active(&exynos5_mif_qos))
 		pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
@@ -3454,6 +3455,7 @@ static int exynos5_devfreq_mif_resume(struct device *dev)
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
 	exynos5_devfreq_mif_init_dvfs(data_mif);
+	exynos5_devfreq_mif_update_timingset(data_mif);
 
 	if (pm_qos_request_active(&exynos5_mif_qos))
 		pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
