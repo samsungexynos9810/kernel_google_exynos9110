@@ -1003,6 +1003,8 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 	int cpu = boot_cluster ? 0 : NR_CA7;
 
 	freq = exynos_getspeed(cpu);
+	if (freq >= val)
+		goto good;
 
 	policy = cpufreq_cpu_get(cpu);
 
@@ -1095,6 +1097,8 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 	int cpu = boot_cluster ? NR_CA15 : 0;
 
 	freq = exynos_getspeed(cpu);
+	if (freq >= val)
+		goto good;
 
 	policy = cpufreq_cpu_get(cpu);
 
