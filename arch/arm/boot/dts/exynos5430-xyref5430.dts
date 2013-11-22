@@ -128,6 +128,7 @@
 
 	i2c@14EB0000 {
 		status = "okay";
+		samsung,i2c-sda-delay = <500>;
 		/* hdmi edid dirver */
 		edid@50 {
 			compatible = "samsung,exynos5-edid_driver";
