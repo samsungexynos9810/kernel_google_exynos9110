@@ -23,7 +23,7 @@ config VIDEO_EXYNOS_HDMI
 	bool "Samsung HDMI Driver"
 	depends on VIDEO_V4L2
 	depends on VIDEO_EXYNOS_TV
-	select EXTCON
+	select SWITCH
 	select FB_MODE_HELPERS
 	help
 	  Say Y here if you want support for the HDMI output
