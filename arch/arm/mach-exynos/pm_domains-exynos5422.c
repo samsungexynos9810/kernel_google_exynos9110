@@ -24,8 +24,6 @@
 #define SHIFT_MFC_BLK_DIV       0
 static DEFINE_SPINLOCK(clk_div2_ratio0_lock);
 
-static struct clk *clk_g3d_parent;
-
 #define GET_CLK(a) __clk_lookup(a)
 #define SET_PARENT(a, b) clk_set_parent(GET_CLK(a), GET_CLK(b))
 #define ENA_CLK(a, b) {if (!__clk_is_enabled(GET_CLK(a))) { b = clk_prepare_enable(GET_CLK(a)); if (b) pr_err(" %s: failed\n %d", __func__, b); } };
@@ -34,23 +32,19 @@ static struct clk *clk_g3d_parent;
 static int exynos5_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	clk_set_parent(GET_CLK("clk_g3d_ip"), clk_g3d_parent);
+	SET_PARENT("mout_aclk_g3d_user", "mout_aclk_g3d_sw");
 	return 0;
 }
 
 static int exynos5_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	clk_g3d_parent = clk_get_parent(GET_CLK("clk_g3d_ip"));
 	return 0;
 }
 
 static int exynos5_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
 {
-	int ret = 0;
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	ENA_CLK("fout_vpll", ret);
-	udelay(70);
 	SET_PARENT("mout_vpll_ctrl", "fout_vpll");
 	return 0;
 }
@@ -58,8 +52,6 @@ static int exynos5_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
 static int exynos5_pd_g3d_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	SET_PARENT("mout_vpll_ctrl", "fin_pll");
-	DIS_CLK("fout_vpll");
 	return 0;
 }
 
