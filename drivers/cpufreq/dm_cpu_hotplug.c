@@ -358,13 +358,15 @@ void dm_cpu_hotplug_exit(void)
 	thread_run_flag = 0;
 }
 
-void dm_cpu_hotplug_init(void)
+static int __init dm_cpu_hotplug_init(void)
 {
 	struct task_struct *k;
 
 	k = kthread_run(&on_run, NULL, "thread_hotplug_func");
-	if (IS_ERR(k))
+	if (IS_ERR(k)) {
 		pr_err("Failed in creation of thread.\n");
+		return -EINVAL;
+	}
 
 	fb_register_client(&fb_block);
 	lcd_is_on = true;
@@ -373,4 +375,8 @@ void dm_cpu_hotplug_init(void)
 	exynos_dm_hotplug_disable = false;
 
 	register_pm_notifier(&exynos_dm_hotplug_nb);
+
+	return 0;
 }
+
+late_initcall(dm_cpu_hotplug_init);
