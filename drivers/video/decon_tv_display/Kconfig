@@ -15,7 +15,7 @@ config VIDEO_EXYNOS_HDMI
 	bool "Samsung HDMI driver"
 	depends on DECON_TV
 	depends on VIDEO_V4L2
-	select EXTCON
+	select SWITCH
 	select FB_MODE_HELPERS
 	default y
 	help

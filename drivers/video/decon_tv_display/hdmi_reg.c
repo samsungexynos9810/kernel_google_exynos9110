@@ -2361,7 +2361,7 @@ int hdmi_hpd_status(struct hdmi_device *hdev)
 
 int is_hdmi_streaming(struct hdmi_device *hdev)
 {
-	if (extcon_get_state(&hdev->hpd_extcon) &&
+	if (switch_get_state(&hdev->hpd_switch) &&
 			(hdev->streaming == HDMI_STREAMING))
 		return 1;
 	return 0;

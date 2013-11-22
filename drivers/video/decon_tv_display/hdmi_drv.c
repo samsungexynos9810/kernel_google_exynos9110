@@ -379,11 +379,11 @@ int hdmi_g_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		ctrl->value = hdev->dvi_mode;
 		break;
 	case V4L2_CID_TV_HPD_STATUS:
-		ctrl->value = extcon_get_state(&hdev->hpd_extcon);
+		ctrl->value = switch_get_state(&hdev->hpd_switch);
 		break;
 	case V4L2_CID_TV_HDMI_STATUS:
 		ctrl->value = (hdev->streaming |
-				extcon_get_state(&hdev->hpd_extcon));
+				switch_get_state(&hdev->hpd_switch));
 		break;
 	case V4L2_CID_TV_MAX_AUDIO_CHANNELS:
 		ctrl->value = edid_audio_informs(hdev);
@@ -712,7 +712,7 @@ static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 {
 	int ret;
 
-	if (state == extcon_get_state(&hdev->hpd_extcon))
+	if (state == switch_get_state(&hdev->hpd_switch))
 		return;
 
 	if (state) {
@@ -727,7 +727,7 @@ static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 		hdev->cur_conf = hdmi_timing2conf(&hdev->cur_timings);
 	}
 
-	extcon_set_state(&hdev->hpd_extcon, state);
+	switch_set_state(&hdev->hpd_switch, state);
 
 	dev_info(hdev->dev, "%s\n", state ? "plugged" : "unplugged");
 }
@@ -940,8 +940,8 @@ static int hdmi_probe(struct platform_device *pdev)
 		dev_info(dev, "success request hdmi-ext irq\n");
 	}
 
-	hdmi_dev->hpd_extcon.name = "hdmi";
-	ret = extcon_dev_register(&hdmi_dev->hpd_extcon, dev);
+	hdmi_dev->hpd_switch.name = "hdmi";
+	ret = switch_dev_register(&hdmi_dev->hpd_switch);
 	if (ret) {
 		dev_err(dev, "request switch class failed.\n");
 		goto fail_gpio;
@@ -969,7 +969,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* register hdmi subdev as entity */
 	ret = hdmi_register_entity(hdmi_dev);
 	if (ret)
-		goto fail_extcon;
+		goto fail_switch;
 
 	hdmi_entity_info_print(hdmi_dev);
 
@@ -978,7 +978,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* initialize hdcp resource */
 	ret = hdcp_prepare(hdmi_dev);
 	if (ret)
-		goto fail_extcon;
+		goto fail_switch;
 
 	/* work after booting */
 	queue_delayed_work(system_nrt_wq, &hdmi_dev->hpd_work_ext,
@@ -987,7 +987,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* mapping SYSTEM registers */
 	ret = hdmi_get_sysreg_addr(hdmi_dev);
 	if (ret)
-		goto fail_extcon;
+		goto fail_switch;
 
 	dev_info(dev, "probe sucessful\n");
 
@@ -995,9 +995,9 @@ static int hdmi_probe(struct platform_device *pdev)
 
 	return 0;
 
-fail_extcon:
+fail_switch:
 	mutex_destroy(&hdmi_dev->mutex);
-	extcon_dev_unregister(&hdmi_dev->hpd_extcon);
+	switch_dev_unregister(&hdmi_dev->hpd_switch);
 
 fail_gpio:
 	gpio_free(hdmi_dev->res.gpio_hpd);
@@ -1025,7 +1025,7 @@ static int hdmi_remove(struct platform_device *pdev)
 	v4l2_device_unregister(&hdmi_dev->v4l2_dev);
 	free_irq(hdmi_dev->ext_irq, hdmi_dev);
 	free_irq(hdmi_dev->int_irq, hdmi_dev);
-	extcon_dev_unregister(&hdmi_dev->hpd_extcon);
+	switch_dev_unregister(&hdmi_dev->hpd_switch);
 	mutex_destroy(&hdmi_dev->mutex);
 	iounmap(hdmi_dev->regs);
 	hdmi_resources_cleanup(hdmi_dev);
