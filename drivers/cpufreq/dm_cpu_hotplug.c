@@ -100,10 +100,18 @@ static int fb_state_change(struct notifier_block *nb,
 		unsigned long val, void *data)
 {
 	struct fb_event *evdata = data;
+	struct fb_info *info = evdata->info;
 	unsigned int blank;
 
 	if (val != FB_EVENT_BLANK)
 		return 0;
+
+	/*
+	 * If FBNODE is not zero, it is not primary display(LCD)
+	 * and don't need to process these scheduling.
+	 */
+	if (info->node)
+		return NOTIFY_OK;
 
 	blank = *(int *)evdata->data;
 
