@@ -102,8 +102,6 @@ static void __cpuinit exynos_secondary_init(unsigned int cpu)
 static int exynos_power_up_cpu(unsigned int phys_cpu)
 {
 	unsigned int timeout;
-	u32 core = MPIDR_AFFINITY_LEVEL(cpu_logical_map(phys_cpu), 0);
-	u32 cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(phys_cpu), 1);
 
 	if (exynos_cpu.power_state(phys_cpu)) {
 		printk(KERN_WARNING "%s: Already enabled core power.\n",
@@ -128,16 +126,25 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 		}
 	}
 
-	if (soc_is_exynos5422()) {
-		if (cluster) {
-			u32 val;
-
-			while(!__raw_readl(EXYNOS_PMU_SPARE2))
-				udelay(10);
-
+	if (phys_cpu < 4) {
+		u32 val;
+		while(!__raw_readl(EXYNOS_PMU_SPARE2))
 			udelay(10);
 
-			val = ((1 << 20) | (1 << 8)) << core;
+		udelay(10);
+
+		if (soc_is_exynos5430()) {
+			val = __raw_readl(EXYNOS_ARM_CORE_STATUS(4 + phys_cpu));
+			val |= (0xF << 8);
+			__raw_writel(val, EXYNOS_ARM_CORE_STATUS(4 + phys_cpu));
+
+			pr_debug("cpu%d: SWRESEET\n", phys_cpu);
+
+			__raw_writel((0x1 << 1), EXYNOS_ARM_CORE_RESET(4 + phys_cpu));
+		} else if (soc_is_exynos5422()) {
+			printk(KERN_DEBUG "cpu%d: SWRESET\n", phys_cpu);
+
+			val = ((1 << 20) | (1 << 8)) << phys_cpu;
 			__raw_writel(val, EXYNOS_SWRESET);
 		}
 	}
