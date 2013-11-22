@@ -78,6 +78,10 @@ struct idmac_desc {
 	u32		des2;	/* buffer 1 physical address */
 
 	u32		des3;	/* buffer 2 physical address */
+	u32		des4;	/* Sector Key */
+	u32		des5;	/* Application Key 0 */
+	u32		des6;	/* Application Key 1 */
+	u32		des7;	/* Application Key 2 */
 };
 #endif /* CONFIG_MMC_DW_IDMAC */
 
