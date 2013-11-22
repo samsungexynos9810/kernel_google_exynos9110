@@ -1964,6 +1964,10 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(gate_ass_i2s_special, "ass_i2s_special", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 3, 0, 0),
 	CGATE(gate_ass_i2s_bus, "ass_i2s_bus", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 2, 0, 0),
 	CGATE(gate_ass_srp, "ass_srp", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 0, 0, 0),
+
+	/* G2D IP */
+	CGATE(clk_qeg2d, "clk_qeg2d", "aclk_333_g2d", EXYNOS5_CLK_GATE_IP_G2D, 10, 0, 0),
+	CGATE(clk_g2d, "clk_g2d", "aclk_333_g2d", EXYNOS5_CLK_GATE_IP_G2D, 3, 0, 0),
 };
 
 static __initdata struct of_device_id ext_clk_match[] = {
