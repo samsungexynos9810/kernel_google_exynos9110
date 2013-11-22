@@ -3722,8 +3722,6 @@ int dw_mci_resume(struct dw_mci *host)
 
 #ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
 	ret = exynos_smc(SMC_CMD_FMP, FMP_MMC_RESUME, 0, 0);
-	if (ret == (u32)-1)
-		return -ENODEV;
 #endif
 
 	/* Restore the old value at FIFOTH register */
