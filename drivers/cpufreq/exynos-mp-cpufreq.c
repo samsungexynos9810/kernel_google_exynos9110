@@ -763,6 +763,153 @@ static struct cpufreq_driver exynos_driver = {
 };
 
 /************************** sysfs interface ************************/
+static ssize_t show_cpufreq_table(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	int i;
+	ssize_t count = 0;
+	size_t tbl_sz = 0, pr_len;
+	struct cpufreq_frequency_table *freq_table_CA15 = exynos_info[CA15]->freq_table;
+	struct cpufreq_frequency_table *freq_table_CA7 = exynos_info[CA7]->freq_table;
+
+	for (i = 0; freq_table_CA15[i].frequency != CPUFREQ_TABLE_END; i++)
+		tbl_sz++;
+	for (i = 0; freq_table_CA7[i].frequency != CPUFREQ_TABLE_END; i++)
+		tbl_sz++;
+	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
+
+	for (i = 0; freq_table_CA15[i].frequency != CPUFREQ_TABLE_END; i++) {
+		if (freq_table_CA15[i].frequency != CPUFREQ_ENTRY_INVALID)
+			count += snprintf(&buf[count], pr_len, "%d ",
+						freq_table_CA15[i].frequency);
+	}
+
+	for (i = 0; freq_table_CA7[i].frequency != CPUFREQ_TABLE_END; i++) {
+		if (freq_table_CA7[i].frequency != CPUFREQ_ENTRY_INVALID)
+			count += snprintf(&buf[count], pr_len, "%d ",
+					freq_table_CA7[i].frequency / 2);
+	}
+
+	count += snprintf(&buf[count - 1], 2, "\n");
+
+	return count - 1;
+}
+
+static ssize_t show_cpufreq_min_limit(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	unsigned int cpu_qos_min = pm_qos_request(PM_QOS_CPU_FREQ_MIN);
+	unsigned int kfc_qos_min = pm_qos_request(PM_QOS_KFC_FREQ_MIN);
+
+	if (cpu_qos_min > 0) {
+		if (cpu_qos_min > freq_max[CA15])
+			cpu_qos_min = freq_max[CA15];
+		else if (cpu_qos_min < freq_min[CA15])
+			cpu_qos_min = freq_min[CA15];
+		return snprintf(buf, 10, "%u\n", cpu_qos_min);
+	} else if (kfc_qos_min > 0) {
+		if (kfc_qos_min > freq_max[CA7])
+			kfc_qos_min = freq_max[CA7];
+		if (kfc_qos_min < freq_min[CA7])
+			kfc_qos_min = freq_min[CA7];
+		return snprintf(buf, 10, "%u\n", kfc_qos_min / 2);
+	} else if (kfc_qos_min == 0) {
+		kfc_qos_min = freq_min[CA7];
+		return snprintf(buf, 10, "%u\n", kfc_qos_min / 2);
+	}
+
+	return 0;
+}
+
+static ssize_t store_cpufreq_min_limit(struct kobject *kobj, struct attribute *attr,
+					const char *buf, size_t count)
+{
+	int cpu_input, kfc_input;
+
+	if (!sscanf(buf, "%d", &cpu_input))
+		return -EINVAL;
+
+	if (cpu_input >= (int)freq_min[CA15]) {
+		/* TODO: enable HMP boost */
+		cpu_input = min(cpu_input, (int)freq_max[CA15]);
+		kfc_input = max_kfc_qos_const.default_value;
+	} else if (cpu_input < (int)freq_min[CA15]) {
+		/* TODO: disable HMP boost */
+		if (cpu_input < 0) {
+			cpu_input = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE;
+			kfc_input = PM_QOS_KFC_FREQ_MIN_DEFAULT_VALUE;
+		} else {
+			kfc_input = cpu_input * 2;
+			if (kfc_input > 0)
+				kfc_input = min(kfc_input, (int)freq_max[CA7]);
+			cpu_input = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE;
+		}
+	}
+
+	if (pm_qos_request_active(&min_cpu_qos))
+		pm_qos_update_request(&min_cpu_qos, cpu_input);
+	if (pm_qos_request_active(&min_kfc_qos))
+		pm_qos_update_request(&min_kfc_qos, kfc_input);
+
+	return count;
+}
+
+static ssize_t show_cpufreq_max_limit(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	unsigned int cpu_qos_max = pm_qos_request(PM_QOS_CPU_FREQ_MAX);
+	unsigned int kfc_qos_max = pm_qos_request(PM_QOS_KFC_FREQ_MAX);
+
+	if (cpu_qos_max > 0 ) {
+		if (cpu_qos_max < freq_min[CA15])
+			cpu_qos_max = freq_min[CA15];
+		else if (cpu_qos_max > freq_max[CA15])
+			cpu_qos_max = freq_max[CA15];
+		return snprintf(buf, 10, "%u\n", cpu_qos_max);
+	} else if (kfc_qos_max > 0) {
+		if (kfc_qos_max < freq_min[CA7])
+			kfc_qos_max = freq_min[CA7];
+		if (kfc_qos_max > freq_max[CA7])
+			kfc_qos_max = freq_max[CA7];
+		return snprintf(buf, 10, "%u\n", kfc_qos_max / 2);
+	} else if (kfc_qos_max == 0) {
+		kfc_qos_max = freq_min[CA7];
+		return snprintf(buf, 10, "%u\n", kfc_qos_max / 2);
+	}
+
+	return 0;
+}
+
+static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct attribute *attr,
+					const char *buf, size_t count)
+{
+	int cpu_input, kfc_input;
+
+	if (!sscanf(buf, "%d", &cpu_input))
+		return -EINVAL;
+
+	if (cpu_input >= (int)freq_min[CA15]) {
+		cpu_input = max(cpu_input, (int)freq_min[CA15]);
+		kfc_input = max_kfc_qos_const.default_value;
+	} else if (cpu_input < (int)freq_min[CA15]) {
+		if (cpu_input < 0) {
+			cpu_input = max_cpu_qos_const.default_value;
+			kfc_input = max_kfc_qos_const.default_value;
+		} else {
+			kfc_input = cpu_input * 2;
+			if (kfc_input > 0)
+				kfc_input = max(kfc_input, (int)freq_min[CA7]);
+			cpu_input = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE;
+		}
+	}
+
+	if (pm_qos_request_active(&max_cpu_qos))
+		pm_qos_update_request(&max_cpu_qos, cpu_input);
+	if (pm_qos_request_active(&max_kfc_qos))
+		pm_qos_update_request(&max_kfc_qos, kfc_input);
+
+	return count;
+}
 
 static ssize_t show_cpu_freq_table(struct kobject *kobj,
 				struct attribute *attr, char *buf)
@@ -788,13 +935,23 @@ static ssize_t show_cpu_freq_table(struct kobject *kobj,
 static ssize_t show_cpu_min_freq(struct kobject *kobj,
 				struct attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u\n", (unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MIN));
+	unsigned int cpu_qos_min = pm_qos_request(PM_QOS_CPU_FREQ_MIN);
+
+	if (cpu_qos_min == 0)
+		cpu_qos_min = freq_min[CA15];
+
+	return sprintf(buf, "%u\n", cpu_qos_min);
 }
 
 static ssize_t show_cpu_max_freq(struct kobject *kobj,
 				struct attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u\n", (unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MAX));
+	unsigned int cpu_qos_max = pm_qos_request(PM_QOS_CPU_FREQ_MAX);
+
+	if (cpu_qos_max == 0)
+		cpu_qos_max = freq_min[CA15];
+
+	return sprintf(buf, "%u\n", cpu_qos_max);
 }
 
 static ssize_t store_cpu_min_freq(struct kobject *kobj, struct attribute *attr,
@@ -810,8 +967,6 @@ static ssize_t store_cpu_min_freq(struct kobject *kobj, struct attribute *attr,
 
 	if (pm_qos_request_active(&min_cpu_qos))
 		pm_qos_update_request(&min_cpu_qos, input);
-	else
-		pm_qos_add_request(&min_cpu_qos, PM_QOS_CPU_FREQ_MIN, input);
 
 	return count;
 }
@@ -829,8 +984,6 @@ static ssize_t store_cpu_max_freq(struct kobject *kobj, struct attribute *attr,
 
 	if (pm_qos_request_active(&max_cpu_qos))
 		pm_qos_update_request(&max_cpu_qos, input);
-	else
-		pm_qos_add_request(&max_cpu_qos, PM_QOS_CPU_FREQ_MAX, input);
 
 	return count;
 }
@@ -859,13 +1012,23 @@ static ssize_t show_kfc_freq_table(struct kobject *kobj,
 static ssize_t show_kfc_min_freq(struct kobject *kobj,
 			     struct attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u\n", (unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MIN));
+	unsigned int kfc_qos_min = pm_qos_request(PM_QOS_KFC_FREQ_MIN);
+
+	if (kfc_qos_min == 0)
+		kfc_qos_min = freq_min[CA7];
+
+	return sprintf(buf, "%u\n", kfc_qos_min);
 }
 
 static ssize_t show_kfc_max_freq(struct kobject *kobj,
 			     struct attribute *attr, char *buf)
 {
-	return sprintf(buf, "%u\n", (unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MAX));
+	unsigned int kfc_qos_max = pm_qos_request(PM_QOS_KFC_FREQ_MAX);
+
+	if (kfc_qos_max == 0)
+		kfc_qos_max = freq_min[CA7];
+
+	return sprintf(buf, "%u\n", kfc_qos_max);
 }
 
 static ssize_t store_kfc_min_freq(struct kobject *kobj, struct attribute *attr,
@@ -881,8 +1044,6 @@ static ssize_t store_kfc_min_freq(struct kobject *kobj, struct attribute *attr,
 
 	if (pm_qos_request_active(&min_kfc_qos))
 		pm_qos_update_request(&min_kfc_qos, input);
-	else
-		pm_qos_add_request(&min_kfc_qos, PM_QOS_KFC_FREQ_MIN, input);
 
 	return count;
 }
@@ -900,8 +1061,6 @@ static ssize_t store_kfc_max_freq(struct kobject *kobj, struct attribute *attr,
 
 	if (pm_qos_request_active(&max_kfc_qos))
 		pm_qos_update_request(&max_kfc_qos, input);
-	else
-		pm_qos_add_request(&max_kfc_qos, PM_QOS_KFC_FREQ_MAX, input);
 
 	return count;
 }
@@ -929,22 +1088,14 @@ static struct attribute_group mp_attr_group = {
 };
 
 #ifdef CONFIG_PM
-static struct global_attr cpufreq_cpu_table =
-		__ATTR(cpufreq_cpu_table, S_IRUGO, show_cpu_freq_table, NULL);
-static struct global_attr cpufreq_cpu_min_limit =
-		__ATTR(cpufreq_cpu_min_limit, S_IRUGO | S_IWUSR,
-			show_cpu_min_freq, store_cpu_min_freq);
-static struct global_attr cpufreq_cpu_max_limit =
-		__ATTR(cpufreq_cpu_max_limit, S_IRUGO | S_IWUSR,
-			show_cpu_max_freq, store_cpu_max_freq);
-static struct global_attr cpufreq_kfc_table =
-		__ATTR(cpufreq_kfc_table, S_IRUGO, show_kfc_freq_table, NULL);
-static struct global_attr cpufreq_kfc_min_limit =
-		__ATTR(cpufreq_kfc_min_limit, S_IRUGO | S_IWUSR,
-			show_kfc_min_freq, store_kfc_min_freq);
-static struct global_attr cpufreq_kfc_max_limit =
-		__ATTR(cpufreq_kfc_max_limit, S_IRUGO | S_IWUSR,
-			show_kfc_max_freq, store_kfc_max_freq);
+static struct global_attr cpufreq_table =
+		__ATTR(cpufreq_table, S_IRUGO, show_cpufreq_table, NULL);
+static struct global_attr cpufreq_min_limit =
+		__ATTR(cpufreq_min_limit, S_IRUGO | S_IWUSR,
+			show_cpufreq_min_limit, store_cpufreq_min_limit);
+static struct global_attr cpufreq_max_limit =
+		__ATTR(cpufreq_max_limit, S_IRUGO | S_IWUSR,
+			show_cpufreq_max_limit, store_cpufreq_max_limit);
 #endif
 
 /************************** sysfs end ************************/
@@ -1346,42 +1497,33 @@ static int __init exynos_cpufreq_init(void)
 	}
 
 #ifdef CONFIG_PM
-	ret = sysfs_create_file(power_kobj, &cpufreq_cpu_table.attr);
+	ret = sysfs_create_file(power_kobj, &cpufreq_table.attr);
 	if (ret) {
-		pr_err("%s: failed to create cpufreq_cpu_table sysfs interface\n", __func__);
+		pr_err("%s: failed to create cpufreq_table sysfs interface\n", __func__);
 		goto err_cpu_table;
 	}
 
-	ret = sysfs_create_file(power_kobj, &cpufreq_cpu_min_limit.attr);
+	ret = sysfs_create_file(power_kobj, &cpufreq_min_limit.attr);
 	if (ret) {
-		pr_err("%s: failed to create cpufreq_cpu_min_limit sysfs interface\n", __func__);
-		goto err_cpu_min_limit;
+		pr_err("%s: failed to create cpufreq_min_limit sysfs interface\n", __func__);
+		goto err_cpufreq_min_limit;
 	}
 
-	ret = sysfs_create_file(power_kobj, &cpufreq_cpu_max_limit.attr);
+	ret = sysfs_create_file(power_kobj, &cpufreq_max_limit.attr);
 	if (ret) {
-		pr_err("%s: failed to create cpufreq_cpu_max_limit sysfs interface\n", __func__);
-		goto err_cpu_max_limit;
-	}
-
-	ret = sysfs_create_file(power_kobj, &cpufreq_kfc_table.attr);
-	if (ret) {
-		pr_err("%s: failed to create cpufreq_kfc_table sysfs interface\n", __func__);
-		goto err_kfc_table;
-	}
-
-	ret = sysfs_create_file(power_kobj, &cpufreq_kfc_min_limit.attr);
-	if (ret) {
-		pr_err("%s: failed to create cpufreq_kfc_min_limit sysfs interface\n", __func__);
-		goto err_kfc_min_limit;
-	}
-
-	ret = sysfs_create_file(power_kobj, &cpufreq_kfc_max_limit.attr);
-	if (ret) {
-		pr_err("%s: failed to create cpufreq_kfc_max_limit sysfs interface\n", __func__);
-		goto err_kfc_max_limit;
+		pr_err("%s: failed to create cpufreq_max_limit sysfs interface\n", __func__);
+		goto err_cpufreq_max_limit;
 	}
 #endif
+
+	pm_qos_add_request(&min_kfc_qos, PM_QOS_KFC_FREQ_MIN,
+					PM_QOS_KFC_FREQ_MIN_DEFAULT_VALUE);
+	pm_qos_add_request(&max_kfc_qos, PM_QOS_KFC_FREQ_MAX,
+					max_kfc_qos_const.default_value);
+	pm_qos_add_request(&min_cpu_qos, PM_QOS_CPU_FREQ_MIN,
+					PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+	pm_qos_add_request(&max_cpu_qos, PM_QOS_CPU_FREQ_MAX,
+					max_cpu_qos_const.default_value);
 
 	if (exynos_info[CA7]->boot_cpu_min_qos) {
 		pm_qos_add_request(&boot_min_kfc_qos, PM_QOS_KFC_FREQ_MIN,
@@ -1453,16 +1595,10 @@ err_workqueue:
 	if (pm_qos_request_active(&boot_min_kfc_qos))
 		pm_qos_remove_request(&boot_min_kfc_qos);
 #ifdef CONFIG_PM
-err_kfc_max_limit:
-	sysfs_remove_file(power_kobj, &cpufreq_kfc_min_limit.attr);
-err_kfc_min_limit:
-	sysfs_remove_file(power_kobj, &cpufreq_kfc_table.attr);
-err_kfc_table:
-	sysfs_remove_file(power_kobj, &cpufreq_cpu_max_limit.attr);
-err_cpu_max_limit:
-	sysfs_remove_file(power_kobj, &cpufreq_cpu_min_limit.attr);
-err_cpu_min_limit:
-	sysfs_remove_file(power_kobj, &cpufreq_cpu_table.attr);
+err_cpufreq_max_limit:
+	sysfs_remove_file(power_kobj, &cpufreq_min_limit.attr);
+err_cpufreq_min_limit:
+	sysfs_remove_file(power_kobj, &cpufreq_table.attr);
 err_cpu_table:
 	sysfs_remove_group(cpufreq_global_kobject, &mp_attr_group);
 #endif
