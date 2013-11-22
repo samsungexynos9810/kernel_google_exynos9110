@@ -142,7 +142,7 @@ config EXYNOS_SNAPSHOT
 config EXYNOS_SNAPSHOT_REG
 	bool "Enable debugging of register access by exynos-snapshot log"
 	depends on EXYNOS_SNAPSHOT
-	default y
+	default n
 
 config EXYNOS_SNAPSHOT_HRTIMER
 	bool "Enable debugging of hrtimer by exynos-snapshot log"

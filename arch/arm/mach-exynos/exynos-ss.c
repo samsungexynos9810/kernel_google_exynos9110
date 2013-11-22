@@ -10,6 +10,7 @@
  */
 
 #include <linux/kernel.h>
+#include <linux/version.h>
 #include <linux/io.h>
 #include <linux/device.h>
 #include <linux/sched.h>
@@ -20,6 +21,7 @@
 #include <linux/notifier.h>
 #include <linux/reboot.h>
 #include <linux/delay.h>
+#include <linux/module.h>
 
 #include <asm/mach/map.h>
 #include <asm/cacheflush.h>
@@ -36,10 +38,11 @@
 #define ESS_HEADER_TOTAL_SZ		(ESS_HEADER_SZ + ESS_MMU_REG_SZ + ESS_CORE_REG_SZ)
 #define ESS_LOG_MEM_SZ			(SZ_2M + SZ_1M)
 #define ESS_HOOK_LOGBUF_SZ		SZ_2M
-#define ESS_HOOK_LOGGER_MAIN_SZ		SZ_1M
-#define ESS_HOOK_LOGGER_EVENTS_SZ	SZ_1M
-#define ESS_HOOK_LOGGER_RADIO_SZ	SZ_1M
+
+#define ESS_HOOK_LOGGER_MAIN_SZ		(SZ_2M + SZ_1M)
 #define ESS_HOOK_LOGGER_SYSTEM_SZ	SZ_1M
+#define ESS_HOOK_LOGGER_EVENTS_SZ	0
+#define ESS_HOOK_LOGGER_RADIO_SZ	0
 
 #define ESS_LOG_STRING_LENGTH		SZ_128
 #define ESS_MMU_REG_OFFSET		SZ_256
@@ -54,11 +57,14 @@
 #define S5P_VA_SS_MMU_REG		(S5P_VA_SS_HEADER + ESS_HEADER_SZ)
 #define S5P_VA_SS_CORE_REG		(S5P_VA_SS_MMU_REG + ESS_MMU_REG_SZ)
 
+/*  logger mandotory */
 #define S5P_VA_SS_LOGBUF		(S5P_VA_SS_LOGMEM + ESS_LOG_MEM_SZ)
 #define S5P_VA_SS_LOGGER_MAIN		(S5P_VA_SS_LOGBUF + ESS_HOOK_LOGBUF_SZ)
 #define S5P_VA_SS_LOGGER_SYSTEM		(S5P_VA_SS_LOGGER_MAIN + ESS_HOOK_LOGGER_MAIN_SZ)
+
+/*  logger option */
 #define S5P_VA_SS_LOGGER_RADIO		(S5P_VA_SS_LOGGER_SYSTEM + ESS_HOOK_LOGGER_SYSTEM_SZ)
-#define S5P_VA_SS_LOGGER_EVENT		(S5P_VA_SS_LOGGER_RADIO + ESS_HOOK_LOGGER_RADIO_SZ)
+#define S5P_VA_SS_LOGGER_EVENTS		(S5P_VA_SS_LOGGER_RADIO + ESS_HOOK_LOGGER_RADIO_SZ)
 
 /*  Physical Address Information */
 #define S5P_PA_SS_BASE(x)		(x)
@@ -67,11 +73,14 @@
 #define S5P_PA_SS_MMU_REG(x)		(S5P_PA_SS_HEADER(x) + ESS_HEADER_SZ)
 #define S5P_PA_SS_CORE_REG(x)		(S5P_PA_SS_MMU_REG(x) + ESS_MMU_REG_SZ)
 
+/*  logger mandotory */
 #define S5P_PA_SS_LOGBUF(x)		(S5P_PA_SS_LOGMEM(x) + ESS_LOG_MEM_SZ)
 #define S5P_PA_SS_LOGGER_MAIN(x)	(S5P_PA_SS_LOGBUF(x) + ESS_HOOK_LOGBUF_SZ)
 #define S5P_PA_SS_LOGGER_SYSTEM(x)	(S5P_PA_SS_LOGGER_MAIN(x) + ESS_HOOK_LOGGER_MAIN_SZ)
+
+/*  logger option */
 #define S5P_PA_SS_LOGGER_RADIO(x)	(S5P_PA_SS_LOGGER_SYSTEM(x) + ESS_HOOK_LOGGER_SYSTEM_SZ)
-#define S5P_PA_SS_LOGGER_EVENT(x)	(S5P_PA_SS_LOGGER_RADIO(x) + ESS_HOOK_LOGGER_RADIO_SZ)
+#define S5P_PA_SS_LOGGER_EVENTS(x)	(S5P_PA_SS_LOGGER_RADIO(x) + ESS_HOOK_LOGGER_RADIO_SZ)
 
 struct exynos_ss_hook_item {
 	unsigned char *head_ptr;
@@ -84,7 +93,7 @@ struct exynos_ss_hook {
 	struct exynos_ss_hook_item logger_main;
 	struct exynos_ss_hook_item logger_system;
 	struct exynos_ss_hook_item logger_radio;
-	struct exynos_ss_hook_item logger_event;
+	struct exynos_ss_hook_item logger_events;
 };
 
 struct exynos_ss_log {
@@ -220,32 +229,17 @@ struct exynos_ss_interface {
 };
 
 extern void exynos5_restart(char mode, const char *cmd);
-extern void register_hook_logbuf(void (*)(const char *, size_t));
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,00)
+extern void register_hook_logbuf(void (*)(const char));
+#else
+extern void register_hook_logbuf(void (*)(const char *, u64, size_t));
+#endif
 extern void register_hook_logger(void (*)(const char *, const char *, size_t));
 static struct exynos_ss_log *ess_log = NULL;
 static struct exynos_ss_hook ess_hook;
 
 /*  External Interface Variable For T32 debugging */
 static struct exynos_ss_interface ess_info;
-
-/*  for enabling/disabling variables */
-#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
-static int ess_hook_logger_enable = 1;
-#else
-static int ess_hook_logger_enable = 0;
-#endif
-
-#ifdef CONFIG_EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
-static int ess_force_dump_enable = 1;
-#else
-static int ess_force_dump_enable = 0;
-#endif
-
-#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
-static int ess_panic_reboot_enable = 1;
-#else
-static int ess_panic_reboot_enable = 0;
-#endif
 
 /*  internal interface variable */
 static int ess_enable = 0;
@@ -255,7 +249,7 @@ static unsigned int ess_size = 0;
 
 DEFINE_PER_CPU(struct exynos_ss_core_reg *, ess_core_reg);
 DEFINE_PER_CPU(struct exynos_ss_mmu_reg *, ess_mmu_reg);
-DEFINE_PER_CPU(enum ess_cause_emerg_event, ess_cause_emerg);
+DEFINE_PER_CPU(enum ess_cause_emerg_events, ess_cause_emerg);
 
 static void exynos_ss_save_core(struct exynos_ss_core_reg *core_reg)
 {
@@ -404,8 +398,8 @@ int exynos_ss_save_context(void)
 }
 EXPORT_SYMBOL(exynos_ss_save_context);
 
-static inline int exynos_ss_check_circle(struct exynos_ss_hook_item *hook,
-					 size_t size)
+static inline int exynos_ss_check_rb(struct exynos_ss_hook_item *hook,
+						size_t size)
 {
 	unsigned int max, cur;
 
@@ -425,31 +419,62 @@ static inline void exynos_ss_hook_logger(const char *name,
 
 	if (!strcmp(name, "log_main"))
 		hook = &ess_hook.logger_main;
+	else if (!strcmp(name, "log_system"))
+		hook = &ess_hook.logger_system;
+#if ESS_HOOK_LOGGER_MAIN_SZ <= SZ_1M
 	else if (!strcmp(name, "log_radio"))
 		hook = &ess_hook.logger_radio;
 	else if (!strcmp(name, "log_events"))
-		hook = &ess_hook.logger_event;
+		hook = &ess_hook.logger_events;
+#endif
 	else
-		hook = &ess_hook.logger_system;
-
-	if ((exynos_ss_check_circle(hook, size)))
+		return;
+#if 0
+	if ((exynos_ss_check_rb(hook, size)))
 		hook->curr_ptr = hook->head_ptr;
 
 	memcpy(hook->curr_ptr, buf, size);
 	hook->curr_ptr += size;
+#endif
 }
 
-static inline void exynos_ss_hook_logbuf(const char *buf, size_t size)
+#if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,00)
+static inline void exynos_ss_hook_logbuf(const char buf)
 {
-	if (ess_hook.logbuf.head_ptr && buf && size) {
-		if (exynos_ss_check_circle(&ess_hook.logbuf, size))
+	if (ess_hook.logbuf.head_ptr && buf) {
+		if (exynos_ss_check_rb(&ess_hook.logbuf, 1))
 			ess_hook.logbuf.curr_ptr = ess_hook.logbuf.head_ptr;
-		memcpy(ess_hook.logbuf.curr_ptr, buf, size);
-		ess_hook.logbuf.curr_ptr += size;
+
+		ess_hook.logbuf.curr_ptr[0] = buf;
+		ess_hook.logbuf.curr_ptr ++;
 	}
 }
+#else
+static inline void exynos_ss_hook_logbuf(const char *buf, u64 ts_nsec, size_t size)
+{
+	if (ess_hook.logbuf.head_ptr && buf && size) {
+		unsigned long rem_nsec;
+		size_t timelen = 0;
 
-enum ess_cause_emerg_event {
+		if (exynos_ss_check_rb(&ess_hook.logbuf, size + 32))
+			ess_hook.logbuf.curr_ptr = ess_hook.logbuf.head_ptr;
+
+		rem_nsec = do_div(ts_nsec, 1000000000);
+
+		/*  fixed exact size */
+		timelen = sprintf(ess_hook.logbuf.curr_ptr, "[%5lu.%06lu] ",
+				(unsigned long)ts_nsec, rem_nsec / 1000);
+
+		ess_hook.logbuf.curr_ptr += timelen;
+		memcpy(ess_hook.logbuf.curr_ptr, buf, size);
+		ess_hook.logbuf.curr_ptr += size;
+		ess_hook.logbuf.curr_ptr[0] = '\n';
+		ess_hook.logbuf.curr_ptr++;
+	}
+}
+#endif
+
+enum ess_cause_emerg_events {
 	CAUSE_INVALID_DUMP = 0x00000000,
 	CAUSE_KERNEL_PANIC = 0x00000001,
 	CAUSE_FORCE_DUMP   = 0x0000000D,
@@ -460,7 +485,8 @@ static void exynos_ss_scratch_reg(unsigned int val)
 {
 	__raw_writel(val, EXYNOS_INFORM4);
 }
-static void exynos_ss_report_cause_emerg(enum ess_cause_emerg_event event)
+
+static void exynos_ss_report_cause_emerg(enum ess_cause_emerg_events event)
 {
 	per_cpu(ess_cause_emerg, smp_processor_id()) = event;
 }
@@ -469,16 +495,15 @@ static int exynos_ss_reboot_handler(struct notifier_block *nb,
 				    unsigned long l, void *p)
 {
 	local_irq_disable();
-
-	if (ess_force_dump_enable) {
-		pr_emerg("exynos-snapshot: forced reboot [%s]\n", __func__);
-		exynos_ss_report_cause_emerg(CAUSE_FORCE_DUMP);
-		exynos_ss_save_context();
-		exynos5_restart(0, "ramdump");
-		while(1);
-	} else
-		pr_emerg("exynos-snapshot: normal reboot [%s]\n", __func__);
-
+#ifdef CONFIG_EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
+	pr_emerg("exynos-snapshot: forced reboot [%s]\n", __func__);
+	exynos_ss_report_cause_emerg(CAUSE_FORCE_DUMP);
+	exynos_ss_save_context();
+	exynos5_restart(0, "ramdump");
+	while(1);
+#else
+	pr_emerg("exynos-snapshot: normal reboot [%s]\n", __func__);
+#endif
 	flush_cache_all();
 	return 0;
 }
@@ -488,15 +513,14 @@ static int exynos_ss_panic_handler(struct notifier_block *nb,
 {
 	local_irq_disable();
 	exynos_ss_report_cause_emerg(CAUSE_KERNEL_PANIC);
-
-	if (ess_panic_reboot_enable) {
-		pr_emerg("exynos-snapshot: panic - forced ramdump mode [%s]\n", __func__);
-		exynos_ss_save_context();
-		exynos5_restart(0, "ramdump");
-		while(1);
-	} else
-		pr_emerg("exynos-snapshot: panic [%s]\n", __func__);
-
+#if CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
+	pr_emerg("exynos-snapshot: panic - forced ramdump mode [%s]\n", __func__);
+	exynos_ss_save_context();
+	exynos5_restart(0, "ramdump");
+	while(1);
+#else
+	pr_emerg("exynos-snapshot: panic [%s]\n", __func__);
+#endif
 	flush_cache_all();
 	return 0;
 }
@@ -522,7 +546,7 @@ static unsigned int __init exynos_ss_remap(unsigned int base, unsigned int size)
 			.type		= MT_DEVICE,
 		},
 	};
-
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
 	static struct map_desc ess_iodesc_logger[] __initdata = {
 		{
 			.virtual        = (unsigned long)S5P_VA_SS_LOGGER_MAIN,
@@ -532,30 +556,32 @@ static unsigned int __init exynos_ss_remap(unsigned int base, unsigned int size)
 			.virtual        = (unsigned long)S5P_VA_SS_LOGGER_SYSTEM,
 			.length         = ESS_HOOK_LOGGER_SYSTEM_SZ,
 			.type           = MT_DEVICE,
+#if ESS_HOOK_LOGGER_MAIN_SZ <= SZ_1M
 		}, {
 			.virtual        = (unsigned long)S5P_VA_SS_LOGGER_RADIO,
 			.length         = ESS_HOOK_LOGGER_RADIO_SZ,
 			.type           = MT_DEVICE,
 		}, {
-			.virtual        = (unsigned long)S5P_VA_SS_LOGGER_EVENT,
-			.length         = ESS_HOOK_LOGGER_MAIN_SZ,
+			.virtual        = (unsigned long)S5P_VA_SS_LOGGER_EVENTS,
+			.length         = ESS_HOOK_LOGGER_EVENTS_SZ,
 			.type           = MT_DEVICE,
+#endif
 		},
 	};
-
+#endif
 	ess_iodesc[0].pfn = __phys_to_pfn(S5P_PA_SS_LOGMEM(base));
 	ess_iodesc[1].pfn = __phys_to_pfn(S5P_PA_SS_LOGBUF(base));
 
+	iotable_init(ess_iodesc, ARRAY_SIZE(ess_iodesc));
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
 	ess_iodesc_logger[0].pfn = __phys_to_pfn(S5P_PA_SS_LOGGER_MAIN(base));
 	ess_iodesc_logger[1].pfn = __phys_to_pfn(S5P_PA_SS_LOGGER_SYSTEM(base));
+#if ESS_HOOK_LOGGER_MAIN_SZ <= SZ_1M
 	ess_iodesc_logger[2].pfn = __phys_to_pfn(S5P_PA_SS_LOGGER_RADIO(base));
-	ess_iodesc_logger[3].pfn = __phys_to_pfn(S5P_PA_SS_LOGGER_EVENT(base));
-
-	iotable_init(ess_iodesc, ARRAY_SIZE(ess_iodesc));
-
-	if (ess_hook_logger_enable)
-		iotable_init(ess_iodesc_logger, ARRAY_SIZE(ess_iodesc_logger));
-
+	ess_iodesc_logger[3].pfn = __phys_to_pfn(S5P_PA_SS_LOGGER_EVENTS(base));
+#endif
+	iotable_init(ess_iodesc_logger, ARRAY_SIZE(ess_iodesc_logger));
+#endif
 	return (unsigned int)S5P_VA_SS_BASE;
 }
 
@@ -569,13 +595,12 @@ static int __init exynos_ss_setup(char *str)
 
 	limit = sizeof(struct exynos_ss_log) + ESS_HOOK_LOGBUF_SZ;
 
-	if (ess_hook_logger_enable) {
-		limit += ESS_HOOK_LOGGER_MAIN_SZ;
-		limit += ESS_HOOK_LOGGER_SYSTEM_SZ;
-		limit += ESS_HOOK_LOGGER_RADIO_SZ;
-		limit += ESS_HOOK_LOGGER_EVENTS_SZ;
-	}
-
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	limit += ESS_HOOK_LOGGER_MAIN_SZ;
+	limit += ESS_HOOK_LOGGER_SYSTEM_SZ;
+	limit += ESS_HOOK_LOGGER_RADIO_SZ;
+	limit += ESS_HOOK_LOGGER_EVENTS_SZ;
+#endif
 	limit = limit & (0xFFF00000);
 	size = limit + SZ_1M;
 
@@ -611,50 +636,43 @@ __setup("ess_setup=", exynos_ss_setup);
  *  ---------------------------------------------------------------------
  *  -		Hooked buffer of kernel's log_buf(2Mbyte)		-
  *  ---------------------------------------------------------------------
- *  -		Hooked main logger buffer of platform(1Mbyte)		-
+ *  -		Hooked main logger buffer of platform(3Mbyte)		-
  *  ---------------------------------------------------------------------
  *  -		Hooked system logger buffer of platform(1Mbyte)		-
  *  ---------------------------------------------------------------------
- *  -		Hooked radio logger buffer of platform(1Mbyte)		-
+ *  -		Hooked radio logger buffer of platform(?Mbyte)		-
  *  ---------------------------------------------------------------------
- *  -		Hooked event logger buffer of platform(1Mbyte)		-
+ *  -		Hooked events logger buffer of platform(?Mbyte)		-
  *  ---------------------------------------------------------------------
  */
 static int __init exynos_ss_output(void)
 {
-	if (ess_hook_logger_enable) {
-		pr_info("Exynos-SnapShot physical / virtual memoy layout:"
-		"\n\thead          : phys:0x%08x virt:0x%08x"
-		"\n\tmmu_reg       : phys:0x%08x virt:0x%08x"
-		"\n\tcore_reg      : phys:0x%08x virt:0x%08x"
-		"\n\tlog           : phys:0x%08x virt:0x%08x"
-		"\n\tlogbuf        : phys:0x%08x virt:0x%08x"
-		"\n\tlogger-main   : phys:0x%08x virt:0x%08x"
-		"\n\tlogger-sys    : phys:0x%08x virt:0x%08x"
-		"\n\tlogger-radio  : phys:0x%08x virt:0x%08x"
-		"\n\tlogger-event  : phys:0x%08x virt:0x%08x\n",
-		(unsigned int)S5P_PA_SS_HEADER(ess_phy_addr), (unsigned int)S5P_VA_SS_HEADER,
-		(unsigned int)S5P_PA_SS_MMU_REG(ess_phy_addr), (unsigned int)S5P_VA_SS_MMU_REG,
-		(unsigned int)S5P_PA_SS_CORE_REG(ess_phy_addr), (unsigned int)S5P_VA_SS_CORE_REG,
-		(unsigned int)S5P_PA_SS_LOGMEM(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGMEM,
-		(unsigned int)S5P_PA_SS_LOGBUF(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGBUF,
-		(unsigned int)S5P_PA_SS_LOGGER_MAIN(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_MAIN,
-		(unsigned int)S5P_PA_SS_LOGGER_SYSTEM(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_SYSTEM,
-		(unsigned int)S5P_PA_SS_LOGGER_RADIO(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_RADIO,
-		(unsigned int)S5P_PA_SS_LOGGER_EVENT(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_EVENT);
-	} else {
-		pr_info("Exynos-SnapShot physical / virtual memoy layout:"
-		"\n\thead          : phys:0x%08x virt:0x%08x"
+	pr_info("Exynos-SnapShot physical / virtual memoy layout-(mandotory):"
+		"\n\theader        : phys:0x%08x virt:0x%08x"
 		"\n\tmmu_reg       : phys:0x%08x virt:0x%08x"
 		"\n\tcore_reg      : phys:0x%08x virt:0x%08x"
 		"\n\tlog           : phys:0x%08x virt:0x%08x"
 		"\n\tlogbuf        : phys:0x%08x virt:0x%08x\n",
-		(unsigned int)S5P_PA_SS_HEADER(ess_phy_addr), (unsigned int)S5P_VA_SS_HEADER,
-		(unsigned int)S5P_PA_SS_MMU_REG(ess_phy_addr), (unsigned int)S5P_VA_SS_MMU_REG,
-		(unsigned int)S5P_PA_SS_CORE_REG(ess_phy_addr), (unsigned int)S5P_VA_SS_CORE_REG,
-		(unsigned int)S5P_PA_SS_LOGMEM(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGMEM,
-		(unsigned int)S5P_PA_SS_LOGBUF(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGBUF);
-	}
+	(unsigned int)S5P_PA_SS_HEADER(ess_phy_addr), (unsigned int)S5P_VA_SS_HEADER,
+	(unsigned int)S5P_PA_SS_MMU_REG(ess_phy_addr), (unsigned int)S5P_VA_SS_MMU_REG,
+	(unsigned int)S5P_PA_SS_CORE_REG(ess_phy_addr), (unsigned int)S5P_VA_SS_CORE_REG,
+	(unsigned int)S5P_PA_SS_LOGMEM(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGMEM,
+	(unsigned int)S5P_PA_SS_LOGBUF(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGBUF);
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	pr_info("Exynos-SnapShot physical / virtual memoy layout-(option):"
+		"\n\tlogger-main   : phys:0x%08x virt:0x%08x"
+		"\n\tlogger-sys    : phys:0x%08x virt:0x%08x"
+		"\n\tlogger-radio  : phys:0x%08x virt:0x%08x"
+		"\n\tlogger-events  : phys:0x%08x virt:0x%08x\n",
+	(unsigned int)S5P_PA_SS_LOGGER_MAIN(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_MAIN,
+	(unsigned int)S5P_PA_SS_LOGGER_SYSTEM(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_SYSTEM,
+#if ESS_HOOK_LOGGER_MAIN_SZ <= SZ_1M
+	(unsigned int)S5P_PA_SS_LOGGER_RADIO(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_RADIO,
+	(unsigned int)S5P_PA_SS_LOGGER_EVENTS(ess_phy_addr), (unsigned int)S5P_VA_SS_LOGGER_EVENTS);
+#else
+	0,0,0,0);
+#endif
+#endif
 	return 0;
 }
 
@@ -702,47 +720,52 @@ static int __init exynos_ss_fixmap(void)
 	ess_info.info_hook.logbuf.curr_ptr = NULL;
 	ess_info.info_hook.logbuf.bufsize = ESS_HOOK_LOGBUF_SZ;
 
-	if (ess_hook_logger_enable) {
-		/* logger - main */
-		ess_hook.logger_main.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_MAIN;
-		ess_hook.logger_main.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_MAIN;
-		ess_hook.logger_main.bufsize = ESS_HOOK_LOGGER_MAIN_SZ;
-		ess_info.info_hook.logger_main.head_ptr =
-				(unsigned char *)(CONFIG_PAGE_OFFSET |
-				(0x0FFFFFFF & S5P_PA_SS_LOGGER_MAIN(ess_phy_addr)));
-		ess_info.info_hook.logger_main.curr_ptr = NULL;
-		ess_info.info_hook.logger_main.bufsize = ESS_HOOK_LOGGER_MAIN_SZ;
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	/* logger - main */
+	ess_hook.logger_main.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_MAIN;
+	ess_hook.logger_main.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_MAIN;
+	ess_hook.logger_main.bufsize = ESS_HOOK_LOGGER_MAIN_SZ;
+	ess_info.info_hook.logger_main.head_ptr =
+			(unsigned char *)(CONFIG_PAGE_OFFSET |
+			(0x0FFFFFFF & S5P_PA_SS_LOGGER_MAIN(ess_phy_addr)));
+	ess_info.info_hook.logger_main.curr_ptr = NULL;
+	ess_info.info_hook.logger_main.bufsize = ESS_HOOK_LOGGER_MAIN_SZ;
 
-		/*  logger - system */
-		ess_hook.logger_system.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_SYSTEM;
-		ess_hook.logger_system.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_SYSTEM;
-		ess_hook.logger_system.bufsize = ESS_HOOK_LOGGER_SYSTEM_SZ;
-		ess_info.info_hook.logger_system.head_ptr =
-				(unsigned char *)(CONFIG_PAGE_OFFSET |
-				(0x0FFFFFFF & S5P_PA_SS_LOGGER_SYSTEM(ess_phy_addr)));
-		ess_info.info_hook.logger_system.curr_ptr = NULL;
-		ess_info.info_hook.logger_system.bufsize = ESS_HOOK_LOGGER_SYSTEM_SZ;
+	/*  logger - system */
+	ess_hook.logger_system.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_SYSTEM;
+	ess_hook.logger_system.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_SYSTEM;
+	ess_hook.logger_system.bufsize = ESS_HOOK_LOGGER_SYSTEM_SZ;
+	ess_info.info_hook.logger_system.head_ptr =
+			(unsigned char *)(CONFIG_PAGE_OFFSET |
+			(0x0FFFFFFF & S5P_PA_SS_LOGGER_SYSTEM(ess_phy_addr)));
+	ess_info.info_hook.logger_system.curr_ptr = NULL;
+	ess_info.info_hook.logger_system.bufsize = ESS_HOOK_LOGGER_SYSTEM_SZ;
 
-		/*  logger - radio */
-		ess_hook.logger_radio.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_RADIO;
-		ess_hook.logger_radio.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_RADIO;
-		ess_hook.logger_radio.bufsize = ESS_HOOK_LOGGER_RADIO_SZ;
-		ess_info.info_hook.logger_radio.head_ptr =
-				(unsigned char *)(CONFIG_PAGE_OFFSET |
-				(0x0FFFFFFF & S5P_PA_SS_LOGGER_RADIO(ess_phy_addr)));
-		ess_info.info_hook.logger_radio.curr_ptr = NULL;
-		ess_info.info_hook.logger_radio.bufsize = ESS_HOOK_LOGGER_RADIO_SZ;
+#if ESS_HOOK_LOGGER_MAIN_SZ <= SZ_1M
+	/*  logger - radio */
+	ess_hook.logger_radio.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_RADIO;
+	ess_hook.logger_radio.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_RADIO;
+	ess_hook.logger_radio.bufsize = ESS_HOOK_LOGGER_RADIO_SZ;
+	ess_info.info_hook.logger_radio.head_ptr =
+			(unsigned char *)(CONFIG_PAGE_OFFSET |
+			(0x0FFFFFFF & S5P_PA_SS_LOGGER_RADIO(ess_phy_addr)));
+	ess_info.info_hook.logger_radio.curr_ptr = NULL;
+	ess_info.info_hook.logger_radio.bufsize = ESS_HOOK_LOGGER_RADIO_SZ;
 
-		/* logger - event */
-		ess_hook.logger_event.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_EVENT;
-		ess_hook.logger_event.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_EVENT;
-		ess_hook.logger_event.bufsize = ESS_HOOK_LOGGER_EVENTS_SZ;
-		ess_info.info_hook.logger_event.head_ptr =
-				(unsigned char *)(CONFIG_PAGE_OFFSET |
-				(0x0FFFFFFF & S5P_PA_SS_LOGGER_EVENT(ess_phy_addr)));
-		ess_info.info_hook.logger_event.curr_ptr = NULL;
-		ess_info.info_hook.logger_event.bufsize = ESS_HOOK_LOGGER_EVENTS_SZ;
-	}
+	/* logger - events */
+	ess_hook.logger_events.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_EVENTS;
+	ess_hook.logger_events.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_EVENTS;
+	ess_hook.logger_events.bufsize = ESS_HOOK_LOGGER_EVENTS_SZ;
+	ess_info.info_hook.logger_events.head_ptr =
+			(unsigned char *)(CONFIG_PAGE_OFFSET |
+			(0x0FFFFFFF & S5P_PA_SS_LOGGER_EVENTS(ess_phy_addr)));
+	ess_info.info_hook.logger_events.curr_ptr = NULL;
+	ess_info.info_hook.logger_events.bufsize = ESS_HOOK_LOGGER_EVENTS_SZ;
+#else
+	memset(&ess_hook.logger_radio, 0, sizeof(ess_hook.logger_radio));
+	memset(&ess_hook.logger_events, 0, sizeof(ess_hook.logger_events));
+#endif
+#endif
 	exynos_ss_output();
 	return 0;
 }
@@ -761,9 +784,9 @@ static int __init exynos_ss_init(void)
 
 		register_hook_logbuf(exynos_ss_hook_logbuf);
 
-		if (ess_hook_logger_enable)
-			register_hook_logger(exynos_ss_hook_logger);
-
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+		register_hook_logger(exynos_ss_hook_logger);
+#endif
 		register_reboot_notifier(&nb_reboot_block);
 		atomic_notifier_chain_register(&panic_notifier_list, &nb_panic_block);
 
