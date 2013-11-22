@@ -610,7 +610,7 @@ static void exynos_dwmci_restore_drv_st(struct dw_mci *host)
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 
 	pin_config_set(priv->drv_str_addr, priv->drv_str_pin,
-		PINCFG_PACK(PINCFG_TYPE_DRV, priv->drv_str_val));
+		PINCFG_PACK(PINCFG_TYPE_DRV, priv->drv_str_base_val));
 }
 
 #define DRV_STR_LV1 0x0
@@ -736,7 +736,8 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	struct mmc_host *mmc = slot->mmc;
 	struct mmc_ios *ios = &(mmc->ios);
 	unsigned int tuning_loop = MAX_TUNING_LOOP;
-	unsigned int retries = MAX_TUNING_RETRIES;
+	unsigned int drv_str_retries = MAX_TUNING_RETRIES - 1;
+	unsigned int delay_retries = 3;
 	const u8 *tuning_blk_pattern;	/* data pattern we expect */
 	bool tuned = 0;
 	int ret = 0;
@@ -745,6 +746,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	unsigned int sample_good = 0;	/* bit map of clock sample (0-7) */
 	u32 test_sample = -1, orig_sample;
 	int best_sample = 0;
+	u32 delay, delay_org, temp;
 
 	if (opcode == MMC_SEND_TUNING_BLOCK_HS200) {
 		if (ios->bus_width == MMC_BUS_WIDTH_8) {
@@ -783,6 +785,8 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 
 	/* Restore Base Drive Strength */
 	priv->drv_str_val = priv->drv_str_base_val;
+
+	delay = delay_org = (mci_readl(host, CLKSEL) >> 30) & 0x3;
 
 	/*
 	 * eMMC 4.5 spec section 6.6.7.1 says the device is guaranteed to
@@ -858,22 +862,36 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 			dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
 					sample_good, best_sample);
 
-			retries--;
 			if (best_sample >= 0) {
-				if (sample_good != 0xff || !retries) {
+				if (sample_good != 0xff) {
 					tuned = true;
 					break;
 				}
 			}
 
-			if (retries) {
+			if (drv_str_retries) {
+				drv_str_retries--;
 				if (priv->drv_str_pin)
 					exynos_dwmci_tuning_drv_st(host);
 				sample_good = 0;
-			}
+			} else if (delay_retries){
+				delay_retries--;
+				if (priv->drv_str_pin)
+					exynos_dwmci_restore_drv_st(host);
+				delay = (delay + 1) % 4;
+				temp = mci_readl(host, CLKSEL) & ~(0x3 << 30);
+				temp |= (delay << 30);
+				mci_writel(host, CLKSEL, temp);
+				sample_good = 0;
+			} else
+				break;
 		}
 		tuning_loop--;
-	} while (!tuned && retries);
+	} while (!tuned);
+
+	temp = mci_readl(host, CLKSEL) & ~(0x3 << 30);
+	temp |= (delay_org << 30);
+	mci_writel(host, CLKSEL, temp);
 
 	if (priv->drv_str_pin)
 		exynos_dwmci_restore_drv_st(host);
@@ -885,6 +903,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		dw_mci_exynos_set_sample(host, best_sample, false);
 	} else {
 		/* Failed. Just restore and return error */
+		dev_err(host->dev,"tuning err\n");
 		mci_writel(host, CDTHRCTL, 0 << 16 | 0);
 		dw_mci_exynos_set_sample(host, orig_sample, false);
 		ret = -EIO;

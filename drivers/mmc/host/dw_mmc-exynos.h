@@ -75,7 +75,7 @@
 #define EXYNOS4210_FIXED_CIU_CLK_DIV	2
 #define EXYNOS4412_FIXED_CIU_CLK_DIV	4
 
-#define MAX_TUNING_LOOP		50
+#define MAX_TUNING_LOOP		72
 #define MAX_TUNING_RETRIES	6
 
 /* Variations in Exynos specific dw-mshc controller */
