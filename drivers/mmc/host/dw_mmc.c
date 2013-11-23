@@ -767,6 +767,7 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 
 			/* Buffer length */
 			sz_per_desc = min(left, rw_size);
+			desc->des1 = length;
 			IDMAC_SET_BUFFER1_SIZE(desc, sz_per_desc);
 
 			/* Physical address to DMA to/from */
@@ -953,6 +954,9 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
 	/* If we don't have a channel, we can't do DMA */
 	if (!host->use_dma)
 		return -ENODEV;
+
+	if (host->use_dma && host->dma_ops->init)
+		host->dma_ops->init(host);
 
 	sg_len = dw_mci_pre_dma_transfer(host, data, 0);
 	if (sg_len < 0) {
