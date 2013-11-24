@@ -219,7 +219,7 @@ static int hdmi_streamon(struct hdmi_device *hdev)
 	int ret;
 	u32 val0, val1, val2;
 
-	dev_info(dev, "%s\n", __func__);
+	dev_dbg(dev, "%s\n", __func__);
 
 	/* 3D test */
 	hdmi_set_infoframe(hdev);
@@ -272,7 +272,7 @@ static int hdmi_streamoff(struct hdmi_device *hdev)
 {
 	struct device *dev = hdev->dev;
 
-	dev_info(dev, "%s\n", __func__);
+	dev_dbg(dev, "%s\n", __func__);
 
 	hdmi_reg_set_ext_hpd(hdev);
 
@@ -294,7 +294,7 @@ static int hdmi_s_stream(struct v4l2_subdev *sd, int enable)
 	struct hdmi_device *hdev = sd_to_hdmi_dev(sd);
 	struct device *dev = hdev->dev;
 
-	dev_info(dev, "%s(%d)\n", __func__, enable);
+	dev_dbg(dev, "%s(%d)\n", __func__, enable);
 	if (enable)
 		return hdmi_streamon(hdev);
 	return hdmi_streamoff(hdev);
@@ -553,7 +553,7 @@ static int hdmi_runtime_resume(struct device *dev)
 	struct hdmi_resources *res = &hdev->res;
 	int ret = 0;
 
-	dev_info(dev, "%s\n", __func__);
+	dev_dbg(dev, "%s\n", __func__);
 
 	/* power-on hdmiphy */
 	if (pdata->hdmiphy_enable)
@@ -578,7 +578,7 @@ static int hdmi_runtime_resume(struct device *dev)
 	if (ret)
 		goto fail;
 
-	dev_info(dev, "poweron succeed\n");
+	dev_dbg(dev, "poweron succeed\n");
 
 	return 0;
 
@@ -601,7 +601,7 @@ static void hdmi_resources_cleanup(struct hdmi_device *hdev)
 {
 	struct hdmi_resources *res = &hdev->res;
 
-	dev_info(hdev->dev, "HDMI resource cleanup\n");
+	dev_dbg(hdev->dev, "HDMI resource cleanup\n");
 	/* put clocks */
 	if (!IS_ERR_OR_NULL(res->sclk_hdmiphy))
 		clk_put(res->sclk_hdmiphy);
@@ -619,7 +619,7 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
 	struct device *dev = hdev->dev;
 	struct hdmi_resources *res = &hdev->res;
 
-	dev_info(dev, "HDMI resource init\n");
+	dev_dbg(dev, "HDMI resource init\n");
 
 	memset(res, 0, sizeof *res);
 	/* get clocks, power */
@@ -676,7 +676,7 @@ static int hdmi_register_entity(struct hdmi_device *hdev)
 	struct exynos_md *md;
 	int ret;
 
-	dev_info(dev, "HDMI entity init\n");
+	dev_dbg(dev, "HDMI entity init\n");
 
 	/* init hdmi subdev */
 	v4l2_subdev_init(sd, &hdmi_sd_ops);
@@ -755,7 +755,7 @@ static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 
 	switch_set_state(&hdev->hpd_switch, state);
 
-	dev_info(hdev->dev, "%s\n", state ? "plugged" : "unplugged");
+	dev_dbg(hdev->dev, "%s\n", state ? "plugged" : "unplugged");
 }
 
 static void hdmi_hpd_work_ext(struct work_struct *work)
