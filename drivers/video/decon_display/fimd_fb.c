@@ -3665,7 +3665,7 @@ static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 
 	return pd->ip_version == EXYNOS5_813 ? 0 : 1;
 #else
-	return 1;
+	return 0;
 #endif
 }
 
@@ -3777,7 +3777,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 #if !defined(CONFIG_SOC_EXYNOS5260)
 	if (!s3c_fb_inquire_version(sfb)) {
-		sfb->axi_disp1 = clk_get(dev, "axi_disp1");
+		sfb->axi_disp1 = clk_get(dev, "aclk_axi_disp1x");
 		if (IS_ERR(sfb->axi_disp1)) {
 			dev_err(dev, "failed to get axi bus clock\n");
 			ret = PTR_ERR(sfb->axi_disp1);
