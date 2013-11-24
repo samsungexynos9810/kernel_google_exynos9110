@@ -822,6 +822,7 @@
 
 	usb@15510000 {
 		samsung,vbus-gpio = <&gph1 3 0>;
+		samsung,boost5v-gpio = <&gpf3 0 0>;
 	};
 
 	gpio_keys {
