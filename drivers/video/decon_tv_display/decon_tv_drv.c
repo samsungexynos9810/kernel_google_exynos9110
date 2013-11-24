@@ -115,29 +115,32 @@ static int dex_enable(struct dex_device *dex)
 
 	/* find sink pad of output via enabled link*/
 	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
-	if (hdmi_sd == NULL)
-		return -EINVAL;
-	dex_dbg("find remote pad %s\n", hdmi_sd->name);
-
-	if (dex->n_streamer) {
-		dex_warn("decon_tv & HDMI already enabled\n");
-		return 0;
+	if (hdmi_sd == NULL) {
+		ret = -EINVAL;
+		goto out;
 	}
+	dex_dbg("find remote pad %s\n", hdmi_sd->name);
 
 	dex_reg_streamon(dex);
 
 	/* get hdmi timing information for decon-tv porch */
 	ret = dex_set_output(dex);
-	if (ret)
+	if (ret) {
 		dex_err("failed get HDMI information\n");
+		goto out;
+	}
 
 	/* start hdmi */
 	ret = v4l2_subdev_call(hdmi_sd, core, s_power, 1);
-	if (ret)
+	if (ret) {
 		dex_err("failed to get power for HDMI\n");
+		goto out;
+	}
 	ret = v4l2_subdev_call(hdmi_sd, video, s_stream, 1);
-	if (ret)
+	if (ret) {
 		dex_err("starting stream failed for HDMI\n");
+		goto out;
+	}
 
 	dex_tv_update(dex);
 
@@ -145,6 +148,10 @@ static int dex_enable(struct dex_device *dex)
 	mutex_unlock(&dex->s_mutex);
 	dex_dbg("enabled decon_tv and HDMI successfully\n");
 	return 0;
+
+out:
+	mutex_unlock(&dex->s_mutex);
+	return ret;
 }
 
 static int dex_disable(struct dex_device *dex)
@@ -158,14 +165,11 @@ static int dex_disable(struct dex_device *dex)
 
 	/* find sink pad of output via enabled link*/
 	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
-	if (hdmi_sd == NULL)
-		return -EINVAL;
-	dex_dbg("find remote pad %s\n", hdmi_sd->name);
-
-	if (!dex->n_streamer) {
-		dex_warn("decon_tv & HDMI already disabled\n");
-		return 0;
+	if (hdmi_sd == NULL) {
+		ret = -EINVAL;
+		goto out;
 	}
+	dex_dbg("find remote pad %s\n", hdmi_sd->name);
 
 	flush_kthread_worker(&dex->update_worker);
 
@@ -185,17 +189,25 @@ static int dex_disable(struct dex_device *dex)
 
 	/* stop hdmi */
 	ret = v4l2_subdev_call(hdmi_sd, video, s_stream, 0);
-	if (ret)
+	if (ret) {
 		dex_err("stopping stream failed for HDMI\n");
+		goto out;
+	}
 	ret = v4l2_subdev_call(hdmi_sd, core, s_power, 0);
-	if (ret)
+	if (ret) {
 		dex_err("failed to put power for HDMI\n");
+		goto out;
+	}
 
 	dex->n_streamer--;
 	mutex_unlock(&dex->s_mutex);
 	dex_dbg("diabled decon_tv and HDMI successfully\n");
 
 	return 0;
+
+out:
+	mutex_unlock(&dex->s_mutex);
+	return ret;
 }
 
 static int dex_blank(int blank_mode, struct fb_info *info)
@@ -208,40 +220,40 @@ static int dex_blank(int blank_mode, struct fb_info *info)
 
 	switch (blank_mode) {
 	case FB_BLANK_POWERDOWN:
-		ret = dex_disable(dex);
-		if (ret < 0) {
-			dex_err("fail to disable decon_tv");
-			return ret;
+		if (!dex->n_streamer) {
+			dex_warn("decon_tv & HDMI already disabled\n");
+			break;
 		}
+		ret = dex_disable(dex);
+		if (ret < 0)
+			dex_err("fail to disable decon_tv");
 #if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
 		pm_qos_remove_request(&exynos5_decon_tv_int_qos);
 		exynos5_update_media_layers(TYPE_TV, 0);
 #endif
 #ifdef CONFIG_PM_RUNTIME
 		ret = pm_runtime_put_sync(dex->dev);
-		if (ret < 0) {
+		if (ret < 0)
 			dex_err("fail to pm_runtime_put_sync()");
-			return ret;
-		}
 #else
 		dex_runtime_suspend(dex->dev);
 #endif
 		break;
 	case FB_BLANK_UNBLANK:
+		if (dex->n_streamer) {
+			dex_warn("decon_tv & HDMI already enabled\n");
+			break;
+		}
 #ifdef CONFIG_PM_RUNTIME
 		ret = pm_runtime_get_sync(dex->dev);
-		if (ret < 0) {
+		if (ret < 0)
 			dex_err("fail to pm_runtime_get_sync()");
-			return ret;
-		}
 #else
 		dex_runtime_resume(dex->dev);
 #endif
 		ret = dex_enable(dex);
-		if (ret < 0) {
+		if (ret < 0)
 			dex_err("fail to enable decon_tv");
-			return ret;
-		}
 #if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
 		pm_qos_add_request(&exynos5_decon_tv_int_qos, PM_QOS_DEVICE_THROUGHPUT, 400000);
 		exynos5_update_media_layers(TYPE_TV, 1);
