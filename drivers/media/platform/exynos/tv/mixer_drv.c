@@ -476,7 +476,7 @@ static void mxr_release_clocks(struct mxr_device *mdev)
 	if (!IS_ERR_OR_NULL(res->vp))
 		clk_put(res->vp);
 #endif
-	if (is_ip_ver_5a || is_ip_ver_5s)
+	if (is_ip_ver_5a || is_ip_ver_5s || is_ip_ver_5s2)
 		if (!IS_ERR_OR_NULL(res->axi_disp1))
 			clk_put(res->axi_disp1);
 	if (!IS_ERR_OR_NULL(res->mixer))
@@ -506,6 +506,12 @@ static int mxr_acquire_clocks(struct mxr_device *mdev)
 	if (is_ip_ver_5a || is_ip_ver_5s) {
 		res->axi_disp1 = clk_get(dev, "axi_disp1");
 		if (IS_ERR_OR_NULL(res->axi_disp1)) {
+			mxr_err(mdev, "failed to get clock 'axi_disp1'\n");
+			goto fail;
+		}
+	} else if (is_ip_ver_5s2) {
+		res->axi_disp1 = clk_get(dev, "aclk_axi_disp1x");
+		if (IS_ERR(res->axi_disp1)) {
 			mxr_err(mdev, "failed to get clock 'axi_disp1'\n");
 			goto fail;
 		}
@@ -624,7 +630,7 @@ static int mxr_runtime_resume(struct device *dev)
 	mxr_dbg(mdev, "resume - start\n");
 	mutex_lock(&mdev->mutex);
 	/* turn clocks on */
-	if (is_ip_ver_5a || is_ip_ver_5s)
+	if (is_ip_ver_5a || is_ip_ver_5s || is_ip_ver_5s2)
 		clk_prepare_enable(res->axi_disp1);
 	clk_prepare_enable(res->mixer);
 #if defined(CONFIG_ARCH_EXYNOS4)
@@ -656,7 +662,7 @@ static int mxr_runtime_suspend(struct device *dev)
 	clk_disable_unprepare(res->vp);
 #endif
 	clk_disable_unprepare(res->mixer);
-	if (is_ip_ver_5a || is_ip_ver_5s)
+	if (is_ip_ver_5a || is_ip_ver_5s || is_ip_ver_5s2)
 		clk_disable_unprepare(res->axi_disp1);
 	mutex_unlock(&mdev->mutex);
 	mxr_dbg(mdev, "suspend - finished\n");
