@@ -1300,11 +1300,18 @@ int fimc_is_sensor_g_bns_height(struct fimc_is_device_sensor *device)
 int fimc_is_sensor_g_bns_ratio(struct fimc_is_device_sensor *device)
 {
 	int binning = 0;
+	u32 sensor_width, sensor_height;
+	u32 bns_width, bns_height;
 
 	BUG_ON(!device);
 
-	binning = min(BINNING(device->image.window.width, device->image.window.otf_width),
-		BINNING(device->image.window.height, device->image.window.otf_height));
+	sensor_width = fimc_is_sensor_g_width(device);
+	sensor_height = fimc_is_sensor_g_height(device);
+	bns_width = fimc_is_sensor_g_bns_width(device);
+	bns_height = fimc_is_sensor_g_bns_height(device);
+
+	binning = min(BINNING(sensor_width, bns_width),
+		BINNING(sensor_height, bns_height));
 
 	return binning;
 }
