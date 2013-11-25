@@ -33,6 +33,7 @@ static int max_support_idx_CA7;
 static int min_support_idx_CA7 = (CPUFREQ_LEVEL_END_CA7 - 1);
 
 static struct clk *fout_kpll;
+static struct clk *fout_spll;
 static struct clk *dout_cpu_kfc;
 static struct clk *dout_hpm_kfc;
 static struct clk *mout_hpm_kfc;
@@ -296,7 +297,7 @@ static void exynos5422_set_clkdiv_CA7(unsigned int div_index)
 static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_index)
 {
 	unsigned int tmp, pdiv;
-	CLK_ENA(__clk_lookup("fout_spll"));
+	CLK_ENA(fout_spll);
 	/* 0. before change to MPLL, set div for MPLL output */
 	if ((new_index < L5) && (old_index < L5))
 		exynos5422_set_clkdiv_CA7(L5); /* pll_safe_index of CA7 */
@@ -359,7 +360,7 @@ static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 	if ((new_index < L5) && (old_index < L5))
 		exynos5422_set_clkdiv_CA7(new_index);
 
-	CLK_DIS(__clk_lookup("fout_spll"));
+	CLK_DIS(fout_spll);
 }
 
 static bool exynos5422_pms_change_CA7(unsigned int old_index,
@@ -465,6 +466,10 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	unsigned long rate;
 
 	set_volt_table_CA7();
+
+	fout_spll = __clk_lookup("fout_spll");
+	if (IS_ERR(fout_spll))
+		goto err_get_clock;
 
 	dout_cpu_kfc = __clk_lookup("dout_kfc");
 	if (IS_ERR(dout_cpu_kfc))
