@@ -180,18 +180,18 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define RISE_LEVEL1_SHIFT			4
 #define RISE_LEVEL2_SHIFT			8
 #define RISE_LEVEL3_SHIFT			12
-#define RISE_LEVEL4_SHIFT      			32
-#define RISE_LEVEL5_SHIFT      			32
-#define RISE_LEVEL6_SHIFT      			32
-#define RISE_LEVEL7_SHIFT      			32
+#define RISE_LEVEL4_SHIFT      			0
+#define RISE_LEVEL5_SHIFT      			0
+#define RISE_LEVEL6_SHIFT      			0
+#define RISE_LEVEL7_SHIFT      			0
 #define FALL_LEVEL0_SHIFT			16
 #define FALL_LEVEL1_SHIFT			20
 #define FALL_LEVEL2_SHIFT			24
 #define FALL_LEVEL3_SHIFT			28
-#define FALL_LEVEL4_SHIFT      			32
-#define FALL_LEVEL5_SHIFT      			32
-#define FALL_LEVEL6_SHIFT      			32
-#define FALL_LEVEL7_SHIFT      			32
+#define FALL_LEVEL4_SHIFT      			0
+#define FALL_LEVEL5_SHIFT      			0
+#define FALL_LEVEL6_SHIFT      			0
+#define FALL_LEVEL7_SHIFT      			0
 #endif
 
 #define GET_ZONE(trip) (trip + 2)
@@ -1251,8 +1251,8 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 #define EXYNOS_TMU_DRV_DATA (NULL)
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5430)
-static struct exynos_tmu_platform_data const exynos5_tmu_data = {
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
+static struct exynos_tmu_platform_data const exynos5430_evt0_tmu_data = {
 	.threshold_falling = 2,
 	.trigger_levels[0] = 55,
 	.trigger_levels[1] = 60,
