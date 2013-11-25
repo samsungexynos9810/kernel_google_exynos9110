@@ -1038,6 +1038,9 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	if (!(buffer->flags & ION_FLAG_CACHED))
 		vma->vm_page_prot = pgprot_writecombine(vma->vm_page_prot);
 
+	/* Default writeable */
+	vma->vm_page_prot = pte_mkdirty(vma->vm_page_prot);
+
 	mutex_lock(&buffer->lock);
 	if (ion_buffer_need_kmap(buffer) && (buffer->kmap_cnt == 0)) {
 		void *vaddr = ion_buffer_kmap_get(buffer);
