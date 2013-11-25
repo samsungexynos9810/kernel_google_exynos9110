@@ -1036,9 +1036,9 @@
 		samsung,power-domain = <&pd_mfc0>;
 		status = "ok";
 		ip_ver = <9>;
-		clock_rate = <333000000>;
+		clock_rate = <552000000>;
 		min_rate = <84000>;
-		num_qos_steps = <4>;
+		num_qos_steps = <5>;
 		mfc_qos_table {
 			mfc_qos_variant_0 {
 				thrd_mb = <0>;
@@ -1072,7 +1072,14 @@
 				freq_cpu = <0>;
 				freq_kfc = <400000>;
 			};
-
+			mfc_qos_variant_4 {
+				thrd_mb = <489600>;
+				freq_mfc = <552000>;
+				freq_int = <543000>;
+				freq_mif = <825000>;
+				freq_cpu = <800000>;
+				freq_kfc = <800000>;
+			};
 		};
 	};
 
@@ -1086,9 +1093,9 @@
 		samsung,power-domain = <&pd_mfc1>;
 		status = "ok";
 		ip_ver = <9>;
-		clock_rate = <333000000>;
+		clock_rate = <552000000>;
 		min_rate = <84000>;
-		num_qos_steps = <4>;
+		num_qos_steps = <5>;
 		mfc_qos_table {
 			mfc_qos_variant_0 {
 				thrd_mb = <0>;
@@ -1121,6 +1128,14 @@
 				freq_mif = <400000>;
 				freq_cpu = <0>;
 				freq_kfc = <400000>;
+			};
+			mfc_qos_variant_4 {
+				thrd_mb = <489600>;
+				freq_mfc = <552000>;
+				freq_int = <543000>;
+				freq_mif = <825000>;
+				freq_cpu = <800000>;
+				freq_kfc = <800000>;
 			};
 		};
 
