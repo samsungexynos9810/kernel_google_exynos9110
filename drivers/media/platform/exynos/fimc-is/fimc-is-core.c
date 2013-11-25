@@ -35,6 +35,7 @@
 #include <linux/v4l2-mediabus.h>
 #include <linux/exynos_iovmm.h>
 #include <mach/devfreq.h>
+#include <mach/bts.h>
 
 #include "fimc-is-core.h"
 #include "fimc-is-param.h"
@@ -403,6 +404,10 @@ int fimc_is_runtime_resume(struct device *dev)
 #endif
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
+#if defined(CONFIG_SOC_EXYNOS5260)
+	bts_initialize("spd-flite-a", true);
+	bts_initialize("spd-flite-b", true);
+#endif
 	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
 #endif
 
