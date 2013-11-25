@@ -1617,7 +1617,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 		hindex = ldr_frame->shot->ctl.entry.highIndexParam;
 		hindex &= ~ldr_frame->shot->dm.entry.highIndexParam;
 		if (lindex || hindex)
-			err("cause : invalid parameter(%08X %08X)", lindex, hindex);
+			err("cause : %d : invalid parameter(%08X %08X)", status2, lindex, hindex);
 		else
 			err("cause : %d", status2);
 	}
