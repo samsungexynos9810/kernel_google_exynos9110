@@ -143,6 +143,8 @@ enum pt_status fimg2d_check_pagetable(struct mm_struct *mm,
 	size = PAGE_ALIGN(size);
 
 	while ((long)size > 0) {
+		unsigned long *lv2d_first;
+		unsigned long lv2d_base, lv2d_end;
 		lv1d = pgd + (vaddr >> LV1_SHIFT);
 
 		/*
@@ -160,26 +162,33 @@ enum pt_status fimg2d_check_pagetable(struct mm_struct *mm,
 		}
 		dmac_flush_range(lv1d, lv1d + 1);
 
-		lv2d = (unsigned long *)phys_to_virt(*lv1d & ~LV2_BASE_MASK) +
-				((vaddr & LV2_PT_MASK) >> LV2_SHIFT);
+		lv2d_base = (unsigned long)phys_to_virt(*lv1d & ~LV2_BASE_MASK);
+		lv2d_end = lv2d_base + LV2_PT_SIZE;
 
-		/*
-		 * check level 2 descriptor
-		 *	lv2 desc[1:0] = 00 --> fault
-		 *	lv2 desc[1:0] = 01 --> 64k pgae
-		 *	lv2 desc[1:0] = 1x --> 4k page
-		 */
-		if ((*lv2d & LV2_DESC_MASK) != 0x2) {
-			fimg2d_debug("invalid LV2 descriptor, "
-					"pgd %p lv2d 0x%lx vaddr 0x%lx\n",
-					pgd, *lv2d, vaddr);
-			return PT_FAULT;
-		}
+		lv2d = (unsigned long *)lv2d_base +
+			(((vaddr & LV2_PT_MASK) >> LV2_SHIFT));
+		lv2d_first = lv2d;
 
-		dmac_flush_range(lv2d, lv2d + 1);
+		do {
+			/*
+			 * check level 2 descriptor
+			 *	lv2 desc[1:0] = 00 --> fault
+			 *	lv2 desc[1:0] = 01 --> 64k pgae
+			 *	lv2 desc[1:0] = 1x --> 4k page
+			 */
+			if ((*lv2d & LV2_DESC_MASK) != 0x2) {
+				fimg2d_debug("invalid LV2 descriptor, "
+						"pgd %p lv2d 0x%lx "
+						"vaddr 0x%lx\n",
+						pgd, *lv2d, vaddr);
+				return PT_FAULT;
+			}
 
-		vaddr += PAGE_SIZE;
-		size -= PAGE_SIZE;
+			vaddr += PAGE_SIZE;
+			size -= PAGE_SIZE;
+		} while (lv2d++, ((unsigned long)lv2d < lv2d_end) && (size > 0));
+
+		dmac_flush_range(lv2d_first, lv2d);
 	}
 
 	return PT_NORMAL;
