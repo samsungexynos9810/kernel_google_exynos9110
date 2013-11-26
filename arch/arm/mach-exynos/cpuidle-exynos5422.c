@@ -58,6 +58,9 @@
 
 #define EXYNOS_CHECK_DIRECTGO	0xFCBA0D10
 #define EXYNOS_CHECK_LPA	0xABAD0000
+#define EXYNOS_CHECK_DSTOP	0xABAE0000
+
+#define AUDIO_CLK_TO_XXTI	0x03770000
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv,
@@ -82,6 +85,7 @@ struct check_reg_lpa {
  */
 
 static struct check_reg_lpa exynos5_power_domain[] = {
+
 	{.check_reg = EXYNOS5_GSCL_STATUS,	.check_bit = 0x7},
 #ifdef MUST_ADD_FOR_ARES2
 	{.check_reg = EXYNOS5_ISP_STATUS,	.check_bit = 0x7},
@@ -91,22 +95,24 @@ static struct check_reg_lpa exynos5_power_domain[] = {
 	{.check_reg = EXYNOS5410_DISP1_STATUS,	.check_bit = 0x7},
 };
 
+static struct check_reg_lpa exynos5_dstop_power_domain[] = {
+	{.check_reg = EXYNOS5410_MAU_STATUS,	.check_bit = 0x7},
+};
+
 /*
  * List of check clock gating list for LPA mode
  * If clock of list is not gated, system can not enter LPA mode.
  */
 
 static struct check_reg_lpa exynos5_clock_gating[] = {
+#ifdef MUST_ADD_FOR_ARES2
 	{.check_reg = EXYNOS5_CLK_GATE_IP_DISP1,	.check_bit = 0x00000008},
+#endif
 	{.check_reg = EXYNOS5_CLK_GATE_IP_MFC,		.check_bit = 0x00000001},
 	{.check_reg = EXYNOS5_CLK_GATE_IP_GEN,		.check_bit = 0x0000001E},
 	{.check_reg = EXYNOS5_CLK_GATE_BUS_FSYS0,	.check_bit = 0x00000006},
 	{.check_reg = EXYNOS5_CLK_GATE_IP_PERIC,	.check_bit = 0x00077FC0},
 };
-
-static struct clk *clkm_phy0;
-static struct clk *clkm_phy1;
-static bool mif_max = false;
 
 #ifdef CONFIG_SAMSUNG_USBPHY
 extern int samsung_usbphy_check_op(void);
@@ -115,6 +121,7 @@ extern int samsung_usbphy_check_op(void);
 #if defined(CONFIG_MMC_DW)
 extern int dw_mci_exynos_request_status(void);
 #endif
+
 #ifdef CONFIG_DEBUG_CPUIDLE
 static inline void show_core_regs(int cpuid)
 {
@@ -179,8 +186,12 @@ static int __maybe_unused exynos_check_enter_mode(void)
 	if (samsung_usbphy_check_op())
 		return EXYNOS_CHECK_DIDLE;
 #endif
+	/* Check audio power domain for Deep STOP */
+	if (exynos_check_reg_status(exynos5_dstop_power_domain,
+			    ARRAY_SIZE(exynos5_dstop_power_domain)))
+		return EXYNOS_CHECK_LPA;
 
-	return EXYNOS_CHECK_LPA;
+	return EXYNOS_CHECK_DSTOP;
 }
 
 static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
@@ -334,7 +345,6 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 		    (after.tv_usec - before.tv_usec);
 
 	dev->last_residency = idle_time;
-
 	return index;
 }
 
@@ -367,8 +377,14 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
-	/* Set value of power down register for aftr mode */
-	exynos_sys_powerdown_conf(SYS_LPA);
+	/* Change audio clock to OSC */
+	__raw_writel(AUDIO_CLK_TO_XXTI, EXYNOS5_CLK_SRC_PERIC1);
+
+	/* Set value of power down register for low power mode */
+	if(enter_mode == EXYNOS_CHECK_LPA)
+		exynos_sys_powerdown_conf(SYS_LPA);
+	else
+		exynos_sys_powerdown_conf(SYS_DSTOP);
 
 	save_cpu_arch_register();
 
@@ -391,15 +407,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
 
 	exynos5_mif_transition_disable(true);
-
-	if(__clk_is_enabled(clkm_phy0)) {
-		mif_max = true;
-		clk_disable(clkm_phy0);
-	}
-	if(__clk_is_enabled(clkm_phy1)) {
-		mif_max = true;
-		clk_disable(clkm_phy1);
-	}
 
 	cpu_pm_enter();
 	exynos_lpa_enter();
@@ -425,12 +432,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_HSI_OPTION);
 
 early_wakeup:
-	if (mif_max) {
-		clk_enable(clkm_phy0);
-		clk_enable(clkm_phy1);
-		mif_max = false;
-	}
-
 	exynos5_mif_transition_disable(false);
 
 	__raw_writel(0, EXYNOS_PMU_SPARE1);
@@ -461,6 +462,7 @@ early_wakeup:
 		    (after.tv_usec - before.tv_usec);
 
 	dev->last_residency = idle_time;
+
 	return index;
 }
 
@@ -615,19 +617,6 @@ static int __init exynos_init_cpuidle(void)
 			printk(KERN_ERR "CPUidle register device failed\n,");
 			return -EIO;
 		}
-	}
-
-	clkm_phy0 = __clk_lookup("clkm_phy0");
-	clkm_phy1 = __clk_lookup("clkm_phy1");
-
-	if (IS_ERR(clkm_phy0)) {
-		pr_err("Cannot get clock \"clkm_phy0\"\n");
-		return PTR_ERR(clkm_phy0);
-	}
-
-	if (IS_ERR(clkm_phy1)) {
-		pr_err("Cannot get clock \"clkm_phy1\"\n");
-		return PTR_ERR(clkm_phy1);
 	}
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
