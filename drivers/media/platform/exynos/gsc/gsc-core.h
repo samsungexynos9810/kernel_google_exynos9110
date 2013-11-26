@@ -868,4 +868,5 @@ void gsc_hw_set_deadlock_irq_mask(struct gsc_dev *dev, bool mask);
 void gsc_hw_set_smart_if_con(struct gsc_dev *dev, bool enable);
 void gsc_hw_set_smart_if_pix_num(struct gsc_ctx *ctx);
 void gsc_hw_set_sfr_update(struct gsc_ctx *ctx);
+void gsc_hw_set_dynamic_clock_gating(struct gsc_dev *dev);
 #endif /* GSC_CORE_H_ */

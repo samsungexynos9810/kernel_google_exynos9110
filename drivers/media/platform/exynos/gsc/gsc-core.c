@@ -1461,6 +1461,8 @@ static int gsc_runtime_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gsc_dev *gsc = (struct gsc_dev *)platform_get_drvdata(pdev);
 
+	gsc_hw_set_dynamic_clock_gating(gsc);
+
 	if (clk_set_parent(gsc->clock[CLK_CHILD],
 			gsc->clock[CLK_PARENT])) {
 		dev_err(dev, "Unable to set parent %s of clock %s.\n",
@@ -1736,6 +1738,8 @@ static int gsc_probe(struct platform_device *pdev)
 
 	exynos_create_iovmm(&pdev->dev, 3, 3);
 	gsc->vb2->resume(gsc->alloc_ctx);
+
+	gsc_hw_set_dynamic_clock_gating(gsc);
 
 	gsc_pm_runtime_enable(&pdev->dev);
 

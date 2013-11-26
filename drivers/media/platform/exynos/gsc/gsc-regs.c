@@ -16,6 +16,19 @@
 #include <mach/map.h>
 #include "gsc-core.h"
 
+void gsc_hw_set_dynamic_clock_gating(struct gsc_dev *dev)
+{
+	u32 cfg = readl(dev->sysreg_gscl + GSCL_NOC_DCG_EN);
+	cfg |= 0x7;
+	writel(cfg, dev->sysreg_gscl + GSCL_NOC_DCG_EN);
+	cfg = readl(dev->sysreg_gscl + GSCL_XIU_TOP_DCG_EN);
+	cfg |= 0x1;
+	writel(cfg, dev->sysreg_gscl + GSCL_XIU_TOP_DCG_EN);
+	cfg = readl(dev->sysreg_gscl + GSCL_DYN_CLKGATE_DISABLE);
+	cfg &= 0x0;
+	writel(cfg, dev->sysreg_gscl + GSCL_DYN_CLKGATE_DISABLE);
+}
+
 void gsc_hw_set_pp_index_init(struct gsc_dev *dev)
 {
 	u32 cfg = readl(dev->regs + GSC_ENABLE);

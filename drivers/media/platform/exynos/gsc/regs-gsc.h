@@ -44,6 +44,12 @@
 #define DSD_CFG				(0x1000)
 #define DSD_CFG_MUX			(0x1004)
 #define DSD_RESERVE10			(0x1048)
+
+/* Dynamic clock gating */
+#define GSCL_NOC_DCG_EN			(0x200)
+#define GSCL_XIU_TOP_DCG_EN		(0x204)
+#define GSCL_DYN_CLKGATE_DISABLE	(0x500)
+
 /* G-Scaler enable */
 #define GSC_ENABLE			0x00
 
