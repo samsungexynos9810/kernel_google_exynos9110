@@ -1941,7 +1941,7 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 					dev_err(host->dev,
 						"data timeout error\n");
 					data->error = -ETIMEDOUT;
-					host->mrq->cmd->error = -ETIMEDOUT;
+					host->mrq_dat->cmd->error = -ETIMEDOUT;
 				} else if (status & SDMMC_INT_DCRC) {
 					dev_err(host->dev,
 						"data CRC error\n");
