@@ -80,5 +80,6 @@ extern void exynos_disable_idle_clock_down(unsigned int cluster);
 extern void exynos_lpi_mask_ctrl(bool on);
 extern void exynos_set_dummy_state(bool on);
 extern void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type);
+extern void exynos_cpu_sequencer_ctrl(bool enable);
 
 #endif /* __ASM_ARCH_PMU_H */

@@ -391,6 +391,18 @@ void exynos_xxti_sys_powerdown(bool enable)
 	__raw_writel(value, EXYNOS5_XXTI_SYS_PWR_REG);
 }
 
+void exynos_cpu_sequencer_ctrl(bool enable)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(EXYNOS5430_EAGLE_CPUSEQ_OPTION);
+	if (enable)
+		tmp |= ENABLE_CPUSEQ;
+	else
+		tmp &= ~ENABLE_CPUSEQ;
+	__raw_writel(tmp, EXYNOS5430_EAGLE_CPUSEQ_OPTION);
+}
+
 static void exynos_cpu_reset_assert_ctrl(bool on, enum cpu_type cluster)
 {
 	unsigned int i;
@@ -478,6 +490,7 @@ int __init exynos5430_pmu_init(void)
 	/* L2 use retention disable */
 	tmp = __raw_readl(EXYNOS_L2_OPTION(0));
 	tmp &= ~USE_RETENTION;
+	tmp |= USE_STANDBYWFIL2 | USE_DEACTIVATE_ACP | USE_DEACTIVATE_ACE;
 	__raw_writel(tmp, EXYNOS_L2_OPTION(0));
 
 	tmp = __raw_readl(EXYNOS_L2_OPTION(1));
