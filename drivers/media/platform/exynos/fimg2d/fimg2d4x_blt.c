@@ -35,8 +35,8 @@
 #define BLIT_TIMEOUT	msecs_to_jiffies(8000)
 
 #define MAX_PREFBUFS	6
-//static int nbufs;
-//static struct sysmmu_prefbuf prefbuf[MAX_PREFBUFS];
+static int nbufs;
+static struct sysmmu_prefbuf prefbuf[MAX_PREFBUFS];
 
 #define G2D_MAX_VMA_MAPPING	12
 
@@ -228,11 +228,6 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 			fimg2d_err("2D clock is not set\n");
 #endif
 
-		atomic_set(&ctrl->busy, 1);
-		perf_start(cmd, PERF_SFR);
-		ctrl->configure(ctrl, cmd);
-		perf_end(cmd, PERF_SFR);
-
 		addr_type = cmd->image[IDST].addr.type;
 
 		//ctx->vma_lock = vma_lock_mapping(ctx->mm, prefbuf, MAX_IMAGES - 1);
@@ -256,6 +251,11 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 			//exynos_sysmmu_set_pbuf(ctrl->dev, nbufs, prefbuf);
 			fimg2d_debug("%s : set smmu prefbuf\n", __func__);
 		}
+
+		atomic_set(&ctrl->busy, 1);
+		perf_start(cmd, PERF_SFR);
+		ctrl->configure(ctrl, cmd);
+		perf_end(cmd, PERF_SFR);
 
 		fimg2d4x_pre_bitblt(ctrl, cmd);
 
@@ -376,7 +376,7 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 	enum image_sel srcsel, dstsel;
 	struct fimg2d_param *p;
 	struct fimg2d_image *src, *msk, *dst;
-	//struct sysmmu_prefbuf *pbuf;
+	struct sysmmu_prefbuf *pbuf;
 
 	fimg2d_debug("ctx %p seq_no(%u)\n", cmd->ctx, cmd->blt.seq_no);
 
@@ -423,8 +423,8 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 	fimg2d4x_set_src_type(ctrl, srcsel);
 	fimg2d4x_set_dst_type(ctrl, dstsel);
 
-	//nbufs = 0;
-	//pbuf = &prefbuf[nbufs];
+	nbufs = 0;
+	pbuf = &prefbuf[nbufs];
 
 	/* src */
 	if (src->addr.type) {
@@ -433,19 +433,20 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 		fimg2d4x_set_src_repeat(ctrl, &p->repeat);
 		if (p->scaling.mode)
 			fimg2d4x_set_src_scaling(ctrl, &p->scaling, &p->repeat);
-#if 0
+
 		/* prefbuf */
 		pbuf->base = cmd->dma[ISRC].base.addr;
 		pbuf->size = cmd->dma[ISRC].base.size;
+		pbuf->config = SYSMMU_PBUFCFG_DEFAULT_INPUT;
 		nbufs++;
 		pbuf++;
 		if (src->order == P2_CRCB || src->order == P2_CBCR) {
 			pbuf->base = cmd->dma[ISRC].plane2.addr;
 			pbuf->size = cmd->dma[ISRC].plane2.size;
+			pbuf->config = SYSMMU_PBUFCFG_DEFAULT_INPUT;
 			nbufs++;
 			pbuf++;
 		}
-#endif
 	}
 
 	/* msk */
@@ -457,13 +458,12 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 		if (p->scaling.mode)
 			fimg2d4x_set_msk_scaling(ctrl, &p->scaling, &p->repeat);
 
-#if 0
 		/* prefbuf */
 		pbuf->base = cmd->dma[IMSK].base.addr;
 		pbuf->size = cmd->dma[IMSK].base.size;
+		pbuf->config = SYSMMU_PBUFCFG_DEFAULT_INPUT;
 		nbufs++;
 		pbuf++;
-#endif
 	}
 
 	/* dst */
@@ -473,20 +473,22 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 		if (p->clipping.enable)
 			fimg2d4x_enable_clipping(ctrl, &p->clipping);
 
-#if 0
 		/* prefbuf */
 		pbuf->base = cmd->dma[IDST].base.addr;
 		pbuf->size = cmd->dma[IDST].base.size;
+		pbuf->config = SYSMMU_PBUFCFG_DEFAULT_OUTPUT;
 		nbufs++;
 		pbuf++;
 		if (dst->order == P2_CRCB || dst->order == P2_CBCR) {
 			pbuf->base = cmd->dma[IDST].plane2.addr;
 			pbuf->size = cmd->dma[IDST].plane2.size;
+			pbuf->config = SYSMMU_PBUFCFG_DEFAULT_OUTPUT;
 			nbufs++;
 			pbuf++;
 		}
-#endif
 	}
+
+	sysmmu_set_prefetch_buffer_by_region(ctrl->dev, prefbuf, nbufs);
 
 	/* bluescreen */
 	if (p->bluscr.mode)
