@@ -653,7 +653,10 @@ static int fimg2d_probe(struct platform_device *pdev)
 	dev_info(&pdev->dev, "++ 9 %s\n", __func__);
 	g2d_cci_snoop_init(pdata->ip_ver);
 
-	//exynos_sysmmu_set_fault_handler(ctrl->dev, fimg2d_sysmmu_fault_handler);
+#ifdef CONFIG_EXYNOS7_IOMMU
+	exynos_create_iovmm(dev, 3, 3);
+#endif
+
 	fimg2d_debug("register sysmmu page fault handler\n");
 
 	/* misc register */

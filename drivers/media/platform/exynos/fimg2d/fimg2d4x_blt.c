@@ -243,8 +243,12 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 				goto fail_n_del;
 			}
 			pgd = (unsigned long *)ctx->mm->pgd;
+#ifdef CONFIG_EXYNOS7_IOMMU
+			iovmm_activate(ctrl->dev);
+#else
 			exynos_sysmmu_enable(ctrl->dev,
 					(unsigned long)virt_to_phys(pgd));
+#endif
 			fimg2d_debug("%s : sysmmu enable: pgd %p ctx %p seq_no(%u)\n",
 				__func__, pgd, ctx, cmd->blt.seq_no);
 
@@ -254,8 +258,18 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 
 		atomic_set(&ctrl->busy, 1);
 		perf_start(cmd, PERF_SFR);
-		ctrl->configure(ctrl, cmd);
+		ret = ctrl->configure(ctrl, cmd);
 		perf_end(cmd, PERF_SFR);
+
+		if (IS_ERR_VALUE(ret)) {
+			fimg2d_err("failed to configure\n");
+#ifdef CONFIG_EXYNOS7_IOMMU
+			iovmm_deactivate(ctrl->dev);
+#else
+			exynos_sysmmu_disable(ctrl->dev);
+#endif
+			goto fail_n_del;
+		}
 
 		fimg2d4x_pre_bitblt(ctrl, cmd);
 
@@ -267,7 +281,29 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 		perf_end(cmd, PERF_BLIT);
 
 		if (addr_type == ADDR_USER || addr_type == ADDR_USER_CONTIG) {
+#ifdef CONFIG_EXYNOS7_IOMMU
+			if (cmd->image[ISRC].addr.type) {
+				exynos_sysmmu_unmap_user_pages(ctrl->dev,
+					ctx->mm, cmd->dma[ISRC].base.addr,
+					cmd->dma[ISRC].base.size);
+			}
+
+			if (cmd->image[IMSK].addr.type) {
+				exynos_sysmmu_unmap_user_pages(ctrl->dev,
+					ctx->mm, cmd->dma[IMSK].base.addr,
+					cmd->dma[IMSK].base.size);
+			}
+
+			if (cmd->image[IDST].addr.type) {
+				exynos_sysmmu_unmap_user_pages(ctrl->dev,
+					ctx->mm, cmd->dma[IDST].base.addr,
+					cmd->dma[IDST].base.size);
+			}
+
+			iovmm_deactivate(ctrl->dev);
+#else
 			exynos_sysmmu_disable(ctrl->dev);
+#endif
 			fimg2d_debug("sysmmu disable\n");
 		}
 fail_n_del:
@@ -377,6 +413,9 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 	struct fimg2d_param *p;
 	struct fimg2d_image *src, *msk, *dst;
 	struct sysmmu_prefbuf *pbuf;
+#ifdef CONFIG_EXYNOS7_IOMMU
+	int ret;
+#endif
 
 	fimg2d_debug("ctx %p seq_no(%u)\n", cmd->ctx, cmd->blt.seq_no);
 
@@ -447,6 +486,28 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 			nbufs++;
 			pbuf++;
 		}
+
+#ifdef CONFIG_EXYNOS7_IOMMU
+		ret = exynos_sysmmu_map_user_pages(
+				ctrl->dev, cmd->ctx->mm,
+				cmd->dma[ISRC].base.addr,
+				cmd->dma[ISRC].base.size, 0);
+		if (IS_ERR_VALUE(ret)) {
+			fimg2d_err("failed to map src buffer for sysmmu\n");
+			return ret;
+		}
+
+		if (src->order == P2_CRCB || src->order == P2_CBCR) {
+			ret = exynos_sysmmu_map_user_pages(
+					ctrl->dev, cmd->ctx->mm,
+					cmd->dma[ISRC].plane2.addr,
+					cmd->dma[ISRC].plane2.size, 0);
+			if (IS_ERR_VALUE(ret)) {
+				fimg2d_err("failed to map src buffer for sysmmu\n");
+				return ret;
+			}
+		}
+#endif
 	}
 
 	/* msk */
@@ -464,6 +525,17 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 		pbuf->config = SYSMMU_PBUFCFG_DEFAULT_INPUT;
 		nbufs++;
 		pbuf++;
+
+#ifdef CONFIG_EXYNOS7_IOMMU
+		ret = exynos_sysmmu_map_user_pages(
+				ctrl->dev, cmd->ctx->mm,
+				cmd->dma[IMSK].base.addr,
+				cmd->dma[IMSK].base.size, 0);
+		if (IS_ERR_VALUE(ret)) {
+			fimg2d_err("failed to map msk buffer for sysmmu\n");
+			return ret;
+		}
+#endif
 	}
 
 	/* dst */
@@ -486,6 +558,28 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 			nbufs++;
 			pbuf++;
 		}
+
+#ifdef CONFIG_EXYNOS7_IOMMU
+		ret = exynos_sysmmu_map_user_pages(
+				ctrl->dev, cmd->ctx->mm,
+				cmd->dma[IDST].base.addr,
+				cmd->dma[IDST].base.size, 0);
+		if (IS_ERR_VALUE(ret)) {
+			fimg2d_err("failed to map src buffer for sysmmu\n");
+			return ret;
+		}
+
+		if (src->order == P2_CRCB || src->order == P2_CBCR) {
+			ret = exynos_sysmmu_map_user_pages(
+					ctrl->dev, cmd->ctx->mm,
+					cmd->dma[IDST].plane2.addr,
+					cmd->dma[IDST].plane2.size, 0);
+			if (IS_ERR_VALUE(ret)) {
+				fimg2d_err("failed to map src buffer for sysmmu\n");
+				return ret;
+			}
+		}
+#endif
 	}
 
 	sysmmu_set_prefetch_buffer_by_region(ctrl->dev, prefbuf, nbufs);

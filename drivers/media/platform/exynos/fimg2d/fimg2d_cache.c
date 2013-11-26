@@ -134,6 +134,7 @@ void fimg2d_clean_outer_pagetable(struct mm_struct *mm, unsigned long vaddr,
 enum pt_status fimg2d_check_pagetable(struct mm_struct *mm,
 		unsigned long vaddr, size_t size)
 {
+#ifndef CONFIG_EXYNOS7_IOMMU
 	unsigned long *pgd;
 	unsigned long *lv1d, *lv2d;
 
@@ -191,5 +192,6 @@ enum pt_status fimg2d_check_pagetable(struct mm_struct *mm,
 		dmac_flush_range(lv2d_first, lv2d);
 	}
 
+#endif
 	return PT_NORMAL;
 }
