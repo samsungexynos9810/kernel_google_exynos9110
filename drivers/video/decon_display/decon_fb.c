@@ -139,8 +139,8 @@ static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
 #define DECON_DUMMY_WIN_DISPLAY
 #ifdef DECON_DUMMY_WIN_DISPLAY
 static dma_addr_t g_fb_dummy_buf;
-#define DUMMY_WIDTH     64
-#define DUMMY_HEIGHT    16
+#define DUMMY_WIDTH     32
+#define DUMMY_HEIGHT    1
 #endif
 
 void debug_function(struct display_driver *dispdrv, const char *buf);
