@@ -839,6 +839,45 @@ unsigned int timeout_wqhd_camera[][2] = {
 
 extern void exynos5_update_district_disp_level(unsigned int idx);
 
+struct devfreq_dynamic_clkgate {
+	unsigned long	addr;
+	unsigned int	bit;
+	unsigned long	freq;
+};
+
+static struct devfreq_dynamic_clkgate exynos5_mif_dynamic_clkgates[] = {
+	{.addr = 0x105E0200,	.bit = 0x20,	.freq = 95000},
+	{.addr = 0x105E0200,	.bit = 0x4,	.freq = 100000},
+	{.addr = 0x105E0200,	.bit = 0x1,	.freq = 66000},
+};
+
+static void exynos5_enable_dynamic_clkgate(struct devfreq_dynamic_clkgate *clkgate_list,
+						unsigned int list_cnt, bool up_case,
+						unsigned long freq)
+{
+	unsigned int i;
+	unsigned int tmp;
+	void __iomem *reg;
+
+	for (i = 0; i < list_cnt; i++) {
+		if (up_case && clkgate_list[i].freq < freq) {
+			/* disable dynamic clock gating */
+			reg = ioremap(clkgate_list[i].addr, SZ_4);
+			tmp = readl(reg);
+			tmp &= ~(clkgate_list[i].bit);
+			writel(tmp, reg);
+			iounmap(reg);
+		} else if (!up_case && clkgate_list[i].freq > freq) {
+			/* enable dynamic clock gating */
+			reg = ioremap(clkgate_list[i].addr, SZ_4);
+			tmp = readl(reg);
+			tmp |= clkgate_list[i].bit;
+			writel(tmp, reg);
+			iounmap(reg);
+		}
+	}
+}
+
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value)
 {
 	unsigned int total_layer_count = 0;
@@ -1314,6 +1353,9 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	}
 
 	if (old_freq < *target_freq) {
+		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
+						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
+						true, *target_freq);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
@@ -1331,6 +1373,9 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
+		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
+						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
+						false, *target_freq);
 
 		if (mif_data->base_idx_dll_on != -1 &&
 			mif_data->restore_idx_dll_on == -1 &&

@@ -398,6 +398,45 @@ static struct devfreq_exynos devfreq_int_exynos = {
 	.ppmu_count = ARRAY_SIZE(ppmu_int),
 };
 
+struct devfreq_dynamic_clkgate {
+	unsigned long	addr;
+	unsigned int	bit;
+	unsigned long	freq;
+};
+
+static struct devfreq_dynamic_clkgate exynos5_int_dynamic_clkgates[] = {
+	{.addr = 0x14830200,	.bit = 0x8,	.freq = 133000},
+	{.addr = 0x13430200,	.bit = 0x8,	.freq = 133000},
+	{.addr = 0x13430200,	.bit = 0x4,	.freq = 133000},
+};
+
+static void exynos5_enable_dynamic_clkgate(struct devfreq_dynamic_clkgate *clkgate_list,
+						unsigned int list_cnt, bool up_case,
+						unsigned long freq)
+{
+	unsigned int i;
+	unsigned int tmp;
+	void __iomem *reg;
+
+	for (i = 0; i < list_cnt; i++) {
+		if (up_case && clkgate_list[i].freq < freq) {
+			/* disable dynamic clock gating */
+			reg = ioremap(clkgate_list[i].addr, SZ_4);
+			tmp = readl(reg);
+			tmp &= ~(clkgate_list[i].bit);
+			writel(tmp, reg);
+			iounmap(reg);
+		} else if (!up_case && clkgate_list[i].freq > freq) {
+			/* enable dynamic clock gating */
+			reg = ioremap(clkgate_list[i].addr, SZ_4);
+			tmp = readl(reg);
+			tmp |= clkgate_list[i].bit;
+			writel(tmp, reg);
+			iounmap(reg);
+		}
+	}
+}
+
 static struct pm_qos_request exynos5_int_qos;
 static struct pm_qos_request boot_int_qos;
 static struct pm_qos_request min_int_thermal_qos;
@@ -596,11 +635,17 @@ static int exynos5_devfreq_int_target(struct device *dev,
 		goto out;
 
 	if (old_freq < *target_freq) {
+		exynos5_enable_dynamic_clkgate(exynos5_int_dynamic_clkgates,
+						ARRAY_SIZE(exynos5_int_dynamic_clkgates),
+						true, *target_freq);
 		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
 		exynos5_devfreq_int_set_freq(int_data, target_idx, old_idx);
 	} else {
 		exynos5_devfreq_int_set_freq(int_data, target_idx, old_idx);
 		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
+		exynos5_enable_dynamic_clkgate(exynos5_int_dynamic_clkgates,
+						ARRAY_SIZE(exynos5_int_dynamic_clkgates),
+						false, *target_freq);
 	}
 out:
 	mutex_unlock(&int_data->lock);
