@@ -23,6 +23,7 @@
 #include <linux/tick.h>
 #include <linux/hrtimer.h>
 #include <linux/cpu.h>
+#include <linux/debugfs.h>
 
 #include <asm/proc-fns.h>
 #include <asm/smp_scu.h>
@@ -59,6 +60,12 @@
 #include <plat/audio.h>
 #endif
 #include <plat/clock.h>
+
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+static cputime64_t cluster_off_time = 0;
+static unsigned long long last_time = 0;
+static bool cluster_off_flag = false;
+#endif
 
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
 #define REG_DIRECTGO_FLAG	(S5P_VA_SYSRAM_NS + 0x20)
@@ -223,6 +230,9 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 };
 
 static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+static DEFINE_PER_CPU(int, in_c2_state);
+#endif
 
 static struct cpuidle_driver exynos_idle_driver = {
 	.name                   = "exynos_idle",
@@ -648,6 +658,25 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 }
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+static int can_enter_cluster_off(int cpu_id)
+{
+#if defined(CONFIG_SCHED_HMP)
+	int cpu;
+
+	for_each_cpu_and(cpu, cpu_online_mask, cpu_coregroup_mask(cpu_id)) {
+		if (cpu_id == cpu)
+			continue;
+
+		if (!(per_cpu(in_c2_state, cpu)))
+			return 0;
+	}
+
+	return 1;
+#else
+	return 0;
+#endif
+}
+
 static int exynos_enter_c2(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
@@ -674,11 +703,23 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	temp &= 0xfffffff0;
 	__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
+	per_cpu(in_c2_state, cpuid) = 1;
+	if (can_enter_cluster_off(cpuid)) {
+		cluster_off_flag = true;
+		last_time = get_jiffies_64();
+	}
+
 	ret = cpu_suspend(0, c2_finisher);
 	if (ret) {
 		temp = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 		temp |= 0xf;
 		__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+	}
+
+	per_cpu(in_c2_state, cpuid) = 0;
+	if (cluster_off_flag) {
+		cluster_off_flag = false;
+		cluster_off_time += get_jiffies_64() - last_time;
 	}
 
 	clear_boot_flag(cpuid, C2_STATE);
@@ -692,6 +733,28 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	dev->last_residency = idle_time;
 	return index;
 }
+
+static struct dentry *cluster_off_time_debugfs;
+
+static int cluster_off_time_show(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "CA15_cluster_off %llu\n",
+			(unsigned long long) cputime64_to_clock_t(cluster_off_time));
+
+	return 0;
+}
+
+static int cluster_off_time_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, cluster_off_time_show, inode->i_private);
+}
+
+const static struct file_operations cluster_off_time_fops = {
+	.open		= cluster_off_time_debug_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
 #endif
 
 static int exynos_cpuidle_notifier_event(struct notifier_block *this,
@@ -742,6 +805,9 @@ static int __init exynos_init_cpuidle(void)
 		device->cpu = cpu_id;
 
 		device->state_count = exynos_idle_driver.state_count;
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+		per_cpu(in_c2_state, cpu_id) = 0;
+#endif
 
 		if (cpuidle_register_device(device)) {
 			printk(KERN_ERR "CPUidle register device failed\n,");
@@ -750,6 +816,17 @@ static int __init exynos_init_cpuidle(void)
 	}
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
+
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+	cluster_off_time_debugfs =
+		debugfs_create_file("cluster_off_time",
+				S_IRUGO, NULL, NULL, &cluster_off_time_fops);
+	if (IS_ERR_OR_NULL(cluster_off_time_debugfs)) {
+		cluster_off_time_debugfs = NULL;
+		pr_err("%s: debugfs_create_file() failed\n", __func__);
+	}
+#endif
+
 	return 0;
 }
 device_initcall(exynos_init_cpuidle);
