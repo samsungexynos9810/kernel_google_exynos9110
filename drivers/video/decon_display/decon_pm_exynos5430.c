@@ -428,7 +428,7 @@ void set_default_hibernation_mode(struct display_driver *dispdrv)
 {
 	dispdrv->pm_status.clock_gating_on = true;
 	dispdrv->pm_status.power_gating_on = true;
-	dispdrv->pm_status.hotplug_gating_on = false;
+	dispdrv->pm_status.hotplug_gating_on = true;
 }
 
 void decon_clock_on(struct display_driver *dispdrv)
