@@ -746,6 +746,7 @@ void mmc_wait_cmdq_empty(struct mmc_host *host)
 {
 	mmc_wait_for_cmdq_done(host);
 }
+EXPORT_SYMBOL(mmc_wait_cmdq_empty);
 
 /**
  *	mmc_pre_req - Prepare for a new request
