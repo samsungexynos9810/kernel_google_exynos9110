@@ -2155,17 +2155,22 @@ static void dw_mci_tasklet_func(unsigned long priv)
 			list_del_init(&host->cur_slot->mrq->hlist);
 			host->state_cmd = STATE_SENDING_CMD;
 			dw_mci_start_request(host, host->cur_slot);
-		} else if (!list_empty(&host->queue)) {
-			struct dw_mci_slot *slot;
-			slot = list_entry(host->queue.next,
-				  struct dw_mci_slot, queue_node);
-			list_del_init(&slot->queue_node);
-			if (!list_empty(&slot->mrq_list)) {
-				slot->mrq = list_first_entry(&slot->mrq_list,
-					struct mmc_request, hlist);
-				list_del_init(&slot->mrq->hlist);
-				host->state_cmd = STATE_SENDING_CMD;
-				dw_mci_start_request(host, slot);
+		} else {
+			host->cur_slot->mrq = NULL;
+			if (!list_empty(&host->queue)) {
+				struct dw_mci_slot *slot;
+				slot = list_entry(host->queue.next,
+					  struct dw_mci_slot, queue_node);
+				list_del_init(&slot->queue_node);
+				if (!list_empty(&slot->mrq_list)) {
+					slot->mrq = list_first_entry(
+						&slot->mrq_list,
+						struct mmc_request, hlist);
+					list_del_init(&slot->mrq->hlist);
+					host->state_cmd = STATE_SENDING_CMD;
+					dw_mci_start_request(host, slot);
+				} else
+					slot->mrq = NULL;
 			}
 		}
 	}
@@ -2902,12 +2907,16 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 			/* Clean up queue if present */
 			mrq = slot->mrq;
 			if (mrq) {
-				if (mrq == host->mrq_cmd ||
-						mrq == host->mrq_dat) {
+				enum dw_mci_state *state = NULL;
+				if (mrq == host->mrq_cmd)
+					state = &host->state_cmd;
+				else if (mrq == host->mrq_dat)
+					state = &host->state_dat;
+				if (state) {
 					host->data = NULL;
 					host->cmd = NULL;
 
-					switch (host->state_cmd) {
+					switch (*state) {
 					case STATE_IDLE:
 						break;
 					case STATE_SENDING_CMD:
@@ -2930,8 +2939,8 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 						break;
 					}
 
-					dw_mci_request_end(host, mrq,
-							&host->state_cmd);
+					dw_mci_request_end(host, mrq, state);
+					slot->mrq = NULL;
 				} else {
 					list_del(&slot->queue_node);
 					mrq->cmd->error = -ENOMEDIUM;
