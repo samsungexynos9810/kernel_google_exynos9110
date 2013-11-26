@@ -171,7 +171,6 @@ config EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
 
 config EXYNOS5_DYNAMIC_CPU_HOTPLUG
 	bool "Dynamic CPU Hotplug support"
-	depends on SOC_EXYNOS5430
 	depends on CPU_FREQ
 	help
 		Enable Dynamic CPU Hotplug
