@@ -817,7 +817,7 @@ static void __init set_volt_table_CA15(void)
 
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	max_support_idx_CA15 = L10;
-	min_support_idx_CA15 = L18;
+	min_support_idx_CA15 = L17;
 #else
 	max_support_idx_CA15 = L15;
 	min_support_idx_CA15 = L18;
