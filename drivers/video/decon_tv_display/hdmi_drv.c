@@ -283,6 +283,7 @@ static int hdmi_s_power(struct v4l2_subdev *sd, int on)
 	 * and hdmi_runtime_suspend functions are directly called.
 	 */
 	if (on) {
+		hdmi_clock_change(hdev, 1);
 		clk_prepare_enable(hdev->res.hdmi);
 #ifdef CONFIG_PM_RUNTIME
 		ret = pm_runtime_get_sync(hdev->dev);
@@ -313,6 +314,7 @@ static int hdmi_s_power(struct v4l2_subdev *sd, int on)
 		hdmi_runtime_suspend(hdev->dev);
 #endif
 		clk_disable_unprepare(hdev->res.hdmi);
+		hdmi_clock_change(hdev, 0);
 	}
 
 	/* only values < 0 indicate errors */
@@ -535,7 +537,7 @@ static int hdmi_runtime_resume(struct device *dev)
 	return 0;
 
 fail:
-	clk_disable_unprepare(res->hdmi);
+	clk_disable_unprepare(res->hdmiphy);
 	hdmiphy_set_isolation(hdev, 0);
 	dev_err(dev, "poweron failed\n");
 
@@ -569,6 +571,19 @@ static int hdmi_clk_set_parent(const char *child, const char *parent)
 	return 0;
 }
 
+int hdmi_clk_set_rate(const char *conid, unsigned int rate)
+{
+	struct clk *target;
+
+	target = __clk_lookup(conid);
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	return clk_set_rate(target, rate);
+}
+
 static void hdmi_resources_cleanup(struct hdmi_device *hdev)
 {
 	struct hdmi_resources *res = &hdev->res;
@@ -582,11 +597,41 @@ static void hdmi_resources_cleanup(struct hdmi_device *hdev)
 	memset(res, 0, sizeof *res);
 }
 
+void hdmi_clock_change(struct hdmi_device *hdev, int on)
+{
+	if (on) {
+		hdmi_clk_set_parent("mout_sclk_decon_tv_eclk_a", "mout_bus_pll_div2");
+		hdmi_clk_set_parent("mout_sclk_decon_tv_eclk_b", "mout_sclk_decon_tv_eclk_a");
+		hdmi_clk_set_parent("mout_sclk_decon_tv_eclk_c", "mout_sclk_decon_tv_eclk_b");
+		hdmi_clk_set_parent("dout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_c");
+
+		hdmi_clk_set_rate("dout_sclk_decon_tv_eclk", 413 * 1000000);
+
+		hdmi_clk_set_parent("sclk_decon_tv_eclk_disp", "dout_sclk_decon_tv_eclk");
+		hdmi_clk_set_parent("mout_sclk_decon_tv_eclk_user", "sclk_decon_tv_eclk_disp");
+		hdmi_clk_set_parent("mout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_user");
+		hdmi_clk_set_parent("dout_sclk_decon_tv_eclk_disp", "mout_sclk_decon_tv_eclk");
+
+		hdmi_clk_set_rate("dout_sclk_decon_tv_eclk_disp", 413 * 1000000);
+
+		hdmi_clk_set_parent("mout_phyclk_hdmiphy_pixel_clko_user",
+				"phyclk_hdmiphy_pixel_clko_phy");
+		hdmi_clk_set_parent("mout_phyclk_hdmiphy_tmds_clko_user",
+				"phyclk_hdmiphy_tmds_clko_phy");
+		hdmi_clk_set_parent("phyclk_hdmi_pixel",
+				"mout_phyclk_hdmiphy_pixel_clko_user");
+		hdmi_clk_set_parent("phyclk_hdmiphy_tmds_clko",
+				"mout_phyclk_hdmiphy_tmds_clko_user");
+	} else {
+		hdmi_clk_set_parent("mout_phyclk_hdmiphy_pixel_clko_user", "oscclk");
+		hdmi_clk_set_parent("mout_phyclk_hdmiphy_tmds_clko_user", "oscclk");
+	}
+}
+
 static int hdmi_resources_init(struct hdmi_device *hdev)
 {
 	struct device *dev = hdev->dev;
 	struct hdmi_resources *res = &hdev->res;
-	int ret = 0;
 
 	dev_dbg(dev, "HDMI resource init\n");
 
@@ -603,23 +648,6 @@ static int hdmi_resources_init(struct hdmi_device *hdev)
 		dev_err(dev, "failed to get clock 'gate_hdmiphy'\n");
 		goto fail;
 	}
-
-	ret = hdmi_clk_set_parent("mout_phyclk_hdmiphy_pixel_clko_user",
-			"phyclk_hdmiphy_pixel_clko_phy");
-	if (ret)
-		goto fail;
-	ret = hdmi_clk_set_parent("mout_phyclk_hdmiphy_tmds_clko_user",
-			"phyclk_hdmiphy_tmds_clko_phy");
-	if (ret)
-		goto fail;
-	ret = hdmi_clk_set_parent("phyclk_hdmi_pixel",
-			"mout_phyclk_hdmiphy_pixel_clko_user");
-	if (ret)
-		goto fail;
-	ret = hdmi_clk_set_parent("phyclk_hdmiphy_tmds_clko",
-			"mout_phyclk_hdmiphy_tmds_clko_user");
-	if (ret)
-		goto fail;
 
 	return 0;
 fail:

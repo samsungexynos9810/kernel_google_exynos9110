@@ -50,6 +50,21 @@ void dex_shadow_protect(struct dex_device *dex, int idx, int en)
 		dex_write_mask(dex, SHADOWCON, 0, SHADOWCON_WINx_PROTECT(idx));
 }
 
+void dex_reg_sw_reset(struct dex_device *dex)
+{
+	dex_write_mask(dex, VIDCON0, 0, VIDCON0_SWRESET);
+	dex_write_mask(dex, VIDCON0, ~0, VIDCON0_SWRESET);
+}
+
+int dex_get_status(struct dex_device *dex)
+{
+	u32 val;
+	val = dex_read(dex, VIDCON0);
+	val &= VIDCON0_DECON_STOP_STATUS;
+
+	return val;
+}
+
 void dex_tv_update(struct dex_device *dex)
 {
 	dex_write_mask(dex, DECON_UPDATE, ~0, DECON_UPDATE_STANDALONE_F);

@@ -150,7 +150,8 @@ static int dex_enable(struct dex_device *dex)
 static int dex_disable(struct dex_device *dex)
 {
 	struct v4l2_subdev *hdmi_sd;
-	int ret = 0;
+	int val;
+	int ret = 0, timecnt = 2000;
 
 	dex_dbg("disable decon_tv\n");
 	mutex_lock(&dex->s_mutex);
@@ -169,6 +170,18 @@ static int dex_disable(struct dex_device *dex)
 	flush_kthread_worker(&dex->update_worker);
 
 	dex_reg_streamoff(dex);
+	do {
+		val = dex_get_status(dex);
+		timecnt--;
+	}
+	while (val && timecnt);
+
+	if (timecnt == 0)
+		dex_err("Failed to disable DECON-TV");
+	else
+		dev_info(dex->dev, "DECON-TV has stopped");
+
+	dex_reg_sw_reset(dex);
 
 	/* stop hdmi */
 	ret = v4l2_subdev_call(hdmi_sd, video, s_stream, 0);

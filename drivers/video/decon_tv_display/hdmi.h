@@ -386,6 +386,7 @@ const struct hdmi_3d_info *hdmi_timing2info(struct v4l2_dv_timings *timings);
 
 void s5p_v4l2_int_src_hdmi_hpd(struct hdmi_device *hdev);
 void s5p_v4l2_int_src_ext_hpd(struct hdmi_device *hdev);
+void hdmi_clock_change(struct hdmi_device *hdev, int on);
 
 irqreturn_t hdmi_irq_handler(int irq, void *dev_data);
 int hdmi_conf_apply(struct hdmi_device *hdmi_dev);
