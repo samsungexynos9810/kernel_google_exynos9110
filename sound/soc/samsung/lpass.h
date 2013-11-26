@@ -49,6 +49,15 @@
 #define LPASS_INTR_UART		(1 << 1)
 #define LPASS_INTR_SFR		(1 << 0)
 
+/* SYSREG_AUD */
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+#define SYSREG_AUD_BASE		(0x11460000)
+#else
+#define SYSREG_AUD_BASE		(0x114F0000)
+#endif
+#define AUD_NOC_DCG_EN		(0x200)
+#define AUD_XIU_TOP_DCG_EN	(0x204)
+
 extern void __iomem *lpass_get_regs(void);
 extern void __iomem *lpass_get_mem(void);
 
