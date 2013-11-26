@@ -185,3 +185,35 @@ int g2d_cci_snoop_control(int ip_ver
 
 	return 0;
 }
+
+int g2d_dynamic_clock_gating(int ip_ver)
+{
+	void __iomem *control_reg;
+
+	switch (ip_ver) {
+	case IP_VER_G2D_5H:
+		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_NOC_DCG_EN;
+		/* Enable ACLK_G2DND_400, ACLK_G2DNP_133 */
+		writel(0x3, control_reg);
+
+		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_XIU_TOP_DCG_EN;
+		/* Enable G2DX */
+		writel(0x1, control_reg);
+
+		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_AXI_US_DCG_EN;
+		/* Enable G2DX_S0 */
+		writel(0x1, control_reg);
+
+		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_XIU_ASYNC_DCG_EN;
+		/* Enable G2DX_S0 */
+		writel(0x1, control_reg);
+
+		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_DYN_CLKGATE_DISABLE;
+		/* Enable G2D */
+		writel(0x0, control_reg);
+
+		break;
+	}
+
+	return 0;
+}
