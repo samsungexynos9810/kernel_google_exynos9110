@@ -22,13 +22,19 @@
 
 #define EXYNOS5260_PA_SYSREG_G2D                0x10A20000
 #define EXYNOS5422_PA_SYSREG_G2D		0x10CE0000
-#define EXYNOS5430_PA_SYSREG_G2D                0x124C0000
+#define EXYNOS5430_PA_SYSREG_G2D		0x124C0000
 
 #define EXYNOS5430_G2D_USER_CON                 0x1000
 #define EXYNOS5430_G2DX_SHARED_VAL_MASK         (1 << 8)
 #define EXYNOS5430_G2DX_SHARED_VAL_SHIFT        (8)
 #define EXYNOS5430_G2DX_SHARED_SEL_MASK         (1 << 0)
 #define EXYNOS5430_G2DX_SHARED_SEL_SHIFT        (0)
+
+#define EXYNOS5430_G2D_NOC_DCG_EN		0x0200
+#define EXYNOS5430_G2D_XIU_TOP_DCG_EN		0x0204
+#define EXYNOS5430_G2D_AXI_US_DCG_EN		0x0208
+#define EXYNOS5430_G2D_XIU_ASYNC_DCG_EN		0x020C
+#define EXYNOS5430_G2D_DYN_CLKGATE_DISABLE	0x0500
 
 #define EXYNOS5260_G2D_USER_CON                 0x0000
 #define EXYNOS5260_G2D_AXUSER_SEL               0x0004
@@ -78,4 +84,5 @@ extern int g2d_cci_snoop_init(int ip_ver);
 extern void g2d_cci_snoop_remove(int ip_ver);
 extern int g2d_cci_snoop_control(int ip_ver
 		, enum g2d_shared_val val, enum g2d_shared_sel sel);
+extern int g2d_dynamic_clock_gating(int ip_ver);
 #endif /* __ASM_ARCH_FIMG2D_H */
