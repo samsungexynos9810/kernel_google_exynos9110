@@ -1816,19 +1816,19 @@ err_v4l2_dev:
 
 static int g2d_runtime_suspend(struct device *dev)
 {
-	g2d_dbg("[%s:%d] >>>>>>>>>>>>>>>>>>>>>>\n",
-			__func__, __LINE__);
 	return 0;
 }
 
 static int g2d_runtime_resume(struct device *dev)
 {
 	struct g2d_dev *g2d = dev_get_drvdata(dev);
-
-	g2d_dbg("[%s:%d] @@@@@@@@@@@@@@@@@@@@@\n",
-			__func__, __LINE__);
+	int ret = 0;
 
 	g2d_clock_resume(g2d);
+
+	ret = g2d_dynamic_clock_gating(IP_VER_G2D_5H);
+	if (ret)
+		dev_err(g2d->dev, "failed to g2d dynamic clock gating\n");
 
 	return 0;
 }
@@ -2098,13 +2098,19 @@ static int g2d_probe(struct platform_device *pdev)
 
 	g2d_clock_gating(g2d, G2D_CLK_ON);
 	g2d_clock_gating(g2d, G2D_CLK_OFF);
-#ifdef CONFIG_FIMG2D_CCI_SNOOP
+
 	ret = g2d_cci_snoop_init(IP_VER_G2D_5H);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to init g2d cci snoop\n");
 		goto err_clk_put;
 	}
-#endif
+
+	ret = g2d_dynamic_clock_gating(IP_VER_G2D_5H);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to g2d dynamic clock gating\n");
+		goto err_clk_put;
+	}
+
 	g2d->variant = &variant;
 
 	dev_info(&pdev->dev, "G2D registered successfully\n");
@@ -2129,9 +2135,8 @@ static int g2d_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 #endif
 	g2d_clk_put(g2d);
-#ifdef CONFIG_FIMG2D_CCI_SNOOP
 	g2d_cci_snoop_remove(IP_VER_G2D_5H);
-#endif
+
 	g2d->vb2->suspend(g2d->alloc_ctx);
 	g2d->vb2->suspend(g2d->alloc_ctx_cci);
 
