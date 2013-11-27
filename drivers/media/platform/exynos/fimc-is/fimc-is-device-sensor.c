@@ -999,6 +999,9 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 		module->ext.actuator_con.peri_setting.i2c.slave_address = actuator_addr;
 	}
 
+	module->ext.flash_con.peri_setting.gpio.first_gpio_port_no = device->pdata->flash_first_gpio;
+	module->ext.flash_con.peri_setting.gpio.second_gpio_port_no = device->pdata->flash_second_gpio;
+
 	/* Data Type For Comapnion:
 	 * Companion use user defined data type.
 	 */

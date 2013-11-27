@@ -272,6 +272,8 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 {
 	int ret = 0;
+	u32 temp;
+	char *pprop;
 	struct exynos_platform_fimc_is_sensor *pdata;
 	struct device_node *dnode;
 	struct device *dev;
@@ -349,6 +351,9 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 		err("id read is fail(%d)", ret);
 		goto p_err;
 	}
+
+	DT_READ_U32(dnode, "flash_first_gpio",   pdata->flash_first_gpio );
+	DT_READ_U32(dnode, "flash_second_gpio",  pdata->flash_second_gpio);
 
 	gpio_reset = of_get_named_gpio(dnode, "gpio_reset", 0);
 	if (!gpio_is_valid(gpio_reset)) {
