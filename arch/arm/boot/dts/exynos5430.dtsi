@@ -477,7 +477,7 @@
 		reg = <0x13A20000 0x1000>;
 		interrupts = <0 214 0>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 2123>, <&clock 2111>;
+		clocks = <&clock 2803>, <&clock 2111>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
 			winmap = <0xA>;
@@ -489,7 +489,7 @@
 		reg = <0x13A30000 0x1000>;
 		interrupts = <0 216 0>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 2123>, <&clock 2111>;
+		clocks = <&clock 2802>, <&clock 2111>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
 			winmap = <0x14>;
