@@ -376,7 +376,7 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 
 	if (!policy) {
 		ret = -EINVAL;
-		goto out;
+		goto no_policy;
 	}
 
 	freqs[cur]->cpu = cpu;
@@ -477,6 +477,7 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 
 out:
 	cpufreq_cpu_put(policy);
+no_policy:
 	return ret;
 }
 
