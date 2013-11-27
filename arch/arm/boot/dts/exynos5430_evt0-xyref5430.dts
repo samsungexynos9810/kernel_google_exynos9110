@@ -881,6 +881,7 @@
 		i2c_addr = <0x2020>;
 		flash_first_gpio = <2>;
 		flash_second_gpio = <3>;
+		is_bns = <0>;
 		status = "okay";
 	};
 
@@ -896,6 +897,7 @@
 		flite_ch = <1>;
 		i2c_ch = <0x1>;
 		i2c_addr = <0x20>;
+		is_bns = <0>;
 		status = "okay";
 	};
 
