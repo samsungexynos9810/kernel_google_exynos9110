@@ -131,6 +131,8 @@ static char *perfname(enum perf_desc id)
 		return "SFR";
 	case PERF_BLIT:
 		return "BLT";
+	case PERF_UNMAP:
+		return "UNMAP";
 	case PERF_TOTAL:
 		return "TOTAL";
 	default:

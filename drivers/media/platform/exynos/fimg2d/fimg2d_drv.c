@@ -27,12 +27,11 @@
 #include <linux/atomic.h>
 #include <linux/delay.h>
 #include <linux/of.h>
-#include <linux/exynos_iovmm.h>
 #include <asm/cacheflush.h>
 #include <plat/cpu.h>
 #include <plat/fimg2d.h>
 #include <linux/pm_runtime.h>
-//#include <mach/pm_interrupt_domains.h>
+#include <linux/exynos_iovmm.h>
 #include "fimg2d.h"
 #include "fimg2d_clk.h"
 #include "fimg2d_ctx.h"
@@ -424,8 +423,10 @@ static long fimg2d_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		fimg2d_debug("addr : %p, size : %d\n",
 				(void *)usr_dst->addr, usr_dst->size);
+#ifndef CCI_SNOOP
 		fimg2d_dma_unsync_inner(usr_dst->addr,
 				usr_dst->size, DMA_FROM_DEVICE);
+#endif
 		kfree(usr_dst);
 		mmput(mm);
 		break;
@@ -787,6 +788,12 @@ static int fimg2d_runtime_resume(struct device *dev)
 		ret = fimg2d_clk_set_gate(ctrl);
 		if (ret) {
 			fimg2d_err("failed to fimg2d_clk_set_gate()\n");
+			ret = -ENOENT;
+		}
+	} else if (ip_is_g2d_5h()) {
+		ret = exynos5430_fimg2d_clk_set(ctrl);
+		if (ret) {
+			fimg2d_err("failed to exynos5430_fimg2d_clk_set()\n");
 			ret = -ENOENT;
 		}
 	}

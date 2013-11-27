@@ -24,9 +24,6 @@
 #include <linux/mutex.h>
 #include <linux/pm_qos.h>
 #include <plat/fimg2d.h>
-#ifdef CCI_SNOOP
-#include <plat/cci.h>
-#endif
 
 #define FIMG2D_MINOR		(240)
 
@@ -438,6 +435,7 @@ enum perf_desc {
 	PERF_CACHE = 0,
 	PERF_SFR,
 	PERF_BLIT,
+	PERF_UNMAP,
 	PERF_TOTAL,
 	PERF_END
 };
@@ -526,6 +524,10 @@ struct fimg2d_control {
 	struct pm_qos_request exynos5_g2d_mif_qos;
 	struct pm_qos_request exynos5_g2d_int_qos;
 	struct fimg2d_platdata *pdata;
+	struct clk *clk_parn1;
+	struct clk *clk_parn2;
+	struct clk *clk_chld1;
+	struct clk *clk_chld2;
 
 	int (*blit)(struct fimg2d_control *ctrl);
 	int (*configure)(struct fimg2d_control *ctrl,

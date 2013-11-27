@@ -427,7 +427,6 @@ static void inner_flush_clip_range(struct fimg2d_bltcmd *cmd)
 	}
 }
 
-#if 0
 static void inner_touch_range(struct fimg2d_bltcmd *cmd)
 {
 	struct fimg2d_image *img;
@@ -458,7 +457,6 @@ static void inner_touch_range(struct fimg2d_bltcmd *cmd)
 		fimg2d_touch_range(c->addr, c->cached);
 	}
 }
-#endif
 #endif
 
 #ifdef CONFIG_OUTER_CACHE
@@ -590,16 +588,13 @@ static int fimg2d_check_dma_sync(struct fimg2d_bltcmd *cmd)
 #ifndef CCI_SNOOP
 	fimg2d_debug("cache flush\n");
 	perf_start(cmd, PERF_CACHE);
-#if 1
-	inner_flush_clip_range(cmd);
-#else
+
 	if (is_inner_flushall(cmd->dma_all)) {
 		inner_touch_range(cmd);
 		flush_all_cpu_caches();
 	} else {
 		inner_flush_clip_range(cmd);
 	}
-#endif
 
 #ifdef CONFIG_OUTER_CACHE
 	if (is_outer_flushall(cmd->dma_all))

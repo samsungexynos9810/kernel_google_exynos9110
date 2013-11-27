@@ -19,11 +19,11 @@
 #include <linux/rmap.h>
 #include <linux/fs.h>
 #include <linux/exynos_iovmm.h>
+#include <linux/clk-private.h>
 #include <asm/cacheflush.h>
 #ifdef CONFIG_PM_RUNTIME
 #include <plat/devs.h>
 #include <linux/pm_runtime.h>
-#include <plat/clock.h>
 #endif
 #include "fimg2d.h"
 #include "fimg2d_clk.h"
@@ -96,7 +96,7 @@ static int vma_lock_mapping_one(struct mm_struct *mm, unsigned long addr,
 			if (mapping_can_locked(
 					(unsigned long)anon | PAGE_MAPPING_ANON,
 					mappings, cnt)) {
-				//page_lock_anon_vma(page);
+				page_lock_anon_vma(page);
 				mappings[cnt++] = (unsigned long)page->mapping;
 			}
 			put_anon_vma(anon);
@@ -168,7 +168,7 @@ static void vma_unlock_mapping(void *__mappings)
 #ifdef CONFIG_PM_RUNTIME
 static int fimg2d4x_get_clk_cnt(struct clk *clk)
 {
-	return clk->usage;
+	return __clk_is_enabled(clk);
 }
 #endif
 
@@ -203,6 +203,25 @@ static void fimg2d4x_pre_bitblt(struct fimg2d_control *ctrl,
 		g2d_cci_snoop_control(ctrl->pdata->ip_ver,
 			       NON_SHAREABLE_PATH, SHARED_G2D_SEL);
 		break;
+
+	case IP_VER_G2D_5H:
+#ifndef CCI_SNOOP
+		/* disable cci path */
+		g2d_cci_snoop_control(ctrl->pdata->ip_ver,
+				NON_SHAREABLE_PATH, SHARED_FROM_SYSMMU);
+		fimg2d_debug("disable cci\n");
+#endif
+#ifdef CCI_SNOOP
+		/* enable cci path */
+		g2d_cci_snoop_control(ctrl->pdata->ip_ver,
+				SHAREABLE_PATH, SHARED_G2D_SEL);
+		fimg2d_debug("enable cci\n");
+#endif
+		break;
+
+	default:
+		fimg2d_err("g2d_cci_snoop_control is not called\n");
+		break;
 	}
 }
 
@@ -224,7 +243,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 		ctx = cmd->ctx;
 
 #ifdef CONFIG_PM_RUNTIME
-		if (fimg2d4x_get_clk_cnt(ctrl->clock) == 0)
+		if (fimg2d4x_get_clk_cnt(ctrl->clock) == false)
 			fimg2d_err("2D clock is not set\n");
 #endif
 
@@ -280,6 +299,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 		ret = fimg2d4x_blit_wait(ctrl, cmd);
 		perf_end(cmd, PERF_BLIT);
 
+		perf_start(cmd, PERF_UNMAP);
 		if (addr_type == ADDR_USER || addr_type == ADDR_USER_CONTIG) {
 #ifdef CONFIG_EXYNOS7_IOMMU
 			if (cmd->image[ISRC].addr.type) {
@@ -306,6 +326,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 #endif
 			fimg2d_debug("sysmmu disable\n");
 		}
+		perf_end(cmd, PERF_UNMAP);
 fail_n_del:
 		//vma_unlock_mapping(ctx->vma_lock);
 		fimg2d_del_command(ctrl, cmd);
