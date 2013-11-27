@@ -234,6 +234,8 @@ struct exynos_platform_fimc_is_sensor {
 	u32 i2c_ch;
 	u32 i2c_addr;
 	u32 is_bns;
+	u32 flash_first_gpio;
+	u32 flash_second_gpio;
 };
 
 extern int exynos_fimc_is_sensor_pins_cfg(struct platform_device *pdev,
