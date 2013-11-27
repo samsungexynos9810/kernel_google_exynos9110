@@ -68,6 +68,7 @@ static DEFINE_MUTEX(cpufreq_scale_lock);
 
 static bool exynos_cpufreq_init_done;
 static bool suspend_prepared = false;
+static bool hmp_boosted = false;
 
 /* Include CPU mask of each cluster */
 cluster_type exynos_boot_cluster;
@@ -831,11 +832,25 @@ static ssize_t store_cpufreq_min_limit(struct kobject *kobj, struct attribute *a
 		return -EINVAL;
 
 	if (cpu_input >= (int)freq_min[CA15]) {
-		/* TODO: enable HMP boost */
+		if (!hmp_boosted) {
+			if (set_hmp_boost(1) < 0)
+				pr_err("%s: failed HMP boost enable\n",
+							__func__);
+			else
+				hmp_boosted = true;
+		}
+
 		cpu_input = min(cpu_input, (int)freq_max[CA15]);
 		kfc_input = max_kfc_qos_const.default_value;
 	} else if (cpu_input < (int)freq_min[CA15]) {
-		/* TODO: disable HMP boost */
+		if (hmp_boosted) {
+			if (set_hmp_boost(0) < 0)
+				pr_err("%s: failed HMP boost disable\n",
+							__func__);
+			else
+				hmp_boosted = false;
+		}
+
 		if (cpu_input < 0) {
 			cpu_input = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE;
 			kfc_input = PM_QOS_KFC_FREQ_MIN_DEFAULT_VALUE;
