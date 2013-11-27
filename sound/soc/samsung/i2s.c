@@ -1267,6 +1267,10 @@ static int i2s_runtime_suspend(struct device *dev)
 	pr_debug("%s entered\n", __func__);
 
 	pinctrl = devm_pinctrl_get_select(dev, "idle");
+	if (IS_ERR(pinctrl)) {
+		dev_warn(dev, "did not get pins for i2s: %li\n",
+			PTR_ERR(pinctrl));
+	}
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
 	lpass_put_sync(dev);
@@ -1285,6 +1289,10 @@ static int i2s_runtime_resume(struct device *dev)
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
 	pinctrl = devm_pinctrl_get_select(dev, "default");
+	if (IS_ERR(pinctrl)) {
+		dev_warn(dev, "did not get pins for i2s: %li\n",
+			PTR_ERR(pinctrl));
+	}
 
 	return 0;
 }
@@ -1303,6 +1311,10 @@ static int i2s_disable(struct device *dev)
 	spin_unlock(&lock);
 
 	pinctrl = devm_pinctrl_get_select(dev, "idle");
+	if (IS_ERR(pinctrl)) {
+		dev_warn(dev, "did not get pins for i2s: %li\n",
+			PTR_ERR(pinctrl));
+	}
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
 	lpass_put_sync(dev);
@@ -1327,6 +1339,10 @@ static int i2s_enable(struct device *dev)
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
 	pinctrl = devm_pinctrl_get_select(dev, "default");
+	if (IS_ERR(pinctrl)) {
+		dev_warn(dev, "did not get pins for i2s: %li\n",
+			PTR_ERR(pinctrl));
+	}
 
 	return 0;
 }
@@ -1512,6 +1528,10 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 		}
 	} else {
 		pinctrl = devm_pinctrl_get_select(&pdev->dev, "idle");
+		if (IS_ERR(pinctrl)) {
+			dev_warn(&pdev->dev, "did not get pins for i2s: %li\n",
+				PTR_ERR(pinctrl));
+		}
 	}
 
 	snd_soc_register_component(&pri_dai->pdev->dev, &samsung_i2s_component,
