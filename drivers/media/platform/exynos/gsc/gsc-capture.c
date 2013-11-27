@@ -1188,7 +1188,7 @@ static int __gsc_cap_get_crop(struct gsc_dev *gsc, struct v4l2_subdev_fh *fh,
 	struct gsc_frame *frame = gsc_capture_get_frame(ctx, pad);
 
 	if (which == V4L2_SUBDEV_FORMAT_TRY) {
-		crop = v4l2_subdev_get_try_crop(fh, pad);
+		*crop = *v4l2_subdev_get_try_crop(fh, pad);
 	} else {
 		crop->left = frame->crop.left;
 		crop->top = frame->crop.top;

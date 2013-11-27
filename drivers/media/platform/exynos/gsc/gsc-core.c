@@ -1637,7 +1637,7 @@ static int gsc_probe(struct platform_device *pdev)
 		}
 	}
 
-	if (gsc->id < 0 || gsc->id >= drv_data->num_entities) {
+	if (gsc->id >= drv_data->num_entities) {
 		dev_err(dev, "Invalid platform device id: %d\n", gsc->id);
 		return -EINVAL;
 	}
