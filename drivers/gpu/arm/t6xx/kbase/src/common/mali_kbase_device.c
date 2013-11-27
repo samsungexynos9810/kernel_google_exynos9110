@@ -493,9 +493,6 @@ bool check_trace_code(kbase_trace_code code)
 	unsigned int temp = code;
 	switch(temp) {
 		case KBASE_TRACE_CODE(CORE_CTX_DESTROY):
-		case KBASE_TRACE_CODE(CORE_GPU_IRQ):
-		case KBASE_TRACE_CODE(CORE_GPU_IRQ_CLEAR):
-		case KBASE_TRACE_CODE(CORE_GPU_IRQ_DONE):
 		case KBASE_TRACE_CODE(CORE_GPU_SOFT_RESET):
 		case KBASE_TRACE_CODE(CORE_GPU_HARD_RESET):
 		case KBASE_TRACE_CODE(JM_SOFTSTOP):
@@ -506,6 +503,7 @@ bool check_trace_code(kbase_trace_code code)
 		case KBASE_TRACE_CODE(LSI_RESUME):
 		case KBASE_TRACE_CODE(LSI_CLOCK_VALUE):
 		case KBASE_TRACE_CODE(LSI_TMU_VALUE):
+		case KBASE_TRACE_CODE(LSI_VOL_VALUE):
 			return true;
 		default:
 			return false;

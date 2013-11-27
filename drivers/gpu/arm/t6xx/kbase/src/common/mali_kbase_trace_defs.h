@@ -222,6 +222,7 @@ int dummy_array[] = {
 	KBASE_TRACE_CODE_MAKE_CODE(LSI_RESUME), /* resume */
 	KBASE_TRACE_CODE_MAKE_CODE(LSI_CLOCK_VALUE), /* clock */
 	KBASE_TRACE_CODE_MAKE_CODE(LSI_TMU_VALUE), /* TMU LOCK info */
+	KBASE_TRACE_CODE_MAKE_CODE(LSI_VOL_VALUE), /* voltage */
 /* Unused code just to make it easier to not have a comma at the end.
  * All other codes MUST come before this */
 	KBASE_TRACE_CODE_MAKE_CODE(DUMMY)

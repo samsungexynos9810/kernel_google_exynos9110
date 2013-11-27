@@ -280,6 +280,7 @@ static int gpu_set_clock(struct exynos_context *platform, int freq)
 	} while (tmp & 0x10000);
 
 	gpu_update_clock(platform);
+	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_VALUE, NULL, NULL, 0u, g3d_rate/MHZ);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock set: %ld\n", g3d_rate / MHZ);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock get: %d\n", platform->cur_clock);
 err:
@@ -410,6 +411,7 @@ static int gpu_set_voltage(struct exynos_context *platform, int vol)
 	_vol = vol;
 
 	gpu_update_voltage(platform);
+	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_VOL_VALUE, NULL, NULL, 0u, vol);
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage set:%d\n", vol);
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage get:%d\n", platform->cur_voltage);
 
