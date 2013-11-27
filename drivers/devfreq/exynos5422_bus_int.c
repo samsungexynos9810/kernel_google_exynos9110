@@ -31,8 +31,7 @@
 
 #include "devfreq_exynos.h"
 #include <plat/pll.h>
-
-#include "exynos5422_ppmu.h"
+#include "noc_probe.h"
 
 #define INT_VOLT_STEP		12500
 #define COLD_VOLT_OFFSET	37500
@@ -44,6 +43,15 @@ static struct pm_qos_request boot_int_qos;
 
 cputime64_t int_pre_time;
 
+/* NoC list for INT block */
+static LIST_HEAD(int_noc_list);
+
+/* restore noc probe */
+void exynos5_int_nocp_resume(void)
+{
+	resume_nocp(&int_noc_list);
+}
+EXPORT_SYMBOL_GPL(exynos5_int_nocp_resume);
 
 enum int_bus_idx {
 	LV_0 = 0,
@@ -124,7 +132,6 @@ struct busfreq_data_int {
 	bool ipll_enabled;
 	unsigned int volt_offset;
 	struct regulator *vdd_int;
-	struct exynos5_ppmu_handle *ppmu;
 
 	struct notifier_block tmu_notifier;
 	int busy;
@@ -682,10 +689,9 @@ static int exynos5_int_bus_get_dev_status(struct device *dev,
 				      struct devfreq_dev_status *stat)
 {
 	struct busfreq_data_int *data = dev_get_drvdata(dev);
-	unsigned long busy_data;
-	unsigned int int_ccnt = 0;
-	unsigned long int_pmcnt = 0;
+	struct nocp_cnt tmp_nocp_cnt;
 
+	nocp_get_aver_cnt(&int_noc_list, &tmp_nocp_cnt);
 
 	rcu_read_lock();
 	stat->current_frequency = opp_get_freq(data->curr_opp);
@@ -695,15 +701,46 @@ static int exynos5_int_bus_get_dev_status(struct device *dev,
 	 * Bandwidth of memory interface is 128bits
 	 * So bus can transfer 16bytes per cycle
 	 */
+	tmp_nocp_cnt.total_byte_cnt >>= 4;
 
-	busy_data = exynos5_ppmu_get_busy(data->ppmu, PPMU_SET_TOP,
-					&int_ccnt, &int_pmcnt);
-
-	stat->total_time = int_ccnt;
-	stat->busy_time = int_pmcnt;
+	stat->total_time = tmp_nocp_cnt.cycle_cnt;
+	stat->busy_time = tmp_nocp_cnt.total_byte_cnt;
 
 	return 0;
 }
+
+struct nocp_info nocp_mem0_0 = {
+	.name		= "mem0_0",
+	.id		= MEM0_0,
+	.pa_base	= NOCP_BASE(MEM0_0),
+};
+
+struct nocp_info nocp_mem0_1 = {
+	.name		= "mem0_1",
+	.id		= MEM0_1,
+	.pa_base	= NOCP_BASE(MEM0_1),
+	.weight		= 5,
+};
+
+struct nocp_info nocp_mem1_0 = {
+	.name		= "mem1_0",
+	.id		= MEM1_0,
+	.pa_base	= NOCP_BASE(MEM1_0),
+};
+
+struct nocp_info nocp_mem1_1 = {
+	.name		= "mem1_1",
+	.id		= MEM1_1,
+	.pa_base	= NOCP_BASE(MEM1_1),
+	.weight		= 5,
+};
+
+struct nocp_info *exynos5_int_nocp_list[] = {
+	&nocp_mem0_0,
+	&nocp_mem0_1,
+	&nocp_mem1_0,
+	&nocp_mem1_1, /* TODO: apply mem1_1 to int? */
+};
 
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 static struct devfreq_simple_ondemand_data exynos5_int_governor_data = {
@@ -981,7 +1018,11 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 		}
 	}
 
+	/* Initialization NoC for INT block */
+	regist_nocp(&int_noc_list, exynos5_int_nocp_list,
+			ARRAY_SIZE(exynos5_int_nocp_list), NOCP_USAGE_INT);
 	rcu_read_lock();
+
 	opp = opp_find_freq_floor(dev, &exynos5_int_devfreq_profile.initial_freq);
 	if (IS_ERR(opp)) {
 		rcu_read_unlock();
@@ -1005,9 +1046,6 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, data);
 
-	data->ppmu = exynos5_ppmu_get();
-	if (!data->ppmu)
-		goto err_opp_add;
 
 #if defined(CONFIG_DEVFREQ_GOV_USERSPACE)
 	data->devfreq = devfreq_add_device(dev, &exynos5_int_devfreq_profile,
@@ -1035,6 +1073,8 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	pdata = pdev->dev.platform_data;
 	if (!pdata)
 		pdata = &default_qos_int_pd;
+
+	bw_monitor_create_sysfs(&data->devfreq->dev.kobj);
 
 	clk_enable(data->fout_spll);
 	data->spll_enabled = true;
@@ -1117,6 +1157,7 @@ static int exynos5_devfreq_int_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
+	resume_nocp(&int_noc_list);
 	if (pm_qos_request_active(&exynos5_int_qos))
 		pm_qos_update_request(&exynos5_int_qos, pdata->default_qos);
 

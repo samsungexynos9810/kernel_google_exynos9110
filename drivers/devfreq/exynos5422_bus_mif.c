@@ -39,7 +39,7 @@
 #include <mach/tmu.h>
 
 #include <plat/pll.h>
-#include "noc_probe.h"
+#include "exynos5422_ppmu.h"
 
 #define SET_DREX_TIMING
 
@@ -80,8 +80,6 @@ cputime64_t mif_pre_time;
 static struct pm_qos_request exynos5_int_qos;
 extern struct pm_qos_request exynos5_cpu_mif_qos;
 
-/* NoC list for MIF block */
-static LIST_HEAD(mif_noc_list);
 static DEFINE_MUTEX(media_mutex);
 
 unsigned int timeout_fullhd[][2] = {
@@ -121,6 +119,7 @@ struct busfreq_data_mif {
 	struct regulator *vdd_mif;
 	unsigned long mspll_freq;
 	unsigned long mspll_volt;
+	struct exynos5_ppmu_handle *ppmu;
 
 	struct notifier_block tmu_notifier;
 	int busy;
@@ -238,12 +237,6 @@ int exynos5_mif_bpll_transition_notify(struct devfreq_info *info, unsigned int s
 }
 EXPORT_SYMBOL_GPL(exynos5_mif_bpll_transition_notify);
 
-/* restore noc probe */
-void exynos5_mif_nocp_resume(void)
-{
-	resume_nocp(&mif_noc_list);
-}
-EXPORT_SYMBOL_GPL(exynos5_mif_nocp_resume);
 
 void exynos5_mif_transition_disable(bool disable)
 {
@@ -651,9 +644,10 @@ out:
 static int exynos5_mif_bus_get_dev_status(struct device *dev,
 		struct devfreq_dev_status *stat)
 {
-	struct nocp_cnt tmp_nocp_cnt;
 	struct busfreq_data_mif *data = dev_get_drvdata(dev);
-	nocp_get_aver_cnt(&mif_noc_list, &tmp_nocp_cnt);
+	unsigned long busy_data;
+	unsigned int int_ccnt = 0;
+	unsigned long int_pmcnt = 0;
 
 	rcu_read_lock();
 	stat->current_frequency = opp_get_freq(data->curr_opp);
@@ -663,13 +657,18 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 	 * Bandwidth of memory interface is 128bits
 	 * So bus can transfer 16bytes per cycle
 	 */
-	tmp_nocp_cnt.total_byte_cnt >>= 4;
+	busy_data = exynos5_ppmu_get_busy(data->ppmu, PPMU_SET_DDR,
+					&int_ccnt, &int_pmcnt);
 
-	stat->total_time = tmp_nocp_cnt.cycle_cnt;
-	stat->busy_time = tmp_nocp_cnt.total_byte_cnt;
+	/* TODO: ppmu will return 0, when after suspend/resume */
+	if(!(int_ccnt | int_pmcnt))
+		return 0;
+
+	stat->total_time = int_ccnt;
+	stat->busy_time = int_pmcnt;
 
 	if (en_profile)
-		pr_info("%lu,%lu\n", tmp_nocp_cnt.total_byte_cnt, tmp_nocp_cnt.cycle_cnt);
+		pr_info("%lu,%lu\n", stat->busy_time, stat->total_time);
 
 	return 0;
 }
@@ -708,39 +707,6 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 
 	return 0;
 }
-
-struct nocp_info nocp_mem0_0 = {
-	.name		= "mem0_0",
-	.id		= MEM0_0,
-	.pa_base	= NOCP_BASE(MEM0_0),
-};
-
-struct nocp_info nocp_mem0_1 = {
-	.name		= "mem0_1",
-	.id		= MEM0_1,
-	.pa_base	= NOCP_BASE(MEM0_1),
-	.weight		= 5,
-};
-
-struct nocp_info nocp_mem1_0 = {
-	.name		= "mem1_0",
-	.id		= MEM1_0,
-	.pa_base	= NOCP_BASE(MEM1_0),
-};
-
-struct nocp_info nocp_mem1_1 = {
-	.name		= "mem1_1",
-	.id		= MEM1_1,
-	.pa_base	= NOCP_BASE(MEM1_1),
-	.weight		= 5,
-};
-
-struct nocp_info *exynos5_mif_nocp_list[] = {
-	&nocp_mem0_0,
-	&nocp_mem0_1,
-	&nocp_mem1_0,
-	&nocp_mem1_1,
-};
 
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
 static struct devfreq_simple_usage_data exynos5_mif_governor_data = {
@@ -1124,9 +1090,10 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	clk_enable(data->clkm_phy0);
 	clk_enable(data->clkm_phy1);
 
-	/* Initialization NoC for MIF block */
-	regist_nocp(&mif_noc_list, exynos5_mif_nocp_list,
-			ARRAY_SIZE(exynos5_mif_nocp_list), NOCP_USAGE_MIF);
+
+	data->ppmu = exynos5_ppmu_get();
+	if (!data->ppmu)
+		goto err_opp_add;
 
 	rcu_read_lock();
 	opp = opp_find_freq_floor(dev, &exynos5_mif_devfreq_profile.initial_freq);
@@ -1203,7 +1170,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	if (err)
 		pr_err("%s: Fail to create sysfs file\n", __func__);
 
-	bw_monitor_create_sysfs(&data->devfreq->dev.kobj);
 
 	pdata = pdev->dev.platform_data;
 	if (!pdata)
@@ -1296,8 +1262,6 @@ static int exynos5_devfreq_resume(struct device *dev)
 	tmp = __raw_readl(EXYNOS5_DMC_PAUSE_CTRL);
 	tmp |= EXYNOS5_DMC_PAUSE_ENABLE;
 	__raw_writel(tmp, EXYNOS5_DMC_PAUSE_CTRL);
-
-	resume_nocp(&mif_noc_list);
 
 	exynos5_set_spll_timing();
 	exynos5_back_pressure_enable(false);
