@@ -338,6 +338,12 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 		goto p_err;
 	}
 
+	ret = of_property_read_u32(dnode, "is_bns", &pdata->is_bns);
+	if (ret) {
+		err("is_bns read is fail(%d)", ret);
+		goto p_err;
+	}
+
 	ret = of_property_read_u32(dnode, "id", &id);
 	if (ret) {
 		err("id read is fail(%d)", ret);

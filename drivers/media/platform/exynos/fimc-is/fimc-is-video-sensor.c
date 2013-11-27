@@ -503,10 +503,8 @@ static int fimc_is_sen_video_s_ctrl(struct file *file, void *priv,
 		}
 		break;
 	case V4L2_CID_IS_S_BNS:
-		if (device->pdata->flite_ch != FLITE_ID_A) {
-			merr("Can`t support BNS at FIMC-LITE CH%d",
-				device, device->pdata->flite_ch);
-			ret = -EINVAL;
+		if (device->pdata->is_bns == false) {
+			mwarn("Could not support BNS\n", device);
 			goto p_err;
 		}
 
