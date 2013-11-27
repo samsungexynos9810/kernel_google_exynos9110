@@ -851,6 +851,8 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 			timeout_table = timeout_wqhd_tv;
 
 			wqhd_tv_window5 = (total_layer_count == NUM_LAYER_5);
+		} else {
+			wqhd_tv_window5 = false;
 		}
 		if (!media_enabled_fimc_lite && !media_enabled_gscl_local && !media_enabled_tv)
 			timeout_table = timeout_wqhd;
@@ -1048,29 +1050,31 @@ static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
 		return -EINVAL;
 	}
 
-	if (!wqhd_tv_window5 &&
+	if (wqhd_tv_window5 &&
 		target_idx == LV1) {
 		__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xD0);
 		__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xC8);
 		__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xC0);
+		__raw_writel(timeout_table[LV3][1], data->base_drex0 + 0x100);
 	} else {
 		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
 		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC8);
 		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC0);
+		__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
 	}
-	__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
 
-	if (!wqhd_tv_window5 &&
+	if (wqhd_tv_window5 &&
 		target_idx == LV1) {
 		__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xD0);
 		__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xC8);
 		__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xC0);
+		__raw_writel(timeout_table[LV3][1], data->base_drex1 + 0x100);
 	} else {
 		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
 		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC8);
 		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC0);
+		__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
 	}
-	__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
 
 	return 0;
 }
