@@ -77,6 +77,8 @@ struct protect_info {
 
 static int secmem_open(struct inode *inode, struct file *file)
 {
+	int ret;
+	static int iso_count = 0;
 	struct miscdevice *miscdev = file->private_data;
 	struct device *dev = miscdev->this_device;
 	struct secmem_info *info;
@@ -91,6 +93,19 @@ static int secmem_open(struct inode *inode, struct file *file)
 	mutex_lock(&drm_lock);
 	instance_count++;
 	mutex_unlock(&drm_lock);
+
+	if (!iso_count) {
+		ret = ion_exynos_contig_heap_isolate(ION_EXYNOS_ID_SECTBL);
+		if (ret < 0) {
+			pr_err("%s: Fail to isolate reserve region. id = %d\n",
+						__func__, ION_EXYNOS_ID_SECTBL);
+			return -ENODEV;
+		}
+		iso_count = 1;
+		pr_debug("%s: reserve region is isolated. id = %d\n",
+						__func__, ION_EXYNOS_ID_SECTBL);
+	}
+
 	return 0;
 }
 
@@ -102,14 +117,20 @@ static void drm_enable_locked(struct secmem_info *info, bool enable)
 	if (drm_onoff != enable) {
 		if (enable) {
 			for (idx = 0; idx < nbufs; idx++) {
+				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL)
+					continue;
 				ret = ion_exynos_contig_heap_isolate(secmem_regions[idx]);
 				if (ret < 0)
 					printk("Fail to isolate reserve region. id = %d\n",
 									secmem_regions[idx]);
 			}
 		} else {
-			for (idx = 0; idx < nbufs; idx++)
+			for (idx = 0; idx < nbufs; idx++) {
+				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL)
+					continue;
 				ion_exynos_contig_heap_deisolate(secmem_regions[idx]);
+			}
+
 		}
 		drm_onoff = enable;
 		/*
