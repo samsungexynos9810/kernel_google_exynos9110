@@ -1447,8 +1447,11 @@ static int dw_mci_get_ro(struct mmc_host *mmc)
 static int dw_mci_get_cd(struct mmc_host *mmc)
 {
 	int present;
+	int temp;
 	struct dw_mci_slot *slot = mmc_priv(mmc);
-	struct dw_mci_board *brd = slot->host->pdata;
+	struct dw_mci *host = slot->host;
+	struct dw_mci_board *brd = host->pdata;
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
 
 	/* Use platform get_cd function, else try onboard card detect */
 	if (brd->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
@@ -1456,14 +1459,14 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
 	else if (brd->get_cd)
 		present = !brd->get_cd(slot->id);
 	else
-		present = (mci_readl(slot->host, CDETECT) & (1 << slot->id))
+		present = (mci_readl(host, CDETECT) & (1 << slot->id))
 			== 0 ? 1 : 0;
 
-	if (gpio_is_valid(brd->cd_gpio)) {
-		if (!gpio_get_value(brd->cd_gpio))
-			present = 1;
-		else
-			present = 0;
+	if (drv_data && drv_data->misc_control) {
+		temp = drv_data->misc_control(host,
+				CTRL_CHECK_CD_GPIO, NULL);
+		if (temp != -1)
+			present = temp;
 	}
 
 	if (present)
@@ -3425,7 +3428,6 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int idx, ret;
 	u32 clock_frequency;
-	int ext_cd_irq = 0;
 
 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
@@ -3527,23 +3529,6 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "supports-sdr104-mode", NULL))
 		pdata->caps |= MMC_CAP_UHS_SDR104;
 
-	pdata->cd_gpio = of_get_named_gpio(np, "cd-gpio", 0);
-
-	if (gpio_is_valid(pdata->cd_gpio) &&
-			!gpio_request(pdata->cd_gpio, "DWMCI_EXT_CD")) {
-		ext_cd_irq = gpio_to_irq(pdata->cd_gpio);
-		if (ext_cd_irq &&
-				devm_request_irq(host->dev, ext_cd_irq,
-					dw_mci_detect_interrupt,
-					IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
-					"tflash_det", host) == 0) {
-			dev_warn(host->dev, "success to request irq for card detect.\n");
-			enable_irq_wake(ext_cd_irq);
-		} else
-			dev_warn(host->dev, "cannot request irq for card detect.\n");
-
-	}
-
 	return pdata;
 }
 
@@ -3563,7 +3548,7 @@ int dw_mci_probe(struct dw_mci *host)
 	bool clock_enabled = false;
 
 	if (drv_data && drv_data->misc_control)
-		drv_data->misc_control(host, CTRL_TURN_ON_2_8V);
+		drv_data->misc_control(host, CTRL_TURN_ON_2_8V, NULL);
 
 	if (!host->pdata) {
 		host->pdata = dw_mci_parse_dt(host);
@@ -3572,6 +3557,10 @@ int dw_mci_probe(struct dw_mci *host)
 			return -EINVAL;
 		}
 	}
+
+	if (drv_data && drv_data->misc_control)
+		drv_data->misc_control(host, CTRL_REQUEST_EXT_IRQ,
+				dw_mci_detect_interrupt);
 
 	if (!host->pdata->select_slot && host->pdata->num_slots > 1) {
 		dev_err(host->dev,
@@ -4029,7 +4018,8 @@ int dw_mci_resume(struct dw_mci *host)
 			dw_mci_setup_bus(slot, true);
 			if (host->pdata->tuned) {
 				if (drv_data && drv_data->misc_control)
-					drv_data->misc_control(host, CTRL_SET_CLK_SAMPLE);
+					drv_data->misc_control(host,
+						CTRL_SET_CLK_SAMPLE, NULL);
 				mci_writel(host, CDTHRCTL,
 						host->cd_rd_thr << 16 | 1);
 			}

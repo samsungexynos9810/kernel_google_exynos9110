@@ -20,6 +20,7 @@
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
 #include <linux/slab.h>	/* for kmalloc/kfree prototype */
+#include <linux/interrupt.h>
 
 #include <plat/gpio-cfg.h>
 
@@ -489,6 +490,8 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	of_property_read_u32(np, "samsung,dw-mshc-ciu-div", &div);
 	priv->ciu_div = div;
 
+	priv->cd_gpio = of_get_named_gpio(np, "cd-gpio", 0);
+
 	ret = of_property_read_u32_array(np,
 			"samsung,dw-mshc-sdr-timing", timing, 3);
 	if (ret)
@@ -925,8 +928,47 @@ static int dw_mci_exynos_turn_on_2_8v(struct dw_mci *host)
 	return ret;
 }
 
-static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_control control)
+static int dw_mci_exynos_request_ext_irq(struct dw_mci *host,
+					irq_handler_t func)
 {
+	struct dw_mci_exynos_priv_data *priv = host->priv;
+	int ext_cd_irq = 0;
+
+	if (gpio_is_valid(priv->cd_gpio) &&
+			!gpio_request(priv->cd_gpio, "DWMCI_EXT_CD")) {
+		ext_cd_irq = gpio_to_irq(priv->cd_gpio);
+		if (ext_cd_irq &&
+				devm_request_irq(host->dev, ext_cd_irq, func,
+					IRQF_TRIGGER_RISING |
+					IRQF_TRIGGER_FALLING |
+					IRQF_ONESHOT,
+					"tflash_det", host) == 0) {
+			dev_warn(host->dev, "success to request irq for card detect.\n");
+			enable_irq_wake(ext_cd_irq);
+		} else
+			dev_warn(host->dev, "cannot request irq for card detect.\n");
+
+	}
+
+	return 0;
+}
+
+static int dw_mci_exynos_check_cd_gpio(struct dw_mci *host)
+{
+	int ret = -1;
+	struct dw_mci_exynos_priv_data *priv = host->priv;
+
+	if (gpio_is_valid(priv->cd_gpio))
+		ret = gpio_get_value(priv->cd_gpio)? 0 : 1;
+
+	return ret;
+}
+
+static int dw_mci_exynos_misc_control(struct dw_mci *host,
+		enum dw_mci_misc_control control, void *priv)
+{
+	int ret = 0;
+
 	switch (control) {
 	case CTRL_SET_CLK_SAMPLE:
 		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
@@ -934,12 +976,18 @@ static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_cont
 	case CTRL_TURN_ON_2_8V:
 		dw_mci_exynos_turn_on_2_8v(host);
 		break;
+	case CTRL_REQUEST_EXT_IRQ:
+		dw_mci_exynos_request_ext_irq(host, (irq_handler_t)priv);
+		break;
+	case CTRL_CHECK_CD_GPIO:
+		ret = dw_mci_exynos_check_cd_gpio(host);
+		break;
 	default:
 		dev_err(host->dev, "dw_mmc exynos: wrong case\n");
 		return -ENODEV;
 	}
 
-	return 0;
+	return ret;
 }
 
 /* Common capabilities of Exynos4/Exynos5 SoC */

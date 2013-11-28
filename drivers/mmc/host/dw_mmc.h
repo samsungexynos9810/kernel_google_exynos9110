@@ -217,6 +217,8 @@
 enum dw_mci_misc_control {
 	CTRL_SET_CLK_SAMPLE = 0,
 	CTRL_TURN_ON_2_8V,
+	CTRL_REQUEST_EXT_IRQ,
+	CTRL_CHECK_CD_GPIO,
 };
 
 extern int dw_mci_probe(struct dw_mci *host);
@@ -251,7 +253,8 @@ struct dw_mci_drv_data {
 	int		(*parse_dt)(struct dw_mci *host);
 	void		(*cfg_smu)(struct dw_mci *host);
 	int		(*execute_tuning)(struct dw_mci *host, u32 opcode);
-	int		(*misc_control)(struct dw_mci *host, enum dw_mci_misc_control control);
+	int		(*misc_control)(struct dw_mci *host,
+			enum dw_mci_misc_control control, void *priv);
 	void		(*register_notifier)(struct dw_mci *host);
 	void		(*unregister_notifier)(struct dw_mci *host);
 };

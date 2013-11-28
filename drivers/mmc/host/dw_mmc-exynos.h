@@ -101,6 +101,7 @@ struct dw_mci_exynos_priv_data {
 	int			drv_str_val;
 	int			drv_str_base_val;
 	u32			drv_str_num;
+	int			cd_gpio;
 };
 
 /*
