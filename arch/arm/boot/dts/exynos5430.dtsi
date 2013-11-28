@@ -1181,8 +1181,14 @@
 		compatible = "samsung,fimp_v4";
 		reg = <0x15020000 0x10000>;
 		interrupts = <0 411 0>;
-		clock-names = "gate_jpeg", "mout_aclk_mscl_400_user", "aclk_mscl_400", "mout_sclk_jpeg_user", "dout_sclk_jpeg";
-		clocks = <&clock 2392>, <&clock 3116>, <&clock 346>, <&clock 3117>, <&clock 4077>;
+		clock-names = "gate_jpeg",
+			"mout_aclk_mscl_400_user", "aclk_mscl_400",
+			"mout_sclk_jpeg_user", "sclk_jpeg_mscl",
+			"mout_sclk_jpeg", "mout_sclk_jpeg_user";
+		clocks = <&clock 2392>,
+		       <&clock 3115>, <&clock 346>,
+		       <&clock 3116>, <&clock 20>,
+		       <&clock 3117>, <&clock 3116>;
 		iommu = <&sysmmu_jpeg>;
 		ip_ver = <2>;
 	};
