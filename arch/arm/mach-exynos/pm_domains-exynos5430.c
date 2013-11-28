@@ -13,9 +13,16 @@
  * published by the Free Software Foundation.
  */
 
+#include <plat/pm.h>
+
 #include <mach/pm_domains.h>
 
 #ifdef CONFIG_SOC_EXYNOS5430
+static struct sleep_save exynos_pd_maudio_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD1),
+};
+
 /* exynos_pd_maudio_power_on_post - callback after power on.
  * @pd: power domain.
  *
@@ -25,15 +32,34 @@ static int exynos_pd_maudio_power_on_post(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
+	s3c_pm_do_restore_core(exynos_pd_maudio_clk_save,
+			ARRAY_SIZE(exynos_pd_maudio_clk_save));
+
 	reg = (1<<28);
 	__raw_writel(reg, EXYNOS_PAD_RET_MAUDIO_OPTION);
 
 	return 0;
 }
 
+static int exynos_pd_maudio_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_maudio_clk_save,
+			ARRAY_SIZE(exynos_pd_maudio_clk_save));
+
+	return 0;
+}
+
+static struct sleep_save exynos_pd_g3d_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G3D0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G3D1),
+};
+
 static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
 	unsigned long timeout;
+
+	s3c_pm_do_restore_core(exynos_pd_g3d_clk_save,
+			ARRAY_SIZE(exynos_pd_g3d_clk_save));
 
 	DEBUG_PRINT_INFO("EXYNOS5430_DIV_G3D: %08x\n", __raw_readl(EXYNOS5430_DIV_G3D));
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
@@ -58,6 +84,20 @@ static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static int exynos_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_g3d_clk_save,
+			ARRAY_SIZE(exynos_pd_g3d_clk_save));
+
+	return 0;
+}
+
+static struct sleep_save exynos_pd_mfc0_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC00),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC01),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC0_SECURE_SMMU_MFC),
+};
+
 /* exynos_pd_mfc0_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -70,6 +110,22 @@ static int exynos_pd_mfc0_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<1);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+static int exynos_pd_mfc0_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_mfc0_clk_save,
+			ARRAY_SIZE(exynos_pd_mfc0_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_mfc0_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_mfc0_clk_save,
+			ARRAY_SIZE(exynos_pd_mfc0_clk_save));
 
 	return 0;
 }
@@ -90,6 +146,12 @@ static int exynos_pd_mfc0_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_mfc1_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC10),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC11),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC1_SECURE_SMMU_MFC),
+};
+
 /* exynos_pd_mfc1_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -102,6 +164,22 @@ static int exynos_pd_mfc1_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<2);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+static int exynos_pd_mfc1_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_mfc1_clk_save,
+			ARRAY_SIZE(exynos_pd_mfc1_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_mfc1_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_mfc1_clk_save,
+			ARRAY_SIZE(exynos_pd_mfc1_clk_save));
 
 	return 0;
 }
@@ -122,6 +200,12 @@ static int exynos_pd_mfc1_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_hevc_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_HEVC0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_HEVC1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_HEVC_SECURE_SMMU_HEVC),
+};
+
 /* exynos_pd_hevc_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -134,6 +218,22 @@ static int exynos_pd_hevc_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<3);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_hevc_clk_save,
+			ARRAY_SIZE(exynos_pd_hevc_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_hevc_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_hevc_clk_save,
+			ARRAY_SIZE(exynos_pd_hevc_clk_save));
 
 	return 0;
 }
@@ -154,6 +254,14 @@ static int exynos_pd_hevc_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_gscl_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL2),
+};
+
 /* exynos_pd_gscl_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -166,6 +274,22 @@ static int exynos_pd_gscl_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<7);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+static int exynos_pd_gscl_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_gscl_clk_save,
+			ARRAY_SIZE(exynos_pd_gscl_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_gscl_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_gscl_clk_save,
+			ARRAY_SIZE(exynos_pd_gscl_clk_save));
 
 	return 0;
 }
@@ -186,6 +310,11 @@ static int exynos_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_disp_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_DISP0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_DISP1),
+};
+
 /* exynos_pd_disp_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -198,6 +327,14 @@ static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
 	reg |= (1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
+
+	return 0;
+}
+
+static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_disp_clk_save,
+			ARRAY_SIZE(exynos_pd_disp_clk_save));
 
 	return 0;
 }
@@ -232,6 +369,10 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 	np = NULL;
 	decon_addr = NULL;
 #endif
+
+	s3c_pm_do_save(exynos_pd_disp_clk_save,
+			ARRAY_SIZE(exynos_pd_disp_clk_save));
+
 	return 0;
 }
 
@@ -255,6 +396,14 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_mscl_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_JPEG),
+};
+
 /* exynos_pd_mscl_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -268,6 +417,22 @@ static int exynos_pd_mscl_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<10);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_mscl_clk_save,
+			ARRAY_SIZE(exynos_pd_mscl_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_mscl_clk_save,
+			ARRAY_SIZE(exynos_pd_mscl_clk_save));
 
 	return 0;
 }
@@ -289,6 +454,12 @@ static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_g2d_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G2D0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G2D1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G2D_SECURE_SMMU_G2D),
+};
+
 /* exynos_pd_g2d_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -302,6 +473,22 @@ static int exynos_pd_g2d_power_on_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_TOP);
 	reg |= (1<<0);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
+
+	return 0;
+}
+
+static int exynos_pd_g2d_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_g2d_clk_save,
+			ARRAY_SIZE(exynos_pd_g2d_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_g2d_power_off_pre(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_save(exynos_pd_g2d_clk_save,
+			ARRAY_SIZE(exynos_pd_g2d_clk_save));
 
 	return 0;
 }
@@ -323,6 +510,13 @@ static int exynos_pd_g2d_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_isp_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP0),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP1),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP2),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP3),
+};
+
 /* exynos_pd_isp_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -340,6 +534,14 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_isp_clk_save,
+			ARRAY_SIZE(exynos_pd_isp_clk_save));
+
+	return 0;
+}
+
 /* exynos_pd_isp_power_off_pre - setup before power off.
  * @pd: power domain.
  *
@@ -353,6 +555,9 @@ static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_ISP1);
 	reg |= (1 << 12 | 1 << 11);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_ISP1);
+
+	s3c_pm_do_save(exynos_pd_isp_clk_save,
+			ARRAY_SIZE(exynos_pd_isp_clk_save));
 
 	return 0;
 }
@@ -374,6 +579,13 @@ static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_cam0_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM00),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM01),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM02),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM03),
+};
+
 /* exynos_pd_cam0_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -391,6 +603,14 @@ static int exynos_pd_cam0_power_on_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_cam0_clk_save,
+			ARRAY_SIZE(exynos_pd_cam0_clk_save));
+
+	return 0;
+}
+
 /* exynos_pd_cam0_power_off_pre - setup before power off.
  * @pd: power domain.
  *
@@ -404,6 +624,9 @@ static int exynos_pd_cam0_power_off_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM01);
 	reg |= (1 << 12);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_CAM01);
+
+	s3c_pm_do_save(exynos_pd_cam0_clk_save,
+			ARRAY_SIZE(exynos_pd_cam0_clk_save));
 
 	return 0;
 }
@@ -425,6 +648,12 @@ static int exynos_pd_cam0_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static struct sleep_save exynos_pd_cam1_clk_save[] = {
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM10),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM11),
+	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM12),
+};
+
 /* exynos_pd_cam1_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -442,6 +671,14 @@ static int exynos_pd_cam1_power_on_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
+{
+	s3c_pm_do_restore_core(exynos_pd_cam1_clk_save,
+			ARRAY_SIZE(exynos_pd_cam1_clk_save));
+
+	return 0;
+}
+
 /* exynos_pd_cam1_power_off_pre - setup before power off.
  * @pd: power domain.
  *
@@ -455,6 +692,9 @@ static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM11);
 	reg |= (1 << 19);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_CAM11);
+
+	s3c_pm_do_save(exynos_pd_cam1_clk_save,
+			ARRAY_SIZE(exynos_pd_cam1_clk_save));
 
 	return 0;
 }
@@ -610,53 +850,71 @@ static struct exynos_pd_callback pd_callback_list[] = {
 	{
 		.name = "pd-maudio",
 		.on_post = exynos_pd_maudio_power_on_post,
+		.off_pre = exynos_pd_maudio_power_off_pre,
 	}, {
 		.name = "pd-mfc0",
 		.on_pre = exynos_pd_mfc0_power_on_pre,
+		.on_post = exynos_pd_mfc0_power_on_post,
+		.off_pre = exynos_pd_mfc0_power_off_pre,
 		.off_post = exynos_pd_mfc0_power_off_post,
 	}, {
 		.name = "pd-mfc1",
 		.on_pre = exynos_pd_mfc1_power_on_pre,
+		.on_post = exynos_pd_mfc1_power_on_post,
+		.off_pre = exynos_pd_mfc1_power_off_pre,
 		.off_post = exynos_pd_mfc1_power_off_post,
 	}, {
 		.name = "pd-hevc",
 		.on_pre = exynos_pd_hevc_power_on_pre,
+		.on_post = exynos_pd_hevc_power_on_post,
+		.off_pre = exynos_pd_hevc_power_off_pre,
 		.off_post = exynos_pd_hevc_power_off_post,
 	}, {
 		.name = "pd-gscl",
 		.on_pre = exynos_pd_gscl_power_on_pre,
+		.on_post = exynos_pd_gscl_power_on_post,
+		.off_pre = exynos_pd_gscl_power_off_pre,
 		.off_post = exynos_pd_gscl_power_off_post,
 	}, {
 		.name = "pd-g3d",
 		.on_post = exynos_pd_g3d_power_on_post,
+		.off_pre = exynos_pd_g3d_power_off_pre,
 	}, {
 		.name = "pd-disp",
 		.on_pre = exynos_pd_disp_power_on_pre,
+		.on_post = exynos_pd_disp_power_on_post,
 		.off_pre = exynos_pd_disp_power_off_pre,
 		.off_post = exynos_pd_disp_power_off_post,
 	}, {
 		.name = "pd-mscl",
 		.on_pre = exynos_pd_mscl_power_on_pre,
+		.on_post = exynos_pd_mscl_power_on_post,
+		.off_pre = exynos_pd_mscl_power_off_pre,
 		.off_post = exynos_pd_mscl_power_off_post,
 	}, {
 		.name = "pd-g2d",
 		.on_pre = exynos_pd_g2d_power_on_pre,
+		.on_post = exynos_pd_g2d_power_on_post,
+		.off_pre = exynos_pd_g2d_power_off_pre,
 		.off_post = exynos_pd_g2d_power_off_post,
 	}, {
 		.name = "pd-isp",
 		.on_pre = exynos_pd_isp_power_on_pre,
+		.on_post = exynos_pd_isp_power_on_post,
 		.off_pre = exynos_pd_isp_power_off_pre,
 		.off = exynos_pd_power_off_with_lpi,
 		.off_post = exynos_pd_isp_power_off_post,
 	}, {
 		.name = "pd-cam0",
 		.on_pre = exynos_pd_cam0_power_on_pre,
+		.on_post = exynos_pd_cam0_power_on_post,
 		.off_pre = exynos_pd_cam0_power_off_pre,
 		.off = exynos_pd_power_off_with_lpi,
 		.off_post = exynos_pd_cam0_power_off_post,
 	}, {
 		.name = "pd-cam1",
 		.on_pre = exynos_pd_cam1_power_on_pre,
+		.on_post = exynos_pd_cam1_power_on_post,
 		.off_pre = exynos_pd_cam1_power_off_pre,
 		.off = exynos_pd_power_off_with_lpi,
 		.off_post = exynos_pd_cam1_power_off_post,
