@@ -46,9 +46,17 @@
 #include "fimc-is-resourcemgr.h"
 #include "fimc-is-clk-gate.h"
 
+#include "sensor/fimc-is-device-2p2.h"
+#include "sensor/fimc-is-device-3h5.h"
+#include "sensor/fimc-is-device-3h7.h"
+#include "sensor/fimc-is-device-3h7_sunny.h"
+#include "sensor/fimc-is-device-3l2.h"
+#include "sensor/fimc-is-device-4e5.h"
+#include "sensor/fimc-is-device-6a3.h"
 #include "sensor/fimc-is-device-6b2.h"
 #include "sensor/fimc-is-device-8b1.h"
 #include "sensor/fimc-is-device-imx135.h"
+#include "sensor/fimc-is-device-imx175.h"
 #include "sensor/fimc-is-device-3l2.h"
 #include "sensor/fimc-is-device-2p2.h"
 
