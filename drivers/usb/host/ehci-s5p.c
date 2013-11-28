@@ -17,6 +17,7 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/notifier.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
@@ -43,12 +44,17 @@
 static const char hcd_name[] = "ehci-s5p";
 static struct hc_driver __read_mostly s5p_ehci_hc_driver;
 
+static int (*bus_suspend)(struct usb_hcd *) = NULL;
+static int (*bus_resume)(struct usb_hcd *) = NULL;
+
 struct s5p_ehci_hcd {
 	struct clk *clk;
 	struct usb_phy *phy;
 	struct usb_otg *otg;
 	struct s5p_ehci_platdata *pdata;
+	struct notifier_block lpa_nb;
 	int power_on;
+	unsigned post_lpa_resume:1;
 };
 
 #define to_s5p_ehci(hcd)      (struct s5p_ehci_hcd *)(hcd_to_ehci(hcd)->priv)
@@ -204,6 +210,32 @@ static inline void remove_ehci_sys_file(struct ehci_hcd *ehci)
 			&dev_attr_ehci_power);
 }
 
+static int
+s5p_ehci_lpa_event(struct notifier_block *nb, unsigned long event, void *data)
+{
+	struct s5p_ehci_hcd *s5p_ehci = container_of(nb,
+					struct s5p_ehci_hcd, lpa_nb);
+	int ret = NOTIFY_OK;
+
+	switch (event) {
+	case USB_LPA_PREPARE:
+		/*
+		 * For the purpose of reducing of power consumption in LPA mode
+		 * the PHY should be completely shutdown and reinitialized after
+		 * exit from LPA.
+		 */
+		if (s5p_ehci->phy)
+			usb_phy_shutdown(s5p_ehci->phy);
+
+		s5p_ehci->post_lpa_resume = 1;
+		break;
+	default:
+		ret = NOTIFY_DONE;
+	}
+
+	return ret;
+}
+
 static int s5p_ehci_probe(struct platform_device *pdev)
 {
 	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
@@ -309,7 +341,19 @@ static int s5p_ehci_probe(struct platform_device *pdev)
 	if (create_ehci_sys_file(ehci))
 		dev_err(&pdev->dev, "Failed to create ehci sys file\n");
 
+	s5p_ehci->lpa_nb.notifier_call = s5p_ehci_lpa_event;
+	s5p_ehci->lpa_nb.next = NULL;
+	s5p_ehci->lpa_nb.priority = 0;
+
+	err = register_samsung_usb_lpa_notifier(&s5p_ehci->lpa_nb);
+	if (err)
+		dev_err(&pdev->dev, "Failed to register lpa notifier\n");
+
 	s5p_ehci->power_on = 1;
+
+	pm_runtime_set_active(&pdev->dev);
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get(&pdev->dev);
 
 	return 0;
 
@@ -330,7 +374,11 @@ static int s5p_ehci_remove(struct platform_device *pdev)
 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
 
+	pm_runtime_put(&pdev->dev);
+	pm_runtime_disable(&pdev->dev);
+
 	s5p_ehci->power_on = 0;
+	unregister_samsung_usb_lpa_notifier(&s5p_ehci->lpa_nb);
 	remove_ehci_sys_file(hcd_to_ehci(hcd));
 	usb_remove_hcd(hcd);
 
@@ -356,6 +404,76 @@ static void s5p_ehci_shutdown(struct platform_device *pdev)
 	if (hcd->driver->shutdown)
 		hcd->driver->shutdown(hcd);
 }
+
+#ifdef CONFIG_PM_RUNTIME
+static int s5p_ehci_runtime_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
+	bool do_wakeup = device_may_wakeup(dev);
+	int rc;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	rc = ehci_suspend(hcd, do_wakeup);
+
+	if (s5p_ehci->phy)
+		pm_runtime_put_sync(s5p_ehci->phy->dev);
+	else if (pdata && pdata->phy_suspend)
+		pdata->phy_suspend(pdev, USB_PHY_TYPE_HOST);
+
+	return rc;
+}
+
+static int s5p_ehci_runtime_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct s5p_ehci_platdata *pdata = pdev->dev.platform_data;
+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
+	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
+	int rc = 0;
+
+	if (dev->power.is_suspended)
+		return 0;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	if (s5p_ehci->phy) {
+		struct usb_phy *phy = s5p_ehci->phy;
+
+		if (s5p_ehci->post_lpa_resume)
+			usb_phy_init(phy);
+		else
+			pm_runtime_get_sync(phy->dev);
+	} else if (pdata && pdata->phy_resume) {
+		rc = pdata->phy_resume(pdev, USB_PHY_TYPE_HOST);
+		s5p_ehci->post_lpa_resume = !!rc;
+	}
+
+	if (s5p_ehci->post_lpa_resume)
+		s5p_ehci_configurate(hcd);
+
+	ehci_resume(hcd, false);
+
+	/*
+	 * REVISIT: in case of LPA bus won't be resumed, so we do it here.
+	 * Alternatively, we can try to setup HC in such a way that it starts
+	 * to sense connections. In this case, root hub will be resumed from
+	 * interrupt (ehci_irq()).
+	 */
+	if (s5p_ehci->post_lpa_resume)
+		usb_hcd_resume_root_hub(hcd);
+
+	s5p_ehci->post_lpa_resume = 0;
+
+	return 0;
+}
+#else
+#define s5p_ehci_runtime_suspend	NULL
+#define s5p_ehci_runtime_resume		NULL
+#endif
 
 #ifdef CONFIG_PM
 static int s5p_ehci_suspend(struct device *dev)
@@ -402,16 +520,51 @@ static int s5p_ehci_resume(struct device *dev)
 	writel(EHCI_INSNREG00_ENABLE_DMA_BURST, EHCI_INSNREG00(hcd->regs));
 
 	ehci_resume(hcd, false);
+
+	/* Update runtime PM status and clear runtime_error */
+	pm_runtime_disable(dev);
+	pm_runtime_set_active(dev);
+	pm_runtime_enable(dev);
+
+	/* Prevent device from runtime suspend during resume time */
+	pm_runtime_get_sync(dev);
+
 	return 0;
+}
+
+int s5p_ehci_bus_suspend(struct usb_hcd *hcd)
+{
+	int ret;
+	ret = bus_suspend(hcd);
+
+#ifdef CONFIG_PM_RUNTIME
+	/* Decrease pm_count that was increased at s5p_ehci_resume func. */
+	if (hcd->self.controller->power.runtime_auto)
+		pm_runtime_put_noidle(hcd->self.controller);
+#endif
+
+	return ret;
+}
+
+int s5p_ehci_bus_resume(struct usb_hcd *hcd)
+{
+	/* When suspend is failed, re-enable clocks & PHY */
+	pm_runtime_resume(hcd->self.controller);
+
+	return bus_resume(hcd);
 }
 #else
 #define s5p_ehci_suspend	NULL
 #define s5p_ehci_resume		NULL
+#define s5p_ehci_bus_resume	NULL
+#define s5p_ehci_bus_suspend	NULL
 #endif
 
 static const struct dev_pm_ops s5p_ehci_pm_ops = {
 	.suspend	= s5p_ehci_suspend,
 	.resume		= s5p_ehci_resume,
+	.runtime_suspend	= s5p_ehci_runtime_suspend,
+	.runtime_resume		= s5p_ehci_runtime_resume,
 };
 
 #ifdef CONFIG_OF
@@ -445,6 +598,13 @@ static int __init ehci_s5p_init(void)
 
 	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
 	ehci_init_driver(&s5p_ehci_hc_driver, &s5p_overrides);
+
+	bus_suspend = s5p_ehci_hc_driver.bus_suspend;
+	bus_resume = s5p_ehci_hc_driver.bus_resume;
+
+	s5p_ehci_hc_driver.bus_suspend = s5p_ehci_bus_suspend;
+	s5p_ehci_hc_driver.bus_resume = s5p_ehci_bus_resume;
+
 	return platform_driver_register(&s5p_ehci_driver);
 }
 module_init(ehci_s5p_init);
