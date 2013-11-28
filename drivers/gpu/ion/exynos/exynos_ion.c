@@ -536,6 +536,11 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 	struct ion_exynos_contig_heap *contig_heap =
 			container_of(heap, struct ion_exynos_contig_heap, heap);
 	struct device *dev;
+	struct page **pages;
+	size_t pages_size = (len / PAGE_SIZE) * sizeof(struct page *);
+	size_t cur;
+	void *p;
+	int ret = 0;
 
 	buffer->flags = flags;
 
@@ -570,7 +575,48 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 		return -ENOMEM;
 	}
 
-	return 0;
+	if (pages_size > PAGE_SIZE)
+		pages = vmalloc(pages_size);
+	else
+		pages = (struct page **)__get_free_page(GFP_KERNEL);
+
+	if (!pages) {
+		pr_err("%s: Failed to allocate page descriptors\n",
+			__func__);
+		ret = -ENOMEM;
+		goto err_alloc_pages;
+	}
+
+	for (cur = 0; cur < (pages_size / sizeof(struct page *)); cur++)
+		pages[cur] = (struct page *)buffer->priv_virt + cur;
+
+	p = vmap(pages, cur, VM_MAP, PAGE_KERNEL);
+	if (!p) {
+		pr_err("%s: Failed to vmap to clean allocated buffer\n",
+			__func__);
+		ret = -ENOMEM;
+		goto err_vmap;
+	}
+
+	if (!(flags & ION_FLAG_NOZEROED))
+		memset(p, 0, len);
+
+	dmac_flush_range(p, p + len);
+
+	vunmap(p);
+
+err_vmap:
+	if (pages_size > PAGE_SIZE)
+		vfree(pages);
+	else
+		free_pages((unsigned long)pages, 0);
+
+err_alloc_pages:
+	if (ret)
+		dma_release_from_contiguous(dev,
+				buffer->priv_virt, buffer->size >> PAGE_SHIFT);
+
+	return ret;
 }
 
 static void ion_exynos_contig_heap_free(struct ion_buffer *buffer)

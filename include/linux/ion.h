@@ -66,6 +66,11 @@ enum ion_heap_type {
 #define ION_FLAG_PRESERVE_KMAP 4	/* kernel address is generated when
 					   user address is generated
 					 */
+#define ION_FLAG_NOZEROED	8	/* Allocated buffer is not initialized
+					   with zero value and userspace is not
+					   able to access the buffer
+					 */
+
 #define __ION_FLAG_CPUMAPPED_DO_NOT_USE__INTERNAL_USE_ONLY__ (1 << 8)
 
 #ifdef __KERNEL__

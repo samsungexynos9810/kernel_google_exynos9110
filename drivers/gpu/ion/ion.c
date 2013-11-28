@@ -1023,6 +1023,12 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	struct ion_buffer *buffer = dmabuf->priv;
 	int ret = 0;
 
+	if (buffer->flags & ION_FLAG_NOZEROED) {
+		pr_err("%s: mmap non-zeroed buffer to user is prohibited!\n",
+			__func__);
+		return -EINVAL;
+	}
+
 	if ((((vma->vm_pgoff << PAGE_SHIFT) >= buffer->size)) ||
 		((vma->vm_end - vma->vm_start) >
 			 (buffer->size - (vma->vm_pgoff << PAGE_SHIFT)))) {

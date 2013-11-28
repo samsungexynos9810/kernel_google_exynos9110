@@ -263,7 +263,8 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 	}
 
 	ion_clean_and_init_allocated_pages(
-			sys_heap, table->sgl, table->orig_nents, true);
+			sys_heap, table->sgl, table->orig_nents,
+			!(flags & ION_FLAG_NOZEROED));
 
 	buffer->priv_virt = table;
 	return 0;
