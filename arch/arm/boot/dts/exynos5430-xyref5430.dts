@@ -825,6 +825,11 @@
 		samsung,boost5v-gpio = <&gpf3 0 0>;
 	};
 
+	usb-switch {
+		samsung,vbus-gpio = <&gph1 3 0>;
+		samsung,id-gpio = <&gpa3 7  0xf>;
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		#address-cells = <1>;
