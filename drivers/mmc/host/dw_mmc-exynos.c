@@ -920,10 +920,9 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 
 static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_control control)
 {
-	u8 sample = host->pdata->clk_smpl;
 	switch (control) {
 	case CTRL_SET_CLK_SAMPLE:
-		dw_mci_exynos_set_sample(host, sample, false);
+		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
 		break;
 	default:
 		dev_err(host->dev, "dw_mmc exynos: wrong case\n");
