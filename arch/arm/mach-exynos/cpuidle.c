@@ -43,11 +43,6 @@
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 #include <sound/exynos.h>
 #endif
-#if 0
-#include <mach/asv.h>
-#include <mach/asv.h>
-#include <mach/devfreq.h>
-#endif
 
 #include <plat/pm.h>
 #include <plat/cpu.h>
@@ -56,15 +51,14 @@
 #include <plat/gpio-cfg.h>
 #include <plat/gpio-core.h>
 #include <plat/usb-phy.h>
-#if 0
-#include <plat/audio.h>
-#endif
 #include <plat/clock.h>
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 static cputime64_t cluster_off_time = 0;
 static unsigned long long last_time = 0;
 static bool cluster_off_flag = false;
+
+#define CLUSTER_OFF_TARGET_RESIDENCY	3000
 #endif
 
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
@@ -219,13 +213,21 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.desc                   = "ARM power down",
 	},
 	[2] = {
+		.enter                  = exynos_enter_c2,
+		.exit_latency           = 300,
+		.target_residency       = CLUSTER_OFF_TARGET_RESIDENCY,
+		.flags                  = CPUIDLE_FLAG_TIME_VALID,
+		.name                   = "C2-1",
+		.desc                   = "Cluster power down",
+	},
+	[3] = {
 #endif
 		.enter                  = exynos_enter_lowpower,
 		.exit_latency           = 300,
-		.target_residency       = 3000,
+		.target_residency       = 5000,
 		.flags                  = CPUIDLE_FLAG_TIME_VALID,
 		.name                   = "C3",
-		.desc                   = "ARM power down",
+		.desc                   = "System power down",
 	},
 };
 
@@ -286,10 +288,19 @@ static int idle_finisher(unsigned long flags)
 }
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+
+#define L2_OFF		(1 << 0)
+#define L2_CCI_OFF	(1 << 1)
+
 static int c2_finisher(unsigned long flags)
 {
 	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
-	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+
+	if (flags == L2_CCI_OFF) {
+		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, flags);
+	} else {
+		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+	}
 	/*
 	 * Secure monitor disables the SMP bit and takes the CPU out of the
 	 * coherency domain.
@@ -681,9 +692,9 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 	/* This mode only can be entered when other core's are offline */
 	if (num_online_cpus() > 1)
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-		return exynos_enter_c2(dev, drv, (new_index - 1));
+		return exynos_enter_c2(dev, drv, 2);
 #else
-		return exynos_enter_idle(dev, drv, (new_index - 2));
+		return exynos_enter_idle(dev, drv, 0);
 #endif
 
 	enter_mode = exynos_check_enter_mode();
@@ -722,16 +733,22 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 static int can_enter_cluster_off(int cpu_id)
 {
 #if defined(CONFIG_SCHED_HMP)
+	ktime_t now = ktime_get();
+	struct clock_event_device *dev;
 	int cpu;
 
 	for_each_cpu_and(cpu, cpu_online_mask, cpu_coregroup_mask(cpu_id)) {
 		if (cpu_id == cpu)
 			continue;
 
+		dev = per_cpu(tick_cpu_device, cpu).evtdev;
 		if (!(per_cpu(in_c2_state, cpu)))
 			return 0;
-	}
 
+		if(ktime_to_us(ktime_sub(dev->next_event, now)) <
+			CLUSTER_OFF_TARGET_RESIDENCY)
+			return 0;
+	}
 	return 1;
 #else
 	return 0;
@@ -746,9 +763,10 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	int idle_time, ret = 0;
 	unsigned int cpuid = smp_processor_id(), cpu_offset = 0;
 	unsigned int temp;
+	unsigned long flags = 0;
 
 	if (!(cpuid & 0x4))
-		return exynos_enter_idle(dev, drv, (index - 1));
+		return exynos_enter_idle(dev, drv, 0);
 
 	local_irq_disable();
 	do_gettimeofday(&before);
@@ -764,24 +782,29 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	temp &= 0xfffffff0;
 	__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
-	per_cpu(in_c2_state, cpuid) = 1;
-	if (can_enter_cluster_off(cpuid)) {
-		cluster_off_flag = true;
-		last_time = get_jiffies_64();
+	if (index == 2) {
+		per_cpu(in_c2_state, cpuid) = 1;
+		if (can_enter_cluster_off(cpuid)) {
+			flags = L2_CCI_OFF;
+			cluster_off_flag = true;
+			last_time = get_jiffies_64();
+		}
 	}
 
-	ret = cpu_suspend(0, c2_finisher);
+	ret = cpu_suspend(flags, c2_finisher);
 	if (ret) {
 		temp = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 		temp |= 0xf;
 		__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 	}
 
-	per_cpu(in_c2_state, cpuid) = 0;
 	if (cluster_off_flag) {
-		cluster_off_flag = false;
 		cluster_off_time += get_jiffies_64() - last_time;
+		cluster_off_flag = false;
 	}
+
+	if (index == 2)
+		per_cpu(in_c2_state, cpuid) = 0;
 
 	clear_boot_flag(cpuid, C2_STATE);
 	cpu_pm_exit();
