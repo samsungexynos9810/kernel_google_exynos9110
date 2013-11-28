@@ -153,7 +153,9 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 
 	init_display_operations();
 
+#ifdef CONFIG_SOC_EXYNOS5430
 	init_display_pm(&g_display_driver);
+#endif
 
 	/* parse display driver device tree & convers it to objects
 	 * for each platform device */

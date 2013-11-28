@@ -1131,9 +1131,11 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 0);
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_SOC_EXYNOS5430
 	/* tiggering power event for PM */
 	if (framedone)
 		disp_pm_dec_refcount(dispdrv);
+#endif
 #endif
 
 	return IRQ_HANDLED;
