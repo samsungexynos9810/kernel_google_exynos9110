@@ -77,7 +77,7 @@ extern struct pm_ops dsi_pm_ops;
 extern struct mipi_dsim_device *dsim_for_decon;
 
 int init_display_pm_status(struct display_driver *dispdrv) {
-	dispdrv->pm_status.trigger_masked = 0;
+	dispdrv->pm_status.trigger_masked = 1;
 	dispdrv->pm_status.clock_enabled = 0;
 	atomic_set(&dispdrv->pm_status.lock_count, 0);
 	dispdrv->pm_status.clk_idle_count = 0;
