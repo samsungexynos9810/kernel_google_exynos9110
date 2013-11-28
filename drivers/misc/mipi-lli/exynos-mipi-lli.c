@@ -265,6 +265,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 {
 	struct device *dev = _dev;
 	struct mipi_lli *lli = dev_get_drvdata(dev);
+	struct exynos_mphy *phy;
 	int status;
 
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
@@ -283,7 +284,17 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	if (status & INTR_PA_PLU_DONE) {
 		dev_dbg(dev, "PLU_DONE\n");
-		exynos_mipi_lli_set_automode(lli, true);
+
+		phy = dev_get_drvdata(lli->mphy);
+
+		if (phy) {
+			if (phy->is_shared_clk)
+				exynos_mipi_lli_set_automode(lli, true);
+			else
+				exynos_mipi_lli_set_automode(lli, false);
+		} else {
+			dev_err(dev, "Failed to get exynos_mphy\n");
+		}
 	}
 
 	if ((status & INTR_RESET_ON_ERROR_DETECTED)) {
