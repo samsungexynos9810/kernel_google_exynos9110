@@ -1140,7 +1140,6 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	int ret = 0;
 	struct v4l2_subdev *subdev_module;
 	struct v4l2_subdev *subdev_csi;
-	struct v4l2_subdev *subdev_flite;
 	struct fimc_is_module_enum *module;
 	struct v4l2_captureparm *cp;
 	struct v4l2_fract *tpf;
@@ -1151,14 +1150,28 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	BUG_ON(!device->subdev_csi);
 	BUG_ON(!param);
 
-	subdev_module = device->subdev_module;
-	subdev_csi = device->subdev_csi;
-	subdev_flite = device->subdev_flite;
 	cp = &param->parm.capture;
 	tpf = &cp->timeperframe;
 
-	info("[SEN:D:%d] framerate: req@%d fps, cur@%d fps\n", device->instance,
+	if (!tpf->denominator) {
+		merr("denominator is 0", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (!tpf->numerator) {
+		merr("numerator is 0", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	framerate = tpf->denominator / tpf->numerator;
+
+	info("[SEN:D:%d] framerate: req@%dfps, cur@%dfps\n", device->instance,
 		framerate, device->image.framerate);
+
+	subdev_module = device->subdev_module;
+	subdev_csi = device->subdev_csi;
 
 	module = (struct fimc_is_module_enum *)v4l2_get_subdevdata(subdev_module);
 	if (!module) {
@@ -1179,19 +1192,6 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
-	if (!tpf->denominator) {
-		merr("denominator is 0", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	if (!tpf->numerator) {
-		merr("numerator is 0", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	framerate = tpf->denominator / tpf->numerator;
 	if (framerate > module->max_framerate) {
 		merr("framerate is invalid(%d > %d)", device, framerate, module->max_framerate);
 		ret = -EINVAL;
