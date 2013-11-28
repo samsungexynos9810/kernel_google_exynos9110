@@ -25,6 +25,7 @@ struct exynos_ohci_hcd {
 	struct usb_phy *phy;
 	struct usb_otg *otg;
 	struct exynos4_ohci_platdata *pdata;
+	int power_on;
 };
 
 static void exynos_ohci_phy_enable(struct exynos_ohci_hcd *exynos_ohci)
@@ -97,6 +98,83 @@ static const struct hc_driver exynos_ohci_hc_driver = {
 #endif
 	.start_port_reset	= ohci_start_port_reset,
 };
+
+static ssize_t show_ohci_power(struct device *dev,
+			       struct device_attribute *attr,
+			       char *buf)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
+
+	return snprintf(buf, PAGE_SIZE, "EHCI Power %s\n",
+			(exynos_ohci->power_on) ? "on" : "off");
+}
+
+static ssize_t store_ohci_power(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
+	struct usb_hcd *hcd = exynos_ohci->hcd;
+	int power_on;
+	int irq;
+	int retval;
+
+	if (sscanf(buf, "%d", &power_on) != 1)
+		return -EINVAL;
+
+	device_lock(dev);
+	if (!power_on && exynos_ohci->power_on) {
+		printk(KERN_DEBUG "%s: EHCI turns off\n", __func__);
+		pm_runtime_forbid(dev);
+		exynos_ohci->power_on = 0;
+		usb_remove_hcd(hcd);
+		exynos_ohci_phy_disable(exynos_ohci);
+	} else if (power_on) {
+		printk(KERN_DEBUG "%s: EHCI turns on\n", __func__);
+		if (exynos_ohci->power_on) {
+			pm_runtime_forbid(dev);
+			usb_remove_hcd(hcd);
+		} else {
+			exynos_ohci_phy_enable(exynos_ohci);
+		}
+
+		irq = platform_get_irq(pdev, 0);
+		retval = usb_add_hcd(hcd, irq, IRQF_SHARED);
+		if (retval < 0) {
+			dev_err(dev, "Power On Fail\n");
+			goto exit;
+		}
+
+		/*
+		 * OHCI root hubs are expected to handle remote wakeup.
+		 * So, wakeup flag init defaults for root hubs.
+		 */
+		device_wakeup_enable(&hcd->self.root_hub->dev);
+
+		exynos_ohci->power_on = 1;
+		pm_runtime_allow(dev);
+	}
+
+exit:
+	device_unlock(dev);
+	return count;
+}
+static DEVICE_ATTR(ohci_power, S_IWUSR | S_IWGRP | S_IRUSR | S_IRGRP,
+	show_ohci_power, store_ohci_power);
+
+static inline int create_ohci_sys_file(struct ohci_hcd *ohci)
+{
+	return device_create_file(ohci_to_hcd(ohci)->self.controller,
+			&dev_attr_ohci_power);
+}
+
+static inline void remove_ohci_sys_file(struct ohci_hcd *ohci)
+{
+	device_remove_file(ohci_to_hcd(ohci)->self.controller,
+			&dev_attr_ohci_power);
+}
 
 static int exynos_ohci_probe(struct platform_device *pdev)
 {
@@ -206,6 +284,11 @@ skip_phy:
 
 	platform_set_drvdata(pdev, exynos_ohci);
 
+	if (create_ohci_sys_file(ohci))
+		dev_err(&pdev->dev, "Failed to create ehci sys file\n");
+
+	exynos_ohci->power_on = 1;
+
 	return 0;
 
 fail_add_hcd:
@@ -221,6 +304,9 @@ static int exynos_ohci_remove(struct platform_device *pdev)
 {
 	struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
 	struct usb_hcd *hcd = exynos_ohci->hcd;
+
+	exynos_ohci->power_on = 0;
+	remove_ohci_sys_file(hcd_to_ohci(hcd));
 
 	usb_remove_hcd(hcd);
 
