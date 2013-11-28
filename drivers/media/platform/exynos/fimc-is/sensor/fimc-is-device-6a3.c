@@ -35,16 +35,11 @@
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
 #include "../fimc-is-resourcemgr.h"
-#include "fimc-is-device-2p2.h"
+#include "fimc-is-device-6a3.h"
 
-#define SENSOR_NAME "S5K2P2"
+#define SENSOR_NAME "S5K6A3"
 
-static struct fimc_is_sensor_cfg config_2p2[] = {
-	/* 5328x3000@30fps */
-	FIMC_IS_SENSOR_CFG(5328, 3000, 30, 30, 0),
-};
-
-static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
+static int sensor_6a3_init(struct v4l2_subdev *subdev, u32 val)
 {
 	int ret = 0;
 	struct fimc_is_module_enum *module;
@@ -59,14 +54,14 @@ static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
 }
 
 static const struct v4l2_subdev_core_ops core_ops = {
-	.init = sensor_2p2_init
+	.init = sensor_6a3_init
 };
 
 static const struct v4l2_subdev_ops subdev_ops = {
 	.core = &core_ops
 };
 
-int sensor_2p2_probe(struct i2c_client *client,
+int sensor_6a3_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	int ret = 0;
@@ -84,7 +79,7 @@ int sensor_2p2_probe(struct i2c_client *client,
 		return -EPROBE_DEFER;
 	}
 
-	device = &core->sensor[SENSOR_2P2_INSTANCE];
+	device = &core->sensor[SENSOR_S5K6A3_INSTANCE];
 
 	subdev_module = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
 	if (!subdev_module) {
@@ -95,58 +90,35 @@ int sensor_2p2_probe(struct i2c_client *client,
 
 	module = &device->module_enum[atomic_read(&core->resourcemgr.rsccount_module)];
 	atomic_inc(&core->resourcemgr.rsccount_module);
-	module->id = SENSOR_NAME_S5K2P2;
 	module->subdev = subdev_module;
-	module->device = SENSOR_2P2_INSTANCE;
+	module->device = SENSOR_S5K6A3_INSTANCE;
 	module->client = client;
-	module->active_width = 5328;
-	module->active_height = 2990;
-	module->pixel_width = module->active_width + 16;
-	module->pixel_height = module->active_height + 10;
-	module->max_framerate = 120;
-	module->position = SENSOR_POSITION_REAR;
-	module->setfile_name = "setfile_2p2.bin";
-	module->cfgs = ARRAY_SIZE(config_2p2);
-	module->cfg = config_2p2;
+	module->pixel_width = 1392 + 16;
+	module->pixel_height = 1402 + 10;
+	module->active_width = 1392;
+	module->active_height = 1402;
+	module->max_framerate = 30;
+	module->position = SENSOR_POSITION_FRONT;
+	module->setfile_name = "setfile_6a3.bin";
+	/* module->settle_max = ARRAY_SIZE(settle_6a3); */
+	/* module->settle_table = settle_6a3; */
 	module->ops = NULL;
 	module->private_data = NULL;
 
 	ext = &module->ext;
 	ext->I2CSclk = I2C_L0;
 
-	ext->sensor_con.product_name = SENSOR_NAME_S5K2P2;
+	ext->sensor_con.product_name = 0;
 	ext->sensor_con.peri_type = SE_I2C;
-	ext->sensor_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C0;
-	ext->sensor_con.peri_setting.i2c.slave_address = 0x5A;
+	ext->sensor_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C1;
+	ext->sensor_con.peri_setting.i2c.slave_address = 0x20;
 	ext->sensor_con.peri_setting.i2c.speed = 400000;
-
-	ext->actuator_con.product_name = ACTUATOR_NAME_AK7345;
-	ext->actuator_con.peri_type = SE_I2C;
-	ext->actuator_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C1;
-	ext->actuator_con.peri_setting.i2c.slave_address = 0x5A;
-	ext->actuator_con.peri_setting.i2c.speed = 400000;
-
-	ext->flash_con.product_name = FLADRV_NAME_LM3560;
-	ext->flash_con.peri_type = SE_GPIO;
-	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 1;
-	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 2;
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
 
-	ext->companion_con.product_name = COMPANION_NAME_73C1;
-	ext->companion_con.peri_info0.valid = true;
-	ext->companion_con.peri_info0.peri_type = SE_SPI;
-	ext->companion_con.peri_info0.peri_setting.spi.channel = 1;
-	ext->companion_con.peri_info1.valid = true;
-	ext->companion_con.peri_info1.peri_type = SE_I2C;
-	ext->companion_con.peri_info1.peri_setting.i2c.channel = 0;
-	ext->companion_con.peri_info1.peri_setting.i2c.slave_address = 0x7A;
-	ext->companion_con.peri_info1.peri_setting.i2c.speed = 400000;
-	ext->companion_con.peri_info2.valid = true;
-	ext->companion_con.peri_info2.peri_type = SE_FIMC_LITE;
-	ext->companion_con.peri_info2.peri_setting.fimc_lite.channel = FLITE_ID_D;
+	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
-#ifdef DEFAULT_S5K2P2_DRIVING
+#ifdef DEFAULT_S5K6A3_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
 #else
 	v4l2_subdev_init(subdev_module, &subdev_ops);

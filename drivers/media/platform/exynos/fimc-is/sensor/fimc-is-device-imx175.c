@@ -34,17 +34,52 @@
 
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
-#include "../fimc-is-resourcemgr.h"
-#include "fimc-is-device-2p2.h"
+#include "fimc-is-device-imx175.h"
 
-#define SENSOR_NAME "S5K2P2"
+#define SENSOR_NAME "IMX175"
 
-static struct fimc_is_sensor_cfg config_2p2[] = {
-	/* 5328x3000@30fps */
-	FIMC_IS_SENSOR_CFG(5328, 3000, 30, 30, 0),
+static struct fimc_is_sensor_cfg config_imx175[] = {
+	/* 1936x1090@24fps */
+	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 7, -1),
+	/* 1936x1090@30fps */
+	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 5, -1),
+	/* 1936x1450@24fps */
+	FIMC_IS_SENSOR_CFG(1936, 1450, 24, 9, -1),
+	/* 2064x1162@24fps */
+	FIMC_IS_SENSOR_CFG(2064, 1162, 24, 8, -1),
+	/* 1936x1090@60fps */
+	FIMC_IS_SENSOR_CFG(1936, 1090, 60, 9, -1),
+	/* 816x460@60fps */
+	FIMC_IS_SENSOR_CFG(816, 460, 60, 9, -1),
+	/* 736x490@120fps */
+	FIMC_IS_SENSOR_CFG(736, 490, 120, 11, -1),
+	/* 1296x730@120fps */
+	FIMC_IS_SENSOR_CFG(1296, 730, 120, 11, -1),
+	/* 4112x2314@24ps */
+	FIMC_IS_SENSOR_CFG(4112, 2314, 24, 14, -1),
+	/* 816x460@120fps */
+	FIMC_IS_SENSOR_CFG(816, 460, 120, 18, -1),
+	/* 4144x2332@24fps */
+	FIMC_IS_SENSOR_CFG(4144, 2332, 24, 19, -1),
+	/* 4144x2332@30fps */
+	FIMC_IS_SENSOR_CFG(4144, 2332, 30, 18, -1),
+	/* 4112x3082@24fps */
+	FIMC_IS_SENSOR_CFG(4112, 3082, 24, 19, -1),
+	/* 4144x3106@24fps */
+	FIMC_IS_SENSOR_CFG(4144, 3106, 24, 23, -1),
+	/* 4144x3106@30fps */
+	FIMC_IS_SENSOR_CFG(4144, 3106, 30, 23, -1),
+	/* 2048x1152@60fps */
+	FIMC_IS_SENSOR_CFG(2048, 1152, 60, 9, -1),
+	/* 1024x576@120fps */
+	FIMC_IS_SENSOR_CFG(1024, 576, 120, 9, -1),
+	/* 1024x576@60fps */
+	FIMC_IS_SENSOR_CFG(1024, 576, 60, 9, -1),
+	/* 1936x1090@15fps */
+	FIMC_IS_SENSOR_CFG(1936, 1090, 15, 7, -1),
 };
 
-static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
+static int sensor_imx175_init(struct v4l2_subdev *subdev, u32 val)
 {
 	int ret = 0;
 	struct fimc_is_module_enum *module;
@@ -59,14 +94,14 @@ static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
 }
 
 static const struct v4l2_subdev_core_ops core_ops = {
-	.init = sensor_2p2_init
+	.init = sensor_imx175_init
 };
 
 static const struct v4l2_subdev_ops subdev_ops = {
 	.core = &core_ops
 };
 
-int sensor_2p2_probe(struct i2c_client *client,
+int sensor_imx175_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	int ret = 0;
@@ -84,7 +119,7 @@ int sensor_2p2_probe(struct i2c_client *client,
 		return -EPROBE_DEFER;
 	}
 
-	device = &core->sensor[SENSOR_2P2_INSTANCE];
+	device = &core->sensor[SENSOR_IMX175_INSTANCE];
 
 	subdev_module = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
 	if (!subdev_module) {
@@ -95,58 +130,55 @@ int sensor_2p2_probe(struct i2c_client *client,
 
 	module = &device->module_enum[atomic_read(&core->resourcemgr.rsccount_module)];
 	atomic_inc(&core->resourcemgr.rsccount_module);
-	module->id = SENSOR_NAME_S5K2P2;
+	module->id = SENSOR_NAME_IMX175;
 	module->subdev = subdev_module;
-	module->device = SENSOR_2P2_INSTANCE;
+	module->device = SENSOR_IMX175_INSTANCE;
+	module->ops = NULL;
 	module->client = client;
-	module->active_width = 5328;
-	module->active_height = 2990;
-	module->pixel_width = module->active_width + 16;
-	module->pixel_height = module->active_height + 10;
+	module->pixel_width = 3264 + 16;
+	module->pixel_height = 2448 + 10;
+	module->active_width = 3264;
+	module->active_height = 2448;
 	module->max_framerate = 120;
-	module->position = SENSOR_POSITION_REAR;
-	module->setfile_name = "setfile_2p2.bin";
-	module->cfgs = ARRAY_SIZE(config_2p2);
-	module->cfg = config_2p2;
+	module->setfile_name = "setfile_imx175.bin";
+	module->cfgs = ARRAY_SIZE(config_imx175);
+	module->cfg = config_imx175;
 	module->ops = NULL;
 	module->private_data = NULL;
 
 	ext = &module->ext;
 	ext->I2CSclk = I2C_L0;
 
-	ext->sensor_con.product_name = SENSOR_NAME_S5K2P2;
+	ext->sensor_con.product_name = 0;
 	ext->sensor_con.peri_type = SE_I2C;
 	ext->sensor_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C0;
-	ext->sensor_con.peri_setting.i2c.slave_address = 0x5A;
+	ext->sensor_con.peri_setting.i2c.slave_address = 0x18;
 	ext->sensor_con.peri_setting.i2c.speed = 400000;
 
-	ext->actuator_con.product_name = ACTUATOR_NAME_AK7345;
+	ext->actuator_con.product_name = ACTUATOR_NAME_AK7343;
 	ext->actuator_con.peri_type = SE_I2C;
-	ext->actuator_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C1;
-	ext->actuator_con.peri_setting.i2c.slave_address = 0x5A;
-	ext->actuator_con.peri_setting.i2c.speed = 400000;
+	ext->actuator_con.peri_setting.i2c.channel
+		= SENSOR_CONTROL_I2C0;
+	ext->actuator_con.peri_setting.i2c.slave_address = 0x18;
 
-	ext->flash_con.product_name = FLADRV_NAME_LM3560;
+	/* ext->flash_con.product_name = FLADRV_NAME_MAX77693; */
+	ext->flash_con.product_name = FLADRV_NAME_NOTHING;
 	ext->flash_con.peri_type = SE_GPIO;
-	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 1;
-	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 2;
+	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
 
+	/* ext->from_con.product_name = FROMDRV_NAME_W25Q80BW; */
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
+	ext->mclk = 0;
+	ext->mipi_lane_num = 0;
+	ext->mipi_speed = 0;
+	ext->fast_open_sensor = 0;
+	ext->self_calibration_mode = 0;
+	ext->I2CSclk = I2C_L0;
 
-	ext->companion_con.product_name = COMPANION_NAME_73C1;
-	ext->companion_con.peri_info0.valid = true;
-	ext->companion_con.peri_info0.peri_type = SE_SPI;
-	ext->companion_con.peri_info0.peri_setting.spi.channel = 1;
-	ext->companion_con.peri_info1.valid = true;
-	ext->companion_con.peri_info1.peri_type = SE_I2C;
-	ext->companion_con.peri_info1.peri_setting.i2c.channel = 0;
-	ext->companion_con.peri_info1.peri_setting.i2c.slave_address = 0x7A;
-	ext->companion_con.peri_info1.peri_setting.i2c.speed = 400000;
-	ext->companion_con.peri_info2.valid = true;
-	ext->companion_con.peri_info2.peri_type = SE_FIMC_LITE;
-	ext->companion_con.peri_info2.peri_setting.fimc_lite.channel = FLITE_ID_D;
+	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
-#ifdef DEFAULT_S5K2P2_DRIVING
+#ifdef DEFAULT_IMX175_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
 #else
 	v4l2_subdev_init(subdev_module, &subdev_ops);

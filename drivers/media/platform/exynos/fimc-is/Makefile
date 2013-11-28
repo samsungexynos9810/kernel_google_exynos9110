@@ -22,11 +22,17 @@ fimc-is-objs	:= fimc-is-core.o \
 		fimc-is-dvfs.o \
 		fimc-is-dt.o \
 		fimc-is-companion.o \
+		fimc-is-clk-gate.o \
 		sensor/fimc-is-device-6b2.o \
 		sensor/fimc-is-device-8b1.o \
 		sensor/fimc-is-device-imx135.o \
 		sensor/fimc-is-device-3l2.o \
 		sensor/fimc-is-device-2p2.o \
-		fimc-is-clk-gate.o \
+		sensor/fimc-is-device-3h5.o \
+		sensor/fimc-is-device-3h7.o \
+		sensor/fimc-is-device-3h7_sunny.o \
+		sensor/fimc-is-device-4e5.o \
+		sensor/fimc-is-device-6a3.o \
+		sensor/fimc-is-device-imx175.o \
 
 obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS) += fimc-is.o

@@ -94,7 +94,7 @@ int sensor_3l2_probe(struct i2c_client *client,
 		return -EPROBE_DEFER;
 	}
 
-	device = &core->sensor[SENSOR_3L2_INSTANCE];
+	device = &core->sensor[SENSOR_S5K3L2_INSTANCE];
 
 	subdev_module = kzalloc(sizeof(struct v4l2_subdev), GFP_KERNEL);
 	if (!subdev_module) {
@@ -107,7 +107,7 @@ int sensor_3l2_probe(struct i2c_client *client,
 	atomic_inc(&core->resourcemgr.rsccount_module);
 	module->id = SENSOR_NAME_S5K3L2;
 	module->subdev = subdev_module;
-	module->device = SENSOR_3L2_INSTANCE;
+	module->device = SENSOR_S5K3L2_INSTANCE;
 	module->client = client;
 	module->pixel_width = 4128 + 16;
 	module->pixel_height = 3096 + 10;
@@ -145,7 +145,7 @@ int sensor_3l2_probe(struct i2c_client *client,
  
 	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
-#ifdef DEFAULT_IMX135_DRIVING
+#ifdef DEFAULT_S5K3L2_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
 #else
 	v4l2_subdev_init(subdev_module, &subdev_ops);

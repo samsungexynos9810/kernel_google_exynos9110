@@ -669,6 +669,14 @@ static int fimc_is_probe(struct platform_device *pdev)
 	}
 #endif
 
+#ifndef SENSOR_S5K6A3_DRIVING
+	ret = sensor_6a3_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_6a3_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
 #ifndef SENSOR_IMX135_DRIVING
 	ret = sensor_imx135_probe(NULL, NULL);
 	if (ret) {
@@ -677,7 +685,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	}
 #endif
 
-#ifndef SENSOR_3L2_DRIVING
+#ifndef SENSOR_S5K3L2_DRIVING
 	ret = sensor_3l2_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_3l2_probe is fail(%d)", ret);
@@ -685,10 +693,50 @@ static int fimc_is_probe(struct platform_device *pdev)
 	}
 #endif
 
-#ifndef SENSOR_2P2_DRIVING
+#ifndef SENSOR_S5K2P2_DRIVING
 	ret = sensor_2p2_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_2p2_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_S5K3H5_DRIVING
+	ret = sensor_3h5_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_3h5_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_S5K3H7_DRIVING
+	ret = sensor_3h7_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_3h7_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_S5K3H7_SUNNY_DRIVING
+	ret = sensor_3h7_sunny_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_3h7_sunny_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_S5K4E5_DRIVING
+	ret = sensor_4e5_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_4e5_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_IMX175_DRIVING
+	ret = sensor_imx175_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_imx175_probe is fail(%d)", ret);
 		goto p_err3;
 	}
 #endif

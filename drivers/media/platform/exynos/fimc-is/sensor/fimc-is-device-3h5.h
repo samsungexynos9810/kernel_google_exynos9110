@@ -9,14 +9,14 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef FIMC_IS_DEVICE_3L2_H
-#define FIMC_IS_DEVICE_3L2_H
+#ifndef FIMC_IS_DEVICE_3H5_H
+#define FIMC_IS_DEVICE_3H5_H
 
-#define SENSOR_S5K3L2_INSTANCE	0
-#define SENSOR_S5K3L2_NAME	SENSOR_NAME_S5K3L2
-/* #define SENSOR_S5K3L2_DRIVING */
+#define SENSOR_S5K3H5_INSTANCE	0
+#define SENSOR_S5K3H5_NAME	SENSOR_NAME_S5K3H5
+/* #define SENSOR_S5K3H5_DRIVING */
 
-int sensor_3l2_probe(struct i2c_client *client,
+int sensor_3h5_probe(struct i2c_client *client,
 	const struct i2c_device_id *id);
 
 #endif
