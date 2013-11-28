@@ -1273,8 +1273,6 @@ int queue_done(struct fimc_is_video_ctx *vctx,
 		goto p_err;
 	}
 
-	/* HACK : VB2_BUF_STATE_ERROR */
-	state = VB2_BUF_STATE_DONE;
 	vb2_buffer_done(vb, state);
 
 p_err:
