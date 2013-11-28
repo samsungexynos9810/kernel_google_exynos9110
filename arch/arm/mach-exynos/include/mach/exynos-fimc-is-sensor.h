@@ -61,6 +61,7 @@ enum exynos_sensor_id {
 	SENSOR_NAME_S5K1P2		 = 12,
 
 	SENSOR_NAME_IMX135		 = 101, /* 101 ~ 200 Sony sensors */
+	SENSOR_NAME_IMX175		 = 102,
 
 	SENSOR_NAME_SR261		 = 201, /* 201 ~ 300 Other vendor sensors */
 
