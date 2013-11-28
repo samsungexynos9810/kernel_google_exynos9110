@@ -2023,7 +2023,6 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		fence = sync_fence_create("display", pt);
 		sync_fence_install(fence, fd);
 		win_data->fence = fd;
-
 		sw_sync_timeline_inc(sfb->timeline, 1);
 		goto err;
 	}
@@ -2240,6 +2239,10 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
 	pm_runtime_get_sync(sfb->dev);
 
+	if (sfb->timeline_max - sfb->timeline->value > 2) {
+		pr_info("time_val %d time_max %d\n", sfb->timeline->value, sfb->timeline_max);
+		sw_sync_timeline_inc(sfb->timeline, sfb->timeline_max - sfb->timeline->value - 2);
+	}
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!sfb->windows[i]->local) {
 			old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
@@ -2328,13 +2331,13 @@ static void s3c_fb_update_regs_handler(struct work_struct *work)
 	mutex_lock(&sfb->update_regs_list_lock);
 	saved_list = sfb->update_regs_list;
 	list_replace_init(&sfb->update_regs_list, &saved_list);
-	mutex_unlock(&sfb->update_regs_list_lock);
 
 	list_for_each_entry_safe(data, next, &saved_list, list) {
 		s3c_fb_update_regs(sfb, data);
 		list_del(&data->list);
 		kfree(data);
 	}
+	mutex_unlock(&sfb->update_regs_list_lock);
 }
 
 static int s3c_fb_get_user_ion_handle(struct s3c_fb *sfb,
