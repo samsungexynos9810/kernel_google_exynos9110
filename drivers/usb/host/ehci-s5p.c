@@ -57,11 +57,12 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 	int err;
-	int gpio, gpio_boost5v;
+	int gpio;
 
 	if (!dev->of_node)
 		return;
 
+#if !defined(CONFIG_USB_EXYNOS_SWITCH)
 	gpio = of_get_named_gpio(dev->of_node, "samsung,vbus-gpio", 0);
 	if (!gpio_is_valid(gpio))
 		return;
@@ -70,18 +71,20 @@ static void s5p_setup_vbus_gpio(struct platform_device *pdev)
 				    "ehci_vbus_gpio");
 	if (err)
 		dev_err(dev, "can't request ehci vbus gpio %d", gpio);
+	else
+		gpio_set_value(gpio, 1);
+#endif
 
-	gpio_boost5v = of_get_named_gpio(dev->of_node, "samsung,boost5v-gpio", 0);
-	if (!gpio_is_valid(gpio_boost5v))
+	gpio = of_get_named_gpio(dev->of_node, "samsung,boost5v-gpio", 0);
+	if (!gpio_is_valid(gpio))
 		return;
 
-	err = devm_gpio_request_one(dev, gpio_boost5v, GPIOF_OUT_INIT_HIGH,
+	err = devm_gpio_request_one(dev, gpio, GPIOF_OUT_INIT_HIGH,
 				    "usb_boost5v_gpio");
 	if (err)
-		dev_err(dev, "can't request usb boost5v gpio %d", gpio_boost5v);
-
-	gpio_set_value(gpio_boost5v, 1);
-	gpio_set_value(gpio, 1);
+		dev_err(dev, "can't request usb boost5v gpio %d", gpio);
+	else
+		gpio_set_value(gpio, 1);
 }
 
 static int s5p_ehci_configurate(struct usb_hcd *hcd)
