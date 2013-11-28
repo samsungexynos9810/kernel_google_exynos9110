@@ -114,13 +114,12 @@ bool usb_phy_check_op(void)
 		if (phy->type == USB_PHY_TYPE_USB3)
 			continue;
 
-		/*
-		 * FIXME: this is used for USB2.0 host controller and
-		 * should be replaced with usb_phy_is_active() call
-		 * once proper power management is implemented.
-		 */
-		if (phy->type == USB_PHY_TYPE_USB2)
-			continue;
+		if (phy->type == USB_PHY_TYPE_USB2) {
+			if (usb_phy_is_active(phy)) {
+				op = true;
+				break;
+			}
+		}
 	}
 
 	spin_unlock_irqrestore(&phy_lock, flags);
