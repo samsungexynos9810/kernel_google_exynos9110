@@ -305,6 +305,130 @@ static int exynos_lli_read_signal(struct mipi_lli *lli)
 	return intr_lsb;
 }
 
+static int exynos_lli_clock_init(struct mipi_lli *lli)
+{
+	struct mipi_lli_clks *clks = &lli->clks;
+
+	if(!clks)
+		return -EINVAL;
+
+	clk_set_parent(clks->mout_phyclk_lli_tx0_symbol_user,
+			clks->phyclk_lli_tx0_symbol);
+	clk_set_parent(clks->mout_phyclk_lli_rx0_symbol_user,
+			clks->phyclk_lli_rx0_symbol);
+	clk_set_parent(clks->mout_mphy_pll, clks->fout_mphy_pll);
+
+	return 0;
+}
+
+static int exynos_lli_clock_gating(struct mipi_lli *lli, int is_gating)
+{
+	struct mipi_lli_clks *clks = &lli->clks;
+
+	if(!clks)
+		return -EINVAL;
+
+	if (is_gating){
+		clk_disable_unprepare(clks->gate_lli_rx0_symbol);
+		clk_disable_unprepare(clks->gate_lli_tx0_symbol);
+		clk_disable_unprepare(clks->gate_lli_rx0_cfg);
+		clk_disable_unprepare(clks->gate_lli_tx0_cfg);
+		clk_disable_unprepare(clks->gate_lli_cmn_cfg);
+		clk_disable_unprepare(clks->gate_lli_be_targ);
+		clk_disable_unprepare(clks->gate_lli_ll_targ);
+		clk_disable_unprepare(clks->gate_lli_be_init);
+		clk_disable_unprepare(clks->gate_lli_ll_init);
+		clk_disable_unprepare(clks->gate_lli_svc_rem);
+		clk_disable_unprepare(clks->gate_lli_svc_loc);
+		clk_disable_unprepare(clks->gate_mphy_pll);
+		clk_disable_unprepare(clks->gate_cpifnm_200);
+		/* it doesn't gate/ungate aclk_cpif_200
+		   clk_disable_unprepare(clks->aclk_cpif_200);
+		 */
+	} else {
+		/* it doesn't gate/ungate aclk_cpif_200
+		   clk_prepare_enable(clks->aclk_cpif_200);
+		 */
+		clk_prepare_enable(clks->gate_cpifnm_200);
+		clk_prepare_enable(clks->gate_mphy_pll);
+		clk_prepare_enable(clks->gate_lli_svc_loc);
+		clk_prepare_enable(clks->gate_lli_svc_rem);
+		clk_prepare_enable(clks->gate_lli_ll_init);
+		clk_prepare_enable(clks->gate_lli_be_init);
+		clk_prepare_enable(clks->gate_lli_ll_targ);
+		clk_prepare_enable(clks->gate_lli_be_targ);
+		clk_prepare_enable(clks->gate_lli_cmn_cfg);
+		clk_prepare_enable(clks->gate_lli_tx0_cfg);
+		clk_prepare_enable(clks->gate_lli_rx0_cfg);
+		clk_prepare_enable(clks->gate_lli_tx0_symbol);
+		clk_prepare_enable(clks->gate_lli_rx0_symbol);
+	}
+
+	return 0;
+}
+
+#ifdef CONFIG_PM_SLEEP
+/* exynos_lli_suspend must call by modem_if */
+static int exynos_lli_suspend(struct mipi_lli *lli)
+{
+	/* masking all of lli interrupts */
+	exynos_lli_system_config(lli);
+	/* clearing all of lli sideband signal */
+	exynos_lli_reset_signal(lli);
+	/* disable LLI_PHY_CONTROL */
+	writel(0, lli->pmu_regs);
+
+	exynos_lli_clock_gating(lli, true);
+
+	lli->is_suspended = true;
+
+	return 0;
+}
+
+/* exynos_lli_resume must call by modem_if */
+static int exynos_lli_resume(struct mipi_lli *lli)
+{
+	/* re-init clock mux selection for LLI & M-PHY */
+	exynos_lli_clock_init(lli);
+	exynos_lli_clock_gating(lli, false);
+
+	/* re-init all of lli resource */
+	exynos_lli_init(lli);
+
+	lli->is_suspended = false;
+
+	return 0;
+}
+#else
+#define exynos_lli_suspend NULL
+#define exynos_lli_resume NULL
+#endif /* CONFIG_PM_SLEEP */
+
+#ifdef CONFIG_PM_RUNTIME
+static int exynos_lli_runtime_suspend(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mipi_lli *lli = platform_get_drvdata(pdev);
+
+	lli->is_runtime_suspended = true;
+
+	return 0;
+}
+
+static int exynos_lli_runtime_resume(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mipi_lli *lli = platform_get_drvdata(pdev);
+
+	lli->is_runtime_suspended = false;
+
+	return 0;
+}
+#else
+#define exynos_lli_runtime_suspend NULL
+#define exynos_lli_runtime_resume NULL
+#endif /* CONFIG_PM_RUNTIME */
+
 static void exynos_mipi_lli_set_automode(struct mipi_lli *lli, bool is_auto)
 {
 	if (is_auto)
@@ -321,6 +445,8 @@ const struct lli_driver exynos_lli_driver = {
 	.send_signal = exynos_lli_send_signal,
 	.reset_signal = exynos_lli_reset_signal,
 	.read_signal = exynos_lli_read_signal,
+	.suspend = exynos_lli_suspend,
+	.resume = exynos_lli_resume,
 };
 
 static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
@@ -502,6 +628,15 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 
 	exynos_lli_get_clk_info(lli);
 
+	/* init clock mux selection for LLI & M-PHY */
+	exynos_lli_clock_init(lli);
+
+	/* When getting clock structure data at first, there is no way to
+	   know whether the value of clock is enabled or disabled.
+	   therefore, at first time, set the enable the clock value to
+	   inform that clock is enabled */
+	exynos_lli_clock_gating(lli, false);
+
 	dout_aclk_cpif_200 = devm_clk_get(lli->dev, "dout_aclk_cpif_200");
 	dout_mif_pre = devm_clk_get(lli->dev, "dout_mif_pre");
 
@@ -526,6 +661,14 @@ static int exynos_mipi_lli_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct dev_pm_ops exynos_mipi_lli_pm = {
+	/* suspend, resume functions must call by modem_if.
+	SET_SYSTEM_SLEEP_PM_OPS(exynos_lli_suspend, exynos_lli_resume)
+	*/
+	SET_RUNTIME_PM_OPS(exynos_lli_runtime_suspend,
+			   exynos_lli_runtime_resume, NULL)
+};
+
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_mipi_lli_dt_match[] = {
 	{
@@ -542,6 +685,7 @@ static struct platform_driver exynos_mipi_lli_driver = {
 	.driver = {
 		.name = "exynos-mipi-lli",
 		.owner = THIS_MODULE,
+		.pm = &exynos_mipi_lli_pm,
 		.of_match_table = of_match_ptr(exynos_mipi_lli_dt_match),
 	},
 };

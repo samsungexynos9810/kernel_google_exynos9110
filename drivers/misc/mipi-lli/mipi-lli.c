@@ -250,6 +250,31 @@ static irqreturn_t mipi_lli_sig_irq(int irq, void *_dev)
 	return IRQ_HANDLED;
 }
 
+/**
+ * mipi_lli_suspend must call by modem_if.
+ */
+void mipi_lli_suspend(void)
+{
+	if (!g_lli || !g_lli->driver || !g_lli->driver->suspend)
+		return;
+
+	g_lli->driver->suspend(g_lli);
+}
+EXPORT_SYMBOL(mipi_lli_suspend);
+
+/**
+ * mipi_lli_resume must call by modem_if.
+ */
+void mipi_lli_resume(void)
+{
+	if (!g_lli || !g_lli->driver || !g_lli->driver->resume)
+		return;
+
+	g_lli->driver->resume(g_lli);
+}
+
+EXPORT_SYMBOL(mipi_lli_resume);
+
 int mipi_lli_add_driver(struct device *dev,
 			const struct lli_driver *lli_driver,
 			int irq)

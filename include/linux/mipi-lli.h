@@ -77,6 +77,8 @@ struct mipi_lli {
 	dma_addr_t		phy_addr;
 	int			state;
 	bool			is_master;
+	bool			is_suspended;
+	bool			is_runtime_suspended;
 
 	struct mipi_lli_ipc_handler hd;
 };
@@ -93,6 +95,9 @@ struct lli_driver {
 	int	(*send_signal)(struct mipi_lli *lli, u32 cmd);
 	int	(*reset_signal)(struct mipi_lli *lli);
 	int	(*read_signal)(struct mipi_lli *lli);
+
+	int	(*suspend)(struct mipi_lli *lli);
+	int	(*resume)(struct mipi_lli *lli);
 };
 
 extern int mipi_lli_add_driver(struct device *dev,
@@ -110,5 +115,7 @@ extern void mipi_lli_send_interrupt(u32 cmd);
 extern void mipi_lli_reset_interrupt(void);
 extern u32 mipi_lli_read_interrupt(void);
 extern void mipi_lli_reload(void);
+extern void mipi_lli_suspend(void);
+extern void mipi_lli_resume(void);
 
 #endif /* __MIPI_LLI_H */
