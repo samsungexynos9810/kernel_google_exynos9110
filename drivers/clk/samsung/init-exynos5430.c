@@ -397,11 +397,15 @@ void jpeg_init_clock(void)
 		pr_err("Unable to set parent %s of clock %s\n",
 				"mout_sclk_jpeg_c", "dout_sclk_jpeg");
 
-	if (exynos_set_parent("mout_sclk_jpeg_user", "dout_sclk_jpeg"))
+	if (exynos_set_parent("sclk_jpeg_mscl", "dout_sclk_jpeg"))
 		pr_err("Unable to set parent %s of clock %s\n",
-				"dout_sclk_jpeg", "mout_sclk_jpeg_user");
+				"dout_sclk_jpeg", "sclk_jpeg_mscl");
 
-	if (exynos_set_rate("dout_sclk_jpeg", 400 * 1000000))
+	if (exynos_set_parent("mout_sclk_jpeg_user", "sclk_jpeg_mscl"))
+		pr_err("Unable to set parent %s of clock %s\n",
+				"sclk_jpeg_mscl", "mout_sclk_jpeg_user");
+
+	if (exynos_set_rate("dout_sclk_jpeg", 413 * 1000000))
 		pr_err("Can't set %s clock rate\n", "dout_sclk_jpeg");
 
 	pr_debug("jpeg: sclk_jpeg %d\n", exynos_get_rate("dout_sclk_jpeg"));
