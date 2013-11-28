@@ -440,19 +440,6 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	int idx_ref;
 	int ret = 0;
 	int id = 0;
-	int dev_pwr = 0;
-
-	/*
-	 * This GPIOs is for eMMC device 2.8 volt supply control
-	*/
-	if (of_get_property(np, "gpios", NULL) != NULL) {
-		dev_pwr = of_get_gpio(np, 0);
-		if (gpio_request(dev_pwr, "dev-pwr")) {
-			ret = -ENODEV;
-			goto err_ref_clk;
-		} else
-			gpio_direction_output(dev_pwr, 1);
-	}
 
 	/*
 	 * Reference clock values for speed mode change are extracted from DT.
@@ -918,11 +905,34 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	return ret;
 }
 
+static int dw_mci_exynos_turn_on_2_8v(struct dw_mci *host)
+{
+	int ret = 0;
+	struct device_node *np = host->dev->of_node;
+	int dev_pwr = 0;
+
+	/*
+	 * This GPIOs is for eMMC device 2.8 volt supply control
+	*/
+	if (of_get_property(np, "gpios", NULL) != NULL) {
+		dev_pwr = of_get_gpio(np, 0);
+		if (gpio_request(dev_pwr, "dev-pwr"))
+			ret = -ENODEV;
+		else
+			gpio_direction_output(dev_pwr, 1);
+	}
+
+	return ret;
+}
+
 static int dw_mci_exynos_misc_control(struct dw_mci *host, enum dw_mci_misc_control control)
 {
 	switch (control) {
 	case CTRL_SET_CLK_SAMPLE:
 		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
+		break;
+	case CTRL_TURN_ON_2_8V:
+		dw_mci_exynos_turn_on_2_8v(host);
 		break;
 	default:
 		dev_err(host->dev, "dw_mmc exynos: wrong case\n");
