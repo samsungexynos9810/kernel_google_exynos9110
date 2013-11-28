@@ -272,6 +272,12 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 
 	spin_lock_irqsave(&sphy->lock, flags);
 
+	/* exit if PHY is already initialized */
+	if (sphy->active) {
+		spin_unlock_irqrestore(&sphy->lock, flags);
+		goto exit;
+	}
+
 	if (host) {
 		/* setting default phy-type for USB 2.0 */
 		if (!strstr(dev_name(host->controller), "ehci") ||
@@ -304,6 +310,11 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
+	pm_runtime_set_active(phy->dev);
+	pm_runtime_enable(phy->dev);
+exit:
+	pm_runtime_get_noresume(phy->dev);
+
 	/* Disable the phy clock */
 	clk_disable_unprepare(sphy->clk);
 
@@ -329,6 +340,12 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 	}
 
 	spin_lock_irqsave(&sphy->lock, flags);
+
+	/* exit if PHY is already shutdown */
+	if (!sphy->active) {
+		spin_unlock_irqrestore(&sphy->lock, flags);
+		goto exit;
+	}
 
 	if (host) {
 		/* setting default phy-type for USB 2.0 */
@@ -359,14 +376,30 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
+	pm_runtime_disable(phy->dev);
+	pm_runtime_set_suspended(phy->dev);
+exit:
+	pm_runtime_put_noidle(phy->dev);
+
 	clk_disable_unprepare(sphy->clk);
 }
 
 static bool samsung_usb2phy_is_active(struct usb_phy *phy)
 {
 	struct samsung_usbphy *sphy = phy_to_sphy(phy);
+	unsigned long flags;
+	bool ret;
 
-	return sphy->active;
+	spin_lock_irqsave(&sphy->lock, flags);
+
+	if (!sphy->active || pm_runtime_suspended(sphy->dev))
+		ret = false;
+	else
+		ret = true;
+
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	return ret;
 }
 
 static int samsung_usb2phy_probe(struct platform_device *pdev)
@@ -467,6 +500,104 @@ static int samsung_usb2phy_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_RUNTIME
+static int samsung_usb2phy_runtime_suspend(struct device *dev)
+{
+	struct samsung_usbphy *sphy = dev_get_drvdata(dev);
+	void __iomem *regs = sphy->regs;
+	unsigned long flags;
+	u32 phyctrl;
+	int ret;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	if (sphy->drv_data->cpu_type != TYPE_EXYNOS5) {
+		dev_info(dev, "Runtime PM is not supported for this cpu type\n");
+		return 0;
+	}
+
+	/* Enable the phy clock */
+	ret = clk_prepare_enable(sphy->clk);
+	if (ret) {
+		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+		return ret;
+	}
+
+	spin_lock_irqsave(&sphy->lock, flags);
+
+	phyctrl = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
+	phyctrl |= HOST_CTRL0_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS5_PHY_HOST_CTRL0);
+
+	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL1);
+	phyctrl |= HSIC_CTRL_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL1);
+
+	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL2);
+	phyctrl |= HSIC_CTRL_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL2);
+
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	/* Disable the phy clock */
+	clk_disable_unprepare(sphy->clk);
+
+	return 0;
+}
+
+static int samsung_usb2phy_runtime_resume(struct device *dev)
+{
+	struct samsung_usbphy *sphy = dev_get_drvdata(dev);
+	void __iomem *regs = sphy->regs;
+	unsigned long flags;
+	u32 phyctrl;
+	int ret;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	if (sphy->drv_data->cpu_type != TYPE_EXYNOS5) {
+		dev_info(dev, "Runtime PM is not supported for this cpu type\n");
+		return 0;
+	}
+
+	/* Enable the phy clock */
+	ret = clk_prepare_enable(sphy->clk);
+	if (ret) {
+		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+		return ret;
+	}
+
+	spin_lock_irqsave(&sphy->lock, flags);
+
+	phyctrl = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
+	phyctrl &= ~HOST_CTRL0_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS5_PHY_HOST_CTRL0);
+
+	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL1);
+	phyctrl &= ~HSIC_CTRL_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL1);
+
+	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL2);
+	phyctrl &= ~HSIC_CTRL_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL2);
+
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	/* Disable the phy clock */
+	clk_disable_unprepare(sphy->clk);
+
+	return 0;
+}
+#else
+#define samsung_usb2phy_runtime_suspend	NULL
+#define samsung_usb2phy_runtime_resume	NULL
+#endif
+
+static const struct dev_pm_ops samsung_usb2phy_pm_ops = {
+	.runtime_suspend	= samsung_usb2phy_runtime_suspend,
+	.runtime_resume		= samsung_usb2phy_runtime_resume,
+};
+
 static const struct samsung_usbphy_drvdata usb2phy_s3c64xx = {
 	.cpu_type		= TYPE_S3C64XX,
 	.devphy_en_mask		= S3C64XX_USBPHY_ENABLE,
@@ -537,6 +668,7 @@ static struct platform_driver samsung_usb2phy_driver = {
 		.name	= "samsung-usb2phy",
 		.owner	= THIS_MODULE,
 		.of_match_table = of_match_ptr(samsung_usbphy_dt_match),
+		.pm	= &samsung_usb2phy_pm_ops,
 	},
 };
 
