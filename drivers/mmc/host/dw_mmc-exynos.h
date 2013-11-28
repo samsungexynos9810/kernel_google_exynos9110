@@ -80,6 +80,11 @@
 #define EXYNOS4210_FIXED_CIU_CLK_DIV	2
 #define EXYNOS4412_FIXED_CIU_CLK_DIV	4
 
+#define EXYNOS_DEF_MMC_0_CAPS	(MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR | \
+				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23)
+#define EXYNOS_DEF_MMC_1_CAPS	MMC_CAP_CMD23
+#define EXYNOS_DEF_MMC_2_CAPS	(MMC_CAP_CMD23 | MMC_CAP_UHS_SDR104)
+
 #define MAX_TUNING_LOOP		72
 #define MAX_TUNING_RETRIES	6
 
@@ -108,6 +113,7 @@ struct dw_mci_exynos_priv_data {
 	int			drv_str_base_val;
 	u32			drv_str_num;
 	int			cd_gpio;
+	u32			caps;
 };
 
 /*
