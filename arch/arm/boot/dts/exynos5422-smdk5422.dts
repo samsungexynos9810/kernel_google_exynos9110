@@ -228,6 +228,7 @@
 		fixed_volt;
 		only_once_tune;
 		supports-highspeed;
+		sw_data_timeout;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
@@ -250,6 +251,7 @@
 		num-slots = <1>;
 		supports-highspeed;
 		cd-type = <1>;
+		sw_data_timeout;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
