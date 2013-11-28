@@ -25,7 +25,7 @@ STATIC base_jd_udata kbase_event_process(kbase_context *kctx, kbase_jd_atom *kat
 
 #ifdef SLSI_INTEGRATION
 	pgd_t *pgd;
-	struct mm_struct *mm = katom->kctx->process_mm;
+	struct mm_struct *mm;
 
 	if (!kctx || !katom || (katom->status != KBASE_JD_ATOM_STATE_COMPLETED)) {
 		printk("Abnormal situation\n");
@@ -33,6 +33,7 @@ STATIC base_jd_udata kbase_event_process(kbase_context *kctx, kbase_jd_atom *kat
 		return data;
 	}
 
+	mm = katom->kctx->process_mm;
 	pgd = pgd_offset(mm, (unsigned long)&katom->completed);
 	if (pgd_none(*pgd) || pgd_bad(*pgd)) {
 		printk("Abnormal katom\n");

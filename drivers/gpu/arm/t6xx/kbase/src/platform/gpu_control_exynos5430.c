@@ -446,6 +446,7 @@ static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state s
 		pm_qos_remove_request(&exynos5_g3d_cpu_qos);
 		break;
 	case GPU_CONTROL_PM_QOS_SET:
+		if (platform->step<0) return -1;
 		pm_qos_update_request(&exynos5_g3d_mif_qos, platform->table[platform->step].mem_freq);
 		pm_qos_update_request(&exynos5_g3d_int_qos, platform->table[platform->step].int_freq);
 		pm_qos_update_request(&exynos5_g3d_cpu_qos, platform->table[platform->step].cpu_freq);
@@ -475,7 +476,7 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 	if (clock == prev_clock)
 		return 0;
 
-	if (WARN_ON((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock))) {
+	if ((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock)) {
 		GPU_LOG(DVFS_ERROR, "invalid clock error (%d)\n", clock);
 		panic("invalid clock");
 	}
@@ -529,7 +530,7 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 		ret = gpu_clock_on(platform);
 		mutex_unlock(&platform->gpu_set_clock_lock);
 #ifdef CONFIG_MALI_T6XX_DVFS
-		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET);
+		if (gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET)<0) GPU_LOG(DVFS_ERROR, "failed to set the PM_QOS\n");
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		break;
 	case GPU_CONTROL_CLOCK_OFF:
@@ -563,7 +564,7 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		mutex_unlock(&platform->gpu_set_clock_lock);
 #ifdef CONFIG_MALI_T6XX_DVFS
-		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET);
+		if (gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET)<0) GPU_LOG(DVFS_ERROR, "failed to set the PM_QOS\n");
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		break;
 	case GPU_CONTROL_CMU_PMU_ON:

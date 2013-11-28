@@ -147,8 +147,7 @@ void kbase_destroy_context(kbase_context *kctx)
 
 #ifdef SLSI_INTEGRATION
 	if (!kctx || kctx->ctx_status != CTX_INITIALIZED) {
-		printk("An uninitialized or destroyed context is tried to be destroyed\n");
-		printk("kctx: 0x%p, kctx->osctx->tgid: %d, kctx->ctx_status: 0x%x\n", kctx, kctx->osctx.tgid, kctx->ctx_status);
+		printk("An uninitialized or destroyed context is tried to be destroyed, kctx: 0x%p\n", kctx);
 		return ;
 	}
 #endif
