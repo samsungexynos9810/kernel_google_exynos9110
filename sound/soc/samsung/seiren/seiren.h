@@ -88,6 +88,9 @@
 #define FW_LOG_LINE		(30)
 #define FW_LOG_MAX		(80)
 
+#define FW_ZERO_SET_BASE	(0x22000)
+#define FW_ZERO_SET_SIZE	(0x1F00)
+
 /* For Debugging */
 #define esa_info(x...)		pr_info("SEIREN: " x)
 #define esa_err(x...)		pr_err("SEIREN: ERR: " x)

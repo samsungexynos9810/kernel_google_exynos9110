@@ -169,8 +169,9 @@ static void esa_fw_download(void)
 	esa_debug("%s: fw size = sram(%d) dram(%d)\n", __func__,
 			fw_sram_bin_size, fw_dram_bin_size);
 
+	writel(FWAREA_IOVA, si.regs + CA5_BOOTADDR);
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
-	udelay(100);
+	udelay(20);
 
 	memset(si.mailbox, 0, 128);
 
@@ -178,6 +179,7 @@ static void esa_fw_download(void)
 		esa_debug("%s: resume\n", __func__);
 		/* Restore SRAM */
 		memcpy(si.sram, si.fwmem_sram_bak, SRAM_FW_MAX);
+		memset(si.sram + FW_ZERO_SET_BASE, 0, FW_ZERO_SET_SIZE);
 	} else {
 		esa_debug("%s: intialize\n", __func__);
 		for (n = 0; n < FWAREA_NUM; n++)
@@ -189,7 +191,6 @@ static void esa_fw_download(void)
 					fw_dram_bin_size);
 	}
 
-	writel(FWAREA_IOVA, si.regs + CA5_BOOTADDR);
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_NORMAL);
 
 	esa_debug("%s: CA5 startup...\n", __func__);
