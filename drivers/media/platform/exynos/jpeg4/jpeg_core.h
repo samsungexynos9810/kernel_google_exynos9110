@@ -68,6 +68,8 @@ enum jpeg_clocks {
 	JPEG_PARN1_CLK,
 	JPEG_CHLD2_CLK,
 	JPEG_PARN2_CLK,
+	JPEG_CHLD3_CLK,
+	JPEG_PARN3_CLK,
 };
 
 enum jpeg_ip_version {
@@ -247,6 +249,8 @@ struct jpeg_dev {
 	struct clk		*clk_chld1;
 	struct clk		*clk_parn2;
 	struct clk		*clk_chld2;
+	struct clk		*clk_parn3;
+	struct clk		*clk_chld3;
 	atomic_t		clk_cnt;
 
 	struct mutex		lock;

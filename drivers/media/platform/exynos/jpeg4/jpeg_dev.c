@@ -207,6 +207,7 @@ static int jpeg_clk_get(struct jpeg_dev *jpeg)
 {
 	char *parn1_clkname, *chld1_clkname;
 	char *parn2_clkname, *chld2_clkname;
+	char *parn3_clkname, *chld3_clkname;
 	char *gate_clkname;
 	struct device *dev = &jpeg->plat_dev->dev;
 
@@ -219,11 +220,17 @@ static int jpeg_clk_get(struct jpeg_dev *jpeg)
 	of_property_read_string_index(dev->of_node,
 		"clock-names", JPEG_CHLD2_CLK, (const char **)&chld2_clkname);
 	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_PARN3_CLK, (const char **)&parn3_clkname);
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_CHLD3_CLK, (const char **)&chld3_clkname);
+	of_property_read_string_index(dev->of_node,
 		"clock-names", JPEG_GATE_CLK, (const char **)&gate_clkname);
 
-	jpeg_dbg("clknames: parent1 %s child1 %s parent2 %s child2 %s gate %s\n",
+	jpeg_dbg("clknames: parent1 %s child1 %s parent2 %s child2 %s parent3 %s \
+			child3 %s gate %s\n",
 		parn1_clkname, chld1_clkname,
-		parn2_clkname, chld2_clkname, gate_clkname);
+		parn2_clkname, chld2_clkname,
+		parn3_clkname, chld3_clkname, gate_clkname);
 
 	jpeg->clk_parn1 = clk_get(dev, parn1_clkname);
 	if (IS_ERR(jpeg->clk_parn1)) {
@@ -249,6 +256,17 @@ static int jpeg_clk_get(struct jpeg_dev *jpeg)
 		goto err_clk_get_chld2;
 	}
 
+	jpeg->clk_parn3 = clk_get(dev, parn3_clkname);
+	if (IS_ERR(jpeg->clk_parn3)) {
+		dev_err(dev, "failed to get parent3 clk\n");
+		goto err_clk_get_parn3;
+	}
+
+	jpeg->clk_chld3 = clk_get(dev, chld3_clkname);
+	if (IS_ERR(jpeg->clk_chld3)) {
+		dev_err(dev, "failed to get child3 clk\n");
+		goto err_clk_get_chld3;
+	}
 	/* clock for gating */
 	jpeg->clk = clk_get(dev, gate_clkname);
 	if (IS_ERR(jpeg->clk)) {
@@ -260,6 +278,10 @@ static int jpeg_clk_get(struct jpeg_dev *jpeg)
 	return 0;
 
 err_clk_get:
+	clk_put(jpeg->clk_chld3);
+err_clk_get_chld3:
+	clk_put(jpeg->clk_parn3);
+err_clk_get_parn3:
 	clk_put(jpeg->clk_chld2);
 err_clk_get_chld2:
 	clk_put(jpeg->clk_parn2);
@@ -279,17 +301,23 @@ static void jpeg_clk_put(struct jpeg_dev *jpeg)
 	clk_put(jpeg->clk_parn1);
 	clk_put(jpeg->clk_chld2);
 	clk_put(jpeg->clk_parn2);
+	clk_put(jpeg->clk_chld3);
+	clk_put(jpeg->clk_parn3);
 }
 
 static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status)
 {
 	if (status == JPEG_CLK_ON) {
 		atomic_inc(&jpeg->clk_cnt);
-		clk_set_parent(jpeg->clk_chld1, jpeg->clk_parn1);
-		clk_set_parent(jpeg->clk_chld2, jpeg->clk_parn2);
+		if (clk_set_parent(jpeg->clk_chld1, jpeg->clk_parn1))
+			jpeg_dbg("Unable to set parent1 of clock child1\n");
+		if (clk_set_parent(jpeg->clk_chld2, jpeg->clk_parn2))
+			jpeg_dbg("Unable to set parent2 of clock child2\n");
+		if (clk_set_parent(jpeg->clk_chld3, jpeg->clk_parn3))
+			jpeg_dbg("Unable to set parent3 of clock child3\n");
 		clk_prepare(jpeg->clk);
 		clk_enable(jpeg->clk);
-		jpeg_dbg("clock enabled\n");
+		jpeg_dbg("jpeg clock enabled\n");
 	} else if (status == JPEG_CLK_OFF) {
 		int clk_cnt = atomic_dec_return(&jpeg->clk_cnt);
 		if (clk_cnt < 0) {
@@ -298,7 +326,7 @@ static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status
 		} else {
 			clk_disable(jpeg->clk);
 			clk_unprepare(jpeg->clk);
-			jpeg_dbg("clock disabled\n");
+			jpeg_dbg("jpeg clock disabled\n");
 		}
 	}
 }
@@ -359,9 +387,9 @@ static int jpeg_m2m_open(struct file *file)
 		kfree(ctx);
 		return ret;
 	}
-#ifdef CONFIG_PM_RUNTIME
+
 	pm_runtime_get_sync(&jpeg->plat_dev->dev);
-#endif
+
 	return 0;
 }
 
@@ -371,9 +399,7 @@ static int jpeg_m2m_release(struct file *file)
 
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&ctx->jpeg_dev->plat_dev->dev);
-#endif
 	kfree(ctx);
 
 	return 0;
@@ -776,11 +802,8 @@ static int jpeg_probe(struct platform_device *pdev)
 	jpeg->bus_dev = dev_get("exynos-busfreq");
 #endif
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
-#else
 	jpeg_clock_gating(jpeg, JPEG_CLK_ON);
-#endif
 	return 0;
 
 err_video_reg:
