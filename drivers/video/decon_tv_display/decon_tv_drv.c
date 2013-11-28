@@ -297,6 +297,7 @@ static int dex_get_hdmi_config(struct dex_device *dex,
 		ret = v4l2_subdev_call(hdmi_sd, video, enum_dv_timings, &hdmi_data->etimings);
 		if (ret)
 			dex_err("failed to enumerate timings\n");
+		break;
 	case EXYNOS_HDMI_STATE_CEC_ADDR:
 		ctrl.id = V4L2_CID_TV_SOURCE_PHY_ADDR;
 		ret = v4l2_subdev_call(hdmi_sd, core, g_ctrl, &ctrl);
