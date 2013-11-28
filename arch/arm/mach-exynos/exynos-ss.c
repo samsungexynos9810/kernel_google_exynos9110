@@ -36,7 +36,7 @@
 #define ESS_MMU_REG_SZ			SZ_4K
 #define ESS_CORE_REG_SZ			SZ_4K
 #define ESS_HEADER_TOTAL_SZ		(ESS_HEADER_SZ + ESS_MMU_REG_SZ + ESS_CORE_REG_SZ)
-#define ESS_LOG_MEM_SZ			(SZ_2M + SZ_1M)
+#define ESS_LOG_MEM_SZ			SZ_4M
 #define ESS_HOOK_LOGBUF_SZ		SZ_2M
 
 #define ESS_HOOK_LOGGER_MAIN_SZ		(SZ_2M + SZ_1M)
@@ -587,22 +587,27 @@ static unsigned int __init exynos_ss_remap(unsigned int base, unsigned int size)
 
 static int __init exynos_ss_setup(char *str)
 {
-	unsigned int size = 0, limit;
+	unsigned int size = 0;
 	unsigned long base = 0;
 
 	if (kstrtoul(str, 0, &base))
 		goto out;
 
-	limit = sizeof(struct exynos_ss_log) + ESS_HOOK_LOGBUF_SZ;
+	size = sizeof(struct exynos_ss_log);
 
+	if (ESS_LOG_MEM_SZ < size)
+		goto out;
+
+	size = ESS_LOG_MEM_SZ + ESS_HOOK_LOGBUF_SZ;
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
-	limit += ESS_HOOK_LOGGER_MAIN_SZ;
-	limit += ESS_HOOK_LOGGER_SYSTEM_SZ;
-	limit += ESS_HOOK_LOGGER_RADIO_SZ;
-	limit += ESS_HOOK_LOGGER_EVENTS_SZ;
+	size += ESS_HOOK_LOGGER_MAIN_SZ;
+	size += ESS_HOOK_LOGGER_SYSTEM_SZ;
+	size += ESS_HOOK_LOGGER_RADIO_SZ;
+	size += ESS_HOOK_LOGGER_EVENTS_SZ;
 #endif
-	limit = limit & (0xFFF00000);
-	size = limit + SZ_1M;
+	/*  allow only align 2Mbyte */
+	if (size % SZ_2M != 0)
+		goto out;
 
 	if (!(reserve_bootmem(base, size, BOOTMEM_EXCLUSIVE))) {
 		ess_phy_addr = base;
