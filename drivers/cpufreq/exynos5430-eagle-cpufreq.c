@@ -816,8 +816,8 @@ static void __init set_volt_table_CA15(void)
 	}
 
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-	max_support_idx_CA15 = L10;
-	min_support_idx_CA15 = L17;
+	max_support_idx_CA15 = L20;
+	min_support_idx_CA15 = L20;
 #else
 	max_support_idx_CA15 = L15;
 	min_support_idx_CA15 = L18;
@@ -962,8 +962,8 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->max_support_idx = max_support_idx_CA15;
 	info->min_support_idx = min_support_idx_CA15;
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L10].frequency;
-	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L10].frequency;
+	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L20].frequency;
+	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L20].frequency;
 #else
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L15].frequency;
 	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L15].frequency;

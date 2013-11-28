@@ -672,7 +672,7 @@ static void __init set_volt_table_CA7(void)
 	}
 
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-	max_support_idx_CA7 = L5;
+	max_support_idx_CA7 = L11;
 	min_support_idx_CA7 = L18;
 #else
 	max_support_idx_CA7 = L5;
@@ -791,8 +791,8 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L5].frequency;
-	info->boot_cpu_max_qos = exynos5430_freq_table_CA7[L5].frequency;
+	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L11].frequency;
+	info->boot_cpu_max_qos = exynos5430_freq_table_CA7[L11].frequency;
 #else
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L5].frequency;
 	info->boot_cpu_max_qos = exynos5430_freq_table_CA7[L5].frequency;
