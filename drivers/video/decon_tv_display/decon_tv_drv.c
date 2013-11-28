@@ -341,7 +341,7 @@ static int dex_set_hdmi_config(struct dex_device *dex,
 
 	switch (hdmi_data->state) {
 	case EXYNOS_HDMI_STATE_PRESET:
-		ret = v4l2_subdev_call(hdmi_sd, video, g_dv_timings, &hdmi_data->timings);
+		ret = v4l2_subdev_call(hdmi_sd, video, s_dv_timings, &hdmi_data->timings);
 		if (ret)
 			dex_err("failed to set timings newly\n");
 		dex_dbg("%dx%d@%s %lldHz %s(%#x)\n", hdmi_data->timings.bt.width,
