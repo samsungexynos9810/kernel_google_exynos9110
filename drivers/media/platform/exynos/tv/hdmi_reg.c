@@ -1611,6 +1611,7 @@ irqreturn_t hdmi_irq_handler(int irq, void *dev_data)
 		if (intc_flag & HDMI_INTC_FLAG_HPD_PLUG) {
 			hdmi_write_mask(hdev, HDMI_INTC_FLAG_0, ~0,
 					HDMI_INTC_FLAG_HPD_PLUG);
+			pr_warn("PLUG interrupt shouldn't happen\n");
 		}
 
 		if (intc_flag & HDMI_INTC_FLAG_HDCP) {
@@ -1619,6 +1620,8 @@ irqreturn_t hdmi_irq_handler(int irq, void *dev_data)
 			hdmi_write_mask(hdev, HDMI_INTC_FLAG_0, ~0,
 					HDMI_INTC_FLAG_HDCP);
 		}
+	} else {
+		pr_warn("HDMI interrupt shouldn't happen\n");
 	}
 
 	return IRQ_HANDLED;
@@ -1628,7 +1631,7 @@ void hdmi_reg_init(struct hdmi_device *hdev)
 {
 	/* enable HPD interrupts */
 	hdmi_write_mask(hdev, HDMI_INTC_CON_0, ~0, HDMI_INTC_EN_GLOBAL |
-		HDMI_INTC_EN_HPD_PLUG | HDMI_INTC_EN_HPD_UNPLUG);
+					HDMI_INTC_EN_HPD_UNPLUG);
 	/* hdcp interrupt must be prohibitted before starting hdcp */
 	hdmi_write_mask(hdev, HDMI_INTC_CON_0, 0, HDMI_INTC_EN_HDCP);
 	/* choose HDMI mode */
@@ -1870,17 +1873,6 @@ void hdmi_enable(struct hdmi_device *hdev, int on)
 		hdmi_write_mask(hdev, HDMI_CON_0, 0, HDMI_EN);
 		hdmi_write_mask(hdev, HDMI_CON_0, 0, HDMI_CON_0_MASK);
 	}
-}
-
-void hdmi_hpd_enable(struct hdmi_device *hdev, int on)
-{
-	/* enable/disable HPD interrupts */
-	if (on)
-		hdmi_write_mask(hdev, HDMI_INTC_CON_0, ~0, HDMI_INTC_EN_GLOBAL |
-				HDMI_INTC_EN_HPD_PLUG | HDMI_INTC_EN_HPD_UNPLUG);
-	else
-		hdmi_write_mask(hdev, HDMI_INTC_CON_0, 0, HDMI_INTC_EN_GLOBAL |
-				HDMI_INTC_EN_HPD_PLUG | HDMI_INTC_EN_HPD_UNPLUG);
 }
 
 void hdmi_hpd_clear_int(struct hdmi_device *hdev)
@@ -2283,18 +2275,17 @@ void hdmi_reg_mute(struct hdmi_device *hdev, int on)
 
 void hdmi_reg_set_int_hpd(struct hdmi_device *hdev)
 {
-	hdmi_write_mask(hdev, HDMI_INTC_CON_0, 0, HDMI_INTC_EN_GLOBAL);
 	s5p_v4l2_int_src_hdmi_hpd(hdev);
 	hdmi_write(hdev, HDMI_HPD_GEN0, 0xff);
-	hdmi_write_mask(hdev, HDMI_INTC_CON_0, ~0, HDMI_INTC_EN_GLOBAL |
-			HDMI_INTC_EN_HPD_PLUG | HDMI_INTC_EN_HPD_UNPLUG);
+	hdmi_write_mask(hdev, HDMI_INTC_CON_0, ~0, HDMI_INTC_EN_HPD_UNPLUG);
+	hdmi_hpd_clear_int(hdev);
 }
 
 void hdmi_reg_set_ext_hpd(struct hdmi_device *hdev)
 {
-	hdmi_write_mask(hdev, HDMI_INTC_FLAG_0, ~0, HDMI_INTC_FLAG_HPD_PLUG |
-			HDMI_INTC_FLAG_HPD_UNPLUG);
-	hdmi_write_mask(hdev, HDMI_INTC_CON_0, 0, HDMI_INTC_EN_GLOBAL);
+	hdmi_hpd_clear_int(hdev);
+	hdmi_write_mask(hdev, HDMI_INTC_CON_0, 0, HDMI_INTC_EN_GLOBAL |
+				HDMI_INTC_EN_HPD_UNPLUG);
 	s5p_v4l2_int_src_ext_hpd(hdev);
 }
 

@@ -246,9 +246,14 @@ static int hdmi_streamon(struct hdmi_device *hdev)
 	hdmi_enable(hdev, 1);
 	hdmi_tg_enable(hdev, 1);
 
-	hdmi_reg_set_int_hpd(hdev);
-
 	hdev->streaming = HDMI_STREAMING;
+
+	/* change the HPD interrupt: External -> Internal */
+	disable_irq(hdev->ext_irq);
+	cancel_delayed_work_sync(&hdev->hpd_work_ext);
+	hdmi_reg_set_int_hpd(hdev);
+	enable_irq(hdev->int_irq);
+	dev_info(hdev->dev, "HDMI interrupt changed to internal\n");
 
 	/* start HDCP if enabled */
 	if (hdev->hdcp_info.hdcp_enable) {
@@ -274,8 +279,6 @@ static int hdmi_streamoff(struct hdmi_device *hdev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	hdmi_reg_set_ext_hpd(hdev);
-
 	if (hdev->hdcp_info.hdcp_enable && hdev->hdcp_info.hdcp_start)
 		hdcp_stop(hdev);
 
@@ -284,6 +287,13 @@ static int hdmi_streamoff(struct hdmi_device *hdev)
 	hdmi_tg_enable(hdev, 0);
 
 	hdev->streaming = HDMI_STOP;
+
+	/* change the HPD interrupt: Internal -> External */
+	disable_irq(hdev->int_irq);
+	cancel_work_sync(&hdev->hpd_work);
+	hdmi_reg_set_ext_hpd(hdev);
+	enable_irq(hdev->ext_irq);
+	dev_info(hdev->dev, "HDMI interrupt changed to external\n");
 
 	hdmi_dumpregs(hdev, "streamoff");
 	return 0;
@@ -318,24 +328,7 @@ static int hdmi_s_power(struct v4l2_subdev *sd, int on)
 #else
 		hdmi_runtime_resume(hdev->dev);
 #endif
-		disable_irq(hdev->ext_irq);
-		cancel_delayed_work_sync(&hdev->hpd_work_ext);
-
-		s5p_v4l2_int_src_hdmi_hpd(hdev);
-		hdmi_hpd_enable(hdev, 1);
-		hdmi_hpd_clear_int(hdev);
-		enable_irq(hdev->int_irq);
-		dev_info(hdev->dev, "HDMI interrupt changed to internal\n");
 	} else {
-		cancel_work_sync(&hdev->work);
-		hdmi_hpd_enable(hdev, 0);
-		disable_irq(hdev->int_irq);
-		cancel_work_sync(&hdev->hpd_work);
-
-		s5p_v4l2_int_src_ext_hpd(hdev);
-		enable_irq(hdev->ext_irq);
-		dev_info(hdev->dev, "HDMI interrupt changed to external\n");
-
 #ifdef CONFIG_PM_RUNTIME
 		ret = pm_runtime_put_sync(hdev->dev);
 #else
