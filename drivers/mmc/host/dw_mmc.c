@@ -3196,7 +3196,7 @@ static void dw_mci_register_notifier(struct dw_mci *host, u32 reg_noti)
 	if (reg_noti == REGISTER_NOTI) {
 		if (drv_data && drv_data->register_notifier)
 			drv_data->register_notifier(host);
-	} else if (reg_noti == REGISTER_NOTI) {
+	} else if (reg_noti == UNREGISTER_NOTI) {
 		if (drv_data && drv_data->unregister_notifier)
 			drv_data->unregister_notifier(host);
 	}
