@@ -1289,7 +1289,7 @@ static int dex_create_links(struct dex_win *win)
 	struct dex_device *dex = win->dex;
 	struct exynos_md *md;
 	int ret, i;
-	int flags;
+	int flags = 0;
 	char err[80];
 
 	if (win->idx == DEX_BACKGROUND)
@@ -1298,7 +1298,6 @@ static int dex_create_links(struct dex_win *win)
 	dex_dbg("decon_tv create links\n");
 	memset(err, 0, sizeof(err));
 
-	flags = MEDIA_LNK_FL_ENABLED;
 	/* link creation : gscaler0~3[1] -> Window1~4[0] */
 	md = (struct exynos_md *)module_name_to_driver_data(MDEV_MODULE_NAME);
 	if (!md) {
@@ -1321,7 +1320,6 @@ static int dex_create_links(struct dex_win *win)
 	}
 
 	/* link creation : Window1~4[pad1] -> hdmi[0] */
-	flags = 0;
 	if (!strcmp(dex->hdmi_sd->name, "s5p-hdmi-sd"))
 		flags = MEDIA_LNK_FL_ENABLED;
 	ret = media_entity_create_link(&win->sd.entity, DEX_PAD_SOURCE,
