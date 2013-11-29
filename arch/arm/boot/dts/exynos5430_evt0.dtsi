@@ -2530,4 +2530,11 @@
 		clock-names = "pclk_tmu0_apbif", "pclk_tmu0_apbif",
 			"pclk_tmu1_apbif", "pclk_tmu1_apbif", "pclk_tmu1_apbif";
 	};
+
+	s5p-smem {
+		compatible = "samsung,exynos-secmem";
+		secmem = <&gsc_0>,
+			 <&gsc_1>,
+			 <&gsc_2>;
+	};
 };
