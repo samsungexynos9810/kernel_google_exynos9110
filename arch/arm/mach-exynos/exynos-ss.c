@@ -429,13 +429,12 @@ static inline void exynos_ss_hook_logger(const char *name,
 #endif
 	else
 		return;
-#if 0
+
 	if ((exynos_ss_check_rb(hook, size)))
 		hook->curr_ptr = hook->head_ptr;
 
 	memcpy(hook->curr_ptr, buf, size);
 	hook->curr_ptr += size;
-#endif
 }
 
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,00)
