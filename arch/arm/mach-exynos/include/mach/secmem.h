@@ -26,14 +26,6 @@ struct secchunk_info {
 	size_t		size;
 };
 
-#ifdef CONFIG_EXYNOS5_DEV_GSC
-extern struct platform_device exynos5_device_gsc0;
-#endif
-
-#ifdef CONFIG_PM_GENERIC_DOMAINS
-extern struct exynos_pm_domain exynos5420_pd_g2d;
-#endif
-
 #if defined(CONFIG_ION)
 extern struct ion_device *ion_exynos;
 struct secfd_info {

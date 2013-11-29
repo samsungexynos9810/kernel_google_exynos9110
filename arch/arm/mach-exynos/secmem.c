@@ -23,6 +23,8 @@
 #include <linux/pm_qos.h>
 #include <linux/dma-contiguous.h>
 #include <linux/exynos_ion.h>
+#include <linux/of.h>
+#include <linux/of_platform.h>
 
 #include <asm/memory.h>
 #include <asm/cacheflush.h>
@@ -109,10 +111,33 @@ static int secmem_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static void drm_enable_locked(struct secmem_info *info, bool enable)
+static int drm_enable_locked(struct secmem_info *info, bool enable)
 {
 	int ret, idx;
 	int nbufs = sizeof(secmem_regions) / sizeof(uint32_t);
+
+	struct platform_device *pdev;
+	struct device *sdev;
+	struct device_node *np;
+
+	np = of_find_compatible_node(NULL, NULL, "samsung,exynos-secmem");
+	if (!of_device_is_available(np)) {
+		pr_err("Fail to find compatible node for secmem\n");
+		return -1;
+	}
+
+	np = of_parse_phandle(np, "secmem", 0);
+	if (!np) {
+		pr_err("secmem node is not found\n");
+		return -1;
+	}
+
+	pdev = of_find_device_by_node(np);
+	if (!pdev) {
+		pr_err("secmem node is not found\n");
+		return -1;
+	}
+	sdev = &pdev->dev;
 
 	if (drm_onoff != enable) {
 		if (enable) {
@@ -124,13 +149,15 @@ static void drm_enable_locked(struct secmem_info *info, bool enable)
 					printk("Fail to isolate reserve region. id = %d\n",
 									secmem_regions[idx]);
 			}
+			pm_runtime_enable(sdev);
+			pm_runtime_get_sync(sdev);
 		} else {
 			for (idx = 0; idx < nbufs; idx++) {
 				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL)
 					continue;
 				ion_exynos_contig_heap_deisolate(secmem_regions[idx]);
 			}
-
+			pm_runtime_put_sync(sdev);
 		}
 		drm_onoff = enable;
 		/*
@@ -142,6 +169,8 @@ static void drm_enable_locked(struct secmem_info *info, bool enable)
 		pr_err("%s: DRM is already %s\n", __func__,
 		       drm_onoff ? "on" : "off");
 	}
+
+	return 0;
 }
 
 static int secmem_release(struct inode *inode, struct file *file)
@@ -152,8 +181,12 @@ static int secmem_release(struct inode *inode, struct file *file)
 	mutex_lock(&drm_lock);
 	instance_count--;
 	if (instance_count == 0) {
-		if (info->drm_enabled)
-			drm_enable_locked(info, false);
+		if (info->drm_enabled) {
+			int ret;
+			ret = drm_enable_locked(info, false);
+			if (ret < 0)
+				pr_err("fail to lock/unlock drm status. lock = %d\n", false);
+		}
 	}
 	else {
 		printk("%s: exist opened instance", __func__);
@@ -256,7 +289,7 @@ static long secmem_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		break;
 	case SECMEM_IOC_SET_DRM_ONOFF:
 	{
-		int val = 0;
+		int ret, val = 0;
 
 		if (copy_from_user(&val, (int __user *)arg, sizeof(int)))
 			return -EFAULT;
@@ -269,7 +302,9 @@ static long secmem_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 			 * 2. if we don't already hdrm enabled,
 			 *    try to enable it.
 			 */
-			drm_enable_locked(info, val);
+			ret = drm_enable_locked(info, val);
+			if (ret < 0)
+				pr_err("fail to lock/unlock drm status. lock = %d\n", val);
 		}
 		mutex_unlock(&drm_lock);
 		break;
@@ -323,9 +358,6 @@ struct miscdevice secmem = {
 	.minor	= MISC_DYNAMIC_MINOR,
 	.name	= SECMEM_DEV_NAME,
 	.fops	= &secmem_fops,
-#ifdef CONFIG_EXYNOS5_DEV_GSC
-	.parent	= &exynos5_device_gsc0.dev,
-#endif
 };
 
 static int __init secmem_init(void)
@@ -341,14 +373,11 @@ static int __init secmem_init(void)
 
 	crypto_driver = NULL;
 
-	pm_runtime_enable(secmem.this_device);
-
 	return 0;
 }
 
 static void __exit secmem_exit(void)
 {
-	__pm_runtime_disable(secmem.this_device, false);
 	misc_deregister(&secmem);
 }
 
