@@ -147,7 +147,7 @@ int create_decon_mic(struct platform_device *pdev)
 
 	mic->lcd = decon_get_lcd_info();
 
-	mic->mic_config = get_display_mic_config();
+	mic->mic_config = dispdrv->dt_ops.get_display_mic_config();
 
 	mic->decon_mic_on = false;
 

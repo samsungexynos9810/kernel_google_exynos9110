@@ -14,14 +14,41 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <video/mipi_display.h>
+#include <linux/platform_device.h>
+
 #include "decon_mipi_dsi.h"
 #include "s6e8aa0_gamma.h"
+#include "decon_display_driver.h"
 
 #define GAMMA_PARAM_SIZE 26
 #define MAX_BRIGHTNESS 255
 #define MIN_BRIGHTNESS 0
 #define DEFAULT_BRIGHTNESS 0
 
+struct decon_lcd s6e8aa0_lcd_info = {
+	/* Only availaable VIDEO MODE */
+	.mode = VIDEO_MODE,
+
+	.vfp = 0x1,
+	.vbp = 0xD,
+	.hfp = 0x18,
+	.hbp = 0x18,
+
+	.vsa = 0x02,
+	.hsa = 0x02,
+
+	.xres = 800,
+	.yres = 1280,
+
+	.width = 71,
+	.height = 114,
+
+	/* Mhz */
+	.hs_clk = 480,
+	.esc_clk = 20,
+
+	.fps = 60,
+};
 static struct mipi_dsim_device *dsim_base;
 static struct backlight_device *bd;
 #ifdef CONFIG_HAS_EARLYSUSPEND
@@ -82,6 +109,10 @@ static const unsigned char elvss_ctrl_set[3] = {
 	0xB1, 0x04, 0x00
 };
 
+struct decon_lcd *decon_get_lcd_info(void)
+{
+	return &s6e8aa0_lcd_info;
+}
 
 static int s6e8aa0_get_brightness(struct backlight_device *bd)
 {

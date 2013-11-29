@@ -82,7 +82,7 @@ struct mic_config g_mic_config;
 #define DISPLAY_MIC_REG_INDEX		2
 #endif
 
-static unsigned int g_dsi_power_gpio_num;
+static struct display_gpio g_disp_gpios;
 struct mipi_dsim_lcd_config g_lcd_config;
 
 static int parse_decon_platdata(struct device_node *np)
@@ -95,22 +95,6 @@ static int parse_decon_platdata(struct device_node *np)
 	DT_READ_U32(np, "samsung,vidcon1", g_decon_platdata.vidcon1);
 #endif
 	DT_READ_U32(np, "samsung,default_win", g_decon_platdata.default_win);
-	DT_READ_U32(np, "samsung,left_margin",
-		g_fb_win0.win_mode.left_margin);
-	DT_READ_U32(np, "samsung,right_margin",
-		g_fb_win0.win_mode.right_margin);
-	DT_READ_U32(np, "samsung,upper_margin",
-		g_fb_win0.win_mode.upper_margin);
-	DT_READ_U32(np, "samsung,lower_margin",
-		g_fb_win0.win_mode.lower_margin);
-	DT_READ_U32(np, "samsung,hsync_len", g_fb_win0.win_mode.hsync_len);
-	DT_READ_U32(np, "samsung,vsync_len", g_fb_win0.win_mode.vsync_len);
-	DT_READ_U32(np, "samsung,xres", g_fb_win0.win_mode.xres);
-	DT_READ_U32(np, "samsung,yres", g_fb_win0.win_mode.yres);
-	DT_READ_U32(np, "samsung,virtual_x", g_fb_win0.virtual_x);
-	DT_READ_U32(np, "samsung,virtual_y", g_fb_win0.virtual_y);
-	DT_READ_U32(np, "samsung,width", g_fb_win0.width);
-	DT_READ_U32(np, "samsung,height", g_fb_win0.height);
 	DT_READ_U32(np, "samsung,max_bpp", g_fb_win0.max_bpp);
 	DT_READ_U32(np, "samsung,default_bpp", g_fb_win0.default_bpp);
 
@@ -119,17 +103,6 @@ static int parse_decon_platdata(struct device_node *np)
 	g_decon_platdata.win[2] = &g_fb_win0;
 	g_decon_platdata.win[3] = &g_fb_win0;
 	g_decon_platdata.win[4] = &g_fb_win0;
-
-	/* parse for mipi-dsi driver */
-	g_lcd_config.rgb_timing.left_margin = g_fb_win0.win_mode.left_margin;
-	g_lcd_config.rgb_timing.right_margin = g_fb_win0.win_mode.right_margin;
-	g_lcd_config.rgb_timing.upper_margin = g_fb_win0.win_mode.upper_margin;
-	g_lcd_config.rgb_timing.lower_margin = g_fb_win0.win_mode.lower_margin;
-	g_lcd_config.rgb_timing.hsync_len = g_fb_win0.win_mode.hsync_len;
-	g_lcd_config.rgb_timing.vsync_len = g_fb_win0.win_mode.vsync_len;
-	g_lcd_config.lcd_size.width = g_fb_win0.win_mode.xres;
-	g_lcd_config.lcd_size.height = g_fb_win0.win_mode.yres;
-
 	return 0;
 
 exception:
@@ -298,28 +271,28 @@ static int parse_interrupt_dt_exynos5430(struct platform_device *pdev,
 	return ret;
 }
 
-struct s3c_fb_driverdata *get_display_drvdata_exynos5430(void)
+struct s3c_fb_driverdata *get_display_drvdata(void)
 {
 	return &g_fb_drvdata;
 }
 
-struct s3c_fb_platdata *get_display_platdata_exynos5430(void)
+struct s3c_fb_platdata *get_display_platdata(void)
 {
 	return &g_decon_platdata;
 }
 
-struct mipi_dsim_config *get_display_dsi_drvdata_exynos5430(void)
+struct mipi_dsim_config *get_display_dsi_drvdata(void)
 {
 	return &g_dsim_config;
 }
 
-struct mipi_dsim_lcd_config *get_display_lcd_drvdata_exynos5430(void)
+struct mipi_dsim_lcd_config *get_display_lcd_drvdata(void)
 {
 	return &g_lcd_config;
 }
 
 #ifdef CONFIG_DECON_MIC
-struct mic_config *get_display_mic_config_exynos5430(void)
+struct mic_config *get_display_mic_config(void)
 {
 	return &g_mic_config;
 }
@@ -355,17 +328,17 @@ static int parse_dsi_drvdata(struct device_node *np)
 	DT_READ_U32_OPTIONAL(np, "bta_timeout", g_dsim_config.bta_timeout);
 	DT_READ_U32_OPTIONAL(np, "rx_timeout", g_dsim_config.rx_timeout);
 
-	g_dsi_power_gpio_num = of_get_gpio(np, 0);
-
+	g_disp_gpios.num++;
+	g_disp_gpios.id[0] = of_get_gpio(np, 0);
 	return 0;
 }
 
-int get_display_dsi_reset_gpio_exynos5430(void)
+struct display_gpio *get_display_dsi_reset_gpio(void)
 {
-	return g_dsi_power_gpio_num;
+	return &g_disp_gpios;
 }
 
-int parse_display_dsi_dt_exynos5430(struct device_node *np)
+static int parse_display_dsi_dt_exynos5430(struct device_node *np)
 {
 	int ret = 0;
 
@@ -443,7 +416,7 @@ static int parse_all_dt_exynos5430(struct device_node *parent)
 /* parse_display_driver_dt_exynos5430
  * for creating all display device tree data & set up H/W info like as
  * base address and IRQ numbers of all display system IPs. */
-int parse_display_driver_dt_exynos5430(struct platform_device *pdev,
+int parse_display_driver_dt(struct platform_device *pdev,
 	struct display_driver *ddp)
 {
 	int ret = 0;
@@ -487,63 +460,6 @@ int parse_display_driver_dt_exynos5430(struct platform_device *pdev,
 	}
 
 	return ret;
-}
-
-void dump_s3c_fb_variant(struct s3c_fb_variant *p_fb_variant)
-{
-	pr_err("[INFO] is_2443:1: 0x%0X\n", p_fb_variant->is_2443);
-	pr_err("[INFO] nr_windows: 0x%0X\n", p_fb_variant->nr_windows);
-	pr_err("[INFO] vidtcon: 0x%0X\n", p_fb_variant->vidtcon);
-	pr_err("[INFO] wincon: 0x%0X\n", p_fb_variant->wincon);
-	pr_err("[INFO] winmap: 0x%0X\n", p_fb_variant->winmap);
-	pr_err("[INFO] keycon: 0x%0X\n", p_fb_variant->keycon);
-	pr_err("[INFO] buf_start: 0x%0X\n", p_fb_variant->buf_start);
-	pr_err("[INFO] buf_end: 0x%0X\n", p_fb_variant->buf_end);
-	pr_err("[INFO] buf_size: 0x%0X\n", p_fb_variant->buf_size);
-	pr_err("[INFO] osd: 0x%0X\n", p_fb_variant->osd);
-	pr_err("[INFO] osd_stride: 0x%0X\n", p_fb_variant->osd_stride);
-	pr_err("[INFO] palette[0]: 0x%0X\n", p_fb_variant->palette[0]);
-	pr_err("[INFO] palette[1]: 0x%0X\n", p_fb_variant->palette[1]);
-	pr_err("[INFO] palette[2]: 0x%0X\n", p_fb_variant->palette[2]);
-	pr_err("[INFO] palette[3]: 0x%0X\n", p_fb_variant->palette[3]);
-	pr_err("[INFO] palette[4]: 0x%0X\n", p_fb_variant->palette[4]);
-
-	pr_err("[INFO] has_prtcon:1: 0x%0X\n", p_fb_variant->has_prtcon);
-	pr_err("[INFO] has_shadowcon:1: 0x%0X\n", p_fb_variant->has_shadowcon);
-	pr_err("[INFO] has_blendcon:1: 0x%0X\n", p_fb_variant->has_blendcon);
-	pr_err("[INFO] has_alphacon:1: 0x%0X\n", p_fb_variant->has_alphacon);
-	pr_err("[INFO] has_clksel:1: 0x%0X\n", p_fb_variant->has_clksel);
-	pr_err("[INFO] has_fixvclk:1: 0x%0X\n", p_fb_variant->has_fixvclk);
-};
-
-void dump_s3c_fb_win_variant(struct s3c_fb_win_variant *p_fb_win_variant)
-{
-	pr_err("[INFO] has_osd_c:1: 0x%0X\n", p_fb_win_variant->has_osd_c);
-	pr_err("[INFO] has_osd_d:1: 0x%0X\n", p_fb_win_variant->has_osd_d);
-	pr_err("[INFO] has_osd_alpha:1: 0x%0X\n",
-		p_fb_win_variant->has_osd_alpha);
-	pr_err("[INFO] palette_16bpp:1: 0x%0X\n",
-		p_fb_win_variant->palette_16bpp);
-	pr_err("[INFO] osd_size_off: 0x%0X\n", p_fb_win_variant->osd_size_off);
-	pr_err("[INFO] palette_sz: 0x%0X\n", p_fb_win_variant->palette_sz);
-	pr_err("[INFO] valid_bpp: 0x%0X\n", p_fb_win_variant->valid_bpp);
-}
-
-void dump_s3c_fb_win_variants(struct s3c_fb_win_variant p_fb_win_variant[],
-	int num)
-{
-	int i;
-	for (i = 0; i < num; ++i) {
-		pr_err("[INFO] -------- %d --------\n", i);
-		dump_s3c_fb_win_variant(&g_fb_win_variant[i]);
-	}
-}
-
-
-void dump_driver_data()
-{
-	dump_s3c_fb_variant(&g_fb_drvdata.variant);
-	dump_s3c_fb_win_variants(g_fb_win_variant, S3C_FB_MAX_WIN);
 }
 
 #endif

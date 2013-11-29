@@ -192,10 +192,6 @@ irqreturn_t dex_irq_handler(int irq, void *dev_data)
 	}
 	if (val & VIDINTCON1_INT_I80) {
 		dex_write_mask(dex, VIDINTCON1, ~0, VIDINTCON1_INT_I80);
-#ifdef CONFIG_MACH_UNIVERSAL5430
-		dex->vsync_timestamp = timestamp;
-		wake_up_interruptible_all(&dex->vsync_wait);
-#endif
 	}
 
 	spin_unlock(&dex->reg_slock);

@@ -21,7 +21,7 @@
 #include "decon_display_driver.h"
 #include "fimd_fb.h"
 #include "decon_mipi_dsi.h"
-#include "fimd_dt.h"
+#include "decon_dt.h"
 #include <mach/map.h>
 
 #include <../drivers/clk/samsung/clk.h>
@@ -73,7 +73,7 @@
 	clk_set_rate(g_##node, target); \
 	} while (0)
 
-int init_display_fimd_clocks_exynos(struct device *dev)
+int init_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
 
@@ -125,7 +125,7 @@ int init_display_fimd_clocks_exynos(struct device *dev)
 	return ret;
 }
 
-int init_display_dsi_clocks_exynos(struct device *dev)
+int init_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
 	return ret;
@@ -187,29 +187,29 @@ void init_display_gpio_exynos(void)
 }
 
 
-int enable_display_dsi_power_exynos(struct device *dev)
+int enable_display_driver_power(struct device *dev)
 {
-	unsigned gpio_power;
-	unsigned int gpio_reset;
+	struct display_gpio *gpio;
+	struct display_driver *dispdrv;
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
 	struct pinctrl *pinctrl;
 #endif
 	int ret = 0;
 
-	gpio_power = get_display_dsi_lcd_power_gpio_exynos();
-	gpio_request_one(gpio_power, GPIOF_OUT_INIT_HIGH, "lcd_power");
-	usleep_range(5000, 6000);
-	gpio_free(gpio_power);
+	dispdrv = get_display_driver();
 
-	gpio_reset = get_display_dsi_lcd_reset_gpio_exynos();
-	gpio_request_one(gpio_reset,
-				GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_power");
 	usleep_range(5000, 6000);
-	gpio_set_value(gpio_reset, 0);
+	gpio_free(gpio->id[0]);
+
+	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
 	usleep_range(5000, 6000);
-	gpio_set_value(gpio_reset, 1);
+	gpio_set_value(gpio->id[1], 0);
 	usleep_range(5000, 6000);
-	gpio_free(gpio_reset);
+	gpio_set_value(gpio->id[1], 1);
+	usleep_range(5000, 6000);
+	gpio_free(gpio->id[1]);
 
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
 	pinctrl = devm_pinctrl_get_select(dev, "turnon_tes");
@@ -219,29 +219,28 @@ int enable_display_dsi_power_exynos(struct device *dev)
 	return ret;
 }
 
-int disable_display_dsi_power_exynos(struct device *dev)
+int disable_display_driver_power(struct device *dev)
 {
-	unsigned gpio_power;
-	unsigned int gpio_reset;
+	struct display_gpio *gpio;
+	struct display_driver *dispdrv;
 	int ret = 0;
 
+	dispdrv = get_display_driver();
+
 	/* Reset */
-	gpio_reset = get_display_dsi_lcd_reset_gpio_exynos();
-	gpio_request_one(gpio_reset,
-				GPIOF_OUT_INIT_LOW, "lcd_reset");
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_LOW, "lcd_reset");
 	usleep_range(5000, 6000);
-	gpio_free(gpio_reset);
+	gpio_free(gpio->id[1]);
 	/* Power */
-	gpio_power = get_display_dsi_lcd_power_gpio_exynos();
-	gpio_request_one(gpio_power,
-			GPIOF_OUT_INIT_LOW, "lcd_power");
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_power");
 	usleep_range(5000, 6000);
-	gpio_free(gpio_power);
+	gpio_free(gpio->id[0]);
 
 	return ret;
 }
 
-int enable_display_fimd_clocks_exynos(struct device *dev)
+int enable_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
 #if 0
@@ -262,24 +261,44 @@ int enable_display_fimd_clocks_exynos(struct device *dev)
 	return ret;
 }
 
-int enable_display_dsi_clocks_exynos(struct device *dev)
-{
-	int ret = 0;
-	return ret;
-}
-
-int disable_display_fimd_clocks_exynos(struct device *dev)
+int enable_display_driver_clocks(struct device *dev)
 {
 	return 0;
 }
 
-int enable_display_fimd_runtimepm_exynos(struct device *dev)
+int disable_display_decon_clocks(struct device *dev)
 {
 	return 0;
 }
 
-int disable_display_fimd_runtimepm_exynos(struct device *dev)
+int enable_display_decon_runtimepm(struct device *dev)
 {
+	return 0;
+}
+
+int disable_display_decon_runtimepm(struct device *dev)
+{
+	return 0;
+}
+
+int disp_pm_runtime_enable(struct display_driver *dispdrv)
+{
+#ifdef DISP_RUNTIME_PM_DEBUG
+	pm_debug("runtime pm for disp-driver enabled\n");
+#endif
+	pm_runtime_enable(dispdrv->display_driver);
+	return 0;
+}
+
+int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
+{
+	pm_runtime_get_sync(dispdrv->display_driver);
+	return 0;
+}
+
+int disp_pm_runtime_put_sync(struct display_driver *dispdrv)
+{
+	pm_runtime_put_sync(dispdrv->display_driver);
 	return 0;
 }
 

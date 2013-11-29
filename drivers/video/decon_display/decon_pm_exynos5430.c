@@ -67,6 +67,27 @@ static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
 static int g_debug_pm_count;
 #endif
 
+#define DISPLAY_GET_CLOCK1(node) do {\
+	g_##node = clk_get(dev, #node); \
+	if (IS_ERR(g_##node)) { \
+		pr_err("Failed to clk_get - " #node "\n"); \
+		return PTR_ERR(g_##node); \
+	} \
+	} while (0)
+
+#define DISPLAY_GET_CLOCK2(child, parent) do {\
+	g_##child = clk_get(dev, #child); \
+	g_##parent = clk_get(dev, #parent); \
+	if (IS_ERR(g_##child)) { \
+		pr_err("Failed to clk_get - " #child "\n"); \
+		return PTR_ERR(g_##child); \
+	} \
+	if (IS_ERR(g_##parent)) { \
+		pr_err("Failed to clk_get - " #parent "\n"); \
+		return PTR_ERR(g_##parent); \
+	} \
+	} while (0)
+
 #define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
 	g_##child = clk_get(dev, #child); \
 	g_##parent = clk_get(dev, #parent); \
@@ -154,170 +175,7 @@ static void check_display_clocks(void)
 	DISPLAY_CHECK_REGS(0x105B060C, 0x00000070, 0x00000020);
 }
 
-int init_display_decon_clocks_exynos5430(struct device *dev)
-{
-	int ret = 0;
-#ifndef CONFIG_SOC_EXYNOS5430_REV_0
-	void __iomem *regs;
-	u32 data;
-#endif
-
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_a, mout_bus_pll_sub);
-	DISPLAY_CLOCK_SET_PARENT(mout_aclk_disp_222_user, aclk_disp_222);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_user,
-		sclk_decon_eclk_mif);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_vclk_user,
-		sclk_decon_vclk_mif);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_mif);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_disp,
-		mout_sclk_decon_eclk_user);
-#else
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_a, mout_bus_pll_div2);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk_user,
-		sclk_decon_eclk_disp);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_vclk_user,
-		sclk_decon_vclk_disp);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_disp);
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_decon_eclk,
-		mout_sclk_decon_eclk_user);
-#endif
-
-	DISPLAY_CLOCK_SET_PARENT(mout_disp_pll, fout_disp_pll);
-
-	DISPLAY_CLOCK_SET_PARENT(mout_aclk_disp_333_user, aclk_disp_333);
-
-
-	/* setup dsd clock for MFC */
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
-#else
-	DISPLAY_CLOCK_SET_PARENT(mout_sclk_dsd_a, mout_mfc_pll_div2);
-#endif
-
-	DISPLAY_SET_RATE(dout_aclk_disp_333, 222*MHZ);
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
-#else
- 	DISPLAY_SET_RATE(dout_sclk_decon_eclk, 200*MHZ);
-#endif
-
-	additional_clock_setup();
-
-#ifndef CONFIG_SOC_EXYNOS5430_REV_0
-	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x0101);
-	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
-#endif
-
-	check_display_clocks();
-	return ret;
-}
-
-int init_display_dsi_clocks_exynos5430(struct device *dev)
-{
-	int ret = 0;
-	void __iomem *regs;
-
-	/* Set DISP_PLL = 136Mhz */
-	regs = ioremap(0x13B90100, 0x4);
-	writel(0xA0880303, regs);
-	iounmap(regs);
-	msleep(20);
-
-	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
-		phyclk_mipidphy_rxclkesc0_phy);
-	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_bitclkdiv8_user,
-		phyclk_mipidphy_bitclkdiv8_phy);
-
-	return ret;
-}
-
-int enable_display_dsi_power_exynos5430(struct device *dev)
-{
-	unsigned gpio_power;
-#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
-	struct pinctrl *pinctrl;
-#endif
-	int id;
-	int ret = 0;
-
-	gpio_power = get_display_dsi_reset_gpio();
-	id = gpio_request(gpio_power, "lcd_power");
-	if (id < 0) {
-		pr_err("Failed to get gpio number for the lcd power\n");
-		return -EINVAL;
-	}
-	gpio_direction_output(gpio_power, 0x01);
-
-	gpio_set_value(gpio_power, 1);
-	usleep_range(5000, 6000);
-
-	gpio_set_value(gpio_power, 0);
-	usleep_range(5000, 6000);
-	msleep(20);
-
-	gpio_set_value(gpio_power, 1);
-	usleep_range(5000, 6000);
-
-#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
-	pinctrl = devm_pinctrl_get_select(dev, "turnon_tes");
-	if (IS_ERR(pinctrl))
-		pr_err("failed to get tes pinctrl - ON");
-#endif
-
-	gpio_free(gpio_power);
-	return ret;
-}
-
-int disable_display_dsi_power_exynos5430(struct device *dev)
-{
-	unsigned gpio_power;
-#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
-	struct pinctrl *pinctrl;
-#endif
-	int id;
-	int ret = 0;
-
-	gpio_power = get_display_dsi_reset_gpio();
-	id = gpio_request(gpio_power, "lcd_power");
-	if (id < 0) {
-		pr_err("Failed to get gpio number for the lcd power\n");
-		return -EINVAL;
-	}
-	gpio_set_value(gpio_power, 0);
-	usleep_range(5000, 6000);
-
-#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
-	pinctrl = devm_pinctrl_get_select(dev, "turnoff_tes");
-	if (IS_ERR(pinctrl))
-		pr_err("failed to get tes pinctrl - OFF");
-#endif
-	gpio_free(gpio_power);
-
-	return ret;
-}
-
-#ifdef FAST_CMU_CLOCK_RECOVER
-static void temporary_cmu_restore(void)
-{
-	void __iomem *regs;
-	u32 data;
-
-	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
-	msleep(20);
-	TEMPORARY_RECOVER_CMU(0x105B0120, 0xFFFFFFFF, 0, 0xA0DE0400);
-	msleep(20);
-	TEMPORARY_RECOVER_CMU(0x105B0210, 0x1, 0, 0x01);
-	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
-	TEMPORARY_RECOVER_CMU(0x105B0610, 0xF, 0, 0x02);
-	TEMPORARY_RECOVER_CMU(0x13B90200, 0xFFFFFFFF, 0, 0x01);
-	TEMPORARY_RECOVER_CMU(0x13B90204, 0x11111, 0, 0x11111);
-	TEMPORARY_RECOVER_CMU(0x13B90208, 0x1100, 0, 0x1100);
-	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x1);
-}
-#endif
-
-int enable_display_decon_clocks_exynos5430(struct device *dev)
+int enable_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
 #ifndef CONFIG_SOC_EXYNOS5430_REV_0
@@ -375,7 +233,163 @@ int enable_display_decon_clocks_exynos5430(struct device *dev)
 	return ret;
 }
 
-int enable_display_dsi_clocks_exynos5430(struct device *dev)
+int init_display_decon_clocks(struct device *dev)
+{
+	int ret = 0;
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_a, mout_bus_pll_sub);
+	DISPLAY_GET_CLOCK2(mout_aclk_disp_222_user, aclk_disp_222);
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_user,
+		sclk_decon_eclk_mif);
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_vclk_user,
+		sclk_decon_vclk_mif);
+	DISPLAY_GET_CLOCK2(mout_sclk_dsd_user, sclk_dsd_mif);
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_disp,
+		mout_sclk_decon_eclk_user);
+#else
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_a, mout_bus_pll_div2);
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_user,
+		sclk_decon_eclk_disp);
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_vclk_user,
+		sclk_decon_vclk_disp);
+	DISPLAY_GET_CLOCK2(mout_sclk_dsd_user, sclk_dsd_disp);
+	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk,
+		mout_sclk_decon_eclk_user);
+#endif
+	DISPLAY_GET_CLOCK2(mout_disp_pll, fout_disp_pll);
+	DISPLAY_GET_CLOCK2(mout_aclk_disp_333_user, aclk_disp_333);
+
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	DISPLAY_GET_CLOCK2(mout_sclk_dsd_a, dout_mfc_pll);
+#else
+	DISPLAY_GET_CLOCK2(mout_sclk_dsd_a, mout_mfc_pll_div2);
+#endif
+
+	DISPLAY_GET_CLOCK1(dout_aclk_disp_333);
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	DISPLAY_GET_CLOCK1(dout_sclk_decon_eclk);
+#else
+	DISPLAY_GET_CLOCK1(dout_sclk_decon_eclk);
+#endif
+	enable_display_decon_clocks(dev);
+
+	additional_clock_setup();
+
+	check_display_clocks();
+	return ret;
+}
+
+int init_display_driver_clocks(struct device *dev)
+{
+	int ret = 0;
+	void __iomem *regs;
+
+	/* Set DISP_PLL = 136Mhz */
+	regs = ioremap(0x13B90100, 0x4);
+	writel(0xA0880303, regs);
+	iounmap(regs);
+	msleep(20);
+
+	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
+		phyclk_mipidphy_rxclkesc0_phy);
+	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_bitclkdiv8_user,
+		phyclk_mipidphy_bitclkdiv8_phy);
+
+	return ret;
+}
+
+int enable_display_driver_power(struct device *dev)
+{
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
+	struct pinctrl *pinctrl;
+#endif
+	int id;
+	int ret = 0;
+	struct display_driver *dispdrv;
+	struct display_gpio *gpio;
+
+	dispdrv = get_display_driver();
+
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+	id = gpio_request(gpio->id[0], "lcd_reset");
+	if (id < 0) {
+		pr_err("Failed to get gpio number for the lcd power\n");
+		return -EINVAL;
+	}
+	gpio_direction_output(gpio->id[0], 0x01);
+
+	gpio_set_value(gpio->id[0], 1);
+	usleep_range(5000, 6000);
+
+	gpio_set_value(gpio->id[0], 0);
+	usleep_range(5000, 6000);
+	msleep(20);
+
+	gpio_set_value(gpio->id[0], 1);
+	usleep_range(5000, 6000);
+
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
+	pinctrl = devm_pinctrl_get_select(dev, "turnon_tes");
+	if (IS_ERR(pinctrl))
+		pr_err("failed to get tes pinctrl - ON");
+#endif
+	gpio_free(gpio->id[0]);
+
+	return ret;
+}
+
+int disable_display_driver_power(struct device *dev)
+{
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
+	struct pinctrl *pinctrl;
+#endif
+	int id;
+	int ret = 0;
+	struct display_driver *dispdrv;
+	struct display_gpio *gpio;
+
+	dispdrv = get_display_driver();
+
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+	id = gpio_request(gpio->id[0], "lcd_reset");
+	if (id < 0) {
+		pr_err("Failed to get gpio number for the lcd power\n");
+		return -EINVAL;
+	}
+	gpio_set_value(gpio->id[0], 0);
+	usleep_range(5000, 6000);
+
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
+	pinctrl = devm_pinctrl_get_select(dev, "turnoff_tes");
+	if (IS_ERR(pinctrl))
+		pr_err("failed to get tes pinctrl - OFF");
+#endif
+	gpio_free(gpio->id[0]);
+
+	return ret;
+}
+
+#ifdef FAST_CMU_CLOCK_RECOVER
+static void temporary_cmu_restore(void)
+{
+	void __iomem *regs;
+	u32 data;
+
+	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
+	msleep(20);
+	TEMPORARY_RECOVER_CMU(0x105B0120, 0xFFFFFFFF, 0, 0xA0DE0400);
+	msleep(20);
+	TEMPORARY_RECOVER_CMU(0x105B0210, 0x1, 0, 0x01);
+	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
+	TEMPORARY_RECOVER_CMU(0x105B0610, 0xF, 0, 0x02);
+	TEMPORARY_RECOVER_CMU(0x13B90200, 0xFFFFFFFF, 0, 0x01);
+	TEMPORARY_RECOVER_CMU(0x13B90204, 0x11111, 0, 0x11111);
+	TEMPORARY_RECOVER_CMU(0x13B90208, 0x1100, 0, 0x1100);
+	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x1);
+}
+#endif
+
+int enable_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
 	void __iomem *regs;
@@ -384,7 +398,7 @@ int enable_display_dsi_clocks_exynos5430(struct device *dev)
 	temporary_cmu_restore();
 #else
 	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
-	enable_display_decon_clocks_exynos5430(NULL);
+	enable_display_decon_clocks(NULL);
 
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
 		phyclk_mipidphy_rxclkesc0_phy);
@@ -397,17 +411,17 @@ int enable_display_dsi_clocks_exynos5430(struct device *dev)
 	return ret;
 }
 
-int disable_display_decon_clocks_exynos5430(struct device *dev)
+int disable_display_decon_clocks(struct device *dev)
 {
 	return 0;
 }
 
-int enable_display_decon_runtimepm_exynos5430(struct device *dev)
+int enable_display_decon_runtimepm(struct device *dev)
 {
 	return 0;
 }
 
-int disable_display_decon_runtimepm_exynos5430(struct device *dev)
+int disable_display_decon_runtimepm(struct device *dev)
 {
 	return 0;
 }

@@ -225,9 +225,9 @@ void s5p_mipi_dsi_display_config(struct mipi_dsim_device *dsim)
 		~(0x3 << 26) & ~(1 << 25) & ~(0x3 << 18) & ~(0x7 << 12) &
 		~(0x3 << 16) & ~(0x7 << 8);
 
-	if (g_dsim_config.e_interface == DSIM_VIDEO)
+	if (dsim->lcd_info->mode == VIDEO_MODE)
 		reg |= (1 << 25);
-	else if (g_dsim_config.e_interface == DSIM_COMMAND)
+	else if (dsim->lcd_info->mode == COMMAND_MODE)
 		reg &= ~(1 << 25);
 	else {
 		dev_err(dsim->dev, "this ddi is not MIPI interface.\n");
@@ -324,12 +324,10 @@ void s5p_mipi_dsi_pll_freq(struct mipi_dsim_device *dsim,
 {
 	unsigned int reg = (readl(dsim->reg_base + S5P_DSIM_PLLCTRL)) &
 		~(0x7ffff << 1);
-	if (soc_is_exynos5250())
-		reg |= (pre_divider & 0x3f) << 13 | (main_divider & 0x1ff) << 4 |
-			(scaler & 0x7) << 1;
-	else
-		reg |= (pre_divider & 0x3f) << 13 | (main_divider & 0x1ff) << 4 |
-			((scaler/2) & 0x7) << 1;
+
+	reg |= (pre_divider & 0x3f) << 13 | (main_divider & 0x1ff) << 4 |
+		(scaler & 0x7) << 1;
+
 	writel(reg, dsim->reg_base + S5P_DSIM_PLLCTRL);
 }
 

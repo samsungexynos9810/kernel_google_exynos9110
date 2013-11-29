@@ -44,15 +44,14 @@
 #include "decon_mipi_dsi_lowlevel.h"
 #include "decon_mipi_dsi.h"
 #include "regs-mipidsim.h"
-#ifdef CONFIG_SOC_EXYNOS5430
-#include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
+
+#ifdef CONFIG_SOC_EXYNOS5430
+#include "decon_fb.h"
 #else
 #include <mach/regs-pmu.h>
 #include "fimd_fb.h"
-#include "fimd_dt.h"
-#include "fimd_pm.h"
 #endif
 
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
@@ -66,6 +65,113 @@ static unsigned int dpll_table[15] = {
 	100, 120, 170, 220, 270,
 	320, 390, 450, 510, 560,
 	640, 690, 770, 870, 950 };
+
+unsigned int dphy_timing[][10] = {
+	/* bps, clk_prepare, clk_zero, clk_post, clk_trail, hs_prepare, hs_zero, hs_trail, lpx */
+	{1500, 13, 65, 17, 13, 16, 24, 16, 11, 18},
+	{1490, 13, 65, 17, 13, 16, 24, 16, 11, 18},
+	{1480, 13, 64, 17, 13, 16, 24, 16, 11, 18},
+	{1470, 13, 64, 17, 13, 16, 24, 16, 11, 18},
+	{1460, 13, 63, 17, 13, 16, 24, 16, 10, 18},
+	{1450, 13, 63, 17, 13, 16, 23, 16, 10, 18},
+	{1440, 13, 63, 17, 13, 15, 23, 16, 10, 18},
+	{1430, 12, 62, 17, 13, 15, 23, 16, 10, 17},
+	{1420, 12, 62, 17, 13, 15, 23, 16, 10, 17},
+	{1410, 12, 61, 16, 13, 15, 23, 16, 10, 17},
+	{1400, 12, 61, 16, 13, 15, 23, 16, 10, 17},
+	{1390, 12, 60, 16, 12, 15, 22, 15, 10, 17},
+	{1380, 12, 60, 16, 12, 15, 22, 15, 10, 17},
+	{1370, 12, 59, 16, 12, 15, 22, 15, 10, 17},
+	{1360, 12, 59, 16, 12, 15, 22, 15, 10, 17},
+	{1350, 12, 59, 16, 12, 14, 22, 15, 10, 16},
+	{1340, 12, 58, 16, 12, 14, 21, 15, 10, 16},
+	{1330, 11, 58, 16, 12, 14, 21, 15, 9, 16},
+	{1320, 11, 57, 16, 12, 14, 21, 15, 9, 16},
+	{1310, 11, 57, 16, 12, 14, 21, 15, 9, 16},
+	{1300, 11, 56, 16, 12, 14, 21, 15, 9, 16},
+	{1290, 11, 56, 16, 12, 14, 21, 15, 9, 16},
+	{1280, 11, 56, 15, 11, 14, 20, 14, 9, 16},
+	{1270, 11, 55, 15, 11, 14, 20, 14, 9, 15},
+	{1260, 11, 55, 15, 11, 13, 20, 14, 9, 15},
+	{1250, 11, 54, 15, 11, 13, 20, 14, 9, 15},
+	{1240, 11, 54, 15, 11, 13, 20, 14, 9, 15},
+	{1230, 11, 53, 15, 11, 13, 19, 14, 9, 15},
+	{1220, 10, 53, 15, 11, 13, 19, 14, 9, 15},
+	{1210, 10, 52, 15, 11, 13, 19, 14, 9, 15},
+	{1200, 10, 52, 15, 11, 13, 19, 14, 9, 15},
+	{1190, 10, 52, 15, 11, 13, 19, 14, 8, 14},
+	{1180, 10, 51, 15, 11, 13, 19, 13, 8, 14},
+	{1170, 10, 51, 15, 10, 12, 18, 13, 8, 14},
+	{1160, 10, 50, 15, 10, 12, 18, 13, 8, 14},
+	{1150, 10, 50, 15, 10, 12, 18, 13, 8, 14},
+	{1140, 10, 49, 14, 10, 12, 18, 13, 8, 14},
+	{1130, 10, 49, 14, 10, 12, 18, 13, 8, 14},
+	{1120, 10, 49, 14, 10, 12, 17, 13, 8, 14},
+	{1110, 9, 48, 14, 10, 12, 17, 13, 8, 13},
+	{1100, 9, 48, 14, 10, 12, 17, 13, 8, 13},
+	{1090, 9, 47, 14, 10, 12, 17, 13, 8, 13},
+	{1080, 9, 47, 14, 10, 11, 17, 13, 8, 13},
+	{1070, 9, 46, 14, 10, 11, 17, 12, 8, 13},
+	{1060, 9, 46, 14, 10, 11, 16, 12, 7, 13},
+	{1050, 9, 45, 14, 9, 11, 16, 12, 7, 13},
+	{1040, 9, 45, 14, 9, 11, 16, 12, 7, 13},
+	{1030, 9, 45, 14, 9, 11, 16, 12, 7, 12},
+	{1020, 9, 44, 14, 9, 11, 16, 12, 7, 12},
+	{1010, 8, 44, 13, 9, 11, 15, 12, 7, 12},
+	{1000, 8, 43, 13, 9, 11, 15, 12, 7, 12},
+	{990, 8, 43, 13, 9, 10, 15, 12, 7, 12},
+	{980, 8, 42, 13, 9, 10, 15, 12, 7, 12},
+	{970, 8, 42, 13, 9, 10, 15, 12, 7, 12},
+	{960, 8, 42, 13, 9, 10, 15, 11, 7, 12},
+	{950, 8, 41, 13, 9, 10, 14, 11, 7, 11},
+	{940, 8, 41, 13, 8, 10, 14, 11, 7, 11},
+	{930, 8, 40, 13, 8, 10, 14, 11, 6, 11},
+	{920, 8, 40, 13, 8, 10, 14, 11, 6, 11},
+	{910, 8, 39, 13, 8, 9, 14, 11, 6, 11},
+	{900, 7, 39, 13, 8, 9, 13, 11, 6, 11},
+	{890, 7, 38, 13, 8, 9, 13, 11, 6, 11},
+	{880, 7, 38, 12, 8, 9, 13, 11, 6, 11},
+	{870, 7, 38, 12, 8, 9, 13, 11, 6, 10},
+	{860, 7, 37, 12, 8, 9, 13, 11, 6, 10},
+	{850, 7, 37, 12, 8, 9, 13, 10, 6, 10},
+	{840, 7, 36, 12, 8, 9, 12, 10, 6, 10},
+	{830, 7, 36, 12, 8, 9, 12, 10, 6, 10},
+	{820, 7, 35, 12, 7, 8, 12, 10, 6, 10},
+	{810, 7, 35, 12, 7, 8, 12, 10, 6, 10},
+	{800, 7, 35, 12, 7, 8, 12, 10, 6, 10},
+	{790, 6, 34, 12, 7, 8, 11, 10, 5, 9},
+	{780, 6, 34, 12, 7, 8, 11, 10, 5, 9},
+	{770, 6, 33, 12, 7, 8, 11, 10, 5, 9},
+	{760, 6, 33, 12, 7, 8, 11, 10, 5, 9},
+	{750, 6, 32, 12, 7, 8, 11, 9, 5, 9},
+	{740, 6, 32, 11, 7, 8, 11, 9, 5, 9},
+	{730, 6, 31, 11, 7, 7, 10, 9, 5, 9},
+	{720, 6, 31, 11, 7, 7, 10, 9, 5, 9},
+	{710, 6, 31, 11, 6, 7, 10, 9, 5, 8},
+	{700, 6, 30, 11, 6, 7, 10, 9, 5, 8},
+	{690, 5, 30, 11, 6, 7, 10, 9, 5, 8},
+	{680, 5, 29, 11, 6, 7, 9, 9, 5, 8},
+	{670, 5, 29, 11, 6, 7, 9, 9, 5, 8},
+	{660, 5, 28, 11, 6, 7, 9, 9, 4, 8},
+	{650, 5, 28, 11, 6, 7, 9, 9, 4, 8},
+	{640, 5, 28, 11, 6, 6, 9, 8, 4, 8},
+	{630, 5, 27, 11, 6, 6, 9, 8, 4, 7},
+	{620, 5, 27, 11, 6, 6, 8, 8, 4, 7},
+	{610, 5, 26, 10, 6, 6, 8, 8, 4, 7},
+	{600, 5, 26, 10, 6, 6, 8, 8, 4, 7},
+	{590, 5, 25, 10, 5, 6, 8, 8, 4, 7},
+	{580, 4, 25, 10, 5, 6, 8, 8, 4, 7},
+	{570, 4, 24, 10, 5, 6, 7, 8, 4, 7},
+	{560, 4, 24, 10, 5, 6, 7, 8, 4, 7},
+	{550, 4, 24, 10, 5, 5, 7, 8, 4, 6},
+	{540, 4, 23, 10, 5, 5, 7, 8, 4, 6},
+	{530, 4, 23, 10, 5, 5, 7, 7, 3, 6},
+	{520, 4, 22, 10, 5, 5, 7, 7, 3, 6},
+	{510, 4, 22, 10, 5, 5, 6, 7, 3, 6},
+	{500, 4, 21, 10, 5, 5, 6, 7, 3, 6},
+	{490, 4, 21, 10, 5, 5, 6, 7, 3, 6},
+	{480, 4, 21, 9, 4, 5, 6, 7, 3, 6},
+};
 
 #ifdef CONFIG_OF
 static const struct of_device_id exynos5_dsim[] = {
@@ -485,7 +591,6 @@ unsigned long s5p_mipi_dsi_change_pll(struct mipi_dsim_device *dsim,
 	}
 
 	dev_dbg(dsim->dev, "freq_band = %d\n", freq_band);
-
 	s5p_mipi_dsi_pll_freq(dsim, pre_divider, main_divider, scaler);
 
 	s5p_mipi_dsi_hs_zero_ctrl(dsim, 0);
@@ -505,54 +610,192 @@ unsigned long s5p_mipi_dsi_change_pll(struct mipi_dsim_device *dsim,
 	return dpll_out;
 }
 
+static u32 decon_mipi_dsi_calc_pms(struct mipi_dsim_device *dsim)
+{
+	u32 p_div, m_div, s_div;
+	u32 target_freq, fin_pll, voc_out, fout_cal;
+	u32 fin = 24;
+	/*
+	 * One clk lane consists of 2 lines.
+	 * HS clk freq = line rate X 2
+	 * Here, we calculate the freq of ONE line(fout_cal is the freq of ONE line).
+	 * Thus, target_freq = dsim->lcd_info->hs_clk/2.
+	 */
+	target_freq = dsim->lcd_info->hs_clk / 2;
+
+	for (p_div = 1; p_div <= 33; p_div++)
+		for (m_div = 25; m_div <= 125; m_div++)
+			for (s_div = 0; s_div <= 3; s_div++) {
+
+				fin_pll = fin / p_div;
+				voc_out = (m_div * fin) / p_div;
+				fout_cal = (m_div * fin) / (p_div * (1 << s_div));
+
+				if ((fin_pll < 6) || (fin_pll > 12))
+					continue;
+				if ((voc_out < 300) || (voc_out > 750))
+					continue;
+				if (fout_cal < target_freq)
+					continue;
+				if ((target_freq == fout_cal) && (fout_cal <= 750))
+					goto calculation_success;
+			}
+
+	for (p_div = 1; p_div <= 33; p_div++)
+		for (m_div = 25; m_div <= 125; m_div++)
+			for (s_div = 0; s_div <= 3; s_div++) {
+
+				fin_pll = fin / p_div;
+				voc_out = (m_div * fin) / p_div;
+				fout_cal = (m_div * fin) / (p_div * (1 << s_div));
+
+				if ((fin_pll < 6) || (fin_pll > 12))
+					continue;
+				if ((voc_out < 300) || (voc_out > 750))
+					continue;
+				if (fout_cal < target_freq)
+					continue;
+				/* target_freq < fout_cal, here is different from the above */
+				if ((target_freq < fout_cal) && (fout_cal <= 750))
+					goto calculation_success;
+			}
+
+	dev_err(dsim->dev, "Failed to calculate PMS values\n");
+	return -EINVAL;
+
+calculation_success:
+	dsim->dsim_config->p = p_div;
+	dsim->dsim_config->m = m_div;
+	dsim->dsim_config->s = s_div;
+	dev_info(dsim->dev, "High Speed Clock rate = %dMhz, P = %d, M = %d, S = %d\n",
+			fout_cal * 2, p_div, m_div, s_div);
+
+	return fout_cal * 2;
+}
+
+static int decon_mipi_dsi_get_dphy_timing(struct mipi_dsim_device *dsim)
+{
+	bool loop = true;
+	/* The index of the last element in array */
+	int i = sizeof(dphy_timing) / sizeof(dphy_timing[0]) - 1;
+
+	/* In case of resume, don't run the following code */
+	if (dsim->timing.bps)
+		return 1;
+
+	while (loop) {
+		if (dphy_timing[i][0] < dsim->hs_clk) {
+			i--;
+			continue;
+		} else {
+			dsim->timing.bps = dsim->hs_clk;
+			dsim->timing.clk_prepare = dphy_timing[i][1];
+			dsim->timing.clk_zero = dphy_timing[i][2];
+			dsim->timing.clk_post = dphy_timing[i][3];
+			dsim->timing.clk_trail = dphy_timing[i][4];
+			dsim->timing.hs_prepare = dphy_timing[i][5];
+			dsim->timing.hs_zero = dphy_timing[i][6];
+			dsim->timing.hs_trail = dphy_timing[i][7];
+			dsim->timing.lpx = dphy_timing[i][8];
+			dsim->timing.hs_exit = dphy_timing[i][9];
+			loop = false;
+		}
+	}
+
+	switch (dsim->dsim_config->esc_clk) {
+	/* Mhz */
+	case 20:
+		dsim->timing.b_dphyctl = 0x1f4;
+		break;
+	case 19:
+		dsim->timing.b_dphyctl = 0x1db;
+		break;
+	case 18:
+		dsim->timing.b_dphyctl = 0x1c2;
+		break;
+	case 17:
+		dsim->timing.b_dphyctl = 0x1a9;
+		break;
+	case 16:
+		dsim->timing.b_dphyctl = 0x190;
+		break;
+	case 15:
+		dsim->timing.b_dphyctl = 0x177;
+		break;
+	case 14:
+		dsim->timing.b_dphyctl = 0x15e;
+		break;
+	case 13:
+		dsim->timing.b_dphyctl = 0x145;
+		break;
+	case 12:
+		dsim->timing.b_dphyctl = 0x12c;
+		break;
+	case 11:
+		dsim->timing.b_dphyctl = 0x113;
+		break;
+	case 10:
+		dsim->timing.b_dphyctl = 0xfa;
+		break;
+	case 9:
+		dsim->timing.b_dphyctl = 0xe1;
+		break;
+	case 8:
+		dsim->timing.b_dphyctl = 0xc8;
+		break;
+	case 7:
+		dsim->timing.b_dphyctl = 0xaf;
+		break;
+	default:
+		dev_err(dsim->dev, "Escape clock is set too low\n");
+		break;
+	}
+
+	return 1;
+}
+
+static int decon_mipi_dsi_set_dphy_timing_value(struct mipi_dsim_device *dsim)
+{
+	s5p_mipi_dsi_set_timing_register0(dsim, dsim->timing.lpx,
+			dsim->timing.hs_exit);
+	s5p_mipi_dsi_set_timing_register1(dsim, dsim->timing.clk_prepare,
+			dsim->timing.clk_zero,	dsim->timing.clk_post,
+			dsim->timing.clk_trail);
+	s5p_mipi_dsi_set_timing_register2(dsim, dsim->timing.hs_prepare,
+			dsim->timing.hs_zero, dsim->timing.hs_trail);
+	s5p_mipi_dsi_set_b_dphyctrl(dsim, dsim->timing.b_dphyctl);
+	return 1;
+}
+
 int s5p_mipi_dsi_set_clock(struct mipi_dsim_device *dsim,
 	unsigned int byte_clk_sel, unsigned int enable)
 {
 	unsigned int esc_div;
 	unsigned long esc_clk_error_rate;
+	struct decon_lcd *lcd_info  = dsim->lcd_info;
 
 	if (enable) {
 		dsim->e_clk_src = byte_clk_sel;
+		dsim->dsim_config->esc_clk = lcd_info->esc_clk;
 
 		/* Escape mode clock and byte clock source */
 		s5p_mipi_dsi_set_byte_clock_src(dsim, byte_clk_sel);
 
 		/* DPHY, DSIM Link : D-PHY clock out */
 		if (byte_clk_sel == DSIM_PLL_OUT_DIV8) {
-			dsim->hs_clk = s5p_mipi_dsi_change_pll(dsim,
-				dsim->dsim_config->p, dsim->dsim_config->m,
-				dsim->dsim_config->s);
-			if (dsim->hs_clk == 0) {
+			dsim->hs_clk = decon_mipi_dsi_calc_pms(dsim);
+			if (dsim->hs_clk == -EINVAL) {
 				dev_err(dsim->dev,
 					"failed to get hs clock.\n");
 				return -EINVAL;
 			}
-			if (!soc_is_exynos5250()) {
-#if defined(CONFIG_DECON_LCD_S6E8AA0)
-				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
-				s5p_mipi_dsi_set_timing_register0(dsim, 0x03, 0x06);
-				s5p_mipi_dsi_set_timing_register1(dsim, 0x04, 0x15,
-									0x09, 0x04);
-				s5p_mipi_dsi_set_timing_register2(dsim, 0x05, 0x06,
-									0x07);
-#elif defined(CONFIG_DECON_LCD_S6E3FA0)
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
-				s5p_mipi_dsi_set_timing_register0(dsim, 0x08, 0x0d);
-				s5p_mipi_dsi_set_timing_register1(dsim, 0x09, 0x30,
-									0x0e, 0x0a);
-				s5p_mipi_dsi_set_timing_register2(dsim, 0x0c, 0x11,
-									0x0d);
-#else
-				s5p_mipi_dsi_set_b_dphyctrl(dsim, 0x0AF);
-				s5p_mipi_dsi_set_timing_register0(dsim, 0x06, 0x0b);
-				s5p_mipi_dsi_set_timing_register1(dsim, 0x07, 0x27,
-									0x0d, 0x08);
-				s5p_mipi_dsi_set_timing_register2(dsim, 0x09, 0x0d,
-									0x0b);
-#endif
-#endif
-			}
+
+			decon_mipi_dsi_get_dphy_timing(dsim);
+			s5p_mipi_dsi_change_pll(dsim,
+				dsim->dsim_config->p, dsim->dsim_config->m,
+				dsim->dsim_config->s);
+			if (!soc_is_exynos5250())
+				decon_mipi_dsi_set_dphy_timing_value(dsim);
 			dsim->byte_clk = dsim->hs_clk / 8;
 			s5p_mipi_dsi_enable_pll_bypass(dsim, 0);
 			s5p_mipi_dsi_pll_on(dsim, 1);
@@ -685,33 +928,28 @@ int s5p_mipi_dsi_enable_frame_done_int(struct mipi_dsim_device *dsim,
 int s5p_mipi_dsi_set_display_mode(struct mipi_dsim_device *dsim,
 	struct mipi_dsim_config *dsim_config)
 {
-	struct s3c_fb_pd_win *pd;
 	unsigned int width = 0, height = 0;
-	struct mipi_dsim_lcd_config *lcd_config;
-	u32 umg, lmg, rmg, vsync_len, hsync_len;
-	pd = (struct s3c_fb_pd_win *)dsim->dsim_config->lcd_panel_info;
+	u32 vbp, vfp, hbp, hfp, vsync_len, hsync_len;
 
-	lcd_config = get_display_lcd_drvdata();
+	width = dsim->lcd_info->xres;
+	height = dsim->lcd_info->yres;
 
-	width = lcd_config->lcd_size.width;
-	height = lcd_config->lcd_size.height;
-	umg = lcd_config->rgb_timing.upper_margin;
-	lmg = lcd_config->rgb_timing.left_margin;
-	rmg = lcd_config->rgb_timing.right_margin;
-	vsync_len = lcd_config->rgb_timing.hsync_len;
-	hsync_len = lcd_config->rgb_timing.vsync_len;
+	vbp = dsim->lcd_info->vbp;
+	vfp = dsim->lcd_info->vfp;
+	hbp = dsim->lcd_info->hbp;
+	hfp = dsim->lcd_info->hfp;
+
+	vsync_len = dsim->lcd_info->vsa;
+	hsync_len = dsim->lcd_info->hsa;
 
 	/* in case of VIDEO MODE (RGB INTERFACE) */
-	if (dsim->dsim_config->e_interface == (u32) DSIM_VIDEO) {
-			s5p_mipi_dsi_set_main_disp_vporch(dsim,
+	if (dsim->lcd_info->mode == VIDEO_MODE) {
+		s5p_mipi_dsi_set_main_disp_vporch(dsim,
 				1, /* cmd allow */
 				1, /* stable vfp */
-				umg);
-			s5p_mipi_dsi_set_main_disp_hporch(dsim,
-				rmg, lmg);
-			s5p_mipi_dsi_set_main_disp_sync_area(dsim,
-				vsync_len,
-				hsync_len);
+				vbp);
+		s5p_mipi_dsi_set_main_disp_hporch(dsim,	hfp, hbp);
+		s5p_mipi_dsi_set_main_disp_sync_area(dsim, vsync_len, hsync_len);
 	}
 #ifdef CONFIG_DECON_MIC
 	width = s5p_mipi_dsi_calc_bs_size(dsim);
@@ -854,78 +1092,17 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-#if 0
-static int s5p_mipi_dsi_suspend(struct device *dev)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct mipi_dsim_device *dsim = platform_get_drvdata(pdev);
-
-	if (dsim->enabled == false)
-		return 0;
-	dsim->enabled = false;
-	dsim->dsim_lcd_drv->suspend(dsim);
-	dsim->state = DSIM_STATE_SUSPEND;
-
-	disable_display_dsi_power(dev);
-	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-
-	pm_runtime_put_sync(dev);
-
-	return 0;
-}
-
-static int s5p_mipi_dsi_resume(struct device *dev)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct mipi_dsim_device *dsim = platform_get_drvdata(pdev);
-
-	if (dsim->enabled == true)
-		return 0;
-
-	enable_display_dsi_clocks_exynos5430(dev);
-	pm_runtime_get_sync(&pdev->dev);
-
-	enable_display_dsi_power(dev);
-
-	if (dsim->dsim_lcd_drv->resume)
-		dsim->dsim_lcd_drv->resume(dsim);
-	s5p_mipi_dsi_init_dsim(dsim);
-	s5p_mipi_dsi_init_link(dsim);
-	dsim->enabled = true;
-#ifdef CONFIG_DECON_MIC
-	decon_mipi_dsi_config_mic(dsim);
-#endif
-	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
-	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
-	s5p_mipi_dsi_set_hs_enable(dsim);
-	dsim->dsim_lcd_drv->displayon(dsim);
-
-	return 0;
-}
-
-static int s5p_mipi_dsi_runtime_suspend(struct device *dev)
-{
-	return 0;
-}
-
-static int s5p_mipi_dsi_runtime_resume(struct device *dev)
-{
-	return 0;
-}
-#else
-#define s5p_mipi_dsi_suspend NULL
-#define s5p_mipi_dsi_resume NULL
-#define s5p_mipi_dsi_runtime_suspend NULL
-#define s5p_mipi_dsi_runtime_resume NULL
-#endif
-
 int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 {
+	struct display_driver *dispdrv;
+	/* get a reference of the display driver */
+	dispdrv = get_display_driver();
+
 	if (dsim->enabled == true)
 		return 0;
 
-	enable_display_dsi_clocks(dsim->dev);
-	enable_display_dsi_power(dsim->dev);
+	GET_DISPDRV_OPS(dispdrv).enable_display_driver_clocks(dsim->dev);
+	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(dsim->dev);
 
 	if (dsim->dsim_lcd_drv->resume)
 		dsim->dsim_lcd_drv->resume(dsim);
@@ -939,9 +1116,7 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
-#ifdef CONFIG_DECON_MIC
 	usleep_range(1000, 1500);
-#endif
 	dsim->dsim_lcd_drv->displayon(dsim);
 
 	return 0;
@@ -949,6 +1124,10 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 
 int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 {
+	struct display_driver *dispdrv;
+	/* get a reference of the display driver */
+	dispdrv = get_display_driver();
+
 	if (dsim->enabled == false)
 		return 0;
 
@@ -957,27 +1136,10 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	dsim->state = DSIM_STATE_SUSPEND;
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 
-	disable_display_dsi_power(dsim->dev);
+	GET_DISPDRV_OPS(dispdrv).disable_display_driver_power(dsim->dev);
 
 	return 0;
 }
-
-static int s5p_mipi_dsi_set_power(struct lcd_device *lcd, int power)
-{
-	struct mipi_dsim_device *dsim = lcd_get_data(lcd);
-
-	if (power == FB_BLANK_UNBLANK) {
-		s5p_mipi_dsi_enable(dsim);
-	} else {
-		s5p_mipi_dsi_disable(dsim);
-	}
-
-	return 0;
-}
-
-struct lcd_ops s5p_mipi_dsi_lcd_ops = {
-	.set_power = s5p_mipi_dsi_set_power,
-};
 
 int create_mipi_dsi_controller(struct platform_device *pdev)
 {
@@ -996,10 +1158,14 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 		return -EFAULT;
 	}
 
+	dispdrv->dsi_driver.dsim = dsim;
+
 	dsim->dev = &pdev->dev;
 	dsim->id = pdev->id;
 
-	dsim->dsim_config = get_display_dsi_drvdata();
+	dsim->dsim_config = dispdrv->dt_ops.get_display_dsi_drvdata();
+
+	dsim->lcd_info = decon_get_lcd_info();
 
 	dsim->reg_base = devm_request_and_ioremap(&pdev->dev, dispdrv->dsi_driver.regs);
 	if (!dsim->reg_base) {
@@ -1021,20 +1187,16 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	dsim->dsim_lcd_drv = dsim->dsim_config->dsim_ddi_pd;
 
-	if (dsim->dsim_config == NULL) {
-		dev_err(&pdev->dev, "dsim_config is NULL.\n");
-		goto err_dsim_config;
-	}
+	dsim->timing.bps = 0;
 
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
 	dsim->dsim_lcd_drv->probe(dsim);
 
-	enable_display_dsi_power(&pdev->dev);
+	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
 
 	dsim->enabled = true;
 #ifdef CONFIG_DECON_MIC
-	dsim->lcd_info = decon_get_lcd_info();
 	decon_mipi_dsi_config_mic(dsim);
 #endif
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
@@ -1049,7 +1211,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	mutex_init(&dsim_rd_wr_mutex);
 	return 0;
 
-err_dsim_config:
 err_irq:
 	release_resource(dispdrv->dsi_driver.regs);
 	kfree(dispdrv->dsi_driver.regs);
@@ -1064,86 +1225,6 @@ err_mem_region:
 	return ret;
 
 }
-
-#ifdef DECON_OLD_STYLE
-static int s5p_mipi_dsi_remove(struct platform_device *pdev)
-{
-	struct mipi_dsim_device *dsim = platform_get_drvdata(pdev);
-	struct display_driver *dispdrv;
-
-	/* get a reference of the display driver */
-	dispdrv = get_display_driver();
-
-	if (dsim->dsim_config->e_interface == DSIM_VIDEO)
-		free_irq(dsim->irq, dsim);
-
-	iounmap(dsim->reg_base);
-
-	clk_disable(dsim->clock);
-	clk_put(dsim->clock);
-
-	release_resource(dispdrv->dsi_driver.regs);
-	kfree(dispdrv->dsi_driver.regs);
-
-	kfree(dsim);
-
-	return 0;
-}
-
-static void s5p_mipi_dsi_shutdown(struct platform_device *pdev)
-{
-	struct mipi_dsim_device *dsim = platform_get_drvdata(pdev);
-
-	if (dsim->enabled != false) {
-		dsim->enabled = false;
-		dsim->dsim_lcd_drv->suspend(dsim);
-		dsim->state = DSIM_STATE_SUSPEND;
-
-		s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 1);
-		s5p_mipi_dsi_clear_interrupt(dsim, 0xffffffff);
-
-		s5p_mipi_dsi_d_phy_onoff(dsim, 0);
-
-		disable_display_dsi_power(&pdev->dev);
-
-	}
-}
-
-static const struct dev_pm_ops mipi_dsi_pm_ops = {
-#ifndef CONFIG_HAS_EARLYSUSPEND
-	.suspend = s5p_mipi_dsi_suspend,
-	.resume = s5p_mipi_dsi_resume,
-#endif
-	.runtime_suspend	= s5p_mipi_dsi_runtime_suspend,
-	.runtime_resume		= s5p_mipi_dsi_runtime_resume,
-};
-
-static struct platform_driver s5p_mipi_dsi_driver = {
-	.probe = s5p_mipi_dsi_probe,
-	.remove = s5p_mipi_dsi_remove,
-	.shutdown = s5p_mipi_dsi_shutdown,
-	.driver = {
-		.name = "s5p-mipi-dsim",
-		.owner = THIS_MODULE,
-		.pm = &mipi_dsi_pm_ops,
-		.of_match_table = of_match_ptr(exynos5_dsim),
-	},
-};
-
-static int s5p_mipi_dsi_register(void)
-{
-	platform_driver_register(&s5p_mipi_dsi_driver);
-
-	return 0;
-}
-
-static void s5p_mipi_dsi_unregister(void)
-{
-	platform_driver_unregister(&s5p_mipi_dsi_driver);
-}
-late_initcall(s5p_mipi_dsi_register);
-module_exit(s5p_mipi_dsi_unregister);
-#endif
 
 MODULE_AUTHOR("Haowei li <haowei.li@samsung.com>");
 MODULE_DESCRIPTION("Samusung MIPI-DSI driver");

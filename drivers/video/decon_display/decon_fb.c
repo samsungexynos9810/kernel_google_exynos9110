@@ -3807,6 +3807,27 @@ static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
 }
 #endif
 
+static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
+{
+	int i;
+	struct decon_lcd *lcd_info = decon_get_lcd_info();
+
+	for (i = 0; i < S3C_FB_MAX_WIN; i++) {
+		pd->win[i]->win_mode.left_margin = lcd_info->hbp;
+		pd->win[i]->win_mode.right_margin = lcd_info->hfp;
+		pd->win[i]->win_mode.upper_margin = lcd_info->vbp;
+		pd->win[i]->win_mode.lower_margin = lcd_info->vfp;
+		pd->win[i]->win_mode.hsync_len = lcd_info->hsa;
+		pd->win[i]->win_mode.vsync_len = lcd_info->vsa;
+		pd->win[i]->win_mode.xres = lcd_info->xres;
+		pd->win[i]->win_mode.yres = lcd_info->yres;
+		pd->win[i]->virtual_x = lcd_info->xres;
+		pd->win[i]->virtual_y = lcd_info->yres;
+		pd->win[i]->width = lcd_info->width;
+		pd->win[i]->height = lcd_info->height;
+	}
+}
+
 int create_decon_display_controller(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
@@ -3823,8 +3844,10 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	dispdrv = get_display_driver();
 
-	fbdrv = get_display_drvdata();
-	pd = get_display_platdata();
+	fbdrv = dispdrv->dt_ops.get_display_drvdata();
+	pd = dispdrv->dt_ops.get_display_platdata();
+
+	decon_parse_lcd_info(pd);
 
 	if (fbdrv->variant.nr_windows > S3C_FB_MAX_WIN) {
 		dev_err(dev, "too many windows, cannot attach\n");
@@ -4179,7 +4202,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
-	disable_display_decon_clocks(sfb->dev);
+	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
 	s3c_fb_debugfs_cleanup(sfb);
 
@@ -4271,7 +4294,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	sfb->power_state = POWER_DOWN;
 
-	disable_display_decon_clocks(sfb->dev);
+	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
@@ -4308,7 +4331,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	disp_pm_runtime_get_sync(dispdrv);
 
-	enable_display_decon_clocks(sfb->dev);
+	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(sfb->dev);
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
@@ -4415,7 +4438,7 @@ int s3c_fb_suspend(struct device *dev)
 		data |= DECON_UPDATE_STANDALONE_F;
 		writel(data, sfb->regs + DECON_UPDATE);
 
-		disable_display_decon_clocks(sfb->dev);
+		GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
 #ifdef CONFIG_ION_EXYNOS
 		iovmm_deactivate(dev);
@@ -4451,7 +4474,7 @@ int s3c_fb_resume(struct device *dev)
 #ifdef CONFIG_PM_RUNTIME
 	disp_pm_runtime_get_sync(dispdrv);
 #endif
-	enable_display_decon_clocks(sfb->dev);
+	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(sfb->dev);
 
 	/* setup gpio and output polarity controls */
 	sfb->power_state = POWER_ON;
@@ -4529,7 +4552,7 @@ int s3c_fb_runtime_suspend(struct device *dev)
 
 	sfb->power_state = POWER_DOWN;
 
-	disable_display_decon_clocks(sfb->dev);
+	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 	return 0;
 }
 
@@ -4551,7 +4574,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	}
 	pd = sfb->pdata;
 
-	enable_display_decon_clocks(dev);
+	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
 
 	sfb->power_state = POWER_ON;
 

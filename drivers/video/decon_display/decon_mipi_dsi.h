@@ -16,6 +16,7 @@
 #include <linux/device.h>
 #include <linux/fb.h>
 #include <linux/notifier.h>
+#include <linux/kernel.h>
 
 #include <linux/regulator/consumer.h>
 
@@ -26,6 +27,20 @@
 #endif
 
 #define to_dsim_plat(d)		(to_platform_device(d)->dev.platform_data)
+
+struct dphy_timing_value {
+	u32 bps;
+	u32 clk_prepare;
+	u32 clk_zero;
+	u32 clk_post;
+	u32 clk_trail;
+	u32 hs_prepare;
+	u32 hs_zero;
+	u32 hs_trail;
+	u32 lpx;
+	u32 hs_exit;
+	u32 b_dphyctl;
+};
 
 enum mipi_dsim_interface_type {
 	DSIM_COMMAND,
@@ -148,9 +163,9 @@ struct mipi_dsim_config {
 	enum mipi_dsim_no_of_data_lane	e_no_data_lane;
 	enum mipi_dsim_byte_clk_src	e_byte_clk;
 
-	unsigned char p;
-	unsigned short m;
-	unsigned char s;
+	unsigned int p;
+	unsigned int m;
+	unsigned int s;
 
 	unsigned int pll_stable_time;
 	unsigned long esc_clk;
@@ -273,6 +288,7 @@ struct mipi_dsim_device {
 	struct lcd_device	*lcd;
 	unsigned int enabled;
 	struct decon_lcd	*lcd_info;
+	struct dphy_timing_value	timing;
 };
 
 /**

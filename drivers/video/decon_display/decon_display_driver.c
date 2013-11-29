@@ -21,16 +21,17 @@
 #include <linux/exynos_iovmm.h>
 
 #include "decon_display_driver.h"
-#include "decon_debug.h"
-#ifdef CONFIG_SOC_EXYNOS5430
-#include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
+
+#ifdef CONFIG_SOC_EXYNOS5430
+#include "decon_fb.h"
 #else
 #include "fimd_fb.h"
-#include "fimd_dt.h"
-#include "fimd_pm.h"
 #endif
+
+#include "decon_debug.h"
+
 #ifdef CONFIG_OF
 static const struct of_device_id decon_disp_device_table[] = {
 	{ .compatible = "samsung,exynos5-disp_driver" },
@@ -40,6 +41,58 @@ MODULE_DEVICE_TABLE(of, decon_disp_device_table);
 #endif
 
 static struct display_driver g_display_driver;
+
+int init_display_decon_clocks(struct device *dev);
+int enable_display_decon_clocks(struct device *dev);
+int disable_display_decon_clocks(struct device *dev);
+int enable_display_decon_runtimepm(struct device *dev);
+int disable_display_decon_runtimepm(struct device *dev);
+int init_display_driver_clocks(struct device *dev);
+int enable_display_driver_clocks(struct device *dev);
+int enable_display_driver_power(struct device *dev);
+int disable_display_driver_power(struct device *dev);
+
+int parse_display_driver_dt(struct platform_device *np, struct display_driver *ddp);
+struct s3c_fb_driverdata *get_display_drvdata(void);
+struct s3c_fb_platdata *get_display_platdata(void);
+struct mipi_dsim_config *get_display_dsi_drvdata(void);
+struct mipi_dsim_lcd_config *get_display_lcd_drvdata(void);
+struct display_gpio *get_display_dsi_reset_gpio(void);
+struct mic_config *get_display_mic_config(void);
+
+extern int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim);
+/* init display operations for pm and parsing functions */
+static int init_display_operations(void)
+{
+#define DT_OPS g_display_driver.dt_ops
+#define DSI_OPS g_display_driver.dsi_driver.dsi_ops
+#define DECON_OPS g_display_driver.decon_driver.decon_ops
+	DT_OPS.parse_display_driver_dt = parse_display_driver_dt;
+	DT_OPS.get_display_drvdata = get_display_drvdata;
+	DT_OPS.get_display_platdata = get_display_platdata;
+	DT_OPS.get_display_dsi_drvdata = get_display_dsi_drvdata;
+	DT_OPS.get_display_lcd_drvdata = get_display_lcd_drvdata;
+	DT_OPS.get_display_dsi_reset_gpio = get_display_dsi_reset_gpio;
+#ifdef CONFIG_DECON_MIC
+	DT_OPS.get_display_mic_config = get_display_mic_config;
+#endif
+
+	DSI_OPS.init_display_driver_clocks = init_display_driver_clocks;
+	DSI_OPS.enable_display_driver_clocks = enable_display_driver_clocks;
+	DSI_OPS.enable_display_driver_power = enable_display_driver_power;
+	DSI_OPS.disable_display_driver_power = disable_display_driver_power;
+
+	DECON_OPS.init_display_decon_clocks = init_display_decon_clocks;
+	DECON_OPS.enable_display_decon_clocks = enable_display_decon_clocks;
+	DECON_OPS.disable_display_decon_clocks = disable_display_decon_clocks;
+	DECON_OPS.enable_display_decon_runtimepm = enable_display_decon_runtimepm;
+	DECON_OPS.disable_display_decon_runtimepm = disable_display_decon_runtimepm;
+#undef DT_OPS
+#undef DSI_OPS
+#undef DECON_OPS
+
+	return 0;
+}
 
 /* create_disp_components - create all components in display sub-system.
  * */
@@ -98,12 +151,14 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 {
 	int ret = -1;
 
+	init_display_operations();
+
 	/* parse display driver device tree & convers it to objects
 	 * for each platform device */
-	ret = parse_display_driver_dt(pdev, &g_display_driver);
+	ret = g_display_driver.dt_ops.parse_display_driver_dt(pdev, &g_display_driver);
 
-	init_display_dsi_clocks(&pdev->dev);
-	init_display_decon_clocks(&pdev->dev);
+	GET_DISPDRV_OPS(&g_display_driver).init_display_driver_clocks(&pdev->dev);
+	GET_DISPCTL_OPS(&g_display_driver).init_display_decon_clocks(&pdev->dev);
 
 	create_disp_components(pdev);
 
@@ -147,6 +202,11 @@ static int display_driver_suspend(struct device *dev)
 }
 #endif
 
+static void display_driver_shutdown(struct platform_device *pdev)
+{
+	s5p_mipi_dsi_disable(g_display_driver.dsi_driver.dsim);
+}
+
 static const struct dev_pm_ops s5p_decon_disp_ops = {
 #ifdef CONFIG_PM_SLEEP
 #ifndef CONFIG_HAS_EARLYSUSPEND
@@ -165,11 +225,10 @@ struct display_driver *get_display_driver(void)
 	return &g_display_driver;
 }
 
-
-
 static struct platform_driver s5p_decon_disp_driver = {
 	.probe = s5p_decon_disp_probe,
 	.remove = s5p_decon_disp_remove,
+	.shutdown = display_driver_shutdown,
 	.driver = {
 		.name = "s5p-decon-display",
 		.owner = THIS_MODULE,

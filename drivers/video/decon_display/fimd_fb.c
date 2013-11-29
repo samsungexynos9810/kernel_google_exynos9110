@@ -58,8 +58,6 @@
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi.h"
 #include "fimd_fb.h"
-#include "fimd_dt.h"
-#include "fimd_pm.h"
 #include <../drivers/clk/samsung/clk.h>
 
 #ifdef CONFIG_DEBUG_FS
@@ -1053,8 +1051,11 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	struct s3c_fb_win *win = info->par;
 	struct s3c_fb *sfb = win->parent;
 	int ret = 0;
+	struct display_driver *dispdrv;
 
 	dev_dbg(sfb->dev, "blank mode %d\n", blank_mode);
+
+	dispdrv = get_display_driver();
 
 	pm_runtime_get_sync(sfb->dev);
 
@@ -1085,7 +1086,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 1;
 #endif
-		init_display_fimd_clocks_exynos(sfb->dev);
+		GET_DISPCTL_OPS(dispdrv).init_display_decon_clocks(sfb->dev);
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
 		break;
@@ -3666,6 +3667,8 @@ static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 #endif
 }
 
+void init_display_gpio_exynos(void);
+
 int create_decon_display_controller(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
@@ -3682,8 +3685,8 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	printk("###%s: Start \n", __func__);
 	dispdrv = get_display_driver();
-	fbdrv = get_display_drvdata();
-	pd = get_display_platdata();
+	fbdrv = dispdrv->dt_ops.get_display_drvdata();
+	pd = dispdrv->dt_ops.get_display_platdata();
 #if 0
 	if (ion_register_special_device(ion_exynos, dev)) {
 		dev_err(dev, "ION special device is already registered\n");
@@ -4508,7 +4511,6 @@ int s3c_fb_runtime_resume(struct device *dev)
 
 	/* setup gpio and output polarity controls */
 	init_display_gpio_exynos();
-
 
 	sfb->power_state = POWER_ON;
 

@@ -18,7 +18,7 @@
 #include "decon_display_driver.h"
 #include "fimd_fb.h"
 #include "decon_mipi_dsi.h"
-#include "fimd_dt.h"
+#include "decon_dt.h"
 
 #define DISP_CTRL_NAME	"fimd_ctrl"
 #define MIPI_DSI_NAME	"mipi_dsi"
@@ -68,9 +68,7 @@ struct mipi_dsim_config g_dsim_config = {
 #define FIMD_CONT_REG_INDEX	0
 #define MIPI_DSI_REG_INDEX	1
 
-static unsigned int g_dsi_power_gpio_num;
-static unsigned int g_dsi_lcd_reset_gpio_num;
-static unsigned int g_dp_hotplug_gpio_num;
+static struct display_gpio g_disp_gpios;
 
 struct mipi_dsim_lcd_config g_lcd_config;
 
@@ -227,8 +225,6 @@ static int parse_display_dt_exynos(struct device_node *np)
 		return -EINVAL;
 	}
 
-	g_dp_hotplug_gpio_num = of_get_gpio(np, 0);
-
 	decon_np = of_find_node_by_name(np, "fb_variant");
 	if (!decon_np) {
 		pr_err("%s: could not find fb_variant node\n",
@@ -291,22 +287,27 @@ static int parse_interrupt_dt_exynos(struct platform_device *pdev,
 	return ret;
 }
 
-struct s3c_fb_driverdata *get_display_drvdata_exynos(void)
+struct display_gpio *get_display_dsi_reset_gpio(void)
+{
+	return &g_disp_gpios;
+}
+
+struct s3c_fb_driverdata *get_display_drvdata(void)
 {
 	return &g_fb_drvdata;
 }
 
-struct s3c_fb_platdata *get_display_platdata_exynos(void)
+struct s3c_fb_platdata *get_display_platdata(void)
 {
 	return &g_fimd_platdata;
 }
 
-struct mipi_dsim_config *get_display_dsi_drvdata_exynos(void)
+struct mipi_dsim_config *get_display_dsi_drvdata(void)
 {
 	return &g_dsim_config;
 }
 
-struct mipi_dsim_lcd_config *get_display_lcd_drvdata_exynos(void)
+struct mipi_dsim_lcd_config *get_display_lcd_drvdata(void)
 {
 	return &g_lcd_config;
 }
@@ -341,25 +342,15 @@ static int parse_dsi_drvdata(struct device_node *np)
 	DT_READ_U32_OPTIONAL(np, "bta_timeout", g_dsim_config.bta_timeout);
 	DT_READ_U32_OPTIONAL(np, "rx_timeout", g_dsim_config.rx_timeout);
 
-	g_dsi_lcd_reset_gpio_num = of_get_gpio(np, 0);
-	g_dsi_power_gpio_num = of_get_gpio(np, 1);
-
+	/* for power1 */
+	g_disp_gpios.num++;
+	g_disp_gpios.id[0] = of_get_gpio(np, 0);
+#ifdef CONFIG_S5P_DP
+	g_disp_gpios.id[0] = of_get_gpio(np, 0);
+#endif
+	g_disp_gpios.num++;
+	g_disp_gpios.id[1] = of_get_gpio(np, 1);
 	return 0;
-}
-
-int get_display_dsi_lcd_reset_gpio_exynos(void)
-{
-	return g_dsi_lcd_reset_gpio_num;
-}
-
-int get_display_dsi_lcd_power_gpio_exynos(void)
-{
-	return g_dsi_power_gpio_num;
-}
-
-int get_display_dp_hotplug_gpio_exynos(void)
-{
-	return g_dp_hotplug_gpio_num;
 }
 
 int parse_display_dsi_dt_exynos(struct device_node *np)
@@ -411,11 +402,10 @@ static int parse_all_dt_exynos(struct device_node *parent)
 
 	return ret;
 }
-void dump_driver_data(void);
 /* parse_display_driver_dt_exynos
  * Parses the DiviceTree data and initilaizes the display H/W info.
  * Initializes the base address and IRQ numbers of all the display system IPs. */
-int parse_display_driver_dt_exynos(struct platform_device *pdev,
+int parse_display_driver_dt(struct platform_device *pdev,
 	struct display_driver *ddp)
 {
 	int ret = 0;
@@ -452,65 +442,7 @@ int parse_display_driver_dt_exynos(struct platform_device *pdev,
 		return -EINVAL;
 	}
 
-	dump_driver_data();
 	return ret;
-}
-
-void dump_s3c_fb_variant(struct s3c_fb_variant *p_fb_variant)
-{
-	pr_debug("[INFO] is_2443:1: 0x%0X\n", p_fb_variant->is_2443);
-	pr_debug("[INFO] nr_windows: 0x%0X\n", p_fb_variant->nr_windows);
-	pr_debug("[INFO] vidtcon: 0x%0X\n", p_fb_variant->vidtcon);
-	pr_debug("[INFO] wincon: 0x%0X\n", p_fb_variant->wincon);
-	pr_debug("[INFO] winmap: 0x%0X\n", p_fb_variant->winmap);
-	pr_debug("[INFO] keycon: 0x%0X\n", p_fb_variant->keycon);
-	pr_debug("[INFO] buf_start: 0x%0X\n", p_fb_variant->buf_start);
-	pr_debug("[INFO] buf_end: 0x%0X\n", p_fb_variant->buf_end);
-	pr_debug("[INFO] buf_size: 0x%0X\n", p_fb_variant->buf_size);
-	pr_debug("[INFO] osd: 0x%0X\n", p_fb_variant->osd);
-	pr_debug("[INFO] osd_stride: 0x%0X\n", p_fb_variant->osd_stride);
-	pr_debug("[INFO] palette[0]: 0x%0X\n", p_fb_variant->palette[0]);
-	pr_debug("[INFO] palette[1]: 0x%0X\n", p_fb_variant->palette[1]);
-	pr_debug("[INFO] palette[2]: 0x%0X\n", p_fb_variant->palette[2]);
-	pr_debug("[INFO] palette[3]: 0x%0X\n", p_fb_variant->palette[3]);
-	pr_debug("[INFO] palette[4]: 0x%0X\n", p_fb_variant->palette[4]);
-
-	pr_debug("[INFO] has_prtcon:1: 0x%0X\n", p_fb_variant->has_prtcon);
-	pr_debug("[INFO] has_shadowcon:1: 0x%0X\n", p_fb_variant->has_shadowcon);
-	pr_debug("[INFO] has_blendcon:1: 0x%0X\n", p_fb_variant->has_blendcon);
-	pr_debug("[INFO] has_alphacon:1: 0x%0X\n", p_fb_variant->has_alphacon);
-	pr_debug("[INFO] has_clksel:1: 0x%0X\n", p_fb_variant->has_clksel);
-	pr_debug("[INFO] has_fixvclk:1: 0x%0X\n", p_fb_variant->has_fixvclk);
-};
-
-void dump_s3c_fb_win_variant(struct s3c_fb_win_variant *p_fb_win_variant)
-{
-	pr_debug("[INFO] has_osd_c:1: 0x%0X\n", p_fb_win_variant->has_osd_c);
-	pr_debug("[INFO] has_osd_d:1: 0x%0X\n", p_fb_win_variant->has_osd_d);
-	pr_debug("[INFO] has_osd_alpha:1: 0x%0X\n",
-		p_fb_win_variant->has_osd_alpha);
-	pr_debug("[INFO] palette_16bpp:1: 0x%0X\n",
-		p_fb_win_variant->palette_16bpp);
-	pr_debug("[INFO] osd_size_off: 0x%0X\n", p_fb_win_variant->osd_size_off);
-	pr_debug("[INFO] palette_sz: 0x%0X\n", p_fb_win_variant->palette_sz);
-	pr_debug("[INFO] valid_bpp: 0x%0X\n", p_fb_win_variant->valid_bpp);
-}
-
-void dump_s3c_fb_win_variants(struct s3c_fb_win_variant p_fb_win_variant[],
-	int num)
-{
-	int i;
-	for (i = 0; i < num; ++i) {
-		pr_debug("[INFO] -------- %d --------\n", i);
-		dump_s3c_fb_win_variant(&g_fb_win_variant[i]);
-	}
-}
-
-
-void dump_driver_data()
-{
-	dump_s3c_fb_variant(&g_fb_drvdata.variant);
-	dump_s3c_fb_win_variants(g_fb_win_variant, S3C_FB_MAX_WIN);
 }
 
 #endif

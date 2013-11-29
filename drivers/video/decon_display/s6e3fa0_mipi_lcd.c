@@ -14,11 +14,10 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <video/mipi_display.h>
+#include <linux/platform_device.h>
 
 #include "decon_mipi_dsi.h"
-
 #include "s6e3fa0_gamma.h"
-
 #include "decon_display_driver.h"
 
 #define GAMMA_PARAM_SIZE 26
@@ -42,6 +41,15 @@ struct decon_lcd s6e3fa0_lcd_info = {
 
 	.xres = 1080,
 	.yres = 1920,
+
+	.width = 70,
+	.height = 121,
+
+	/* Mhz */
+	.hs_clk = 1100,
+	.esc_clk = 20,
+
+	.fps = 60,
 };
 
 static struct mipi_dsim_device *dsim_base;
@@ -190,7 +198,7 @@ static const unsigned char SEQ_DISPCTL[] = {
 	0x02, 0x03, 0xC, 0xA0, 0x01, 0x48
 };
 
-struct decon_lcd * decon_get_lcd_info()
+struct decon_lcd * decon_get_lcd_info(void)
 {
 	return &s6e3fa0_lcd_info;
 }
@@ -507,8 +515,6 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 	mdelay(12);
 
 	update_brightness(bd->props.brightness);
-
-	dev_info(dsim->dev, "is displaying in VIDEO(RGB) mode\n");
 }
 #endif
 
