@@ -99,7 +99,6 @@ enum dw_mci_exynos_type {
 
 /* Exynos implementation specific driver private data */
 struct dw_mci_exynos_priv_data {
-	enum dw_mci_exynos_type ctrl_type;
 	u8			ciu_div;
 	u32			sdr_timing;
 	u32			ddr_timing;

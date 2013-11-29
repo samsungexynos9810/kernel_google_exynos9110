@@ -36,43 +36,14 @@ struct dw_mci *dw_mci_lpa_host[3] = {0, 0, 0};
 unsigned int dw_mci_host_count;
 unsigned int dw_mci_save_sfr[3][30];
 
-static struct dw_mci_exynos_compatible {
-	char				*compatible;
-	enum dw_mci_exynos_type		ctrl_type;
-} exynos_compat[] = {
-	{
-		.compatible	= "samsung,exynos4210-dw-mshc",
-		.ctrl_type	= DW_MCI_TYPE_EXYNOS4210,
-	}, {
-		.compatible	= "samsung,exynos4412-dw-mshc",
-		.ctrl_type	= DW_MCI_TYPE_EXYNOS4412,
-	}, {
-		.compatible	= "samsung,exynos5250-dw-mshc",
-		.ctrl_type	= DW_MCI_TYPE_EXYNOS5250,
-	}, {
-		.compatible	= "samsung,exynos5422-dw-mshc",
-		.ctrl_type	= DW_MCI_TYPE_EXYNOS5422,
-	}, {
-		.compatible	= "samsung,exynos5430-dw-mshc",
-		.ctrl_type	= DW_MCI_TYPE_EXYNOS5430,
-	},
-};
-
 static int dw_mci_exynos_priv_init(struct dw_mci *host)
 {
 	struct dw_mci_exynos_priv_data *priv;
-	int idx;
 
 	priv = devm_kzalloc(host->dev, sizeof(*priv), GFP_KERNEL);
 	if (!priv) {
 		dev_err(host->dev, "mem alloc failed for private data\n");
 		return -ENOMEM;
-	}
-
-	for (idx = 0; idx < ARRAY_SIZE(exynos_compat); idx++) {
-		if (of_device_is_compatible(host->dev->of_node,
-					exynos_compat[idx].compatible))
-			priv->ctrl_type = exynos_compat[idx].ctrl_type;
 	}
 
 	host->priv = priv;
@@ -287,14 +258,13 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
 {
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 
-	if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5250 ||
-		priv->ctrl_type == DW_MCI_TYPE_EXYNOS5422 ||
-		priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430)
-		host->bus_hz /= (priv->ciu_div + 1);
-	else if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS4412)
-		host->bus_hz /= EXYNOS4412_FIXED_CIU_CLK_DIV;
-	else if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS4210)
-		host->bus_hz /= EXYNOS4210_FIXED_CIU_CLK_DIV;
+#if defined(CONFIG_SOC_EXYNOS4412)
+	host->bus_hz /= EXYNOS4412_FIXED_CIU_CLK_DIV;
+#elif defined(CONFIG_SOC_EXYNOS4210)
+	host->bus_hz /= EXYNOS4210_FIXED_CIU_CLK_DIV;
+#else
+	host->bus_hz /= (priv->ciu_div + 1);
+#endif
 
 	return 0;
 }
@@ -338,7 +308,6 @@ static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
  */
 static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 {
-	struct dw_mci_exynos_priv_data *priv = host->priv;
 	u32 ciu_rate = clk_get_rate(host->ciu_clk);
 	u32 ciu_div;
 	u32 tmp_reg;
@@ -357,13 +326,13 @@ static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 			dev_warn(host->dev, "Couldn't set rate to %u\n",
 				 ciu_rate);
 
-		if (priv->ctrl_type != DW_MCI_TYPE_EXYNOS5422) {
-			clkerr = clk_set_rate(bdiv, ciu_rate);
-			if (clkerr)
-				dev_warn(host->dev, "Couldn't set rate to %u\n",
-					 ciu_rate);
-			ciu_rate = clk_get_rate(host->ciu_clk);
-		}
+#if !defined(CONFIG_SOC_EXYNOS5422)
+		clkerr = clk_set_rate(bdiv, ciu_rate);
+		if (clkerr)
+			dev_warn(host->dev, "Couldn't set rate to %u\n",
+				 ciu_rate);
+		ciu_rate = clk_get_rate(host->ciu_clk);
+#endif
 	}
 
 	host->bus_hz = ciu_rate / ciu_div;
@@ -397,11 +366,11 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 		clksel = ((priv->ddr200_timing & 0xfffffff8) | pdata->clk_smpl);
 
 		if (!tuning) {
-			if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5422 ||
-				priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430)
-				rclk_base = 0x70;
-			else
-				rclk_base = 0x0;
+#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5430)
+			rclk_base = 0x70;
+#else
+			rclk_base = 0x0;
+#endif
 
 			rddqs = __raw_readl(host->regs + DWMCI_DDR200_RDDQS_EN
 					+ rclk_base);
