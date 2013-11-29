@@ -162,8 +162,7 @@ int sensor_imx175_probe(struct i2c_client *client,
 		= SENSOR_CONTROL_I2C0;
 	ext->actuator_con.peri_setting.i2c.slave_address = 0x18;
 
-	/* ext->flash_con.product_name = FLADRV_NAME_MAX77693; */
-	ext->flash_con.product_name = FLADRV_NAME_NOTHING;
+	ext->flash_con.product_name = FLADRV_NAME_MAX77693;
 	ext->flash_con.peri_type = SE_GPIO;
 	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 0;
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 1;
