@@ -148,6 +148,7 @@ int sensor_imx135_probe(struct i2c_client *client,
 
 	ext = &module->ext;
 	memset(ext, 0x0, sizeof(struct sensor_open_extended));
+	ext->mipi_lane_num = 4;
 	ext->sensor_con.product_name = 0;
 	ext->sensor_con.peri_type = SE_I2C;
 	//ext->sensor_con.peri_setting.i2c.channel = sensor_info->i2c_channel;

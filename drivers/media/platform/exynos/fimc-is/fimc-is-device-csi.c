@@ -40,7 +40,7 @@
 #define S5PCSIS_CTRL_UPDATE_SHADOW(x)			((1 << (x)) << 16)
 #define S5PCSIS_CTRL_WCLK_EXTCLK			(1 << 8)
 #define S5PCSIS_CTRL_RESET				(1 << 4)
-#define S5PCSIS_CTRL_NUMOFDATALANE(x)			(x << 2)
+#define S5PCSIS_CTRL_NUMOFDATALANE(x)			((x) << 2)
 #define S5PCSIS_CTRL_ENABLE				(1 << 0)
 
 /* D-PHY control */
@@ -212,7 +212,6 @@ static void s5pcsis_system_enable(unsigned long __iomem *base_reg, int on)
 
 #if defined(CONFIG_SOC_EXYNOS5420) || defined(CONFIG_SOC_EXYNOS5430)
 	val |= S5PCSIS_CTRL_WCLK_EXTCLK;
-	val |= S5PCSIS_CTRL_NUMOFDATALANE(0x3);
 #endif
 
 	if (on) {
@@ -281,6 +280,10 @@ static void s5pcsis_set_params(unsigned long __iomem *base_reg,
 	struct fimc_is_image *image)
 {
 	u32 val;
+	u32 num_lanes = 0x3;
+
+	if (image->num_lanes)
+		num_lanes = image->num_lanes - 1;
 
 #if defined(CONFIG_SOC_EXYNOS5410)
 	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG));
@@ -295,6 +298,8 @@ static void s5pcsis_set_params(unsigned long __iomem *base_reg,
 
 	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
 	val &= ~S5PCSIS_CTRL_ALIGN_32BIT;
+
+	val |= S5PCSIS_CTRL_NUMOFDATALANE(num_lanes);
 
 	/* Interleaved data */
 	if (image->format.field == V4L2_FIELD_INTERLACED) {
@@ -361,6 +366,7 @@ static int csi_init(struct v4l2_subdev *subdev, u32 value)
 	csi->sensor_cfgs = module->cfgs;
 	csi->sensor_cfg = module->cfg;
 	csi->image.framerate = SENSOR_DEFAULT_FRAMERATE; /* default frame rate */
+	csi->image.num_lanes = module->ext.mipi_lane_num;
 
 p_err:
 	return ret;

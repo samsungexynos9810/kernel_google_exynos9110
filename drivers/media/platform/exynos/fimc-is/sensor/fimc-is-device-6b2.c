@@ -572,6 +572,7 @@ int sensor_6b2_probe(struct i2c_client *client,
 	}
 
 	ext = &module->ext;
+	ext->mipi_lane_num = 1;
 	ext->I2CSclk = I2C_L0;
 	ext->sensor_con.product_name = SENSOR_NAME_S5K6B2;
 	ext->sensor_con.peri_type = SE_I2C;

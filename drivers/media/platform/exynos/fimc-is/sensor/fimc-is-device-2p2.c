@@ -112,6 +112,7 @@ int sensor_2p2_probe(struct i2c_client *client,
 	module->private_data = NULL;
 
 	ext = &module->ext;
+	ext->mipi_lane_num = 4;
 	ext->I2CSclk = I2C_L0;
 
 	ext->sensor_con.product_name = SENSOR_NAME_S5K2P2;

@@ -106,6 +106,7 @@ int sensor_6a3_probe(struct i2c_client *client,
 	module->private_data = NULL;
 
 	ext = &module->ext;
+	ext->mipi_lane_num = 1;
 	ext->I2CSclk = I2C_L0;
 
 	ext->sensor_con.product_name = 0;
