@@ -512,7 +512,7 @@ static int exynos_ss_panic_handler(struct notifier_block *nb,
 {
 	local_irq_disable();
 	exynos_ss_report_cause_emerg(CAUSE_KERNEL_PANIC);
-#if CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	pr_emerg("exynos-snapshot: panic - forced ramdump mode [%s]\n", __func__);
 	exynos_ss_save_context();
 	exynos5_restart(0, "ramdump");
