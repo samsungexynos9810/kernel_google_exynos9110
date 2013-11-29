@@ -344,10 +344,6 @@ int disable_display_driver_power(struct device *dev)
 
 	dispdrv = get_display_driver();
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	dispdrv->pm_status.ops->clk_off(dispdrv);
-#endif
-
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
 	id = gpio_request(gpio->id[0], "lcd_reset");
 	if (id < 0) {
@@ -411,6 +407,13 @@ int enable_display_driver_clocks(struct device *dev)
 
 int disable_display_decon_clocks(struct device *dev)
 {
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	struct display_driver *dispdrv;
+	dispdrv = get_display_driver();
+
+	dispdrv->pm_status.ops->clk_off(dispdrv);
+#endif
+
 	return 0;
 }
 
