@@ -17,6 +17,7 @@
 #include <linux/of_gpio.h>
 #include <linux/delay.h>
 #include <linux/clk-private.h>
+#include <linux/exynos_iovmm.h>
 
 #include <linux/platform_device.h>
 #include "regs-decon.h"
@@ -262,10 +263,8 @@ int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	pm_runtime_get_sync(dispdrv->display_driver);
-	if (dispdrv->platform_status > DISP_STATUS_PM0) {
-		if (!dispdrv->pm_status.clock_enabled)
-			display_block_clock_on(dispdrv);
-	}
+	if (dispdrv->platform_status > DISP_STATUS_PM0)
+		display_block_clock_on(dispdrv);
 	return 0;
 }
 
@@ -350,9 +349,8 @@ static void decon_clock_gating_handler(struct kthread_work *work)
 	struct display_driver *dispdrv = get_display_driver();
 	unsigned long flags;
 
-	if(dispdrv->pm_status.clock_enabled)
-		if (dispdrv->pm_status.clk_idle_count > MAX_CLK_GATING_COUNT)
-			display_block_clock_off(dispdrv);
+	if (dispdrv->pm_status.clk_idle_count > MAX_CLK_GATING_COUNT)
+		display_block_clock_off(dispdrv);
 
 	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
 	dispdrv->pm_status.clk_idle_count = 0;
@@ -412,6 +410,11 @@ static void __display_block_clock_on(struct display_driver *dispdrv)
 	call_pm_ops(dispdrv, mic_driver, clk_on, dispdrv);
 #endif
 	call_pm_ops(dispdrv, decon_driver, clk_on, dispdrv);
+
+#ifdef CONFIG_ION_EXYNOS
+	if (iovmm_activate(dispdrv->decon_driver.sfb->dev) < 0)
+		pr_err("%s: failed to reactivate vmm\n", __func__);
+#endif
 }
 
 static void __display_block_clock_off(struct display_driver *dispdrv)
@@ -422,6 +425,10 @@ static void __display_block_clock_off(struct display_driver *dispdrv)
 	call_pm_ops(dispdrv, mic_driver, clk_off, dispdrv);
 #endif
 	call_pm_ops(dispdrv, dsi_driver, clk_off, dispdrv);
+
+#ifdef CONFIG_ION_EXYNOS
+	iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
+#endif
 }
 
 static void request_dynamic_hotplug(bool hotplug)
@@ -486,14 +493,18 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 
 void display_block_clock_on(struct display_driver *dispdrv)
 {
-	pm_debug("+");
-	__display_block_clock_on(dispdrv);
-	dispdrv->pm_status.clock_enabled = 1;
-	pm_debug("-");
+	if (!dispdrv->pm_status.clock_enabled) {
+		pm_debug("+");
+		__display_block_clock_on(dispdrv);
+		dispdrv->pm_status.clock_enabled = 1;
+		pm_debug("-");
+	}
 }
 
 void display_block_clock_off(struct display_driver *dispdrv)
 {
-	dispdrv->pm_status.clock_enabled = 0;
-	__display_block_clock_off(dispdrv);
+	if (dispdrv->pm_status.clock_enabled) {
+		dispdrv->pm_status.clock_enabled = 0;
+		__display_block_clock_off(dispdrv);
+	}
 }

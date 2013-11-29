@@ -4381,8 +4381,6 @@ static int s3c_fb_remove(struct platform_device *pdev)
 
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
-	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
-
 	s3c_fb_debugfs_cleanup(sfb);
 
 	disp_pm_runtime_put_sync(dispdrv);
@@ -4492,8 +4490,6 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	decon_fb_reset(sfb);
 
 	sfb->power_state = POWER_DOWN;
-
-	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
@@ -4827,21 +4823,12 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 		s3c_fb_enable_irq(sfb);
 	mutex_unlock(&sfb->vsync_info.irq_lock);
 
-#ifdef CONFIG_ION_EXYNOS
-	ret = iovmm_activate(sfb->dev);
-	if (ret < 0) {
-		dev_err(sfb->dev, "failed to reactivate vmm\n");
-		goto err_lpd;
-	}
-#endif
-
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
 	decon_fb_direct_on_off(sfb, true);
 	sfb->output_on = true;
 
-err_lpd:
 	return ret;
 }
 
@@ -4850,8 +4837,6 @@ int decon_hibernation_power_off(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 	dispdrv = get_display_driver();
-
-	iovmm_deactivate(sfb->dev);
 
 	decon_fb_reset(sfb);
 
