@@ -19,20 +19,18 @@
 
 #define SHIFT_GSCL_BLK_300_DIV      4
 #define SHIFT_GSCL_BLK_333_432_DIV  6
-#define SHIFT_DISP1_BLK_DIV     16
 #define SHIFT_MSCL_BLK_DIV      28
 #define SHIFT_MFC_BLK_DIV       0
 static DEFINE_SPINLOCK(clk_div2_ratio0_lock);
 
-#define GET_CLK(a) __clk_lookup(a)
-#define SET_PARENT(a, b) clk_set_parent(GET_CLK(a), GET_CLK(b))
-#define ENA_CLK(a, b) {if (!__clk_is_enabled(GET_CLK(a))) { b = clk_prepare_enable(GET_CLK(a)); if (b) pr_err(" %s: failed\n %d", __func__, b); } };
-#define DIS_CLK(a) {if (__clk_is_enabled(GET_CLK(a))) clk_disable_unprepare(GET_CLK(a)); };
-
 static int exynos5_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
+	unsigned int reg;
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	SET_PARENT("mout_aclk_g3d_user", "mout_aclk_g3d_sw");
+	/* restore mout_aclk_g3d_user parent set to mout_aclk_g3d_sw */
+	reg = __raw_readl(EXYNOS5_CLK_SRC_TOP5);
+	reg |= (1<<16);
+	__raw_writel(reg, EXYNOS5_CLK_SRC_TOP5);
 	return 0;
 }
 
@@ -45,7 +43,6 @@ static int exynos5_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos5_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	SET_PARENT("mout_vpll_ctrl", "fout_vpll");
 	return 0;
 }
 
@@ -155,24 +152,6 @@ static int exynos5_pd_isp_power_control(struct exynos_pm_domain *pd, int power_f
 }
 #endif
 
-#ifdef G3D_PM_NOTIFIER
-static int exynos5410_pm_domain_notifier(struct notifier_block *notifier,
-			unsigned long pm_event, void *unused)
-{
-	switch (pm_event) {
-	case PM_SUSPEND_PREPARE:
-		pm_genpd_poweron(&exynos54xx_pd_g3d.pd);
-		break;
-	case PM_POST_SUSPEND:
-		bts_initialize("pd-eagle", true);
-		bts_initialize("pd_kfc", true);
-		break;
-	}
-
-	return NOTIFY_DONE;
-}
-#endif
-
 static void exynos5_pd_set_fake_rate(void __iomem *regs, unsigned int shift_val)
 {
 	unsigned int clk_div2_ratio0_value;
@@ -222,20 +201,13 @@ static int exynos5_pd_mfc_power_on_post(struct exynos_pm_domain *pd)
 
 static int exynos5_pd_maudio_power_on_pre(struct exynos_pm_domain *pd)
 {
-	int ret = 0;
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	/* Turn on EPLL before maudio block on */
-	ENA_CLK("fout_epll", ret);
-	udelay(100);
 	return 0;
 }
 
 static int exynos5_pd_maudio_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	SET_PARENT("mout_epll", "fin_pll");
-	/* Turn off EPLL after maudio block off */
-	DIS_CLK("fout_epll");
 	return 0;
 }
 
