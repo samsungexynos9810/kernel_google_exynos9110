@@ -436,32 +436,33 @@ static int fimc_is_fault_handler(struct iommu_domain *domain,
 	pr_err("Device virtual(0x%X) is invalid access\n", (u32)fault_addr);
 
 	core = dev_get_drvdata(dev);
-	if (!core)
-		pr_err("core is NULL\n");
+	if (core) {
+		fimc_is_hw_logdump(&core->interface);
+		fimc_is_hw_memdump(&core->interface,
+			core->minfo.kvaddr + 0x010F8000 /* TTB_BASE ~ 16KB */,
+			core->minfo.kvaddr + 0x010F8000 + 0x4000);
+		fimc_is_hw_memdump(&core->interface,
+			core->minfo.kvaddr + 0x010FC000 /* GUARD2_BASE ~ 16KB */,
+			core->minfo.kvaddr + 0x010FC000 + 0x4000);
 
-	fimc_is_hw_logdump(&core->interface);
-	fimc_is_hw_memdump(&core->interface,
-		core->minfo.kvaddr + 0x010F8000 /* TTB_BASE ~ 16KB */,
-		core->minfo.kvaddr + 0x010F8000 + 0x4000);
-	fimc_is_hw_memdump(&core->interface,
-		core->minfo.kvaddr + 0x010FC000 /* GUARD2_BASE ~ 16KB */,
-		core->minfo.kvaddr + 0x010FC000 + 0x4000);
-
-	sensor = &core->sensor[0];
-	if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
-		framemgr = &sensor->vctx->q_dst.framemgr;
-		for (i = 0; i < FRAMEMGR_MAX_REQUEST; ++i) {
-			pr_err("LITE0 BUF[%d][0] = %d, 0x%08X\n", i,
-				framemgr->frame[i].memory, framemgr->frame[i].dvaddr_buffer[0]);
+		sensor = &core->sensor[0];
+		if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
+			framemgr = &sensor->vctx->q_dst.framemgr;
+			for (i = 0; i < FRAMEMGR_MAX_REQUEST; ++i) {
+				pr_err("LITE0 BUF[%d][0] = %d, 0x%08X\n", i,
+					framemgr->frame[i].memory,
+					framemgr->frame[i].dvaddr_buffer[0]);
+			}
 		}
-	}
 
-	sensor = &core->sensor[1];
-	if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
-		framemgr = &sensor->vctx->q_dst.framemgr;
-		for (i = 0; i < FRAMEMGR_MAX_REQUEST; ++i) {
-			pr_err("LITE1 BUF[%d][0] = %d, 0x%08X\n", i,
-				framemgr->frame[i].memory, framemgr->frame[i].dvaddr_buffer[0]);
+		sensor = &core->sensor[1];
+		if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
+			framemgr = &sensor->vctx->q_dst.framemgr;
+			for (i = 0; i < FRAMEMGR_MAX_REQUEST; ++i) {
+				pr_err("LITE1 BUF[%d][0] = %d, 0x%08X\n", i,
+					framemgr->frame[i].memory,
+					framemgr->frame[i].dvaddr_buffer[0]);
+			}
 		}
 	}
 
