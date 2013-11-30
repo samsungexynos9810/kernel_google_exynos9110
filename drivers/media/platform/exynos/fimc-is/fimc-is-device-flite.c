@@ -1604,7 +1604,7 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	if (!subdev_flite) {
 		merr("subdev_flite is NULL", device);
 		ret = -ENOMEM;
-		goto p_err;
+		goto err_alloc_subdev_flite;
 	}
 	device->subdev_flite = subdev_flite;
 
@@ -1612,7 +1612,7 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	if (!flite) {
 		merr("flite is NULL", device);
 		ret = -ENOMEM;
-		goto p_err;
+		goto err_alloc_flite;
 	}
 
 	flite->instance = instance;
@@ -1630,7 +1630,7 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	default:
 		err("instance is invalid(%d)", instance);
 		ret = -EINVAL;
-		goto p_err;
+		goto err_invalid_instance;
 	}
 
 	v4l2_subdev_init(subdev_flite, &subdev_ops);
@@ -1640,10 +1640,21 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	ret = v4l2_device_register_subdev(&device->v4l2_dev, subdev_flite);
 	if (ret) {
 		merr("v4l2_device_register_subdev is fail(%d)", device, ret);
-		goto p_err;
+		goto err_reg_v4l2_subdev;
 	}
 
-p_err:
 	info("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
+	return 0;
+
+err_reg_v4l2_subdev:
+err_invalid_instance:
+	kfree(flite);
+
+err_alloc_flite:
+	kfree(subdev_flite);
+	device->subdev_flite = NULL;
+
+err_alloc_subdev_flite:
+	err("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }
