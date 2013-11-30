@@ -99,7 +99,7 @@ int fimc_is_clk_gate_set(struct fimc_is_core *core,
 		if (skip_set_state == false) {
 			(gate_ctrl->chk_on_off_cnt[group_id])++; /* for debuging */
 			(gate_ctrl->msk_cnt[group_id])++;
-			test_and_set_bit(group_id, &gate_ctrl->msk_state);
+			set_bit(group_id, &gate_ctrl->msk_state);
 		}
 		gate_info->groups[group_id].mask_clk_on_mod =
 			gate_info->groups[group_id].mask_clk_on_org;
