@@ -561,7 +561,7 @@ int fimc_is_csi_probe(struct fimc_is_device_sensor *device,
 	if (!subdev_csi) {
 		merr("subdev_csi is NULL", device);
 		ret = -ENOMEM;
-		goto p_err;
+		goto err_alloc_subdev_csi;
 	}
 	device->subdev_csi = subdev_csi;
 
@@ -569,7 +569,7 @@ int fimc_is_csi_probe(struct fimc_is_device_sensor *device,
 	if (!csi) {
 		merr("csi is NULL", device);
 		ret = -ENOMEM;
-		goto p_err;
+		goto err_alloc_csi;
 	}
 
 	csi->instance = instance;
@@ -586,7 +586,7 @@ int fimc_is_csi_probe(struct fimc_is_device_sensor *device,
 	default:
 		err("instance is invalid(%d)", instance);
 		ret = -EINVAL;
-		goto p_err;
+		goto err_invalid_instance;
 	}
 
 	v4l2_subdev_init(subdev_csi, &subdev_ops);
@@ -596,10 +596,21 @@ int fimc_is_csi_probe(struct fimc_is_device_sensor *device,
 	ret = v4l2_device_register_subdev(&device->v4l2_dev, subdev_csi);
 	if (ret) {
 		merr("v4l2_device_register_subdev is fail(%d)", device, ret);
-		goto p_err;
+		goto err_reg_v4l2_subdev;
 	}
 
-p_err:
 	info("[FRT:D:%d] %s(%d)\n", instance, __func__, ret);
+	return 0;
+
+err_reg_v4l2_subdev:
+err_invalid_instance:
+	kfree(csi);
+
+err_alloc_csi:
+	kfree(subdev_csi);
+	device->subdev_csi = NULL;
+
+err_alloc_subdev_csi:
+	err("[FRT:D:%d] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }
