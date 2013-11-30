@@ -25,8 +25,6 @@
 #include <media/videobuf2-memops.h>
 #include <media/videobuf2-ion.h>
 
-#include <asm/cacheflush.h>
-
 #include <linux/exynos_iovmm.h>
 #include <plat/cpu.h>
 
@@ -422,6 +420,9 @@ static int vb2_ion_map_dmabuf(void *mem_priv, int plane)
 		return -EINVAL;
 	}
 
+	vb2_ion_sync_for_device((void *) &buf->cookie, 0, buf->size,
+			ctx_coherent(ctx) ? DMA_COHERENT : buf->direction);
+
 	buf->cookie.offset = 0;
 	/* buf->kva = NULL; */
 
@@ -459,6 +460,10 @@ static void vb2_ion_unmap_dmabuf(void *mem_priv)
 
 	dma_buf_unmap_attachment(buf->attachment, buf->cookie.sgt,
 		ctx_coherent(buf->ctx) ? DMA_COHERENT : buf->direction);
+
+	vb2_ion_sync_for_cpu((void *) &buf->cookie, 0, buf->size,
+			ctx_coherent(buf->ctx) ? DMA_COHERENT : buf->direction);
+
 	buf->cookie.sgt = NULL;
 }
 
@@ -977,258 +982,68 @@ const struct vb2_mem_ops vb2_ion_memops = {
 };
 EXPORT_SYMBOL_GPL(vb2_ion_memops);
 
-typedef void (*dma_sync_func)(struct device *, struct scatterlist *, int,
-				   enum dma_data_direction);
-
-static void vb2_ion_sync_bufs(struct vb2_ion_buf *buf,
-				enum dma_data_direction dir,
-				dma_sync_func func)
-{
-	struct scatterlist *sg = buf->cookie.sgt->sgl;
-	int nents = buf->cookie.sgt->nents;
-	off_t offset = buf->cookie.offset;
-	struct scatterlist sg_tmp[2];
-
-	while (offset >= sg_dma_len(sg)) {
-		offset -= sg_dma_len(sg);
-		nents--;
-		sg = sg_next(sg);
-		if (!sg)
-			return;
-	}
-
-	sg_init_table(sg_tmp, 2);
-	memcpy(sg_tmp, sg, sizeof(*sg));
-
-	if (nents == 1)
-		sg_mark_end(sg_tmp);
-	else
-		sg_chain(sg_tmp, 2, sg_next(sg));
-
-	if ((offset + sg_tmp[0].offset) >= PAGE_SIZE) {
-		struct page *page = sg_page(sg_tmp);
-		unsigned int len = sg_dma_len(sg_tmp);
-		offset += sg_tmp[0].offset;
-		page += offset >> PAGE_SHIFT;
-		len -= offset & PAGE_MASK;
-		offset &= ~PAGE_MASK;
-		sg_set_page(sg_tmp, page, len, offset);
-	} else {
-		sg_tmp[0].length -= offset;
-		sg_tmp[0].offset += offset;
-	}
-
-	func(buf->ctx->dev, sg_tmp, nents, dir);
-}
-
 void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 						enum dma_data_direction dir)
 {
-	struct vb2_ion_buf *buf =
-			container_of(cookie, struct vb2_ion_buf, cookie);
+	struct vb2_ion_buf *buf = container_of(cookie,
+					struct vb2_ion_buf, cookie);
 
-	if (ctx_coherent(buf->ctx))
-		return;
+	dev_dbg(buf->ctx->dev, "syncing for device, dmabuf: %p, kva: %p, "
+		"size: %d, dir: %d\n", buf->dma_buf, buf->kva, size, dir);
 
-	if ((offset + size) > buf->size)
-		size -= offset + size - buf->size;
-
-	if (!buf->kva) {
-		if (size <= DMA_SYNC_SIZE) {
-			vb2_ion_sync_bufs(buf, dir, dma_sync_sg_for_device);
-			return;
-		}
-
-//		flush_all_cpu_caches();
+	if (buf->dma_buf && !buf->vma) {
+		exynos_ion_sync_dmabuf_for_device(buf->ctx->dev,
+						buf->dma_buf, size, dir);
+	} else if (buf->kva) {
+		if ((offset + size) > buf->size)
+			size -= (offset + size) - buf->size;
+		exynos_ion_sync_vaddr_for_device(buf->ctx->dev,
+						buf->kva, size, offset, dir);
 	} else {
-		dmac_map_area(buf->kva + offset, size, dir);
+		exynos_ion_sync_sg_for_device(buf->ctx->dev,
+						buf->cookie.sgt, dir);
 	}
-
-#ifdef CONFIG_OUTER_CACHE
-	if (size > OUTER_FLUSH_ALL_SIZE) {
-		outer_flush_all();
-	} else {
-		struct scatterlist *sg;
-		struct vb2_ion_cookie *vb2cookie = cookie;
-
-		offset += vb2cookie->offset;
-
-		/* finding first sg that offset become smaller */
-		for (sg = vb2cookie->sgt->sgl;
-			(sg != NULL) && (sg_dma_len(sg) <= offset);
-				sg = sg_next(sg))
-			offset -= sg_dma_len(sg);
-
-		while ((size != 0) && (sg != NULL)) {
-			size_t sg_size;
-
-			sg_size = min_t(size_t, size, sg_dma_len(sg) - offset);
-			if (dir == DMA_FROM_DEVICE)
-				outer_inv_range(sg_phys(sg) + offset,
-						sg_phys(sg) + offset + sg_size);
-			else
-				outer_clean_range(sg_phys(sg) + offset,
-						sg_phys(sg) + offset + sg_size);
-
-			size -= sg_size;
-			offset = 0;
-			sg = sg_next(sg);
-		}
-	}
-#endif
 }
 EXPORT_SYMBOL_GPL(vb2_ion_sync_for_device);
 
 void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 						enum dma_data_direction dir)
 {
-	struct vb2_ion_buf *buf =
-			container_of(cookie, struct vb2_ion_buf, cookie);
+	struct vb2_ion_buf *buf = container_of(cookie,
+					struct vb2_ion_buf, cookie);
 
-	if (ctx_coherent(buf->ctx))
-		return;
+	dev_dbg(buf->ctx->dev, "syncing for cpu, dmabuf: %p, kva: %p, "
+		"size: %d, dir: %d\n", buf->dma_buf, buf->kva, size, dir);
 
-	if ((offset + size) > buf->size)
-		size -= offset + size - buf->size;
-
-	if (!buf->kva) {
-		if (size <= DMA_SYNC_SIZE) {
-			vb2_ion_sync_bufs(buf, dir, dma_sync_sg_for_cpu);
-			return;
-		}
-
-//		flush_all_cpu_caches();
+	if (buf->dma_buf && !buf->vma) {
+		exynos_ion_sync_dmabuf_for_cpu(buf->ctx->dev,
+						buf->dma_buf, size, dir);
+	} else if (buf->kva) {
+		if ((offset + size) > buf->size)
+			size -= (offset + size) - buf->size;
+		exynos_ion_sync_vaddr_for_cpu(buf->ctx->dev,
+						buf->kva, size, offset, dir);
 	} else {
-		dmac_unmap_area(buf->kva + offset, size, dir);
+		exynos_ion_sync_sg_for_cpu(buf->ctx->dev,
+						buf->cookie.sgt, dir);
 	}
-
-#ifdef CONFIG_OUTER_CACHE
-	if (dir == DMA_TO_DEVICE) {
-		return;
-	} else if (size > OUTER_FLUSH_ALL_SIZE) {
-		outer_flush_all();
-	} else {
-		struct scatterlist *sg;
-		struct vb2_ion_cookie *vb2cookie = cookie;
-
-		offset += vb2cookie->offset;
-
-		/* finding first sg that offset become smaller */
-		for (sg = vb2cookie->sgt->sgl;
-			(sg != NULL) && (sg_dma_len(sg) <= offset);
-				sg = sg_next(sg))
-			offset -= sg_dma_len(sg);
-
-		while ((size != 0) && (sg != NULL)) {
-			size_t sg_size;
-
-			sg_size = min_t(size_t, size, sg_dma_len(sg) - offset);
-			outer_inv_range(sg_phys(sg) + offset,
-						sg_phys(sg) + offset + sg_size);
-
-			size -= sg_size;
-			offset = 0;
-			sg = sg_next(sg);
-		}
-	}
-#endif
 }
 EXPORT_SYMBOL_GPL(vb2_ion_sync_for_cpu);
 
 int vb2_ion_buf_prepare(struct vb2_buffer *vb)
 {
 	int i;
-	size_t size = 0;
 	enum dma_data_direction dir;
-	bool nokaddr = false;
 
 	dir = V4L2_TYPE_IS_OUTPUT(vb->v4l2_buf.type) ?
 					DMA_TO_DEVICE : DMA_FROM_DEVICE;
 
 	for (i = 0; i < vb->num_planes; i++) {
 		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
-
-		if (ctx_coherent(buf->ctx))
-			return 0;
-
-		if (buf->attachment && !buf->vma) /* dma-buf type */
-			return 0;
-
-		if (!buf->cached)
-			continue;
-
-		if (!buf->kva)
-			nokaddr = true;
-
-		size += buf->size;
+		vb2_ion_sync_for_device((void *) &buf->cookie, 0,
+							buf->size, dir);
 	}
 
-	if ((nokaddr && (size > DMA_SYNC_SIZE)) ||
-			(size >= CACHE_FLUSH_ALL_SIZE)) {
-//		flush_all_cpu_caches();
-		goto outercache;
-	}
-
-	for (i = 0; i < vb->num_planes; i++) {
-		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
-
-		if (!buf->cached)
-			continue;
-
-		if (!buf->kva)
-			vb2_ion_sync_bufs(buf, dir, dma_sync_sg_for_device);
-		else
-			dmac_map_area(buf->kva, buf->size, dir);
-	}
-
-	if (nokaddr) /* vb2_ion_sync_bufs() operates on the outer cache also */
-		return 0;
-
-outercache:
-#ifdef CONFIG_OUTER_CACHE
-	if (size > OUTER_FLUSH_ALL_SIZE) { /* L2 cache size of Exynos4 */
-		outer_flush_all();
-		return 0;
-	}
-
-	for (i = 0; i < vb->num_planes; i++) {
-		int j;
-		struct vb2_ion_buf *buf;
-		struct scatterlist *sg;
-		off_t offset;
-
-		buf = vb->planes[i].mem_priv;
-		if (!buf->cached)
-			continue;
-
-		offset = buf->cookie.offset;
-
-		for_each_sg(buf->cookie.sgt->sgl,
-					sg, buf->cookie.sgt->nents, j) {
-			phys_addr_t phys;
-			size_t sz_op;
-
-			if (offset >= sg_dma_len(sg)) {
-				offset -= sg_dma_len(sg);
-				continue;
-			}
-
-			phys = sg_phys(sg) + offset;
-			sz_op = min_t(size_t, sg_dma_len(sg) - offset, size);
-
-			if (dir == DMA_FROM_DEVICE)
-				outer_inv_range(phys, phys + sz_op);
-			else
-				outer_clean_range(phys, phys + sz_op);
-
-			offset = 0;
-			size -= sz_op;
-
-			if (size == 0)
-				break;
-		}
-	}
-#endif
 	return 0;
 }
 EXPORT_SYMBOL_GPL(vb2_ion_buf_prepare);
@@ -1236,97 +1051,17 @@ EXPORT_SYMBOL_GPL(vb2_ion_buf_prepare);
 int vb2_ion_buf_finish(struct vb2_buffer *vb)
 {
 	int i;
-	size_t size = 0;
 	enum dma_data_direction dir;
-	bool nokaddr = false;
 
 	dir = V4L2_TYPE_IS_OUTPUT(vb->v4l2_buf.type) ?
 					DMA_TO_DEVICE : DMA_FROM_DEVICE;
 
-	if (dir == DMA_TO_DEVICE)
-		return 0;
-
 	for (i = 0; i < vb->num_planes; i++) {
 		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
-
-		if (ctx_coherent(buf->ctx))
-			return 0;
-
-		if (buf->attachment && !buf->vma) /* dma-buf type */
-			return 0;
-
-		if (!buf->cached)
-			continue;
-
-		if (!buf->kva)
-			nokaddr = true;
-
-		size += buf->size;
+		vb2_ion_sync_for_cpu((void *) &buf->cookie, 0,
+						buf->size, dir);
 	}
 
-	if ((nokaddr && (size > DMA_SYNC_SIZE)) ||
-			(size >= CACHE_FLUSH_ALL_SIZE)) {
-//		flush_all_cpu_caches();
-		goto outercache;
-	}
-
-	for (i = 0; i < vb->num_planes; i++) {
-		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
-
-		if (!buf->cached)
-			continue;
-
-		if (!buf->kva)
-			vb2_ion_sync_bufs(buf, dir, dma_sync_sg_for_cpu);
-		else
-			dmac_unmap_area(buf->kva, buf->size, dir);
-	}
-
-	if (nokaddr) /* vb2_ion_sync_bufs() operates on the outer cache also */
-		return 0;
-
-outercache:
-#ifdef CONFIG_OUTER_CACHE
-	if (size > OUTER_FLUSH_ALL_SIZE) { /* L2 cache size of Exynos4 */
-		outer_flush_all();
-		return 0;
-	}
-
-	for (i = 0; i < vb->num_planes; i++) {
-		int j;
-		struct vb2_ion_buf *buf;
-		struct scatterlist *sg;
-		off_t offset;
-
-		buf = vb->planes[i].mem_priv;
-		if (!buf->cached)
-			continue;
-
-		offset = buf->cookie.offset;
-
-		for_each_sg(buf->cookie.sgt->sgl,
-					sg, buf->cookie.sgt->nents, j) {
-			phys_addr_t phys;
-			size_t sz_op;
-
-			if (offset >= sg_dma_len(sg)) {
-				offset -= sg_dma_len(sg);
-				continue;
-			}
-
-			phys = sg_phys(sg) + offset;
-			sz_op = min_t(size_t, sg_dma_len(sg) - offset, size);
-
-			outer_inv_range(phys, sz_op);
-
-			offset = 0;
-			size -= sz_op;
-
-			if (size == 0)
-				break;
-		}
-	}
-#endif
 	return 0;
 }
 EXPORT_SYMBOL_GPL(vb2_ion_buf_finish);

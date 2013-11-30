@@ -25,6 +25,10 @@
 #include <linux/sched.h>
 #include <linux/shrinker.h>
 #include <linux/types.h>
+#include <linux/semaphore.h>
+#include <linux/vmalloc.h>
+#include <linux/dma-direction.h>
+#include <asm/cacheflush.h>
 
 struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
 
@@ -122,6 +126,18 @@ struct ion_heap_ops {
 			 struct vm_area_struct *vma);
 };
 
+/* [INTERNAL USE ONLY] set when ion_mmap() or kmap() is called */
+#define ION_FLAG_CPUMAPPED (1 << 15)
+
+/* [INTERNAL USE ONLY] dirty flag for ion buffer */
+#define ION_FLAG_CLEAN (1 << 14)
+
+/* [INTERNAL USE ONLY] flush needed before first use */
+#define ION_FLAG_READY_TO_USE (1 << 13)
+
+/* [INTERNAL USE ONLY] threshold value for whole cache flush */
+#define ION_FLUSH_ALL_HIGHLIMIT SZ_8M
+
 /**
  * heap flags - flags between the heaps and core ion code
  */
@@ -147,6 +163,10 @@ struct ion_heap_ops {
  * @lock:		protects the free list
  * @waitqueue:		queue to wait on from deferred free thread
  * @task:		task struct of deferred free thread
+ * @vm_sem:		semaphore for reserved_vm_area
+ * @page_idx:		index of reserved_vm_area slots
+ * @reserved_vm_area:	reserved vm area
+ * @pte:		pte lists for reserved_vm_area
  * @debug_show:		called when heap debug file is read to add any
  *			heap specific debug info to output
  *
@@ -169,6 +189,10 @@ struct ion_heap {
 	struct rt_mutex lock;
 	wait_queue_head_t waitqueue;
 	struct task_struct *task;
+	struct semaphore vm_sem;
+	atomic_t page_idx;
+	struct vm_struct *reserved_vm_area;
+	pte_t **pte;
 	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
 };
 
@@ -194,6 +218,42 @@ static inline bool ion_buffer_fault_user_mappings(struct ion_buffer *buffer)
 {
 	return (buffer->flags & ION_FLAG_CACHED) &&
 		!(buffer->flags & ION_FLAG_CACHED_NEEDS_SYNC);
+}
+
+static inline void ion_buffer_set_cpumapped(struct ion_buffer *buffer)
+{
+	buffer->flags |= ION_FLAG_CPUMAPPED;
+	if (buffer->flags & ION_FLAG_CACHED)
+		buffer->flags &= ~ION_FLAG_CLEAN;
+}
+
+static inline bool ion_buffer_cpumapped(struct ion_buffer *buffer)
+{
+	/* both user map and kmap are treated as cpumapped */
+	if ((buffer->flags & ION_FLAG_CPUMAPPED) || (buffer->kmap_cnt > 0))
+		return true;
+	else
+		return false;
+}
+
+static inline void ion_buffer_set_clean(struct ion_buffer *buffer)
+{
+	buffer->flags |= ION_FLAG_CLEAN;
+}
+
+static inline bool ion_buffer_dirty(struct ion_buffer *buffer)
+{
+	/* always dirty if cacheable buffer is mapped to cpu */
+	if ((buffer->flags & ION_FLAG_CACHED) &&
+				(buffer->flags & ION_FLAG_CPUMAPPED))
+		return true;
+	else
+		return !(buffer->flags & ION_FLAG_CLEAN);
+}
+
+static inline bool ion_buffer_need_flush_all(struct ion_buffer *buffer)
+{
+	return buffer->size >= ION_FLUSH_ALL_HIGHLIMIT;
 }
 
 /**
@@ -302,6 +362,29 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *);
 void ion_chunk_heap_destroy(struct ion_heap *);
 struct ion_heap *ion_cma_heap_create(struct ion_platform_heap *);
 void ion_cma_heap_destroy(struct ion_heap *);
+
+typedef void (*ion_heap_sync_func)(const void *, size_t, int);
+void ion_heap_sync(struct ion_heap *heap, struct sg_table *sgt,
+			enum dma_data_direction dir,
+			ion_heap_sync_func sync, bool memzero);
+int ion_heap_reserve_vm(struct ion_heap *heap);
+
+static inline void ion_buffer_flush(const void *vaddr, size_t size, int dir)
+{
+	dmac_flush_range(vaddr, vaddr + size);
+}
+
+static inline void ion_buffer_make_ready(struct ion_buffer *buffer)
+{
+	if (!(buffer->flags & ION_FLAG_READY_TO_USE)) {
+		ion_heap_sync(buffer->heap, buffer->sg_table,
+				DMA_BIDIRECTIONAL, ion_buffer_flush,
+				!(buffer->flags & ION_FLAG_NOZEROED));
+		buffer->flags |= ION_FLAG_READY_TO_USE;
+		if (!(buffer->flags & ION_FLAG_CPUMAPPED))
+			buffer->flags |= ION_FLAG_CLEAN;
+	}
+}
 
 /**
  * kernel api to allocate/free from carveout -- used when carveout is

@@ -569,6 +569,10 @@ static void *ion_buffer_kmap_get(struct ion_buffer *buffer)
 		return vaddr;
 	buffer->vaddr = vaddr;
 	buffer->kmap_cnt++;
+
+	ion_buffer_make_ready(buffer);
+	ion_buffer_set_cpumapped(buffer);
+
 	return vaddr;
 }
 
@@ -966,6 +970,8 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	mutex_lock(&buffer->lock);
 	/* now map it to userspace */
 	ret = buffer->heap->ops->map_user(buffer->heap, buffer, vma);
+	ion_buffer_make_ready(buffer);
+	ion_buffer_set_cpumapped(buffer);
 	mutex_unlock(&buffer->lock);
 
 	if (ret)
@@ -1142,8 +1148,8 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
-	dma_sync_sg_for_device(NULL, buffer->sg_table->sgl,
-			       buffer->sg_table->nents, DMA_BIDIRECTIONAL);
+	ion_heap_sync(buffer->heap, buffer->sg_table,
+				DMA_BIDIRECTIONAL, ion_buffer_flush, false);
 	dma_buf_put(dmabuf);
 	return 0;
 }

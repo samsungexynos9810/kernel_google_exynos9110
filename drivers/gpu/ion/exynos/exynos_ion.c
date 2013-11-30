@@ -823,6 +823,8 @@ static struct ion_heap *__ion_heap_create(struct ion_platform_heap *heap_data,
 	heap->name = heap_data->name;
 	heap->id = heap_data->id;
 
+	ion_heap_reserve_vm(heap);
+
 	return heap;
 }
 
@@ -834,14 +836,174 @@ void __ion_heap_destroy(struct ion_heap *heap)
 	switch ((int)heap->type) {
 	case ION_HEAP_TYPE_EXYNOS:
 		ion_exynos_heap_destroy(heap);
+		free_vm_area(heap->reserved_vm_area);
 		break;
 	case ION_HEAP_TYPE_EXYNOS_CONTIG:
 		ion_exynos_contig_heap_destroy(heap);
+		free_vm_area(heap->reserved_vm_area);
 		break;
 	default:
 		ion_heap_destroy(heap);
 	}
 }
+
+void exynos_ion_sync_dmabuf_for_device(struct device *dev,
+					struct dma_buf *dmabuf,
+					size_t size,
+					enum dma_data_direction dir)
+{
+	struct ion_buffer *buffer = (struct ion_buffer *) dmabuf->priv;
+
+	if (dir == DMA_COHERENT)
+		return;
+
+	if (IS_ERR_OR_NULL(buffer))
+		BUG();
+
+	mutex_lock(&buffer->lock);
+	ion_buffer_make_ready(buffer);
+
+	if (ion_buffer_fault_user_mappings(buffer))
+		goto out;
+
+	if (!ion_buffer_dirty(buffer))
+		goto out;
+
+	pr_debug("%s: syncing for device %s, buffer: %p, size: %d\n",
+			__func__, dev ? dev_name(dev) : "null", buffer, size);
+
+	if (ion_buffer_need_flush_all(buffer)) {
+		flush_all_cpu_caches();
+	} else if (!IS_ERR_OR_NULL(buffer->vaddr)) {
+		dmac_map_area(buffer->vaddr, size, dir);
+	} else if (buffer->heap->reserved_vm_area) {
+		ion_heap_sync(buffer->heap, buffer->sg_table,
+					dir, dmac_map_area, false);
+	} else {
+		dma_sync_sg_for_device(dev, buffer->sg_table->sgl,
+					buffer->sg_table->orig_nents, dir);
+	}
+
+out:
+	mutex_unlock(&buffer->lock);
+}
+EXPORT_SYMBOL(exynos_ion_sync_dmabuf_for_device);
+
+void exynos_ion_sync_vaddr_for_device(struct device *dev,
+					void *vaddr,
+					size_t size,
+					off_t offset,
+					enum dma_data_direction dir)
+{
+	if (dir == DMA_COHERENT)
+		return;
+
+	pr_debug("%s: syncing for device %s, vaddr: %p, size: %d, offset: %ld\n",
+			__func__, dev ? dev_name(dev) : "null",
+			vaddr, size, offset);
+
+	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
+		flush_all_cpu_caches();
+	else if (!IS_ERR_OR_NULL(vaddr))
+		dmac_map_area(vaddr + offset, size, dir);
+	else
+		BUG();
+}
+EXPORT_SYMBOL(exynos_ion_sync_vaddr_for_device);
+
+void exynos_ion_sync_sg_for_device(struct device *dev,
+					struct sg_table *sgt,
+					enum dma_data_direction dir)
+{
+	if (dir == DMA_COHERENT)
+		return;
+
+	dma_sync_sg_for_device(dev, sgt->sgl, sgt->orig_nents, dir);
+}
+EXPORT_SYMBOL(exynos_ion_sync_sg_for_device);
+
+void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
+					struct dma_buf *dmabuf,
+					size_t size,
+					enum dma_data_direction dir)
+{
+	struct ion_buffer *buffer = (struct ion_buffer *) dmabuf->priv;
+
+	if (dir == DMA_COHERENT)
+		return;
+
+	if (IS_ERR_OR_NULL(buffer))
+		BUG();
+
+	mutex_lock(&buffer->lock);
+	ion_buffer_make_ready(buffer);
+
+	if (ion_buffer_fault_user_mappings(buffer))
+		goto out;
+
+	if (!ion_buffer_dirty(buffer))
+		goto out;
+
+	pr_debug("%s: syncing for cpu %s, buffer: %p, size: %d\n",
+			__func__, dev ? dev_name(dev) : "null", buffer, size);
+
+	if (ion_buffer_need_flush_all(buffer)) {
+		flush_all_cpu_caches();
+	} else if (!IS_ERR_OR_NULL(buffer->vaddr)) {
+		dmac_unmap_area(buffer->vaddr, size, dir);
+	} else if (buffer->heap->reserved_vm_area) {
+		ion_heap_sync(buffer->heap, buffer->sg_table,
+					dir, dmac_unmap_area, false);
+	} else {
+		dma_sync_sg_for_cpu(dev, buffer->sg_table->sgl,
+					buffer->sg_table->orig_nents, dir);
+	}
+
+	if (!ion_buffer_cpumapped(buffer)) {
+		pr_debug("%s: set clean for buffer %p, cached: %d, "
+				"mapped: %d\n", __func__,
+				buffer, ion_buffer_cached(buffer),
+				ion_buffer_cpumapped(buffer));
+		ion_buffer_set_clean(buffer);
+	}
+
+out:
+	mutex_unlock(&buffer->lock);
+}
+EXPORT_SYMBOL(exynos_ion_sync_dmabuf_for_cpu);
+
+void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
+					void *vaddr,
+					size_t size,
+					off_t offset,
+					enum dma_data_direction dir)
+{
+	if (dir == DMA_COHERENT)
+		return;
+
+	pr_debug("%s: syncing for cpu %s, vaddr: %p, size: %d, offset: %ld\n",
+			__func__, dev ? dev_name(dev) : "null",
+			vaddr, size, offset);
+
+	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
+		flush_all_cpu_caches();
+	else if (!IS_ERR_OR_NULL(vaddr))
+		dmac_unmap_area(vaddr + offset, size, dir);
+	else
+		BUG();
+}
+EXPORT_SYMBOL(exynos_ion_sync_vaddr_for_cpu);
+
+void exynos_ion_sync_sg_for_cpu(struct device *dev,
+					struct sg_table *sgt,
+					enum dma_data_direction dir)
+{
+	if (dir == DMA_COHERENT)
+		return;
+
+	dma_sync_sg_for_cpu(dev, sgt->sgl, sgt->orig_nents, dir);
+}
+EXPORT_SYMBOL(exynos_ion_sync_sg_for_cpu);
 
 #ifdef CONFIG_ION_EXYNOS_OF
 static int exynos_ion_populate_heaps(struct platform_device *pdev,

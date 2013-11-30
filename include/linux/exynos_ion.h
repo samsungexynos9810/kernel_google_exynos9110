@@ -18,6 +18,9 @@
 #define _LINUX_EXYNOS_ION_H
 
 #include <linux/ion.h>
+#include <linux/device.h>
+#include <linux/dma-buf.h>
+#include <linux/dma-direction.h>
 
 enum {
 	ION_HEAP_TYPE_EXYNOS_CONTIG = ION_HEAP_TYPE_CUSTOM + 1,
@@ -94,11 +97,51 @@ enum {
 #ifdef __KERNEL__
 
 #ifdef CONFIG_ION_EXYNOS
+void exynos_ion_sync_dmabuf_for_device(struct device *dev,
+					struct dma_buf *dmabuf,
+					size_t size,
+					enum dma_data_direction dir);
+void exynos_ion_sync_vaddr_for_device(struct device *dev,
+					void *vaddr,
+					size_t size,
+					off_t offset,
+					enum dma_data_direction dir);
+void exynos_ion_sync_sg_for_device(struct device *dev,
+					struct sg_table *sgt,
+					enum dma_data_direction dir);
+void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
+					struct dma_buf *dmabuf,
+					size_t size,
+					enum dma_data_direction dir);
+void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
+					void *vaddr,
+					size_t size,
+					off_t offset,
+					enum dma_data_direction dir);
+void exynos_ion_sync_sg_for_cpu(struct device *dev,
+					struct sg_table *sgt,
+					enum dma_data_direction dir);
 unsigned int ion_exynos_contig_region_mask(char *region_name);
 int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size);
 int ion_exynos_contig_heap_isolate(int region_id);
 void ion_exynos_contig_heap_deisolate(int region_id);
 #else
+void exynos_ion_sync_for_device(struct device *dev,
+					struct dma_buf *dbuf,
+					void *vaddr, size_t size,
+					off_t offset, struct sg_table *sgt,
+					enum dma_data_direction dir)
+{
+}
+
+void exynos_ion_sync_for_cpu(struct device *dev,
+					struct dma_buf *dbuf,
+					void *vaddr, size_t size,
+					off_t offset, struct sg_table *sgt,
+					enum dma_data_direction dir)
+{
+}
+
 static inline int ion_exynos_contig_region_mask(char *region_name)
 {
 	return 0;
