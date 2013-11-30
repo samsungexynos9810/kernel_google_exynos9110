@@ -103,7 +103,8 @@ static int fb_state_change(struct notifier_block *nb,
 	struct fb_info *info = evdata->info;
 	unsigned int blank;
 
-	if (val != FB_EVENT_BLANK)
+	if (val != FB_EVENT_BLANK &&
+		val != FB_R_EARLY_EVENT_BLANK)
 		return 0;
 
 	/*
@@ -257,6 +258,8 @@ static enum hotplug_mode diagnose_condition(void)
 	}
 	if ((low_stay > 5) && (!lcd_is_on || forced_hotplug))
 		ret = CHP_LOW_POWER;
+	else
+		ret = CHP_NORMAL;
 
 	return ret;
 }
