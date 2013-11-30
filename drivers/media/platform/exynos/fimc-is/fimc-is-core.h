@@ -38,7 +38,6 @@
 #include "fimc-is-resourcemgr.h"
 #include "fimc-is-device-sensor.h"
 #include "fimc-is-device-ischain.h"
-#include "fimc-is-dvfs.h"
 
 #include "fimc-is-video.h"
 #include "fimc-is-mem.h"
