@@ -6711,21 +6711,10 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 
 	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
 			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0) {
-		framemgr_e_barrier_irqs(framemgr, 0, flags);
-
-		if (frame) {
-			frame->shot->uctl.scalerUd.taapTargetAddress[0] =
-				frame->dvaddr_buffer[0];
-			frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
-			frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
-		} else {
-			frame->shot->uctl.scalerUd.taapTargetAddress[0] = 0;
-			frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
-			frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
-			merr("ISP %d frame is drop", device, frame->fcount);
-		}
-
-		framemgr_x_barrier_irqr(framemgr, 0, flags);
+		frame->shot->uctl.scalerUd.taapTargetAddress[0] =
+			frame->dvaddr_buffer[0];
+		frame->shot->uctl.scalerUd.taapTargetAddress[1] = 0;
+		frame->shot->uctl.scalerUd.taapTargetAddress[2] = 0;
 	}
 
 	frame->shot->ctl.entry.lowIndexParam = 0;
