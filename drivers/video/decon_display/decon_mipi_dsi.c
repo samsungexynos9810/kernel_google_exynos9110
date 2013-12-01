@@ -39,6 +39,7 @@
 #include <plat/cpu.h>
 
 #include <mach/map.h>
+#include <mach/exynos5-mipiphy.h>
 
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi_lowlevel.h"
@@ -194,31 +195,7 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
 
 #ifdef CONFIG_SOC_EXYNOS5430
-	void __iomem *base;
-	unsigned int reg = 0;
-
-	base = ioremap(0x105C0710, 0x4);
-	if (enable) {
-		reg |= (1 << 0);
-		writel(reg, base);
-	} else {
-		reg &= ~(1 << 0);
-		writel(reg, base);
-	}
-	iounmap(base);
-
-	/* D-PHY reset */
-	base = ioremap(0x13B8100c, 0x4);
-	if (enable) {
-		reg &= ~(1 << 0);
-		writel(reg, base);
-		reg |= (1 << 0);
-		writel(reg, base);
-	} else {
-		reg &= ~(1 << 0);
-		writel(reg, base);
-	}
-	iounmap(base);
+	exynos5_dism_phy_enable(0, enable);
 #else
 	unsigned int reg;
 
