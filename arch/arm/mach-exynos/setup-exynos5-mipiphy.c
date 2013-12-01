@@ -15,52 +15,96 @@
 #include <linux/spinlock.h>
 #include <mach/regs-clock.h>
 
-#define S5P_CAM0_MIPI0_DPHY_RESET			(1 << 0)
-#define S5P_CAM0_MIPI1_DPHY_RESET			(1 << 1)
-#define S5P_CAM1_MIPI2_DPHY_RESET			(1 << 0)
+#define MIPI_PHY_BIT0					(1 << 0)
+#define MIPI_PHY_BIT1					(1 << 1)
 
 static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 {
 	static DEFINE_SPINLOCK(lock);
-	void __iomem *addr;
+	void __iomem *addr_phy;
+	void __iomem *addr_reset;
 	unsigned long flags;
 	u32 cfg;
+	u32 csi_reset = 0;
+	u32 dsi_reset = 0;
 
-	addr = S5P_MIPI_DPHY_CONTROL(id);
+	addr_phy = S5P_MIPI_DPHY_CONTROL(id);
 
 	spin_lock_irqsave(&lock, flags);
 
 	/* PHY reset */
 	switch(id) {
 	case 0:
-		cfg = __raw_readl(S5P_VA_SYSREG_CAM0 + 0x1014);
-		cfg |= S5P_CAM0_MIPI0_DPHY_RESET;
-		__raw_writel(cfg, S5P_VA_SYSREG_CAM0 + 0x1014);
+		if (reset == S5P_MIPI_DPHY_SRESETN) {
+			if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
+				addr_reset = ioremap(0x120F1014, 0x4);
+				cfg = __raw_readl(addr_reset);
+				cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
+				__raw_writel(cfg, addr_reset);
+				iounmap(addr_reset);
+			}
+		} else {
+			if (readl(S5P_VA_PMU + 0x4084) & 0x1) {
+				addr_reset = ioremap(0x13B8100c, 0x4);
+				cfg = __raw_readl(addr_reset);
+				cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
+				__raw_writel(cfg, addr_reset);
+				iounmap(addr_reset);
+			}
+		}
 		break;
 	case 1:
-		cfg = __raw_readl(S5P_VA_SYSREG_CAM0 + 0x1014);
-		cfg |= S5P_CAM0_MIPI1_DPHY_RESET;
-		__raw_writel(cfg, S5P_VA_SYSREG_CAM0 + 0x1014);
+		if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
+			addr_reset = ioremap(0x120F1014, 0x4);
+			cfg = __raw_readl(addr_reset);
+			cfg = on ? (cfg | MIPI_PHY_BIT1) : (cfg & ~MIPI_PHY_BIT1);
+			__raw_writel(cfg, addr_reset);
+			iounmap(addr_reset);
+		}
 		break;
 	case 2:
-		cfg = __raw_readl(S5P_VA_SYSREG_CAM1 + 0x1020);
-		cfg |= S5P_CAM1_MIPI2_DPHY_RESET;
-		__raw_writel(cfg, S5P_VA_SYSREG_CAM1 + 0x1020);
+		if (readl(S5P_VA_PMU + 0x40A4) & 0x1) {
+			addr_reset = ioremap(0x145F1020, 0x4);
+			cfg = __raw_readl(addr_reset);
+			cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
+			__raw_writel(cfg, addr_reset);
+			iounmap(addr_reset);
+		}
 		break;
 	default:
 		pr_err("id(%d) is invalid", id);
 		return -EINVAL;
 	}
 
+	/* CHECK CMA0 PD STATUS */
+	if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
+		addr_reset = ioremap(0x120F1014, 0x4);
+		csi_reset = __raw_readl(addr_reset);
+		iounmap(addr_reset);
+	}
+
+	/* CHECK DISP PD STATUS */
+	if (readl(S5P_VA_PMU + 0x4084) & 0x1) {
+		addr_reset = ioremap(0x13B8100c, 0x4);
+		dsi_reset = __raw_readl(addr_reset);
+		iounmap(addr_reset);
+	}
+
 	/* PHY PMU enable */
-	cfg = __raw_readl(addr);
+	cfg = __raw_readl(addr_phy);
 
 	if (on)
 		cfg |= S5P_MIPI_DPHY_ENABLE;
-	else
-		cfg &= ~S5P_MIPI_DPHY_ENABLE;
+	else {
+		if (id == 0) {
+			if(!((csi_reset | dsi_reset) & MIPI_PHY_BIT0))
+				cfg &= ~S5P_MIPI_DPHY_ENABLE;
+		} else {
+			cfg &= ~S5P_MIPI_DPHY_ENABLE;
+		}
+	}
 
-	__raw_writel(cfg, addr);
+	__raw_writel(cfg, addr_phy);
 	spin_unlock_irqrestore(&lock, flags);
 
 	return 0;
@@ -71,3 +115,9 @@ int exynos5_csis_phy_enable(int id, bool on)
 	return __exynos5_mipi_phy_control(id, on, S5P_MIPI_DPHY_SRESETN);
 }
 EXPORT_SYMBOL(exynos5_csis_phy_enable);
+
+int exynos5_dism_phy_enable(int id, bool on)
+{
+	return __exynos5_mipi_phy_control(id, on, S5P_MIPI_DPHY_MRESETN);
+}
+EXPORT_SYMBOL(exynos5_dism_phy_enable);

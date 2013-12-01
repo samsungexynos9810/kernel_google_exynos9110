@@ -12,5 +12,6 @@
 #define __PLAT_MIPI_PHY_H __FILE__
 
 extern int exynos5_csis_phy_enable(int id, bool on);
+extern int exynos5_dism_phy_enable(int id, bool on);
 
 #endif /* __PLAT_MIPI_PHY_H */
