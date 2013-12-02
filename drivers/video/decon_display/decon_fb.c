@@ -107,10 +107,11 @@ struct s3c_fb;
 
 static struct dma_buf *g_framebuf;
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_hibernation_power_on(struct display_driver *dispdrv);
 int decon_hibernation_power_off(struct display_driver *dispdrv);
 extern int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim);
+static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb);
 #endif
 
 extern struct mipi_dsim_device *dsim_for_decon;
@@ -1008,7 +1009,6 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 
 static int s3c_fb_enable(struct s3c_fb *sfb);
 static int s3c_fb_disable(struct s3c_fb *sfb);
-static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb);
 
 /**
  * s3c_fb_blank() - blank or unblank the given window
@@ -1038,7 +1038,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		if (sfb->power_state == POWER_HIBER_DOWN) {
 			s3c_fb_disable_lcd_off(sfb);
 			s5p_mipi_dsi_lcd_off(dsim_for_decon);
@@ -1056,7 +1056,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		prev_overlap_cnt = 0;
 		prev_gsc_local_cnt = 0;
 #endif
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		init_display_pm_status(dispdrv);
 #endif
 		break;
@@ -2476,14 +2476,16 @@ static void s3c_fb_update_regs_handler(struct work_struct *work)
 			container_of(work, struct s3c_fb, update_regs_work);
 	struct s3c_reg_data *data, *next;
 	struct list_head saved_list;
-	struct display_driver *dispdrv = get_display_driver();
+	struct display_driver *dispdrv;
+
+	dispdrv = get_display_driver();
 
 	mutex_lock(&sfb->update_regs_list_lock);
 	saved_list = sfb->update_regs_list;
 	list_replace_init(&sfb->update_regs_list, &saved_list);
 	mutex_unlock(&sfb->update_regs_list_lock);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, true);
 #endif
 	list_for_each_entry_safe(data, next, &saved_list, list) {
@@ -2491,7 +2493,7 @@ static void s3c_fb_update_regs_handler(struct work_struct *work)
 		list_del(&data->list);
 		kfree(data);
 	}
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, false);
 #endif
 }
@@ -2521,7 +2523,7 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 
 	struct fb_var_screeninfo *var = &info->var;
 	int offset;
-	struct display_driver *dispdrv = get_display_driver();
+	struct display_driver *dispdrv;
 
 	union {
 		struct s3c_fb_user_window user_window;
@@ -2532,10 +2534,13 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		u32 vsync;
 	} p;
 
+	dispdrv = get_display_driver();
+
 	if ((sfb->power_state == POWER_DOWN) &&
 		(cmd != S3CFB_WIN_CONFIG))
 		return 0;
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	if (sfb->power_state == POWER_HIBER_DOWN) {
 		switch (cmd) {
@@ -2547,6 +2552,7 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 			return 0;
 		}
 	}
+#endif
 
 	switch (cmd) {
 	case FBIO_WAITFORVSYNC:
@@ -4309,7 +4315,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	dispdrv->decon_driver.ops->pwr_on = decon_hibernation_power_on;
 	dispdrv->decon_driver.ops->pwr_off = decon_hibernation_power_off;
 #endif
@@ -4415,6 +4421,7 @@ static void decon_fb_perframeoff(struct s3c_fb *sfb)
 }
 #endif
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 {
 	struct display_driver *dispdrv = get_display_driver();
@@ -4434,6 +4441,7 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 
 	return 0;
 }
+#endif
 
 static int s3c_fb_disable(struct s3c_fb *sfb)
 {
@@ -4780,7 +4788,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 }
 #endif
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_hibernation_power_on(struct display_driver *dispdrv)
 {
 	int default_win;

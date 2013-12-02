@@ -70,11 +70,13 @@ struct pm_ops display_block_ops = {
 	.pwr_off 	= display_hibernation_power_off,
 };
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 extern struct pm_ops decon_pm_ops;
 #ifdef CONFIG_DECON_MIC
 extern struct pm_ops mic_pm_ops;
 #endif
 extern struct pm_ops dsi_pm_ops;
+#endif
 
 extern struct mipi_dsim_device *dsim_for_decon;
 
@@ -95,7 +97,7 @@ int init_display_pm(struct display_driver *dispdrv)
 	init_display_pm_status(dispdrv);
 
 	spin_lock_init(&dispdrv->pm_status.slock);
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	set_default_hibernation_mode(dispdrv);
 #else
 	dispdrv->pm_status.clock_gating_on = false;
@@ -133,11 +135,13 @@ int init_display_pm(struct display_driver *dispdrv)
 	init_kthread_work(&dispdrv->pm_status.control_power_gating_work,
 		decon_power_gating_handler);
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	dispdrv->pm_status.ops = &display_block_ops;
 	dispdrv->decon_driver.ops = &decon_pm_ops;
 	dispdrv->dsi_driver.ops = &dsi_pm_ops;
 #ifdef CONFIG_DECON_MIC
 	dispdrv->mic_driver.ops = &mic_pm_ops;
+#endif
 #endif
 	return 0;
 }
@@ -209,7 +213,7 @@ static void disable_mask(struct display_driver *dispdrv)
 
 void debug_function(struct display_driver *dispdrv, const char *buf)
 {
-#ifndef CONFIG_FB_I80_COMMAND_MODE
+#ifndef CONFIG_FB_HIBERNATION_DISPLAY
 	pm_debug("does not support");
 	return;
 #endif

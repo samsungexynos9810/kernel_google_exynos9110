@@ -186,7 +186,7 @@ struct mipi_dsim_device *dsim_for_decon;
 EXPORT_SYMBOL(dsim_for_decon);
 
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv);
 int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv);
 #endif
@@ -1107,12 +1107,10 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 0);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-#ifdef CONFIG_SOC_EXYNOS5430
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* tiggering power event for PM */
 	if (framedone)
 		disp_pm_dec_refcount(dispdrv);
-#endif
 #endif
 
 	return IRQ_HANDLED;
@@ -1167,6 +1165,7 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	return 0;
 }
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim)
 {
 	struct display_driver *dispdrv;
@@ -1181,6 +1180,7 @@ int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim)
 
 	return 0;
 }
+#endif
 
 int s5p_mipi_dsi_ulps_enable(struct mipi_dsim_device *dsim,
 	unsigned int mode)
@@ -1246,7 +1246,7 @@ int s5p_mipi_dsi_ulps_enable(struct mipi_dsim_device *dsim,
 	return ret;
 }
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv)
 {
 	struct mipi_dsim_device *dsim = dispdrv->dsi_driver.dsim;
@@ -1386,11 +1386,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	dispdrv->dsi_driver.dsim = dsim;
 
-#ifdef CONFIG_SOC_EXYNOS5430
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	dispdrv->dsi_driver.ops->pwr_on = s5p_mipi_dsi_hibernation_power_on;
 	dispdrv->dsi_driver.ops->pwr_off = s5p_mipi_dsi_hibernation_power_off;
-#endif
 #endif
 
 	mutex_init(&dsim_rd_wr_mutex);

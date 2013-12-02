@@ -153,7 +153,7 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 
 	init_display_operations();
 
-#ifdef CONFIG_SOC_EXYNOS5430
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	init_display_pm(&g_display_driver);
 #endif
 

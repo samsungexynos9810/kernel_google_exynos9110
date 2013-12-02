@@ -49,7 +49,7 @@ struct decon_mic {
 struct decon_mic *mic_for_decon;
 EXPORT_SYMBOL(mic_for_decon);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_mic_hibernation_power_on(struct display_driver *dispdrv);
 int decon_mic_hibernation_power_off(struct display_driver *dispdrv);
 #endif
@@ -181,7 +181,7 @@ int create_decon_mic(struct platform_device *pdev)
 	mic->decon_mic_on = true;
 
 	dispdrv->mic_driver.mic = mic;
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	dispdrv->mic_driver.ops->pwr_on = decon_mic_hibernation_power_on;
 	dispdrv->mic_driver.ops->pwr_off = decon_mic_hibernation_power_off;
 #endif
@@ -237,7 +237,7 @@ int decon_mic_sw_reset(struct decon_mic *mic)
 	return 0;
 }
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_mic_hibernation_power_on(struct display_driver *dispdrv)
 {
 	struct decon_mic *mic = dispdrv->mic_driver.mic;
