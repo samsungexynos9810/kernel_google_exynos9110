@@ -1254,6 +1254,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		pm_runtime_put_sync(dev);
 		mdbgd_ischain("pm_runtime_suspended = %d\n", device, pm_runtime_suspended(dev));
 
+#if defined(CONFIG_SOC_EXYNOS3470)
+		writel(0x0, PMUREG_ISP_ARM_SYS_PWR_REG);
+#else
 		timeout = 1000;
 		while ((readl(PMUREG_ISP_STATUS) & 0x1) && timeout) {
 			timeout--;
@@ -1262,6 +1265,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		if (timeout == 0)
 			err("ISP power down failed(0x%08x)\n",
 				readl(PMUREG_ISP_STATUS));
+#endif /* defined(CONFIG_SOC_EXYNOS3470) */
 #if defined(CONFIG_SOC_EXYNOS5430)
 		timeout = 1000;
 		while ((readl(PMUREG_CAM0_STATUS) & 0x1) && timeout) {

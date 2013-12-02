@@ -45,6 +45,11 @@
 #undef ENABLE_DVFS
 #endif
 
+#if defined(CONFIG_SOC_EXYNOS3470)
+#undef ENABLE_CLOCK_GATE
+#undef ENABLE_DVFS
+#undef ENABLE_FULL_BYPASS
+#endif
 /*
  * -----------------------------------------------------------------------------
  * Debug Message Configuration

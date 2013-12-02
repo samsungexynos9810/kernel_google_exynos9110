@@ -931,7 +931,7 @@ enum is_param_set_bit {
 #define LOWBIT_OF_NUM(num)		(num >= 32 ? 0 : BIT0<<num)
 #define HIGHBIT_OF_NUM(num)		(num >= 32 ? BIT0<<(num-32) : 0)
 
-#if !defined(CONFIG_SOC_EXYNOS5430)
+#if !defined(CONFIG_SOC_EXYNOS5430) && !defined(CONFIG_SOC_EXYNOS5260) && !defined(CONFIG_SOC_EXYNOS3470)
 
 /* 0~31 */
 #define PARAM_GLOBAL_SHOTMODE		0
@@ -1039,7 +1039,8 @@ enum is_param_set_bit {
 #define PARAM_RANGE_SENSOR		5
 #define PARAM_STRNUM_BUFFER		(PARAM_BUFFER_CONTROL)
 #define PARAM_RANGE_BUFFER		3
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS3470)
+
 #define PARAM_STRNUM_3AA		(PARAM_3AA_CONTROL)
 #define PARAM_RANGE_3AA			8
 #define PARAM_STRNUM_ISP		(PARAM_ISP_CONTROL)
@@ -1965,7 +1966,7 @@ struct buffer_param {
 	struct param_otf_output	otf_output;
 };
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS3470)
 struct taa_param {
 	struct param_control		control;
 	struct param_otf_input		otf_input;	/* otf_input */
@@ -2066,7 +2067,7 @@ struct is_param_region {
 	struct global_param		global;
 	struct sensor_param		sensor;
 	struct buffer_param		buf;
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS3470)
 	struct taa_param		taa;
 #endif
 	struct isp_param		isp;

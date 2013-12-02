@@ -58,6 +58,7 @@
 #include "sensor/fimc-is-device-8b1.h"
 #include "sensor/fimc-is-device-imx135.h"
 #include "sensor/fimc-is-device-imx175.h"
+#include "sensor/fimc-is-device-4h5.h"
 #include "sensor/fimc-is-device-3l2.h"
 #include "sensor/fimc-is-device-2p2.h"
 
@@ -66,6 +67,9 @@
 #endif
 
 #if defined(CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS3470_BUS_DEVFREQ)
 #define CONFIG_FIMC_IS_BUS_DEVFREQ
 #endif
 #if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
@@ -115,11 +119,7 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 #ifdef ENABLE_TDNR
 				SIZE_DNR_INTERNAL_BUF * NUM_DNR_INTERNAL_BUF +
 #endif
-#if defined(CONFIG_ARCH_EXYNOS4)
-				0);
-#else
 				0, 1, 0);
-#endif
 
 	if (IS_ERR(fw_cookie)) {
 		err("Allocating bitprocessor buffer failed");
@@ -320,7 +320,11 @@ int fimc_is_runtime_suspend(struct device *dev)
 #endif
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
-	 exynos5_update_media_layers(TYPE_FIMC_LITE, false);
+#if defined(CONFIG_SOC_EXYNOS3470)
+	bts_initialize("pd-cam", true);
+#else
+	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
+#endif
 #endif
 
 #if defined(CONFIG_MACH_SMDK5410) || defined(CONFIG_MACH_SMDK5420)
@@ -407,12 +411,13 @@ int fimc_is_runtime_resume(struct device *dev)
 #if defined(CONFIG_SOC_EXYNOS5260)
 	bts_initialize("spd-flite-a", true);
 	bts_initialize("spd-flite-b", true);
+#elif defined(CONFIG_SOC_EXYNOS3470)
+	bts_initialize("pd-cam", true);
 #endif
 	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
 #endif
 
 	pr_info("FIMC-IS runtime resume out\n");
-
 	return 0;
 
 p_err:
@@ -751,6 +756,14 @@ static int fimc_is_probe(struct platform_device *pdev)
 	ret = sensor_imx175_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_imx175_probe is fail(%d)", ret);
+		goto p_err3;
+	}
+#endif
+
+#ifndef SENSOR_s5K4H5_DRIVING
+	ret = sensor_4h5_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_4h5_probe is fail(%d)", ret);
 		goto p_err3;
 	}
 #endif
