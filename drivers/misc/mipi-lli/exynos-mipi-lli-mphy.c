@@ -26,6 +26,9 @@ struct device *lli_mphy;
 int exynos_mphy_init(struct exynos_mphy *phy)
 {
 	writel(0x45, phy->loc_regs + PHY_TX_HS_SYNC_LENGTH(0));
+	/* if TX_LCC is disable, M-TX should enter SLEEP or STALL state
+	based on the current value of the TX_MODE upon getting a TOB REQ */
+	writel(0x0, phy->loc_regs + PHY_TX_LCC_ENABLE(0));
 
 	return 0;
 }
