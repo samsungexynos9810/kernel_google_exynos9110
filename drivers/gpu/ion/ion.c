@@ -36,6 +36,7 @@
 #include <linux/debugfs.h>
 #include <linux/dma-buf.h>
 #include <linux/idr.h>
+#include <linux/exynos_iovmm.h>
 
 #include <asm/cacheflush.h>
 
@@ -249,6 +250,7 @@ static struct ion_buffer *ion_buffer_create(struct ion_heap *heap,
 	buffer->dev = dev;
 	buffer->size = len;
 	INIT_LIST_HEAD(&buffer->vmas);
+	INIT_LIST_HEAD(&buffer->iovas);
 	mutex_init(&buffer->lock);
 	/* this will set up dma addresses for the sglist -- it is not
 	   technically correct as per the dma api -- a specific
@@ -278,11 +280,19 @@ err2:
 
 void ion_buffer_destroy(struct ion_buffer *buffer)
 {
+	struct ion_iovm_map *iovm_map;
+	struct ion_iovm_map *tmp;
+
 	if (buffer->kmap_cnt > 0) {
 		WARN((buffer->kmap_cnt > 1) || !ion_buffer_cpumapped(buffer),
 		     "kmap_cnt %d, ion_buffer_cpumapped %d",
 		     buffer->kmap_cnt, ion_buffer_cpumapped(buffer));
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
+	}
+	list_for_each_entry_safe(iovm_map, tmp, &buffer->iovas, list) {
+		iovmm_unmap(iovm_map->dev, iovm_map->iova);
+		list_del(&iovm_map->list);
+		kfree(iovm_map);
 	}
 	buffer->heap->ops->unmap_dma(buffer->heap, buffer);
 	buffer->heap->ops->free(buffer);
@@ -1615,4 +1625,90 @@ void __init ion_reserve(struct ion_platform_data *data)
 			data->heaps[i].base,
 			data->heaps[i].size);
 	}
+}
+
+static struct ion_iovm_map *ion_buffer_iova_create(struct ion_buffer *buffer,
+			struct device *dev, enum dma_data_direction dir, int id)
+{
+	/* Must be called under buffer->lock held */
+	struct ion_iovm_map *iovm_map;
+
+	iovm_map = kzalloc(sizeof(struct ion_iovm_map), GFP_KERNEL);
+	if (!iovm_map) {
+		pr_err("%s: Failed to allocate ion_iovm_map for %s\n",
+			__func__, dev_name(dev));
+		return ERR_PTR(-ENOMEM);
+	}
+
+	iovm_map->iova = iovmm_map(dev, buffer->sg_table->sgl, 0, buffer->size,
+					dir, id);
+	if (IS_ERR_VALUE(iovm_map->iova)) {
+		kfree(iovm_map);
+		pr_err("%s: Unable to allocate IOVA for %s\n",
+			__func__, dev_name(dev));
+		return ERR_PTR(iovm_map->iova);
+	}
+
+	iovm_map->region_id = id;
+	iovm_map->dev = dev;
+	iovm_map->map_cnt = 1;
+
+	return iovm_map;
+}
+
+dma_addr_t ion_iovmm_map(struct dma_buf_attachment *attachment,
+			 off_t offset, size_t size,
+			 enum dma_data_direction direction, int id)
+{
+	struct dma_buf *dmabuf = attachment->dmabuf;
+	struct ion_buffer *buffer = dmabuf->priv;
+	struct ion_iovm_map *iovm_map;
+
+	BUG_ON(dmabuf->ops != &dma_buf_ops);
+
+	mutex_lock(&buffer->lock);
+	list_for_each_entry(iovm_map, &buffer->iovas, list) {
+		if ((attachment->dev == iovm_map->dev) &&
+				(id == iovm_map->region_id)) {
+			iovm_map->map_cnt++;
+			mutex_unlock(&buffer->lock);
+			return iovm_map->iova;
+		}
+	}
+
+	iovm_map = ion_buffer_iova_create(buffer, attachment->dev, direction, id);
+	if (IS_ERR(iovm_map)) {
+		mutex_unlock(&buffer->lock);
+		return PTR_ERR(iovm_map);
+	}
+
+	list_add_tail(&iovm_map->list, &buffer->iovas);
+	mutex_unlock(&buffer->lock);
+
+	return iovm_map->iova;
+}
+
+void ion_iovmm_unmap(struct dma_buf_attachment *attachment, dma_addr_t iova)
+{
+	struct ion_iovm_map *iovm_map;
+	struct dma_buf * dmabuf = attachment->dmabuf;
+	struct device *dev = attachment->dev;
+	struct ion_buffer *buffer = attachment->dmabuf->priv;
+
+	BUG_ON(dmabuf->ops != &dma_buf_ops);
+
+	mutex_lock(&buffer->lock);
+	list_for_each_entry(iovm_map, &buffer->iovas, list) {
+		if ((dev == iovm_map->dev) && (iova == iovm_map->iova)) {
+			if (WARN_ON(iovm_map->map_cnt-- == 0))
+				iovm_map->map_cnt = 0;
+			mutex_unlock(&buffer->lock);
+			return;
+		}
+	}
+
+	pr_warn("%s: IOVA %x is not found for %s\n",
+		__func__, iova, dev_name(dev));
+
+	mutex_unlock(&buffer->lock);
 }

@@ -91,6 +91,8 @@ enum {
 /* return value of ion_exynos_contig_region_mask() that indicates error */
 #define EXYNOS_CONTIG_REGION_NOMASK ~0
 
+#ifdef __KERNEL__
+
 #ifdef CONFIG_ION_EXYNOS
 unsigned int ion_exynos_contig_region_mask(char *region_name);
 int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size);
@@ -125,5 +127,7 @@ static inline int fdt_init_exynos_ion(void)
 	return 0;
 }
 #endif
+
+#endif /* __KERNEL */
 
 #endif /* _LINUX_ION_H */
