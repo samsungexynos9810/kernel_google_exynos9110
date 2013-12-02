@@ -853,7 +853,7 @@
 		};
 	};
 
-	usb@12110000 {
+	ehci: usb@12110000 {
 		compatible = "samsung,exynos5-ehci";
 		reg = <0x12110000 0x100>;
 		interrupts = <0 71 0>;
@@ -863,7 +863,7 @@
 		usb-phy = <&usb2_phy>;
 	};
 
-	usb@12120000 {
+	ohci: usb@12120000 {
 		compatible = "samsung,exynos5-ohci";
 		reg = <0x12120000 0x100>;
 		interrupts = <0 71 0>;
@@ -919,6 +919,12 @@
 			interrupts = <0 73 0>;
 			usb-phy = <&dwc3_usb2_phy &dwc3_usb3_phy_1>;
 		};
+	};
+
+	usb-switch {
+		compatible = "samsung,exynos-usb-switch";
+		ehci = <&ehci>;
+		ohci = <&ohci>;
 	};
 
 	adc@12D10000 {
