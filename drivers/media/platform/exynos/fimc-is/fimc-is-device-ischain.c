@@ -4726,8 +4726,8 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	u32 chain3_width, chain3_height, chain3_ratio;
 	u32 chain1_wmin, chain1_hmin;
 #endif
-	u32 input_crop[4];
-	u32 output_crop[4];
+	u32 input_crop[4] = {0, };
+	u32 output_crop[4] = {0, };
 	u32 sensor_width, sensor_height;
 	u32 bns_width, bns_height;
 	u32 framerate;
@@ -4857,24 +4857,23 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	}
 #endif
 
+	input_crop[0] = 0;
+	input_crop[1] = 0;
+	input_crop[2] = device->bns_width - device->margin_width;
+	input_crop[3] = device->bns_height - device->margin_height;
 	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
 		/*
 		 * In case of dirty bayer capture, reprocessing instance does not use 3aa.
 		 * In this case, ischain device has no 3aa group.
 		 */
-		if (test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state)) {
-			input_crop[0] = 0;
-			input_crop[1] = 0;
-			input_crop[2] = device->bns_width - device->margin_width;
-			input_crop[3] = device->bns_height - device->margin_height;
+		if (leader_3aa && test_bit(FIMC_IS_SUBDEV_OPEN, &leader_3aa->state))
 			fimc_is_ischain_s_3aa_size(device, NULL, input_crop,
 					output_crop, &lindex, &hindex, &indexes);
-		}
 	} else {
-		input_crop[0] = 0;
-		input_crop[1] = 0;
-		input_crop[2] = device->bns_width - device->margin_width;
-		input_crop[3] = device->bns_height - device->margin_height;
+		output_crop[0] = 0;
+		output_crop[1] = 0;
+		output_crop[2] = device->chain0_width;
+		output_crop[3] = device->chain0_width;
 
 		fimc_is_ischain_s_3aa_size(device, NULL, input_crop,
 				output_crop, &lindex, &hindex, &indexes);
