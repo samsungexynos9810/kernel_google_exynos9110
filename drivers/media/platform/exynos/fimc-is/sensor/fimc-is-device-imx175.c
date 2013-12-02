@@ -34,6 +34,7 @@
 
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
+#include "../fimc-is-resourcemgr.h"
 #include "fimc-is-device-imx175.h"
 
 #define SENSOR_NAME "IMX175"
