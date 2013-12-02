@@ -245,6 +245,7 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	pdata->clk_cfg = exynos5430_fimc_is_cfg_clk;
 	pdata->clk_on = exynos5430_fimc_is_clk_on;
 	pdata->clk_off = exynos5430_fimc_is_clk_off;
+	pdata->print_clk = exynos5430_fimc_is_print_clk;
 	pdata->print_cfg = exynos5_fimc_is_print_cfg;
 
 	dev->platform_data = pdata;
