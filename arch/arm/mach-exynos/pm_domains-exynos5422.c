@@ -199,6 +199,73 @@ static int exynos5_pd_mfc_power_on_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static int exynos5_pd_mfc_power_on_pre(struct exynos_pm_domain *pd)
+{
+	unsigned int temp;
+	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
+	temp = __raw_readl(EXYNOS5_CLK_SRC_MASK_TOP1);
+	temp |= 0x1 << 28;
+	__raw_writel(temp, EXYNOS5_CLK_SRC_MASK_TOP1);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_BUS_TOP);
+	temp |= 0x1 << 15;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_BUS_TOP);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_BUS_MFC);
+	temp |= 0x7F << 16 | 0x3;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_BUS_MFC);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_IP_MFC);
+	temp |= 0x7F;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_IP_MFC);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_BLOCK);
+	temp |= 0x1;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_BLOCK);
+/*
+	temp = __raw_readl((void const volatile *)0x10020770);
+	temp |= 0x1 << 25 | 0x1 << 6 | 0x1;
+	__raw_writel(temp, (void const volatile *)0x10020770);
+*/
+	temp = __raw_readl(EXYNOS5_CLK_SRC_MASK_TOP0);
+	temp |= 0x1 << 20 | 0x1 << 16;
+	__raw_writel(temp, EXYNOS5_CLK_SRC_MASK_TOP0);
+	return 0;
+}
+
+static int exynos5_pd_mfc_power_off_pre(struct exynos_pm_domain *pd)
+{
+	unsigned int temp;
+	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
+	temp = __raw_readl(EXYNOS5_CLK_SRC_MASK_TOP1);
+	temp |= 0x1 << 28;
+	__raw_writel(temp, EXYNOS5_CLK_SRC_MASK_TOP1);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_BUS_TOP);
+	temp |= 0x1 << 15;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_BUS_TOP);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_BUS_MFC);
+	temp |= 0x7F << 16 | 0x3;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_BUS_MFC);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_IP_MFC);
+	temp |= 0x7F;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_IP_MFC);
+
+	temp = __raw_readl(EXYNOS5_CLK_GATE_BLOCK);
+	temp |= 0x1;
+	__raw_writel(temp, EXYNOS5_CLK_GATE_BLOCK);
+/*
+	temp = __raw_readl((void const volatile *)0x10020770);
+	temp |= 0x1 << 25 | 0x1 << 6 | 0x1;
+	__raw_writel(temp, (void const volatile *)0x10020770);
+*/
+	temp = __raw_readl(EXYNOS5_CLK_SRC_MASK_TOP0);
+	temp |= 0x1 << 20 | 0x1 << 16;
+	__raw_writel(temp, EXYNOS5_CLK_SRC_MASK_TOP0);
+	return 0;
+}
 static int exynos5_pd_maudio_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
@@ -219,8 +286,10 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_pre = exynos5_pd_g3d_power_off_pre,
 		.off_post = exynos5_pd_g3d_power_off_post,
 	} , {
+		.on_pre= exynos5_pd_mfc_power_on_pre,
 		.on_post = exynos5_pd_mfc_power_on_post,
 		.name = "pd-mfc",
+		.off_pre= exynos5_pd_mfc_power_off_pre,
 	} , {
 		.on_pre = exynos5_pd_maudio_power_on_pre,
 		.on_post = exynos5_pd_maudio_power_on_post,
