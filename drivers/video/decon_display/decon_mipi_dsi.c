@@ -1409,9 +1409,11 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	dispdrv->dsi_driver.dsim = dsim;
 
+#ifdef CONFIG_SOC_EXYNOS5430
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	dispdrv->dsi_driver.ops->pwr_on = s5p_mipi_dsi_hibernation_power_on;
 	dispdrv->dsi_driver.ops->pwr_off = s5p_mipi_dsi_hibernation_power_off;
+#endif
 #endif
 
 	mutex_init(&dsim_rd_wr_mutex);
