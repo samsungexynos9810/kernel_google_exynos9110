@@ -2350,8 +2350,10 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 	mutex_unlock(&resourcemgr->dvfs_ctrl.lock);
 #endif
 	ret = fimc_is_hw_stream_on(device->interface, device->instance);
-	if (ret)
+	if (ret) {
 		merr("fimc_is_hw_stream_on is fail(%d)", device, ret);
+		device->pdata->print_clk(device->pdev);
+	}
 
 p_err:
 	return ret;
