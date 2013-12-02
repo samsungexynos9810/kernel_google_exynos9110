@@ -12,6 +12,7 @@
 #ifndef FIMC_IS_MEM_H
 #define FIMC_IS_MEM_H
 
+#include <linux/platform_device.h>
 #include <media/videobuf2-core.h>
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
 #include <media/videobuf2-cma-phys.h>

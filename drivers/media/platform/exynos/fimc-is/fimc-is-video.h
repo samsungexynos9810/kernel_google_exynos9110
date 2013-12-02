@@ -1,6 +1,7 @@
 #ifndef FIMC_IS_VIDEO_H
 #define FIMC_IS_VIDEO_H
 
+#include <linux/version.h>
 #include <media/v4l2-ioctl.h>
 #include "fimc-is-type.h"
 #include "fimc-is-mem.h"

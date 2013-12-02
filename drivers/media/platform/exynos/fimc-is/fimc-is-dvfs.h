@@ -18,7 +18,6 @@
 #include <linux/slab.h>
 
 #include "fimc-is-time.h"
-#include "fimc-is-core.h"
 #include "fimc-is-param.h"
 #include "fimc-is-cmd.h"
 #include "fimc-is-regs.h"

@@ -11,6 +11,7 @@
  */
 
 #include <linux/slab.h>
+#include "fimc-is-core.h"
 #include "fimc-is-dvfs.h"
 
 extern struct pm_qos_request exynos_isp_qos_dev;
