@@ -503,7 +503,7 @@ int cfg_clk_sclk(struct platform_device *pdev)
 
 	/* SCLK_UART */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart", "mout_bus_pll_user");
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_uart", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_uart", 207 * 1000000);
 	fimc_is_get_rate_dt(pdev, "sclk_isp_uart_top");
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart_user", "sclk_isp_uart_top");
 	fimc_is_get_rate_dt(pdev, "sclk_isp_uart");
@@ -609,11 +609,11 @@ int cfg_clk_cam0(struct platform_device *pdev)
 
 	/* CAM0 400 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_400", "mout_aclk_cam0_400_user");
-	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_400", 400 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_400", 413 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_400");
-	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_200", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_200", 207 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_200");
-	fimc_is_set_rate_dt(pdev, "dout_pclk_cam0_50", 50 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam0_50", 52 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_pclk_cam0_50");
 
 #ifdef EXYNOS5430_CMU_DUMP
@@ -680,9 +680,9 @@ int cfg_clk_cam1(struct platform_device *pdev)
 	/* FD */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_fd_a", "mout_aclk_cam1_400_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_fd_b", "mout_aclk_fd_a");
-	fimc_is_set_rate_dt(pdev, "dout_aclk_fd", 400 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_fd", 413 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_aclk_fd");
-	fimc_is_set_rate_dt(pdev, "dout_pclk_fd", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_fd", 207 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_pclk_fd");
 
 	/* CSI 2 */
@@ -690,6 +690,14 @@ int cfg_clk_cam1(struct platform_device *pdev)
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_b", "mout_aclk_cam1_333_user");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_csis2_a", 333 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_aclk_csis2_a");
+
+	/* MPWM */
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_166", 166 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_cam1_166");
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 83 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_pclk_cam1_83");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 83 * 1000000);
+	fimc_is_get_rate_dt(pdev, "dout_sclk_isp_mpwm");
 
 #ifdef EXYNOS5430_CMU_DUMP
 	/* CMU_DUMP */
@@ -726,14 +734,14 @@ int cfg_clk_isp(struct platform_device *pdev)
 	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_400_user", "aclk_isp_400");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_dis_400_user", "aclk_isp_dis_400");
 	/* ISP */
-	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_c_200", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_c_200", 207 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_c_200");
-	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_d_200", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_d_200", 207 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_d_200");
-	fimc_is_set_rate_dt(pdev, "dout_pclk_isp", 80 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_isp", 83 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_pclk_isp");
 	/* DIS */
-	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 207 * 1000000);
 	fimc_is_get_rate_dt(pdev, "dout_pclk_isp_dis");
 
 #ifdef EXYNOS5430_CMU_DUMP
