@@ -336,7 +336,7 @@ void fimc_is_ischain_savefirm(struct fimc_is_device_ischain *this);
 	(test_bit(FIMC_IS_GROUP_OTF_INPUT, &(device)->group_3aa.state))
 #define IS_EQUAL_COORD(i, o)				\
 	(((i)[0] != (o)[0]) || ((i)[1] != (o)[1]) ||	\
-	 ((i)[2] != (o)[2]) || ((i)[3] != (o)[4]))
+	 ((i)[2] != (o)[2]) || ((i)[3] != (o)[3]))
 #define IS_NULL_COORD(c)				\
 	(!(c)[0] && !(c)[1] && !(c)[2] && !(c)[3])
 #endif
