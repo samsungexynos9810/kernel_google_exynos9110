@@ -376,6 +376,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	u32 *clk_tbl = priv->ref_clk;
 	u32 clksel, rddqs, dline;
 	u32 cclkin;
+	u32 rclk_base;
 	unsigned char timing = ios->timing;
 
 	if (timing > MMC_TIMING_MMC_HS200_DDR) {
@@ -384,8 +385,6 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	}
 
 	cclkin = clk_tbl[timing];
-	rddqs = DWMCI_DDR200_RDDQS_EN_DEF;
-	dline = DWMCI_DDR200_DLINE_CTRL_DEF;
 	clksel = __raw_readl(host->regs + DWMCI_CLKSEL);
 
 	if (host->bus_hz != cclkin) {
@@ -398,8 +397,36 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 		clksel = ((priv->ddr200_timing & 0xfffffff8) | pdata->clk_smpl);
 
 		if (!tuning) {
-			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
-			dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | DWMCI_RD_DQS_DELAY_CTRL(90);
+			if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5422 ||
+				priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430)
+				rclk_base = 0x70;
+			else
+				rclk_base = 0x0;
+
+			rddqs = __raw_readl(host->regs + DWMCI_DDR200_RDDQS_EN
+					+ rclk_base);
+			dline = __raw_readl(host->regs + DWMCI_DDR200_DLINE_CTRL
+					+ rclk_base);
+
+			rddqs &= ~(DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0xFF) |
+					DWMCI_TXDT_CRC_TIMER_INITVAL(0xFF));
+			dline &= ~(DWMCI_FIFO_CLK_DELAY_CTRL(0x3) |
+					DWMCI_RD_DQS_DELAY_CTRL(0x3FF));
+
+			rddqs |= (DWMCI_DDR200_RDDQS_EN_DEF |
+					DWMCI_AXI_NON_BLOCKING_WRITE |
+					DWMCI_RDDQS_EN);
+			if (priv->delay_line)
+				dline |= DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
+				DWMCI_RD_DQS_DELAY_CTRL(priv->delay_line);
+			else
+				dline |= DWMCI_DDR200_DLINE_CTRL_DEF;
+
+			__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN +
+					rclk_base);
+			__raw_writel(dline, host->regs +
+					DWMCI_DDR200_DLINE_CTRL + rclk_base);
+
 			host->quirks &= ~DW_MCI_QUIRK_NO_DETECT_EBIT;
 		}
 	} else if (timing == MMC_TIMING_MMC_HS200 ||
@@ -414,15 +441,6 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	}
 
 	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
-
-	if (priv->ctrl_type == DW_MCI_TYPE_EXYNOS5422 ||
-		priv->ctrl_type == DW_MCI_TYPE_EXYNOS5430) {
-		__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN + 0x70);
-		__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL + 0x70);
-	} else {
-		__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN);
-		__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL);
-	}
 }
 
 #ifndef MHZ
@@ -532,6 +550,10 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 			goto err_ref_clk;
 
 		priv->ddr200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+
+		/* Delay Line */
+		of_property_read_u32(np,
+			"samsung,dw-mshc-ddr200-delay-line", &priv->delay_line);
 		break;
 	/* dwmmc1 : SDIO    */
 	case 1:

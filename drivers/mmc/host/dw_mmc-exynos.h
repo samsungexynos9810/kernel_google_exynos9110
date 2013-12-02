@@ -33,21 +33,26 @@
 /* DDR200 RDDQS Enable*/
 #define DWMCI_TXDT_CRC_TIMER_FASTLIMIT(x)	(((x) & 0xFF) << 16)
 #define DWMCI_TXDT_CRC_TIMER_INITVAL(x)		(((x) & 0xFF) << 8)
+#define DWMCI_TXDT_CRC_TIMER_SET(x, y)	(DWMCI_TXDT_CRC_TIMER_FASTLIMIT(x) | \
+					DWMCI_TXDT_CRC_TIMER_INITVAL(y))
 #define DWMCI_AXI_NON_BLOCKING_WRITE		BIT(7)
 #define DWMCI_BUSY_CHK_CLK_STOP_EN		BIT(2)
 #define DWMCI_RXDATA_START_BIT_SEL		BIT(1)
 #define DWMCI_RDDQS_EN				BIT(0)
 #define DWMCI_DDR200_RDDQS_EN_DEF	DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0x13) | \
 					DWMCI_TXDT_CRC_TIMER_INITVAL(0x15)
+/* DDR200 DLINE CTRL */
+#define DWMCI_WD_DQS_DELAY_CTRL(x)		(((x) & 0x3FF) << 20)
+#define DWMCI_FIFO_CLK_DELAY_CTRL(x)		(((x) & 0x3) << 16)
+#define DWMCI_RD_DQS_DELAY_CTRL(x)		((x) & 0x3FF)
+#define DWMCI_DDR200_DLINE_CTRL_SET(x, y, z)	(DWMCI_WD_DQS_DELAY_CTRL(x) | \
+						DWMCI_FIFO_CLK_DELAY_CTRL(y) | \
+						DWMCI_RD_DQS_DELAY_CTRL(z))
 #define DWMCI_DDR200_DLINE_CTRL_DEF	DWMCI_FIFO_CLK_DELAY_CTRL(0x2) | \
 					DWMCI_RD_DQS_DELAY_CTRL(0x40)
 
 /* DDR200 Async FIFO Control */
 #define DWMCI_ASYNC_FIFO_RESET		BIT(0)
-
-/* DDR200 DLINE Control */
-#define DWMCI_FIFO_CLK_DELAY_CTRL(x)	(((x) & 0x3) << 16)
-#define DWMCI_RD_DQS_DELAY_CTRL(x)	((x) & 0x3FF)
 
 /* Block number in eMMC */
 #define DWMCI_BLOCK_NUM			0xFFFFFFFF
@@ -99,6 +104,7 @@ struct dw_mci_exynos_priv_data {
 	const char		*drv_str_pin;
 	const char		*drv_str_addr;
 	int			drv_str_val;
+	u32			delay_line;
 	int			drv_str_base_val;
 	u32			drv_str_num;
 	int			cd_gpio;
