@@ -39,6 +39,80 @@
 
 #define SENSOR_NAME "S5K6A3"
 
+/* FIXME: it's for 6b2. */
+static struct fimc_is_settle settle_6a3[] = {
+	/* 1456x1090@24fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1936x1090@24fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1456x1090@30fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	},
+	/* 1936x1090@30fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	},
+	/* 1456x1090@24fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1456x1090@15fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 15,
+		.settle		= 13,
+	},
+	/* 1936x1090@24fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 24,
+		.settle		= 13,
+	},
+	/* 1936x1090@15fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 15,
+		.settle		= 13,
+	},
+	/* 1456x1090@30fps */
+	{
+		.width		= 1456,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	},
+	/* 1936x1090@30fps */
+	{
+		.width		= 1936,
+		.height		= 1090,
+		.framerate	= 30,
+		.settle		= 16,
+	}
+};
+
 static int sensor_6a3_init(struct v4l2_subdev *subdev, u32 val)
 {
 	int ret = 0;
@@ -65,6 +139,7 @@ int sensor_6a3_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
 	int ret = 0;
+	int enum_idx = 0;
 	struct fimc_is_core *core;
 	struct v4l2_subdev *subdev_module;
 	struct fimc_is_module_enum *module;
@@ -88,8 +163,10 @@ int sensor_6a3_probe(struct i2c_client *client,
 		goto p_err;
 	}
 
-	module = &device->module_enum[atomic_read(&core->resourcemgr.rsccount_module)];
+	enum_idx = atomic_read(&core->resourcemgr.rsccount_module);
+	module = &device->module_enum[enum_idx];
 	atomic_inc(&core->resourcemgr.rsccount_module);
+	module->id = SENSOR_S5K6A3_NAME;
 	module->subdev = subdev_module;
 	module->device = SENSOR_S5K6A3_INSTANCE;
 	module->client = client;
@@ -100,16 +177,17 @@ int sensor_6a3_probe(struct i2c_client *client,
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_FRONT;
 	module->setfile_name = "setfile_6a3.bin";
-	/* module->settle_max = ARRAY_SIZE(settle_6a3); */
-	/* module->settle_table = settle_6a3; */
+	module->settle_max = ARRAY_SIZE(settle_6a3);
+	module->settle_table = settle_6a3;
 	module->ops = NULL;
 	module->private_data = NULL;
 
 	ext = &module->ext;
-	ext->mipi_lane_num = 1;
 	ext->I2CSclk = I2C_L0;
+	ext->mipi_settle_line = 18;
+	ext->mipi_lane_num = 1;
 
-	ext->sensor_con.product_name = 0;
+	ext->sensor_con.product_name = SENSOR_S5K6A3_NAME;
 	ext->sensor_con.peri_type = SE_I2C;
 	ext->sensor_con.peri_setting.i2c.channel = SENSOR_CONTROL_I2C1;
 	ext->sensor_con.peri_setting.i2c.slave_address = 0x20;
@@ -129,6 +207,6 @@ int sensor_6a3_probe(struct i2c_client *client,
 	snprintf(subdev_module->name, V4L2_SUBDEV_NAME_SIZE, "sensor-subdev.%d", module->id);
 
 p_err:
-	info("%s(%d)\n", __func__, ret);
+	info("%s(%d) enum_idx(%d)\n", __func__, ret, enum_idx);
 	return ret;
 }
