@@ -50,7 +50,8 @@ static int is_device_detect(struct exynos_usb_switch *usb_switch)
 
 static void set_host_vbus(struct exynos_usb_switch *usb_switch, int value)
 {
-	gpio_set_value(usb_switch->gpio_host_vbus, value);
+	if (gpio_is_valid(usb_switch->gpio_host_vbus))
+		gpio_set_value(usb_switch->gpio_host_vbus, value);
 }
 
 struct usb_gadget *
