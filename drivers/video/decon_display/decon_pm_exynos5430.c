@@ -407,7 +407,7 @@ int enable_display_driver_clocks(struct device *dev)
 
 int disable_display_decon_clocks(struct device *dev)
 {
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
@@ -427,11 +427,25 @@ int disable_display_decon_runtimepm(struct device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 void set_default_hibernation_mode(struct display_driver *dispdrv)
 {
-	dispdrv->pm_status.clock_gating_on = true;
-	dispdrv->pm_status.power_gating_on = false;
-	dispdrv->pm_status.hotplug_gating_on = false;
+	bool clock_gating = false;
+	bool power_gating = false;
+	bool hotplug_gating = false;
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	clock_gating = true;
+#endif
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
+	power_gating = true;
+#endif
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING_DEEPSTOP
+	hotplug_gating = true;
+#endif
+	dispdrv->pm_status.clock_gating_on = clock_gating;
+	dispdrv->pm_status.power_gating_on = power_gating;
+	dispdrv->pm_status.hotplug_gating_on = hotplug_gating;
 }
 
 void decon_clock_on(struct display_driver *dispdrv)
@@ -509,4 +523,5 @@ struct pm_ops dsi_pm_ops = {
 	.clk_on		= dsi_clock_on,
 	.clk_off 	= dsi_clock_off,
 };
+#endif
 
