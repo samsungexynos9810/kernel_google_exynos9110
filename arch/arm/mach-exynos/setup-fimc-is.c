@@ -37,8 +37,6 @@
 
 struct platform_device; /* don't need the contents */
 
-/* #define EXYNOS5430_CMU_DUMP */
-
 #if defined(CONFIG_ARCH_EXYNOS5)
 /*------------------------------------------------------*/
 /*		Exynos5 series - FIMC-IS		*/
@@ -199,7 +197,7 @@ unsigned int  fimc_is_get_rate_dt(struct platform_device *pdev,
 	}
 
 	rate_target = clk_get_rate(target);
-	pr_debug("%s : %d\n", conid, rate_target);
+	pr_info("%s : %d\n", conid, rate_target);
 
 	return rate_target;
 }
@@ -402,84 +400,6 @@ int cfg_clk_div_max(struct platform_device *pdev)
 	/* DIS */
 	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 1);
 
-#ifdef EXYNOS5430_CMU_DUMP
-	/* CMU_TOP_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_TOP1(0x%x)\n", readl(EXYNOS5430_SRC_SEL_TOP1));
-	pr_info("EXYNOS5430_SRC_SEL_TOP2(0x%x)\n", readl(EXYNOS5430_SRC_SEL_TOP2));
-	pr_info("EXYNOS5430_SRC_SEL_TOP_CAM1(0x%x)\n", readl(EXYNOS5430_SRC_SEL_TOP_CAM1));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP0(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP0));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP1(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP1));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP2(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP2));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP3(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP3));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP_CAM1(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP_CAM1));
-	pr_info("EXYNOS5430_DIV_TOP0(0x%x)\n", readl(EXYNOS5430_DIV_TOP0));
-	pr_info("EXYNOS5430_DIV_TOP_CAM10(0x%x)\n", readl(EXYNOS5430_DIV_TOP_CAM10));
-	pr_info("EXYNOS5430_DIV_TOP_CAM11(0x%x)\n", readl(EXYNOS5430_DIV_TOP_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
-	/* CMU_CAM0_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_CAM00(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM00));
-	pr_info("EXYNOS5430_SRC_SEL_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM01));
-	pr_info("EXYNOS5430_SRC_SEL_CAM02(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM02));
-	pr_info("EXYNOS5430_SRC_SEL_CAM03(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM03));
-	pr_info("EXYNOS5430_SRC_SEL_CAM04(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM04));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM00(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM00));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM01));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM02(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM02));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM03(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM03));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM04(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM04));
-	pr_info("EXYNOS5430_SRC_STAT_CAM00(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM00));
-	pr_info("EXYNOS5430_SRC_STAT_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM01));
-	pr_info("EXYNOS5430_SRC_STAT_CAM02(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM02));
-	pr_info("EXYNOS5430_SRC_STAT_CAM03(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM03));
-	pr_info("EXYNOS5430_SRC_STAT_CAM04(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM04));
-	pr_info("EXYNOS5430_SRC_IGNORE_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_IGNORE_CAM01));
-	pr_info("EXYNOS5430_DIV_CAM00(0x%x)\n", readl(EXYNOS5430_DIV_CAM00));
-	pr_info("EXYNOS5430_DIV_CAM01(0x%x)\n", readl(EXYNOS5430_DIV_CAM01));
-	pr_info("EXYNOS5430_DIV_CAM02(0x%x)\n", readl(EXYNOS5430_DIV_CAM02));
-	pr_info("EXYNOS5430_DIV_CAM03(0x%x)\n", readl(EXYNOS5430_DIV_CAM03));
-	pr_info("EXYNOS5430_DIV_STAT_CAM00(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM00));
-	pr_info("EXYNOS5430_DIV_STAT_CAM01(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM01));
-	pr_info("EXYNOS5430_DIV_STAT_CAM02(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM02));
-	pr_info("EXYNOS5430_DIV_STAT_CAM03(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM03));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM00(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM00));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM01(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM01));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM02(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM02));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM03(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM03));
-	/* CMU_CAM1_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_CAM10(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM10));
-	pr_info("EXYNOS5430_SRC_SEL_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM11));
-	pr_info("EXYNOS5430_SRC_SEL_CAM12(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM12));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM10(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM10));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM11));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM12(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM12));
-	pr_info("EXYNOS5430_SRC_STAT_CAM10(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM10));
-	pr_info("EXYNOS5430_SRC_STAT_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM11));
-	pr_info("EXYNOS5430_SRC_STAT_CAM12(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM12));
-	pr_info("EXYNOS5430_SRC_IGNORE_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_IGNORE_CAM11));
-	pr_info("EXYNOS5430_DIV_CAM10(0x%x)\n", readl(EXYNOS5430_DIV_CAM10));
-	pr_info("EXYNOS5430_DIV_CAM11(0x%x)\n", readl(EXYNOS5430_DIV_CAM11));
-	pr_info("EXYNOS5430_DIV_STAT_CAM10(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM10));
-	pr_info("EXYNOS5430_DIV_STAT_CAM11(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM10(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM10));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM11(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM12(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM12));
-	/* CMU_ISP_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_ISP(0x%x)\n", readl(EXYNOS5430_SRC_SEL_ISP));
-	pr_info("EXYNOS5430_SRC_ENABLE_ISP(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_ISP));
-	pr_info("EXYNOS5430_SRC_STAT_ISP(0x%x)\n", readl(EXYNOS5430_SRC_STAT_ISP));
-	pr_info("EXYNOS5430_DIV_ISP(0x%x)\n", readl(EXYNOS5430_DIV_ISP));
-	pr_info("EXYNOS5430_DIV_STAT_ISP(0x%x)\n", readl(EXYNOS5430_DIV_STAT_ISP));
-	pr_info("EXYNOS5430_ENABLE_ACLK_ISP0(0x%x)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP0));
-	pr_info("EXYNOS5430_ENABLE_ACLK_ISP1(0x%x)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP1));
-	pr_info("EXYNOS5430_ENABLE_ACLK_ISP2(0x%x)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP2));
-	pr_info("EXYNOS5430_ENABLE_PCLK_ISP(0x%x)\n", readl(EXYNOS5430_ENABLE_PCLK_ISP));
-	pr_info("EXYNOS5430_ENABLE_SCLK_ISP(0x%x)\n", readl(EXYNOS5430_ENABLE_SCLK_ISP));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP0(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP0));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP1(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP1));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP2(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP2));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP3(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP3));
-#endif
-
 	return 0;
 }
 
@@ -489,51 +409,24 @@ int cfg_clk_sclk(struct platform_device *pdev)
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "oscclk");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 24 * 1000000);
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_b", 24 * 1000000);
-	fimc_is_get_rate_dt(pdev, "sclk_isp_spi0_top");
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0_user", "sclk_isp_spi0_top");
-	fimc_is_get_rate_dt(pdev, "sclk_isp_spi0");
 
 	/* SCLK_SPI1 */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1", "oscclk");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 24 * 1000000);
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 24 * 1000000);
-	fimc_is_get_rate_dt(pdev, "sclk_isp_spi1_top");
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1_user", "sclk_isp_spi1_top");
-	fimc_is_get_rate_dt(pdev, "sclk_isp_spi1");
 
 	/* SCLK_UART */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart", "mout_bus_pll_user");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_uart", 207 * 1000000);
-	fimc_is_get_rate_dt(pdev, "sclk_isp_uart_top");
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart_user", "sclk_isp_uart_top");
-	fimc_is_get_rate_dt(pdev, "sclk_isp_uart");
-
-#ifdef EXYNOS5430_CMU_DUMP
-	/* CMU_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_TOP1(0x%x)\n", readl(EXYNOS5430_SRC_SEL_TOP1));
-	pr_info("EXYNOS5430_SRC_SEL_TOP2(0x%x)\n", readl(EXYNOS5430_SRC_SEL_TOP2));
-	pr_info("EXYNOS5430_SRC_SEL_TOP_CAM1(0x%x)\n", readl(EXYNOS5430_SRC_SEL_TOP_CAM1));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP0(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP0));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP1(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP1));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP2(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP2));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP3(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP3));
-	pr_info("EXYNOS5430_SRC_ENABLE_TOP_CAM1(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_TOP_CAM1));
-	pr_info("EXYNOS5430_DIV_TOP0(0x%x)\n", readl(EXYNOS5430_DIV_TOP0));
-	pr_info("EXYNOS5430_DIV_TOP_CAM10(0x%x)\n", readl(EXYNOS5430_DIV_TOP_CAM10));
-	pr_info("EXYNOS5430_DIV_TOP_CAM11(0x%x)\n", readl(EXYNOS5430_DIV_TOP_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
-#endif
 
 	return 0;
 }
 
 int cfg_clk_cam0(struct platform_device *pdev)
 {
-	/* CMU_TOP */
-	fimc_is_get_rate_dt(pdev, "aclk_cam0_552");
-	fimc_is_get_rate_dt(pdev, "aclk_cam0_400");
-	fimc_is_get_rate_dt(pdev, "aclk_cam0_333");
-
 	/* USER_MUX_SEL */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_552_user", "aclk_cam0_552");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_400_user", "aclk_cam0_400");
@@ -546,118 +439,63 @@ int cfg_clk_cam0(struct platform_device *pdev)
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_a_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_a_b", "mout_aclk_lite_a_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_a", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_a");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_a", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_a");
 
 	/* LITE B */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_b_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_b_b", "mout_aclk_lite_b_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_b", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_b");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_b", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_b");
 
 	/* LITE D */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_d_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_d_b", "mout_aclk_lite_d_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_d", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_d");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_d", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_d");
 
 	/* LITE C PIXELASYNC */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_b", "mout_sclk_pixelasync_lite_c_init_a");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_pixelasync_lite_c");
 
 	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_b", "mout_aclk_cam0_333_user");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 333 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_sclk_pixelasync_lite_c");
 
 	/* 3AA 0 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa0_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa0_b", "mout_aclk_3aa0_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_3aa0", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_3aa0");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_3aa0", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_3aa0");
 
 	/* 3AA 0 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa1_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_3aa1_b", "mout_aclk_3aa1_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_3aa1", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_3aa1");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_3aa1", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_3aa1");
 
 	/* CSI 0 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis0_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis0_b", "mout_aclk_csis0_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_csis0", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_csis0");
 
 	/* CSI 1 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis1_a", "mout_aclk_cam0_552_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis1_b", "mout_aclk_csis1_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_csis1", 552 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_csis1");
 
 	/* CAM0 400 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_400", "mout_aclk_cam0_400_user");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_400", 413 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_400");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_200", 207 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_200");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_cam0_50", 52 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_cam0_50");
-
-#ifdef EXYNOS5430_CMU_DUMP
-	/* CMU_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_CAM00(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM00));
-	pr_info("EXYNOS5430_SRC_SEL_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM01));
-	pr_info("EXYNOS5430_SRC_SEL_CAM02(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM02));
-	pr_info("EXYNOS5430_SRC_SEL_CAM03(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM03));
-	pr_info("EXYNOS5430_SRC_SEL_CAM04(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM04));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM00(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM00));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM01));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM02(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM02));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM03(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM03));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM04(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM04));
-	pr_info("EXYNOS5430_SRC_STAT_CAM00(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM00));
-	pr_info("EXYNOS5430_SRC_STAT_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM01));
-	pr_info("EXYNOS5430_SRC_STAT_CAM02(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM02));
-	pr_info("EXYNOS5430_SRC_STAT_CAM03(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM03));
-	pr_info("EXYNOS5430_SRC_STAT_CAM04(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM04));
-	pr_info("EXYNOS5430_SRC_IGNORE_CAM01(0x%x)\n", readl(EXYNOS5430_SRC_IGNORE_CAM01));
-	pr_info("EXYNOS5430_DIV_CAM00(0x%x)\n", readl(EXYNOS5430_DIV_CAM00));
-	pr_info("EXYNOS5430_DIV_CAM01(0x%x)\n", readl(EXYNOS5430_DIV_CAM01));
-	pr_info("EXYNOS5430_DIV_CAM02(0x%x)\n", readl(EXYNOS5430_DIV_CAM02));
-	pr_info("EXYNOS5430_DIV_CAM03(0x%x)\n", readl(EXYNOS5430_DIV_CAM03));
-	pr_info("EXYNOS5430_DIV_STAT_CAM00(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM00));
-	pr_info("EXYNOS5430_DIV_STAT_CAM01(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM01));
-	pr_info("EXYNOS5430_DIV_STAT_CAM02(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM02));
-	pr_info("EXYNOS5430_DIV_STAT_CAM03(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM03));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM00(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM00));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM01(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM01));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM02(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM02));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM03(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM03));
-#endif
 
 	return 0;
 }
 
 int cfg_clk_cam1(struct platform_device *pdev)
 {
-	/* CMU_TOP */
-	fimc_is_get_rate_dt(pdev, "aclk_cam1_552");
-	fimc_is_get_rate_dt(pdev, "aclk_cam1_400");
-	fimc_is_get_rate_dt(pdev, "aclk_cam1_333");
-
 	/* USER_MUX_SEL */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_552_user", "aclk_cam1_552");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_400_user", "aclk_cam1_400");
@@ -665,102 +503,45 @@ int cfg_clk_cam1(struct platform_device *pdev)
 
 	/* C-A5 */
 	fimc_is_set_rate_dt(pdev, "dout_atclk_cam1", 276 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_atclk_cam1");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_dbg_cam1", 138 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_dbg_cam1");
 
 	/* LITE A */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_c_a", "mout_aclk_cam1_400_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_lite_c_b", "mout_aclk_cam1_333_user");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_lite_c", 333 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_c");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_lite_c", 166 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_c");
 
 	/* FD */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_fd_a", "mout_aclk_cam1_400_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_fd_b", "mout_aclk_fd_a");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_fd", 413 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_fd");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_fd", 207 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_fd");
 
 	/* CSI 2 */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_a", "mout_aclk_cam1_400_user");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_b", "mout_aclk_cam1_333_user");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_csis2_a", 333 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_csis2_a");
 
 	/* MPWM */
 	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_166", 166 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_cam1_166");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 83 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_cam1_83");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 83 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_sclk_isp_mpwm");
-
-#ifdef EXYNOS5430_CMU_DUMP
-	/* CMU_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_CAM10(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM10));
-	pr_info("EXYNOS5430_SRC_SEL_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM11));
-	pr_info("EXYNOS5430_SRC_SEL_CAM12(0x%x)\n", readl(EXYNOS5430_SRC_SEL_CAM12));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM10(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM10));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM11));
-	pr_info("EXYNOS5430_SRC_ENABLE_CAM12(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_CAM12));
-	pr_info("EXYNOS5430_SRC_STAT_CAM10(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM10));
-	pr_info("EXYNOS5430_SRC_STAT_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM11));
-	pr_info("EXYNOS5430_SRC_STAT_CAM12(0x%x)\n", readl(EXYNOS5430_SRC_STAT_CAM12));
-	pr_info("EXYNOS5430_SRC_IGNORE_CAM11(0x%x)\n", readl(EXYNOS5430_SRC_IGNORE_CAM11));
-	pr_info("EXYNOS5430_DIV_CAM10(0x%x)\n", readl(EXYNOS5430_DIV_CAM10));
-	pr_info("EXYNOS5430_DIV_CAM11(0x%x)\n", readl(EXYNOS5430_DIV_CAM11));
-	pr_info("EXYNOS5430_DIV_STAT_CAM10(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM10));
-	pr_info("EXYNOS5430_DIV_STAT_CAM11(0x%x)\n", readl(EXYNOS5430_DIV_STAT_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM10(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM10));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM11(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM12(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM12));
-#endif
 
 	return 0;
 }
 
 int cfg_clk_isp(struct platform_device *pdev)
 {
-	/* CMU_TOP */
-	fimc_is_get_rate_dt(pdev, "aclk_isp_400");
-	fimc_is_get_rate_dt(pdev, "aclk_isp_dis_400");
-
 	/* CMU_ISP */
 	/* USER_MUX_SEL */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_400_user", "aclk_isp_400");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_isp_dis_400_user", "aclk_isp_dis_400");
 	/* ISP */
 	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_c_200", 207 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_c_200");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_isp_d_200", 207 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_d_200");
 	fimc_is_set_rate_dt(pdev, "dout_pclk_isp", 83 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_isp");
 	/* DIS */
 	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 207 * 1000000);
-	fimc_is_get_rate_dt(pdev, "dout_pclk_isp_dis");
-
-#ifdef EXYNOS5430_CMU_DUMP
-	/* CMU_DUMP */
-	pr_info("EXYNOS5430_SRC_SEL_ISP(0x%x)\n", readl(EXYNOS5430_SRC_SEL_ISP));
-	pr_info("EXYNOS5430_SRC_ENABLE_ISP(0x%x)\n", readl(EXYNOS5430_SRC_ENABLE_ISP));
-	pr_info("EXYNOS5430_SRC_STAT_ISP(0x%x)\n", readl(EXYNOS5430_SRC_STAT_ISP));
-	pr_info("EXYNOS5430_DIV_ISP(0x%x)\n", readl(EXYNOS5430_DIV_ISP));
-	pr_info("EXYNOS5430_DIV_STAT_ISP(0x%x)\n", readl(EXYNOS5430_DIV_STAT_ISP));
-	pr_info("EXYNOS5430_ENABLE_ACLK_ISP0(0x%x)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP0));
-	pr_info("EXYNOS5430_ENABLE_ACLK_ISP1(0x%x)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP1));
-	pr_info("EXYNOS5430_ENABLE_ACLK_ISP2(0x%x)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP2));
-	pr_info("EXYNOS5430_ENABLE_PCLK_ISP(0x%x)\n", readl(EXYNOS5430_ENABLE_PCLK_ISP));
-	pr_info("EXYNOS5430_ENABLE_SCLK_ISP(0x%x)\n", readl(EXYNOS5430_ENABLE_SCLK_ISP));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP0(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP0));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP1(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP1));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP2(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP2));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP3(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP3));
-#endif
 
 	return 0;
 }
@@ -777,6 +558,8 @@ int exynos5430_fimc_is_cfg_clk(struct platform_device *pdev)
 	cfg_clk_cam1(pdev);
 	cfg_clk_isp(pdev);
 
+	//exynos5430_fimc_is_print_clk(pdev);
+
 	return 0;
 }
 
@@ -784,30 +567,185 @@ int exynos5430_fimc_is_clk_on(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
-#ifdef EXYNOS5430_CMU_DUMP
-	/* CMU_DUMP */
-	pr_info("EXYNOS5430_ENABLE_SCLK_TOP_CAM1(0x%x)\n", readl(EXYNOS5430_ENABLE_SCLK_TOP_CAM1));
-	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM00(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM00));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM01(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM01));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM02(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM02));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM03(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM03));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM10(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM10));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM11(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM11));
-	pr_info("EXYNOS5430_ENABLE_IP_CAM12(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_CAM12));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP0(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP0));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP1(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP1));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP2(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP2));
-	pr_info("EXYNOS5430_ENABLE_IP_ISP3(0x%x)\n", readl(EXYNOS5430_ENABLE_IP_ISP3));
-#endif
-
-
 	return 0;
 }
 
 int exynos5430_fimc_is_clk_off(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
+
+	return 0;
+}
+
+int exynos5430_fimc_is_print_clk(struct platform_device *pdev)
+{
+	pr_debug("%s\n", __func__);
+
+	/* SCLK */
+	/* SCLK_SPI0 */
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi0_top");
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi0");
+	/* SCLK_SPI1 */
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi1_top");
+	fimc_is_get_rate_dt(pdev, "sclk_isp_spi1");
+	/* SCLK_UART */
+	fimc_is_get_rate_dt(pdev, "sclk_isp_uart_top");
+	fimc_is_get_rate_dt(pdev, "sclk_isp_uart");
+
+	/* CAM0 */
+	/* CMU_TOP */
+	fimc_is_get_rate_dt(pdev, "aclk_cam0_552");
+	fimc_is_get_rate_dt(pdev, "aclk_cam0_400");
+	fimc_is_get_rate_dt(pdev, "aclk_cam0_333");
+	/* LITE A */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_a");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_a");
+	/* LITE B */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_b");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_b");
+	/* LITE D */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_d");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_d");
+	/* LITE C PIXELASYNC */
+	fimc_is_get_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_pixelasync_lite_c");
+	fimc_is_get_rate_dt(pdev, "dout_sclk_pixelasync_lite_c");
+	/* 3AA 0 */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_3aa0");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_3aa0");
+	/* 3AA 0 */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_3aa1");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_3aa1");
+	/* CSI 0 */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_csis0");
+	/* CSI 1 */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_csis1");
+	/* CAM0 400 */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_400");
+	fimc_is_get_rate_dt(pdev, "dout_aclk_cam0_200");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_cam0_50");
+
+	/* CAM1 */
+	/* CMU_TOP */
+	fimc_is_get_rate_dt(pdev, "aclk_cam1_552");
+	fimc_is_get_rate_dt(pdev, "aclk_cam1_400");
+	fimc_is_get_rate_dt(pdev, "aclk_cam1_333");
+	/* C-A5 */
+	fimc_is_get_rate_dt(pdev, "dout_atclk_cam1");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_dbg_cam1");
+	/* LITE A */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_lite_c");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_lite_c");
+	/* FD */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_fd");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_fd");
+	/* CSI 2 */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_csis2_a");
+	/* MPWM */
+	fimc_is_get_rate_dt(pdev, "dout_pclk_cam1_166");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_cam1_83");
+	fimc_is_get_rate_dt(pdev, "dout_sclk_isp_mpwm");
+
+	/* ISP */
+	/* CMU_TOP */
+	fimc_is_get_rate_dt(pdev, "aclk_isp_400");
+	fimc_is_get_rate_dt(pdev, "aclk_isp_dis_400");
+	/* ISP */
+	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_c_200");
+	fimc_is_get_rate_dt(pdev, "dout_aclk_isp_d_200");
+	fimc_is_get_rate_dt(pdev, "dout_pclk_isp");
+	/* DIS */
+	fimc_is_get_rate_dt(pdev, "dout_pclk_isp_dis");
+
+	/* CMU_TOP_DUMP */
+	pr_info("EXYNOS5430_SRC_SEL_TOP1(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_TOP1));
+	pr_info("EXYNOS5430_SRC_SEL_TOP2(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_TOP2));
+	pr_info("EXYNOS5430_SRC_SEL_TOP_CAM1(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_TOP_CAM1));
+	pr_info("EXYNOS5430_SRC_ENABLE_TOP0(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_TOP0));
+	pr_info("EXYNOS5430_SRC_ENABLE_TOP1(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_TOP1));
+	pr_info("EXYNOS5430_SRC_ENABLE_TOP2(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_TOP2));
+	pr_info("EXYNOS5430_SRC_ENABLE_TOP3(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_TOP3));
+	pr_info("EXYNOS5430_SRC_ENABLE_TOP_CAM1(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_TOP_CAM1));
+	pr_info("EXYNOS5430_DIV_TOP0(0x%08X)\n", readl(EXYNOS5430_DIV_TOP0));
+	pr_info("EXYNOS5430_DIV_TOP_CAM10(0x%08X)\n", readl(EXYNOS5430_DIV_TOP_CAM10));
+	pr_info("EXYNOS5430_DIV_TOP_CAM11(0x%08X)\n", readl(EXYNOS5430_DIV_TOP_CAM11));
+	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
+	/* CMU_CAM0_DUMP */
+	pr_info("EXYNOS5430_SRC_SEL_CAM00(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM00));
+	pr_info("EXYNOS5430_SRC_SEL_CAM01(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM01));
+	pr_info("EXYNOS5430_SRC_SEL_CAM02(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM02));
+	pr_info("EXYNOS5430_SRC_SEL_CAM03(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM03));
+	pr_info("EXYNOS5430_SRC_SEL_CAM04(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM04));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM00(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM00));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM01(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM01));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM02(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM02));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM03(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM03));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM04(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM04));
+	pr_info("EXYNOS5430_SRC_STAT_CAM00(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM00));
+	pr_info("EXYNOS5430_SRC_STAT_CAM01(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM01));
+	pr_info("EXYNOS5430_SRC_STAT_CAM02(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM02));
+	pr_info("EXYNOS5430_SRC_STAT_CAM03(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM03));
+	pr_info("EXYNOS5430_SRC_STAT_CAM04(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM04));
+	pr_info("EXYNOS5430_SRC_IGNORE_CAM01(0x%08X)\n", readl(EXYNOS5430_SRC_IGNORE_CAM01));
+	pr_info("EXYNOS5430_DIV_CAM00(0x%08X)\n", readl(EXYNOS5430_DIV_CAM00));
+	pr_info("EXYNOS5430_DIV_CAM01(0x%08X)\n", readl(EXYNOS5430_DIV_CAM01));
+	pr_info("EXYNOS5430_DIV_CAM02(0x%08X)\n", readl(EXYNOS5430_DIV_CAM02));
+	pr_info("EXYNOS5430_DIV_CAM03(0x%08X)\n", readl(EXYNOS5430_DIV_CAM03));
+	pr_info("EXYNOS5430_DIV_STAT_CAM00(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM00));
+	pr_info("EXYNOS5430_DIV_STAT_CAM01(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM01));
+	pr_info("EXYNOS5430_DIV_STAT_CAM02(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM02));
+	pr_info("EXYNOS5430_DIV_STAT_CAM03(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM03));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM00(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM00));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM01(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM01));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM02(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM02));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM03(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM03));
+	/* CMU_CAM1_DUMP */
+	pr_info("EXYNOS5430_SRC_SEL_CAM10(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM10));
+	pr_info("EXYNOS5430_SRC_SEL_CAM11(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM11));
+	pr_info("EXYNOS5430_SRC_SEL_CAM12(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM12));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM10(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM10));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM11(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM11));
+	pr_info("EXYNOS5430_SRC_ENABLE_CAM12(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_CAM12));
+	pr_info("EXYNOS5430_SRC_STAT_CAM10(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM10));
+	pr_info("EXYNOS5430_SRC_STAT_CAM11(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM11));
+	pr_info("EXYNOS5430_SRC_STAT_CAM12(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_CAM12));
+	pr_info("EXYNOS5430_SRC_IGNORE_CAM11(0x%08X)\n", readl(EXYNOS5430_SRC_IGNORE_CAM11));
+	pr_info("EXYNOS5430_DIV_CAM10(0x%08X)\n", readl(EXYNOS5430_DIV_CAM10));
+	pr_info("EXYNOS5430_DIV_CAM11(0x%08X)\n", readl(EXYNOS5430_DIV_CAM11));
+	pr_info("EXYNOS5430_DIV_STAT_CAM10(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM10));
+	pr_info("EXYNOS5430_DIV_STAT_CAM11(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM11));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM10(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM10));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM11(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM11));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM12(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM12));
+	/* CMU_ISP_DUMP */
+	pr_info("EXYNOS5430_SRC_SEL_ISP(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_ISP));
+	pr_info("EXYNOS5430_SRC_ENABLE_ISP(0x%08X)\n", readl(EXYNOS5430_SRC_ENABLE_ISP));
+	pr_info("EXYNOS5430_SRC_STAT_ISP(0x%08X)\n", readl(EXYNOS5430_SRC_STAT_ISP));
+	pr_info("EXYNOS5430_DIV_ISP(0x%08X)\n", readl(EXYNOS5430_DIV_ISP));
+	pr_info("EXYNOS5430_DIV_STAT_ISP(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_ISP));
+	pr_info("EXYNOS5430_ENABLE_ACLK_ISP0(0x%08X)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP0));
+	pr_info("EXYNOS5430_ENABLE_ACLK_ISP1(0x%08X)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP1));
+	pr_info("EXYNOS5430_ENABLE_ACLK_ISP2(0x%08X)\n", readl(EXYNOS5430_ENABLE_ACLK_ISP2));
+	pr_info("EXYNOS5430_ENABLE_PCLK_ISP(0x%08X)\n", readl(EXYNOS5430_ENABLE_PCLK_ISP));
+	pr_info("EXYNOS5430_ENABLE_SCLK_ISP(0x%08X)\n", readl(EXYNOS5430_ENABLE_SCLK_ISP));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP0(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP0));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP1(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP1));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP2(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP2));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP3(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP3));
+	/* CMU_ENABLE_DUMP */
+	pr_info("EXYNOS5430_ENABLE_SCLK_TOP_CAM1(0x%08X)\n", readl(EXYNOS5430_ENABLE_SCLK_TOP_CAM1));
+	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM00(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM00));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM01(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM01));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM02(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM02));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM03(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM03));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM10(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM10));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM11(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM11));
+	pr_info("EXYNOS5430_ENABLE_IP_CAM12(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM12));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP0(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP0));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP1(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP1));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP2(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP2));
+	pr_info("EXYNOS5430_ENABLE_IP_ISP3(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_ISP3));
 
 	return 0;
 }
