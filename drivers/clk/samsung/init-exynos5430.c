@@ -218,7 +218,7 @@ void cam0_init_clock(void)
 	exynos_set_rate("dout_aclk_cam0_552", 552 * 1000000);
 
 	/* ACLK_CAM0_400 */
-	exynos_set_rate("dout_aclk_cam0_400", 400 * 1000000);
+	exynos_set_rate("dout_aclk_cam0_400", 413 * 1000000);
 
 	/* ACLK_CAM0_333 */
 	exynos_set_rate("dout_aclk_cam0_333", 333 * 1000000);
@@ -232,7 +232,7 @@ void cam1_init_clock(void)
 	exynos_set_rate("dout_aclk_cam1_552", 552 * 1000000);
 
 	/* ACLK_CAM1_400 */
-	exynos_set_rate("dout_aclk_cam1_400", 400 * 1000000);
+	exynos_set_rate("dout_aclk_cam1_400", 413 * 1000000);
 
 	/* ACLK_CAM1_333 */
 	exynos_set_rate("dout_aclk_cam1_333", 333 * 1000000);
@@ -242,11 +242,11 @@ void isp_init_clock(void)
 {
 	/* ACLK_ISP_400 */
 	exynos_set_parent("mout_aclk_isp_400", "mout_bus_pll_user");
-	exynos_set_rate("dout_aclk_isp_400", 400 * 1000000);
+	exynos_set_rate("dout_aclk_isp_400", 413 * 1000000);
 
 	/* ACLK_ISP_DIS_400 */
 	exynos_set_parent("mout_aclk_isp_dis_400", "mout_bus_pll_user");
-	exynos_set_rate("dout_aclk_isp_dis_400", 400 * 1000000);
+	exynos_set_rate("dout_aclk_isp_dis_400", 413 * 1000000);
 }
 
 void g3d_init_clock(void)
