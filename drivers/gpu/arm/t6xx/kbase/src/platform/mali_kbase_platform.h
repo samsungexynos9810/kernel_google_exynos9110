@@ -91,8 +91,8 @@ struct exynos_context {
 #ifdef CONFIG_PM_RUNTIME
 	struct exynos_pm_domain *exynos_pm_domain;
 #endif /* CONFIG_PM_RUNTIME */
-	struct mutex gpu_set_clock_lock;
-	struct mutex gpu_enable_clock_lock;
+	struct mutex gpu_clock_lock;
+	struct mutex gpu_dvfs_handler_lock;
 	spinlock_t gpu_dvfs_spinlock;
 #ifdef CONFIG_MALI_T6XX_DVFS
 	int utilization;

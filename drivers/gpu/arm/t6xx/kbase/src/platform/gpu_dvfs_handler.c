@@ -71,12 +71,12 @@ static void gpu_dvfs_event_proc(struct work_struct *q)
 	if (!platform)
 		return;
 
-	mutex_lock(&platform->gpu_enable_clock_lock);
+	mutex_lock(&platform->gpu_dvfs_handler_lock);
 	if (gpu_control_state_set(kbdev, GPU_CONTROL_IS_POWER_ON, 0)) {
 		freq = gpu_get_target_freq();
 		gpu_set_target_freq(freq);
 	}
-	mutex_unlock(&platform->gpu_enable_clock_lock);
+	mutex_unlock(&platform->gpu_dvfs_handler_lock);
 }
 static DECLARE_WORK(gpu_dvfs_work, gpu_dvfs_event_proc);
 
@@ -202,21 +202,21 @@ int gpu_dvfs_handler_control(struct kbase_device *kbdev, gpu_dvfs_handler_comman
 	switch (command) {
 #ifdef CONFIG_MALI_T6XX_DVFS
 	case GPU_HANDLER_DVFS_ON:
-		mutex_lock(&platform->gpu_enable_clock_lock);
+		mutex_lock(&platform->gpu_dvfs_handler_lock);
 		gpu_dvfs_on_off(kbdev, true);
-		mutex_unlock(&platform->gpu_enable_clock_lock);
+		mutex_unlock(&platform->gpu_dvfs_handler_lock);
 		break;
 	case GPU_HANDLER_DVFS_OFF:
-		mutex_lock(&platform->gpu_enable_clock_lock);
+		mutex_lock(&platform->gpu_dvfs_handler_lock);
 		gpu_dvfs_on_off(kbdev, false);
-		mutex_unlock(&platform->gpu_enable_clock_lock);
+		mutex_unlock(&platform->gpu_dvfs_handler_lock);
 		break;
 	case GPU_HANDLER_DVFS_GOVERNOR_CHANGE:
-		mutex_lock(&platform->gpu_enable_clock_lock);
+		mutex_lock(&platform->gpu_dvfs_handler_lock);
 		gpu_dvfs_on_off(kbdev, false);
 		gpu_dvfs_governor_init(kbdev, param);
 		gpu_dvfs_on_off(kbdev, true);
-		mutex_unlock(&platform->gpu_enable_clock_lock);
+		mutex_unlock(&platform->gpu_dvfs_handler_lock);
 		break;
 	case GPU_HANDLER_DVFS_MAX_LOCK:
 		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);

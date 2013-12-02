@@ -123,18 +123,10 @@ static int gpu_pm_notifier(struct notifier_block *nb, unsigned long event, void 
 	int err = NOTIFY_OK;
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (gpu_control_state_set(pkbdev, GPU_CONTROL_PREPARE_OFF, 0) < 0)
-			err = NOTIFY_BAD;
 		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_SUSPEND, NULL, NULL, 0u, 0u);
-#endif /* CONFIG_MALI_T6XX_DVFS */
 		break;
 	case PM_POST_SUSPEND:
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (gpu_control_state_set(pkbdev, GPU_CONTROL_PREPARE_ON, 0) < 0)
-			err = NOTIFY_BAD;
 		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_RESUME, NULL, NULL, 0u, 0u);
-#endif /* CONFIG_MALI_T6XX_DVFS */
 		break;
 	default:
 		break;
@@ -142,40 +134,16 @@ static int gpu_pm_notifier(struct notifier_block *nb, unsigned long event, void 
 	return err;
 }
 
-static int pm_callback_power_on(kbase_device *kbdev)
+static int gpu_power_on(kbase_device *kbdev)
 {
-	int result;
-	int ret_val;
 	struct kbase_os_device *osdev = &kbdev->osdev;
-	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
-	if (!platform)
-		return -ENODEV;
 
-	if (pm_runtime_status_suspended(osdev->dev))
-		ret_val = 1;
-	else
-		ret_val = 0;
+	pm_runtime_resume(osdev->dev);
 
-	if (osdev->dev->power.disable_depth > 0) {
-		if (platform->cmu_pmu_status == 0) {
-			gpu_control_state_set(kbdev, GPU_CONTROL_CMU_PMU_ON, 0);
-			GPU_LOG(DVFS_WARNING, "fallback for pm_callback_power_on\n");
-		}
-		return ret_val;
-	}
-	result = pm_runtime_resume(osdev->dev);
-
-	if (result < 0 && result == -EAGAIN) {
-		gpu_control_state_set(kbdev, GPU_CONTROL_CMU_PMU_ON, 0);
-		GPU_LOG(DVFS_WARNING, "pm_runtime_resume failed and fallback for pm_callback_power_on\n");
-	} else if (result < 0) {
-		GPU_LOG(DVFS_ERROR, "pm_runtime_resume failed (%d)\n", result);
-	}
-
-	return ret_val;
+	return 0;
 }
 
-static void pm_callback_power_off(kbase_device *kbdev)
+static void gpu_power_off(kbase_device *kbdev)
 {
 	struct kbase_os_device *osdev = &kbdev->osdev;
 	pm_schedule_suspend(osdev->dev, RUNTIME_PM_DELAY_TIME);
@@ -199,14 +167,18 @@ static void gpu_device_runtime_disable(struct kbase_device *kbdev)
 
 static int pm_callback_runtime_on(kbase_device *kbdev)
 {
+	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
+	if (!platform)
+		return -ENODEV;
+
 	GPU_LOG(DVFS_INFO, "g3d turn on\n");
 	KBASE_TRACE_ADD_EXYNOS(kbdev, LSI_GPU_ON, NULL, NULL, 0u, 0u);
 
-	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON, 0);
 #ifdef CONFIG_MALI_T6XX_DVFS
-	if (gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_ON, 0) < 0)
-		return -EPERM;
+	gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_ON, 0);
 #endif /* CONFIG_MALI_T6XX_DVFS */
+	gpu_control_state_set(kbdev, GPU_CONTROL_CHANGE_CLK_VOL, platform->cur_clock);
+	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON, 0);
 
 	return 0;
 }
@@ -217,15 +189,11 @@ static void pm_callback_runtime_off(kbase_device *kbdev)
 	KBASE_TRACE_ADD_EXYNOS(kbdev, LSI_GPU_OFF, NULL, NULL, 0u, 0u);
 
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_OFF, 0);
-#ifdef CONFIG_MALI_T6XX_DVFS
-	if (gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_OFF, 0) < 0)
-		GPU_LOG(DVFS_ERROR, "disabling dvfs is faled\n");
-#endif /* CONFIG_MALI_T6XX_DVFS */
 }
 
 kbase_pm_callback_conf pm_callbacks = {
-	.power_on_callback = pm_callback_power_on,
-	.power_off_callback = pm_callback_power_off,
+	.power_on_callback = gpu_power_on,
+	.power_off_callback = gpu_power_off,
 #ifdef CONFIG_PM_RUNTIME
 	.power_runtime_init_callback = gpu_device_runtime_init,
 	.power_runtime_term_callback = gpu_device_runtime_disable,

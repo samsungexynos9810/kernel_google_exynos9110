@@ -73,6 +73,8 @@ static mali_bool kbase_platform_exynos5_init(kbase_device *kbdev)
 	platform->polling_speed = 100;
 	gpu_debug_level = DVFS_WARNING;
 
+	mutex_init(&platform->gpu_clock_lock);
+	mutex_init(&platform->gpu_dvfs_handler_lock);
 	spin_lock_init(&platform->gpu_dvfs_spinlock);
 
 	/* gpu control module init*/

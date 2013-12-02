@@ -1,4 +1,4 @@
-/* drivers/gpu/t6xx/kbase/src/platform/gpu_control_eyxnos5430.c
+/* drivers/gpu/t6xx/kbase/src/platform/gpu_control_exynos5430.c
  *
  * Copyright 2011 by S.LSI. Samsung Electronics Inc.
  * San#24, Nongseo-Dong, Giheung-Gu, Yongin, Korea
@@ -17,23 +17,14 @@
 
 #include <kbase/src/common/mali_kbase.h>
 
-#include <linux/fb.h>
-#include <linux/clk.h>
-#include <linux/pm_qos.h>
-#include <linux/delay.h>
 #include <linux/regulator/driver.h>
 
-#include <mach/regs-clock.h>
 #include <mach/asv-exynos.h>
 #include <mach/pm_domains.h>
-
-#include <../drivers/clk/samsung/clk.h>
 
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
 #include "gpu_control.h"
-
-struct kbase_device *pkbdev;
 
 #ifdef CONFIG_PM_RUNTIME
 struct exynos_pm_domain *gpu_get_pm_domain(kbase_device *kbdev)
@@ -71,59 +62,18 @@ int get_cpu_clock_speed(u32 *cpu_clock)
 	return 0;
 }
 
-static int gpu_is_power_on(void)
+int gpu_is_power_on(void)
 {
 	return ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) == EXYNOS_INT_LOCAL_PWR_EN) ? 1 : 0;
 }
 
-static int gpu_power_on(void)
+int gpu_power_init(kbase_device *kbdev)
 {
-	int timeout;
+	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 
-	/* Turn on G3D  */
-	__raw_writel(EXYNOS_INT_LOCAL_PWR_EN, EXYNOS5430_G3D_CONFIGURATION);
+	if (!platform)
+		return -ENODEV;
 
-	/* Wait for G3D power stability */
-	timeout = 1000;
-
-	while ((__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != EXYNOS_INT_LOCAL_PWR_EN) {
-		if (timeout == 0) {
-			/* need to call panic  */
-			panic("failed to turn on g3d via g3d_configuration\n");
-			return -ETIMEDOUT;
-		}
-		timeout--;
-		udelay(10);
-	}
-
-	return 0;
-}
-
-static int gpu_power_off(void)
-{
-	int timeout;
-
-	/* Turn off G3D  */
-	__raw_writel(0x0, EXYNOS5430_G3D_CONFIGURATION);
-
-	/* Wait for G3D power stability */
-	timeout = 1000;
-
-	while (__raw_readl(EXYNOS5430_G3D_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) {
-		if (timeout == 0) {
-			/* need to call panic */
-			panic("failed to turn off g3d via g3d_configuration\n");
-			return -ETIMEDOUT;
-		}
-		timeout--;
-		udelay(10);
-	}
-
-	return 0;
-}
-
-static int gpu_power_init(void)
-{
 	GPU_LOG(DVFS_INFO, "g3d power initialized\n");
 
 	return 0;
@@ -140,7 +90,7 @@ static int gpu_update_clock(struct exynos_context *platform)
 	return 0;
 }
 
-static int gpu_clock_on(struct exynos_context *platform)
+int gpu_clock_on(struct exynos_context *platform)
 {
 	if (!platform)
 		return -ENODEV;
@@ -161,7 +111,7 @@ static int gpu_clock_on(struct exynos_context *platform)
 	return 0;
 }
 
-static int gpu_clock_off(struct exynos_context *platform)
+int gpu_clock_off(struct exynos_context *platform)
 {
 	if (!platform)
 		return -ENODEV;
@@ -177,7 +127,7 @@ static int gpu_clock_off(struct exynos_context *platform)
 	return 0;
 }
 
-static int gpu_set_clock(struct exynos_context *platform, int freq)
+int gpu_set_clock(struct exynos_context *platform, int freq)
 {
 	long g3d_rate_prev = -1;
 	unsigned long g3d_rate = freq * MHZ;
@@ -250,7 +200,6 @@ static int gpu_set_clock(struct exynos_context *platform, int freq)
 	} while (tmp & 0x1);
 
 	gpu_update_clock(platform);
-	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_VALUE, NULL, NULL, 0u, g3d_rate/MHZ);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock set: %ld\n", g3d_rate / MHZ);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock get: %d\n", platform->cur_clock);
 err:
@@ -263,7 +212,7 @@ err:
 
 static int gpu_get_clock(kbase_device *kbdev)
 {
-	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
+	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
 
@@ -302,7 +251,7 @@ static int gpu_get_clock(kbase_device *kbdev)
 	return 0;
 }
 
-static int gpu_clock_init(kbase_device *kbdev)
+int gpu_clock_init(kbase_device *kbdev)
 {
 	int ret;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
@@ -334,7 +283,7 @@ static int gpu_update_voltage(struct exynos_context *platform)
 	return 0;
 }
 
-static int gpu_set_voltage(struct exynos_context *platform, int vol)
+int gpu_set_voltage(struct exynos_context *platform, int vol)
 {
 	static int _vol = -1;
 
@@ -356,7 +305,6 @@ static int gpu_set_voltage(struct exynos_context *platform, int vol)
 	_vol = vol;
 
 	gpu_update_voltage(platform);
-	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_VOL_VALUE, NULL, NULL, 0u, vol);
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage set:%d\n", vol);
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage get:%d\n", platform->cur_voltage);
 
@@ -364,7 +312,7 @@ static int gpu_set_voltage(struct exynos_context *platform, int vol)
 }
 
 #ifdef CONFIG_REGULATOR
-static int gpu_regulator_enable(struct exynos_context *platform)
+int gpu_regulator_enable(struct exynos_context *platform)
 {
 	if (!platform->g3d_regulator) {
 		GPU_LOG(DVFS_ERROR, "g3d_regulator is not initialized\n");
@@ -378,7 +326,7 @@ static int gpu_regulator_enable(struct exynos_context *platform)
 	return 0;
 }
 
-static int gpu_regulator_disable(struct exynos_context *platform)
+int gpu_regulator_disable(struct exynos_context *platform)
 {
 	if (!platform->g3d_regulator) {
 		GPU_LOG(DVFS_ERROR, "g3d_regulator is not initialized\n");
@@ -392,7 +340,7 @@ static int gpu_regulator_disable(struct exynos_context *platform)
 	return 0;
 }
 
-static int gpu_regulator_init(struct exynos_context *platform)
+int gpu_regulator_init(struct exynos_context *platform)
 {
 	int gpu_voltage = 0;
 
@@ -423,279 +371,3 @@ static int gpu_regulator_init(struct exynos_context *platform)
 	return 0;
 }
 #endif /* CONFIG_REGULATOR */
-
-#ifdef CONFIG_MALI_T6XX_DVFS
-#ifdef CONFIG_BUS_DEVFREQ
-static struct pm_qos_request exynos5_g3d_mif_qos;
-static struct pm_qos_request exynos5_g3d_int_qos;
-static struct pm_qos_request exynos5_g3d_cpu_qos;
-#endif /* CONFIG_BUS_DEVFREQ */
-
-static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
-{
-#ifdef CONFIG_BUS_DEVFREQ
-	switch (state) {
-	case GPU_CONTROL_PM_QOS_INIT:
-		pm_qos_add_request(&exynos5_g3d_mif_qos, PM_QOS_BUS_THROUGHPUT, 0);
-		pm_qos_add_request(&exynos5_g3d_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
-		pm_qos_add_request(&exynos5_g3d_cpu_qos, PM_QOS_CPU_FREQ_MIN, 0);
-		break;
-	case GPU_CONTROL_PM_QOS_DEINIT:
-		pm_qos_remove_request(&exynos5_g3d_mif_qos);
-		pm_qos_remove_request(&exynos5_g3d_int_qos);
-		pm_qos_remove_request(&exynos5_g3d_cpu_qos);
-		break;
-	case GPU_CONTROL_PM_QOS_SET:
-		if (platform->step<0) return -1;
-		pm_qos_update_request(&exynos5_g3d_mif_qos, platform->table[platform->step].mem_freq);
-		pm_qos_update_request(&exynos5_g3d_int_qos, platform->table[platform->step].int_freq);
-		pm_qos_update_request(&exynos5_g3d_cpu_qos, platform->table[platform->step].cpu_freq);
-		break;
-	case GPU_CONTROL_PM_QOS_RESET:
-		pm_qos_update_request(&exynos5_g3d_mif_qos, 0);
-		pm_qos_update_request(&exynos5_g3d_int_qos, 0);
-		pm_qos_update_request(&exynos5_g3d_cpu_qos, 0);
-	default:
-		break;
-	}
-#endif /* CONFIG_BUS_DEVFREQ */
-	return 0;
-}
-#endif /* CONFIG_MALI_T6XX_DVFS */
-
-static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
-{
-	static int prev_clock = -1;
-#ifdef CONFIG_PM_RUNTIME
-	struct exynos_pm_domain *pd = NULL;
-#endif
-	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
-	if (!platform)
-		return -ENODEV;
-
-	if (clock == prev_clock)
-		return 0;
-
-	if ((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock)) {
-		GPU_LOG(DVFS_ERROR, "invalid clock error (%d)\n", clock);
-		panic("invalid clock");
-	}
-
-	if (clock > prev_clock) {
-		gpu_set_voltage(platform, voltage + platform->voltage_margin);
-		gpu_set_clock(platform, clock);
-	} else {
-		gpu_set_clock(platform, clock);
-		gpu_set_voltage(platform, voltage + platform->voltage_margin);
-	}
-	GPU_LOG(DVFS_INFO, "[G3D] clock changed [%d -> %d]\n", prev_clock, clock);
-
-#ifdef CONFIG_MALI_T6XX_DVFS
-	gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, prev_clock);
-#endif /* CONFIG_MALI_T6XX_DVFS */
-
-	prev_clock = clock;
-
-#ifdef CONFIG_PM_RUNTIME
-	if (pd)
-		mutex_unlock(&pd->access_lock);
-#endif
-
-	return 0;
-}
-
-int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, int param)
-{
-	int ret = 0, voltage;
-#ifdef CONFIG_MALI_T6XX_DVFS
-	unsigned long flags;
-#endif /* CONFIG_MALI_T6XX_DVFS */
-	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
-	if (!platform)
-		return -ENODEV;
-
-	KBASE_DEBUG_ASSERT(kbdev != NULL);
-
-	switch (state) {
-	case GPU_CONTROL_CLOCK_ON:
-		mutex_lock(&platform->gpu_set_clock_lock);
-		ret = gpu_set_clock(platform, platform->cur_clock);
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (ret == 0) {
-			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
-			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-		}
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		ret = gpu_clock_on(platform);
-		mutex_unlock(&platform->gpu_set_clock_lock);
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET)<0) GPU_LOG(DVFS_ERROR, "failed to set the PM_QOS\n");
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		break;
-	case GPU_CONTROL_CLOCK_OFF:
-		mutex_lock(&platform->gpu_set_clock_lock);
-		ret = gpu_clock_off(platform);
-		mutex_unlock(&platform->gpu_set_clock_lock);
-#ifdef CONFIG_MALI_T6XX_DVFS
-		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_RESET);
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		break;
-	case GPU_CONTROL_IS_POWER_ON:
-		ret = gpu_is_power_on();
-		break;
-	case GPU_CONTROL_SET_MARGIN:
-		mutex_lock(&platform->gpu_set_clock_lock);
-		voltage = platform->table[platform->step].voltage + platform->voltage_margin;
-		if (voltage <= COLD_MINIMUM_VOL)
-			voltage = COLD_MINIMUM_VOL;
-		gpu_set_voltage(platform, voltage);
-		mutex_unlock(&platform->gpu_set_clock_lock);
-		GPU_LOG(DVFS_DEBUG, "we set the voltage: %d\n", voltage);
-		break;
-	case GPU_CONTROL_CHANGE_CLK_VOL:
-		mutex_lock(&platform->gpu_set_clock_lock);
-		ret = gpu_set_clk_vol(kbdev, param, gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_VOLTAGE, param));
-#ifdef CONFIG_MALI_T6XX_DVFS
-		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-		if (ret == 0)
-			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
-		spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		mutex_unlock(&platform->gpu_set_clock_lock);
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_SET)<0) GPU_LOG(DVFS_ERROR, "failed to set the PM_QOS\n");
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		break;
-	case GPU_CONTROL_CMU_PMU_ON:
-		mutex_lock(&platform->gpu_set_clock_lock);
-		if (platform->cmu_pmu_status == 1) {
-			mutex_unlock(&platform->gpu_set_clock_lock);
-			ret = -1;
-		}
-		gpu_power_on();
-		ret = gpu_set_clock(platform, platform->cur_clock);
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (ret == 0) {
-			spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-			platform->step = gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_GET_LEVEL, platform->cur_clock);
-			spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-		}
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		ret = gpu_clock_on(platform);
-		platform->cmu_pmu_status = 1;
-		mutex_unlock(&platform->gpu_set_clock_lock);
-		break;
-	case GPU_CONTROL_CMU_PMU_OFF:
-		mutex_lock(&platform->gpu_set_clock_lock);
-		if (platform->cmu_pmu_status == 0) {
-			mutex_unlock(&platform->gpu_set_clock_lock);
-			ret = -1;
-		}
-		gpu_clock_off(platform);
-		gpu_power_off();
-		platform->cmu_pmu_status = 0;
-		mutex_unlock(&platform->gpu_set_clock_lock);
-		break;
-	case GPU_CONTROL_PREPARE_ON:
-#ifdef CONFIG_MALI_T6XX_DVFS
-		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-		if ((platform->dvfs_status && platform->wakeup_lock) &&
-				(platform->table[platform->step].clock < MALI_DVFS_START_FREQ))
-			platform->cur_clock = MALI_DVFS_START_FREQ;
-
-		if (platform->min_lock > 0)
-			platform->cur_clock = MAX(platform->min_lock, platform->cur_clock);
-		else if (platform->max_lock > 0)
-			platform->cur_clock = MIN(platform->max_lock, platform->cur_clock);
-
-		platform->down_requirement = platform->table[platform->step].stay_count;
-		spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
-
-		if (!kbdev->pm.metrics.timer_active) {
-			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
-			kbdev->pm.metrics.timer_active = true;
-			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
-			hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(platform->polling_speed), HRTIMER_MODE_REL);
-		}
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		break;
-	case GPU_CONTROL_PREPARE_OFF:
-#ifdef CONFIG_MALI_T6XX_DVFS
-		if (platform->dvfs_status && kbdev->pm.metrics.timer_active) {
-			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
-			kbdev->pm.metrics.timer_active = false;
-			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
-			hrtimer_cancel(&kbdev->pm.metrics.timer);
-		}
-#endif /* CONFIG_MALI_T6XX_DVFS */
-		break;
-	default:
-		return -1;
-	}
-
-	return ret;
-}
-
-int gpu_control_module_init(kbase_device *kbdev)
-{
-	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
-	if (!platform)
-		return -ENODEV;
-
-	mutex_init(&platform->gpu_set_clock_lock);
-	mutex_init(&platform->gpu_enable_clock_lock);
-#ifdef CONFIG_PM_RUNTIME
-	platform->exynos_pm_domain = gpu_get_pm_domain(kbdev);
-#endif /* CONFIG_PM_RUNTIME */
-
-	pkbdev = kbdev;
-
-	if (gpu_power_init() < 0) {
-		GPU_LOG(DVFS_ERROR, "failed to initialize g3d power\n");
-		goto out;
-	}
-
-	if (gpu_clock_init(kbdev) < 0) {
-		GPU_LOG(DVFS_ERROR, "failed to initialize g3d clock\n");
-		goto out;
-	}
-
-#ifdef CONFIG_REGULATOR
-	if (gpu_regulator_init(platform) < 0) {
-		GPU_LOG(DVFS_ERROR, "failed to initialize g3d regulator\n");
-		goto regulator_init_fail;
-	}
-#endif /* CONFIG_REGULATOR */
-
-#ifdef CONFIG_MALI_T6XX_DVFS
-	gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_INIT);
-#endif /* CONFIG_MALI_T6XX_DVFS */
-
-	return 0;
-#ifdef CONFIG_REGULATOR
-regulator_init_fail:
-	gpu_regulator_disable(platform);
-#endif /* CONFIG_REGULATOR */
-out:
-	return -EPERM;
-}
-
-void gpu_control_module_term(kbase_device *kbdev)
-{
-	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
-	if (!platform)
-		return;
-
-#ifdef CONFIG_PM_RUNTIME
-	platform->exynos_pm_domain = NULL;
-#endif /* CONFIG_PM_RUNTIME */
-#ifdef CONFIG_REGULATOR
-	gpu_regulator_disable(platform);
-#endif /* CONFIG_REGULATOR */
-
-#ifdef CONFIG_MALI_T6XX_DVFS
-	gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_DEINIT);
-#endif /* CONFIG_MALI_T6XX_DVFS */
-}
-
