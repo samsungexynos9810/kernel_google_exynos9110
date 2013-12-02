@@ -22,6 +22,7 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/of_gpio.h>
+#include <linux/pinctrl/consumer.h>
 #include <linux/platform_data/exynos-usb-switch.h>
 #include <linux/usb/gadget.h>
 
@@ -297,6 +298,7 @@ static int exynos_usbswitch_parse_dt(struct exynos_usb_switch *usb_switch,
 {
 	struct device_node *node;
 	struct platform_device *pdev;
+	struct pinctrl	*pinctrl;
 	int ret;
 
 	/* Host detection */
@@ -340,6 +342,10 @@ static int exynos_usbswitch_parse_dt(struct exynos_usb_switch *usb_switch,
 		if (ret)
 			dev_err(dev, "failed to request vbus control gpio");
 	}
+
+	pinctrl = devm_pinctrl_get_select_default(dev);
+	if (IS_ERR(pinctrl))
+		dev_info(dev, "failed to configure pins\n");
 
 	/* EHCI */
 	node = of_parse_phandle(dev->of_node, "ehci", 0);
