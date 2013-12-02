@@ -974,7 +974,7 @@
 		reg = <0x11000000 0x10000>;
 		interrupts = <0 96 0>;
 		clock-names = "mfc", "aclk_333", "mout_aclk_333_user", "gate_ip_mfc", "mout_aclk_333_sw", "dout_aclk_333";
-		clocks = <&clock 1350>, <&clock 486>, <&clock 2040>, <&clock 1234>, <&clock 2033>, <&clock 4008>;
+		clocks = <&clock 1350>, <&clock 486>, <&clock 2041>, <&clock 1234>, <&clock 2034>, <&clock 4008>;
 		iommu = <&sysmmu_mfc0_0>, <&sysmmu_mfc0_1>;
 		samsung,power-domain = <&pd_mfc0>;
 		status = "ok";
