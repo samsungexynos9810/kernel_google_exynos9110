@@ -687,7 +687,7 @@ static int fimc_is_isp_video_g_ext_ctrl(struct file *file, void *priv,
 
 	switch (ctrl->id) {
 	case V4L2_CID_CAM_SENSOR_FW_VER:
-		if((sysfs_pinfo != NULL) && (sysfs_pinfo->header_ver != NULL)) {
+		if (sysfs_pinfo != NULL) {
 			strncpy(ctrl->string, sysfs_pinfo->header_ver,
 						strlen(ctrl->string) - 1);
 			ctrl->string[strlen(ctrl->string) - 1] = '\0';
