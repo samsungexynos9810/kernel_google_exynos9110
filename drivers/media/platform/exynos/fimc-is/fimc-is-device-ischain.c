@@ -3131,7 +3131,6 @@ static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 	struct scalerc_param *scc_param;
 	struct odc_param *odc_param;
 	struct dis_param *dis_param;
-	u32 chain0_width, chain0_height;
 	u32 chain1_width, chain1_height;
 
 	BUG_ON(!device);
@@ -3145,29 +3144,13 @@ static int fimc_is_ischain_s_chain1_size(struct fimc_is_device_ischain *device,
 	scc_param = &device->is_region->parameter.scalerc;
 	odc_param = &device->is_region->parameter.odc;
 	dis_param = &device->is_region->parameter.dis;
-	chain0_width = device->chain0_width;
-	chain0_height = device->chain0_height;
 	chain1_width = width;
 	chain1_height = height;
 
-	mdbgd_ischain("current chain0 size : %dx%d\n", device,
-		chain0_width, chain0_height);
 	mdbgd_ischain("current chain1 size : %dx%d\n", device,
 		device->chain1_width, device->chain1_height);
 	mdbgd_ischain("request chain1 size : %dx%d\n", device,
 		chain1_width, chain1_height);
-
-	if (!chain0_width) {
-		err("chain0 width is zero");
-		ret = -EINVAL;
-		goto exit;
-	}
-
-	if (!chain0_height) {
-		err("chain0 height is zero");
-		ret = -EINVAL;
-		goto exit;
-	}
 
 	if (!chain1_width) {
 		err("chain1 width is zero");
