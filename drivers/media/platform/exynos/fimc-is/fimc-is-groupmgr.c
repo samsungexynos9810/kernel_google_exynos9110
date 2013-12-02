@@ -674,10 +674,13 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 	case GROUP_ID_3A1:
 		/* path configuration */
 		group->prev = NULL;
-		if (GET_FIMC_IS_NUM_OF_SUBIP(core, isp))
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, isp)) {
 			group->next = &device->group_isp;
-		else
+			/* HACK */
+			group->next->prev = group;
+		} else {
 			group->next = NULL;
+		}
 		group->subdev[ENTRY_SCALERC] = NULL;
 		group->subdev[ENTRY_DIS] = NULL;
 		group->subdev[ENTRY_TDNR] = NULL;
@@ -685,9 +688,6 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 		group->subdev[ENTRY_LHFD] = NULL;
 		group->subdev[ENTRY_3AAC] = &device->taac;
 		group->subdev[ENTRY_3AAP] = &device->taap;
-
-		/* HACK */
-		group->next->prev = group;
 
 		device->taac.leader = leader;
 		device->taap.leader = leader;
