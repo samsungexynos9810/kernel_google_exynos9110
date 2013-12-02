@@ -401,6 +401,20 @@ static void exynos_ohci_shutdown(struct platform_device *pdev)
 	struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
 	struct usb_hcd *hcd = exynos_ohci->hcd;
 
+	if (!exynos_ohci->power_on)
+		return;
+
+	if (!hcd->rh_registered)
+		return;
+
+	/*
+	 * OHCI receives clock from the PHY. If PHY is suspended,
+	 * SFR cannot be accessed. Here we make sure, that PHY
+	 * is not suspended, so shutdown call will complete
+	 * successfully.
+	 */
+	pm_runtime_forbid(&pdev->dev);
+
 	if (hcd->driver->shutdown)
 		hcd->driver->shutdown(hcd);
 }
