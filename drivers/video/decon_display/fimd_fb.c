@@ -762,6 +762,9 @@ static int s3c_fb_get_overlap_cnt(struct s3c_fb *sfb, struct s3c_fb_win_config *
 	else if (overlaps2_cnt > 0)
 		overlap_max_cnt = max(overlap_max_cnt, 2);
 
+	/* TODO: It will be removed after tuning DEVFREQ & BTS. */
+	overlap_max_cnt = 4;
+
 	return overlap_max_cnt;
 }
 #endif
