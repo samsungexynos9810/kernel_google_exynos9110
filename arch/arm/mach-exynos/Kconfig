@@ -201,6 +201,13 @@ config EXYNOS_CONTENT_PATH_PROTECTION
 	help
 	  Enable content path protection of EXYNOS.
 
+config ASV_MARGIN_TEST
+	bool "Enable margin test"
+	depends on ARM_ATAG_DTB_COMPAT
+	default n
+	help
+	  Support to ASV voltage margin test
+
 if EXYNOS_ATAGS
 
 config EXYNOS_DEV_DMA
@@ -288,10 +295,6 @@ config EXYNOS_SETUP_SPI
 	bool
 	help
 	  Common setup code for SPI GPIO configurations.
-
-config ASV_MARGIN_TEST
-	bool "Enable margin test"
-	default n
 
 # machine support
 
