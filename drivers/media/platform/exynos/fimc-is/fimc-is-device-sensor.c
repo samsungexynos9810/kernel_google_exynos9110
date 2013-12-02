@@ -1668,7 +1668,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 	if (!device) {
 		err("device is NULL");
 		ret = -EINVAL;
-		goto p_err;
+		goto err_dev_null;
 	}
 
 	subdev_csi = device->subdev_csi;
@@ -1712,6 +1712,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
+err_dev_null:
 	return ret;
 }
 
