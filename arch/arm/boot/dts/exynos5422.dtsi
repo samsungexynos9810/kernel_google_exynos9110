@@ -262,6 +262,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1288>, <&clock 1265>;
+		samsung,power-domain = <&spd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -276,6 +277,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1287>, <&clock 1264>;
+		samsung,power-domain = <&spd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -290,6 +292,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1282>, <&clock 1281>;
+		samsung,power-domain = <&spd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -303,6 +306,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1289>, <&clock 1266>;
+		samsung,power-domain = <&spd_gscl>;
 	};
 
 	sysmmu_g2d: sysmmu@0x10A60000 {
@@ -313,6 +317,7 @@
 		samsung,power-domain = <&pd_g2d>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 231>, <&clock 234>;
+		samsung,power-domain = <&pd_g2d>;
 		prop-map {
 			iomap = "r";
 		};
@@ -326,6 +331,7 @@
 		samsung,power-domain = <&pd_g2d>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 231>, <&clock 234>;
+		samsung,power-domain = <&pd_g2d>;
 		prop-map {
 			iomap = "w";
 		};
@@ -527,6 +533,7 @@
 		samsung,power-domain = <&spd_jpeg1>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1413>, <&clock 1418>;
+		samsung,power-domain = <&spd_jpeg1>;
 	};
 
 	sysmmu_jpeg2: sysmmu@0x11F20000 {
@@ -536,6 +543,7 @@
 		samsung,power-domain = <&spd_jpeg2>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1413>, <&clock 1417>;
+		samsung,power-domain = <&spd_jpeg2>;
 	};
 
 	sysmmu_mfc0_0: sysmmu@0x11200000 {
@@ -564,9 +572,9 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <3 2>;
 		qos = <15>;
-		samsung,power-domain = <&spd_fimd>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1322>, <&clock 1329>;
+		samsung,power-domain = <&spd_fimd>;
 		prop-map {
 			winmap = <0x11>;
 		};
@@ -578,9 +586,9 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <3 0>;
 		qos = <15>;
-		samsung,power-domain = <&spd_fimd>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1321>, <&clock 1329>;
+		samsung,power-domain = <&spd_fimd>;
 		prop-map {
 			winmap = <0xe>;
 		};
