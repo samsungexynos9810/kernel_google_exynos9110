@@ -214,17 +214,17 @@ void debug_function(struct display_driver *dispdrv, const char *buf)
 	return;
 #endif
 	pr_info("calls [%s] to control gating function\n", buf);
-	if (!strncmp(buf, "clk-gate-on", sizeof(buf))) {
+	if (!strcmp(buf, "clk-gate-on")) {
 		dispdrv->pm_status.clock_gating_on = true;
-	} else if (!strncmp(buf, "clk-gate-off", sizeof(buf))) {
+	} else if (!strcmp(buf, "clk-gate-off")) {
 		dispdrv->pm_status.clock_gating_on = false;
-	} else if (!strncmp(buf, "pwr-gate-on", sizeof(buf))) {
+	} else if (!strcmp(buf, "pwr-gate-on")) {
 		dispdrv->pm_status.power_gating_on = true;
-	} else if (!strncmp(buf, "pwr-gate-off", sizeof(buf))) {
+	} else if (!strcmp(buf, "pwr-gate-off")) {
 		dispdrv->pm_status.power_gating_on = false;
-	} else if (!strncmp(buf, "hotplug-gate-on", sizeof(buf))) {
+	} else if (!strcmp(buf, "hotplug-gate-on")) {
 		dispdrv->pm_status.hotplug_gating_on = true;
-	} else if (!strncmp(buf, "hotplug-gate-off", sizeof(buf))) {
+	} else if (!strcmp(buf, "hotplug-gate-off")) {
 		dispdrv->pm_status.hotplug_gating_on = false;
 	} else {
 		pr_err("INVALID parameter: '%s'\n", buf);
