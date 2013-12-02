@@ -15,6 +15,7 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <linux/sort.h>
+#include <linux/reboot.h>
 
 #include <linux/fs.h>
 #include <asm/segment.h>
@@ -244,6 +245,25 @@ static struct notifier_block exynos_dm_hotplug_nb = {
 	.priority = 1,
 };
 
+static int exynos_dm_hotplut_reboot_notifier(struct notifier_block *this,
+				unsigned long code, void *_cmd)
+{
+	switch (code) {
+	case SYSTEM_POWER_OFF:
+	case SYS_RESTART:
+		mutex_lock(&dm_hotplug_lock);
+		exynos_dm_hotplug_disable = true;
+		mutex_unlock(&dm_hotplug_lock);
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block exynos_dm_hotplug_reboot_nb = {
+	.notifier_call = exynos_dm_hotplut_reboot_notifier,
+};
+
 static int low_stay = 0;
 
 static enum hotplug_mode diagnose_condition(void)
@@ -378,6 +398,7 @@ static int __init dm_cpu_hotplug_init(void)
 	exynos_dm_hotplug_disable = false;
 
 	register_pm_notifier(&exynos_dm_hotplug_nb);
+	register_reboot_notifier(&exynos_dm_hotplug_reboot_nb);
 
 	return 0;
 }
