@@ -1598,7 +1598,7 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 		region->parameter.scalerp.otf_input.height,
 		region->parameter.scalerp.otf_input.format
 		);
-	mdbgd_ischain("SCC DO : %2d    %4d  %3d   %04dx%04d %4d,%d\n", device,
+	mdbgd_ischain("SCP DO : %2d    %4d  %3d   %04dx%04d %4d,%d\n", device,
 		region->parameter.scalerp.control.cmd,
 		region->parameter.scalerp.control.bypass,
 		region->parameter.scalerp.dma_output.cmd,
