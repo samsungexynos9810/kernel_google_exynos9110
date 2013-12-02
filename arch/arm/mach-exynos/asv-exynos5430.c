@@ -94,7 +94,7 @@ static int __init get_isp_volt(char *str)
 	get_option(&str, &set_isp_volt);
 	return 0;
 }
-early_param("g3d", get_g3d_volt);
+early_param("isp", get_isp_volt);
 #endif
 
 static unsigned int exynos5430_get_asv_group_arm(struct asv_common *asv_comm)
