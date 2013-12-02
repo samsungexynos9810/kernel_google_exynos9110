@@ -28,6 +28,8 @@
 #define FLITE_NOWAIT_MASK	0xFFFF0000
 #define FLITE_NOWAIT_SHIFT	16
 
+#define FLITE_OVERFLOW_COUNT	300
+
 struct fimc_is_device_sensor;
 
 enum fimc_is_flite_state {
@@ -48,6 +50,8 @@ struct fimc_is_device_flite {
 
 	struct fimc_is_image		image;
 	struct fimc_is_framemgr		*framemgr;
+
+	u32				overflow_cnt;
 
 	/* which 3aa gorup is connected when otf is enable */
 	u32				group;

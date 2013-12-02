@@ -519,6 +519,40 @@ static void flite_hw_clr_interrupt_source(unsigned long __iomem *base_reg)
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
+static void flite_hw_set_ovf_interrupt_source(unsigned long __iomem *base_reg)
+{
+	u32 cfg = 0;
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+
+	/* for checking overflow */
+	cfg &= ~FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE;
+
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+}
+
+static void flite_hw_clr_ovf_interrupt_source(unsigned long __iomem *base_reg)
+{
+	u32 cfg = 0;
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+
+	/* for checking overflow */
+	cfg |= FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE;
+
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+}
+
+static int flite_hw_check_ovf_interrupt_source(unsigned long __iomem *base_reg)
+{
+	u32 cfg = 0;
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+
+	/* for checking overflow */
+	if (cfg & FLITE_REG_CIGCTRL_IRQ_OVFEN0_DISABLE)
+		return true;
+
+	return false;
+}
+
 static void flite_hw_force_reset(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0, retry = 100;
@@ -920,6 +954,9 @@ static void tasklet_flite_end(unsigned long data)
 	info("E%d %d\n", bdone, atomic_read(&flite->fcount));
 #endif
 
+	if (flite_hw_check_ovf_interrupt_source(flite->base_reg))
+		flite_hw_set_ovf_interrupt_source(flite->base_reg);
+
 	framemgr_e_barrier(framemgr, FMGR_IDX_1 + bdone);
 
 	if (test_bit(bdone, &flite->state)) {
@@ -1107,34 +1144,46 @@ clear_status:
 	if (status1 & (1 << 8)) {
 		u32 ciwdofst;
 
-		pr_err("[CamIF%d] OFCR\n", flite->instance);
+		flite_hw_clr_ovf_interrupt_source(flite->base_reg);
+
+		if (flite->overflow_cnt % FLITE_OVERFLOW_COUNT == 0)
+			pr_err("[CamIF%d] OFCR(cnt:%u)\n", flite->instance, flite->overflow_cnt);
 		ciwdofst = readl(flite->base_reg + 0x10);
 		ciwdofst  |= (0x1 << 14);
 		writel(ciwdofst, flite->base_reg + 0x10);
 		ciwdofst  &= ~(0x1 << 14);
 		writel(ciwdofst, flite->base_reg + 0x10);
+		flite->overflow_cnt++;
 	}
 
 	if (status1 & (1 << 9)) {
 		u32 ciwdofst;
 
-		pr_err("[CamIF%d] OFCB\n", flite->instance);
+		flite_hw_clr_ovf_interrupt_source(flite->base_reg);
+
+		if (flite->overflow_cnt % FLITE_OVERFLOW_COUNT == 0)
+			pr_err("[CamIF%d] OFCB(cnt:%u)\n", flite->instance, flite->overflow_cnt);
 		ciwdofst = readl(flite->base_reg + 0x10);
 		ciwdofst  |= (0x1 << 15);
 		writel(ciwdofst, flite->base_reg + 0x10);
 		ciwdofst  &= ~(0x1 << 15);
 		writel(ciwdofst, flite->base_reg + 0x10);
+		flite->overflow_cnt++;
 	}
 
 	if (status1 & (1 << 10)) {
 		u32 ciwdofst;
 
-		pr_err("[CamIF%d] OFY\n", flite->instance);
+		flite_hw_clr_ovf_interrupt_source(flite->base_reg);
+
+		if (flite->overflow_cnt % FLITE_OVERFLOW_COUNT == 0)
+			pr_err("[CamIF%d] OFY(cnt:%u)\n", flite->instance, flite->overflow_cnt);
 		ciwdofst = readl(flite->base_reg + 0x10);
 		ciwdofst  |= (0x1 << 30);
 		writel(ciwdofst, flite->base_reg + 0x10);
 		ciwdofst  &= ~(0x1 << 30);
 		writel(ciwdofst, flite->base_reg + 0x10);
+		flite->overflow_cnt++;
 	}
 
 	return IRQ_HANDLED;
@@ -1269,6 +1318,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	framemgr = flite->framemgr;
 	image = &flite->image;
 
+	flite->overflow_cnt = 0;
 	flite->sw_trigger = FLITE_B_SLOT_VALID;
 	flite->sw_checker = EXPECT_FRAME_START;
 	flite->tasklet_param_str = 0;
