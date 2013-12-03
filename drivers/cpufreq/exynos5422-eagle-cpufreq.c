@@ -15,6 +15,7 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/cpufreq.h>
+#include <linux/suspend.h>
 #include <linux/clk-private.h>
 #include <linux/pm_qos.h>
 
@@ -33,6 +34,7 @@
 
 static int max_support_idx_CA15;
 static int min_support_idx_CA15 = (CPUFREQ_LEVEL_END_CA15 - 1);
+static struct pm_qos_request resume_max_cpu_qos;
 
 static struct clk *dout_cpu;
 static struct clk *mout_cpu;
@@ -552,6 +554,26 @@ static bool exynos5422_is_alive_CA15(void)
 	return tmp ? true : false;
 }
 
+#ifdef CONFIG_PM
+static int exynos_cpufreq_cpu_pm_notifier(struct notifier_block *notifier,
+		unsigned long pm_event, void *v)
+{
+	switch (pm_event) {
+	case PM_SUSPEND_PREPARE:
+		break;
+	case PM_POST_SUSPEND:
+		pm_qos_update_request_timeout(&resume_max_cpu_qos, 1000 * 1000, 5000 * 1000);
+		break;
+	}
+	return NOTIFY_OK;
+}
+
+static struct notifier_block exynos_cpufreq_cpu_nb = {
+	.notifier_call = exynos_cpufreq_cpu_pm_notifier,
+	.priority = 1,
+};
+#endif
+
 int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 {
 	int i;
@@ -637,6 +659,13 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->set_freq = exynos5422_set_frequency_CA15;
 	info->need_apll_change = exynos5422_pms_change_CA15;
 	info->is_alive = exynos5422_is_alive_CA15;
+
+#ifdef CONFIG_PM
+	register_pm_notifier(&exynos_cpufreq_cpu_nb);
+
+	pm_qos_add_request(&resume_max_cpu_qos, PM_QOS_CPU_FREQ_MAX,
+			PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
+#endif
 
 #ifdef ENABLE_CLKOUT
 	tmp = __raw_readl(EXYNOS5_CLKOUT_CMU_TOP);
