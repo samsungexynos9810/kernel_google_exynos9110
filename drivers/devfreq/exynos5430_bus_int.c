@@ -1327,10 +1327,10 @@ static struct pm_qos_request min_int_thermal_qos;
 static struct pm_qos_request exynos5_int_bts_qos;
 
 int district_level_by_disp_333[] = {
-	LV0,
-	LV2,
-	LV3,
+	LV4,
 	LV5,
+	LV6,
+	LV6,
 };
 
 void exynos5_update_district_int_level(int aclk_disp_333_idx)

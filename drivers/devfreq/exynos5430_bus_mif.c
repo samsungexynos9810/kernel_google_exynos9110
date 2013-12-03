@@ -700,12 +700,12 @@ unsigned int timeout_fullhd_camera[][2] = {
 };
 
 struct devfreq_distriction_level distriction_wqhd[] = {
-	{LV9,	LV1},
-	{LV8,	LV1},
-	{LV7,	LV1},
-	{LV5,	LV1},
-	{LV4,	LV1},
-	{LV3,	LV0},
+	{LV8,   LV1},           /* 0: 103000, 211000 */
+	{LV7,   LV1},           /* 1(lcdonidle): 138000, 211000 */
+	{LV4,   LV1},           /* 2(menu1): 275000, 211000 */
+	{LV4,   LV1},           /* 3: 275000, 211000 */
+	{LV3,   LV1},           /* 4: 413000, 211000 */
+	{LV2,   LV0},           /* 5: 543000, 211000 */
 };
 
 unsigned int timeout_wqhd[][2] = {
