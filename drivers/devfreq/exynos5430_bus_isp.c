@@ -29,7 +29,7 @@
 #include "devfreq_exynos.h"
 #include "governor.h"
 
-#define DEVFREQ_INITIAL_FREQ	(666000)
+#define DEVFREQ_INITIAL_FREQ	(111000)
 #define DEVFREQ_POLLING_PERIOD	(0)
 
 #define DISP_VOLT_STEP		12500
@@ -1214,7 +1214,7 @@ module_exit(exynos5_devfreq_isp_exit);
 #include "devfreq_exynos.h"
 #include "governor.h"
 
-#define DEVFREQ_INITIAL_FREQ	(666000)
+#define DEVFREQ_INITIAL_FREQ	(111000)
 #define DEVFREQ_POLLING_PERIOD	(0)
 
 #define DISP_VOLT_STEP		12500
