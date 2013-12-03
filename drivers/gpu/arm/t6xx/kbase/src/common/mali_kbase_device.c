@@ -80,6 +80,9 @@ mali_error kbase_device_init(kbase_device * const kbdev)
 
 	spin_lock_init(&kbdev->mmu_mask_change);
 
+	if (kbasep_trace_init(kbdev) != MALI_ERROR_NONE)
+		goto free_reset_workq;
+
 	/* Initialize platform specific context */
 	if (MALI_FALSE == kbasep_platform_device_init(kbdev))
 		goto fail;
@@ -168,9 +171,6 @@ mali_error kbase_device_init(kbase_device * const kbdev)
 
 	hrtimer_init(&kbdev->reset_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	kbdev->reset_timer.function = kbasep_reset_timer_callback;
-
-	if (kbasep_trace_init(kbdev) != MALI_ERROR_NONE)
-		goto free_reset_workq;
 
 	mutex_init(&kbdev->cacheclean_lock);
 	atomic_set(&kbdev->keep_gpu_powered_count, 0);
