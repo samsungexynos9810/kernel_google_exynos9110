@@ -32,10 +32,17 @@
 int decon_dbg = 5;
 module_param(decon_dbg, int, 0644);
 
-#define pm_debug(fmt, args...)						\
-	do {								\
-		if (decon_dbg >= 6)					\
-			printk(KERN_DEBUG "[DEBUG]%s: "fmt "\n",	\
+#define pm_info(fmt, args...)					\
+	do {							\
+		if (decon_dbg >= 5)				\
+			printk("[INFO]%s: "fmt "\n",		\
+				__func__, ##args);		\
+	} while (0)
+
+#define pm_debug(fmt, args...)					\
+	do {							\
+		if (decon_dbg >= 6)				\
+			printk("[DEBUG]%s: "fmt "\n",		\
 				__func__, ##args);		\
 	} while (0)
 
@@ -150,7 +157,7 @@ void disp_debug_power_info(void)
 {
 	struct display_driver *dispdrv = get_display_driver();
 
-	pm_debug("mask: %d, clk: %d, "
+	pm_info("mask: %d, clk: %d, "
 		"lock: %d, clk_idle: %d, pwr_idle: %d,	\
 		frame_cnt: %d, te_cnt: %d",
 		dispdrv->pm_status.trigger_masked,
@@ -214,10 +221,10 @@ static void disable_mask(struct display_driver *dispdrv)
 void debug_function(struct display_driver *dispdrv, const char *buf)
 {
 #ifndef CONFIG_FB_HIBERNATION_DISPLAY
-	pm_debug("does not support");
+	pm_info("%s: does not support", __func__);
 	return;
 #endif
-	pr_info("calls [%s] to control gating function\n", buf);
+	pm_info("calls [%s] to control gating function\n", buf);
 	if (!strcmp(buf, "clk-gate-on")) {
 		dispdrv->pm_status.clock_gating_on = true;
 	} else if (!strcmp(buf, "clk-gate-off")) {
@@ -233,11 +240,11 @@ void debug_function(struct display_driver *dispdrv, const char *buf)
 	} else {
 		pr_err("INVALID parameter: '%s'\n", buf);
 	}
-	pm_debug("CLOCK GATING MODE: %s\n",
+	pm_info("CLOCK GATING MODE: %s\n",
 		dispdrv->pm_status.clock_gating_on == true? "TRUE":"FALSE");
-	pm_debug("POWER GATING MODE: %s\n",
+	pm_info("POWER GATING MODE: %s\n",
 		dispdrv->pm_status.power_gating_on == true? "TRUE":"FALSE");
-	pm_debug("HOTPLUG GATING MODE: %s\n",
+	pm_info("HOTPLUG GATING MODE: %s\n",
 		dispdrv->pm_status.hotplug_gating_on == true? "TRUE":"FALSE");
 }
 
@@ -313,7 +320,7 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 			if (dispdrv->pm_status.power_gating_on &&
 				dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT) {
 				disp_pm_gate_lock(dispdrv, true);
-				pm_debug("##### display_hibernation_power_off +");
+				pm_info("##### display_hibernation_power_off +");
 				queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 						&dispdrv->pm_status.control_power_gating_work);
 			}
@@ -361,9 +368,10 @@ bool disp_pm_check_camera(void)
 /* disp_pm_dec_refcount - it is called at the DSI frame done */
 int disp_pm_dec_refcount(struct display_driver *dispdrv)
 {
+	++frame_done_count;
+
 	if (!dispdrv->pm_status.clock_gating_on) return 0;
 
-	++frame_done_count;
 	return 0;
 }
 
@@ -395,7 +403,7 @@ static void decon_power_gating_handler(struct kthread_work *work)
 		dispdrv->pm_status.pwr_idle_count = 0;
 		disp_pm_gate_lock(dispdrv, false);
 		spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
-		pm_debug("##### display_hibernation_power_off -\n");
+		pm_info("##### display_hibernation_power_off -\n");
 	}
 }
 
@@ -475,7 +483,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 		return ret;
 	}
 
-	pm_debug("##### +");
+	pm_info("##### +");
 	disp_pm_gate_lock(dispdrv, true);
 
 	request_dynamic_hotplug(false);
@@ -488,8 +496,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 
 	disp_pm_gate_lock(dispdrv, false);
 
-	disp_debug_power_info();
-	pm_debug("##### -\n");
+	pm_info("##### -\n");
 	return ret;
 }
 
@@ -530,7 +537,9 @@ void display_block_clock_on(struct display_driver *dispdrv)
 void display_block_clock_off(struct display_driver *dispdrv)
 {
 	if (dispdrv->pm_status.clock_enabled) {
+		pm_debug("+");
 		dispdrv->pm_status.clock_enabled = 0;
 		__display_block_clock_off(dispdrv);
+		pm_debug("-");
 	}
 }
