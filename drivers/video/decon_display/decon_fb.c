@@ -2387,8 +2387,8 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
 
-	disp_pm_runtime_get_sync(dispdrv);
 	disp_pm_add_refcount(dispdrv);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 #if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE) && !defined(DECON_DUMMY_WIN_DISPLAY)
@@ -2544,7 +2544,6 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	if (sfb->power_state == POWER_HIBER_DOWN) {
 		switch (cmd) {
-		case S3CFB_SET_VSYNC_INT:
 		case S3CFB_WIN_CONFIG:
 			dispdrv->pm_status.ops->pwr_on(dispdrv);
 		break;
@@ -4757,6 +4756,7 @@ int s3c_fb_runtime_suspend(struct device *dev)
 		sfb->power_state = POWER_DOWN;
 
 	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
+
 	return 0;
 }
 
@@ -4796,6 +4796,11 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	u32 reg;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 	struct s3c_fb_platdata *pd = sfb->pdata;
+
+	if (sfb->output_on) {
+		pr_info("%s, DECON are already output on state\n", __func__);
+		return -EBUSY;
+	}
 
 	decon_fb_reset(sfb);
 

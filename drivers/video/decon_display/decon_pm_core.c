@@ -332,6 +332,15 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 	if (!dispdrv->pm_status.clock_gating_on) return 0;
 
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
+	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
+	if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN
+	 || dispdrv->decon_driver.sfb->power_state == POWER_DOWN) {
+		display_hibernation_power_on(dispdrv);
+	}
+
+	if (dispdrv->platform_status > DISP_STATUS_PM0)
+		display_block_clock_on(dispdrv);
+
 	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
 	if (dispdrv->pm_status.trigger_masked) {
 		disable_mask(dispdrv);
@@ -474,6 +483,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 	mutex_lock(&sfb->output_lock);
 	disp_pm_runtime_get_sync(dispdrv);
 	__display_hibernation_power_on(dispdrv);
+	sfb->power_state = POWER_ON;
 	mutex_unlock(&sfb->output_lock);
 
 	disp_pm_gate_lock(dispdrv, false);
