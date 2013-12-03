@@ -16,8 +16,18 @@
 #include <plat/pm.h>
 
 #include <mach/pm_domains.h>
+#include <mach/devfreq.h>
 
 #ifdef CONFIG_SOC_EXYNOS5430
+static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned int turn_on)
+{
+#ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
+	exynos5_int_notify_power_status(pd->genpd.name, true);
+	exynos5_isp_notify_power_status(pd->genpd.name, true);
+	exynos5_disp_notify_power_status(pd->genpd.name, true);
+#endif
+}
+
 static struct sleep_save exynos_pd_maudio_clk_save[] = {
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD0),
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD1),
@@ -112,6 +122,8 @@ static int exynos_pd_mfc0_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_mfc0_clk_save,
 			ARRAY_SIZE(exynos_pd_mfc0_clk_save));
 
+	exynos_pd_notify_power_state(pd, true);
+
 	return 0;
 }
 
@@ -166,6 +178,8 @@ static int exynos_pd_mfc1_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_mfc1_clk_save,
 			ARRAY_SIZE(exynos_pd_mfc1_clk_save));
 
+	exynos_pd_notify_power_state(pd, true);
+
 	return 0;
 }
 
@@ -219,6 +233,8 @@ static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_hevc_clk_save,
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	return 0;
 }
@@ -275,6 +291,8 @@ static int exynos_pd_gscl_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_gscl_clk_save,
 			ARRAY_SIZE(exynos_pd_gscl_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	return 0;
 }
@@ -343,6 +361,8 @@ static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 	writel(0x1f, reg + 0x208);
 	writel(0x0, reg + 0x500);
 	iounmap(reg);
+
+	exynos_pd_notify_power_state(pd, true);
 
 	return 0;
 }
@@ -434,6 +454,8 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_mscl_clk_save,
 			ARRAY_SIZE(exynos_pd_mscl_clk_save));
 
+	exynos_pd_notify_power_state(pd, true);
+
 	return 0;
 }
 
@@ -489,6 +511,8 @@ static int exynos_pd_g2d_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_g2d_clk_save,
 			ARRAY_SIZE(exynos_pd_g2d_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	return 0;
 }
@@ -546,6 +570,8 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_isp_clk_save,
 			ARRAY_SIZE(exynos_pd_isp_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	return 0;
 }
@@ -616,6 +642,8 @@ static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_cam0_clk_save,
 			ARRAY_SIZE(exynos_pd_cam0_clk_save));
 
+	exynos_pd_notify_power_state(pd, true);
+
 	return 0;
 }
 
@@ -683,6 +711,8 @@ static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_cam1_clk_save,
 			ARRAY_SIZE(exynos_pd_cam1_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	return 0;
 }
