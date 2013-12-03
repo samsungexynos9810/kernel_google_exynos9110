@@ -899,7 +899,6 @@
 			reg = <0x0>;
 
 			controller-data {
-				cs-gpio = <&gpc3 1 0>;
 				samsung,spi-feedback-delay = <0>;
 			};
 		};
@@ -917,7 +916,6 @@
 			pinctrl-0 = <&fimc_is_comp_int>;
 
 			controller-data {
-				cs-gpio = <&gpc3 5 0>;
 				samsung,spi-feedback-delay = <0>;
 			};
 		};
