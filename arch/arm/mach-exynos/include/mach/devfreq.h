@@ -39,6 +39,9 @@ enum devfreq_layer_count {
 
 #ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value);
+void exynos5_int_notify_power_status(const char* pd_name, unsigned int turn_on);
+void exynos5_isp_notify_power_status(const char* pd_name, unsigned int turn_on);
+void exynos5_disp_notify_power_status(const char* pd_name, unsigned int turn_on);
 #endif
 
 #ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ

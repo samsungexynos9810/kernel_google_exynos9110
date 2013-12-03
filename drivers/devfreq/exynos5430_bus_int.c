@@ -89,6 +89,8 @@ struct devfreq_data_int {
 
 	struct mutex lock;
 
+	unsigned int use_dvfs;
+
 	struct notifier_block tmu_notifier;
 };
 
@@ -460,6 +462,7 @@ static struct pm_qos_request exynos5_int_qos;
 static struct pm_qos_request boot_int_qos;
 static struct pm_qos_request min_int_thermal_qos;
 static struct pm_qos_request exynos5_int_bts_qos;
+static struct devfreq_data_int *data_int;
 
 int district_level_by_disp_333[] = {
 	LV4,
@@ -467,6 +470,89 @@ int district_level_by_disp_333[] = {
 	LV6,
 	LV6,
 };
+
+static inline int exynos5_devfreq_int_get_idx(struct devfreq_opp_table *table,
+				unsigned int size,
+				unsigned long freq)
+{
+	int i;
+
+	for (i = 0; i < size; ++i) {
+		if (table[i].freq == freq)
+			return i;
+	}
+
+	return -1;
+}
+
+static int exynos5_devfreq_int_set_clk(struct devfreq_data_int *data,
+					int target_idx,
+					struct clk *clk,
+					struct devfreq_clk_info *clk_info)
+{
+	int i;
+	struct devfreq_clk_states *clk_states = clk_info->states;
+
+	if (clk_get_rate(clk) < clk_info->freq) {
+		if (clk_states) {
+			for (i = 0; i < clk_states->state_count; ++i) {
+				clk_set_parent(devfreq_int_clk[clk_states->state[i].clk_idx].clk,
+					devfreq_int_clk[clk_states->state[i].parent_clk_idx].clk);
+			}
+		}
+
+		if (clk_info->freq != 0)
+			clk_set_rate(clk, clk_info->freq);
+	} else {
+		if (clk_info->freq != 0)
+			clk_set_rate(clk, clk_info->freq);
+
+		if (clk_states) {
+			for (i = 0; i < clk_states->state_count; ++i) {
+				clk_set_parent(devfreq_int_clk[clk_states->state[i].clk_idx].clk,
+					devfreq_int_clk[clk_states->state[i].parent_clk_idx].clk);
+			}
+		}
+
+		if (clk_info->freq != 0)
+			clk_set_rate(clk, clk_info->freq);
+	}
+
+	return 0;
+}
+
+void exynos5_int_notify_power_status(const char *pd_name, unsigned int turn_on)
+{
+	int i;
+	int cur_freq_idx;
+
+	if (!turn_on ||
+		!data_int->use_dvfs)
+		return;
+
+	mutex_lock(&data_int->lock);
+	cur_freq_idx = exynos5_devfreq_int_get_idx(devfreq_int_opp_list,
+                                                ARRAY_SIZE(devfreq_int_opp_list),
+                                                data_int->devfreq->previous_freq);
+	if (cur_freq_idx == -1) {
+		mutex_unlock(&data_int->lock);
+		pr_err("DEVFREQ(INT) : can't find target_idx to apply notify of power\n");
+		return;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(devfreq_int_pm_domain); ++i) {
+		if (devfreq_int_pm_domain[i].pm_domain_name == NULL)
+			continue;
+		if (strcmp(devfreq_int_pm_domain[i].pm_domain_name, pd_name))
+			continue;
+
+		exynos5_devfreq_int_set_clk(data_int,
+						cur_freq_idx,
+						devfreq_int_clk[devfreq_clk_int_info_idx[i]].clk,
+						devfreq_clk_int_info_list[i]);
+	}
+	mutex_unlock(&data_int->lock);
+}
 
 void exynos5_update_district_int_level(int aclk_disp_333_idx)
 {
@@ -482,20 +568,6 @@ void exynos5_update_district_int_level(int aclk_disp_333_idx)
 
 	if (pm_qos_request_active(&exynos5_int_bts_qos))
 		pm_qos_update_request(&exynos5_int_bts_qos, devfreq_int_opp_list[int_qos].freq);
-}
-
-static inline int exynos5_devfreq_int_get_idx(struct devfreq_opp_table *table,
-				unsigned int size,
-				unsigned long freq)
-{
-	int i;
-
-	for (i = 0; i < size; ++i) {
-		if (table[i].freq == freq)
-			return i;
-	}
-
-	return -1;
 }
 
 static int exynos5_devfreq_int_set_freq(struct devfreq_data_int *data,
@@ -627,6 +699,7 @@ static int exynos5_devfreq_int_target(struct device *dev,
 	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
+		mutex_unlock(&int_data->lock);
 		dev_err(dev, "DEVFREQ(INT) : Invalid OPP to find\n");
 		ret = PTR_ERR(target_opp);
 		goto out;
@@ -886,6 +959,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 		goto err_inittable;
 
 	platform_set_drvdata(pdev, data);
+	data_int = data;
 	mutex_init(&data->lock);
 
 	data->volt_offset = 0;
@@ -920,6 +994,8 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	data->tmu_notifier.notifier_call = exynos5_devfreq_int_tmu_notifier;
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
+	data->use_dvfs = true;
+
 	return ret;
 err_nb:
 	devfreq_remove_device(data->devfreq);

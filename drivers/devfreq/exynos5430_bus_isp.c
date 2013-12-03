@@ -103,6 +103,8 @@ struct devfreq_data_isp {
 
 	struct mutex lock;
 
+	unsigned int use_dvfs;
+
 	struct notifier_block tmu_notifier;
 };
 
@@ -593,6 +595,7 @@ static struct exynos_devfreq_platdata exynos5430_qos_isp = {
 static struct pm_qos_request exynos5_isp_qos;
 static struct pm_qos_request boot_isp_qos;
 static struct pm_qos_request min_isp_thermal_qos;
+static struct devfreq_data_isp *data_isp;
 
 static inline int exynos5_devfreq_isp_get_idx(struct devfreq_opp_table *table,
 				unsigned int size,
@@ -606,6 +609,75 @@ static inline int exynos5_devfreq_isp_get_idx(struct devfreq_opp_table *table,
 	}
 
 	return -1;
+}
+
+static int exynos5_devfreq_isp_set_clk(struct devfreq_data_isp *data,
+					int target_idx,
+					struct clk *clk,
+					struct devfreq_clk_info *clk_info)
+{
+	int i;
+	struct devfreq_clk_states *clk_states = clk_info->states;
+
+	if (clk_get_rate(clk) < clk_info->freq) {
+		if (clk_states) {
+			for (i = 0; i < clk_states->state_count; ++i) {
+				clk_set_parent(devfreq_isp_clk[clk_states->state[i].clk_idx].clk,
+						devfreq_isp_clk[clk_states->state[i].parent_clk_idx].clk);
+			}
+		}
+
+		if (clk_info->freq != 0)
+			clk_set_rate(clk, clk_info->freq);
+	} else {
+		if (clk_info->freq != 0)
+			clk_set_rate(clk, clk_info->freq);
+
+		if (clk_states) {
+			for (i = 0; i < clk_states->state_count; ++i) {
+				clk_set_parent(devfreq_isp_clk[clk_states->state[i].clk_idx].clk,
+						devfreq_isp_clk[clk_states->state[i].parent_clk_idx].clk);
+			}
+		}
+
+		if (clk_info->freq != 0)
+			clk_set_rate(clk, clk_info->freq);
+	}
+
+	return 0;
+}
+
+void exynos5_isp_notify_power_status(const char *pd_name, unsigned int turn_on)
+{
+	int i;
+	int cur_freq_idx;
+
+	if (!turn_on ||
+		!data_isp->use_dvfs)
+		return;
+
+	mutex_lock(&data_isp->lock);
+	cur_freq_idx = exynos5_devfreq_isp_get_idx(devfreq_isp_opp_list,
+			ARRAY_SIZE(devfreq_isp_opp_list),
+			data_isp->devfreq->previous_freq);
+	if (cur_freq_idx == -1) {
+		mutex_unlock(&data_isp->lock);
+		pr_err("DEVFREQ(INT) : can't find target_idx to apply notify of power\n");
+		return;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(devfreq_isp_pm_domain); ++i) {
+		if (devfreq_isp_pm_domain[i].pm_domain_name == NULL)
+			continue;
+		if (strcmp(devfreq_isp_pm_domain[i].pm_domain_name, pd_name))
+			continue;
+
+		exynos5_devfreq_isp_set_clk(data_isp,
+				cur_freq_idx,
+				devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk,
+				devfreq_clk_isp_info_list[i]);
+	}
+	mutex_unlock(&data_isp->lock);
 }
 
 static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
@@ -737,6 +809,7 @@ static int exynos5_devfreq_isp_target(struct device *dev,
 	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
+		mutex_unlock(&isp_data->lock);
 		dev_err(dev, "DEVFREQ(ISP) : Invalid OPP to find\n");
 		ret = PTR_ERR(target_opp);
 		goto out;
@@ -973,6 +1046,7 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 		goto err_inittable;
 
 	platform_set_drvdata(pdev, data);
+	data_isp = data;
 	mutex_init(&data->lock);
 
 	data->volt_offset = 0;
@@ -993,6 +1067,8 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	data->tmu_notifier.notifier_call = exynos5_devfreq_isp_tmu_notifier;
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
+	data->use_dvfs = true;
+
 	return ret;
 err_inittable:
 	devfreq_remove_device(data->devfreq);

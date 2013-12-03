@@ -1324,6 +1324,7 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
+		mutex_unlock(&mif_data->lock);
 		dev_err(dev, "DEVFREQ(MIF) : Invalid OPP to find\n");
 		ret = PTR_ERR(target_opp);
 		goto out;
