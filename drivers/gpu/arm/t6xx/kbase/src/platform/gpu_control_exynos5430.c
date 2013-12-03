@@ -26,6 +26,13 @@
 #include "gpu_dvfs_handler.h"
 #include "gpu_control.h"
 
+#define L2CONFIG_MO_1BY8			0b0101
+#define L2CONFIG_MO_1BY4			0b1010
+#define L2CONFIG_MO_1BY2			0b1111
+#define L2CONFIG_MO_NO_RESTRICT		0
+
+extern struct kbase_device *pkbdev;
+
 #ifdef CONFIG_PM_RUNTIME
 struct exynos_pm_domain *gpu_get_pm_domain(kbase_device *kbdev)
 {
@@ -127,6 +134,21 @@ int gpu_clock_off(struct exynos_context *platform)
 	return 0;
 }
 
+static int gpu_set_maximum_outstanding_req(int val)
+{
+	volatile unsigned int reg;
+
+	if(val > 0b1111)
+		return -1;
+
+	reg = kbase_os_reg_read(pkbdev, GPU_CONTROL_REG(L2_MMU_CONFIG));
+	reg &= ~(0b1111 << 24);
+	reg |= ((val & 0b1111) << 24);
+	kbase_os_reg_write(pkbdev, GPU_CONTROL_REG(L2_MMU_CONFIG), reg);
+
+	return 0;
+}
+
 int gpu_set_clock(struct exynos_context *platform, int freq)
 {
 	long g3d_rate_prev = -1;
@@ -164,6 +186,8 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 			goto err;
 		}
 
+		gpu_set_maximum_outstanding_req(L2CONFIG_MO_1BY8);				/* Restrict M.O by 1/8 */
+
 		/*change here for future stable clock changing*/
 		ret = clk_set_parent(platform->mout_g3d_pll, platform->fin_pll);
 		if (ret < 0) {
@@ -185,6 +209,7 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 			goto err;
 		}
 
+		gpu_set_maximum_outstanding_req(L2CONFIG_MO_NO_RESTRICT);		/* Set to M.O by maximum */
 		g3d_rate_prev = g3d_rate;
 	}
 
