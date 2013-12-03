@@ -303,6 +303,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <24 5>;
 		samsung,power-domain = <&pd_g2d>;
+		mmu-masters = <&fimg2d_0>;
 		prop-map {
 			iomap = "r";
 		};
@@ -314,6 +315,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <22 2>;
 		samsung,power-domain = <&pd_g2d>;
+		mmu-masters = <&fimg2d_0>;
 		prop-map {
 			iomap = "w";
 		};
@@ -326,6 +328,7 @@
 		interrupts = <7 4>;
 		qos = <15>;
 		samsung,power-domain = <&spd_mixer>;
+		mmu-masters = <&mixer>;
 	};
 
 	sysmmu_gscl0: sysmmu@0x13E80000 {
@@ -334,6 +337,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <2 0>;
 		samsung,power-domain = <&spd_gscl0>;
+		mmu-masters = <&gsc_0>;
 	};
 
 	sysmmu_gscl1: sysmmu@0x13E90000 {
@@ -342,6 +346,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <2 2>;
 		samsung,power-domain = <&spd_gscl1>;
+		mmu-masters = <&gsc_1>;
 	};
 
 	sysmmu_fimc_fd: sysmmu@0x132A0000 {
@@ -413,6 +418,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <22 4>;
 		samsung,power-domain = <&pd_mscl>;
+		mmu-masters = <&scaler_0>;
 		prop-map {
 			iomap = "r";
 		};
@@ -423,6 +429,7 @@
 		reg = <0x12890000 0x1000>;
 		interrupts = <0 186 0>;
 		samsung,power-domain = <&pd_mscl>;
+		mmu-masters = <&scaler_1>;
 		prop-map {
 			iomap = "r";
 		};
@@ -433,6 +440,7 @@
 		reg = <0x128A0000 0x1000>;
 		interrupts = <0 188 0>;
 		samsung,power-domain = <&pd_mscl>;
+		mmu-masters = <&scaler_2>;
 		prop-map {
 			iomap = "r";
 		};
@@ -444,6 +452,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <27 2>;
 		samsung,power-domain = <&pd_mscl>;
+		mmu-masters = <&scaler_0>;
 		prop-map {
 			iomap = "w";
 		};
@@ -455,6 +464,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <22 6>;
 		samsung,power-domain = <&pd_mscl>;
+		mmu-masters = <&scaler_1>;
 		prop-map {
 			iomap = "w";
 		};
@@ -466,6 +476,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <19 6>;
 		samsung,power-domain = <&pd_mscl>;
+		mmu-masters = <&scaler_2>;
 		prop-map {
 			iomap = "w";
 		};
@@ -477,6 +488,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <4 2>;
 		samsung,power-domain = <&spd_jpeg1>;
+		mmu-masters = <&jpeg_0>;
 	};
 
 	sysmmu_jpeg2: sysmmu@0x11F20000 {
@@ -484,6 +496,7 @@
 		reg = <0x11F20000 0x1000>;
 		interrupts = <0 169 0>;
 		samsung,power-domain = <&spd_jpeg2>;
+		mmu-masters = <&jpeg_1>;
 	};
 
 	sysmmu_mfc0_0: sysmmu@0x11200000 {
@@ -492,6 +505,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <6 2>;
 		samsung,power-domain = <&pd_mfc0>;
+		mmu-masters = <&mfc_0>;
 	};
 
 	sysmmu_mfc0_1: sysmmu@0x11210000 {
@@ -500,6 +514,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <8 5>;
 		samsung,power-domain = <&pd_mfc0>;
+		mmu-masters = <&mfc_0>;
 	};
 
 	sysmmu_fimd0x: sysmmu@0x14640000 {
@@ -509,6 +524,7 @@
 		interrupts = <3 2>;
 		qos = <15>;
 		samsung,power-domain = <&spd_fimd>;
+		mmu-masters = <&fimd_fb>;
 		prop-map {
 			winmap = <0x11>;
 		};
@@ -521,6 +537,7 @@
 		interrupts = <3 0>;
 		qos = <15>;
 		samsung,power-domain = <&spd_fimd>;
+		mmu-masters = <&fimd_fb>;
 		prop-map {
 			winmap = <0xe>;
 		};
@@ -1216,7 +1233,7 @@
 	};
 
 	/* TVOUT : mixer driver */
-	mixer@14450000 {
+	mixer: mixer@14450000 {
 		compatible = "samsung,exynos5-mixer_driver";
 		reg = <0x14450000 0x4000>;
 		iommu = <&sysmmu_tv>;
