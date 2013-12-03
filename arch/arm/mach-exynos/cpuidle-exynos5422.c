@@ -267,6 +267,68 @@ static int c2_finisher(unsigned long flags)
 }
 #endif
 
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+void exynos_enable_idle_clock_down(unsigned int cluster)
+{
+	unsigned int tmp;
+
+	if (cluster) {
+		/* For A15 core */
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL);
+		tmp &= ~((0x7 << 28) | (0x7 << 16) | (1 << 9) | (1 << 8));
+		tmp |= (0x7 << 28) | (0x7 << 16) | 0x3ff;
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL);
+
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL2);
+		tmp &= ~((0x3 << 24) | (0xffff << 8) | (0x77));
+		tmp |= (1 << 16) | (1 << 8) | (1 << 4) | (1 << 0);
+		tmp |= (1 << 25) | (1 << 24);
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL2);
+	} else {
+		/* For A7 core */
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL_KFC);
+		tmp &= ~((0x3F << 16) | (1 << 8));
+		tmp |= (0x3F << 16) | 0x1ff;
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL_KFC);
+
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL2_KFC);
+		tmp &= ~((0x1 << 24) | (0xffff << 8) | (0x7));
+		tmp |= (1 << 16) | (1 << 8) | (1 << 0);
+		tmp |= 1 << 24;
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL2_KFC);
+	}
+
+	pr_debug("%s idle clock down is enabled\n", cluster ? "ARM" : "KFC");
+}
+
+void exynos_disable_idle_clock_down(unsigned int cluster)
+{
+	unsigned int tmp;
+
+	if (cluster) {
+		/* For A15 core */
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL);
+		tmp &= ~((0x7 << 28) | (0x7 << 16) | (1 << 9) | (1 << 8));
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL);
+
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL2);
+		tmp &= ~((0x3 << 24) | (0xffff << 8) | (0x77));
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL2);
+	} else {
+		/* For A7 core */
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL_KFC);
+		tmp &= ~((0x7 << 16) | (1 << 8));
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL_KFC);
+
+		tmp = __raw_readl(EXYNOS5422_PWR_CTRL2_KFC);
+		tmp &= ~((0x1 << 24) | (0xffff << 8) | (0x7));
+		__raw_writel(tmp, EXYNOS5422_PWR_CTRL2_KFC);
+	}
+
+	pr_debug("%s idle clock down is disabled\n", cluster ? "ARM" : "KFC");
+}
+#endif
+
 static struct sleep_save exynos5_lpa_save[] = {
 	/* CMU side */
 	SAVE_ITEM(EXYNOS5_CLK_SRC_MASK_TOP),
@@ -311,6 +373,11 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_disable_idle_clock_down(ARM);
+	exynos_disable_idle_clock_down(KFC);
+#endif
+
 	save_cpu_arch_register();
 
 	/* Setting Central Sequence Register for power down mode */
@@ -334,6 +401,11 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	cpu_pm_exit();
 
 	restore_cpu_arch_register();
+
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_enable_idle_clock_down(ARM);
+	exynos_enable_idle_clock_down(KFC);
+#endif
 
 	/* Clear wakeup state register */
 	__raw_writel(0x0, EXYNOS_WAKEUP_STAT);
@@ -385,6 +457,11 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 		exynos_sys_powerdown_conf(SYS_LPA);
 	else
 		exynos_sys_powerdown_conf(SYS_DSTOP);
+
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_disable_idle_clock_down(ARM);
+	exynos_disable_idle_clock_down(KFC);
+#endif
 
 	save_cpu_arch_register();
 
@@ -448,6 +525,11 @@ early_wakeup:
 	cpu_pm_exit();
 
 	restore_cpu_arch_register();
+
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_enable_idle_clock_down(ARM);
+	exynos_enable_idle_clock_down(KFC);
+#endif
 
 	s3c_pm_do_restore_core(exynos5_lpa_save,
 			       ARRAY_SIZE(exynos5_lpa_save));
@@ -620,6 +702,11 @@ static int __init exynos_init_cpuidle(void)
 	}
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
+
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+	exynos_enable_idle_clock_down(ARM);
+	exynos_enable_idle_clock_down(KFC);
+#endif
 
 	return 0;
 }
