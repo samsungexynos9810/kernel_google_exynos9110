@@ -553,6 +553,8 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L5;
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
+	info->boot_cpu_min_qos = exynos5422_freq_table_CA7[L2].frequency;
+	info->boot_cpu_max_qos = exynos5422_freq_table_CA7[L2].frequency;
 	info->cpu_clk = fout_kpll;
 
 	/*info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
