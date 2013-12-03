@@ -171,6 +171,8 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
 
 	sphy = phy_to_sphy(phy);
 
+	dev_dbg(sphy->dev, "%s\n", __func__);
+
 	/* Enable the phy clock */
 	ret = clk_prepare_enable(sphy->clk);
 	if (ret) {
@@ -179,6 +181,13 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
 	}
 
 	spin_lock_irqsave(&sphy->lock, flags);
+
+	sphy->usage_count++;
+
+	if (sphy->usage_count - 1) {
+		dev_dbg(sphy->dev, "PHY is already initialized\n");
+		goto exit;
+	}
 
 	/* setting default phy-type for USB 3.0 */
 	samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
@@ -189,8 +198,7 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
 	/* Initialize usb phy registers */
 	samsung_exynos5_usb3phy_enable(sphy);
 
-	sphy->active = true;
-
+exit:
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */
@@ -209,12 +217,26 @@ static void samsung_usb3phy_shutdown(struct usb_phy *phy)
 
 	sphy = phy_to_sphy(phy);
 
+	dev_dbg(sphy->dev, "%s\n", __func__);
+
 	if (clk_prepare_enable(sphy->clk)) {
 		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
 		return;
 	}
 
 	spin_lock_irqsave(&sphy->lock, flags);
+
+	if (!sphy->usage_count) {
+		dev_dbg(sphy->dev, "PHY is already shutdown\n");
+		goto exit;
+	}
+
+	sphy->usage_count--;
+
+	if (sphy->usage_count) {
+		dev_dbg(sphy->dev, "PHY is still in use\n");
+		goto exit;
+	}
 
 	/* setting default phy-type for USB 3.0 */
 	samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
@@ -224,9 +246,7 @@ static void samsung_usb3phy_shutdown(struct usb_phy *phy)
 
 	/* Enable phy isolation */
 	samsung_usbphy_set_isolation(sphy, true);
-
-	sphy->active = false;
-
+exit:
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	clk_disable_unprepare(sphy->clk);
@@ -236,7 +256,7 @@ static bool samsung_usb3phy_is_active(struct usb_phy *phy)
 {
 	struct samsung_usbphy *sphy = phy_to_sphy(phy);
 
-	return sphy->active;
+	return !!sphy->usage_count;
 }
 
 static int samsung_usb3phy_probe(struct platform_device *pdev)

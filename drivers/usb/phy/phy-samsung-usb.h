@@ -285,7 +285,6 @@ struct samsung_usbphy_drvdata {
  * @pmuregs: USB device PHY_CONTROL register memory base
  * @sysreg: USB2.0 PHY_CFG register memory base
  * @ref_clk_freq: reference clock frequency selection
- * @active: true if phy is initialized; false if phy is shutdown
  * @usage_count: phy usage counter
  * @drv_data: driver data available for different SoCs
  * @phy_type: Samsung SoCs specific phy types:	#HOST
@@ -302,11 +301,6 @@ struct samsung_usbphy {
 	void __iomem	*pmuregs;
 	void __iomem	*sysreg;
 	int		ref_clk_freq;
-	/*
-	 * TODO: remove active flag when usage counter has been
-	 * implemented for all Samsung PHYs
-	 */
-	bool		active;
 	int		usage_count;
 	int		has_hsic_pmureg;
 	const struct samsung_usbphy_drvdata *drv_data;
