@@ -667,7 +667,7 @@ calculation_success:
 	dsim->dsim_config->p = p_div;
 	dsim->dsim_config->m = m_div;
 	dsim->dsim_config->s = s_div;
-	dev_info(dsim->dev, "High Speed Clock rate = %dMhz, P = %d, M = %d, S = %d\n",
+	dev_dbg(dsim->dev, "High Speed Clock rate = %dMhz, P = %d, M = %d, S = %d\n",
 			fout_cal * 2, p_div, m_div, s_div);
 
 	return fout_cal * 2;
@@ -990,9 +990,9 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 		}
 
 		if (time_out != 0) {
-			dev_info(dsim->dev,
+			dev_dbg(dsim->dev,
 				"DSI Master driver has been completed.\n");
-			dev_info(dsim->dev, "DSI Master state is stop state\n");
+			dev_dbg(dsim->dev, "DSI Master state is stop state\n");
 		}
 
 		dsim->state = DSIM_STATE_STOP;
