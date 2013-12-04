@@ -526,11 +526,13 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 
 void display_block_clock_on(struct display_driver *dispdrv)
 {
-	if (!dispdrv->pm_status.clock_enabled) {
-		pm_debug("+");
-		__display_block_clock_on(dispdrv);
-		dispdrv->pm_status.clock_enabled = 1;
-		pm_debug("-");
+	if (dispdrv->platform_status > DISP_STATUS_PM0) {
+		if (!dispdrv->pm_status.clock_enabled) {
+			pm_debug("+");
+			__display_block_clock_on(dispdrv);
+			dispdrv->pm_status.clock_enabled = 1;
+			pm_debug("-");
+		}
 	}
 }
 

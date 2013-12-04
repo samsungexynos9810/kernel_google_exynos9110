@@ -176,6 +176,8 @@ int enable_display_decon_clocks(struct device *dev)
 	void __iomem *regs;
 	u32 data;
 #endif
+	struct display_driver *dispdrv;
+	dispdrv = get_display_driver();
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
@@ -223,6 +225,10 @@ int enable_display_decon_clocks(struct device *dev)
 #ifndef CONFIG_SOC_EXYNOS5430_REV_0
 	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x0101);
 	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
+#endif
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	dispdrv->pm_status.ops->clk_on(dispdrv);
 #endif
 	return ret;
 }
