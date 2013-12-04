@@ -207,16 +207,27 @@ static int parse_subip_info(struct exynos_platform_fimc_is *pdata, struct device
 		return -EINVAL;
 	}
 
-	DT_READ_U32(np, "num_of_3a0", subip_info->num_of_3a0 );
-	DT_READ_U32(np, "num_of_3a1", subip_info->num_of_3a1 );
-	DT_READ_U32(np, "num_of_isp", subip_info->num_of_isp );
-	DT_READ_U32(np, "num_of_drc", subip_info->num_of_drc );
-	DT_READ_U32(np, "num_of_scc", subip_info->num_of_scc );
-	DT_READ_U32(np, "num_of_odc", subip_info->num_of_odc );
-	DT_READ_U32(np, "num_of_dis", subip_info->num_of_dis );
-	DT_READ_U32(np, "num_of_3dnr",subip_info->num_of_3dnr);
-	DT_READ_U32(np, "num_of_scp", subip_info->num_of_scp );
-	DT_READ_U32(np, "num_of_fd",  subip_info->num_of_fd  );
+	DT_READ_U32(np, "num_of_3a0", subip_info->info_3a0.valid);
+	DT_READ_U32(np, "num_of_3a1", subip_info->info_3a1.valid);
+	DT_READ_U32(np, "num_of_isp", subip_info->info_isp.valid);
+	DT_READ_U32(np, "num_of_drc", subip_info->info_drc.valid);
+	DT_READ_U32(np, "num_of_scc", subip_info->info_scc.valid);
+	DT_READ_U32(np, "num_of_odc", subip_info->info_odc.valid);
+	DT_READ_U32(np, "num_of_dis", subip_info->info_dis.valid);
+	DT_READ_U32(np, "num_of_dnr", subip_info->info_dnr.valid);
+	DT_READ_U32(np, "num_of_scp", subip_info->info_scp.valid);
+	DT_READ_U32(np, "num_of_fd",  subip_info->info_fd.valid );
+
+	DT_READ_U32(np, "full_bypass_3a0", subip_info->info_3a0.full_bypass);
+	DT_READ_U32(np, "full_bypass_3a1", subip_info->info_3a1.full_bypass);
+	DT_READ_U32(np, "full_bypass_isp", subip_info->info_isp.full_bypass);
+	DT_READ_U32(np, "full_bypass_drc", subip_info->info_drc.full_bypass);
+	DT_READ_U32(np, "full_bypass_scc", subip_info->info_scc.full_bypass);
+	DT_READ_U32(np, "full_bypass_odc", subip_info->info_odc.full_bypass);
+	DT_READ_U32(np, "full_bypass_dis", subip_info->info_dis.full_bypass);
+	DT_READ_U32(np, "full_bypass_dnr", subip_info->info_dnr.full_bypass);
+	DT_READ_U32(np, "full_bypass_scp", subip_info->info_scp.full_bypass);
+	DT_READ_U32(np, "full_bypass_fd",  subip_info->info_fd.full_bypass );
 
 	pdata->subip_info = subip_info;
 

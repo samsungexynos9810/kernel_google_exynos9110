@@ -707,7 +707,7 @@ int fimc_is_group_open(struct fimc_is_groupmgr *groupmgr,
 			group->subdev[ENTRY_SCALERC] = NULL;
 		/* dis is not included to any group initially */
 		group->subdev[ENTRY_DIS] = NULL;
-		if (GET_FIMC_IS_NUM_OF_SUBIP(core, 3dnr))
+		if (GET_FIMC_IS_NUM_OF_SUBIP(core, dnr))
 			group->subdev[ENTRY_TDNR] = &device->dnr;
 		else
 			group->subdev[ENTRY_TDNR] = NULL;

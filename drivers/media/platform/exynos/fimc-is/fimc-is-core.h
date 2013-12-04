@@ -170,9 +170,9 @@
 #endif
 
 #define GET_FIMC_IS_NUM_OF_SUBIP(core, subip) \
-	( core->pdata->subip_info->num_of_ ## subip )
+	( core->pdata->subip_info->info_ ## subip.valid )
 #define GET_FIMC_IS_NUM_OF_SUBIP2(device, subip) \
-	( ((struct fimc_is_core *)device->interface->core)->pdata->subip_info->num_of_ ## subip )
+	( ((struct fimc_is_core *)device->interface->core)->pdata->subip_info->info_ ## subip.valid )
 
 enum fimc_is_debug_device {
 	FIMC_IS_DEBUG_MAIN = 0,
