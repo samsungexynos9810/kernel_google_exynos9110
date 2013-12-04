@@ -384,8 +384,13 @@ void fimc_is_subdev_drc_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
+#ifdef ENABLE_FULL_BYPASS
+	ctl_param->cmd = CONTROL_COMMAND_STOP;
+#else
 	ctl_param->cmd = CONTROL_COMMAND_START;
+#endif
 	ctl_param->bypass = CONTROL_BYPASS_ENABLE;
+
 	*lindex |= LOWBIT_OF(PARAM_DRC_CONTROL);
 	*hindex |= HIGHBIT_OF(PARAM_DRC_CONTROL);
 	(*indexes)++;
