@@ -1860,7 +1860,7 @@ static void wq_func_shot(struct work_struct *data)
 #ifdef ENABLE_CLOCK_GATE
 			/* dynamic clock off */
 			if (sysfs_debug.en_clk_gate &&
-					sysfs_debug.clk_gate_mode == 0)
+					sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 				fimc_is_clk_gate_set(core, group->id, false, false);
 #endif
 			wq_func_group(groupmgr, group, grp_framemgr, frame,
@@ -1875,7 +1875,7 @@ static void wq_func_shot(struct work_struct *data)
 #ifdef ENABLE_CLOCK_GATE
 		if (fcount == 1 &&
 				sysfs_debug.en_clk_gate &&
-				sysfs_debug.clk_gate_mode == 0)
+				sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 			fimc_is_clk_gate_lock_set(core, instance, false);
 #endif
 remain:

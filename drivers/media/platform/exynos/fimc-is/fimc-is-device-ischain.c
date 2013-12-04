@@ -1990,7 +1990,7 @@ int fimc_is_itf_process_stop(struct fimc_is_device_ischain *device,
 #ifdef ENABLE_CLOCK_GATE
 	struct fimc_is_core *core = (struct fimc_is_core *)device->interface->core;
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0) {
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 		fimc_is_clk_gate_lock_set(core, device->instance, true);
 		fimc_is_wrap_clk_gate_set(core, (1 << GROUP_ID_MAX) - 1, true);
 	}
@@ -1999,7 +1999,7 @@ int fimc_is_itf_process_stop(struct fimc_is_device_ischain *device,
 		device->instance, group, 0);
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-		sysfs_debug.clk_gate_mode == 0)
+		sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 		fimc_is_clk_gate_lock_set(core, device->instance, false);
 #endif
 	return ret;
@@ -2020,7 +2020,7 @@ int fimc_is_itf_force_stop(struct fimc_is_device_ischain *device,
 		group = GROUP_ID(GROUP_ID_3A0);
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0) {
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 		fimc_is_clk_gate_lock_set(core, device->instance, true);
 		fimc_is_wrap_clk_gate_set(core, (1 << GROUP_ID_MAX) - 1, true);
 	}
@@ -2029,7 +2029,7 @@ int fimc_is_itf_force_stop(struct fimc_is_device_ischain *device,
 		device->instance, group, 1);
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-		sysfs_debug.clk_gate_mode == 0)
+		sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 		fimc_is_clk_gate_lock_set(core, device->instance, false);
 #endif
 	return ret;
@@ -2074,7 +2074,7 @@ static int fimc_is_itf_init_process_stop(struct fimc_is_device_ischain *device)
 		group = GROUP_ID(GROUP_ID_3A0);
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0) {
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 		fimc_is_clk_gate_lock_set(core, device->instance, true);
 		fimc_is_wrap_clk_gate_set(core, (1 << GROUP_ID_MAX) - 1, true);
 
@@ -2084,7 +2084,7 @@ static int fimc_is_itf_init_process_stop(struct fimc_is_device_ischain *device)
 		device->instance, (group & GROUP_ID_PARM_MASK), 0);
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-		sysfs_debug.clk_gate_mode == 0)
+		sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 		fimc_is_clk_gate_lock_set(core, device->instance, false);
 #endif
 	return ret;
@@ -2216,7 +2216,7 @@ int fimc_is_itf_power_down(struct fimc_is_interface *interface)
 	/* HACK */
 	struct fimc_is_core *core = (struct fimc_is_core *)interface->core;
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0) {
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 		fimc_is_clk_gate_lock_set(core, 0, true);
 		fimc_is_wrap_clk_gate_set(core, (1 << GROUP_ID_MAX) - 1, true);
 	}
@@ -2224,7 +2224,7 @@ int fimc_is_itf_power_down(struct fimc_is_interface *interface)
 	ret = fimc_is_hw_power_down(interface, 0);
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-		sysfs_debug.clk_gate_mode == 0)
+		sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 		fimc_is_clk_gate_lock_set(core, 0, false);
 #endif
 	return ret;
@@ -2301,7 +2301,7 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	/* HACK */
 	/* dynamic clock on */
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0)
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 		fimc_is_clk_gate_set(core, group->id, true, false);
 #endif
 	group_id = GROUP_ID(group->id);
@@ -2582,7 +2582,7 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 		mdbgd_ischain("power up and loaded firmware\n", device);
 #ifdef ENABLE_CLOCK_GATE
 		if (sysfs_debug.en_clk_gate &&
-				sysfs_debug.clk_gate_mode == 0) {
+				sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 			core = (struct fimc_is_core *)device->interface->core;
 			fimc_is_clk_gate_init(core);
 		}
@@ -2593,7 +2593,7 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0) {
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 		core = (struct fimc_is_core *)device->interface->core;
 		fimc_is_clk_gate_lock_set(core, device->instance, true);
 		fimc_is_wrap_clk_gate_set(core, (1 << GROUP_ID_MAX) - 1, true);
@@ -2637,7 +2637,7 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 #ifdef ENABLE_CLOCK_GATE
 	core = (struct fimc_is_core *)device->interface->core;
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0) {
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
 		fimc_is_clk_gate_lock_set(core, device->instance, true);
 		fimc_is_wrap_clk_gate_set(core, (1 << GROUP_ID_MAX) - 1, true);
 	}
@@ -2677,7 +2677,7 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
-			sysfs_debug.clk_gate_mode == 0)
+			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
 		fimc_is_clk_gate_lock_set(core, device->instance, false);
 #endif
 exit:

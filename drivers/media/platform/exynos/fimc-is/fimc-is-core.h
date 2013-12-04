@@ -224,10 +224,15 @@ enum fimc_is_front_state {
 	FIMC_IS_FRONT_ST_SUSPENDED,
 };
 
+enum fimc_is_clck_gate_mode {
+	CLOCK_GATE_MODE_HOST = 0,
+	CLOCK_GATE_MODE_FW,
+};
+
 struct fimc_is_sysfs_debug {
 	unsigned int en_dvfs;
 	unsigned int en_clk_gate;
-	unsigned int clk_gate_mode; /* 0:Host, 1:F/W clk gate */
+	unsigned int clk_gate_mode;
 };
 
 struct fimc_is_core {

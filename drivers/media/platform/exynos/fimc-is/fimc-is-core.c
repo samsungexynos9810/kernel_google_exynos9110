@@ -494,9 +494,9 @@ static ssize_t store_clk_gate_mode(struct device *dev,
 		goto out;
 
 	if (value > 0)
-		sysfs_debug.clk_gate_mode = 1;
+		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_FW;
 	else
-		sysfs_debug.clk_gate_mode = 0;
+		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
 out:
 #endif
 	return count;
@@ -522,10 +522,10 @@ static ssize_t store_en_clk_gate(struct device *dev,
 
 	if (value > 0) {
 		sysfs_debug.en_clk_gate = 1;
-		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE;
+		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
 	} else {
 		sysfs_debug.en_clk_gate = 0;
-		sysfs_debug.clk_gate_mode = 0;
+		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
 	}
 out:
 #endif
@@ -859,7 +859,9 @@ static int fimc_is_probe(struct platform_device *pdev)
 #ifdef ENABLE_CLOCK_GATE
 	sysfs_debug.en_clk_gate = 1;
 #ifdef HAS_FW_CLOCK_GATE
-	sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE;
+	sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_FW;
+#else
+	sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
 #endif
 #endif
 	ret = sysfs_create_group(&core->pdev->dev.kobj, &fimc_is_debug_attr_group);
