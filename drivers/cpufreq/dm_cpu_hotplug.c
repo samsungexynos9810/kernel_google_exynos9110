@@ -48,10 +48,82 @@ enum hotplug_mode {
 	CHP_LOW_POWER,
 };
 
+static int dynamic_hotplug(enum hotplug_mode mode);
+
 static enum hotplug_mode prev_mode;
 static unsigned int delay = POLLING_MSEC;
 
-static bool exynos_dm_hotplug_disable;
+static bool dm_hotplug_enable;
+
+static bool exynos_dm_hotplug_enabled(void)
+{
+	return dm_hotplug_enable;
+}
+
+static void exynos_dm_hotplug_enable(void)
+{
+	mutex_lock(&dm_hotplug_lock);
+	if (exynos_dm_hotplug_enabled()) {
+		pr_info("%s: dynamic hotplug already enabled\n",
+				__func__);
+		mutex_unlock(&dm_hotplug_lock);
+		return;
+	}
+	dm_hotplug_enable = true;
+	mutex_unlock(&dm_hotplug_lock);
+}
+
+static void exynos_dm_hotplug_disable(void)
+{
+	mutex_lock(&dm_hotplug_lock);
+	if (!exynos_dm_hotplug_enabled()) {
+		pr_info("%s: dynamic hotplug already disabled\n",
+				__func__);
+		mutex_unlock(&dm_hotplug_lock);
+		return;
+	}
+	dm_hotplug_enable = false;
+	mutex_unlock(&dm_hotplug_lock);
+}
+
+#ifdef CONFIG_PM
+static ssize_t show_enable_dm_hotplug(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	bool enabled = exynos_dm_hotplug_enabled();
+
+	return snprintf(buf, 10, "%s\n", enabled ? "enabled" : "disabled");
+}
+
+static ssize_t store_enable_dm_hotplug(struct kobject *kobj, struct attribute *attr,
+					const char *buf, size_t count)
+{
+	int enable_input;
+
+	if (!sscanf(buf, "%d", &enable_input))
+		return -EINVAL;
+
+	if (enable_input > 1 || enable_input < 0) {
+		pr_err("%s: invalid value (%d)\n", __func__, enable_input);
+		return -EINVAL;
+	}
+
+	if (enable_input) {
+		exynos_dm_hotplug_enable();
+	} else {
+		if (!dynamic_hotplug(CHP_NORMAL))
+			prev_mode = CHP_NORMAL;
+
+		exynos_dm_hotplug_disable();
+	}
+
+	return count;
+}
+
+static struct global_attr enable_dm_hotplug =
+		__ATTR(enable_dm_hotplug, S_IRUGO | S_IWUSR,
+			show_enable_dm_hotplug, store_enable_dm_hotplug);
+#endif
 
 static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
 {
@@ -147,7 +219,7 @@ static int __ref __cpu_hotplug(struct cpumask *be_out_cpus, bool out_flag)
 	int ret = 0;
 
 	mutex_lock(&dm_hotplug_lock);
-	if (exynos_dm_hotplug_disable ||
+	if (!exynos_dm_hotplug_enabled() ||
 			cpumask_weight(be_out_cpus) >= NR_CPUS) {
 		ret = -EPERM;
 		goto out;
@@ -225,15 +297,11 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 {
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
-		mutex_lock(&dm_hotplug_lock);
-		exynos_dm_hotplug_disable = true;
-		mutex_unlock(&dm_hotplug_lock);
+		exynos_dm_hotplug_disable();
 		break;
 
 	case PM_POST_SUSPEND:
-		mutex_lock(&dm_hotplug_lock);
-		exynos_dm_hotplug_disable = false;
-		mutex_unlock(&dm_hotplug_lock);
+		exynos_dm_hotplug_enable();
 		break;
 	}
 
@@ -251,9 +319,7 @@ static int exynos_dm_hotplut_reboot_notifier(struct notifier_block *this,
 	switch (code) {
 	case SYSTEM_POWER_OFF:
 	case SYS_RESTART:
-		mutex_lock(&dm_hotplug_lock);
-		exynos_dm_hotplug_disable = true;
-		mutex_unlock(&dm_hotplug_lock);
+		exynos_dm_hotplug_disable();
 		break;
 	}
 
@@ -365,6 +431,9 @@ static int on_run(void *data)
 			pr_debug("frequency info : %d, %s\n", cur_load_freq
 				, (exe_mode==1)?"NORMAL":((exe_mode==2)?"LOW":"HIGH"));
 #endif
+			if (!exynos_dm_hotplug_enabled())
+				continue;
+
 			if (dynamic_hotplug(exe_mode) < 0)
 				exe_mode = prev_mode;
 		}
@@ -384,6 +453,7 @@ void dm_cpu_hotplug_exit(void)
 static int __init dm_cpu_hotplug_init(void)
 {
 	struct task_struct *k;
+	int ret = 0;
 
 	k = kthread_run(&on_run, NULL, "thread_hotplug_func");
 	if (IS_ERR(k)) {
@@ -395,12 +465,28 @@ static int __init dm_cpu_hotplug_init(void)
 	lcd_is_on = true;
 	forced_hotplug = false;
 
-	exynos_dm_hotplug_disable = false;
+	dm_hotplug_enable = true;
+
+#ifdef CONFIG_PM
+	ret = sysfs_create_file(power_kobj, &enable_dm_hotplug.attr);
+	if (ret) {
+		pr_err("%s: failed to create enable_dm_hotplug sysfs interface\n",
+			__func__);
+		goto err_enable_dm_hotplug;
+	}
+#endif
 
 	register_pm_notifier(&exynos_dm_hotplug_nb);
 	register_reboot_notifier(&exynos_dm_hotplug_reboot_nb);
 
-	return 0;
+	return ret;
+
+err_enable_dm_hotplug:
+	fb_unregister_client(&fb_block);
+	kthread_stop(k);
+	put_task_struct(k);
+
+	return ret;
 }
 
 late_initcall(dm_cpu_hotplug_init);
