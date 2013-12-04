@@ -1398,6 +1398,9 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			cancel_delayed_work_sync(&slot->host->tp_mon);
 			pm_qos_update_request(&slot->host->pm_qos_mif, 0);
 			pm_qos_update_request(&slot->host->pm_qos_cpu, 0);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+			pm_qos_update_request(&slot->host->pm_qos_kfc, 0);
+#endif
 		}
 		break;
 	default:
@@ -2841,6 +2844,9 @@ static void dw_mci_tp_mon(struct work_struct *work)
 	struct dw_mci_mon_table *tp_tbl = host->pdata->tp_mon_tbl;
 	s32 mif_lock_value = 0;
 	s32 cpu_lock_value = 0;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	s32 kfc_lock_value = 0;
+#endif
 
 	while (tp_tbl->range) {
 		if (host->transferred_cnt > tp_tbl->range)
@@ -2850,17 +2856,33 @@ static void dw_mci_tp_mon(struct work_struct *work)
 
 	mif_lock_value = tp_tbl->mif_lock_value;
 	cpu_lock_value = tp_tbl->cpu_lock_value;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	kfc_lock_value = tp_tbl->kfc_lock_value;
+#endif
 
+#ifndef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 	dev_dbg(host->dev, "%d byte/s cnt=%d mif=%d cpu=%d\n",
 						host->transferred_cnt,
 						host->cmd_cnt,
 						mif_lock_value,
 						cpu_lock_value);
+#else
+	dev_dbg(host->dev, "%d byte/s cnt=%d mif=%d cpu=%d kfc=%d\n",
+						host->transferred_cnt,
+						host->cmd_cnt,
+						mif_lock_value,
+						cpu_lock_value,
+						kfc_lock_value);
+#endif
 
 	pm_qos_update_request_timeout(&host->pm_qos_mif,
 					mif_lock_value, 2000000);
 	pm_qos_update_request_timeout(&host->pm_qos_cpu,
 					cpu_lock_value, 2000000);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	pm_qos_update_request_timeout(&host->pm_qos_kfc,
+					kfc_lock_value, 2000000);
+#endif
 
 	host->transferred_cnt = 0;
 	host->cmd_cnt = 0;
@@ -3781,6 +3803,10 @@ int dw_mci_probe(struct dw_mci *host)
 					PM_QOS_BUS_THROUGHPUT, 0);
 		pm_qos_add_request(&host->pm_qos_cpu,
 					PM_QOS_CPU_FREQ_MIN, 0);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		pm_qos_add_request(&host->pm_qos_kfc,
+					PM_QOS_KFC_FREQ_MIN, 0);
+#endif
 	}
 
 	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
@@ -3854,6 +3880,9 @@ err_workqueue:
 	if (host->pdata->tp_mon_tbl) {
 		pm_qos_remove_request(&host->pm_qos_mif);
 		pm_qos_remove_request(&host->pm_qos_cpu);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		pm_qos_remove_request(&host->pm_qos_kfc);
+#endif
 	}
 
 err_dmaunmap:
@@ -3904,6 +3933,9 @@ void dw_mci_remove(struct dw_mci *host)
 		cancel_delayed_work_sync(&host->tp_mon);
 		pm_qos_remove_request(&host->pm_qos_mif);
 		pm_qos_remove_request(&host->pm_qos_cpu);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		pm_qos_remove_request(&host->pm_qos_kfc);
+#endif
 	}
 
 	if (drv_data && drv_data->register_notifier)
@@ -3962,6 +3994,9 @@ int dw_mci_suspend(struct dw_mci *host)
 		cancel_delayed_work_sync(&host->tp_mon);
 		pm_qos_update_request(&host->pm_qos_mif, 0);
 		pm_qos_update_request(&host->pm_qos_cpu, 0);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		pm_qos_update_request(&host->pm_qos_kfc, 0);
+#endif
 		host->transferred_cnt = 0;
 		host->cmd_cnt = 0;
 	}

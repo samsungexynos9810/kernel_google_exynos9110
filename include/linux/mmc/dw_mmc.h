@@ -259,6 +259,9 @@ struct dw_mci {
 	u32			cmd_cnt;
 	struct pm_qos_request	pm_qos_mif;
 	struct pm_qos_request	pm_qos_cpu;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	struct pm_qos_request   pm_qos_kfc;
+#endif
 
 	struct regulator	*vmmc;	/* Power regulator */
 	struct regulator	*vqmmc;
@@ -327,6 +330,9 @@ struct dw_mci_mon_table {
 	u32	range;
 	s32	mif_lock_value;
 	s32	cpu_lock_value;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	s32     kfc_lock_value;
+#endif
 };
 
 /* Board platform data */
