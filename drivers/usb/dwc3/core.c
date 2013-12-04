@@ -347,7 +347,7 @@ err0:
 	return ret;
 }
 
-static void dwc3_core_exit(struct dwc3 *dwc)
+void dwc3_core_exit(struct dwc3 *dwc)
 {
 	usb_phy_shutdown(dwc->usb2_phy);
 	usb_phy_shutdown(dwc->usb3_phy);
@@ -535,6 +535,10 @@ static int dwc3_probe(struct platform_device *pdev)
 			goto err2;
 		}
 
+		/* turn off PHYs to save power */
+		dwc3_core_exit(dwc);
+		dwc->needs_reinit = 1;
+
 		ret = dwc3_host_init(dwc);
 		if (ret) {
 			dev_err(dev, "failed to initialize host\n");
@@ -703,8 +707,10 @@ static int dwc3_suspend(struct device *dev)
 		dwc3_gadget_suspend(dwc);
 		break;
 	case USB_DR_MODE_OTG:
-		/* FALLTHROUGH */
+		break;
 	case USB_DR_MODE_HOST:
+		usb_phy_shutdown(dwc->usb3_phy);
+		usb_phy_shutdown(dwc->usb2_phy);
 	default:
 		/* do nothing */
 		break;
@@ -716,9 +722,6 @@ static int dwc3_suspend(struct device *dev)
 
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
-	usb_phy_shutdown(dwc->usb3_phy);
-	usb_phy_shutdown(dwc->usb2_phy);
-
 	return 0;
 }
 
@@ -726,10 +729,6 @@ static int dwc3_resume(struct device *dev)
 {
 	struct dwc3	*dwc = dev_get_drvdata(dev);
 	unsigned long	flags;
-
-	usb_phy_init(dwc->usb3_phy);
-	usb_phy_init(dwc->usb2_phy);
-	msleep(100);
 
 	spin_lock_irqsave(&dwc->lock, flags);
 
@@ -741,8 +740,10 @@ static int dwc3_resume(struct device *dev)
 		dwc3_gadget_resume(dwc);
 		break;
 	case USB_DR_MODE_OTG:
-		/* FALLTHROUGH */
+		break;
 	case USB_DR_MODE_HOST:
+		usb_phy_init(dwc->usb3_phy);
+		usb_phy_init(dwc->usb2_phy);
 	default:
 		/* do nothing */
 		break;
