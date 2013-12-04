@@ -14,10 +14,37 @@
 #define __MIPI_LLI_H
 
 #include <linux/miscdevice.h>
+#include <linux/clk.h>
 
 struct mipi_lli_ipc_handler {
 	void *data;
 	void (*handler)(void *, u32);
+};
+
+struct mipi_lli_clks {
+	/* for gate/ungate clock */
+	struct clk	*aclk_cpif_200;
+	struct clk	*gate_cpifnm_200;
+	struct clk	*gate_mphy_pll;
+	struct clk	*gate_lli_svc_loc;
+	struct clk	*gate_lli_svc_rem;
+	struct clk	*gate_lli_ll_init;
+	struct clk	*gate_lli_be_init;
+	struct clk	*gate_lli_ll_targ;
+	struct clk	*gate_lli_be_targ;
+	struct clk	*gate_lli_cmn_cfg;
+	struct clk	*gate_lli_tx0_cfg;
+	struct clk	*gate_lli_rx0_cfg;
+	struct clk	*gate_lli_tx0_symbol;
+	struct clk	*gate_lli_rx0_symbol;
+
+	/* for clk_set_parents */
+	struct clk	*mout_phyclk_lli_tx0_symbol_user;
+	struct clk	*phyclk_lli_tx0_symbol;
+	struct clk	*mout_phyclk_lli_rx0_symbol_user;
+	struct clk	*phyclk_lli_rx0_symbol;
+	struct clk	*mout_mphy_pll;
+	struct clk	*fout_mphy_pll;
 };
 
 struct mipi_lli {
@@ -30,6 +57,8 @@ struct mipi_lli {
 	 * set_bit() or clear_bit() to change their values.
 	 */
 	unsigned long		flags;
+
+	struct mipi_lli_clks	clks;
 
 	unsigned int		irq;		/* irq allocated */
 	unsigned int		irq_sig;	/* irq_sig allocated */
