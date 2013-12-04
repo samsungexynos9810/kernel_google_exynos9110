@@ -986,10 +986,12 @@ static void wq_func_general(struct work_struct *data)
 			err("IHC_NOT_READY is occured, need reset");
 			fimc_is_hw_logdump(itf);
 			break;
+#if (FW_HAS_REPORT_ERR_CMD)
 		case IHC_REPORT_ERR:
 			err("IHC_REPORT_ERR is occured");
 			fimc_is_hw_logdump(itf);
 			break;
+#endif
 		default:
 			err("func_general unknown(0x%08X) end\n", msg->command);
 			break;
