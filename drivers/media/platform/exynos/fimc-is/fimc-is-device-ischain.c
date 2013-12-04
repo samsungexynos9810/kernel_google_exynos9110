@@ -4941,14 +4941,14 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		ret = -EINVAL;
 		goto p_err;
 	}
-#ifdef HAS_FW_CLOCK_GATE
+
 	ret = fimc_is_itf_sys_ctl(device, IS_SYS_CLOCK_GATE, sysfs_debug.clk_gate_mode);
 	if (ret) {
 		merr("fimc_is_itf_sys_ctl is fail", device);
 		ret = -EINVAL;
 		goto p_err;
 	}
-#endif
+
 	/*
 	 * this code is enabled when camera 2.0 feature is enabled
 	 * ret = fimc_is_itf_g_capability(device);

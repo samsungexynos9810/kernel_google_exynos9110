@@ -893,18 +893,22 @@ static void wq_func_general(struct work_struct *data)
 					sizeof(struct fimc_is_msg));
 				testnclr_wakeup(itf, msg->parameter1);
 				break;
+#if (FW_HAS_SYS_CTRL_CMD)
 			case HIC_SYSTEM_CONTROL:
 				dbg_interface("system control done\n");
 				memcpy(&itf->reply, msg,
 					sizeof(struct fimc_is_msg));
 				testnclr_wakeup(itf, msg->parameter1);
 				break;
+#endif
+#if (FW_HAS_SENSOR_MODE_CMD)
 			case HIC_SENSOR_MODE_CHANGE:
 				dbg_interface("sensor mode change done\n");
 				memcpy(&itf->reply, msg,
 					sizeof(struct fimc_is_msg));
 				testnclr_wakeup(itf, msg->parameter1);
 				break;
+#endif
 			/*non-blocking command*/
 			case HIC_SHOT:
 				err("shot done is not acceptable\n");
@@ -2861,6 +2865,7 @@ int fimc_is_hw_power_down(struct fimc_is_interface *this,
 	return ret;
 }
 
+#if (FW_HAS_SYS_CTRL_CMD)
 int fimc_is_hw_sys_ctl(struct fimc_is_interface *this,
 	u32 instance, int cmd, int val)
 {
@@ -2882,7 +2887,15 @@ int fimc_is_hw_sys_ctl(struct fimc_is_interface *this,
 
 	return ret;
 }
+#else
+int fimc_is_hw_sys_ctl(struct fimc_is_interface *this,
+	u32 instance, int cmd, int val)
+{
+	return 0;
+}
+#endif
 
+#if (FW_HAS_SENSOR_MODE_CMD)
 int fimc_is_hw_sensor_mode(struct fimc_is_interface *this,
 	u32 instance, int cfg)
 {
@@ -2904,6 +2917,13 @@ int fimc_is_hw_sensor_mode(struct fimc_is_interface *this,
 
 	return ret;
 }
+#else
+int fimc_is_hw_sensor_mode(struct fimc_is_interface *this,
+	u32 instance, int cfg)
+{
+	return 0;
+}
+#endif
 
 int fimc_is_hw_shot_nblk(struct fimc_is_interface *this,
 	u32 instance, u32 group, u32 bayer, u32 shot, u32 fcount, u32 rcount)

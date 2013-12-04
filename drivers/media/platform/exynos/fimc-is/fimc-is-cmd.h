@@ -12,6 +12,8 @@
 #ifndef FIMC_IS_CMD_H
 #define FIMC_IS_CMD_H
 
+#include "fimc-is-config.h"
+
 #define IS_COMMAND_VER 132 /* IS COMMAND VERSION 1.32 */
 
 enum is_cmd {
@@ -48,9 +50,15 @@ enum is_cmd {
 	HIC_CALIBRATE_ACTUATOR,
 	HIC_GET_IP_STATUS /* 30 */,
 	HIC_I2C_CONTROL_LOCK,
-	HIC_SYSTEM_CONTROL /* 0x20 */,
+#if (SUPPORTED_IS_CMD_VER >= 132)
+	HIC_SYSTEM_CONTROL,
 	HIC_SENSOR_MODE_CHANGE,
+#else
+	HIC_ADJUST_SET_FILE = 0x20,
+	HIC_CHECK_A5_TASK_CPU_USAGE,
+#endif
 	HIC_COMMAND_END,
+
 	/* IS -> HOST */
 	IHC_GET_SENSOR_NUMBER = 0x1000,
 	/* Parameter1 : Address of space to copy a setfile */
@@ -68,9 +76,16 @@ enum is_cmd {
 	IHC_AA_DONE,
 	IHC_NOT_READY,
 	IHC_FLASH_READY,
+#if (SUPPORTED_IS_CMD_VER >= 132)
 	IHC_REPORT_ERR,
+#endif
 	IHC_COMMAND_END
 };
+
+/* supported command macros by F/W version */
+#define FW_HAS_SYS_CTRL_CMD	(SUPPORTED_IS_CMD_VER >= 132)
+#define FW_HAS_SENSOR_MODE_CMD	(SUPPORTED_IS_CMD_VER >= 132)
+#define FW_HAS_REPORT_ERR_CMD	(SUPPORTED_IS_CMD_VER >= 132)
 
 enum is_reply {
 	ISR_DONE	= 0x2000,
