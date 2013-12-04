@@ -4194,7 +4194,9 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 
 	if (!GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
 		if ((taa_param->vdma1_input.bds_out_width != output_crop[2]) ||
-			(taa_param->vdma1_input.bds_out_height != output_crop[3])) {
+			(taa_param->vdma1_input.bds_out_height != output_crop[3]) ||
+			(taa_param->vdma1_input.bayer_crop_width != input_crop[2]) ||
+			(taa_param->vdma1_input.bayer_crop_height != input_crop[3])) {
 			ret = fimc_is_ischain_s_3aa_size(device,
 				ldr_frame,
 				input_crop,
@@ -4206,7 +4208,8 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 				merr("fimc_is_ischain_3aa_size is fail(%d)", device, ret);
 				goto p_err;
 			}
-
+			mrinfo("[3AA] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
 			mrinfo("[3AA] out_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
