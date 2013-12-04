@@ -106,13 +106,14 @@ bool usb_phy_check_op(void)
 			}
 		}
 
-		/*
-		 * FIXME: this is used for DWC3 DRD controller and
-		 * should be removed once proper power management is
-		 * implemented.
-		 */
-		if (phy->type == USB_PHY_TYPE_USB3)
-			continue;
+		if (phy->type == USB_PHY_TYPE_USB3) {
+			if (usb_phy_is_active(phy)) {
+				op = true;
+				break;
+			} else {
+				continue;
+			}
+		}
 
 		if (phy->type == USB_PHY_TYPE_USB2) {
 			if (usb_phy_is_active(phy)) {
