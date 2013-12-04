@@ -87,7 +87,7 @@ struct check_reg_lpa {
 static struct check_reg_lpa exynos5_power_domain[] = {
 
 	{.check_reg = EXYNOS5_GSCL_STATUS,	.check_bit = 0x7},
-#ifdef MUST_ADD_FOR_ARES2
+#ifdef MUST_CHECK_FOR_ARES2
 	{.check_reg = EXYNOS5_ISP_STATUS,	.check_bit = 0x7},
 #endif
 	{.check_reg = EXYNOS5410_MFC_STATUS,	.check_bit = 0x7},
@@ -105,14 +105,18 @@ static struct check_reg_lpa exynos5_dstop_power_domain[] = {
  */
 
 static struct check_reg_lpa exynos5_clock_gating[] = {
-#ifdef MUST_ADD_FOR_ARES2
+#ifdef MUST_CHECK_FOR_ARES2
 	{.check_reg = EXYNOS5_CLK_GATE_IP_DISP1,	.check_bit = 0x00000008},
-#endif
 	{.check_reg = EXYNOS5_CLK_GATE_IP_MFC,		.check_bit = 0x00000001},
+#endif
 	{.check_reg = EXYNOS5_CLK_GATE_IP_GEN,		.check_bit = 0x0000001E},
 	{.check_reg = EXYNOS5_CLK_GATE_BUS_FSYS0,	.check_bit = 0x00000006},
 	{.check_reg = EXYNOS5_CLK_GATE_IP_PERIC,	.check_bit = 0x00077FC0},
 };
+
+static struct clk *clkm_phy0;
+static struct clk *clkm_phy1;
+static bool mif_max = false;
 
 #ifdef CONFIG_SAMSUNG_USBPHY
 extern int samsung_usbphy_check_op(void);
@@ -485,6 +489,12 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 
 	exynos5_mif_transition_disable(true);
 
+	if((__clk_is_enabled(clkm_phy0))||(__clk_is_enabled(clkm_phy1))) {
+		mif_max = true;
+		clk_disable(clkm_phy0);
+		clk_disable(clkm_phy1);
+	}
+
 	cpu_pm_enter();
 	exynos_lpa_enter();
 
@@ -509,6 +519,12 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_HSI_OPTION);
 
 early_wakeup:
+	if (mif_max) {
+		clk_enable(clkm_phy0);
+		clk_enable(clkm_phy1);
+		mif_max = false;
+	}
+
 	exynos5_mif_transition_disable(false);
 
 	__raw_writel(0, EXYNOS_PMU_SPARE1);
@@ -517,7 +533,7 @@ early_wakeup:
 	tmp &= ~(EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
 	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
 
-	exynos5_mif_nocp_resume();
+	exynos5_int_nocp_resume();
 
 	clear_boot_flag(cpuid, C2_STATE);
 
@@ -699,6 +715,19 @@ static int __init exynos_init_cpuidle(void)
 			printk(KERN_ERR "CPUidle register device failed\n,");
 			return -EIO;
 		}
+	}
+
+	clkm_phy0 = __clk_lookup("clkm_phy0");
+	clkm_phy1 = __clk_lookup("clkm_phy1");
+
+	if (IS_ERR(clkm_phy0)) {
+		pr_err("Cannot get clock \"clkm_phy0\"\n");
+		return PTR_ERR(clkm_phy0);
+	}
+
+	if (IS_ERR(clkm_phy1)) {
+		pr_err("Cannot get clock \"clkm_phy1\"\n");
+		return PTR_ERR(clkm_phy1);
 	}
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
