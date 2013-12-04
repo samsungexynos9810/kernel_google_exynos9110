@@ -266,9 +266,9 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 	host = phy->otg->host;
 
 	/* Enable the phy clock */
-	ret = clk_prepare_enable(sphy->clk);
+	ret = clk_enable(sphy->clk);
 	if (ret) {
-		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
 		return ret;
 	}
 
@@ -318,7 +318,7 @@ exit:
 	pm_runtime_get_noresume(phy->dev);
 
 	/* Disable the phy clock */
-	clk_disable_unprepare(sphy->clk);
+	clk_disable(sphy->clk);
 
 	return ret;
 }
@@ -338,8 +338,8 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 
 	host = phy->otg->host;
 
-	if (clk_prepare_enable(sphy->clk)) {
-		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+	if (clk_enable(sphy->clk)) {
+		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
 		return;
 	}
 
@@ -391,7 +391,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 exit:
 	pm_runtime_put_noidle(phy->dev);
 
-	clk_disable_unprepare(sphy->clk);
+	clk_disable(sphy->clk);
 }
 
 static bool samsung_usb2phy_is_active(struct usb_phy *phy)
@@ -491,9 +491,26 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
 
 	spin_lock_init(&sphy->lock);
 
+	ret = clk_prepare(sphy->clk);
+	if (ret) {
+		dev_err(dev, "clk_prepare failed\n");
+		return ret;
+	}
+
 	platform_set_drvdata(pdev, sphy);
 
-	return usb_add_phy_dev(&sphy->phy);
+	ret = usb_add_phy_dev(&sphy->phy);
+	if (ret) {
+		dev_err(dev, "Failed to add PHY\n");
+		goto err1;
+	}
+
+	return 0;
+
+err1:
+	clk_unprepare(sphy->clk);
+
+	return ret;
 }
 
 static int samsung_usb2phy_remove(struct platform_device *pdev)
@@ -501,6 +518,7 @@ static int samsung_usb2phy_remove(struct platform_device *pdev)
 	struct samsung_usbphy *sphy = platform_get_drvdata(pdev);
 
 	usb_remove_phy(&sphy->phy);
+	clk_unprepare(sphy->clk);
 
 	if (sphy->pmuregs)
 		iounmap(sphy->pmuregs);
@@ -527,9 +545,9 @@ static int samsung_usb2phy_runtime_suspend(struct device *dev)
 	}
 
 	/* Enable the phy clock */
-	ret = clk_prepare_enable(sphy->clk);
+	ret = clk_enable(sphy->clk);
 	if (ret) {
-		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
 		return ret;
 	}
 
@@ -550,7 +568,7 @@ static int samsung_usb2phy_runtime_suspend(struct device *dev)
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */
-	clk_disable_unprepare(sphy->clk);
+	clk_disable(sphy->clk);
 
 	return 0;
 }
@@ -571,9 +589,9 @@ static int samsung_usb2phy_runtime_resume(struct device *dev)
 	}
 
 	/* Enable the phy clock */
-	ret = clk_prepare_enable(sphy->clk);
+	ret = clk_enable(sphy->clk);
 	if (ret) {
-		dev_err(sphy->dev, "%s: clk_prepare_enable failed\n", __func__);
+		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
 		return ret;
 	}
 
@@ -594,7 +612,7 @@ static int samsung_usb2phy_runtime_resume(struct device *dev)
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */
-	clk_disable_unprepare(sphy->clk);
+	clk_disable(sphy->clk);
 
 	return 0;
 }
