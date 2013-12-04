@@ -69,6 +69,7 @@ static DEFINE_MUTEX(cpufreq_scale_lock);
 static bool exynos_cpufreq_init_done;
 static bool suspend_prepared = false;
 static bool hmp_boosted = false;
+static bool egl_hotplugged = false;
 
 /* Include CPU mask of each cluster */
 cluster_type exynos_boot_cluster;
@@ -905,10 +906,26 @@ static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct attribute *a
 		return -EINVAL;
 
 	if (cpu_input >= (int)freq_min[CA15]) {
+		if (egl_hotplugged) {
+			if (big_cores_hotplug(false))
+				pr_err("%s: failed big cores hotplug in\n",
+							__func__);
+			else
+				egl_hotplugged = false;
+		}
+
 		cpu_input = max(cpu_input, (int)freq_min[CA15]);
 		kfc_input = max_kfc_qos_const.default_value;
 	} else if (cpu_input < (int)freq_min[CA15]) {
 		if (cpu_input < 0) {
+			if (egl_hotplugged) {
+				if (big_cores_hotplug(false))
+					pr_err("%s: failed big cores hotplug in\n",
+							__func__);
+				else
+					egl_hotplugged = false;
+			}
+
 			cpu_input = max_cpu_qos_const.default_value;
 			kfc_input = max_kfc_qos_const.default_value;
 		} else {
@@ -916,6 +933,14 @@ static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct attribute *a
 			if (kfc_input > 0)
 				kfc_input = max(kfc_input, (int)freq_min[CA7]);
 			cpu_input = PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE;
+
+			if (!egl_hotplugged) {
+				if (big_cores_hotplug(true))
+					pr_err("%s: failed big cores hotplug out\n",
+							__func__);
+				else
+					egl_hotplugged = true;
+			}
 		}
 	}
 
