@@ -4801,11 +4801,6 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	u32 lindex = 0;
 	u32 hindex = 0;
 	u32 indexes = 0;
-#if !defined(CONFIG_SOC_EXYNOS5430)
-#if defined(ENABLE_FULL_BYPASS)
-	int cfg;
-#endif
-#endif
 
 	BUG_ON(!device);
 	BUG_ON(!device->sensor);
@@ -5043,15 +5038,6 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		goto p_err;
 	}
 
-/* HACK: HW dependant code will be moved platform data */
-#if !defined(CONFIG_SOC_EXYNOS5430)
-#if defined(ENABLE_FULL_BYPASS)
-	cfg = readl(EXYNOS5_CLKGATE_IP_ISP1);
-	cfg &= ~((0x7 << 20) | (0x7 << 9) | (3 << 1));
-	writel(cfg, EXYNOS5_CLKGATE_IP_ISP1);
-#endif
-#endif
-
 	set_bit(FIMC_IS_SUBDEV_START, &leader->state);
 	set_bit(FIMC_IS_ISHCAIN_START, &device->state);
 
@@ -5065,12 +5051,6 @@ int fimc_is_ischain_isp_stop(struct fimc_is_device_ischain *device,
 	struct fimc_is_queue *queue)
 {
 	int ret = 0;
-#if !defined(CONFIG_SOC_EXYNOS5430)
-#if defined(ENABLE_FULL_BYPASS)
-	int cfg;
-#endif
-#endif
-
 	struct fimc_is_groupmgr *groupmgr;
 	struct fimc_is_group *group;
 
@@ -5087,15 +5067,6 @@ int fimc_is_ischain_isp_stop(struct fimc_is_device_ischain *device,
 		mwarn("already stop", device);
 		goto p_err;
 	}
-
-/* HACK: HW dependant code will be moved platform data */
-#if !defined(CONFIG_SOC_EXYNOS5430)
-#if defined(ENABLE_FULL_BYPASS)
-	cfg = readl(EXYNOS5_CLKGATE_IP_ISP1);
-	cfg |= ((0x7 << 20) | (0x7 << 9) | (3 << 1));
-	writel(cfg, EXYNOS5_CLKGATE_IP_ISP1);
-#endif
-#endif
 
 	ret = fimc_is_group_process_stop(groupmgr, group, queue);
 	if (ret) {

@@ -282,11 +282,10 @@ void fimc_is_subdev_dis_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-#ifdef ENABLE_FULL_BYPASS
-	param->control.cmd = CONTROL_COMMAND_STOP;
-	param->control.bypass = CONTROL_BYPASS_ENABLE;
-#else
-	param->control.cmd = CONTROL_COMMAND_START;
+	if (device->pdata->subip_info->info_dis.full_bypass)
+		param->control.cmd = CONTROL_COMMAND_STOP;
+	else
+		param->control.cmd = CONTROL_COMMAND_START;
 	/*
 	 * special option
 	 * bypass command should be 2 for enabling software dis
@@ -294,7 +293,6 @@ void fimc_is_subdev_dis_bypass(struct fimc_is_device_ischain *device,
 	 * can't support multi-plane.
 	 */
 	param->control.bypass = CONTROL_BYPASS_ENABLE;
-#endif
 
 	*lindex |= LOWBIT_OF(PARAM_DIS_CONTROL);
 	*hindex |= HIGHBIT_OF(PARAM_DIS_CONTROL);
@@ -347,11 +345,11 @@ void fimc_is_subdev_dnr_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-#ifdef ENABLE_FULL_BYPASS
-	ctl_param->cmd = CONTROL_COMMAND_STOP;
-#else
-	ctl_param->cmd = CONTROL_COMMAND_START;
-#endif
+	if (device->pdata->subip_info->info_dnr.full_bypass)
+		ctl_param->cmd = CONTROL_COMMAND_STOP;
+	else
+		ctl_param->cmd = CONTROL_COMMAND_START;
+
 	ctl_param->bypass = CONTROL_BYPASS_ENABLE;
 
 	*lindex |= LOWBIT_OF(PARAM_TDNR_CONTROL);
@@ -384,11 +382,11 @@ void fimc_is_subdev_drc_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-#ifdef ENABLE_FULL_BYPASS
-	ctl_param->cmd = CONTROL_COMMAND_STOP;
-#else
-	ctl_param->cmd = CONTROL_COMMAND_START;
-#endif
+	if (device->pdata->subip_info->info_drc.full_bypass)
+		ctl_param->cmd = CONTROL_COMMAND_STOP;
+	else
+		ctl_param->cmd = CONTROL_COMMAND_START;
+
 	ctl_param->bypass = CONTROL_BYPASS_ENABLE;
 
 	*lindex |= LOWBIT_OF(PARAM_DRC_CONTROL);
