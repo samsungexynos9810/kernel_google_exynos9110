@@ -68,6 +68,66 @@ static u32 exynos_lli_cal_remap(u32 base_addr, unsigned long size)
 	return remap_addr;
 }
 
+static int exynos_lli_get_clk_info(struct mipi_lli *lli)
+{
+	struct mipi_lli_clks *clks = &lli->clks;
+
+	clks->aclk_cpif_200 = devm_clk_get(lli->dev, "aclk_cpif_200");
+	/* To gate/ungate clocks */
+	clks->gate_cpifnm_200 = devm_clk_get(lli->dev, "gate_cpifnm_200");
+	clks->gate_mphy_pll = devm_clk_get(lli->dev, "gate_mphy_pll");
+	clks->gate_lli_svc_loc = devm_clk_get(lli->dev, "gate_lli_svc_loc");
+	clks->gate_lli_svc_rem = devm_clk_get(lli->dev, "gate_lli_svc_rem");
+	clks->gate_lli_ll_init = devm_clk_get(lli->dev, "gate_lli_ll_init");
+	clks->gate_lli_be_init = devm_clk_get(lli->dev, "gate_lli_be_init");
+	clks->gate_lli_ll_targ = devm_clk_get(lli->dev, "gate_lli_ll_targ");
+	clks->gate_lli_be_targ = devm_clk_get(lli->dev, "gate_lli_be_targ");
+	clks->gate_lli_cmn_cfg = devm_clk_get(lli->dev, "gate_lli_cmn_cfg");
+	clks->gate_lli_tx0_cfg = devm_clk_get(lli->dev, "gate_lli_tx0_cfg");
+	clks->gate_lli_rx0_cfg = devm_clk_get(lli->dev, "gate_lli_rx0_cfg");
+	clks->gate_lli_tx0_symbol = devm_clk_get(lli->dev, "gate_lli_tx0_symbol");
+	clks->gate_lli_rx0_symbol = devm_clk_get(lli->dev, "gate_lli_rx0_symbol");
+
+	/* For mux selection of clocks */
+	clks->mout_phyclk_lli_tx0_symbol_user = devm_clk_get(lli->dev,
+			"mout_phyclk_lli_tx0_symbol_user");
+	clks->phyclk_lli_tx0_symbol = devm_clk_get(lli->dev,
+			"phyclk_lli_tx0_symbol");
+	clks->mout_phyclk_lli_rx0_symbol_user = devm_clk_get(lli->dev,
+			"mout_phyclk_lli_rx0_symbol_user");
+	clks->phyclk_lli_rx0_symbol = devm_clk_get(lli->dev,
+			"phyclk_lli_rx0_symbol");
+	clks->mout_mphy_pll = devm_clk_get(lli->dev, "mout_mphy_pll");
+	clks->fout_mphy_pll = devm_clk_get(lli->dev, "fout_mphy_pll");
+
+	if (IS_ERR(clks->aclk_cpif_200) ||
+		IS_ERR(clks->gate_cpifnm_200) ||
+		IS_ERR(clks->gate_mphy_pll) ||
+		IS_ERR(clks->gate_lli_svc_loc) ||
+		IS_ERR(clks->gate_lli_svc_rem) ||
+		IS_ERR(clks->gate_lli_ll_init) ||
+		IS_ERR(clks->gate_lli_be_init) ||
+		IS_ERR(clks->gate_lli_ll_targ) ||
+		IS_ERR(clks->gate_lli_be_targ) ||
+		IS_ERR(clks->gate_lli_cmn_cfg) ||
+		IS_ERR(clks->gate_lli_tx0_cfg) ||
+		IS_ERR(clks->gate_lli_rx0_cfg) ||
+		IS_ERR(clks->gate_lli_tx0_symbol) ||
+		IS_ERR(clks->gate_lli_rx0_symbol) ||
+		IS_ERR(clks->mout_phyclk_lli_tx0_symbol_user) ||
+		IS_ERR(clks->phyclk_lli_tx0_symbol) ||
+		IS_ERR(clks->mout_phyclk_lli_rx0_symbol_user) ||
+		IS_ERR(clks->phyclk_lli_rx0_symbol) ||
+		IS_ERR(clks->mout_mphy_pll) ||
+		IS_ERR(clks->fout_mphy_pll)
+	) {
+		dev_err(lli->dev, "exynos_lli_get_clks - failed\n");
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
 static void exynos_lli_system_config(struct mipi_lli *lli)
 {
 	if (lli->sys_regs) {
@@ -439,6 +499,8 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 		dev_err(dev, "failed get mphy\n");
 		return -ENODEV;
 	}
+
+	exynos_lli_get_clk_info(lli);
 
 	dout_aclk_cpif_200 = devm_clk_get(lli->dev, "dout_aclk_cpif_200");
 	dout_mif_pre = devm_clk_get(lli->dev, "dout_mif_pre");
