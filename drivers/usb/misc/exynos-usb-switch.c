@@ -322,7 +322,7 @@ static int exynos_usbswitch_parse_dt(struct exynos_usb_switch *usb_switch,
 	if (!gpio_is_valid(usb_switch->gpio_device_detect)) {
 		dev_info(dev, "device detect gpio is not available\n");
 	} else {
-		ret = devm_gpio_request(dev, usb_switch->gpio_host_detect,
+		ret = devm_gpio_request(dev, usb_switch->gpio_device_detect,
 						"usbswitch_b_sess_gpio");
 		if (ret)
 			dev_err(dev, "failed to request host detect gpio");
