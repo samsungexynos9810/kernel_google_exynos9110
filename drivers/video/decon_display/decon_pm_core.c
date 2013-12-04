@@ -398,13 +398,13 @@ static void decon_power_gating_handler(struct kthread_work *work)
 	if (!disp_pm_check_camera()) {
 		if (dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT)
 			display_hibernation_power_off(dispdrv);
-
-		spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
-		dispdrv->pm_status.pwr_idle_count = 0;
-		disp_pm_gate_lock(dispdrv, false);
-		spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
-		pm_info("##### display_hibernation_power_off -\n");
 	}
+
+	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
+	dispdrv->pm_status.pwr_idle_count = 0;
+	disp_pm_gate_lock(dispdrv, false);
+	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	pm_info("##### display_hibernation_power_off -\n");
 }
 
 static int __display_hibernation_power_on(struct display_driver *dispdrv)
