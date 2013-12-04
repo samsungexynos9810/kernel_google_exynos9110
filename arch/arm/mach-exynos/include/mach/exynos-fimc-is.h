@@ -111,18 +111,23 @@ enum FIMC_IS_CLK_GATE_USR_SCENARIO {
  *   This info describes what and how many subip fimc-is has.
  *   In machine data, this info should be defined.
  */
+struct exynos_fimc_is_subip_ext {
+	bool valid;
+	bool full_bypass;
+};
+
 struct exynos_fimc_is_subip_info {
 	/* You can add more new subip */
-	u32 num_of_3a0;
-	u32 num_of_3a1;
-	u32 num_of_isp;
-	u32 num_of_drc;
-	u32 num_of_scc;
-	u32 num_of_odc;
-	u32 num_of_dis;
-	u32 num_of_3dnr;
-	u32 num_of_scp;
-	u32 num_of_fd;
+	struct exynos_fimc_is_subip_ext info_3a0;
+	struct exynos_fimc_is_subip_ext info_3a1;
+	struct exynos_fimc_is_subip_ext info_isp;
+	struct exynos_fimc_is_subip_ext info_drc;
+	struct exynos_fimc_is_subip_ext info_scc;
+	struct exynos_fimc_is_subip_ext info_odc;
+	struct exynos_fimc_is_subip_ext info_dis;
+	struct exynos_fimc_is_subip_ext info_dnr;
+	struct exynos_fimc_is_subip_ext info_scp;
+	struct exynos_fimc_is_subip_ext info_fd;
 };
 
 /*
