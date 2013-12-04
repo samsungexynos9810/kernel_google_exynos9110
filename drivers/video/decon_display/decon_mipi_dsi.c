@@ -1387,8 +1387,10 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dispdrv->dsi_driver.dsim = dsim;
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	dispdrv->dsi_driver.ops->pwr_on = s5p_mipi_dsi_hibernation_power_on;
-	dispdrv->dsi_driver.ops->pwr_off = s5p_mipi_dsi_hibernation_power_off;
+	if (dispdrv->dsi_driver.ops) {
+		dispdrv->dsi_driver.ops->pwr_on = s5p_mipi_dsi_hibernation_power_on;
+		dispdrv->dsi_driver.ops->pwr_off = s5p_mipi_dsi_hibernation_power_off;
+	}
 #endif
 
 	mutex_init(&dsim_rd_wr_mutex);
