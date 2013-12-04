@@ -153,8 +153,7 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 {
 	long g3d_rate_prev = -1;
 	unsigned long g3d_rate = freq * MHZ;
-	unsigned long tmp = 0;
-	int ret;
+	int ret = 0;
 
 	if (platform->aclk_g3d == 0)
 		return -1;
@@ -174,18 +173,6 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (g3d_rate != g3d_rate_prev) {
-		/*for stable clock input.*/
-		ret = clk_set_rate(platform->fout_g3d_pll, 100000000);
-		if (ret < 0) {
-			GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [fout_g3d_pll]\n");
-			goto err;
-		}
-
-		if (!(__raw_readl(EXYNOS5430_G3D_PLL_CON0) & (0x1 << 29))) {
-			GPU_LOG(DVFS_ERROR, "failed EXYNOS5430_G3D_PLL_CON0 is not enabled\n");
-			goto err;
-		}
-
 		gpu_set_maximum_outstanding_req(L2CONFIG_MO_1BY8);				/* Restrict M.O by 1/8 */
 
 		/*change here for future stable clock changing*/
@@ -212,17 +199,6 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 		gpu_set_maximum_outstanding_req(L2CONFIG_MO_NO_RESTRICT);		/* Set to M.O by maximum */
 		g3d_rate_prev = g3d_rate;
 	}
-
-	ret = clk_set_rate(platform->dout_aclk_g3d, g3d_rate);
-	if (ret < 0) {
-		GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [dout_aclk_g3d]\n");
-		goto err;
-	}
-
-	/* Waiting for clock is stable */
-	do {
-		tmp = __raw_readl(EXYNOS5430_DIV_STAT_G3D);
-	} while (tmp & 0x1);
 
 	gpu_update_clock(platform);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock set: %ld\n", g3d_rate / MHZ);
