@@ -881,7 +881,6 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	struct fimc_is_group *group_3aa;
 
 	BUG_ON(!device);
-	BUG_ON(!device->subdev_module);
 
 	if (!test_bit(FIMC_IS_SENSOR_OPEN, &device->state)) {
 		merr("already close", device);
