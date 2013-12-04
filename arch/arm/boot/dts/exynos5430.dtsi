@@ -2528,9 +2528,13 @@
 			num_of_scc = <1>;
 			num_of_odc = <0>;
 			num_of_dis = <1>;
-			num_of_3dnr = <1>;
+			num_of_dnr = <1>;
 			num_of_scp = <1>;
 			num_of_fd = <1>;
+
+			full_bypass_drc = <1>;
+			full_bypass_dis = <1>;
+			full_bypass_dnr = <1>;
 		};
 	};
 
