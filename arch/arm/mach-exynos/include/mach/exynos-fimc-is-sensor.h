@@ -214,10 +214,10 @@ struct exynos_sensor_pin {
 	enum pin_act act;
 };
 
-#define SET_PIN(d, s, c, i, p, v, n, a)				\
-	(d)->pin_ctrls[s][c][i].pin	= p;			\
-	(d)->pin_ctrls[s][c][i].value	= v;			\
-	strncpy((d)->pin_ctrls[s][c][i].name, n, sizeof(n));	\
+#define SET_PIN(d, s, c, i, p, v, n, a)		\
+	(d)->pin_ctrls[s][c][i].pin	= p;	\
+	(d)->pin_ctrls[s][c][i].value	= v;	\
+	(d)->pin_ctrls[s][c][i].name	= n;	\
 	(d)->pin_ctrls[s][c][i].act	= a;
 
 /*
