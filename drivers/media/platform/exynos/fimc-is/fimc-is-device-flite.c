@@ -717,8 +717,7 @@ int init_fimc_lite(unsigned long __iomem *base_reg)
 }
 
 static int start_fimc_lite(unsigned long __iomem *base_reg,
-	struct fimc_is_image *image,
-	u32 otf_setting)
+	struct fimc_is_image *image, u32 otf_setting, u32 bns)
 {
 	flite_hw_set_cam_channel(base_reg, otf_setting);
 	flite_hw_set_cam_source_size(base_reg, image);
@@ -734,7 +733,8 @@ static int start_fimc_lite(unsigned long __iomem *base_reg,
 	flite_hw_set_window_offset(base_reg, image);
 	/* flite_hw_set_test_pattern_enable(); */
 
-	flite_hw_set_bns(base_reg, image);
+	if (bns)
+		flite_hw_set_bns(base_reg, image);
 
 	flite_hw_set_last_capture_end_clear(base_reg);
 	flite_hw_set_capture_start(base_reg);
@@ -1309,6 +1309,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	struct fimc_is_image *image;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
+	struct fimc_is_device_sensor *sensor = v4l2_get_subdev_hostdata(subdev);
 
 	BUG_ON(!flite);
 	BUG_ON(!flite->framemgr);
@@ -1384,7 +1385,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 		flite_hw_set_output_local(flite->base_reg, false);
 	}
 
-	start_fimc_lite(flite->base_reg, image, otf_setting);
+	start_fimc_lite(flite->base_reg, image, otf_setting, sensor->pdata->is_bns);
 
 p_err:
 	return ret;
