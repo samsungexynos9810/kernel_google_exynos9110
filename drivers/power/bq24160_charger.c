@@ -737,27 +737,29 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 		if (bd->cached_status.stat != old_status.stat) {
 			if (bd->cached_status.stat == STAT_NO_VALID_SOURCE) {
 				if (old_status.stat == STAT_CHARGING_FROM_IN || old_status.stat == STAT_CHARGING_FROM_USB
-						|| old_status.stat == STAT_IN_READY || old_status.stat == STAT_USB_READY)
+						|| old_status.stat == STAT_IN_READY || old_status.stat == STAT_USB_READY) {
+					bq24160_hz_enable(bd, 1);
+					bq24160_set_ce(bd, 1);
 					bq24160_stop_watchdog_reset(bd);
+				}
 			} else if (bd->cached_status.stat == STAT_IN_READY || bd->cached_status.stat == STAT_USB_READY) {
 				if (old_status.stat == STAT_NO_VALID_SOURCE) {
 					xyref5430_set_values(bd);
 					bq24160_start_watchdog_reset(bd);
+					bq24160_hz_enable(bd, 0);
+					bq24160_set_ce(bd, 0);
 				}
 			} else if (bd->cached_status.stat == STAT_CHARGING_FROM_IN || bd->cached_status.stat == STAT_CHARGING_FROM_USB) {
 				if (old_status.stat == STAT_NO_VALID_SOURCE) {
 					xyref5430_set_values(bd);
 					bq24160_start_watchdog_reset(bd);
+					bq24160_hz_enable(bd, 0);
+					bq24160_set_ce(bd, 0);
 				}
-			} else if (bd->cached_status.stat == STAT_CHARGE_DONE) {
-				if (old_status.stat >= STAT_IN_READY && old_status.stat <= STAT_CHARGING_FROM_USB)
-					bq24160_stop_watchdog_reset(bd);
-				bq24160_hz_enable(bd, 1);
-				bq24160_set_ce(bd, 1);
 			}
+			bq24160_dump_registers(bd);
 		}
 		bq24160_update_power_supply(bd);
-		bq24160_dump_registers(bd);
 	}
 
 	return IRQ_HANDLED;
