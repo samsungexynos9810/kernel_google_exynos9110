@@ -136,6 +136,7 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 	return NULL;
 }
 
+#ifndef CONFIG_ION_EXYNOS
 static void ion_clean_and_unmap(unsigned long vaddr, pte_t *ptep,
 				size_t size, bool memory_zero)
 {
@@ -215,6 +216,13 @@ static void ion_clean_and_init_allocated_pages(
 
 	up(&heap->vm_sem);
 }
+#else
+static void ion_clean_and_init_allocated_pages(
+		struct ion_system_heap *heap, struct scatterlist *sgl,
+		int nents, bool memory_zero)
+{
+}
+#endif
 
 static int ion_system_heap_allocate(struct ion_heap *heap,
 				     struct ion_buffer *buffer,
