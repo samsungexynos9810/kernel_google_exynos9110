@@ -735,6 +735,9 @@ static unsigned int dex_map_ion_handle(struct dex_device *dex,
 		goto err_iovmm_map;
 	}
 
+	exynos_ion_sync_dmabuf_for_device(dex->dev, dma->dma_buf,
+						dma->dma_buf->size,
+						DMA_TO_DEVICE);
 	dma->ion_handle = ion_handle;
 
 	return dma->dma_buf->size;
@@ -760,6 +763,9 @@ static void dex_free_dma_buf(struct dex_device *dex, struct dex_dma_buf_data *dm
 	ion_iovmm_unmap(dma->attachment , dma->dma_addr);
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_BIDIRECTIONAL);
+	exynos_ion_sync_dmabuf_for_cpu(dex->dev, dma->dma_buf,
+					dma->dma_buf->size,
+					DMA_BIDIRECTIONAL);
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 	dma_buf_put(dma->dma_buf);
 	ion_free(dex->ion_client, dma->ion_handle);
