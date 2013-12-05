@@ -24,11 +24,11 @@ enum usb_cable_status {
 struct exynos_usb_switch {
 	unsigned long connect;
 
-	unsigned int host_detect_irq;
-	unsigned int device_detect_irq;
-	unsigned int gpio_host_detect;
-	unsigned int gpio_device_detect;
-	unsigned int gpio_host_vbus;
+	int host_detect_irq;
+	int device_detect_irq;
+	int gpio_host_detect;
+	int gpio_device_detect;
+	int gpio_host_vbus;
 
 	struct device *ehci_dev;
 	struct device *ohci_dev;
