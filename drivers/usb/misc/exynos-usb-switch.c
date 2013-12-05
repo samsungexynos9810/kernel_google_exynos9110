@@ -35,6 +35,19 @@
 static const char switch_name[] = "exynos_usb_switch";
 static struct exynos_usb_switch *our_switch;
 
+const char *exynos_usbswitch_mode_string(unsigned long mode)
+{
+	if (!mode)
+		return "IDLE";
+	else if (test_bit(USB_HOST_ATTACHED, &mode))
+		return "USB_HOST_ATTACHED";
+	else if (test_bit(USB_DEVICE_ATTACHED, &mode))
+		return "USB_DEVICE_ATTACHED";
+	else
+		/* something wrong */
+		return "undefined";
+}
+
 static int is_host_detect(struct exynos_usb_switch *usb_switch)
 {
 	if (!gpio_is_valid(usb_switch->gpio_host_detect))
@@ -293,6 +306,56 @@ static int exynos_usbswitch_resume(struct device *dev)
 #define exynos_usbswitch_resume		NULL
 #endif
 
+/* SysFS interface */
+
+static ssize_t
+exynos_usbswitch_show_mode(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct exynos_usb_switch *usb_switch = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%s\n",
+			exynos_usbswitch_mode_string(usb_switch->connect));
+}
+
+static DEVICE_ATTR(mode, S_IRUSR | S_IRGRP,
+	exynos_usbswitch_show_mode, NULL);
+
+static ssize_t
+exynos_usbswitch_store_id(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t n)
+{
+	struct exynos_usb_switch *usb_switch = dev_get_drvdata(dev);
+	int id;
+
+	if (sscanf(buf, "%d", &id) != 1)
+		return -EINVAL;
+
+	mutex_lock(&usb_switch->mutex);
+
+	if (!id)
+		exynos_change_usb_mode(usb_switch, USB_HOST_ATTACHED);
+	else
+		exynos_change_usb_mode(usb_switch, USB_HOST_DETACHED);
+
+	mutex_unlock(&usb_switch->mutex);
+
+	return n;
+}
+
+static DEVICE_ATTR(id, S_IWUSR | S_IRUSR | S_IRGRP,
+	NULL, exynos_usbswitch_store_id);
+
+static struct attribute *exynos_usbswitch_attributes[] = {
+	&dev_attr_id.attr,
+	&dev_attr_mode.attr,
+	NULL
+};
+
+static const struct attribute_group exynos_usbswitch_attr_group = {
+	.attrs = exynos_usbswitch_attributes,
+};
+
 static int exynos_usbswitch_parse_dt(struct exynos_usb_switch *usb_switch,
 				     struct device *dev)
 {
@@ -470,9 +533,13 @@ static int exynos_usbswitch_probe(struct platform_device *pdev)
 
 	exynos_usb_status_init(usb_switch);
 
+	ret = sysfs_create_group(&dev->kobj, &exynos_usbswitch_attr_group);
+	if (ret)
+		dev_warn(dev, "failed to create dwc3 otg attributes\n");
+
 	platform_set_drvdata(pdev, usb_switch);
 
-	return ret;
+	return 0;
 
 fail:
 	wake_unlock(&usb_switch->wake_lock);
@@ -488,6 +555,7 @@ static int exynos_usbswitch_remove(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, 0);
 
+	sysfs_remove_group(&pdev->dev.kobj, &exynos_usbswitch_attr_group);
 	wake_unlock(&usb_switch->wake_lock);
 	cancel_work_sync(&usb_switch->switch_work);
 	destroy_workqueue(usb_switch->workqueue);
