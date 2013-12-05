@@ -161,4 +161,13 @@ extern cluster_type exynos_boot_cluster;
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 extern int force_dynamic_hotplug(bool out_flag);
 #endif
+#if defined(CONFIG_SCHED_HMP) && defined(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)
+int big_cores_hotplug(bool out_flag);
+#else
+static inline int big_cores_hotplug(bool out_flag)
+{
+	return 0;
+}
+#endif
+
 #endif

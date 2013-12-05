@@ -42,10 +42,17 @@ static int cpu_util[NR_CPUS];
 static unsigned int cur_load_freq = 0;
 static bool lcd_is_on;
 static bool forced_hotplug;
+static bool do_enable_hotplug;
+static bool do_disable_hotplug;
+static bool big_hotpluged;
+static bool do_big_hotplug;
+static bool in_low_power_mode;
 
 enum hotplug_mode {
 	CHP_NORMAL = 1,
 	CHP_LOW_POWER,
+	CHP_BIG_IN,
+	CHP_BIG_OUT,
 };
 
 static int dynamic_hotplug(enum hotplug_mode mode);
@@ -109,12 +116,18 @@ static ssize_t store_enable_dm_hotplug(struct kobject *kobj, struct attribute *a
 	}
 
 	if (enable_input) {
+		do_enable_hotplug = true;
 		exynos_dm_hotplug_enable();
+
+		dynamic_hotplug(CHP_BIG_OUT);
+		do_enable_hotplug = false;
 	} else {
-		if (!dynamic_hotplug(CHP_NORMAL))
-			prev_mode = CHP_NORMAL;
+		do_disable_hotplug = true;
+		dynamic_hotplug(CHP_NORMAL);
+		prev_mode = CHP_NORMAL;
 
 		exynos_dm_hotplug_disable();
+		do_disable_hotplug = false;
 	}
 
 	return count;
@@ -213,10 +226,13 @@ static struct notifier_block fb_block = {
 	.notifier_call = fb_state_change,
 };
 
-static int __ref __cpu_hotplug(struct cpumask *be_out_cpus, bool out_flag)
+static int __ref __cpu_hotplug(struct cpumask *be_out_cpus,
+				bool out_flag, enum hotplug_mode mode)
 {
 	int i = 0;
 	int ret = 0;
+	int hotplug_cpus = NR_CPUS;
+	int end_hotplug_cpu = 1;
 
 	mutex_lock(&dm_hotplug_lock);
 	if (!exynos_dm_hotplug_enabled() ||
@@ -225,23 +241,79 @@ static int __ref __cpu_hotplug(struct cpumask *be_out_cpus, bool out_flag)
 		goto out;
 	}
 
+	if (big_hotpluged) {
+		if (out_flag) {
+			if (mode == CHP_BIG_OUT && in_low_power_mode)
+				goto out;
+
+			if (do_enable_hotplug) {
+				if (!in_low_power_mode)
+					end_hotplug_cpu = NR_CPUS - NR_CA15;
+				hotplug_cpus = NR_CPUS;
+			} else {
+				hotplug_cpus = NR_CPUS - NR_CA15;
+			}
+		} else {
+			if (mode == CHP_BIG_IN && in_low_power_mode)
+				goto out;
+
+			if (do_disable_hotplug ||
+				(mode == CHP_BIG_IN && do_big_hotplug)) {
+				if (!in_low_power_mode)
+					end_hotplug_cpu = 1;
+				hotplug_cpus = NR_CPUS;
+			} else {
+				hotplug_cpus = NR_CPUS - NR_CA15;
+			}
+		}
+	}
+
+	if (do_big_hotplug) {
+		if (in_low_power_mode)
+			goto out;
+
+		end_hotplug_cpu = NR_CPUS - NR_CA15;
+	}
+
+	if (do_enable_hotplug && !big_hotpluged)
+		goto out;
+
 	if (out_flag) {
-		for (i = NR_CPUS - 1; i > 0; i--) {
+		for (i = hotplug_cpus - 1; i >= end_hotplug_cpu; i--) {
 			ret = cpu_down(i);
 			if (ret)
 				break;
 		}
 	} else {
-		for (i = NR_CA7; i < NR_CPUS; i++) {
-			ret = cpu_up(i);
-			if (ret)
-				break;
+		if (big_hotpluged && !do_disable_hotplug) {
+			for (i = end_hotplug_cpu; i < hotplug_cpus; i++) {
+				ret = cpu_up(i);
+				if (ret)
+					break;
+			}
+		} else {
+			for (i = end_hotplug_cpu + (NR_CA7 - 1); i < hotplug_cpus; i++) {
+				ret = cpu_up(i);
+				if (ret)
+					break;
+			}
 		}
 
-		for (i = 1; i < NR_CPUS - NR_CA15; i++) {
-			ret = cpu_up(i);
-			if (ret)
-				break;
+		if (big_hotpluged && !in_low_power_mode)
+			goto out;
+
+		if (big_hotpluged && !do_disable_hotplug) {
+			for (i = end_hotplug_cpu; i < hotplug_cpus; i++) {
+				ret = cpu_up(i);
+				if (ret)
+					break;
+			}
+		} else {
+			for (i = end_hotplug_cpu; i < (hotplug_cpus - NR_CA15); i++) {
+				ret = cpu_up(i);
+				if (ret)
+					break;
+			}
 		}
 	}
 
@@ -258,7 +330,7 @@ int force_dynamic_hotplug(bool out_flag)
 
 	cpumask_clear(&out_target);
 
-	ret = __cpu_hotplug(&out_target, out_flag);
+	ret = __cpu_hotplug(&out_target, out_flag, CHP_LOW_POWER);
 
 	prev_mode = CHP_LOW_POWER;
 	forced_hotplug = out_flag;
@@ -275,19 +347,53 @@ static int dynamic_hotplug(enum hotplug_mode mode)
 	cpumask_clear(&out_target);
 
 	switch (mode) {
+	case CHP_BIG_OUT:
+		delay = POLLING_MSEC;
+		for (i = 1; i < NR_CPUS; i++)
+			cpumask_set_cpu(i, &out_target);
+		ret = __cpu_hotplug(&out_target, true, mode);
+		break;
+	case CHP_BIG_IN:
+		delay = POLLING_MSEC;
+		if (cpumask_weight(cpu_online_mask) < NR_CPUS)
+			ret = __cpu_hotplug(&out_target, false, mode);
+		break;
 	case CHP_LOW_POWER:
 		delay = POLLING_MSEC;
 		for (i = 1; i < NR_CPUS; i++)
 			cpumask_set_cpu(i, &out_target);
-		ret = __cpu_hotplug(&out_target, true);
+		ret = __cpu_hotplug(&out_target, true, mode);
+		in_low_power_mode = true;
 		break;
 	case CHP_NORMAL:
 	default:
 		delay = POLLING_MSEC;
 		if (cpumask_weight(cpu_online_mask) < NR_CPUS)
-			ret = __cpu_hotplug(&out_target, false);
+			ret = __cpu_hotplug(&out_target, false, mode);
+		in_low_power_mode = false;
 		break;
 	}
+
+	return ret;
+}
+
+int big_cores_hotplug(bool out_flag)
+{
+	int ret;
+
+	do_big_hotplug = true;
+
+	if (out_flag) {
+		ret = dynamic_hotplug(CHP_BIG_OUT);
+		if (!ret)
+			big_hotpluged = true;
+	} else {
+		ret = dynamic_hotplug(CHP_BIG_IN);
+		if (!ret)
+			big_hotpluged = false;
+	}
+
+	do_big_hotplug = false;
 
 	return ret;
 }
@@ -428,8 +534,8 @@ static int on_run(void *data)
 
 		if (exe_mode != prev_mode) {
 #ifdef DM_HOTPLUG_DEBUG
-			pr_debug("frequency info : %d, %s\n", cur_load_freq
-				, (exe_mode==1)?"NORMAL":((exe_mode==2)?"LOW":"HIGH"));
+			pr_info("frequency info : %d, prev_mode %d, exe_mode %d\n",
+					cur_load_freq, prev_mode, exe_mode);
 #endif
 			if (!exynos_dm_hotplug_enabled())
 				continue;
@@ -464,8 +570,13 @@ static int __init dm_cpu_hotplug_init(void)
 	fb_register_client(&fb_block);
 	lcd_is_on = true;
 	forced_hotplug = false;
+	do_enable_hotplug = false;
+	do_disable_hotplug = false;
 
 	dm_hotplug_enable = true;
+	big_hotpluged = false;
+	do_big_hotplug = false;
+	in_low_power_mode = false;
 
 #ifdef CONFIG_PM
 	ret = sysfs_create_file(power_kobj, &enable_dm_hotplug.attr);
