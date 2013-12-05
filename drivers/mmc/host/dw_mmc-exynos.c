@@ -313,7 +313,9 @@ static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
 	u32 tmp_reg;
 	int clkerr = 0;
 	struct clk *adiv = devm_clk_get(host->dev, "dout_mmc_a");
+#if !defined(CONFIG_SOC_EXYNOS5422)
 	struct clk *bdiv = devm_clk_get(host->dev, "dout_mmc_b");
+#endif
 
 	tmp_reg = mci_readl(host, CLKSEL);
 	ciu_div = SDMMC_CLKSEL_GET_DIVRATIO(tmp_reg);
