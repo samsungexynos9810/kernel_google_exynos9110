@@ -1609,6 +1609,9 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 		goto err_buf_map_attachment;
 	}
 #endif
+	exynos_ion_sync_dmabuf_for_device(sfb->dev, dma->dma_buf,
+						dma->dma_buf->size,
+						DMA_TO_DEVICE);
 	dma->ion_handle = ion_handle;
 	return dma->dma_buf->size;
 
@@ -1635,6 +1638,10 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_TO_DEVICE);
+
+	exynos_ion_sync_dmabuf_for_cpu(sfb->dev, dma->dma_buf,
+					dma->dma_buf->size,
+					DMA_FROM_DEVICE);
 #endif
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 	dma_buf_put(dma->dma_buf);
