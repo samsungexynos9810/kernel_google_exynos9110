@@ -454,8 +454,22 @@ void set_default_hibernation_mode(struct display_driver *dispdrv)
 	dispdrv->pm_status.hotplug_gating_on = hotplug_gating;
 }
 
+#define DECON_VCLK_ECLK_MUX_MASKING
+int decon_vclk_eclk_mux_control(bool enable)
+{
+	int ret = 0;
+	void __iomem *regs;
+	u32 data = 0x00;
+
+	if (enable)
+		TEMPORARY_RECOVER_CMU(0x13B9030C, 0x11, 0, 0x11);
+	else
+		TEMPORARY_RECOVER_CMU(0x13B9030C, 0x11, 0, 0x0);
+	return ret;
+}
 void decon_clock_on(struct display_driver *dispdrv)
 {
+#ifndef DECON_VCLK_ECLK_MUX_MASKING
 	if (!dispdrv->decon_driver.clk) {
 		dispdrv->decon_driver.clk = __clk_lookup("gate_decon");
 		if (IS_ERR(dispdrv->decon_driver.clk)) {
@@ -465,6 +479,9 @@ void decon_clock_on(struct display_driver *dispdrv)
 	}
 	clk_prepare(dispdrv->decon_driver.clk);
 	clk_enable(dispdrv->decon_driver.clk);
+#else
+	decon_vclk_eclk_mux_control(true);
+#endif
 }
 
 void mic_clock_on(struct display_driver *dispdrv)
@@ -497,8 +514,12 @@ void dsi_clock_on(struct display_driver *dispdrv)
 
 void decon_clock_off(struct display_driver *dispdrv)
 {
+#ifndef DECON_VCLK_ECLK_MUX_MASKING
 	clk_disable(dispdrv->decon_driver.clk);
 	clk_unprepare(dispdrv->decon_driver.clk);
+#else
+	decon_vclk_eclk_mux_control(false);
+#endif
 }
 
 void dsi_clock_off(struct display_driver *dispdrv)

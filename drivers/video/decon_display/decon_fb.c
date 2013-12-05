@@ -137,7 +137,7 @@ MODULE_DEVICE_TABLE(of, exynos5_decon);
 static void s3c_fb_sw_trigger(struct s3c_fb *sfb);
 #endif
 
-#define DECON_DUMMY_WIN_DISPLAY
+#undef DECON_DUMMY_WIN_DISPLAY
 #ifdef DECON_DUMMY_WIN_DISPLAY
 static dma_addr_t g_fb_dummy_buf;
 #define DUMMY_WIDTH     32
