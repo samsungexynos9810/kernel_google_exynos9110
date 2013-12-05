@@ -25,6 +25,7 @@
 #include <mach/map.h>
 
 #include <../drivers/clk/samsung/clk.h>
+static struct clk *g_mout_fimd1, *g_mout_rpll_ctrl, *g_mout_fimd1_mdnie1, *g_clk_fimd1, *g_mout_aclk_300_disp1_user, *g_mout_aclk_300_disp1_sw, *g_dout_aclk_300_disp1, *g_mout_aclk_300_disp1, *g_mout_dpll_ctrl, *g_mout_aclk_400_disp1_user, *g_mout_aclk_400_disp1_sw, *g_dout_aclk_400_disp1, *g_mout_aclk_400_disp1, *g_mout_fimd1_mdnie1, *g_mout_fimd1, *g_sclk_rpll, *g_sclk_fimd1;
 
 #define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
 	g_##child = clk_get(dev, #child); \
@@ -76,47 +77,23 @@
 int init_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
-
-	ret = exynos_set_parent("mout_fimd1", "mout_rpll_ctrl");
-	if (ret < 0)
-		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
-
-	ret = exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
-	if (ret < 0)
-		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
 
 #ifdef CONFIG_DECON_LCD_S6E8AA0
-	ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
+	DISPLAY_SET_RATE(clk_fimd1, 67 * MHZ);
 #else
-	ret = exynos_set_rate("sclk_fimd1", 266 * MHZ);
+	DISPLAY_SET_RATE(clk_fimd1, 266 * MHZ);
 #endif
-	if (ret < 0)
-		printk("exynos_set_rate failed: ret %d \n", ret);
 
-	ret = exynos_set_parent("mout_aclk_300_disp1_user", "mout_aclk_300_disp1_sw");
-	if (ret < 0)
-		pr_err("exynos_set_rate failed: ret %d\n", ret);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1_user, mout_aclk_300_disp1_sw);
 
-	ret = exynos_set_parent("mout_aclk_300_disp1_sw", "dout_aclk_300_disp1");
-	if (ret < 0)
-		pr_err("exynos_set_rate failed: ret %d\n", ret);
-
-	ret = exynos_set_parent("mout_aclk_300_disp1", "mout_dpll_ctrl");
-	if (ret < 0)
-		pr_err("exynos_set_rate failed: ret %d\n", ret);
-
-	ret = exynos_set_rate("dout_aclk_300_disp1", 300 * MHZ);
-	if (ret < 0)
-		pr_err("exynos_set_rate failed: ret %d\n", ret);
-
-	if (exynos_set_parent("mout_aclk_400_disp1_user", "mout_aclk_400_disp1_sw") < 0)
-		pr_err("Unable to set parent for mout_aclk_400_disp1_user\n");
-
-	if (exynos_set_parent("mout_aclk_400_disp1_sw", "dout_aclk_400_disp1") < 0)
-		pr_err("Unable to set parent for mout_aclk_400_disp1_sw.\n");
-
-	if (exynos_set_parent("mout_aclk_400_disp1", "mout_dpll_ctrl") < 0)
-		pr_err("Unable to set parent for mout_aclk_400_disp1.\n");
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1_sw, dout_aclk_300_disp1);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1, mout_dpll_ctrl);
+	DISPLAY_SET_RATE(dout_aclk_300_disp1, 300 * MHZ);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_400_disp1_user, mout_aclk_400_disp1_sw);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_400_disp1_sw, dout_aclk_400_disp1);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_400_disp1, mout_dpll_ctrl);
 
 	pr_info("%s: pixel_clk_rate: %d\n", __func__, exynos_get_rate("sclk_fimd1"));
 	pr_info("%s: aclk300_clk_rate: %d\n", __func__, exynos_get_rate("mout_aclk_300_disp1_user"));
@@ -247,15 +224,9 @@ int enable_display_decon_clocks(struct device *dev)
 	DISPLAY_CLOCK_INLINE_SET_PARENT(sclk_fimd1, mout_fimd1);
 	DISPLAY_INLINE_SET_RATE(sclk_fimd1, 67 * MHZ);
 #else
-	ret = exynos_set_parent("mout_fimd1_mdnie1", "mout_fimd1");
-	if (ret < 0)
-		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
-	ret = exynos_set_parent("mout_fimd1", "sclk_rpll");
-	if (ret < 0)
-		pr_err("DISPLAY_CLOCK_SET_PARENT: ret %d\n", ret);
-	ret = exynos_set_rate("sclk_fimd1", 67 * MHZ);
-	if (ret < 0)
-		pr_err("exynos_set_rate failed: ret %d\n", ret);
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, sclk_rpll);
+	DISPLAY_SET_RATE(sclk_fimd1, 67 * MHZ);
 #endif
 
 	return ret;

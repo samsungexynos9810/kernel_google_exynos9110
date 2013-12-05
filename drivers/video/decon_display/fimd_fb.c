@@ -3773,7 +3773,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 		goto err_lcd_clk;
 	}
 #endif
-	sfb->bus_clk = clk_get(dev, "fimd1");
+	sfb->bus_clk = clk_get(dev, "sclk_fimd1");
 	if (IS_ERR(sfb->bus_clk)) {
 		dev_err(dev, "failed to get bus clock\n");
 		ret = PTR_ERR(sfb->bus_clk);
@@ -3794,7 +3794,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 
 	if (!sfb->variant.has_clksel) {
-		sfb->lcd_clk = clk_get(dev, "sclk_fimd1");
+		sfb->lcd_clk = clk_get(dev, "clk_fimd1");
 		if (IS_ERR(sfb->lcd_clk)) {
 			dev_err(dev, "failed to get lcd clock\n");
 			ret = PTR_ERR(sfb->lcd_clk);
