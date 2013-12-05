@@ -254,6 +254,7 @@ struct samsung_pmx_func {
 	const char		*name;
 	const char		**groups;
 	u8			num_groups;
+	u32			val;
 };
 
 /* list of all exported SoC specific data */
