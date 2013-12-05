@@ -116,14 +116,16 @@ void samsung_usbphy_set_isolation(struct samsung_usbphy *sphy, bool on)
 		return;
 	}
 
-	reg_val = readl(reg);
+	if (reg) {
+		reg_val = readl(reg);
 
-	if (on)
-		reg_val &= ~en_mask;
-	else
-		reg_val |= en_mask;
+		if (on)
+			reg_val &= ~en_mask;
+		else
+			reg_val |= en_mask;
 
-	writel(reg_val, reg);
+		writel(reg_val, reg);
+	}
 }
 EXPORT_SYMBOL_GPL(samsung_usbphy_set_isolation);
 
@@ -153,14 +155,16 @@ void samsung_hsicphy_set_isolation(struct samsung_usbphy *sphy, bool on)
 		return;
 	}
 
-	reg_val = readl(reg);
+	if (reg) {
+		reg_val = readl(reg);
 
-	if (on)
-		reg_val &= ~en_mask;
-	else
-		reg_val |= en_mask;
+		if (on)
+			reg_val &= ~en_mask;
+		else
+			reg_val |= en_mask;
 
-	writel(reg_val, reg);
+		writel(reg_val, reg);
+	}
 }
 EXPORT_SYMBOL_GPL(samsung_hsicphy_set_isolation);
 
