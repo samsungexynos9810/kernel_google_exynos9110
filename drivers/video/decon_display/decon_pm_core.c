@@ -385,8 +385,8 @@ static void decon_clock_gating_handler(struct kthread_work *work)
 
 	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
 	dispdrv->pm_status.clk_idle_count = 0;
-	disp_pm_gate_lock(dispdrv, false);
 	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	disp_pm_gate_lock(dispdrv, false);
 	pm_debug("display_block_clock_off -");
 }
 
@@ -402,8 +402,8 @@ static void decon_power_gating_handler(struct kthread_work *work)
 
 	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
 	dispdrv->pm_status.pwr_idle_count = 0;
-	disp_pm_gate_lock(dispdrv, false);
 	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	disp_pm_gate_lock(dispdrv, false);
 	pm_info("##### display_hibernation_power_off -\n");
 }
 
