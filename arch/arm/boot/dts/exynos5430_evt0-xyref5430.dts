@@ -784,6 +784,10 @@
 		samsung,vbus-gpio = <&gph1 3 0>;
 	};
 
+	usb-switch {
+		samsung,vbus-gpio = <&gph1 3 0>;
+	};
+
 	gpio_keys {
 		compatible = "gpio-keys";
 		#address-cells = <1>;
