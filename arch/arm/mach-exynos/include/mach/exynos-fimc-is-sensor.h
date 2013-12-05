@@ -214,6 +214,12 @@ struct exynos_sensor_pin {
 	enum pin_act act;
 };
 
+#define SET_PIN(d, s, c, i, p, v, n, a)				\
+	(d)->pin_ctrls[s][c][i].pin	= p;			\
+	(d)->pin_ctrls[s][c][i].value	= v;			\
+	strncpy((d)->pin_ctrls[s][c][i].name, n, sizeof(n));	\
+	(d)->pin_ctrls[s][c][i].act	= a;
+
 /*
  * struct exynos_platform_fimc_is_sensor - platform data for exynos_sensor driver
  * @irq: GPIO getting the irq pin of exynos_sensor
