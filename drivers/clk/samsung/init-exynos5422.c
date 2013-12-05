@@ -47,9 +47,9 @@ static inline void add_enabler(const char *name)
 static void top_clk_enable(void)
 {
 	struct clk_enabler *ce;
+	struct clk *clk;
 #if defined(CMU_PRINT_PLL)
 	unsigned long tmp;
-	struct clk *clk;
 #endif
 	add_enabler("fout_apll");
 	add_enabler("fout_bpll");
@@ -67,11 +67,20 @@ static void top_clk_enable(void)
 	add_enabler("aclk_300_jpeg");
 	add_enabler("aclk_200_disp1");
 
+	add_enabler("clk_fimd1");
+	add_enabler("clk_dp1");
+	add_enabler("clk_dsim1");
+	add_enabler("clk_smmufimd1x_m1");
+	add_enabler("clk_smmufimd1x_m0");
+
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
 		clk_enable(ce->clk);
 	}
 
+	/* Enable unipro mux to support LPA Mode */
+	clk = __clk_lookup("mout_unipro");
+	clk_prepare_enable(clk);
 #if defined(CMU_PRINT_PLL)
 	clk = __clk_lookup("fout_apll");
 	tmp = clk_get_rate(clk);
@@ -170,6 +179,22 @@ void pwm_init_clock(void)
 			"pclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
 }
 
+static inline void force_disable(const char *name)
+{
+	struct clk *clock;
+	clock = __clk_lookup(name);
+
+	if (IS_ERR(clock))
+		return;
+	clk_prepare_enable(clock);
+	clk_disable_unprepare(clock);
+}
+
+void force_disable_clock(void)
+{
+	force_disable("clk_mfc_ip");
+}
+
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
@@ -177,4 +202,5 @@ void __init exynos5422_clock_init(void)
 	mscl_init_clock();
 	g2d_init_clock();
 	pwm_init_clock();
+	force_disable_clock();
 }
