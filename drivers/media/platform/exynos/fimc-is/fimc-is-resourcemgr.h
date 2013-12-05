@@ -20,6 +20,7 @@ struct fimc_is_dvfs_ctrl {
 	int cur_mif_qos;
 	int cur_cam_qos;
 	int cur_i2c_qos;
+	int cur_disp_qos;
 
 	struct fimc_is_dvfs_scenario_ctrl *static_ctrl;
 	struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl;

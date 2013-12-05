@@ -46,6 +46,7 @@
 #include "fimc-is-dt.h"
 #include "fimc-is-resourcemgr.h"
 #include "fimc-is-clk-gate.h"
+#include "fimc-is-dvfs.h"
 
 #include "sensor/fimc-is-device-2p2.h"
 #include "sensor/fimc-is-device-3h5.h"
@@ -79,11 +80,15 @@
 #define CONFIG_FIMC_IS_BUS_DEVFREQ
 #endif
 
+#if !defined(PM_QOS_CAM_THROUGHPUT)
+#define PM_QOS_CAM_THROUGHPUT	(PM_QOS_DISPLAY_THROUGHPUT + 1)
+#endif
+
 struct fimc_is_from_info *sysfs_finfo = NULL;
 struct fimc_is_from_info *sysfs_pinfo = NULL;
 struct device *fimc_is_dev = NULL;
 
-extern struct pm_qos_request exynos_isp_qos_dev;
+extern struct pm_qos_request exynos_isp_qos_int;
 extern struct pm_qos_request exynos_isp_qos_mem;
 extern struct pm_qos_request exynos_isp_qos_cam;
 extern struct pm_qos_request exynos_isp_qos_disp;
@@ -294,7 +299,7 @@ int fimc_is_runtime_suspend(struct device *dev)
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
 #if defined(CONFIG_PM_DEVFREQ)
-	int int_qos, mif_qos, cam_qos;
+	int int_qos, mif_qos, cam_qos, disp_qos;
 #endif
 
 	pr_info("FIMC_IS runtime suspend in\n");
@@ -306,17 +311,20 @@ int fimc_is_runtime_suspend(struct device *dev)
 
 #if defined(CONFIG_PM_DEVFREQ)
 	/* DEVFREQ release */
-	pr_info("[RSC] %s: DVFS UNLOCK\n", __func__);
+	pr_info("[RSC] %s: QoS UNLOCK\n", __func__);
 	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, FIMC_IS_SN_MAX);
 	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, FIMC_IS_SN_MAX);
 	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, FIMC_IS_SN_MAX);
+	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, FIMC_IS_SN_MAX);
 
 	if (int_qos)
-		pm_qos_remove_request(&exynos_isp_qos_dev);
+		pm_qos_remove_request(&exynos_isp_qos_int);
 	if (mif_qos)
 		pm_qos_remove_request(&exynos_isp_qos_mem);
 	if (cam_qos)
 		pm_qos_remove_request(&exynos_isp_qos_cam);
+	if (disp_qos)
+		pm_qos_remove_request(&exynos_isp_qos_disp);
 #endif
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
@@ -361,7 +369,7 @@ int fimc_is_runtime_resume(struct device *dev)
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
 #if defined(CONFIG_PM_DEVFREQ)
-	int int_qos, mif_qos, cam_qos;
+	int int_qos, mif_qos, cam_qos, disp_qos;
 #endif
 
 	pm_stay_awake(dev);
@@ -371,17 +379,20 @@ int fimc_is_runtime_resume(struct device *dev)
 	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, FIMC_IS_SN_MAX);
 	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, FIMC_IS_SN_MAX);
 	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, FIMC_IS_SN_MAX);
+	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, FIMC_IS_SN_MAX);
 
 	/* DEVFREQ lock */
 	if (int_qos)
-		pm_qos_add_request(&exynos_isp_qos_dev, PM_QOS_DEVICE_THROUGHPUT, int_qos);
+		pm_qos_add_request(&exynos_isp_qos_int, PM_QOS_DEVICE_THROUGHPUT, int_qos);
 	if (mif_qos)
 		pm_qos_add_request(&exynos_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
 	if (cam_qos)
 		pm_qos_add_request(&exynos_isp_qos_cam, PM_QOS_CAM_THROUGHPUT, cam_qos);
+	if (disp_qos)
+		pm_qos_add_request(&exynos_isp_qos_disp, PM_QOS_DISPLAY_THROUGHPUT, disp_qos);
 
-	pr_info("[RSC] %s: DVFS LOCK(int(%d), mif(%d), cam(%d))\n",
-		__func__, int_qos, mif_qos, cam_qos);
+	pr_info("[RSC] %s: QoS LOCK [INT(%d), MIF(%d), CAM(%d), DISP(%d)]\n",
+		__func__, int_qos, mif_qos, cam_qos, disp_qos);
 #endif
 
 	/* Low clock setting */

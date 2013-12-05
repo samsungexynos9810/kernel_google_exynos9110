@@ -22,7 +22,7 @@
 #include "fimc-is-resourcemgr.h"
 #include "fimc-is-core.h"
 
-struct pm_qos_request exynos_isp_qos_dev;
+struct pm_qos_request exynos_isp_qos_int;
 struct pm_qos_request exynos_isp_qos_mem;
 struct pm_qos_request exynos_isp_qos_cam;
 struct pm_qos_request exynos_isp_qos_disp;

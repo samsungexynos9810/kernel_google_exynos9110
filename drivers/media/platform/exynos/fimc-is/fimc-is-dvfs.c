@@ -14,9 +14,10 @@
 #include "fimc-is-core.h"
 #include "fimc-is-dvfs.h"
 
-extern struct pm_qos_request exynos_isp_qos_dev;
+extern struct pm_qos_request exynos_isp_qos_int;
 extern struct pm_qos_request exynos_isp_qos_mem;
 extern struct pm_qos_request exynos_isp_qos_cam;
+extern struct pm_qos_request exynos_isp_qos_disp;
 
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING);
@@ -263,6 +264,7 @@ int fimc_is_dvfs_init(struct fimc_is_resourcemgr *resourcemgr)
 	resourcemgr->dvfs_ctrl.cur_mif_qos = 0;
 	resourcemgr->dvfs_ctrl.cur_cam_qos = 0;
 	resourcemgr->dvfs_ctrl.cur_i2c_qos = 0;
+	resourcemgr->dvfs_ctrl.cur_disp_qos = 0;
 
 	/* init spin_lock for clock gating */
 	mutex_init(&resourcemgr->dvfs_ctrl.lock);
@@ -463,7 +465,7 @@ exit:
 int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 {
 	int ret = 0;
-	int int_qos, mif_qos, i2c_qos, cam_qos = 0;
+	int int_qos, mif_qos, i2c_qos, cam_qos, disp_qos = 0;
 	int refcount;
 	struct fimc_is_core *core;
 	struct fimc_is_resourcemgr *resourcemgr;
@@ -486,10 +488,12 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 
 	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, scenario_id);
 	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, scenario_id);
-	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, scenario_id);
 	i2c_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_I2C, scenario_id);
+	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, scenario_id);
+	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, scenario_id);
 
-	if (int_qos < 0 || mif_qos < 0 || i2c_qos < 0 || cam_qos < 0) {
+	if ((int_qos < 0) || (mif_qos < 0) || (i2c_qos < 0)
+			|| (cam_qos < 0) || (disp_qos < 0)) {
 		err("getting qos value is failed!!\n");
 		return -EINVAL;
 	}
@@ -504,7 +508,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 			}
 		}
 
-		pm_qos_update_request(&exynos_isp_qos_dev, int_qos);
+		pm_qos_update_request(&exynos_isp_qos_int, int_qos);
 		dvfs_ctrl->cur_int_qos = int_qos;
 
 		if (!i2c_qos) {
@@ -527,8 +531,14 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 		dvfs_ctrl->cur_cam_qos = cam_qos;
 	}
 
-	dbg("[RSC:%d] DVFS INT(%d), MIF(%d), CAM(%d), I2C(%d)\n",
-			device->instance, int_qos, mif_qos, cam_qos, i2c_qos);
+	if (disp_qos && dvfs_ctrl->cur_disp_qos != disp_qos) {
+		pm_qos_update_request(&exynos_isp_qos_disp, disp_qos);
+		dvfs_ctrl->cur_disp_qos = disp_qos;
+	}
+
+	dbg("[RSC:%d]: New QoS [INT(%d), MIF(%d), CAM(%d), DISP(%d), I2C(%d)]\n",
+			device->instance, int_qos, mif_qos,
+			cam_qos, disp_qos, i2c_qos);
 exit:
 	return ret;
 }
