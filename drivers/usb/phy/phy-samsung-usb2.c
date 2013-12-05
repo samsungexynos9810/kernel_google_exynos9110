@@ -348,7 +348,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 	if (!sphy->usage_count) {
 		dev_dbg(sphy->dev, "PHY is already shutdown\n");
 		spin_unlock_irqrestore(&sphy->lock, flags);
-		return;
+		goto exit1;
 	}
 
 	sphy->usage_count--;
@@ -356,7 +356,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 	if (sphy->usage_count) {
 		dev_dbg(sphy->dev, "PHY is still in use\n");
 		spin_unlock_irqrestore(&sphy->lock, flags);
-		goto exit;
+		goto exit2;
 	}
 
 	if (host) {
@@ -388,9 +388,9 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 
 	pm_runtime_disable(phy->dev);
 	pm_runtime_set_suspended(phy->dev);
-exit:
+exit2:
 	pm_runtime_put_noidle(phy->dev);
-
+exit1:
 	clk_disable(sphy->clk);
 }
 
