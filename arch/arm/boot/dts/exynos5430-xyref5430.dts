@@ -785,6 +785,13 @@
 			samsung,pin-function = <0xf>;
 			samsung,pin-pud = <3>;
 		};
+
+		sw_id_irq: sw-id-irq {
+			samsung,pins = "gpa3-7";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <3>;
+		};
+
 	};
 
 	dwc3_boost5v: fixedregulator@0 {
@@ -828,6 +835,8 @@
 	usb-switch {
 		samsung,vbus-gpio = <&gph1 3 0>;
 		samsung,id-gpio = <&gpa3 7  0xf>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sw_id_irq>;
 	};
 
 	gpio_keys {
