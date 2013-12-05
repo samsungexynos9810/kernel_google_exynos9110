@@ -132,6 +132,7 @@ struct display_component_mic {
  * the other is the status wating VSYNC. */
 struct display_pm_status {
 	spinlock_t slock;
+	struct mutex pm_lock;
 	int trigger_masked;
 	int clock_enabled;
 	atomic_t lock_count;

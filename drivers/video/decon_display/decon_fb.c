@@ -1056,9 +1056,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		prev_overlap_cnt = 0;
 		prev_gsc_local_cnt = 0;
 #endif
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-		init_display_pm_status(dispdrv);
-#endif
 		break;
 
 	case FB_BLANK_UNBLANK:
@@ -1083,6 +1080,10 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 
 	disp_pm_runtime_put_sync(dispdrv);
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	if (blank_mode == FB_BLANK_POWERDOWN || blank_mode == FB_BLANK_NORMAL)
+		init_display_pm_status(dispdrv);
+#endif
 	return ret;
 }
 

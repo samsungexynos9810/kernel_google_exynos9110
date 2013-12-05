@@ -104,6 +104,7 @@ int init_display_pm(struct display_driver *dispdrv)
 	init_display_pm_status(dispdrv);
 
 	spin_lock_init(&dispdrv->pm_status.slock);
+	mutex_init(&dispdrv->pm_status.pm_lock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	set_default_hibernation_mode(dispdrv);
 #else
@@ -275,8 +276,8 @@ int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	pm_runtime_get_sync(dispdrv->display_driver);
-	if (dispdrv->platform_status > DISP_STATUS_PM0)
-		display_block_clock_on(dispdrv);
+	display_block_clock_on(dispdrv);
+
 	return 0;
 }
 
@@ -345,8 +346,7 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 		display_hibernation_power_on(dispdrv);
 	}
 
-	if (dispdrv->platform_status > DISP_STATUS_PM0)
-		display_block_clock_on(dispdrv);
+	display_block_clock_on(dispdrv);
 
 	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
 	if (dispdrv->pm_status.trigger_masked) {
@@ -527,21 +527,25 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 void display_block_clock_on(struct display_driver *dispdrv)
 {
 	if (dispdrv->platform_status > DISP_STATUS_PM0) {
+		mutex_lock(&dispdrv->pm_status.pm_lock);
 		if (!dispdrv->pm_status.clock_enabled) {
 			pm_debug("+");
 			__display_block_clock_on(dispdrv);
 			dispdrv->pm_status.clock_enabled = 1;
 			pm_debug("-");
 		}
+		mutex_unlock(&dispdrv->pm_status.pm_lock);
 	}
 }
 
 void display_block_clock_off(struct display_driver *dispdrv)
 {
+	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (dispdrv->pm_status.clock_enabled) {
 		pm_debug("+");
 		dispdrv->pm_status.clock_enabled = 0;
 		__display_block_clock_off(dispdrv);
 		pm_debug("-");
 	}
+	mutex_unlock(&dispdrv->pm_status.pm_lock);
 }
