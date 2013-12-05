@@ -49,7 +49,7 @@ enum devfreq_transition {
     MIF_DEVFREQ_DIS_MONITORING,
 };
 
-void exynos5_mif_nocp_resume(void);
+void exynos5_int_nocp_resume(void);
 void exynos5_mif_transition_disable(bool disable);
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value);
 #endif /* CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ */
