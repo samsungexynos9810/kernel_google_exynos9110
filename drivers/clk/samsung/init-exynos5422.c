@@ -225,6 +225,28 @@ void g2d_init_clock(void)
 			, __func__, __LINE__, clk_rate1);
 }
 
+void gsc_clock_init(void)
+{
+	if (exynos_set_parent("mout_aclk_300_gscl", "mout_dpll_ctrl"))
+		pr_err("failed clock mout_aclk_300_gscl to \
+				mout_dpll_ctrl\n");
+	if (exynos_set_parent("mout_aclk_300_gscl_sw",
+				"dout_aclk_300_gscl"))
+		pr_err("failed clock mout_aclk_300_gscl_sw to \
+				dout_aclk_300_gscl\n");
+	if (exynos_set_parent("mout_aclk_300_gscl_user",
+				"mout_aclk_300_gscl_sw"))
+		pr_err("failed clock mout_aclk_300_gscl_user to \
+				mout_aclk_300_gscl_sw\n");
+	if (exynos_set_parent("aclk_300_gscl", "mout_aclk_300_gscl_user"))
+		pr_err("failed clock aclk_300_gscl to \
+				mout_aclk_300_gscl_user\n");
+	exynos_set_rate("dout_aclk_300_gscl", 300 * MHZ);
+	pr_info("gscaler: dout_aclk_300_gscl %d aclk_300_gscl %d\n",
+			exynos_get_rate("dout_aclk_300_gscl"),
+			exynos_get_rate("aclk_300_gscl"));
+}
+
 void pwm_init_clock(void)
 {
 	clk_register_fixed_factor(NULL, "pwm-clock",
@@ -239,4 +261,5 @@ void __init exynos5422_clock_init(void)
 	mscl_init_clock();
 	g2d_init_clock();
 	pwm_init_clock();
+	gsc_clock_init();
 }
