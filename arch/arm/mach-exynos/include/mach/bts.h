@@ -11,10 +11,17 @@
 #ifndef __EXYNOS_BTS_H_
 #define __EXYNOS_BTS_H_
 
-#if defined(CONFIG_EXYNOS5430_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 void bts_initialize(const char *pd_name, bool on);
 #else
 #define bts_initialize(a, b) do {} while (0)
 #endif
+
+#if defined(CONFIG_EXYNOS5422_BTS)
+void bts_change_g3d_state(unsigned int freq);
+#else
+#define bts_change_g3d_state(a) do {} while(0)
+#endif
+
 
 #endif
