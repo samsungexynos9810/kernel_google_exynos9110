@@ -16,6 +16,8 @@
 
 #define NUM_IRQ_REGS	4
 
+#define SEC_PMIC_REV(iodev)	(iodev)->rev_num
+
 enum sec_device_type {
 	S5M8751X,
 	S5M8763X,

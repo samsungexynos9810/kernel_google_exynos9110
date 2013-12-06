@@ -256,7 +256,7 @@ static int s2m_rtc_stop_alarm(struct s2m_rtc_info *info)
 
 	switch (info->iodev->device_type) {
 	case S2MPS11X:
-		if (info->iodev->rev_num <= S2MPS11_REV_82) {
+		if (SEC_PMIC_REV(info->iodev) <= S2MPS11_REV_82) {
 			ret = s2m_rtc_workaround_operation(info, data);
 			if (ret < 0)
 				return ret;
