@@ -356,6 +356,13 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	}
 
 	cclkin = clk_tbl[timing];
+	rddqs = DWMCI_DDR200_RDDQS_EN_DEF;
+	dline = DWMCI_DDR200_DLINE_CTRL_DEF;
+#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5430)
+	rclk_base = 0x70;
+#else
+	rclk_base = 0x0;
+#endif
 	clksel = __raw_readl(host->regs + DWMCI_CLKSEL);
 
 	if (host->bus_hz != cclkin) {
@@ -368,36 +375,13 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 		clksel = ((priv->ddr200_timing & 0xfffffff8) | pdata->clk_smpl);
 
 		if (!tuning) {
-#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5430)
-			rclk_base = 0x70;
-#else
-			rclk_base = 0x0;
-#endif
-
-			rddqs = __raw_readl(host->regs + DWMCI_DDR200_RDDQS_EN
-					+ rclk_base);
-			dline = __raw_readl(host->regs + DWMCI_DDR200_DLINE_CTRL
-					+ rclk_base);
-
-			rddqs &= ~(DWMCI_TXDT_CRC_TIMER_FASTLIMIT(0xFF) |
-					DWMCI_TXDT_CRC_TIMER_INITVAL(0xFF));
-			dline &= ~(DWMCI_FIFO_CLK_DELAY_CTRL(0x3) |
-					DWMCI_RD_DQS_DELAY_CTRL(0x3FF));
-
-			rddqs |= (DWMCI_DDR200_RDDQS_EN_DEF |
-					DWMCI_AXI_NON_BLOCKING_WRITE |
-					DWMCI_RDDQS_EN);
+			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
 			if (priv->delay_line)
-				dline |= DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
+				dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
 				DWMCI_RD_DQS_DELAY_CTRL(priv->delay_line);
 			else
-				dline |= DWMCI_DDR200_DLINE_CTRL_DEF;
-
-			__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN +
-					rclk_base);
-			__raw_writel(dline, host->regs +
-					DWMCI_DDR200_DLINE_CTRL + rclk_base);
-
+				dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
+				DWMCI_RD_DQS_DELAY_CTRL(90);
 			host->quirks &= ~DW_MCI_QUIRK_NO_DETECT_EBIT;
 		}
 	} else if (timing == MMC_TIMING_MMC_HS200 ||
@@ -412,6 +396,8 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	}
 
 	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
+	__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN + rclk_base);
+	__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL + rclk_base);
 }
 
 #ifndef MHZ
