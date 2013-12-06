@@ -1275,21 +1275,25 @@
 
         spd_gscl0: spd-gscl0@10044000 {
             compatible = "samsung,exynos-spd";
+		bts-status = "enabled";
         };
 
         spd_gscl1: spd-gscl1@10044000 {
             compatible = "samsung,exynos-spd";
+		bts-status = "enabled";
         };
     };
 
     pd_mfc0: pd-mfc@10044060 {
         compatible = "samsung,exynos-pd";
         reg = <0x10044060 0x20>;
+	bts-status = "enabled";
     };
 
 	pd_g3d: pd-g3d@0x10044080 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10044080 0x20>;
+		bts-status = "enabled";
 	};
 
 	pd_disp1: pd-disp1@0x100440c0 {
@@ -1322,12 +1326,14 @@
 		compatible = "samsung,exynos-pd";
 		reg = <0x10044100 0x20>;
 		status = "disabled";
+		bts-status = "enabled";
 	};
 
 	pd_mscl: pd-mscl@10044120 {
         compatible = "samsung,exynos-pd";
         reg = <0x10044120 0x20>;
 		status = "disabled";
+		bts-status = "enabled";
     };
 
 	pd_fsys: pd-fsys@10044140 {
@@ -1337,6 +1343,7 @@
 
         spd_usbdrd30: spd-usbdrd30@10044140 {
             compatible = "samsung,exynos-spd";
+		bts-status = "enabled";
         };
 
         spd_pdma: spd-pdma@10044140 {
@@ -1362,11 +1369,13 @@
 		spd_jpeg1: spd-jpeg1@10044180 {
 			compatible = "samsung,exynos-spd";
 			status = "disabled";
+			bts-status = "enabled";
 		};
 
 		spd_jpeg2: spd-jpeg2@10044180 {
 			compatible = "samsung,exynos-spd";
 		        status = "disabled";
+			bts-status = "enabled";
 		};
 	};
 
