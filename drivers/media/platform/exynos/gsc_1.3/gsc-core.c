@@ -1278,7 +1278,8 @@ static int gsc_clk_get(struct gsc_dev *gsc)
 		gsc->clock[i] = ERR_PTR(-EINVAL);
 
 	for (i = 0; i < GSC_MAX_CLOCKS; i++) {
-		gsc->clock[i] = __clk_lookup(gsc_clocks[i]);
+		gsc->clock[i] = devm_clk_get(&gsc->pdev->dev,
+				gsc_clocks[i]);
 		if (IS_ERR(gsc->clock[i])) {
 			ret = PTR_ERR(gsc->clock[i]);
 			goto err;
