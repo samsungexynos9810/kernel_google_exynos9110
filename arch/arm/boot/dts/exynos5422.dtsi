@@ -1063,8 +1063,8 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13E00000 0x1000>;
 		interrupts = <0 85 0>;
-		clocks = <&clock 565>;
-		clock-names = "gate_gscl";
+		clocks = <&clock 1268>, <&clock 494>, <&clock 2077>;
+		clock-names = "gscl", "aclk_300_gscl", "aclk_300_gscl_sw";
 		ip_ver = <1>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -1076,8 +1076,8 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13E10000 0x1000>;
 		interrupts = <0 86 0>;
-		clocks = <&clock 566>;
-		clock-names = "gate_gscl";
+		clocks = <&clock 1267>, <&clock 494>, <&clock 2077>;
+		clock-names = "gscl", "aclk_300_gscl", "aclk_300_gscl_sw";
 		ip_ver = <1>;
 		mif_min = <160000>;
 		int_min = <111000>;
