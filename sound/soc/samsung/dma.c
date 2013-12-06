@@ -146,15 +146,22 @@ static void audio_buffdone(void *data)
 
 	pr_debug("Entered %s\n", __func__);
 
-	snd_pcm_period_elapsed(substream);
+	if (prtd->state & ST_RUNNING) {
+		prtd->dma_pos += prtd->dma_period;
+		if (prtd->dma_pos >= prtd->dma_end)
+			prtd->dma_pos = prtd->dma_start;
 
-	spin_lock(&prtd->lock);
-	if (!samsung_dma_has_circular()) {
-		prtd->dma_loaded--;
-		if (!samsung_dma_has_infiniteloop())
-			dma_enqueue(substream);
+		if (substream)
+			snd_pcm_period_elapsed(substream);
+
+		spin_lock(&prtd->lock);
+		if (!samsung_dma_has_circular()) {
+			prtd->dma_loaded--;
+			if (!samsung_dma_has_infiniteloop())
+				dma_enqueue(substream);
+		}
+		spin_unlock(&prtd->lock);
 	}
-	spin_unlock(&prtd->lock);
 }
 
 static int dma_hw_params(struct snd_pcm_substream *substream,
@@ -307,14 +314,10 @@ static snd_pcm_uframes_t dma_pointer(struct snd_pcm_substream *substream)
 	struct snd_pcm_runtime *runtime = substream->runtime;
 	struct runtime_data *prtd = runtime->private_data;
 	unsigned long res;
-	dma_addr_t src, dst;
 
 	pr_debug("Entered %s\n", __func__);
-	prtd->params->ops->getposition(prtd->params->ch, &src, &dst);
-	if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
-		res = dst - prtd->dma_start;
-	else
-		res = src - prtd->dma_start;
+
+	res = prtd->dma_pos - prtd->dma_start;
 
 	pr_debug("Pointer offset: %lu\n", res);
 
