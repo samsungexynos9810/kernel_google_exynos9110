@@ -2010,6 +2010,9 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	struct sync_pt *pt;
 	int fd;
 	unsigned int bw = 0;
+	struct display_driver *dispdrv;
+
+	dispdrv = get_display_driver();
 
 	fd = get_unused_fd();
 	if (fd < 0)
@@ -2164,6 +2167,9 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			sw_sync_timeline_inc(sfb->timeline, 1);
 			kfree(regs);
 		} else {
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+			disp_pm_gate_lock(dispdrv, true);
+#endif
 			mutex_unlock(&sfb->update_regs_list_lock);
 		}
 	}
@@ -2486,17 +2492,14 @@ static void s3c_fb_update_regs_handler(struct work_struct *work)
 	list_replace_init(&sfb->update_regs_list, &saved_list);
 	mutex_unlock(&sfb->update_regs_list_lock);
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_gate_lock(dispdrv, true);
-#endif
 	list_for_each_entry_safe(data, next, &saved_list, list) {
 		s3c_fb_update_regs(sfb, data);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+		disp_pm_gate_lock(dispdrv, false);
+#endif
 		list_del(&data->list);
 		kfree(data);
 	}
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_gate_lock(dispdrv, false);
-#endif
 }
 
 static int s3c_fb_get_user_ion_handle(struct s3c_fb *sfb,
