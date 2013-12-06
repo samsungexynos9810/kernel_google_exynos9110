@@ -1545,6 +1545,20 @@
 		status = "disabled";
 	};
 
+	i2c_8: i2c@14130000 {
+		compatible = "samsung,exynos5430-fimc-i2c";
+		reg = <0x14130000 0x1000>;
+		interrupts = <0 166 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_i2c_0>;
+		clocks = <&clock 4184>, <&clock 4184>;
+		clock-names = "rate_i2c","gate_i2c";
+		status = "disabled";
+		samsung,power-domain = <&pd_cam1>;
+        };
+
 	hsi2c_0: hsi2c@14E40000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,polling-mode;
@@ -1781,6 +1795,8 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&fimc_is_spi_pin0>;
+		domain = "cam1";
+		samsung,power-domain = <&pd_cam1>;
 	};
 
 	spi_4: spi@141b0000 {
@@ -1794,6 +1810,8 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&fimc_is_spi_pin1>;
+		domain = "cam1";
+		samsung,power-domain = <&pd_cam1>;
 	};
 
 	fimc_is_sensor0: fimc_is_sensor@12100000 {
