@@ -1183,7 +1183,7 @@
 			};
 			hevc_qos_variant_3 {
 				thrd_mb = <489600>;
-				freq_hevc = <400000>;
+				freq_hevc = <413000>;
 				freq_int = <400000>;
 				freq_mif = <400000>;
 				freq_cpu = <0>;
