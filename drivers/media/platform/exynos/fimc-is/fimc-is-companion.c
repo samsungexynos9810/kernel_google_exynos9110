@@ -261,9 +261,30 @@ exit:
 	return ret;
 }
 
+static unsigned int fimc_is_comp_version(struct fimc_is_core *core)
+{
+	u8 read_data[2];
+	u16 comp_ver = 0;
+	u32 read_addr;
+
+	if (!core->spi1) {
+		pr_debug("spi1 device is not available");
+		goto p_err;
+	}
+
+	read_addr = 0x0002;
+	fimc_is_comp_spi_read(core->spi1, (void *)read_data, read_addr, 2);
+	comp_ver = read_data[0] << 8 | read_data[1] << 0;
+	pr_info("Companion Version: 0x%04X\n", comp_ver);
+
+p_err:
+	return comp_ver;
+}
+
 int fimc_is_comp_loadfirm(struct fimc_is_core *core)
 {
 	int ret = 0;
+	u32 comp_ver;
 
 	if (!core->spi1) {
 		pr_debug("spi1 device is not available");
@@ -271,7 +292,19 @@ int fimc_is_comp_loadfirm(struct fimc_is_core *core)
 	}
 
 	fimc_is_comp_spi_single_write(core->spi1, 0x00000000);
-	fimc_is_comp_spi_single_write(core->spi1, 0x60480001);
+
+	comp_ver = fimc_is_comp_version(core);
+
+	if (comp_ver == 0x00A0)
+		fimc_is_comp_spi_single_write(core->spi1, 0x02560001);
+	else if (comp_ver == 0x00B0)
+		fimc_is_comp_spi_single_write(core->spi1, 0x01220001);
+	else
+		err("Invlide companion version(%04X)", comp_ver);
+
+	usleep_range(1000, 1000);
+
+	fimc_is_comp_spi_single_write(core->spi1, 0x60420001);
 	fimc_is_comp_spi_single_write(core->spi1, 0x64280000);
 	fimc_is_comp_spi_single_write(core->spi1, 0x642A0000);
 
