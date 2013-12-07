@@ -5309,15 +5309,13 @@ static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device,
 		queue->framecfg.format.num_planes,
 		device->imemory.kvaddr_shared + 447 * sizeof(u32));
 
-	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-		/* setting for always scaled output setting on reprocessing */
-		scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
-		scc_otf_output->width = output_crop[2];
-		scc_otf_output->height = output_crop[3];
-		*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
-		*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
-		(*indexes)++;
-	}
+	/* setting always although otf output is not used. */
+	scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
+	scc_otf_output->width = output_crop[2];
+	scc_otf_output->height = output_crop[3];
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
+	(*indexes)++;
 
 	scc_input_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_INPUT_CROP);
 	scc_input_crop->cmd = SCALER_CROP_COMMAND_ENABLE;
@@ -5422,6 +5420,8 @@ static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device,
 	int ret = 0;
 	struct param_dma_output *scc_dma_output;
 	struct param_scaler_input_crop *scc_input_crop;
+	struct param_otf_output *scc_otf_output;
+	struct param_scaler_output_crop *scc_output_crop;
 
 	mdbgd_ischain("%s\n", device, __func__);
 
@@ -5439,6 +5439,20 @@ static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device,
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
 	(*indexes)++;
+
+	scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
+	scc_otf_output->width = device->chain1_width;
+	scc_otf_output->height = device->chain1_height;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
+	(*indexes)++;
+
+	scc_output_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OUTPUT_CROP);
+	scc_output_crop->cmd = SCALER_CROP_COMMAND_DISABLE;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_OUTPUT_CROP);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OUTPUT_CROP);
+	(*indexes)++;
+
 	clear_bit(FIMC_IS_SUBDEV_START, &subdev->state);
 
 	return ret;
