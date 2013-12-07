@@ -406,15 +406,15 @@ int cfg_clk_div_max(struct platform_device *pdev)
 int cfg_clk_sclk(struct platform_device *pdev)
 {
 	/* SCLK_SPI0 */
-	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "oscclk");
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 24 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_b", 24 * 1000000);
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "mout_bus_pll_user");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 275 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_b", 46 * 1000000);
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0_user", "sclk_isp_spi0_top");
 
 	/* SCLK_SPI1 */
-	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1", "oscclk");
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 24 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 24 * 1000000);
+	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1", "mout_bus_pll_user");
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 275 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 46 * 1000000);
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1_user", "sclk_isp_spi1_top");
 
 	/* SCLK_UART */
