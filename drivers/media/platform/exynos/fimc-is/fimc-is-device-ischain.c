@@ -4778,8 +4778,14 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		}
 	}
 
-	device->chain0_width = leader->input.width;
-	device->chain0_height = leader->input.height;
+	if (leader_3aa && (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) ||
+				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1))) {
+		device->chain0_width = leader->input.width;
+		device->chain0_height = leader->input.height;
+	} else {
+		device->chain0_width = leader->input.width - device->margin_width;
+		device->chain0_height = leader->input.height - device->margin_height;
+	}
 
 	device->dzoom_width = 0;
 	device->bds_width = 0;
