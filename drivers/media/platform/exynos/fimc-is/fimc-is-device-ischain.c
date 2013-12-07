@@ -4877,13 +4877,6 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		device->chain1_width, device->chain1_height,
 				&lindex, &hindex, &indexes);
 
-#ifdef SCALER_PARALLEL_MODE
-	device->chain2_width = device->chain0_width;
-	device->chain2_height = device->chain0_height;
-
-	device->chain2_width = device->chain0_width;
-	device->chain2_height = device->chain0_height;
-#endif
 	fimc_is_ischain_s_chain2_size(device,
 		NULL, device->chain2_width, device->chain2_height,
 				&lindex, &hindex, &indexes);
@@ -5529,19 +5522,6 @@ static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 			(output_crop[3] != scc_param->output_crop.crop_height) ||
 			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
 
-#ifdef SCALER_PARALLEL_MODE
-			ret = fimc_is_ischain_s_chain0_size(device,
-				ldr_frame,
-				output_crop[2],
-				output_crop[3],
-				&lindex,
-				&hindex,
-				&indexes);
-			if (ret) {
-				merr("fimc_is_ischain_s_chain0_size is fail(%d)", device, ret);
-				goto p_err;
-			}
-#endif
 			ret = fimc_is_ischain_scc_start(device,
 				subdev,
 				ldr_frame,
@@ -5687,8 +5667,8 @@ static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device,
 	scp_input_crop->crop_width = input_crop[2];
 	scp_input_crop->crop_height = input_crop[3];
 #ifdef SCALER_PARALLEL_MODE
-	scp_input_crop->in_width = input_crop[2];
-	scp_input_crop->in_height = input_crop[3];
+	scp_input_crop->in_width = device->bds_width;
+	scp_input_crop->in_height = device->bds_height;
 	scp_input_crop->out_width = output_crop[2];
 	scp_input_crop->out_height = output_crop[3];
 #else
@@ -5923,18 +5903,6 @@ static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 				&indexes);
 			if (ret) {
 				merr("fimc_is_ischain_s_chain2_size is fail(%d)", device, ret);
-				goto p_err;
-			}
-
-			ret = fimc_is_ischain_s_chain3_size(device,
-				ldr_frame,
-				output_crop[2],
-				output_crop[3],
-				&lindex,
-				&hindex,
-				&indexes);
-			if (ret) {
-				merr("fimc_is_ischain_s_chain3_size is fail(%d)", device, ret);
 				goto p_err;
 			}
 #endif
