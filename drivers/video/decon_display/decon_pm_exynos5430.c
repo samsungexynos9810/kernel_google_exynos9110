@@ -434,6 +434,13 @@ int disable_display_decon_runtimepm(struct device *dev)
 }
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+int get_display_line_count(struct display_driver *dispdrv)
+{
+	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+
+	return (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT);
+}
+
 void set_default_hibernation_mode(struct display_driver *dispdrv)
 {
 	bool clock_gating = false;

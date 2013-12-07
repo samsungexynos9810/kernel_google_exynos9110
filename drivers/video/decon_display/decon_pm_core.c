@@ -69,6 +69,7 @@ int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
 extern void set_default_hibernation_mode(struct display_driver *dispdrv);
+extern int get_display_line_count(struct display_driver *dispdrv);
 
 struct pm_ops display_block_ops = {
 	.clk_on		= display_block_clock_on,
@@ -450,8 +451,12 @@ static void __display_block_clock_on(struct display_driver *dispdrv)
 #endif
 }
 
-static void __display_block_clock_off(struct display_driver *dispdrv)
+static int __display_block_clock_off(struct display_driver *dispdrv)
 {
+	if (get_display_line_count(dispdrv)) {
+		pm_debug("wait until last frame is totally transferred");
+		return -EBUSY;
+	}
 	/* DECON -> (MDNIE) -> MIC -> DSIM -> SMMU */
 	call_pm_ops(dispdrv, decon_driver, clk_off, dispdrv);
 #ifdef CONFIG_DECON_MIC
@@ -462,6 +467,7 @@ static void __display_block_clock_off(struct display_driver *dispdrv)
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
 #endif
+	return 0;
 }
 
 static void request_dynamic_hotplug(bool hotplug)
@@ -543,8 +549,8 @@ void display_block_clock_off(struct display_driver *dispdrv)
 	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (dispdrv->pm_status.clock_enabled) {
 		pm_debug("+");
-		dispdrv->pm_status.clock_enabled = 0;
-		__display_block_clock_off(dispdrv);
+		if (__display_block_clock_off(dispdrv) == 0)
+			dispdrv->pm_status.clock_enabled = 0;
 		pm_debug("-");
 	}
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
