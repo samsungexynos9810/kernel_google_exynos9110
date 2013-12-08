@@ -57,6 +57,7 @@
 #undef ENABLE_CLOCK_GATE
 #undef ENABLE_DVFS
 #undef ENABLE_FULL_BYPASS
+#define SUPPORTED_IS_CMD_VER	130
 #endif
 /*
  * -----------------------------------------------------------------------------
