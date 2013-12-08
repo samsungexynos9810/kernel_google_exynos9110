@@ -549,7 +549,7 @@
 		reg = <0x142D0000 0x1000>;
 		interrupts = <0 169 0>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 2672>, <&clock 2637>;
+		clocks = <&clock 2667>, <&clock 2637>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
