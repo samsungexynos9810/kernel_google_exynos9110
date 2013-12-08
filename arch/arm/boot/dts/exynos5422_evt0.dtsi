@@ -326,7 +326,6 @@
 		reg = <0x13E80000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 0>;
-		samsung,power-domain = <&spd_gscl0>;
 	};
 
 	sysmmu_gscl1: sysmmu@0x13E90000 {
@@ -334,7 +333,6 @@
 		reg = <0x13E90000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 2>;
-		samsung,power-domain = <&spd_gscl1>;
 	};
 
 	sysmmu_fimc_fd: sysmmu@0x132A0000 {
@@ -1054,7 +1052,6 @@
 		mif_min = <160000>;
 		int_min = <111000>;
 		iommu = <&sysmmu_gscl0>;
-		samsung,power-domain = <&spd_gscl0>;
 	};
 
 	gsc_1: gsc@0x13E10000 {
@@ -1067,7 +1064,6 @@
 		mif_min = <160000>;
 		int_min = <111000>;
 		iommu = <&sysmmu_gscl1>;
-		samsung,power-domain = <&spd_gscl1>;
 	};
 
 	jpeg_0: jpeg@11F50000 {
@@ -1259,21 +1255,6 @@
 			reg = <0x10040700 0x4>;
 		};
 	};
-
-    pd_gscl: pd-gscl@10044000 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x10044000 0x20>;
-
-        spd_gscl0: spd-gscl0@10044000 {
-            compatible = "samsung,exynos-spd";
-		bts-status = "enabled";
-        };
-
-        spd_gscl1: spd-gscl1@10044000 {
-            compatible = "samsung,exynos-spd";
-		bts-status = "enabled";
-        };
-    };
 
     pd_mfc0: pd-mfc@10044060 {
         compatible = "samsung,exynos-pd";
