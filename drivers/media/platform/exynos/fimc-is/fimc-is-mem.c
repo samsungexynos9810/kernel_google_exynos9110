@@ -44,8 +44,9 @@
 static void *fimc_is_ion_init(struct platform_device *pdev)
 {
 	return vb2_ion_create_context(&pdev->dev, SZ_4K,
-					VB2ION_CTX_IOMMU | VB2ION_CTX_VMCONTIG |
-					VB2ION_CTX_UNCACHED);
+					VB2ION_CTX_IOMMU |
+					VB2ION_CTX_VMCONTIG |
+					VB2ION_CTX_KVA_ONDEMAND);
 }
 
 static unsigned long plane_addr(struct vb2_buffer *vb, u32 plane_no)
