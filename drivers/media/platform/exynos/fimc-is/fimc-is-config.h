@@ -46,6 +46,7 @@
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS5260)
+#undef ENABLE_SETFILE
 #undef ENABLE_DRC
 #undef ENABLE_CLOCK_GATE
 #undef ENABLE_DVFS
