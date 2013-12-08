@@ -40,77 +40,19 @@
 #define SENSOR_NAME "S5K6A3"
 
 /* FIXME: it's for 6b2. */
-static struct fimc_is_settle settle_6a3[] = {
+static struct fimc_is_sensor_cfg config_6a3[] = {
 	/* 1456x1090@24fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SENSOR_CFG(1456, 1090, 24, 13, -1),
 	/* 1936x1090@24fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 13, -1),
 	/* 1456x1090@30fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
+	FIMC_IS_SENSOR_CFG(1456, 1090, 30, 16, -1),
 	/* 1936x1090@30fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
-	/* 1456x1090@24fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 16, -1),
 	/* 1456x1090@15fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 15,
-		.settle		= 13,
-	},
-	/* 1936x1090@24fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 24,
-		.settle		= 13,
-	},
+	FIMC_IS_SENSOR_CFG(1456, 1090, 15, 13, -1),
 	/* 1936x1090@15fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 15,
-		.settle		= 13,
-	},
-	/* 1456x1090@30fps */
-	{
-		.width		= 1456,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	},
-	/* 1936x1090@30fps */
-	{
-		.width		= 1936,
-		.height		= 1090,
-		.framerate	= 30,
-		.settle		= 16,
-	}
+	FIMC_IS_SENSOR_CFG(1936, 1090, 15, 13, -1),
 };
 
 static int sensor_6a3_init(struct v4l2_subdev *subdev, u32 val)
@@ -177,8 +119,8 @@ int sensor_6a3_probe(struct i2c_client *client,
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_FRONT;
 	module->setfile_name = "setfile_6a3.bin";
-	module->settle_max = ARRAY_SIZE(settle_6a3);
-	module->settle_table = settle_6a3;
+	module->cfgs = ARRAY_SIZE(config_6a3);
+	module->cfg = config_6a3;
 	module->ops = NULL;
 	module->private_data = NULL;
 
