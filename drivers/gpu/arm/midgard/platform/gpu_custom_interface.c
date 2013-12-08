@@ -68,6 +68,11 @@ static ssize_t show_time_in_state(struct device *dev, struct device_attribute *a
 	if (!platform)
 		return -ENODEV;
 
+	if (gpu_control_state_set(kbdev, GPU_CONTROL_IS_POWER_ON, 0))
+		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, platform->cur_clock);
+	else
+		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, 0);
+
 	for (i = platform->table_size - 1; i >= 0; i--) {
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d %llu\n",
 				platform->table[i].clock,

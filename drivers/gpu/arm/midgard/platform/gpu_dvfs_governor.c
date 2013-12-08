@@ -316,12 +316,15 @@ int gpu_dvfs_update_time_in_state(struct exynos_context *platform, int freq)
 #ifdef CONFIG_MALI_T6XX_DEBUG_SYS
 	u64 current_time;
 	static u64 prev_time;
+	int level = gpu_dvfs_get_level(platform, freq);
 
 	if (prev_time == 0)
 		prev_time = get_jiffies_64();
 
 	current_time = get_jiffies_64();
-	platform->table[gpu_dvfs_get_level(platform, freq)].time += current_time-prev_time;
+	if ((level >= 0) && (level < platform->table_size))
+		platform->table[level].time += current_time-prev_time;
+
 	prev_time = current_time;
 #endif /* CONFIG_MALI_T6XX_DEBUG_SYS */
 

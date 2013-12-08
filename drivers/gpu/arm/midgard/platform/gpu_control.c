@@ -49,6 +49,7 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
 			hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(platform->polling_speed), HRTIMER_MODE_REL);
 		}
+		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, 0);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		break;
 	case GPU_CONTROL_CLOCK_OFF:
@@ -60,6 +61,7 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 			hrtimer_cancel(&kbdev->pm.metrics.timer);
 		}
 		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_RESET);
+		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, platform->cur_clock);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		ret = gpu_clock_off(platform);
 		break;
