@@ -114,20 +114,22 @@ enum FIMC_IS_CLK_GATE_USR_SCENARIO {
 struct exynos_fimc_is_subip_ext {
 	bool valid;
 	bool full_bypass;
+	u32 version;
 };
 
 struct exynos_fimc_is_subip_info {
 	/* You can add more new subip */
-	struct exynos_fimc_is_subip_ext info_3a0;
-	struct exynos_fimc_is_subip_ext info_3a1;
-	struct exynos_fimc_is_subip_ext info_isp;
-	struct exynos_fimc_is_subip_ext info_drc;
-	struct exynos_fimc_is_subip_ext info_scc;
-	struct exynos_fimc_is_subip_ext info_odc;
-	struct exynos_fimc_is_subip_ext info_dis;
-	struct exynos_fimc_is_subip_ext info_dnr;
-	struct exynos_fimc_is_subip_ext info_scp;
-	struct exynos_fimc_is_subip_ext info_fd;
+	struct exynos_fimc_is_subip_ext _mcuctl;
+	struct exynos_fimc_is_subip_ext _3a0;
+	struct exynos_fimc_is_subip_ext _3a1;
+	struct exynos_fimc_is_subip_ext _isp;
+	struct exynos_fimc_is_subip_ext _drc;
+	struct exynos_fimc_is_subip_ext _scc;
+	struct exynos_fimc_is_subip_ext _odc;
+	struct exynos_fimc_is_subip_ext _dis;
+	struct exynos_fimc_is_subip_ext _dnr;
+	struct exynos_fimc_is_subip_ext _scp;
+	struct exynos_fimc_is_subip_ext _fd;
 };
 
 /*
