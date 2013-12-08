@@ -41,7 +41,6 @@
 
 enum devfreq_int_idx {
 	LV0_A,
-	LV0_B,
 	LV0,
 	LV1,
 	LV2,
@@ -121,15 +120,14 @@ struct devfreq_clk_list devfreq_int_clk[CLK_COUNT] = {
 };
 
 struct devfreq_opp_table devfreq_int_opp_list[] = {
-	{LV0_A,	633000,	1175000},
-	{LV0_B,	543000,	1075000},
-	{LV0,	413000,	1025000},
-	{LV1,	317000,	1000000},
-	{LV2,	275000,	 975000},
-	{LV3,	206000,	 962500},
-	{LV4,	165000,	 950000},
-	{LV5,	138000,	 937500},
-	{LV6,	103000,	 925000},
+	{LV0_A,	543000,	1175000},
+	{LV0,	413000,	1075000},
+	{LV1,	317000,	1025000},
+	{LV2,	275000,	1000000},
+	{LV3,	206000,	 975000},
+	{LV4,	165000,	 962500},
+	{LV5,	138000,	 950000},
+	{LV6,	103000,	 937500},
 };
 
 struct devfreq_clk_state aclk_g2d_mfc_pll[] = {
@@ -228,7 +226,6 @@ struct devfreq_clk_states aclk_mfc1_333_mfc_pll_list = {
 
 struct devfreq_clk_info aclk_bus1_400[] = {
 	{LV0_A,	413000000,	0,	NULL},
-	{LV0_B,	413000000,	0,	NULL},
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	275000000,	0,	NULL},
@@ -240,7 +237,6 @@ struct devfreq_clk_info aclk_bus1_400[] = {
 
 struct devfreq_clk_info aclk_bus2_400[] = {
 	{LV0_A,	413000000,	0,	NULL},
-	{LV0_B,	413000000,	0,	NULL},
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	275000000,	0,	NULL},
@@ -252,7 +248,6 @@ struct devfreq_clk_info aclk_bus2_400[] = {
 
 struct devfreq_clk_info aclk_g2d_400[] = {
 	{LV0_A,	413000000,	0,	&aclk_g2d_bus_pll_list},
-	{LV0_B,	413000000,	0,	&aclk_g2d_bus_pll_list},
 	{LV0,	413000000,	0,	&aclk_g2d_bus_pll_list},
 	{LV1,	317000000,	0,	&aclk_g2d_mfc_pll_list},
 	{LV2,	275000000,	0,	&aclk_g2d_bus_pll_list},
@@ -264,7 +259,6 @@ struct devfreq_clk_info aclk_g2d_400[] = {
 
 struct devfreq_clk_info aclk_g2d_266[] = {
 	{LV0_A,	275000000,	0,	NULL},
-	{LV0_B,	275000000,	0,	NULL},
 	{LV0,	275000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	207000000,	0,	NULL},
@@ -276,7 +270,6 @@ struct devfreq_clk_info aclk_g2d_266[] = {
 
 struct devfreq_clk_info aclk_gscl_333[] = {
 	{LV0_A,	317000000,	0,	NULL},
-	{LV0_B,	317000000,	0,	NULL},
 	{LV0,	317000000,	0,	NULL},
 	{LV1,	317000000,	0,	NULL},
 	{LV2,	317000000,	0,	NULL},
@@ -288,7 +281,6 @@ struct devfreq_clk_info aclk_gscl_333[] = {
 
 struct devfreq_clk_info aclk_mscl[] = {
 	{LV0_A,	413000000,	0,	&aclk_mscl_bus_pll_list},
-	{LV0_B,	413000000,	0,	&aclk_mscl_bus_pll_list},
 	{LV0,	413000000,	0,	&aclk_mscl_bus_pll_list},
 	{LV1,	317000000,	0,	&aclk_mscl_mfc_pll_list},
 	{LV2,	275000000,	0,	&aclk_mscl_bus_pll_list},
@@ -300,7 +292,6 @@ struct devfreq_clk_info aclk_mscl[] = {
 
 struct devfreq_clk_info sclk_jpeg[] = {
 	{LV0_A,	413000000,	0,	&sclk_jpeg_bus_pll_list},
-	{LV0_B,	413000000,	0,	&sclk_jpeg_bus_pll_list},
 	{LV0,	413000000,	0,	&sclk_jpeg_bus_pll_list},
 	{LV1,	317000000,	0,	&sclk_jpeg_mfc_pll_list},
 	{LV2,	275000000,	0,	&sclk_jpeg_bus_pll_list},
@@ -312,8 +303,7 @@ struct devfreq_clk_info sclk_jpeg[] = {
 
 struct devfreq_clk_info aclk_mfc0_333[] = {
 	{LV0_A,	552000000,	0,	&aclk_mfc0_333_isp_pll_list},
-	{LV0_B,	552000000,	0,	&aclk_mfc0_333_isp_pll_list},
-	{LV0,	455000000,	0,	&aclk_mfc0_333_mphy_pll_list},
+	{LV0,	500000000,	0,	&aclk_mfc0_333_mphy_pll_list},
 	{LV1,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV2,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV3,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
@@ -324,19 +314,17 @@ struct devfreq_clk_info aclk_mfc0_333[] = {
 
 struct devfreq_clk_info aclk_mfc1_333[] = {
 	{LV0_A,	317000000,	0,	&aclk_mfc1_333_mfc_pll_list},
-	{LV0_B,	317000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 	{LV0,	317000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 	{LV1,	211000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 	{LV2,	211000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 	{LV3,	211000000,	0,	&aclk_mfc1_333_mfc_pll_list},
-	{LV4,	158000000,	0,	&aclk_mfc1_333_mfc_pll_list},
+	{LV4,	159000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 	{LV5,	106000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 	{LV6,	 80000000,	0,	&aclk_mfc1_333_mfc_pll_list},
 };
 
 struct devfreq_clk_info aclk_hevc_400[] = {
 	{LV0_A,	413000000,	0,	NULL},
-	{LV0_B,	413000000,	0,	NULL},
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	275000000,	0,	NULL},
 	{LV2,	275000000,	0,	NULL},
@@ -390,7 +378,7 @@ struct devfreq_pm_domain_link devfreq_int_pm_domain[] = {
 static struct devfreq_simple_ondemand_data exynos5_devfreq_int_governor_data = {
 	.pm_qos_class		= PM_QOS_DEVICE_THROUGHPUT,
 	.upthreshold		= 95,
-	.cal_qos_max		= 667000,
+	.cal_qos_max		= 543000,
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_int = {
@@ -1329,7 +1317,7 @@ static struct pm_qos_request exynos5_int_bts_qos;
 int district_level_by_disp_333[] = {
 	LV0,
 	LV2,
-	LV3,
+	LV4,
 	LV5,
 };
 

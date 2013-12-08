@@ -270,39 +270,21 @@ struct devfreq_clk_states aclk_isp_dis_400_mfc_pll_list = {
 };
 
 struct devfreq_clk_info isp_pll[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	552000000,	0,	NULL},
 	{LV5,	552000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	444000000,	0,	NULL},
-	{LV5,	444000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_cam0_552[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	552000000,	0,	NULL},
 	{LV5,	552000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	444000000,	0,	NULL},
-	{LV5,	444000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_cam0_400[] = {
@@ -333,147 +315,75 @@ struct devfreq_clk_info aclk_cam0_bus_400[] = {
 };
 
 struct devfreq_clk_info aclk_csis0[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_lite_a[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_3aa0[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_csis1[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	 79000000,	0,	NULL},
 	{LV1,	 79000000,	0,	NULL},
 	{LV2,	 79000000,	0,	NULL},
 	{LV3,	 79000000,	0,	NULL},
 	{LV4,	 79000000,	0,	NULL},
 	{LV5,	 79000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 74000000,	0,	NULL},
-	{LV1,	 74000000,	0,	NULL},
-	{LV2,	 74000000,	0,	NULL},
-	{LV3,	 74000000,	0,	NULL},
-	{LV4,	 74000000,	0,	NULL},
-	{LV5,	 74000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_lite_b[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	 79000000,	0,	NULL},
 	{LV1,	 79000000,	0,	NULL},
 	{LV2,	 79000000,	0,	NULL},
 	{LV3,	 79000000,	0,	NULL},
 	{LV4,	 79000000,	0,	NULL},
 	{LV5,	 79000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 74000000,	0,	NULL},
-	{LV1,	 74000000,	0,	NULL},
-	{LV2,	 74000000,	0,	NULL},
-	{LV3,	 74000000,	0,	NULL},
-	{LV4,	 74000000,	0,	NULL},
-	{LV5,	 74000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_3aa1[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	 79000000,	0,	NULL},
 	{LV1,	 79000000,	0,	NULL},
 	{LV2,	 79000000,	0,	NULL},
 	{LV3,	 79000000,	0,	NULL},
 	{LV4,	 79000000,	0,	NULL},
 	{LV5,	 79000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 74000000,	0,	NULL},
-	{LV1,	 74000000,	0,	NULL},
-	{LV2,	 74000000,	0,	NULL},
-	{LV3,	 74000000,	0,	NULL},
-	{LV4,	 74000000,	0,	NULL},
-	{LV5,	 74000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_lite_d[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	 69000000,	0,	NULL},
 	{LV1,	 69000000,	0,	NULL},
 	{LV2,	 69000000,	0,	NULL},
 	{LV3,	 69000000,	0,	NULL},
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 56000000,	0,	NULL},
-	{LV1,	 56000000,	0,	NULL},
-	{LV2,	 56000000,	0,	NULL},
-	{LV3,	 56000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info sclk_pixel_init_552[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	 69000000,	0,	NULL},
 	{LV1,	 69000000,	0,	NULL},
 	{LV2,	 69000000,	0,	NULL},
 	{LV3,	 69000000,	0,	NULL},
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 56000000,	0,	NULL},
-	{LV1,	 56000000,	0,	NULL},
-	{LV2,	 56000000,	0,	NULL},
-	{LV3,	 56000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info sclk_pixel_333[] = {
@@ -486,39 +396,21 @@ struct devfreq_clk_info sclk_pixel_333[] = {
 };
 
 struct devfreq_clk_info aclk_cam1_552[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV1,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV2,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV3,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV4,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
 	{LV5,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV1,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV2,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV3,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV4,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV5,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-#endif
 };
 
 struct devfreq_clk_info aclk_cam1_400[] = {
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M)
 	{LV0,	413000000,	0,	NULL},
 	{LV1,	413000000,	0,	NULL},
 	{LV2,	413000000,	0,	NULL},
 	{LV3,	413000000,	0,	NULL},
 	{LV4,	275000000,	0,	NULL},
 	{LV5,	275000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M)
-	{LV0,	275000000,	0,	NULL},
-	{LV1,	275000000,	0,	NULL},
-	{LV2,	275000000,	0,	NULL},
-	{LV3,	275000000,	0,	NULL},
-	{LV4,	275000000,	0,	NULL},
-	{LV5,	275000000,	0,	NULL},
-#endif
 };
 
 struct devfreq_clk_info aclk_cam1_333[] = {
