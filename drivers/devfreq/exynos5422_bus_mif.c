@@ -78,7 +78,6 @@ static struct pm_qos_request min_mif_thermal_qos;
 cputime64_t mif_pre_time;
 
 static struct pm_qos_request exynos5_int_qos;
-extern struct pm_qos_request exynos5_cpu_mif_qos;
 
 static DEFINE_MUTEX(media_mutex);
 
@@ -1204,9 +1203,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	pm_qos_update_request_timeout(&boot_mif_qos,
 			exynos5_mif_devfreq_profile.initial_freq, 41300 * 1000);
 	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
-#ifdef CONFIG_ARM_EXYNOS5422_CPUFREQ
-	pm_qos_add_request(&exynos5_cpu_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
-#endif
 
 	register_reboot_notifier(&exynos5_mif_reboot_notifier);
 
@@ -1245,9 +1241,6 @@ static int exynos5_devfreq_remove(struct platform_device *pdev)
 
 	devfreq_remove_device(data->devfreq);
 
-#ifdef CONFIG_ARM_EXYNOS5422_CPUFREQ
-	pm_qos_remove_request(&exynos5_cpu_mif_qos);
-#endif
 	pm_qos_remove_request(&min_mif_thermal_qos);
 	pm_qos_remove_request(&exynos5_mif_qos);
 

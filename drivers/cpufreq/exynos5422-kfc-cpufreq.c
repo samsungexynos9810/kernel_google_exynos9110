@@ -41,7 +41,6 @@ static struct clk *mout_cpu_kfc;
 static struct clk *mout_kpll_ctrl;
 static struct clk *mout_mx_mspll_kfc;
 
-extern struct pm_qos_request exynos5_cpu_mif_qos;
 static unsigned int exynos5422_volt_table_CA7[CPUFREQ_LEVEL_END_CA7];
 
 static struct cpufreq_frequency_table exynos5422_freq_table_CA7[] = {
@@ -251,7 +250,6 @@ static const unsigned int asv_voltage_5422_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	 900000,    /* L14 200 */
 };
 
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 /* Minimum memory throughput in megabytes per second */
 static int exynos5422_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	266000, /* 1.6 GHz */
@@ -271,7 +269,6 @@ static int exynos5422_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	0,  /* 200 MHz */
 
 };
-#endif
 
 static void exynos5422_set_clkdiv_CA7(unsigned int div_index)
 {
@@ -411,22 +408,7 @@ unsigned int tmp;
 		}
 	}
 
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
-	if (old_index >= new_index) {
-		if (pm_qos_request_active(&exynos5_cpu_mif_qos))
-			pm_qos_update_request(&exynos5_cpu_mif_qos,
-				exynos5422_bus_table_CA7[new_index]);
-	}
-#endif
 	pr_debug("post clk [%ld]\n", clk_get_rate(dout_cpu_kfc));
-
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
-	if (old_index < new_index) {
-		if (pm_qos_request_active(&exynos5_cpu_mif_qos))
-			pm_qos_update_request(&exynos5_cpu_mif_qos,
-				exynos5422_bus_table_CA7[new_index]);
-	}
-#endif
 }
 
 static void __init set_volt_table_CA7(void)
@@ -454,7 +436,7 @@ static void __init set_volt_table_CA7(void)
 static bool exynos5422_is_alive_CA7(void)
 {
 	unsigned int tmp = true;
-	tmp = __raw_readl(EXYNOS54XX_KFC_L2_SYS_PWR_REG) & L2_LOCAL_PWR_EN;
+	tmp = __raw_readl(EXYNOS54XX_KFC_COMMON_STATUS) & L2_LOCAL_PWR_EN;
 
 	return tmp ? true : false;
 }
@@ -534,6 +516,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->boot_cpu_min_qos = exynos5422_freq_table_CA7[L2].frequency;
 	info->boot_cpu_max_qos = exynos5422_freq_table_CA7[L2].frequency;
 	info->cpu_clk = fout_kpll;
+	info->bus_table = exynos5422_bus_table_CA7;
 
 	/*info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
 
