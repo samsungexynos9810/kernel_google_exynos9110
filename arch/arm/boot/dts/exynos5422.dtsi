@@ -262,7 +262,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1288>, <&clock 1265>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -277,7 +277,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1287>, <&clock 1264>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -292,7 +292,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1282>, <&clock 1281>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -306,7 +306,7 @@
 		samsung,power-domain = <&pd_gscl>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1289>, <&clock 1266>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 	};
 
 	sysmmu_g2d: sysmmu@0x10A60000 {
