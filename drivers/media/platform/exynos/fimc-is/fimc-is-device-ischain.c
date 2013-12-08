@@ -3508,6 +3508,7 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 	return ret;
 }
 
+#ifdef ENABLE_SETFILE
 static int fimc_is_ischain_chg_setfile(struct fimc_is_device_ischain *device)
 {
 	int ret = 0;
@@ -3572,6 +3573,7 @@ static int fimc_is_ischain_chg_setfile(struct fimc_is_device_ischain *device)
 p_err:
 	return ret;
 }
+#endif
 
 #ifdef SCALER_CROP_DZOOM
 static int fimc_is_ischain_s_dzoom(struct fimc_is_device_ischain *this,
@@ -6476,7 +6478,6 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *check_frame)
 {
 	int ret = 0;
-	u32 setfile_save;
 	u32 capture_id;
 	unsigned long flags;
 	struct fimc_is_group *group;
@@ -6484,6 +6485,9 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *frame;
 	struct fimc_is_subdev *leader, *taac, *taap, *scc, *dis, *scp;
 	struct camera2_node *node, *leader_node;
+#ifdef ENABLE_SETFILE
+	u32 setfile_save;
+#endif
 
 #ifdef DBG_STREAMING
 	mdbgd_ischain("%s()\n", device, __func__);
@@ -6655,6 +6659,9 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *frame;
 	struct fimc_is_subdev *leader, *scc, *dis, *dnr, *scp, *fd;
 	struct camera2_node *node, *leader_node;
+#ifdef ENABLE_SETFILE
+	u32 setfile_save;
+#endif
 
 	BUG_ON(!device);
 	BUG_ON(!check_frame);
@@ -6725,6 +6732,23 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	frame->shot->dm.entry.lowIndexParam = 0;
 	frame->shot->dm.entry.highIndexParam = 0;
 	leader_node = &frame->shot_ext->node_group.leader;
+
+#ifdef ENABLE_SETFILE
+	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0) {
+		if (frame->shot_ext->setfile != device->setfile) {
+			setfile_save = device->setfile;
+			device->setfile = frame->shot_ext->setfile;
+
+			ret = fimc_is_ischain_chg_setfile(device);
+			if (ret) {
+				err("fimc_is_ischain_chg_setfile is fail");
+				device->setfile = setfile_save;
+				goto p_err;
+			}
+		}
+	}
+#endif
 
 #ifdef ENABLE_DRC
 	if (frame->shot_ext->drc_bypass) {
