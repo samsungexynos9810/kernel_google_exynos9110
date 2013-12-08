@@ -2584,6 +2584,9 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 			goto p_err;
 		}
 
+		/* W/A for a lower version MCUCTL */
+		fimc_is_interface_reset(device->interface);
+
 		mdbgd_ischain("power up and loaded firmware\n", device);
 #ifdef ENABLE_CLOCK_GATE
 		if (sysfs_debug.en_clk_gate &&

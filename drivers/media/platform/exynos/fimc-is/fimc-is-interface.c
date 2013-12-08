@@ -722,23 +722,22 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 static inline u32 fimc_is_get_intr(struct fimc_is_interface *itf)
 {
 	u32 status = 0;
-#if !defined(CONFIG_SOC_EXYNOS5430)
 	volatile struct is_common_reg __iomem *com_regs = itf->com_regs;
 
-	status = readl(&com_regs->ihcmd_iflag) |
-		readl(&com_regs->scc_iflag) |
-		readl(&com_regs->dis_iflag) |
-		readl(&com_regs->scp_iflag) |
-		readl(&com_regs->meta_iflag) |
-		readl(&com_regs->shot_iflag);
-#endif
+	if (itf->need_iflag) {
+		status = readl(&com_regs->ihcmd_iflag) |
+			 readl(&com_regs->scc_iflag) |
+			 readl(&com_regs->dis_iflag) |
+			 readl(&com_regs->scp_iflag) |
+			 readl(&com_regs->meta_iflag) |
+			 readl(&com_regs->shot_iflag);
+	}
 
 	status |= readl(itf->regs + INTMSR1);
 
 	return status;
 }
 
-#if !defined(CONFIG_SOC_EXYNOS5430)
 static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
 	u32 index)
 {
@@ -746,34 +745,29 @@ static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
 
 	writel((1 << index), itf->regs + INTCR1);
 
-	switch (index) {
-	case INTR_GENERAL:
-		writel(0, &com_regs->ihcmd_iflag);
-		break;
-	case INTR_SCC_FDONE:
-		writel(0, &com_regs->scc_iflag);
-		break;
-	case INTR_DIS_FDONE:
-		writel(0, &com_regs->dis_iflag);
-		break;
-	case INTR_SCP_FDONE:
-		writel(0, &com_regs->scp_iflag);
-		break;
-	case INTR_SHOT_DONE:
-		writel(0, &com_regs->shot_iflag);
-		break;
-	default:
-		err("unknown command clear\n");
-		break;
+	if (itf->need_iflag) {
+		switch (index) {
+		case INTR_GENERAL:
+			writel(0, &com_regs->ihcmd_iflag);
+			break;
+		case INTR_SCC_FDONE:
+			writel(0, &com_regs->scc_iflag);
+			break;
+		case INTR_DIS_FDONE:
+			writel(0, &com_regs->dis_iflag);
+			break;
+		case INTR_SCP_FDONE:
+			writel(0, &com_regs->scp_iflag);
+			break;
+		case INTR_SHOT_DONE:
+			writel(0, &com_regs->shot_iflag);
+			break;
+		default:
+			err("unknown command clear\n");
+			break;
+		}
 	}
 }
-#else
-static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
-	u32 index)
-{
-	writel((1 << index), itf->regs + INTCR1);
-}
-#endif
 
 static void wq_func_general(struct work_struct *data)
 {
@@ -2014,15 +2008,14 @@ static void interface_timer(unsigned long data)
 				for (j = 0; j < 64; ++j)
 					pr_err("MCTL[%d] : %08X\n", j, readl(regs + (4 * j)));
 
-#if !defined(CONFIG_SOC_EXYNOS5430)
-				if (readl(&itf->com_regs->shot_iflag)) {
+				if (itf->need_iflag &&
+					readl(&itf->com_regs->shot_iflag)) {
 					pr_err("\n### MCUCTL check ###\n");
 					fimc_is_clr_intr(itf, INTR_SHOT_DONE);
 
 					for (j = 0; j < 64; ++j)
 						pr_err("MCTL[%d] : %08X\n", j, readl(regs + (4 * j)));
 				}
-#endif
 #ifdef BUG_ON_ENABLE
 				BUG();
 #endif
@@ -2216,7 +2209,7 @@ static irqreturn_t interface_isr(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-
+#define VERSION_OF_NO_NEED_IFLAG 221
 int fimc_is_interface_probe(struct fimc_is_interface *this,
 	u32 regs,
 	u32 irq,
@@ -2249,15 +2242,11 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 	this->regs = (void *)regs;
 	this->com_regs = (struct is_common_reg *)(regs + ISSR0);
 
-	/* common register init */
-#if !defined(CONFIG_SOC_EXYNOS5430)
-	writel(0, &this->com_regs->ihcmd_iflag);
-	writel(0, &this->com_regs->scc_iflag);
-	writel(0, &this->com_regs->dis_iflag);
-	writel(0, &this->com_regs->scp_iflag);
-	writel(0, &this->com_regs->meta_iflag);
-	writel(0, &this->com_regs->shot_iflag);
-#endif
+	if (GET_FIMC_IS_VER_OF_SUBIP(core, mcuctl) < VERSION_OF_NO_NEED_IFLAG)
+		this->need_iflag = true;
+	else
+		this->need_iflag = false;
+
 	ret = request_irq(irq, interface_isr, 0, "mcuctl", this);
 	if (ret)
 		err("request_irq failed\n");
@@ -2379,6 +2368,18 @@ void fimc_is_interface_unlock(struct fimc_is_interface *this)
 {
 	atomic_set(&this->lock_pid, 0);
 	wake_up(&this->lock_wait_queue);
+}
+
+void fimc_is_interface_reset(struct fimc_is_interface *this)
+{
+	if (this->need_iflag) {
+		writel(0, &this->com_regs->ihcmd_iflag);
+		writel(0, &this->com_regs->scc_iflag);
+		writel(0, &this->com_regs->dis_iflag);
+		writel(0, &this->com_regs->scp_iflag);
+		writel(0, &this->com_regs->meta_iflag);
+		writel(0, &this->com_regs->shot_iflag);
+	}
 }
 
 int fimc_is_hw_logdump(struct fimc_is_interface *this)

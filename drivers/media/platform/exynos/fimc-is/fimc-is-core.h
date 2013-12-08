@@ -173,6 +173,8 @@
 	( core->pdata->subip_info->_ ## subip.valid )
 #define GET_FIMC_IS_NUM_OF_SUBIP2(device, subip) \
 	( ((struct fimc_is_core *)device->interface->core)->pdata->subip_info->_ ## subip.valid )
+#define GET_FIMC_IS_VER_OF_SUBIP(core, subip) \
+	((core)->pdata->subip_info->_##subip.version)
 
 enum fimc_is_debug_device {
 	FIMC_IS_DEBUG_MAIN = 0,

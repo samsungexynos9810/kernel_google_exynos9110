@@ -213,6 +213,17 @@ struct is_common_reg {
 	u32 fcount_sen2;
 	u32 fcount_sen1;
 	u32 fcount_sen0;
+
+	/* This flag is not used.
+	 * But do not remove this flag for driver commonization.
+	 * It will be removed.
+	 */
+	u32 ihcmd_iflag;
+	u32 meta_iflag;
+	u32 scc_iflag;
+	u32 dis_iflag;
+	u32 scp_iflag;
+	u32 shot_iflag;
 };
 #else
 struct is_common_reg {

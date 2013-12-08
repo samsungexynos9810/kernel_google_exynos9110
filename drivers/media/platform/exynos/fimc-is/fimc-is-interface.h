@@ -123,6 +123,7 @@ struct fimc_is_work_list {
 struct fimc_is_interface {
 	void __iomem			*regs;
 	struct is_common_reg __iomem	*com_regs;
+	bool				need_iflag;
 	unsigned long			state;
 	spinlock_t			process_barrier;
 	struct mutex			request_barrier;
@@ -174,6 +175,7 @@ int fimc_is_interface_open(struct fimc_is_interface *this);
 int fimc_is_interface_close(struct fimc_is_interface *this);
 void fimc_is_interface_lock(struct fimc_is_interface *this);
 void fimc_is_interface_unlock(struct fimc_is_interface *this);
+void fimc_is_interface_reset(struct fimc_is_interface *this);
 
 /*for debugging*/
 int print_fre_work_list(struct fimc_is_work_list *this);
