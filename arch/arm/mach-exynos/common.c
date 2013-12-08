@@ -137,6 +137,11 @@ static struct map_desc exynos_iodesc[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID),
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_CHIPID2,
+		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID2),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	},
 };
 
@@ -660,6 +665,17 @@ int __init exynos_fdt_map_chipid(unsigned long node, const char *uname,
 	iodesc.virtual = (unsigned long)S5P_VA_CHIPID;
 	iodesc.type = MT_DEVICE;
 	iotable_init(&iodesc, 1);
+
+	reg = of_get_flat_dt_prop(node, "reg2", &len);
+	if (reg == NULL || len != (sizeof(unsigned long) * 2))
+		return 0;
+
+	iodesc.pfn = __phys_to_pfn(be32_to_cpu(reg[0]));
+	iodesc.length = be32_to_cpu(reg[1]) - 1;
+	iodesc.virtual = (unsigned long)S5P_VA_CHIPID2;
+	iodesc.type = MT_DEVICE;
+	iotable_init(&iodesc, 1);
+
 	return 1;
 }
 #endif
