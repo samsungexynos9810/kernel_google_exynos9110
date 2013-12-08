@@ -54,6 +54,7 @@
 #define SUPPORTED_IS_CMD_VER	130
 #endif
 #if defined(CONFIG_SOC_EXYNOS3470)
+#undef ENABLE_SETFILE
 #undef ENABLE_DRC
 #undef ENABLE_CLOCK_GATE
 #undef ENABLE_DVFS
