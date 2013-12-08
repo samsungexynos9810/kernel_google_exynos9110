@@ -41,6 +41,33 @@
 /* SMDK has a 16.934MHZ crystal attached to WM8994 */
 #define SMDK_WM8994_FREQ 16934000
 
+static int smdk_codec_fll_enable(struct snd_soc_dai *codec_dai,
+				 unsigned int pll_out)
+{
+	static bool fll_enabled = false;
+	bool on = pll_out ? true : false;
+	int ret;
+
+	if (fll_enabled == on)
+		return 0;
+
+	pr_debug("%s: %s\n", __func__, on ? "ON" : "OFF");
+
+	ret = snd_soc_dai_set_pll(codec_dai, WM8994_FLL1, WM8994_FLL_SRC_MCLK1,
+					SMDK_WM8994_FREQ, pll_out);
+	if (ret < 0)
+		return ret;
+
+	ret = snd_soc_dai_set_sysclk(codec_dai, WM8994_SYSCLK_FLL1,
+					pll_out, SND_SOC_CLOCK_IN);
+	if (ret < 0)
+		return ret;
+
+	fll_enabled = on;
+
+	return 0;
+}
+
 static int smdk_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
@@ -59,19 +86,13 @@ static int smdk_hw_params(struct snd_pcm_substream *substream,
 	else
 		pll_out = params_rate(params) * 256;
 
+	ret = smdk_codec_fll_enable(codec_dai, pll_out);
+	if (ret < 0)
+		return ret;
+
 	ret = snd_soc_dai_set_fmt(codec_dai, SND_SOC_DAIFMT_I2S
 					 | SND_SOC_DAIFMT_NB_NF
 					 | SND_SOC_DAIFMT_CBM_CFM);
-	if (ret < 0)
-		return ret;
-
-	ret = snd_soc_dai_set_pll(codec_dai, WM8994_FLL1, WM8994_FLL_SRC_MCLK1,
-					SMDK_WM8994_FREQ, pll_out);
-	if (ret < 0)
-		return ret;
-
-	ret = snd_soc_dai_set_sysclk(codec_dai, WM8994_SYSCLK_FLL1,
-					pll_out, SND_SOC_CLOCK_IN);
 	if (ret < 0)
 		return ret;
 
@@ -138,6 +159,23 @@ static int smdk_wm8994_init_paiftx(struct snd_soc_pcm_runtime *rtd)
 	return 0;
 }
 
+static int smdk_set_bias_level_post(struct snd_soc_card *card,
+				struct snd_soc_dapm_context *dapm,
+				enum snd_soc_bias_level level)
+{
+	struct snd_soc_dai *aif1_dai = card->rtd[0].codec_dai;
+
+	if (dapm->dev != aif1_dai->dev)
+		return 0;
+
+	if ((level == SND_SOC_BIAS_OFF) && !aif1_dai->active) {
+		pr_debug("%s: SND_SOC_BIAS_OFF\n", __func__);
+		smdk_codec_fll_enable(aif1_dai, 0);
+	}
+
+	return 0;
+}
+
 static struct snd_soc_dai_link smdk_dai[] = {
 	{ /* Primary DAI i/f */
 		.name = "WM8994 PRI",
@@ -169,6 +207,7 @@ static struct snd_soc_card smdk = {
 	.owner = THIS_MODULE,
 	.dai_link = smdk_dai,
 	.num_links = ARRAY_SIZE(smdk_dai),
+	.set_bias_level_post = smdk_set_bias_level_post,
 };
 
 static int smdk_audio_probe(struct platform_device *pdev)
