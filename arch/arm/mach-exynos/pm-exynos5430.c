@@ -54,6 +54,7 @@ static struct sleep_save exynos5430_set_clk[] = {
 	{ .reg = EXYNOS5430_ENABLE_IP_FSYS0,		.val = 0x00007DF9, },
 	{ .reg = EXYNOS5430_ENABLE_IP_PERIC0,		.val = 0x1FFFFEFF, },
 	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1,		.val = 0x00000011, },
+	{ .reg = EXYNOS5430_ENABLE_IP_CPIF0,		.val = 0x000FF000, },
 #if 0
 	{ .reg = EXYNOS5430_ENABLE_IP_FSYS1,				.val = 0x00000000, },
 	{ .reg = EXYNOS5430_ENABLE_IP_EGL0,				.val = 0x00000000, },
