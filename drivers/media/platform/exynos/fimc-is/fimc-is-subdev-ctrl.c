@@ -282,7 +282,7 @@ void fimc_is_subdev_dis_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	if (device->pdata->subip_info->info_dis.full_bypass)
+	if (device->pdata->subip_info->_dis.full_bypass)
 		param->control.cmd = CONTROL_COMMAND_STOP;
 	else
 		param->control.cmd = CONTROL_COMMAND_START;
@@ -345,7 +345,7 @@ void fimc_is_subdev_dnr_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	if (device->pdata->subip_info->info_dnr.full_bypass)
+	if (device->pdata->subip_info->_dnr.full_bypass)
 		ctl_param->cmd = CONTROL_COMMAND_STOP;
 	else
 		ctl_param->cmd = CONTROL_COMMAND_START;
@@ -382,7 +382,7 @@ void fimc_is_subdev_drc_bypass(struct fimc_is_device_ischain *device,
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	if (device->pdata->subip_info->info_drc.full_bypass)
+	if (device->pdata->subip_info->_drc.full_bypass)
 		ctl_param->cmd = CONTROL_COMMAND_STOP;
 	else
 		ctl_param->cmd = CONTROL_COMMAND_START;
