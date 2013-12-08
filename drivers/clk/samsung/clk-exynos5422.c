@@ -58,15 +58,6 @@ enum exynos5422_clks {
 /* CLK_GATE_SCLK_CPU */
 	sclk_hpm = 64,
 
-/* CLK_GATE_BUS_CPERI0 */
-	aclk_axi_pcx = 96,
-	aclk_gic_cpu,
-
-/* CLK_GATE_BUS_CPERI1 */
-	pclk_iem_iec = 128,
-	pclk_iem_apc,
-	pclk_int_comb_cpu,
-
 /* CLK_GATE_IP_CPERI */
 	clk_pmu = 160,
 	clk_cmu_mempart,
@@ -75,34 +66,6 @@ enum exynos5422_clks {
 	clk_iem_iec,
 	clk_iem_apc,
 	clk_int_comb_cpu,
-
-/* CLK_GATE_BUS_G2D */
-	pclk_qeslimsss = 192,
-	pclk_smmuslimsss,
-	pclk_ppmuacpx,
-	pclk_qeg2d,
-	pclk_qesss,
-	pclk_qemdma,
-	pclk_smmug2d,
-	pclk_smmusss,
-	pclk_smmumdma = 200,
-	pclk_g2d,
-	pclk_noc_g2d,
-	pclk_xiu_acpx,
-	aclk_qeslimsss,
-	aclk_smmuslimsss,
-	aclk_slimsss,
-	aclk_ppmuacpx,
-	aclk_qeg2d,
-	aclk_qesss,
-	aclk_qemdma = 210,
-	aclk_smmug2d,
-	aclk_smmusss,
-	aclk_smmumdma,
-	aclk_g2d,
-	aclk_sss,
-	aclk_mdma,
-	aclk_xiu_acpx,
 
 /* CLK_GATE_IP_G2D */
 	clk_qeslimsss = 224,
@@ -118,95 +81,6 @@ enum exynos5422_clks {
 	clk_g2d,
 	clk_sss,
 	clk_mdma,
-
-/* CLK_GATE_BUS_ISP0 */
-	atclk_atb_isp_arm_slave = 256,
-	atclk_axi_div1,
-	atclk_axi_div0,
-	atclk_ppmuispx,
-	atclk_ppmuisp = 260,
-	aclk_qe_mcuisp,
-	aclk_qe_scalerp,
-	aclk_qe_scalerc,
-	aclk_qe_fd,
-	aclk_qe_drc,
-	aclk_qe_isp,
-	aclk_smmu_mcuisp,
-	aclk_smmu_scalerp,
-	aclk_smmu_scalerc,
-	aclk_fd = 270,
-	aclk_drc,
-	aclk_isp_isp0,
-	aclk_axi_333,
-
-
-/* CLK_GATE_BUS_ISP1 */
-	aclk_asyncaxim_3dnr_bus = 288,
-	aclk_asyncaxim_dis0_bus,
-	aclk_asyncaxim_dis1_bus = 290,
-	aclk_asyncaxim_drc_bus,
-	aclk_asyncaxim_fd_bus,
-	aclk_asyncaxim_isp,
-	aclk_asyncaxim_scc,
-	aclk_asyncaxim_scp_bus,
-	aclk_asyncaxis_3dnr,
-	aclk_asyncaxis_dis0,
-	aclk_asyncaxis_dis1,
-	aclk_asyncaxis_fd,
-	aclk_asyncaxis_scp = 300,
-	aclk_qe_3dnr,
-	aclk_qe_dis1,
-	aclk_qe_dis0,
-	aclk_smmu_3dnr,
-	aclk_smmu_dis1,
-	aclk_smmu_dis0,
-	aclk_3dnr,
-	aclk_dis,
-	aclk_chain_glue1,
-
-/* CLK_GATE_BUS_ISP2 */
-	pclk_uart_isp = 320,
-	pclk_wdt_isp,
-	pclk_i2c2_isp,
-	pclk_pwm_isp,
-	pclk_mtcadc_isp,
-	pclk_i2c1_isp,
-	pclk_i2c0_isp,
-	pclk_mpwm_isp,
-	pclk_mcuctl_isp,
-	pclk_ppmuispx,
-	pclk_ppmuisp = 330,
-	pclk_qe_mcuisp,
-	pclk_qe_fd,
-	pclk_qe_scalerp,
-	pclk_qe_scalerc,
-	pclk_qe_drc,
-	pclk_qe_isp,
-	pclk_smmu_mcuisp,
-	pclk_smmu_fd,
-	pclk_smmu_scalerp,
-	pclk_smmu_scalerc = 340,
-	pclk_smmu_drc,
-	pclk_smmu_isp,
-	pclk_scalerp,
-	pclk_scalerc,
-	pclk_fd,
-	pclk_drc,
-	pclk_isp_isp2,
-
-/* CLK_GATE_BUS_ISP3 */
-	pclkdbg_mcuisp = 352,
-	pclk_spi1_isp,
-	pclk_spi0_isp,
-	pclk_qe_3dnr,
-	pclk_qe_dis1,
-	pclk_qe_dis0,
-	pclk_smmu_3dnr,
-	pclk_smmu_dis1,
-	pclk_smmu_dis0 = 360,
-	pclk_3dnr,
-	pclk_dis,
-
 
 /* CLK_GATE_IP_ISP0 */
 	clk_uart_isp = 384,
@@ -258,10 +132,8 @@ enum exynos5422_clks {
 	clk_dis = 430,
 	clk_chain_glue1,
 
-
 /* CLK_GATE_SCLK_ISP */
 	sclk_mpwm_isp = 448,
-
 
 /* CLK_GATE_BUS_TOP */
 	mphy_refclk = 480,
@@ -284,278 +156,16 @@ enum exynos5422_clks {
 	aclk_266_g2d,
 	aclk_333_g2d,
 
-/* CLK_GATE_BUS_GSCL0 */
-	pclk_qe_gscl1 = 512,
-	pclk_qe_gscl0,
-	pclk_qe_fimcl1,
-	pclk_qe_fimcl0,
-	pclk_qe_3aa,
-	pclk_ppmu_gscl1,
-	pclk_ppmu_gscl0,
-	pclk_ppmu_fimcl,
-	pclk_ppmu_3aa = 520,
-	pclk_gscaler1,
-	pclk_gscaler0,
-	pclk_camif_top_fimcl3,
-	pclk_camif_top_fimcl1,
-	pclk_camif_top_fimcl0,
-	pclk_camif_top_3aa,
-	pclk_qe_fimcl3,
-
-/* CLK_GATE_BUS_GSCL1 */
-	pclk_camif_top_csis0 = 544,
-	aclk_asyncs,
-	pclk_smmu_fimcl3,
-	aclk_gscl_fimc_lite3,
-	aclk_noc_gsclx,
-	aclk_noc_fimcx,
-	aclk_noc_taa = 550,
-	aclk_gscl_fimc_lite1,
-	aclk_gscl_fimc_lite0,
-	aclk_3aa,
-	aclk_gscl1,
-	aclk_gscl0,
-	pclk_smmu_gscl1,
-	pclk_smmu_gscl0,
-	pclk_smmu_fimcl1,
-	pclk_smmu_fimcl0,
-	pclk_smmu_3aa = 560,
-
 /* CLK_GATE_BUS_DISP1 */
-	pclk_ppmutvx = 576,
-	pclk_ppmufimd1x,
-	pclk_mic1,
-	pclk_qetvm1,
-	pclk_qetvm0 = 580,
-	pclk_smmufimd1x_m1,
-	pclk_qefimd1m1,
-	pclk_qefimd1m0,
-	pclk_smmutvx,
-	pclk_smmufimd1x_m0,
-	pclk_asynctvx,
-	pclk_hdmi,
-	pclk_dp1,
-	pclk_dsim1,
-	pclk_mdnie1 = 590,
-	pclk_hdmiphy_apbif,
-	pclk_asyncxim_gscl,
-	aclk_noc_disp1,
-	pclk_noc_p_disp1,
-	aclk_axi_gscl2disp1,
-	aclk_axi_tvx,
-	hclk_ahb2apb_disp11p,
-	hclk_ahb2apb_disp10p,
-	hclk_ahb_disp1h,
-	aclk_axi_fimd1x = 600,
-	aclk_axi_disp1x,
-	aclk_mixer,
-	hclk_mdine1,
-	hclk_mie1,
-	aclk_fimd1,
-
-/* CLK_GATE_BUS_WCORE */
-	aclk_lpi = 608,
-
-/* CLK_GATE_BUS_MFC */
-	pclk_ppmumfcr = 640,
-	pclk_ppmumfcl,
-	pclk_qemfcr,
-	pclk_qemfcl,
-	pclk_smmumfcr,
-	pclk_smmumfcl,
-	pclk_mfc_bus_mfc,
-	hclk_ahb2apb_mfcp,
-	aclk_mfc_bus_mfc,
-
-/* CLK_GATE_BUS_G3D */
-	hardip = 672,
-	aclk_niu,
-	pclk_qeg3d,
-	pclk_hpmg3d,
-	aclk_ahb2apb_g3dp,
-	aclk_qeg3d,
-
-/* CLK_GATE_BUS_GEN */
-	pclk_tzpc11 = 704,
-	pclk_tzpc10,
-	pclk_axi_genx,
-	pclk_smmujpeg2,
-	pclk_ppmugenx,
-	plck_qejpeg2,
-	pclk_qejpeg = 710,
-	pclk_qemdma1,
-	pclk_qerotator,
-	pclk_provkey1,
-	pclk_provkey0,
-	pclk_smmujpeg,
-	pclk_smmumdma1,
-	pclk_smmurotator,
-	pclk_top_rtc,
-	pclk_rotator,
-	pclk_mc = 720,
-	hclk_ahb2apb_genx,
-	hclk_ahb2apb_gen1p,
-	hclk_ahb2apb_gen0p,
-	aclk_axi_genx,
-	aclk_jpeg2,
-	aclk_jpeg,
-	aclk_mdma1,
-	aclk_rotator,
+	aclk_axi_disp1x = 601,
 
 /* CLK_GATE_BUS_FSYS0 */
-	hclk_usbdrd301 = 736,
-	hclk_ahb_usbhs,
-	hclk_ahb_sfrfsys2,
-	hclk_ahb_sfrf1h,
-	aclk_axi_fd128x = 740,
-	hclk_usbdrd300,
-	hclk_usbhost20,
-	hclk_sromc,
-	hclk_sdmmc2,
-	hclk_sdmmc1,
-	hclk_sdmmc0, /* = mmc0 */
-	aclk_noc_fsys2, /* = aclk_200_fsys2 */
-	aclk_noc_fsys, /* = aclk_200_fsys */
-	aclk_ahb_sfrfsh,
-	aclk_axi_fsx = 750,
-	aclk_axi_fd64x,
-	aclk_rtic,
-	aclk_ufs,
-	aclk_pdma1,
-	aclk_pdma0,
-	aclk_tsi, /* = tsi */
+    aclk_noc_fsys = 748, /* = aclk_200_fsys */
+    aclk_noc_fsys2 = 749, /* = aclk_200_fsys2 */
+    aclk_pdma1 = 754,
+    aclk_pdma0 = 755,
 
-/* CLK_GATE_BUS_FSYS1 */
-	pclk_ahb2apb_fsyssp = 768,
-	pclk_qe_ufs,
-	pclk_qe_usbdrd301 = 770,
-	pclk_qe_usbdrd300,
-	pclk_ppmu_ufs,
-	pclk_ahb2apb_fsys2,
-	pclk_ahb2apb_fsys1p,
-	pclk_smmurtic,
 
-/* CLK_GATE_BUS_FSYS2 */
-	pclk_qe_mmc2 = 800,
-	pclk_qe_mmc1,
-	pclk_qe_mmc0,
-	pclk_ppmu_mmc2,
-	pclk_ppmu_mmc1,
-	pclk_ppmu_mmc0,
-	pclk_noc_p_fsys2_i,
-	pclk_noc_p_fsys2_t,
-	pclk_noc_p_fsys_i,
-	pclk_noc_p_fsys_t,
-
-/* CLK_GATE_BUS_MSCL */
-	pclk_alb = 832,
-	pclk_asyncaxi2,
-	pclk_asyncaxi1,
-	pclk_asyncaxi0,
-	pclk_smmu2,
-	pclk_smmu1,
-	pclk_smmu0,
-	pclk_qe2,
-	pclk_qe1 = 840,
-	pclk_qe0,
-	pclk_ppmu1,
-	pclk_ppmu0,
-	pclk_mscl2,
-	pclk_mscl1,
-	pclk_mscl0,
-	aclk_ppmu1,
-	aclk_ppmu0,
-	aclk_mscl2,
-	aclk_mscl1 = 850,
-	aclk_mscl0,
-
-/* CLK_GATE_BUS_PERIC */
-	aclk_axi2ahb_perich = 864,
-	pclk_spdif,
-	pclk_pwm,
-	pclk_pcm2,
-	pclk_pcm1,
-	pclk_i2s2,
-	pclk_i2s1 = 870,
-	pclk_keyif,
-	pclk_spi2,
-	pclk_spi1,
-	pclk_spi0,
-	pclk_tsadc,
-	pclk_i2chdmi,
-	pclk_i2c7,
-	pclk_i2c6,
-	pclk_i2c5,
-	pclk_i2c4 = 880,
-	pclk_i2c3,
-	pclk_i2c2,
-	pclk_i2c1,
-	pclk_i2c0,
-	pclk_uart4,
-	pclk_uart3,
-	pclk_uart2,
-	pclk_uart1,
-	pclk_uart0, /* uart0 */
-	hclk_ahb2apb_peric1p = 890,
-	hclk_ahb2apb_peric0p,
-	aclk_asyncaxim_prix_sfrperich,
-
-/* CLK_GATE_BUS_PERIC1 */
-	hclk_ahb2apb_peric2p = 896,
-	pclk_i2c10,
-	pclk_i2c9,
-	pclk_i2c8,
-
-/* CLK_GATE_BUS_PERIS0 */
-	pclk_tzpc9 = 928,
-	pclk_tzpc8,
-	pclk_tzpc7 = 930,
-	pclk_tzpc6,
-	pclk_tzpc5,
-	pclk_tzpc4,
-	pclk_tzpc3,
-	pclk_tzpc2,
-	pclk_tzpc1,
-	pclk_tzpc0,
-	pclk_sysreg,
-	pclk_chipid_apbif,
-	pclk_abb_apbif = 940, /* = abb_apbif */
-	aclk_asyncaxim_pl0x_perisp,
-	hclk_ahb2apb_peris1p,
-	hclk_ahb2apb_peris0p,
-	aclk_axi2ahb_perish,
-
-/* CLK_GATE_BUS_PERIS1 */
-	pclk_tmu_gpu_apbif = 960,
-	pclk_tmu_apbif,
-	pclk_rtc,
-	pclk_wdt,
-	pclk_st, /* = mct */
-	pclk_seckey_apbif,
-	pclk_hdmi_cec, /* = hdmi_cec */
-
-/* CLK_GATE_BUS_NOC */
-	aclk_disp = 992,
-	aclk_mscl,
-	aclk_gscl,
-	aclk_isp_noc,
-	aclk_mfc_bus_noc,
-	aclk_wcore,
-	aclk_gen, /* = aclk_266 */
-	aclk_mau,
-	aclk_mscl01_niu = 1000,
-	aclk_mscl2_niu,
-	pclk_mscl_niu,
-	pclk_g3d,
-	pclk_disp,
-	pclk_mscl,
-	pclk_gscl,
-	pclk_isp_noc,
-	pclk_mfc_bus_noc,
-	pclk_wcore,
-	pclk_gen = 1010,
-	pclk_mau,
-	pclk_noc_rstop,
 
 /* CLK_GATE_TOP_SCLK_GSCL */
 	sclk_gscl_wrap_b = 1024, /* = sclk_gscl_wb*/
@@ -812,28 +422,6 @@ enum exynos5422_clks {
 	clkm_phy1,
 	clkm_phy0,
 
-/* CLK_GATE_BUS_CDREX1 */
-	pclk_ppmu0_0 = 1632,
-	pclk_ppmu0_1,
-	pclk_ppmu1_0,
-	pclk_ppmu1_1,
-	pclk_ppmu_kfc,
-	pclk_ppmu_eagle,
-	aclk_cbx_g2d,
-	aclk_cbx_kfc,
-	aclk_cbx_eagle = 1640,
-	aclk_ppmu0_0,
-	aclk_ppmu0_1,
-	aclk_ppmu1_0,
-	aclk_ppmu1_1,
-	aclk_ppmu_kfc,
-	aclk_ppmu_eagle,
-	pclk_xiu_1async_mi_g2d,
-	pclk_alb_g2d,
-	pclk_asyncapb_cssys,
-	pclk_p_niu_p_cci_t = 1650,
-	pclk_dcorep,
-
 /* CLK_GATE_IP_CDREX */
 	clk_qe2g2d = 1664,
 	clk_qe1kfc,
@@ -844,11 +432,6 @@ enum exynos5422_clks {
 	clk_drex0 = 1670,
 	clk_sfrtzascp,
 	clk_sfrcdrexp,
-
-/* CLK_GATE_BUS_CPU_KFC */
-	pclk_apb_async = 1696,/* = pclk_dbg */
-	atclk_atb_async,/* = pclk_dbg */
-	aclk_ace_async, /* = aclk_cpud_kfc */
 
 /* CLK_GATE_ASS */
 	gate_ass_niu_p = 1720,
@@ -1212,6 +795,7 @@ static __initdata void *exynos5422_clk_regs[] = {
 	EXYNOS5_CLK_GATE_BUS_TOP,
 	EXYNOS5_CLK_GATE_BUS_FSYS0,
 	EXYNOS5_CLK_GATE_BUS_PERIC,
+	EXYNOS5_CLK_GATE_IP_PERIC,
 	EXYNOS5_CLK_GATE_BUS_PERIC1,
 	EXYNOS5_CLK_GATE_BUS_PERIS0,
 	EXYNOS5_CLK_GATE_BUS_PERIS1,
@@ -1701,61 +1285,31 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 		GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
 struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
-    GATE_A(pclk_st, "pclk_st", "aclk_66_psgen", (unsigned long) EXYNOS5_CLK_GATE_BUS_PERIS1, 2, 0, 0, "mct"),
-
 	/* CMU_CPU */
 	CGATE(aclk_axi_cpud, "aclk_axi_cpud", "dout_cpud", EXYNOS5_CLK_GATE_BUS_CPU, 0, CLK_IGNORE_UNUSED, 0),
 	CGATE(sclk_hpm, "sclk_hpm", "dout_hpm", EXYNOS5_CLK_GATE_SCLK_CPU, 1, CLK_IGNORE_UNUSED, 0),
-
-	/* CMU_KFC */
-	CGATE(aclk_ace_async, "aclk_ace_async", "dout_aclk", EXYNOS5_CLK_GATE_BUS_CPU_KFC, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(atclk_atb_async, "atclk_atb_async", "dout_pclk", EXYNOS5_CLK_GATE_BUS_CPU_KFC, 1, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_apb_async, "pclk_apb_async", "dout_pclk", EXYNOS5_CLK_GATE_BUS_CPU_KFC, 2, CLK_IGNORE_UNUSED, 0),
-
-	/* CORE */
-	CGATE(cclk_drex0, "cclk_drex0", "dout_cclk_drex0", EXYNOS5_CLK_GATE_BUS_CDREX, 4, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_drex0, "pclk_drex0", "dout_pclk_drex0", EXYNOS5_CLK_GATE_BUS_CDREX, 18, CLK_IGNORE_UNUSED, 0),
-
-	CGATE(cclk_drex1, "cclk_drex1", "dout_cclk_drex1", EXYNOS5_CLK_GATE_BUS_CDREX, 5, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_drex1, "pclk_drex1", "dout_pclk_drex1", EXYNOS5_CLK_GATE_BUS_CDREX, 19, CLK_IGNORE_UNUSED, 0),
-
-	CGATE(pclk_core_mem, "pclk_core_mem", "dout_pclk_core_mem", EXYNOS5_CLK_GATE_BUS_CDREX, 27, CLK_IGNORE_UNUSED, 0),
 
 	/* CMU_TOP */
 	CGATE(aclk_noc_fsys, "aclk_noc_fsys", "mout_aclk_200_fsys_user",
 			EXYNOS5_CLK_GATE_BUS_FSYS0, 9, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_noc_fsys2, "aclk_noc_fsys2", "mout_aclk200_fsys2_user",
 			EXYNOS5_CLK_GATE_BUS_FSYS0, 10, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_200_disp1, "aclk_200_disp1", "mout_aclk_200_disp1_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 18, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_400_mscl, "aclk_400_mscl", "mout_aclk_400_mscl_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 17, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_400_isp, "aclk_400_isp", "mout_aclk_400_isp_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 16, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_66_peric, "aclk_66_peric", "mout_aclk_66_peric_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_66_psgen, "aclk_66_psgen", "mout_aclk_66_psgen_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 10, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_66_gpio, "pclk_66_gpio", "mout_pclk_66_gpio_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 9, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333_432_isp, "aclk_333_432_isp", "mout_aclk_333_432_isp_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 8, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333_432_gscl, "aclk_333_432_gscl", "mout_aclk_333_432_gscl_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 7, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_300_gscl, "aclk_300_gscl", "mout_aclk_300_gscl_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 6, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333_432_isp0, "aclk_333_432_isp0", "mout_aclk_300_gscl_jpeg",
-			EXYNOS5_CLK_GATE_BUS_TOP, 5, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_300_jpeg, "aclk_300_jpeg", "mout_aclk_300_jpeg_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 4, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333_g2d, "aclk_333_g2d", "mout_aclk_333_g2d_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_266_g2d, "aclk_266_g2d", "mout_aclk_266_g2d_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 1, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_166, "aclk_166", "mout_aclk_166_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 14, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333, "aclk_333", "mout_aclk_333_user",
-			EXYNOS5_CLK_GATE_BUS_TOP, 15, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(aclk_200_disp1, "aclk_200_disp1", "mout_aclk_200_disp1_user", EXYNOS5_CLK_GATE_BUS_TOP, 18, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_400_mscl, "aclk_400_mscl", "mout_aclk_400_mscl_user", EXYNOS5_CLK_GATE_BUS_TOP, 17, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_400_isp, "aclk_400_isp", "mout_aclk_400_isp_user", EXYNOS5_CLK_GATE_BUS_TOP, 16, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_66_peric, "aclk_66_peric", "mout_aclk_66_peric_user", EXYNOS5_CLK_GATE_BUS_TOP, 11, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_66_psgen, "aclk_66_psgen", "mout_aclk_66_psgen_user", EXYNOS5_CLK_GATE_BUS_TOP, 10, CLK_IGNORE_UNUSED, 0),
+	CGATE(pclk_66_gpio, "pclk_66_gpio", "mout_pclk_66_gpio_user", EXYNOS5_CLK_GATE_BUS_TOP, 9, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_333_432_isp, "aclk_333_432_isp", "mout_aclk_333_432_isp_user", EXYNOS5_CLK_GATE_BUS_TOP, 8, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_333_432_gscl, "aclk_333_432_gscl", "mout_aclk_333_432_gscl_user", EXYNOS5_CLK_GATE_BUS_TOP, 7, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_300_gscl, "aclk_300_gscl", "mout_aclk_300_gscl_user", EXYNOS5_CLK_GATE_BUS_TOP, 6, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_333_432_isp0, "aclk_333_432_isp0", "mout_aclk_300_gscl_jpeg", EXYNOS5_CLK_GATE_BUS_TOP, 5, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_300_jpeg, "aclk_300_jpeg", "mout_aclk_300_jpeg_user", EXYNOS5_CLK_GATE_BUS_TOP, 4, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_333_g2d, "aclk_333_g2d", "mout_aclk_333_g2d_user", EXYNOS5_CLK_GATE_BUS_TOP, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_266_g2d, "aclk_266_g2d", "mout_aclk_266_g2d_user", EXYNOS5_CLK_GATE_BUS_TOP, 1, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_166, "aclk_166", "mout_aclk_166_user", EXYNOS5_CLK_GATE_BUS_TOP, 14, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_333, "aclk_333", "mout_aclk_333_user", EXYNOS5_CLK_GATE_BUS_TOP, 15, CLK_IGNORE_UNUSED, 0),
 
 	/* sclk */
 	CGATE(sclk_uart0, "sclk_uart0", "dout_uart0",
@@ -1810,6 +1364,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(sclk_fimd1, "sclk_fimd1", "dout_fimd1",
 		EXYNOS5_CLK_GATE_TOP_SCLK_DISP1, 0, CLK_SET_RATE_PARENT, 0),
 
+    /* mixer, disp */
 	CGATE(aclk_axi_disp1x, "aclk_axi_disp1x", "mout_aclk_300_disp1_user",
 		EXYNOS5_CLK_GATE_BUS_DISP1, 4, CLK_SET_RATE_PARENT, 0),
 
@@ -1829,83 +1384,14 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 		EXYNOS5_CLK_GATE_TOP_SCLK_MAU, 1, CLK_SET_RATE_PARENT, 0),
 
 	/* FSYS */
-	CGATE(aclk_tsi, "aclk_tsi", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 0, 0, 0),
+	CGATE(clk_usbhost20, "clk_usbhost20", "aclk_noc_fsys", EXYNOS5_CLK_GATE_IP_FSYS, 18, 0, 0),
 	CGATE(aclk_pdma0, "aclk_pdma0", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 1, 0, 0),
 	CGATE(aclk_pdma1, "aclk_pdma1", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 2, 0, 0),
-	CGATE(aclk_ufs, "aclk_ufs", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 3, 0, 0),
-	CGATE(aclk_rtic, "aclk_rtic", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 5, 0, 0),
-	CGATE(hclk_sdmmc0, "hclk_sdmmc0", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 12, 0, 0),
-	CGATE(hclk_sdmmc1, "hclk_sdmmc1", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 13, 0, 0),
-	CGATE(hclk_sdmmc2, "hclk_sdmmc2", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 14, 0, 0),
-	CGATE(hclk_sromc, "hclk_sromc", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_BUS_FSYS0, 19, CLK_IGNORE_UNUSED, 0),
-	CGATE(clk_usbhost20, "clk_usbhost20", "aclk_noc_fsys", EXYNOS5_CLK_GATE_IP_FSYS, 18, 0, 0),
-	CGATE(hclk_usbdrd300, "hclk_usbdrd300", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 21, 0, 0),
-	CGATE(hclk_usbdrd301, "hclk_usbdrd301", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 28, 0, 0),
 
-	/* UART */
-	CGATE(pclk_uart0, "pclk_uart0", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 4, 0, 0),
-	CGATE(pclk_uart1, "pclk_uart1", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 5, 0, 0),
-	CGATE(pclk_uart3, "pclk_uart3", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 7, 0, 0),
+	/* PERIS */
+	CGATE(clk_wdt, "clk_wdt", "aclk_66_psgen", EXYNOS5_CLK_GATE_IP_PERIS, 19, 0, 0),
 
-	/* I2C */
-	CGATE(pclk_i2c0, "pclk_i2c0", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 9, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c1, "pclk_i2c1", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 10, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c2, "pclk_i2c2", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 11, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c3, "pclk_i2c3", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 12, CLK_IGNORE_UNUSED, 0),
-
-	CGATE(pclk_i2c4, "pclk_i2c4", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c5, "pclk_i2c5", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 14, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c6, "pclk_i2c6", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 15, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c7, "pclk_i2c7", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 16, CLK_IGNORE_UNUSED, 0),
-
-	CGATE(pclk_i2c8, "pclk_i2c8", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC1, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c9, "pclk_i2c9", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC1, 1, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2c10, "pclk_i2c10", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC1, 2, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_i2chdmi, "pclk_i2c_hdmi", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 17, 0, 0),
-
-	/* SPI */
-	CGATE(pclk_spi0, "pclk_spi0", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 19, 0, 0),
-	CGATE(pclk_spi1, "pclk_spi1", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 20, 0, 0),
-	CGATE(pclk_spi2, "pclk_spi2", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 21, 0, 0),
-	CGATE(pclk_keyif, "pclk_keyif", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 22, 0, 0),
-
-	/* I2S */
-	CGATE(pclk_i2s1, "pclk_i2s1", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 23, 0, 0),
-	CGATE(pclk_i2s2, "pclk_i2s2", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 24, 0, 0),
-
-	/* PCM */
-	CGATE(pclk_pcm1, "pclk_pcm1", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 25, 0, 0),
-	CGATE(pclk_pcm2, "pclk_pcm2", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 26, 0, 0),
-
-	/* PWM */
-	CGATE(pclk_pwm, "pclk_pwm", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 27, 0, 0),
-	/* SPDIF */
-	CGATE(pclk_spdif, "pclk_spdif", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 29, 0, 0),
-
-	CGATE(pclk_tsadc, "pclk_tsadc", "aclk_66_peric", EXYNOS5_CLK_GATE_BUS_PERIC, 18, 0, 0),
-
-	CGATE(pclk_abb_apbif, "pclk_abb_apbif", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 11, 0, 0),
-	CGATE(pclk_chipid_apbif, "pclk_chipid_apbif", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 12, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_sysreg, "pclk_sysreg", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(pclk_tzpc0, "pclk_tzpc0", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 18, 0, 0),
-	CGATE(pclk_tzpc1, "pclk_tzpc1", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 19, 0, 0),
-	CGATE(pclk_tzpc2, "pclk_tzpc2", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 20, 0, 0),
-	CGATE(pclk_tzpc3, "pclk_tzpc3", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 21, 0, 0),
-	CGATE(pclk_tzpc4, "pclk_tzpc4", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 22, 0, 0),
-	CGATE(pclk_tzpc5, "pclk_tzpc5", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 23, 0, 0),
-	CGATE(pclk_tzpc6, "pclk_tzpc6", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 24, 0, 0),
-	CGATE(pclk_tzpc7, "pclk_tzpc7", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 25, 0, 0),
-	CGATE(pclk_tzpc8, "pclk_tzpc8", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 26, 0, 0),
-	CGATE(pclk_tzpc9, "pclk_tzpc9", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS0, 27, 0, 0),
-
-	CGATE(pclk_hdmi_cec, "pclk_hdmi_cec", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS1, 0, 0, 0),
-	CGATE(pclk_seckey_apbif, "pclk_seckey_apbif", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS1, 1, 0, 0),
-
-	CGATE(pclk_wdt, "pclk_wdt", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS1, 3, 0, 0),
-	CGATE(pclk_rtc, "pclk_rtc", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS1, 4, 0, 0),
-	CGATE(pclk_tmu_apbif, "pclk_tmu_apbif", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS1, 5, 0, 0),
-	CGATE(pclk_tmu_gpu_apbif, "pclk_tmu_gpu_apbif", "aclk_66_psgen", EXYNOS5_CLK_GATE_BUS_PERIS1, 6, 0, 0),
-
+	/* GSCL */
 	CGATE(clk_gscl0, "clk_gscl0", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 0, 0, 0),
 	CGATE(clk_gscl1, "clk_gscl1", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 1, 0, 0),
 	CGATE(clk_3aa, "clk_3aa", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 4, 0, 0),
@@ -1916,7 +1402,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_smmu_gscl0, "clk_smmu_gscl0", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 6, 0, 0),
 	CGATE(clk_smmu_gscl1, "clk_smmu_gscl1", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 7, 0, 0),
 
-	CGATE(clk_gscl_wrap_a, "gscl_wrap_a", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 12, 0, 0),
+	CGATE(clk_gscl_wrap_a, "clk_gscl_wrap_a", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 12, 0, 0),
 	CGATE(clk_gscl_wrap_b, "clk_gscl_wrap_b", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 13, 0, 0),
 	CGATE(clk_smmu_fimcl3, "clk_smmu_fimcl3,", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 16, 0, 0),
 	CGATE(gscl_fimc_lite3, "gscl_fimc_lite3", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 17, 0, 0),
@@ -1962,11 +1448,9 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_smmu1, "clk_smmu1", "aclk_400_mscl", EXYNOS5_CLK_GATE_IP_MSCL, 9, 0, 0),
 	CGATE(clk_smmu2, "clk_smmu2", "aclk_400_mscl", EXYNOS5_CLK_GATE_IP_MSCL, 10, 0, 0),
 
+	/* BUS_CDREX */
 	CGATE(clkm_phy0, "clkm_phy0", "dout_sclk_cdrex", EXYNOS5_CLK_GATE_BUS_CDREX, 0, 0, 0),
 	CGATE(clkm_phy1, "clkm_phy1", "dout_sclk_cdrex", EXYNOS5_CLK_GATE_BUS_CDREX, 1, 0, 0),
-
-	CGATE(clk2x_phy0, "clk2x_phy0", "dout_clk2x_phy0", EXYNOS5_CLK_GATE_BUS_CDREX, 0, 0, 0),
-	CGATE(clk2x_phy1, "clk2x_phy1", "dout_clk2x_phy0", EXYNOS5_CLK_GATE_BUS_CDREX, 1, 0, 0),
 
 	/* ASS */
 	CGATE(gate_ass_niu_p, "ass_niu_p", "mout_ass_clk", EXYNOS_CLKGATE_AUDSS, 11, 0, 0),
@@ -1996,9 +1480,11 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_pcm1, "clk_pcm1", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 22, 0, 0),
 	CGATE(clk_i2s2, "clk_i2s2", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 21, 0, 0),
 	CGATE(clk_i2s1, "clk_i2s1", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 20, 0, 0),
+
 	CGATE(clk_spi2, "clk_spi2", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 18, 0, 0),
 	CGATE(clk_spi1, "clk_spi1", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 17, 0, 0),
 	CGATE(clk_spi0, "clk_spi0", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 16, 0, 0),
+
 	CGATE(clk_tsadc,"clk_tsadc","aclk_66_peric",  EXYNOS5_CLK_GATE_IP_PERIC, 15, 0, 0),
 	CGATE(clk_i2chdmi, "clk_i2chdmi", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 14, 0, 0),
 	CGATE(clk_i2c7, "clk_i2c7", "aclk_66_peric",  EXYNOS5_CLK_GATE_IP_PERIC, 13, 0, 0),
@@ -2015,6 +1501,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_uart2, "clk_uart2", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 2, 0, 0),
 	CGATE(clk_uart1, "clk_uart1", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 1, 0, 0),
 	CGATE(clk_uart0, "clk_uart0", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 0, 0, 0),
+
 };
 
 static __initdata struct of_device_id ext_clk_match[] = {

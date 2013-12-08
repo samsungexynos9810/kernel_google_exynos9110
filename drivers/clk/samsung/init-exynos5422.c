@@ -73,6 +73,47 @@ static void top_clk_enable(void)
 	add_enabler("clk_smmufimd1x_m1");
 	add_enabler("clk_smmufimd1x_m0");
 
+	/* enable list */
+	add_enabler("clk_mscl2");
+	add_enabler("clk_mscl1");
+	add_enabler("clk_mscl0");
+	add_enabler("aclk_333_432_gscl");
+	add_enabler("aclk_300_gscl");
+	add_enabler("pclk_smmu_gscl0");
+	add_enabler("pclk_smmu_gscl1");
+	add_enabler("sclk_gscl_wrap_b");
+	add_enabler("sclk_gscl_wrap_a");
+	add_enabler("clk_smmu_gscl1");
+	add_enabler("clk_smmu_gscl0");
+	add_enabler("clk_gscl1");
+	add_enabler("clk_gscl0");
+	add_enabler("aclk_noc_fsys");
+
+	/* enable list to enter suspend to ram */
+	add_enabler("sclk_usbphy300");
+	add_enabler("dout_usbphy300");
+	add_enabler("sclk_usbdrd300");
+	add_enabler("dout_usbdrd300");
+	add_enabler("mout_usbdrd300");
+	add_enabler("sclk_usbphy301");
+	add_enabler("dout_usbphy301");
+	add_enabler("sclk_usbdrd301");
+	add_enabler("dout_usbdrd301");
+	add_enabler("mout_usbdrd301");
+
+	/* enable list to wake up */
+	add_enabler("pclk_seckey_apbif");
+	add_enabler("pclk_tzpc9");
+	add_enabler("pclk_tzpc8");
+	add_enabler("pclk_tzpc7");
+	add_enabler("pclk_tzpc6");
+	add_enabler("pclk_tzpc5");
+	add_enabler("pclk_tzpc4");
+	add_enabler("pclk_tzpc3");
+	add_enabler("pclk_tzpc2");
+	add_enabler("pclk_tzpc1");
+	add_enabler("pclk_tzpc0");
+
 	list_for_each_entry(ce, &clk_enabler_list, node) {
 		clk_prepare(ce->clk);
 		clk_enable(ce->clk);
