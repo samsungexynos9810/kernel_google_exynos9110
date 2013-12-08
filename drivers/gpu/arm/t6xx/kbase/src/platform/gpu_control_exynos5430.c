@@ -107,6 +107,10 @@ int gpu_clock_on(struct exynos_context *platform)
 		return -1;
 	}
 
+	/* restore mout_g3d_pll */
+	clk_set_parent(platform->mout_g3d_pll, platform->fin_pll);
+	clk_set_parent(platform->mout_g3d_pll, platform->fout_g3d_pll);
+
 	if (platform->clk_g3d_status == 1)
 		return 0;
 
