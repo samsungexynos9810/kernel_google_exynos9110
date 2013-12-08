@@ -25,26 +25,26 @@
 
 #include <plat/cpu.h>
 
-#define CHIP_ID_REG		(S5P_VA_CHIPID)
-#define CHIP_MAIN_REV_SHIFT	(4)
-#define CHIP_MAIN_REV_MASK	(0xF << CHIP_MAIN_REV_SHIFT)
+#define CHIP_ID2_REG			(S5P_VA_CHIPID)
 
-#define TEMP_ASV_GROUP_BASE	(EXYNOS_PA_CHIPID + 0x4030)
-#define ASV_TBL3_MASK		(0xF)
-#define TEMP_ASV_GROUP_5	(0x5)
-#define TEMP_ASV_GROUP_10	(0xA)
-#define TEMP_ASV_GROUP_11	(0xB)
-#define TEMP_ASV_GROUP_12	(0xC)
+#define ASV_ARM_SPEED_GRP_REG		(S5P_VA_CHIPID2 + 0x10)
+#define ASV_ARM_MAIN_GRP_OFFSET		(0)
 
-enum chip_main_rev {
-	EXYNOS5430_EVT0,
-	EXYNOS5430_EVT1,
-};
+#define ASV_KFC_SPEED_GRP_REG		(S5P_VA_CHIPID2 + 0x14)
+#define ASV_KFC_MAIN_GRP_OFFSET		(0)
 
-static unsigned int temp_asv_group;
+#define ASV_G3D_MIF_SPEED_GRP_REG	(S5P_VA_CHIPID2 + 0x18)
+#define ASV_G3D_MAIN_GRP_OFFSET		(0)
+#define ASV_MIF_MAIN_GRP_OFFSET		(16)
+
+#define ASV_INT_ISP_SPEED_GRP_REG	(S5P_VA_CHIPID2 + 0x1C)
+#define ASV_INT_MAIN_GRP_OFFSET		(0)
+#define ASV_CAM0_DISP_MAIN_GRP_OFFSET	(16)
+
+#define ASV_SPEED_GRP_MASK		(0xFF)
 
 static bool is_speedgroup;
-static unsigned special_lot_group;
+static unsigned int speed_group[ASV_TYPE_END] = {0, };
 
 #ifdef CONFIG_ASV_MARGIN_TEST
 static int set_arm_volt = 0;
@@ -97,65 +97,10 @@ static int __init get_isp_volt(char *str)
 early_param("g3d", get_g3d_volt);
 #endif
 
-#if 0
-static void exynos5430_set_abb(struct asv_info *asv_inform)
-{
-	void __iomem *target_reg;
-	unsigned int target_value;
-
-	switch (asv_inform->asv_type) {
-	case ID_ARM:
-		target_reg = EXYNOS5430_BIAS_CON_ARM;
-		target_value = arm_asv_abb_info[asv_inform->result_asv_grp];
-		break;
-	case ID_KFC:
-		target_reg = EXYNOS5430_BIAS_CON_KFC;
-		target_value = kfc_asv_abb_info[asv_inform->result_asv_grp];
-		break;
-	case ID_INT:
-		target_reg = EXYNOS5430_BIAS_CON_INT;
-		target_value = int_asv_abb_info[asv_inform->result_asv_grp];
-		break;
-	case ID_MIF:
-		target_reg = EXYNOS5430_BIAS_CON_MIF;
-		target_value = mif_asv_abb_info[asv_inform->result_asv_grp];
-		break;
-	case ID_G3D:
-		target_reg = EXYNOS5430_BIAS_CON_G3D;
-		target_value = g3d_asv_abb_info[asv_inform->result_asv_grp];
-		break;
-	case ID_ISP:
-		target_reg = EXYNOS5430_BIAS_CON_ISP;
-		target_value = isp_asv_abb_info[asv_inform->result_asv_grp];
-		break;
-	default:
-		return;
-	}
-
-	set_abb(target_reg, target_value);
-}
-#endif
-
 static unsigned int exynos5430_get_asv_group_arm(struct asv_common *asv_comm)
 {
-	unsigned int i;
-	struct asv_info *target_asv_info = asv_get(ID_ARM);
-
 	if (is_speedgroup)
-		return special_lot_group;
-
-	if (temp_asv_group)
-		return temp_asv_group;
-
-	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
-		if (refer_use_table_get_asv[0][i] &&
-			asv_comm->ids_value <= refer_table_get_asv[0][i])
-			return i;
-
-		if (refer_use_table_get_asv[1][i] &&
-			asv_comm->hpm_value <= refer_table_get_asv[1][i])
-			return i;
-	}
+		return speed_group[ID_ARM];
 
 	return 0;
 }
@@ -165,12 +110,11 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 	unsigned int i;
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
-#if 0
-	exynos5430_set_abb(asv_inform);
-#endif
-
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
-	asv_inform->asv_abb  = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_volt) {
+		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
 
 	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 		asv_inform->asv_volt[i].asv_freq = arm_asv_volt_info[i][0];
@@ -184,11 +128,10 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 
 	if (show_value) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
-			pr_info("%s LV%d freq : %d volt : %d abb : %d\n",
+			pr_info("%s LV%d freq : %d volt : %d\n",
 					asv_inform->name, i,
 					asv_inform->asv_volt[i].asv_freq,
-					asv_inform->asv_volt[i].asv_value,
-					asv_inform->asv_abb[i].asv_value);
+					asv_inform->asv_volt[i].asv_value);
 	}
 }
 
@@ -199,24 +142,8 @@ static struct asv_ops exynos5430_asv_ops_arm = {
 
 static unsigned int exynos5430_get_asv_group_kfc(struct asv_common *asv_comm)
 {
-	unsigned int i;
-	struct asv_info *target_asv_info = asv_get(ID_KFC);
-
 	if (is_speedgroup)
-		return special_lot_group;
-
-	if (temp_asv_group)
-		return temp_asv_group;
-
-	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
-		if (refer_use_table_get_asv[0][i] &&
-			asv_comm->ids_value <= refer_table_get_asv[0][i])
-			return i;
-
-		if (refer_use_table_get_asv[1][i] &&
-			asv_comm->hpm_value <= refer_table_get_asv[1][i])
-			return i;
-	}
+		return speed_group[ID_KFC];
 
 	return 0;
 }
@@ -227,7 +154,10 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
-	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_volt) {
+		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
 
 	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 		asv_inform->asv_volt[i].asv_freq = kfc_asv_volt_info[i][0];
@@ -255,24 +185,8 @@ static struct asv_ops exynos5430_asv_ops_kfc = {
 
 static unsigned int exynos5430_get_asv_group_int(struct asv_common *asv_comm)
 {
-	unsigned int i;
-	struct asv_info *target_asv_info = asv_get(ID_INT);
-
 	if (is_speedgroup)
-		return special_lot_group;
-
-	if (temp_asv_group)
-		return temp_asv_group;
-
-	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
-		if (refer_use_table_get_asv[0][i] &&
-			asv_comm->ids_value <= refer_table_get_asv[0][i])
-			return i;
-
-		if (refer_use_table_get_asv[1][i] &&
-			asv_comm->hpm_value <= refer_table_get_asv[1][i])
-			return i;
-	}
+		return speed_group[ID_INT];
 
 	return 0;
 }
@@ -283,7 +197,10 @@ static void exynos5430_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
-	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_volt) {
+		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
 
 	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 		asv_inform->asv_volt[i].asv_freq = int_asv_volt_info[i][0];
@@ -311,24 +228,8 @@ static struct asv_ops exynos5430_asv_ops_int = {
 
 static unsigned int exynos5430_get_asv_group_mif(struct asv_common *asv_comm)
 {
-	unsigned int i;
-	struct asv_info *target_asv_info = asv_get(ID_MIF);
-
 	if (is_speedgroup)
-		return special_lot_group;
-
-	if (temp_asv_group)
-		return temp_asv_group;
-
-	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
-		if (refer_use_table_get_asv[0][i] &&
-			asv_comm->ids_value <= refer_table_get_asv[0][i])
-			return i;
-
-		if (refer_use_table_get_asv[1][i] &&
-			asv_comm->hpm_value <= refer_table_get_asv[1][i])
-			return i;
-	}
+		return speed_group[ID_MIF];
 
 	return 0;
 }
@@ -338,12 +239,11 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 	unsigned int i;
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
-#if 0
-	exynos5430_set_abb(asv_inform);
-#endif
-
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
-	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_volt) {
+		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
 
 	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 		asv_inform->asv_volt[i].asv_freq = mif_asv_volt_info[i][0];
@@ -371,24 +271,8 @@ static struct asv_ops exynos5430_asv_ops_mif = {
 
 static unsigned int exynos5430_get_asv_group_g3d(struct asv_common *asv_comm)
 {
-	unsigned int i;
-	struct asv_info *target_asv_info = asv_get(ID_G3D);
-
 	if (is_speedgroup)
-		return special_lot_group;
-
-	if (temp_asv_group)
-		return temp_asv_group;
-
-	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
-		if (refer_use_table_get_asv[0][i] &&
-			asv_comm->ids_value <= refer_table_get_asv[0][i])
-			return i;
-
-		if (refer_use_table_get_asv[1][i] &&
-			asv_comm->hpm_value <= refer_table_get_asv[1][i])
-			return i;
-	}
+		return speed_group[ID_G3D];
 
 	return 0;
 }
@@ -399,7 +283,10 @@ static void exynos5430_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
-	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_volt) {
+		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
 
 	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 		asv_inform->asv_volt[i].asv_freq = g3d_asv_volt_info[i][0];
@@ -427,24 +314,8 @@ static struct asv_ops exynos5430_asv_ops_g3d = {
 
 static unsigned int exynos5430_get_asv_group_isp(struct asv_common *asv_comm)
 {
-	unsigned int i;
-	struct asv_info *target_asv_info = asv_get(ID_ISP);
-
 	if (is_speedgroup)
-		return special_lot_group;
-
-	if (temp_asv_group)
-		return temp_asv_group;
-
-	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
-		if (refer_use_table_get_asv[0][i] &&
-			asv_comm->ids_value <= refer_table_get_asv[0][i])
-			return i;
-
-		if (refer_use_table_get_asv[1][i] &&
-			asv_comm->hpm_value <= refer_table_get_asv[1][i])
-			return i;
-	}
+		return speed_group[ID_ISP];
 
 	return 0;
 }
@@ -455,7 +326,10 @@ static void exynos5430_set_asv_info_isp(struct asv_info *asv_inform, bool show_v
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
-	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_volt) {
+		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
 
 	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 		asv_inform->asv_volt[i].asv_freq = isp_asv_volt_info[i][0];
@@ -540,58 +414,34 @@ unsigned int exynos5430_regist_asv_member(void)
 
 int exynos5430_init_asv(struct asv_common *asv_info)
 {
-#if 0
-	struct clk *clk_abb;
-#endif
-	unsigned int chip_id_value;
-	unsigned int chip_rev = 0;
-	void __iomem *temp_asv_base;
-	unsigned int temp_asv_value = 0;
+	unsigned int arm_speed_grp, kfc_speed_grp;
+	unsigned int g3d_mif_speed_grp, int_isp_speed_grp;
 
-	special_lot_group = 0;
-	is_speedgroup = false;
+	is_speedgroup = true;
 
-#if 0
-	/* enable abb clock */
-	clk_abb = clk_get(NULL, "clk_abb_apbif");
-	if (IS_ERR(clk_abb)) {
-		pr_err("EXYNOS5430 ASV : cannot find abb clock!\n");
+	if (samsung_rev() == EXYNOS5430_REV_0) {
+		pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
 		return -EINVAL;
 	}
-	clk_enable(clk_abb);
-#endif
 
-	chip_id_value = __raw_readl(CHIP_ID_REG);
-	chip_rev = (chip_id_value & CHIP_MAIN_REV_MASK) >> CHIP_MAIN_REV_SHIFT;
+	arm_speed_grp = readl(ASV_ARM_SPEED_GRP_REG);
+	kfc_speed_grp = readl(ASV_KFC_SPEED_GRP_REG);
+	g3d_mif_speed_grp = readl(ASV_G3D_MIF_SPEED_GRP_REG);
+	int_isp_speed_grp = readl(ASV_INT_ISP_SPEED_GRP_REG);
 
-	pr_info("EXYNOS5430 Rev is %u\n", chip_rev);
+	speed_group[ID_ARM] = (arm_speed_grp >> ASV_ARM_MAIN_GRP_OFFSET) & ASV_SPEED_GRP_MASK;
+	speed_group[ID_KFC] = (kfc_speed_grp >> ASV_KFC_MAIN_GRP_OFFSET) & ASV_SPEED_GRP_MASK;
+	speed_group[ID_G3D] = (g3d_mif_speed_grp >> ASV_G3D_MAIN_GRP_OFFSET) & ASV_SPEED_GRP_MASK;
+	speed_group[ID_MIF] = (g3d_mif_speed_grp >> ASV_MIF_MAIN_GRP_OFFSET) & ASV_SPEED_GRP_MASK;
+	speed_group[ID_INT] = (int_isp_speed_grp >> ASV_INT_MAIN_GRP_OFFSET) & ASV_SPEED_GRP_MASK;
+	speed_group[ID_ISP] = (int_isp_speed_grp >> ASV_CAM0_DISP_MAIN_GRP_OFFSET) & ASV_SPEED_GRP_MASK;
 
-	if (chip_rev == EXYNOS5430_EVT0) {
-		temp_asv_base = ioremap(TEMP_ASV_GROUP_BASE, SZ_1K);
-		if (!temp_asv_base) {
-			pr_err("EXYNOS5430 ASV : cannot allocation memory\n");
-			return -ENOMEM;
-		}
+	if (speed_group[ID_ISP] == 0)
+		speed_group[ID_ISP] = speed_group[ID_INT];
 
-		temp_asv_value = __raw_readl(temp_asv_base);
-		temp_asv_value &= ASV_TBL3_MASK;
-
-		pr_info("EXYNOS5430 ASV : temp ASV value is %u\n", temp_asv_value);
-
-		if (temp_asv_value == TEMP_ASV_GROUP_10)
-			temp_asv_group = TEMP_ASV_GROUP_10;
-		else if (temp_asv_value == TEMP_ASV_GROUP_11)
-			temp_asv_group = TEMP_ASV_GROUP_11;
-		else if (temp_asv_value == TEMP_ASV_GROUP_12)
-			temp_asv_group = TEMP_ASV_GROUP_12;
-		else
-			temp_asv_group = TEMP_ASV_GROUP_5;
-
-		iounmap(temp_asv_base);
-	} else {
-		pr_err("EXYNOS5430 ASV : cannot support evt%u\n", chip_rev);
-		return -EINVAL;
-	}
+	pr_info("EXYNOS5430 ASV : ARM(%u), KFC(%u), G3D(%u), MIF(%u), INT(%u), ISP(%u)\n",
+			speed_group[ID_ARM], speed_group[ID_KFC], speed_group[ID_G3D],
+			speed_group[ID_MIF], speed_group[ID_INT], speed_group[ID_ISP]);
 
 	asv_info->regist_asv_member = exynos5430_regist_asv_member;
 

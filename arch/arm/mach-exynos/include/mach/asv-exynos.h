@@ -69,6 +69,7 @@ enum asv_type_id {
 	ID_INT_MIF_L2,
 	ID_INT_MIF_L3,
 	ID_ISP,
+	ASV_TYPE_END,
 };
 
 /* define Struct for ASV common */
