@@ -760,7 +760,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	}
 #endif
 
-#ifndef SENSOR_s5K4H5_DRIVING
+#ifndef SENSOR_S5K4H5_DRIVING
 	ret = sensor_4h5_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_4h5_probe is fail(%d)", ret);

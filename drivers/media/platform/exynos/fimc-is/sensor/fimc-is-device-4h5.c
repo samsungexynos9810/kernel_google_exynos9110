@@ -130,7 +130,6 @@ int sensor_4h5_probe(struct i2c_client *client,
 
 	module = &device->module_enum[atomic_read(&core->resourcemgr.rsccount_module)];
 	atomic_inc(&core->resourcemgr.rsccount_module);
-	//module = &device->module_enum[SENSOR_S5K4H5_NAME];
 	module->id = SENSOR_NAME_S5K4H5;
 	module->subdev = subdev_module;
 	module->device = SENSOR_S5K4H5_INSTANCE;
@@ -157,13 +156,11 @@ int sensor_4h5_probe(struct i2c_client *client,
 	ext->sensor_con.peri_setting.i2c.speed = 400000;
 
 	ext->actuator_con.product_name = ACTUATOR_NAME_DW9804;
-	//ext->actuator_con.product_name = ACTUATOR_NAME_NOTHING;
 	ext->actuator_con.peri_type = SE_I2C;
 	ext->actuator_con.peri_setting.i2c.channel
 		= SENSOR_CONTROL_I2C0;
 
 	ext->flash_con.product_name = FLADRV_NAME_RT5033;
-	//ext->flash_con.product_name = FLADRV_NAME_NOTHING;
 	ext->flash_con.peri_type = SE_GPIO;
 	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 8;
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 6;
