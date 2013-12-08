@@ -259,7 +259,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <3 4>;
 		qos = <15>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -271,7 +271,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <24 1>;
 		qos = <15>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -283,7 +283,7 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <2 4>;
 		qos = <15>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -294,7 +294,7 @@
 		reg = <0x13CC0000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <23 6>;
-		samsung,power-domain = <&spd_gscl>;
+		samsung,power-domain = <&pd_gscl>;
 	};
 
 	sysmmu_g2d: sysmmu@0x10A60000 {
