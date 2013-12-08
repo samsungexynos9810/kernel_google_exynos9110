@@ -37,8 +37,6 @@
 #include "fimc-is-regs.h"
 #include "fimc-is-err.h"
 #include "fimc-is-video.h"
-#include "fimc-is-metadata.h"
-#include "fimc-is-device-ischain.h"
 
 const struct v4l2_file_operations fimc_is_scc_video_fops;
 const struct v4l2_ioctl_ops fimc_is_scc_video_ioctl_ops;
@@ -461,6 +459,7 @@ static int fimc_is_scc_video_s_ctrl(struct file *file, void *priv,
 	int ret = 0;
 	unsigned long flags;
 	struct fimc_is_video_ctx *vctx = file->private_data;
+	struct fimc_is_device_ischain *device;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
 
@@ -468,6 +467,13 @@ static int fimc_is_scc_video_s_ctrl(struct file *file, void *priv,
 	BUG_ON(!ctrl);
 
 	mdbgv_scc("%s\n", vctx, __func__);
+
+	device = vctx->device;
+	if (!device) {
+		merr("device is NULL", vctx);
+		ret = -EINVAL;
+		goto p_err;
+	}
 
 	framemgr = GET_DST_FRAMEMGR(vctx);
 	frame = NULL;
@@ -497,12 +503,26 @@ static int fimc_is_scc_video_s_ctrl(struct file *file, void *priv,
 			framemgr_x_barrier_irqr(framemgr, 0, flags);
 		}
 		break;
+	case V4L2_CID_IS_COLOR_RANGE:
+		if (test_bit(FIMC_IS_SUBDEV_START, &device->scc.state)) {
+			err("failed to change color range: device started already (0x%08x)",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->setfile &= ~FIMC_IS_SCC_CRANGE_MASK;
+
+			if (ctrl->value)
+				device->setfile	|=
+					(FIMC_IS_CRANGE_LIMITED << FIMC_IS_SCC_CRANGE_SHIFT);
+		}
+		break;
 	default:
 		merr("unsupported ioctl(%d)\n", vctx, ctrl->id);
 		ret = -EINVAL;
 		break;
 	}
 
+p_err:
 	return ret;
 }
 

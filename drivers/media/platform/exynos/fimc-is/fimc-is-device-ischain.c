@@ -1673,9 +1673,10 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 		region->parameter.scalerp.output_crop.pos_y
 		);
 
-	setfile = (device->setfile & FIMC_IS_SETFILE_MASK);
 	group |= GROUP_ID(device->group_3aa.id);
 	group |= GROUP_ID(device->group_isp.id);
+
+	setfile = (device->setfile & FIMC_IS_SETFILE_MASK);
 
 	ret = fimc_is_hw_a_param(device->interface,
 		device->instance,
@@ -2521,6 +2522,10 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 	device->crop_width	= 0;
 	device->crop_height	= 0;
 	device->setfile		= 0;
+	device->setfile	|= (FIMC_IS_CRANGE_FULL << FIMC_IS_ISP_CRANGE_SHIFT);
+	device->setfile	|= (FIMC_IS_CRANGE_FULL << FIMC_IS_SCC_CRANGE_SHIFT);
+	device->setfile	|= (FIMC_IS_CRANGE_FULL << FIMC_IS_SCP_CRANGE_SHIFT);
+	device->setfile	|= ISS_SUB_SCENARIO_STILL_PREVIEW;
 	device->dzoom_width	= 0;
 	device->force_down	= false;
 	device->sensor		= NULL;
@@ -2824,35 +2829,65 @@ static int fimc_is_ischain_s_setfile(struct fimc_is_device_ischain *device,
 {
 	int ret = 0;
 	u32 crange;
-	struct isp_param *isp_param;
+	struct param_otf_output *otf_output;
+	struct param_scaler_imageeffect *scaler_effect;
 
 	BUG_ON(!device);
 	BUG_ON(!lindex);
 	BUG_ON(!hindex);
 	BUG_ON(!indexes);
 
-	info("[ISC:D:%d] setfile is %08X\n", device->instance, setfile);
+	info("[ISC:D:%d] setfile: 0x%08X\n", device->instance, setfile);
 
 	if ((setfile & FIMC_IS_SETFILE_MASK) >= ISS_SUB_END) {
-		merr("setfile id(%08X) is invalid", device, setfile);
+		merr("setfile id(%d) is invalid", device,
+				(setfile & FIMC_IS_SETFILE_MASK));
 		ret = -EINVAL;
 		goto p_err;
 	}
 
-	isp_param = &device->is_region->parameter.isp;
 	/*
 	 * Color Range
 	 * 0 : Wide range
 	 * 1 : Narrow range
 	 */
-	crange = (setfile & FIMC_IS_CRANGE_MASK) >> FIMC_IS_CRANGE_SHIFT;
+	otf_output = fimc_is_itf_g_param(device, NULL, PARAM_ISP_OTF_OUTPUT);
+	crange = (setfile & FIMC_IS_ISP_CRANGE_MASK) >> FIMC_IS_ISP_CRANGE_SHIFT;
 	if (crange)
-		isp_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444_TRUNCATED;
+		otf_output->format = OTF_OUTPUT_FORMAT_YUV444_TRUNCATED;
 	else
-		isp_param->otf_output.format = OTF_OUTPUT_FORMAT_YUV444;
+		otf_output->format = OTF_OUTPUT_FORMAT_YUV444;
 	*lindex |= LOWBIT_OF(PARAM_ISP_OTF_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_ISP_OTF_OUTPUT);
+
+	info("[ISC:D:%d] ISP color range: %s\n", device->instance,
+			(crange ? "limited" : "full"));
+
+	scaler_effect = fimc_is_itf_g_param(device, NULL, PARAM_SCALERC_IMAGE_EFFECT);
+	crange = (setfile & FIMC_IS_SCC_CRANGE_MASK) >> FIMC_IS_SCC_CRANGE_SHIFT;
+	if (crange)
+		scaler_effect->yuv_range = SCALER_OUTPUT_YUV_RANGE_NARROW;
+	else
+		scaler_effect->yuv_range = SCALER_OUTPUT_YUV_RANGE_FULL;
+	*lindex |= LOWBIT_OF(PARAM_SCALERC_IMAGE_EFFECT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERC_IMAGE_EFFECT);
 	(*indexes)++;
+
+	info("[ISC:D:%d] SCC color range: %s\n", device->instance,
+			(crange ? "limited" : "full"));
+
+	scaler_effect = fimc_is_itf_g_param(device, NULL, PARAM_SCALERP_IMAGE_EFFECT);
+	crange = (setfile & FIMC_IS_SCP_CRANGE_MASK) >> FIMC_IS_SCP_CRANGE_SHIFT;
+	if (crange)
+		scaler_effect->yuv_range = SCALER_OUTPUT_YUV_RANGE_NARROW;
+	else
+		scaler_effect->yuv_range = SCALER_OUTPUT_YUV_RANGE_FULL;
+	*lindex |= LOWBIT_OF(PARAM_SCALERP_IMAGE_EFFECT);
+	*hindex |= HIGHBIT_OF(PARAM_SCALERP_IMAGE_EFFECT);
+	(*indexes)++;
+
+	info("[ISC:D:%d] SCP color range: %s\n", device->instance,
+			(crange ? "limited" : "full"));
 
 p_err:
 	return ret;
@@ -4904,15 +4939,6 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 
 	fimc_is_ischain_s_path(device, &lindex, &hindex, &indexes);
 
-	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-		device->setfile = 0;
-		device->setfile |= (FIMC_IS_CRANGE_WIDE << FIMC_IS_CRANGE_SHIFT);
-		device->setfile |= ISS_SUB_SCENARIO_STILL_CAPTURE;
-	} else {
-		device->setfile = 0;
-		device->setfile |= (FIMC_IS_CRANGE_WIDE << FIMC_IS_CRANGE_SHIFT);
-		device->setfile |= ISS_SUB_SCENARIO_STILL_PREVIEW;
-	}
 	fimc_is_ischain_s_setfile(device, device->setfile, &lindex, &hindex, &indexes);
 
 	if (test_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state))

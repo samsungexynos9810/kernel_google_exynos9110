@@ -640,6 +640,27 @@ static int fimc_is_isp_video_s_ctrl(struct file *file, void *priv,
 		}
 		dbg_isp("V4L2_CID_IS_DVFS_UNLOCK : %d I2C(%d)\n", ctrl->value, i2c_clk);
 		break;
+	case V4L2_CID_IS_SET_SETFILE:
+		if (test_bit(FIMC_IS_SUBDEV_START, &device->group_isp.leader.state)) {
+			err("Setting setfile is only avaiable before starting device!! (0x%08x)",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->setfile = ctrl->value;
+		}
+	case V4L2_CID_IS_COLOR_RANGE:
+		if (test_bit(FIMC_IS_SUBDEV_START, &device->group_isp.leader.state)) {
+			err("failed to change color range: device started already (0x%08x)",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->setfile &= ~FIMC_IS_ISP_CRANGE_MASK;
+
+			if (ctrl->value)
+				device->setfile	|=
+					(FIMC_IS_CRANGE_LIMITED << FIMC_IS_ISP_CRANGE_SHIFT);
+		}
+		break;
 	default:
 		err("unsupported ioctl(%d)\n", ctrl->id);
 		ret = -EINVAL;

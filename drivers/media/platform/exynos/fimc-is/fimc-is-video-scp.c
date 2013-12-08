@@ -557,6 +557,19 @@ static int fimc_is_scp_video_s_ctrl(struct file *file, void *priv,
 			framemgr_x_barrier_irqr(framemgr, 0, flags);
 		}
 		break;
+	case V4L2_CID_IS_COLOR_RANGE:
+		if (test_bit(FIMC_IS_SUBDEV_START, &device->scp.state)) {
+			err("failed to change color range: device started already (0x%08x)",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->setfile &= ~FIMC_IS_SCP_CRANGE_MASK;
+
+			if (ctrl->value)
+				device->setfile	|=
+					(FIMC_IS_CRANGE_LIMITED << FIMC_IS_SCP_CRANGE_SHIFT);
+		}
+		break;
 	default:
 		err("unsupported ioctl(%d)\n", ctrl->id);
 		ret = -EINVAL;

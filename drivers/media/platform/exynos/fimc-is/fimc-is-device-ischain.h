@@ -22,8 +22,6 @@
 #define SENSOR_MAX_CTL			0x10
 #define SENSOR_MAX_CTL_MASK		(SENSOR_MAX_CTL-1)
 
-#define FIMC_IS_SETFILE_MASK		0xFFFF
-
 #define REPROCESSING_FLAG		0x80000000
 #define REPROCESSING_MASK		0xF0000000
 #define REPROCESSING_SHIFT		28
@@ -35,11 +33,15 @@
 #define TAX_VINDEX_SHIFT		8
 #define MODULE_MASK			0x000000FF
 
-#define FIMC_IS_SETFILE_MASK		0xFFFF
-#define FIMC_IS_CRANGE_MASK		0xFFFF0000
-#define FIMC_IS_CRANGE_SHIFT		16
-#define FIMC_IS_CRANGE_WIDE		0
-#define FIMC_IS_CRANGE_NARROW		1
+#define FIMC_IS_SETFILE_MASK		0x0000FFFF
+#define FIMC_IS_ISP_CRANGE_MASK		0x0F000000
+#define FIMC_IS_ISP_CRANGE_SHIFT	24
+#define FIMC_IS_SCC_CRANGE_MASK		0x00F00000
+#define FIMC_IS_SCC_CRANGE_SHIFT	20
+#define FIMC_IS_SCP_CRANGE_MASK		0x000F0000
+#define FIMC_IS_SCP_CRANGE_SHIFT	16
+#define FIMC_IS_CRANGE_FULL		0
+#define FIMC_IS_CRANGE_LIMITED		1
 
 /*global state*/
 enum fimc_is_ischain_state {
@@ -142,6 +144,7 @@ struct fimc_is_device_ischain {
 	u32					bds_width;
 	u32					bds_height;
 	u32					setfile;
+	u32					scp_setfile;
 
 	struct camera2_sm			capability;
 	struct camera2_uctl			cur_peri_ctl;
