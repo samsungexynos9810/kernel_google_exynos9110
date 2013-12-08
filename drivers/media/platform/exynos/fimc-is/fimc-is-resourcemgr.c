@@ -68,6 +68,13 @@ int fimc_is_resource_get(struct fimc_is_resourcemgr *resourcemgr)
 
 		/* 1. interface open */
 		fimc_is_interface_open(&core->interface);
+
+#ifdef ENABLE_DVFS
+		/* dvfs controller init */
+		ret = fimc_is_dvfs_init(resourcemgr);
+		if (ret)
+			err("%s: fimc_is_dvfs_init failed!\n", __func__);
+#endif
 	}
 
 	atomic_inc(&core->rsccount);
