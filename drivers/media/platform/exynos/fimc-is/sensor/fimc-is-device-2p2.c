@@ -42,6 +42,16 @@
 static struct fimc_is_sensor_cfg config_2p2[] = {
 	/* 5328x3000@30fps */
 	FIMC_IS_SENSOR_CFG(5328, 3000, 30, 30, 0),
+	/* 4004X3000@30fps */
+	FIMC_IS_SENSOR_CFG(4004, 3000, 30, 23, 1),
+	/* 3008X3000@30fps */
+	FIMC_IS_SENSOR_CFG(3008, 3000, 30, 19, 2),
+	/* 2664X1500@60fps */
+	FIMC_IS_SENSOR_CFG(2664, 1500, 60, 19, 3),
+	/* 1328X748@120fps */
+	FIMC_IS_SENSOR_CFG(1328, 748, 120, 13, 4),
+	/* 816X490@300fps */
+	FIMC_IS_SENSOR_CFG(816, 490, 300, 13, 5),
 };
 
 static int sensor_2p2_init(struct v4l2_subdev *subdev, u32 val)
@@ -99,11 +109,11 @@ int sensor_2p2_probe(struct i2c_client *client,
 	module->subdev = subdev_module;
 	module->device = SENSOR_2P2_INSTANCE;
 	module->client = client;
-	module->active_width = 5328;
+	module->active_width = 5312;
 	module->active_height = 2990;
 	module->pixel_width = module->active_width + 16;
 	module->pixel_height = module->active_height + 10;
-	module->max_framerate = 120;
+	module->max_framerate = 300;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_2p2.bin";
 	module->cfgs = ARRAY_SIZE(config_2p2);
