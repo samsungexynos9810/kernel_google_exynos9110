@@ -1076,7 +1076,7 @@
 			mfc_qos_variant_3 {
 				thrd_mb = <326400>;
 				freq_mfc = <317000>;
-				freq_int = <413000>;
+				freq_int = <317000>;
 				freq_mif = <413000>;
 				freq_cpu = <0>;
 				freq_kfc = <400000>;
@@ -1135,7 +1135,7 @@
 			mfc_qos_variant_3 {
 				thrd_mb = <326400>;
 				freq_mfc = <317000>;
-				freq_int = <413000>;
+				freq_int = <317000>;
 				freq_mif = <413000>;
 				freq_cpu = <0>;
 				freq_kfc = <400000>;
