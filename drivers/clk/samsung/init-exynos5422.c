@@ -62,10 +62,55 @@ static void top_clk_enable(void)
 	add_enabler("fout_epll");
 	add_enabler("fout_rpll");
 	add_enabler("fout_kpll");
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	/* top bus clock enable */
+	add_enabler("mout_aclk_200_fsys_user");
+	add_enabler("mout_pclk_200_fsys_user");
+	add_enabler("mout_aclk_100_noc_user");
+	add_enabler("mout_aclk_400_wcore_user");
+	add_enabler("mout_aclk_200_fsys2_user");
+	add_enabler("aclk_200_disp1");
+	add_enabler("aclk_400_mscl");
+	add_enabler("aclk_400_isp");
+	add_enabler("mout_aclk_333_user");
+	add_enabler("mout_aclk_266_user");
+	add_enabler("mout_aclk_166_user");
+	add_enabler("aclk_66_peric");
+	add_enabler("aclk_66_psgen");
+	add_enabler("pclk_66_gpio");
+	add_enabler("aclk_333_432_isp0");
+	add_enabler("aclk_333_432_isp");
+	add_enabler("aclk_333_432_gscl");
+	add_enabler("aclk_300_gscl");
+	add_enabler("mout_aclk_300_disp1_user");
+	add_enabler("aclk_300_jpeg");
+	add_enabler("mout_aclk_g3d_user");
+	add_enabler("aclk_266_g2d");
+	add_enabler("aclk_333_g2d");
+	add_enabler("mout_aclk_400_disp1_user");
+	add_enabler("aclk_266_isp");
+	add_enabler("aclk_432_scaler");
+	add_enabler("aclk_432_cam");
+	add_enabler("aclk_f1_550_cam");
+	add_enabler("aclk_550_cam");
+	add_enabler("mau_epll_clk");
+	add_enabler("mx_mspll_ccore_phy");
+	add_enabler("sclk_gscl_wrap_b");
+	add_enabler("sclk_gscl_wrap_a");
+	add_enabler("sclk_isp_sensor2");
+	add_enabler("sclk_isp_sensor1");
+	add_enabler("sclk_isp_sensor0");
+	add_enabler("sclk_uart_isp");
+	add_enabler("sclk_isp0_isp");
+	add_enabler("sclk_isp1_isp");
+	add_enabler("sclk_pwm_isp");
+#else
+	add_enabler("pclk_66_gpio");
 	add_enabler("aclk_66_peric");
 	add_enabler("aclk_66_psgen");
 	add_enabler("aclk_300_jpeg");
 	add_enabler("aclk_200_disp1");
+#endif
 
 	add_enabler("clk_fimd1");
 	add_enabler("clk_dp1");
@@ -81,8 +126,10 @@ static void top_clk_enable(void)
 	add_enabler("aclk_300_gscl");
 	add_enabler("pclk_smmu_gscl0");
 	add_enabler("pclk_smmu_gscl1");
+#ifndef CONFIG_SOC_EXYNOS5422_REV_0
 	add_enabler("sclk_gscl_wrap_b");
 	add_enabler("sclk_gscl_wrap_a");
+#endif
 	add_enabler("clk_smmu_gscl1");
 	add_enabler("clk_smmu_gscl0");
 	add_enabler("clk_gscl1");
