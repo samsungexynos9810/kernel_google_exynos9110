@@ -99,10 +99,10 @@ int sensor_3h5_probe(struct i2c_client *client,
 	module->subdev = subdev_module;
 	module->device = SENSOR_S5K3H5_INSTANCE;
 	module->client = client;
-	module->pixel_width = 3248 + 16;
-	module->pixel_height = 2438 + 10;
 	module->active_width = 3248;
 	module->active_height = 2438;
+	module->pixel_width = module->active_width + 16;
+	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_3h5.bin";
