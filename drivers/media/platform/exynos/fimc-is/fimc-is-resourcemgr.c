@@ -68,10 +68,6 @@ int fimc_is_resource_get(struct fimc_is_resourcemgr *resourcemgr)
 
 		/* 1. interface open */
 		fimc_is_interface_open(&core->interface);
-
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
-		exynos5_mif_bpll_register_notifier(&exynos_mif_nb);
-#endif
 	}
 
 	atomic_inc(&core->rsccount);
@@ -125,10 +121,6 @@ int fimc_is_resource_put(struct fimc_is_resourcemgr *resourcemgr)
 		ret = fimc_is_interface_close(&core->interface);
 		if (ret)
 			err("fimc_is_interface_close is failed");
-
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
-		exynos5_mif_bpll_unregister_notifier(&exynos_mif_nb);
-#endif
 
 #ifndef RESERVED_MEM
 		/* 5. Dealloc memroy */

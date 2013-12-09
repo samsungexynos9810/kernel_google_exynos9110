@@ -221,69 +221,6 @@ exit:
 	return ret;
 }
 
-#if defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ)
-static int exynos5_fimc_mif_notifier(struct notifier_block *notifier,
-	unsigned long event, void *v)
-{
-	struct devfreq_info *info = (struct devfreq_info *)v;
-	int cfg;
-	int timeout = 1000000;
-
-	switch (event) {
-	case MIF_DEVFREQ_PRECHANGE:
-		if (info->new == 800000) {
-			spin_lock(&int_div_lock);
-			cfg = __raw_readl(EXYNOS5_CLKDIV_TOP1);
-			cfg &= ~(0x7 << 20);
-			cfg |= (0x1 << 20);
-			__raw_writel(cfg, EXYNOS5_CLKDIV_TOP1);
-			do {
-				timeout--;
-			} while(timeout &&
-				(__raw_readl(EXYNOS5_CLKDIV_STAT_TOP1) &
-				(0x1 << 20)));
-			if (!timeout)
-				pr_err("%s: timeout for clock diving #1\n",
-					__func__);
-			spin_unlock(&int_div_lock);
-		}
-		break;
-	case MIF_DEVFREQ_POSTCHANGE:
-               if (info->new == 400000) {
-                        if ((__raw_readl(EXYNOS5_BPLL_CON0) & 0x7) == 2) {
-				udelay(500);
-				spin_lock(&int_div_lock);
-                                cfg = __raw_readl(EXYNOS5_CLKDIV_TOP1);
-                                cfg &= ~(0x7 << 20);
-                                cfg |= (0x0 << 20);
-                                __raw_writel(cfg, EXYNOS5_CLKDIV_TOP1);
-                                do {
-                                        timeout--;
-                                } while(timeout &&
-                                        (__raw_readl(EXYNOS5_CLKDIV_STAT_TOP1) &
-                                        (0x1 << 20)));
-				if (!timeout)
-					pr_err("%s: timeout for clock "
-						"diving #1\n",__func__);
-				spin_unlock(&int_div_lock);
-                        } else {
-				pr_err("%s: CRITCAL error\n",__func__);
-	                }
-                }
-		break;
-	default:
-		pr_err("%s: No scenario for %d to %d\n", __func__, info->old, info->new);
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block exynos_mif_nb = {
-	.notifier_call = exynos5_fimc_mif_notifier,
-};
-#endif
-
 static int fimc_is_suspend(struct device *dev)
 {
 	pr_debug("FIMC_IS Suspend\n");
@@ -339,7 +276,7 @@ int fimc_is_runtime_suspend(struct device *dev)
 #endif
 #endif
 
-#if defined(CONFIG_MACH_SMDK5410) || defined(CONFIG_MACH_SMDK5420)
+#if defined(CONFIG_MACH_SMDK5420)
 	/* Sensor power off */
         /* TODO : need close_sensor */
 	if (core->pdata->cfg_gpio) {

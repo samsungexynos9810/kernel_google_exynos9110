@@ -32,10 +32,6 @@
 #define ENABLE_DVFS
 #endif
 
-#if defined(ENABLE_FULL_BYPASS) && defined(CONFIG_SOC_EXYNOS5410)
-#undef ENABLE_FULL_BYPASS
-#endif
-
 #if defined(ENABLE_ODC) && defined(CONFIG_SOC_EXYNOS5420)
 #undef ENABLE_ODC
 #endif

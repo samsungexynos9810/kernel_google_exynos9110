@@ -96,9 +96,6 @@
 static struct pm_qos_request pm_qos_req_cpu;
 static struct exynos5_bus_int_handle *isp_int_handle_min;
 static struct exynos5_bus_mif_handle *isp_mif_handle_min;
-#elif defined(CONFIG_SOC_EXYNOS5410)
-extern struct fimc_is_from_info		*sysfs_finfo;
-extern struct fimc_is_from_info		*sysfs_pinfo;
 #endif
 
 /* sysfs variable for debug */
@@ -1177,9 +1174,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		}
 		set_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
 
-#if defined(CONFIG_SOC_EXYNOS5410) || defined(CONFIG_SOC_EXYNOS5420)
+#if defined(CONFIG_SOC_EXYNOS5420)
 		/* 3. S/W reset pixel async bridge */
-		if (soc_is_exynos5410() || soc_is_exynos5420())
+		if (soc_is_exynos5420())
 			tdnr_s3d_pixel_async_sw_reset(device);
 #endif
 
@@ -3652,24 +3649,6 @@ static int fimc_is_ischain_s_dzoom(struct fimc_is_device_ischain *this,
 
 	chain0_ratio_width = chain0_width;
 	chain0_ratio_height = chain0_height;
-
-	/* ISP dma input crop is not supported in exynos5410 */
-	if (soc_is_exynos5410()) {
-		chain0_ratio = chain0_width * 1000 / chain0_height;
-		preview_ratio = this->chain3_width * 1000 / this->chain3_height;
-
-		if (chain0_ratio < preview_ratio) {
-			/* ex: sensor(4:3) --> preview(16:9) */
-			chain0_ratio_height =
-				(chain0_ratio_width * this->chain3_height) / this->chain3_width;
-			chain0_ratio_height = ALIGN(chain0_ratio_height, 2);
-		} else if (chain0_ratio > preview_ratio) {
-			/* ex: sensor(4:3) --> preview(11:9) */
-			chain0_ratio_width =
-				(chain0_ratio_height * this->chain3_width) / this->chain3_height;
-			chain0_ratio_width = ALIGN(chain0_ratio_width, 4);
-		}
-	}
 
 #ifdef USE_ADVANCED_DZOOM
 	zoom_input = (chain0_ratio_width * 1000) / crop_width;

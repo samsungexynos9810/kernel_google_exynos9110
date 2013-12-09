@@ -282,14 +282,7 @@ static void s5pcsis_set_params(unsigned long __iomem *base_reg,
 	if (image->num_lanes)
 		num_lanes = image->num_lanes - 1;
 
-#if defined(CONFIG_SOC_EXYNOS5410)
-	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG));
-	if (soc_is_exynos5250())
-		val = (val & ~S5PCSIS_CFG_NR_LANE_MASK) | (2 - 1);
-	else
-		val = (val & ~S5PCSIS_CFG_NR_LANE_MASK) | (4 - 1);
-	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG));
-#elif defined(CONFIG_SOC_EXYNOS3470)
+#if defined(CONFIG_SOC_EXYNOS3470)
 	writel(0x000000AC, base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG)); /* only for carmen */
 #endif
 	__s5pcsis_set_format(base_reg, image);
