@@ -315,6 +315,11 @@ extern const struct fimc_is_vb2 fimc_is_vb2_cma;
 extern const struct fimc_is_vb2 fimc_is_vb2_ion;
 #endif
 
+#if defined(CONFIG_SOC_EXYNOS3470)
+extern int mali_dvfs_level_lock(void);
+extern int mali_dvfs_level_unlock(void);
+#endif
+
 extern struct device *fimc_is_dev;
 
 void fimc_is_mem_suspend(void *alloc_ctxes);
