@@ -425,12 +425,13 @@ static int __display_hibernation_power_off(struct display_driver *dispdrv)
 {
 	call_block_pm_ops(dispdrv, clk_on, dispdrv);
 
-	/* MIC -> DSIM -> DECON */
+	/* DECON -> MIC -> DSIM */
+	call_pm_ops(dispdrv, decon_driver, pwr_off, dispdrv);
+
 #ifdef CONFIG_DECON_MIC
 	call_pm_ops(dispdrv, mic_driver, pwr_off, dispdrv);
 #endif
 	call_pm_ops(dispdrv, dsi_driver, pwr_off, dispdrv);
-	call_pm_ops(dispdrv, decon_driver, pwr_off, dispdrv);
 
 	call_block_pm_ops(dispdrv, clk_off, dispdrv);
 	return 0;
@@ -457,16 +458,16 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 		pm_debug("wait until last frame is totally transferred");
 		return -EBUSY;
 	}
-	/* DECON -> (MDNIE) -> MIC -> DSIM -> SMMU */
+
+	/* SMMU -> DECON -> (MDNIE) -> MIC -> DSIM */
+#ifdef CONFIG_ION_EXYNOS
+	iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
+#endif
 	call_pm_ops(dispdrv, decon_driver, clk_off, dispdrv);
 #ifdef CONFIG_DECON_MIC
 	call_pm_ops(dispdrv, mic_driver, clk_off, dispdrv);
 #endif
 	call_pm_ops(dispdrv, dsi_driver, clk_off, dispdrv);
-
-#ifdef CONFIG_ION_EXYNOS
-	iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
-#endif
 	return 0;
 }
 
