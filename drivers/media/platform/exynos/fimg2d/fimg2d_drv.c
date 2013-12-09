@@ -760,6 +760,11 @@ static int fimg2d_resume(struct device *dev)
 	atomic_set(&ctrl->suspended, 0);
 	g2d_spin_unlock(&ctrl->bltlock, flags);
 	g2d_unlock(&ctrl->drvlock);
+	/* G2D clk gating mask */
+	if (ip_is_g2d_5ar2()) {
+		fimg2d_clk_on(ctrl);
+		fimg2d_clk_off(ctrl);
+	}
 	fimg2d_info("resume... done\n");
 	return 0;
 }
