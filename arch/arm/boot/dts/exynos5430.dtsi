@@ -914,7 +914,7 @@
 		ranges;
 
 		hdmiphy-sys {
-			reg = <0x105C0700 0xC>;
+			reg = <0x105C0700 0x4>;
 		};
 	};
 
@@ -928,9 +928,17 @@
 		pinctrl-names = "hdmi_cec";
 		pinctrl-0 = <&hdmi_cec>;
 
-		clock-names = "pclk_hdmi_cec";
+		clock-names = "gate_hdmi_cec";
 
-		clocks = <&clock 867>;
+		clocks = <&clock 2483>;
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		hdmiphy-sys {
+			reg = <0x105C0700 0x4>;
+		};
 	};
 
 	watchdog@10020000 {

@@ -69,7 +69,7 @@
 		hdmi_cec: hdmi_cec {
 			samsung,pins = "gpa3-1";
 			samsung,pin-function = <3>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <1>;
 			samsung,pin-drv = <0>;
 		};
 	};
