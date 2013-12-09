@@ -76,18 +76,10 @@
 #define SENSOR_REG_VIS_AE_OFF				(0x5000)
 
 static struct fimc_is_sensor_cfg config_6b2[] = {
-	/* 1456x1090@24fps */
-	FIMC_IS_SENSOR_CFG(1456, 1090, 24, 13, -1),
-	/* 1936x1090@24fps */
-	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 13, 1),
-	/* 1456x1090@30fps */
-	FIMC_IS_SENSOR_CFG(1456, 1090, 30, 16, -1),
 	/* 1936x1090@30fps */
 	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 16, 0),
-	/* 1456x1090@15fps */
-	FIMC_IS_SENSOR_CFG(1456, 1090, 15, 13, -1),
-	/* 1936x1090@15fps */
-	FIMC_IS_SENSOR_CFG(1936, 1090, 15, 13, -1),
+	/* 1936x1090@24fps */
+	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 13, 1),
 };
 
 #if 0
@@ -569,10 +561,10 @@ int sensor_6b2_probe(struct i2c_client *client,
 	module->device = SENSOR_S5K6B2_INSTANCE;
 	module->ops = &module_6b2_ops;
 	module->client = client;
-	module->pixel_width = 1920 + 16;
-	module->pixel_height = 1080 + 10;
 	module->active_width = 1920;
 	module->active_height = 1080;
+	module->pixel_width = module->active_width + 16;
+	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_FRONT;
 	module->setfile_name = "setfile_6b2.bin";
