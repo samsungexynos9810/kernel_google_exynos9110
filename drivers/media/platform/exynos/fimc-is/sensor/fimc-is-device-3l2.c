@@ -41,17 +41,17 @@
 
 static struct fimc_is_sensor_cfg config_3l2[] = {
 	/* 4144x3106@30fps */
-	FIMC_IS_SENSOR_CFG(4144, 3106, 30, 23, 0),
+	FIMC_IS_SENSOR_CFG(4144, 3106, 30, 25, 0),
 	/* 4144x2332@30fps */
-	FIMC_IS_SENSOR_CFG(4144, 2332, 30, 23, 1),
+	FIMC_IS_SENSOR_CFG(4144, 2332, 30, 25, 1),
+	/* 2072x1154@24fps */
+	FIMC_IS_SENSOR_CFG(2072, 1154, 24, 5, 2),
+	/* 2072x1166@24fps */
+	FIMC_IS_SENSOR_CFG(2072, 1166, 24, 5, 3),
 	/* 1024x584@120fps */
 	FIMC_IS_SENSOR_CFG(1040, 584, 120, 17, 4),
 	/* 2072x1166@60fps */
 	FIMC_IS_SENSOR_CFG(2072, 1162, 60, 9, 5),
-	/* 2072x1166@24fps */
-	FIMC_IS_SENSOR_CFG(2072, 1166, 24, 5, 3),
-	/* 2072x1154@24fps */
-	FIMC_IS_SENSOR_CFG(2072, 1154, 24, 5, 2),
 };
 
 static int sensor_3l2_init(struct v4l2_subdev *subdev, u32 val)
@@ -109,10 +109,10 @@ int sensor_3l2_probe(struct i2c_client *client,
 	module->subdev = subdev_module;
 	module->device = SENSOR_S5K3L2_INSTANCE;
 	module->client = client;
-	module->pixel_width = 4128 + 16;
-	module->pixel_height = 3096 + 10;
 	module->active_width = 4128;
 	module->active_height = 3096;
+	module->pixel_width = module->active_width + 16;
+	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 120;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_3l2.bin";
