@@ -1859,10 +1859,14 @@ const u8 *hdmiphy_timing2conf(struct v4l2_dv_timings timings)
 	int i;
 
 	for (i = 0; i < hdmiphy_conf_cnt; ++i)
-		if (v4l_match_dv_timings(&hdmiphy_conf[i].dv_timings,
+		if (hdmi_match_timings(&hdmiphy_conf[i].dv_timings,
 					&timings, 0))
-			return  hdmiphy_conf[i].data;
-	return NULL;
+			break;
+
+	if (i == hdmi_pre_cnt)
+		return NULL;
+
+	return  hdmiphy_conf[i].data;
 }
 
 int hdmi_conf_apply(struct hdmi_device *hdmi_dev)

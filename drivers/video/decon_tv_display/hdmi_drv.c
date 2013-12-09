@@ -60,16 +60,43 @@ static struct hdmi_device *sd_to_hdmi_dev(struct v4l2_subdev *sd)
 	return container_of(sd, struct hdmi_device, sd);
 }
 
+const bool hdmi_match_timings(const struct v4l2_dv_timings *t1,
+			  const struct v4l2_dv_timings *t2,
+			  unsigned pclock_delta)
+{
+	if (t1->type != t2->type)
+		return false;
+	if (t1->bt.width == t2->bt.width &&
+	    t1->bt.height == t2->bt.height &&
+	    t1->bt.interlaced == t2->bt.interlaced &&
+	    t1->bt.polarities == t2->bt.polarities &&
+	    t1->bt.pixelclock >= t2->bt.pixelclock - pclock_delta &&
+	    t1->bt.pixelclock <= t2->bt.pixelclock + pclock_delta &&
+	    t1->bt.hfrontporch == t2->bt.hfrontporch &&
+	    t1->bt.vfrontporch == t2->bt.vfrontporch &&
+	    t1->bt.vsync == t2->bt.vsync &&
+	    t1->bt.vbackporch == t2->bt.vbackporch &&
+	    (!t1->bt.interlaced ||
+		(t1->bt.il_vfrontporch == t2->bt.il_vfrontporch &&
+		 t1->bt.il_vsync == t2->bt.il_vsync &&
+		 t1->bt.il_vbackporch == t2->bt.il_vbackporch)))
+		return true;
+	return false;
+}
+
 static const struct hdmi_timings *hdmi_timing2conf(struct v4l2_dv_timings *timings)
 {
 	int i;
 
 	for (i = 0; i < hdmi_pre_cnt; ++i)
-		if (v4l_match_dv_timings(&hdmi_conf[i].dv_timings,
+		if (hdmi_match_timings(&hdmi_conf[i].dv_timings,
 					timings, 0))
-			return  hdmi_conf[i].conf;
+			break;
 
-	return NULL;
+	if (i == hdmi_pre_cnt)
+		return NULL;
+
+	return hdmi_conf[i].conf;
 }
 
 const struct hdmi_3d_info *hdmi_timing2info(struct v4l2_dv_timings *timings)
@@ -77,11 +104,14 @@ const struct hdmi_3d_info *hdmi_timing2info(struct v4l2_dv_timings *timings)
 	int i;
 
 	for (i = 0; i < hdmi_pre_cnt; ++i)
-		if (v4l_match_dv_timings(&hdmi_conf[i].dv_timings,
+		if (hdmi_match_timings(&hdmi_conf[i].dv_timings,
 					timings, 0))
-			return  hdmi_conf[i].info;
+			break;
 
-	return NULL;
+	if (i == hdmi_pre_cnt)
+		return NULL;
+
+	return  hdmi_conf[i].info;
 }
 
 void s5p_v4l2_int_src_hdmi_hpd(struct hdmi_device *hdev)

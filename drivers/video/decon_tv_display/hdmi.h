@@ -383,6 +383,9 @@ extern const int hdmi_pre_cnt;
 extern const int hdmiphy_conf_cnt;
 
 const struct hdmi_3d_info *hdmi_timing2info(struct v4l2_dv_timings *timings);
+const bool hdmi_match_timings(const struct v4l2_dv_timings *t1,
+			  const struct v4l2_dv_timings *t2,
+			  unsigned pclock_delta);
 
 void s5p_v4l2_int_src_hdmi_hpd(struct hdmi_device *hdev);
 void s5p_v4l2_int_src_ext_hpd(struct hdmi_device *hdev);
