@@ -190,7 +190,7 @@ struct sensor_open_extended {
 #define GPIO_SCENARIO_ON		0
 #define GPIO_SCENARIO_OFF		1
 #define GPIO_SCENARIO_MAX		2
-#define GPIO_CTRL_MAX			10
+#define GPIO_CTRL_MAX			20
 
 #define SENSOR_SCENARIO_NORMAL		0
 #define SENSOR_SCENARIO_VISION		1
