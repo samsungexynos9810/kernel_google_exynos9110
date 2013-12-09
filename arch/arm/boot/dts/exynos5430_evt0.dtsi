@@ -2421,6 +2421,7 @@
 			};
 		};
 		subip_info {
+			num_of_mcuctl = <1>;
 			num_of_3a0 = <1>;
 			num_of_3a1 = <1>;
 			num_of_isp = <1>;
@@ -2435,6 +2436,8 @@
 			full_bypass_drc = <0>;
 			full_bypass_dis = <1>;
 			full_bypass_dnr = <1>;
+
+			version_mcuctl = <221>;
 		};
 	};
 
