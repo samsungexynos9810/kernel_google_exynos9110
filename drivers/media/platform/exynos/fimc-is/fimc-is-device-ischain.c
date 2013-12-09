@@ -480,11 +480,7 @@ static const struct odc_param init_odc_param = {
 
 static const struct dis_param init_dis_param = {
 	.control = {
-#if defined(CONFIG_SOC_EXYNOS5420)
-		.cmd = CONTROL_COMMAND_STOP,
-#else
 		.cmd = CONTROL_COMMAND_START,
-#endif
 		.bypass = CONTROL_BYPASS_ENABLE,
 		.err = CONTROL_ERROR_NO,
 	},
@@ -515,11 +511,7 @@ static const struct dis_param init_dis_param = {
 };
 static const struct tdnr_param init_tdnr_param = {
 	.control = {
-#if defined(CONFIG_SOC_EXYNOS5420)
-		.cmd = CONTROL_COMMAND_STOP,
-#else
 		.cmd = CONTROL_COMMAND_START,
-#endif
 		.bypass = CONTROL_BYPASS_ENABLE,
 		.err = CONTROL_ERROR_NO,
 	},
@@ -1163,14 +1155,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			goto exit;
 		}
 		set_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
-
-#if defined(CONFIG_SOC_EXYNOS5420)
-		/* 3. S/W reset pixel async bridge */
-		if (soc_is_exynos5420())
-			tdnr_s3d_pixel_async_sw_reset(device);
-#endif
-
-		info("%s(%d) - async bridge\n", __func__, on);
 
 		/* 4. A5 start address setting */
 		mdbgd_ischain("imemory.base(dvaddr) : 0x%08x\n", device, device->imemory.dvaddr);

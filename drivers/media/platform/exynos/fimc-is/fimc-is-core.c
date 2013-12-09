@@ -76,9 +76,6 @@
 #if defined(CONFIG_ARM_EXYNOS3470_BUS_DEVFREQ)
 #define CONFIG_FIMC_IS_BUS_DEVFREQ
 #endif
-#if defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
-#define CONFIG_FIMC_IS_BUS_DEVFREQ
-#endif
 #if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
 #define CONFIG_FIMC_IS_BUS_DEVFREQ
 #endif
@@ -274,19 +271,6 @@ int fimc_is_runtime_suspend(struct device *dev)
 #else
 	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
 #endif
-#endif
-
-#if defined(CONFIG_MACH_SMDK5420)
-	/* Sensor power off */
-        /* TODO : need close_sensor */
-	if (core->pdata->cfg_gpio) {
-		core->pdata->cfg_gpio(core->pdev, 0, false);
-		core->pdata->cfg_gpio(core->pdev, 2, false);
-	} else {
-		err("failed to sensor_power_on\n");
-		ret = -EINVAL;
-		goto p_err;
-	}
 #endif
 
 	if (core->pdata->clk_off) {
