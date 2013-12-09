@@ -42,10 +42,6 @@
 #include <linux/regulator/consumer.h>
 #include <linux/gpio.h>
 #include <plat/gpio-cfg.h>
-#if defined(CONFIG_SOC_EXYNOS5250)
-#include <mach/exynos5_bus.h>
-#include <plat/bts.h>
-#endif
 #if defined(CONFIG_SOC_EXYNOS3470)
 #include <mach/bts.h>
 #endif
@@ -91,12 +87,6 @@
 #define DEFAULT_CAPTURE_STILL_CROP_HEIGHT	(1440)
 #define DEFAULT_PREVIEW_VIDEO_WIDTH		(640)
 #define DEFAULT_PREVIEW_VIDEO_HEIGHT		(480)
-
-#if defined(CONFIG_SOC_EXYNOS5250)
-static struct pm_qos_request pm_qos_req_cpu;
-static struct exynos5_bus_int_handle *isp_int_handle_min;
-static struct exynos5_bus_mif_handle *isp_mif_handle_min;
-#endif
 
 /* sysfs variable for debug */
 extern struct fimc_is_sysfs_debug sysfs_debug;
@@ -2350,10 +2340,6 @@ int fimc_is_ischain_probe(struct fimc_is_device_ischain *device,
 	scc = &device->scc;
 	dis = &device->dis;
 	scp = &device->scp;
-
-#if defined(CONFIG_BUSFREQ_OPP) && defined(CONFIG_SOC_EXYNOS5250)
-	device->bus_dev		= dev_get("exynos-busfreq");
-#endif
 
 	device->interface	= interface;
 	device->mem		= mem;

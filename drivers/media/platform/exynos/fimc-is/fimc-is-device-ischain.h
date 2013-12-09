@@ -119,7 +119,6 @@ struct fimc_is_ishcain_mem {
 
 struct fimc_is_device_ischain {
 	struct platform_device			*pdev;
-	struct device				*bus_dev;
 	struct exynos_platform_fimc_is		*pdata;
 	void __iomem				*regs;
 

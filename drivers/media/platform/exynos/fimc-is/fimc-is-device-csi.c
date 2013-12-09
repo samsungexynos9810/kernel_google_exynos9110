@@ -265,10 +265,7 @@ static void s5pcsis_set_hsync_settle(unsigned long __iomem *base_reg, u32 settle
 {
 	u32 val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
 
-	if (soc_is_exynos5250())
-		val = (val & ~S5PCSIS_DPHYCTRL_HSS_MASK) | (0x6 << 28);
-	else
-		val = (val & ~S5PCSIS_DPHYCTRL_HSS_MASK) | (settle << 24);
+	val = (val & ~S5PCSIS_DPHYCTRL_HSS_MASK) | (settle << 24);
 
 	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
 }
