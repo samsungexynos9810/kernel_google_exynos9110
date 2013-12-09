@@ -20,15 +20,15 @@
 #include <linux/interrupt.h>
 #include <linux/export.h>
 #include <linux/module.h>
+#include <linux/of_gpio.h>
 #include <plat/devs.h>
-#include <mach/exynos-tv.h>
 
 #include "cec.h"
 
 #ifdef CONFIG_OF
 static const struct of_device_id cec_device_table[] = {
-	        { .compatible = "samsung,exynos5-cec_driver" },
-		{},
+	{ .compatible = "samsung,exynos5-cec_driver" },
+	{},
 };
 MODULE_DEVICE_TABLE(of, cec_device_table);
 #endif
@@ -81,7 +81,7 @@ static int s5p_cec_open(struct inode *inode, struct file *file)
 	int ret = 0;
 
 	mutex_lock(&cec_lock);
-	clk_enable(hdmi_cec_clk);
+	clk_prepare_enable(hdmi_cec_clk);
 
 	if (atomic_read(&hdmi_on)) {
 		tvout_dbg("do not allow multiple open for tvout cec\n");
@@ -115,7 +115,7 @@ static int s5p_cec_release(struct inode *inode, struct file *file)
 	s5p_cec_mask_tx_interrupts();
 	s5p_cec_mask_rx_interrupts();
 
-	clk_disable(hdmi_cec_clk);
+	clk_disable_unprepare(hdmi_cec_clk);
 	clk_put(hdmi_cec_clk);
 
 	return 0;
@@ -312,18 +312,14 @@ static irqreturn_t s5p_cec_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int __devinit s5p_cec_probe(struct platform_device *pdev)
+static int s5p_cec_probe(struct platform_device *pdev)
 {
-	struct s5p_platform_cec *pdata;
+	struct device *dev = &pdev->dev;
 	u8 *buffer;
 	int ret;
 	struct resource *res;
-
-	pdata = to_tvout_plat(&pdev->dev);
-
-	if (pdata->cfg_gpio)
-		pdata->cfg_gpio(pdev);
-
+	struct pinctrl *pinctrl;
+	int gpio;
 
 	s5p_cec_mem_probe(pdev);
 
@@ -334,30 +330,29 @@ static int __devinit s5p_cec_probe(struct platform_device *pdev)
 		return -EBUSY;
 	}
 
-#if 0
-	irq_num = platform_get_irq(pdev, 0);
-
-	if (irq_num < 0) {
-		printk(KERN_ERR  "failed to get %s irq resource\n", "cec");
-		ret = -ENOENT;
-
-		return ret;
+	if (of_get_property(dev->of_node, "gpios", NULL) != NULL) {
+		gpio = of_get_gpio(dev->of_node, 0);
+		if (gpio_request(gpio, "hdmi-cec")) {
+			dev_err(dev, "failed to request cec gpio\n");
+			return -ENODEV;
+		} else {
+			gpio_direction_input(gpio);
+			pinctrl = devm_pinctrl_get_select(dev, "hdmi_cec");
+			if (IS_ERR(pinctrl))
+				dev_err(dev, "failed to set cec gpio");
+			dev_info(dev, "success request GPIO for hdmi-cec");
+		}
 	}
-#endif
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
-	if (res == NULL) {
-		dev_err(&pdev->dev, "failed to get irq resource.\n");
-		ret = -ENOENT;
-		return ret;
+	if (!res) {
+		dev_err(dev, "failed to get irq resource.\n");
+		return -ENXIO;
 	}
-
-	ret = request_irq(res->start, s5p_cec_irq_handler, IRQF_DISABLED,
-		pdev->name, &pdev->id);
-
-	if (ret != 0) {
-		printk(KERN_ERR  "failed to install %s irq (%d)\n", "cec", ret);
-
+	ret = devm_request_irq(dev, res->start, s5p_cec_irq_handler,
+			IRQF_DISABLED, "hdmi-cec", &pdev->id);
+	if (ret) {
+		dev_err(dev, "request int interrupt failed.\n");
 		return ret;
 	}
 
@@ -377,9 +372,9 @@ static int __devinit s5p_cec_probe(struct platform_device *pdev)
 	cec_rx_struct.buffer = buffer;
 
 	cec_rx_struct.size   = 0;
-	TV_CLK_GET_WITH_ERR_CHECK(hdmi_cec_clk, pdev, "hdmicec");
+	TV_CLK_GET_WITH_ERR_CHECK(hdmi_cec_clk, pdev, "gate_hdmi_cec");
 
-	dev_info(&pdev->dev, "probe successful\n");
+	dev_info(dev, "probe successful\n");
 
 	return 0;
 }
@@ -417,7 +412,7 @@ static struct platform_driver s5p_cec_driver = {
 };
 
 static char banner[] __initdata =
-	"S5P CEC for Exynos4 Driver, (c) 2009 Samsung Electronics\n";
+	"S5P CEC for Exynos5 Driver, (c) 2013 Samsung Electronics\n";
 
 static int __init s5p_cec_init(void)
 {
