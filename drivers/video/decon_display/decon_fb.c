@@ -4855,6 +4855,7 @@ int decon_hibernation_power_off(struct display_driver *dispdrv)
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 	dispdrv = get_display_driver();
 
+	decon_fb_direct_on_off(sfb, false);
 	decon_fb_reset(sfb);
 
 	return ret;
