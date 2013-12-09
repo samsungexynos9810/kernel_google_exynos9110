@@ -101,8 +101,8 @@ int sensor_4e5_probe(struct i2c_client *client,
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_4e5.bin";
-	/* module->settle_max = ARRAY_SIZE(settle_4e5); */
-	/* module->settle_table = settle_4e5; */
+	module->cfgs = 0;
+	module->cfg = NULL;
 	module->ops = NULL;
 	module->private_data = NULL;
 

@@ -47,7 +47,7 @@
 
 #define SPARE_PLANE 1
 #if defined(CONFIG_SOC_EXYNOS3470) || defined(CONFIG_SOC_EXYNOS5260)
-#define SPARE_SIZE (20 * 1024)
+#define SPARE_SIZE (32 * 1024)
 #else
 #define SPARE_SIZE (24 * 1024)
 #endif
@@ -199,11 +199,13 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		sizes[1] = SPARE_SIZE;
 		break;
 	case V4L2_PIX_FMT_SBGGR10:
-		dbg("V4L2_PIX_FMT_SBGGR10(w:%d)(h:%d)\n", frame->width, frame->height);
+		dbg("V4L2_PIX_FMT_SBGGR10(w:%d)(h:%d)\n",
+				frame->width, frame->height);
 		sizes[0] = frame->width*frame->height*2;
 		if (frame->bytesperline[0]) {
 			if (frame->bytesperline[0] >= frame->width * 5 / 4) {
-				sizes[0] = frame->bytesperline[0] * frame->height;
+			sizes[0] = frame->bytesperline[0]
+			    * frame->height;
 			} else {
 				err("Bytesperline too small\
 					(fmt(V4L2_PIX_FMT_SBGGR10), W(%d), Bytes(%d))",
@@ -214,11 +216,13 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		sizes[1] = SPARE_SIZE;
 		break;
 	case V4L2_PIX_FMT_SBGGR16:
-		dbg("V4L2_PIX_FMT_SBGGR16(w:%d)(h:%d)\n", frame->width, frame->height);
+		dbg("V4L2_PIX_FMT_SBGGR16(w:%d)(h:%d)\n",
+				frame->width, frame->height);
 		sizes[0] = frame->width*frame->height*2;
 		if (frame->bytesperline[0]) {
 			if (frame->bytesperline[0] >= frame->width * 2) {
-				sizes[0] = frame->bytesperline[0] * frame->height;
+				sizes[0] = frame->bytesperline[0]
+						* frame->height;
 			} else {
 				err("Bytesperline too small\
 					(fmt(V4L2_PIX_FMT_SBGGR16), W(%d), Bytes(%d))",
@@ -234,7 +238,8 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 		sizes[0] = get_plane_size_flite(frame->width,frame->height);
 		if (frame->bytesperline[0]) {
 			if (frame->bytesperline[0] >= frame->width * 3 / 2) {
-				sizes[0] = frame->bytesperline[0] * frame->height;
+				sizes[0] = frame->bytesperline[0]
+						* frame->height;
 			} else {
 				err("Bytesperline too small\
 				(fmt(V4L2_PIX_FMT_SBGGR12), W(%d), Bytes(%d))",
@@ -288,7 +293,9 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_src->drv_priv	= vctx;
 		vbq_src->ops		= vctx->vb2_ops;
 		vbq_src->mem_ops	= vctx->mem_ops;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 		vbq_src->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
+#endif
 		ret = vb2_queue_init(vbq_src);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -303,7 +310,9 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_dst->drv_priv	= vctx;
 		vbq_dst->ops		= vctx->vb2_ops;
 		vbq_dst->mem_ops	= vctx->mem_ops;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 		vbq_dst->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
+#endif
 		ret = vb2_queue_init(vbq_dst);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -319,7 +328,9 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_src->drv_priv	= vctx;
 		vbq_src->ops		= vctx->vb2_ops;
 		vbq_src->mem_ops	= vctx->mem_ops;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 		vbq_src->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
+#endif
 		ret = vb2_queue_init(vbq_src);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -332,7 +343,9 @@ static int queue_init(void *priv, struct vb2_queue *vbq_src,
 		vbq_dst->drv_priv	= vctx;
 		vbq_dst->ops		= vctx->vb2_ops;
 		vbq_dst->mem_ops	= vctx->mem_ops;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 		vbq_dst->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
+#endif
 		ret = vb2_queue_init(vbq_dst);
 		if (ret) {
 			err("vb2_queue_init fail");
@@ -746,7 +759,9 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	video->id		= video_number;
 	video->vb2		= mem->vb2;
 	video->alloc_ctx	= mem->alloc_ctx;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
 	video->vd.vfl_dir	= vfl_dir;
+#endif
 	video->vd.v4l2_dev	= v4l2_dev;
 	video->vd.fops		= fops;
 	video->vd.ioctl_ops	= ioctl_ops;
@@ -1018,7 +1033,9 @@ int fimc_is_video_set_format_mplane(struct file *file,
 
 	ret = fimc_is_queue_set_format_mplane(queue, format);
 
-	mdbgv_vid("set_format(%d x %d)\n", queue->framecfg.width, queue->framecfg.height);
+	mdbgv_vid("set_format(%d x %d)\n", queue->framecfg.width,
+		queue->framecfg.height);
+
 	return ret;
 }
 

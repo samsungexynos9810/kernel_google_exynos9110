@@ -334,7 +334,7 @@ static int fimc_is_scp_video_set_crop(struct file *file, void *fh,
 	if (ret)
 		merr("fimc_is_ischain_scp_s_format is fail(%d)", vctx, ret);
 
- p_err:
+p_err:
 	return ret;
 }
 

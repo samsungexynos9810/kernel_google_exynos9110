@@ -68,6 +68,8 @@ enum interrupt_map {
 	INTR_DIS_FDONE		= 3,
 	INTR_SCP_FDONE		= 4,
 	/* 5 is ISP YUV DONE */
+	INTR_3A0C_FDONE		= 5,
+	INTR_3A1C_FDONE		= 6,
 	INTR_SHOT_DONE		= 7,
 	INTR_MAX_MAP
 };

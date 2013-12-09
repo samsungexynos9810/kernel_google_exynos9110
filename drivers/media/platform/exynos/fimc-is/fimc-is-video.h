@@ -9,6 +9,13 @@
 #include "fimc-is-metadata.h"
 #include "fimc-is-config.h"
 
+/* configuration by linux kernel version */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,7,0))
+#define VFL_DIR_RX		0
+#define VFL_DIR_TX		1
+#define VFL_DIR_M2M		2
+#endif
+
 #define FIMC_IS_MAX_NODES			(3)
 #define FIMC_IS_MAX_BUFS			(12)
 #define FIMC_IS_MAX_PLANES			(4)

@@ -32,7 +32,6 @@
 #include <linux/videodev2_exynos_camera.h>
 #include <linux/vmalloc.h>
 #include <linux/interrupt.h>
-#include <linux/exynos_iovmm.h>
 #include <linux/of.h>
 
 #include "fimc-is-core.h"
@@ -40,6 +39,12 @@
 #include "fimc-is-cmd.h"
 #include "fimc-is-regs.h"
 #include "fimc-is-err.h"
+
+#if defined(CONFIG_EXYNOS_IOMMU)
+#include <plat/iovmm.h>
+#elif defined(CONFIG_EXYNOS7_IOMMU)
+#include <linux/exynos_iovmm.h>
+#endif
 
 static void *fimc_is_ion_init(struct platform_device *pdev)
 {
@@ -89,11 +94,9 @@ int fimc_is_mem_probe(struct fimc_is_mem *this,
 		ret = PTR_ERR(this->alloc_ctx);
 		goto p_err;
 	}
-#if defined(CONFIG_ARCH_EXYNOS4)
-	exynos_create_iovmm(&pdev->dev);
-#else
+
+	/* FIXME: should be different by device type */
 	exynos_create_iovmm(&pdev->dev, 1, 4);
-#endif
 
 p_err:
 	return ret;

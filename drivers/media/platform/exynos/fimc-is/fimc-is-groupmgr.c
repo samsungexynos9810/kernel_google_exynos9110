@@ -1620,6 +1620,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		fimc_is_gframe_trans_grp_to_grp(group, group_next, gframe);
 		spin_unlock_irq(&gframemgr->frame_slock);
 	} else {
+#if defined(CONFIG_SOC_EXYNOS5430)
 		/* single */
 		group->fcount++;
 		spin_lock_irq(&gframemgr->frame_slock);
@@ -1656,6 +1657,11 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 
 		gframe->fcount = ldr_frame->fcount;
 		spin_unlock_irq(&gframemgr->frame_slock);
+#else
+		/* only there's one group in ischain */
+		pr_debug("[GRP%d] only one group X -> O -> X\n",
+			group->id);
+#endif
 	}
 
 #ifdef DEBUG_AA
@@ -1672,16 +1678,16 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		if (scenario_id > 0) {
 			struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl = resourcemgr->dvfs_ctrl.dynamic_ctrl;
 			info("%s: GRP:%d dynamic scenario(%d)-[%s]\n",
-				__func__, group->id, scenario_id,
-				dynamic_ctrl->scenarios[dynamic_ctrl->cur_scenario_idx].scenario_nm);
+					__func__, group->id, scenario_id,
+					dynamic_ctrl->scenarios[dynamic_ctrl->cur_scenario_idx].scenario_nm);
 			fimc_is_set_dvfs(device, scenario_id);
 		}
 
 		if ((scenario_id < 0) && (resourcemgr->dvfs_ctrl.dynamic_ctrl->cur_frame_tick == 0)) {
 			struct fimc_is_dvfs_scenario_ctrl *static_ctrl = resourcemgr->dvfs_ctrl.static_ctrl;
 			info("%s: GRP:%d restore static scenario(%d)-[%s]\n",
-				__func__, group->id, static_ctrl->cur_scenario_id,
-				static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
+					__func__, group->id, static_ctrl->cur_scenario_id,
+					static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
 			fimc_is_set_dvfs(device, static_ctrl->cur_scenario_id);
 		}
 	}

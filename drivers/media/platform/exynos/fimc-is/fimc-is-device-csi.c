@@ -180,9 +180,6 @@ static void s5pcsis_enable_interrupts(unsigned long __iomem *base_reg,
 	val = on ? val | S5PCSIS_INTMSK_EN_ALL :
 		   val & ~S5PCSIS_INTMSK_EN_ALL;
 
-	val = on ? val | S5PCSIS_INTMSK_EN_ALL :
-		   val & ~S5PCSIS_INTMSK_EN_ALL;
-
 	if (image->format.field == V4L2_FIELD_INTERLACED) {
 		if (on) {
 			val |= S5PCSIS_INTMSK_FRAME_START_CH2;

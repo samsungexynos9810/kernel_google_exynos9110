@@ -33,7 +33,6 @@
 #include <linux/pm_qos.h>
 #include <linux/bug.h>
 #include <linux/v4l2-mediabus.h>
-#include <linux/exynos_iovmm.h>
 #include <mach/devfreq.h>
 #include <mach/bts.h>
 
@@ -64,7 +63,11 @@
 #include "sensor/fimc-is-device-2p2.h"
 
 #ifdef USE_OWN_FAULT_HANDLER
+#if defined(CONFIG_EXYNOS_IOMMU)
+#include <plat/sysmmu.h>
+#elif defined(CONFIG_EXYNOS7_IOMMU)
 #include <linux/exynos_iovmm.h>
+#endif
 #endif
 
 #if defined(CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ)
@@ -158,6 +161,7 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 exit:
 	info("[COR] Device virtual for internal: %08x\n", this->minfo.kvaddr);
 	this->minfo.fw_cookie = fw_cookie;
+
 	return ret;
 }
 
@@ -687,8 +691,10 @@ static int fimc_is_probe(struct platform_device *pdev)
 
 	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
+#ifdef CONFIG_OF
 		pdata = fimc_is_parse_dt(&pdev->dev);
 		if (IS_ERR(pdata))
+#endif
 			return PTR_ERR(pdata);
 	}
 
@@ -930,7 +936,11 @@ static int fimc_is_probe(struct platform_device *pdev)
 #endif
 
 #ifdef USE_OWN_FAULT_HANDLER
+#if defined(CONFIG_EXYNOS_IOMMU)
+	exynos_sysmmu_set_fault_handler(fimc_is_dev, fimc_is_fault_handler);
+#elif defined(CONFIG_EXYNOS7_IOMMU)
 	iovmm_set_fault_handler(fimc_is_dev, fimc_is_fault_handler, NULL);
+#endif
 #endif
 
 	dbg("%s : fimc_is_front_%d probe success\n", __func__, pdev->id);
@@ -988,6 +998,7 @@ static const struct dev_pm_ops fimc_is_pm_ops = {
 	.runtime_resume		= fimc_is_runtime_resume,
 };
 
+#ifdef CONFIG_OF
 static int fimc_is_spi_probe(struct spi_device *spi)
 {
 	int ret = 0;
@@ -1025,7 +1036,6 @@ static int fimc_is_spi_remove(struct spi_device *spi)
 	return 0;
 }
 
-#ifdef CONFIG_OF
 static const struct of_device_id exynos_fimc_is_match[] = {
 	{
 		.compatible = "samsung,exynos5-fimc-is",

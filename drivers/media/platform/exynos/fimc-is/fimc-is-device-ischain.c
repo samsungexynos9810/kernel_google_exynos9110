@@ -1208,6 +1208,8 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 
 		exynos_smc_readsfr(PA_FIMC_IS_GIC_C + 0x4, &debug);
 		pr_info("%s : PA_FIMC_IS_GIC_C : 0x%08x\n", __func__, debug);
+		if (debug != 0xFC)
+			merr("secure configuration is fail[0x131E0004:%08X]", device, debug);
 #endif
 
 		/* 5. A5 power on*/
@@ -1676,13 +1678,18 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 	group |= GROUP_ID(device->group_3aa.id);
 	group |= GROUP_ID(device->group_isp.id);
 
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group = GROUP_ID(GROUP_ID_3A0);
+
 	setfile = (device->setfile & FIMC_IS_SETFILE_MASK);
 
 	ret = fimc_is_hw_a_param(device->interface,
 		device->instance,
 		(group & GROUP_ID_PARM_MASK),
 		setfile);
-
 	return ret;
 }
 
@@ -2052,7 +2059,7 @@ static int fimc_is_itf_init_process_start(struct fimc_is_device_ischain *device)
 
 	ret = fimc_is_hw_process_on(device->interface,
 		device->instance,
-                (group & GROUP_ID_PARM_MASK));
+		(group & GROUP_ID_PARM_MASK));
 
 	return ret;
 }
@@ -2949,6 +2956,7 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 		taa_otf_input->cmd = OTF_INPUT_COMMAND_ENABLE;
 	else
 		taa_otf_input->cmd = OTF_INPUT_COMMAND_DISABLE;
+
 	taa_otf_input->width = device->sensor_width;
 	taa_otf_input->height = device->sensor_height;
 	taa_otf_input->bayer_crop_enable = 1;
@@ -2972,8 +2980,6 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	taa_otf_input->order = OTF_INPUT_ORDER_BAYER_GR_BG;
 	taa_otf_input->frametime_min = 0;
 	taa_otf_input->frametime_max = 1000000;
-
-
 	*lindex |= LOWBIT_OF(PARAM_3AA_OTF_INPUT);
 	*hindex |= HIGHBIT_OF(PARAM_3AA_OTF_INPUT);
 	(*indexes)++;
@@ -2984,6 +2990,7 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 		taa_dma_input->cmd = DMA_INPUT_COMMAND_DISABLE;
 	else
 		taa_dma_input->cmd = DMA_INPUT_COMMAND_BUF_MNGR;
+
 	taa_dma_input->width = device->sensor_width;
 	taa_dma_input->height = device->sensor_height;
 	taa_dma_input->dma_crop_offset_x = 0;
@@ -4814,7 +4821,10 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 	groupmgr = device->groupmgr;
 	group = &device->group_isp;
 	framemgr = &queue->framemgr;
-	leader_3aa = &device->group_3aa.leader;
+	if (device->group_3aa.id == GROUP_ID_INVALID)
+		leader_3aa = NULL;
+	else
+		leader_3aa = &device->group_3aa.leader;
 	sensor_param = &device->is_region->parameter.sensor;
 	sensor_width = fimc_is_sensor_g_width(device->sensor);
 	sensor_height = fimc_is_sensor_g_height(device->sensor);
@@ -6861,30 +6871,30 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 	}
 
 	for (capture_id = 0; capture_id < CAPTURE_NODE_MAX; ++capture_id) {
-                node = &frame->shot_ext->node_group.capture[capture_id];
-                scc = dis = scp = NULL;
+		node = &frame->shot_ext->node_group.capture[capture_id];
+		scc = dis = scp = NULL;
 
-                switch(node->vid) {
-                case 0:
-                        break;
-                case FIMC_IS_VIDEO_SCC_NUM:
-                        scc = group->subdev[ENTRY_SCALERC];
-                        break;
-                case FIMC_IS_VIDEO_VDC_NUM:
-                        dis = group->subdev[ENTRY_DIS];
-                        break;
-                case FIMC_IS_VIDEO_SCP_NUM:
-                        scp = group->subdev[ENTRY_SCALERP];
-                        break;
-                case FIMC_IS_VIDEO_3A0C_NUM:
-                case FIMC_IS_VIDEO_3A1C_NUM:
-                case FIMC_IS_VIDEO_3A0P_NUM:
-                case FIMC_IS_VIDEO_3A1P_NUM:
-                default:
-                        merr("capture0 vid(%d) is invalid", device, node->vid);
-			ret = -EINVAL;
-			goto p_err;
-                }
+		switch(node->vid) {
+			case 0:
+				break;
+			case FIMC_IS_VIDEO_SCC_NUM:
+				scc = group->subdev[ENTRY_SCALERC];
+				break;
+			case FIMC_IS_VIDEO_VDC_NUM:
+				dis = group->subdev[ENTRY_DIS];
+				break;
+			case FIMC_IS_VIDEO_SCP_NUM:
+				scp = group->subdev[ENTRY_SCALERP];
+				break;
+			case FIMC_IS_VIDEO_3A0C_NUM:
+			case FIMC_IS_VIDEO_3A1C_NUM:
+			case FIMC_IS_VIDEO_3A0P_NUM:
+			case FIMC_IS_VIDEO_3A1P_NUM:
+			default:
+				merr("capture0 vid(%d) is invalid", device, node->vid);
+				ret = -EINVAL;
+				goto p_err;
+		}
 
 		if (scc) {
 			ret = fimc_is_ischain_scc_tag(device, scc, frame, node);

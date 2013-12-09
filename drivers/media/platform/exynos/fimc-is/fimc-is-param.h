@@ -840,9 +840,7 @@ enum is_entry {
 	ENTRY_GLOBAL,
 	ENTRY_BUFFER,
 	ENTRY_SENSOR,
-#if defined(CONFIG_SOC_EXYNOS5430)
 	ENTRY_3AA,
-#endif
 	ENTRY_ISP,
 	ENTRY_DRC,
 	ENTRY_SCALERC,
@@ -2209,10 +2207,12 @@ struct is_face_marker {
 	u32	blink_level;
 };
 
+#if defined(CONFIG_SOC_EXYNOS5430)
 struct is_debug_region {
 	u32	frame_count;
 	u32	reserved[PARAMETER_MAX_MEMBER-1];
 };
+#endif
 
 #define MAX_FRAME_COUNT		8
 #define MAX_FRAME_COUNT_PREVIEW	4
@@ -2226,7 +2226,9 @@ struct is_region {
 	struct is_tune_region	tune;
 	struct is_frame_header	header[MAX_FRAME_COUNT];
 	struct is_face_marker	face[MAX_FACE_COUNT];
+#if defined(CONFIG_SOC_EXYNOS5430)
 	struct is_debug_region	debug;
+#endif
 	u32			shared[MAX_SHARED_COUNT];
 };
 

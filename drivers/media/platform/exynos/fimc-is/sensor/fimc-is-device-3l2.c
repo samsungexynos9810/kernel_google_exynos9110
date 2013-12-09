@@ -143,7 +143,7 @@ int sensor_3l2_probe(struct i2c_client *client,
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 3;
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
- 
+
 	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
 #ifdef DEFAULT_S5K3L2_DRIVING

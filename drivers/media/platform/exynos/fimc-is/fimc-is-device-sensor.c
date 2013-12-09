@@ -721,11 +721,13 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+#ifdef CONFIG_OF
 	ret = fimc_is_sensor_parse_dt(pdev);
 	if (ret) {
 		err("parsing device tree is fail(%d)", ret);
 		goto p_err;
 	}
+#endif
 
 	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
@@ -1789,10 +1791,20 @@ static struct platform_driver fimc_is_sensor_driver = {
 
 module_platform_driver(fimc_is_sensor_driver);
 #else
+static struct platform_device_id fimc_is_sensor_driver_ids[] = {
+	{
+		.name		= FIMC_IS_SENSOR_DEV_NAME,
+		.driver_data	= 0,
+	},
+	{},
+};
+MODULE_DEVICE_TABLE(platform, fimc_is_sensor_driver_ids);
+
 static struct platform_driver fimc_is_sensor_driver = {
-	.probe	= fimc_is_sensor_probe,
-	.remove	= fimc_is_sensor_remove,
-	.driver = {
+	.probe	  = fimc_is_sensor_probe,
+	.remove	  = __devexit_p(fimc_is_sensor_remove),
+	.id_table = fimc_is_sensor_driver_ids,
+	.driver	  = {
 		.name	= FIMC_IS_SENSOR_DEV_NAME,
 		.owner	= THIS_MODULE,
 		.pm	= &fimc_is_sensor_pm_ops,

@@ -40,14 +40,14 @@
 #define SENSOR_NAME "S5K3H7_SUNNY"
 
 static struct fimc_is_sensor_cfg config_3h7_sunny[] = {
-	/* 3280x2458@30fps */
-	FIMC_IS_SENSOR_CFG(3280, 2458, 30, 15, -1),
-	/* 3280x2458@24fps */
-	FIMC_IS_SENSOR_CFG(3280, 2458, 24, 12, -1),
+	/* 3264x2448@30fps */
+	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 15, 0),
+	/* 3264x2448@24fps */
+	FIMC_IS_SENSOR_CFG(3264, 2448, 24, 12, -1),
 	/* 1936x1450@24fps */
 	FIMC_IS_SENSOR_CFG(1936, 1450, 24, 12, -1),
-	/* 3280x1846@30fps */
-	FIMC_IS_SENSOR_CFG(3280, 1846, 30, 11, -1),
+	/* 3264x1836@30fps */
+	FIMC_IS_SENSOR_CFG(3264, 1836, 30, 11, -1),
 };
 
 static int sensor_3h7_sunny_init(struct v4l2_subdev *subdev, u32 val)

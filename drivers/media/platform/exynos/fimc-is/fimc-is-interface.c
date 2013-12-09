@@ -649,6 +649,7 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->ihc_param3);
 		msg->parameter4 = readl(&com_regs->ihc_param4);
 		break;
+#if defined(CONFIG_SOC_EXYNOS5430)
 	case INTR_3A0C_FDONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -667,6 +668,7 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->taa1c_param3);
 		msg->parameter4 = 0;
 		break;
+#endif
 	case INTR_SCC_FDONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -1728,19 +1730,23 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 		break;
 	case GROUP_ID_ISP:
 		if (fcount != ldr_frame->fcount) {
-			err("cause : mismatch(%d != %d)", fcount, ldr_frame->fcount);
+			err("cause : mismatch(%d != %d)", fcount,
+				ldr_frame->fcount);
 			status1 = ISR_NDONE;
 		}
 
-		wq_func_group_isp(groupmgr, group, ldr_framemgr, ldr_frame, vctx, status1);
+		wq_func_group_isp(groupmgr, group, ldr_framemgr, ldr_frame,
+			vctx, status1);
 		break;
 	case GROUP_ID_DIS:
 		if (fcount != ldr_frame->fcount) {
-			err("cause : mismatch(%d != %d)", fcount, ldr_frame->fcount);
+			err("cause : mismatch(%d != %d)", fcount,
+				ldr_frame->fcount);
 			status1 = ISR_NDONE;
 		}
 
-		wq_func_group_dis(groupmgr, group, ldr_framemgr, ldr_frame, vctx, status1);
+		wq_func_group_dis(groupmgr, group, ldr_framemgr, ldr_frame,
+			vctx, status1);
 		break;
 	default:
 		err("unresolved group id %d", group->id);

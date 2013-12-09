@@ -39,6 +39,11 @@
 
 #define SENSOR_NAME "S5K3H7"
 
+static struct fimc_is_sensor_cfg config_3h7[] = {
+	/* 3264x2448@30fps */
+	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 15, 0),
+};
+
 static int sensor_3h7_init(struct v4l2_subdev *subdev, u32 val)
 {
 	int ret = 0;
@@ -101,8 +106,8 @@ int sensor_3h7_probe(struct i2c_client *client,
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_3h7.bin";
-	/* module->settle_max = ARRAY_SIZE(settle_3h7); */
-	/* module->settle_table = settle_3h7; */
+	module->cfgs = ARRAY_SIZE(config_3h7);
+	module->cfg = config_3h7;
 	module->ops = NULL;
 	module->private_data = NULL;
 
