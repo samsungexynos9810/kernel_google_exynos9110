@@ -2126,6 +2126,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	host->tasklet_state = 1;
 
 	if (host->cmd_status & SDMMC_INT_HLE) {
+		dw_mci_reg_dump(host);
 		clear_bit(EVENT_CMD_COMPLETE, &host->pending_events);
 		dev_err(host->dev, "hardware locked write error\n");
 		goto unlock;
