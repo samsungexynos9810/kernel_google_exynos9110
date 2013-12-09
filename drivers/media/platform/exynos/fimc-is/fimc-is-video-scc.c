@@ -504,7 +504,7 @@ static int fimc_is_scc_video_s_ctrl(struct file *file, void *priv,
 		}
 		break;
 	case V4L2_CID_IS_COLOR_RANGE:
-		if (test_bit(FIMC_IS_SUBDEV_START, &device->scc.state)) {
+		if (test_bit(FIMC_IS_SUBDEV_START, &device->group_isp.leader.state)) {
 			err("failed to change color range: device started already (0x%08x)",
 					ctrl->value);
 			ret = -EINVAL;
