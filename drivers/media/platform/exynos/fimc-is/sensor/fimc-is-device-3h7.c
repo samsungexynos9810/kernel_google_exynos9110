@@ -41,7 +41,7 @@
 
 static struct fimc_is_sensor_cfg config_3h7[] = {
 	/* 3264x2448@30fps */
-	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 15, 0),
+	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 17, 0),
 };
 
 static int sensor_3h7_init(struct v4l2_subdev *subdev, u32 val)
@@ -99,10 +99,10 @@ int sensor_3h7_probe(struct i2c_client *client,
 	module->subdev = subdev_module;
 	module->device = SENSOR_S5K3H7_INSTANCE;
 	module->client = client;
-	module->pixel_width = 3248 + 16;
-	module->pixel_height = 2438 + 10;
 	module->active_width = 3248;
 	module->active_height = 2438;
+	module->pixel_width = module->active_width + 16;
+	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_3h7.bin";
