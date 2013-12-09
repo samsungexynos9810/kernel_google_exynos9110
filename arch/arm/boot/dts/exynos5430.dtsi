@@ -390,8 +390,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12150000 0x1000>;
 		interrupts = <0 128 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2575>, <&clock 2532>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2575>;
 		samsung,power-domain = <&pd_cam0>;
 		prop-map {
 			iomap = "w";
@@ -402,8 +402,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12160000 0x1000>;
 		interrupts = <0 130 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2574>, <&clock 2531>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2574>;
 		samsung,power-domain = <&pd_cam0>;
 		prop-map {
 			iomap = "w";
@@ -414,8 +414,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12170000 0x1000>;
 		interrupts = <0 132 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2573>, <&clock 2530>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2573>;
 		samsung,power-domain = <&pd_cam0>;
 		prop-map {
 			iomap = "w";
@@ -426,8 +426,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12180000 0x1000>;
 		interrupts = <0 137 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2572>, <&clock 2526>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2572>;
 		samsung,power-domain = <&pd_cam0>;
 	};
 
@@ -435,8 +435,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x121A0000 0x1000>;
 		interrupts = <0 147 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2571>, <&clock 2525>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2571>;
 		samsung,power-domain = <&pd_cam0>;
 	};
 
@@ -444,8 +444,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x12450000 0x1000>;
 		interrupts = <0 257 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2233>, <&clock 2213>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2233>;
 		samsung,power-domain = <&pd_g2d>;
 	};
 
@@ -453,8 +453,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13A00000 0x1000>;
 		interrupts = <0 192 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2125>, <&clock 2114>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2125>;
 		samsung,power-domain = <&spd_decon>;
 		prop-map {
 			winmap = <0x7>;
@@ -465,8 +465,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13A10000 0x1000>;
 		interrupts = <0 194 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2124>, <&clock 2114>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2124>;
 		samsung,power-domain = <&spd_decon>;
 		prop-map {
 			winmap = <0x18>;
@@ -477,8 +477,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13A20000 0x1000>;
 		interrupts = <0 214 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2803>, <&clock 2111>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2803>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
 			winmap = <0xA>;
@@ -489,8 +489,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13A30000 0x1000>;
 		interrupts = <0 216 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2802>, <&clock 2111>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2802>;
 		samsung,power-domain = <&spd_decon_tv>;
 		prop-map {
 			winmap = <0x14>;
@@ -501,8 +501,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13C80000 0x1000>;
 		interrupts = <0 288 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2283>, <&clock 2265>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2283>;
 		samsung,power-domain = <&spd_gscl0>;
 	};
 
@@ -510,8 +510,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13C90000 0x1000>;
 		interrupts = <0 290 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2284>, <&clock 2264>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2284>;
 		samsung,power-domain = <&spd_gscl1>;
 	};
 
@@ -519,8 +519,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x13CA0000 0x1000>;
 		interrupts = <0 292 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2285>, <&clock 2263>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2285>;
 		samsung,power-domain = <&spd_gscl2>;
 	};
 
@@ -528,8 +528,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x142B0000 0x1000>;
 		interrupts = <0 160 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2671>, <&clock 2635>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2671>;
 		samsung,power-domain = <&pd_cam1>;
 		prop-map {
 			iomap = "w";
@@ -540,8 +540,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x142C0000 0x1000>;
 		interrupts = <0 162 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2670>, <&clock 2634>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2670>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -549,8 +549,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x142D0000 0x1000>;
 		interrupts = <0 169 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2667>, <&clock 2637>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2667>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -558,8 +558,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x14320000 0x1000>;
 		interrupts = <0 346 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2745>, <&clock 2719>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2745>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -567,8 +567,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x14330000 0x1000>;
 		interrupts = <0 338 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2744>, <&clock 2718>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2744>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -576,8 +576,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x14340000 0x1000>;
 		interrupts = <0 340 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2743>, <&clock 2717>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2743>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -585,8 +585,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x143A0000 0x1000>;
 		interrupts = <0 342 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2742>, <&clock 2716>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2742>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -594,8 +594,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x143B0000 0x1000>;
 		interrupts = <0 344 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2741>, <&clock 2716>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2741>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -603,8 +603,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x143C0000 0x1000>;
 		interrupts = <0 336 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2738>, <&clock 2714>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2738>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -612,8 +612,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x143D0000 0x1000>;
 		interrupts = <0 349 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2740>, <&clock 2715>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2740>;
 		samsung,power-domain = <&pd_isp>;
 	};
 
@@ -622,8 +622,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x14F00000 0x1000>;
 		interrupts = <0 449 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2305>, <&clock 2292>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2305>;
 		samsung,power-domain = <&pd_hevc>;
 	};
 
@@ -631,8 +631,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x14F10000 0x1000>;
 		interrupts = <0 451 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2304>, <&clock 2292>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2304>;
 		samsung,power-domain = <&pd_hevc>;
 	};
 
@@ -641,8 +641,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15040000 0x1000>;
 		interrupts = <0 404 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2410>, <&clock 2394>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2410>;
 		samsung,power-domain = <&spd_mscl0>;
 	};
 
@@ -650,8 +650,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15050000 0x1000>;
 		interrupts = <0 406 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2411>, <&clock 2393>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2411>;
 		samsung,power-domain = <&spd_mscl1>;
 	};
 
@@ -659,8 +659,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15060000 0x1000>;
 		interrupts = <0 408 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2412>, <&clock 2392>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2412>;
 		samsung,power-domain = <&spd_jpeg>;
 	};
 
@@ -668,8 +668,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15200000 0x1000>;
 		interrupts = <0 352 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2364>, <&clock 2352>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2364>;
 		samsung,power-domain = <&pd_mfc0>;
 	};
 
@@ -677,8 +677,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15210000 0x1000>;
 		interrupts = <0 354 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2363>, <&clock 2352>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2363>;
 		samsung,power-domain = <&pd_mfc0>;
 	};
 
@@ -687,8 +687,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15300000 0x1000>;
 		interrupts = <0 360 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2385>, <&clock 2372>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2385>;
 		samsung,power-domain = <&pd_mfc1>;
 	};
 
@@ -696,8 +696,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15310000 0x1000>;
 		interrupts = <0 362 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2384>, <&clock 2372>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2384>;
 		samsung,power-domain = <&pd_mfc1>;
 	};
 
@@ -705,8 +705,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15650000 0x1000>;
 		interrupts = <0 240 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2184>, <&clock 2174>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2184>;
 		status = "disabled";
 	};
 
@@ -714,8 +714,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15660000 0x1000>;
 		interrupts = <0 233 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2183>, <&clock 2167>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2183>;
 		status = "disabled";
 	};
 
@@ -723,8 +723,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15670000 0x1000>;
 		interrupts = <0 236 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2182>, <&clock 2166>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2182>;
 		status = "disabled";
 	};
 
@@ -732,8 +732,8 @@
 		compatible = "samsung,exynos5430-sysmmu";
 		reg = <0x15680000 0x1000>;
 		interrupts = <0 238 0>;
-		clock-names = "sysmmu", "master";
-		clocks = <&clock 2181>, <&clock 2165>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2181>;
 		status = "disabled";
 	};
 
