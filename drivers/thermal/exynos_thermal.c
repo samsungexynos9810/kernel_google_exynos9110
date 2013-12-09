@@ -1070,6 +1070,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 
 	pr_debug("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
 			alltemp[0], alltemp[1], alltemp[2], alltemp[3], alltemp[4], max, gpu_temp);
+
 	return max;
 }
 
@@ -1574,6 +1575,48 @@ static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
 			platform_get_device_id(pdev)->driver_data;
 }
 
+/* sysfs interface : /sys/devices/10060000.tmu/temp */
+static ssize_t
+exynos_thermal_sensor_temp(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct exynos_tmu_data *data = th_zone->sensor_conf->private_data;
+	u8 temp_code;
+	unsigned long temp[EXYNOS_TMU_COUNT] = {0,};
+	int i, len = 0;
+
+	mutex_lock(&data->lock);
+	clk_enable(data->clk[0]);
+	clk_enable(data->clk[1]);
+
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
+		if (temp_code == 0xff)
+			continue;
+		temp[i] = code_to_temp(data, temp_code, i) * MCELSIUS;
+	}
+
+	clk_disable(data->clk[0]);
+	clk_disable(data->clk[1]);
+	mutex_unlock(&data->lock);
+
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
+		len += snprintf(&buf[len], PAGE_SIZE, "sensor%d : %ld\n", i, temp[i]);
+
+	return len;
+}
+
+static DEVICE_ATTR(temp, S_IRUSR | S_IRGRP, exynos_thermal_sensor_temp, NULL);
+
+static struct attribute *exynos_thermal_sensor_attributes[] = {
+	&dev_attr_temp.attr,
+	NULL
+};
+
+static const struct attribute_group exynos_thermal_sensor_attr_group = {
+	.attrs = exynos_thermal_sensor_attributes,
+};
+
 static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 {
 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
@@ -1626,6 +1669,7 @@ static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigne
 
 		if (ret) {
 			dev_err(&exynos_tmu_pdev->dev, "Failed to register thermal interface\n");
+			sysfs_remove_group(&exynos_tmu_pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
 			unregister_pm_notifier(&exynos_pm_nb);
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 			exynos_cpufreq_init_unregister_notifier(&exynos_cpufreq_nb);
@@ -1814,6 +1858,10 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	}
 
 	register_pm_notifier(&exynos_pm_nb);
+
+	ret = sysfs_create_group(&pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
+	if (ret)
+		dev_err(&exynos_tmu_pdev->dev, "cannot create thermal sensor attributes\n");
 
 	return 0;
 
