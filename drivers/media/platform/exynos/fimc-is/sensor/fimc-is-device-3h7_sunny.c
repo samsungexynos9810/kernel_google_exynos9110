@@ -41,13 +41,7 @@
 
 static struct fimc_is_sensor_cfg config_3h7_sunny[] = {
 	/* 3264x2448@30fps */
-	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 15, 0),
-	/* 3264x2448@24fps */
-	FIMC_IS_SENSOR_CFG(3264, 2448, 24, 12, -1),
-	/* 1936x1450@24fps */
-	FIMC_IS_SENSOR_CFG(1936, 1450, 24, 12, -1),
-	/* 3264x1836@30fps */
-	FIMC_IS_SENSOR_CFG(3264, 1836, 30, 11, -1),
+	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 17, 0),
 };
 
 static int sensor_3h7_sunny_init(struct v4l2_subdev *subdev, u32 val)
@@ -105,10 +99,10 @@ int sensor_3h7_sunny_probe(struct i2c_client *client,
 	module->subdev = subdev_module;
 	module->device = SENSOR_S5K3H7_SUNNY_INSTANCE;
 	module->client = client;
-	module->pixel_width = 3248 + 16;
-	module->pixel_height = 2438 + 10;
 	module->active_width = 3248;
 	module->active_height = 2438;
+	module->pixel_width = module->active_width + 16;
+	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_REAR;
 	module->setfile_name = "setfile_3h7_sunny.bin";
