@@ -1010,6 +1010,9 @@ static int __init __fdt_init_exynos_ion(unsigned long node, const char *uname,
 		return 0;
 
 	prop = of_get_flat_dt_prop(node, "contig-names", &len);
+	if (!prop)
+		return 0;
+
 	pch = (char *)prop;
 	cch = pch + len;
 	/* NULL separated list of character strings */
