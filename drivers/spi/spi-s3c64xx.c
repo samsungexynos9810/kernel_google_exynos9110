@@ -82,6 +82,8 @@
 #define S3C64XX_SPI_MODE_TXDMA_ON		(1<<1)
 #define S3C64XX_SPI_MODE_4BURST			(1<<0)
 
+#define S3C64XX_SPI_SLAVE_NSC_CNT_2		(2<<4)
+#define S3C64XX_SPI_SLAVE_NSC_CNT_1		(1<<4)
 #define S3C64XX_SPI_SLAVE_AUTO			(1<<1)
 #define S3C64XX_SPI_SLAVE_SIG_INACT		(1<<0)
 
@@ -548,9 +550,19 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 	cs = spi->controller_data;
 	if(cs->line != (unsigned)NULL)
 		gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 1 : 0);
-	/* Start the signals */
-	writel(spi->mode & SPI_CS_HIGH ? S3C64XX_SPI_SLAVE_SIG_INACT : 0,
-	       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+
+	if (cs->cs_mode == AUTO_CS_MODE) {
+		/* Set auto chip selection */
+		writel(readl(sdd->regs + S3C64XX_SPI_SLAVE_SEL)
+			| S3C64XX_SPI_SLAVE_AUTO
+			| S3C64XX_SPI_SLAVE_NSC_CNT_2,
+		sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+	} else {
+		/* Start the signals */
+		writel(spi->mode & SPI_CS_HIGH ?
+				S3C64XX_SPI_SLAVE_SIG_INACT : 0,
+			       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+	}
 }
 
 static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
@@ -900,10 +912,17 @@ try_transfer:
 		sdd->state &= ~RXBUSY;
 		sdd->state &= ~TXBUSY;
 
-		enable_datapath(sdd, spi, xfer, use_dma);
+		if (cs->cs_mode == AUTO_CS_MODE) {
+			/* Slave Select */
+			enable_cs(sdd, spi);
 
-		/* Slave Select */
-		enable_cs(sdd, spi);
+			enable_datapath(sdd, spi, xfer, use_dma);
+		} else {
+			enable_datapath(sdd, spi, xfer, use_dma);
+
+			/* Slave Select */
+			enable_cs(sdd, spi);
+		}
 
 		spin_unlock_irqrestore(&sdd->lock, flags);
 
@@ -989,6 +1008,7 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 	struct s3c64xx_spi_csinfo *cs;
 	struct device_node *slave_np, *data_np = NULL;
 	u32 fb_delay = 0;
+	u32 cs_mode = 0;
 
 	slave_np = spi->dev.of_node;
 	if (!slave_np) {
@@ -1015,6 +1035,10 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 
 	of_property_read_u32(data_np, "samsung,spi-feedback-delay", &fb_delay);
 	cs->fb_delay = fb_delay;
+
+	of_property_read_u32(data_np, "samsung,spi-chip-select-mode", &cs_mode);
+	cs->cs_mode = cs_mode;
+
 	of_node_put(data_np);
 	return cs;
 }
