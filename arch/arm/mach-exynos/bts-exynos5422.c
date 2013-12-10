@@ -11,6 +11,7 @@
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/list.h>
 #include <linux/dma-mapping.h>
 #include <linux/pm_runtime.h>
