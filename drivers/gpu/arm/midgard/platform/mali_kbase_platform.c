@@ -197,8 +197,6 @@ kbase_platform_config platform_config = {
 		.midgard_type              = KBASE_MALI_T604
 };
 
-#ifndef CONFIG_MALI_PLATFORM_FAKE
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
 int kbase_platform_early_init(struct platform_device *pdev)
 {
 	kbase_platform_config *config;
@@ -208,23 +206,13 @@ int kbase_platform_early_init(struct platform_device *pdev)
 	attribute_count = kbasep_get_config_attribute_count(config->attributes);
 
 	return platform_device_add_data(
+#ifndef CONFIG_MALI_PLATFORM_FAKE
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
 		pdev,
-		config->attributes,
-		attribute_count * sizeof(config->attributes[0]));
-}
 #else
-int kbase_platform_early_init(void)
-{
-	kbase_platform_config *config;
-	int attribute_count;
-
-	config = &platform_config;
-	attribute_count = kbasep_get_config_attribute_count(config->attributes);
-
-	return platform_device_add_data(
 		&exynos5_device_g3d,
-		config->attributes,
-		attribute_count * sizeof(config->attributes[0]));
-}
 #endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0) */
 #endif /* CONFIG_MALI_PLATFORM_FAKE */
+		config->attributes,
+		attribute_count * sizeof(config->attributes[0]));
+}

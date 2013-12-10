@@ -150,10 +150,6 @@ struct mali_debug_utilisation_stats
 void gpu_set_debug_level(int level);
 int gpu_get_debug_level(void);
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 10, 0)
 int kbase_platform_early_init(struct platform_device *pdev);
-#else
-int kbase_platform_early_init(void);
-#endif
 
 #endif /* _GPU_PLATFORM_H_ */
