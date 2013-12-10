@@ -2380,7 +2380,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_bus2rtnd_400, "gate_bus2rtnd_400", NULL, EXYNOS5430_ENABLE_IP_BUS21, 0, CLK_IGNORE_UNUSED, 0),
 
 	/* CPIF0 */
-	CGTE(gate_mphy_pll, "gate_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 19, 0, 0),
+	CGTE(gate_mphy_pll, "gate_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 19, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_mphy_pll_mif, "gate_mphy_pll_mif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 18, 0, 0),
 	CGTE(gate_freq_det_mphy_pll, "gate_freq_det_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 17, 0, 0),
 	CGTE(gate_ufs_mphy, "gate_ufs_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 16, 0, 0),
