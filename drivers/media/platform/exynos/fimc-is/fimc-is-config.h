@@ -33,7 +33,6 @@
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS5430)
-#undef ENABLE_DVFS
 #define SUPPORTED_IS_CMD_VER	132
 #endif
 
