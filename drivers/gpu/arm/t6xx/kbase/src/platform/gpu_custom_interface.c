@@ -700,7 +700,7 @@ static ssize_t set_debug_level(struct device *dev, struct device_attribute *attr
 		return -ENOENT;
 	}
 
-	if ((debug_level < 0) || (debug_level >= DVFS_DEBUG_END)) {
+	if ((debug_level < 0) || (debug_level > DVFS_DEBUG_END)) {
 		GPU_LOG(DVFS_WARNING, "set_debug_level: invalid value\n");
 		return -ENOENT;
 	}
@@ -758,7 +758,7 @@ static ssize_t set_polling_speed(struct device *dev, struct device_attribute *at
 
 	ret = kstrtoint(buf, 0, &polling_speed);
 
-	if ((polling_speed < 100) || (polling_speed >= 1000)) {
+	if ((polling_speed < 100) || (polling_speed > 1000)) {
 		GPU_LOG(DVFS_WARNING, "set_polling_speed: invalid value\n");
 		return -ENOENT;
 	}
