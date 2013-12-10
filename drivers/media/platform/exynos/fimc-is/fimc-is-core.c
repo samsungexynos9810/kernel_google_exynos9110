@@ -493,18 +493,17 @@ static ssize_t store_clk_gate_mode(struct device *dev,
 				 const char *buf, size_t count)
 {
 #ifdef HAS_FW_CLOCK_GATE
-	unsigned int value;
-	int ret;
-
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
-		goto out;
-
-	if (value > 0)
-		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_FW;
-	else
+	switch(buf[0]) {
+	case '0':
 		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
-out:
+		break;
+	case '1':
+		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_FW;
+		break;
+	default:
+		pr_debug("%s: %c\n", __func__, buf[0]);
+		break;
+	}
 #endif
 	return count;
 }
@@ -520,21 +519,19 @@ static ssize_t store_en_clk_gate(struct device *dev,
 				 const char *buf, size_t count)
 {
 #ifdef ENABLE_CLOCK_GATE
-	unsigned int value;
-	int ret;
-
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
-		goto out;
-
-	if (value > 0) {
-		sysfs_debug.en_clk_gate = 1;
+	switch(buf[0]) {
+	case '0':
+		sysfs_debug.en_clk_gate = false;
 		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
-	} else {
-		sysfs_debug.en_clk_gate = 0;
+		break;
+	case '1':
+		sysfs_debug.en_clk_gate = true;
 		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
+		break;
+	default:
+		pr_debug("%s: %c\n", __func__, buf[0]);
+		break;
 	}
-out:
 #endif
 	return count;
 }
@@ -553,25 +550,17 @@ static ssize_t store_en_dvfs(struct device *dev,
 	struct fimc_is_core *core =
 		(struct fimc_is_core *)platform_get_drvdata(to_platform_device(dev));
 	struct fimc_is_resourcemgr *resourcemgr;
-	unsigned int value;
-	int i, ret;
+	int i;
 
 	BUG_ON(!core);
 
 	resourcemgr = &core->resourcemgr;
 
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
-		goto out;
-
-	if (value > 0) {
-		/* It can not re-define static scenario */
-		sysfs_debug.en_dvfs = value;
-	} else {
-		sysfs_debug.en_dvfs = 0;
+	switch(buf[0]) {
+	case '0':
+		sysfs_debug.en_dvfs = false;
 		/* update dvfs lever to max */
 		mutex_lock(&resourcemgr->dvfs_ctrl.lock);
-		sysfs_debug.en_dvfs = value;
 		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
 			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state)))
 				fimc_is_set_dvfs(&(core->ischain[i]), FIMC_IS_SN_MAX);
@@ -579,8 +568,15 @@ static ssize_t store_en_dvfs(struct device *dev,
 		fimc_is_dvfs_init(resourcemgr);
 		resourcemgr->dvfs_ctrl.static_ctrl->cur_scenario_id = FIMC_IS_SN_MAX;
 		mutex_unlock(&resourcemgr->dvfs_ctrl.lock);
+		break;
+	case '1':
+		/* It can not re-define static scenario */
+		sysfs_debug.en_dvfs = true;
+		break;
+	default:
+		pr_debug("%s: %c\n", __func__, buf[0]);
+		break;
 	}
-out:
 #endif
 	return count;
 }
