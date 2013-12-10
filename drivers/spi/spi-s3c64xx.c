@@ -1140,6 +1140,11 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 
 		/* Max possible */
 		speed = clk_get_rate(sdd->src_clk) / 2 / (0 + 1);
+		if (!speed) {
+			dev_err(&spi->dev, "clock rate of speed is 0\n");
+			err = -EINVAL;
+			goto setup_exit;
+		}
 
 		if (spi->max_speed_hz > speed)
 			spi->max_speed_hz = speed;
