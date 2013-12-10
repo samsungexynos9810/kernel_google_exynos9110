@@ -352,7 +352,12 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 	/* see if we can actually set the requested timer margin, and if
 	 * not, try the default value */
 
-	s3c2410wdt_set_min_max_timeout(&s3c2410_wdd);
+	ret = s3c2410wdt_set_min_max_timeout(&s3c2410_wdd);
+	if (ret != 0) {
+		dev_err(dev, "clock rate is 0\n");
+		goto err_clk;
+	}
+
 	watchdog_init_timeout(&s3c2410_wdd, tmr_margin,  &pdev->dev);
 	if (s3c2410wdt_set_heartbeat(&s3c2410_wdd, s3c2410_wdd.timeout)) {
 		started = s3c2410wdt_set_heartbeat(&s3c2410_wdd,
