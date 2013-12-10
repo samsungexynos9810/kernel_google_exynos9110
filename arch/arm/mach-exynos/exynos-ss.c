@@ -461,8 +461,8 @@ static inline void exynos_ss_hook_logbuf(const char *buf, u64 ts_nsec, size_t si
 		rem_nsec = do_div(ts_nsec, 1000000000);
 
 		/*  fixed exact size */
-		timelen = sprintf(ess_hook.logbuf.curr_ptr, "[%5lu.%06lu] ",
-				(unsigned long)ts_nsec, rem_nsec / 1000);
+		timelen = snprintf(ess_hook.logbuf.curr_ptr, 32,
+					"[%5lu.%06lu] ", (unsigned long)ts_nsec, rem_nsec / 1000);
 
 		ess_hook.logbuf.curr_ptr += timelen;
 		memcpy(ess_hook.logbuf.curr_ptr, buf, size);
