@@ -1221,14 +1221,14 @@ static ssize_t region_name_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
-	return sprintf(buf, "%s\n", cmadata->name);
+	return scnprintf(buf, "%s\n", cmadata->name);
 }
 
 static ssize_t region_id_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
-	return sprintf(buf, "%u\n", cmadata->id);
+	return scnprintf(buf, "%u\n", cmadata->id);
 }
 
 static struct device_attribute cma_regname_attr = __ATTR_RO(region_name);
