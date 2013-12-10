@@ -41,6 +41,7 @@
 		extra_tuning;
 		supports-highspeed;
 		enable-cache-control;
+		qos_int_level = <133>;
 		fifo-depth = <0x80>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
@@ -70,6 +71,7 @@
 		fixed_volt;
 		only_once_tune;
 		supports-highspeed;
+		qos_int_level = <133>;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
@@ -91,6 +93,7 @@
 		status = "okay";
 		num-slots = <1>;
 		supports-highspeed;
+		qos_int_level = <133>;
 		cd-type = <1>;
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
