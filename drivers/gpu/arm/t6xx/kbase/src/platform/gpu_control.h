@@ -108,6 +108,9 @@ typedef enum {
 #endif
 
 #define GPU_DVFS_FREQUENCY		100
+#ifdef CONFIG_CPU_THERMAL_IPA
+#define GPU_DVFS_TIME_INTERVAL	5
+#endif /* CONFIG_CPU_THERMAL_IPA */
 
 /* GPU DVFS GOVERNOR */
 #if SOC_NAME == 5422

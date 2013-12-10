@@ -22,6 +22,9 @@
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
 #include "gpu_control.h"
+#ifdef CONFIG_CPU_THERMAL_IPA
+#include "gpu_ipa.h"
+#endif /* CONFIG_CPU_THERMAL_IPA */
 #include "gpu_custom_interface.h"
 
 #ifdef CONFIG_MALI_T6XX_DEBUG_SYS
@@ -775,6 +778,75 @@ static ssize_t set_polling_speed(struct device *dev, struct device_attribute *at
 	return count;
 }
 
+#ifdef CONFIG_CPU_THERMAL_IPA
+static ssize_t show_norm_utilization(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+#ifdef CONFIG_EXYNOS_THERMAL
+	struct kbase_device *kbdev;
+
+	kbdev = dev_get_drvdata(dev);
+
+	if (!kbdev)
+		return -ENODEV;
+#ifdef CONFIG_MALI_T6XX_DVFS
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d", gpu_ipa_dvfs_get_norm_utilisation(kbdev));
+#else
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "-1");
+#endif
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+#else
+	GPU_LOG(DVFS_WARNING, "EXYNOS THERMAL build config is disabled. You can not set\n");
+#endif
+
+	return ret;
+}
+
+static ssize_t show_utilization_stats(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	ssize_t ret = 0;
+#ifdef CONFIG_EXYNOS_THERMAL
+	struct kbase_device *kbdev;
+	struct mali_debug_utilisation_stats stats;
+
+	kbdev = dev_get_drvdata(dev);
+
+	if (!kbdev)
+		return -ENODEV;
+
+#ifdef CONFIG_T6XX_DVFS
+	gpu_ipa_dvfs_get_utilisation_stats(&stats);
+
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "util=%d norm_util=%d norm_freq=%d time_busy=%u time_idle=%u time_tick=%d",
+					stats.s.utilisation, stats.s.norm_utilisation,
+					stats.s.freq_for_norm, stats.time_busy, stats.time_idle,
+					stats.time_tick);
+#else
+	ret += snprintf(buf+ret, PAGE_SIZE-ret, "-1");
+#endif
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+#else
+	GPU_LOG(DVFS_WARNING, "EXYNOS THERMAL build config is disabled. You can not set\n");
+#endif
+
+	return ret;
+}
+#endif /* CONFIG_CPU_THERMAL_IPA */
+
 /** The sysfs file @c clock, fbdev.
  *
  * This is used for obtaining information about the mali t6xx operating clock & framebuffer address,
@@ -789,6 +861,10 @@ DEVICE_ATTR(dvfs_min_lock, S_IRUGO|S_IWUSR, show_min_lock_dvfs, set_min_lock_dvf
 DEVICE_ATTR(time_in_state, S_IRUGO|S_IWUSR, show_time_in_state, set_time_in_state);
 DEVICE_ATTR(tmu, S_IRUGO|S_IWUSR, show_tmu, set_tmu_control);
 DEVICE_ATTR(utilization, S_IRUGO, show_utilization, NULL);
+#ifdef CONFIG_CPU_THERMAL_IPA
+DEVICE_ATTR(norm_utilization, S_IRUGO, show_norm_utilization, NULL);
+DEVICE_ATTR(utilization_stats, S_IRUGO, show_utilization_stats, NULL);
+#endif /* CONFIG_CPU_THERMAL_IPA */
 DEVICE_ATTR(dvfs_table, S_IRUGO, show_dvfs_table, NULL);
 DEVICE_ATTR(power_state, S_IRUGO, show_power_state, NULL);
 DEVICE_ATTR(dvfs_governor, S_IRUGO|S_IWUSR, show_governor, set_governor);
@@ -842,7 +918,17 @@ int gpu_create_sysfs_file(struct device *dev)
 		GPU_LOG(DVFS_ERROR, "Couldn't create sysfs file [utilization]\n");
 		goto out;
 	}
+#ifdef CONFIG_CPU_THERMAL_IPA
+	if (device_create_file(dev, &dev_attr_norm_utilization)) {
+		dev_err(dev, "Couldn't create sysfs file [norm_utilization]\n");
+		goto out;
+	}
 
+	if (device_create_file(dev, &dev_attr_utilization_stats)) {
+		dev_err(dev, "Couldn't create sysfs file [utilization_stats]\n");
+		goto out;
+	}
+#endif /* CONFIG_CPU_THERMAL_IPA */
 	if (device_create_file(dev, &dev_attr_dvfs_table)) {
 		GPU_LOG(DVFS_ERROR, "Couldn't create sysfs file [dvfs_table]\n");
 		goto out;
@@ -889,6 +975,10 @@ void gpu_remove_sysfs_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_time_in_state);
 	device_remove_file(dev, &dev_attr_tmu);
 	device_remove_file(dev, &dev_attr_utilization);
+#ifdef CONFIG_CPU_THERMAL_IPA
+	device_remove_file(dev, &dev_attr_norm_utilization);
+	device_remove_file(dev, &dev_attr_utilization_stats);
+#endif /* CONFIG_CPU_THERMAL_IPA */
 	device_remove_file(dev, &dev_attr_dvfs_table);
 	device_remove_file(dev, &dev_attr_power_state);
 	device_remove_file(dev, &dev_attr_dvfs_governor);
