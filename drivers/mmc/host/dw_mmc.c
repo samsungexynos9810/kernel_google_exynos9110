@@ -2008,7 +2008,8 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 			}
 
 			if (host->mrq_dat->sbc && !data->error) {
-				data->stop->error = 0;
+				if (data->stop)
+					data->stop->error = 0;
 				done = 1;
 				goto exit_dat;
 			}
