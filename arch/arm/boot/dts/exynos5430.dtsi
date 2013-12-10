@@ -2010,9 +2010,6 @@
 				<&clock 5021>,
 				<&clock 5022>,
 
-				<&clock 2520>,
-				<&clock 2521>,
-				<&clock 2522>,
 				<&clock 2523>,
 				<&clock 2524>,
 				<&clock 2525>,
@@ -2021,7 +2018,6 @@
 				<&clock 2530>,
 				<&clock 2531>,
 				<&clock 2532>,
-				<&clock 2533>,
 				<&clock 2534>,
 				<&clock 2535>,
 				<&clock 2536>,
@@ -2031,140 +2027,25 @@
 				<&clock 2542>,
 				<&clock 2543>,
 				<&clock 2544>,
-				<&clock 2545>,
-				<&clock 2546>,
 
 				<&clock 2550>,
 				<&clock 2551>,
 				<&clock 2552>,
 				<&clock 2553>,
 				<&clock 2554>,
-				<&clock 2555>,
 
-				<&clock 2560>,
-				<&clock 2561>,
-				<&clock 2562>,
-				<&clock 2563>,
-				<&clock 2564>,
-				<&clock 2565>,
-
-				<&clock 2570>,
-				<&clock 2571>,
-				<&clock 2572>,
-				<&clock 2573>,
-				<&clock 2574>,
-				<&clock 2575>,
-				<&clock 2576>,
-				<&clock 2577>,
-
-				<&clock 2580>,
-				<&clock 2581>,
-				<&clock 2582>,
 				<&clock 2583>,
 				<&clock 2584>,
 				<&clock 2585>,
 				<&clock 2586>,
 				<&clock 2587>,
 
-				<&clock 2590>,
-				<&clock 2591>,
-				<&clock 2592>,
-				<&clock 2593>,
-				<&clock 2594>,
-				<&clock 2595>,
-				<&clock 2596>,
-
-				<&clock 2600>,
-				<&clock 2601>,
-				<&clock 2602>,
-				<&clock 2603>,
-				<&clock 2604>,
-
 				<&clock 2610>,
 				<&clock 2611>,
-				<&clock 2612>,
 				<&clock 2613>,
-				<&clock 2614>,
-				<&clock 2615>,
-				<&clock 2616>,
-				<&clock 2617>,
 
-				<&clock 2620>,
-				<&clock 2621>,
-				<&clock 2622>,
-				<&clock 2623>,
-				<&clock 2624>,
-				<&clock 2625>,
-				<&clock 2626>,
-				<&clock 2627>,
-
-				<&clock 2630>,
-				<&clock 2631>,
-				<&clock 2632>,
-				<&clock 2633>,
-				<&clock 2634>,
 				<&clock 2635>,
-				<&clock 2636>,
-				<&clock 2637>,
-
-				<&clock 2640>,
-				<&clock 2641>,
-				<&clock 2642>,
-				<&clock 2643>,
-				<&clock 2644>,
-				<&clock 2645>,
-				<&clock 2646>,
-				<&clock 2647>,
-
-				<&clock 2650>,
-				<&clock 2651>,
-				<&clock 2652>,
-				<&clock 2653>,
-				<&clock 2654>,
-				<&clock 2655>,
-				<&clock 2656>,
-				<&clock 2657>,
-
-				<&clock 2660>,
-				<&clock 2661>,
-				<&clock 2662>,
-				<&clock 2663>,
-				<&clock 2664>,
-				<&clock 2665>,
-				<&clock 2666>,
-				<&clock 2667>,
-
-				<&clock 2670>,
-				<&clock 2671>,
-				<&clock 2672>,
-				<&clock 2673>,
-				<&clock 2674>,
-				<&clock 2675>,
-				<&clock 2676>,
-				<&clock 2677>,
-
-				<&clock 2680>,
-				<&clock 2681>,
-				<&clock 2682>,
-				<&clock 2683>,
-				<&clock 2684>,
-				<&clock 2685>,
-				<&clock 2686>,
-				<&clock 2687>,
-
-				<&clock 2690>,
-				<&clock 2691>,
-				<&clock 2692>,
-				<&clock 2693>,
-				<&clock 2694>,
-				<&clock 2695>,
-				<&clock 2696>,
-				<&clock 2696>,
-
-				<&clock 2700>,
-				<&clock 2701>,
-				<&clock 2702>,
-				<&clock 2703>;
+				<&clock 2636>;
 		clock-names =	"sclk_isp_spi0_top", /* 30 */
 				"sclk_isp_spi1_top",
 				"sclk_isp_uart_top",
@@ -2303,10 +2184,7 @@
 				"phyclk_rxbyteclkhs0_s2a",
 				"phyclk_rxbyteclkhs0_s2b",
 
-				"gate_pmu_cam0", /* 2520 */
-				"gate_sysreg_cam0",
-				"gate_cmu_cam0_local",
-				"gate_csis1",
+				"gate_csis1", /* 2523 */
 				"gate_csis0",
 				"gate_3aa1",
 				"gate_3aa0",
@@ -2314,7 +2192,6 @@
 				"gate_lite_d", /* 2530 */
 				"gate_lite_b",
 				"gate_lite_a",
-				"gate_ahbsyncdn",
 				"gate_axius_lite_d",
 				"gate_axius_lite_b",
 				"gate_axius_lite_a",
@@ -2324,140 +2201,25 @@
 				"gate_asyncapb_lite_d",
 				"gate_asyncapb_lite_b",
 				"gate_asyncapb_lite_a",
-				"gate_asyncaxi_cam1",
-				"gate_asyncaxi_isp0p",
 
 				"gate_asyncaxi_3aa1", /* 2550 */
 				"gate_asyncaxi_3aa0",
 				"gate_asyncaxi_lite_d",
 				"gate_asyncaxi_lite_b",
 				"gate_asyncaxi_lite_a",
-				"gate_ahb2apb_ispsfrp",
 
-				"gate_axi2apb_isp0p", /* 2560 */
-				"gate_axi2ahb_isp0p",
-				"gate_xiu_is0x",
-				"gate_xiu_is0ex",
-				"gate_cam0np_276",
-				"gate_cam0nd_400",
-
-				"gate_ppmu_isp0ex", /* 2570 */
-				"gate_smmu_3aa1",
-				"gate_smmu_3aa0",
-				"gate_smmu_lite_d",
-				"gate_smmu_lite_b",
-				"gate_smmu_lite_a",
-				"gate_qe_3aa1",
-				"gate_qe_3aa0",
-
-				"gate_qe_lite_d", /* 2580 */
-				"gate_qe_lite_b",
-				"gate_qe_lite_a",
-				"gate_lite_freecnt",
+				"gate_lite_freecnt", /* 2583 */
 				"gate_pixelasync_3aa1",
 				"gate_pixelasync_3aa0",
 				"gate_pixelasync_lite_c",
 				"gate_pixelasync_lite_c_init",
 
-				"gate_csis1_local", /* 2590 */
-				"gate_csis0_local",
-				"gate_3aa1_local",
-				"gate_3aa0_local",
-				"gate_lite_d_local",
-				"gate_lite_b_local",
-				"gate_lite_a_local",
-
-				"gate_lite_freecnt_local", /* 2600 */
-				"gate_pixelasync_3aa1_local",
-				"gate_pixelasync_3aa0_local",
-				"gate_pixelasync_lite_c_local",
-				"gate_pixelasync_lite_c_init_local",
-
 				"gate_rxbyteclkhs0_s2b", /* 2610 */
 				"gate_lite_c_freecnt",
-				"gate_pixelasyncm_fd",
 				"gate_pixelasyncs_lite_c",
-				"gate_cssys",
-				"gate_pmu_cam1",
-				"gate_sysreg_cam1",
-				"gate_cmu_cam1_local",
 
-				"gate_isp_mtcadc", /* 2620 */
-				"gate_isp_wdt",
-				"gate_isp_pwm",
-				"gate_isp_uart",
-				"gate_isp_mcuctl",
-				"gate_isp_spi1",
-				"gate_isp_spi0",
-				"gate_isp_i2c2",
-
-				"gate_isp_i2c1", /* 2630 */
-				"gate_isp_i2c0",
-				"gate_isp_mpwm",
-				"gate_isp_gic",
-				"gate_fd",
-				"gate_lite_c",
-				"gate_csis2",
-				"gate_isp_ca5",
-
-				"gate_asyncapb_fd", /* 2640 */
-				"gate_asyncapb_lite_c",
-				"gate_asyncahbs_sfrisp2h2",
-				"gate_asyncahbs_sfrisp2h1",
-				"gate_asyncaxi_ca5",
-				"gate_asyncaxi_ispx2",
-				"gate_asyncaxi_ispx1",
-				"gate_asyncaxi_ispx0",
-
-				"gate_asyncaxi_ispex", /* 2650 */
-				"gate_asyncaxi_isp3p",
-				"gate_asyncaxi_fd",
-				"gate_asyncaxi_lite_c",
-				"gate_ahb2apb_isp5p",
-				"gate_ahb2apb_isp3p",
-				"gate_axi2apb_isp3p",
-				"gate_ahb_sfrisp2h",
-
-				"gate_axi_isp_hx", /* 2660 */
-				"gate_axi_isp_cx",
-				"gate_xiu_ispx",
-				"gate_xiu_ispex",
-				"gate_cam1np_333",
-				"gate_cam1nd_400",
-				"gate_ppmu_ispex",
-				"gate_smmu_isp3p",
-
-				"gate_smmu_fd", /* 2670 */
-				"gate_smmu_lite_c",
-				"gate_qe_isp3p",
-				"gate_qe_fd",
-				"gate_qe_lite_c",
-				"gate_ahbdn_sfrisp2h",
-				"gate_ahbdn_isp5p",
-				"gate_axius_isp3p",
-
-				"gate_axius_fd", /* 2680 */
-				"gate_axius_lite_c",
-				"gate_isp_mtcadc_local",
-				"gate_isp_wdt_local",
-				"gate_isp_pwm_local",
-				"gate_isp_uart_local",
-				"gate_isp_mcuctl_local",
-				"gate_isp_spi1_local",
-
-				"gate_isp_spi0_local", /* 2690 */
-				"gate_isp_i2c2_local",
-				"gate_isp_i2c1_local",
-				"gate_isp_i2c0_local",
-				"gate_isp_mpwm_local",
-				"gate_isp_gic_local",
-				"gate_fd_local",
-				"gate_lite_c_local",
-
-				"gate_csis2_local", /* 2700 */
-				"gate_lite_c_freecnt_local",
-				"gate_pixelasyncm_fd_local",
-				"gate_pixelasyncs_lite_c_local";
+				"gate_lite_c", /* 2635 */
+				"gate_csis2"; /* 2636 */
 		iommu = <&sysmmu_3aa0>,
 			<&sysmmu_3aa1>,
 			<&sysmmu_fimc_fd>,
