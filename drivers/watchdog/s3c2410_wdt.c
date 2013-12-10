@@ -336,7 +336,7 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 	rate_wdt_clock = devm_clk_get(dev, "rate_watchdog");
 	if (IS_ERR(rate_wdt_clock)) {
 		dev_err(dev, "failed to find watchdog rate clock source\n");
-		ret = PTR_ERR(wdt_clock);
+		ret = PTR_ERR(rate_wdt_clock);
 		goto err;
 	}
 
