@@ -394,10 +394,6 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 	cmdr = cmd->opcode;
 	argr = ((cmd->arg >> 9) & 0x1FFFF);
 
-	if (!(host->quirks & DW_MMC_QUIRK_NO_VOLSW_INT) &&
-				cmdr == SD_SWITCH_VOLTAGE)
-		cmdr |= SDMMC_VOLT_SWITCH;
-
 	if (cmdr == MMC_STOP_TRANSMISSION)
 		cmdr |= SDMMC_CMD_STOP;
 	else if (cmdr != MMC_SEND_STATUS &&
@@ -2646,15 +2642,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			if (!pending &&
 			    ((mci_readl(host, STATUS) >> 17) & 0x1fff))
 				pending |= SDMMC_INT_DATA_OVER;
-		}
-
-		if (host->quirks & DW_MMC_QUIRK_NO_VOLSW_INT &&
-						pending & SDMMC_INT_CMD_DONE) {
-			u32 cmd = mci_readl(host, CMD) & 0x3f;
-			if (cmd == SD_SWITCH_VOLTAGE &&
-				!(mci_readl(host, STATUS) & SDMMC_DATA_BUSY)) {
-					pending |= SDMMC_INT_RTO;
-			}
 		}
 
 		if (host->quirks & DW_MCI_QUIRK_NO_DETECT_EBIT &&

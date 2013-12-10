@@ -296,8 +296,6 @@ struct dw_mci_dma_ops {
 #define DW_MCI_QUIRK_BYPASS_SMU			BIT(4)
 /* No detect end bit during read */
 #define DW_MCI_QUIRK_NO_DETECT_EBIT		BIT(5)
-/* No use voltage switch interrupt */
-#define DW_MMC_QUIRK_NO_VOLSW_INT		BIT(6)
 /* Use fixed IO voltage */
 #define DW_MMC_QUIRK_FIXED_VOLTAGE		BIT(7)
 /* Use S/W data timeout */
