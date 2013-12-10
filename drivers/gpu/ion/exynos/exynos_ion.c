@@ -832,6 +832,8 @@ static int exynos_ion_populate_heaps(struct platform_device *pdev,
 			continue;
 		}
 
+		BUG_ON(i >= num_heaps);
+
 		heaps[i] = __ion_heap_create(&heap_data, &pdev->dev);
 		if (IS_ERR_OR_NULL(heaps[i])) {
 			ret = PTR_ERR(heaps[i]);
@@ -841,8 +843,6 @@ static int exynos_ion_populate_heaps(struct platform_device *pdev,
 		ion_device_add_heap(ion_exynos, heaps[i]);
 
 		i++;
-
-		BUG_ON(i > num_heaps);
 	}
 
 	return 0;
