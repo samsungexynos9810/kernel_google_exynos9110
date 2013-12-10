@@ -3569,8 +3569,11 @@ int dw_mci_probe(struct dw_mci *host)
 	int init_slots = 0;
 	bool clock_enabled = false;
 
-	if (drv_data && drv_data->misc_control)
-		drv_data->misc_control(host, CTRL_TURN_ON_2_8V, NULL);
+	if (drv_data && drv_data->misc_control) {
+		ret = drv_data->misc_control(host, CTRL_TURN_ON_2_8V, NULL);
+		if (ret)
+			return ret;
+	}
 
 	if (!host->pdata) {
 		host->pdata = dw_mci_parse_dt(host);

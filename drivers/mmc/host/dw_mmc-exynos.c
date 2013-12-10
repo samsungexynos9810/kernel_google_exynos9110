@@ -898,7 +898,7 @@ static int dw_mci_exynos_turn_on_2_8v(struct dw_mci *host)
 	*/
 	if (of_get_property(np, "gpios", NULL) != NULL) {
 		dev_pwr = of_get_gpio(np, 0);
-		if (gpio_request(dev_pwr, "dev-pwr"))
+		if (gpio_request(dev_pwr, "dev-pwr") || (dev_pwr < 0))
 			ret = -ENODEV;
 		else
 			gpio_direction_output(dev_pwr, 1);
@@ -977,7 +977,7 @@ static int dw_mci_exynos_misc_control(struct dw_mci *host,
 		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
 		break;
 	case CTRL_TURN_ON_2_8V:
-		dw_mci_exynos_turn_on_2_8v(host);
+		ret = dw_mci_exynos_turn_on_2_8v(host);
 		break;
 	case CTRL_REQUEST_EXT_IRQ:
 		dw_mci_exynos_request_ext_irq(host, (irq_handler_t)priv);
