@@ -330,9 +330,11 @@ static void ass_enable(void)
 	lpass_reg_restore();
 
 	/* ASS_MUX_SEL */
-	exynos_set_parent("mout_ass_clk_p", "fout_epll");
+	exynos_set_parent("mout_ass_clk", "fout_epll");
+	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
 
 	clk_prepare_enable(lpass.clk_dmac);
+	clk_prepare_enable(lpass.clk_timer);
 }
 
 static void lpass_enable(void)
@@ -382,11 +384,12 @@ static void ass_disable(void)
 	lpass.enabled = false;
 
 	clk_disable_unprepare(lpass.clk_dmac);
+	clk_disable_unprepare(lpass.clk_timer);
 
 	lpass_reg_save();
 
 	/* ASS_MUX_SEL */
-	exynos_set_parent("mout_ass_clk_p", "fin_pll");
+	exynos_set_parent("mout_ass_clk", "fin_pll");
 }
 
 static void lpass_disable(void)
@@ -444,8 +447,16 @@ static int clk_set_heirachy_ass(struct platform_device *pdev)
 		goto err0;
 	}
 
+	lpass.clk_timer = clk_get(dev, "timer");
+	if (IS_ERR(lpass.clk_timer)) {
+		dev_err(dev, "timer clk not found\n");
+		goto err1;
+	}
+
 	return 0;
 
+err1:
+	clk_put(lpass.clk_dmac);
 err0:
 	return -1;
 }
@@ -507,6 +518,7 @@ err0:
 static void clk_put_all_ass(void)
 {
 	clk_put(lpass.clk_dmac);
+	clk_put(lpass.clk_timer);
 }
 
 static void clk_put_all(void)
