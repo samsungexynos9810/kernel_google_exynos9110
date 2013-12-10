@@ -1547,7 +1547,8 @@ int mmc_regulator_set_ocr(struct mmc_host *mmc,
 		 */
 		voltage = regulator_get_voltage(supply);
 
-		if (!regulator_can_change_voltage(supply))
+		if (!regulator_can_change_voltage(supply)
+				|| mmc->caps2 & MMC_CAP2_BROKEN_VOLTAGE)
 			min_uV = max_uV = voltage;
 
 		if (voltage < 0)
@@ -1634,6 +1635,9 @@ int __mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage)
 	int err = 0;
 	int old_signal_voltage = host->ios.signal_voltage;
 
+	if (host->caps2 & MMC_CAP2_BROKEN_VOLTAGE)
+		return 0;
+
 	host->ios.signal_voltage = signal_voltage;
 	if (host->ops->start_signal_voltage_switch) {
 		mmc_host_clk_hold(host);
@@ -1655,6 +1659,9 @@ int mmc_set_signal_voltage(struct mmc_host *host, int signal_voltage)
 	u32 clock;
 
 	BUG_ON(!host);
+
+	if (host->caps2 & MMC_CAP2_BROKEN_VOLTAGE)
+		return 0;
 
 	/*
 	 * Send CMD11 only if the request is to switch the card to
