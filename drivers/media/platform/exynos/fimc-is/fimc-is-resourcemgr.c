@@ -21,6 +21,7 @@
 
 #include "fimc-is-resourcemgr.h"
 #include "fimc-is-core.h"
+#include "fimc-is-dvfs.h"
 
 struct pm_qos_request exynos_isp_qos_int;
 struct pm_qos_request exynos_isp_qos_mem;

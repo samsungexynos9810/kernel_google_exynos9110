@@ -40,6 +40,7 @@
 #include "fimc-is-framemgr.h"
 #include "fimc-is-groupmgr.h"
 #include "fimc-is-cmd.h"
+#include "fimc-is-dvfs.h"
 
 /* sysfs variable for debug */
 extern struct fimc_is_sysfs_debug sysfs_debug;

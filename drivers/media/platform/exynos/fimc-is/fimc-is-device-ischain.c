@@ -57,6 +57,7 @@
 #include "fimc-is-device-ischain.h"
 #include "fimc-is-companion.h"
 #include "fimc-is-clk-gate.h"
+#include "fimc-is-dvfs.h"
 
 #define SDCARD_FW
 #define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
