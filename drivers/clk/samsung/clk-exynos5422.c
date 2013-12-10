@@ -818,6 +818,8 @@ static __initdata void *exynos5422_clk_regs[] = {
 	EXYNOS5_CLK_GATE_IP_FSYS,
 	EXYNOS5_CLK_SRC_KFC,
 	EXYNOS5_CLK_DIV_KFC0,
+	EXYNOS5_CLK_DIV_G2D,
+	EXYNOS5_CLK_GATE_IP_G2D,
 };
 
 /* list of all parent clocks */
