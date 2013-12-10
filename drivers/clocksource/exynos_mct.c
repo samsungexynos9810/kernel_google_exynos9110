@@ -417,7 +417,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
 	mevt->evt = evt;
 
 	mevt->base = EXYNOS4_MCT_L_BASE(cpu);
-	snprintf(mevt->name, 20,"mct_tick%d", cpu);
+	snprintf(mevt->name, sizeof(mevt->name), "mct_tick%d", cpu);
 
 	evt->name = mevt->name;
 	evt->cpumask = cpumask_of(cpu);
