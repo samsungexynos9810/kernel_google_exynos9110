@@ -67,7 +67,7 @@ static bool cluster_off_flag = false;
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 #define C2_TARGET_RESIDENCY			1000
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-#define CLUSTER_OFF_TARGET_RESIDENCY	3000
+#define CLUSTER_OFF_TARGET_RESIDENCY		3000
 #endif
 #endif
 #define LOWPOWER_TARGET_RESIDENCY		5000
@@ -199,11 +199,9 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
-#ifdef MUST_CHECK_FOR_ARES2
 #ifdef CONFIG_SAMSUNG_USBPHY
 	if (samsung_usbphy_check_op())
 		return EXYNOS_CHECK_DIDLE;
-#endif
 #endif
 	/* Check audio power domain for Deep STOP */
 	if (exynos_check_reg_status(exynos5_dstop_power_domain,
@@ -247,10 +245,10 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 #endif
 		.enter			= exynos_enter_lowpower,
 		.exit_latency		= 300,
-		.target_residency	= 3000,
+		.target_residency	= LOWPOWER_TARGET_RESIDENCY,
 		.flags			= CPUIDLE_FLAG_TIME_VALID,
 		.name			= "C3",
-		.desc			= "ARM power down",
+		.desc			= "System power down",
 	},
 };
 
@@ -291,6 +289,7 @@ static int idle_finisher(unsigned long flags)
 #define L2_OFF		(1 << 0)
 #define L2_CCI_OFF	(1 << 1)
 #endif
+
 static int c2_finisher(unsigned long flags)
 {
 	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
@@ -538,7 +537,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1_REG);
 	tmp |= (EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
 	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
-#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
+#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 	exynos5_mif_transition_disable(true);
 #endif
 	if((__clk_is_enabled(clkm_phy0))||(__clk_is_enabled(clkm_phy1))) {
@@ -577,7 +576,7 @@ early_wakeup:
 		mif_max = false;
 	}
 
-#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
+#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 	exynos5_mif_transition_disable(false);
 #endif
 	__raw_writel(0, EXYNOS_PMU_SPARE1);
@@ -586,7 +585,7 @@ early_wakeup:
 	tmp &= ~(EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
 	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
 
-#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
+#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 	exynos5_int_nocp_resume();
 #endif
 	clear_boot_flag(cpuid, C2_STATE);
@@ -628,7 +627,11 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 	/* This mode only can be entered when other core's are offline */
 	if (num_online_cpus() > 1)
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+#if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+		return exynos_enter_c2(dev, drv, 2);
+#else
 		return exynos_enter_c2(dev, drv, 1);
+#endif
 #else
 		return exynos_enter_idle(dev, drv, 0);
 #endif
@@ -735,12 +738,17 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 			flags = L2_CCI_OFF;
 	}
 
+	if (flags)
+		__raw_writel(0, EXYNOS_COMMON_CONFIGURATION(cluster_id));
+	else
+		__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
+
 	ret = cpu_suspend(flags, c2_finisher);
 	if (ret) {
 		__raw_writel(0x3, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
-		if (flags)
-			__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
+	if (flags)
+		__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 	}
 
 	if (cluster_off_flag) {
@@ -753,7 +761,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	if (ret)
 		__raw_writel(0x3, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 #endif
-
 
 	value = __raw_readl(EXYNOS5422_ARM_INTR_SPREAD_ENABLE);
 	value |= (0x1 << cpu_offset);
@@ -834,7 +841,7 @@ static int __init exynos_init_cpuidle(void)
 	struct cpuidle_driver *drv = &exynos_idle_driver;
 	struct cpuidle_state *idle_set;
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-	u32 value;
+	u32 value = 0;
 
 	value = __raw_readl(EXYNOS_COMMON_OPTION(0));
 	value |= (1 << 30) | (1 << 29) | (1 << 9);
