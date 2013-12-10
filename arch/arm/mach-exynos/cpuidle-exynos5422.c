@@ -60,8 +60,6 @@
 #define EXYNOS_CHECK_LPA	0xABAD0000
 #define EXYNOS_CHECK_DSTOP	0xABAE0000
 
-#define AUDIO_CLK_TO_XXTI	0x03770000
-
 static int exynos_enter_idle(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv,
 			      int index);
@@ -453,8 +451,15 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
-	/* Change audio clock to OSC */
-	__raw_writel(AUDIO_CLK_TO_XXTI, EXYNOS5_CLK_SRC_PERIC1);
+	/*
+	 * If audio clock source is changed to others,
+	 * set back audio clock to XXTI.
+	 */
+	tmp = __raw_readl(EXYNOS5_CLK_SRC_PERIC1);
+	if(tmp&0x7000) {
+		tmp &= ~((1<<12)|(1<<13)|(1<<14));
+		__raw_writel(tmp, EXYNOS5_CLK_SRC_PERIC1);
+	}
 
 	/* Set value of power down register for low power mode */
 	if(enter_mode == EXYNOS_CHECK_LPA)
