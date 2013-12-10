@@ -15,7 +15,7 @@
  * DVFS
  */
 
-#include <kbase/src/common/mali_kbase.h>
+#include <mali_kbase.h>
 
 #include <linux/fb.h>
 

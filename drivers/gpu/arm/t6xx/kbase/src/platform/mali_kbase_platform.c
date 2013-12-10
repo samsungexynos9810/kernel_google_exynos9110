@@ -15,7 +15,7 @@
  * Platform-dependent init.
  */
 
-#include <kbase/src/common/mali_kbase.h>
+#include <mali_kbase.h>
 
 #include <mach/regs-pmu.h>
 #include <plat/devs.h>

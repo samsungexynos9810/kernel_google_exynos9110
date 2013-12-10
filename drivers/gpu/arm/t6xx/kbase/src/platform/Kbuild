@@ -16,6 +16,8 @@ MALI_CUSTOMER_RELEASE = 1
 
 platform_name := $(shell echo $(CONFIG_MALI_PLATFORM_THIRDPARTY_NAME))
 
+ccflags-$(CONFIG_MALI_T6XX) = -I$(src)/../common
+
 obj-$(CONFIG_MALI_T6XX) += mali_kbase_platform.o
 obj-$(CONFIG_MALI_T6XX) += gpu_notifier.o
 obj-$(CONFIG_MALI_T6XX) += gpu_control_exynos$(platform_name).o

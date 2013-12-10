@@ -14,7 +14,7 @@
  * @file gpu_notifier.c
  */
 
-#include <kbase/src/common/mali_kbase.h>
+#include <mali_kbase.h>
 
 #include <linux/suspend.h>
 #include <linux/pm_runtime.h>
