@@ -541,18 +541,17 @@ static struct sleep_save exynos5_lpa_save[] = {
 };
 
 static struct sleep_save exynos5_set_clksrc[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_FSYS0		, .val = 0x00007dfb, },
-	{ .reg = EXYNOS5430_ENABLE_IP_PERIC0		, .val = 0x1fffffff, },
+	{ .reg = EXYNOS5430_ENABLE_IP_FSYS0,	.val = 0x00007dfb, },
+	{ .reg = EXYNOS5430_ENABLE_IP_PERIC0,	.val = 0x1fffffff, },
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1		, .val = 0x00000033, },
+	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1,	.val = 0x00000033, },
 #else
-	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1		, .val = 0x00000011, },
+	{ .reg = EXYNOS5430_SRC_SEL_TOP_PERIC1,	.val = 0x00000011, },
 #endif
-	{ .reg = EXYNOS5430_ENABLE_IP_EGL1		, .val = 0x00000fff, },
-	{ .reg = EXYNOS5430_ENABLE_IP_KFC1		, .val = 0x00000fff, },
-
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF1		, .val = 0x01fffff7, },
-	{ .reg = EXYNOS5430_ENABLE_IP_CPIF0		, .val = 0x000FF000, },
+	{ .reg = EXYNOS5430_ENABLE_IP_EGL1,	.val = 0x00000fff, },
+	{ .reg = EXYNOS5430_ENABLE_IP_KFC1,	.val = 0x00000fff, },
+	{ .reg = EXYNOS5430_ENABLE_IP_MIF1,	.val = 0x01fffff7, },
+	{ .reg = EXYNOS5430_ENABLE_IP_CPIF0,	.val = 0x000FF000, },
 };
 
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
