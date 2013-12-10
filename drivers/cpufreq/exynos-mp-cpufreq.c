@@ -804,7 +804,7 @@ static ssize_t show_cpufreq_min_limit(struct kobject *kobj,
 	unsigned int cpu_qos_min = pm_qos_request(PM_QOS_CPU_FREQ_MIN);
 	unsigned int kfc_qos_min = pm_qos_request(PM_QOS_KFC_FREQ_MIN);
 
-	if (cpu_qos_min > 0) {
+	if (cpu_qos_min > 0 && get_hmp_boost()) {
 		if (cpu_qos_min > freq_max[CA15])
 			cpu_qos_min = freq_max[CA15];
 		else if (cpu_qos_min < freq_min[CA15])
