@@ -167,6 +167,16 @@ static void top_clk_enable(void)
 	pr_info("Clock enables : TOP, MIF\n");
 }
 
+static void aud_init_clock(void)
+{
+	exynos_set_parent("mout_ass_clk", "fout_epll");
+	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
+
+	exynos_set_rate("dout_ass_srp", 100 * 1000000);
+	exynos_set_rate("dout_ass_bus", 50 * 1000000);
+	exynos_set_rate("dout_ass_i2s", 12 * 1000000);
+}
+
 static void uart_clock_init(void)
 {
 	exynos_set_rate("dout_uart0", 150000000);
@@ -224,6 +234,7 @@ void pwm_init_clock(void)
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
+	aud_init_clock();
 	uart_clock_init();
 	mscl_init_clock();
 	g2d_init_clock();
