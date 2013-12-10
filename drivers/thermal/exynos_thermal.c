@@ -1683,30 +1683,30 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	clk_enable(data->clk[1]);
 
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
-	pr_debug("TRIMINFO[%d] = 0x%x\n", id, reg_data);
+	pr_info("TRIMINFO[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CONTROL);
-	pr_debug("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
+	pr_info("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CURRENT_TEMP);
-	pr_debug("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
+	pr_info("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE3_0);
-	pr_debug("THRESHOLD_TEMP_RISE3_0[%d] = 0x%x\n", id, reg_data);
+	pr_info("THRESHOLD_TEMP_RISE3_0[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE7_4);
-	pr_debug("THRESHOLD_TEMP_RISE7_4[%d] = 0x%x\n", id, reg_data);
+	pr_info("THRESHOLD_TEMP_RISE7_4[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL3_0);
-	pr_debug("THRESHOLD_TEMP_FALL3_0[%d] = 0x%x\n", id, reg_data);
+	pr_info("THRESHOLD_TEMP_FALL3_0[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL7_4);
-	pr_debug("THRESHOLD_TEMP_FALL7_4[%d] = 0x%x\n", id, reg_data);
+	pr_info("THRESHOLD_TEMP_FALL7_4[%d] = 0x%x\n", id, reg_data);
 #else
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE);
-	pr_debug("THRESHOLD_TEMP_RISE[%d] = 0x%x\n", id, reg_data);
+	pr_info("THRESHOLD_TEMP_RISE[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL);
-	pr_debug("THRESHOLD_TEMP_FALL[%d] = 0x%x\n", id, reg_data);
+	pr_info("THRESHOLD_TEMP_FALL[%d] = 0x%x\n", id, reg_data);
 #endif
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTEN);
-	pr_debug("INTEN[%d] = 0x%x\n", id, reg_data);
+	pr_info("INTEN[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
-	pr_debug("INTCLEAR[%d] = 0x%x\n", id, reg_data);
+	pr_info("INTCLEAR[%d] = 0x%x\n", id, reg_data);
 
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
