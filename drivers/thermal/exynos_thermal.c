@@ -927,12 +927,11 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	/* Save trimming info in order to perform calibration */
 	trim_info = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
 	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
-	if (data->temp_error1[id] == 0)
-		data->temp_error1[id] = 75;
 	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
 #ifndef CONFIG_SOC_EXYNOS5430_REV_1
-	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE))
+	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE) ||
+			(data->temp_error1[id] == 0))
 		data->temp_error1[id] = pdata->efuse_value;
 #else
 	if (data->temp_error1[id] == 0)
@@ -1409,7 +1408,7 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
-	.efuse_value = 55,
+	.efuse_value = 75,
 	.freq_tab[0] = {
 		.freq_clip_max = 500 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
