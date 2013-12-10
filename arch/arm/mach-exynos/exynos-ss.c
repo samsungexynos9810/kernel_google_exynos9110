@@ -909,6 +909,6 @@ void exynos_ss_printk(char *fmt, ...)
 	    (ARRAY_SIZE(ess_log->printk) - 1);
 	ess_log->printk[i].time = cpu_clock(cpu);
 	ess_log->printk[i].cpu = cpu;
-	strncpy(ess_log->printk[i].log, buf, ESS_LOG_STRING_LENGTH);
+	strncpy(ess_log->printk[i].log, buf, ESS_LOG_STRING_LENGTH - 1);
 }
 #endif
