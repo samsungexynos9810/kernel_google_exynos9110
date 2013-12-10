@@ -931,6 +931,16 @@ struct camera2_as_udm {
 };
 
 /** \brief
+ User-defined metadata for anti-shading.
+*/
+struct camera2_ipc_udm {
+	/** vendor specific length */
+	uint32_t vsLength;
+	/** vendor specific data array */
+	uint32_t vendorSpecific[CAMERA2_MAX_VENDER_LENGTH];
+};
+
+/** \brief
  User-defined metadata for aa.
 */
 struct camera2_internal_udm {
@@ -1033,6 +1043,7 @@ struct camera2_udm {
 	struct camera2_awb_udm		awb;
 	struct camera2_af_udm		af;
 	struct camera2_as_udm		as;
+	struct camera2_ipc_udm		ipc;
 	/* KJ_121129 : Add udm for sirc sdk. */
 	struct camera2_internal_udm	internal;
 	/* Add udm for bayer down size. */
