@@ -58,6 +58,7 @@
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi.h"
 #include "fimd_fb.h"
+#include "decon_pm.h"
 #include <../drivers/clk/samsung/clk.h>
 
 #ifdef CONFIG_DEBUG_FS
@@ -802,6 +803,7 @@ static int s3c_fb_set_par(struct fb_info *info)
 	int win_no = win->index;
 	u32 data;
 	int old_wincon;
+	struct display_driver *dispdrv = get_display_driver();
 
 	dev_dbg(sfb->dev, "setting framebuffer parameters\n");
 
@@ -810,7 +812,7 @@ static int s3c_fb_set_par(struct fb_info *info)
 		return -EINVAL;
 	}
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	if (sfb->power_state == POWER_DOWN)
 		return 0;
@@ -895,7 +897,7 @@ static int s3c_fb_set_par(struct fb_info *info)
 
 	shadow_protect_win(win, 0);
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 
 	return 0;
 }
@@ -978,11 +980,12 @@ static int s3c_fb_setcolreg(unsigned regno,
 	struct s3c_fb_win *win = info->par;
 	struct s3c_fb *sfb = win->parent;
 	unsigned int val;
+	struct display_driver *dispdrv = get_display_driver();
 
 	dev_dbg(sfb->dev, "%s: win %d: %d => rgb=%d/%d/%d\n",
 		__func__, win->index, regno, red, green, blue);
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	if (sfb->power_state == POWER_DOWN)
 		return 0;
@@ -1014,11 +1017,11 @@ static int s3c_fb_setcolreg(unsigned regno,
 		break;
 
 	default:
-		pm_runtime_put_sync(sfb->dev);
+		disp_pm_runtime_put_sync(dispdrv);
 		return 1;	/* unknown type */
 	}
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
 }
 
@@ -1067,7 +1070,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 
 	dispdrv = get_display_driver();
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 #ifdef CONFIG_PM_RUNTIME
 	if (sfb->power_state == POWER_DOWN)
@@ -1107,7 +1110,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		ret = -EINVAL;
 	}
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 
 	return ret;
 }
@@ -1130,8 +1133,9 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	struct s3c_fb *sfb	= win->parent;
 	void __iomem *buf	= sfb->regs + win->index * 8;
 	unsigned int start_boff, end_boff;
+	struct display_driver *dispdrv = get_display_driver();
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	/* Offset in bytes to the start of the displayed area */
 	start_boff = var->yoffset * info->fix.line_length;
@@ -1151,7 +1155,7 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 			break;
 		default:
 			dev_err(sfb->dev, "invalid bpp\n");
-			pm_runtime_put_sync(sfb->dev);
+			disp_pm_runtime_put_sync(dispdrv);
 			return -EINVAL;
 		}
 	}
@@ -1170,7 +1174,7 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 
 	shadow_protect_win(win, 0);
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
 }
 
@@ -1182,8 +1186,9 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 {
 	void __iomem *regs = sfb->regs;
 	u32 irq_ctrl_reg;
+	struct display_driver *dispdrv = get_display_driver();
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
 #if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
@@ -1213,7 +1218,7 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 #endif
 
 	writel(irq_ctrl_reg, regs + VIDINTCON0);
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 }
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
@@ -1254,8 +1259,9 @@ static void s3c_fb_disable_irq(struct s3c_fb *sfb)
 {
 	void __iomem *regs = sfb->regs;
 	u32 irq_ctrl_reg;
+	struct display_driver *dispdrv = get_display_driver();
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
 #ifdef CONFIG_DEBUG_FS
@@ -1265,7 +1271,7 @@ static void s3c_fb_disable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg &= ~VIDINTCON0_INT_ENABLE;
 
 	writel(irq_ctrl_reg, regs + VIDINTCON0);
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 }
 
 static void s3c_fb_activate_vsync(struct s3c_fb *sfb)
@@ -1360,8 +1366,9 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 {
 	ktime_t timestamp;
 	int ret;
+	struct display_driver *dispdrv = get_display_driver();
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	timestamp = sfb->vsync_info.timestamp;
 	s3c_fb_activate_vsync(sfb);
@@ -1379,7 +1386,7 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 	s3c_fb_deactivate_vsync(sfb);
 #endif
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 
 	if (timeout && ret == 0) {
 		dev_err(sfb->dev, "wait for vsync timeout");
@@ -1398,8 +1405,9 @@ int s3c_fb_set_window_position(struct fb_info *info,
 	int win_no = win->index;
 	void __iomem *regs = sfb->regs;
 	u32 data;
+	struct display_driver *dispdrv = get_display_driver();
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 	shadow_protect_win(win, 1);
 
 	if (!s3c_fb_validate_x_alignment(sfb, user_window.x, var->xres,
@@ -1414,7 +1422,7 @@ int s3c_fb_set_window_position(struct fb_info *info,
 	writel(data, regs + VIDOSD_B(win_no, sfb->variant));
 
 	shadow_protect_win(win, 0);
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
 }
 
@@ -1426,6 +1434,7 @@ int s3c_fb_set_plane_alpha_blending(struct fb_info *info,
 	int win_no = win->index;
 	void __iomem *regs = sfb->regs;
 	u32 data;
+	struct display_driver *dispdrv = get_display_driver();
 
 	u32 alpha_high = 0;
 	u32 alpha_low = 0;
@@ -1438,7 +1447,7 @@ int s3c_fb_set_plane_alpha_blending(struct fb_info *info,
 			(((user_alpha.green & 0xf)) << 8) |
 			(((user_alpha.blue & 0xf)) << 0));
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 	shadow_protect_win(win, 1);
 
 	data = readl(regs + sfb->variant.wincon + (win_no * 4));
@@ -1463,7 +1472,7 @@ int s3c_fb_set_plane_alpha_blending(struct fb_info *info,
 	}
 
 	shadow_protect_win(win, 0);
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 
 	return 0;
 }
@@ -1476,6 +1485,7 @@ int s3c_fb_set_chroma_key(struct fb_info *info,
 	int win_no = win->index;
 	void __iomem *regs = sfb->regs;
 	void __iomem *keycon = regs + sfb->variant.keycon;
+	struct display_driver *dispdrv = get_display_driver();
 
 	u32 data = 0;
 
@@ -1485,7 +1495,7 @@ int s3c_fb_set_chroma_key(struct fb_info *info,
 			((user_chroma.green & 0xff) << 8) |
 			((user_chroma.blue & 0xff) << 0));
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 	shadow_protect_win(win, 1);
 
 	if (user_chroma.enabled)
@@ -1498,7 +1508,7 @@ int s3c_fb_set_chroma_key(struct fb_info *info,
 	writel(data, keycon + WKEYCON1);
 
 	shadow_protect_win(win, 0);
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 
 	return 0;
 }
@@ -2244,9 +2254,10 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	int count = 10;
 	int local_cnt = 0;
 	int i;
+	struct display_driver *dispdrv = get_display_driver();
 
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	if (sfb->timeline_max - sfb->timeline->value > 2) {
 		pr_info("time_val %d time_max %d\n", sfb->timeline->value, sfb->timeline_max);
@@ -2309,7 +2320,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		if (!sfb->windows[i]->local)
 			s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 	sw_sync_timeline_inc(sfb->timeline, 1);
 
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
@@ -3804,7 +3815,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	dispdrv->decon_driver.sfb = sfb;
 	platform_set_drvdata(pdev, sfb);
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	/* setup gpio and output polarity controls */
 
@@ -4048,7 +4059,7 @@ err_mc_link_create_fail:
 #endif
 
 err_pm_runtime:
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 
 err_lcd_clk:
 	pm_runtime_disable(sfb->dev);
@@ -4093,7 +4104,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
 
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 
 	unregister_framebuffer(sfb->windows[sfb->pdata->default_win]->fbinfo);
 
@@ -4127,7 +4138,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 
 	s3c_fb_debugfs_cleanup(sfb);
 
-	pm_runtime_put_sync(sfb->dev);
+	disp_pm_runtime_put_sync(dispdrv);
 	pm_runtime_disable(sfb->dev);
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 	pm_qos_remove_request(&exynos5_fimd_mif_qos);
@@ -4338,7 +4349,7 @@ int s3c_fb_suspend(struct device *dev)
 #ifdef CONFIG_ION_EXYNOS
 		iovmm_deactivate(dev);
 #endif
-		pm_runtime_put_sync(sfb->dev);
+		disp_pm_runtime_put_sync(dispdrv);
 		sfb->output_on = false;
 	}
 	mutex_unlock(&sfb->output_lock);
@@ -4367,7 +4378,7 @@ int s3c_fb_resume(struct device *dev)
 		goto err;
 	}
 #ifdef CONFIG_PM_RUNTIME
-	pm_runtime_get_sync(sfb->dev);
+	disp_pm_runtime_get_sync(dispdrv);
 #elif 0 /*!defined(CONFIG_FIMD_USE_BUS_DEVFREQ) && !defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)*/
 	if (!sfb->fb_mif_handle) {
 		sfb->fb_mif_handle = exynos5_bus_mif_min(300000);

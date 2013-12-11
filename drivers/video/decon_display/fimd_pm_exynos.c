@@ -295,15 +295,72 @@ int disable_display_decon_runtimepm(struct device *dev)
 	return 0;
 }
 
-int disp_pm_runtime_enable(struct display_driver *dispdrv)
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+int get_display_line_count(struct display_driver *dispdrv)
 {
-#ifdef DISP_RUNTIME_PM_DEBUG
-	pm_debug("runtime pm for disp-driver enabled\n");
-#endif
-	pm_runtime_enable(dispdrv->display_driver);
 	return 0;
 }
 
+void set_default_hibernation_mode(struct display_driver *dispdrv)
+{
+	bool clock_gating = false;
+	bool power_gating = false;
+	bool hotplug_gating = false;
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	clock_gating = true;
+#endif
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
+	power_gating = true;
+#endif
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING_DEEPSTOP
+	hotplug_gating = true;
+#endif
+	dispdrv->pm_status.clock_gating_on = clock_gating;
+	dispdrv->pm_status.power_gating_on = power_gating;
+	dispdrv->pm_status.hotplug_gating_on = hotplug_gating;
+}
+
+void fimd_clock_on(struct display_driver *dispdrv)
+{
+}
+
+void mic_clock_on(struct display_driver *dispdrv)
+{
+}
+
+void dsi_clock_on(struct display_driver *dispdrv)
+{
+}
+
+void fimd_clock_off(struct display_driver *dispdrv)
+{
+}
+
+void dsi_clock_off(struct display_driver *dispdrv)
+{
+}
+
+void mic_clock_off(struct display_driver *dispdrv)
+{
+}
+
+struct pm_ops decon_pm_ops = {
+	.clk_on		= fimd_clock_on,
+	.clk_off 	= fimd_clock_off,
+};
+#ifdef CONFIG_DECON_MIC
+struct pm_ops mic_pm_ops = {
+	.clk_on		= mic_clock_on,
+	.clk_off 	= mic_clock_off,
+};
+#endif
+struct pm_ops dsi_pm_ops = {
+	.clk_on		= dsi_clock_on,
+	.clk_off 	= dsi_clock_off,
+};
+
+#else
 int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
 {
 	pm_runtime_get_sync(dispdrv->display_driver);
@@ -315,4 +372,4 @@ int disp_pm_runtime_put_sync(struct display_driver *dispdrv)
 	pm_runtime_put_sync(dispdrv->display_driver);
 	return 0;
 }
-
+#endif
