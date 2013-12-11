@@ -386,7 +386,9 @@ static struct devfreq_exynos devfreq_mif_exynos = {
 	.ppmu_count = ARRAY_SIZE(ppmu_mif),
 };
 
-struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
+struct devfreq_mif_timing_parameter *dmc_timing_parameter;
+
+struct devfreq_mif_timing_parameter dmc_timing_parameter_2gb[] = {
 	{	/* 825Mhz */
 		.timing_row	= 0x365A9713,
 		.timing_data	= 0x4740085E,
@@ -506,6 +508,128 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter[] = {
 		},
 	},
 };
+
+struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
+	{	/* 825Mhz */
+		.timing_row	= 0x575A9713,
+		.timing_data	= 0x4740085E,
+		.timing_power	= 0x545B0446,
+		.rd_fetch	= 0x00000003,
+		.timing_rfcpb	= 0x00002626,
+		.dvfs_con1	= 0x0E0E2121,
+		.mif_drex_mr_data = {
+			[0]	= 0x00000870,
+			[1]	= 0x00100870,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	}, {	/* 633Mhz */
+		.timing_row	= 0x4348758F,
+		.timing_data	= 0x3530064A,
+		.timing_power	= 0x40460335,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00001D1D,
+		.dvfs_con1	= 0x0A0A2121,
+		.mif_drex_mr_data = {
+			[0]	= 0x00000860,
+			[1]	= 0x00100860,
+			[2]	= 0x0000040C,
+			[3]	= 0x0010040C,
+		},
+	}, {	/* 543Mhz */
+		.timing_row	= 0x3A4764CD,
+		.timing_data	= 0x35300549,
+		.timing_power	= 0x383C0335,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00001919,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000078C,
+			[3]	= 0x0010078C,
+		},
+	}, {	/* 413Mhz */
+		.timing_row	= 0x2C35538A,
+		.timing_data	= 0x24200539,
+		.timing_power	= 0x2C2E0225,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00001313,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	}, {	/* 275Mhz */
+		.timing_row	= 0x1D244287,
+		.timing_data	= 0x23200529,
+		.timing_power	= 0x1C1F0225,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00000D0D,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	}, {	/* 206Mhz */
+		.timing_row	= 0x162331C6,
+		.timing_data	= 0x23200529,
+		.timing_power	= 0x18170225,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00000A0A,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	}, {	/* 165Mhz */
+		.timing_row	= 0x12223185,
+		.timing_data	= 0x23200529,
+		.timing_power	= 0x14130225,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00000808,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	}, {	/* 138Mhz */
+		.timing_row	= 0x11222144,
+		.timing_data	= 0x23200529,
+		.timing_power	= 0x10100225,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00000707,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	}, {	/* 103Mhz */
+		.timing_row	= 0x11222103,
+		.timing_data	= 0x23200529,
+		.timing_power	= 0x100C0225,
+		.rd_fetch	= 0x00000002,
+		.timing_rfcpb	= 0x00000505,
+		.dvfs_con1	= 0x09092121,
+		.mif_drex_mr_data = {
+			[0]	= 0x0000081C,
+			[1]	= 0x0010081C,
+			[2]	= 0x0000060C,
+			[3]	= 0x0010060C,
+		},
+	},
+};
+
 
 static struct workqueue_struct *devfreq_mif_thermal_wq_ch0;
 static struct workqueue_struct *devfreq_mif_thermal_wq_ch1;
@@ -1395,6 +1519,18 @@ static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 		tmp |= (0x2 << 24);
 	__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
 
+	switch (exynos5430_get_memory_size()) {
+	case 2:
+		dmc_timing_parameter = dmc_timing_parameter_2gb;
+		break;
+	case 3:
+		dmc_timing_parameter = dmc_timing_parameter_3gb;
+		break;
+	default:
+		pr_err("DEVFREQ(MIF) : can't get information of memory size!!\n");
+		break;
+	}
+
 	mutex_unlock(&data->lock);
 
 	return 0;
@@ -1698,6 +1834,7 @@ static int __init exynos5_devfreq_mif_init(void)
 	media_num_mixer_layer = false;
 	media_num_decon_layer = false;
 	wqhd_tv_window5 = false;
+	dmc_timing_parameter = NULL;
 
 	exynos5_devfreq_mif_device.dev.platform_data = &exynos5430_qos_mif;
 
