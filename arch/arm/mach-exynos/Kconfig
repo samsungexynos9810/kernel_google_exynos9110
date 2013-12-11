@@ -83,6 +83,12 @@ config SOC_EXYNOS5422
 	help
 	  Enable EXYNOS5422 SoC support
 
+config SOC_EXYNOS5422_REV_0
+	bool "Rev 0.0"
+	depends on SOC_EXYNOS5422
+	help
+	  This option enables for REV 0
+
 config SOC_EXYNOS5430
 	bool "SAMSUNG EXYNOS5430"
 	default n
