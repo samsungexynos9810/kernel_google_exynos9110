@@ -99,6 +99,10 @@ typedef enum {
 #define CONFIG_BUS_DEVFREQ
 #endif
 
+#ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
+#define CONFIG_BUS_DEVFREQ
+#endif
+
 #ifdef CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ
 #define CONFIG_BUS_DEVFREQ
 #endif
