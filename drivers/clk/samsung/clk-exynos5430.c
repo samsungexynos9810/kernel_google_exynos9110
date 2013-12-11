@@ -2751,8 +2751,8 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_seckey, "gate_seckey", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_SECKEY, 1, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_seckey_apbif, "gate_seckey_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_SECKEY, 0, CLK_IGNORE_UNUSED, 0),
 
-	CGTE(gate_chipid, "gate_chipid", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 1, 0, 0),
-	CGTE(gate_chipid_apbif, "gate_chipid_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 0, 0, 0),
+	CGTE(gate_chipid, "gate_chipid", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 1, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_chipid_apbif, "gate_chipid_apbif", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_CHIPID, 0, CLK_IGNORE_UNUSED, 0),
 
 	CGTE(gate_toprtc, "gate_toprtc", NULL, EXYNOS5430_ENABLE_IP_PERIS_SECURE_TOPRTC, 0, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_rtc, "gate_rtc", NULL, EXYNOS5430_ENABLE_IP_MIF_SECURE_RTC, 0, CLK_IGNORE_UNUSED, 0),
