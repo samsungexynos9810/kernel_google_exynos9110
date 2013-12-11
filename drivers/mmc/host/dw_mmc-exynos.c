@@ -980,13 +980,13 @@ static int dw_mci_exynos_misc_control(struct dw_mci *host,
 		ret = dw_mci_exynos_turn_on_2_8v(host);
 		break;
 	case CTRL_REQUEST_EXT_IRQ:
-		dw_mci_exynos_request_ext_irq(host, (irq_handler_t)priv);
+		ret = dw_mci_exynos_request_ext_irq(host, (irq_handler_t)priv);
 		break;
 	case CTRL_CHECK_CD_GPIO:
 		ret = dw_mci_exynos_check_cd_gpio(host);
 		break;
 	case CTRL_SET_DEF_CAPS:
-		dw_mci_exynos_set_def_caps(host);
+		ret = dw_mci_exynos_set_def_caps(host);
 		break;
 	default:
 		dev_err(host->dev, "dw_mmc exynos: wrong case\n");
