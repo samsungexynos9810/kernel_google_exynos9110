@@ -1398,18 +1398,6 @@ static void __init map_lowmem(void)
 	create_mapping_memory(start, end, true);
 #else
 	if (enable_noexec) {
-		mem_types[MT_MEMORY].prot_pte |= L_PTE_RDONLY;
-		start = __pa(_stext) & PAGE_MASK;
-		end = __pa(__start_rodata);
-		create_mapping_memory(start, end, true);
-
-		mem_types[MT_MEMORY].prot_pte |= L_PTE_XN;
-		start = __pa(__start_rodata);
-		end = __pa(__init_begin);
-		create_mapping_memory(start, end, true);
-
-		mem_types[MT_MEMORY].prot_pte &= ~L_PTE_XN;
-		mem_types[MT_MEMORY].prot_pte &= ~L_PTE_RDONLY;
 		start = __pa(__init_begin);
 		end = ALIGN(__pa(__init_end), PAGE_SIZE);
 		create_mapping_memory(start, end, true);
@@ -1419,6 +1407,20 @@ static void __init map_lowmem(void)
 		end = __pa(_stext) & PAGE_MASK;
 		if (start != end)
 			create_mapping_memory(start, end, true);
+
+#ifndef CONFIG_FTRACE
+		mem_types[MT_MEMORY].prot_pte |= L_PTE_RDONLY;
+#endif
+		mem_types[MT_MEMORY].prot_pte &= ~L_PTE_XN;
+		start = __pa(_stext) & PAGE_MASK;
+		end = __pa(__start_rodata);
+		create_mapping_memory(start, end, true);
+
+		mem_types[MT_MEMORY].prot_pte &= ~L_PTE_RDONLY;
+		mem_types[MT_MEMORY].prot_pte |= L_PTE_XN;
+		start = __pa(__start_rodata);
+		end = __pa(__init_begin);
+		create_mapping_memory(start, end, true);
 
 		start = ALIGN(__pa(__init_end), PAGE_SIZE);
 		end = ALIGN(__pa(__init_end), PMD_SIZE);
