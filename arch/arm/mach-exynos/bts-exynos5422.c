@@ -98,6 +98,7 @@ enum bts_clock_index {
 	BTS_CLOCK_MMC,
 	BTS_CLOCK_USB,
 	BTS_CLOCK_DIS1,
+	BTS_CLOCK_G2D,
 	BTS_CLOCK_MAX,
 };
 
@@ -296,6 +297,9 @@ static struct bts_ip_clk exynos5_bts_clk[] = {
 	},
 	[BTS_CLOCK_DIS1] = {
 		.clkname = "axi_disp1",
+	},
+	[BTS_CLOCK_G2D] = {
+		.clkname = "clk_g2d",
 	},
 };
 
@@ -734,6 +738,8 @@ static void set_bts_ip_table(struct bts_info *bts)
 		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_USB].clk);
 	else if ((bts->id & BTS_DIS1) && exynos5_bts_clk[BTS_CLOCK_DIS1].clk)
 		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_DIS1].clk);
+	else if ((bts->id & BTS_G2D) && exynos5_bts_clk[BTS_CLOCK_G2D].clk)
+		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_G2D].clk);
 
 	if (bts->clk)
 		clk_prepare_enable(bts->clk);
@@ -752,6 +758,8 @@ static void set_bts_ip_table(struct bts_info *bts)
 		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_USB].clk);
 	else if ((bts->id & BTS_DIS1) && exynos5_bts_clk[BTS_CLOCK_DIS1].clk)
 		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_DIS1].clk);
+	else if ((bts->id & BTS_G2D) && exynos5_bts_clk[BTS_CLOCK_G2D].clk)
+		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_G2D].clk);
 
 	if (bts->clk)
 		clk_disable_unprepare(bts->clk);
@@ -916,6 +924,8 @@ static int __init exynos5_bts_init(void)
 
 		list_add(&exynos5_bts[i].list, &bts_list);
 	}
+	exynos5_bts[BTS_IDX_G2D].clk = __clk_lookup("clk_qeg2d");
+	exynos5_bts_clk[BTS_CLOCK_G2D].clk = __clk_lookup(exynos5_bts_clk[BTS_CLOCK_G2D].clkname);
 
 	bts_drex_init();
 
