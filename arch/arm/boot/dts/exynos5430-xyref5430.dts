@@ -44,10 +44,10 @@
 		fifo-depth = <0x80>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
-		samsung,dw-mshc-sdr-timing = <0 4 3>;
-		samsung,dw-mshc-ddr-timing = <0 2 3>;
-		samsung,dw-mshc-hs200-timing = <0 2 3>;
-		samsung,dw-mshc-ddr200-timing = <0 2 1>;
+		samsung,dw-mshc-sdr-timing = <1 2 3>;
+		samsung,dw-mshc-ddr-timing = <2 3 3>;
+		samsung,dw-mshc-hs200-timing = <0 3 3>;
+		samsung,dw-mshc-ddr200-timing = <0 6 1>;
 		clk_pin = "gpr0-0";
 		clk_addr = "15690000.pinctrl";
 		clk_val = <0x3>;
@@ -73,8 +73,8 @@
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
-		samsung,dw-mshc-sdr-timing = <2 3 3>;
-		samsung,dw-mshc-ddr-timing = <1 2 3>;
+		samsung,dw-mshc-sdr-timing = <1 2 3>;
+		samsung,dw-mshc-ddr-timing = <2 3 3>;
 		num-ref-clks = <8>;
 		ciu_clkin = <25 50 50 100 200 100 200 400>;
 		pinctrl-names = "default";
@@ -95,8 +95,8 @@
 		fifo-depth = <0x40>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
-		samsung,dw-mshc-sdr-timing = <0 3 3>;
-		samsung,dw-mshc-ddr-timing = <1 2 3>;
+		samsung,dw-mshc-sdr-timing = <1 2 3>;
+		samsung,dw-mshc-ddr-timing = <2 3 3>;
 		clk_pin = "gpr4-0";
 		clk_addr = "15690000.pinctrl";
 		clk_val = <0x2>;
