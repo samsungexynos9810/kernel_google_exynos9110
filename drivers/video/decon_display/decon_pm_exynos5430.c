@@ -557,5 +557,17 @@ struct pm_ops dsi_pm_ops = {
 	.clk_on		= dsi_clock_on,
 	.clk_off 	= dsi_clock_off,
 };
-#endif
 
+#else
+int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
+{
+	pm_runtime_get_sync(dispdrv->display_driver);
+	return 0;
+}
+
+int disp_pm_runtime_put_sync(struct display_driver *dispdrv)
+{
+	pm_runtime_put_sync(dispdrv->display_driver);
+	return 0;
+}
+#endif

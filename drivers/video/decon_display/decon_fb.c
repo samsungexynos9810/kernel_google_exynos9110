@@ -1027,7 +1027,9 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	dev_info(sfb->dev, "blank mode %d\n", blank_mode);
 
 	dispdrv = get_display_driver();
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_init_status(dispdrv);
+#endif
 	disp_pm_runtime_get_sync(dispdrv);
 
 #ifdef CONFIG_PM_RUNTIME
@@ -1278,9 +1280,11 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 
 	dispdrv = get_display_driver();
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* tiggering power event for PM */
 	if (sfb->power_state == POWER_ON)
 		disp_pm_te_triggered(dispdrv);
+#endif
 
 	spin_lock(&sfb->slock);
 #ifdef CONFIG_FB_I80_SW_TRIGGER
@@ -2394,7 +2398,9 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_add_refcount(dispdrv);
+#endif
 	disp_pm_runtime_get_sync(dispdrv);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
@@ -3755,7 +3761,9 @@ ssize_t s3c_fb_debugfs_write(struct file *file, const char *userbuf, size_t coun
 		p++;
 	}
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	debug_function(dispdrv, buf);
+#endif
 
 	return count;
 }
@@ -4073,7 +4081,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	sfb->timeline_max = 1;
 	/* XXX need to cleanup on errors */
 #endif
-	disp_pm_runtime_enable(dispdrv);
+	pm_runtime_enable(sfb->dev);
 
 	sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
 	if (!sfb->regs) {
