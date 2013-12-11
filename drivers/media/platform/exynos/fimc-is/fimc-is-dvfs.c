@@ -446,11 +446,6 @@ int fimc_is_get_qos(struct fimc_is_core *core, u32 type, u32 scenario_id)
 	goto exit;
 
 struct_qos:
-	if (!pdata->dvfs_data) {
-		err("qos structure in platform data is NULL\n");
-		return -EINVAL;
-	}
-
 	if (max(0, (int)type) >= FIMC_IS_DVFS_END) {
 		err("Cannot find DVFS value");
 		return -EINVAL;
