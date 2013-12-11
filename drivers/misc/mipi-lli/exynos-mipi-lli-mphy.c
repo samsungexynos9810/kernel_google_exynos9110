@@ -59,7 +59,6 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 	writel(0x1A, phy->loc_regs + (0x40*4));
 
 	/* Reset-On-Error REQ timing configuration */
-	writel(0x30, phy->loc_regs + (0x5c*4));
 	writel(0x1D, phy->loc_regs + (0x77*4));
 
 	return 0;
