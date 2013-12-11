@@ -22,7 +22,6 @@
 
 #include "fimc-is-core.h"
 #include "fimc-is-device-csi.h"
-#include "fimc-is-device-sensor.h"
 
 /* PMU for FIMC-IS*/
 #define MIPICSI0_REG_BASE	(S5P_VA_MIPICSI0)   /* phy : 0x13c2_0000 */

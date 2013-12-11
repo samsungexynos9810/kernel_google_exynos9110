@@ -2,7 +2,6 @@
 #define FIMC_IS_DEVICE_CSI_H
 
 #include "fimc-is-type.h"
-#include "fimc-is-device-sensor.h"
 
 struct fimc_is_device_csi {
 	/* channel information */
