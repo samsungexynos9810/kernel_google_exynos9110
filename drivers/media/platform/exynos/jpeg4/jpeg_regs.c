@@ -867,9 +867,9 @@ void jpeg_set_timer_count(void __iomem *base, unsigned int size)
 void jpeg_get_frame_size(void __iomem *base,
 			unsigned int *width, unsigned int *height)
 {
-	*width = (readl(base + S5P_JPEG_IMG_SIZE_REG) & S5P_JPEG_X_SIZE_MASK);
-	*height = ((readl(base + S5P_JPEG_IMG_SIZE_REG) >> S5P_JPEG_Y_SIZE_SHIFT)
-			& S5P_JPEG_Y_SIZE_MASK);
+    unsigned int reg = readl(base + S5P_JPEG_IMG_SIZE_REG);
+	*width = reg & S5P_JPEG_X_SIZE_MASK;
+	*height = (reg & S5P_JPEG_Y_SIZE_MASK) >> S5P_JPEG_Y_SIZE_SHIFT;
 }
 
 enum jpeg_frame_format jpeg_get_frame_fmt(void __iomem *base)
