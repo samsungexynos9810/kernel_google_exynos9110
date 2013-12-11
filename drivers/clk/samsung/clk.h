@@ -90,6 +90,52 @@ struct samsung_fixed_factor_clock {
  * @mux_flags: flags for mux-type clock.
  * @alias: optional clock alias name to be assigned to this clock.
  */
+
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+struct samsung_mux_clock {
+	unsigned int		id;
+	const char		*dev_name;
+	const char		*name;
+	const char		**parent_names;
+	u8			num_parents;
+	unsigned long		flags;
+	unsigned long		offset;
+	u8			shift;
+	u8			width;
+	u8			mux_flags;
+	const char		*alias;
+	unsigned long		stat_offset;
+	u8			stat_shift;
+	u8			stat_width;
+};
+
+#define __MUX(_id, dname, cname, pnames, o, s, w, f, mf, a, so, ss, sw)	\
+{							\
+	.id		= _id,				\
+	.dev_name	= dname,			\
+	.name		= cname,			\
+	.parent_names	= pnames,			\
+	.num_parents	= ARRAY_SIZE(pnames),		\
+	.flags		= f,				\
+	.offset		= o,				\
+	.shift		= s,				\
+	.width		= w,				\
+	.mux_flags	= mf,				\
+	.alias		= a,				\
+	.stat_offset	= so,				\
+	.stat_shift	= ss,				\
+	.stat_width	= sw,				\
+}
+
+#define MUX(_id, cname, pnames, o, s, w)			\
+	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, NULL, 0, 0, 0)
+
+#define MUX_A(_id, cname, pnames, o, s, w, a)			\
+	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, a, 0, 0, 0)
+
+#define MUX_STAT(_id, cname, pnames, o, s, w, so, ss, sw)			\
+	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, NULL, so, ss, sw)
+#else
 struct samsung_mux_clock {
 	unsigned int		id;
 	const char		*dev_name;
@@ -105,19 +151,19 @@ struct samsung_mux_clock {
 };
 
 #define __MUX(_id, dname, cname, pnames, o, s, w, f, mf, a)	\
-	{							\
-		.id		= _id,				\
-		.dev_name	= dname,			\
-		.name		= cname,			\
-		.parent_names	= pnames,			\
-		.num_parents	= ARRAY_SIZE(pnames),		\
-		.flags		= f,				\
-		.offset		= o,				\
-		.shift		= s,				\
-		.width		= w,				\
-		.mux_flags	= mf,				\
-		.alias		= a,				\
-	}
+{							\
+	.id		= _id,				\
+	.dev_name	= dname,			\
+	.name		= cname,			\
+	.parent_names	= pnames,			\
+	.num_parents	= ARRAY_SIZE(pnames),		\
+	.flags		= f,				\
+	.offset		= o,				\
+	.shift		= s,				\
+	.width		= w,				\
+	.mux_flags	= mf,				\
+	.alias		= a,				\
+}
 
 #define MUX(_id, cname, pnames, o, s, w)			\
 	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, NULL)
@@ -127,6 +173,7 @@ struct samsung_mux_clock {
 
 #define MUX_F(_id, cname, pnames, o, s, w, f, mf)		\
 	__MUX(_id, NULL, cname, pnames, o, s, w, f, mf, NULL)
+#endif
 
 /**
  * @id: platform specific id of the clock.
