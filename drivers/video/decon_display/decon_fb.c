@@ -4853,7 +4853,6 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 	decon_fb_set_vidoutif(sfb, VIDOUTCON0_I80IF_F);
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
@@ -4876,11 +4875,6 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	reg |= TRIGCON_HWTRIGEN_I80_RGB;
 	reg |= TRIGCON_HWTRIGMASK_I80_RGB;
 	writel(reg, sfb->regs + TRIGCON);
-
-	mutex_lock(&sfb->vsync_info.irq_lock);
-	if (sfb->vsync_info.irq_refcount)
-		s3c_fb_enable_irq(sfb);
-	mutex_unlock(&sfb->vsync_info.irq_lock);
 
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
