@@ -74,6 +74,7 @@ struct lpass_info {
 	struct clk		*clk_timer;
 	bool			rpm_enabled;
 	bool			dcg_avail;
+	atomic_t		use_cnt;
 } lpass;
 
 struct aud_reg {
@@ -253,6 +254,7 @@ void lpass_get_sync(struct device *ip_dev)
 	list_for_each_entry(si, &subip_list, node) {
 		if (si->dev == ip_dev) {
 			atomic_inc(&si->use_cnt);
+			atomic_inc(&lpass.use_cnt);
 			pr_debug("%s: %s (use:%d)\n", __func__,
 				si->name, atomic_read(&si->use_cnt));
 			pm_runtime_get_sync(&lpass.pdev->dev);
@@ -267,6 +269,7 @@ void lpass_put_sync(struct device *ip_dev)
 	list_for_each_entry(si, &subip_list, node) {
 		if (si->dev == ip_dev) {
 			atomic_dec(&si->use_cnt);
+			atomic_dec(&lpass.use_cnt);
 			pr_debug("%s: %s (use:%d)\n", __func__,
 				si->name, atomic_read(&si->use_cnt));
 			pm_runtime_put_sync(&lpass.pdev->dev);
@@ -341,8 +344,6 @@ static void lpass_dcg_enable(bool on)
 
 static void ass_enable(void)
 {
-	lpass.enabled = true;
-
 	lpass_reg_restore();
 
 	/* ASS_MUX_SEL */
@@ -351,6 +352,8 @@ static void ass_enable(void)
 
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_timer);
+
+	lpass.enabled = true;
 }
 
 static void lpass_enable(void)
@@ -620,13 +623,17 @@ static const struct file_operations lpass_proc_fops = {
 	.release = single_release,
 };
 
-#if !defined(CONFIG_PM_RUNTIME) && defined(CONFIG_PM_SLEEP)
+#ifdef CONFIG_PM_SLEEP
 static int lpass_suspend(struct device *dev)
 {
 	pr_debug("%s entered\n", __func__);
 
+#ifdef CONFIG_PM_RUNTIME
+	if (atomic_read(&lpass.use_cnt) > 0)
+		lpass_disable();
+#else
 	lpass_disable();
-
+#endif
 	return 0;
 }
 
@@ -634,8 +641,12 @@ static int lpass_resume(struct device *dev)
 {
 	pr_debug("%s entered\n", __func__);
 
+#ifdef CONFIG_PM_RUNTIME
+	if (atomic_read(&lpass.use_cnt) > 0)
+		lpass_enable();
+#else
 	lpass_enable();
-
+#endif
 	return 0;
 }
 #else
@@ -751,6 +762,7 @@ static int lpass_probe(struct platform_device *pdev)
 		pr_info("Failed to register /proc/driver/lpadd\n");
 
 	spin_lock_init(&lpass.lock);
+	atomic_set(&lpass.use_cnt, 0);
 	lpass_init_reg_list();
 
 	/* unmask irq source */
