@@ -531,6 +531,12 @@ static int esa_exe(struct file *file, unsigned int param,
 		goto err;
 	}
 
+	/* prevent test alarmed about tainted data */
+	if (ibuf_info.mem_size > rtd->ibuf_size) {
+		ibuf_info.mem_size = rtd->ibuf_size;
+		esa_err("%s: There is too much input data", __func__);
+	}
+
 	/* receive pcm data from user */
 	if (copy_from_user(ibuf, (void *)ibuf_info.virt_addr,
 					ibuf_info.mem_size)) {
