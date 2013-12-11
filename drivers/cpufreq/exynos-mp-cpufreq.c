@@ -779,6 +779,10 @@ static ssize_t show_cpufreq_table(struct kobject *kobj,
 		tbl_sz++;
 	for (i = 0; freq_table_CA7[i].frequency != CPUFREQ_TABLE_END; i++)
 		tbl_sz++;
+
+	if (tbl_sz == 0)
+		return -EINVAL;
+
 	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
 
 	for (i = 0; freq_table_CA15[i].frequency != CPUFREQ_TABLE_END; i++) {
@@ -961,6 +965,10 @@ static ssize_t show_cpu_freq_table(struct kobject *kobj,
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
 		tbl_sz++;
+
+	if (tbl_sz == 0)
+		return -EINVAL;
+
 	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
@@ -981,7 +989,7 @@ static ssize_t show_cpu_min_freq(struct kobject *kobj,
 	if (cpu_qos_min == 0)
 		cpu_qos_min = freq_min[CA15];
 
-	return sprintf(buf, "%u\n", cpu_qos_min);
+	return snprintf(buf, PAGE_SIZE, "%u\n", cpu_qos_min);
 }
 
 static ssize_t show_cpu_max_freq(struct kobject *kobj,
@@ -992,7 +1000,7 @@ static ssize_t show_cpu_max_freq(struct kobject *kobj,
 	if (cpu_qos_max == 0)
 		cpu_qos_max = freq_min[CA15];
 
-	return sprintf(buf, "%u\n", cpu_qos_max);
+	return snprintf(buf, PAGE_SIZE, "%u\n", cpu_qos_max);
 }
 
 static ssize_t store_cpu_min_freq(struct kobject *kobj, struct attribute *attr,
@@ -1038,6 +1046,10 @@ static ssize_t show_kfc_freq_table(struct kobject *kobj,
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
 		tbl_sz++;
+
+	if (tbl_sz == 0)
+		return -EINVAL;
+
 	pr_len = (size_t)((PAGE_SIZE - 2) / tbl_sz);
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
@@ -1058,7 +1070,7 @@ static ssize_t show_kfc_min_freq(struct kobject *kobj,
 	if (kfc_qos_min == 0)
 		kfc_qos_min = freq_min[CA7];
 
-	return sprintf(buf, "%u\n", kfc_qos_min);
+	return snprintf(buf, PAGE_SIZE, "%u\n", kfc_qos_min);
 }
 
 static ssize_t show_kfc_max_freq(struct kobject *kobj,
@@ -1069,7 +1081,7 @@ static ssize_t show_kfc_max_freq(struct kobject *kobj,
 	if (kfc_qos_max == 0)
 		kfc_qos_max = freq_min[CA7];
 
-	return sprintf(buf, "%u\n", kfc_qos_max);
+	return snprintf(buf, PAGE_SIZE, "%u\n", kfc_qos_max);
 }
 
 static ssize_t store_kfc_min_freq(struct kobject *kobj, struct attribute *attr,
