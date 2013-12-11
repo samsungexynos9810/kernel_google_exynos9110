@@ -821,9 +821,10 @@ static void *arm_exynos_dma_alloc(struct device *dev, size_t size,
 	dma_addr_t *handle, gfp_t gfp, struct dma_attrs *attrs)
 {
 	pgprot_t prot = __get_dma_pgprot(attrs, pgprot_kernel);
-	void *addr;
-	u64 mask = get_coherent_dma_mask(dev);
 	struct page *page = NULL;
+	void *addr;
+	void *memory;
+	u64 mask = get_coherent_dma_mask(dev);
 
 #ifdef CONFIG_DMA_API_DEBUG
 	u64 limit = (mask + 1) & ~mask;
@@ -837,6 +838,9 @@ static void *arm_exynos_dma_alloc(struct device *dev, size_t size,
 	if (!mask)
 		return NULL;
 
+	if (dma_alloc_from_coherent(dev, size, handle, &memory))
+		return memory;
+
 	if (mask < 0xffffffffULL)
 		gfp |= GFP_DMA;
 
@@ -845,8 +849,11 @@ static void *arm_exynos_dma_alloc(struct device *dev, size_t size,
 	*handle = DMA_ERROR_CODE;
 	size = PAGE_ALIGN(size);
 
-	addr = __alloc_remap_buffer(dev, size, gfp, prot, &page,
-			__builtin_return_address(0));
+	if (!(gfp & __GFP_WAIT))
+		addr = __alloc_from_pool(size, &page);
+	else
+		addr = __alloc_remap_buffer(dev, size, gfp, prot, &page,
+				__builtin_return_address(0));
 	if (addr)
 		*handle = pfn_to_dma(dev, page_to_pfn(page));
 
@@ -936,10 +943,17 @@ static void arm_exynos_dma_free(struct device *dev, size_t size, void *cpu_addr,
 {
 	struct page *page = pfn_to_page(dma_to_pfn(dev, handle));
 
+	if (dma_release_from_coherent(dev, get_order(size), cpu_addr))
+		return;
+
 	size = PAGE_ALIGN(size);
 
-	__dma_free_remap(cpu_addr, size);
-	__dma_free_buffer(page, size);
+	if (__free_from_pool(cpu_addr, size)) {
+		return;
+	} else {
+		__dma_free_remap(cpu_addr, size);
+		__dma_free_buffer(page, size);
+	}
 }
 
 int arm_dma_get_sgtable(struct device *dev, struct sg_table *sgt,
