@@ -18,6 +18,7 @@
 #include <linux/delay.h>
 
 #include <linux/platform_device.h>
+#include "regs-fimd.h"
 #include "decon_display_driver.h"
 #include "fimd_fb.h"
 #include "decon_mipi_dsi.h"
@@ -263,6 +264,23 @@ int disable_display_driver_power(struct device *dev)
 int enable_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
+	struct display_driver *dispdrv;
+	struct s3c_fb *sfb;
+
+	dispdrv = get_display_driver();
+	sfb = dispdrv->decon_driver.sfb;
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	dispdrv->pm_status.ops->clk_on(dispdrv);
+#else
+	clk_prepare_enable(sfb->bus_clk);
+
+	clk_prepare_enable(sfb->axi_disp1);
+
+	if (!sfb->variant.has_clksel)
+		clk_prepare_enable(sfb->lcd_clk);
+#endif
+
 #if 0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(sclk_fimd1, mout_fimd1);
 	DISPLAY_INLINE_SET_RATE(sclk_fimd1, 67 * MHZ);
@@ -271,7 +289,6 @@ int enable_display_decon_clocks(struct device *dev)
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, sclk_rpll);
 	DISPLAY_SET_RATE(sclk_fimd1, 67 * MHZ);
 #endif
-
 	return ret;
 }
 
@@ -282,6 +299,23 @@ int enable_display_driver_clocks(struct device *dev)
 
 int disable_display_decon_clocks(struct device *dev)
 {
+	struct display_driver *dispdrv;
+	struct s3c_fb *sfb;
+
+	dispdrv = get_display_driver();
+	sfb = dispdrv->decon_driver.sfb;
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	dispdrv->pm_status.ops->clk_off(dispdrv);
+#else
+	if (!sfb->variant.has_clksel)
+		clk_disable_unprepare(sfb->lcd_clk);
+
+	clk_disable_unprepare(sfb->axi_disp1);
+
+	clk_disable_unprepare(sfb->bus_clk);
+#endif
+
 	return 0;
 }
 
@@ -296,9 +330,35 @@ int disable_display_decon_runtimepm(struct device *dev)
 }
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+bool check_camera_is_running(void)
+{
+	/* CAM1 STATUS */
+	if (readl(S5P_VA_PMU + 0x5104) & 0x1)
+		return true;
+	else
+		return false;
+}
+
+void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask)
+{
+	unsigned int data;
+
+	data = readl(sfb->regs + TRIGCON);
+	if (mask) {
+		data |= HWTRIGEN_PER_RGB | HWTRGEN_I80_RGB;
+		data &= ~(HWTRG_UNMASK_I80_RGB);
+	} else {
+		data &= ~(SWTRGCMD_I80_RGB | TRGMODE_I80_RGB);
+		data |= HWTRIGEN_PER_RGB | HWTRG_UNMASK_I80_RGB | HWTRGEN_I80_RGB;
+	}
+	writel(data, sfb->regs + TRIGCON);
+}
+
 int get_display_line_count(struct display_driver *dispdrv)
 {
-	return 0;
+	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+
+	return (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT);
 }
 
 void set_default_hibernation_mode(struct display_driver *dispdrv)
@@ -323,6 +383,15 @@ void set_default_hibernation_mode(struct display_driver *dispdrv)
 
 void fimd_clock_on(struct display_driver *dispdrv)
 {
+	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+
+	clk_prepare_enable(sfb->bus_clk);
+
+	/*TODO: Check FIMD H/W version */
+	clk_prepare_enable(sfb->axi_disp1);
+
+	if (!sfb->variant.has_clksel)
+		clk_prepare_enable(sfb->lcd_clk);
 }
 
 void mic_clock_on(struct display_driver *dispdrv)
@@ -331,14 +400,32 @@ void mic_clock_on(struct display_driver *dispdrv)
 
 void dsi_clock_on(struct display_driver *dispdrv)
 {
+	if (!dispdrv->dsi_driver.clk) {
+		dispdrv->dsi_driver.clk = __clk_lookup("clk_dsim1");
+		if (IS_ERR(dispdrv->dsi_driver.clk)) {
+			pr_err("Failed to clk_get - clk_dsim1\n");
+			return;
+		}
+	}
+	clk_prepare_enable(dispdrv->dsi_driver.clk);
 }
 
 void fimd_clock_off(struct display_driver *dispdrv)
 {
+	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+
+	if (!sfb->variant.has_clksel)
+		clk_disable_unprepare(sfb->lcd_clk);
+
+	/*TODO: Check FIMD H/W version */
+	clk_disable_unprepare(sfb->axi_disp1);
+
+	clk_disable_unprepare(sfb->bus_clk);
 }
 
 void dsi_clock_off(struct display_driver *dispdrv)
 {
+	clk_disable_unprepare(dispdrv->dsi_driver.clk);
 }
 
 void mic_clock_off(struct display_driver *dispdrv)
