@@ -66,6 +66,8 @@ static mali_bool kbase_platform_exynos5_init(kbase_device *kbdev)
 	if (NULL == platform)
 		return MALI_FALSE;
 
+	memset(platform, 0, sizeof(struct exynos_context));
+
 	kbdev->platform_context = (void *) platform;
 
 	platform->cmu_pmu_status = 0;
