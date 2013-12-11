@@ -308,6 +308,11 @@ struct clk_mux {
 	u8		shift;
 	u8		flags;
 	spinlock_t	*lock;
+	#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	void __iomem	*stat_reg;
+	u8		stat_shift;
+	u8		stat_width;
+	#endif
 };
 
 #define CLK_MUX_INDEX_ONE		BIT(0)
@@ -315,6 +320,19 @@ struct clk_mux {
 
 extern const struct clk_ops clk_mux_ops;
 
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+struct clk *clk_register_mux(struct device *dev, const char *name,
+		const char **parent_names, u8 num_parents, unsigned long flags,
+		void __iomem *reg, u8 shift, u8 width,
+		u8 clk_mux_flags, spinlock_t *lock,
+		void __iomem *stat_reg, u8 stat_shift, u8 stat_width);
+
+struct clk *clk_register_mux_table(struct device *dev, const char *name,
+		const char **parent_names, u8 num_parents, unsigned long flags,
+		void __iomem *reg, u8 shift, u32 mask,
+		u8 clk_mux_flags, u32 *table, spinlock_t *lock,
+		void __iomem *stat_reg, u8 stat_shift, u8 stat_width);
+#else
 struct clk *clk_register_mux(struct device *dev, const char *name,
 		const char **parent_names, u8 num_parents, unsigned long flags,
 		void __iomem *reg, u8 shift, u8 width,
@@ -324,6 +342,7 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
 		const char **parent_names, u8 num_parents, unsigned long flags,
 		void __iomem *reg, u8 shift, u32 mask,
 		u8 clk_mux_flags, u32 *table, spinlock_t *lock);
+#endif
 
 void of_fixed_factor_clk_setup(struct device_node *node);
 
