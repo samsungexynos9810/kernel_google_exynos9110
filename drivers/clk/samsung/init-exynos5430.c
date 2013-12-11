@@ -255,7 +255,7 @@ void g3d_init_clock(void)
 
 	__raw_writel(__raw_readl(EXYNOS5430_G3D_PLL_CON0) | (0xe << 28),
 			EXYNOS5430_G3D_PLL_CON0);
-	while (__raw_readl(EXYNOS5430_G3D_PLL_CON0) | (0x1 << 29))
+	while (__raw_readl(EXYNOS5430_G3D_PLL_CON0) & (0x1 << 29))
 		break;
 
 	exynos_set_parent("mout_g3d_pll", "fin_pll");
