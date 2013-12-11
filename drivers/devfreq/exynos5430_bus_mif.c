@@ -1179,7 +1179,7 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
-		exynos5_devfreq_mif_set_dll(mif_data, target_idx, target_idx);
+		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
