@@ -40,6 +40,7 @@ enum {
 extern int exynos_check_aud_pwr(void);
 
 extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
+extern int lpass_set_gpio_cb(struct device *ip_dev, void (*ip_cb)(void));
 extern void lpass_get_sync(struct device *ip_dev);
 extern void lpass_put_sync(struct device *ip_dev);
 extern struct iommu_domain *lpass_get_iommu_domain(void);

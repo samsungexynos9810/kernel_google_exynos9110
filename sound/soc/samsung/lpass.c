@@ -86,6 +86,7 @@ struct aud_reg {
 struct subip_info {
 	struct device		*dev;
 	const char		*name;
+	void			(*cb)(void);
 	atomic_t		use_cnt;
 	struct list_head	node;
 };
@@ -233,6 +234,7 @@ int lpass_register_subip(struct device *ip_dev, const char *ip_name)
 
 	si->dev = ip_dev;
 	si->name = ip_name;
+	si->cb = NULL;
 	atomic_set(&si->use_cnt, 0);
 	list_add(&si->node, &subip_list);
 
@@ -245,6 +247,22 @@ int lpass_register_subip(struct device *ip_dev, const char *ip_name)
 	}
 
 	return 0;
+}
+
+int lpass_set_gpio_cb(struct device *ip_dev, void (*ip_cb)(void))
+{
+	struct subip_info *si;
+
+	list_for_each_entry(si, &subip_list, node) {
+		if (si->dev == ip_dev) {
+			si->cb = ip_cb;
+			pr_info("%s: %s(cb: %p)\n", __func__,
+				si->name, si->cb);
+			return 0;
+		}
+	}
+
+	return -EINVAL;
 }
 
 void lpass_get_sync(struct device *ip_dev)
@@ -322,10 +340,33 @@ static void lpass_pll_enable(bool on)
 	}
 }
 
+static void lpass_retention_pad(void)
+{
+	struct subip_info *si;
+
+	/* Powerdown mode for gpio */
+	list_for_each_entry(si, &subip_list, node) {
+		if (si->cb != NULL)
+			(*si->cb)();
+	}
+
+	/* Set PAD retention */
+	writel(1, EXYNOS5430_GPIO_MODE_AUD_SYS_PWR_REG);
+}
+
 static void lpass_release_pad(void)
 {
+	struct subip_info *si;
+
+	/* Restore gpio */
+	list_for_each_entry(si, &subip_list, node) {
+		if (si->cb != NULL)
+			(*si->cb)();
+	}
+
 	/* Release PAD retention */
 	writel(1 << 28, EXYNOS_PAD_RET_MAUDIO_OPTION);
+	writel(1, EXYNOS5430_GPIO_MODE_AUD_SYS_PWR_REG);
 }
 
 static void lpass_dcg_enable(bool on)
@@ -371,7 +412,6 @@ static void lpass_enable(void)
 	/* Enable AUD_PLL */
 	lpass_pll_enable(true);
 
-	lpass_release_pad();
 	lpass_reg_restore();
 	lpass_dcg_enable(true);
 
@@ -395,6 +435,9 @@ static void lpass_enable(void)
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
 	lpass_reset_toggle(LPASS_IP_DMA);
+
+	/* PAD */
+	lpass_release_pad();
 
 	lpass.enabled = true;
 }
@@ -425,6 +468,9 @@ static void lpass_disable(void)
 	}
 
 	lpass.enabled = false;
+
+	/* PAD */
+	lpass_retention_pad();
 
 	clk_disable_unprepare(lpass.clk_dmac);
 	clk_disable_unprepare(lpass.clk_sramc);
