@@ -2743,6 +2743,9 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 				err("fimc_is_comp_loadsetf() fail");
 				goto p_err;
 			}
+		} else {
+			module->ext.companion_con.product_name
+				= COMPANION_NAME_NOTHING;
 		}
 	}
 
