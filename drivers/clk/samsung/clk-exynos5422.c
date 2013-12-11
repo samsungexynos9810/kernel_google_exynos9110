@@ -165,7 +165,8 @@ enum exynos5422_clks {
     aclk_pdma1 = 754,
     aclk_pdma0 = 755,
 
-
+/* CLK_GATE_BUS_PERIS1 */
+    pclk_st = 964, /* = mct */
 
 /* CLK_GATE_TOP_SCLK_GSCL */
 	sclk_gscl_wrap_b = 1024, /* = sclk_gscl_wb*/
@@ -1287,6 +1288,7 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 		GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
 struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
+	GATE_A(pclk_st, "pclk_st", "aclk_66_psgen", (unsigned long) EXYNOS5_CLK_GATE_BUS_PERIS1, 2, 0, 0, "mct"),
 	/* CMU_CPU */
 	CGATE(aclk_axi_cpud, "aclk_axi_cpud", "dout_cpud", EXYNOS5_CLK_GATE_BUS_CPU, 0, CLK_IGNORE_UNUSED, 0),
 	CGATE(sclk_hpm, "sclk_hpm", "dout_hpm", EXYNOS5_CLK_GATE_SCLK_CPU, 1, CLK_IGNORE_UNUSED, 0),

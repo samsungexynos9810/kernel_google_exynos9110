@@ -220,22 +220,6 @@ void pwm_init_clock(void)
 			"pclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
 }
 
-static inline void force_disable(const char *name)
-{
-	struct clk *clock;
-	clock = __clk_lookup(name);
-
-	if (IS_ERR(clock))
-		return;
-	clk_prepare_enable(clock);
-	clk_disable_unprepare(clock);
-}
-
-void force_disable_clock(void)
-{
-	force_disable("clk_mfc_ip");
-}
-
 void __init exynos5422_clock_init(void)
 {
 	top_clk_enable();
@@ -243,5 +227,4 @@ void __init exynos5422_clock_init(void)
 	mscl_init_clock();
 	g2d_init_clock();
 	pwm_init_clock();
-	force_disable_clock();
 }
