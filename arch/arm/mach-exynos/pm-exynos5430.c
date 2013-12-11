@@ -222,7 +222,6 @@ static void exynos_pm_resume(void)
 
 	/* For release retention */
 	__raw_writel((1 << 28), EXYNOS_PAD_RET_DRAM_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_MAUDIO_OPTION);
 	__raw_writel((1 << 28), EXYNOS_PAD_RET_JTAG_OPTION);
 	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_MMC2_OPTION);
 	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_TOP_OPTION);

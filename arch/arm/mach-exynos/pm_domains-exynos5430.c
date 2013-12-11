@@ -25,18 +25,11 @@ static struct sleep_save exynos_pd_maudio_clk_save[] = {
 
 /* exynos_pd_maudio_power_on_post - callback after power on.
  * @pd: power domain.
- *
- * release pad retention for maudio.
  */
 static int exynos_pd_maudio_power_on_post(struct exynos_pm_domain *pd)
 {
-	unsigned int reg;
-
 	s3c_pm_do_restore_core(exynos_pd_maudio_clk_save,
 			ARRAY_SIZE(exynos_pd_maudio_clk_save));
-
-	reg = (1<<28);
-	__raw_writel(reg, EXYNOS_PAD_RET_MAUDIO_OPTION);
 
 	return 0;
 }
