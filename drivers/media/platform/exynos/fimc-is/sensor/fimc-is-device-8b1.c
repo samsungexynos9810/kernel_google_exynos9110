@@ -261,7 +261,21 @@ static int sensor_8b1_s_param(struct v4l2_subdev *subdev, struct v4l2_streamparm
 
 	cp = &param->parm.capture;
 	tpf = &cp->timeperframe;
-	duration = (tpf->numerator * 1000 * 1000 * 1000) / tpf->denominator;
+
+	if (!tpf->denominator) {
+		err("denominator is 0");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (!tpf->numerator) {
+		err("numerator is 0");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	duration = (u64)(tpf->numerator * 1000 * 1000 * 1000) /
+					(u64)(tpf->denominator);
 
 	sensor = (struct fimc_is_module_enum *)v4l2_get_subdevdata(subdev);
 	if (!sensor) {
