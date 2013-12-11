@@ -862,8 +862,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 	total_layer_count = media_num_mixer_layer + media_num_decon_layer;
 
-	if (total_layer_count < 0 ||
-		5 < total_layer_count) {
+	if (total_layer_count > 5) {
 		pr_err("DEVFREQ(MIF) : total window count should be between 1 and 5\n");
 		return;
 	}
@@ -2675,8 +2674,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 	total_layer_count = media_num_mixer_layer + media_num_decon_layer;
 
-	if (total_layer_count < 0 ||
-		5 < total_layer_count) {
+	if (total_layer_count > 5) {
 		pr_err("DEVFREQ(MIF) : total window count should be between 1 and 5\n");
 		return;
 	}

@@ -915,7 +915,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct devfreq_data_isp *data;
-	struct devfreq_notifier_block *devfreq_nb;
 	struct exynos_devfreq_platdata *plat_data;
 
 	if (exynos5_devfreq_isp_init_clock()) {
@@ -958,14 +957,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 						&exynos5_devfreq_isp_profile,
 						"simple_ondemand",
 						&exynos5_devfreq_isp_governor_data);
-
-	devfreq_nb = kzalloc(sizeof(struct devfreq_data_isp), GFP_KERNEL);
-	if (devfreq_nb == NULL) {
-		pr_err("DEVFREQ(ISP) : Failed to allocate notifier block\n");
-		ret = -ENOMEM;
-		goto err_nb;
-	}
-
 	plat_data = data->dev->platform_data;
 
 	data->devfreq->min_freq = plat_data->default_qos;
@@ -978,9 +969,8 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
 	return ret;
-err_nb:
-	devfreq_remove_device(data->devfreq);
 err_inittable:
+	devfreq_remove_device(data->devfreq);
 	kfree(exynos5_devfreq_isp_profile.freq_table);
 err_freqtable:
 	kfree(data);
@@ -2100,7 +2090,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct devfreq_data_isp *data;
-	struct devfreq_notifier_block *devfreq_nb;
 	struct exynos_devfreq_platdata *plat_data;
 
 	if (exynos5_devfreq_isp_init_clock()) {
@@ -2144,13 +2133,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 						"simple_ondemand",
 						&exynos5_devfreq_isp_governor_data);
 
-	devfreq_nb = kzalloc(sizeof(struct devfreq_notifier_block), GFP_KERNEL);
-	if (devfreq_nb == NULL) {
-		pr_err("DEVFREQ(ISP) : Failed to allocate notifier block\n");
-		ret = -ENOMEM;
-		goto err_nb;
-	}
-
 	plat_data = data->dev->platform_data;
 
 	data->devfreq->min_freq = plat_data->default_qos;
@@ -2163,9 +2145,8 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
 	return ret;
-err_nb:
-	devfreq_remove_device(data->devfreq);
 err_inittable:
+	devfreq_remove_device(data->devfreq);
 	kfree(exynos5_devfreq_isp_profile.freq_table);
 err_freqtable:
 	kfree(data);
