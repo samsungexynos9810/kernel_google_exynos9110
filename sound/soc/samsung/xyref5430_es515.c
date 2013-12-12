@@ -39,6 +39,9 @@ static void xyref_enable_mclk(bool on)
 	writel(on ? 0x1000 : 0x1001, EXYNOS_PMU_DEBUG);
 }
 
+#if !defined(CONFIG_SND_SOC_ES515_I2S_MASTER) \
+	|| defined(CONFIG_SND_SAMSUNG_AUX_HDMI) \
+	|| defined(CONFIG_SND_SAMSUNG_AUX_SPDIF)
 static int set_aud_pll_rate(unsigned long rate)
 {
 	struct clk *fout_aud_pll;
@@ -61,7 +64,7 @@ out:
 
 	return 0;
 }
-
+#endif
 #ifdef CONFIG_SND_SOC_ES515_I2S_MASTER
 /*
  * XYREF eS515 I2S DAI operations. (Codec master)
@@ -446,14 +449,11 @@ static int xyref_audio_probe(struct platform_device *pdev)
 	int n, ret;
 	struct device_node *np = pdev->dev.of_node;
 	struct snd_soc_card *card = &xyref;
-	bool hdmi_avail = false;
-	bool spdif_avail = false;
-
 #ifdef CONFIG_SND_SAMSUNG_AUX_HDMI
-	hdmi_avail = true;
+	bool hdmi_avail = true;
 #endif
 #ifdef CONFIG_SND_SAMSUNG_AUX_SPDIF
-	spdif_avail = true;
+	bool spdif_avail = true;
 #endif
 	card->dev = &pdev->dev;
 
@@ -462,18 +462,20 @@ static int xyref_audio_probe(struct platform_device *pdev)
 			xyref_dai[n].cpu_of_node = of_parse_phandle(np,
 					"samsung,audio-cpu", n);
 
+#ifdef CONFIG_SND_SAMSUNG_AUX_HDMI
 			if (!xyref_dai[n].cpu_of_node && hdmi_avail) {
 				xyref_dai[n].cpu_of_node = of_parse_phandle(np,
 					"samsung,audio-cpu-hdmi", 0);
 				hdmi_avail = false;
 			}
-
+#endif
+#ifdef CONFIG_SND_SAMSUNG_AUX_SPDIF
 			if (!xyref_dai[n].cpu_of_node && spdif_avail) {
 				xyref_dai[n].cpu_of_node = of_parse_phandle(np,
 					"samsung,audio-cpu-spdif", 0);
 				spdif_avail = false;
 			}
-
+#endif
 			if (!xyref_dai[n].cpu_of_node) {
 				dev_err(&pdev->dev, "Property "
 				"'samsung,audio-cpu' missing or invalid\n");
