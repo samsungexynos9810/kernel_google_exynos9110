@@ -141,6 +141,12 @@ static int gpu_set_maximum_outstanding_req(int val)
 	if(val > 0b1111)
 		return -1;
 
+	if (!pkbdev)
+		return -2;
+
+	if (!gpu_is_power_on())
+		return -3;
+
 	reg = kbase_os_reg_read(pkbdev, GPU_CONTROL_REG(L2_MMU_CONFIG));
 	reg &= ~(0b1111 << 24);
 	reg |= ((val & 0b1111) << 24);
@@ -173,7 +179,9 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (g3d_rate != g3d_rate_prev) {
-		gpu_set_maximum_outstanding_req(L2CONFIG_MO_1BY8);				/* Restrict M.O by 1/8 */
+		ret = gpu_set_maximum_outstanding_req(L2CONFIG_MO_1BY8);
+		if ( ret < 0)
+			GPU_LOG(DVFS_ERROR, "failed to set MO (%d)\n", ret);
 
 		/*change here for future stable clock changing*/
 		ret = clk_set_parent(platform->mout_g3d_pll, platform->fin_pll);
@@ -196,7 +204,10 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 			goto err;
 		}
 
-		gpu_set_maximum_outstanding_req(L2CONFIG_MO_NO_RESTRICT);		/* Set to M.O by maximum */
+		ret = gpu_set_maximum_outstanding_req(L2CONFIG_MO_NO_RESTRICT);
+		if ( ret < 0)
+			GPU_LOG(DVFS_ERROR, "failed to restore MO (%d)\n", ret);
+
 		g3d_rate_prev = g3d_rate;
 	}
 
