@@ -493,34 +493,36 @@ static void exynos_ss_report_cause_emerg(enum ess_cause_emerg_events event)
 static int exynos_ss_reboot_handler(struct notifier_block *nb,
 				    unsigned long l, void *p)
 {
-	local_irq_disable();
 #ifdef CONFIG_EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
+	local_irq_disable();
 	pr_emerg("exynos-snapshot: forced reboot [%s]\n", __func__);
 	exynos_ss_report_cause_emerg(CAUSE_FORCE_DUMP);
 	exynos_ss_save_context();
+	flush_cache_all();
 	exynos5_restart(0, "ramdump");
 	while(1);
 #else
 	pr_emerg("exynos-snapshot: normal reboot [%s]\n", __func__);
-#endif
 	flush_cache_all();
+#endif
 	return 0;
 }
 
 static int exynos_ss_panic_handler(struct notifier_block *nb,
 				   unsigned long l, void *buf)
 {
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	local_irq_disable();
 	exynos_ss_report_cause_emerg(CAUSE_KERNEL_PANIC);
-#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	pr_emerg("exynos-snapshot: panic - forced ramdump mode [%s]\n", __func__);
 	exynos_ss_save_context();
+	flush_cache_all();
 	exynos5_restart(0, "ramdump");
 	while(1);
 #else
 	pr_emerg("exynos-snapshot: panic [%s]\n", __func__);
-#endif
 	flush_cache_all();
+#endif
 	return 0;
 }
 
