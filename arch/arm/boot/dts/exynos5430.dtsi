@@ -253,8 +253,9 @@
 		dmas = <&adma 5 &adma 6>;
 		dma-names = "tx", "rx";
 		interrupts = <0 67 0>;
-		pinctrl-names = "default";
+		pinctrl-names = "default", "idle";
 		pinctrl-0 = <&uart_aud_bus>;
+		pinctrl-1 = <&uart_aud_bus>;
 		clocks = <&clock 4156>, <&clock 2004>;
 		clock-names = "sclk_uart3", "gate_uart3";
 		samsung,lpass-subip;
