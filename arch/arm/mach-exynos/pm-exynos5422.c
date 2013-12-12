@@ -93,8 +93,8 @@ static struct sleep_save exynos5422_set_clksrc[] = {
 	{ .reg = EXYNOS5_CLK_GATE_BUS_DISP1,		.val = 0xffffffff, },
 };
 
-static struct sleep_save exynos54xx_enable_xxti[] = {
-	{ .reg = EXYNOS5_XXTI_SYS_PWR_REG,		.val = 0x1, },
+static struct sleep_save exynos5422_enable_xxti[] = {
+	{ .reg = EXYNOS5422_XXTI_SYS_PWR_REG,		.val = 0x1, },
 };
 
 static struct sleep_save exynos_core_save[] = {
@@ -174,9 +174,9 @@ static void exynos_pm_prepare(void)
 	/* Set value of power down register for sleep mode */
 	exynos_sys_powerdown_conf(SYS_SLEEP);
 
-	if (!(__raw_readl(EXYNOS_PMU_DEBUG) & 0x1))
-		s3c_pm_do_restore_core(exynos54xx_enable_xxti,
-				ARRAY_SIZE(exynos54xx_enable_xxti));
+	if (!(__raw_readl(EXYNOS5422_PMU_DEBUG) & 0x1))
+		s3c_pm_do_restore_core(exynos5422_enable_xxti,
+				ARRAY_SIZE(exynos5422_enable_xxti));
 
 	__raw_writel(EXYNOS_CHECK_SLEEP, REG_INFORM1);
 
@@ -185,25 +185,25 @@ static void exynos_pm_prepare(void)
 
 	s3c_pm_do_restore_core(exynos5422_set_clksrc, ARRAY_SIZE(exynos5422_set_clksrc));
 
-	tmp = __raw_readl(EXYNOS5_ARM_L2_OPTION);
+	tmp = __raw_readl(EXYNOS5422_ARM_L2_OPTION);
 	tmp &= ~EXYNOS5_USE_RETENTION;
-	__raw_writel(tmp, EXYNOS5_ARM_L2_OPTION);
+	__raw_writel(tmp, EXYNOS5422_ARM_L2_OPTION);
 
-	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1_REG);
+	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1);
 	tmp |= (EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
-	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
+	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1);
 
-	tmp = __raw_readl(EXYNOS54XX_ARM_COMMON_OPTION);
+	tmp = __raw_readl(EXYNOS5422_ARM_COMMON_OPTION);
 	tmp &= ~(1<<3);
-	__raw_writel(tmp, EXYNOS54XX_ARM_COMMON_OPTION);
+	__raw_writel(tmp, EXYNOS5422_ARM_COMMON_OPTION);
 
-	tmp = __raw_readl(EXYNOS5422_FSYS2_OPTION_REG);
+	tmp = __raw_readl(EXYNOS5422_FSYS2_OPTION);
 	tmp |= EXYNOS5422_EMULATION;
-	__raw_writel(tmp, EXYNOS5422_FSYS2_OPTION_REG);
+	__raw_writel(tmp, EXYNOS5422_FSYS2_OPTION);
 
-	tmp = __raw_readl(EXYNOS5422_PSGEN_OPTION_REG);
+	tmp = __raw_readl(EXYNOS5422_PSGEN_OPTION);
 	tmp |= EXYNOS5422_EMULATION;
-	__raw_writel(tmp, EXYNOS5422_PSGEN_OPTION_REG);
+	__raw_writel(tmp, EXYNOS5422_PSGEN_OPTION);
 }
 
 static int exynos_pm_suspend(void)
@@ -212,7 +212,7 @@ static int exynos_pm_suspend(void)
 	unsigned int count = 10000;
 
 	do {
-		tmp = __raw_readl(EXYNOS_COMMON_STATUS(0)) & 0x3;
+		tmp = __raw_readl(EXYNOS5422_ARM_COMMON_STATUS) & 0x3;
 		udelay(10);
 		count--;
 	} while (tmp && count);
@@ -226,12 +226,12 @@ static int exynos_pm_suspend(void)
 
 	s3c_pm_do_save(exynos_core_save, ARRAY_SIZE(exynos_core_save));
 
-	__raw_writel(0x00F00F00, EXYNOS_CENTRAL_SEQ_OPTION);
+	__raw_writel(0x00F00F00, EXYNOS5422_CENTRAL_SEQ_OPTION);
 
 	/* Setting Central Sequence Register for power down mode */
-	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	tmp = __raw_readl(EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
 	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
-	__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	__raw_writel(tmp, EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
 
 	return 0;
 }
@@ -241,8 +241,8 @@ static void exynos_pm_resume(void)
 	unsigned long tmp;
 	int i;
 
-	__raw_writel(EXYNOS5410_USE_STANDBY_WFI_ALL,
-		EXYNOS_CENTRAL_SEQ_OPTION);
+	__raw_writel(EXYNOS5422_USE_STANDBY_WFI_ALL,
+		EXYNOS5422_CENTRAL_SEQ_OPTION);
 
 	/* HACK */
 	exynos_smc(SMC_CMD_REG,
@@ -259,28 +259,28 @@ static void exynos_pm_resume(void)
 	 * S5P_CENTRAL_LOWPWR_CFG bit will not be set automatically
 	 * in this situation.
 	 */
-	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	tmp = __raw_readl(EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
 	if (!(tmp & EXYNOS_CENTRAL_LOWPWR_CFG)) {
 		tmp |= EXYNOS_CENTRAL_LOWPWR_CFG;
-		__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+		__raw_writel(tmp, EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
 		/* No need to perform below restore code */
 		goto early_wakeup;
 	}
 
 	/* For release retention */
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_DRAM_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_MAUDIO_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_JTAG_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_GPIO_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_UART_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCA_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCB_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_MMCC_OPTION);
-	__raw_writel((1 << 28), EXYNOS54XX_PAD_RET_HSI_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_EBIA_OPTION);
-	__raw_writel((1 << 28), EXYNOS_PAD_RET_EBIB_OPTION);
-	__raw_writel((1 << 28), EXYNOS5_PAD_RETENTION_SPI_OPTION);
-	__raw_writel((1 << 28), EXYNOS5_PAD_RETENTION_GPIO_SYSMEM_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_DRAM_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_MAU_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_JTAG_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_GPIO_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_UART_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_MMCA_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_MMCB_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_MMCC_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_HSI_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_EBIA_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_EBIB_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_SPI_OPTION);
+	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_DRAM_COREBLK_OPTION);
 
 	s3c_pm_do_restore_core(exynos_core_save, ARRAY_SIZE(exynos_core_save));
 
@@ -290,17 +290,17 @@ static void exynos_pm_resume(void)
 
 early_wakeup:
 
-	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1_REG);
+	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1);
 	tmp &= ~(EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
-	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
+	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1);
 
-	tmp = __raw_readl(EXYNOS5422_FSYS2_OPTION_REG);
+	tmp = __raw_readl(EXYNOS5422_FSYS2_OPTION);
 	tmp &= ~EXYNOS5422_EMULATION;
-	__raw_writel(tmp, EXYNOS5422_FSYS2_OPTION_REG);
+	__raw_writel(tmp, EXYNOS5422_FSYS2_OPTION);
 
-	tmp = __raw_readl(EXYNOS5422_PSGEN_OPTION_REG);
+	tmp = __raw_readl(EXYNOS5422_PSGEN_OPTION);
 	tmp &= ~EXYNOS5422_EMULATION;
-	__raw_writel(tmp, EXYNOS5422_PSGEN_OPTION_REG);
+	__raw_writel(tmp, EXYNOS5422_PSGEN_OPTION);
 
 	return;
 }
