@@ -113,6 +113,9 @@ struct asv_ops {
 	void		(*set_asv_info)(struct asv_info *asv_inform, bool show_value);
 };
 
+/* 5430 */
+unsigned int exynos5430_get_memory_size(void);
+
 /* define function for common asv */
 extern void add_asv_member(struct asv_info *exynos_asv_info);
 extern struct asv_info *asv_get(enum asv_type_id exynos_asv_type_id);

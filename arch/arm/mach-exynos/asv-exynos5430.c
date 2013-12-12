@@ -126,6 +126,8 @@ struct asv_fused_info {
 	unsigned int voltage_lock;
 };
 
+static unsigned int asv_mem_size;
+
 static struct asv_fused_info egl_fused_info;
 static struct asv_fused_info kfc_fused_info;
 static struct asv_fused_info g3d_fused_info;
@@ -183,6 +185,18 @@ static int __init get_isp_volt(char *str)
 }
 early_param("isp", get_isp_volt);
 #endif
+
+unsigned int exynos5430_get_memory_size(void)
+{
+	switch (asv_mem_size) {
+	case 0:
+		return 2;
+	case 1:
+		return 3;
+	}
+
+	return 0;
+}
 
 static unsigned int exynos5430_lock_voltage(unsigned int volt_lock)
 {
@@ -632,6 +646,7 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 
 	asv_ref_info.is_speedgroup = true;
 
+	asv_mem_size = (readl(S5P_VA_CHIPID + 0x0004) >> ASV_MEM_SIZE_SHIFT) & ASV_MEM_SIZE_MASK;
 	arm_speed_grp = readl(ASV_ARM_SPEED_GRP_REG);
 	kfc_speed_grp = readl(ASV_KFC_SPEED_GRP_REG);
 	g3d_mif_speed_grp = readl(ASV_G3D_MIF_SPEED_GRP_REG);
