@@ -266,10 +266,10 @@ int ppmu_reset(struct ppmu_info *ppmu);
 int ppmu_reset_total(struct ppmu_info *ppmu,
 			unsigned int size);
 int ppmu_count(struct ppmu_info *ppmu,
-		unsigned long *ccnt,
-		unsigned long *pmcnt);
+		unsigned long long *ccnt,
+		unsigned long long *pmcnt);
 int ppmu_count_total(struct ppmu_info *ppmu,
 			unsigned int size,
-			unsigned long *ccnt,
-			unsigned long *pmcnt);
+			unsigned long long *ccnt,
+			unsigned long long *pmcnt);
 #endif /* __DEVFREQ_EXYNOS_PPMU2_H */
