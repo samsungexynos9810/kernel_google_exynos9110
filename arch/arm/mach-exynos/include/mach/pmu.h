@@ -19,17 +19,19 @@
 
 /* PMU(Power Management Unit) support */
 enum sys_powerdown {
-#if defined (CONFIG_SOC_EXYNOS5422)
-	SYS_AFTR,
-	SYS_LPA,
-	SYS_DSTOP,
-#elif defined (CONFIG_SOC_EXYNOS5430)
+#ifdef CONFIG_SOC_EXYNOS5430
 	SYS_AFTR,
 	SYS_LPD,
 	SYS_LPA,
 	SYS_ALPA,
 	SYS_DSTOP,
 	SYS_DSTOP_PSR,
+#else
+	SYS_AFTR,
+	SYS_LPA,
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	SYS_DSTOP,
+#endif
 #endif
 	SYS_SLEEP,
 	NUM_SYS_POWERDOWN,
@@ -45,7 +47,7 @@ enum cpu_type {
 enum type_pmu_wdt_reset {
 	/* if pmu_wdt_reset is EXYNOS_SYS_WDTRESET */
 	PMU_WDT_RESET_TYPE0 = 0,
-	/* if pmu_wdt_reset is EXYNOS5410_SYS_WDTRESET */
+	/* if pmu_wdt_reset is EXYNOS5410_SYS_WDTRESET, EXYNOS5422_SYS_WDTRESET/ */
 	PMU_WDT_RESET_TYPE1,
 	/* if pmu_wdt_reset is EXYNOS5430_SYS_WDTRESET_EGL */
 	PMU_WDT_RESET_TYPE2,
