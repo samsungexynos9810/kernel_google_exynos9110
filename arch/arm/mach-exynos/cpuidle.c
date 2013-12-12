@@ -55,8 +55,8 @@
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 static cputime64_t cluster_off_time = 0;
-static unsigned long long last_time = 0;
-static bool cluster_off_flag = false;
+static unsigned long long __maybe_unused last_time = 0;
+static bool __maybe_unused cluster_off_flag = false;
 
 #define CLUSTER_OFF_TARGET_RESIDENCY	3000
 #endif
@@ -730,7 +730,7 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 }
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-static int can_enter_cluster_off(int cpu_id)
+static int __maybe_unused can_enter_cluster_off(int cpu_id)
 {
 #if defined(CONFIG_SCHED_HMP)
 	ktime_t now = ktime_get();
@@ -782,6 +782,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	temp &= 0xfffffff0;
 	__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
 	if (index == 2) {
 		per_cpu(in_c2_state, cpuid) = 1;
 		if (can_enter_cluster_off(cpuid)) {
@@ -790,6 +791,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 			last_time = get_jiffies_64();
 		}
 	}
+#endif
 
 	ret = cpu_suspend(flags, c2_finisher);
 	if (ret) {
@@ -798,6 +800,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 		__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 	}
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
 	if (cluster_off_flag) {
 		cluster_off_time += get_jiffies_64() - last_time;
 		cluster_off_flag = false;
@@ -805,6 +808,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 
 	if (index == 2)
 		per_cpu(in_c2_state, cpuid) = 0;
+#endif
 
 	clear_boot_flag(cpuid, C2_STATE);
 	cpu_pm_exit();
