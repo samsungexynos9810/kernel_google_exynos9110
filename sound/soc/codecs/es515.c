@@ -1450,7 +1450,7 @@ static int es515_build_algo_read_msg(char *msg, int *msg_len,
 	unsigned int index = reg & ES515_ADDR_MASK;
 	unsigned int paramid;
 
-	if (index > ARRAY_SIZE(es515_algo_paramid))
+	if (index >= ARRAY_SIZE(es515_algo_paramid))
 		return -EINVAL;
 
 	paramid = es515_algo_paramid[index];
@@ -1474,7 +1474,7 @@ static int es515_build_algo_write_msg(char *msg, int *msg_len,
 	unsigned int cmd;
 	unsigned int paramid;
 
-	if (index > ARRAY_SIZE(es515_algo_paramid))
+	if (index >= ARRAY_SIZE(es515_algo_paramid))
 		return -EINVAL;
 
 	paramid = es515_algo_paramid[index];
@@ -1511,7 +1511,7 @@ static int es515_build_dev_read_msg(char *msg, int *msg_len,
 	unsigned int index = reg & ES515_ADDR_MASK;
 	unsigned int paramid;
 
-	if (index > ARRAY_SIZE(es515_dev_paramid))
+	if (index >= ARRAY_SIZE(es515_dev_paramid))
 		return -EINVAL;
 
 	paramid = es515_dev_paramid[index];
@@ -1535,7 +1535,7 @@ static int es515_build_dev_write_msg(char *msg, int *msg_len,
 	unsigned int cmd;
 	unsigned int paramid;
 
-	if (index > ARRAY_SIZE(es515_dev_paramid))
+	if (index >= ARRAY_SIZE(es515_dev_paramid))
 		return -EINVAL;
 
 	paramid = es515_dev_paramid[index];
@@ -1572,7 +1572,7 @@ static int es515_build_cmd_read_msg(char *msg, int *msg_len,
 	unsigned int index = reg & ES515_ADDR_MASK;
 	struct es515_cmd_access *cmd_access;
 
-	if (index > ARRAY_SIZE(es515_cmd_access))
+	if (index >= ARRAY_SIZE(es515_cmd_access))
 		return -EINVAL;
 	cmd_access = es515_cmd_access + index;
 
@@ -1591,7 +1591,7 @@ static int es515_build_cmd_write_msg(char *msg, int *msg_len,
 	unsigned int index = reg & ES515_ADDR_MASK;
 	struct es515_cmd_access *cmd_access;
 
-	if (index > ARRAY_SIZE(es515_cmd_access))
+	if (index >= ARRAY_SIZE(es515_cmd_access))
 		return -EINVAL;
 	cmd_access = es515_cmd_access + index;
 
@@ -2150,8 +2150,7 @@ static int es515_get_device_param(struct snd_kcontrol *kcontrol,
 	msg[3] = value & 0x00ff;
 
 	value = es515_write_and_read_response(msg, msg_len);
-	if (value >= 0)
-		ucontrol->value.integer.value[0] = value;
+	ucontrol->value.integer.value[0] = value;
 
 	return 0;
 }
@@ -2233,8 +2232,7 @@ static int es515_get_algorithm_param(struct snd_kcontrol *kcontrol,
 	msg[3] = value & 0x00ff;
 
 	value = es515_write_and_read_response(msg, msg_len);
-	if (value >= 0)
-		ucontrol->value.integer.value[0] = value;
+	ucontrol->value.integer.value[0] = value;
 
 	return 0;
 }
@@ -2377,9 +2375,7 @@ static int es515_get_getdigital_gain(struct snd_kcontrol *kcontrol,
 	msg[3] = value & 0x00ff;
 
 	value = es515_write_and_read_response(msg, msg_len);
-	if (value >= 0) {
-		ucontrol->value.integer.value[0] = value;
-	}
+	ucontrol->value.integer.value[0] = value;
 
 	return 0;
 }
@@ -2463,8 +2459,7 @@ static int es515_get_getdata_path(struct snd_kcontrol *kcontrol,
 	msg[3] = value & 0x00ff;
 
 	value = es515_write_and_read_response(msg, msg_len);
-	if (value >= 0)
-		ucontrol->value.integer.value[0] = value;
+	ucontrol->value.integer.value[0] = value;
 
 	return 0;
 }
@@ -3721,10 +3716,6 @@ static int es515_i2c_write(struct es515_priv *es515, char *buf, int len)
 		},
 	};
 
-	if (es515->this_client == NULL) {
-		pr_err("i2c client struct null es515:%p\n", es515);
-		return 0;
-	}
 	if (!skip_debug && !fw_download)
 		pr_debug("[%s]: 0x%02x, 0x%02x, 0x%02x, 0x%02x,",
 				__func__, buf[0], buf[1], buf[2], buf[3]);
@@ -3841,9 +3832,11 @@ static irqreturn_t es515_threaded_isr(int irq, void *data)
 				case 13:
 					pr_debug("EP Short Circuit\n");
 					break;
+/* dead code
 				default:
 					pr_err("Unsupported Event\n");
 					break;
+*/
 				}
 			}
 		}
