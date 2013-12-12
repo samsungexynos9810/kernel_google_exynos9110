@@ -127,7 +127,7 @@ bool usb_phy_check_op(void)
 
 	return op;
 }
-EXPORT_SYMBOL_GPL(usb_check_phy_active);
+EXPORT_SYMBOL_GPL(usb_phy_check_op);
 
 /**
  * devm_usb_get_phy - find the USB PHY
