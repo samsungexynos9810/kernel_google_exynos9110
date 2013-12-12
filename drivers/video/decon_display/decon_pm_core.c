@@ -106,6 +106,7 @@ int init_display_pm(struct display_driver *dispdrv)
 
 	spin_lock_init(&dispdrv->pm_status.slock);
 	mutex_init(&dispdrv->pm_status.pm_lock);
+	mutex_init(&dispdrv->pm_status.clk_lock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	set_default_hibernation_mode(dispdrv);
 #else
@@ -342,10 +343,8 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
-	if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN
-	 || dispdrv->decon_driver.sfb->power_state == POWER_DOWN) {
+	if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN)
 		display_hibernation_power_on(dispdrv);
-	}
 
 	display_block_clock_on(dispdrv);
 
@@ -433,7 +432,6 @@ static int __display_hibernation_power_off(struct display_driver *dispdrv)
 #endif
 	call_pm_ops(dispdrv, dsi_driver, pwr_off, dispdrv);
 
-	call_block_pm_ops(dispdrv, clk_off, dispdrv);
 	return 0;
 }
 
@@ -492,15 +490,15 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 
 	pm_info("##### +");
 	disp_pm_gate_lock(dispdrv, true);
+	mutex_lock(&dispdrv->pm_status.pm_lock);
 
 	request_dynamic_hotplug(false);
 
-	mutex_lock(&sfb->output_lock);
-	disp_pm_runtime_get_sync(dispdrv);
+	pm_runtime_get_sync(dispdrv->display_driver);
 	__display_hibernation_power_on(dispdrv);
 	sfb->power_state = POWER_ON;
-	mutex_unlock(&sfb->output_lock);
 
+	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_pm_gate_lock(dispdrv, false);
 
 	pm_info("##### -\n");
@@ -517,14 +515,13 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 		return ret;
 	}
 
-	mutex_lock(&sfb->output_lock);
+	mutex_lock(&dispdrv->pm_status.pm_lock);
 	sfb->power_state = POWER_HIBER_DOWN;
 	__display_hibernation_power_off(dispdrv);
 	disp_pm_runtime_put_sync(dispdrv);
-	sfb->output_on = false;
-	mutex_unlock(&sfb->output_lock);
 
 	request_dynamic_hotplug(true);
+	mutex_unlock(&dispdrv->pm_status.pm_lock);
 
 	disp_debug_power_info();
 
@@ -536,14 +533,14 @@ void display_block_clock_on(struct display_driver *dispdrv)
 	if (!dispdrv->pm_status.clock_gating_on) return;
 
 	if (dispdrv->platform_status > DISP_STATUS_PM0) {
-		mutex_lock(&dispdrv->pm_status.pm_lock);
+		mutex_lock(&dispdrv->pm_status.clk_lock);
 		if (!dispdrv->pm_status.clock_enabled) {
 			pm_debug("+");
 			__display_block_clock_on(dispdrv);
 			dispdrv->pm_status.clock_enabled = 1;
 			pm_debug("-");
 		}
-		mutex_unlock(&dispdrv->pm_status.pm_lock);
+		mutex_unlock(&dispdrv->pm_status.clk_lock);
 	}
 }
 
@@ -551,12 +548,12 @@ void display_block_clock_off(struct display_driver *dispdrv)
 {
 	if (!dispdrv->pm_status.clock_gating_on) return;
 
-	mutex_lock(&dispdrv->pm_status.pm_lock);
+	mutex_lock(&dispdrv->pm_status.clk_lock);
 	if (dispdrv->pm_status.clock_enabled) {
 		pm_debug("+");
 		if (__display_block_clock_off(dispdrv) == 0)
 			dispdrv->pm_status.clock_enabled = 0;
 		pm_debug("-");
 	}
-	mutex_unlock(&dispdrv->pm_status.pm_lock);
+	mutex_unlock(&dispdrv->pm_status.clk_lock);
 }
