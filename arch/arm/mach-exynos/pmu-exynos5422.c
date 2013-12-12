@@ -334,30 +334,30 @@ static struct exynos_pmu_conf exynos5422_pmu_config[] = {
 };
 #endif
 
-void __iomem *exynos5_list_feed[] = {
-	EXYNOS5_ARM_CORE0_OPTION,
-	EXYNOS5_ARM_CORE1_OPTION,
-	EXYNOS5_ARM_COMMON_OPTION,
-	EXYNOS5_GSCL_OPTION,
-	EXYNOS5_ISP_OPTION,
-	EXYNOS5_MFC_OPTION,
-	EXYNOS5_G3D_OPTION,
-	EXYNOS5_DISP1_OPTION,
-	EXYNOS5_MAU_OPTION,
-	EXYNOS5_TOP_PWR_OPTION,
-	EXYNOS5_TOP_PWR_SYSMEM_OPTION,
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+void __iomem *exynos5422_list_feed[] = {
+	EXYNOS_ARM_CORE_OPTION(0),
+	EXYNOS_ARM_CORE_OPTION(1),
+	EXYNOS_ARM_CORE_OPTION(2),
+	EXYNOS_ARM_CORE_OPTION(3),
+	EXYNOS_ARM_CORE_OPTION(4),
+	EXYNOS_ARM_CORE_OPTION(5),
+	EXYNOS_ARM_CORE_OPTION(6),
+	EXYNOS_ARM_CORE_OPTION(7),
+	EXYNOS5422_ARM_COMMON_OPTION,
+	EXYNOS5422_KFC_COMMON_OPTION,
+	EXYNOS5422_SCALER_OPTION,
+	EXYNOS5422_ISP_OPTION,
+	EXYNOS5422_MFC_OPTION,
+	EXYNOS5422_G3D_OPTION,
+	EXYNOS5422_DISP1_OPTION,
+	EXYNOS5422_MAU_OPTION,
+	EXYNOS5422_G2D_OPTION,
+	EXYNOS5422_MSC_OPTION,
+	EXYNOS5422_TOP_PWR_OPTION,
+	EXYNOS5422_TOP_PWR_COREBLK_OPTION,
 };
-
-void __iomem *exynos5_list_diable_wfi_wfe[] = {
-	EXYNOS5_FSYS_ARM_OPTION,
-	EXYNOS5_ISP_ARM_OPTION,
-};
-
-void __iomem *exynos5_list_disable_pmu_reg[] = {
-	EXYNOS5_CMU_SYSCLK_ISP_SYS_PWR_REG,
-	EXYNOS5_CMU_RESET_ISP_SYS_PWR_REG,
-};
-
+#else
 void __iomem *exynos5422_list_feed[] = {
 	EXYNOS_ARM_CORE_OPTION(0),
 	EXYNOS_ARM_CORE_OPTION(1),
@@ -380,6 +380,7 @@ void __iomem *exynos5422_list_feed[] = {
 	EXYNOS5_TOP_PWR_OPTION,
 	EXYNOS5_TOP_PWR_SYSMEM_OPTION,
 };
+#endif
 
 void set_boot_flag(unsigned int cpu, unsigned int mode)
 {
@@ -540,18 +541,18 @@ void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type)
 		return;
 	}
 
-	value = __raw_readl(EXYNOS_AUTOMATIC_WDT_RESET_DISABLE);
+	value = __raw_readl(EXYNOS5422_AUTOMATIC_WDT_RESET_DISABLE);
 	if (on)
 		value &= ~wdt_auto_reset_dis;
 	else
 		value |= wdt_auto_reset_dis;
-	__raw_writel(value, EXYNOS_AUTOMATIC_WDT_RESET_DISABLE);
-	value = __raw_readl(EXYNOS_MASK_WDT_RESET_REQUEST);
+	__raw_writel(value, EXYNOS5422_AUTOMATIC_WDT_RESET_DISABLE);
+	value = __raw_readl(EXYNOS5422_MASK_WDT_RESET_REQUEST);
 	if (on)
 		value &= ~wdt_reset_mask;
 	else
 		value |= wdt_reset_mask;
-	__raw_writel(value, EXYNOS_MASK_WDT_RESET_REQUEST);
+	__raw_writel(value, EXYNOS5422_MASK_WDT_RESET_REQUEST);
 
 	return;
 }
@@ -582,43 +583,35 @@ void exynos_reset_assert_ctrl(bool on)
 
 	on = true;
 
-	option = __raw_readl(EXYNOS54XX_ARM_COMMON_OPTION);
+	option = __raw_readl(EXYNOS5422_ARM_COMMON_OPTION);
 	option = on ? (option | EXYNOS_USE_DELAYED_RESET_ASSERTION) :
 			(option & ~EXYNOS_USE_DELAYED_RESET_ASSERTION);
-	__raw_writel(option, EXYNOS54XX_ARM_COMMON_OPTION);
+	__raw_writel(option, EXYNOS5422_ARM_COMMON_OPTION);
 
-	option = __raw_readl(EXYNOS54XX_KFC_COMMON_OPTION);
+	option = __raw_readl(EXYNOS5422_KFC_COMMON_OPTION);
 	option = on ? (option | EXYNOS_USE_DELAYED_RESET_ASSERTION) :
 			(option & ~EXYNOS_USE_DELAYED_RESET_ASSERTION);
-	__raw_writel(option, EXYNOS54XX_KFC_COMMON_OPTION);
+	__raw_writel(option, EXYNOS5422_KFC_COMMON_OPTION);
 }
 
 void exynos_set_core_flag(void)
 {
-	__raw_writel(KFC, EXYNOS_IROM_DATA2);
+	__raw_writel(KFC, EXYNOS5422_IROM_DATA_REG2);
 }
 
-static void exynos54xx_init_pmu(void)
+static void exynos_use_feedback(void)
 {
 	unsigned int i;
 	unsigned int tmp;
-	void __iomem **exynos_list_feed;
-	unsigned int size = 0;
-
-	if (soc_is_exynos5422()) {
-		exynos_list_feed = exynos5422_list_feed;
-		size = ARRAY_SIZE(exynos5422_list_feed);
-	} else
-		pr_err("Unsupported SOC type!\n");
 
 	/*
 	 * Enable only SC_FEEDBACK
 	 */
-	for (i = 0; i < size; i++) {
-		tmp = __raw_readl(exynos_list_feed[i]);
+	for (i = 0; i < ARRAY_SIZE(exynos5422_list_feed); i++) {
+		tmp = __raw_readl(exynos5422_list_feed[i]);
 		tmp &= ~EXYNOS5_USE_SC_COUNTER;
 		tmp |= EXYNOS5_USE_SC_FEEDBACK;
-		__raw_writel(tmp, exynos_list_feed[i]);
+		__raw_writel(tmp, exynos5422_list_feed[i]);
 	}
 }
 
@@ -632,54 +625,54 @@ int __init exynos5422_pmu_init(void)
 	exynos_cpu.is_last_core = exynos5422_is_last_core;
 
 	/* Enable USE_STANDBY_WFI for all CORE */
-	__raw_writel(EXYNOS5410_USE_STANDBY_WFI_ALL,
-			EXYNOS_CENTRAL_SEQ_OPTION);
+	__raw_writel(EXYNOS5422_USE_STANDBY_WFI_ALL,
+			EXYNOS5422_CENTRAL_SEQ_OPTION);
 
-	value = __raw_readl(EXYNOS_L2_OPTION(0));
+	value = __raw_readl(EXYNOS5422_ARM_L2_OPTION);
 	value &= ~EXYNOS5_USE_RETENTION;
-	__raw_writel(value, EXYNOS_L2_OPTION(0));
+	__raw_writel(value, EXYNOS5422_ARM_L2_OPTION);
 
-	value = __raw_readl(EXYNOS_L2_OPTION(1));
+	value = __raw_readl(EXYNOS5422_KFC_L2_OPTION);
 	value &= ~EXYNOS5_USE_RETENTION;
-	__raw_writel(value, EXYNOS_L2_OPTION(1));
+	__raw_writel(value, EXYNOS5422_KFC_L2_OPTION);
 
 	/*
 	 * To skip to control L2 commont at resume and DFT logic,
 	 * set the #0 and #1 bit of PMU_SPARE3.
 	 */
-	__raw_writel(0x3, EXYNOS_PMU_SPARE3);
+	__raw_writel(EXYNOS5422_SWRESET_KFC_SEL, EXYNOS5422_PMU_SPARE3);
 
 	/*
 	 * If turn L2_COMMON off, clocks relating ATB async bridge is gated.
 	 * So when ISP power is gated, LPI is stucked.
 	 */
-	value = __raw_readl(EXYNOS54XX_LPI_MASK0);
+	value = __raw_readl(EXYNOS5422_LPI_MASK0);
 	value |= EXYNOS5422_ATB_ISP_ARM;
-	__raw_writel(value, EXYNOS54XX_LPI_MASK0);
+	__raw_writel(value, EXYNOS5422_LPI_MASK0);
 
-	value = __raw_readl(EXYNOS54XX_LPI_MASK1);
+	value = __raw_readl(EXYNOS5422_LPI_MASK1);
 	value |= EXYNOS5422_ATB_KFC;
-	__raw_writel(value, EXYNOS54XX_LPI_MASK1);
+	__raw_writel(value, EXYNOS5422_LPI_MASK1);
 
 	/*
 	 * To prevent form issuing new bus request form L2 memory system
 	 * If core status is power down, should be set '1' to L2  power down
 	 */
-	value = __raw_readl(EXYNOS54XX_ARM_COMMON_OPTION);
+	value = __raw_readl(EXYNOS5422_ARM_COMMON_OPTION);
 	value |= EXYNOS5_SKIP_DEACTIVATE_ACEACP_IN_PWDN;
-	__raw_writel(value, EXYNOS54XX_ARM_COMMON_OPTION);
+	__raw_writel(value, EXYNOS5422_ARM_COMMON_OPTION);
 
 	/*
 	* Set PSHOLD port for ouput high
 	*/
-	value = __raw_readl(EXYNOS_PS_HOLD_CONTROL);
+	value = __raw_readl(EXYNOS5422_PS_HOLD_CONTROL);
 	value |= EXYNOS_PS_HOLD_OUTPUT_HIGH;
-	__raw_writel(value, EXYNOS_PS_HOLD_CONTROL);
+	__raw_writel(value, EXYNOS5422_PS_HOLD_CONTROL);
 
 	/*
 	* Enable signal for PSHOLD port
 	*/
-	value = __raw_readl(EXYNOS_PS_HOLD_CONTROL);
+	value = __raw_readl(EXYNOS5422_PS_HOLD_CONTROL);
 	value |= EXYNOS_PS_HOLD_EN;
 	__raw_writel(value, EXYNOS_PS_HOLD_CONTROL);
 
@@ -687,17 +680,17 @@ int __init exynos5422_pmu_init(void)
 	 * DUR_WAIT_RESET : 0xF
 	 * This setting is to reduce suspend/resume time.
 	 */
-	__raw_writel(DUR_WAIT_RESET, EXYNOS5_LOGIC_RESET_DURATION3);
+	__raw_writel(DUR_WAIT_RESET, EXYNOS5422_LOGIC_RESET_DURATION3);
 
 	/* Serialized CPU wakeup of Eagle */
-	__raw_writel(SPREAD_ENABLE, EXYNOS5_ARM_INTR_SPREAD_ENABLE);
-	__raw_writel(SPREAD_USE_STANDWFI, EXYNOS5_ARM_INTR_SPREAD_USE_STANDBYWFI);
-	__raw_writel(0x1, EXYNOS5_UP_SCHEDULER);
+	__raw_writel(SPREAD_ENABLE, EXYNOS5422_ARM_INTR_SPREAD_ENABLE);
+	__raw_writel(SPREAD_USE_STANDWFI, EXYNOS5422_ARM_INTR_SPREAD_USE_STANDBYWFI);
+	__raw_writel(0x1, EXYNOS5422_UP_SCHEDULER);
 
 	/* PMU setting to use L2 auto-power gating */
-	value = __raw_readl(EXYNOS_COMMON_OPTION(0));
+	value = __raw_readl(EXYNOS5422_ARM_COMMON_OPTION);
 	value |= (1 << 30) | (1 << 29) | (1 << 9);
-	__raw_writel(value, EXYNOS_COMMON_OPTION(0));
+	__raw_writel(value, EXYNOS5422_ARM_COMMON_OPTION);
 
 	exynos_reset_assert_ctrl(false);
 
@@ -718,7 +711,7 @@ int __init exynos5422_pmu_init(void)
 	 * Set measure power on/off duration
 	 * Use SC_USE_FEEDBACK
 	 */
-	exynos54xx_init_pmu();
+	exynos_use_feedback();
 
 	exynos_pmu_config = exynos5422_pmu_config;
 
