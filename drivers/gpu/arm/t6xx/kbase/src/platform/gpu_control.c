@@ -157,9 +157,6 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 	if (!platform)
 		return -ENODEV;
 
-	if (clock == prev_clock)
-		return 0;
-
 	if ((clock > platform->table[platform->table_size-1].clock) || (clock < platform->table[0].clock)) {
 		GPU_LOG(DVFS_ERROR, "Mismatch clock error (%d)\n", clock);
 		return -1;
