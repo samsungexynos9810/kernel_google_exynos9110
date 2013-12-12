@@ -3103,45 +3103,78 @@ void __init exynos5430_clk_init(struct device_node *np)
 			EXYNOS5430_EGL_PLL_LOCK,
 			EXYNOS5430_EGL_PLL_CON0, pll_egl_kfc_rate_table, ARRAY_SIZE(pll_egl_kfc_rate_table));
 
+	if (egl_pll == NULL)
+		panic("%s: Fail to register egl_pll", __func__);
+
 	kfc_pll = samsung_clk_register_pll35xx("fout_kfc_pll", "fin_pll",
 			EXYNOS5430_KFC_PLL_LOCK,
 			EXYNOS5430_KFC_PLL_CON0, pll_egl_kfc_rate_table, ARRAY_SIZE(pll_egl_kfc_rate_table));
+
+	if (kfc_pll == NULL)
+		panic("%s: Fail to register kfc_pll", __func__);
 
 	mem0_pll = samsung_clk_register_pll35xx("fout_mem0_pll", "fin_pll",
 			EXYNOS5430_MEM0_PLL_LOCK,
 			EXYNOS5430_MEM0_PLL_CON0, pll_mem0_rate_table, ARRAY_SIZE(pll_mem0_rate_table));
 
+	if (mem0_pll == NULL)
+		panic("%s: Fail to register mem0_pll", __func__);
+
 	mem1_pll = samsung_clk_register_pll35xx("fout_mem1_pll", "fin_pll",
 			EXYNOS5430_MEM1_PLL_LOCK,
 			EXYNOS5430_MEM1_PLL_CON0, pll_mem1_rate_table, ARRAY_SIZE(pll_mem1_rate_table));
+
+	if (mem1_pll == NULL)
+		panic("%s: Fail to register mem1_pll", __func__);
 
 	mfc_pll = samsung_clk_register_pll35xx("fout_mfc_pll", "fin_pll",
 			EXYNOS5430_MFC_PLL_LOCK,
 			EXYNOS5430_MFC_PLL_CON0, pll_mfc_rate_table, ARRAY_SIZE(pll_mfc_rate_table));
 
+	if (mfc_pll == NULL)
+		panic("%s: Fail to register mfc_pll", __func__);
+
 	bus_pll = samsung_clk_register_pll35xx("fout_bus_pll", "fin_pll",
 			EXYNOS5430_BUS_PLL_LOCK,
 			EXYNOS5430_BUS_PLL_CON0, pll_bus_rate_table, ARRAY_SIZE(pll_bus_rate_table));
+
+	if (bus_pll == NULL)
+		panic("%s: Fail to register bus_pll", __func__);
 
 	mphy_pll = samsung_clk_register_pll35xx("fout_mphy_pll", "fin_pll",
 			EXYNOS5430_MPHY_PLL_LOCK,
 			EXYNOS5430_MPHY_PLL_CON0, pll_mphy_rate_table, ARRAY_SIZE(pll_mphy_rate_table));
 
+	if (mphy_pll == NULL)
+		panic("%s: Fail to register mphy_pll", __func__);
+
 	disp_pll = samsung_clk_register_pll35xx("fout_disp_pll", "fin_pll",
 			EXYNOS5430_DISP_PLL_LOCK,
 			EXYNOS5430_DISP_PLL_CON0, NULL, 0);
+
+	if (disp_pll == NULL)
+		panic("%s: Fail to register disp_pll", __func__);
 
 	aud_pll = samsung_clk_register_pll36xx("fout_aud_pll", "fin_pll",
 			EXYNOS5430_AUD_PLL_LOCK,
 			EXYNOS5430_AUD_PLL_CON0, pll_aud_rate_table, ARRAY_SIZE(pll_aud_rate_table));
 
+	if (aud_pll == NULL)
+		panic("%s: Fail to register aud_pll", __func__);
+
 	g3d_pll = samsung_clk_register_pll35xx("fout_g3d_pll", "fin_pll",
 			EXYNOS5430_G3D_PLL_LOCK,
 			EXYNOS5430_G3D_PLL_CON0, pll_g3d_rate_table, ARRAY_SIZE(pll_g3d_rate_table));
 
+	if (g3d_pll == NULL)
+		panic("%s: Fail to register g3d_pll", __func__);
+
 	isp_pll = samsung_clk_register_pll35xx("fout_isp_pll", "fin_pll",
 			EXYNOS5430_ISP_PLL_LOCK,
 			EXYNOS5430_ISP_PLL_CON0, pll_isp_rate_table, ARRAY_SIZE(pll_isp_rate_table));
+
+	if (isp_pll == NULL)
+		panic("%s: Fail to register isp_pll", __func__);
 
 	samsung_clk_add_lookup(g3d_pll, fout_g3d_pll);
 
