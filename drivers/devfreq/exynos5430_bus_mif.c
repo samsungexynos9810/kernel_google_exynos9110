@@ -864,7 +864,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 	if (total_layer_count > 5) {
 		pr_err("DEVFREQ(MIF) : total window count should be between 1 and 5\n");
-		return;
+		goto out;
 	}
 
 	if (media_resolution == RESOLUTION_FULLHD) {
@@ -876,7 +876,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		if (media_enabled_gscl_local) {
 			if (total_layer_count == NUM_LAYER_5) {
 				pr_err("DEVFREQ(MIF) : can't support mif and disp distriction. using gscl local with 5 windows.\n");
-				return;
+				goto out;
 			}
 			if (mif_qos > distriction_fullhd_gscl[total_layer_count].mif_level)
 				mif_qos = distriction_fullhd_gscl[total_layer_count].mif_level;
@@ -930,6 +930,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 	}
 
 	exynos5_update_district_disp_level(disp_qos);
+out:
 	mutex_unlock(&media_mutex);
 }
 
@@ -1245,7 +1246,8 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "DEVFREQ(MIF) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+		ret = PTR_ERR(target_opp);
+		goto out;
 	}
 
 	*target_freq = opp_get_freq(target_opp);
@@ -2676,7 +2678,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 	if (total_layer_count > 5) {
 		pr_err("DEVFREQ(MIF) : total window count should be between 1 and 5\n");
-		return;
+		goto out;
 	}
 
 	if (media_resolution == RESOLUTION_FULLHD) {
@@ -2688,7 +2690,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		if (media_enabled_gscl_local) {
 			if (total_layer_count == NUM_LAYER_5) {
 				pr_err("DEVFREQ(MIF) : can't support mif and disp distriction. using gscl local with 5 windows.\n");
-				return;
+				goto out;
 			}
 			if (mif_qos > distriction_fullhd_gscl[total_layer_count].mif_level)
 				mif_qos = distriction_fullhd_gscl[total_layer_count].mif_level;
@@ -2741,6 +2743,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 	}
 
 	exynos5_update_district_disp_level(disp_qos);
+out:
 	mutex_unlock(&media_mutex);
 }
 
@@ -3040,7 +3043,8 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "DEVFREQ(MIF) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+		ret = PTR_ERR(target_opp);
+		goto out;
 	}
 
 	*target_freq = opp_get_freq(target_opp);

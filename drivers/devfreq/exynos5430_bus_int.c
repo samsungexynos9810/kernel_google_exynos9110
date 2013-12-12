@@ -570,7 +570,8 @@ static int exynos5_devfreq_int_target(struct device *dev,
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "DEVFREQ(INT) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+		ret = PTR_ERR(target_opp);
+		goto out;
 	}
 
 	*target_freq = opp_get_freq(target_opp);
@@ -1483,7 +1484,8 @@ static int exynos5_devfreq_int_target(struct device *dev,
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "DEVFREQ(INT) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+		ret = PTR_ERR(target_opp);
+		goto out;
 	}
 
 	*target_freq = opp_get_freq(target_opp);
