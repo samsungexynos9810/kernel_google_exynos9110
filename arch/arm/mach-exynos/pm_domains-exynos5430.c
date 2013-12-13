@@ -720,14 +720,20 @@ static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 #define __set_mask(name) __raw_writel(name##_ALL, name)
 #define __clr_mask(name) __raw_writel(~(name##_ALL), name)
 
-static int lpi_disable(const char *name)
+static int force_down_pre(const char *name)
 {
+	unsigned int reg;
 
 	if (strncmp(name, "pd-cam0", 7) == 0) {
 		__set_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
 		__set_mask(EXYNOS5430_LPI_MASK_CAM0_ASYNCBRIDGE);
 		__set_mask(EXYNOS5430_LPI_MASK_CAM0_NOCBUS);
 	} else if (strncmp(name, "pd-cam1", 7) == 0) {
+		/* in case of cam1, should be clear STANDBY_WFI */
+		reg = __raw_readl(EXYNOS5430_A5IS_OPTION);
+		reg &= ~(1 << 16);
+		__raw_writel(reg, EXYNOS5430_A5IS_OPTION);
+
 		__set_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
 		__set_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
 		__set_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
@@ -742,7 +748,7 @@ static int lpi_disable(const char *name)
 	return 0;
 }
 
-static int lpi_enable(const char *name)
+static int force_down_post(const char *name)
 {
 	if (strncmp(name, "pd-cam0", 7) == 0) {
 		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
@@ -804,23 +810,28 @@ static int exynos_pd_power_off_with_lpi(struct exynos_pm_domain *pd, int power_f
 		timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
 
 		if (unlikely(!timeout)) {
-			pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
+			pr_err(PM_DOMAIN_PREFIX "%s can't control power, try again\n", pd->name);
 
-			if (lpi_disable(pd->name))
-				pr_warn("%s: failed to disable LPI mask\n", pd->name);
+			/* check power ON status */
+			if (__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) {
+				if (force_down_pre(pd->name))
+					pr_warn("%s: failed to make force down state\n", pd->name);
 
-			timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+				timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
 
-			if (lpi_enable(pd->name))
-				pr_warn("%s: failed to enable LPI mask\n", pd->name);
+				if (force_down_post(pd->name))
+					pr_warn("%s: failed to restore normal state\n", pd->name);
 
-			if (unlikely(!timeout)) {
-				pr_err(PM_DOMAIN_PREFIX "%s can't control power with LPI masking, timeout\n",
-						pd->name);
-				mutex_unlock(&pd->access_lock);
-				return -ETIMEDOUT;
+				if (unlikely(!timeout)) {
+					pr_err(PM_DOMAIN_PREFIX "%s can't control power forcedly, timeout\n",
+							pd->name);
+					mutex_unlock(&pd->access_lock);
+					return -ETIMEDOUT;
+				} else {
+					pr_warn(PM_DOMAIN_PREFIX "%s force power down success\n", pd->name);
+				}
 			} else {
-				pr_warn(PM_DOMAIN_PREFIX "%s force power down success\n", pd->name);
+				pr_warn(PM_DOMAIN_PREFIX "%s power-off already\n", pd->name);
 			}
 		}
 
