@@ -122,13 +122,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_THERM_TRIP_EN			(1 << 12)
 #define EXYNOS_MUX_ADDR				0x600000
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-#define EFUSE_MIN_VALUE				0
-#define EFUSE_MAX_VALUE				255
-#else
 #define EFUSE_MIN_VALUE 			40
 #define EFUSE_MAX_VALUE 			100
-#endif
 
 /* In-kernel thermal framework related macros & definations */
 #define SENSOR_NAME_LEN				16
@@ -883,10 +878,13 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 		data->temp_error1[id] = 75;
 	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
-	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) ||
-			(data->temp_error1[id] > EFUSE_MAX_VALUE) ||
-			(data->temp_error2[id] != 0))
+#ifndef CONFIG_SOC_EXYNOS5430_REV_1
+	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE))
 		data->temp_error1[id] = pdata->efuse_value;
+#else
+	if (data->temp_error1[id] == 0)
+		data->temp_error1[id] = pdata->efuse_value;
+#endif
 
 	/* Count trigger levels to be enabled */
 	for (i = 0; i < MAX_THRESHOLD_LEVS; i++)
