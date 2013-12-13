@@ -464,6 +464,9 @@ int edid_update(struct hdmi_device *hdev)
 		edid_misc = specs.misc;
 	pr_info("EDID: misc flags %08x", edid_misc);
 
+	if (!specs.audiodb)
+		goto out;
+
 	for (i = 0; i < specs.audiodb_len; i++) {
 		if (specs.audiodb[i].format != FB_AUDIO_LPCM)
 			continue;
@@ -491,10 +494,6 @@ int edid_update(struct hdmi_device *hdev)
 	}
 	pr_info("EDID: Audio channels %d", max_audio_channels);
 
-	fb_destroy_modedb(specs.modedb);
-	fb_destroy_audiodb(specs.audiodb);
-	fb_destroy_videodb(specs.videodb);
-	fb_destroy_vsdb(specs.vsdb);
 out:
 	/* No supported preset found, use default */
 	if (first)

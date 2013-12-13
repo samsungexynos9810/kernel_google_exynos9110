@@ -810,6 +810,10 @@ int hdmi_set_gpio(struct hdmi_device *hdev)
 	if (of_get_property(dev->of_node, "gpios", NULL) != NULL) {
 		/* HPD */
 		res->gpio_hpd = of_get_gpio(dev->of_node, 0);
+		if (res->gpio_hpd < 0) {
+			dev_err(dev, "failed to get gpio hpd\n");
+			return -ENODEV;
+		}
 		if (gpio_request(res->gpio_hpd, "hdmi-hpd")) {
 			dev_err(dev, "failed to request hdmi-hpd\n");
 			ret = -ENODEV;
@@ -820,6 +824,10 @@ int hdmi_set_gpio(struct hdmi_device *hdev)
 		}
 		/* Level shifter */
 		res->gpio_ls = of_get_gpio(dev->of_node, 1);
+		if (res->gpio_ls < 0) {
+			dev_err(dev, "failed to get gpio ls\n");
+			return -ENODEV;
+		}
 		if (gpio_request(res->gpio_ls, "hdmi-ls")) {
 			dev_err(dev, "failed to request hdmi-ls\n");
 			ret = -ENODEV;
@@ -830,6 +838,10 @@ int hdmi_set_gpio(struct hdmi_device *hdev)
 		}
 		/* DDC */
 		res->gpio_dcdc = of_get_gpio(dev->of_node, 2);
+		if (res->gpio_dcdc < 0) {
+			dev_err(dev, "failed to get gpio dcdc\n");
+			return -ENODEV;
+		}
 		if (gpio_request(res->gpio_dcdc, "hdmi-dcdc")) {
 			dev_err(dev, "failed to request hdmi-dcdc\n");
 			ret = -ENODEV;
@@ -910,7 +922,7 @@ static int hdmi_probe(struct platform_device *pdev)
 		pdata = hdmi_dev->pdata;
 	} else {
 		hdmi_dev->pdata = dev->platform_data;
-		memcpy(hdmi_dev->pdata, pdata, sizeof(*pdata));
+		pdata = hdmi_dev->pdata;
 	}
 	dev_info(dev, "HDMI ip version %d\n", pdata->ip_ver);
 

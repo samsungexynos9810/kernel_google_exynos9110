@@ -1854,13 +1854,13 @@ void hdmi_timing_apply(struct hdmi_device *hdev,
 	hdmi_writeb(hdev, HDMI_TG_DECON_EN, 1);
 }
 
-const u8 *hdmiphy_timing2conf(struct v4l2_dv_timings timings)
+static const u8 *hdmiphy_timing2conf(struct v4l2_dv_timings *timings)
 {
 	int i;
 
 	for (i = 0; i < hdmiphy_conf_cnt; ++i)
 		if (hdmi_match_timings(&hdmiphy_conf[i].dv_timings,
-					&timings, 0))
+					timings, 0))
 			break;
 
 	if (i == hdmi_pre_cnt)
@@ -1883,7 +1883,7 @@ int hdmi_conf_apply(struct hdmi_device *hdmi_dev)
 	/* configure presets */
 	timings = hdmi_dev->cur_timings;
 
-	data = hdmiphy_timing2conf(timings);
+	data = hdmiphy_timing2conf(&timings);
 	if (!data) {
 		dev_err(dev, "format not supported\n");
 		return -EINVAL;

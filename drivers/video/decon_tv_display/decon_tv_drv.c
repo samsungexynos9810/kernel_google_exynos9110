@@ -90,6 +90,12 @@ static int dex_set_output(struct dex_device *dex)
 	struct v4l2_mbus_framefmt mbus_fmt;
 	int ret;
 
+	mbus_fmt.width = 0;
+	mbus_fmt.height = 0;
+	mbus_fmt.code = 0;
+	mbus_fmt.field = 0;
+	mbus_fmt.colorspace = 0;
+
 	/* find sink pad of output via enabled link*/
 	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
 	if (hdmi_sd == NULL)
@@ -274,6 +280,9 @@ static int dex_get_hdmi_config(struct dex_device *dex,
 	struct v4l2_control ctrl;
 	int ret = 0;
 	dex_dbg("state : %d\n", hdmi_data->state);
+
+	ctrl.id = 0;
+	ctrl.value = 0;
 
 	/* find sink pad of output via enabled link*/
 	hdmi_sd = dex_remote_subdev(dex->windows[DEX_DEFAULT_WIN]);
@@ -1467,7 +1476,7 @@ static int dex_probe(struct platform_device *pdev)
 		pdata = dex->pdata;
 	} else {
 		dex->pdata = dev->platform_data;
-		memcpy(dex->pdata, pdata, sizeof(*pdata));
+		pdata = dex->pdata;
 	}
 	dev_info(dev, "DECON-TV ip version %d\n", pdata->ip_ver);
 
