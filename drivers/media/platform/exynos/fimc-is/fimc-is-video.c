@@ -1306,21 +1306,3 @@ int buffer_done(struct fimc_is_video_ctx *vctx, u32 index)
 
 	return ret;
 }
-
-long video_ioctl3(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	int ret = 0;
-	struct fimc_is_video_ctx *video_ctx = file->private_data;
-
-	if (mutex_lock_interruptible(&video_ctx->lock)) {
-		err("mutex_lock_interruptible is fail");
-		ret = -ERESTARTSYS;
-		goto p_err;
-	}
-
-	ret = video_ioctl2(file, cmd, arg);
-
-p_err:
-	mutex_unlock(&video_ctx->lock);
-	return ret;
-}
