@@ -25,7 +25,11 @@
 
 #include <plat/cpu.h>
 
-#define CHIP_ID2_REG			(S5P_VA_CHIPID)
+#define CHIP_ID2_REG			(S5P_VA_CHIPID + 0x4)
+#define EXYNOS5430_IDS_OFFSET		(16)
+#define EXYNOS5430_IDS_MASK		(0xFF)
+#define ASV_MEM_SIZE_SHIFT		(4)
+#define ASV_MEM_SIZE_MASK		(0x3)
 
 #define ASV_ARM_SPEED_GRP_REG		(S5P_VA_CHIPID2 + 0x10)
 #define ASV_ARM_GRP_1_OFFSET		(0)
@@ -677,6 +681,41 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 		isp_fused_info.speed_grp[EXYNOS5430_GRP_L2] = int_fused_info.speed_grp[EXYNOS5430_GRP_L2];
 		isp_fused_info.speed_grp[EXYNOS5430_GRP_L3] = int_fused_info.speed_grp[EXYNOS5430_GRP_L3];
 		isp_fused_info.voltage_lock = int_fused_info.voltage_lock;
+
+		/* temporary ASV group */
+		if (egl_fused_info.speed_grp[EXYNOS5430_GRP_L1] == 0) {
+			unsigned int temp_asv_group;
+			unsigned int ids_value = readl(CHIP_ID2_REG);
+			int i;
+
+			ids_value = (ids_value >> EXYNOS5430_IDS_OFFSET) & EXYNOS5430_IDS_MASK;
+
+			if (ids_value >= 150)
+				temp_asv_group = 13;
+			else if (ids_value < 150 && ids_value >= 140)
+				temp_asv_group = 12;
+			else if (ids_value < 140 && ids_value >= 130)
+				temp_asv_group = 11;
+			else if (ids_value < 130 && ids_value >= 120)
+				temp_asv_group = 10;
+			else if (ids_value < 120 && ids_value >= 110)
+				temp_asv_group = 9;
+			else if (ids_value < 110 && ids_value >= 100)
+				temp_asv_group = 8;
+			else
+				temp_asv_group = 5;
+
+			for (i = 0; i < EXYNOS5430_GRP_MAX_NR; i++) {
+				egl_fused_info.speed_grp[i] = temp_asv_group;
+				kfc_fused_info.speed_grp[i] = temp_asv_group;
+				g3d_fused_info.speed_grp[i] = temp_asv_group;
+				mif_fused_info.speed_grp[i] = temp_asv_group;
+				int_fused_info.speed_grp[i] = temp_asv_group;
+				isp_fused_info.speed_grp[i] = temp_asv_group;
+			}
+
+			pr_info("EXYNOS5430 ASV : IDS : %u\n", ids_value);
+		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		egl_fused_info.speed_grp[EXYNOS5430_GRP_L1] =
 			(arm_speed_grp >> ASV_ARM_GRP_1_OFFSET) & ASV_SPEED_GRP_MASK;
