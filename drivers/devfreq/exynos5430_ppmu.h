@@ -44,8 +44,8 @@ struct devfreq_exynos {
 	struct list_head node;
 	struct ppmu_info *ppmu_list;
 	unsigned int ppmu_count;
-	unsigned long val_ccnt;
-	unsigned long val_pmcnt;
+	unsigned long long val_ccnt;
+	unsigned long long val_pmcnt;
 };
 
 int exynos5430_devfreq_init(struct devfreq_exynos *de);
