@@ -183,7 +183,7 @@ struct devfreq_opp_table devfreq_mif_opp_list[] = {
 };
 
 struct devfreq_clk_value aclk_clk2x_825[] = {
-	{0x1000, ((0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, (0x1 << 20), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_633[] = {
@@ -191,31 +191,31 @@ struct devfreq_clk_value aclk_clk2x_633[] = {
 };
 
 struct devfreq_clk_value aclk_clk2x_543[] = {
-	{0x1000, (0x1 << 28), ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
+	{0x1000, 0, ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_413[] = {
-	{0x1000, ((0x1 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, ((0x1 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_275[] = {
-	{0x1000, ((0x2 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, ((0x2 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_206[] = {
-	{0x1000, ((0x3 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, ((0x3 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_165[] = {
-	{0x1000, ((0x4 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, ((0x4 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_138[] = {
-	{0x1000, ((0x5 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, ((0x5 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value aclk_clk2x_103[] = {
-	{0x1000, ((0x7 << 28) | (0x1 << 20) | (0x1 << 16)), ((0xF << 28) | (0x1 << 12))},
+	{0x1000, ((0x7 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value *aclk_clk2x_list[] = {
@@ -230,25 +230,34 @@ struct devfreq_clk_value *aclk_clk2x_list[] = {
 	aclk_clk2x_103,
 };
 
-struct devfreq_clk_state aclk_mif_400_bus_pll[] = {
-	{MOUT_ACLK_MIF_400,     MOUT_BUS_PLL_DIV2},
+struct devfreq_clk_state aclk_mif_400_mem1_pll[] = {
+	{MOUT_ACLK_MIF_400,     MOUT_MEM1_PLL_DIV2},
 };
 
-struct devfreq_clk_states aclk_mif_400_bus_pll_list = {
-	.state = aclk_mif_400_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_mif_400_bus_pll),
+struct devfreq_clk_state aclk_mifnm_200_bus_pll[] = {
+	{DOUT_MIF_PRE,		MOUT_ACLK_MIFNM_200},
+};
+
+struct devfreq_clk_states aclk_mif_400_mem1_pll_list = {
+	.state = aclk_mif_400_mem1_pll,
+	.state_count = ARRAY_SIZE(aclk_mif_400_mem1_pll),
+};
+
+struct devfreq_clk_states aclk_mifnm_200_bus_pll_list = {
+	.state = aclk_mifnm_200_bus_pll,
+	.state_count = ARRAY_SIZE(aclk_mifnm_200_bus_pll),
 };
 
 struct devfreq_clk_info aclk_mif_400[] = {
-	{LV0,   413000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV1,   275000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV2,   275000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV3,   207000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV4,   165000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV5,   165000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV6,   138000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV7,   138000000,      0,      &aclk_mif_400_bus_pll_list},
-	{LV8,   104000000,      0,      &aclk_mif_400_bus_pll_list},
+	{LV0,   413000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV1,   275000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV2,   275000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV3,   207000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV4,   165000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV5,   165000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV6,   138000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV7,   138000000,      0,      &aclk_mif_400_mem1_pll_list},
+	{LV8,   104000000,      0,      &aclk_mif_400_mem1_pll_list},
 };
 
 struct devfreq_clk_info aclk_mif_200[] = {
@@ -264,63 +273,63 @@ struct devfreq_clk_info aclk_mif_200[] = {
 };
 
 struct devfreq_clk_info mif_pre[] = {
-	{LV0,   825000000,      0,      NULL},
-	{LV1,   825000000,      0,      NULL},
-	{LV2,   825000000,      0,      NULL},
-	{LV3,   825000000,      0,      NULL},
-	{LV4,   825000000,      0,      NULL},
-	{LV5,   825000000,      0,      NULL},
-	{LV6,   825000000,      0,      NULL},
-	{LV7,   825000000,      0,      NULL},
-	{LV8,   825000000,      0,      NULL},
+	{LV0,   800000000,      0,      NULL},
+	{LV1,   800000000,      0,      NULL},
+	{LV2,   800000000,      0,      NULL},
+	{LV3,   800000000,      0,      NULL},
+	{LV4,   800000000,      0,      NULL},
+	{LV5,   800000000,      0,      NULL},
+	{LV6,   800000000,      0,      NULL},
+	{LV7,   800000000,      0,      NULL},
+	{LV8,   800000000,      0,      NULL},
 };
 
 struct devfreq_clk_info aclk_mifnm[] = {
-	{LV0,   138000000,      0,      NULL},
-	{LV1,   138000000,      0,      NULL},
-	{LV2,   138000000,      0,      NULL},
-	{LV3,   138000000,      0,      NULL},
-	{LV4,   104000000,      0,      NULL},
-	{LV5,   104000000,      0,      NULL},
-	{LV6,   104000000,      0,      NULL},
-	{LV7,   104000000,      0,      NULL},
-	{LV8,   104000000,      0,      NULL},
+	{LV0,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV1,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV2,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV3,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV4,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV5,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV6,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV7,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV8,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
 };
 
 struct devfreq_clk_info aclk_mifnd[] = {
-	{LV0,	 83000000,      0,      NULL},
-	{LV1,	 83000000,      0,      NULL},
-	{LV2,	 83000000,      0,      NULL},
-	{LV3,	 83000000,      0,      NULL},
-	{LV4,	 69000000,      0,      NULL},
-	{LV5,	 69000000,      0,      NULL},
-	{LV6,	 69000000,      0,      NULL},
-	{LV7,	 69000000,      0,      NULL},
-	{LV8,	 69000000,      0,      NULL},
+	{LV0,	 80000000,      0,      NULL},
+	{LV1,	 80000000,      0,      NULL},
+	{LV2,	 80000000,      0,      NULL},
+	{LV3,	 80000000,      0,      NULL},
+	{LV4,	 67000000,      0,      NULL},
+	{LV5,	 67000000,      0,      NULL},
+	{LV6,	 67000000,      0,      NULL},
+	{LV7,	 67000000,      0,      NULL},
+	{LV8,	 67000000,      0,      NULL},
 };
 
 struct devfreq_clk_info aclk_mif_133[] = {
-	{LV0,	 83000000,      0,      NULL},
-	{LV1,	 69000000,      0,      NULL},
-	{LV2,	 69000000,      0,      NULL},
-	{LV3,	 69000000,      0,      NULL},
-	{LV4,	 69000000,      0,      NULL},
-	{LV5,	 69000000,      0,      NULL},
-	{LV6,	 69000000,      0,      NULL},
-	{LV7,	 69000000,      0,      NULL},
-	{LV8,	 69000000,      0,      NULL},
+	{LV0,	 80000000,      0,      NULL},
+	{LV1,	 67000000,      0,      NULL},
+	{LV2,	 67000000,      0,      NULL},
+	{LV3,	 67000000,      0,      NULL},
+	{LV4,	 67000000,      0,      NULL},
+	{LV5,	 67000000,      0,      NULL},
+	{LV6,	 67000000,      0,      NULL},
+	{LV7,	 67000000,      0,      NULL},
+	{LV8,	 67000000,      0,      NULL},
 };
 
 struct devfreq_clk_info aclk_cpif_200[] = {
-	{LV0,   138000000,      0,      NULL},
-	{LV1,   138000000,      0,      NULL},
-	{LV2,   138000000,      0,      NULL},
-	{LV3,   104000000,      0,      NULL},
-	{LV4,   104000000,      0,      NULL},
-	{LV5,   104000000,      0,      NULL},
-	{LV6,   104000000,      0,      NULL},
-	{LV7,   104000000,      0,      NULL},
-	{LV8,   104000000,      0,      NULL},
+	{LV0,   134000000,      0,      NULL},
+	{LV1,   134000000,      0,      NULL},
+	{LV2,   134000000,      0,      NULL},
+	{LV3,   100000000,      0,      NULL},
+	{LV4,   100000000,      0,      NULL},
+	{LV5,   100000000,      0,      NULL},
+	{LV6,   100000000,      0,      NULL},
+	{LV7,   100000000,      0,      NULL},
+	{LV8,   100000000,      0,      NULL},
 };
 
 struct devfreq_clk_info sclk_hpm_mif[] = {
