@@ -3815,13 +3815,27 @@ static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 }
 */
 
-static void decon_fb_reset(struct s3c_fb *sfb)
+static int decon_fb_reset(struct s3c_fb *sfb)
 {
 	void __iomem *regs = sfb->regs + VIDCON0;
+	int ret = 0;
+	int timecnt = 2000;
+	unsigned int data;
 
 	writel(VIDCON0_SWRESET, regs);
 
-	writel(~VIDCON0_SWRESET, regs);
+	do {
+		data = readl(sfb->regs + VIDCON0);
+		data &= VIDCON0_SWRESET;
+		timecnt--;
+		udelay(10);
+	} while (data && timecnt);
+
+	if (timecnt == 0) {
+		dev_err(sfb->dev, "Failed to sw_reset DECON");
+		ret = -EBUSY;
+	}
+	return ret;
 }
 
 static void decon_fb_set_clkgate_mode(struct s3c_fb *sfb, u32 enable)
@@ -4445,7 +4459,6 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 		sfb->pdata->lcd_off();
 
 	disp_pm_runtime_put_sync(dispdrv);
-	sfb->output_on = false;
 
 	mutex_unlock(&sfb->output_lock);
 
@@ -4453,10 +4466,63 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 }
 #endif
 
+static int s3c_fb_decon_stop(struct s3c_fb *sfb)
+{
+	int ret = 0;
+	int timecnt = 2000;
+	unsigned int data;
+
+	if (!sfb->output_on) {
+		return 0;
+	}
+
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	hw_trigger_mask_enable(sfb, true);
+#endif
+
+	do {
+		data = readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT;
+		timecnt--;
+		udelay(100);
+	} while (data && timecnt);
+
+	if (timecnt == 0) {
+		dev_err(sfb->dev, "%s: Failed to wait LINECNT(%d)\n",
+			__func__, data);
+		ret = -EBUSY;
+	}
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	decon_fb_direct_on_off(sfb, false);
+#else
+	decon_fb_perframeoff(sfb);
+#endif
+
+	timecnt = 2000;
+	do {
+		data = readl(sfb->regs + VIDCON0);
+		data &= VIDCON0_DECON_STOP_STATUS;
+		timecnt--;
+		udelay(10);
+	} while (data && timecnt);
+
+	if (timecnt == 0) {
+		dev_err(sfb->dev, "%s: Failed to stop DECON", __func__);
+		ret = -EBUSY;
+	}
+
+	if (soc_is_exynos5430())
+		ret = decon_fb_reset(sfb);
+
+	if (ret == 0)
+		sfb->output_on = false;
+
+	return ret;
+}
+
 static int s3c_fb_disable(struct s3c_fb *sfb)
 {
-	u32 data;
-	int ret = 0, timecnt = 2000;
+	int ret = 0;
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
@@ -4478,34 +4544,8 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	if (sfb->update_regs_wq)
 		flush_workqueue(sfb->update_regs_wq);
 #endif
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-	hw_trigger_mask_enable(sfb, true);
-#endif
-	while (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT) {
-		dev_dbg(sfb->dev, "wait for line counter");
-	};
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	decon_fb_direct_on_off(sfb, false);
-#else
-	decon_fb_perframeoff(sfb);
-#endif
-	data = readl(sfb->regs + DECON_UPDATE);
-	data |= DECON_UPDATE_STANDALONE_F;
-	writel(data, sfb->regs + DECON_UPDATE);
 
-	do {
-		data = readl(sfb->regs + VIDCON0);
-		data &= VIDCON0_DECON_STOP_STATUS;
-		timecnt--;
-	}
-	while (data && timecnt);
-
-	if (timecnt == 0)
-		dev_err(sfb->dev, "Failed to disable DECON");
-	else
-		dev_info(sfb->dev, "DECON has stopped");
-
-	decon_fb_reset(sfb);
+	ret = s3c_fb_decon_stop(sfb);
 
 	sfb->power_state = POWER_DOWN;
 
@@ -4635,17 +4675,8 @@ int s3c_fb_suspend(struct device *dev)
 
 		if (sfb->update_regs_wq)
 			flush_workqueue(sfb->update_regs_wq);
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		hw_trigger_mask_enable(sfb, true);
-#endif
-		while (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT) {
-			dev_dbg(sfb->dev, "wait for line counter");
-		};
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-		decon_fb_direct_on_off(sfb, false);
-#else
-		decon_fb_perframeoff(sfb);
-#endif
+
+		ret = s3c_fb_decon_stop(sfb);
 
 		data = readl(sfb->regs + DECON_UPDATE);
 		data |= DECON_UPDATE_STANDALONE_F;
@@ -4759,6 +4790,7 @@ int s3c_fb_runtime_suspend(struct device *dev)
 {
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
+	int ret;
 
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
@@ -4766,9 +4798,11 @@ int s3c_fb_runtime_suspend(struct device *dev)
 	if (sfb->power_state != POWER_HIBER_DOWN)
 		sfb->power_state = POWER_DOWN;
 
+	ret = s3c_fb_decon_stop(sfb);
+
 	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
-	return 0;
+	return ret;
 }
 
 int s3c_fb_runtime_resume(struct device *dev)
@@ -4813,6 +4847,7 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 		return -EBUSY;
 	}
 
+	mutex_lock(&sfb->output_lock);
 	decon_fb_reset(sfb);
 
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
@@ -4852,17 +4887,19 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 #endif
 	decon_fb_direct_on_off(sfb, true);
 	sfb->output_on = true;
+	mutex_unlock(&sfb->output_lock);
 
 	return ret;
 }
 
 int decon_hibernation_power_off(struct display_driver *dispdrv)
 {
-	int ret = 0;
+	int ret;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
-	decon_fb_direct_on_off(sfb, false);
-	decon_fb_reset(sfb);
+	mutex_lock(&sfb->output_lock);
+	ret = s3c_fb_decon_stop(sfb);
+	mutex_unlock(&sfb->output_lock);
 
 	return ret;
 }
