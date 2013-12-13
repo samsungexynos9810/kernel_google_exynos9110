@@ -89,12 +89,6 @@ static void top_clk_enable(void)
 	add_enabler("clk_gscl0");
 	add_enabler("aclk_noc_fsys");
 	add_enabler("aclk_aclk_333_g2d");
-	add_enabler("aclk_300_jpeg");
-
-	add_enabler("clk_mdma1");
-	add_enabler("clk_smmurotator");
-	add_enabler("clk_smmujpeg");
-	add_enabler("clk_rotator");
 
 	/* enable list to enter suspend to ram */
 	add_enabler("sclk_usbphy300");
