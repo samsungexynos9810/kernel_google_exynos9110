@@ -44,7 +44,6 @@
 static const char hcd_name[] = "ehci-s5p";
 static struct hc_driver __read_mostly s5p_ehci_hc_driver;
 
-static int (*bus_suspend)(struct usb_hcd *) = NULL;
 static int (*bus_resume)(struct usb_hcd *) = NULL;
 
 struct s5p_ehci_hcd {
@@ -353,7 +352,6 @@ static int s5p_ehci_probe(struct platform_device *pdev)
 
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get(&pdev->dev);
 
 	return 0;
 
@@ -374,7 +372,6 @@ static int s5p_ehci_remove(struct platform_device *pdev)
 	struct usb_hcd *hcd = platform_get_drvdata(pdev);
 	struct s5p_ehci_hcd *s5p_ehci = to_s5p_ehci(hcd);
 
-	pm_runtime_put(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
 
 	s5p_ehci->power_on = 0;
@@ -526,24 +523,7 @@ static int s5p_ehci_resume(struct device *dev)
 	pm_runtime_set_active(dev);
 	pm_runtime_enable(dev);
 
-	/* Prevent device from runtime suspend during resume time */
-	pm_runtime_get_sync(dev);
-
 	return 0;
-}
-
-int s5p_ehci_bus_suspend(struct usb_hcd *hcd)
-{
-	int ret;
-	ret = bus_suspend(hcd);
-
-#ifdef CONFIG_PM_RUNTIME
-	/* Decrease pm_count that was increased at s5p_ehci_resume func. */
-	if (hcd->self.controller->power.runtime_auto)
-		pm_runtime_put_noidle(hcd->self.controller);
-#endif
-
-	return ret;
 }
 
 int s5p_ehci_bus_resume(struct usb_hcd *hcd)
@@ -557,7 +537,6 @@ int s5p_ehci_bus_resume(struct usb_hcd *hcd)
 #define s5p_ehci_suspend	NULL
 #define s5p_ehci_resume		NULL
 #define s5p_ehci_bus_resume	NULL
-#define s5p_ehci_bus_suspend	NULL
 #endif
 
 static const struct dev_pm_ops s5p_ehci_pm_ops = {
@@ -599,10 +578,7 @@ static int __init ehci_s5p_init(void)
 	pr_info("%s: " DRIVER_DESC "\n", hcd_name);
 	ehci_init_driver(&s5p_ehci_hc_driver, &s5p_overrides);
 
-	bus_suspend = s5p_ehci_hc_driver.bus_suspend;
 	bus_resume = s5p_ehci_hc_driver.bus_resume;
-
-	s5p_ehci_hc_driver.bus_suspend = s5p_ehci_bus_suspend;
 	s5p_ehci_hc_driver.bus_resume = s5p_ehci_bus_resume;
 
 	return platform_driver_register(&s5p_ehci_driver);

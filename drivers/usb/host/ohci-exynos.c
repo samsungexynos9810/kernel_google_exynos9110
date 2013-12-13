@@ -75,20 +75,6 @@ static int ohci_exynos_start(struct usb_hcd *hcd)
 }
 
 #ifdef CONFIG_PM
-static int exynos_ohci_bus_suspend(struct usb_hcd *hcd)
-{
-	int ret;
-	ret = ohci_bus_suspend(hcd);
-
-#ifdef CONFIG_PM_RUNTIME
-	/* Decrease pm_count that was increased at s5p_ehci_resume func. */
-	if (hcd->self.controller->power.runtime_auto)
-		pm_runtime_put_noidle(hcd->self.controller);
-#endif
-
-	return ret;
-}
-
 static int exynos_ohci_bus_resume(struct usb_hcd *hcd)
 {
 	/* When suspend is failed, re-enable clocks & PHY */
@@ -98,7 +84,6 @@ static int exynos_ohci_bus_resume(struct usb_hcd *hcd)
 }
 #else
 #define exynos_ohci_bus_resume	NULL
-#define exynos_ohci_bus_suspend	NULL
 #endif
 
 static const struct hc_driver exynos_ohci_hc_driver = {
@@ -123,7 +108,7 @@ static const struct hc_driver exynos_ohci_hc_driver = {
 	.hub_status_data	= ohci_hub_status_data,
 	.hub_control		= ohci_hub_control,
 #ifdef	CONFIG_PM
-	.bus_suspend		= exynos_ohci_bus_suspend,
+	.bus_suspend		= ohci_bus_suspend,
 	.bus_resume		= exynos_ohci_bus_resume,
 #endif
 	.start_port_reset	= ohci_start_port_reset,
@@ -356,7 +341,6 @@ skip_phy:
 
 	pm_runtime_set_active(&pdev->dev);
 	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get(&pdev->dev);
 
 	return 0;
 
@@ -374,7 +358,6 @@ static int exynos_ohci_remove(struct platform_device *pdev)
 	struct exynos_ohci_hcd *exynos_ohci = platform_get_drvdata(pdev);
 	struct usb_hcd *hcd = exynos_ohci->hcd;
 
-	pm_runtime_put(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
 
 	exynos_ohci->power_on = 0;
@@ -531,9 +514,6 @@ static int exynos_ohci_resume(struct device *dev)
 	pm_runtime_disable(dev);
 	pm_runtime_set_active(dev);
 	pm_runtime_enable(dev);
-
-	/* Prevent device from runtime suspend during resume time */
-	pm_runtime_get_sync(dev);
 
 	return 0;
 }
