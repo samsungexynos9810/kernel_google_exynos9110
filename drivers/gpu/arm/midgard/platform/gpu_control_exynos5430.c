@@ -31,6 +31,8 @@
 #define L2CONFIG_MO_1BY2			0b1111
 #define L2CONFIG_MO_NO_RESTRICT		0
 
+#define G3D_NOC_DCG_EN 0x14a90200
+
 extern struct kbase_device *pkbdev;
 
 #ifdef CONFIG_PM_RUNTIME
@@ -105,6 +107,40 @@ int gpu_is_clock_on(struct exynos_context *platform)
 	return __clk_is_enabled(platform->aclk_g3d);
 }
 
+int gpu_dcg_enable(struct exynos_context *platform)
+{
+       int *p_dcg;
+
+       if (!platform)
+               return -ENODEV;
+
+       if (!gpu_is_power_on()) {
+               GPU_LOG(DVFS_WARNING, "can't set clock on in g3d power off status\n");
+               return -1;
+       }
+
+       p_dcg = (int *)ioremap_nocache(G3D_NOC_DCG_EN, 4);
+       if (platform->cur_clock < 275) *p_dcg = 0x3;    /* ACLK_G3DND_600 is the same as the ACLK_G3D, so the current clock is read */
+       else *p_dcg = 0x1;
+       iounmap(p_dcg);
+
+       return 0;
+}
+
+int gpu_dcg_disable(struct exynos_context *platform)
+{
+       int *p_dcg;
+
+       if (!platform)
+               return -ENODEV;
+
+       p_dcg = (int *)ioremap_nocache(G3D_NOC_DCG_EN, 4);
+       *p_dcg = 0x0;
+       iounmap(p_dcg);
+
+       return 0;
+}
+
 int gpu_clock_on(struct exynos_context *platform)
 {
 	if (!platform)
@@ -121,6 +157,7 @@ int gpu_clock_on(struct exynos_context *platform)
 	if (platform->aclk_g3d)
 		(void) clk_prepare_enable(platform->aclk_g3d);
 
+	gpu_dcg_enable(platform);
 	platform->clk_g3d_status = 1;
 
 	return 0;
@@ -130,6 +167,8 @@ int gpu_clock_off(struct exynos_context *platform)
 {
 	if (!platform)
 		return -ENODEV;
+
+	gpu_dcg_disable(platform);
 
 	if (platform->clk_g3d_status == 0)
 		return 0;
