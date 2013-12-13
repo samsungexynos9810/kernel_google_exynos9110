@@ -255,13 +255,13 @@ int fimc_is_runtime_suspend(struct device *dev)
 	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, FIMC_IS_SN_MAX);
 	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, FIMC_IS_SN_MAX);
 
-	if (int_qos)
+	if (int_qos > 0)
 		pm_qos_remove_request(&exynos_isp_qos_int);
-	if (mif_qos)
+	if (mif_qos > 0)
 		pm_qos_remove_request(&exynos_isp_qos_mem);
-	if (cam_qos)
+	if (cam_qos > 0)
 		pm_qos_remove_request(&exynos_isp_qos_cam);
-	if (disp_qos)
+	if (disp_qos > 0)
 		pm_qos_remove_request(&exynos_isp_qos_disp);
 #endif
 
@@ -307,13 +307,13 @@ int fimc_is_runtime_resume(struct device *dev)
 	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, FIMC_IS_SN_MAX);
 
 	/* DEVFREQ lock */
-	if (int_qos)
+	if (int_qos > 0)
 		pm_qos_add_request(&exynos_isp_qos_int, PM_QOS_DEVICE_THROUGHPUT, int_qos);
-	if (mif_qos)
+	if (mif_qos > 0)
 		pm_qos_add_request(&exynos_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
-	if (cam_qos)
+	if (cam_qos > 0)
 		pm_qos_add_request(&exynos_isp_qos_cam, PM_QOS_CAM_THROUGHPUT, cam_qos);
-	if (disp_qos)
+	if (disp_qos > 0)
 		pm_qos_add_request(&exynos_isp_qos_disp, PM_QOS_DISPLAY_THROUGHPUT, disp_qos);
 
 	pr_info("[RSC] %s: QoS LOCK [INT(%d), MIF(%d), CAM(%d), DISP(%d)]\n",
