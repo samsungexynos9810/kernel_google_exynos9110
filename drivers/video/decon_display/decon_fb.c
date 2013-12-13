@@ -3959,10 +3959,11 @@ static void s3c_fb_configure_trigger(struct s3c_fb *sfb)
 
 static int decon_fb_config_eint_for_te(struct s3c_fb *sfb)
 {
-	int ret, gpio;
+	int ret;
+	u32 gpio;
 	struct device *dev = sfb->dev;
 
-	gpio = of_get_gpio(dev->of_node, 0);
+	gpio = (u32)of_get_gpio(dev->of_node, 0);
 	sfb->irq_no = gpio_to_irq(gpio);
 	ret = devm_request_irq(dev, sfb->irq_no, decon_fb_isr_for_eint,
 			  IRQF_TRIGGER_RISING, "s3c_fb", sfb);
