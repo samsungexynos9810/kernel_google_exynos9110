@@ -288,7 +288,7 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 		dev_err(sfb->dev, "invalid bpp\n");
 	}
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
 	x = var->xres;
 	y = var->yres;
 #else
@@ -572,6 +572,7 @@ static inline u32 blendeq(enum s3c_fb_blending blending, u8 transp_length,
 }
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+#if !defined (CONFIG_SOC_EXYNOS5422)
 static void s3c_fb_config_i80(struct s3c_fb *sfb,
 		struct s3c_fb_i80mode *win_mode)
 {
@@ -604,6 +605,7 @@ static void s3c_fb_config_i80(struct s3c_fb *sfb,
 	data |= VIDCON0_CLKVALUP;
 	writel(data, sfb->regs + VIDCON0);
 }
+#endif
 
 void s3c_fb_hw_trigger_set(struct s3c_fb *sfb, enum trig_con_set mode)
 {
@@ -674,7 +676,7 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
         data &=	~VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
 	s3c_fb_config_i80(sfb, win_mode);
 #endif
 }
@@ -1179,7 +1181,7 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	pm_runtime_get_sync(sfb->dev);
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
 	irq_ctrl_reg |= VIDINTCON0_INT_SYSMAINCON;
 	irq_ctrl_reg |= VIDINTCON0_INT_I80IFDONE;
@@ -1769,20 +1771,13 @@ static u32 s3c_fb_rgborder(int format)
 	case S3C_FB_PIXEL_FORMAT_RGBX_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_5551:
-#ifdef CONFIG_MACH_SMDK5422
 		return WIN_RGB_ORDER_RGB;
-#else
-		return WIN_RGB_ORDER_BGR;
-#endif
 
 	case S3C_FB_PIXEL_FORMAT_RGB_565:
 	case S3C_FB_PIXEL_FORMAT_BGRA_8888:
 	case S3C_FB_PIXEL_FORMAT_BGRX_8888:
-#ifdef CONFIG_MACH_SMDK5422
 		return WIN_RGB_ORDER_BGR;
-#else
-		return WIN_RGB_ORDER_RGB;
-#endif
+
 	default:
 		pr_warn("s3c-fb: unrecognized pixel format %u\n", format);
 		return 0;

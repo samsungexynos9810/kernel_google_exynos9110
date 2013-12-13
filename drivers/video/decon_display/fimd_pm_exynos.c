@@ -25,7 +25,27 @@
 #include <mach/map.h>
 
 #include <../drivers/clk/samsung/clk.h>
-static struct clk *g_mout_fimd1, *g_mout_rpll_ctrl, *g_mout_fimd1_mdnie1, *g_clk_fimd1, *g_mout_aclk_300_disp1_user, *g_mout_aclk_300_disp1_sw, *g_dout_aclk_300_disp1, *g_mout_aclk_300_disp1, *g_mout_dpll_ctrl, *g_mout_aclk_400_disp1_user, *g_mout_aclk_400_disp1_sw, *g_dout_aclk_400_disp1, *g_mout_aclk_400_disp1, *g_mout_fimd1_mdnie1, *g_mout_fimd1, *g_sclk_rpll, *g_sclk_fimd1;
+static struct clk *g_mout_fimd1;
+static struct clk *g_mout_rpll_ctrl;
+static struct clk *g_mout_fimd1_mdnie1;
+static struct clk *g_clk_fimd1;
+static struct clk *g_mout_aclk_300_disp1_user;
+static struct clk *g_mout_aclk_300_disp1_sw;
+static struct clk *g_dout_aclk_300_disp1;
+static struct clk *g_mout_aclk_300_disp1;
+/*static struct clk *g_mout_aclk_200_disp1_user;
+static struct clk *g_mout_aclk_200_disp1_sw;
+static struct clk *g_dout_aclk_200_disp1;
+static struct clk *g_mout_aclk_200_disp1;*/
+static struct clk *g_mout_dpll_ctrl;
+static struct clk *g_mout_aclk_400_disp1_user;
+static struct clk *g_mout_aclk_400_disp1_sw;
+static struct clk *g_dout_aclk_400_disp1;
+static struct clk *g_mout_aclk_400_disp1;
+static struct clk *g_mout_fimd1_mdnie1;
+static struct clk *g_mout_fimd1;
+static struct clk *g_sclk_rpll;
+static struct clk *g_sclk_fimd1;
 
 #define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
 	g_##child = clk_get(dev, #child); \
@@ -78,7 +98,9 @@ int init_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
+#if !defined (CONFIG_SOC_EXYNOS5422)
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
+#endif
 
 #ifdef CONFIG_DECON_LCD_S6E8AA0
 	DISPLAY_SET_RATE(clk_fimd1, 67 * MHZ);
@@ -86,8 +108,14 @@ int init_display_decon_clocks(struct device *dev)
 	DISPLAY_SET_RATE(clk_fimd1, 266 * MHZ);
 #endif
 
-	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1_user, mout_aclk_300_disp1_sw);
+#if 0
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_200_disp1_user, mout_aclk_200_disp1_sw);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_200_disp1_sw, dout_aclk_200_disp1);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_200_disp1, mout_dpll_ctrl);
+	DISPLAY_SET_RATE(dout_aclk_200_disp1, 200 * MHZ);
+#endif
 
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1_user, mout_aclk_300_disp1_sw);
 	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1_sw, dout_aclk_300_disp1);
 	DISPLAY_CLOCK_SET_PARENT(mout_aclk_300_disp1, mout_dpll_ctrl);
 	DISPLAY_SET_RATE(dout_aclk_300_disp1, 300 * MHZ);
@@ -96,6 +124,7 @@ int init_display_decon_clocks(struct device *dev)
 	DISPLAY_CLOCK_SET_PARENT(mout_aclk_400_disp1, mout_dpll_ctrl);
 
 	pr_info("%s: pixel_clk_rate: %d\n", __func__, exynos_get_rate("sclk_fimd1"));
+	pr_info("%s: aclk200_clk_rate: %d\n", __func__, exynos_get_rate("mout_aclk_200_disp1_user"));
 	pr_info("%s: aclk300_clk_rate: %d\n", __func__, exynos_get_rate("mout_aclk_300_disp1_user"));
 	pr_info("%s: aclk400_clk_rate: %d\n", __func__, exynos_get_rate("mout_aclk_400_disp1_user"));
 
@@ -156,11 +185,20 @@ void init_display_gpio_exynos(void)
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
 	reg |= (1 << 11);
 	__raw_writel(reg, S3C_VA_SYS + 0x0214);
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
 	reg |= (1 << 24);
 	__raw_writel(reg, S3C_VA_SYS + 0x0214);
 #endif
+
+#if defined (CONFIG_SOC_EXYNOS5422)
+	/* related to convertor between FIMD & MIPI */
+	reg = __raw_readl(S3C_VA_SYS + 0x0214);
+	reg |= (1 << 12);
+	__raw_writel(reg, S3C_VA_SYS + 0x0214);
+#endif
+
 }
 
 
