@@ -817,7 +817,7 @@ static int exynos_pd_power_off_with_lpi(struct exynos_pm_domain *pd, int power_f
 			if (unlikely(!timeout)) {
 				pr_err(PM_DOMAIN_PREFIX "%s can't control power with LPI masking, timeout\n",
 						pd->name);
-				mutex_lock(&pd->access_lock);
+				mutex_unlock(&pd->access_lock);
 				return -ETIMEDOUT;
 			} else {
 				pr_warn(PM_DOMAIN_PREFIX "%s force power down success\n", pd->name);
