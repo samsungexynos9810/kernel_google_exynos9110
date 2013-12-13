@@ -63,10 +63,6 @@ struct fimc_is_device_flite {
 	struct tasklet_struct		tasklet_flite_str;
 	u32				tasklet_param_end;
 	struct tasklet_struct		tasklet_flite_end;
-
-	/* W/A: Lost  start interrupt */
-	int				start;
-	int				end;
 };
 
 int fimc_is_flite_probe(struct fimc_is_device_sensor *device,

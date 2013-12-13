@@ -1052,8 +1052,6 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 #endif
 			/* frame both interrupt since latency */
 			if (flite->sw_checker) {
-				flite->end++;
-				flite->start++;
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT ">");
 #endif
@@ -1076,8 +1074,6 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				notify_fcount(flite->instance, atomic_read(&flite->fcount));
 				tasklet_schedule(&flite->tasklet_flite_str);
 			} else {
-				flite->start++;
-				flite->end++;
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT "<");
 #endif
@@ -1100,7 +1096,6 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				tasklet_schedule(&flite->tasklet_flite_end);
 			}
 		} else if (status == (2 << 4)) {
-			flite->start++;
 #ifdef DBG_FLITEISR
 			printk(KERN_CONT "<");
 #endif
@@ -1115,26 +1110,6 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 			notify_fcount(flite->instance, atomic_read(&flite->fcount));
 			tasklet_schedule(&flite->tasklet_flite_str);
 		} else {
-			flite->end++;
-			/* W/A: Lost start interrupt */
-			if (flite->start - flite->end < 0) {
-				warn("[CamIF%d] Lost start interupt(S(%d), E(%d))\n",
-					flite->instance, flite->start, flite->end);
-				flite->start++;
-#ifdef DBG_FLITEISR
-				printk(KERN_CONT "<");
-#endif
-				/* frame start interrupt */
-				flite->sw_checker = EXPECT_FRAME_END;
-				if (flite->sw_trigger)
-					flite->sw_trigger = FLITE_A_SLOT_VALID;
-				else
-					flite->sw_trigger = FLITE_B_SLOT_VALID;
-				flite->tasklet_param_str = flite->sw_trigger;
-				atomic_inc(&flite->fcount);
-				notify_fcount(flite->instance, atomic_read(&flite->fcount));
-				tasklet_schedule(&flite->tasklet_flite_str);
-			}
 #ifdef DBG_FLITEISR
 			printk(KERN_CONT ">");
 #endif
@@ -1339,8 +1314,6 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	framemgr = flite->framemgr;
 	image = &flite->image;
 
-	flite->start = 0;
-	flite->end = 0;
 	flite->overflow_cnt = 0;
 	flite->sw_trigger = FLITE_B_SLOT_VALID;
 	flite->sw_checker = EXPECT_FRAME_START;
