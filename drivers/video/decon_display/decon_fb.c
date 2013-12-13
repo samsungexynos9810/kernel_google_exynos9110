@@ -1301,11 +1301,9 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 {
 	struct s3c_fb *sfb = dev_id;
 	void __iomem  *regs = sfb->regs;
-	struct display_driver *dispdrv;
 	u32 irq_sts_reg;
 	ktime_t timestamp;
 
-	dispdrv = get_display_driver();
 	timestamp = ktime_get();
 
 	spin_lock(&sfb->slock);
