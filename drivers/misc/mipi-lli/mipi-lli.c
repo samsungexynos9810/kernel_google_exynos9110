@@ -262,6 +262,9 @@ int mipi_lli_add_driver(struct device *dev,
 
 	lli = devm_kzalloc(dev, sizeof(*lli), GFP_KERNEL);
 
+	if (!lli)
+		return -ENOMEM;
+
 	lli->driver = lli_driver;
 	lli->dev = dev;
 	lli->irq_sig = irq;
