@@ -32,7 +32,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE);
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
+#if defined(ENABLE_DVFS)
 /*
  * Static Scenario Set
  * You should describe static scenario by priorities of scenario.
