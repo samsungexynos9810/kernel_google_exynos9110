@@ -138,7 +138,6 @@ int create_decon_mic(struct platform_device *pdev)
 	struct display_driver *dispdrv;
 	struct decon_mic *mic;
 	struct resource *res;
-	int ret;
 
 	dispdrv = get_display_driver();
 
@@ -159,13 +158,13 @@ int create_decon_mic(struct platform_device *pdev)
 	res = dispdrv->mic_driver.regs;
 	if (!res) {
 		dev_err(dev, "failed to find resource\n");
-		ret = -ENOENT;
+		return -ENOENT;
 	}
 
 	mic->reg_base = ioremap(res->start, resource_size(res));
 	if (!mic->reg_base) {
 		dev_err(dev, "failed to map registers\n");
-		ret = -ENXIO;
+		return -ENXIO;
 	}
 
 	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
