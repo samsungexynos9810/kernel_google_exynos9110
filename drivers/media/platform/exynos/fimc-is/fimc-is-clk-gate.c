@@ -172,7 +172,7 @@ int fimc_is_clk_gate_set(struct fimc_is_core *core,
 			mask_off |= gate_info->groups[group_id].mask_clk_off_depend;
 		}
 		/* clock off */
-		if (((gate_ctrl->msk_clk_on_off_state) ^ mask_off) != 0) {
+		if (((gate_ctrl->msk_clk_on_off_state) & mask_off) > 0) {
 			cfg &= ~(mask_off << 16); /* shortly before clock off */
 			writel(cfg, core->ischain[0].interface->regs + ISSR53);
 
