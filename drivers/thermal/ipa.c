@@ -1171,9 +1171,6 @@ static void arbiter_init(struct work_struct *work)
 	/* TODO when we introduce dynamic RoS power we need
 	   to add a ros_max_power !! */
 	arbiter_data.config.soc_max_power += arbiter_data.config.ros_power;
-	/* Hacky to avoid possible rounding errors when converting
-	   between power and freq, we add some additional power!! */
-	arbiter_data.config.soc_max_power += arbiter_data.config.a7_max_power;
 
 	INIT_DELAYED_WORK(&arbiter_data.work, arbiter_poll);
 
