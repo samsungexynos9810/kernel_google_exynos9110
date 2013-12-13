@@ -52,6 +52,7 @@ static inline void cpu_enter_lowpower_a9(void)
 
 static inline void cpu_enter_lowpower_a15(void)
 {
+#ifndef CONFIG_ARM_TRUSTZONE
 	unsigned int v;
 
 	asm volatile(
@@ -78,6 +79,7 @@ static inline void cpu_enter_lowpower_a15(void)
 
 	isb();
 	dsb();
+#endif
 }
 
 static inline void cpu_leave_lowpower(void)
@@ -99,36 +101,24 @@ static inline void cpu_leave_lowpower(void)
 void exynos_power_down_cpu(unsigned int cpu)
 {
 	struct cpumask mask;
+	int type = !cpumask_and(&mask, cpu_online_mask, cpu_coregroup_mask(cpu));
 
+	set_boot_flag(cpu, HOTPLUG);
+	exynos_cpu.power_down(cpu);
+
+#ifdef CONFIG_EXYNOS_CLUSTER_POWER_DOWN
 	if (soc_is_exynos5422()) {
-		int cluster_id = (read_cpuid_mpidr() >> 8) & 0xff;
-
-		exynos_cpu.power_down(cpu);
-
-		if (cluster_id == 0) {
-			set_boot_flag(cpu, CHECK_CCI_SNOOP);
-			if (!cpumask_and(&mask, cpu_online_mask, cpu_coregroup_mask(cpu))) {
-				__raw_writel(0, EXYNOS_COMMON_CONFIGURATION(cluster_id));
-				exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, L2_CCI_OFF);
-			}
-		}
-	} else {
-		u32 non_boot_cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(4), 1);
 		u32 cluster_id = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
-
-		set_boot_flag(cpu, HOTPLUG);
-
-		exynos_cpu.power_down(cpu);
-		if (non_boot_cluster == cluster_id) {
-			if (!cpumask_and(&mask, cpu_online_mask,
-						cpu_coregroup_mask(cpu))) {
-				exynos_smc(SMC_CMD_SHUTDOWN,
-					   OP_TYPE_CLUSTER,
-					   SMC_POWERSTATE_IDLE,
-					   (1 << 1)/*L2_CCI_OFF*/);
-			}
-		}
+		if (type)
+			__raw_writel(0, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 	}
+#endif
+#ifdef CONFIG_ARM_TRUSTZONE
+	exynos_smc(SMC_CMD_SHUTDOWN,
+		   OP_TYPE_CLUSTER & type,
+		   SMC_POWERSTATE_IDLE,
+		   0);
+#endif
 }
 
 static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
@@ -137,7 +127,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 
 		/* make secondary cpus to be turned off at next WFI command */
 		exynos_power_down_cpu(cpu);
-
+#ifndef CONFIG_ARM_TRUSTZONE
 		/*
 		 * here's the WFI
 		 */
@@ -145,7 +135,7 @@ static inline void platform_do_lowpower(unsigned int cpu, int *spurious)
 		    :
 		    :
 		    : "memory", "cc");
-
+#endif
 		if (pen_release == cpu_logical_map(cpu)) {
 			/*
 			 * OK, proper wakeup, we're done
