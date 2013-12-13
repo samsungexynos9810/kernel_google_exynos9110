@@ -191,17 +191,16 @@ static int exynos5_ppmu_get_filter(enum exynos_ppmu_sets filter,
 }
 
 int exynos5_ppmu_get_busy(struct exynos5_ppmu_handle *handle,
-	enum exynos_ppmu_sets filter, unsigned int *ccnt,
-	unsigned long *pmcnt)
+	enum exynos_ppmu_sets filter, unsigned long long *ccnt,
+	unsigned long long *pmcnt)
 {
 	unsigned long flags;
 	int i;
 	int busy = 0;
-	int temp;
 	enum exynos5_ppmu_list start, end;
 	int ret;
-	unsigned int max_ccnt = 0, temp_ccnt = 0;
-	unsigned long max_pmcnt = 0, temp_pmcnt = 0;
+	unsigned long max_ccnt = 0, temp_ccnt = 0;
+	unsigned long temp_pmcnt = 0;
 
 	ret = exynos5_ppmu_get_filter(filter, &start, &end);
 	if (ret < 0)
@@ -221,21 +220,17 @@ int exynos5_ppmu_get_busy(struct exynos5_ppmu_handle *handle,
 		if (temp_ccnt > max_ccnt)
 			max_ccnt = temp_ccnt;
 
-		temp_pmcnt = handle->ppmu[i].count[PPMU_PMNCNT3];
-		if (temp_pmcnt > max_pmcnt)
-			max_pmcnt = temp_pmcnt;
-
-		temp = handle->ppmu[i].count[PPMU_PMNCNT3] * 100;
-		if (handle->ppmu[i].count > 0 && temp > 0)
-			temp /= handle->ppmu[i].ccnt;
-
-		if (temp > busy)
-			busy = temp;
-
+		temp_pmcnt += handle->ppmu[i].count[PPMU_PMNCNT3];
 	}
 
 	*ccnt = max_ccnt;
-	*pmcnt = max_pmcnt;
+	*pmcnt = temp_pmcnt;
+
+	if (max_ccnt > 0) {
+		busy = (temp_pmcnt * 100) / max_ccnt;
+	} else {
+		busy = -EINVAL;
+	}
 
 	exynos5_ppmu_handle_clear(handle, (end - start) + 1);
 
