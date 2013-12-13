@@ -4842,12 +4842,14 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 	struct s3c_fb_platdata *pd = sfb->pdata;
 
+	mutex_lock(&sfb->output_lock);
+
 	if (sfb->output_on) {
 		pr_info("%s, DECON are already output on state\n", __func__);
+		mutex_unlock(&sfb->output_lock);
 		return -EBUSY;
 	}
 
-	mutex_lock(&sfb->output_lock);
 	decon_fb_reset(sfb);
 
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
