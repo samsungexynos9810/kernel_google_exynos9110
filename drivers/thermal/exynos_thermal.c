@@ -1333,15 +1333,19 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.trigger_levels[0] = 80,
 	.trigger_levels[1] = 90,
 	.trigger_levels[2] = 100,
-	.trigger_levels[3] = 110,
+	.trigger_levels[3] = 100,
+	.trigger_levels[4] = 100,
+	.trigger_levels[5] = 100,
+	.trigger_levels[6] = 100,
+	.trigger_levels[7] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
-	.trigger_level4_en = 0,
-	.trigger_level5_en = 0,
-	.trigger_level6_en = 0,
-	.trigger_level7_en = 0,
+	.trigger_level4_en = 1,
+	.trigger_level5_en = 1,
+	.trigger_level6_en = 1,
+	.trigger_level7_en = 1,
 	.gain = 8,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
@@ -1380,9 +1384,53 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
+	.freq_tab[3] = {
+		.freq_clip_max = 500 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 200 * 1000,
+#endif
+		.temp_level = 100,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[4] = {
+		.freq_clip_max = 500 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 200 * 1000,
+#endif
+		.temp_level = 100,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[5] = {
+		.freq_clip_max = 500 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 200 * 1000,
+#endif
+		.temp_level = 100,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[6] = {
+		.freq_clip_max = 500 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 200 * 1000,
+#endif
+		.temp_level = 100,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
 	.size[THERMAL_TRIP_ACTIVE] = 1,
 	.size[THERMAL_TRIP_PASSIVE] = 6,
-	.freq_tab_count = 3,
+	.freq_tab_count = 7,
 	.type = SOC_ARCH_EXYNOS5430,
 	.clock_count = 2,
 	.clk_name[0] = "pclk_tmu0_apbif",
