@@ -3787,7 +3787,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 		ret = PTR_ERR(sfb->bus_clk);
 		goto err_sfb;
 	}
-	clk_prepare_enable(sfb->bus_clk);
 
 #if !defined(CONFIG_SOC_EXYNOS5260)
 	if (!s3c_fb_inquire_version(sfb)) {
@@ -3797,7 +3796,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 			ret = PTR_ERR(sfb->axi_disp1);
 			goto err_bus_clk;
 		}
-		clk_prepare_enable(sfb->axi_disp1);
 	}
 #endif
 
@@ -3808,7 +3806,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 			ret = PTR_ERR(sfb->lcd_clk);
 			goto err_axi_clk;
 		}
-		clk_prepare_enable(sfb->lcd_clk);
 	}
 
 	dev_dbg(dev, "got resources (regs %p), probing windows\n", sfb->regs);
@@ -4121,15 +4118,8 @@ static int s3c_fb_remove(struct platform_device *pdev)
 
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
-	if (!sfb->variant.has_clksel) {
-		clk_disable_unprepare(sfb->lcd_clk);
+	if (!sfb->variant.has_clksel)
 		clk_put(sfb->lcd_clk);
-	}
-
-	if (!s3c_fb_inquire_version(sfb))
-		clk_disable_unprepare(sfb->axi_disp1);
-
-	clk_disable_unprepare(sfb->bus_clk);
 
 	if (!s3c_fb_inquire_version(sfb))
 		clk_put(sfb->axi_disp1);
