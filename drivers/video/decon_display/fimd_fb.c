@@ -4179,13 +4179,6 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	sfb->power_state = POWER_DOWN;
 
-	if (!sfb->variant.has_clksel)
-		clk_disable_unprepare(sfb->lcd_clk);
-
-	if (!s3c_fb_inquire_version(sfb))
-		clk_disable_unprepare(sfb->axi_disp1);
-
-	clk_disable_unprepare(sfb->bus_clk);
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
 #endif
@@ -4225,13 +4218,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	}
 
 	pm_runtime_get_sync(sfb->dev);
-	clk_prepare_enable(sfb->bus_clk);
-
-	if (!s3c_fb_inquire_version(sfb))
-		clk_prepare_enable(sfb->axi_disp1);
-
-	if (!sfb->variant.has_clksel)
-		clk_prepare_enable(sfb->lcd_clk);
 
 	/* setup gpio and output polarity controls */
 	init_display_gpio_exynos();
