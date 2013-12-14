@@ -46,6 +46,7 @@ MODULE_DEVICE_TABLE(of, decon_tv_device_table);
 
 #if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
 struct pm_qos_request exynos5_decon_tv_int_qos;
+static int prev_overlap_cnt = 0;
 #endif
 
 int dex_log_level = 5;
@@ -237,6 +238,7 @@ static int dex_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
 		pm_qos_remove_request(&exynos5_decon_tv_int_qos);
 		exynos5_update_media_layers(TYPE_TV, 0);
+		prev_overlap_cnt = 0;
 #endif
 #ifdef CONFIG_PM_RUNTIME
 		ret = pm_runtime_put_sync(dex->dev);
@@ -264,6 +266,7 @@ static int dex_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
 		pm_qos_add_request(&exynos5_decon_tv_int_qos, PM_QOS_DEVICE_THROUGHPUT, 400000);
 		exynos5_update_media_layers(TYPE_TV, 1);
+		prev_overlap_cnt = 1;
 #endif
 		break;
 	default:
@@ -684,6 +687,25 @@ static bool dex_validate_x_alignment(struct dex_device *dex, int x, u32 w,
 	return 1;
 }
 
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+static int dex_get_overlap_cnt(struct dex_device *dex,
+			struct s3c_fb_win_config *win_config)
+{
+	struct s3c_fb_win_config *win_cfg;
+	int overlap_cnt = 0;
+	int i;
+
+	for (i = 1; i < DEX_MAX_WINDOWS; i++) {
+		win_cfg = &win_config[i];
+		if (win_cfg->state == S3C_FB_WIN_STATE_BUFFER) {
+			overlap_cnt++;
+		}
+	}
+
+	return overlap_cnt;
+}
+#endif
+
 static unsigned int dex_map_ion_handle(struct dex_device *dex,
 		struct dex_dma_buf_data *dma, struct ion_handle *ion_handle,
 		struct dma_buf *buf, int idx)
@@ -977,6 +999,10 @@ static int dex_set_win_config(struct dex_device *dex,
 			regs->wincon[i] &= ~WINCONx_ENWIN;
 	}
 
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+	regs->win_overlap_cnt = dex_get_overlap_cnt(dex, win_config);
+#endif
+
 	if (ret) {
 		for (i = 1; i < DEX_MAX_WINDOWS; i++)
 			if (!dex->windows[i]->local)
@@ -1103,6 +1129,15 @@ static void dex_update(struct dex_device *dex, struct dex_reg_data *regs)
 		}
 	}
 
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+	if (prev_overlap_cnt < regs->win_overlap_cnt) {
+		exynos5_update_media_layers(TYPE_TV, regs->win_overlap_cnt);
+		dex_dbg("+++window overlap count %d to %d\n",
+				prev_overlap_cnt, regs->win_overlap_cnt);
+		prev_overlap_cnt = regs->win_overlap_cnt;
+	}
+#endif
+
 	do {
 		dex_update_regs(dex, regs);
 		dex_reg_wait4update(dex);
@@ -1128,6 +1163,15 @@ static void dex_update(struct dex_device *dex, struct dex_reg_data *regs)
 	for (i = 1; i < DEX_MAX_WINDOWS; i++)
 		if (!dex->windows[i]->local)
 			dex_free_dma_buf(dex, &old_dma_bufs[i]);
+
+#if defined(CONFIG_DECONTV_USE_BUS_DEVFREQ)
+	if (prev_overlap_cnt > regs->win_overlap_cnt) {
+		exynos5_update_media_layers(TYPE_TV, regs->win_overlap_cnt);
+		dex_dbg("---window overlap count %d to %d\n",
+				prev_overlap_cnt, regs->win_overlap_cnt);
+		prev_overlap_cnt = regs->win_overlap_cnt;
+	}
+#endif
 }
 
 static void dex_update_handler(struct kthread_work *work)

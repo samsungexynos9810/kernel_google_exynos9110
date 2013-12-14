@@ -118,6 +118,7 @@ struct dex_reg_data {
 	u32			buf_end[DEX_MAX_WINDOWS];
 	u32			buf_size[DEX_MAX_WINDOWS];
 	struct dex_dma_buf_data dma_buf_data[DEX_MAX_WINDOWS];
+	u32			win_overlap_cnt;
 };
 
 struct dex_resources {
