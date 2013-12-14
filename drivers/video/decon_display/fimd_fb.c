@@ -4470,15 +4470,10 @@ int s3c_fb_runtime_suspend(struct device *dev)
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
 
-	sfb->power_state = POWER_DOWN;
+	if (sfb->power_state != POWER_HIBER_DOWN)
+		sfb->power_state = POWER_DOWN;
 
-	if (!sfb->variant.has_clksel)
-		clk_disable_unprepare(sfb->lcd_clk);
-
-	if (!s3c_fb_inquire_version(sfb))
-		clk_disable_unprepare(sfb->axi_disp1);
-
-	clk_disable_unprepare(sfb->bus_clk);
+	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
 	return 0;
 }
@@ -4515,13 +4510,11 @@ int s3c_fb_runtime_resume(struct device *dev)
 			dev_err(sfb->dev, "failed to request min_freq for int\n");
 	}
 #endif
-	clk_prepare_enable(sfb->bus_clk);
 
-	if (!s3c_fb_inquire_version(sfb))
-		clk_prepare_enable(sfb->axi_disp1);
+	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
 
-	if (!sfb->variant.has_clksel)
-		clk_prepare_enable(sfb->lcd_clk);
+	if (sfb->power_state != POWER_HIBER_DOWN)
+		sfb->power_state = POWER_ON;
 
 	/* setup gpio and output polarity controls */
 	init_display_gpio_exynos();

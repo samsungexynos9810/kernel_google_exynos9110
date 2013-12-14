@@ -37,10 +37,10 @@
 #define VIDOSD_C(win, variant) (OSD_BASE(win, variant) + 0x08)
 #define VIDOSD_D(win, variant) (OSD_BASE(win, variant) + 0x0C)
 
-
-enum {
-	POWER_ON,
-	POWER_DOWN,
+enum s3c_fb_pm_status {
+	POWER_ON = 0,
+	POWER_DOWN = 1,
+	POWER_HIBER_DOWN = 2,
 };
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
@@ -342,7 +342,7 @@ struct s3c_fb {
 
 	int			 irq_no;
 	struct s3c_fb_vsync	 vsync_info;
-	bool			power_state;
+	enum s3c_fb_pm_status	 power_state;
 
 #ifdef CONFIG_ION_EXYNOS
 	struct ion_client	*fb_ion_client;
