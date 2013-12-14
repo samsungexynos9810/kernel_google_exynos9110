@@ -184,9 +184,11 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
+#ifdef MUST_CHECK_FOR_ARES2
 #ifdef CONFIG_SAMSUNG_USBPHY
 	if (samsung_usbphy_check_op())
 		return EXYNOS_CHECK_DIDLE;
+#endif
 #endif
 	/* Check audio power domain for Deep STOP */
 	if (exynos_check_reg_status(exynos5_dstop_power_domain,
