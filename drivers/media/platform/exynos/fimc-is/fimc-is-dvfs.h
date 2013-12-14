@@ -33,6 +33,10 @@
 	int check_ ## __SCENARIO \
 		(struct fimc_is_device_ischain *device, ...)
 
+#define SIZE_FHD (1920 * 1080)
+#define SIZE_WHD (2560 * 1440)
+#define SIZE_UHD (3840 * 2160)
+
 enum FIMC_IS_DVFS_SCENARIO_TYPE {
 	FIMC_IS_STATIC_SN,
 	FIMC_IS_DYNAMIC_SN,

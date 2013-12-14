@@ -24,7 +24,9 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING);
-DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW);
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_FHD);
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_WHD);
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_UHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE);
@@ -37,42 +39,52 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE);
  * And you should name array 'static_scenarios'
  */
 static struct fimc_is_dvfs_scenario static_scenarios[] = {
-	[0] = {
+	{
 		.scenario_id		= FIMC_IS_SN_DUAL_CAPTURE,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAPTURE),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE),
 	},
-	[1] = {
+	{
 		.scenario_id		= FIMC_IS_SN_DUAL_CAMCORDING,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAMCORDING),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING),
 	},
-	[2] = {
+	{
 		.scenario_id		= FIMC_IS_SN_DUAL_PREVIEW,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_PREVIEW),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW),
 	},
-	[3] = {
+	{
 		.scenario_id		= FIMC_IS_SN_HIGH_SPEED_FPS,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_HIGH_SPEED_FPS),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS),
 	},
-	[4] = {
+	{
 		.scenario_id		= FIMC_IS_SN_REAR_CAMCORDING,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_CAMCORDING),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING),
 	},
-	[5] = {
-		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW,
-		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW),
-		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW),
+	{
+		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW_FHD,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW_FHD),
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_FHD),
 	},
-	[6] = {
+	{
+		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW_WHD,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW_WHD),
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_WHD),
+	},
+	{
+		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW_UHD,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW_UHD),
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_UHD),
+	},
+	{
 		.scenario_id		= FIMC_IS_SN_FRONT_VT1,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_VT1),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1),
 	},
-	[7] = {
+	{
 		.scenario_id		= FIMC_IS_SN_FRONT_PREVIEW,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_PREVIEW),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW),
@@ -85,13 +97,13 @@ static struct fimc_is_dvfs_scenario static_scenarios[] = {
  * And you should name array 'dynamic_scenarios'
  */
 static struct fimc_is_dvfs_scenario dynamic_scenarios[] = {
-	[0] = {
+	{
 		.scenario_id		= FIMC_IS_SN_REAR_CAPTURE,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_CAPTURE),
 		.keep_frame_tick	= KEEP_FRAME_TICK_DEFAULT,
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE),
 	},
-	[1] = {
+	{
 		.scenario_id		= FIMC_IS_SN_DIS_ENABLE,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DIS_ENABLE),
 		.keep_frame_tick	= KEEP_FRAME_TICK_DEFAULT,
@@ -103,7 +115,7 @@ static struct fimc_is_dvfs_scenario dynamic_scenarios[] = {
  * Default Scenario can not be seleted, this declaration is for static variable.
  */
 static struct fimc_is_dvfs_scenario static_scenarios[] = {
-	[0] = {
+	{
 		.scenario_id		= FIMC_IS_SN_DEFAULT,
 		.scenario_nm		= NULL,
 		.keep_frame_tick	= 0,
@@ -111,7 +123,7 @@ static struct fimc_is_dvfs_scenario static_scenarios[] = {
 	},
 };
 static struct fimc_is_dvfs_scenario dynamic_scenarios[] = {
-	[0] = {
+	{
 		.scenario_id		= FIMC_IS_SN_DEFAULT,
 		.scenario_nm		= NULL,
 		.keep_frame_tick	= 0,
@@ -198,11 +210,40 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING)
 		return 0;
 }
 
-/* rear preview */
-DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW)
+/* rear preview FHD */
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_FHD)
 {
 	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
+			(device->chain3_width * device->chain3_height <= SIZE_FHD) &&
+			((device->setfile & FIMC_IS_SETFILE_MASK) \
+			 != ISS_SUB_SCENARIO_VIDEO))
+
+		return 1;
+	else
+		return 0;
+}
+
+/* rear preview WHD */
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_WHD)
+{
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
+			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
+			(device->chain3_width * device->chain3_height > SIZE_FHD) &&
+			(device->chain3_width * device->chain3_height <= SIZE_WHD) &&
+			((device->setfile & FIMC_IS_SETFILE_MASK) \
+			 != ISS_SUB_SCENARIO_VIDEO))
+		return 1;
+	else
+		return 0;
+}
+
+/* rear preview UHD */
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_UHD)
+{
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
+			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
+			(device->chain3_width * device->chain3_height > SIZE_WHD) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 != ISS_SUB_SCENARIO_VIDEO))
 		return 1;
