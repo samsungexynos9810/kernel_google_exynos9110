@@ -1281,7 +1281,7 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	dispdrv = get_display_driver();
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	/* tiggering power event for PM */
+	/* triggering power event for PM */
 	if (sfb->power_state == POWER_ON)
 		disp_pm_te_triggered(dispdrv);
 #endif
@@ -4825,7 +4825,8 @@ int s3c_fb_runtime_resume(struct device *dev)
 
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
 
-	sfb->power_state = POWER_ON;
+	if (sfb->power_state != POWER_HIBER_DOWN)
+		sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs + VIDCON1);
 
