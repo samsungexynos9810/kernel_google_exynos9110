@@ -1859,6 +1859,12 @@ static int fimc_is_itf_unmap(struct fimc_is_device_ischain *device,
 
 	mdbgd_ischain("%s()\n", device, __func__);
 
+	/* if there's only one group of isp, send group id by 3a0 */
+	if ((group & GROUP_ID(GROUP_ID_ISP)) &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
+			GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
+		group = GROUP_ID(GROUP_ID_3A0);
+
 	ret = fimc_is_hw_unmap(device->interface, device->instance, group);
 	if (ret)
 		merr("fimc_is_hw_unmap is fail(%d)", device, ret);
