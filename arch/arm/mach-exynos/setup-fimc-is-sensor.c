@@ -349,6 +349,27 @@ int exynos_fimc_is_sensor_iclk_on(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
+	switch(channel) {
+	case 0:
+		fimc_is_enable_dt(pdev, "aclk_csis0");
+		fimc_is_enable_dt(pdev, "pclk_csis0");
+		fimc_is_enable_dt(pdev, "gate_lite_a");
+		fimc_is_enable_dt(pdev, "gate_lite_d");
+		break;
+	case 1:
+		fimc_is_enable_dt(pdev, "aclk_csis1");
+		fimc_is_enable_dt(pdev, "pclk_csis1");
+		fimc_is_enable_dt(pdev, "gate_lite_b");
+		break;
+	case 2:
+		fimc_is_enable_dt(pdev, "gate_csis2");
+		fimc_is_enable_dt(pdev, "gate_lite_c");
+		break;
+	default:
+		pr_err("channel is invalid(%d)\n", channel);
+		break;
+	}
+
 	return 0;
 }
 
@@ -356,6 +377,27 @@ int exynos_fimc_is_sensor_iclk_off(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
+	switch(channel) {
+	case 0:
+		fimc_is_disable_dt(pdev, "aclk_csis0");
+		fimc_is_disable_dt(pdev, "pclk_csis0");
+		fimc_is_disable_dt(pdev, "gate_lite_a");
+		fimc_is_disable_dt(pdev, "gate_lite_d");
+		break;
+	case 1:
+		fimc_is_disable_dt(pdev, "aclk_csis1");
+		fimc_is_disable_dt(pdev, "pclk_csis1");
+		fimc_is_disable_dt(pdev, "gate_lite_b");
+		break;
+	case 2:
+		fimc_is_disable_dt(pdev, "gate_csis2");
+		fimc_is_disable_dt(pdev, "gate_lite_c");
+		break;
+	default:
+		pr_err("channel is invalid(%d)\n", channel);
+		break;
+	}
+
 	return 0;
 }
 

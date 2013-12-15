@@ -563,9 +563,44 @@ int exynos5430_fimc_is_cfg_clk(struct platform_device *pdev)
 	return 0;
 }
 
+static int exynos_fimc_is_sensor_iclk_init(struct platform_device *pdev)
+{
+	fimc_is_enable_dt(pdev, "aclk_csis0");
+	fimc_is_enable_dt(pdev, "pclk_csis0");
+	fimc_is_enable_dt(pdev, "aclk_csis1");
+	fimc_is_enable_dt(pdev, "pclk_csis1");
+	fimc_is_enable_dt(pdev, "gate_csis2");
+	fimc_is_enable_dt(pdev, "gate_lite_a");
+	fimc_is_enable_dt(pdev, "gate_lite_b");
+	fimc_is_enable_dt(pdev, "gate_lite_d");
+	fimc_is_enable_dt(pdev, "gate_lite_c");
+	fimc_is_enable_dt(pdev, "gate_lite_freecnt");
+
+	return 0;
+}
+
+static int exynos_fimc_is_sensor_iclk_deinit(struct platform_device *pdev)
+{
+	fimc_is_disable_dt(pdev, "aclk_csis0");
+	fimc_is_disable_dt(pdev, "pclk_csis0");
+	fimc_is_disable_dt(pdev, "aclk_csis1");
+	fimc_is_disable_dt(pdev, "pclk_csis1");
+	fimc_is_disable_dt(pdev, "gate_csis2");
+	fimc_is_disable_dt(pdev, "gate_lite_a");
+	fimc_is_disable_dt(pdev, "gate_lite_b");
+	fimc_is_disable_dt(pdev, "gate_lite_d");
+	fimc_is_disable_dt(pdev, "gate_lite_c");
+	fimc_is_disable_dt(pdev, "gate_lite_freecnt");
+
+	return 0;
+}
+
 int exynos5430_fimc_is_clk_on(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
+
+	exynos_fimc_is_sensor_iclk_init(pdev);
+	exynos_fimc_is_sensor_iclk_deinit(pdev);
 
 	return 0;
 }

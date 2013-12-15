@@ -208,6 +208,10 @@ int fimc_is_set_rate_dt(struct platform_device *pdev,
 	const char *conid, unsigned int rate);
 unsigned int  fimc_is_get_rate_dt(struct platform_device *pdev,
 	const char *conid);
+unsigned int  fimc_is_enable_dt(struct platform_device *pdev,
+	const char *conid);
+void  fimc_is_disable_dt(struct platform_device *pdev,
+	const char *conid);
 
 /* platform specific clock functions */
 #if defined(CONFIG_ARCH_EXYNOS4)
