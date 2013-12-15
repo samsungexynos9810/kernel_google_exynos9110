@@ -81,7 +81,7 @@
 #endif
 
 #if !defined(PM_QOS_CAM_THROUGHPUT)
-#define PM_QOS_CAM_THROUGHPUT	(PM_QOS_DISPLAY_THROUGHPUT + 1)
+#define PM_QOS_CAM_THROUGHPUT	PM_QOS_RESERVED
 #endif
 
 struct fimc_is_from_info *sysfs_finfo = NULL;
