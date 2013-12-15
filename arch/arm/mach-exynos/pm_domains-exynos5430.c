@@ -750,22 +750,6 @@ static int force_down_pre(const char *name)
 
 static int force_down_post(const char *name)
 {
-	if (strncmp(name, "pd-cam0", 7) == 0) {
-		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
-		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_ASYNCBRIDGE);
-		__clr_mask(EXYNOS5430_LPI_MASK_CAM0_NOCBUS);
-	} else if (strncmp(name, "pd-cam1", 7) == 0) {
-		__clr_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
-		__clr_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
-		__clr_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
-	} else if (strncmp(name, "pd-isp", 6) == 0) {
-		__clr_mask(EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
-		__clr_mask(EXYNOS5430_LPI_MASK_ISP_ASYNCBRIDGE);
-		__clr_mask(EXYNOS5430_LPI_MASK_ISP_NOCBUS);
-	} else {
-		return -EINVAL;
-	}
-
 	return 0;
 }
 
