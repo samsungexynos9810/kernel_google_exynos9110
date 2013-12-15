@@ -787,8 +787,8 @@ enum exynos5422_clks {
 	/* GATE */
 	/* TOP */
 	sclk_epll2	= 5000,
-	sclk_spll2,
-	aclk_432_scaler,
+	/* sclk_spll2, */ /* = dout_spll_ctrl_div2 */
+	aclk_432_scaler = 5002,
 	aclk_432_cam,
 	aclk_f1_550_cam,
 	aclk_550_cam,
@@ -969,9 +969,9 @@ PNAME(group5_p)		= { "mout_vpll_ctrl", "mout_dpll_ctrl" };
 /* temporary support ipll for ISP*/
 PNAME(group1_2_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_ipll_ctrl" };
 /* temporary support spll2, epll2 for ISP*/
-PNAME(group1_1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "sclk_spll2", "sclk_epll2"};
+PNAME(group1_1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2", "sclk_epll2"};
 /* temporary support spll2 for ISP*/
-PNAME(group4_1_p)		= { "mout_ipll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "sclk_spll2" };
+PNAME(group4_1_p)		= { "mout_ipll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2" };
 #endif
 
 /* CMU-TOP */
@@ -984,7 +984,11 @@ PNAME(mout_aclk_100_noc_user_p)	= { "fin_pll", "mout_aclk_100_noc" };
 PNAME(mout_aclk_400_wcore_bpll_p) = {"mout_aclk_400_wcore", "mout_bpll_ctrl_user"};
 PNAME(mout_aclk_400_wcore_sw_p) = {"dout_aclk_400_wcore", "mout_spll_ctrl"};
 PNAME(mout_aclk_400_wcore_user_p) = {"fin_pll", "mout_aclk_400_wcore_sw"};
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+PNAME(mout_aclk_200_fsys2_sw_p) = { "dout_aclk_200_fsys2", "dout_spll_ctrl"};
+#else
 PNAME(mout_aclk_200_fsys2_sw_p) = { "dout_aclk_200_fsys2", "mout_spll_ctrl"};
+#endif
 PNAME(mout_aclk_200_fsys2_user_p)	= { "fin_pll", "mout_aclk200_fsys2_sw" };
 PNAME(mout_aclk_200_sw_p) = { "dout_aclk_200", "mout_spll_ctrl"};
 PNAME(mout_aclk_200_disp1_user_p)	= { "fin_pll", "mout_aclk_200_sw" };
@@ -1064,7 +1068,12 @@ PNAME(mout_spdif_p)	= { "fin_pll", "dout_audio0", "dout_audio1", "dout_audio2",
 PNAME(mout_mau_audio0_p)	= { "fin_pll", "mau_audiocdclk", "mout_dpll_ctrl", "mout_mpll_ctrl",
 			  "mout_spll_ctrl", "mout_ipll_ctrl", "mout_epll_ctrl", "mout_rpll_ctrl" };
 PNAME(mout_mclk_cdrex_p)	= { "mout_bpll_ctrl_user", "mout_mx_mspll_ccore" };
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+PNAME(mout_mx_mspll_ccore_p)	= { "mout_bpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2",
+ "mout_spll_ctrl", "mout_epll_ctrl"};
+#else
 PNAME(mout_mx_mspll_ccore_p)	= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_spll_ctrl"};
+#endif
 
 PNAME(mout_mau_epll_clk_p) = { "mout_epll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_spll_ctrl"};
 
@@ -1256,7 +1265,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_400_disp1_user, EXYNOS5_CLK_SRC_TOP5, 0, 1),
 
 	CMUX(mout_mau_epll_clk, EXYNOS5_CLK_SRC_TOP7, 20, 2),
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMUX(mout_mx_mspll_ccore, EXYNOS5_CLK_SRC_TOP7, 16, 3),
+#else
 	CMUX(mout_mx_mspll_ccore, EXYNOS5_CLK_SRC_TOP7, 16, 2),
+#endif
 	CMUX(mout_mx_mspll_cpu, EXYNOS5_CLK_SRC_TOP7, 12, 2),
 	CMUX(mout_mx_mspll_kfc, EXYNOS5_CLK_SRC_TOP7, 8, 2),
 
@@ -1853,8 +1866,12 @@ struct samsung_pll_rate_table vpll_rate_table[] = {
 
 struct samsung_pll_rate_table spll_rate_table[] = {
 	/* rate		p	m	s	k */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{ 800000000U,   3,  200,    1,  0},
+#else
 	{ 400000000U,   3,  200,    2,  0},
 	{  66000000U,   4,  352,    5,  0},
+#endif
 };
 
 struct samsung_pll_rate_table mpll_rate_table[] = {
@@ -1871,6 +1888,17 @@ struct samsung_pll_rate_table rpll_rate_table[] = {
 
 struct samsung_pll_rate_table bpll_rate_table[] = {
 	/* rate		p	m	s	k */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{ 925000000U,   4,  307,    1,  0},
+	{ 825000000U,   4,  275,    1,  0},
+	{ 728000000U,   3,  182,    1,  0},
+	{ 633000000U,   4,  211,    1,  0},
+	{ 543000000U,   2,  181,    2,  0},
+	{ 413000000U,   6,  413,    2,  0},
+	{ 275000000U,   3,  275,    3,  0},
+	{ 206000000U,   3,  206,    3,  0},
+	{ 165000000U,   2,  110,    3,  0},
+#else
 	{ 933000000U,   4,  311,    1,  0},
 	{ 800000000U,   3,  200,    1,  0},
 	{ 733000000U,   2,  122,    1,  0},
@@ -1880,6 +1908,7 @@ struct samsung_pll_rate_table bpll_rate_table[] = {
 	{ 266000000U,   3,  266,    3,  0},
 	{ 200000000U,   3,  200,    3,  0},
 	{ 160000000U,   3,  160,    3,  0},
+#endif
 };
 
 struct samsung_pll_rate_table apll_rate_table[] = {

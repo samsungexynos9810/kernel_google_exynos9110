@@ -63,6 +63,9 @@ static void top_clk_enable(void)
 	add_enabler("fout_rpll");
 	add_enabler("fout_kpll");
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	add_enabler("dout_spll_ctrl_div2");
+#endif
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	/* top bus clock enable */
 	add_enabler("mout_aclk_200_fsys_user");
 	add_enabler("mout_pclk_200_fsys_user");
@@ -167,6 +170,10 @@ static void top_clk_enable(void)
 		clk_enable(ce->clk);
 	}
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	exynos_set_rate("fout_spll", 800000000);
+	exynos_set_rate("dout_spll_ctrl", 400000000);
+#endif
 	/* Enable unipro mux to support LPA Mode */
 	clk = __clk_lookup("mout_unipro");
 	clk_prepare_enable(clk);
@@ -202,7 +209,11 @@ static void top_clk_enable(void)
 	clk = __clk_lookup("fout_spll");
 	tmp = clk_get_rate(clk);
 	pr_info("spll %ld\n", tmp);
-
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	clk = __clk_lookup("dout_spll_ctrl_div2");
+	tmp = clk_get_rate(clk);
+	pr_info("dout_spll_ctrl_div2 %ld\n", tmp);
+#endif
 	clk = __clk_lookup("fout_vpll");
 	tmp = clk_get_rate(clk);
 	pr_info("vpll %ld\n", tmp);

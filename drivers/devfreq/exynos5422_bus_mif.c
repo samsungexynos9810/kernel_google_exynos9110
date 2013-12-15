@@ -355,12 +355,17 @@ static void exynos5_set_dmc_timing(int target_idx)
 static void exynos5_set_spll_timing(void)
 {
 	unsigned int spll_timing_row, spll_timing_data, spll_timing_power;
-
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	spll_timing_row = 0x2A35538A;
+	spll_timing_data = 0x2720085E;
+	spll_timing_power = 0x282C0225;
+#else
 	spll_timing_row = exynos5422_dram_param[LV_4][0];
 	spll_timing_data = exynos5422_dram_param[LV_4][1];
 	spll_timing_power = exynos5422_dram_param[LV_4][2];
+#endif
 
-	/* set drex timing parameters for SPLL(400MHz) switching */
+	/* set drex timing parameters for 400MHz switching */
 	__raw_writel(spll_timing_row, EXYNOS5_DREXI_0_TIMINGROW1);
 	__raw_writel(spll_timing_row, EXYNOS5_DREXI_1_TIMINGROW1);
 	__raw_writel(spll_timing_data, EXYNOS5_DREXI_0_TIMINGDATA1);
