@@ -1491,6 +1491,12 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 		set_bit(FLITE_OTF_WITH_3AA, &flite->state);
 	}
 
+	/* to determine flite buffer done mode (early/normal) */
+	if (flite->chk_early_buf_done) {
+		flite->chk_early_buf_done(flite, device->image.framerate,
+			device->pdev->id);
+	}
+
 	ret = v4l2_subdev_call(subdev_flite, video, s_stream, enable);
 	if (ret) {
 		merr("v4l2_flite_call(s_stream) is fail(%d)", device, ret);

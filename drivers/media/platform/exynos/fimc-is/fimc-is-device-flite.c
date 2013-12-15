@@ -922,6 +922,16 @@ static void tasklet_flite_str1(unsigned long data)
 		}
 	}
 
+	if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY) {
+		flite->early_work_called = false;
+		if (flite->early_work_skip == true) {
+			info("flite early work skip");
+			flite->early_work_skip = false;
+		} else {
+			queue_delayed_work(flite->early_workqueue, &flite->early_work_wq,
+					msecs_to_jiffies(flite->buf_done_wait_time));
+		}
+	}
 	v4l2_subdev_notify(subdev, FLITE_NOTIFY_FSTART, &fcount);
 }
 
@@ -1006,7 +1016,70 @@ static void tasklet_flite_end(unsigned long data)
 	framemgr_x_barrier(framemgr, FMGR_IDX_1 + bdone);
 
 	v4l2_subdev_notify(subdev, FLITE_NOTIFY_FEND, frame_done);
+	flite->early_work_called = true;
 }
+
+static void tasklet_flite_end_chk(unsigned long data)
+{
+	struct v4l2_subdev *subdev = NULL;
+	struct fimc_is_device_flite *flite = NULL;
+	subdev = (struct v4l2_subdev *)data;
+	flite = v4l2_get_subdevdata(subdev);
+
+	if (flite->early_work_called == false) {
+		u32 fcount = atomic_read(&flite->fcount);
+		info("[CamIF%d][%08d] delayed work queue was slower than end irq",
+			flite->instance, fcount);
+	}
+
+	return;
+}
+
+static void wq_func_flite_early_work(struct work_struct *data)
+{
+	struct fimc_is_device_flite *flite = NULL;
+	struct delayed_work *early_work_wq = NULL;
+
+	early_work_wq = container_of(data, struct delayed_work,
+		work);
+	flite = container_of(early_work_wq, struct fimc_is_device_flite,
+		early_work_wq);
+
+	if (!flite) {
+		err("flite is NULL");
+		BUG();
+	}
+
+	flite->tasklet_param_end = flite->sw_trigger;
+	tasklet_schedule(&flite->tasklet_flite_early_end);
+}
+
+#ifdef SUPPORTED_EARLY_BUF_DONE
+static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate, u32 position)
+{
+	if (framerate <= 30) {
+		/* early buffer done mode */
+		flite->buf_done_mode = FLITE_BUF_DONE_EARLY;
+
+		if (position == SENSOR_POSITION_REAR)
+			flite->early_buf_done_mode = FLITE_BUF_EARLY_30P;
+		else
+			flite->early_buf_done_mode = FLITE_BUF_EARLY_10P;
+
+		flite->buf_done_wait_time = FLITE_VVALID_TIME -
+			(u32)(FLITE_VVALID_TIME * (flite->early_buf_done_mode * 0.1f));
+	} else {
+		/* normal buffer done mode */
+		flite->buf_done_mode = FLITE_BUF_DONE_NORMAL;
+		flite->early_buf_done_mode = FLITE_BUF_EARLY_NOTHING;
+		flite->buf_done_wait_time = 0;
+	}
+
+	info("[CamIF%d] buffer done mode [m%d/em%d/wt%d]", flite->instance,
+		flite->buf_done_mode, flite->early_buf_done_mode,
+		flite->buf_done_wait_time);
+}
+#endif
 
 static inline void notify_fcount(u32 channel, u32 fcount)
 {
@@ -1059,7 +1132,6 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				flite->sw_checker = EXPECT_FRAME_START;
 				flite->tasklet_param_end = flite->sw_trigger;
 				tasklet_schedule(&flite->tasklet_flite_end);
-
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT "<");
 #endif
@@ -1090,6 +1162,8 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				flite->tasklet_param_str = flite->sw_trigger;
 				atomic_inc(&flite->fcount);
 				notify_fcount(flite->instance, atomic_read(&flite->fcount));
+				if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
+					flite->early_work_skip = true;
 				tasklet_schedule(&flite->tasklet_flite_str);
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT ">");
@@ -1097,6 +1171,8 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				/* frame end interrupt */
 				flite->sw_checker = EXPECT_FRAME_START;
 				flite->tasklet_param_end = flite->sw_trigger;
+				if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
+					tasklet_schedule(&flite->tasklet_flite_early_end);
 				tasklet_schedule(&flite->tasklet_flite_end);
 			}
 		} else if (status == (2 << 4)) {
@@ -1131,7 +1207,8 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 #endif
 			/* frame end interrupt */
 			flite->sw_checker = EXPECT_FRAME_START;
-			flite->tasklet_param_end = flite->sw_trigger;
+			if (flite->buf_done_mode == FLITE_BUF_DONE_NORMAL)
+				flite->tasklet_param_end = flite->sw_trigger;
 			tasklet_schedule(&flite->tasklet_flite_end);
 		}
 	}
@@ -1390,12 +1467,25 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 
 		flite_hw_set_output_local(flite->base_reg, true);
 	} else {
-		tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str1, (unsigned long)subdev);
-		tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
-
+		switch (flite->buf_done_mode) {
+		case FLITE_BUF_DONE_NORMAL:
+			tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str1, (unsigned long)subdev);
+			tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
+			break;
+		case FLITE_BUF_DONE_EARLY:
+			flite->early_work_skip = false;
+			flite->early_work_called = false;
+			tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str1, (unsigned long)subdev);
+			tasklet_init(&flite->tasklet_flite_early_end, tasklet_flite_end, (unsigned long)subdev);
+			tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end_chk, (unsigned long)subdev);
+			break;
+		default:
+			tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str1, (unsigned long)subdev);
+			tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
+			break;
+		}
 		flite_hw_set_output_local(flite->base_reg, false);
 	}
-
 	start_fimc_lite(flite->base_reg, image, otf_setting, sensor->pdata->is_bns);
 
 p_err:
@@ -1471,6 +1561,10 @@ static int flite_stream_off(struct v4l2_subdev *subdev,
 		fimc_is_frame_trans_req_to_fre(framemgr, frame);
 		fimc_is_frame_request_head(framemgr, &frame);
 	}
+
+	/* buffer done mode init */
+	flite->buf_done_mode = FLITE_BUF_DONE_NORMAL;
+	flite->early_buf_done_mode = FLITE_BUF_EARLY_NOTHING;
 
 	framemgr_x_barrier_irqr(framemgr, FMGR_IDX_3, flags);
 
@@ -1655,6 +1749,20 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 		goto err_reg_v4l2_subdev;
 	}
 
+	/* buffer done mode is normal (default) */
+	flite->buf_done_mode = FLITE_BUF_DONE_NORMAL;
+	flite->early_buf_done_mode = FLITE_BUF_EARLY_NOTHING;
+	flite->chk_early_buf_done = NULL;
+#ifdef SUPPORTED_EARLY_BUF_DONE
+	flite->chk_early_buf_done = chk_early_buf_done;
+#endif
+	flite->early_workqueue = alloc_workqueue("fimc-is/early_workqueue/highpri", WQ_HIGHPRI, 0);
+	if (!flite->early_workqueue) {
+		warn("failed to alloc own workqueue, will be use global one");
+		goto err_reg_v4l2_subdev;
+	} else {
+		INIT_DELAYED_WORK(&flite->early_work_wq, wq_func_flite_early_work);
+	}
 	info("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
 	return 0;
 

@@ -30,6 +30,9 @@
 
 #define FLITE_OVERFLOW_COUNT	300
 
+#define FLITE_VVALID_TIME 32 /* ms */
+
+
 struct fimc_is_device_sensor;
 
 enum fimc_is_flite_state {
@@ -40,6 +43,24 @@ enum fimc_is_flite_state {
 	FLITE_LAST_CAPTURE,
 	/* one the fly output */
 	FLITE_OTF_WITH_3AA,
+};
+
+enum fimc_is_flite_buf_done_mode {
+	FLITE_BUF_DONE_NORMAL	= 0, /* when end-irq */
+	FLITE_BUF_DONE_EARLY	= 1, /* when delayed work queue since start-irq */
+};
+
+/*
+ * 10p means 10% early than end irq. We supposed that VVALID time is 32ms (FLITE_VVALID_TIME)
+ * ex. 32 * 0.1 = 3ms, early interval is (32 - 3) = 29ms
+ *     32 * 0.2 = 6ms,                   (32 - 6) = 26ms
+ *     32 * 0.3 = 9ms,                   (32 - 9) = 23ms
+ */
+enum fimc_is_flite_early_buf_done_mode {
+	FLITE_BUF_EARLY_NOTHING	= 0,
+	FLITE_BUF_EARLY_10P	= 1, /* 10%(29ms) 3ms */
+	FLITE_BUF_EARLY_20P	= 2, /* 20%(26ms) 6ms */
+	FLITE_BUF_EARLY_30P	= 3, /* 30%(23ms) 9ms */
 };
 
 struct fimc_is_device_flite {
@@ -63,6 +84,17 @@ struct fimc_is_device_flite {
 	struct tasklet_struct		tasklet_flite_str;
 	u32				tasklet_param_end;
 	struct tasklet_struct		tasklet_flite_end;
+
+	/* for early buffer done */
+	u32				buf_done_mode;
+	u32				early_buf_done_mode;
+	u32				buf_done_wait_time;
+	bool				early_work_skip;
+	bool				early_work_called;
+	struct tasklet_struct		tasklet_flite_early_end;
+	struct workqueue_struct		*early_workqueue;
+	struct delayed_work		early_work_wq;
+	void				(*chk_early_buf_done)(struct fimc_is_device_flite *flite, u32 framerate, u32 position);
 };
 
 int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
