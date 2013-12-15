@@ -63,6 +63,7 @@ obj-$(CONFIG_MACH_EXYNOS5_DT)		+= mach-exynos5-dt.o
 obj-$(CONFIG_MACH_SMDK5422)		+= mach-smdk5422.o
 
 obj-$(CONFIG_MACH_XYREF5430)		+= mach-xyref5430.o
+obj-$(CONFIG_MACH_XYREF5430)		+= mach-xyref5430-pinctrl.o
 
 obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS)    += setup-fimc-is.o
 obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS)    += setup-fimc-is-sensor.o
