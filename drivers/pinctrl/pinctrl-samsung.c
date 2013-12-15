@@ -203,10 +203,10 @@ static int samsung_dt_subnode_to_map(struct samsung_pinctrl_drv_data *drvdata,
 	unsigned reserve;
 	struct property *prop;
 	const char *group;
-	bool has_func = false;
+	bool has_func;
 
 	ret = of_property_read_u32(np, "samsung,pin-function", &val);
-	if (!ret)
+	if (ret >= 0)
 		has_func = true;
 
 	for (i = 0; i < ARRAY_SIZE(cfg_params); i++) {
