@@ -1384,6 +1384,7 @@ static struct platform_driver samsung_pinctrl_driver = {
 #ifdef CONFIG_CPU_IDLE
 static struct notifier_block samsung_pinctrl_notifier_block = {
 	.notifier_call = samsung_pinctrl_notifier,
+	.priority = 1,
 };
 #endif /*CONFIG_CPU_IDLE */
 
