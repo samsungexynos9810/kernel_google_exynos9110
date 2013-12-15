@@ -85,7 +85,7 @@ enum is_cmd {
 
 /* supported command macros by F/W version */
 #define FW_HAS_SYS_CTRL_CMD	(SUPPORTED_IS_CMD_VER >= 132)
-#define FW_HAS_SENSOR_MODE_CMD	(SUPPORTED_IS_CMD_VER >= 132)
+#define FW_HAS_SENSOR_MODE_CMD	(SUPPORTED_IS_CMD_VER >= 131)
 #define FW_HAS_REPORT_ERR_CMD	(SUPPORTED_IS_CMD_VER >= 132)
 
 enum is_reply {
