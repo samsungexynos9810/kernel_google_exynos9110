@@ -776,7 +776,7 @@ static unsigned int check_power_status(struct exynos_pm_domain *pd, int power_fl
 }
 
 #define TIMEOUT_COUNT	100 /* about 1ms, based on 10us */
-static int exynos_pd_power_off_with_lpi(struct exynos_pm_domain *pd, int power_flags)
+static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_flags)
 {
 	unsigned long timeout;
 
@@ -897,21 +897,21 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.on_pre = exynos_pd_isp_power_on_pre,
 		.on_post = exynos_pd_isp_power_on_post,
 		.off_pre = exynos_pd_isp_power_off_pre,
-		.off = exynos_pd_power_off_with_lpi,
+		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_isp_power_off_post,
 	}, {
 		.name = "pd-cam0",
 		.on_pre = exynos_pd_cam0_power_on_pre,
 		.on_post = exynos_pd_cam0_power_on_post,
 		.off_pre = exynos_pd_cam0_power_off_pre,
-		.off = exynos_pd_power_off_with_lpi,
+		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_cam0_power_off_post,
 	}, {
 		.name = "pd-cam1",
 		.on_pre = exynos_pd_cam1_power_on_pre,
 		.on_post = exynos_pd_cam1_power_on_post,
 		.off_pre = exynos_pd_cam1_power_off_pre,
-		.off = exynos_pd_power_off_with_lpi,
+		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_cam1_power_off_post,
 	},
 };
