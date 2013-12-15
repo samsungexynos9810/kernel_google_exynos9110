@@ -146,6 +146,17 @@ struct mif_bus_opp_table {
 };
 
 struct mif_bus_opp_table mif_bus_opp_list[] = {
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{LV_0, 825000, 1050000, 0},
+	{LV_1, 728000, 1037500, 0},
+	{LV_2, 633000, 1012500, 0},
+	{LV_3, 543000,  937500, 0},
+	{LV_4, 413000,  887500, 0},
+	{LV_5, 275000,  875000, 0},
+	{LV_6, 206000,  875000, 0},
+	{LV_7, 165000,  875000, 0},
+	{LV_8, 138000,  875000, 0},
+#else
 	{LV_0, 800000, 1050000, 0},
 	{LV_1, 733000, 1037500, 0},
 	{LV_2, 667000, 1012500, 0},
@@ -155,11 +166,23 @@ struct mif_bus_opp_table mif_bus_opp_list[] = {
 	{LV_6, 200000,  875000, 0},
 	{LV_7, 160000,  875000, 0},
 	{LV_8, 133000,  875000, 0},
+#endif
 };
 
 #if defined(SET_DREX_TIMING)
 static unsigned int exynos5422_dram_param[][3] = {
 	/* timiningRow, timingData, timingPower */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{0x575A9713, 0x4740085E, 0x545B0446},	/*825Mhz*/
+	{0x4D598651, 0x3730085E, 0x4C510336},	/*728Mhz*/
+	{0x4348758F, 0x3730085E, 0x40460335},	/*633Mhz*/
+	{0x3A4764CD, 0x3730085E, 0x383C0335},	/*543Mhz*/
+	{0x2C35538A, 0x2720085E, 0x2C2E0225},	/*413Mhz*/
+	{0x1D244287, 0x2720085E, 0x1C1F0225},	/*275Mhz*/
+	{0x162331C6, 0x2720085E, 0x18170225},	/*206Mhz*/
+	{0x12223185, 0x2720085E, 0x14130225},	/*165Mhz*/
+	{0x11222144, 0x2720085E, 0x10100225},	/*138Mhz*/
+#else
 	{0x345A96D3, 0x3630065C, 0x50380336},	/* 800Mhz */
 	{0x30598651, 0x3630065C, 0x4C340336},	/* 733Mhz */
 	{0x2C4885D0, 0x3630065C, 0x442F0335},	/* 667Mhz */
@@ -169,6 +192,7 @@ static unsigned int exynos5422_dram_param[][3] = {
 	{0x112331C5, 0x2620065C, 0x140E0225},	/* 200Mhz */
 	{0x11223185, 0x2620065C, 0x100C0225},	/* 160Mhz */
 	{0x11222144, 0x2620065C, 0x100C0225},	/* 133Mhz */
+#endif
 };
 #endif
 /*
@@ -364,7 +388,6 @@ static void exynos5_set_spll_timing(void)
 	spll_timing_data = exynos5422_dram_param[LV_4][1];
 	spll_timing_power = exynos5422_dram_param[LV_4][2];
 #endif
-
 	/* set drex timing parameters for 400MHz switching */
 	__raw_writel(spll_timing_row, EXYNOS5_DREXI_0_TIMINGROW1);
 	__raw_writel(spll_timing_row, EXYNOS5_DREXI_1_TIMINGROW1);
@@ -478,8 +501,7 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 		data->changed_timeout = false;
 	}
 
-	clk_prepare(data->fout_spll);
-	clk_enable(data->fout_spll);
+	clk_prepare_enable(data->fout_spll);
 	exynos5_set_spll_timing();
 	exynos5_switch_timing(SET_1);
 
@@ -512,8 +534,7 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 		tmp &= 0x7;
 	} while (tmp != 0x1);
 
-	clk_disable(data->fout_spll);
-	clk_unprepare(data->fout_spll);
+	clk_disable_unprepare(data->fout_spll);
 
 	if (target_freq <= mif_bus_opp_list[LV_5].clk && !data->changed_timeout) {
 		exynos5_change_timeout(true);
@@ -617,17 +638,13 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 					target_volt + MIF_VOLT_STEP);
 
 		if (freq == mif_bus_opp_list[LV_0].clk)	{
-			clk_prepare(data->clkm_phy0);
-			clk_prepare(data->clkm_phy1);
-			clk_enable(data->clkm_phy0);
-			clk_enable(data->clkm_phy1);
+			clk_prepare_enable(data->clkm_phy0);
+			clk_prepare_enable(data->clkm_phy1);
 		}
 	} else {
 		if (old_freq == mif_bus_opp_list[LV_0].clk)	{
-			clk_disable(data->clkm_phy0);
-			clk_disable(data->clkm_phy1);
-			clk_unprepare(data->clkm_phy0);
-			clk_unprepare(data->clkm_phy1);
+			clk_disable_unprepare(data->clkm_phy0);
+			clk_disable_unprepare(data->clkm_phy1);
 		}
 		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
 			regulator_set_voltage(data->vdd_mif, data->mspll_volt,
@@ -679,7 +696,7 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 }
 
 static struct devfreq_dev_profile exynos5_mif_devfreq_profile = {
-	.initial_freq	= 800000,
+	.initial_freq	= 825000,
 	.polling_ms	= 100,
 	.target		= exynos5_mif_busfreq_target,
 	.get_dev_status	= exynos5_mif_bus_get_dev_status,
@@ -875,7 +892,7 @@ static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr
 static DEVICE_ATTR(freq_table, S_IRUGO, show_freq_table, NULL);
 
 static struct exynos_devfreq_platdata exynos5422_qos_mif = {
-	.default_qos = 160000,
+	.default_qos = 413000,
 };
 
 static int exynos5_mif_reboot_notifier_call(struct notifier_block *this,
@@ -1046,7 +1063,12 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 		goto err_mx_mspll_ccore;
 	}
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	data->mout_spll = clk_get(dev, "dout_spll_ctrl_div2");
+	data->mout_spll = clk_get(dev, "mout_epll_ctrl");
+#else
 	data->mout_spll = clk_get(dev, "mout_spll_ctrl");
+#endif
 	if (IS_ERR(data->mout_spll)) {
 		dev_err(dev, "Cannot get clock \"mout_spll\"\n");
 		err = PTR_ERR(data->mout_spll);
@@ -1090,11 +1112,8 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 		goto err_clkm_phy;
 	}
 
-	clk_prepare(data->clkm_phy0);
-	clk_prepare(data->clkm_phy1);
-	clk_enable(data->clkm_phy0);
-	clk_enable(data->clkm_phy1);
-
+	clk_prepare_enable(data->clkm_phy0);
+	clk_prepare_enable(data->clkm_phy1);
 
 	data->ppmu = exynos5_ppmu_get();
 	if (!data->ppmu)
@@ -1184,7 +1203,7 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&media_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_update_request_timeout(&boot_mif_qos,
-			exynos5_mif_devfreq_profile.initial_freq, 40000 * 1000);
+			exynos5_mif_devfreq_profile.initial_freq, 41300 * 1000);
 	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 #ifdef CONFIG_ARM_EXYNOS5422_CPUFREQ
 	pm_qos_add_request(&exynos5_cpu_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
