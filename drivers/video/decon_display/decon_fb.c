@@ -1042,9 +1042,10 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_NORMAL:
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		if (sfb->power_state == POWER_HIBER_DOWN) {
-			s3c_fb_disable_lcd_off(sfb);
-			s5p_mipi_dsi_lcd_off(dsim_for_decon);
-			break;
+			if (s3c_fb_disable_lcd_off(sfb) == 0) {
+				s5p_mipi_dsi_lcd_off(dsim_for_decon);
+				break;
+			}
 		}
 #endif
 		ret = s3c_fb_disable(sfb);
@@ -4449,6 +4450,14 @@ static void decon_fb_perframeoff(struct s3c_fb *sfb)
 static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 {
 	struct display_driver *dispdrv = get_display_driver();
+
+#ifdef CONFIG_ION_EXYNOS
+	if (sfb->update_regs_wq) {
+		flush_workqueue(sfb->update_regs_wq);
+		if (sfb->power_state == POWER_ON)
+			return -EBUSY;
+	}
+#endif
 
 	mutex_lock(&sfb->output_lock);
 
