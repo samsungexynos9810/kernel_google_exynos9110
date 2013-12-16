@@ -136,11 +136,17 @@ static int gpu_pm_notifier(struct notifier_block *nb, unsigned long event, void 
 
 static int gpu_power_on(kbase_device *kbdev)
 {
+	int ret_val;
 	struct kbase_os_device *osdev = &kbdev->osdev;
+
+	if (pm_runtime_status_suspended(osdev->dev))
+		ret_val = 1;
+	else
+		ret_val = 0;
 
 	pm_runtime_resume(osdev->dev);
 
-	return 0;
+	return ret_val;
 }
 
 static void gpu_power_off(kbase_device *kbdev)
