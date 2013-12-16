@@ -2768,8 +2768,12 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 		}
 	}
 
+#if (FW_HAS_SENSOR_MODE_CMD)
 	ret = fimc_is_itf_open(device, ((sensor->mode << 16) | (module_id & 0xFFFF)),
 			group_id, flag, &module->ext);
+#else
+	ret = fimc_is_itf_open(device, module_id, group_id, flag, &module->ext);
+#endif
 	if (ret) {
 		merr("open fail", device);
 		goto p_err;
