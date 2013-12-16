@@ -60,7 +60,7 @@ static struct hdmi_device *sd_to_hdmi_dev(struct v4l2_subdev *sd)
 	return container_of(sd, struct hdmi_device, sd);
 }
 
-const bool hdmi_match_timings(const struct v4l2_dv_timings *t1,
+bool hdmi_match_timings(const struct v4l2_dv_timings *t1,
 			  const struct v4l2_dv_timings *t2,
 			  unsigned pclock_delta)
 {
