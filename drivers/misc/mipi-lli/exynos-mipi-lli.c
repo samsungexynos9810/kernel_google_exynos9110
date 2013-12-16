@@ -11,6 +11,7 @@
  */
 
 #include <linux/clk.h>
+#include <linux/clk-private.h>
 #include <linux/delay.h>
 #include <linux/err.h>
 #include <linux/interrupt.h>
@@ -340,6 +341,8 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 	struct device_node *node = dev->of_node;
 	struct mipi_lli *lli;
 	struct resource *res;
+	struct clk *dout_aclk_cpif_200;
+	struct clk *dout_mif_pre;
 	void __iomem *regs, *remote_regs, *sysregs, *pmuregs;
 	int irq, irq_sig;
 	int ret = 0;
@@ -436,6 +439,16 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 		dev_err(dev, "failed get mphy\n");
 		return -ENODEV;
 	}
+
+	dout_aclk_cpif_200 = devm_clk_get(lli->dev, "dout_aclk_cpif_200");
+	dout_mif_pre = devm_clk_get(lli->dev, "dout_mif_pre");
+
+	ret = clk_set_rate(dout_aclk_cpif_200, 100000000);
+	if (!ret)
+		dev_err(dev, "failed clk_set_rate on dout_aclk_cpif_200 to 100000000");
+
+	dev_err(dev, "dout_aclk_cpif_200 = %ld\n", dout_aclk_cpif_200->rate);
+	dev_err(dev, "dout_mif_pre= %ld\n", dout_mif_pre->rate);
 
 	dev_info(dev, "Registered MIPI-LLI interface\n");
 

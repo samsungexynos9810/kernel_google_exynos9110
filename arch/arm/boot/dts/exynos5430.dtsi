@@ -2390,6 +2390,8 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
+		clocks = <&clock 4114>, <&clock 4104>;
+		clock-names = "dout_aclk_cpif_200", "dout_mif_pre";
 
 		mphy {
 			compatible = "samsung,exynos-mipi-lli-mphy";
