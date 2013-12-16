@@ -61,6 +61,12 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 	/* Reset-On-Error REQ timing configuration */
 	writel(0x1D, phy->loc_regs + (0x77*4));
 
+	/* SYNC PATTERN change enable as 0b10101010 */
+	writel(0x1, phy->loc_regs + (0x8A*4));
+	writel(0xA, phy->loc_regs + (0x87*4));
+	writel(0xAA, phy->loc_regs + (0x88*4));
+	writel(0xAA, phy->loc_regs + (0x89*4));
+
 	return 0;
 }
 
