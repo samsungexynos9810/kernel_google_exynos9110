@@ -898,7 +898,9 @@ static int dw_mci_exynos_turn_on_2_8v(struct dw_mci *host)
 	*/
 	if (of_get_property(np, "gpios", NULL) != NULL) {
 		dev_pwr = of_get_gpio(np, 0);
-		if (gpio_request(dev_pwr, "dev-pwr") || (dev_pwr < 0))
+		if (dev_pwr < 0)
+			ret = -ENODEV;
+		else if (gpio_request(dev_pwr, "dev-pwr"))
 			ret = -ENODEV;
 		else
 			gpio_direction_output(dev_pwr, 1);
