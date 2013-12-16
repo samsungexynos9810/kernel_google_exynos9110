@@ -28,7 +28,7 @@
 #include "gpu_custom_interface.h"
 
 #ifdef CONFIG_MALI_T6XX_DEBUG_SYS
-static int gpu_get_dvfs_table(struct kbase_device *kbdev, char *buf, size_t buf_size)
+static int gpu_get_asv_table(struct kbase_device *kbdev, char *buf, size_t buf_size)
 {
 	int i, cnt = 0;
 	struct exynos_context *platform;
@@ -48,6 +48,26 @@ static int gpu_get_dvfs_table(struct kbase_device *kbdev, char *buf, size_t buf_
 		platform->table[i].max_threshold, platform->table[i].stay_count, platform->table[i].mem_freq,
 		platform->table[i].int_freq, platform->table[i].cpu_freq);
 	}
+
+	return cnt;
+}
+
+static int gpu_get_dvfs_table(struct kbase_device *kbdev, char *buf, size_t buf_size)
+{
+	int i, cnt = 0;
+	struct exynos_context *platform;
+
+	platform = (struct exynos_context *)kbdev->platform_context;
+	if (!platform)
+		return -ENODEV;
+
+	if (buf == NULL)
+		return 0;
+
+	for (i = platform->table_size-1; i >= 0; i--) {
+		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", platform->table[i].clock);
+	}
+	cnt += snprintf(buf+cnt, buf_size-cnt, "\n");
 
 	return cnt;
 }
@@ -291,6 +311,29 @@ static ssize_t set_dvfs(struct device *dev, struct device_attribute *attr, const
 	GPU_LOG(DVFS_WARNING, "G3D DVFS build config is disabled. You can not set\n");
 #endif /* CONFIG_MALI_T6XX_DVFS */
 	return count;
+}
+
+static ssize_t show_asv_table(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct kbase_device *kbdev;
+	ssize_t ret = 0;
+
+	kbdev = dev_get_drvdata(dev);
+
+	if (!kbdev)
+		return -ENODEV;
+
+	ret += gpu_get_asv_table(kbdev, buf+ret, (size_t)PAGE_SIZE-ret);
+
+	if (ret < PAGE_SIZE - 1) {
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "\n");
+	} else {
+		buf[PAGE_SIZE-2] = '\n';
+		buf[PAGE_SIZE-1] = '\0';
+		ret = PAGE_SIZE-1;
+	}
+
+	return ret;
 }
 
 static ssize_t show_dvfs_table(struct device *dev, struct device_attribute *attr, char *buf)
@@ -870,6 +913,7 @@ DEVICE_ATTR(utilization, S_IRUGO, show_utilization, NULL);
 DEVICE_ATTR(norm_utilization, S_IRUGO, show_norm_utilization, NULL);
 DEVICE_ATTR(utilization_stats, S_IRUGO, show_utilization_stats, NULL);
 #endif /* CONFIG_CPU_THERMAL_IPA */
+DEVICE_ATTR(asv_table, S_IRUGO, show_asv_table, NULL);
 DEVICE_ATTR(dvfs_table, S_IRUGO, show_dvfs_table, NULL);
 DEVICE_ATTR(power_state, S_IRUGO, show_power_state, NULL);
 DEVICE_ATTR(dvfs_governor, S_IRUGO|S_IWUSR, show_governor, set_governor);
@@ -934,6 +978,11 @@ int gpu_create_sysfs_file(struct device *dev)
 		goto out;
 	}
 #endif /* CONFIG_CPU_THERMAL_IPA */
+	if (device_create_file(dev, &dev_attr_asv_table)) {
+		GPU_LOG(DVFS_ERROR, "Couldn't create sysfs file [asv_table]\n");
+		goto out;
+	}
+
 	if (device_create_file(dev, &dev_attr_dvfs_table)) {
 		GPU_LOG(DVFS_ERROR, "Couldn't create sysfs file [dvfs_table]\n");
 		goto out;
@@ -984,6 +1033,7 @@ void gpu_remove_sysfs_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_norm_utilization);
 	device_remove_file(dev, &dev_attr_utilization_stats);
 #endif /* CONFIG_CPU_THERMAL_IPA */
+	device_remove_file(dev, &dev_attr_asv_table);
 	device_remove_file(dev, &dev_attr_dvfs_table);
 	device_remove_file(dev, &dev_attr_power_state);
 	device_remove_file(dev, &dev_attr_dvfs_governor);
