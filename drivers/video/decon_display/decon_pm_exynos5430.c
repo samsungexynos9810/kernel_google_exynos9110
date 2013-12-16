@@ -179,6 +179,8 @@ int enable_display_decon_clocks(struct device *dev)
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
+	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
+
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
 		mout_bus_pll_sub);
@@ -392,13 +394,9 @@ static void temporary_cmu_restore(void)
 int enable_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
-	void __iomem *regs;
-	u32 data;
 #ifdef FAST_CMU_CLOCK_RECOVER
 	temporary_cmu_restore();
 #else
-	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
-	enable_display_decon_clocks(NULL);
 
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
 		phyclk_mipidphy_rxclkesc0_phy);
