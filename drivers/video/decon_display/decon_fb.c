@@ -1029,12 +1029,17 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	dispdrv = get_display_driver();
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_init_status(dispdrv);
+	disp_pm_gate_lock(dispdrv, true);
 #endif
 	disp_pm_runtime_get_sync(dispdrv);
 
 #ifdef CONFIG_PM_RUNTIME
-	if (sfb->power_state == POWER_DOWN)
+	if (sfb->power_state == POWER_DOWN) {
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+		disp_pm_gate_lock(dispdrv, false);
+#endif
 		return 0;
+	}
 #endif
 
 	switch (blank_mode) {
@@ -1084,6 +1089,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	disp_pm_runtime_put_sync(dispdrv);
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, false);
 	if (blank_mode == FB_BLANK_POWERDOWN || blank_mode == FB_BLANK_NORMAL)
 		init_display_pm_status(dispdrv);
 #endif
