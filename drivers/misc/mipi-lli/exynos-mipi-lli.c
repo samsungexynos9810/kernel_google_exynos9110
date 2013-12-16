@@ -129,7 +129,7 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	 */
 	writel(2, lli->regs + EXYNOS_PA_PA_DBG_RX_LATCH_MODE);
 
-	writel(0x20, lli->regs + EXYNOS_PA_NACK_RTT);
+	writel(0x40, lli->regs + EXYNOS_PA_NACK_RTT);
 	writel(0x1, lli->regs + EXYNOS_PA_MK0_INSERTION_ENABLE);
 	writel((128<<0) | (1<<12), lli->regs + EXYNOS_PA_MK0_CONTROL);
 	/* Set Scrambler enable */
