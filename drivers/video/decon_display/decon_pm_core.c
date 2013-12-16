@@ -483,14 +483,15 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
-	if (sfb->power_state == POWER_ON) {
-		pr_info("%s, DECON are already power on state\n", __func__);
-		return ret;
-	}
+	disp_pm_gate_lock(dispdrv, true);
+	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 
 	pm_info("##### +");
-	disp_pm_gate_lock(dispdrv, true);
 	mutex_lock(&dispdrv->pm_status.pm_lock);
+	if (sfb->power_state == POWER_ON) {
+		pr_info("%s, DECON are already power on state\n", __func__);
+		goto done;
+	}
 
 	request_dynamic_hotplug(false);
 
@@ -498,6 +499,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 	__display_hibernation_power_on(dispdrv);
 	sfb->power_state = POWER_ON;
 
+done:
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_pm_gate_lock(dispdrv, false);
 
@@ -510,19 +512,20 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
+	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (sfb->power_state == POWER_DOWN) {
 		pr_info("%s, DECON are already power off state\n", __func__);
-		return ret;
+		goto done;
 	}
 
-	mutex_lock(&dispdrv->pm_status.pm_lock);
 	sfb->power_state = POWER_HIBER_DOWN;
 	__display_hibernation_power_off(dispdrv);
 	disp_pm_runtime_put_sync(dispdrv);
 
 	request_dynamic_hotplug(true);
-	mutex_unlock(&dispdrv->pm_status.pm_lock);
 
+done:
+	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_debug_power_info();
 
 	return ret;
