@@ -1716,7 +1716,8 @@ static int fimc_is_itf_open(struct fimc_is_device_ischain *device,
 		&device->margin_height);
 	if (ret) {
 		merr("fimc_is_hw_open is fail", device);
-		device->pdata->print_cfg(device->pdev, fimc_is_sensor_g_instance(device->sensor));
+		CALL_POPS(device, print_cfg, device->pdev,
+				fimc_is_sensor_g_instance(device->sensor));
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -1938,7 +1939,7 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 	ret = fimc_is_hw_stream_on(device->interface, device->instance);
 	if (ret) {
 		merr("fimc_is_hw_stream_on is fail(%d)", device, ret);
-		device->pdata->print_clk(device->pdev);
+		CALL_POPS(device, print_clk, device->pdev);
 	}
 
 p_err:

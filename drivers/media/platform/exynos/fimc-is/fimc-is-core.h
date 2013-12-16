@@ -289,4 +289,7 @@ int fimc_is_spi_reset(void *buf, u32 rx_addr, size_t size);
 int fimc_is_spi_read(void *buf, u32 rx_addr, size_t size);
 int fimc_is_runtime_suspend(struct device *dev);
 int fimc_is_runtime_resume(struct device *dev);
+
+#define CALL_POPS(s, op, args...) (((s)->pdata->op) ? ((s)->pdata->op(args)) : -EPERM)
+
 #endif /* FIMC_IS_CORE_H_ */
