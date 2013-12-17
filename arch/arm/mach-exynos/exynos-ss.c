@@ -485,10 +485,12 @@ static void exynos_ss_scratch_reg(unsigned int val)
 	__raw_writel(val, EXYNOS_INFORM4);
 }
 
+#if defined(CONFIG_EXYNOS_SNAPSHOT_FORCE_DUMP_MODE) || defined(CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT)
 static void exynos_ss_report_cause_emerg(enum ess_cause_emerg_events event)
 {
 	per_cpu(ess_cause_emerg, smp_processor_id()) = event;
 }
+#endif
 
 static int exynos_ss_reboot_handler(struct notifier_block *nb,
 				    unsigned long l, void *p)
