@@ -53,12 +53,14 @@
 #include <plat/usb-phy.h>
 #include <plat/clock.h>
 
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 static cputime64_t cluster_off_time = 0;
-static unsigned long long __maybe_unused last_time = 0;
-static bool __maybe_unused cluster_off_flag = false;
+static unsigned long long last_time = 0;
+static bool cluster_off_flag = false;
+static spinlock_t cluster_ctrl_lock;
 
-#define CLUSTER_OFF_TARGET_RESIDENCY	5000
+static DEFINE_PER_CPU(int, in_c2_state);
+#define CLUSTER_OFF_TARGET_RESIDENCY	3000
 #endif
 
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
@@ -214,6 +216,7 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.flags                  = CPUIDLE_FLAG_TIME_VALID,
 		.name                   = "C2",
 		.desc                   = "ARM power down",
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	},
 	[2] = {
 		.enter                  = exynos_enter_c2,
@@ -224,6 +227,10 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.desc                   = "Cluster power down",
 	},
 	[3] = {
+#else
+	},
+	[2] = {
+#endif
 #endif
 		.enter                  = exynos_enter_lowpower,
 		.exit_latency           = 300,
@@ -235,9 +242,6 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 };
 
 static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-static DEFINE_PER_CPU(int, in_c2_state);
-#endif
 
 static struct cpuidle_driver exynos_idle_driver = {
 	.name                   = "exynos_idle",
@@ -291,19 +295,22 @@ static int idle_finisher(unsigned long flags)
 }
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 #define L2_OFF		(1 << 0)
 #define L2_CCI_OFF	(1 << 1)
-
+#endif
 static int c2_finisher(unsigned long flags)
 {
 	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
 
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (flags == L2_CCI_OFF) {
+		exynos_cpu_sequencer_ctrl(true);
 		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, flags);
-	} else {
+	} else
+#endif
 		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
-	}
+
 	/*
 	 * Secure monitor disables the SMP bit and takes the CPU out of the
 	 * coherency domain.
@@ -696,7 +703,11 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 	/* This mode only can be entered when other core's are offline */
 	if (num_online_cpus() > 1)
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 		return exynos_enter_c2(dev, drv, 2);
+#else
+		return exynos_enter_c2(dev, drv, 1);
+#endif
 #else
 		return exynos_enter_idle(dev, drv, 0);
 #endif
@@ -734,7 +745,8 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 }
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-static int __maybe_unused can_enter_cluster_off(int cpu_id)
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+static int can_enter_cluster_off(int cpu_id)
 {
 #if defined(CONFIG_SCHED_HMP)
 	ktime_t now = ktime_get();
@@ -758,6 +770,7 @@ static int __maybe_unused can_enter_cluster_off(int cpu_id)
 	return 0;
 #endif
 }
+#endif
 
 static int exynos_enter_c2(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
@@ -786,12 +799,15 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	temp &= 0xfffffff0;
 	__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
-#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (index == 2) {
 		per_cpu(in_c2_state, cpuid) = 1;
 		if (can_enter_cluster_off(cpuid)) {
-			flags = L2_CCI_OFF;
+			spin_lock(&cluster_ctrl_lock);
 			cluster_off_flag = true;
+			spin_unlock(&cluster_ctrl_lock);
+
+			flags = L2_CCI_OFF;
 			last_time = get_jiffies_64();
 		}
 	}
@@ -804,10 +820,15 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 		__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 	}
 
-#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+	exynos_cpu_sequencer_ctrl(false);
+
 	if (cluster_off_flag) {
 		cluster_off_time += get_jiffies_64() - last_time;
+
+		spin_lock(&cluster_ctrl_lock);
 		cluster_off_flag = false;
+		spin_unlock(&cluster_ctrl_lock);
 	}
 
 	if (index == 2)
@@ -825,7 +846,9 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	dev->last_residency = idle_time;
 	return index;
 }
+#endif
 
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 static struct dentry *cluster_off_time_debugfs;
 
 static int cluster_off_time_show(struct seq_file *s, void *unused)
@@ -897,7 +920,7 @@ static int __init exynos_init_cpuidle(void)
 		device->cpu = cpu_id;
 
 		device->state_count = exynos_idle_driver.state_count;
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 		per_cpu(in_c2_state, cpu_id) = 0;
 #endif
 
@@ -909,7 +932,7 @@ static int __init exynos_init_cpuidle(void)
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
 
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	cluster_off_time_debugfs =
 		debugfs_create_file("cluster_off_time",
 				S_IRUGO, NULL, NULL, &cluster_off_time_fops);
@@ -917,6 +940,8 @@ static int __init exynos_init_cpuidle(void)
 		cluster_off_time_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
+
+	spin_lock_init(&cluster_ctrl_lock);
 #endif
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
