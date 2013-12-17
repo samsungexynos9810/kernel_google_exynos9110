@@ -114,6 +114,19 @@ static void top_clk_enable(void)
 	add_enabler("aclk_300_jpeg");
 	add_enabler("aclk_200_disp1");
 #endif
+	add_enabler("aclk_noc_fsys");
+	add_enabler("aclk_noc_fsys2");
+	add_enabler("dout_unipro");
+	add_enabler("mout_aclk_g3d_user");
+	add_enabler("clk_ahb2apb_g3dp");
+	add_enabler("clk_sdmmc0");
+	add_enabler("clk_sdmmc1");
+	add_enabler("clk_sdmmc2");
+	add_enabler("clk_usbdrd301");
+	add_enabler("clk_usbdrd300");
+	add_enabler("clk_ufs");
+	add_enabler("clk_slimsss");
+	add_enabler("clk_sss");
 
 	add_enabler("clk_fimd1");
 	add_enabler("clk_dp1");
