@@ -513,7 +513,7 @@
 
 		dwc3 {
 			maximum-speed = "super-speed";
-			dr_mode = "host";
+			dr_mode = "otg";
 		};
 	};
 
