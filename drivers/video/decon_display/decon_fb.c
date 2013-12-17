@@ -4455,8 +4455,6 @@ static void decon_fb_perframeoff(struct s3c_fb *sfb)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 {
-	struct display_driver *dispdrv = get_display_driver();
-
 #ifdef CONFIG_ION_EXYNOS
 	if (sfb->update_regs_wq) {
 		flush_workqueue(sfb->update_regs_wq);
@@ -4473,7 +4471,7 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 	if (sfb->pdata->lcd_off)
 		sfb->pdata->lcd_off();
 
-	disp_pm_runtime_put_sync(dispdrv);
+	pm_runtime_put_sync(sfb->dev);
 
 	mutex_unlock(&sfb->output_lock);
 
@@ -4568,7 +4566,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	iovmm_deactivate(sfb->dev);
 #endif
 
-	disp_pm_runtime_put_sync(dispdrv);
+	pm_runtime_put_sync(sfb->dev);
 	sfb->output_on = false;
 
 err:
@@ -4597,7 +4595,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 		goto err;
 	}
 
-	disp_pm_runtime_get_sync(dispdrv);
+	pm_runtime_get_sync(sfb->dev);
 
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(sfb->dev);
 	sfb->power_state = POWER_ON;
