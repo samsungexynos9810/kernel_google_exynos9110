@@ -134,12 +134,11 @@ static void exynos5_ppmu_add(struct exynos_ppmu *to, struct exynos_ppmu *from,
 {
 	int i;
 	int j;
-
 	for (i = start; i <= end; i++) {
 		for (j = PPMU_PMNCNT0; j < PPMU_PMNCNT_MAX; j++)
-			to[i].count[j] += from[i].count[j];
+			to[i].count[j] = from[i].count[j];
 
-		to[i].ccnt += from[i].ccnt;
+		to[i].ccnt = from[i].ccnt;
 		if (to[i].ccnt < from[i].ccnt)
 			to[i].ccnt_overflow = true;
 
