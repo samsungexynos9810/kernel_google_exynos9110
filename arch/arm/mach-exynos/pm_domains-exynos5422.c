@@ -605,7 +605,7 @@ static int exynos5_pd_peric_power_off_post(struct exynos_pm_domain *pd)
 }
 
 #ifndef CONFIG_SOC_EXYNOS5422_REV_0
-struct exynos5422_pd_state exynos5422_peric_clk[] = {
+struct exynos5422_pd_state exynos5422_fimc_is_clk[] = {
 	/*
 	   { .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
 	   .set_val = 0x1 << 16 | 0x1 << 13 | 0x1 << 8 | 0x1 << 5, },
@@ -623,19 +623,19 @@ struct exynos5422_pd_state exynos5422_peric_clk[] = {
 		.set_val = 0x1 << 1, },
 };
 
-static int exynos5_pd_fimc_is_power_on_pre(struct exynos_pm_domain *pd, int power_flag)
+static int exynos5_pd_fimc_is_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_save_reg(exynos5422_peric_clk, ARRAY_SIZE(exynos5422_peric_clk));
-	exynos5_enable_clk(exynos5422_peric_clk, ARRAY_SIZE(exynos5422_peric_clk));
+	exynos5_pd_save_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
+	exynos5_enable_clk(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 	/* ISP ARM reset */
 
 	return 0;
 }
-static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd, int power_flag)
+static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_restore_reg(exynos5422_peric_clk, ARRAY_SIZE(exynos5422_peric_clk));
+	exynos5_pd_restore_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 
 	/* BBOAR setting */
 	/* ISP_ARM_CONFIGURATION ARM power on */
@@ -643,21 +643,21 @@ static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd, int pow
 
 	return 0;
 }
-static int exynos5_pd_fimc_is_power_off_pre(struct exynos_pm_domain *pd, int power_flag)
+static int exynos5_pd_fimc_is_power_off_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_save_reg(exynos5422_peric_clk, ARRAY_SIZE(exynos5422_peric_clk));
-	exynos5_enable_clk(exynos5422_peric_clk, ARRAY_SIZE(exynos5422_peric_clk));
+	exynos5_pd_save_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
+	exynos5_enable_clk(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 
 	/* ISP_ARM_SYS_PWR_REG */
 	/* ISP_ARM_OPTION */
 
 	return 0;
 }
-static int exynos5_pd_fimc_is_power_off_post(struct exynos_pm_domain *pd, int power_flag)
+static int exynos5_pd_fimc_is_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_restore_reg(exynos5422_peric_clk, ARRAY_SIZE(exynos5422_peric_clk));
+	exynos5_pd_restore_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 
 	/* ISP_ARM_OPTION */
 
@@ -779,55 +779,55 @@ static struct exynos_pd_callback pd_callback_list[] = {
 	} , {
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 		.on_pre = exynos5_pd_scl_power_on_pre,
-			.on_post = exynos5_pd_scl_power_on_post,
-			.name = "pd-scl",
-			.off_pre = exynos5_pd_scl_power_off_pre,
-			.off_post = exynos5_pd_scl_power_off_post,
+		.on_post = exynos5_pd_scl_power_on_post,
+		.name = "pd-scl",
+		.off_pre = exynos5_pd_scl_power_off_pre,
+		.off_post = exynos5_pd_scl_power_off_post,
 	} , {
 		.on_pre = exynos5_pd_cam_power_on_pre,
-			.on_post = exynos5_pd_cam_power_on_post,
-			.name = "pd-cam",
-			.off_pre = exynos5_pd_cam_power_off_pre,
-			.off_post = exynos5_pd_cam_power_off_post,
+		.on_post = exynos5_pd_cam_power_on_post,
+		.name = "pd-cam",
+		.off_pre = exynos5_pd_cam_power_off_pre,
+		.off_post = exynos5_pd_cam_power_off_post,
 	} , {
 #else
 		.on_pre = exynos5_pd_gscl_power_on_pre,
-			.on_post = exynos5_pd_gscl_power_on_post,
-			.name = "pd-gscl",
-			.off_pre = exynos5_pd_gscl_power_off_pre,
-			.off_post = exynos5_pd_gscl_power_off_post,
+		.on_post = exynos5_pd_gscl_power_on_post,
+		.name = "pd-gscl",
+		.off_pre = exynos5_pd_gscl_power_off_pre,
+		.off_post = exynos5_pd_gscl_power_off_post,
 	} , {
 #endif
 		.on_pre = exynos5_pd_mscl_power_on_pre,
-			.on_post = exynos5_pd_mscl_power_on_post,
-			.name = "pd-mscl",
-			.off_pre = exynos5_pd_mscl_power_off_pre,
-			.off_post = exynos5_pd_mscl_power_off_post,
+		.on_post = exynos5_pd_mscl_power_on_post,
+		.name = "pd-mscl",
+		.off_pre = exynos5_pd_mscl_power_off_pre,
+		.off_post = exynos5_pd_mscl_power_off_post,
 	} , {
 		.on_pre = exynos5_pd_g2d_power_on_pre,
-			.on_post = exynos5_pd_g2d_power_on_post,
-			.name = "pd-g2d",
-			.off_pre = exynos5_pd_g2d_power_off_pre,
-			.off_post = exynos5_pd_g2d_power_off_post,
+		.on_post = exynos5_pd_g2d_power_on_post,
+		.name = "pd-g2d",
+		.off_pre = exynos5_pd_g2d_power_off_pre,
+		.off_post = exynos5_pd_g2d_power_off_post,
 	} , {
 		.on_pre = exynos5_pd_fsys_power_on_pre,
-			.on_post = exynos5_pd_fsys_power_on_post,
-			.name = "pd-fsys",
-			.off_pre = exynos5_pd_fsys_power_off_pre,
-			.off_post = exynos5_pd_fsys_power_off_post,
+		.on_post = exynos5_pd_fsys_power_on_post,
+		.name = "pd-fsys",
+		.off_pre = exynos5_pd_fsys_power_off_pre,
+		.off_post = exynos5_pd_fsys_power_off_post,
 	} , {
 		.on_pre = exynos5_pd_peric_power_on_pre,
-			.on_post = exynos5_pd_peric_power_on_post,
-			.name = "pd-peric",
-			.on_pre = exynos5_pd_peric_power_off_pre,
-			.on_post = exynos5_pd_peric_power_off_post,
+		.on_post = exynos5_pd_peric_power_on_post,
+		.name = "pd-peric",
+		.on_pre = exynos5_pd_peric_power_off_pre,
+		.on_post = exynos5_pd_peric_power_off_post,
 #ifndef CONFIG_SOC_EXYNOS5422_REV_0
 	} , {
 		.on_pre = exynos5_pd_fimc_is_power_on_pre,
-			.on_post = exynos5_pd_fimc_is_power_on_post,
-			.name = "pd-fimc-is",
-			.off_pre = exynos5_pd_fimc_is_power_off_pre,
-			.off_post = exynos5_pd_fimc_is_power_off_post,
+		.on_post = exynos5_pd_fimc_is_power_on_post,
+		.name = "pd-fimc-is",
+		.off_pre = exynos5_pd_fimc_is_power_off_pre,
+		.off_post = exynos5_pd_fimc_is_power_off_post,
 #endif
 	} , {
 		.name = "pd-isp",
