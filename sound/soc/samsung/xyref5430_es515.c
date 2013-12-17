@@ -26,7 +26,7 @@
 
 /* XYREF use CLKOUT from AP */
 #define XYREF_MCLK_FREQ		24000000
-#define XYREF_AUD_PLL_FREQ	393216018
+#define XYREF_AUD_PLL_FREQ	196608009
 
 static bool clkout_enabled;
 static struct snd_soc_card xyref;
