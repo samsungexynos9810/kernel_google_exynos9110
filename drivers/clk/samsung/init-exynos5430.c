@@ -146,8 +146,8 @@ static void aud_init_clock(void)
 	exynos_set_parent("mout_sclk_aud_pcm", "mout_aud_pll_user");
 #endif
 
-	exynos_set_rate("fout_aud_pll", 393216020);
-	exynos_set_rate("dout_aud_ca5", 393216020);
+	exynos_set_rate("fout_aud_pll", 196608010);
+	exynos_set_rate("dout_aud_ca5", 196608010);
 	exynos_set_rate("dout_aclk_aud", 133000000);
 	exynos_set_rate("dout_pclk_dbg_aud", 133000000);
 
