@@ -356,6 +356,7 @@ void __iomem *exynos5422_list_feed[] = {
 	EXYNOS5422_MSC_OPTION,
 	EXYNOS5422_TOP_PWR_OPTION,
 	EXYNOS5422_TOP_PWR_COREBLK_OPTION,
+	EXYNOS5422_CAM_OPTION,
 };
 #else
 void __iomem *exynos5422_list_feed[] = {
@@ -647,7 +648,7 @@ int __init exynos5422_pmu_init(void)
 	 * So when ISP power is gated, LPI is stucked.
 	 */
 	value = __raw_readl(EXYNOS5422_LPI_MASK0);
-	value |= EXYNOS5422_ATB_ISP_ARM;
+	value |= EXYNOS5422_ATB_ISP_ARM | EXYNOS5422_DIS;
 	__raw_writel(value, EXYNOS5422_LPI_MASK0);
 
 	value = __raw_readl(EXYNOS5422_LPI_MASK1);
