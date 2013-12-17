@@ -1287,12 +1287,6 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 
 	dispdrv = get_display_driver();
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	/* triggering power event for PM */
-	if (sfb->power_state == POWER_ON)
-		disp_pm_te_triggered(dispdrv);
-#endif
-
 	spin_lock(&sfb->slock);
 #ifdef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_sw_trigger(sfb);
@@ -1301,6 +1295,12 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 
 	spin_unlock(&sfb->slock);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	/* triggering power event for PM */
+	if (sfb->power_state == POWER_ON)
+		disp_pm_te_triggered(dispdrv);
+#endif
+
 	return IRQ_HANDLED;
 }
 #endif
