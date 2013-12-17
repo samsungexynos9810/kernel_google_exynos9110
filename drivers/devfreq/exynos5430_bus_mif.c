@@ -1126,9 +1126,9 @@ static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
 
 	if (wqhd_tv_window5 &&
 		target_idx == LV0) {
-		__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xD0);
-		__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC8);
-		__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC0);
+		__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xD0);
+		__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC8);
+		__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC0);
 		__raw_writel(timeout_table[LV2][1], data->base_drex1 + 0x100);
 	} else {
 		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
