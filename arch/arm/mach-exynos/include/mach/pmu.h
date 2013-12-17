@@ -29,9 +29,7 @@ enum sys_powerdown {
 #else
 	SYS_AFTR,
 	SYS_LPA,
-#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	SYS_DSTOP,
-#endif
 #endif
 	SYS_SLEEP,
 	NUM_SYS_POWERDOWN,
