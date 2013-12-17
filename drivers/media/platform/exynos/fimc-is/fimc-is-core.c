@@ -269,7 +269,10 @@ int fimc_is_runtime_suspend(struct device *dev)
 #endif
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
-#if defined(CONFIG_SOC_EXYNOS3470)
+#if defined(CONFIG_SOC_EXYNOS5260)
+	bts_initialize("spd-flite-a", false);
+	bts_initialize("spd-flite-b", false);
+#elif defined(CONFIG_SOC_EXYNOS3470)
 	bts_initialize("pd-cam", false);
 #else
 	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
