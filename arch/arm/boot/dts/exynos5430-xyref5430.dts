@@ -49,6 +49,7 @@
 		samsung,dw-mshc-ddr-timing = <2 3 3>;
 		samsung,dw-mshc-hs200-timing = <0 3 3>;
 		samsung,dw-mshc-ddr200-timing = <0 6 1>;
+		samsung,dw-mshc-ddr200-delay-line = <100>;
 		clk_pin = "gpr0-0";
 		clk_addr = "15690000.pinctrl";
 		clk_val = <0x3>;
