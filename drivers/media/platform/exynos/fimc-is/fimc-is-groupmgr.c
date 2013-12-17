@@ -1170,6 +1170,8 @@ check_completion:
 				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
 				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
 			group_id = GROUP_ID(GROUP_ID_3A0);
+		else
+			group_id = GROUP_ID(group->id);
 		ret = fimc_is_itf_process_stop(device, group_id);
 		if (ret) {
 			merr("fimc_is_itf_process_stop is fail", group);
