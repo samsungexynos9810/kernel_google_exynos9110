@@ -495,7 +495,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 
 	/* check current qos */
 	if (int_qos && dvfs_ctrl->cur_int_qos != int_qos) {
-		if (!i2c_qos) {
+		if (i2c_qos) {
 			ret = fimc_is_itf_i2c_lock(device, i2c_qos, true);
 			if (ret) {
 				err("fimc_is_itf_i2_clock fail\n");
@@ -506,7 +506,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 		pm_qos_update_request(&exynos_isp_qos_int, int_qos);
 		dvfs_ctrl->cur_int_qos = int_qos;
 
-		if (!i2c_qos) {
+		if (i2c_qos) {
 			/* i2c unlock */
 			ret = fimc_is_itf_i2c_lock(device, i2c_qos, false);
 			if (ret) {
