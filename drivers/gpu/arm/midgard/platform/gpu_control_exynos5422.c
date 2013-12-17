@@ -26,10 +26,6 @@
 #include "gpu_dvfs_handler.h"
 #include "gpu_control.h"
 
-#define EXYNOS5422_G3D_CONFIGURATION	EXYNOS5410_G3D_CONFIGURATION
-#define EXYNOS5422_G3D_STATUS			EXYNOS5410_G3D_STATUS
-#define EXYNOS5422_G3D_OPTION			EXYNOS5410_G3D_OPTION
-
 extern struct kbase_device *pkbdev;
 
 #ifdef CONFIG_PM_RUNTIME
