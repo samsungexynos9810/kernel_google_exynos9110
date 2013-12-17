@@ -41,7 +41,7 @@
 		extra_tuning;
 		supports-highspeed;
 		enable-cache-control;
-		qos_int_level = <133>;
+		qos_int_level = <138000>;
 		fifo-depth = <0x80>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
