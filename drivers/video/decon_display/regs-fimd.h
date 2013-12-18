@@ -90,6 +90,7 @@
 #define VIDOUT_CON_RGB				(0x0 << 8)
 #define VIDOUT_F_I80_LDI0			(0x2 << 8)
 
+#define VIDCON1                                 (0x20004)
 #define VIDCON1_LINECNT_MASK			(0x7ff << 16)
 #define VIDCON1_LINECNT_SHIFT			(16)
 #define VIDCON1_LINECNT_GET(_v)			(((_v) >> 16) & 0x7ff)
