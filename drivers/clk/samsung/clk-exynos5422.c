@@ -555,7 +555,7 @@ enum exynos5422_clks {
 	mout_mx_mspll_kfc,
 
 	mout_aclk_333_432_isp0_sw,
-	mout_aclk_333_432_isp_sw,
+	mout_aclk_333_432_isp_sw = 2065,
 	mout_aclk_333_432_gscl_sw,
 	mout_aclk_300_gscl_sw,
 	mout_aclk_300_disp1_sw,
@@ -566,7 +566,7 @@ enum exynos5422_clks {
 	mout_aclk_400_disp1_sw,
 
 	mout_aclk_333_432_isp0_user,
-	mout_aclk_333_432_isp_user,
+	mout_aclk_333_432_isp_user = 2075,
 	mout_aclk_333_432_gscl_user,
 	mout_aclk_300_gscl_user,
 	mout_aclk_300_disp1_user,
@@ -589,20 +589,20 @@ enum exynos5422_clks {
 	mout_hdmi,
 
 		/* MAU */
-	mout_mau_audio0,
+	mout_mau_audio0 = 2109,
 
 		/* FSYS */
 		/* FSYS2 */
 	mout_usbdrd300,	mout_usbdrd301,
 	mout_mmc0,	mout_mmc1,	mout_mmc2,
-	mout_unipro,
+	mout_unipro = 2115,
 
 		/* ISP */
 	mout_isp_sensor,
 	mout_pwm_isp,
 	mout_uart_isp,
 	mout_spi0_isp,
-	mout_spi1_isp,
+	mout_spi1_isp = 2120,
 
 		/* ETC */
 	mout_mphy_refclk,
@@ -664,7 +664,7 @@ enum exynos5422_clks {
 	dout_aclk_400_isp,
 	dout_aclk_333,
 	dout_aclk_166,
-	dout_aclk_266,
+	dout_aclk_266 = 4010,
 	dout_aclk_66,
 	dout_aclk_333_432_isp0,
 	dout_aclk_333_432_isp,
@@ -717,7 +717,7 @@ enum exynos5422_clks {
 	dout_audio0,
 
 	/* CMU_CPU */
-	dout_arm2,
+	dout_arm2 = 4144,
 	dout_arm2_lsb,
 	dout_arm2_msb,
 	dout_cpud,
@@ -738,7 +738,7 @@ enum exynos5422_clks {
 	/* CMU_CPERI */
 	dout_sclk_cdrex,
 	dout_clk2x_phy0,
-	dout_cclk_drex0,
+	dout_cclk_drex0 = 4160,
 	dout_pclk_drex0,
 	dout_cclk_drex1,
 	dout_pclk_drex1,
@@ -750,7 +750,7 @@ enum exynos5422_clks {
 	dout_ispdiv0_0,
 	dout_mcuispdiv0,
 	dout_mcuispdiv1,
-	dout_ispdiv0,
+	dout_ispdiv0 = 4170,
 	dout_ispdiv1,
 	dout_ispdiv2,
 
@@ -811,7 +811,7 @@ enum exynos5422_clks {
 	mout_aclk_266_isp_sw,
 	/* mout_aclk_266_isp_user, */
 	mout_aclk_432_scaler,
-	mout_aclk_432_scaler_sw,
+	mout_aclk_432_scaler_sw = 5304,
 	mout_aclk_432_scaler_user,
 	mout_aclk_432_cam,
 	mout_aclk_432_cam_sw,
@@ -821,7 +821,7 @@ enum exynos5422_clks {
 	mout_aclk_fl1_550_cam_user,
 	mout_aclk_550_cam,
 	mout_aclk_550_cam_sw,
-	mout_aclk_550_cam_user,
+	mout_aclk_550_cam_user = 5315,
 	mout_mau_epll_clk_user,
 	mout_mx_mspll_ccore_phy,
 	/* GSCL */
@@ -835,7 +835,7 @@ enum exynos5422_clks {
 	dout_spll_ctrl_div2,
 	dout_osc, /* osc_div */
 	dout_aclk_266_isp,
-	dout_aclk_432_scaler,
+	dout_aclk_432_scaler = 5405,
 	dout_aclk_432_cam,
 	dout_aclk_fl1_550_cam,
 	dout_aclk_550_cam,
@@ -1098,8 +1098,8 @@ PNAME(mout_aclk_432_cam_user_p)	= { "dout_osc", "mout_aclk_432_cam_sw" };
 PNAME(mout_aclk_fl1_550_cam_sw_p)	= { "dout_aclk_fl1_550_cam", "dout_spll_ctrl" };
 PNAME(mout_aclk_fl1_550_cam_user_p)	= { "dout_osc", "mout_aclk_fl1_550_cam_sw" };
 
-PNAME(mout_aclk_550_cam_sw_p)	= { "dout_aclk_500_cam", "dout_spll_ctrl" };
-PNAME(mout_aclk_550_cam_user_p)	= { "dout_osc", "mout_aclk_500_cam_sw" };
+PNAME(mout_aclk_550_cam_sw_p)	= { "dout_aclk_550_cam", "dout_spll_ctrl" };
+PNAME(mout_aclk_550_cam_user_p)	= { "dout_osc", "mout_aclk_550_cam_sw" };
 
 PNAME(mout_mau_epll_clk_user_p)	= { "dout_osc", "mout_mau_epll_clk" };
 PNAME(mout_mx_mspll_ccore_phy_p)	= { "mout_bpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl" };
@@ -1329,8 +1329,8 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX_A(mout_epll2, EXYNOS5_CLK_SRC_TOP7, 28, 1, "sclk_epll2"),
 
 	CMX(mout_aclk_266_isp, "mout_aclk_266_isp", group1_2_p, EXYNOS5_CLK_SRC_TOP8, 12, 2),
-	CMUX(mout_aclk_266_isp_sw, EXYNOS5_CLK_SRC_TOP11, 0, 1),
-	CMUX(mout_aclk_266_isp_user, EXYNOS5_CLK_SRC_TOP13, 12, 1),
+	CMUX(mout_aclk_266_isp_sw, EXYNOS5_CLK_SRC_TOP13, 12, 1),
+	CMUX(mout_aclk_266_isp_user, EXYNOS5_CLK_SRC_TOP9, 12, 1),
 
 	CMX(mout_aclk_432_scaler, "mout_aclk_432_scaler", group4_p, EXYNOS5_CLK_SRC_TOP8, 28, 2),
 	CMUX(mout_aclk_432_scaler_sw, EXYNOS5_CLK_SRC_TOP13, 28, 1),
@@ -1340,11 +1340,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_432_cam_sw, EXYNOS5_CLK_SRC_TOP13, 24, 1),
 	CMUX(mout_aclk_432_cam_user, EXYNOS5_CLK_SRC_TOP9, 24, 1),
 
-	CMX(mout_aclk_fl1_550_cam, "mout_aclk_fl1_550_cam", group1_p, EXYNOS5_CLK_SRC_TOP8, 20, 2),
+	CMX(mout_aclk_fl1_550_cam, "mout_aclk_fl1_550_cam", group1_1_p, EXYNOS5_CLK_SRC_TOP8, 20, 3),
 	CMUX(mout_aclk_fl1_550_cam_sw, EXYNOS5_CLK_SRC_TOP13, 20, 1),
 	CMUX(mout_aclk_fl1_550_cam_user, EXYNOS5_CLK_SRC_TOP9, 20, 1),
 
-	CMX(mout_aclk_550_cam, "mout_aclk_550_cam", group1_p, EXYNOS5_CLK_SRC_TOP8, 16, 2),
+	CMX(mout_aclk_550_cam, "mout_aclk_550_cam", group1_1_p, EXYNOS5_CLK_SRC_TOP8, 16, 3),
 	CMUX(mout_aclk_550_cam_sw, EXYNOS5_CLK_SRC_TOP13, 16, 1),
 	CMUX(mout_aclk_550_cam_user, EXYNOS5_CLK_SRC_TOP9, 16, 1),
 
@@ -1490,7 +1490,7 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_aclk_266_isp, "mout_aclk_266_isp", EXYNOS5_CLK_DIV_TOP8, 12, 3),
 	CDIV(dout_aclk_432_scaler, "mout_aclk_432_scaler", EXYNOS5_CLK_DIV_TOP8, 28, 3),
 	CDIV(dout_aclk_432_cam, "mout_aclk_432_cam", EXYNOS5_CLK_DIV_TOP8, 24, 3),
-	CDIV(dout_aclk_fl1_550_cam, "mout_aclk_f1_550_cam", EXYNOS5_CLK_DIV_TOP8, 20, 3),
+	CDIV(dout_aclk_fl1_550_cam, "mout_aclk_fl1_550_cam", EXYNOS5_CLK_DIV_TOP8, 20, 3),
 	CDIV(dout_aclk_550_cam, "mout_aclk_550_cam", EXYNOS5_CLK_DIV_TOP8, 16, 3),
 
 	/* GSCL */
@@ -1499,12 +1499,12 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout2_gscl_blk_300, "aclk_300_gscl", EXYNOS5_CLK_DIV2_RATIO0, 4, 2),
 	CDIV(dout2_gscl_blk_333, "aclk_333_432_gscl", EXYNOS5_CLK_DIV2_RATIO0, 6, 2),
 	CDIV(dout2_cam_blk_432, "aclk_432_cam", EXYNOS5_CLK_DIV4_RATIO, 12, 2),
-	CDIV(dout2_cam_blk_550, "aclk_fl1_550_cam", EXYNOS5_CLK_DIV4_RATIO, 8, 2),
+	CDIV(dout2_cam_blk_550, "aclk_f1_550_cam", EXYNOS5_CLK_DIV4_RATIO, 8, 2),
 
 	/* ISP */
-	CDIV(dout_isp_sensor0, "mout_isp_sensor0", EXYNOS5_SCLK_DIV_ISP0, 8, 8),
-	CDIV(dout_isp_sensor1, "mout_isp_sensor1", EXYNOS5_SCLK_DIV_ISP0, 16, 8),
-	CDIV(dout_isp_sensor2, "mout_isp_sensor2", EXYNOS5_SCLK_DIV_ISP0, 24, 8),
+	CDIV(dout_isp_sensor0, "mout_isp_sensor", EXYNOS5_SCLK_DIV_ISP0, 8, 8),
+	CDIV(dout_isp_sensor1, "mout_isp_sensor", EXYNOS5_SCLK_DIV_ISP0, 16, 8),
+	CDIV(dout_isp_sensor2, "mout_isp_sensor", EXYNOS5_SCLK_DIV_ISP0, 24, 8),
 
 	CDIV(dout_pwm_isp, "mout_pwm_isp", EXYNOS5_SCLK_DIV_ISP1, 28, 4),
 	CDIV(dout_uart_isp, "mout_uart_isp", EXYNOS5_SCLK_DIV_ISP1, 24, 4),
@@ -1516,8 +1516,8 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_spi1_isp_pre, "dout_spi1_isp", EXYNOS5_SCLK_DIV_ISP1, 8, 8),
 
 	CDIV(dout_ispdiv0_0, "aclk_333_432_isp0", EXYNOS5_CLK_DIV_ISP0, 0, 3),
-	CDIV(dout_mcuispdiv0, "aclk_400_isp", EXYNOS5_CLK_DIV_ISP1, 4, 3),
-	CDIV(dout_mcuispdiv1, "aclk_400_isp", EXYNOS5_CLK_DIV_ISP0, 0, 3),
+	CDIV(dout_mcuispdiv0, "aclk_400_isp", EXYNOS5_CLK_DIV_ISP1, 0, 3),
+	CDIV(dout_mcuispdiv1, "aclk_400_isp", EXYNOS5_CLK_DIV_ISP1, 4, 3),
 	CDIV(dout_ispdiv0, "aclk_333_432_isp", EXYNOS5_CLK_DIV_ISP0, 0, 3),
 	CDIV(dout_ispdiv1, "aclk_333_432_isp", EXYNOS5_CLK_DIV_ISP0, 4, 3),
 	CDIV(dout_ispdiv2, "dout_ispdiv1", EXYNOS5_CLK_DIV_ISP2, 0, 3),
@@ -1563,10 +1563,10 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	CGATE(aclk_333, "aclk_333", "mout_aclk_333_user", EXYNOS5_CLK_GATE_BUS_TOP, 15, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_266_isp, "aclk_266_isp", "mout_aclk_266_isp_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_432_scaler, "aclk_432_scaler", "mout_aclk_432_scaler_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_432_cam, "aclk_432_cam", "mout_aclk_432_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_f1_550_cam, "aclk_f1_550_cam", "mout_aclk_f1_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_550_cam, "aclk_550_cam", "mout_aclk_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_432_scaler, "aclk_432_scaler", "mout_aclk_432_scaler_user", EXYNOS5_CLK_GATE_BUS_TOP, 27, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_432_cam, "aclk_432_cam", "mout_aclk_432_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 26, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_f1_550_cam, "aclk_f1_550_cam", "mout_aclk_fl1_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 25, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_550_cam, "aclk_550_cam", "mout_aclk_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 24, CLK_IGNORE_UNUSED, 0),
 	CGATE(mau_epll_clk, "mau_epll_clk", "mout_mau_epll_clk_user", EXYNOS5_CLK_GATE_BUS_TOP, 23, CLK_IGNORE_UNUSED, 0),
 /* no gate exist for mx_mspll_ccore_phy */
 /* temporary use src mask */
