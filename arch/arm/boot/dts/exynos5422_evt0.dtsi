@@ -301,6 +301,13 @@
 		clocks = <&clock 1289>, <&clock 1266>;
 	};
 
+	sysmmu_3aa_2: sysmmu@0x13CC0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x13CB0000 0x1000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <15 5>;
+	};
+
 	sysmmu_g2d: sysmmu@0x10A60000 {
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x10A60000 0x1000>;
@@ -392,20 +399,6 @@
 		interrupts = <5 2>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 403>, <&clock 410>;
-	};
-
-	sysmmu_fimc_dis0: sysmmu@0x132D0000 {
-		compatible = "samsung,exynos4210-sysmmu";
-		reg = <0x132D0000 0x1000>;
-		interrupt-parent = <&combiner>;
-		interrupts = <10 4>;
-	};
-
-	sysmmu_fimc_dis1: sysmmu@0x132E0000 {
-		compatible = "samsung,exynos4210-sysmmu";
-		reg = <0x132E0000 0x1000>;
-		interrupt-parent = <&combiner>;
-		interrupts = <9 4>;
 	};
 
 	sysmmu_fimc_scp: sysmmu@0x13290000 {
