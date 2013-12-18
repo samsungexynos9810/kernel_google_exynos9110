@@ -41,6 +41,7 @@ struct cpu_load_info {
 
 static DEFINE_PER_CPU(struct cpu_load_info, cur_cpu_info);
 static DEFINE_MUTEX(dm_hotplug_lock);
+static DEFINE_MUTEX(big_hotplug_lock);
 
 static struct task_struct *dm_hotplug_task;
 static int cpu_util[NR_CPUS];
@@ -49,7 +50,7 @@ static bool lcd_is_on;
 static bool forced_hotplug;
 static bool do_enable_hotplug;
 static bool do_disable_hotplug;
-static bool big_hotpluged;
+static int big_hotpluged;
 static bool do_big_hotplug;
 static bool in_low_power_mode;
 
@@ -386,21 +387,43 @@ static int dynamic_hotplug(enum hotplug_mode mode)
 
 int big_cores_hotplug(bool out_flag)
 {
-	int ret;
+	int ret = 0;
+
+	mutex_lock(&big_hotplug_lock);
 
 	do_big_hotplug = true;
 
 	if (out_flag) {
+		if (big_hotpluged) {
+			big_hotpluged++;
+			goto out;
+		}
+
 		ret = dynamic_hotplug(CHP_BIG_OUT);
 		if (!ret)
-			big_hotpluged = true;
+			big_hotpluged++;
 	} else {
+		if (WARN_ON(!big_hotpluged)) {
+			pr_err("%s: big cores already hotplug in\n",
+					__func__);
+			ret = -EINVAL;
+			goto out;
+		}
+
+		if (big_hotpluged > 1) {
+			big_hotpluged--;
+			goto out;
+		}
+
 		ret = dynamic_hotplug(CHP_BIG_IN);
 		if (!ret)
-			big_hotpluged = false;
+			big_hotpluged--;
 	}
 
+out:
 	do_big_hotplug = false;
+
+	mutex_unlock(&big_hotplug_lock);
 
 	return ret;
 }
@@ -595,7 +618,7 @@ static int __init dm_cpu_hotplug_init(void)
 	do_disable_hotplug = false;
 
 	dm_hotplug_enable = true;
-	big_hotpluged = false;
+	big_hotpluged = 0;
 	do_big_hotplug = false;
 	in_low_power_mode = false;
 
