@@ -42,6 +42,7 @@ struct cpu_load_info {
 static DEFINE_PER_CPU(struct cpu_load_info, cur_cpu_info);
 static DEFINE_MUTEX(dm_hotplug_lock);
 
+static struct task_struct *dm_hotplug_task;
 static int cpu_util[NR_CPUS];
 static unsigned int cur_load_freq = 0;
 static bool lcd_is_on;
@@ -59,9 +60,11 @@ enum hotplug_mode {
 	CHP_BIG_OUT,
 };
 
+static int on_run(void *data);
 static int dynamic_hotplug(enum hotplug_mode mode);
 
 static enum hotplug_mode prev_mode;
+static enum hotplug_mode exe_mode;
 static unsigned int delay = POLLING_MSEC;
 
 static bool dm_hotplug_enable;
@@ -408,9 +411,19 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
 		exynos_dm_hotplug_disable();
+		kthread_stop(dm_hotplug_task);
 		break;
 
 	case PM_POST_SUSPEND:
+		dm_hotplug_task =
+			kthread_create(on_run, NULL, "thread_hotplug");
+		if (IS_ERR(dm_hotplug_task)) {
+			pr_err("Failed in creation of thread.\n");
+			return -EINVAL;
+		}
+
+		wake_up_process(dm_hotplug_task);
+
 		exynos_dm_hotplug_enable();
 		break;
 	}
@@ -430,6 +443,7 @@ static int exynos_dm_hotplut_reboot_notifier(struct notifier_block *this,
 	case SYSTEM_POWER_OFF:
 	case SYS_RESTART:
 		exynos_dm_hotplug_disable();
+		kthread_stop(dm_hotplug_task);
 		break;
 	}
 
@@ -523,12 +537,9 @@ static void calc_load(void)
 	return;
 }
 
-static int thread_run_flag;
-
 static int on_run(void *data)
 {
 	int on_cpu = 0;
-	enum hotplug_mode exe_mode;
 
 	struct cpumask thread_cpumask;
 
@@ -537,9 +548,8 @@ static int on_run(void *data)
 	sched_setaffinity(0, &thread_cpumask);
 
 	prev_mode = CHP_NORMAL;
-	thread_run_flag = 1;
 
-	while (thread_run_flag) {
+	while (!kthread_should_stop()) {
 		calc_load();
 		exe_mode = diagnose_condition();
 
@@ -556,24 +566,24 @@ static int on_run(void *data)
 		}
 
 		prev_mode = exe_mode;
-		msleep(delay);
+
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule_timeout_interruptible(msecs_to_jiffies(delay));
+		set_current_state(TASK_RUNNING);
 	}
+
+	pr_info("stopped %s\n", dm_hotplug_task->comm);
 
 	return 0;
 }
 
-void dm_cpu_hotplug_exit(void)
-{
-	thread_run_flag = 0;
-}
-
 static int __init dm_cpu_hotplug_init(void)
 {
-	struct task_struct *k;
 	int ret = 0;
 
-	k = kthread_run(&on_run, NULL, "thread_hotplug_func");
-	if (IS_ERR(k)) {
+	dm_hotplug_task =
+		kthread_create(on_run, NULL, "thread_hotplug");
+	if (IS_ERR(dm_hotplug_task)) {
 		pr_err("Failed in creation of thread.\n");
 		return -EINVAL;
 	}
@@ -601,12 +611,13 @@ static int __init dm_cpu_hotplug_init(void)
 	register_pm_notifier(&exynos_dm_hotplug_nb);
 	register_reboot_notifier(&exynos_dm_hotplug_reboot_nb);
 
+	wake_up_process(dm_hotplug_task);
+
 	return ret;
 
 err_enable_dm_hotplug:
 	fb_unregister_client(&fb_block);
-	kthread_stop(k);
-	put_task_struct(k);
+	kthread_stop(dm_hotplug_task);
 
 	return ret;
 }
