@@ -631,6 +631,9 @@ mali_bool jd_done_nolock(kbase_jd_atom *katom)
 		for (i = 0; i < 2; i++)
 			jd_resolve_dep(&runnable_jobs, katom, i);
 
+		if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
+			kbase_jd_post_external_resources(katom);
+
 		while (!list_empty(&runnable_jobs)) {
 			kbase_jd_atom *node = list_entry(runnable_jobs.prev, kbase_jd_atom, dep_item[0]);
 			list_del(runnable_jobs.prev);
@@ -655,9 +658,6 @@ mali_bool jd_done_nolock(kbase_jd_atom *katom)
 			if (node->status == KBASE_JD_ATOM_STATE_COMPLETED)
 				list_add_tail(&node->dep_item[0], &completed_jobs);
 		}
-
-		if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
-			kbase_jd_post_external_resources(katom);
 
 		kbase_event_post(kctx, katom);
 
