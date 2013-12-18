@@ -65,4 +65,11 @@ struct devfreq_pm_domain_link {
 	struct exynos_pm_domain *pm_domain;
 };
 
+struct devfreq_dynamic_clkgate {
+	unsigned long	paddr;
+	unsigned long	vaddr;
+	unsigned int	bit;
+	unsigned long	freq;
+};
+
 #endif /* __DEVFREQ_EXYNOS_H */

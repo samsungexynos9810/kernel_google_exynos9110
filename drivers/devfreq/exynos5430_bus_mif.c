@@ -839,17 +839,34 @@ unsigned int timeout_wqhd_camera[][2] = {
 
 extern void exynos5_update_district_disp_level(unsigned int idx);
 
-struct devfreq_dynamic_clkgate {
-	unsigned long	addr;
-	unsigned int	bit;
-	unsigned long	freq;
+static struct devfreq_dynamic_clkgate exynos5_mif_dynamic_clkgates[] = {
+	{.paddr = 0x105E0200,	.vaddr = 0x00,	.bit = 0x20,	.freq = 95000},
+	{.paddr = 0x105E0200,	.vaddr = 0x00,	.bit = 0x4,	.freq = 100000},
+	{.paddr = 0x105E0200,	.vaddr = 0x00,	.bit = 0x1,	.freq = 66000},
 };
 
-static struct devfreq_dynamic_clkgate exynos5_mif_dynamic_clkgates[] = {
-	{.addr = 0x105E0200,	.bit = 0x20,	.freq = 95000},
-	{.addr = 0x105E0200,	.bit = 0x4,	.freq = 100000},
-	{.addr = 0x105E0200,	.bit = 0x1,	.freq = 66000},
-};
+static int exynos5_init_mif_dynamic_clkgate(struct platform_device *pdev)
+{
+	unsigned int i;
+	unsigned int list_cnt;
+	list_cnt = ARRAY_SIZE(exynos5_mif_dynamic_clkgates);
+	for (i = 0; i < list_cnt; i++) {
+		exynos5_mif_dynamic_clkgates[i].vaddr =
+			(unsigned long)devm_ioremap(&pdev->dev, exynos5_mif_dynamic_clkgates[i].paddr, SZ_4);
+	}
+	return 0;
+}
+
+static int exynos5_deinit_mif_dynamic_clkgate(struct platform_device *pdev)
+{
+	unsigned int i;
+	unsigned int list_cnt;
+	list_cnt = ARRAY_SIZE(exynos5_mif_dynamic_clkgates);
+	for (i = 0; i < list_cnt; i++)
+		if (exynos5_mif_dynamic_clkgates[i].vaddr)
+			devm_ioremap_release(&pdev->dev, (void *)exynos5_mif_dynamic_clkgates[i].vaddr);
+	return 0;
+}
 
 static void exynos5_enable_dynamic_clkgate(struct devfreq_dynamic_clkgate *clkgate_list,
 						unsigned int list_cnt, bool up_case,
@@ -862,18 +879,20 @@ static void exynos5_enable_dynamic_clkgate(struct devfreq_dynamic_clkgate *clkga
 	for (i = 0; i < list_cnt; i++) {
 		if (up_case && clkgate_list[i].freq < freq) {
 			/* disable dynamic clock gating */
-			reg = ioremap(clkgate_list[i].addr, SZ_4);
-			tmp = readl(reg);
-			tmp &= ~(clkgate_list[i].bit);
-			writel(tmp, reg);
-			iounmap(reg);
+			if (likely(clkgate_list[i].vaddr)) {
+				reg = (void __iomem *)clkgate_list[i].vaddr;
+				tmp = readl(reg);
+				tmp &= ~(clkgate_list[i].bit);
+				writel(tmp, reg);
+			}
 		} else if (!up_case && clkgate_list[i].freq > freq) {
 			/* enable dynamic clock gating */
-			reg = ioremap(clkgate_list[i].addr, SZ_4);
-			tmp = readl(reg);
-			tmp |= clkgate_list[i].bit;
-			writel(tmp, reg);
-			iounmap(reg);
+			if (likely(clkgate_list[i].vaddr)) {
+				reg = (void __iomem *)clkgate_list[i].vaddr;
+				tmp = readl(reg);
+				tmp |= clkgate_list[i].bit;
+				writel(tmp, reg);
+			}
 		}
 	}
 }
@@ -1792,6 +1811,10 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_inittable;
 
+	ret = exynos5_init_mif_dynamic_clkgate(pdev);
+	if (ret)
+		goto err_inittable;
+
 	/* Setting non-exist index with restore of dll on */
 	data->restore_idx_dll_on = -1;
 	data->base_idx_dll_on = -1;
@@ -1857,6 +1880,8 @@ static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
 	iounmap(data->base_drex1);
 	iounmap(data->base_lpddr_phy0);
 	iounmap(data->base_lpddr_phy1);
+
+	exynos5_deinit_mif_dynamic_clkgate(pdev);
 
 	flush_workqueue(devfreq_mif_thermal_wq_ch0);
 	destroy_workqueue(devfreq_mif_thermal_wq_ch0);
