@@ -172,10 +172,8 @@ static void check_display_clocks(void)
 int enable_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
-#ifndef CONFIG_SOC_EXYNOS5430_REV_0
 	void __iomem *regs;
 	u32 data;
-#endif
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
