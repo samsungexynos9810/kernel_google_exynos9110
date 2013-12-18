@@ -186,7 +186,7 @@ struct ion_heap {
 	struct shrinker shrinker;
 	struct list_head free_list;
 	size_t free_list_size;
-	struct rt_mutex lock;
+	spinlock_t free_lock;
 	wait_queue_head_t waitqueue;
 	struct task_struct *task;
 	struct semaphore vm_sem;
