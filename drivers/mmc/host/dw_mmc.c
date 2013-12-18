@@ -3585,6 +3585,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "enable-cmdq", NULL))
 		pdata->caps2 |= MMC_CAP2_CMDQ;
 
+	if (of_find_property(np, "device-driver", NULL))
+		pdata->caps2 |= MMC_CAP2_DEVICE_DRIVER;
+
 	if (of_find_property(np, "clock-gate", NULL))
 		pdata->use_gate_clock = true;
 

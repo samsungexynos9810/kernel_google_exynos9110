@@ -495,6 +495,12 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 		priv->drv_str_pin, priv->drv_str_addr,
 		priv->drv_str_val, priv->drv_str_num);
 
+	/*
+	 * Exynos-dependent generic control flag
+	 */
+	if (of_find_property(np, "use-fine-tuning", NULL))
+		priv->ctrl_flag |= DW_MMC_EXYNOS_USE_FINE_TUNING;
+
 	id = of_alias_get_id(host->dev->of_node, "mshc");
 	switch (id) {
 	/* dwmmc0 : eMMC    */
