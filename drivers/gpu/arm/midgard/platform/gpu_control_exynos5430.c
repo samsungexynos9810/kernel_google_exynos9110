@@ -97,6 +97,14 @@ static int gpu_update_clock(struct exynos_context *platform)
 	return 0;
 }
 
+int gpu_is_clock_on(struct exynos_context *platform)
+{
+	if (!platform)
+		return -ENODEV;
+
+	return __clk_is_enabled(platform->aclk_g3d);
+}
+
 int gpu_clock_on(struct exynos_context *platform)
 {
 	if (!platform)
@@ -172,6 +180,12 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 	if (!gpu_is_power_on()) {
 		ret = -1;
 		GPU_LOG(DVFS_WARNING, "gpu_set_clk_vol in the G3D power-off state!\n");
+		goto err;
+	}
+
+	if (!gpu_is_clock_on(platform)) {
+		ret = -1;
+		GPU_LOG(DVFS_WARNING, "gpu_set_clk_vol in the G3D clock-off state!\n");
 		goto err;
 	}
 

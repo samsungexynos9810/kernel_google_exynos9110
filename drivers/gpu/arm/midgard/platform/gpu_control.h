@@ -152,6 +152,7 @@ struct exynos_pm_domain *gpu_get_pm_domain(kbase_device *kbdev);
 int get_cpu_clock_speed(u32 *cpu_clock);
 int gpu_is_power_on(void);
 int gpu_power_init(kbase_device *kbdev);
+int gpu_is_clock_on(struct exynos_context *platform);
 int gpu_clock_on(struct exynos_context *platform);
 int gpu_clock_off(struct exynos_context *platform);
 int gpu_set_clock(struct exynos_context *platform, int freq);
