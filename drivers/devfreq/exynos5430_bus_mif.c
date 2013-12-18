@@ -919,7 +919,8 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		media_enabled_gscl_local = value;
 		break;
 	case TYPE_TV:
-		media_enabled_tv = value;
+		media_num_mixer_layer = value;
+		media_enabled_tv = !!value;
 		break;
 	case TYPE_RESOLUTION:
 		media_resolution = value;
@@ -2758,7 +2759,8 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		media_enabled_gscl_local = value;
 		break;
 	case TYPE_TV:
-		media_enabled_tv = value;
+		media_num_mixer_layer = value;
+		media_enabled_tv = !!value;
 		break;
 	case TYPE_RESOLUTION:
 		media_resolution = value;
