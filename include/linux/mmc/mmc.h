@@ -433,4 +433,30 @@ struct _mmc_csd {
 #define MMC_SWITCH_MODE_CLEAR_BITS	0x02	/* Clear bits which are 1 in value */
 #define MMC_SWITCH_MODE_WRITE_BYTE	0x03	/* Set target to value */
 
+/*
+ * Manufacturer ID from CID
+ */
+#define CID_MANFID_SANDISK	0x2
+#define CID_MANFID_TOSHIBA	0x11
+#define CID_MANFID_MICRON	0x13
+#define CID_MANFID_SAMSUNG	0x15
+
+/*
+ * Device Output Driver Type
+ */
+#define MMC_DRIVER_TYPE_0	0	/* Default, x1 */
+#define MMC_DRIVER_TYPE_1	1	/* x1.5 */
+#define MMC_DRIVER_TYPE_2	2	/* x0.75 */
+#define MMC_DRIVER_TYPE_3	3	/* x0.5 */
+#define MMC_DRIVER_TYPE_4	4	/* x1.2 */
+#define MMC_DRIVER_TYPE_5	5	/* x2 */
+
+/*
+ * HS_TIMING
+ */
+#define MMC_HS_TIMING_LEGACY	0	/* for legacy mode */
+#define MMC_HS_TIMING_HS	1	/* for high speed */
+#define MMC_HS_TIMING_HS200	2	/* for hs200 */
+#define MMC_HS_TIMING_DDR200	3	/* for ddr200 */
+
 #endif /* LINUX_MMC_MMC_H */

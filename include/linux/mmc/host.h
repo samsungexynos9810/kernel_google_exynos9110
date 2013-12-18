@@ -298,6 +298,7 @@ struct mmc_host {
 				 MMC_CAP2_HS200_1_2V_SDR)
 #define MMC_CAP2_CMDQ		(MMC_CAP2_CACHE_CTRL | \
 				(1 << 15))	/* Allow command queuing */
+#define MMC_CAP2_DEVICE_DRIVER	(1 << 16)	/* */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
