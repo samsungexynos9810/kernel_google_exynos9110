@@ -112,6 +112,9 @@ static struct check_reg_lpa exynos5_dstop_power_domain[] = {
  */
 
 static struct check_reg_lpa exynos5_clock_gating[] = {
+#ifdef CONFIG_EXYNOS_MIPI_LLI
+	{.check_reg = EXYNOS5430_ENABLE_IP_CPIF0,	.check_bit = 0xFFE},
+#endif
 };
 
 #ifdef CONFIG_SAMSUNG_USBPHY
