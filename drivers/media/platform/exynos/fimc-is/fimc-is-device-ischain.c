@@ -4972,7 +4972,7 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		output_crop[0] = 0;
 		output_crop[1] = 0;
 		output_crop[2] = device->chain0_width;
-		output_crop[3] = device->chain0_width;
+		output_crop[3] = device->chain0_height;
 
 		fimc_is_ischain_s_3aa_size(device, NULL, input_crop,
 				output_crop, &lindex, &hindex, &indexes);
