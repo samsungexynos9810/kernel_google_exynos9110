@@ -96,10 +96,6 @@ enum bts_id {
 
 enum bts_clock_index {
 	BTS_CLOCK_G3D = 0,
-	BTS_CLOCK_MMC,
-	BTS_CLOCK_USB,
-	BTS_CLOCK_DIS1,
-	BTS_CLOCK_G2D,
 	BTS_CLOCK_MAX,
 };
 
@@ -114,7 +110,6 @@ struct bts_info {
 	unsigned int pa_base;
 	void __iomem *va_base;
 	struct bts_table table;
-	const char *devname;
 	const char *pd_name;
 	const char *clk_name;
 	struct clk *clk;
@@ -129,8 +124,7 @@ struct bts_set_table {
 };
 
 struct bts_ip_clk {
-	const char *clkname;
-	const char *devname;
+	const char *clk_name;
 	struct clk *clk;
 };
 
@@ -288,19 +282,7 @@ BTS_TABLE(0xcccc);
 
 static struct bts_ip_clk exynos5_bts_clk[] = {
 	[BTS_CLOCK_G3D] = {
-		.clkname = "clk_ahb2apb_g3dp",
-	},
-	[BTS_CLOCK_MMC] = {
-		.clkname = "clk_ahb2apb_fsys1p",
-	},
-	[BTS_CLOCK_USB] = {
-		.clkname = "clk_ahb2apb_fsyssp",
-	},
-	[BTS_CLOCK_DIS1] = {
-		.clkname = "axi_disp1",
-	},
-	[BTS_CLOCK_G2D] = {
-		.clkname = "clk_g2d",
+		.clk_name = "clk_ahb2apb_g3dp",
 	},
 };
 
@@ -336,8 +318,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimd1m0",
 		.pa_base = EXYNOS5_PA_BTS_DISP10,
 		.pd_name = "spd-fimd",
-		.devname = "exynos5-fb.1",
-		.clk_name = "lcd",
+		.clk_name = "clk_fimd1",
 		.table.table_list = axiqos_0x8888_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = true,
@@ -347,8 +328,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimd1m1",
 		.pa_base = EXYNOS5_PA_BTS_DISP11,
 		.pd_name = "spd-fimd",
-		.devname = "exynos5-fb.1",
-		.clk_name = "lcd",
+		.clk_name = "clk_fimd1",
 		.table.table_list = axiqos_0x8888_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = true,
@@ -358,8 +338,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "tvm0",
 		.pa_base = EXYNOS5_PA_BTS_MIXER0,
 		.pd_name = "spd-mixer",
-		.devname = "s5p-mixer",
-		.clk_name = "mixer",
+		.clk_name = "clk_mixer",
 		.table.table_list = axiqos_0x8888_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = true,
@@ -369,8 +348,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "tvm1",
 		.pa_base = EXYNOS5_PA_BTS_MIXER1,
 		.pd_name = "spd-mixer",
-		.devname = "s5p-mixer",
-		.clk_name = "mixer",
+		.clk_name = "clk_mixer",
 		.table.table_list = axiqos_0x8888_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = true,
@@ -380,7 +358,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimc_lite0",
 		.pa_base = EXYNOS5_PA_BTS_FIMCLITE0,
 		.pd_name = "pd-fimclite",
-		.clk_name = "gscl_flite0",
 		.table.table_list = axiqos_0xcccc_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = true,
@@ -390,7 +367,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimc_lite1",
 		.pa_base = EXYNOS5_PA_BTS_FIMCLITE1,
 		.pd_name = "pd-fimclite",
-		.clk_name = "gscl_flite1",
 		.table.table_list = axiqos_0xcccc_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = true,
@@ -400,7 +376,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "3aa",
 		.pa_base = EXYNOS5_PA_BTS_3AA,
 		.pd_name = "pd-fimclite",
-		.clk_name = "gscl_3aa",
 		.table.table_list = axiqos_0xcccc_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = true,
@@ -410,7 +385,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "rotator",
 		.pa_base = EXYNOS5_PA_BTS_ROTATOR,
 		.pd_name = "DEFAULT",
-		.clk_name = "rotator",
+		.clk_name = "clk_rotator",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -420,7 +395,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "sss",
 		.pa_base = EXYNOS5_PA_BTS_SSS,
 		.pd_name = "DEFAULT",
-		.clk_name = "secss",
+		.clk_name = "clk_sss",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -430,7 +405,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "sssslim",
 		.pa_base = EXYNOS5_PA_BTS_SSSSLIM,
 		.pd_name = "DEFAULT",
-		.clk_name = "slimsss",
+		.clk_name = "clk_slimsss",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -440,8 +415,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "g2d",
 		.pa_base = EXYNOS5_PA_BTS_G2D,
 		.pd_name = "DEFAULT",
-		.devname = "s5p-fimg2d",
-		.clk_name = "fimg2d",
+		.clk_name = "clk_g2d",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -469,8 +443,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mfc0",
 		.pa_base = EXYNOS5_PA_BTS_MFC0,
 		.pd_name = "pd-mfc",
-		.devname = "s3c-mfc",
-		.clk_name = "mfc",
+		.clk_name = "clk_mfc_ip",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -480,8 +453,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mfc1",
 		.pa_base = EXYNOS5_PA_BTS_MFC1,
 		.pd_name = "pd-mfc",
-		.devname = "s3c-mfc",
-		.clk_name = "mfc",
+		.clk_name = "clk_mfc_ip",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -491,8 +463,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "g3d0",
 		.pa_base = EXYNOS5_PA_BTS_G3D0,
 		.pd_name = "pd-g3d",
-		.devname = "mali.0",
-		.clk_name = "g3d",
+		.clk_name = "clk_g3d_ip",
 		.table.table_list = g3d_fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(g3d_fbm_l_r_high_table),
 		.on = true,
@@ -502,8 +473,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "g3d1",
 		.pa_base = EXYNOS5_PA_BTS_G3D1,
 		.pd_name = "pd-g3d",
-		.devname = "mali.0",
-		.clk_name = "g3d",
+		.clk_name = "clk_g3d_ip",
 		.table.table_list = g3d_fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(g3d_fbm_l_r_high_table),
 		.on = true,
@@ -513,8 +483,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mdma0",
 		.pa_base = EXYNOS5_PA_BTS_MDMA,
 		.pd_name = "DEFAULT",
-		.devname = "dma-pl330.2",
-		.clk_name = "dma",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -524,7 +492,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mdma1",
 		.pa_base = EXYNOS5_PA_BTS_MDMA1,
 		.pd_name = "DEFAULT",
-		.clk_name = "mdma1",
+		.clk_name = "clk_mdma1",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -534,7 +502,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "jpeg0",
 		.pa_base = EXYNOS5_PA_BTS_JPEG,
 		.pd_name = "spd-jpeg1",
-		.clk_name = "jpeg-hx",
+		.clk_name = "clk_jpeg",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -544,7 +512,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "jpeg2",
 		.pa_base = EXYNOS5_PA_BTS_JPEG2,
 		.pd_name = "spd-jpeg2",
-		.clk_name = "jpeg2-hx",
+		.clk_name = "clk_jpeg2",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -554,8 +522,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "usbdrd300",
 		.pa_base = EXYNOS5_PA_BTS_USBDRD300,
 		.pd_name = "DEFAULT",
-		.devname = "exynos-dwc3.0",
-		.clk_name = "usbdrd30",
+		.clk_name = "clk_usbdrd300",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -565,8 +532,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "usbdrd301",
 		.pa_base = EXYNOS5_PA_BTS_USBDRD301,
 		.pd_name = "DEFAULT",
-		.devname = "exynos-dwc3.1",
-		.clk_name = "usbdrd30",
+		.clk_name = "clk_usbdrd301",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -576,7 +542,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "ufs",
 		.pa_base = EXYNOS5_PA_BTS_UFS,
 		.pd_name = "DEFAULT",
-		.clk_name = "ufs",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -586,8 +551,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mmc0",
 		.pa_base = EXYNOS5_PA_BTS_MMC0,
 		.pd_name = "DEFAULT",
-		.devname = "dw_mmc.0",
-		.clk_name = "dwmci",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -597,8 +560,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mmc1",
 		.pa_base = EXYNOS5_PA_BTS_MMC1,
 		.pd_name = "DEFAULT",
-		.devname = "dw_mmc.1",
-		.clk_name = "dwmci",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -608,8 +569,6 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mmc2",
 		.pa_base = EXYNOS5_PA_BTS_MMC2,
 		.pd_name = "DEFAULT",
-		.devname = "dw_mmc.2",
-		.clk_name = "dwmci",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -619,8 +578,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mscl0",
 		.pa_base = EXYNOS5_PA_BTS_MSCL0,
 		.pd_name = "pd-mscl",
-		.devname = "exynos5-scaler.0",
-		.clk_name = "mscl",
+		.clk_name = "clk_mscl0",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -629,9 +587,8 @@ static struct bts_info exynos5_bts[] = {
 		.id = BTS_MSCL1,
 		.name = "mscl1",
 		.pa_base = EXYNOS5_PA_BTS_MSCL1,
-		.devname = "exynos5-scaler.1",
 		.pd_name = "pd-mscl",
-		.clk_name = "mscl",
+		.clk_name = "clk_mscl1",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -640,9 +597,8 @@ static struct bts_info exynos5_bts[] = {
 		.id = BTS_MSCL2,
 		.name = "mscl2",
 		.pa_base = EXYNOS5_PA_BTS_MSCL2,
-		.devname = "exynos5-scaler.2",
 		.pd_name = "pd-mscl",
-		.clk_name = "mscl",
+		.clk_name = "clk_mscl2",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -652,8 +608,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "gscl0",
 		.pa_base = EXYNOS5_PA_BTS_GSCL0,
 		.pd_name = "spd-gscl0",
-		.devname = "exynos-gsc.0",
-		.clk_name = "gscl",
+		.clk_name = "clk_gscl0",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -663,8 +618,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "gscl1",
 		.pa_base = EXYNOS5_PA_BTS_GSCL1,
 		.pd_name = "spd-gscl1",
-		.devname = "exynos-gsc.1",
-		.clk_name = "gscl",
+		.clk_name = "clk_gscl0",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
@@ -733,14 +687,6 @@ static void set_bts_ip_table(struct bts_info *bts)
 
 	if ((bts->id & BTS_G3D) && exynos5_bts_clk[BTS_CLOCK_G3D].clk)
 		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
-	else if ((bts->id & BTS_MMC) && exynos5_bts_clk[BTS_CLOCK_MMC].clk)
-		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_MMC].clk);
-	else if ((bts->id & BTS_USB) && exynos5_bts_clk[BTS_CLOCK_USB].clk)
-		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_USB].clk);
-	else if ((bts->id & BTS_DIS1) && exynos5_bts_clk[BTS_CLOCK_DIS1].clk)
-		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_DIS1].clk);
-	else if ((bts->id & BTS_G2D) && exynos5_bts_clk[BTS_CLOCK_G2D].clk)
-		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_G2D].clk);
 
 	if (bts->clk)
 		clk_prepare_enable(bts->clk);
@@ -753,14 +699,6 @@ static void set_bts_ip_table(struct bts_info *bts)
 
 	if ((bts->id & BTS_G3D) && exynos5_bts_clk[BTS_CLOCK_G3D].clk)
 		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
-	else if ((bts->id & BTS_MMC) && exynos5_bts_clk[BTS_CLOCK_MMC].clk)
-		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_MMC].clk);
-	else if ((bts->id & BTS_USB) && exynos5_bts_clk[BTS_CLOCK_USB].clk)
-		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_USB].clk);
-	else if ((bts->id & BTS_DIS1) && exynos5_bts_clk[BTS_CLOCK_DIS1].clk)
-		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_DIS1].clk);
-	else if ((bts->id & BTS_G2D) && exynos5_bts_clk[BTS_CLOCK_G2D].clk)
-		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_G2D].clk);
 
 	if (bts->clk)
 		clk_disable_unprepare(bts->clk);
@@ -838,7 +776,7 @@ void bts_initialize(const char *pd_name, bool on)
 
 	spin_lock(&bts_lock);
 
-	BTS_DBG("[%s] pd_name: %s, on/off:%x\n", __func__, pd_name, on);
+	BTS_DBG("[BTS][%s] pd_name: %s, on/off:%x\n", __func__, pd_name, on);
 	list_for_each_entry(bts, &bts_list, list)
 		if (pd_name && bts->pd_name && !strcmp(bts->pd_name, pd_name)) {
 			bts->on = on;
@@ -916,6 +854,7 @@ static void bts_drex_init(void)
 static int __init exynos5_bts_init(void)
 {
 	int i;
+	struct clk *clk;
 
 	BTS_DBG("[BTS][%s] bts init\n", __func__);
 
@@ -923,10 +862,26 @@ static int __init exynos5_bts_init(void)
 		exynos5_bts[i].va_base
 			= ioremap(exynos5_bts[i].pa_base, SZ_4K);
 
+		if (exynos5_bts[i].clk_name) {
+			clk = __clk_lookup(exynos5_bts[i].clk_name);
+			if (IS_ERR(clk))
+				pr_err("failed to get bts clk %s\n",
+						exynos5_bts[i].clk_name);
+			else
+				exynos5_bts[i].clk = clk;
+		}
+
 		list_add(&exynos5_bts[i].list, &bts_list);
 	}
-	exynos5_bts[BTS_IDX_G2D].clk = __clk_lookup("clk_qeg2d");
-	exynos5_bts_clk[BTS_CLOCK_G2D].clk = __clk_lookup(exynos5_bts_clk[BTS_CLOCK_G2D].clkname);
+
+	for (i = 0; i < ARRAY_SIZE(exynos5_bts_clk); i++) {
+		clk = __clk_lookup(exynos5_bts[i].clk_name);
+		if (IS_ERR(clk))
+			pr_err("failed to get bts clk %s\n",
+					exynos5_bts_clk[i].clk_name);
+		else
+			exynos5_bts_clk[i].clk = clk;
+	}
 
 	bts_drex_init();
 
