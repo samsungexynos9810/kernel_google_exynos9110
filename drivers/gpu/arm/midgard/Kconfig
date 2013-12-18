@@ -13,7 +13,6 @@
 #
 
 
-
 menuconfig MALI_MIDGARD
 	tristate "Mali-T6XX r4p0 support"
 	default n
@@ -47,7 +46,7 @@ config MALI_T6XX_RT_PM
 	help
 	  Choose this option to enable runtime power management on MALI T6XX DDK.
 
-config MALI_MIDGARD_ENABLE_TRACE
+menuconfig MALI_T6XX_ENABLE_TRACE
 	bool "Enable kbase tracing"
 	depends on MALI_MIDGARD
 	default n
@@ -55,7 +54,21 @@ config MALI_MIDGARD_ENABLE_TRACE
 	  Enables tracing in kbase.  Trace log available through
 	  the "mali_trace" debugfs file, when the CONFIG_DEBUG_FS is enabled
 
-config MALI_MIDGARD_DEBUG_SYS
+config MALI_EXYNOS_TRACE
+	bool "Enable LSI trace"
+	depends on MALI_MIDGARD && MALI_T6XX_ENABLE_TRACE
+#	default y
+	help
+	  Enable tracing in kbase. It defined by S.LSI
+
+config MALI_FULL_TRACE
+	bool "Enable FULL trace"
+	depends on MALI_MIDGARD && MALI_T6XX_ENABLE_TRACE
+#	default n
+	help
+	  Enable tracing in kbase. It defined by ARM and work fully.
+
+config MALI_T6XX_DEBUG_SYS
 	bool "Enable sysfs for mali t6xx"
 	depends on MALI_MIDGARD && SYSFS
 	default n
@@ -74,7 +87,7 @@ menuconfig MALI_EXPERT
 
 config MALI_DEBUG_SHADER_SPLIT_FS
 	bool "Allow mapping of shader cores via sysfs"
-	depends on MALI_MIDGARD && MALI_MIDGARD_DEBUG_SYS && MALI_EXPERT
+	depends on MALI_MIDGARD && MALI_T6XX_DEBUG_SYS && MALI_EXPERT
 	default n
 	help
 	  Select this option to provide a sysfs entry for runtime configuration of shader

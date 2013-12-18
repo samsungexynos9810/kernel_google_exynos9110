@@ -47,7 +47,7 @@
 #endif				/* CONFIG_SYNC */
 
 /** Enable SW tracing when set */
-#ifdef CONFIG_MALI_MIDGARD_ENABLE_TRACE
+#ifdef CONFIG_MALI_T6XX_ENABLE_TRACE
 #define KBASE_TRACE_ENABLE 1
 #endif
 
@@ -719,7 +719,7 @@ struct kbase_device {
 	struct list_head        kctx_list;
 	struct mutex            kctx_list_lock;
 
-#ifdef CONFIG_MALI_MIDGARD_RT_PM
+#ifdef CONFIG_MALI_T6XX_RT_PM
 	struct delayed_work runtime_pm_workqueue;
 #endif
 

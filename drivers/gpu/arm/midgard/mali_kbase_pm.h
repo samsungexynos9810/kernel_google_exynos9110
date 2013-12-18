@@ -836,7 +836,7 @@ void kbase_pm_do_poweron(struct kbase_device *kbdev, mali_bool is_resume);
  */
 void kbase_pm_do_poweroff(struct kbase_device *kbdev, mali_bool is_suspend);
 
-#ifdef CONFIG_MALI_MIDGARD_DVFS
+#ifdef CONFIG_MALI_T6XX_DVFS
 
 /**
  * Function provided by platform specific code when DVFS is enabled to allow

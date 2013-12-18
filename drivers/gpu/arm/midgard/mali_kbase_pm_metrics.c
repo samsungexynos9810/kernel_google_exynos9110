@@ -223,9 +223,9 @@ int kbase_pm_get_dvfs_utilisation(kbase_device *kbdev)
 	}
 #endif
 
-#ifdef CONFIG_MALI_MIDGARD_DVFS
+#ifdef CONFIG_MALI_T6XX_DVFS
 	kbase_platform_dvfs_event(kbdev, utilisation);
-#endif				/*CONFIG_MALI_MIDGARD_DVFS */
+#endif				/*CONFIG_MALI_T6XX_DVFS */
  out:
 
 	kbdev->pm.metrics.time_idle = 0;
@@ -272,9 +272,9 @@ kbase_pm_dvfs_action kbase_pm_get_dvfs_action(kbase_device *kbdev)
 
 	kbdev->pm.metrics.utilisation = utilisation;
  out:
-#ifdef CONFIG_MALI_MIDGARD_DVFS
+#ifdef CONFIG_MALI_T6XX_DVFS
 	kbase_platform_dvfs_event(kbdev, utilisation);
-#endif				/*CONFIG_MALI_MIDGARD_DVFS */
+#endif				/*CONFIG_MALI_T6XX_DVFS */
 	kbdev->pm.metrics.time_idle = 0;
 	kbdev->pm.metrics.time_busy = 0;
 	spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
