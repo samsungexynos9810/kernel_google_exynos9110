@@ -29,6 +29,8 @@
 #include <linux/of_dma.h>
 #include <linux/err.h>
 
+#include <plat/cpu.h>
+
 #include "dmaengine.h"
 #define PL330_MAX_CHAN		8
 #define PL330_MAX_IRQS		32
@@ -2833,7 +2835,9 @@ static inline int get_burst_len(struct dma_pl330_desc *desc, size_t len)
 	burst_len >>= desc->rqcfg.brst_size;
 
 	/* src/dst_burst_len can't be more than 16 */
-	if (burst_len > 16)
+	if (soc_is_exynos5422() && burst_len > 8)
+	        burst_len = 8;
+	else if (burst_len > 16)
 		burst_len = 16;
 
 	while (burst_len > 1) {
