@@ -3317,6 +3317,50 @@ static int fimc_is_ischain_s_chain2_size(struct fimc_is_device_ischain *device,
 	return ret;
 }
 
+/**
+ Utility function to adjust output crop size based on the
+ H/W limitation of SCP scaling.
+ output_crop_w and output_crop_h are call-by reference parameter,
+ which contain intended cropping size. Adjusted size will be stored on
+ those parameters when this function returns.
+ */
+static int fimc_is_ischain_scp_adjust_crop(struct fimc_is_device_ischain *device,
+	struct scalerp_param *scp_param,
+	u32 *output_crop_w, u32 *output_crop_h)
+{
+	int changed = 0;
+
+	if (*output_crop_w > scp_param->otf_input.width * 4) {
+		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
+			device, scp_param->otf_input.width, *output_crop_w);
+		*output_crop_w = scp_param->otf_input.width * 4;
+		changed |= 0x01;
+	}
+
+	if (*output_crop_h > scp_param->otf_input.height * 4) {
+		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
+			device, scp_param->otf_input.height, *output_crop_h);
+		*output_crop_h = scp_param->otf_input.height * 4;
+		changed |= 0x02;
+	}
+
+	if (*output_crop_w < (scp_param->otf_input.width + 15) / 16) {
+		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
+			device, scp_param->otf_input.width, *output_crop_w);
+		*output_crop_w = (scp_param->otf_input.width + 15) / 16;
+		changed |= 0x10;
+	}
+
+	if (*output_crop_h < (scp_param->otf_input.height + 15) / 16) {
+		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
+			device, scp_param->otf_input.height, *output_crop_h);
+		*output_crop_h = (scp_param->otf_input.height + 15) / 16;
+		changed |= 0x20;
+	}
+
+	return changed;
+}
+
 static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 	struct fimc_is_frame *frame,
 	u32 width,
@@ -3333,6 +3377,7 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 	struct param_dma_output *dma_output;
 	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_queue *queue;
+	struct scalerp_param *scp_param;
 	u32 chain2_width, chain2_height;
 	u32 chain3_width, chain3_height;
 	u32 scp_crop_width, scp_crop_height;
@@ -3345,6 +3390,10 @@ static int fimc_is_ischain_s_chain3_size(struct fimc_is_device_ischain *device,
 
 	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state))
 		return 0;
+
+	/* Adjust output crop to prevent exceeding SCP limitation */
+	scp_param = &device->is_region->parameter.scalerp;
+	fimc_is_ischain_scp_adjust_crop(device, scp_param, &width, &height);
 
 	vctx = device->scp.vctx;
 	queue = &vctx->q_dst;
@@ -5632,6 +5681,7 @@ p_err:
 	return ret;
 }
 
+
 static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
 	struct fimc_is_frame *frame,
@@ -5649,29 +5699,7 @@ static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device,
 	struct param_scaler_input_crop *scp_input_crop;
 	struct param_scaler_output_crop	 *scp_output_crop;
 
-	if (output_crop[2] > scp_param->otf_input.width * 4) {
-		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
-			device, scp_param->otf_input.width, output_crop[2]);
-		output_crop[2] = scp_param->otf_input.width * 4;
-	}
-
-	if (output_crop[3] > scp_param->otf_input.height * 4) {
-		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
-			device, scp_param->otf_input.height, output_crop[3]);
-		output_crop[3] = scp_param->otf_input.height * 4;
-	}
-
-	if (output_crop[2] < (scp_param->otf_input.width + 15) / 16) {
-		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
-			device, scp_param->otf_input.width, output_crop[2]);
-		output_crop[2] = (scp_param->otf_input.width + 15) / 16;
-	}
-
-	if (output_crop[3] < (scp_param->otf_input.height + 15) / 16) {
-		mwarn("Cannot be scaled down beyond 1/16 times(%d -> %d)",
-			device, scp_param->otf_input.height, output_crop[3]);
-		output_crop[3] = (scp_param->otf_input.height + 15) / 16;
-	}
+	fimc_is_ischain_scp_adjust_crop(device, scp_param, &output_crop[2], &output_crop[3]);
 
 	planes = queue->framecfg.format.num_planes;
 	for (i = 0; i < queue->buf_maxcount; i++) {
@@ -5932,6 +5960,21 @@ static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 				merr("fimc_is_ischain_s_chain2_size is fail(%d)", device, ret);
 				goto p_err;
 			}
+
+			ret = fimc_is_ischain_s_chain3_size(device,
+				ldr_frame,
+				output_crop[2],
+				output_crop[3],
+				&lindex,
+				&hindex,
+				&indexes);
+			if (ret) {
+				merr("fimc_is_ischain_s_chain3_size is fail(%d)", device, ret);
+				goto p_err;
+			}
+			mrinfo("[SCPX] xx_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
+
 #endif
 			ret = fimc_is_ischain_scp_start(device,
 				subdev,
