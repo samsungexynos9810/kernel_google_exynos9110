@@ -470,13 +470,15 @@ static int s5p_ace_aes_write_sfr(struct s5p_ace_aes_ctx *sctx)
 		s5p_ace_write_sfr(ACE_AES_KEY6, addr[1]);
 		s5p_ace_write_sfr(ACE_AES_KEY7, addr[2]);
 		s5p_ace_write_sfr(ACE_AES_KEY8, addr[3]);
-		if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
-		ACE_AES_OPERMODE_XTS) {
-			s5p_ace_write_sfr(ACE_AES_KEY15, addr[4]);
-			s5p_ace_write_sfr(ACE_AES_KEY16, addr[5]);
-			s5p_ace_write_sfr(ACE_AES_KEY17, addr[6]);
-			s5p_ace_write_sfr(ACE_AES_KEY18, addr[7]);
-		}
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
+			if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
+				ACE_AES_OPERMODE_XTS) {
+				s5p_ace_write_sfr(ACE_AES_KEY15, addr[4]);
+				s5p_ace_write_sfr(ACE_AES_KEY16, addr[5]);
+				s5p_ace_write_sfr(ACE_AES_KEY17, addr[6]);
+				s5p_ace_write_sfr(ACE_AES_KEY18, addr[7]);
+			}
+#endif
 		break;
 	case 24:
 		s5p_ace_write_sfr(ACE_AES_KEY3, addr[0]);
@@ -495,17 +497,19 @@ static int s5p_ace_aes_write_sfr(struct s5p_ace_aes_ctx *sctx)
 		s5p_ace_write_sfr(ACE_AES_KEY6, addr[5]);
 		s5p_ace_write_sfr(ACE_AES_KEY7, addr[6]);
 		s5p_ace_write_sfr(ACE_AES_KEY8, addr[7]);
-		if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
-		ACE_AES_OPERMODE_XTS) {
-			s5p_ace_write_sfr(ACE_AES_KEY11, addr[8]);
-			s5p_ace_write_sfr(ACE_AES_KEY12, addr[9]);
-			s5p_ace_write_sfr(ACE_AES_KEY13, addr[10]);
-			s5p_ace_write_sfr(ACE_AES_KEY14, addr[11]);
-			s5p_ace_write_sfr(ACE_AES_KEY15, addr[12]);
-			s5p_ace_write_sfr(ACE_AES_KEY16, addr[13]);
-			s5p_ace_write_sfr(ACE_AES_KEY17, addr[14]);
-			s5p_ace_write_sfr(ACE_AES_KEY18, addr[15]);
-		}
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
+			if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
+			ACE_AES_OPERMODE_XTS) {
+				s5p_ace_write_sfr(ACE_AES_KEY11, addr[8]);
+				s5p_ace_write_sfr(ACE_AES_KEY12, addr[9]);
+				s5p_ace_write_sfr(ACE_AES_KEY13, addr[10]);
+				s5p_ace_write_sfr(ACE_AES_KEY14, addr[11]);
+				s5p_ace_write_sfr(ACE_AES_KEY15, addr[12]);
+				s5p_ace_write_sfr(ACE_AES_KEY16, addr[13]);
+				s5p_ace_write_sfr(ACE_AES_KEY17, addr[14]);
+				s5p_ace_write_sfr(ACE_AES_KEY18, addr[15]);
+			}
+#endif
 		break;
 	default:
 		return -EINVAL;
@@ -573,12 +577,14 @@ static int s5p_ace_aes_engine_start(struct s5p_ace_aes_ctx *sctx,
 	reg = (reg & ~ACE_FC_SELBC_MASK) | ACE_FC_SELBC_AES;
 	s5p_ace_write_sfr(ACE_FC_FIFOCTRL, reg);
 
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 	if ((sctx->sfr_ctrl & ACE_AES_OPERMODE_MASK) ==
 	ACE_AES_OPERMODE_XTS) {
 		/* Set message length */
 		s5p_ace_write_sfr(ACE_AES_MSGSIZE_LOW, len);
 		s5p_ace_write_sfr(ACE_AES_MSGSIZE_HIGH, 0);
 	}
+#endif
 
 	/* Stop flushing BRDMA and BTDMA */
 	reg = ACE_FC_BRDMACFLUSH_OFF;
@@ -1263,6 +1269,7 @@ static int s5p_ace_ctr_aes_set_key(struct crypto_ablkcipher *tfm, const u8 *key,
 	return s5p_ace_aes_set_key(sctx, key, key_len);
 }
 
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 static int s5p_ace_xts_aes_set_key(struct crypto_ablkcipher *tfm, const u8 *key,
 		unsigned int key_len)
 {
@@ -1270,6 +1277,7 @@ static int s5p_ace_xts_aes_set_key(struct crypto_ablkcipher *tfm, const u8 *key,
 	s5p_ace_aes_set_cipher(sctx, MI_AES_XTS, key_len * 4);
 	return s5p_ace_aes_set_key(sctx, key, key_len);
 }
+#endif
 
 static int s5p_ace_ecb_aes_encrypt(struct ablkcipher_request *req)
 {
@@ -1301,6 +1309,7 @@ static int s5p_ace_ctr_aes_decrypt(struct ablkcipher_request *req)
 	return s5p_ace_aes_crypt(req, BC_MODE_DEC);
 }
 
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 static int s5p_ace_xts_aes_encrypt(struct ablkcipher_request *req)
 {
 	return s5p_ace_aes_crypt(req, BC_MODE_ENC);
@@ -1310,6 +1319,7 @@ static int s5p_ace_xts_aes_decrypt(struct ablkcipher_request *req)
 {
 	return s5p_ace_aes_crypt(req, BC_MODE_DEC);
 }
+#endif
 #else
 static int s5p_ace_ecb_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
 		unsigned int key_len)
@@ -1335,6 +1345,7 @@ static int s5p_ace_ctr_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
 	return s5p_ace_aes_set_key(sctx, key, key_len);
 }
 
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 static int s5p_ace_xts_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
 		unsigned int key_len)
 {
@@ -1342,6 +1353,7 @@ static int s5p_ace_xts_aes_set_key(struct crypto_tfm *tfm, const u8 *key,
 	s5p_ace_aes_set_cipher(sctx, MI_AES_XTS, key_len * 4);
 	return s5p_ace_aes_set_key(sctx, key, key_len);
 }
+#endif
 
 static int s5p_ace_ecb_aes_encrypt(struct blkcipher_desc *desc,
 			   struct scatterlist *dst, struct scatterlist *src,
@@ -1385,6 +1397,7 @@ static int s5p_ace_ctr_aes_decrypt(struct blkcipher_desc *desc,
 	return s5p_ace_aes_crypt(desc, dst, src, nbytes, BC_MODE_DEC);
 }
 
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 static int s5p_ace_xts_aes_encrypt(struct blkcipher_desc *desc,
 			   struct scatterlist *dst, struct scatterlist *src,
 			   unsigned int nbytes)
@@ -1398,6 +1411,7 @@ static int s5p_ace_xts_aes_decrypt(struct blkcipher_desc *desc,
 {
 	return s5p_ace_aes_crypt(desc, dst, src, nbytes, BC_MODE_DEC);
 }
+#endif
 #endif
 
 static int s5p_ace_cra_init_tfm(struct crypto_tfm *tfm)
@@ -1546,6 +1560,7 @@ static struct crypto_alg algs_bc[] = {
 			.decrypt	= s5p_ace_ctr_aes_decrypt,
 		}
 	},
+#if defined(CONFIG_ACE_USE_SLIMSSS_VER_1) || defined(CONFIG_ACE_USE_SSS_VER_6)
 	{
 		.cra_name		= "xts(aes)",
 		.cra_driver_name	= "xts-aes-s5p-ace",
@@ -1580,6 +1595,7 @@ static struct crypto_alg algs_bc[] = {
 			.decrypt	= s5p_ace_xts_aes_decrypt,
 		}
 	}
+#endif
 };
 #endif
 
@@ -2805,10 +2821,10 @@ static int s5p_ace_resume(struct platform_device *dev)
 
 #ifdef CONFIG_OF
 static const struct of_device_id cryptographic_accelerator_match[] = {
-#if defined(CONFIG_ACE_USE_SSS_VER_6)
-	{ .compatible = "samsung,exynos5430-sss"},
+#if defined(CONFIG_ACE_USE_SSS_VER_4) || defined(CONFIG_ACE_USE_SSS_VER_5) || defined(CONFIG_ACE_USE_SSS_VER_6)
+       { .compatible = "samsung,exynos5-sss"},
 #else
-	{ .compatible = "samsung,exynos5430-slimsss"},
+       { .compatible = "samsung,exynos5-slimsss"},
 #endif
 	{},
 };
