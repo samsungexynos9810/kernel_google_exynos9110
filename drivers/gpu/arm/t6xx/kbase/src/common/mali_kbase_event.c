@@ -27,9 +27,19 @@ STATIC base_jd_udata kbase_event_process(kbase_context *kctx, kbase_jd_atom *kat
 	pgd_t *pgd;
 	struct mm_struct *mm;
 
-	if (!kctx || !katom || (katom->status != KBASE_JD_ATOM_STATE_COMPLETED)) {
-		printk("Abnormal situation\n");
-		printk("kctx: 0x%p, katom: 0x%p, katom->status: 0x%x\n", kctx, katom, katom->status);
+	if (!kctx) {
+		memset(data.blob, 0, sizeof(data.blob));
+		printk("kctx is NULL! \n");
+		return data;
+	}
+	if (!katom) {
+		memset(data.blob, 0, sizeof(data.blob));
+		printk("katom is NULL! \n");
+		return data;
+	}
+	if (katom->status != KBASE_JD_ATOM_STATE_COMPLETED) {
+		memset(data.blob, 0, sizeof(data.blob));
+		printk("katom->status (0x%x) isn't completed! \n", katom->status);
 		return data;
 	}
 
