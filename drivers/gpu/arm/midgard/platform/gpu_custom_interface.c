@@ -869,7 +869,7 @@ static ssize_t show_utilization_stats(struct device *dev, struct device_attribut
 	if (!kbdev)
 		return -ENODEV;
 
-#ifdef CONFIG_T6XX_DVFS
+#ifdef CONFIG_MALI_T6XX_DVFS
 	gpu_ipa_dvfs_get_utilisation_stats(&stats);
 
 	ret += snprintf(buf+ret, PAGE_SIZE-ret, "util=%d norm_util=%d norm_freq=%d time_busy=%u time_idle=%u time_tick=%d",
