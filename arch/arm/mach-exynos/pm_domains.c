@@ -68,6 +68,7 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 					__raw_readl(pd->base+4),
 					__raw_readl(pd->base+8));
 				pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
+				mutex_unlock(&pd->access_lock);
 				return -ETIMEDOUT;
 			}
 			--timeout;

@@ -169,8 +169,9 @@ struct exynos5422_pd_state exynos5422_maudio_clk[] = {
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	{ .reg = EXYNOS5_CLK_SRC_TOP7,			.val = 0,
 		.set_val = 0x1 << 20, },
-	{ .reg = EXYNOS5_CLK_GATE_BUS_TOP,		.val = 0,
+/*	{ .reg = EXYNOS5_CLK_GATE_BUS_TOP,		.val = 0,
 		.set_val = 0x1 << 23, },
+*/
 #else
 	{ .reg = EXYNOS5_CLK_SRC_TOP6,			.val = 0,
 		.set_val = 0x1 << 20, },
@@ -276,10 +277,6 @@ struct exynos5422_pd_state exynos5422_scl_clk[] = {
 	   { .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
 	   .set_val = 0x1 << 27 | 0x1 << 6, },
 	   */
-	{ .reg = EXYNOS5_CLK_GATE_BUS_GSCL0,		.val = 0,
-		.set_val = 0x3 << 28 | 0x3 << 14 },
-	{ .reg = EXYNOS5_CLK_GATE_BUS_GSCL1,		.val = 0,
-		.set_val = 0x1 << 27 | 0x1 << 24 | 0x3 << 12 | 0x3 << 6, },
 	{ .reg = EXYNOS5_CLK_GATE_IP_GSCL0,			.val = 0,
 		.set_val = 0x3 << 28 | 0x3 << 14 | 0x3 << 0, },
 	{ .reg = EXYNOS5_CLK_GATE_IP_GSCL1,			.val = 0,
@@ -323,18 +320,10 @@ static int exynos5_pd_scl_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 struct exynos5422_pd_state exynos5422_cam_clk[] = {
-	{ .reg = EXYNOS5_CLK_SRC_MASK_TOP1,			.val = 0,
-		.set_val = 0x1 << 0, },
-	{ .reg = EXYNOS5_CLK_SRC_MASK_TOP8,			.val = 0,
-		.set_val = 0x1 << 24 | 0x1 << 20 | 0x1 << 16, },
-	{ .reg = EXYNOS5_CLK_SRC_MASK_CAM,			.val = 0,
-		.set_val = 0x1 << 28 | 0x1 << 24, },
+/*
 	{ .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
 		.set_val = 0x7 << 24 | 0x1 << 7, },
-	{ .reg = EXYNOS5_CLK_GATE_BUS_GSCL0,		.val = 0,
-		.set_val = 0x7 << 24 | 0x1 << 13 | 0xF << 8 },
-	{ .reg = EXYNOS5_CLK_GATE_BUS_GSCL1,		.val = 0,
-		.set_val = 0x1 << 28 | 0x3 << 25 | 0x3 << 21 | 0x7 << 17 | 0x7 << 2, },
+*/
 	{ .reg = EXYNOS5_CLK_GATE_IP_GSCL0,			.val = 0,
 		.set_val = 0x7 << 24 | 0x1 << 13 | 0xF << 8 | 0x7 << 4, },
 	{ .reg = EXYNOS5_CLK_GATE_IP_GSCL1,			.val = 0,
@@ -427,8 +416,10 @@ static int exynos5_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
 #endif
 
 struct exynos5422_pd_state exynos5422_mscl_clk[] = {
+/*
 	{ .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
 		.set_val = 0x1 << 17, },
+*/
 	{ .reg = EXYNOS5_CLK_GATE_IP_MSCL,			.val = 0,
 		.set_val = 0x7FFF1F, },
 };
@@ -554,20 +545,14 @@ static int exynos5_pd_fsys_power_off_post(struct exynos_pm_domain *pd)
 }
 
 struct exynos5422_pd_state exynos5422_peric_clk[] = {
-	{ .reg = EXYNOS5_CLK_SRC_MASK_TOP1,			.val = 0,
-		.set_val = 0x1 << 8, },
-	{ .reg = EXYNOS5_CLK_SRC_MASK_PERIC0,		.val = 0,
-		.set_val = 0x1 << 28 | 0x1 << 24 | 0x1 << 20 | 0x1 << 16 | 0x1 << 12 | 0x1 << 8 | 0x1 << 4, },
-	{ .reg = EXYNOS5_CLK_SRC_MASK_PERIC1,		.val = 0,
-		.set_val = 0x1 << 28 | 0x1 << 24 | 0x1 << 20 | 0x1 << 16 | 0x1 << 12, },
-	{ .reg = EXYNOS5_CLK_GATE_BUS_PERIC,		.val = 0,
-		.set_val = 0xAFFFFFFF, },
 	{ .reg = EXYNOS5_CLK_GATE_IP_PERIC,			.val = 0,
 		.set_val = 0xF5F7FFDF, },
 	{ .reg = EXYNOS5_CLK_GATE_TOP_SCLK_PERIC,	.val = 0,
 		.set_val = 0xF << 15 | 0x1 << 11 | 0xF << 6 | 0x1F << 0, },
+/*
 	{ .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
 		.set_val = 0x1 << 11, },
+*/
 };
 
 static int exynos5_pd_peric_power_on_pre(struct exynos_pm_domain *pd)
@@ -606,14 +591,6 @@ static int exynos5_pd_peric_power_off_post(struct exynos_pm_domain *pd)
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 struct exynos5422_pd_state exynos5422_fimc_is_clk[] = {
-	/*
-	   { .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
-	   .set_val = 0x1 << 16 | 0x1 << 13 | 0x1 << 8 | 0x1 << 5, },
-	   */
-	/*
-	   { .reg = EXYNOS5_CLK_SRC_MASK_ISP,			.val = 0,
-	   .set_val = 0x1 << 28 | 0x1 << 24 | 0x1 << 20 | 0x1 << 16 | 0x1 << 12, },
-	   */
 	{ .reg = EXYNOS5_CLK_GATE_TOP_SCLK_ISP,			.val = 0,
 		.set_val = 0x1 << 12 | 0x1 << 8 | 0x1F, },
 	/* related Async-bridge Clock On */
@@ -629,6 +606,7 @@ static int exynos5_pd_fimc_is_power_on_pre(struct exynos_pm_domain *pd)
 	exynos5_pd_save_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 	exynos5_enable_clk(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 	/* ISP ARM reset */
+	/* __raw_writel(0x0, EXYNOS5422_ISP_ARM_SYS_PWR_REG); */
 
 	return 0;
 }
@@ -651,8 +629,8 @@ static int exynos5_pd_fimc_is_power_off_pre(struct exynos_pm_domain *pd)
 	exynos5_pd_save_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 	exynos5_enable_clk(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 
-	/* ISP_ARM_SYS_PWR_REG */
-	/* ISP_ARM_OPTION */
+	/* ISP ARM reset */
+	/* __raw_writel(0x0, EXYNOS5422_ISP_ARM_SYS_PWR_REG); */
 
 	return 0;
 }
