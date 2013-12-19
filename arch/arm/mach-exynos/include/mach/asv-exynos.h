@@ -113,8 +113,17 @@ struct asv_ops {
 	void		(*set_asv_info)(struct asv_info *asv_inform, bool show_value);
 };
 
-/* 5430 */
-unsigned int exynos5430_get_memory_size(void);
+#ifdef CONFIG_SOC_EXYNOS5430
+extern unsigned int exynos5430_get_memory_size(void);
+extern void exynos5430_get_egl_speed_option(unsigned int *opt_flag, unsigned int *spd_sel);
+
+#define EGL_DISABLE_SPD_OPTION		(0)
+#define EGL_ENABLE_SPD_OPTION		(1)
+#define EGL_SPD_SEL_1500_MHZ		(0x0)
+#define EGL_SPD_SEL_1700_MHZ		(0x1)
+#define EGL_SPD_SEL_1900_MHZ		(0x2)
+#define EGL_SPD_SEL_2100_MHZ		(0x3)
+#endif
 
 /* define function for common asv */
 extern void add_asv_member(struct asv_info *exynos_asv_info);

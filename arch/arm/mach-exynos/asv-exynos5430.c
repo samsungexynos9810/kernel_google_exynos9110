@@ -115,6 +115,12 @@
 #define ASV_VER_200			(0x2)
 #define ASV_VER_300			(0x3)
 
+#define EGL_SPD_OPTION_REG		(S5P_VA_CHIPID2 + 0x24)
+#define EGL_SPD_OPTION_FLAG_OFFSET	(0)
+#define EGL_SPD_OPTION_FLAG_MASK	(0x1)
+#define EGL_SPD_SEL_OFFSET		(1)
+#define EGL_SPD_SEL_MASK		(0x3)
+
 struct asv_reference {
 	unsigned int asv_version;
 	bool is_speedgroup;
@@ -127,6 +133,8 @@ struct asv_fused_info {
 };
 
 static unsigned int asv_mem_size;
+static unsigned int egl_speed_option;
+static unsigned int egl_speed_sel;
 
 static struct asv_fused_info egl_fused_info;
 static struct asv_fused_info kfc_fused_info;
@@ -196,6 +204,12 @@ unsigned int exynos5430_get_memory_size(void)
 	}
 
 	return 0;
+}
+
+void exynos5430_get_egl_speed_option(unsigned int *opt_flag, unsigned int *spd_sel)
+{
+	*opt_flag = egl_speed_option;
+	*spd_sel = egl_speed_sel;
 }
 
 static unsigned int exynos5430_lock_voltage(unsigned int volt_lock)
@@ -638,6 +652,7 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 	unsigned int arm_speed_grp, kfc_speed_grp;
 	unsigned int g3d_mif_speed_grp, int_isp_speed_grp;
 	unsigned int asv_tbl_ver_ema;
+	unsigned int egl_speed_option_reg;
 
 	if (samsung_rev() == EXYNOS5430_REV_0) {
 		pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
@@ -647,11 +662,23 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 	asv_ref_info.is_speedgroup = true;
 
 	asv_mem_size = (readl(S5P_VA_CHIPID + 0x0004) >> ASV_MEM_SIZE_SHIFT) & ASV_MEM_SIZE_MASK;
+
+	pr_info("EXYNOS5430 ASV : LPDDR3 DRAM size %uGB\n", asv_mem_size + 2);
+
 	arm_speed_grp = readl(ASV_ARM_SPEED_GRP_REG);
 	kfc_speed_grp = readl(ASV_KFC_SPEED_GRP_REG);
 	g3d_mif_speed_grp = readl(ASV_G3D_MIF_SPEED_GRP_REG);
 	int_isp_speed_grp = readl(ASV_INT_ISP_SPEED_GRP_REG);
 	asv_tbl_ver_ema = readl(ASV_TBL_VER_EMA_REG);
+	egl_speed_option_reg = readl(EGL_SPD_OPTION_REG);
+
+	egl_speed_option =
+		(egl_speed_option_reg >> EGL_SPD_OPTION_FLAG_OFFSET) & EGL_SPD_OPTION_FLAG_MASK;
+	egl_speed_sel =
+		(egl_speed_option_reg >> EGL_SPD_SEL_OFFSET) & EGL_SPD_SEL_MASK;
+
+	pr_info("EXYNOS5430 ASV : EGL Speed Option (%u), EGL Speed Select (0x%x)\n",
+			egl_speed_option, egl_speed_sel);
 
 	asv_ref_info.asv_version = (asv_tbl_ver_ema >> ASV_TBL_VER_OFFSET) & ASV_TBL_VER_MASK;
 
