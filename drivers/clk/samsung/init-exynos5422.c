@@ -150,9 +150,7 @@ static void top_clk_enable(void)
 	add_enabler("clk_slimsss");
 	add_enabler("clk_sss");
 
-	add_enabler("clk_fimd1");
 	add_enabler("clk_dp1");
-	add_enabler("clk_dsim1");
 	add_enabler("clk_smmufimd1x_m1");
 	add_enabler("clk_smmufimd1x_m0");
 
