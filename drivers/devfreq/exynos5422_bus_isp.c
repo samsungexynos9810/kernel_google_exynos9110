@@ -1,13 +1,14 @@
 /*
  * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  *              http://www.samsung.com
- *		Sangkyu Kim(skwith.kim@samsung.com)
+ *		Jiyun Kim(jiyun83.kim@samsung.com)
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
  */
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 #include <linux/init.h>
 #include <linux/slab.h>
 #include <linux/pm_qos.h>
@@ -28,13 +29,20 @@
 #include "devfreq_exynos.h"
 #include "governor.h"
 
-#define DEVFREQ_INITIAL_FREQ	(666000)
-#define DEVFREQ_POLLING_PERIOD	(0)
+#define DEVFREQ_INITIAL_FREQ	(111000)
+#define DEVFREQ_POLLING_PERIOD	(100)
 
 #define DISP_VOLT_STEP		12500
 #define COLD_VOLT_OFFSET	37500
 #define LIMIT_COLD_VOLTAGE	1250000
 #define MIN_COLD_VOLTAGE	950000
+
+#ifdef DEVFREQ_ISP_DEBUG
+void print_clk(struct clk *p, unsigned long set_freq)
+{
+	printk("%s, set %ld, get %ld\n", p->name, set_freq, clk_get_rate(p)/1000);
+}
+#endif
 
 enum devfreq_isp_idx {
 	LV0,
@@ -43,51 +51,36 @@ enum devfreq_isp_idx {
 	LV3,
 	LV4,
 	LV5,
+	LV6,
 	LV_COUNT,
 };
 
 enum devfreq_isp_clk {
-	ISP_PLL,
-	DOUT_ACLK_CAM0_552,
-	DOUT_ACLK_CAM0_400_TOP,
-	DOUT_ACLK_CAM0_333,
-	DOUT_ACLK_CAM0_400,
-	DOUT_ACLK_CSIS0,
-	DOUT_ACLK_LITE_A,
-	DOUT_ACLK_3AA0,
-	DOUT_ACLK_CSIS1,
-	DOUT_ACLK_LITE_B,
-	DOUT_ACLK_3AA1,
-	DOUT_ACLK_LITE_D,
-	DOUT_SCLK_PIXEL_INIT_552,
-	DOUT_SCLK_PIXEL_333,
-	DOUT_ACLK_CAM1_552,
-	DOUT_ACLK_CAM1_400,
-	DOUT_ACLK_CAM1_333,
-	DOUT_ACLK_FD_400,
-	DOUT_ACLK_CSIS2_333,
-	DOUT_ACLK_LITE_C,
-	DOUT_ACLK_ISP_400,
-	DOUT_ACLK_ISP_DIS_400,
-	MOUT_ACLK_CAM1_552_A,
-	MOUT_ACLK_CAM1_552_B,
-	MOUT_ISP_PLL,
-	MOUT_BUS_PLL_USER,
-	MOUT_MFC_PLL_USER,
-	MOUT_ACLK_FD_A,
-	MOUT_ACLK_FD_B,
-	MOUT_ACLK_ISP_400,
-	MOUT_ACLK_CAM1_333_USER,
-	MOUT_ACLK_CAM1_400_USER,
-	MOUT_ACLK_CAM1_552_USER,
-	MOUT_SCLK_PIXELASYNC_LITE_C_B,
-	MOUT_ACLK_CAM0_333_USER,
-	ACLK_CAM0_333,
-	MOUT_ACLK_LITE_C_B,
-	MOUT_ACLK_CSIS2_B,
-	MOUT_ACLK_ISP_DIS_400,
-	MOUT_SCLK_LITE_FREECNT_C,
-	DOUT_PCLK_LITE_D,
+	DOUT_ACLK_333_432_GSCL,
+	DOUT_ACLK_432_CAM,
+
+	DOUT_ACLK_550_CAM,
+	DOUT_ACLK_FL1_550_CAM,
+	DOUT_GSCL_WRAP_A,
+	DOUT_GSCL_WRAP_B,
+
+	MOUT_IPLL_CTRL,
+	MOUT_ACLK_333_432_GSCL,
+	MOUT_ACLK_333_432_GSCL_SW,
+	MOUT_ACLK_333_432_GSCL_USER,
+	MOUT_ACLK_432_CAM,
+	MOUT_ACLK_432_CAM_SW,
+	MOUT_ACLK_432_CAM_USER,
+
+	MOUT_MPLL_CTRL,
+	MOUT_ACLK_550_CAM,
+	MOUT_ACLK_550_CAM_SW,
+	MOUT_ACLK_550_CAM_USER,
+	MOUT_ACLK_FL1_550_CAM,
+	MOUT_ACLK_FL1_550_CAM_SW,
+	MOUT_ACLK_FL1_550_CAM_USER,
+	MOUT_GSCL_WRAP_A,
+	MOUT_GSCL_WRAP_B,
 	CLK_COUNT,
 };
 
@@ -105,543 +98,178 @@ struct devfreq_data_isp {
 };
 
 struct devfreq_clk_list devfreq_isp_clk[CLK_COUNT] = {
-	{"fout_isp_pll",},
-	{"dout_aclk_cam0_552",},
-	{"dout_aclk_cam0_400_top",},
-	{"dout_aclk_cam0_333",},
-	{"dout_aclk_cam0_400",},
-	{"dout_aclk_csis0",},
-	{"dout_aclk_lite_a",},
-	{"dout_aclk_3aa0",},
-	{"dout_aclk_csis1",},
-	{"dout_aclk_lite_b",},
-	{"dout_aclk_3aa1",},
-	{"dout_aclk_lite_d",},
-	{"dout_sclk_pixelasync_lite_c_init",},
-	{"dout_sclk_pixelasync_lite_c",},
-	{"dout_aclk_cam1_552",},
-	{"dout_aclk_cam1_400",},
-	{"dout_aclk_cam1_333",},
-	{"dout_aclk_fd",},
-	{"dout_aclk_csis2_a",},
-	{"dout_aclk_lite_c",},
-	{"dout_aclk_isp_400",},
-	{"dout_aclk_isp_dis_400",},
-	{"mout_aclk_cam1_552_a",},
-	{"mout_aclk_cam1_552_b",},
-	{"mout_isp_pll",},
-	{"mout_bus_pll_user",},
-	{"mout_mfc_pll_user",},
-	{"mout_aclk_fd_a",},
-	{"mout_aclk_fd_b",},
-	{"mout_aclk_isp_400",},
-	{"mout_aclk_cam1_333_user",},
-	{"mout_aclk_cam1_400_user",},
-	{"mout_aclk_cam1_552_user",},
-	{"mout_sclk_pixelasync_lite_c_b",},
-	{"mout_aclk_cam0_333_user",},
-	{"aclk_cam0_333",},
-	{"mout_aclk_lite_c_b",},
-	{"mout_aclk_csis2_b",},
-	{"mout_aclk_isp_dis_400",},
-	{"mout_sclk_lite_freecnt_c",},
-	{"dout_pclk_lite_d",},
+	{"dout_aclk_333_432_gscl",},
+	{"dout_aclk_432_cam",},
+	{"dout_aclk_550_cam",},
+	{"dout_aclk_fl1_550_cam",},
+	{"dout_gscl_wrap_a",},
+	{"dout_gscl_wrap_b",},
+	{"mout_ipll_ctrl",},
+	{"mout_aclk_333_432_gscl",},
+	{"mout_aclk_333_432_gscl_sw",},
+	{"mout_aclk_333_432_gscl_user",},
+	{"mout_aclk_432_cam",},
+	{"mout_aclk_432_cam_sw",},
+	{"mout_aclk_432_cam_user",},
+	{"mout_mpll_ctrl",},
+	{"mout_aclk_550_cam",},
+	{"mout_aclk_550_cam_sw",},
+	{"mout_aclk_550_cam_user",},
+	{"mout_aclk_fl1_550_cam",},
+	{"mout_aclk_fl1_550_cam_sw",},
+	{"mout_aclk_fl1_550_cam_user",},
+	{"mout_gscl_wrap_a",},
+	{"mout_gscl_wrap_b",},
 };
 
 struct devfreq_opp_table devfreq_isp_opp_list[] = {
-	{LV0,	666000,	950000},
-	{LV1,	555000,	950000},
-	{LV2,	444000,	950000},
-	{LV3,	333000, 950000},
-	{LV4,	222000,	950000},
-	{LV5,	111000,	950000},
+	{LV0,	666000,	1015000},
+	{LV1,	555000,	1015000},
+	{LV2,	444000,	1015000},
+	{LV3,	333000, 1015000},
+	{LV4,	222000,	1015000},
+	{LV5,	111000,	 850000},
+	{LV6,	100000,	 850000},
 };
 
-struct devfreq_clk_state mux_sclk_pixelasync_lite_c[] = {
-	{MOUT_SCLK_PIXELASYNC_LITE_C_B,	MOUT_ACLK_CAM0_333_USER},
+struct devfreq_clk_state mux_aclk_333_432_gscl[] = {
+	{MOUT_ACLK_333_432_GSCL, MOUT_IPLL_CTRL},
+	{MOUT_ACLK_333_432_GSCL_SW, DOUT_ACLK_333_432_GSCL},
+	{MOUT_ACLK_333_432_GSCL_USER, MOUT_ACLK_333_432_GSCL_SW},
 };
 
-struct devfreq_clk_state mux_sclk_lite_freecnt_c[] = {
-	{MOUT_SCLK_LITE_FREECNT_C,	DOUT_PCLK_LITE_D},
+struct devfreq_clk_state mux_aclk_432_cam[] = {
+	{MOUT_ACLK_432_CAM, MOUT_IPLL_CTRL},
+	{MOUT_ACLK_432_CAM_SW, DOUT_ACLK_432_CAM},
+	{MOUT_ACLK_432_CAM_USER, MOUT_ACLK_432_CAM_SW},
 };
 
-struct devfreq_clk_state aclk_cam1_552_isp_pll[] = {
-	{MOUT_ACLK_CAM1_552_A,	MOUT_ISP_PLL},
-	{MOUT_ACLK_CAM1_552_B,	MOUT_ACLK_CAM1_552_A},
+struct devfreq_clk_state mux_aclk_550_cam[] = {
+	{MOUT_ACLK_550_CAM, MOUT_MPLL_CTRL},
+	{MOUT_ACLK_550_CAM_SW, DOUT_ACLK_550_CAM},
+	{MOUT_ACLK_550_CAM_USER, MOUT_ACLK_550_CAM_SW},
 };
 
-struct devfreq_clk_state aclk_cam1_552_bus_pll[] = {
-	{MOUT_ACLK_CAM1_552_A,	MOUT_BUS_PLL_USER},
-	{MOUT_ACLK_CAM1_552_B,	MOUT_ACLK_CAM1_552_A},
+struct devfreq_clk_state mux_aclk_fl1_550_cam[] = {
+	{MOUT_ACLK_FL1_550_CAM, MOUT_MPLL_CTRL},
+	{MOUT_ACLK_FL1_550_CAM_SW, DOUT_ACLK_FL1_550_CAM},
+	{MOUT_ACLK_FL1_550_CAM_USER, MOUT_ACLK_FL1_550_CAM_SW},
 };
 
-struct devfreq_clk_state mux_aclk_csis2[] = {
-	{MOUT_ACLK_CSIS2_B,	MOUT_ACLK_CAM1_333_USER},
+struct devfreq_clk_state mux_gscl_wrap_a[] = {
+	{MOUT_GSCL_WRAP_A, MOUT_MPLL_CTRL},
 };
 
-struct devfreq_clk_state mux_aclk_lite_c[] = {
-	{MOUT_ACLK_LITE_C_B,	MOUT_ACLK_CAM1_333_USER},
+struct devfreq_clk_state mux_gscl_wrap_b[] = {
+	{MOUT_GSCL_WRAP_B, MOUT_MPLL_CTRL},
 };
 
-struct devfreq_clk_state aclk_fd_400_bus_pll[] = {
-	{MOUT_ACLK_FD_A,	MOUT_ACLK_CAM1_400_USER},
-	{MOUT_ACLK_FD_B,	MOUT_ACLK_FD_A},
+struct devfreq_clk_states aclk_333_432_gscl_list = {
+	.state = mux_aclk_333_432_gscl,
+	.state_count = ARRAY_SIZE(mux_aclk_333_432_gscl),
 };
 
-struct devfreq_clk_state aclk_fd_400_mfc_pll[] = {
-	{MOUT_ACLK_FD_B,	MOUT_ACLK_CAM1_333_USER},
+struct devfreq_clk_states aclk_432_cam_list = {
+	.state = mux_aclk_432_cam,
+	.state_count = ARRAY_SIZE(mux_aclk_432_cam),
 };
 
-struct devfreq_clk_state aclk_isp_400_bus_pll[] = {
-	{MOUT_ACLK_ISP_400,	MOUT_BUS_PLL_USER},
+struct devfreq_clk_states aclk_550_cam_list = {
+	.state = mux_aclk_550_cam,
+	.state_count = ARRAY_SIZE(mux_aclk_550_cam),
 };
 
-struct devfreq_clk_state aclk_isp_400_mfc_pll[] = {
-	{MOUT_ACLK_ISP_400,	MOUT_MFC_PLL_USER},
+struct devfreq_clk_states aclk_fl1_550_cam_list = {
+	.state = mux_aclk_fl1_550_cam,
+	.state_count = ARRAY_SIZE(mux_aclk_fl1_550_cam),
 };
 
-struct devfreq_clk_state mux_aclk_isp_dis_400[] = {
-	{MOUT_ACLK_ISP_DIS_400,	MOUT_MFC_PLL_USER},
+struct devfreq_clk_states sclk_gscl_wrap_a_list = {
+	.state = mux_gscl_wrap_a,
+	.state_count = ARRAY_SIZE(mux_gscl_wrap_a),
 };
 
-struct devfreq_clk_states sclk_lite_freecnt_c_list = {
-	.state = mux_sclk_lite_freecnt_c,
-	.state_count = ARRAY_SIZE(mux_sclk_lite_freecnt_c),
+struct devfreq_clk_states sclk_gscl_wrap_b_list = {
+	.state = mux_gscl_wrap_b,
+	.state_count = ARRAY_SIZE(mux_gscl_wrap_b),
 };
 
-struct devfreq_clk_states sclk_pixelasync_lite_c_list = {
-	.state = mux_sclk_pixelasync_lite_c,
-	.state_count = ARRAY_SIZE(mux_sclk_pixelasync_lite_c),
+struct devfreq_clk_info aclk_333_432_gscl[] = {
+	{LV0,	432000,	0,	&aclk_333_432_gscl_list},
+	{LV1,	432000,	0,	&aclk_333_432_gscl_list},
+	{LV2,	432000,	0,	&aclk_333_432_gscl_list},
+	{LV3,	432000,	0,	&aclk_333_432_gscl_list},
+	{LV4,	432000,	0,	&aclk_333_432_gscl_list},
+	{LV5,	216000,	0,	&aclk_333_432_gscl_list},
+	{LV6,	144000,	0,	&aclk_333_432_gscl_list},
 };
 
-struct devfreq_clk_states aclk_cam1_552_isp_pll_list = {
-	.state = aclk_cam1_552_isp_pll,
-	.state_count = ARRAY_SIZE(aclk_cam1_552_isp_pll),
+struct devfreq_clk_info aclk_432_cam[] = {
+	{LV0,	216000,	0,	&aclk_432_cam_list},
+	{LV1,	432000,	0,	&aclk_432_cam_list},
+	{LV2,	216000,	0,	&aclk_432_cam_list},
+	{LV3,	144000,	0,	&aclk_432_cam_list},
+	{LV4,	 72000,	0,	&aclk_432_cam_list},
+	{LV5,	 54000,	0,	&aclk_432_cam_list},
+	{LV6,	 54000,	0,	&aclk_432_cam_list},
 };
 
-struct devfreq_clk_states aclk_cam1_552_bus_pll_list = {
-	.state = aclk_cam1_552_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_cam1_552_bus_pll),
+struct devfreq_clk_info aclk_550_cam[] = {
+	{LV0,	532000,	0,	&aclk_550_cam_list},
+	{LV1,	266000,	0,	&aclk_550_cam_list},
+	{LV2,	266000,	0,	&aclk_550_cam_list},
+	{LV3,	266000,	0,	&aclk_550_cam_list},
+	{LV4,	266000,	0,	&aclk_550_cam_list},
+	{LV5,	266000,	0,	&aclk_550_cam_list},
+	{LV6,	133000,	0,	&aclk_550_cam_list},
 };
 
-struct devfreq_clk_states mux_aclk_csis2_list = {
-	.state = mux_aclk_csis2,
-	.state_count = ARRAY_SIZE(mux_aclk_csis2),
+struct devfreq_clk_info aclk_fl1_550_cam[] = {
+	{LV0,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV1,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV2,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV3,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV4,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV5,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV6,	 76000,	0,	&aclk_fl1_550_cam_list},
 };
 
-struct devfreq_clk_states mux_aclk_lite_c_list = {
-	.state = mux_aclk_lite_c,
-	.state_count = ARRAY_SIZE(mux_aclk_lite_c),
+struct devfreq_clk_info sclk_gscl_wrap_a[] = {
+	{LV0,	532000,	0,	&sclk_gscl_wrap_a_list},
+	{LV1,	532000,	0,	&sclk_gscl_wrap_a_list},
+	{LV2,	532000,	0,	&sclk_gscl_wrap_a_list},
+	{LV3,	532000,	0,	&sclk_gscl_wrap_a_list},
+	{LV4,	532000,	0,	&sclk_gscl_wrap_a_list},
+	{LV5,	266000,	0,	&sclk_gscl_wrap_a_list},
+	{LV6,	133000,	0,	&sclk_gscl_wrap_a_list},
 };
 
-struct devfreq_clk_states aclk_fd_400_bus_pll_list = {
-	.state = aclk_fd_400_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_fd_400_bus_pll),
-};
-
-struct devfreq_clk_states aclk_fd_400_mfc_pll_list = {
-	.state = aclk_fd_400_mfc_pll,
-	.state_count = ARRAY_SIZE(aclk_fd_400_mfc_pll),
-};
-
-struct devfreq_clk_states aclk_isp_400_bus_pll_list = {
-	.state = aclk_isp_400_bus_pll,
-	.state_count = ARRAY_SIZE(aclk_isp_400_bus_pll),
-};
-
-struct devfreq_clk_states aclk_isp_400_mfc_pll_list = {
-	.state = aclk_isp_400_mfc_pll,
-	.state_count = ARRAY_SIZE(aclk_isp_400_mfc_pll),
-};
-
-struct devfreq_clk_states aclk_isp_dis_400_list = {
-	.state = mux_aclk_isp_dis_400,
-	.state_count = ARRAY_SIZE(mux_aclk_isp_dis_400),
-};
-
-struct devfreq_clk_info isp_pll[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	552000000,	0,	NULL},
-	{LV1,	552000000,	0,	NULL},
-	{LV2,	552000000,	0,	NULL},
-	{LV3,	552000000,	0,	NULL},
-	{LV4,	552000000,	0,	NULL},
-	{LV5,	552000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	444000000,	0,	NULL},
-	{LV5,	444000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_cam0_552[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	552000000,	0,	NULL},
-	{LV1,	552000000,	0,	NULL},
-	{LV2,	552000000,	0,	NULL},
-	{LV3,	552000000,	0,	NULL},
-	{LV4,	552000000,	0,	NULL},
-	{LV5,	552000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	444000000,	0,	NULL},
-	{LV5,	444000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_cam0_400_top[] = {
-	{LV0,	400000000,	0,	NULL},
-	{LV1,	400000000,	0,	NULL},
-	{LV2,	400000000,	0,	NULL},
-	{LV3,	400000000,	0,	NULL},
-	{LV4,	400000000,	0,	NULL},
-	{LV5,	400000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_cam0_333[] = {
-	{LV0,	334000000,	0,	NULL},
-	{LV1,	334000000,	0,	NULL},
-	{LV2,	334000000,	0,	NULL},
-	{LV3,	334000000,	0,	NULL},
-	{LV4,	334000000,	0,	NULL},
-	{LV5,	334000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_cam0_400[] = {
-	{LV0,	400000000,	0,	NULL},
-	{LV1,	400000000,	0,	NULL},
-	{LV2,	400000000,	0,	NULL},
-	{LV3,	400000000,	0,	NULL},
-	{LV4,	400000000,	0,	NULL},
-	{LV5,	 50000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_csis0[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	552000000,	0,	NULL},
-	{LV1,	552000000,	0,	NULL},
-	{LV2,	552000000,	0,	NULL},
-	{LV3,	552000000,	0,	NULL},
-	{LV4,	 69000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_lite_a[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	552000000,	0,	NULL},
-	{LV1,	552000000,	0,	NULL},
-	{LV2,	552000000,	0,	NULL},
-	{LV3,	552000000,	0,	NULL},
-	{LV4,	 69000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_3aa0[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	552000000,	0,	NULL},
-	{LV1,	552000000,	0,	NULL},
-	{LV2,	552000000,	0,	NULL},
-	{LV3,	552000000,	0,	NULL},
-	{LV4,	 69000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	444000000,	0,	NULL},
-	{LV1,	444000000,	0,	NULL},
-	{LV2,	444000000,	0,	NULL},
-	{LV3,	444000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_csis1[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	 79000000,	0,	NULL},
-	{LV1,	 79000000,	0,	NULL},
-	{LV2,	 79000000,	0,	NULL},
-	{LV3,	 79000000,	0,	NULL},
-	{LV4,	 79000000,	0,	NULL},
-	{LV5,	 79000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 74000000,	0,	NULL},
-	{LV1,	 74000000,	0,	NULL},
-	{LV2,	 74000000,	0,	NULL},
-	{LV3,	 74000000,	0,	NULL},
-	{LV4,	 74000000,	0,	NULL},
-	{LV5,	 74000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_lite_b[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	 79000000,	0,	NULL},
-	{LV1,	 79000000,	0,	NULL},
-	{LV2,	 79000000,	0,	NULL},
-	{LV3,	 79000000,	0,	NULL},
-	{LV4,	 79000000,	0,	NULL},
-	{LV5,	 79000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 74000000,	0,	NULL},
-	{LV1,	 74000000,	0,	NULL},
-	{LV2,	 74000000,	0,	NULL},
-	{LV3,	 74000000,	0,	NULL},
-	{LV4,	 74000000,	0,	NULL},
-	{LV5,	 74000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_3aa1[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	 79000000,	0,	NULL},
-	{LV1,	 79000000,	0,	NULL},
-	{LV2,	 79000000,	0,	NULL},
-	{LV3,	 79000000,	0,	NULL},
-	{LV4,	 79000000,	0,	NULL},
-	{LV5,	 79000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 74000000,	0,	NULL},
-	{LV1,	 74000000,	0,	NULL},
-	{LV2,	 74000000,	0,	NULL},
-	{LV3,	 74000000,	0,	NULL},
-	{LV4,	 74000000,	0,	NULL},
-	{LV5,	 74000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_lite_d[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	 69000000,	0,	NULL},
-	{LV1,	 69000000,	0,	NULL},
-	{LV2,	 69000000,	0,	NULL},
-	{LV3,	 69000000,	0,	NULL},
-	{LV4,	 69000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 56000000,	0,	NULL},
-	{LV1,	 56000000,	0,	NULL},
-	{LV2,	 56000000,	0,	NULL},
-	{LV3,	 56000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info sclk_pixel_init_552[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	 69000000,	0,	NULL},
-	{LV1,	 69000000,	0,	NULL},
-	{LV2,	 69000000,	0,	NULL},
-	{LV3,	 69000000,	0,	NULL},
-	{LV4,	 69000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	 56000000,	0,	NULL},
-	{LV1,	 56000000,	0,	NULL},
-	{LV2,	 56000000,	0,	NULL},
-	{LV3,	 56000000,	0,	NULL},
-	{LV4,	 56000000,	0,	NULL},
-	{LV5,	 56000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info sclk_pixel_333[] = {
-	{LV0,	 42000000,	0,	&sclk_pixelasync_lite_c_list},
-	{LV1,	 42000000,	0,	&sclk_pixelasync_lite_c_list},
-	{LV2,	 42000000,	0,	&sclk_pixelasync_lite_c_list},
-	{LV3,	 42000000,	0,	&sclk_pixelasync_lite_c_list},
-	{LV4,	 42000000,	0,	&sclk_pixelasync_lite_c_list},
-	{LV5,	 42000000,	0,	&sclk_pixelasync_lite_c_list},
-};
-
-struct devfreq_clk_info aclk_cam1_552[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
-	{LV1,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
-	{LV2,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
-	{LV3,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
-	{LV4,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV5,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV1,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV2,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV3,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV4,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV5,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-#endif
-};
-
-struct devfreq_clk_info aclk_cam1_400[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	400000000,	0,	NULL},
-	{LV1,	400000000,	0,	NULL},
-	{LV2,	400000000,	0,	NULL},
-	{LV3,	400000000,	0,	NULL},
-	{LV4,	267000000,	0,	NULL},
-	{LV5,	267000000,	0,	NULL},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	267000000,	0,	NULL},
-	{LV1,	267000000,	0,	NULL},
-	{LV2,	267000000,	0,	NULL},
-	{LV3,	267000000,	0,	NULL},
-	{LV4,	267000000,	0,	NULL},
-	{LV5,	267000000,	0,	NULL},
-#endif
-};
-
-struct devfreq_clk_info aclk_cam1_333[] = {
-	{LV0,	334000000,	0,	NULL},
-	{LV1,	334000000,	0,	NULL},
-	{LV2,	334000000,	0,	NULL},
-	{LV3,	334000000,	0,	NULL},
-	{LV4,	334000000,	0,	NULL},
-	{LV5,	334000000,	0,	NULL},
-};
-
-struct devfreq_clk_info aclk_fd_400[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV1,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV2,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV3,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV4,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV5,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	400000000,	0,	&aclk_fd_400_bus_pll_list},
-	{LV1,	167000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV2,	334000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV3,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV4,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV5,	 84000000,	0,	&aclk_fd_400_mfc_pll_list},
-#endif
-};
-
-struct devfreq_clk_info aclk_csis2_333[] = {
-	{LV0,	 42000000,	0,	&mux_aclk_csis2_list},
-	{LV1,	 42000000,	0,	&mux_aclk_csis2_list},
-	{LV2,	 42000000,	0,	&mux_aclk_csis2_list},
-	{LV3,	 42000000,	0,	&mux_aclk_csis2_list},
-	{LV4,	 42000000,	0,	&mux_aclk_csis2_list},
-	{LV5,	 42000000,	0,	&mux_aclk_csis2_list},
-};
-
-struct devfreq_clk_info aclk_lite_c[] = {
-	{LV0,	 42000000,	0,	&mux_aclk_lite_c_list},
-	{LV1,	 42000000,	0,	&mux_aclk_lite_c_list},
-	{LV2,	 42000000,	0,	&mux_aclk_lite_c_list},
-	{LV3,	 42000000,	0,	&mux_aclk_lite_c_list},
-	{LV4,	 42000000,	0,	&mux_aclk_lite_c_list},
-	{LV5,	 42000000,	0,	&mux_aclk_lite_c_list},
-};
-
-struct devfreq_clk_info aclk_isp_400[] = {
-#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_16M)
-	{LV0,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV1,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV2,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV3,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV4,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV5,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-#elif defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ_CAM_13M)
-	{LV0,	400000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV1,	167000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV2,	334000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV3,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV4,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV5,	 84000000,	0,	&aclk_isp_400_mfc_pll_list},
-#endif
-};
-
-struct devfreq_clk_info aclk_isp_dis_400[] = {
-	{LV0,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV1,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV2,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV3,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV4,	 84000000,	0,	&aclk_isp_dis_400_list},
-	{LV5,	 84000000,	0,	&aclk_isp_dis_400_list},
-};
-
-struct devfreq_clk_info sclk_lite_freecnt_c[] = {
-	{LV0,	 0,	0,	&sclk_lite_freecnt_c_list},
-	{LV1,	 0,	0,	&sclk_lite_freecnt_c_list},
-	{LV2,	 0,	0,	&sclk_lite_freecnt_c_list},
-	{LV3,	 0,	0,	&sclk_lite_freecnt_c_list},
-	{LV4,	 0,	0,	&sclk_lite_freecnt_c_list},
-	{LV5,	 0,	0,	&sclk_lite_freecnt_c_list},
+struct devfreq_clk_info sclk_gscl_wrap_b[] = {
+	{LV0,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV1,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV2,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV3,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV4,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV5,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV6,	 76000,	0,	&sclk_gscl_wrap_b_list},
 };
 
 struct devfreq_clk_info *devfreq_clk_isp_info_list[] = {
-	isp_pll,
-	aclk_cam0_552,
-	aclk_cam0_400_top,
-	aclk_cam0_333,
-	aclk_cam0_400,
-	aclk_csis0,
-	aclk_lite_a,
-	aclk_3aa0,
-	aclk_csis1,
-	aclk_lite_b,
-	aclk_3aa1,
-	aclk_lite_c,
-	sclk_pixel_init_552,
-	sclk_pixel_333,
-	aclk_cam1_552,
-	aclk_cam1_400,
-	aclk_cam1_333,
-	aclk_fd_400,
-	aclk_csis2_333,
-	aclk_lite_c,
-	aclk_isp_400,
-	aclk_isp_dis_400,
-	sclk_lite_freecnt_c,
+	aclk_333_432_gscl,
+	aclk_432_cam,
+	aclk_550_cam,
+	aclk_fl1_550_cam,
+	sclk_gscl_wrap_a,
+	sclk_gscl_wrap_b,
 };
 
 enum devfreq_isp_clk devfreq_clk_isp_info_idx[] = {
-	ISP_PLL,
-	DOUT_ACLK_CAM0_552,
-	DOUT_ACLK_CAM0_400_TOP,
-	DOUT_ACLK_CAM0_333,
-	DOUT_ACLK_CAM0_400,
-	DOUT_ACLK_CSIS0,
-	DOUT_ACLK_LITE_A,
-	DOUT_ACLK_3AA0,
-	DOUT_ACLK_CSIS1,
-	DOUT_ACLK_LITE_B,
-	DOUT_ACLK_3AA1,
-	DOUT_ACLK_LITE_D,
-	DOUT_SCLK_PIXEL_INIT_552,
-	DOUT_SCLK_PIXEL_333,
-	DOUT_ACLK_CAM1_552,
-	DOUT_ACLK_CAM1_400,
-	DOUT_ACLK_CAM1_333,
-	DOUT_ACLK_FD_400,
-	DOUT_ACLK_CSIS2_333,
-	DOUT_ACLK_LITE_C,
-	DOUT_ACLK_ISP_400,
-	DOUT_ACLK_ISP_DIS_400,
-	MOUT_SCLK_LITE_FREECNT_C,
+	DOUT_ACLK_333_432_GSCL,
+	DOUT_ACLK_432_CAM,
+	DOUT_ACLK_550_CAM,
+	DOUT_ACLK_FL1_550_CAM,
+	DOUT_GSCL_WRAP_A,
+	DOUT_GSCL_WRAP_B,
 };
 
 #ifdef CONFIG_PM_RUNTIME
@@ -735,8 +363,12 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 				}
 			}
 
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
+			if (clk_info->freq != 0) {
+				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq * 1000);
+#ifdef DEVFREQ_ISP_DEBUG
+				print_clk(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
+#endif
+			}
 #ifdef CONFIG_PM_RUNTIME
 		if (pm_domain != NULL)
 			mutex_unlock(&pm_domain->access_lock);
@@ -759,8 +391,12 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 		}
 #endif
 
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
+			if (clk_info->freq != 0) {
+				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq * 1000);
+#ifdef DEVFREQ_ISP_DEBUG
+				print_clk(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
+#endif
+			}
 
 			if (clk_states) {
 				for (j = 0; j < clk_states->state_count; ++j) {
@@ -769,8 +405,12 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 				}
 			}
 
-			if (clk_info->freq != 0)
-				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
+			if (clk_info->freq != 0) {
+				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq * 1000);
+#ifdef DEVFREQ_ISP_DEBUG
+				print_clk(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
+#endif
+			}
 #ifdef CONFIG_PM_RUNTIME
 		if (pm_domain != NULL)
 			mutex_unlock(&pm_domain->access_lock);
@@ -830,7 +470,8 @@ static int exynos5_devfreq_isp_target(struct device *dev,
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "DEVFREQ(ISP) : Invalid OPP to find\n");
-		return PTR_ERR(target_opp);
+		ret = PTR_ERR(target_opp);
+		goto out;
 	}
 
 	*target_freq = opp_get_freq(target_opp);
@@ -962,7 +603,7 @@ static int exynos5_init_isp_table(struct device *dev)
 static int exynos5_devfreq_isp_reboot_notifier(struct notifier_block *nb, unsigned long val,
 						void *v)
 {
-	pm_qos_update_request(&exynos5_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
+	pm_qos_update_request(&boot_isp_qos, exynos5_devfreq_isp_profile.initial_freq);
 
 	return NOTIFY_DONE;
 }
@@ -980,8 +621,8 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 	unsigned int *on = v;
 
 	if (event == TMU_COLD) {
-		if (pm_qos_request_active(&exynos5_isp_qos))
-			pm_qos_update_request(&exynos5_isp_qos,
+		if (pm_qos_request_active(&min_isp_thermal_qos))
+			pm_qos_update_request(&min_isp_thermal_qos,
 					exynos5_devfreq_isp_profile.initial_freq);
 
 		if (*on) {
@@ -1018,8 +659,8 @@ static int exynos5_devfreq_isp_tmu_notifier(struct notifier_block *nb, unsigned 
 			mutex_unlock(&data->lock);
 		}
 
-		if (pm_qos_request_active(&exynos5_isp_qos))
-			pm_qos_update_request(&exynos5_isp_qos,
+		if (pm_qos_request_active(&min_isp_thermal_qos))
+			pm_qos_update_request(&min_isp_thermal_qos,
 					exynos5422_qos_isp.default_qos);
 	}
 
@@ -1031,7 +672,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct devfreq_data_isp *data;
-	struct devfreq_notifier_block *devfreq_nb;
 	struct exynos_devfreq_platdata *plat_data;
 
 	if (exynos5_devfreq_isp_init_clock()) {
@@ -1069,26 +709,15 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
-	data->vdd_isp = regulator_get(NULL, "vdd_disp/cam0");
+	data->vdd_isp = regulator_get(NULL, "vdd_int");
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_isp_profile,
 						"simple_ondemand",
 						&exynos5_devfreq_isp_governor_data);
-
-	devfreq_nb = kzalloc(sizeof(struct devfreq_data_isp), GFP_KERNEL);
-	if (devfreq_nb == NULL) {
-		pr_err("DEVFREQ(ISP) : Failed to allocate notifier block\n");
-		ret = -ENOMEM;
-		goto err_nb;
-	}
-
 	plat_data = data->dev->platform_data;
 
 	data->devfreq->min_freq = plat_data->default_qos;
 	data->devfreq->max_freq = exynos5_devfreq_isp_governor_data.cal_qos_max;
-	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
-	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, plat_data->default_qos);
 
 	register_reboot_notifier(&exynos5_isp_reboot_notifier);
 
@@ -1097,9 +726,8 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
 	return ret;
-err_nb:
-	devfreq_remove_device(data->devfreq);
 err_inittable:
+	devfreq_remove_device(data->devfreq);
 	kfree(exynos5_devfreq_isp_profile.freq_table);
 err_freqtable:
 	kfree(data);
@@ -1115,6 +743,7 @@ static int exynos5_devfreq_isp_remove(struct platform_device *pdev)
 
 	pm_qos_remove_request(&min_isp_thermal_qos);
 	pm_qos_remove_request(&exynos5_isp_qos);
+	pm_qos_remove_request(&boot_isp_qos);
 
 	regulator_put(data->vdd_isp);
 
@@ -1162,7 +791,16 @@ static struct platform_device exynos5_devfreq_isp_device = {
 	.name	= "exynos5-devfreq-isp",
 	.id	= -1,
 };
-
+/*
+static int exynos5_devfreq_isp_qos_init(void)
+{
+	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5422_qos_isp.default_qos);
+	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, exynos5422_qos_isp.default_qos);
+	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5422_qos_isp.default_qos);
+	return 0;
+}
+device_initcall(exynos5_devfreq_isp_qos_init);
+*/
 static int __init exynos5_devfreq_isp_init(void)
 {
 	int ret;
@@ -1183,3 +821,4 @@ static void __exit exynos5_devfreq_isp_exit(void)
 	platform_device_unregister(&exynos5_devfreq_isp_device);
 }
 module_exit(exynos5_devfreq_isp_exit);
+#endif
