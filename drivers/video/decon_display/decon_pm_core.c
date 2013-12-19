@@ -445,8 +445,10 @@ static void __display_block_clock_on(struct display_driver *dispdrv)
 	call_pm_ops(dispdrv, decon_driver, clk_on, dispdrv);
 
 #ifdef CONFIG_ION_EXYNOS
-	if (iovmm_activate(dispdrv->decon_driver.sfb->dev) < 0)
-		pr_err("%s: failed to reactivate vmm\n", __func__);
+	if (dispdrv->platform_status > DISP_STATUS_PM0) {
+		if (iovmm_activate(dispdrv->decon_driver.sfb->dev) < 0)
+			pr_err("%s: failed to reactivate vmm\n", __func__);
+	}
 #endif
 }
 
@@ -459,7 +461,8 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 
 	/* SMMU -> DECON -> (MDNIE) -> MIC -> DSIM */
 #ifdef CONFIG_ION_EXYNOS
-	iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
+	if (dispdrv->platform_status > DISP_STATUS_PM0)
+		iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
 #endif
 	call_pm_ops(dispdrv, decon_driver, clk_off, dispdrv);
 #ifdef CONFIG_DECON_MIC
@@ -535,16 +538,14 @@ void display_block_clock_on(struct display_driver *dispdrv)
 {
 	if (!dispdrv->pm_status.clock_gating_on) return;
 
-	if (dispdrv->platform_status > DISP_STATUS_PM0) {
-		mutex_lock(&dispdrv->pm_status.clk_lock);
-		if (!dispdrv->pm_status.clock_enabled) {
-			pm_debug("+");
-			__display_block_clock_on(dispdrv);
-			dispdrv->pm_status.clock_enabled = 1;
-			pm_debug("-");
-		}
-		mutex_unlock(&dispdrv->pm_status.clk_lock);
+	mutex_lock(&dispdrv->pm_status.clk_lock);
+	if (!dispdrv->pm_status.clock_enabled) {
+		pm_debug("+");
+		__display_block_clock_on(dispdrv);
+		dispdrv->pm_status.clock_enabled = 1;
+		pm_debug("-");
 	}
+	mutex_unlock(&dispdrv->pm_status.clk_lock);
 }
 
 void display_block_clock_off(struct display_driver *dispdrv)

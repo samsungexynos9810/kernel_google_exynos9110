@@ -227,7 +227,7 @@ int enable_display_decon_clocks(struct device *dev)
 	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
 #endif
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
 	dispdrv->pm_status.ops->clk_on(dispdrv);
 #endif
 	return ret;
@@ -409,7 +409,7 @@ int enable_display_driver_clocks(struct device *dev)
 
 int disable_display_decon_clocks(struct device *dev)
 {
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
