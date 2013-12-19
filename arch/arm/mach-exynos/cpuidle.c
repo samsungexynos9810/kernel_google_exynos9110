@@ -62,7 +62,7 @@ static bool cluster_off_flag = false;
 static spinlock_t cluster_ctrl_lock;
 static DEFINE_PER_CPU(int, in_c2_state);
 
-#define CLUSTER_OFF_TARGET_RESIDENCY	3000
+#define CLUSTER_OFF_TARGET_RESIDENCY	5000
 #endif
 
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
