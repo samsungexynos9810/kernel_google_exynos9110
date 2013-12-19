@@ -1560,8 +1560,8 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(aclk_333_g2d, "aclk_333_g2d", "mout_aclk_333_g2d_user", EXYNOS5_CLK_GATE_BUS_TOP, 0, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_266_g2d, "aclk_266_g2d", "mout_aclk_266_g2d_user", EXYNOS5_CLK_GATE_BUS_TOP, 1, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_166, "aclk_166", "mout_aclk_166_user", EXYNOS5_CLK_GATE_BUS_TOP, 14, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_333, "aclk_333", "mout_aclk_333_user", EXYNOS5_CLK_GATE_BUS_TOP, 15, CLK_IGNORE_UNUSED, 0),
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CGATE(aclk_333, "aclk_333", "mout_aclk_333_user", EXYNOS5_CLK_GATE_BUS_TOP, 15, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_266_isp, "aclk_266_isp", "mout_aclk_266_isp_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_432_scaler, "aclk_432_scaler", "mout_aclk_432_scaler_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_432_cam, "aclk_432_cam", "mout_aclk_432_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
