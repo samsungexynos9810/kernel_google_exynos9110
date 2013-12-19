@@ -1259,7 +1259,7 @@
     pd_mfc0: pd-mfc@10044060 {
         compatible = "samsung,exynos-pd";
         reg = <0x10044060 0x20>;
-	bts-status = "enabled";
+	bts-status = "disabled";
     };
 
 	pd_g3d: pd-g3d@0x10044080 {
