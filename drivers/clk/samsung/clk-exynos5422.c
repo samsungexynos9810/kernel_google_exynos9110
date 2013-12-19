@@ -961,19 +961,23 @@ PNAME(mout_hpm_kfc_p)          = { "mout_kpll_ctrl" , "mout_mx_mspll_kfc" };
 	mout_aclk_266,
 	mout_aclk_66,
 */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(group1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl"};
+PNAME(group1_1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2", "sclk_epll2"};
+PNAME(group1_2_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2"};
+PNAME(group1_3_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2", "sclk_epll2", "mout_ipll_ctrl"};
+PNAME(group1_4_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl"};
+PNAME(group1_5_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_spll_ctrl"};
+#else
+PNAME(group1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl"};
+#endif
 PNAME(group2_p)		= { "fin_pll", "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_spll_ctrl", "mout_ipll_ctrl", "mout_epll_ctrl", "mout_rpll_ctrl" };
 #ifndef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(group3_p)		= { "mout_rpll_ctrl", "mout_spll_ctrl" };
-#endif
 PNAME(group4_p)		= { "mout_ipll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl" };
+#endif
 PNAME(group5_p)		= { "mout_vpll_ctrl", "mout_dpll_ctrl" };
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-/* temporary support ipll for ISP*/
-PNAME(group1_2_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_ipll_ctrl" };
-/* temporary support spll2, epll2 for ISP*/
-PNAME(group1_1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2", "sclk_epll2"};
-/* temporary support spll2 for ISP*/
 PNAME(group4_1_p)		= { "mout_ipll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "dout_spll_ctrl_div2" };
 #endif
 
@@ -983,7 +987,7 @@ PNAME(mout_aclk_200_fsys_user_p)	= { "fin_pll", "mout_aclk_200_fsys_sw" };
 PNAME(mout_pclk_200_fsys_sw_p) = { "dout_pclk_200_fsys", "mout_spll_ctrl"};
 PNAME(mout_pclk_200_fsys_user_p)	= { "fin_pll", "mout_pclk_200_fsys_sw" };
 PNAME(mout_aclk_100_noc_sw_p)	= { "dout_aclk_100_noc", "mout_spll_ctrl" };
-PNAME(mout_aclk_100_noc_user_p)	= { "fin_pll", "mout_aclk_100_noc" };
+PNAME(mout_aclk_100_noc_user_p)	= { "fin_pll", "mout_aclk_100_noc_sw" };
 PNAME(mout_aclk_400_wcore_bpll_p) = {"mout_aclk_400_wcore", "mout_bpll_ctrl_user"};
 PNAME(mout_aclk_400_wcore_sw_p) = {"dout_aclk_400_wcore", "mout_spll_ctrl"};
 PNAME(mout_aclk_400_wcore_user_p) = {"fin_pll", "mout_aclk_400_wcore_sw"};
@@ -992,7 +996,7 @@ PNAME(mout_aclk_200_fsys2_sw_p) = { "dout_aclk_200_fsys2", "dout_spll_ctrl"};
 #else
 PNAME(mout_aclk_200_fsys2_sw_p) = { "dout_aclk_200_fsys2", "mout_spll_ctrl"};
 #endif
-PNAME(mout_aclk_200_fsys2_user_p)	= { "fin_pll", "mout_aclk200_fsys2_sw" };
+PNAME(mout_aclk_200_fsys2_user_p)	= { "fin_pll", "mout_aclk_200_fsys2_sw" };
 PNAME(mout_aclk_200_sw_p) = { "dout_aclk_200", "mout_spll_ctrl"};
 PNAME(mout_aclk_200_disp1_user_p)	= { "fin_pll", "mout_aclk_200_sw" };
 
@@ -1016,9 +1020,13 @@ PNAME(mout_aclk_333_sw_p) = { "dout_aclk_333", "mout_spll_ctrl"};
 PNAME(mout_aclk_333_user_p)	= { "fin_pll", "mout_aclk_333_sw" };
 PNAME(mout_aclk_166_sw_p) = { "dout_aclk_166", "mout_spll_ctrl"};
 PNAME(mout_aclk_166_user_p)	= { "fin_pll", "mout_aclk_166_sw" };
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+PNAME(mout_aclk_266_sw_p) = { "dout_aclk_266", "dout_spll_ctrl"};
+PNAME(mout_aclk_266_user_p)	= { "dout_osc", "mout_aclk_266_sw" };
+#else
 PNAME(mout_aclk_266_sw_p) = { "dout_aclk_266", "mout_spll_ctrl"};
 PNAME(mout_aclk_266_user_p)	= { "fin_pll", "mout_aclk_266_sw" };
-
+#endif
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(mout_aclk_333_432_isp0_sw_p) = { "dout_aclk_333_432_isp0", "dout_spll_ctrl"};
 PNAME(mout_aclk_333_432_isp0_user_p)	= { "dout_osc", "mout_aclk_333_432_isp0_sw" };
@@ -1171,29 +1179,50 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_pclk_200_fsys_sw, EXYNOS5_CLK_SRC_TOP10, 24, 1),
 	CMUX(mout_pclk_200_fsys_user, EXYNOS5_CLK_SRC_TOP3, 24, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_100_noc, "mout_aclk_100_noc", group1_2_p, EXYNOS5_CLK_SRC_TOP0, 20, 2),
+#else
 	CMX(mout_aclk_100_noc, "mout_aclk_100_noc", group1_p, EXYNOS5_CLK_SRC_TOP0, 20, 2),
+#endif
 	CMUX(mout_aclk_100_noc_sw, EXYNOS5_CLK_SRC_TOP10, 20, 1),
 	CMUX(mout_aclk_100_noc_user, EXYNOS5_CLK_SRC_TOP3, 20, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_400_wcore, "mout_aclk_400_wcore", group1_3_p, EXYNOS5_CLK_SRC_TOP0, 16, 2),
+#else
 	CMX(mout_aclk_400_wcore, "mout_aclk_400_wcore", group1_p, EXYNOS5_CLK_SRC_TOP0, 16, 2),
+#endif
 	CMUX(mout_aclk_400_wcore_bpll, EXYNOS5_CMU_TOP_SPARE2, 4, 1),
 	CMUX(mout_aclk_400_wcore_sw, EXYNOS5_CLK_SRC_TOP10, 16, 1),
 	CMUX(mout_aclk_400_wcore_user, EXYNOS5_CLK_SRC_TOP3, 16, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_200_fsys2, "mout_aclk_200_fsys2", group1_4_p, EXYNOS5_CLK_SRC_TOP0, 12, 2),
+#else
 	CMX(mout_aclk_200_fsys2, "mout_aclk_200_fsys2", group1_p, EXYNOS5_CLK_SRC_TOP0, 12, 2),
+#endif
 	CMUX(mout_aclk_200_fsys2_sw, EXYNOS5_CLK_SRC_TOP10, 12, 1),
 	CMUX(mout_aclk_200_fsys2_user, EXYNOS5_CLK_SRC_TOP3, 12, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_200, "mout_aclk_200", group1_4_p, EXYNOS5_CLK_SRC_TOP0, 8, 3),
+#else
 	CMX(mout_aclk_200, "mout_aclk_200", group1_p, EXYNOS5_CLK_SRC_TOP0, 8, 2),
+#endif
 	CMUX(mout_aclk_200_sw, EXYNOS5_CLK_SRC_TOP10, 8, 1),
 	CMUX(mout_aclk_200_disp1_user, EXYNOS5_CLK_SRC_TOP3, 8, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	MUX_A(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_1_p,
+			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 3, "aclk400_mscl"),
+#else
 	MUX_A(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_p,
 			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 2, "aclk400_mscl"),
+#endif
 	CMUX(mout_aclk_400_mscl_sw, EXYNOS5_CLK_SRC_TOP10, 4, 1),
 	CMUX(mout_aclk_400_mscl_user, EXYNOS5_CLK_SRC_TOP3, 4, 1),
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	CMX(mout_aclk_400_isp, "mout_aclk_400_isp", group1_1_p, EXYNOS5_CLK_SRC_TOP0, 0, 2),
+	CMX(mout_aclk_400_isp, "mout_aclk_400_isp", group1_1_p, EXYNOS5_CLK_SRC_TOP0, 0, 3),
 #else
 	CMX(mout_aclk_400_isp, "mout_aclk_400_isp", group1_p, EXYNOS5_CLK_SRC_TOP0, 0, 2),
 #endif
@@ -1201,19 +1230,35 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_400_isp_user, EXYNOS5_CLK_SRC_TOP3, 0, 1),
 
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_333, "mout_aclk_333", group1_2_p, EXYNOS5_CLK_SRC_TOP1, 28, 2),
+#else
 	CMX(mout_aclk_333, "mout_aclk_333", group1_p, EXYNOS5_CLK_SRC_TOP1, 28, 2),
+#endif
 	CMUX(mout_aclk_333_sw, EXYNOS5_CLK_SRC_TOP11, 28, 1),
 	CMUX(mout_aclk_333_user, EXYNOS5_CLK_SRC_TOP4, 28, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_266, "mout_aclk_266", group1_5_p, EXYNOS5_CLK_SRC_TOP1, 20, 2),
+#else
 	CMX(mout_aclk_266, "mout_aclk_266", group1_p, EXYNOS5_CLK_SRC_TOP1, 20, 2),
+#endif
 	CMUX(mout_aclk_266_sw, EXYNOS5_CLK_SRC_TOP11, 20, 1),
 	CMUX(mout_aclk_266_user, EXYNOS5_CLK_SRC_TOP4, 20, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_166, "mout_aclk_166", group1_4_p, EXYNOS5_CLK_SRC_TOP1, 24, 2),
+#else
 	CMX(mout_aclk_166, "mout_aclk_166", group1_p, EXYNOS5_CLK_SRC_TOP1, 24, 2),
+#endif
 	CMUX(mout_aclk_166_sw, EXYNOS5_CLK_SRC_TOP11, 24, 1),
 	CMUX(mout_aclk_166_user, EXYNOS5_CLK_SRC_TOP4, 24, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_66, "mout_aclk_66", group1_4_p, EXYNOS5_CLK_SRC_TOP1, 8, 2),
+#else
 	CMX(mout_aclk_66, "mout_aclk_66", group1_p, EXYNOS5_CLK_SRC_TOP1, 8, 2),
+#endif
 	CMUX(mout_aclk_66_sw, EXYNOS5_CLK_SRC_TOP11, 8, 1),
 	CMUX(mout_aclk_66_peric_user, EXYNOS5_CLK_SRC_TOP4, 8, 1),
 	CMUX(mout_aclk_66_psgen_user, EXYNOS5_CLK_SRC_TOP5, 4, 1),
@@ -1235,19 +1280,34 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_333_432_isp_sw, EXYNOS5_CLK_SRC_TOP11, 4, 1),
 	CMUX(mout_aclk_333_432_isp_user, EXYNOS5_CLK_SRC_TOP4, 4, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_333_432_gscl, "mout_aclk_333_432_gscl", group4_1_p, EXYNOS5_CLK_SRC_TOP1, 0, 2),
+#else
 	CMX(mout_aclk_333_432_gscl, "mout_aclk_333_432_gscl", group4_p, EXYNOS5_CLK_SRC_TOP1, 0, 2),
+#endif
 	CMUX(mout_aclk_333_432_gscl_sw, EXYNOS5_CLK_SRC_TOP11, 0, 1),
 	CMUX(mout_aclk_333_432_gscl_user, EXYNOS5_CLK_SRC_TOP4, 0, 1),
-
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_300_gscl, "mout_aclk_300_gscl", group1_5_p, EXYNOS5_CLK_SRC_TOP2, 28, 2),
+#else
 	CMX(mout_aclk_300_gscl, "mout_aclk_300_gscl", group1_p, EXYNOS5_CLK_SRC_TOP2, 28, 2),
+#endif
 	CMUX(mout_aclk_300_gscl_sw, EXYNOS5_CLK_SRC_TOP12, 28, 1),
 	CMUX(mout_aclk_300_gscl_user, EXYNOS5_CLK_SRC_TOP5, 28, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_300_disp1, "mout_aclk_300_disp1", group1_5_p, EXYNOS5_CLK_SRC_TOP2, 24, 2),
+#else
 	CMX(mout_aclk_300_disp1, "mout_aclk_300_disp1", group1_p, EXYNOS5_CLK_SRC_TOP2, 24, 2),
+#endif
 	CMUX(mout_aclk_300_disp1_sw, EXYNOS5_CLK_SRC_TOP12, 24, 1),
 	CMUX(mout_aclk_300_disp1_user, EXYNOS5_CLK_SRC_TOP5, 24, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_300_jpeg, "mout_aclk_300_jpeg", group1_5_p, EXYNOS5_CLK_SRC_TOP2, 20, 2),
+#else
 	CMX(mout_aclk_300_jpeg, "mout_aclk_300_jpeg", group1_p, EXYNOS5_CLK_SRC_TOP2, 20, 2),
+#endif
 	CMUX(mout_aclk_300_jpeg_sw, EXYNOS5_CLK_SRC_TOP12, 20, 1),
 	CMUX(mout_aclk_300_jpeg_user, EXYNOS5_CLK_SRC_TOP5, 20, 1),
 
@@ -1255,15 +1315,27 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_g3d_sw, EXYNOS5_CLK_SRC_TOP12, 16, 1),
 	CMUX(mout_aclk_g3d_user, EXYNOS5_CLK_SRC_TOP5, 16, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_266_g2d, "mout_aclk_266_g2d", group1_5_p, EXYNOS5_CLK_SRC_TOP2, 12, 2),
+#else
 	CMX(mout_aclk_266_g2d, "mout_aclk_266_g2d", group1_p, EXYNOS5_CLK_SRC_TOP2, 12, 2),
+#endif
 	CMUX(mout_aclk_266_g2d_sw, EXYNOS5_CLK_SRC_TOP12, 12, 1),
 	CMUX(mout_aclk_266_g2d_user, EXYNOS5_CLK_SRC_TOP5, 12, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_333_g2d, "mout_aclk_333_g2d", group1_5_p, EXYNOS5_CLK_SRC_TOP2, 8, 2),
+#else
 	CMX(mout_aclk_333_g2d, "mout_aclk_333_g2d", group1_p, EXYNOS5_CLK_SRC_TOP2, 8, 2),
+#endif
 	CMUX(mout_aclk_333_g2d_sw, EXYNOS5_CLK_SRC_TOP12, 8, 1),
 	CMUX(mout_aclk_333_g2d_user, EXYNOS5_CLK_SRC_TOP5, 8, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_aclk_400_disp1, "mout_aclk_400_disp1", group1_1_p, EXYNOS5_CLK_SRC_TOP2, 0, 2),
+#else
 	CMX(mout_aclk_400_disp1, "mout_aclk_400_disp1", group1_p, EXYNOS5_CLK_SRC_TOP2, 0, 2),
+#endif
 	CMUX(mout_aclk_400_disp1_sw, EXYNOS5_CLK_SRC_TOP12, 0, 1),
 	CMUX(mout_aclk_400_disp1_user, EXYNOS5_CLK_SRC_TOP5, 0, 1),
 
@@ -1335,11 +1407,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_266_isp_sw, EXYNOS5_CLK_SRC_TOP13, 12, 1),
 	CMUX(mout_aclk_266_isp_user, EXYNOS5_CLK_SRC_TOP9, 12, 1),
 
-	CMX(mout_aclk_432_scaler, "mout_aclk_432_scaler", group4_p, EXYNOS5_CLK_SRC_TOP8, 28, 2),
+	CMX(mout_aclk_432_scaler, "mout_aclk_432_scaler", group1_5_p, EXYNOS5_CLK_SRC_TOP8, 28, 2),
 	CMUX(mout_aclk_432_scaler_sw, EXYNOS5_CLK_SRC_TOP13, 28, 1),
 	CMUX(mout_aclk_432_scaler_user, EXYNOS5_CLK_SRC_TOP9, 28, 1),
 
-	CMX(mout_aclk_432_cam, "mout_aclk_432_cam", group4_p, EXYNOS5_CLK_SRC_TOP8, 24, 2),
+	CMX(mout_aclk_432_cam, "mout_aclk_432_cam", group1_5_p, EXYNOS5_CLK_SRC_TOP8, 24, 2),
 	CMUX(mout_aclk_432_cam_sw, EXYNOS5_CLK_SRC_TOP13, 24, 1),
 	CMUX(mout_aclk_432_cam_user, EXYNOS5_CLK_SRC_TOP9, 24, 1),
 
@@ -1347,7 +1419,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_fl1_550_cam_sw, EXYNOS5_CLK_SRC_TOP13, 20, 1),
 	CMUX(mout_aclk_fl1_550_cam_user, EXYNOS5_CLK_SRC_TOP9, 20, 1),
 
-	CMX(mout_aclk_550_cam, "mout_aclk_550_cam", group1_1_p, EXYNOS5_CLK_SRC_TOP8, 16, 3),
+	CMX(mout_aclk_550_cam, "mout_aclk_550_cam", group1_4_p, EXYNOS5_CLK_SRC_TOP8, 16, 3),
 	CMUX(mout_aclk_550_cam_sw, EXYNOS5_CLK_SRC_TOP13, 16, 1),
 	CMUX(mout_aclk_550_cam_user, EXYNOS5_CLK_SRC_TOP9, 16, 1),
 
@@ -1392,7 +1464,7 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_aclk_200_fsys, "mout_aclk_200_fsys", EXYNOS5_CLK_DIV_TOP0, 28, 3),
 
     CDIV(dout_pclk_200_fsys, "mout_pclk_200_fsys", EXYNOS5_CLK_DIV_TOP0, 24, 3),
-    CDIV(dout_aclk_100_noc, "mout_aclk_100_noc_user", EXYNOS5_CLK_DIV_TOP0, 20, 3),
+    CDIV(dout_aclk_100_noc, "mout_aclk_100_noc", EXYNOS5_CLK_DIV_TOP0, 20, 3),
     CDIV(dout_aclk_400_wcore, "mout_aclk_400_wcore_bpll", EXYNOS5_CLK_DIV_TOP0, 16, 3),
     CDIV(dout_aclk_200_fsys2, "mout_aclk_200_fsys2", EXYNOS5_CLK_DIV_TOP0, 12, 3),
     CDIV(dout_aclk_200, "mout_aclk_200", EXYNOS5_CLK_DIV_TOP0, 8, 3),
@@ -1526,9 +1598,10 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_ispdiv0_0, "aclk_333_432_isp0", EXYNOS5_CLK_DIV_ISP0, 0, 3),
 	CDIV(dout_mcuispdiv0, "aclk_400_isp", EXYNOS5_CLK_DIV_ISP1, 0, 3),
 	CDIV(dout_mcuispdiv1, "aclk_400_isp", EXYNOS5_CLK_DIV_ISP1, 4, 3),
-	CDIV(dout_ispdiv0, "aclk_333_432_isp", EXYNOS5_CLK_DIV_ISP0, 0, 3),
-	CDIV(dout_ispdiv1, "aclk_333_432_isp", EXYNOS5_CLK_DIV_ISP0, 4, 3),
-	CDIV(dout_ispdiv2, "dout_ispdiv1", EXYNOS5_CLK_DIV_ISP2, 0, 3),
+
+	CDIV(dout_ispdiv0, "aclk_333_432_isp", EXYNOS5_SCLK_DIV_ISP0, 8, 8),
+	CDIV(dout_ispdiv1, "aclk_333_432_isp", EXYNOS5_SCLK_DIV_ISP0, 16, 8),
+	CDIV(dout_ispdiv2, "dout_ispdiv1", EXYNOS5_SCLK_DIV_ISP0, 24, 8),
 #endif
 };
 
@@ -1849,13 +1922,20 @@ static __initdata struct of_device_id ext_clk_match[] = {
 
 struct samsung_pll_rate_table cpll_rate_table[] = {
 	/* rate		p	m	s	k */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{ 666000000U,   4,  222,    1,  0},
+#else
 	{ 666000000U,   4,  222,    1,  0},
 	{ 640000000U,   3,  160,    1,  0},
 	{ 320000000U,   3,  160,    2,  0},
+#endif
 };
 
 struct samsung_pll_rate_table epll_rate_table[] = {
 	/* rate		p	m	s	k */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{ 466000000U,   3,  233,    2,  0},
+#else
 	{ 600000000U,   2,  100,    1,  0},
 	{ 400000000U,   3,  200,    2,  0},
 	{ 200000000U,   3,  200,    3,  0},
@@ -1864,6 +1944,7 @@ struct samsung_pll_rate_table epll_rate_table[] = {
 	{  67737600U,   5,  452,    5,  0},
 	{  49152000U,   3,  197,    5,  0},
 	{  45158400U,   3,  181,    5,  0},
+#endif
 };
 
 struct samsung_pll_rate_table ipll_rate_table[] = {
@@ -1881,7 +1962,11 @@ struct samsung_pll_rate_table ipll_rate_table[] = {
 struct samsung_pll_rate_table vpll_rate_table[] = {
 	/* rate		p	m	s	k */
 	{ 600000000U,   2,  200,    2,  0},
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{ 543000000U,   2,  181,    2,  0},
+#else
 	{ 533000000U,   6,  533,    2,  0},
+#endif
 	{ 480000000U,   2,  160,    2,  0},
 	{ 420000000U,   2,  140,    2,  0},
 	{ 350000000U,   3,  175,    2,  0},
