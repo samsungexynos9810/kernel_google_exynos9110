@@ -430,6 +430,19 @@ int disable_display_decon_runtimepm(struct device *dev)
 }
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask)
+{
+	unsigned int val;
+
+	val = readl(sfb->regs + TRIGCON);
+	if (mask)
+		val &= ~(TRIGCON_HWTRIGMASK_I80_RGB);
+	else
+		val |= (TRIGCON_HWTRIGMASK_I80_RGB);
+
+	writel(val, sfb->regs + TRIGCON);
+}
+
 int get_display_line_count(struct display_driver *dispdrv)
 {
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
