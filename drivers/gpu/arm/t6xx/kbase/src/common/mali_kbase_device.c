@@ -76,7 +76,7 @@ kbase_device *kbase_device_alloc(void)
 
 mali_error kbase_device_init(kbase_device * const kbdev)
 {
-	int i;			/* i used after the for loop, don't reuse ! */
+	int i = 0;			/* i used after the for loop, don't reuse ! */
 
 	spin_lock_init(&kbdev->mmu_mask_change);
 
