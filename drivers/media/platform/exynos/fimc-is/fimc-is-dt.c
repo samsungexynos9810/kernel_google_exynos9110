@@ -54,6 +54,7 @@ p_err:
 
 static int parse_gate_info(struct exynos_platform_fimc_is *pdata, struct device_node *np)
 {
+	int ret = 0;
 	struct device_node *group_np = NULL;
 	struct device_node *gate_info_np;
 	struct property *prop;
@@ -86,7 +87,8 @@ static int parse_gate_info(struct exynos_platform_fimc_is *pdata, struct device_
 	gate_info_np = of_find_node_by_name(np, "clk_gate_ctrl");
 	if (!gate_info_np) {
 		printk(KERN_ERR "%s: can't find fimc_is clk_gate_ctrl node\n", __func__);
-		return -ENOENT;
+		ret = -ENOENT;
+		goto p_err;
 	}
 	i = 0;
 	while ((group_np = of_get_next_child(gate_info_np, group_np))) {
@@ -122,6 +124,9 @@ static int parse_gate_info(struct exynos_platform_fimc_is *pdata, struct device_
 	pdata->gate_info->clk_on_off = exynos_fimc_is_clk_gate;
 
 	return 0;
+p_err:
+	kfree(gate_info);
+	return ret;
 }
 
 static int parse_dvfs_data(struct exynos_platform_fimc_is *pdata, struct device_node *np)
@@ -257,6 +262,7 @@ static int parse_subip_info(struct exynos_platform_fimc_is *pdata, struct device
 
 struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 {
+	void *ret = NULL;
 	struct exynos_platform_fimc_is *pdata;
 	struct device_node *subip_info_np;
 	struct device_node *dvfs_np;
@@ -285,7 +291,8 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	subip_info_np = of_find_node_by_name(np, "subip_info");
 	if (!subip_info_np) {
 		printk(KERN_ERR "%s: can't find fimc_is subip_info node\n", __func__);
-		return ERR_PTR(-ENOENT);
+		ret = ERR_PTR(-ENOENT);
+		goto p_err;
 	}
 	parse_subip_info(pdata, subip_info_np);
 
@@ -295,11 +302,15 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	dvfs_np = of_find_node_by_name(np, "fimc_is_dvfs");
 	if (!dvfs_np) {
 		printk(KERN_ERR "%s: can't find fimc_is_dvfs node\n", __func__);
-		return ERR_PTR(-ENOENT);
+		ret = ERR_PTR(-ENOENT);
+		goto p_err;
 	}
 	parse_dvfs_data(pdata, dvfs_np);
 
 	return pdata;
+p_err:
+	kfree(pdata);
+	return ret;
 }
 
 int fimc_is_sensor_parse_dt(struct platform_device *pdev)
@@ -463,7 +474,9 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 
 	dev->platform_data = pdata;
 
+	return ret;
 p_err:
+	kfree(pdata);
 	return ret;
 }
 #else
