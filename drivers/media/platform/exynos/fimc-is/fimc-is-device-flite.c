@@ -1074,6 +1074,10 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				notify_fcount(flite->instance, atomic_read(&flite->fcount));
 				tasklet_schedule(&flite->tasklet_flite_str);
 			} else {
+				/* W/A: Skip start tasklet at interrupt lost case */
+				warn("[CamIF%d] invalide interrupt interval",
+					flite->instance);
+				goto clear_status;
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT "<");
 #endif
