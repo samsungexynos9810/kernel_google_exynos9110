@@ -172,6 +172,11 @@ static int s3c2410wdt_set_min_max_timeout(struct watchdog_device *wdd)
 {
 	unsigned long freq = clk_get_rate(rate_wdt_clock);
 
+	if(freq == 0) {
+		dev_err(wdd->dev, "failed to get platdata\n");
+		return -EINVAL;
+	}
+
 	wdd->min_timeout = 1;
 	wdd->max_timeout = S3C2410_WTCNT_MAX *
 		(S3C2410_WTCON_PRESCALE_MAX + 1) * S3C2410_WTCON_DIVMAX / freq;
