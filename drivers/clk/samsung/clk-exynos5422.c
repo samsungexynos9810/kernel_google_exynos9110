@@ -790,7 +790,7 @@ enum exynos5422_clks {
 	/* sclk_spll2, */ /* = dout_spll_ctrl_div2 */
 	aclk_432_scaler = 5002,
 	aclk_432_cam,
-	aclk_f1_550_cam,
+	aclk_fl1_550_cam,
 	aclk_550_cam,
 	mau_epll_clk,
 	mx_mspll_ccore_phy,
@@ -962,7 +962,9 @@ PNAME(mout_hpm_kfc_p)          = { "mout_kpll_ctrl" , "mout_mx_mspll_kfc" };
 */
 PNAME(group1_p)		= { "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl"};
 PNAME(group2_p)		= { "fin_pll", "mout_cpll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl", "mout_spll_ctrl", "mout_ipll_ctrl", "mout_epll_ctrl", "mout_rpll_ctrl" };
+#ifndef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(group3_p)		= { "mout_rpll_ctrl", "mout_spll_ctrl" };
+#endif
 PNAME(group4_p)		= { "mout_ipll_ctrl", "mout_dpll_ctrl", "mout_mpll_ctrl" };
 PNAME(group5_p)		= { "mout_vpll_ctrl", "mout_dpll_ctrl" };
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
@@ -1353,8 +1355,13 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_mx_mspll_ccore_phy, EXYNOS5_CLK_SRC_TOP7, 0, 3),
 
 	/* GSCL */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_gscl_wrap_a, "mout_gscl_wrap_a", group2_p, EXYNOS5_CLK_SRC_CAM, 28, 3),
+	CMX(mout_gscl_wrap_b, "mout_gscl_wrap_b", group2_p, EXYNOS5_CLK_SRC_CAM, 24, 3),
+#else
 	CMX(mout_gscl_wrap_a, "mout_gscl_wrap_a", group3_p, EXYNOS5_CLK_SRC_CAM, 28, 3),
 	CMX(mout_gscl_wrap_b, "mout_gscl_wrap_b", group3_p, EXYNOS5_CLK_SRC_CAM, 24, 3),
+#endif
 #endif
 };
 
@@ -1565,7 +1572,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(aclk_266_isp, "aclk_266_isp", "mout_aclk_266_isp_user", EXYNOS5_CLK_GATE_BUS_TOP, 13, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_432_scaler, "aclk_432_scaler", "mout_aclk_432_scaler_user", EXYNOS5_CLK_GATE_BUS_TOP, 27, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_432_cam, "aclk_432_cam", "mout_aclk_432_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 26, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_f1_550_cam, "aclk_f1_550_cam", "mout_aclk_fl1_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 25, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_fl1_550_cam, "aclk_fl1_550_cam", "mout_aclk_fl1_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 25, CLK_IGNORE_UNUSED, 0),
 	CGATE(aclk_550_cam, "aclk_550_cam", "mout_aclk_550_cam_user", EXYNOS5_CLK_GATE_BUS_TOP, 24, CLK_IGNORE_UNUSED, 0),
 	CGATE(mau_epll_clk, "mau_epll_clk", "mout_mau_epll_clk_user", EXYNOS5_CLK_GATE_BUS_TOP, 23, CLK_IGNORE_UNUSED, 0),
 /* no gate exist for mx_mspll_ccore_phy */
@@ -1859,10 +1866,14 @@ struct samsung_pll_rate_table epll_rate_table[] = {
 
 struct samsung_pll_rate_table ipll_rate_table[] = {
 	/* rate		p	m	s	k */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	{ 432000000U,   4,  288,    2,  0},
+#else
 	{ 864000000U,	4,  288,    1,  0},
 	{ 666000000U,	4,  222,    1,  0},
 	{ 432000000U,   4,  288,    2,  0},
 	{ 370000000U,   3,  185,    2,  0},
+#endif
 };
 
 struct samsung_pll_rate_table vpll_rate_table[] = {
