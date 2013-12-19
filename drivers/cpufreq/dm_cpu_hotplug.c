@@ -25,7 +25,11 @@
 #include <mach/cpufreq.h>
 #include <linux/suspend.h>
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+#define NORMALMIN_FREQ	1000000
+#else
 #define NORMALMIN_FREQ	500000
+#endif
 #define POLLING_MSEC	100
 
 struct cpu_load_info {
@@ -441,11 +445,18 @@ static int low_stay = 0;
 static enum hotplug_mode diagnose_condition(void)
 {
 	int ret = prev_mode;
+	unsigned int normal_min_freq;
 
-	if (cur_load_freq > NORMALMIN_FREQ) {
+#if defined(CONFIG_SCHED_HMP) && defined(CONFIG_CPU_FREQ_GOV_INTERACTIVE)
+	normal_min_freq = cpufreq_interactive_get_hispeed_freq(0);
+#else
+	normal_min_freq = NORMALMIN_FREQ;
+#endif
+
+	if (cur_load_freq > normal_min_freq) {
 		low_stay = 0;
 		ret = CHP_NORMAL;
-	} else if (cur_load_freq <= NORMALMIN_FREQ && low_stay <= 5) {
+	} else if (cur_load_freq <= normal_min_freq && low_stay <= 5) {
 		low_stay++;
 	}
 	if ((low_stay > 5) && (!lcd_is_on || forced_hotplug))
