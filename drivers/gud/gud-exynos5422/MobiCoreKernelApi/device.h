@@ -21,7 +21,7 @@
 struct mcore_device_t {
 	/* MobiCore Trustlet session associated with the device */
 	struct list_head	session_vector;
-	struct list_head	 wsm_l2_vector; /* WSM L2 Table  */
+	struct list_head	wsm_mmu_vector; /* WSM L2 or L3 Table  */
 
 	uint32_t		device_id;	/* Device identifier */
 	struct connection	*connection;	/* The device connection */
@@ -36,7 +36,7 @@ struct mcore_device_t *mcore_device_create(
 void mcore_device_cleanup(struct mcore_device_t *dev);
 
 
-bool mcore_device_open(struct mcore_device_t *dev, const char *deviceName);
+bool mcore_device_open(struct mcore_device_t *dev, const char *device_name);
 void mcore_device_close(struct mcore_device_t *dev);
 bool mcore_device_has_sessions(struct mcore_device_t *dev);
 bool mcore_device_create_new_session(

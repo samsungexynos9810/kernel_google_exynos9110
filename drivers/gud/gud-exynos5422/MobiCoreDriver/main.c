@@ -131,8 +131,9 @@ static int free_buffer(struct mc_buffer *buffer, bool unlock)
 		return -EINVAL;
 
 	MCDRV_DBG_VERBOSE(mcd,
-			  "handle=%u phys_addr=0x%p, virt_addr=0x%p len=%u",
-		  buffer->handle, buffer->phys, buffer->addr, buffer->len);
+			  "handle=%u phys_addr=0x%llx, virt_addr=0x%p len=%u",
+		  buffer->handle, (u64)buffer->phys,
+		  buffer->addr, buffer->len);
 
 	if (!atomic_dec_and_test(&buffer->usage)) {
 		MCDRV_DBG_VERBOSE(mcd, "Could not free %u", buffer->handle);
@@ -147,7 +148,7 @@ static int free_buffer(struct mc_buffer *buffer, bool unlock)
 }
 
 static uint32_t mc_find_cont_wsm_addr(struct mc_instance *instance, void *uaddr,
-	uint32_t *addr, uint32_t len)
+	void **addr, uint32_t len)
 {
 	int ret = 0;
 	struct mc_buffer *buffer;
@@ -162,7 +163,7 @@ static uint32_t mc_find_cont_wsm_addr(struct mc_instance *instance, void *uaddr,
 	/* search for the given handle in the buffers list */
 	list_for_each_entry(buffer, &ctx.cont_bufs, list) {
 		if (buffer->uaddr == uaddr && buffer->len == len) {
-			*addr = (uint32_t)buffer->addr;
+			*addr = buffer->addr;
 			goto found;
 		}
 	}
@@ -229,7 +230,7 @@ out:
 #endif
 }
 static uint32_t mc_find_cont_wsm(struct mc_instance *instance, uint32_t handle,
-	int32_t fd, uint32_t *phys, uint32_t *len)
+	int32_t fd, phys_addr_t *phys, uint32_t *len)
 {
 	int ret = 0;
 	struct mc_buffer *buffer;
@@ -250,7 +251,7 @@ static uint32_t mc_find_cont_wsm(struct mc_instance *instance, uint32_t handle,
 	list_for_each_entry(buffer, &ctx.cont_bufs, list) {
 		if (buffer->handle == handle) {
 			if (mc_check_owner_fd(buffer->instance, fd)) {
-				*phys = (uint32_t)buffer->phys;
+				*phys = buffer->phys;
 				*len = buffer->len;
 				goto found;
 			} else {
@@ -373,7 +374,7 @@ int mc_get_buffer(struct mc_instance *instance,
 {
 	struct mc_buffer *cbuffer = NULL;
 	void *addr = 0;
-	void *phys = 0;
+	phys_addr_t phys = 0;
 	unsigned int order;
 	unsigned long allocated_size;
 	int ret = 0;
@@ -417,7 +418,7 @@ int mc_get_buffer(struct mc_instance *instance,
 		ret = -ENOMEM;
 		goto err;
 	}
-	phys = (void *)virt_to_phys(addr);
+	phys = virt_to_phys(addr);
 	cbuffer->handle = get_unique_id();
 	cbuffer->phys = phys;
 	cbuffer->addr = addr;
@@ -432,9 +433,10 @@ int mc_get_buffer(struct mc_instance *instance,
 	list_add(&cbuffer->list, &ctx.cont_bufs);
 
 	MCDRV_DBG_VERBOSE(mcd,
-			  "allocated phys=0x%p - 0x%p, size=%ld, kvirt=0x%p"
+			  "allocated phys=0x%llx - 0x%llx, size=%ld, kvirt=0x%p"
 			  ", h=%d",
-			  phys, (void *)((unsigned int)phys+allocated_size),
+			  (u64)phys,
+			  (u64)(phys+allocated_size),
 			  allocated_size, addr, cbuffer->handle);
 	*buffer = cbuffer;
 	goto unlock;
@@ -480,7 +482,7 @@ unlock:
 	return ret;
 }
 
-void *get_mci_base_phys(unsigned int len)
+static phys_addr_t get_mci_base_phys(unsigned int len)
 {
 	if (ctx.mci_base.phys) {
 		return ctx.mci_base.phys;
@@ -493,25 +495,25 @@ void *get_mci_base_phys(unsigned int len)
 		if (ctx.mci_base.addr == NULL) {
 			MCDRV_DBG_WARN(mcd, "get_free_pages failed");
 			memset(&ctx.mci_base, 0, sizeof(ctx.mci_base));
-			return NULL;
+			return 0;
 		}
-		ctx.mci_base.phys = (void *)virt_to_phys(ctx.mci_base.addr);
+		ctx.mci_base.phys = virt_to_phys(ctx.mci_base.addr);
 		return ctx.mci_base.phys;
 	}
 }
 
 /*
- * Create a l2 table from a virtual memory buffer which can be vmalloc
+ * Create a MMU table from a virtual memory buffer which can be vmalloc
  * or user space virtual memory
  */
-int mc_register_wsm_l2(struct mc_instance *instance,
+int mc_register_wsm_mmu(struct mc_instance *instance,
 	void *buffer, uint32_t len,
-	uint32_t *handle, uint32_t *phys)
+	uint32_t *handle, phys_addr_t *phys)
 {
 	int ret = 0;
-	struct mc_l2_table *table = NULL;
+	struct mc_mmu_table *table = NULL;
 	struct task_struct *task = current;
-	uint32_t kbuff = 0x0;
+	void *kbuff = NULL;
 
 	if (WARN(!instance, "No instance data available"))
 		return -EFAULT;
@@ -524,12 +526,12 @@ int mc_register_wsm_l2(struct mc_instance *instance,
 	MCDRV_DBG_VERBOSE(mcd, "buffer: %p, len=%08x", buffer, len);
 
 	if (!mc_find_cont_wsm_addr(instance, buffer, &kbuff, len))
-		table = mc_alloc_l2_table(instance, NULL, (void *)kbuff, len);
+		table = mc_alloc_mmu_table(instance, NULL, kbuff, len);
 	else
-		table = mc_alloc_l2_table(instance, task, buffer, len);
+		table = mc_alloc_mmu_table(instance, task, buffer, len);
 
 	if (IS_ERR(table)) {
-		MCDRV_DBG_ERROR(mcd, "new_used_l2_table() failed");
+		MCDRV_DBG_ERROR(mcd, "mc_alloc_mmu_table() failed");
 		return -EINVAL;
 	}
 
@@ -537,19 +539,19 @@ int mc_register_wsm_l2(struct mc_instance *instance,
 	*handle = table->handle;
 	/* WARNING: daemon shouldn't know this either, but live with it */
 	if (is_daemon(instance))
-		*phys = (uint32_t)table->phys;
+		*phys = table->phys;
 	else
 		*phys = 0;
 
-	MCDRV_DBG_VERBOSE(mcd, "handle: %d, phys=%p",
-			  *handle, (void *)*phys);
+	MCDRV_DBG_VERBOSE(mcd, "handle: %d, phys=0x%llX",
+			  *handle, (u64)(*phys));
 
 	MCDRV_DBG_VERBOSE(mcd, "exit with %d/0x%08X", ret, ret);
 
 	return ret;
 }
 
-int mc_unregister_wsm_l2(struct mc_instance *instance, uint32_t handle)
+int mc_unregister_wsm_mmu(struct mc_instance *instance, uint32_t handle)
 {
 	int ret = 0;
 
@@ -557,11 +559,12 @@ int mc_unregister_wsm_l2(struct mc_instance *instance, uint32_t handle)
 		return -EFAULT;
 
 	/* free table (if no further locks exist) */
-	mc_free_l2_table(instance, handle);
+	mc_free_mmu_table(instance, handle);
 
 	return ret;
 }
-/* Lock the object from handle, it could be a WSM l2 table or a cont buffer! */
+
+/* Lock the object from handle, it could be a WSM MMU table or a cont buffer! */
 static int mc_lock_handle(struct mc_instance *instance, uint32_t handle)
 {
 	int ret = 0;
@@ -575,9 +578,9 @@ static int mc_lock_handle(struct mc_instance *instance, uint32_t handle)
 	}
 
 	mutex_lock(&instance->lock);
-	ret = mc_lock_l2_table(instance, handle);
+	ret = mc_lock_mmu_table(instance, handle);
 
-	/* Handle was not a l2 table but a cont buffer */
+	/* Handle was not a MMU table but a cont buffer */
 	if (ret == -EINVAL) {
 		/* Call the non locking variant! */
 		ret = __lock_buffer(instance, handle);
@@ -601,9 +604,9 @@ static int mc_unlock_handle(struct mc_instance *instance, uint32_t handle)
 	}
 
 	mutex_lock(&instance->lock);
-	ret = mc_free_l2_table(instance, handle);
+	ret = mc_free_mmu_table(instance, handle);
 
-	/* Not a l2 table, then it must be a buffer */
+	/* Not a MMU table, then it must be a buffer */
 	if (ret == -EINVAL) {
 		/* Call the non locking variant! */
 		ret = __free_buffer(instance, handle, true);
@@ -613,11 +616,9 @@ static int mc_unlock_handle(struct mc_instance *instance, uint32_t handle)
 	return ret;
 }
 
-static uint32_t mc_find_wsm_l2(struct mc_instance *instance,
+static phys_addr_t mc_find_wsm_mmu(struct mc_instance *instance,
 	uint32_t handle, int32_t fd)
 {
-	uint32_t ret = 0;
-
 	if (WARN(!instance, "No instance data available"))
 		return 0;
 
@@ -626,12 +627,10 @@ static uint32_t mc_find_wsm_l2(struct mc_instance *instance,
 		return 0;
 	}
 
-	ret = mc_find_l2_table(handle, fd);
-
-	return ret;
+	return mc_find_mmu_table(handle, fd);
 }
 
-static int mc_clean_wsm_l2(struct mc_instance *instance)
+static int mc_clean_wsm_mmu(struct mc_instance *instance)
 {
 	if (WARN(!instance, "No instance data available"))
 		return -EFAULT;
@@ -641,7 +640,7 @@ static int mc_clean_wsm_l2(struct mc_instance *instance)
 		return -EPERM;
 	}
 
-	mc_clean_l2_tables();
+	mc_clean_mmu_tables();
 
 	return 0;
 }
@@ -650,13 +649,14 @@ static int mc_fd_mmap(struct file *file, struct vm_area_struct *vmarea)
 {
 	struct mc_instance *instance = get_instance(file);
 	unsigned long len = vmarea->vm_end - vmarea->vm_start;
-	void *paddr = (void *)(vmarea->vm_pgoff << PAGE_SHIFT);
+	phys_addr_t paddr = (vmarea->vm_pgoff << PAGE_SHIFT);
 	unsigned int pfn;
 	struct mc_buffer *buffer = 0;
 	int ret = 0;
 
-	MCDRV_DBG_VERBOSE(mcd, "enter (vma start=0x%p, size=%ld, mci=%p)",
-			  (void *)vmarea->vm_start, len, ctx.mci_base.phys);
+	MCDRV_DBG_VERBOSE(mcd, "enter (vma start=0x%p, size=%ld, mci=0x%llX)",
+			  (void *)vmarea->vm_start, len,
+			  (u64)ctx.mci_base.phys);
 
 	if (WARN(!instance, "No instance data available"))
 		return -EFAULT;
@@ -774,21 +774,24 @@ static long mc_fd_user_ioctl(struct file *file, unsigned int cmd,
 
 	case MC_IO_REG_WSM:{
 		struct mc_ioctl_reg_wsm reg;
+		phys_addr_t phys;
 		if (copy_from_user(&reg, uarg, sizeof(reg)))
 			return -EFAULT;
 
-		ret = mc_register_wsm_l2(instance, (void *)reg.buffer,
-			reg.len, &reg.handle, &reg.table_phys);
+		ret = mc_register_wsm_mmu(instance, (void *)reg.buffer,
+			reg.len, &reg.handle, &phys);
+		reg.table_phys = phys;
+
 		if (!ret) {
 			if (copy_to_user(uarg, &reg, sizeof(reg))) {
 				ret = -EFAULT;
-				mc_unregister_wsm_l2(instance, reg.handle);
+				mc_unregister_wsm_mmu(instance, reg.handle);
 			}
 		}
 		break;
 	}
 	case MC_IO_UNREG_WSM:
-		ret = mc_unregister_wsm_l2(instance, (uint32_t)arg);
+		ret = mc_unregister_wsm_mmu(instance, (uint32_t)arg);
 		break;
 
 	case MC_IO_VERSION:
@@ -809,7 +812,7 @@ static long mc_fd_user_ioctl(struct file *file, unsigned int cmd,
 			return -EFAULT;
 
 		map.handle = buffer->handle;
-		map.phys_addr = (unsigned long)buffer->phys;
+		map.phys_addr = buffer->phys;
 		map.reused = 0;
 		if (copy_to_user(uarg, &map, sizeof(map)))
 			ret = -EFAULT;
@@ -818,7 +821,7 @@ static long mc_fd_user_ioctl(struct file *file, unsigned int cmd,
 		break;
 	}
 	default:
-		MCDRV_DBG_ERROR(mcd, "unsupported cmd=%d", cmd);
+		MCDRV_DBG_ERROR(mcd, "unsupported cmd=0x%x", cmd);
 		ret = -ENOIOCTLCMD;
 		break;
 
@@ -862,8 +865,8 @@ static long mc_fd_admin_ioctl(struct file *file, unsigned int cmd,
 			return -EFAULT;
 
 		ctx.mcp = ctx.mci_base.addr + init.mcp_offset;
-		ret = mc_init((uint32_t)ctx.mci_base.phys, init.nq_offset,
-			init.nq_length, init.mcp_offset, init.mcp_length);
+		ret = mc_init(ctx.mci_base.phys, init.nq_length,
+			init.mcp_offset, init.mcp_length);
 		break;
 	}
 	case MC_IO_INFO: {
@@ -896,14 +899,14 @@ static long mc_fd_admin_ioctl(struct file *file, unsigned int cmd,
 		ret = mc_unlock_handle(instance, (uint32_t)arg);
 		break;
 	case MC_IO_CLEAN_WSM:
-		ret = mc_clean_wsm_l2(instance);
+		ret = mc_clean_wsm_mmu(instance);
 		break;
 	case MC_IO_RESOLVE_WSM: {
-		uint32_t phys;
+		phys_addr_t phys;
 		struct mc_ioctl_resolv_wsm wsm;
 		if (copy_from_user(&wsm, uarg, sizeof(wsm)))
 			return -EFAULT;
-		phys = mc_find_wsm_l2(instance, wsm.handle, wsm.fd);
+		phys = mc_find_wsm_mmu(instance, wsm.handle, wsm.fd);
 		if (!phys)
 			return -EINVAL;
 
@@ -915,7 +918,8 @@ static long mc_fd_admin_ioctl(struct file *file, unsigned int cmd,
 	}
 	case MC_IO_RESOLVE_CONT_WSM: {
 		struct mc_ioctl_resolv_cont_wsm cont_wsm;
-		uint32_t phys = 0, len = 0;
+		phys_addr_t phys = 0;
+		uint32_t len = 0;
 		if (copy_from_user(&cont_wsm, uarg, sizeof(cont_wsm)))
 			return -EFAULT;
 		ret = mc_find_cont_wsm(instance, cont_wsm.handle, cont_wsm.fd,
@@ -934,7 +938,7 @@ static long mc_fd_admin_ioctl(struct file *file, unsigned int cmd,
 			return -EFAULT;
 
 		map.reused = (ctx.mci_base.phys != 0);
-		map.phys_addr = (unsigned long)get_mci_base_phys(map.len);
+		map.phys_addr = get_mci_base_phys(map.len);
 		if (!map.phys_addr) {
 			MCDRV_DBG_ERROR(mcd, "Failed to setup MCI buffer!");
 			return -EFAULT;
@@ -1064,23 +1068,38 @@ struct mc_instance *mc_alloc_instance(void)
 }
 
 #if defined(TBASE_CORE_SWITCHER) && defined(DEBUG)
-static ssize_t mc_fd_write(struct file *file, const char *buffer,
+static ssize_t mc_fd_write(struct file *file, const char __user *buffer,
 			size_t buffer_len, loff_t *x)
 {
 	uint32_t cpu_new;
+	/* we only consider one digit */
+	char buf[2];
 	struct mc_instance *instance = get_instance(file);
 
 	if (WARN(!instance, "No instance data available"))
 		return -EFAULT;
-	if (buffer[0] == 'n') {
+
+	/* Invalid data, nothing to do */
+	if (buffer_len < 1)
+		return -EINVAL;
+
+	/* Invalid data, nothing to do */
+	if (copy_from_user(buf, buffer, min(sizeof(buf), buffer_len)))
+		return -EFAULT;
+
+	if (buf[0] == 'n') {
 		mc_nsiq();
-	} else {
-		cpu_new = buffer[0] - '0';
+	/* If it's a digit then switch cores */
+	} else if ((buf[0] >= '0') && (buf[0] <= '9')) {
+		cpu_new = buf[0] - '0';
 		if (cpu_new <= 8) {
 			MCDRV_DBG_VERBOSE(mcd, "Set Active Cpu: %d\n", cpu_new);
 			mc_switch_core(cpu_new);
 		}
+	} else {
+		return -EINVAL;
 	}
+
 	return buffer_len;
 }
 #endif
@@ -1098,7 +1117,7 @@ int mc_release_instance(struct mc_instance *instance)
 		return -EFAULT;
 
 	mutex_lock(&instance->lock);
-	mc_clear_l2_tables(instance);
+	mc_clear_mmu_tables(instance);
 
 	mutex_lock(&ctx.bufs_lock);
 	/* release all mapped data */
@@ -1371,7 +1390,7 @@ static int __init mobicore_init(void)
 	if (ret != 0)
 		goto free_pm;
 
-	ret = mc_init_l2_tables();
+	ret = mc_init_mmu_tables();
 
 #ifdef MC_CRYPTO_CLOCK_MANAGEMENT
 	ret = mc_pm_clock_initialize();
@@ -1417,7 +1436,7 @@ static void __exit mobicore_exit(void)
 	mobicore_log_free();
 #endif
 
-	mc_release_l2_tables();
+	mc_release_mmu_tables();
 
 #ifdef MC_PM_RUNTIME
 	mc_pm_free();

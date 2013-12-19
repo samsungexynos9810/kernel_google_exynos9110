@@ -37,7 +37,9 @@
 #define MC_FC_INIT		-1
 #define MC_FC_INFO		-2
 #define MC_FC_NWD_TRACE		-31 /* Mem trace setup fastcall */
-#define MC_FC_SWITCH_CORE   0x84000005
+#ifdef TBASE_CORE_SWITCHER
+#define MC_FC_SWITCH_CORE	0x84000005
+#endif
 
 
 /*
@@ -95,6 +97,7 @@ union mc_fc_info {
 	} as_out;
 };
 
+#ifdef TBASE_CORE_SWITCHER
 /* fast call switch Core parameters */
 union mc_fc_swich_core {
 	union fc_generic as_generic;
@@ -110,6 +113,7 @@ union mc_fc_swich_core {
 		uint32_t ext_info;
 	} as_out;
 };
+#endif
 /*
  * _smc() - fast call to MobiCore
  *

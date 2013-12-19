@@ -17,7 +17,7 @@ ifdef MCDRV_SYMBOLS_FILE
 endif
 
 ifeq ($(PLATFORM), ARM_VE_A9X4_QEMU)
-	ccflags-y += -DMC_NETLINK_COMPAT
+	ccflags-y += -DMC_NETLINK_COMPAT_V37
 endif
 
 ifeq ($(PLATFORM), MSM8974_SURF_STD)

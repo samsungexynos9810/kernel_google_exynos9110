@@ -17,17 +17,7 @@ struct wsm {
 	void			*virt_addr;
 	uint32_t		len;
 	uint32_t		handle;
-	void			*phys_addr;
 	struct list_head	list;
 };
-
-struct wsm *wsm_create(
-	void			*virt_addr,
-	uint32_t		len,
-	uint32_t		handle,
-
-	/* NULL this may be unknown, so is can be omitted */
-	void			*phys_addr
-);
 
 #endif /* _MC_KAPI_WSM_H_ */

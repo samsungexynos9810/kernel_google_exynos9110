@@ -52,7 +52,7 @@ struct mc_buffer {
 	/* virtual Userspace start address */
 	void			*uaddr;
 	/* physical start address */
-	void			*phys;
+	phys_addr_t		phys;
 	/* order of number of pages */
 	unsigned int		order;
 	uint32_t		len;
@@ -129,14 +129,14 @@ struct mc_instance *mc_alloc_instance(void);
 int mc_release_instance(struct mc_instance *instance);
 
 /*
- * mc_register_wsm_l2() - Create a L2 table from a virtual memory buffer which
+ * mc_register_wsm_mmu() - Create a MMU table from a virtual memory buffer which
  * can be vmalloc or user space virtual memory
  */
-int mc_register_wsm_l2(struct mc_instance *instance,
+int mc_register_wsm_mmu(struct mc_instance *instance,
 	void *buffer, uint32_t len,
-	uint32_t *handle, uint32_t *phys);
+	uint32_t *handle, phys_addr_t *phys);
 /* Unregister the buffer mapped above */
-int mc_unregister_wsm_l2(struct mc_instance *instance, uint32_t handle);
+int mc_unregister_wsm_mmu(struct mc_instance *instance, uint32_t handle);
 
 /* Allocate one mc_buffer of contiguous space */
 int mc_get_buffer(struct mc_instance *instance,

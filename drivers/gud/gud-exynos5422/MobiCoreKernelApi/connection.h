@@ -44,7 +44,6 @@ struct connection {
 };
 
 struct connection *connection_new(void);
-struct connection *connection_create(int socket_descriptor, pid_t dest);
 void connection_cleanup(struct connection *conn);
 bool connection_connect(struct connection *conn, pid_t dest);
 size_t connection_read_datablock(struct connection *conn, void *buffer,

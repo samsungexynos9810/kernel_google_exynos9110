@@ -19,9 +19,6 @@ struct bulk_buffer_descriptor {
 	uint32_t	len;		/* Length of the Bulk buffer */
 	uint32_t	handle;
 
-	/* The physical address of the L2 table of the Bulk buffer*/
-	void		*phys_addr_wsm_l2;
-
 	/* The list param for using the kernel lists*/
 	struct list_head list;
 };
@@ -29,8 +26,7 @@ struct bulk_buffer_descriptor {
 struct bulk_buffer_descriptor *bulk_buffer_descriptor_create(
 	void		*virt_addr,
 	uint32_t	len,
-	uint32_t	handle,
-	void		*phys_addr_wsm_l2
+	uint32_t	handle
 );
 
 /*
