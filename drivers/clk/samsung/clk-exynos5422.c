@@ -1527,6 +1527,9 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 #define CGATE(_id, cname, pname, o, b, f, gf) \
 		GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
+#define CMGATE(_id, cname, pname, o, b, f, gf, s) \
+		MGATE(_id, cname, pname, (unsigned long)o, b, f, gf, (unsigned long)s)
+
 struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	GATE_A(pclk_st, "pclk_st", "aclk_66_psgen", (unsigned long) EXYNOS5_CLK_GATE_BUS_PERIS1, 2, 0, 0, "mct"),
 	/* CMU_CPU */

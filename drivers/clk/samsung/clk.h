@@ -21,6 +21,7 @@
 #include <linux/of_address.h>
 
 #define MHZ (1000*1000)
+#define CLK_GATE_MULTI_BIT_SET   BIT(30)
 
 /**
  * struct samsung_fixed_rate_clock: information about fixed-rate clock
@@ -197,9 +198,10 @@ struct samsung_gate_clock {
 	u8			bit_idx;
 	u8			gate_flags;
 	const char		*alias;
+	unsigned long		set_bit;
 };
 
-#define __GATE(_id, dname, cname, pname, o, b, f, gf, a)	\
+#define __GATE(_id, dname, cname, pname, o, b, f, gf, a, s)	\
 	{							\
 		.id		= _id,				\
 		.dev_name	= dname,			\
@@ -210,19 +212,23 @@ struct samsung_gate_clock {
 		.bit_idx	= b,				\
 		.gate_flags	= gf,				\
 		.alias		= a,				\
+		.set_bit	= s,				\
 	}
 
 #define GATE(_id, cname, pname, o, b, f, gf)			\
-	__GATE(_id, NULL, cname, pname, o, b, f, gf, NULL)
+	__GATE(_id, NULL, cname, pname, o, b, f, gf, NULL, 0)
+
+#define MGATE(_id, cname, pname, o, b, f, gf, s)			\
+	__GATE(_id, NULL, cname, pname, o, b, f, gf, NULL, s)
 
 #define GATE_A(_id, cname, pname, o, b, f, gf, a)		\
-	__GATE(_id, NULL, cname, pname, o, b, f, gf, a)
+	__GATE(_id, NULL, cname, pname, o, b, f, gf, a, 0)
 
 #define GATE_D(_id, dname, cname, pname, o, b, f, gf)		\
-	__GATE(_id, dname, cname, pname, o, b, f, gf, NULL)
+	__GATE(_id, dname, cname, pname, o, b, f, gf, NULL, 0)
 
 #define GATE_DA(_id, dname, cname, pname, o, b, f, gf, a)	\
-	__GATE(_id, dname, cname, pname, o, b, f, gf, a)
+	__GATE(_id, dname, cname, pname, o, b, f, gf, a, 0)
 
 #define PNAME(x) static const char *x[] __initdata
 

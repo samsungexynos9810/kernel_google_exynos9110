@@ -208,6 +208,115 @@ void __init samsung_clk_register_div(struct samsung_div_clock *list,
 	}
 }
 
+struct exynos_clk_gate {
+	struct clk_hw hw;
+	void __iomem	*reg;
+	unsigned long	set_bit;
+	u8	bit_idx;
+	u8	flags;
+	spinlock_t	*lock;
+};
+
+#define to_clk_gate(_hw) container_of(_hw, struct exynos_clk_gate, hw)
+
+static void exynos_clk_gate_endisable(struct clk_hw *hw, int enable)
+{
+	struct exynos_clk_gate *gate = to_clk_gate(hw);
+	int set = gate->flags & CLK_GATE_SET_TO_DISABLE ? 1 : 0;
+	unsigned long flags = 0;
+	u32 reg;
+
+	set ^= enable;
+
+	if (gate->lock)
+		spin_lock_irqsave(gate->lock, flags);
+
+	reg = readl(gate->reg);
+
+	if (set)
+		reg |= gate->set_bit;
+	else
+		reg &= ~(gate->set_bit);
+
+	writel(reg, gate->reg);
+
+	if (gate->lock)
+		spin_unlock_irqrestore(gate->lock, flags);
+}
+
+static int exynos5_clk_gate_enable(struct clk_hw *hw)
+{
+	exynos_clk_gate_endisable(hw, 1);
+
+	return 0;
+}
+
+static void exynos5_clk_gate_disable(struct clk_hw *hw)
+{
+	exynos_clk_gate_endisable(hw, 0);
+}
+
+static int exynos5_clk_gate_is_enabled(struct clk_hw *hw)
+{
+	u32 reg;
+	struct exynos_clk_gate *gate = to_clk_gate(hw);
+
+	reg = readl(gate->reg);
+
+	/* if a set bit disables this clk, flip it before masking */
+	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
+		reg ^= gate->bit_idx;
+
+	reg &= gate->bit_idx;
+
+	return reg ? 1 : 0;
+}
+
+const struct clk_ops exynos5_clk_gate_ops = {
+	.enable = exynos5_clk_gate_enable,
+	.disable = exynos5_clk_gate_disable,
+	.is_enabled = exynos5_clk_gate_is_enabled,
+};
+EXPORT_SYMBOL_GPL(clk_gate_ops);
+
+struct clk *exynos_clk_register_gate(struct device *dev, const char *name,
+		const char *parent_name, unsigned long flags,
+		void __iomem *reg, u8 bit_idx,
+		u8 clk_gate_flags, spinlock_t *lock, unsigned long set_bit)
+{
+	struct exynos_clk_gate *gate;
+	struct clk *clk;
+	struct clk_init_data init;
+
+	/* allocate the gate */
+	gate = kzalloc(sizeof(struct clk_gate), GFP_KERNEL);
+	if (!gate) {
+		pr_err("%s: could not allocate gated clk\n", __func__);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	init.name = name;
+	init.ops = &exynos5_clk_gate_ops;
+	init.flags = flags | CLK_IS_BASIC;
+	init.parent_names = (parent_name ? &parent_name: NULL);
+	init.num_parents = (parent_name ? 1 : 0);
+
+	/* struct clk_gate assignments */
+	gate->reg = reg;
+	gate->bit_idx = bit_idx;
+	gate->flags = clk_gate_flags;
+	gate->lock = lock;
+	gate->hw.init = &init;
+	gate->set_bit = set_bit;
+
+	clk = clk_register(dev, &gate->hw);
+
+	if (IS_ERR(clk))
+		kfree(gate);
+
+	return clk;
+}
+
 /* register a list of gate clocks */
 void __init samsung_clk_register_gate(struct samsung_gate_clock *list,
 						unsigned int nr_clk)
@@ -216,9 +325,15 @@ void __init samsung_clk_register_gate(struct samsung_gate_clock *list,
 	unsigned int idx, ret;
 
 	for (idx = 0; idx < nr_clk; idx++, list++) {
-		clk = clk_register_gate(NULL, list->name, list->parent_name,
-				list->flags, reg_base + list->offset,
-				list->bit_idx, list->gate_flags, &lock);
+		if (list->flags & CLK_GATE_MULTI_BIT_SET)
+			clk = exynos_clk_register_gate(NULL, list->name, list->parent_name,
+					list->flags, reg_base + list->offset,
+					list->bit_idx, list->gate_flags, &lock, list->set_bit);
+		else
+			clk = clk_register_gate(NULL, list->name, list->parent_name,
+					list->flags, reg_base + list->offset,
+					list->bit_idx, list->gate_flags, &lock);
+
 		if (IS_ERR(clk)) {
 			pr_err("%s: failed to register clock %s\n", __func__,
 				list->name);
