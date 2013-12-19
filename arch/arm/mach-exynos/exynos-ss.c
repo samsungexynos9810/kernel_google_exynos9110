@@ -816,7 +816,7 @@ void __exynos_ss_task(int cpu, struct task_struct *task)
 	i = atomic_inc_return(&ess_log->task_log_idx[cpu]) &
 	    (ARRAY_SIZE(ess_log->task[0]) - 1);
 	ess_log->task[cpu][i].time = cpu_clock(cpu);
-	strcpy(ess_log->task[cpu][i].comm, task->comm);
+	strncpy(ess_log->task[cpu][i].comm, task->comm, TASK_COMM_LEN - 1);
 	ess_log->task[cpu][i].pid = task->pid;
 }
 
