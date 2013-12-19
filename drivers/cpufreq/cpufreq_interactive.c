@@ -1414,6 +1414,16 @@ void cpufreq_interactive_update_target_freq(unsigned int target_freq, int cpu)
 	up_write(&pcpu->enable_sem);
 }
 
+unsigned int cpufreq_interactive_get_hispeed_freq(int cpu)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu =
+			&per_cpu(cpuinfo, cpu);
+	struct cpufreq_interactive_tunables *tunables =
+			pcpu->policy->governor_data;
+
+	return tunables->hispeed_freq;
+}
+
 static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
