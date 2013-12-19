@@ -54,6 +54,8 @@
 #define S5P_VA_SS_LOGMEM		(S5P_VA_SS_BASE)
 
 #define S5P_VA_SS_HEADER		(S5P_VA_SS_LOGMEM)
+#define S5P_VA_SS_SCRATCH		(S5P_VA_SS_LOGMEM + 0x10)
+#define S5P_VA_SS_LAST_LOGBUF		(S5P_VA_SS_LOGMEM + 0x14)
 #define S5P_VA_SS_MMU_REG		(S5P_VA_SS_HEADER + ESS_HEADER_SZ)
 #define S5P_VA_SS_CORE_REG		(S5P_VA_SS_MMU_REG + ESS_MMU_REG_SZ)
 
@@ -113,6 +115,7 @@ struct exynos_ss_log {
 		struct worker *worker;
 		struct work_struct *work;
 		work_func_t f;
+		int en;
 	} work[NR_CPUS][ESS_LOG_MAX_NUM];
 	struct reg_log {
 		unsigned long long time;
@@ -121,6 +124,12 @@ struct exynos_ss_log {
 		unsigned int reg;
 		int en;
 	} reg[NR_CPUS][ESS_LOG_MAX_NUM];
+	struct printkl_log {
+		unsigned long long time;
+		int cpu;
+		int msg;
+		int val;
+	} printkl[ESS_LOG_MAX_NUM * 2];
 	struct printk_log {
 		unsigned long long time;
 		int cpu;
@@ -139,6 +148,7 @@ struct exynos_ss_log {
 	atomic_t work_log_idx[NR_CPUS];
 	atomic_t reg_log_idx[NR_CPUS];
 	atomic_t hrtimer_log_idx[NR_CPUS];
+	atomic_t printkl_log_idx;
 	atomic_t printk_log_idx;
 };
 
@@ -228,7 +238,7 @@ struct exynos_ss_interface {
 	struct exynos_ss_hook info_hook;
 };
 
-extern void exynos5_restart(char mode, const char *cmd);
+extern void (*arm_pm_restart)(char str, const char *cmd);
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,00)
 extern void register_hook_logbuf(void (*)(const char));
 #else
@@ -440,12 +450,17 @@ static inline void exynos_ss_hook_logger(const char *name,
 #if LINUX_VERSION_CODE <= KERNEL_VERSION(3,5,00)
 static inline void exynos_ss_hook_logbuf(const char buf)
 {
+	unsigned int last_buf;
 	if (ess_hook.logbuf.head_ptr && buf) {
 		if (exynos_ss_check_rb(&ess_hook.logbuf, 1))
 			ess_hook.logbuf.curr_ptr = ess_hook.logbuf.head_ptr;
 
 		ess_hook.logbuf.curr_ptr[0] = buf;
-		ess_hook.logbuf.curr_ptr ++;
+		ess_hook.logbuf.curr_ptr++;
+
+		/*  save the address of last_buf to physical address */
+		last_buf = (unsigned int)ess_hook.logbuf.curr_ptr;
+		__raw_writel((last_buf & (SZ_16M - 1)) | ess_phy_addr, S5P_VA_SS_LAST_LOGBUF);
 	}
 }
 #else
@@ -453,6 +468,7 @@ static inline void exynos_ss_hook_logbuf(const char *buf, u64 ts_nsec, size_t si
 {
 	if (ess_hook.logbuf.head_ptr && buf && size) {
 		unsigned long rem_nsec;
+		unsigned int last_buf;
 		size_t timelen = 0;
 
 		if (exynos_ss_check_rb(&ess_hook.logbuf, size + 32))
@@ -461,14 +477,18 @@ static inline void exynos_ss_hook_logbuf(const char *buf, u64 ts_nsec, size_t si
 		rem_nsec = do_div(ts_nsec, 1000000000);
 
 		/*  fixed exact size */
-		timelen = snprintf(ess_hook.logbuf.curr_ptr, 32,
-					"[%5lu.%06lu] ", (unsigned long)ts_nsec, rem_nsec / 1000);
+		timelen = sprintf(ess_hook.logbuf.curr_ptr, "[%5lu.%06lu] ",
+				(unsigned long)ts_nsec, rem_nsec / 1000);
 
 		ess_hook.logbuf.curr_ptr += timelen;
 		memcpy(ess_hook.logbuf.curr_ptr, buf, size);
 		ess_hook.logbuf.curr_ptr += size;
 		ess_hook.logbuf.curr_ptr[0] = '\n';
 		ess_hook.logbuf.curr_ptr++;
+
+		/*  save the address of last_buf to physical address */
+		last_buf = (unsigned int)ess_hook.logbuf.curr_ptr;
+		__raw_writel((last_buf & (SZ_16M - 1)) | ess_phy_addr, S5P_VA_SS_LAST_LOGBUF);
 	}
 }
 #endif
@@ -482,7 +502,7 @@ enum ess_cause_emerg_events {
 
 static void exynos_ss_scratch_reg(unsigned int val)
 {
-	__raw_writel(val, EXYNOS_INFORM4);
+	__raw_writel(val, S5P_VA_SS_SCRATCH);
 }
 
 #if defined(CONFIG_EXYNOS_SNAPSHOT_FORCE_DUMP_MODE) || defined(CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT)
@@ -501,10 +521,11 @@ static int exynos_ss_reboot_handler(struct notifier_block *nb,
 	exynos_ss_report_cause_emerg(CAUSE_FORCE_DUMP);
 	exynos_ss_save_context();
 	flush_cache_all();
-	exynos5_restart(0, "ramdump");
+	arm_pm_restart(0, "reset");
 	while(1);
 #else
 	pr_emerg("exynos-snapshot: normal reboot [%s]\n", __func__);
+	exynos_ss_scratch_reg(CAUSE_INVALID_DUMP);
 	flush_cache_all();
 #endif
 	return 0;
@@ -519,7 +540,7 @@ static int exynos_ss_panic_handler(struct notifier_block *nb,
 	pr_emerg("exynos-snapshot: panic - forced ramdump mode [%s]\n", __func__);
 	exynos_ss_save_context();
 	flush_cache_all();
-	exynos5_restart(0, "ramdump");
+	arm_pm_restart(0, "reset");
 	while(1);
 #else
 	pr_emerg("exynos-snapshot: panic [%s]\n", __func__);
@@ -609,7 +630,7 @@ static int __init exynos_ss_setup(char *str)
 	size += ESS_HOOK_LOGGER_EVENTS_SZ;
 #endif
 	/*  allow only align 2Mbyte */
-	if (size % SZ_2M != 0)
+	if ((size & SZ_1M) != 0)
 		goto out;
 
 	if (!(reserve_bootmem(base, size, BOOTMEM_EXCLUSIVE))) {
@@ -684,27 +705,37 @@ static int __init exynos_ss_output(void)
 	return 0;
 }
 
-static int __init exynos_ss_fixmap(void)
+/*	Header dummy data(4K)
+ *	-------------------------------------------------------------------------
+ *		0		4		8		C
+ *	-------------------------------------------------------------------------
+ *	0	virt_addr	phy_addr	size		magic_code
+ *	4	Scratch_val	logbuf_addr	0		0
+ *	-------------------------------------------------------------------------
+*/
+static void __init exynos_ss_fixmap_header(void)
 {
-	unsigned int *header_ptr, i;
+	/*  fill 0 to next to header */
+	int i;
+	unsigned int *addr = (unsigned int *)ess_virt_addr;
 
-	memset((unsigned int *)ess_virt_addr, 0, ess_size);
+	*addr = (unsigned int)ess_virt_addr;
+	addr++;
+	*addr = (unsigned int)ess_phy_addr;
+	addr++;
+	*addr = (unsigned int)ess_size;
+	addr++;
+	*addr = 0xDBDBDBDB;
 
-	header_ptr = (unsigned int *)ess_virt_addr;
-	*header_ptr = (unsigned int)header_ptr;
-	header_ptr++;
-	*header_ptr = (unsigned int)ess_phy_addr;
-	header_ptr++;
-	*header_ptr = (unsigned int)ess_size;
-	header_ptr++;
-	*header_ptr = 0xDBDBDBDB;
-
+	/*  kernel log buf */
 	ess_log = (struct exynos_ss_log *)(S5P_VA_SS_LOGMEM + ESS_HEADER_TOTAL_SZ);
+	/*  set fake translation to virtual address to debug trace */
 	ess_info.info_log = (struct exynos_ss_log *)(CONFIG_PAGE_OFFSET |
 			    (0x0FFFFFFF & (S5P_PA_SS_LOGMEM(ess_phy_addr) +
 					   ESS_HEADER_TOTAL_SZ)));
 
 	atomic_set(&(ess_log->printk_log_idx), -1);
+	atomic_set(&(ess_log->printkl_log_idx), -1);
 	for (i = 0; i < NR_CPUS; i++) {
 		atomic_set(&(ess_log->task_log_idx[i]), -1);
 		atomic_set(&(ess_log->irq_log_idx[i]), -1);
@@ -717,9 +748,37 @@ static int __init exynos_ss_fixmap(void)
 		per_cpu(ess_core_reg, i) = (struct exynos_ss_core_reg *)
 					   (S5P_VA_SS_CORE_REG + i * ESS_CORE_REG_OFFSET);
 	}
+	/*  initialize Logmem to 0 except only header */
+	memset((unsigned int *)(S5P_VA_SS_LOGMEM + ESS_HEADER_SZ),
+				0, ESS_LOG_MEM_SZ - ESS_HEADER_SZ);
+}
+
+static int __init exynos_ss_fixmap(void)
+{
+	unsigned int last_buf, align;
+
+	/*  fixmap to header first */
+	exynos_ss_fixmap_header();
+
+	/*  load last_buf address */
+	last_buf = (unsigned int)readl(S5P_VA_SS_LAST_LOGBUF);
+	align = (last_buf & 0xFF000000);
+
+	/*  check physical address offset */
+	if (align == ((S5P_PA_SS_LOGBUF(ess_phy_addr) & 0xFF000000))) {
+		/*  assumed valid address */
+		ess_hook.logbuf.curr_ptr = (unsigned char*)
+			((last_buf & (SZ_16M - 1)) |
+			 (unsigned int)S5P_VA_SS_LOGBUF);
+	}
+	else {	/*  invalid address, set to first line */
+		ess_hook.logbuf.curr_ptr = (unsigned char *)S5P_VA_SS_LOGBUF;
+
+		/*  initialize logbuf to 0 */
+		memset((unsigned int *)S5P_VA_SS_LOGBUF, 0, ESS_HOOK_LOGBUF_SZ);
+	}
 
 	ess_hook.logbuf.head_ptr = (unsigned char *)S5P_VA_SS_LOGBUF;
-	ess_hook.logbuf.curr_ptr = (unsigned char *)S5P_VA_SS_LOGBUF;
 	ess_hook.logbuf.bufsize = ESS_HOOK_LOGBUF_SZ;
 
 	ess_info.info_hook.logbuf.head_ptr =
@@ -739,6 +798,9 @@ static int __init exynos_ss_fixmap(void)
 	ess_info.info_hook.logger_main.curr_ptr = NULL;
 	ess_info.info_hook.logger_main.bufsize = ESS_HOOK_LOGGER_MAIN_SZ;
 
+	/*  initialize logger main to 0 */
+	memset((unsigned int *)S5P_VA_SS_LOGGER_MAIN, 0, ESS_HOOK_LOGGER_MAIN_SZ);
+
 	/*  logger - system */
 	ess_hook.logger_system.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_SYSTEM;
 	ess_hook.logger_system.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_SYSTEM;
@@ -748,6 +810,9 @@ static int __init exynos_ss_fixmap(void)
 			(0x0FFFFFFF & S5P_PA_SS_LOGGER_SYSTEM(ess_phy_addr)));
 	ess_info.info_hook.logger_system.curr_ptr = NULL;
 	ess_info.info_hook.logger_system.bufsize = ESS_HOOK_LOGGER_SYSTEM_SZ;
+
+	/*  initialize logger system to 0 */
+	memset((unsigned int *)S5P_VA_SS_LOGGER_SYSTEM, 0, ESS_HOOK_LOGGER_SYSTEM_SZ);
 
 #if ESS_HOOK_LOGGER_MAIN_SZ <= SZ_1M
 	/*  logger - radio */
@@ -760,7 +825,10 @@ static int __init exynos_ss_fixmap(void)
 	ess_info.info_hook.logger_radio.curr_ptr = NULL;
 	ess_info.info_hook.logger_radio.bufsize = ESS_HOOK_LOGGER_RADIO_SZ;
 
-	/* logger - events */
+	/*  initialize logger radio to 0 */
+	memset((unsigned int *)S5P_VA_SS_LOGGER_RADIO, 0, ESS_HOOK_LOGGER_RADIO_SZ);
+
+	/*  logger - events */
 	ess_hook.logger_events.head_ptr = (unsigned char *)S5P_VA_SS_LOGGER_EVENTS;
 	ess_hook.logger_events.curr_ptr = (unsigned char *)S5P_VA_SS_LOGGER_EVENTS;
 	ess_hook.logger_events.bufsize = ESS_HOOK_LOGGER_EVENTS_SZ;
@@ -769,6 +837,9 @@ static int __init exynos_ss_fixmap(void)
 			(0x0FFFFFFF & S5P_PA_SS_LOGGER_EVENTS(ess_phy_addr)));
 	ess_info.info_hook.logger_events.curr_ptr = NULL;
 	ess_info.info_hook.logger_events.bufsize = ESS_HOOK_LOGGER_EVENTS_SZ;
+
+	/*  initialize logger events to 0 */
+	memset((unsigned int *)S5P_VA_SS_LOGGER_EVENTS, 0, ESS_HOOK_LOGGER_EVENTS_SZ);
 #else
 	memset(&ess_hook.logger_radio, 0, sizeof(ess_hook.logger_radio));
 	memset(&ess_hook.logger_events, 0, sizeof(ess_hook.logger_events));
@@ -838,8 +909,8 @@ void __exynos_ss_irq(unsigned int irq, void *fn, int en)
 	ess_log->irq[cpu][i].en = en;
 }
 
-void __exynos_ss_work(struct worker *worker,
-			  struct work_struct *work, work_func_t f)
+void __exynos_ss_work(struct worker *worker, struct work_struct *work,
+			work_func_t f, int en)
 {
 	int cpu = raw_smp_processor_id();
 	unsigned i;
@@ -853,6 +924,7 @@ void __exynos_ss_work(struct worker *worker,
 	ess_log->work[cpu][i].worker = worker;
 	ess_log->work[cpu][i].work = work;
 	ess_log->work[cpu][i].f = f;
+	ess_log->work[cpu][i].en = en;
 }
 
 void __exynos_ss_hrtimer(struct hrtimer *timer, s64 *now,
@@ -914,5 +986,22 @@ void exynos_ss_printk(char *fmt, ...)
 	ess_log->printk[i].time = cpu_clock(cpu);
 	ess_log->printk[i].cpu = cpu;
 	strncpy(ess_log->printk[i].log, buf, ESS_LOG_STRING_LENGTH - 1);
+}
+
+void __exynos_ss_printkl(int msg, int val)
+{
+	int cpu = raw_smp_processor_id();
+	unsigned i;
+
+	if (!ess_enable || !ess_log)
+		return;
+
+	i = atomic_inc_return(&ess_log->printkl_log_idx) &
+	    (ARRAY_SIZE(ess_log->printkl) - 1);
+
+	ess_log->printkl[i].time = cpu_clock(cpu);
+	ess_log->printkl[i].cpu = cpu;
+	ess_log->printkl[i].msg = msg;
+	ess_log->printkl[i].val = val;
 }
 #endif

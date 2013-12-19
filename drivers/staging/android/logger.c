@@ -412,8 +412,10 @@ static void fix_up_readers(struct logger_log *log, size_t len)
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT
 #define ESS_MAX_BUF_SIZE	4096
+#define ESS_MAX_SYNC_BUF_SIZE	256
 #define ESS_MAX_TIMEBUF_SIZE	20
 static char ess_buf[ESS_MAX_BUF_SIZE];
+static char ess_sync_buf[ESS_MAX_SYNC_BUF_SIZE];
 static int ess_size;
 static void (*func_hook_logger)(const char *name, const char *buf, size_t size);
 void register_hook_logger(void (*func)(const char *name, const char *buf, size_t size))
@@ -497,6 +499,16 @@ static ssize_t do_write_log_from_user(struct logger_log *log,
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT
 	if (func_hook_logger && ess_size < ESS_MAX_BUF_SIZE) {
+		/*  sync with kernel log buffer */
+		if (strncmp(log->buffer + log->w_off, "!@", 2) == 0) {
+			memset(ess_sync_buf, 0, ESS_MAX_SYNC_BUF_SIZE);
+			if (count < (ESS_MAX_SYNC_BUF_SIZE - 1))
+				memcpy(ess_sync_buf, log->buffer + log->w_off,
+						count);
+			else
+				memcpy(ess_sync_buf, log->buffer + log->w_off,
+						ESS_MAX_SYNC_BUF_SIZE - 1);
+		}
 		memcpy(ess_buf + ess_size, log->buffer + log->w_off, len);
 		ess_size += count;
 	}
@@ -582,6 +594,10 @@ static ssize_t logger_aio_write(struct kiocb *iocb, const struct iovec *iov,
 	/* wake up any blocked readers */
 	wake_up_interruptible(&log->wq);
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT
+	if (func_hook_logger && strncmp(ess_sync_buf, "!@", 2) == 0)
+		printk(KERN_INFO "%s\n", ess_sync_buf);
+#endif
 	return ret;
 }
 
