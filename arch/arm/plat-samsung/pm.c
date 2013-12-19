@@ -232,7 +232,8 @@ static void __maybe_unused s3c_pm_show_resume_irqs(int start,
 	}
 }
 
-
+void (*pm_logic_prep)(void);
+void (*pm_logic_finish)(void);
 void (*pm_cpu_prep)(void);
 int (*pm_cpu_sleep)(unsigned long);
 
@@ -341,12 +342,16 @@ static int s3c_pm_prepare(void)
 	/* prepare check area if configured */
 
 	s3c_pm_check_prepare();
+	if (pm_logic_prep)
+		pm_logic_prep();
 	return 0;
 }
 
 static void s3c_pm_finish(void)
 {
 	s3c_pm_check_cleanup();
+	if (pm_logic_finish)
+		pm_logic_finish();
 }
 
 static const struct platform_suspend_ops s3c_pm_ops = {
