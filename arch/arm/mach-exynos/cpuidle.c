@@ -58,7 +58,7 @@ static cputime64_t cluster_off_time = 0;
 static unsigned long long __maybe_unused last_time = 0;
 static bool __maybe_unused cluster_off_flag = false;
 
-#define CLUSTER_OFF_TARGET_RESIDENCY	3000
+#define CLUSTER_OFF_TARGET_RESIDENCY	5000
 #endif
 
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
