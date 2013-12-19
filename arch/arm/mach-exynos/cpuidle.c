@@ -57,9 +57,10 @@
 static cputime64_t cluster_off_time = 0;
 static unsigned long long last_time = 0;
 static bool cluster_off_flag = false;
-static spinlock_t cluster_ctrl_lock;
 
+static spinlock_t cluster_ctrl_lock;
 static DEFINE_PER_CPU(int, in_c2_state);
+
 #define CLUSTER_OFF_TARGET_RESIDENCY	3000
 #endif
 
@@ -169,7 +170,7 @@ static int exynos_uart_fifo_check(void)
 	return ret;
 }
 
-static int __maybe_unused exynos_check_enter_mode(void)
+static int exynos_check_enter_mode(void)
 {
 	/* Check power domain */
 	if (exynos_check_reg_status(exynos5_power_domain,
@@ -216,8 +217,8 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.flags                  = CPUIDLE_FLAG_TIME_VALID,
 		.name                   = "C2",
 		.desc                   = "ARM power down",
-#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	},
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	[2] = {
 		.enter                  = exynos_enter_c2,
 		.exit_latency           = 300,
@@ -228,7 +229,6 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 	},
 	[3] = {
 #else
-	},
 	[2] = {
 #endif
 #endif
@@ -846,7 +846,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	dev->last_residency = idle_time;
 	return index;
 }
-#endif
 
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 static struct dentry *cluster_off_time_debugfs;
@@ -870,6 +869,7 @@ const static struct file_operations cluster_off_time_fops = {
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
+#endif
 #endif
 
 static int exynos_cpuidle_notifier_event(struct notifier_block *this,
