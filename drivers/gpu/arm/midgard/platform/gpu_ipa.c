@@ -59,8 +59,6 @@ static unsigned int gpu_ipa_dvfs_max_allowed_freq(struct kbase_device *kbdev)
 	return dvfs_max_info->clock;
 }
 
-#define POWER_COEFF_GPU 64 /* all core on param */
-
 void gpu_ipa_dvfs_calc_norm_utilisation(struct kbase_device *kbdev)
 {
 	int cur_freq;
