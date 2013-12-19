@@ -321,9 +321,9 @@ struct devfreq_clk_info aclk_mif_133[] = {
 };
 
 struct devfreq_clk_info aclk_cpif_200[] = {
-	{LV0,   134000000,      0,      NULL},
-	{LV1,   134000000,      0,      NULL},
-	{LV2,   134000000,      0,      NULL},
+	{LV0,   100000000,      0,      NULL},
+	{LV1,   100000000,      0,      NULL},
+	{LV2,   100000000,      0,      NULL},
 	{LV3,   100000000,      0,      NULL},
 	{LV4,   100000000,      0,      NULL},
 	{LV5,   100000000,      0,      NULL},
