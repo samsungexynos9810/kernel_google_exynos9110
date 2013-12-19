@@ -854,6 +854,7 @@ enum exynos5422_clks {
 };
 
 static __initdata void *exynos5422_clk_regs[] = {
+	EXYNOS5422_CMU_CPU_SPARE1,
 	EXYNOS5_CLK_SRC_CPU,
 	EXYNOS5_CLK_DIV_CPU0,
 	EXYNOS5_CLK_DIV_CPU1,
