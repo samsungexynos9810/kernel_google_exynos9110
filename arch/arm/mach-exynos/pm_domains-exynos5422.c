@@ -604,7 +604,7 @@ static int exynos5_pd_peric_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
-#ifndef CONFIG_SOC_EXYNOS5422_REV_0
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 struct exynos5422_pd_state exynos5422_fimc_is_clk[] = {
 	/*
 	   { .reg = EXYNOS5_CLK_GATE_BUS_TOP,			.val = 0,
@@ -632,6 +632,7 @@ static int exynos5_pd_fimc_is_power_on_pre(struct exynos_pm_domain *pd)
 
 	return 0;
 }
+
 static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
@@ -643,6 +644,7 @@ static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd)
 
 	return 0;
 }
+
 static int exynos5_pd_fimc_is_power_off_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
@@ -654,98 +656,13 @@ static int exynos5_pd_fimc_is_power_off_pre(struct exynos_pm_domain *pd)
 
 	return 0;
 }
+
 static int exynos5_pd_fimc_is_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
 	exynos5_pd_restore_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
 
 	/* ISP_ARM_OPTION */
-
-	return 0;
-}
-#endif
-
-#ifdef CONFIG_EXYNOS5_DEV_FIMC_IS
-static int exynos5_pd_isp_power_control(struct exynos_pm_domain *pd, int power_flag)
-{
-	int ret = exynos_pm_domain_power_control(domain, power_flag);
-	int tmp, timeout = 500;
-
-	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	if (ret) {
-		__raw_writel(0, EXYNOS5420_ISP_ARM_OPTION);
-
-		do {
-			tmp = __raw_readl(domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN;
-			usleep_range(80, 100);
-			timeout--;
-		} while ((tmp != power_flag) && timeout);
-
-		if (!timeout) {
-			pr_err("PM DOMAIN : ISP WFI unset power down fail(state:%x)\n",
-					__raw_readl(domain->base + 0x4));
-
-			tmp = __raw_readl(EXYNOS5420_LPI_BUS_MASK0);
-			tmp |= (EXYNOS5420_LPI_BUS_MASK0_ISP0 |
-					EXYNOS5420_LPI_BUS_MASK0_ISP1 |
-					EXYNOS5420_LPI_BUS_MASK0_RSTOP_ISP |
-					EXYNOS5420_LPI_BUS_MASK0_PRSTOP_ISP);
-			__raw_writel(tmp, EXYNOS5420_LPI_BUS_MASK0);
-
-			timeout = 100;
-
-			do {
-				tmp = __raw_readl(domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN;
-				udelay(1);
-				timeout--;
-			} while ((tmp != power_flag) && timeout);
-
-			if (!timeout) {
-				pr_err("CG_STATUS0 : %08X\n", __raw_readl(EXYNOS5420_CG_STATUS0));
-
-				tmp = __raw_readl(EXYNOS5420_LPI_MASK0);
-				tmp |= EXYNOS5420_LPI_MASK0_FD;
-				__raw_writel(tmp, EXYNOS5420_LPI_MASK0);
-				pr_err("FD Disable(LPI : %08X)\n", __raw_readl(EXYNOS5420_LPI_MASK0));
-
-				timeout = 100;
-				do {
-					tmp = __raw_readl(domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN;
-					udelay(1);
-					timeout--;
-				} while ((tmp != power_flag) && timeout);
-
-				if (!timeout) {
-					pr_err("CG_STATUS0 : %08X\n", __raw_readl(EXYNOS5420_CG_STATUS0));
-
-					tmp = __raw_readl(EXYNOS5420_LPI_MASK0);
-					tmp |= EXYNOS5420_LPI_MASK0_OTHERS;
-					__raw_writel(tmp, EXYNOS5420_LPI_MASK0);
-					pr_err("Others Disable(LPI : %08X)\n", __raw_readl(EXYNOS5420_LPI_MASK0));
-
-					timeout = 100;
-					do {
-						tmp = __raw_readl(domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN;
-						udelay(1);
-						timeout--;
-					} while ((tmp != power_flag) && timeout);
-
-					if (!timeout)
-						pr_err("ISP force timeout fail\n");
-				}
-			} else {
-				pr_err("PM DOMAIN : ISP force timeout success\n");
-				tmp = __raw_readl(EXYNOS5420_LPI_BUS_MASK0);
-				tmp &= ~(EXYNOS5420_LPI_BUS_MASK0_ISP0 |
-						EXYNOS5420_LPI_BUS_MASK0_ISP1 |
-						EXYNOS5420_LPI_BUS_MASK0_RSTOP_ISP |
-						EXYNOS5420_LPI_BUS_MASK0_PRSTOP_ISP);
-				__raw_writel(tmp, EXYNOS5420_LPI_BUS_MASK0);
-			}
-		} else {
-			pr_err("PM DOMAIN : ISP WFI unset power down success\n");
-		}
-	}
 
 	return 0;
 }
@@ -777,27 +694,6 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_pre = exynos5_pd_disp1_power_off_pre,
 		.off_post = exynos5_pd_disp1_power_off_post,
 	} , {
-#ifdef CONFIG_SOC_EXYNOS5422_REV_0
-		.on_pre = exynos5_pd_scl_power_on_pre,
-		.on_post = exynos5_pd_scl_power_on_post,
-		.name = "pd-scl",
-		.off_pre = exynos5_pd_scl_power_off_pre,
-		.off_post = exynos5_pd_scl_power_off_post,
-	} , {
-		.on_pre = exynos5_pd_cam_power_on_pre,
-		.on_post = exynos5_pd_cam_power_on_post,
-		.name = "pd-cam",
-		.off_pre = exynos5_pd_cam_power_off_pre,
-		.off_post = exynos5_pd_cam_power_off_post,
-	} , {
-#else
-		.on_pre = exynos5_pd_gscl_power_on_pre,
-		.on_post = exynos5_pd_gscl_power_on_post,
-		.name = "pd-gscl",
-		.off_pre = exynos5_pd_gscl_power_off_pre,
-		.off_post = exynos5_pd_gscl_power_off_post,
-	} , {
-#endif
 		.on_pre = exynos5_pd_mscl_power_on_pre,
 		.on_post = exynos5_pd_mscl_power_on_post,
 		.name = "pd-mscl",
@@ -816,89 +712,52 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_pre = exynos5_pd_fsys_power_off_pre,
 		.off_post = exynos5_pd_fsys_power_off_post,
 	} , {
+#ifndef CONFIG_SOC_EXYNOS5422_REV_0
+		.name = "pd-fsys2",
+	} , {
+#endif
+#ifdef NOT_USE_SPEC_OUT
+		.name = "pd-psgen",
+	} , {
+#endif
 		.on_pre = exynos5_pd_peric_power_on_pre,
 		.on_post = exynos5_pd_peric_power_on_post,
 		.name = "pd-peric",
 		.on_pre = exynos5_pd_peric_power_off_pre,
 		.on_post = exynos5_pd_peric_power_off_post,
-#ifndef CONFIG_SOC_EXYNOS5422_REV_0
 	} , {
+		.name = "pd-wcore",
+	} , {
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 		.on_pre = exynos5_pd_fimc_is_power_on_pre,
 		.on_post = exynos5_pd_fimc_is_power_on_post,
-		.name = "pd-fimc-is",
+		.name = "pd-isp",
 		.off_pre = exynos5_pd_fimc_is_power_off_pre,
 		.off_post = exynos5_pd_fimc_is_power_off_post,
-#endif
 	} , {
+#else
 		.name = "pd-isp",
 	} , {
-		.name = "pd-csis0",
+#endif
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+		.on_pre = exynos5_pd_scl_power_on_pre,
+		.on_post = exynos5_pd_scl_power_on_post,
+		.name = "pd-gscl",
+		.off_pre = exynos5_pd_scl_power_off_pre,
+		.off_post = exynos5_pd_scl_power_off_post,
 	} , {
-		.name = "pd-csis1",
-	} , {
-		.name = "pd-csis2",
-	} , {
-		.name = "pd-flite0",
-	} , {
-		.name = "pd-flite1",
-	} , {
-		.name = "pd-flite2",
-	} , {
-		.name = "pd-fimd1",
-	} , {
-		.name = "pd-mixer",
-	} , {
-		.name = "pd-dp",
-	} , {
-		.name = "pd-dsim1",
-	} , {
-		.name = "pd-gscaler0",
-	} , {
-		.name = "pd-gscaler1",
-	} , {
-		.name = "pd-fimclite",
-	} , {
-		.name = "pd-csis",
-	} , {
-		.name = "pd-mscl0",
-	} , {
-		.name = "pd-mscl1",
-	} , {
-		.name = "pd-mscl2",
-	} , {
-		.name = "pd-usbdrd30",
-	} , {
-		.name = "pd-pdma",
-	} , {
-		.name = "pd-usbhost20",
-	} , {
-		.name = "pd-fsys2",
-	} , {
-		.name = "pd-mmc",
-	} , {
-		.name = "pd-sromc",
-	} , {
-		.name = "pd-ufs",
-	} , {
-		.name = "pd-psgen",
-	} , {
-		.name = "pd-psgengen",
-	} , {
-		.name = "pd-rotator",
-	} , {
-		.name = "pd-mdma",
-	} , {
-		.name = "pd-jpeg",
-	} , {
-		.name = "pd-psgenperis",
-	} , {
-		.name = "pd-sysreg",
-	} , {
-		.name = "pd-tzpc",
-	} , {
-		.name = "pd-tmu",
-	} , {
-		.name = "pd-seckey",
+		.on_pre = exynos5_pd_cam_power_on_pre,
+		.on_post = exynos5_pd_cam_power_on_post,
+		.name = "pd-cam",
+		.off_pre = exynos5_pd_cam_power_off_pre,
+		.off_post = exynos5_pd_cam_power_off_post,
+#else
+		.on_pre = exynos5_pd_gscl_power_on_pre,
+		.on_post = exynos5_pd_gscl_power_on_post,
+		.name = "pd-gscl",
+		.off_pre = exynos5_pd_gscl_power_off_pre,
+		.off_post = exynos5_pd_gscl_power_off_post,
+#endif
 	},
 };
 

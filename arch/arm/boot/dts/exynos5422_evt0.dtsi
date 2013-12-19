@@ -326,6 +326,7 @@
 		reg = <0x13E80000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 0>;
+		samsung,power-domain = <&spd_gscl0>;
 	};
 
 	sysmmu_gscl1: sysmmu@0x13E90000 {
@@ -333,6 +334,7 @@
 		reg = <0x13E90000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 2>;
+		samsung,power-domain = <&spd_gscl1>;
 	};
 
 	sysmmu_fimc_fd: sysmmu@0x132A0000 {
@@ -1046,6 +1048,7 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13E00000 0x1000>;
 		interrupts = <0 85 0>;
+		samsung,power-domain = <&spd_gscl0>;
 		clocks = <&clock 565>;
 		clock-names = "gate_gscl";
 		ip_ver = <1>;
@@ -1058,6 +1061,7 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13E10000 0x1000>;
 		interrupts = <0 86 0>;
+		samsung,power-domain = <&spd_gscl1>;
 		clocks = <&clock 566>;
 		clock-names = "gate_gscl";
 		ip_ver = <1>;
@@ -1256,11 +1260,33 @@
 		};
 	};
 
-    pd_mfc0: pd-mfc@10044060 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x10044060 0x20>;
-	bts-status = "disabled";
-    };
+	pd_gscl: pd-gscl@10044000 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044000 0x20>;
+
+		spd_gscl0: spd-gscl0@10044000 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+
+		spd_gscl1: spd-gscl1@10044000 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+	};
+
+	pd_isp: pd-isp@10044020 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044020 0x20>;
+		parent = <&pd_cam>;
+		bts-status = "enabled";
+	};
+
+	pd_mfc0: pd-mfc@10044060 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044060 0x20>;
+		bts-status = "enabled";
+	};
 
 	pd_g3d: pd-g3d@0x10044080 {
 		compatible = "samsung,exynos-pd";
@@ -1290,9 +1316,9 @@
 
 
 	pd_maudio: pd-maudio@100440e0 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x100440e0 0x20>;
-    };
+		compatible = "samsung,exynos-pd";
+		reg = <0x100440e0 0x20>;
+	};
 
 	pd_g2d: pd-g2d@0x10044100 {
 		compatible = "samsung,exynos-pd";
@@ -1302,35 +1328,29 @@
 	};
 
 	pd_mscl: pd-mscl@10044120 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x10044120 0x20>;
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044120 0x20>;
 		status = "disabled";
 		bts-status = "enabled";
-    };
+	};
 
 	pd_fsys: pd-fsys@10044140 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x10044140 0x20>;
+		compatible = "samsung,exynos-pd";
+		reg = <0x10044140 0x20>;
 		status = "disabled";
 
-        spd_usbdrd30: spd-usbdrd30@10044140 {
-            compatible = "samsung,exynos-spd";
-		bts-status = "enabled";
-        };
+		spd_usbdrd30: spd-usbdrd30@10044140 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
 
-        spd_pdma: spd-pdma@10044140 {
-            compatible = "samsung,exynos-spd";
-        };
+		spd_pdma: spd-pdma@10044140 {
+			compatible = "samsung,exynos-spd";
+		};
 
 		spd_usbhost20: spd-usbhost20@10044140 {
-            compatible = "samsung,exynos-spd";
-        };
-    };
-
-	pd_fsys2: pd-fsys2@10044160 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x10044160 0x20>;
-		status = "disabled";
+			compatible = "samsung,exynos-spd";
+		};
 	};
 
 	pd_psgen: pd-psgen@10044180 {
@@ -1346,15 +1366,22 @@
 
 		spd_jpeg2: spd-jpeg2@10044180 {
 			compatible = "samsung,exynos-spd";
-		        status = "disabled";
+			status = "disabled";
 			bts-status = "enabled";
 		};
 	};
 
 	pd_peric: pd-peric@100441A0 {
-        compatible = "samsung,exynos-pd";
-        reg = <0x100441A0 0x20>;
+		compatible = "samsung,exynos-pd";
+		reg = <0x100441A0 0x20>;
 		status = "disabled";
+	};
+
+	pd_cam: pd-cam@10045100 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10045100 0x20>;
+		parent = <&pd_gscl>;
+		bts-status = "enabled";
 	};
 
 };
