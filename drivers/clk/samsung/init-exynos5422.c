@@ -327,6 +327,10 @@ void pwm_init_clock(void)
 
 void __init exynos5422_clock_init(void)
 {
+/* EXYNOS5422 C2 enable support */
+	__raw_writel(__raw_readl(EXYNOS5422_CMU_CPU_SPARE1) | (1<<1 | 1<<3),
+													 EXYNOS5422_CMU_CPU_SPARE1);
+
 	top_clk_enable();
 	aud_init_clock();
 	uart_clock_init();
