@@ -21,11 +21,17 @@
 
 #include <linux/platform_device.h>
 #include <mach/map.h>
-#include "regs-decon.h"
 #include "decon_display_driver.h"
-#include "decon_fb.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
+
+#ifdef CONFIG_SOC_EXYNOS5430
+#include "regs-decon.h"
+#include "decon_fb.h"
+#else
+#include "regs-fimd.h"
+#include "fimd_fb.h"
+#endif
 
 #include <../drivers/clk/samsung/clk.h>
 
@@ -68,6 +74,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv);
 int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
+extern void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask);
 extern void set_default_hibernation_mode(struct display_driver *dispdrv);
 extern int get_display_line_count(struct display_driver *dispdrv);
 
@@ -188,35 +195,25 @@ void disp_pm_gate_lock(struct display_driver *dispdrv, bool increase)
 
 static void enable_mask(struct display_driver *dispdrv)
 {
-	u32 val;
-	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
-
 	if(dispdrv->pm_status.trigger_masked)
 		return;
 
 	dispdrv->pm_status.trigger_masked = 1;
 	/* MASK */
-	val = readl(sfb->regs + TRIGCON);
-	val &= ~(TRIGCON_HWTRIGMASK_I80_RGB);
-	writel(val, sfb->regs + TRIGCON);
+	set_hw_trigger_mask(dispdrv->decon_driver.sfb, true);
 
 	pm_debug("Enable mask");
 }
 
 static void disable_mask(struct display_driver *dispdrv)
 {
-	u32 val;
-	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
-
 	if(!dispdrv->pm_status.trigger_masked)
 		return;
 
 	dispdrv->pm_status.trigger_masked = 0;
 
 	/* UNMASK */
-	val = readl(sfb->regs + TRIGCON);
-	val |= (TRIGCON_HWTRIGMASK_I80_RGB);
-	writel(val, sfb->regs + TRIGCON);
+	set_hw_trigger_mask(dispdrv->decon_driver.sfb, false);
 
 	pm_debug("Disable mask");
 }
@@ -455,7 +452,8 @@ static void __display_block_clock_on(struct display_driver *dispdrv)
 static int __display_block_clock_off(struct display_driver *dispdrv)
 {
 	if (get_display_line_count(dispdrv)) {
-		pm_debug("wait until last frame is totally transferred");
+		pm_debug("wait until last frame is totally transferred %d:",
+				get_display_line_count(dispdrv));
 		return -EBUSY;
 	}
 
