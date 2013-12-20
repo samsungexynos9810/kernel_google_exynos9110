@@ -1676,8 +1676,8 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_slimbus_peric, "sclk_slimbus_peric", "dout_sclk_slimbus", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 10, CLK_IGNORE_UNUSED, 0),
 
 	/* MIF */
-	CGTE(sclk_mfc_pll, "sclk_mfc_pll", "mout_mfc_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_bus_pll, "sclk_bus_pll", "mout_bus_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(sclk_bus_pll, "sclk_bus_pll", "mout_bus_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 2, CLK_IGNORE_UNUSED, 0),
+	CGTE(sclk_mfc_pll, "sclk_mfc_pll", "mout_mfc_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 3, CLK_IGNORE_UNUSED, 0),
 	CGTE(sclk_hpm_mif, "sclk_hpm_mif", "dout_sclk_hpm_mif", EXYNOS5430_ENABLE_SCLK_MIF, 4, CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_cpif_200, "aclk_cpif_200", "dout_aclk_cpif_200", EXYNOS5430_ENABLE_ACLK_MIF3, 0, CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_disp_333, "aclk_disp_333", "dout_aclk_disp_333", EXYNOS5430_ENABLE_ACLK_MIF3, 1, CLK_IGNORE_UNUSED, 0),
