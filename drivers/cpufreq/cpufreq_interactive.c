@@ -33,6 +33,10 @@
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+#include <mach/cpufreq.h>
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/cpufreq_interactive.h>
 
@@ -587,8 +591,22 @@ static int cpufreq_interactive_speedchange_task(void *data)
 		for_each_cpu(cpu, &tmp_mask) {
 			unsigned int j;
 			unsigned int max_freq = 0;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+			unsigned int smp_id = smp_processor_id();
+
+			if (exynos_boot_cluster == CA7) {
+				if ((smp_id == 0 && cpu >= NR_CA7) ||
+					(smp_id == NR_CA7 && cpu < NR_CA7))
+					continue;
+			} else {
+				if ((smp_id == 0 && cpu >= NR_CA15) ||
+					(smp_id == NR_CA15 && cpu < NR_CA15))
+					continue;
+			}
+#endif
 
 			pcpu = &per_cpu(cpuinfo, cpu);
+
 			if (!down_read_trylock(&pcpu->enable_sem))
 				continue;
 			if (!pcpu->governor_enabled) {
@@ -1319,6 +1337,10 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 		sched_setscheduler_nocheck(tunables->speedchange_task, SCHED_FIFO, &param);
 		get_task_struct(tunables->speedchange_task);
+
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		kthread_bind(tunables->speedchange_task, policy->cpu);
+#endif
 
 		/* NB: wake up so the thread does not look hung to the freezer */
 		wake_up_process(tunables->speedchange_task);
