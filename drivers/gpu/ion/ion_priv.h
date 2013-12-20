@@ -241,6 +241,11 @@ static inline void ion_buffer_set_clean(struct ion_buffer *buffer)
 	buffer->flags |= ION_FLAG_CLEAN;
 }
 
+static inline void ion_buffer_set_ready(struct ion_buffer *buffer)
+{
+	buffer->flags |= ION_FLAG_READY_TO_USE;
+}
+
 static inline bool ion_buffer_dirty(struct ion_buffer *buffer)
 {
 	/* always dirty if cacheable buffer is mapped to cpu */

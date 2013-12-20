@@ -62,6 +62,7 @@ struct page_info {
 	struct page *page;
 	unsigned int order;
 	struct list_head list;
+	bool from_pool;
 };
 
 static struct page *alloc_buffer_page(struct ion_system_heap *heap,
@@ -115,12 +116,22 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 	struct page *page;
 	struct page_info *info;
 	int i;
+	struct ion_page_pool *pool;
+	bool from_pool = false;
 
 	for (i = 0; i < num_orders; i++) {
 		if (size < order_to_size(orders[i]))
 			continue;
 		if (max_order < orders[i])
 			continue;
+
+		if (!ion_buffer_cached(buffer)) {
+			pool = heap->pools[order_to_index(orders[i])];
+			mutex_lock(&pool->mutex);
+			if ((pool->high_count > 0) || (pool->low_count > 0))
+				from_pool = true;
+			mutex_unlock(&pool->mutex);
+		}
 
 		page = alloc_buffer_page(heap, buffer, orders[i]);
 		if (!page)
@@ -131,6 +142,7 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 			return NULL;
 		info->page = page;
 		info->order = orders[i];
+		info->from_pool = from_pool;
 		return info;
 	}
 	return NULL;
@@ -240,6 +252,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 	int i = 0;
 	unsigned long size_remaining = PAGE_ALIGN(size);
 	unsigned int max_order = orders[0];
+	bool all_pages_from_pool = true;
 
 	INIT_LIST_HEAD(&pages);
 	while (size_remaining > 0) {
@@ -266,9 +279,14 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		struct page *page = info->page;
 		sg_set_page(sg, page, (1 << info->order) * PAGE_SIZE, 0);
 		sg = sg_next(sg);
+		if (all_pages_from_pool && !info->from_pool)
+			all_pages_from_pool = false;
 		list_del(&info->list);
 		kfree(info);
 	}
+
+	if (all_pages_from_pool)
+		ion_buffer_set_ready(buffer);
 
 	ion_clean_and_init_allocated_pages(
 			sys_heap, table->sgl, table->orig_nents,
@@ -300,7 +318,7 @@ void ion_system_heap_free(struct ion_buffer *buffer)
 
 	/* uncached pages come from the page pools, zero them before returning
 	   for security purposes (other allocations are zerod at alloc time */
-	if (!cached)
+	if (!cached && !(buffer->flags & ION_FLAG_NOZEROED))
 		ion_heap_buffer_zero(buffer);
 
 	for_each_sg(table->sgl, sg, table->nents, i)
