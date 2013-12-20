@@ -3304,7 +3304,8 @@ static int s3c_fb_register_mc_entity(struct s3c_fb_win *win, struct exynos_md *m
 	/* Init a window of fimd as a sub-device */
 	v4l2_subdev_init(sd, &s3c_fb_sd_ops);
 	sd->owner = THIS_MODULE;
-	sprintf(sd->name, "s3c-fb-window%d", win->index);
+	snprintf(sd->name, V4L2_SUBDEV_NAME_SIZE,
+			"s3c-fb-window%d", win->index);
 
 	/* fimd sub-devices can be opened in user space */
 	sd->flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
@@ -3401,7 +3402,7 @@ static int s3c_fb_create_mc_links(struct s3c_fb_win *win)
 				GSC_OUT_PAD_SOURCE, &win->sd.entity,
 				FIMD_PAD_SINK_FROM_GSCALER_SRC, 0);
 		if (ret) {
-			sprintf(err, "%s --> %s",
+			snprintf(err, sizeof(err), "%s --> %s",
 				md->gsc_sd[i]->entity.name,
 				win->sd.entity.name);
 				goto mc_link_create_fail;
@@ -4055,16 +4056,15 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	fbdrv = dispdrv->dt_ops.get_display_drvdata();
 	pd = dispdrv->dt_ops.get_display_platdata();
+	if (!pd) {
+		dev_err(dev, "no platform data specified\n");
+		return -EINVAL;
+	}
 
 	decon_parse_lcd_info(pd);
 
 	if (fbdrv->variant.nr_windows > S3C_FB_MAX_WIN) {
 		dev_err(dev, "too many windows, cannot attach\n");
-		return -EINVAL;
-	}
-
-	if (!pd) {
-		dev_err(dev, "no platform data specified\n");
 		return -EINVAL;
 	}
 
