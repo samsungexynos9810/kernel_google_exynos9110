@@ -521,6 +521,7 @@ struct fimg2d_control {
 	struct list_head cmd_q;
 	struct workqueue_struct *work_q;
 	struct pm_qos_request exynos5_g2d_cpu_qos;
+	struct pm_qos_request exynos5_g2d_kfc_qos;
 	struct pm_qos_request exynos5_g2d_mif_qos;
 	struct pm_qos_request exynos5_g2d_int_qos;
 	struct fimg2d_platdata *pdata;

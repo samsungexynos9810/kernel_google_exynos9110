@@ -54,7 +54,9 @@ static struct fimg2d_control *ctrl;
 
 void fimg2d_pm_qos_add(struct fimg2d_control *ctrl)
 {
-#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || \
+	defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
 	struct fimg2d_platdata *pdata;
 
 #ifdef CONFIG_OF
@@ -64,11 +66,19 @@ void fimg2d_pm_qos_add(struct fimg2d_control *ctrl)
 #endif
 #endif
 
-#ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
+#if defined CONFIG_ARM_EXYNOS_IKS_CPUFREQ
 	if (pdata->cpu_min)
 		pm_qos_add_request(&ctrl->exynos5_g2d_cpu_qos,
 					PM_QOS_CPU_FREQ_MIN, 0);
+#elif defined CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	if (pdata->cpu_min)
+		pm_qos_add_request(&ctrl->exynos5_g2d_cpu_qos,
+				PM_QOS_CPU_FREQ_MIN, 0);
+	if (pdata->kfc_min)
+		pm_qos_add_request(&ctrl->exynos5_g2d_kfc_qos,
+				PM_QOS_KFC_FREQ_MIN, 0);
 #endif
+
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
 	if (pdata->mif_min)
 		pm_qos_add_request(&ctrl->exynos5_g2d_mif_qos,
@@ -81,7 +91,9 @@ void fimg2d_pm_qos_add(struct fimg2d_control *ctrl)
 
 void fimg2d_pm_qos_remove(struct fimg2d_control *ctrl)
 {
-#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || \
+	defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
 	struct fimg2d_platdata *pdata;
 
 #ifdef CONFIG_OF
@@ -91,10 +103,14 @@ void fimg2d_pm_qos_remove(struct fimg2d_control *ctrl)
 #endif
 #endif
 
-#ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	if (pdata->cpu_min)
 		pm_qos_remove_request(&ctrl->exynos5_g2d_cpu_qos);
+	if (pdata->kfc_min)
+		pm_qos_remove_request(&ctrl->exynos5_g2d_kfc_qos);
 #endif
+
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
 	if (pdata->mif_min)
 		pm_qos_remove_request(&ctrl->exynos5_g2d_mif_qos);
@@ -105,7 +121,9 @@ void fimg2d_pm_qos_remove(struct fimg2d_control *ctrl)
 
 void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status status)
 {
-#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || \
+	defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
 	struct fimg2d_platdata *pdata;
 
 #ifdef CONFIG_OF
@@ -122,9 +140,12 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 		if (pdata->int_min)
 			pm_qos_update_request(&ctrl->exynos5_g2d_int_qos, pdata->int_min);
 #endif
-#ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		if (pdata->cpu_min)
 			pm_qos_update_request(&ctrl->exynos5_g2d_cpu_qos, pdata->cpu_min);
+		if (pdata->kfc_min)
+			pm_qos_update_request(&ctrl->exynos5_g2d_kfc_qos, pdata->kfc_min);
 #endif
 	} else if (status == FIMG2D_QOS_OFF) {
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
@@ -133,12 +154,18 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 		if (pdata->int_min)
 			pm_qos_update_request(&ctrl->exynos5_g2d_int_qos, 0);
 #endif
-#ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		if (pdata->cpu_min)
 			pm_qos_update_request(&ctrl->exynos5_g2d_cpu_qos, 0);
+		if (pdata->kfc_min)
+			pm_qos_update_request(&ctrl->exynos5_g2d_kfc_qos, 0);
 #endif
 	}
-#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
+
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || \
+	defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
 	fimg2d_debug("Done fimg2d_pm_qos_update(cpu:%d, mif:%d, int:%d)\n",
 			pdata->cpu_min, pdata->mif_min, pdata->int_min);
 #endif
@@ -276,7 +303,8 @@ static int fimg2d_open(struct inode *inode, struct file *file)
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
 		fimg2d_debug("count:%ld, fimg2d_pm_qos_update(ON,mif,int) is already called\n", count);
 #endif
-#ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		fimg2d_debug("count:%ld, fimg2d_pm_qos_update(ON,cpu) is already called\n", count);
 #endif
 	}
@@ -307,7 +335,8 @@ static int fimg2d_release(struct inode *inode, struct file *file)
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
 		fimg2d_debug("count:%ld, fimg2d_pm_qos_update(OFF,mif.int) is not called yet\n", count);
 #endif
-#ifdef CONFIG_ARM_EXYNOS_IKS_CPUFREQ
+#if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
+	defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 		fimg2d_debug("count:%ld, fimg2d_pm_qos_update(OFF, cpu) is not called yet\n", count);
 #endif
 	}
@@ -524,11 +553,12 @@ static void g2d_parse_dt(struct device_node *np, struct fimg2d_platdata *pdata)
 
 	of_property_read_u32(np, "ip_ver", &pdata->ip_ver);
 	of_property_read_u32(np, "cpu_min", &pdata->cpu_min);
+	of_property_read_u32(np, "kfc_min", &pdata->kfc_min);
 	of_property_read_u32(np, "mif_min", &pdata->mif_min);
 	of_property_read_u32(np, "int_min", &pdata->int_min);
 
-	fimg2d_debug("ip_ver:%x cpu_min:%d, mif_min:%d, int_min:%d\n"
-			, pdata->ip_ver, pdata->cpu_min
+	fimg2d_debug("ip_ver:%x cpu_min:%d, kfc_min:%d, mif_min:%d, int_min:%d\n"
+			, pdata->ip_ver, pdata->cpu_min, pdata->kfc_min
 			, pdata->mif_min, pdata->int_min);
 }
 #else
@@ -651,7 +681,6 @@ static int fimg2d_probe(struct platform_device *pdev)
 	fimg2d_clk_on(ctrl);
 #endif
 
-	dev_info(&pdev->dev, "++ 9 %s\n", __func__);
 	g2d_cci_snoop_init(pdata->ip_ver);
 
 #ifdef CONFIG_EXYNOS7_IOMMU
