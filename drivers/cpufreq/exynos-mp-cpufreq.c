@@ -40,6 +40,9 @@
 #include <mach/tmu.h>
 #include <plat/cpu.h>
 
+#define POWER_COEFF_15P		57 /* percore param */
+#define POWER_COEFF_7P		11 /* percore  param */
+
 #ifdef CONFIG_SMP
 struct lpj_info {
 	unsigned long   ref;
@@ -66,7 +69,7 @@ static struct cpufreq_freqs *freqs[CA_END];
 static DEFINE_MUTEX(cpufreq_lock);
 static DEFINE_MUTEX(cpufreq_scale_lock);
 
-static bool exynos_cpufreq_init_done;
+bool exynos_cpufreq_init_done;
 static bool suspend_prepared = false;
 static bool hmp_boosted = false;
 static bool egl_hotplugged = false;
@@ -91,6 +94,8 @@ static struct pm_qos_request min_kfc_qos;
 static struct pm_qos_request max_kfc_qos;
 static struct pm_qos_request exynos_mif_qos_CA7;
 static struct pm_qos_request exynos_mif_qos_CA15;
+static struct pm_qos_request ipa_max_kfc_qos;
+static struct pm_qos_request ipa_max_cpu_qos;
 
 static struct workqueue_struct *cluster_monitor_wq;
 static struct delayed_work monitor_cluster_on;
@@ -483,8 +488,111 @@ no_policy:
 	return ret;
 }
 
+static void __exynos_set_max_freq(struct pm_qos_request *pm_qos_request, int class, int max_freq)
+{
+	if (pm_qos_request_active(pm_qos_request))
+		pm_qos_update_request(pm_qos_request, max_freq);
+	else
+		pm_qos_add_request(pm_qos_request, class, max_freq);
+}
+
+void exynos_set_max_freq(int max_freq, unsigned int cpu)
+{
+	struct pm_qos_request *req;
+	int class;
+
+	if (get_cur_cluster(cpu) == CA7) {
+		req = &ipa_max_kfc_qos;
+		class = PM_QOS_KFC_FREQ_MAX;
+	} else {
+		req = &ipa_max_cpu_qos;
+		class = PM_QOS_CPU_FREQ_MAX;
+	}
+
+	__exynos_set_max_freq(req, class, max_freq);
+}
+
+struct cpu_power_info {
+	unsigned int load[4];
+	unsigned int freq;
+	cluster_type cluster;
+	unsigned int temp;
+};
+
+unsigned int get_power_value(struct cpu_power_info *power_info)
+{
+	/* ps : power_static (mW)
+         * pd : power_dynamic (mW)
+	 */
+	u64 temp;
+	u64 pd_tot;
+	unsigned int ps, total_power;
+	unsigned int volt, maxfreq;
+	int i, coeff;
+	struct cpufreq_frequency_table *freq_table;
+	unsigned int *volt_table;
+	unsigned int freq = power_info->freq / 10000;
+
+	if (power_info->cluster == CA15) {
+		coeff = POWER_COEFF_15P;
+		freq_table = exynos_info[CA15]->freq_table;
+		volt_table = exynos_info[CA15]->volt_table;
+		maxfreq = exynos_info[CA15]->freq_table[exynos_info[CA15]->max_support_idx].frequency;
+	} else if (power_info->cluster == CA7) {
+		coeff = POWER_COEFF_7P;
+		freq_table = exynos_info[CA7]->freq_table;
+		volt_table = exynos_info[CA7]->volt_table;
+		maxfreq = exynos_info[CA7]->freq_table[exynos_info[CA7]->max_support_idx].frequency;
+	} else {
+		BUG_ON(1);
+	}
+
+	if (power_info->freq < freq_min[power_info->cluster]) {
+		pr_warn("%s: freq: %d for cluster: %d is less than min. freq: %d\n",
+			__func__, power_info->freq, power_info->cluster,
+			freq_min[power_info->cluster]);
+		power_info->freq = freq_min[power_info->cluster];
+	}
+
+	if (power_info->freq > maxfreq) {
+		pr_warn("%s: freq: %d for cluster: %d is greater than max. freq: %d\n",
+			__func__, power_info->freq, power_info->cluster,
+			maxfreq);
+		power_info->freq = maxfreq;
+	}
+
+	for (i = 0; (freq_table[i].frequency != CPUFREQ_TABLE_END); i++) {
+		if (power_info->freq == freq_table[i].frequency)
+			break;
+	}
+
+	volt = volt_table[i] / 10000;
+
+	/* TODO: pde_p is not linear to load, need to update equation */
+	pd_tot = 0;
+	temp = coeff * freq * volt * volt / 100000;
+	for (i = 0; i < 4; i++) {
+		if (power_info->load[i] > 100) {
+			pr_err("%s: Load should be a percent value\n", __func__);
+			BUG_ON(1);
+		}
+		pd_tot += temp * (power_info->load[i]+1);
+	}
+	total_power = (unsigned int)pd_tot / (unsigned int)100;
+
+	/* pse = alpha ~ volt ~ temp */
+	/* TODO: Update voltage, temperature variant PSE */
+	ps = 0;
+
+	total_power += ps;
+
+	return total_power;
+}
+
 unsigned int g_cpufreq;
 unsigned int g_kfcfreq;
+unsigned int g_clamp_cpufreqs[CA_END];
+
 /* Set clock frequency */
 static int exynos_target(struct cpufreq_policy *policy,
 			  unsigned int target_freq,
@@ -494,6 +602,9 @@ static int exynos_target(struct cpufreq_policy *policy,
 	struct cpufreq_frequency_table *freq_table = exynos_info[cur]->freq_table;
 	unsigned int index;
 	int ret = 0;
+
+	trace_printk("IPA:%s:%d Called by %x, with target_freq %d", __PRETTY_FUNCTION__, __LINE__,
+			(unsigned int) __builtin_return_address (0), target_freq);
 
 	mutex_lock(&cpufreq_lock);
 
@@ -509,10 +620,13 @@ static int exynos_target(struct cpufreq_policy *policy,
 	if (cur == CA15) {
 		target_freq = max((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MIN), target_freq);
 		target_freq = min((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MAX), target_freq);
+		target_freq = min(g_clamp_cpufreqs[CA15], target_freq); /* add IPA clamp */
 	} else {
 		target_freq = max((unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MIN), target_freq);
 		target_freq = min((unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MAX), target_freq);
+		target_freq = min(g_clamp_cpufreqs[CA7], target_freq); /* add IPA clamp */
 	}
+	trace_printk("IPA:%s:%d will apply %d ", __PRETTY_FUNCTION__, __LINE__, target_freq);
 
 	if (cpufreq_frequency_table_target(policy, freq_table,
 				target_freq, relation, &index)) {
@@ -540,6 +654,24 @@ out:
 		g_kfcfreq = target_freq;
 
 	return ret;
+}
+
+void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
+{
+	unsigned int freq = 0;
+	unsigned int new_freq = 0;
+	unsigned int cur = get_cur_cluster(cpu);
+
+	g_clamp_cpufreqs[cur] = clamp_freq;
+	new_freq = min(clamp_freq, gov_target);
+	freq = exynos_getspeed(cpu);
+
+	trace_printk("IPA: %s:%d: set clamps for cpu %d to %d (curr was %d)",
+		     __PRETTY_FUNCTION__, __LINE__, cpu, clamp_freq, freq);
+
+	if (new_freq != freq)
+		exynos_target(cpufreq_cpu_get(cpu),
+			      new_freq, CPUFREQ_RELATION_H);
 }
 
 #ifdef CONFIG_PM
@@ -881,7 +1013,7 @@ static ssize_t show_cpufreq_max_limit(struct kobject *kobj,
 	unsigned int cpu_qos_max = pm_qos_request(PM_QOS_CPU_FREQ_MAX);
 	unsigned int kfc_qos_max = pm_qos_request(PM_QOS_KFC_FREQ_MAX);
 
-	if (cpu_qos_max > 0 ) {
+	if (cpu_qos_max > 0) {
 		if (cpu_qos_max < freq_min[CA15])
 			cpu_qos_max = freq_min[CA15];
 		else if (cpu_qos_max > freq_max[CA15])
@@ -974,11 +1106,11 @@ static ssize_t show_cpu_freq_table(struct kobject *kobj,
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++) {
 		if (freq_table[i].frequency != CPUFREQ_ENTRY_INVALID)
 			count += snprintf(&buf[count], pr_len, "%d ",
-						freq_table[i].frequency);
-        }
+					freq_table[i].frequency);
+	}
 
-        count += snprintf(&buf[count], 2, "\n");
-        return count;
+	count += snprintf(&buf[count], 2, "\n");
+	return count;
 }
 
 static ssize_t show_cpu_min_freq(struct kobject *kobj,
@@ -1411,6 +1543,9 @@ static int __init exynos_cpufreq_init(void)
 	int i, ret = -EINVAL;
 	cluster_type cluster;
 	struct cpufreq_frequency_table *freq_table;
+
+	g_clamp_cpufreqs[CA15] = UINT_MAX;
+	g_clamp_cpufreqs[CA7] = UINT_MAX;
 
 	boot_cluster = 0;
 
