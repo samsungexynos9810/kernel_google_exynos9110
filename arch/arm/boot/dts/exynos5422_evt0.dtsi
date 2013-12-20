@@ -1115,8 +1115,8 @@
 		compatible = "samsung,jpeg-hx2";
 		reg = <0x11F50000 0x1000>;
 		interrupts = <0 89 0>;
-		clock-names = "jpeg";
-		clocks = <&clock 600>;
+		clock-names = "jpeg", "aclk_300_jpeg", "aclk_300_jpeg_user";
+		clocks = <&clock 1418>, <&clock 496>, <&clock 2079>;
 		iommu = <&sysmmu_jpeg>;
 		ip_ver = <3>;
 		samsung,power-domain = <&spd_jpeg1>;
@@ -1126,8 +1126,8 @@
 		compatible = "samsung,jpeg-hx2";
 		reg = <0x11F60000 0x1000>;
 		interrupts = <0 168 0>;
-		clock-names = "jpeg";
-		clocks = <&clock 600>;
+		clock-names = "jpeg", "aclk_300_jpeg", "aclk_300_jpeg_user";
+		clocks = <&clock 1417>, <&clock 496>, <&clock 2079>;
 		iommu = <&sysmmu_jpeg2>;
 		ip_ver = <3>;
 		samsung,power-domain = <&spd_jpeg2>;
