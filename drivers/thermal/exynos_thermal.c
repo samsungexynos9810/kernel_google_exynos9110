@@ -490,7 +490,8 @@ void exynos_tmu_call_notifier(enum tmu_noti_state_t cur_state)
 		cur_state = TMU_COLD;
 
 	if (cur_state != tmu_old_state) {
-		if (cur_state == TMU_COLD || cur_state == TMU_NORMAL)
+		if ((cur_state == TMU_COLD) ||
+			((cur_state == TMU_NORMAL) && (tmu_old_state == TMU_COLD)))
 			blocking_notifier_call_chain(&exynos_tmu_notifier, TMU_COLD, &cur_state);
 		else
 			blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &tmu_old_state);
