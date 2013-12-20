@@ -19,6 +19,7 @@
 #include <linux/clk-private.h>
 
 #include <linux/platform_device.h>
+#include <mach/map.h>
 #include "regs-decon.h"
 #include "decon_display_driver.h"
 #include "decon_fb.h"
@@ -430,6 +431,15 @@ int disable_display_decon_runtimepm(struct device *dev)
 }
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+bool check_camera_is_running(void)
+{
+	/* CAM1 STATUS */
+	if (readl(S5P_VA_PMU + 0x40A4) & 0x1)
+		return true;
+	else
+		return false;
+}
+
 void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask)
 {
 	unsigned int val;

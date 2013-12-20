@@ -20,7 +20,6 @@
 #include <linux/exynos_iovmm.h>
 
 #include <linux/platform_device.h>
-#include <mach/map.h>
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
@@ -74,6 +73,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv);
 int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
+extern bool check_camera_is_running(void);
 extern void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask);
 extern void set_default_hibernation_mode(struct display_driver *dispdrv);
 extern int get_display_line_count(struct display_driver *dispdrv);
@@ -353,15 +353,6 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 	return 0;
 }
 
-bool disp_pm_check_camera(void)
-{
-	/* CAM1 STATUS */
-	if (readl(S5P_VA_PMU  + 0x40A4) & 0x1)
-		return true;
-	else
-		return false;
-}
-
 /* disp_pm_dec_refcount - it is called at the DSI frame done */
 int disp_pm_dec_refcount(struct display_driver *dispdrv)
 {
@@ -392,7 +383,7 @@ static void decon_power_gating_handler(struct kthread_work *work)
 	struct display_driver *dispdrv = get_display_driver();
 	unsigned long flags;
 
-	if (!disp_pm_check_camera()) {
+	if (!check_camera_is_running()) {
 		if (dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT)
 			display_hibernation_power_off(dispdrv);
 	}
