@@ -303,7 +303,17 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
 					 RESOLUTION * DECAY);
 
+	/* This patch is not checked */
+#ifndef CONFIG_CPU_THERMAL_IPA
 	get_typical_interval(data);
+#else
+	/*
+	 * HACK - Ignore repeating patterns when we're
+	 * forecasting a very large idle period.
+	 */
+	if(data->predicted_us < MAX_INTERESTING)
+		get_typical_interval(data);
+#endif
 
 	/*
 	 * We want to default to C1 (hlt), not to busy polling
