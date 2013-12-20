@@ -305,7 +305,7 @@
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x13CB0000 0x1000>;
 		interrupt-parent = <&combiner>;
-		interrupts = <15 5>;
+		interrupts = <7 2>; /* SYSMMU_MDMA1 */
 	};
 
 	sysmmu_g2d: sysmmu@0x10A60000 {
