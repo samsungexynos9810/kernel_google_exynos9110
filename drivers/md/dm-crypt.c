@@ -1629,6 +1629,7 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 	struct dm_arg_set as;
 	const char *opt_string;
 	char dummy;
+	char tmp[32];
 
 	static struct dm_arg _args[] = {
 		{0, 1, "Invalid number of feature args"},
@@ -1689,7 +1690,9 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 
 	if (cc->hw_fmp == 0) {
 		ret = -EINVAL;
-		if (sscanf(argv[2], "%llu%c", &tmpll, &dummy) != 1) {
+		memset(tmp, 0, sizeof(tmp));
+		snprintf(tmp, sizeof(tmp) - 1, "%s", argv[2]);
+		if (sscanf(tmp, "%llu%c", &tmpll, &dummy) != 1) {
 			ti->error = "Invalid iv_offset sector";
 			goto bad;
 		}
@@ -1701,7 +1704,9 @@ static int crypt_ctr(struct dm_target *ti, unsigned int argc, char **argv)
 		goto bad;
 	}
 
-	if (sscanf(argv[4], "%llu%c", &tmpll, &dummy) != 1) {
+	memset(tmp, 0, sizeof(tmp));
+	snprintf(tmp, sizeof(tmp) - 1, "%s", argv[4]);
+	if (sscanf(tmp, "%llu%c", &tmpll, &dummy) != 1) {
 		ti->error = "Invalid device sector";
 		goto bad;
 	}
