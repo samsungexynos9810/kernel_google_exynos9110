@@ -143,7 +143,7 @@
 /* Version register */
 #define S5P_DSIM_VERSION	(0x1000)  /* Specifies the DSIM version information */
 #else
-#ifdef CONFIG_SOC_EXYNOS5422
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 #define S5P_DSIM_VERSION	(0x0)  /* Specifies the DSIM version information */
 #define S5P_DSIM_STATUS		(0x04)	/* Status register */
 #define S5P_DSIM_RGB_STATUS	(0x08)  /* Status register */

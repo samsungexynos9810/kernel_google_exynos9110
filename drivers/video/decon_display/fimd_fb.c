@@ -75,6 +75,10 @@
 static int prev_overlap_cnt;
 #endif
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+#define FIMD_VIDEO_PSR
+#endif
+
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ) || defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 #include <linux/pm_qos.h>
 static struct pm_qos_request exynos5_fimd_int_qos;
@@ -288,7 +292,7 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 		dev_err(sfb->dev, "invalid bpp\n");
 	}
 
-#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
 	x = var->xres;
 	y = var->yres;
 #else
@@ -572,7 +576,7 @@ static inline u32 blendeq(enum s3c_fb_blending blending, u8 transp_length,
 }
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
-#if !defined (CONFIG_SOC_EXYNOS5422)
+#if !defined (FIMD_VIDEO_PSR)
 static void s3c_fb_config_i80(struct s3c_fb *sfb,
 		struct s3c_fb_i80mode *win_mode)
 {
@@ -676,7 +680,7 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
         data &=	~VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
 
-#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
 	s3c_fb_config_i80(sfb, win_mode);
 #endif
 }
@@ -1181,7 +1185,7 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	pm_runtime_get_sync(sfb->dev);
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
-#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
 	irq_ctrl_reg |= VIDINTCON0_INT_SYSMAINCON;
 	irq_ctrl_reg |= VIDINTCON0_INT_I80IFDONE;
@@ -1771,13 +1775,20 @@ static u32 s3c_fb_rgborder(int format)
 	case S3C_FB_PIXEL_FORMAT_RGBX_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_5551:
+#if defined (CONFIG_MACH_SMDK5422) || defined (CONFIG_SOC_EXYNOS5422_REV_0)
 		return WIN_RGB_ORDER_RGB;
+#else
+		return WIN_RGB_ORDER_BGR;
+#endif
 
 	case S3C_FB_PIXEL_FORMAT_RGB_565:
 	case S3C_FB_PIXEL_FORMAT_BGRA_8888:
 	case S3C_FB_PIXEL_FORMAT_BGRX_8888:
+#if defined (CONFIG_MACH_SMDK5422) || defined (CONFIG_SOC_EXYNOS5422_REV_0)
 		return WIN_RGB_ORDER_BGR;
-
+#else
+		return WIN_RGB_ORDER_RGB;
+#endif
 	default:
 		pr_warn("s3c-fb: unrecognized pixel format %u\n", format);
 		return 0;

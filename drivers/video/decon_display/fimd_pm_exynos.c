@@ -25,6 +25,11 @@
 #include <mach/map.h>
 
 #include <../drivers/clk/samsung/clk.h>
+
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+#define FIMD_VIDEO_PSR
+#endif
+
 static struct clk *g_mout_fimd1;
 static struct clk *g_mout_rpll_ctrl;
 static struct clk *g_mout_fimd1_mdnie1;
@@ -98,7 +103,7 @@ int init_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
-#if !defined (CONFIG_SOC_EXYNOS5422)
+#if !defined (CONFIG_SOC_EXYNOS5422_REV_0)
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
 #endif
 
@@ -186,13 +191,13 @@ void init_display_gpio_exynos(void)
 	reg |= (1 << 11);
 	__raw_writel(reg, S3C_VA_SYS + 0x0214);
 
-#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (CONFIG_SOC_EXYNOS5422)
+#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
 	reg |= (1 << 24);
 	__raw_writel(reg, S3C_VA_SYS + 0x0214);
 #endif
 
-#if defined (CONFIG_SOC_EXYNOS5422)
+#if defined (CONFIG_SOC_EXYNOS5422_REV_0)
 	/* related to convertor between FIMD & MIPI */
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
 	reg |= (1 << 12);
