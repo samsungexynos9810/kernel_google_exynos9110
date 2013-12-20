@@ -325,6 +325,30 @@ void pwm_init_clock(void)
 			"pclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
 }
 
+void jpeg_clock_init(void)
+{
+	if (exynos_set_parent("mout_aclk_300_jpeg", "mout_dpll_ctrl"))
+		pr_err("failed clock mout_aclk_300_jpeg to \
+				mout_dpll_ctrl\n");
+	if (exynos_set_parent("mout_aclk_300_jpeg_sw",
+				"dout_aclk_300_jpeg"))
+		pr_err("failed clock mout_aclk_300_jpeg_sw to \
+				dout_aclk_300_jpeg\n");
+	if (exynos_set_parent("mout_aclk_300_jpeg_user",
+				"mout_aclk_300_jpeg_sw"))
+		pr_err("failed clock mout_aclk_300_jpeg_user to \
+				mout_aclk_300_jpeg_sw\n");
+	if (exynos_set_parent("aclk_300_jpeg", "mout_aclk_300_jpeg_user"))
+		pr_err("failed clock aclk_300_jpeg to \
+				mout_aclk_300_jpeg_user\n");
+	exynos_set_rate("dout_aclk_300_jpeg", 300 * MHZ);
+
+	pr_info("[%s:%d]jpeg: dout_aclk_300_jpeg %d aclk_300_jpeg %d\n",
+			__func__, __LINE__,
+			exynos_get_rate("dout_aclk_300_jpeg"),
+			exynos_get_rate("aclk_300_jpeg"));
+}
+
 void __init exynos5422_clock_init(void)
 {
 /* EXYNOS5422 C2 enable support */
@@ -338,4 +362,5 @@ void __init exynos5422_clock_init(void)
 	g2d_init_clock();
 	pwm_init_clock();
 	gsc_clock_init();
+	jpeg_clock_init();
 }
