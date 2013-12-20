@@ -265,11 +265,31 @@ static struct vb2_ops jpeg_hx_dec_vb2_qops = {
 
 static int jpeg_clk_get(struct jpeg_dev *jpeg)
 {
+	char *parn1_clkname, *chld1_clkname;
 	char *gate_clkname;
 	struct device *dev = &jpeg->plat_dev->dev;
 
 	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_PARN1_CLK, (const char **)&parn1_clkname);
+	of_property_read_string_index(dev->of_node,
+		"clock-names", JPEG_CHLD1_CLK, (const char **)&chld1_clkname);
+	of_property_read_string_index(dev->of_node,
 		"clock-names", JPEG_GATE_CLK, (const char **)&gate_clkname);
+
+	jpeg_dbg("clknames: parent1 %s child1 %s gate %s\n",
+		parn1_clkname, chld1_clkname, gate_clkname);
+
+	jpeg->clk_parn1 = clk_get(dev, parn1_clkname);
+	if (IS_ERR(jpeg->clk_parn1)) {
+		dev_err(dev, "failed to get parent1 clk\n");
+		goto err_clk_get_parn1;
+	}
+
+	jpeg->clk_chld1 = clk_get(dev, chld1_clkname);
+	if (IS_ERR(jpeg->clk_chld1)) {
+		dev_err(dev, "failed to get child1 clk\n");
+		goto err_clk_get_chld1;
+	}
 
 	/* clock for gating */
 	jpeg->clk = clk_get(dev, gate_clkname);
@@ -282,6 +302,10 @@ static int jpeg_clk_get(struct jpeg_dev *jpeg)
 	return 0;
 
 err_clk_get:
+	clk_put(jpeg->clk_chld1);
+err_clk_get_chld1:
+	clk_put(jpeg->clk_parn1);
+err_clk_get_parn1:
 	return -ENXIO;
 }
 
@@ -289,13 +313,16 @@ static void jpeg_clk_put(struct jpeg_dev *jpeg)
 {
 	clk_unprepare(jpeg->clk);
 	clk_put(jpeg->clk);
+	clk_put(jpeg->clk_chld1);
+	clk_put(jpeg->clk_parn1);
 }
 
-#ifdef CONFIG_PM_RUNTIME
 static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status)
 {
 	if (status == JPEG_CLK_ON) {
 		atomic_inc(&jpeg->clk_cnt);
+		if (clk_set_parent(jpeg->clk_chld1, jpeg->clk_parn1))
+			jpeg_dbg("Unable to set parent1 of clock child1\n");
 		clk_prepare(jpeg->clk);
 		clk_enable(jpeg->clk);
 		jpeg_dbg("clock enabled\n");
@@ -311,9 +338,6 @@ static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status
 		}
 	}
 }
-#else
-#define jpeg_clock_gating(jpeg, on)
-#endif
 
 static inline enum jpeg_node_type jpeg_hx_get_node_type(struct file *file)
 {
@@ -439,9 +463,7 @@ static int jpeg_hx_m2m_open(struct file *file)
 		return err;
 	}
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&jpeg->plat_dev->dev);
-#endif
 	return 0;
 
 err_node_type:
@@ -455,9 +477,7 @@ static int jpeg_hx_m2m_release(struct file *file)
 
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&ctx->jpeg_dev->plat_dev->dev);
-#endif
 	kfree(ctx);
 
 	return 0;
@@ -670,7 +690,7 @@ static irqreturn_t jpeg_hx_irq(int irq, void *priv)
 	jpeg->end_time = sched_clock();
 	jpeg_dbg("OPERATION-TIME: %llu\n", jpeg->end_time - jpeg->start_time);
 #endif
-	int_status = jpeg_hx_get_timer_status(jpeg);
+	int_status = jpeg_hx_get_timer_status(jpeg->reg_base);
 	if (int_status & JPEG_TIMER_INT_STAT) {
 		dev_err(&jpeg->plat_dev->dev, "%s: time out\n",	__func__);
 		printk("dumping registers\n");
@@ -946,16 +966,13 @@ static int jpeg_hx_probe(struct platform_device *pdev)
 	exynos_create_iovmm(&pdev->dev, 3, 3);
 	jpeg->vb2->resume(jpeg->alloc_ctx);
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
-#else
-	jpeg_clock_gating(jpeg, SC_CLK_ON);
+#ifndef CONFIG_PM_RUNTIME
+	jpeg_clock_gating(jpeg, JPEG_CLK_ON);
 #endif
 	jpeg->ver = jpeg_hwget_version(jpeg->reg_base);
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&pdev->dev);
-#endif
 	v4l2_err(&jpeg->v4l2_dev, "jpeg-hx2.%d registered successfully\n", jpeg->id);
 
 	return 0;
@@ -999,9 +1016,7 @@ static int jpeg_hx_remove(struct platform_device *pdev)
 	mutex_destroy(&jpeg->lock);
 	iounmap(jpeg->reg_base);
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
-#endif
 	jpeg->vb2->suspend(jpeg->alloc_ctx);
 	jpeg_clk_put(jpeg);
 	kfree(jpeg);
