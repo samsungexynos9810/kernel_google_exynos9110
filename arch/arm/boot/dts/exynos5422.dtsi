@@ -1273,6 +1273,22 @@
 		};
 	};
 
+	sss@10830000 {
+		compatible = "samsung,exynos5-sss";
+		reg = <0x10830000 0x8000>;
+		interrupts = <0 112 0>;
+		clocks = <&clock 235>;
+		clock-names = "secss";
+	};
+
+	slimsss@10900000 {
+		compatible = "samsung,exynos5-slimsss";
+		reg = <0x10900000 0x1000>;
+		interrupts = <0 196 0>;
+		clocks = <&clock 226>;
+		clock-names = "slimsss";
+	};
+
     pd_gscl: pd-gscl@10044000 {
         compatible = "samsung,exynos-pd";
         reg = <0x10044000 0x20>;
