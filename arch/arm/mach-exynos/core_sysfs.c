@@ -16,6 +16,7 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 #include <linux/moduleparam.h>
+#include <linux/sched.h>
 
 #include <asm/cputype.h>
 #include <asm/smp_plat.h>
