@@ -170,4 +170,14 @@ static inline int big_cores_hotplug(bool out_flag)
 }
 #endif
 
+/*
+ * interface for IPA
+ */
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || defined(CONFIG_ARM_EXYNOS_CPUFREQ)
+void exynos_set_max_freq(int max_freq, unsigned int cpu);
+void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target);
+#else
+void exynos_set_max_freq(int max_freq, unsigned int cpu) {}
+void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target) {}
+#endif
 #endif
