@@ -43,6 +43,8 @@
 #include <mach/tmu.h>
 #include <mach/cpufreq.h>
 
+#include "ipa.h"
+
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static struct cpumask mp_cluster_cpus[CA_END];
 #endif
@@ -1117,7 +1119,9 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	clk_disable(data->clk[0]);
 	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
-
+#if defined(CONFIG_CPU_THERMAL_IPA)
+	check_switch_ipa_on(max);
+#endif
 	pr_debug("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
 			alltemp[0], alltemp[1], alltemp[2], alltemp[3], alltemp[4], max, gpu_temp);
 
@@ -1212,7 +1216,11 @@ static struct thermal_sensor_conf exynos_sensor_conf = {
 	.read_temperature	= (int (*)(void *))exynos_tmu_read,
 	.write_emul_temp	= exynos_tmu_set_emulation,
 };
-
+#if defined(CONFIG_CPU_THERMAL_IPA)
+static struct ipa_sensor_conf ipa_sensor_conf = {
+	.read_soc_temperature	= (int (*)(void *))exynos_tmu_read,
+};
+#endif
 static int exynos_pm_notifier(struct notifier_block *notifier,
 		unsigned long pm_event, void *v)
 {
@@ -1735,6 +1743,10 @@ static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigne
 
 			return ret;
 		}
+#if defined(CONFIG_CPU_THERMAL_IPA)
+		ipa_sensor_conf.private_data = exynos_sensor_conf.private_data;
+		ipa_register_thermal_sensor(&ipa_sensor_conf);
+#endif
 		break;
 	}
 	return 0;
