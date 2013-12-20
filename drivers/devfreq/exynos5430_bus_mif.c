@@ -691,8 +691,6 @@ unsigned int timeout_fullhd[][2] = {
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
@@ -714,8 +712,6 @@ unsigned int timeout_fullhd_gscl[][2] = {
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
-	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
@@ -733,8 +729,6 @@ struct devfreq_distriction_level distriction_fullhd_tv[] = {
 };
 
 unsigned int timeout_fullhd_tv[][2] = {
-	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
@@ -766,7 +760,6 @@ unsigned int timeout_fullhd_camera[][2] = {
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
-	{0x00800080,	0x000000FF},
 };
 
 struct devfreq_distriction_level distriction_wqhd[] = {
@@ -781,13 +774,11 @@ struct devfreq_distriction_level distriction_wqhd[] = {
 unsigned int timeout_wqhd[][2] = {
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
 	{0x02000200,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00400040,	0x000000FF},
 	{0x00400040,	0x000000FF},
-	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 };
@@ -804,13 +795,11 @@ struct devfreq_distriction_level distriction_wqhd_tv[] = {
 unsigned int timeout_wqhd_tv[][2] = {
 	{0x0FFF0FFF,	0x00000000},
 	{0x0FFF0FFF,	0x00000000},
-	{0x0FFF0FFF,	0x00000000},
 	{0x02000200,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00400040,	0x000000FF},
 	{0x00400040,	0x000000FF},
-	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 };
@@ -825,7 +814,6 @@ struct devfreq_distriction_level distriction_wqhd_camera[] = {
 };
 
 unsigned int timeout_wqhd_camera[][2] = {
-	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
@@ -1192,10 +1180,10 @@ static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
 	} else {
 		if (wqhd_tv_window5 &&
 				target_idx == LV1) {
-			__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xD0);
-			__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xC8);
-			__raw_writel(timeout_table[LV3][0], data->base_drex0 + 0xC0);
-			__raw_writel(timeout_table[LV3][1], data->base_drex0 + 0x100);
+			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xD0);
+			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC8);
+			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC0);
+			__raw_writel(timeout_table[LV2][1], data->base_drex0 + 0x100);
 		} else {
 			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
 			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC8);
@@ -1205,10 +1193,10 @@ static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
 
 		if (wqhd_tv_window5 &&
 				target_idx == LV1) {
-			__raw_writel(timeout_table[LV3][0], data->base_drex1 + 0xD0);
-			__raw_writel(timeout_table[LV3][0], data->base_drex1 + 0xC8);
-			__raw_writel(timeout_table[LV3][0], data->base_drex1 + 0xC0);
-			__raw_writel(timeout_table[LV3][1], data->base_drex1 + 0x100);
+			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xD0);
+			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC8);
+			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC0);
+			__raw_writel(timeout_table[LV2][1], data->base_drex1 + 0x100);
 		} else {
 			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
 			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC8);
