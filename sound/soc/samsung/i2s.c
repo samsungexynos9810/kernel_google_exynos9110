@@ -1077,13 +1077,37 @@ static struct samsung_fdma_cpu_ops cpu_ops = {
 };
 #endif
 
+static void i2s_cfg_gpio(struct i2s_dai *i2s, const char *name)
+{
+	struct platform_device *pdev;
+	struct s3c_audio_pdata *i2s_pdata;
+
+	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
+
+	if (pdev->dev.of_node) {
+		if (IS_ERR(devm_pinctrl_get_select(&pdev->dev, name)))
+			goto err;
+	} else {
+		i2s_pdata = pdev->dev.platform_data;
+		if (i2s_pdata->cfg_gpio && i2s_pdata->cfg_gpio(pdev))
+			goto err;
+	}
+
+	return;
+err:
+	dev_dbg(&pdev->dev, "Unable to configure i2s gpio as %s\n", name);
+	return;
+}
+
 #ifdef CONFIG_PM
 static int i2s_suspend(struct snd_soc_dai *dai)
 {
 	struct i2s_dai *i2s = to_info(dai);
 
-	if (dai->active)
+	if (dai->active) {
+		i2s_cfg_gpio(i2s, "idle");
 		i2s_reg_save(i2s);
+	}
 
 	return 0;
 }
@@ -1092,8 +1116,10 @@ static int i2s_resume(struct snd_soc_dai *dai)
 {
 	struct i2s_dai *i2s = to_info(dai);
 
-	if (dai->active)
+	if (dai->active) {
 		i2s_reg_restore(i2s);
+		i2s_cfg_gpio(i2s, "default");
+	}
 
 	return 0;
 }
@@ -1262,15 +1288,10 @@ static inline int samsung_i2s_get_driver_data(struct platform_device *pdev)
 static int i2s_runtime_suspend(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
-	struct pinctrl *pinctrl;
 
 	pr_debug("%s entered\n", __func__);
 
-	pinctrl = devm_pinctrl_get_select(dev, "idle");
-	if (IS_ERR(pinctrl)) {
-		dev_warn(dev, "did not get pins for i2s: %li\n",
-			PTR_ERR(pinctrl));
-	}
+	i2s_cfg_gpio(i2s, "idle");
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
 	lpass_put_sync(dev);
@@ -1281,18 +1302,13 @@ static int i2s_runtime_suspend(struct device *dev)
 static int i2s_runtime_resume(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
-	struct pinctrl *pinctrl;
 
 	pr_debug("%s entered\n", __func__);
 
 	lpass_get_sync(dev);
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
-	pinctrl = devm_pinctrl_get_select(dev, "default");
-	if (IS_ERR(pinctrl)) {
-		dev_warn(dev, "did not get pins for i2s: %li\n",
-			PTR_ERR(pinctrl));
-	}
+	i2s_cfg_gpio(i2s, "default");
 
 	return 0;
 }
@@ -1300,7 +1316,6 @@ static int i2s_runtime_resume(struct device *dev)
 static int i2s_disable(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
-	struct pinctrl *pinctrl;
 
 	spin_lock(&lock);
 	i2s->enable_cnt--;
@@ -1310,11 +1325,7 @@ static int i2s_disable(struct device *dev)
 	}
 	spin_unlock(&lock);
 
-	pinctrl = devm_pinctrl_get_select(dev, "idle");
-	if (IS_ERR(pinctrl)) {
-		dev_warn(dev, "did not get pins for i2s: %li\n",
-			PTR_ERR(pinctrl));
-	}
+	i2s_cfg_gpio(i2s, "idle");
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
 	lpass_put_sync(dev);
@@ -1325,7 +1336,6 @@ static int i2s_disable(struct device *dev)
 static int i2s_enable(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
-	struct pinctrl *pinctrl;
 
 	spin_lock(&lock);
 	i2s->enable_cnt++;
@@ -1338,11 +1348,7 @@ static int i2s_enable(struct device *dev)
 	lpass_get_sync(dev);
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
-	pinctrl = devm_pinctrl_get_select(dev, "default");
-	if (IS_ERR(pinctrl)) {
-		dev_warn(dev, "did not get pins for i2s: %li\n",
-			PTR_ERR(pinctrl));
-	}
+	i2s_cfg_gpio(i2s, "default");
 
 	return 0;
 }
