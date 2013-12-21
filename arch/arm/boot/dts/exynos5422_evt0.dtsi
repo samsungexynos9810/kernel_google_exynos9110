@@ -259,7 +259,8 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <3 4>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 1288>, <&clock 1265>;
+		clocks = <&clock 1288>, <&clock 1261>;
+		samsung,power-domain = <&pd_gscl>;
 		qos = <15>;
 		prop-map {
 			iomap = "w";
@@ -272,7 +273,8 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <24 1>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 1287>, <&clock 1264>;
+		clocks = <&clock 1287>, <&clock 1260>;
+		samsung,power-domain = <&pd_gscl>;
 		qos = <15>;
 		prop-map {
 			iomap = "w";
@@ -286,6 +288,7 @@
 		interrupts = <2 4>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1282>, <&clock 1281>;
+		samsung,power-domain = <&pd_gscl>;
 		qos = <15>;
 		prop-map {
 			iomap = "w";
@@ -298,14 +301,18 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <23 6>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 1289>, <&clock 1266>;
+		clocks = <&clock 1289>, <&clock 1263>;
+		samsung,power-domain = <&pd_gscl>;
 	};
 
-	sysmmu_3aa_2: sysmmu@0x13CC0000 {
+	sysmmu_3aa_2: sysmmu@0x13CB0000 {
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x13CB0000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <7 2>; /* SYSMMU_MDMA1 */
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 5014>, <&clock 5008>;
+		samsung,power-domain = <&pd_gscl>;
 	};
 
 	sysmmu_g2d: sysmmu@0x10A60000 {
@@ -313,6 +320,9 @@
 		reg = <0x10A60000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <24 5>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 231>, <&clock 234>;
+		samsung,power-domain = <&pd_g2d>;
 		prop-map {
 			iomap = "r";
 		};
@@ -323,6 +333,9 @@
 		reg = <0x10A70000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <22 2>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 231>, <&clock 234>;
+		samsung,power-domain = <&pd_g2d>;
 		prop-map {
 			iomap = "w";
 		};
@@ -335,6 +348,7 @@
 		interrupts = <7 4>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1320>, <&clock 1324>;
+		samsung,power-domain = <&spd_mixer>;
 		qos = <15>;
 	};
 
@@ -344,7 +358,8 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <2 0>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 1286>, <&clock 1268>;
+		clocks = <&clock 1286>, <&clock 1264>;
+		samsung,power-domain = <&spd_gscl0>;
 	};
 
 	sysmmu_gscl1: sysmmu@0x13E90000 {
@@ -353,7 +368,8 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <2 2>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 1285>, <&clock 1267>;
+		clocks = <&clock 1285>, <&clock 1263>;
+		samsung,power-domain = <&spd_gscl1>;
 	};
 
 	sysmmu_fimc_fd: sysmmu@0x132A0000 {
@@ -363,6 +379,7 @@
 		interrupts = <5 0>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 404>, <&clock 411>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_fimc_cpu: sysmmu@0x132B0000 {
@@ -372,6 +389,7 @@
 		interrupts = <5 4>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 401>, <&clock 408>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_fimc_isp: sysmmu@0x13260000 {
@@ -381,6 +399,7 @@
 		interrupts = <10 6>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 406>, <&clock 413>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_fimc_drc: sysmmu@0x13270000 {
@@ -390,6 +409,7 @@
 		interrupts = <4 6>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 405>, <&clock 412>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_fimc_scc: sysmmu@0x13280000 {
@@ -399,6 +419,7 @@
 		interrupts = <5 2>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 403>, <&clock 410>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_fimc_scp: sysmmu@0x13290000 {
@@ -408,6 +429,7 @@
 		interrupts = <3 6>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 402>, <&clock 409>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_fimc_3dnr: sysmmu@0x132F0000 {
@@ -417,6 +439,7 @@
 		interrupts = <5 6>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 426>, <&clock 429>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	sysmmu_scaler0r: sysmmu@0x12880000 {
@@ -426,6 +449,7 @@
 		interrupts = <22 4>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1542>, <&clock 1550>;
+		samsung,power-domain = <&pd_mscl>;
 		prop-map {
 			iomap = "r";
 		};
@@ -437,6 +461,7 @@
 		interrupts = <0 186 0>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1541>, <&clock 1549>;
+		samsung,power-domain = <&pd_mscl>;
 		prop-map {
 			iomap = "r";
 		};
@@ -448,6 +473,7 @@
 		interrupts = <0 188 0>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1540>, <&clock 1548>;
+		samsung,power-domain = <&pd_mscl>;
 		prop-map {
 			iomap = "r";
 		};
@@ -460,6 +486,7 @@
 		interrupts = <27 2>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1542>, <&clock 1550>;
+		samsung,power-domain = <&pd_mscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -472,6 +499,7 @@
 		interrupts = <22 6>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1541>, <&clock 1549>;
+		samsung,power-domain = <&pd_mscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -483,7 +511,8 @@
 		interrupt-parent = <&combiner>;
 		interrupts = <19 6>;
 		clock-names = "sysmmu", "master";
-		clocks = <&clock 1542>, <&clock 1550>;
+		clocks = <&clock 1540>, <&clock 1548>;
+		samsung,power-domain = <&pd_mscl>;
 		prop-map {
 			iomap = "w";
 		};
@@ -496,6 +525,7 @@
 		interrupts = <4 2>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1413>, <&clock 1418>;
+		samsung,power-domain = <&spd_jpeg1>;
 	};
 
 	sysmmu_jpeg2: sysmmu@0x11F20000 {
@@ -504,6 +534,7 @@
 		interrupts = <0 169 0>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1413>, <&clock 1417>;
+		samsung,power-domain = <&spd_jpeg2>;
 	};
 
 	sysmmu_mfc0_0: sysmmu@0x11200000 {
@@ -1091,8 +1122,9 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13E00000 0x1000>;
 		interrupts = <0 85 0>;
-		clocks = <&clock 1268>, <&clock 494>, <&clock 2077>;
+		clocks = <&clock 1264>, <&clock 494>, <&clock 2077>;
 		clock-names = "gscl", "aclk_300_gscl", "aclk_300_gscl_sw";
+		samsung,power-domain = <&spd_gscl0>;
 		ip_ver = <1>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -1103,8 +1135,9 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13E10000 0x1000>;
 		interrupts = <0 86 0>;
-		clocks = <&clock 1267>, <&clock 494>, <&clock 2077>;
+		clocks = <&clock 1263>, <&clock 494>, <&clock 2077>;
 		clock-names = "gscl", "aclk_300_gscl", "aclk_300_gscl_sw";
+		samsung,power-domain = <&spd_gscl1>;
 		ip_ver = <1>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -1139,6 +1172,7 @@
 		interrupts = <0 220 0>;
 		clocks = <&clock 1550>;
 		clock-names = "gate";
+		samsung,power-domain = <&pd_mscl>;
 		iommu = <&sysmmu_scaler0r>, <&sysmmu_scaler0w>;
 	};
 
@@ -1148,6 +1182,7 @@
 		interrupts = <0 221 0>;
 		clocks = <&clock 1549>;
 		clock-names = "gate";
+		samsung,power-domain = <&pd_mscl>;
 		iommu = <&sysmmu_scaler1r>, <&sysmmu_scaler1w>;
 	};
 
@@ -1157,6 +1192,7 @@
 		interrupts = <0 222 0>;
 		clocks = <&clock 1548>;
 		clock-names = "gate";
+		samsung,power-domain = <&pd_mscl>;
 		iommu = <&sysmmu_scaler2r>, <&sysmmu_scaler2w>;
 	};
 
