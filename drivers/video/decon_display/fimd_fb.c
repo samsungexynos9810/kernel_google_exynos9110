@@ -620,6 +620,7 @@ void s3c_fb_hw_trigger_set(struct s3c_fb *sfb, enum trig_con_set mode)
 		data &= ~(SWTRGCMD_I80_RGB | TRGMODE_I80_RGB);
 		data |= HWTRIGEN_PER_RGB | HWTRG_UNMASK_I80_RGB | HWTRGEN_I80_RGB;
 	} else {
+		data |= HWTRIGEN_PER_RGB | HWTRGEN_I80_RGB;
 		data &= ~(HWTRG_UNMASK_I80_RGB);
 	}
 	writel(data, sfb->regs + TRIGCON);
@@ -1037,12 +1038,12 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 
 	writel(0, sfb->regs + WINxMAP(index));
 
-	data = readl(sfb->regs + VIDCON0);
-	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
-	writel(data, sfb->regs + VIDCON0);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 #endif
+	data = readl(sfb->regs + VIDCON0);
+	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
+	writel(data, sfb->regs + VIDCON0);
 }
 
 static int s3c_fb_enable(struct s3c_fb *sfb);
@@ -1226,7 +1227,6 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 		i--;
 
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
-
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 
@@ -3827,7 +3827,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
 		reg &= ~VIDCON1_VCLK_MASK;
-		reg |= VIDCON1_VCLK_HOLD;
+		reg |= VIDCON1_VCLK_MASK;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
 
@@ -4258,7 +4258,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
 		reg &= ~VIDCON1_VCLK_MASK;
-		reg |= VIDCON1_VCLK_HOLD;
+		reg |= VIDCON1_VCLK_MASK;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
 
@@ -4291,6 +4291,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 		0x29, 0);
 
 	msleep(12);
+	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
@@ -4415,7 +4416,7 @@ int s3c_fb_resume(struct device *dev)
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
 		reg &= ~VIDCON1_VCLK_MASK;
-		reg |= VIDCON1_VCLK_HOLD;
+		reg |= VIDCON1_VCLK_MASK;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
 
@@ -4448,6 +4449,7 @@ int s3c_fb_resume(struct device *dev)
 		0x29, 0);
 
 	msleep(12);
+	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
