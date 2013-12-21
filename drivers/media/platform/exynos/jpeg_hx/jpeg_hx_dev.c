@@ -463,7 +463,9 @@ static int jpeg_hx_m2m_open(struct file *file)
 		return err;
 	}
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&jpeg->plat_dev->dev);
+#endif
 	return 0;
 
 err_node_type:
@@ -477,7 +479,9 @@ static int jpeg_hx_m2m_release(struct file *file)
 
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&ctx->jpeg_dev->plat_dev->dev);
+#endif
 	kfree(ctx);
 
 	return 0;
@@ -966,13 +970,16 @@ static int jpeg_hx_probe(struct platform_device *pdev)
 	exynos_create_iovmm(&pdev->dev, 3, 3);
 	jpeg->vb2->resume(jpeg->alloc_ctx);
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
-#ifndef CONFIG_PM_RUNTIME
+#else
 	jpeg_clock_gating(jpeg, JPEG_CLK_ON);
 #endif
 	jpeg->ver = jpeg_hwget_version(jpeg->reg_base);
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_put_sync(&pdev->dev);
+#endif
 	v4l2_err(&jpeg->v4l2_dev, "jpeg-hx2.%d registered successfully\n", jpeg->id);
 
 	return 0;
@@ -1016,7 +1023,9 @@ static int jpeg_hx_remove(struct platform_device *pdev)
 	mutex_destroy(&jpeg->lock);
 	iounmap(jpeg->reg_base);
 
+#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
+#endif
 	jpeg->vb2->suspend(jpeg->alloc_ctx);
 	jpeg_clk_put(jpeg);
 	kfree(jpeg);
