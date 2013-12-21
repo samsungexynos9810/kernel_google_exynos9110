@@ -167,14 +167,17 @@ void disp_debug_power_info(void)
 {
 	struct display_driver *dispdrv = get_display_driver();
 
-	pm_info("mask: %d, clk: %d, "
-		"lock: %d, clk_idle: %d, pwr_idle: %d,	\
-		frame_cnt: %d, te_cnt: %d",
+	pm_info("mask: %d, clk: %d,  \
+		lock: %d, clk_idle: %d, pwr_idle: %d\n,	\
+		output_on: %d, pwr_state: %d, vsync: %lld, frame_cnt: %d, te_cnt: %d",
 		dispdrv->pm_status.trigger_masked,
 		dispdrv->pm_status.clock_enabled,
 		atomic_read(&dispdrv->pm_status.lock_count),
 		dispdrv->pm_status.clk_idle_count,
 		dispdrv->pm_status.pwr_idle_count,
+		dispdrv->decon_driver.sfb->output_on,
+		dispdrv->decon_driver.sfb->power_state,
+		ktime_to_ns(dispdrv->decon_driver.sfb->vsync_info.timestamp),
 		frame_done_count,
 		te_count);
 }
@@ -517,8 +520,8 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	request_dynamic_hotplug(true);
 
 done:
-	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_debug_power_info();
+	mutex_unlock(&dispdrv->pm_status.pm_lock);
 
 	return ret;
 }
