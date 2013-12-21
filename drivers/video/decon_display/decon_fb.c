@@ -2558,9 +2558,10 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	if (sfb->power_state == POWER_HIBER_DOWN) {
 		switch (cmd) {
+		case S3CFB_SET_VSYNC_INT:
 		case S3CFB_WIN_CONFIG:
 			dispdrv->pm_status.ops->pwr_on(dispdrv);
-		break;
+			break;
 		default:
 			return 0;
 		}
@@ -4464,6 +4465,8 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 #endif
 
 	mutex_lock(&sfb->output_lock);
+
+	sfb->power_state = POWER_DOWN;
 
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
