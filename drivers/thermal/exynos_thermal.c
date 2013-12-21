@@ -633,6 +633,7 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
 	return 0;
 }
 
+#ifdef CONFIG_SOC_EXYNOS5430
 static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal)
 {
 	int ret = 0;
@@ -673,6 +674,7 @@ static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal
 
 	return ret;
 }
+#endif
 
 /* Operation callback functions for thermal zone */
 static struct thermal_zone_device_ops const exynos_dev_ops = {
