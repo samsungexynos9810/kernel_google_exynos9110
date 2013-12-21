@@ -206,10 +206,14 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define CA15_POLICY_CORE 	((exynos_boot_cluster == CA15) ? 0 : 4)
 #define CS_POLICY_CORE		0
 
+#define CPU_HOTPLUG_IN_TEMP	95
+#define CPU_HOTPLUG_OUT_TEMP	100
+
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
 static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
 static enum mif_noti_state_t mif_old_state = MIF_TH_LV1;
 static bool is_suspending;
+static bool is_cpu_hotplugged_out;
 
 static BLOCKING_NOTIFIER_HEAD(exynos_tmu_notifier);
 static BLOCKING_NOTIFIER_HEAD(exynos_gpu_notifier);
@@ -628,6 +632,48 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
 
 	return 0;
 }
+
+static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal)
+{
+	int ret = 0;
+	int cur_temp = 0;
+
+	if (!thermal->temperature)
+		return -EINVAL;
+
+	cur_temp = thermal->temperature / MCELSIUS;
+
+	if (is_cpu_hotplugged_out) {
+		if (cur_temp < CPU_HOTPLUG_IN_TEMP) {
+			/*
+			 * If current temperature is lower than low threshold,
+			 * call big_cores_hotplug(false) for hotplugged out cpus.
+			 */
+			ret = big_cores_hotplug(false);
+			if (ret)
+				pr_err("%s: failed big cores hotplug in\n",
+							__func__);
+			else
+				is_cpu_hotplugged_out = false;
+		}
+	} else {
+		if (cur_temp >= CPU_HOTPLUG_OUT_TEMP) {
+			/*
+			 * If current temperature is higher than high threshold,
+			 * call big_cores_hotplug(true) to hold temperature down.
+			 */
+			ret = big_cores_hotplug(true);
+			if (ret)
+				pr_err("%s: failed big cores hotplug out\n",
+							__func__);
+			else
+				is_cpu_hotplugged_out = true;
+		}
+	}
+
+	return ret;
+}
+
 /* Operation callback functions for thermal zone */
 static struct thermal_zone_device_ops const exynos_dev_ops = {
 	.bind = exynos_bind,
@@ -640,6 +686,9 @@ static struct thermal_zone_device_ops const exynos_dev_ops = {
 	.get_trip_type = exynos_get_trip_type,
 	.get_trip_temp = exynos_get_trip_temp,
 	.get_crit_temp = exynos_get_crit_temp,
+#ifdef CONFIG_SOC_EXYNOS5430
+	.throttle_cpu_hotplug = exynos_throttle_cpu_hotplug,
+#endif
 };
 
 /*
@@ -1861,6 +1910,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	ret = sysfs_create_group(&pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
 	if (ret)
 		dev_err(&exynos_tmu_pdev->dev, "cannot create thermal sensor attributes\n");
+
+	is_cpu_hotplugged_out = false;
 
 	return 0;
 
