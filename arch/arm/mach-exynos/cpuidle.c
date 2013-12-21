@@ -387,7 +387,7 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	unsigned int ret = 0;
 	unsigned int cpuid = smp_processor_id();
 
-	local_irq_disable();
+	local_fiq_disable();
 	do_gettimeofday(&before);
 
 	exynos_set_wakeupmask();
@@ -439,7 +439,7 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 
 	do_gettimeofday(&after);
 
-	local_irq_enable();
+	local_fiq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
 
@@ -582,7 +582,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	s3c_pm_do_restore_core(exynos5_set_clksrc,
 			       ARRAY_SIZE(exynos5_set_clksrc));
 
-	local_irq_disable();
+	local_fiq_disable();
 	do_gettimeofday(&before);
 
 	/*
@@ -685,7 +685,7 @@ early_wakeup:
 
 	do_gettimeofday(&after);
 
-	local_irq_enable();
+	local_fiq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
 
@@ -730,13 +730,13 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 	struct timeval before, after;
 	int idle_time;
 
-	local_irq_disable();
+	local_fiq_disable();
 	do_gettimeofday(&before);
 
 	cpu_do_idle();
 
 	do_gettimeofday(&after);
-	local_irq_enable();
+	local_fiq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		(after.tv_usec - before.tv_usec);
 
@@ -761,8 +761,7 @@ static int can_enter_cluster_off(int cpu_id)
 		if (!(per_cpu(in_c2_state, cpu)))
 			return 0;
 
-		if(ktime_to_us(ktime_sub(dev->next_event, now)) <
-			CLUSTER_OFF_TARGET_RESIDENCY)
+		if(ktime_to_us(ktime_sub(dev->next_event, now)) < CLUSTER_OFF_TARGET_RESIDENCY)
 			return 0;
 	}
 	return 1;
@@ -770,6 +769,13 @@ static int can_enter_cluster_off(int cpu_id)
 	return 0;
 #endif
 }
+#endif
+
+#ifdef CONFIG_CPUIDLE_TEST_SYSFS
+unsigned int enter_counter[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+unsigned int early_wakeup_counter[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+unsigned int enter_residency[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+int test_start = 0;
 #endif
 
 static int exynos_enter_c2(struct cpuidle_device *dev,
@@ -785,7 +791,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	if (!(cpuid & 0x4))
 		return exynos_enter_idle(dev, drv, 0);
 
-	local_irq_disable();
+	local_fiq_disable();
 	do_gettimeofday(&before);
 
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
@@ -793,6 +799,21 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 
 	set_boot_flag(cpuid, C2_STATE);
 	cpu_pm_enter();
+
+#ifdef CONFIG_CPUIDLE_TEST_SYSFS
+	if (test_start == 'r') {
+		int i;
+		test_start = 0;
+		for (i=0; i<8; i++) {
+			enter_counter[i] = 0;
+			early_wakeup_counter[i] = 0;
+			enter_residency[i] = 0;
+		}
+	}
+
+	if (test_start != 0)
+		enter_counter[cpuid]++;
+#endif
 
 	cpu_offset = cpuid ^ 0x4;
 	temp = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
@@ -818,6 +839,10 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 		temp = __raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 		temp |= 0xf;
 		__raw_writel(temp, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
+#ifdef CONFIG_CPUIDLE_TEST_SYSFS
+		if (test_start != 0)
+			early_wakeup_counter[cpuid]++;
+#endif
 	}
 
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
@@ -839,11 +864,44 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	cpu_pm_exit();
 
 	do_gettimeofday(&after);
-	local_irq_enable();
+	local_fiq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
 
 	dev->last_residency = idle_time;
+
+#ifdef CONFIG_CPUIDLE_TEST_SYSFS
+	if (test_start != 0)
+		enter_residency[cpuid] += idle_time;
+
+#if 0
+	do {
+		static unsigned int pre_div = 0, cur_div = 0;
+		cur_div = __raw_readl(EXYNOS5430_DIV_EGL1);
+		if (pre_div != cur_div) {
+			printk("############################# %08x\n", __raw_readl(EXYNOS5430_DIV_EGL1));
+			pre_div = cur_div;
+		}
+	while (0);
+#endif
+
+	if (!(enter_counter[cpuid] % 20) && (test_start == 's')) {
+		printk("ver4 %d\n", idle_time);
+		printk("%u %u %u %u\n",	enter_counter[4],
+					enter_counter[5],
+					enter_counter[6],
+					enter_counter[7]);
+		printk("%u %u %u %u\n",	early_wakeup_counter[4],
+					early_wakeup_counter[5],
+					early_wakeup_counter[6],
+					early_wakeup_counter[7]);
+		printk("%u %u %u %u\n",	enter_residency[4],
+					enter_residency[5],
+					enter_residency[6],
+					enter_residency[7]);
+	}
+#endif
+
 	return index;
 }
 

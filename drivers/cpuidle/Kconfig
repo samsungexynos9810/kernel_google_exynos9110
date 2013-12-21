@@ -44,6 +44,12 @@ config EXYNOS_CLUSTER_POWER_DOWN
 	help
 	  Enable C2 state on cpuidle
 
+config CPUIDLE_TEST_SYSFS
+	bool "Enable C2 sysfs"
+	depends on EXYNOS_CPUIDLE_C2
+	help
+	  Enable sysfs interface to check C2 status
+
 config EXYNOS_IDLE_CLOCK_DOWN
 	bool "EXYNOS core idle clock down"
 	depends on CPU_IDLE
