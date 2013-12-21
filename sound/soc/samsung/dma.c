@@ -42,18 +42,18 @@ static atomic_t dram_usage_cnt;
 
 static const struct snd_pcm_hardware dma_hardware = {
 	.info			= SNDRV_PCM_INFO_INTERLEAVED |
-				    SNDRV_PCM_INFO_BLOCK_TRANSFER |
-				    SNDRV_PCM_INFO_MMAP |
-				    SNDRV_PCM_INFO_MMAP_VALID,
+				  SNDRV_PCM_INFO_BLOCK_TRANSFER |
+				  SNDRV_PCM_INFO_MMAP |
+				  SNDRV_PCM_INFO_MMAP_VALID,
 	.formats		= SNDRV_PCM_FMTBIT_S16_LE |
-				    SNDRV_PCM_FMTBIT_U16_LE |
-				    SNDRV_PCM_FMTBIT_U8 |
-				    SNDRV_PCM_FMTBIT_S8,
+				  SNDRV_PCM_FMTBIT_U16_LE |
+				  SNDRV_PCM_FMTBIT_U8 |
+				  SNDRV_PCM_FMTBIT_S8,
 	.channels_min		= 1,
 	.channels_max		= 8,
-	.buffer_bytes_max	= 128*1024,
+	.buffer_bytes_max	= 256*1024,
 	.period_bytes_min	= 128,
-	.period_bytes_max	= 64*1024,
+	.period_bytes_max	= 32*1024,
 	.periods_min		= 2,
 	.periods_max		= 128,
 	.fifo_size		= 32,
@@ -68,6 +68,7 @@ struct runtime_data {
 	dma_addr_t dma_pos;
 	dma_addr_t dma_end;
 	struct s3c_dma_params *params;
+	struct snd_pcm_hardware hw;
 	bool dram_used;
 };
 
@@ -341,12 +342,11 @@ static snd_pcm_uframes_t dma_pointer(struct snd_pcm_substream *substream)
 static int dma_open(struct snd_pcm_substream *substream)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	struct snd_dma_buffer *buf = &substream->dma_buffer;
 	struct runtime_data *prtd;
+	size_t period_bytes;
 
 	pr_debug("Entered %s\n", __func__);
-
-	snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
-	snd_soc_set_runtime_hwparams(substream, &dma_hardware);
 
 	prtd = kzalloc(sizeof(struct runtime_data), GFP_KERNEL);
 	if (prtd == NULL)
@@ -354,7 +354,16 @@ static int dma_open(struct snd_pcm_substream *substream)
 
 	spin_lock_init(&prtd->lock);
 
+	memcpy(&prtd->hw, &dma_hardware, sizeof(struct snd_pcm_hardware));
+
+	prtd->hw.buffer_bytes_max = buf->bytes;
+	period_bytes = buf->bytes / prtd->hw.periods_min;
+	if (period_bytes < prtd->hw.period_bytes_max)
+		prtd->hw.period_bytes_max = period_bytes;
+
+	snd_pcm_hw_constraint_integer(runtime, SNDRV_PCM_HW_PARAM_PERIODS);
 	runtime->private_data = prtd;
+	snd_soc_set_runtime_hwparams(substream, &prtd->hw);
 
 	return 0;
 }
