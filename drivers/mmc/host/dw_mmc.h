@@ -215,7 +215,7 @@
  * of common files.
  */
 enum dw_mci_misc_control {
-	CTRL_SET_CLK_SAMPLE = 0,
+	CTRL_RESTORE_CLKSEL = 0,
 	CTRL_TURN_ON_2_8V,
 	CTRL_REQUEST_EXT_IRQ,
 	CTRL_CHECK_CD_GPIO,

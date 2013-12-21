@@ -358,6 +358,7 @@ struct dw_mci_board {
 	 * need to retest all the possible values again.
 	 */
 	u8 clk_smpl;
+	bool is_fine_tuned;
 	bool tuned;
 	bool extra_tuning;
 	bool only_once_tune;

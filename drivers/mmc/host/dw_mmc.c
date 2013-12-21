@@ -4102,7 +4102,7 @@ int dw_mci_resume(struct dw_mci *host)
 			if (host->pdata->tuned) {
 				if (drv_data && drv_data->misc_control)
 					drv_data->misc_control(host,
-						CTRL_SET_CLK_SAMPLE, NULL);
+						CTRL_RESTORE_CLKSEL, NULL);
 				mci_writel(host, CDTHRCTL,
 						host->cd_rd_thr << 16 | 1);
 			}

@@ -572,6 +572,21 @@ static void dw_mci_exynos_set_sample(struct dw_mci *host, u32 sample, bool tunin
 		dw_mci_set_quirk_endbit(host, clksel);
 }
 
+static void dw_mci_set_fine_tuning_bit(struct dw_mci *host,
+		bool is_fine_tuning)
+{
+	u32 clksel;
+
+	clksel = mci_readl(host, CLKSEL);
+	clksel = (clksel & ~BIT(6));
+	if (is_fine_tuning) {
+		host->pdata->is_fine_tuned = true;
+		clksel |= BIT(6);
+	} else
+		host->pdata->is_fine_tuned = false;
+	mci_writel(host, CLKSEL, clksel);
+}
+
 /* read current clock sample offset */
 static u32 dw_mci_exynos_get_sample(struct dw_mci *host)
 {
@@ -652,7 +667,8 @@ static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 	divratio = (mci_readl(host, CLKSEL) >> 24) & 0x7;
 
 	if (divratio == 1) {
-		testbits = orig_bits = map & (map >> 4);
+		orig_bits = map & (map >> 4);
+		testbits = orig_bits = orig_bits | (orig_bits << 4);
 		dev_info(host->dev, "divratio: %d map: 0x %08x\n",
 					divratio, testbits);
 #define THREEBITS 0x7
@@ -698,6 +714,48 @@ static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 	return sel;
 }
 
+static int __find_median_of_16bits(u32 orig_bits, u16 mask, u8 startbit)
+{
+	u32 i, testbits;
+
+	testbits = orig_bits;
+	for (i = startbit; i < (16 + startbit); i++, testbits >>= 1)
+		if ((testbits & mask) == mask)
+			return SDMMC_CLKSEL_CCLK_FINE_SAMPLE(i);
+	return -1;
+}
+
+#define NUM_OF_MASK	6
+static int find_median_of_16bits(struct dw_mci *host, unsigned int map)
+{
+	u32 orig_bits;
+	u8 i, divratio;
+	int sel = -1;
+	u16 mask[NUM_OF_MASK] = {0x1fff, 0x7ff, 0x1ff, 0x7f, 0x1f, 0x7};
+
+	/* replicate the map so "arithimetic shift right" shifts in
+	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
+	 */
+	if (map == 0xFFFF)
+		return sel;
+
+	divratio = (mci_readl(host, CLKSEL) >> 24) & 0x7;
+	dev_info(host->dev, "divratio: %d map: 0x %08x\n", divratio, map);
+
+	orig_bits = map | (map << 16);
+	if (divratio == 1) {
+		orig_bits = orig_bits & (orig_bits >> 8);
+		i = 3;
+	}
+
+	for (i = 0; i < NUM_OF_MASK; i++)
+		if (-1 != (sel = __find_median_of_16bits(orig_bits,
+				mask[i], NUM_OF_MASK-i)))
+			break;
+
+	return sel;
+}
+
 /*
  * Test all 8 possible "Clock in" Sample timings.
  * Create a bitmap of which CLock sample values work and find the "median"
@@ -711,16 +769,25 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	struct mmc_ios *ios = &(mmc->ios);
 	unsigned int tuning_loop = MAX_TUNING_LOOP;
 	unsigned int drv_str_retries = MAX_TUNING_RETRIES - 1;
-	unsigned int delay_retries = 3;
 	const u8 *tuning_blk_pattern;	/* data pattern we expect */
 	bool tuned = 0;
 	int ret = 0;
 	u8 *tuning_blk;			/* data read from device */
 	unsigned int blksz;
+
 	unsigned int sample_good = 0;	/* bit map of clock sample (0-7) */
-	u32 test_sample = -1, orig_sample;
+	u32 test_sample = -1;
+	u32 orig_sample;
 	int best_sample = 0;
-	u32 delay, delay_org, temp;
+	u8 pass_index;
+	bool en_fine_tuning = false;
+	bool is_fine_tuning = false;
+	unsigned int abnormal_result = 0xFF;
+
+	if (priv->ctrl_flag & DW_MMC_EXYNOS_USE_FINE_TUNING) {
+		en_fine_tuning = true;
+		abnormal_result = 0xFFFF;
+	}
 
 	if (opcode == MMC_SEND_TUNING_BLOCK_HS200) {
 		if (ios->bus_width == MMC_BUS_WIDTH_8) {
@@ -753,14 +820,12 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	if (!tuning_blk)
 		return -ENOMEM;
 
-	orig_sample = dw_mci_exynos_get_sample(host);
+	test_sample = orig_sample = dw_mci_exynos_get_sample(host);
 	host->cd_rd_thr = 512;
 	mci_writel(host, CDTHRCTL, host->cd_rd_thr << 16 | 1);
 
 	/* Restore Base Drive Strength */
 	priv->drv_str_val = priv->drv_str_base_val;
-
-	delay = delay_org = (mci_readl(host, CLKSEL) >> 30) & 0x3;
 
 	/*
 	 * eMMC 4.5 spec section 6.6.7.1 says the device is guaranteed to
@@ -808,10 +873,37 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		mrq.data = &data;
 		host->mrq_cmd = &mrq;
 
-		test_sample = dw_mci_tuning_sampling(host);
-		dw_mci_set_timeout(host);
+		/*
+		 * DDR200 tuning Sequence with fine tuning setup
+		 *
+		 * 0. phase 0 (0 degree) + no fine tuning setup
+		 * - pass_index = 0
+		 * 1. phase 0 + fine tuning setup
+		 * - pass_index = 1
+		 * 2. phase 1 (90 degree) + no fine tuning setup
+		 * - pass_index = 2
+		 * ..
+		 * 15. phase 7 + fine tuning setup
+		 * - pass_index = 15
+		 *
+		 */
+		if (en_fine_tuning)
+			dw_mci_set_fine_tuning_bit(host, is_fine_tuning);
+		else
+			test_sample = dw_mci_tuning_sampling(host);
 
+		dw_mci_set_timeout(host);
 		mmc_wait_for_req(mmc, &mrq);
+
+		pass_index = (u8)test_sample;
+		if (en_fine_tuning) {
+			pass_index *= 2;
+			if (is_fine_tuning) {
+				pass_index++;
+				test_sample = dw_mci_tuning_sampling(host);
+			}
+			is_fine_tuning = !is_fine_tuning;
+		}
 
 		if (!cmd.error && !data.error) {
 			/*
@@ -819,10 +911,10 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 			 * If yes, remember this sample value works.
 			 */
 			if (host->use_dma == 1) {
-				sample_good |= (1 << test_sample);
+				sample_good |= (1 << pass_index);
 			} else {
 				if (!memcmp(tuning_blk_pattern, tuning_blk, blksz))
-					sample_good |= (1 << test_sample);
+					sample_good |= (1 << pass_index);
 			}
 		} else {
 			dev_info(&mmc->class_dev,
@@ -830,18 +922,23 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 				cmd.error, data.error);
 		}
 
-		if (orig_sample == test_sample) {
+		if (orig_sample == test_sample && !is_fine_tuning) {
 
 			/*
 			 * Get at middle clock sample values.
 			 */
-			best_sample = find_median_of_bits(host, sample_good);
+			if (en_fine_tuning)
+				best_sample = find_median_of_16bits(host,
+						sample_good);
+			else
+				best_sample = find_median_of_bits(host,
+						sample_good);
 
 			dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
 					sample_good, best_sample);
 
 			if (best_sample >= 0) {
-				if (sample_good != 0xff) {
+				if (sample_good != abnormal_result) {
 					tuned = true;
 					break;
 				}
@@ -852,27 +949,29 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 				if (priv->drv_str_pin)
 					exynos_dwmci_tuning_drv_st(host);
 				sample_good = 0;
-			} else if (delay_retries){
-				delay_retries--;
-				if (priv->drv_str_pin)
-					exynos_dwmci_restore_drv_st(host);
-				delay = (delay + 1) % 4;
-				temp = mci_readl(host, CLKSEL) & ~(0x3 << 30);
-				temp |= (delay << 30);
-				mci_writel(host, CLKSEL, temp);
-				sample_good = 0;
 			} else
 				break;
 		}
 		tuning_loop--;
 	} while (!tuned);
 
-	temp = mci_readl(host, CLKSEL) & ~(0x3 << 30);
-	temp |= (delay_org << 30);
-	mci_writel(host, CLKSEL, temp);
-
 	if (priv->drv_str_pin)
 		exynos_dwmci_restore_drv_st(host);
+
+	/*
+	 * To set sample value with mid, the value should be divided by 2,
+	 * because mid represents index in pass map extended.(8 -> 16 bits)
+	 * And that mid is odd number, means the selected case includes
+	 * using fine tuning.
+	 */
+	if (en_fine_tuning) {
+		if (best_sample % 2)
+			dw_mci_set_fine_tuning_bit(host, true);
+		else
+			dw_mci_set_fine_tuning_bit(host, false);
+
+		best_sample /= 2;
+	}
 
 	if (tuned) {
 		host->pdata->clk_smpl = best_sample;
@@ -980,8 +1079,9 @@ static int dw_mci_exynos_misc_control(struct dw_mci *host,
 	int ret = 0;
 
 	switch (control) {
-	case CTRL_SET_CLK_SAMPLE:
+	case CTRL_RESTORE_CLKSEL:
 		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
+		dw_mci_set_fine_tuning_bit(host, host->pdata->is_fine_tuned);
 		break;
 	case CTRL_TURN_ON_2_8V:
 		ret = dw_mci_exynos_turn_on_2_8v(host);

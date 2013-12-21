@@ -14,6 +14,7 @@
 
 #define DWMCI_CLKSEL			0x09C	/* Ken : need to unify definition */
 #define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 7) << 0)
+#define SDMMC_CLKSEL_CCLK_FINE_SAMPLE(x)	(((x) & 0xF) << 0)
 #define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 7) << 16)
 #define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 7) << 24)
 #define SDMMC_CLKSEL_GET_DRV_WD3(x)	(((x) >> 16) & 0x7)
@@ -85,8 +86,8 @@
 #define EXYNOS_DEF_MMC_1_CAPS	MMC_CAP_CMD23
 #define EXYNOS_DEF_MMC_2_CAPS	(MMC_CAP_CMD23 | MMC_CAP_UHS_SDR104)
 
-#define MAX_TUNING_LOOP		72
 #define MAX_TUNING_RETRIES	6
+#define MAX_TUNING_LOOP		(MAX_TUNING_RETRIES * 8 * 2)
 
 /* Variations in Exynos specific dw-mshc controller */
 enum dw_mci_exynos_type {
@@ -113,6 +114,9 @@ struct dw_mci_exynos_priv_data {
 	u32			drv_str_num;
 	int			cd_gpio;
 	u32			caps;
+	u32			ctrl_flag;
+
+#define DW_MMC_EXYNOS_USE_FINE_TUNING		BIT(0)
 };
 
 /*
