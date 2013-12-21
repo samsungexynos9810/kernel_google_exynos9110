@@ -493,9 +493,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1_REG);
 	tmp |= (EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
 	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
-
+#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
 	exynos5_mif_transition_disable(true);
-
+#endif
 	if((__clk_is_enabled(clkm_phy0))||(__clk_is_enabled(clkm_phy1))) {
 		mif_max = true;
 		clk_disable(clkm_phy0);
@@ -532,16 +532,18 @@ early_wakeup:
 		mif_max = false;
 	}
 
+#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
 	exynos5_mif_transition_disable(false);
-
+#endif
 	__raw_writel(0, EXYNOS_PMU_SPARE1);
 
 	tmp = __raw_readl(EXYNOS5422_SFR_AXI_CGDIS1_REG);
 	tmp &= ~(EXYNOS5422_UFS | EXYNOS5422_ACE_KFC | EXYNOS5422_ACE_EAGLE);
 	__raw_writel(tmp, EXYNOS5422_SFR_AXI_CGDIS1_REG);
 
+#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
 	exynos5_int_nocp_resume();
-
+#endif
 	clear_boot_flag(cpuid, C2_STATE);
 
 	exynos_lpa_exit();
