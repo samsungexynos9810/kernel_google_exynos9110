@@ -1390,4 +1390,10 @@
 		status = "disabled";
 	};
 
+	s5p-smem {
+		compatible = "samsung,exynos-secmem";
+		secmem = <&gsc_0>,
+			 <&gsc_1>;
+	};
+
 };
