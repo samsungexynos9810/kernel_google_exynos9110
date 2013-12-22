@@ -35,6 +35,8 @@
 		mdev0 = &mdev_0;
 		jpeg0 = &jpeg_0;
 		jpeg1 = &jpeg_1;
+		spi3 = &spi_3;
+		spi4 = &spi_4;
 		scaler0 = &scaler_0;
 		scaler1 = &scaler_1;
 		scaler2 = &scaler_2;
@@ -1334,6 +1336,357 @@
 
 		hdmiphy-sys {
 			reg = <0x10040700 0x4>;
+		};
+	};
+
+	spi_3: spi@131a0000 {
+		compatible = "samsung,exynos5410-spi";
+		reg = <0x131a0000 0x100>;
+		interrupts = <0 170 0>; /* NON */
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 1221>, <&clock 4121>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_spi_pin0>;
+	};
+
+	spi_4: spi@131b0000 {
+		compatible = "samsung,exynos5410-spi";
+		reg = <0x131b0000 0x100>;
+		interrupts = <0 171 0>; /* NON */
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 1220>, <&clock 4122>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_spi_pin1>;
+	};
+
+	/* CAMIF0 - MIPI-CSIS0, FIMC-Lite0 driver */
+	fimc_is_sensor0: fimc_is_sensor@13C00000 {
+		compatible = "samsung,exynos5-fimc-is-sensor";
+		reg = <0x13C00000 0x10000>,	/* FIMC_LITE0 */
+			<0x13C20000 0x10000>;	/* MIPI-CSI0 */
+		interrupts = <0 125 0>;
+		pinctrl-names =	"ch0", "af0";
+		pinctrl-0 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
+		pinctrl-1 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk &fimc_is_ch1_i2c>;
+		iommu = <&sysmmu_flite_a>;
+		samsung,power-domain = <&pd_cam>;
+		clock-names = "mout_isp_sensor", /* 2116 */
+				"dout_isp_sensor0",	/* 4114 */
+				"dout_isp_sensor1",	/* 4115 */
+				"dout_isp_sensor2",	/* 4116 */
+				"sclk_isp_sensor0", /* 1218 */
+				"sclk_isp_sensor1", /* 1217 */
+				"sclk_isp_sensor2"; /* 1216 */
+		clocks = <&clock 2116>,
+				<&clock 4114>,
+				<&clock 4115>,
+				<&clock 4116>,
+				<&clock 1218>,
+				<&clock 1217>,
+				<&clock 1216>;
+	};
+
+	/* CAMIF1 - MIPI-CSIS1, FIMC-Lite1 driver */
+	fimc_is_sensor1: fimc_is_sensor@13C10000 {
+		compatible = "samsung,exynos5-fimc-is-sensor";
+		reg = <0x13C10000 0x10000>,	/* FIMC_LITE1 */
+			<0x13C30000 0x10000>;	/* MIPI-CSI1 */
+		interrupts = <0 126 0>;
+		pinctrl-names =	"ch1";
+		pinctrl-0 = <&fimc_is_ch2_i2c &fimc_is_ch2_mclk>;
+		iommu = <&sysmmu_flite_b>;
+		samsung,power-domain = <&pd_cam>;
+		clock-names = "mout_isp_sensor", /* 2116 */
+				"dout_isp_sensor0",	/* 4114 */
+				"dout_isp_sensor1",	/* 4115 */
+				"dout_isp_sensor2",	/* 4116 */
+				"sclk_isp_sensor0", /* 1218 */
+				"sclk_isp_sensor1", /* 1217 */
+				"sclk_isp_sensor2"; /* 1216 */
+		clocks = <&clock 2116>,
+				<&clock 4114>,
+				<&clock 4115>,
+				<&clock 4116>,
+				<&clock 1218>,
+				<&clock 1217>,
+				<&clock 1216>;
+	};
+
+	/* FIMC-IS driver */
+	fimc_is@13000000 {
+		compatible = "samsung,exynos5-fimc-is";
+		reg = <0x13180000 0x10000>;
+		interrupt-parent = <&combiner>;
+		interrupts = <19 1>, /* ARMISP_GIC */
+					<19 4>; /* ISP_GIC */
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_uart &fimc_is_flash>;
+		clock-names = "fin_pll", /* 1 */
+				"mout_cpll_ctrl",	/* 2001 */
+				"mout_dpll_ctrl",	/* 2002 */
+				"mout_epll_ctrl",	/* 2003 */
+				"mout_rpll_ctrl",	/* 2004 */
+				"mout_ipll_ctrl",	/* 2005 */
+				"mout_spll_ctrl",	/* 2006 */
+				"mout_mpll_ctrl",	/* 2008 */
+				"sclk_epll2",	/* 5000 */
+				"dout_spll_ctrl_div2",	/* 5402 */
+				/* ACLK_400_ISP */
+				"mout_aclk_400_isp", /* 2025 */
+				"dout_aclk_400_isp", /* 4007 */
+				"mout_aclk_400_isp_sw", /* 2033 */
+				"mout_aclk_400_isp_user", /* 2040 */
+				"dout_mcuispdiv0", /* 4168 */
+				"dout_mcuispdiv1", /* 4169 */
+				/* ACLK_266_ISP */
+				"mout_aclk_266_isp", /* 5301 */
+				"dout_aclk_266_isp", /* 5404 */
+				"mout_aclk_266_isp_sw", /* 5302 */
+				"mout_aclk_266_isp_user", /* 2044 */
+				/* ACLK_333_432_ISP */
+				"mout_aclk_333_432_isp", /* 2051 */
+				"dout_aclk_333_432_isp", /* 4013 */
+				"mout_aclk_333_432_isp_sw", /* 2065 */
+				"mout_aclk_333_432_isp_user", /* 2075 */
+				/* ACLK_333_432_ISP0 */
+				"mout_aclk_333_432_isp0", /* 2050 */
+				"dout_aclk_333_432_isp0", /* 4012 */
+				"mout_aclk_333_432_isp0_sw", /* 2064 */
+				"mout_aclk_333_432_isp0_user", /* 2074 */
+				/* ACLK_DIV0, ACLK_DIV1, ACLK_DIV2 */
+				"dout_ispdiv0", /* 4170 */
+				"dout_ispdiv1", /* 4171 */
+				"dout_ispdiv2", /* 4172 */
+				/* ACLK_333_432_GSCL */
+				"mout_aclk_333_432_gscl", /* 2052 */
+				"dout_aclk_333_432_gscl", /* 4014 */
+				"mout_aclk_333_432_gscl_sw", /* 2066 */
+				"mout_aclk_333_432_gscl_user", /* 2076 */
+				/* ACLK_432_CAM */
+				"mout_aclk_432_cam", /* 5306 */
+				"dout_aclk_432_cam", /* 5406 */
+				"mout_aclk_432_cam_sw", /* 5307 */
+				"mout_aclk_432_cam_user", /* 5308 */
+				/* ACLK_550_CAM */
+				"mout_aclk_550_cam", /* 5313 */
+				"dout_aclk_550_cam", /* 5408 */
+				"mout_aclk_550_cam_sw", /* 5314 */
+				"mout_aclk_550_cam_user", /* 5315 */
+				/* ACLK_FL_550_CAM */
+				"mout_aclk_fl1_550_cam", /* 5310 */
+				"dout_aclk_fl1_550_cam", /* 5407 */
+				"mout_aclk_fl1_550_cam_sw", /* 5311 */
+				"mout_aclk_fl1_550_cam_user", /* 5312 */
+				/* GSCL divider */
+				"dout2_gscl_blk_333", /* 5413 */
+				"dout2_cam_blk_432", /* 5414 */
+				"dout2_cam_blk_550", /* 5415 */
+				/* sclk_isp_sensor0,1 */
+				"mout_isp_sensor", /* 2116 */
+				"dout_isp_sensor0", /* 4114 */
+				"dout_isp_sensor1", /* 4115 */
+				"dout_isp_sensor2", /* 4116 */
+				/* PWM-ISP */
+				"mout_pwm_isp", /* 2117 */
+				"dout_pwm_isp", /* 4117 */
+				/* UART-ISP */
+				"mout_uart_isp", /* 2118 */
+				"dout_uart_isp", /* 4118 */
+				/* SPI0-ISP */
+				"mout_spi0_isp", /* 2119 */
+				"dout_spi0_isp", /* 4119 */
+				"dout_spi0_isp_pre", /* 4121 */
+				/* SPI1-ISP */
+				"mout_spi1_isp", /* 2120 */
+				"dout_spi1_isp", /* 4120 */
+				"dout_spi1_isp_pre", /* 4122 */
+				/* SCLK_GSCL_WRAP_A */
+				"mout_gscl_wrap_a", /* 5320 */
+				"dout_gscl_wrap_a", /* 5410 */
+				/* SCLK_GSCL_WRAP_B */
+				"mout_gscl_wrap_b", /* 5321 */
+				"dout_gscl_wrap_b", /* 5411 */
+				/* GATE */
+				"sclk_isp_sensor0",	/* 1218 */
+				"sclk_isp_sensor1",	/* 1217 */
+				"sclk_isp_sensor2",	/* 1216 */
+				"sclk_gscl_wrap_a",	/* 1025 */
+				"sclk_gscl_wrap_b",	/* 1024 */
+				/* ETC */
+				"dout_ispdiv0_0"; /* 4167 */
+		clocks = <&clock 1>,
+				<&clock 2001>,
+				<&clock 2002>,
+				<&clock 2003>,
+				<&clock 2004>,
+				<&clock 2005>,
+				<&clock 2006>,
+				<&clock 2008>,
+				<&clock 5000>,
+				<&clock 5001>,
+
+				<&clock 2025>,
+				<&clock 4007>,
+				<&clock 2033>,
+				<&clock 2040>,
+				<&clock 4168>,
+				<&clock 4169>,
+
+				<&clock 5301>,
+				<&clock 5404>,
+				<&clock 5302>,
+				<&clock 2044>,
+
+				<&clock 2051>,
+				<&clock 4013>,
+				<&clock 2065>,
+				<&clock 2075>,
+
+				<&clock 2050>,
+				<&clock 4012>,
+				<&clock 2064>,
+				<&clock 2074>,
+
+				<&clock 4170>,
+				<&clock 4171>,
+				<&clock 4172>,
+
+				<&clock 2052>,
+				<&clock 4014>,
+				<&clock 2066>,
+				<&clock 2076>,
+
+				<&clock 5306>,
+				<&clock 5406>,
+				<&clock 5307>,
+				<&clock 5308>,
+
+				<&clock 5313>,
+				<&clock 5408>,
+				<&clock 5314>,
+				<&clock 5315>,
+
+				<&clock 5310>,
+				<&clock 5407>,
+				<&clock 5311>,
+				<&clock 5312>,
+
+				<&clock 5413>,
+				<&clock 5414>,
+				<&clock 5415>,
+
+				<&clock 2116>,
+				<&clock 4114>,
+				<&clock 4115>,
+				<&clock 4116>,
+
+				<&clock 2117>,
+				<&clock 4117>,
+
+				<&clock 2118>,
+				<&clock 4118>,
+
+				<&clock 2119>,
+				<&clock 4119>,
+				<&clock 4121>,
+
+				<&clock 2120>,
+				<&clock 4120>,
+				<&clock 4122>,
+
+				<&clock 5320>,
+				<&clock 5410>,
+				<&clock 5321>,
+				<&clock 5411>,
+
+				<&clock 1218>,
+				<&clock 1217>,
+				<&clock 1216>,
+				<&clock 1025>,
+				<&clock 1024>,
+
+				<&clock 4167>;
+		iommu = <&sysmmu_3aa>,
+				<&sysmmu_3aa_2>,
+				<&sysmmu_fimc_cpu>,
+				<&sysmmu_fimc_isp>,
+				<&sysmmu_fimc_drc>,
+				<&sysmmu_fimc_scc>,
+				<&sysmmu_fimc_scp>,
+				<&sysmmu_fimc_3dnr>,
+				<&sysmmu_fimc_fd>,
+				<&sysmmu_flite_d>;
+		samsung,power-domain = <&pd_isp>;
+		status = "ok";
+		/* This seq of declaration is very important.*/
+		/* It should be matched to enum FIMC_IS_CLK_GATE_IP */
+		clk_gate_enums =<0>, /* 3a1 */
+				<1>, /* isp */
+				<2>, /* drc */
+				<3>, /* scc */
+				<5>, /* dis */
+				<6>, /* 3dnr */
+				<7>, /* scp */
+				<8>, /* fd */
+				<9>; /* 3a0 */
+		clk_gate_strs =	"gate_3aa1",
+				"gate_isp",
+				"gate_drc",
+				"gate_scalerc",
+				"gate_dis",
+				"gate_3dnr",
+				"gate_scalerp",
+				"gate_fd",
+				"gate_3aa0";
+		clk_gate_ctrl {
+			/* 3a0 */
+			group0 {
+				mask_clk_on_org = <9>;
+				mask_clk_off_self_org = <9>;
+			};
+			/* 3a1 */
+			group1 {
+				/* not defined */
+			};
+			/* isp */
+			group2 {
+				mask_clk_on_org = 	<1>,
+							<2>,
+							<6>,
+							<7>,
+							<8>;
+				mask_clk_off_self_org =	<1>,
+							<2>,
+							<3>,
+							<6>,
+							<7>,
+							<8>;
+			};
+		};
+		subip_info {
+			num_of_mcuctl = <1>;
+			num_of_3a0 = <1>;
+			num_of_3a1 = <1>;
+			num_of_isp = <1>;
+			num_of_drc = <1>;
+			num_of_scc = <1>;
+			num_of_odc = <0>;
+			num_of_dis = <0>;
+			num_of_dnr = <1>;
+			num_of_scp = <1>;
+			num_of_fd = <1>;
+
+			full_bypass_drc = <0>;
+			full_bypass_dis = <1>;
+			full_bypass_dnr = <1>;
+
+			version_mcuctl = <221>;
 		};
 	};
 
