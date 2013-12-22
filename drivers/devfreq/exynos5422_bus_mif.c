@@ -1065,7 +1065,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	data->mout_spll = clk_get(dev, "dout_spll_ctrl_div2");
-	data->mout_spll = clk_get(dev, "mout_epll_ctrl");
 #else
 	data->mout_spll = clk_get(dev, "mout_spll_ctrl");
 #endif
