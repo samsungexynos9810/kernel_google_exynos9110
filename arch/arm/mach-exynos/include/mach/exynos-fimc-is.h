@@ -136,7 +136,7 @@ struct exynos_fimc_is_subip_info {
 
 /*
  * struct exynos_fimc_is_clk_gate_group
- * 	This struct is for host clock gating.
+ *	This struct is for host clock gating.
  * 	It decsribes register, masking bit info and other control for each group.
  *	If you uses host clock gating, You must define this struct in exynos_fimc_is_clk_gate_info.
  */
@@ -156,7 +156,7 @@ struct exynos_fimc_is_clk_gate_group {
  * 	And it has function pointer to include user scenario masking
  */
 struct exynos_fimc_is_clk_gate_info {
-	const char* gate_str[FIMC_IS_CLK_GATE_MAX];			/* register adr for gating */
+	const char *gate_str[FIMC_IS_CLK_GATE_MAX];			/* register adr for gating */
 	struct exynos_fimc_is_clk_gate_group groups[FIMC_IS_GRP_MAX];
 	/* You must set this function pointer (on/off) */
 	int (*clk_on_off)(u32 clk_gate_id, bool is_on);
@@ -229,38 +229,17 @@ extern int exynos4_fimc_is_print_cfg(struct platform_device *pdev, u32 channel);
 extern int exynos4_fimc_is_cfg_gpio(struct platform_device *pdev, int channel, bool flag_on);
 #else /* exynos 4 */
 /* exynos 5 */
-#if defined(CONFIG_SOC_EXYNOS5250)
-extern int exynos5250_fimc_is_cfg_clk(struct platform_device *pdev);
-extern int exynos5250_fimc_is_clk_on(struct platform_device *pdev);
-extern int exynos5250_fimc_is_clk_off(struct platform_device *pdev);
-#elif defined(CONFIG_SOC_EXYNOS5410)
-extern int exynos5410_fimc_is_cfg_clk(struct platform_device *pdev);
-extern int exynos5410_fimc_is_clk_on(struct platform_device *pdev);
-extern int exynos5410_fimc_is_clk_off(struct platform_device *pdev);
-extern int exynos5410_fimc_is_sensor_clk_on(struct platform_device *pdev, u32 source);
-extern int exynos5410_fimc_is_sensor_clk_off(struct platform_device *pdev, u32 source);
-#elif defined(CONFIG_SOC_EXYNOS5420)
-extern int exynos5420_fimc_is_cfg_clk(struct platform_device *pdev);
-extern int exynos5420_fimc_is_clk_on(struct platform_device *pdev);
-extern int exynos5420_fimc_is_clk_off(struct platform_device *pdev);
-extern int exynos5420_fimc_is_sensor_clk_on(struct platform_device *pdev, u32 source);
-extern int exynos5420_fimc_is_sensor_clk_off(struct platform_device *pdev, u32 source);
-#elif defined(CONFIG_SOC_EXYNOS5430)
-extern int exynos5430_fimc_is_cfg_clk(struct platform_device *pdev);
-extern int exynos5430_fimc_is_clk_on(struct platform_device *pdev);
-extern int exynos5430_fimc_is_clk_off(struct platform_device *pdev);
-extern int exynos5430_fimc_is_print_clk(struct platform_device *pdev);
-extern int exynos5430_fimc_is_sensor_clk_on(struct platform_device *pdev, u32 source);
-extern int exynos5430_fimc_is_sensor_clk_off(struct platform_device *pdev, u32 source);
-extern int exynos5430_fimc_is_set_user_clk_gate(u32 group_id,
-		bool is_on,
-		u32 user_scenario_id,
-		unsigned long msk_state,
-		struct exynos_fimc_is_clk_gate_info *gate_info);
-extern int exynos5430_fimc_is_clk_gate(	u32 clk_gate_id, bool is_on);
-#endif
-extern int exynos5_fimc_is_sensor_power_on(struct platform_device *pdev, int sensor_id);
-extern int exynos5_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor_id);
-extern int exynos5_fimc_is_print_cfg(struct platform_device *pdev, u32 channel);
+extern int exynos_fimc_is_cfg_clk(struct platform_device *pdev);
+extern int exynos_fimc_is_clk_on(struct platform_device *pdev);
+extern int exynos_fimc_is_clk_off(struct platform_device *pdev);
+extern int exynos_fimc_is_print_clk(struct platform_device *pdev);
+extern int exynos_fimc_is_set_user_clk_gate(u32 group_id, bool is_on, u32 user_scenario_id,
+											unsigned long msk_state,
+											struct exynos_fimc_is_clk_gate_info *gate_info);
+extern int exynos_fimc_is_clk_gate(u32 clk_gate_id, bool is_on);
+
+extern int exynos_fimc_is_sensor_power_on(struct platform_device *pdev, int sensor_id);
+extern int exynos_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor_id);
+extern int exynos_fimc_is_print_cfg(struct platform_device *pdev, u32 channel);
 #endif /* exynos 5*/
 #endif /* EXYNOS_FIMC_IS_H_ */

@@ -18,6 +18,30 @@
 #define MIPI_PHY_BIT0					(1 << 0)
 #define MIPI_PHY_BIT1					(1 << 1)
 
+#if defined(CONFIG_SOC_EXYNOS5422)
+static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
+{
+	void __iomem *addr_phy;
+	u32 cfg;
+
+	addr_phy = S5P_MIPI_DPHY_CONTROL(id);
+
+	cfg = __raw_readl(addr_phy);
+	cfg = (cfg | S5P_MIPI_DPHY_SRESETN);
+	__raw_writel(cfg, addr_phy);
+
+	if (1) {
+		cfg |= S5P_MIPI_DPHY_ENABLE;
+	} else if (!(cfg & (S5P_MIPI_DPHY_SRESETN | S5P_MIPI_DPHY_MRESETN)
+			& (~S5P_MIPI_DPHY_SRESETN))) {
+		cfg &= ~S5P_MIPI_DPHY_ENABLE;
+	}
+
+	__raw_writel(cfg, addr_phy);
+
+	return 0;
+}
+#else
 static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 {
 	static DEFINE_SPINLOCK(lock);
@@ -109,6 +133,7 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 
 	return 0;
 }
+#endif
 
 int exynos5_csis_phy_enable(int id, bool on)
 {

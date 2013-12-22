@@ -30,7 +30,9 @@
 #ifdef CONFIG_OF
 #include <linux/of_gpio.h>
 #endif
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5422)
+#include <mach/regs-clock-exynos5422.h>
+#elif defined(CONFIG_SOC_EXYNOS5430)
 #include <mach/regs-clock-exynos5430.h>
 #endif
 
@@ -190,7 +192,102 @@ p_err:
 
 }
 
-int exynos_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
+#if defined(CONFIG_SOC_EXYNOS5422)
+int exynos5422_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+	int ret = 0;
+
+	pr_info("clk_cfg:(ch%d),scenario(%d)\n", channel, scenario);
+
+	if (scenario != SENSOR_SCENARIO_VISION) {
+		switch (channel) {
+		case 0:
+			/* MIPI-CSIS PHY */
+
+			/* MIPI-CSIS0 */
+			fimc_is_set_parent_dt(pdev, "mout_gscl_wrap_a", "mout_mpll_ctrl");
+			fimc_is_set_rate_dt(pdev, "dout_gscl_wrap_a", (532 * 1000000));
+			fimc_is_get_rate_dt(pdev, "dout_gscl_wrap_a");
+			/* FIMC-LITE0 */
+
+			/* FIMC-LITE3 */
+
+			break;
+		case 1:
+			/* MIPI-CSIS PHY */
+
+			/* MIPI-CSIS1 */
+			fimc_is_set_parent_dt(pdev, "mout_gscl_wrap_b", "mout_mpll_ctrl");
+			fimc_is_set_rate_dt(pdev, "dout_gscl_wrap_b", (532 * 1000000));
+			fimc_is_get_rate_dt(pdev, "dout_gscl_wrap_b");
+			/* FIMC-LITE1 */
+
+			break;
+		default:
+			pr_err("channel is invalid(%d)\n", channel);
+			break;
+		}
+	} else {
+	}
+
+	return ret;
+}
+
+int exynos5422_fimc_is_sensor_iclk_on(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+	return 0;
+}
+
+int exynos5422_fimc_is_sensor_iclk_off(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+	return 0;
+}
+
+int exynos5422_fimc_is_sensor_mclk_on(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+	u32 frequency;
+	char div_name[30];
+	char sclk_name[30];
+
+	pr_info("%s:ch(%d)\n", __func__, channel);
+
+	snprintf(div_name, sizeof(div_name), "dout_isp_sensor%d", channel);
+	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", channel);
+
+	fimc_is_set_parent_dt(pdev, "mout_isp_sensor", "fin_pll");
+	fimc_is_set_rate_dt(pdev, div_name, (24 * 1000000));
+	fimc_is_enable_dt(pdev, sclk_name);
+	frequency = fimc_is_get_rate_dt(pdev, div_name);
+
+	pr_info("%s(%d, mclk : %d)\n", __func__, channel, frequency);
+
+	return 0;
+}
+
+int exynos5422_fimc_is_sensor_mclk_off(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+	char sclk_name[30];
+
+	pr_debug("%s\n", __func__);
+
+	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", channel);
+
+	fimc_is_disable_dt(pdev, sclk_name);
+
+	return 0;
+}
+#elif defined(CONFIG_SOC_EXYNOS5430)
+int exynos5430_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
@@ -201,7 +298,7 @@ int exynos_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 
 	pr_info("clk_cfg(ch%d)\n", channel);
 
-	switch(channel) {
+	switch (channel) {
 	case 0:
 		/* USER_MUX_SEL */
 		fimc_is_set_parent_dt(pdev, "mout_aclk_cam0_552_user", "oscclk");
@@ -345,11 +442,11 @@ int exynos_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 	return ret;
 }
 
-int exynos_fimc_is_sensor_iclk_on(struct platform_device *pdev,
+int exynos5430_fimc_is_sensor_iclk_on(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
-	switch(channel) {
+	switch (channel) {
 	case 0:
 		fimc_is_enable_dt(pdev, "aclk_csis0");
 		fimc_is_enable_dt(pdev, "pclk_csis0");
@@ -373,11 +470,11 @@ int exynos_fimc_is_sensor_iclk_on(struct platform_device *pdev,
 	return 0;
 }
 
-int exynos_fimc_is_sensor_iclk_off(struct platform_device *pdev,
+int exynos5430_fimc_is_sensor_iclk_off(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
-	switch(channel) {
+	switch (channel) {
 	case 0:
 		fimc_is_disable_dt(pdev, "aclk_csis0");
 		fimc_is_disable_dt(pdev, "pclk_csis0");
@@ -401,7 +498,7 @@ int exynos_fimc_is_sensor_iclk_off(struct platform_device *pdev,
 	return 0;
 }
 
-int exynos_fimc_is_sensor_mclk_on(struct platform_device *pdev,
+int exynos5430_fimc_is_sensor_mclk_on(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
@@ -428,7 +525,7 @@ int exynos_fimc_is_sensor_mclk_on(struct platform_device *pdev,
 	return 0;
 }
 
-int exynos_fimc_is_sensor_mclk_off(struct platform_device *pdev,
+int exynos5430_fimc_is_sensor_mclk_off(struct platform_device *pdev,
 	u32 scenario,
 	u32 channel)
 {
@@ -449,5 +546,67 @@ int exynos_fimc_is_sensor_mclk_off(struct platform_device *pdev,
 	fimc_is_set_rate_dt(pdev, div_b_name, 1);
 	fimc_is_get_rate_dt(pdev, sclk_name);
 
+	return 0;
+}
+#endif
+
+/* Wrapper functions */
+int exynos_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_fimc_is_sensor_iclk_cfg(pdev, scenario, channel);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_fimc_is_sensor_iclk_cfg(pdev, scenario, channel);
+#endif
+	return 0;
+}
+
+int exynos_fimc_is_sensor_iclk_on(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_fimc_is_sensor_iclk_on(pdev, scenario, channel);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_fimc_is_sensor_iclk_on(pdev, scenario, channel);
+#endif
+	return 0;
+}
+
+int exynos_fimc_is_sensor_iclk_off(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_fimc_is_sensor_iclk_off(pdev, scenario, channel);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_fimc_is_sensor_iclk_off(pdev, scenario, channel);
+#endif
+	return 0;
+}
+
+int exynos_fimc_is_sensor_mclk_on(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_fimc_is_sensor_mclk_on(pdev, scenario, channel);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_fimc_is_sensor_mclk_on(pdev, scenario, channel);
+#endif
+	return 0;
+}
+
+int exynos_fimc_is_sensor_mclk_off(struct platform_device *pdev,
+	u32 scenario,
+	u32 channel)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_fimc_is_sensor_mclk_off(pdev, scenario, channel);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_fimc_is_sensor_mclk_off(pdev, scenario, channel);
+#endif
 	return 0;
 }
