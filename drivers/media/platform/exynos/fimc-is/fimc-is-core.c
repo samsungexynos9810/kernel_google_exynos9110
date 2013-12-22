@@ -366,7 +366,7 @@ p_err:
 #ifdef USE_OWN_FAULT_HANDLER
 static void __fimc_is_fault_handler(struct device *dev)
 {
-	u32 i;
+	u32 i, j, k;
 	struct fimc_is_core *core;
 	struct fimc_is_device_sensor *sensor;
 	struct fimc_is_framemgr *framemgr;
@@ -381,6 +381,7 @@ static void __fimc_is_fault_handler(struct device *dev)
 			core->minfo.kvaddr + 0x010FC000 /* GUARD2_BASE ~ 16KB */,
 			core->minfo.kvaddr + 0x010FC000 + 0x4000);
 
+		/* REAR SENSOR */
 		sensor = &core->sensor[0];
 		if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
 			framemgr = &sensor->vctx->q_dst.framemgr;
@@ -391,6 +392,7 @@ static void __fimc_is_fault_handler(struct device *dev)
 			}
 		}
 
+		/* FRONT SENSOR */
 		sensor = &core->sensor[1];
 		if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
 			framemgr = &sensor->vctx->q_dst.framemgr;
@@ -398,6 +400,92 @@ static void __fimc_is_fault_handler(struct device *dev)
 				pr_err("LITE1 BUF[%d][0] = %d, 0x%08X\n", i,
 					framemgr->frame[i].memory,
 					framemgr->frame[i].dvaddr_buffer[0]);
+			}
+		}
+
+		/* ISCHAIN */
+		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
+			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state))) {
+				/* 3AA */
+				framemgr = &core->ischain[i].group_3aa.leader.vctx->q_src.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* 3AAC */
+				framemgr = &core->ischain[i].taac.vctx->q_dst.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* 3AAP */
+				framemgr = &core->ischain[i].taap.vctx->q_dst.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* ISP */
+				framemgr = &core->ischain[i].group_isp.leader.vctx->q_src.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* SCC */
+				framemgr = &core->ischain[i].scc.vctx->q_dst.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* VDC */
+				framemgr = &core->ischain[i].dis.vctx->q_dst.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* VDO */
+				framemgr = &core->ischain[i].group_dis.leader.vctx->q_src.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
+				/* SCP */
+				framemgr = &core->ischain[i].scp.vctx->q_dst.framemgr;
+				for (j = 0; j < framemgr->frame_cnt; ++j) {
+					for (k = 0; k < framemgr->frame[j].planes; k++) {
+						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
+							framemgr->id, j, k,
+							framemgr->frame[j].memory,
+							framemgr->frame[j].dvaddr_buffer[k]);
+					}
+				}
 			}
 		}
 	} else {
