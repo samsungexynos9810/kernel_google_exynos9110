@@ -102,17 +102,17 @@ enum is_scenario_id {
 };
 
 enum is_subscenario_id {
-	ISS_SUB_SCENARIO_STILL_PREVIEW = 0,	// 0: still preview
-	ISS_SUB_SCENARIO_VIDEO = 1,		// 1: video
-	ISS_SUB_SCENARIO_DUAL_STILL = 2,	// 2: dual still preview
-	ISS_SUB_SCENARIO_DUAL_VIDEO = 3,	// 3: dual video
-	ISS_SUB_SCENARIO_VIDEO_HIGH_SPEED = 4,	// 4: video high speed
-	ISS_SUB_SCENARIO_STILL_CAPTURE = 5,	// 5: still capture
-	ISS_SUB_SCENARIO_FHD_60FPS = 6,		// 6: video FHD 60fps
+	ISS_SUB_SCENARIO_STILL_PREVIEW = 0,		/* 0: still preview */
+	ISS_SUB_SCENARIO_VIDEO = 1,				/* 1: video */
+	ISS_SUB_SCENARIO_DUAL_STILL = 2,		/* 2: dual still preview */
+	ISS_SUB_SCENARIO_DUAL_VIDEO = 3,		/* 3: dual video */
+	ISS_SUB_SCENARIO_VIDEO_HIGH_SPEED = 4,	/* 4: video high speed */
+	ISS_SUB_SCENARIO_STILL_CAPTURE = 5,		/* 5: still capture */
+	ISS_SUB_SCENARIO_FHD_60FPS = 6,			/* 6: video FHD 60fps */
 
-	ISS_SUB_SCENARIO_FRONT_VT1 = 4,		// 4: front camera VT1 (Temporary)
-	ISS_SUB_SCENARIO_FRONT_VT2 = 5,		// 5: front camera VT2 (Temporary)
-	ISS_SUB_SCENARIO_FRONT_SMART_STAY = 6,	// 6: front camera smart stay (Temporary)
+	ISS_SUB_SCENARIO_FRONT_VT1 = 4,			/* 4: front camera VT1 (Temporary) */
+	ISS_SUB_SCENARIO_FRONT_VT2 = 5,			/* 5: front camera VT2 (Temporary) */
+	ISS_SUB_SCENARIO_FRONT_SMART_STAY = 6,	/* 6: front camera smart stay (Temporary) */
 	ISS_SUB_END,
 };
 
@@ -147,7 +147,7 @@ struct is_setfile_header {
 #define IS_SET_INTERRUPT(base)		(base->uiINTGR1 |= IS_SET_INT_BIT)
 #define IS_CLR_INTERRUPT(base)		(base->uiINTCR1 |= IS_CLR_INT_BIT)
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 struct is_common_reg {
 	u32 hicmd;
 	u32 hic_sensorid;

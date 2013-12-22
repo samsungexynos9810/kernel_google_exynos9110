@@ -1157,6 +1157,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		}
 		set_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
 
+#if defined(CONFIG_SOC_EXYNOS5422)
+		tdnr_s3d_pixel_async_sw_reset(device);
+#endif /* defined(CONFIG_SOC_EXYNOS5422) */
 		/* 4. A5 start address setting */
 		mdbgd_ischain("imemory.base(dvaddr) : 0x%08x\n", device, device->imemory.dvaddr);
 		mdbgd_ischain("imemory.base(kvaddr) : 0x%08X\n", device, device->imemory.kvaddr);
@@ -1259,6 +1262,8 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			err("CAM1 power down failed(CAM1:0x%08x, A5:0x%08x)\n",
 				readl(PMUREG_CAM1_STATUS), readl(PMUREG_ISP_ARM_STATUS));
 #endif /* defined(CONFIG_SOC_EXYNOS5430) */
+#if defined(CONFIG_SOC_EXYNOS5422)
+#endif /* defined(CONFIG_SOC_EXYNOS5422) */
 #else
 		/* A5 power off*/
 		timeout = 1000;
@@ -2731,6 +2736,12 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 	/* FW loading of peripheral device */
 	if ((module->position == SENSOR_POSITION_REAR)
 		&& !test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		/* set target spi channel */
+		if (TARGET_SPI_CH_FOR_PERI == 0)
+			core->t_spi = core->spi0;
+		else
+			core->t_spi = core->spi1;
+
 		if (fimc_is_comp_is_valid(core) == 0) {
 			ret = fimc_is_comp_loadfirm(core);
 			if (ret) {
@@ -6542,7 +6553,7 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 		node = &frame->shot_ext->node_group.capture[capture_id];
 		taac = taap = scc = dis = scp = NULL;
 
-		switch(node->vid) {
+		switch (node->vid) {
 		case 0:
 			break;
 		case FIMC_IS_VIDEO_3A0C_NUM:
@@ -6554,14 +6565,14 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 			taap = group->subdev[ENTRY_3AAP];
 			break;
 		case FIMC_IS_VIDEO_SCC_NUM:
-                        scc = group->subdev[ENTRY_SCALERC];
-                        break;
-                case FIMC_IS_VIDEO_VDC_NUM:
-                        dis = group->subdev[ENTRY_DIS];
-                        break;
-                case FIMC_IS_VIDEO_SCP_NUM:
-                        scp = group->subdev[ENTRY_SCALERP];
-                        break;
+			scc = group->subdev[ENTRY_SCALERC];
+			break;
+		case FIMC_IS_VIDEO_VDC_NUM:
+			dis = group->subdev[ENTRY_DIS];
+			break;
+		case FIMC_IS_VIDEO_SCP_NUM:
+			scp = group->subdev[ENTRY_SCALERP];
+			break;
 		default:
 			merr("capture0 vid(%d) is invalid", device, node->vid);
 			ret = -EINVAL;
@@ -6827,26 +6838,26 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 		node = &frame->shot_ext->node_group.capture[capture_id];
 		scc = dis = scp = NULL;
 
-		switch(node->vid) {
-			case 0:
-				break;
-			case FIMC_IS_VIDEO_SCC_NUM:
-				scc = group->subdev[ENTRY_SCALERC];
-				break;
-			case FIMC_IS_VIDEO_VDC_NUM:
-				dis = group->subdev[ENTRY_DIS];
-				break;
-			case FIMC_IS_VIDEO_SCP_NUM:
-				scp = group->subdev[ENTRY_SCALERP];
-				break;
-			case FIMC_IS_VIDEO_3A0C_NUM:
-			case FIMC_IS_VIDEO_3A1C_NUM:
-			case FIMC_IS_VIDEO_3A0P_NUM:
-			case FIMC_IS_VIDEO_3A1P_NUM:
-			default:
-				merr("capture0 vid(%d) is invalid", device, node->vid);
-				ret = -EINVAL;
-				goto p_err;
+		switch (node->vid) {
+		case 0:
+			break;
+		case FIMC_IS_VIDEO_SCC_NUM:
+			scc = group->subdev[ENTRY_SCALERC];
+			break;
+		case FIMC_IS_VIDEO_VDC_NUM:
+			dis = group->subdev[ENTRY_DIS];
+			break;
+		case FIMC_IS_VIDEO_SCP_NUM:
+			scp = group->subdev[ENTRY_SCALERP];
+			break;
+		case FIMC_IS_VIDEO_3A0C_NUM:
+		case FIMC_IS_VIDEO_3A1C_NUM:
+		case FIMC_IS_VIDEO_3A0P_NUM:
+		case FIMC_IS_VIDEO_3A1P_NUM:
+		default:
+			merr("capture0 vid(%d) is invalid", device, node->vid);
+			ret = -EINVAL;
+			goto p_err;
 		}
 
 		if (scc) {
@@ -6979,7 +6990,7 @@ int fimc_is_ischain_dis_callback(struct fimc_is_device_ischain *device,
 		node = &frame->shot_ext->node_group.capture[capture_id];
 		scp = NULL;
 
-		switch(node->vid) {
+		switch (node->vid) {
 		case 0:
 			break;
 		case FIMC_IS_VIDEO_SCP_NUM:

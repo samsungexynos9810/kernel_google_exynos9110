@@ -35,6 +35,15 @@
 #if defined(CONFIG_SOC_EXYNOS5430)
 #undef ENABLE_SETFILE
 #define SUPPORTED_IS_CMD_VER	132
+#define TARGET_SPI_CH_FOR_PERI	1
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS5422)
+#undef ENABLE_SETFILE
+#define SUPPORTED_IS_CMD_VER	132
+#define TARGET_SPI_CH_FOR_PERI	0
+#undef ENABLE_CLOCK_GATE
+#undef ENABLE_DVFS
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS5260)
@@ -44,6 +53,7 @@
 #undef ENABLE_DVFS
 #undef ENABLE_FULL_BYPASS
 #define SUPPORTED_IS_CMD_VER	131
+#define TARGET_SPI_CH_FOR_PERI	1
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS3470)
@@ -53,6 +63,7 @@
 #undef ENABLE_DVFS
 #undef ENABLE_FULL_BYPASS
 #define SUPPORTED_IS_CMD_VER	131
+#define TARGET_SPI_CH_FOR_PERI	1
 #endif
 /*
  * -----------------------------------------------------------------------------

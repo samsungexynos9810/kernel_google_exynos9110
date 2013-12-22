@@ -94,9 +94,8 @@ static int fimc_is_comp_spi_burst_write(struct spi_device *spi,
 		tx_buf[1] = 0x6F; /* address */
 		tx_buf[2] = 0x12; /* address */
 
-		for (j = 0; j < burst_width; j++) {
+		for (j = 0; j < burst_width; j++)
 			tx_buf[j + 3] = *(buf + i + j); /* data */
-		}
 
 		ret = spi_write(spi, &tx_buf[0], j + 3);
 		if (ret) {
@@ -110,9 +109,8 @@ static int fimc_is_comp_spi_burst_write(struct spi_device *spi,
 	tx_buf[1] = 0x6F; /* address */
 	tx_buf[2] = 0x12; /* address */
 
-	for (j = 0; j < (size - burst_size); j ++) {
+	for (j = 0; j < (size - burst_size); j++)
 		tx_buf[j + 3] = *(buf + i + j); /* data */
-	}
 
 	ret = spi_write(spi, &tx_buf[0], j + 3);
 	if (ret)
@@ -146,9 +144,8 @@ static int fimc_is_comp_load_binary(struct fimc_is_core *core, char *name)
 	set_fs(KERNEL_DS);
 	snprintf(fw_name, sizeof(fw_name), "/data/%s", name);
 	fp = filp_open(fw_name, O_RDONLY, 0);
-	if (IS_ERR(fp)) {
+	if (IS_ERR(fp))
 		goto request_fw;
-	}
 
 	fw_requested = 0;
 	size = fp->f_path.dentry->d_inode->i_size;
@@ -202,7 +199,7 @@ request_fw:
 	}
 
 	if (!strcmp(name, COMP_FW)) {
-		ret = fimc_is_comp_spi_burst_write(core->spi1, buf, size, 256);
+		ret = fimc_is_comp_spi_burst_write(core->t_spi, buf, size, 256);
 		if (ret) {
 			err("fimc_is_comp_spi_write() fail");
 			goto p_err;
@@ -216,7 +213,7 @@ request_fw:
 				*(buf + i + 2) << 8 |
 				*(buf + i + 3) << 0;
 
-			ret = fimc_is_comp_spi_single_write(core->spi1, data);
+			ret = fimc_is_comp_spi_single_write(core->t_spi, data);
 			if (ret) {
 				err("fimc_is_comp_spi_setf_write() fail");
 				break;
@@ -243,19 +240,22 @@ int fimc_is_comp_is_valid(struct fimc_is_core *core)
 	u16 _read_data;
 	u32 read_addr;
 
-	if (!core->spi1) {
-		pr_info("spi1 device is not available");
+	if (!core->t_spi) {
+		pr_info("t_spi device is not available");
 		goto exit;
 	}
 
 	/* check validation(Read data must be 0x73C1) */
 	read_addr = 0x0;
-	fimc_is_comp_spi_read(core->spi1, (void *)read_data, read_addr, 2);
+	fimc_is_comp_spi_read(core->t_spi, (void *)read_data, read_addr, 2);
 	_read_data = read_data[0] << 8 | read_data[1] << 0;
 	pr_info("Companion vaildation: 0x%04x\n", _read_data);
 
+	/* HACK : remove this at exynos5422 */
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if (_read_data != COMP_MAGIC_NUMBER)
 		ret = -EINVAL;
+#endif
 
 exit:
 	return ret;
@@ -267,13 +267,13 @@ static unsigned int fimc_is_comp_version(struct fimc_is_core *core)
 	u16 comp_ver = 0;
 	u32 read_addr;
 
-	if (!core->spi1) {
+	if (!core->t_spi) {
 		pr_debug("spi1 device is not available");
 		goto p_err;
 	}
 
 	read_addr = 0x0002;
-	fimc_is_comp_spi_read(core->spi1, (void *)read_data, read_addr, 2);
+	fimc_is_comp_spi_read(core->t_spi, (void *)read_data, read_addr, 2);
 	comp_ver = read_data[0] << 8 | read_data[1] << 0;
 	pr_info("Companion Version: 0x%04X\n", comp_ver);
 
@@ -286,27 +286,27 @@ int fimc_is_comp_loadfirm(struct fimc_is_core *core)
 	int ret = 0;
 	u32 comp_ver;
 
-	if (!core->spi1) {
-		pr_debug("spi1 device is not available");
+	if (!core->t_spi) {
+		pr_debug("t_spi device is not available");
 		goto p_err;
 	}
 
-	fimc_is_comp_spi_single_write(core->spi1, 0x00000000);
+	fimc_is_comp_spi_single_write(core->t_spi, 0x00000000);
 
 	comp_ver = fimc_is_comp_version(core);
 
 	if (comp_ver == 0x00A0)
-		fimc_is_comp_spi_single_write(core->spi1, 0x02560001);
+		fimc_is_comp_spi_single_write(core->t_spi, 0x02560001);
 	else if (comp_ver == 0x00B0)
-		fimc_is_comp_spi_single_write(core->spi1, 0x01220001);
+		fimc_is_comp_spi_single_write(core->t_spi, 0x01220001);
 	else
 		err("Invlide companion version(%04X)", comp_ver);
 
 	usleep_range(1000, 1000);
 
-	fimc_is_comp_spi_single_write(core->spi1, 0x60420001);
-	fimc_is_comp_spi_single_write(core->spi1, 0x64280000);
-	fimc_is_comp_spi_single_write(core->spi1, 0x642A0000);
+	fimc_is_comp_spi_single_write(core->t_spi, 0x60420001);
+	fimc_is_comp_spi_single_write(core->t_spi, 0x64280000);
+	fimc_is_comp_spi_single_write(core->t_spi, 0x642A0000);
 
 	ret = fimc_is_comp_load_binary(core, COMP_FW);
 	if (ret) {
@@ -314,7 +314,7 @@ int fimc_is_comp_loadfirm(struct fimc_is_core *core)
 		goto p_err;
 	}
 
-	fimc_is_comp_spi_single_write(core->spi1, 0x60140001);
+	fimc_is_comp_spi_single_write(core->t_spi, 0x60140001);
 
 	usleep_range(1000, 1000);
 	ret = fimc_is_comp_is_valid(core);
@@ -331,8 +331,8 @@ int fimc_is_comp_loadsetf(struct fimc_is_core *core)
 {
 	int ret = 0;
 
-	if (!core->spi1) {
-		pr_debug("spi1 device is not available");
+	if (!core->t_spi) {
+		pr_debug("t_spi device is not available");
 		goto p_err;
 	}
 

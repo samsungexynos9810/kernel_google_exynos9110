@@ -63,10 +63,10 @@
 #include "sensor/fimc-is-device-2p2.h"
 
 #ifdef USE_OWN_FAULT_HANDLER
-#if defined(CONFIG_EXYNOS_IOMMU)
-#include <plat/sysmmu.h>
-#elif defined(CONFIG_EXYNOS7_IOMMU)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0))
 #include <linux/exynos_iovmm.h>
+#else
+#include <plat/sysmmu.h>
 #endif
 #endif
 
@@ -80,7 +80,7 @@
 #define CONFIG_FIMC_IS_BUS_DEVFREQ
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,10,9))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 9))
 #define PM_QOS_CAM_THROUGHPUT	PM_QOS_RESERVED
 #endif
 
@@ -403,7 +403,7 @@ static void __fimc_is_fault_handler(struct device *dev)
 	}
 }
 
-#if defined(CONFIG_EXYNOS_IOMMU)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0))
 #define SECT_ORDER 20
 #define LPAGE_ORDER 16
 #define SPAGE_ORDER 12
@@ -465,7 +465,7 @@ static int fimc_is_fault_handler(struct device *dev, const char *mmuname,
 
 	return 0;
 }
-#elif defined(CONFIG_EXYNOS7_IOMMU)
+#else
 static int fimc_is_fault_handler(struct iommu_domain *domain,
 	struct device *dev,
 	unsigned long fault_addr,
@@ -493,7 +493,7 @@ static ssize_t store_clk_gate_mode(struct device *dev,
 				 const char *buf, size_t count)
 {
 #ifdef HAS_FW_CLOCK_GATE
-	switch(buf[0]) {
+	switch (buf[0]) {
 	case '0':
 		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
 		break;
@@ -519,7 +519,7 @@ static ssize_t store_en_clk_gate(struct device *dev,
 				 const char *buf, size_t count)
 {
 #ifdef ENABLE_CLOCK_GATE
-	switch(buf[0]) {
+	switch (buf[0]) {
 	case '0':
 		sysfs_debug.en_clk_gate = false;
 		sysfs_debug.clk_gate_mode = CLOCK_GATE_MODE_HOST;
@@ -556,7 +556,7 @@ static ssize_t store_en_dvfs(struct device *dev,
 
 	resourcemgr = &core->resourcemgr;
 
-	switch(buf[0]) {
+	switch (buf[0]) {
 	case '0':
 		sysfs_debug.en_dvfs = false;
 		/* update dvfs lever to max */
@@ -604,7 +604,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	struct fimc_is_core *core;
 	int ret = -ENODEV;
 
-	info("%s\n", __func__);
+	info("%s:start\n", __func__);
 
 	pdata = dev_get_platdata(&pdev->dev);
 	if (!pdata) {
@@ -853,9 +853,9 @@ static int fimc_is_probe(struct platform_device *pdev)
 #endif
 
 #ifdef USE_OWN_FAULT_HANDLER
-#if defined(CONFIG_EXYNOS_IOMMU)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0))
 	exynos_sysmmu_set_fault_handler(fimc_is_dev, fimc_is_fault_handler);
-#elif defined(CONFIG_EXYNOS7_IOMMU)
+#else
 	iovmm_set_fault_handler(fimc_is_dev, fimc_is_fault_handler, NULL);
 #endif
 #endif
@@ -891,6 +891,8 @@ static int fimc_is_probe(struct platform_device *pdev)
 	if (ret)
 		err("%s: fimc_is_clk_gate_init failed!\n", __func__);
 #endif
+
+	info("%s:end\n", __func__);
 	return 0;
 
 p_err3:

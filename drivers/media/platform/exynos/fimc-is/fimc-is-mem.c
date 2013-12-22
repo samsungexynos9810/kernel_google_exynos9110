@@ -37,10 +37,10 @@
 #include "fimc-is-regs.h"
 #include "fimc-is-err.h"
 
-#if defined(CONFIG_EXYNOS_IOMMU)
-#include <plat/iovmm.h>
-#elif defined(CONFIG_EXYNOS7_IOMMU)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0))
 #include <linux/exynos_iovmm.h>
+#else
+#include <plat/sysmmu.h>
 #endif
 
 static void *fimc_is_ion_init(struct platform_device *pdev)

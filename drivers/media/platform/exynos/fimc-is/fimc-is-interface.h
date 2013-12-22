@@ -48,7 +48,7 @@ enum fimc_is_interface_state {
 	IS_IF_STATE_BUSY,
 };
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 enum interrupt_map {
 	INTR_GENERAL		= 0,
 	INTR_ISP_FDONE		= 1,

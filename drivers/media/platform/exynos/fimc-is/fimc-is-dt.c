@@ -118,10 +118,9 @@ static int parse_gate_info(struct exynos_platform_fimc_is *pdata, struct device_
 	}
 
 	pdata->gate_info = gate_info;
-#if defined(CONFIG_SOC_EXYNOS5430)
-	pdata->gate_info->user_clk_gate = exynos5430_fimc_is_set_user_clk_gate;
-	pdata->gate_info->clk_on_off = exynos5430_fimc_is_clk_gate;
-#endif
+	pdata->gate_info->user_clk_gate = exynos_fimc_is_set_user_clk_gate;
+	pdata->gate_info->clk_on_off = exynos_fimc_is_clk_gate;
+
 	return 0;
 }
 
@@ -225,7 +224,7 @@ static int parse_subip_info(struct exynos_platform_fimc_is *pdata, struct device
 	DT_READ_U32(np, "num_of_dis", subip_info->_dis.valid);
 	DT_READ_U32(np, "num_of_dnr", subip_info->_dnr.valid);
 	DT_READ_U32(np, "num_of_scp", subip_info->_scp.valid);
-	DT_READ_U32(np, "num_of_fd",  subip_info->_fd.valid );
+	DT_READ_U32(np, "num_of_fd",  subip_info->_fd.valid);
 
 	DT_READ_U32(np, "full_bypass_mcuctl", subip_info->_mcuctl.full_bypass);
 	DT_READ_U32(np, "full_bypass_3a0", subip_info->_3a0.full_bypass);
@@ -237,7 +236,7 @@ static int parse_subip_info(struct exynos_platform_fimc_is *pdata, struct device
 	DT_READ_U32(np, "full_bypass_dis", subip_info->_dis.full_bypass);
 	DT_READ_U32(np, "full_bypass_dnr", subip_info->_dnr.full_bypass);
 	DT_READ_U32(np, "full_bypass_scp", subip_info->_scp.full_bypass);
-	DT_READ_U32(np, "full_bypass_fd",  subip_info->_fd.full_bypass );
+	DT_READ_U32(np, "full_bypass_fd",  subip_info->_fd.full_bypass);
 
 	DT_READ_U32(np, "version_mcuctl", subip_info->_mcuctl.version);
 	DT_READ_U32(np, "version_3a0", subip_info->_3a0.version);
@@ -249,7 +248,7 @@ static int parse_subip_info(struct exynos_platform_fimc_is *pdata, struct device
 	DT_READ_U32(np, "version_dis", subip_info->_dis.version);
 	DT_READ_U32(np, "version_dnr", subip_info->_dnr.version);
 	DT_READ_U32(np, "version_scp", subip_info->_scp.version);
-	DT_READ_U32(np, "version_fd",  subip_info->_fd.version );
+	DT_READ_U32(np, "version_fd",  subip_info->_fd.version);
 
 	pdata->subip_info = subip_info;
 
@@ -275,11 +274,11 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 		return ERR_PTR(-ENOMEM);
 	}
 
-	pdata->clk_cfg = exynos5430_fimc_is_cfg_clk;
-	pdata->clk_on = exynos5430_fimc_is_clk_on;
-	pdata->clk_off = exynos5430_fimc_is_clk_off;
-	pdata->print_clk = exynos5430_fimc_is_print_clk;
-	pdata->print_cfg = exynos5_fimc_is_print_cfg;
+	pdata->clk_cfg = exynos_fimc_is_cfg_clk;
+	pdata->clk_on = exynos_fimc_is_clk_on;
+	pdata->clk_off = exynos_fimc_is_clk_off;
+	pdata->print_clk = exynos_fimc_is_print_clk;
+	pdata->print_cfg = exynos_fimc_is_print_cfg;
 
 	dev->platform_data = pdata;
 
@@ -313,6 +312,7 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 	struct device *dev;
 	int gpio_reset, gpio_standby;
 	int gpio_comp_en, gpio_comp_rst;
+	int gpio_cam_en;
 	int gpio_none = 0;
 	u32 id;
 
@@ -409,29 +409,41 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 	if (!gpio_is_valid(gpio_standby))
 		dev_err(dev, "failed to get gpio_standby\n");
 
-	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 0, gpio_reset, 0, NULL, PIN_RESET);
-	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 1, gpio_none, 0, "ch", PIN_FUNCTION);
-	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 2, gpio_comp_en, 0, NULL, PIN_OUTPUT_HIGH);
-	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 3, gpio_comp_rst, 0, NULL, PIN_RESET);
+	gpio_cam_en = of_get_named_gpio(dnode, "gpios_cam_en", 0);
+	if (!gpio_is_valid(gpio_cam_en))
+		dev_err(dev, "failed to get gpio_cam_en\n");
+
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 0, gpio_cam_en, 0, NULL, PIN_OUTPUT_HIGH);
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 1, gpio_reset, 0, NULL, PIN_RESET);
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 2, gpio_none, 0, "ch", PIN_FUNCTION);
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 3, gpio_comp_en, 0, NULL, PIN_OUTPUT_HIGH);
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 4, gpio_comp_rst, 0, NULL, PIN_RESET);
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if ((id == SENSOR_POSITION_REAR) && (board_rev == 2)) {
-		SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 4, gpio_none, 0, "af", PIN_FUNCTION);
+		SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 5, gpio_none, 0, "af", PIN_FUNCTION);
 	}
-	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 5, gpio_none, 0, NULL, PIN_END);
+#else
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 5, gpio_none, 0, "af", PIN_FUNCTION);
+#endif
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_ON, 6, gpio_none, 0, NULL, PIN_END);
 
 	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 0, gpio_reset, 0, NULL, PIN_RESET);
 	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 1, gpio_reset, 0, NULL, PIN_INPUT);
 	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 2, gpio_comp_rst, 0, NULL, PIN_RESET);
 	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 3, gpio_comp_rst, 0, NULL, PIN_INPUT);
 	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 4, gpio_comp_en, 0, NULL, PIN_INPUT);
-	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 5, gpio_none, 0, NULL, PIN_END);
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 5, gpio_cam_en, 0, NULL, PIN_OUTPUT_LOW);
+	SET_PIN(pdata, SENSOR_SCENARIO_NORMAL, GPIO_SCENARIO_OFF, 6, gpio_none, 0, NULL, PIN_END);
 
-	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 0, gpio_reset, 0, NULL, PIN_OUTPUT_LOW);
-	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 1, gpio_standby, 0, NULL, PIN_OUTPUT_HIGH);
-	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 2, gpio_none, 0, NULL, PIN_END);
+	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 0, gpio_cam_en, 0, NULL, PIN_OUTPUT_HIGH);
+	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 1, gpio_reset, 0, NULL, PIN_OUTPUT_LOW);
+	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 2, gpio_standby, 0, NULL, PIN_OUTPUT_HIGH);
+	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_ON, 3, gpio_none, 0, NULL, PIN_END);
 
 	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_OFF, 0, gpio_reset, 0, NULL, PIN_RESET);
 	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_OFF, 1, gpio_reset, 0, NULL, PIN_INPUT);
 	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_OFF, 2, gpio_standby, 0, NULL, PIN_OUTPUT_LOW);
+	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_OFF, 4, gpio_cam_en, 0, NULL, PIN_OUTPUT_LOW);
 	SET_PIN(pdata, SENSOR_SCENARIO_VISION, GPIO_SCENARIO_OFF, 3, gpio_none, 0, NULL, PIN_END);
 
 	/* Xyref5430 board revision config */

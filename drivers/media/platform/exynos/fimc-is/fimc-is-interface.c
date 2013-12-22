@@ -649,7 +649,7 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->ihc_param3);
 		msg->parameter4 = readl(&com_regs->ihc_param4);
 		break;
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	case INTR_3A0C_FDONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -2462,7 +2462,7 @@ int fimc_is_hw_memdump(struct fimc_is_interface *this,
 	memset(sentence, 0, sizeof(sentence));
 	printk(KERN_ERR "Memory Dump(0x%08X ~ 0x%08X)\n", start, end);
 
-	while((u32)cur <= end) {
+	while ((u32)cur <= end) {
 		if (!(items % 8)) {
 			printk(KERN_ERR "%s", sentence);
 			offset = 0;

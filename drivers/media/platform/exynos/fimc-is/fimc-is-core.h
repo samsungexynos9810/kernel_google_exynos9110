@@ -14,7 +14,7 @@
 
 #include <linux/version.h>
 #include <linux/sched.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0))
 #include <linux/sched/rt.h>
 #endif
 #include <linux/spinlock.h>
@@ -112,7 +112,26 @@
 #define GATE_IP_ODC			(0)
 #define GATE_IP_DIS			(1)
 #define GATE_IP_DNR			(2)
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5422)
+#define DVFS_L0				(600000)
+#define DVFS_L1				(500000)
+#define DVFS_L1_1			(480000)
+#define DVFS_L1_2			(460000)
+#define DVFS_L1_3			(440000)
+
+#define DVFS_MIF_L0			(800000)
+#define DVFS_MIF_L1			(733000)
+#define DVFS_MIF_L2			(667000)
+#define DVFS_MIF_L3			(533000)
+#define DVFS_MIF_L4			(400000)
+#define DVFS_MIF_L5			(266000)
+
+#define I2C_L0				(108000000)
+#define I2C_L1				(36000000)
+#define I2C_L1_1			(54000000)
+#define I2C_L2				(21600000)
+#define DVFS_SKIP_FRAME_NUM		(5)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 #define DVFS_L0				(600000)
 #define DVFS_L1				(500000)
 #define DVFS_L1_1			(480000)
@@ -141,9 +160,9 @@
 #endif
 
 #define GET_FIMC_IS_NUM_OF_SUBIP(core, subip) \
-	( core->pdata->subip_info->_ ## subip.valid )
+	(core->pdata->subip_info->_ ## subip.valid)
 #define GET_FIMC_IS_NUM_OF_SUBIP2(device, subip) \
-	( ((struct fimc_is_core *)device->interface->core)->pdata->subip_info->_ ## subip.valid )
+	(((struct fimc_is_core *)device->interface->core)->pdata->subip_info->_ ## subip.valid)
 #define GET_FIMC_IS_VER_OF_SUBIP(core, subip) \
 	((core)->pdata->subip_info->_##subip.version)
 
@@ -247,6 +266,7 @@ struct fimc_is_core {
 	/* spi */
 	struct spi_device			*spi0;
 	struct spi_device			*spi1;
+	struct spi_device			*t_spi;
 };
 
 #if defined(CONFIG_VIDEOBUF2_CMA_PHYS)
