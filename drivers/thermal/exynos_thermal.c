@@ -41,6 +41,7 @@
 #include <linux/of.h>
 #include <linux/delay.h>
 #include <linux/suspend.h>
+#include <plat/cpu.h>
 #include <mach/tmu.h>
 #include <mach/cpufreq.h>
 
@@ -114,8 +115,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_TMU_CLEAR_RISE_INT      		0xff
 #define EXYNOS_TMU_CLEAR_FALL_INT      		0xff << 16
 #else
-#define EXYNOS_TMU_CLEAR_RISE_INT		0x111
-#define EXYNOS_TMU_CLEAR_FALL_INT		(0x111 << 12)
+#define EXYNOS_TMU_CLEAR_RISE_INT		0x1111
+#define EXYNOS_TMU_CLEAR_FALL_INT		(0x1111 << 16)
 #endif
 #define EXYNOS_MUX_ADDR_VALUE			6
 #define EXYNOS_MUX_ADDR_SHIFT			20
@@ -197,8 +198,13 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_TMU_COUNT			5
 #define EXYSNO_CLK_COUNT			2
 #define TRIP_EN_COUNT				8
+#ifdef CONFIG_SOC_EXYNOS5422
+#define EXYNOS_GPU_NUMBER			4
+#define EXYNOS_ISP_NUMBER			4
+#else
 #define EXYNOS_GPU_NUMBER			2
 #define EXYNOS_ISP_NUMBER			4
+#endif
 
 #define MIN_TEMP				20
 #define MAX_TEMP				125
@@ -833,20 +839,46 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp, int id)
 {
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	int temp_code;
+	int fuse_id = 0;
 
 	if (temp > MAX_TEMP)
 		temp_code = MAX_TEMP;
 	else if (temp < MIN_TEMP)
 		temp_code = MIN_TEMP;
 
+	if (soc_is_exynos5422()) {
+		switch (id) {
+		case 0:
+			fuse_id = 0;
+			break;
+		case 1:
+			fuse_id = 1;
+			break;
+		case 2:
+			fuse_id = 3;
+			break;
+		case 3:
+			fuse_id = 4;
+			break;
+		case 4:
+			fuse_id = 2;
+			break;
+		default:
+			pr_err("unknown sensor id on Exynos5422\n");
+			break;
+		}
+	} else {
+		fuse_id = id;
+	}
+
 	switch (pdata->cal_type) {
 	case TYPE_TWO_POINT_TRIMMING:
 		temp_code = (temp - 25) *
-		    (data->temp_error2[id] - data->temp_error1[id]) /
-		    (85 - 25) + data->temp_error1[id];
+		    (data->temp_error2[fuse_id] - data->temp_error1[fuse_id]) /
+		    (85 - 25) + data->temp_error1[fuse_id];
 		break;
 	case TYPE_ONE_POINT_TRIMMING:
-		temp_code = temp + data->temp_error1[id] - 25;
+		temp_code = temp + data->temp_error1[fuse_id] - 25;
 		break;
 	default:
 		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
@@ -864,14 +896,40 @@ static int code_to_temp(struct exynos_tmu_data *data, u8 temp_code, int id)
 {
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	int temp;
+	int fuse_id = 0;
+
+	if (soc_is_exynos5422()) {
+		switch (id) {
+		case 0:
+			fuse_id = 0;
+			break;
+		case 1:
+			fuse_id = 1;
+			break;
+		case 2:
+			fuse_id = 3;
+			break;
+		case 3:
+			fuse_id = 4;
+			break;
+		case 4:
+			fuse_id = 2;
+			break;
+		default:
+			pr_err("unknown sensor id on Exynos5422\n");
+			break;
+		}
+	} else {
+		fuse_id = id;
+	}
 
 	switch (pdata->cal_type) {
 	case TYPE_TWO_POINT_TRIMMING:
-		temp = (temp_code - data->temp_error1[id]) * (85 - 25) /
-		    (data->temp_error2[id] - data->temp_error1[id]) + 25;
+		temp = (temp_code - data->temp_error1[fuse_id]) * (85 - 25) /
+		    (data->temp_error2[fuse_id] - data->temp_error1[fuse_id]) + 25;
 		break;
 	case TYPE_ONE_POINT_TRIMMING:
-		temp = temp_code - data->temp_error1[id] + 25;
+		temp = temp_code - data->temp_error1[fuse_id] + 25;
 		break;
 	default:
 		temp = temp_code - EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
@@ -891,12 +949,12 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 {
 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
 	struct exynos_tmu_platform_data *pdata = data->pdata;
-	unsigned int status, trim_info;
+	unsigned int status;
 	unsigned int rising_threshold = 0, falling_threshold = 0;
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	unsigned int rising_threshold7_4 = 0, falling_threshold7_4 = 0;
 #endif
-	int ret = 0, threshold_code, i, trigger_levs = 0, timeout = 5;
+	int ret = 0, threshold_code, i, trigger_levs = 0;
 
 	mutex_lock(&data->lock);
 	clk_enable(data->clk[0]);
@@ -907,36 +965,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 		ret = -EBUSY;
 		goto out;
 	}
-
-	if (data->soc == SOC_ARCH_EXYNOS) {
-		__raw_writel(EXYNOS_TRIMINFO_RELOAD1,
-				data->base[id] + EXYNOS_TRIMINFO_CONFIG);
-		__raw_writel(EXYNOS_TRIMINFO_RELOAD2,
-				data->base[id] + EXYNOS_TRIMINFO_CONTROL);
-		while (readl(data->base[id] + EXYNOS_TRIMINFO_CONTROL) & EXYNOS_TRIMINFO_RELOAD1) {
-			if(!timeout) {
-				pr_err("Thermal TRIMINFO register reload failed\n");
-				break;
-			}
-			timeout--;
-			cpu_relax();
-			usleep_range(5,10);
-		}
-	}
-
-	/* Save trimming info in order to perform calibration */
-	trim_info = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
-	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
-	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
-
-#ifndef CONFIG_SOC_EXYNOS5430_REV_1
-	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE) ||
-			(data->temp_error1[id] == 0))
-		data->temp_error1[id] = pdata->efuse_value;
-#else
-	if (data->temp_error1[id] == 0)
-		data->temp_error1[id] = pdata->efuse_value;
-#endif
 
 	/* Count trigger levels to be enabled */
 	for (i = 0; i < MAX_THRESHOLD_LEVS; i++)
@@ -1024,6 +1052,51 @@ out:
 	mutex_unlock(&data->lock);
 
 	return ret;
+}
+
+static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
+{
+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+	struct exynos_tmu_platform_data *pdata = data->pdata;
+	unsigned int trim_info;
+	int timeout = 5;
+
+	mutex_lock(&data->lock);
+	clk_enable(data->clk[0]);
+	clk_enable(data->clk[1]);
+
+	if (data->soc == SOC_ARCH_EXYNOS) {
+		__raw_writel(EXYNOS_TRIMINFO_RELOAD1,
+				data->base[id] + EXYNOS_TRIMINFO_CONFIG);
+		__raw_writel(EXYNOS_TRIMINFO_RELOAD2,
+				data->base[id] + EXYNOS_TRIMINFO_CONTROL);
+		while (readl(data->base[id] + EXYNOS_TRIMINFO_CONTROL) & EXYNOS_TRIMINFO_RELOAD1) {
+			if(!timeout) {
+				pr_err("Thermal TRIMINFO register reload failed\n");
+				break;
+			}
+			timeout--;
+			cpu_relax();
+			usleep_range(5,10);
+		}
+	}
+
+	/* Save trimming info in order to perform calibration */
+	trim_info = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
+	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
+	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
+
+#ifndef CONFIG_SOC_EXYNOS5430_REV_1
+	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE) ||
+			(data->temp_error1[id] == 0))
+		data->temp_error1[id] = pdata->efuse_value;
+#else
+	if (data->temp_error1[id] == 0)
+		data->temp_error1[id] = pdata->efuse_value;
+#endif
+	clk_disable(data->clk[0]);
+	clk_disable(data->clk[1]);
+	mutex_unlock(&data->lock);
 }
 
 static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
@@ -1120,7 +1193,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 #if defined(CONFIG_CPU_THERMAL_IPA)
 	check_switch_ipa_on(max);
 #endif
-	pr_debug("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
+	pr_info("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
 			alltemp[0], alltemp[1], alltemp[2], alltemp[3], alltemp[4], max, gpu_temp);
 
 	return max;
@@ -1502,45 +1575,65 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #if defined(CONFIG_SOC_EXYNOS5422)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.threshold_falling = 2,
-	.trigger_levels[0] = 60,
-	.trigger_levels[1] = 70,
-	.trigger_levels[2] = 80,
-	.trigger_levels[3] = 110,
+	.trigger_levels[0] = 40,
+	.trigger_levels[1] = 45,
+	.trigger_levels[2] = 50,
+	.trigger_levels[3] = 60,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
-	.gain = 5,
+	.trigger_level4_en = 0,
+	.trigger_level5_en = 0,
+	.trigger_level6_en = 0,
+	.trigger_level7_en = 0,
+	.gain = 8,
 	.reference_voltage = 16,
 	.noise_cancel_mode = 4,
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 55,
 	.freq_tab[0] = {
-		.freq_clip_max = 1200 * 1000,
-		.temp_level = 60,
+		.freq_clip_max = 1800 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1200 * 1000,
+#endif
+		.temp_level = 40,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 1100 * 1000,
-		.temp_level = 70,
+		.freq_clip_max = 1800 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1100 * 1000,
+#endif
+		.temp_level = 45,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.freq_tab[2] = {
-		.freq_clip_max = 900 * 1000,
-		.temp_level = 80,
+		.freq_clip_max = 1800 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 900 * 1000,
+#endif
+		.temp_level = 50,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.freq_tab[3] = {
-		.freq_clip_max = 800 * 1000,
-		.temp_level = 90,
+		.freq_clip_max = 1800 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 800 * 1000,
+#endif
+		.temp_level = 55,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
 	.size[THERMAL_TRIP_ACTIVE] = 1,
@@ -1843,6 +1936,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	mutex_init(&data->lock);
 
 	/* Save the eFuse value before initializing TMU */
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
+		exynos_tmu_get_efuse(pdev, i);
+
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		ret = exynos_tmu_initialize(pdev, i);
 		if (ret) {
