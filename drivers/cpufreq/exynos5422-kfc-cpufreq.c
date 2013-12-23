@@ -114,71 +114,7 @@ static unsigned int clkdiv_cpu0_5422_CA7[CPUFREQ_LEVEL_END_CA7][5] = {
 	/* ARM L14: 200MHz */
 	{ 0, 2, 7, 3, 3 },
 };
-#if 0
-static unsigned int clkdiv_cpu1_5422_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
-	/*
-	 * Clock divider value for following
-	 * { SCLK_KFC_PLL, SCLK_HPM_KFC }
-	 */
 
-	/* ARM L0: 2.0GHz */
-	{ 0, 7 },
-
-	/* ARM L1: 1.9GMHz */
-	{ 0, 7 },
-
-	/* ARM L2: 1.8GMHz */
-	{ 0, 7 },
-
-	/* ARM L3: 1.7GHz */
-	{ 0, 7 },
-
-	/* ARM L4: 1.6GHz */
-	{ 0, 7 },
-
-	/* ARM L5: 1.5GMHz */
-	{ 0, 7 },
-
-	/* ARM L6: 1.4GMHz */
-	{ 0, 7 },
-
-	/* ARM L7: 1.3GHz */
-	{ 0, 7 },
-
-	/* ARM L8: 1.2GHz */
-	{ 0, 7 },
-
-	/* ARM L9: 1.1GHz */
-	{ 0, 7 },
-
-	/* ARM L10: 1000MHz */
-	{ 0, 7 },
-
-	/* ARM L11: 900MHz */
-	{ 0, 7 },
-
-	/* ARM L12: 800MHz */
-	{ 0, 7 },
-
-	/* ARM L13: 700MHz */
-	{ 0, 7 },
-
-	/* ARM L14: 600MHz */
-	{ 0, 7 },
-
-	/* ARM L15: 500MHz */
-	{ 0, 7 },
-
-	/* ARM L16: 400MHz */
-	{ 0, 7 },
-
-	/* ARM L17: 300MHz */
-	{ 0, 7 },
-
-	/* ARM L18: 200MHz */
-	{ 0, 7 },
-};
-#endif
 static unsigned int exynos5422_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	/* MDIV | PDIV | SDIV */
 	/* KPLL FOUT L0: 2.0GHz */
@@ -428,8 +364,11 @@ static void __init set_volt_table_CA7(void)
 		pr_info("CPUFREQ of CA7  L%d : %d uV\n", i,
 			exynos5422_volt_table_CA7[i]);
 	}
-
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	max_support_idx_CA7 = L1;
+#else
 	max_support_idx_CA7 = L3;
+#endif
 	min_support_idx_CA7 = L10;
 }
 

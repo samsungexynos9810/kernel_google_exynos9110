@@ -520,7 +520,11 @@ static void __init set_volt_table_CA15(void)
 #ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
 	max_support_idx_CA15 = L3;
 #else
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	max_support_idx_CA15 = L4;
+#else
 	max_support_idx_CA15 = L5;
+#endif
 #endif
 	min_support_idx_CA15 = L16;
 }
