@@ -19,7 +19,11 @@
 #include <linux/slab.h>
 
 #include <mach/asv-exynos.h>
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+#include <mach/asv-exynos5422_evt0.h>
+#else
 #include <mach/asv-exynos5422.h>
+#endif
 #include <mach/map.h>
 #include <mach/regs-pmu.h>
 #include <linux/regulator/consumer.h>
