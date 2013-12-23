@@ -21,6 +21,7 @@
 #include <linux/cpumask.h>
 #include <linux/debugfs.h>
 #include <linux/fs.h>
+#include <linux/ipa.h>
 #include <linux/module.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
@@ -28,7 +29,6 @@
 
 #include <mach/cpufreq.h>
 
-#include "ipa.h"
 #include "platform_tables.h"
 #include "../cpufreq/cpu_load_metric.h"
 

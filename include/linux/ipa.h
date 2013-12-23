@@ -43,6 +43,7 @@ int thermal_register_notifier(struct notifier_block *nb);
 int thermal_unregister_notifier(struct notifier_block *nb);
 
 #else
+
 static inline void check_switch_ipa_on(int t)
 {
 }

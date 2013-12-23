@@ -27,6 +27,7 @@
 #include <linux/slab.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
+#include <linux/ipa.h>
 #include <linux/clk.h>
 #include <linux/workqueue.h>
 #include <linux/sysfs.h>
@@ -42,8 +43,6 @@
 #include <linux/suspend.h>
 #include <mach/tmu.h>
 #include <mach/cpufreq.h>
-
-#include "ipa.h"
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static struct cpumask mp_cluster_cpus[CA_END];
