@@ -31,6 +31,8 @@
 #include <linux/ump.h>
 #endif				/* CONFIG_UMP */
 
+#include <linux/exynos_ion.h>
+
 #define beenthere(f, a...)  KBASE_DEBUG_PRINT_INFO(KBASE_JD, "%s:" f, __func__, ##a)
 
 /*
@@ -225,6 +227,8 @@ out:
 		reg->alloc->imported.umm.sgt = NULL;
 	}
 
+	exynos_ion_sync_dmabuf_for_device(kctx->kbdev->osdev.dev, reg->alloc->imported.umm.dma_buf, reg->alloc->imported.umm.dma_buf->size, DMA_BIDIRECTIONAL);
+
 	return err;
 }
 
@@ -237,6 +241,7 @@ static void kbase_jd_umm_unmap(kbase_context *kctx, struct kbase_va_region *reg,
 	if (mmu_update)
 		kbase_mmu_teardown_pages(kctx, reg->start_pfn, kbase_reg_current_backed_size(reg));
 	dma_buf_unmap_attachment(reg->alloc->imported.umm.dma_attachment, reg->alloc->imported.umm.sgt, DMA_BIDIRECTIONAL);
+	exynos_ion_sync_dmabuf_for_cpu(kctx->kbdev->osdev.dev, reg->alloc->imported.umm.dma_buf, reg->alloc->imported.umm.dma_buf->size, DMA_BIDIRECTIONAL);
 	reg->alloc->imported.umm.sgt = NULL;
 }
 #endif				/* CONFIG_DMA_SHARED_BUFFER */
