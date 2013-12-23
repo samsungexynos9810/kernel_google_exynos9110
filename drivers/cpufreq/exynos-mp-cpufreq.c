@@ -1787,7 +1787,7 @@ static int __init exynos_cpufreq_init(void)
 		}
 
 		queue_delayed_work_on(0, cluster_monitor_wq, &monitor_cluster_on,
-						msecs_to_jiffies(100));
+						msecs_to_jiffies(1000));
 	}
 
 	exynos_cpufreq_init_done = true;
