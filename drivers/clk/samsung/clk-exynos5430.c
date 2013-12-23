@@ -857,6 +857,10 @@ enum exynos5430_clks {
 	/* dividers for EVT1*/
 	dout_sclk_decon_tv_eclk = 4200, dout_sclk_dsim0,
 
+	/* mux gate */
+	mgate_sclk_mmc2_b = 4210, mgate_sclk_mmc1_b,
+	mgate_sclk_mmc0_d,
+
 	/* fixed clock */
 	oscclk = 5000,
 	phyclk_usbdrd30_udrd30_phyclock_phy,
@@ -2980,6 +2984,11 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(dout_mem1_pll, "dout_mem1_pll", "mout_mem1_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
 	CGTE(dout_mfc_pll, "dout_mfc_pll", "mout_mfc_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
 	CGTE(dout_bus_pll, "dout_bus_pll", "mout_bus_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
+
+	/* MUX gate */
+	CGTE(mgate_sclk_mmc2_b, "mgate_sclk_mmc2_b", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 28, CLK_IGNORE_UNUSED, 0),
+	CGTE(mgate_sclk_mmc1_b, "mgate_sclk_mmc1_b", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 20, CLK_IGNORE_UNUSED, 0),
+	CGTE(mgate_sclk_mmc0_d, "mgate_sclk_mmc0_d", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 12, CLK_IGNORE_UNUSED, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
