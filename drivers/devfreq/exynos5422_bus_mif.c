@@ -1019,6 +1019,8 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	unsigned long tmpfreq;
 	struct exynos_devfreq_platdata *pdata;
 	int err = 0;
+	unsigned long initial_freq;
+	unsigned long initial_volt, current_volt;
 
 	data = kzalloc(sizeof(struct busfreq_data_mif), GFP_KERNEL);
 
@@ -1112,6 +1114,15 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 	clk_prepare_enable(data->clkm_phy0);
 	clk_prepare_enable(data->clkm_phy1);
+
+	/* support ASV setting */
+	initial_freq = clk_get_rate(data->mclk_cdrex);
+	initial_volt = get_match_volt(ID_MIF, initial_freq/1000);
+	regulator_set_voltage(data->vdd_mif, initial_volt, initial_volt);
+	current_volt = regulator_get_voltage(data->vdd_mif);
+	if (current_volt != initial_volt)
+		dev_err(dev, "Cannot set default asv voltage\n");
+	pr_info("MIF: set ASV freq %ld, voltage %ld\n", initial_freq/1000, current_volt);
 
 	data->ppmu = exynos5_ppmu_get();
 	if (!data->ppmu)
