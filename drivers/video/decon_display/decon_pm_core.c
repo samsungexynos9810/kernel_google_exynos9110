@@ -34,6 +34,8 @@
 
 #include <../drivers/clk/samsung/clk.h>
 
+#define GATE_LOCK_CNT 1
+
 int decon_dbg = 5;
 module_param(decon_dbg, int, 0644);
 
@@ -221,6 +223,18 @@ static void disable_mask(struct display_driver *dispdrv)
 	pm_debug("Disable mask");
 }
 
+static void init_gating_idle_count(struct display_driver *dispdrv)
+{
+	unsigned long flags;
+
+	if (dispdrv->pm_status.clk_idle_count != 0) {
+		spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
+		dispdrv->pm_status.clk_idle_count = 0;
+		dispdrv->pm_status.pwr_idle_count = 0;
+		spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	}
+}
+
 void debug_function(struct display_driver *dispdrv, const char *buf)
 {
 #ifndef CONFIG_FB_HIBERNATION_DISPLAY
@@ -262,17 +276,12 @@ int disp_pm_runtime_enable(struct display_driver *dispdrv)
 
 int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
 {
-	unsigned long flags;
-
 	if (!dispdrv->pm_status.clock_gating_on) {
 		pm_runtime_get_sync(dispdrv->display_driver);
 		return 0;
 	}
 
-	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
-	dispdrv->pm_status.clk_idle_count = 0;
-	dispdrv->pm_status.pwr_idle_count = 0;
-	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	init_gating_idle_count(dispdrv);
 
 	/* guarantee clock and power gating */
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
@@ -341,6 +350,8 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 
 	if (!dispdrv->pm_status.clock_gating_on) return 0;
 
+	init_gating_idle_count(dispdrv);
+
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN)
@@ -369,14 +380,11 @@ int disp_pm_dec_refcount(struct display_driver *dispdrv)
 static void decon_clock_gating_handler(struct kthread_work *work)
 {
 	struct display_driver *dispdrv = get_display_driver();
-	unsigned long flags;
 
 	if (dispdrv->pm_status.clk_idle_count > MAX_CLK_GATING_COUNT)
 		display_block_clock_off(dispdrv);
 
-	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
-	dispdrv->pm_status.clk_idle_count = 0;
-	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	init_gating_idle_count(dispdrv);
 	disp_pm_gate_lock(dispdrv, false);
 	pm_debug("display_block_clock_off -");
 }
@@ -384,16 +392,13 @@ static void decon_clock_gating_handler(struct kthread_work *work)
 static void decon_power_gating_handler(struct kthread_work *work)
 {
 	struct display_driver *dispdrv = get_display_driver();
-	unsigned long flags;
 
 	if (!check_camera_is_running()) {
 		if (dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT)
 			display_hibernation_power_off(dispdrv);
 	}
 
-	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
-	dispdrv->pm_status.pwr_idle_count = 0;
-	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
+	init_gating_idle_count(dispdrv);
 	disp_pm_gate_lock(dispdrv, false);
 	pm_info("##### display_hibernation_power_off -\n");
 }
@@ -510,6 +515,11 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (sfb->power_state == POWER_DOWN) {
 		pr_info("%s, DECON are already power off state\n", __func__);
+		goto done;
+	}
+
+	if (atomic_read(&dispdrv->pm_status.lock_count) > GATE_LOCK_CNT) {
+		pr_info("%s, DECON does not need power-off\n", __func__);
 		goto done;
 	}
 
