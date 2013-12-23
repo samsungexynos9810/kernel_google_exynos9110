@@ -344,6 +344,19 @@ __v7_setup:
 
 	stmia	r12, {r0-r3}
 	mov	r3, #0
+
+/* Prevent the clock generator from stopping the L2 logic clock */
+	mrc	p15, 1, r10, c15, c0, 0		@ read l2aux control register
+#ifdef CONFIG_L2_AUTO_CLOCK_DISABLE
+	orr	r10, r10, #1 << 27		@ set bit #27
+#else
+	bic	r10, r10, #1 << 27		@ clear bit #27
+#endif
+	ldr	r0, =SMC_CMD_REG
+	ldr	r1, =SMC_REG_ID_CP15(15, 1, 0, 0)
+	mov	r2, r10
+	smc	0
+
 /* Enable Non-cacheable streaming enhancement */
 	mrc	p15, 0, r10, c1, c0, 1		@ read aux control register
 	orr	r10, r10, #1 << 24		@ set bit #24
