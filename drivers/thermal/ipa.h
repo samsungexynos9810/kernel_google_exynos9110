@@ -20,10 +20,18 @@
 
 #include <linux/cpufreq.h>
 
+#define THERMAL_NEW_MAX_FREQ 0
+
 struct ipa_sensor_conf {
 	int (*read_soc_temperature)(void *data);
 	int (*read_skin_temperature)(void);
 	void *private_data;
+};
+
+struct thermal_limits {
+	int max_freq;
+	int cur_freq;
+	cpumask_t cpus;
 };
 
 #ifdef CONFIG_CPU_THERMAL_IPA
@@ -31,9 +39,10 @@ struct ipa_sensor_conf {
 void check_switch_ipa_on(int temp);
 void ipa_cpufreq_requested(struct cpufreq_policy *p, unsigned int *freqs);
 int ipa_register_thermal_sensor(struct ipa_sensor_conf *);
+int thermal_register_notifier(struct notifier_block *nb);
+int thermal_unregister_notifier(struct notifier_block *nb);
 
 #else
-#if 0
 static inline void check_switch_ipa_on(int t)
 {
 }
@@ -46,7 +55,17 @@ static inline int ipa_register_thermal_sensor(struct ipa_sensor_conf *p)
 {
 	return 0;
 }
-#endif
+
+static inline int thermal_register_notifier(struct notifier_block *nb)
+{
+	return 0;
+}
+
+static inline int thermal_unregister_notifier(struct notifier_block *nb)
+{
+	return 0;
+}
+
 #endif
 
 #endif /* _DRIVERS_THERMAL_IPA_H */

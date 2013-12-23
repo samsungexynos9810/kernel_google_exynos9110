@@ -116,6 +116,8 @@ static struct ipa_config default_config = {
 	},
 };
 
+static BLOCKING_NOTIFIER_HEAD(thermal_notifier_list);
+
 void gpu_ipa_dvfs_get_utilisation_stats(struct mali_debug_utilisation_stats *stats);
 int gpu_ipa_dvfs_max_lock(int clock);
 void gpu_ipa_dvfs_max_unlock(void);
@@ -242,6 +244,18 @@ static void arbiter_set_gpu_freq_limit(int freq)
 	/*Mali DVFS code will apply changes on next DVFS tick (100ms)*/
 }
 
+static int thermal_call_chain(int freq, int idx)
+{
+	struct thermal_limits limits = {
+		.max_freq = freq,
+		.cur_freq = arbiter_data.cl_stats[idx].freq,
+	};
+
+	cpumask_copy(&limits.cpus, arbiter_data.cl_stats[idx].mask);
+
+	return blocking_notifier_call_chain(&thermal_notifier_list, THERMAL_NEW_MAX_FREQ, &limits);
+}
+
 static void arbiter_set_cpu_freq_limit(int freq, int idx)
 {
 	int i, cpu, max_freq;
@@ -259,6 +273,8 @@ static void arbiter_set_cpu_freq_limit(int freq, int idx)
 		i++;
 	}
 	ipa_set_clamp(cpumask_any(arbiter_data.cl_stats[idx].mask), freq, max_freq);
+
+	thermal_call_chain(freq, idx);
 }
 
 static int freq_to_power(int freq, int max, struct coefficients *coeff)
@@ -1130,6 +1146,16 @@ int ipa_register_thermal_sensor(struct ipa_sensor_conf *sensor)
 void ipa_mali_dvfs_requested(unsigned int freq)
 {
 	arbiter_data.gpu_freq = freq;
+}
+
+int thermal_register_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_register(&thermal_notifier_list, nb);
+}
+
+int thermal_unregister_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_unregister(&thermal_notifier_list, nb);
 }
 
 extern bool exynos_cpufreq_init_done;
