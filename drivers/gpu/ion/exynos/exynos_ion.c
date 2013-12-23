@@ -570,6 +570,8 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 		return -ENOMEM;
 	}
 
+	flush_all_cpu_caches();
+
 	return 0;
 }
 
