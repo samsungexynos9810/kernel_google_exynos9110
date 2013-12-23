@@ -100,7 +100,7 @@ int exynos5430_fimg2d_clk_setup(struct fimg2d_control *ctrl)
 			/* clock is not present */
 			ctrl->clk_chld2 = NULL;
 		else
-			return PTR_ERR(ctrl->clk_chld1);
+			return PTR_ERR(ctrl->clk_chld2);
 		dev_info(ctrl->dev, "'mux_266_child' clock is not present\n");
 	}
 

@@ -263,10 +263,18 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 			}
 			pgd = (unsigned long *)ctx->mm->pgd;
 #ifdef CONFIG_EXYNOS7_IOMMU
-			iovmm_activate(ctrl->dev);
+			if (iovmm_activate(ctrl->dev)) {
+				fimg2d_err("failed to iovmm activate\n");
+				ret = -EPERM;
+				goto fail_n_del;
+			}
 #else
-			exynos_sysmmu_enable(ctrl->dev,
-					(unsigned long)virt_to_phys(pgd));
+			if (exynos_sysmmu_enable(ctrl->dev,
+					(unsigned long)virt_to_phys(pgd))) {
+				fimg2d_err("failed to sysmme enable\n");
+				ret = -EPERM;
+				goto fail_n_del;
+			}
 #endif
 			fimg2d_debug("%s : sysmmu enable: pgd %p ctx %p seq_no(%u)\n",
 				__func__, pgd, ctx, cmd->blt.seq_no);
