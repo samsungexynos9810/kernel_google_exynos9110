@@ -570,8 +570,6 @@ static int on_run(void *data)
 	cpumask_set_cpu(on_cpu, &thread_cpumask);
 	sched_setaffinity(0, &thread_cpumask);
 
-	prev_mode = CHP_NORMAL;
-
 	while (!kthread_should_stop()) {
 		calc_load();
 		exe_mode = diagnose_condition();
@@ -621,6 +619,8 @@ static int __init dm_cpu_hotplug_init(void)
 	big_hotpluged = 0;
 	do_big_hotplug = false;
 	in_low_power_mode = false;
+
+	prev_mode = CHP_NORMAL;
 
 #ifdef CONFIG_PM
 	ret = sysfs_create_file(power_kobj, &enable_dm_hotplug.attr);
