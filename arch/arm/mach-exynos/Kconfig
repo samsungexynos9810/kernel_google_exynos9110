@@ -80,12 +80,14 @@ config SOC_EXYNOS5422
 	select S5P_PM if PM
 	select S5P_SLEEP if SUSPEND
 	select SAMSUNG_DMADEV
+	select L2_AUTO_CLOCK_DISABLE
 	help
 	  Enable EXYNOS5422 SoC support
 
 config SOC_EXYNOS5422_REV_0
 	bool "Rev 0.0"
 	depends on SOC_EXYNOS5422
+	select L2_AUTO_CLOCK_DISABLE
 	help
 	  This option enables for REV 0
 
