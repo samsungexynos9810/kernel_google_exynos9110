@@ -686,10 +686,10 @@ static void set_bts_ip_table(struct bts_info *bts)
 	BTS_DBG("[BTS] bts set: %s\n", bts->name);
 
 	if ((bts->id & BTS_G3D) && exynos5_bts_clk[BTS_CLOCK_G3D].clk)
-		clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
+		clk_enable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
 
 	if (bts->clk)
-		clk_prepare_enable(bts->clk);
+		clk_enable(bts->clk);
 
 	for (i = 0; i < bts->table.table_num; i++) {
 		__raw_writel(table->val, bts->va_base + table->reg);
@@ -698,10 +698,10 @@ static void set_bts_ip_table(struct bts_info *bts)
 	}
 
 	if ((bts->id & BTS_G3D) && exynos5_bts_clk[BTS_CLOCK_G3D].clk)
-		clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
+		clk_disable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
 
 	if (bts->clk)
-		clk_disable_unprepare(bts->clk);
+		clk_disable(bts->clk);
 }
 
 static void set_bts_g3d_table(bool mode)
@@ -720,8 +720,8 @@ static void set_bts_g3d_table(bool mode)
 		table_num = ARRAY_SIZE(g3d_read_ch_fbm_table);
 	}
 
-	clk_prepare_enable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
-	clk_prepare_enable(exynos5_bts[BTS_IDX_G3D0].clk);
+	clk_enable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
+	clk_enable(exynos5_bts[BTS_IDX_G3D0].clk);
 
 	for (i = 0; i < table_num; i++) {
 		__raw_writel(table->val, exynos5_bts[BTS_IDX_G3D0].va_base + table->reg);
@@ -730,8 +730,8 @@ static void set_bts_g3d_table(bool mode)
 		table++;
 	}
 
-	clk_disable_unprepare(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
-	clk_disable_unprepare(exynos5_bts[BTS_IDX_G3D0].clk);
+	clk_disable(exynos5_bts_clk[BTS_CLOCK_G3D].clk);
+	clk_disable(exynos5_bts[BTS_IDX_G3D0].clk);
 
 	update_g3d_mode(mode);
 }
@@ -864,11 +864,14 @@ static int __init exynos5_bts_init(void)
 
 		if (exynos5_bts[i].clk_name) {
 			clk = __clk_lookup(exynos5_bts[i].clk_name);
-			if (IS_ERR(clk))
+
+			if (IS_ERR(clk)) {
 				pr_err("failed to get bts clk %s\n",
 						exynos5_bts[i].clk_name);
-			else
+			} else {
+				clk_prepare(clk);
 				exynos5_bts[i].clk = clk;
+			}
 		}
 
 		list_add(&exynos5_bts[i].list, &bts_list);
@@ -876,11 +879,13 @@ static int __init exynos5_bts_init(void)
 
 	for (i = 0; i < ARRAY_SIZE(exynos5_bts_clk); i++) {
 		clk = __clk_lookup(exynos5_bts[i].clk_name);
-		if (IS_ERR(clk))
+		if (IS_ERR(clk)) {
 			pr_err("failed to get bts clk %s\n",
 					exynos5_bts_clk[i].clk_name);
-		else
+		} else {
+			clk_prepare(clk);
 			exynos5_bts_clk[i].clk = clk;
+		}
 	}
 
 	bts_drex_init();
