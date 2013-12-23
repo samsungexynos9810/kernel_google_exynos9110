@@ -384,7 +384,7 @@ struct trace_data {
 	int Ptot_req;
 	int extra;
 };
-
+#ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 static void print_trace(struct trace_data *td)
 {
 	trace_printk("gpu_freq_in=%d gpu_util=%d gpu_nutil=%d "
@@ -438,7 +438,15 @@ static void print_only_temp_trace(int skin_temp)
 
 	print_trace(&trace_data);
 }
+#else
+static void print_trace(struct trace_data *td)
+{
+}
 
+static void print_only_temp_trace(int skin_temp)
+{
+}
+#endif
 static void check_switch_ipa_off(int skin_temp)
 {
 	int currT, threshold_temp;
@@ -577,12 +585,12 @@ static int F_ctlr(int curr)
 	/* output should not exceed max power */
 	if (out > config->soc_max_power)
 		out = config->soc_max_power;
-
+#ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 	trace_printk("curr=%d err=%d err_integral=%d p=%d i=%d d=%d out=%d\n",
 		     curr, frac_to_int(err), frac_to_int(ctlr->err_integral),
 		     (int) frac_to_int(p), (int) frac_to_int(i), (int) frac_to_int(d),
 		     (int) out);
-
+#endif
 	/* the casts here should be safe */
 	return (int)out;
 }

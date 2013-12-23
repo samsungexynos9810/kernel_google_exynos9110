@@ -602,10 +602,10 @@ static int exynos_target(struct cpufreq_policy *policy,
 	struct cpufreq_frequency_table *freq_table = exynos_info[cur]->freq_table;
 	unsigned int index;
 	int ret = 0;
-
+#ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 	trace_printk("IPA:%s:%d Called by %x, with target_freq %d", __PRETTY_FUNCTION__, __LINE__,
 			(unsigned int) __builtin_return_address (0), target_freq);
-
+#endif
 	mutex_lock(&cpufreq_lock);
 
 	if (exynos_info[cur]->blocked)
@@ -626,7 +626,10 @@ static int exynos_target(struct cpufreq_policy *policy,
 		target_freq = min((unsigned int)pm_qos_request(PM_QOS_KFC_FREQ_MAX), target_freq);
 		target_freq = min(g_clamp_cpufreqs[CA7], target_freq); /* add IPA clamp */
 	}
+
+#ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 	trace_printk("IPA:%s:%d will apply %d ", __PRETTY_FUNCTION__, __LINE__, target_freq);
+#endif
 
 	if (cpufreq_frequency_table_target(policy, freq_table,
 				target_freq, relation, &index)) {
@@ -666,9 +669,10 @@ void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
 	new_freq = min(clamp_freq, gov_target);
 	freq = exynos_getspeed(cpu);
 
+#ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 	trace_printk("IPA: %s:%d: set clamps for cpu %d to %d (curr was %d)",
 		     __PRETTY_FUNCTION__, __LINE__, cpu, clamp_freq, freq);
-
+#endif
 	if (new_freq != freq)
 		exynos_target(cpufreq_cpu_get(cpu),
 			      new_freq, CPUFREQ_RELATION_H);
