@@ -206,10 +206,12 @@ static void reset_arbiter_configuration(struct ipa_config *config)
 
 static int queue_arbiter_poll(void)
 {
-	int ret;
+	int cpu, ret;
 
-	ret = queue_delayed_work(system_freezable_wq, &arbiter_data.work,
-			msecs_to_jiffies(ARBITER_PERIOD_MSEC));
+	cpu = cpumask_any(arbiter_data.cl_stats[CA7].mask);
+	ret = queue_delayed_work_on(cpu, system_freezable_wq,
+				&arbiter_data.work,
+				msecs_to_jiffies(ARBITER_PERIOD_MSEC));
 
 	arbiter_data.active = true;
 
