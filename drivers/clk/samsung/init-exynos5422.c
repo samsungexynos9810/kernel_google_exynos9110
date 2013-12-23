@@ -420,9 +420,11 @@ void crypto_init_clock(void)
 
 void __init exynos5422_clock_init(void)
 {
+#ifndef CONFIG_L2_AUTO_CLOCK_DISABLE
 /* EXYNOS5422 C2 enable support */
 	__raw_writel(__raw_readl(EXYNOS5422_CMU_CPU_SPARE1) | (1<<1 | 1<<3),
-													 EXYNOS5422_CMU_CPU_SPARE1);
+			EXYNOS5422_CMU_CPU_SPARE1);
+#endif
 
 	top_clk_enable();
 	clkout_init_clock();
