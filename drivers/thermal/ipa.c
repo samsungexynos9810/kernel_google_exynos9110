@@ -32,6 +32,9 @@
 #include "platform_tables.h"
 #include "../cpufreq/cpu_load_metric.h"
 
+#define MHZ_TO_KHZ(freq) ((freq) * 1000)
+#define KHZ_TO_MHZ(freq) ((freq) / 1000)
+
 #define NUM_CLUSTERS 2
 #define MAX_GPU_FREQ 533
 #define MAX_A15_FREQ 1900000
@@ -314,7 +317,7 @@ static int get_cpu_freq_limit(cluster_type cl, int power_out, int util)
 		nr_coeffs = NR_A7_COEFFS;
 	}
 
-	return power_to_freq((power_out * 100) / util, nr_coeffs, coeffs) * 1000;
+	return MHZ_TO_KHZ(power_to_freq((power_out * 100) / util, nr_coeffs, coeffs));
 }
 
 /* Powers in mW
@@ -819,14 +822,14 @@ static void setup_power_tables(void)
 	t.load[0] = 100; t.load[1] = t.load[2] = t.load[3] = 0;
 	t.cluster = CA7;
 	for (i = 0; i < NR_A7_COEFFS; i++) {
-		t.freq = a7_cpu_coeffs[i].frequency * 1000;
+		t.freq = MHZ_TO_KHZ(a7_cpu_coeffs[i].frequency);
 		a7_cpu_coeffs[i].power = get_power_value(&t);
 		pr_info("cluster: %d freq: %d power=%d\n", CA7, t.freq, a7_cpu_coeffs[i].power);
 	}
 
 	t.cluster = CA15;
 	for (i = 0; i < NR_A15_COEFFS; i++) {
-		t.freq = a15_cpu_coeffs[i].frequency * 1000;
+		t.freq = MHZ_TO_KHZ(a15_cpu_coeffs[i].frequency);
 		a15_cpu_coeffs[i].power = get_power_value(&t);
 		pr_info("cluster: %d freq: %d power=%d\n", CA15, t.freq, a15_cpu_coeffs[i].power);
 	}
@@ -847,7 +850,7 @@ static int get_cpu_power_req(int cl_idx, struct coefficients *coeffs, int nr_coe
 	i = 0;
 	for_each_cpu(cpu, arbiter_data.cl_stats[cl_idx].mask) {
 		int util = arbiter_data.cl_stats[cl_idx].utils[i];
-		int freq = arbiter_data.cpu_freqs[cl_idx][i] / 1000;
+		int freq = KHZ_TO_MHZ(arbiter_data.cpu_freqs[cl_idx][i]);
 
 		power += freq_to_power(freq, nr_coeffs, coeffs) * util;
 
@@ -900,8 +903,8 @@ static void arbiter_calc(int currT)
 	/*
 	 * Calculate the model values to observe power in the previous window
 	 */
-	Pa15_in = freq_to_power(arbiter_data.cl_stats[CA15].freq / 1000, NR_A15_COEFFS, a15_cpu_coeffs) * arbiter_data.cl_stats[CA15].util;
-	Pa7_in = freq_to_power(arbiter_data.cl_stats[CA7].freq / 1000, NR_A7_COEFFS, a7_cpu_coeffs) * arbiter_data.cl_stats[CA7].util;
+	Pa15_in = freq_to_power(KHZ_TO_MHZ(arbiter_data.cl_stats[CA15].freq), NR_A15_COEFFS, a15_cpu_coeffs) * arbiter_data.cl_stats[CA15].util;
+	Pa7_in = freq_to_power(KHZ_TO_MHZ(arbiter_data.cl_stats[CA7].freq), NR_A7_COEFFS, a7_cpu_coeffs) * arbiter_data.cl_stats[CA7].util;
 	Pgpu_in = kbase_platform_dvfs_freq_to_power(arbiter_data.mali_stats.s.freq_for_norm) * arbiter_data.gpu_load;
 
 	Pcpu_in = Pa7_in + Pa15_in;
@@ -1064,8 +1067,8 @@ static void arbiter_calc(int currT)
 	trace_data.currT = currT;
 	trace_data.deltaT = deltaT;
 	trace_data.gpu_freq_out = gpu_freq_limit;
-	trace_data.a15_freq_out = cpu_freq_limits[CA15] / 1000;
-	trace_data.a7_freq_out = cpu_freq_limits[CA7] / 1000;
+	trace_data.a15_freq_out = KHZ_TO_MHZ(cpu_freq_limits[CA15]);
+	trace_data.a7_freq_out = KHZ_TO_MHZ(cpu_freq_limits[CA7]);
 	trace_data.gpu_freq_req = arbiter_data.gpu_freq;
 	trace_data.a15_0_freq_in = arbiter_data.cpu_freqs[CA15][0];
 	trace_data.a15_1_freq_in = arbiter_data.cpu_freqs[CA15][1];
@@ -1194,9 +1197,10 @@ static void arbiter_init(struct work_struct *work)
 	setup_power_tables();
 
 	/* reconfigure max */
-	arbiter_data.config.a7_max_power = freq_to_power(arbiter_data.cpu_freq_limits[CA7] / 1000,
+	arbiter_data.config.a7_max_power = freq_to_power(KHZ_TO_MHZ(arbiter_data.cpu_freq_limits[CA7]),
 							NR_A7_COEFFS, a7_cpu_coeffs) * cpumask_weight(arbiter_data.cl_stats[CA7].mask);
-	arbiter_data.config.a15_max_power = freq_to_power(arbiter_data.cpu_freq_limits[CA15] / 1000,
+
+	arbiter_data.config.a15_max_power = freq_to_power(KHZ_TO_MHZ(arbiter_data.cpu_freq_limits[CA15]),
 							NR_A15_COEFFS, a15_cpu_coeffs) * cpumask_weight(arbiter_data.cl_stats[CA15].mask);
 
 	arbiter_data.config.gpu_max_power = kbase_platform_dvfs_freq_to_power(arbiter_data.gpu_freq_limit);
