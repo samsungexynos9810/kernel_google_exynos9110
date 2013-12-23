@@ -139,61 +139,61 @@ static unsigned int clkdiv_cpu1_5430_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
 	 */
 
 	/* ARM L0: 2.0GHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L1: 1.9GMHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L2: 1.8GMHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L3: 1.7GHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L4: 1.6GHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L5: 1.5GMHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L6: 1.4GMHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L7: 1.3GHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L8: 1.2GHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L9: 1.1GHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L10: 1000MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L11: 900MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L12: 800MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L13: 700MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L14: 600MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L15: 500MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L16: 400MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L17: 300MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 
 	/* ARM L18: 200MHz */
-	{ 0, 7 },
+	{ 3, 7 },
 };
 
 static unsigned int exynos5430_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
