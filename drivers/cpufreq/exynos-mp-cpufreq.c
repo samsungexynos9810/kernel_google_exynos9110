@@ -1369,6 +1369,10 @@ static struct notifier_block exynos_cpufreq_reboot_notifier = {
 extern void cpufreq_interactive_update_target_freq(unsigned int target_freq, int cpu);
 #endif
 
+static void exynos_qos_nop(void *info)
+{
+}
+
 static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long val, void *v)
 {
 	int ret;
@@ -1397,6 +1401,8 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 		goto good;
 	}
 #endif
+
+	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
 
 	ret = __cpufreq_driver_target(policy, val, CPUFREQ_RELATION_H);
 
@@ -1448,6 +1454,8 @@ static int exynos_cpu_max_qos_handler(struct notifier_block *b, unsigned long va
 	}
 #endif
 
+	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
+
 	ret = __cpufreq_driver_target(policy, val, CPUFREQ_RELATION_H);
 
 	cpufreq_cpu_put(policy);
@@ -1498,6 +1506,8 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 	}
 #endif
 
+	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
+
 	ret = __cpufreq_driver_target(policy, val, CPUFREQ_RELATION_H);
 
 	cpufreq_cpu_put(policy);
@@ -1547,6 +1557,8 @@ static int exynos_kfc_max_qos_handler(struct notifier_block *b, unsigned long va
 		goto good;
 	}
 #endif
+
+	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
 
 	ret = __cpufreq_driver_target(policy, val, CPUFREQ_RELATION_H);
 
