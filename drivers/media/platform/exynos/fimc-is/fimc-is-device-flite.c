@@ -1075,7 +1075,7 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				tasklet_schedule(&flite->tasklet_flite_str);
 			} else {
 				/* W/A: Skip start tasklet at interrupt lost case */
-				warn("[CamIF%d] invalide interrupt interval",
+				warn("[CamIF%d] invalid interrupt interval",
 					flite->instance);
 				goto clear_status;
 #ifdef DBG_FLITEISR
