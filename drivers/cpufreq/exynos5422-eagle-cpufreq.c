@@ -521,7 +521,7 @@ static void __init set_volt_table_CA15(void)
 	max_support_idx_CA15 = L3;
 #else
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	max_support_idx_CA15 = L4;
+	max_support_idx_CA15 = L5;
 #else
 	max_support_idx_CA15 = L5;
 #endif
