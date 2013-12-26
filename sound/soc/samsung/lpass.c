@@ -347,7 +347,7 @@ static void ass_enable(void)
 	lpass_reg_restore();
 
 	/* ASS_MUX_SEL */
-	exynos_set_parent("mout_ass_clk", "fout_epll");
+	exynos_set_parent("mout_ass_clk", "fin_pll");
 	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
 
 	clk_prepare_enable(lpass.clk_dmac);
