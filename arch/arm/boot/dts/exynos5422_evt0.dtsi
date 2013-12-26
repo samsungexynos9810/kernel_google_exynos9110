@@ -265,7 +265,7 @@
 		interrupts = <3 4>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1288>, <&clock 1261>;
-		samsung,power-domain = <&pd_gscl>;
+		samsung,power-domain = <&pd_cam>;
 		qos = <15>;
 		prop-map {
 			iomap = "w";
@@ -279,7 +279,7 @@
 		interrupts = <24 1>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1287>, <&clock 1260>;
-		samsung,power-domain = <&pd_gscl>;
+		samsung,power-domain = <&pd_cam>;
 		qos = <15>;
 		prop-map {
 			iomap = "w";
@@ -293,7 +293,7 @@
 		interrupts = <2 4>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1282>, <&clock 1281>;
-		samsung,power-domain = <&pd_gscl>;
+		samsung,power-domain = <&pd_cam>;
 		qos = <15>;
 		prop-map {
 			iomap = "w";
@@ -307,7 +307,7 @@
 		interrupts = <23 6>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 1289>, <&clock 1263>;
-		samsung,power-domain = <&pd_gscl>;
+		samsung,power-domain = <&pd_cam>;
 	};
 
 	sysmmu_3aa_2: sysmmu@0x13CB0000 {
@@ -316,7 +316,7 @@
 		interrupts = <0 172 0>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 5014>, <&clock 5008>;
-		samsung,power-domain = <&pd_gscl>;
+		samsung,power-domain = <&pd_cam>;
 	};
 
 	sysmmu_g2d: sysmmu@0x10A60000 {
