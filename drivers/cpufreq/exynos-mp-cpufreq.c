@@ -620,6 +620,10 @@ static int exynos_target(struct cpufreq_policy *policy,
 	if (target_freq == 0)
 		target_freq = policy->min;
 
+	/* if PLL bypass, frequency scale is skip */
+	if (exynos_getspeed(policy->cpu) <= 24000)
+		goto out;
+
 	/* verify old frequency */
 	if (freqs[cur]->old != exynos_getspeed(policy->cpu)) {
 		printk("oops, sombody change clock  old clk:%d, cur clk:%d \n", freqs[cur]->old, exynos_getspeed(policy->cpu));
