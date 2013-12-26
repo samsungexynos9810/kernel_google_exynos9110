@@ -119,12 +119,12 @@
 #define DVFS_L1_2			(460000)
 #define DVFS_L1_3			(440000)
 
-#define DVFS_MIF_L0			(800000)
-#define DVFS_MIF_L1			(733000)
-#define DVFS_MIF_L2			(667000)
-#define DVFS_MIF_L3			(533000)
-#define DVFS_MIF_L4			(400000)
-#define DVFS_MIF_L5			(266000)
+#define DVFS_MIF_L0			(825000)
+#define DVFS_MIF_L1			(728000)
+#define DVFS_MIF_L2			(633000)
+#define DVFS_MIF_L3			(543000)
+#define DVFS_MIF_L4			(413000)
+#define DVFS_MIF_L5			(275000)
 
 #define I2C_L0				(108000000)
 #define I2C_L1				(36000000)

@@ -32,7 +32,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE);
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 /*
  * Static Scenario Set
  * You should describe static scenario by priorities of scenario.
@@ -572,7 +572,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 		dvfs_ctrl->cur_disp_qos = disp_qos;
 	}
 
-	dbg("[RSC:%d]: New QoS [INT(%d), MIF(%d), CAM(%d), DISP(%d), I2C(%d)]\n",
+	pr_info("[RSC:%d]: New QoS [INT(%d), MIF(%d), CAM(%d), DISP(%d), I2C(%d)]\n",
 			device->instance, int_qos, mif_qos,
 			cam_qos, disp_qos, i2c_qos);
 exit:
