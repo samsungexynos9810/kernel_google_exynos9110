@@ -31,6 +31,13 @@
 #define ENABLE_CLKOUT
 #define SUPPORT_APLL_BYPASS
 
+#define ARM_INT_SKEW_FREQ   1600000
+#define ARM_INT_SKEW_FREQ_H 1800000
+
+#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
+static struct pm_qos_request min_int_qos;
+#endif
+
 static int max_support_idx_CA15;
 static int min_support_idx_CA15 = (CPUFREQ_LEVEL_END_CA15 - 1);
 
@@ -350,6 +357,26 @@ static int exynos5422_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	400000, /* 200 MHz */
 };
 
+static void exynos5422_set_int_skew_CA15(int new_index)
+{
+#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
+	if (exynos5422_freq_table_CA15[new_index].frequency < ARM_INT_SKEW_FREQ) {
+		if (pm_qos_request_active(&min_int_qos))
+			pm_qos_update_request(&min_int_qos, 0);
+	} else if ((exynos5422_freq_table_CA15[new_index].frequency < ARM_INT_SKEW_FREQ_H)) {
+		if (pm_qos_request_active(&min_int_qos))
+#if defined(CONFIG_S5P_DP)
+			pm_qos_update_request(&min_int_qos, 222000);
+#else
+		pm_qos_update_request(&min_int_qos, 111000);
+#endif
+	} else {
+		if (pm_qos_request_active(&min_int_qos))
+			pm_qos_update_request(&min_int_qos, 400000);
+	}
+#endif
+};
+
 static void exynos5422_set_clkdiv_CA15(unsigned int div_index)
 {
 	unsigned int tmp;
@@ -625,6 +652,11 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->set_freq = exynos5422_set_frequency_CA15;
 	info->need_apll_change = exynos5422_pms_change_CA15;
 	info->is_alive = exynos5422_is_alive_CA15;
+	info->set_int_skew = exynos5422_set_int_skew_CA15;
+
+#ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
+	pm_qos_add_request(&min_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
+#endif
 
 #ifdef ENABLE_CLKOUT
 	tmp = __raw_readl(EXYNOS5_CLKOUT_CMU_TOP);
