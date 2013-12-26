@@ -134,12 +134,6 @@
 #define RXBUSY    (1<<2)
 #define TXBUSY    (1<<3)
 
-struct s3c64xx_spi_dma_data {
-	struct dma_chan *ch;
-	enum dma_transfer_direction direction;
-	unsigned int dmach;
-};
-
 /**
  * struct s3c64xx_spi_info - SPI Controller hardware info
  * @fifo_lvl_mask: Bit-mask for {TX|RX}_FIFO_LVL bits in SPI_STATUS register.
@@ -160,51 +154,6 @@ struct s3c64xx_spi_port_config {
 	int	tx_st_done;
 	bool	high_speed;
 	bool	clk_from_cmu;
-};
-
-/**
- * struct s3c64xx_spi_driver_data - Runtime info holder for SPI driver.
- * @clk: Pointer to the spi clock.
- * @src_clk: Pointer to the clock used to generate SPI signals.
- * @master: Pointer to the SPI Protocol master.
- * @cntrlr_info: Platform specific data for the controller this driver manages.
- * @tgl_spi: Pointer to the last CS left untoggled by the cs_change hint.
- * @queue: To log SPI xfer requests.
- * @lock: Controller specific lock.
- * @state: Set of FLAGS to indicate status.
- * @rx_dmach: Controller's DMA channel for Rx.
- * @tx_dmach: Controller's DMA channel for Tx.
- * @sfr_start: BUS address of SPI controller regs.
- * @regs: Pointer to ioremap'ed controller registers.
- * @irq: interrupt
- * @xfer_completion: To indicate completion of xfer task.
- * @cur_mode: Stores the active configuration of the controller.
- * @cur_bpw: Stores the active bits per word settings.
- * @cur_speed: Stores the active xfer clock speed.
- */
-struct s3c64xx_spi_driver_data {
-	void __iomem                    *regs;
-	struct clk                      *clk;
-	struct clk                      *src_clk;
-	struct platform_device          *pdev;
-	struct spi_master               *master;
-	struct s3c64xx_spi_info  *cntrlr_info;
-	struct spi_device               *tgl_spi;
-	struct list_head                queue;
-	spinlock_t                      lock;
-	unsigned long                   sfr_start;
-	struct completion               xfer_completion;
-	unsigned                        state;
-	unsigned                        cur_mode, cur_bpw;
-	unsigned                        cur_speed;
-	struct s3c64xx_spi_dma_data	rx_dma;
-	struct s3c64xx_spi_dma_data	tx_dma;
-#if defined(CONFIG_S3C_DMA) || defined(CONFIG_SAMSUNG_DMADEV)
-	struct samsung_dma_ops		*ops;
-#endif
-	struct s3c64xx_spi_port_config	*port_conf;
-	unsigned int			port_id;
-	unsigned long			gpios[4];
 };
 
 static void flush_fifo(struct s3c64xx_spi_driver_data *sdd)
