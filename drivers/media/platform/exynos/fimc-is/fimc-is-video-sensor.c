@@ -520,6 +520,36 @@ static int fimc_is_sen_video_s_ctrl(struct file *file, void *priv,
 			goto p_err;
 		}
 		break;
+	/*
+	 * gain boost: min_target_fps,  max_target_fps, scene_mode
+	 */
+	case V4L2_CID_IS_MIN_TARGET_FPS:
+		if (test_bit(FIMC_IS_SENSOR_FRONT_START, &device->state)) {
+			err("failed to set min_target_fps: %d - sensor stream on already\n",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->min_target_fps = ctrl->value;
+		}
+		break;
+	case V4L2_CID_IS_MAX_TARGET_FPS:
+		if (test_bit(FIMC_IS_SENSOR_FRONT_START, &device->state)) {
+			err("failed to set max_target_fps: %d - sensor stream on already\n",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->max_target_fps = ctrl->value;
+		}
+		break;
+	case V4L2_CID_SCENEMODE:
+		if (test_bit(FIMC_IS_SENSOR_FRONT_START, &device->state)) {
+			err("failed to set scene_mode: %d - sensor stream on already\n",
+					ctrl->value);
+			ret = -EINVAL;
+		} else {
+			device->scene_mode = ctrl->value;
+		}
+		break;
 	default:
 		err("unsupported ioctl(%d)\n", ctrl->id);
 		ret = -EINVAL;

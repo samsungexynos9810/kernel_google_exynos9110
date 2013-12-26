@@ -155,6 +155,10 @@ struct fimc_is_device_sensor {
 	struct v4l2_subdev				*subdev_flite;
 
 	int						mode;
+	/* gain boost */
+	int						min_target_fps;
+	int						max_target_fps;
+	int						scene_mode;
 
 	/* ENABLE_DTP */
 	bool						dtp_check;

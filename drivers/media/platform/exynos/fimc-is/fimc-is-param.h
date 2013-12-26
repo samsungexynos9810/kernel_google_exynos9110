@@ -36,8 +36,24 @@
 		(dev->is_p_region->parameter.global.shotmode.skip_frames = x)
 
 /* Sensor control */
-#define IS_SENSOR_SET_FRAME_RATE(dev, x) \
-		(dev->is_p_region->parameter.sensor.frame_rate.frame_rate = x)
+#define IS_SENSOR_SET_FRAMERATE(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.framerate = x)
+#define IS_SENSOR_SET_WIDTH(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.width = x)
+#define IS_SENSOR_SET_HEIGHT(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.height = x)
+#define IS_SENSOR_SET_MODE(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.mode = x)
+#define IS_SENSOR_SET_BINNING_RATIO_X(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.binning_ratio_x = x)
+#define IS_SENSOR_SET_BINNING_RATIO_Y(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.binning_ratio_y = x)
+#define IS_SENSOR_SET_MIN_TARGET_FPS(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.min_target_fps = x)
+#define IS_SENSOR_SET_MAX_TARGET_FPS(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.max_target_fps = x)
+#define IS_SENSOR_SET_SCENE_MODE(dev, x) \
+		(dev->is_p_region->parameter.sensor.config.scene_mode = x)
 
 /* ISP Macros */
 #define IS_ISP_SET_PARAM_CONTROL_CMD(dev, x) \
@@ -858,7 +874,7 @@ enum is_param_set_bit {
 	PARAM_SENSOR_CONTROL,
 	PARAM_SENSOR_OTF_INPUT,
 	PARAM_SENSOR_OTF_OUTPUT,
-	PARAM_SENSOR_FRAME_RATE,
+	PARAM_SENSOR_CONFIG,
 	PARAM_SENSOR_DMA_OUTPUT,
 	PARAM_BUFFER_CONTROL,
 	PARAM_BUFFER_OTF_INPUT,
@@ -931,8 +947,8 @@ enum is_param_set_bit {
 #define PARAM_SENSOR_CONTROL		INC_NUM(PARAM_GLOBAL_SHOTMODE)
 #define PARAM_SENSOR_OTF_INPUT		INC_NUM(PARAM_SENSOR_CONTROL)
 #define PARAM_SENSOR_OTF_OUTPUT		INC_NUM(PARAM_SENSOR_OTF_INPUT)
-#define PARAM_SENSOR_FRAME_RATE		INC_NUM(PARAM_SENSOR_OTF_OUTPUT)
-#define PARAM_SENSOR_DMA_OUTPUT		INC_NUM(PARAM_SENSOR_FRAME_RATE)
+#define PARAM_SENSOR_CONFIG		INC_NUM(PARAM_SENSOR_OTF_OUTPUT)
+#define PARAM_SENSOR_DMA_OUTPUT		INC_NUM(PARAM_SENSOR_CONFIG)
 #define PARAM_BUFFER_CONTROL		INC_NUM(PARAM_SENSOR_DMA_OUTPUT)
 #define PARAM_BUFFER_OTF_INPUT		INC_NUM(PARAM_BUFFER_CONTROL)
 #define PARAM_BUFFER_OTF_OUTPUT		INC_NUM(PARAM_BUFFER_OTF_INPUT)
@@ -1720,9 +1736,17 @@ struct param_global_shotmode {
 	u32	err;
 };
 
-struct param_sensor_framerate {
-	u32	frame_rate;
-	u32	reserved[PARAMETER_MAX_MEMBER-2];
+struct param_sensor_config {
+	u32	framerate;
+	u32	width;
+	u32	height;
+	u32	mode;
+	u32	binning_ratio_x;
+	u32	binning_ratio_y;
+	u32	min_target_fps;
+	u32	max_target_fps;
+	u32	scene_mode;
+	u32	reserved[PARAMETER_MAX_MEMBER-10];
 	u32	err;
 };
 
@@ -1906,7 +1930,7 @@ struct sensor_param {
 	struct param_control		control;
 	struct param_otf_input		otf_input;
 	struct param_otf_output		otf_output;
-	struct param_sensor_framerate	frame_rate;
+	struct param_sensor_config	config;
 	struct param_dma_output		dma_output;
 };
 

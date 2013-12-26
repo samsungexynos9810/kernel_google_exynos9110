@@ -201,11 +201,15 @@ static const struct file_operations debug_fops = {
 #endif
 
 static const struct sensor_param init_sensor_param = {
-	.frame_rate = {
+	.config = {
 #ifdef FIXED_FPS_DEBUG
-		.frame_rate = FIXED_FPS_VALUE,
+		.framerate = FIXED_FPS_VALUE,
+		.min_target_fps = FIXED_FPS_VALUE,
+		.max_target_fps = FIXED_FPS_VALUE,
 #else
-		.frame_rate = 30,
+		.framerate = 30,
+		.min_target_fps = 15,
+		.max_target_fps = 30,
 #endif
 	},
 };
@@ -1424,7 +1428,7 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			region->parameter.taa.vdma1_input.height + device->margin_height,
 			(region->parameter.taa.vdma1_input.sensor_binning_ratio_x / 1000),
 			(region->parameter.taa.vdma1_input.sensor_binning_ratio_y / 1000),
-			region->parameter.sensor.frame_rate.frame_rate
+			region->parameter.sensor.config.framerate
 			);
 	else
 		mdbgd_ischain("SENSOR :  %04dx%04d        %1dx%1d          %3d\n",
@@ -1433,7 +1437,7 @@ static int fimc_is_itf_f_param(struct fimc_is_device_ischain *device)
 			region->parameter.sensor.dma_output.height,
 			(region->parameter.taa.otf_input.sensor_binning_ratio_x / 1000),
 			(region->parameter.taa.otf_input.sensor_binning_ratio_y / 1000),
-			region->parameter.sensor.frame_rate.frame_rate
+			region->parameter.sensor.config.framerate
 			);
 	mdbgd_ischain(" NAME    ON  BYPASS PATH        SIZE FORMAT\n", device);
 	mdbgd_ischain("3AX OI : %2d    %4d  %3d   %04dx%04d    %3d\n", device,
@@ -5019,10 +5023,17 @@ int fimc_is_ischain_isp_start(struct fimc_is_device_ischain *device,
 		fimc_is_itf_sensor_mode(device);
 
 #ifdef FIXED_FPS_DEBUG
-	sensor_param->frame_rate.frame_rate = FIXED_FPS_VALUE;
+	sensor_param->config.framerate = FIXED_FPS_VALUE;
 #else
-	sensor_param->frame_rate.frame_rate = framerate;
+	sensor_param->config.framerate = framerate;
 #endif
+	if (device->sensor->min_target_fps > 0)
+		sensor_param->config.min_target_fps = device->sensor->min_target_fps;
+	if (device->sensor->max_target_fps > 0)
+		sensor_param->config.max_target_fps = device->sensor->max_target_fps;
+	if (device->sensor->scene_mode >= AA_SCENE_MODE_UNSUPPORTED)
+		sensor_param->config.scene_mode = device->sensor->scene_mode;
+
 	sensor_param->dma_output.width = sensor_width;
 	sensor_param->dma_output.height = sensor_height;
 
