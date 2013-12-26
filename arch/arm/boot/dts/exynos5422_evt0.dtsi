@@ -1433,16 +1433,77 @@
 				"dout_isp_sensor0",	/* 4114 */
 				"dout_isp_sensor1",	/* 4115 */
 				"dout_isp_sensor2",	/* 4116 */
-				"sclk_isp_sensor0", /* 1218 */
-				"sclk_isp_sensor1", /* 1217 */
-				"sclk_isp_sensor2"; /* 1216 */
+				/* GATE (CLK_GATE_TOP_SCLK_GSCL)*/
+				"sclk_gscl_wrap_b", /* 1024 */
+				"sclk_gscl_wrap_a", /* 1025 */
+				/* GATE (CLK_GATE_TOP_SCLK_ISP)*/
+				"sclk_isp_sensor2",	/* 1216 */
+				"sclk_isp_sensor1",	/* 1217 */
+				"sclk_isp_sensor0",	/* 1218 */
+				"sclk_pwm_isp",		/* 1219 */
+				"sclk_spi1_isp",	/* 1220 */
+				"sclk_spi0_isp",	/* 1221 */
+				"sclk_uart_isp",	/* 1222 */
+				/* GATE (CLK_GATE_IP_GSCL0)*/
+				"clk_camif_top_fimcl3",	/* 1255 */
+				"clk_camif_top_fimcl1",	/* 1256 */
+				"clk_camif_top_fimcl0",	/* 1257 */
+				"clk_camif_top_3aa",	/* 1258 */
+				"gscl_fimc_lite1",		/* 1260 */
+				"gscl_fimc_lite0",		/* 1261 */
+				"clk_3aa",				/* 1262 */
+				/* GATE (CLK_GATE_IP_GSCL0)*/
+				"clk_camif_top_csis0",	/* 1280 */
+				"gscl_fimc_lite3",		/* 1281 */
+				"clk_gscl_wrap_b",		/* 1283 */
+				"clk_gscl_wrap_a",		/* 1284 */
+				/* GATE (CLK_GATE_IP_CAM )*/
+				"clk_3aa_2",			/* 5008 */
+				"clk_xiu_si_gscl_cam",	/* 5010 */
+				"clk_noc_p_rstop_fimcl",/* 5011 */
+				"clk_camif_top_3aa0",	/* 5012 */
+				"clk_bts_gscl1",		/* 1248 */
+				"clk_bts_gscl0",		/* 1249 */
+				"clk_gscaler1",			/* 1253 */
+				"clk_gscaler0";			/* 1254 */
 		clocks = <&clock 2116>,
 				<&clock 4114>,
 				<&clock 4115>,
 				<&clock 4116>,
-				<&clock 1218>,
+
+				<&clock 1024>,
+				<&clock 1025>,
+
+				<&clock 1216>,
 				<&clock 1217>,
-				<&clock 1216>;
+				<&clock 1218>,
+				<&clock 1219>,
+				<&clock 1220>,
+				<&clock 1221>,
+				<&clock 1222>,
+
+				<&clock 1255>,
+				<&clock 1256>,
+				<&clock 1257>,
+				<&clock 1258>,
+				<&clock 1260>,
+				<&clock 1261>,
+				<&clock 1262>,
+
+				<&clock 1280>,
+				<&clock 1281>,
+				<&clock 1283>,
+				<&clock 1284>,
+
+				<&clock 5008>,
+				<&clock 5010>,
+				<&clock 5011>,
+				<&clock 5012>,
+
+				<&clock 1248>,
+				<&clock 1249>,
+				<&clock 1253>,
+				<&clock 1254>;
 	};
 
 	/* CAMIF1 - MIPI-CSIS1, FIMC-Lite1 driver */
@@ -1459,16 +1520,77 @@
 				"dout_isp_sensor0",	/* 4114 */
 				"dout_isp_sensor1",	/* 4115 */
 				"dout_isp_sensor2",	/* 4116 */
-				"sclk_isp_sensor0", /* 1218 */
-				"sclk_isp_sensor1", /* 1217 */
-				"sclk_isp_sensor2"; /* 1216 */
+				/* GATE (CLK_GATE_TOP_SCLK_GSCL)*/
+				"sclk_gscl_wrap_b", /* 1024 */
+				"sclk_gscl_wrap_a", /* 1025 */
+				/* GATE (CLK_GATE_TOP_SCLK_ISP)*/
+				"sclk_isp_sensor2",	/* 1216 */
+				"sclk_isp_sensor1",	/* 1217 */
+				"sclk_isp_sensor0",	/* 1218 */
+				"sclk_pwm_isp",		/* 1219 */
+				"sclk_spi1_isp",	/* 1220 */
+				"sclk_spi0_isp",	/* 1221 */
+				"sclk_uart_isp",	/* 1222 */
+				/* GATE (CLK_GATE_IP_GSCL0)*/
+				"clk_camif_top_fimcl3",	/* 1255 */
+				"clk_camif_top_fimcl1",	/* 1256 */
+				"clk_camif_top_fimcl0",	/* 1257 */
+				"clk_camif_top_3aa",	/* 1258 */
+				"gscl_fimc_lite1",		/* 1260 */
+				"gscl_fimc_lite0",		/* 1261 */
+				"clk_3aa",				/* 1262 */
+				/* GATE (CLK_GATE_IP_GSCL0)*/
+				"clk_camif_top_csis0",	/* 1280 */
+				"gscl_fimc_lite3",		/* 1281 */
+				"clk_gscl_wrap_b",		/* 1283 */
+				"clk_gscl_wrap_a",		/* 1284 */
+				/* GATE (CLK_GATE_IP_CAM )*/
+				"clk_3aa_2",			/* 5008 */
+				"clk_xiu_si_gscl_cam",	/* 5010 */
+				"clk_noc_p_rstop_fimcl",/* 5011 */
+				"clk_camif_top_3aa0",	/* 5012 */
+				"clk_bts_gscl1",		/* 1248 */
+				"clk_bts_gscl0",		/* 1249 */
+				"clk_gscaler1",			/* 1253 */
+				"clk_gscaler0";			/* 1254 */
 		clocks = <&clock 2116>,
 				<&clock 4114>,
 				<&clock 4115>,
 				<&clock 4116>,
-				<&clock 1218>,
+
+				<&clock 1024>,
+				<&clock 1025>,
+
+				<&clock 1216>,
 				<&clock 1217>,
-				<&clock 1216>;
+				<&clock 1218>,
+				<&clock 1219>,
+				<&clock 1220>,
+				<&clock 1221>,
+				<&clock 1222>,
+
+				<&clock 1255>,
+				<&clock 1256>,
+				<&clock 1257>,
+				<&clock 1258>,
+				<&clock 1260>,
+				<&clock 1261>,
+				<&clock 1262>,
+
+				<&clock 1280>,
+				<&clock 1281>,
+				<&clock 1283>,
+				<&clock 1284>,
+
+				<&clock 5008>,
+				<&clock 5010>,
+				<&clock 5011>,
+				<&clock 5012>,
+
+				<&clock 1248>,
+				<&clock 1249>,
+				<&clock 1253>,
+				<&clock 1254>;
 	};
 
 	/* FIMC-IS driver */
@@ -1565,14 +1687,62 @@
 				/* SCLK_GSCL_WRAP_B */
 				"mout_gscl_wrap_b", /* 5321 */
 				"dout_gscl_wrap_b", /* 5411 */
-				/* GATE */
-				"sclk_isp_sensor0",	/* 1218 */
-				"sclk_isp_sensor1",	/* 1217 */
+				/* GATE (CLK_GATE_TOP_SCLK_GSCL)*/
+				"sclk_gscl_wrap_b", /* 1024 */
+				"sclk_gscl_wrap_a", /* 1025 */
+				/* GATE (CLK_GATE_TOP_SCLK_ISP)*/
 				"sclk_isp_sensor2",	/* 1216 */
-				"sclk_gscl_wrap_a",	/* 1025 */
-				"sclk_gscl_wrap_b",	/* 1024 */
+				"sclk_isp_sensor1",	/* 1217 */
+				"sclk_isp_sensor0",	/* 1218 */
+				"sclk_pwm_isp",		/* 1219 */
+				"sclk_spi1_isp",	/* 1220 */
+				"sclk_spi0_isp",	/* 1221 */
+				"sclk_uart_isp",	/* 1222 */
+				/* GATE (CLK_GATE_IP_GSCL0)*/
+				"clk_camif_top_fimcl3",	/* 1255 */
+				"clk_camif_top_fimcl1",	/* 1256 */
+				"clk_camif_top_fimcl0",	/* 1257 */
+				"clk_camif_top_3aa",	/* 1258 */
+				"gscl_fimc_lite1",		/* 1260 */
+				"gscl_fimc_lite0",		/* 1261 */
+				"clk_3aa",				/* 1262 */
+				/* GATE (CLK_GATE_IP_GSCL0)*/
+				"clk_camif_top_csis0",	/* 1280 */
+				"gscl_fimc_lite3",		/* 1281 */
+				"clk_gscl_wrap_b",		/* 1283 */
+				"clk_gscl_wrap_a",		/* 1284 */
+				/* GATE (CLK_GATE_IP_CAM )*/
+				"clk_3aa_2",			/* 5008 */
+				"clk_xiu_si_gscl_cam",	/* 5010 */
+				"clk_noc_p_rstop_fimcl",/* 5011 */
+				"clk_camif_top_3aa0",	/* 5012 */
+				/* GATE (CLK_GATE_IP_ISP0 )*/
+				"clk_uart_isp",			/* 384 */
+				"clk_wdt_isp",			/* 385 */
+				"clk_i2c2_isp",			/* 386 */
+				"clk_pwm_isp",			/* 387 */
+				"clk_mtcadc_isp",		/* 388 */
+				"clk_i2c1_isp",			/* 389 */
+				"clk_i2c0_isp",			/* 390 */
+				"clk_mpwm_isp",			/* 391 */
+				"clk_mcuctl_isp",		/* 392 */
+				"clk_gicisp",			/* 407 */
+				"clk_mcuisp",			/* 408 */
+				"clk_scalerp",			/* 409 */
+				"clk_scalerc",			/* 410 */
+				"clk_fd",				/* 411 */
+				"clk_drc",				/* 412 */
+				"clk_isp",				/* 413 */
+				/* GATE (CLK_GATE_IP_ISP1 )*/
+				"aclk_asyncaxim_3dnr_ip",	/* 416 */
+				"aclk_asyncaxim_fd_ip",		/* 419 */
+				"aclk_asyncaxim_scp_ip",	/* 420 */
+				"clk_spi1_isp",				/* 421 */
+				"clk_spi0_isp",				/* 422 */
+				"clk_3dnr",					/* 429 */
+				"clk_chain_glue1",			/* 431 */
 				/* ETC */
-				"dout_ispdiv0_0"; /* 4167 */
+				"dout_ispdiv0_0";			/* 4167 */
 		clocks = <&clock 1>,
 				<&clock 2001>,
 				<&clock 2002>,
@@ -1658,11 +1828,58 @@
 				<&clock 5321>,
 				<&clock 5411>,
 
-				<&clock 1218>,
-				<&clock 1217>,
-				<&clock 1216>,
-				<&clock 1025>,
 				<&clock 1024>,
+				<&clock 1025>,
+
+				<&clock 1216>,
+				<&clock 1217>,
+				<&clock 1218>,
+				<&clock 1219>,
+				<&clock 1220>,
+				<&clock 1221>,
+				<&clock 1222>,
+
+				<&clock 1255>,
+				<&clock 1256>,
+				<&clock 1257>,
+				<&clock 1258>,
+				<&clock 1260>,
+				<&clock 1261>,
+				<&clock 1262>,
+
+				<&clock 1280>,
+				<&clock 1281>,
+				<&clock 1283>,
+				<&clock 1284>,
+
+				<&clock 5008>,
+				<&clock 5010>,
+				<&clock 5011>,
+				<&clock 5012>,
+
+				<&clock 384>,
+				<&clock 385>,
+				<&clock 386>,
+				<&clock 387>,
+				<&clock 388>,
+				<&clock 389>,
+				<&clock 390>,
+				<&clock 391>,
+				<&clock 392>,
+				<&clock 407>,
+				<&clock 408>,
+				<&clock 409>,
+				<&clock 410>,
+				<&clock 411>,
+				<&clock 412>,
+				<&clock 413>,
+				<&clock 416>,
+				<&clock 419>,
+				<&clock 420>,
+				<&clock 421>,
+				<&clock 422>,
+				<&clock 429>,
+				<&clock 431>,
 
 				<&clock 4167>;
 		iommu = <&sysmmu_3aa>,
