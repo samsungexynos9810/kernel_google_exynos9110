@@ -362,6 +362,10 @@ static struct es515_route_configs es515_def_route_configs[] = {
 			0x90, 0x0C, 0x11, 0x00,
 			/* 30 dB */
 			0x90, 0x0D, 0x00, 0x14,
+			/* set HP Ramped Gain switch */
+			0x90, 0x0C, 0x1F, 0x61,
+			/* turn off */
+			0x90, 0x0D, 0x00, 0x00,
 			0xff,
 		},
 /*		.active_out_codec_port = ES515_CODEC_PORT_SPEAKER,*/
