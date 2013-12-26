@@ -16,6 +16,12 @@
 #include <linux/miscdevice.h>
 #include <linux/clk.h>
 
+enum mipi_lli_link_status {
+	LLI_RESET,
+	LLI_MOUNTED,
+	LLI_UNMOUNTED,
+};
+
 struct mipi_lli_ipc_handler {
 	void *data;
 	void (*handler)(void *, u32);
@@ -109,6 +115,7 @@ extern void __iomem *mipi_lli_request_sh_region(u32 sh_addr, u32 size);
 extern void mipi_lli_release_sh_region(void *rgn);
 extern unsigned long mipi_lli_get_phys_base(void);
 extern unsigned long mipi_lli_get_phys_size(void);
+extern int mipi_lli_get_link_status(void);
 extern int mipi_lli_register_handler(void (*handler)(void *, u32), void *data);
 extern int mipi_lli_unregister_handler(void (*handler)(void *, u32));
 extern void mipi_lli_send_interrupt(u32 cmd);

@@ -141,6 +141,9 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	struct exynos_mphy *phy = dev_get_drvdata(lli->mphy);
 	u32 remap_addr;
 
+	/* update lli_link_state as reset */
+	lli->state = LLI_RESET;
+
 	exynos_lli_system_config(lli);
 	/* enable LLI_PHY_CONTROL */
 	writel(1, lli->pmu_regs);
@@ -461,11 +464,15 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	if (status & INTR_MPHY_HIBERN8_EXIT_DONE)
 		writel(LLI_MOUNT_CTRL, lli->regs + EXYNOS_DME_CSA_SYSTEM_SET);
 
-	if (status & INTR_LLI_MOUNT_DONE)
+	if (status & INTR_LLI_MOUNT_DONE) {
+		lli->state = LLI_MOUNTED;
 		dev_dbg(dev, "Mount\n");
+	}
 
-	if (status & INTR_LLI_UNMOUNT_DONE)
+	if (status & INTR_LLI_UNMOUNT_DONE) {
+		lli->state = LLI_UNMOUNTED;
 		dev_dbg(dev, "Unmount\n");
+	}
 
 	if (status & INTR_PA_PLU_DETECTED)
 		dev_dbg(dev, "PLU_DETECT\n");
