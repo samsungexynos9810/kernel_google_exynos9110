@@ -32,9 +32,10 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
-#ifdef CONFIG_SEC_PM
+#ifdef CONFIG_ANDROID
 #include <asm/uaccess.h>
 #include <linux/syscalls.h>
+#include <linux/android_aid.h>
 #endif
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1176,7 +1177,7 @@ static struct attribute_group interactive_attr_group_gov_pol = {
 	.name = "interactive",
 };
 
-#ifdef CONFIG_SEC_PM
+#ifdef CONFIG_ANDROID
 static const char *interactive_sysfs[] = {
 	"target_loads",
 	"above_hispeed_delay",
@@ -1228,8 +1229,7 @@ static struct notifier_block cpufreq_interactive_idle_nb = {
 	.notifier_call = cpufreq_interactive_idle_notifier,
 };
 
-#ifdef CONFIG_SEC_PM
-#define AID_SYSTEM        1000  /* system server */
+#ifdef CONFIG_ANDROID
 static void change_sysfs_owner(struct cpufreq_policy *policy)
 {
 	char buf[NAME_MAX];
