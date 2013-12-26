@@ -1593,10 +1593,10 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 	}
 
 #ifdef CONFIG_ARCH_EXYNOS4
-	dma->dma_addr = iovmm_map(&s5p_device_fimd0.dev, dma->sg_table->sgl, 0,
+	dma->dma_addr = ion_iovmm_map(dma->attachment, 0,
 			dma->dma_buf->size, DMA_TO_DEVICE, win_no);
 #else
-	dma->dma_addr = iovmm_map(sfb->dev, dma->sg_table->sgl, 0,
+	dma->dma_addr = ion_iovmm_map(dma->attachment, 0,
 			dma->dma_buf->size, DMA_TO_DEVICE, win_no);
 #endif
 	if (!dma->dma_addr || IS_ERR_VALUE(dma->dma_addr)) {
@@ -1631,7 +1631,7 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 		sync_fence_put(dma->fence);
 
 #if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
-	iovmm_unmap(sfb->dev, dma->dma_addr);
+	ion_iovmm_unmap(dma->attachment, dma->dma_addr);
 
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_TO_DEVICE);

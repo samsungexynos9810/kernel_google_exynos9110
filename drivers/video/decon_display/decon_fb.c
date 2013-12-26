@@ -1529,7 +1529,7 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 		goto err_buf_map_attachment;
 	}
 
-	dma->dma_addr = iovmm_map(sfb->dev, dma->sg_table->sgl, 0,
+	dma->dma_addr = ion_iovmm_map(dma->attachment, 0,
 			dma->dma_buf->size, DMA_TO_DEVICE, win_no);
 	if (!dma->dma_addr || IS_ERR_VALUE(dma->dma_addr)) {
 		dev_err(sfb->dev, "iovmm_map() failed: %d\n", dma->dma_addr);
@@ -1563,7 +1563,7 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 		sync_fence_put(dma->fence);
 
 #if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE)
-	iovmm_unmap(sfb->dev, dma->dma_addr);
+	ion_iovmm_unmap(dma->attachment, dma->dma_addr);
 
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_TO_DEVICE);
@@ -2409,18 +2409,6 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	disp_pm_runtime_get_sync(dispdrv);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
-#if !defined(CONFIG_FB_EXYNOS_FIMD_SYSMMU_DISABLE) && !defined(DECON_DUMMY_WIN_DISPLAY)
-		u32 new_start = regs->vidw_buf_start[i];
-		u32 shadow_start = readl(sfb->regs +
-				SHD_VIDW_BUF_START(i));
-		if (new_start && (new_start == shadow_start)) {
-			pr_err("%s: 0x%08x is already unmapped \
-					address\n", __func__, new_start);
-			disp_pm_runtime_put_sync(dispdrv);
-			sw_sync_timeline_inc(sfb->timeline, 1);
-			return;
-		}
-#endif
 		old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
 		if (WIN_CONFIG_DMA(i)) {
 			if (regs->dma_buf_data[i].fence)
