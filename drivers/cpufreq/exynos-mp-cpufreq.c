@@ -418,6 +418,9 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	/* Update policy current frequency */
 	cpufreq_notify_transition(policy, freqs[cur], CPUFREQ_PRECHANGE);
 
+	if (exynos_info[cur]->set_int_skew)
+		exynos_info[cur]->set_int_skew(new_index);
+
 	/* When the new frequency is higher than current frequency */
 	if ((freqs[cur]->new > freqs[cur]->old) && !safe_volt){
 		/* Firstly, voltage up to increase frequency */
@@ -433,6 +436,9 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 		if (exynos_info[cur]->set_ema)
 			exynos_info[cur]->set_ema(safe_volt);
 	}
+
+	if (exynos_info[cur]->set_int_skew)
+		exynos_info[cur]->set_int_skew(new_index);
 
 	if (old_index > new_index) {
 		if (cur == CA15) {
