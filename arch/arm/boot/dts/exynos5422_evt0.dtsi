@@ -1104,8 +1104,8 @@
 				freq_kfc = <0>;
 			};
 			mfc_qos_variant_1 {
-				thrd_mb = <163200>;
-				freq_mfc = <200000>;
+				thrd_mb = <108000>;
+				freq_mfc = <134000>;
 				freq_int = <200000>;
 				freq_mif = <200000>;
 				freq_cpu = <0>;
@@ -1113,7 +1113,7 @@
 			};
 			mfc_qos_variant_2 {
 				thrd_mb = <244800>;
-				freq_mfc = <300000>;
+				freq_mfc = <200000>;
 				freq_int = <300000>;
 				freq_mif = <300000>;
 				freq_cpu = <0>;
