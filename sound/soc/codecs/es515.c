@@ -163,6 +163,9 @@ bool ES515_SR_BIT;
 
 struct es515_priv es515_priv_glb;
 
+static int es515_dai_word_length[4];
+static int es515_device_word_length(int dai_id, int bits_per_sample);
+
 #if defined(CONFIG_SND_SOC_ES515_SLIMBUS)
 static unsigned int es515_ap_tx1_ch_cnt = 1;
 unsigned int es515_rx1_route_enable;
@@ -3106,6 +3109,9 @@ static void es515_i2s_shutdown(struct snd_pcm_substream *substream,
 
 	pr_debug("%s(): dai->name = %s, dai->id = %d\n", __func__,
 			dai->name, dai->id);
+
+	if (!dai->active)
+		es515_device_word_length(dai->id, 0);
 }
 
 static int es515_device_word_length (int dai_id, int bits_per_sample)
@@ -3113,6 +3119,14 @@ static int es515_device_word_length (int dai_id, int bits_per_sample)
 	int rc = 0;
 
 	pr_debug("%s(): id = %d\n", __func__, dai_id);
+
+	/* Update, if changed */
+	if (bits_per_sample == es515_dai_word_length[dai_id])
+		return 0;
+
+	es515_dai_word_length[dai_id] = bits_per_sample;
+	if (!bits_per_sample)
+		return 0;
 
 	/* Set Device Param ID for wordlength */
 	rc = es515_write(NULL, ES515_DEVICE_PARAM_ID, 0x0A00 + (dai_id << 8));
