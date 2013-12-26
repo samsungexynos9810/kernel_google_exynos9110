@@ -5339,6 +5339,9 @@ static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device,
 	struct param_otf_output *scc_otf_output;
 	struct param_scaler_input_crop *scc_input_crop;
 	struct param_scaler_output_crop *scc_output_crop;
+#ifndef SCALER_PARALLEL_MODE
+	struct param_otf_input *scp_otf_input;
+#endif
 
 	if (output_crop[2] > scc_param->otf_input.width * 4) {
 		mwarn("Cannot be scaled up beyond 4 times(%d -> %d)",
@@ -5379,9 +5382,21 @@ static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device,
 		device->imemory.kvaddr_shared + 447 * sizeof(u32));
 
 	/* setting always although otf output is not used. */
-	scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
-	scc_otf_output->width = output_crop[2];
-	scc_otf_output->height = output_crop[3];
+	if (test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
+		scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
+		scc_otf_output->width = output_crop[2];
+		scc_otf_output->height = output_crop[3];
+	} else {
+		scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
+#ifdef SCALER_PARALLEL_MODE
+		scc_otf_output->width = output_crop[2];
+		scc_otf_output->height = output_crop[3];
+#else
+		scp_otf_input = fimc_is_itf_g_param(device, frame, PARAM_SCALERP_OTF_INPUT);
+		scc_otf_output->width = scp_otf_input->width;
+		scc_otf_output->height = scp_otf_input->height;
+#endif
+	}
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_OTF_OUTPUT);
 	(*indexes)++;
@@ -5435,8 +5450,8 @@ static int fimc_is_ischain_scc_start(struct fimc_is_device_ischain *device,
 		scc_dma_output->buffer_number = queue->buf_maxcount;
 		scc_dma_output->plane = queue->framecfg.format.num_planes - 1;
 		scc_dma_output->buffer_address = device->imemory.dvaddr_shared + 447*sizeof(u32);
-		scc_dma_output->width = output_crop[2];
-		scc_dma_output->height = output_crop[3];
+		scc_dma_output->width = input_crop[2];
+		scc_dma_output->height = input_crop[3];
 		scc_dma_output->reserved[0] = SCALER_DMA_OUT_UNSCALED;
 	}
 
@@ -5596,6 +5611,8 @@ static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 			(output_crop[1] != scc_param->output_crop.pos_y) ||
 			(output_crop[2] != scc_param->output_crop.crop_width) ||
 			(output_crop[3] != scc_param->output_crop.crop_height) ||
+			(input_crop[2] != scc_param->dma_output.width) ||
+			(input_crop[3] != scc_param->dma_output.height) ||
 			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
 
 			ret = fimc_is_ischain_scc_start(device,
