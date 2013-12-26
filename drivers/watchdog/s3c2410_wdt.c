@@ -312,9 +312,6 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 	pdata = dev_get_platdata(&pdev->dev);
-	/* Enable pmu watchdog reset control */
-	if (pdata != NULL && pdata->pmu_wdt_control != NULL)
-		pdata->pmu_wdt_control(1, pdata->pmu_wdt_reset_type);
 
 	wdt_mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (wdt_mem == NULL) {
@@ -353,6 +350,12 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 	}
 
 	clk_prepare_enable(wdt_clock);
+
+	/* Enable pmu watchdog reset control */
+	if (pdata != NULL && pdata->pmu_wdt_control != NULL) {
+		s3c2410wdt_int_clear(&s3c2410_wdd);
+		pdata->pmu_wdt_control(1, pdata->pmu_wdt_reset_type);
+	}
 
 	/* see if we can actually set the requested timer margin, and if
 	 * not, try the default value */
