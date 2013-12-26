@@ -108,23 +108,23 @@ int kbase_platform_dvfs_freq_to_power(int freq)
 	unsigned long long power;
 	struct kbase_device *kbdev = pkbdev;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
-	gpu_dvfs_info *dvfs_status;
 
 	if (!platform) {
 		GPU_LOG(DVFS_ERROR, "platform context (0x%p) is not initialized within %s\n", platform, __FUNCTION__);
 		return -1;
 	}
 
-	dvfs_status = platform->table;
-
 	if (0 == freq) {
 		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
 		power = platform->power;
 		spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
 	} else {
-		level = platform->step;
-		if (level >= 0) {
-			vol = dvfs_status->voltage/10000;
+		for (level = 0; level < platform->table_size; level++)
+			if (platform->table[level].clock == freq)
+				break;
+
+		if (level < platform->table_size) {
+			vol = platform->table[level].voltage / 10000;
 			power = div_u64((u64)POWER_COEFF_GPU * freq * vol * vol, 100000);
 		} else {
 			power = 0;
@@ -141,22 +141,18 @@ int kbase_platform_dvfs_power_to_freq(int power)
 	u64 _power;
 	struct kbase_device *kbdev = pkbdev;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
-	gpu_dvfs_info *dvfs_status;
+
 	if (!platform) {
 		GPU_LOG(DVFS_ERROR, "platform context (0x%p) is not initialized within %s\n", platform, __FUNCTION__);
 		return -1;
 	}
 
-	dvfs_status = platform->table;
-	level = 0;
-	while (level < (platform->table_size))
-	{
-		vol = dvfs_status->voltage/10000;
-		freq = dvfs_status->clock;
+	for (level = 0; level < (platform->table_size - 1); level++) {
+		vol = platform->table[level].voltage / 10000;
+		freq = platform->table[level].clock;
 		_power = div_u64((u64)POWER_COEFF_GPU * freq * vol * vol, 100000);
-		if ((int)_power > power)
+		if ((int)_power >= power)
 			break;
-		level++;
 	}
 
 	return platform->table[level].clock;
@@ -202,9 +198,8 @@ void gpu_ipa_dvfs_get_utilisation_stats(struct mali_debug_utilisation_stats *sta
 	spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
 }
 
-int gpu_ipa_dvfs_max_lock(int level)
+int gpu_ipa_dvfs_max_lock(int clock)
 {
-	int clock;
 	struct kbase_device *kbdev = pkbdev;
 	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
 
@@ -214,7 +209,6 @@ int gpu_ipa_dvfs_max_lock(int level)
 	}
 
 	platform->target_lock_type = IPA_LOCK;
-	clock=gpu_dvfs_get_clock(level);
 
 	gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_MAX_LOCK, clock);
 	return 0;
