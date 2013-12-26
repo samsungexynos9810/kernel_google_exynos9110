@@ -2072,7 +2072,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 
 	mutex_lock(&sfb->output_lock);
 
-	if (!sfb->output_on) {
+	if (!sfb->output_on && sfb->power_state == POWER_DOWN) {
 		sfb->timeline_max++;
 		pt = sw_sync_pt_create(sfb->timeline, sfb->timeline_max);
 		fence = sync_fence_create("display", pt);
@@ -2442,26 +2442,14 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		u32 vsync;
 	} p;
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	struct display_driver *dispdrv;
-	dispdrv = get_display_driver();
-#endif
-
 	if ((sfb->power_state == POWER_DOWN) &&
 		(cmd != S3CFB_WIN_CONFIG))
 		return 0;
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
-	if (sfb->power_state == POWER_HIBER_DOWN) {
-		switch (cmd) {
-		case S3CFB_WIN_CONFIG:
-			dispdrv->pm_status.ops->pwr_on(dispdrv);
-		break;
-		default:
-			return 0;
-		}
-	}
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
+	/* Try to scheduled for DISPLAY power_on */
+	if (disp_pm_sched_power_on(get_display_driver(), cmd) < 0)
+		return 0;
 #endif
 
 	switch (cmd) {
