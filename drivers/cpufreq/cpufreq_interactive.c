@@ -32,6 +32,10 @@
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
 #include <asm/cputime.h>
+#ifdef CONFIG_SEC_PM
+#include <asm/uaccess.h>
+#include <linux/syscalls.h>
+#endif
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 #include <mach/cpufreq.h>
@@ -1172,6 +1176,22 @@ static struct attribute_group interactive_attr_group_gov_pol = {
 	.name = "interactive",
 };
 
+#ifdef CONFIG_SEC_PM
+static const char *interactive_sysfs[] = {
+	"target_loads",
+	"above_hispeed_delay",
+	"hispeed_freq",
+	"go_hispeed_load",
+	"min_sample_time",
+	"timer_rate",
+	"timer_slack",
+	"boost",
+	"boostpulse",
+	"boostpulse_duration",
+	"io_is_busy",
+};
+#endif
+
 static struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy)
 {
 	if (have_governor_per_policy())
@@ -1207,6 +1227,32 @@ static int cpufreq_interactive_idle_notifier(struct notifier_block *nb,
 static struct notifier_block cpufreq_interactive_idle_nb = {
 	.notifier_call = cpufreq_interactive_idle_notifier,
 };
+
+#ifdef CONFIG_SEC_PM
+#define AID_SYSTEM        1000  /* system server */
+static void change_sysfs_owner(struct cpufreq_policy *policy)
+{
+	char buf[NAME_MAX];
+	mm_segment_t oldfs;
+	int i;
+	char *path = kobject_get_path(get_governor_parent_kobj(policy),
+			GFP_KERNEL);
+
+	oldfs = get_fs();
+	set_fs(get_ds());
+
+	for (i = 0; i < ARRAY_SIZE(interactive_sysfs); i++) {
+		snprintf(buf, sizeof(buf), "/sys%s/interactive/%s", path,
+				interactive_sysfs[i]);
+		sys_chown(buf, AID_SYSTEM, AID_SYSTEM);
+	}
+
+	set_fs(oldfs);
+	kfree(path);
+}
+#else
+static inline void change_sysfs_owner(struct cpufreq_policy *policy) { }
+#endif
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event)
@@ -1248,6 +1294,8 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			kfree(tunables);
 			return rc;
 		}
+
+		change_sysfs_owner(policy);
 
 		if (!tuned_parameters[policy->cpu]) {
 			tunables->above_hispeed_delay = default_above_hispeed_delay;
