@@ -1376,6 +1376,8 @@ static struct notifier_block exynos_cpufreq_reboot_notifier = {
 	.notifier_call = exynos_cpufreq_reboot_notifier_call,
 };
 
+void (*disable_c3_idle)(bool disable);
+
 static void exynos_qos_nop(void *info)
 {
 }
@@ -1409,9 +1411,15 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 	}
 #endif
 
+	if (disable_c3_idle)
+		disable_c3_idle(true);
+
 	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
 
 	ret = __cpufreq_driver_target(policy, val, CPUFREQ_RELATION_H);
+
+	if (disable_c3_idle)
+		disable_c3_idle(false);
 
 	cpufreq_cpu_put(policy);
 
@@ -1457,9 +1465,15 @@ static int exynos_cpu_max_qos_handler(struct notifier_block *b, unsigned long va
 	}
 #endif
 
+	if (disable_c3_idle)
+		disable_c3_idle(true);
+
 	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
 
 	ret = __cpufreq_driver_target(policy, val, CPUFREQ_RELATION_H);
+
+	if (disable_c3_idle)
+		disable_c3_idle(false);
 
 	cpufreq_cpu_put(policy);
 

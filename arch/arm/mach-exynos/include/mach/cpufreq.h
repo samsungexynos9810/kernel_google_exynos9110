@@ -159,6 +159,9 @@ struct cpu_info_alter {
 };
 
 extern cluster_type exynos_boot_cluster;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+extern void (*disable_c3_idle)(bool disable);
+#endif
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 extern int force_dynamic_hotplug(bool out_flag);
 #endif
