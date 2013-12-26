@@ -354,6 +354,18 @@ void jpeg_clock_init(void)
 			exynos_get_rate("aclk_300_jpeg"));
 }
 
+void mfc_clock_init(void)
+{
+	exynos_set_parent("mout_aclk_333", "dout_spll_ctrl_div2");
+	exynos_set_parent("mout_aclk_333_sw", "mout_aclk_333");
+	exynos_set_parent("mout_aclk_333_user", "mout_aclk_333_sw");
+	exynos_set_parent("aclk_333", "mout_aclk_333_user");
+
+	exynos_set_rate("dout_aclk_333", 400*1000000);
+
+	pr_info("mfc: aclk_333 %d\n", exynos_get_rate("aclk_333"));
+}
+
 void __init exynos5422_clock_init(void)
 {
 /* EXYNOS5422 C2 enable support */
@@ -369,4 +381,5 @@ void __init exynos5422_clock_init(void)
 	pwm_init_clock();
 	gsc_clock_init();
 	jpeg_clock_init();
+	mfc_clock_init();
 }
