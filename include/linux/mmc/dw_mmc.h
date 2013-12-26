@@ -229,6 +229,7 @@ struct dw_mci {
 	atomic_t		ciu_clk_cnt;
 	atomic_t		gate_clk_cnt;
 	spinlock_t		ciu_clk_lock;
+	spinlock_t		gate_clk_lock;
 	struct dw_mci_slot	*slot[MAX_MCI_SLOTS];
 
 	/* FIFO push and pull */

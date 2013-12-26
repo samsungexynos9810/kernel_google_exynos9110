@@ -1330,6 +1330,8 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	struct dw_mci_slot *slot = mmc_priv(mmc);
 	const struct dw_mci_drv_data *drv_data = slot->host->drv_data;
 	u32 regs;
+	int gate_disabled = 0;
+	bool cclk_request_turn_off = 0;
 
 	switch (ios->bus_width) {
 	case MMC_BUS_WIDTH_4:
@@ -1374,6 +1376,7 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 				slot->host->pdata->qos_int_level);
 	} else {
 		pm_qos_update_request(&slot->host->pm_qos_int, 0);
+		cclk_request_turn_off = 1;
 	}
 
 	if (drv_data && drv_data->set_ios) {
@@ -1384,8 +1387,18 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		mmc->f_max = slot->host->bus_hz;
 	}
 
+	/*
+	 * CIU clock should be enabled because dw_mci_setup_bus is called
+	 * unconditionally in this function
+	 */
+	spin_lock(&slot->host->gate_clk_lock);
+	gate_disabled = !atomic_read(&slot->host->gate_clk_cnt);
+	if (gate_disabled)
+		dw_mci_clk_en(slot->host);
+
 	/* Slot specific timing and width adjustment */
 	dw_mci_setup_bus(slot, false);
+	spin_unlock(&slot->host->gate_clk_lock);
 
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
@@ -1394,6 +1407,8 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 			schedule_delayed_work(&slot->host->tp_mon, HZ);
 		break;
 	case MMC_POWER_OFF:
+		cclk_request_turn_off = 1;
+
 		if (slot->host->pdata->tp_mon_tbl) {
 			cancel_delayed_work_sync(&slot->host->tp_mon);
 			pm_qos_update_request(&slot->host->pm_qos_mif, 0);
@@ -1405,6 +1420,12 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		break;
 	default:
 		break;
+	}
+
+	if (cclk_request_turn_off) {
+		spin_lock(&slot->host->gate_clk_lock);
+		dw_mci_clk_dis(slot->host);
+		spin_unlock(&slot->host->gate_clk_lock);
 	}
 }
 
@@ -1557,6 +1578,7 @@ static int dw_mci_1_8v_signal_voltage_switch(struct dw_mci_slot *slot)
 	u32 reg;
 	int ret = 0, retry = 10;
 	u32 status;
+	int gate_disabled;
 
 	dw_mci_wait_reset(host->dev, host, SDMMC_CTRL_RESET);
 
@@ -1574,10 +1596,17 @@ static int dw_mci_1_8v_signal_voltage_switch(struct dw_mci_slot *slot)
 	} while (--retry);
 
 out:
+	spin_lock(&host->gate_clk_lock);
+	gate_disabled = !atomic_read(&host->gate_clk_cnt);
+	if (gate_disabled)
+		dw_mci_clk_en(host);
 	reg = mci_readl(host, CLKENA);
 	reg &= ~((SDMMC_CLKEN_LOW_PWR | SDMMC_CLKEN_ENABLE) << slot->id);
 	mci_writel(host, CLKENA, reg);
 	mci_send_cmd(slot, SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+	if (gate_disabled)
+		dw_mci_clk_dis(host);
+	spin_unlock(&host->gate_clk_lock);
 
 	if (host->vqmmc) {
 		ret = regulator_set_voltage(host->vqmmc, 1800000, 1800000);
@@ -1595,10 +1624,17 @@ out:
 	/* Wait for 5ms */
 	usleep_range(5000, 5500);
 
+	spin_lock(&host->gate_clk_lock);
+	gate_disabled = !atomic_read(&host->gate_clk_cnt);
+	if (gate_disabled)
+		dw_mci_clk_en(host);
 	reg = mci_readl(host, CLKENA);
 	reg |= SDMMC_CLKEN_ENABLE << slot->id;
 	mci_writel(host, CLKENA, reg);
 	mci_send_cmd(slot, SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+	if (gate_disabled)
+		dw_mci_clk_dis(host);
+	spin_unlock(&host->gate_clk_lock);
 
 	return ret;
 }
@@ -2982,13 +3018,30 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
 
-				dw_mci_fifo_reset(host->dev, host);
+				spin_lock(&host->gate_clk_lock);
+				if (!atomic_read(&host->gate_clk_cnt)) {
+					dw_mci_clk_en(host);
+					dw_mci_fifo_reset(host->dev, host);
+					dw_mci_clk_dis(host);
+				} else {
+					dw_mci_fifo_reset(host->dev, host);
+				}
+				spin_unlock(&host->gate_clk_lock);
 #ifdef CONFIG_MMC_DW_IDMAC
 				dw_mci_idma_reset_dma(host);
 #endif
 			} else if (host->cur_slot) {
-				dw_mci_ciu_reset(host->dev, host);
-				mci_writel(host, RINTSTS, 0xFFFFFFFF);
+				spin_lock(&host->gate_clk_lock);
+				if (!atomic_read(&host->gate_clk_cnt)) {
+					dw_mci_clk_en(host);
+					dw_mci_ciu_reset(host->dev, host);
+					mci_writel(host, RINTSTS, 0xFFFFFFFF);
+					dw_mci_clk_dis(host);
+				} else {
+					dw_mci_ciu_reset(host->dev, host);
+					mci_writel(host, RINTSTS, 0xFFFFFFFF);
+				}
+				spin_unlock(&host->gate_clk_lock);
 			}
 
 			spin_unlock_bh(&host->lock);
@@ -3676,6 +3729,7 @@ int dw_mci_probe(struct dw_mci *host)
 	host->quirks = host->pdata->quirks;
 
 	spin_lock_init(&host->lock);
+	spin_lock_init(&host->gate_clk_lock);
 	INIT_LIST_HEAD(&host->queue);
 
 	/*
@@ -3970,11 +4024,19 @@ int dw_mci_suspend(struct dw_mci *host)
 		if (!slot)
 			continue;
 		if (slot->mmc) {
+			int gate_disabled;
+			spin_lock(&host->gate_clk_lock);
+			gate_disabled = !atomic_read(&host->gate_clk_cnt);
+			if (gate_disabled)
+				dw_mci_clk_en(host);
 			clkena = mci_readl(host, CLKENA);
 			clkena &= ~((SDMMC_CLKEN_LOW_PWR) << slot->id);
 			mci_writel(host, CLKENA, clkena);
 			mci_send_cmd(slot,
 				SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+			if (gate_disabled)
+				dw_mci_clk_dis(host);
+			spin_unlock(&host->gate_clk_lock);
 
 			slot->mmc->pm_flags |= slot->mmc->pm_caps;
 			ret = mmc_suspend_host(slot->mmc);
@@ -4010,6 +4072,7 @@ EXPORT_SYMBOL(dw_mci_suspend);
 int dw_mci_resume(struct dw_mci *host)
 {
 	const struct dw_mci_drv_data *drv_data = host->drv_data;
+	int gate_disabled;
 
 	int i, ret;
 
@@ -4024,10 +4087,22 @@ int dw_mci_resume(struct dw_mci *host)
 		}
 	}
 
+	spin_lock(&host->gate_clk_lock);
+	gate_disabled = !atomic_read(&host->gate_clk_cnt);
+	if (gate_disabled)
+		dw_mci_clk_en(host);
+
 	if (!mci_wait_reset(host->dev, host)) {
+		if (gate_disabled)
+			dw_mci_clk_dis(host);
+		spin_unlock(&host->gate_clk_lock);
 		ret = -ENODEV;
 		return ret;
 	}
+
+	if (gate_disabled)
+		dw_mci_clk_dis(host);
+	spin_unlock(&host->gate_clk_lock);
 
 	if (host->use_dma && host->dma_ops->init)
 		host->dma_ops->init(host);
@@ -4065,6 +4140,10 @@ int dw_mci_resume(struct dw_mci *host)
 			ios.timing = MMC_TIMING_LEGACY;
 			dw_mci_set_ios(slot->mmc, &ios);
 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
+			spin_lock(&host->gate_clk_lock);
+			gate_disabled = !atomic_read(&host->gate_clk_cnt);
+			if (gate_disabled)
+				dw_mci_clk_en(host);
 			dw_mci_setup_bus(slot, true);
 			if (host->pdata->tuned) {
 				if (drv_data && drv_data->misc_control)
@@ -4073,6 +4152,9 @@ int dw_mci_resume(struct dw_mci *host)
 				mci_writel(host, CDTHRCTL,
 						host->cd_rd_thr << 16 | 1);
 			}
+			if (gate_disabled)
+				dw_mci_clk_dis(host);
+			spin_unlock(&host->gate_clk_lock);
 		}
 
 		if (dw_mci_get_cd(slot->mmc))
