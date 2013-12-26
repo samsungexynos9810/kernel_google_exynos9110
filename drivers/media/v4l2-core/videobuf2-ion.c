@@ -427,9 +427,8 @@ static int vb2_ion_map_dmabuf(void *mem_priv, int plane)
 
 	mutex_lock(&ctx->lock);
 	if (ctx_iommu(ctx) && !ctx->protected && buf->cookie.ioaddr == 0) {
-		buf->cookie.ioaddr = iovmm_map(ctx->dev,
-				       buf->cookie.sgt->sgl, 0, buf->size,
-				       buf->direction, plane);
+		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
+					buf->size, buf->direction, plane);
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
 			pr_err("buf->cookie.ioaddr is error: %d\n",
 					buf->cookie.ioaddr);
@@ -470,7 +469,7 @@ static void vb2_ion_detach_dmabuf(void *mem_priv)
 
 	mutex_lock(&ctx->lock);
 	if (buf->cookie.ioaddr && ctx_iommu(ctx) && !ctx->protected ) {
-		iovmm_unmap(ctx->dev, buf->cookie.ioaddr);
+		ion_iovmm_unmap(buf->attachment, buf->cookie.ioaddr);
 		buf->cookie.ioaddr = 0;
 	}
 	mutex_unlock(&ctx->lock);
