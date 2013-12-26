@@ -891,7 +891,7 @@ static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr
 static DEVICE_ATTR(freq_table, S_IRUGO, show_freq_table, NULL);
 
 static struct exynos_devfreq_platdata exynos5422_qos_mif = {
-	.default_qos = 413000,
+	.default_qos = 138000,
 };
 
 static int exynos5_mif_reboot_notifier_call(struct notifier_block *this,
@@ -1212,7 +1212,7 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&media_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_update_request_timeout(&boot_mif_qos,
-			exynos5_mif_devfreq_profile.initial_freq, 41300 * 1000);
+			exynos5_mif_devfreq_profile.initial_freq, 40000 * 1000); /* 40 second */
 	pm_qos_add_request(&min_mif_thermal_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 
 	register_reboot_notifier(&exynos5_mif_reboot_notifier);
