@@ -31,7 +31,9 @@
 #define L2CONFIG_MO_1BY2			0b1111
 #define L2CONFIG_MO_NO_RESTRICT		0
 
+#if GPU_DYNAMIC_CLK_GATING
 #define G3D_NOC_DCG_EN 0x14a90200
+#endif
 
 extern struct kbase_device *pkbdev;
 
@@ -107,6 +109,7 @@ int gpu_is_clock_on(struct exynos_context *platform)
 	return __clk_is_enabled(platform->aclk_g3d);
 }
 
+#if GPU_DYNAMIC_CLK_GATING
 int gpu_dcg_enable(struct exynos_context *platform)
 {
        int *p_dcg;
@@ -140,6 +143,7 @@ int gpu_dcg_disable(struct exynos_context *platform)
 
        return 0;
 }
+#endif
 
 int gpu_clock_on(struct exynos_context *platform)
 {
@@ -157,7 +161,9 @@ int gpu_clock_on(struct exynos_context *platform)
 	if (platform->aclk_g3d)
 		(void) clk_prepare_enable(platform->aclk_g3d);
 
+#if GPU_DYNAMIC_CLK_GATING
 	gpu_dcg_enable(platform);
+#endif
 	platform->clk_g3d_status = 1;
 
 	return 0;
@@ -168,7 +174,9 @@ int gpu_clock_off(struct exynos_context *platform)
 	if (!platform)
 		return -ENODEV;
 
+#if GPU_DYNAMIC_CLK_GATING
 	gpu_dcg_disable(platform);
+#endif
 
 	if (platform->clk_g3d_status == 0)
 		return 0;
