@@ -728,7 +728,7 @@ static unsigned int dex_map_ion_handle(struct dex_device *dex,
 		goto err_buf_map_attachment;
 	}
 
-	dma->dma_addr = iovmm_map(dex->dev, dma->sg_table->sgl, 0,
+	dma->dma_addr = ion_iovmm_map(dma->attachment, 0,
 			dma->dma_buf->size, DMA_TO_DEVICE, idx);
 	if (!dma->dma_addr || IS_ERR_VALUE(dma->dma_addr)) {
 		dex_err("iovmm_map() failed: %d\n", dma->dma_addr);
@@ -757,7 +757,7 @@ static void dex_free_dma_buf(struct dex_device *dex, struct dex_dma_buf_data *dm
 	if (dma->fence)
 		sync_fence_put(dma->fence);
 
-	iovmm_unmap(dex->dev , dma->dma_addr);
+	ion_iovmm_unmap(dma->attachment , dma->dma_addr);
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_BIDIRECTIONAL);
 	dma_buf_detach(dma->dma_buf, dma->attachment);
