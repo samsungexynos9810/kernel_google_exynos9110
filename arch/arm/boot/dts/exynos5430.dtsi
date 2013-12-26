@@ -2312,7 +2312,7 @@
 	};
 
 	sss@11100000 {
-		compatible = "samsung,exynos5430-sss";
+		compatible = "samsung,exynos5-sss";
 		reg = <0x11100000 0x8000>;
 		interrupts = <0 315 0>;
 		clocks = <&clock 2334>;
@@ -2320,7 +2320,7 @@
 	};
 
 	slimsss@11140000 {
-		compatible = "samsung,exynos5430-slimsss";
+		compatible = "samsung,exynos5-slimsss";
 		reg = <0x11140000 0x1000>;
 		interrupts = <0 312 0>;
 		clocks = <&clock 2335>;
