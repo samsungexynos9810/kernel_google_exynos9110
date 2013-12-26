@@ -37,7 +37,7 @@ typedef enum {
 /* mali_kbase_platform */
 #if SOC_NAME == 5422
 #define G3D_MAX_FREQ    420000
-#define G3D_MIN_FREQ    100000
+#define G3D_MIN_FREQ    177000
 #elif SOC_NAME == 5430
 #define G3D_MAX_FREQ    600000
 #define G3D_MIN_FREQ    160000
@@ -54,7 +54,7 @@ typedef enum {
 #define GPU_THROTTLING_95_100   420
 #define GPU_THROTTLING_100_105  350
 #define GPU_THROTTLING_105_110  177
-#define GPU_TRIPPING_110        100
+#define GPU_TRIPPING_110        177
 #define VOLTAGE_OFFSET_MARGIN   37500
 #define RUNTIME_PM_DELAY_TIME   100
 #elif SOC_NAME == 5430
