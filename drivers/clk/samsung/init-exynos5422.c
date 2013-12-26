@@ -388,6 +388,24 @@ void mfc_clock_init(void)
 	pr_info("mfc: aclk_333 %d\n", exynos_get_rate("aclk_333"));
 }
 
+void crypto_init_clock(void)
+{
+	if (exynos_set_parent("mout_aclk_266_g2d", "mout_mpll_ctrl"))
+		pr_err("failed to set parent %s\n", "mout_aclk_266_g2d");
+
+	if (exynos_set_parent("mout_aclk_266_g2d_sw", "dout_aclk_266_g2d"))
+		pr_err("failed to set parent %s\n", "mout_aclk_266_g2d_sw");
+
+	if (exynos_set_parent("mout_aclk_266_g2d_user", "mout_aclk_266_g2d_sw"))
+		pr_err("failed to set parent %s\n", "mout_aclk_266_g2d_user");
+
+	if (exynos_set_rate("dout_aclk_266_g2d", 300 * 1000000))
+		pr_err("failed to set rate %s\n", "dout_aclk_266_g2d");
+
+	if (exynos_set_rate("dout_acp_pclk", 150 * 1000000))
+		pr_err("failed to set rate %s\n", "dout_acp_pclk");
+}
+
 void __init exynos5422_clock_init(void)
 {
 /* EXYNOS5422 C2 enable support */
@@ -404,4 +422,5 @@ void __init exynos5422_clock_init(void)
 	gsc_clock_init();
 	jpeg_clock_init();
 	mfc_clock_init();
+	crypto_init_clock();
 }
