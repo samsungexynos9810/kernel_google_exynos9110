@@ -791,7 +791,7 @@ static struct platform_device exynos5_devfreq_isp_device = {
 	.name	= "exynos5-devfreq-isp",
 	.id	= -1,
 };
-/*
+
 static int exynos5_devfreq_isp_qos_init(void)
 {
 	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5422_qos_isp.default_qos);
@@ -800,7 +800,7 @@ static int exynos5_devfreq_isp_qos_init(void)
 	return 0;
 }
 device_initcall(exynos5_devfreq_isp_qos_init);
-*/
+
 static int __init exynos5_devfreq_isp_init(void)
 {
 	int ret;
