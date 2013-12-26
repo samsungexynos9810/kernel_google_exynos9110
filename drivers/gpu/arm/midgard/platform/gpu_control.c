@@ -25,7 +25,9 @@
 
 struct kbase_device *pkbdev;
 
+#ifdef CONFIG_MALI_T6XX_DVFS
 static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state);
+#endif
 static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage);
 
 int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, int param)
@@ -114,12 +116,15 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 	return ret;
 }
 
+#ifdef CONFIG_MALI_T6XX_DVFS
 #ifdef CONFIG_BUS_DEVFREQ
 static struct pm_qos_request exynos5_g3d_mif_qos;
 static struct pm_qos_request exynos5_g3d_int_qos;
 static struct pm_qos_request exynos5_g3d_cpu_qos;
 #endif /* CONFIG_BUS_DEVFREQ */
+#endif /* CONFIG_MALI_T6XX_DVFS */
 
+#ifdef CONFIG_MALI_T6XX_DVFS
 static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state state)
 {
 #ifdef CONFIG_BUS_DEVFREQ
@@ -151,6 +156,7 @@ static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state s
 #endif /* CONFIG_BUS_DEVFREQ */
 	return 0;
 }
+#endif /* CONFIG_MALI_T6XX_DVFS */
 
 static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 {
