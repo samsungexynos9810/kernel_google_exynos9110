@@ -62,6 +62,8 @@ struct rational {
 #define CAMERA2_MAX_FACES		16
 #define CAMERA2_MAX_VENDER_LENGTH	400
 #define CAPTURE_NODE_MAX		2
+#define CAMERA2_PDAF_RESULT_COL_MAX	7
+#define CAMERA2_PDAF_RESULT_ROW_MAX	3
 
 #define OPEN_MAGIC_NUMBER		0x01020304
 #define SHOT_MAGIC_NUMBER		0x23456789
@@ -684,7 +686,12 @@ enum aa_afmode {
 	AA_AFMODE_CONTINUOUS_VIDEO,
 	AA_AFMODE_CONTINUOUS_PICTURE_FACE,
 
-	AA_AFMODE_EDOF = 31,
+	/* Special modes for PDAF */
+	AA_AFMODE_PDAF_OUTFOCUSING = 31,
+	AA_AFMODE_PDAF_OUTFOCUSING_FACE,
+
+	/* Not supported yet */
+	AA_AFMODE_EDOF = 41,
 };
 
 enum aa_afstate {
@@ -1004,6 +1011,13 @@ struct camera2_bayer_udm {
 	uint32_t	height;
 };
 
+struct camera2_pdaf_udm {
+	uint32_t	pdafColSize; /* width of PDAF map, 0 means no PDAF data */
+	uint32_t	pdafRowSize; /* height of PDAF map, 0 means no PDAF data */
+	uint32_t	pdafData[CAMERA2_PDAF_RESULT_COL_MAX][CAMERA2_PDAF_RESULT_ROW_MAX];
+	uint32_t	reliability[CAMERA2_PDAF_RESULT_COL_MAX][CAMERA2_PDAF_RESULT_ROW_MAX];
+};
+
 /** \brief
 	User-defined control area.
     \remarks
@@ -1048,6 +1062,7 @@ struct camera2_udm {
 	struct camera2_internal_udm	internal;
 	/* Add udm for bayer down size. */
 	struct camera2_bayer_udm	bayer;
+	struct camera2_pdaf_udm	 	pdaf;
 };
 
 struct camera2_shot {
