@@ -1082,6 +1082,23 @@ int s5p_mipi_dsi_clear_frame_done(struct mipi_dsim_device *dsim)
 	return 0;
 }
 
+static int s5p_mipi_dsi_set_interrupt(struct mipi_dsim_device *dsim, bool enable)
+{
+	unsigned int int_msk;
+
+	int_msk = SFR_PL_FIFO_EMPTY | RX_DAT_DONE | MIPI_FRAME_DONE | ERR_RX_ECC;
+
+	if (enable) {
+		/* clear interrupt */
+		s5p_mipi_dsi_clear_all_interrupt(dsim);
+		s5p_mipi_dsi_set_interrupt_mask(dsim, int_msk, 0);
+	} else {
+		s5p_mipi_dsi_set_interrupt_mask(dsim, int_msk, 1);
+	}
+
+	return 0;
+}
+
 static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 {
 	unsigned int int_src;
@@ -1089,6 +1106,7 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	int framedone = 0;
 	struct display_driver *dispdrv;
 
+	spin_lock(&dsim->slock);
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 1);
 	int_src = readl(dsim->reg_base + S5P_DSIM_INTSRC);
 
@@ -1106,6 +1124,7 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	s5p_mipi_dsi_clear_interrupt(dsim, int_src);
 
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 0);
+	spin_unlock(&dsim->slock);
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* tiggering power event for PM */
@@ -1140,6 +1159,10 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
+
+	/* enable interrupts */
+	s5p_mipi_dsi_set_interrupt(dsim, true);
+
 	usleep_range(1000, 1500);
 	dsim->dsim_lcd_drv->displayon(dsim);
 
@@ -1154,6 +1177,9 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 
 	if (dsim->enabled == false)
 		return 0;
+
+	/* disable interrupts */
+	s5p_mipi_dsi_set_interrupt(dsim, false);
 
 	dsim->enabled = false;
 	dsim->dsim_lcd_drv->suspend(dsim);
@@ -1275,6 +1301,8 @@ int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv)
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
 
+	s5p_mipi_dsi_set_interrupt(dsim, true);
+
 	return 0;
 }
 
@@ -1283,6 +1311,8 @@ int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv)
 	struct mipi_dsim_device *dsim = dispdrv->dsi_driver.dsim;
 	if (dsim->enabled == false)
 		return 0;
+
+	s5p_mipi_dsi_set_interrupt(dsim, false);
 
 	/* Enter ULPS mode clk & data */
 	s5p_mipi_dsi_ulps_enable(dsim, true);
@@ -1339,6 +1369,8 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->dev = &pdev->dev;
 	dsim->id = pdev->id;
 
+	spin_lock_init(&dsim->slock);
+
 	dsim->dsim_config = dispdrv->dt_ops.get_display_dsi_drvdata();
 
 	dsim->lcd_info = decon_get_lcd_info();
@@ -1392,6 +1424,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 		dispdrv->dsi_driver.ops->pwr_off = s5p_mipi_dsi_hibernation_power_off;
 	}
 #endif
+
+	/* enable interrupts */
+	s5p_mipi_dsi_set_interrupt(dsim, true);
 
 	mutex_init(&dsim_rd_wr_mutex);
 	return 0;

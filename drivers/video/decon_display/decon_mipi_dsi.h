@@ -289,6 +289,7 @@ struct mipi_dsim_device {
 	unsigned int enabled;
 	struct decon_lcd	*lcd_info;
 	struct dphy_timing_value	timing;
+	spinlock_t slock;
 };
 
 /**
