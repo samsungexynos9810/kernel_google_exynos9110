@@ -104,6 +104,8 @@ struct int_bus_opp_table int_bus_opp_list[] = {
 	{LV_6,    83000,  925000, 0},
 };
 
+static unsigned int devfreq_int_asv_abb[LV_END];
+
 struct int_clk_info {
 	unsigned int idx;
 	unsigned long target_freq;
@@ -860,6 +862,8 @@ static int exynos5_int_busfreq_target(struct device *dev,
 	unsigned long freq;
 	unsigned long old_freq;
 	unsigned long target_volt;
+	int i, target_idx = LV_0;
+	bool set_abb_first_than_volt;
 
 	mutex_lock(&data->lock);
 
@@ -892,19 +896,31 @@ static int exynos5_int_busfreq_target(struct device *dev,
 		target_volt = get_limit_voltage(target_volt, data->volt_offset);
 #endif
 
+	for (i = LV_0; i < LV_END; i++) {
+		if (int_bus_opp_list[i].freq == freq)
+			target_idx = int_bus_opp_list[i].idx;
+	}
+
 	/*
 	 * If target freq is higher than old freq
 	 * after change voltage, setting freq ratio
 	 */
 	pr_debug("%s old_freq %ld, freq %ld", __func__, old_freq, freq);
+	set_abb_first_than_volt = is_set_abb_first(ID_INT, old_freq, freq);
 	if (old_freq < freq) {
+		if (set_abb_first_than_volt)
+			set_match_abb(ID_INT, devfreq_int_asv_abb[target_idx]);
 		regulator_set_voltage(data->vdd_int, target_volt, target_volt + INT_VOLT_STEP);
-
+		if (!set_abb_first_than_volt)
+			set_match_abb(ID_INT, devfreq_int_asv_abb[target_idx]);
 		exynos5_int_set_freq(data, freq, old_freq);
 	} else {
 		exynos5_int_set_freq(data, freq, old_freq);
-
+		if (set_abb_first_than_volt)
+			set_match_abb(ID_INT, devfreq_int_asv_abb[target_idx]);
 		regulator_set_voltage(data->vdd_int, target_volt, target_volt + INT_VOLT_STEP);
+		if (!set_abb_first_than_volt)
+			set_match_abb(ID_INT, devfreq_int_asv_abb[target_idx]);
 	}
 
 	data->curr_opp = opp;
@@ -992,6 +1008,7 @@ static int exynos5422_init_int_table(struct busfreq_data_int *data)
 	unsigned int i;
 	unsigned int ret;
 	unsigned int asv_volt;
+	unsigned int asv_abb = 0;
 
 	/* will add code for ASV information setting function in here */
 
@@ -1009,6 +1026,13 @@ static int exynos5422_init_int_table(struct busfreq_data_int *data)
 			dev_err(data->dev, "Fail to add opp entries.\n");
 			return ret;
 		}
+		asv_abb = get_match_abb(ID_INT, int_bus_opp_list[i].freq);
+		if (!asv_abb)
+			devfreq_int_asv_abb[i] = ABB_BYPASS;
+		else
+			devfreq_int_asv_abb[i] = asv_abb;
+
+		pr_info("DEVFREQ(INT) : %luKhz, ABB %u\n", int_bus_opp_list[i].freq, devfreq_int_asv_abb[i]);
 	}
 
 	return 0;

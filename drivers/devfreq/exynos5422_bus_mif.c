@@ -194,6 +194,8 @@ static unsigned int int_fimc_opp_list[][3] = {
 	{LV_5, LV_2, LV_2},
 };
 
+static unsigned int devfreq_mif_asv_abb[LV_END];
+
 #if defined(SET_DREX_TIMING)
 static unsigned int exynos5422_dram_param[][3] = {
 	/* timiningRow, timingData, timingPower */
@@ -620,6 +622,8 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 	unsigned long freq;
 	unsigned long old_freq;
 	unsigned long target_volt;
+	int i, target_idx = LV_0;
+	bool set_abb_first_than_volt;
 
 	if (mif_transition_disabled)
 		return 0;
@@ -656,12 +660,22 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 	if (data->volt_offset)
 		target_volt = get_limit_voltage(target_volt, data->volt_offset);
 #endif
+	for (i = LV_0; i < LV_END; i++) {
+		if (mif_bus_opp_list[i].clk == freq) {
+			target_idx = mif_bus_opp_list[i].idx;
+			break;
+		}
+	}
+
+	set_abb_first_than_volt = is_set_abb_first(ID_MIF, old_freq, freq);
 
 	/*
 	 * If target freq is higher than old freq
 	 * after change voltage, setting freq ratio
 	 */
 	if (old_freq < freq) {
+		if (set_abb_first_than_volt)
+			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
 			regulator_set_voltage(data->vdd_mif, data->mspll_volt,
 					data->mspll_volt + MIF_VOLT_STEP);
@@ -669,11 +683,19 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 			regulator_set_voltage(data->vdd_mif, target_volt,
 					target_volt + MIF_VOLT_STEP);
 
+		if (!set_abb_first_than_volt)
+			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
+
 		exynos5_mif_set_freq(data, old_freq, freq);
 
-		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
+		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq)) {
+			if (set_abb_first_than_volt)
+				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 			regulator_set_voltage(data->vdd_mif, target_volt,
 					target_volt + MIF_VOLT_STEP);
+			if (!set_abb_first_than_volt)
+				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
+		}
 
 		if (freq == mif_bus_opp_list[LV_0].clk)	{
 			clk_prepare_enable(data->clkm_phy0);
@@ -684,13 +706,22 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 			clk_disable_unprepare(data->clkm_phy0);
 			clk_disable_unprepare(data->clkm_phy1);
 		}
-		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
+		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq)) {
+			if (set_abb_first_than_volt)
+				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 			regulator_set_voltage(data->vdd_mif, data->mspll_volt,
 					data->mspll_volt + MIF_VOLT_STEP);
 
-		exynos5_mif_set_freq(data, old_freq, freq);
+			if (!set_abb_first_than_volt)
+				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
+		}
 
+		exynos5_mif_set_freq(data, old_freq, freq);
+		if (set_abb_first_than_volt)
+			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		regulator_set_voltage(data->vdd_mif, target_volt, target_volt + MIF_VOLT_STEP);
+		if (!set_abb_first_than_volt)
+			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 	}
 
 	curr_mif_freq = freq;
@@ -746,6 +777,7 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 	unsigned int i;
 	unsigned int ret;
 	unsigned int asv_volt;
+	unsigned int asv_abb = 0;
 
 	/* will add code for ASV information setting function in here */
 
@@ -763,6 +795,12 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 			dev_err(data->dev, "Fail to add opp entries.\n");
 			return ret;
 		}
+		asv_abb = get_match_abb(ID_MIF, mif_bus_opp_list[i].clk);
+		if (!asv_abb)
+			devfreq_mif_asv_abb[i] = ABB_BYPASS;
+		else
+			devfreq_mif_asv_abb[i] = asv_abb;
+		pr_info("DEVFREQ(MIF) : %luKhz, ABB %u\n", mif_bus_opp_list[i].clk, devfreq_mif_asv_abb[i]);
 	}
 
 	return 0;
