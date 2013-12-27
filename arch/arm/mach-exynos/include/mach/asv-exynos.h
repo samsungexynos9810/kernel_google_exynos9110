@@ -131,6 +131,8 @@ extern struct asv_info *asv_get(enum asv_type_id exynos_asv_type_id);
 extern unsigned int get_match_volt(enum asv_type_id target_type, unsigned int target_freq);
 extern unsigned int get_match_abb(enum asv_type_id target_type, unsigned int target_freq);
 extern unsigned int set_match_abb(enum asv_type_id target_type, unsigned int target_abb);
+extern bool is_set_abb_first(enum asv_type_id target_type, unsigned int old_freq, unsigned int target_freq);
+
 /* define function for initialize of SoC */
 extern int exynos5410_init_asv(struct asv_common *asv_info);
 extern int exynos5422_init_asv(struct asv_common *asv_info);

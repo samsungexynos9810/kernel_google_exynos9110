@@ -92,6 +92,22 @@ unsigned int get_match_abb(enum asv_type_id target_type, unsigned int target_fre
 	return ABB_X100;
 }
 
+bool is_set_abb_first(enum asv_type_id target_type, unsigned int old_freq, unsigned int target_freq)
+{
+	int old_abb, target_abb;
+	old_abb = get_match_abb(target_type, old_freq);
+	target_abb = get_match_abb(target_type, target_freq);
+
+	if (old_abb == ABB_BYPASS && (target_abb == ABB_X070 || target_abb == ABB_X080))
+		return true;
+	else if ((old_abb == ABB_X120 || old_abb == ABB_X130) && target_abb == ABB_BYPASS)
+		return true;
+	else if (old_abb == ABB_BYPASS && (target_abb == ABB_X120 || target_abb == ABB_X130))
+		return false;
+	else
+		return true;
+}
+
 unsigned int set_match_abb(enum asv_type_id target_type, unsigned int target_abb)
 {
 	struct asv_info *match_asv_info = asv_get(target_type);
