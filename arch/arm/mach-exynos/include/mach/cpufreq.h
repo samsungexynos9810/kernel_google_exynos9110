@@ -50,6 +50,7 @@ struct exynos_dvfs_info {
 	bool		blocked;
 	struct clk	*cpu_clk;
 	unsigned int	*volt_table;
+        unsigned int    *abb_table;
 	const unsigned int	*max_op_freqs;
 	struct cpufreq_frequency_table	*freq_table;
 	struct regulator *regulator;
