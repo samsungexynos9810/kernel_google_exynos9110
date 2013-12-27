@@ -1135,7 +1135,7 @@
 		compatible = "samsung,s3c6400-pwm";
 		reg = <0x12dd0000 0x1000>;
 		#pwm-cells = <3>;
-		clocks = <&clock 1157>,
+		clocks = <&clock 1156>,
 		       <&clock_pwm 1>, <&clock_pwm 2>,
 		       <&clock_pwm 5>, <&clock_pwm 6>,
 		       <&clock_pwm 7>, <&clock_pwm 8>,
