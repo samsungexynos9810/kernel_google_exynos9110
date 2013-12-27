@@ -568,7 +568,7 @@ static int i2s_set_sysclk(struct snd_soc_dai *dai,
 			dev_err(&i2s->pdev->dev,
 				"%s:%d Other DAI busy\n", __func__, __LINE__);
 			return -EAGAIN;
-		} else {
+		} else if (other) {
 			/* Call can't be on the active DAI */
 			i2s->op_clk = other->op_clk;
 			i2s->rclk_srcrate = other->rclk_srcrate;
