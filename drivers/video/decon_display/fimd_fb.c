@@ -1192,8 +1192,9 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	irq_ctrl_reg |= VIDINTCON0_INT_I80IFDONE;
 #else
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
+#if !defined (FIMD_VIDEO_PSR)
 	irq_ctrl_reg |= VIDINTCON0_INT_FRAME;
-
+#endif
 	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL0_MASK;
 	irq_ctrl_reg |= VIDINTCON0_FRAMESEL0_VSYNC;
 	irq_ctrl_reg &= ~VIDINTCON0_FRAMESEL1_MASK;
@@ -1220,11 +1221,8 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 {
 	struct s3c_fb *sfb = dev_id;
 	ktime_t timestamp = ktime_get();
-	int i = 10000;
 
 	spin_lock(&sfb->slock);
-	while(i)
-		i--;
 
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 	sfb->vsync_info.timestamp = timestamp;
@@ -1337,8 +1335,10 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 		/* VSYNC interrupt, accept it */
 		writel(VIDINTCON1_INT_FRAME, regs + VIDINTCON1);
 
+#ifndef CONFIG_FB_I80_COMMAND_MODE
 		sfb->vsync_info.timestamp = timestamp;
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
+#endif
 	}
 	if (irq_sts_reg & VIDINTCON1_INT_FIFO) {
 		writel(VIDINTCON1_INT_FIFO, regs + VIDINTCON1);
