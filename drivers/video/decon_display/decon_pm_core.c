@@ -227,7 +227,8 @@ static void init_gating_idle_count(struct display_driver *dispdrv)
 {
 	unsigned long flags;
 
-	if (dispdrv->pm_status.clk_idle_count != 0) {
+	if (dispdrv->pm_status.clk_idle_count != 0 ||
+		dispdrv->pm_status.pwr_idle_count != 0) {
 		spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
 		dispdrv->pm_status.clk_idle_count = 0;
 		dispdrv->pm_status.pwr_idle_count = 0;
