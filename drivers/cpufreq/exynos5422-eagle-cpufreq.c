@@ -50,6 +50,7 @@ static struct clk *mx_mspll_cpu;
 static struct clk *fout_spll;
 
 static unsigned int exynos5422_volt_table_CA15[CPUFREQ_LEVEL_END_CA15];
+static unsigned int exynos5422_abb_table_CA15[CPUFREQ_LEVEL_END_CA15];
 
 static struct cpufreq_frequency_table exynos5422_freq_table_CA15[] = {
 	{L0,  2400 * 1000},
@@ -530,6 +531,7 @@ static void __init set_volt_table_CA15(void)
 {
 	unsigned int i;
 	unsigned int asv_volt __maybe_unused;
+	unsigned int asv_abb = 0;
 
 	for (i = 0; i < CPUFREQ_LEVEL_END_CA15; i++) {
 		/* FIXME: need to update voltage table for REV1 */
@@ -542,6 +544,15 @@ static void __init set_volt_table_CA15(void)
 
 		pr_info("CPUFREQ of CA15 L%d : %d uV\n", i,
 		exynos5422_volt_table_CA15[i]);
+
+		asv_abb = get_match_abb(ID_ARM, exynos5422_freq_table_CA15[i].frequency);
+		if (!asv_abb)
+			exynos5422_abb_table_CA15[i] = ABB_BYPASS;
+		else
+			exynos5422_abb_table_CA15[i] = asv_abb;
+
+		pr_info("CPUFREQ of CA15  L%d : ABB %d\n", i,
+				exynos5422_abb_table_CA15[i]);
 	}
 
 #ifdef CONFIG_EXYNOS5_MAX_CPU_HOTPLUG
@@ -665,6 +676,7 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	/* info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
 
 	info->volt_table = exynos5422_volt_table_CA15;
+	info->abb_table = exynos5422_abb_table_CA15;
 	info->freq_table = exynos5422_freq_table_CA15;
 	info->set_freq = exynos5422_set_frequency_CA15;
 	info->need_apll_change = exynos5422_pms_change_CA15;

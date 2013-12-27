@@ -43,6 +43,7 @@ static struct clk *mout_cpll_ctrl;
 static struct clk *mout_mx_mspll_kfc;
 
 static unsigned int exynos5422_volt_table_CA7[CPUFREQ_LEVEL_END_CA7];
+static unsigned int exynos5422_abb_table_CA7[CPUFREQ_LEVEL_END_CA7];
 
 static struct cpufreq_frequency_table exynos5422_freq_table_CA7[] = {
 	{L0,  1600 * 1000},
@@ -347,6 +348,7 @@ static void __init set_volt_table_CA7(void)
 {
 	unsigned int i;
 	unsigned int asv_volt __maybe_unused;
+	unsigned int asv_abb = 0;
 
 	for (i = 0; i < CPUFREQ_LEVEL_END_CA7; i++) {
 		/* FIXME: need to update voltage table for REV1 */
@@ -359,6 +361,14 @@ static void __init set_volt_table_CA7(void)
 
 		pr_info("CPUFREQ of CA7  L%d : %d uV\n", i,
 			exynos5422_volt_table_CA7[i]);
+		asv_abb = get_match_abb(ID_KFC, exynos5422_freq_table_CA7[i].frequency);
+		if (!asv_abb)
+			exynos5422_abb_table_CA7[i] = ABB_BYPASS;
+		else
+			exynos5422_abb_table_CA7[i] = asv_abb;
+
+		pr_info("CPUFREQ of CA7  L%d : ABB %d\n", i,
+				exynos5422_abb_table_CA7[i]);
 	}
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	max_support_idx_CA7 = L1;
@@ -461,6 +471,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	/*info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
 
 	info->volt_table = exynos5422_volt_table_CA7;
+	info->abb_table = exynos5422_abb_table_CA7;
 	info->freq_table = exynos5422_freq_table_CA7;
 	info->set_freq = exynos5422_set_frequency_CA7;
 	info->need_apll_change = exynos5422_pms_change_CA7;
