@@ -83,18 +83,15 @@ struct check_reg_lpa {
  */
 
 static struct check_reg_lpa exynos5_power_domain[] = {
-
-	{.check_reg = EXYNOS5_GSCL_STATUS,	.check_bit = 0x7},
-#ifdef MUST_CHECK_FOR_ARES2
-	{.check_reg = EXYNOS5_ISP_STATUS,	.check_bit = 0x7},
-#endif
-	{.check_reg = EXYNOS5410_MFC_STATUS,	.check_bit = 0x7},
-	{.check_reg = EXYNOS5410_G3D_STATUS,	.check_bit = 0x7},
-	{.check_reg = EXYNOS5410_DISP1_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5422_SCALER_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5422_ISP_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5422_MFC_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5422_G3D_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5422_DISP1_STATUS,	.check_bit = 0x7},
 };
 
 static struct check_reg_lpa exynos5_dstop_power_domain[] = {
-	{.check_reg = EXYNOS5410_MAU_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS5422_MAU_STATUS,	.check_bit = 0x7},
 };
 
 /*
@@ -106,6 +103,7 @@ static struct check_reg_lpa exynos5_clock_gating[] = {
 	{.check_reg = EXYNOS5_CLK_GATE_IP_DISP1,	.check_bit = 0x00000008},
 	{.check_reg = EXYNOS5_CLK_GATE_IP_MFC,		.check_bit = 0x00000001},
 	{.check_reg = EXYNOS5_CLK_GATE_IP_GEN,		.check_bit = 0x0000001E},
+#endif
 	{.check_reg = EXYNOS5_CLK_GATE_BUS_FSYS0,	.check_bit = 0x00000006},
 	{.check_reg = EXYNOS5_CLK_GATE_IP_PERIC,	.check_bit = 0x00077FC0},
 };
