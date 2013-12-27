@@ -4766,11 +4766,6 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
 
-	mutex_lock(&sfb->vsync_info.irq_lock);
-	if (sfb->vsync_info.irq_refcount)
-		s3c_fb_enable_irq(sfb);
-	mutex_unlock(&sfb->vsync_info.irq_lock);
-
 #ifdef CONFIG_ION_EXYNOS
 	ret = iovmm_activate(sfb->dev);
 	if (ret < 0) {
@@ -4798,37 +4793,13 @@ err:
 
 int s3c_fb_hibernation_power_off(struct display_driver *dispdrv)
 {
-	u32 vidcon0;
-	int ret = 0;
+	int ret;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
 	mutex_lock(&sfb->output_lock);
-
-	if (!sfb->output_on) {
-		ret = -EBUSY;
-		goto err;
-	}
-
-	vidcon0 = readl(sfb->regs + VIDCON0);
-
-	/* see the note in the framebuffer datasheet about
-	 * why you cannot take both of these bits down at the
-	 * same time. */
-
-	if (vidcon0 & VIDCON0_ENVID) {
-		vidcon0 |= VIDCON0_ENVID;
-		vidcon0 &= ~VIDCON0_ENVID_F;
-		writel(vidcon0, sfb->regs + VIDCON0);
-	} else
-		dev_warn(sfb->dev, "ENVID not set while disabling fb");
-
-#ifdef CONFIG_ION_EXYNOS
-	iovmm_deactivate(sfb->dev);
-#endif
-	sfb->output_on = false;
-
-err:
+	ret = s3c_fb_decon_stop(sfb);
 	mutex_unlock(&sfb->output_lock);
+
 	return ret;
 }
 #endif
