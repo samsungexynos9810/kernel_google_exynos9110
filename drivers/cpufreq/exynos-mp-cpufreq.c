@@ -1365,10 +1365,6 @@ static struct notifier_block exynos_cpufreq_reboot_notifier = {
 	.notifier_call = exynos_cpufreq_reboot_notifier_call,
 };
 
-#ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
-extern void cpufreq_interactive_update_target_freq(unsigned int target_freq, int cpu);
-#endif
-
 static void exynos_qos_nop(void *info)
 {
 }
@@ -1411,10 +1407,6 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 	if (ret < 0)
 		goto bad;
 
-#ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
-	if (!strcmp(policy->governor->name, "interactive"))
-		cpufreq_interactive_update_target_freq(val, cpu);
-#endif
 good:
 	return NOTIFY_OK;
 bad:
@@ -1463,10 +1455,6 @@ static int exynos_cpu_max_qos_handler(struct notifier_block *b, unsigned long va
 	if (ret < 0)
 		goto bad;
 
-#ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
-	if (!strcmp(policy->governor->name, "interactive"))
-		cpufreq_interactive_update_target_freq(val, cpu);
-#endif
 good:
 	return NOTIFY_OK;
 bad:
@@ -1515,10 +1503,6 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 	if (ret < 0)
 		goto bad;
 
-#ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
-	if (!strcmp(policy->governor->name, "interactive"))
-		cpufreq_interactive_update_target_freq(val, cpu);
-#endif
 good:
 	return NOTIFY_OK;
 bad:
@@ -1567,10 +1551,6 @@ static int exynos_kfc_max_qos_handler(struct notifier_block *b, unsigned long va
 	if (ret < 0)
 		goto bad;
 
-#ifdef CONFIG_CPU_FREQ_GOV_INTERACTIVE
-	if (!strcmp(policy->governor->name, "interactive"))
-		cpufreq_interactive_update_target_freq(val, cpu);
-#endif
 good:
 	return NOTIFY_OK;
 bad:
