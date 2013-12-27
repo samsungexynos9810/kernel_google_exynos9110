@@ -497,6 +497,11 @@ int __init exynos5430_pmu_init(void)
 	tmp &= ~USE_RETENTION;
 	__raw_writel(tmp, EXYNOS_L2_OPTION(1));
 
+	/* UP Scheduler Enable */
+	tmp = __raw_readl(EXYNOS5_UP_SCHEDULER);
+	tmp |= ENABLE_EAGLE_CPU;
+	__raw_writel(tmp, EXYNOS5_UP_SCHEDULER);
+
 	/*
 	 * Set PSHOLD port for output high
 	 */
