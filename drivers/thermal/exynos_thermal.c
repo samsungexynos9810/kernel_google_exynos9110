@@ -1410,9 +1410,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 75,
 	.freq_tab[0] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 1000 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 900 * 1000,
+		.freq_clip_max_kfc = 1500 * 1000,
 #endif
 		.temp_level = 80,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1421,9 +1421,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
+		.freq_clip_max_kfc = 800 * 1000,
 #endif
 		.temp_level = 90,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1432,9 +1432,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[2] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 200 * 1000,
+		.freq_clip_max_kfc = 500 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1443,9 +1443,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[3] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 200 * 1000,
+		.freq_clip_max_kfc = 500 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1454,9 +1454,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[4] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 200 * 1000,
+		.freq_clip_max_kfc = 500 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1465,9 +1465,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[5] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 200 * 1000,
+		.freq_clip_max_kfc = 500 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1476,9 +1476,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[6] = {
-		.freq_clip_max = 500 * 1000,
+		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 200 * 1000,
+		.freq_clip_max_kfc = 500 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
