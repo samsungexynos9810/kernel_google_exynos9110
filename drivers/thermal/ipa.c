@@ -95,7 +95,7 @@ struct ipa_config {
 };
 
 static struct ipa_config default_config = {
-	.control_temp = 69,
+	.control_temp = 81,
 	.temp_threshold = 30,
 	.enabled = 1,
 	.tdp = 3500,
@@ -103,19 +103,19 @@ static struct ipa_config default_config = {
 	.ros_power = 500, /* rest of soc */
 	.a7_weight = 4 << WEIGHT_SHIFT,
 	.a15_weight = 1 << WEIGHT_SHIFT,
-	.gpu_weight = 1 << WEIGHT_SHIFT,
+	.gpu_weight = 1024,
 	.a7_max_power = 250*4,
 	.a15_max_power = 1638 * 4,
 	.gpu_max_power = 3110,
-	.enable_ctlr = 0,
+	.enable_ctlr = 1,
 	.ctlr = {
 		.mult = 2,
-		.k_i = 10,
+		.k_i = 1,
 		.k_d = 0,
 		.feed_forward = 1,
 		.integral_reset_value = 0,
 		.integral_cutoff = 0,
-		.integral_reset_threshold = 20,
+		.integral_reset_threshold = 10,
 	},
 };
 
