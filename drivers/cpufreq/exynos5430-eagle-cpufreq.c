@@ -43,6 +43,7 @@ static struct clk *mout_egl_pll;
 static struct clk *sclk_bus_pll;
 static struct clk *mout_bus_pll_user;
 static struct clk *fout_egl_pll;
+static unsigned int spd_option_flag, spd_sel;
 
 static unsigned int exynos5430_volt_table_CA15[CPUFREQ_LEVEL_END_CA15];
 
@@ -803,7 +804,6 @@ static void __init set_volt_table_CA15(void)
 {
 	unsigned int i;
 	unsigned int asv_volt = 0;
-	unsigned int spd_option_flag, spd_sel;
 
 	for (i = 0; i < CPUFREQ_LEVEL_END_CA15; i++) {
 		asv_volt = get_match_volt(ID_ARM, exynos5430_freq_table_CA15[i].frequency);
@@ -831,7 +831,7 @@ static void __init set_volt_table_CA15(void)
 		else if (spd_sel == EGL_SPD_SEL_2100_MHZ)
 			max_support_idx_CA15 = L4;	/* 2.1 GHz */
 	}
-	min_support_idx_CA15 = L20;	/* 500 MHz */
+	min_support_idx_CA15 = L17;	/* 800 MHz */
 
 	pr_info("CPUFREQ of CA15 max_freq : L%d %u khz\n", max_support_idx_CA15,
 		exynos5430_freq_table_CA15[max_support_idx_CA15].frequency);
@@ -981,8 +981,16 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->max_support_idx = max_support_idx_CA15;
 	info->min_support_idx = min_support_idx_CA15;
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
-	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L20].frequency;
-	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L20].frequency;
+	if (spd_option_flag == EGL_DISABLE_SPD_OPTION) {
+		/* booting frequency is 800MHz */
+		info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L17].frequency;
+		info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L17].frequency;
+	} else {
+		/* booting frequency is 1.2GHz */
+		info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L13].frequency;
+		info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L13].frequency;
+	}
+
 #else
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA15[L15].frequency;
 	info->boot_cpu_max_qos = exynos5430_freq_table_CA15[L15].frequency;
