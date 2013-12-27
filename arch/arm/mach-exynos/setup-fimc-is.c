@@ -365,7 +365,7 @@ int exynos5422_cfg_clk_sclk(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout_uart_isp", (24* 1000000));
 	/* SCLK_PWM_ISP */
 	fimc_is_set_parent_dt(pdev, "mout_pwm_isp", "fin_pll");
-	fimc_is_set_rate_dt(pdev, "dout_pwm_isp", (24 * 1000000));
+	fimc_is_set_rate_dt(pdev, "dout_pwm_isp", (2 * 1000000));
 
 	return 0;
 }
