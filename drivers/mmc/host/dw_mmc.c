@@ -93,12 +93,22 @@ struct idmac_desc {
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
 
-static int dw_mci_ciu_clk_en(struct dw_mci *host)
+int dw_mci_ciu_clk_en(struct dw_mci *host)
 {
 	int ret = 1;
+	struct clk *gate_clk = (!IS_ERR(host->gate_clk)) ? host->gate_clk :
+		((!IS_ERR(host->ciu_clk)) ? host->ciu_clk : NULL);
+
+	if (!host->pdata->use_gate_clock)
+		return 0;
+
+	if (!gate_clk) {
+		dev_err(host->dev, "no available CIU gating clock\n");
+		return 1;
+	}
 
 	if (!atomic_read(&host->ciu_clk_cnt)) {
-		ret = clk_prepare_enable(host->ciu_clk);
+		ret = clk_prepare_enable(gate_clk);
 		atomic_inc_return(&host->ciu_clk_cnt);
 		if (ret)
 			dev_err(host->dev, "failed to enable ciu clock\n");
@@ -106,14 +116,24 @@ static int dw_mci_ciu_clk_en(struct dw_mci *host)
 
 	return ret;
 }
+EXPORT_SYMBOL(dw_mci_ciu_clk_en);
 
-static void dw_mci_ciu_clk_dis(struct dw_mci *host)
+void dw_mci_ciu_clk_dis(struct dw_mci *host)
 {
+	struct clk *gate_clk = (!IS_ERR(host->gate_clk)) ? host->gate_clk :
+		((!IS_ERR(host->ciu_clk)) ? host->ciu_clk : NULL);
+
+	BUG_ON(!gate_clk);
+
+	if (!host->pdata->use_gate_clock)
+		return;
+
 	if (atomic_read(&host->ciu_clk_cnt)) {
-		clk_disable_unprepare(host->ciu_clk);
+		clk_disable_unprepare(gate_clk);
 		atomic_dec_return(&host->ciu_clk_cnt);
 	}
 }
+EXPORT_SYMBOL(dw_mci_ciu_clk_dis);
 
 static int dw_mci_biu_clk_en(struct dw_mci *host)
 {
@@ -134,28 +154,6 @@ static void dw_mci_biu_clk_dis(struct dw_mci *host)
 	if (atomic_read(&host->biu_clk_cnt)) {
 		clk_disable_unprepare(host->biu_clk);
 		atomic_dec_return(&host->biu_clk_cnt);
-	}
-}
-
-static int dw_mci_clk_en(struct dw_mci *host)
-{
-	int ret = 1;
-
-	if (!atomic_read(&host->gate_clk_cnt)) {
-		ret = clk_prepare_enable(host->gate_clk);
-		atomic_inc_return(&host->gate_clk_cnt);
-		if (ret)
-			dev_err(host->dev, "failed to enable clock\n");
-	}
-
-	return ret;
-}
-
-static void dw_mci_clk_dis(struct dw_mci *host)
-{
-	if (atomic_read(&host->gate_clk_cnt)) {
-		clk_disable_unprepare(host->gate_clk);
-		atomic_dec_return(&host->gate_clk_cnt);
 	}
 }
 
@@ -364,7 +362,7 @@ void dw_mci_reg_dump(struct dw_mci *host)
 	dev_err(host->dev, ": completed_events:0x%08lx\n", host->completed_events);
 	dev_err(host->dev, ": state:           %d\n", host->state_cmd);
 	dev_err(host->dev, ": gate-clk:            %s\n",
-			      atomic_read(&host->gate_clk_cnt) ?
+			      atomic_read(&host->ciu_clk_cnt) ?
 			      "enable" : "disable");
 	dev_err(host->dev, ": ===========================================\n");
 }
@@ -1391,14 +1389,14 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	 * CIU clock should be enabled because dw_mci_setup_bus is called
 	 * unconditionally in this function
 	 */
-	spin_lock(&slot->host->gate_clk_lock);
-	gate_disabled = !atomic_read(&slot->host->gate_clk_cnt);
+	spin_lock(&slot->host->ciu_clk_lock);
+	gate_disabled = !atomic_read(&slot->host->ciu_clk_cnt);
 	if (gate_disabled)
-		dw_mci_clk_en(slot->host);
+		dw_mci_ciu_clk_en(slot->host);
 
 	/* Slot specific timing and width adjustment */
 	dw_mci_setup_bus(slot, false);
-	spin_unlock(&slot->host->gate_clk_lock);
+	spin_unlock(&slot->host->ciu_clk_lock);
 
 	switch (ios->power_mode) {
 	case MMC_POWER_UP:
@@ -1423,9 +1421,9 @@ static void dw_mci_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	}
 
 	if (cclk_request_turn_off) {
-		spin_lock(&slot->host->gate_clk_lock);
-		dw_mci_clk_dis(slot->host);
-		spin_unlock(&slot->host->gate_clk_lock);
+		spin_lock(&slot->host->ciu_clk_lock);
+		dw_mci_ciu_clk_dis(slot->host);
+		spin_unlock(&slot->host->ciu_clk_lock);
 	}
 }
 
@@ -1596,17 +1594,17 @@ static int dw_mci_1_8v_signal_voltage_switch(struct dw_mci_slot *slot)
 	} while (--retry);
 
 out:
-	spin_lock(&host->gate_clk_lock);
-	gate_disabled = !atomic_read(&host->gate_clk_cnt);
+	spin_lock(&host->ciu_clk_lock);
+	gate_disabled = !atomic_read(&host->ciu_clk_cnt);
 	if (gate_disabled)
-		dw_mci_clk_en(host);
+		dw_mci_ciu_clk_en(host);
 	reg = mci_readl(host, CLKENA);
 	reg &= ~((SDMMC_CLKEN_LOW_PWR | SDMMC_CLKEN_ENABLE) << slot->id);
 	mci_writel(host, CLKENA, reg);
 	mci_send_cmd(slot, SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
 	if (gate_disabled)
-		dw_mci_clk_dis(host);
-	spin_unlock(&host->gate_clk_lock);
+		dw_mci_ciu_clk_dis(host);
+	spin_unlock(&host->ciu_clk_lock);
 
 	if (host->vqmmc) {
 		ret = regulator_set_voltage(host->vqmmc, 1800000, 1800000);
@@ -1624,17 +1622,17 @@ out:
 	/* Wait for 5ms */
 	usleep_range(5000, 5500);
 
-	spin_lock(&host->gate_clk_lock);
-	gate_disabled = !atomic_read(&host->gate_clk_cnt);
+	spin_lock(&host->ciu_clk_lock);
+	gate_disabled = !atomic_read(&host->ciu_clk_cnt);
 	if (gate_disabled)
-		dw_mci_clk_en(host);
+		dw_mci_ciu_clk_en(host);
 	reg = mci_readl(host, CLKENA);
 	reg |= SDMMC_CLKEN_ENABLE << slot->id;
 	mci_writel(host, CLKENA, reg);
 	mci_send_cmd(slot, SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
 	if (gate_disabled)
-		dw_mci_clk_dis(host);
-	spin_unlock(&host->gate_clk_lock);
+		dw_mci_ciu_clk_dis(host);
+	spin_unlock(&host->ciu_clk_lock);
 
 	return ret;
 }
@@ -3018,30 +3016,30 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
 
-				spin_lock(&host->gate_clk_lock);
-				if (!atomic_read(&host->gate_clk_cnt)) {
-					dw_mci_clk_en(host);
+				spin_lock(&host->ciu_clk_lock);
+				if (!atomic_read(&host->ciu_clk_cnt)) {
+					dw_mci_ciu_clk_en(host);
 					dw_mci_fifo_reset(host->dev, host);
-					dw_mci_clk_dis(host);
+					dw_mci_ciu_clk_dis(host);
 				} else {
 					dw_mci_fifo_reset(host->dev, host);
 				}
-				spin_unlock(&host->gate_clk_lock);
+				spin_unlock(&host->ciu_clk_lock);
 #ifdef CONFIG_MMC_DW_IDMAC
 				dw_mci_idma_reset_dma(host);
 #endif
 			} else if (host->cur_slot) {
-				spin_lock(&host->gate_clk_lock);
-				if (!atomic_read(&host->gate_clk_cnt)) {
-					dw_mci_clk_en(host);
+				spin_lock(&host->ciu_clk_lock);
+				if (!atomic_read(&host->ciu_clk_cnt)) {
+					dw_mci_ciu_clk_en(host);
 					dw_mci_ciu_reset(host->dev, host);
 					mci_writel(host, RINTSTS, 0xFFFFFFFF);
-					dw_mci_clk_dis(host);
+					dw_mci_ciu_clk_dis(host);
 				} else {
 					dw_mci_ciu_reset(host->dev, host);
 					mci_writel(host, RINTSTS, 0xFFFFFFFF);
 				}
-				spin_unlock(&host->gate_clk_lock);
+				spin_unlock(&host->ciu_clk_lock);
 			}
 
 			spin_unlock_bh(&host->lock);
@@ -3630,7 +3628,6 @@ int dw_mci_probe(struct dw_mci *host)
 	int width, i, ret = 0;
 	u32 fifo_size, qrdy_int, msize, tx_wmark, rx_wmark;
 	int init_slots = 0;
-	bool clock_enabled = false;
 
 	if (drv_data && drv_data->misc_control) {
 		ret = drv_data->misc_control(host, CTRL_TURN_ON_2_8V, NULL);
@@ -3656,49 +3653,40 @@ int dw_mci_probe(struct dw_mci *host)
 		return -ENODEV;
 	}
 
+	/*
+	 * Get clock sources
+	 */
 	host->biu_clk = devm_clk_get(host->dev, "biu");
 	if (IS_ERR(host->biu_clk)) {
 		dev_dbg(host->dev, "biu clock not available\n");
-	} else if (!host->pdata->use_gate_clock) {
-		ret = dw_mci_biu_clk_en(host);
-		if (ret) {
-			dev_err(host->dev, "failed to enable biu clock\n");
-			return ret;
-		}
 	}
-
 	host->ciu_clk = devm_clk_get(host->dev, "gate_ciu");
 	if (IS_ERR(host->ciu_clk)) {
 		dev_dbg(host->dev, "ciu clock not available\n");
 		host->bus_hz = host->pdata->bus_hz;
-	} else if (!host->pdata->use_gate_clock) {
-		/*
-		 * in case of using CIU clock to gate
-		 */
-		ret = dw_mci_ciu_clk_en(host);
+	}
+	host->gate_clk = devm_clk_get(host->dev, "gate_mmc");
+	if (IS_ERR(host->gate_clk))
+		dev_dbg(host->dev, "clock for gating not available\n");
+
+	/*
+	 * BIU clock enable
+	 */
+	if (IS_ERR(host->gate_clk)) {
+		ret = dw_mci_biu_clk_en(host);
 		if (ret) {
-			dev_err(host->dev, "failed to enable ciu clock\n");
+			dev_err(host->dev, "failed to enable biu clock\n");
 			goto err_clk_biu;
-		} else
-			clock_enabled = true;
-	} else {
-		/*
-		 * in case of using an additional clock to gate
-		 */
-		host->gate_clk = devm_clk_get(host->dev, "gate_mmc");
-		if (IS_ERR(host->gate_clk))
-			dev_dbg(host->dev, "clock for gating not available\n");
-		else {
-			ret = dw_mci_clk_en(host);
-			if (ret) {
-				dev_err(host->dev, "failed to enable clock\n");
-				goto err_clk_biu;
-			} else
-				clock_enabled = true;
 		}
 	}
 
-	if (clock_enabled) {
+	/*
+	 * CIU clock enable
+	 */
+	ret = dw_mci_ciu_clk_en(host);
+	if (ret) {
+		goto err_clk_ciu;
+	} else {
 		if (host->pdata->bus_hz) {
 			ret = clk_set_rate(host->ciu_clk,
 					host->pdata->bus_hz);
@@ -3729,7 +3717,7 @@ int dw_mci_probe(struct dw_mci *host)
 	host->quirks = host->pdata->quirks;
 
 	spin_lock_init(&host->lock);
-	spin_lock_init(&host->gate_clk_lock);
+	spin_lock_init(&host->ciu_clk_lock);
 	INIT_LIST_HEAD(&host->queue);
 
 	/*
@@ -3947,13 +3935,11 @@ err_dmaunmap:
 		regulator_disable(host->vmmc);
 
 err_clk_ciu:
-	if (!IS_ERR(host->ciu_clk) && (!host->pdata->use_gate_clock))
+	if (!IS_ERR(host->ciu_clk) || !IS_ERR(host->gate_clk))
 		dw_mci_ciu_clk_dis(host);
 err_clk_biu:
-	if (!IS_ERR(host->biu_clk) && (!host->pdata->use_gate_clock))
+	if (!IS_ERR(host->biu_clk))
 		dw_mci_biu_clk_dis(host);
-	if (!IS_ERR(host->gate_clk) && host->pdata->use_gate_clock)
-		dw_mci_clk_dis(host);
 
 	return ret;
 }
@@ -4004,7 +3990,7 @@ void dw_mci_remove(struct dw_mci *host)
 		regulator_disable(host->vmmc);
 
 	if (!IS_ERR(host->gate_clk))
-		dw_mci_clk_dis(host);
+		dw_mci_ciu_clk_dis(host);
 }
 EXPORT_SYMBOL(dw_mci_remove);
 
@@ -4025,18 +4011,18 @@ int dw_mci_suspend(struct dw_mci *host)
 			continue;
 		if (slot->mmc) {
 			int gate_disabled;
-			spin_lock(&host->gate_clk_lock);
-			gate_disabled = !atomic_read(&host->gate_clk_cnt);
+			spin_lock(&host->ciu_clk_lock);
+			gate_disabled = !atomic_read(&host->ciu_clk_cnt);
 			if (gate_disabled)
-				dw_mci_clk_en(host);
+				dw_mci_ciu_clk_en(host);
 			clkena = mci_readl(host, CLKENA);
 			clkena &= ~((SDMMC_CLKEN_LOW_PWR) << slot->id);
 			mci_writel(host, CLKENA, clkena);
 			mci_send_cmd(slot,
 				SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
 			if (gate_disabled)
-				dw_mci_clk_dis(host);
-			spin_unlock(&host->gate_clk_lock);
+				dw_mci_ciu_clk_dis(host);
+			spin_unlock(&host->ciu_clk_lock);
 
 			slot->mmc->pm_flags |= slot->mmc->pm_caps;
 			ret = mmc_suspend_host(slot->mmc);
@@ -4087,22 +4073,22 @@ int dw_mci_resume(struct dw_mci *host)
 		}
 	}
 
-	spin_lock(&host->gate_clk_lock);
-	gate_disabled = !atomic_read(&host->gate_clk_cnt);
+	spin_lock(&host->ciu_clk_lock);
+	gate_disabled = !atomic_read(&host->ciu_clk_cnt);
 	if (gate_disabled)
-		dw_mci_clk_en(host);
+		dw_mci_ciu_clk_en(host);
 
 	if (!mci_wait_reset(host->dev, host)) {
 		if (gate_disabled)
-			dw_mci_clk_dis(host);
-		spin_unlock(&host->gate_clk_lock);
+			dw_mci_ciu_clk_dis(host);
+		spin_unlock(&host->ciu_clk_lock);
 		ret = -ENODEV;
 		return ret;
 	}
 
 	if (gate_disabled)
-		dw_mci_clk_dis(host);
-	spin_unlock(&host->gate_clk_lock);
+		dw_mci_ciu_clk_dis(host);
+	spin_unlock(&host->ciu_clk_lock);
 
 	if (host->use_dma && host->dma_ops->init)
 		host->dma_ops->init(host);
@@ -4140,10 +4126,10 @@ int dw_mci_resume(struct dw_mci *host)
 			ios.timing = MMC_TIMING_LEGACY;
 			dw_mci_set_ios(slot->mmc, &ios);
 			dw_mci_set_ios(slot->mmc, &slot->mmc->ios);
-			spin_lock(&host->gate_clk_lock);
-			gate_disabled = !atomic_read(&host->gate_clk_cnt);
+			spin_lock(&host->ciu_clk_lock);
+			gate_disabled = !atomic_read(&host->ciu_clk_cnt);
 			if (gate_disabled)
-				dw_mci_clk_en(host);
+				dw_mci_ciu_clk_en(host);
 			dw_mci_setup_bus(slot, true);
 			if (host->pdata->tuned) {
 				if (drv_data && drv_data->misc_control)
@@ -4153,8 +4139,8 @@ int dw_mci_resume(struct dw_mci *host)
 						host->cd_rd_thr << 16 | 1);
 			}
 			if (gate_disabled)
-				dw_mci_clk_dis(host);
-			spin_unlock(&host->gate_clk_lock);
+				dw_mci_ciu_clk_dis(host);
+			spin_unlock(&host->ciu_clk_lock);
 		}
 
 		if (dw_mci_get_cd(slot->mmc))

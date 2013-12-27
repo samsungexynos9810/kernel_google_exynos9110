@@ -228,6 +228,8 @@ extern void dw_mci_remove(struct dw_mci *host);
 extern int dw_mci_suspend(struct dw_mci *host);
 extern int dw_mci_resume(struct dw_mci *host);
 #endif
+extern int dw_mci_ciu_clk_en(struct dw_mci *host);
+extern void dw_mci_ciu_clk_dis(struct dw_mci *host);
 
 /**
  * dw_mci driver data - dw-mshc implementation specific driver data.

@@ -105,7 +105,7 @@ static void exynos_sfr_restore(unsigned int i)
 	int startbit_clear = false;
 	unsigned int cmd_status = 0;
 	unsigned long timeout = jiffies + msecs_to_jiffies(500);
-	int gate_disabled, ret;
+	int gate_disabled;
 
 	mci_writel(host, CTRL , dw_mci_save_sfr[i][0]);
 	mci_writel(host, PWREN, dw_mci_save_sfr[i][1]);
@@ -124,14 +124,10 @@ static void exynos_sfr_restore(unsigned int i)
 	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][14]);
 	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][15]);
 
-	spin_lock(&host->gate_clk_lock);
-	gate_disabled = !atomic_read(&host->gate_clk_cnt);
-	if (gate_disabled) {
-		ret = clk_prepare_enable(host->gate_clk);
-		atomic_inc_return(&host->gate_clk_cnt);
-		if (ret)
-			dev_err(host->dev, "failed to enable clock\n");
-	}
+	spin_lock(&host->ciu_clk_lock);
+	gate_disabled = !atomic_read(&host->ciu_clk_cnt);
+	if (gate_disabled)
+		dw_mci_ciu_clk_en(host);
 
 	mci_writel(host, CMDARG, 0);
 	wmb();
@@ -147,11 +143,9 @@ static void exynos_sfr_restore(unsigned int i)
 		}
 	}
 
-	if (gate_disabled) {
-		clk_disable_unprepare(host->gate_clk);
-		atomic_dec_return(&host->gate_clk_cnt);
-	}
-	spin_unlock(&host->gate_clk_lock);
+	if (gate_disabled)
+		dw_mci_ciu_clk_dis(host);
+	spin_unlock(&host->ciu_clk_lock);
 
 	if (startbit_clear == false)
 		dev_err(host->dev, "CMD start bit stuck %02d\n", i);
