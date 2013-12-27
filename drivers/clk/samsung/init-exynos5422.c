@@ -327,7 +327,7 @@ void gsc_clock_init(void)
 void pwm_init_clock(void)
 {
 	clk_register_fixed_factor(NULL, "pwm-clock",
-			"pclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
+			"sclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
 }
 
 void jpeg_clock_init(void)
