@@ -1465,7 +1465,7 @@ struct samsung_div_clock exynos5430_div_clks[] __initdata = {
 	CDIV(dout_egl1, "mout_egl", EXYNOS5430_DIV_EGL0, 0, 3),
 	CDIV(dout_egl2, "dout_egl1", EXYNOS5430_DIV_EGL0, 4, 3),
 	CDIV(dout_aclk_egl, "dout_egl2", EXYNOS5430_DIV_EGL0, 8, 3),
-	CDIV(dout_atclk_egl, "dout_egl2", EXYNOS5430_DIV_EGL0, 16, 4444),
+	CDIV(dout_atclk_egl, "dout_egl2", EXYNOS5430_DIV_EGL0, 16, 4),
 	CDIV(dout_pclk_dbg_egl, "dout_egl2", EXYNOS5430_DIV_EGL0, 20, 3),
 	CDIV(dout_pclk_egl, "dout_egl2", EXYNOS5430_DIV_EGL0, 12, 3),
 	CDIV(dout_sclk_hpm_egl, "mout_egl", EXYNOS5430_DIV_EGL1, 4, 3),
@@ -2991,10 +2991,10 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_pixelasyncm_ispd_local, "gate_pixelasyncm_ispd_local", NULL, EXYNOS5430_ENABLE_IP_ISP_LOCAL1, 1, 0, 0),
 	CGTE(gate_pixelasync_ispc_local, "gate_pixelasync_ispc_local", NULL, EXYNOS5430_ENABLE_IP_ISP_LOCAL1, 0, 0, 0),
 
-	CGTE(dout_mem0_pll, "dout_mem0_pll", "mout_mem0_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(dout_mem1_pll, "dout_mem1_pll", "mout_mem1_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(dout_mfc_pll, "dout_mfc_pll", "mout_mfc_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(dout_bus_pll, "dout_bus_pll", "mout_bus_pll", EXYNOS5430_ENABLE_ACLK_MIF0, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(dout_mem0_pll, "dout_mem0_pll", "mout_mem0_pll", NULL, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(dout_mem1_pll, "dout_mem1_pll", "mout_mem1_pll", NULL, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(dout_mfc_pll, "dout_mfc_pll", "mout_mfc_pll", NULL, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(dout_bus_pll, "dout_bus_pll", "mout_bus_pll", NULL, 0, CLK_IGNORE_UNUSED, 0),
 
 	/* MUX gate */
 	CGTE(mgate_sclk_mmc2_b, "mgate_sclk_mmc2_b", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 28, CLK_IGNORE_UNUSED, 0),
