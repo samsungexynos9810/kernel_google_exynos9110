@@ -313,8 +313,7 @@
 	sysmmu_3aa_2: sysmmu@0x13CB0000 {
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x13CB0000 0x1000>;
-		interrupt-parent = <&combiner>;
-		interrupts = <7 2>; /* SYSMMU_MDMA1 */
+		interrupts = <0 172 0>;
 		clock-names = "sysmmu", "master";
 		clocks = <&clock 5014>, <&clock 5008>;
 		samsung,power-domain = <&pd_gscl>;
