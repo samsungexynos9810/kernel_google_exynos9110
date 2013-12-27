@@ -97,6 +97,14 @@ static inline bool samsung_pll35xx_mp_change(u32 mdiv, u32 pdiv, u32 pll_con)
 		return 0;
 }
 
+static inline bool samsung_pll35xx_s_change(u32 sdiv, u32 pll_con)
+{
+	if (sdiv != ((pll_con >> PLL35XX_SDIV_SHIFT) & PLL35XX_SDIV_MASK))
+		return 1;
+	else
+		return 0;
+}
+
 static int samsung_pll35xx_set_rate(struct clk_hw *hw, unsigned long drate,
 					unsigned long prate)
 {
@@ -115,6 +123,8 @@ static int samsung_pll35xx_set_rate(struct clk_hw *hw, unsigned long drate,
 	tmp = __raw_readl(pll->con_reg);
 
 	if (!(samsung_pll35xx_mp_change(rate->mdiv, rate->pdiv, tmp))) {
+		if (!samsung_pll35xx_s_change(rate->sdiv, tmp))
+			return 0;
 		/* If only s change, change just s value only*/
 		tmp &= ~(PLL35XX_SDIV_MASK << PLL35XX_SDIV_SHIFT);
 		tmp |= rate->sdiv << PLL35XX_SDIV_SHIFT;
