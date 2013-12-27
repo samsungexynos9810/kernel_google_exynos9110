@@ -664,18 +664,39 @@ void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
 	unsigned int freq = 0;
 	unsigned int new_freq = 0;
 	unsigned int cur = get_cur_cluster(cpu);
+	struct cpufreq_policy *policy;
 
 	g_clamp_cpufreqs[cur] = clamp_freq;
 	new_freq = min(clamp_freq, gov_target);
 	freq = exynos_getspeed(cpu);
 
+	if (freq <= clamp_freq)
+		return;
+
+	policy = cpufreq_cpu_get(cpu);
+
+	if (!policy)
+		return;
+
+	if (!policy->user_policy.governor) {
+		cpufreq_cpu_put(policy);
+		return;
+	}
+#if defined(CONFIG_CPU_FREQ_GOV_USERSPACE) || defined(CONFIG_CPU_FREQ_GOV_PERFORMANCE)
+	if ((strcmp(policy->governor->name, "userspace") == 0)
+			|| strcmp(policy->governor->name, "performance") == 0) {
+		cpufreq_cpu_put(policy);
+		return;
+	}
+#endif
 #ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 	trace_printk("IPA: %s:%d: set clamps for cpu %d to %d (curr was %d)",
 		     __PRETTY_FUNCTION__, __LINE__, cpu, clamp_freq, freq);
 #endif
-	if (new_freq != freq)
-		exynos_target(cpufreq_cpu_get(cpu),
-			      new_freq, CPUFREQ_RELATION_H);
+
+	__cpufreq_driver_target(policy, new_freq, CPUFREQ_RELATION_H);
+
+	cpufreq_cpu_put(policy);
 }
 
 #ifdef CONFIG_PM
