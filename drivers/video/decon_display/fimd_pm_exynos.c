@@ -273,6 +273,15 @@ int enable_display_decon_clocks(struct device *dev)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
 	dispdrv->pm_status.ops->clk_on(dispdrv);
 #else
+	if (!dispdrv->dsi_driver.clk) {
+		dispdrv->dsi_driver.clk = __clk_lookup("clk_dsim1");
+		if (IS_ERR(dispdrv->dsi_driver.clk)) {
+			pr_err("Failed to clk_get - clk_dsim1\n");
+			return ret;
+		}
+	}
+	clk_prepare_enable(dispdrv->dsi_driver.clk);
+
 	clk_prepare_enable(sfb->bus_clk);
 
 	clk_prepare_enable(sfb->axi_disp1);
@@ -314,6 +323,8 @@ int disable_display_decon_clocks(struct device *dev)
 	clk_disable_unprepare(sfb->axi_disp1);
 
 	clk_disable_unprepare(sfb->bus_clk);
+
+	clk_disable_unprepare(dispdrv->dsi_driver.clk);
 #endif
 
 	return 0;
