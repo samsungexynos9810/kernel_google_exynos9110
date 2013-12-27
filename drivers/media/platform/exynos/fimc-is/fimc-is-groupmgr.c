@@ -1157,6 +1157,19 @@ check_completion:
 		ret = -EINVAL;
 	}
 
+	if (!test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state)) {
+		retry = 10;
+		while (--retry && framemgr->frame_pro_cnt) {
+			warn("%d frame pros waiting...\n", framemgr->frame_pro_cnt);
+			msleep(20);
+		}
+
+		if (!retry) {
+			merr("waiting(until process empty) is fail", group);
+			ret = -EINVAL;
+		}
+	}
+
 	if (test_bit(FIMC_IS_GROUP_FORCE_STOP, &group->state)) {
 		ret = fimc_is_itf_force_stop(device, GROUP_ID(group->id));
 		if (ret) {
@@ -1179,15 +1192,17 @@ check_completion:
 		}
 	}
 
-	retry = 10;
-	while (--retry && framemgr->frame_pro_cnt) {
-		warn("%d frame pros waiting...\n", framemgr->frame_pro_cnt);
-		msleep(20);
-	}
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state)) {
+		retry = 10;
+		while (--retry && framemgr->frame_pro_cnt) {
+			warn("%d frame pros waiting...\n", framemgr->frame_pro_cnt);
+			msleep(20);
+		}
 
-	if (!retry) {
-		merr("waiting(until process empty) is fail", group);
-		ret = -EINVAL;
+		if (!retry) {
+			merr("waiting(until process empty) is fail", group);
+			ret = -EINVAL;
+		}
 	}
 
 	rcount = atomic_read(&group->rcount);
