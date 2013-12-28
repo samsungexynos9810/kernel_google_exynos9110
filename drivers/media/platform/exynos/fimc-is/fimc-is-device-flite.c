@@ -755,12 +755,21 @@ static inline int flite_s_use_buffer(struct fimc_is_device_flite *flite,
 	u32 bindex)
 {
 	int ret = 0;
+	unsigned long target_time;
 
 	BUG_ON(!flite);
 
 	if (!atomic_read(&flite->bcount)) {
+		if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY) {
+			target_time = jiffies +
+				msecs_to_jiffies(FLITE_VVALID_TIME);
+			while ((target_time > jiffies) &&
+					flite_hw_get_status1(flite->base_reg) && (7 << 20))
+				pr_debug("over vblank (early buffer done)");
+		}
+
 		if (flite_hw_get_status1(flite->base_reg) && (7 << 20)) {
-			merr("over vblank", flite);
+			merr("over vblank (buf-mode : %d)", flite, flite->buf_done_mode);
 			ret = -EINVAL;
 			goto p_err;
 		}
@@ -781,12 +790,21 @@ static inline int flite_s_unuse_buffer(struct fimc_is_device_flite *flite,
 	u32 bindex)
 {
 	int ret = 0;
+	unsigned long target_time;
 
 	BUG_ON(!flite);
 
 	if (atomic_read(&flite->bcount) == 1) {
+		if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY) {
+			target_time = jiffies +
+				msecs_to_jiffies(FLITE_VVALID_TIME);
+			while ((target_time > jiffies) &&
+					flite_hw_get_status1(flite->base_reg) && (7 << 20))
+				pr_debug("over vblank (early buffer done)");
+		}
+
 		if (flite_hw_get_status1(flite->base_reg) && (7 << 20)) {
-			merr("over vblank", flite);
+			merr("over vblank (buf-mode : %d)", flite, flite->buf_done_mode);
 			ret = -EINVAL;
 			goto p_err;
 		}
