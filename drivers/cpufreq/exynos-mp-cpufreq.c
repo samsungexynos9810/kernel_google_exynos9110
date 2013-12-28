@@ -621,7 +621,8 @@ static int exynos_target(struct cpufreq_policy *policy,
 		target_freq = policy->min;
 
 	/* verify old frequency */
-	BUG_ON(freqs[cur]->old != exynos_getspeed(policy->cpu));
+	if(freqs[cur]->old != exynos_getspeed(policy->cpu))
+		pr_info("old : %d, getspeed : %d\n", freqs[cur]->old, exynos_getspeed(policy->cpu));
 
 	if (cur == CA15) {
 		target_freq = max((unsigned int)pm_qos_request(PM_QOS_CPU_FREQ_MIN), target_freq);
