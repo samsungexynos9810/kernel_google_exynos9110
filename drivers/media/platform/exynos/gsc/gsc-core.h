@@ -666,6 +666,7 @@ int gsc_out_link_validate(const struct media_pad *source,
 			  const struct media_pad *sink);
 int gsc_pipeline_s_stream(struct gsc_dev *gsc, bool on);
 void gsc_dump_registers(struct gsc_dev *gsc);
+void gsc_hw_dump_regs(void __iomem *base);
 
 static inline void gsc_ctx_state_lock_set(u32 state, struct gsc_ctx *ctx)
 {

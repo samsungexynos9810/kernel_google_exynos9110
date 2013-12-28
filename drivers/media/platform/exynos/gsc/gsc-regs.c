@@ -1053,3 +1053,61 @@ void gsc_hw_set_v_coef(struct gsc_ctx *ctx)
 		}
 	}
 }
+
+#define gsc_dump_reg(base, offset, size)\
+	print_hex_dump(KERN_ALERT, "+" #offset ": ", DUMP_PREFIX_OFFSET, 16, 4, \
+			base + offset, size, false)
+void gsc_hw_dump_regs(void __iomem *base)
+{
+	gsc_dump_reg(base, 0x000, 0x60);
+	gsc_dump_reg(base, 0x080, 0x20);
+	gsc_dump_reg(base, 0x0B0, 0x20);
+	gsc_dump_reg(base, 0x10C, 0x04);
+	gsc_dump_reg(base, 0x110, 0x40);
+	gsc_dump_reg(base, 0x160, 0x40);
+	gsc_dump_reg(base, 0x1B0, 0x40);
+
+	/* coefficient registers */
+	gsc_dump_reg(base, 0x200, 0x84);
+	gsc_dump_reg(base, 0x290, 0x24);
+	gsc_dump_reg(base, 0x300, 0x24);
+	gsc_dump_reg(base, 0x330, 0x24);
+	gsc_dump_reg(base, 0x360, 0x24);
+	gsc_dump_reg(base, 0x390, 0x24);
+	gsc_dump_reg(base, 0x3C0, 0x24);
+	gsc_dump_reg(base, 0x3F0, 0x24);
+	gsc_dump_reg(base, 0x420, 0x24);
+	gsc_dump_reg(base, 0x450, 0x24);
+	gsc_dump_reg(base, 0x500, 0x24);
+	gsc_dump_reg(base, 0x530, 0x24);
+	gsc_dump_reg(base, 0x560, 0x24);
+	gsc_dump_reg(base, 0x590, 0x24);
+	gsc_dump_reg(base, 0x600, 0x24);
+	gsc_dump_reg(base, 0x630, 0x24);
+	gsc_dump_reg(base, 0x660, 0x24);
+	gsc_dump_reg(base, 0x690, 0x24);
+	gsc_dump_reg(base, 0x6C0, 0x24);
+	gsc_dump_reg(base, 0x6F0, 0x24);
+	gsc_dump_reg(base, 0x720, 0x24);
+	gsc_dump_reg(base, 0x750, 0x24);
+	gsc_dump_reg(base, 0x800, 0x24);
+	gsc_dump_reg(base, 0x830, 0x24);
+	gsc_dump_reg(base, 0x860, 0x24);
+	gsc_dump_reg(base, 0x890, 0x24);
+	gsc_dump_reg(base, 0x900, 0x24);
+	gsc_dump_reg(base, 0x930, 0x24);
+	gsc_dump_reg(base, 0x960, 0x24);
+	gsc_dump_reg(base, 0x990, 0x24);
+	gsc_dump_reg(base, 0x9C0, 0x24);
+	gsc_dump_reg(base, 0x9F0, 0x24);
+	gsc_dump_reg(base, 0xA20, 0x24);
+	gsc_dump_reg(base, 0xA50, 0x24);
+
+	gsc_dump_reg(base, 0xA74, 0x08);
+	gsc_dump_reg(base, 0xA80, 0x04);
+	gsc_dump_reg(base, 0xAF0, 0x0C);
+
+	/* Shadow registers */
+	gsc_dump_reg(base, 0xB00, 0x2C);
+	gsc_dump_reg(base, 0xB30, 0x10);
+}

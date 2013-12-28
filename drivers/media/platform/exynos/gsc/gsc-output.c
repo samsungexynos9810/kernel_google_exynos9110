@@ -27,6 +27,7 @@
 #include <linux/clk.h>
 #include <linux/string.h>
 #include <linux/delay.h>
+#include <linux/exynos_iovmm.h>
 #include <media/v4l2-ioctl.h>
 
 #include "gsc-core.h"
@@ -781,6 +782,18 @@ int gsc_output_ctrls_create(struct gsc_dev *gsc)
 	return 0;
 }
 
+static int gsc_sysmmu_output_fault_handler(struct iommu_domain *domain,
+				struct device *dev, unsigned long fault_addr,
+				int fault_flags, void *p)
+{
+	struct gsc_output_device *out = p;
+
+	dev_crit(dev, "System MMU fault while OUTPUT ---------\n");
+	gsc_hw_dump_regs(out->ctx->gsc_dev->regs);
+
+	return 0;
+}
+
 static int gsc_output_open(struct file *file)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
@@ -817,6 +830,10 @@ static int gsc_output_open(struct file *file)
 		clear_bit(ST_OUTPUT_OPEN, &gsc->state);
 		return ret;
 	}
+
+	iovmm_set_fault_handler(&gsc->pdev->dev,
+			gsc_sysmmu_output_fault_handler, &gsc->out);
+
 	return ret;
 }
 

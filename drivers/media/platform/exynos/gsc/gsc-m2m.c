@@ -24,6 +24,7 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#include <linux/exynos_iovmm.h>
 #include <media/v4l2-ioctl.h>
 
 #include "gsc-core.h"
@@ -128,6 +129,17 @@ void gsc_op_timer_handler(unsigned long arg)
 	}
 	gsc_err("GSCALER[%d] interrupt hasn't been triggered", gsc->id);
 	gsc_err("erro ctx: %p, ctx->state: 0x%x", ctx, ctx->state);
+}
+
+static int gsc_sysmmu_m2m_fault_handler(struct iommu_domain *domain,
+				struct device *dev, unsigned long fault_addr,
+				int fault_flags, void *p)
+{
+	struct gsc_ctx *ctx = p;
+
+	dev_crit(dev, "System MMU fault while M2M ---------\n");
+	gsc_hw_dump_regs(ctx->gsc_dev->regs);
+	return 0;
 }
 
 static void gsc_m2m_device_run(void *priv)
@@ -239,6 +251,10 @@ static void gsc_m2m_device_run(void *priv)
 	add_timer(&ctx->op_timer);
 
 	spin_unlock_irqrestore(&ctx->slock, flags);
+
+	iovmm_set_fault_handler(&gsc->pdev->dev,
+			gsc_sysmmu_m2m_fault_handler, ctx);
+
 	return;
 
 put_device:
