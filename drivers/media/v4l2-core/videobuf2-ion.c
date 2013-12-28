@@ -1101,6 +1101,7 @@ int vb2_ion_attach_iommu(void *alloc_ctx)
 }
 EXPORT_SYMBOL_GPL(vb2_ion_attach_iommu);
 
-MODULE_AUTHOR("Jonghun,	Han <jonghun.han@samsung.com>");
+MODULE_AUTHOR("Cho KyongHo <pullip.cho@samsung.com>");
+MODULE_AUTHOR("Jinsung Yang <jsgood.yang@samsung.com>");
 MODULE_DESCRIPTION("Android ION allocator handling routines for videobuf2");
 MODULE_LICENSE("GPL");
