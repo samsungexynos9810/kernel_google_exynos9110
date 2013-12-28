@@ -44,6 +44,8 @@ static struct fimc_is_sensor_cfg config_imx175[] = {
 	FIMC_IS_SENSOR_CFG(3280, 2458, 30, 14, 0),
 	/* 3280X1846@30fps */
 	FIMC_IS_SENSOR_CFG(3280, 1846, 30, 11, 1),
+	/* 3280X1846@15fps, Busrt Panorama */
+	FIMC_IS_SENSOR_CFG(3280, 1846, 15, 11, 1),
 	/* 3280X2458@24fps */
 	FIMC_IS_SENSOR_CFG(3280, 2458, 24, 11, 2),
 	/* 3280X1846@24fps */
