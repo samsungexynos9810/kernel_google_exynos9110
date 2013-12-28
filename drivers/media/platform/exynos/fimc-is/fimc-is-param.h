@@ -1089,7 +1089,7 @@ enum otf_input_path {
 };
 
 enum otf_intput_error {
-	OTF_INPUT_ERROR_NO		= 0 /* Input setting is done */
+       OTF_INPUT_ERROR_NO		= 0 /* Input setting is done */
 };
 
 enum dma_input_command {
@@ -1855,7 +1855,7 @@ struct param_isp_afc {
 };
 
 struct param_scaler_imageeffect {
-	u32 	cmd;
+	u32	cmd;
 	u32	arbitrary_cb;
 	u32	arbitrary_cr;
 	u32	yuv_range;

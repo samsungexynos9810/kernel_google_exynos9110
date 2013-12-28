@@ -40,7 +40,7 @@
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0))
 #include <linux/exynos_iovmm.h>
 #else
-#include <plat/sysmmu.h>
+#include <plat/iovmm.h>
 #endif
 
 static void *fimc_is_ion_init(struct platform_device *pdev)

@@ -48,7 +48,6 @@ enum fimc_is_interface_state {
 	IS_IF_STATE_BUSY,
 };
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 enum interrupt_map {
 	INTR_GENERAL		= 0,
 	INTR_ISP_FDONE		= 1,
@@ -60,20 +59,6 @@ enum interrupt_map {
 	INTR_SHOT_DONE		= 7,
 	INTR_MAX_MAP
 };
-#else
-enum interrupt_map {
-	INTR_GENERAL		= 0,
-	INTR_ISP_FDONE		= 1,
-	INTR_SCC_FDONE		= 2,
-	INTR_DIS_FDONE		= 3,
-	INTR_SCP_FDONE		= 4,
-	/* 5 is ISP YUV DONE */
-	INTR_3A0C_FDONE		= 5,
-	INTR_3A1C_FDONE		= 6,
-	INTR_SHOT_DONE		= 7,
-	INTR_MAX_MAP
-};
-#endif
 
 enum streaming_state {
 	IS_IF_STREAMING_INIT,

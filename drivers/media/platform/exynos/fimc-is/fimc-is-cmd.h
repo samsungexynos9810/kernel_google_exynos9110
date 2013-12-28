@@ -102,16 +102,16 @@ enum is_scenario_id {
 };
 
 enum is_subscenario_id {
-	ISS_SUB_SCENARIO_STILL_PREVIEW = 0,		/* 0: still preview */
-	ISS_SUB_SCENARIO_VIDEO = 1,				/* 1: video */
-	ISS_SUB_SCENARIO_DUAL_STILL = 2,		/* 2: dual still preview */
-	ISS_SUB_SCENARIO_DUAL_VIDEO = 3,		/* 3: dual video */
+	ISS_SUB_SCENARIO_STILL_PREVIEW = 0,	/* 0: still preview */
+	ISS_SUB_SCENARIO_VIDEO = 1,		/* 1: video */
+	ISS_SUB_SCENARIO_DUAL_STILL = 2,	/* 2: dual still preview */
+	ISS_SUB_SCENARIO_DUAL_VIDEO = 3,	/* 3: dual video */
 	ISS_SUB_SCENARIO_VIDEO_HIGH_SPEED = 4,	/* 4: video high speed */
-	ISS_SUB_SCENARIO_STILL_CAPTURE = 5,		/* 5: still capture */
-	ISS_SUB_SCENARIO_FHD_60FPS = 6,			/* 6: video FHD 60fps */
+	ISS_SUB_SCENARIO_STILL_CAPTURE = 5,	/* 5: still capture */
+	ISS_SUB_SCENARIO_FHD_60FPS = 6,		/* 6: video FHD 60fps */
 
-	ISS_SUB_SCENARIO_FRONT_VT1 = 4,			/* 4: front camera VT1 (Temporary) */
-	ISS_SUB_SCENARIO_FRONT_VT2 = 5,			/* 5: front camera VT2 (Temporary) */
+	ISS_SUB_SCENARIO_FRONT_VT1 = 4,		/* 4: front camera VT1 (Temporary) */
+	ISS_SUB_SCENARIO_FRONT_VT2 = 5,		/* 5: front camera VT2 (Temporary) */
 	ISS_SUB_SCENARIO_FRONT_SMART_STAY = 6,	/* 6: front camera smart stay (Temporary) */
 	ISS_SUB_END,
 };
@@ -147,7 +147,6 @@ struct is_setfile_header {
 #define IS_SET_INTERRUPT(base)		(base->uiINTGR1 |= IS_SET_INT_BIT)
 #define IS_CLR_INTERRUPT(base)		(base->uiINTCR1 |= IS_CLR_INT_BIT)
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 struct is_common_reg {
 	u32 hicmd;
 	u32 hic_sensorid;
@@ -157,85 +156,7 @@ struct is_common_reg {
 	u32 hic_param4;
 
 	u32 power_down_debug_number;
-	u32 reserved1[3];
 
-	u32 ihcmd;
-	u32 ihc_sensorid;
-	u32 ihc_param1;
-	u32 ihc_param2;
-	u32 ihc_param3;
-	u32 ihc_param4;
-
-	u32 reserved2[3];
-
-	u32 taa0c_sensor_id;
-	u32 taa0c_param1;
-	u32 taa0c_param2;
-	u32 taa0c_param3;
-
-	u32 reserved3[3];
-
-	u32 taa1c_sensor_id;
-	u32 taa1c_param1;
-	u32 taa1c_param2;
-	u32 taa1c_param3;
-
-	u32 reserved4[3];
-
-	u32 scc_sensor_id;
-	u32 scc_param1;
-	u32 scc_param2;
-	u32 scc_param3;
-
-	u32 reserved5[3];
-
-	u32 dis_sensor_id;
-	u32 dis_param1;
-	u32 dis_param2;
-	u32 dis_param3;
-
-	u32 reserved6[3];
-
-	u32 scp_sensor_id;
-	u32 scp_param1;
-	u32 scp_param2;
-	u32 scp_param3;
-
-	u32 reserved7[4];
-
-	u32 shot_sensor_id;
-	u32 shot_param1;
-	u32 shot_param2;
-	u32 shot_param3;
-
-	u32 grp1_done_frame_num;
-
-	u32 fcount_sen3;
-	u32 fcount_sen2;
-	u32 fcount_sen1;
-	u32 fcount_sen0;
-
-	/* This flag is not used.
-	 * But do not remove this flag for driver commonization.
-	 * It will be removed.
-	 */
-	u32 ihcmd_iflag;
-	u32 meta_iflag;
-	u32 scc_iflag;
-	u32 dis_iflag;
-	u32 scp_iflag;
-	u32 shot_iflag;
-};
-#else
-struct is_common_reg {
-	u32 hicmd;
-	u32 hic_sensorid;
-	u32 hic_param1;
-	u32 hic_param2;
-	u32 hic_param3;
-	u32 hic_param4;
-
-	u32 power_down_debug_number;
 	u32 reserved1[2];
 
 	u32 ihcmd_iflag;
@@ -246,13 +167,23 @@ struct is_common_reg {
 	u32 ihc_param3;
 	u32 ihc_param4;
 
-	u32 reserved2[3];
+	u32 reserved2[2];
 
-	u32 meta_iflag;
-	u32 meta_sensor_id;
-	u32 meta_param1;
+	u32 taa0c_iflag;
+	u32 taa0c_sensor_id;
+	u32 taa0c_param1;
+	u32 taa0c_param2;
+	u32 taa0c_param3;
 
-	u32 reserved3[5];
+	u32 reserved3[2];
+
+	u32 taa1c_iflag;
+	u32 taa1c_sensor_id;
+	u32 taa1c_param1;
+	u32 taa1c_param2;
+	u32 taa1c_param3;
+
+	u32 reserved4[2];
 
 	u32 scc_iflag;
 	u32 scc_sensor_id;
@@ -260,7 +191,7 @@ struct is_common_reg {
 	u32 scc_param2;
 	u32 scc_param3;
 
-	u32 reserved4[3];
+	u32 reserved5[2];
 
 	u32 dis_iflag;
 	u32 dis_sensor_id;
@@ -268,7 +199,7 @@ struct is_common_reg {
 	u32 dis_param2;
 	u32 dis_param3;
 
-	u32 reserved5[3];
+	u32 reserved6[2];
 
 	u32 scp_iflag;
 	u32 scp_sensor_id;
@@ -276,14 +207,7 @@ struct is_common_reg {
 	u32 scp_param2;
 	u32 scp_param3;
 
-	u32 reserved6[1];
-
-	u32 isp_yuv_iflag;
-	u32 isp_yuv_sensor_id;
-	u32 isp_yuv_param1;
-	u32 isp_yuv_param2;
-
-	u32 reserved7[1];
+	u32 reserved7[3];
 
 	u32 shot_iflag;
 	u32 shot_sensor_id;
@@ -298,7 +222,6 @@ struct is_common_reg {
 	u32 fcount_sen1;
 	u32 fcount_sen0;
 };
-#endif
 
 struct is_mcuctl_reg {
 	u32 mcuctl;

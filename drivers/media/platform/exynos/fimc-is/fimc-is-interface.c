@@ -649,7 +649,6 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->ihc_param3);
 		msg->parameter4 = readl(&com_regs->ihc_param4);
 		break;
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	case INTR_3A0C_FDONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -668,7 +667,6 @@ static inline void fimc_is_get_cmd(struct fimc_is_interface *itf,
 		msg->parameter3 = readl(&com_regs->taa1c_param3);
 		msg->parameter4 = 0;
 		break;
-#endif
 	case INTR_SCC_FDONE:
 		msg->id = 0;
 		msg->command = IHC_FRAME_DONE;
@@ -728,10 +726,11 @@ static inline u32 fimc_is_get_intr(struct fimc_is_interface *itf)
 
 	if (itf->need_iflag) {
 		status = readl(&com_regs->ihcmd_iflag) |
+			 readl(&com_regs->taa0c_iflag) |
+			 readl(&com_regs->taa1c_iflag) |
 			 readl(&com_regs->scc_iflag) |
 			 readl(&com_regs->dis_iflag) |
 			 readl(&com_regs->scp_iflag) |
-			 readl(&com_regs->meta_iflag) |
 			 readl(&com_regs->shot_iflag);
 	}
 
@@ -751,6 +750,12 @@ static inline void fimc_is_clr_intr(struct fimc_is_interface *itf,
 		switch (index) {
 		case INTR_GENERAL:
 			writel(0, &com_regs->ihcmd_iflag);
+			break;
+		case INTR_3A0C_FDONE:
+			writel(0, &com_regs->taa0c_iflag);
+			break;
+		case INTR_3A1C_FDONE:
+			writel(0, &com_regs->taa1c_iflag);
 			break;
 		case INTR_SCC_FDONE:
 			writel(0, &com_regs->scc_iflag);
@@ -2380,10 +2385,11 @@ void fimc_is_interface_reset(struct fimc_is_interface *this)
 {
 	if (this->need_iflag) {
 		writel(0, &this->com_regs->ihcmd_iflag);
+		writel(0, &this->com_regs->taa0c_iflag);
+		writel(0, &this->com_regs->taa1c_iflag);
 		writel(0, &this->com_regs->scc_iflag);
 		writel(0, &this->com_regs->dis_iflag);
 		writel(0, &this->com_regs->scp_iflag);
-		writel(0, &this->com_regs->meta_iflag);
 		writel(0, &this->com_regs->shot_iflag);
 	}
 }
