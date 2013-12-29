@@ -878,7 +878,7 @@ static int __init exynos5_bts_init(void)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(exynos5_bts_clk); i++) {
-		clk = __clk_lookup(exynos5_bts[i].clk_name);
+		clk = __clk_lookup(exynos5_bts_clk[i].clk_name);
 		if (IS_ERR(clk)) {
 			pr_err("failed to get bts clk %s\n",
 					exynos5_bts_clk[i].clk_name);
