@@ -265,9 +265,9 @@ static int exynos5_clk_gate_is_enabled(struct clk_hw *hw)
 
 	/* if a set bit disables this clk, flip it before masking */
 	if (gate->flags & CLK_GATE_SET_TO_DISABLE)
-		reg ^= gate->bit_idx;
+		reg ^= BIT(gate->bit_idx);
 
-	reg &= gate->bit_idx;
+	reg &= BIT(gate->bit_idx);
 
 	return reg ? 1 : 0;
 }
