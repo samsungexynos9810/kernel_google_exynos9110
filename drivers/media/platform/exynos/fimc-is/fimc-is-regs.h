@@ -14,10 +14,8 @@
 
 #include <mach/map.h>
 
-/* WDT_ISP register */
-#define WDT			0x00170000
 /* MCUCTL register */
-#define MCUCTL			0x0
+#define MCUCTL				0x0
 /* MCU Controller Register */
 #define MCUCTLR				(MCUCTL+0x00)
 #define MCUCTLR_AXI_ISPX_AWCACHE(x)	((x) << 16)
