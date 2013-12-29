@@ -224,14 +224,10 @@ enum exynos5422_clks {
 	sclk_uart_isp,
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 /* CLK_GATE_IP_GSCL0 */
-	clk_bts_gscl1 = 1248,
-	clk_bts_gscl0,
-	clk_bts_fimcl1,
+	clk_bts_fimcl1 = 1250,
 	clk_bts_fimcl0,
 	clk_bts_3aa,
-	clk_gscaler1,
-	clk_gscaler0,
-	clk_camif_top_fimcl3,
+	clk_camif_top_fimcl3 = 1255,
 	clk_camif_top_fimcl1,
 	clk_camif_top_fimcl0,
 	clk_camif_top_3aa,
@@ -1749,13 +1745,9 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 /* CLK_GATE_IP_GSCL0 */
-	CGATE(clk_bts_gscl1, "clk_bts_gscl1", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL0, 29, 0, 0),
-	CGATE(clk_bts_gscl0, "clk_bts_gscl0", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL0, 28, 0, 0),
 	CGATE(clk_bts_fimcl1, "clk_bts_fimcl1", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL0, 26, 0, 0),
 	CGATE(clk_bts_fimcl0, "clk_bts_fimcl0", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL0, 25, 0, 0),
 	CGATE(clk_bts_3aa, "clk_bts_3aa", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL0, 24, 0, 0),
-	CGATE(clk_gscaler1, "clk_gscaler1", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL0, 15, 0, 0),
-	CGATE(clk_gscaler0, "clk_gscaler0", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL0, 14, 0, 0),
 	CGATE(clk_camif_top_fimcl3, "clk_camif_top_fimcl3", "sclk_gscl_wrap_a_div2", EXYNOS5_CLK_GATE_IP_GSCL0, 13, 0, 0),
 	CGATE(clk_camif_top_fimcl1, "clk_camif_top_fimcl1", "dout2_cam_blk_550", EXYNOS5_CLK_GATE_IP_GSCL0, 11, 0, 0),
 	CGATE(clk_camif_top_fimcl0, "clk_camif_top_fimcl0", "sclk_gscl_wrap_a_div2", EXYNOS5_CLK_GATE_IP_GSCL0, 10, 0, 0),
@@ -1764,8 +1756,8 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(gscl_fimc_lite1, "gscl_fimc_lite1", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 6, 0, 0),
 	CGATE(gscl_fimc_lite0, "gscl_fimc_lite0", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 5, 0, 0),
 	CGATE(clk_3aa, "clk_3aa", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 4, 0, 0),
-	CMGATE(clk_gscl0, "clk_gscl0", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 0, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 28 | 0x1 << 0),
-	CMGATE(clk_gscl1, "clk_gscl1", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 1, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 29 | 0x1 << 1),
+	CMGATE(clk_gscl0, "clk_gscl0", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 0, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 28 | 0x1 << 14 | 0x1 << 0),
+	CMGATE(clk_gscl1, "clk_gscl1", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 1, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 29 | 0x1 << 15 | 0x1 << 1),
 
 /* CLK_GATE_IP_GSCL1 */
 	CGATE(clk_camif_top_csis0, "clk_camif_top_csis0", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL1, 18, 0, 0),
