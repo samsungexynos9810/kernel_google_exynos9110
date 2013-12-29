@@ -126,9 +126,6 @@ static void clkout_init_clock(void)
 
 static void aud_init_clock(void)
 {
-	/* Enable AUD_PLL (Default 393.216MHz)*/
-	writel((1 << 31) | readl(EXYNOS5430_AUD_PLL_CON0),
-					EXYNOS5430_AUD_PLL_CON0);
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	/* AUD0 */
 	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
