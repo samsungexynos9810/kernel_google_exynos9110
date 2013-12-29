@@ -273,6 +273,7 @@ int fimc_is_runtime_suspend(struct device *dev)
 	bts_initialize("pd-cam", false);
 #else
 	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
+	bts_initialize("pd-fimclite", false);
 #endif
 #endif
 
@@ -347,6 +348,7 @@ int fimc_is_runtime_resume(struct device *dev)
 #elif defined(CONFIG_SOC_EXYNOS3470)
 	bts_initialize("pd-cam", true);
 #endif
+	bts_initialize("pd-fimclite", true);
 	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
 #endif
 
