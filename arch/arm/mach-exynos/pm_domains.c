@@ -128,14 +128,14 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 		return ret;
 	}
 
+	if (pd->cb && pd->cb->on_post)
+		pd->cb->on_post(pd);
+
 #if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 	/* enable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, true);
 #endif
-
-	if (pd->cb && pd->cb->on_post)
-		pd->cb->on_post(pd);
 
 	return 0;
 }
@@ -159,14 +159,14 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 		return -EINVAL;
 	}
 
-	if (pd->cb && pd->cb->off_pre)
-		pd->cb->off_pre(pd);
-
 #if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
 	/* disable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, false);
 #endif
+
+	if (pd->cb && pd->cb->off_pre)
+		pd->cb->off_pre(pd);
 
 	ret = pd->off(pd, 0);
 	if (unlikely(ret)) {
