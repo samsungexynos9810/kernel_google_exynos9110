@@ -5515,7 +5515,6 @@ static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device,
 {
 	int ret = 0;
 	struct param_dma_output *scc_dma_output;
-	struct param_scaler_input_crop *scc_input_crop;
 	struct param_otf_output *scc_otf_output;
 	struct param_scaler_output_crop *scc_output_crop;
 
@@ -5525,14 +5524,6 @@ static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device,
 	scc_dma_output->cmd = DMA_OUTPUT_COMMAND_DISABLE;
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
-	(*indexes)++;
-
-	/* HACK: SCC is timeouted if a below size not be changed */
-	scc_input_crop = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_INPUT_CROP);
-	scc_input_crop->out_width = device->chain1_width;
-	scc_input_crop->out_height = device->chain1_height;
-	*lindex |= LOWBIT_OF(PARAM_SCALERC_INPUT_CROP);
-	*hindex |= HIGHBIT_OF(PARAM_SCALERC_INPUT_CROP);
 	(*indexes)++;
 
 	scc_otf_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_OTF_OUTPUT);
