@@ -466,19 +466,19 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	if (status & INTR_LLI_MOUNT_DONE) {
 		lli->state = LLI_MOUNTED;
-		dev_dbg(dev, "Mount\n");
+		dev_err(dev, "Mount\n");
 	}
 
 	if (status & INTR_LLI_UNMOUNT_DONE) {
 		lli->state = LLI_UNMOUNTED;
-		dev_dbg(dev, "Unmount\n");
+		dev_err(dev, "Unmount\n");
 	}
 
 	if (status & INTR_PA_PLU_DETECTED)
-		dev_dbg(dev, "PLU_DETECT\n");
+		dev_info(dev, "PLU_DETECT\n");
 
 	if (status & INTR_PA_PLU_DONE) {
-		dev_dbg(dev, "PLU_DONE\n");
+		dev_info(dev, "PLU_DONE\n");
 
 		phy = dev_get_drvdata(lli->mphy);
 
