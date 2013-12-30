@@ -5522,7 +5522,6 @@ static int fimc_is_ischain_scc_stop(struct fimc_is_device_ischain *device,
 	mdbgd_ischain("%s\n", device, __func__);
 
 	scc_dma_output = fimc_is_itf_g_param(device, frame, PARAM_SCALERC_DMA_OUTPUT);
-	/* HACK: F/W cannot support dyanmic on/off */
 	scc_dma_output->cmd = DMA_OUTPUT_COMMAND_DISABLE;
 	*lindex |= LOWBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
 	*hindex |= HIGHBIT_OF(PARAM_SCALERC_DMA_OUTPUT);
