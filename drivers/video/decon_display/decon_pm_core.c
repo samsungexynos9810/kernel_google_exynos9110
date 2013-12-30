@@ -333,7 +333,6 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 			if (dispdrv->pm_status.power_gating_on &&
 				dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT) {
 				disp_pm_gate_lock(dispdrv, true);
-				pm_info("##### display_hibernation_power_off +");
 				queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 						&dispdrv->pm_status.control_power_gating_work);
 			}
@@ -401,7 +400,6 @@ static void decon_power_gating_handler(struct kthread_work *work)
 
 	init_gating_idle_count(dispdrv);
 	disp_pm_gate_lock(dispdrv, false);
-	pm_info("##### display_hibernation_power_off -\n");
 }
 
 static int __display_hibernation_power_on(struct display_driver *dispdrv)
@@ -513,6 +511,7 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
+	pm_info("##### +");
 	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (sfb->power_state == POWER_DOWN) {
 		pr_info("%s, DECON are already power off state\n", __func__);
@@ -533,6 +532,7 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 done:
 	disp_debug_power_info();
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
+	pm_info("##### -\n");
 
 	return ret;
 }
