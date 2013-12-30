@@ -3817,7 +3817,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	/* set video clock running at under-run */
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
-		reg &= ~VIDCON1_VCLK_MASK;
 		reg |= VIDCON1_VCLK_MASK;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
@@ -4248,7 +4247,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	/* set video clock running at under-run */
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
-		reg &= ~VIDCON1_VCLK_MASK;
 		reg |= VIDCON1_VCLK_MASK;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
@@ -4406,7 +4404,6 @@ int s3c_fb_resume(struct device *dev)
 	/* set video clock running at under-run */
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
-		reg &= ~VIDCON1_VCLK_MASK;
 		reg |= VIDCON1_VCLK_MASK;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
@@ -4480,6 +4477,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 	struct s3c_fb_platdata *pd;
+	u32 reg;
 
 	dispdrv = get_display_driver();
 	if (!dispdrv) {
@@ -4520,6 +4518,12 @@ int s3c_fb_runtime_resume(struct device *dev)
 	sfb->power_state = POWER_ON;
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
+	/* set video clock running at under-run */
+	if (sfb->variant.has_fixvclk) {
+		reg = readl(sfb->regs +  sfb->variant.vidcon1);
+		reg |= VIDCON1_VCLK_MASK;
+		writel(reg, sfb->regs +  sfb->variant.vidcon1);
+	}
 	return 0;
 }
 #endif

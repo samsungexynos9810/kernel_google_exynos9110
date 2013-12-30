@@ -144,7 +144,7 @@ struct s3c_fb_platdata {
 struct s3c_fb_variant {
 	unsigned int	is_2443:1;
 	unsigned short	nr_windows;
-	unsigned short	vidcon1;
+	unsigned int	vidcon1;
 	unsigned int	vidtcon;
 	unsigned short	wincon;
 	unsigned short	winmap;
