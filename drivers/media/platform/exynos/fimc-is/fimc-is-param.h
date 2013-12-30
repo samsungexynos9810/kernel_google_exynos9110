@@ -1695,8 +1695,7 @@ struct param_dma_input {
 	u32	bds_out_height; /* without margine */
 	u32	user_min_frame_time;
 	u32	user_max_frame_time;
-	u32	scaler_path_sel; /* parallel or serial for SCC*/
-	u32	reserved[PARAMETER_MAX_MEMBER-28];
+	u32	reserved[PARAMETER_MAX_MEMBER-27];
 	u32	err;
 };
 
