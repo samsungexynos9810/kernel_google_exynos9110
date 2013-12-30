@@ -178,7 +178,11 @@ int enable_display_decon_clocks(struct device *dev)
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
-	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
+#ifdef CONFIG_DECON_LCD_S6E3HA0
+	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 250 * MHZ);
+#else
+	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 142 * MHZ);
+#endif
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
@@ -257,7 +261,7 @@ int init_display_decon_clocks(struct device *dev)
 	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk,
 		mout_sclk_decon_eclk_user);
 #endif
-	DISPLAY_GET_CLOCK2(mout_disp_pll, fout_disp_pll);
+	DISPLAY_GET_CLOCK1(mout_disp_pll);
 	DISPLAY_GET_CLOCK2(mout_aclk_disp_333_user, aclk_disp_333);
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
@@ -283,12 +287,13 @@ int init_display_decon_clocks(struct device *dev)
 int init_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
-	void __iomem *regs;
 
-	/* Set DISP_PLL = 136Mhz */
-	regs = ioremap(0x13B90100, 0x4);
-	writel(0xA0880303, regs);
-	iounmap(regs);
+	DISPLAY_GET_CLOCK1(fout_disp_pll);
+#ifdef CONFIG_DECON_LCD_S6E3HA0
+	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 250 * MHZ);
+#else
+	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 142 * MHZ);
+#endif
 	msleep(20);
 
 	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
@@ -370,38 +375,14 @@ int disable_display_driver_power(struct device *dev)
 	return ret;
 }
 
-#ifdef FAST_CMU_CLOCK_RECOVER
-static void temporary_cmu_restore(void)
-{
-	void __iomem *regs;
-	u32 data;
-
-	TEMPORARY_RECOVER_CMU(0x13B90100, 0xFFFFFFFF, 0, 0xA0880303);
-	msleep(20);
-	TEMPORARY_RECOVER_CMU(0x105B0120, 0xFFFFFFFF, 0, 0xA0DE0400);
-	msleep(20);
-	TEMPORARY_RECOVER_CMU(0x105B0210, 0x1, 0, 0x01);
-	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
-	TEMPORARY_RECOVER_CMU(0x105B0610, 0xF, 0, 0x02);
-	TEMPORARY_RECOVER_CMU(0x13B90200, 0xFFFFFFFF, 0, 0x01);
-	TEMPORARY_RECOVER_CMU(0x13B90204, 0x11111, 0, 0x11111);
-	TEMPORARY_RECOVER_CMU(0x13B90208, 0x1100, 0, 0x1100);
-	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x1);
-}
-#endif
-
 int enable_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
-#ifdef FAST_CMU_CLOCK_RECOVER
-	temporary_cmu_restore();
-#else
 
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
 		phyclk_mipidphy_rxclkesc0_phy);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_bitclkdiv8_user,
 		phyclk_mipidphy_bitclkdiv8_phy);
-#endif
 
 	check_display_clocks();
 
