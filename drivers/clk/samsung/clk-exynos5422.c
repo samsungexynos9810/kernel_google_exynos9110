@@ -1088,8 +1088,13 @@ PNAME(mout_mau_epll_clk_p) = { "mout_epll_ctrl", "mout_dpll_ctrl", "mout_mpll_ct
 PNAME(mout_aclk_400_disp1_sw_p) = { "dout_aclk_400_disp1", "mout_spll_ctrl"};
 PNAME(mout_aclk_400_disp1_user_p)	= { "fin_pll", "mout_aclk_400_disp1_sw" };
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+PNAME(mout_ass_clk_p)	= { "fin_pll", "mout_mau_epll_clk_user" };
+PNAME(mout_ass_i2s_p)	= { "mout_ass_clk", "cdclk0", "sclk_mau_audio0" };
+#else
 PNAME(mout_ass_clk_p)	= { "fin_pll", "fout_epll" };
 PNAME(mout_ass_i2s_p)	= { "mout_ass_clk", "cdclk0", "sclk_mau_audio0" };
+#endif
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(mout_epll2_p)	= { "mout_epll_ctrl", "dout_epll_ctrl_div2" };
@@ -1336,7 +1341,12 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_400_disp1_sw, EXYNOS5_CLK_SRC_TOP12, 0, 1),
 	CMUX(mout_aclk_400_disp1_user, EXYNOS5_CLK_SRC_TOP5, 0, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_mau_epll_clk, "mout_mau_epll_clk", mout_mau_epll_clk_p, EXYNOS5_CLK_SRC_TOP7, 20, 2),
+#else
 	CMUX(mout_mau_epll_clk, EXYNOS5_CLK_SRC_TOP7, 20, 2),
+#endif
+
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	CMUX(mout_mx_mspll_ccore, EXYNOS5_CLK_SRC_TOP7, 16, 3),
 #else
@@ -1394,7 +1404,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 
 	/* ASS */
 	CMX(mout_ass_clk, "mout_ass_clk", mout_ass_clk_p, EXYNOS_CLKSRC_AUDSS, 0, 1),
-	CMX(mout_ass_i2s, "mout_ass_i2s", mout_ass_i2s_p, EXYNOS_CLKSRC_AUDSS, 2, 3),
+	CMX(mout_ass_i2s, "mout_ass_i2s", mout_ass_i2s_p, EXYNOS_CLKSRC_AUDSS, 2, 2),
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	/* EPLL */
@@ -1420,7 +1430,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_550_cam_sw, EXYNOS5_CLK_SRC_TOP13, 16, 1),
 	CMUX(mout_aclk_550_cam_user, EXYNOS5_CLK_SRC_TOP9, 16, 1),
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	CMX(mout_mau_epll_clk_user, "mout_mau_epll_clk_user", mout_mau_epll_clk_user_p, EXYNOS5_CLK_SRC_TOP9, 8, 1),
+#else
 	CMUX(mout_mau_epll_clk_user, EXYNOS5_CLK_SRC_TOP9, 8, 1),
+#endif
 
 	CMUX(mout_mx_mspll_ccore_phy, EXYNOS5_CLK_SRC_TOP7, 0, 3),
 
