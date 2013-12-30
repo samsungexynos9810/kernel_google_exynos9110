@@ -649,15 +649,14 @@ unsigned int exynos5430_regist_asv_member(void)
 
 int exynos5430_init_asv(struct asv_common *asv_info)
 {
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
+	pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
+	return -EINVAL;
+#else
 	unsigned int arm_speed_grp, kfc_speed_grp;
 	unsigned int g3d_mif_speed_grp, int_isp_speed_grp;
 	unsigned int asv_tbl_ver_ema;
 	unsigned int egl_speed_option_reg;
-
-	if (samsung_rev() == EXYNOS5430_REV_0) {
-		pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
-		return -EINVAL;
-	}
 
 	asv_ref_info.is_speedgroup = true;
 
@@ -844,4 +843,5 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 	asv_info->regist_asv_member = exynos5430_regist_asv_member;
 
 	return 0;
+#endif
 }
