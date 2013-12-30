@@ -1053,6 +1053,7 @@ static void tasklet_flite_end_chk(unsigned long data)
 	return;
 }
 
+#ifdef SUPPORTED_EARLY_BUF_DONE
 static void wq_func_flite_early_work(struct work_struct *data)
 {
 	struct fimc_is_device_flite *flite = NULL;
@@ -1072,7 +1073,6 @@ static void wq_func_flite_early_work(struct work_struct *data)
 	tasklet_schedule(&flite->tasklet_flite_early_end);
 }
 
-#ifdef SUPPORTED_EARLY_BUF_DONE
 static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate, u32 position)
 {
 	if (framerate <= 30) {
@@ -1773,7 +1773,6 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	flite->chk_early_buf_done = NULL;
 #ifdef SUPPORTED_EARLY_BUF_DONE
 	flite->chk_early_buf_done = chk_early_buf_done;
-#endif
 	flite->early_workqueue = alloc_workqueue("fimc-is/early_workqueue/highpri", WQ_HIGHPRI, 0);
 	if (!flite->early_workqueue) {
 		warn("failed to alloc own workqueue, will be use global one");
@@ -1781,6 +1780,7 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	} else {
 		INIT_DELAYED_WORK(&flite->early_work_wq, wq_func_flite_early_work);
 	}
+#endif
 	info("[BAK:D:%d] %s(%d)\n", instance, __func__, ret);
 	return 0;
 
