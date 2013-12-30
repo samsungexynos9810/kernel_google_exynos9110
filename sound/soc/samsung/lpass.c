@@ -31,6 +31,7 @@
 #include <mach/regs-audss.h>
 #include <mach/regs-pmu.h>
 #include <mach/regs-clock-exynos5430.h>
+#include <mach/regs-clock-exynos5422.h>
 
 #include "lpass.h"
 
@@ -372,8 +373,16 @@ static void ass_enable(void)
 	lpass_reg_restore();
 
 	/* ASS_MUX_SEL */
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	exynos_set_parent("mout_dpll_ctrl", "fout_dpll");
+	exynos_set_parent("mout_mau_epll_clk", "mout_dpll_ctrl");
+	exynos_set_parent("mout_mau_epll_clk_user", "mout_mau_epll_clk");
+	exynos_set_parent("mout_ass_clk", "mout_mau_epll_clk_user");
+	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
+#else
 	exynos_set_parent("mout_ass_clk", "fin_pll");
 	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
+#endif
 
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_timer);
@@ -598,9 +607,9 @@ static void lpass_add_suspend_reg(void __iomem *reg)
 
 static void lpass_init_reg_list_ass(void)
 {
-	lpass_add_suspend_reg(EXYNOS_CLKGATE_AUDSS);
-	lpass_add_suspend_reg(EXYNOS_CLKDIV_AUDSS);
 	lpass_add_suspend_reg(EXYNOS_CLKSRC_AUDSS);
+	lpass_add_suspend_reg(EXYNOS_CLKDIV_AUDSS);
+	lpass_add_suspend_reg(EXYNOS_CLKGATE_AUDSS);
 }
 
 static void lpass_init_reg_list(void)
