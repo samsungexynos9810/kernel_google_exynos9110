@@ -2,8 +2,8 @@
 #define _DRIVERS_THERMAL_PLATFORM_H
 
 #define NR_CPU_COEFFS 24
-#define NR_A7_COEFFS 10
-#define NR_A15_COEFFS 12
+#define NR_A7_COEFFS 8
+#define NR_A15_COEFFS 13
 #define NR_GPU_COEFFS 7
 
 struct coefficients {
@@ -112,18 +112,6 @@ struct coefficients cpu_coeffs[NR_CPU_COEFFS] = {
 
 struct coefficients a7_cpu_coeffs[NR_A7_COEFFS] = {
 	{
-		.power		= 42,
-		.frequency	= 500,
-	},
-	{
-		.power		= 53,
-		.frequency	= 600,
-	},
-	{
-		.power		= 67,
-		.frequency	= 700,
-	},
-	{
 		.power		= 82,
 		.frequency	= 800,
 	},
@@ -147,9 +135,13 @@ struct coefficients a7_cpu_coeffs[NR_A7_COEFFS] = {
 		.power		= 204,
 		.frequency	= 1300,
 	},
-	{/* TODO: find the right power number here */
+	{
 		.power		= 250,
 		.frequency	= 1400,
+	},
+	{
+		.power		= 289,
+		.frequency	= 1500,
 	},
 };
 
@@ -201,6 +193,10 @@ struct coefficients a15_cpu_coeffs[NR_A15_COEFFS] = {
 	{
 		.power		= 1638,
 		.frequency	= 1900,
+	},
+	{
+		.power		= 1888,
+		.frequency	= 2000,
 	},
 };
 
