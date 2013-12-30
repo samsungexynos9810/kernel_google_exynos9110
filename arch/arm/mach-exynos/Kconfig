@@ -610,6 +610,13 @@ config MACH_XYREF5430
 	  Machine support for Samsung EXYNOS5430 machine with device tree enabled.
 	  Select this if a fdt blob is available for the EXYNOS5430 SoC based board.
 
+config EXYNOS54XX_DEBUG
+	bool "ARM Debug architecture v7.1 support"
+	depends on SOC_EXYNOS5430
+	default y
+	help
+	  Enable preserve debug logic state.
+
 if ARCH_EXYNOS4
 
 comment "Configuration for HSMMC 8-bit bus width"
