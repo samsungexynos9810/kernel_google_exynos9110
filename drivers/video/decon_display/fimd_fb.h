@@ -43,6 +43,12 @@ enum s3c_fb_pm_status {
 	POWER_HIBER_DOWN = 2,
 };
 
+enum s3c_fb_psr_mode {
+	S3C_FB_VIDEO_MODE = 0,
+	S3C_FB_DP_PSR_MODE = 1,
+	S3C_FB_MIPI_COMMAND_MODE = 2,
+};
+
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 struct s3c_fb_i80mode {
 	const char *name;
@@ -373,6 +379,8 @@ struct s3c_fb {
 #endif
 	struct exynos5_bus_mif_handle *fb_mif_handle;
 	struct exynos5_bus_int_handle *fb_int_handle;
+
+	enum s3c_fb_psr_mode psr_mode;
 };
 
 struct s3c_fb_rect {

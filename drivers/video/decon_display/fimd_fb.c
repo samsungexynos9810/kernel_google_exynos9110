@@ -3560,6 +3560,15 @@ static ssize_t s3c_fb_vsync_show(struct device *dev,
 
 static DEVICE_ATTR(vsync, S_IRUGO, s3c_fb_vsync_show, NULL);
 
+static ssize_t s3c_fb_psr_info(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct s3c_fb *sfb = dev_get_drvdata(dev);
+	return scnprintf(buf, PAGE_SIZE, "%d\n", sfb->psr_mode);
+}
+
+static DEVICE_ATTR(psr_info, S_IRUGO, s3c_fb_psr_info, NULL);
+
 #ifdef CONFIG_ION_EXYNOS
 int s3c_fb_sysmmu_fault_handler(struct device *dev, const char *mmuname,
 		int itype, unsigned long pgtable_base,
@@ -3851,6 +3860,15 @@ int create_decon_display_controller(struct platform_device *pdev)
 	sfb->pdata = pd;
 	sfb->variant = fbdrv->variant;
 
+#if defined(CONFIG_FB_I80_COMMAND_MODE) || defined(CONFIG_FB_I80IF)
+	sfb->psr_mode = S3C_FB_MIPI_COMMAND_MODE;
+#elif defined(CONFIG_S5P_DP_PSR)
+	sfb->psr_mode = S3C_FB_DP_PSR_MODE;
+#else
+	sfb->psr_mode = S3C_FB_VIDEO_MODE;
+#endif
+	dev_info(dev, "PSR mode is %d(0: VIDEO, 1: DP, 2: MIPI)\n", sfb->psr_mode);
+
 	spin_lock_init(&sfb->slock);
 	mutex_init(&sfb->output_lock);
 
@@ -4097,6 +4115,12 @@ int create_decon_display_controller(struct platform_device *pdev)
 		goto err_create_file;
 	}
 
+	ret = device_create_file(sfb->dev, &dev_attr_psr_info);
+	if (ret) {
+		dev_err(sfb->dev, "failed to create psr info file\n");
+		goto err_create_psr_info_file;
+	}
+
 	sfb->vsync_info.thread = kthread_run(s3c_fb_wait_for_vsync_thread,
 			sfb, "s3c-fb-vsync");
 	if (sfb->vsync_info.thread == ERR_PTR(-ENOMEM)) {
@@ -4167,6 +4191,9 @@ err_fb:
 #endif
 
 err_iovmm:
+	device_remove_file(sfb->dev, &dev_attr_psr_info);
+
+err_create_psr_info_file:
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
 err_create_file:
