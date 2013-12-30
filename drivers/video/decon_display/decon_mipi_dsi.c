@@ -966,8 +966,6 @@ int s5p_mipi_dsi_init_link(struct mipi_dsim_device *dsim)
 	id = dsim->id;
 	switch (dsim->state) {
 	case DSIM_STATE_INIT:
-		s5p_mipi_dsi_init_fifo_pointer(dsim, 0x1f);
-
 		/* dsi configuration */
 		s5p_mipi_dsi_init_config(dsim);
 		s5p_mipi_dsi_enable_lane(dsim, DSIM_LANE_CLOCK, 1);
