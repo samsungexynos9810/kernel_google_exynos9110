@@ -2357,7 +2357,8 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 
-	if (soc_is_exynos5430() && (samsung_rev() == EXYNOS5430_REV_0)) {
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
+	if (soc_is_exynos5430()) {
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
 			if (test_bit(S3C_FB_STOP_DMA,
 				&sfb->windows[i]->state)) {
@@ -2370,6 +2371,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 			}
 		}
 	}
+#endif
 	if (readl(sfb->regs + DECON_UPDATE_SHADOW) & (1<<0))
 		pr_err("Error:0x%x\n",
 				readl(sfb->regs + DECON_UPDATE_SHADOW));
@@ -3166,12 +3168,13 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		data &= ~(0x07 << 20); /* Masking */
 		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
-		if (soc_is_exynos5430() &&
-			(samsung_rev() == EXYNOS5430_REV_1_0)) {
+#if !defined(CONFIG_SOC_EXYNOS5430_REV_0)
+		if (soc_is_exynos5430()) {
 			data = readl(sfb->regs + DECON_UPDATE_SCHEME);
 			data |= (0x1 << 31);
 			writel(data, sfb->regs + DECON_UPDATE_SCHEME);
 		}
+#endif
 	} else {
 		dev_dbg(sfb->dev, "Decon stop(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
