@@ -279,7 +279,17 @@ static int exynos_lli_get_status(struct mipi_lli *lli)
 
 static int exynos_lli_send_signal(struct mipi_lli *lli, u32 cmd)
 {
-	writel(cmd, lli->remote_regs + EXYNOS_TL_SIGNAL_SET_LSB);
+	if (lli->state) {
+		writel(cmd, lli->remote_regs + EXYNOS_TL_SIGNAL_SET_LSB);
+	} else {
+		int is_mounted = 0;
+
+		is_mounted = readl(lli->regs + EXYNOS_DME_CSA_SYSTEM_STATUS);
+		is_mounted &= LLI_MOUNTED;
+
+		dev_err(lli->dev, "%s: LLI not mounted !! mnt_reg = %x",
+				__func__, is_mounted);
+	}
 
 	return 0;
 }
