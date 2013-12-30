@@ -1885,10 +1885,7 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 #endif
 	struct fimc_is_group *group_3aa, *group_isp;
 	struct fimc_is_resourcemgr *resourcemgr;
-#ifdef SCALER_PARALLEL_MODE
-	int cfg = 0;
-	struct fimc_is_interface *itf = device->interface;
-#endif
+
 	BUG_ON(!device);
 	BUG_ON(!device->resourcemgr);
 
@@ -1917,13 +1914,6 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 		}
 	}
 
-#ifdef SCALER_PARALLEL_MODE
-	cfg = readl(itf->regs + MCUCTL);
-	pr_debug("MCUCTL Crtl REG(0x%x)\n", cfg);
-	/* setting MCUCTL SERI_PARA_SEL[3]: Parallel connection */
-	cfg |= (1 << 3);
-	writel(cfg, itf->regs + MCUCTL);
-#endif
 	if (retry)
 		info("[ISC:D:%d] stream on ready\n", device->instance);
 	else
@@ -3560,6 +3550,11 @@ static int fimc_is_ischain_s_path(struct fimc_is_device_ischain *device,
 		fimc_is_subdev_dnr_bypass(device, &dnr_param->control, lindex, hindex, indexes);
 
 		scp_param->control.cmd = CONTROL_COMMAND_START;
+#ifdef SCALER_PARALLEL_MODE
+		scp_param->otf_input.scaler_path_sel = OTF_INPUT_PARAL_PATH;
+#else
+		scp_param->otf_input.scaler_path_sel = OTF_INPUT_SERIAL_PATH;
+#endif
 		*lindex |= LOWBIT_OF(PARAM_SCALERP_CONTROL);
 		*hindex |= HIGHBIT_OF(PARAM_SCALERP_CONTROL);
 		(*indexes)++;
