@@ -38,6 +38,12 @@ config EXYNOS_CPUIDLE_C2
 	help
 	  Enable C2 state on cpuidle
 
+config EXYNOS_CLUSTER_POWER_DOWN
+	bool "EXYNOS CLUSTER POWER DOWN"
+	depends on EXYNOS_CPUIDLE_C2
+	help
+	  Enable C2 state on cpuidle
+
 config EXYNOS_IDLE_CLOCK_DOWN
 	bool "EXYNOS core idle clock down"
 	depends on CPU_IDLE
