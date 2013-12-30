@@ -101,6 +101,7 @@ struct lli_driver {
 	int	(*send_signal)(struct mipi_lli *lli, u32 cmd);
 	int	(*reset_signal)(struct mipi_lli *lli);
 	int	(*read_signal)(struct mipi_lli *lli);
+	int	(*loopback_test)(struct mipi_lli *lli);
 
 	int	(*suspend)(struct mipi_lli *lli);
 	int	(*resume)(struct mipi_lli *lli);

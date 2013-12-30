@@ -442,6 +442,84 @@ static void exynos_mipi_lli_set_automode(struct mipi_lli *lli, bool is_auto)
 		writel(CSA_AUTO_MODE, lli->regs + EXYNOS_PA_CSA_PA_CLR);
 }
 
+static int exynos_lli_loopback_test(struct mipi_lli *lli)
+{
+	int uval = 0;
+	struct exynos_mphy *phy = dev_get_drvdata(lli->mphy);
+
+	/* enable LLI_PHY_CONTROL */
+	writel(1, lli->pmu_regs);
+
+	/* software reset */
+	writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
+
+	/* to set TxH8 as H8_EXIT : 0x2b -> 0 */
+	writel(0x0, phy->loc_regs + PHY_TX_HIBERN8_CONTROL(0));
+	/* to set RxH8 as H8_EXIT : 0xa7 -> 0 */
+	writel(0x0, phy->loc_regs + PHY_RX_ENTER_HIBERN8(0));
+
+	writel(0x1, phy->loc_regs + PHY_TX_MODE(0));
+	writel(0x1, phy->loc_regs + PHY_RX_MODE(0));
+
+	writel(0x0, phy->loc_regs + PHY_TX_LCC_ENABLE(0));
+	/* 0x10F24128 sets 0xFFFFFFFF to
+	   LLI_Set_Config_update_All(LLI_SVC_BASE_LOCAL); */
+	writel(0xFFFFFFFF, lli->regs + EXYNOS_PA_CONFIG_UPDATE);
+
+	writel(0x1, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
+	/* RX setting */
+	writel(0x75, phy->loc_regs + (0x0a*4)); /* Internal Serial loopback */
+	writel(0x01, phy->loc_regs + (0x16*4)); /* Align Enable */
+
+	writel(0x01, phy->loc_regs + (0x0b*4)); /* user pattern ALL 0 */
+	writel(0x0F, phy->loc_regs + (0x0C*4));
+	writel(0xFF, phy->loc_regs + (0x0D*4));
+	writel(0xFF, phy->loc_regs + (0x0E*4));
+
+	writel(0x2b, phy->loc_regs + (0x2f*4));
+	writel(0x60, phy->loc_regs + (0x1a*4));
+	writel(0x14, phy->loc_regs + (0x29*4)); /* failed LB test on ATE */
+	writel(0xC0, phy->loc_regs + (0x2E*4));
+
+	/* TX setting */
+	writel(0x03, phy->loc_regs + (0x32*4));
+	writel(0x25, phy->loc_regs + (0x78*4)); /* Internal serial loopback */
+	writel(0x01, phy->loc_regs + (0x79*4)); /* user ALL 0 */
+
+	writel(0x0F, phy->loc_regs + (0x7A*4));
+	writel(0xFF, phy->loc_regs + (0x7B*4));
+	writel(0xFF, phy->loc_regs + (0x7C*4));
+
+	writel(0x0, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
+
+	mdelay(100);
+	/* LLI_Set_RxBYpass as BY_PASS_ENTER */
+	writel(0x1, phy->loc_regs + (0x2e*4));
+	writel(0xFFFFFFFF, lli->regs + EXYNOS_PA_CONFIG_UPDATE);
+	/* LLI_Set_TxBYpass as BY_PASS_ENTER */
+	writel(0x1, phy->loc_regs + (0xa8*4));
+	writel(0xFFFFFFFF, lli->regs + EXYNOS_PA_CONFIG_UPDATE);
+
+	mdelay(200);
+
+	writel(0x1, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
+	uval = readl(phy->loc_regs + (0x23*4));
+	dev_err(lli->dev, "LB error : 0x%x\n", uval);
+	if (uval == 0x24)
+		dev_err(lli->dev, "PWM loopbacktest is Passed!!");
+	else
+		dev_err(lli->dev, "PWM loopbacktest is Failed!!");
+
+	writel(0x0, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
+
+	writel(0x1, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+	uval = readl(phy->loc_regs + (0x26*4)); /* o_pll_lock[7] */
+	writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+
+	dev_err(lli->dev, "uval : %d\n", uval);
+
+	return 0;
+}
 const struct lli_driver exynos_lli_driver = {
 	.init = exynos_lli_init,
 	.set_master = exynos_lli_set_master,
@@ -450,6 +528,7 @@ const struct lli_driver exynos_lli_driver = {
 	.send_signal = exynos_lli_send_signal,
 	.reset_signal = exynos_lli_reset_signal,
 	.read_signal = exynos_lli_read_signal,
+	.loopback_test = exynos_lli_loopback_test,
 	.suspend = exynos_lli_suspend,
 	.resume = exynos_lli_resume,
 };

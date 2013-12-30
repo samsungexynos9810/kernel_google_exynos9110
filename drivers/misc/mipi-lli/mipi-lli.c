@@ -237,6 +237,8 @@ static ssize_t store_mipi_lli_control(struct device *dev,
 		lli->driver->exit(lli);
 	else if (command == 5)
 		mipi_lli_send_signal_test(lli);
+	else if (command == 6)
+		lli->driver->loopback_test(lli);
 	else
 		dev_err(dev, "Un-support control command\n");
 
