@@ -24,11 +24,20 @@
 #define HOT_CRITICAL_TEMP	110
 #define MIF_TH_TEMP1		85
 #define MIF_TH_TEMP2		95
+
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+#define GPU_TH_TEMP1		80
+#define GPU_TH_TEMP2		90
+#define GPU_TH_TEMP3		100
+#define GPU_TH_TEMP4		100
+#define GPU_TH_TEMP5		110
+#else
 #define GPU_TH_TEMP1		85
 #define GPU_TH_TEMP2		90
 #define GPU_TH_TEMP3		95
 #define GPU_TH_TEMP4		100
 #define GPU_TH_TEMP5		110
+#endif
 
 enum tmu_status_t {
 	TMU_STATUS_INIT = 0,
