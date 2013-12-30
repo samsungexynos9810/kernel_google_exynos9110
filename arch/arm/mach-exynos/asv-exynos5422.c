@@ -498,6 +498,7 @@ static struct asv_ops exynos5422_asv_ops_g3d = {
 	.set_asv_info	= exynos5422_set_asv_info_g3d,
 };
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 static unsigned int exynos5422_get_asv_group_isp(struct asv_common *asv_comm)
 {
 	unsigned int i;
@@ -554,6 +555,7 @@ static struct asv_ops exynos5422_asv_ops_isp = {
 	.get_asv_group	= exynos5422_get_asv_group_isp,
 	.set_asv_info	= exynos5422_set_asv_info_isp,
 };
+#endif
 
 struct asv_info exynos5422_asv_member[] = {
 	{
@@ -591,6 +593,7 @@ struct asv_info exynos5422_asv_member[] = {
 		.asv_group_nr	= ASV_GRP_NR(G3D),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(G3D),
 		.max_volt_value = MAX_VOLT(G3D),
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	}, {
 		.asv_type	= ID_ISP,
 		.name		= "VDD_ISP",
@@ -598,6 +601,7 @@ struct asv_info exynos5422_asv_member[] = {
 		.asv_group_nr	= ASV_GRP_NR(ISP),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(ISP),
 		.max_volt_value = MAX_VOLT(ISP),
+#endif
 	},
 };
 
