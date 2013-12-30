@@ -214,6 +214,8 @@ static int exynos_lli_init(struct mipi_lli *lli)
 		phy->ovtm_init(phy);
 		writel(0x0, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
 	}
+	/* Update PA configuration for MPHY standard attributes */
+	writel(0xFFFFFFFF, lli->regs + EXYNOS_PA_CONFIG_UPDATE);
 
 	/* Set SNF FIFO for LL&BE */
 	writel(((0x1F<<1) | 1), lli->regs + EXYNOS_IAL_LL_SNF_FIFO);
