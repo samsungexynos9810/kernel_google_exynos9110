@@ -564,6 +564,23 @@ static bool exynos5422_is_alive_CA15(void)
 	return tmp ? true : false;
 }
 
+static void exynos5422_set_ema_CA15(unsigned int target_volt)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(EXYNOS54XX_ARM_EMA_CTRL);
+
+	if ((target_volt <= EXYNOS54XX_ARM_EMA_BASE_VOLT) &&
+			(tmp & ~EXYNOS54XX_ARM_WAS_ENABLE)) {
+		tmp |= EXYNOS54XX_ARM_WAS_ENABLE;
+		__raw_writel(tmp, EXYNOS54XX_ARM_EMA_CTRL);
+	} else if ((target_volt > EXYNOS54XX_ARM_EMA_BASE_VOLT) &&
+			(tmp & EXYNOS54XX_ARM_WAS_ENABLE)) {
+		tmp &= ~EXYNOS54XX_ARM_WAS_ENABLE;
+		__raw_writel(tmp, EXYNOS54XX_ARM_EMA_CTRL);
+	}
+};
+
 int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 {
 	int i;
@@ -653,6 +670,7 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->need_apll_change = exynos5422_pms_change_CA15;
 	info->is_alive = exynos5422_is_alive_CA15;
 	info->set_int_skew = exynos5422_set_int_skew_CA15;
+	info->set_ema = exynos5422_set_ema_CA15;
 
 #ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
 	pm_qos_add_request(&min_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
