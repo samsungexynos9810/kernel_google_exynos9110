@@ -496,30 +496,28 @@ static const unsigned int asv_voltage_5430_CA7[CPUFREQ_LEVEL_END_CA7] = {
 };
 #endif
 
-#if 0
 /* Minimum memory throughput in megabytes per second */
 static int exynos5430_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
-	400000,	/* 2.0 GHz */
-	400000,	/* 1.9 GHz */
-	400000,	/* 1.8 GHz */
-	400000,	/* 1.7 GHz */
-	266000,	/* 1.6 GHz */
-	266000,	/* 1.5 GHz */
-	266000,	/* 1.4 GHz */
-	266000,	/* 1.3 GHz */
-	200000,	/* 1.2 GHz */
-	200000,	/* 1.1 GHz */
-	200000,	/* 1.0 GHz */
-	160000,	/* 900 MHz */
-	160000,	/* 800 MHz */
-	160000,	/* 700 MHz */
-	133000,	/* 600 MHz */
-	133000,	/* 500 MHz */
-	0,	/* 400 MHz */
-	0,	/* 300 MHz */
-	0,	/* 200 MHz */
+	413000,		/* 2.0 GHz */
+	413000,		/* 1.9 GHz */
+	413000,		/* 1.8 GHz */
+	413000,		/* 1.7 GHz */
+	413000,		/* 1.6 GHz */
+	275000,		/* 1.5 GHz */
+	275000,		/* 1.4 GHz */
+	275000,		/* 1.3 GHz */
+	206000,		/* 1.2 GHz */
+	206000,		/* 1.1 GHz */
+	206000,		/* 1.0 GHz */
+	165000,		/* 900 MHz */
+	165000,		/* 800 MHz */
+	138000,		/* 700 MHz */
+	138000,		/* 600 MHz */
+	103000,		/* 500 MHz */
+	0,		/* 400 MHz */
+	0,		/* 300 MHz */
+	0,		/* 200 MHz */
 };
-#endif
 
 static void exynos5430_set_clkdiv_CA7(unsigned int div_index)
 {
@@ -798,9 +796,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L5].frequency;
 	info->boot_cpu_max_qos = exynos5430_freq_table_CA7[L5].frequency;
 #endif
-#if 0
 	info->bus_table = exynos5430_bus_table_CA7;
-#endif
 	info->cpu_clk = fout_kfc_pll;
 
 	info->volt_table = exynos5430_volt_table_CA7;
