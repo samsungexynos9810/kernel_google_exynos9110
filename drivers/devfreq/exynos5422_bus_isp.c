@@ -709,7 +709,7 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
-	data->vdd_isp = regulator_get(NULL, "vdd_int");
+	data->vdd_isp = regulator_get(NULL, "vdd_cam_isp_1.0v");
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_isp_profile,
 						"simple_ondemand",
