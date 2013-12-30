@@ -1193,7 +1193,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 #if defined(CONFIG_CPU_THERMAL_IPA)
 	check_switch_ipa_on(max);
 #endif
-	pr_info("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
+	pr_debug("[TMU] TMU0 = %d, TMU1 = %d, TMU2 = %d, TMU3 = %d, TMU4 = %d    MAX = %d, GPU = %d\n",
 			alltemp[0], alltemp[1], alltemp[2], alltemp[3], alltemp[4], max, gpu_temp);
 
 	return max;
