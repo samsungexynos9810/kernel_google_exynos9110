@@ -69,6 +69,10 @@
 #define EXYNOS5422_G3DLOCK_UP_MASK	(0x03)
 #define EXYNOS5422_G3DLOCK_DN_OFFSET	(26)
 #define EXYNOS5422_G3DLOCK_DN_MASK	(0x03)
+#define EXYNOS5422_ISPLOCK_UP_OFFSET	(28)
+#define EXYNOS5422_ISPLOCK_UP_MASK	(0x03)
+#define EXYNOS5422_ISPLOCK_DN_OFFSET	(30)
+#define EXYNOS5422_ISPLOCK_DN_MASK	(0x03)
 
 /* Following value use with *10000 */
 #define EXYNOS5422_TMCB_CHIPER	10000
@@ -97,7 +101,7 @@ enum volt_offset {
 bool is_speedgroup;
 unsigned special_lot_group;
 enum table_version asv_table_version;
-enum volt_offset asv_volt_offset[5][2];
+enum volt_offset asv_volt_offset[ASV_TYPE_END][2];
 
 struct asv_reference {
 	unsigned int ids_value;
@@ -494,6 +498,63 @@ static struct asv_ops exynos5422_asv_ops_g3d = {
 	.set_asv_info	= exynos5422_set_asv_info_g3d,
 };
 
+static unsigned int exynos5422_get_asv_group_isp(struct asv_common *asv_comm)
+{
+	unsigned int i;
+	struct asv_info *target_asv_info = asv_get(ID_ISP);
+
+	if (is_speedgroup)
+		return special_lot_group;
+
+	for (i = 0; i < target_asv_info->asv_group_nr; i++) {
+		if (refer_use_table_get_asv[0][i] &&
+			asv_comm->ids_value <= refer_table_get_asv[0][i])
+			return i;
+
+		if (refer_use_table_get_asv[1][i] &&
+			asv_comm->hpm_value <= refer_table_get_asv[1][i])
+			return i;
+	}
+
+	return 0;
+}
+
+static void exynos5422_set_asv_info_isp(struct asv_info *asv_inform, bool show_value)
+{
+	unsigned int i;
+	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
+
+	exynos5422_set_abb(asv_inform);
+
+	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+
+	for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+		asv_inform->asv_volt[i].asv_freq = isp_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+		asv_inform->asv_volt[i].asv_value =
+			exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP)
+			+ set_mif_volt;
+#else
+		asv_inform->asv_volt[i].asv_value =
+			exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP);
+#endif
+	}
+
+	if (show_value) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
+			pr_info("%s LV%d freq : %d volt : %d\n",
+					asv_inform->name, i,
+					asv_inform->asv_volt[i].asv_freq,
+					asv_inform->asv_volt[i].asv_value);
+	}
+}
+
+static struct asv_ops exynos5422_asv_ops_isp = {
+	.get_asv_group	= exynos5422_get_asv_group_isp,
+	.set_asv_info	= exynos5422_set_asv_info_isp,
+};
+
 struct asv_info exynos5422_asv_member[] = {
 	{
 		.asv_type	= ID_ARM,
@@ -530,6 +591,13 @@ struct asv_info exynos5422_asv_member[] = {
 		.asv_group_nr	= ASV_GRP_NR(G3D),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(G3D),
 		.max_volt_value = MAX_VOLT(G3D),
+	}, {
+		.asv_type	= ID_ISP,
+		.name		= "VDD_ISP",
+		.ops		= &exynos5422_asv_ops_isp,
+		.asv_group_nr	= ASV_GRP_NR(ISP),
+		.dvfs_level_nr	= DVFS_LEVEL_NR(ISP),
+		.max_volt_value = MAX_VOLT(ISP),
 	},
 };
 
@@ -599,6 +667,8 @@ int exynos5422_init_asv(struct asv_common *asv_info)
 	asv_volt_offset[ID_G3D][1] = (chip_id4_value >> EXYNOS5422_G3DLOCK_DN_OFFSET) & EXYNOS5422_G3DLOCK_DN_MASK;
 	asv_volt_offset[ID_MIF][0] = (chip_id4_value >> EXYNOS5422_MIFLOCK_UP_OFFSET) & EXYNOS5422_MIFLOCK_UP_MASK;
 	asv_volt_offset[ID_MIF][1] = (chip_id4_value >> EXYNOS5422_MIFLOCK_DN_OFFSET) & EXYNOS5422_MIFLOCK_DN_MASK;
+	asv_volt_offset[ID_ISP][0] = (chip_id4_value >> EXYNOS5422_ISPLOCK_UP_OFFSET) & EXYNOS5422_ISPLOCK_UP_MASK;
+	asv_volt_offset[ID_ISP][1] = (chip_id4_value >> EXYNOS5422_ISPLOCK_DN_OFFSET) & EXYNOS5422_ISPLOCK_DN_MASK;
 
 	asv_info->regist_asv_member = exynos5422_regist_asv_member;
 
