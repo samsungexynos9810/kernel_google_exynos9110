@@ -51,6 +51,27 @@ static void top_clk_enable(void)
 #if defined(CMU_PRINT_PLL)
 	unsigned long tmp;
 #endif
+
+	/* CAM CMU */
+	add_enabler("clk_camif_top_3aa");
+	add_enabler("clk_camif_top_fimcl1");
+	add_enabler("clk_camif_top_3aa0");
+	add_enabler("clk_gscl_wrap_b");
+	add_enabler("clk_gscl_wrap_a");
+	add_enabler("clk_camif_top_fimcl0");
+	add_enabler("clk_camif_top_fimcl3");
+	add_enabler("mout_aclk_432_cam_sw");
+	add_enabler("clk_noc_p_rstop_fimcl");
+	add_enabler("clk_xiu_si_gscl_cam");
+	add_enabler("clk_xiu_mi_gscl_cam");
+	add_enabler("gscl_fimc_lite3");
+	add_enabler("clk_3aa");
+	add_enabler("clk_camif_top_csis0");
+
+	/* SPI  */
+	add_enabler("sclk_spi2");
+	add_enabler("sclk_spi1");
+	add_enabler("sclk_spi0");
 	add_enabler("fout_apll");
 	add_enabler("fout_bpll");
 	add_enabler("fout_cpll");
