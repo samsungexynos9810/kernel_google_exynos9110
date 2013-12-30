@@ -901,6 +901,7 @@
 			#dma-cells = <1>;
 			#dma-channels = <8>;
 			#dma-requests = <32>;
+			#dma-secure-mode = <1>;
 		};
 
 		adma: adma@03880000 {
