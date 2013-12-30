@@ -42,9 +42,7 @@
 
 #include <plat/cpu.h>
 
-#ifdef CONFIG_PM_RUNTIME
 #include <linux/pm_runtime.h>
-#endif
 
 #include <media/v4l2-ioctl.h>
 
@@ -835,9 +833,7 @@ static int jpeg_remove(struct platform_device *pdev)
 	mutex_destroy(&jpeg->lock);
 	iounmap(jpeg->reg_base);
 
-#ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
-#endif
 	jpeg->vb2->suspend(jpeg->alloc_ctx);
 	jpeg_clk_put(jpeg);
 
