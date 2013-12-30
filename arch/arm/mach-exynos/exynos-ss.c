@@ -127,8 +127,8 @@ struct exynos_ss_log {
 	struct printkl_log {
 		unsigned long long time;
 		int cpu;
-		int msg;
-		int val;
+		unsigned int msg;
+		unsigned int val;
 	} printkl[ESS_LOG_MAX_NUM * 2];
 	struct printk_log {
 		unsigned long long time;
@@ -988,7 +988,7 @@ void exynos_ss_printk(char *fmt, ...)
 	strncpy(ess_log->printk[i].log, buf, ESS_LOG_STRING_LENGTH - 1);
 }
 
-void __exynos_ss_printkl(int msg, int val)
+void exynos_ss_printkl(unsigned int msg, unsigned int val)
 {
 	int cpu = raw_smp_processor_id();
 	unsigned i;

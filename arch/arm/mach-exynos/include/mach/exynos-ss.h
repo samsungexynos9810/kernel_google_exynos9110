@@ -48,6 +48,7 @@ extern void __exynos_ss_hrtimer(struct hrtimer *timer, s64 *now,
 extern void __exynos_ss_reg(unsigned int read, unsigned int val,
 			    unsigned int reg, int en);
 extern void exynos_ss_printk(char *fmt, ...);
+extern void exynos_ss_printkl(unsigned int msg, unsigned int val);
 extern int exynos_ss_save_context(void);
 
 static inline void exynos_ss_irq(unsigned int irq, void *fn, int en)
@@ -97,6 +98,7 @@ static inline void exynos_ss_softirq(unsigned int irq, void *fn, int en)
 #define exynos_ss_hrtimer(a,b,c,d)	do { } while(0)
 #define exynos_ss_softirq(a,b,c)	do { } while(0)
 #define exynos_ss_printk(...)		do { } while(0)
+#define exynos_ss_printkl(a,b)		do { } while(0)
 #define exynos_ss_save_context()	do { } while(0)
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
 
