@@ -265,9 +265,16 @@ static void clkout_init_clock(void)
 
 static void aud_init_clock(void)
 {
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	exynos_set_parent("mout_dpll_ctrl", "fout_dpll");
+	exynos_set_parent("mout_mau_epll_clk", "mout_dpll_ctrl");
+	exynos_set_parent("mout_mau_epll_clk_user", "mout_mau_epll_clk");
+	exynos_set_parent("mout_ass_clk", "mout_mau_epll_clk_user");
+	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
+#else
 	exynos_set_parent("mout_ass_clk", "fin_pll");
 	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
-
+#endif
 	exynos_set_rate("dout_ass_srp", 100 * 1000000);
 	exynos_set_rate("dout_ass_bus", 50 * 1000000);
 	exynos_set_rate("dout_ass_i2s", 12 * 1000000);
