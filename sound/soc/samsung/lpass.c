@@ -64,7 +64,6 @@ struct lpass_info {
 	int			ver;
 	struct platform_device	*pdev;
 	void __iomem		*regs;
-	void __iomem		*regs_sys;
 	void __iomem		*mem;
 	struct iommu_domain	*domain;
 	struct proc_dir_entry	*proc_file;
@@ -73,7 +72,6 @@ struct lpass_info {
 	struct clk		*clk_intr;
 	struct clk		*clk_timer;
 	bool			rpm_enabled;
-	bool			dcg_avail;
 	atomic_t		use_cnt;
 } lpass;
 
@@ -369,20 +367,6 @@ static void lpass_release_pad(void)
 	writel(1, EXYNOS5430_GPIO_MODE_AUD_SYS_PWR_REG);
 }
 
-static void lpass_dcg_enable(bool on)
-{
-	if (!lpass.dcg_avail)
-		return;
-
-	if (on) {
-		writel(3, lpass.regs_sys + AUD_NOC_DCG_EN);
-		writel(1, lpass.regs_sys + AUD_XIU_TOP_DCG_EN);
-	} else {
-		writel(0, lpass.regs_sys + AUD_NOC_DCG_EN);
-		writel(0, lpass.regs_sys + AUD_XIU_TOP_DCG_EN);
-	}
-}
-
 static void ass_enable(void)
 {
 	lpass_reg_restore();
@@ -413,7 +397,6 @@ static void lpass_enable(void)
 	lpass_pll_enable(true);
 
 	lpass_reg_restore();
-	lpass_dcg_enable(true);
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	/* AUD0 */
@@ -775,16 +758,6 @@ static int lpass_probe(struct platform_device *pdev)
 	if (ret) {
 		dev_err(dev, "failed to set clock hierachy\n");
 		return -ENXIO;
-	}
-
-	if (is_new_ass()) {
-		lpass.dcg_avail = true;
-		lpass.regs_sys = devm_ioremap(&pdev->dev,
-						SYSREG_AUD_BASE, SZ_4K);
-		if (!lpass.regs_sys) {
-			dev_err(dev, "DCG SFR ioremap failed\n");
-			return -ENOMEM;
-		}
 	}
 
 #ifdef CONFIG_SND_SAMSUNG_IOMMU
