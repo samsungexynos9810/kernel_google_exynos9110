@@ -173,6 +173,25 @@ unsigned int of_dma_get_mcode_addr(struct device_node *np)
 EXPORT_SYMBOL_GPL(of_dma_get_mcode_addr);
 
 /**
+ * of_dma_secure_dma_ch- Get the DMA micro code buffer address.
+ * @np:		device node of DMA controller
+ *
+ * Return the physical address.
+ */
+bool of_dma_secure_mode(struct device_node *np)
+{
+	bool ret = 0;
+	const __be32	*prop;
+
+	prop = of_get_property(np, "#dma-secure-mode", NULL);
+	if (prop)
+		ret = be32_to_cpup(prop);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(of_dma_secure_mode);
+
+/**
  * of_dma_request_slave_channel - Get the DMA slave channel
  * @np:		device node to get DMA request from
  * @name:	name of desired channel
