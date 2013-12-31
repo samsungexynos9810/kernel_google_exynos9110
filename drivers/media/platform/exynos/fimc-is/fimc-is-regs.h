@@ -386,4 +386,7 @@
 #define PA_FIMC_IS_GIC_D			(0x131F0000)
 #endif
 
+/* PWM for FIMC-IS*/
+#define FIMC_IS_PWM_TCNTB0			(0xC)
+
 #endif
