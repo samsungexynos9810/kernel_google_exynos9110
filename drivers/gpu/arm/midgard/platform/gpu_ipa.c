@@ -3,7 +3,7 @@
 #include "gpu_dvfs_handler.h"
 
 #define CREATE_TRACE_POINTS
-#include <platform/mali_power.h>
+#include "mali_power.h"
 #undef  CREATE_TRACE_POINTS
 
 extern struct kbase_device *pkbdev;
