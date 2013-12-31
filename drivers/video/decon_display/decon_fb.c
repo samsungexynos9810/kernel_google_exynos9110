@@ -3162,6 +3162,8 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	u32 data = 0;
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
+	struct display_driver *dispdrv = get_display_driver();
+
 	if (enable) {
 		dev_dbg(sfb->dev, "Decon start(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
@@ -3181,6 +3183,9 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		data &= ~(0x07 << 20); /* Masking == diable local path */
 		writel(data, sfb->regs + WINCON(win->index));
 	}
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, enable);
+#endif
 	dev_dbg(sfb->dev, "window via local path started/stopped : %d\n",
 		enable);
 	return 0;
