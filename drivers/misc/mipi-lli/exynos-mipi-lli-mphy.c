@@ -61,9 +61,6 @@ int exynos_mphy_cmn_init(struct exynos_mphy *phy)
 	writel(0x01, phy->loc_regs + (0x4D*4));
 	writel(0x03, phy->loc_regs + (0x4E*4));
 
-	/* PLL power off */
-	writel(0x0, phy->loc_regs + (0x1A*4));
-
 	return 0;
 }
 
@@ -99,6 +96,9 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 	writel(0x00, phy->loc_regs + (0x1A*4));
 	writel(0xDB, phy->loc_regs + (0x2F*4));
 	writel(0xC0, phy->loc_regs + (0x2E*4));
+
+	/* PLL power off */
+	writel(0x0, phy->loc_regs + (0x1A*4));
 
 	return 0;
 }
