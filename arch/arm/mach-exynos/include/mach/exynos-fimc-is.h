@@ -78,8 +78,17 @@ enum FIMC_IS_DVFS_QOS_TYPE {
 	FIMC_IS_DVFS_I2C,
 	FIMC_IS_DVFS_CAM,
 	FIMC_IS_DVFS_DISP,
+	FIMC_IS_DVFS_PWM,
 	FIMC_IS_DVFS_END,
 };
+
+#define SET_QOS(t, s, i, m, _i, c, d, p)	\
+	(t)[s][FIMC_IS_DVFS_INT]	= i;	\
+	(t)[s][FIMC_IS_DVFS_MIF]	= m;	\
+	(t)[s][FIMC_IS_DVFS_I2C]	= _i;	\
+	(t)[s][FIMC_IS_DVFS_CAM]	= c;	\
+	(t)[s][FIMC_IS_DVFS_DISP]	= d;	\
+	(t)[s][FIMC_IS_DVFS_PWM]	= p;
 
 enum FIMC_IS_CLK_GATE {
 	FIMC_IS_GATE_3AA1_IP,
@@ -117,6 +126,7 @@ struct exynos_fimc_is_subip_ext {
 	bool valid;
 	bool full_bypass;
 	u32 version;
+	u32 base_addr;
 };
 
 struct exynos_fimc_is_subip_info {
@@ -132,6 +142,7 @@ struct exynos_fimc_is_subip_info {
 	struct exynos_fimc_is_subip_ext _dnr;
 	struct exynos_fimc_is_subip_ext _scp;
 	struct exynos_fimc_is_subip_ext _fd;
+	struct exynos_fimc_is_subip_ext _pwm;
 };
 
 /*
