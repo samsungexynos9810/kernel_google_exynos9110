@@ -33,7 +33,6 @@
 
 static struct clk *g_mout_fimd1;
 static struct clk *g_mout_rpll_ctrl;
-static struct clk *g_mout_fimd1_mdnie1;
 static struct clk *g_clk_fimd1;
 static struct clk *g_mout_aclk_300_disp1_user;
 static struct clk *g_mout_aclk_300_disp1_sw;
@@ -48,10 +47,9 @@ static struct clk *g_mout_aclk_400_disp1_user;
 static struct clk *g_mout_aclk_400_disp1_sw;
 static struct clk *g_dout_aclk_400_disp1;
 static struct clk *g_mout_aclk_400_disp1;
+#ifndef CONFIG_SOC_EXYNOS5422_REV_0
 static struct clk *g_mout_fimd1_mdnie1;
-static struct clk *g_mout_fimd1;
-static struct clk *g_sclk_rpll;
-static struct clk *g_sclk_fimd1;
+#endif
 
 #define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
 	g_##child = clk_get(dev, #child); \
@@ -290,13 +288,15 @@ int enable_display_decon_clocks(struct device *dev)
 		clk_prepare_enable(sfb->lcd_clk);
 #endif
 
-#if 0
-	DISPLAY_CLOCK_INLINE_SET_PARENT(sclk_fimd1, mout_fimd1);
-	DISPLAY_INLINE_SET_RATE(sclk_fimd1, 67 * MHZ);
-#else
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
+#if !defined (CONFIG_SOC_EXYNOS5422_REV_0)
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
-	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, sclk_rpll);
-	DISPLAY_SET_RATE(sclk_fimd1, 67 * MHZ);
+#endif
+
+#ifdef CONFIG_DECON_LCD_S6E8AA0
+	DISPLAY_SET_RATE(clk_fimd1, 67 * MHZ);
+#else
+	DISPLAY_SET_RATE(clk_fimd1, 266 * MHZ);
 #endif
 	return ret;
 }
