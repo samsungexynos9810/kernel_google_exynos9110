@@ -23,7 +23,7 @@
  */
 
 #ifdef CONFIG_SYNC
-#include <linux/seq_file.h>
+
 #include <../../../../staging/android/sync.h>
 #include <mali_kbase.h>
 

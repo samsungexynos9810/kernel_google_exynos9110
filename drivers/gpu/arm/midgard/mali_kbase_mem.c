@@ -593,6 +593,9 @@ struct kbase_va_region *kbase_alloc_free_region(kbase_context *kctx, u64 start_p
 
 	new_reg->flags |= KBASE_REG_GROWABLE;
 
+	/* Set up default MEMATTR usage */
+	new_reg->flags |= KBASE_REG_MEMATTR_INDEX(ASn_MEMATTR_INDEX_DEFAULT);
+
 	new_reg->start_pfn = start_pfn;
 	new_reg->nr_pages = nr_pages;
 
@@ -629,10 +632,11 @@ KBASE_EXPORT_TEST_API(kbase_free_alloced_region)
 void kbase_mmu_update(kbase_context *kctx)
 {
 	/* Use GPU implementation-defined caching policy. */
-	u32 memattr = ASn_MEMATTR_IMPL_DEF_CACHE_POLICY;
+	u64 mem_attrs;
 	u32 pgd_high;
 
 	KBASE_DEBUG_ASSERT(NULL != kctx);
+	mem_attrs = kctx->mem_attrs;
 	/* ASSERT that the context has a valid as_nr, which is only the case
 	 * when it's scheduled in.
 	 *
@@ -641,20 +645,28 @@ void kbase_mmu_update(kbase_context *kctx)
 
 	pgd_high = sizeof(kctx->pgd) > 4 ? (kctx->pgd >> 32) : 0;
 
-	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_TRANSTAB_LO), (kctx->pgd & ASn_TRANSTAB_ADDR_SPACE_MASK) | ASn_TRANSTAB_READ_INNER | ASn_TRANSTAB_ADRMODE_TABLE, kctx);
+	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_TRANSTAB_LO),
+			(kctx->pgd & ASn_TRANSTAB_ADDR_SPACE_MASK) |
+			ASn_TRANSTAB_READ_INNER | ASn_TRANSTAB_ADRMODE_TABLE,
+			kctx);
 
-	/* Need to use a conditional expression to avoid "right shift count >= width of type"
-	 * error when using an if statement - although the size_of condition is evaluated at compile
-	 * time the unused branch is not removed until after it is type-checked and the error
-	 * produced.
+	/* Need to use a conditional expression to avoid
+	 * "right shift count >= width of type" error when using an if statement
+	 * - although the size_of condition is evaluated at compile time the
+	 * unused branch is not removed until after it is type-checked and the
+	 * error produced.
 	 */
 	pgd_high = sizeof(kctx->pgd) > 4 ? (kctx->pgd >> 32) : 0;
 
-	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_TRANSTAB_HI), pgd_high, kctx);
+	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_TRANSTAB_HI),
+			pgd_high, kctx);
 
-	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_MEMATTR_LO), memattr, kctx);
-	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_MEMATTR_HI), memattr, kctx);
-	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_COMMAND), ASn_COMMAND_UPDATE, kctx);
+	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_MEMATTR_LO),
+			mem_attrs        & 0xFFFFFFFFUL, kctx);
+	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_MEMATTR_HI),
+			(mem_attrs >> 32) & 0xFFFFFFFFUL, kctx);
+	kbase_reg_write(kctx->kbdev, MMU_AS_REG(kctx->as_nr, ASn_COMMAND),
+			ASn_COMMAND_UPDATE, kctx);
 }
 
 KBASE_EXPORT_TEST_API(kbase_mmu_update)
@@ -929,7 +941,9 @@ mali_error kbase_mem_free(kbase_context *kctx, mali_addr64 gpu_addr)
 		/* Validate the region */
 		reg = kbase_region_tracker_find_region_base_address(kctx, gpu_addr);
 		if (!reg) {
-			KBASE_DEBUG_ASSERT_MSG(0, "Trying to free nonexistent region\n 0x%llX", gpu_addr);
+			KBASE_DEBUG_PRINT_WARN(KBASE_MEM,
+			    "kbase_mem_free called with nonexistent gpu_addr 0x%llX",
+			    gpu_addr);
 			err = MALI_ERROR_FUNCTION_FAILED;
 			goto out_unlock;
 		}

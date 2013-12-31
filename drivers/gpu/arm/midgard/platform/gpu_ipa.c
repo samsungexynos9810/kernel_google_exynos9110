@@ -100,13 +100,12 @@ void gpu_ipa_dvfs_calc_norm_utilisation(struct kbase_device *kbdev)
 	gpu_ipa_trace_utilisation(kbdev);
 }
 
-int kbase_platform_dvfs_freq_to_power(int freq)
+int kbase_platform_dvfs_freq_to_power(struct kbase_device *kbdev, int freq)
 {
 	int level;
 	unsigned int vol;
 	unsigned long flags;
 	unsigned long long power;
-	struct kbase_device *kbdev = pkbdev;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 
 	if (!platform) {
@@ -134,12 +133,11 @@ int kbase_platform_dvfs_freq_to_power(int freq)
 	return (int)power;
 }
 
-int kbase_platform_dvfs_power_to_freq(int power)
+int kbase_platform_dvfs_power_to_freq(struct kbase_device *kbdev, int power)
 {
 	int level, freq;
 	unsigned int vol;
 	u64 _power;
-	struct kbase_device *kbdev = pkbdev;
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 
 	if (!platform) {

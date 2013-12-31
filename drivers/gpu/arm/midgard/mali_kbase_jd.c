@@ -196,7 +196,7 @@ static mali_error kbase_jd_umm_map(kbase_context *kctx, struct kbase_va_region *
 		size_t pages = PFN_UP(sg_dma_len(s));
 
 		WARN_ONCE(sg_dma_len(s) & (PAGE_SIZE-1),
-		"sg_dma_len(s)=%zu is not a multiple of PAGE_SIZE\n",
+		"sg_dma_len(s)=%u is not a multiple of PAGE_SIZE\n",
 		sg_dma_len(s));
 
 		WARN_ONCE(sg_dma_address(s) & (PAGE_SIZE-1),
@@ -630,6 +630,9 @@ mali_bool jd_done_nolock(kbase_jd_atom *katom)
 
 		for (i = 0; i < 2; i++)
 			jd_resolve_dep(&runnable_jobs, katom, i);
+
+		if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
+			kbase_jd_post_external_resources(katom);
 
 		if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
 			kbase_jd_post_external_resources(katom);

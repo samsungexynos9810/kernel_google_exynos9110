@@ -857,7 +857,7 @@ typedef struct base_jd_event_v2 {
 } base_jd_event_v2;
 
 /**
- * Padding required to ensure that the @ref basep_dump_cpu_gpu_counters structure fills
+ * Padding required to ensure that the @ref base_dump_cpu_gpu_counters structure fills
  * a full cache line.
  */
 

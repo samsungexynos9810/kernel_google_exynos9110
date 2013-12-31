@@ -42,7 +42,6 @@
 #endif				/* CONFIG_KDS */
 
 #ifdef CONFIG_SYNC
-#include <linux/seq_file.h>
 #include <../../../../staging/android/sync.h>
 #endif				/* CONFIG_SYNC */
 
@@ -747,6 +746,8 @@ struct kbase_context {
 	struct mutex event_mutex;
 	mali_bool event_closed;
 	struct workqueue_struct *event_workq;
+
+	u64 mem_attrs;
 
 	atomic_t                setup_complete;
 	atomic_t                setup_in_progress;

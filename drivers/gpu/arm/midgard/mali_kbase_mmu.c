@@ -206,12 +206,10 @@ static void page_fault_worker(struct work_struct *data)
 		kbase_reg_write(kbdev, MMU_AS_REG(as_no, ASn_LOCKADDR_LO), lock_addr & 0xFFFFFFFFUL, kctx);
 		kbase_reg_write(kbdev, MMU_AS_REG(as_no, ASn_LOCKADDR_HI), lock_addr >> 32, kctx);
 		kbase_reg_write(kbdev, MMU_AS_REG(as_no, ASn_COMMAND), ASn_COMMAND_LOCK, kctx);
-#ifdef MALI_INCLUDE_SKRYMIR
 		if (kbase_hw_has_issue(kbdev, BASE_HW_ISSUE_T76X_3285)) {
 			kbase_reg_write(kbdev, MMU_REG(MMU_IRQ_CLEAR), (1UL << as_no), NULL);
 			kbase_reg_write(kbdev, MMU_AS_REG(as_no, ASn_COMMAND), ASn_COMMAND_LOCK, kctx);
 		}
-#endif /* MALI_INCLUDE_SKRYMIR */
 
 		/* set up the new pages */
 		err = kbase_mmu_insert_pages(kctx, region->start_pfn + kbase_reg_current_backed_size(region) - new_pages, &kbase_get_phy_pages(region)[kbase_reg_current_backed_size(region) - new_pages], new_pages, region->flags);
@@ -476,11 +474,17 @@ static void mmu_insert_pages_failure_recovery(kbase_context *kctx, u64 vpfn, phy
  */
 static u64 kbase_mmu_get_mmu_flags(unsigned long flags)
 {
-	u64 mmu_flags = 0;
+	u64 mmu_flags;
 
-	mmu_flags |= (flags & KBASE_REG_GPU_WR) ? ENTRY_WR_BIT : 0;	/* write perm if requested */
-	mmu_flags |= (flags & KBASE_REG_GPU_RD) ? ENTRY_RD_BIT : 0;	/* read perm if requested */
-	mmu_flags |= (flags & KBASE_REG_GPU_NX) ? ENTRY_NX_BIT : 0;	/* nx if requested */
+	/* store mem_attr index as 4:2 (macro called ensures 3 bits already) */
+	mmu_flags = KBASE_REG_MEMATTR_VALUE(flags) << 2;
+
+	/* write perm if requested */
+	mmu_flags |= (flags & KBASE_REG_GPU_WR) ? ENTRY_WR_BIT : 0;
+	/* read perm if requested */
+	mmu_flags |= (flags & KBASE_REG_GPU_RD) ? ENTRY_RD_BIT : 0;
+	/* nx if requested */
+	mmu_flags |= (flags & KBASE_REG_GPU_NX) ? ENTRY_NX_BIT : 0;
 
 	if (flags & KBASE_REG_SHARE_BOTH) {
 		/* inner and outer shareable */
@@ -860,6 +864,14 @@ mali_error kbase_mmu_init(kbase_context *kctx)
 
 	/* Preallocate MMU depth of four pages for mmu_teardown_level to use */
 	kctx->mmu_teardown_pages = kmalloc(PAGE_SIZE * 4, GFP_KERNEL);
+
+	kctx->mem_attrs = (ASn_MEMATTR_IMPL_DEF_CACHE_POLICY <<
+			   (ASn_MEMATTR_INDEX_IMPL_DEF_CACHE_POLICY * 8)) |
+			  (ASn_MEMATTR_FORCE_TO_CACHE_ALL    <<
+			   (ASn_MEMATTR_INDEX_FORCE_TO_CACHE_ALL * 8)) |
+			  (ASn_MEMATTR_WRITE_ALLOC           <<
+			   (ASn_MEMATTR_INDEX_WRITE_ALLOC * 8)) |
+			  0; /* The other indices are unused for now */
 
 	if (NULL == kctx->mmu_teardown_pages)
 		return MALI_ERROR_OUT_OF_MEMORY;
