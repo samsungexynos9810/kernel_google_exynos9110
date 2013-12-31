@@ -71,6 +71,7 @@
 /* #define DEBUG */
 #define DBG_VIDEO
 #define DBG_DEVICE
+#define DBG_PER_FRAME
 /* #define DBG_STREAMING */
 #define DEBUG_INSTANCE 0xF
 /* #define BUG_ON_ENABLE */
@@ -265,6 +266,13 @@
 #else
 #define dbg_interface(fmt, args...)
 #define dbg_frame(fmt, args...)
+#endif
+
+#if (defined(DEBUG) && defined(DBG_PER_FRAME))
+#define mdbg_pframe(fmt, object, frame, args...) \
+	pr_info("[@][%d:F%d]" fmt, object->instance, frame->fcount,  ##args)
+#else
+#define mdbg_pframe(fmt, object, frame, args...)
 #endif
 
 #endif

@@ -572,7 +572,7 @@ int fimc_is_set_dvfs(struct fimc_is_device_ischain *device, u32 scenario_id)
 		dvfs_ctrl->cur_disp_qos = disp_qos;
 	}
 
-	pr_info("[RSC:%d]: New QoS [INT(%d), MIF(%d), CAM(%d), DISP(%d), I2C(%d)]\n",
+	dbg("[RSC:%d]: New QoS [INT(%d), MIF(%d), CAM(%d), DISP(%d), I2C(%d)]\n",
 			device->instance, int_qos, mif_qos,
 			cam_qos, disp_qos, i2c_qos);
 exit:

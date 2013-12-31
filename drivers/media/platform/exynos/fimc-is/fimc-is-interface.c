@@ -349,7 +349,7 @@ static int waiting_is_ready(struct fimc_is_interface *interface)
 		cfg = readl(interface->regs + INTMSR0);
 		status = INTMSR0_GET_INTMSD0(cfg);
 		udelay(100);
-		info("Retry to read INTMSR0(%d)\n", try_count);
+		dbg("Retry to read INTMSR0(%d)\n", try_count);
 
 		if (--try_count == 0) {
 			err("INTMSR0's 0 bit is not cleared.");

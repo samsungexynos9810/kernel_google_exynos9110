@@ -1694,18 +1694,15 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_DYNAMIC_SN, device);
 
 		if (scenario_id > 0) {
-			struct fimc_is_dvfs_scenario_ctrl *dynamic_ctrl = resourcemgr->dvfs_ctrl.dynamic_ctrl;
-			info("%s: GRP:%d dynamic scenario(%d)-[%s]\n",
-					__func__, group->id, scenario_id,
-					dynamic_ctrl->scenarios[dynamic_ctrl->cur_scenario_idx].scenario_nm);
+			info("GRP:%d dynamic scenario(%d)\n",
+					group->id, scenario_id);
 			fimc_is_set_dvfs(device, scenario_id);
 		}
 
 		if ((scenario_id < 0) && (resourcemgr->dvfs_ctrl.dynamic_ctrl->cur_frame_tick == 0)) {
 			struct fimc_is_dvfs_scenario_ctrl *static_ctrl = resourcemgr->dvfs_ctrl.static_ctrl;
-			info("%s: GRP:%d restore static scenario(%d)-[%s]\n",
-					__func__, group->id, static_ctrl->cur_scenario_id,
-					static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
+			info("GRP:%d restore scenario(%d)\n",
+					group->id, static_ctrl->cur_scenario_id);
 			fimc_is_set_dvfs(device, static_ctrl->cur_scenario_id);
 		}
 	}

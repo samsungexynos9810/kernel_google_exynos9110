@@ -1926,11 +1926,8 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 		/* try to find dynamic scenario to apply */
 		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_STATIC_SN, device);
 		if (scenario_id >= 0) {
-			struct fimc_is_dvfs_scenario_ctrl *static_ctrl =
-				resourcemgr->dvfs_ctrl.static_ctrl;
-			pr_info("%s: [ISC:D:%d] static scenario(%d)-[%s]\n",
-					__func__, device->instance, scenario_id,
-					static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
+			info("[ISC:D:%d] static scenario(%d)\n",
+					device->instance, scenario_id);
 			fimc_is_set_dvfs(device, scenario_id);
 		}
 	}
@@ -4320,7 +4317,7 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 			}
 			mrinfo("[3AA] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
-			mrinfo("[3AA] out_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[3AA] out_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 	} else {
@@ -4544,7 +4541,7 @@ static int fimc_is_ischain_3aap_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			mrinfo("[3AP] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[3AP] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
@@ -4751,7 +4748,7 @@ static int fimc_is_ischain_3aac_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			mrinfo("[3AC] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[3AC] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
@@ -5642,9 +5639,9 @@ static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			mrinfo("[SCC] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[SCC] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
-			mrinfo("[SCC] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[SCC] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
@@ -6020,9 +6017,9 @@ static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-			mrinfo("[SCP] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[SCP] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
-			mrinfo("[SCP] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+			mdbg_pframe("[SCP] ot_crop[%d, %d, %d, %d]\n", device, ldr_frame,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 
