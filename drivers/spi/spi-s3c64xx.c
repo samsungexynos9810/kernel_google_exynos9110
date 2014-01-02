@@ -33,12 +33,14 @@
 #include <linux/of_gpio.h>
 
 #include <linux/platform_data/spi-s3c64xx.h>
+#include <mach/exynos-fimc-is.h>
 
 #if defined(CONFIG_S3C_DMA) || defined(CONFIG_SAMSUNG_DMADEV)
 #include <mach/dma.h>
 #endif
 
 #define MAX_SPI_PORTS		5
+#define SPI_AUTOSUSPEND_TIMEOUT		(2000)
 
 /* Registers and bit-fields */
 
@@ -320,7 +322,8 @@ static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
 						&s3c64xx_spi_dma_client);
 	}
 
-	pm_runtime_put(&sdd->pdev->dev);
+	pm_runtime_mark_last_busy(&sdd->pdev->dev);
+	pm_runtime_put_autosuspend(&sdd->pdev->dev);
 
 	return 0;
 }
@@ -439,7 +442,8 @@ static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
 		dma_release_channel(sdd->tx_dma.ch);
 	}
 
-	pm_runtime_put(&sdd->pdev->dev);
+	pm_runtime_mark_last_busy(&sdd->pdev->dev);
+	pm_runtime_put_autosuspend(&sdd->pdev->dev);
 	return 0;
 }
 
@@ -1124,7 +1128,9 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 		}
 	}
 
-	pm_runtime_put(&sdd->pdev->dev);
+	pm_runtime_mark_last_busy(&sdd->pdev->dev);
+	pm_runtime_put_autosuspend(&sdd->pdev->dev);
+
 	disable_cs(sdd, spi);
 	return 0;
 
@@ -1230,6 +1236,7 @@ static struct s3c64xx_spi_info *s3c64xx_spi_parse_dt(struct device *dev)
 {
 	struct s3c64xx_spi_info *sci;
 	u32 temp;
+	const char *domain;
 
 	sci = devm_kzalloc(dev, sizeof(*sci), GFP_KERNEL);
 	if (!sci) {
@@ -1260,6 +1267,13 @@ static struct s3c64xx_spi_info *s3c64xx_spi_parse_dt(struct device *dev)
 	} else {
 		sci->num_cs = temp;
 	}
+
+	sci->domain = DOMAIN_TOP;
+	of_property_read_string(dev->of_node, "domain", &domain);
+	if (strncmp(domain, "isp", 3) == 0)
+		sci->domain = DOMAIN_ISP;
+	else if (strncmp(domain, "cam1", 4) == 0)
+		sci->domain = DOMAIN_CAM1;
 
 	return sci;
 }
@@ -1390,6 +1404,11 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err0;
 	}
 
+	pm_runtime_use_autosuspend(&pdev->dev);
+	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get_sync(&pdev->dev);
+
 	if (sci->cfg_gpio && sci->cfg_gpio()) {
 		dev_err(&pdev->dev, "Unable to config gpio\n");
 		ret = -EBUSY;
@@ -1425,6 +1444,7 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err2;
 	}
 
+
 	/* Setup Deufult Mode */
 	s3c64xx_spi_hwinit(sdd, sdd->port_id);
 
@@ -1444,6 +1464,9 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 	       S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
 	       sdd->regs + S3C64XX_SPI_INT_EN);
 
+	pm_runtime_mark_last_busy(&pdev->dev);
+	pm_runtime_put_autosuspend(&pdev->dev);
+
 	if (spi_register_master(master)) {
 		dev_err(&pdev->dev, "cannot register SPI master\n");
 		ret = -EBUSY;
@@ -1456,13 +1479,10 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 					mem_res->end, mem_res->start,
 					sdd->rx_dma.dmach, sdd->tx_dma.dmach);
 
-	pm_runtime_set_active(&pdev->dev);
-	pm_runtime_enable(&pdev->dev);
-	pm_request_idle(&pdev->dev);
-
 	return 0;
 
 err3:
+	pm_runtime_disable(&pdev->dev);
 	clk_disable_unprepare(sdd->src_clk);
 err2:
 	clk_disable_unprepare(sdd->clk);
@@ -1497,13 +1517,13 @@ static int s3c64xx_spi_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_SLEEP
 static int s3c64xx_spi_suspend(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
+	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 
 	spi_master_suspend(master);
 
-	if (pdev->id < 3) {
+	if (sci->domain == DOMAIN_TOP) {
 		if (!pm_runtime_enabled(dev)) {
 			/* Disable the clock */
 			clk_disable_unprepare(sdd->src_clk);
@@ -1518,18 +1538,17 @@ static int s3c64xx_spi_suspend(struct device *dev)
 
 static int s3c64xx_spi_resume(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 
-	if (sci->cfg_gpio)
-		sci->cfg_gpio();
-
-	if (pdev->id < 3) {
+	if (sci->domain == DOMAIN_TOP) {
 		/* Enable the clock */
 		clk_prepare_enable(sdd->src_clk);
 		clk_prepare_enable(sdd->clk);
+
+		if (sci->cfg_gpio)
+			sci->cfg_gpio();
 
 		s3c64xx_spi_hwinit(sdd, sdd->port_id);
 
@@ -1562,9 +1581,25 @@ static int s3c64xx_spi_runtime_resume(struct device *dev)
 {
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
+	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
 
-	clk_prepare_enable(sdd->src_clk);
-	clk_prepare_enable(sdd->clk);
+	if (sci->domain == DOMAIN_TOP) {
+		clk_prepare_enable(sdd->src_clk);
+		clk_prepare_enable(sdd->clk);
+	} else if (sci->domain == DOMAIN_CAM1 || sci->domain == DOMAIN_ISP) {
+		struct platform_device *fimc_is_pdev;
+
+		if (fimc_is_dev == NULL)
+			return -EPERM;
+
+		fimc_is_pdev = to_platform_device(fimc_is_dev);
+		exynos_fimc_is_cfg_cam_clk(fimc_is_pdev);
+
+		clk_prepare_enable(sdd->src_clk);
+		clk_prepare_enable(sdd->clk);
+
+		s3c64xx_spi_hwinit(sdd, sdd->port_id);
+	}
 
 	return 0;
 }

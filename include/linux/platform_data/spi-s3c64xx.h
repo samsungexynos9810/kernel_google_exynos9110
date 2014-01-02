@@ -29,6 +29,15 @@ enum {
 	SWAP_MODE = 1,
 };
 
+/*
+ * Located domain
+ */
+enum spi_domain {
+	DOMAIN_TOP = 0,
+	DOMAIN_ISP,
+	DOMAIN_CAM1,
+};
+
 struct platform_device;
 
 /**
@@ -59,6 +68,7 @@ struct s3c64xx_spi_info {
 	int swap_mode;
 	int (*cfg_gpio)(void);
 	dma_filter_fn filter;
+	enum spi_domain domain;
 };
 
 struct s3c64xx_spi_dma_data {
