@@ -2048,7 +2048,6 @@
 	pd_mscl: pd-mscl@10044120 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10044120 0x20>;
-		status = "disabled";
 		bts-status = "enabled";
 	};
 
