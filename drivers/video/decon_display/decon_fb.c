@@ -3164,6 +3164,8 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	struct s3c_fb *sfb = win->parent;
 	struct display_driver *dispdrv = get_display_driver();
 
+	dispdrv = get_display_driver();
+
 	if (enable) {
 		dev_dbg(sfb->dev, "Decon start(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
