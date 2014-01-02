@@ -656,7 +656,7 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP2);
 
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP_CAM1);
-	reg = 0x11111111;
+	reg |= (1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP_CAM1);
 #endif
 
@@ -713,7 +713,7 @@ static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 
 #ifdef EXYNOS5430_CLK_SRC_GATING
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP_CAM1);
-	reg = 0x00000000;
+	reg &= ~(1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP_CAM1);
 
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP2);
@@ -721,7 +721,7 @@ static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP2);
 
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP0);
-	reg |= (1<<4);
+	reg &= ~(1<<4);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP0);
 #endif
 
