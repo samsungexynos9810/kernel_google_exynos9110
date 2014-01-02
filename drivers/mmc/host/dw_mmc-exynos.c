@@ -124,10 +124,10 @@ static void exynos_sfr_restore(unsigned int i)
 	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][14]);
 	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][15]);
 
-	spin_lock(&host->ciu_clk_lock);
+	mutex_lock(&host->ciu_clk_lock);
 	gate_disabled = !atomic_read(&host->ciu_clk_cnt);
 	if (gate_disabled)
-		dw_mci_ciu_clk_en(host);
+		dw_mci_ciu_clk_en(host, false);
 
 	mci_writel(host, CMDARG, 0);
 	wmb();
@@ -145,7 +145,7 @@ static void exynos_sfr_restore(unsigned int i)
 
 	if (gate_disabled)
 		dw_mci_ciu_clk_dis(host);
-	spin_unlock(&host->ciu_clk_lock);
+	mutex_unlock(&host->ciu_clk_lock);
 
 	if (startbit_clear == false)
 		dev_err(host->dev, "CMD start bit stuck %02d\n", i);
