@@ -122,7 +122,7 @@ int dma_contiguous_info(struct device *dev, struct cma_info *info)
 static inline
 int dma_contiguous_isolate(struct device *dev)
 {
-	return -ENOSYS
+	return -ENOSYS;
 }
 
 #define dma_contiguous_deisolate(dev) do { } while (0)
