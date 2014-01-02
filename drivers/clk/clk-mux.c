@@ -71,9 +71,6 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
 	struct clk_mux *mux = to_clk_mux(hw);
 	u32 val;
 	unsigned long flags = 0;
-	#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
-	u32 mask;
-	#endif
 
 	if (mux->table)
 		index = mux->table[index];
@@ -94,15 +91,26 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
 	val |= index << mux->shift;
 	writel(val, mux->reg);
 
-	#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
 	if (mux->stat_reg) {
-		mask = BIT(mux->stat_shift + mux->stat_width - 1);
+		unsigned int timeout = 1000;
+		unsigned int mask = BIT(mux->stat_shift + mux->stat_width - 1);
 		do {
+			--timeout;
+			if (timeout == 0) {
+				pr_err("mux_set_parent (%s) is timeout.\n",
+					 __clk_get_name(hw->clk));
+				pr_err("MUX_REG: %08x, MUX_STAT_REG: %08x\n",
+					__raw_readl(mux->reg), __raw_readl(mux->stat_reg));
+				if (mux->lock)
+					spin_unlock_irqrestore(mux->lock, flags);
+				return -ETIMEDOUT;
+			}
 			val = readl(mux->stat_reg);
 			val &= mask;
 		} while (val != 0);
 	}
-	#endif
+#endif
 	if (mux->lock)
 		spin_unlock_irqrestore(mux->lock, flags);
 
