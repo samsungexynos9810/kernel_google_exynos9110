@@ -1865,6 +1865,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CMGATE(clk_slimsss, "clk_slimsss", "aclk_266_g2d", EXYNOS5_CLK_GATE_IP_G2D, 12, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 14 | 0x1 << 12),
 	CMGATE(clk_sss, "clk_sss", "aclk_266_g2d", EXYNOS5_CLK_GATE_IP_G2D, 2, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 9 | 0x1 << 2),
 	CGATE(clk_smmug2d, "clk_smmug2d", "aclk_333_g2d", EXYNOS5_CLK_GATE_IP_G2D, 7, 0, 0),
+	CMGATE(clk_mdma, "clk_mdma", "aclk_333_g2d", EXYNOS5_CLK_GATE_IP_G2D, 1, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 8 | 0x1 << 1),
 
 	/* CLK_GATE_IP_PERIC */
 	CGATE(clk_i2c10, "clk_i2c10", "aclk_66_peric", EXYNOS5_CLK_GATE_IP_PERIC, 31, 0, 0),
