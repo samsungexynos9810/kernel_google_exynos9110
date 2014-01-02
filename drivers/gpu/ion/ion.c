@@ -444,18 +444,16 @@ static bool ion_handle_validate(struct ion_client *client,
 
 static int ion_handle_add(struct ion_client *client, struct ion_handle *handle)
 {
+	int id;
 	struct rb_node **p = &client->handles.rb_node;
 	struct rb_node *parent = NULL;
 	struct ion_handle *entry;
 
-	idr_preload(GFP_KERNEL);
-	do {
-		handle->id = idr_alloc(&client->idr, handle, 1, 0, GFP_KERNEL);
-	} while (handle->id == -EAGAIN);
-	idr_preload_end();
+	id = idr_alloc(&client->idr, handle, 1, 0, GFP_KERNEL);
+	if (id < 0)
+		return id;
 
-	if (handle->id < 0)
-		return handle->id;
+	handle->id = id;
 
 	while (*p) {
 		parent = *p;
