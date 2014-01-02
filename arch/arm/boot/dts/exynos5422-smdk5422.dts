@@ -28,6 +28,7 @@
 	};
 /*disp_driver {*/
 	fimd_fb: fimd_fb {
+		gpios = <&gpd1 7 0xf>;
 		fimd: fimd_ctrl {
 			samsung,left_margin = <0x18>;
 			samsung,right_margin = <0x18>;

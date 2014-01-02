@@ -602,7 +602,6 @@
 
 		/*int-mipi-dsi0 = 113;
 		int-mipi-dsi1 = 114;*/
-		gpios = <&gpd1 7 0xf>;
 
 		/* Clocks for the DECON driver */
 		/* Clocks for the MIPI-DSI driver */
