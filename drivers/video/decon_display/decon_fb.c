@@ -2194,6 +2194,7 @@ static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 	struct v4l2_subdev_crop crop;
 	int ret = 0;
 	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
+	struct display_driver *dispdrv = get_display_driver();
 
 	if (enable) {
 		crop.rect.left = regs->x[i];
@@ -2202,6 +2203,8 @@ static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 		crop.rect.height = regs->h[i];
 		crop.pad = GSC_OUT_PAD_SOURCE;
 		crop.which = V4L2_SUBDEV_FORMAT_ACTIVE;
+
+		GET_DISPCTL_OPS(dispdrv).enable_display_dsd_clocks(sfb->dev);
 		ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id],
 				pad, set_crop, NULL, &crop);
 		if (ret) {
@@ -4934,6 +4937,8 @@ int decon_hibernation_power_off(struct display_driver *dispdrv)
 {
 	int ret;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+
+	GET_DISPCTL_OPS(dispdrv).disable_display_dsd_clocks(sfb->dev);
 
 	mutex_lock(&sfb->output_lock);
 	ret = s3c_fb_decon_stop(sfb);

@@ -400,6 +400,37 @@ int disable_display_decon_runtimepm(struct device *dev)
 	return 0;
 }
 
+int enable_display_dsd_clocks(struct device *dev, bool enable)
+{
+	struct display_driver *dispdrv;
+	dispdrv = get_display_driver();
+
+	if (!dispdrv->decon_driver.dsd_clk) {
+		dispdrv->decon_driver.dsd_clk = __clk_lookup("gate_dsd");
+		if (IS_ERR(dispdrv->decon_driver.dsd_clk)) {
+			pr_err("Failed to clk_get - gate_dsd\n");
+			return -EBUSY;
+		}
+	}
+
+	if (dispdrv->decon_driver.dsd_clk->enable_count == 0)
+		clk_prepare_enable(dispdrv->decon_driver.dsd_clk);
+	return 0;
+}
+
+int disable_display_dsd_clocks(struct device *dev, bool enable)
+{
+	struct display_driver *dispdrv;
+	dispdrv = get_display_driver();
+
+	if (!dispdrv->decon_driver.dsd_clk)
+		return -EBUSY;
+
+	if (dispdrv->decon_driver.dsd_clk->enable_count > 0)
+		clk_disable_unprepare(dispdrv->decon_driver.dsd_clk);
+	return 0;
+}
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 bool check_camera_is_running(void)
 {

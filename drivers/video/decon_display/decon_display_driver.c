@@ -47,6 +47,8 @@ int enable_display_decon_clocks(struct device *dev);
 int disable_display_decon_clocks(struct device *dev);
 int enable_display_decon_runtimepm(struct device *dev);
 int disable_display_decon_runtimepm(struct device *dev);
+int enable_display_dsd_clocks(struct device *dev);
+int disable_display_dsd_clocks(struct device *dev);
 int init_display_driver_clocks(struct device *dev);
 int enable_display_driver_clocks(struct device *dev);
 int enable_display_driver_power(struct device *dev);
@@ -87,6 +89,10 @@ static int init_display_operations(void)
 	DECON_OPS.disable_display_decon_clocks = disable_display_decon_clocks;
 	DECON_OPS.enable_display_decon_runtimepm = enable_display_decon_runtimepm;
 	DECON_OPS.disable_display_decon_runtimepm = disable_display_decon_runtimepm;
+#ifdef CONFIG_SOC_EXYNOS5430
+	DECON_OPS.enable_display_dsd_clocks = enable_display_dsd_clocks;
+	DECON_OPS.disable_display_dsd_clocks = disable_display_dsd_clocks;
+#endif
 #undef DT_OPS
 #undef DSI_OPS
 #undef DECON_OPS

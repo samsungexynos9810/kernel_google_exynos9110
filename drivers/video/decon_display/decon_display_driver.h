@@ -69,6 +69,8 @@ struct display_controller_ops {
 	int (*disable_display_decon_clocks)(struct device *dev);
 	int (*enable_display_decon_runtimepm)(struct device *dev);
 	int (*disable_display_decon_runtimepm)(struct device *dev);
+	int (*enable_display_dsd_clocks)(struct device *dev);
+	int (*disable_display_dsd_clocks)(struct device *dev);
 };
 
 /* display_driverr_ops - operations for controlling power of
@@ -104,6 +106,7 @@ struct display_component_decon {
 	struct s3c_fb *sfb;
 	struct display_controller_ops decon_ops;
 	struct clk *clk;
+	struct clk *dsd_clk;
 	struct pm_ops *ops;
 };
 
