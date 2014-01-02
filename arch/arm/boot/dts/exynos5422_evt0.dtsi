@@ -219,7 +219,7 @@
 		reg = <0x12C30000 0x100>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart3_bus>;
-		clocks = <&clock 1162>, <&clock 886>;
+		clocks = <&clock 1162>, <&clock 1496>;
 		clock-names = "sclk_uart3", "gate_uart3";
 	};
 
