@@ -1166,6 +1166,18 @@ int exynos_fimc_is_cfg_clk(struct platform_device *pdev)
 	return 0;
 }
 
+int exynos_fimc_is_cfg_cam_clk(struct platform_device *pdev)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_cfg_clk_sclk(pdev);
+	exynos5422_cfg_clk_cam(pdev);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_cfg_clk_sclk(pdev);
+	exynos5430_cfg_clk_cam1(pdev);
+#endif
+	return 0;
+}
+
 int exynos_fimc_is_clk_on(struct platform_device *pdev)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)

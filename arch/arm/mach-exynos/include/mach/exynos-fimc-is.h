@@ -200,6 +200,8 @@ struct exynos_platform_fimc_is {
 	struct exynos_fimc_is_clk_gate_info *gate_info;
 };
 
+extern struct device *fimc_is_dev;
+
 extern void exynos_fimc_is_set_platdata(struct exynos_platform_fimc_is *pd);
 
 int fimc_is_set_parent_dt(struct platform_device *pdev,
@@ -230,6 +232,7 @@ extern int exynos4_fimc_is_cfg_gpio(struct platform_device *pdev, int channel, b
 #else /* exynos 4 */
 /* exynos 5 */
 extern int exynos_fimc_is_cfg_clk(struct platform_device *pdev);
+extern int exynos_fimc_is_cfg_cam_clk(struct platform_device *pdev);
 extern int exynos_fimc_is_clk_on(struct platform_device *pdev);
 extern int exynos_fimc_is_clk_off(struct platform_device *pdev);
 extern int exynos_fimc_is_print_clk(struct platform_device *pdev);
