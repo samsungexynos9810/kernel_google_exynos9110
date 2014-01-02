@@ -1229,8 +1229,8 @@
 		interrupts = <0 220 0>;
 		clocks = <&clock 1550>;
 		clock-names = "gate";
-		samsung,power-domain = <&pd_mscl>;
 		iommu = <&sysmmu_scaler0r>, <&sysmmu_scaler0w>;
+		samsung,power-domain = <&spd_mscl0>;
 	};
 
 	scaler_1: scaler@12810000 {
@@ -1239,8 +1239,8 @@
 		interrupts = <0 221 0>;
 		clocks = <&clock 1549>;
 		clock-names = "gate";
-		samsung,power-domain = <&pd_mscl>;
 		iommu = <&sysmmu_scaler1r>, <&sysmmu_scaler1w>;
+		samsung,power-domain = <&spd_mscl1>;
 	};
 
 	scaler_2: scaler@12820000 {
@@ -1249,8 +1249,8 @@
 		interrupts = <0 222 0>;
 		clocks = <&clock 1548>;
 		clock-names = "gate";
-		samsung,power-domain = <&pd_mscl>;
 		iommu = <&sysmmu_scaler2r>, <&sysmmu_scaler2w>;
+		samsung,power-domain = <&spd_mscl2>;
 	};
 
 	fimg2d_0: fimg2d@10850000 {
@@ -2054,6 +2054,18 @@
 		compatible = "samsung,exynos-pd";
 		reg = <0x10044120 0x20>;
 		bts-status = "enabled";
+		spd_mscl0: spd-mscl0@10044120 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+		spd_mscl1: spd-mscl1@10044120 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
+		spd_mscl2: spd-mscl2@10044120 {
+			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
+		};
 	};
 
 	pd_fsys: pd-fsys@10044140 {
