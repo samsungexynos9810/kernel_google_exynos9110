@@ -19,6 +19,7 @@
 
 #include "clk.h"
 #include "clk-pll.h"
+#define CMU_PRINT_PLL
 
 struct clk_enabler {
 	struct clk		*clk;
@@ -204,8 +205,8 @@ static void top_clk_enable(void)
 	}
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	exynos_set_rate("fout_spll", 800000000);
-	exynos_set_rate("dout_spll_ctrl", 400000000);
+	exynos_set_rate("fout_spll", 400000000);
+	exynos_set_rate("dout_spll_ctrl", 200000000);
 #endif
 	/* Enable unipro mux to support LPA Mode */
 	clk = __clk_lookup("mout_unipro");

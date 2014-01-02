@@ -985,8 +985,10 @@ PNAME(mout_pclk_200_fsys_sw_p) = { "dout_pclk_200_fsys", "mout_spll_ctrl"};
 PNAME(mout_pclk_200_fsys_user_p)	= { "fin_pll", "mout_pclk_200_fsys_sw" };
 PNAME(mout_aclk_100_noc_sw_p)	= { "dout_aclk_100_noc", "mout_spll_ctrl" };
 PNAME(mout_aclk_100_noc_user_p)	= { "fin_pll", "mout_aclk_100_noc_sw" };
+#ifndef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(mout_aclk_400_wcore_bpll_p) = {"mout_aclk_400_wcore", "mout_bpll_ctrl_user"};
-PNAME(mout_aclk_400_wcore_sw_p) = {"dout_aclk_400_wcore", "mout_spll_ctrl"};
+#endif
+PNAME(mout_aclk_400_wcore_sw_p) = {"dout_aclk_400_wcore", "dout_spll_ctrl"};
 PNAME(mout_aclk_400_wcore_user_p) = {"fin_pll", "mout_aclk_400_wcore_sw"};
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 PNAME(mout_aclk_200_fsys2_sw_p) = { "dout_aclk_200_fsys2", "dout_spll_ctrl"};
@@ -1190,11 +1192,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_100_noc_user, EXYNOS5_CLK_SRC_TOP3, 20, 1),
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	CMX(mout_aclk_400_wcore, "mout_aclk_400_wcore", group1_3_p, EXYNOS5_CLK_SRC_TOP0, 16, 2),
+	CMX(mout_aclk_400_wcore, "mout_aclk_400_wcore", group1_3_p, EXYNOS5_CLK_SRC_TOP0, 16, 3),
 #else
 	CMX(mout_aclk_400_wcore, "mout_aclk_400_wcore", group1_p, EXYNOS5_CLK_SRC_TOP0, 16, 2),
-#endif
 	CMUX(mout_aclk_400_wcore_bpll, EXYNOS5_CMU_TOP_SPARE2, 4, 1),
+#endif
 	CMUX(mout_aclk_400_wcore_sw, EXYNOS5_CLK_SRC_TOP10, 16, 1),
 	CMUX(mout_aclk_400_wcore_user, EXYNOS5_CLK_SRC_TOP3, 16, 1),
 
@@ -1215,11 +1217,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMUX(mout_aclk_200_disp1_user, EXYNOS5_CLK_SRC_TOP3, 8, 1),
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	MUX_A(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_1_p,
-			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 3, "aclk400_mscl"),
+	MUX(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_1_p,
+			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 3),
 #else
-	MUX_A(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_p,
-			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 2, "aclk400_mscl"),
+	MUX(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_p,
+			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 2),
 #endif
 	CMUX(mout_aclk_400_mscl_sw, EXYNOS5_CLK_SRC_TOP10, 4, 1),
 	CMUX(mout_aclk_400_mscl_user, EXYNOS5_CLK_SRC_TOP3, 4, 1),
@@ -1476,7 +1478,12 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 
     CDIV(dout_pclk_200_fsys, "mout_pclk_200_fsys", EXYNOS5_CLK_DIV_TOP0, 24, 3),
     CDIV(dout_aclk_100_noc, "mout_aclk_100_noc", EXYNOS5_CLK_DIV_TOP0, 20, 3),
+
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+    CDIV(dout_aclk_400_wcore, "mout_aclk_400_wcore", EXYNOS5_CLK_DIV_TOP0, 16, 3),
+#else
     CDIV(dout_aclk_400_wcore, "mout_aclk_400_wcore_bpll", EXYNOS5_CLK_DIV_TOP0, 16, 3),
+#endif
     CDIV(dout_aclk_200_fsys2, "mout_aclk_200_fsys2", EXYNOS5_CLK_DIV_TOP0, 12, 3),
     CDIV(dout_aclk_200, "mout_aclk_200", EXYNOS5_CLK_DIV_TOP0, 8, 3),
     CDIV(dout_aclk_400_mscl, "mout_aclk_400_mscl", EXYNOS5_CLK_DIV_TOP0, 4, 3),
@@ -1630,7 +1637,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	/* CMU_TOP */
 	CGATE(aclk_noc_fsys, "aclk_noc_fsys", "mout_aclk_200_fsys_user",
 			EXYNOS5_CLK_GATE_BUS_FSYS0, 9, CLK_IGNORE_UNUSED, 0),
-	CGATE(aclk_noc_fsys2, "aclk_noc_fsys2", "mout_aclk200_fsys2_user",
+	CGATE(aclk_noc_fsys2, "aclk_noc_fsys2", "mout_aclk_200_fsys2_user",
 			EXYNOS5_CLK_GATE_BUS_FSYS0, 10, CLK_IGNORE_UNUSED, 0),
 
 	CGATE(aclk_200_disp1, "aclk_200_disp1", "mout_aclk_200_disp1_user", EXYNOS5_CLK_GATE_BUS_TOP, 18, CLK_IGNORE_UNUSED, 0),
