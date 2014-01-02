@@ -21,7 +21,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ttySAC3,115200 vmalloc=512M ess_setup=0x46000000";
+		bootargs = "console=ttySAC3,115200 vmalloc=512M ess_setup=0x46000000 clk_ignore_unused";
 	};
 
 	fixed-rate-clocks {
