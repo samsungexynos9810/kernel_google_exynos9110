@@ -387,6 +387,7 @@ static struct sleep_save exynos5_lpa_save[] = {
 	SAVE_ITEM(EXYNOS5_CLK_SRC_MASK_PERIC1),
 	SAVE_ITEM(EXYNOS5_CLK_SRC_TOP3),
 	SAVE_ITEM(EXYNOS5_CLK_SRC_TOP5),
+	SAVE_ITEM(EXYNOS5_CLK_DIV_G2D),
 };
 
 static struct sleep_save exynos5_set_clksrc[] = {
