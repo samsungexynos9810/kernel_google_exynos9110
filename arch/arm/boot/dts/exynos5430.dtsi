@@ -1217,6 +1217,7 @@
 		       <&clock 3116>, <&clock 20>,
 		       <&clock 3117>, <&clock 3116>;
 		iommu = <&sysmmu_jpeg>;
+		samsung,power-domain = <&spd_jpeg>;
 		ip_ver = <2>;
 	};
 
