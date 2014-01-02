@@ -486,6 +486,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "mdma0",
 		.pa_base = EXYNOS5_PA_BTS_MDMA,
 		.pd_name = "DEFAULT",
+		.clk_name = "clk_mdma",
 		.table.table_list = fbm_l_r_high_table,
 		.table.table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = true,
