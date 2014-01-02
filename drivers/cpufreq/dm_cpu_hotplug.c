@@ -493,10 +493,11 @@ static enum hotplug_mode diagnose_condition(void)
 	if (cur_load_freq > normal_min_freq) {
 		low_stay = 0;
 		ret = CHP_NORMAL;
-	} else if (cur_load_freq <= normal_min_freq && low_stay <= 5) {
-		low_stay++;
+	} else if (cur_load_freq <= normal_min_freq) {
+		low_stay = 1;
 	}
-	if ((low_stay > 5) && (!lcd_is_on || forced_hotplug))
+
+	if (low_stay && (!lcd_is_on || forced_hotplug))
 		ret = CHP_LOW_POWER;
 	else
 		ret = CHP_NORMAL;
