@@ -31,21 +31,18 @@
 static struct clk *g_mout_sclk_decon_eclk_a;
 static struct clk *g_mout_disp_pll, *g_fout_disp_pll;
 static struct clk *g_mout_sclk_decon_eclk_user;
-static struct clk *g_mout_sclk_decon_vclk_user;
 static struct clk *g_mout_sclk_dsd_user;
 static struct clk *g_aclk_disp_333, *g_mout_aclk_disp_333_user;
 static struct clk *g_mout_sclk_decon_eclk_user;
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 static struct clk *g_mout_bus_pll_sub;
 static struct clk *g_sclk_decon_eclk_mif;
-static struct clk *g_sclk_decon_vclk_mif;
 static struct clk *g_sclk_dsd_mif;
 static struct clk *g_aclk_disp_222, *g_mout_aclk_disp_222_user;
 static struct clk *g_mout_sclk_decon_eclk_disp;
 #else
 static struct clk *g_mout_bus_pll_div2;
 static struct clk *g_sclk_decon_eclk_disp;
-static struct clk *g_sclk_decon_vclk_disp;
 static struct clk *g_sclk_dsd_disp;
 static struct clk *g_mout_sclk_decon_eclk;
 #endif
@@ -189,8 +186,6 @@ int enable_display_decon_clocks(struct device *dev)
 		mout_bus_pll_sub);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_user,
 		sclk_decon_eclk_mif);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_vclk_user,
-		sclk_decon_vclk_mif);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_mif);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_disp,
 		mout_sclk_decon_eclk_user);
@@ -201,8 +196,6 @@ int enable_display_decon_clocks(struct device *dev)
 		mout_bus_pll_div2);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_user,
 		sclk_decon_eclk_disp);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_vclk_user,
-		sclk_decon_vclk_disp);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_disp);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk,
 		mout_sclk_decon_eclk_user);
@@ -246,8 +239,6 @@ int init_display_decon_clocks(struct device *dev)
 	DISPLAY_GET_CLOCK2(mout_aclk_disp_222_user, aclk_disp_222);
 	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_user,
 		sclk_decon_eclk_mif);
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_vclk_user,
-		sclk_decon_vclk_mif);
 	DISPLAY_GET_CLOCK2(mout_sclk_dsd_user, sclk_dsd_mif);
 	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_disp,
 		mout_sclk_decon_eclk_user);
@@ -255,8 +246,6 @@ int init_display_decon_clocks(struct device *dev)
 	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_a, mout_bus_pll_div2);
 	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_user,
 		sclk_decon_eclk_disp);
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_vclk_user,
-		sclk_decon_vclk_disp);
 	DISPLAY_GET_CLOCK2(mout_sclk_dsd_user, sclk_dsd_disp);
 	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk,
 		mout_sclk_decon_eclk_user);
