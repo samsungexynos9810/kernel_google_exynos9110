@@ -302,6 +302,8 @@ static void exynos5422_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 	unsigned int i;
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
 
+	exynos5422_set_abb(asv_inform);
+
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 
@@ -356,6 +358,8 @@ static void exynos5422_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 {
 	unsigned int i;
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
+
+	exynos5422_set_abb(asv_inform);
 
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
@@ -468,6 +472,8 @@ static void exynos5422_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 {
 	unsigned int i;
 	unsigned int target_asv_grp_nr = asv_inform->result_asv_grp;
+
+	exynos5422_set_abb(asv_inform);
 
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
