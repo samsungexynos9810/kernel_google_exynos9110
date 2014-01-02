@@ -136,8 +136,8 @@ static int esa_send_cmd_exe(struct esa_rtd *rtd, unsigned char *ibuf,
 	} else {		/* DRAM buffer */
 		ibuf_offset = ibuf - si.bufmem;
 		obuf_offset = obuf - si.bufmem;
-		ibuf_ca5_pa = ibuf_offset + BASEMEM_OFFSET + SRAM_FW_MAX;
-		obuf_ca5_pa = obuf_offset + BASEMEM_OFFSET + SRAM_FW_MAX;
+		ibuf_ca5_pa = ibuf_offset + BASEMEM_OFFSET;
+		obuf_ca5_pa = obuf_offset + BASEMEM_OFFSET;
 	}
 
 	writel(rtd->handle_id, si.mailbox + HANDLE_ID);
@@ -169,7 +169,6 @@ static void esa_fw_download(void)
 	esa_debug("%s: fw size = sram(%d) dram(%d)\n", __func__,
 			fw_sram_bin_size, fw_dram_bin_size);
 
-	writel(FWAREA_IOVA, si.regs + CA5_BOOTADDR);
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	udelay(20);
 
@@ -277,8 +276,8 @@ static void esa_buffer_init(struct file *file)
 		use_sram = true;
 		break;
 	case ADEC_AAC:
-		ibuf_size = DEC_IBUF_SIZE;
-		obuf_size = DEC_OBUF_SIZE;
+		ibuf_size = DEC_AAC_IBUF_SIZE;
+		obuf_size = DEC_AAC_OBUF_SIZE;
 		ibuf_count = DEC_IBUF_NUM;
 		obuf_count = DEC_OBUF_NUM;
 		break;
@@ -1065,13 +1064,7 @@ static int esa_prepare_buffer(struct device *dev)
 		}
 	}
 
-	ret = iommu_map(si.domain, FWAREA_IOVA, 0x03000000, SRAM_FW_MAX, 0);
-	if (ret) {
-		esa_err("Failed to map iommu\n");
-		goto err0;
-	}
-
-	for (n = 0, iova = FWAREA_IOVA + SRAM_FW_MAX;
+	for (n = 0, iova = FWAREA_IOVA;
 			n < FWAREA_NUM; n++, iova += FWAREA_SIZE) {
 		ret = iommu_map(si.domain, iova,
 				si.fwarea_pa[n], FWAREA_SIZE, 0);
@@ -1088,7 +1081,7 @@ static int esa_prepare_buffer(struct device *dev)
 
 	return 0;
 err1:
-	for (n = 0, iova = FWAREA_IOVA + SRAM_FW_MAX;
+	for (n = 0, iova = FWAREA_IOVA;
 			n < FWAREA_NUM; n++, iova += FWAREA_SIZE) {
 		iommu_unmap(si.domain, iova, FWAREA_SIZE);
 	}

@@ -59,8 +59,12 @@
 #define FWAREA_IOVA		(0x50000000)
 
 /* Buffer Information - decode */
-#define DEC_IBUF_SIZE		(0x800)
-#define DEC_OBUF_SIZE		(0x18000)
+#define DEC_IBUF_SIZE		(2048)
+#define DEC_OBUF_SIZE		(36864)
+
+#define DEC_AAC_IBUF_SIZE       (4096)
+#define DEC_AAC_OBUF_SIZE       (73728)
+
 #define DEC_FLAC_IBUF_SIZE	(0x5000)
 #define DEC_FLAC_OBUF_SIZE	(0x20000)
 #define DEC_IBUF_NUM		(0x2)
@@ -75,7 +79,7 @@
 
 #define INSTANCE_MAX		(20)
 #define SRAM_FW_MAX		(0x3E000)
-#define SRAM_IO_BUF		(0x28000)
+#define SRAM_IO_BUF		(0x2C000)
 #define SRAM_IBUF_OFFSET	(0)
 #define SRAM_OBUF_OFFSET	(DEC_IBUF_SIZE * DEC_IBUF_NUM)
 #define BUF_SIZE_MAX		(0x50000)
@@ -88,7 +92,7 @@
 #define FW_LOG_LINE		(30)
 #define FW_LOG_MAX		(80)
 
-#define FW_ZERO_SET_BASE	(0x22000)
+#define FW_ZERO_SET_BASE	(0x14000)
 #define FW_ZERO_SET_SIZE	(0x1F00)
 
 /* For Debugging */
