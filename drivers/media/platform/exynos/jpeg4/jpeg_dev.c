@@ -801,7 +801,9 @@ static int jpeg_probe(struct platform_device *pdev)
 #endif
 
 	pm_runtime_enable(&pdev->dev);
+#ifndef CONFIG_PM_RUNTIME
 	jpeg_clock_gating(jpeg, JPEG_CLK_ON);
+#endif
 	return 0;
 
 err_video_reg:
