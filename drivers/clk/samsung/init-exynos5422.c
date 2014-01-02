@@ -16,6 +16,7 @@
 #include <linux/of_address.h>
 #include <mach/regs-clock-exynos5422.h>
 #include <mach/regs-pmu.h>
+#include <mach/regs-audss.h>
 
 #include "clk.h"
 #include "clk-pll.h"
@@ -266,6 +267,9 @@ static void clkout_init_clock(void)
 
 static void aud_init_clock(void)
 {
+	/* To avoid over-clock */
+	writel(0xF48, EXYNOS_CLKDIV_AUDSS);
+
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	exynos_set_parent("mout_dpll_ctrl", "fout_dpll");
 	exynos_set_parent("mout_mau_epll_clk", "mout_dpll_ctrl");
