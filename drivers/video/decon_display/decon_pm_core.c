@@ -32,6 +32,8 @@
 #include "fimd_fb.h"
 #endif
 
+#include <mach/cpufreq.h>
+
 #include <../drivers/clk/samsung/clk.h>
 
 #define GATE_LOCK_CNT 1
@@ -62,10 +64,6 @@ module_param(decon_dbg, int, 0644);
 /* following values are for debugging */
 unsigned int frame_done_count;
 unsigned int te_count;
-
-#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
-extern int force_dynamic_hotplug(bool out_flag);
-#endif
 
 static void enable_mask(struct display_driver *dispdrv);
 static void disable_mask(struct display_driver *dispdrv);
