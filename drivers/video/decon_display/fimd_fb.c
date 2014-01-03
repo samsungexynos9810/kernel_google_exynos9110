@@ -130,6 +130,7 @@ struct s3c_fb;
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int s3c_fb_hibernation_power_on(struct display_driver *dispdrv);
 int s3c_fb_hibernation_power_off(struct display_driver *dispdrv);
+extern int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim);
 static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb);
 #endif
 
@@ -1094,6 +1095,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		if (sfb->power_state == POWER_HIBER_DOWN) {
 			if (s3c_fb_disable_lcd_off(sfb) == 0) {
+				s5p_mipi_dsi_lcd_off(dsim_for_decon);
 				break;
 			}
 		}
@@ -4632,6 +4634,8 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 #endif
 
 	mutex_lock(&sfb->output_lock);
+
+	sfb->power_state = POWER_DOWN;
 
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
