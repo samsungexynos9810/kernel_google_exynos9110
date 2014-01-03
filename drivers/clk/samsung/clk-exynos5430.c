@@ -2404,10 +2404,10 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	/* CPIF0 */
 	CGTE(gate_mphy_pll, "gate_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 19, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_mphy_pll_mif, "gate_mphy_pll_mif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 18, 0, 0),
-	CGTE(gate_freq_det_mphy_pll, "gate_freq_det_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 17, 0, 0),
+	CGTE(gate_mphy_pll_mif, "gate_mphy_pll_mif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 18, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_freq_det_mphy_pll, "gate_freq_det_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 17, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_ufs_mphy, "gate_ufs_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 16, 0, 0),
-	CGTE(gate_lli_mphy, "gate_lli_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 15, 0, 0),
+	CGTE(gate_lli_mphy, "gate_lli_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 15, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_gpio_cpif, "gate_gpio_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 14, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_pmu_cpif, "gate_pmu_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 13, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_sysreg_cpif, "gate_sysreg_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 12, CLK_IGNORE_UNUSED, 0),
