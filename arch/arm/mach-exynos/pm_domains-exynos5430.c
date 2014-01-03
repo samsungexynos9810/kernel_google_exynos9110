@@ -503,6 +503,11 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
+	/* dynamic clock gating enabled */
+	__raw_writel(3, S5P_VA_SYSREG_MSCL + 0x200);
+	__raw_writel(1, S5P_VA_SYSREG_MSCL + 0x204);
+	__raw_writel(0, S5P_VA_SYSREG_MSCL + 0x500);
+
 	return 0;
 }
 
