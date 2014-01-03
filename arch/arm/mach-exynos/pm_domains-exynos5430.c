@@ -138,6 +138,10 @@ static int exynos_pd_mfc0_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
+	/* dynamic clock gating enabled */
+	__raw_writel(3, S5P_VA_SYSREG_MFC0 + 0x200);
+	__raw_writel(1, S5P_VA_SYSREG_MFC0 + 0x204);
+
 	return 0;
 }
 
@@ -206,6 +210,11 @@ static int exynos_pd_mfc1_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
+	/* dynamic clock gating enabled */
+	__raw_writel(3, S5P_VA_SYSREG_MFC1 + 0x200);
+	__raw_writel(1, S5P_VA_SYSREG_MFC1 + 0x204);
+
+
 	return 0;
 }
 
@@ -273,6 +282,10 @@ static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
 
 	exynos_pd_notify_power_state(pd, true);
+
+	/* dynamic clock gating enabled */
+	__raw_writel(3, S5P_VA_SYSREG_HEVC + 0x200);
+	__raw_writel(1, S5P_VA_SYSREG_HEVC + 0x204);
 
 	return 0;
 }
