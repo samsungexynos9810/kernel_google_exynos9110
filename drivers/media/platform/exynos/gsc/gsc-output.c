@@ -713,8 +713,9 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 			spin_unlock_irqrestore(&gsc->slock, flags);
 			return;
 		}
-		gsc_hw_set_input_buf_masking(gsc, vb->v4l2_buf.index, false);
 		gsc_hw_set_sfr_update(ctx);
+
+		gsc_hw_set_input_buf_masking(gsc, vb->v4l2_buf.index, false);
 		spin_unlock_irqrestore(&gsc->slock, flags);
 	} else {
 		gsc_err("All requested buffers have been queued already");
