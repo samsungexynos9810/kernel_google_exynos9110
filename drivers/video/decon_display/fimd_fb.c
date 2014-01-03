@@ -4798,6 +4798,14 @@ int s3c_fb_hibernation_power_off(struct display_driver *dispdrv)
 
 	mutex_lock(&sfb->output_lock);
 	ret = s3c_fb_decon_stop(sfb);
+
+#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
+	pm_qos_update_request(&exynos5_fimd_mif_qos, 0);
+#elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+	exynos5_update_media_layers(TYPE_FIMD1, 0);
+	pm_qos_update_request(&exynos5_fimd_int_qos, 0);
+	prev_overlap_cnt = 0;
+#endif
 	mutex_unlock(&sfb->output_lock);
 
 	return ret;
