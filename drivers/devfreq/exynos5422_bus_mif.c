@@ -68,6 +68,8 @@ bool mif_is_probed;
 
 static bool mif_transition_disabled;
 static unsigned int enabled_fimc_lite;
+unsigned int enabled_ud_encode;
+unsigned int enabled_ud_decode;
 static unsigned int num_mixer_layers;
 static unsigned int num_fimd1_layers;
 
@@ -166,6 +168,30 @@ struct mif_bus_opp_table mif_bus_opp_list[] = {
 	{LV_7, 160000,  875000, 0},
 	{LV_8, 133000,  875000, 0},
 #endif
+};
+
+static unsigned int mif_ud_decode_opp_list[][3] = {
+	{0, 0, 0},
+	{LV_3, LV_2, LV_1},
+	{LV_2, LV_1, LV_1},
+	{LV_2, LV_0, LV_0},
+	{LV_1, LV_0, 0},
+};
+
+static unsigned int mif_fimc_opp_list[][3] = {
+	{0, 0, 0},
+	{LV_8, LV_7, LV_5},
+	{LV_7, LV_6, LV_4},
+	{LV_5, LV_5, LV_4},
+	{LV_5, LV_5, LV_1},
+};
+
+static unsigned int int_fimc_opp_list[][3] = {
+	{0, 0, 0},
+	{LV_6, LV_6, LV_2},
+	{LV_6, LV_4, LV_2},
+	{LV_5, LV_4, LV_2},
+	{LV_5, LV_2, LV_2},
 };
 
 #if defined(SET_DREX_TIMING)
@@ -267,10 +293,12 @@ void exynos5_mif_transition_disable(bool disable)
 }
 EXPORT_SYMBOL_GPL(mif_transition_disabled);
 
+extern void exynos5_update_district_int_level(unsigned int idx);
+
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value)
 {
-	unsigned int num_total_layers;
-	unsigned long media_qos_freq = 0;
+	unsigned int num_total_layers, mif_idx, int_idx;
+	unsigned long media_qos_mif_freq = 0;
 
 	mutex_lock(&media_mutex);
 
@@ -280,6 +308,10 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		num_mixer_layers = value;
 	else if (media_type == TYPE_FIMD1)
 		num_fimd1_layers = value;
+	else if (media_type == TYPE_UD_DECODING)
+		enabled_ud_decode = value;
+	else if (media_type == TYPE_UD_ENCODING)
+		enabled_ud_encode = value;
 
 	num_total_layers = num_mixer_layers + num_fimd1_layers;
 
@@ -288,54 +320,51 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 			enabled_fimc_lite ? "enabled" : "disabled",
 			num_mixer_layers, num_fimd1_layers, num_total_layers);
 
-	if (!enabled_fimc_lite && num_mixer_layers) {
-		media_qos_freq = mif_bus_opp_list[LV_4].clk;
-		goto out;
-	}
-
-	switch (num_total_layers) {
-	case NUM_LAYER_6:
-		if (enabled_fimc_lite)
-			media_qos_freq = mif_bus_opp_list[LV_0].clk;
-		break;
-	case NUM_LAYER_5:
-		if (enabled_fimc_lite)
-			media_qos_freq = mif_bus_opp_list[LV_2].clk;
-		break;
-	case NUM_LAYER_4:
-		if (enabled_fimc_lite)
-			media_qos_freq = mif_bus_opp_list[LV_2].clk;
-		else
-			media_qos_freq = mif_bus_opp_list[LV_4].clk;
-		break;
-	case NUM_LAYER_3:
-		if (enabled_fimc_lite)
-			media_qos_freq = mif_bus_opp_list[LV_3].clk;
-		else
-			media_qos_freq = mif_bus_opp_list[LV_5].clk;
-		break;
-	case NUM_LAYER_2:
-		if (enabled_fimc_lite)
-			media_qos_freq = mif_bus_opp_list[LV_3].clk;
-		else
-			media_qos_freq = mif_bus_opp_list[LV_7].clk;
-		break;
-	case NUM_LAYER_1:
-	case NUM_LAYER_0:
-		if (enabled_fimc_lite) {
-			if (num_mixer_layers == 0 && num_fimd1_layers < 2)
-				media_qos_freq = mif_bus_opp_list[LV_4].clk;
-			else
-				media_qos_freq = mif_bus_opp_list[LV_3].clk;
-		} else {
-			media_qos_freq = mif_bus_opp_list[LV_8].clk;
+	if (enabled_fimc_lite) {
+		switch (num_total_layers) {
+			case NUM_LAYER_5:
+				media_qos_mif_freq = mif_bus_opp_list[LV_0].clk;
+				break;
+			case NUM_LAYER_4:
+				if (num_mixer_layers == 0)
+					media_qos_mif_freq = mif_bus_opp_list[LV_2].clk;
+				else
+					media_qos_mif_freq = mif_bus_opp_list[LV_1].clk;
+				break;
+			case NUM_LAYER_3:
+				media_qos_mif_freq = mif_bus_opp_list[LV_2].clk;
+				break;
+			case NUM_LAYER_2:
+				if (num_mixer_layers == 0)
+					media_qos_mif_freq = mif_bus_opp_list[LV_3].clk;
+				else
+					media_qos_mif_freq = mif_bus_opp_list[LV_2].clk;
+				break;
+			case NUM_LAYER_1:
+				media_qos_mif_freq = mif_bus_opp_list[LV_4].clk;
+				break;
 		}
-		break;
+	} else {
+		if (num_fimd1_layers == 0)
+			pr_info("invalid number of fimd1 layers\n");
+
+		mif_idx = mif_fimc_opp_list[num_fimd1_layers][num_mixer_layers];
+		media_qos_mif_freq = mif_bus_opp_list[mif_idx].clk;
+
+		int_idx = int_fimc_opp_list[num_fimd1_layers][num_mixer_layers];
+		exynos5_update_district_int_level(int_idx);
 	}
 
-out:
+	if (enabled_ud_decode) {
+		if (num_fimd1_layers == 0)
+			pr_info("invalid number of fimd1 layers\n");
+
+		mif_idx = mif_ud_decode_opp_list[num_fimd1_layers][num_mixer_layers];
+		media_qos_mif_freq = mif_bus_opp_list[mif_idx].clk;
+	}
+
 	if (pm_qos_request_active(&media_mif_qos))
-		pm_qos_update_request(&media_mif_qos, media_qos_freq);
+		pm_qos_update_request(&media_mif_qos, media_qos_mif_freq);
 
 	mutex_unlock(&media_mutex);
 }
@@ -490,6 +519,11 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 			pm_qos_remove_request(&exynos5_int_qos);
 	}
 
+	if ((enabled_ud_decode || enabled_ud_encode) && !data->bp_enabled) {
+		exynos5_back_pressure_enable(true);
+		data->bp_enabled = true;
+	}
+
 	if (target_freq <= mif_bus_opp_list[LV_4].clk && !data->bp_enabled) {
 		exynos5_back_pressure_enable(true);
 		data->bp_enabled = true;
@@ -541,8 +575,13 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 	}
 
 	if (target_freq > mif_bus_opp_list[LV_4].clk && data->bp_enabled) {
-		exynos5_back_pressure_enable(false);
-		data->bp_enabled = false;
+		if (enabled_ud_decode || enabled_ud_encode) {
+			exynos5_back_pressure_enable(true);
+			data->bp_enabled = true;
+		} else {
+			exynos5_back_pressure_enable(false);
+			data->bp_enabled = false;
+		}
 	}
 }
 

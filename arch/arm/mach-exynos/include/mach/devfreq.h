@@ -14,6 +14,8 @@ enum devfreq_media_type {
 	TYPE_MIXER,
 #ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
 	TYPE_FIMD1,
+	TYPE_UD_ENCODING,
+	TYPE_UD_DECODING,
 #else
 	TYPE_DECON,
 #endif
