@@ -793,6 +793,7 @@
 
 	hsi2c_3: hsi2c@12CD0000 {
 		compatible = "samsung,exynos5-hsi2c";
+		samsung,polling-mode;
 		reg = <0x12CD0000 0x1000>;
 		interrupts = <0 63 0>;
 		#address-cells = <1>;
