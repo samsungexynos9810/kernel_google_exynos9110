@@ -953,8 +953,8 @@
 
 	usb@12000000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 1121>, <&clock 1448>;
-		clock-names = "sclk_usbdrd30", "usbdrd30";
+		clocks = <&clock 1448>;
+		clock-names = "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
@@ -970,8 +970,8 @@
 
 	usb@12400000 {
 		compatible = "samsung,exynos5-dwusb3";
-		clocks = <&clock 1120>, <&clock 1447>;
-		clock-names = "sclk_usbdrd30", "usbdrd30";
+		clocks = <&clock 1447>;
+		clock-names = "usbdrd30";
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges;
