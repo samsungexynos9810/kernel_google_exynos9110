@@ -27,7 +27,6 @@ static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned i
 	exynos5_disp_notify_power_status(pd->genpd.name, true);
 #endif
 }
-#define EXYNOS5430_CLK_SRC_GATING
 
 static struct sleep_save exynos_pd_maudio_clk_save[] = {
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD0),
@@ -36,7 +35,7 @@ static struct sleep_save exynos_pd_maudio_clk_save[] = {
 
 static int exynos_pd_maudio_power_on_pre(struct exynos_pm_domain *pd)
 {
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	unsigned int reg;
 
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP0);
@@ -68,7 +67,7 @@ static int exynos_pd_maudio_power_off_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_maudio_power_off_post(struct exynos_pm_domain *pd)
 {
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	unsigned int reg;
 
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP0);
@@ -118,7 +117,7 @@ static int exynos_pd_mfc0_power_on_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP4);
 	reg |= (1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP4);
@@ -166,7 +165,7 @@ static int exynos_pd_mfc0_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<1);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP4);
 	reg &= ~(1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP4);
@@ -190,7 +189,7 @@ static int exynos_pd_mfc1_power_on_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP4);
 	reg |= (1<<24 | 1<<20 | 1<<16);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP4);
@@ -239,7 +238,7 @@ static int exynos_pd_mfc1_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<2);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP4);
 	reg &= ~(1<<24 | 1<<20 | 1<<16);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP4);
@@ -263,7 +262,7 @@ static int exynos_pd_hevc_power_on_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP2);
 	reg |= (1<<28);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP2);
@@ -311,7 +310,7 @@ static int exynos_pd_hevc_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<3);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP2);
 	reg &= ~(1<<28);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP2);
@@ -337,7 +336,7 @@ static int exynos_pd_gscl_power_on_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP3);
 	reg |= (1<<8);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP3);
@@ -381,7 +380,7 @@ static int exynos_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<7);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP3);
 	reg &= ~(1<<8);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP3);
@@ -496,7 +495,7 @@ static int exynos_pd_mscl_power_on_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP_MSCL);
 	reg |= (1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP_MSCL);
@@ -547,7 +546,7 @@ static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<10);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP_MSCL);
 	reg &= ~(1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP_MSCL);
@@ -573,7 +572,7 @@ static int exynos_pd_g2d_power_on_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP3);
 	reg |= (1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP3);
@@ -618,7 +617,7 @@ static int exynos_pd_g2d_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<0);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP3);
 	reg &= ~(1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP3);
@@ -645,7 +644,7 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP0);
 	reg |= (1<<4);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP0);
@@ -710,7 +709,7 @@ static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<4);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP_CAM1);
 	reg &= ~(1<<8 | 1<<4 | 1<<0);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP_CAM1);
@@ -815,7 +814,7 @@ static int exynos_pd_cam1_power_on_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP2);
 	reg |= (1<<16 | 1<<12 | 1<<8);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP2);
@@ -872,7 +871,7 @@ static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 	reg &= ~(1<<6);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_TOP);
 
-#ifdef EXYNOS5430_CLK_SRC_GATING
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg = __raw_readl(EXYNOS5430_SRC_ENABLE_TOP2);
 	reg &= ~(1<<16 | 1<<12 | 1<<8);
 	__raw_writel(reg, EXYNOS5430_SRC_ENABLE_TOP2);
