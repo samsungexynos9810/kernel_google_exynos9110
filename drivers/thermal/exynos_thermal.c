@@ -213,8 +213,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define CA15_POLICY_CORE 	((exynos_boot_cluster == CA15) ? 0 : 4)
 #define CS_POLICY_CORE		0
 
-#define CPU_HOTPLUG_IN_TEMP	95
-#define CPU_HOTPLUG_OUT_TEMP	100
+#define CPU_HOTPLUG_IN_TEMP	105
+#define CPU_HOTPLUG_OUT_TEMP	110
 
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
 static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
@@ -1464,18 +1464,18 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.trigger_levels[0] = 80,
 	.trigger_levels[1] = 90,
 	.trigger_levels[2] = 100,
-	.trigger_levels[3] = 100,
-	.trigger_levels[4] = 100,
-	.trigger_levels[5] = 100,
-	.trigger_levels[6] = 100,
-	.trigger_levels[7] = 110,
+	.trigger_levels[3] = 110,
+	.trigger_levels[4] = 110,
+	.trigger_levels[5] = 110,
+	.trigger_levels[6] = 110,
+	.trigger_levels[7] = 115,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
 	.trigger_level2_en = 1,
 	.trigger_level3_en = 1,
-	.trigger_level4_en = 1,
-	.trigger_level5_en = 1,
-	.trigger_level6_en = 1,
+	.trigger_level4_en = 0,
+	.trigger_level5_en = 0,
+	.trigger_level6_en = 0,
 	.trigger_level7_en = 1,
 	.gain = 8,
 	.reference_voltage = 16,
@@ -1483,7 +1483,7 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 75,
 	.freq_tab[0] = {
-		.freq_clip_max = 1000 * 1000,
+		.freq_clip_max = 1300 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1500 * 1000,
 #endif
@@ -1494,9 +1494,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #endif
 	},
 	.freq_tab[1] = {
-		.freq_clip_max = 800 * 1000,
+		.freq_clip_max = 1100 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 800 * 1000,
+		.freq_clip_max_kfc = 1500 * 1000,
 #endif
 		.temp_level = 90,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1507,7 +1507,7 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.freq_tab[2] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
+		.freq_clip_max_kfc = 1500 * 1000,
 #endif
 		.temp_level = 100,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1518,9 +1518,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.freq_tab[3] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
+		.freq_clip_max_kfc = 800 * 1000,
 #endif
-		.temp_level = 100,
+		.temp_level = 110,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1529,9 +1529,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.freq_tab[4] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
+		.freq_clip_max_kfc = 800 * 1000,
 #endif
-		.temp_level = 100,
+		.temp_level = 110,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1540,9 +1540,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.freq_tab[5] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
+		.freq_clip_max_kfc = 800 * 1000,
 #endif
-		.temp_level = 100,
+		.temp_level = 110,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
@@ -1551,9 +1551,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.freq_tab[6] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
+		.freq_clip_max_kfc = 800 * 1000,
 #endif
-		.temp_level = 100,
+		.temp_level = 110,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
