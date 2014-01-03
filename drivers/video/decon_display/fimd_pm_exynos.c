@@ -268,6 +268,25 @@ int enable_display_decon_clocks(struct device *dev)
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
 
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
+#if !defined (CONFIG_SOC_EXYNOS5422_REV_0)
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
+#endif
+
+#ifdef CONFIG_DECON_LCD_S6E8AA0
+	DISPLAY_INLINE_SET_RATE(clk_fimd1, 67 * MHZ);
+#else
+	DISPLAY_INLINE_SET_RATE(clk_fimd1, 266 * MHZ);
+#endif
+
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_300_disp1_user, mout_aclk_300_disp1_sw);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_300_disp1_sw, dout_aclk_300_disp1);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_300_disp1, mout_dpll_ctrl);
+	DISPLAY_INLINE_SET_RATE(dout_aclk_300_disp1, 300 * MHZ);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_400_disp1_user, mout_aclk_400_disp1_sw);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_400_disp1_sw, dout_aclk_400_disp1);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_400_disp1, mout_dpll_ctrl);
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
 	dispdrv->pm_status.ops->clk_on(dispdrv);
 #else
@@ -286,17 +305,6 @@ int enable_display_decon_clocks(struct device *dev)
 
 	if (!sfb->variant.has_clksel)
 		clk_prepare_enable(sfb->lcd_clk);
-#endif
-
-	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
-#if !defined (CONFIG_SOC_EXYNOS5422_REV_0)
-	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
-#endif
-
-#ifdef CONFIG_DECON_LCD_S6E8AA0
-	DISPLAY_SET_RATE(clk_fimd1, 67 * MHZ);
-#else
-	DISPLAY_SET_RATE(clk_fimd1, 266 * MHZ);
 #endif
 	return ret;
 }

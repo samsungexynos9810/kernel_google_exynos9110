@@ -1117,7 +1117,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 1;
 #endif
-		GET_DISPCTL_OPS(dispdrv).init_display_decon_clocks(sfb->dev);
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
 		break;
