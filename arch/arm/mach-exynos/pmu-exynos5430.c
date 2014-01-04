@@ -516,6 +516,13 @@ int __init exynos5430_pmu_init(void)
 	tmp |= EXYNOS_PS_HOLD_EN;
 	__raw_writel(tmp, EXYNOS_PS_HOLD_CONTROL);
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+	/* Enable non retention flip-flop reset */
+	tmp = __raw_readl(EXYNOS_PMU_SPARE0);
+	tmp |= EXYNOS_EN_NONRET_RESET;
+	__raw_writel(tmp, EXYNOS_PMU_SPARE0);
+#endif
+
 	exynos_pmu_config = exynos5430_pmu_config;
 	exynos_cpu.power_up = exynos5430_secondary_up;
 	exynos_cpu.power_state = exynos5430_cpu_state;
