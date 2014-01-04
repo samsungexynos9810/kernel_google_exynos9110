@@ -155,22 +155,6 @@ static void top_clk_enable(void)
 	add_enabler("clk_smmufimd1x_m0");
 
 	/* enable list */
-	add_enabler("clk_mscl2");
-	add_enabler("clk_mscl1");
-	add_enabler("clk_mscl0");
-	add_enabler("aclk_333_432_gscl");
-	add_enabler("aclk_300_gscl");
-	add_enabler("pclk_smmu_gscl0");
-	add_enabler("pclk_smmu_gscl1");
-#ifndef CONFIG_SOC_EXYNOS5422_REV_0
-	add_enabler("sclk_gscl_wrap_b");
-	add_enabler("sclk_gscl_wrap_a");
-#endif
-	add_enabler("clk_smmu_gscl1");
-	add_enabler("clk_smmu_gscl0");
-	add_enabler("clk_gscl1");
-	add_enabler("clk_gscl0");
-	add_enabler("aclk_noc_fsys");
 	add_enabler("aclk_aclk_333_g2d");
 
 	/* enable list to enter suspend to ram */
