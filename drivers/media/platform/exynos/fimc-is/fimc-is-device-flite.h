@@ -53,14 +53,16 @@ enum fimc_is_flite_buf_done_mode {
 /*
  * 10p means 10% early than end irq. We supposed that VVALID time is 32ms (FLITE_VVALID_TIME)
  * ex. 32 * 0.1 = 3ms, early interval is (32 - 3) = 29ms
+ *     32 * 0.1.5 = 4ms,                 (32 - 4) = 28ms
  *     32 * 0.2 = 6ms,                   (32 - 6) = 26ms
  *     32 * 0.3 = 9ms,                   (32 - 9) = 23ms
  */
 enum fimc_is_flite_early_buf_done_mode {
 	FLITE_BUF_EARLY_NOTHING	= 0,
 	FLITE_BUF_EARLY_10P	= 1, /* 10%(29ms) 3ms */
-	FLITE_BUF_EARLY_20P	= 2, /* 20%(26ms) 6ms */
-	FLITE_BUF_EARLY_30P	= 3, /* 30%(23ms) 9ms */
+	FLITE_BUF_EARLY_15P	= 2, /* 15%(28ms) 4ms */
+	FLITE_BUF_EARLY_20P	= 3, /* 20%(26ms) 6ms */
+	FLITE_BUF_EARLY_30P	= 4, /* 30%(23ms) 9ms */
 };
 
 struct fimc_is_device_flite {

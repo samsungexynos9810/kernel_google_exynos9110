@@ -1082,7 +1082,7 @@ static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate
 		if (position == SENSOR_POSITION_REAR)
 			flite->early_buf_done_mode = FLITE_BUF_EARLY_30P;
 		else
-			flite->early_buf_done_mode = FLITE_BUF_EARLY_10P;
+			flite->early_buf_done_mode = FLITE_BUF_EARLY_15P;
 
 		flite->buf_done_wait_time = FLITE_VVALID_TIME -
 			(u32)(FLITE_VVALID_TIME * (flite->early_buf_done_mode * 0.1f));
