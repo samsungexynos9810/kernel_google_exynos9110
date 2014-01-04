@@ -148,8 +148,6 @@ static void top_clk_enable(void)
 	add_enabler("clk_sdmmc2");
 	add_enabler("clk_usbdrd301");
 	add_enabler("clk_usbdrd300");
-	add_enabler("clk_slimsss");
-	add_enabler("clk_sss");
 
 	add_enabler("clk_smmufimd1x_m1");
 	add_enabler("clk_smmufimd1x_m0");
