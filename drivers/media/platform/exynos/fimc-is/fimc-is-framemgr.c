@@ -549,6 +549,7 @@ int fimc_is_frame_open(struct fimc_is_framemgr *this, u32 id, u32 buffers)
 
 		this->frame[i].kvaddr_shot = 0;
 		this->frame[i].dvaddr_shot = 0;
+		this->frame[i].has_fcount = false;
 		fimc_is_frame_s_free_shot(this, &this->frame[i]);
 	}
 
@@ -586,6 +587,7 @@ int fimc_is_frame_close(struct fimc_is_framemgr *this)
 
 		this->frame[i].kvaddr_shot = 0;
 		this->frame[i].dvaddr_shot = 0;
+		this->frame[i].has_fcount = false;
 	}
 
 	return ret;

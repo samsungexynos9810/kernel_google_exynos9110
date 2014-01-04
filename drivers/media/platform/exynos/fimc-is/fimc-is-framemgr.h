@@ -147,6 +147,9 @@ struct fimc_is_frame {
 	unsigned long		out_flag;
 	struct vb2_buffer	*vb;
 
+	/* for overwriting framecount check */
+	bool			has_fcount;
+
 	/* time measure externally */
 	struct timeval		*tzone;
 	/* time measure internally */

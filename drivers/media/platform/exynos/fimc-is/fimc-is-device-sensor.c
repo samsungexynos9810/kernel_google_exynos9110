@@ -572,8 +572,32 @@ static int fimc_is_sensor_notify_by_fstr(struct fimc_is_device_sensor *device, v
 		do_gettimeofday(&frame->tzone[TM_FLITE_STR]);
 #endif
 #endif
-		frame->fcount = device->fcount;
-		fimc_is_sensor_tag(device, frame);
+		if (frame->has_fcount) {
+			struct list_head *temp;
+			struct fimc_is_frame *next_frame;
+			bool finded = false;
+
+			list_for_each(temp, &framemgr->frame_process_head) {
+				next_frame = list_entry(temp, struct fimc_is_frame, list);
+				if (next_frame->has_fcount) {
+					continue;
+				} else {
+					finded = true;
+					break;
+				}
+			}
+
+			if (finded) {
+				/* finded frame in processing frame list */
+				next_frame->has_fcount = true;
+				next_frame->fcount = device->fcount;
+				fimc_is_sensor_tag(device, next_frame);
+			}
+		} else {
+			frame->fcount = device->fcount;
+			fimc_is_sensor_tag(device, frame);
+			frame->has_fcount = true;
+		}
 	}
 #ifdef TASKLET_MSG
 	if (!frame) {
@@ -596,8 +620,10 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 	BUG_ON(!device->vctx);
 
 	frame = (struct fimc_is_frame *)arg;
-	if (frame)
+	if (frame) {
+		frame->has_fcount = false;
 		buffer_done(device->vctx, frame->index);
+	}
 
 #ifdef ENABLE_DTP
 	if (device->dtp_check) {
