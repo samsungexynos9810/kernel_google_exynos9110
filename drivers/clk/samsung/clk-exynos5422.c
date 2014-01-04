@@ -845,8 +845,9 @@ enum exynos5422_clks {
 	dout2_cam_blk_550,
 	aclk_550_cam_div2,
 	sclk_gscl_wrap_a_div2,
-	clk_dummy1,
+
 #endif
+	clk_dummy1,
 	nr_clks,
 };
 
