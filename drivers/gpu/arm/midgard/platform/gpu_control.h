@@ -36,7 +36,11 @@ typedef enum {
 
 /* mali_kbase_platform */
 #if SOC_NAME == 5422
-#define G3D_MAX_FREQ    420000
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+#define G3D_MAX_FREQ    543000
+#else
+#define G3D_MAX_FREQ    533000
+#endif /* CONFIG_SOC_EXYNOS5422_REV_0 */
 #define G3D_MIN_FREQ    177000
 #elif SOC_NAME == 5430
 #define G3D_MAX_FREQ    600000
