@@ -1293,11 +1293,12 @@ static struct s3c64xx_spi_info *s3c64xx_spi_parse_dt(struct device *dev)
 	}
 
 	sci->domain = DOMAIN_TOP;
-	of_property_read_string(dev->of_node, "domain", &domain);
-	if (strncmp(domain, "isp", 3) == 0)
-		sci->domain = DOMAIN_ISP;
-	else if (strncmp(domain, "cam1", 4) == 0)
-		sci->domain = DOMAIN_CAM1;
+	if (!of_property_read_string(dev->of_node, "domain", &domain)) {
+		if (strncmp(domain, "isp", 3) == 0)
+			sci->domain = DOMAIN_ISP;
+		else if (strncmp(domain, "cam1", 4) == 0)
+			sci->domain = DOMAIN_CAM1;
+	}
 
 	return sci;
 }
