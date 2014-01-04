@@ -700,8 +700,9 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				} else {
 					clk_set_parent(int_clk->parent_clk, int_clk->p_parent_clk);
 				}
-
+#ifndef CONFIG_PM_RUNTIME
 				clk_set_parent(int_clk->clk, int_clk->parent_clk);
+#endif
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
@@ -719,7 +720,9 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				} else {
 					clk_set_parent(int_clk->parent_clk, int_clk->p_parent_clk);
 				}
+#ifndef CONFIG_PM_RUNTIME
 				clk_set_parent(int_clk->clk, int_clk->parent_clk);
+#endif
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
@@ -749,7 +752,9 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				} else {
 					clk_set_parent(int_clk->parent_clk, int_clk->p_parent_clk);
 				}
+#ifndef CONFIG_PM_RUNTIME
 				clk_set_parent(int_clk->clk, int_clk->parent_clk);
+#endif
 			/* No need to change pll */
 			clk_set_rate(int_clk->p_parent_clk,
 				int_clk->clk_info[target_idx].target_freq * 1000);
