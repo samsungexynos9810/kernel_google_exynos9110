@@ -1056,11 +1056,12 @@ static void aud_uart_get_sync(struct platform_device *pdev, struct uart_port *po
 static void aud_uart_put_sync(struct platform_device *pdev)
 {
 }
-
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 static int aud_uart_gpio_cfg(struct platform_device *pdev, int level)
 {
 	return 0;
 }
+#endif
 #endif
 
 /* power power management control */
