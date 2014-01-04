@@ -565,7 +565,7 @@ EXYNOS5_INT_PM_CLK(aclk_333_432_isp	,	"mout_aclk_333_432_isp_user"	, "mout_aclk_
 EXYNOS5_INT_PM_CLK(aclk_333_432_isp0,	"mout_aclk_333_432_isp0_user"	, "mout_aclk_333_432_isp0_sw"	, "dout_aclk_333_432_isp0"	, "mout_aclk_333_432_isp0"	, NULL, aclk_333_432_isp0);
 */
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-EXYNOS5_INT_PM_CLK(aclk_333			, 	"mout_aclk_333_user"		, "mout_aclk_333_sw"		, "dout_aclk_333"		, "mout_aclk_333"		, NULL, aclk_333_g2d);
+EXYNOS5_INT_PM_CLK(aclk_333			, 	"mout_aclk_333_user"		, "mout_aclk_333_sw"		, "dout_aclk_333"		, "mout_aclk_333"		, NULL, aclk_333);
 /*
 EXYNOS5_INT_PM_CLK(aclk_432_scaler	,	"mout_aclk_432_scaler_user"		, "mout_aclk_432_scaler_sw"		, "dout_aclk_432_scaler"	, "mout_aclk_432_scaler"	, NULL, aclk_432_scaler);
 EXYNOS5_INT_PM_CLK(aclk_266_isp		, 	"mout_aclk_266_isp_user"		, "mout_aclk_266_isp_sw"		, "dout_aclk_266_isp"		, "mout_aclk_266_isp"		, NULL, aclk_266_isp);
@@ -658,7 +658,7 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 	struct int_pm_clks *int_clk;
 
 #ifdef DEVFREQ_INT_TRACE
-	printk("@@@@@@@@@@@@ pre %ld , target %ld \n", pre_freq, target_freq);
+	printk("Set int target: %ld\n", target_freq);
 #endif
 	/* Find setting value with target and previous frequency */
 	for (i = 0; i < LV_END; i++) {
@@ -688,6 +688,14 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				continue;
 
 			int_clk->p2_parent_clk =  exynos5_change_pll(data, int_clk->clk_info[target_idx].src_pll);
+			if (int_clk->clk_info[target_idx].src_pll == SW_MUX) {
+				clk_set_parent(int_clk->p_parent_clk, int_clk->p2_parent_clk);
+#ifdef DEVFREQ_INT_TRACE
+				printk("[%s] -P:[%s] %ld\n", int_clk->p_parent_clk->name, int_clk->p2_parent_clk->name, clk_get_rate(int_clk->p2_parent_clk));
+#endif
+				continue;
+			}
+
 			if (pre_freq > target_freq) {
 				/* process clock tree */
 				if (int_clk->p2_parent_clk) {
@@ -706,7 +714,7 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
-			printk("1@@@ %s set_rate %ld, get_rate %ld\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk));
+			printk("[%s] set to %ld, get value is %ld - P:[%s]\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk) / 1000, int_clk->p2_parent_clk->name);
 #endif
 			} else {
 				/* process clock tree */
@@ -726,7 +734,7 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
-			printk("2@@@ %s set_rate %ld, get_rate %ld\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk));
+			printk("[%s] set to %ld, get value is %ld - P:[%s]\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk) / 1000, int_clk->p2_parent_clk->name);
 #endif
 				/*
 				 * If the clock rate is set before setting the parent clock,
@@ -736,7 +744,7 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
-			printk("3@@@ %s set_rate %ld, get_rate %ld\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk));
+			printk("[%s] set to %ld, get value is %ld - P:[%s]\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk) / 1000, int_clk->p2_parent_clk->name);
 #endif
 			}
 		} else {
@@ -759,7 +767,7 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 			clk_set_rate(int_clk->p_parent_clk,
 				int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
-			printk("4@@@ %s set_rate %ld, get_rate %ld\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk));
+			printk("[%s] set to %ld, get value is %ld - P:[%s]\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk) / 1000, int_clk->p2_parent_clk->name);
 #endif
 		}
 	}
@@ -1151,8 +1159,11 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 		err = PTR_ERR(data->mout_dpll);
 		goto err_mout_dpll;
 	}
-
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	data->mout_spll = aclk_get(dev, "dout_spll_ctrl_div2");
+#else
 	data->mout_spll = aclk_get(dev, "mout_spll_ctrl");
+#endif
 	if (IS_ERR(data->mout_spll) || data->mout_spll == NULL) {
 		dev_err(dev, "Cannot get clock \"mout_spll\"\n");
 		err = PTR_ERR(data->mout_spll);
