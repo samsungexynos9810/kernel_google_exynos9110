@@ -574,6 +574,36 @@ static struct sleep_save exynos5_set_clksrc[] = {
 	{ .reg = EXYNOS5430_ENABLE_IP_CPIF0,	.val = 0x000FF000, },
 };
 
+static void exynos_set_mif_mux_status(void)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(EXYNOS5430_SRC_ENABLE_MIF1);
+
+	/* 1. If 12bit of CLK_MUX_ENABLE_MIF1 is '1', save '1' */
+	if (tmp & EXYNOS5430_CLKM_PHY_C_ENABLE)
+		__raw_writel(0x1, EXYNOS5430_DREX_CALN2);
+	else
+		__raw_writel(0x0, EXYNOS5430_DREX_CALN2);
+
+	/* 2. Write 0 to 12bit of CLK_MUX_ENABLE_MIF1 before LPA/DSTOP */
+	tmp &= ~EXYNOS5430_CLKM_PHY_C_ENABLE;
+	__raw_writel(tmp, EXYNOS5430_SRC_ENABLE_MIF1);
+}
+
+static void exynos_restore_mif_mux_status(void)
+{
+	unsigned int tmp;
+
+	tmp = __raw_readl(EXYNOS5430_SRC_ENABLE_MIF1);
+	if (__raw_readl(EXYNOS5430_DREX_CALN2))
+		tmp |= EXYNOS5430_CLKM_PHY_C_ENABLE;
+	else
+		tmp &= ~EXYNOS5430_CLKM_PHY_C_ENABLE;
+
+	__raw_writel(tmp, EXYNOS5430_SRC_ENABLE_MIF1);
+}
+
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int lp_mode, int index, int enter_mode)
@@ -640,6 +670,11 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	if (lp_mode == SYS_ALPA)
 		__raw_writel(0x1, EXYNOS5430_PMU_SYNC_CTRL);
 
+	/* This is W/A for gating Mclk during LPA/DSTOP */
+	/* Save flag to confirm if current mode is LPA or DSTOP */
+	__raw_writel(EXYNOS_CHECK_DIRECTGO, EXYNOS5430_DREX_CALN1);
+	exynos_set_mif_mux_status();
+
 	ret = cpu_suspend(0, idle_finisher);
 	if (ret) {
 		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
@@ -671,6 +706,11 @@ early_wakeup:
 
 	if (lp_mode == SYS_ALPA)
 		__raw_writel(0x0, EXYNOS5430_PMU_SYNC_CTRL);
+
+	/* This is W/A for gating Mclk during LPA/DSTOP */
+	/* Clear flag  */
+	__raw_writel(0, EXYNOS5430_DREX_CALN1);
+	exynos_restore_mif_mux_status();
 
 	clear_boot_flag(cpuid, C2_STATE);
 
