@@ -2095,6 +2095,12 @@
 		status = "disabled";
 	};
 
+	pd_wcore: pd-wcore@100441C0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10041C00 0x20>;
+		status = "disabled";
+	};
+
 	pd_cam: pd-cam@10045100 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10045100 0x20>;
