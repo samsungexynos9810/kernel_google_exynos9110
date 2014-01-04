@@ -103,9 +103,18 @@ static int secmem_open(struct inode *inode, struct file *file)
 						__func__, ION_EXYNOS_ID_SECTBL);
 			return -ENODEV;
 		}
+
+		ret = ion_exynos_contig_heap_isolate(ION_EXYNOS_ID_MFC_FW);
+		if (ret < 0) {
+			pr_err("%s: Fail to isolate reserve region. id = %d\n",
+						__func__, ION_EXYNOS_ID_MFC_FW);
+			return -ENODEV;
+		}
+
 		iso_count = 1;
-		pr_debug("%s: reserve region is isolated. id = %d\n",
-						__func__, ION_EXYNOS_ID_SECTBL);
+		pr_debug("%s: reserve region is isolated. id = %d, %d\n",
+						__func__, ION_EXYNOS_ID_SECTBL,
+						ION_EXYNOS_ID_MFC_FW);
 	}
 
 	return 0;
@@ -142,7 +151,8 @@ static int drm_enable_locked(struct secmem_info *info, bool enable)
 	if (drm_onoff != enable) {
 		if (enable) {
 			for (idx = 0; idx < nbufs; idx++) {
-				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL)
+				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
+					secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
 					continue;
 				ret = ion_exynos_contig_heap_isolate(secmem_regions[idx]);
 				if (ret < 0)
@@ -153,7 +163,8 @@ static int drm_enable_locked(struct secmem_info *info, bool enable)
 			pm_runtime_get_sync(sdev);
 		} else {
 			for (idx = 0; idx < nbufs; idx++) {
-				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL)
+				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
+					secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
 					continue;
 				ion_exynos_contig_heap_deisolate(secmem_regions[idx]);
 			}
