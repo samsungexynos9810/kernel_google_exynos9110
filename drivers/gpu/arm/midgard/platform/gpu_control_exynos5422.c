@@ -110,13 +110,9 @@ int gpu_clock_on(struct exynos_context *platform)
 		return -1;
 	}
 
-	if (platform->clk_g3d_status == 1)
-		return 0;
-
-	if (platform->clk_g3d_ip)
+	if (platform->clk_g3d_ip && !gpu_is_clock_on(platform)) {
 		(void) clk_prepare_enable(platform->clk_g3d_ip);
-
-	platform->clk_g3d_status = 1;
+	}
 
 	return 0;
 }
@@ -126,13 +122,9 @@ int gpu_clock_off(struct exynos_context *platform)
 	if (!platform)
 		return -ENODEV;
 
-	if (platform->clk_g3d_status == 0)
-		return 0;
-
-	if (platform->clk_g3d_ip)
+	if (platform->clk_g3d_ip && gpu_is_clock_on(platform)) {
 		(void)clk_disable_unprepare(platform->clk_g3d_ip);
-
-	platform->clk_g3d_status = 0;
+	}
 
 	return 0;
 }
