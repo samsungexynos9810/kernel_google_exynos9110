@@ -4804,6 +4804,7 @@ int s3c_fb_hibernation_power_off(struct display_driver *dispdrv)
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 	pm_qos_update_request(&exynos5_fimd_mif_qos, 0);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+	bts_scen_update(TYPE_LAYERS, 0);
 	exynos5_update_media_layers(TYPE_FIMD1, 0);
 	prev_overlap_cnt = 0;
 #endif
