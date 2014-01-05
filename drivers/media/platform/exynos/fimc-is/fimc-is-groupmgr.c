@@ -1110,6 +1110,11 @@ int fimc_is_group_process_stop(struct fimc_is_groupmgr *groupmgr,
 		goto p_err;
 	}
 
+	if (!test_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state)) {
+		warn("alredy close sensor was called");
+		goto p_err;
+	}
+
 	sensor = device->sensor;
 	framemgr = &queue->framemgr;
 
