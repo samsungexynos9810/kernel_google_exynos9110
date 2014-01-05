@@ -509,6 +509,10 @@ int exynos5422_fimc_is_clk_on(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
+	fimc_is_enable_dt(pdev, "sclk_uart_isp");
+	fimc_is_enable_dt(pdev, "sclk_pwm_isp");
+	fimc_is_enable_dt(pdev, "sclk_spi0_isp");
+
 	return 0;
 }
 
@@ -517,6 +521,10 @@ int exynos5422_fimc_is_clk_off(struct platform_device *pdev)
 	pr_debug("%s\n", __func__);
 
 	exynos5422_cfg_clk_div_max(pdev);
+	fimc_is_disable_dt(pdev, "sclk_uart_isp");
+	fimc_is_disable_dt(pdev, "sclk_pwm_isp");
+	fimc_is_disable_dt(pdev, "sclk_spi0_isp");
+
 	return 0;
 }
 

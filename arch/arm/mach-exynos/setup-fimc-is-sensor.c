@@ -287,12 +287,6 @@ int exynos5422_fimc_is_sensor_mclk_on(struct platform_device *pdev,
 	fimc_is_enable_dt(pdev, "clk_xiu_si_gscl_cam");
 	fimc_is_enable_dt(pdev, "clk_noc_p_rstop_fimcl");
 
-	/* HACK */
-	fimc_is_enable_dt(pdev, "clk_bts_gscl1");
-	fimc_is_enable_dt(pdev, "clk_bts_gscl0");
-	fimc_is_enable_dt(pdev, "clk_gscaler1");
-	fimc_is_enable_dt(pdev, "clk_gscaler0");
-
 	pr_info("EXYNOS5_CLK_GATE_IP_GSCL0(0x%08X)\n", readl(EXYNOS5_CLK_GATE_IP_GSCL0));
 
 	pr_info("%s(%d, mclk : %d)\n", __func__, channel, frequency);
@@ -311,6 +305,26 @@ int exynos5422_fimc_is_sensor_mclk_off(struct platform_device *pdev,
 	snprintf(sclk_name, sizeof(sclk_name), "sclk_isp_sensor%d", channel);
 
 	fimc_is_disable_dt(pdev, sclk_name);
+
+	switch (channel) {
+	case SENSOR_CONTROL_I2C0:
+		fimc_is_disable_dt(pdev, "sclk_gscl_wrap_a");
+		fimc_is_disable_dt(pdev, "clk_camif_top_fimcl0");
+		fimc_is_disable_dt(pdev, "clk_camif_top_fimcl3");
+		fimc_is_disable_dt(pdev, "gscl_fimc_lite0");
+		fimc_is_disable_dt(pdev, "gscl_fimc_lite3");
+		fimc_is_disable_dt(pdev, "clk_gscl_wrap_a");
+		break;
+	case SENSOR_CONTROL_I2C2:
+		fimc_is_disable_dt(pdev, "sclk_gscl_wrap_b");
+		fimc_is_disable_dt(pdev, "clk_camif_top_fimcl1");
+		fimc_is_disable_dt(pdev, "gscl_fimc_lite1");
+		fimc_is_disable_dt(pdev, "clk_gscl_wrap_b");
+		break;
+	default:
+		pr_err("channel is invalid(%d)\n", channel);
+		break;
+	}
 
 	return 0;
 }
