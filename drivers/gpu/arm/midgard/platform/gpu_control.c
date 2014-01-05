@@ -170,14 +170,18 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 		return -1;
 	}
 
+	if (platform->voltage_margin)
+		voltage = MAX(voltage + platform->voltage_margin, COLD_MINIMUM_VOL);
+
 	if (clock > prev_clock) {
-		gpu_set_voltage(platform, voltage + platform->voltage_margin);
+		gpu_set_voltage(platform, voltage);
 		gpu_set_clock(platform, clock);
 	} else {
 		gpu_set_clock(platform, clock);
-		gpu_set_voltage(platform, voltage + platform->voltage_margin);
+		gpu_set_voltage(platform, voltage);
 	}
-	GPU_LOG(DVFS_INFO, "[G3D] clock changed [%d -> %d]\n", prev_clock, clock);
+
+	GPU_LOG(DVFS_INFO, "[G3D]clk[%d -> %d], vol[%d + %d]\n", prev_clock, clock, voltage, platform->voltage_margin);
 
 	gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, prev_clock);
 
