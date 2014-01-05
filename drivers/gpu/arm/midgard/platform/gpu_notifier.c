@@ -164,7 +164,6 @@ static struct notifier_block gpu_pm_nb = {
 static mali_error gpu_device_runtime_init(struct kbase_device *kbdev)
 {
 	pm_suspend_ignore_children(kbdev->osdev.dev, true);
-	pm_runtime_enable(kbdev->osdev.dev);
 	return MALI_ERROR_NONE;
 }
 
@@ -185,8 +184,8 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 #ifdef CONFIG_MALI_T6XX_DVFS
 	gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_ON, 0);
 #endif /* CONFIG_MALI_T6XX_DVFS */
-	gpu_control_state_set(kbdev, GPU_CONTROL_CHANGE_CLK_VOL, platform->cur_clock);
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON, 0);
+	gpu_control_state_set(kbdev, GPU_CONTROL_CHANGE_CLK_VOL, platform->cur_clock);
 
 	return 0;
 }
@@ -234,6 +233,8 @@ int gpu_notifier_init(kbase_device *kbdev)
 	if (register_pm_notifier(&gpu_pm_nb))
 		return MALI_FALSE;
 #endif /* CONFIG_MALI_T6XX_RT_PM */
+
+	pm_runtime_enable(kbdev->osdev.dev);
 
 	return MALI_TRUE;
 }
