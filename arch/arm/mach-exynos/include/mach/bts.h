@@ -18,10 +18,16 @@ void bts_initialize(const char *pd_name, bool on);
 #endif
 
 #if defined(CONFIG_EXYNOS5422_BTS)
-void bts_change_g3d_state(unsigned int freq);
-#else
-#define bts_change_g3d_state(a) do {} while(0)
-#endif
+enum bts_scen_type {
+	TYPE_MFC_UD_DECODING = 0,
+	TYPE_MFC_UD_ENCODING,
+	TYPE_LAYERS,
+	TYPE_G3D_FREQ,
+};
 
+void bts_scen_update(enum bts_scen_type type, unsigned int val);
+#else
+#define bts_scen_update(a, b) do {} while(0)
+#endif
 
 #endif
