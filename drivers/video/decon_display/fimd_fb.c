@@ -41,6 +41,7 @@
 #include <plat/cpu.h>
 
 #include "regs-fimd.h"
+#include <mach/bts.h>
 
 #ifdef CONFIG_ION_EXYNOS
 #include <linux/dma-buf.h>
@@ -1107,6 +1108,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos5_fimd_mif_qos, 0);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+		bts_scen_update(TYPE_LAYERS, 0);
 		exynos5_update_media_layers(TYPE_FIMD1, 0);
 		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 0;
@@ -1117,6 +1119,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos5_fimd_mif_qos, 200000);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+		bts_scen_update(TYPE_LAYERS, 1);
 		exynos5_update_media_layers(TYPE_FIMD1, 1);
 		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 1;
@@ -2334,6 +2337,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	}
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 	if (prev_overlap_cnt < regs->win_overlap_cnt) {
+		bts_scen_update(TYPE_LAYERS, regs->win_overlap_cnt);
 		exynos5_update_media_layers(TYPE_FIMD1, regs->win_overlap_cnt);
 		if (regs->win_overlap_cnt >= 2)
 			pm_qos_update_request(&exynos5_fimd_int_qos, 111000);
@@ -2383,6 +2387,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	}
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 	if (prev_overlap_cnt > regs->win_overlap_cnt) {
+		bts_scen_update(TYPE_LAYERS, regs->win_overlap_cnt);
 		exynos5_update_media_layers(TYPE_FIMD1, regs->win_overlap_cnt);
 		if (regs->win_overlap_cnt >= 2)
 			pm_qos_update_request(&exynos5_fimd_int_qos, 111000);
