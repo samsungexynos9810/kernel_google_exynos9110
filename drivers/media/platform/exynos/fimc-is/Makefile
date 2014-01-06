@@ -12,6 +12,8 @@ fimc-is-objs	:= fimc-is-core.o \
 		fimc-is-video-scp.o \
 		fimc-is-video-vdisc.o \
 		fimc-is-video-vdiso.o \
+		fimc-is-hw-csi.o \
+		fimc-is-hw-ischain.o \
 		fimc-is-subdev-ctrl.o \
 		fimc-is-device-csi.o \
 		fimc-is-device-flite.o \
