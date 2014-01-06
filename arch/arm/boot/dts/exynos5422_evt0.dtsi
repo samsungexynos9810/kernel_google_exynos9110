@@ -1274,8 +1274,16 @@
 		clocks = <&clock 1722>,		/* gate_ass_adma */
 			 <&clock 1723>,		/* gate_ass_timer */
 			 <&clock 1725>,		/* gate_ass_gpio */
-			 <&clock 1730>;		/* gate_ass_srp */
-		clock-names = "dmac", "timer", "gpio", "srp";
+			 <&clock 1730>,		/* gate_ass_srp */
+			 <&clock 5>,		/* fout_dpll */
+			 <&clock 2002>,		/* mout_dpll_ctrl */
+			 <&clock 2060>,		/* mout_mau_epll_clk */
+			 <&clock 5316>,		/* mout_mau_epll_clk_user */
+			 <&clock 2200>,		/* mout_ass_clk */
+			 <&clock 2201>;		/* mout_ass_i2s */
+		clock-names = "dmac", "timer", "gpio", "srp", "fout_dpll",
+			"mout_dpll_ctrl", "mout_mau_epll_clk",
+			"mout_mau_epll_clk_user", "mout_ass_clk", "mout_ass_i2s";
 		samsung,power-domain = <&pd_maudio>;
 		status = "ok";
 	};
