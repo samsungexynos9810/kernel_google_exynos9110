@@ -439,6 +439,15 @@ bool check_camera_is_running(void)
 		return false;
 }
 
+bool get_display_power_status(void)
+{
+	/* DISP_STATUS */
+	if (readl(S5P_VA_PMU + 0x4084) & 0x1)
+		return true;
+	else
+		return false;
+}
+
 void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask)
 {
 	unsigned int val;

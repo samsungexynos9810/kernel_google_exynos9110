@@ -23,6 +23,7 @@
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
+#include "decon_pm_exynos.h"
 
 #ifdef CONFIG_SOC_EXYNOS5430
 #include "regs-decon.h"
@@ -73,10 +74,6 @@ int display_hibernation_power_on(struct display_driver *dispdrv);
 int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
-extern bool check_camera_is_running(void);
-extern void set_hw_trigger_mask(struct s3c_fb *sfb, bool mask);
-extern void set_default_hibernation_mode(struct display_driver *dispdrv);
-extern int get_display_line_count(struct display_driver *dispdrv);
 
 struct pm_ops display_block_ops = {
 	.clk_on		= display_block_clock_on,
@@ -537,6 +534,13 @@ done:
 void display_block_clock_on(struct display_driver *dispdrv)
 {
 	if (!dispdrv->pm_status.clock_gating_on) return;
+
+	if (!get_display_power_status()) {
+		pm_info("Requested a pm_runtime_get_sync, but power still off");
+		pm_runtime_get_sync(dispdrv->display_driver);
+		if (!get_display_power_status())
+			BUG();
+	}
 
 	mutex_lock(&dispdrv->pm_status.clk_lock);
 	if (!dispdrv->pm_status.clock_enabled) {
