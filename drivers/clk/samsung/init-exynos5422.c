@@ -397,6 +397,21 @@ void crypto_init_clock(void)
 		pr_err("failed to set rate %s\n", "dout_acp_pclk");
 }
 
+void mmc_clock_init(void)
+{
+	exynos_set_parent("mout_mmc0", "mout_cpll_ctrl");
+	exynos_set_parent("mout_mmc1", "mout_spll_ctrl");
+	exynos_set_parent("mout_mmc2", "mout_cpll_ctrl");
+
+	exynos_set_rate("dout_mmc0", 666 * 1000000);
+	exynos_set_rate("dout_mmc1", 800 * 1000000);
+	exynos_set_rate("dout_mmc2", 666 * 1000000);
+
+	pr_info("mmc0: dout_mmc0 %d\n", exynos_get_rate("dout_mmc0"));
+	pr_info("mmc1: dout_mmc1 %d\n", exynos_get_rate("dout_mmc1"));
+	pr_info("mmc2: dout_mmc2 %d\n", exynos_get_rate("dout_mmc2"));
+}
+
 void __init exynos5422_clock_init(void)
 {
 #ifndef CONFIG_L2_AUTO_CLOCK_DISABLE
@@ -409,6 +424,7 @@ void __init exynos5422_clock_init(void)
 	clkout_init_clock();
 	aud_init_clock();
 	uart_clock_init();
+	mmc_clock_init();
 	mscl_init_clock();
 	g2d_init_clock();
 	pwm_init_clock();
