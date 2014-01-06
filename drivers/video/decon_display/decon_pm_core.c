@@ -528,7 +528,6 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	request_dynamic_hotplug(true);
 
 done:
-	disp_debug_power_info();
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	pm_info("##### -\n");
 
