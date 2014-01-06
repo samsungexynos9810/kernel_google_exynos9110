@@ -1104,7 +1104,17 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	int framedone = 0;
 	struct display_driver *dispdrv;
 
+	dispdrv = get_display_driver();
+
 	spin_lock(&dsim->slock);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	if (dispdrv->platform_status > DISP_STATUS_PM0 &&
+			!dispdrv->pm_status.clock_enabled) {
+		dev_err(dsim->dev, "IRQ occured during clock-gating!\n");
+		spin_unlock(&dsim->slock);
+		return IRQ_HANDLED;
+	}
+#endif
 	s5p_mipi_dsi_set_interrupt_mask(dsim, 0xffffffff, 1);
 	int_src = readl(dsim->reg_base + S5P_DSIM_INTSRC);
 
@@ -1113,10 +1123,8 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 		complete(&dsim_wr_comp);
 	if (int_src & RX_DAT_DONE)
 		complete(&dsim_rd_comp);
-	if (int_src & MIPI_FRAME_DONE) {
-		dispdrv = get_display_driver();
+	if (int_src & MIPI_FRAME_DONE)
 		framedone = 1;
-	}
 	if (int_src & ERR_RX_ECC)
 		dev_err(dsim->dev, "RX ECC Multibit error was detected!\n");
 	s5p_mipi_dsi_clear_interrupt(dsim, int_src);
