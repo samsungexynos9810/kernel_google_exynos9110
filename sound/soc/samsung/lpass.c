@@ -72,6 +72,12 @@ struct lpass_info {
 	struct clk		*clk_sramc;
 	struct clk		*clk_intr;
 	struct clk		*clk_timer;
+	struct clk		*clk_fout_dpll;
+	struct clk		*clk_mout_dpll_ctrl;
+	struct clk		*clk_mout_mau_epll_clk;
+	struct clk		*clk_mout_mau_epll_clk_user;
+	struct clk		*clk_mout_ass_clk;
+	struct clk		*clk_mout_ass_i2s;
 	bool			rpm_enabled;
 	atomic_t		use_cnt;
 } lpass;
@@ -374,11 +380,17 @@ static void ass_enable(void)
 
 	/* ASS_MUX_SEL */
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	exynos_set_parent("mout_dpll_ctrl", "fout_dpll");
-	exynos_set_parent("mout_mau_epll_clk", "mout_dpll_ctrl");
-	exynos_set_parent("mout_mau_epll_clk_user", "mout_mau_epll_clk");
-	exynos_set_parent("mout_ass_clk", "mout_mau_epll_clk_user");
-	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
+	clk_set_parent(lpass.clk_mout_dpll_ctrl, lpass.clk_fout_dpll);
+	clk_set_parent(lpass.clk_mout_mau_epll_clk, lpass.clk_mout_dpll_ctrl);
+	clk_set_parent(lpass.clk_mout_mau_epll_clk_user, lpass.clk_mout_mau_epll_clk);
+	clk_set_parent(lpass.clk_mout_ass_clk, lpass.clk_mout_mau_epll_clk_user);
+	clk_set_parent(lpass.clk_mout_ass_i2s, lpass.clk_mout_ass_clk);
+
+	clk_prepare_enable(lpass.clk_mout_dpll_ctrl);
+	clk_prepare_enable(lpass.clk_mout_mau_epll_clk);
+	clk_prepare_enable(lpass.clk_mout_mau_epll_clk_user);
+	clk_prepare_enable(lpass.clk_mout_ass_clk);
+	clk_prepare_enable(lpass.clk_mout_ass_i2s);
 #else
 	exynos_set_parent("mout_ass_clk", "fin_pll");
 	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
@@ -438,6 +450,13 @@ static void ass_disable(void)
 {
 	lpass.enabled = false;
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	clk_disable_unprepare(lpass.clk_mout_dpll_ctrl);
+	clk_disable_unprepare(lpass.clk_mout_mau_epll_clk);
+	clk_disable_unprepare(lpass.clk_mout_mau_epll_clk_user);
+	clk_disable_unprepare(lpass.clk_mout_ass_clk);
+	clk_disable_unprepare(lpass.clk_mout_ass_i2s);
+#endif
 	clk_disable_unprepare(lpass.clk_dmac);
 	clk_disable_unprepare(lpass.clk_timer);
 
@@ -499,22 +518,70 @@ static int clk_set_heirachy_ass(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
 
+	lpass.clk_fout_dpll = clk_get(NULL,"fout_dpll");
+	if (IS_ERR_OR_NULL(lpass.clk_fout_dpll)) {
+		dev_err(dev, "fout_dpll clk not found\n");
+		goto err0;
+	}
+
+	lpass.clk_mout_dpll_ctrl = clk_get(dev,"mout_dpll_ctrl");
+	if (IS_ERR_OR_NULL(lpass.clk_mout_dpll_ctrl)) {
+		dev_err(dev, "mout_dpll_ctrl clk not found\n");
+		goto err1;
+	}
+
+	lpass.clk_mout_mau_epll_clk = clk_get(dev,"mout_mau_epll_clk");
+	if (IS_ERR_OR_NULL(lpass.clk_mout_mau_epll_clk)) {
+		dev_err(dev, "mout_mau_epll_clk clk not found\n");
+		goto err2;
+	}
+
+	lpass.clk_mout_mau_epll_clk_user = clk_get(dev,"mout_mau_epll_clk_user");
+	if (IS_ERR_OR_NULL(lpass.clk_mout_mau_epll_clk_user)) {
+		dev_err(dev, "mout_mau_epll_clk_user clk not found\n");
+		goto err3;
+	}
+
+	lpass.clk_mout_ass_clk = clk_get(dev,"mout_ass_clk");
+	if (IS_ERR_OR_NULL(lpass.clk_mout_ass_clk)) {
+		dev_err(dev, "clk_mout_ass_clk clk not found\n");
+		goto err4;
+	}
+
+	lpass.clk_mout_ass_i2s = clk_get(dev,"mout_ass_i2s");
+	if (IS_ERR_OR_NULL(lpass.clk_mout_ass_i2s)) {
+		dev_err(dev, "mout_ass_i2s clk not found\n");
+		goto err5;
+	}
+
 	lpass.clk_dmac = clk_get(dev, "dmac");
 	if (IS_ERR(lpass.clk_dmac)) {
 		dev_err(dev, "dmac clk not found\n");
-		goto err0;
+		goto err6;
 	}
 
 	lpass.clk_timer = clk_get(dev, "timer");
 	if (IS_ERR(lpass.clk_timer)) {
 		dev_err(dev, "timer clk not found\n");
-		goto err1;
+		goto err7;
 	}
 
 	return 0;
 
-err1:
+err7:
 	clk_put(lpass.clk_dmac);
+err6:
+	clk_put(lpass.clk_mout_ass_i2s);
+err5:
+	clk_put(lpass.clk_mout_ass_clk);
+err4:
+	clk_put(lpass.clk_mout_mau_epll_clk_user);
+err3:
+	clk_put(lpass.clk_mout_mau_epll_clk);
+err2:
+	clk_put(lpass.clk_mout_dpll_ctrl);
+err1:
+	clk_put(lpass.clk_fout_dpll);
 err0:
 	return -1;
 }
