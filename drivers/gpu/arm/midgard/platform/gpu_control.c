@@ -18,6 +18,7 @@
 #include <mali_kbase.h>
 
 #include <linux/pm_qos.h>
+#include <mach/bts.h>
 
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
@@ -176,7 +177,13 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 	if (clock > prev_clock) {
 		gpu_set_voltage(platform, voltage);
 		gpu_set_clock(platform, clock);
+#if defined(CONFIG_EXYNOS5422_BTS)
+		bts_scen_update(TYPE_G3D_FREQ, clock);
+#endif /* CONFIG_EXYNOS5422_BTS */
 	} else {
+#if defined(CONFIG_EXYNOS5422_BTS)
+		bts_scen_update(TYPE_G3D_FREQ, clock);
+#endif /* CONFIG_EXYNOS5422_BTS */
 		gpu_set_clock(platform, clock);
 		gpu_set_voltage(platform, voltage);
 	}
