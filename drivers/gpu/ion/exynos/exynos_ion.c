@@ -605,6 +605,9 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 
 	vunmap(p);
 
+	ion_buffer_set_ready(buffer);
+	ion_buffer_set_clean(buffer);
+
 err_vmap:
 	if (pages_size > PAGE_SIZE)
 		vfree(pages);
