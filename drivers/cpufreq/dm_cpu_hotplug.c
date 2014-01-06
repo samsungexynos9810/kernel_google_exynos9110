@@ -250,7 +250,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				if (cpu_online(i)) {
 					ret = cpu_down(i);
 					if (ret)
-						break;
+						goto blk_out;
 				}
 			}
 		} else {
@@ -258,7 +258,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				if (cpu_online(i)) {
 					ret = cpu_down(i);
 					if (ret)
-						break;
+						goto blk_out;
 				}
 			}
 		}
@@ -274,7 +274,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				if (!cpu_online(i)) {
 					ret = cpu_up(i);
 					if (ret)
-						break;
+						goto blk_out;
 				}
 			}
 		} else {
@@ -283,7 +283,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 					if (!cpu_online(i)) {
 						ret = cpu_up(i);
 						if (ret)
-							break;
+							goto blk_out;
 					}
 				}
 			} else {
@@ -292,7 +292,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
-								break;
+								goto blk_out;
 						}
 					}
 
@@ -300,7 +300,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
-								break;
+								goto blk_out;
 						}
 					}
 				} else {
@@ -308,7 +308,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
-								break;
+								goto blk_out;
 						}
 					}
 				}
@@ -324,7 +324,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 			if (cpu_online(i)) {
 				ret = cpu_down(i);
 				if (ret)
-					break;
+					goto blk_out;
 			}
 		}
 	} else {
@@ -335,7 +335,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 			if (!cpu_online(i)) {
 				ret = cpu_up(i);
 				if (ret)
-					break;
+					goto blk_out;
 			}
 		}
 	}
@@ -557,6 +557,7 @@ static void calc_load(void)
 static int on_run(void *data)
 {
 	int on_cpu = 0;
+	int ret;
 
 	struct cpumask thread_cpumask;
 
@@ -581,11 +582,9 @@ static int on_run(void *data)
 			continue;
 
 		if (prev_cmd == exe_cmd) {
-			if (dynamic_hotplug(exe_cmd) < 0) {
-				pr_err("%s: failed dynamic hotplug (exe_cmd %d)\n",
-					__func__, exe_cmd);
+			ret = dynamic_hotplug(exe_cmd);
+			if (ret < 0)
 				goto failed_out;
-			}
 		}
 
 		prev_cmd = exe_cmd;
@@ -597,8 +596,12 @@ static int on_run(void *data)
 
 	pr_info("stopped %s\n", dm_hotplug_task->comm);
 
-failed_out:
 	return 0;
+
+failed_out:
+	panic("%s: failed dynamic hotplug (exe_cmd %d)\n", __func__, exe_cmd);
+
+	return ret;
 }
 
 static int __init dm_cpu_hotplug_init(void)
