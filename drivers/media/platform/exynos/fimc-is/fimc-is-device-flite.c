@@ -48,6 +48,7 @@
 #define FLITE_MAX_RESET_READY_TIME	(20) /* 100ms */
 #define FLITE_MAX_WIDTH_SIZE		(8192)
 #define FLITE_MAX_HEIGHT_SIZE		(8192)
+/* #define COLORBAR_MODE */
 
 /*FIMCLite*/
 /* Camera Source size */
@@ -379,8 +380,13 @@ static void flite_hw_set_cam_source_size(unsigned long __iomem *base_reg,
 
 	BUG_ON(!image);
 
+#ifdef COLORBAR_MODE
+	cfg |= FLITE_REG_CISRCSIZE_SIZE_H(640);
+	cfg |= FLITE_REG_CISRCSIZE_SIZE_V(480);
+#else
 	cfg |= FLITE_REG_CISRCSIZE_SIZE_H(image->window.o_width);
 	cfg |= FLITE_REG_CISRCSIZE_SIZE_V(image->window.o_height);
+#endif
 
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CISRCSIZE));
 }
@@ -393,7 +399,7 @@ static void flite_hw_set_dma_offset(unsigned long __iomem *base_reg,
 	BUG_ON(!image);
 
 	/* HACK */
-	if (image->format.pixelformat == V4L2_PIX_FMT_SBGGR12)
+	if (image->format.pixelformat == V4L2_PIX_FMT_SBGGR10 || image->format.pixelformat == V4L2_PIX_FMT_SBGGR12)
 		cfg |= FLITE_REG_CIOCAN_OCAN_H(roundup(image->window.o_width, 10));
 	else
 		cfg |= FLITE_REG_CIOCAN_OCAN_H(image->window.o_width);
@@ -441,10 +447,14 @@ static int flite_hw_set_source_format(unsigned long __iomem *base_reg, struct fi
 
 	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
+#ifdef COLORBAR_MODE
+	cfg |= FLITE_REG_CIGCTRL_YUV422_1P;
+#else
 	if (image->format.pixelformat == V4L2_PIX_FMT_SGRBG8)
 		cfg |= FLITE_REG_CIGCTRL_RAW8;
 	else
 		cfg |= FLITE_REG_CIGCTRL_RAW10;
+#endif
 
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
@@ -458,7 +468,7 @@ static void flite_hw_set_dma_fmt(unsigned long __iomem *base_reg,
 
 	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIODMAFMT));
 
-	if (pixelformat == V4L2_PIX_FMT_SBGGR12)
+	if (pixelformat == V4L2_PIX_FMT_SBGGR10 || pixelformat == V4L2_PIX_FMT_SBGGR12)
 		cfg |= FLITE_REG_CIODMAFMT_PACK12;
 	else
 		cfg |= FLITE_REG_CIODMAFMT_NORMAL;
@@ -500,16 +510,18 @@ static void flite_hw_set_output_local(unsigned long __iomem *base_reg, bool enab
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
-/* will use for pattern generation testing
-static void flite_hw_set_test_pattern_enable(void)
+#ifdef COLORBAR_MODE
+/* will use for pattern generation testing */
+static void flite_hw_set_test_pattern_enable(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
-	cfg = readl(flite_reg_base + FLITE_REG_CIGCTRL);
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 	cfg |= FLITE_REG_CIGCTRL_TEST_PATTERN_COLORBAR;
 
-	writel(cfg, flite_reg_base + FLITE_REG_CIGCTRL);
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
-*/
+#endif
 
 static void flite_hw_set_config_irq(unsigned long __iomem *base_reg)
 {
@@ -773,7 +785,9 @@ static int start_fimc_lite(unsigned long __iomem *base_reg,
 	/*flite_hw_set_interrupt_starten0_disable(mipi_reg_base);*/
 	flite_hw_set_config_irq(base_reg);
 	flite_hw_set_window_offset(base_reg, image);
-	/* flite_hw_set_test_pattern_enable(); */
+#ifdef COLORBAR_MODE
+	flite_hw_set_test_pattern_enable(base_reg);
+#endif
 
 	if (bns)
 		flite_hw_set_bns(base_reg, image);
