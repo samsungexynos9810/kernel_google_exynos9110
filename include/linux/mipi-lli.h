@@ -102,6 +102,7 @@ struct lli_driver {
 	int	(*reset_signal)(struct mipi_lli *lli);
 	int	(*read_signal)(struct mipi_lli *lli);
 	int	(*loopback_test)(struct mipi_lli *lli);
+	int	(*debug_info)(struct mipi_lli *lli);
 
 	int	(*suspend)(struct mipi_lli *lli);
 	int	(*resume)(struct mipi_lli *lli);
@@ -122,6 +123,7 @@ extern int mipi_lli_unregister_handler(void (*handler)(void *, u32));
 extern void mipi_lli_send_interrupt(u32 cmd);
 extern void mipi_lli_reset_interrupt(void);
 extern u32 mipi_lli_read_interrupt(void);
+extern void mipi_lli_debug_info(void);
 extern void mipi_lli_reload(void);
 extern void mipi_lli_suspend(void);
 extern void mipi_lli_resume(void);

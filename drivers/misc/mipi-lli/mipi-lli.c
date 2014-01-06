@@ -183,6 +183,21 @@ u32 mipi_lli_read_interrupt(void)
 EXPORT_SYMBOL(mipi_lli_read_interrupt);
 
 /**
+ * mipi_lli_debug_info - Print debugging information for LLI.
+ *
+ * Returns a pointer to the allocated event buffer structure on success
+ * otherwise ERR_PTR(errno).
+ */
+void mipi_lli_debug_info(void)
+{
+	if (!g_lli || !g_lli->driver || !g_lli->driver->debug_info)
+		return;
+
+	g_lli->driver->debug_info(g_lli);
+}
+EXPORT_SYMBOL(mipi_lli_debug_info);
+
+/**
  * mipi_lli_reload - Reload all resource for re-init
  *
  * Returns a pointer to the allocated event buffer structure on success
@@ -227,7 +242,9 @@ static ssize_t store_mipi_lli_control(struct device *dev,
 
 	device_lock(dev);
 
-	if (command == 1)
+	if (command == 0)
+		lli->driver->debug_info(lli);
+	else if (command == 1)
 		lli->driver->init(lli);
 	else if (command == 2)
 		lli->driver->set_master(lli, true);
