@@ -197,7 +197,7 @@ void fimc_is_set_plane_size(struct fimc_is_frame_cfg *frame, unsigned int sizes[
 	case V4L2_PIX_FMT_SBGGR10:
 		dbg("V4L2_PIX_FMT_SBGGR10(w:%d)(h:%d)\n",
 				frame->width, frame->height);
-		sizes[0] = frame->width*frame->height*2;
+		sizes[0] = get_plane_size_flite(frame->width,frame->height);
 		if (frame->bytesperline[0]) {
 			if (frame->bytesperline[0] >= frame->width * 5 / 4) {
 			sizes[0] = frame->bytesperline[0]
@@ -749,6 +749,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	const struct v4l2_ioctl_ops *ioctl_ops)
 {
 	int ret = 0;
+	u32 video_id;
 
 	vref_init(video);
 	mutex_init(&video->lock);
@@ -767,6 +768,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	video->vd.lock		= lock;
 	video_set_drvdata(&video->vd, video);
 
+	video_id = EXYNOS_VIDEONODE_FIMC_IS + video_number;
 	ret = video_register_device(&video->vd,
 		VFL_TYPE_GRABBER,
 		(EXYNOS_VIDEONODE_FIMC_IS + video_number));
@@ -776,6 +778,7 @@ int fimc_is_video_probe(struct fimc_is_video *video,
 	}
 
 p_err:
+	info("[VID] %s(%d) is created\n", video_name, video_id);
 	return ret;
 }
 
