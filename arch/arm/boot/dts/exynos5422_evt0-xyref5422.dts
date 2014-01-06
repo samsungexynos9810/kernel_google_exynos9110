@@ -113,7 +113,7 @@
 		clk_val = <0x3>;
 		clk_str_num = <4>;
 		num-ref-clks = <8>;
-		ciu_clkin = <20812500 41625000 41625000 83250000 166500000 83250000 166500000 333000000>;
+		ciu_clkin = <25000000 50000000 50000000 100000000 200000000 100000000 200000000 400000000>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus1 &sd2_bus4 &dwmmc2_cd_irq>;
 
