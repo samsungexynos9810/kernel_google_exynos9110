@@ -138,6 +138,6 @@ int sensor_6a3_probe(struct i2c_client *client,
 	snprintf(subdev_module->name, V4L2_SUBDEV_NAME_SIZE, "sensor-subdev.%d", module->id);
 
 p_err:
-	info("%s(%d) enum_idx(%d)\n", __func__, ret, enum_idx);
+	info("%s(%d)\n", __func__, ret);
 	return ret;
 }
