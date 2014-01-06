@@ -161,7 +161,9 @@ struct hdmi_resources {
 	struct clk *sclk_hdmi;
 	struct clk *sclk_pixel;
 	struct clk *sclk_hdmiphy;
-	int gpio;
+	int gpio_hpd;
+	int gpio_ls;
+	int gpio_dcdc;
 };
 
 struct hdmi_tg_regs {

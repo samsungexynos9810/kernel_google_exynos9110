@@ -786,9 +786,8 @@ static void hdmi_hpd_work_ext(struct work_struct *work)
 	int state = 0;
 	struct hdmi_device *hdev = container_of(work, struct hdmi_device,
 						hpd_work_ext.work);
-	struct hdmi_resources *res = &hdev->res;
 
-	state = gpio_get_value(res->gpio);
+	state = gpio_get_value(hdev->res.gpio_hpd);
 	hdmi_hpd_changed(hdev, state);
 }
 
@@ -798,6 +797,60 @@ static void hdmi_hpd_work(struct work_struct *work)
 						hpd_work);
 
 	hdmi_hpd_changed(hdev, 0);
+}
+
+static int hdmi_set_gpio(struct hdmi_device *hdev)
+{
+	struct device *dev = hdev->dev;
+	struct hdmi_resources *res = &hdev->res;
+	int ret = 0;
+
+	if (of_get_property(dev->of_node, "gpios", NULL) != NULL) {
+		/* HPD */
+		res->gpio_hpd = of_get_gpio(dev->of_node, 0);
+		if (res->gpio_hpd < 0) {
+			dev_err(dev, "failed to get gpio hpd\n");
+			return -ENODEV;
+		}
+		if (gpio_request(res->gpio_hpd, "hdmi-hpd")) {
+			dev_err(dev, "failed to request hdmi-hpd\n");
+			ret = -ENODEV;
+		} else {
+			gpio_direction_input(res->gpio_hpd);
+			s5p_v4l2_int_src_ext_hpd(hdev);
+			dev_info(dev, "success request GPIO for hdmi-hpd\n");
+		}
+		/* Level shifter */
+		res->gpio_ls = of_get_gpio(dev->of_node, 1);
+		if (res->gpio_ls < 0) {
+			dev_err(dev, "failed to get gpio ls\n");
+			return -ENODEV;
+		}
+		if (gpio_request(res->gpio_ls, "hdmi-ls")) {
+			dev_err(dev, "failed to request hdmi-ls\n");
+			ret = -ENODEV;
+		} else {
+			gpio_direction_output(res->gpio_ls, 1);
+			gpio_set_value(res->gpio_ls, 1);
+			dev_info(dev, "success request GPIO for hdmi-ls\n");
+		}
+		/* DDC */
+		res->gpio_dcdc = of_get_gpio(dev->of_node, 2);
+		if (res->gpio_dcdc < 0) {
+			dev_err(dev, "failed to get gpio dcdc\n");
+			return -ENODEV;
+		}
+		if (gpio_request(res->gpio_dcdc, "hdmi-dcdc")) {
+			dev_err(dev, "failed to request hdmi-dcdc\n");
+			ret = -ENODEV;
+		} else {
+			gpio_direction_output(res->gpio_dcdc, 1);
+			gpio_set_value(res->gpio_dcdc, 1);
+			dev_info(dev, "success request GPIO for hdmi-dcdc\n");
+		}
+	}
+
+	return ret;
 }
 
 static int hdmi_probe(struct platform_device *pdev)
@@ -894,21 +947,14 @@ static int hdmi_probe(struct platform_device *pdev)
 		goto fail_vdev;
 
 	/* setting the GPIO */
-	if (of_get_property(dev->of_node, "gpios", NULL) != NULL) {
-		hdmi_dev->res.gpio = of_get_gpio(dev->of_node, 0);
-		if (gpio_request(hdmi_dev->res.gpio, "hdmi-hpd")) {
-			dev_err(dev, "failed to request HPD-plug\n");
-			ret = -ENODEV;
-			goto fail_clk;
-		} else {
-			gpio_direction_input(hdmi_dev->res.gpio);
-			s5p_v4l2_int_src_ext_hpd(hdmi_dev);
-			dev_info(dev, "success request GPIO for hdmi-hpd\n");
-		}
+	ret = hdmi_set_gpio(hdmi_dev);
+	if (ret) {
+		dev_err(dev, "failed to get GPIO\n");
+		goto fail_clk;
 	}
 
 	/* External hpd */
-	hdmi_dev->ext_irq = gpio_to_irq(hdmi_dev->res.gpio);
+	hdmi_dev->ext_irq = gpio_to_irq(hdmi_dev->res.gpio_hpd);
 	ret = devm_request_irq(dev, hdmi_dev->ext_irq, hdmi_irq_handler_ext,
 			IRQ_TYPE_EDGE_BOTH, "hdmi-ext", hdmi_dev);
 	if (ret) {
@@ -1000,7 +1046,9 @@ fail_switch:
 	mutex_destroy(&hdmi_dev->mutex);
 
 fail_gpio:
-	gpio_free(hdmi_dev->res.gpio);
+	gpio_free(hdmi_dev->res.gpio_hpd);
+	gpio_free(hdmi_dev->res.gpio_ls);
+	gpio_free(hdmi_dev->res.gpio_dcdc);
 
 fail_clk:
 	hdmi_resources_cleanup(hdmi_dev);
