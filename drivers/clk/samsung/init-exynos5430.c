@@ -431,8 +431,8 @@ void cpif_init_clock(void)
 
 void crypto_init_clock(void)
 {
-	exynos_set_rate("dout_aclk_imem_266", 267*1000000);
-	exynos_set_rate("dout_aclk_imem_200", 200*1000000);
+	exynos_set_rate("dout_aclk_imem_266", 160*1000000);
+	exynos_set_rate("dout_aclk_imem_200", 160*1000000);
 }
 
 void pwm_init_clock(void)
