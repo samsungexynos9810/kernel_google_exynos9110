@@ -113,7 +113,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_TRIMINFO_RELOAD			0x1
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 #define EXYNOS_TMU_CLEAR_RISE_INT      		0xff
-#define EXYNOS_TMU_CLEAR_FALL_INT      		0xff << 16
+#define EXYNOS_TMU_CLEAR_FALL_INT      		(0xff << 16)
 #else
 #define EXYNOS_TMU_CLEAR_RISE_INT		0x1111
 #define EXYNOS_TMU_CLEAR_FALL_INT		(0x1111 << 16)
@@ -124,8 +124,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_THERM_TRIP_EN			(1 << 12)
 #define EXYNOS_MUX_ADDR				0x600000
 
-#define EFUSE_MIN_VALUE 			40
-#define EFUSE_MAX_VALUE 			100
+#define EFUSE_MIN_VALUE				40
+#define EFUSE_MAX_VALUE				100
 
 /* In-kernel thermal framework related macros & definations */
 #define SENSOR_NAME_LEN				16
@@ -521,7 +521,7 @@ void exynos_gpu_call_notifier(enum gpu_noti_state_t cur_state)
 	if (is_suspending)
 		cur_state = GPU_COLD;
 
-	if (cur_state!=gpu_old_state) {
+	if (cur_state != gpu_old_state) {
 		pr_info("gpu temperature state %d to %d\n", gpu_old_state, cur_state);
 		blocking_notifier_call_chain(&exynos_gpu_notifier, cur_state, &cur_state);
 		gpu_old_state = cur_state;
@@ -1071,13 +1071,13 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 		__raw_writel(EXYNOS_TRIMINFO_RELOAD2,
 				data->base[id] + EXYNOS_TRIMINFO_CONTROL);
 		while (readl(data->base[id] + EXYNOS_TRIMINFO_CONTROL) & EXYNOS_TRIMINFO_RELOAD1) {
-			if(!timeout) {
+			if (!timeout) {
 				pr_err("Thermal TRIMINFO register reload failed\n");
 				break;
 			}
 			timeout--;
 			cpu_relax();
-			usleep_range(5,10);
+			usleep_range(5, 10);
 		}
 	}
 
@@ -1171,11 +1171,9 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 
 		if (i == EXYNOS_GPU_NUMBER) {
 			gpu_temp = temp;
-		}
-		else if (i == EXYNOS_ISP_NUMBER) {
+		} else if (i == EXYNOS_ISP_NUMBER) {
 			isp_temp = temp;
-		}
-		else {
+		} else {
 			if (temp > max)
 				max = temp;
 			if (temp < min)
@@ -1296,14 +1294,14 @@ static int exynos_pm_notifier(struct notifier_block *notifier,
 		unsigned long pm_event, void *v)
 {
 	switch (pm_event) {
-		case PM_SUSPEND_PREPARE:
-			is_suspending = true;
-			exynos_tmu_call_notifier(TMU_COLD);
-			exynos_gpu_call_notifier(TMU_COLD);
-			break;
-		case PM_POST_SUSPEND:
-			is_suspending = false;
-			break;
+	case PM_SUSPEND_PREPARE:
+		is_suspending = true;
+		exynos_tmu_call_notifier(TMU_COLD);
+		exynos_gpu_call_notifier(TMU_COLD);
+		break;
+	case PM_POST_SUSPEND:
+		is_suspending = false;
+		break;
 	}
 
 	return NOTIFY_OK;
