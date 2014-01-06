@@ -439,6 +439,7 @@ static int fimc_is_sen_video_s_input(struct file *file, void *priv,
 
 	drive = input & SENSOR_DRIVING_MASK;
 	input = input & SENSOR_MODULE_MASK;
+
 	ret = fimc_is_sensor_s_input(device, input, drive);
 	if (ret) {
 		merr("fimc_is_sensor_s_input is fail(%d)", device, ret);

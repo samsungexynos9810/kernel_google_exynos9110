@@ -421,6 +421,11 @@ static void flite_hw_set_dma_fmt(unsigned long __iomem *base_reg,
 	else
 		cfg |= FLITE_REG_CIODMAFMT_NORMAL;
 
+	if (pixelformat == V4L2_PIX_FMT_SGRBG8)
+		cfg |= FLITE_REG_CIODMAFMT_1D_DMA;
+	else
+		cfg |= FLITE_REG_CIODMAFMT_2D_DMA;
+
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIODMAFMT));
 }
 

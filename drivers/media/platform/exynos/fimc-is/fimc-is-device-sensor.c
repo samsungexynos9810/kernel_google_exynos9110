@@ -49,6 +49,14 @@
 
 extern int fimc_is_sen_video_probe(void *data);
 
+extern u32 __iomem *notify_fcount_sen0;
+extern u32 __iomem *notify_fcount_sen1;
+extern u32 __iomem *notify_fcount_sen2;
+u32 notify_fcount_sen0_fw;
+u32 notify_fcount_sen1_fw;
+u32 notify_fcount_sen2_fw;
+u32 notify_fcount_dummy;
+
 #define BINNING(x, y) roundup((x) * 1000 / (y), 250)
 
 int fimc_is_sensor_read(struct i2c_client *client,
@@ -64,16 +72,13 @@ int fimc_is_sensor_read(struct i2c_client *client,
 		return -ENODEV;
 	}
 
-	/* 1. I2C operation for writing. */
 	msg[0].addr = client->addr;
-	msg[0].flags = 0; /* write : 0, read : 1 */
+	msg[0].flags = 0;
 	msg[0].len = 2;
 	msg[0].buf = wbuf;
-	/* TODO : consider other size of buffer */
 	wbuf[0] = array[1];
 	wbuf[1] = array[0];
 
-	/* 2. I2C operation for reading data. */
 	msg[1].addr = client->addr;
 	msg[1].flags = I2C_M_RD;
 	msg[1].len = 1;
@@ -108,8 +113,6 @@ int fimc_is_sensor_write(struct i2c_client *client,
 	wbuf[0] = array[1];
 	wbuf[1] = array[0];
 	wbuf[2] = val;
-
-	info("I2CW(%d) [%d][%d] : %d\n", client->addr, array[1], array[0], val);
 
 	ret = i2c_transfer(client->adapter, msg, 1);
 	if (ret < 0) {
@@ -392,10 +395,12 @@ static void fimc_is_sensor_dtp(unsigned long data)
 		return;
 	}
 
-	ischain = device->ischain;
-	if (!ischain) {
-		err("ischain is NULL");
-		return;
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		ischain = device->ischain;
+		if (!ischain) {
+			err("ischain is NULL");
+			return;
+		}
 	}
 
 	queue = GET_DST_QUEUE(vctx);
@@ -406,10 +411,12 @@ static void fimc_is_sensor_dtp(unsigned long data)
 	}
 
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
-	set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_3aa.state);
-	set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_isp.state);
-	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &ischain->group_3ax.state))
-		up(&ischain->group_3aa.smp_trigger);
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_3aa.state);
+		set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_isp.state);
+		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &ischain->group_3ax.state))
+			up(&ischain->group_3aa.smp_trigger);
+	}
 
 	framemgr_e_barrier_irqs(framemgr, 0, flags);
 
@@ -535,7 +542,6 @@ static void fimc_is_sensor_control(struct work_struct *data)
 	csensor_ctl = &device->sensor_ctl;
 
 	if (rsensor_ctl->exposureTime != csensor_ctl->exposureTime) {
-		info("exposure request : %d %d\n", (u32)rsensor_ctl->exposureTime, (u32)csensor_ctl->exposureTime);
 		CALL_MOPS(module, s_exposure, subdev_module, rsensor_ctl->exposureTime);
 		csensor_ctl->exposureTime = rsensor_ctl->exposureTime;
 	}
@@ -623,6 +629,12 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 	if (frame) {
 		frame->has_fcount = false;
 		buffer_done(device->vctx, frame->index);
+
+		/* device driving */
+		if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+			device->control_frame = frame;
+			schedule_work(&device->control_work);
+		}
 	}
 
 #ifdef ENABLE_DTP
@@ -636,12 +648,6 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 		device->instant_cnt--;
 		if (device->instant_cnt <= 1)
 			wake_up(&device->instant_wait);
-	}
-
-	/* device driving */
-	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-		device->control_frame = frame;
-		schedule_work(&device->control_work);
 	}
 
 	return ret;
@@ -868,7 +874,7 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 	memset(&device->lens_ctl, 0, sizeof(struct camera2_lens_ctl));
 	memset(&device->flash_ctl, 0, sizeof(struct camera2_flash_ctl));
 
-       /* for mediaserver force close */
+	/* for mediaserver force close */
 	ret = fimc_is_resource_get(device->resourcemgr);
 	if (ret) {
 		merr("fimc_is_resource_get is fail", device);
@@ -952,9 +958,15 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	}
 
 	/* for mediaserver force close */
-	ret = fimc_is_resource_put(device->resourcemgr);
-	if (ret)
-		merr("fimc_is_resource_put is fail", device);
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		ret = fimc_is_resource_put(device->resourcemgr);
+		if (ret)
+			merr("fimc_is_resource_put is fail", device);
+	} else {
+		notify_fcount_sen0 = (u32 *)notify_fcount_sen0_fw;
+		notify_fcount_sen1 = (u32 *)notify_fcount_sen1_fw;
+		notify_fcount_sen2 = (u32 *)notify_fcount_sen2_fw;
+	}
 
 	clear_bit(FIMC_IS_SENSOR_OPEN, &device->state);
 
@@ -979,7 +991,6 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	BUG_ON(!device->pdata);
 	BUG_ON(!device->subdev_csi);
 	BUG_ON(input >= SENSOR_NAME_END);
-
 
 	for (i = 0; i < SENSOR_MAX_ENUM; i++) {
 		if (&device->module_enum[i] &&
@@ -1051,9 +1062,21 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
-	if(test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
 		device->pdata->scenario = SENSOR_SCENARIO_VISION;
-		info("[SEN:D:%d] vision sensor mode\n", device->instance);
+
+		ret = fimc_is_resource_put(device->resourcemgr);
+		if (ret)
+			merr("fimc_is_resource_put is fail", device);
+
+		notify_fcount_sen0_fw = (u32)notify_fcount_sen0;
+		notify_fcount_sen1_fw = (u32)notify_fcount_sen1;
+		notify_fcount_sen2_fw = (u32)notify_fcount_sen2;
+		notify_fcount_sen0 = &notify_fcount_dummy;
+		notify_fcount_sen1 = &notify_fcount_dummy;
+		notify_fcount_sen2 = &notify_fcount_dummy;
+	} else {
+		device->pdata->scenario = SENSOR_SCENARIO_NORMAL;
 	}
 
 	/* configuration clock control */
@@ -1087,7 +1110,9 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	device->subdev_module = subdev_module;
 
 p_err:
-	info("[SEN:D:%d] %s(%d, %d, %d)\n", device->instance, __func__, input, drive, ret);
+	info("[SEN:D:%d] input: %d, drive: %d, ret: %d)\n",
+			device->instance, input, drive, ret);
+
 	return ret;
 }
 
@@ -1479,7 +1504,8 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 
 	BUG_ON(!device);
 	BUG_ON(!device->subdev_flite);
-	BUG_ON(!device->ischain);
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state))
+		BUG_ON(!device->ischain);
 
 	subdev_flite = device->subdev_flite;
 	enable = FLITE_ENABLE_FLAG;
@@ -1497,25 +1523,27 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 		goto p_err;
 	}
 
-	clear_bit(FLITE_OTF_WITH_3AA, &flite->state);
-	if (IS_ISCHAIN_OTF(device->ischain)) {
-		if (device->ischain->group_3aa.id == GROUP_ID_3A0) {
-			flite->group = GROUP_ID_3A0;
-		} else if (device->ischain->group_3aa.id == GROUP_ID_3A1) {
-			flite->group = GROUP_ID_3A1;
-		} else {
-			merr("invalid otf path(%d)", device, device->ischain->group_3aa.id);
-			ret = -EINVAL;
-			goto p_err;
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		clear_bit(FLITE_OTF_WITH_3AA, &flite->state);
+		if (IS_ISCHAIN_OTF(device->ischain)) {
+			if (device->ischain->group_3aa.id == GROUP_ID_3A0) {
+				flite->group = GROUP_ID_3A0;
+			} else if (device->ischain->group_3aa.id == GROUP_ID_3A1) {
+				flite->group = GROUP_ID_3A1;
+			} else {
+				merr("invalid otf path(%d)", device, device->ischain->group_3aa.id);
+				ret = -EINVAL;
+				goto p_err;
+			}
+
+			set_bit(FLITE_OTF_WITH_3AA, &flite->state);
 		}
 
-		set_bit(FLITE_OTF_WITH_3AA, &flite->state);
-	}
-
-	/* to determine flite buffer done mode (early/normal) */
-	if (flite->chk_early_buf_done) {
-		flite->chk_early_buf_done(flite, device->image.framerate,
-			device->pdev->id);
+		/* to determine flite buffer done mode (early/normal) */
+		if (flite->chk_early_buf_done) {
+			flite->chk_early_buf_done(flite, device->image.framerate,
+					device->pdev->id);
+		}
 	}
 
 	ret = v4l2_subdev_call(subdev_flite, video, s_stream, enable);
@@ -1653,7 +1681,8 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 		merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
 
 	/* HACK */
-	set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state))
+		set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
 
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
