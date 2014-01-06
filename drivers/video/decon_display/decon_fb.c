@@ -4503,8 +4503,6 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
 	if (sfb->pdata->lcd_off)
 		sfb->pdata->lcd_off();
 
-	pm_runtime_put_sync(sfb->dev);
-
 	mutex_unlock(&sfb->output_lock);
 
 	return 0;
