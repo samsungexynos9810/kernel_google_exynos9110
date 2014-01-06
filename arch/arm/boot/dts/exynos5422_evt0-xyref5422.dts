@@ -299,7 +299,7 @@
 				};
 
 				ldo19_reg: LDO19 {
-					regulator-name = "vdd_ldo19";
+					regulator-name = "vmmc";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <2850000>;
 					regulator-always-on;
