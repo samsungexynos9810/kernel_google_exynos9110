@@ -4943,6 +4943,13 @@ int decon_hibernation_power_off(struct display_driver *dispdrv)
 
 	mutex_lock(&sfb->output_lock);
 	ret = s3c_fb_decon_stop(sfb);
+
+#if defined(CONFIG_DECON_DEVFREQ)
+	exynos5_update_media_layers(TYPE_DECON, 0);
+	exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
+	prev_overlap_cnt = 0;
+	prev_gsc_local_cnt = 0;
+#endif
 	mutex_unlock(&sfb->output_lock);
 
 	return ret;
