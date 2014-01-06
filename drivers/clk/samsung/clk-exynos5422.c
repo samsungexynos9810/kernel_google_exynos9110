@@ -642,7 +642,7 @@ enum exynos5422_clks {
 	/* PSGEN */
 
 	/* ASS */
-	mout_ass_clk,
+	mout_ass_clk = 2200,
 	mout_ass_i2s,
 
 	/* etc */
