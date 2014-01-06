@@ -76,7 +76,6 @@ int fimc_is_sen_video_probe(void *data)
 		dev_err(&device->pdev->dev, "%s is fail(%d)\n", __func__, ret);
 
 p_err:
-	info("[SS%d:V:X] %s(%d)\n", number, __func__, ret);
 	return ret;
 }
 
