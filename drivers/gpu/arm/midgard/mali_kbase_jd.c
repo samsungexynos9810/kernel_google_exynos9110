@@ -634,9 +634,6 @@ mali_bool jd_done_nolock(kbase_jd_atom *katom)
 		if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
 			kbase_jd_post_external_resources(katom);
 
-		if (katom->core_req & BASE_JD_REQ_EXTERNAL_RESOURCES)
-			kbase_jd_post_external_resources(katom);
-
 		while (!list_empty(&runnable_jobs)) {
 			kbase_jd_atom *node = list_entry(runnable_jobs.prev, kbase_jd_atom, dep_item[0]);
 			list_del(runnable_jobs.prev);
