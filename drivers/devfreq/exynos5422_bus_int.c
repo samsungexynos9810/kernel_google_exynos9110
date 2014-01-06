@@ -689,9 +689,9 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 
 			int_clk->p2_parent_clk =  exynos5_change_pll(data, int_clk->clk_info[target_idx].src_pll);
 			if (int_clk->clk_info[target_idx].src_pll == SW_MUX) {
-				clk_set_parent(int_clk->p_parent_clk, int_clk->p2_parent_clk);
+				clk_set_parent(int_clk->parent_clk, int_clk->p2_parent_clk);
 #ifdef DEVFREQ_INT_TRACE
-				printk("[%s] -P:[%s] %ld\n", int_clk->p_parent_clk->name, int_clk->p2_parent_clk->name, clk_get_rate(int_clk->p2_parent_clk));
+				printk("[%s] -P:[%s] %ld\n", int_clk->parent_clk->name, int_clk->p2_parent_clk->name, clk_get_rate(int_clk->p2_parent_clk));
 #endif
 				continue;
 			}
@@ -1160,7 +1160,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 		goto err_mout_dpll;
 	}
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	data->mout_spll = aclk_get(dev, "dout_spll_ctrl_div2");
+	data->mout_spll = aclk_get(dev, "dout_spll_ctrl");
 #else
 	data->mout_spll = aclk_get(dev, "mout_spll_ctrl");
 #endif
