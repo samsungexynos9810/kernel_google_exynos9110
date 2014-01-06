@@ -150,8 +150,11 @@
 		};
 	};
 
-	i2c@12C80000 {
+	hsi2c@12CC0000 {
+		samsung,hs-mode;
+		clock-frequency = <2500000>;
 		status = "okay";
+
 		/* hdmi edid dirver */
 		edid@50 {
 			compatible = "samsung,exynos5-edid_driver";

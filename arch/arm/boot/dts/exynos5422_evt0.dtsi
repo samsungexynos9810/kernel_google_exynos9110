@@ -1367,7 +1367,7 @@
 		interrupts = <0 95 0>;
 		samsung,power-domain = <&spd_hdmi>;
 
-		gpios = <&gpx3 7 0xf>;
+		gpios = <&gpx3 7 0xf>, <&gpy4 2 0x1>, <&gpy4 3 0x1>;
 
 		pinctrl-names = "hdmi_hdmi_hpd", "hdmi_ext_hpd";
 		pinctrl-0 = <&hdmi_hdmi_hpd>;
