@@ -89,7 +89,7 @@ static struct hdmi_device *sd_to_hdmi_dev(struct v4l2_subdev *sd)
 	return container_of(sd, struct hdmi_device, sd);
 }
 
-const bool hdmi_match_timings(const struct v4l2_dv_timings *t1,
+bool hdmi_match_timings(const struct v4l2_dv_timings *t1,
 			  const struct v4l2_dv_timings *t2,
 			  unsigned pclock_delta)
 {
@@ -778,7 +778,7 @@ static void hdmi_hpd_changed(struct hdmi_device *hdev, int state)
 
 	switch_set_state(&hdev->hpd_switch, state);
 
-	dev_dbg(hdev->dev, "%s\n", state ? "plugged" : "unplugged");
+	dev_info(hdev->dev, "%s\n", state ? "plugged" : "unplugged");
 }
 
 static void hdmi_hpd_work_ext(struct work_struct *work)
@@ -884,8 +884,9 @@ static int hdmi_probe(struct platform_device *pdev)
 		pdata = hdmi_dev->pdata;
 	} else {
 		hdmi_dev->pdata = dev->platform_data;
-		memcpy(hdmi_dev->pdata, pdata, sizeof(*pdata));
+		pdata = hdmi_dev->pdata;
 	}
+	dev_info(dev, "HDMI ip version %d\n", pdata->ip_ver);
 
 	/* mapping HDMI registers */
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
