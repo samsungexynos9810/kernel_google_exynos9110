@@ -133,6 +133,7 @@ int kbase_platform_dvfs_freq_to_power(int freq);
 int kbase_platform_dvfs_power_to_freq(int power);
 unsigned int get_power_value(struct cpu_power_info *power_info);
 int get_ipa_dvfs_max_freq(void);
+int get_real_max_freq(cluster_type cluster);
 
 #define ARBITER_PERIOD_MSEC 100
 
@@ -1190,11 +1191,11 @@ static void arbiter_init(struct work_struct *work)
 	}
 
 	arbiter_data.gpu_freq_limit = MAX_GPU_FREQ;
-	arbiter_data.cpu_freq_limits[CA15] = MAX_A15_FREQ;
-	arbiter_data.cpu_freq_limits[CA7] = MAX_A7_FREQ;
+	arbiter_data.cpu_freq_limits[CA15] = get_real_max_freq(CA15);
+	arbiter_data.cpu_freq_limits[CA7] = get_real_max_freq(CA7);
 	for (i = 0; i < NR_CPUS; i++) {
-		arbiter_data.cpu_freqs[CA15][i] = 1900000;
-		arbiter_data.cpu_freqs[CA7][i] = 1400000;
+		arbiter_data.cpu_freqs[CA15][i] = get_real_max_freq(CA15);
+		arbiter_data.cpu_freqs[CA7][i] = get_real_max_freq(CA7);
 	}
 
 	setup_cpusmasks(arbiter_data.cl_stats);
