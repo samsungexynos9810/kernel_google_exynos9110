@@ -1280,10 +1280,12 @@
 			 <&clock 2060>,		/* mout_mau_epll_clk */
 			 <&clock 5316>,		/* mout_mau_epll_clk_user */
 			 <&clock 2200>,		/* mout_ass_clk */
-			 <&clock 2201>;		/* mout_ass_i2s */
+			 <&clock 2201>,		/* mout_ass_i2s */
+			 <&clock 1>;		/* fin_pll */
 		clock-names = "dmac", "timer", "gpio", "srp", "fout_dpll",
 			"mout_dpll_ctrl", "mout_mau_epll_clk",
-			"mout_mau_epll_clk_user", "mout_ass_clk", "mout_ass_i2s";
+			"mout_mau_epll_clk_user", "mout_ass_clk",
+			"mout_ass_i2s", "fin_pll";
 		samsung,power-domain = <&pd_maudio>;
 		status = "ok";
 	};
