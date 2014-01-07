@@ -1110,9 +1110,10 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	unsigned int int_src;
 	struct mipi_dsim_device *dsim = dev_id;
 	int framedone = 0;
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv;
-
 	dispdrv = get_display_driver();
+#endif
 
 	spin_lock(&dsim->slock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
