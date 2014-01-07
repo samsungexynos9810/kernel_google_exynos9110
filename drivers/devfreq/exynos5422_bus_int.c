@@ -114,6 +114,7 @@ struct int_pm_clks {
 	const char *p2_parent_clk_name;
 	struct clk *p2_parent_clk;
 	struct int_clk_info *clk_info;
+	int table_size;
 };
 
 struct busfreq_data_int {
@@ -255,24 +256,11 @@ struct int_clk_info aclk_400_mscl[] = {
 
 struct int_clk_info aclk_400_isp[] = {
 	/* Level, Freq, Parent_Pll */
-	{LV_0,   400000, SW_MUX},
-	{LV_1,   400000, SW_MUX},
-	{LV_1_1, 400000, SW_MUX},
-	{LV_1_2, 400000, SW_MUX},
-	{LV_1_3, 400000, SW_MUX},
-#ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_2,    66000, M_PLL},
-	{LV_3,    66000, M_PLL},
-	{LV_4,    66000, M_PLL},
-	{LV_5,    66000, M_PLL},
-	{LV_6,    66000, M_PLL},
-#else
-	{LV_2,    67000, M_PLL},
-	{LV_3,    67000, M_PLL},
-	{LV_4,    67000, M_PLL},
-	{LV_5,    67000, M_PLL},
-	{LV_6,    67000, M_PLL},
-#endif
+	{LV_0,   532000, M_PLL},
+	{LV_1,   532000, M_PLL},
+	{LV_1_1, 532000, M_PLL},
+	{LV_1_2, 532000, M_PLL},
+	{LV_1_3, 532000, M_PLL},
 };
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
@@ -369,11 +357,6 @@ struct int_clk_info aclk_333_432_isp0[] = {
 	{LV_1_2,  87000, I_PLL},
 	{LV_1_3,  87000, I_PLL},
 #endif
-	{LV_2,     3000, I_PLL},
-	{LV_3,     3000, I_PLL},
-	{LV_4,     3000, I_PLL},
-	{LV_5,     3000, I_PLL},
-	{LV_6,     3000, I_PLL},
 };
 
 struct int_clk_info aclk_333_432_isp[] = {
@@ -391,11 +374,6 @@ struct int_clk_info aclk_333_432_isp[] = {
 	{LV_1_2,  87000, I_PLL},
 	{LV_1_3,  87000, I_PLL},
 #endif
-	{LV_2,     3000, I_PLL},
-	{LV_3,     3000, I_PLL},
-	{LV_4,     3000, I_PLL},
-	{LV_5,     3000, I_PLL},
-	{LV_6,     3000, I_PLL},
 };
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
@@ -406,11 +384,6 @@ struct int_clk_info aclk_432_scaler[] = {
 	{LV_1_1, 144000, I_PLL},
 	{LV_1_2, 108000, I_PLL},
 	{LV_1_3,  72000, I_PLL},
-	{LV_2,     3000, I_PLL},
-	{LV_3,     3000, I_PLL},
-	{LV_4,     3000, I_PLL},
-	{LV_5,     3000, I_PLL},
-	{LV_6,     3000, I_PLL},
 };
 struct int_clk_info aclk_266_isp[] = {
 	/* Level, Freq, Parent_Pll */
@@ -419,11 +392,6 @@ struct int_clk_info aclk_266_isp[] = {
 	{LV_1_1, 144000, I_PLL},
 	{LV_1_2, 108000, I_PLL},
 	{LV_1_3,  72000, I_PLL},
-	{LV_2,     3000, I_PLL},
-	{LV_3,     3000, I_PLL},
-	{LV_4,     3000, I_PLL},
-	{LV_5,     3000, I_PLL},
-	{LV_6,     3000, I_PLL},
 };
 #else
 struct int_clk_info aclk_333_432_gscl[] = {
@@ -537,7 +505,7 @@ struct int_clk_info aclk_333_g2d[] = {
 };
 
 
-#define EXYNOS5_INT_PM_CLK(NAME, CLK, PCLK, P_PCLK, P1_PCLK, P2_PCLK, CLK_INFO)		\
+#define EXYNOS5_INT_PM_CLK(NAME, CLK, PCLK, P_PCLK, P1_PCLK, P2_PCLK, CLK_INFO, SIZE)		\
 static struct int_pm_clks int_pm_clks_##NAME = {	\
 	.clk_name = CLK,					\
 	.parent_clk_name = PCLK,				\
@@ -545,40 +513,35 @@ static struct int_pm_clks int_pm_clks_##NAME = {	\
 	.p1_parent_clk_name = P1_PCLK,				\
 	.p2_parent_clk_name = P2_PCLK,				\
 	.clk_info = CLK_INFO,					\
+	.table_size = SIZE,					\
 }
 
-EXYNOS5_INT_PM_CLK(aclk_200_fsys	,	"mout_aclk_200_fsys_user"		, "mout_aclk_200_fsys_sw"		, "dout_aclk_200_fsys"		, "mout_aclk_200_fsys"		, NULL, aclk_200_fsys);
-EXYNOS5_INT_PM_CLK(pclk_200_fsys	,	"mout_pclk_200_fsys_user"		, "mout_pclk_200_fsys_sw"		, "dout_pclk_200_fsys"		, "mout_pclk_200_fsys"		, NULL, pclk_200_fsys);
-EXYNOS5_INT_PM_CLK(aclk_100_noc		,	"mout_aclk_100_noc_user"		, "mout_aclk_100_noc_sw"		, "dout_aclk_100_noc"		, "mout_aclk_100_noc"		, NULL, aclk_100_noc);
-EXYNOS5_INT_PM_CLK(aclk_400_wcore	, 	"mout_aclk_400_wcore_user"		, "mout_aclk_400_wcore_sw"		, "dout_aclk_400_wcore"		, "mout_aclk_400_wcore"		, NULL, aclk_400_wcore);
-EXYNOS5_INT_PM_CLK(aclk_200_fsys2	, 	"mout_aclk_200_fsys2_user"		, "mout_aclk_200_fsys2_sw"		, "dout_aclk_200_fsys2"		, "mout_aclk_200_fsys2"		, NULL, aclk_200_fsys2);
-EXYNOS5_INT_PM_CLK(aclk_200_disp1	, 	"mout_aclk_200_disp1_user"			, "mout_aclk_200_sw"			, "dout_aclk_200"		, "mout_aclk_200"		, NULL, aclk_200_disp1);
-EXYNOS5_INT_PM_CLK(aclk_400_mscl	, 	"mout_aclk_400_mscl_user"		, "mout_aclk_400_mscl_sw"		, "dout_aclk_400_mscl"		, "mout_aclk_400_mscl"		, NULL, aclk_400_mscl);
-/*
-EXYNOS5_INT_PM_CLK(aclk_400_isp		,	"mout_aclk_400_isp_user"		, "mout_aclk_400_isp_sw"		, "dout_aclk_400_isp"		, "mout_aclk_400_isp"		, NULL, aclk_400_isp);
-*/
-EXYNOS5_INT_PM_CLK(aclk_166			,	"mout_aclk_166_user"			, "mout_aclk_166_sw"			, "dout_aclk_166"			, "mout_aclk_166"			, NULL, aclk_166);
-EXYNOS5_INT_PM_CLK(aclk_266			,	"mout_aclk_266_user"			, "mout_aclk_266_sw"			, "dout_aclk_266"			, "mout_aclk_266"			, NULL, aclk_266);
-EXYNOS5_INT_PM_CLK(aclk_66			, 	"mout_aclk_66_peric_user"				, "mout_aclk_66_sw"				, "dout_aclk_66"			, "mout_aclk_66"			, NULL, aclk_66);
-/*
-EXYNOS5_INT_PM_CLK(aclk_333_432_isp	,	"mout_aclk_333_432_isp_user"	, "mout_aclk_333_432_isp_sw"	, "dout_aclk_333_432_isp"	, "mout_aclk_333_432_isp"	, NULL, aclk_333_432_isp);
-EXYNOS5_INT_PM_CLK(aclk_333_432_isp0,	"mout_aclk_333_432_isp0_user"	, "mout_aclk_333_432_isp0_sw"	, "dout_aclk_333_432_isp0"	, "mout_aclk_333_432_isp0"	, NULL, aclk_333_432_isp0);
-*/
+EXYNOS5_INT_PM_CLK(aclk_200_fsys	,	"mout_aclk_200_fsys_user"		, "mout_aclk_200_fsys_sw"		, "dout_aclk_200_fsys"		, "mout_aclk_200_fsys"		, NULL, aclk_200_fsys, 10);
+EXYNOS5_INT_PM_CLK(pclk_200_fsys	,	"mout_pclk_200_fsys_user"		, "mout_pclk_200_fsys_sw"		, "dout_pclk_200_fsys"		, "mout_pclk_200_fsys"		, NULL, pclk_200_fsys, 10);
+EXYNOS5_INT_PM_CLK(aclk_100_noc		,	"mout_aclk_100_noc_user"		, "mout_aclk_100_noc_sw"		, "dout_aclk_100_noc"		, "mout_aclk_100_noc"		, NULL, aclk_100_noc, 10);
+EXYNOS5_INT_PM_CLK(aclk_400_wcore	, 	"mout_aclk_400_wcore_user"		, "mout_aclk_400_wcore_sw"		, "dout_aclk_400_wcore"		, "mout_aclk_400_wcore"		, NULL, aclk_400_wcore, 10);
+EXYNOS5_INT_PM_CLK(aclk_200_fsys2	, 	"mout_aclk_200_fsys2_user"		, "mout_aclk_200_fsys2_sw"		, "dout_aclk_200_fsys2"		, "mout_aclk_200_fsys2"		, NULL, aclk_200_fsys2, 10);
+EXYNOS5_INT_PM_CLK(aclk_200_disp1	, 	"mout_aclk_200_disp1_user"			, "mout_aclk_200_sw"			, "dout_aclk_200"		, "mout_aclk_200"		, NULL, aclk_200_disp1, 10);
+EXYNOS5_INT_PM_CLK(aclk_400_mscl	, 	"mout_aclk_400_mscl_user"		, "mout_aclk_400_mscl_sw"		, "dout_aclk_400_mscl"		, "mout_aclk_400_mscl"		, NULL, aclk_400_mscl, 10);
+EXYNOS5_INT_PM_CLK(aclk_400_isp		,	"mout_aclk_400_isp_user"		, "mout_aclk_400_isp_sw"		, "dout_aclk_400_isp"		, "mout_aclk_400_isp"		, NULL, aclk_400_isp, 5);
+EXYNOS5_INT_PM_CLK(aclk_166			,	"mout_aclk_166_user"			, "mout_aclk_166_sw"			, "dout_aclk_166"			, "mout_aclk_166"			, NULL, aclk_166, 10);
+EXYNOS5_INT_PM_CLK(aclk_266			,	"mout_aclk_266_user"			, "mout_aclk_266_sw"			, "dout_aclk_266"			, "mout_aclk_266"			, NULL, aclk_266, 10);
+EXYNOS5_INT_PM_CLK(aclk_66			, 	"mout_aclk_66_peric_user"				, "mout_aclk_66_sw"				, "dout_aclk_66"			, "mout_aclk_66"			, NULL, aclk_66, 10);
+EXYNOS5_INT_PM_CLK(aclk_333_432_isp	,	"mout_aclk_333_432_isp_user"	, "mout_aclk_333_432_isp_sw"	, "dout_aclk_333_432_isp"	, "mout_aclk_333_432_isp"	, NULL, aclk_333_432_isp, 5);
+EXYNOS5_INT_PM_CLK(aclk_333_432_isp0,	"mout_aclk_333_432_isp0_user"	, "mout_aclk_333_432_isp0_sw"	, "dout_aclk_333_432_isp0"	, "mout_aclk_333_432_isp0"	, NULL, aclk_333_432_isp0, 5);
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-EXYNOS5_INT_PM_CLK(aclk_333			, 	"mout_aclk_333_user"		, "mout_aclk_333_sw"		, "dout_aclk_333"		, "mout_aclk_333"		, NULL, aclk_333);
-/*
-EXYNOS5_INT_PM_CLK(aclk_432_scaler	,	"mout_aclk_432_scaler_user"		, "mout_aclk_432_scaler_sw"		, "dout_aclk_432_scaler"	, "mout_aclk_432_scaler"	, NULL, aclk_432_scaler);
-EXYNOS5_INT_PM_CLK(aclk_266_isp		, 	"mout_aclk_266_isp_user"		, "mout_aclk_266_isp_sw"		, "dout_aclk_266_isp"		, "mout_aclk_266_isp"		, NULL, aclk_266_isp);
-*/
+EXYNOS5_INT_PM_CLK(aclk_333			, 	"mout_aclk_333_user"		, "mout_aclk_333_sw"		, "dout_aclk_333"		, "mout_aclk_333"		, NULL, aclk_333, 10);
+EXYNOS5_INT_PM_CLK(aclk_432_scaler	,	"mout_aclk_432_scaler_user"		, "mout_aclk_432_scaler_sw"		, "dout_aclk_432_scaler"	, "mout_aclk_432_scaler"	, NULL, aclk_432_scaler, 5);
+EXYNOS5_INT_PM_CLK(aclk_266_isp		, 	"mout_aclk_266_isp_user"		, "mout_aclk_266_isp_sw"		, "dout_aclk_266_isp"		, "mout_aclk_266_isp"		, NULL, aclk_266_isp, 5);
 #else
-EXYNOS5_INT_PM_CLK(aclk_333_432_gscl, 	"mout_aclk_333_432_gscl_user"	, "mout_aclk_333_432_gscl_sw"	, "dout_aclk_333_432_gscl"	, "mout_aclk_333_432_gscl"	, NULL, aclk_333_432_gscl);
+EXYNOS5_INT_PM_CLK(aclk_333_432_gscl, 	"mout_aclk_333_432_gscl_user"	, "mout_aclk_333_432_gscl_sw"	, "dout_aclk_333_432_gscl"	, "mout_aclk_333_432_gscl"	, NULL, aclk_333_432_gscl, 10);
 #endif
-EXYNOS5_INT_PM_CLK(aclk_300_gscl	, 	"mout_aclk_300_gscl_user"		, "mout_aclk_300_gscl_sw"		, "dout_aclk_300_gscl"		, "mout_aclk_300_gscl"		, NULL, aclk_300_gscl);
-EXYNOS5_INT_PM_CLK(aclk_300_disp1	, 	"mout_aclk_300_disp1_user"		, "mout_aclk_300_disp1_sw"		, "dout_aclk_300_disp1"		, "mout_aclk_300_disp1"		, NULL, aclk_300_disp1);
-EXYNOS5_INT_PM_CLK(aclk_300_jpeg	, 	"mout_aclk_300_jpeg_user"		, "mout_aclk_300_jpeg_sw"		, "dout_aclk_300_jpeg"		, "mout_aclk_300_jpeg"		, NULL, aclk_300_jpeg);
-EXYNOS5_INT_PM_CLK(aclk_266_g2d		, 	"mout_aclk_266_g2d_user"		, "mout_aclk_266_g2d_sw"		, "dout_aclk_266_g2d"		, "mout_aclk_266_g2d"		, NULL, aclk_266_g2d);
-EXYNOS5_INT_PM_CLK(aclk_333_g2d		, 	"mout_aclk_333_g2d_user"		, "mout_aclk_333_g2d_sw"		, "dout_aclk_333_g2d"		, "mout_aclk_333_g2d"		, NULL, aclk_333_g2d);
-EXYNOS5_INT_PM_CLK(aclk_400_disp1	, 	"mout_aclk_400_disp1_user"		, "mout_aclk_400_disp1_sw"		, "dout_aclk_400_disp1"		, "mout_aclk_400_disp1"		, NULL, aclk_400_disp1);
+EXYNOS5_INT_PM_CLK(aclk_300_gscl	, 	"mout_aclk_300_gscl_user"		, "mout_aclk_300_gscl_sw"		, "dout_aclk_300_gscl"		, "mout_aclk_300_gscl"		, NULL, aclk_300_gscl, 10);
+EXYNOS5_INT_PM_CLK(aclk_300_disp1	, 	"mout_aclk_300_disp1_user"		, "mout_aclk_300_disp1_sw"		, "dout_aclk_300_disp1"		, "mout_aclk_300_disp1"		, NULL, aclk_300_disp1, 10);
+EXYNOS5_INT_PM_CLK(aclk_300_jpeg	, 	"mout_aclk_300_jpeg_user"		, "mout_aclk_300_jpeg_sw"		, "dout_aclk_300_jpeg"		, "mout_aclk_300_jpeg"		, NULL, aclk_300_jpeg, 10);
+EXYNOS5_INT_PM_CLK(aclk_266_g2d		, 	"mout_aclk_266_g2d_user"		, "mout_aclk_266_g2d_sw"		, "dout_aclk_266_g2d"		, "mout_aclk_266_g2d"		, NULL, aclk_266_g2d, 10);
+EXYNOS5_INT_PM_CLK(aclk_333_g2d		, 	"mout_aclk_333_g2d_user"		, "mout_aclk_333_g2d_sw"		, "dout_aclk_333_g2d"		, "mout_aclk_333_g2d"		, NULL, aclk_333_g2d, 10);
+EXYNOS5_INT_PM_CLK(aclk_400_disp1	, 	"mout_aclk_400_disp1_user"		, "mout_aclk_400_disp1_sw"		, "dout_aclk_400_disp1"		, "mout_aclk_400_disp1"		, NULL, aclk_400_disp1, 10);
 
 static struct int_pm_clks *exynos5_int_pm_clks[] = {
 	&int_pm_clks_aclk_200_fsys,
@@ -588,16 +551,16 @@ static struct int_pm_clks *exynos5_int_pm_clks[] = {
 	&int_pm_clks_aclk_200_fsys2,
 	&int_pm_clks_aclk_200_disp1,
 	&int_pm_clks_aclk_400_mscl,
-/*	&int_pm_clks_aclk_400_isp, */
+	&int_pm_clks_aclk_400_isp,
 	&int_pm_clks_aclk_166,
 	&int_pm_clks_aclk_266,
 	&int_pm_clks_aclk_66,
 	&int_pm_clks_aclk_333,
-/*	&int_pm_clks_aclk_333_432_isp, */
-/*	&int_pm_clks_aclk_333_432_isp0, */
+	&int_pm_clks_aclk_333_432_isp,
+	&int_pm_clks_aclk_333_432_isp0,
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-/*	&int_pm_clks_aclk_432_scaler, */
-/*	&int_pm_clks_aclk_266_isp, */
+	&int_pm_clks_aclk_432_scaler,
+	&int_pm_clks_aclk_266_isp,
 #else
 	&int_pm_clks_aclk_333_432_gscl,
 #endif
@@ -689,6 +652,9 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 	}
 
 	list_for_each_entry(int_clk, &data->list, node) {
+		/* Do not control power domain off clocks*/
+		if(target_idx >= int_clk->table_size )
+			continue;
 
 		if (int_clk->clk_info[pre_idx].src_pll !=
 			int_clk->clk_info[target_idx].src_pll) {
