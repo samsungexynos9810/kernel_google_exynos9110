@@ -201,10 +201,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define TRIP_EN_COUNT				8
 #ifdef CONFIG_SOC_EXYNOS5422
 #define EXYNOS_GPU_NUMBER			4
-#define EXYNOS_ISP_NUMBER			4
 #else
 #define EXYNOS_GPU_NUMBER			2
-#define EXYNOS_ISP_NUMBER			4
 #endif
 
 #define MIN_TEMP				20
@@ -1163,7 +1161,7 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 static int exynos_tmu_read(struct exynos_tmu_data *data)
 {
 	u8 temp_code;
-	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0, isp_temp = 0;
+	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0;
 	int alltemp[EXYNOS_TMU_COUNT] = {0, };
 
 	mutex_lock(&data->lock);
@@ -1177,8 +1175,6 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 
 		if (i == EXYNOS_GPU_NUMBER) {
 			gpu_temp = temp;
-		} else if (i == EXYNOS_ISP_NUMBER) {
-			isp_temp = temp;
 		} else {
 			if (temp > max)
 				max = temp;
