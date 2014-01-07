@@ -67,7 +67,6 @@ static void exynos5_pwr_reg_set(struct exynos5422_pd_state *ptr, int count)
 	spin_unlock(&clk_save_restore_lock);
 }
 
-
 static void exynos5_pd_set_fake_rate(void __iomem *regs, unsigned int shift_val)
 {
 	unsigned int clk_div2_ratio0_value;
@@ -223,7 +222,6 @@ struct exynos5422_pd_state exynos54xx_pwr_reg_mau[] = {
 		.set_val = 0, },
 };
 
-
 static int exynos5_pd_maudio_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
@@ -353,7 +351,6 @@ struct exynos5422_pd_state exynos54xx_pwr_reg_gscl[] = {
 	{ .reg = EXYNOS5_CMU_RESET_GSCL_SYS_PWR_REG,	.val = 0,
 		.set_val = 0, },
 };
-
 
 static int exynos5_pd_scl_power_on_pre(struct exynos_pm_domain *pd)
 {
@@ -710,6 +707,8 @@ struct exynos5422_pd_state exynos54xx_pwr_reg_isp[] = {
 	{ .reg = EXYNOS5422_CMU_SYSCLK_ISP_SYS_PWR_REG,		.val = 0,
 		.set_val = 0, },
 	{ .reg = EXYNOS5422_CMU_RESET_ISP_SYS_PWR_REG,		.val = 0,
+		.set_val = 0, },
+	{ .reg = EXYNOS5422_ISP_ARM_SYS_PWR_REG,		.val = 0,
 		.set_val = 0, },
 };
 
