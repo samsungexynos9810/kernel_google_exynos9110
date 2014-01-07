@@ -196,7 +196,7 @@ static int gpu_dvfs_update_asv_table(struct exynos_context *platform, int govern
 #endif /* SOC_NAME */
 		voltage = get_match_volt(ID_G3D, platform->table[i].clock*1000);
 		if (voltage > 0)
-			platform->table[i].voltage = voltage + VOLTAGE_OFFSET_MARGIN;
+			platform->table[i].voltage = voltage;
 		GPU_LOG(DVFS_INFO, "G3D %dKhz ASV is %duV\n", platform->table[i].clock*1000, platform->table[i].voltage);
 	}
 	return 0;
