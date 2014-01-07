@@ -37,6 +37,7 @@
 #include <mach/asv-exynos.h>
 #include <mach/smc.h>
 #include <mach/tmu.h>
+#include "governor.h"
 
 #include <plat/pll.h>
 #include "exynos5422_ppmu.h"
@@ -81,6 +82,7 @@ static bool en_profile;
 #define SET_0			0
 #define SET_1			1
 
+#define NEW_THERMAL
 #ifdef CONFIG_EXYNOS_THERMAL
 bool mif_is_probed;
 #endif
@@ -143,8 +145,52 @@ struct busfreq_data_mif {
 
 	struct notifier_block tmu_notifier;
 	int busy;
+#ifdef CONFIG_EXYNOS_THERMAL
+#ifdef NEW_THERMAL
+	void __iomem *base_drex0;
+	void __iomem *base_drex1;
+#endif
+#endif
 };
 
+#ifdef CONFIG_EXYNOS_THERMAL
+#ifdef NEW_THERMAL
+#include <linux/workqueue.h>
+#define MRSTATUS_THERMAL_BIT_SHIFT (7)
+#define MRSTATUS_THERMAL_BIT_MASK  (1)
+#define MRSTATUS_THERMAL_LV_MASK   (0x7)
+
+enum devfreq_mif_thermal_autorate {
+	RATE_ONE = 0x0000005D,
+	RATE_HALF = 0x0000002E,
+	RATE_QUARTER = 0x00000017,
+};
+
+enum devfreq_mif_thermal_channel {
+	THERMAL_CHANNEL0,
+	THERMAL_CHANNEL1,
+};
+struct devfreq_thermal_work {
+	struct delayed_work devfreq_mif_thermal_work;
+	enum devfreq_mif_thermal_channel channel;
+	struct workqueue_struct *work_queue;
+	unsigned int polling_period;
+	unsigned long max_freq;
+};
+static struct workqueue_struct *devfreq_mif_thermal_wq_ch0;
+static struct workqueue_struct *devfreq_mif_thermal_wq_ch1;
+static struct devfreq_thermal_work devfreq_mif_ch0_work = {
+	.channel = THERMAL_CHANNEL0,
+	.polling_period = 1000,
+};
+static struct devfreq_thermal_work devfreq_mif_ch1_work = {
+	.channel = THERMAL_CHANNEL1,
+	.polling_period = 1000,
+};
+struct busfreq_data_mif *data_mif;
+
+#endif
+#endif
 enum mif_bus_idx {
 	LV_0 = 0,
 	LV_1,
@@ -382,6 +428,46 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 		mif_idx = mif_ud_decode_opp_list[num_fimd1_layers][num_mixer_layers];
 		media_qos_mif_freq = mif_bus_opp_list[mif_idx].clk;
+	}
+
+	switch (num_total_layers) {
+		case NUM_LAYER_6:
+			if (enabled_fimc_lite)
+				media_qos_mif_freq = mif_bus_opp_list[LV_0].clk;
+			break;
+		case NUM_LAYER_5:
+			if (enabled_fimc_lite)
+				media_qos_mif_freq = mif_bus_opp_list[LV_2].clk;
+			break;
+		case NUM_LAYER_4:
+			if (enabled_fimc_lite)
+				media_qos_mif_freq = mif_bus_opp_list[LV_2].clk;
+			else
+				media_qos_mif_freq = mif_bus_opp_list[LV_4].clk;
+			break;
+		case NUM_LAYER_3:
+			if (enabled_fimc_lite)
+				media_qos_mif_freq = mif_bus_opp_list[LV_3].clk;
+			else
+				media_qos_mif_freq = mif_bus_opp_list[LV_5].clk;
+			break;
+		case NUM_LAYER_2:
+			if (enabled_fimc_lite)
+				media_qos_mif_freq = mif_bus_opp_list[LV_3].clk;
+			else
+				media_qos_mif_freq = mif_bus_opp_list[LV_7].clk;
+			break;
+		case NUM_LAYER_1:
+		case NUM_LAYER_0:
+			if (enabled_fimc_lite) {
+				if (num_mixer_layers == 0 && num_fimd1_layers < 2)
+					media_qos_mif_freq = mif_bus_opp_list[LV_4].clk;
+				else
+					media_qos_mif_freq = mif_bus_opp_list[LV_3].clk;
+			} else {
+				media_qos_mif_freq = mif_bus_opp_list[LV_8].clk;
+			}
+			break;
 	}
 
 	if (pm_qos_request_active(&media_mif_qos))
@@ -662,6 +748,13 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 	target_volt = opp_get_voltage(opp);
 	rcu_read_unlock();
 
+#ifdef CONFIG_EXYNOS_THERMAL
+#ifdef NEW_THERMAL
+	freq = min3(freq,
+			devfreq_mif_ch0_work.max_freq,
+			devfreq_mif_ch1_work.max_freq);
+#endif
+#endif
 	/* get olg opp information */
 	rcu_read_lock();
 	old_freq = opp_get_freq(data->curr_opp);
@@ -766,7 +859,7 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 	 * So bus can transfer 16bytes per cycle
 	 */
 	busy_data = exynos5_ppmu_get_busy(data->ppmu, PPMU_SET_DDR,
-					&int_ccnt, &int_pmcnt);
+			&int_ccnt, &int_pmcnt);
 
 	/* TODO: ppmu will return 0, when after suspend/resume */
 	if(!(int_ccnt | int_pmcnt))
@@ -828,11 +921,110 @@ static struct devfreq_simple_usage_data exynos5_mif_governor_data = {
 	.upthreshold		= 85,
 	.target_percentage	= 80,
 	.proportional		= 100,
-	.cal_qos_max		= 667000,
+	.cal_qos_max		= 825000,
 	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
 };
 #endif
 
+#ifdef CONFIG_EXYNOS_THERMAL
+#ifdef NEW_THERMAL
+static void exynos5_devfreq_thermal_event(struct devfreq_thermal_work *work)
+{
+	if (work->polling_period == 0)
+		return;
+
+	queue_delayed_work(work->work_queue,
+			&work->devfreq_mif_thermal_work,
+			msecs_to_jiffies(work->polling_period));
+}
+
+static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
+{
+	struct delayed_work *d_work = container_of(work, struct delayed_work, work);
+	struct devfreq_thermal_work *thermal_work =
+		container_of(d_work, struct devfreq_thermal_work, devfreq_mif_thermal_work);
+	unsigned int mrstatus, tmp_thermal_level, max_thermal_level = 0;
+	unsigned int timingaref_value = RATE_ONE;
+	unsigned long max_freq = exynos5_mif_governor_data.cal_qos_max;
+	bool throttling = false;
+	void __iomem *base_drex = NULL;
+
+	if (thermal_work->channel == THERMAL_CHANNEL0) {
+		base_drex = data_mif->base_drex0;
+	} else if (thermal_work->channel == THERMAL_CHANNEL1) {
+		base_drex = data_mif->base_drex1;
+	}
+	__raw_writel(0x09001000, base_drex + 0x10);
+	mrstatus = __raw_readl(base_drex + 0x54);
+	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
+	if (tmp_thermal_level > max_thermal_level)
+		max_thermal_level = tmp_thermal_level;
+
+	__raw_writel(0x09101000, base_drex + 0x10);
+	mrstatus = __raw_readl(base_drex + 0x54);
+	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
+	if (tmp_thermal_level > max_thermal_level)
+		max_thermal_level = tmp_thermal_level;
+
+	switch (max_thermal_level) {
+		case 0:
+		case 1:
+		case 2:
+		case 3:
+			timingaref_value = RATE_ONE;
+			thermal_work->polling_period = 1000;
+			break;
+		case 4:
+			timingaref_value = RATE_HALF;
+			thermal_work->polling_period = 300;
+			break;
+		case 6:
+			throttling = true;
+		case 5:
+			timingaref_value = RATE_QUARTER;
+			thermal_work->polling_period = 100;
+			break;
+		default:
+			pr_err("DEVFREQ(MIF) : can't support memory thermal level\n");
+			return;
+	}
+
+	if (throttling){
+		max_freq = mif_bus_opp_list[LV_6].clk;
+	}
+	else
+		max_freq = exynos5_mif_governor_data.cal_qos_max;
+
+	if (thermal_work->max_freq != max_freq) {
+		thermal_work->max_freq = max_freq;
+		mutex_lock(&data_mif->devfreq->lock);
+		data_mif->devfreq->max_freq = max_freq;
+		update_devfreq(data_mif->devfreq);
+		mutex_unlock(&data_mif->devfreq->lock);
+	}
+
+	__raw_writel(timingaref_value, base_drex + 0x30);
+	exynos5_devfreq_thermal_event(thermal_work);
+}
+
+static void exynos5_devfreq_init_thermal(void)
+{
+	devfreq_mif_thermal_wq_ch0 = create_freezable_workqueue("devfreq_thermal_wq_ch0");
+	devfreq_mif_thermal_wq_ch1 = create_freezable_workqueue("devfreq_thermal_wq_ch1");
+
+	INIT_DELAYED_WORK(&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
+			exynos5_devfreq_thermal_monitor);
+	INIT_DELAYED_WORK(&devfreq_mif_ch1_work.devfreq_mif_thermal_work,
+			exynos5_devfreq_thermal_monitor);
+
+	devfreq_mif_ch0_work.work_queue = devfreq_mif_thermal_wq_ch0;
+	devfreq_mif_ch1_work.work_queue = devfreq_mif_thermal_wq_ch1;
+
+	exynos5_devfreq_thermal_event(&devfreq_mif_ch0_work);
+	exynos5_devfreq_thermal_event(&devfreq_mif_ch1_work);
+}
+#endif
+#endif
 static ssize_t mif_show_state(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	unsigned int i;
@@ -989,7 +1181,7 @@ static struct exynos_devfreq_platdata exynos5422_qos_mif = {
 };
 
 static int exynos5_mif_reboot_notifier_call(struct notifier_block *this,
-				   unsigned long code, void *_cmd)
+		unsigned long code, void *_cmd)
 {
 	pm_qos_update_request(&exynos5_mif_qos, exynos5_mif_devfreq_profile.initial_freq);
 
@@ -1055,50 +1247,51 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 			pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
 	}
 
+#ifndef NEW_THERMAL
 	switch (event) {
-	case MIF_TH_LV1:
-		__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_0_TIMINGAREF);
-		__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_1_TIMINGAREF);
+		case MIF_TH_LV1:
+			__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_0_TIMINGAREF);
+			__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_1_TIMINGAREF);
 
-		if (pm_qos_request_active(&min_mif_thermal_qos))
-			pm_qos_update_request(&min_mif_thermal_qos, pdata->default_qos);
-
-		break;
-	case MIF_TH_LV2:
-		/*
-		 * In case of temperature increment, set MIF level 266Mhz as minimum
-		 * before changing dram refresh counter.
-		 */
-		if (*on < MIF_TH_LV2) {
 			if (pm_qos_request_active(&min_mif_thermal_qos))
-				pm_qos_update_request(&min_mif_thermal_qos,
-						mif_bus_opp_list[LV_5].clk);
-		}
+				pm_qos_update_request(&min_mif_thermal_qos, pdata->default_qos);
 
-		__raw_writel(AREF_HOT, EXYNOS5_DREXI_0_TIMINGAREF);
-		__raw_writel(AREF_HOT, EXYNOS5_DREXI_1_TIMINGAREF);
+			break;
+		case MIF_TH_LV2:
+			/*
+			 * In case of temperature increment, set MIF level 266Mhz as minimum
+			 * before changing dram refresh counter.
+			 */
+			if (*on < MIF_TH_LV2) {
+				if (pm_qos_request_active(&min_mif_thermal_qos))
+					pm_qos_update_request(&min_mif_thermal_qos,
+							mif_bus_opp_list[LV_5].clk);
+			}
 
-		/*
-		 * In case of temperature decrement, set MIF level 266Mhz as minimum
-		 * after changing dram refresh counter.
-		 */
-		if (*on > MIF_TH_LV2) {
+			__raw_writel(AREF_HOT, EXYNOS5_DREXI_0_TIMINGAREF);
+			__raw_writel(AREF_HOT, EXYNOS5_DREXI_1_TIMINGAREF);
+
+			/*
+			 * In case of temperature decrement, set MIF level 266Mhz as minimum
+			 * after changing dram refresh counter.
+			 */
+			if (*on > MIF_TH_LV2) {
+				if (pm_qos_request_active(&min_mif_thermal_qos))
+					pm_qos_update_request(&min_mif_thermal_qos,
+							mif_bus_opp_list[LV_5].clk);
+			}
+
+			break;
+		case MIF_TH_LV3:
 			if (pm_qos_request_active(&min_mif_thermal_qos))
-				pm_qos_update_request(&min_mif_thermal_qos,
-						mif_bus_opp_list[LV_5].clk);
-		}
+				pm_qos_update_request(&min_mif_thermal_qos, mif_bus_opp_list[LV_4].clk);
 
-		break;
-	case MIF_TH_LV3:
-		if (pm_qos_request_active(&min_mif_thermal_qos))
-			pm_qos_update_request(&min_mif_thermal_qos, mif_bus_opp_list[LV_4].clk);
+			__raw_writel(AREF_CRITICAL, EXYNOS5_DREXI_0_TIMINGAREF);
+			__raw_writel(AREF_CRITICAL, EXYNOS5_DREXI_1_TIMINGAREF);
 
-		__raw_writel(AREF_CRITICAL, EXYNOS5_DREXI_0_TIMINGAREF);
-		__raw_writel(AREF_CRITICAL, EXYNOS5_DREXI_1_TIMINGAREF);
-
-		break;
+			break;
 	}
-
+#endif
 	return NOTIFY_OK;
 }
 #endif
@@ -1242,6 +1435,11 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_EXYNOS_THERMAL
 	data->tmu_notifier.notifier_call = exynos5_bus_mif_tmu_notifier;
+#ifdef NEW_THERMAL
+	data->base_drex0 = S5P_VA_DREXI_0;
+	data->base_drex1 = S5P_VA_DREXI_1;
+	data_mif = data;
+#endif
 #endif
 	platform_set_drvdata(pdev, data);
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
@@ -1302,6 +1500,12 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	if (!pdata)
 		pdata = &exynos5422_qos_mif;
 
+#ifdef CONFIG_EXYNOS_THERMAL
+#ifdef NEW_THERMAL
+	devfreq_mif_ch0_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
+	devfreq_mif_ch1_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
+#endif
+#endif
 	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&media_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
@@ -1314,6 +1518,11 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 #ifdef CONFIG_EXYNOS_THERMAL
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 	mif_is_probed = true;
+#ifdef NEW_THERMAL
+	devfreq_mif_ch0_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
+	devfreq_mif_ch1_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
+	exynos5_devfreq_init_thermal();
+#endif
 #endif
 	return 0;
 
@@ -1343,6 +1552,15 @@ err_regulator:
 static int exynos5_devfreq_remove(struct platform_device *pdev)
 {
 	struct busfreq_data_mif *data = platform_get_drvdata(pdev);
+
+#ifdef CONFIG_EXYNOS_THERMAL
+#ifdef NEW_THERMAL
+	flush_workqueue(devfreq_mif_thermal_wq_ch0);
+	destroy_workqueue(devfreq_mif_thermal_wq_ch0);
+	flush_workqueue(devfreq_mif_thermal_wq_ch1);
+	destroy_workqueue(devfreq_mif_thermal_wq_ch1);
+#endif
+#endif
 
 	devfreq_remove_device(data->devfreq);
 
