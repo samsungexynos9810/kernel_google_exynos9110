@@ -652,6 +652,11 @@ unsigned int get_power_value(struct cpu_power_info *power_info)
 	return total_power;
 }
 
+int get_real_max_freq(cluster_type cluster)
+{
+	return freq_max[cluster];
+}
+
 unsigned int g_cpufreq;
 unsigned int g_kfcfreq;
 unsigned int g_clamp_cpufreqs[CA_END];
