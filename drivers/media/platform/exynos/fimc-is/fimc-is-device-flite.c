@@ -1084,7 +1084,8 @@ static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate
 	u32 margin = 0;
 	u32 duration = 0;
 
-	if (framerate > 0 && framerate <= 30) {
+	/* HACK: applied on 15~30fps forcely */
+	if (framerate > 15 && framerate <= 30) {
 
 		duration = 1000 / framerate;
 
