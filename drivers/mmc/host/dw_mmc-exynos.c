@@ -105,7 +105,6 @@ static void exynos_sfr_restore(unsigned int i)
 	int startbit_clear = false;
 	unsigned int cmd_status = 0;
 	unsigned long timeout = jiffies + msecs_to_jiffies(500);
-	int gate_disabled;
 
 	mci_writel(host, CTRL , dw_mci_save_sfr[i][0]);
 	mci_writel(host, PWREN, dw_mci_save_sfr[i][1]);
@@ -124,10 +123,8 @@ static void exynos_sfr_restore(unsigned int i)
 	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][14]);
 	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][15]);
 
-	mutex_lock(&host->ciu_clk_lock);
-	gate_disabled = !atomic_read(&host->ciu_clk_cnt);
-	if (gate_disabled)
-		dw_mci_ciu_clk_en(host, false);
+	atomic_inc_return(&host->ciu_en_win);
+	dw_mci_ciu_clk_en(host, false);
 
 	mci_writel(host, CMDARG, 0);
 	wmb();
@@ -142,10 +139,7 @@ static void exynos_sfr_restore(unsigned int i)
 			break;
 		}
 	}
-
-	if (gate_disabled)
-		dw_mci_ciu_clk_dis(host);
-	mutex_unlock(&host->ciu_clk_lock);
+	atomic_dec_return(&host->ciu_en_win);
 
 	if (startbit_clear == false)
 		dev_err(host->dev, "CMD start bit stuck %02d\n", i);
