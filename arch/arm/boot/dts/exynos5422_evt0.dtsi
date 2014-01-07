@@ -964,7 +964,7 @@
 			compatible = "synopsys,dwc3";
 			reg = <0x12000000 0x10000>;
 			interrupts = <0 72 0>;
-			usb-phy = <&dwc3_usb2_phy &dwc3_usb3_phy_0>;
+			usb-phy = <&dwc3_usb2_phy_0 &dwc3_usb3_phy_0>;
 		};
 	};
 
@@ -981,7 +981,7 @@
 			compatible = "synopsys,dwc3";
 			reg = <0x12400000 0x10000>;
 			interrupts = <0 73 0>;
-			usb-phy = <&dwc3_usb2_phy &dwc3_usb3_phy_1>;
+			usb-phy = <&dwc3_usb2_phy_1 &dwc3_usb3_phy_1>;
 		};
 	};
 
@@ -1001,7 +1001,11 @@
 		clock-names = "gate_adcif";
 	};
 
-	dwc3_usb2_phy: usbphy {
+	dwc3_usb2_phy_0: usbphy@0 {
+		compatible = "samsung,exynos5-usb2phy-dummy";
+	};
+
+	dwc3_usb2_phy_1: usbphy@1 {
 		compatible = "samsung,exynos5-usb2phy-dummy";
 	};
 
