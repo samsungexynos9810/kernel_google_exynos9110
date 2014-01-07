@@ -98,8 +98,9 @@ static inline void cpu_leave_lowpower(void)
 
 void exynos_power_down_cpu(unsigned int cpu)
 {
+	struct cpumask mask;
+
 	if (soc_is_exynos5422()) {
-		struct cpumask mask;
 		int cluster_id = (read_cpuid_mpidr() >> 8) & 0xff;
 
 		exynos_cpu.power_down(cpu);
@@ -113,16 +114,20 @@ void exynos_power_down_cpu(unsigned int cpu)
 		}
 	} else {
 		u32 non_boot_cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(4), 1);
-		unsigned int sif = non_boot_cluster ? 4 : 3;
+		u32 cluster_id = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
 
 		set_boot_flag(cpu, HOTPLUG);
 
-		if (exynos_cpu.is_last_core(cpu)) {
-			flush_cache_all();
-			cci_snoop_disable(sif);
-		}
-
 		exynos_cpu.power_down(cpu);
+		if (non_boot_cluster == cluster_id) {
+			if (!cpumask_and(&mask, cpu_online_mask,
+						cpu_coregroup_mask(cpu))) {
+				exynos_smc(SMC_CMD_SHUTDOWN,
+					   OP_TYPE_CLUSTER,
+					   SMC_POWERSTATE_IDLE,
+					   (1 << 1)/*L2_CCI_OFF*/);
+			}
+		}
 	}
 }
 
