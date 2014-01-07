@@ -464,7 +464,7 @@ static void ass_disable(void)
 	lpass_reg_save();
 
 	/* ASS_MUX_SEL */
-	
+
 	clk_set_parent(lpass.clk_mout_ass_clk, lpass.clk_fin_pll);
 //	exynos_set_parent("mout_ass_clk", "fin_pll");
 
@@ -569,7 +569,7 @@ static int clk_set_heirachy_ass(struct platform_device *pdev)
 		dev_err(dev, "timer clk not found\n");
 		goto err7;
 	}
-	
+
 	lpass.clk_fin_pll = clk_get(NULL, "fin_pll");
 	if (IS_ERR(lpass.clk_fin_pll)) {
 		dev_err(dev, "fin_pll clk not found\n");
