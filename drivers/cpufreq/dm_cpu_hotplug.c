@@ -581,7 +581,7 @@ static int on_run(void *data)
 		if (exynos_dm_hotplug_disabled())
 			continue;
 
-		if (prev_cmd == exe_cmd) {
+		if (prev_cmd != exe_cmd) {
 			ret = dynamic_hotplug(exe_cmd);
 			if (ret < 0)
 				goto failed_out;
