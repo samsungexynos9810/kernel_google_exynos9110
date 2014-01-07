@@ -1708,8 +1708,8 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_decon_eclk_disp, "sclk_decon_eclk_disp", "dout_sclk_decon_eclk", EXYNOS5430_ENABLE_SCLK_MIF, 5, CLK_IGNORE_UNUSED, 0),
 	CGTE(sclk_decon_vclk_disp, "sclk_decon_vclk_disp", "dout_sclk_decon_vclk", EXYNOS5430_ENABLE_SCLK_MIF, 6, CLK_IGNORE_UNUSED, 0),
 	CGTE(sclk_decon_tv_eclk_disp, "sclk_decon_tv_eclk_disp", "dout_sclk_decon_tv_eclk", EXYNOS5430_ENABLE_SCLK_MIF, 7, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_dsd_disp, "sclk_dsd_disp", "dout_sclk_dsd", EXYNOS5430_ENABLE_SCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_dsim0_disp, "sclk_dism0_disp", "dout_sclk_dsim0", EXYNOS5430_ENABLE_SCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(sclk_dsd_disp, "sclk_dsd_disp", "dout_sclk_dsd", EXYNOS5430_ENABLE_SCLK_MIF, 8, CLK_IGNORE_UNUSED, 0),
+	CGTE(sclk_dsim0_disp, "sclk_dsim0_disp", "dout_sclk_dsim0", EXYNOS5430_ENABLE_SCLK_MIF, 9, CLK_IGNORE_UNUSED, 0),
 
 	/* CPIF */
 	CGTE(sclk_mphy_pll, "sclk_mphy_pll", "mout_mphy_pll", EXYNOS5430_ENABLE_SCLK_CPIF, 9, CLK_IGNORE_UNUSED, 0),
@@ -2092,7 +2092,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(aclk_asyncaxis_mif_pimemx, "aclk_asyncaxis_mif_pimemx", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 6, CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_axids_pimemx_gic, "aclk_axids_pimemx_gic", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 9, CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_axids_pimemx_imem0p, "aclk_axids_pimemx_imem0p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 10, CLK_IGNORE_UNUSED, 0),
-	CGTE(aclk_axids_pimemx_imem1p, "aclk_axids_pimemx_imem1p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 10, CLK_IGNORE_UNUSED, 0),
+	CGTE(aclk_axids_pimemx_imem1p, "aclk_axids_pimemx_imem1p", "aclk_imem_200", EXYNOS5430_ENABLE_ACLK_IMEM, 11, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_sss, "pclk_sss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SSS, 0, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_slimsss, "pclk_slimsss", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_SLIMSSS, 0, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_rtic, "pclk_rtic", "aclk_imem_200", EXYNOS5430_ENABLE_PCLK_IMEM_SECURE_RTIC, 0, CLK_IGNORE_UNUSED, 0),
