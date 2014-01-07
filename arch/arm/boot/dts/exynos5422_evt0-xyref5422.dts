@@ -300,16 +300,16 @@
 
 				ldo20_reg: LDO20 {
 					regulator-name = "vdd_ldo20";
-					regulator-min-microvolt = <1000000>;
-					regulator-max-microvolt = <2100000>;
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
 					regulator-always-on;
 					regulator-initial-mode = <3>;
 				};
 
 				ldo21_reg: LDO21 {
 					regulator-name = "vdd_ldo21";
-					regulator-min-microvolt = <1000000>;
-					regulator-max-microvolt = <2100000>;
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
 					regulator-always-on;
 					regulator-initial-mode = <3>;
 				};
@@ -366,8 +366,8 @@
 
 				ldo28_reg: LDO28 {
 					regulator-name = "vdd_ldo28";
-					regulator-min-microvolt = <3000000>;
-					regulator-max-microvolt = <3000000>;
+					regulator-min-microvolt = <2800000>;
+					regulator-max-microvolt = <2800000>;
 					regulator-always-on;
 					regulator-initial-mode = <1>;
 				};
@@ -394,10 +394,34 @@
 					regulator-initial-mode = <3>;
 				};
 
+				ldo32_reg: LDO32 {
+					regulator-name = "vdd_ldo32";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-initial-mode = <3>;
+				};
+
 				ldo34_reg: LDO34 {
 					regulator-name = "vdd_ldo34";
 					regulator-min-microvolt = <3000000>;
 					regulator-max-microvolt = <3000000>;
+					regulator-always-on;
+					regulator-initial-mode = <1>;
+				};
+
+				ldo35_reg: LDO35 {
+					regulator-name = "vdd_ldo35";
+					regulator-min-microvolt = <1200000>;
+					regulator-max-microvolt = <1200000>;
+					regulator-always-on;
+					regulator-initial-mode = <1>;
+				};
+
+				ldo38_reg: LDO38 {
+					regulator-name = "vdd_ldo38";
+					regulator-min-microvolt = <2800000>;
+					regulator-max-microvolt = <2800000>;
 					regulator-always-on;
 					regulator-initial-mode = <1>;
 				};
@@ -768,10 +792,7 @@
 	/* CAMIF0 - MIPI-CSIS0, FIMC-Lite0 driver */
 	fimc_is_sensor0: fimc_is_sensor@13C00000 {
 		scenario = <0>;
-		gpio_reset = <&gpe0 4 0x1>;
-		gpios_comp_en = <&gpe0 5 0x1>; /* COMP_EN */
-		gpios_comp_reset = <&gpd1 0 0x1>; /* COMP_rstn */
-		gpios_cam_en = <&gpd1 6 0x1>; /* MAIN_CAM_A2.8V_EN */
+		gpio_reset = <&gpe0 1 0x1>;
 		id = <0>;
 		mclk_ch = <0>;
 		csi_ch = <0>;
@@ -787,9 +808,8 @@
 	/* CAMIF1 - MIPI-CSIS1, FIMC-Lite1 driver */
 	fimc_is_sensor1: fimc_is_sensor@13C10000 {
 		scenario = <0>;
-		gpio_reset = <&gpe0 3 0x1>;
+		gpio_reset = <&gpe0 4 0x1>;
 		gpio_standby = <&gpe0 0 0x1>;
-		gpios_cam_en = <&gpd1 2 0x1>; /* VT_CAM_1.2V_EN */
 		id = <1>;
 		mclk_ch = <2>;
 		csi_ch = <1>;
