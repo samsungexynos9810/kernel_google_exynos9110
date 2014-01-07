@@ -767,7 +767,7 @@ static inline int flite_s_use_buffer(struct fimc_is_device_flite *flite,
 	if (!atomic_read(&flite->bcount)) {
 		if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY) {
 			target_time = jiffies +
-				msecs_to_jiffies(FLITE_VVALID_TIME);
+				msecs_to_jiffies(flite->buf_done_wait_time);
 			while ((target_time > jiffies) &&
 					flite_hw_get_status1(flite->base_reg) && (7 << 20))
 				pr_debug("over vblank (early buffer done)");
@@ -802,7 +802,7 @@ static inline int flite_s_unuse_buffer(struct fimc_is_device_flite *flite,
 	if (atomic_read(&flite->bcount) == 1) {
 		if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY) {
 			target_time = jiffies +
-				msecs_to_jiffies(FLITE_VVALID_TIME);
+				msecs_to_jiffies(flite->buf_done_wait_time);
 			while ((target_time > jiffies) &&
 					flite_hw_get_status1(flite->base_reg) && (7 << 20))
 				pr_debug("over vblank (early buffer done)");
@@ -1080,17 +1080,31 @@ static void wq_func_flite_early_work(struct work_struct *data)
 
 static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate, u32 position)
 {
-	if (framerate <= 30) {
-		/* early buffer done mode */
-		flite->buf_done_mode = FLITE_BUF_DONE_EARLY;
+	/* ms */
+	u32 margin = 0;
+	u32 duration = 0;
+
+	if (framerate > 0 && framerate <= 30) {
+
+		duration = 1000 / framerate;
 
 		if (position == SENSOR_POSITION_REAR)
 			flite->early_buf_done_mode = FLITE_BUF_EARLY_30P;
 		else
-			flite->early_buf_done_mode = FLITE_BUF_EARLY_15P;
+			flite->early_buf_done_mode = FLITE_BUF_EARLY_20P;
 
-		flite->buf_done_wait_time = FLITE_VVALID_TIME -
-			(u32)(FLITE_VVALID_TIME * (flite->early_buf_done_mode * 0.1f));
+		margin = FLITE_VVALID_TIME_BASE * (flite->early_buf_done_mode * 0.1f);
+
+		if (margin >= duration) {
+			/* normal buffer done mode */
+			flite->buf_done_mode = FLITE_BUF_DONE_NORMAL;
+			flite->early_buf_done_mode = FLITE_BUF_EARLY_NOTHING;
+			flite->buf_done_wait_time = 0;
+		} else {
+			/* early buffer done mode */
+			flite->buf_done_mode = FLITE_BUF_DONE_EARLY;
+			flite->buf_done_wait_time = duration - margin;
+		}
 	} else {
 		/* normal buffer done mode */
 		flite->buf_done_mode = FLITE_BUF_DONE_NORMAL;
@@ -1098,8 +1112,8 @@ static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate
 		flite->buf_done_wait_time = 0;
 	}
 
-	info("[CamIF%d] buffer done mode [m%d/em%d/wt%d]", flite->instance,
-		flite->buf_done_mode, flite->early_buf_done_mode,
+	info("[CamIF%d] buffer done mode [m%d/em%d/du%d/mg%d/wt%d]", flite->instance,
+		flite->buf_done_mode, flite->early_buf_done_mode, duration, margin,
 		flite->buf_done_wait_time);
 }
 #endif
