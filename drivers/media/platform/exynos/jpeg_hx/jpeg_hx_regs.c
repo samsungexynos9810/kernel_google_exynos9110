@@ -94,6 +94,7 @@ void jpeg_hx_set_dec_out_fmt(void __iomem *base,
 
 	case YCRCB_420_3P:
 		reg = reg | JPEG_DEC_YUV_420_3P | JPEG_OUT_NV_21;
+		break;
 
 	case RGB_565:
 		reg = reg | JPEG_DEC_RGB565;
