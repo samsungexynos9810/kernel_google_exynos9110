@@ -1390,7 +1390,7 @@ static int mxr_probe(struct platform_device *pdev)
 		pdata = mdev->pdata;
 	} else {
 		mdev->pdata = dev->platform_data;
-		memcpy(mdev->pdata, pdata, sizeof(*pdata));
+		pdata = mdev->pdata;
 	}
 	dev_info(dev, "tv ip version%d\n", pdata->ip_ver);
 
