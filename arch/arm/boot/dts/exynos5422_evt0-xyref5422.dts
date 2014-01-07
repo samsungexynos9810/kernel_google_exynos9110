@@ -471,6 +471,35 @@
 		};
 	};
 
+	i2c_1: i2c@12C70000 {
+		/*compatible = "samsung,exynos5-hsi2c";*/
+		/*clock-frequency = <400000>;*/	/* 400KHz */
+		status = "okay";
+		audio_codec: codec@3e {
+			compatible = "audience,es515";
+			reg = <0x3E>;
+			gpios = <&gpy7 7 0	/* reset */
+				 &gpx0 5 0xF	/* interrupt */
+				 &gpj4 2 0>;	/* wakeup */
+			pinctrl-names = "default";
+			pinctrl-0 = <&codec_ctl &codec_ctl_1>;
+		};
+	};
+
+	pinctrl@13400000 {
+		codec_ctl: codec-ctl {
+			samsung,pins = "gpy7-7", "gpx0-5";
+			samsung,pin-con-pdn = <3>;
+		};
+	};
+
+	pinctrl@14000000 {
+		codec_ctl_1: codec-ctl {
+			samsung,pins = "gpj4-2";
+			samsung,pin-con-pdn = <3>;
+		};
+	};
+
 	usb@12000000 {
 		status = "okay";
 
@@ -856,6 +885,10 @@
 		status = "okay";
 	};
 
+	spdif: spdif@12DB0000 {
+		status = "okay";
+	};
+
 	audio_codec_dummy: dummy-codec {
 		compatible = "samsung,dummy-codec";
 		status = "okay";
@@ -867,124 +900,14 @@
         };
 
 	sound {
-		compatible = "samsung,universal-dummy";
+		compatible = "samsung,xyref-es515";
 		samsung,audio-cpu = <&i2s0		/* primary */
 				     &i2s0>;		/* secondary */
-		samsung,audio-codec = <&audio_codec_dummy
+		samsung,audio-cpu-spdif = <&spdif>;	/* spdif */
+		samsung,audio-codec = <&audio_codec
+				       &audio_codec
 				       &audio_codec_dummy>;
 		status = "okay";
-	};
-
-	sound {
-		compatible = "samsung,universal_wm5110";
-		samsung,audio-cpu = <&i2s0              /* primary */
-				     &i2s0>;            /* secondary */
-		samsung,audio-codec = <&audio_codec
-	                               &audio_codec>;
-	        status = "okay";
-        };
-
-	spi_2: spi@12d40000 {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		pinctrl-names = "default";
-		pinctrl-0 = <&spi2_bus>;
-
-                status = "okay";
-
-		audio_codec: wm5110@0 {
-			compatible = "wlf,wm5110";
-			reg = <0x0>;
-			spi-max-frequency = <1000000>;
-			interrupts = <5 0 0>;
-			interrupt-parent = <&gpx2>;
-
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			pinctrl-names ="default";
-			pinctrl-0 = <&codec_ctrl &audio_ctrl>;
-
-			wlf,reset = <&gpg2 0 0>;
-			wlf,ldoena = <&gpg0 1 0>;
-			wlf,micd-detect-debounce = <500>;
-			wlf,micd-bias-start-time = <0x1>;
-			wlf,micd-rate = <0x7>;
-			wlf,micd-dbtime = <0x1>;
-			wlf,micd-timeout = <1000>;
-			wlf,micd-force-micbias;
-			wlf,micd-ranges = <
-				139 226
-				295 115
-				752 114
-				1257 217
-			>;
-
-			wlf,micd-configs = <
-				0x0 1 0
-			>;
-
-			wlf,micbias1 = <2800 0 1 0 0>;
-			wlf,micbias2 = <1800 0 1 0 0>;
-			wlf,micbias3 = <1800 0 1 0 0>;
-
-			wlf,gpio-defaults = <
-				0xA101
-				0xA101
-				0xA101
-				0xA101
-				0x8101
-			>;
-
-			wlf,gpsw = <0x3>;
-			wlf,use-jd-gpio;
-			wlf,jd-gpio-nopull;
-			wlf,micd-software-compare;
-
-			wlf,max-channels-clocked = <2 0 0>;
-			/* 0:MICVDD 1:MICBIAS1 2:MICBIAS2 3:MICBIAS3 */
-			wlf,dmic-ref = <0 1 3 2>;
-			/* 1st cell:IN1 2rd cell:IN2 3nd cell:IN3 4th cell:IN4 */
-			wlf,inmode = <2 0 2 2>;
-
-			AVDD-supply = <&ldo18_reg>;
-			LDOVDD-supply = <&ldo18_reg>;
-			DBVDD1-supply = <&ldo18_reg>;
-
-			CPVDD-supply = <&ldo18_reg>;
-			DBVDD2-supply = <&ldo18_reg>;
-			DBVDD3-supply = <&ldo18_reg>;
-			SPKVDDL-supply = <&ldo18_reg>;
-			SPKVDDR-supply = <&ldo18_reg>;
-
-			controller-data {
-				cs-gpio = <&gpb1 2 0>;
-				samsung,spi-feedback-delay = <0>;
-			};
-		};
-	};
-
-	audio_pdata {
-		compatible = "samsung,audio-pdata";
-
-		mic_bias_gpio = <&gpy7 6 0>;
-		status = "okay";
-	};
-
-	pinctrl@13400000 {
-		audio_ctrl: audio-ctl {
-			samsung,pins = "gpy7-6";
-			samsung,pin-con-pdn = <3>;
-		};
-
-	};
-
-	pinctrl@14000000 {
-		codec_ctrl: codec-ctl {
-			samsung,pins ="gpg2-0", "gpg0-1";
-			samsung,pin-con-pdn =<3>;
-		};
-
 	};
 
 	pinctrl@13400000 {
