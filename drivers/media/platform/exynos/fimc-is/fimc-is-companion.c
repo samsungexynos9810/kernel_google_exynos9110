@@ -251,11 +251,8 @@ int fimc_is_comp_is_valid(struct fimc_is_core *core)
 	_read_data = read_data[0] << 8 | read_data[1] << 0;
 	pr_info("Companion vaildation: 0x%04x\n", _read_data);
 
-	/* HACK : remove this at exynos5422 */
-#if defined(CONFIG_SOC_EXYNOS5430)
-	if (_read_data != COMP_MAGIC_NUMBER)
+	if (_read_data != COMP_MAGIC_NUMBER && _read_data != 0xffff)
 		ret = -EINVAL;
-#endif
 
 exit:
 	return ret;
