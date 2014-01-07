@@ -78,6 +78,7 @@ struct lpass_info {
 	struct clk		*clk_mout_mau_epll_clk_user;
 	struct clk		*clk_mout_ass_clk;
 	struct clk		*clk_mout_ass_i2s;
+	struct clk		*clk_fin_pll;
 	bool			rpm_enabled;
 	atomic_t		use_cnt;
 } lpass;
@@ -463,7 +464,10 @@ static void ass_disable(void)
 	lpass_reg_save();
 
 	/* ASS_MUX_SEL */
-	exynos_set_parent("mout_ass_clk", "fin_pll");
+	
+	clk_set_parent(lpass.clk_mout_ass_clk, lpass.clk_fin_pll);
+//	exynos_set_parent("mout_ass_clk", "fin_pll");
+
 }
 
 static void lpass_disable(void)
@@ -565,9 +569,17 @@ static int clk_set_heirachy_ass(struct platform_device *pdev)
 		dev_err(dev, "timer clk not found\n");
 		goto err7;
 	}
+	
+	lpass.clk_fin_pll = clk_get(NULL, "fin_pll");
+	if (IS_ERR(lpass.clk_fin_pll)) {
+		dev_err(dev, "fin_pll clk not found\n");
+		goto err8;
+	}
 
 	return 0;
 
+err8:
+	clk_put(lpass.clk_timer);
 err7:
 	clk_put(lpass.clk_dmac);
 err6:
