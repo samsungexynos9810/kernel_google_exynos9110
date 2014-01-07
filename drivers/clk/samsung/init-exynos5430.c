@@ -480,6 +480,15 @@ void clocks_to_oscclk(void)
 	exynos_set_parent("mout_aclk_mscl_400_user", "oscclk");
 }
 
+void clocks_restore_from_oscclk(void)
+{
+	exynos_set_parent("mout_mphy_pll_user", "sclk_mphy_pll");
+	exynos_set_parent("mout_disp_pll", "fout_disp_pll");
+
+	exynos_set_parent("mout_aclk_mscl_400_b", "mout_aclk_mscl_400_a");
+	exynos_set_parent("mout_aclk_g2d_400_b", "mout_aclk_g2d_400_a");
+}
+
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
@@ -505,3 +514,11 @@ void __init exynos5430_clock_init(void)
 
 	clocks_to_oscclk();
 }
+
+static __init int exynos5430_clock_late_init(void)
+{
+	clocks_restore_from_oscclk();
+
+	return 0;
+}
+late_initcall(exynos5430_clock_late_init);
