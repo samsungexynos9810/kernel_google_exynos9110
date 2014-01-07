@@ -491,6 +491,12 @@
 			samsung,pins = "gpy7-7", "gpx0-5";
 			samsung,pin-con-pdn = <3>;
 		};
+
+		b_sess0_irq: b-sess0-irq {
+			samsung,pins = "gpx0-7";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <0>;
+		};
 	};
 
 	pinctrl@14000000 {
@@ -500,7 +506,30 @@
 		};
 	};
 
+	dwc3_vbus: fixedregulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "VUSB_BOOST_5V";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpy6 2 1>;
+		enable-active-high;
+	};
+
 	usb@12000000 {
+		dwc3-vbus-supply = <&dwc3_vbus>;
+		samsung,bsess-gpio = <&gpx0 7 0xf>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&b_sess0_irq>;
+		status = "okay";
+
+		dwc3 {
+			maximum-speed = "super-speed";
+			dr_mode = "otg";
+		};
+	};
+
+	usb@12400000 {
+		dwc3-vbus-supply = <&dwc3_vbus>;
 		status = "okay";
 
 		dwc3 {
