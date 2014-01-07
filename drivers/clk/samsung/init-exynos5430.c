@@ -20,8 +20,6 @@
 #include "clk.h"
 #include "clk-pll.h"
 
-#define CLOCKS_TO_OSCCLK
-
 struct clk_enabler {
 	struct clk		*clk;
 	struct list_head	node;
@@ -155,22 +153,18 @@ static void aud_init_clock(void)
 	exynos_set_rate("dout_sclk_aud_slimbus", 24576002);
 	exynos_set_rate("dout_sclk_aud_uart", 133000000);
 
-#ifndef CLOCKS_TO_OSCCLK
 	/* TOP1 */
 	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
 	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
-#endif
 
 	/* TOP_PERIC1 */
 	exynos_set_parent("mout_sclk_audio0", "mout_aud_pll_user_top");
 	exynos_set_parent("mout_sclk_audio1", "mout_aud_pll_user_top");
 	exynos_set_parent("mout_sclk_spdif", "dout_sclk_audio0");
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_rate("dout_sclk_audio0", 24576002);
 	exynos_set_rate("dout_sclk_audio1", 49152004);
 	exynos_set_rate("dout_sclk_pcm1", 2048002);
 	exynos_set_rate("dout_sclk_i2s1", 49152004);
-#endif
 }
 
 void mfc_init_clock(void)
@@ -183,7 +177,6 @@ void mfc_init_clock(void)
 	exynos_set_parent("mout_aclk_mfc1_333_b", "mout_aclk_mfc1_333_a");
 	exynos_set_parent("mout_aclk_mfc1_333_c", "mout_aclk_mfc1_333_b");
 
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_parent("mout_aclk_mfc0_333_user", "aclk_mfc0_333");
 	exynos_set_parent("mout_aclk_mfc1_333_user", "aclk_mfc1_333");
 
@@ -198,7 +191,6 @@ void mfc_init_clock(void)
 			exynos_get_rate("aclk_mfc0_333"),
 			exynos_get_rate("aclk_mfc1_333"),
 			exynos_get_rate("aclk_hevc_400"));
-#endif
 }
 
 void adma_init_clock(void)
@@ -245,7 +237,6 @@ void cam1_init_clock(void)
 
 void isp_init_clock(void)
 {
-#ifndef CLOCKS_TO_OSCCLK
 	/* ACLK_ISP_400 */
 	exynos_set_parent("mout_aclk_isp_400", "mout_bus_pll_user");
 	exynos_set_rate("dout_aclk_isp_400", 413 * 1000000);
@@ -253,7 +244,6 @@ void isp_init_clock(void)
 	/* ACLK_ISP_DIS_400 */
 	exynos_set_parent("mout_aclk_isp_dis_400", "mout_bus_pll_user");
 	exynos_set_rate("dout_aclk_isp_dis_400", 413 * 1000000);
-#endif
 }
 
 void g3d_init_clock(void)
@@ -310,15 +300,11 @@ void usb_init_clock(void)
 
 void mscl_init_clock(void)
 {
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_parent("mout_aclk_mscl_400_a", "mout_bus_pll_user");
 	exynos_set_parent("mout_aclk_mscl_400_b", "mout_aclk_mscl_400_a");
-#endif
 	exynos_set_parent("dout_aclk_mscl_400", "mout_aclk_mscl_400_b");
 	exynos_set_parent("aclk_mscl_400", "dout_aclk_mscl_400");
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_parent("mout_aclk_mscl_400_user", "aclk_mscl_400");
-#endif
 	exynos_set_parent("dout_pclk_mscl", "mout_aclk_mscl_400_user");
 
 	exynos_set_parent("aclk_m2mscaler0", "mout_aclk_mscl_400_user");
@@ -329,10 +315,8 @@ void mscl_init_clock(void)
 	exynos_set_parent("aclk_jpeg", "mout_aclk_mscl_400_user");
 	exynos_set_parent("pclk_jpeg", "dout_pclk_mscl");
 
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_rate("dout_aclk_mscl_400", 413 * 1000000);
 	exynos_set_rate("dout_pclk_mscl", 100 * 1000000);
-#endif
 
 	pr_debug("scaler_0: aclk_m2mscaler0 %d pclk_m2mscaler0 %d\n",
 			exynos_get_rate("aclk_m2mscaler0"),
@@ -349,7 +333,6 @@ void mscl_init_clock(void)
 
 void g2d_init_clock(void)
 {
-#ifndef CLOCKS_TO_OSCCLK
 	int clk_rate1;
 	int clk_rate2;
 
@@ -380,7 +363,6 @@ void g2d_init_clock(void)
 
 	pr_info("[%s:%d] aclk_g2d_400:%d, aclk_g2d_266:%d\n"
 			, __func__, __LINE__, clk_rate1, clk_rate2);
-#endif
 }
 
 void jpeg_init_clock(void)
@@ -405,11 +387,9 @@ void jpeg_init_clock(void)
 		pr_err("Unable to set parent %s of clock %s\n",
 				"dout_sclk_jpeg", "sclk_jpeg_mscl");
 
-#ifndef CLOCKS_TO_OSCCLK
 	if (exynos_set_parent("mout_sclk_jpeg_user", "sclk_jpeg_mscl"))
 		pr_err("Unable to set parent %s of clock %s\n",
 				"sclk_jpeg_mscl", "mout_sclk_jpeg_user");
-#endif
 
 	if (exynos_set_rate("dout_sclk_jpeg", 413 * 1000000))
 		pr_err("Can't set %s clock rate\n", "dout_sclk_jpeg");
@@ -419,12 +399,10 @@ void jpeg_init_clock(void)
 
 void cpif_init_clock(void)
 {
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_parent("mout_phyclk_lli_tx0_symbol_user",
 			  "phyclk_lli_tx0_symbol");
 	exynos_set_parent("mout_phyclk_lli_rx0_symbol_user",
 			  "phyclk_lli_rx0_symbol");
-#endif
 	exynos_set_parent("mout_mphy_pll",
 			  "fout_mphy_pll");
 }
@@ -451,15 +429,11 @@ void decon_tv_init_clock(void)
 	exynos_set_rate("dout_sclk_decon_tv_eclk", 413 * 1000000);
 
 	exynos_set_parent("sclk_decon_tv_eclk_disp", "dout_sclk_decon_tv_eclk");
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_parent("mout_sclk_decon_tv_eclk_user", "sclk_decon_tv_eclk_disp");
-#endif
 	exynos_set_parent("mout_sclk_decon_tv_eclk", "mout_sclk_decon_tv_eclk_user");
 	exynos_set_parent("dout_sclk_decon_tv_eclk_disp", "mout_sclk_decon_tv_eclk");
 
-#ifndef CLOCKS_TO_OSCCLK
 	exynos_set_rate("dout_sclk_decon_tv_eclk_disp", 413 * 1000000);
-#endif
 }
 
 void clocks_to_oscclk(void)
@@ -509,9 +483,6 @@ void clocks_to_oscclk(void)
 void __init exynos5430_clock_init(void)
 {
 	top_clk_enable();
-#ifdef CLOCKS_TO_OSCCLK
-	clocks_to_oscclk();
-#endif
 	mfc_init_clock();
 	clkout_init_clock();
 	aud_init_clock();
@@ -531,4 +502,6 @@ void __init exynos5430_clock_init(void)
 	crypto_init_clock();
 	pwm_init_clock();
 	decon_tv_init_clock();
+
+	clocks_to_oscclk();
 }
