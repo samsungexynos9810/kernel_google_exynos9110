@@ -185,7 +185,7 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 		goto err;
 	}
 
-	g3d_rate_prev = clk_get_rate(platform->clk_g3d_ip)/MHZ;
+	g3d_rate_prev = clk_get_rate(platform->fout_vpll)/MHZ;
 
 	/* if changed the VPLL rate, set rate for VPLL and wait for lock time */
 	if (freq != g3d_rate_prev) {
