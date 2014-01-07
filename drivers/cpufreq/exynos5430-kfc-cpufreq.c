@@ -681,9 +681,12 @@ static void __init set_volt_table_CA7(void)
 static bool exynos5430_is_alive_CA7(void)
 {
 	unsigned int tmp;
-	tmp = __raw_readl(EXYNOS5430_KFC_L2_STATUS) & L2_LOCAL_PWR_EN;
 
-	return tmp ? true : false;
+	tmp = __raw_readl(EXYNOS5430_KFC_PLL_CON1);
+	tmp &= EXYNOS5430_PLL_BYPASS_MASK;
+	tmp >>= EXYNOS5430_PLL_BYPASS_SHIFT;
+
+	return !tmp ? true : false;
 }
 
 int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
