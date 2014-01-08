@@ -477,4 +477,5 @@ int s3c_fb_suspend(struct device *dev);
 						struct s3c_fb_user_ion_client)
 #define S3CFB_WIN_CONFIG		_IOW('F', 209, \
 						struct s3c_fb_win_config_data)
+#define S3CFB_WIN_PSR_EXIT 		_IOW('F', 210, int)
 #endif
