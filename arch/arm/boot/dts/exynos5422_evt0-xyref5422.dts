@@ -809,13 +809,12 @@
 	fimc_is_sensor1: fimc_is_sensor@13C10000 {
 		scenario = <0>;
 		gpio_reset = <&gpe0 4 0x1>;
-		gpio_standby = <&gpe0 0 0x1>;
 		id = <1>;
-		mclk_ch = <2>;
+		mclk_ch = <1>;
 		csi_ch = <1>;
 		flite_ch = <1>;
 		i2c_ch = <0x2>;
-		i2c_addr = <0x6A>;
+		i2c_addr = <0x20>;
 		is_bns = <0>;
 		status = "okay";
 	};
