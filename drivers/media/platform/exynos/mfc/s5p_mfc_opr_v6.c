@@ -2987,7 +2987,7 @@ void s5p_mfc_try_run(struct s5p_mfc_dev *dev)
 		/* Trigger again if other instance's work is waiting */
 		spin_lock_irq(&dev->condlock);
 		if (dev->ctx_work_bits)
-			queue_work_on(0, dev->sched_wq, &dev->sched_work);
+			queue_work(dev->sched_wq, &dev->sched_work);
 		spin_unlock_irq(&dev->condlock);
 	}
 }

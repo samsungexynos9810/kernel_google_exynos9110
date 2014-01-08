@@ -1947,7 +1947,6 @@ static void mfc_parse_dt(struct device_node *np, struct s5p_mfc_dev *mfc)
 }
 
 /* MFC probe function */
-extern struct cpumask hmp_slow_cpu_mask;
 static int s5p_mfc_probe(struct platform_device *pdev)
 {
 	struct s5p_mfc_dev *dev;
@@ -2032,10 +2031,8 @@ static int s5p_mfc_probe(struct platform_device *pdev)
 		goto err_res_irq;
 	}
 	dev->irq = res->start;
-
 	ret = request_threaded_irq(dev->irq, NULL, s5p_mfc_irq, IRQF_ONESHOT, pdev->name,
 									dev);
-	irq_set_affinity(dev->irq, &hmp_slow_cpu_mask);
 	if (ret != 0) {
 		dev_err(&pdev->dev, "failed to install irq (%d)\n", ret);
 		goto err_req_irq;
