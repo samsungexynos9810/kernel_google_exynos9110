@@ -1283,9 +1283,6 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 {
 	struct s3c_fb *sfb = dev_id;
 	ktime_t timestamp = ktime_get();
-	struct display_driver *dispdrv;
-
-	dispdrv = get_display_driver();
 
 	spin_lock(&sfb->slock);
 #ifdef CONFIG_FB_I80_SW_TRIGGER
@@ -1298,7 +1295,7 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
 	if (sfb->power_state == POWER_ON)
-		disp_pm_te_triggered(dispdrv);
+		disp_pm_te_triggered(get_display_driver());
 #endif
 
 	return IRQ_HANDLED;
@@ -2019,9 +2016,6 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 	struct sync_pt *pt;
 	int fd;
 	unsigned int bw = 0;
-	struct display_driver *dispdrv;
-
-	dispdrv = get_display_driver();
 
 	fd = get_unused_fd();
 	if (fd < 0)
@@ -2177,7 +2171,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			kfree(regs);
 		} else {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-			disp_pm_gate_lock(dispdrv, true);
+			disp_pm_gate_lock(get_display_driver(), true);
 #endif
 			mutex_unlock(&sfb->update_regs_list_lock);
 		}
@@ -2486,9 +2480,6 @@ static void s3c_fb_update_regs_handler(struct work_struct *work)
 			container_of(work, struct s3c_fb, update_regs_work);
 	struct s3c_reg_data *data, *next;
 	struct list_head saved_list;
-	struct display_driver *dispdrv;
-
-	dispdrv = get_display_driver();
 
 	mutex_lock(&sfb->update_regs_list_lock);
 	saved_list = sfb->update_regs_list;
@@ -2498,7 +2489,7 @@ static void s3c_fb_update_regs_handler(struct work_struct *work)
 	list_for_each_entry_safe(data, next, &saved_list, list) {
 		s3c_fb_update_regs(sfb, data);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-		disp_pm_gate_lock(dispdrv, false);
+		disp_pm_gate_lock(get_display_driver(), false);
 #endif
 		list_del(&data->list);
 		kfree(data);
@@ -2530,7 +2521,6 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 
 	struct fb_var_screeninfo *var = &info->var;
 	int offset;
-	struct display_driver *dispdrv;
 
 	union {
 		struct s3c_fb_user_window user_window;
@@ -2541,7 +2531,10 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		u32 vsync;
 	} p;
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
+#endif
 
 	if ((sfb->power_state == POWER_DOWN) &&
 		(cmd != S3CFB_WIN_CONFIG))
@@ -4615,9 +4608,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	int default_win;
 	int ret = 0;
 	u32 reg;
-	struct display_driver *dispdrv;
-
-	dispdrv = get_display_driver();
 
 	mutex_lock(&sfb->output_lock);
 	if (sfb->output_on) {
@@ -4627,7 +4617,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	pm_runtime_get_sync(sfb->dev);
 
-	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(sfb->dev);
 	sfb->power_state = POWER_ON;
 
 	decon_fb_reset(sfb);
