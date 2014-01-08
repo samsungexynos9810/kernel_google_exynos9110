@@ -343,7 +343,12 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 {
 	unsigned long flags;
 
+	if (dispdrv->platform_status == DISP_STATUS_PM0) return 0;
+
 	if (!dispdrv->pm_status.clock_gating_on) return 0;
+
+	if (dispdrv->decon_driver.sfb->power_state == POWER_DOWN)
+		return 0;
 
 	init_gating_idle_count(dispdrv);
 

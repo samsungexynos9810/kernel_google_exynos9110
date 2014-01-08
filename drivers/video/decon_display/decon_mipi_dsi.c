@@ -276,6 +276,10 @@ static void s5p_mipi_dsi_long_data_wr(struct mipi_dsim_device *dsim, unsigned in
 int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	unsigned int data0, unsigned int data1)
 {
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_add_refcount(get_display_driver());
+#endif
+
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
 		dev_dbg(dsim->dev, "MIPI DSIM is not ready.\n");
 		return -EINVAL;
@@ -421,6 +425,10 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 {
 	u32 rx_fifo, txhd, rx_size;
 	int i, j;
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_add_refcount(get_display_driver());
+#endif
 
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
 		dev_dbg(dsim->dev, "MIPI DSIM is not ready.\n");
