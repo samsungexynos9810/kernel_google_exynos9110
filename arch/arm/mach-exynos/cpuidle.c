@@ -814,7 +814,7 @@ static int can_enter_cluster_off(int cpu_id)
 	if (disabled_c3)
 		return 0;
 
-	for_each_cpu_and(cpu, cpu_online_mask, cpu_coregroup_mask(cpu_id)) {
+	for_each_cpu_and(cpu, cpu_possible_mask, cpu_coregroup_mask(cpu_id)) {
 		if (cpu_id == cpu)
 			continue;
 
