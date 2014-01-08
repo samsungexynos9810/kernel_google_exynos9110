@@ -1730,7 +1730,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		fimc_is_gframe_trans_grp_to_grp(group, group_next, gframe);
 		spin_unlock_irq(&gframemgr->frame_slock);
 	} else {
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS4415)
 		/* single */
 		group->fcount++;
 		spin_lock_irq(&gframemgr->frame_slock);

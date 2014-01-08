@@ -3,6 +3,8 @@
 
 #include <linux/v4l2-mediabus.h>
 
+#include <media/v4l2-device.h>
+
 enum fimc_is_device_type {
 	FIMC_IS_DEVICE_SENSOR,
 	FIMC_IS_DEVICE_ISCHAIN
