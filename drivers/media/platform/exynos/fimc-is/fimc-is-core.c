@@ -81,6 +81,9 @@
 #endif
 #endif
 
+#if defined(CONFIG_ARM_EXYNOS4415_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
 #if defined(CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ)
 #define CONFIG_FIMC_IS_BUS_DEVFREQ
 #endif
@@ -119,9 +122,6 @@ extern struct pm_qos_request exynos_isp_qos_int;
 extern struct pm_qos_request exynos_isp_qos_mem;
 extern struct pm_qos_request exynos_isp_qos_cam;
 extern struct pm_qos_request exynos_isp_qos_disp;
-#ifdef CONFIG_SOC_EXYNOS5422
-extern struct pm_qos_request max_cpu_qos;
-#endif
 
 extern int fimc_is_3a0_video_probe(void *data);
 extern int fimc_is_3a1_video_probe(void *data);
@@ -261,150 +261,6 @@ static int fimc_is_resume(struct device *dev)
 {
 	pr_debug("FIMC_IS Resume\n");
 	return 0;
-}
-
-int fimc_is_runtime_suspend(struct device *dev)
-{
-	int ret = 0;
-	struct platform_device *pdev = to_platform_device(dev);
-	struct fimc_is_core *core
-		= (struct fimc_is_core *)platform_get_drvdata(pdev);
-#if defined(CONFIG_PM_DEVFREQ)
-	int int_qos, mif_qos, cam_qos, disp_qos;
-#endif
-
-	pr_info("FIMC_IS runtime suspend in\n");
-
-#if !defined(CONFIG_SOC_EXYNOS5430)
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (core->mem.alloc_ctx)
-		vb2_ion_detach_iommu(core->mem.alloc_ctx);
-#endif
-#endif
-
-#if defined(CONFIG_PM_DEVFREQ)
-	/* DEVFREQ release */
-	pr_info("[RSC] %s: QoS UNLOCK\n", __func__);
-	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, START_DVFS_LEVEL);
-	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, START_DVFS_LEVEL);
-	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, START_DVFS_LEVEL);
-	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, START_DVFS_LEVEL);
-
-	if (int_qos > 0)
-		pm_qos_remove_request(&exynos_isp_qos_int);
-	if (mif_qos > 0)
-		pm_qos_remove_request(&exynos_isp_qos_mem);
-	if (cam_qos > 0)
-		pm_qos_remove_request(&exynos_isp_qos_cam);
-	if (disp_qos > 0)
-		pm_qos_remove_request(&exynos_isp_qos_disp);
-#endif
-
-#ifdef CONFIG_SOC_EXYNOS5422
-	/* EGL Release */
-	pm_qos_update_request(&max_cpu_qos, PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
-	pm_qos_remove_request(&max_cpu_qos);
-#endif /* CONFIG_SOC_EXYNOS5422 */
-
-#if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
-#if defined(CONFIG_SOC_EXYNOS5260)
-	bts_initialize("spd-flite-a", false);
-	bts_initialize("spd-flite-b", false);
-#elif defined(CONFIG_SOC_EXYNOS3470)
-	bts_initialize("pd-cam", false);
-#else
-	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
-	bts_initialize("pd-fimclite", false);
-#endif
-#endif
-
-	if (CALL_POPS(core, clk_off, core->pdev) < 0) {
-		err("clk_off is fail\n");
-		ret = -EINVAL;
-		goto p_err;
-	}
-	pr_info("FIMC_IS runtime suspend out\n");
-
-p_err:
-	pm_relax(dev);
-	return ret;
-}
-
-int fimc_is_runtime_resume(struct device *dev)
-{
-	int ret = 0;
-	struct platform_device *pdev = to_platform_device(dev);
-	struct fimc_is_core *core
-		= (struct fimc_is_core *)platform_get_drvdata(pdev);
-#if defined(CONFIG_PM_DEVFREQ)
-	int int_qos, mif_qos, cam_qos, disp_qos;
-#endif
-
-	pm_stay_awake(dev);
-	pr_info("FIMC_IS runtime resume in\n");
-
-#ifdef CONFIG_SOC_EXYNOS5422
-	/* EGL Lock */
-	pm_qos_add_request(&max_cpu_qos, PM_QOS_CPU_FREQ_MAX, 1600000);
-#endif /* CONFIG_SOC_EXYNOS5422 */
-#if defined(CONFIG_PM_DEVFREQ)
-	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, START_DVFS_LEVEL);
-	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, START_DVFS_LEVEL);
-	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, START_DVFS_LEVEL);
-	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, START_DVFS_LEVEL);
-
-	/* DEVFREQ lock */
-	if (int_qos > 0)
-		pm_qos_add_request(&exynos_isp_qos_int, PM_QOS_DEVICE_THROUGHPUT, int_qos);
-	if (mif_qos > 0)
-		pm_qos_add_request(&exynos_isp_qos_mem, PM_QOS_BUS_THROUGHPUT, mif_qos);
-	if (cam_qos > 0)
-		pm_qos_add_request(&exynos_isp_qos_cam, PM_QOS_CAM_THROUGHPUT, cam_qos);
-	if (disp_qos > 0)
-		pm_qos_add_request(&exynos_isp_qos_disp, PM_QOS_DISPLAY_THROUGHPUT, disp_qos);
-
-	pr_info("[RSC] %s: QoS LOCK [INT(%d), MIF(%d), CAM(%d), DISP(%d)]\n",
-		__func__, int_qos, mif_qos, cam_qos, disp_qos);
-#endif
-
-	/* Low clock setting */
-	if (CALL_POPS(core, clk_cfg, core->pdev) < 0) {
-		err("clk_cfg is fail\n");
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-	/* Clock on */
-	if (CALL_POPS(core, clk_on, core->pdev) < 0) {
-		err("clk_on is fail\n");
-		ret = -EINVAL;
-		goto p_err;
-	}
-
-#if !defined(CONFIG_SOC_EXYNOS5430)
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (core->mem.alloc_ctx)
-		vb2_ion_attach_iommu(core->mem.alloc_ctx);
-#endif
-#endif
-
-#if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
-#if defined(CONFIG_SOC_EXYNOS5260)
-	bts_initialize("spd-flite-a", true);
-	bts_initialize("spd-flite-b", true);
-#elif defined(CONFIG_SOC_EXYNOS3470)
-	bts_initialize("pd-cam", true);
-#endif
-	bts_initialize("pd-fimclite", true);
-	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
-#endif
-
-	pr_info("FIMC-IS runtime resume out\n");
-	return 0;
-
-p_err:
-	pm_relax(dev);
-	return ret;
 }
 
 #ifdef USE_OWN_FAULT_HANDLER
