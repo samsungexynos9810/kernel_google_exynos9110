@@ -40,8 +40,13 @@
 #include <mach/tmu.h>
 #include <plat/cpu.h>
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 #define POWER_COEFF_15P		57 /* percore param */
 #define POWER_COEFF_7P		11 /* percore  param */
+#else
+#define POWER_COEFF_15P		48 /* percore param */
+#define POWER_COEFF_7P		9 /* percore  param */
+#endif
 
 #ifdef CONFIG_SMP
 struct lpj_info {
