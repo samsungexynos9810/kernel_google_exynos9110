@@ -20,6 +20,7 @@
 
 #include <linux/platform_device.h>
 #include <mach/map.h>
+
 #include "regs-decon.h"
 #include "decon_display_driver.h"
 #include "decon_fb.h"
@@ -27,107 +28,6 @@
 #include "decon_dt.h"
 
 #include <../drivers/clk/samsung/clk.h>
-
-static struct clk *g_mout_sclk_decon_eclk_a;
-static struct clk *g_mout_disp_pll, *g_fout_disp_pll;
-static struct clk *g_mout_sclk_decon_eclk_user;
-static struct clk *g_mout_sclk_dsd_user;
-static struct clk *g_aclk_disp_333, *g_mout_aclk_disp_333_user;
-static struct clk *g_mout_sclk_decon_eclk_user;
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-static struct clk *g_mout_bus_pll_sub;
-static struct clk *g_sclk_decon_eclk_mif;
-static struct clk *g_sclk_dsd_mif;
-static struct clk *g_aclk_disp_222, *g_mout_aclk_disp_222_user;
-static struct clk *g_mout_sclk_decon_eclk_disp;
-#else
-static struct clk *g_mout_bus_pll_div2;
-static struct clk *g_sclk_decon_eclk_disp;
-static struct clk *g_sclk_dsd_disp;
-static struct clk *g_mout_sclk_decon_eclk;
-#endif
-
-static struct clk *g_dout_aclk_disp_333;
-static struct clk *g_dout_sclk_decon_eclk;
-
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-static struct clk *g_mout_sclk_dsd_a, *g_dout_mfc_pll;
-#else
-static struct clk *g_mout_sclk_dsd_a, *g_mout_mfc_pll_div2;
-#endif
-
-static struct clk *g_phyclk_mipidphy_rxclkesc0_phy,
-	*g_mout_phyclk_mipidphy_rxclkesc0_user;
-static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
-	*g_mout_phyclk_mipidphy_bitclkdiv8_user;
-
-#define DISPLAY_GET_CLOCK1(node) do {\
-	g_##node = clk_get(dev, #node); \
-	if (IS_ERR(g_##node)) { \
-		pr_err("Failed to clk_get - " #node "\n"); \
-		return PTR_ERR(g_##node); \
-	} \
-	} while (0)
-
-#define DISPLAY_GET_CLOCK2(child, parent) do {\
-	g_##child = clk_get(dev, #child); \
-	g_##parent = clk_get(dev, #parent); \
-	if (IS_ERR(g_##child)) { \
-		pr_err("Failed to clk_get - " #child "\n"); \
-		return PTR_ERR(g_##child); \
-	} \
-	if (IS_ERR(g_##parent)) { \
-		pr_err("Failed to clk_get - " #parent "\n"); \
-		return PTR_ERR(g_##parent); \
-	} \
-	} while (0)
-
-#define DISPLAY_CLOCK_SET_PARENT(child, parent) do {\
-	g_##child = clk_get(dev, #child); \
-	g_##parent = clk_get(dev, #parent); \
-	if (IS_ERR(g_##child)) { \
-		pr_err("Failed to clk_get - " #child "\n"); \
-		return PTR_ERR(g_##child); \
-	} \
-	if (IS_ERR(g_##parent)) { \
-		pr_err("Failed to clk_get - " #parent "\n"); \
-		return PTR_ERR(g_##parent); \
-	} \
-	ret = clk_set_parent(g_##child, g_##parent); \
-	if (ret < 0) { \
-		pr_err("failed to set parent " #parent " of " #child "\n"); \
-	} \
-	} while (0)
-
-#define DISPLAY_CLOCK_INLINE_SET_PARENT(child, parent) do {\
-	ret = clk_set_parent(g_##child, g_##parent); \
-	if (ret < 0) { \
-		pr_err("failed to set parent " #parent " of " #child "\n"); \
-	} \
-	} while (0)
-
-#define DISPLAY_CHECK_REGS(addr, mask, val) do {\
-	regs = ioremap(addr, 0x4); \
-	data = readl(regs); \
-	if ((data & mask) != val) { \
-		pr_err("[ERROR] Masked value, (0x%08X & " \
-			"val(0x%08X)) SHOULD BE 0x%08X, but 0x%08X\n", \
-			mask, addr, val, (data&mask)); \
-	} \
-	iounmap(regs); \
-	} while (0)
-
-#define DISPLAY_INLINE_SET_RATE(node, target) \
-	clk_set_rate(g_##node, target);
-
-#define DISPLAY_SET_RATE(node, target) do {\
-	g_##node = clk_get(dev, #node); \
-	if (IS_ERR(g_##node)) { \
-		pr_err("Failed to clk_get - " #node "\n"); \
-		return PTR_ERR(g_##node); \
-	} \
-	clk_set_rate(g_##node, target); \
-	} while (0)
 
 #define TEMPORARY_RECOVER_CMU(addr, mask, bits, value) do {\
 	regs = ioremap(addr, 0x4); \
@@ -137,133 +37,288 @@ static struct clk *g_phyclk_mipidphy_bitclkdiv8_phy,
 	iounmap(regs); \
 	} while (0)
 
-static void additional_clock_setup(void)
-{
-	void __iomem *regs;
+/* temporary helper function to clock setup */
+struct clk_cmu {
+	unsigned int	pa;
+	void __iomem	*va;
+};
 
-	/* Set: ignore CLK1 was toggling */
-	regs = ioremap(0x13B90508, 0x4);
-	writel(0, regs);
-	iounmap(regs);
+struct clk_cmu cmu_list[] = {
+	{0x10030000,	EXYNOS5430_VA_CMU_TOP},
+	{0x11800000,	EXYNOS5430_VA_CMU_EGL},
+	{0x11900000,	EXYNOS5430_VA_CMU_KFC},
+	{0x114C0000,	EXYNOS5430_VA_CMU_AUD},
+	{0x14800000,	EXYNOS5430_VA_CMU_BUS1},
+	{0x13400000,	EXYNOS5430_VA_CMU_BUS2},
+	{0x120D0000,	EXYNOS5430_VA_CMU_CAM0},
+	{0x121C0000,	EXYNOS5430_VA_CMU_CAM0_LOCAL},
+	{0x145D0000,	EXYNOS5430_VA_CMU_CAM1},
+	{0x142F0000,	EXYNOS5430_VA_CMU_CAM1_LOCAL},
+	{0x10FC0000,	EXYNOS5430_VA_CMU_CPIF},
+	{0x13B90000,	EXYNOS5430_VA_CMU_DISP},
+	{0x156E0000,	EXYNOS5430_VA_CMU_FSYS},
+	{0x12460000,	EXYNOS5430_VA_CMU_G2D},
+	{0x14AA0000,	EXYNOS5430_VA_CMU_G3D},
+	{0x13CF0000,	EXYNOS5430_VA_CMU_GSCL},
+	{0x14F80000,	EXYNOS5430_VA_CMU_HEVC},
+	{0x11060000,	EXYNOS5430_VA_CMU_IMEM},
+	{0x146D0000,	EXYNOS5430_VA_CMU_ISP},
+	{0x14360000,	EXYNOS5430_VA_CMU_ISP_LOCAL},
+	{0x15280000,	EXYNOS5430_VA_CMU_MFC0},
+	{0x15380000,	EXYNOS5430_VA_CMU_MFC1},
+	{0x105B0000,	EXYNOS5430_VA_CMU_MIF},
+	{0x150D0000,	EXYNOS5430_VA_CMU_MSCL},
+	{0x14C80000,	EXYNOS5430_VA_CMU_PERIC},
+	{0x10040000,	EXYNOS5430_VA_CMU_PERIS}
+};
+
+unsigned int find_cmu(void __iomem *va)
+{
+	unsigned int i, reg;
+
+	reg = (unsigned int)va;
+
+	for (i = 0; i < ARRAY_SIZE(cmu_list); i++) {
+		if ((reg & 0xfffff000) == (unsigned int)cmu_list[i].va)
+			break;
+	}
+
+	i = (i >= ARRAY_SIZE(cmu_list)) ? 0 : cmu_list[i].pa;
+
+	i += (reg & 0xfff);
+
+	return i;
 }
 
-static void check_display_clocks(void)
+static int exynos_display_set_parent(const char *child, const char *parent)
 {
-	void __iomem *regs;
-	u32 data = 0x00;
+	struct clk *p;
+	struct clk *c;
+	struct clk_mux *mux;
+	unsigned int val;
+	int r = 0;
 
-	/* Now check mux values */
-	DISPLAY_CHECK_REGS(0x105B0210, 0x00000001, 0x00000001);
-	DISPLAY_CHECK_REGS(0x13B90200, 0x00000001, 0x00000001);
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_CHECK_REGS(0x13B90204, 0x000FFFFF, 0x00011111);
-#endif
-	DISPLAY_CHECK_REGS(0x13B90208, 0x00001100, 0x00001100);
-	DISPLAY_CHECK_REGS(0x13B9020C, 0x00000001, 0x00000001);
+	p = __clk_lookup(parent);
+	if (IS_ERR(p)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, parent);
+		return -EINVAL;
+	}
 
-	/* Now check divider value */
-	DISPLAY_CHECK_REGS(0x105B060C, 0x00000070, 0x00000020);
+	c = __clk_lookup(child);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, child);
+		return -EINVAL;
+	}
+
+	r = clk_set_parent(c, p);
+	if (r < 0)
+		pr_info("failed %s: %s, %s, %d\n", __func__, child, parent, r);
+	else {
+		mux = container_of(c->hw, struct clk_mux, hw);
+		val = readl(mux->reg) >> mux->shift;
+		val &= mux->mask;
+		pr_debug("0x%08X[%2d], %8d, 0x%08x, %30s, %30s\n",
+			find_cmu(mux->reg), mux->shift, val, readl(mux->reg), child, parent);
+	}
+
+	return r;
 }
 
-int enable_display_decon_clocks(struct device *dev)
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+static int exynos_display_set_divide(const char *conid, unsigned int divider)
 {
-	int ret = 0;
-	void __iomem *regs;
-	u32 data;
-	struct display_driver *dispdrv;
-	dispdrv = get_display_driver();
+	struct clk *p;
+	struct clk *c;
+	struct clk_divider *div;
+	unsigned int val;
+	unsigned long rate;
+	int r = 0;
 
-	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 142 * MHZ);
+	c = __clk_lookup(conid);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
 
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
-		mout_bus_pll_sub);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_user,
-		sclk_decon_eclk_mif);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_mif);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_disp,
-		mout_sclk_decon_eclk_user);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_disp_222_user,
-		aclk_disp_222);
-#else
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
-		mout_bus_pll_div2);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_user,
-		sclk_decon_eclk_disp);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_user, sclk_dsd_disp);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk,
-		mout_sclk_decon_eclk_user);
-#endif
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_disp_pll, fout_disp_pll);
+	p = clk_get_parent(c);
+	if (IS_ERR(p)) {
+		pr_err("%s: could not find parent : %s\n", __func__, conid);
+		return -EINVAL;
+	}
 
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_disp_333_user,
-		aclk_disp_333);
+	rate = DIV_ROUND_UP(clk_get_rate(p), (divider + 1));
 
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_a, dout_mfc_pll);
-#else
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_dsd_a, mout_mfc_pll_div2);
-#endif
+	r = clk_set_rate(c, rate);
+	if (r < 0)
+		pr_info("failed to %s, %s, %d\n", __func__, conid, r);
+	else {
+		div = container_of(c->hw, struct clk_divider, hw);
+		val = readl(div->reg) >> div->shift;
+		val &= (BIT(div->width) - 1);
+		WARN_ON(divider != val);
+		pr_debug("0x%08X[%2d], %8d, 0x%08x, %30s, %30s, %ld, %ld\n",
+			find_cmu(div->reg), div->shift, val, readl(div->reg), conid,
+			__clk_get_name(p), clk_get_rate(c), clk_get_rate(p));
+	}
 
-	DISPLAY_INLINE_SET_RATE(dout_aclk_disp_333, 222*MHZ);
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_INLINE_SET_RATE(dout_sclk_decon_eclk, 400*MHZ);
-#else
-	DISPLAY_INLINE_SET_RATE(dout_sclk_decon_eclk, 200*MHZ);
+	return r;
+}
 #endif
 
-	additional_clock_setup();
+static int exynos_display_set_rate(const char *conid, unsigned long rate)
+{
+	struct clk *p;
+	struct clk *c;
+	struct clk_divider *div;
+	unsigned int val;
+	int r = 0;
 
-#ifndef CONFIG_SOC_EXYNOS5430_REV_0
-	TEMPORARY_RECOVER_CMU(0x13B9020C, 0xFFFFFFFF, 0, 0x0101);
-	TEMPORARY_RECOVER_CMU(0x105B060C, 0x7, 4, 0x02);
-#endif
+	c = __clk_lookup(conid);
+	if (IS_ERR(c)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, conid);
+		return -EINVAL;
+	}
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
-	dispdrv->pm_status.ops->clk_on(dispdrv);
-#endif
-	return ret;
+	p = clk_get_parent(c);
+	if (IS_ERR(p)) {
+		pr_err("%s: could not find parent : %s\n", __func__, conid);
+		return -EINVAL;
+	}
+
+	r = clk_set_rate(c, rate);
+	if (r < 0)
+		pr_info("failed to %s, %s, %d\n", __func__, conid, r);
+	else {
+		div = container_of(c->hw, struct clk_divider, hw);
+		val = readl(div->reg) >> div->shift;
+		val &= (BIT(div->width) - 1);
+		pr_debug("0x%08X[%2d], %8d, 0x%08x, %30s, %30s, %ld, %ld\n",
+			find_cmu(div->reg), div->shift, val, readl(div->reg), conid,
+			__clk_get_name(p), clk_get_rate(c), clk_get_rate(p));
+	}
+
+	return r;
 }
 
 int init_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_a, mout_bus_pll_sub);
-	DISPLAY_GET_CLOCK2(mout_aclk_disp_222_user, aclk_disp_222);
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_user,
-		sclk_decon_eclk_mif);
-	DISPLAY_GET_CLOCK2(mout_sclk_dsd_user, sclk_dsd_mif);
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_disp,
-		mout_sclk_decon_eclk_user);
-#else
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_a, mout_bus_pll_div2);
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk_user,
-		sclk_decon_eclk_disp);
-	DISPLAY_GET_CLOCK2(mout_sclk_dsd_user, sclk_dsd_disp);
-	DISPLAY_GET_CLOCK2(mout_sclk_decon_eclk,
-		mout_sclk_decon_eclk_user);
-#endif
-	DISPLAY_GET_CLOCK1(mout_disp_pll);
-	DISPLAY_GET_CLOCK2(mout_aclk_disp_333_user, aclk_disp_333);
-
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_GET_CLOCK2(mout_sclk_dsd_a, dout_mfc_pll);
-#else
-	DISPLAY_GET_CLOCK2(mout_sclk_dsd_a, mout_mfc_pll_div2);
+	struct decon_lcd *lcd = decon_get_lcd_info();
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	struct display_driver *dispdrv = get_display_driver();
 #endif
 
-	DISPLAY_GET_CLOCK1(dout_aclk_disp_333);
+	if (lcd->xres * lcd->yres == 1080 * 1920)
+		exynos_display_set_rate("fout_disp_pll", 142 * MHZ);
+	else if (lcd->xres * lcd->yres == 1440 * 2560)
+		exynos_display_set_rate("fout_disp_pll", 250 * MHZ);
+	else if (lcd->xres * lcd->yres == 2560 * 1600)
+		exynos_display_set_rate("fout_disp_pll", 278 * MHZ);
+	else
+		dev_err(dev, "%s: resolution %d:%d is missing\n", __func__, lcd->xres, lcd->yres);
+
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	DISPLAY_GET_CLOCK1(dout_sclk_decon_eclk);
-#else
-	DISPLAY_GET_CLOCK1(dout_sclk_decon_eclk);
+	if (lcd->xres * lcd->yres == 1440 * 2560) {
+		exynos_display_set_rate("dout_aclk_disp_333", 333 * MHZ);
+		exynos_display_set_rate("dout_sclk_decon_eclk", 275 * MHZ);
+	} else {
+		exynos_display_set_rate("dout_aclk_disp_333", 222 * MHZ);
+		exynos_display_set_rate("dout_sclk_decon_eclk", 400 * MHZ);
+	}
+	exynos_display_set_parent("mout_sclk_decon_eclk_a", "mout_bus_pll_sub");
+	exynos_display_set_parent("mout_aclk_disp_222_user", "aclk_disp_222");
+	exynos_display_set_parent("mout_sclk_decon_eclk_user", "sclk_decon_eclk_mif");
+	exynos_display_set_parent("mout_sclk_decon_vclk_user", "sclk_decon_vclk_mif");
+	exynos_display_set_parent("mout_sclk_dsd_user", "sclk_dsd_mif");
+	exynos_display_set_parent("mout_sclk_decon_eclk_disp", "mout_sclk_decon_eclk_user");
+	exynos_display_set_parent("mout_disp_pll", "fout_disp_pll");
+	exynos_display_set_parent("mout_aclk_disp_333_user", "aclk_disp_333");
+
+	exynos_display_set_parent("mout_sclk_dsd_a", "dout_mfc_pll");
 #endif
-	enable_display_decon_clocks(dev);
 
-	additional_clock_setup();
 
-	check_display_clocks();
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+	exynos_display_set_divide("dout_aclk_disp_333", 1);
+	exynos_display_set_parent("mout_aclk_disp_333_a", "mout_mfc_pll_div2");
+	exynos_display_set_parent("mout_aclk_disp_333_b", "mout_aclk_disp_333_a");
+	exynos_display_set_divide("dout_pclk_disp", 2);
+	exynos_display_set_parent("mout_aclk_disp_333_user", "aclk_disp_333");
+
+	if (lcd->xres * lcd->yres == 1080 * 1920) {
+		exynos_display_set_divide("dout_sclk_decon_eclk", 4);
+		exynos_display_set_parent("mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_b");
+		exynos_display_set_parent("mout_sclk_decon_eclk_b", "mout_sclk_decon_eclk_a");
+		exynos_display_set_parent("mout_sclk_decon_eclk_a", "mout_bus_pll_div2");
+		exynos_display_set_divide("dout_sclk_decon_eclk_disp", 0);
+		exynos_display_set_parent("mout_sclk_decon_eclk", "mout_sclk_decon_eclk_user");
+		exynos_display_set_parent("mout_sclk_decon_eclk_user", "sclk_decon_eclk_disp");
+		exynos_display_set_divide("dout_sclk_decon_vclk", 0);
+		exynos_display_set_parent("mout_sclk_decon_vclk_c", "mout_sclk_decon_vclk_b");
+		exynos_display_set_parent("mout_sclk_decon_vclk_b", "mout_sclk_decon_vclk_a");
+		exynos_display_set_parent("mout_sclk_decon_vclk_a", "oscclk");
+		exynos_display_set_divide("dout_sclk_decon_vclk_disp", 0);
+		exynos_display_set_parent("mout_sclk_decon_vclk", "mout_disp_pll");
+		exynos_display_set_parent("mout_disp_pll", "fout_disp_pll");
+		exynos_display_set_divide("dout_sclk_dsim0", 4);
+		exynos_display_set_parent("mout_sclk_dsim0_c", "mout_sclk_dsim0_b");
+		exynos_display_set_parent("mout_sclk_dsim0_b", "mout_sclk_dsim0_a");
+		exynos_display_set_parent("mout_sclk_dsim0_a", "mout_bus_pll_div2");
+		exynos_display_set_divide("dout_sclk_dsim0_disp", 0);
+		exynos_display_set_parent("mout_sclk_dsim0", "mout_sclk_dsim0_user");
+		exynos_display_set_parent("mout_sclk_dsim0_user", "sclk_dsim0_disp");
+	} else if (lcd->xres * lcd->yres == 1440 * 2560) {
+		exynos_display_set_divide("dout_sclk_decon_eclk", 2);
+		exynos_display_set_parent("mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_b");
+		exynos_display_set_parent("mout_sclk_decon_eclk_b", "mout_sclk_decon_eclk_a");
+		exynos_display_set_parent("mout_sclk_decon_eclk_a", "mout_bus_pll_div2");
+		exynos_display_set_divide("dout_sclk_decon_eclk_disp", 0);
+		exynos_display_set_parent("mout_sclk_decon_eclk", "mout_sclk_decon_eclk_user");
+		exynos_display_set_parent("mout_sclk_decon_eclk_user", "sclk_decon_eclk_disp");
+		exynos_display_set_divide("dout_sclk_decon_vclk", 0);
+		exynos_display_set_parent("mout_sclk_decon_vclk_c", "mout_sclk_decon_vclk_b");
+		exynos_display_set_parent("mout_sclk_decon_vclk_b", "mout_sclk_decon_vclk_a");
+		exynos_display_set_parent("mout_sclk_decon_vclk_a", "oscclk");
+		exynos_display_set_divide("dout_sclk_decon_vclk_disp", 0);
+		exynos_display_set_parent("mout_sclk_decon_vclk", "mout_disp_pll");
+		exynos_display_set_parent("mout_disp_pll", "fout_disp_pll");
+		exynos_display_set_divide("dout_sclk_dsim0", 2);
+		exynos_display_set_parent("mout_sclk_dsim0_c", "mout_sclk_dsim0_b");
+		exynos_display_set_parent("mout_sclk_dsim0_b", "mout_sclk_dsim0_a");
+		exynos_display_set_parent("mout_sclk_dsim0_a", "mout_bus_pll_div2");
+		exynos_display_set_divide("dout_sclk_dsim0_disp", 0);
+		exynos_display_set_parent("mout_sclk_dsim0", "mout_sclk_dsim0_user");
+		exynos_display_set_parent("mout_sclk_dsim0_user", "sclk_dsim0_disp");
+	} else if (lcd->xres * lcd->yres == 2560 * 1600) {
+		exynos_display_set_divide("dout_sclk_decon_eclk", 1);
+		exynos_display_set_parent("mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_b");
+		exynos_display_set_parent("mout_sclk_decon_eclk_b", "mout_mfc_pll_div2");
+		exynos_display_set_parent("mout_sclk_decon_eclk_a", "oscclk");
+		exynos_display_set_divide("dout_sclk_decon_eclk_disp", 0);
+		exynos_display_set_parent("mout_sclk_decon_eclk", "mout_sclk_decon_eclk_user");
+		exynos_display_set_parent("mout_sclk_decon_eclk_user", "sclk_decon_eclk_disp");
+		exynos_display_set_divide("dout_sclk_decon_vclk", 0);
+		exynos_display_set_parent("mout_sclk_decon_vclk_c", "mout_sclk_decon_vclk_b");
+		exynos_display_set_parent("mout_sclk_decon_vclk_b", "mout_sclk_decon_vclk_a");
+		exynos_display_set_parent("mout_sclk_decon_vclk_a", "oscclk");
+		exynos_display_set_divide("dout_sclk_decon_vclk_disp", 0);
+		exynos_display_set_parent("mout_sclk_decon_vclk", "mout_disp_pll");
+		exynos_display_set_parent("mout_disp_pll", "fout_disp_pll");
+		exynos_display_set_divide("dout_sclk_dsim0", 1);
+		exynos_display_set_parent("mout_sclk_dsim0_c", "mout_sclk_dsim0_b");
+		exynos_display_set_parent("mout_sclk_dsim0_b", "mout_mfc_pll_div2");
+		exynos_display_set_parent("mout_sclk_dsim0_a", "oscclk");
+		exynos_display_set_divide("dout_sclk_dsim0_disp", 0);
+		exynos_display_set_parent("mout_sclk_dsim0", "mout_sclk_dsim0_user");
+		exynos_display_set_parent("mout_sclk_dsim0_user", "sclk_dsim0_disp");
+	} else
+		dev_err(dev, "%s: resolution %d:%d is missing\n", __func__, lcd->xres, lcd->yres);
+#endif
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	dispdrv->pm_status.ops->clk_on(dispdrv);
+#endif
+
 	return ret;
 }
 
@@ -271,17 +326,29 @@ int init_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
 
-	DISPLAY_GET_CLOCK1(fout_disp_pll);
-	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 142 * MHZ);
-	msleep(20);
-
-	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
-		phyclk_mipidphy_rxclkesc0_phy);
-	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_bitclkdiv8_user,
-		phyclk_mipidphy_bitclkdiv8_phy);
+	exynos_display_set_parent("mout_phyclk_mipidphy_rxclkesc0_user", "phyclk_mipidphy_rxclkesc0_phy");
+	exynos_display_set_parent("mout_phyclk_mipidphy_bitclkdiv8_user", "phyclk_mipidphy_bitclkdiv8_phy");
 
 	return ret;
 }
+
+int enable_display_decon_clocks(struct device *dev)
+{
+	return 0;
+}
+
+int disable_display_decon_clocks(struct device *dev)
+{
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	struct display_driver *dispdrv;
+	dispdrv = get_display_driver();
+
+	dispdrv->pm_status.ops->clk_off(dispdrv);
+#endif
+
+	return 0;
+}
+
 
 int enable_display_driver_power(struct device *dev)
 {
@@ -352,32 +419,6 @@ int disable_display_driver_power(struct device *dev)
 	gpio_free(gpio->id[0]);
 
 	return ret;
-}
-
-int enable_display_driver_clocks(struct device *dev)
-{
-	int ret = 0;
-
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,
-		phyclk_mipidphy_rxclkesc0_phy);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_phyclk_mipidphy_bitclkdiv8_user,
-		phyclk_mipidphy_bitclkdiv8_phy);
-
-	check_display_clocks();
-
-	return ret;
-}
-
-int disable_display_decon_clocks(struct device *dev)
-{
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
-	struct display_driver *dispdrv;
-	dispdrv = get_display_driver();
-
-	dispdrv->pm_status.ops->clk_off(dispdrv);
-#endif
-
-	return 0;
 }
 
 int enable_display_decon_runtimepm(struct device *dev)
@@ -493,6 +534,7 @@ int decon_vclk_eclk_mux_control(bool enable)
 		TEMPORARY_RECOVER_CMU(0x13B9030C, 0x11, 0, 0x0);
 	return ret;
 }
+
 void decon_clock_on(struct display_driver *dispdrv)
 {
 #ifndef DECON_VCLK_ECLK_MUX_MASKING
@@ -564,19 +606,18 @@ void mic_clock_off(struct display_driver *dispdrv)
 
 struct pm_ops decon_pm_ops = {
 	.clk_on		= decon_clock_on,
-	.clk_off 	= decon_clock_off,
+	.clk_off	= decon_clock_off,
 };
 #ifdef CONFIG_DECON_MIC
 struct pm_ops mic_pm_ops = {
 	.clk_on		= mic_clock_on,
-	.clk_off 	= mic_clock_off,
+	.clk_off	= mic_clock_off,
 };
 #endif
 struct pm_ops dsi_pm_ops = {
 	.clk_on		= dsi_clock_on,
-	.clk_off 	= dsi_clock_off,
+	.clk_off	= dsi_clock_off,
 };
-
 #else
 int disp_pm_runtime_get_sync(struct display_driver *dispdrv)
 {
@@ -590,3 +631,4 @@ int disp_pm_runtime_put_sync(struct display_driver *dispdrv)
 	return 0;
 }
 #endif
+

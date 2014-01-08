@@ -4776,7 +4776,7 @@ int s3c_fb_resume(struct device *dev)
 #ifdef CONFIG_PM_RUNTIME
 	disp_pm_runtime_get_sync(dispdrv);
 #endif
-	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(sfb->dev);
+	GET_DISPCTL_OPS(dispdrv).init_display_decon_clocks(sfb->dev);
 
 	/* setup gpio and output polarity controls */
 	sfb->power_state = POWER_ON;
@@ -4881,7 +4881,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	}
 	pd = sfb->pdata;
 
-	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
+	GET_DISPCTL_OPS(dispdrv).init_display_decon_clocks(dev);
 
 	if (sfb->power_state != POWER_HIBER_DOWN)
 		sfb->power_state = POWER_ON;

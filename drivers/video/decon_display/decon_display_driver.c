@@ -80,7 +80,6 @@ static int init_display_operations(void)
 #endif
 
 	DSI_OPS.init_display_driver_clocks = init_display_driver_clocks;
-	DSI_OPS.enable_display_driver_clocks = enable_display_driver_clocks;
 	DSI_OPS.enable_display_driver_power = enable_display_driver_power;
 	DSI_OPS.disable_display_driver_power = disable_display_driver_power;
 
