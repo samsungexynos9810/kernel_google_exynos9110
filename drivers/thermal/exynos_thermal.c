@@ -1092,12 +1092,12 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
 	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
-#ifndef CONFIG_SOC_EXYNOS5430_REV_1
-	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE) ||
-			(data->temp_error1[id] == 0))
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
+	if (data->temp_error1[id] == 0)
 		data->temp_error1[id] = pdata->efuse_value;
 #else
-	if (data->temp_error1[id] == 0)
+	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE) ||
+			(data->temp_error1[id] == 0))
 		data->temp_error1[id] = pdata->efuse_value;
 #endif
 	clk_disable(data->clk[0]);
