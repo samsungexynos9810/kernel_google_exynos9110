@@ -769,7 +769,7 @@ static inline int flite_s_use_buffer(struct fimc_is_device_flite *flite,
 			target_time = jiffies +
 				msecs_to_jiffies(flite->buf_done_wait_time);
 			while ((target_time > jiffies) &&
-					flite_hw_get_status1(flite->base_reg) && (7 << 20))
+					(flite_hw_get_status1(flite->base_reg) && (7 << 20)))
 				pr_debug("over vblank (early buffer done)");
 		}
 
@@ -804,7 +804,7 @@ static inline int flite_s_unuse_buffer(struct fimc_is_device_flite *flite,
 			target_time = jiffies +
 				msecs_to_jiffies(flite->buf_done_wait_time);
 			while ((target_time > jiffies) &&
-					flite_hw_get_status1(flite->base_reg) && (7 << 20))
+					(flite_hw_get_status1(flite->base_reg) && (7 << 20)))
 				pr_debug("over vblank (early buffer done)");
 		}
 
@@ -973,6 +973,11 @@ static void tasklet_flite_end(unsigned long data)
 	if (!flite) {
 		err("flite is NULL");
 		BUG();
+	}
+
+	if ((flite->buf_done_mode == FLITE_BUF_DONE_EARLY) &&
+		test_bit(FLITE_LAST_CAPTURE, &flite->state)) {
+		info("Skip due to Last Frame Capture\n");
 	}
 
 	framemgr = flite->framemgr;
@@ -1560,6 +1565,7 @@ static int flite_stream_off(struct v4l2_subdev *subdev,
 		timetowait = wait_event_timeout(flite->wait_queue,
 			test_bit(FLITE_LAST_CAPTURE, &flite->state),
 			FIMC_IS_FLITE_STOP_TIMEOUT);
+
 		if (!timetowait) {
 			/* forcely stop */
 			stop_fimc_lite(base_reg);
@@ -1570,12 +1576,17 @@ static int flite_stream_off(struct v4l2_subdev *subdev,
 			ret = -ETIME;
 		}
 	} else {
+		if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
+			flush_delayed_work(&flite->early_work_wq);
 		/*
 		 * DTP test can make iommu fault because senosr is streaming
 		 * therefore it need  force reset
 		 */
 		flite_hw_force_reset(base_reg);
 	}
+
+	if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
+		cancel_delayed_work_sync(&flite->early_work_wq);
 
 	/* clr interrupt source */
 	flite_hw_clr_interrupt_source(base_reg);
