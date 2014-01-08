@@ -212,7 +212,7 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 		}
 
 		/*restore parent*/
-		clk_set_parent(platform->mout_aclk_g3d, platform->mout_vpll_ctrl);
+		ret = clk_set_parent(platform->mout_aclk_g3d, platform->mout_vpll_ctrl);
 		if (ret < 0) {
 			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_aclk_g3d]\n");
 			goto err;

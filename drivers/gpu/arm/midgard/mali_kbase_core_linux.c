@@ -24,6 +24,7 @@
  */
 
 #include <mali_kbase.h>
+#include <mali_kbase_gpu_memory_debugfs.h>
 #include <mali_kbase_uku.h>
 #include <mali_midg_regmap.h>
 #include <mali_kbase_gator.h>

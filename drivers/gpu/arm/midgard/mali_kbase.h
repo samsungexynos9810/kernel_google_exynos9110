@@ -53,7 +53,6 @@
 #include "mali_kbase_mem.h"
 #include "mali_kbase_security.h"
 #include "mali_kbase_utility.h"
-#include <mali_kbase_gpu_memory_debugfs.h>
 #include "mali_kbase_cpuprops.h"
 #include "mali_kbase_gpuprops.h"
 #ifdef CONFIG_GPU_TRACEPOINTS

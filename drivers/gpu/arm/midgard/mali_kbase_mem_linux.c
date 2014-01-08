@@ -793,8 +793,10 @@ static int kbase_cpu_mmap(struct kbase_va_region *reg, struct vm_area_struct *vm
 		vma->vm_flags |= VM_PFNMAP;
 		for (i = 0; i < nr_pages; i++) {
 			err = vm_insert_pfn(vma, vma->vm_start + (i << PAGE_SHIFT), page_array[i + start_off] >> PAGE_SHIFT);
-			if (WARN_ON(err))
+			if (err) {
+				WARN_ON(err);
 				break;
+			}
 		}
 	} else {
 		/* MIXEDMAP so we can vfree the kaddr early and not track it after map time */
