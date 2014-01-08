@@ -32,6 +32,7 @@ enum bts_index {
 	BTS_IDX_MIXER1,
 	BTS_IDX_FIMC_LITE0,
 	BTS_IDX_FIMC_LITE1,
+	BTS_IDX_3AA_2,
 	BTS_IDX_3AA,
 	BTS_IDX_ROTATOR,
 	BTS_IDX_SSS,
@@ -66,6 +67,7 @@ enum bts_id {
 	BTS_MIXER1 = (1 << BTS_IDX_MIXER1),
 	BTS_FIMC_LITE0 = (1 << BTS_IDX_FIMC_LITE0),
 	BTS_FIMC_LITE1 = (1 << BTS_IDX_FIMC_LITE1),
+	BTS_3AA_2 = (1 << BTS_IDX_3AA_2),
 	BTS_3AA = (1 << BTS_IDX_3AA),
 	BTS_ROTATOR = (1 << BTS_IDX_ROTATOR),
 	BTS_SSS = (1 << BTS_IDX_SSS),
@@ -169,7 +171,7 @@ struct bts_scen_status pr_state = {
 #define BTS_FIMD (BTS_FIMD1M0 | BTS_FIMD1M1)
 #define BTS_MIXER (BTS_MIXER0 | BTS_MIXER1)
 #define BTS_DIS1 (BTS_MIXER0 | BTS_MIXER1 | BTS_FIMD1M0 | BTS_FIMD1M1)
-#define BTS_FIMC (BTS_FIMC_LITE0 | BTS_FIMC_LITE1 | BTS_3AA)
+#define BTS_FIMC (BTS_FIMC_LITE0 | BTS_FIMC_LITE1 | BTS_3AA | BTS_3AA_2)
 #define BTS_MDMA (BTS_MDMA0 | BTS_MDMA1)
 #define BTS_MFC (BTS_MFC0 | BTS_MFC1)
 #define BTS_G3D (BTS_G3D0 | BTS_G3D1)
@@ -421,6 +423,20 @@ static struct bts_info exynos5_bts[] = {
 		.pa_base = EXYNOS5_PA_BTS_FIMCLITE1,
 		.pd_name = "pd-fimclite",
 		.clk_name = "gscl_fimc_lite1",
+		.table[BS_DEFAULT].table_list = axiqos_0xcccc_table,
+		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xdddd_table,
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0xcccc_table,
+		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.on = false,
+	},
+	[BTS_IDX_3AA_2] = {
+		.id = BTS_3AA_2,
+		.name = "3aa_2",
+		.pa_base = EXYNOS5_PA_BTS_3AA_2,
+		.pd_name = "pd-fimclite",
+		.clk_name = "clk_3aa_2",
 		.table[BS_DEFAULT].table_list = axiqos_0xcccc_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xdddd_table,
