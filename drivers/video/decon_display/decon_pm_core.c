@@ -337,8 +337,31 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 	spin_unlock(&dispdrv->pm_status.slock);
 }
 
-/* disp_pm_add_efcount - it is called in the early start of the
- * set_win_config */
+/* disp_pm_sched_power_on - it is called in the early start of the
+ * fb_ioctl to exit HDM */
+int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
+{
+	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+
+	init_gating_idle_count(dispdrv);
+
+	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
+	if (sfb->power_state == POWER_HIBER_DOWN) {
+		switch (cmd) {
+		case S3CFB_WIN_PSR_EXIT:
+		case S3CFB_WIN_CONFIG:
+			display_hibernation_power_on(dispdrv);
+			break;
+		default:
+			return -EBUSY;
+		}
+	}
+
+	return 0;
+}
+
+/* disp_pm_add_refcount - it is called in the early start of the
+ * update_reg_handler */
 int disp_pm_add_refcount(struct display_driver *dispdrv)
 {
 	unsigned long flags;
