@@ -1849,7 +1849,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
 	int ret, i, count = 0;
 	int trigger_level_en[TRIP_EN_COUNT];
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
 	unsigned int spd_option_flag, spd_sel;
+#endif
 
 	exynos_tmu_pdev = pdev;
 	is_suspending = false;
