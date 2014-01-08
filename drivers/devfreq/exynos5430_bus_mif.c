@@ -763,8 +763,8 @@ unsigned int timeout_fullhd_camera[][2] = {
 };
 
 struct devfreq_distriction_level distriction_wqhd[] = {
-	{LV8,   LV1},
-	{LV7,	LV1},
+	{LV8,   LV2},
+	{LV7,	LV2},
 	{LV6,	LV1},
 	{LV4,	LV0},
 	{LV3,   LV0},
@@ -779,6 +779,27 @@ unsigned int timeout_wqhd[][2] = {
 	{0x00800080,	0x000000FF},
 	{0x00400040,	0x000000FF},
 	{0x00400040,	0x000000FF},
+	{0x00000000,	0x000000FF},
+	{0x00000000,	0x000000FF},
+};
+
+struct devfreq_distriction_level distriction_wqhd_gscl[] = {
+	{LV7,	LV2},
+	{LV6,	LV2},
+	{LV4,	LV1},
+	{LV3,   LV0},
+	{LV2,	LV0},
+	{LV2,	LV0},
+};
+
+unsigned int timeout_wqhd_gscl[][2] = {
+	{0x0FFF0FFF,	0x00000000},
+	{0x02000200,	0x000000FF},
+	{0x00800080,	0x000000FF},
+	{0x00800080,	0x000000FF},
+	{0x00400040,	0x000000FF},
+	{0x00400040,	0x000000FF},
+	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 };
@@ -958,6 +979,17 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 			if (mif_qos > distriction_wqhd_camera[total_layer_count].mif_level)
 				mif_qos = distriction_wqhd_camera[total_layer_count].mif_level;
 			timeout_table = timeout_wqhd_camera;
+		}
+		if (media_enabled_gscl_local) {
+			if (total_layer_count == NUM_LAYER_5) {
+				pr_err("DEVFREQ(MIF) : can't support mif and disp distriction. using gscl local with 5 windows.\n");
+				goto out;
+			}
+			if (mif_qos > distriction_wqhd_gscl[total_layer_count].mif_level)
+				mif_qos = distriction_wqhd_gscl[total_layer_count].mif_level;
+			if (disp_qos > distriction_wqhd_gscl[total_layer_count].disp_level)
+				disp_qos = distriction_wqhd_gscl[total_layer_count].disp_level;
+			timeout_table = timeout_wqhd_gscl;
 		}
 		if (media_enabled_tv) {
 			if (mif_qos > distriction_wqhd_tv[total_layer_count].mif_level)
