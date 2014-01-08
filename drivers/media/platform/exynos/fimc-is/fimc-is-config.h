@@ -28,6 +28,12 @@
 /* #define ENABLE_MIF_400 */
 /* #define ENABLE_DTP */
 
+#define CSI_VERSION_0000_0000	0x0
+#define CSI_VERSION_0310_0100	0x03100100
+
+#define FIMC_IS_VERSION_000	0x0
+#define FIMC_IS_VERSION_250	0x250
+
 #if defined(CONFIG_PM_DEVFREQ)
 #define ENABLE_DVFS
 #define START_DVFS_LEVEL FIMC_IS_SN_REAR_PREVIEW_FHD
@@ -36,32 +42,52 @@
 #if defined(CONFIG_SOC_EXYNOS5430)
 #undef ENABLE_SETFILE
 #define SUPPORTED_IS_CMD_VER	132
+#define FIMC_IS_CSI_VERSION 	CSI_VERSION_0000_0000
 #define TARGET_SPI_CH_FOR_PERI	0
-#endif
+#define FIMC_IS_VERSION		FIMC_IS_VERSION_000
 
-#if defined(CONFIG_SOC_EXYNOS5422)
+#elif defined(CONFIG_SOC_EXYNOS5422)
 #undef ENABLE_SETFILE
 #define SUPPORTED_IS_CMD_VER	132
+#define FIMC_IS_CSI_VERSION 	CSI_VERSION_0000_0000
 #define TARGET_SPI_CH_FOR_PERI	0
 #undef HAS_FW_CLOCK_GATE
-#endif
+#define FIMC_IS_VERSION		FIMC_IS_VERSION_000
 
-#if defined(CONFIG_SOC_EXYNOS5260)
+#elif defined(CONFIG_SOC_EXYNOS5260)
 #undef ENABLE_SETFILE
 #undef ENABLE_DRC
 #undef ENABLE_FULL_BYPASS
 #define SUPPORTED_EARLY_BUF_DONE
 #define SUPPORTED_IS_CMD_VER	131
 #define TARGET_SPI_CH_FOR_PERI	1
-#endif
+#define FIMC_IS_CSI_VERSION 	CSI_VERSION_0000_0000
+#define FIMC_IS_VERSION		FIMC_IS_VERSION_000
 
-#if defined(CONFIG_SOC_EXYNOS3470)
+#elif defined(CONFIG_SOC_EXYNOS4415)
+#undef ENABLE_SETFILE
+#undef ENABLE_DRC
+#undef ENABLE_CLOCK_GATE
+#define SUPPORTED_EARLY_BUF_DONE
+#define SUPPORTED_IS_CMD_VER	132
+#define TARGET_SPI_CH_FOR_PERI 1
+#define FIMC_IS_CSI_VERSION	CSI_VERSION_0310_0100
+#define FIMC_IS_VERSION		FIMC_IS_VERSION_250
+
+#elif defined(CONFIG_SOC_EXYNOS3470)
 #undef ENABLE_SETFILE
 #undef ENABLE_DRC
 #undef ENABLE_DVFS
 #undef ENABLE_FULL_BYPASS
+#define ENABLE_IFLAG
 #define SUPPORTED_IS_CMD_VER	131
 #define TARGET_SPI_CH_FOR_PERI	1
+#define FIMC_IS_CSI_VERSION 	CSI_VERSION_0000_0000
+#define FIMC_IS_VERSION		FIMC_IS_VERSION_000
+
+#else
+#error fimc-is driver can NOT support this platform
+
 #endif
 /*
  * -----------------------------------------------------------------------------
@@ -87,6 +113,7 @@
 /* #define PRINT_CAPABILITY */
 /* #define PRINT_BUFADDR */
 /* #define PRINT_DZOOM */
+/* #define PRINT_PARAM */
 #define ISDRV_VERSION 244
 
 #if (defined(BAYER_CROP_DZOOM) && defined(SCALER_CROP_DZOOM))
@@ -156,7 +183,7 @@
 
 /* debug message for video node */
 #define mdbgv_vid(fmt, args...) \
-	pr_info("[@][COM:V] " fmt, ##args)
+	pr_info("[@][VID:V] " fmt, ##args)
 
 #define mdbgv_sensor(fmt, this, args...) \
 	mdbg_common("[%d][SS%d:V] ", fmt, this->video->id, this->instance, ##args)
@@ -275,5 +302,4 @@
 #else
 #define mdbg_pframe(fmt, object, frame, args...)
 #endif
-
 #endif
