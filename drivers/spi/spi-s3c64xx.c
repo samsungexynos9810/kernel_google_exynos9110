@@ -1029,9 +1029,13 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 		return ERR_PTR(-ENOMEM);
 	}
 
-	cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
-	if (!gpio_is_valid(cs->line))
+	if (of_get_property(data_np, "cs-gpio", NULL)) {
+		cs->line = of_get_named_gpio(data_np, "cs-gpio", 0);
+		if (!gpio_is_valid(cs->line))
+			cs->line = (unsigned)NULL;
+	} else {
 		cs->line = (unsigned)NULL;
+	}
 
 	of_property_read_u32(data_np, "samsung,spi-feedback-delay", &fb_delay);
 	cs->fb_delay = fb_delay;
