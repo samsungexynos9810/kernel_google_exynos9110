@@ -37,7 +37,10 @@ enum bts_index {
 	BTS_IDX_DECONM2,
 	BTS_IDX_DECONM3,
 	BTS_IDX_DECONM4,
-	BTS_IDX_TV,
+	BTS_IDX_DECONTV_M0,
+	BTS_IDX_DECONTV_M1,
+	BTS_IDX_DECONTV_M2,
+	BTS_IDX_DECONTV_M3,
 	BTS_IDX_FIMCLITE0,
 	BTS_IDX_FIMCLITE1,
 	BTS_IDX_FIMCLITE2,
@@ -55,7 +58,10 @@ enum bts_id {
 	BTS_DECONM2 = (1 << BTS_IDX_DECONM2),
 	BTS_DECONM3 = (1 << BTS_IDX_DECONM3),
 	BTS_DECONM4 = (1 << BTS_IDX_DECONM4),
-	BTS_TV= (1 << BTS_IDX_TV),
+	BTS_DECONTV_M0 = (1 << BTS_IDX_DECONTV_M0),
+	BTS_DECONTV_M1 = (1 << BTS_IDX_DECONTV_M1),
+	BTS_DECONTV_M2 = (1 << BTS_IDX_DECONTV_M2),
+	BTS_DECONTV_M3 = (1 << BTS_IDX_DECONTV_M3),
 	BTS_FIMCLITE0 = (1 << BTS_IDX_FIMCLITE0),
 	BTS_FIMCLITE1 = (1 << BTS_IDX_FIMCLITE1),
 	BTS_FIMCLITE2 = (1 << BTS_IDX_FIMCLITE2),
@@ -130,7 +136,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "decon0",
 		.pa_base = EXYNOS5430_PA_BTS_DECONM0,
 		.pd_name = "spd-decon",
-		.clk_name = "gate_qe_deconm0",
+		.clk_name = "gate_bts_deconm0",
 		.table.table_list = axiqos_0xdddd_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xdddd_table),
 		.on = false,
@@ -140,7 +146,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "decon1",
 		.pa_base = EXYNOS5430_PA_BTS_DECONM1,
 		.pd_name = "spd-decon",
-		.clk_name = "gate_qe_deconm1",
+		.clk_name = "gate_bts_deconm1",
 		.table.table_list = axiqos_0xdddd_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xdddd_table),
 		.on = false,
@@ -150,7 +156,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "decon2",
 		.pa_base = EXYNOS5430_PA_BTS_DECONM2,
 		.pd_name = "spd-decon",
-		.clk_name = "gate_qe_deconm2",
+		.clk_name = "gate_bts_deconm2",
 		.table.table_list = axiqos_0xdddd_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xdddd_table),
 		.on = false,
@@ -160,7 +166,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "decon3",
 		.pa_base = EXYNOS5430_PA_BTS_DECONM3,
 		.pd_name = "spd-decon",
-		.clk_name = "gate_qe_deconm3",
+		.clk_name = "gate_bts_deconm3",
 		.table.table_list = axiqos_0xdddd_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xdddd_table),
 		.on = false,
@@ -170,17 +176,47 @@ static struct bts_info exynos5_bts[] = {
 		.name = "decon4",
 		.pa_base = EXYNOS5430_PA_BTS_DECONM4,
 		.pd_name = "spd-decon",
-		.clk_name = "gate_qe_deconm4",
+		.clk_name = "gate_bts_deconm4",
 		.table.table_list = axiqos_0xdddd_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xdddd_table),
 		.on = false,
 	},
-	[BTS_IDX_TV] = {
-		.id = BTS_TV,
-		.name = "mixer0",
-		.pa_base = EXYNOS5430_PA_BTS_TV,
+	[BTS_IDX_DECONTV_M0] = {
+		.id = BTS_DECONTV_M0,
+		.name = "decontv_m0",
+		.pa_base = EXYNOS5430_PA_BTS_DECONTV_M0,
 		.pd_name = "spd-decon-tv",
-		.clk_name = "gate_qe_mixerm0",
+		.clk_name = "gate_bts_decontv_m0",
+		.table.table_list = axiqos_0xcccc_table,
+		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.on = false,
+	},
+	[BTS_IDX_DECONTV_M1] = {
+		.id = BTS_DECONTV_M1,
+		.name = "decontv_m1",
+		.pa_base = EXYNOS5430_PA_BTS_DECONTV_M1,
+		.pd_name = "spd-decon-tv",
+		.clk_name = "gate_bts_decontv_m1",
+		.table.table_list = axiqos_0xcccc_table,
+		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.on = false,
+	},
+	[BTS_IDX_DECONTV_M2] = {
+		.id = BTS_DECONTV_M2,
+		.name = "decontv_m2",
+		.pa_base = EXYNOS5430_PA_BTS_DECONTV_M2,
+		.pd_name = "spd-decon-tv",
+		.clk_name = "gate_bts_decontv_m2",
+		.table.table_list = axiqos_0xcccc_table,
+		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.on = false,
+	},
+	[BTS_IDX_DECONTV_M3] = {
+		.id = BTS_DECONTV_M3,
+		.name = "decontv_m3",
+		.pa_base = EXYNOS5430_PA_BTS_DECONTV_M3,
+		.pd_name = "spd-decon-tv",
+		.clk_name = "gate_bts_decontv_m3",
 		.table.table_list = axiqos_0xcccc_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = false,
@@ -190,7 +226,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimclite0",
 		.pa_base = EXYNOS5430_PA_BTS_FIMC_LITE0,
 		.pd_name = "pd-cam0",
-		.clk_name = "gate_qe_lite_a",
+		.clk_name = "gate_bts_lite_a",
 		.table.table_list = axiqos_0xeeee_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
 		.on = false,
@@ -200,7 +236,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimclite1",
 		.pa_base = EXYNOS5430_PA_BTS_FIMC_LITE1,
 		.pd_name = "pd-cam0",
-		.clk_name = "gate_qe_lite_b",
+		.clk_name = "gate_bts_lite_b",
 		.table.table_list = axiqos_0xeeee_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
 		.on = false,
@@ -210,7 +246,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimclite2",
 		.pa_base = EXYNOS5430_PA_BTS_FIMC_LITE2,
 		.pd_name = "pd-cam1",
-		.clk_name = "gate_qe_lite_c",
+		.clk_name = "gate_bts_lite_c",
 		.table.table_list = axiqos_0xeeee_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
 		.on = false,
@@ -220,7 +256,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "fimclite3",
 		.pa_base = EXYNOS5430_PA_BTS_FIMC_LITE3,
 		.pd_name = "pd-cam0",
-		.clk_name = "gate_qe_lite_d",
+		.clk_name = "gate_bts_lite_d",
 		.table.table_list = axiqos_0xeeee_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
 		.on = false,
@@ -230,7 +266,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "3aa0",
 		.pa_base = EXYNOS5430_PA_BTS_3AA0,
 		.pd_name = "pd-cam0",
-		.clk_name = "gate_qe_3aa0",
+		.clk_name = "gate_bts_3aa0",
 		.table.table_list = axiqos_0xeeee_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
 		.on = false,
@@ -240,7 +276,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "3aa1",
 		.pa_base = EXYNOS5430_PA_BTS_3AA1,
 		.pd_name = "pd-cam0",
-		.clk_name = "gate_qe_3aa1",
+		.clk_name = "gate_bts_3aa1",
 		.table.table_list = axiqos_0xeeee_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
 		.on = false,
@@ -250,7 +286,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "gscl",
 		.pa_base = EXYNOS5430_PA_BTS_GSCL0,
 		.pd_name = "gscl-local",
-		.clk_name = "gate_qe_gscl0",
+		.clk_name = "gate_bts_gscl0",
 		.table.table_list = axiqos_0xffff_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
 		.on = false,
@@ -260,7 +296,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "gscl1",
 		.pa_base = EXYNOS5430_PA_BTS_GSCL1,
 		.pd_name = "gscl-local",
-		.clk_name = "gate_qe_gscl1",
+		.clk_name = "gate_bts_gscl1",
 		.table.table_list = axiqos_0xffff_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
 		.on = false,
@@ -270,7 +306,7 @@ static struct bts_info exynos5_bts[] = {
 		.name = "gscl2",
 		.pa_base = EXYNOS5430_PA_BTS_GSCL2,
 		.pd_name = "gscl-local",
-		.clk_name = "gate_qe_gscl2",
+		.clk_name = "gate_bts_gscl2",
 		.table.table_list = axiqos_0xffff_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
 		.on = false,
@@ -296,12 +332,8 @@ static void set_bts_ip_table(struct bts_info *bts, bool on)
 
 	BTS_DBG("[BTS] bts set: %s, on/off: %d\n", bts->name, on);
 
-#if 0
-	if (bts->clk) {
-		clk_prepare(bts->clk);
+	if (on && bts->clk)
 		clk_enable(bts->clk);
-	}
-#endif
 
 	for (i = 0; i < table_num; i++) {
 		__raw_writel(table->val, bts->va_base + table->reg);
@@ -309,12 +341,8 @@ static void set_bts_ip_table(struct bts_info *bts, bool on)
 		table++;
 	}
 
-#if 0
-	if (bts->clk) {
+	if (!on && bts->clk)
 		clk_disable(bts->clk);
-		clk_unprepare(bts->clk);
-	}
-#endif
 }
 
 void bts_initialize(const char *pd_name, bool on)
@@ -417,27 +445,37 @@ static int debug_deconm_get(void *data, u64 *val)
 	return 0;
 }
 
-static int debug_tv_set(void *data, u64 val)
+static int debug_decontv_set(void *data, u64 val)
 {
-	bool on = exynos5_bts[BTS_IDX_TV].on;
+	bool on = exynos5_bts[BTS_IDX_DECONTV_M0].on;
 
 	spin_lock(&bts_lock);
 
-	exynos5_bts[BTS_IDX_TV].table.table_list[2].val = val;
-	exynos5_bts[BTS_IDX_TV].table.table_list[3].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M0].table.table_list[2].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M0].table.table_list[3].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M1].table.table_list[2].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M1].table.table_list[3].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M2].table.table_list[2].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M2].table.table_list[3].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M3].table.table_list[2].val = val;
+	exynos5_bts[BTS_IDX_DECONTV_M3].table.table_list[3].val = val;
 
-	if (on)
-		set_bts_ip_table(&exynos5_bts[BTS_IDX_TV], on);
-	else
-		pr_info("[BTS]TV is power off\n");
+	if (on) {
+		set_bts_ip_table(&exynos5_bts[BTS_IDX_DECONTV_M0], on);
+		set_bts_ip_table(&exynos5_bts[BTS_IDX_DECONTV_M1], on);
+		set_bts_ip_table(&exynos5_bts[BTS_IDX_DECONTV_M2], on);
+		set_bts_ip_table(&exynos5_bts[BTS_IDX_DECONTV_M3], on);
+	} else {
+		pr_info("[BTS]DECONETV is power off\n");
+	}
 
 	spin_unlock(&bts_lock);
 	return 0;
 }
 
-static int debug_tv_get(void *data, u64 *val)
+static int debug_decontv_get(void *data, u64 *val)
 {
-	*val = exynos5_bts[BTS_IDX_TV].on;
+	*val = exynos5_bts[BTS_IDX_DECONTV_M0].on;
 	return 0;
 }
 
@@ -532,7 +570,7 @@ static int debug_gscl_local_get(void *data, u64 *val)
 }
 
 DEFINE_SIMPLE_ATTRIBUTE(debug_deconm_fops, debug_deconm_get, debug_deconm_set, "%llx\n");
-DEFINE_SIMPLE_ATTRIBUTE(debug_tv_fops, debug_tv_get, debug_tv_set, "%llx\n");
+DEFINE_SIMPLE_ATTRIBUTE(debug_tv_fops, debug_decontv_get, debug_decontv_set, "%llx\n");
 DEFINE_SIMPLE_ATTRIBUTE(debug_cam0_fops, debug_cam0_get, debug_cam0_set, "%llx\n");
 DEFINE_SIMPLE_ATTRIBUTE(debug_cam1_fops, debug_cam1_get, debug_cam1_set, "%llx\n");
 DEFINE_SIMPLE_ATTRIBUTE(debug_gscl_local_fops, debug_gscl_local_get, debug_gscl_local_set, "%llx\n");
@@ -580,9 +618,7 @@ static void bts_drex_init(void)
 static int __init exynos5_bts_init(void)
 {
 	int i;
-#if 0
 	struct clk *clk;
-#endif
 
 	BTS_DBG("[BTS][%s] bts init\n", __func__);
 
@@ -590,16 +626,16 @@ static int __init exynos5_bts_init(void)
 		exynos5_bts[i].va_base
 			= ioremap(exynos5_bts[i].pa_base, SZ_4K);
 
-#if 0
 		if (exynos5_bts[i].clk_name) {
 			clk = __clk_lookup(exynos5_bts[i].clk_name);
 			if (IS_ERR(clk))
 				pr_err("failed to get bts clk %s\n",
 						exynos5_bts[i].clk_name);
-			else
+			else {
 				exynos5_bts[i].clk = clk;
+				clk_prepare(exynos5_bts[i].clk);
+			}
 		}
-#endif
 
 		list_add(&exynos5_bts[i].list, &bts_list);
 	}
