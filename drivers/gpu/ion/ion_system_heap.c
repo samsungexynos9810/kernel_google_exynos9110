@@ -285,8 +285,10 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		kfree(info);
 	}
 
-	if (all_pages_from_pool)
+	if (all_pages_from_pool) {
 		ion_buffer_set_ready(buffer);
+		ion_buffer_set_clean(buffer);
+	}
 
 	ion_clean_and_init_allocated_pages(
 			sys_heap, table->sgl, table->orig_nents,
