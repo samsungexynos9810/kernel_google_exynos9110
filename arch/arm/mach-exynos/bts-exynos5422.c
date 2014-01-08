@@ -919,7 +919,7 @@ void bts_scen_update(enum bts_scen_type type, unsigned int val)
 			if (!pr_state.g3d_flag && (val <= G3D_177)) {
 				update_g3d_flag(true);
 				scen = BS_G3D_MO;
-			} else if (pr_state.g3d_flag) {
+			} else if (pr_state.g3d_flag && (val > G3D_177)) {
 				update_g3d_flag(false);
 				scen = BS_G3D_DEFAULT;
 			}
