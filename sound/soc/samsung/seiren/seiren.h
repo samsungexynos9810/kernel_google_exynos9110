@@ -135,6 +135,12 @@ enum SEIREN_PORTTYPE {
 	PORT_OUT,
 };
 
+enum SEIREN_EOSSTATE {
+	EOS_NO = 0x0,
+	EOS_YET,
+	EOS_FINAL,
+};
+
 enum SEIREN_PARAMCMD {
 	/* PCM parameters */
 	PCM_PARAM_MAX_SAMPLE_RATE = 0x0,

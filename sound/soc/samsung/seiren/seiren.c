@@ -477,13 +477,8 @@ static ssize_t esa_read(struct file *file, char *buffer,
 	}
 
 	/* if meet eos, it sholud also collect data of another buff */
-	if (rtd->get_eos && *obuf_filled_) {
-		if (copy_to_user((void *)(buffer + *obuf_filled_size), obuf_,
-				*obuf_filled_size_))
-			goto err;
-		*obuf_filled_size += *obuf_filled_size_;
-		*obuf_filled_size_ = 0;
-		*obuf_filled_ = false;
+	if (rtd->get_eos && !*obuf_filled_) {
+		rtd->get_eos = EOS_FINAL;
 	}
 
 	esa_debug("%s: handle_id[%x], idx:[%d], obuf:[%d], obuf_filled_size:[%d]\n",
@@ -653,7 +648,7 @@ static int esa_set_params(struct file *file, unsigned int param,
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
 		esa_send_cmd((param << 16) | CMD_SET_PARAMS);
 		esa_debug("ADEC_PARAM_SET_EOS: handle_id:%x\n", rtd->handle_id);
-		rtd->get_eos = true;
+		rtd->get_eos = EOS_YET;
 		break;
 	case SET_IBUF_POOL_INFO:
 		esa_debug("SET_IBUF_POOL_INFO: arg:%ld\n", arg);
@@ -740,6 +735,8 @@ static int esa_get_params(struct file *file, unsigned int param,
 		esa_send_cmd((param << 16) | CMD_GET_PARAMS);
 		val = readl(si.mailbox + RETURN_CMD);
 		esa_debug("OUTPUT_STATUS:%ld, handle_id:%x\n", val, rtd->handle_id);
+		if (val && rtd->get_eos == EOS_YET)
+			val = 0;
 		ret = copy_to_user((unsigned long *)arg, &val,
 					sizeof(unsigned long));
 		break;
@@ -880,7 +877,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		esa_debug("CH_FLUSH: val: %x, handle_id : %x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
-		rtd->get_eos = false;
+		rtd->get_eos = EOS_NO;
 		rtd->select_ibuf = 0;
 		rtd->select_obuf = 0;
 		rtd->obuf0_filled = false;
@@ -914,7 +911,7 @@ static int esa_open(struct inode *inode, struct file *file)
 
 	/* initialize */
 	file->private_data = rtd;
-	rtd->get_eos = false;
+	rtd->get_eos = EOS_NO;
 	rtd->need_config = false;
 	rtd->select_ibuf = 0;
 	rtd->select_obuf = 0;
