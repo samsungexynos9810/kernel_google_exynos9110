@@ -1543,10 +1543,11 @@ static struct ion_iovm_map *ion_buffer_iova_create(struct ion_buffer *buffer,
 	iovm_map->iova = iovmm_map(dev, buffer->sg_table->sgl, 0, buffer->size,
 					dir, id);
 	if (IS_ERR_VALUE(iovm_map->iova)) {
+		int ret = iovm_map->iova;
 		kfree(iovm_map);
 		pr_err("%s: Unable to allocate IOVA for %s\n",
 			__func__, dev_name(dev));
-		return ERR_PTR(iovm_map->iova);
+		return ERR_PTR(ret);
 	}
 
 	iovm_map->region_id = id;
