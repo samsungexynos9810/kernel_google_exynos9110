@@ -155,7 +155,7 @@ struct display_pm_status {
 };
 
 #define MAX_CLK_GATING_COUNT 2
-#define MAX_PWR_GATING_COUNT 10
+#define MAX_PWR_GATING_COUNT 25
 
 /* display_driver - Abstraction for display driver controlling
  * all display system in the system */
