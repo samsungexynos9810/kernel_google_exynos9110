@@ -163,6 +163,83 @@ static void samsung_exynos5_usb3phy_disable(struct samsung_usbphy *sphy)
 	writel(phytest, regs + EXYNOS5_DRD_PHYTEST);
 }
 
+static void samsung_usb3phy_crport_handshake(struct samsung_usbphy *sphy,
+							u32 val, u32 cmd)
+{
+	u32 usec = 100;
+	u32 result;
+
+	writel(val | cmd, sphy->regs + EXYNOS5_DRD_PHYREG0);
+
+	do {
+		result = readl(sphy->regs + EXYNOS5_DRD_PHYREG1);
+		if (result & EXYNOS5_DRD_PHYREG1_CR_ACK)
+			break;
+
+		udelay(1);
+	} while (usec-- > 0);
+
+	if (!usec)
+		dev_err(sphy->dev, "CRPORT handshake timeout1 (0x%08x)\n", val);
+
+	usec = 100;
+
+	writel(val, sphy->regs + EXYNOS5_DRD_PHYREG0);
+
+	do {
+		result = readl(sphy->regs + EXYNOS5_DRD_PHYREG1);
+		if (!(result & EXYNOS5_DRD_PHYREG1_CR_ACK))
+			break;
+
+		udelay(1);
+	} while (usec-- > 0);
+
+	if (!usec)
+		dev_err(sphy->dev, "CRPORT handshake timeout2 (0x%08x)\n", val);
+}
+
+static void samsung_usb3phy_crport_ctrl(struct samsung_usbphy *sphy,
+							u32 addr, u32 data)
+{
+	/* Write Address */
+	writel(EXYNOS5_DRD_PHYREG0_CR_DATA_IN(addr),
+			sphy->regs + EXYNOS5_DRD_PHYREG0);
+	samsung_usb3phy_crport_handshake(sphy,
+			EXYNOS5_DRD_PHYREG0_CR_DATA_IN(addr),
+			EXYNOS5_DRD_PHYREG0_CR_CR_CAP_DATA);
+
+	/* Write Data */
+	writel(EXYNOS5_DRD_PHYREG0_CR_DATA_IN(data),
+			sphy->regs + EXYNOS5_DRD_PHYREG0);
+	samsung_usb3phy_crport_handshake(sphy,
+			EXYNOS5_DRD_PHYREG0_CR_DATA_IN(data),
+			EXYNOS5_DRD_PHYREG0_CR_CR_CAP_DATA);
+	samsung_usb3phy_crport_handshake(sphy,
+			EXYNOS5_DRD_PHYREG0_CR_DATA_IN(data),
+			EXYNOS5_DRD_PHYREG0_CR_WRITE);
+}
+
+static void samsung_usb3phy_tune(struct usb_phy *phy)
+{
+	struct samsung_usbphy *sphy;
+
+	sphy = phy_to_sphy(phy);
+
+	if (sphy->drv_data->need_crport_tuning) {
+		u32 temp;
+
+		temp = LOSLEVEL_OVRD_IN_LOS_BIAS_5420 |
+			LOSLEVEL_OVRD_IN_EN |
+			LOSLEVEL_OVRD_IN_LOS_LEVEL_DEFAULT;
+		samsung_usb3phy_crport_ctrl(sphy,
+			EXYNOS5_DRD_PHYSS_LOSLEVEL_OVRD_IN, temp);
+
+		temp = TX_VBOOSTLEVEL_OVRD_IN_VBOOST_5420;
+		samsung_usb3phy_crport_ctrl(sphy,
+			EXYNOS5_DRD_PHYSS_TX_VBOOSTLEVEL_OVRD_IN, temp);
+	}
+}
+
 static int samsung_usb3phy_init(struct usb_phy *phy)
 {
 	struct samsung_usbphy *sphy;
@@ -306,6 +383,7 @@ static int samsung_usb3phy_probe(struct platform_device *pdev)
 	sphy->phy.init		= samsung_usb3phy_init;
 	sphy->phy.shutdown	= samsung_usb3phy_shutdown;
 	sphy->phy.is_active	= samsung_usb3phy_is_active;
+	sphy->phy.tune		= samsung_usb3phy_tune;
 	sphy->drv_data		= samsung_usbphy_get_driver_data(pdev);
 	sphy->ref_clk_freq	= samsung_usbphy_get_refclk_freq(sphy);
 
@@ -351,21 +429,32 @@ static int samsung_usb3phy_remove(struct platform_device *pdev)
 static struct samsung_usbphy_drvdata usb3phy_exynos5250 = {
 	.cpu_type		= TYPE_EXYNOS5250,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
+	.need_crport_tuning	= false,
+};
+
+static struct samsung_usbphy_drvdata usb3phy_exynos5420 = {
+	.cpu_type		= TYPE_EXYNOS5,
+	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
+	.need_crport_tuning	= true,
 };
 
 static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
 	.cpu_type		= TYPE_EXYNOS5,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
+	.need_crport_tuning	= false,
 };
 
 #ifdef CONFIG_OF
 static const struct of_device_id samsung_usbphy_dt_match[] = {
 	{
 		.compatible = "samsung,exynos5250-usb3phy",
-		.data = &usb3phy_exynos5250
+		.data = &usb3phy_exynos5250,
+	}, {
+		.compatible = "samsung,exynos5420-usb3phy",
+		.data = &usb3phy_exynos5420,
 	}, {
 		.compatible = "samsung,exynos5-usb3phy",
-		.data = &usb3phy_exynos5
+		.data = &usb3phy_exynos5,
 	},
 	{},
 };
@@ -376,6 +465,9 @@ static struct platform_device_id samsung_usbphy_driver_ids[] = {
 	{
 		.name		= "exynos5250-usb3phy",
 		.driver_data	= (unsigned long)&usb3phy_exynos5250,
+	}, {
+		.name		= "exynos5420-usb3phy",
+		.driver_data	= (unsigned long)&usb3phy_exynos5420,
 	}, {
 		.name		= "exynos5-usb3phy",
 		.driver_data	= (unsigned long)&usb3phy_exynos5,

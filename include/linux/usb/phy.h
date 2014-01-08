@@ -100,6 +100,7 @@ struct usb_phy {
 	int	(*init)(struct usb_phy *x);
 	void	(*shutdown)(struct usb_phy *x);
 	bool	(*is_active)(struct usb_phy *x);
+	void	(*tune)(struct usb_phy *x);
 
 	/* enable/disable VBUS */
 	int	(*set_vbus)(struct usb_phy *x, int on);
@@ -200,6 +201,14 @@ usb_phy_vbus_off(struct usb_phy *x)
 
 	return x->set_vbus(x, false);
 }
+
+static inline void
+usb_phy_tune(struct usb_phy *x)
+{
+	if (x->tune)
+		x->tune(x);
+}
+
 
 /* for usb host and peripheral controller drivers */
 #if IS_ENABLED(CONFIG_USB_PHY)

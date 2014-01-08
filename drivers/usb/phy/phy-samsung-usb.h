@@ -196,7 +196,15 @@
 #define PHYCLKRST_COMMONONN			(0x1 << 0)
 
 #define EXYNOS5_DRD_PHYREG0			(0x14)
+#define EXYNOS5_DRD_PHYREG0_CR_WRITE		(1 << 19)
+#define EXYNOS5_DRD_PHYREG0_CR_READ		(1 << 18)
+#define EXYNOS5_DRD_PHYREG0_CR_DATA_IN(_x)	((_x) << 2)
+#define EXYNOS5_DRD_PHYREG0_CR_CR_CAP_DATA	(1 << 1)
+#define EXYNOS5_DRD_PHYREG0_CR_CR_CAP_ADDR	(1 << 0)
+
 #define EXYNOS5_DRD_PHYREG1			(0x18)
+#define EXYNOS5_DRD_PHYREG1_CR_DATA_OUT(_x)	((_x) << 1)
+#define EXYNOS5_DRD_PHYREG1_CR_ACK		(1 << 0)
 
 #define EXYNOS5_DRD_PHYPARAM0			(0x1c)
 
@@ -240,6 +248,17 @@
 
 #define EXYNOS5_USB2PHY_CTRL_OFFSET		(0x8)
 
+/* USB 3.0 DRD SS Function Control Regs used to access by CR PORT */
+#define EXYNOS5_DRD_PHYSS_LOSLEVEL_OVRD_IN	(0x15)
+#define LOSLEVEL_OVRD_IN_LOS_BIAS_5420		(0x5 << 13)
+#define LOSLEVEL_OVRD_IN_LOS_BIAS_DEFAULT	(0x0 << 13)
+#define LOSLEVEL_OVRD_IN_EN			(0x1 << 10)
+#define LOSLEVEL_OVRD_IN_LOS_LEVEL_DEFAULT	(0x9 << 0)
+
+#define EXYNOS5_DRD_PHYSS_TX_VBOOSTLEVEL_OVRD_IN	(0x12)
+#define TX_VBOOSTLEVEL_OVRD_IN_VBOOST_5420		(0x5 << 13)
+#define TX_VBOOSTLEVEL_OVRD_IN_VBOOST_DEFAULT		(0x4 << 13)
+
 enum samsung_cpu_type {
 	TYPE_S3C64XX,
 	TYPE_EXYNOS4210,
@@ -273,6 +292,7 @@ struct samsung_usbphy_drvdata {
 	u32 devphy_reg_offset;
 	u32 hostphy_reg_offset;
 	u32 hsicphy_reg_offset;
+	bool need_crport_tuning;
 };
 
 /*
