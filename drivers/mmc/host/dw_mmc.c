@@ -127,8 +127,11 @@ void dw_mci_ciu_clk_dis(struct dw_mci *host)
 	if (!host->pdata->use_gate_clock)
 		return;
 
-	if (!atomic_read(&host->ciu_en_win))
+	if (atomic_read(&host->ciu_en_win)) {
+		dev_err(host->dev, "Not available CIU off: %d\n",
+				host->ciu_en_win);
 		return;
+	}
 
 	if (atomic_cmpxchg(&host->ciu_clk_cnt, 1, 0))
 		clk_disable_unprepare(gate_clk);
@@ -364,6 +367,7 @@ void dw_mci_reg_dump(struct dw_mci *host)
 	dev_err(host->dev, ": gate-clk:            %s\n",
 			      atomic_read(&host->ciu_clk_cnt) ?
 			      "enable" : "disable");
+	dev_err(host->dev, ": ciu_en_win:           %d\n", host->ciu_en_win);
 	dev_err(host->dev, ": ===========================================\n");
 }
 
