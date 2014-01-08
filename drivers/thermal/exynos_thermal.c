@@ -44,6 +44,7 @@
 #include <plat/cpu.h>
 #include <mach/tmu.h>
 #include <mach/cpufreq.h>
+#include <mach/asv-exynos.h>
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static struct cpumask mp_cluster_cpus[CA_END];
@@ -1848,6 +1849,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
 	int ret, i, count = 0;
 	int trigger_level_en[TRIP_EN_COUNT];
+	unsigned int spd_option_flag, spd_sel;
 
 	exynos_tmu_pdev = pdev;
 	is_suspending = false;
@@ -1859,6 +1861,13 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "No platform init data supplied.\n");
 		return -ENODEV;
 	}
+
+#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+	exynos5430_get_egl_speed_option(&spd_option_flag, &spd_sel);
+	if (spd_option_flag == EGL_DISABLE_SPD_OPTION)
+		pdata->freq_tab[0].freq_clip_max = 1200 * 1000;
+#endif
+
 	data = devm_kzalloc(&pdev->dev, sizeof(struct exynos_tmu_data),
 					GFP_KERNEL);
 	if (!data) {
