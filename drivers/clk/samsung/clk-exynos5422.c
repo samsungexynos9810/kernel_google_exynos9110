@@ -2104,46 +2104,43 @@ struct samsung_pll_rate_table dpll_rate_table[] = {
 /* register exynos5422 clocks */
 void __init exynos5422_clk_init(struct device_node *np)
 {
-	struct clk *apll, *bpll, *cpll, *dpll, *ipll, *mpll, *spll, *vpll;
-	struct clk *epll, *rpll, *kpll;
-
 	samsung_clk_init(np, 0, nr_clks, (unsigned long *) exynos5422_clk_regs,
 			ARRAY_SIZE(exynos5422_clk_regs), NULL, 0);
 
 	samsung_clk_of_register_fixed_ext(exynos5422_fixed_rate_ext_clks,
 			ARRAY_SIZE(exynos5422_fixed_rate_ext_clks),
 			ext_clk_match);
-	apll = samsung_clk_register_pll35xx("fout_apll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_apll", "fin_pll",
 			EXYNOS5_APLL_LOCK, EXYNOS5_APLL_CON0, apll_rate_table, ARRAY_SIZE(apll_rate_table));
 
-	bpll = samsung_clk_register_pll35xx("fout_bpll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_bpll", "fin_pll",
 			EXYNOS5_BPLL_LOCK, EXYNOS5_BPLL_CON0, bpll_rate_table, ARRAY_SIZE(bpll_rate_table));
 
-	cpll = samsung_clk_register_pll35xx("fout_cpll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_cpll", "fin_pll",
 			EXYNOS5_CPLL_LOCK, EXYNOS5_CPLL_CON0, cpll_rate_table, ARRAY_SIZE(cpll_rate_table));
 
-	dpll = samsung_clk_register_pll35xx("fout_dpll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_dpll", "fin_pll",
 			EXYNOS5_DPLL_LOCK, EXYNOS5_DPLL_CON0, dpll_rate_table, ARRAY_SIZE(dpll_rate_table));
 
-	ipll = samsung_clk_register_pll35xx("fout_ipll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_ipll", "fin_pll",
 			EXYNOS5_IPLL_LOCK, EXYNOS5_IPLL_CON0, ipll_rate_table, ARRAY_SIZE(ipll_rate_table));
 
-	kpll = samsung_clk_register_pll35xx("fout_kpll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_kpll", "fin_pll",
 			EXYNOS5_KPLL_LOCK, EXYNOS5_KPLL_CON0, kpll_rate_table, ARRAY_SIZE(kpll_rate_table));
 
-	mpll = samsung_clk_register_pll35xx("fout_mpll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_mpll", "fin_pll",
 			EXYNOS5_MPLL_LOCK, EXYNOS5_MPLL_CON0, mpll_rate_table, ARRAY_SIZE(mpll_rate_table));
 
-	spll = samsung_clk_register_pll35xx("fout_spll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_spll", "fin_pll",
 			EXYNOS5_SPLL_LOCK, EXYNOS5_SPLL_CON0, spll_rate_table, ARRAY_SIZE(spll_rate_table));
 
-	vpll = samsung_clk_register_pll35xx("fout_vpll", "fin_pll",
+	samsung_clk_register_pll35xx("fout_vpll", "fin_pll",
 			EXYNOS5_VPLL_LOCK, EXYNOS5_VPLL_CON0, vpll_rate_table, ARRAY_SIZE(vpll_rate_table));
 
-	epll = samsung_clk_register_pll36xx("fout_epll", "fin_pll",
+	samsung_clk_register_pll36xx("fout_epll", "fin_pll",
 			EXYNOS5_EPLL_LOCK, EXYNOS5_EPLL_CON0, epll_rate_table, ARRAY_SIZE(epll_rate_table));
 
-	rpll = samsung_clk_register_pll36xx("fout_rpll", "fin_pll",
+	samsung_clk_register_pll36xx("fout_rpll", "fin_pll",
 			EXYNOS5_RPLL_LOCK, EXYNOS5_RPLL_CON0, rpll_rate_table, ARRAY_SIZE(rpll_rate_table));
 
 	samsung_clk_register_fixed_rate(exynos5422_fixed_rate_clks,
