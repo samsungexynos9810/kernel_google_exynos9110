@@ -1119,6 +1119,7 @@ static void fimc_is_ischain_forcedown(struct fimc_is_device_ischain *this,
 	}
 }
 
+#if !defined(CONFIG_SOC_EXYNOS4415)
 void tdnr_s3d_pixel_async_sw_reset(struct fimc_is_device_ischain *this)
 {
 	u32 cfg = readl(SYSREG_GSCBLK_CFG1);
@@ -1131,6 +1132,7 @@ void tdnr_s3d_pixel_async_sw_reset(struct fimc_is_device_ischain *this)
 	cfg &= ~(1 << 5);
 	writel(cfg, SYSREG_ISPBLK_CFG);
 }
+#endif
 
 static void fimc_is_a5_power_off(struct device *dev)
 {
@@ -3091,7 +3093,8 @@ static int fimc_is_ischain_s_3aa_size(struct fimc_is_device_ischain *device,
 	taa_dma_input->user_min_frame_time = 0;
 	taa_dma_input->user_max_frame_time = 1000000;
 
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR10 ||
+			queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 		taa_dma_input->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
 		taa_dma_input->format = DMA_INPUT_FORMAT_BAYER;
@@ -3180,7 +3183,8 @@ static int fimc_is_ischain_s_chain0_size(struct fimc_is_device_ischain *device,
 		dma_input->height = chain0_height;
 		dma_input->bitwidth = DMA_INPUT_BIT_WIDTH_10BIT;
 
-		if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+		if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR10 ||
+			queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 			dma_input->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 		} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
 			dma_input->format = DMA_INPUT_FORMAT_BAYER;
@@ -4534,7 +4538,8 @@ static int fimc_is_ischain_3aap_start(struct fimc_is_device_ischain *device,
 	taa_vdma2_output->bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
 	taa_vdma2_output->notify_dma_done = DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
 
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR10 ||
+			queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 		taa_vdma2_output->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
 		taa_vdma2_output->format = DMA_INPUT_FORMAT_BAYER;
@@ -4759,7 +4764,8 @@ static int fimc_is_ischain_3aac_start(struct fimc_is_device_ischain *device,
 	taa_vdma4_output->bitwidth = DMA_OUTPUT_BIT_WIDTH_12BIT;
 	taa_vdma4_output->notify_dma_done = DMA_OUTPUT_NOTIFY_DMA_DONE_ENBABLE;
 
-	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
+	if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR10 ||
+			queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR12) {
 		taa_vdma4_output->format = DMA_INPUT_FORMAT_BAYER_PACKED12;
 	} else if (queue->framecfg.format.pixelformat == V4L2_PIX_FMT_SBGGR16) {
 		taa_vdma4_output->format = DMA_INPUT_FORMAT_BAYER;
@@ -7087,6 +7093,14 @@ int fimc_is_ischain_isp_callback(struct fimc_is_device_ischain *device,
 			}
 		}
 	}
+
+#ifdef PRINT_PARAM
+	if (frame->fcount == 1) {
+		fimc_is_hw_memdump(device->interface,
+			(u32) &device->is_region->parameter,
+			(u32) &device->is_region->parameter + sizeof(device->is_region->parameter));
+	}
+#endif
 
 p_err:
 	if (ret) {

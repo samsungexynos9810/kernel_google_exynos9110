@@ -51,6 +51,8 @@ extern struct device *camera_front_dev;
 extern struct device *camera_rear_dev;
 
 extern int fimc_is_sen_video_probe(void *data);
+int fimc_is_sensor_runtime_resume(struct device *dev);
+int fimc_is_sensor_runtime_suspend(struct device *dev);
 
 extern u32 __iomem *notify_fcount_sen0;
 extern u32 __iomem *notify_fcount_sen1;
@@ -952,6 +954,8 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&device->pdev->dev);
+#else
+	fimc_is_sensor_runtime_resume(&device->pdev->dev);
 #endif
 
 #ifdef ENABLE_DTP
@@ -1007,6 +1011,8 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 
 #if defined(CONFIG_PM_RUNTIME)
 	pm_runtime_put_sync(&device->pdev->dev);
+#else
+	fimc_is_sensor_runtime_suspend(&device->pdev->dev);
 #endif
 	/* cancel a work and wait for it to finish */
 	cancel_work_sync(&device->control_work);
@@ -1941,6 +1947,24 @@ int fimc_is_sensor_runtime_resume(struct device *dev)
 		ret = -EINVAL;
 		goto p_err;
 	}
+/* HACK */
+/* at xyref 4415, when runtime_suspend operating, isp0 power is off thoroughly
+   so it needs to power on operation at sensor_runtime_resume operation */
+#if defined(CONFOG_SOC_EXYNOS4415) && !defined(CONFIG_PM_RUNTIME)
+	{
+		u32 val;
+		/* ISP0 */
+		/* 1. set feedback mode */
+		val = __raw_readl(PMUREG_ISP0_OPTION);
+		val = (val & ~(0x3<< 0)) | (0x2 << 0);
+		__raw_writel(val, PMUREG_ISP0_OPTION);
+
+		/* 2. power on isp0 */
+		val = __raw_readl(PMUREG_ISP0_CONFIGURATION);
+		val = (val & ~(0x7 << 0)) | (0x7 << 0);
+		__raw_writel(val, PMUREG_ISP0_CONFIGURATION);
+	}
+#endif
 
 	/* 1. Enable MIPI */
 	ret = v4l2_subdev_call(subdev_csi, core, s_power, 1);
