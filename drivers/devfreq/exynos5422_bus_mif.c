@@ -1103,8 +1103,11 @@ static ssize_t store_upthreshold(struct device *dev,
 	unsigned int value;
 	int ret;
 
+	if (count > sizeof(value))
+		goto out;
+
 	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
+	if (ret != 1 || value > 100)
 		goto out;
 
 	exynos5_mif_governor_data.upthreshold = value;
@@ -1126,8 +1129,11 @@ static ssize_t store_target_percentage(struct device *dev,
 	unsigned int value;
 	int ret;
 
+	if (count > sizeof(value))
+		goto out;
+
 	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
+	if (ret != 1 || value > 100)
 		goto out;
 
 	exynos5_mif_governor_data.target_percentage = value;
@@ -1149,8 +1155,11 @@ static ssize_t store_proportional(struct device *dev,
 	unsigned int value;
 	int ret;
 
+	if (count > sizeof(value))
+		goto out;
+
 	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
+	if (ret != 1 || value > 100)
 		goto out;
 
 	exynos5_mif_governor_data.proportional = value;
@@ -1172,8 +1181,11 @@ static ssize_t store_en_profile(struct device *dev,
 	unsigned int value;
 	int ret;
 
+	if (count > sizeof(value))
+		goto out;
+
 	ret = sscanf(buf, "%u", &value);
-	if (ret != 1)
+	if (ret != 1 || value > 2)
 		goto out;
 
 	if (value)
