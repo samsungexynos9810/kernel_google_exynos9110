@@ -341,6 +341,8 @@ int dwc3_core_init(struct dwc3 *dwc)
 
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 
+	usb_phy_tune(dwc->usb3_phy);
+
 	return 0;
 
 err0:
