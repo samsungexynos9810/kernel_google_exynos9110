@@ -120,66 +120,111 @@ static int secmem_open(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int drm_enable_locked(struct secmem_info *info, bool enable)
+struct device_node *get_secmem_dev_node_and_size(size_t *index_np_size)
 {
-	int ret, idx;
-	int nbufs = sizeof(secmem_regions) / sizeof(uint32_t);
-
-	struct platform_device *pdev;
-	struct device *sdev;
+	size_t size;
+	const __be32 *phandle;
 	struct device_node *np;
 
 	np = of_find_compatible_node(NULL, NULL, "samsung,exynos-secmem");
 	if (!of_device_is_available(np)) {
 		pr_err("Fail to find compatible node for secmem\n");
-		return -1;
+		return NULL;
 	}
 
-	np = of_parse_phandle(np, "secmem", 0);
-	if (!np) {
-		pr_err("secmem node is not found\n");
-		return -1;
+	phandle = of_get_property(np, "secmem", &size);
+	if (!phandle) {
+		printk("fail to get phandle from semem\n");
+		return NULL;
 	}
 
-	pdev = of_find_device_by_node(np);
+	size = size / sizeof(*phandle);
+	*index_np_size = size;
+
+	return np;
+}
+
+struct platform_device *get_secmem_dt_index_pdev(struct device_node *np, int idx)
+{
+	struct device_node *np_idx;
+	struct platform_device *pdev;
+
+	np_idx = of_parse_phandle(np, "secmem", idx);
+	if (!np_idx) {
+		pr_err("secmem phandle node is not found\n");
+		return NULL;
+	}
+
+	pdev = of_find_device_by_node(np_idx);
 	if (!pdev) {
 		pr_err("secmem node is not found\n");
-		return -1;
+		return NULL;
 	}
-	sdev = &pdev->dev;
 
-	if (drm_onoff != enable) {
-		if (enable) {
-			for (idx = 0; idx < nbufs; idx++) {
-				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
-					secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
-					continue;
-				ret = ion_exynos_contig_heap_isolate(secmem_regions[idx]);
-				if (ret < 0)
-					printk("Fail to isolate reserve region. id = %d\n",
-									secmem_regions[idx]);
-			}
-			pm_runtime_enable(sdev);
-			pm_runtime_get_sync(sdev);
-		} else {
-			for (idx = 0; idx < nbufs; idx++) {
-				if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
-					secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
-					continue;
-				ion_exynos_contig_heap_deisolate(secmem_regions[idx]);
-			}
-			pm_runtime_put_sync(sdev);
-		}
-		drm_onoff = enable;
-		/*
-		 * this will only allow this instance to turn drm_off either by
-		 * calling the ioctl or by closing the fd
-		 */
-		info->drm_enabled = enable;
-	} else {
-		pr_err("%s: DRM is already %s\n", __func__,
-		       drm_onoff ? "on" : "off");
+	return pdev;
+}
+
+int drm_enable_locked(struct secmem_info *info, bool enable)
+{
+	int ret, idx, idx_np;
+	size_t idx_np_size;
+	struct platform_device *pdev;
+	struct device_node *np = NULL;
+	struct device *dev;
+	int nbufs = sizeof(secmem_regions) / sizeof(uint32_t);
+
+	if (drm_onoff == enable) {
+		pr_err("%s: DRM is already %s\n", __func__, drm_onoff ? "on" : "off");
+		return 0;
 	}
+
+	np = get_secmem_dev_node_and_size(&idx_np_size);
+	if (!np) {
+		pr_err("fail to get secmem dev node and size\n");
+		return 0;
+	}
+
+	for (idx_np = 0; idx_np < idx_np_size; idx_np++) {
+		pdev = get_secmem_dt_index_pdev(np, idx_np);
+		if (pdev == NULL) {
+			pr_err("fail to get secmem index pdev\n");
+			return 0;
+		}
+		dev = &pdev->dev;
+
+		if (enable) {
+			pm_runtime_enable(dev);
+			pm_runtime_get_sync(dev);
+		} else {
+			pm_runtime_put_sync(dev);
+			pm_runtime_disable(dev);
+		}
+	}
+
+	if (enable) {
+		for (idx = 0; idx < nbufs; idx++) {
+			if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
+						secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
+				continue;
+			ret = ion_exynos_contig_heap_isolate(secmem_regions[idx]);
+			if (ret < 0)
+				pr_err("Fail to isolate reserve region. id = %d\n",
+								secmem_regions[idx]);
+		}
+	} else {
+		for (idx = 0; idx < nbufs; idx++) {
+			if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
+						secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
+				continue;
+			ion_exynos_contig_heap_deisolate(secmem_regions[idx]);
+		}
+	}
+	drm_onoff = enable;
+	/*
+	 * this will only allow this instance to turn drm_off either by
+	 * calling the ioctl or by closing the fd
+	 */
+	info->drm_enabled = enable;
 
 	return 0;
 }
