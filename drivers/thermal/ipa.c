@@ -36,10 +36,8 @@
 #define MHZ_TO_KHZ(freq) ((freq) * 1000)
 #define KHZ_TO_MHZ(freq) ((freq) / 1000)
 
-#define NUM_CLUSTERS 2
+#define NUM_CLUSTERS CA_END
 #define MAX_GPU_FREQ 533
-#define MAX_A15_FREQ 1900000
-#define MAX_A7_FREQ 1400000
 
 struct mali_utilisation_stats {
 	int utilisation;
@@ -1050,10 +1048,10 @@ static void arbiter_calc(int currT)
 	trace_data.gpu_nutil = arbiter_data.mali_stats.s.norm_utilisation;
 	trace_data.a15_freq_in = KHZ_TO_MHZ(arbiter_data.cl_stats[CA15].freq);
 	trace_data.a15_util = arbiter_data.cl_stats[CA15].util;
-	trace_data.a15_nutil = (arbiter_data.cl_stats[CA15].util * arbiter_data.cl_stats[CA15].freq) / MAX_A15_FREQ;
+	trace_data.a15_nutil = (arbiter_data.cl_stats[CA15].util * arbiter_data.cl_stats[CA15].freq) / get_real_max_freq(CA15);
 	trace_data.a7_freq_in = KHZ_TO_MHZ(arbiter_data.cl_stats[CA7].freq);
 	trace_data.a7_util = arbiter_data.cl_stats[CA7].util;
-	trace_data.a7_nutil = (arbiter_data.cl_stats[CA7].util * arbiter_data.cl_stats[CA7].freq) / MAX_A7_FREQ;
+	trace_data.a7_nutil = (arbiter_data.cl_stats[CA7].util * arbiter_data.cl_stats[CA7].freq) / get_real_max_freq(CA7);;
 	trace_data.Pgpu_in = Pgpu_in / 100;
 	trace_data.Pa15_in =  Pa15_in / 100;
 	trace_data.Pa7_in = Pa7_in / 100;
