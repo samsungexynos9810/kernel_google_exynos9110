@@ -67,6 +67,10 @@ void s5p_mipi_dsi_set_3d_off_mic_on_h_size(struct mipi_dsim_device *dsim)
 	bs_size = s5p_mipi_dsi_calc_bs_size(dsim);
 
 	writel(bs_size, regs);
+#ifdef CONFIG_SOC_EXYNOS5422
+	bs_size += dsim->lcd_info->hfp;
+	writel(bs_size, dsim->reg_base + S5P_DSIM_PRO_OFF_MIC_ON_HFP);
+#endif
 }
 #endif
 

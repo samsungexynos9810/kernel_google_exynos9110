@@ -20,9 +20,16 @@
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
 
+#ifdef CONFIG_DECON_MIC
+#include "decon_mic.h"
+#endif
+
 #define DISP_CTRL_NAME	"fimd_ctrl"
 #define MIPI_DSI_NAME	"mipi_dsi"
 #define MIPI_LCD_NAME	"mipi_lcd_info"
+#ifdef CONFIG_DECON_MIC
+#define MIC_NAME	"decon_mic"
+#endif
 
 #define DT_READ_U32(node, key, value) do {\
 		pprop = key; \
@@ -65,8 +72,16 @@ struct mipi_dsim_config g_dsim_config = {
 #endif
 };
 
+#ifdef CONFIG_DECON_MIC
+struct mic_config g_mic_config;
+#endif
+
 #define FIMD_CONT_REG_INDEX	0
 #define MIPI_DSI_REG_INDEX	1
+
+#ifdef CONFIG_DECON_MIC
+#define DISPLAY_MIC_REG_INDEX		2
+#endif
 
 static struct display_gpio g_disp_gpios;
 
@@ -312,6 +327,13 @@ struct mipi_dsim_lcd_config *get_display_lcd_drvdata(void)
 	return &g_lcd_config;
 }
 
+#ifdef CONFIG_DECON_MIC
+struct mic_config *get_display_mic_config(void)
+{
+	return &g_mic_config;
+}
+#endif
+
 static int parse_dsi_drvdata(struct device_node *np)
 {
 	u32 temp;
@@ -370,6 +392,16 @@ end:
 	return 0;
 }
 
+#ifdef CONFIG_DECON_MIC
+int parse_decon_mic_dt_exynos(struct device_node *np)
+{
+	u32 temp;
+
+	DT_READ_U32_OPTIONAL(np, "sysreg1", g_mic_config.sysreg1);
+	return 0;
+}
+#endif
+
 /* parse_all_dt_exynos -
  * parses TOP device tree for display subsystem */
 static int parse_all_dt_exynos(struct device_node *parent)
@@ -400,6 +432,18 @@ static int parse_all_dt_exynos(struct device_node *parent)
 		return ret;
 	}
 
+#ifdef CONFIG_DECON_MIC
+	node = of_get_child_by_name(parent, MIC_NAME);
+	if (!node) {
+		pr_err("device tree errror : empty mic dt\n");
+		return -EINVAL;
+	}
+	ret = parse_decon_mic_dt_exynos(node);
+	if (ret < 0) {
+		pr_err("parsing for MIC failed.\n");
+		return ret;
+	}
+#endif
 	return ret;
 }
 /* parse_display_driver_dt_exynos
@@ -429,6 +473,14 @@ int parse_display_driver_dt(struct platform_device *pdev,
 	pr_info("%s: decon_driver.regs %x dsi_driver.regs %x\n", __func__,
 		*(unsigned int *)ddp->decon_driver.regs, *(unsigned int *)ddp->dsi_driver.regs);
 
+#ifdef CONFIG_DECON_MIC
+	ddp->mic_driver.regs = platform_get_resource(pdev,
+		IORESOURCE_MEM, DISPLAY_MIC_REG_INDEX);
+	if (!ddp->mic_driver.regs) {
+		pr_err("failed to find registers for MIC\n");
+		return -ENOENT;
+	}
+#endif
 	/* starts to parse device tree */
 	ret = parse_interrupt_dt_exynos(pdev, ddp);
 	if (ret < 0) {

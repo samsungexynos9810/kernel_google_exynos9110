@@ -173,11 +173,7 @@ int enable_display_decon_clocks(struct device *dev)
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
-#ifdef CONFIG_DECON_LCD_S6E3HA0
-	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 250 * MHZ);
-#else
 	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 142 * MHZ);
-#endif
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_sclk_decon_eclk_a,
@@ -276,11 +272,7 @@ int init_display_driver_clocks(struct device *dev)
 	int ret = 0;
 
 	DISPLAY_GET_CLOCK1(fout_disp_pll);
-#ifdef CONFIG_DECON_LCD_S6E3HA0
-	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 250 * MHZ);
-#else
 	DISPLAY_INLINE_SET_RATE(fout_disp_pll, 142 * MHZ);
-#endif
 	msleep(20);
 
 	DISPLAY_CLOCK_SET_PARENT(mout_phyclk_mipidphy_rxclkesc0_user,

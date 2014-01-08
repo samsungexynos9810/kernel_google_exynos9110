@@ -187,7 +187,10 @@ void init_display_gpio_exynos(void)
 	 *  1 | Bypass : selected
 	 */
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
+	reg &= ~(1 << 11);
+#ifndef CONFIG_DECON_MIC
 	reg |= (1 << 11);
+#endif
 	__raw_writel(reg, S3C_VA_SYS + 0x0214);
 
 #if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)

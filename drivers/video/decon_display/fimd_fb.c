@@ -138,6 +138,11 @@ static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb);
 extern struct mipi_dsim_device *dsim_for_decon;
 extern int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim);
 extern int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim);
+#ifdef CONFIG_DECON_MIC
+extern struct decon_mic *mic_for_decon;
+extern int decon_mic_enable(struct decon_mic *mic);
+extern int decon_mic_disable(struct decon_mic *mic);
+#endif
 #ifdef CONFIG_ION_EXYNOS
 extern struct ion_device *ion_exynos;
 #endif
@@ -1105,6 +1110,9 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #endif
 		ret = s3c_fb_disable(sfb);
 		s5p_mipi_dsi_disable(dsim_for_decon);
+#ifdef CONFIG_DECON_MIC
+		decon_mic_disable(mic_for_decon);
+#endif
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos5_fimd_mif_qos, 0);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
@@ -1123,6 +1131,9 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		exynos5_update_media_layers(TYPE_FIMD1, 1);
 		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 1;
+#endif
+#ifdef CONFIG_DECON_MIC
+		decon_mic_enable(mic_for_decon);
 #endif
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
@@ -3775,6 +3786,18 @@ static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 
 void init_display_gpio_exynos(void);
 
+#ifdef CONFIG_DECON_MIC
+static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
+{
+	u32 reg = 0;
+
+	if (enable)
+		reg = MIC_CTRL_ON_UP | MIC_CTRL_ON_F;
+
+	writel(reg, sfb->regs + MIC_CTRL);
+}
+#endif
+
 int create_decon_display_controller(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
@@ -3911,7 +3934,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 	init_display_gpio_exynos();
 
 	sfb->power_state = POWER_ON;
-
+#ifdef CONFIG_DECON_MIC
+        s3c_fb_set_mic_enable(sfb, true);
+#endif
 	writel(pd->vidcon1, sfb->regs + sfb->variant.vidcon1);
 
 	/* set video clock running at under-run */
@@ -4372,6 +4397,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	sfb->power_state = POWER_ON;
 
+#ifdef CONFIG_DECON_MIC
+        s3c_fb_set_mic_enable(sfb, true);
+#endif
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
 	if (soc_is_exynos5422())
 		writel(0x3, sfb->regs + REG_CLKGATE_MODE);
@@ -4517,6 +4545,9 @@ int s3c_fb_resume(struct device *dev)
 
 	sfb->power_state = POWER_ON;
 
+#ifdef CONFIG_DECON_MIC
+        s3c_fb_set_mic_enable(sfb, true);
+#endif
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
 	if (soc_is_exynos5422())
 		writel(0x3, sfb->regs + REG_CLKGATE_MODE);
@@ -4691,6 +4722,9 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 		goto err;
 	}
 
+#ifdef CONFIG_DECON_MIC
+        s3c_fb_set_mic_enable(sfb, true);
+#endif
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
 	if (soc_is_exynos5422())
 		writel(0x3, sfb->regs + REG_CLKGATE_MODE);

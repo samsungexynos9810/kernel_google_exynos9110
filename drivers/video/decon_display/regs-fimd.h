@@ -149,6 +149,10 @@
 #define PRTCON					(0x0c)
 #define PRTCON_PROTECT				(1 << 11)
 
+#define MIC_CTRL			(0x10)
+#define MIC_CTRL_ON_UP			(1 << 3)
+#define MIC_CTRL_ON_F			(1 << 0)
+
 /* VIDTCON0 */
 
 #define VIDTCON0_VBPDE_MASK			(0xff << 24)
