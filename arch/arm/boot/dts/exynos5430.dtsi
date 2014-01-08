@@ -1299,6 +1299,7 @@
 
 		spd_decon_tv: spd-decon-tv@105c4080 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_hdmi: spd-hdmi@105c4080 {
