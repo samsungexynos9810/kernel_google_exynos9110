@@ -1332,9 +1332,19 @@ static int crypt_setkey_allcpus(struct crypt_config *cc)
 		for (i = 0; i < cc->key_size; i++)
 			key_storage[i] = cc->key[i];
 
-		r = exynos_smc(SMC_CMD_FMP, FMP_MMC_KEY_SET,
-			EXYNOS5430_PA_SYSRAM_NS + FMP_KEY_STORAGE_OFFSET,
-			cc->key_size);
+		if (soc_is_exynos5422())
+			r = exynos_smc(SMC_CMD_FMP, FMP_MMC_KEY_SET,
+				EXYNOS5422_PA_SYSRAM_NS + FMP_KEY_STORAGE_OFFSET,
+				cc->key_size);
+		else if (soc_is_exynos5430())
+			r = exynos_smc(SMC_CMD_FMP, FMP_MMC_KEY_SET,
+				EXYNOS5430_PA_SYSRAM_NS + FMP_KEY_STORAGE_OFFSET,
+				cc->key_size);
+		else {
+			pr_err("dm-crypt: unsupported SoC type\n");
+			return -EINVAL;
+		}
+
 		err = ((r == (u32)-1) ? r : 0);
 	} else {
 		for (i = 0; i < cc->tfms_count; i++) {
