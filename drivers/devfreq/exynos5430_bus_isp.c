@@ -830,8 +830,11 @@ static int exynos5_devfreq_isp_target(struct device *dev,
 						devfreq_isp->previous_freq);
 	old_freq = devfreq_isp->previous_freq;
 
-	if (target_idx < 0)
+	if (target_idx < 0 ||
+		old_idx < 0) {
+		ret = -EINVAL;
 		goto out;
+	}
 
 	if (old_freq == *target_freq)
 		goto out;
@@ -853,6 +856,9 @@ static int exynos5_devfreq_isp_get_dev_status(struct device *dev,
 						struct devfreq_dev_status *stat)
 {
 	struct devfreq_data_isp *data = dev_get_drvdata(dev);
+
+	if (!data->use_dvfs)
+		return -EAGAIN;
 
 	stat->current_frequency = data->devfreq->previous_freq;
 	stat->busy_time = 0;

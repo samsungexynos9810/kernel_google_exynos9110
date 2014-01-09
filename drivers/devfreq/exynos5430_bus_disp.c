@@ -331,8 +331,11 @@ static int exynos5_devfreq_disp_target(struct device *dev,
 						devfreq_disp->previous_freq);
 	old_freq = devfreq_disp->previous_freq;
 
-	if (target_idx < 0)
+	if (target_idx < 0 ||
+		old_idx < 0) {
+		ret = -EINVAL;
 		goto out;
+	}
 
 	if (old_freq == *target_freq)
 		goto out;
@@ -354,6 +357,9 @@ static int exynos5_devfreq_disp_get_dev_status(struct device *dev,
 						struct devfreq_dev_status *stat)
 {
 	struct devfreq_data_disp *data = dev_get_drvdata(dev);
+
+	if (!data->use_dvfs)
+		return -EAGAIN;
 
 	if (ppmu_count_total(devfreq_disp_exynos.ppmu_list,
 			devfreq_disp_exynos.ppmu_count,

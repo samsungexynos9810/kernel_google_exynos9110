@@ -111,6 +111,8 @@ struct devfreq_data_mif {
 
 	struct notifier_block tmu_notifier;
 
+	bool use_dvfs;
+
 	void __iomem *base_mif;
 	void __iomem *base_sysreg_mif;
 	void __iomem *base_drex0;
@@ -1339,6 +1341,10 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 
 	mutex_lock(&mif_data->lock);
 
+	*target_freq = min3(*target_freq,
+			devfreq_mif_ch0_work.max_freq,
+			devfreq_mif_ch1_work.max_freq);
+
 	rcu_read_lock();
 	target_opp = devfreq_recommended_opp(dev, target_freq, flags);
 	if (IS_ERR(target_opp)) {
@@ -1356,10 +1362,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 #endif
 	rcu_read_unlock();
 
-	*target_freq = min3(*target_freq,
-				devfreq_mif_ch0_work.max_freq,
-				devfreq_mif_ch1_work.max_freq);
-
 	target_idx = exynos5_devfreq_mif_get_idx(devfreq_mif_opp_list,
 						ARRAY_SIZE(devfreq_mif_opp_list),
 						*target_freq);
@@ -1368,8 +1370,11 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 						devfreq_mif->previous_freq);
 	old_freq = devfreq_mif->previous_freq;
 
-	if (target_idx < 0)
+	if (target_idx < 0 ||
+		old_idx < 0) {
+		ret = -EINVAL;
 		goto out;
+	}
 
 	if (old_freq == *target_freq)
 		goto out;
@@ -1410,6 +1415,9 @@ static int exynos5_devfreq_mif_get_dev_status(struct device *dev,
 						struct devfreq_dev_status *stat)
 {
 	struct devfreq_data_mif *data = dev_get_drvdata(dev);
+
+	if (!data->use_dvfs)
+		return -EAGAIN;
 
 	stat->current_frequency = data->devfreq->previous_freq;
 	stat->busy_time = devfreq_mif_exynos.val_pmcnt;
@@ -1781,6 +1789,7 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 		goto err_data;
 	}
 
+	data->use_dvfs = false;
 	data_mif = data;
 	mutex_init(&data->lock);
 
@@ -1805,6 +1814,9 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 		goto err_inittable;
 
 	platform_set_drvdata(pdev, data);
+
+	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
+	devfreq_mif_ch1_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
@@ -1833,8 +1845,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 
 	data->devfreq->min_freq = plat_data->default_qos;
 	data->devfreq->max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
-	devfreq_mif_ch1_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 
 	register_reboot_notifier(&exynos5_mif_reboot_notifier);
 
@@ -1844,6 +1854,8 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	data->tmu_notifier.notifier_call = exynos5_devfreq_mif_tmu_notifier;
 	exynos_tmu_add_notifier(&data->tmu_notifier);
 #endif
+	data->use_dvfs = true;
+
 	return ret;
 err_nb:
 	devfreq_remove_device(data->devfreq);
