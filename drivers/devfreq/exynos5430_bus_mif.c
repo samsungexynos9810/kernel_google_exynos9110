@@ -1178,11 +1178,13 @@ static int exynos5_devfreq_mif_set_dll(struct devfreq_data_mif *data,
 {
 	unsigned int tmp;
 
-	if (target_volt >= DLL_ON_BASE_VOLT) {
+	if (target_idx == LV0) {
+		/* only LV0 use DLL tacing mode(CLKM_PHY_C_ENABLE mux gating 1(enable)/0(disable)). */
 		tmp = __raw_readl(data->base_mif + 0x304);
 		tmp |= (0x1 << 12);
 		__raw_writel(tmp, data->base_mif + 0x304);
 	} else {
+		/* DLL Tracing off mode */
 		tmp = __raw_readl(data->base_mif + 0x304);
 		tmp &= ~(0x1 << 12);
 		__raw_writel(tmp, data->base_mif + 0x304);
@@ -1473,7 +1475,7 @@ static int exynos5_init_mif_table(struct device *dev,
 	unsigned int ret;
 	unsigned int freq;
 	unsigned int volt;
-	bool checked_volt_over900mv = false;
+	bool checked_level_dllon = false;
 
 	for (i = 0; i < ARRAY_SIZE(devfreq_mif_opp_list); ++i) {
 		freq = devfreq_mif_opp_list[i].freq;
@@ -1483,10 +1485,10 @@ static int exynos5_init_mif_table(struct device *dev,
 
 		exynos5_devfreq_mif_profile.freq_table[i] = freq;
 
-		if (!checked_volt_over900mv) {
-			if (volt < DLL_ON_BASE_VOLT) {
+		if (!checked_level_dllon) {
+			if (freq == devfreq_mif_opp_list[LV0].freq) {
 				data->base_idx_dll_on = i;
-				checked_volt_over900mv = true;
+				checked_level_dllon = true;
 			}
 		}
 
