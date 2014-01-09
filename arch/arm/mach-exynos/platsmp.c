@@ -186,10 +186,7 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct 
 	 * and branch to the address found there.
 	 */
 
-	if (soc_is_exynos5430())
-		timeout = jiffies + (10 * HZ);
-	else
-		timeout = jiffies + (1 * HZ);
+	timeout = jiffies + (1 * HZ);
 	while (time_before(jiffies, timeout)) {
 		unsigned long boot_addr;
 
