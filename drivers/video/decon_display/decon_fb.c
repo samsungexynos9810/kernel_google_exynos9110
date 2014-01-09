@@ -383,35 +383,6 @@ static void shadow_protect_win(struct s3c_fb_win *win, bool protect)
 	}
 }
 
-static void patch_set_shadow_protect(struct s3c_fb_win *win,
-				struct s3c_fb *sfb, int enable)
-{
-	u32 data, timeout = 0;
-
-	if (enable) {
-		if ((readl(sfb->regs + WINCON_SHADOW(win->index))) & 0x1) {
-			while(1) {
-				data = readl(sfb->regs + DECON_UPDATE_SHADOW);
-				if (!(data & 1))
-					break;
-
-				udelay(100);
-
-				if (++timeout > 2000) {
-					dev_err(sfb->dev, "\n\n %s Timeout error\n\n", __func__);
-					break;
-				} else {
-					dev_err(sfb->dev, "shodow update bit is not\
-							'0'\n");
-				}
-			}
-		}
-		shadow_protect_win(win, 1);
-	} else {
-		shadow_protect_win(win, 0);
-	}
-}
-
 static inline u32 fb_visual(u32 bits_per_pixel, unsigned short palette_sz)
 {
 	switch (bits_per_pixel) {
@@ -3186,35 +3157,8 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
-	u32 enable = (u32)arg;
-	u32 data = 0;
 
 	switch (cmd) {
-	case S3CFB_SHADOW_PROTECT:
-		if (enable)
-			patch_set_shadow_protect(win, sfb, 1);
-		else
-			patch_set_shadow_protect(win, sfb, 0);
-		break;
-
-	case S3CFB_STAND_ALONE_UPDATE:
-		data = readl(sfb->regs + DECON_UPDATE);
-		data |= DECON_UPDATE_STANDALONE_F;
-		writel(data, sfb->regs + DECON_UPDATE);
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		/* hw_trigger_mask_enable(win, false); */
-#endif
-		break;
-
-	case S3CFB_SYNC_SLAVE_UPDATE:
-		data = readl(sfb->regs + DECON_UPDATE);
-		data |= DECON_UPDATE_STANDALONE_F;
-		data |= DECON_UPDATE_SLAVE_SYNC;
-		writel(data, sfb->regs + DECON_UPDATE);
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-		/* hw_trigger_mask_enable(win, false); */
-#endif
-		break;
 	case S3CFB_FLUSH_WORKQUEUE:
 		if (sfb->update_regs_wq) {
 			mutex_lock(&sfb->output_lock);
@@ -3227,6 +3171,7 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		dev_err(sfb->dev, "unsupported s3c_fb_sd_ioctl\n");
 		return -EINVAL;
 	}
+
 	return 0;
 }
 
