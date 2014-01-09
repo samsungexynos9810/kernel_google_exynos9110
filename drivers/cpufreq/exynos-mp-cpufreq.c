@@ -73,6 +73,7 @@ bool exynos_cpufreq_init_done;
 static bool suspend_prepared = false;
 static bool hmp_boosted = false;
 static bool egl_hotplugged = false;
+bool cluster_on[CA_END] = {true, };
 
 /* Include CPU mask of each cluster */
 cluster_type exynos_boot_cluster;
@@ -200,6 +201,9 @@ static void cluster_onoff_monitor(struct work_struct *work)
 	unsigned int freq;
 	int i;
 
+	if (exynos_info[CA15]->is_alive)
+		cluster_on[CA15] = exynos_info[CA15]->is_alive();
+
 	if (exynos_info[CA15]->bus_table && exynos_info[CA15]->is_alive) {
 		if (!exynos_info[CA15]->is_alive() && CA15_cluster_on) {
 			pm_qos_update_request(&exynos_mif_qos_CA15, 0);
@@ -220,6 +224,9 @@ static void cluster_onoff_monitor(struct work_struct *work)
 			CA15_cluster_on = true;
 		}
 	}
+
+	if (exynos_info[CA7]->is_alive)
+		cluster_on[CA7] = exynos_info[CA7]->is_alive();
 
 	if (exynos_info[CA7]->bus_table && exynos_info[CA7]->is_alive) {
 		if (!exynos_info[CA7]->is_alive() && CA7_cluster_on) {
