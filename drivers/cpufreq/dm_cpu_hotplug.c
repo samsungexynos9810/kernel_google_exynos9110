@@ -55,6 +55,9 @@ static bool do_disable_hotplug;
 #if defined(CONFIG_SCHED_HMP)
 static int big_hotpluged;
 #endif
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+static unsigned int egl_min_freq;
+#endif
 
 enum hotplug_cmd {
 	CMD_NORMAL,
@@ -375,6 +378,11 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 
 void force_dynamic_hotplug(bool out_flag)
 {
+	if (!out_flag) {
+		if (!dynamic_hotplug(CMD_NORMAL))
+			prev_cmd = CMD_NORMAL;
+	}
+
 	forced_hotplug = out_flag;
 }
 
@@ -472,12 +480,19 @@ static struct notifier_block exynos_dm_hotplug_reboot_nb = {
 	.notifier_call = exynos_dm_hotplut_reboot_notifier,
 };
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+extern bool cluster_on[CA_END];
+#endif
 static int low_stay = 0;
 
 static enum hotplug_cmd diagnose_condition(void)
 {
 	enum hotplug_cmd ret;
 	unsigned int normal_min_freq;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	struct cpufreq_policy *policy;
+	unsigned int egl_cur_freq;
+#endif
 
 #if defined(CONFIG_SCHED_HMP) && defined(CONFIG_CPU_FREQ_GOV_INTERACTIVE)
 	normal_min_freq = cpufreq_interactive_get_hispeed_freq(0);
@@ -485,9 +500,26 @@ static enum hotplug_cmd diagnose_condition(void)
 	normal_min_freq = NORMALMIN_FREQ;
 #endif
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	policy = cpufreq_cpu_get(NR_CA7);
+	if (!policy) {
+		egl_cur_freq = 0;
+	} else {
+		if (cluster_on[CA15])
+			egl_cur_freq = policy->cur;
+		else
+			egl_cur_freq = 0;
+		cpufreq_cpu_put(policy);
+	}
+#endif
 	ret = CMD_NORMAL;
 
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+	if ((cur_load_freq > normal_min_freq) ||
+		(egl_cur_freq >= egl_min_freq))
+#else
 	if (cur_load_freq > normal_min_freq)
+#endif
 		low_stay = 0;
 	else if (cur_load_freq <= normal_min_freq)
 		low_stay = 1;
@@ -607,6 +639,9 @@ failed_out:
 static int __init dm_cpu_hotplug_init(void)
 {
 	int ret = 0;
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	struct cpufreq_policy *policy;
+#endif
 
 	dm_hotplug_task =
 		kthread_create(on_run, NULL, "thread_hotplug");
@@ -638,6 +673,18 @@ static int __init dm_cpu_hotplug_init(void)
 	}
 #endif
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	policy = cpufreq_cpu_get(NR_CA7);
+	if (!policy) {
+		pr_err("%s: invaled policy cpu%d\n", __func__, NR_CA7);
+		ret = -ENODEV;
+		goto err_policy;
+	}
+
+	egl_min_freq = policy->min;
+	cpufreq_cpu_put(policy);
+#endif
+
 	register_pm_notifier(&exynos_dm_hotplug_nb);
 	register_reboot_notifier(&exynos_dm_hotplug_reboot_nb);
 
@@ -645,6 +692,10 @@ static int __init dm_cpu_hotplug_init(void)
 
 	return ret;
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+err_policy:
+	sysfs_remove_file(power_kobj, &enable_dm_hotplug.attr);
+#endif
 err_enable_dm_hotplug:
 	fb_unregister_client(&fb_block);
 	kthread_stop(dm_hotplug_task);
