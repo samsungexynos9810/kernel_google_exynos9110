@@ -1255,9 +1255,10 @@
 		  clocks = <&clock 234>, <&clock 228>;
 		  clock-names = "clk_g2d", "clk_qeg2d";
 		  ip_ver = <7>; /* IP_VER_G2D_5AR2 */
-		  cpu_min = <400000>;
-		  mif_min = <667000>;
-		  int_min = <333000>;
+		  cpu_min = <0>;
+		  kfc_min = <800000>;
+		  mif_min = <633000>;
+		  int_min = <400000>;
 		  samsung,power-domain = <&pd_g2d>;
 	};
 
