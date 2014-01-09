@@ -1128,7 +1128,7 @@
 			mfc_qos_variant_3 {
 				thrd_mb = <489600>;
 				freq_mfc = <400000>;
-				freq_int = <400000>;
+				freq_int = <420000>;
 				freq_mif = <400000>;
 				freq_cpu = <0>;
 				freq_kfc = <400000>;
