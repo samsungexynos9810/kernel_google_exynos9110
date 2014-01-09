@@ -633,11 +633,18 @@ void *kbasep_trace_seq_start(struct seq_file *s, loff_t *pos)
 	struct trace_seq_state *state = s->private;
 	int i;
 
-	i = (state->start + *pos) & KBASE_TRACE_MASK;
-	if (i >= state-> end)
+	if (*pos > KBASE_TRACE_SIZE)
 		return NULL;
 
-	return state;
+	i = state->start + *pos;
+	if ((state->end >= state->start && i >= state->end) ||
+			i >= state->end + KBASE_TRACE_SIZE)
+	return NULL;
+
+	i &= KBASE_TRACE_MASK;
+
+	return &state->trace_buf[i];
+
 }
 
 void kbasep_trace_seq_stop(struct seq_file *s, void *data)
@@ -652,11 +659,8 @@ void *kbasep_trace_seq_next(struct seq_file *s, void *data, loff_t *pos)
 	(*pos)++;
 
 	i = (state->start + *pos) & KBASE_TRACE_MASK;
-#ifdef CONFIG_MALI_EXYNOS_TRACE
-	if (i >= state->end || state->start < state->end) {
-#else
-	if (i >= state->end) {
-#endif
+
+	if (i == state->end) {
 		return NULL;
 	}
 

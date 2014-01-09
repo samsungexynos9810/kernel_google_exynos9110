@@ -682,11 +682,7 @@ struct kbase_device {
 	spinlock_t              trace_lock;
 	u16                     trace_first_out;
 	u16                     trace_next_in;
-#ifdef CONFIG_MALI_EXYNOS_TRACE
-	kbase_trace            trace_rbuf[KBASE_TRACE_SIZE];
-#else
 	kbase_trace            *trace_rbuf;
-#endif
 #endif
 
 #if MALI_CUSTOMER_RELEASE == 0
