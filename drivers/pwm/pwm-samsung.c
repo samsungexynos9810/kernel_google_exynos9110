@@ -82,6 +82,7 @@ struct s3c_chip {
 	struct pwm_chip		chip;
 	struct s3c_pwm_device	*s3c_pwm[NPWM];
 	unsigned int		pwm_type;
+	unsigned int		reg_tcfg0;
 };
 
 static DEFINE_SPINLOCK(pwm_spinlock);
@@ -561,6 +562,8 @@ static int s3c_pwm_suspend(struct device *dev)
 			s3c_pwm->period_ns = -1;
 		}
 	}
+	/* Save pwm registers*/
+	s3c->reg_tcfg0 = __raw_readl(s3c->reg_base + REG_TCFG0);
 
 	clk_disable(s3c->clk);
 	return 0;
@@ -573,6 +576,9 @@ static int s3c_pwm_resume(struct device *dev)
 	unsigned char i;
 
 	clk_enable(s3c->clk);
+
+	/* Restore pwm registers*/
+	__raw_writel(s3c->reg_tcfg0, s3c->reg_base + REG_TCFG0);
 
 	for (i = 0; i < NPWM; i++) {
 		if (s3c->s3c_pwm[i] == NULL)
