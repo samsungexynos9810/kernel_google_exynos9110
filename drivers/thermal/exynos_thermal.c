@@ -214,8 +214,13 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define CA15_POLICY_CORE 	((exynos_boot_cluster == CA15) ? 0 : 4)
 #define CS_POLICY_CORE		0
 
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define CPU_HOTPLUG_IN_TEMP	105
 #define CPU_HOTPLUG_OUT_TEMP	110
+#elif defined(CONFIG_SOC_EXYNOS5422)
+#define CPU_HOTPLUG_IN_TEMP	95
+#define CPU_HOTPLUG_OUT_TEMP	100
+#endif
 
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
 static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
@@ -641,7 +646,7 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
 	return 0;
 }
 
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal)
 {
 	int ret = 0;
@@ -696,7 +701,7 @@ static struct thermal_zone_device_ops const exynos_dev_ops = {
 	.get_trip_type = exynos_get_trip_type,
 	.get_trip_temp = exynos_get_trip_temp,
 	.get_crit_temp = exynos_get_crit_temp,
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	.throttle_cpu_hotplug = exynos_throttle_cpu_hotplug,
 #endif
 };
