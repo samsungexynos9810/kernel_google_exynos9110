@@ -249,7 +249,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 			goto blk_out;
 
 		if (cmd == CMD_BIG_OUT && !in_low_power_mode) {
-			for (i = NR_CPUS - 1; i >= NR_CA7; i--) {
+			for (i = setup_max_cpus - 1; i >= NR_CA7; i--) {
 				if (cpu_online(i)) {
 					ret = cpu_down(i);
 					if (ret)
@@ -257,7 +257,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				}
 			}
 		} else {
-			for (i = NR_CPUS - 1; i > 0; i--) {
+			for (i = setup_max_cpus - 1; i > 0; i--) {
 				if (cpu_online(i)) {
 					ret = cpu_down(i);
 					if (ret)
@@ -273,7 +273,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 			if (in_low_power_mode)
 				goto blk_out;
 
-			for (i = NR_CA7; i < NR_CPUS; i++) {
+			for (i = NR_CA7; i < setup_max_cpus; i++) {
 				if (!cpu_online(i)) {
 					ret = cpu_up(i);
 					if (ret)
@@ -291,7 +291,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				}
 			} else {
 				if (lcd_is_on) {
-					for (i = NR_CA7; i < NR_CPUS; i++) {
+					for (i = NR_CA7; i < setup_max_cpus; i++) {
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
@@ -307,7 +307,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 						}
 					}
 				} else {
-					for (i = 1; i < NR_CPUS; i++) {
+					for (i = 1; i < setup_max_cpus; i++) {
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
@@ -323,7 +323,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 		if (do_disable_hotplug)
 			goto blk_out;
 
-		for (i = NR_CPUS - 1; i > 0; i--) {
+		for (i = setup_max_cpus - 1; i > 0; i--) {
 			if (cpu_online(i)) {
 				ret = cpu_down(i);
 				if (ret)
@@ -334,7 +334,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 		if (in_suspend_prepared)
 			goto blk_out;
 
-		for (i = 1; i < NR_CPUS; i++) {
+		for (i = 1; i < setup_max_cpus; i++) {
 			if (!cpu_online(i)) {
 				ret = cpu_up(i);
 				if (ret)
