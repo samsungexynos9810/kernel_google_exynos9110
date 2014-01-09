@@ -28,6 +28,10 @@
 #define CLK_IS_BASIC		BIT(5) /* Basic clk, can't do a to_clk_foo() */
 #define CLK_GET_RATE_NOCACHE	BIT(6) /* do not use the cached clk rate */
 
+#ifdef CONFIG_SOC_EXYNOS5422
+#define CLK_DO_NOT_UPDATE_CHILD BIT(19) /* do not recalculate child */
+#endif
+
 struct clk_hw;
 
 /**

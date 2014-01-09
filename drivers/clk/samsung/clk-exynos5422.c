@@ -21,8 +21,8 @@
 #include "clk-exynos5422.h"
 
 #undef MUX
-#define MUX(_id, cname, pnames, o, s, w)                       \
-	__MUX(_id, NULL, cname, pnames, o, s, w, CLK_GET_RATE_NOCACHE, 0, NULL)
+#define MUX(_id, cname, pnames, o, s, w, f)                       \
+	__MUX(_id, NULL, cname, pnames, o, s, w, f, 0, NULL)
 
 #undef DIV
 #define DIV(_id, cname, pname, o, s, w)                                \
@@ -1014,11 +1014,20 @@ PNAME(mout_aclk_66_peric_user_p)	= { "fin_pll", "mout_aclk_66_sw" };
 PNAME(mout_aclk_66_psgen_user_p)	= { "fin_pll", "mout_aclk_66_sw" };
 PNAME(mout_pclk_66_gpio_user_p)	= { "mout_aclk_66_sw", "dout_aclk_66_sw_div2" };
 
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+PNAME(mout_aclk_400_mscl_sw_p) = { "dout_aclk_400_mscl", "dout_spll_ctrl"};
+PNAME(mout_aclk_400_mscl_user_p)	= { "dout_osc", "mout_aclk_400_mscl_sw" };
+#else
 PNAME(mout_aclk_400_mscl_sw_p) = { "dout_aclk_400_mscl", "mout_spll_ctrl"};
 PNAME(mout_aclk_400_mscl_user_p)	= { "fin_pll", "mout_aclk_400_mscl_sw" };
-
+#endif
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+PNAME(mout_aclk_333_sw_p) = { "dout_aclk_333", "dout_spll_ctrl"};
+PNAME(mout_aclk_333_user_p)	= { "dout_osc", "mout_aclk_333_sw" };
+#else
 PNAME(mout_aclk_333_sw_p) = { "dout_aclk_333", "mout_spll_ctrl"};
 PNAME(mout_aclk_333_user_p)	= { "fin_pll", "mout_aclk_333_sw" };
+#endif
 PNAME(mout_aclk_166_sw_p) = { "dout_aclk_166", "mout_spll_ctrl"};
 PNAME(mout_aclk_166_user_p)	= { "fin_pll", "mout_aclk_166_sw" };
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
@@ -1151,9 +1160,11 @@ struct samsung_fixed_factor_clock exynos5422_fixed_factor_clks[] __initdata = {
 };
 
 #define CMX(_id, cname, pnames, o, s, w) \
-		MUX(_id, cname, pnames, (unsigned long)o, s, w)
+		MUX(_id, cname, pnames, (unsigned long)o, s, w, 0)
 #define CMUX(_id, o, s, w) \
-		MUX(_id, #_id, _id##_p, (unsigned long)o, s, w)
+		MUX(_id, #_id, _id##_p, (unsigned long)o, s, w, 0)
+#define CMUX_EX(_id, o, s, w, f) \
+		MUX(_id, #_id, _id##_p, (unsigned long)o, s, w, f)
 #define CMUX_A(_id, o, s, w, a) \
 		MUX_A(_id, #_id, _id##_p, (unsigned long)o, s, w, a)
 struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
@@ -1220,7 +1231,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	MUX(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_1_p,
-			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 3),
+			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 3, 0),
 #else
 	MUX(mout_aclk_400_mscl, "mout_aclk_400_mscl", group1_p,
 			(unsigned long)EXYNOS5_CLK_SRC_TOP0, 4, 2),
@@ -1233,7 +1244,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMX(mout_aclk_400_isp, "mout_aclk_400_isp", group1_p, EXYNOS5_CLK_SRC_TOP0, 0, 2),
 #endif
 	CMUX(mout_aclk_400_isp_sw, EXYNOS5_CLK_SRC_TOP10, 0, 1),
-	CMUX(mout_aclk_400_isp_user, EXYNOS5_CLK_SRC_TOP3, 0, 1),
+	CMUX_EX(mout_aclk_400_isp_user, EXYNOS5_CLK_SRC_TOP3, 0, 1, CLK_DO_NOT_UPDATE_CHILD),
 
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
@@ -1276,7 +1287,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMX(mout_aclk_333_432_isp0, "mout_aclk_333_432_isp0", group4_p, EXYNOS5_CLK_SRC_TOP1, 12, 2),
 #endif
 	CMUX(mout_aclk_333_432_isp0_sw, EXYNOS5_CLK_SRC_TOP11, 12, 1),
-	CMUX(mout_aclk_333_432_isp0_user, EXYNOS5_CLK_SRC_TOP4, 12, 1),
+	CMUX_EX(mout_aclk_333_432_isp0_user, EXYNOS5_CLK_SRC_TOP4, 12, 1, CLK_DO_NOT_UPDATE_CHILD),
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	CMX(mout_aclk_333_432_isp, "mout_aclk_333_432_isp", group4_1_p, EXYNOS5_CLK_SRC_TOP1, 4, 2),
@@ -1284,7 +1295,7 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 	CMX(mout_aclk_333_432_isp, "mout_aclk_333_432_isp", group4_p, EXYNOS5_CLK_SRC_TOP1, 4, 2),
 #endif
 	CMUX(mout_aclk_333_432_isp_sw, EXYNOS5_CLK_SRC_TOP11, 4, 1),
-	CMUX(mout_aclk_333_432_isp_user, EXYNOS5_CLK_SRC_TOP4, 4, 1),
+	CMUX_EX(mout_aclk_333_432_isp_user, EXYNOS5_CLK_SRC_TOP4, 4, 1, CLK_DO_NOT_UPDATE_CHILD),
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	CMX(mout_aclk_333_432_gscl, "mout_aclk_333_432_gscl", group4_1_p, EXYNOS5_CLK_SRC_TOP1, 0, 2),
@@ -1416,11 +1427,11 @@ struct samsung_mux_clock exynos5422_mux_clks[] __initdata = {
 
 	CMX(mout_aclk_266_isp, "mout_aclk_266_isp", group1_6_p, EXYNOS5_CLK_SRC_TOP8, 12, 2),
 	CMUX(mout_aclk_266_isp_sw, EXYNOS5_CLK_SRC_TOP13, 12, 1),
-	CMUX(mout_aclk_266_isp_user, EXYNOS5_CLK_SRC_TOP9, 12, 1),
+	CMUX_EX(mout_aclk_266_isp_user, EXYNOS5_CLK_SRC_TOP9, 12, 1, CLK_DO_NOT_UPDATE_CHILD),
 
 	CMX(mout_aclk_432_scaler, "mout_aclk_432_scaler", group4_1_p, EXYNOS5_CLK_SRC_TOP8, 28, 2),
 	CMUX(mout_aclk_432_scaler_sw, EXYNOS5_CLK_SRC_TOP13, 28, 1),
-	CMUX(mout_aclk_432_scaler_user, EXYNOS5_CLK_SRC_TOP9, 28, 1),
+	CMUX_EX(mout_aclk_432_scaler_user, EXYNOS5_CLK_SRC_TOP9, 28, 1, CLK_DO_NOT_UPDATE_CHILD),
 
 	CMX(mout_aclk_432_cam, "mout_aclk_432_cam", group4_1_p, EXYNOS5_CLK_SRC_TOP8, 24, 2),
 	CMUX(mout_aclk_432_cam_sw, EXYNOS5_CLK_SRC_TOP13, 24, 1),
@@ -1479,7 +1490,11 @@ struct samsung_div_clock exynos5422_div_clks[] __initdata = {
 	CDIV(dout_aclk_200_fsys, "mout_aclk_200_fsys", EXYNOS5_CLK_DIV_TOP0, 28, 3),
 
     CDIV(dout_pclk_200_fsys, "mout_pclk_200_fsys", EXYNOS5_CLK_DIV_TOP0, 24, 3),
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+    CDIV(dout_aclk_100_noc, "mout_aclk_100_noc", EXYNOS5_CLK_DIV_TOP0, 20, 4),
+#else
     CDIV(dout_aclk_100_noc, "mout_aclk_100_noc", EXYNOS5_CLK_DIV_TOP0, 20, 3),
+#endif
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
     CDIV(dout_aclk_400_wcore, "mout_aclk_400_wcore", EXYNOS5_CLK_DIV_TOP0, 16, 3),

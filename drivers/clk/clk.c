@@ -987,6 +987,11 @@ static void __clk_recalc_rates(struct clk *clk, unsigned long msg)
 		__clk_notify(clk, msg, old_rate, clk->rate);
 
 	hlist_for_each_entry(child, &clk->children, child_node)
+#ifdef CONFIG_SOC_EXYNOS5422
+		if (child->flags & CLK_DO_NOT_UPDATE_CHILD)
+			continue;
+		else
+#endif
 		__clk_recalc_rates(child, msg);
 }
 
