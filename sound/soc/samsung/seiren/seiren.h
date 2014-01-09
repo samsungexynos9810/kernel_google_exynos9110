@@ -59,7 +59,7 @@
 #define FWAREA_IOVA		(0x50000000)
 
 /* Buffer Information - decode */
-#define DEC_IBUF_SIZE		(2048)
+#define DEC_IBUF_SIZE		(4096)
 #define DEC_OBUF_SIZE		(36864)
 
 #define DEC_AAC_IBUF_SIZE       (4096)
@@ -81,7 +81,7 @@
 #define SRAM_FW_MAX		(0x3E000)
 #define SRAM_IO_BUF		(0x2C000)
 #define SRAM_IBUF_OFFSET	(0)
-#define SRAM_OBUF_OFFSET	(DEC_IBUF_SIZE * DEC_IBUF_NUM)
+#define SRAM_OBUF_OFFSET	(DEC_IBUF_SIZE)
 #define BUF_SIZE_MAX		(0x50000)
 
 #define SAMPLE_RATE_MIN		(8000)
