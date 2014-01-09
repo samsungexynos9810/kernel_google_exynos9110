@@ -2367,9 +2367,10 @@
 		clocks = <&clock 2213>, <&clock 2221>, <&clock 3111>, <&clock 330>, <&clock 3112>, <&clock 331>;
 		clock-names = "fimg2d", "gate_qe_g2d", "mux_400_child", "mux_400_parent", "mux_266_child", "mux_266_parent";
 		ip_ver = <6>; /* IP_VER_G2D_5H */
-		cpu_min = <400000>;
-		mif_min = <667000>;
-		int_min = <333000>;
+		cpu_min = <800000>;
+		kfc_min = <800000>;
+		mif_min = <825000>;
+		int_min = <400000>;
 		samsung,power-domain = <&pd_g2d>;
 	};
 
