@@ -31,6 +31,8 @@
 #define MIC_NAME	"decon_mic"
 #endif
 
+#define DT_LCD_CONF_IGNORE
+
 #define DT_READ_U32(node, key, value) do {\
 		pprop = key; \
 		if (of_property_read_u32((node), key, &temp)) \
@@ -96,6 +98,7 @@ static int parse_fimd_platdata(struct device_node *np)
 	DT_READ_U32(np, "samsung,vidcon0", g_fimd_platdata.vidcon0);
 	DT_READ_U32(np, "samsung,vidcon1", g_fimd_platdata.vidcon1);
 	DT_READ_U32(np, "samsung,default_win", g_fimd_platdata.default_win);
+#ifndef DT_LCD_CONF_IGNORE
 	DT_READ_U32(np, "samsung,left_margin",
 		g_fb_win0.win_mode.left_margin);
 	DT_READ_U32(np, "samsung,right_margin",
@@ -112,6 +115,7 @@ static int parse_fimd_platdata(struct device_node *np)
 	DT_READ_U32(np, "samsung,virtual_y", g_fb_win0.virtual_y);
 	DT_READ_U32(np, "samsung,width", g_fb_win0.width);
 	DT_READ_U32(np, "samsung,height", g_fb_win0.height);
+#endif
 	DT_READ_U32(np, "samsung,max_bpp", g_fb_win0.max_bpp);
 	DT_READ_U32(np, "samsung,default_bpp", g_fb_win0.default_bpp);
 
@@ -121,6 +125,7 @@ static int parse_fimd_platdata(struct device_node *np)
 	g_fimd_platdata.win[3] = &g_fb_win0;
 	g_fimd_platdata.win[4] = &g_fb_win0;
 
+#ifndef DT_LCD_CONF_IGNORE
 	/* parse for mipi-dsi driver */
 	g_lcd_config.rgb_timing.left_margin = g_fb_win0.win_mode.left_margin;
 	g_lcd_config.rgb_timing.right_margin = g_fb_win0.win_mode.right_margin;
@@ -130,7 +135,7 @@ static int parse_fimd_platdata(struct device_node *np)
 	g_lcd_config.rgb_timing.vsync_len = g_fb_win0.win_mode.vsync_len;
 	g_lcd_config.lcd_size.width = g_fb_win0.win_mode.xres;
 	g_lcd_config.lcd_size.height = g_fb_win0.win_mode.yres;
-
+#endif
 	return 0;
 
 exception:

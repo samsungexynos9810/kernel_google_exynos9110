@@ -3592,6 +3592,10 @@ static struct synaptics_rmi4_platform_data *synaptics_rmi_parse_dt(struct i2c_cl
 	}
 	dev->platform_data = pdata;
 
+#if defined(CONFIG_DECON_LCD_S6E3FA0)
+	pdata->sensor_max_x = 1079;
+	pdata->sensor_max_y = 1919;
+#else
 	if (of_property_read_u32(np, "sensor_max_x", &pdata->sensor_max_x)) {
 		dev_err(dev, "failed to get sensor_max_x property\n");
 		return ERR_PTR(-EINVAL);
@@ -3601,6 +3605,7 @@ static struct synaptics_rmi4_platform_data *synaptics_rmi_parse_dt(struct i2c_cl
 		dev_err(dev, "failed to get sensor_max_y property\n");
 		return ERR_PTR(-EINVAL);
 	}
+#endif
 
 	if (of_property_read_u8(np, "max_touch_width", &pdata->max_touch_width)) {
 		dev_err(dev, "failed to get max_touch_width property\n");

@@ -3798,6 +3798,27 @@ static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
 }
 #endif
 
+static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
+{
+	int i;
+	struct decon_lcd *lcd_info = decon_get_lcd_info();
+
+	for (i = 0; i < S3C_FB_MAX_WIN; i++) {
+		pd->win[i]->win_mode.left_margin = lcd_info->hbp;
+		pd->win[i]->win_mode.right_margin = lcd_info->hfp;
+		pd->win[i]->win_mode.upper_margin = lcd_info->vbp;
+		pd->win[i]->win_mode.lower_margin = lcd_info->vfp;
+		pd->win[i]->win_mode.hsync_len = lcd_info->hsa;
+		pd->win[i]->win_mode.vsync_len = lcd_info->vsa;
+		pd->win[i]->win_mode.xres = lcd_info->xres;
+		pd->win[i]->win_mode.yres = lcd_info->yres;
+		pd->win[i]->virtual_x = lcd_info->xres;
+		pd->win[i]->virtual_y = lcd_info->yres;
+		pd->win[i]->width = lcd_info->width;
+		pd->win[i]->height = lcd_info->height;
+	}
+}
+
 int create_decon_display_controller(struct platform_device *pdev)
 {
 	struct s3c_fb_driverdata *fbdrv;
@@ -3815,22 +3836,19 @@ int create_decon_display_controller(struct platform_device *pdev)
 	printk("###%s: Start \n", __func__);
 	dispdrv = get_display_driver();
 	fbdrv = dispdrv->dt_ops.get_display_drvdata();
-	pd = dispdrv->dt_ops.get_display_platdata();
-#if 0
-	if (ion_register_special_device(ion_exynos, dev)) {
-		dev_err(dev, "ION special device is already registered\n");
-		return -EBUSY;
-	}
-#endif
+
 	if (fbdrv->variant.nr_windows > S3C_FB_MAX_WIN) {
 		dev_err(dev, "too many windows, cannot attach\n");
 		return -EINVAL;
 	}
 
+	pd = dispdrv->dt_ops.get_display_platdata();
 	if (!pd) {
 		dev_err(dev, "no platform data specified\n");
 		return -EINVAL;
 	}
+
+	decon_parse_lcd_info(pd);
 
 	sfb = devm_kzalloc(dev, sizeof(struct s3c_fb), GFP_KERNEL);
 	if (!sfb) {

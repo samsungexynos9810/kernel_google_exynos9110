@@ -33,7 +33,7 @@
 
 static struct clk *g_mout_fimd1;
 static struct clk *g_mout_rpll_ctrl;
-static struct clk *g_clk_fimd1;
+static struct clk *g_dout_fimd1;
 static struct clk *g_mout_aclk_300_disp1_user;
 static struct clk *g_mout_aclk_300_disp1_sw;
 static struct clk *g_dout_aclk_300_disp1;
@@ -106,10 +106,12 @@ int init_display_decon_clocks(struct device *dev)
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
 #endif
 
-#ifdef CONFIG_DECON_LCD_S6E8AA0
-	DISPLAY_SET_RATE(clk_fimd1, 67 * MHZ);
+#if defined(CONFIG_DECON_LCD_S6E8AA0)
+	DISPLAY_SET_RATE(dout_fimd1, 67 * MHZ);
+#elif defined(CONFIG_DECON_LCD_S6E3FA0)
+	DISPLAY_SET_RATE(dout_fimd1, 133 * MHZ);
 #else
-	DISPLAY_SET_RATE(clk_fimd1, 266 * MHZ);
+	DISPLAY_SET_RATE(dout_fimd1, 266 * MHZ);
 #endif
 
 #if 0
@@ -276,10 +278,13 @@ int enable_display_decon_clocks(struct device *dev)
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
 #endif
 
-#ifdef CONFIG_DECON_LCD_S6E8AA0
-	DISPLAY_INLINE_SET_RATE(clk_fimd1, 67 * MHZ);
+
+#if defined(CONFIG_DECON_LCD_S6E8AA0)
+	DISPLAY_INLINE_SET_RATE(dout_fimd1, 67 * MHZ);
+#elif defined(CONFIG_DECON_LCD_S6E3FA0)
+	DISPLAY_INLINE_SET_RATE(dout_fimd1, 133 * MHZ);
 #else
-	DISPLAY_INLINE_SET_RATE(clk_fimd1, 266 * MHZ);
+	DISPLAY_INLINE_SET_RATE(dout_fimd1, 266 * MHZ);
 #endif
 
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_300_disp1_user, mout_aclk_300_disp1_sw);
