@@ -33,12 +33,13 @@ static int max_support_idx_CA7;
 static int min_support_idx_CA7 = (CPUFREQ_LEVEL_END_CA7 - 1);
 
 static struct clk *fout_kpll;
-static struct clk *fout_spll;
+static struct clk *fout_cpll;
 static struct clk *dout_cpu_kfc;
 static struct clk *dout_hpm_kfc;
 static struct clk *mout_hpm_kfc;
 static struct clk *mout_cpu_kfc;
 static struct clk *mout_kpll_ctrl;
+static struct clk *mout_cpll_ctrl;
 static struct clk *mout_mx_mspll_kfc;
 
 static unsigned int exynos5422_volt_table_CA7[CPUFREQ_LEVEL_END_CA7];
@@ -224,13 +225,10 @@ static void exynos5422_set_clkdiv_CA7(unsigned int div_index)
 #endif
 }
 
-#define CLK_ENA(a) clk_prepare_enable(a)
-#define CLK_DIS(a) clk_disable_unprepare(a)
 #define USING_CCF
 static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_index)
 {
 	unsigned int tmp, pdiv;
-	CLK_ENA(fout_spll);
 	/* 0. before change to MPLL, set div for MPLL output */
 	if ((new_index < L5) && (old_index < L5))
 		exynos5422_set_clkdiv_CA7(L5); /* pll_safe_index of CA7 */
@@ -292,8 +290,6 @@ static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 	/* 6. restore original div value */
 	if ((new_index < L5) && (old_index < L5))
 		exynos5422_set_clkdiv_CA7(new_index);
-
-	CLK_DIS(fout_spll);
 }
 
 static bool exynos5422_pms_change_CA7(unsigned int old_index,
@@ -388,8 +384,8 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 
 	set_volt_table_CA7();
 
-	fout_spll = __clk_lookup("fout_spll");
-	if (IS_ERR(fout_spll))
+	fout_cpll = __clk_lookup("fout_cpll");
+	if (IS_ERR(fout_cpll))
 		goto err_get_clock;
 
 	dout_cpu_kfc = __clk_lookup("dout_kfc");
@@ -412,6 +408,10 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	if (IS_ERR(mout_mx_mspll_kfc))
 		goto err_get_clock;
 
+	mout_cpll_ctrl = __clk_lookup("mout_cpll_ctrl");
+	if (IS_ERR(mout_cpll_ctrl))
+		goto err_get_clock;
+
 	mout_kpll_ctrl = __clk_lookup("mout_kpll_ctrl");
 	if (IS_ERR(mout_kpll_ctrl))
 		goto err_get_clock;
@@ -421,11 +421,12 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 		goto err_get_clock;
 
 	clk_set_parent(mout_kpll_ctrl, fout_kpll);
+	clk_set_parent(mout_mx_mspll_kfc, mout_cpll_ctrl);
 	clk_set_parent(mout_cpu_kfc, mout_kpll_ctrl);
 	clk_set_parent(mout_hpm_kfc, mout_kpll_ctrl);
 
 	rate = clk_get_rate(mout_mx_mspll_kfc) / 1000;
-	pr_info("kfc clock[%ld], mpll clock[%ld]\n", clk_get_rate(dout_cpu_kfc) / 1000, rate);
+	pr_info("kfc clock[%ld], mx_mspll clock[%ld]\n", clk_get_rate(dout_cpu_kfc) / 1000, rate);
 
 	for (i = L0; i < CPUFREQ_LEVEL_END_CA7; i++) {
 		exynos5422_clkdiv_table_CA7[i].index = i;
