@@ -2470,7 +2470,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 #if defined(CONFIG_DECON_DEVFREQ)
 	if (prev_gsc_local_cnt > local_cnt) {
 		if (local_cnt == 0)
-			bts_initialize("gsc-local", false);
+			bts_initialize("gscl-local", false);
 		exynos5_update_media_layers(TYPE_GSCL_LOCAL, local_cnt);
 	}
 	if (prev_overlap_cnt > regs->win_overlap_cnt)
