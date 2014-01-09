@@ -386,12 +386,6 @@ static void ass_enable(void)
 	clk_set_parent(lpass.clk_mout_mau_epll_clk_user, lpass.clk_mout_mau_epll_clk);
 	clk_set_parent(lpass.clk_mout_ass_clk, lpass.clk_mout_mau_epll_clk_user);
 	clk_set_parent(lpass.clk_mout_ass_i2s, lpass.clk_mout_ass_clk);
-
-	clk_prepare_enable(lpass.clk_mout_dpll_ctrl);
-	clk_prepare_enable(lpass.clk_mout_mau_epll_clk);
-	clk_prepare_enable(lpass.clk_mout_mau_epll_clk_user);
-	clk_prepare_enable(lpass.clk_mout_ass_clk);
-	clk_prepare_enable(lpass.clk_mout_ass_i2s);
 #else
 	exynos_set_parent("mout_ass_clk", "fin_pll");
 	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
@@ -451,23 +445,13 @@ static void ass_disable(void)
 {
 	lpass.enabled = false;
 
-#ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	clk_disable_unprepare(lpass.clk_mout_dpll_ctrl);
-	clk_disable_unprepare(lpass.clk_mout_mau_epll_clk);
-	clk_disable_unprepare(lpass.clk_mout_mau_epll_clk_user);
-	clk_disable_unprepare(lpass.clk_mout_ass_clk);
-	clk_disable_unprepare(lpass.clk_mout_ass_i2s);
-#endif
 	clk_disable_unprepare(lpass.clk_dmac);
 	clk_disable_unprepare(lpass.clk_timer);
 
 	lpass_reg_save();
 
 	/* ASS_MUX_SEL */
-
 	clk_set_parent(lpass.clk_mout_ass_clk, lpass.clk_fin_pll);
-//	exynos_set_parent("mout_ass_clk", "fin_pll");
-
 }
 
 static void lpass_disable(void)
