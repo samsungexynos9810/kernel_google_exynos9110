@@ -16,7 +16,8 @@
 #define FIMG2D_SET_CLK_NAME		"aclk_333_g2d_dout"
 
 #if	defined(CONFIG_ARM_EXYNOS5410_BUS_DEVFREQ) ||	\
-	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ)
+	defined(CONFIG_ARM_EXYNOS5420_BUS_DEVFREQ) ||	\
+	defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
 #define CONFIG_FIMG2D_USE_BUS_DEVFREQ
 #endif
 
@@ -75,6 +76,7 @@ struct fimg2d_platdata {
 	const char *gate_clkname2;
 	unsigned long clkrate;
 	int  cpu_min;
+	int  kfc_min;
 	int  mif_min;
 	int  int_min;
 };
