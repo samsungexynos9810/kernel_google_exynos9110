@@ -466,8 +466,7 @@
 	};
 
 	i2c_1: i2c@12C70000 {
-		/*compatible = "samsung,exynos5-hsi2c";*/
-		/*clock-frequency = <400000>;*/	/* 400KHz */
+		samsung,i2c-max-bus-freq = <400000>;
 		status = "okay";
 		audio_codec: codec@3e {
 			compatible = "audience,es515";
