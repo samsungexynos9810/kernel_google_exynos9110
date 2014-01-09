@@ -410,7 +410,7 @@ static ssize_t esa_write(struct file *file, const char *buffer,
 		if (rtd->need_config)
 			rtd->need_config = false;
 		else if (size != 0)
-			esa_err("%s: decoding fail. response:%x\n", __func__, response);
+			esa_debug("%s: No output? response:%x\n", __func__, response);
 	}
 
 	pm_runtime_mark_last_busy(&si.pdev->dev);
@@ -878,10 +878,6 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
 		rtd->get_eos = EOS_NO;
-		rtd->select_ibuf = 0;
-		rtd->select_obuf = 0;
-		rtd->obuf0_filled = false;
-		rtd->obuf1_filled = false;
 		break;
 	case SEIREN_IOCTL_CH_CONFIG:
 		esa_debug("CH_CONFIG\n");
