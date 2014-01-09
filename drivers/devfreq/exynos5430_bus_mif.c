@@ -111,9 +111,6 @@ struct devfreq_data_mif {
 
 	struct notifier_block tmu_notifier;
 
-	int restore_idx_dll_on;
-	int base_idx_dll_on;
-
 	void __iomem *base_mif;
 	void __iomem *base_sysreg_mif;
 	void __iomem *base_drex0;
@@ -1339,7 +1336,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	int target_idx, old_idx;
 	unsigned long target_volt;
 	unsigned long old_freq;
-	unsigned long old_volt;
 
 	mutex_lock(&mif_data->lock);
 
@@ -1378,23 +1374,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	if (old_freq == *target_freq)
 		goto out;
 
-	if (mif_data->restore_idx_dll_on != -1 &&
-		target_idx < mif_data->base_idx_dll_on) {
-		old_freq = devfreq_mif_opp_list[mif_data->restore_idx_dll_on].freq;
-		old_volt = devfreq_mif_opp_list[mif_data->restore_idx_dll_on].volt;
-
-		exynos5_devfreq_mif_set_volt(mif_data, old_volt, old_volt + VOLT_STEP);
-		exynos5_devfreq_mif_set_timeout(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_timing_set(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_phy(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_directcmd(mif_data, mif_data->restore_idx_dll_on);
-		exynos5_devfreq_mif_set_freq(mif_data, mif_data->restore_idx_dll_on, old_idx);
-		exynos5_devfreq_mif_set_dll(mif_data, old_volt, mif_data->restore_idx_dll_on);
-
-		mif_data->restore_idx_dll_on = -1;
-	}
-
 	if (old_freq < *target_freq) {
 		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
@@ -1419,12 +1398,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
 						false, *target_freq);
-
-		if (mif_data->base_idx_dll_on != -1 &&
-			mif_data->restore_idx_dll_on == -1 &&
-			target_idx >= mif_data->base_idx_dll_on) {
-			mif_data->restore_idx_dll_on = target_idx;
-		}
 	}
 
 out:
@@ -1475,7 +1448,6 @@ static int exynos5_init_mif_table(struct device *dev,
 	unsigned int ret;
 	unsigned int freq;
 	unsigned int volt;
-	bool checked_level_dllon = false;
 
 	for (i = 0; i < ARRAY_SIZE(devfreq_mif_opp_list); ++i) {
 		freq = devfreq_mif_opp_list[i].freq;
@@ -1484,13 +1456,6 @@ static int exynos5_init_mif_table(struct device *dev,
 			volt = devfreq_mif_opp_list[i].volt;
 
 		exynos5_devfreq_mif_profile.freq_table[i] = freq;
-
-		if (!checked_level_dllon) {
-			if (freq == devfreq_mif_opp_list[LV0].freq) {
-				data->base_idx_dll_on = i;
-				checked_level_dllon = true;
-			}
-		}
 
 		ret = opp_add(dev, freq, volt);
 		if (ret) {
@@ -1838,10 +1803,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	ret = exynos5_init_mif_dynamic_clkgate(pdev);
 	if (ret)
 		goto err_inittable;
-
-	/* Setting non-exist index with restore of dll on */
-	data->restore_idx_dll_on = -1;
-	data->base_idx_dll_on = -1;
 
 	platform_set_drvdata(pdev, data);
 
