@@ -327,7 +327,6 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 			++dispdrv->pm_status.pwr_idle_count;
 			if (dispdrv->pm_status.power_gating_on &&
 				dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT) {
-				disp_pm_gate_lock(dispdrv, true);
 				queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 						&dispdrv->pm_status.control_power_gating_work);
 			}
@@ -350,7 +349,8 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 		switch (cmd) {
 		case S3CFB_WIN_PSR_EXIT:
 		case S3CFB_WIN_CONFIG:
-			display_hibernation_power_on(dispdrv);
+			queue_kthread_work(&dispdrv->pm_status.control_power_gating,
+				&dispdrv->pm_status.control_power_gating_work);
 			break;
 		default:
 			return -EBUSY;
@@ -416,13 +416,14 @@ static void decon_power_gating_handler(struct kthread_work *work)
 {
 	struct display_driver *dispdrv = get_display_driver();
 
-	if (!check_camera_is_running()) {
-		if (dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT)
+	if (dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT) {
+		if (!check_camera_is_running()) {
 			display_hibernation_power_off(dispdrv);
+			init_gating_idle_count(dispdrv);
+		}
+	} else if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN) {
+		display_hibernation_power_on(dispdrv);
 	}
-
-	init_gating_idle_count(dispdrv);
-	disp_pm_gate_lock(dispdrv, false);
 }
 
 static int __display_hibernation_power_on(struct display_driver *dispdrv)
@@ -505,10 +506,8 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
-	disp_pm_gate_lock(dispdrv, true);
-	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
-
 	pm_info("##### +");
+	disp_pm_gate_lock(dispdrv, true);
 	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (sfb->power_state == POWER_ON) {
 		pr_info("%s, DECON are already power on state\n", __func__);
@@ -524,7 +523,6 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 done:
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_pm_gate_lock(dispdrv, false);
-
 	pm_info("##### -\n");
 	return ret;
 }
@@ -535,6 +533,7 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
 	pm_info("##### +");
+	disp_pm_gate_lock(dispdrv, true);
 	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (sfb->power_state == POWER_DOWN) {
 		pr_info("%s, DECON are already power off state\n", __func__);
@@ -554,6 +553,7 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 
 done:
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
+	disp_pm_gate_lock(dispdrv, false);
 	pm_info("##### -\n");
 
 	return ret;
