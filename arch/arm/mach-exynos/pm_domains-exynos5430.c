@@ -410,10 +410,25 @@ static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+/* exynos_pd_disp_power_on_post - setup after power on.
+ * @pd: power domain.
+ *
+ * enable DISP dynamic clock gating
+ */
 static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 {
+	void __iomem* reg;
+
 	s3c_pm_do_restore_core(exynos_pd_disp_clk_save,
 			ARRAY_SIZE(exynos_pd_disp_clk_save));
+
+	/* Enable DISP dynamic clock gating */
+	reg = ioremap(0x13B80000, SZ_4K);
+	writel(0x3, reg + 0x200);
+	writel(0xf, reg + 0x204);
+	writel(0x1f, reg + 0x208);
+	writel(0x0, reg + 0x500);
+	iounmap(reg);
 
 	exynos_pd_notify_power_state(pd, true);
 
