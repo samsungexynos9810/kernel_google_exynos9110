@@ -325,13 +325,19 @@ static void jpeg_clock_gating(struct jpeg_dev *jpeg, enum jpeg_clk_status status
 			jpeg_dbg("Unable to set parent1 of clock child1\n");
 		clk_prepare(jpeg->clk);
 		clk_enable(jpeg->clk);
+
+		jpeg->vb2->resume(jpeg->alloc_ctx);
+
 		jpeg_dbg("clock enabled\n");
 	} else if (status == JPEG_CLK_OFF) {
 		int clk_cnt = atomic_dec_return(&jpeg->clk_cnt);
+
 		if (clk_cnt < 0) {
 			jpeg_err("JPEG clock control is wrong!!\n");
 			atomic_set(&jpeg->clk_cnt, 0);
 		} else {
+			jpeg->vb2->suspend(jpeg->alloc_ctx);
+
 			clk_disable(jpeg->clk);
 			clk_unprepare(jpeg->clk);
 			jpeg_dbg("clock disabled\n");
@@ -968,7 +974,6 @@ static int jpeg_hx_probe(struct platform_device *pdev)
 	}
 
 	exynos_create_iovmm(&pdev->dev, 3, 3);
-	jpeg->vb2->resume(jpeg->alloc_ctx);
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(&pdev->dev);
@@ -1026,7 +1031,6 @@ static int jpeg_hx_remove(struct platform_device *pdev)
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_disable(&pdev->dev);
 #endif
-	jpeg->vb2->suspend(jpeg->alloc_ctx);
 	jpeg_clk_put(jpeg);
 	kfree(jpeg);
 	return 0;
