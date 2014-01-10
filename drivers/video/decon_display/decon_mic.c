@@ -54,7 +54,6 @@ int decon_mic_hibernation_power_on(struct display_driver *dispdrv);
 int decon_mic_hibernation_power_off(struct display_driver *dispdrv);
 #endif
 
-#ifdef CONFIG_SOC_EXYNOS5430
 static int decon_mic_set_sys_reg(struct decon_mic *mic, bool enable)
 {
 	u32 data;
@@ -103,221 +102,23 @@ static unsigned int decon_mic_calc_bs_size(struct decon_mic *mic)
 	return bs_size;
 }
 
-static void decon_mic_set_2d_bit_stream_size(struct decon_mic *mic)
-{
-	u32 data;
-
-	data = decon_mic_calc_bs_size(mic);
-
-	writel(data, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_2);
-}
-
 static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
 {
 	u32 data = readl(mic->reg_base);
 	struct decon_lcd *lcd = mic->lcd;
 
 	if (enable) {
-		data |= DECON_MIC_OLD_CORE | DECON_MIC_CORE_ENABLE
-			| DECON_MIC_UPDATE_REG | DECON_MIC_ON_REG;
-
-		if (lcd->mode == COMMAND_MODE)
-			data |= DECON_MIC_COMMAND_MODE;
-		else
-			data |= DECON_MIC_VIDEO_MODE;
-	} else {
-		data &= ~DECON_MIC_CORE_ENABLE;
-		data |= DECON_MIC_UPDATE_REG;
-	}
-
-	writel(data, mic->reg_base);
-}
-
-int create_decon_mic(struct platform_device *pdev)
-{
-	struct device *dev = &pdev->dev;
-	struct display_driver *dispdrv;
-	struct decon_mic *mic;
-	struct resource *res;
-
-	dispdrv = get_display_driver();
-
-	mic = devm_kzalloc(dev, sizeof(struct decon_mic), GFP_KERNEL);
-	if (!mic) {
-		dev_err(dev, "no memory for mic driver");
-		return -ENOMEM;
-	}
-
-	mic->dev = dev;
-
-	mic->lcd = decon_get_lcd_info();
-
-	mic->mic_config = dispdrv->dt_ops.get_display_mic_config();
-
-	mic->decon_mic_on = false;
-
-	res = dispdrv->mic_driver.regs;
-	if (!res) {
-		dev_err(dev, "failed to find resource\n");
-		return -ENOENT;
-	}
-
-	mic->reg_base = ioremap(res->start, resource_size(res));
-	if (!mic->reg_base) {
-		dev_err(dev, "failed to map registers\n");
-		return -ENXIO;
-	}
-
-	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
-
-	decon_mic_set_image_size(mic);
-
-	decon_mic_set_2d_bit_stream_size(mic);
-
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
-
-	mic_for_decon = mic;
-
-	mic->decon_mic_on = true;
-
-	dispdrv->mic_driver.mic = mic;
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	dispdrv->mic_driver.ops->pwr_on = decon_mic_hibernation_power_on;
-	dispdrv->mic_driver.ops->pwr_off = decon_mic_hibernation_power_off;
-#endif
-
-	dev_info(dev, "MIC driver has been probed\n");
-	return 0;
-}
-
-int decon_mic_enable(struct decon_mic *mic)
-{
-	if (mic->decon_mic_on == true)
-		return 0;
-
-	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
-
-	decon_mic_set_image_size(mic);
-
-	decon_mic_set_2d_bit_stream_size(mic);
-
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
-
-	mic->decon_mic_on = true;
-
-	dev_info(mic->dev, "MIC driver is ON;\n");
-
-	return 0;
-}
-
-int decon_mic_disable(struct decon_mic *mic)
-{
-	if (mic->decon_mic_on == false)
-		return 0;
-	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
-
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
-
-	mic->decon_mic_on = false;
-
-	dev_info(mic->dev, "MIC driver is OFF;\n");
-
-	return 0;
-}
-
-int decon_mic_sw_reset(struct decon_mic *mic)
-{
-	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
-
-	u32 data = readl(regs);
-
-	data |= DECON_MIC_SW_RST;
-	writel(data, regs);
-
-	return 0;
-}
-
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-int decon_mic_hibernation_power_on(struct display_driver *dispdrv)
-{
-	struct decon_mic *mic = dispdrv->mic_driver.mic;
-
-	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
-	decon_mic_set_image_size(mic);
-	decon_mic_set_2d_bit_stream_size(mic);
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
-
-	mic->decon_mic_on = true;
-
-	return 0;
-}
-
-int decon_mic_hibernation_power_off(struct display_driver *dispdrv)
-{
-	struct decon_mic *mic = dispdrv->mic_driver.mic;
-
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
-	decon_mic_sw_reset(mic);
-	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
-
-	mic->decon_mic_on = false;
-
-	return 0;
-}
-#endif
-#else
-int decon_mic_sw_reset(struct decon_mic *mic)
-{
-	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
-
-	u32 data = readl(regs);
-
-	data |= DECON_MIC_SW_RST;
-	writel(data, regs);
-
-	return 0;
-}
-
-static int decon_mic_set_sys_reg(struct decon_mic *mic, bool enable)
-{
-	return 0;
-}
-
-static void decon_mic_set_image_size(struct decon_mic *mic)
-{
-	u32 data = 0;
-	struct decon_lcd *lcd = mic->lcd;
-
-	data = (lcd->yres << DECON_MIC_IMG_V_SIZE_SHIFT)
-		| (lcd->xres << DECON_MIC_IMG_H_SIZE_SHIFT);
-
-	writel(data, mic->reg_base + DECON_MIC_IMG_SIZE);
-}
-
-static unsigned int decon_mic_calc_bs_size(struct decon_mic *mic)
-{
-	struct decon_lcd *lcd = mic->lcd;
-	u32 temp1, temp2, bs_size;
-
-	temp1 = lcd->xres / 4 * 2;
-	temp2 = lcd->xres % 4;
-	bs_size = temp1 + temp2;
-
-	return bs_size;
-}
-
-static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
-{
-	struct decon_lcd *lcd = mic->lcd;
-	u32 data = readl(mic->reg_base);
-
-	if (enable) {
+#ifdef CONFIG_SOC_EXYNOS5422
 		data &= ~(DECON_MIC_CORE_MASK | DECON_MIC_MODE_MASK |
 			DECON_MIC_CORE_NEW_MASK | DECON_MIC_PSR_MASK |
 			DECON_MIC_BS_SWAP_MASK | DECON_MIC_ON_MASK |
 			DECON_MIC_UPDATE_REG_MASK);
 		data |= DECON_MIC_CORE_ENABLE |
 			DECON_MIC_NEW_CORE | DECON_MIC_ON_REG | DECON_MIC_UPDATE_REG;
+#else
+		data |= DECON_MIC_OLD_CORE | DECON_MIC_CORE_ENABLE
+			| DECON_MIC_UPDATE_REG | DECON_MIC_ON_REG;
+#endif
 
 		if (lcd->mode == COMMAND_MODE)
 			data |= DECON_MIC_COMMAND_MODE;
@@ -331,6 +132,19 @@ static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
 	writel(data, mic->reg_base);
 }
 
+int decon_mic_sw_reset(struct decon_mic *mic)
+{
+	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
+
+	u32 data = readl(regs);
+
+	data |= DECON_MIC_SW_RST;
+	writel(data, regs);
+
+	return 0;
+}
+
+#ifdef CONFIG_SOC_EXYNOS5422
 static void decon_mic_set_porch_timing(struct decon_mic *mic)
 {
 	struct decon_lcd *lcd = mic->lcd;
@@ -380,11 +194,16 @@ static void decon_mic_set_output_timing(struct decon_mic *mic)
 
 	writel(bs_2d, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_2);
 }
-
-static void decon_mic_set_alg_param(struct decon_mic *mic)
+#else
+static void decon_mic_set_2d_bit_stream_size(struct decon_mic *mic)
 {
+	u32 data;
 
+	data = decon_mic_calc_bs_size(mic);
+
+	writel(data, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_2);
 }
+#endif
 
 int decon_mic_enable(struct decon_mic *mic)
 {
@@ -392,16 +211,22 @@ int decon_mic_enable(struct decon_mic *mic)
 		return 0;
 
 	decon_mic_sw_reset(mic);
-	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
+#ifdef CONFIG_SOC_EXYNOS5422
 	decon_mic_set_porch_timing(mic);
+#else
+	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
+#endif
+
 	decon_mic_set_image_size(mic);
+
+#ifdef CONFIG_SOC_EXYNOS5422
 	decon_mic_set_output_timing(mic);
-	decon_mic_set_alg_param(mic);
+#else
+	decon_mic_set_2d_bit_stream_size(mic);
+#endif
 	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
 
 	mic->decon_mic_on = true;
-
-	dev_info(mic->dev, "MIC driver is ON;\n");
 
 	return 0;
 }
@@ -410,13 +235,12 @@ int decon_mic_disable(struct decon_mic *mic)
 {
 	if (mic->decon_mic_on == false)
 		return 0;
-	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
 
+	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
+	decon_mic_sw_reset(mic);
 	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
 
 	mic->decon_mic_on = false;
-
-	dev_info(mic->dev, "MIC driver is OFF;\n");
 
 	return 0;
 }
@@ -427,7 +251,6 @@ int create_decon_mic(struct platform_device *pdev)
 	struct display_driver *dispdrv;
 	struct decon_mic *mic;
 	struct resource *res;
-	int ret;
 
 	dispdrv = get_display_driver();
 
@@ -448,21 +271,25 @@ int create_decon_mic(struct platform_device *pdev)
 	res = dispdrv->mic_driver.regs;
 	if (!res) {
 		dev_err(dev, "failed to find resource\n");
-		ret = -ENOENT;
+		return -ENOENT;
 	}
 
 	mic->reg_base = ioremap(res->start, resource_size(res));
 	if (!mic->reg_base) {
 		dev_err(dev, "failed to map registers\n");
-		ret = -ENXIO;
+		return -ENXIO;
 	}
 
 	decon_mic_enable(mic);
+
 	mic_for_decon = mic;
 
-	mic->decon_mic_on = true;
-
 	dispdrv->mic_driver.mic = mic;
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	dispdrv->mic_driver.ops->pwr_on = decon_mic_hibernation_power_on;
+	dispdrv->mic_driver.ops->pwr_off = decon_mic_hibernation_power_off;
+#endif
+
 	dev_info(dev, "MIC driver has been probed\n");
 	return 0;
 }
@@ -470,33 +297,15 @@ int create_decon_mic(struct platform_device *pdev)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_mic_hibernation_power_on(struct display_driver *dispdrv)
 {
-	struct decon_mic *mic = dispdrv->mic_driver.mic;
-
-	decon_mic_sw_reset(mic);
-	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
-	decon_mic_set_porch_timing(mic);
-	decon_mic_set_image_size(mic);
-	decon_mic_set_output_timing(mic);
-	decon_mic_set_alg_param(mic);
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
-
-	mic->decon_mic_on = true;
-
+	decon_mic_enable(dispdrv->mic_driver.mic);
 	return 0;
 }
 
 int decon_mic_hibernation_power_off(struct display_driver *dispdrv)
 {
-	struct decon_mic *mic = dispdrv->mic_driver.mic;
-
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
-	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
-
-	mic->decon_mic_on = false;
-
+	decon_mic_disable(dispdrv->mic_driver.mic);
 	return 0;
 }
-#endif
 #endif
 
 MODULE_AUTHOR("Haowei Li <Haowei.li@samsung.com>");
