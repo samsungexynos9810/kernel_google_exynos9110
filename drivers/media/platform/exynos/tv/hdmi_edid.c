@@ -23,6 +23,7 @@
 
 #define EDID_SEGMENT_ADDR	(0x60 >> 1)
 #define EDID_ADDR		(0xA0 >> 1)
+#define EDID_SEGMENT_IGNORE	(2)
 #define EDID_BLOCK_SIZE		128
 #define EDID_SEGMENT(x)		((x) >> 1)
 #define EDID_OFFSET(x)		(((x) & 1) * EDID_BLOCK_SIZE)
@@ -136,6 +137,7 @@ static int edid_i2c_read(struct hdmi_device *hdev, u8 segment, u8 offset,
 						   u8 *buf, size_t len)
 {
 	struct device *dev = hdev->dev;
+	struct s5p_hdmi_platdata *pdata = hdev->pdata;
 	struct i2c_client *i2c = edid_client;
 	int cnt = 0;
 	int ret;
@@ -164,9 +166,20 @@ static int edid_i2c_read(struct hdmi_device *hdev, u8 segment, u8 offset,
 		return -ENODEV;
 
 	do {
-		ret = i2c_transfer(i2c->adapter, msg, ARRAY_SIZE(msg));
-		if (ret == ARRAY_SIZE(msg))
-			break;
+		/*
+		 * If the HS-I2C is used for DDC(EDID),
+		 * shouldn't write the segment pointer.
+		 */
+		if (is_ip_ver_5s2) {
+			ret = i2c_transfer(i2c->adapter, &msg[1],
+						EDID_SEGMENT_IGNORE);
+			if (ret == EDID_SEGMENT_IGNORE)
+				break;
+		} else {
+			ret = i2c_transfer(i2c->adapter, msg, ARRAY_SIZE(msg));
+			if (ret == ARRAY_SIZE(msg))
+				break;
+		}
 
 		dev_dbg(dev, "%s: can't read data, retry %d\n", __func__, cnt);
 		msleep(25);
