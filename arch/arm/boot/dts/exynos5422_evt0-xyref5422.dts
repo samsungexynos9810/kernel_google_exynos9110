@@ -697,6 +697,14 @@
 		};
 	};
 
+	spi_0: spi@12d20000 {
+		status = "disabled";
+	};
+
+	spi_2: spi@12d40000 {
+		status = "disabled";
+	};
+
 	spi_3: spi@131a0000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
