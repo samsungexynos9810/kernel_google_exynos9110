@@ -2812,7 +2812,7 @@ static int es515_wakeup(struct es515_priv *es515)
 	return rc;
 }
 
-#ifdef CONFIG_PM
+#if defined(CONFIG_PM) && defined(CONFIG_SND_SOC_ES515_POWERSAVE)
 static int es515_sleep(struct es515_priv *es515)
 {
 	int rc;
@@ -3332,23 +3332,27 @@ static struct snd_soc_dai_ops es515_portx_dai_ops = {
 #ifdef CONFIG_PM
 static int es515_codec_suspend(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_SND_SOC_ES515_POWERSAVE
 	struct es515_priv *es515 = snd_soc_codec_get_drvdata(codec);
 
 	es515_set_bias_level(codec, SND_SOC_BIAS_OFF);
-
 	es515_sleep(es515);
-
+#else
+	es515_set_bias_level(codec, SND_SOC_BIAS_OFF);
+#endif
 	return 0;
 }
 
 static int es515_codec_resume(struct snd_soc_codec *codec)
 {
+#ifdef CONFIG_SND_SOC_ES515_POWERSAVE
 	struct es515_priv *es515 = snd_soc_codec_get_drvdata(codec);
 
 	es515_wakeup(es515);
-
 	es515_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-
+#else
+	es515_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+#endif
 	return 0;
 }
 #else
