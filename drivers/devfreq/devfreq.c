@@ -91,7 +91,7 @@ static int devfreq_get_freq_level(struct devfreq *devfreq, unsigned long freq)
  */
 static int devfreq_update_status(struct devfreq *devfreq, unsigned long freq)
 {
-	int lev, prev_lev;
+	int lev, prev_lev = 0;
 	unsigned long cur_time;
 
 	lev = devfreq_get_freq_level(devfreq, freq);
@@ -104,6 +104,10 @@ static int devfreq_update_status(struct devfreq *devfreq, unsigned long freq)
 	if (freq != devfreq->previous_freq) {
 		prev_lev = devfreq_get_freq_level(devfreq,
 						devfreq->previous_freq);
+		if (prev_lev && prev_lev < 0) {
+			pr_err("DEVFREQ: invalid index to update status\n");
+			return -EINVAL;
+		}
 		devfreq->trans_table[(prev_lev *
 				devfreq->profile->max_state) + lev]++;
 		devfreq->total_trans++;
