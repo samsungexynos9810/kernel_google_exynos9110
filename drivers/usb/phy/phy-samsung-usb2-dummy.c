@@ -21,6 +21,26 @@
 
 #include "phy-samsung-usb.h"
 
+static bool samsung_usb2phy_dummy_is_active(struct usb_phy *phy)
+{
+	struct samsung_usbphy *sphy = phy_to_sphy(phy);
+	unsigned long flags;
+	bool ret;
+
+	spin_lock_irqsave(&sphy->lock, flags);
+
+	/* Dummy phy is used by DWC3 for OTG */
+	if (phy->otg && (phy->state == OTG_STATE_B_PERIPHERAL ||
+			 phy->state == OTG_STATE_A_HOST))
+		ret = true;
+	else
+		ret = false;
+
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	return ret;
+}
+
 static int samsung_usb2phy_dummy_probe(struct platform_device *pdev)
 {
 	struct samsung_usbphy *sphy;
@@ -39,6 +59,9 @@ static int samsung_usb2phy_dummy_probe(struct platform_device *pdev)
 	sphy->phy.dev		= sphy->dev;
 	sphy->phy.label		= "samsung-usb2phy-dummy";
 	sphy->phy.type		= USB_PHY_TYPE_USB2;
+	sphy->phy.is_active	= samsung_usb2phy_dummy_is_active;
+
+	spin_lock_init(&sphy->lock);
 
 	platform_set_drvdata(pdev, sphy);
 

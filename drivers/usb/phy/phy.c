@@ -95,17 +95,6 @@ bool usb_phy_check_op(void)
 	spin_lock_irqsave(&phy_lock, flags);
 
 	list_for_each_entry(phy, &phy_list, head) {
-		/* First check whether OTG is available */
-		if (phy->otg && phy->state != OTG_STATE_UNDEFINED) {
-			if (phy->state == OTG_STATE_B_PERIPHERAL ||
-			    phy->state == OTG_STATE_A_HOST) {
-				op = true;
-				break;
-			} else {
-				continue;
-			}
-		}
-
 		if (phy->type == USB_PHY_TYPE_USB3) {
 			if (usb_phy_is_active(phy)) {
 				op = true;
