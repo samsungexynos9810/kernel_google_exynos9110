@@ -144,8 +144,7 @@
 	};
 
 	hsi2c@12CC0000 {
-		samsung,hs-mode;
-		clock-frequency = <2500000>;
+		clock-frequency = <400000>;
 		status = "okay";
 
 		/* hdmi edid dirver */
