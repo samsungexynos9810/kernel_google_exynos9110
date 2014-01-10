@@ -379,7 +379,7 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	struct regulator *regulator = exynos_info[cur]->regulator;
 	unsigned int new_index, old_index;
 	unsigned int volt, safe_volt = 0;
-	bool set_abb_first_than_volt;
+	bool set_abb_first_than_volt = false;
 	int ret = 0;
 
 	if (!policy) {
@@ -422,10 +422,12 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	if (exynos_info[cur]->set_int_skew)
 		exynos_info[cur]->set_int_skew(new_index);
 
-	if (cur == CA7)
-		set_abb_first_than_volt = is_set_abb_first(ID_KFC, curr_freq, target_freq);
-	else
-		set_abb_first_than_volt = is_set_abb_first(ID_ARM, curr_freq, target_freq);
+	if (exynos_info[cur]->abb_table) {
+		if (cur == CA7)
+			set_abb_first_than_volt = is_set_abb_first(ID_KFC, curr_freq, target_freq);
+		else
+			set_abb_first_than_volt = is_set_abb_first(ID_ARM, curr_freq, target_freq);
+	}
 
 	/* When the new frequency is higher than current frequency */
 	if ((freqs[cur]->new > freqs[cur]->old) && !safe_volt){
@@ -822,7 +824,7 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 	unsigned int freqCA7, freqCA15;
 	unsigned int bootfreqCA7, bootfreqCA15;
 	unsigned int abb_freqCA7 = 0, abb_freqCA15 = 0;
-	bool set_abb_first_than_volt;
+	bool set_abb_first_than_volt = false;
 	int volt, i;
 
 	switch (pm_event) {
@@ -843,7 +845,8 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		BUG_ON(volt <= 0);
 		volt = get_limit_voltage(volt);
 
-		set_abb_first_than_volt = is_set_abb_first(ID_KFC, freqCA7, bootfreqCA7);
+		if (exynos_info[CA7]->abb_table)
+			set_abb_first_than_volt = is_set_abb_first(ID_KFC, freqCA7, bootfreqCA7);
 
 		if (!set_abb_first_than_volt)
 			if (regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt))
@@ -874,7 +877,9 @@ static int exynos_cpufreq_pm_notifier(struct notifier_block *notifier,
 		}
 		volt = get_limit_voltage(volt);
 
-		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA15, bootfreqCA15);
+		set_abb_first_than_volt = false;
+		if (exynos_info[CA15]->abb_table)
+			set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA15, bootfreqCA15);
 
 		if (!set_abb_first_than_volt)
 			if (regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt))
@@ -1414,7 +1419,7 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 	unsigned int freqCA7, freqCA15;
 	unsigned int bootfreqCA7, bootfreqCA15;
 	unsigned int abb_freqCA7 = 0, abb_freqCA15 = 0;
-	bool set_abb_first_than_volt;
+	bool set_abb_first_than_volt = false;
 	int volt, i;
 
 	mutex_lock(&cpufreq_lock);
@@ -1432,7 +1437,8 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 			get_freq_volt(CA7, freqCA7));
 	volt = get_limit_voltage(volt);
 
-	set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA7, bootfreqCA7);
+	if (exynos_info[CA7]->abb_table)
+		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA7, bootfreqCA7);
 
 	if (!set_abb_first_than_volt)
 		if (regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt))
@@ -1461,7 +1467,10 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 			get_freq_volt(CA15, freqCA15));
 	volt = get_limit_voltage(volt);
 
-	set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA15, bootfreqCA15);
+
+	set_abb_first_than_volt = false;
+	if (exynos_info[CA15]->abb_table)
+		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA15, bootfreqCA15);
 
 	if (!set_abb_first_than_volt)
 		if (regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt))
