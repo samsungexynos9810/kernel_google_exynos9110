@@ -149,6 +149,8 @@ static const struct of_device_id exynos5_fimd[] = {
 MODULE_DEVICE_TABLE(of, exynos5_fimd);
 #endif
 
+void debug_function(struct display_driver *dispdrv, const char *buf);
+
 #if defined(CONFIG_ION_EXYNOS)
 static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 {
@@ -3690,6 +3692,31 @@ static int s3c_fb_debugfs_show(struct seq_file *f, void *offset)
 	return 0;
 }
 
+ssize_t s3c_fb_debugfs_write(struct file *file, const char *userbuf, size_t count, loff_t *off)
+{
+	char buf[20], *p;
+	struct display_driver *dispdrv;
+
+	dispdrv = get_display_driver();
+
+	memset(buf, 0x0, sizeof(buf));
+	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
+		return -EFAULT;
+
+	p = buf;
+	while(*p) {
+		if (*p == 0x0A)
+			*p = 0x00;
+		p++;
+	}
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	debug_function(dispdrv, buf);
+#endif
+
+	return count;
+}
+
 static int s3c_fb_debugfs_open(struct inode *inode, struct file *file)
 {
 	return single_open(file, s3c_fb_debugfs_show, inode->i_private);
@@ -3699,6 +3726,7 @@ static const struct file_operations s3c_fb_debugfs_fops = {
 	.owner		= THIS_MODULE,
 	.open		= s3c_fb_debugfs_open,
 	.read		= seq_read,
+	.write		= s3c_fb_debugfs_write,
 	.llseek		= seq_lseek,
 	.release	= single_release,
 };
