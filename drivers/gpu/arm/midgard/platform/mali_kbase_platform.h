@@ -86,7 +86,7 @@ struct exynos_context {
 	struct regulator *g3d_regulator;
 
 	gpu_dvfs_info *table;
-#if SOC_NAME == 5260
+#ifdef CONFIG_DYNIMIC_ABB
 	int *devfreq_g3d_asv_abb;
 #endif
 	int table_size;

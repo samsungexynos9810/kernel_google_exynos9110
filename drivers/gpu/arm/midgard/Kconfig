@@ -168,4 +168,11 @@ config MALI_GPU_TRACEPOINTS
 	help
 	  Enables GPU tracepoints using Android trace event definitions.
 
+config DYNIMIC_ABB
+    bool "Enable dynimic abb"
+    depends on MALI_MIDGARD
+    default n
+    help
+      Select this option for enable dynimic abb.
+
 source "drivers/gpu/arm/midgard/platform/Kconfig"

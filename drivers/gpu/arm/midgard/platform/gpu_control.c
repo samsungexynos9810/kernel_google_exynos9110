@@ -23,6 +23,7 @@
 #include "mali_kbase_platform.h"
 #include "gpu_dvfs_handler.h"
 #include "gpu_control.h"
+#include "mach/asv-exynos.h"
 
 struct kbase_device *pkbdev;
 
@@ -176,6 +177,9 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 
 	if (clock > prev_clock) {
 		gpu_set_voltage(platform, voltage);
+#ifdef CONFIG_DYNIMIC_ABB
+        set_match_abb(ID_G3D, platform->devfreq_g3d_asv_abb[platform->step]);
+#endif
 		gpu_set_clock(platform, clock);
 #if defined(CONFIG_EXYNOS5422_BTS)
 		bts_scen_update(TYPE_G3D_FREQ, clock);
@@ -185,6 +189,9 @@ static int gpu_set_clk_vol(struct kbase_device *kbdev, int clock, int voltage)
 		bts_scen_update(TYPE_G3D_FREQ, clock);
 #endif /* CONFIG_EXYNOS5422_BTS */
 		gpu_set_clock(platform, clock);
+#ifdef CONFIG_DYNIMIC_ABB
+        set_match_abb(ID_G3D, platform->devfreq_g3d_asv_abb[platform->step]);
+#endif
 		gpu_set_voltage(platform, voltage);
 	}
 
