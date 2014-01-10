@@ -482,8 +482,8 @@ int __init exynos5430_pmu_init(void)
 	exynos_use_feedback();
 
 	/* Enable USE_STANDBY_WFI for all CORE */
-	__raw_writel(EXYNOS5_USE_STANDBY_WFI_ALL,
-			EXYNOS_CENTRAL_SEQ_OPTION);
+	__raw_writel(EXYNOS5_USE_STANDBY_WFI_ALL |
+		EXYNOS_USE_PROLOGNED_LOGIC_RESET, EXYNOS_CENTRAL_SEQ_OPTION);
 
 	exynos_cpu_reset_assert_ctrl(true, ARM);
 
