@@ -2141,7 +2141,8 @@ exit_dat:
 static void dw_mci_tasklet_func(unsigned long priv)
 {
 	struct dw_mci *host = (struct dw_mci *)priv;
-	int done;
+	int done_cmd, done_dat;
+	struct mmc_request *mrq_cmd, *mrq_dat;
 
 	spin_lock(&host->lock);
 	host->tasklet_state = 1;
@@ -2154,9 +2155,11 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	}
 
 	/* command state */
-	done = dw_mci_tasklet_cmd(host);
-	if (done)
-		dw_mci_request_end(host, host->mrq_cmd, &host->state_cmd);
+	done_cmd = dw_mci_tasklet_cmd(host);
+	mrq_cmd = host->mrq_cmd;
+
+	if (done_cmd)
+		host->state_cmd = STATE_IDLE;
 
 	if (host->state_cmd == STATE_SENDING_DATA ||
 	    host->state_cmd == STATE_DATA_BUSY ||
@@ -2169,9 +2172,11 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	}
 
 	/* data state */
-	done = dw_mci_tasklet_dat(host);
-	if (done)
-		dw_mci_request_end(host, host->mrq_dat, &host->state_dat);
+	done_dat = dw_mci_tasklet_dat(host);
+	mrq_dat = host->mrq_dat;
+
+	if (done_dat)
+		host->state_dat = STATE_IDLE;
 
 	if (host->state_cmd == STATE_IDLE) {
 		if (!list_empty(&host->cur_slot->mrq_list)) {
@@ -2200,7 +2205,13 @@ static void dw_mci_tasklet_func(unsigned long priv)
 			}
 		}
 	}
+	host->tasklet_state = 0;
 
+	if (done_cmd)
+		dw_mci_request_end(host, mrq_cmd, &host->state_cmd);
+
+	if (done_dat)
+		dw_mci_request_end(host, mrq_dat, &host->state_dat);
 unlock:
 
 	host->tasklet_state = 0;
