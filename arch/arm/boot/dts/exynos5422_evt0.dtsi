@@ -1916,8 +1916,7 @@
 		clk_gate_ctrl {
 			/* 3a0 */
 			group0 {
-				mask_clk_on_org = <9>;
-				mask_clk_off_self_org = <9>;
+				/* not defined */
 			};
 			/* 3a1 */
 			group1 {
