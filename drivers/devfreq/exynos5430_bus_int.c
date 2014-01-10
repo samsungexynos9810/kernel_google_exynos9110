@@ -31,7 +31,7 @@
 #include "devfreq_exynos.h"
 #include "governor.h"
 
-#define DEVFREQ_INITIAL_FREQ	(413000)
+#define DEVFREQ_INITIAL_FREQ	(400000)
 #define DEVFREQ_POLLING_PERIOD	(0)
 
 #define INT_VOLT_STEP		12500
@@ -380,11 +380,11 @@ struct devfreq_pm_domain_link devfreq_int_pm_domain[] = {
 static struct devfreq_simple_ondemand_data exynos5_devfreq_int_governor_data = {
 	.pm_qos_class		= PM_QOS_DEVICE_THROUGHPUT,
 	.upthreshold		= 95,
-	.cal_qos_max		= 543000,
+	.cal_qos_max		= 400000,
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_int = {
-	.default_qos		= 103000,
+	.default_qos		= 100000,
 };
 
 static struct ppmu_info ppmu_int[] = {
@@ -986,7 +986,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	plat_data = data->dev->platform_data;
 
 	data->devfreq->min_freq = plat_data->default_qos;
-	data->devfreq->max_freq = exynos5_devfreq_int_governor_data.cal_qos_max;
+	data->devfreq->max_freq = devfreq_int_opp_list[LV0].freq;
 
 	register_reboot_notifier(&exynos5_int_reboot_notifier);
 
