@@ -269,7 +269,6 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 
 			gsc_hw_set_smart_if_pix_num(ctx);
 			gsc_hw_set_smart_if_con(gsc, true);
-			gsc_hw_set_sfr_update(ctx);
 		}
 	}
 
@@ -299,6 +298,30 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 	return 0;
 }
 
+static long gsc_subdev_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
+{
+	struct gsc_dev *gsc = entity_data_to_gsc(v4l2_get_subdevdata(sd));
+	struct gsc_ctx *ctx = gsc->out.ctx;
+	unsigned long flags;
+
+	switch (cmd) {
+	case GSC_SET_BUF:
+		spin_lock_irqsave(&gsc->slock, flags);
+		gsc_hw_set_sfr_update(ctx);
+		gsc_hw_set_input_apply_pending_bit(gsc);
+		spin_unlock_irqrestore(&gsc->slock, flags);
+		break;
+	default:
+		gsc_err("unsupported gsc_subdev_ioctl");
+		return -EINVAL;
+	}
+	return 0;
+}
+
+static const struct v4l2_subdev_core_ops gsc_subdev_core_ops = {
+	.ioctl = gsc_subdev_ioctl,
+};
+
 static struct v4l2_subdev_pad_ops gsc_subdev_pad_ops = {
 	.get_fmt = gsc_subdev_get_fmt,
 	.set_fmt = gsc_subdev_set_fmt,
@@ -313,6 +336,7 @@ static struct v4l2_subdev_video_ops gsc_subdev_video_ops = {
 static struct v4l2_subdev_ops gsc_subdev_ops = {
 	.pad = &gsc_subdev_pad_ops,
 	.video = &gsc_subdev_video_ops,
+	.core = &gsc_subdev_core_ops,
 };
 
 static int gsc_out_power_off(struct v4l2_subdev *sd)
@@ -703,6 +727,7 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 			return;
 		}
 		gsc_hw_set_input_buf_mask_all(gsc);
+		gsc->out.pending_mask = 0xf;
 	}
 
 	if (gsc->out.req_cnt >= atomic_read(&q->queued_count)) {
@@ -713,9 +738,7 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 			spin_unlock_irqrestore(&gsc->slock, flags);
 			return;
 		}
-		gsc_hw_set_sfr_update(ctx);
-
-		gsc_hw_set_input_buf_masking(gsc, vb->v4l2_buf.index, false);
+		gsc_out_set_pp_pending_bit(gsc, vb->v4l2_buf.index, false);
 		spin_unlock_irqrestore(&gsc->slock, flags);
 	} else {
 		gsc_err("All requested buffers have been queued already");

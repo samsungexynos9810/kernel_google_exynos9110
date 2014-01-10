@@ -2281,6 +2281,19 @@ static void set_reg_data(struct s3c_fb *sfb, int i,
 		regs->dma_buf_data[i];
 }
 
+static int s3c_fb_set_otf_buffer(struct s3c_fb *sfb, int i)
+{
+	int ret = 0;
+	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
+
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id], core, ioctl,
+			GSC_SET_BUF, NULL);
+	if (ret)
+		pr_err("GSC_SET_BUF failed\n");
+
+	return ret;
+}
+
 static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	unsigned short i;
@@ -2351,6 +2364,14 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				readl(sfb->regs + DECON_UPDATE_SHADOW));
 
 	writel(data, sfb->regs + DECON_UPDATE);
+
+	for (i = 0; i < sfb->variant.nr_windows; i++) {
+		if (!WIN_CONFIG_DMA(i)) {
+			ret = s3c_fb_set_otf_buffer(sfb, i);
+			if (ret)
+				pr_err("failed set otf buffer\n");
+		}
+	}
 }
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
@@ -3167,6 +3188,8 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		}
 		break;
 
+	case S3CFB_READY_TO_SETBUF:
+		break;
 	default:
 		dev_err(sfb->dev, "unsupported s3c_fb_sd_ioctl\n");
 		return -EINVAL;

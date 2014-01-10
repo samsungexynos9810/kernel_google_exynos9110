@@ -398,6 +398,7 @@ struct gsc_output_device {
 	struct media_pad	sd_pads[GSC_PADS_NUM];
 	struct list_head	active_buf_q;
 	int			req_cnt;
+	unsigned int		pending_mask;
 };
 
 /**
@@ -805,6 +806,14 @@ static inline void update_ctrl_value(struct v4l2_ctrl *ctrl, s32 value)
 	ctrl->cur.val = ctrl->val = value;
 }
 
+static inline void gsc_out_set_pp_pending_bit(struct gsc_dev *gsc, u32 index, bool mask)
+{
+	if (mask)
+		gsc->out.pending_mask |= (1 << index);
+	else
+		gsc->out.pending_mask &= ~(1 << index);
+}
+
 void gsc_hw_set_sw_reset(struct gsc_dev *dev);
 void gsc_hw_set_one_frm_mode(struct gsc_dev *dev, bool mask);
 void gsc_hw_set_frm_done_irq_mask(struct gsc_dev *dev, bool mask);
@@ -869,4 +878,5 @@ void gsc_hw_set_smart_if_con(struct gsc_dev *dev, bool enable);
 void gsc_hw_set_smart_if_pix_num(struct gsc_ctx *ctx);
 void gsc_hw_set_sfr_update(struct gsc_ctx *ctx);
 void gsc_hw_set_dynamic_clock_gating(struct gsc_dev *dev);
+void gsc_hw_set_input_apply_pending_bit(struct gsc_dev *dev);
 #endif /* GSC_CORE_H_ */

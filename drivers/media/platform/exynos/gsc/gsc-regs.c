@@ -488,6 +488,14 @@ void gsc_hw_set_output_buf_mask_all(struct gsc_dev *dev)
 	writel(cfg, dev->regs + GSC_OUT_BASE_ADDR_CR_MASK);
 }
 
+void gsc_hw_set_input_apply_pending_bit(struct gsc_dev *dev)
+{
+	u32 cfg = readl(dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
+	cfg &= ~0xf;
+	cfg |= dev->out.pending_mask;
+	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
+}
+
 void gsc_hw_set_input_buf_masking(struct gsc_dev *dev, u32 shift,
 				bool enable)
 {

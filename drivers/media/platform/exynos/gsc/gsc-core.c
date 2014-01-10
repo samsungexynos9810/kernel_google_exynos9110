@@ -1301,6 +1301,7 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 			done_buf = active_queue_pop(&gsc->out, gsc);
 			if (done_buf->idx != gsc_hw_get_curr_in_buf_idx(gsc)) {
 				gsc_hw_set_input_buf_masking(gsc, done_buf->idx, true);
+				gsc_out_set_pp_pending_bit(gsc, done_buf->idx, true);
 				vb2_buffer_done(&done_buf->vb, VB2_BUF_STATE_DONE);
 				list_del(&done_buf->list);
 			}
