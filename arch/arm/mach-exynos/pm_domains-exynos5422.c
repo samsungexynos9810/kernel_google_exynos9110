@@ -22,6 +22,7 @@
 #define SHIFT_MFC_BLK_DIV       0
 static DEFINE_SPINLOCK(clk_div2_ratio0_lock);
 static DEFINE_SPINLOCK(clk_save_restore_lock);
+void __iomem *hdmi_regs;
 
 struct exynos5422_pd_state {
 	void __iomem *reg;
@@ -311,6 +312,19 @@ static int exynos5_pd_disp1_power_on_post(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5_CLK_SRC_TOP3);
 	reg |= (1 << 8);
 	__raw_writel(reg, EXYNOS5_CLK_SRC_TOP3);
+
+	/* disable HDMI_PHY */
+	reg = __raw_readl(EXYNOS5_CLK_GATE_IP_DISP1);
+	reg |= (1 << 6);
+	__raw_writel(reg, EXYNOS5_CLK_GATE_IP_DISP1);
+
+	__raw_writel(0x1, hdmi_regs + 0x30);
+
+	DEBUG_PRINT_INFO("HDMI phy power off : %x\n", __raw_readl(hdmi_regs + 0x30));
+
+	reg = __raw_readl(EXYNOS5_CLK_GATE_IP_DISP1);
+	reg &= ~(1 << 6);
+	__raw_writel(reg, EXYNOS5_CLK_GATE_IP_DISP1);
 
 	return 0;
 }
@@ -849,6 +863,11 @@ struct exynos_pd_callback * exynos_pd_find_callback(struct exynos_pm_domain *pd)
 
 	spin_lock_init(&clk_div2_ratio0_lock);
 	spin_lock_init(&clk_save_restore_lock);
+
+	hdmi_regs = ioremap(0x14530000, SZ_32);
+	if (IS_ERR_OR_NULL(hdmi_regs))
+		pr_err("PM DOMAIN : can't remap of hdmi phy address\n");
+
 	/* find callback function for power domain */
 	for (i=0, cb = &pd_callback_list[0]; i<ARRAY_SIZE(pd_callback_list); i++, cb++) {
 		if (strcmp(cb->name, pd->name))
