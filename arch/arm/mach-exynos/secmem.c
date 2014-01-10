@@ -166,12 +166,11 @@ struct platform_device *get_secmem_dt_index_pdev(struct device_node *np, int idx
 
 int drm_enable_locked(struct secmem_info *info, bool enable)
 {
-	int ret, idx, idx_np;
+	int idx_np;
 	size_t idx_np_size;
 	struct platform_device *pdev;
 	struct device_node *np = NULL;
 	struct device *dev;
-	int nbufs = sizeof(secmem_regions) / sizeof(uint32_t);
 
 	if (drm_onoff == enable) {
 		pr_err("%s: DRM is already %s\n", __func__, drm_onoff ? "on" : "off");
@@ -201,24 +200,6 @@ int drm_enable_locked(struct secmem_info *info, bool enable)
 		}
 	}
 
-	if (enable) {
-		for (idx = 0; idx < nbufs; idx++) {
-			if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
-						secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
-				continue;
-			ret = ion_exynos_contig_heap_isolate(secmem_regions[idx]);
-			if (ret < 0)
-				pr_err("Fail to isolate reserve region. id = %d\n",
-								secmem_regions[idx]);
-		}
-	} else {
-		for (idx = 0; idx < nbufs; idx++) {
-			if (secmem_regions[idx] == ION_EXYNOS_ID_SECTBL ||
-						secmem_regions[idx] == ION_EXYNOS_ID_MFC_FW)
-				continue;
-			ion_exynos_contig_heap_deisolate(secmem_regions[idx]);
-		}
-	}
 	drm_onoff = enable;
 	/*
 	 * this will only allow this instance to turn drm_off either by
