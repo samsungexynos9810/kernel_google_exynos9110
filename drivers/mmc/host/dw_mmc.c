@@ -3131,7 +3131,10 @@ static int dw_mci_of_get_wp_gpio(struct device *dev, u8 slot)
 	if (!np)
 		return -EINVAL;
 
-	gpio = of_get_named_gpio(np, "wp-gpios", 0);
+	if (of_get_property(np, "wp-gpios", NULL))
+		gpio = of_get_named_gpio(np, "wp-gpios", 0);
+	else
+		gpio = -1;
 
 	/* Having a missing entry is valid; return silently */
 	if (!gpio_is_valid(gpio))

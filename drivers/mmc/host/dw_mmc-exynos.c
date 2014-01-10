@@ -476,7 +476,10 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	of_property_read_u32(np, "samsung,dw-mshc-ciu-div", &div);
 	priv->ciu_div = div;
 
-	priv->cd_gpio = of_get_named_gpio(np, "cd-gpio", 0);
+	if (of_get_property(np, "cd-gpio", NULL))
+		priv->cd_gpio = of_get_named_gpio(np, "cd-gpio", 0);
+	else
+		priv->cd_gpio = -1;
 
 	ret = of_property_read_u32_array(np,
 			"samsung,dw-mshc-sdr-timing", timing, 3);
