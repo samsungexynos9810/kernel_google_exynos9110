@@ -43,6 +43,7 @@
 #include <mach/regs-clock.h>
 #include <mach/pmu.h>
 #include <mach/smc.h>
+#include <mach/cpufreq.h>
 #include <mach/exynos-pm.h>
 #include <mach/devfreq.h>
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
@@ -668,12 +669,26 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 #define CHECK_CCI_SNOOP		(1 << 7)
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+static bool disabled_c3 = false;
+
+static void exynos_disable_c3_idle(bool disable)
+{
+	disabled_c3 = disable;
+}
+#endif
+
 static int can_enter_cluster_off(int cpu_id)
 {
 #if defined(CONFIG_SCHED_HMP)
 	ktime_t now = ktime_get();
 	struct clock_event_device *dev;
 	int cpu;
+
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	if (disabled_c3)
+		return 0;
+#endif
 
 	for_each_cpu_and(cpu, cpu_online_mask, cpu_coregroup_mask(cpu_id)) {
 		if (cpu_id == cpu)
@@ -896,6 +911,10 @@ static int __init exynos_init_cpuidle(void)
 		pr_err("Cannot get clock \"clkm_phy1\"\n");
 		return PTR_ERR(clkm_phy1);
 	}
+
+#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN) && defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+	disable_c3_idle = exynos_disable_c3_idle;
+#endif
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
 
