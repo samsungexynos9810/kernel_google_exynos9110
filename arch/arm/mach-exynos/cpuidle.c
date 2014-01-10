@@ -630,6 +630,10 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(0x00001000, EXYNOS5430_WAKEUP_MASK);
 	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK1);
 	__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK2);
+	__raw_writel(__raw_readl(EXYNOS5430_TOP_PWR_OPTION) | (1 << 31),
+				EXYNOS5430_TOP_PWR_OPTION);
+	__raw_writel(__raw_readl(EXYNOS5430_TOP_PWR_MIF_OPTION) | (1 << 31),
+				EXYNOS5430_TOP_PWR_MIF_OPTION);
 
 	/* Configure GPIO Power down control register */
 #ifdef MUST_MODIFY
@@ -731,6 +735,10 @@ early_wakeup:
 	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT);
 	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT1);
 	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT2);
+	__raw_writel(__raw_readl(EXYNOS5430_TOP_PWR_OPTION) & ~(1 << 31),
+				EXYNOS5430_TOP_PWR_OPTION);
+	__raw_writel(__raw_readl(EXYNOS5430_TOP_PWR_MIF_OPTION) & ~(1 << 31),
+				EXYNOS5430_TOP_PWR_MIF_OPTION);
 
 	do_gettimeofday(&after);
 
