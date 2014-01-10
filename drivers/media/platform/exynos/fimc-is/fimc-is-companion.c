@@ -251,7 +251,7 @@ int fimc_is_comp_is_valid(struct fimc_is_core *core)
 	_read_data = read_data[0] << 8 | read_data[1] << 0;
 	pr_info("Companion vaildation: 0x%04x\n", _read_data);
 
-	if (_read_data != COMP_MAGIC_NUMBER && _read_data != 0xffff)
+	if (_read_data != COMP_MAGIC_NUMBER)
 		ret = -EINVAL;
 
 exit:
