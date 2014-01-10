@@ -978,6 +978,7 @@ static void tasklet_flite_end(unsigned long data)
 	if ((flite->buf_done_mode == FLITE_BUF_DONE_EARLY) &&
 		test_bit(FLITE_LAST_CAPTURE, &flite->state)) {
 		info("Skip due to Last Frame Capture\n");
+		return;
 	}
 
 	framemgr = flite->framemgr;
