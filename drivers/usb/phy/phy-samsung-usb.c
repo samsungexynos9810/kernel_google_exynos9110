@@ -31,8 +31,8 @@
 
 #include "phy-samsung-usb.h"
 
-static struct blocking_notifier_head usb_lpa_nh =
-		BLOCKING_NOTIFIER_INIT(usb_lpa_nh);
+static struct raw_notifier_head usb_lpa_nh =
+		RAW_NOTIFIER_INIT(usb_lpa_nh);
 
 int samsung_usbphy_parse_dt(struct samsung_usbphy *sphy)
 {
@@ -290,7 +290,7 @@ int samsung_usbphy_check_op(void)
 	/* REVISIT: this also can be done by cpuidle code */
 	if (!op) {
 		/* System is going to enter LPA, so notify all subscribers */
-		blocking_notifier_call_chain(&usb_lpa_nh,
+		raw_notifier_call_chain(&usb_lpa_nh,
 				USB_LPA_PREPARE, NULL);
 	}
 
@@ -306,12 +306,12 @@ EXPORT_SYMBOL_GPL(samsung_usb_lpa_resume);
 
 int register_samsung_usb_lpa_notifier(struct notifier_block *nb)
 {
-	return blocking_notifier_chain_register(&usb_lpa_nh, nb);
+	return raw_notifier_chain_register(&usb_lpa_nh, nb);
 }
 EXPORT_SYMBOL_GPL(register_samsung_usb_lpa_notifier);
 
 int unregister_samsung_usb_lpa_notifier(struct notifier_block *nb)
 {
-	return blocking_notifier_chain_unregister(&usb_lpa_nh, nb);
+	return raw_notifier_chain_unregister(&usb_lpa_nh, nb);
 }
 EXPORT_SYMBOL_GPL(unregister_samsung_usb_lpa_notifier);
