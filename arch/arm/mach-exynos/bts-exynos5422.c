@@ -97,14 +97,16 @@ enum bts_id {
 
 enum exynos_bts_scenario {
 	BS_DEFAULT,
-	BS_MIXER_HIGH,
-	BS_MIXER_DEFAULT,
+	BS_LAYER2_SCEN,
+	BS_LAYER2_SCEN_DEFAULT,
 	BS_MFC_UD_DECODING_ENABLE,
 	BS_MFC_UD_DECODING_DISABLE,
 	BS_MFC_UD_ENCODING_ENABLE,
 	BS_MFC_UD_ENCODING_DISABLE,
 	BS_G3D_MO,
 	BS_G3D_DEFAULT,
+	BS_FIMC_SCEN_ENABLE,
+	BS_FIMC_SCEN_DISABLE,
 	BS_DISABLE,
 	BS_MAX,
 };
@@ -133,7 +135,8 @@ struct bts_scen_status {
 	bool g3d_flag;
 	unsigned int g3d_freq;
 	unsigned int media_layers;
-	bool mixer_scen_flag;
+	bool layer_scen_flag;
+	unsigned int ud_scen;
 };
 
 struct bts_info {
@@ -154,13 +157,15 @@ struct bts_scen_status pr_state = {
 	.g3d_flag = false,
 	.g3d_freq = 177,
 	.media_layers = 1,
-	.mixer_scen_flag = false,
+	.layer_scen_flag = false,
+	.ud_scen = 0,
 };
 
 #define update_g3d_freq(a) (pr_state.g3d_freq = a)
 #define update_g3d_flag(a) (pr_state.g3d_flag = a)
 #define update_media_layers(a) (pr_state.media_layers = a)
-#define update_mixer_flag(a) (pr_state.mixer_scen_flag = a)
+#define update_layer_scen_flag(a) (pr_state.layer_scen_flag = a)
+#define update_ud_scen(a) (pr_state.ud_scen = a)
 
 #define G3D_177		(177)
 #define LAYERS_2	(2)
@@ -170,7 +175,6 @@ struct bts_scen_status pr_state = {
 #define BTS_CPU (BTS_KFC | BTS_EAGLE)
 #define BTS_FIMD (BTS_FIMD1M0 | BTS_FIMD1M1)
 #define BTS_MIXER (BTS_MIXER0 | BTS_MIXER1)
-#define BTS_DIS1 (BTS_MIXER0 | BTS_MIXER1 | BTS_FIMD1M0 | BTS_FIMD1M1)
 #define BTS_FIMC (BTS_FIMC_LITE0 | BTS_FIMC_LITE1 | BTS_3AA | BTS_3AA_2)
 #define BTS_MDMA (BTS_MDMA0 | BTS_MDMA1)
 #define BTS_MFC (BTS_MFC0 | BTS_MFC1)
@@ -181,7 +185,7 @@ struct bts_scen_status pr_state = {
 #define BTS_MSCL (BTS_MSCL0 | BTS_MSCL1 | BTS_MSCL2)
 #define BTS_GSCL (BTS_GSCL0 | BTS_GSCL1)
 
-#define is_bts_scen_ip(a) (a & (BTS_FIMC | BTS_MFC | BTS_MIXER | BTS_G3D))
+#define is_bts_scen_ip(a) (a & (BTS_FIMC | BTS_MFC | BTS_MIXER | BTS_G3D | BTS_FIMD))
 
 #ifdef BTS_DBGGEN
 #define BTS_DBG(x...) pr_err(x)
@@ -323,24 +327,27 @@ static struct bts_set_table g3d_read_ch_fbm_table[] = {
 	{READ_QOS_CONTROL, 0x7},
 };
 
-static struct bts_set_table axiqos_mfc_encoding_table[] = {
+static struct bts_set_table axiqes_mfc_un_table[] = {
 	{READ_QOS_CONTROL, 0x0},
 	{WRITE_QOS_CONTROL, 0x0},
-	{READ_CHANNEL_PRIORITY, 0xffff},
+	{READ_CHANNEL_PRIORITY, 0xdddd},
 	{READ_TOKEN_MAX_VALUE, 0xffdf},
 	{READ_BW_UPPER_BOUNDARY, 0x18},
 	{READ_BW_LOWER_BOUNDARY, 0x1},
 	{READ_INITIAL_TOKEN_VALUE, 0x8},
+	{READ_FLEXIBLE_BLOCKING_CONTROL, 0x0},
 	{WRITE_CHANNEL_PRIORITY, 0xcccc},
 	{WRITE_TOKEN_MAX_VALUE, 0xffdf},
 	{WRITE_BW_UPPER_BOUNDARY, 0x18},
 	{WRITE_BW_LOWER_BOUNDARY, 0x1},
 	{WRITE_INITIAL_TOKEN_VALUE, 0x8},
+	{WRITE_FLEXIBLE_BLOCKING_CONTROL, 0x0},
 	{READ_QOS_CONTROL, 0x1},
 	{WRITE_QOS_CONTROL, 0x1},
 };
 
 BTS_TABLE(0x8888);
+BTS_TABLE(0xbbbb);
 BTS_TABLE(0xcccc);
 BTS_TABLE(0xdddd);
 
@@ -363,6 +370,18 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_fimd1",
 		.table[BS_DEFAULT].table_list = axiqos_0x8888_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_FIMC_SCEN_ENABLE].table_list = axiqos_0xdddd_table,
+		.table[BS_FIMC_SCEN_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_FIMC_SCEN_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_FIMC_SCEN_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_MFC_UD_DECODING_ENABLE].table_list = axiqos_0x8888_table,
+		.table[BS_MFC_UD_DECODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_MFC_UD_DECODING_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_MFC_UD_DECODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xbbbb_table,
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xbbbb_table),
+		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = false,
 	},
 	[BTS_IDX_FIMD1M1] = {
@@ -373,6 +392,18 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_fimd1",
 		.table[BS_DEFAULT].table_list = axiqos_0x8888_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_FIMC_SCEN_ENABLE].table_list = axiqos_0xdddd_table,
+		.table[BS_FIMC_SCEN_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_FIMC_SCEN_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_FIMC_SCEN_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_MFC_UD_DECODING_ENABLE].table_list = axiqos_0x8888_table,
+		.table[BS_MFC_UD_DECODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_MFC_UD_DECODING_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_MFC_UD_DECODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xbbbb_table,
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xbbbb_table),
+		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = false,
 	},
 	[BTS_IDX_MIXER0] = {
@@ -383,10 +414,10 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_mixer",
 		.table[BS_DEFAULT].table_list = axiqos_0x8888_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0x8888_table),
-		.table[BS_MIXER_DEFAULT].table_list = axiqos_0x8888_table,
-		.table[BS_MIXER_DEFAULT].table_num = ARRAY_SIZE(axiqos_0x8888_table),
-		.table[BS_MIXER_HIGH].table_list = axiqos_0xdddd_table,
-		.table[BS_MIXER_HIGH].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_FIMC_SCEN_ENABLE].table_list = axiqos_0xdddd_table,
+		.table[BS_FIMC_SCEN_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_FIMC_SCEN_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_FIMC_SCEN_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = false,
 	},
 	[BTS_IDX_MIXER1] = {
@@ -397,10 +428,10 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_mixer",
 		.table[BS_DEFAULT].table_list = axiqos_0x8888_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0x8888_table),
-		.table[BS_MIXER_DEFAULT].table_list = axiqos_0x8888_table,
-		.table[BS_MIXER_DEFAULT].table_num = ARRAY_SIZE(axiqos_0x8888_table),
-		.table[BS_MIXER_HIGH].table_list = axiqos_0xdddd_table,
-		.table[BS_MIXER_HIGH].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_FIMC_SCEN_ENABLE].table_list = axiqos_0xdddd_table,
+		.table[BS_FIMC_SCEN_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
+		.table[BS_FIMC_SCEN_DISABLE].table_list = axiqos_0x8888_table,
+		.table[BS_FIMC_SCEN_DISABLE].table_num = ARRAY_SIZE(axiqos_0x8888_table),
 		.on = false,
 	},
 	[BTS_IDX_FIMC_LITE0] = {
@@ -411,10 +442,6 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "gscl_fimc_lite0",
 		.table[BS_DEFAULT].table_list = axiqos_0xcccc_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xdddd_table,
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0xcccc_table,
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = false,
 	},
 	[BTS_IDX_FIMC_LITE1] = {
@@ -425,10 +452,6 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "gscl_fimc_lite1",
 		.table[BS_DEFAULT].table_list = axiqos_0xcccc_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xdddd_table,
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0xcccc_table,
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = false,
 	},
 	[BTS_IDX_3AA_2] = {
@@ -439,10 +462,6 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_3aa_2",
 		.table[BS_DEFAULT].table_list = axiqos_0xcccc_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xdddd_table,
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0xcccc_table,
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = false,
 	},
 	[BTS_IDX_3AA] = {
@@ -453,10 +472,6 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_3aa",
 		.table[BS_DEFAULT].table_list = axiqos_0xcccc_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_0xdddd_table,
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xdddd_table),
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = axiqos_0xcccc_table,
-		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
 		.on = false,
 	},
 	[BTS_IDX_ROTATOR] = {
@@ -525,12 +540,12 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_mfc_ip",
 		.table[BS_DEFAULT].table_list = fbm_l_r_high_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(fbm_l_r_high_table),
-		.table[BS_MFC_UD_DECODING_ENABLE].table_list = axiqos_0xcccc_table,
-		.table[BS_MFC_UD_DECODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.table[BS_MFC_UD_DECODING_ENABLE].table_list = axiqes_mfc_un_table,
+		.table[BS_MFC_UD_DECODING_ENABLE].table_num = ARRAY_SIZE(axiqes_mfc_un_table),
 		.table[BS_MFC_UD_DECODING_DISABLE].table_list = fbm_l_r_high_table,
 		.table[BS_MFC_UD_DECODING_DISABLE].table_num = ARRAY_SIZE(fbm_l_r_high_table),
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_mfc_encoding_table,
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_mfc_encoding_table),
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqes_mfc_un_table,
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqes_mfc_un_table),
 		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = fbm_l_r_high_table,
 		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = false,
@@ -543,12 +558,12 @@ static struct bts_info exynos5_bts[] = {
 		.clk_name = "clk_mfc_ip",
 		.table[BS_DEFAULT].table_list = fbm_l_r_high_table,
 		.table[BS_DEFAULT].table_num = ARRAY_SIZE(fbm_l_r_high_table),
-		.table[BS_MFC_UD_DECODING_ENABLE].table_list = axiqos_0xcccc_table,
-		.table[BS_MFC_UD_DECODING_ENABLE].table_num = ARRAY_SIZE(axiqos_0xcccc_table),
+		.table[BS_MFC_UD_DECODING_ENABLE].table_list = axiqes_mfc_un_table,
+		.table[BS_MFC_UD_DECODING_ENABLE].table_num = ARRAY_SIZE(axiqes_mfc_un_table),
 		.table[BS_MFC_UD_DECODING_DISABLE].table_list = fbm_l_r_high_table,
 		.table[BS_MFC_UD_DECODING_DISABLE].table_num = ARRAY_SIZE(fbm_l_r_high_table),
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqos_mfc_encoding_table,
-		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqos_mfc_encoding_table),
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_list = axiqes_mfc_un_table,
+		.table[BS_MFC_UD_ENCODING_ENABLE].table_num = ARRAY_SIZE(axiqes_mfc_un_table),
 		.table[BS_MFC_UD_ENCODING_DISABLE].table_list = fbm_l_r_high_table,
 		.table[BS_MFC_UD_ENCODING_DISABLE].table_num = ARRAY_SIZE(fbm_l_r_high_table),
 		.on = false,
@@ -731,34 +746,32 @@ static struct bts_scenario bts_scen[] = {
 		.name = "bts_default",
 		.id = BS_DEFAULT,
 	},
-	[BS_MIXER_HIGH] = {
-		.name = "bts_mixer_high",
-		.ip = BTS_MIXER,
-		.id = BS_MIXER_HIGH,
+	[BS_LAYER2_SCEN] = {
+		.name = "bts_layer2_scen",
+		.id = BS_LAYER2_SCEN,
 	},
-	[BS_MIXER_DEFAULT] = {
-		.name = "bts_mixer_default",
-		.ip = BTS_MIXER,
-		.id = BS_MIXER_HIGH,
+	[BS_LAYER2_SCEN_DEFAULT] = {
+		.name = "bts_layer2_scen_default",
+		.id = BS_LAYER2_SCEN_DEFAULT,
 	},
 	[BS_MFC_UD_DECODING_ENABLE] = {
-		.name = "bts_mfc_ud_decoding_eanble",
-		.ip = BTS_MFC,
+		.name = "bts_mfc_ud_decoding_enable",
+		.ip = BTS_MFC | BTS_FIMD,
 		.id = BS_MFC_UD_DECODING_ENABLE,
 	},
 	[BS_MFC_UD_DECODING_DISABLE] = {
 		.name = "bts_mfc_ud_decoding_disable",
-		.ip = BTS_MFC,
+		.ip = BTS_MFC | BTS_FIMD,
 		.id = BS_MFC_UD_DECODING_DISABLE,
 	},
 	[BS_MFC_UD_ENCODING_ENABLE] = {
-		.name = "bts_mfc_ud_encoding_eanble",
-		.ip = BTS_MFC | BTS_FIMC,
+		.name = "bts_mfc_ud_encoding_enabled",
+		.ip = BTS_MFC | BTS_FIMD,
 		.id = BS_MFC_UD_ENCODING_ENABLE,
 	},
 	[BS_MFC_UD_ENCODING_DISABLE] = {
 		.name = "bts_mfc_ud_encoding_disable",
-		.ip = BTS_MFC | BTS_FIMC,
+		.ip = BTS_MFC | BTS_FIMD,
 		.id = BS_MFC_UD_ENCODING_DISABLE,
 	},
 	[BS_G3D_MO] = {
@@ -770,6 +783,16 @@ static struct bts_scenario bts_scen[] = {
 		.name = "bts_g3d_default",
 		.ip = BTS_G3D,
 		.id = BS_G3D_DEFAULT,
+	},
+	[BS_FIMC_SCEN_ENABLE] = {
+		.name = "bts_fimc_scen_enable",
+		.ip = BTS_FIMD | BTS_MIXER,
+		.id = BS_FIMC_SCEN_ENABLE,
+	},
+	[BS_FIMC_SCEN_DISABLE] = {
+		.name = "bts_fimc_scen_disable",
+		.ip = BTS_FIMD | BTS_MIXER,
+		.id = BS_FIMC_SCEN_DISABLE,
 	},
 	[BS_MAX] = {
 		.name = "undefined"
@@ -827,6 +850,11 @@ static void set_bts_ip_table(enum exynos_bts_scenario scen,
 	int i;
 	struct bts_set_table *table = bts->table[scen].table_list;
 
+	if (!bts->on) {
+		BTS_DBG("[BTS] scen:%s, bts off: %s\n", bts_scen[scen].name, bts->name);
+		return;
+	}
+
 	BTS_DBG("[BTS] scen:%s, bts set: %s\n", bts_scen[scen].name, bts->name);
 
 	if ((bts->id & BTS_G3D) && exynos5_bts_clk[BTS_CLOCK_G3D].clk)
@@ -868,19 +896,27 @@ static void set_bts_scenario(enum exynos_bts_scenario scen)
 			set_bts_ip_table(scen, bts);
 
 	switch (scen) {
+	case BS_LAYER2_SCEN:
+		set_timeout_val(QOS_0xC, 0x00000020);
+		break;
+	case BS_LAYER2_SCEN_DEFAULT:
+		set_timeout_val(QOS_0xC, 0x00000080);
+		break;
 	case BS_MFC_UD_DECODING_ENABLE:
-		set_timeout_val(QOS_0xC, 0x00000000);
+		set_timeout_val(QOS_0xC, 0x00000080);
+		set_timeout_val(QOS_0xD, 0x00000040);
 		break;
 	case BS_MFC_UD_DECODING_DISABLE:
 		set_timeout_val(QOS_0xC, 0x00000080);
+		set_timeout_val(QOS_0xD, 0x00000fff);
 		break;
 	case BS_MFC_UD_ENCODING_ENABLE:
 		set_timeout_val(QOS_0xC, 0x00000fff);
-		set_timeout_val(QOS_0xD, 0x000000ff);
+		set_timeout_val(QOS_0xD, 0x00000032);
 		break;
 	case BS_MFC_UD_ENCODING_DISABLE:
 		set_timeout_val(QOS_0xC, 0x00000080);
-		set_timeout_val(QOS_0xD, 0x000007ff);
+		set_timeout_val(QOS_0xD, 0x00000fff);
 		break;
 	default:
 		break;
@@ -892,46 +928,63 @@ void bts_scen_update(enum bts_scen_type type, unsigned int val)
 	enum exynos_bts_scenario scen = BS_DEFAULT;
 
 	spin_lock(&bts_lock);
-	BTS_DBG("[BTS] %s\n", __func__);
 
 	switch (type) {
+	case TYPE_LAYERS:
+		if (!exynos5_bts[BTS_IDX_MIXER0].on)
+			break;
+
+		if (exynos5_bts[BTS_IDX_FIMC_LITE0].on &&
+			exynos5_bts[BTS_IDX_FIMD1M0].on) {
+			BTS_DBG("[BTS] LAYERS: %u\n", val);
+			if (!pr_state.layer_scen_flag && (val <= LAYERS_2)) {
+				update_layer_scen_flag(true);
+				scen = BS_LAYER2_SCEN;
+			} else if (pr_state.layer_scen_flag) {
+				update_layer_scen_flag(false);
+				scen = BS_LAYER2_SCEN_DEFAULT;
+			}
+		} else if (pr_state.layer_scen_flag) {
+			update_layer_scen_flag(false);
+			scen = BS_LAYER2_SCEN_DEFAULT;
+		}
+		update_media_layers(val);
+		break;
 	case TYPE_MFC_UD_DECODING:
 		BTS_DBG("[BTS] MFC_UD_DECODING: %u\n", val);
-		scen = val ? BS_MFC_UD_DECODING_ENABLE : BS_MFC_UD_DECODING_DISABLE;
+		if (val) {
+			update_ud_scen(pr_state.ud_scen | BS_MFC_UD_DECODING_ENABLE);
+			scen = BS_MFC_UD_DECODING_ENABLE;
+		} else {
+			update_ud_scen(pr_state.ud_scen & ~BS_MFC_UD_DECODING_ENABLE);
+			if (exynos5_bts[BTS_IDX_FIMC_LITE0].on && !pr_state.ud_scen)
+				scen = BS_FIMC_SCEN_ENABLE;
+			else
+				scen = BS_MFC_UD_DECODING_DISABLE;
+		}
 		break;
 
 	case TYPE_MFC_UD_ENCODING:
 		BTS_DBG("[BTS] MFC_UD_ENCODING: %u\n", val);
-		scen = val ? BS_MFC_UD_ENCODING_ENABLE : BS_MFC_UD_ENCODING_DISABLE;
-		break;
-
-	case TYPE_LAYERS:
-		if (!exynos5_bts[BTS_IDX_MIXER0].on)
-			break;
-		BTS_DBG("[BTS] LAYERS: %u\n", val);
-
-		if (exynos5_bts[BTS_IDX_FIMC_LITE0].on &&
-			exynos5_bts[BTS_IDX_FIMD1M0].on) {
-			if (!pr_state.mixer_scen_flag && (val <= LAYERS_2)) {
-				update_mixer_flag(true);
-				scen = BS_MIXER_HIGH;
-			} else if (pr_state.mixer_scen_flag) {
-				update_mixer_flag(false);
-				scen = BS_MIXER_DEFAULT;
-			}
-		} else if (pr_state.mixer_scen_flag) {
-			update_mixer_flag(false);
-			scen = BS_MIXER_DEFAULT;
+		if (val) {
+			update_ud_scen(pr_state.ud_scen | BS_MFC_UD_ENCODING_ENABLE);
+			scen = BS_MFC_UD_ENCODING_ENABLE;
+		} else {
+			update_ud_scen(pr_state.ud_scen & ~BS_MFC_UD_ENCODING_ENABLE);
+			if (exynos5_bts[BTS_IDX_FIMC_LITE0].on && !pr_state.ud_scen)
+				scen = BS_FIMC_SCEN_ENABLE;
+			else
+				scen = BS_MFC_UD_ENCODING_DISABLE;
 		}
-		update_media_layers(val);
+
 		break;
 
 	case TYPE_G3D_FREQ:
 		if (!exynos5_bts[BTS_IDX_G3D0].on)
 			break;
-		BTS_DBG("[BTS] G3D freq: %u\n", val);
 
 		if (exynos5_bts[BTS_IDX_FIMC_LITE0].on) {
+			BTS_DBG("[BTS] G3D freq: %u\n", val);
 			if (!pr_state.g3d_flag && (val <= G3D_177)) {
 				update_g3d_flag(true);
 				scen = BS_G3D_MO;
@@ -998,18 +1051,29 @@ void bts_initialize(const char *pd_name, bool on)
 	}
 	set_bts_scenario(scen);
 
+	scen = BS_DEFAULT;
+	if (fimc_flag && !pr_state.ud_scen) {
+		pr_err("[BTS] ud_scen: %u \n", pr_state.ud_scen);
+		if (fimc_state)
+			scen = BS_FIMC_SCEN_ENABLE;
+		else
+			scen = BS_FIMC_SCEN_DISABLE;
+	}
+	set_bts_scenario(scen);
+
+	scen = BS_DEFAULT;
 	if (fimc_flag && exynos5_bts[BTS_IDX_FIMD1M0].on &&
 			exynos5_bts[BTS_IDX_MIXER0].on) {
 		if (pr_state.media_layers <= LAYERS_2) {
-			update_mixer_flag(fimc_state);
-			scen = fimc_state ? BS_MIXER_HIGH : BS_MIXER_DEFAULT;
+			update_layer_scen_flag(fimc_state);
+			scen = fimc_state ? BS_LAYER2_SCEN : BS_LAYER2_SCEN_DEFAULT;
 		}
 	} else if (mixer_state && exynos5_bts[BTS_IDX_FIMD1M0].on &&
 			exynos5_bts[BTS_IDX_MIXER0].on) {
-		update_mixer_flag(false);
+		update_layer_scen_flag(false);
 		if (pr_state.media_layers <= LAYERS_2) {
-			update_mixer_flag(true);
-			scen = BS_MIXER_HIGH;
+			update_layer_scen_flag(true);
+			scen = BS_LAYER2_SCEN;
 		}
 	}
 	set_bts_scenario(scen);
@@ -1022,8 +1086,8 @@ static void bts_drex_init(void)
 	BTS_DBG("[BTS][%s] bts drex init\n", __func__);
 
 	__raw_writel(0x00000000, S5P_VA_DREXI_0 + 0x00D8);
-	__raw_writel(0x000007FF, S5P_VA_DREXI_0 + 0x00C8);
 	__raw_writel(0x00000080, S5P_VA_DREXI_0 + 0x00C0);
+	__raw_writel(0x00000FFF, S5P_VA_DREXI_0 + 0x00C8);
 	__raw_writel(0x00000FFF, S5P_VA_DREXI_0 + 0x00A0);
 	__raw_writel(0x00000000, S5P_VA_DREXI_0 + 0x0100);
 	__raw_writel(0x88588858, S5P_VA_DREXI_0 + 0x0104);
@@ -1041,8 +1105,8 @@ static void bts_drex_init(void)
 	__raw_writel(0x00000000, S5P_VA_DREXI_0 + 0x0240);
 
 	__raw_writel(0x00000000, S5P_VA_DREXI_1 + 0x00D8);
-	__raw_writel(0x000007FF, S5P_VA_DREXI_1 + 0x00C8);
 	__raw_writel(0x00000080, S5P_VA_DREXI_1 + 0x00C0);
+	__raw_writel(0x00000FFF, S5P_VA_DREXI_1 + 0x00C8);
 	__raw_writel(0x00000FFF, S5P_VA_DREXI_1 + 0x00A0);
 	__raw_writel(0x00000000, S5P_VA_DREXI_1 + 0x0100);
 	__raw_writel(0x88588858, S5P_VA_DREXI_1 + 0x0104);
