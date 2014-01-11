@@ -515,6 +515,13 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 		if (exynos_info[cur]->set_ema)
 			 exynos_info[cur]->set_ema(volt);
 
+		if (exynos_info[cur]->abb_table) {
+			if (cur == CA7)
+				set_abb_first_than_volt = is_set_abb_first(ID_KFC, freqs[cur]->old, freqs[cur]->new);
+			else
+				set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqs[cur]->old, freqs[cur]->new);
+		}
+
 		if (!set_abb_first_than_volt)
 			regulator_set_voltage(regulator, volt, volt);
 		if (exynos_info[cur]->abb_table) {
@@ -1438,7 +1445,7 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 	volt = get_limit_voltage(volt);
 
 	if (exynos_info[CA7]->abb_table)
-		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA7, bootfreqCA7);
+		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA7, max(bootfreqCA7, freqCA7));
 
 	if (!set_abb_first_than_volt)
 		if (regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt))
@@ -1470,7 +1477,7 @@ static int exynos_cpufreq_reboot_notifier_call(struct notifier_block *this,
 
 	set_abb_first_than_volt = false;
 	if (exynos_info[CA15]->abb_table)
-		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA15, bootfreqCA15);
+		set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqCA15, max(bootfreqCA15, freqCA15));
 
 	if (!set_abb_first_than_volt)
 		if (regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt))
