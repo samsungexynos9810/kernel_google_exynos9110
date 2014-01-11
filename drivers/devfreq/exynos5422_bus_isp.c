@@ -200,38 +200,38 @@ struct devfreq_clk_info aclk_333_432_gscl[] = {
 	{LV2,	432000,	0,	&aclk_333_432_gscl_list},
 	{LV3,	432000,	0,	&aclk_333_432_gscl_list},
 	{LV4,	432000,	0,	&aclk_333_432_gscl_list},
-	{LV5,	216000,	0,	&aclk_333_432_gscl_list},
-	{LV6,	144000,	0,	&aclk_333_432_gscl_list},
+	{LV5,	432000,	0,	&aclk_333_432_gscl_list},
+	{LV6,	432000,	0,	&aclk_333_432_gscl_list},
 };
 
 struct devfreq_clk_info aclk_432_cam[] = {
-	{LV0,	216000,	0,	&aclk_432_cam_list},
-	{LV1,	432000,	0,	&aclk_432_cam_list},
-	{LV2,	216000,	0,	&aclk_432_cam_list},
-	{LV3,	144000,	0,	&aclk_432_cam_list},
-	{LV4,	 72000,	0,	&aclk_432_cam_list},
+	{LV0,	432000,	0,	&aclk_432_cam_list},
+	{LV1,	 54000,	0,	&aclk_432_cam_list},
+	{LV2,	 87000,	0,	&aclk_432_cam_list},
+	{LV3,	 54000,	0,	&aclk_432_cam_list},
+	{LV4,	 54000,	0,	&aclk_432_cam_list},
 	{LV5,	 54000,	0,	&aclk_432_cam_list},
 	{LV6,	 54000,	0,	&aclk_432_cam_list},
 };
 
 struct devfreq_clk_info aclk_550_cam[] = {
 	{LV0,	532000,	0,	&aclk_550_cam_list},
-	{LV1,	266000,	0,	&aclk_550_cam_list},
+	{LV1,	532000,	0,	&aclk_550_cam_list},
 	{LV2,	266000,	0,	&aclk_550_cam_list},
 	{LV3,	266000,	0,	&aclk_550_cam_list},
 	{LV4,	266000,	0,	&aclk_550_cam_list},
-	{LV5,	266000,	0,	&aclk_550_cam_list},
+	{LV5,	178000,	0,	&aclk_550_cam_list},
 	{LV6,	133000,	0,	&aclk_550_cam_list},
 };
 
 struct devfreq_clk_info aclk_fl1_550_cam[] = {
 	{LV0,	 76000,	0,	&aclk_fl1_550_cam_list},
-	{LV1,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV1,	 67000,	0,	&aclk_fl1_550_cam_list},
 	{LV2,	 76000,	0,	&aclk_fl1_550_cam_list},
-	{LV3,	 76000,	0,	&aclk_fl1_550_cam_list},
-	{LV4,	 76000,	0,	&aclk_fl1_550_cam_list},
-	{LV5,	 76000,	0,	&aclk_fl1_550_cam_list},
-	{LV6,	 76000,	0,	&aclk_fl1_550_cam_list},
+	{LV3,	 67000,	0,	&aclk_fl1_550_cam_list},
+	{LV4,	 67000,	0,	&aclk_fl1_550_cam_list},
+	{LV5,	 67000,	0,	&aclk_fl1_550_cam_list},
+	{LV6,	 67000,	0,	&aclk_fl1_550_cam_list},
 };
 
 struct devfreq_clk_info sclk_gscl_wrap_a[] = {
@@ -239,19 +239,19 @@ struct devfreq_clk_info sclk_gscl_wrap_a[] = {
 	{LV1,	532000,	0,	&sclk_gscl_wrap_a_list},
 	{LV2,	532000,	0,	&sclk_gscl_wrap_a_list},
 	{LV3,	532000,	0,	&sclk_gscl_wrap_a_list},
-	{LV4,	532000,	0,	&sclk_gscl_wrap_a_list},
-	{LV5,	266000,	0,	&sclk_gscl_wrap_a_list},
+	{LV4,	266000,	0,	&sclk_gscl_wrap_a_list},
+	{LV5,	178000,	0,	&sclk_gscl_wrap_a_list},
 	{LV6,	133000,	0,	&sclk_gscl_wrap_a_list},
 };
 
 struct devfreq_clk_info sclk_gscl_wrap_b[] = {
 	{LV0,	 76000,	0,	&sclk_gscl_wrap_b_list},
-	{LV1,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV1,	 67000,	0,	&sclk_gscl_wrap_b_list},
 	{LV2,	 76000,	0,	&sclk_gscl_wrap_b_list},
-	{LV3,	 76000,	0,	&sclk_gscl_wrap_b_list},
-	{LV4,	 76000,	0,	&sclk_gscl_wrap_b_list},
-	{LV5,	 76000,	0,	&sclk_gscl_wrap_b_list},
-	{LV6,	 76000,	0,	&sclk_gscl_wrap_b_list},
+	{LV3,	 67000,	0,	&sclk_gscl_wrap_b_list},
+	{LV4,	 67000,	0,	&sclk_gscl_wrap_b_list},
+	{LV5,	 67000,	0,	&sclk_gscl_wrap_b_list},
+	{LV6,	 67000,	0,	&sclk_gscl_wrap_b_list},
 };
 
 struct devfreq_clk_info *devfreq_clk_isp_info_list[] = {

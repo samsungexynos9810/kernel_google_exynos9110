@@ -386,7 +386,7 @@ struct int_clk_info aclk_333_432_isp0[] = {
 	{LV_1,   216000, I_PLL},
 	{LV_1_1, 144000, I_PLL},
 	{LV_1_2, 108000, I_PLL},
-	{LV_1_3, 72000, I_PLL},
+	{LV_1_3,  87000, I_PLL},
 #else
 	{LV_1,   144000, I_PLL},
 	{LV_1_1, 216000, I_PLL},
@@ -400,9 +400,9 @@ struct int_clk_info aclk_333_432_isp[] = {
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	{LV_0,   432000, I_PLL},
 	{LV_1,   432000, I_PLL},
-	{LV_1_1, 216000, I_PLL},
-	{LV_1_2, 216000, I_PLL},
-	{LV_1_3, 144000, I_PLL},
+	{LV_1_1, 432000, I_PLL},
+	{LV_1_2, 432000, I_PLL},
+	{LV_1_3, 432000, I_PLL},
 #else
 	{LV_0,   432000, I_PLL},
 	{LV_1,   144000, I_PLL},
@@ -427,7 +427,7 @@ struct int_clk_info aclk_266_isp[] = {
 	{LV_1,   216000, I_PLL},
 	{LV_1_1, 144000, I_PLL},
 	{LV_1_2, 108000, I_PLL},
-	{LV_1_3,  72000, I_PLL},
+	{LV_1_3,  87000, I_PLL},
 };
 #else
 struct int_clk_info aclk_333_432_gscl[] = {
