@@ -239,10 +239,10 @@ struct mif_bus_opp_table mif_bus_opp_list[] = {
 
 static unsigned int mif_ud_decode_opp_list[][3] = {
 	{0, 0, 0},
-	{LV_3, LV_2, LV_1},
-	{LV_2, LV_1, LV_1},
-	{LV_2, LV_0, LV_0},
-	{LV_1, LV_0, 0},
+	{LV_3, LV_2, LV_2},
+	{LV_2, LV_2, LV_1},
+	{LV_2, LV_1, LV_0},
+	{LV_1, LV_0, LV_0},
 };
 
 static unsigned int mif_fimc_opp_list[][3] = {
@@ -250,15 +250,15 @@ static unsigned int mif_fimc_opp_list[][3] = {
 	{LV_8, LV_7, LV_5},
 	{LV_7, LV_6, LV_4},
 	{LV_5, LV_5, LV_4},
-	{LV_5, LV_5, LV_1},
+	{LV_5, LV_4, LV_1},
 };
 
 static unsigned int int_fimc_opp_list[][3] = {
 	{0, 0, 0},
-	{LV_6, LV_6, LV_2},
-	{LV_6, LV_4, LV_2},
-	{LV_5, LV_4, LV_2},
-	{LV_5, LV_2, LV_2},
+	{LV_7, LV_7, LV_3},
+	{LV_7, LV_5, LV_3},
+	{LV_6, LV_5, LV_3},
+	{LV_6, LV_3, LV_3},
 };
 
 static unsigned int devfreq_mif_asv_abb[LV_END];
@@ -415,7 +415,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		}
 	} else {
 		if (num_fimd1_layers == 0)
-			pr_info("invalid number of fimd1 layers\n");
+			pr_debug("invalid number of fimd1 layers\n");
 
 		mif_idx = mif_fimc_opp_list[num_fimd1_layers][num_mixer_layers];
 		media_qos_mif_freq = mif_bus_opp_list[mif_idx].clk;
@@ -426,7 +426,7 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 	if (enabled_ud_decode) {
 		if (num_fimd1_layers == 0)
-			pr_info("invalid number of fimd1 layers\n");
+			pr_debug("invalid number of fimd1 layers\n");
 
 		mif_idx = mif_ud_decode_opp_list[num_fimd1_layers][num_mixer_layers];
 		media_qos_mif_freq = mif_bus_opp_list[mif_idx].clk;
@@ -628,12 +628,8 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 			pm_qos_remove_request(&exynos5_int_qos);
 	}
 
-	if ((enabled_ud_decode || enabled_ud_encode) && !data->bp_enabled) {
-		exynos5_back_pressure_enable(true);
-		data->bp_enabled = true;
-	}
-
-	if (target_freq <= mif_bus_opp_list[LV_4].clk && !data->bp_enabled) {
+	if (!data->bp_enabled && (target_freq <= mif_bus_opp_list[LV_4].clk ||
+		(enabled_ud_decode || enabled_ud_encode || enabled_fimc_lite))) {
 		exynos5_back_pressure_enable(true);
 		data->bp_enabled = true;
 	}
@@ -683,14 +679,10 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 		data->changed_timeout = true;
 	}
 
-	if (target_freq > mif_bus_opp_list[LV_4].clk && data->bp_enabled) {
-		if (enabled_ud_decode || enabled_ud_encode) {
-			exynos5_back_pressure_enable(true);
-			data->bp_enabled = true;
-		} else {
-			exynos5_back_pressure_enable(false);
-			data->bp_enabled = false;
-		}
+	if (data ->bp_enabled && (target_freq > mif_bus_opp_list[LV_4].clk &&
+		!enabled_ud_decode && !enabled_ud_encode  &&!enabled_fimc_lite)) {
+		exynos5_back_pressure_enable(false);
+		data->bp_enabled = false;
 	}
 }
 
