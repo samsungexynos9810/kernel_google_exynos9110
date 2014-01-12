@@ -137,14 +137,10 @@ int sensor_2p2_probe(struct i2c_client *client,
 	ext->actuator_con.peri_setting.i2c.slave_address = 0x5A;
 	ext->actuator_con.peri_setting.i2c.speed = 400000;
 
-#if defined(CONFIG_SOC_EXYNOS5422)
-	ext->flash_con.product_name = FLADRV_NAME_MAX77693;
-#else
 	ext->flash_con.product_name = FLADRV_NAME_LM3560;
-#endif
 	ext->flash_con.peri_type = SE_GPIO;
-	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 1;
-	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 2;
+	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 2;
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 3;
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
 
