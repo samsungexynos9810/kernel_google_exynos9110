@@ -31,6 +31,8 @@
 /* For Accessing CP15/SFR (General) */
 #define SMC_CMD_REG		(-101)
 
+#define SMC_PROTECTION_SET	0x81000000
+
 /* For FMP Ctrl */
 #define SMC_CMD_FMP		(0x81000020)
 

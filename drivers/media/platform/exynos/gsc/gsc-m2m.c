@@ -537,6 +537,12 @@ static int gsc_m2m_streamon(struct file *file, void *fh,
 
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_ON, pdata->mif_min, pdata->int_min);
 
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 1);
+		gsc_dbg("DRM enable");
+	}
+
 	return v4l2_m2m_streamon(file, ctx->m2m_ctx, type);
 }
 
@@ -547,6 +553,12 @@ static int gsc_m2m_streamoff(struct file *file, void *fh,
 	struct gsc_dev *gsc = ctx->gsc_dev;
 
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
+
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 0);
+		gsc_dbg("DRM disable");
+	}
 
 	return v4l2_m2m_streamoff(file, ctx->m2m_ctx, type);
 }
@@ -762,12 +774,6 @@ static int gsc_m2m_release(struct file *file)
 	gsc_dbg("pid: %d, state: 0x%lx, refcnt= %d",
 		task_pid_nr(current), gsc->state, gsc->m2m.refcnt);
 
-	/* if we didn't properly sequence with the secure side to turn off
-	 * content protection, we may be left in a very bad state and the
-	 * only way to recover this reliably is to reboot.
-	 */
-	BUG_ON(gsc->protected_content);
-
 	v4l2_m2m_ctx_release(ctx->m2m_ctx);
 	gsc_ctrls_delete(ctx);
 	v4l2_fh_del(&ctx->fh);
@@ -775,6 +781,15 @@ static int gsc_m2m_release(struct file *file)
 
 	if (--gsc->m2m.refcnt <= 0)
 		clear_bit(ST_M2M_OPEN, &gsc->state);
+
+	/* This is unnormal case */
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		gsc_err("DRM should be disabled before device close");
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 0);
+		gsc_set_protected_content(gsc, false);
+	}
+
 	kfree(ctx);
 	return 0;
 }
