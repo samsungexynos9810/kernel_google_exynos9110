@@ -272,34 +272,6 @@ enum devfreq_isp_clk devfreq_clk_isp_info_idx[] = {
 	DOUT_GSCL_WRAP_B,
 };
 
-#ifdef CONFIG_PM_RUNTIME
-struct devfreq_pm_domain_link devfreq_isp_pm_domain[] = {
-	{NULL,},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam0",},
-	{"pd-cam1",},
-	{"pd-cam1",},
-	{"pd-cam1",},
-	{"pd-cam1",},
-	{"pd-cam1",},
-	{"pd-cam1",},
-	{"pd-isp",},
-	{"pd-isp",},
-	{"pd-cam0",},
-};
-#endif
-
 static struct devfreq_simple_ondemand_data exynos5_devfreq_isp_governor_data = {
 	.pm_qos_class		= PM_QOS_CAM_THROUGHPUT,
 	.upthreshold		= 95,
@@ -335,27 +307,12 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 	int i, j;
 	struct devfreq_clk_info *clk_info;
 	struct devfreq_clk_states *clk_states;
-#ifdef CONFIG_PM_RUNTIME
-	struct exynos_pm_domain *pm_domain;
-#endif
 
 	if (target_idx < old_idx) {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_isp_info_list); ++i) {
 			clk_info = &devfreq_clk_isp_info_list[i][target_idx];
 			clk_states = clk_info->states;
 
-#ifdef CONFIG_PM_RUNTIME
-		pm_domain = devfreq_isp_pm_domain[i].pm_domain;
-
-		if (pm_domain != NULL) {
-			mutex_lock(&pm_domain->access_lock);
-			if ((__raw_readl(pm_domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN) == 0) {
-				mutex_unlock(&pm_domain->access_lock);
-				continue;
-			}
-		}
-#endif
-
 			if (clk_states) {
 				for (j = 0; j < clk_states->state_count; ++j) {
 					clk_set_parent(devfreq_isp_clk[clk_states->state[j].clk_idx].clk,
@@ -369,28 +326,12 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 				print_clk(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
 #endif
 			}
-#ifdef CONFIG_PM_RUNTIME
-		if (pm_domain != NULL)
-			mutex_unlock(&pm_domain->access_lock);
-#endif
 		}
 	} else {
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_isp_info_list); ++i) {
 			clk_info = &devfreq_clk_isp_info_list[i][target_idx];
 			clk_states = clk_info->states;
 
-#ifdef CONFIG_PM_RUNTIME
-		pm_domain = devfreq_isp_pm_domain[i].pm_domain;
-
-		if (pm_domain != NULL) {
-			mutex_lock(&pm_domain->access_lock);
-			if ((__raw_readl(pm_domain->base + 0x4) & EXYNOS_INT_LOCAL_PWR_EN) == 0) {
-				mutex_unlock(&pm_domain->access_lock);
-				continue;
-			}
-		}
-#endif
-
 			if (clk_info->freq != 0) {
 				clk_set_rate(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq * 1000);
 #ifdef DEVFREQ_ISP_DEBUG
@@ -411,10 +352,6 @@ static int exynos5_devfreq_isp_set_freq(struct devfreq_data_isp *data,
 				print_clk(devfreq_isp_clk[devfreq_clk_isp_info_idx[i]].clk, clk_info->freq);
 #endif
 			}
-#ifdef CONFIG_PM_RUNTIME
-		if (pm_domain != NULL)
-			mutex_unlock(&pm_domain->access_lock);
-#endif
 		}
 	}
 
@@ -527,35 +464,6 @@ static struct devfreq_dev_profile exynos5_devfreq_isp_profile = {
 	.get_dev_status	= exynos5_devfreq_isp_get_dev_status,
 	.max_state	= LV_COUNT,
 };
-
-#ifdef CONFIG_PM_RUNTIME
-static int exynos5_devfreq_isp_init_pm_domain(void)
-{
-	struct platform_device *pdev = NULL;
-	struct device_node *np = NULL;
-	int i;
-
-	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
-		struct exynos_pm_domain *pd;
-
-		if (!of_device_is_available(np))
-			continue;
-
-		pdev = of_find_device_by_node(np);
-		pd = platform_get_drvdata(pdev);
-
-		for (i = 0; i < ARRAY_SIZE(devfreq_isp_pm_domain); ++i) {
-			if (devfreq_isp_pm_domain[i].pm_domain_name == NULL)
-				continue;
-
-			if (!strcmp(devfreq_isp_pm_domain[i].pm_domain_name, pd->genpd.name))
-				devfreq_isp_pm_domain[i].pm_domain = pd;
-		}
-	}
-
-	return 0;
-}
-#endif
 
 static int exynos5_devfreq_isp_init_clock(void)
 {
@@ -678,13 +586,6 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 		ret = -EINVAL;
 		goto err_data;
 	}
-
-#ifdef CONFIG_PM_RUNTIME
-	if (exynos5_devfreq_isp_init_pm_domain()) {
-		ret = -EINVAL;
-		goto err_data;
-	}
-#endif
 
 	data = kzalloc(sizeof(struct devfreq_data_isp), GFP_KERNEL);
 	if (data == NULL) {
