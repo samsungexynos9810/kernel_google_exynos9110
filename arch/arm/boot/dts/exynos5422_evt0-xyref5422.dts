@@ -888,7 +888,7 @@
 			rear_capture_mif = <825000>; /* L0 */
 			rear_capture_i2c = <0>;
 
-			rear_camcording_int = <500000>; /* L1 */
+			rear_camcording_int = <600000>; /* L0 */
 			rear_camcording_cam = <555000>; /* L1 */
 			rear_camcording_mif = <728000>; /* L1 */
 			rear_camcording_i2c = <0>;
