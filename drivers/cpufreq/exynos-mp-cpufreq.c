@@ -750,9 +750,6 @@ void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
 	new_freq = min(clamp_freq, gov_target);
 	freq = exynos_getspeed(cpu);
 
-	if (freq <= clamp_freq)
-		return;
-
 	policy = cpufreq_cpu_get(cpu);
 
 	if (!policy)
