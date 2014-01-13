@@ -36,6 +36,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
+#include <linux/firmware.h>
 
 #include <sound/exynos.h>
 
@@ -43,7 +44,6 @@
 #include "seiren.h"
 #include "seiren_ioctl.h"
 #include "seiren_error.h"
-#include "seiren_fw.h"
 
 
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
@@ -167,7 +167,7 @@ static void esa_fw_download(void)
 	int n;
 
 	esa_debug("%s: fw size = sram(%d) dram(%d)\n", __func__,
-			fw_sram_bin_size, fw_dram_bin_size);
+			si.fw_sbin_size, si.fw_dbin_size);
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_RESET);
 	udelay(20);
@@ -185,9 +185,9 @@ static void esa_fw_download(void)
 			memset(si.fwarea[n], 0, FWAREA_SIZE);
 
 		memset(si.sram, 0, SRAM_FW_MAX);	/* for ZI area */
-		memcpy(si.sram, si.fwmem, fw_sram_bin_size);
-		memcpy(si.fwarea[0], si.fwmem + fw_sram_bin_size,
-					fw_dram_bin_size);
+		memcpy(si.sram, si.fwmem, si.fw_sbin_size);
+		memcpy(si.fwarea[0], si.fwmem + si.fw_sbin_size,
+					si.fw_dbin_size);
 	}
 
 	lpass_reset(LPASS_IP_CA5, LPASS_OP_NORMAL);
@@ -202,6 +202,9 @@ static int esa_fw_startup(void)
 
 	if (si.fw_ready)
 		return 0;
+
+	if (!si.fwmem_loaded)
+		return -EAGAIN;
 
 	/* power on */
 	si.fw_use_dram = true;
@@ -230,6 +233,9 @@ static void esa_fw_shutdown(void)
 	u32 cnt, val;
 
 	if (!si.fw_ready)
+		return;
+
+	if (!si.fwmem_loaded)
 		return;
 
 	/* SUSPEND & IDLE */
@@ -896,6 +902,11 @@ static int esa_open(struct inode *inode, struct file *file)
 {
 	struct esa_rtd *rtd;
 
+	if (!si.fwmem_loaded) {
+		esa_err("Firmware not ready\n");
+		return -ENXIO;
+	}
+
 	/* alloc rtd */
 	rtd = esa_alloc_rtd();
 	if (!rtd) {
@@ -1037,8 +1048,6 @@ static int esa_prepare_buffer(struct device *dev)
 		goto err;
 	}
 	si.fwmem_pa = virt_to_phys(si.fwmem);
-	memcpy(si.fwmem, fw_sram_bin, fw_sram_bin_size);
-	memcpy(si.fwmem + fw_sram_bin_size, fw_dram_bin, fw_dram_bin_size);
 
 	/* Firmware backup for SRAM */
 	si.fwmem_sram_bak = devm_kzalloc(dev, SRAM_FW_MAX, GFP_KERNEL);
@@ -1088,6 +1097,34 @@ err:
 	return -ENOMEM;
 }
 #endif
+
+static void esa_fw_request_complete(const struct firmware *fw_sram, void *ctx)
+{
+	const struct firmware *fw_dram;
+	struct device *dev = ctx;
+
+	if (!fw_sram) {
+		esa_err("Failed to requset firmware[%s]\n", FW_SRAM_NAME);
+		return;
+	}
+
+	if (request_firmware(&fw_dram, FW_DRAM_NAME, dev)) {
+		esa_err("Failed to requset firmware[%s]\n", FW_DRAM_NAME);
+		return;
+	}
+
+	si.fwmem_loaded = true;
+	si.fw_sbin_size = fw_sram->size;
+	si.fw_dbin_size = fw_dram->size;
+
+	memcpy(si.fwmem, fw_sram->data, si.fw_sbin_size);
+	memcpy(si.fwmem + si.fw_sbin_size, fw_dram->data, si.fw_dbin_size);
+
+	esa_info("FW Loaded (SRAM = %d, DRAM = %d)\n",
+			si.fw_sbin_size, si.fw_dbin_size);
+
+	return;
+}
 
 static const char banner[] =
 	KERN_INFO "Exynos Seiren Audio driver, (c)2013 Samsung Electronics\n";
@@ -1164,6 +1201,18 @@ static int esa_probe(struct platform_device *pdev)
 	dev_err(dev, "iommu not available\n");
 	goto err;
 #endif
+
+	ret = request_firmware_nowait(THIS_MODULE,
+				      FW_ACTION_HOTPLUG,
+				      FW_SRAM_NAME,
+				      dev,
+				      GFP_KERNEL,
+				      dev,
+				      esa_fw_request_complete);
+	if (ret) {
+		dev_err(dev, "could not load firmware\n");
+		goto err;
+	}
 
 	ret = request_irq(si.irq_ca5, esa_isr, 0, "lpass-ca5", 0);
 	if (ret < 0) {

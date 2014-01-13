@@ -95,6 +95,9 @@
 #define FW_ZERO_SET_BASE	(0x14000)
 #define FW_ZERO_SET_SIZE	(0x1F00)
 
+#define FW_SRAM_NAME		"seiren_fw_sram.bin"
+#define FW_DRAM_NAME		"seiren_fw_dram.bin"
+
 /* For Debugging */
 #define esa_info(x...)		pr_info("SEIREN: " x)
 #define esa_err(x...)		pr_err("SEIREN: ERR: " x)
@@ -260,6 +263,9 @@ struct seiren_info {
 	unsigned int	fwmem_pa;
 	unsigned char	*fwmem_sram_bak;
 	volatile bool	isr_done;
+	bool		fwmem_loaded;
+	int		fw_sbin_size;
+	int		fw_dbin_size;
 
 	int		rtd_cnt;
 	struct esa_rtd	*rtd_pool[INSTANCE_MAX];
