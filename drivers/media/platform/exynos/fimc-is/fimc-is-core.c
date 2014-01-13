@@ -975,12 +975,6 @@ static int fimc_is_probe(struct platform_device *pdev)
 			err("%s: fimc_is_dvfs_init failed!\n", __func__);
 	}
 #endif
-#ifdef ENABLE_CLOCK_GATE
-	/* clock gate init */
-	ret = fimc_is_clk_gate_init(core);
-	if (ret)
-		err("%s: fimc_is_clk_gate_init failed!\n", __func__);
-#endif
 
 	info("%s:end\n", __func__);
 	return 0;
