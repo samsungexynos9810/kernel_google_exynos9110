@@ -395,12 +395,36 @@ static void exynos_ss_save_mmu(struct exynos_ss_mmu_reg *mmu_reg)
 	);
 }
 
+int exynos_ss_output_dump(void)
+{
+	/*
+	 *  Output CPU Memory Error syndrome Register
+	 *  CPUMERRSR, L2MERRSR
+	 */
+	unsigned long reg0;
+
+	asm ("mrc p15, 0, %0, c0, c0, 0\n": "=r" (reg0));
+	if (((reg0 >> 4) & 0xFFF) == 0xC0F) {
+		/*  Only Cortex-A15 */
+		unsigned long reg1, reg2, reg3;
+		asm ("mrrc p15, 0, %0, %1, c15\n\t"
+			"mrrc p15, 1, %2, %3, c15\n"
+			: "=r" (reg0), "=r" (reg1),
+			"=r" (reg2), "=r" (reg3));
+		pr_emerg("CPUMERRSR: %08lx_%08lx, L2MERRSR: %08lx_%08lx\n",
+				reg1, reg0, reg3, reg2);
+	}
+	return 0;
+}
+EXPORT_SYMBOL(exynos_ss_output_dump);
+
 int exynos_ss_save_context(void)
 {
 	unsigned long flags;
 	local_irq_save(flags);
 	exynos_ss_save_mmu(per_cpu(ess_mmu_reg, smp_processor_id()));
 	exynos_ss_save_core(per_cpu(ess_core_reg, smp_processor_id()));
+	exynos_ss_output_dump();
 	pr_emerg("exynos-snapshot: context saved(CPU:%d)\n", smp_processor_id());
 	local_irq_restore(flags);
 	flush_cache_all();
