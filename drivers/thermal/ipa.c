@@ -1188,7 +1188,7 @@ static void arbiter_init(struct work_struct *work)
 		return;
 	}
 
-	arbiter_data.gpu_freq_limit = MAX_GPU_FREQ;
+	arbiter_data.gpu_freq_limit = get_ipa_dvfs_max_freq();
 	arbiter_data.cpu_freq_limits[CA15] = get_real_max_freq(CA15);
 	arbiter_data.cpu_freq_limits[CA7] = get_real_max_freq(CA7);
 	for (i = 0; i < NR_CPUS; i++) {
