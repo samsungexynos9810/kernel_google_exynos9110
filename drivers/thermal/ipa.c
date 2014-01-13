@@ -1227,7 +1227,7 @@ static void arbiter_init(struct work_struct *work)
 }
 
 #ifdef CONFIG_OF
-static int __init get_dt_infrom_ipa(void)
+static int __init get_dt_inform_ipa(void)
 {
 	u32 proper_val;
 	int ret = 0;
@@ -1235,206 +1235,208 @@ static int __init get_dt_infrom_ipa(void)
 	struct device_node *ipa_np;
 
 	ipa_np = of_find_compatible_node(NULL, NULL, "samsung,exynos-ipa");
-	if (of_device_is_available(ipa_np)) {
-		/* read control_temp */
-		ret = of_property_read_u32(ipa_np, "control_temp", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of control_temp\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.control_temp = proper_val;
-			pr_info("[IPA] control_temp : %d\n", (u32)proper_val);
-		}
 
-		/* read temp_threshold */
-		ret = of_property_read_u32(ipa_np, "temp_threshold", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of temp_threshold\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.temp_threshold = proper_val;
-			pr_info("[IPA] temp_threshold : %d\n", (u32)proper_val);
-		}
+	if (!ipa_np)
+		return -EINVAL;
 
-		/* read enabled */
-		ret = of_property_read_u32(ipa_np, "enabled", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of enabled\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.enabled = proper_val;
-			pr_info("[IPA] enabled : %d\n", (u32)proper_val);
-		}
+	/* read control_temp */
+	ret = of_property_read_u32(ipa_np, "control_temp", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of control_temp\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.control_temp = proper_val;
+		pr_info("[IPA] control_temp : %d\n", (u32)proper_val);
+	}
 
-		/* read tdp */
-		ret = of_property_read_u32(ipa_np, "tdp", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of tdp\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.tdp = proper_val;
-			pr_info("[IPA] tdp : %d\n", (u32)proper_val);
-		}
+	/* read temp_threshold */
+	ret = of_property_read_u32(ipa_np, "temp_threshold", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of temp_threshold\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.temp_threshold = proper_val;
+		pr_info("[IPA] temp_threshold : %d\n", (u32)proper_val);
+	}
 
-		/* read boost */
-		ret = of_property_read_u32(ipa_np, "boost", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of boost\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.boost = proper_val;
-			pr_info("[IPA] boost : %d\n", (u32)proper_val);
-		}
+	/* read enabled */
+	ret = of_property_read_u32(ipa_np, "enabled", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of enabled\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.enabled = proper_val;
+		pr_info("[IPA] enabled : %d\n", (u32)proper_val);
+	}
 
-		/* read ros_power */
-		ret = of_property_read_u32(ipa_np, "ros_power", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ros_power\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ros_power = proper_val;
-			pr_info("[IPA] ros_power : %d\n", (u32)proper_val);
-		}
+	/* read tdp */
+	ret = of_property_read_u32(ipa_np, "tdp", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of tdp\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.tdp = proper_val;
+		pr_info("[IPA] tdp : %d\n", (u32)proper_val);
+	}
 
-		/* read a7_weight */
-		ret = of_property_read_u32(ipa_np, "a7_weight", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of a7_weight\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.a7_weight = proper_val;
-			pr_info("[IPA] a7_weight : %d\n", (u32)proper_val);
-		}
+	/* read boost */
+	ret = of_property_read_u32(ipa_np, "boost", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of boost\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.boost = proper_val;
+		pr_info("[IPA] boost : %d\n", (u32)proper_val);
+	}
 
-		/* read a15_weight */
-		ret = of_property_read_u32(ipa_np, "a15_weight", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of a15_weight\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.a15_weight = proper_val;
-			pr_info("[IPA] a15_weight : %d\n", (u32)proper_val);
-		}
+	/* read ros_power */
+	ret = of_property_read_u32(ipa_np, "ros_power", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ros_power\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ros_power = proper_val;
+		pr_info("[IPA] ros_power : %d\n", (u32)proper_val);
+	}
 
-		/* read gpu_weight */
-		ret = of_property_read_u32(ipa_np, "gpu_weight", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of gpu_weight\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.gpu_weight = proper_val;
-			pr_info("[IPA] gpu_weight : %d\n", (u32)proper_val);
-		}
+	/* read a7_weight */
+	ret = of_property_read_u32(ipa_np, "a7_weight", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of a7_weight\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.a7_weight = proper_val;
+		pr_info("[IPA] a7_weight : %d\n", (u32)proper_val);
+	}
 
-		/* read a7_max_power */
-		ret = of_property_read_u32(ipa_np, "a7_max_power", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of a7_max_power\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.a7_max_power = proper_val;
-			pr_info("[IPA] a7_max_power : %d\n", (u32)proper_val);
-		}
+	/* read a15_weight */
+	ret = of_property_read_u32(ipa_np, "a15_weight", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of a15_weight\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.a15_weight = proper_val;
+		pr_info("[IPA] a15_weight : %d\n", (u32)proper_val);
+	}
 
-		/* read a15_max_power */
-		ret = of_property_read_u32(ipa_np, "a15_max_power", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of a15_max_power\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.a15_max_power = proper_val;
-			pr_info("[IPA] a15_max_power : %d\n", (u32)proper_val);
-		}
+	/* read gpu_weight */
+	ret = of_property_read_u32(ipa_np, "gpu_weight", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of gpu_weight\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.gpu_weight = proper_val;
+		pr_info("[IPA] gpu_weight : %d\n", (u32)proper_val);
+	}
 
-		/* read gpu_max_power */
-		ret = of_property_read_u32(ipa_np, "gpu_max_power", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of gpu_max_power\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.gpu_max_power = proper_val;
-			pr_info("[IPA] gpu_max_power : %d\n", (u32)proper_val);
-		}
+	/* read a7_max_power */
+	ret = of_property_read_u32(ipa_np, "a7_max_power", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of a7_max_power\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.a7_max_power = proper_val;
+		pr_info("[IPA] a7_max_power : %d\n", (u32)proper_val);
+	}
 
-		/* read enable_ctlr */
-		ret = of_property_read_u32(ipa_np, "enable_ctlr", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of enable_ctlr\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.enable_ctlr = proper_val;
-			pr_info("[IPA] enable_ctlr : %d\n", (u32)proper_val);
-		}
+	/* read a15_max_power */
+	ret = of_property_read_u32(ipa_np, "a15_max_power", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of a15_max_power\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.a15_max_power = proper_val;
+		pr_info("[IPA] a15_max_power : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.mult */
-		ret = of_property_read_u32(ipa_np, "ctlr.mult", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of enabled\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.mult = proper_val;
-			pr_info("[IPA] ctlr.mult : %d\n", (u32)proper_val);
-		}
+	/* read gpu_max_power */
+	ret = of_property_read_u32(ipa_np, "gpu_max_power", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of gpu_max_power\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.gpu_max_power = proper_val;
+		pr_info("[IPA] gpu_max_power : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.k_i */
-		ret = of_property_read_u32(ipa_np, "ctlr.k_i", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ctlr.k_i\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.k_i = proper_val;
-			pr_info("[IPA] ctlr.k_i : %d\n", (u32)proper_val);
-		}
+	/* read enable_ctlr */
+	ret = of_property_read_u32(ipa_np, "enable_ctlr", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of enable_ctlr\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.enable_ctlr = proper_val;
+		pr_info("[IPA] enable_ctlr : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.k_d */
-		ret = of_property_read_u32(ipa_np, "ctlr.k_d", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ctlr.k_d\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.k_d = proper_val;
-			pr_info("[IPA] ctlr.k_d : %d\n", (u32)proper_val);
-		}
+	/* read ctlr.mult */
+	ret = of_property_read_u32(ipa_np, "ctlr.mult", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of enabled\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.mult = proper_val;
+		pr_info("[IPA] ctlr.mult : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.feed_forward */
-		ret = of_property_read_u32(ipa_np, "ctlr.feed_forward", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ctlr.feed_forward\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.feed_forward = proper_val;
-			pr_info("[IPA] ctlr.feed_forward : %d\n", (u32)proper_val);
-		}
+	/* read ctlr.k_i */
+	ret = of_property_read_u32(ipa_np, "ctlr.k_i", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ctlr.k_i\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.k_i = proper_val;
+		pr_info("[IPA] ctlr.k_i : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.integral_reset_value */
-		ret = of_property_read_u32(ipa_np, "ctlr.integral_reset_value", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ctlr.integral_reset_value\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.integral_reset_value = proper_val;
-			pr_info("[IPA] ctlr.integral_reset_value : %d\n", (u32)proper_val);
-		}
+	/* read ctlr.k_d */
+	ret = of_property_read_u32(ipa_np, "ctlr.k_d", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ctlr.k_d\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.k_d = proper_val;
+		pr_info("[IPA] ctlr.k_d : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.integral_cutoff */
-		ret = of_property_read_u32(ipa_np, "ctlr.integral_cutoff", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ctlr.integral_cutoff\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.integral_cutoff = proper_val;
-			pr_info("[IPA] ctlr.integral_cutoff : %d\n", (u32)proper_val);
-		}
+	/* read ctlr.feed_forward */
+	ret = of_property_read_u32(ipa_np, "ctlr.feed_forward", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ctlr.feed_forward\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.feed_forward = proper_val;
+		pr_info("[IPA] ctlr.feed_forward : %d\n", (u32)proper_val);
+	}
 
-		/* read ctlr.integral_reset_threshold */
-		ret = of_property_read_u32(ipa_np, "ctlr.integral_reset_threshold", &proper_val);
-		if (ret) {
-			pr_err("[%s] There is no Property of ctlr.integral_reset_threshold\n", __func__);
-			return -EINVAL;
-		} else {
-			default_config.ctlr.integral_reset_threshold = proper_val;
-			pr_info("[IPA] ctlr.integral_reset_threshold : %d\n", (u32)proper_val);
-		}
+	/* read ctlr.integral_reset_value */
+	ret = of_property_read_u32(ipa_np, "ctlr.integral_reset_value", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ctlr.integral_reset_value\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.integral_reset_value = proper_val;
+		pr_info("[IPA] ctlr.integral_reset_value : %d\n", (u32)proper_val);
+	}
+
+	/* read ctlr.integral_cutoff */
+	ret = of_property_read_u32(ipa_np, "ctlr.integral_cutoff", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ctlr.integral_cutoff\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.integral_cutoff = proper_val;
+		pr_info("[IPA] ctlr.integral_cutoff : %d\n", (u32)proper_val);
+	}
+
+	/* read ctlr.integral_reset_threshold */
+	ret = of_property_read_u32(ipa_np, "ctlr.integral_reset_threshold", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of ctlr.integral_reset_threshold\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.ctlr.integral_reset_threshold = proper_val;
+		pr_info("[IPA] ctlr.integral_reset_threshold : %d\n", (u32)proper_val);
 	}
 
 	return 0;
@@ -1444,7 +1446,7 @@ static int __init get_dt_infrom_ipa(void)
 static int ipa_init(void)
 {
 #ifdef CONFIG_OF
-	if (get_dt_infrom_ipa()) {
+	if (get_dt_inform_ipa()) {
 		pr_err("[%s] ERROR there are no DT inform\n", __func__);
 		return -EINVAL;
 	}
