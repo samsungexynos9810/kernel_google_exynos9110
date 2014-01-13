@@ -136,7 +136,7 @@ static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state s
 		pm_qos_add_request(&exynos5_g3d_mif_qos, PM_QOS_BUS_THROUGHPUT, 0);
 		pm_qos_add_request(&exynos5_g3d_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
 		pm_qos_add_request(&exynos5_g3d_cpu_kfc_min_qos, PM_QOS_KFC_FREQ_MIN, 0);
-		pm_qos_add_request(&exynos5_g3d_cpu_egl_max_qos, PM_QOS_CPU_FREQ_MAX, 0);
+		pm_qos_add_request(&exynos5_g3d_cpu_egl_max_qos, PM_QOS_CPU_FREQ_MAX, PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
 		break;
 	case GPU_CONTROL_PM_QOS_DEINIT:
 		pm_qos_remove_request(&exynos5_g3d_mif_qos);
@@ -156,7 +156,7 @@ static int gpu_pm_qos_command(struct exynos_context *platform, gpu_pmqos_state s
 		pm_qos_update_request(&exynos5_g3d_mif_qos, 0);
 		pm_qos_update_request(&exynos5_g3d_int_qos, 0);
 		pm_qos_update_request(&exynos5_g3d_cpu_kfc_min_qos, 0);
-		pm_qos_update_request(&exynos5_g3d_cpu_egl_max_qos, 0);
+		pm_qos_update_request(&exynos5_g3d_cpu_egl_max_qos, PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
 	default:
 		break;
 	}
