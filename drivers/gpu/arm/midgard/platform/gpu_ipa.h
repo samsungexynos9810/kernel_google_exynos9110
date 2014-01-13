@@ -16,5 +16,5 @@ void gpu_ipa_dvfs_get_utilisation_stats(struct mali_debug_utilisation_stats *sta
 void gpu_ipa_dvfs_calc_norm_utilisation(struct kbase_device *kbdev);
 int gpu_ipa_dvfs_max_lock(int clock);
 int gpu_ipa_dvfs_max_unlock(void);
-
+int get_ipa_dvfs_max_freq(void);
 #endif

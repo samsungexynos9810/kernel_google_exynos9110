@@ -127,6 +127,7 @@ void gpu_ipa_dvfs_max_unlock(void);
 int kbase_platform_dvfs_freq_to_power(int freq);
 int kbase_platform_dvfs_power_to_freq(int power);
 unsigned int get_power_value(struct cpu_power_info *power_info);
+int get_ipa_dvfs_max_freq(void);
 
 #define ARBITER_PERIOD_MSEC 100
 

@@ -226,3 +226,11 @@ int gpu_ipa_dvfs_max_unlock(void)
 	gpu_dvfs_handler_control(kbdev, GPU_HANDLER_DVFS_MAX_UNLOCK, 0);
 	return 0;
 }
+
+int get_ipa_dvfs_max_freq(void)
+{
+	struct kbase_device *kbdev = pkbdev;
+	struct exynos_context *platform = (struct exynos_context *)kbdev->platform_context;
+
+	return platform->table[platform->table_size - 1].clock;
+}
