@@ -1020,6 +1020,8 @@ static int exynos5422_init_int_table(struct busfreq_data_int *data)
 
 		pr_info("INT %luKhz ASV is %duV\n", int_bus_opp_list[i].freq, asv_volt);
 
+		exynos5_int_devfreq_profile.freq_table[i] = int_bus_opp_list[i].freq;
+
 		ret = opp_add(data->dev, int_bus_opp_list[i].freq, asv_volt);
 
 		if (ret) {
@@ -1169,6 +1171,12 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 
 	if (data == NULL) {
 		dev_err(dev, "Cannot allocate memory for INT.\n");
+		return -ENOMEM;
+	}
+
+	exynos5_int_devfreq_profile.freq_table = kzalloc(sizeof(int) * LV_END, GFP_KERNEL);
+	if (exynos5_int_devfreq_profile.freq_table == NULL) {
+		pr_err("DEVFREQ(MIF) : Failed to allocate freq table\n");
 		return -ENOMEM;
 	}
 

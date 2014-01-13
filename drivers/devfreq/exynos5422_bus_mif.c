@@ -893,6 +893,8 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 
 		pr_info("MIF %luKhz ASV is %duV\n", mif_bus_opp_list[i].clk, asv_volt);
 
+		exynos5_mif_devfreq_profile.freq_table[i] = mif_bus_opp_list[i].clk;
+
 		ret = opp_add(data->dev, mif_bus_opp_list[i].clk, asv_volt);
 
 		if (ret) {
@@ -1368,6 +1370,12 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 	if (data == NULL) {
 		dev_err(dev, "Failed to allocate memory for MIF\n");
+		return -ENOMEM;
+	}
+
+	exynos5_mif_devfreq_profile.freq_table = kzalloc(sizeof(int) * LV_END, GFP_KERNEL);
+	if (exynos5_mif_devfreq_profile.freq_table == NULL) {
+		pr_err("DEVFREQ(MIF) : Failed to allocate freq table\n");
 		return -ENOMEM;
 	}
 
