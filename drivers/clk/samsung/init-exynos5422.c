@@ -82,8 +82,8 @@ static void top_clk_enable(void)
 	add_enabler("fout_mpll");
 	add_enabler("fout_spll");
 	add_enabler("fout_vpll");
-	add_enabler("fout_epll");
-	add_enabler("fout_rpll");
+	//add_enabler("fout_epll");
+	//add_enabler("fout_rpll");
 	add_enabler("fout_kpll");
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	add_enabler("dout_spll_ctrl_div2");
