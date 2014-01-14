@@ -53,6 +53,7 @@ enum devfreq_int_idx {
 
 enum devfreq_int_clk {
 	DOUT_ACLK_BUS1_400,
+	DOUT_MIF_PRE,
 	DOUT_ACLK_BUS2_400,
 	MOUT_BUS_PLL_USER,
 	MOUT_MFC_PLL_USER,
@@ -96,6 +97,7 @@ struct devfreq_data_int {
 
 struct devfreq_clk_list devfreq_int_clk[CLK_COUNT] = {
 	{"dout_aclk_bus1_400",},
+	{"dout_mif_pre",},
 	{"dout_aclk_bus2_400",},
 	{"mout_bus_pll_user",},
 	{"mout_mfc_pll_user",},
@@ -231,10 +233,21 @@ struct devfreq_clk_info aclk_bus1_400[] = {
 	{LV0,	400000000,	0,	NULL},
 	{LV1,	267000000,	0,	NULL},
 	{LV2,	267000000,	0,	NULL},
-	{LV3,	207000000,	0,	NULL},
+	{LV3,	200000000,	0,	NULL},
 	{LV4,	160000000,	0,	NULL},
 	{LV5,	134000000,	0,	NULL},
 	{LV6,	100000000,	0,	NULL},
+};
+
+struct devfreq_clk_info dout_mif_pre[] = {
+	{LV0_A,	800000000,	0,	NULL},
+	{LV0,	800000000,	0,	NULL},
+	{LV1,	800000000,	0,	NULL},
+	{LV2,	800000000,	0,	NULL},
+	{LV3,	800000000,	0,	NULL},
+	{LV4,	800000000,	0,	NULL},
+	{LV5,	800000000,	0,	NULL},
+	{LV6,	800000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_bus2_400[] = {
@@ -277,7 +290,7 @@ struct devfreq_clk_info aclk_gscl_333[] = {
 	{LV2,	317000000,	0,	NULL},
 	{LV3,	317000000,	0,	NULL},
 	{LV4,	317000000,	0,	NULL},
-	{LV5,	159000000,	0,	NULL},
+	{LV5,	317000000,	0,	NULL},
 	{LV6,	159000000,	0,	NULL},
 };
 
@@ -304,7 +317,7 @@ struct devfreq_clk_info sclk_jpeg[] = {
 };
 
 struct devfreq_clk_info aclk_mfc0_333[] = {
-	{LV0_A,	552000000,	0,	&aclk_mfc0_333_isp_pll_list},
+	{LV0_A,	633000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV0,	500000000,	0,	&aclk_mfc0_333_mphy_pll_list},
 	{LV1,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
 	{LV2,	317000000,	0,	&aclk_mfc0_333_mfc_pll_list},
@@ -338,6 +351,7 @@ struct devfreq_clk_info aclk_hevc_400[] = {
 
 struct devfreq_clk_info *devfreq_clk_int_info_list[] = {
 	aclk_bus1_400,
+	dout_mif_pre,
 	aclk_bus2_400,
 	aclk_g2d_400,
 	aclk_g2d_266,
@@ -351,6 +365,7 @@ struct devfreq_clk_info *devfreq_clk_int_info_list[] = {
 
 enum devfreq_int_clk devfreq_clk_int_info_idx[] = {
 	DOUT_ACLK_BUS1_400,
+	DOUT_MIF_PRE,
 	DOUT_ACLK_BUS2_400,
 	DOUT_ACLK_G2D_400,
 	DOUT_ACLK_G2D_266,
@@ -365,6 +380,7 @@ enum devfreq_int_clk devfreq_clk_int_info_idx[] = {
 #ifdef CONFIG_PM_RUNTIME
 struct devfreq_pm_domain_link devfreq_int_pm_domain[] = {
 	{"pd-bus1",},
+	{"pd-bus2",},
 	{"pd-bus2",},
 	{"pd-g2d",},
 	{"pd-g2d",},

@@ -287,7 +287,7 @@ struct devfreq_clk_info aclk_mifnm[] = {
 	{LV0,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
 	{LV1,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
 	{LV2,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
-	{LV3,   134000000,      0,      &aclk_mifnm_200_bus_pll_list},
+	{LV3,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
 	{LV4,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
 	{LV5,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},
 	{LV6,   100000000,      0,      &aclk_mifnm_200_bus_pll_list},

@@ -419,8 +419,8 @@ struct devfreq_clk_info aclk_cam1_552[] = {
 	{LV2,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV3,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV4,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
-	{LV5,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV6,	413000000,	0,	&aclk_cam1_552_bus_pll_list},
+	{LV5,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
+	{LV6,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
 };
 
 struct devfreq_clk_info aclk_cam1_400[] = {
@@ -447,8 +447,8 @@ struct devfreq_clk_info aclk_fd_400[] = {
 	{LV0,	400000000,	0,	&aclk_fd_400_bus_pll_list},
 	{LV1,	400000000,	0,	&aclk_fd_400_bus_pll_list},
 	{LV2,	317000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV3,	159000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV4,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
+	{LV3,	317000000,	0,	&aclk_fd_400_mfc_pll_list},
+	{LV4,	159000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV5,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV6,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
 };
@@ -478,7 +478,7 @@ struct devfreq_clk_info aclk_isp_400[] = {
 	{LV1,	400000000,	0,	&aclk_isp_400_bus_pll_list},
 	{LV2,	317000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV3,	267000000,	0,	&aclk_isp_400_bus_pll_list},
-	{LV4,	127000000,	0,	&aclk_isp_400_mfc_pll_list},
+	{LV4,	159000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV5,	 80000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV6,	 80000000,	0,	&aclk_isp_400_mfc_pll_list},
 };
@@ -488,7 +488,7 @@ struct devfreq_clk_info aclk_isp_dis_400[] = {
 	{LV1,	400000000,	0,	&aclk_isp_dis_400_bus_pll_list},
 	{LV2,	317000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 	{LV3,	267000000,	0,	&aclk_isp_dis_400_bus_pll_list},
-	{LV4,	127000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV4,	159000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 	{LV5,	 80000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 	{LV6,	 80000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 };
@@ -500,6 +500,7 @@ struct devfreq_clk_info sclk_lite_freecnt_c[] = {
 	{LV3,	 0,	0,	&sclk_lite_freecnt_c_list},
 	{LV4,	 0,	0,	&sclk_lite_freecnt_c_list},
 	{LV5,	 0,	0,	&sclk_lite_freecnt_c_list},
+	{LV6,	 0,	0,	&sclk_lite_freecnt_c_list},
 };
 
 struct devfreq_clk_info *devfreq_clk_isp_info_list[] = {
