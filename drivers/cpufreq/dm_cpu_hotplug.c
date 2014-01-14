@@ -430,6 +430,14 @@ out:
 
 	return ret;
 }
+
+void hotplug_in_by_pm_qos(void)
+{
+	if(!dynamic_hotplug(CMD_NORMAL))
+		prev_cmd = CMD_NORMAL;
+	else
+		pr_err("%s: failed hotplug in\n", __func__);
+}
 #endif
 
 static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
@@ -521,7 +529,8 @@ static enum hotplug_cmd diagnose_condition(void)
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	if ((cur_load_freq > normal_min_freq) ||
-		(egl_cur_freq >= egl_min_freq))
+		(egl_cur_freq >= egl_min_freq) ||
+		(pm_qos_request(PM_QOS_CPU_FREQ_MIN) >= egl_min_freq))
 #else
 	if (cur_load_freq > normal_min_freq)
 #endif

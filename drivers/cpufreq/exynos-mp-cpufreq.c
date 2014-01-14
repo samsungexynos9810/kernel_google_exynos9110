@@ -1533,6 +1533,9 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 	struct cpufreq_policy *policy;
 	int cpu = boot_cluster ? 0 : NR_CA7;
 
+	if (val)
+		hotplug_in_by_pm_qos();
+
 	freq = exynos_getspeed(cpu);
 	if (freq >= val)
 		goto good;
