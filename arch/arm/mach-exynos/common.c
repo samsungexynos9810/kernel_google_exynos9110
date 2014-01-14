@@ -577,12 +577,12 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM0,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM0),
-		.length         = SZ_64K,
+		.length         = SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM1,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM1),
-		.length         = SZ_64K,
+		.length         = SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_PMU_LPI_CAM0,
@@ -619,7 +619,13 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_MFC1),
 		.length         = SZ_4K,
 		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_DISP,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_DISP),
+		.length         = SZ_4K,
+		.type		= MT_DEVICE,
 	},
+
 };
 
 static struct map_desc exynos5440_iodesc0[] __initdata = {

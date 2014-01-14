@@ -61,38 +61,34 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 	case 0:
 		if (reset == S5P_MIPI_DPHY_SRESETN) {
 			if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
-				addr_reset = ioremap(0x120F1014, 0x4);
+				addr_reset = S5P_VA_SYSREG_CAM0 + 0x0014;
 				cfg = __raw_readl(addr_reset);
 				cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
 				__raw_writel(cfg, addr_reset);
-				iounmap(addr_reset);
 			}
 		} else {
 			if (readl(S5P_VA_PMU + 0x4084) & 0x1) {
-				addr_reset = ioremap(0x13B8100c, 0x4);
+				addr_reset = S5P_VA_SYSREG_DISP + 0x000c;
 				cfg = __raw_readl(addr_reset);
 				cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
 				__raw_writel(cfg, addr_reset);
-				iounmap(addr_reset);
 			}
 		}
 		break;
 	case 1:
 		if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
-			addr_reset = ioremap(0x120F1014, 0x4);
+			addr_reset = S5P_VA_SYSREG_CAM0 + 0x0014;
 			cfg = __raw_readl(addr_reset);
 			cfg = on ? (cfg | MIPI_PHY_BIT1) : (cfg & ~MIPI_PHY_BIT1);
 			__raw_writel(cfg, addr_reset);
-			iounmap(addr_reset);
 		}
 		break;
 	case 2:
 		if (readl(S5P_VA_PMU + 0x40A4) & 0x1) {
-			addr_reset = ioremap(0x145F1020, 0x4);
+			addr_reset = S5P_VA_SYSREG_CAM1 + 0x0020;
 			cfg = __raw_readl(addr_reset);
 			cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
 			__raw_writel(cfg, addr_reset);
-			iounmap(addr_reset);
 		}
 		break;
 	default:
@@ -102,16 +98,14 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 
 	/* CHECK CMA0 PD STATUS */
 	if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
-		addr_reset = ioremap(0x120F1014, 0x4);
+		addr_reset = S5P_VA_SYSREG_CAM0 + 0x0014;
 		csi_reset = __raw_readl(addr_reset);
-		iounmap(addr_reset);
 	}
 
 	/* CHECK DISP PD STATUS */
 	if (readl(S5P_VA_PMU + 0x4084) & 0x1) {
-		addr_reset = ioremap(0x13B8100c, 0x4);
+		addr_reset = S5P_VA_SYSREG_DISP + 0x000c;
 		dsi_reset = __raw_readl(addr_reset);
-		iounmap(addr_reset);
 	}
 
 	/* PHY PMU enable */
