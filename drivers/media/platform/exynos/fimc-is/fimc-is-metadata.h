@@ -62,8 +62,8 @@ struct rational {
 #define CAMERA2_MAX_FACES		16
 #define CAMERA2_MAX_VENDER_LENGTH	400
 #define CAPTURE_NODE_MAX		2
-#define CAMERA2_PDAF_RESULT_COL_MAX	7
-#define CAMERA2_PDAF_RESULT_ROW_MAX	3
+#define CAMERA2_MAX_PDAF_MULTIROI_COLUMN 9
+#define CAMERA2_MAX_PDAF_MULTIROI_ROW 5
 
 #define OPEN_MAGIC_NUMBER		0x01020304
 #define SHOT_MAGIC_NUMBER		0x23456789
@@ -689,6 +689,8 @@ enum aa_afmode {
 	/* Special modes for PDAF */
 	AA_AFMODE_PDAF_OUTFOCUSING = 31,
 	AA_AFMODE_PDAF_OUTFOCUSING_FACE,
+	AA_AFMODE_PDAF_OUTFOCUSING_CONTINUOUS_PICTURE,
+	AA_AFMODE_PDAF_OUTFOCUSING_CONTINUOUS_PICTURE_FACE,
 
 	/* Not supported yet */
 	AA_AFMODE_EDOF = 41,
@@ -925,6 +927,9 @@ struct camera2_af_udm {
 	uint32_t	vsLength;
 	/** vendor specific data array */
 	uint32_t	vendorSpecific[CAMERA2_MAX_VENDER_LENGTH];
+	int32_t         lensPositionInfinity;
+	int32_t         lensPositionMacro;
+	int32_t         lensPositionCurrent;
 };
 
 /** \brief
@@ -1011,11 +1016,46 @@ struct camera2_bayer_udm {
 	uint32_t	height;
 };
 
+enum companion_drc_mode {
+	COMPANION_DRC_OFF = 1,
+	COMPANION_DRC_ON,
+};
+
+enum companion_wdr_mode {
+	COMPANION_WDR_OFF = 1,
+	COMPANION_WDR_ON,
+};
+
+enum companion_paf_mode {
+	COMPANION_PAF_OFF = 1,
+	COMPANION_PAF_ON,
+};
+
+struct camera2_companion_uctl {
+	enum companion_drc_mode drc_mode;
+	enum companion_wdr_mode wdr_mode;
+	enum companion_paf_mode paf_mode;
+};
+
+struct camera2_pdaf_single_result {
+	uint16_t        mode;
+	uint16_t        goalPos;
+	uint16_t        reliability;
+	uint16_t        currentPos;
+};
+
+struct camera2_pdaf_multi_result {
+	uint16_t        mode;
+	uint16_t        goalPos;
+	uint16_t        reliability;
+};
+
 struct camera2_pdaf_udm {
-	uint32_t	pdafColSize; /* width of PDAF map, 0 means no PDAF data */
-	uint32_t	pdafRowSize; /* height of PDAF map, 0 means no PDAF data */
-	uint32_t	pdafData[CAMERA2_PDAF_RESULT_COL_MAX][CAMERA2_PDAF_RESULT_ROW_MAX];
-	uint32_t	reliability[CAMERA2_PDAF_RESULT_COL_MAX][CAMERA2_PDAF_RESULT_ROW_MAX];
+	uint16_t				numCol;	/* width of PDAF map, 0 means no multi PDAF data */
+	uint16_t				numRow;	/* height of PDAF map, 0 means no multi PDAF data */
+	struct camera2_pdaf_multi_result	multiResult[CAMERA2_MAX_PDAF_MULTIROI_COLUMN][CAMERA2_MAX_PDAF_MULTIROI_ROW];
+	struct camera2_pdaf_single_result	singleResult;
+	uint16_t				lensPosResolution;	/* 1023(unsigned 10bit) */
 };
 
 /** \brief
@@ -1049,6 +1089,15 @@ struct camera2_uctl {
 	struct camera2_scaler_uctl	scalerUd;
 	/** ispfw specific control(user-defined) of Bcrop1. */
 	struct camera2_bayer_uctl	bayerUd;
+	struct camera2_companion_uctl	companionUd;
+};
+
+struct camera2_companion_udm {
+	enum companion_drc_mode drc_mode;
+	enum companion_wdr_mode wdr_mode;
+	enum companion_paf_mode paf_mode;
+
+	struct camera2_pdaf_udm pdaf;
 };
 
 struct camera2_udm {
@@ -1062,7 +1111,7 @@ struct camera2_udm {
 	struct camera2_internal_udm	internal;
 	/* Add udm for bayer down size. */
 	struct camera2_bayer_udm	bayer;
-	struct camera2_pdaf_udm	 	pdaf;
+	struct camera2_companion_udm	companion;
 };
 
 struct camera2_shot {
