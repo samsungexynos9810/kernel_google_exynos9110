@@ -284,6 +284,18 @@ exit:
 	return ret;
 }
 
+static void __samsung_usb3phy_shutdown(struct samsung_usbphy *sphy)
+{
+	/* setting default phy-type for USB 3.0 */
+	samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
+
+	/* De-initialize usb phy registers */
+	samsung_exynos5_usb3phy_disable(sphy);
+
+	/* Enable phy isolation */
+	samsung_usbphy_set_isolation(sphy, true);
+}
+
 /*
  * The function passed to the usb driver for phy shutdown
  */
@@ -315,14 +327,7 @@ static void samsung_usb3phy_shutdown(struct usb_phy *phy)
 		goto exit;
 	}
 
-	/* setting default phy-type for USB 3.0 */
-	samsung_usbphy_set_type(&sphy->phy, USB_PHY_TYPE_DEVICE);
-
-	/* De-initialize usb phy registers */
-	samsung_exynos5_usb3phy_disable(sphy);
-
-	/* Enable phy isolation */
-	samsung_usbphy_set_isolation(sphy, true);
+	__samsung_usb3phy_shutdown(sphy);
 exit:
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
@@ -426,6 +431,48 @@ static int samsung_usb3phy_remove(struct platform_device *pdev)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
+static int samsung_usb3phy_resume(struct device *dev)
+{
+	struct samsung_usbphy *sphy = dev_get_drvdata(dev);
+	unsigned long flags;
+	int ret;
+
+	/*
+	 * There is issue, when USB3.0 PHY is in active state
+	 * after resume. This leads to increased power consumption
+	 * if no USB drivers use the PHY.
+	 *
+	 * The following code shutdowns the PHY, so it is in defined
+	 * state (OFF) after resume. If any USB driver already got
+	 * the PHY at this time, we do nothing and just exit.
+	 */
+
+	dev_dbg(sphy->dev, "%s\n", __func__);
+
+	ret = clk_enable(sphy->clk);
+	if (ret < 0) {
+		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
+		return ret;
+	}
+
+	spin_lock_irqsave(&sphy->lock, flags);
+
+	if (sphy->usage_count) {
+		dev_dbg(sphy->dev, "PHY is already in use\n");
+		goto exit;
+	}
+
+	__samsung_usb3phy_shutdown(sphy);
+exit:
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	clk_disable(sphy->clk);
+
+	return 0;
+}
+#endif
+
 static struct samsung_usbphy_drvdata usb3phy_exynos5250 = {
 	.cpu_type		= TYPE_EXYNOS5250,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
@@ -442,6 +489,10 @@ static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
 	.cpu_type		= TYPE_EXYNOS5,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
 	.need_crport_tuning	= false,
+};
+
+static const struct dev_pm_ops samsung_usb3phy_dev_pm_ops = {
+	.resume		= samsung_usb3phy_resume,
 };
 
 #ifdef CONFIG_OF
@@ -485,6 +536,7 @@ static struct platform_driver samsung_usb3phy_driver = {
 		.name	= "samsung-usb3phy",
 		.owner	= THIS_MODULE,
 		.of_match_table = of_match_ptr(samsung_usbphy_dt_match),
+		.pm	= &samsung_usb3phy_dev_pm_ops,
 	},
 };
 
