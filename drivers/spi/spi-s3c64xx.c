@@ -573,7 +573,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 	int ms;
 
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
-	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
+	ms = xfer->len * 8 * 2000 / sdd->cur_speed;
 	ms += 10; /* some tolerance */
 
 	if (dma_mode) {
