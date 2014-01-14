@@ -32,7 +32,7 @@
 #endif
 
 static struct clk *g_mout_fimd1;
-static struct clk *g_mout_rpll_ctrl;
+static struct clk *g_mout_mpll_ctrl;
 static struct clk *g_dout_fimd1;
 static struct clk *g_mout_aclk_300_disp1_user;
 static struct clk *g_mout_aclk_300_disp1_sw;
@@ -101,7 +101,7 @@ static struct clk *g_mout_fimd1_mdnie1;
 int init_display_decon_clocks(struct device *dev)
 {
 	int ret = 0;
-	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd1, mout_mpll_ctrl);
 #if !defined (CONFIG_SOC_EXYNOS5422_REV_0)
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
 #endif
@@ -273,7 +273,7 @@ int enable_display_decon_clocks(struct device *dev)
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
 
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd1, mout_rpll_ctrl);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd1, mout_mpll_ctrl);
 #if !defined (CONFIG_SOC_EXYNOS5422_REV_0)
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd1_mdnie1, mout_fimd1);
 #endif

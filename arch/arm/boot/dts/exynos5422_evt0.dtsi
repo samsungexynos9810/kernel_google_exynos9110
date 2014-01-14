@@ -610,14 +610,14 @@
 				<&clock 2068>, <&clock 4016>, <&clock 2054>,
 				<&clock 2002>, <&clock 2083>, <&clock 2073>,
 				<&clock 4021>, <&clock 2059>, <&clock 601>,
-				<&clock 1326>, <&clock 4103>;
+				<&clock 1326>, <&clock 4103>, <&clock 2008>;
 
 		clock-names = "clk_fimd1", "mout_fimd1", "sclk_fimd1",
 					"mout_rpll_ctrl", "mout_fimd1_mdnie1", "mout_aclk_300_disp1_user",
 					"mout_aclk_300_disp1_sw", "dout_aclk_300_disp1", "mout_aclk_300_disp1",
 					"mout_dpll_ctrl", "mout_aclk_400_disp1_user", "mout_aclk_400_disp1_sw",
 					"dout_aclk_400_disp1", "mout_aclk_400_disp1", "aclk_axi_disp1x",
-					"clk_dsim1", "dout_fimd1";
+					"clk_dsim1", "dout_fimd1", "mout_mpll_ctrl";
 		pinctrl-names = "turnon_tes", "turnoff_tes";
 		pinctrl-0 = <&disp_teson>;
 		pinctrl-1 = <&disp_tesoff>;
