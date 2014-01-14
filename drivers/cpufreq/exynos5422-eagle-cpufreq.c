@@ -330,7 +330,7 @@ static const unsigned int asv_voltage_5422_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	 900000,    /* L22  300 */
 	 900000,    /* L22  200 */
 };
-#if 0
+
 /* Minimum memory throughput in megabytes per second */
 static int exynos5422_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	800000, /* 2.4 GHz */
@@ -357,7 +357,7 @@ static int exynos5422_bus_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	400000, /* 300 MHz */
 	400000, /* 200 MHz */
 };
-#endif
+
 static void exynos5422_set_int_skew_CA15(int new_index)
 {
 #ifdef CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ
@@ -672,7 +672,7 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->boot_cpu_min_qos = exynos5422_freq_table_CA15[L9].frequency;
 	info->boot_cpu_max_qos = exynos5422_freq_table_CA15[L9].frequency;
 	info->cpu_clk = fout_apll;
-	/* info->bus_table = exynos5422_bus_table_CA15; */
+	info->bus_table = exynos5422_bus_table_CA15;
 	/* info->max_op_freqs = exynos5422_max_op_freq_b_evt0;*/
 
 	info->volt_table = exynos5422_volt_table_CA15;
