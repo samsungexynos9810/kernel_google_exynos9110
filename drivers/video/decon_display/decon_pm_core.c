@@ -312,6 +312,12 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 	if (dispdrv->platform_status > DISP_STATUS_PM0 &&
 		atomic_read(&dispdrv->pm_status.lock_count) == 0) {
 		if (dispdrv->pm_status.clock_enabled) {
+			if (!dispdrv->pm_status.trigger_masked)
+				enable_mask(dispdrv);
+		}
+
+		if (dispdrv->pm_status.clock_enabled &&
+			MAX_CLK_GATING_COUNT > 0) {
 			if (!dispdrv->pm_status.trigger_masked) {
 				enable_mask(dispdrv);
 			}
@@ -532,7 +538,6 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
-	pm_info("##### +");
 	disp_pm_gate_lock(dispdrv, true);
 	mutex_lock(&dispdrv->pm_status.pm_lock);
 	if (sfb->power_state == POWER_DOWN) {
@@ -544,17 +549,22 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 		pr_info("%s, DECON does not need power-off\n", __func__);
 		goto done;
 	}
+	if (get_display_line_count(dispdrv)) {
+		pm_debug("wait until last frame is totally transferred %d:",
+				get_display_line_count(dispdrv));
+		goto done;
+	}
 
+	pm_info("##### +");
 	sfb->power_state = POWER_HIBER_DOWN;
 	__display_hibernation_power_off(dispdrv);
 	disp_pm_runtime_put_sync(dispdrv);
 
 	request_dynamic_hotplug(true);
-
+	pm_info("##### -\n");
 done:
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_pm_gate_lock(dispdrv, false);
-	pm_info("##### -\n");
 
 	return ret;
 }

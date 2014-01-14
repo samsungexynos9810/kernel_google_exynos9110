@@ -154,8 +154,14 @@ struct display_pm_status {
 	int pwr_idle_count;
 };
 
+#define USE_ONLY_POWER_GATING_MODE
+#ifdef USE_ONLY_POWER_GATING_MODE
+#define MAX_CLK_GATING_COUNT 0
+#define MAX_PWR_GATING_COUNT 5
+#else
 #define MAX_CLK_GATING_COUNT 2
-#define MAX_PWR_GATING_COUNT 25
+#define MAX_PWR_GATING_COUNT 10
+#endif
 
 /* display_driver - Abstraction for display driver controlling
  * all display system in the system */
