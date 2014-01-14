@@ -2229,6 +2229,12 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	unsigned short i;
 	unsigned int data;
+	u32 reg;
+
+	reg = readl(sfb->regs + VIDCON0);
+	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
+	writel(reg, sfb->regs + VIDCON0);
+
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!sfb->windows[i]->local)
 			shadow_protect_win(sfb->windows[i], 1);
@@ -4779,12 +4785,7 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 #endif
 
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
-
-	reg = readl(sfb->regs + VIDCON0);
-	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
-	writel(reg, sfb->regs + VIDCON0);
 	sfb->output_on = true;
-
 err:
 	mutex_unlock(&sfb->output_lock);
 
