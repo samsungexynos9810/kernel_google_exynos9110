@@ -307,6 +307,12 @@ static int c2_finisher(unsigned long flags)
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (flags == L2_CCI_OFF) {
 		exynos_cpu_sequencer_ctrl(true);
+
+		spin_lock(&cluster_ctrl_lock);
+		cluster_off_flag = true;
+		spin_unlock(&cluster_ctrl_lock);
+		last_time = get_jiffies_64();
+
 		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, flags);
 	} else
 #endif
@@ -892,14 +898,8 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (index == 2) {
 		per_cpu(in_c2_state, cpuid) = 1;
-		if (can_enter_cluster_off(cpuid)) {
-			spin_lock(&cluster_ctrl_lock);
-			cluster_off_flag = true;
-			spin_unlock(&cluster_ctrl_lock);
-
+		if (can_enter_cluster_off(cpuid))
 			flags = L2_CCI_OFF;
-			last_time = get_jiffies_64();
-		}
 	}
 #endif
 
@@ -917,7 +917,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	exynos_cpu_sequencer_ctrl(false);
 
-	if (cluster_off_flag) {
+	if (cluster_off_flag && !disabled_c3) {
 		cluster_off_time += get_jiffies_64() - last_time;
 
 		spin_lock(&cluster_ctrl_lock);
