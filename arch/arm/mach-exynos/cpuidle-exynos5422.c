@@ -767,7 +767,7 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 		__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 	}
 
-	if (cluster_off_flag) {
+	if (cluster_off_flag && !disabled_c3) {
 		cluster_off_time += get_jiffies_64() - last_time;
 		cluster_off_flag = false;
 	}
