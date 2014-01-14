@@ -584,7 +584,7 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
 		cmd, arg, cmd_status);
 }
 
-static void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host)
+void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host)
 {
 	struct dw_mci_slot *slot = host->cur_slot;
 	unsigned long timeout = jiffies + msecs_to_jiffies(10);
@@ -612,7 +612,7 @@ out:
 	}
 }
 
-static bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host)
+bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host)
 {
 	unsigned long timeout = jiffies + msecs_to_jiffies(1000);
 	unsigned int ctrl;

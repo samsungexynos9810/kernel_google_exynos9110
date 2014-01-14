@@ -36,6 +36,9 @@ struct dw_mci *dw_mci_lpa_host[3] = {0, 0, 0};
 unsigned int dw_mci_host_count;
 unsigned int dw_mci_save_sfr[3][30];
 
+extern void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host);
+extern bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host);
+
 static int dw_mci_exynos_priv_init(struct dw_mci *host)
 {
 	struct dw_mci_exynos_priv_data *priv;
@@ -897,6 +900,9 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		mrq.stop = &stop;
 		mrq.data = &data;
 		host->mrq_cmd = &mrq;
+
+		dw_mci_fifo_reset(host->dev, host);
+		dw_mci_ciu_reset(host->dev, host);
 
 		/*
 		 * DDR200 tuning Sequence with fine tuning setup
