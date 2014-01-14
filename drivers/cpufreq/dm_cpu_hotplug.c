@@ -68,6 +68,8 @@ enum hotplug_cmd {
 
 static int on_run(void *data);
 static int dynamic_hotplug(enum hotplug_cmd cmd);
+static enum hotplug_cmd diagnose_condition(void);
+static void calc_load(void);
 
 static enum hotplug_cmd prev_cmd;
 static enum hotplug_cmd exe_cmd;
@@ -378,12 +380,15 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 
 void force_dynamic_hotplug(bool out_flag)
 {
-	if (!out_flag) {
-		if (!dynamic_hotplug(CMD_NORMAL))
-			prev_cmd = CMD_NORMAL;
-	}
+	enum hotplug_cmd cmd;
 
 	forced_hotplug = out_flag;
+
+	calc_load();
+	cmd = diagnose_condition();
+
+	if (!dynamic_hotplug(cmd))
+		prev_cmd = cmd;
 }
 
 #if defined(CONFIG_SCHED_HMP)
