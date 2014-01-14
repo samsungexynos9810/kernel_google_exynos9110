@@ -1181,6 +1181,7 @@ static void arbiter_init(struct work_struct *work)
 		pr_info("exynos_cpufreq not initialized. Deferring again...\n");
 		queue_delayed_work(system_freezable_wq, &init_work,
 				msecs_to_jiffies(500));
+		return;
 	}
 
 	arbiter_data.gpu_freq_limit = MAX_GPU_FREQ;
