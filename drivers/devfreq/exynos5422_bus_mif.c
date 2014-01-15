@@ -238,7 +238,7 @@ struct mif_bus_opp_table mif_bus_opp_list[] = {
 };
 
 static unsigned int mif_ud_decode_opp_list[][3] = {
-	{0, 0, 0},
+	{LV_3, LV_3, LV_3},
 	{LV_3, LV_2, LV_2},
 	{LV_2, LV_2, LV_1},
 	{LV_2, LV_1, LV_0},
@@ -246,7 +246,7 @@ static unsigned int mif_ud_decode_opp_list[][3] = {
 };
 
 static unsigned int mif_fimc_opp_list[][3] = {
-	{0, 0, 0},
+	{LV_8, LV_8, LV_8},
 	{LV_8, LV_7, LV_5},
 	{LV_7, LV_6, LV_4},
 	{LV_5, LV_5, LV_4},
@@ -254,7 +254,7 @@ static unsigned int mif_fimc_opp_list[][3] = {
 };
 
 static unsigned int int_fimc_opp_list[][3] = {
-	{0, 0, 0},
+	{LV_6, LV_6, LV_6},
 	{LV_7, LV_7, LV_3},
 	{LV_7, LV_5, LV_3},
 	{LV_6, LV_5, LV_3},
