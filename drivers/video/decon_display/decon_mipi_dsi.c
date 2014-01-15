@@ -1298,6 +1298,8 @@ int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv)
 
 	/* PPI signal disable + D-PHY reset */
 	s5p_mipi_dsi_d_phy_onoff(dsim, 1);
+	/* Stable time */
+	s5p_mipi_dsi_pll_stable_time(dsim, dsim->dsim_config->pll_stable_time);
 
 	/* Enable PHY PLL */
 	s5p_mipi_dsi_pll_on(dsim, 1);
