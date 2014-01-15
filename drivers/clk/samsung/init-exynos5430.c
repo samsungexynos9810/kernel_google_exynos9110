@@ -151,7 +151,7 @@ static void aud_init_clock(void)
 	exynos_set_rate("dout_sclk_aud_i2s", 49152004);
 	exynos_set_rate("dout_sclk_aud_pcm", 2048002);
 	exynos_set_rate("dout_sclk_aud_slimbus", 24576002);
-	exynos_set_rate("dout_sclk_aud_uart", 133000000);
+	exynos_set_rate("dout_sclk_aud_uart", 196608010);
 
 	/* TOP1 */
 	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
