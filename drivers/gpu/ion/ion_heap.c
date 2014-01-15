@@ -204,9 +204,9 @@ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
 		if (total_drained >= size)
 			break;
 		list_del(&buffer->list);
-		ion_buffer_destroy(buffer);
 		heap->free_list_size -= buffer->size;
 		total_drained += buffer->size;
+		ion_buffer_destroy(buffer);
 	}
 	spin_unlock(&heap->free_lock);
 
