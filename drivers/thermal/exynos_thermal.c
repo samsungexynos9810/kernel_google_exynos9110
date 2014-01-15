@@ -501,6 +501,11 @@ int exynos_tmu_add_notifier(struct notifier_block *n)
 
 void exynos_tmu_call_notifier(enum tmu_noti_state_t cur_state)
 {
+	int temp = -1;
+
+	if (th_zone && th_zone->therm_dev)
+		temp = th_zone->therm_dev->temperature;	
+
 	if (is_suspending)
 		cur_state = TMU_COLD;
 
@@ -510,7 +515,7 @@ void exynos_tmu_call_notifier(enum tmu_noti_state_t cur_state)
 			blocking_notifier_call_chain(&exynos_tmu_notifier, TMU_COLD, &cur_state);
 		else
 			blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &tmu_old_state);
-		pr_info("tmu temperature state %d to %d, cur_temp : %d\n", tmu_old_state, cur_state, th_zone->therm_dev->temperature);
+		pr_info("tmu temperature state %d to %d, cur_temp : %d\n", tmu_old_state, cur_state, temp);
 		tmu_old_state = cur_state;
 	}
 }
