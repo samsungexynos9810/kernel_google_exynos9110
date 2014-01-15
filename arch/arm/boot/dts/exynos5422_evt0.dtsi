@@ -742,7 +742,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c3_bus>;
-		clocks = <&clock 1492>, <&clock 1492>;
+		clocks = <&clock 1491>, <&clock 1491>;
 		clock-names = "rate_i2c", "gate_i2c";
 		status = "disabled";
 	};
