@@ -15,7 +15,6 @@
 #ifndef S5P_MFC_OPR_V5_H_
 #define S5P_MFC_OPR_V5_H_
 
-#include "s5p_mfc_common.h"
 #include "s5p_mfc_mem.h"
 
 #define MFC_CTRL_MODE_CUSTOM	MFC_CTRL_MODE_SHM
