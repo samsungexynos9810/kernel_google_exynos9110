@@ -537,6 +537,11 @@ static void fimc_is_sensor_control(struct work_struct *data)
 
 	device = container_of(data, struct fimc_is_device_sensor, control_work);
 	subdev_module = device->subdev_module;
+	if (!subdev_module) {
+		err("subdev_module is NULL");
+		return;
+	}
+
 	module = v4l2_get_subdevdata(subdev_module);
 	rsensor_ctl = &device->control_frame->shot->ctl.sensor;
 	csensor_ctl = &device->sensor_ctl;
@@ -951,6 +956,9 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 #if defined(CONFIG_PM_RUNTIME)
 	pm_runtime_put_sync(&device->pdev->dev);
 #endif
+	/* cancel a work and wait for it to finish */
+	cancel_work_sync(&device->control_work);
+	cancel_work_sync(&device->instant_work);
 
 	if (device->subdev_module) {
 		v4l2_device_unregister_subdev(device->subdev_module);
