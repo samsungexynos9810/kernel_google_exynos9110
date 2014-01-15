@@ -160,6 +160,10 @@ struct fimc_is_device_sensor {
 	int						max_target_fps;
 	int						scene_mode;
 
+	/* for vision control */
+	int						exposure_time;
+	int						frame_duration;
+
 	/* ENABLE_DTP */
 	bool						dtp_check;
 	struct timer_list				dtp_timer;
@@ -194,6 +198,11 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	struct v4l2_streamparm *param);
 int fimc_is_sensor_s_bns(struct fimc_is_device_sensor *device,
 	u32 reatio);
+
+int fimc_is_sensor_s_frame_duration(struct fimc_is_device_sensor *device,
+	u32 frame_duration);
+int fimc_is_sensor_s_exposure_time(struct fimc_is_device_sensor *device,
+	u32 exposure_time);
 
 int fimc_is_sensor_g_instance(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_framerate(struct fimc_is_device_sensor *device);

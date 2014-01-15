@@ -551,6 +551,20 @@ static int fimc_is_sen_video_s_ctrl(struct file *file, void *priv,
 			device->scene_mode = ctrl->value;
 		}
 		break;
+	case V4L2_CID_SENSOR_SET_FRAME_RATE:
+		if (fimc_is_sensor_s_frame_duration(device, ctrl->value)) {
+			err("failed to set frame duration : %d\n - %d",
+					ctrl->value, ret);
+			ret = -EINVAL;
+		}
+		break;
+	case V4L2_CID_SENSOR_SET_AE_TARGET:
+		if (fimc_is_sensor_s_exposure_time(device, ctrl->value)) {
+			err("failed to set exposure time : %d\n - %d",
+					ctrl->value, ret);
+			ret = -EINVAL;
+		}
+		break;
 	default:
 		err("unsupported ioctl(%d)\n", ctrl->id);
 		ret = -EINVAL;

@@ -875,6 +875,8 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 	device->instant_ret = 0;
 	device->ischain = NULL;
 	device->subdev_module = NULL;
+	device->exposure_time = 0;
+	device->frame_duration = 0;
 	memset(&device->sensor_ctl, 0, sizeof(struct camera2_sensor_ctl));
 	memset(&device->lens_ctl, 0, sizeof(struct camera2_lens_ctl));
 	memset(&device->flash_ctl, 0, sizeof(struct camera2_flash_ctl));
@@ -1302,6 +1304,81 @@ int fimc_is_sensor_s_bns(struct fimc_is_device_sensor *device,
 	device->image.window.otf_height
 		= rounddown((sensor_height * 1000 / ratio), 2);
 
+p_err:
+	return ret;
+}
+
+int fimc_is_sensor_s_frame_duration(struct fimc_is_device_sensor *device,
+	u32 frame_duration)
+{
+	int ret = 0;
+	struct v4l2_subdev *subdev_module;
+	struct fimc_is_module_enum *module;
+
+	BUG_ON(!device);
+
+	subdev_module = device->subdev_module;
+	if (!subdev_module) {
+		err("subdev_module is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	module = v4l2_get_subdevdata(subdev_module);
+	if (!module) {
+		err("module is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (frame_duration <= 0) {
+		err("it is wrong frame duration(%d)", frame_duration);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (device->frame_duration != frame_duration) {
+		CALL_MOPS(module, s_duration, subdev_module, frame_duration);
+		device->frame_duration = frame_duration;
+	}
+
+p_err:
+	return ret;
+}
+
+int fimc_is_sensor_s_exposure_time(struct fimc_is_device_sensor *device,
+	u32 exposure_time)
+{
+	int ret = 0;
+	struct v4l2_subdev *subdev_module;
+	struct fimc_is_module_enum *module;
+
+	BUG_ON(!device);
+
+	subdev_module = device->subdev_module;
+	if (!subdev_module) {
+		err("subdev_module is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	module = v4l2_get_subdevdata(subdev_module);
+	if (!module) {
+		err("module is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (exposure_time <= 0) {
+		err("it is wrong exposure time (%d)", exposure_time);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	if (device->exposure_time != exposure_time) {
+		CALL_MOPS(module, s_exposure, subdev_module, exposure_time);
+		device->exposure_time = exposure_time;
+	}
 p_err:
 	return ret;
 }
