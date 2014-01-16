@@ -123,9 +123,10 @@ static int s3c2410wdt_stop(struct watchdog_device *wdd)
 }
 
 #ifdef CONFIG_PM
-static int s3c2410wdt_int_clear(struct watchdog_device *wdd)
+static int s3c2410wdt_stop_intclear(struct watchdog_device *wdd)
 {
 	spin_lock(&wdt_lock);
+	__s3c2410wdt_stop();
 	writel(1, wdt_base + S3C2410_WTCLRINT);
 	spin_unlock(&wdt_lock);
 
@@ -353,7 +354,8 @@ static int s3c2410wdt_probe(struct platform_device *pdev)
 
 	/* Enable pmu watchdog reset control */
 	if (pdata != NULL && pdata->pmu_wdt_control != NULL) {
-		s3c2410wdt_int_clear(&s3c2410_wdd);
+		/* Prevent watchdog reset while setting */
+		s3c2410wdt_stop_intclear(&s3c2410_wdd);
 		pdata->pmu_wdt_control(1, pdata->pmu_wdt_reset_type);
 	}
 
@@ -476,8 +478,7 @@ static int s3c2410wdt_resume(struct platform_device *dev)
 
 	pdata = dev_get_platdata(&dev->dev);
 	/* Stop and clear watchdog interrupt */
-	s3c2410wdt_stop(&s3c2410_wdd);
-	s3c2410wdt_int_clear(&s3c2410_wdd);
+	s3c2410wdt_stop_intclear(&s3c2410_wdd);
 
 	/* Enable pmu watchdog reset control */
 	if (pdata != NULL && pdata->pmu_wdt_control != NULL)
