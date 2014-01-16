@@ -98,6 +98,7 @@ int init_display_pm_status(struct display_driver *dispdrv) {
 	atomic_set(&dispdrv->pm_status.lock_count, 0);
 	dispdrv->pm_status.clk_idle_count = 0;
 	dispdrv->pm_status.pwr_idle_count = 0;
+	dispdrv->platform_status = DISP_STATUS_PM0;
 
 	te_count = 0;
 	frame_done_count = 0;
@@ -349,6 +350,11 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
 	init_gating_idle_count(dispdrv);
+
+	if (dispdrv->platform_status < DISP_STATUS_PM1) {
+		if (cmd == S3CFB_WIN_CONFIG)
+			disp_pm_init_status(dispdrv);
+	}
 
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	if (sfb->power_state == POWER_HIBER_DOWN) {

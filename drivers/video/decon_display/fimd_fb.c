@@ -1082,7 +1082,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 
 	dispdrv = get_display_driver();
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_init_status(dispdrv);
 	disp_pm_gate_lock(dispdrv, true);
 #endif
 
@@ -2477,7 +2476,7 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		(cmd != S3CFB_WIN_CONFIG))
 		return 0;
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* Try to scheduled for DISPLAY power_on */
 	if (disp_pm_sched_power_on(get_display_driver(), cmd) < 0)
 		return 0;
