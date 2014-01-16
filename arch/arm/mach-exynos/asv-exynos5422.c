@@ -69,10 +69,10 @@
 #define EXYNOS5422_G3DLOCK_UP_MASK	(0x03)
 #define EXYNOS5422_G3DLOCK_DN_OFFSET	(26)
 #define EXYNOS5422_G3DLOCK_DN_MASK	(0x03)
-#define EXYNOS5422_ISPLOCK_UP_OFFSET	(28)
-#define EXYNOS5422_ISPLOCK_UP_MASK	(0x03)
-#define EXYNOS5422_ISPLOCK_DN_OFFSET	(30)
-#define EXYNOS5422_ISPLOCK_DN_MASK	(0x03)
+
+#define CHIP_ID5_REG	(S5P_VA_CHIPID + 0x2C)
+#define EXYNOS5422_ISPLOCK_OFFSET	(0)
+#define EXYNOS5422_ISPLOCK_MASK	(0x03)
 
 /* Following value use with *10000 */
 #define EXYNOS5422_TMCB_CHIPER	10000
@@ -81,8 +81,6 @@
 
 #define LOT_ID_REG		(S5P_VA_CHIPID + 0x14)
 #define LOT_ID_LEN		(5)
-
-#define BASE_VOLTAGE_OFFSET	1000000
 
 enum table_version {
 	ASV_TABLE_VER0,
@@ -93,9 +91,9 @@ enum table_version {
 
 enum volt_offset {
 	VOLT_OFFSET_0MV,
-	VOLT_OFFSET_25MV,
+	VOLT_OFFSET_12_5MV,
 	VOLT_OFFSET_50MV,
-	VOLT_OFFSET_75MV,
+	VOLT_OFFSET_25MV,
 };
 
 bool is_speedgroup;
@@ -158,14 +156,39 @@ unsigned int exynos5422_add_volt_offset(unsigned int voltage, enum volt_offset o
 	switch (offset) {
 	case VOLT_OFFSET_0MV:
 		break;
-	case VOLT_OFFSET_25MV:
-		voltage += 25000;
+	case VOLT_OFFSET_12_5MV:
+		voltage += 12500;
 		break;
 	case VOLT_OFFSET_50MV:
 		voltage += 50000;
 		break;
-	case VOLT_OFFSET_75MV:
-		voltage += 75000;
+	case VOLT_OFFSET_25MV:
+		voltage += 25000;
+		break;
+	}
+
+	return voltage;
+}
+
+unsigned int exynos5422_get_base_volt(unsigned int target_type)
+{
+	unsigned int voltage = 0;
+
+	switch (target_type) {
+	case ID_ARM:
+		voltage = 1000000;
+		break;
+	case ID_KFC:
+		voltage = 1000000;
+		break;
+	case ID_INT:
+		voltage = 900000;
+		break;
+	case ID_MIF:
+		voltage = 800000;
+		break;
+	case ID_G3D:
+		voltage = 800000;
 		break;
 	}
 
@@ -174,13 +197,14 @@ unsigned int exynos5422_add_volt_offset(unsigned int voltage, enum volt_offset o
 
 static unsigned int exynos5422_apply_volt_offset(unsigned int voltage, enum asv_type_id target_type)
 {
-	if (!is_speedgroup)
-		return voltage;
-
-	if (voltage > BASE_VOLTAGE_OFFSET)
-		voltage = exynos5422_add_volt_offset(voltage, asv_volt_offset[target_type][0]);
-	else
-		voltage = exynos5422_add_volt_offset(voltage, asv_volt_offset[target_type][1]);
+	if (target_type == ID_ISP) {
+			voltage = exynos5422_add_volt_offset(voltage, asv_volt_offset[target_type][0]);
+	} else {
+		if (voltage > exynos5422_get_base_volt((unsigned int)target_type))
+			voltage = exynos5422_add_volt_offset(voltage, asv_volt_offset[target_type][0]);
+		else
+			voltage = exynos5422_add_volt_offset(voltage, asv_volt_offset[target_type][1]);
+	}
 
 	return voltage;
 }
@@ -656,6 +680,7 @@ int exynos5422_init_asv(struct asv_common *asv_info)
 	struct clk *clk_abb;
 	unsigned int chip_id3_value;
 	unsigned int chip_id4_value;
+	unsigned int chip_id5_value;
 
 	special_lot_group = 0;
 	is_speedgroup = false;
@@ -671,6 +696,7 @@ int exynos5422_init_asv(struct asv_common *asv_info)
 
 	chip_id3_value = __raw_readl(CHIP_ID3_REG);
 	chip_id4_value = __raw_readl(CHIP_ID4_REG);
+	chip_id5_value = __raw_readl(CHIP_ID5_REG);
 
 	if ((chip_id3_value >> EXYNOS5422_USESG_OFFSET) & EXYNOS5422_USESG_MASK) {
 		if (!((chip_id3_value >> EXYNOS5422_SG_BSIGN_OFFSET) & EXYNOS5422_SG_BSIGN_MASK))
@@ -706,8 +732,8 @@ int exynos5422_init_asv(struct asv_common *asv_info)
 	asv_volt_offset[ID_G3D][1] = (chip_id4_value >> EXYNOS5422_G3DLOCK_DN_OFFSET) & EXYNOS5422_G3DLOCK_DN_MASK;
 	asv_volt_offset[ID_MIF][0] = (chip_id4_value >> EXYNOS5422_MIFLOCK_UP_OFFSET) & EXYNOS5422_MIFLOCK_UP_MASK;
 	asv_volt_offset[ID_MIF][1] = (chip_id4_value >> EXYNOS5422_MIFLOCK_DN_OFFSET) & EXYNOS5422_MIFLOCK_DN_MASK;
-	asv_volt_offset[ID_ISP][0] = (chip_id4_value >> EXYNOS5422_ISPLOCK_UP_OFFSET) & EXYNOS5422_ISPLOCK_UP_MASK;
-	asv_volt_offset[ID_ISP][1] = (chip_id4_value >> EXYNOS5422_ISPLOCK_DN_OFFSET) & EXYNOS5422_ISPLOCK_DN_MASK;
+
+	asv_volt_offset[ID_ISP][0] = (chip_id5_value >> EXYNOS5422_ISPLOCK_OFFSET) & EXYNOS5422_ISPLOCK_MASK;
 
 	asv_info->regist_asv_member = exynos5422_regist_asv_member;
 
