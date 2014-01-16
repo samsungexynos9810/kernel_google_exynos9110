@@ -794,6 +794,13 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 #endif
 			}
 		} else {
+			if (int_clk->clk_info[target_idx].src_pll == SW_MUX) {
+#ifdef DEVFREQ_INT_TRACE
+				printk("[%s] -P:[%s] %ld\n", int_clk->parent_clk->name, int_clk->p2_parent_clk->name, clk_get_rate(int_clk->p2_parent_clk));
+#endif
+				clk_set_parent(int_clk->parent_clk, int_clk->p2_parent_clk);
+				continue;
+			}
 			int_clk->p2_parent_clk =  exynos5_change_pll(data, int_clk->clk_info[target_idx].src_pll);
 				/* process clock tree */
 				if (int_clk->p2_parent_clk) {
