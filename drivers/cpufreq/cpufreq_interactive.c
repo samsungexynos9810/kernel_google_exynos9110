@@ -1473,6 +1473,9 @@ unsigned int cpufreq_interactive_get_hispeed_freq(int cpu)
 	struct cpufreq_interactive_tunables *tunables =
 			pcpu->policy->governor_data;
 
+	if (!tunables)
+		return 0;
+
 	return tunables->hispeed_freq;
 }
 

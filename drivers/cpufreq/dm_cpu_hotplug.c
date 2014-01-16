@@ -509,6 +509,8 @@ static enum hotplug_cmd diagnose_condition(void)
 
 #if defined(CONFIG_SCHED_HMP) && defined(CONFIG_CPU_FREQ_GOV_INTERACTIVE)
 	normal_min_freq = cpufreq_interactive_get_hispeed_freq(0);
+	if (!normal_min_freq)
+		normal_min_freq = NORMALMIN_FREQ;
 #else
 	normal_min_freq = NORMALMIN_FREQ;
 #endif
