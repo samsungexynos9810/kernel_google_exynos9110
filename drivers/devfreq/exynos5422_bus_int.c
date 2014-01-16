@@ -635,10 +635,10 @@ static struct pm_qos_request exynos5_int_media_qos;
 
 void exynos5_update_district_int_level(unsigned idx)
 {
-	if (!pm_qos_request_active(&exynos5_int_media_qos));
+	if (!pm_qos_request_active(&exynos5_int_media_qos))
 		return;
-
-	pm_qos_update_request(&exynos5_int_media_qos, int_bus_opp_list[idx].freq);
+	else
+		pm_qos_update_request(&exynos5_int_media_qos, int_bus_opp_list[idx].freq);
 }
 
 #ifdef CONFIG_EXYNOS_THERMAL
