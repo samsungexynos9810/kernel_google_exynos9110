@@ -439,6 +439,7 @@ void kbase_gpu_interrupt(kbase_device *kbdev, u32 val)
 
 STATIC mali_error kbasep_trace_init(kbase_device *kbdev)
 {
+#ifndef CONFIG_MALI_EXYNOS_TRACE /* MALI_SEC */
 	void *rbuf;
 
 	rbuf = kmalloc(sizeof(kbase_trace) * KBASE_TRACE_SIZE, GFP_KERNEL);
@@ -447,6 +448,7 @@ STATIC mali_error kbasep_trace_init(kbase_device *kbdev)
 		return MALI_ERROR_FUNCTION_FAILED;
 
 	kbdev->trace_rbuf = rbuf;
+#endif
 	spin_lock_init(&kbdev->trace_lock);
 	kbasep_trace_debugfs_init(kbdev);
 	return MALI_ERROR_NONE;
@@ -454,9 +456,11 @@ STATIC mali_error kbasep_trace_init(kbase_device *kbdev)
 
 STATIC void kbasep_trace_term(kbase_device *kbdev)
 {
+#ifndef CONFIG_MALI_EXYNOS_TRACE /* MALI_SEC */
 	debugfs_remove(kbdev->trace_dentry);
 	kbdev->trace_dentry= NULL;
 	kfree(kbdev->trace_rbuf);
+#endif
 }
 
 void kbasep_trace_format_msg(kbase_trace *trace_msg, char *buffer, int len)
