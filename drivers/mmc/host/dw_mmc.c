@@ -3653,10 +3653,6 @@ int dw_mci_probe(struct dw_mci *host)
 		}
 	}
 
-	if (drv_data && drv_data->misc_control)
-		drv_data->misc_control(host, CTRL_REQUEST_EXT_IRQ,
-				dw_mci_detect_interrupt);
-
 	if (!host->pdata->select_slot && host->pdata->num_slots > 1) {
 		dev_err(host->dev,
 			"Platform data must supply select_slot function\n");
@@ -3913,6 +3909,10 @@ int dw_mci_probe(struct dw_mci *host)
 					"but failed on all\n", host->num_slots);
 		goto err_workqueue;
 	}
+
+	if (drv_data && drv_data->misc_control)
+		drv_data->misc_control(host, CTRL_REQUEST_EXT_IRQ,
+				dw_mci_detect_interrupt);
 
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
