@@ -545,7 +545,11 @@ static void fimc_is_sensor_control(struct work_struct *data)
 	module = v4l2_get_subdevdata(subdev_module);
 	rsensor_ctl = &device->control_frame->shot->ctl.sensor;
 	csensor_ctl = &device->sensor_ctl;
-
+/*
+ * HAL can't send meta data for vision
+ * We accepted vision control by s_ctrl
+ */
+#if 0
 	if (rsensor_ctl->exposureTime != csensor_ctl->exposureTime) {
 		CALL_MOPS(module, s_exposure, subdev_module, rsensor_ctl->exposureTime);
 		csensor_ctl->exposureTime = rsensor_ctl->exposureTime;
@@ -560,6 +564,7 @@ static void fimc_is_sensor_control(struct work_struct *data)
 		CALL_MOPS(module, s_again, subdev_module, rsensor_ctl->sensitivity);
 		csensor_ctl->sensitivity = rsensor_ctl->sensitivity;
 	}
+#endif
 }
 
 static int fimc_is_sensor_notify_by_fstr(struct fimc_is_device_sensor *device, void *arg)
@@ -1309,9 +1314,10 @@ p_err:
 }
 
 int fimc_is_sensor_s_frame_duration(struct fimc_is_device_sensor *device,
-	u32 frame_duration)
+	u32 framerate)
 {
 	int ret = 0;
+	u64 frame_duration;
 	struct v4l2_subdev *subdev_module;
 	struct fimc_is_module_enum *module;
 
@@ -1331,8 +1337,10 @@ int fimc_is_sensor_s_frame_duration(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
+	/* unit : nano */
+	frame_duration = (1000 * 1000 * 1000) / framerate;
 	if (frame_duration <= 0) {
-		err("it is wrong frame duration(%d)", frame_duration);
+		err("it is wrong frame duration(%lld)", frame_duration);
 		ret = -EINVAL;
 		goto p_err;
 	}

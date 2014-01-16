@@ -162,7 +162,7 @@ struct fimc_is_device_sensor {
 
 	/* for vision control */
 	int						exposure_time;
-	int						frame_duration;
+	u64						frame_duration;
 
 	/* ENABLE_DTP */
 	bool						dtp_check;
