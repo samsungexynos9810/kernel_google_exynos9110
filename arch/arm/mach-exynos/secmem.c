@@ -191,13 +191,10 @@ int drm_enable_locked(struct secmem_info *info, bool enable)
 		}
 		dev = &pdev->dev;
 
-		if (enable) {
-			pm_runtime_enable(dev);
+		if (enable)
 			pm_runtime_get_sync(dev);
-		} else {
+		else
 			pm_runtime_put_sync(dev);
-			pm_runtime_disable(dev);
-		}
 	}
 
 	drm_onoff = enable;
