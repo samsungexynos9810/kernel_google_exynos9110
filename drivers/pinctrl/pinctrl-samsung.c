@@ -822,7 +822,7 @@ static int samsung_pinctrl_create_function(struct device *dev,
 		return -ENOMEM;
 	}
 
-	strcpy(fname, func_np->full_name);
+	strlcpy(fname, func_np->full_name, strlen(func_np->full_name) + 1);
 	func->name = fname;
 
 	func->groups = devm_kzalloc(dev, npins * sizeof(char *), GFP_KERNEL);
@@ -848,7 +848,7 @@ static int samsung_pinctrl_create_function(struct device *dev,
 		gname_copy = devm_kzalloc(dev, strlen(gname) + 1, GFP_KERNEL);
 		if (!gname_copy)
 			return -ENOMEM;
-		strcpy(gname_copy, gname);
+		strlcpy(gname_copy, gname, strlen(gname) + 1);
 
 		func->groups[i] = gname_copy;
 
