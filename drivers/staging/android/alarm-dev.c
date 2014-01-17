@@ -103,9 +103,10 @@ static void alarm_clear(enum android_alarm_type alarm_type)
 	devalarm_try_to_cancel(&alarms[alarm_type]);
 	if (alarm_pending) {
 		alarm_pending &= ~alarm_type_mask;
-		if (!alarm_pending && !wait_pending)
+		if (!alarm_pending && !wait_pending) {
 			__pm_relax(&alarm_wake_lock);
 			__pm_relax(&temp_wake_lock);
+		}
 	}
 	alarm_enabled &= ~alarm_type_mask;
 	spin_unlock_irqrestore(&alarm_slock, flags);
