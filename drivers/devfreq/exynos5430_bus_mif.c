@@ -1384,21 +1384,21 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
 						true, *target_freq);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
-		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
+		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 	} else {
+		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
-		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
 		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
@@ -3167,34 +3167,34 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		old_volt = devfreq_mif_opp_list[mif_data->restore_idx_dll_on].volt;
 
 		exynos5_devfreq_mif_set_volt(mif_data, old_volt, old_volt + VOLT_STEP);
-		exynos5_devfreq_mif_set_timeout(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_set_timing_set(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_set_phy(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_directcmd(mif_data, mif_data->restore_idx_dll_on);
 		exynos5_devfreq_mif_set_freq(mif_data, mif_data->restore_idx_dll_on, old_idx);
 		/*exynos5_devfreq_mif_set_dll(mif_data, old_volt, mif_data->restore_idx_dll_on);*/
+		exynos5_devfreq_mif_set_timeout(mif_data, mif_data->restore_idx_dll_on);
 
 		mif_data->restore_idx_dll_on = -1;
 	}
 
 	if (old_freq < *target_freq) {
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
-		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		/*exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);*/
+		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 	} else {
+		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		/*exynos5_devfreq_mif_set_dll(mif_data, target_idx, target_idx);*/
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
-		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
 
 		if (mif_data->base_idx_dll_on != -1 &&
