@@ -1595,15 +1595,6 @@ static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 	__raw_writel(0x0C0C2121, data->base_lpddr_phy0 + 0xBC);
 	__raw_writel(0x0C0C2121, data->base_lpddr_phy1 + 0xBC);
 
-	/* Setting DVFS Mode */
-	tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-	tmp &= ~(0x3 << 24);
-	if (use_mif_timing_set_0)
-		tmp |= (0x1 << 24);
-	else
-		tmp |= (0x2 << 24);
-	__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
-
 	switch (exynos5430_get_memory_size()) {
 	case 2:
 		dmc_timing_parameter = dmc_timing_parameter_2gb;
@@ -3398,15 +3389,6 @@ static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 	/* Setting DVFS Mode Control of PHY */
 	__raw_writel(0x0C0C2121, data->base_lpddr_phy0 + 0xBC);
 	__raw_writel(0x0C0C2121, data->base_lpddr_phy1 + 0xBC);
-
-	/* Setting DVFS Mode */
-	tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-	tmp &= ~(0x3 << 24);
-	if (use_mif_timing_set_0)
-		tmp |= (0x1 << 24);
-	else
-		tmp |= (0x2 << 24);
-	__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
 
 	mutex_unlock(&data->lock);
 
