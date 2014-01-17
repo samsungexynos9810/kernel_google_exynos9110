@@ -1643,6 +1643,18 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 	unsigned long freq;
 	struct cpufreq_policy *policy;
 	int cpu = boot_cluster ? NR_CA15 : 0;
+	unsigned int threshold_freq;
+
+#if defined(CONFIG_CPU_FREQ_GOV_INTERACTIVE)
+	threshold_freq = cpufreq_interactive_get_hispeed_freq(0);
+	if (!threshold_freq)
+		threshold_freq = 1000000;	/* 1.0GHz */
+#else
+	threshold_freq = 1000000;	/* 1.0GHz */
+#endif
+
+	if (val > threshold_freq)
+		hotplug_in_by_pm_qos();
 
 	freq = exynos_getspeed(cpu);
 	if (freq >= val)
