@@ -275,17 +275,23 @@ static int dw_mci_exynos_setup_clock(struct dw_mci *host)
 }
 static void dw_mci_exynos_register_dump(struct dw_mci *host)
 {
+	u32 i;
+
 	dev_err(host->dev, ": CLKSEL:	0x%08x\n", mci_readl(host, CLKSEL));
 	dev_err(host->dev, ": DWMCI_EMMCP_BASE:	0x%08x\n",
 		__raw_readl(host->regs + DWMCI_EMMCP_BASE));
 	dev_err(host->dev, ": DWMCI_MPSECURITY:	0x%08x\n",
 		__raw_readl(host->regs + DWMCI_MPSECURITY));
-	dev_err(host->dev, ": DWMCI_MPSBEGIN0:	0x%08x\n",
-		__raw_readl(host->regs + DWMCI_MPSBEGIN0));
-	dev_err(host->dev, ": DWMCI_MPSEND0:	0x%08x\n",
-		__raw_readl(host->regs + DWMCI_MPSEND0));
-	dev_err(host->dev, ": DWMCI_MPSCTRL0:	0x%08x\n",
-		__raw_readl(host->regs + DWMCI_MPSCTRL0));
+	dev_err(host->dev, ": DWMCI_MPSTAT:	0x%08x\n",
+		__raw_readl(host->regs + DWMCI_MPSTAT));
+	for (i = 0; i < 8; i++) {
+		dev_err(host->dev, ": DWMCI_MPSBEGIN%d:	0x%08x\n", i,
+			__raw_readl(host->regs + DWMCI_MPSBEGIN0 + (0x10 * i)));
+		dev_err(host->dev, ": DWMCI_MPSEND%d:	0x%08x\n", i,
+			__raw_readl(host->regs + DWMCI_MPSEND0 + (0x10 * i)));
+		dev_err(host->dev, ": DWMCI_MPSCTRL%d:	0x%08x\n", i,
+			__raw_readl(host->regs + DWMCI_MPSCTRL0 + (0x10 * i)));
+	}
 	dev_err(host->dev, ": DWMCI_DDR200_RDDQS_EN:	0x%08x\n",
 		__raw_readl(host->regs + DWMCI_DDR200_RDDQS_EN + 0x70));
 	dev_err(host->dev, ": DWMCI_DDR200_ASYNC_FIFO_CTRL:	0x%08x\n",
