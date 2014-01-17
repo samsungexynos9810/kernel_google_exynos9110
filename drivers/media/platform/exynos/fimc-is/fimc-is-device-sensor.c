@@ -1627,14 +1627,11 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 	if (ret)
 		merr("sensor stream off is failed(%d)\n", device, ret);
 
-#ifndef CONFIG_SOC_EXYNOS5430
 	/* HACK: This should be recovered after companion driver is enabled
-	 * especially exynos5430
+	 * ret = v4l2_subdev_call(subdev_csi, video, s_stream, IS_DISABLE_STREAM);
+	 * if (ret)
+	 * 	merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
 	 */
-	ret = v4l2_subdev_call(subdev_csi, video, s_stream, IS_DISABLE_STREAM);
-	if (ret)
-		merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
-#endif
 
 	/* HACK */
 	set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
