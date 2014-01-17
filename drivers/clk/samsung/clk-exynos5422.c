@@ -847,8 +847,6 @@ enum exynos5422_clks {
 	sclk_gscl_wrap_a_div2,
 
 #endif
-	gate_rpll,
-	gate_epll,
 	clk_dummy1,
 	nr_clks,
 };
@@ -1943,8 +1941,6 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_camif_top_3aa0, "clk_camif_top_3aa0", "aclk_550_cam", EXYNOS5_CLK_GATE_IP_CAM, 27, 0, 0),
 	CGATE(clk_smmu_3aa0, "clk_smmu_3aa0", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_CAM, 25, 0, 0),
 #endif
-	CGATE(gate_rpll, "gate_rpll", NULL, EXYNOS5_RPLL_CON0, EXYNOS5_PLL_ENABLE_SHIFT, 0, 0),
-	CGATE(gate_epll, "gate_epll", NULL, EXYNOS5_EPLL_CON0, EXYNOS5_PLL_ENABLE_SHIFT, 0, 0),
 };
 
 static __initdata struct of_device_id ext_clk_match[] = {
