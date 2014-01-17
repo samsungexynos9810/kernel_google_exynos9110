@@ -908,11 +908,6 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	if (ret)
 		merr("fimc_is_sensor_front_stop is fail(%d)", device, ret);
 
-	/* HACK: Move to fimc_is_sensor_front_stop() */
-	ret = v4l2_subdev_call(device->subdev_csi, video, s_stream, IS_DISABLE_STREAM);
-	if (ret)
-		merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
-
 	ret = fimc_is_csi_close(device->subdev_csi);
 	if (ret)
 		merr("fimc_is_flite_close is fail(%d)", device, ret);
@@ -1627,11 +1622,9 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 	if (ret)
 		merr("sensor stream off is failed(%d)\n", device, ret);
 
-	/* HACK: This should be recovered after companion driver is enabled
-	 * ret = v4l2_subdev_call(subdev_csi, video, s_stream, IS_DISABLE_STREAM);
-	 * if (ret)
-	 * 	merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
-	 */
+	ret = v4l2_subdev_call(subdev_csi, video, s_stream, IS_DISABLE_STREAM);
+	if (ret)
+		merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
 
 	/* HACK */
 	set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
