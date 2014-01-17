@@ -415,19 +415,32 @@ static int exynos_lli_clock_gating(struct mipi_lli *lli, int is_gating)
 		/* it doesn't gate/ungate aclk_cpif_200
 		   clk_prepare_enable(clks->aclk_cpif_200);
 		 */
-		clk_prepare_enable(clks->gate_cpifnm_200);
-		clk_prepare_enable(clks->gate_mphy_pll);
-		clk_prepare_enable(clks->gate_lli_svc_loc);
-		clk_prepare_enable(clks->gate_lli_svc_rem);
-		clk_prepare_enable(clks->gate_lli_ll_init);
-		clk_prepare_enable(clks->gate_lli_be_init);
-		clk_prepare_enable(clks->gate_lli_ll_targ);
-		clk_prepare_enable(clks->gate_lli_be_targ);
-		clk_prepare_enable(clks->gate_lli_cmn_cfg);
-		clk_prepare_enable(clks->gate_lli_tx0_cfg);
-		clk_prepare_enable(clks->gate_lli_rx0_cfg);
-		clk_prepare_enable(clks->gate_lli_tx0_symbol);
-		clk_prepare_enable(clks->gate_lli_rx0_symbol);
+		if (clks->gate_cpifnm_200->enable_count < 1)
+			clk_prepare_enable(clks->gate_cpifnm_200);
+		if (clks->gate_mphy_pll->enable_count < 1)
+			clk_prepare_enable(clks->gate_mphy_pll);
+		if (clks->gate_lli_svc_loc->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_svc_loc);
+		if (clks->gate_lli_svc_rem->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_svc_rem);
+		if (clks->gate_lli_ll_init->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_ll_init);
+		if (clks->gate_lli_be_init->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_be_init);
+		if (clks->gate_lli_ll_targ->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_ll_targ);
+		if (clks->gate_lli_be_targ->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_be_targ);
+		if (clks->gate_lli_cmn_cfg->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_cmn_cfg);
+		if (clks->gate_lli_tx0_cfg->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_tx0_cfg);
+		if (clks->gate_lli_rx0_cfg->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_rx0_cfg);
+		if (clks->gate_lli_tx0_symbol->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_tx0_symbol);
+		if (clks->gate_lli_rx0_symbol->enable_count < 1)
+			clk_prepare_enable(clks->gate_lli_rx0_symbol);
 	}
 
 	return 0;
