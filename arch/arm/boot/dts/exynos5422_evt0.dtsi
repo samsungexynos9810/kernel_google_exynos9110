@@ -1012,7 +1012,7 @@
 		interrupts = <0 106 0>;
 		#io-channel-cells = <1>;
 		io-channel-ranges;
-		clocks = <&clock 875>;
+		clocks = <&clock 1485>;
 		clock-names = "gate_adcif";
 	};
 
