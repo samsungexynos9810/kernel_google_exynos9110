@@ -2593,10 +2593,7 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 static int s3c_fb_release(struct fb_info *info, int user)
 {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	struct display_driver *dispdrv;
-	dispdrv = get_display_driver();
-
-	disp_pm_gate_lock(dispdrv, true);
+	disp_pm_sched_power_on(get_display_driver(), S3CFB_PLATFORM_RESET);
 #endif
 	return 0;
 }
