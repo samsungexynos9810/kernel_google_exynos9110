@@ -46,14 +46,14 @@ static DEFINE_MUTEX(big_hotplug_lock);
 static struct task_struct *dm_hotplug_task;
 static int cpu_util[NR_CPUS];
 static unsigned int cur_load_freq = 0;
-static bool lcd_is_on;
-static bool forced_hotplug;
-static bool in_low_power_mode;
-static bool in_suspend_prepared;
-static bool do_enable_hotplug;
-static bool do_disable_hotplug;
+static bool lcd_is_on = true;
+static bool forced_hotplug = false;
+static bool in_low_power_mode = false;
+static bool in_suspend_prepared = false;
+static bool do_enable_hotplug = false;
+static bool do_disable_hotplug = false;
 #if defined(CONFIG_SCHED_HMP)
-static int big_hotpluged;
+static int big_hotpluged = 0;
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static unsigned int egl_min_freq;
@@ -71,11 +71,11 @@ static int dynamic_hotplug(enum hotplug_cmd cmd);
 static enum hotplug_cmd diagnose_condition(void);
 static void calc_load(void);
 
-static enum hotplug_cmd prev_cmd;
+static enum hotplug_cmd prev_cmd = CMD_NORMAL;
 static enum hotplug_cmd exe_cmd;
 static unsigned int delay = POLLING_MSEC;
 
-static int dm_hotplug_disable;
+static int dm_hotplug_disable = 0;
 
 static int exynos_dm_hotplug_disabled(void)
 {
@@ -667,18 +667,6 @@ static int __init dm_cpu_hotplug_init(void)
 	}
 
 	fb_register_client(&fb_block);
-	lcd_is_on = true;
-	forced_hotplug = false;
-	in_low_power_mode = false;
-	in_suspend_prepared = false;
-	do_enable_hotplug = false;
-	do_disable_hotplug = false;
-	dm_hotplug_disable = 0;
-#if defined(CONFIG_SCHED_HMP)
-	big_hotpluged = 0;
-#endif
-
-	prev_cmd = CMD_NORMAL;
 
 #ifdef CONFIG_PM
 	ret = sysfs_create_file(power_kobj, &enable_dm_hotplug.attr);
