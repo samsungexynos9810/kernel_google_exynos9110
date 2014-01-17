@@ -544,6 +544,17 @@ int exynos5422_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor
 	return 0;
 }
 
+int exynos5422_fimc_is_print_pwr(struct platform_device *pdev)
+{
+	pr_debug("%s\n", __func__);
+
+	pr_info("ISP power state(0x%08x)\n", readl(EXYNOS5422_ISP_STATUS));
+	pr_info("CAM power state(0x%08x)\n", readl(EXYNOS5422_CAM_STATUS));
+	pr_info("CA5 power state(0x%08x)\n", readl(EXYNOS5422_ISP_ARM_STATUS));
+
+	return 0;
+}
+
 int exynos5422_fimc_is_set_user_clk_gate(u32 group_id,
 		bool is_on,
 		u32 user_scenario_id,
@@ -1123,6 +1134,18 @@ int exynos5430_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor
 	return 0;
 }
 
+int exynos5430_fimc_is_print_pwr(struct platform_device *pdev)
+{
+	pr_debug("%s\n", __func__);
+
+	pr_info("ISP power state(0x%08x)\n", readl(EXYNOS5430_ISP_STATUS));
+	pr_info("CAM0 power state(0x%08x)\n", readl(EXYNOS5430_CAM0_STATUS));
+	pr_info("CAM1 power state(0x%08x)\n", readl(EXYNOS5430_CAM1_STATUS));
+	pr_info("CA5 power state(0x%08x)\n", readl(EXYNOS5430_A5IS_STATUS));
+
+	return 0;
+}
+
 int exynos5430_fimc_is_set_user_clk_gate(u32 group_id,
 		bool is_on,
 		u32 user_scenario_id,
@@ -1255,6 +1278,16 @@ int exynos_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor_id)
 	exynos5422_fimc_is_sensor_power_off(pdev, sensor_id);
 #elif defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_fimc_is_sensor_power_off(pdev, sensor_id);
+#endif
+	return 0;
+}
+
+int exynos_fimc_is_print_pwr(struct platform_device *pdev)
+{
+#if defined(CONFIG_SOC_EXYNOS5422)
+	exynos5422_fimc_is_print_pwr(pdev);
+#elif defined(CONFIG_SOC_EXYNOS5430)
+	exynos5430_fimc_is_print_pwr(pdev);
 #endif
 	return 0;
 }

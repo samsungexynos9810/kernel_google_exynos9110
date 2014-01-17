@@ -186,6 +186,7 @@ struct exynos_platform_fimc_is {
 	int	(*clk_off)(struct platform_device *pdev);
 	int	(*print_clk)(struct platform_device *pdev);
 	int	(*print_cfg)(struct platform_device *pdev, u32 channel);
+	int	(*print_pwr)(struct platform_device *pdev);
 
 	/* These fields are to return qos value for dvfs scenario */
 	u32	*int_qos_table;
@@ -244,5 +245,6 @@ extern int exynos_fimc_is_clk_gate(u32 clk_gate_id, bool is_on);
 extern int exynos_fimc_is_sensor_power_on(struct platform_device *pdev, int sensor_id);
 extern int exynos_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor_id);
 extern int exynos_fimc_is_print_cfg(struct platform_device *pdev, u32 channel);
+extern int exynos_fimc_is_print_pwr(struct platform_device *pdev);
 #endif /* exynos 5*/
 #endif /* EXYNOS_FIMC_IS_H_ */
