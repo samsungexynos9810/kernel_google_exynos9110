@@ -1552,18 +1552,19 @@ static int s3c64xx_spi_suspend(struct device *dev)
 {
 	struct spi_master *master = dev_get_drvdata(dev);
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(master);
+#ifndef CONFIG_PM_RUNTIME
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
+#endif
 
 	spi_master_suspend(master);
 
+#ifndef CONFIG_PM_RUNTIME
 	if (sci->domain == DOMAIN_TOP) {
-		if (!pm_runtime_enabled(dev)) {
-			/* Disable the clock */
-			clk_disable_unprepare(sdd->src_clk);
-			clk_disable_unprepare(sdd->clk);
-		}
+		/* Disable the clock */
+		clk_disable_unprepare(sdd->src_clk);
+		clk_disable_unprepare(sdd->clk);
 	}
-
+#endif
 	sdd->cur_speed = 0; /* Output Clock is stopped */
 
 	return 0;
@@ -1585,15 +1586,25 @@ static int s3c64xx_spi_resume(struct device *dev)
 
 		s3c64xx_spi_hwinit(sdd, sdd->port_id);
 
-		if (pm_runtime_enabled(dev)) {
-			/* Disable the clock */
-			clk_disable_unprepare(sdd->src_clk);
-			clk_disable_unprepare(sdd->clk);
-		}
+#ifdef CONFIG_PM_RUNTIME
+		/* Disable the clock */
+		clk_disable_unprepare(sdd->src_clk);
+		clk_disable_unprepare(sdd->clk);
+#endif
 	}
 
 	spi_master_resume(master);
 
+	return 0;
+}
+#else
+static int s3c64xx_spi_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static int s3c64xx_spi_resume(struct device *dev)
+{
 	return 0;
 }
 #endif /* CONFIG_PM_SLEEP */
@@ -1642,7 +1653,8 @@ static int s3c64xx_spi_runtime_resume(struct device *dev)
 #endif /* CONFIG_PM_RUNTIME */
 
 static const struct dev_pm_ops s3c64xx_spi_pm = {
-	SET_SYSTEM_SLEEP_PM_OPS(s3c64xx_spi_suspend, s3c64xx_spi_resume)
+	.suspend_noirq = s3c64xx_spi_suspend,
+	.resume_noirq = s3c64xx_spi_resume,
 	SET_RUNTIME_PM_OPS(s3c64xx_spi_runtime_suspend,
 			   s3c64xx_spi_runtime_resume, NULL)
 };
