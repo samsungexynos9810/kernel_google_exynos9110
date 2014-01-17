@@ -1035,6 +1035,13 @@ static inline int exynos5_devfreq_mif_get_idx(struct devfreq_opp_table *table,
 	return -1;
 }
 
+static int exynos5_devfreq_mif_update_timingset(struct devfreq_data_mif *data)
+{
+	use_mif_timing_set_0 = ((__raw_readl(data->base_mif + 0x1004) & 0x1) == 0);
+
+	return 0;
+}
+
 static int exynos5_devfreq_mif_change_timing_set(struct devfreq_data_mif *data)
 {
 	unsigned int tmp;
@@ -1069,7 +1076,7 @@ static int exynos5_devfreq_mif_change_timing_set(struct devfreq_data_mif *data)
 		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB8);
 	}
 
-	use_mif_timing_set_0 = !use_mif_timing_set_0;
+	exynos5_devfreq_mif_update_timingset(data);
 
 	return 0;
 }
@@ -1559,13 +1566,6 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 	return NOTIFY_OK;
 }
 #endif
-
-static int exynos5_devfreq_mif_update_timingset(struct devfreq_data_mif *data)
-{
-	use_mif_timing_set_0 = ((__raw_readl(data->base_mif + 0x1004) & 0x1) == 0);
-
-	return 0;
-}
 
 static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 {
@@ -2841,6 +2841,13 @@ static inline int exynos5_devfreq_mif_get_idx(struct devfreq_opp_table *table,
 	return -1;
 }
 
+static int exynos5_devfreq_mif_update_timingset(struct devfreq_data_mif *data)
+{
+	use_mif_timing_set_0 = ((__raw_readl(data->base_mif + 0x1004) & 0x1) == 0);
+
+	return 0;
+}
+
 static int exynos5_devfreq_mif_change_timing_set(struct devfreq_data_mif *data)
 {
 	unsigned int tmp;
@@ -2875,7 +2882,7 @@ static int exynos5_devfreq_mif_change_timing_set(struct devfreq_data_mif *data)
 		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB8);
 	}
 
-	use_mif_timing_set_0 = !use_mif_timing_set_0;
+	exynos5_devfreq_mif_update_timingset(data);
 
 	return 0;
 }
@@ -3354,13 +3361,6 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 	return NOTIFY_OK;
 }
 #endif
-
-static int exynos5_devfreq_mif_update_timingset(struct devfreq_data_mif *data)
-{
-	use_mif_timing_set_0 = ((__raw_readl(data->base_mif + 0x1004) & 0x1) == 0);
-
-	return 0;
-}
 
 static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 {
