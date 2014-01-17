@@ -1681,8 +1681,11 @@ static int fimc_is_itf_enum(struct fimc_is_device_ischain *device)
 	mdbgd_ischain("%s()\n", device, __func__);
 
 	ret = fimc_is_hw_enum(device->interface);
-	if (ret)
+	if (ret) {
 		merr("fimc_is_itf_enum is fail(%d)", device, ret);
+		CALL_POPS(device, print_pwr, device->pdev);
+		CALL_POPS(device, print_clk, device->pdev);
+	}
 
 	return ret;
 }
