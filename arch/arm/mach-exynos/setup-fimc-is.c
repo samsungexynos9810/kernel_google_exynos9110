@@ -384,11 +384,6 @@ int exynos5422_cfg_clk_cam(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout_aclk_432_cam", (432 * 1000000));
 	fimc_is_set_parent_dt(pdev, "mout_aclk_432_cam_sw", "dout_aclk_432_cam");
 	fimc_is_set_parent_dt(pdev, "mout_aclk_432_cam_user", "mout_aclk_432_cam_sw");
-	/* FL1_550_CAM */
-	fimc_is_set_parent_dt(pdev, "mout_aclk_fl1_550_cam", "mout_mpll_ctrl");
-	fimc_is_set_rate_dt(pdev, "dout_aclk_fl1_550_cam", (76 * 1000000));
-	fimc_is_set_parent_dt(pdev, "mout_aclk_fl1_550_cam_sw", "dout_aclk_fl1_550_cam");
-	fimc_is_set_parent_dt(pdev, "mout_aclk_fl1_550_cam_user", "mout_aclk_fl1_550_cam_sw");
 	/* 550_CAM */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_550_cam", "mout_mpll_ctrl");
 	fimc_is_set_rate_dt(pdev, "dout_aclk_550_cam", (532 * 1000000));
@@ -400,8 +395,6 @@ int exynos5422_cfg_clk_cam(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout2_gscl_blk_333", (217 * 1000000));
 	/* CLKDIV2_CAM_BLK_432 */
 	fimc_is_set_rate_dt(pdev, "dout2_cam_blk_432", (217 * 1000000));
-	/* CLKDIV2_CAM_BLK_550 */
-	fimc_is_set_rate_dt(pdev, "dout2_cam_blk_550", (266 * 1000000));
 
 	return 0;
 }

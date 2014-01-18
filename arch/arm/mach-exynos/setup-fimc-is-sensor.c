@@ -201,16 +201,29 @@ int exynos5422_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 
 	pr_info("clk_cfg:(ch%d),scenario(%d)\n", channel, scenario);
 
-	if (scenario != SENSOR_SCENARIO_VISION) {
+	switch (channel) {
+	case 0:
 		/* MIPI-CSIS0 */
 		fimc_is_set_parent_dt(pdev, "mout_gscl_wrap_a", "mout_mpll_ctrl");
 		fimc_is_set_rate_dt(pdev, "dout_gscl_wrap_a", (532 * 1000000));
 		fimc_is_get_rate_dt(pdev, "dout_gscl_wrap_a");
+		break;
+	case 1:
+		/* FL1_550_CAM */
+		fimc_is_set_parent_dt(pdev, "mout_aclk_fl1_550_cam", "mout_mpll_ctrl");
+		fimc_is_set_rate_dt(pdev, "dout_aclk_fl1_550_cam", (76 * 1000000));
+		fimc_is_set_parent_dt(pdev, "mout_aclk_fl1_550_cam_sw", "dout_aclk_fl1_550_cam");
+		fimc_is_set_parent_dt(pdev, "mout_aclk_fl1_550_cam_user", "mout_aclk_fl1_550_cam_sw");
+		fimc_is_set_rate_dt(pdev, "dout2_cam_blk_550", (38 * 1000000));
+
 		/* MIPI-CSIS1 */
 		fimc_is_set_parent_dt(pdev, "mout_gscl_wrap_b", "mout_mpll_ctrl");
 		fimc_is_set_rate_dt(pdev, "dout_gscl_wrap_b", (76 * 1000000));
 		fimc_is_get_rate_dt(pdev, "dout_gscl_wrap_b");
-	} else {
+		break;
+	default:
+		pr_err("channel is invalid(%d)\n", channel);
+		break;
 	}
 
 	return ret;
