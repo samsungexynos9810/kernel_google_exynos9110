@@ -42,11 +42,6 @@
 #define DEFAULT_SENSOR_HEIGHT	104
 #define SENSOR_MEMSIZE DEFAULT_SENSOR_WIDTH * DEFAULT_SENSOR_HEIGHT
 
-#define FLITE_REG_CISTATUS_IRQ_SRC_OVERFLOW		(1 << 7)
-#define FLITE_REG_CISTATUS_IRQ_SRC_LASTCAPEND		(1 << 6)
-#define FLITE_REG_CISTATUS_IRQ_SRC_FRMSTART		(1 << 5)
-#define FLITE_REG_CISTATUS_IRQ_SRC_FRMEND		(1 << 4)
-
 #define SENSOR_REG_VIS_DURATION_MSB			(0x6026)
 #define SENSOR_REG_VIS_DURATION_LSB			(0x6027)
 #define SENSOR_REG_VIS_FRAME_LENGTH_LINE_ALV_MSB	(0x4340)
@@ -82,7 +77,6 @@ static struct fimc_is_sensor_cfg config_8b1[] = {
 	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 13, 1),
 };
 
-#if 0
 static int sensor_8b1_open(struct v4l2_subdev *sd,
 	struct v4l2_subdev_fh *fh)
 {
@@ -97,24 +91,21 @@ static int sensor_8b1_close(struct v4l2_subdev *sd,
 }
 static int sensor_8b1_registered(struct v4l2_subdev *sd)
 {
-	/* TODO : If need */
 	pr_info("%s\n", __func__);
 	return 0;
 }
 
 static void sensor_8b1_unregistered(struct v4l2_subdev *sd)
 {
-	/* TODO : If need */
 	pr_info("%s\n", __func__);
 }
 
-static const struct v4l2_subdev_internal_ops sensor_8b1_iops = {
+static const struct v4l2_subdev_internal_ops internal_ops = {
 	.open = sensor_8b1_open,
 	.close = sensor_8b1_close,
 	.registered = sensor_8b1_registered,
 	.unregistered = sensor_8b1_unregistered,
 };
-#endif
 
 static int sensor_8b1_init(struct v4l2_subdev *subdev, u32 val)
 {
@@ -134,76 +125,145 @@ static int sensor_8b1_init(struct v4l2_subdev *subdev, u32 val)
 
 	pr_info("%s\n", __func__);
 	/* sensor init */
-	/* 8 bit mode */
-	fimc_is_sensor_write(client, 0x7030, 0x0E);
-	fimc_is_sensor_write(client, 0x7031, 0x2F);
+	fimc_is_sensor_write(client, 0x705A, 0x01);
+	fimc_is_sensor_write(client, 0x7090, 0x01);
+	fimc_is_sensor_write(client, 0x7029, 0x10);
+	fimc_is_sensor_write(client, 0x7306, 0x04);
+	fimc_is_sensor_write(client, 0x702A, 0x04);
 
-	/* Analog Tuning */
-	fimc_is_sensor_write(client, 0x7067, 0x00);
-	fimc_is_sensor_write(client, 0x7074, 0x22);
+	fimc_is_sensor_write(client, 0x7209, 0xF5);
+	fimc_is_sensor_write(client, 0x720B, 0xF5);
+	fimc_is_sensor_write(client, 0x7245, 0xC4);
+	fimc_is_sensor_write(client, 0x703B, 0x1A);
+	fimc_is_sensor_write(client, 0x7064, 0x43); /* 10 */
 
-	/* Dark Tuning */
-	fimc_is_sensor_write(client, 0x7402, 0x1F);
-	fimc_is_sensor_write(client, 0x7403, 0xC0);
-	fimc_is_sensor_write(client, 0x7247, 0x01);
+	fimc_is_sensor_write(client, 0x7058, 0x6F);
+	fimc_is_sensor_write(client, 0x7073, 0x04);
+	fimc_is_sensor_write(client, 0x705C, 0x40);
+	fimc_is_sensor_write(client, 0x706E, 0xFA);
+	fimc_is_sensor_write(client, 0x706D, 0x77);
 
-	fimc_is_sensor_write(client, 0x7412, 0x09);
-	fimc_is_sensor_write(client, 0x7413, 0xB9);
-	fimc_is_sensor_write(client, 0x7430, 0x05);
-	fimc_is_sensor_write(client, 0x7432, 0x02);
-	fimc_is_sensor_write(client, 0x7433, 0x32);
-	fimc_is_sensor_write(client, 0x7075, 0x3D);
-	fimc_is_sensor_write(client, 0x7066, 0x09);
+	fimc_is_sensor_write(client, 0x7070, 0x0F);
+	fimc_is_sensor_write(client, 0x7060, 0x07);
+	fimc_is_sensor_write(client, 0x7087, 0x00);
+	fimc_is_sensor_write(client, 0x7115, 0x01);
+	fimc_is_sensor_write(client, 0x7061, 0x40); /* 20 */
 
-	/* AE setting */
-	fimc_is_sensor_write(client, 0x6000, 0x11);
-	fimc_is_sensor_write(client, 0x6001, 0x11);
-	fimc_is_sensor_write(client, 0x6002, 0x14);
-	fimc_is_sensor_write(client, 0x6003, 0x41);
-	fimc_is_sensor_write(client, 0x6004, 0x14);
-	fimc_is_sensor_write(client, 0x6005, 0x41);
-	fimc_is_sensor_write(client, 0x6006, 0x11);
-	fimc_is_sensor_write(client, 0x6007, 0x11);
 
-	/* Number of pixel */
-	fimc_is_sensor_write(client, 0x5030, 0x20);
-	fimc_is_sensor_write(client, 0x5031, 0xB4);
+	fimc_is_sensor_write(client, 0x4345, 0x08);
+	fimc_is_sensor_write(client, 0x4348, 0x07);
+	fimc_is_sensor_write(client, 0x4349, 0x83);
+	fimc_is_sensor_write(client, 0x434C, 0x01);
+	fimc_is_sensor_write(client, 0x434D, 0x40);
 
-	/* AE target */
-	fimc_is_sensor_write(client, 0x600A, 0x2A);
+	fimc_is_sensor_write(client, 0x4381, 0x01);
+	fimc_is_sensor_write(client, 0x4383, 0x05);
+	fimc_is_sensor_write(client, 0x4347, 0x08);
+	fimc_is_sensor_write(client, 0x434A, 0x04);
+	fimc_is_sensor_write(client, 0x434B, 0x3B); /* 30 */
 
-	/* AE speed */
-	fimc_is_sensor_write(client, 0x5034, 0x00);
+	fimc_is_sensor_write(client, 0x434E, 0x00);
+	fimc_is_sensor_write(client, 0x434F, 0xB4);
+	fimc_is_sensor_write(client, 0x4385, 0x01);
+	fimc_is_sensor_write(client, 0x4387, 0x05);
+	fimc_is_sensor_write(client, 0x6029, 0x05);
 
-	/* Inner Target Tolerance */
-	fimc_is_sensor_write(client, 0x503F, 0x03);
+	fimc_is_sensor_write(client, 0x602A, 0x05);
+	fimc_is_sensor_write(client, 0x602B, 0x02);
+	fimc_is_sensor_write(client, 0x602C, 0x04);
+	fimc_is_sensor_write(client, 0x7454, 0x02);
+	fimc_is_sensor_write(client, 0x6014, 0x27); /* 40 */
 
-	/* patch height */
-	fimc_is_sensor_write(client, 0x6015, 0x19);
+	fimc_is_sensor_write(client, 0x6015, 0x1D);
+	fimc_is_sensor_write(client, 0x6018, 0x01);
+#ifdef VISION_30FPS
+	fimc_is_sensor_write(client, 0x7460, 0x01);
+#else
+	fimc_is_sensor_write(client, 0x7460, 0x00);
+#endif
+	fimc_is_sensor_write(client, 0x5030, 0x06);
+	fimc_is_sensor_write(client, 0x5031, 0x01);
 
-	/* G + R Setting */
-	/* Vision Senser Data = 0.5*Gr + 0.5*R */
-	fimc_is_sensor_write(client, 0x6029, 0x02);
-	fimc_is_sensor_write(client, 0x602A, 0x02);
+	fimc_is_sensor_write(client, 0x600E, 0x05);
+	fimc_is_sensor_write(client, 0x503F, 0x02);
+	fimc_is_sensor_write(client, 0x503D, 0x20);
+	fimc_is_sensor_write(client, 0x503E, 0x70);
+	fimc_is_sensor_write(client, 0x7467, 0x20); /* 50 */
 
-	/* For Analog Gain 16x */
-	fimc_is_sensor_write(client, 0x7018, 0xCF);
-	fimc_is_sensor_write(client, 0x7019, 0xDB);
-	fimc_is_sensor_write(client, 0x702A, 0x8D);
-	fimc_is_sensor_write(client, 0x702B, 0x60);
+	fimc_is_sensor_write(client, 0x7468, 0x20);
+	fimc_is_sensor_write(client, 0x7469, 0x20);
+	fimc_is_sensor_write(client, 0x746A, 0x20);
+	fimc_is_sensor_write(client, 0x746B, 0x20);
+	fimc_is_sensor_write(client, 0x746C, 0x20);
+
+	fimc_is_sensor_write(client, 0x7405, 0x28);
+	fimc_is_sensor_write(client, 0x7407, 0xC0);
+	fimc_is_sensor_write(client, 0x7465, 0x4B);
+	fimc_is_sensor_write(client, 0x7461, 0x01);
+	fimc_is_sensor_write(client, 0x7462, 0xF8); /* 60 */
+
+	fimc_is_sensor_write(client, 0x7463, 0x1E);
+	fimc_is_sensor_write(client, 0x7464, 0x02);
+#ifdef VISION_30FPS
+	fimc_is_sensor_write(client, 0x5014, 0x08);
+	fimc_is_sensor_write(client, 0x5015, 0x33);
+#else
+	fimc_is_sensor_write(client, 0x5014, 0x1A);
+	fimc_is_sensor_write(client, 0x5015, 0x00);
+#endif
+
+	fimc_is_sensor_write(client, 0x5016, 0x00);
+
+	fimc_is_sensor_write(client, 0x5017, 0x02);
 	fimc_is_sensor_write(client, 0x5035, 0x02);
+	fimc_is_sensor_write(client, 0x5036, 0x00);
+	fimc_is_sensor_write(client, 0x5037, 0x06);
+	fimc_is_sensor_write(client, 0x5038, 0xC0); /* 70 */
 
-	/* frame rate - default 10fps*/
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_MSB, 0x00);
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_LSB, 0x6A);
+	fimc_is_sensor_write(client, 0x5034, 0x00);
+	fimc_is_sensor_write(client, 0x746E, 0xFF);
+	fimc_is_sensor_write(client, 0x746F, 0x01);
+	fimc_is_sensor_write(client, 0x5004, 0x01);
+	fimc_is_sensor_write(client, 0x5005, 0x1E);
 
-	/* BIT_RATE_MBPS_alv */
-	fimc_is_sensor_write(client, 0x7351, 0x02);
-	fimc_is_sensor_write(client, 0x7352, 0x48);
-	fimc_is_sensor_write(client, 0x7353, 0x00);
-	fimc_is_sensor_write(client, 0x7354, 0x00);
+	fimc_is_sensor_write(client, 0x6040, 0x11);
+	fimc_is_sensor_write(client, 0x6041, 0x11);
+	fimc_is_sensor_write(client, 0x6042, 0x11);
+	fimc_is_sensor_write(client, 0x6043, 0x11);
+	fimc_is_sensor_write(client, 0x6044, 0x11); /* 80 */
 
+	fimc_is_sensor_write(client, 0x6045, 0x13);
+	fimc_is_sensor_write(client, 0x6046, 0x31);
+	fimc_is_sensor_write(client, 0x6047, 0x11);
+	fimc_is_sensor_write(client, 0x6048, 0x11);
+	fimc_is_sensor_write(client, 0x6049, 0x24);
+
+	fimc_is_sensor_write(client, 0x604A, 0x42);
+	fimc_is_sensor_write(client, 0x604B, 0x11);
+	fimc_is_sensor_write(client, 0x604C, 0x11);
+	fimc_is_sensor_write(client, 0x604D, 0x24);
+	fimc_is_sensor_write(client, 0x604E, 0x42); /* 90 */
+
+	fimc_is_sensor_write(client, 0x604F, 0x11);
+	fimc_is_sensor_write(client, 0x6050, 0x11);
+	fimc_is_sensor_write(client, 0x6051, 0x24);
+	fimc_is_sensor_write(client, 0x6052, 0x42);
+	fimc_is_sensor_write(client, 0x6053, 0x11);
+
+	fimc_is_sensor_write(client, 0x6054, 0x11);
+	fimc_is_sensor_write(client, 0x6055, 0x23);
+	fimc_is_sensor_write(client, 0x6056, 0x32);
+	fimc_is_sensor_write(client, 0x6057, 0x11);
+	fimc_is_sensor_write(client, 0x600A, 0x3A); /* 100 */
+
+	fimc_is_sensor_write(client, 0x7406, 0x28);
+	fimc_is_sensor_write(client, 0x746D, 0x04);
 	fimc_is_sensor_write(client, 0x7339, 0x03);
+#ifdef VISION_30FPS
+#else
+	fimc_is_sensor_write(client, 0x6027, 0x69);
+#endif
+	fimc_is_sensor_write(client, 0x4100, 0x01);
 
 	pr_info("[MOD:D:%d] %s(%d)\n", module->id, __func__, val);
 
@@ -590,8 +650,9 @@ int sensor_8b1_probe(struct i2c_client *client,
 
 	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
-#ifdef DEFAULT_S5K8B1_DRIVING
+#ifdef SENSOR_S5K8B1_DRIVING
 	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
+	subdev_module->internal_ops = &internal_ops;
 #else
 	v4l2_subdev_init(subdev_module, &subdev_ops);
 #endif
