@@ -1278,15 +1278,6 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 			return -ENOMEM;
 		}
 
-		rc = sysfs_create_group(get_governor_parent_kobj(policy),
-				get_sysfs_attr());
-		if (rc) {
-			kfree(tunables);
-			return rc;
-		}
-
-		change_sysfs_owner(policy);
-
 		if (!tuned_parameters[policy->cpu]) {
 			tunables->above_hispeed_delay = default_above_hispeed_delay;
 			tunables->nabove_hispeed_delay =
@@ -1309,6 +1300,15 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 		spin_lock_init(&tunables->target_loads_lock);
 		spin_lock_init(&tunables->above_hispeed_delay_lock);
+
+		rc = sysfs_create_group(get_governor_parent_kobj(policy),
+				get_sysfs_attr());
+		if (rc) {
+			kfree(tunables);
+			return rc;
+		}
+
+		change_sysfs_owner(policy);
 
 		if (!policy->governor->initialized) {
 			idle_notifier_register(&cpufreq_interactive_idle_nb);
