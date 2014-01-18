@@ -558,6 +558,18 @@
 		};
 	};
 
+	/* vision */
+	i2c@12C70000 {
+		status = "okay";
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+		status = "okay";
+		fimc-is-vision@20 {
+			compatible = "samsung,exynos5-fimc-is-sensor-6b2";
+			reg = <0x35>;
+		};
+	};
+
 	dwc3_vbus: fixedregulator@0 {
 		compatible = "regulator-fixed";
 		regulator-name = "VUSB_BOOST_5V";
