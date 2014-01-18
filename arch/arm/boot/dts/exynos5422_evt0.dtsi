@@ -1529,6 +1529,14 @@
 				"dout_isp_sensor0",	/* 4114 */
 				"dout_isp_sensor1",	/* 4115 */
 				"dout_isp_sensor2",	/* 4116 */
+
+				/* ACLK_FL_550_CAM */
+				"mout_aclk_fl1_550_cam", /* 5310 */
+				"dout_aclk_fl1_550_cam", /* 5407 */
+				"mout_aclk_fl1_550_cam_sw", /* 5311 */
+				"mout_aclk_fl1_550_cam_user", /* 5312 */
+				"dout2_cam_blk_550", /* 5415 */
+
 				/* GATE (CLK_GATE_TOP_SCLK_GSCL)*/
 				"sclk_gscl_wrap_b", /* 1024 */
 				"sclk_gscl_wrap_a", /* 1025 */
@@ -1566,6 +1574,12 @@
 				<&clock 4114>,
 				<&clock 4115>,
 				<&clock 4116>,
+
+				<&clock 5310>,
+				<&clock 5407>,
+				<&clock 5311>,
+				<&clock 5312>,
+				<&clock 5415>,
 
 				<&clock 1024>,
 				<&clock 1025>,
