@@ -426,8 +426,10 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	/* Update policy current frequency */
 	cpufreq_notify_transition(policy, freqs[cur], CPUFREQ_PRECHANGE);
 
-	if (exynos_info[cur]->set_int_skew)
-		exynos_info[cur]->set_int_skew(new_index);
+	if (freqs[cur]->new > freqs[cur]->old) {
+		if (exynos_info[cur]->set_int_skew)
+			exynos_info[cur]->set_int_skew(new_index);
+	}
 
 	if (exynos_info[cur]->abb_table) {
 		if (cur == CA7)
@@ -473,9 +475,6 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 		if (exynos_info[cur]->set_ema)
 			exynos_info[cur]->set_ema(safe_volt);
 	}
-
-	if (exynos_info[cur]->set_int_skew)
-		exynos_info[cur]->set_int_skew(new_index);
 
 	if (old_index > new_index) {
 		if (cur == CA15) {
@@ -539,6 +538,11 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 		}
 		if (set_abb_first_than_volt)
 			regulator_set_voltage(regulator, volt, volt);
+	}
+
+	if (freqs[cur]->new < freqs[cur]->old) {
+		if (exynos_info[cur]->set_int_skew)
+			exynos_info[cur]->set_int_skew(new_index);
 	}
 
 out:
