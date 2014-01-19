@@ -2590,6 +2590,17 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 	return dma_buf_mmap(win->dma_buf_data.dma_buf, vma, 0);
 }
 
+static int s3c_fb_release(struct fb_info *info, int user)
+{
+	struct display_driver *dispdrv;
+	dispdrv = get_display_driver();
+
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, true);
+#endif
+	return 0;
+}
+
 static struct fb_ops s3c_fb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_check_var	= s3c_fb_check_var,
@@ -2602,6 +2613,7 @@ static struct fb_ops s3c_fb_ops = {
 	.fb_pan_display	= s3c_fb_pan_display,
 	.fb_ioctl	= s3c_fb_ioctl,
 	.fb_mmap	= s3c_fb_mmap,
+	.fb_release	= s3c_fb_release,
 };
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
