@@ -14,9 +14,7 @@
 
 #define SENSOR_S5K8B1_INSTANCE	1
 #define SENSOR_S5K8B1_NAME	SENSOR_NAME_S5K8B1
-#if defined(CONFIG_SOC_EXYNOS5430)
 #define SENSOR_S5K8B1_DRIVING
-#endif
 
 struct fimc_is_module_8b1 {
 	u16		vis_duration;
