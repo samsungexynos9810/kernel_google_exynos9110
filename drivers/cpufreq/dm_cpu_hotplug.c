@@ -16,6 +16,7 @@
 #include <linux/kthread.h>
 #include <linux/sort.h>
 #include <linux/reboot.h>
+#include <linux/debugfs.h>
 
 #include <linux/fs.h>
 #include <asm/segment.h>
@@ -652,6 +653,28 @@ failed_out:
 	return ret;
 }
 
+static struct dentry *cputime_debugfs;
+
+static int cputime_debug_show(struct seq_file *s, void *unsued)
+{
+	seq_printf(s, "cputime %llu\n",
+			(unsigned long long) cputime64_to_clock_t(get_jiffies_64()));
+
+	return 0;
+}
+
+static int cputime_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, cputime_debug_show, inode->i_private);
+}
+
+const static struct file_operations cputime_fops = {
+	.open		= cputime_debug_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+
 static int __init dm_cpu_hotplug_init(void)
 {
 	int ret = 0;
@@ -691,6 +714,13 @@ static int __init dm_cpu_hotplug_init(void)
 
 	register_pm_notifier(&exynos_dm_hotplug_nb);
 	register_reboot_notifier(&exynos_dm_hotplug_reboot_nb);
+
+	cputime_debugfs =
+		debugfs_create_file("cputime", S_IRUGO, NULL, NULL, &cputime_fops);
+	if (IS_ERR_OR_NULL(cputime_debugfs)) {
+		cputime_debugfs = NULL;
+		pr_err("%s: debugfs_create_file() failed\n", __func__);
+	}
 
 	wake_up_process(dm_hotplug_task);
 
