@@ -213,7 +213,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define CS_POLICY_CORE		0
 
 #if defined(CONFIG_SOC_EXYNOS5430)
-#define CPU_HOTPLUG_IN_TEMP	105
+#define CPU_HOTPLUG_IN_TEMP	95
 #define CPU_HOTPLUG_OUT_TEMP	110
 #elif defined(CONFIG_SOC_EXYNOS5422)
 #define CPU_HOTPLUG_IN_TEMP	95
