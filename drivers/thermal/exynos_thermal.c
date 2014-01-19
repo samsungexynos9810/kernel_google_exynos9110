@@ -967,16 +967,27 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	unsigned int rising_threshold7_4 = 0, falling_threshold7_4 = 0;
 #endif
 	int ret = 0, threshold_code, i, trigger_levs = 0;
+	int timeout = 20000;
 
 	mutex_lock(&data->lock);
 	clk_enable(data->clk[0]);
 	clk_enable(data->clk[1]);
 
-	status = readb(data->base[id] + EXYNOS_TMU_REG_STATUS);
-	if (!status) {
-		ret = -EBUSY;
-		goto out;
-	}
+	while(1) {
+		status = readb(data->base[id] + EXYNOS_TMU_REG_STATUS);
+		if (status)
+			break;
+
+		timeout--;
+		if (!timeout) {
+			pr_err("%s: timeout TMU busy\n", __func__);
+			ret = -EBUSY;
+			goto out;
+		}
+
+		cpu_relax();
+		usleep_range(1, 2);
+	};
 
 	/* Count trigger levels to be enabled */
 	for (i = 0; i < MAX_THRESHOLD_LEVS; i++)
@@ -1168,15 +1179,31 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 
 static int exynos_tmu_read(struct exynos_tmu_data *data)
 {
-	u8 temp_code;
+	u8 temp_code, status;
 	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0;
 	int alltemp[EXYNOS_TMU_COUNT] = {0, };
+	int timeout = 20000;
 
 	mutex_lock(&data->lock);
 	clk_enable(data->clk[0]);
 	clk_enable(data->clk[1]);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+		while (1) {
+			status = readb(data->base[i] + EXYNOS_TMU_REG_STATUS);
+			if (status)
+				break;
+
+			timeout--;
+			if (!timeout) {
+				pr_err("%s: timeout TMU busy\n", __func__);
+				break;
+			}
+
+			cpu_relax();
+			usleep_range(1, 2);
+		};
+
 		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
 		temp = code_to_temp(data, temp_code, i);
 		alltemp[i] = temp;
