@@ -79,8 +79,6 @@ struct protect_info {
 
 static int secmem_open(struct inode *inode, struct file *file)
 {
-	int ret;
-	static int iso_count = 0;
 	struct miscdevice *miscdev = file->private_data;
 	struct device *dev = miscdev->this_device;
 	struct secmem_info *info;
@@ -95,27 +93,6 @@ static int secmem_open(struct inode *inode, struct file *file)
 	mutex_lock(&drm_lock);
 	instance_count++;
 	mutex_unlock(&drm_lock);
-
-	if (!iso_count) {
-		ret = ion_exynos_contig_heap_isolate(ION_EXYNOS_ID_SECTBL);
-		if (ret < 0) {
-			pr_err("%s: Fail to isolate reserve region. id = %d\n",
-						__func__, ION_EXYNOS_ID_SECTBL);
-			return -ENODEV;
-		}
-
-		ret = ion_exynos_contig_heap_isolate(ION_EXYNOS_ID_MFC_FW);
-		if (ret < 0) {
-			pr_err("%s: Fail to isolate reserve region. id = %d\n",
-						__func__, ION_EXYNOS_ID_MFC_FW);
-			return -ENODEV;
-		}
-
-		iso_count = 1;
-		pr_debug("%s: reserve region is isolated. id = %d, %d\n",
-						__func__, ION_EXYNOS_ID_SECTBL,
-						ION_EXYNOS_ID_MFC_FW);
-	}
 
 	return 0;
 }
@@ -408,6 +385,8 @@ struct miscdevice secmem = {
 static int __init secmem_init(void)
 {
 	int ret;
+	static int iso_count = 0;
+	static int count, nbufs = 0;
 
 	ret = misc_register(&secmem);
 	if (ret) {
@@ -417,6 +396,22 @@ static int __init secmem_init(void)
 	}
 
 	crypto_driver = NULL;
+
+	if (!iso_count) {
+		nbufs = sizeof(secmem_regions) / sizeof(uint32_t);
+
+		for (count = 0; count < nbufs; count++) {
+			ret = ion_exynos_contig_heap_isolate(secmem_regions[count]);
+			if (ret < 0) {
+				pr_err("%s: Fail to isolate reserve region. id = %d\n",
+						__func__, secmem_regions[count]);
+				return -ENODEV;
+			}
+		}
+
+		iso_count = 1;
+		pr_debug("%s: reserve region is isolated.\n", __func__);
+	}
 
 	return 0;
 }
