@@ -415,6 +415,8 @@ struct ion_exynos_contig_heap {
 struct ion_exynos_cmadata {
 	int id;
 	char name[MAX_CONTIG_NAME + 1];
+	bool isolated_on_boot; /* set on boot-time. unset by isolated_store() */
+	struct mutex lock;
 };
 
 static int ion_cma_device_name_match(struct device *dev, void *data)
@@ -513,17 +515,29 @@ EXPORT_SYMBOL(ion_exynos_contig_heap_info);
 int ion_exynos_contig_heap_isolate(int region_id)
 {
 	struct device *dev = ion_exynos_contig_dev(region_id);
+	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
+	int ret = 0;
+
 	if (!dev)
 		return -ENODEV;
 
-	return dma_contiguous_isolate(dev);
+	mutex_lock(&cmadata->lock);
+	if (!cmadata->isolated_on_boot)
+		ret = dma_contiguous_isolate(dev);
+	mutex_unlock(&cmadata->lock);
+	return ret;
 }
 
 void ion_exynos_contig_heap_deisolate(int region_id)
 {
 	struct device *dev = ion_exynos_contig_dev(region_id);
-	if (dev)
-		dma_contiguous_deisolate(dev);
+	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
+	if (dev) {
+		mutex_lock(&cmadata->lock);
+		if (!cmadata->isolated_on_boot)
+			dma_contiguous_deisolate(dev);
+		mutex_unlock(&cmadata->lock);
+	}
 }
 
 static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
@@ -1201,6 +1215,7 @@ struct exynos_ion_contig_region {
 	size_t size;
 	phys_addr_t base;
 	struct device dev;
+	bool isolated;
 };
 
 static int contig_region_cursor __initdata;
@@ -1269,6 +1284,22 @@ static int __init __fdt_init_exynos_ion(unsigned long node, const char *uname,
 		contig_region_cursor++;
 	}
 
+	prop = of_get_flat_dt_prop(node, "contig-isolate_on_boot", &len);
+	/* <id> */
+	for (i = 0; prop && (unsigned long)i < (len / sizeof(long)); i++) {
+		int id;
+		int j;
+
+		id = be32_to_cpu(prop[i]);
+
+		for (j = 0; j < contig_region_cursor; j++) {
+			if (exynos_ion_contig_region[j].id == id) {
+				exynos_ion_contig_region[j].isolated = true;
+				break;
+			}
+		}
+
+	}
 	return 0;
 }
 
@@ -1439,11 +1470,62 @@ static ssize_t region_id_show(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
-	return scnprintf(buf, PAGE_SIZE, "%u\n", cmadata->id);
+	return scnprintf(buf, PAGE_SIZE, "%zu\n", cmadata->id);
+}
+
+static ssize_t isolated_show(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct cma_info info;
+	/*
+	 * lock is not required
+	 * because this just shows a snapshot of the information
+	 */
+	if (dma_contiguous_info(dev, &info)) {
+		dev_err(dev, "Failed to retrieve region information\n");
+		info.isolated = false;
+	}
+	return scnprintf(buf, PAGE_SIZE, "%d\n", info.isolated ? 1 : 0);
+}
+
+static ssize_t isolated_store(struct device *dev, struct device_attribute *attr,
+				const char *buf, size_t count)
+{
+	struct cma_info info;
+	struct ion_exynos_cmadata *cmadata;
+	long new;
+	int ret;
+
+	ret = kstrtol(buf, 0, &new);
+	if (ret)
+		return ret;
+
+	if ((new > 1) || (new < 0)) /* only 0 and 1 are allowed */
+		return -EINVAL;
+
+	if (dma_contiguous_info(dev, &info)) {
+		dev_err(dev, "Failed to retrieve region information\n");
+		return -ENODEV;
+	}
+	cmadata = dev_get_drvdata(dev);
+	mutex_lock(&cmadata->lock);
+	if (info.isolated != (typeof(info.isolated))new) {
+		if (!new) {
+			cmadata->isolated_on_boot = false;
+			dma_contiguous_deisolate(dev);
+		} else if (dma_contiguous_isolate(dev)) {
+			dev_err(dev, "Failed to isolate\n");
+		}
+	}
+
+	mutex_unlock(&cmadata->lock);
+
+	return count;
 }
 
 static struct device_attribute cma_regname_attr = __ATTR_RO(region_name);
 static struct device_attribute cma_regid_attr = __ATTR_RO(region_id);
+static DEVICE_ATTR(isolated, S_IRUSR | S_IWUSR, isolated_show, isolated_store);
 
 static int __init ion_exynos_contigheap_init(void)
 {
@@ -1502,8 +1584,43 @@ static int __init ion_exynos_contigheap_init(void)
 		if (ret)
 			dev_err(dev, "%s: Failed to create '%s' file. (%d)\n",
 				__func__, cma_regname_attr.attr.name, ret);
+
+		ret = device_create_file(dev, &dev_attr_isolated);
+		if (ret)
+			dev_err(dev, "%s: Failed to create '%s' file. (%d)\n",
+				__func__, dev_attr_isolated.attr.name, ret);
+
+		mutex_init(&drvdata->lock);
 	}
 
 	return 0;
 }
 subsys_initcall_sync(ion_exynos_contigheap_init);
+
+static int __init __ion_dma_contiguous_isolate(struct device *dev, void *unused)
+{
+	struct ion_exynos_cmadata *cmadata = dev_get_drvdata(dev);
+	int i;
+
+	for (i = 0; i < contig_region_cursor; i++) {
+		if (exynos_ion_contig_region[i].id == cmadata->id) {
+			if (exynos_ion_contig_region[i].isolated) {
+				int ret;
+				mutex_lock(&cmadata->lock);
+				cmadata->isolated_on_boot = true;
+				ret = dma_contiguous_isolate(dev);
+				mutex_unlock(&cmadata->lock);
+				return ret;
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int __init ion_exynos_process_isolated(void)
+{
+	return class_for_each_device(ion_cma_class, NULL, NULL,
+			__ion_dma_contiguous_isolate);
+}
+late_initcall(ion_exynos_process_isolated);
