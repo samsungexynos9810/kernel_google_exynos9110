@@ -301,6 +301,7 @@ struct samsung_usbphy_drvdata {
  * @plat: platform data
  * @dev: The parent device supplied to the probe function
  * @clk: usb phy clock
+ * @lpa_nb: notifier block for LPA events
  * @regs: usb phy controller registers memory base
  * @pmuregs: USB device PHY_CONTROL register memory base
  * @sysreg: USB2.0 PHY_CFG register memory base
@@ -317,6 +318,7 @@ struct samsung_usbphy {
 	struct samsung_usbphy_data *plat;
 	struct device	*dev;
 	struct clk	*clk;
+	struct notifier_block lpa_nb;
 	void __iomem	*regs;
 	void __iomem	*pmuregs;
 	void __iomem	*sysreg;

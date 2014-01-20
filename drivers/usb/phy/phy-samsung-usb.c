@@ -298,6 +298,12 @@ int samsung_usbphy_check_op(void)
 }
 EXPORT_SYMBOL_GPL(samsung_usbphy_check_op);
 
+void samsung_usb_lpa_resume(void)
+{
+	raw_notifier_call_chain(&usb_lpa_nh, USB_LPA_RESUME, NULL);
+}
+EXPORT_SYMBOL_GPL(samsung_usb_lpa_resume);
+
 int register_samsung_usb_lpa_notifier(struct notifier_block *nb)
 {
 	return blocking_notifier_chain_register(&usb_lpa_nh, nb);

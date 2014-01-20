@@ -123,6 +123,7 @@ static struct check_reg_lpa exynos5_clock_gating[] = {
 
 #ifdef CONFIG_SAMSUNG_USBPHY
 extern int samsung_usbphy_check_op(void);
+extern void samsung_usb_lpa_resume(void);
 #endif
 
 #if defined(CONFIG_MMC_DW)
@@ -709,6 +710,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_FSYSGENIO_OPTION);
 
 early_wakeup:
+	samsung_usb_lpa_resume();
 
 	if (lp_mode == SYS_ALPA)
 		__raw_writel(0x0, EXYNOS5430_PMU_SYNC_CTRL);

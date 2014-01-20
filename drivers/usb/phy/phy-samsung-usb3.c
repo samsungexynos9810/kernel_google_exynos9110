@@ -297,6 +297,34 @@ static void __samsung_usb3phy_shutdown(struct samsung_usbphy *sphy)
 }
 
 /*
+ * Shutdown phy if it's not in use
+ */
+static void samsung_usb3phy_idle(struct samsung_usbphy *sphy)
+{
+	unsigned long flags;
+	int ret;
+
+	dev_dbg(sphy->dev, "%s\n", __func__);
+
+	ret = clk_enable(sphy->clk);
+	if (ret < 0) {
+		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
+		return;
+	}
+
+	spin_lock_irqsave(&sphy->lock, flags);
+
+	if (!sphy->usage_count)
+		__samsung_usb3phy_shutdown(sphy);
+	else
+		dev_dbg(sphy->dev, "%s: PHY is currently in use\n", __func__);
+
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	clk_disable(sphy->clk);
+}
+
+/*
  * The function passed to the usb driver for phy shutdown
  */
 static void samsung_usb3phy_shutdown(struct usb_phy *phy)
@@ -339,6 +367,35 @@ static bool samsung_usb3phy_is_active(struct usb_phy *phy)
 	struct samsung_usbphy *sphy = phy_to_sphy(phy);
 
 	return !!sphy->usage_count;
+}
+
+static int
+samsung_usb3phy_lpa_event(struct notifier_block *nb,
+			  unsigned long event,
+			  void *data)
+{
+	struct samsung_usbphy *sphy = container_of(nb,
+					struct samsung_usbphy, lpa_nb);
+	int ret = NOTIFY_OK;
+
+	switch (event) {
+	case USB_LPA_RESUME:
+		/*
+		 * There is issue, when USB3.0 PHY is in active state
+		 * after LPA resume even if it was shutdown before entering
+		 * LPA. This leads to increased power consumption if no
+		 * USB drivers use the PHY. Here we shutdown the PHY
+		 * (if it is not already in use), so it is in defined state
+		 * (OFF) after LPA resume.
+		 */
+		samsung_usb3phy_idle(sphy);
+
+		break;
+	default:
+		ret = NOTIFY_DONE;
+	}
+
+	return ret;
 }
 
 static int samsung_usb3phy_probe(struct platform_device *pdev)
@@ -400,6 +457,14 @@ static int samsung_usb3phy_probe(struct platform_device *pdev)
 		return ret;
 	}
 
+	sphy->lpa_nb.notifier_call = samsung_usb3phy_lpa_event;
+	sphy->lpa_nb.next = NULL;
+	sphy->lpa_nb.priority = 0;
+
+	ret = register_samsung_usb_lpa_notifier(&sphy->lpa_nb);
+	if (ret)
+		dev_err(dev, "Failed to register lpa notifier\n");
+
 	ret = usb_add_phy_dev(&sphy->phy);
 	if (ret) {
 		dev_err(dev, "Failed to add PHY\n");
@@ -421,6 +486,7 @@ static int samsung_usb3phy_remove(struct platform_device *pdev)
 	struct samsung_usbphy *sphy = platform_get_drvdata(pdev);
 
 	usb_remove_phy(&sphy->phy);
+	unregister_samsung_usb_lpa_notifier(&sphy->lpa_nb);
 	clk_unprepare(sphy->clk);
 
 	if (sphy->pmuregs)
@@ -435,39 +501,16 @@ static int samsung_usb3phy_remove(struct platform_device *pdev)
 static int samsung_usb3phy_resume(struct device *dev)
 {
 	struct samsung_usbphy *sphy = dev_get_drvdata(dev);
-	unsigned long flags;
-	int ret;
 
 	/*
 	 * There is issue, when USB3.0 PHY is in active state
-	 * after resume. This leads to increased power consumption
-	 * if no USB drivers use the PHY.
-	 *
-	 * The following code shutdowns the PHY, so it is in defined
-	 * state (OFF) after resume. If any USB driver already got
-	 * the PHY at this time, we do nothing and just exit.
+	 * after system resume even if it was shutdown before entering
+	 * system suspend. This leads to increased power consumption
+	 * if no USB drivers use the PHY. Here we shutdown the PHY
+	 * (if it is not already in use), so it is in defined state
+	 * (OFF) after system resume.
 	 */
-
-	dev_dbg(sphy->dev, "%s\n", __func__);
-
-	ret = clk_enable(sphy->clk);
-	if (ret < 0) {
-		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
-		return ret;
-	}
-
-	spin_lock_irqsave(&sphy->lock, flags);
-
-	if (sphy->usage_count) {
-		dev_dbg(sphy->dev, "PHY is already in use\n");
-		goto exit;
-	}
-
-	__samsung_usb3phy_shutdown(sphy);
-exit:
-	spin_unlock_irqrestore(&sphy->lock, flags);
-
-	clk_disable(sphy->clk);
+	samsung_usb3phy_idle(sphy);
 
 	return 0;
 }
