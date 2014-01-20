@@ -962,7 +962,7 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 					buffer->sg_table->orig_nents, dir);
 	}
 
-	if (!ion_buffer_cpumapped(buffer)) {
+	if (!ion_buffer_cached(buffer) || !ion_buffer_cpumapped(buffer)) {
 		pr_debug("%s: set clean for buffer %p, cached: %d, "
 				"mapped: %d\n", __func__,
 				buffer, ion_buffer_cached(buffer),
