@@ -333,6 +333,7 @@ enum exynos5422_clks {
 	clk_jpeg2,
 	clk_jpeg,
 	clk_rotator,
+	clk_top_rtc = 1420,
 
 /* CLK_GATE_IP_FSYS */
 	clk_ahb2apb_fsys2 = 1440,
@@ -1775,6 +1776,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_sdmmc2, "clk_sdmmc2", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_IP_FSYS, 14, 0, 0),
 	CGATE(clk_sdmmc1, "clk_sdmmc1", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_IP_FSYS, 13, 0, 0),
 	CGATE(clk_sdmmc0, "clk_sdmmc0", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_IP_FSYS, 12, 0, 0),
+	CGATE(clk_rtic, "clk_rtic", "aclk_noc_fsys2", EXYNOS5_CLK_GATE_IP_FSYS, 9, 0, 0),
 
 	CGATE(aclk_pdma0, "aclk_pdma0", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 1, 0, 0),
 	CGATE(aclk_pdma1, "aclk_pdma1", "aclk_noc_fsys", EXYNOS5_CLK_GATE_BUS_FSYS0, 2, 0, 0),
@@ -1850,6 +1852,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CMGATE(clk_jpeg, "clk_jpeg", "aclk_300_jpeg", EXYNOS5_CLK_GATE_IP_GEN, 2, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 12 | 0x1 << 2),
 	CGATE(clk_jpeg2, "clk_jpeg2", "aclk_300_jpeg", EXYNOS5_CLK_GATE_IP_GEN, 3, 0, 0),
 	CMGATE(clk_mdma1, "clk_mdma1", "aclk_gen", EXYNOS5_CLK_GATE_IP_GEN, 4, CLK_GATE_MULTI_BIT_SET, 0, 0x1 << 14 | 0x1 << 4),
+	CGATE(clk_top_rtc, "clk_top_rtc", "aclk_66_psgen", EXYNOS5_CLK_GATE_IP_GEN, 5, 0, 0),
 	CGATE(clk_smmurotator, "clk_smmurotator", "aclk_gen", EXYNOS5_CLK_GATE_IP_GEN, 6, 0, 0),
 	CGATE(clk_smmujpeg, "clk_smmujpeg", "aclk_300_jpeg", EXYNOS5_CLK_GATE_IP_GEN, 7, 0, 0),
 	CGATE(clk_smmumdma1, "clk_smmumdma1", "aclk_gen", EXYNOS5_CLK_GATE_IP_GEN, 9, 0, 0),
