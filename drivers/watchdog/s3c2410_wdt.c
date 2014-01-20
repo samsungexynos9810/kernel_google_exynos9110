@@ -122,7 +122,6 @@ static int s3c2410wdt_stop(struct watchdog_device *wdd)
 	return 0;
 }
 
-#ifdef CONFIG_PM
 static int s3c2410wdt_stop_intclear(struct watchdog_device *wdd)
 {
 	spin_lock(&wdt_lock);
@@ -132,7 +131,6 @@ static int s3c2410wdt_stop_intclear(struct watchdog_device *wdd)
 
 	return 0;
 }
-#endif
 
 static int s3c2410wdt_start(struct watchdog_device *wdd)
 {
