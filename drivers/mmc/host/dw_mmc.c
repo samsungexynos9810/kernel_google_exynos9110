@@ -3232,9 +3232,6 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	if (host->pdata->caps)
 		mmc->caps = host->pdata->caps;
 
-	if (host->pdata->pm_caps)
-		mmc->pm_caps = host->pdata->pm_caps;
-
 	if (host->dev->of_node) {
 		ctrl_id = of_alias_get_id(host->dev->of_node, "mshc");
 		if (ctrl_id < 0)
@@ -3249,7 +3246,7 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 		mmc->caps2 = host->pdata->caps2;
 
 	if (host->pdata->pm_caps) {
-		mmc->pm_caps |= host->pdata->pm_caps;
+		mmc->pm_caps = host->pdata->pm_caps;
 		mmc->pm_flags = mmc->pm_caps;
 	}
 
