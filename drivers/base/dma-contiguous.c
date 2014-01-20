@@ -38,6 +38,7 @@ struct cma {
 	unsigned long	count;
 	unsigned long	free_count;
 	unsigned long	*bitmap;
+	unsigned long	carved_out_count;
 	bool isolated;
 };
 
@@ -159,6 +160,7 @@ static __init int cma_activate_area(unsigned long base_pfn, unsigned long count)
 }
 
 static __init struct cma *cma_create_area(unsigned long base_pfn,
+				     unsigned long carved_out_count,
 				     unsigned long count)
 {
 	int bitmap_size = BITS_TO_LONGS(count) * sizeof(long);
@@ -179,7 +181,7 @@ static __init struct cma *cma_create_area(unsigned long base_pfn,
 	if (!cma->bitmap)
 		goto no_mem;
 
-	ret = cma_activate_area(base_pfn, count);
+	ret = cma_activate_area(base_pfn, carved_out_count);
 	if (ret)
 		goto error;
 
@@ -196,6 +198,8 @@ no_mem:
 static struct cma_reserved {
 	phys_addr_t start;
 	unsigned long size;
+	phys_addr_t carved_out_start;
+	unsigned long carved_out_size;
 	struct device *dev;
 } cma_reserved[MAX_CMA_AREAS] __initdata;
 static unsigned cma_reserved_count __initdata;
@@ -209,7 +213,8 @@ static int __init cma_init_reserved_areas(void)
 
 	for (; i; --i, ++r) {
 		struct cma *cma;
-		cma = cma_create_area(PFN_DOWN(r->start),
+		cma = cma_create_area(PFN_DOWN(r->carved_out_start),
+				      r->carved_out_size >> PAGE_SHIFT,
 				      r->size >> PAGE_SHIFT);
 		if (!IS_ERR(cma))
 			dev_set_cma_area(r->dev, cma);
@@ -249,8 +254,14 @@ int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
 	if (!size)
 		return -EINVAL;
 
+	r->size = PAGE_ALIGN(size);
+
 	/* Sanitise input arguments */
 	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
+	if (base & (alignment - 1)) {
+		pr_err("Invalid alignment of base address %pa\n", &base);
+		return -EINVAL;
+	}
 	base = ALIGN(base, alignment);
 	size = ALIGN(size, alignment);
 	limit &= ~(alignment - 1);
@@ -280,8 +291,8 @@ int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
 	 * Each reserved area must be initialised later, when more kernel
 	 * subsystems (like slab allocator) are available.
 	 */
-	r->start = base;
-	r->size = size;
+	r->carved_out_start = base;
+	r->carved_out_size = size;
 	r->dev = dev;
 	cma_reserved_count++;
 	pr_info("CMA: reserved %ld MiB at %08lx\n", (unsigned long)size / SZ_1M,
@@ -417,6 +428,7 @@ int dma_contiguous_info(struct device *dev, struct cma_info *info)
 	info->base = cma->base_pfn << PAGE_SHIFT;
 	info->size = cma->count << PAGE_SHIFT;
 	info->free = cma->free_count << PAGE_SHIFT;
+	info->isolated = cma->isolated;
 
 	return 0;
 }

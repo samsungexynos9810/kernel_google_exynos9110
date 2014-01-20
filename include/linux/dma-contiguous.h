@@ -61,6 +61,7 @@ struct cma_info {
 	phys_addr_t	base;
 	size_t		size;
 	size_t		free;
+	bool		isolated;
 };
 
 #ifdef CONFIG_CMA
