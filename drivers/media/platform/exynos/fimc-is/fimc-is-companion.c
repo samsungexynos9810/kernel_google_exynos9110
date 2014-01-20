@@ -10,6 +10,7 @@
  */
 
 #include <linux/platform_device.h>
+#include <linux/spi/spi.h>
 #include "fimc-is-sec-define.h"
 #include "fimc-is-companion.h"
 #include "fimc-is-device-ischain.h"
