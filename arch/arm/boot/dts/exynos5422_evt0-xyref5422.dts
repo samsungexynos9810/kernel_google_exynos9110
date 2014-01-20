@@ -1034,7 +1034,8 @@
 			       "mfc_input",
 			       "sectbl",
 			       "mfc_fw",
-			       "mfc_nfw";
+			       "mfc_nfw",
+			       "secdma";
 
 		contig = <0 0x2000000 0x0>,
 		         <2 0x400000 0x0>,
@@ -1043,7 +1044,8 @@
 		         <7 0x1000000 0x0>,
 		         <9 0x400000 0x0>,
 		         <8 0x400000 0x0>,
-		         <12 0x400000 0x0>;
+		         <12 0x400000 0x0>,
+		         <13 0x400000 0x0>;
 
 		ion_noncontig_heap {
 			id-type = <0 0>;
