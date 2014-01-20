@@ -26,6 +26,12 @@
 
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
+#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5430)
+extern void show_exynos_pmu(void);
+#endif
+#if defined(CONFIG_SOC_EXYNOS5422)
+extern void show_exynos_cmu(void);
+#endif
 
 /* Machine specific panic information string */
 char *mach_panic_string;
@@ -115,6 +121,12 @@ void panic(const char *fmt, ...)
 		dump_stack();
 #endif
 
+#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5430)
+	show_exynos_pmu();
+#endif
+#if defined(CONFIG_SOC_EXYNOS5422)
+	show_exynos_cmu();
+#endif
 	sysrq_sched_debug_show();
 
 	/*
