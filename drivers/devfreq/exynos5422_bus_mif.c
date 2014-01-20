@@ -253,14 +253,6 @@ static unsigned int mif_fimc_opp_list[][3] = {
 	{LV_5, LV_4, LV_1},
 };
 
-static unsigned int int_fimc_opp_list[][3] = {
-	{LV_6, LV_6, LV_6},
-	{LV_7, LV_7, LV_3},
-	{LV_7, LV_5, LV_3},
-	{LV_6, LV_5, LV_3},
-	{LV_6, LV_3, LV_3},
-};
-
 static unsigned int devfreq_mif_asv_abb[LV_END];
 
 #if defined(SET_DREX_TIMING)
@@ -363,6 +355,7 @@ void exynos5_mif_transition_disable(bool disable)
 EXPORT_SYMBOL_GPL(mif_transition_disabled);
 
 extern void exynos5_update_district_int_level(unsigned int idx);
+extern unsigned int int_fimc_opp_list[][3];
 
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value)
 {

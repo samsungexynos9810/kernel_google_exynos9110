@@ -59,14 +59,14 @@ enum int_bus_idx {
 	LV_1_1,
 	LV_1_2,
 	LV_1_3,
-#ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	LV_1_4,
-#endif
 	LV_2,
 	LV_3,
 	LV_4,
 	LV_5,
 	LV_6,
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+	LV_7,
+#endif
 	LV_END,
 };
 
@@ -79,6 +79,14 @@ enum int_bus_pll {
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	S_PLL,
 #endif
+};
+
+unsigned int int_fimc_opp_list[][3] = {
+	{LV_7, LV_7, LV_7},
+	{LV_7, LV_7, LV_3},
+	{LV_7, LV_5, LV_3},
+	{LV_6, LV_5, LV_3},
+	{LV_6, LV_3, LV_3},
 };
 
 struct int_bus_opp_table {
@@ -95,13 +103,19 @@ struct int_bus_opp_table int_bus_opp_list[] = {
 	{LV_1_2, 460000,  987500, 0},	/* ISP Special Level */
 	{LV_1_3, 440000,  987500, 0},	/* ISP Special Level */
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 420000,  987500, 0},	/* UHD play */
-#endif
+	{LV_2,   420000,  987500, 0},	/* UHD play */
+	{LV_3,   400000,  987500, 0},
+	{LV_4,   333000,  950000, 0},
+	{LV_5,   222000,  950000, 0},
+	{LV_6,   111000,  950000, 0},
+	{LV_7,    83000,  925000, 0},
+#else
 	{LV_2,   400000,  987500, 0},
 	{LV_3,   333000,  950000, 0},
 	{LV_4,   222000,  950000, 0},
 	{LV_5,   111000,  950000, 0},
 	{LV_6,    83000,  925000, 0},
+#endif
 };
 
 static unsigned int devfreq_int_asv_abb[LV_END];
@@ -164,13 +178,19 @@ struct int_clk_info aclk_200_fsys[] = {
 	{LV_1_2, 200000, D_PLL},
 	{LV_1_3, 200000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 200000, D_PLL},
-#endif
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   200000, D_PLL},
+	{LV_5,   150000, D_PLL},
+	{LV_6,   100000, D_PLL},
+	{LV_7,   100000, D_PLL},
+#else
 	{LV_2,   200000, D_PLL},
 	{LV_3,   200000, D_PLL},
 	{LV_4,   150000, D_PLL},
 	{LV_5,   100000, D_PLL},
 	{LV_6,   100000, D_PLL},
+#endif
 };
 
 struct int_clk_info pclk_200_fsys[] = {
@@ -181,13 +201,19 @@ struct int_clk_info pclk_200_fsys[] = {
 	{LV_1_2, 100000, D_PLL},
 	{LV_1_3, 100000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 200000, D_PLL},
-#endif
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   100000, D_PLL},
+	{LV_5,   100000, D_PLL},
+	{LV_6,   100000, D_PLL},
+	{LV_7,   100000, D_PLL},
+#else
 	{LV_2,   200000, D_PLL},
 	{LV_3,   100000, D_PLL},
 	{LV_4,   100000, D_PLL},
 	{LV_5,   100000, D_PLL},
 	{LV_6,   100000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_100_noc[] = {
@@ -198,12 +224,12 @@ struct int_clk_info aclk_100_noc[] = {
 	{LV_1_2, 100000, D_PLL},
 	{LV_1_3, 100000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 100000, D_PLL},
 	{LV_2,   100000, D_PLL},
-	{LV_3,    86000, D_PLL},
-	{LV_4,    75000, D_PLL},
-	{LV_5,    60000, D_PLL},
+	{LV_3,   100000, D_PLL},
+	{LV_4,    86000, D_PLL},
+	{LV_5,    75000, D_PLL},
 	{LV_6,    60000, D_PLL},
+	{LV_7,    60000, D_PLL},
 #else
 	{LV_2,   100000, D_PLL},
 	{LV_3,    86000, D_PLL},
@@ -220,13 +246,19 @@ struct int_clk_info aclk_400_wcore[] = {
 	{LV_1_2, 400000, SW_MUX},
 	{LV_1_3, 400000, SW_MUX},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 400000, SW_MUX},
-#endif
+	{LV_2,   400000, SW_MUX},
+	{LV_3,   400000, SW_MUX},
+	{LV_4,   333000, C_PLL},
+	{LV_5,   222000, C_PLL},
+	{LV_6,   111000, C_PLL},
+	{LV_7,    84000, C_PLL},
+#else
 	{LV_2,   400000, SW_MUX},
 	{LV_3,   333000, C_PLL},
 	{LV_4,   222000, C_PLL},
 	{LV_5,   111000, C_PLL},
 	{LV_6,    84000, C_PLL},
+#endif
 };
 struct int_clk_info aclk_200_fsys2[] = {
 	/* Level, Freq, Parent_Pll */
@@ -236,13 +268,19 @@ struct int_clk_info aclk_200_fsys2[] = {
 	{LV_1_2, 150000, D_PLL},
 	{LV_1_3, 150000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 150000, D_PLL},
-#endif
+	{LV_2,   150000, D_PLL},
+	{LV_3,   150000, D_PLL},
+	{LV_4,   150000, D_PLL},
+	{LV_5,   150000, D_PLL},
+	{LV_6,   100000, D_PLL},
+	{LV_7,    75000, D_PLL},
+#else
 	{LV_2,   150000, D_PLL},
 	{LV_3,   150000, D_PLL},
 	{LV_4,   150000, D_PLL},
 	{LV_5,   100000, D_PLL},
 	{LV_6,    75000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_200_disp1[] = {
@@ -253,13 +291,19 @@ struct int_clk_info aclk_200_disp1[] = {
 	{LV_1_2, 200000, D_PLL},
 	{LV_1_3, 200000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 200000, D_PLL},
-#endif
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   150000, D_PLL},
+	{LV_5,   150000, D_PLL},
+	{LV_6,   100000, D_PLL},
+	{LV_7,   100000, D_PLL},
+#else
 	{LV_2,   200000, D_PLL},
 	{LV_3,   150000, D_PLL},
 	{LV_4,   150000, D_PLL},
 	{LV_5,   100000, D_PLL},
 	{LV_6,   100000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_400_mscl[] = {
@@ -270,13 +314,19 @@ struct int_clk_info aclk_400_mscl[] = {
 	{LV_1_2, 400000, SW_MUX},
 	{LV_1_3, 400000, SW_MUX},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 400000, SW_MUX},
-#endif
+	{LV_2,   400000, SW_MUX},
+	{LV_3,   333000, C_PLL},
+	{LV_4,   333000, C_PLL},
+	{LV_5,   222000, C_PLL},
+	{LV_6,   167000, C_PLL},
+	{LV_7,    84000, C_PLL},
+#else
 	{LV_2,   333000, C_PLL},
 	{LV_3,   333000, C_PLL},
 	{LV_4,   222000, C_PLL},
 	{LV_5,   167000, C_PLL},
 	{LV_6,    84000, C_PLL},
+#endif
 };
 
 struct int_clk_info aclk_400_isp[] = {
@@ -296,12 +346,12 @@ struct int_clk_info aclk_333[] = {
 	{LV_1_1, 400000, SW_MUX},
 	{LV_1_2, 400000, SW_MUX},
 	{LV_1_3, 400000, SW_MUX},
-	{LV_1_4, 400000, SW_MUX},
-	{LV_2,   333000, C_PLL},
-	{LV_3,   222000, C_PLL},
-	{LV_4,   167000, C_PLL},
-	{LV_5,   111000, C_PLL},
-	{LV_6,    96000, C_PLL},
+	{LV_2,   400000, SW_MUX},
+	{LV_3,   333000, C_PLL},
+	{LV_4,   222000, C_PLL},
+	{LV_5,   167000, C_PLL},
+	{LV_6,   111000, C_PLL},
+	{LV_7,    96000, C_PLL},
 };
 #endif
 
@@ -314,12 +364,12 @@ struct int_clk_info aclk_166[] = {
 	{LV_1_1, 167000, C_PLL},
 	{LV_1_2, 167000, C_PLL},
 	{LV_1_3, 167000, C_PLL},
-	{LV_1_4, 167000, C_PLL},
 	{LV_2,   167000, C_PLL},
-	{LV_3,   134000, C_PLL},
-	{LV_4,   111000, C_PLL},
-	{LV_5,    84000, C_PLL},
+	{LV_3,   167000, C_PLL},
+	{LV_4,   134000, C_PLL},
+	{LV_5,   111000, C_PLL},
 	{LV_6,    84000, C_PLL},
+	{LV_7,    84000, C_PLL},
 #else
 	{LV_0,   167000, C_PLL},
 	{LV_1,   167000, C_PLL},
@@ -342,12 +392,12 @@ struct int_clk_info aclk_266[] = {
 	{LV_1_1, 160000, S_PLL},
 	{LV_1_2,  75000, D_PLL},
 	{LV_1_3,  75000, D_PLL},
-	{LV_1_4, 267000, S_PLL},
 	{LV_2,   267000, S_PLL},
-	{LV_3,   160000, S_PLL},
-	{LV_4,   134000, S_PLL},
+	{LV_3,   267000, S_PLL},
+	{LV_4,   160000, S_PLL},
 	{LV_5,   134000, S_PLL},
-	{LV_6,    75000, D_PLL},
+	{LV_6,   134000, S_PLL},
+	{LV_7,    75000, D_PLL},
 #else
 	{LV_0,   267000, M_PLL},
 	{LV_1,   134000, M_PLL},
@@ -370,13 +420,19 @@ struct int_clk_info aclk_66[] = {
 	{LV_1_2,  67000, C_PLL},
 	{LV_1_3,  67000, C_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4,  67000, C_PLL},
-#endif
 	{LV_2,    67000, C_PLL},
 	{LV_3,    67000, C_PLL},
 	{LV_4,    67000, C_PLL},
 	{LV_5,    67000, C_PLL},
 	{LV_6,    67000, C_PLL},
+	{LV_7,    67000, C_PLL},
+#else
+	{LV_2,    67000, C_PLL},
+	{LV_3,    67000, C_PLL},
+	{LV_4,    67000, C_PLL},
+	{LV_5,    67000, C_PLL},
+	{LV_6,    67000, C_PLL},
+#endif
 };
 
 struct int_clk_info aclk_333_432_isp0[] = {
@@ -453,13 +509,19 @@ struct int_clk_info aclk_300_gscl[] = {
 	{LV_1_2, 300000, D_PLL},
 	{LV_1_3, 300000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 300000, D_PLL},
-#endif
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   300000, D_PLL},
+	{LV_5,   200000, D_PLL},
+	{LV_6,   150000, D_PLL},
+	{LV_7,   150000, D_PLL},
+#else
 	{LV_2,   300000, D_PLL},
 	{LV_3,   300000, D_PLL},
 	{LV_4,   200000, D_PLL},
 	{LV_5,   150000, D_PLL},
 	{LV_6,   150000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_300_disp1[] = {
@@ -470,13 +532,19 @@ struct int_clk_info aclk_300_disp1[] = {
 	{LV_1_2, 200000, D_PLL},
 	{LV_1_3, 200000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 200000, D_PLL},
-#endif
+	{LV_2,   200000, D_PLL},
+	{LV_3,   200000, D_PLL},
+	{LV_4,   200000, D_PLL},
+	{LV_5,   200000, D_PLL},
+	{LV_6,   200000, D_PLL},
+	{LV_7,   120000, D_PLL},
+#else
 	{LV_2,   200000, D_PLL},
 	{LV_3,   200000, D_PLL},
 	{LV_4,   200000, D_PLL},
 	{LV_5,   200000, D_PLL},
 	{LV_6,   120000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_400_disp1[] = {
@@ -487,13 +555,19 @@ struct int_clk_info aclk_400_disp1[] = {
 	{LV_1_2, 300000, D_PLL},
 	{LV_1_3, 300000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 300000, D_PLL},
-#endif
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   300000, D_PLL},
+	{LV_5,   200000, D_PLL},
+	{LV_6,   200000, D_PLL},
+	{LV_7,   120000, D_PLL},
+#else
 	{LV_2,   300000, D_PLL},
 	{LV_3,   300000, D_PLL},
 	{LV_4,   200000, D_PLL},
 	{LV_5,   200000, D_PLL},
 	{LV_6,   120000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_300_jpeg[] = {
@@ -504,13 +578,19 @@ struct int_clk_info aclk_300_jpeg[] = {
 	{LV_1_2, 300000, D_PLL},
 	{LV_1_3, 300000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 300000, D_PLL},
-#endif
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   300000, D_PLL},
+	{LV_5,   200000, D_PLL},
+	{LV_6,   150000, D_PLL},
+	{LV_7,    75000, D_PLL},
+#else
 	{LV_2,   300000, D_PLL},
 	{LV_3,   300000, D_PLL},
 	{LV_4,   200000, D_PLL},
 	{LV_5,   150000, D_PLL},
 	{LV_6,    75000, D_PLL},
+#endif
 };
 
 struct int_clk_info aclk_266_g2d[] = {
@@ -521,12 +601,12 @@ struct int_clk_info aclk_266_g2d[] = {
 	{LV_1_1, 267000, S_PLL},
 	{LV_1_2, 267000, S_PLL},
 	{LV_1_3, 267000, S_PLL},
-	{LV_1_4, 267000, S_PLL},
 	{LV_2,   267000, S_PLL},
 	{LV_3,   267000, S_PLL},
-	{LV_4,   160000, S_PLL},
-	{LV_5,   134000, S_PLL},
-	{LV_6,    75000, D_PLL},
+	{LV_4,   267000, S_PLL},
+	{LV_5,   160000, S_PLL},
+	{LV_6,   134000, S_PLL},
+	{LV_7,    75000, D_PLL},
 #else
 	{LV_0,   267000, M_PLL},
 	{LV_1,   267000, M_PLL},
@@ -547,13 +627,19 @@ struct int_clk_info aclk_333_g2d[] = {
 	{LV_1_2, 333000, C_PLL},
 	{LV_1_3, 333000, C_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_1_4, 300000, D_PLL},
-#endif
+	{LV_2,   300000, D_PLL},
+	{LV_3,   300000, D_PLL},
+	{LV_4,   222000, C_PLL},
+	{LV_5,   222000, C_PLL},
+	{LV_6,   167000, C_PLL},
+	{LV_7,    84000, C_PLL},
+#else
 	{LV_2,   300000, D_PLL},
 	{LV_3,   222000, C_PLL},
 	{LV_4,   222000, C_PLL},
 	{LV_5,   167000, C_PLL},
 	{LV_6,    84000, C_PLL},
+#endif
 };
 
 
