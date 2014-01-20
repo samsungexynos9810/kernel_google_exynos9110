@@ -40,8 +40,8 @@
 #define SENSOR_NAME "S5K3H7"
 
 static struct fimc_is_sensor_cfg config_3h7[] = {
-	/* 3264x2448@30fps */
-	FIMC_IS_SENSOR_CFG(3264, 2448, 30, 17, 0),
+	/* 3280x2458@30fps */
+	FIMC_IS_SENSOR_CFG(3280, 2458, 30, 15, 0),
 };
 
 static int sensor_3h7_init(struct v4l2_subdev *subdev, u32 val)

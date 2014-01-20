@@ -44,14 +44,14 @@ static struct fimc_is_sensor_cfg config_3l2[] = {
 	FIMC_IS_SENSOR_CFG(4144, 3106, 30, 25, 0),
 	/* 4144x2332@30fps */
 	FIMC_IS_SENSOR_CFG(4144, 2332, 30, 25, 1),
-	/* 2072x1154@24fps */
-	FIMC_IS_SENSOR_CFG(2072, 1154, 24, 5, 2),
+	/* 2072x1554@24fps */
+	FIMC_IS_SENSOR_CFG(2072, 1554, 24, 25, 2),
 	/* 2072x1166@24fps */
-	FIMC_IS_SENSOR_CFG(2072, 1166, 24, 5, 3),
-	/* 1024x584@120fps */
+	FIMC_IS_SENSOR_CFG(2072, 1166, 24, 25, 3),
+	/* 1040x584@120fps */
 	FIMC_IS_SENSOR_CFG(1040, 584, 120, 17, 4),
 	/* 2072x1166@60fps */
-	FIMC_IS_SENSOR_CFG(2072, 1162, 60, 9, 5),
+	FIMC_IS_SENSOR_CFG(2072, 1166, 60, 19, 5),
 };
 
 static int sensor_3l2_init(struct v4l2_subdev *subdev, u32 val)

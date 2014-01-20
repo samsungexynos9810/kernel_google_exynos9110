@@ -75,6 +75,8 @@ static struct fimc_is_sensor_cfg config_6b2[] = {
 	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 16, 0),
 	/* 1936x1090@24fps */
 	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 13, 1),
+	/* 1296x730@30fps */
+	FIMC_IS_SENSOR_CFG(1296, 730, 30, 13, 2),
 };
 
 static int sensor_6b2_open(struct v4l2_subdev *sd,

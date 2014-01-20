@@ -40,8 +40,8 @@
 #define SENSOR_NAME "S5K6A3"
 
 static struct fimc_is_sensor_cfg config_6a3[] = {
-	/* 1936x1090@30fps */
-	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 16, 0),
+	/* 1412x796@30fps */
+	FIMC_IS_SENSOR_CFG(1412, 796, 30, 16, 0),
 };
 
 static int sensor_6a3_init(struct v4l2_subdev *subdev, u32 val)

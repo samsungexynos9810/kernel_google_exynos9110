@@ -73,8 +73,6 @@
 static struct fimc_is_sensor_cfg config_8b1[] = {
 	/* 1936x1090@30fps */
 	FIMC_IS_SENSOR_CFG(1936, 1090, 30, 17, 0),
-	/* 1936x1090@24fps */
-	FIMC_IS_SENSOR_CFG(1936, 1090, 24, 13, 1),
 };
 
 static int sensor_8b1_open(struct v4l2_subdev *sd,

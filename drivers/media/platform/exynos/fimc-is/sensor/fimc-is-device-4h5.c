@@ -40,13 +40,13 @@
 
 static struct fimc_is_sensor_cfg config_4h5[] = {
 	/* 3280x2458@30fps */
-	FIMC_IS_SENSOR_CFG(3280, 2458, 30, 17, 0),
+	FIMC_IS_SENSOR_CFG(3280, 2458, 30, 14, 0),
 	/* 3280x1846@30fps */
-	FIMC_IS_SENSOR_CFG(3280, 1846, 30, 14, 1),
+	FIMC_IS_SENSOR_CFG(3280, 1846, 30, 11, 1),
 	/* 1640x924@60fps */
-	FIMC_IS_SENSOR_CFG(1640, 924, 60, 17, 2),
+	FIMC_IS_SENSOR_CFG(1640, 924, 60, 14, 2),
 	/* 816x460@120fps */
-	FIMC_IS_SENSOR_CFG(816, 460, 120, 17, 3),
+	FIMC_IS_SENSOR_CFG(816, 460, 120, 14, 3),
 };
 
 static int sensor_4h5_init(struct v4l2_subdev *subdev, u32 val)
