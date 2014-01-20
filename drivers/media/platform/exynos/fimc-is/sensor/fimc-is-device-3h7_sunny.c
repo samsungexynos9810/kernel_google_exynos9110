@@ -134,7 +134,11 @@ int sensor_3h7_sunny_probe(struct i2c_client *client,
 #endif
 	ext->flash_con.peri_type = SE_I2C;
 	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 5;
+#if defined(CONFIG_MACH_XYREF4415)
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 6;
+#else
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 8;
+#endif
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
 
