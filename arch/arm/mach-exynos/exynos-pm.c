@@ -58,10 +58,11 @@ EXPORT_SYMBOL_GPL(exynos_pm_unregister_notifier);
 
 int exynos_lpa_enter(void)
 {
+	unsigned long flags;
 	int nr_calls;
 	int ret = 0;
 
-	read_lock(&exynos_pm_notifier_lock);
+	read_lock_irqsave(&exynos_pm_notifier_lock, flags);
 	ret = exynos_pm_notify(LPA_ENTER, -1, &nr_calls);
 	if (ret)
 		/*
@@ -69,7 +70,7 @@ int exynos_lpa_enter(void)
 		 * PM entry who are notified earlier to prepare for it.
 		 */
 		exynos_pm_notify(LPA_ENTER_FAIL, nr_calls - 1, NULL);
-	read_unlock(&exynos_pm_notifier_lock);
+	read_unlock_irqrestore(&exynos_pm_notifier_lock, flags);
 
 	return ret;
 }
@@ -77,11 +78,12 @@ EXPORT_SYMBOL_GPL(exynos_lpa_enter);
 
 int exynos_lpa_exit(void)
 {
+	unsigned long flags;
 	int ret;
 
-	read_lock(&exynos_pm_notifier_lock);
+	read_lock_irqsave(&exynos_pm_notifier_lock, flags);
 	ret = exynos_pm_notify(LPA_EXIT, -1, NULL);
-	read_unlock(&exynos_pm_notifier_lock);
+	read_unlock_irqrestore(&exynos_pm_notifier_lock, flags);
 
 	return ret;
 }
