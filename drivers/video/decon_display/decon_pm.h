@@ -13,7 +13,7 @@
 
 int init_display_pm_status(struct display_driver *dispdrv);
 int init_display_pm(struct display_driver *dispdrv);
-int disp_pm_init_status(struct display_driver *dispdrv);
+int disp_pm_set_plat_status(struct display_driver *dispdrv, bool platform_on);
 int disp_pm_add_refcount(struct display_driver *dispdrv);
 int disp_pm_dec_refcount(struct display_driver *dispdrv);
 void disp_pm_te_triggered(struct display_driver *dispdrv);

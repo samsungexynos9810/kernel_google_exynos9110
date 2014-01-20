@@ -91,12 +91,23 @@ extern struct pm_ops dsi_pm_ops;
 
 extern struct mipi_dsim_device *dsim_for_decon;
 
+int disp_pm_set_plat_status(struct display_driver *dispdrv, bool platform_on)
+{
+	if (platform_on)
+		dispdrv->platform_status = DISP_STATUS_PM1;
+	else
+		dispdrv->platform_status = DISP_STATUS_PM0;
+
+	return 0;
+}
+
 int init_display_pm_status(struct display_driver *dispdrv) {
 	dispdrv->pm_status.clock_enabled = 0;
 	atomic_set(&dispdrv->pm_status.lock_count, 0);
 	dispdrv->pm_status.clk_idle_count = 0;
 	dispdrv->pm_status.pwr_idle_count = 0;
 	dispdrv->platform_status = DISP_STATUS_PM0;
+	disp_pm_set_plat_status(dispdrv, false);
 
 	te_count = 0;
 	frame_done_count = 0;
@@ -186,12 +197,6 @@ void disp_debug_power_info(void)
 		ktime_to_ns(dispdrv->decon_driver.sfb->vsync_info.timestamp),
 		frame_done_count,
 		te_count);
-}
-
-int disp_pm_init_status(struct display_driver *dispdrv)
-{
-	dispdrv->platform_status = DISP_STATUS_PM1;
-	return 0;
 }
 
 void disp_pm_gate_lock(struct display_driver *dispdrv, bool increase)
@@ -356,9 +361,10 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 
 	init_gating_idle_count(dispdrv);
 
+	/* First WIN_CONFIG should be on clock and power-gating */
 	if (dispdrv->platform_status < DISP_STATUS_PM1) {
 		if (cmd == S3CFB_WIN_CONFIG)
-			disp_pm_init_status(dispdrv);
+			disp_pm_set_plat_status(dispdrv, true);
 	}
 
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
