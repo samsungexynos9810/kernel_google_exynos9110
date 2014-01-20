@@ -1179,9 +1179,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		fimc_is_runtime_resume(dev);
 		info("%s(%d) - fimc_is runtime resume complete\n", __func__, on);
 #endif
-#if defined(CONFIG_SOC_EXYNOS3470)
-		bts_initialize("pd-cam", true);
-#endif
 		snprintf(fw_name, sizeof(fw_name), "%s", FIMC_IS_FW);
 
 #if 0
@@ -1272,9 +1269,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		/* Check FW state for WFI of A5 */
 		debug = readl(device->interface->regs + ISSR6);
 		printk(KERN_INFO "%s: A5 state(0x%x)\n", __func__, debug);
-#if defined(CONFIG_SOC_EXYNOS3470)
-		bts_initialize("pd-cam", false);
-#endif
+
 		/* FIMC-IS local power down */
 #if defined(CONFIG_PM_RUNTIME)
 		rpm_ret = pm_runtime_put_sync(dev);
@@ -1290,6 +1285,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 #if defined(CONFIG_SOC_EXYNOS3470)
 		writel(0x0, PMUREG_ISP_ARM_SYS_PWR_REG);
 #else
+#if !defined(CONFIG_SOC_EXYNOS4415)
 		timeout = 2000;
 		while ((readl(PMUREG_ISP_STATUS) & 0x1) && timeout) {
 			timeout--;
@@ -1298,6 +1294,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		if (timeout == 0)
 			err("ISP power down failed(0x%08x)\n",
 				readl(PMUREG_ISP_STATUS));
+#endif
 #endif /* defined(CONFIG_SOC_EXYNOS3470) */
 #if defined(CONFIG_SOC_EXYNOS5430)
 		timeout = 1000;
