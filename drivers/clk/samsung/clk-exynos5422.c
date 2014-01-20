@@ -2102,6 +2102,30 @@ struct samsung_pll_rate_table dpll_rate_table[] = {
 	{  66000000U,   4,  352,    5,  0},
 };
 
+#define EXYNOS5422_PRINT_CMU(name) \
+	pr_info("  - %s  : 0x%x\n", \
+			#name, \
+			__raw_readl(EXYNOS5_##name))
+
+void show_exynos_cmu(void)
+{
+	pr_info("\n");
+	pr_info(" -----------------------------------------------------------------------------------\n");
+	pr_info(" **** CMU register dump ****\n");
+	EXYNOS5422_PRINT_CMU(APLL_CON0);
+	EXYNOS5422_PRINT_CMU(KPLL_CON0);
+	EXYNOS5422_PRINT_CMU(BPLL_CON0);
+	EXYNOS5422_PRINT_CMU(CPLL_CON0);
+	EXYNOS5422_PRINT_CMU(DPLL_CON0);
+	EXYNOS5422_PRINT_CMU(IPLL_CON0);
+	EXYNOS5422_PRINT_CMU(MPLL_CON0);
+	EXYNOS5422_PRINT_CMU(SPLL_CON0);
+	EXYNOS5422_PRINT_CMU(VPLL_CON0);
+	EXYNOS5422_PRINT_CMU(EPLL_CON0);
+	EXYNOS5422_PRINT_CMU(RPLL_CON0);
+	pr_info(" -----------------------------------------------------------------------------------\n");
+}
+
 /* register exynos5422 clocks */
 void __init exynos5422_clk_init(struct device_node *np)
 {
