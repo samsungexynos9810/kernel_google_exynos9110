@@ -37,7 +37,7 @@ struct thermal_limits {
 #ifdef CONFIG_CPU_THERMAL_IPA
 
 void check_switch_ipa_on(int temp);
-void ipa_cpufreq_requested(struct cpufreq_policy *p, unsigned int *freqs);
+void ipa_cpufreq_requested(struct cpufreq_policy *p, unsigned int freq);
 int ipa_register_thermal_sensor(struct ipa_sensor_conf *);
 int thermal_register_notifier(struct notifier_block *nb);
 int thermal_unregister_notifier(struct notifier_block *nb);

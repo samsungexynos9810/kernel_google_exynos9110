@@ -1129,7 +1129,7 @@ static int get_cluster_from_cpufreq_policy(struct cpufreq_policy *policy)
 	return policy->cpu > 3 ? CA15 : CA7;
 }
 
-void ipa_cpufreq_requested(struct cpufreq_policy *policy, unsigned int *freqs)
+void ipa_cpufreq_requested(struct cpufreq_policy *policy, unsigned int freq)
 {
 	int cl_idx, i;
 	unsigned int cpu;
@@ -1138,7 +1138,7 @@ void ipa_cpufreq_requested(struct cpufreq_policy *policy, unsigned int *freqs)
 
 	i = 0;
 	for_each_cpu(cpu, arbiter_data.cl_stats[cl_idx].mask) {
-		arbiter_data.cpu_freqs[cl_idx][i] = freqs[i];
+		arbiter_data.cpu_freqs[cl_idx][i] = freq;
 
 		i++;
 	}
