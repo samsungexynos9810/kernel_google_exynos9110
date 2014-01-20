@@ -206,7 +206,7 @@ static void samsung_usb3phy_crport_ctrl(struct samsung_usbphy *sphy,
 			sphy->regs + EXYNOS5_DRD_PHYREG0);
 	samsung_usb3phy_crport_handshake(sphy,
 			EXYNOS5_DRD_PHYREG0_CR_DATA_IN(addr),
-			EXYNOS5_DRD_PHYREG0_CR_CR_CAP_DATA);
+			EXYNOS5_DRD_PHYREG0_CR_CR_CAP_ADDR);
 
 	/* Write Data */
 	writel(EXYNOS5_DRD_PHYREG0_CR_DATA_IN(data),
