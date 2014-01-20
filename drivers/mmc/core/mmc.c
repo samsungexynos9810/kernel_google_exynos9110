@@ -960,10 +960,6 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 			goto free_card;
 	}
 
-	if (card->cid.manfid == CID_MANFID_SAMSUNG &&
-			host->caps2 & MMC_CAP2_DEVICE_DRIVER)
-		driver_type = MMC_DRIVER_TYPE_5 << 4;
-
 	/*
 	 * Select card, as all following commands rely on that.
 	 */
@@ -1070,9 +1066,13 @@ static int mmc_init_card(struct mmc_host *host, u32 ocr,
 		err = 0;
 		if (card->ext_csd.hs_max_dtr > 52000000 &&
 			(host->caps2 & MMC_CAP2_HS200 ||
-			 host->caps2 & MMC_CAP2_HS200_DDR))
+			 host->caps2 & MMC_CAP2_HS200_DDR)) {
+			/*
+			 * Device output driver strength
+			 */
+			driver_type = host->dev_drv_str << 4;
 			err = mmc_select_hs200(card, driver_type);
-		else if	(host->caps & MMC_CAP_MMC_HIGHSPEED)
+		} else if (host->caps & MMC_CAP_MMC_HIGHSPEED)
 			err = mmc_switch(card, EXT_CSD_CMD_SET_NORMAL,
 					 EXT_CSD_HS_TIMING, 1,
 					 card->ext_csd.generic_cmd6_time);

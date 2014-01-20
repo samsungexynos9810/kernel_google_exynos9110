@@ -3250,6 +3250,11 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 		mmc->pm_flags = mmc->pm_caps;
 	}
 
+	if (host->pdata->dev_drv_str)
+		mmc->dev_drv_str = host->pdata->dev_drv_str;
+	else
+		mmc->dev_drv_str = MMC_DRIVER_TYPE_0;
+
 	if (host->pdata->get_bus_wd)
 		bus_width = host->pdata->get_bus_wd(slot->id);
 	else if (host->dev->of_node)
@@ -3524,6 +3529,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 
 	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
 	of_property_read_u32(np, "qos_int_level", &pdata->qos_int_level);
+	of_property_read_u32(np, "device-driver", &pdata->dev_drv_str);
 
 	if (!of_property_read_u32(np, "clock-frequency", &clock_frequency))
 		pdata->bus_hz = clock_frequency;
@@ -3608,9 +3614,6 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 
 	if (of_find_property(np, "enable-cmdq", NULL))
 		pdata->caps2 |= MMC_CAP2_CMDQ;
-
-	if (of_find_property(np, "device-driver", NULL))
-		pdata->caps2 |= MMC_CAP2_DEVICE_DRIVER;
 
 	if (of_find_property(np, "clock-gate", NULL))
 		pdata->use_gate_clock = true;

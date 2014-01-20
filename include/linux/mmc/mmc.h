@@ -442,16 +442,6 @@ struct _mmc_csd {
 #define CID_MANFID_SAMSUNG	0x15
 
 /*
- * Device Output Driver Type
- */
-#define MMC_DRIVER_TYPE_0	0	/* Default, x1 */
-#define MMC_DRIVER_TYPE_1	1	/* x1.5 */
-#define MMC_DRIVER_TYPE_2	2	/* x0.75 */
-#define MMC_DRIVER_TYPE_3	3	/* x0.5 */
-#define MMC_DRIVER_TYPE_4	4	/* x1.2 */
-#define MMC_DRIVER_TYPE_5	5	/* x2 */
-
-/*
  * HS_TIMING
  */
 #define MMC_HS_TIMING_LEGACY	0	/* for legacy mode */

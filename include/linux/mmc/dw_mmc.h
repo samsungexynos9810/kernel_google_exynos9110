@@ -418,6 +418,7 @@ struct dw_mci_board {
 	bool use_gate_clock;
 	bool enable_cclk_on_suspend;
 	bool on_suspend;
+	unsigned int dev_drv_str;
 };
 
 #endif /* LINUX_MMC_DW_MMC_H */

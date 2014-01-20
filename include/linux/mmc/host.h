@@ -298,9 +298,17 @@ struct mmc_host {
 				 MMC_CAP2_HS200_1_2V_DDR)
 #define MMC_CAP2_CMDQ		(MMC_CAP2_CACHE_CTRL | \
 				(1 << 15))	/* Allow command queuing */
-#define MMC_CAP2_DEVICE_DRIVER	(1 << 16)	/* */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
+
+	unsigned int		dev_drv_str;	/* device driver strength */
+#define MMC_DRIVER_TYPE_0	0	/* Default, x1 */
+#define MMC_DRIVER_TYPE_1	1	/* x1.5 */
+#define MMC_DRIVER_TYPE_2	2	/* x0.75 */
+#define MMC_DRIVER_TYPE_3	3	/* x0.5 */
+#define MMC_DRIVER_TYPE_4	4	/* x1.2 */
+#define MMC_DRIVER_TYPE_5	5	/* x2 */
+
 
 #ifdef CONFIG_MMC_CLKGATE
 	int			clk_requests;	/* internal reference counter */
