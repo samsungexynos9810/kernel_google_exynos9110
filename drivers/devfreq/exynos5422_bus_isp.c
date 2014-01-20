@@ -206,9 +206,9 @@ struct devfreq_clk_info aclk_333_432_gscl[] = {
 
 struct devfreq_clk_info aclk_432_cam[] = {
 	{LV0,	432000,	0,	&aclk_432_cam_list},
-	{LV1,	 54000,	0,	&aclk_432_cam_list},
-	{LV2,	 87000,	0,	&aclk_432_cam_list},
-	{LV3,	 54000,	0,	&aclk_432_cam_list},
+	{LV1,	216000,	0,	&aclk_432_cam_list},
+	{LV2,	 54000,	0,	&aclk_432_cam_list},
+	{LV3,	 87000,	0,	&aclk_432_cam_list},
 	{LV4,	 54000,	0,	&aclk_432_cam_list},
 	{LV5,	 54000,	0,	&aclk_432_cam_list},
 	{LV6,	 54000,	0,	&aclk_432_cam_list},

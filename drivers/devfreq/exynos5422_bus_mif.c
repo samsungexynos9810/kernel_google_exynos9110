@@ -253,8 +253,10 @@ static unsigned int mif_fimc_opp_list[][3] = {
 
 static unsigned int devfreq_mif_asv_abb[LV_END];
 
+static unsigned int (*exynos5422_dram_param)[3];
+
 #if defined(SET_DREX_TIMING)
-static unsigned int exynos5422_dram_param[][3] = {
+static unsigned int exynos5422_dram_param_3gb[][3] = {
 	/* timiningRow, timingData, timingPower */
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	{0x575A9713, 0x4740085E, 0x545B0446},	/*825Mhz*/
@@ -279,6 +281,22 @@ static unsigned int exynos5422_dram_param[][3] = {
 #endif
 };
 #endif
+
+#ifdef CONFIG_SOC_EXYNOS5422_REV_0
+static unsigned int exynos5422_dram_param_2gb[][3] = {
+	/* timiningRow, timingData, timingPower */
+	{0x365A9713, 0x4740085E, 0x543A0446},   /*825Mhz*/
+	{0x30598651, 0x3730085E, 0x4C330336},   /*728Mhz*/
+	{0x2A48758F, 0x3730085E, 0x402D0335},   /*633Mhz*/
+	{0x244764CD, 0x3730085E, 0x38270335},   /*543Mhz*/
+	{0x1B35538A, 0x2720085E, 0x2C1D0225},   /*413Mhz*/
+	{0x12244287, 0x2720085E, 0x1C140225},   /*275Mhz*/
+	{0x112331C6, 0x2720085E, 0x180F0225},   /*206Mhz*/
+	{0x12223185, 0x2720085E, 0x140C0225},   /*165Mhz*/
+	{0x11222144, 0x2720085E, 0x100C0225},   /*138Mhz*/
+};
+#endif
+
 /*
  * MIF devfreq notifier
  */
@@ -859,6 +877,27 @@ static struct devfreq_dev_profile exynos5_mif_devfreq_profile = {
 	.max_state = LV_END,
 };
 
+static int exynos5422_dram_parameter(void)
+{
+	unsigned int pkg_id;
+
+	pkg_id = __raw_readl(S5P_VA_CHIPID + 4);
+
+	pkg_id = (pkg_id >> 4) & 0xf;
+
+	if (pkg_id == 0x2 || pkg_id == 0x3) {
+		exynos5422_dram_param = exynos5422_dram_param_2gb;
+		return 0;
+	}
+
+	if (pkg_id == 0x0 || pkg_id == 0x1 || pkg_id == 0x8) {
+		exynos5422_dram_param = exynos5422_dram_param_3gb;
+		return 0;
+	}
+
+	return -EINVAL;
+}
+
 static int exynos5422_mif_table(struct busfreq_data_mif *data)
 {
 	unsigned int i;
@@ -1374,6 +1413,11 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 	/* Setting table for MIF*/
 	exynos5422_mif_table(data);
+
+	if (exynos5422_dram_parameter()) {
+		dev_err(dev, "Can't support memory type\n");
+		goto err_regulator;
+	}
 
 	data->vdd_mif = regulator_get(dev, "vdd_mif");
 	if (IS_ERR(data->vdd_mif)) {
