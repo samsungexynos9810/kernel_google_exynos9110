@@ -966,6 +966,31 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	return index;
 }
 
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+static struct dentry *cluster_off_time_debugfs;
+
+static int cluster_off_time_show(struct seq_file *s, void *unused)
+{
+	seq_printf(s, "CA15_cluster_off %llu\n",
+			(unsigned long long) cputime64_to_clock_t(cluster_off_time));
+
+	return 0;
+}
+
+static int cluster_off_time_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, cluster_off_time_show, inode->i_private);
+}
+
+const static struct file_operations cluster_off_time_fops = {
+	.open		= cluster_off_time_debug_open,
+	.read		= seq_read,
+	.llseek		= seq_lseek,
+	.release	= single_release,
+};
+#endif
+#endif
+
 static struct dentry *lp_debugfs;
 
 static int lp_debug_show(struct seq_file *s, void *unused)
@@ -1016,31 +1041,6 @@ const static struct file_operations lp_cdev_status_fops = {
 	.llseek         = seq_lseek,
 	.release        = single_release,
 };
-
-#if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-static struct dentry *cluster_off_time_debugfs;
-
-static int cluster_off_time_show(struct seq_file *s, void *unused)
-{
-	seq_printf(s, "CA15_cluster_off %llu\n",
-			(unsigned long long) cputime64_to_clock_t(cluster_off_time));
-
-	return 0;
-}
-
-static int cluster_off_time_debug_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, cluster_off_time_show, inode->i_private);
-}
-
-const static struct file_operations cluster_off_time_fops = {
-	.open		= cluster_off_time_debug_open,
-	.read		= seq_read,
-	.llseek		= seq_lseek,
-	.release	= single_release,
-};
-#endif
-#endif
 
 static int exynos_cpuidle_notifier_event(struct notifier_block *this,
 					  unsigned long event,
