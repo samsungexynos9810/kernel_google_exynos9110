@@ -4708,6 +4708,10 @@ int s3c_fb_runtime_resume(struct device *dev)
 			dev_err(sfb->dev, "failed to request min_freq for int\n");
 	}
 #endif
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	if (sfb->irq_no != 0)
+		enable_irq(sfb->irq_no);
+#endif
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	if ((sfb->irq_no != 0) &&
@@ -4717,6 +4721,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	}
 #endif
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
+
 
 	if (sfb->power_state != POWER_HIBER_DOWN)
 		sfb->power_state = POWER_ON;
