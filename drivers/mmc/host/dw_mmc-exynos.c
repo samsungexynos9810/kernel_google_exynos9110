@@ -176,6 +176,8 @@ static void exynos_sfr_save(unsigned int i)
 #else
 	dw_mci_save_sfr[i][15] = mci_readl(host, DBADDR);
 #endif
+	dw_mci_save_sfr[i][17] = mci_readl(host, DDR200_RDDQS_EN);
+	dw_mci_save_sfr[i][18] = mci_readl(host, DDR200_DLINE_CTRL);
 	/* For LPA */
 	atomic_inc_return(&host->ciu_en_win);
 	if (host->pdata->enable_cclk_on_suspend) {
@@ -214,6 +216,8 @@ static void exynos_sfr_restore(unsigned int i)
 #else
 	mci_writel(host, DBADDR, dw_mci_save_sfr[i][15]);
 #endif
+	mci_writel(host, DDR200_RDDQS_EN, dw_mci_save_sfr[i][17]);
+	mci_writel(host, DDR200_DLINE_CTRL, dw_mci_save_sfr[i][18]);
 	atomic_inc_return(&host->ciu_en_win);
 	dw_mci_ciu_clk_en(host, false);
 
