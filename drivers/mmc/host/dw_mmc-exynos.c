@@ -503,9 +503,9 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 		}
 	} else if (timing == MMC_TIMING_MMC_HS200 ||
 			timing == MMC_TIMING_UHS_SDR104) {
-		clksel = (clksel & 0xfff8ffff) | (priv->ciu_div << 16);
+		clksel = (clksel & 0xfff8ffff) | (priv->selclk_drv << 16);
 	} else if (timing == MMC_TIMING_UHS_SDR50) {
-		clksel = (clksel & 0xfff8ffff) | (priv->ciu_div << 16);
+		clksel = (clksel & 0xfff8ffff) | (priv->selclk_drv << 16);
 	} else if (timing == MMC_TIMING_UHS_DDR50) {
 		clksel = priv->ddr_timing;
 	} else {
@@ -588,6 +588,9 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 		priv->cd_gpio = of_get_named_gpio(np, "cd-gpio", 0);
 	else
 		priv->cd_gpio = -1;
+
+	if (of_property_read_u32(np, "selclk_drv", &priv->selclk_drv))
+		priv->selclk_drv = 3;
 
 	ret = of_property_read_u32_array(np,
 			"samsung,dw-mshc-sdr-timing", timing, 4);

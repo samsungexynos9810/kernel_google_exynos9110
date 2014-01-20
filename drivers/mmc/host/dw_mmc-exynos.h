@@ -13,7 +13,8 @@
 #define NUM_PINS(x)			(x + 2)
 
 #define EXYNOS_DEF_MMC_0_CAPS	(MMC_CAP_UHS_DDR50 | MMC_CAP_1_8V_DDR | \
-				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23)
+				MMC_CAP_8_BIT_DATA | MMC_CAP_CMD23 | \
+				MMC_CAP_ERASE)
 #define EXYNOS_DEF_MMC_1_CAPS	MMC_CAP_CMD23
 #define EXYNOS_DEF_MMC_2_CAPS	(MMC_CAP_CMD23 | MMC_CAP_UHS_SDR104)
 
@@ -47,6 +48,7 @@ struct dw_mci_exynos_priv_data {
 	u32			caps;
 	u32			ctrl_flag;
 	u32			ignore_phase;
+	u32			selclk_drv;
 
 #define DW_MMC_EXYNOS_USE_FINE_TUNING		BIT(0)
 };

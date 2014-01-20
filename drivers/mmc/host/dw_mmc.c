@@ -3530,6 +3530,7 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
 	of_property_read_u32(np, "qos_int_level", &pdata->qos_int_level);
 	of_property_read_u32(np, "device-driver", &pdata->dev_drv_str);
+	of_property_read_u32(np, "sw-timeout", &pdata->sw_timeout);
 
 	if (!of_property_read_u32(np, "clock-frequency", &clock_frequency))
 		pdata->bus_hz = clock_frequency;
@@ -3542,23 +3543,33 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 
 	/* caps */
 	if (of_find_property(np, "caps-control", NULL)) {
-		if (of_find_property(np, "support-ddr50", NULL))
-			pdata->caps |= MMC_CAP_UHS_DDR50;
+		if (of_find_property(np, "supports-ddr50", NULL))
+			pdata->caps = MMC_CAP_UHS_DDR50;
 
-		if (of_find_property(np, "support-1-8v-ddr", NULL))
+		if (of_find_property(np, "supports-1-8v-ddr", NULL))
 			pdata->caps |= MMC_CAP_1_8V_DDR;
 
-		if (of_find_property(np, "support-8-bit", NULL))
+		if (of_find_property(np, "supports-8-bit", NULL))
 			pdata->caps |= MMC_CAP_8_BIT_DATA;
 
-		if (of_find_property(np, "support-cmd23", NULL))
+		if (of_find_property(np, "supports-cmd23", NULL))
 			pdata->caps |= MMC_CAP_CMD23;
 
-		if (of_find_property(np, "support-sdr104", NULL))
+		if (of_find_property(np, "supports-sdr104-mode", NULL))
 			pdata->caps |= MMC_CAP_UHS_SDR104;
+
+		if (of_find_property(np, "supports-erase", NULL))
+			pdata->caps |= MMC_CAP_ERASE;
+
 	} else if (drv_data && drv_data->misc_control)
 		pdata->caps = drv_data->misc_control(host,
 				CTRL_SET_DEF_CAPS, NULL);
+
+	if (of_find_property(np, "supports-sdr50-mode", NULL))
+		pdata->caps |= MMC_CAP_UHS_SDR50;
+
+	if (of_find_property(np, "supports-sdio-irq", NULL))
+		pdata->caps |= MMC_CAP_SDIO_IRQ;
 
 	/* caps2 */
 	if (of_find_property(np, "extra_tuning", NULL))
@@ -3624,10 +3635,6 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_property_read_u32(dev->of_node, "cd-type",
 				&pdata->cd_type))
 		pdata->cd_type = DW_MCI_CD_PERMANENT;
-
-
-	if (of_find_property(np, "supports-sdr104-mode", NULL))
-		pdata->caps |= MMC_CAP_UHS_SDR104;
 
 	return pdata;
 }
