@@ -671,6 +671,11 @@ static void cpufreq_interactive_boost(const struct cpufreq_policy *policy)
 		pcpu = &per_cpu(cpuinfo, i);
 		tunables = pcpu->policy->governor_data;
 
+		if (!tunables->speedchange_task) {
+			spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+			return;
+		}
+
 		if (pcpu->target_freq < tunables->hispeed_freq) {
 			pcpu->target_freq = tunables->hispeed_freq;
 			cpumask_set_cpu(i, &speedchange_cpumask);
