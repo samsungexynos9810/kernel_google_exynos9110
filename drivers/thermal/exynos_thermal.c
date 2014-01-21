@@ -1601,9 +1601,9 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 #if defined(CONFIG_SOC_EXYNOS5422)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.threshold_falling = 2,
-	.trigger_levels[0] = 80,
-	.trigger_levels[1] = 90,
-	.trigger_levels[2] = 100,
+	.trigger_levels[0] = 95,
+	.trigger_levels[1] = 100,
+	.trigger_levels[2] = 105,
 	.trigger_levels[3] = 110,
 	.trigger_level0_en = 1,
 	.trigger_level1_en = 1,
@@ -1619,28 +1619,6 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 55,
 	.freq_tab[0] = {
-		.freq_clip_max = 1700 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1500 * 1000,
-#endif
-		.temp_level = 80,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[1] = {
-		.freq_clip_max = 1500 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1500 * 1000,
-#endif
-		.temp_level = 90,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[2] = {
 		.freq_clip_max = 900 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1500 * 1000,
@@ -1651,7 +1629,7 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
-	.freq_tab[3] = {
+	.freq_tab[1] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1200 * 1000,
@@ -1662,9 +1640,20 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
+	.freq_tab[2] = {
+		.freq_clip_max = 800 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1200 * 1000,
+#endif
+		.temp_level = 105,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
 	.size[THERMAL_TRIP_ACTIVE] = 1,
-	.size[THERMAL_TRIP_PASSIVE] = 3,
-	.freq_tab_count = 4,
+	.size[THERMAL_TRIP_PASSIVE] = 2,
+	.freq_tab_count = 3,
 	.type = SOC_ARCH_EXYNOS,
 };
 #define EXYNOS5422_TMU_DRV_DATA (&exynos5_tmu_data)
