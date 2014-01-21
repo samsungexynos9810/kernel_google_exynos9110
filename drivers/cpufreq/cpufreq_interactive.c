@@ -695,7 +695,7 @@ static void cpufreq_interactive_boost(const struct cpufreq_policy *policy)
 
 	spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 
-	if (anyboost)
+	if (anyboost && tunables->speedchange_task)
 		wake_up_process(tunables->speedchange_task);
 }
 
