@@ -341,6 +341,7 @@ static void release_power_caps(void)
 		arbiter_set_cpu_freq_limit(freq, cl_idx);
 	}
 
+	arbiter_data.gpu_freq_limit = 0;
 	gpu_ipa_dvfs_max_unlock();
 }
 
