@@ -24,6 +24,7 @@
 #include <linux/ipa.h>
 #include <linux/module.h>
 #include <linux/slab.h>
+#include <linux/sysfs.h>
 #include <linux/workqueue.h>
 #include <linux/math64.h>
 #include <linux/of.h>
@@ -140,6 +141,8 @@ static struct arbiter_data
 	struct ipa_config config;
 	struct ipa_sensor_conf *sensor;
 	struct dentry *debugfs_root;
+	struct kobject *kobj;
+
 	bool active;
 	bool initialised;
 
@@ -820,6 +823,34 @@ static struct dentry * setup_debugfs(struct ipa_config *config)
 	return ipa_d;
 }
 
+define_ipa_attr(enabled);
+
+static struct attribute *ipa_attrs[] = {
+	&enabled.attr,
+	NULL
+};
+
+struct attribute_group ipa_attr_group = {
+	.attrs = ipa_attrs,
+};
+
+static void setup_sysfs(struct arbiter_data *arb)
+{
+	int rc;
+
+	arb->kobj = kobject_create_and_add("ipa", power_kobj);
+	if (!arb->kobj) {
+		pr_info("Unable to create ipa kobject\n");
+		return;
+	}
+
+	rc = sysfs_create_group(arb->kobj, &ipa_attr_group);
+	if (rc) {
+		pr_info("Unable to create ipa group\n");
+		return;
+	}
+}
+
 static void setup_power_tables(void)
 {
 	struct cpu_power_info t;
@@ -1201,6 +1232,7 @@ static void arbiter_init(struct work_struct *work)
 
 	reset_arbiter_configuration(&arbiter_data.config);
 	arbiter_data.debugfs_root = setup_debugfs(&arbiter_data.config);
+	setup_sysfs(&arbiter_data);
 	setup_power_tables();
 
 	/* reconfigure max */

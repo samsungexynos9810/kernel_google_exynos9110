@@ -19,6 +19,7 @@
 #define _DRIVERS_THERMAL_IPA_H
 
 #include <linux/cpufreq.h>
+#include <linux/sysfs.h>
 
 #define THERMAL_NEW_MAX_FREQ 0
 
@@ -33,6 +34,18 @@ struct thermal_limits {
 	int cur_freq;
 	cpumask_t cpus;
 };
+
+struct ipa_attr {
+	struct attribute attr;
+	ssize_t (*show)(struct kobject *kobj,
+			struct attribute *attr, char *buf);
+	ssize_t (*store)(struct kobject *a, struct attribute *b,
+			 const char *c, size_t count);
+};
+
+#define define_ipa_attr(_name)			\
+static struct ipa_attr _name =			\
+__ATTR(_name, 0664, NULL, NULL)
 
 #ifdef CONFIG_CPU_THERMAL_IPA
 
