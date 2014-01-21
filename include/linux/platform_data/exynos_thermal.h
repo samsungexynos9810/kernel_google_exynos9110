@@ -117,8 +117,6 @@ struct exynos_tmu_platform_data {
 	bool trigger_level6_en;
 	bool trigger_level7_en;
 
-	char clk_name[2][100];
-
 	u8 gain;
 	u8 reference_voltage;
 	u8 noise_cancel_mode;
@@ -129,6 +127,5 @@ struct exynos_tmu_platform_data {
 	struct freq_clip_table freq_tab[8];
 	int size[THERMAL_TRIP_CRITICAL + 1];
 	unsigned int freq_tab_count;
-	unsigned int clock_count;
 };
 #endif /* _LINUX_EXYNOS_THERMAL_H */

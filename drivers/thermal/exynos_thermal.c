@@ -28,7 +28,6 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/ipa.h>
-#include <linux/clk.h>
 #include <linux/workqueue.h>
 #include <linux/sysfs.h>
 #include <linux/kobject.h>
@@ -237,7 +236,6 @@ struct exynos_tmu_data {
 	enum soc_type soc;
 	struct work_struct irq_work;
 	struct mutex lock;
-	struct clk *clk[EXYSNO_CLK_COUNT];
 	u8 temp_error1[EXYNOS_TMU_COUNT];
 	u8 temp_error2[EXYNOS_TMU_COUNT];
 };
@@ -967,8 +965,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	int timeout = 20000;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	while(1) {
 		status = readb(data->base[id] + EXYNOS_TMU_REG_STATUS);
@@ -1067,8 +1063,6 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 #endif
 	}
 out:
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 
 	return ret;
@@ -1082,8 +1076,6 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 	int timeout = 5;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	if (data->soc == SOC_ARCH_EXYNOS) {
 		__raw_writel(EXYNOS_TRIMINFO_RELOAD1,
@@ -1114,8 +1106,6 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 			(data->temp_error1[id] == 0))
 		data->temp_error1[id] = pdata->efuse_value;
 #endif
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 }
 
@@ -1126,8 +1116,6 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	unsigned int con, interrupt_en;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
@@ -1169,8 +1157,6 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
 	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 }
 
@@ -1182,8 +1168,6 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	int timeout = 20000;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		while (1) {
@@ -1219,8 +1203,6 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	exynos_check_mif_noti_state(max);
 	exynos_check_gpu_noti_state(gpu_temp);
 
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 #if defined(CONFIG_CPU_THERMAL_IPA)
 	check_switch_ipa_on(max);
@@ -1245,8 +1227,6 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
 		goto out;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	reg = readl(data->base + EXYNOS_EMUL_CON);
 
@@ -1264,8 +1244,6 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
 
 	writel(reg, data->base + EXYNOS_EMUL_CON);
 
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 	return 0;
 out:
@@ -1283,8 +1261,6 @@ static void exynos_tmu_work(struct work_struct *work)
 	int i;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 	if (data->soc != SOC_ARCH_EXYNOS4210)
 		for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
@@ -1293,8 +1269,6 @@ static void exynos_tmu_work(struct work_struct *work)
 	else
 		writel(EXYNOS4210_TMU_INTCLEAR_VAL,
 				data->base[0] + EXYNOS_TMU_REG_INTCLEAR);
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 	exynos_report_trigger();
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
@@ -1481,9 +1455,6 @@ static struct exynos_tmu_platform_data const exynos5430_evt0_tmu_data = {
 	.size[THERMAL_TRIP_PASSIVE] = 3,
 	.freq_tab_count = 4,
 	.type = SOC_ARCH_EXYNOS,
-	.clock_count = 2,
-	.clk_name[0] = "pclk_tmu0_apbif",
-	.clk_name[1] = "pclk_tmu1_apbif",
 };
 #define EXYNOS5430_EVT0_TMU_DRV_DATA (&exynos5430_evt0_tmu_data)
 #else
@@ -1595,9 +1566,6 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.size[THERMAL_TRIP_PASSIVE] = 6,
 	.freq_tab_count = 7,
 	.type = SOC_ARCH_EXYNOS5430,
-	.clock_count = 2,
-	.clk_name[0] = "pclk_tmu0_apbif",
-	.clk_name[1] = "pclk_tmu1_apbif",
 };
 #define EXYNOS5430_TMU_DRV_DATA (&exynos5430_tmu_data)
 #else
@@ -1672,9 +1640,6 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 	.size[THERMAL_TRIP_PASSIVE] = 3,
 	.freq_tab_count = 4,
 	.type = SOC_ARCH_EXYNOS,
-	.clock_count = 2,
-	.clk_name[0] = "tmu",
-	.clk_name[1] = "tmu_gpu",
 };
 #define EXYNOS5422_TMU_DRV_DATA (&exynos5_tmu_data)
 #else
@@ -1767,8 +1732,6 @@ exynos_thermal_sensor_temp(struct device *dev,
 	int i, len = 0;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
@@ -1777,8 +1740,6 @@ exynos_thermal_sensor_temp(struct device *dev,
 		temp[i] = code_to_temp(data, temp_code, i) * MCELSIUS;
 	}
 
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
@@ -1804,8 +1765,6 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	unsigned int reg_data;
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
 	pr_info("TRIMINFO[%d] = 0x%x\n", id, reg_data);
@@ -1833,8 +1792,6 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
 	pr_info("INTCLEAR[%d] = 0x%x\n", id, reg_data);
 
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 }
 
@@ -1842,7 +1799,6 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigned long event, void *v)
 {
 	int ret = 0, i;
-	struct exynos_tmu_platform_data *pdata = exynos_tmu_pdev->dev.platform_data;
 
 	switch (event) {
 	case CPUFREQ_INIT_COMPLETE:
@@ -1856,8 +1812,6 @@ static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigne
 			exynos_cpufreq_init_unregister_notifier(&exynos_cpufreq_nb);
 #endif
 			platform_set_drvdata(exynos_tmu_pdev, NULL);
-			for (i = 0; i < pdata->clock_count; i++)
-				clk_unprepare(tmudata->clk[i]);
 			for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 				if (tmudata->irq[i])
 					free_irq(tmudata->irq[i], tmudata);
@@ -1946,23 +1900,6 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		}
 	}
 
-	for (i = 0; i < pdata->clock_count; i++) {
-		data->clk[i] = devm_clk_get(&pdev->dev, pdata->clk_name[i]);
-		if (IS_ERR(data->clk[i])) {
-			ret = PTR_ERR(data->clk);
-			dev_err(&pdev->dev, "Failed to get clock\n");
-			goto err_clk;
-		}
-	}
-
-	for (i = 0; i < pdata->clock_count; i++) {
-		ret = clk_prepare(data->clk[i]);
-		if (ret) {
-			dev_err(&pdev->dev, "Failed to prepare clk\n");
-			goto err_prepare_clk;
-		}
-	}
-
 	if (pdata->type == SOC_ARCH_EXYNOS || pdata->type == SOC_ARCH_EXYNOS4210 ||
 			pdata->type == SOC_ARCH_EXYNOS5430)
 		data->soc = pdata->type;
@@ -1993,15 +1930,11 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	}
 
 	mutex_lock(&data->lock);
-	clk_enable(data->clk[0]);
-	clk_enable(data->clk[1]);
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		unsigned int temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
 		int temp = code_to_temp(data, temp_code, i);
 		pr_debug("[TMU]temp[%d] : %d\n", i, temp);
 	}
-	clk_disable(data->clk[0]);
-	clk_disable(data->clk[1]);
 	mutex_unlock(&data->lock);
 
 
@@ -2068,10 +2001,6 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 err_tmu:
 	platform_set_drvdata(pdev, NULL);
 err_soc_type:
-	for (i = 0; i < pdata->clock_count; i++)
-		clk_unprepare(data->clk[i]);
-err_prepare_clk:
-err_clk:
 err_io_remap:
 err_get_resource:
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
@@ -2087,7 +2016,6 @@ err_get_irq:
 
 static int exynos_tmu_remove(struct platform_device *pdev)
 {
-	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
 	int i;
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
@@ -2096,9 +2024,6 @@ static int exynos_tmu_remove(struct platform_device *pdev)
 	unregister_pm_notifier(&exynos_pm_nb);
 
 	exynos_unregister_thermal();
-
-	clk_unprepare(data->clk[0]);
-	clk_unprepare(data->clk[1]);
 
 	platform_set_drvdata(pdev, NULL);
 
