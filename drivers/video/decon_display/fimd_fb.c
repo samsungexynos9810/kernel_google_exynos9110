@@ -2187,33 +2187,19 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		put_unused_fd(fd);
 		kfree(regs);
 	} else {
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+		disp_pm_gate_lock(get_display_driver(), true);
+#endif
 		mutex_lock(&sfb->update_regs_list_lock);
 		sfb->timeline_max++;
 		pt = sw_sync_pt_create(sfb->timeline, sfb->timeline_max);
 		fence = sync_fence_create("display", pt);
 		sync_fence_install(fence, fd);
 		win_data->fence = fd;
+
 		list_add_tail(&regs->list, &sfb->update_regs_list);
-		if (!queue_work(sfb->update_regs_wq, &sfb->update_regs_work)) {
-			list_del(&regs->list);
-
-			for (i = 0; i < sfb->variant.nr_windows; i++) {
-				sfb->windows[i]->fbinfo->fix =
-						sfb->windows[i]->prev_fix;
-				sfb->windows[i]->fbinfo->var =
-						sfb->windows[i]->prev_var;
-				s3c_fb_free_dma_buf(sfb, &regs->dma_buf_data[i]);
-			}
-			mutex_unlock(&sfb->update_regs_list_lock);
-
-			sw_sync_timeline_inc(sfb->timeline, 1);
-			kfree(regs);
-		} else {
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-			disp_pm_gate_lock(get_display_driver(), true);
-#endif
-			mutex_unlock(&sfb->update_regs_list_lock);
-		}
+		mutex_unlock(&sfb->update_regs_list_lock);
+		queue_kthread_work(&sfb->update_regs_worker, &sfb->update_regs_work);
 	}
 
 err:
@@ -2407,7 +2393,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 #endif
 }
 
-static void s3c_fb_update_regs_handler(struct work_struct *work)
+static void s3c_fb_update_regs_handler(struct kthread_work *work)
 {
 	struct s3c_fb *sfb =
 			container_of(work, struct s3c_fb, update_regs_work);
@@ -3889,12 +3875,19 @@ int create_decon_display_controller(struct platform_device *pdev)
 	INIT_LIST_HEAD(&sfb->update_regs_list);
 	mutex_init(&sfb->update_regs_list_lock);
 
-	INIT_WORK(&sfb->update_regs_work, s3c_fb_update_regs_handler);
-	sfb->update_regs_wq = create_singlethread_workqueue("s3c_fb_update_regs_wq");
-	if (sfb->update_regs_wq == NULL) {
-		dev_err(dev, "failed to create work queue\n");
-		goto err_sfb;
+	init_kthread_worker(&sfb->update_regs_worker);
+
+	sfb->update_regs_thread = kthread_run(kthread_worker_fn,
+			&sfb->update_regs_worker, "s3c-fb-update");
+	if (IS_ERR(sfb->update_regs_thread)) {
+		int err = PTR_ERR(sfb->update_regs_thread);
+		sfb->update_regs_thread = NULL;
+
+		dev_err(dev, "failed to run update_regs thread\n");
+		return err;
 	}
+	init_kthread_work(&sfb->update_regs_work, s3c_fb_update_regs_handler);
+
 	sfb->timeline = sw_sync_timeline_create("s3c-fb");
 	sfb->timeline_max = 1;
 	/* XXX need to cleanup on errors */
@@ -4241,8 +4234,7 @@ err_bus_clk:
 	clk_put(sfb->bus_clk);
 err_sfb:
 #ifdef CONFIG_ION_EXYNOS
-	if (sfb->update_regs_wq)
-		destroy_workqueue(sfb->update_regs_wq);
+	kthread_stop(sfb->update_regs_thread);
 #endif
 	return ret;
 }
@@ -4269,8 +4261,8 @@ static int s3c_fb_remove(struct platform_device *pdev)
 	unregister_framebuffer(sfb->windows[sfb->pdata->default_win]->fbinfo);
 
 #ifdef CONFIG_ION_EXYNOS
-	if (sfb->update_regs_wq)
-		destroy_workqueue(sfb->update_regs_wq);
+	if (sfb->update_regs_thread)
+		kthread_stop(sfb->update_regs_thread);
 #endif
 	for (win = 0; win < S3C_FB_MAX_WIN; win++)
 		if (sfb->windows[win])
@@ -4340,6 +4332,10 @@ static int s3c_fb_decon_stop(struct s3c_fb *sfb)
 		return 0;
 	}
 
+#ifdef CONFIG_ION_EXYNOS
+	flush_kthread_worker(&sfb->update_regs_worker);
+#endif
+
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
@@ -4387,11 +4383,6 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	if (sfb->pdata->lcd_off)
 		sfb->pdata->lcd_off();
-
-#ifdef CONFIG_ION_EXYNOS
-	if (sfb->update_regs_wq)
-		flush_workqueue(sfb->update_regs_wq);
-#endif
 
 	ret = s3c_fb_decon_stop(sfb);
 
@@ -4515,9 +4506,6 @@ int s3c_fb_suspend(struct device *dev)
 
 		if (sfb->pdata->lcd_off)
 			sfb->pdata->lcd_off();
-
-		if (sfb->update_regs_wq)
-			flush_workqueue(sfb->update_regs_wq);
 
 		ret = s3c_fb_decon_stop(sfb);
 
