@@ -972,10 +972,11 @@ static int get_cpu_power_req(int cl_idx, struct coefficients *coeffs, int nr_coe
 	power = 0;
 	i = 0;
 	for_each_cpu(cpu, arbiter_data.cl_stats[cl_idx].mask) {
-		int util = arbiter_data.cl_stats[cl_idx].utils[i];
-		int freq = KHZ_TO_MHZ(arbiter_data.cpu_freqs[cl_idx][i]);
-
-		power += freq_to_power(freq, nr_coeffs, coeffs) * util;
+		if (cpu_online(cpu)) {
+			int util = arbiter_data.cl_stats[cl_idx].utils[i];
+			int freq = KHZ_TO_MHZ(arbiter_data.cpu_freqs[cl_idx][i]);
+			power += freq_to_power(freq, nr_coeffs, coeffs) * util;
+		}
 
 		i++;
 	}
