@@ -214,6 +214,44 @@ static int gpu_set_maximum_outstanding_req(int val)
 	return 0;
 }
 
+
+int gpu_register_dump()
+{
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	if (gpu_is_power_on()) {
+
+		/* G3D PMU */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x105C4064, __raw_readl(EXYNOS5430_G3D_STATUS));
+
+		/* G3D PLL */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0000, __raw_readl(EXYNOS5430_G3D_PLL_LOCK));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0100, __raw_readl(EXYNOS5430_G3D_PLL_CON0));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0104, __raw_readl(EXYNOS5430_G3D_PLL_CON1));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA010c, __raw_readl(EXYNOS5430_G3D_PLL_FREQ_DET));
+
+		/* G3D SRC */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0200, __raw_readl(EXYNOS5430_SRC_SEL_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0300, __raw_readl(EXYNOS5430_SRC_ENABLE_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0400, __raw_readl(EXYNOS5430_SRC_STAT_G3D));
+
+		/* G3D DIV */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0600, __raw_readl(EXYNOS5430_DIV_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0604, __raw_readl(EXYNOS5430_DIV_G3D_PLL_FREQ_DET));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0700, __raw_readl(EXYNOS5430_DIV_STAT_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0704, __raw_readl(EXYNOS5430_DIV_STAT_G3D_PLL_FREQ_DET));
+
+		/* G3D ENABLE */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0800, __raw_readl(EXYNOS5430_ENABLE_ACLK_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0900, __raw_readl(EXYNOS5430_ENABLE_PCLK_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0A00, __raw_readl(EXYNOS5430_ENABLE_SCLK_G3D));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0B00, __raw_readl(EXYNOS5430_ENABLE_IP_G3D0));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x14AA0B0A, __raw_readl(EXYNOS5430_ENABLE_IP_G3D1));
+	}
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
+
+	return 0;
+}
+
 int gpu_set_clock(struct exynos_context *platform, int freq)
 {
 	long g3d_rate_prev = -1;
@@ -277,6 +315,9 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 	}
 
 	gpu_update_clock(platform);
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_VALUE, NULL, NULL, 0u, g3d_rate/MHZ);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock set: %ld\n", g3d_rate / MHZ);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock get: %d\n", platform->cur_clock);
 err:
@@ -382,6 +423,9 @@ int gpu_set_voltage(struct exynos_context *platform, int vol)
 	_vol = vol;
 
 	gpu_update_voltage(platform);
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_VOL_VALUE, NULL, NULL, 0u, vol);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage set:%d\n", vol);
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage get:%d\n", platform->cur_voltage);
 

@@ -107,7 +107,9 @@ static int gpu_tmu_notifier(struct notifier_block *notifier,
 		if (gpu_tmu_hot_check_and_work(pkbdev, event))
 			GPU_LOG(DVFS_ERROR, "failed to open device");
 	}
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_TMU_VALUE, NULL, NULL, 0u, event);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 
 	gpu_control_state_set(pkbdev, GPU_CONTROL_SET_MARGIN, 0);
 
@@ -125,10 +127,14 @@ static int gpu_pm_notifier(struct notifier_block *nb, unsigned long event, void 
 	int err = NOTIFY_OK;
 	switch (event) {
 	case PM_SUSPEND_PREPARE:
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_SUSPEND, NULL, NULL, 0u, 0u);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 		break;
 	case PM_POST_SUSPEND:
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_RESUME, NULL, NULL, 0u, 0u);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 		break;
 	default:
 		break;
@@ -179,7 +185,9 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 		return -ENODEV;
 
 	GPU_LOG(DVFS_INFO, "g3d turn on\n");
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 	KBASE_TRACE_ADD_EXYNOS(kbdev, LSI_GPU_ON, NULL, NULL, 0u, 0u);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 	gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_ON, 0);
@@ -193,7 +201,9 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 static void pm_callback_runtime_off(kbase_device *kbdev)
 {
 	GPU_LOG(DVFS_INFO, "g3d turn off\n");
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 	KBASE_TRACE_ADD_EXYNOS(kbdev, LSI_GPU_OFF, NULL, NULL, 0u, 0u);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_OFF, 0);
 }

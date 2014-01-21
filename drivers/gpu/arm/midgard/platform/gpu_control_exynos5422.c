@@ -170,6 +170,30 @@ unsigned long get_dpll_freq(int curr, int targ)
 	return (dpll_clk*1000000);
 }
 
+int gpu_register_dump(void)
+{
+#ifdef CONFIG_MALI_EXYNOS_TRACE
+	if (gpu_is_power_on()) {
+
+		/* G3D PMU */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x10044084, __raw_readl(EXYNOS5422_G3D_STATUS));
+
+		/* G3D SRC */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x10020208, __raw_readl(EXYNOS5_CLK_SRC_TOP2));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x10020214, __raw_readl(EXYNOS5_CLK_SRC_TOP5));
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x10020288, __raw_readl(EXYNOS5_CLK_SRC_TOP12));
+
+		/* G3D DIV */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x10020608, __raw_readl(EXYNOS5_CLK_DIV_STAT_TOP2));
+
+		/* G3D MUX */
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_REGISTER_DUMP, NULL, NULL, 0x10020414, __raw_readl(EXYNOS5_CLK_MUX_STAT_TOP5));
+	}
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
+
+	return 0;
+}
+
 int gpu_set_clock(struct exynos_context *platform, int freq)
 {
 	long g3d_rate_prev = -1;
@@ -245,7 +269,11 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 	} while (tmp & 0x10000);
 
 	gpu_update_clock(platform);
+
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_VALUE, NULL, NULL, 0u, g3d_rate/MHZ);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
+
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock set: %ld\n", g3d_rate / MHZ);
 	GPU_LOG(DVFS_DEBUG, "[G3D] clock get: %d\n", platform->cur_clock);
 err:
@@ -378,7 +406,10 @@ int gpu_set_voltage(struct exynos_context *platform, int vol)
 	_vol = vol;
 
 	gpu_update_voltage(platform);
+
+#ifdef CONFIG_MALI_EXYNOS_TRACE
 	KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_VOL_VALUE, NULL, NULL, 0u, vol);
+#endif /* CONFIG_MALI_EXYNOS_TRACE */
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage set:%d\n", vol);
 	GPU_LOG(DVFS_DEBUG, "[G3D] voltage get:%d\n", platform->cur_voltage);
 

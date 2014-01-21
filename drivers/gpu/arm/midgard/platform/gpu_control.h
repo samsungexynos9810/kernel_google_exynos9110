@@ -163,6 +163,7 @@ int gpu_power_init(kbase_device *kbdev);
 int gpu_is_clock_on(struct exynos_context *platform);
 int gpu_clock_on(struct exynos_context *platform);
 int gpu_clock_off(struct exynos_context *platform);
+int gpu_register_dump(void);
 int gpu_set_clock(struct exynos_context *platform, int freq);
 int gpu_clock_init(kbase_device *kbdev);
 int gpu_set_voltage(struct exynos_context *platform, int vol);

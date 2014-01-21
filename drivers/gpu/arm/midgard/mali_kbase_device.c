@@ -625,6 +625,7 @@ void kbasep_trace_dump(kbase_device *kbdev)
 STATIC void kbasep_trace_hook_wrapper(void *param)
 {
 	kbase_device *kbdev = (kbase_device *) param;
+
 	kbasep_trace_dump(kbdev);
 }
 
