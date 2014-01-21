@@ -199,18 +199,6 @@ static int display_driver_runtime_resume(struct device *dev)
 #endif
 }
 
-#ifdef CONFIG_PM_SLEEP
-static int display_driver_resume(struct device *dev)
-{
-	return s3c_fb_resume(dev);
-}
-
-static int display_driver_suspend(struct device *dev)
-{
-	return s3c_fb_suspend(dev);
-}
-#endif
-
 static void display_driver_shutdown(struct platform_device *pdev)
 {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
@@ -225,8 +213,8 @@ static void display_driver_shutdown(struct platform_device *pdev)
 static const struct dev_pm_ops s5p_decon_disp_ops = {
 #ifdef CONFIG_PM_SLEEP
 #ifndef CONFIG_HAS_EARLYSUSPEND
-	.suspend = display_driver_suspend,
-	.resume = display_driver_resume,
+	.suspend = NULL,
+	.resume = NULL,
 #endif
 #endif
 	.runtime_suspend	= display_driver_runtime_suspend,
