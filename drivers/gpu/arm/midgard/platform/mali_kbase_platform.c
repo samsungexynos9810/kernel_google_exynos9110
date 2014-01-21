@@ -87,7 +87,7 @@ static mali_bool kbase_platform_exynos5_init(kbase_device *kbdev)
 	gpu_dvfs_governor_init(kbdev, G3D_DVFS_GOVERNOR_DEFAULT);
 #ifdef CONFIG_MALI_T6XX_DVFS
 	spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-	platform->wakeup_lock = 0;
+	platform->wakeup_lock = DEFAULT_WAKEUP_LOCK;
 	spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 	/* dvfs handler init*/

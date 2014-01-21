@@ -274,7 +274,6 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 	}
 
 	platform->down_requirement = 1;
-	platform->wakeup_lock = 0;
 
 	platform->governor_type = governor_type;
 	platform->governor_num = G3D_MAX_GOVERNOR_NUM;

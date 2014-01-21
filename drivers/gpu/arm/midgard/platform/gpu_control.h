@@ -89,13 +89,16 @@ typedef enum {
 #if SOC_NAME == 5422
 #define MALI_DVFS_START_FREQ		266
 #define MALI_DVFS_BL_CONFIG_FREQ	266
+#define DEFAULT_WAKEUP_LOCK			1
 #elif SOC_NAME == 5430
 #define MALI_DVFS_START_FREQ		266
 #define MALI_DVFS_BL_CONFIG_FREQ	266
+#define DEFAULT_WAKEUP_LOCK			1
 #elif SOC_NAME == 5260
 #define MALI_DVFS_START_FREQ		350
 #define MALI_DVFS_BL_CONFIG_FREQ	350
 #define ACLK_G3D_STAT				0x10
+#define DEFAULT_WAKEUP_LOCK			0
 #else
 #error SOC_NAME should be specified.
 #endif

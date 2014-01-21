@@ -89,8 +89,7 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 	case GPU_CONTROL_PREPARE_ON:
 #ifdef CONFIG_MALI_T6XX_DVFS
 		spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
-		if ((platform->dvfs_status && platform->wakeup_lock) &&
-				(platform->table[platform->step].clock < MALI_DVFS_START_FREQ))
+		if (platform->dvfs_status && platform->wakeup_lock)
 			platform->cur_clock = MALI_DVFS_START_FREQ;
 
 		if (platform->min_lock > 0)
