@@ -628,7 +628,7 @@ static int on_run(void *data)
 #endif
 #endif
 		if (exynos_dm_hotplug_disabled())
-			continue;
+			goto sleep;
 
 		if (prev_cmd != exe_cmd) {
 			ret = dynamic_hotplug(exe_cmd);
@@ -638,6 +638,7 @@ static int on_run(void *data)
 
 		prev_cmd = exe_cmd;
 
+sleep:
 		set_current_state(TASK_INTERRUPTIBLE);
 		schedule_timeout_interruptible(msecs_to_jiffies(delay));
 		set_current_state(TASK_RUNNING);
