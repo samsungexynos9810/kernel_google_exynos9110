@@ -43,24 +43,39 @@ int exynos_mphy_init(struct exynos_mphy *phy)
 
 int exynos_mphy_cmn_init(struct exynos_mphy *phy)
 {
+	static bool is_first = true;
+
 	if (phy->is_shared_clk)
 		writel(0x00, phy->loc_regs + (0x4f*4));
 	else
 		writel(0xF9, phy->loc_regs + (0x4f*4));
 
 	/* Basic tune for series-A */
-	writel(0x0F, phy->loc_regs + (0x0A*4));
+	writel(0x0A, phy->loc_regs + (0x0A*4));
 	writel(0x07, phy->loc_regs + (0x11*4));
-	writel(0xDB, phy->loc_regs + (0x19*4));
+	writel(0x98, phy->loc_regs + (0x19*4));
 	writel(0x07, phy->loc_regs + (0x12*4));
 	writel(0x03, phy->loc_regs + (0x13*4));
 	writel(0x03, phy->loc_regs + (0x14*4));
-	writel(0x07, phy->loc_regs + (0x16*4));
+	writel(0x08, phy->loc_regs + (0x16*4));
 	writel(0x01, phy->loc_regs + (0x17*4));
-	writel(0x6A, phy->loc_regs + (0x1C*4));
 	writel(0x07, phy->loc_regs + (0x44*4));
 	writel(0x01, phy->loc_regs + (0x4D*4));
 	writel(0x03, phy->loc_regs + (0x4E*4));
+
+	/* afc on only booting time */
+	if (is_first) {
+		writel(0x07, phy->loc_regs + (0x44*4));
+		writel(0x00, phy->loc_regs + (0x31*4));
+		is_first = false;
+	}
+	else {
+		writel(phy->afc_val, phy->loc_regs + (0x44*4));
+		writel(0x01, phy->loc_regs + (0x31*4));
+	}
+
+	/* afc tune */
+	writel(0x2c, phy->loc_regs + (0x46*4));
 
 	return 0;
 }

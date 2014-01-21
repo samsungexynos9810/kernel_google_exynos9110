@@ -201,6 +201,7 @@ struct exynos_mphy {
 
 	enum phy_mode_type default_mode;
 	bool is_shared_clk;
+	int afc_val;
 
 	int (*init)(struct exynos_mphy *phy);
 	int (*cmn_init)(struct exynos_mphy *phy);

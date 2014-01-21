@@ -675,6 +675,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_LLI_MOUNT_DONE) {
+		static bool is_first = true;
 		struct exynos_mphy *phy;
 		int credit = 0;
 		int rx_fsm_state, tx_fsm_state, afc_val, csa_status;
@@ -690,6 +691,12 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 		writel(0x1, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
 		afc_val = readl(phy->loc_regs + (0x27*4));
 		writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+
+		if (is_first) {
+			phy->afc_val = afc_val;
+			is_first = false;
+		}
+
 		dev_err(dev, "rx_fsm = %x, tx_fsm = %x, afc_val= %x, csa_status = %x\n"
 				,rx_fsm_state, tx_fsm_state, afc_val, csa_status);
 		dev_err(dev, "pa_err_cnt : %d\n", pa_err_cnt);
