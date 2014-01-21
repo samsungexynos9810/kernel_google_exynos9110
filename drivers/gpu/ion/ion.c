@@ -867,7 +867,7 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 
 		if (ion_buffer_page_is_dirty(page)) {
 			struct scatterlist sg;
-			sg_set_page(&sg, page, PAGE_SIZE, 0);
+			sg_set_page(&sg, ion_buffer_page(page), PAGE_SIZE, 0);
 			dma_sync_sg_for_device(dev, &sg, 1, dir);
 		}
 		ion_buffer_page_clean(buffer->pages + i);
@@ -1171,6 +1171,9 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 		return -EINVAL;
 	}
 	buffer = dmabuf->priv;
+
+	if (!ion_buffer_cached(buffer) || !ion_buffer_dirty(buffer))
+		return 0;
 
 	ion_heap_sync(buffer->heap, buffer->sg_table,
 				DMA_BIDIRECTIONAL, ion_buffer_flush, false);

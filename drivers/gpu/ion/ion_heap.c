@@ -320,22 +320,23 @@ void ion_heap_sync(struct ion_heap *heap, struct sg_table *sgt,
 			continue;
 		}
 
-		for (j = 0; j < (sg_dma_len(sg) / PAGE_SIZE); j++) {
+		for (j = 0; j < (sg->length / PAGE_SIZE); j++) {
 			set_pte_at(&init_mm, vaddr, ptep,
 					mk_pte(sg_page(sg) + j, PAGE_KERNEL));
 			ptep++;
 			vaddr += PAGE_SIZE;
-		}
+			sum += PAGE_SIZE;
 
-		sum += j * PAGE_SIZE;
-		if (sum == SZ_1M) {
-			ptep = heap->pte[pte_idx];
-			vaddr = (unsigned long) heap->reserved_vm_area->addr +
-						(SZ_1M * page_idx);
+			if (sum == SZ_1M) {
+				ptep = heap->pte[pte_idx];
+				vaddr =
+				(unsigned long)heap->reserved_vm_area->addr
+					+ (SZ_1M * page_idx);
 
-			ion_heap_sync_and_unmap(vaddr, ptep, sum,
-							dir, sync, memzero);
-			sum = 0;
+				ion_heap_sync_and_unmap(vaddr, ptep, sum,
+						dir, sync, memzero);
+				sum = 0;
+			}
 		}
 	}
 
