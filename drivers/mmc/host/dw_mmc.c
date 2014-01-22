@@ -354,6 +354,7 @@ void dw_mci_reg_dump(struct dw_mci *host)
 	dev_err(host->dev, ": IDINTEN:	0x%08x\n", mci_readl(host, IDINTEN));
 	dev_err(host->dev, ": DSCADDR:	0x%08x\n", mci_readl(host, DSCADDR));
 	dev_err(host->dev, ": BUFADDR:	0x%08x\n", mci_readl(host, BUFADDR));
+	dev_err(host->dev, ": SHA_CMD_IS:	0x%08x\n", mci_readl(host, SHA_CMD_IS));
 	if (drv_data && drv_data->register_dump)
 		drv_data->register_dump(host);
 	dw_mci_cmd_reg_summary(host);
