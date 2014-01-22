@@ -615,6 +615,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	struct mipi_lli *lli = dev_get_drvdata(dev);
 	struct exynos_mphy *phy;
 	int status;
+	static int pa_err_cnt = 0;
 
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 
@@ -654,6 +655,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	if (status & INTR_PA_ERROR_INDICATION) {
 		dev_err(dev, "PA_REASON %x\n",
 			readl(lli->regs + EXYNOS_DME_LLI_PA_INTR_REASON));
+		pa_err_cnt++;
 	}
 
 	if (status & INTR_DL_ERROR_INDICATION) {
@@ -690,6 +692,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 		writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
 		dev_err(dev, "rx_fsm = %x, tx_fsm = %x, afc_val= %x, csa_status = %x\n"
 				,rx_fsm_state, tx_fsm_state, afc_val, csa_status);
+		dev_err(dev, "pa_err_cnt : %d\n", pa_err_cnt);
 
 		if (!credit) {
 			mdelay(2);
