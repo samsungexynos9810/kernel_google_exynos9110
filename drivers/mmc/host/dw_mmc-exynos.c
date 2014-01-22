@@ -238,6 +238,15 @@ void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 	/* Extended Descriptor On */
 	__raw_writel(reg | (1 << 31), host->regs + DWMCI_MPSECURITY);
 
+#ifndef CONFIG_MMC_DW_FMP_DM_CRYPT
+	__raw_writel(0, host->regs + DWMCI_MPSBEGIN0);
+	__raw_writel(DWMCI_BLOCK_NUM, host->regs + DWMCI_MPSEND0);
+	__raw_writel(DWMCI_MPSCTRL_SECURE_READ_BIT |
+		DWMCI_MPSCTRL_SECURE_WRITE_BIT |
+		DWMCI_MPSCTRL_NON_SECURE_READ_BIT |
+		DWMCI_MPSCTRL_NON_SECURE_WRITE_BIT |
+		DWMCI_MPSCTRL_VALID, host->regs + DWMCI_MPSCTRL0);
+#else
 	/* FMP Bypass Partition */
 	__raw_writel(DW_MMC_BYPASS_SECTOR, host->regs + DWMCI_MPSBEGIN0);
 	__raw_writel(DW_MMC_BYPASS_SECTOR, host->regs + DWMCI_MPSEND0);
@@ -257,6 +266,7 @@ void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 		DWMCI_MPSCTRL_NON_SECURE_WRITE_BIT |
 		DWMCI_MPSCTRL_ENCRYPTION |
 		DWMCI_MPSCTRL_VALID, host->regs + DWMCI_MPSCTRL1);
+#endif
 }
 
 static int dw_mci_exynos_setup_clock(struct dw_mci *host)
