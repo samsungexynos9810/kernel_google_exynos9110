@@ -1569,32 +1569,6 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 
 static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 {
-	unsigned int tmp;
-
-	mutex_lock(&data->lock);
-
-	/* Pause Enable */
-	tmp = __raw_readl(data->base_mif + 0x1008);
-	tmp |= 0x1;
-	__raw_writel(tmp, data->base_mif + 0x1008);
-
-	/* Configuring Automatic Direct Command Operation */
-	tmp = __raw_readl(data->base_sysreg_mif + 0x1020);
-	tmp = 0x80030010;
-	__raw_writel(tmp, data->base_sysreg_mif + 0x1020);
-
-	/* Decision for Timing Parameter Set Switch Control */
-	tmp = __raw_readl(data->base_drex0 + 0xE0);
-	tmp &= ~0x1;
-	__raw_writel(tmp, data->base_drex0 + 0xE0);
-	tmp = __raw_readl(data->base_drex1 + 0xE0);
-	tmp &= ~0x1;
-	__raw_writel(tmp, data->base_drex1 + 0xE0);
-
-	/* Setting DVFS Mode Control of PHY */
-	__raw_writel(0x0C0C2121, data->base_lpddr_phy0 + 0xBC);
-	__raw_writel(0x0C0C2121, data->base_lpddr_phy1 + 0xBC);
-
 	switch (exynos5430_get_memory_size()) {
 	case 2:
 		dmc_timing_parameter = dmc_timing_parameter_2gb;
@@ -1606,8 +1580,6 @@ static int exynos5_devfreq_mif_init_dvfs(struct devfreq_data_mif *data)
 		pr_err("DEVFREQ(MIF) : can't get information of memory size!!\n");
 		break;
 	}
-
-	mutex_unlock(&data->lock);
 
 	return 0;
 }
@@ -1904,7 +1876,6 @@ static int exynos5_devfreq_mif_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
-	exynos5_devfreq_mif_init_dvfs(data_mif);
 	exynos5_devfreq_mif_update_timingset(data_mif);
 
 	if (pm_qos_request_active(&exynos5_mif_qos))
