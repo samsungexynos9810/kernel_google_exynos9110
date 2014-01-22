@@ -790,8 +790,11 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13C00000 0x1000>;
 		interrupts = <0 297 0>;
-		clocks = <&clock 2265>;
-		clock-names = "gate_gscl";
+		clocks = <&clock 2265>, <&clock 3113>, <&clock 343>,
+		       <&clock 3114>, <&clock 344> ;
+		clock-names = "gate_gscl", "mout_aclk_gscl_333_user",
+			"aclk_gscl_333", "mout_aclk_gscl_111_user",
+			"aclk_gscl_111";
 		ip_ver = <2>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -802,8 +805,12 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13C10000 0x1000>;
 		interrupts = <0 298 0>;
-		clocks = <&clock 2264>;
-		clock-names = "gate_gscl";
+		clocks = <&clock 2264>, <&clock 3113>, <&clock 343>,
+		       <&clock 3114>, <&clock 344> ;
+		clock-names = "gate_gscl", "mout_aclk_gscl_333_user",
+			"aclk_gscl_333", "mout_aclk_gscl_111_user",
+			"aclk_gscl_111";
+
 		ip_ver = <2>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -814,8 +821,11 @@
 		compatible = "samsung,exynos5-gsc";
 		reg = <0x13C20000 0x1000>;
 		interrupts = <0 299 0>;
-		clocks = <&clock 2263>;
-		clock-names = "gate_gscl";
+		clocks = <&clock 2263>, <&clock 3113>, <&clock 343>,
+		       <&clock 3114>, <&clock 344> ;
+		clock-names = "gate_gscl", "mout_aclk_gscl_333_user",
+			"aclk_gscl_333", "mout_aclk_gscl_111_user",
+			"aclk_gscl_111";
 		ip_ver = <2>;
 		mif_min = <160000>;
 		int_min = <111000>;
