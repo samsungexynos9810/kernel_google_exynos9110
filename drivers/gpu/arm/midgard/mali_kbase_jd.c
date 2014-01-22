@@ -514,7 +514,7 @@ static mali_error kbase_jd_pre_external_resources(kbase_jd_atom *katom, const ba
 			if (reg && reg->alloc == katom->extres[res_no].alloc && reg->alloc->type)
 				mmu_update = 1;
 			katom->extres[res_no].alloc->imported.umm.current_mapping_usage_count--;
-			if (0 == reg->alloc->imported.umm.current_mapping_usage_count)
+			if (reg && (0 == reg->alloc->imported.umm.current_mapping_usage_count))
 				kbase_jd_umm_unmap(katom->kctx, reg, mmu_update);
 		}
 #endif				/* CONFIG_DMA_SHARED_BUFFER */
