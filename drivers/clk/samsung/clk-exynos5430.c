@@ -3128,7 +3128,7 @@ struct samsung_pll_rate_table pll_disp_rate_table[] = {
 void __init exynos5430_clk_init(struct device_node *np)
 {
 	struct clk *egl_pll, *kfc_pll, *mem0_pll, *mem1_pll, *mfc_pll,
-		*bus_pll, *mphy_pll, *disp_pll, *aud_pll, *g3d_pll, *isp_pll;
+		*bus_pll, *mphy_pll, *clk_disp_pll, *aud_pll, *g3d_pll, *isp_pll;
 
 	samsung_clk_init(np, 0, nr_clks, (unsigned long *)exynos5430_clk_regs,
 			ARRAY_SIZE(exynos5430_clk_regs), NULL, 0);
@@ -3186,12 +3186,14 @@ void __init exynos5430_clk_init(struct device_node *np)
 	if (mphy_pll == NULL)
 		panic("%s: Fail to register mphy_pll", __func__);
 
-	disp_pll = samsung_clk_register_pll35xx("fout_disp_pll", "fin_pll",
+	clk_disp_pll = samsung_clk_register_pll35xx("fout_disp_pll", "fin_pll",
 			EXYNOS5430_DISP_PLL_LOCK,
 			EXYNOS5430_DISP_PLL_CON0, pll_disp_rate_table, ARRAY_SIZE(pll_disp_rate_table));
 
-	if (disp_pll == NULL)
+	if (clk_disp_pll == NULL)
 		panic("%s: Fail to register disp_pll", __func__);
+
+	samsung_clk_add_lookup(clk_disp_pll, disp_pll);
 
 	aud_pll = samsung_clk_register_pll36xx("fout_aud_pll", "fin_pll",
 			EXYNOS5430_AUD_PLL_LOCK,
