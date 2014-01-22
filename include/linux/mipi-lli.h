@@ -118,6 +118,7 @@ extern void mipi_lli_release_sh_region(void *rgn);
 extern unsigned long mipi_lli_get_phys_base(void);
 extern unsigned long mipi_lli_get_phys_size(void);
 extern int mipi_lli_get_link_status(void);
+extern int mipi_lli_suspended(void);
 extern int mipi_lli_register_handler(void (*handler)(void *, u32), void *data);
 extern int mipi_lli_unregister_handler(void (*handler)(void *, u32));
 extern void mipi_lli_send_interrupt(u32 cmd);

@@ -84,6 +84,17 @@ unsigned long mipi_lli_get_phys_size(void)
 EXPORT_SYMBOL(mipi_lli_get_phys_size);
 
 /**
+ * mipi_lli_suspended
+ *
+ * Returns mipi_lli_is_suspended.
+ */
+int mipi_lli_suspended(void)
+{
+	return g_lli->is_suspended;
+}
+EXPORT_SYMBOL(mipi_lli_suspended);
+
+/**
  * mipi_lli_get_link_status
  *
  * Returns mipi_lli_link_status.
