@@ -2557,14 +2557,13 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	/* MIF */
 	CGTE(gate_disp_333, "gate_disp_333", NULL, EXYNOS5430_ENABLE_IP_MIF3, 1, CLK_IGNORE_UNUSED, 0),
 
-	/* GSCL */
+/* GSCL */
 	CGTE(gate_pmu_gscl, "gate_pmu_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 5, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_sysreg_gscl, "gate_sysreg_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 4, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_gsd, "gate_gsd", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 3, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_gscl2, "gate_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 2, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_gscl1, "gate_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 1, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_gscl0, "gate_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 0, CLK_IGNORE_UNUSED, 0),
-
+	CGTE(gate_gsd, "gate_gsd", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 3,	0, 0),
+	CGTE(gate_gscl2, "gate_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 2, 0, 0),
+	CGTE(gate_gscl1, "gate_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 1, 0, 0),
+	CGTE(gate_gscl0, "gate_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 0, 0, 0),
 	CGTE(gate_ppmu_gscl2, "gate_ppmu_gscl2", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 13, 0, 0),
 	CGTE(gate_ppmu_gscl1, "gate_ppmu_gscl1", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 12, 0, 0),
 	CGTE(gate_ppmu_gscl0, "gate_ppmu_gscl0", NULL, EXYNOS5430_ENABLE_IP_GSCL1, 11, 0, 0),
