@@ -156,9 +156,14 @@ static void gsc_m2m_device_run(void *priv)
 	gsc = ctx->gsc_dev;
 
 	if (in_irq())
-		pm_runtime_get(&gsc->pdev->dev);
+		ret = pm_runtime_get(&gsc->pdev->dev);
 	else
-		pm_runtime_get_sync(&gsc->pdev->dev);
+		ret = pm_runtime_get_sync(&gsc->pdev->dev);
+
+	if (ret < 0) {
+		gsc_err("fail to pm_runtime_get");
+		return;
+	}
 
 	spin_lock_irqsave(&ctx->slock, flags);
 	/* Reconfigure hardware if the context has changed. */
