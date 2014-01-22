@@ -78,6 +78,34 @@ int fimc_is_wrap_clk_gate_set(struct fimc_is_core *core,
 	return 0;
 }
 
+inline bool fimc_is_group_otf(struct fimc_is_device_ischain *device, int group_id)
+{
+	struct fimc_is_group *group;
+
+	switch (group_id) {
+	case GROUP_ID_3A0:
+	case GROUP_ID_3A1:
+		group = &device->group_3aa;
+		break;
+	case GROUP_ID_ISP:
+		group = &device->group_isp;
+		break;
+	case GROUP_ID_DIS:
+		group = &device->group_dis;
+		break;
+	default:
+		group = NULL;
+		pr_err("%s unresolved group id %d", __func__,  group_id);
+		return false;
+	}
+
+	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state))
+		return true;
+	else
+		return false;
+}
+
+
 int fimc_is_clk_gate_set(struct fimc_is_core *core,
 			int group_id, bool is_on, bool skip_set_state, bool user_scenario)
 {
@@ -107,7 +135,7 @@ int fimc_is_clk_gate_set(struct fimc_is_core *core,
 		(gate_ctrl->chk_on_off_cnt[group_id])--; /* for debuging */
 		(gate_ctrl->msk_cnt[group_id])--;
 		if ((gate_ctrl->msk_cnt[group_id]) < 0) {
-			pr_warn("%s msk_cnt[%d] is lower than jero !!\n", __func__, group_id);
+			pr_warn("%s msk_cnt[%d] is lower than zero !!\n", __func__, group_id);
 			(gate_ctrl->msk_cnt[group_id]) = 0;
 		}
 		if ((gate_ctrl->msk_cnt[group_id]) == 0)
@@ -125,6 +153,13 @@ int fimc_is_clk_gate_set(struct fimc_is_core *core,
 			if ((!test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &core->ischain[i].state)) &&
 					(gate_ctrl->msk_lock_by_ischain[i])) {
 				pr_info("%s lock(on) due to instance(%d)\n", __func__, i);
+				goto exit;
+			}
+
+			/* don't off! if there is at least this group that is OTF */
+			if (fimc_is_group_otf(&core->ischain[i], group_id)) {
+				pr_debug("%s don't off!! this instance(%d) group(%d) is OTF\n",
+					__func__, i, group_id);
 				goto exit;
 			}
 		}
