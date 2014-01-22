@@ -90,6 +90,9 @@ struct ipa_config {
 	u32 a15_max_power;
 	u32 gpu_max_power;
 	u32 soc_max_power;
+	int hotplug_out_threshold;
+	int hotplug_in_threshold;
+	u32 cores_out;
 	u32 enable_ctlr;
 	struct ctlr ctlr;
 };
@@ -111,6 +114,8 @@ static struct ipa_config default_config = {
 	.a15_max_power = 1638 * 4,
 	.gpu_max_power = 3110,
 	.enable_ctlr = 1,
+	.hotplug_out_threshold = 10,
+	.hotplug_in_threshold = 2,
 	.ctlr = {
 		.mult = 2,
 		.k_i = 1,
@@ -395,6 +400,8 @@ struct trace_data {
 	int Pcpu_req;
 	int Ptot_req;
 	int extra;
+	int online_cores;
+	int hotplug_cores_out;
 };
 #ifdef CONFIG_CPU_THERMAL_IPA_DEBUG
 static void print_trace(struct trace_data *td)
@@ -415,7 +422,8 @@ static void print_trace(struct trace_data *td)
 		"a7_1_freq_in=%d "
 		"a7_2_freq_in=%d "
 		"a7_3_freq_in=%d "
-		"Pgpu_req=%d Pa15_req=%d Pa7_req=%d Pcpu_req=%d Ptot_req=%d extra=%d\n",
+		"Pgpu_req=%d Pa15_req=%d Pa7_req=%d Pcpu_req=%d Ptot_req=%d extra=%d "
+                "online_cores=%d hotplug_cores_out=%d\n",
 		td->gpu_freq_in, td->gpu_util, td->gpu_nutil,
 		td->a15_freq_in, td->a15_util, td->a15_nutil,
 		td->a7_freq_in, td->a7_util, td->a7_nutil,
@@ -432,7 +440,8 @@ static void print_trace(struct trace_data *td)
 		td->a7_1_freq_in,
 		td->a7_2_freq_in,
 		td->a7_3_freq_in,
-		td->Pgpu_req, td->Pa15_req, td->Pa7_req, td->Pcpu_req, td->Ptot_req, td->extra);
+		td->Pgpu_req, td->Pa15_req, td->Pa7_req, td->Pcpu_req, td->Ptot_req, td->extra,
+		td->online_cores, td->hotplug_cores_out);
 }
 
 static void print_only_temp_trace(int skin_temp)
@@ -877,6 +886,16 @@ static struct dentry * setup_debugfs(struct ipa_config *config)
 	if (!dentry_f)
 		pr_warn("unable to create the debugfs file: gpu_max_power\n");
 
+	dentry_f = debugfs_create_u32("hotplug_out_threshold", 0644, ipa_d,
+				      &config->hotplug_out_threshold);
+	if (!dentry_f)
+		pr_warn("unable to create the debugfs file: hotplug_out_threshold\n");
+
+	dentry_f = debugfs_create_u32("hotplug_in_threshold", 0644, ipa_d,
+				      &config->hotplug_in_threshold);
+	if (!dentry_f)
+		pr_warn("unable to create the debugfs file: hotplug_in_threshold\n");
+
 	dentry_f = debugfs_create_bool("enable_ctlr", 0644, ipa_d,
 				       &config->enable_ctlr);
 	if (!dentry_f)
@@ -979,6 +998,7 @@ static void arbiter_calc(int currT)
 	int extra;
 	int a15_util, a7_util;
 	int gpu_freq_limit, cpu_freq_limits[NUM_CLUSTERS];
+	int cpu, online_cores;
 	struct trace_data trace_data;
 
 	struct ipa_config *config = &arbiter_data.config;
@@ -1142,6 +1162,33 @@ static void arbiter_calc(int currT)
 
 	gpu_freq_limit = kbase_platform_dvfs_power_to_freq(Pgpu_out);
 
+#ifdef CONFIG_CPU_THERMAL_IPA_CONTROL
+	if (config->enabled) {
+		arbiter_set_cpu_freq_limit(cpu_freq_limits[CA15], CA15);
+		arbiter_set_cpu_freq_limit(cpu_freq_limits[CA7], CA7);
+		arbiter_set_gpu_freq_limit(gpu_freq_limit);
+
+		/*
+		 * If we have reached critical thresholds then also
+		 * hotplug cores as approprpiate
+		 */
+		if (deltaT < -config->hotplug_out_threshold && !config->cores_out) {
+			ipa_hotplug(true);
+			config->cores_out = 1;
+		}
+		if (deltaT > config->hotplug_in_threshold && config->cores_out) {
+			ipa_hotplug(false);
+			config->cores_out = 0;
+		}
+	}
+#else
+#error "Turn on CONFIG_CPU_THERMAL_IPA_CONTROL to enable IPA control"
+#endif
+
+	online_cores = 0;
+	for_each_online_cpu(cpu)
+		online_cores++;
+
 	trace_data.gpu_freq_in = arbiter_data.mali_stats.s.freq_for_norm;
 	trace_data.gpu_util = arbiter_data.mali_stats.s.utilisation;
 	trace_data.gpu_nutil = arbiter_data.mali_stats.s.norm_utilisation;
@@ -1188,16 +1235,8 @@ static void arbiter_calc(int currT)
 	trace_data.Pcpu_req = Pcpu_req;
 	trace_data.Ptot_req = Ptot_req;
 	trace_data.extra = extra;
-
-#ifdef CONFIG_CPU_THERMAL_IPA_CONTROL
-	if (config->enabled) {
-		arbiter_set_cpu_freq_limit(cpu_freq_limits[CA15], CA15);
-		arbiter_set_cpu_freq_limit(cpu_freq_limits[CA7], CA7);
-		arbiter_set_gpu_freq_limit(gpu_freq_limit);
-	}
-#else
-#error "Turn on CONFIG_CPU_THERMAL_IPA_CONTROL to enable IPA control"
-#endif
+	trace_data.online_cores = online_cores;
+	trace_data.hotplug_cores_out = arbiter_data.config.cores_out;
 
 	print_trace(&trace_data);
 }
@@ -1457,6 +1496,26 @@ static int __init get_dt_inform_ipa(void)
 	} else {
 		default_config.gpu_max_power = proper_val;
 		pr_info("[IPA] gpu_max_power : %d\n", (u32)proper_val);
+	}
+
+	/* read hotplug_in_threshold */
+	ret = of_property_read_u32(ipa_np, "hotplug_in_threshold", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of hotplug_in_threshold\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.hotplug_in_threshold = proper_val;
+		pr_info("[IPA] hotplug_in_threshold : %d\n", (u32)proper_val);
+	}
+
+	/* read hotplug_out_threshold */
+	ret = of_property_read_u32(ipa_np, "hotplug_out_threshold", &proper_val);
+	if (ret) {
+		pr_err("[%s] There is no Property of hotplug_out_threshold\n", __func__);
+		return -EINVAL;
+	} else {
+		default_config.hotplug_out_threshold = proper_val;
+		pr_info("[IPA] hotplug_out_threshold : %d\n", (u32)proper_val);
 	}
 
 	/* read enable_ctlr */

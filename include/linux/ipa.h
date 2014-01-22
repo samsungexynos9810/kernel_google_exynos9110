@@ -47,6 +47,8 @@ struct ipa_attr {
 static struct ipa_attr _name =			\
 __ATTR(_name, 0664, _name##_show, _name##_store)
 
+void ipa_hotplug(bool remove_cores);  // this is not very generic
+
 #ifdef CONFIG_CPU_THERMAL_IPA
 
 void check_switch_ipa_on(int temp);

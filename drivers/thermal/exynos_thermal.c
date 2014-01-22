@@ -1214,6 +1214,14 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	return max;
 }
 
+#if defined(CONFIG_CPU_THERMAL_IPA)
+void ipa_hotplug(bool removecores)
+{
+	big_cores_hotplug(removecores);
+}
+#endif
+
+
 #ifdef CONFIG_THERMAL_EMULATION
 static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
 {
