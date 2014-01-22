@@ -491,18 +491,10 @@ void show_exynos_pmu(void)
 			__raw_readl(EXYNOS_ARM_CORE0_STATUS + i * 0x80),
 			__raw_readl(EXYNOS_ARM_CORE0_OPTION + i * 0x80));
 	}
-	pr_info(" **** EGL NONCPU CONFIG : 0x%x  STATUS : 0x%x  OPTION : 0x%x\n",
-			__raw_readl(EXYNOS_COMMON_CONFIGURATION(0)),
-			__raw_readl(EXYNOS_COMMON_STATUS(0)),
-			__raw_readl(EXYNOS_COMMON_OPTION(0)));
 	pr_info(" **** EGL L2 CONFIG : 0x%x  STATUS : 0x%x  OPTION : 0x%x\n",
 			__raw_readl(EXYNOS_L2_CONFIGURATION(0)),
 			__raw_readl(EXYNOS_L2_STATUS(0)),
 			__raw_readl(EXYNOS_L2_OPTION(0)));
-	pr_info(" **** KFC NONCPU CONFIG : 0x%x  STATUS : 0x%x  OPTION : 0x%x\n",
-			__raw_readl(EXYNOS_COMMON_CONFIGURATION(1)),
-			__raw_readl(EXYNOS_COMMON_STATUS(1)),
-			__raw_readl(EXYNOS_COMMON_OPTION(1)));
 	pr_info(" **** KFC L2 CONFIG : 0x%x  STATUS : 0x%x  OPTION : 0x%x\n",
 			__raw_readl(EXYNOS_L2_CONFIGURATION(1)),
 			__raw_readl(EXYNOS_L2_STATUS(1)),
