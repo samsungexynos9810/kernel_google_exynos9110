@@ -729,6 +729,50 @@ static ssize_t __write_file_bool(struct file *file, const char __user *user_buf,
 	return count;
 }
 
+static ssize_t control_temp_show(struct kobject *kobj,
+				   struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", arbiter_data.config.control_temp);
+}
+
+static ssize_t control_temp_store(struct kobject *kobj,
+				    struct kobj_attribute *attr,
+				    const char *buf, size_t n)
+{
+	unsigned long val;
+
+	if (kstrtoul(buf, 10, &val))
+		return -EINVAL;
+
+	arbiter_data.config.control_temp = val;
+	return n;
+}
+
+static ssize_t enabled_show(struct kobject *kobj,
+				   struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%c\n", arbiter_data.config.enabled?'Y':'N');
+}
+
+static ssize_t enabled_store(struct kobject *kobj,
+				    struct kobj_attribute *attr,
+				    const char *buf, size_t n)
+{
+    if (!buf)
+        return -EINVAL;
+
+    if ((buf[0]) == 'Y') {
+        arbiter_data.config.enabled = true;
+        return n;
+    } else  if ((buf[0]) == 'N') {
+        arbiter_data.config.enabled = false;
+		release_power_caps();
+        return n;
+    }
+
+    return -EINVAL;
+}
+
 static ssize_t debugfs_enabled_set(struct file *file, const char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
@@ -824,9 +868,11 @@ static struct dentry * setup_debugfs(struct ipa_config *config)
 }
 
 define_ipa_attr(enabled);
+define_ipa_attr(control_temp);
 
 static struct attribute *ipa_attrs[] = {
 	&enabled.attr,
+    &control_temp.attr,
 	NULL
 };
 

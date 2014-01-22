@@ -38,14 +38,14 @@ struct thermal_limits {
 struct ipa_attr {
 	struct attribute attr;
 	ssize_t (*show)(struct kobject *kobj,
-			struct attribute *attr, char *buf);
-	ssize_t (*store)(struct kobject *a, struct attribute *b,
+                    struct kobj_attribute *attr, char *buf);
+	ssize_t (*store)(struct kobject *a, struct kobj_attribute *b,
 			 const char *c, size_t count);
 };
 
 #define define_ipa_attr(_name)			\
 static struct ipa_attr _name =			\
-__ATTR(_name, 0664, NULL, NULL)
+__ATTR(_name, 0664, _name##_show, _name##_store)
 
 #ifdef CONFIG_CPU_THERMAL_IPA
 
