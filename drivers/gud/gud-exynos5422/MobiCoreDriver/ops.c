@@ -233,6 +233,11 @@ int mc_info(uint32_t ext_info_id, uint32_t *state, uint32_t *ext_info)
 }
 
 #ifdef TBASE_CORE_SWITCHER
+int mc_active_core(void)
+{
+	return active_cpu;
+}
+
 int mc_switch_core(uint32_t core_num)
 {
 	int32_t ret = 0;
