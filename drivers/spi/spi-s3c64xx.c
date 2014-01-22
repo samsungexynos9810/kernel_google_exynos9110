@@ -39,6 +39,10 @@
 #include <mach/dma.h>
 #endif
 
+#include <mach/exynos-pm.h>
+
+static LIST_HEAD(drvdata_list);
+
 #define MAX_SPI_PORTS		5
 #define SPI_AUTOSUSPEND_TIMEOUT		(2000)
 
@@ -295,6 +299,8 @@ static int acquire_dma(struct s3c64xx_spi_driver_data *sdd)
 	return 1;
 }
 
+static void s3c64xx_spi_hwinit(struct s3c64xx_spi_driver_data *sdd, int channel);
+
 static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
 {
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
@@ -307,6 +313,9 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
 	}
 
 	pm_runtime_get_sync(&sdd->pdev->dev);
+
+	if (sci->need_hw_init)
+		s3c64xx_spi_hwinit(sdd, sdd->port_id);
 
 	return 0;
 }
@@ -1257,6 +1266,8 @@ static void s3c64xx_spi_hwinit(struct s3c64xx_spi_driver_data *sdd, int channel)
 	writel(val, regs + S3C64XX_SPI_MODE_CFG);
 
 	flush_fifo(sdd);
+
+	sci->need_hw_init = 0;
 }
 
 #ifdef CONFIG_OF
@@ -1328,6 +1339,28 @@ static inline struct s3c64xx_spi_port_config *s3c64xx_spi_get_port_config(
 	return (struct s3c64xx_spi_port_config *)
 			 platform_get_device_id(pdev)->driver_data;
 }
+
+
+#ifdef CONFIG_CPU_IDLE
+static int s3c64xx_spi_notifier(struct notifier_block *self,
+				unsigned long cmd, void *v)
+{
+	struct s3c64xx_spi_info *sci;
+
+	switch (cmd) {
+	case LPA_EXIT:
+		list_for_each_entry(sci, &drvdata_list, node)
+			sci->need_hw_init = 1;
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block s3c64xx_spi_notifier_block = {
+	.notifier_call = s3c64xx_spi_notifier,
+};
+#endif /*CONFIG_CPU_IDLE */
 
 static int s3c64xx_spi_probe(struct platform_device *pdev)
 {
@@ -1505,6 +1538,8 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto err3;
 	}
+
+	list_add_tail(&sci->node, &drvdata_list);
 
 	dev_dbg(&pdev->dev, "Samsung SoC SPI Driver loaded for Bus SPI-%d with %d Slaves attached\n",
 					sdd->port_id, master->num_chipselect);
@@ -1761,6 +1796,9 @@ MODULE_ALIAS("platform:s3c64xx-spi");
 
 static int __init s3c64xx_spi_init(void)
 {
+#ifdef CONFIG_CPU_IDLE
+	exynos_pm_register_notifier(&s3c64xx_spi_notifier_block);
+#endif
 	return platform_driver_probe(&s3c64xx_spi_driver, s3c64xx_spi_probe);
 }
 subsys_initcall(s3c64xx_spi_init);
