@@ -32,6 +32,7 @@
 #define NORMALMIN_FREQ	500000
 #endif
 #define POLLING_MSEC	100
+#define DEFAULT_LOW_STAY_THRSHD	0
 
 struct cpu_load_info {
 	cputime64_t cpu_idle;
@@ -45,6 +46,7 @@ static DEFINE_MUTEX(dm_hotplug_lock);
 static DEFINE_MUTEX(big_hotplug_lock);
 
 static struct task_struct *dm_hotplug_task;
+static unsigned int low_stay_threshold = DEFAULT_LOW_STAY_THRSHD;
 static int cpu_util[NR_CPUS];
 static unsigned int cur_load_freq = 0;
 static bool lcd_is_on = true;
@@ -152,9 +154,37 @@ static ssize_t store_enable_dm_hotplug(struct kobject *kobj, struct attribute *a
 	return count;
 }
 
+static ssize_t show_stay_threshold(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "%u\n", low_stay_threshold);
+}
+
+static ssize_t store_stay_threshold(struct kobject *kobj, struct attribute *attr,
+					const char *buf, size_t count)
+{
+	int input_threshold;
+
+	if (!sscanf(buf, "%d", &input_threshold))
+		return -EINVAL;
+
+	if (input_threshold < 0) {
+		pr_err("%s: invalid value (%d)\n", __func__, input_threshold);
+		return -EINVAL;
+	}
+
+	low_stay_threshold = (unsigned int)input_threshold;
+
+	return count;
+}
+
 static struct global_attr enable_dm_hotplug =
 		__ATTR(enable_dm_hotplug, S_IRUGO | S_IWUSR,
 			show_enable_dm_hotplug, store_enable_dm_hotplug);
+
+static struct global_attr dm_hotplug_stay_threshold =
+		__ATTR(dm_hotplug_stay_threshold, S_IRUGO | S_IWUSR,
+			show_stay_threshold, store_stay_threshold);
 #endif
 
 static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
@@ -538,10 +568,12 @@ static enum hotplug_cmd diagnose_condition(void)
 	if (cur_load_freq > normal_min_freq)
 #endif
 		low_stay = 0;
-	else if (cur_load_freq <= normal_min_freq)
-		low_stay = 1;
+	else if (cur_load_freq <= normal_min_freq &&
+		low_stay <= low_stay_threshold)
+		low_stay++;
 
-	if (low_stay && (!lcd_is_on || forced_hotplug))
+	if (low_stay > low_stay_threshold &&
+		(!lcd_is_on || forced_hotplug))
 		ret = CMD_LOW_POWER;
 
 	return ret;
@@ -699,6 +731,13 @@ static int __init dm_cpu_hotplug_init(void)
 			__func__);
 		goto err_enable_dm_hotplug;
 	}
+
+	ret = sysfs_create_file(power_kobj, &dm_hotplug_stay_threshold.attr);
+	if (ret) {
+		pr_err("%s: failed to create dm_hotplug_stay_threshold sysfs interface\n",
+			__func__);
+		goto err_dm_hotplug_stay_threshold;
+	}
 #endif
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -729,9 +768,13 @@ static int __init dm_cpu_hotplug_init(void)
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 err_policy:
-	sysfs_remove_file(power_kobj, &enable_dm_hotplug.attr);
 #endif
+#ifdef CONFIG_PM
+	sysfs_remove_file(power_kobj, &dm_hotplug_stay_threshold.attr);
+err_dm_hotplug_stay_threshold:
+	sysfs_remove_file(power_kobj, &enable_dm_hotplug.attr);
 err_enable_dm_hotplug:
+#endif
 	fb_unregister_client(&fb_block);
 	kthread_stop(dm_hotplug_task);
 
