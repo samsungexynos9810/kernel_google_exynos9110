@@ -89,6 +89,20 @@ struct check_reg_lpa {
 	unsigned int	check_bit;
 };
 
+struct check_wakeup_stat {
+	unsigned int	buf_cnt;
+	unsigned int	early_wakeup;
+	unsigned int	wakeup_stat;
+	unsigned int	wakeup_stat1;
+	unsigned int	wakeup_stat2;
+};
+
+#define EXYNOS_WAKEUP_STAT_BUF_SIZE	200
+static unsigned int aftr_wakeup_count = 0;
+static unsigned int lpa_wakeup_count = 0;
+static struct check_wakeup_stat aftr_wakeup_stat[EXYNOS_WAKEUP_STAT_BUF_SIZE];
+static struct check_wakeup_stat lpa_wakeup_stat[EXYNOS_WAKEUP_STAT_BUF_SIZE];
+
 /*
  * List of check power domain list for LPA mode
  * These register are have to power off to enter LPA mode
@@ -440,6 +454,14 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	exynos_idle_clock_down(true, KFC);
 #endif
 
+	aftr_wakeup_stat[aftr_wakeup_count].buf_cnt = aftr_wakeup_count;
+	aftr_wakeup_stat[aftr_wakeup_count].wakeup_stat = __raw_readl(EXYNOS5430_WAKEUP_STAT);
+	aftr_wakeup_stat[aftr_wakeup_count].wakeup_stat1 = __raw_readl(EXYNOS5430_WAKEUP_STAT1);
+	aftr_wakeup_stat[aftr_wakeup_count].wakeup_stat2 = __raw_readl(EXYNOS5430_WAKEUP_STAT2);
+	aftr_wakeup_count++;
+	if (aftr_wakeup_count > EXYNOS_WAKEUP_STAT_BUF_SIZE)
+		aftr_wakeup_count = 0;
+
 	/* Clear wakeup state register */
 	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT);
 	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT1);
@@ -620,6 +642,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	unsigned long tmp;
 	unsigned int cpuid = smp_processor_id();
 	unsigned int cpu_offset;
+	unsigned int early_wakeup_flag = 0;
 
 	/*
 	 * Before enter central sequence mode, clock src register have to set
@@ -687,6 +710,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
 		tmp |= EXYNOS_CENTRAL_LOWPWR_CFG;
 		__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+		early_wakeup_flag = 1;
 
 		goto early_wakeup;
 	}
@@ -734,6 +758,15 @@ early_wakeup:
 
 	s3c_pm_do_restore_core(exynos5_lpa_save,
 			       ARRAY_SIZE(exynos5_lpa_save));
+
+	lpa_wakeup_stat[lpa_wakeup_count].buf_cnt = lpa_wakeup_count;
+	lpa_wakeup_stat[lpa_wakeup_count].wakeup_stat = __raw_readl(EXYNOS5430_WAKEUP_STAT);
+	lpa_wakeup_stat[lpa_wakeup_count].wakeup_stat1 = __raw_readl(EXYNOS5430_WAKEUP_STAT1);
+	lpa_wakeup_stat[lpa_wakeup_count].wakeup_stat2 = __raw_readl(EXYNOS5430_WAKEUP_STAT2);
+	lpa_wakeup_stat[lpa_wakeup_count].early_wakeup = early_wakeup_flag;
+	lpa_wakeup_count++;
+	if (lpa_wakeup_count > EXYNOS_WAKEUP_STAT_BUF_SIZE)
+		lpa_wakeup_count = 0;
 
 	/* Clear wakeup state register */
 	__raw_writel(0x0, EXYNOS5430_WAKEUP_STAT);
@@ -1028,6 +1061,25 @@ static int lp_debug_show(struct seq_file *s, void *unused)
 		seq_printf(s, "\tdstop power_domain : (%d), status : (0x%08x)\n",
 				i, __raw_readl(exynos5_dstop_power_domain[i].check_reg) &
 				exynos5_dstop_power_domain[i].check_bit);
+
+	seq_printf(s, "\n[ AFTR WAKEUP_STAT ]\n");
+
+	for (i = 0; i < EXYNOS_WAKEUP_STAT_BUF_SIZE; i++) {
+		seq_printf(s, "%10u: WAKEUP_STAT(0x%08x), WAKEUP_STAT1(0x%08x), "
+				"WAKEUP_STAT2(0x%08x)\n", aftr_wakeup_stat[i].buf_cnt,
+				aftr_wakeup_stat[i].wakeup_stat, aftr_wakeup_stat[i].wakeup_stat1,
+				aftr_wakeup_stat[i].wakeup_stat2);
+	}
+
+	seq_printf(s, "\n[ LPA WAKEUP_STAT ]\n");
+
+	for (i = 0; i < EXYNOS_WAKEUP_STAT_BUF_SIZE; i++) {
+		seq_printf(s, "%10u: early_wakeup: %u, WAKEUP_STAT(0x%08x), "
+				"WAKEUP_STAT1(0x%08x), WAKEUP_STAT2(0x%08x)\n",
+				lpa_wakeup_stat[i].buf_cnt, lpa_wakeup_stat[i].early_wakeup,
+				lpa_wakeup_stat[i].wakeup_stat, lpa_wakeup_stat[i].wakeup_stat1,
+				lpa_wakeup_stat[i].wakeup_stat2);
+	}
 
 	return 0;
 }
