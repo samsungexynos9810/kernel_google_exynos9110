@@ -748,6 +748,25 @@ static ssize_t control_temp_store(struct kobject *kobj,
 	return n;
 }
 
+static ssize_t tdp_show(struct kobject *kobj,
+				   struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", arbiter_data.config.tdp);
+}
+
+static ssize_t tdp_store(struct kobject *kobj,
+				    struct kobj_attribute *attr,
+				    const char *buf, size_t n)
+{
+	unsigned long val;
+
+	if (kstrtoul(buf, 10, &val))
+		return -EINVAL;
+
+	arbiter_data.config.tdp = val;
+	return n;
+}
+
 static ssize_t enabled_show(struct kobject *kobj,
 				   struct kobj_attribute *attr, char *buf)
 {
@@ -869,10 +888,12 @@ static struct dentry * setup_debugfs(struct ipa_config *config)
 
 define_ipa_attr(enabled);
 define_ipa_attr(control_temp);
+define_ipa_attr(tdp);
 
 static struct attribute *ipa_attrs[] = {
 	&enabled.attr,
     &control_temp.attr,
+    &tdp.attr,
 	NULL
 };
 
