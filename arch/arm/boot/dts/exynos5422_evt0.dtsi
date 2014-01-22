@@ -1101,17 +1101,17 @@
 		mfc_qos_table {
 			mfc_qos_variant_0 {
 				thrd_mb = <0>;
-				freq_mfc = <100000>;
-				freq_int = <200000>;
-				freq_mif = <200000>;
+				freq_mfc = <96000>;
+				freq_int = <83000>;
+				freq_mif = <165000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 			};
 			mfc_qos_variant_1 {
 				thrd_mb = <108000>;
-				freq_mfc = <134000>;
-				freq_int = <200000>;
-				freq_mif = <200000>;
+				freq_mfc = <111000>;
+				freq_int = <111000>;
+				freq_mif = <206000>;
 				freq_cpu = <0>;
 				freq_kfc = <0>;
 			};
