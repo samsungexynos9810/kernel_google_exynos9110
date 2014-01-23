@@ -133,6 +133,7 @@ static bool mif_max = false;
 
 #ifdef CONFIG_SAMSUNG_USBPHY
 extern int samsung_usbphy_check_op(void);
+extern void samsung_usb_lpa_resume(void);
 #endif
 
 #if defined(CONFIG_MMC_DW)
@@ -572,6 +573,8 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel((1 << 28), EXYNOS5422_PAD_RETENTION_HSI_OPTION);
 
 early_wakeup:
+	samsung_usb_lpa_resume();
+
 	if (mif_max) {
 		clk_enable(clkm_phy0);
 		clk_enable(clkm_phy1);
