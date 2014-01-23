@@ -4487,11 +4487,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
-
-	msleep(12);
-	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
