@@ -104,6 +104,7 @@ extern int gsc_dbg;
 #define	GSC_CTX_START			(1 << 5)
 #define	GSC_CTX_STOP_REQ		(1 << 6)
 #define	GSC_CTX_CAP			(1 << 10)
+#define	GSC_DST_CROP			(1 << 11)
 
 #define GSC_SC_UP_MAX_RATIO		65536
 #define GSC_SC_DOWN_RATIO_7_8		74898

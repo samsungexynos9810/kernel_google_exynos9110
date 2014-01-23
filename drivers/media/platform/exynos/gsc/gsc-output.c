@@ -253,6 +253,7 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 		f->crop.top = crop->rect.top;
 		f->crop.width = crop->rect.width;
 		f->crop.height = crop->rect.height;
+		ctx->state |= GSC_DST_CROP;
 
 		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 			ret = gsc_set_scaler_info(ctx);
@@ -454,8 +455,8 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 		gsc_err("Requested count exceeds maximun count of input buffer");
 		return -EINVAL;
 	} else if (reqbufs->count == 0)
-		gsc_ctx_state_lock_clear(GSC_SRC_FMT | GSC_DST_FMT,
-					 out->ctx);
+		gsc_ctx_state_lock_clear(GSC_SRC_FMT | GSC_DST_FMT |
+				GSC_DST_CROP, out->ctx);
 
 	gsc_set_protected_content(gsc, out->ctx->gsc_ctrls.drm_en->cur.val);
 
@@ -579,7 +580,7 @@ static int gsc_output_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 	struct gsc_ctx *ctx = gsc->out.ctx;
 	struct gsc_variant *variant = gsc->variant;
 	struct gsc_frame *f;
-	unsigned int mask = GSC_DST_FMT | GSC_SRC_FMT;
+	unsigned int mask = GSC_DST_FMT | GSC_SRC_FMT | GSC_DST_CROP;
 	int ret;
 
 	if (!is_output(cr->type)) {
@@ -595,7 +596,7 @@ static int gsc_output_s_crop(struct file *file, void *fh, struct v4l2_crop *cr)
 
 	ctx->scaler.is_scaled_down = false;
 	/* Check to see if scaling ratio is within supported range */
-	if ((ctx->state & (GSC_DST_FMT | GSC_SRC_FMT)) == mask) {
+	if ((ctx->state & (GSC_DST_FMT | GSC_SRC_FMT | GSC_DST_CROP)) == mask) {
 		ret = gsc_check_scaler_ratio(ctx, variant,
 				f->crop.width, f->crop.height,
 				ctx->d_frame.crop.width,
