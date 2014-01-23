@@ -2916,7 +2916,7 @@ static void dw_mci_tp_mon(struct work_struct *work)
 
 	pm_qos_update_request_timeout(&host->pm_qos_int,
 					host->pdata->qos_int_level,
-					200000);
+					10000);
 	pm_qos_update_request_timeout(&host->pm_qos_mif,
 					mif_lock_value, 2000000);
 	pm_qos_update_request_timeout(&host->pm_qos_cpu,
