@@ -101,6 +101,8 @@ static int exyswd_rng_probe(struct platform_device *pdev)
 	rng.name = "exyswd_rng";
 	rng.read = exynos_swd_read;
 
+	spin_lock_init(&hwrandom_lock);
+
 	return hwrng_register(&rng);
 }
 
