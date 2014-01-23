@@ -2310,12 +2310,12 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 					pr_err("fail start localpath\n");
 				clear_bit(S3C_FB_READY_TO_LOCAL,
 					&sfb->windows[i]->state);
+				set_bit(S3C_FB_LOCAL,
+					&sfb->windows[i]->state);
 			} else {
 				ret = s3c_fb_change_frame(sfb, regs, i);
 				if (ret)
 					pr_err("failed change frame\n");
-				set_bit(S3C_FB_LOCAL,
-					&sfb->windows[i]->state);
 			}
 		}
 	}
