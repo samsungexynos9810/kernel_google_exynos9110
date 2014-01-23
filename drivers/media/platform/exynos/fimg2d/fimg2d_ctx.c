@@ -98,6 +98,7 @@ static inline int image_stride(struct fimg2d_image *img, int plane)
 static int fimg2d_check_address_range(unsigned long addr, size_t size)
 {
 	struct vm_area_struct *vma;
+	struct vm_area_struct *nvma;
 	int ret = 0;
 
 	if (addr + size <= addr) {
@@ -109,11 +110,28 @@ static int fimg2d_check_address_range(unsigned long addr, size_t size)
 	down_read(&current->mm->mmap_sem);
 	vma = find_vma(current->mm, addr);
 
-	if ((vma == NULL) || (vma->vm_end < (addr + size))) {
-		if (vma)
-			fimg2d_err("%#lx, %#x = vma[%#lx, %#lx]\n",
-				addr, size, vma->vm_start, vma->vm_end);
+	if (vma == NULL) {
+		fimg2d_err("vma is NULL\n");
 		ret = -EINVAL;
+	} else {
+		nvma = vma->vm_next;
+
+		while ((vma->vm_end < (addr + size)) &&
+				(nvma != NULL) &&
+				(vma->vm_end == nvma->vm_start)) {
+			vma = vma->vm_next;
+			nvma = nvma->vm_next;
+		}
+
+		if ((vma == NULL) || (vma->vm_end < (addr + size))) {
+			if (vma == NULL)
+				fimg2d_err("vma is invalid, addr : %#lx, size : %#x\n",
+						addr, size);
+			else
+				fimg2d_err("addr : %#lx, size : %#x - out of vma[%#lx, %#lx] range\n",
+				addr, size, vma->vm_start, vma->vm_end);
+			ret =  -EFAULT;
+		}
 	}
 
 	up_read(&current->mm->mmap_sem);
@@ -588,7 +606,6 @@ static int fimg2d_check_dma_sync(struct fimg2d_bltcmd *cmd)
 #ifndef CCI_SNOOP
 	fimg2d_debug("cache flush\n");
 	perf_start(cmd, PERF_CACHE);
-
 	if (is_inner_flushall(cmd->dma_all)) {
 		inner_touch_range(cmd);
 		flush_all_cpu_caches();
