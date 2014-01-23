@@ -43,6 +43,7 @@
 #include <plat/map-s5p.h>
 
 #include "dw_mmc.h"
+#include "dw_mmc-exynos.h"
 
 #ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
 #include "../card/queue.h"
@@ -2662,7 +2663,7 @@ static void dw_mci_cmd_interrupt(struct dw_mci *host, u32 status)
 static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 {
 	struct dw_mci *host = dev_id;
-	u32 status, pending;
+	u32 status, pending, reg;
 	int i;
 	int ret = IRQ_NONE;
 
@@ -2714,9 +2715,13 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 		}
 
 		if (pending & DW_MCI_DATA_ERROR_FLAGS) {
-			if (mci_readl(host, RINTSTS) & SDMMC_INT_HTO)
+			if (mci_readl(host, RINTSTS) & SDMMC_INT_HTO) {
+				dev_err(host->dev, "host timeout error\n");
 				dw_mci_reg_dump(host);
-
+				reg = __raw_readl(host->regs + DWMCI_MPSTAT);
+				if (reg & (BIT(0)))
+					panic("DMA hang Issue !!!!");
+			}
 			/* if there is an error report DATA_ERROR */
 			mci_writel(host, RINTSTS, DW_MCI_DATA_ERROR_FLAGS);
 			host->data_status = pending;
