@@ -471,8 +471,6 @@ void gsc_hw_set_input_buf_mask_all(struct gsc_dev *dev)
 	cfg |= GSC_IN_BASE_ADDR_PINGPONG(dev->variant->in_buf_cnt);
 
 	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
-	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_CB_MASK);
-	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_CR_MASK);
 }
 
 void gsc_hw_set_output_buf_mask_all(struct gsc_dev *dev)
@@ -506,8 +504,6 @@ void gsc_hw_set_input_buf_masking(struct gsc_dev *dev, u32 shift,
 	cfg |= enable << shift;
 
 	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
-	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_CB_MASK);
-	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_CR_MASK);
 }
 
 void gsc_hw_set_output_buf_masking(struct gsc_dev *dev, u32 shift,

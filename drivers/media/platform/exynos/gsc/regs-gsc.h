@@ -271,15 +271,11 @@
 /* G-Scaler input y base current address */
 #define GSC_IN_BASE_ADDR_Y_CUR(n)	(0x60 + (n) * 0x4)
 
-/* G-Scaler input cb address mask */
-#define GSC_IN_BASE_ADDR_CB_MASK	0x7C
 /* G-Scaler input cb base address */
 #define GSC_IN_BASE_ADDR_CB(n)		(0x80 + (n) * 0x4)
 /* G-Scaler input cb base current address */
 #define GSC_IN_BASE_ADDR_CB_CUR(n)	(0x90 + (n) * 0x4)
 
-/* G-Scaler input cr address mask */
-#define GSC_IN_BASE_ADDR_CR_MASK	0xAC
 /* G-Scaler input cr base address */
 #define GSC_IN_BASE_ADDR_CR(n)		(0xB0 + (n) * 0x4)
 /* G-Scaler input cr base current address */
