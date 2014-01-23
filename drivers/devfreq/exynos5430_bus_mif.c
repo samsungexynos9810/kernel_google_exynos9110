@@ -535,11 +535,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 633Mhz */
 		.timing_row	= 0x4348758F,
-		.timing_data	= 0x3530064A,
+		.timing_data	= 0x3530084E,
 		.timing_power	= 0x40460335,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00001D1D,
-		.dvfs_con1	= 0x0A0A2121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x00000860,
 			[1]	= 0x00100860,
@@ -548,11 +548,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 543Mhz */
 		.timing_row	= 0x3A4764CD,
-		.timing_data	= 0x35300549,
+		.timing_data	= 0x3530084E,
 		.timing_power	= 0x383C0335,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00001919,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -561,11 +561,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 413Mhz */
 		.timing_row	= 0x2C35538A,
-		.timing_data	= 0x24200539,
+		.timing_data	= 0x2420083E,
 		.timing_power	= 0x2C2E0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00001313,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -574,11 +574,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 275Mhz */
 		.timing_row	= 0x1D244287,
-		.timing_data	= 0x23200529,
+		.timing_data	= 0x2320082E,
 		.timing_power	= 0x1C1F0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000D0D,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -587,11 +587,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 206Mhz */
 		.timing_row	= 0x162331C6,
-		.timing_data	= 0x23200529,
+		.timing_data	= 0x2320082E,
 		.timing_power	= 0x18170225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000A0A,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -600,11 +600,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 165Mhz */
 		.timing_row	= 0x12223185,
-		.timing_data	= 0x23200529,
+		.timing_data	= 0x2320082E,
 		.timing_power	= 0x14130225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000808,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -613,11 +613,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 138Mhz */
 		.timing_row	= 0x11222144,
-		.timing_data	= 0x23200529,
+		.timing_data	= 0x2320082E,
 		.timing_power	= 0x10100225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000707,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -626,11 +626,11 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 		},
 	}, {	/* 103Mhz */
 		.timing_row	= 0x11222103,
-		.timing_data	= 0x23200529,
+		.timing_data	= 0x2320082E,
 		.timing_power	= 0x100C0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000505,
-		.dvfs_con1	= 0x09092121,
+		.dvfs_con1	= 0x0E0E2121,
 		.mif_drex_mr_data = {
 			[0]	= 0x0000081C,
 			[1]	= 0x0010081C,
@@ -1163,21 +1163,6 @@ static int exynos5_devfreq_mif_set_phy(struct devfreq_data_mif *data,
 	return 0;
 }
 
-static int exynos5_devfreq_mif_set_directcmd(struct devfreq_data_mif *data,
-						int target_idx)
-{
-	struct devfreq_mif_timing_parameter *cur_parameter;
-
-	cur_parameter = &dmc_timing_parameter[target_idx];
-
-	__raw_writel(cur_parameter->mif_drex_mr_data[0], data->base_sysreg_mif + 0x1030);
-	__raw_writel(cur_parameter->mif_drex_mr_data[1], data->base_sysreg_mif + 0x1034);
-	__raw_writel(cur_parameter->mif_drex_mr_data[2], data->base_sysreg_mif + 0x1038);
-	__raw_writel(cur_parameter->mif_drex_mr_data[3], data->base_sysreg_mif + 0x103C);
-
-	return 0;
-}
-
 static int exynos5_devfreq_mif_set_dll(struct devfreq_data_mif *data,
 					unsigned long target_volt,
 					int target_idx)
@@ -1197,6 +1182,42 @@ static int exynos5_devfreq_mif_set_dll(struct devfreq_data_mif *data,
 	}
 
 	return 0;
+}
+
+static void exynos5_devfreq_mif_dynamic_setting(struct devfreq_data_mif *data,
+						bool flag)
+{
+	unsigned int tmp;
+
+	if (flag) {
+		tmp = __raw_readl(data->base_drex0 + 0x0004);
+		tmp |= ((0x1 << 5) | (0x1 << 1));
+		__raw_writel(tmp, data->base_drex0 + 0x0004);
+		tmp = __raw_readl(data->base_drex1 + 0x0004);
+		tmp |= ((0x1 << 5) | (0x1 << 1));
+		__raw_writel(tmp, data->base_drex1 + 0x0004);
+
+		tmp = __raw_readl(data->base_drex0 + 0x0008);
+		tmp |= (0x1 << 4);
+		__raw_writel(tmp, data->base_drex0 + 0x0008);
+		tmp = __raw_readl(data->base_drex1 + 0x0008);
+		tmp |= (0x1 << 4);
+		__raw_writel(tmp, data->base_drex1 + 0x0008);
+	} else {
+		tmp = __raw_readl(data->base_drex0 + 0x0004);
+		tmp &= ~((0x1 << 5) | (0x1 << 1));
+		__raw_writel(tmp, data->base_drex0 + 0x0004);
+		tmp = __raw_readl(data->base_drex1 + 0x0004);
+		tmp &= ~((0x1 << 5) | (0x1 << 1));
+		__raw_writel(tmp, data->base_drex1 + 0x0004);
+
+		tmp = __raw_readl(data->base_drex0 + 0x0008);
+		tmp &= ~(0x1 << 4);
+		__raw_writel(tmp, data->base_drex0 + 0x0008);
+		tmp = __raw_readl(data->base_drex1 + 0x0008);
+		tmp &= ~(0x1 << 4);
+		__raw_writel(tmp, data->base_drex1 + 0x0008);
+	}
 }
 
 static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
@@ -1386,6 +1407,7 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	if (old_freq == *target_freq)
 		goto out;
 
+	exynos5_devfreq_mif_dynamic_setting(mif_data, false);
 	if (old_freq < *target_freq) {
 		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
@@ -1394,7 +1416,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
@@ -1403,7 +1424,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_directcmd(mif_data, target_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
@@ -1411,7 +1431,7 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
 						false, *target_freq);
 	}
-
+	exynos5_devfreq_mif_dynamic_setting(mif_data, true);
 out:
 	mutex_unlock(&mif_data->lock);
 
