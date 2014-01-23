@@ -1258,6 +1258,10 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	spin_lock(&sfb->slock);
 #ifdef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_sw_trigger(sfb);
+#else
+#ifndef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
+	hw_trigger_mask_enable(sfb, true);
+#endif
 #endif
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
@@ -2340,6 +2344,10 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	}
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		shadow_protect_win(sfb->windows[i], 0);
+
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	hw_trigger_mask_enable(sfb, false);
+#endif
 
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
@@ -4866,11 +4874,8 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
 	reg = readl(sfb->regs + TRIGCON);
 
-	reg |= TRIGCON_TRIGEN_PER_I80_RGB_F | TRIGCON_TRIGEN_I80_RGB_F;
-	reg &= ~(TRIGCON_SWTRIGEN_I80_RGB);
-	reg |= TRIGCON_HWTRIGEN_I80_RGB;
-	reg |= TRIGCON_HWTRIGMASK_I80_RGB;
-	writel(reg, sfb->regs + TRIGCON);
+	s3c_fb_configure_trigger(sfb);
+	hw_trigger_mask_enable(sfb, true);
 
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
