@@ -870,6 +870,17 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 		goto p_err;
 	}
 
+	/*
+	 * Maybe there are some waiting smp_shot semaphores when finishing kthread
+	 * in group close. This situation caused waiting kthread_stop to finish it
+	 * We should check if there are smp_shot in waiting list.
+	 */
+	while (!list_empty(&group->smp_shot.wait_list)) {
+		warn("group%d frame reqs are waiting in semaphore[%d] when closing",
+				group->id, group->smp_shot.count);
+		up(&group->smp_shot);
+	}
+
 	if ((refcount == 1) &&
 		test_bit(FIMC_IS_GGROUP_INIT, &groupmgr->group_state[group->id]) &&
 		groupmgr->group_task[group->id]) {
@@ -1535,6 +1546,13 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	}
 	atomic_dec(&group->smp_shot_count);
 	try_sdown = true;
+
+	/* skip left operation, if group is closing */
+	if (!test_bit(FIMC_IS_GROUP_READY, &group->state)) {
+		mwarn("this group%d was already process stoped", group, group->id);
+		ret = -EINVAL;
+		goto p_err;
+	}
 
 	PROGRAM_COUNT(2);
 	ret = down_interruptible(&groupmgr->group_smp_res[group->id]);
