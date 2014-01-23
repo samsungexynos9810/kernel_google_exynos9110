@@ -81,11 +81,9 @@ static int prev_overlap_cnt;
 #define FIMD_VIDEO_PSR
 #endif
 
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ) || defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
+#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 #include <linux/pm_qos.h>
 static struct pm_qos_request exynos5_fimd_int_qos;
-#endif
-#if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 static struct pm_qos_request exynos5_fimd_mif_qos;
 #endif
 #if defined(CONFIG_SOC_EXYNOS5260)
@@ -1117,7 +1115,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 		bts_scen_update(TYPE_LAYERS, 0);
 		exynos5_update_media_layers(TYPE_FIMD1, 0);
-		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 0;
 #endif
 		break;
@@ -1128,7 +1125,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 		bts_scen_update(TYPE_LAYERS, 1);
 		exynos5_update_media_layers(TYPE_FIMD1, 1);
-		pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 		prev_overlap_cnt = 1;
 #endif
 #ifdef CONFIG_DECON_MIC
@@ -2355,10 +2351,6 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	if (prev_overlap_cnt < regs->win_overlap_cnt) {
 		bts_scen_update(TYPE_LAYERS, regs->win_overlap_cnt);
 		exynos5_update_media_layers(TYPE_FIMD1, regs->win_overlap_cnt);
-		if (regs->win_overlap_cnt >= 2)
-			pm_qos_update_request(&exynos5_fimd_int_qos, 111000);
-		else
-			pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 	}
 #endif
 
@@ -2405,10 +2397,6 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	if (prev_overlap_cnt > regs->win_overlap_cnt) {
 		bts_scen_update(TYPE_LAYERS, regs->win_overlap_cnt);
 		exynos5_update_media_layers(TYPE_FIMD1, regs->win_overlap_cnt);
-		if (regs->win_overlap_cnt >= 2)
-			pm_qos_update_request(&exynos5_fimd_int_qos, 111000);
-		else
-			pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 	}
 	prev_overlap_cnt = regs->win_overlap_cnt;
 #endif
@@ -4030,7 +4018,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	pm_qos_add_request(&exynos5_fimd_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 	exynos5_update_media_layers(TYPE_FIMD1, 1);
-	pm_qos_add_request(&exynos5_fimd_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
 	prev_overlap_cnt = 1;
 #endif
 	/* we have the register setup, start allocating framebuffers */
@@ -4803,7 +4790,6 @@ int s3c_fb_hibernation_power_off(struct display_driver *dispdrv)
 	pm_qos_update_request(&exynos5_fimd_mif_qos, 0);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
 	exynos5_update_media_layers(TYPE_FIMD1, 0);
-	pm_qos_update_request(&exynos5_fimd_int_qos, 0);
 	prev_overlap_cnt = 0;
 #endif
 	mutex_unlock(&sfb->output_lock);
