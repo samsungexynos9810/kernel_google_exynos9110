@@ -396,7 +396,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 		clksel = ((priv->ddr200_timing & 0xfffffff8) | pdata->clk_smpl);
 
 		if (!tuning) {
-			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
+			rddqs |= DWMCI_RDDQS_EN;
 			if (priv->delay_line)
 				dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
 				DWMCI_RD_DQS_DELAY_CTRL(priv->delay_line);
