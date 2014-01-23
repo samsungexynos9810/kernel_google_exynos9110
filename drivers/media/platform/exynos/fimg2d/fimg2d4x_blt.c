@@ -38,9 +38,9 @@
 static int nbufs;
 static struct sysmmu_prefbuf prefbuf[MAX_PREFBUFS];
 
+#ifndef CONFIG_EXYNOS7_IOMMU
 #define G2D_MAX_VMA_MAPPING	12
 
-#if 0
 static int mapping_can_locked(unsigned long mapping, unsigned long mappings[], int cnt)
 {
 	int i;
@@ -96,7 +96,7 @@ static int vma_lock_mapping_one(struct mm_struct *mm, unsigned long addr,
 			if (mapping_can_locked(
 					(unsigned long)anon | PAGE_MAPPING_ANON,
 					mappings, cnt)) {
-				page_lock_anon_vma(page);
+				page_lock_anon_vma_read(page);
 				mappings[cnt++] = (unsigned long)page->mapping;
 			}
 			put_anon_vma(anon);
@@ -151,7 +151,7 @@ static void vma_unlock_mapping(void *__mappings)
 	for (i = 0; i < G2D_MAX_VMA_MAPPING; i++) {
 		if (mappings[i]) {
 			if (mappings[i] & PAGE_MAPPING_ANON) {
-				page_unlock_anon_vma(
+				page_unlock_anon_vma_read(
 					(struct anon_vma *)(mappings[i] &
 							~PAGE_MAPPING_FLAGS));
 			} else {
@@ -163,6 +163,14 @@ static void vma_unlock_mapping(void *__mappings)
 
 	kfree(mappings);
 }
+#else
+static void *vma_lock_mapping(struct mm_struct *mm,
+	       struct sysmmu_prefbuf area[], int num_area)
+{
+	return NULL;
+}
+
+#define vma_unlock_mapping(mapping) do { } while (0)
 #endif
 
 #ifdef CONFIG_PM_RUNTIME
@@ -249,7 +257,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 
 		addr_type = cmd->image[IDST].addr.type;
 
-		//ctx->vma_lock = vma_lock_mapping(ctx->mm, prefbuf, MAX_IMAGES - 1);
+		ctx->vma_lock = vma_lock_mapping(ctx->mm, prefbuf, MAX_IMAGES - 1);
 
 		if (fimg2d_check_pgd(ctx->mm, cmd)) {
 			ret = -EFAULT;
@@ -336,7 +344,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 		}
 		perf_end(cmd, PERF_UNMAP);
 fail_n_del:
-		//vma_unlock_mapping(ctx->vma_lock);
+		vma_unlock_mapping(ctx->vma_lock);
 		fimg2d_del_command(ctrl, cmd);
 	}
 
