@@ -78,7 +78,6 @@ struct s3c_pwm_device {
 struct s3c_chip {
 	struct platform_device	*pdev;
 	struct clk		*clk;
-	struct clk		*ipclk;
 	void __iomem		*reg_base;
 	struct pwm_chip		chip;
 	struct s3c_pwm_device	*s3c_pwm[NPWM];
@@ -419,14 +418,6 @@ static int s3c_pwm_clk_init(struct platform_device *pdev,
 	struct device *dev = &pdev->dev;
 	static struct clk *clk_scaler[2];
 
-	s3c->ipclk = devm_clk_get(dev, "ipclk");
-	if (IS_ERR(s3c->ipclk)) {
-		pr_err("no parent ip clock\n");
-		return -EINVAL;
-	}
-
-	clk_prepare_enable(s3c->ipclk);
-
 	s3c->clk = devm_clk_get(dev, "gate_timers");
 	if (IS_ERR(s3c->clk)) {
 		pr_err("no parent clock\n");
@@ -534,7 +525,6 @@ static int s3c_pwm_remove(struct platform_device *pdev)
 		return err;
 
 	clk_disable_unprepare(s3c->clk);
-	clk_disable_unprepare(s3c->ipclk);
 
 	return 0;
 }
@@ -576,7 +566,6 @@ static int s3c_pwm_suspend(struct device *dev)
 	s3c->reg_tcfg0 = __raw_readl(s3c->reg_base + REG_TCFG0);
 
 	clk_disable(s3c->clk);
-	clk_disable(s3c->ipclk);
 	return 0;
 }
 
@@ -586,7 +575,6 @@ static int s3c_pwm_resume(struct device *dev)
 	struct s3c_pwm_device *s3c_pwm;
 	unsigned char i;
 
-	clk_enable(s3c->ipclk);
 	clk_enable(s3c->clk);
 
 	/* Restore pwm registers*/
