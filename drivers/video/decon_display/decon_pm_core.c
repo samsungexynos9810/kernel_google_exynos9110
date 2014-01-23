@@ -66,8 +66,7 @@ module_param(decon_dbg, int, 0644);
 unsigned int frame_done_count;
 unsigned int te_count;
 
-static void enable_mask(struct display_driver *dispdrv);
-static void disable_mask(struct display_driver *dispdrv);
+static void enable_mask(struct display_driver *dispdrv, bool enable);
 void display_block_clock_on(struct display_driver *dispdrv);
 void display_block_clock_off(struct display_driver *dispdrv);
 int display_hibernation_power_on(struct display_driver *dispdrv);
@@ -194,29 +193,13 @@ void disp_pm_gate_lock(struct display_driver *dispdrv, bool increase)
 		atomic_dec(&dispdrv->pm_status.lock_count);
 }
 
-static void enable_mask(struct display_driver *dispdrv)
+static void enable_mask(struct display_driver *dispdrv, bool enable)
 {
-	if(dispdrv->pm_status.trigger_masked)
-		return;
+	/* MASK control */
+	set_hw_trigger_mask(dispdrv->decon_driver.sfb, enable);
+	dispdrv->pm_status.trigger_masked = enable;
 
-	dispdrv->pm_status.trigger_masked = 1;
-	/* MASK */
-	set_hw_trigger_mask(dispdrv->decon_driver.sfb, true);
-
-	pm_debug("Enable mask");
-}
-
-static void disable_mask(struct display_driver *dispdrv)
-{
-	if(!dispdrv->pm_status.trigger_masked)
-		return;
-
-	dispdrv->pm_status.trigger_masked = 0;
-
-	/* UNMASK */
-	set_hw_trigger_mask(dispdrv->decon_driver.sfb, false);
-
-	pm_debug("Disable mask");
+	pm_debug("Enable mask, %d", enable);
 }
 
 static void init_gating_idle_count(struct display_driver *dispdrv)
@@ -312,16 +295,14 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 	spin_lock(&dispdrv->pm_status.slock);
 	if (dispdrv->platform_status > DISP_STATUS_PM0 &&
 		atomic_read(&dispdrv->pm_status.lock_count) == 0) {
-		if (dispdrv->pm_status.clock_enabled) {
-			if (!dispdrv->pm_status.trigger_masked)
-				enable_mask(dispdrv);
+		if (dispdrv->pm_status.clock_enabled &&
+			MAX_CLK_GATING_COUNT == 0) {
+			enable_mask(dispdrv, true);
 		}
 
 		if (dispdrv->pm_status.clock_enabled &&
 			MAX_CLK_GATING_COUNT > 0) {
-			if (!dispdrv->pm_status.trigger_masked) {
-				enable_mask(dispdrv);
-			}
+			enable_mask(dispdrv, true);
 
 			++dispdrv->pm_status.clk_idle_count;
 			if (dispdrv->pm_status.clk_idle_count > MAX_CLK_GATING_COUNT) {
@@ -376,8 +357,6 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
  * update_reg_handler */
 int disp_pm_add_refcount(struct display_driver *dispdrv)
 {
-	unsigned long flags;
-
 	if (dispdrv->platform_status == DISP_STATUS_PM0) return 0;
 
 	if (!dispdrv->pm_status.clock_gating_on) return 0;
@@ -394,11 +373,6 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 
 	display_block_clock_on(dispdrv);
 
-	spin_lock_irqsave(&dispdrv->pm_status.slock, flags);
-	if (dispdrv->pm_status.trigger_masked) {
-		disable_mask(dispdrv);
-	}
-	spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
 	return 0;
 }
 
