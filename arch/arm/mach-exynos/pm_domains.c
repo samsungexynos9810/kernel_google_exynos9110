@@ -69,6 +69,21 @@ static int exynos_pd_power(struct exynos_pm_domain *pd, int power_flags)
 					__raw_readl(pd->base+8));
 				pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
 				mutex_unlock(&pd->access_lock);
+#if defined(CONFIG_SOC_EXYNOS5422)
+				pr_info("\e[1;33m  ######### cmu register dump on timeout ######### \e[0m\n");
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_EPLL_CON0", readl(EXYNOS5_EPLL_CON0));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_DPLL_CON0", readl(EXYNOS5_DPLL_CON0));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_MPLL_CON0", readl(EXYNOS5_MPLL_CON0));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_SPLL_CON0", readl(EXYNOS5_SPLL_CON0));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_SRC_TOP6", readl(EXYNOS5_CLK_SRC_TOP6));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_MUX_STAT_TOP6", readl(EXYNOS5_CLK_MUX_STAT_TOP6));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_SRC_TOP7", readl(EXYNOS5_CLK_SRC_TOP7));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_SRC_MASK_TOP7", readl(EXYNOS5_CLK_SRC_MASK_TOP7));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_MUX_STAT_TOP7", readl(EXYNOS5_CLK_MUX_STAT_TOP7));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_SRC_TOP9", readl(EXYNOS5_CLK_SRC_TOP9));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_MUX_STAT_TOP9", readl(EXYNOS5_CLK_MUX_STAT_TOP9));
+				pr_info("$$$$$$$$$ %s : %08X\n","EXYNOS5_CLK_GATE_BUS_TOP", readl(EXYNOS5_CLK_GATE_BUS_TOP));
+#endif
 				return -ETIMEDOUT;
 			}
 			--timeout;
