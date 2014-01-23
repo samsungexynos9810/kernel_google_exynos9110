@@ -1174,10 +1174,11 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 		}
 	}
 
+	disable_cs(sdd, spi);
+
 	pm_runtime_mark_last_busy(&sdd->pdev->dev);
 	pm_runtime_put_autosuspend(&sdd->pdev->dev);
 
-	disable_cs(sdd, spi);
 	return 0;
 
 setup_exit:
@@ -1479,7 +1480,13 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 	}
 
 	pm_runtime_use_autosuspend(&pdev->dev);
-	pm_runtime_set_autosuspend_delay(&pdev->dev, SPI_AUTOSUSPEND_TIMEOUT);
+
+	if (sci->domain == DOMAIN_TOP)
+		pm_runtime_set_autosuspend_delay(&pdev->dev, 0);
+	else
+		pm_runtime_set_autosuspend_delay(&pdev->dev,
+					SPI_AUTOSUSPEND_TIMEOUT);
+
 	pm_runtime_enable(&pdev->dev);
 	pm_runtime_get_sync(&pdev->dev);
 
