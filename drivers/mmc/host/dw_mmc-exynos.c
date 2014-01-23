@@ -431,35 +431,46 @@ static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
  *
  * @want_bus_hz: bus_hz the eMMC device wants
  */
-static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz)
+static void dw_mci_exynos_set_bus_hz(struct dw_mci *host, u32 want_bus_hz,
+					unsigned char timing)
 {
+	struct dw_mci_exynos_priv_data *priv = host->priv;
 	u32 ciu_rate = clk_get_rate(host->ciu_clk);
 	u32 ciu_div;
 	u32 tmp_reg;
 	int clkerr = 0;
 	struct clk *adiv = devm_clk_get(host->dev, "dout_mmc_a");
-#if !defined(CONFIG_SOC_EXYNOS5422)
 	struct clk *bdiv = devm_clk_get(host->dev, "dout_mmc_b");
-#endif
 
-	tmp_reg = mci_readl(host, CLKSEL);
+	if (timing == MMC_TIMING_MMC_HS200_DDR)
+		tmp_reg = priv->ddr200_timing;
+	else if (timing == MMC_TIMING_UHS_DDR50)
+		tmp_reg = priv->ddr_timing;
+	else
+		tmp_reg = priv->sdr_timing;
 	ciu_div = SDMMC_CLKSEL_GET_DIVRATIO(tmp_reg);
 
 	/* Try to set the upstream clock rate */
 	if (ciu_rate != (want_bus_hz * ciu_div)) {
 		ciu_rate = want_bus_hz * ciu_div;
+
+		/*
+		 * Some SoCs have more than one clock divider
+		 * because expected frequency can't be generated
+		 * for too high frequency of muxed PLL.
+		 */
 		clkerr = clk_set_rate(adiv, ciu_rate);
 		if (clkerr)
 			dev_warn(host->dev, "Couldn't set rate to %u\n",
 				 ciu_rate);
 
-#if !defined(CONFIG_SOC_EXYNOS5422)
-		clkerr = clk_set_rate(bdiv, ciu_rate);
-		if (clkerr)
-			dev_warn(host->dev, "Couldn't set rate to %u\n",
-				 ciu_rate);
-		ciu_rate = clk_get_rate(host->ciu_clk);
-#endif
+		if (!IS_ERR(bdiv)) {
+			clkerr = clk_set_rate(bdiv, ciu_rate);
+			if (clkerr)
+				dev_warn(host->dev, "Couldn't set rate to %u\n",
+					 ciu_rate);
+			ciu_rate = clk_get_rate(host->ciu_clk);
+		}
 	}
 
 	host->bus_hz = ciu_rate / ciu_div;
@@ -485,7 +496,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	clksel = mci_readl(host, CLKSEL);
 
 	if (host->bus_hz != cclkin) {
-		dw_mci_exynos_set_bus_hz(host, cclkin);
+		dw_mci_exynos_set_bus_hz(host, cclkin, timing);
 		host->bus_hz = cclkin;
 		host->current_speed = 0;
 	}
