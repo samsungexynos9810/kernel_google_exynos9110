@@ -337,10 +337,7 @@ void gsc_clock_init(void)
 void pwm_init_clock(void)
 {
 	clk_register_fixed_factor(NULL, "pwm-clock",
-			"sclk_pwm",CLK_SET_RATE_PARENT, 1, 1);
-	if (exynos_set_parent("mout_pwm", "mout_cpll_ctrl"))
-		pr_err("failed clock mout_pwm to mout_cpll_ctrl\n");
-	exynos_set_rate("dout_pwm", 66600000);
+			"clk_pwm",CLK_SET_RATE_PARENT, 1, 1);
 }
 
 void jpeg_clock_init(void)
