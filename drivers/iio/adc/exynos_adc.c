@@ -33,6 +33,7 @@
 #include <linux/of_irq.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_platform.h>
+#include <linux/pm_runtime.h>
 
 #include <linux/iio/iio.h>
 #include <linux/iio/machine.h>
@@ -89,6 +90,7 @@ struct exynos_adc {
 	struct clk		*clk;
 	unsigned int		irq;
 	struct regulator	*vdd;
+	struct device		*dev;
 
 	struct completion	completion;
 
@@ -125,6 +127,8 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 	if (mask != IIO_CHAN_INFO_RAW)
 		return -EINVAL;
 
+	pm_runtime_get_sync(info->dev);
+
 	mutex_lock(&indio_dev->mlock);
 
 	/* Select the channel to be used and Trigger conversion */
@@ -150,6 +154,8 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 	*val = info->value;
 
 	mutex_unlock(&indio_dev->mlock);
+
+	pm_runtime_put_sync(info->dev);
 
 	if (timeout == 0)
 		return -ETIMEDOUT;
@@ -184,7 +190,11 @@ static int exynos_adc_reg_access(struct iio_dev *indio_dev,
 	if (readval == NULL)
 		return -EINVAL;
 
+	pm_runtime_get_sync(info->dev);
+
 	*readval = readl(info->regs + reg);
+
+	pm_runtime_put_sync(info->dev);
 
 	return 0;
 }
@@ -250,6 +260,26 @@ static void exynos_adc_hw_init(struct exynos_adc *info)
 	}
 }
 
+static void exynos_adc_hw_deinit(struct exynos_adc *info)
+{
+	u32 con1, con2;
+
+	if (info->version == ADC_V2) {
+		con2 = readl(ADC_V2_CON2(info->regs));
+		con2 &= ~(ADC_V2_CON2_OSEL | ADC_V2_CON2_ESEL |
+			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0));
+		writel(con2, ADC_V2_CON2(info->regs));
+
+		/* Enable interrupts */
+		writel(0, ADC_V2_INT_EN(info->regs));
+	} else {
+		/* Enable 12-bit ADC resolution */
+		con1 = readl(ADC_V1_CON(info->regs));
+		con1 &= ~(ADC_V1_CON_RES);
+		writel(con1, ADC_V1_CON(info->regs));
+	}
+}
+
 static int exynos_adc_probe(struct platform_device *pdev)
 {
 	struct exynos_adc *info = NULL;
@@ -310,9 +340,6 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		goto err_iio;
 	}
 
-	if (info->phy_ctrl)
-		writel(1, info->enable_reg);
-
 	info->clk = devm_clk_get(&pdev->dev, "gate_adcif");
 	if (IS_ERR(info->clk)) {
 		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
@@ -348,15 +375,8 @@ static int exynos_adc_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_irq;
 
-	if (info->vdd) {
-		ret = regulator_enable(info->vdd);
-		if (ret)
-			goto err_iio_dev;
-	}
-
-	clk_prepare_enable(info->clk);
-
-	exynos_adc_hw_init(info);
+	info->dev = &pdev->dev;
+	pm_runtime_enable(&pdev->dev);
 
 	ret = of_platform_populate(np, exynos_adc_match, NULL, &pdev->dev);
 	if (ret < 0) {
@@ -374,8 +394,6 @@ err_of_populate:
 	if (info->vdd)
 		regulator_disable(info->vdd);
 
-	clk_disable_unprepare(info->clk);
-err_iio_dev:
 	iio_device_unregister(indio_dev);
 err_irq:
 	free_irq(info->irq, info);
@@ -391,6 +409,9 @@ static int exynos_adc_remove(struct platform_device *pdev)
 
 	device_for_each_child(&pdev->dev, NULL,
 				exynos_adc_remove_devices);
+
+	exynos_adc_hw_deinit(info);
+
 	if (info->vdd)
 		regulator_disable(info->vdd);
 
@@ -398,6 +419,8 @@ static int exynos_adc_remove(struct platform_device *pdev)
 
 	if (info->phy_ctrl)
 		writel(0, info->enable_reg);
+
+	pm_runtime_disable(&pdev->dev);
 
 	iio_device_unregister(indio_dev);
 	free_irq(info->irq, info);
@@ -406,48 +429,39 @@ static int exynos_adc_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_SLEEP
-static int exynos_adc_suspend(struct device *dev)
+#ifdef CONFIG_PM_RUNTIME
+static int exynos_adc_runtime_suspend(struct device *dev)
 {
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct exynos_adc *info = iio_priv(indio_dev);
-	u32 con;
 
-	if (info->version == ADC_V2) {
-		con = readl(ADC_V2_CON1(info->regs));
-		con &= ~ADC_CON_EN_START;
-		writel(con, ADC_V2_CON1(info->regs));
-	} else {
-		con = readl(ADC_V1_CON(info->regs));
-		con |= ADC_V1_CON_STANDBY;
-		writel(con, ADC_V1_CON(info->regs));
-	}
+	exynos_adc_hw_deinit(info);
 
 	clk_disable_unprepare(info->clk);
+
+	if (info->vdd) {
+		if (regulator_disable(info->vdd))
+			dev_err(info->dev, "failed disabling iio regulator.\n");
+	}
 
 	if (info->phy_ctrl)
 		writel(0, info->enable_reg);
 
-	if (info->vdd)
-		regulator_disable(info->vdd);
-
 	return 0;
 }
 
-static int exynos_adc_resume(struct device *dev)
+static int exynos_adc_runtime_resume(struct device *dev)
 {
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct exynos_adc *info = iio_priv(indio_dev);
-	int ret;
-
-	if (info->vdd) {
-		ret = regulator_enable(info->vdd);
-		if (ret)
-			return ret;
-	}
 
 	if (info->phy_ctrl)
 		writel(1, info->enable_reg);
+
+	if (info->vdd) {
+		if (regulator_enable(info->vdd))
+			dev_err(info->dev, "failed enabling iio regulator.\n");
+	}
 
 	clk_prepare_enable(info->clk);
 
@@ -457,9 +471,10 @@ static int exynos_adc_resume(struct device *dev)
 }
 #endif
 
-static SIMPLE_DEV_PM_OPS(exynos_adc_pm_ops,
-			exynos_adc_suspend,
-			exynos_adc_resume);
+static const struct dev_pm_ops exynos_adc_pm = {
+	SET_RUNTIME_PM_OPS(exynos_adc_runtime_suspend,
+			   exynos_adc_runtime_resume, NULL)
+};
 
 static struct platform_driver exynos_adc_driver = {
 	.probe		= exynos_adc_probe,
@@ -468,7 +483,7 @@ static struct platform_driver exynos_adc_driver = {
 		.name	= "exynos-adc",
 		.owner	= THIS_MODULE,
 		.of_match_table = exynos_adc_match,
-		.pm	= &exynos_adc_pm_ops,
+		.pm	= &exynos_adc_pm,
 	},
 };
 
