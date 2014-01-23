@@ -277,7 +277,8 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	unsigned int data0, unsigned int data1)
 {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_add_refcount(get_display_driver());
+	struct display_driver *dispdrv = get_display_driver();
+	disp_pm_add_refcount(dispdrv);
 #endif
 
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
@@ -286,6 +287,9 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	}
 
 	mutex_lock(&dsim_rd_wr_mutex);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, true);
+#endif
 	switch (data_id) {
 	/* short packet types of packet types for command. */
 	case MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM:
@@ -379,6 +383,9 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 		mutex_unlock(&dsim_rd_wr_mutex);
 		return -EINVAL;
 	}
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, false);
+#endif
 	mutex_unlock(&dsim_rd_wr_mutex);
 
 	return 0;
@@ -423,11 +430,12 @@ static void s5p_mipi_dsi_rx_err_handler(struct mipi_dsim_device *dsim,
 int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	 u32 addr, u32 count, u8 *buf)
 {
-	u32 rx_fifo, txhd, rx_size;
-	int i, j;
+	u32 rx_fifo, txhd, rx_size = 0;
+	int i, j, ret = 0;
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_add_refcount(get_display_driver());
+	struct display_driver *dispdrv = get_display_driver();
+	disp_pm_add_refcount(dispdrv);
 #endif
 
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
@@ -436,6 +444,9 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	}
 
 	mutex_lock(&dsim_rd_wr_mutex);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, true);
+#endif
 	INIT_COMPLETION(dsim_rd_comp);
 
 	/* Set the maximum packet size returned */
@@ -449,8 +460,8 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	if (!wait_for_completion_interruptible_timeout(&dsim_rd_comp,
 		MIPI_RD_TIMEOUT)) {
 		dev_err(dsim->dev, "MIPI DSIM read Timeout!\n");
-		mutex_unlock(&dsim_rd_wr_mutex);
-		return -ETIMEDOUT;
+		ret = -ETIMEDOUT;
+		goto rx_exit;
 	}
 
 	rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
@@ -501,8 +512,8 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 			__func__, rx_fifo);
 		goto clear_rx_fifo;
 	}
-	mutex_unlock(&dsim_rd_wr_mutex);
-	return 0;
+	ret = rx_size;
+	goto rx_exit;
 
 clear_rx_fifo:
 	i = 0;
@@ -515,15 +526,20 @@ clear_rx_fifo:
 			__func__, rx_fifo);
 		i++;
 	}
-	mutex_unlock(&dsim_rd_wr_mutex);
-	return 0;
+	ret = 0;
+	goto rx_exit;
 
 rx_error:
 	s5p_mipi_dsi_force_dphy_stop_state(dsim, 1);
 	usleep_range(3000, 4000);
 	s5p_mipi_dsi_force_dphy_stop_state(dsim, 0);
+	ret = -EPERM;
+rx_exit:
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_gate_lock(dispdrv, false);
+#endif
 	mutex_unlock(&dsim_rd_wr_mutex);
-	return -1;
+	return ret;
 }
 
 int s5p_mipi_dsi_pll_on(struct mipi_dsim_device *dsim, unsigned int enable)
