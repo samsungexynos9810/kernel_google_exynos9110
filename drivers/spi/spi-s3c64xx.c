@@ -41,7 +41,9 @@
 
 #include <mach/exynos-pm.h>
 
+#ifdef CONFIG_EXYNOS_SPI_RESET_DURING_DSTOP
 static LIST_HEAD(drvdata_list);
+#endif
 
 #define MAX_SPI_PORTS		5
 #define SPI_AUTOSUSPEND_TIMEOUT		(2000)
@@ -1340,8 +1342,7 @@ static inline struct s3c64xx_spi_port_config *s3c64xx_spi_get_port_config(
 			 platform_get_device_id(pdev)->driver_data;
 }
 
-
-#ifdef CONFIG_CPU_IDLE
+#ifdef CONFIG_EXYNOS_SPI_RESET_DURING_DSTOP
 static int s3c64xx_spi_notifier(struct notifier_block *self,
 				unsigned long cmd, void *v)
 {
@@ -1360,7 +1361,7 @@ static int s3c64xx_spi_notifier(struct notifier_block *self,
 static struct notifier_block s3c64xx_spi_notifier_block = {
 	.notifier_call = s3c64xx_spi_notifier,
 };
-#endif /*CONFIG_CPU_IDLE */
+#endif /* CONFIG_EXYNOS_SPI_RESET_DURING_DSTOP */
 
 static int s3c64xx_spi_probe(struct platform_device *pdev)
 {
@@ -1539,7 +1540,9 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err3;
 	}
 
+#ifdef CONFIG_EXYNOS_SPI_RESET_DURING_DSTOP
 	list_add_tail(&sci->node, &drvdata_list);
+#endif
 
 	dev_dbg(&pdev->dev, "Samsung SoC SPI Driver loaded for Bus SPI-%d with %d Slaves attached\n",
 					sdd->port_id, master->num_chipselect);
@@ -1796,7 +1799,7 @@ MODULE_ALIAS("platform:s3c64xx-spi");
 
 static int __init s3c64xx_spi_init(void)
 {
-#ifdef CONFIG_CPU_IDLE
+#ifdef CONFIG_EXYNOS_SPI_RESET_DURING_DSTOP
 	exynos_pm_register_notifier(&s3c64xx_spi_notifier_block);
 #endif
 	return platform_driver_probe(&s3c64xx_spi_driver, s3c64xx_spi_probe);
