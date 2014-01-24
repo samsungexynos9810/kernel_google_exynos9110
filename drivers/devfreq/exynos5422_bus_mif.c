@@ -100,8 +100,6 @@ static struct pm_qos_request media_mif_qos;
 static struct pm_qos_request min_mif_thermal_qos;
 cputime64_t mif_pre_time;
 
-static struct pm_qos_request exynos5_int_qos;
-
 static DEFINE_MUTEX(media_mutex);
 
 unsigned int timeout_fullhd[][2] = {
@@ -611,14 +609,6 @@ static void exynos5_mif_set_freq(struct busfreq_data_mif *data,
 			target_idx = mif_bus_opp_list[i].idx;
 			break;
 		}
-	}
-
-	if (target_idx <= LV_4) {
-		if (!pm_qos_request_active(&exynos5_int_qos))
-			pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, 111000);
-	} else {
-		if (pm_qos_request_active(&exynos5_int_qos))
-			pm_qos_remove_request(&exynos5_int_qos);
 	}
 
 	if (!data->bp_enabled && (target_freq <= mif_bus_opp_list[LV_4].clk ||
