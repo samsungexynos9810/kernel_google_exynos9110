@@ -658,6 +658,36 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_LLI_MOUNT_DONE) {
+		struct exynos_mphy *phy;
+		int credit = 0;
+		int rx_fsm_state, tx_fsm_state, afc_val, csa_status;
+
+		phy = dev_get_drvdata(lli->mphy);
+
+		udelay(10);
+
+		rx_fsm_state = readl(phy->loc_regs + PHY_RX_FSM_STATE(0));
+		tx_fsm_state = readl(phy->loc_regs + PHY_TX_FSM_STATE(0));
+		csa_status = readl(lli->regs + EXYNOS_DME_CSA_SYSTEM_STATUS);
+		credit = readl(lli->regs + EXYNOS_DL_DBG_TX_CREDTIS);
+		writel(0x1, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+		afc_val = readl(phy->loc_regs + (0x27*4));
+		writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+		dev_err(dev, "rx_fsm = %x, tx_fsm = %x, afc_val= %x, csa_status = %x\n"
+				,rx_fsm_state, tx_fsm_state, afc_val, csa_status);
+
+		if (!credit) {
+			mdelay(2);
+			credit = readl(lli->regs + EXYNOS_DL_DBG_TX_CREDTIS);
+			dev_err(dev, "waiting 2ms to get TX_CREDITS for LLI.\n");
+
+			if (!credit) {
+				dev_err(dev, "ERR: Failed to get TX_CREDITS for LLI");
+				mipi_lli_debug_info();
+				return IRQ_HANDLED;
+			}
+		}
+
 		lli->state = LLI_MOUNTED;
 		dev_err(dev, "Mount\n");
 	}
