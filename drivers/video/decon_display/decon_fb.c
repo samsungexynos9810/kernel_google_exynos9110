@@ -110,8 +110,6 @@ static struct dma_buf *g_framebuf;
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_hibernation_power_on(struct display_driver *dispdrv);
 int decon_hibernation_power_off(struct display_driver *dispdrv);
-extern int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim);
-static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb);
 #endif
 
 extern struct mipi_dsim_device *dsim_for_decon;
@@ -1009,6 +1007,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		disp_pm_gate_lock(dispdrv, false);
 #endif
+		dev_info(sfb->dev, "%s: improper power state.\n", __func__);
 		return 0;
 	}
 #endif
@@ -1017,12 +1016,8 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-		if (sfb->power_state == POWER_HIBER_DOWN) {
-			if (s3c_fb_disable_lcd_off(sfb) == 0) {
-				s5p_mipi_dsi_lcd_off(dsim_for_decon);
-				break;
-			}
-		}
+		if (sfb->power_state == POWER_HIBER_DOWN)
+			disp_pm_add_refcount(dispdrv);
 #endif
 		ret = s3c_fb_disable(sfb);
 		s5p_mipi_dsi_disable(dsim_for_decon);
@@ -4453,33 +4448,6 @@ static void decon_fb_perframeoff(struct s3c_fb *sfb)
 	data &= ~VIDCON0_ENVID_F;
 
 	writel(data, regs);
-}
-#endif
-
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-static int s3c_fb_disable_lcd_off(struct s3c_fb *sfb)
-{
-#ifdef CONFIG_ION_EXYNOS
-	if (sfb->update_regs_wq) {
-		flush_workqueue(sfb->update_regs_wq);
-		if (sfb->power_state == POWER_ON)
-			return -EBUSY;
-	}
-#endif
-
-	mutex_lock(&sfb->output_lock);
-
-	sfb->power_state = POWER_DOWN;
-
-	if (sfb->pdata->backlight_off)
-		sfb->pdata->backlight_off();
-
-	if (sfb->pdata->lcd_off)
-		sfb->pdata->lcd_off();
-
-	mutex_unlock(&sfb->output_lock);
-
-	return 0;
 }
 #endif
 
