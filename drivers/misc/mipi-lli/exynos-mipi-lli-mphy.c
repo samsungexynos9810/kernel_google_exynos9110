@@ -30,12 +30,13 @@ int exynos_mphy_init(struct exynos_mphy *phy)
 	based on the current value of the TX_MODE upon getting a TOB REQ */
 	writel(0x0, phy->loc_regs + PHY_TX_LCC_ENABLE(0));
 
-	/* use PWM-G2 for LLI initialization.
+	/* use HS-G2 for LLI initialization.
 	   This value has to keep synchronization with CP
 	   before the LLI mount occurs. */
-	writel(0x2, phy->loc_regs + PHY_TX_PWMGEAR(0));
-	/* To secure margin of LLI mount, sets RX value from 0x1 to 0x0 */
-	writel(0x0, phy->loc_regs + PHY_RX_PWMGEAR(0));
+	writel(0x2, phy->loc_regs + PHY_TX_MODE(0));
+	writel(0x2, phy->loc_regs + PHY_RX_MODE(0));
+	writel(0x2, phy->loc_regs + PHY_TX_HSGEAR(0));
+	writel(0x2, phy->loc_regs + PHY_RX_HSGEAR(0));
 
 	return 0;
 }
