@@ -274,7 +274,6 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	writel(((0x1F<<1) | 1), lli->regs + EXYNOS_IAL_BE_SNF_FIFO);
 
 	writel(0x1000, lli->regs + EXYNOS_PA_WORSTCASE_RTT);
-	writel(0x1, lli->regs + EXYNOS_PA_SLAVE_AUTOMOUNT);
 
 	return 0;
 }
