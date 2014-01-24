@@ -32,6 +32,10 @@
 static int max_support_idx_CA7;
 static int min_support_idx_CA7 = (CPUFREQ_LEVEL_END_CA7 - 1);
 
+#ifdef CONFIG_PM_DEBUG
+static int is_init_time;
+#endif
+
 static struct clk *fout_kpll;
 static struct clk *fout_cpll;
 static struct clk *dout_cpu_kfc;
@@ -207,6 +211,42 @@ static int exynos5422_bus_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	0,  /* 200 MHz */
 
 };
+
+static void exynos5422_set_ema_CA7(unsigned int target_volt)
+{
+	unsigned int value = 0;
+#ifdef CONFIG_PM_DEBUG
+	unsigned int temp;
+#endif
+
+	if (target_volt < EMA_VOLT_LEV_1)
+		value |= EMA_VAL_0;
+	else if (target_volt < EMA_VOLT_LEV_2)
+		value |= EMA_VAL_1;
+	else if (target_volt < EMA_VOLT_LEV_3)
+		value |= EMA_VAL_2;
+	else
+		value |= EMA_VAL_3;
+
+	value = (value << 4) | value;
+#ifdef CONFIG_PM_DEBUG
+	if (is_init_time) {
+		pr_info("[SET_EMA_TEST] volt : %d  value : 0x%x\n",
+				target_volt, value);
+		goto skip;
+	}
+#endif
+	__raw_writel(value, EXYNOS5422_KFC_EMA_CTRL);
+
+#ifdef CONFIG_PM_DEBUG
+	do {
+		temp = __raw_readl(EXYNOS5422_KFC_EMA_STATUS);
+	} while (temp & EMA_ON_CHANGE);
+
+skip:
+	return;
+#endif
+}
 
 static void exynos5422_set_clkdiv_CA7(unsigned int div_index)
 {
@@ -391,7 +431,9 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	int i;
 	unsigned int tmp;
 	unsigned long rate;
-
+#ifdef CONFIG_PM_DEBUG
+	is_init_time = 1;
+#endif
 	set_volt_table_CA7();
 
 	fout_cpll = __clk_lookup("fout_cpll");
@@ -476,6 +518,8 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->set_freq = exynos5422_set_frequency_CA7;
 	info->need_apll_change = exynos5422_pms_change_CA7;
 	info->is_alive = exynos5422_is_alive_CA7;
+	info->set_ema = exynos5422_set_ema_CA7;
+
 
 #ifdef ENABLE_CLKOUT
 	tmp = __raw_readl(EXYNOS5_CLKOUT_CMU_KFC);
@@ -484,6 +528,14 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	__raw_writel(tmp, EXYNOS5_CLKOUT_CMU_KFC);
 #endif
 
+#ifdef CONFIG_PM_DEBUG
+	info->set_ema(EMA_VOLT_LEV_0 - 12500);
+	info->set_ema(EMA_VOLT_LEV_1 - 12500);
+	info->set_ema(EMA_VOLT_LEV_2 - 12500);
+	info->set_ema(EMA_VOLT_LEV_3 - 12500);
+	info->set_ema(EMA_VOLT_LEV_3 + 12500);
+	is_init_time = 0;
+#endif
 	return 0;
 
 err_get_clock:
