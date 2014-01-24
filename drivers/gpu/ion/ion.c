@@ -1172,8 +1172,10 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
-	if (!ion_buffer_cached(buffer) || !ion_buffer_dirty(buffer))
+	if (!ion_buffer_cached(buffer) || !ion_buffer_dirty(buffer)) {
+		dma_buf_put(dmabuf);
 		return 0;
+	}
 
 	ion_heap_sync(buffer->heap, buffer->sg_table,
 				DMA_BIDIRECTIONAL, ion_buffer_flush, false);
