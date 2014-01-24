@@ -1264,9 +1264,6 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 
 	spin_lock(&sfb->slock);
 
-#ifndef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
-	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
-#endif
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 
@@ -2379,6 +2376,10 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				i, regs->vidw_buf_start[i],
 				readl(sfb->regs + SHD_VIDW_BUF_START(i)));
 	}
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
+#endif
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		if (!sfb->windows[i]->local)
