@@ -713,6 +713,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	if (status & INTR_LLI_UNMOUNT_DONE) {
 		lli->state = LLI_UNMOUNTED;
 		dev_err(dev, "Unmount\n");
+		exynos_lli_init(lli);
 	}
 
 	writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
