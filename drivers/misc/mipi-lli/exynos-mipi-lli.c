@@ -26,10 +26,10 @@
 
 #define EXYNOS_LLI_LINK_START		(0x4000)
 /*
- * 5ns, Default System Clock 200MHz
+ * 5ns, Default System Clock 100MHz
  * SYSTEM_CLOCK_PERIOD = 1000MHz / System Clock
  */
-#define SYSTEM_CLOCK_PERIOD		(5)
+#define SYSTEM_CLOCK_PERIOD		(10)
 #define SIG_INT_MASK0			(0xFFFFFFFF)
 #define SIG_INT_MASK1			(0xFFFFFFFF)
 
