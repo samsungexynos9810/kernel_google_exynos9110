@@ -900,10 +900,15 @@
 			rear_capture_mif = <825000>; /* L0 */
 			rear_capture_i2c = <0>;
 
-			rear_camcording_int = <440000>; /* L1-3 */
-			rear_camcording_cam = <444000>; /* L2 */
-			rear_camcording_mif = <543000>; /* L3 */
-			rear_camcording_i2c = <0>;
+			rear_camcording_fhd_int = <440000>; /* L1-3 */
+			rear_camcording_fhd_cam = <444000>; /* L2 */
+			rear_camcording_fhd_mif = <543000>; /* L3 */
+			rear_camcording_fhd_i2c = <0>;
+
+			rear_camcording_ud_int = <600000>; /* L0 */
+			rear_camcording_ud_cam = <666000>; /* L0 */
+			rear_camcording_ud_mif = <825000>; /* L0 */
+			rear_camcording_ud_i2c = <0>;
 
 			dual_preview_int = <600000>; /* L0 */
 			dual_preview_cam = <666000>; /* L0 */
