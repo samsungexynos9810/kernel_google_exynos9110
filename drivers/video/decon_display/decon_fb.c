@@ -1258,10 +1258,6 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	spin_lock(&sfb->slock);
 #ifdef CONFIG_FB_I80_SW_TRIGGER
 	s3c_fb_sw_trigger(sfb);
-#else
-#ifndef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
-	hw_trigger_mask_enable(sfb, true);
-#endif
 #endif
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
@@ -2460,6 +2456,10 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	}
 
 	while (readl(sfb->regs + DECON_UPDATE) & 0x1);
+
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	hw_trigger_mask_enable(sfb, true);
+#endif
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		s3c_fb_free_dma_buf(sfb, &old_dma_bufs[i]);
