@@ -23,7 +23,8 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS);
-DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING);
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_FHD);
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_UHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_FHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_WHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_UHD);
@@ -43,48 +44,43 @@ static struct fimc_is_dvfs_scenario static_scenarios[] = {
 		.scenario_id		= FIMC_IS_SN_DUAL_CAPTURE,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAPTURE),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_DUAL_CAMCORDING,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAMCORDING),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_DUAL_PREVIEW,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_PREVIEW),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_HIGH_SPEED_FPS,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_HIGH_SPEED_FPS),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS),
-	},
-	{
-		.scenario_id		= FIMC_IS_SN_REAR_CAMCORDING,
-		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_CAMCORDING),
-		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING),
-	},
-	{
+	}, {
+		.scenario_id		= FIMC_IS_SN_REAR_CAMCORDING_FHD,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_CAMCORDING_FHD),
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_FHD),
+	}, {
+		.scenario_id		= FIMC_IS_SN_REAR_CAMCORDING_UHD,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_CAMCORDING_UHD),
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_UHD),
+	}, {
 		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW_FHD,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW_FHD),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_FHD),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW_WHD,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW_WHD),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_WHD),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_REAR_PREVIEW_UHD,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_PREVIEW_UHD),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_UHD),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_FRONT_VT1,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_VT1),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1),
-	},
-	{
+	}, {
 		.scenario_id		= FIMC_IS_SN_FRONT_PREVIEW,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_PREVIEW),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW),
@@ -198,11 +194,26 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS)
 		return 0;
 }
 
-/* rear camcording */
-DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING)
+/* rear camcording FHD*/
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_FHD)
 {
 	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
+			(device->chain3_width * device->chain3_height <= SIZE_FHD) &&
+			((device->setfile & FIMC_IS_SETFILE_MASK) \
+			 == ISS_SUB_SCENARIO_VIDEO))
+		return 1;
+	else
+		return 0;
+}
+
+/* rear camcording UHD*/
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_UHD)
+{
+	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
+			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
+			(device->chain3_width * device->chain3_height > SIZE_FHD) &&
+			(device->chain3_width * device->chain3_height <= SIZE_UHD) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 == ISS_SUB_SCENARIO_VIDEO))
 		return 1;
