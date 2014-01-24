@@ -609,16 +609,6 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	if (status & INTR_MPHY_HIBERN8_EXIT_DONE)
 		writel(LLI_MOUNT_CTRL, lli->regs + EXYNOS_DME_CSA_SYSTEM_SET);
 
-	if (status & INTR_LLI_MOUNT_DONE) {
-		lli->state = LLI_MOUNTED;
-		dev_err(dev, "Mount\n");
-	}
-
-	if (status & INTR_LLI_UNMOUNT_DONE) {
-		lli->state = LLI_UNMOUNTED;
-		dev_err(dev, "Unmount\n");
-	}
-
 	if (status & INTR_PA_PLU_DETECTED)
 		dev_info(dev, "PLU_DETECT\n");
 
@@ -666,6 +656,16 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 		dev_err(dev, "IAL_REASON0 %x, REASON1 %x\n",
 			readl(lli->regs + EXYNOS_DME_LLI_IAL_INTR_REASON0),
 			readl(lli->regs + EXYNOS_DME_LLI_IAL_INTR_REASON1));
+	}
+
+	if (status & INTR_LLI_MOUNT_DONE) {
+		lli->state = LLI_MOUNTED;
+		dev_err(dev, "Mount\n");
+	}
+
+	if (status & INTR_LLI_UNMOUNT_DONE) {
+		lli->state = LLI_UNMOUNTED;
+		dev_err(dev, "Unmount\n");
 	}
 
 	writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
