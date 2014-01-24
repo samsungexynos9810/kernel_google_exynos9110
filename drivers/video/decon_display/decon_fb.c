@@ -3936,7 +3936,6 @@ static void s3c_fb_configure_trigger(struct s3c_fb *sfb)
 #else
 	data &= ~(TRIGCON_SWTRIGEN_I80_RGB);
 	data |= TRIGCON_HWTRIGEN_I80_RGB;
-	data |= TRIGCON_HWTRIGMASK_I80_RGB;
 #endif
 	writel(data, regs);
 
@@ -4320,6 +4319,10 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 #endif
 
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	/* it is required for the scenarios that directly writes FB data into mapped address */
+	hw_trigger_mask_enable(sfb, false);
+#endif
 	sfb->output_on = true;
 
 	dev_dbg(sfb->dev, "about to register framebuffer\n");
@@ -4635,6 +4638,8 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	}
 #endif
 
+	hw_trigger_mask_enable(sfb, false);
+
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
@@ -4872,8 +4877,6 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	/* use platform specified window as the basis for the lcd timings */
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
-	reg = readl(sfb->regs + TRIGCON);
-
 	s3c_fb_configure_trigger(sfb);
 	hw_trigger_mask_enable(sfb, true);
 
