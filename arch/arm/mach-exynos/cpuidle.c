@@ -25,6 +25,9 @@
 #include <linux/cpu.h>
 #include <linux/reboot.h>
 #include <linux/debugfs.h>
+#ifdef CONFIG_EXYNOS_MIPI_LLI
+#include <linux/mipi-lli.h>
+#endif
 
 #include <asm/proc-fns.h>
 #include <asm/smp_scu.h>
@@ -142,11 +145,11 @@ static struct check_reg_lpa exynos5_dstop_power_domain[] = {
 
 static struct check_reg_lpa exynos5_clock_gating[] = {
 	{.check_reg = EXYNOS5430_ENABLE_IP_PERIC0,	.check_bit = 0xF00FFF},
-#ifdef CONFIG_EXYNOS_MIPI_LLI
-	{.check_reg = EXYNOS5430_ENABLE_IP_CPIF0,	.check_bit = 0xFFE},
-#endif
 };
 
+#ifdef CONFIG_EXYNOS_MIPI_LLI
+extern int mipi_lli_get_link_status(void);
+#endif
 #ifdef CONFIG_SAMSUNG_USBPHY
 extern int samsung_usbphy_check_op(void);
 extern void samsung_usb_lpa_resume(void);
@@ -212,6 +215,11 @@ static int exynos_check_enter_mode(void)
 
 #if defined(CONFIG_MMC_DW)
 	if (dw_mci_exynos_request_status())
+		return EXYNOS_CHECK_DIDLE;
+#endif
+
+#ifdef CONFIG_EXYNOS_MIPI_LLI
+	if (mipi_lli_get_link_status())
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
