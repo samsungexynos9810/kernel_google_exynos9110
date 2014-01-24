@@ -440,6 +440,7 @@ static int exynos_lli_suspend(struct mipi_lli *lli)
 {
 	/* masking all of lli interrupts */
 	exynos_lli_system_config(lli);
+	writel(0x0, lli->regs + EXYNOS_DME_LLI_INTR_ENABLE);
 	/* clearing all of lli sideband signal */
 	exynos_lli_reset_signal(lli);
 	/* disable LLI_PHY_CONTROL */
