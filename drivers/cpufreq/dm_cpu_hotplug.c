@@ -77,6 +77,8 @@ static void calc_load(void);
 static enum hotplug_cmd prev_cmd = CMD_NORMAL;
 static enum hotplug_cmd exe_cmd;
 static unsigned int delay = POLLING_MSEC;
+static unsigned int out_delay = POLLING_MSEC;
+static unsigned int in_delay = POLLING_MSEC;
 
 static int dm_hotplug_disable = 0;
 
@@ -178,6 +180,38 @@ static ssize_t store_stay_threshold(struct kobject *kobj, struct attribute *attr
 	return count;
 }
 
+static ssize_t show_dm_hotplug_delay(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "hotplug delay (out : %umsec, in : %umsec, cur : %umsec)\n",
+				out_delay, in_delay, delay);
+}
+
+static ssize_t store_dm_hotplug_delay(struct kobject *kobj, struct attribute *attr,
+					const char *buf, size_t count)
+{
+	int input_out_delay, input_in_delay;
+
+	if (!sscanf(buf, "%d %d", &input_out_delay, &input_in_delay))
+		return -EINVAL;
+
+	if (input_out_delay < 0 || input_in_delay < 0) {
+		pr_err("%s: invalid value (%d, %d)\n",
+			__func__, input_out_delay, input_in_delay);
+		return -EINVAL;
+	}
+
+	out_delay = (unsigned int)input_out_delay;
+	in_delay = (unsigned int)input_in_delay;
+
+	if (in_low_power_mode)
+		delay = in_delay;
+	else
+		delay = out_delay;
+
+	return count;
+}
+
 static struct global_attr enable_dm_hotplug =
 		__ATTR(enable_dm_hotplug, S_IRUGO | S_IWUSR,
 			show_enable_dm_hotplug, store_enable_dm_hotplug);
@@ -185,6 +219,10 @@ static struct global_attr enable_dm_hotplug =
 static struct global_attr dm_hotplug_stay_threshold =
 		__ATTR(dm_hotplug_stay_threshold, S_IRUGO | S_IWUSR,
 			show_stay_threshold, store_stay_threshold);
+
+static struct global_attr dm_hotplug_delay =
+		__ATTR(dm_hotplug_delay, S_IRUGO | S_IWUSR,
+			show_dm_hotplug_delay, store_dm_hotplug_delay);
 #endif
 
 static inline u64 get_cpu_idle_time_jiffy(unsigned int cpu, u64 *wall)
@@ -391,6 +429,7 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 	case CMD_LOW_POWER:
 		ret = __cpu_hotplug(true, cmd);
 		in_low_power_mode = true;
+		delay = in_delay;
 		break;
 	case CMD_BIG_OUT:
 		ret = __cpu_hotplug(true, cmd);
@@ -401,6 +440,7 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 	case CMD_NORMAL:
 		ret = __cpu_hotplug(false, cmd);
 		in_low_power_mode = false;
+		delay = out_delay;
 		break;
 	}
 
@@ -738,6 +778,13 @@ static int __init dm_cpu_hotplug_init(void)
 			__func__);
 		goto err_dm_hotplug_stay_threshold;
 	}
+
+	ret = sysfs_create_file(power_kobj, &dm_hotplug_delay.attr);
+	if (ret) {
+		pr_err("%s: failed to create dm_hotplug_delay sysfs interface\n",
+			__func__);
+		goto err_dm_hotplug_delay;
+	}
 #endif
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -770,6 +817,8 @@ static int __init dm_cpu_hotplug_init(void)
 err_policy:
 #endif
 #ifdef CONFIG_PM
+	sysfs_remove_file(power_kobj, &dm_hotplug_delay.attr);
+err_dm_hotplug_delay:
 	sysfs_remove_file(power_kobj, &dm_hotplug_stay_threshold.attr);
 err_dm_hotplug_stay_threshold:
 	sysfs_remove_file(power_kobj, &enable_dm_hotplug.attr);
