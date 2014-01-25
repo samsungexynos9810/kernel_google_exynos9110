@@ -510,6 +510,7 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 
 	priv->drv_str_pin = of_get_property(np, "clk_pin", NULL);
 	priv->drv_str_addr = of_get_property(np, "clk_addr", NULL);
+	of_property_read_u32(np, "ignore-phase", &priv->ignore_phase);
 	of_property_read_u32(np, "clk_val", &priv->drv_str_val);
 	priv->drv_str_base_val = priv->drv_str_val;
 	of_property_read_u32(np, "clk_str_num", &priv->drv_str_num);
@@ -577,11 +578,16 @@ static void dw_mci_set_quirk_endbit(struct dw_mci *host, s8 mid)
 
 static u8 dw_mci_tuning_sampling(struct dw_mci *host)
 {
+	struct dw_mci_exynos_priv_data *priv = host->priv;
 	u32 clksel;
 	u8 sample;
 
 	clksel = mci_readl(host, CLKSEL);
 	sample = (clksel + 1) & 0x7;
+	if (priv->ignore_phase) {
+		if (priv->ignore_phase & (0x1 << sample))
+			sample = (sample + 1) & 0x7;
+	}
 	clksel = (clksel & 0xfffffff8) | sample;
 	mci_writel(host, CLKSEL, clksel);
 

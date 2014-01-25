@@ -116,6 +116,7 @@ struct dw_mci_exynos_priv_data {
 	int			cd_gpio;
 	u32			caps;
 	u32			ctrl_flag;
+	u32			ignore_phase;
 
 #define DW_MMC_EXYNOS_USE_FINE_TUNING		BIT(0)
 };
