@@ -3014,7 +3014,9 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 
 			/* Power down slot */
 			atomic_inc_return(&host->ciu_en_win);
+			spin_unlock_bh(&host->lock);
 			dw_mci_ciu_clk_en(host, false);
+			spin_lock_bh(&host->lock);
 			if (present == 0) {
 				clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
 
