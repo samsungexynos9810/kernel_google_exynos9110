@@ -89,6 +89,8 @@ struct devfreq_data_int {
 
 	struct mutex lock;
 
+	unsigned long target_volt;
+	unsigned long volt_constraint_isp;
 	unsigned int use_dvfs;
 
 	struct notifier_block tmu_notifier;
@@ -623,6 +625,37 @@ out:
 	return 0;
 }
 
+int exynos5_int_check_voltage_constraint(unsigned long isp_voltage)
+{
+	int i;
+
+	mutex_lock(&data_int->lock);
+
+	for (i = ARRAY_SIZE(devfreq_int_opp_list) - 1; i >= 0; --i) {
+		if (devfreq_int_opp_list[i].volt + data_int->volt_offset > isp_voltage)
+			break;
+	}
+
+	if (i < 0) {
+		mutex_unlock(&data_int->lock);
+		pr_err("DEVFREQ(INT) : can't find lower voltage than constraint isp voltage\n");
+		return -ENOENT;
+	}
+
+	data_int->volt_constraint_isp = devfreq_int_opp_list[i].volt + data_int->volt_offset;
+	if (data_int->target_volt < data_int->volt_constraint_isp) {
+		exynos5_devfreq_int_set_volt(data_int,
+			data_int->volt_constraint_isp, data_int->volt_constraint_isp + VOLT_STEP);
+	} else {
+		exynos5_devfreq_int_set_volt(data_int,
+			data_int->target_volt, data_int->target_volt + VOLT_STEP);
+	}
+
+	mutex_unlock(&data_int->lock);
+
+	return 0;
+}
+
 #ifdef CONFIG_EXYNOS_THERMAL
 static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_offset)
 {
@@ -666,6 +699,10 @@ static int exynos5_devfreq_int_target(struct device *dev,
 #ifdef CONFIG_EXYNOS_THERMAL
 	target_volt = get_limit_voltage(target_volt, int_data->volt_offset);
 #endif
+	/* just want to save voltage before apply constraint with isp */
+	int_data->target_volt = target_volt;
+	if (target_volt < int_data->volt_constraint_isp)
+		target_volt = int_data->volt_constraint_isp;
 	rcu_read_unlock();
 
 	target_idx = exynos5_devfreq_int_get_idx(devfreq_int_opp_list,
@@ -778,6 +815,7 @@ static int exynos5_init_int_table(struct device *dev)
 			volt = devfreq_int_opp_list[i].volt;
 
 		exynos5_devfreq_int_profile.freq_table[i] = freq;
+		devfreq_int_opp_list[i].volt = volt;
 
 		ret = opp_add(dev, freq, volt);
 		if (ret) {
@@ -914,6 +952,8 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	data_int = data;
 	mutex_init(&data->lock);
 
+	data->target_volt = get_match_volt(ID_INT, DEVFREQ_INITIAL_FREQ);
+	data->volt_constraint_isp = 0;
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
 	data->vdd_int = regulator_get(NULL, "vdd_int");
