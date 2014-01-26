@@ -1965,7 +1965,7 @@ static int __init exynos_cpufreq_init(void)
 		pm_qos_add_request(&exynos_mif_qos_CA15, PM_QOS_BUS_THROUGHPUT, 0);
 
 	if (exynos_info[CA7]->bus_table || exynos_info[CA15]->bus_table) {
-		INIT_DEFERRABLE_WORK(&monitor_cluster_on, cluster_onoff_monitor);
+		INIT_DELAYED_WORK(&monitor_cluster_on, cluster_onoff_monitor);
 
 		cluster_monitor_wq = create_workqueue("cluster_monitor");
 		if (!cluster_monitor_wq) {
