@@ -826,8 +826,8 @@ static void __init set_volt_table_CA15(void)
 			max_support_idx_CA15 = L8;	/* 1.7 GHz */
 		else if (spd_sel == EGL_SPD_SEL_1900_MHZ)
 			max_support_idx_CA15 = L6;	/* 1.9 GHz */
-		else if (spd_sel == EGL_SPD_SEL_2100_MHZ)
-			max_support_idx_CA15 = L6;	/* 1.9 GHz */
+		else if (spd_sel == EGL_SPD_SEL_2000_MHZ)
+			max_support_idx_CA15 = L5;	/* 2.0 GHz */
 	}
 	min_support_idx_CA15 = L17;	/* 800 MHz */
 
