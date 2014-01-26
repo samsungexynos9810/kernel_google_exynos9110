@@ -999,7 +999,7 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 		case 1:
 		case 2:
 		case 3:
-			timingaref_value = RATE_ONE;
+			timingaref_value = RATE_HALF;
 			thermal_work->polling_period = 1000;
 			break;
 		case 4:
