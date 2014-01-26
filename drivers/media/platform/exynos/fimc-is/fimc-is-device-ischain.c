@@ -1286,9 +1286,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 
 			fimc_is_a5_power_off(dev);
 		}
-#if defined(CONFIG_SOC_EXYNOS3470)
-		writel(0x0, PMUREG_ISP_ARM_SYS_PWR_REG);
-#else
 #if !defined(CONFIG_SOC_EXYNOS4415)
 		timeout = 2000;
 		while ((readl(PMUREG_ISP_STATUS) & 0x1) && timeout) {
@@ -1299,7 +1296,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			err("ISP power down failed(0x%08x)\n",
 				readl(PMUREG_ISP_STATUS));
 #endif
-#endif /* defined(CONFIG_SOC_EXYNOS3470) */
 #if defined(CONFIG_SOC_EXYNOS5430)
 		timeout = 1000;
 		while ((readl(PMUREG_CAM0_STATUS) & 0x1) && timeout) {
