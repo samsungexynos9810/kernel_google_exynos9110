@@ -1545,7 +1545,7 @@ static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long va
 	int cpu = boot_cluster ? 0 : NR_CA7;
 
 	if (val)
-		hotplug_in_by_pm_qos();
+		event_hotplug_in();
 
 	freq = exynos_getspeed(cpu);
 	if (freq >= val)
@@ -1665,7 +1665,7 @@ static int exynos_kfc_min_qos_handler(struct notifier_block *b, unsigned long va
 #endif
 
 	if (val > threshold_freq)
-		hotplug_in_by_pm_qos();
+		event_hotplug_in();
 
 	freq = exynos_getspeed(cpu);
 	if (freq >= val)

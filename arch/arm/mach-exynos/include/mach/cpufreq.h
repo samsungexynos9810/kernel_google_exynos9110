@@ -180,14 +180,14 @@ extern void force_dynamic_hotplug(bool out_flag);
 #endif
 #if defined(CONFIG_SCHED_HMP) && defined(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)
 int big_cores_hotplug(bool out_flag);
-void hotplug_in_by_pm_qos(void);
+void event_hotplug_in(void);
 #else
 static inline int big_cores_hotplug(bool out_flag)
 {
 	return 0;
 }
 
-static inline void hotplug_in_by_pm_qos(void)
+static inline void event_hotplug_in(void)
 {
 	return;
 }
