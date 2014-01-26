@@ -96,7 +96,7 @@ static int vma_lock_mapping_one(struct mm_struct *mm, unsigned long addr,
 			if (mapping_can_locked(
 					(unsigned long)anon | PAGE_MAPPING_ANON,
 					mappings, cnt)) {
-				page_lock_anon_vma_read(page);
+				anon_vma_lock_write(anon);
 				mappings[cnt++] = (unsigned long)page->mapping;
 			}
 			put_anon_vma(anon);
@@ -151,7 +151,7 @@ static void vma_unlock_mapping(void *__mappings)
 	for (i = 0; i < G2D_MAX_VMA_MAPPING; i++) {
 		if (mappings[i]) {
 			if (mappings[i] & PAGE_MAPPING_ANON) {
-				page_unlock_anon_vma_read(
+				anon_vma_unlock_write(
 					(struct anon_vma *)(mappings[i] &
 							~PAGE_MAPPING_FLAGS));
 			} else {
