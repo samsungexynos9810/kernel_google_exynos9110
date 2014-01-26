@@ -661,9 +661,13 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 
 	if(cs->line != (unsigned)NULL)
 		gpio_set_value(cs->line, spi->mode & SPI_CS_HIGH ? 0 : 1);
-	/* Quiese the signals */
-	writel(spi->mode & SPI_CS_HIGH ? 0 : S3C64XX_SPI_SLAVE_SIG_INACT,
-	       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+
+	if (cs->cs_mode != AUTO_CS_MODE) {
+		/* Quiese the signals */
+		writel(spi->mode & SPI_CS_HIGH
+			? 0 : S3C64XX_SPI_SLAVE_SIG_INACT,
+		       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
+	}
 }
 
 static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
@@ -911,10 +915,12 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 				xfer->len = fifo_lvl;
 		} else {
 		/* Polling method for xfers not bigger than FIFO capacity */
-			if (xfer->len <= fifo_lvl)
+			if (xfer->len <= fifo_lvl) {
 				use_dma = 0;
-			else
+			} else {
 				use_dma = 1;
+				cs->cs_mode = AUTO_CS_MODE;
+			}
 		}
 try_transfer:
 		spin_lock_irqsave(&sdd->lock, flags);
