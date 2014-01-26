@@ -29,6 +29,10 @@
 #include <linux/rcupdate.h>
 #include "input-compat.h"
 
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+#include <mach/cpufreq.h>
+#endif
+
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@suse.cz>");
 MODULE_DESCRIPTION("Input core");
 MODULE_LICENSE("GPL");
@@ -279,6 +283,11 @@ static int input_get_disposition(struct input_dev *dev,
 		break;
 
 	case EV_KEY:
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+		if (value == 1)
+			event_hotplug_in();
+#endif
+
 		if (is_event_supported(code, dev->keybit, KEY_MAX)) {
 
 			/* auto-repeat bypasses state updates */
