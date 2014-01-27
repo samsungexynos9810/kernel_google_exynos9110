@@ -61,7 +61,7 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 	case 0:
 		if (reset == S5P_MIPI_DPHY_SRESETN) {
 			if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
-				addr_reset = S5P_VA_SYSREG_CAM0 + 0x0014;
+				addr_reset = S5P_VA_SYSREG_CAM0 + 0x1014;
 				cfg = __raw_readl(addr_reset);
 				cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
 				__raw_writel(cfg, addr_reset);
@@ -77,7 +77,7 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 		break;
 	case 1:
 		if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
-			addr_reset = S5P_VA_SYSREG_CAM0 + 0x0014;
+			addr_reset = S5P_VA_SYSREG_CAM0 + 0x1014;
 			cfg = __raw_readl(addr_reset);
 			cfg = on ? (cfg | MIPI_PHY_BIT1) : (cfg & ~MIPI_PHY_BIT1);
 			__raw_writel(cfg, addr_reset);
@@ -85,7 +85,7 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 		break;
 	case 2:
 		if (readl(S5P_VA_PMU + 0x40A4) & 0x1) {
-			addr_reset = S5P_VA_SYSREG_CAM1 + 0x0020;
+			addr_reset = S5P_VA_SYSREG_CAM1 + 0x1020;
 			cfg = __raw_readl(addr_reset);
 			cfg = on ? (cfg | MIPI_PHY_BIT0) : (cfg & ~MIPI_PHY_BIT0);
 			__raw_writel(cfg, addr_reset);
@@ -98,7 +98,7 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 
 	/* CHECK CMA0 PD STATUS */
 	if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
-		addr_reset = S5P_VA_SYSREG_CAM0 + 0x0014;
+		addr_reset = S5P_VA_SYSREG_CAM0 + 0x1014;
 		csi_reset = __raw_readl(addr_reset);
 	}
 
