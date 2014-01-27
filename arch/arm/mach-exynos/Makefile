@@ -43,6 +43,7 @@ obj-$(CONFIG_SOC_EXYNOS5422)	+= pmu-exynos5422.o
 
 obj-$(CONFIG_EXYNOS_SNAPSHOT)	+= exynos-ss.o
 obj-$(CONFIG_EXYNOS54XX_DEBUG)	+= debug_exynos54XX.o
+obj-$(CONFIG_EXYNOS_CORESIGHT)	+= coresight.o
 
 plus_sec := $(call as-instr,.arch_extension sec,+sec)
 AFLAGS_exynos-smc.o		:=-Wa,-march=armv7-a$(plus_sec)
