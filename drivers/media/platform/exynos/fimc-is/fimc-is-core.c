@@ -369,6 +369,7 @@ static void __fimc_is_fault_handler(struct device *dev)
 	u32 i, j, k;
 	struct fimc_is_core *core;
 	struct fimc_is_device_sensor *sensor;
+	struct fimc_is_device_ischain *ischain;
 	struct fimc_is_framemgr *framemgr;
 
 	core = dev_get_drvdata(dev);
@@ -405,85 +406,102 @@ static void __fimc_is_fault_handler(struct device *dev)
 
 		/* ISCHAIN */
 		for (i = 0; i < FIMC_IS_MAX_NODES; i++) {
-			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &((core->ischain[i]).state))) {
+			if (test_bit(FIMC_IS_ISCHAIN_OPEN, &(core->ischain[i].state))) {
+				ischain = &core->ischain[i];
 				/* 3AA */
-				framemgr = &core->ischain[i].group_3aa.leader.vctx->q_src.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->group_3aa.leader.state)) {
+					framemgr = &ischain->group_3aa.leader.vctx->q_src.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[3AA:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* 3AAC */
-				framemgr = &core->ischain[i].taac.vctx->q_dst.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->taac.state)) {
+					framemgr = &ischain->taac.leader->vctx->q_dst.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[3AAC:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* 3AAP */
-				framemgr = &core->ischain[i].taap.vctx->q_dst.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->taap.state)) {
+					framemgr = &ischain->taap.leader->vctx->q_dst.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[3AAP:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* ISP */
-				framemgr = &core->ischain[i].group_isp.leader.vctx->q_src.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->group_isp.leader.state)) {
+					framemgr = &ischain->group_isp.leader.vctx->q_src.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[ISP:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* SCC */
-				framemgr = &core->ischain[i].scc.vctx->q_dst.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->scc.state)) {
+					framemgr = &ischain->scc.vctx->q_dst.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[SCC:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* VDC */
-				framemgr = &core->ischain[i].dis.vctx->q_dst.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->dis.state)) {
+					framemgr = &ischain->dis.vctx->q_dst.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[VDC:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* VDO */
-				framemgr = &core->ischain[i].group_dis.leader.vctx->q_src.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->group_dis.leader.state)) {
+					framemgr = &ischain->group_dis.leader.vctx->q_src.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[VDO:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 				/* SCP */
-				framemgr = &core->ischain[i].scp.vctx->q_dst.framemgr;
-				for (j = 0; j < framemgr->frame_cnt; ++j) {
-					for (k = 0; k < framemgr->frame[j].planes; k++) {
-						pr_err("ID[%d:%08X] BUF[%d][%d] = %d, 0x%08X\n", i,
-							framemgr->id, j, k,
-							framemgr->frame[j].memory,
-							framemgr->frame[j].dvaddr_buffer[k]);
+				if (test_bit(FIMC_IS_SUBDEV_START, &ischain->scp.state)) {
+					framemgr = &ischain->scp.vctx->q_dst.framemgr;
+					for (j = 0; j < framemgr->frame_cnt; ++j) {
+						for (k = 0; k < framemgr->frame[j].planes; k++) {
+							pr_err("[SCP:%d] BUF[%d][%d] = %d, 0x%08X\n",
+								i, j, k,
+								framemgr->frame[j].memory,
+								framemgr->frame[j].dvaddr_buffer[k]);
+						}
 					}
 				}
 			}
