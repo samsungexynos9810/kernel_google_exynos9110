@@ -1269,6 +1269,17 @@ static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
 	return 0;
 }
 
+static void exynos5_devfreq_waiting_pause(struct devfreq_data_mif *data)
+{
+	while ((__raw_readl(data->base_mif + 0x1008) & 0x00070000) != 0);
+}
+
+static void exynos5_devfreq_waiting_mux(struct devfreq_data_mif *data)
+{
+	while ((__raw_readl(data->base_mif + 0x0404) & 0x04440000) != 0);
+	while ((__raw_readl(data->base_mif + 0x0704) & 0x00000010) != 0);
+}
+
 static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 					int target_idx,
 					int old_idx)
@@ -1283,6 +1294,9 @@ static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 		tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
 		tmp |= aclk_clk2x_list[target_idx]->set_value;
 		__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
+
+		exynos5_devfreq_waiting_pause(data);
+		exynos5_devfreq_waiting_mux(data);
 
 		for (i = 0; i < ARRAY_SIZE(devfreq_clk_mif_info_list); ++i) {
 			clk_info = &devfreq_clk_mif_info_list[i][target_idx];
@@ -1320,6 +1334,9 @@ static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 		tmp &= ~(aclk_clk2x_list[target_idx]->clr_value);
 		tmp |= aclk_clk2x_list[target_idx]->set_value;
 		__raw_writel(tmp, data->base_mif + aclk_clk2x_list[target_idx]->reg);
+
+		exynos5_devfreq_waiting_pause(data);
+		exynos5_devfreq_waiting_mux(data);
 	}
 
 	return 0;
