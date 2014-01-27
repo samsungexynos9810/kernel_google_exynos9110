@@ -2592,10 +2592,10 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 
 static int s3c_fb_release(struct fb_info *info, int user)
 {
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv;
 	dispdrv = get_display_driver();
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, true);
 #endif
 	return 0;
@@ -3717,9 +3717,11 @@ static int s3c_fb_debugfs_show(struct seq_file *f, void *offset)
 ssize_t s3c_fb_debugfs_write(struct file *file, const char *userbuf, size_t count, loff_t *off)
 {
 	char buf[20], *p;
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
+#endif
 
 	memset(buf, 0x0, sizeof(buf));
 	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
