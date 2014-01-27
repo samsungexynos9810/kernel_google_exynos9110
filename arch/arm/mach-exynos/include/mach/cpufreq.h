@@ -67,6 +67,18 @@ struct cpufreq_clkdiv {
 	unsigned int	clkdiv1;
 };
 
+#if defined(CONFIG_SOC_EXYNOS5422)
+#define EMA_VAL_0 0x4
+#define EMA_VAL_1 0x3
+#define EMA_VAL_2 0x1
+#define EMA_VAL_3 0x1
+#define EMA_VOLT_LEV_0 900000
+#define EMA_VOLT_LEV_1 950000
+#define EMA_VOLT_LEV_2 1045000
+#define EMA_VOLT_LEV_3 1155000
+#define EMA_ON_CHANGE 0x11
+#endif
+
 #if defined(CONFIG_ARCH_EXYNOS4)
 extern int exynos4210_cpufreq_init(struct exynos_dvfs_info *);
 extern int exynos4x12_cpufreq_init(struct exynos_dvfs_info *);
