@@ -262,16 +262,16 @@ struct int_clk_info aclk_400_wcore[] = {
 };
 struct int_clk_info aclk_200_fsys2[] = {
 	/* Level, Freq, Parent_Pll */
-	{LV_0,   150000, D_PLL},
-	{LV_1,   150000, D_PLL},
-	{LV_1_1, 150000, D_PLL},
-	{LV_1_2, 150000, D_PLL},
-	{LV_1_3, 150000, D_PLL},
+	{LV_0,   120000, D_PLL},
+	{LV_1,   120000, D_PLL},
+	{LV_1_1, 120000, D_PLL},
+	{LV_1_2, 120000, D_PLL},
+	{LV_1_3, 120000, D_PLL},
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	{LV_2,   150000, D_PLL},
-	{LV_3,   150000, D_PLL},
-	{LV_4,   150000, D_PLL},
-	{LV_5,   150000, D_PLL},
+	{LV_2,   120000, D_PLL},
+	{LV_3,   120000, D_PLL},
+	{LV_4,   120000, D_PLL},
+	{LV_5,   120000, D_PLL},
 	{LV_6,   100000, D_PLL},
 	{LV_7,    75000, D_PLL},
 #else
