@@ -579,7 +579,7 @@ enum exynos5430_clks {
 
 	gate_top_cam1 = 2780, gate_top_cam0, gate_top_isp,
 
-	gate_disp_333 = 2790,
+	gate_disp_333 = 2790, gate_cpif_200,
 
 	/* gates for EVT1 */
 	gate_ppmu_tv1x = 2800, gate_ppmu_tv0x, gate_smmu_tv1x,
@@ -2405,9 +2405,9 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	/* CPIF0 */
 	CGTE(gate_mphy_pll, "gate_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 19, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_mphy_pll_mif, "gate_mphy_pll_mif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 18, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_freq_det_mphy_pll, "gate_freq_det_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 17, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_freq_det_mphy_pll, "gate_freq_det_mphy_pll", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 17, 0, 0),
 	CGTE(gate_ufs_mphy, "gate_ufs_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 16, 0, 0),
-	CGTE(gate_lli_mphy, "gate_lli_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 15, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_lli_mphy, "gate_lli_mphy", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 15, 0, 0),
 	CGTE(gate_gpio_cpif, "gate_gpio_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 14, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_pmu_cpif, "gate_pmu_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 13, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_sysreg_cpif, "gate_sysreg_cpif", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 12, CLK_IGNORE_UNUSED, 0),
@@ -2422,7 +2422,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_lli_ll_init, "gate_lli_ll_init", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 3, 0, 0),
 	CGTE(gate_lli_svc_rem, "gate_lli_svc_rem", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 2, 0, 0),
 	CGTE(gate_lli_svc_loc, "gate_lli_svc_loc", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 1, 0, 0),
-	CGTE(gate_mdma0, "gate_mdma0", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_mdma0, "gate_mdma0", NULL, EXYNOS5430_ENABLE_IP_CPIF0, 0, 0, 0),
 
 	/* CPIF1 */
 	CGTE(gate_smmu_mdma0, "gate_smmu_mdma0", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 9, 0, 0),
@@ -2434,7 +2434,7 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_xiu_llix, "gate_xiu_llix", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 3, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_xiu_cpifsfrx, "gate_xiu_cpifsfrx", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 2, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_cpifnp_200, "gate_cpifnp_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 1, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_cpifnm_200, "gate_cpifnm_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_cpifnm_200, "gate_cpifnm_200", NULL, EXYNOS5430_ENABLE_IP_CPIF1, 0, 0, 0),
 
 	/* DISP0 */
 	CGTE(gate_freq_det_disp_pll, "gate_freq_det_disp_pll", NULL, EXYNOS5430_ENABLE_IP_DISP0, 11, 0, 0),
@@ -2556,8 +2556,9 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 
 	/* MIF */
 	CGTE(gate_disp_333, "gate_disp_333", NULL, EXYNOS5430_ENABLE_IP_MIF3, 1, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_cpif_200, "gate_cpif_200", NULL, EXYNOS5430_ENABLE_IP_MIF3, 0, CLK_IGNORE_UNUSED, 0),
 
-/* GSCL */
+	/* GSCL */
 	CGTE(gate_pmu_gscl, "gate_pmu_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 5, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_sysreg_gscl, "gate_sysreg_gscl", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 4, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_gsd, "gate_gsd", NULL, EXYNOS5430_ENABLE_IP_GSCL0, 3,	0, 0),
@@ -2698,11 +2699,11 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(gate_smmu_jpeg, "gate_smmu_jpeg", NULL, EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_JPEG, 0, 0, 0),
 
 	/* PERIC */
-	CGTE(gate_slimbus, "gate_slimbus", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 28, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_slimbus, "gate_slimbus", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 28, 0, 0),
 	CGTE(gate_pwm, "gate_pwm", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 27, 0, 0),
-	CGTE(gate_spdif, "gate_spdif", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 26, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_pcm1, "gate_pcm1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 25, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_i2s1, "gate_i2s1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 24, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_spdif, "gate_spdif", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 26, 0, 0),
+	CGTE(gate_pcm1, "gate_pcm1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 25, 0, 0),
+	CGTE(gate_i2s1, "gate_i2s1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 24, 0, 0),
 	CGTE(gate_spi2, "gate_spi2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 23, 0, 0),
 	CGTE(gate_spi1, "gate_spi1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 22, 0, 0),
 	CGTE(gate_spi0, "gate_spi0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 21, 0, 0),
