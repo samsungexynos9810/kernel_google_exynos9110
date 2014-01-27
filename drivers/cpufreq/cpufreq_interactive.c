@@ -642,7 +642,9 @@ static int cpufreq_interactive_speedchange_task(void *data)
 							max_freq,
 							CPUFREQ_RELATION_H);
 
+#if defined(CONFIG_CPU_THERMAL_IPA)
 			ipa_cpufreq_requested(pcpu->policy, max_freq);
+#endif
 
 			trace_cpufreq_interactive_setspeed(cpu,
 						     pcpu->target_freq,
