@@ -525,8 +525,19 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 
 	s2m->dev = &pdev->dev;
 	s2m->iodev = iodev;
-	s2m->irq = irq_base + S2MPS13_IRQ_RTCA0;
 	s2m->wtsr_smpl = pdata->wtsr_smpl;
+
+	switch (iodev->device_type) {
+	case S2MPS13X:
+		s2m->irq = irq_base + S2MPS13_IRQ_RTCA0;
+		break;
+	case S2MPS11X:
+		s2m->irq = irq_base + S2MPS11_IRQ_RTCA0;
+		break;
+	default:
+		/* If this happens the core function has a problem */
+		BUG();
+	}
 
 	platform_set_drvdata(pdev, s2m);
 
