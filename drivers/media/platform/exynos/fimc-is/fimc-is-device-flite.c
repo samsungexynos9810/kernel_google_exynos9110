@@ -1194,6 +1194,8 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				warn("[CamIF%d] invalid interrupt interval",
 					flite->instance);
 				goto clear_status;
+/* HACK: Disable dead code because of Prevent Issue */
+#if 0
 #ifdef DBG_FLITEISR
 				printk(KERN_CONT "<");
 #endif
@@ -1218,6 +1220,7 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
 					tasklet_schedule(&flite->tasklet_flite_early_end);
 				tasklet_schedule(&flite->tasklet_flite_end);
+#endif
 			}
 		} else if (status == (2 << 4)) {
 			/* W/A: Skip start tasklet at interrupt lost case */
