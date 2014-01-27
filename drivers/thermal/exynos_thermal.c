@@ -1329,19 +1329,29 @@ static struct notifier_block exynos_pm_nb = {
 };
 
 #if defined(CONFIG_SOC_EXYNOS5430)
+static void exynos_tmu_core_control(bool on)
+{
+	int i;
+	unsigned int con;
+	struct exynos_tmu_data *data = platform_get_drvdata(exynos_tmu_pdev);
+
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+		con = readl(data->base[i] + EXYNOS_TMU_REG_CONTROL);
+		con &= 0xfffffffc;
+		con |= (on ? EXYNOS_TMU_CORE_ON : EXYNOS_TMU_CORE_OFF);
+		writel(con, data->base[i] + EXYNOS_TMU_REG_CONTROL);
+	}
+}
+
 static int exynos_pm_dstop_notifier(struct notifier_block *notifier,
 		unsigned long pm_event, void *v)
 {
-	int i;
-
 	switch (pm_event) {
 	case LPA_ENTER:
-		for (i = 0; i < EXYNOS_TMU_COUNT; i++)
-			exynos_tmu_control(exynos_tmu_pdev, i, false);
+		exynos_tmu_core_control(false);
 		break;
 	case LPA_EXIT:
-		for (i = 0; i < EXYNOS_TMU_COUNT; i++)
-			exynos_tmu_control(exynos_tmu_pdev, i, true);
+		exynos_tmu_core_control(true);
 		break;
 	}
 
