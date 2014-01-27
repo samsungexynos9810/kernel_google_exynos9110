@@ -25,6 +25,7 @@ config ARCH_EXYNOS5
 	select HAVE_ARM_SCU if SMP
 	select HAVE_SMP
 	select HAVE_EXYNOS5_HSI2C if I2C
+	select EXYNOS_CORESIGHT
 	help
 	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
 
@@ -661,4 +662,7 @@ config EXYNOS_HDMI_RESET_DURING_DSTOP
 config EXYNOS_TOP_RTC_RESET_DURING_DSTOP
 	bool
 
+# Use coresight debugging.
+config EXYNOS_CORESIGHT
+	bool
 endif
