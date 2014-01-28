@@ -278,18 +278,21 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv = get_display_driver();
+	disp_pm_gate_lock(dispdrv, true);
 	disp_pm_add_refcount(dispdrv);
 #endif
 
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
-		dev_dbg(dsim->dev, "MIPI DSIM is not ready.\n");
+		dev_info(dsim->dev, "MIPI DSIM is not ready. enabled %d state %d\n",
+							 dsim->enabled, dsim->state);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+		disp_pm_gate_lock(dispdrv, false);
+#endif
+
 		return -EINVAL;
 	}
 
 	mutex_lock(&dsim_rd_wr_mutex);
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_gate_lock(dispdrv, true);
-#endif
 	switch (data_id) {
 	/* short packet types of packet types for command. */
 	case MIPI_DSI_GENERIC_SHORT_WRITE_0_PARAM:
@@ -435,7 +438,6 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv = get_display_driver();
-	disp_pm_add_refcount(dispdrv);
 #endif
 
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
@@ -446,6 +448,7 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	mutex_lock(&dsim_rd_wr_mutex);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, true);
+	disp_pm_add_refcount(dispdrv);
 #endif
 	INIT_COMPLETION(dsim_rd_comp);
 
