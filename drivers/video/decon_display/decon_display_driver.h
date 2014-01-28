@@ -137,7 +137,6 @@ struct display_pm_status {
 	spinlock_t slock;
 	struct mutex pm_lock;
 	struct mutex clk_lock;
-	int trigger_masked;
 	int clock_enabled;
 	atomic_t lock_count;
 	struct kthread_worker	control_clock_gating;
