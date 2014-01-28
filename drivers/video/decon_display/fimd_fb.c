@@ -152,6 +152,7 @@ MODULE_DEVICE_TABLE(of, exynos5_fimd);
 #endif
 
 void debug_function(struct display_driver *dispdrv, const char *buf);
+static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout);
 
 #if defined(CONFIG_ION_EXYNOS)
 static void s3c_fb_dump_registers(struct s3c_fb *sfb)
@@ -1203,7 +1204,15 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	writel(info->fix.smem_start + end_boff, buf + sfb->variant.buf_end);
 
 	shadow_protect_win(win, 0);
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+        s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
+#endif
 
+        s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+        s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
+#endif
 	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
 }
