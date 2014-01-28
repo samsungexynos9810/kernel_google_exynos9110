@@ -543,11 +543,6 @@ arch_initcall(exynos5_pm_domain_init);
 
 static __init int exynos_pm_domain_idle(void)
 {
-	unsigned long j1 = jiffies+HZ;
-
-	/* HACK: wait 1sec not to interfere late-probed devices */
-	while(time_before(jiffies, j1))
-		schedule();
 
 	pr_info(PM_DOMAIN_PREFIX "Power off unused power domains.\n");
 	pm_genpd_poweroff_unused();
