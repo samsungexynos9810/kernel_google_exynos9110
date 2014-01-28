@@ -215,6 +215,8 @@ static int display_driver_suspend(struct device *dev)
 static void display_driver_shutdown(struct platform_device *pdev)
 {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	struct display_driver *dispdrv = get_display_driver();
+	disp_pm_gate_lock(dispdrv, true);
 	disp_pm_add_refcount(get_display_driver());
 #endif
 	s5p_mipi_dsi_disable(g_display_driver.dsi_driver.dsim);
