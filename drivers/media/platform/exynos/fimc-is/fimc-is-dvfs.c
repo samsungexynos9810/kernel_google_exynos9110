@@ -41,10 +41,6 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE);
  */
 static struct fimc_is_dvfs_scenario static_scenarios[] = {
 	{
-		.scenario_id		= FIMC_IS_SN_DUAL_CAPTURE,
-		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAPTURE),
-		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE),
-	}, {
 		.scenario_id		= FIMC_IS_SN_DUAL_CAMCORDING,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAMCORDING),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING),
@@ -94,6 +90,12 @@ static struct fimc_is_dvfs_scenario static_scenarios[] = {
  */
 static struct fimc_is_dvfs_scenario dynamic_scenarios[] = {
 	{
+		.scenario_id		= FIMC_IS_SN_DUAL_CAPTURE,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_DUAL_CAPTURE),
+		.keep_frame_tick	= KEEP_FRAME_TICK_DEFAULT,
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE),
+	},
+	{
 		.scenario_id		= FIMC_IS_SN_REAR_CAPTURE,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_REAR_CAPTURE),
 		.keep_frame_tick	= KEEP_FRAME_TICK_DEFAULT,
@@ -141,12 +143,14 @@ static inline int fimc_is_get_open_sensor_cnt(struct fimc_is_core *core) {
 /* dual capture */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE)
 {
+
 	struct fimc_is_core *core;
 	int sensor_cnt = 0;
 	core = (struct fimc_is_core *)device->interface->core;
 	sensor_cnt = fimc_is_get_open_sensor_cnt(core);
 
-	if ((device->chain0_width > 2560) && (sensor_cnt >= 2))
+	if ((sensor_cnt >= 2) &&
+			(test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)))
 		return 1;
 	else
 		return 0;
@@ -160,7 +164,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING)
 	core = (struct fimc_is_core *)device->interface->core;
 	sensor_cnt = fimc_is_get_open_sensor_cnt(core);
 
-	if ((device->chain0_width <= 2560) && (sensor_cnt >= 2) &&
+	if ((sensor_cnt >= 2) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 == ISS_SUB_SCENARIO_VIDEO))
 		return 1;
@@ -176,7 +180,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW)
 	core = (struct fimc_is_core *)device->interface->core;
 	sensor_cnt = fimc_is_get_open_sensor_cnt(core);
 
-	if ((device->chain0_width <= 2560) && (sensor_cnt >= 2) &&
+	if ((sensor_cnt >= 2) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 != ISS_SUB_SCENARIO_VIDEO))
 		return 1;
