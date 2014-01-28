@@ -19,6 +19,7 @@
 #include "clk.h"
 #include "clk-pll.h"
 #include "clk-exynos5430.h"
+#include "mach/regs-pmu.h"
 
 enum exynos5430_clks {
 	none,
@@ -895,6 +896,9 @@ enum exynos5430_clks {
 	gate_hpm_egl_enable,
 	gate_freq_det_aud_pll,
 	gate_freq_det_isp_pll,
+
+	/* gate clk_out */
+	gate_clkout = 5050,
 
 	nr_clks,
 };
@@ -3008,6 +3012,10 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(mgate_sclk_mmc2_b, "mgate_sclk_mmc2_b", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 28, CLK_IGNORE_UNUSED, 0),
 	CGTE(mgate_sclk_mmc1_b, "mgate_sclk_mmc1_b", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 20, CLK_IGNORE_UNUSED, 0),
 	CGTE(mgate_sclk_mmc0_d, "mgate_sclk_mmc0_d", NULL, EXYNOS5430_SRC_ENABLE_TOP_FSYS0, 12, CLK_IGNORE_UNUSED, 0),
+
+	/* clk_out */
+	CGTE(gate_clkout, "gate_clkout", "fin_pll", EXYNOS_PMU_DEBUG, 0, 0, 0),
+
 };
 
 /* fixed rate clocks generated outside the soc */
