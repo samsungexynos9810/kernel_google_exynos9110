@@ -862,6 +862,8 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 				   bool next)
 {
 	struct scatterlist *sg;
+	struct dw_mci_slot *slot = host->cur_slot;
+	struct mmc_card *card = slot->mmc->card;
 	unsigned int i, sg_len;
 	unsigned int align_mask = host->align_size - 1;
 
@@ -878,6 +880,55 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 
 	if (data->blksz & align_mask)
 		return -EINVAL;
+
+	if (data->blksz < (1 << host->data_shift))
+		return -EINVAL;
+
+	if (card && mmc_card_sdio(card)) {
+		unsigned int rxwmark_val = 0, msize_val = 0, i;
+		unsigned int msize[8] = {1, 4, 8, 16, 32, 64, 128, 256};
+
+		for (i = 1; i < sizeof(msize) / sizeof(unsigned int); i++) {
+			if (data->blksz != 0 &&
+					(data->blksz / (1 << host->data_shift)) % msize[i] == 0)
+				continue;
+			else
+				break;
+		}
+		if (data->blksz < host->fifo_depth / 2) {
+			if (i > 1) {
+				msize_val = i - 1;
+				rxwmark_val = msize[i - 1] - 1;
+			} else {
+				msize_val = 0;
+				rxwmark_val = 1;
+			}
+		} else {
+			if (i > 5) {
+				msize_val = i - 5;
+				rxwmark_val = msize[i - 5] - 1;
+			} else {
+				msize_val = 0;
+				rxwmark_val = 1;
+			}
+		}
+
+		host->fifoth_val = ((msize_val << 28) | (rxwmark_val << 16) |
+				((host->fifo_depth / 2) << 0));
+
+		dev_dbg(host->dev,
+			"data->blksz: %d data->blocks %d Transfer Size %d  "
+			"msize_val : %d, rxwmark_val : %d i : %d host->fifoth_val: 0x%08x\n",
+			data->blksz, data->blocks, (data->blksz * data->blocks),
+			msize_val, rxwmark_val, i, host->fifoth_val);
+
+		mci_writel(host, FIFOTH, host->fifoth_val);
+
+		if (mmc_card_uhs(card)
+				&& card->host->caps & MMC_CAP_UHS_SDR104
+				&& data->flags & MMC_DATA_READ)
+			mci_writel(host, CDTHRCTL, data->blksz << 16 | 1);
+	}
 
 	for_each_sg(data->sg, sg, data->sg_len, i) {
 		if (sg->offset & align_mask || sg->length & align_mask)
@@ -980,57 +1031,12 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
 static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
 {
 	u32 temp;
-	struct dw_mci_slot *slot = host->cur_slot;
-	struct mmc_card *card = slot->mmc->card;
 
 	data->error = -EINPROGRESS;
 
 	WARN_ON(host->data);
 	host->sg = NULL;
 	host->data = data;
-
-	if (card && mmc_card_sdio(card)) {
-		unsigned int rxwmark_val, msize_val, i;
-		unsigned int msize[8] = {1, 4, 8, 16, 32, 64, 128, 256};
-
-		for (i = 1; i < sizeof(msize) / sizeof(unsigned int); i++) {
-			if (data->blksz != 0 &&
-				(data->blksz / (1 << host->data_shift)) % msize[i] == 0)
-				continue;
-			else
-				break;
-		}
-		if (data->blksz < host->fifo_depth / 2) {
-			if (i > 1) {
-				msize_val = i - 1;
-				rxwmark_val = msize[i-1] - 1;
-			} else {
-				msize_val = 0;
-				rxwmark_val = 1;
-			}
-		} else {
-			if (i > 5) {
-				msize_val = i - 5;
-				rxwmark_val = msize[i-5] - 1;
-			} else {
-				msize_val = 0;
-				rxwmark_val = 1;
-			}
-		}
-		dev_dbg(&slot->mmc->class_dev,
-			"msize_val : %d, rxwmark_val : %d\n",
-			msize_val, rxwmark_val);
-
-		host->fifoth_val = ((msize_val << 28) | (rxwmark_val << 16) |
-				   ((host->fifo_depth/2) << 0));
-
-		mci_writel(host, FIFOTH, host->fifoth_val);
-
-		if (mmc_card_uhs(card)
-				&& card->host->caps & MMC_CAP_UHS_SDR104
-				&& data->flags & MMC_DATA_READ)
-			mci_writel(host, CDTHRCTL, data->blksz << 16 | 1);
-	}
 
 	if (data->flags & MMC_DATA_READ)
 		host->dir_status = DW_MCI_RECV_STATUS;
