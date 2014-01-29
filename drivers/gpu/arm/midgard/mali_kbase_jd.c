@@ -33,9 +33,6 @@
 
 #include <linux/exynos_ion.h>
 
-/* S.LSI intergration */
-extern int gpu_register_dump(void);
-
 #define beenthere(f, a...)  KBASE_DEBUG_PRINT_INFO(KBASE_JD, "%s:" f, __func__, ##a)
 
 /*
@@ -1306,11 +1303,6 @@ static enum hrtimer_restart zap_timeout_callback(struct hrtimer *timer)
 	zap_reset_data *reset_data = container_of(timer, zap_reset_data, timer);
 	kbase_device *kbdev = reset_data->kbdev;
 	unsigned long flags;
-
-	/* S.LSI intergration */
-	gpu_register_dump();
-	KBASE_TRACE_DUMP(kbdev);
-	BUG_ON(1);
 
 	spin_lock_irqsave(&reset_data->lock, flags);
 

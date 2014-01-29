@@ -27,9 +27,6 @@
 #include <mali_kbase_gator.h>
 #include <mali_kbase_pm.h>
 
-/* S.LSI intergration */
-extern int gpu_register_dump(void);
-
 #if MALI_MOCK_TEST
 #define MOCKABLE(function) function##_original
 #else
@@ -743,11 +740,6 @@ static enum hrtimer_restart kbasep_reset_timeout(struct hrtimer *timer)
 
 	/* Set the wait queue to wake up kbase_pm_init_hw even though the reset hasn't completed */
 	kbase_pm_reset_done(rtdata->kbdev);
-
-	/* S.LSI intergration */
-	gpu_register_dump();
-	KBASE_TRACE_DUMP(rtdata->kbdev);
-	BUG_ON(1);
 
 	return HRTIMER_NORESTART;
 }
