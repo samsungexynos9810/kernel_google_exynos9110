@@ -18,24 +18,29 @@
 #include <linux/kobject.h>
 #include <linux/sysfs.h>
 #include <linux/moduleparam.h>
+#include <linux/kallsyms.h>
 #include <asm/cputype.h>
 #include <asm/smp_plat.h>
 
+#include <plat/cpu.h>
 #include "common.h"
 
-#define CS_OSLOCK		0x300
-#define CS_OSLOCK_CHECK	0x304
-#define CS_PC_VAL		0xA0
-#define CS_SJTAG_STAT		0x8004
+#define CS_OSLOCK		(0x300)
+#define CS_PC_VAL		(0xA0)
 
-struct exynos_cs {
-	void __iomem	*base;
-	void __iomem	*kfc_src_base;
-	unsigned int	offset[2];
-};
+#define CS_SJTAG_STATUS		(0x8004)
+#define CS_SJTAG_SOFT_LOCK	(1<<2)
 
-static struct exynos_cs cs;
+#define ITERATION		(5)
+
 static DEFINE_SPINLOCK(lock);
+static unsigned int exynos_cs_base[NR_CPUS];
+unsigned int exynos_cs_pc[NR_CPUS][ITERATION];
+
+#ifdef CONFIG_SOC_EXYNOS5422
+#define	KFC_MUX_PHY_ADDR	(0x10038200)
+
+static void __iomem *kfc_mux_base;
 
 /*
  * This function will be removed after fixing
@@ -43,74 +48,72 @@ static DEFINE_SPINLOCK(lock);
  */
 static void kfc_mux_changing(int en)
 {
-	unsigned int clk_src_kfc = readl(cs.kfc_src_base);
+	unsigned int mux_val = readl(kfc_mux_base);
 
 	if (!en)
-		clk_src_kfc &= ~(0x1 << 0);
+		mux_val &= ~(0x1 << 0);
 	else
-		clk_src_kfc |= (0x1 << 0);
+		mux_val |= (0x1 << 0);
 
-	writel(clk_src_kfc, cs.kfc_src_base);
+	writel(mux_val, kfc_mux_base);
 }
+#endif
 
 void exynos_cs_show_pcval(void)
 {
-	unsigned int sjtag_stat;
 	unsigned long flags;
-	int cpu, val;
-	int offset;
-	int phys_cpu;
+	unsigned int cpu, iter;
+	unsigned int val = 0;
 
-	if (!cs.base)
+	if (exynos_cs_base[0] == 0)
 		return;
 
 	spin_lock_irqsave(&lock, flags);
 
-	/* To check whether SJTAG is fused or not. */
-	sjtag_stat = readl(cs.base + CS_SJTAG_STAT);
-	if (sjtag_stat & (0x1 << 2))
-		return;
-
+#ifdef CONFIG_SOC_EXYNOS5422
 	kfc_mux_changing(0);
+#endif
 
-	for (cpu = 0; cpu < nr_cpu_ids; cpu++) {
-		void __iomem *base;
-		unsigned int core, cluster;
+	for (iter = 0; iter < ITERATION; iter++) {
+		for (cpu = 0; cpu < NR_CPUS; cpu++) {
+			void __iomem *base = (void *) exynos_cs_base[cpu];
 
-		phys_cpu = cpu_logical_map(cpu);
-		core = MPIDR_AFFINITY_LEVEL(phys_cpu, 0);
-		cluster = MPIDR_AFFINITY_LEVEL(phys_cpu, 1);
+			if (!exynos_cpu.power_state(cpu)) {
+				exynos_cs_pc[cpu][iter] = 0x0;
+				continue;
+			}
 
-		if (cluster)
-			offset = cs.offset[0] + core * 0x2000;
-		else
-			offset = cs.offset[1] + core * 0x2000;
+			/* Release OSlock */
+			writel(0x1, base + CS_OSLOCK);
 
-		if (!exynos_cpu.power_state(cpu)) {
-			pr_err("%s: CPU[%d] Power down.\n", __func__,
-			cpu);
-			continue;
+			/* Read current PC value */
+			val = __raw_readl(base + CS_PC_VAL);
+
+			if (cpu >= 4) {
+				/* The PCSR of A15 shoud be substracted 0x8 from
+				 * curretnly PCSR value */
+				val -= 0x8;
+			}
+
+			exynos_cs_pc[cpu][iter] = val;
 		}
-
-		base = cs.base + offset;
-
-		/* Release OSlock */
-		writel(0x1, base + CS_OSLOCK);
-
-		/* Read current PC value */
-		val = __raw_readl(base + CS_PC_VAL);
-
-		if (!cluster) {
-			/* The PCSR of A15 shoud be substracted 0x8 from
-			 * curretnly PCSR value */
-			val -= 0x8;
-		}
-
-		pr_err("%s: CPU[%d] PC Val 0x%x\n", __func__, cpu, val);
 	}
 
+#ifdef CONFIG_SOC_EXYNOS5422
 	kfc_mux_changing(1);
+#endif
+
 	spin_unlock_irqrestore(&lock, flags);
+
+	for (cpu = 0; cpu < NR_CPUS; cpu++) {
+		pr_err("CPU[%d] saved pc value\n", cpu);
+		for (iter = 0; iter < ITERATION; iter++) {
+			char buf[KSYM_SYMBOL_LEN];
+
+			sprint_symbol(buf, exynos_cs_pc[cpu][iter]);
+			pr_err("      0x%08x : %s\n", exynos_cs_pc[cpu][iter], buf);
+		}
+	}
 }
 EXPORT_SYMBOL(exynos_cs_show_pcval);
 
@@ -118,8 +121,8 @@ static int exynos_cs_init_dt(struct device *dev)
 {
 	struct device_node *node = NULL;
 	const unsigned int *cs_reg;
-	const unsigned int *kfc_src_reg;
-	unsigned int cs_addr, kfc_src_addr;
+	unsigned int cs_addr, sjtag;
+	void __iomem *sjtag_base;
 	int len, i = 0;
 
 	if (!dev->of_node) {
@@ -133,31 +136,47 @@ static int exynos_cs_init_dt(struct device *dev)
 
 	cs_addr = be32_to_cpup(cs_reg);
 
-	kfc_src_reg = of_get_property(dev->of_node, "reg1", &len);
-	if (!kfc_src_reg)
-		return -ESPIPE;
-
-	kfc_src_addr = be32_to_cpup(kfc_src_reg);
-
-	cs.base = devm_ioremap(dev, cs_addr, SZ_256K);
-	if (!cs.base)
+	/* Check Secure JTAG */
+	sjtag_base = devm_ioremap(dev, cs_addr + CS_SJTAG_STATUS, SZ_4);
+	if (!sjtag_base) {
+		pr_err("%s: cannot ioremap cs base.\n", __func__);
 		return -ENOMEM;
+	}
 
-	cs.kfc_src_base = devm_ioremap(dev, kfc_src_addr, SZ_4);
-	if (!cs.kfc_src_base)
-		return -ENOMEM;
+	sjtag = readl(sjtag_base);
+	devm_iounmap(dev, sjtag_base);
+
+	if (sjtag & CS_SJTAG_SOFT_LOCK)
+		return -EIO;
 
 	while ((node = of_find_node_by_type(node, "cs"))) {
 		const unsigned int *offset;
+		void __iomem *cs_base;
+		unsigned int cs_offset;
 
 		offset = of_get_property(node, "offset", &len);
 		if (!offset)
 			return -ESPIPE;
 
-		cs.offset[i] = be32_to_cpup(offset);
+		cs_offset = be32_to_cpup(offset);
+		cs_base = devm_ioremap(dev, cs_addr + cs_offset, SZ_4K);
+		if (!cs_base) {
+			pr_err("%s: cannot ioremap cs base.\n", __func__);
+			return -ENOMEM;
+		}
+
+		exynos_cs_base[i] = (unsigned int) cs_base;
 
 		i++;
 	}
+
+#ifdef CONFIG_SOC_EXYNOS5422
+		kfc_mux_base = devm_ioremap(dev, KFC_MUX_PHY_ADDR, SZ_4);
+		if (!kfc_mux_base) {
+			pr_err("%s: cannont ioremap kfc_mux_base.\n", __func__);
+			return -ENOMEM;
+		}
+#endif
 
 	return 0;
 }
@@ -175,8 +194,8 @@ static int exynos_cs_probe(struct platform_device *pdev)
 
 	ret = exynos_cs_init_dt(&pdev->dev);
 	if (ret) {
-		pr_err("Error to init dt %d\n", ret);
-		return -ENODEV;
+		/* mark unable to call exynos_cs_show_pcval */
+		exynos_cs_base[0] = 0;
 	}
 
 	return ret;
@@ -198,4 +217,3 @@ static struct platform_driver exynos_cs_driver = {
 };
 
 module_platform_driver(exynos_cs_driver);
-
