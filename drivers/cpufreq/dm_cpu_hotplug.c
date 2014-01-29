@@ -60,6 +60,7 @@ static int big_hotpluged = 0;
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static unsigned int egl_min_freq;
+static unsigned int kfc_max_freq;
 #endif
 
 enum hotplug_cmd {
@@ -67,6 +68,7 @@ enum hotplug_cmd {
 	CMD_LOW_POWER,
 	CMD_BIG_IN,
 	CMD_BIG_OUT,
+	CMD_LITTLE_IN,
 };
 
 static int on_run(void *data);
@@ -354,7 +356,8 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				}
 			}
 		} else {
-			if (big_hotpluged && !do_disable_hotplug) {
+			if ((big_hotpluged && !do_disable_hotplug) ||
+				(cmd == CMD_LITTLE_IN)) {
 				for (i = 1; i < NR_CA7; i++) {
 					if (!cpu_online(i)) {
 						ret = cpu_up(i);
@@ -439,6 +442,7 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 	case CMD_BIG_IN:
 		ret = __cpu_hotplug(false, cmd);
 		break;
+	case CMD_LITTLE_IN:
 	case CMD_NORMAL:
 		ret = __cpu_hotplug(false, cmd);
 		in_low_power_mode = false;
@@ -597,6 +601,14 @@ static enum hotplug_cmd diagnose_condition(void)
 #endif
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	policy = cpufreq_cpu_get(0);
+	if (!policy) {
+		kfc_max_freq = 0;
+	} else {
+		kfc_max_freq = policy->max;
+		cpufreq_cpu_put(policy);
+	}
+
 	policy = cpufreq_cpu_get(NR_CA7);
 	if (!policy) {
 		egl_cur_freq = 0;
@@ -608,19 +620,28 @@ static enum hotplug_cmd diagnose_condition(void)
 		cpufreq_cpu_put(policy);
 	}
 #endif
-	ret = CMD_NORMAL;
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+	ret = CMD_LITTLE_IN;
+
+	if (cur_load_freq >= kfc_max_freq)
+		ret = CMD_NORMAL;
+
 	if ((cur_load_freq > normal_min_freq) ||
 		(egl_cur_freq >= egl_min_freq) ||
-		(pm_qos_request(PM_QOS_CPU_FREQ_MIN) >= egl_min_freq))
+		(pm_qos_request(PM_QOS_CPU_FREQ_MIN) >= egl_min_freq)) {
+		if (in_low_power_mode)
+			ret = CMD_LITTLE_IN;
 #else
-	if (cur_load_freq > normal_min_freq)
+	ret = CMD_NORMAL;
+
+	if (cur_load_freq > normal_min_freq) {
 #endif
 		low_stay = 0;
-	else if (cur_load_freq <= normal_min_freq &&
-		low_stay <= low_stay_threshold)
+	} else if (cur_load_freq <= normal_min_freq &&
+		low_stay <= low_stay_threshold) {
 		low_stay++;
+	}
 
 	if (low_stay > low_stay_threshold &&
 		(!lcd_is_on || forced_hotplug))
