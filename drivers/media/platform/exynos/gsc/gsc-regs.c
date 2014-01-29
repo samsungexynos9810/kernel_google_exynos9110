@@ -1076,7 +1076,7 @@ void gsc_hw_set_v_coef(struct gsc_ctx *ctx)
 			base + offset, size, false)
 void gsc_hw_dump_regs(void __iomem *base)
 {
-	gsc_dump_reg(base, 0x000, 0x60);
+	gsc_dump_reg(base, 0x000, 0x70);
 	gsc_dump_reg(base, 0x080, 0x20);
 	gsc_dump_reg(base, 0x0B0, 0x20);
 	gsc_dump_reg(base, 0x10C, 0x04);

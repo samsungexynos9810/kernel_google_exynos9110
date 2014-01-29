@@ -2275,11 +2275,25 @@ static int s3c_fb_set_otf_buffer(struct s3c_fb *sfb, int i)
 	return ret;
 }
 
+static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
+{
+	int ret = 0;
+	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
+
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id], core, ioctl,
+			GSC_SFR_UPDATE, NULL);
+	if (ret)
+		pr_err("GSC_SFR_UPDATE failed\n");
+
+	return ret;
+}
+
 static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	unsigned short i;
 	unsigned int data;
 	int ret = 0;
+	unsigned long flags;
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		shadow_protect_win(sfb->windows[i], 1);
@@ -2349,6 +2363,15 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		pr_err("Error:0x%x\n",
 				readl(sfb->regs + DECON_UPDATE_SHADOW));
 
+	spin_lock_irqsave(&sfb->md->slock, flags);
+	for (i = 0; i < sfb->variant.nr_windows; i++) {
+		if (!WIN_CONFIG_DMA(i)) {
+			ret = s3c_fb_set_sfr_update(sfb, i);
+			if (ret)
+				pr_err("failed set sfr update\n");
+		}
+	}
+
 	writel(data, sfb->regs + DECON_UPDATE);
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
@@ -2358,6 +2381,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				pr_err("failed set otf buffer\n");
 		}
 	}
+	spin_unlock_irqrestore(&sfb->md->slock, flags);
 }
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)

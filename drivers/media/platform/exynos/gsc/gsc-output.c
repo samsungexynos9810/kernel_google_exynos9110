@@ -303,14 +303,13 @@ static long gsc_subdev_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg
 {
 	struct gsc_dev *gsc = entity_data_to_gsc(v4l2_get_subdevdata(sd));
 	struct gsc_ctx *ctx = gsc->out.ctx;
-	unsigned long flags;
 
 	switch (cmd) {
-	case GSC_SET_BUF:
-		spin_lock_irqsave(&gsc->slock, flags);
+	case GSC_SFR_UPDATE:
 		gsc_hw_set_sfr_update(ctx);
+		break;
+	case GSC_SET_BUF:
 		gsc_hw_set_input_apply_pending_bit(gsc);
-		spin_unlock_irqrestore(&gsc->slock, flags);
 		break;
 	default:
 		gsc_err("unsupported gsc_subdev_ioctl");
@@ -471,7 +470,6 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 			gsc_err("Decon subdev ioctl failed");
 			return ret;
 		}
-		return 0;
 	}
 
 	if (gsc->protected_content && reqbufs->count) {
@@ -743,18 +741,16 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 	}
 
 	if (gsc->out.req_cnt >= atomic_read(&q->queued_count)) {
-		spin_lock_irqsave(&gsc->slock, flags);
+		spin_lock_irqsave(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
 		ret = gsc_out_set_in_addr(gsc, ctx, buf, vb->v4l2_buf.index);
 		if (ret) {
 			gsc_err("Failed to prepare G-Scaler address");
-			spin_unlock_irqrestore(&gsc->slock, flags);
-			return;
+			spin_unlock_irqrestore(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
 		}
 		gsc_out_set_pp_pending_bit(gsc, vb->v4l2_buf.index, false);
-		spin_unlock_irqrestore(&gsc->slock, flags);
+		spin_unlock_irqrestore(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
 	} else {
 		gsc_err("All requested buffers have been queued already");
-		return;
 	}
 }
 
