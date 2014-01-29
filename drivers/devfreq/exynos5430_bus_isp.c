@@ -384,11 +384,11 @@ struct devfreq_clk_info aclk_3aa1[] = {
 };
 
 struct devfreq_clk_info aclk_lite_d[] = {
-	{LV0,	 69000000,	0,	NULL},
-	{LV1,	 69000000,	0,	NULL},
-	{LV2,	 69000000,	0,	NULL},
-	{LV3,	 69000000,	0,	NULL},
-	{LV4,	 69000000,	0,	NULL},
+	{LV0,	 138000000,	0,	NULL},
+	{LV1,	 138000000,	0,	NULL},
+	{LV2,	 138000000,	0,	NULL},
+	{LV3,	 138000000,	0,	NULL},
+	{LV4,	 138000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
 	{LV6,	 69000000,	0,	NULL},
 };
