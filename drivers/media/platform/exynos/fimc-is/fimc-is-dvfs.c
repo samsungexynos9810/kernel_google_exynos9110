@@ -166,7 +166,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAMCORDING)
 
 	if ((sensor_cnt >= 2) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
-			 == ISS_SUB_SCENARIO_VIDEO))
+			 == ISS_SUB_SCENARIO_DUAL_VIDEO))
 		return 1;
 	else
 		return 0;
@@ -182,7 +182,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_PREVIEW)
 
 	if ((sensor_cnt >= 2) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
-			 != ISS_SUB_SCENARIO_VIDEO))
+			 != ISS_SUB_SCENARIO_DUAL_VIDEO))
 		return 1;
 	else
 		return 0;
