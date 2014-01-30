@@ -829,6 +829,8 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 			}
 
 			if (pre_freq > target_freq) {
+				clk_set_rate(int_clk->p_parent_clk,
+						int_clk->clk_info[target_idx].target_freq * 1000);
 				/* process clock tree */
 				if (int_clk->p2_parent_clk) {
 					clk_set_parent(int_clk->p1_parent_clk, int_clk->p2_parent_clk);
@@ -843,6 +845,11 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 #ifndef CONFIG_PM_RUNTIME
 				clk_set_parent(int_clk->clk, int_clk->parent_clk);
 #endif
+				/*
+				 * If the clock rate is set before setting the parent clock,
+				 * the clock rate is incorrect after setting the parent clock
+				 * by divider value. So, re-setting clock rate.
+				 */
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
@@ -863,16 +870,9 @@ static void exynos5_int_set_freq(struct busfreq_data_int *data,
 #ifndef CONFIG_PM_RUNTIME
 				clk_set_parent(int_clk->clk, int_clk->parent_clk);
 #endif
-				clk_set_rate(int_clk->p_parent_clk,
-						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
 			printk("[%s] set to %ld, get value is %ld - P:[%s]\n", int_clk->p_parent_clk->name, int_clk->clk_info[target_idx].target_freq, clk_get_rate(int_clk->p_parent_clk) / 1000, int_clk->p2_parent_clk->name);
 #endif
-				/*
-				 * If the clock rate is set before setting the parent clock,
-				 * the clock rate is incorrect after setting the parent clock
-				 * by divider value. So, re-setting clock rate.
-				 */
 				clk_set_rate(int_clk->p_parent_clk,
 						int_clk->clk_info[target_idx].target_freq * 1000);
 #ifdef DEVFREQ_INT_TRACE
