@@ -284,7 +284,7 @@ const struct clk_ops exynos5_clk_gate_ops = {
 	.disable = exynos5_clk_gate_disable,
 	.is_enabled = exynos5_clk_gate_is_enabled,
 };
-EXPORT_SYMBOL_GPL(clk_gate_ops);
+EXPORT_SYMBOL_GPL(exynos5_clk_gate_ops);
 
 struct clk *exynos_clk_register_gate(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
