@@ -110,9 +110,15 @@ int gpu_clock_on(struct exynos_context *platform)
 		return -1;
 	}
 
-	if (platform->clk_g3d_ip && !gpu_is_clock_on(platform)) {
+	if (platform->clk_g3d_status == 1)
+		return 0;
+
+	if (platform->clk_g3d_ip) {
 		(void) clk_prepare_enable(platform->clk_g3d_ip);
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_ON, NULL, NULL, 0u, 0u);
 	}
+
+	platform->clk_g3d_status = 1;
 
 	return 0;
 }
@@ -122,9 +128,15 @@ int gpu_clock_off(struct exynos_context *platform)
 	if (!platform)
 		return -ENODEV;
 
-	if (platform->clk_g3d_ip && gpu_is_clock_on(platform)) {
+	if (platform->clk_g3d_status == 0)
+		return 0;
+
+	if (platform->clk_g3d_ip) {
 		(void)clk_disable_unprepare(platform->clk_g3d_ip);
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_OFF, NULL, NULL, 0u, 0u);
 	}
+
+	platform->clk_g3d_status = 0;
 
 	return 0;
 }
@@ -305,6 +317,8 @@ static int gpu_get_clock(kbase_device *kbdev)
 	if (IS_ERR(platform->clk_g3d_ip)) {
 		GPU_LOG(DVFS_ERROR, "failed to clk_get [clk_g3d_ip]\n");
 		return -1;
+	} else {
+		platform->clk_g3d_status = 1;
 	}
 
 	return 0;

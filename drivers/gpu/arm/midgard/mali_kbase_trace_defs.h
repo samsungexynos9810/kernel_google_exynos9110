@@ -229,6 +229,9 @@ int dummy_array[] = {
 	KBASE_TRACE_CODE_MAKE_CODE(LSI_CLOCK_VALUE), /* clock */
 	KBASE_TRACE_CODE_MAKE_CODE(LSI_TMU_VALUE), /* TMU LOCK info */
 	KBASE_TRACE_CODE_MAKE_CODE(LSI_VOL_VALUE), /* voltage */
+	KBASE_TRACE_CODE_MAKE_CODE(LSI_REGISTER_DUMP), /* CMU & PMU info */
+	KBASE_TRACE_CODE_MAKE_CODE(LSI_CLOCK_ON), /* GPU CLOCK ON */
+	KBASE_TRACE_CODE_MAKE_CODE(LSI_CLOCK_OFF), /* GPU CLOCK OFF*/
 /* Unused code just to make it easier to not have a comma at the end.
  * All other codes MUST come before this */
 	KBASE_TRACE_CODE_MAKE_CODE(DUMMY)

@@ -520,6 +520,9 @@ bool check_trace_code(kbase_trace_code code)
 		case KBASE_TRACE_CODE(LSI_CLOCK_VALUE):
 		case KBASE_TRACE_CODE(LSI_TMU_VALUE):
 		case KBASE_TRACE_CODE(LSI_VOL_VALUE):
+		case KBASE_TRACE_CODE(LSI_REGISTER_DUMP):
+		case KBASE_TRACE_CODE(LSI_CLOCK_ON):
+		case KBASE_TRACE_CODE(LSI_CLOCK_OFF):
 			return true;
 		default:
 			return false;

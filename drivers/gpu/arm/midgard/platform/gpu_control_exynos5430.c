@@ -158,8 +158,10 @@ int gpu_clock_on(struct exynos_context *platform)
 	if (platform->clk_g3d_status == 1)
 		return 0;
 
-	if (platform->aclk_g3d)
+	if (platform->aclk_g3d) {
 		(void) clk_prepare_enable(platform->aclk_g3d);
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_ON, NULL, NULL, 0u, 0u);
+	}
 
 #if GPU_DYNAMIC_CLK_GATING
 	gpu_dcg_enable(platform);
@@ -181,8 +183,10 @@ int gpu_clock_off(struct exynos_context *platform)
 	if (platform->clk_g3d_status == 0)
 		return 0;
 
-	if (platform->aclk_g3d)
+	if (platform->aclk_g3d) {
 		(void)clk_disable_unprepare(platform->aclk_g3d);
+		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_OFF, NULL, NULL, 0u, 0u);
+	}
 
 	platform->clk_g3d_status = 0;
 
