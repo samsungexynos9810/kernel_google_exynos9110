@@ -387,9 +387,10 @@ static void __fimc_is_fault_handler(struct device *dev)
 		if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
 			framemgr = &sensor->vctx->q_dst.framemgr;
 			for (i = 0; i < FRAMEMGR_MAX_REQUEST; ++i) {
-				pr_err("LITE0 BUF[%d][0] = %d, 0x%08X\n", i,
+				pr_err("LITE0 BUF[%d][0] = %d, 0x%08X, 0x%08X\n", i,
 					framemgr->frame[i].memory,
-					framemgr->frame[i].dvaddr_buffer[0]);
+					framemgr->frame[i].dvaddr_buffer[0],
+					framemgr->frame[i].kvaddr_buffer[0]);
 			}
 		}
 
@@ -398,9 +399,10 @@ static void __fimc_is_fault_handler(struct device *dev)
 		if (test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
 			framemgr = &sensor->vctx->q_dst.framemgr;
 			for (i = 0; i < FRAMEMGR_MAX_REQUEST; ++i) {
-				pr_err("LITE1 BUF[%d][0] = %d, 0x%08X\n", i,
+				pr_err("LITE1 BUF[%d][0] = %d, 0x%08X. 0x%08X\n", i,
 					framemgr->frame[i].memory,
-					framemgr->frame[i].dvaddr_buffer[0]);
+					framemgr->frame[i].dvaddr_buffer[0],
+					framemgr->frame[i].kvaddr_buffer[0]);
 			}
 		}
 
@@ -413,10 +415,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->group_3aa.leader.vctx->q_src.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[3AA:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[3AA:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -425,10 +428,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->taac.leader->vctx->q_dst.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[3AAC:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[3AAC:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -437,10 +441,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->taap.leader->vctx->q_dst.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[3AAP:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[3AAP:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -449,10 +454,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->group_isp.leader.vctx->q_src.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[ISP:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[ISP:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -461,10 +467,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->scc.vctx->q_dst.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[SCC:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[SCC:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -473,10 +480,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->dis.vctx->q_dst.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[VDC:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[VDC:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -485,10 +493,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->group_dis.leader.vctx->q_src.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[VDO:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[VDO:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
@@ -497,10 +506,11 @@ static void __fimc_is_fault_handler(struct device *dev)
 					framemgr = &ischain->scp.vctx->q_dst.framemgr;
 					for (j = 0; j < framemgr->frame_cnt; ++j) {
 						for (k = 0; k < framemgr->frame[j].planes; k++) {
-							pr_err("[SCP:%d] BUF[%d][%d] = %d, 0x%08X\n",
+							pr_err("[SCP:%d] BUF[%d][%d] = %d, 0x%08X, 0x%08X\n",
 								i, j, k,
 								framemgr->frame[j].memory,
-								framemgr->frame[j].dvaddr_buffer[k]);
+								framemgr->frame[j].dvaddr_buffer[k],
+								framemgr->frame[j].kvaddr_buffer[k]);
 						}
 					}
 				}
