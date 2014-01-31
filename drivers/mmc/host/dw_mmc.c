@@ -1228,6 +1228,8 @@ static void __dw_mci_start_request(struct dw_mci *host,
 
 	host->cmd_status = 0;
 	host->completed_events = 0;
+	if (!MMC_CHECK_CMDQ_MODE(host))
+		host->data_status = 0;
 
 	if (cmd->data) {
 		host->mrq_dat = mrq;
