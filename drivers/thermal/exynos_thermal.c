@@ -223,6 +223,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #if defined(CONFIG_SOC_EXYNOS5430)
 #define CALIB_SEL_MASK			0x00800000
 #define VPTAT_CTRL_MASK			0x00700000
+#define BUF_VREF_SEL_2POINT		23
 #endif
 
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
@@ -1119,6 +1120,13 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 
 	con = pdata->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 		pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+#if defined(CONFIG_SOC_EXYNOS5430)
+	if (id == EXYNOS_GPU_NUMBER) {
+		if (triminfo & CALIB_SEL_MASK)
+			con = BUF_VREF_SEL_2POINT << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
+				pdata->gain << EXYNOS_TMU_GAIN_SHIFT;
+	}
+#endif
 
 	if (data->soc != SOC_ARCH_EXYNOS4210)
 		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
