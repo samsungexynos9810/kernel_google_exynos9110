@@ -68,7 +68,7 @@ static bool cluster_off_flag = false;
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 #define C2_TARGET_RESIDENCY			1000
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-#define CLUSTER_OFF_TARGET_RESIDENCY		3000
+#define CLUSTER_OFF_TARGET_RESIDENCY		5000
 #endif
 #endif
 #define LOWPOWER_TARGET_RESIDENCY		5000
@@ -415,7 +415,7 @@ static struct sleep_save exynos5_set_clksrc[] = {
 	{ .reg = EXYNOS5_CLK_SRC_MASK_PERIC1		, .val = 0xffffffff, },
 };
 
-static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
+static int __maybe_unused exynos_enter_core0_aftr(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
@@ -669,7 +669,7 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 #endif
 	enter_mode = exynos_check_enter_mode();
 	if (enter_mode == EXYNOS_CHECK_DIDLE)
-		return exynos_enter_core0_aftr(dev, drv, new_index);
+		return exynos_enter_idle(dev, drv, 0);
 	else
 		return exynos_enter_core0_lpa(dev, drv, SYS_LPA, new_index, enter_mode);
 }
@@ -720,7 +720,7 @@ static int can_enter_cluster_off(int cpu_id)
 		return 0;
 #endif
 
-	for_each_cpu_and(cpu, cpu_online_mask, cpu_coregroup_mask(cpu_id)) {
+	for_each_cpu_and(cpu, cpu_possible_mask, cpu_coregroup_mask(cpu_id)) {
 		if (cpu_id == cpu)
 			continue;
 
