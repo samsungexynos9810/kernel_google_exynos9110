@@ -131,6 +131,14 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 
 	mutex_lock(&indio_dev->mlock);
 
+	/* clear irq */
+	if (info->version == ADC_V2)
+		writel(1, ADC_V2_INT_ST(info->regs));
+	else
+		writel(1, ADC_V1_INTCLR(info->regs));
+
+	enable_irq(info->irq);
+
 	/* Select the channel to be used and Trigger conversion */
 	if (info->version == ADC_V2) {
 		con2 = readl(ADC_V2_CON2(info->regs));
@@ -151,6 +159,9 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 
 	timeout = wait_for_completion_interruptible_timeout
 			(&info->completion, EXYNOS_ADC_TIMEOUT);
+
+	disable_irq(info->irq);
+
 	*val = info->value;
 
 	mutex_unlock(&indio_dev->mlock);
@@ -321,6 +332,14 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		}
 	}
 
+	info->clk = devm_clk_get(&pdev->dev, "gate_adcif");
+	if (IS_ERR(info->clk)) {
+		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
+							PTR_ERR(info->clk));
+		ret = PTR_ERR(info->clk);
+		goto err_iio;
+	}
+
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
 		dev_err(&pdev->dev, "no irq resource?\n");
@@ -332,7 +351,9 @@ static int exynos_adc_probe(struct platform_device *pdev)
 
 	init_completion(&info->completion);
 
-	ret = request_irq(info->irq, exynos_adc_isr,
+	clk_prepare_enable(info->clk);
+
+	ret = devm_request_irq(&pdev->dev, info->irq, exynos_adc_isr,
 					0, dev_name(&pdev->dev), info);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed requesting irq, irq = %d\n",
@@ -340,13 +361,8 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		goto err_iio;
 	}
 
-	info->clk = devm_clk_get(&pdev->dev, "gate_adcif");
-	if (IS_ERR(info->clk)) {
-		dev_err(&pdev->dev, "failed getting clock, err = %ld\n",
-							PTR_ERR(info->clk));
-		ret = PTR_ERR(info->clk);
-		goto err_irq;
-	}
+	disable_irq(info->irq);
+	clk_disable_unprepare(info->clk);
 
 	info->vdd = devm_regulator_get(&pdev->dev, "vdd");
 	if (IS_ERR(info->vdd)) {
@@ -373,7 +389,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
 
 	ret = iio_device_register(indio_dev);
 	if (ret)
-		goto err_irq;
+		goto err_iio;
 
 	info->dev = &pdev->dev;
 	pm_runtime_enable(&pdev->dev);
@@ -389,14 +405,14 @@ static int exynos_adc_probe(struct platform_device *pdev)
 	return 0;
 
 err_of_populate:
+	pm_runtime_disable(&pdev->dev);
+
 	device_for_each_child(&pdev->dev, NULL,
 				exynos_adc_remove_devices);
 	if (info->vdd)
 		regulator_disable(info->vdd);
 
 	iio_device_unregister(indio_dev);
-err_irq:
-	free_irq(info->irq, info);
 err_iio:
 	iio_device_free(indio_dev);
 	return ret;
@@ -409,6 +425,8 @@ static int exynos_adc_remove(struct platform_device *pdev)
 
 	device_for_each_child(&pdev->dev, NULL,
 				exynos_adc_remove_devices);
+
+	clk_prepare_enable(info->clk);
 
 	exynos_adc_hw_deinit(info);
 
@@ -423,7 +441,6 @@ static int exynos_adc_remove(struct platform_device *pdev)
 	pm_runtime_disable(&pdev->dev);
 
 	iio_device_unregister(indio_dev);
-	free_irq(info->irq, info);
 	iio_device_free(indio_dev);
 
 	return 0;
