@@ -222,6 +222,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 
 #if defined(CONFIG_SOC_EXYNOS5430)
 #define CALIB_SEL_MASK			0x00800000
+#define VPTAT_CTRL_MASK			0x00700000
 #endif
 
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
@@ -1110,6 +1111,9 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	unsigned int con, interrupt_en;
+	unsigned int triminfo;
+
+	triminfo = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
 
 	mutex_lock(&data->lock);
 
@@ -1146,6 +1150,10 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 #if defined(CONFIG_SOC_EXYNOS5430)
 	if (id == EXYNOS_GPU_NUMBER)
 		con |= EXYNOS_MUX_ADDR;
+	else {
+		if (triminfo & CALIB_SEL_MASK)
+			con |= triminfo & VPTAT_CTRL_MASK;
+	}
 #elif defined(CONFIG_SOC_EXYNOS5422)
 	con |= EXYNOS_MUX_ADDR;
 #endif
