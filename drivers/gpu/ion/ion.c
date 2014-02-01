@@ -588,7 +588,6 @@ static void *ion_buffer_kmap_get(struct ion_buffer *buffer)
 	buffer->kmap_cnt++;
 
 	ion_buffer_make_ready(buffer);
-	ion_buffer_set_cpumapped(buffer);
 
 	return vaddr;
 }
@@ -852,6 +851,10 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 	struct ion_vma_list *vma_list;
 	int pages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
 
+	mutex_lock(&buffer->lock);
+	ion_buffer_make_ready(buffer);
+	mutex_unlock(&buffer->lock);
+
 	if (!ion_buffer_cached(buffer) || (dir == DMA_COHERENT))
 		return;
 
@@ -862,6 +865,7 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 		return;
 
 	mutex_lock(&buffer->lock);
+
 	for (i = 0; i < pages; i++) {
 		struct page *page = buffer->pages[i];
 
@@ -988,7 +992,6 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	/* now map it to userspace */
 	ret = buffer->heap->ops->map_user(buffer->heap, buffer, vma);
 	ion_buffer_make_ready(buffer);
-	ion_buffer_set_cpumapped(buffer);
 	mutex_unlock(&buffer->lock);
 
 	if (ret)
@@ -1172,7 +1175,8 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 	}
 	buffer = dmabuf->priv;
 
-	if (!ion_buffer_cached(buffer) || !ion_buffer_dirty(buffer)) {
+	if (!ion_buffer_cached(buffer) ||
+			ion_buffer_fault_user_mappings(buffer)) {
 		dma_buf_put(dmabuf);
 		return 0;
 	}

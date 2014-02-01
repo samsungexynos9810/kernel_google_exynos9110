@@ -126,12 +126,6 @@ struct ion_heap_ops {
 			 struct vm_area_struct *vma);
 };
 
-/* [INTERNAL USE ONLY] set when ion_mmap() or kmap() is called */
-#define ION_FLAG_CPUMAPPED (1 << 15)
-
-/* [INTERNAL USE ONLY] dirty flag for ion buffer */
-#define ION_FLAG_CLEAN (1 << 14)
-
 /* [INTERNAL USE ONLY] flush needed before first use */
 #define ION_FLAG_READY_TO_USE (1 << 13)
 
@@ -142,6 +136,12 @@ struct ion_heap_ops {
  * heap flags - flags between the heaps and core ion code
  */
 #define ION_HEAP_FLAG_DEFER_FREE (1 << 0)
+
+/* [INTERNAL USE ONLY] buffer is migrated to other free list */
+#define ION_FLAG_BUFFER_MIGRATED (1 << 12)
+
+/* [INTERNAL USE ONLY] buffer is being freed by shrinker */
+#define ION_FLAG_SHRINKER_FREE (1 << 11)
 
 /**
  * struct ion_heap - represents a heap in the system
@@ -220,40 +220,9 @@ static inline bool ion_buffer_fault_user_mappings(struct ion_buffer *buffer)
 		!(buffer->flags & ION_FLAG_CACHED_NEEDS_SYNC);
 }
 
-static inline void ion_buffer_set_cpumapped(struct ion_buffer *buffer)
-{
-	buffer->flags |= ION_FLAG_CPUMAPPED;
-	if (buffer->flags & ION_FLAG_CACHED)
-		buffer->flags &= ~ION_FLAG_CLEAN;
-}
-
-static inline bool ion_buffer_cpumapped(struct ion_buffer *buffer)
-{
-	/* both user map and kmap are treated as cpumapped */
-	if ((buffer->flags & ION_FLAG_CPUMAPPED) || (buffer->kmap_cnt > 0))
-		return true;
-	else
-		return false;
-}
-
-static inline void ion_buffer_set_clean(struct ion_buffer *buffer)
-{
-	buffer->flags |= ION_FLAG_CLEAN;
-}
-
 static inline void ion_buffer_set_ready(struct ion_buffer *buffer)
 {
 	buffer->flags |= ION_FLAG_READY_TO_USE;
-}
-
-static inline bool ion_buffer_dirty(struct ion_buffer *buffer)
-{
-	/* always dirty if cacheable buffer is mapped to cpu */
-	if ((buffer->flags & ION_FLAG_CACHED) &&
-				(buffer->flags & ION_FLAG_CPUMAPPED))
-		return true;
-	else
-		return !(buffer->flags & ION_FLAG_CLEAN);
 }
 
 static inline bool ion_buffer_need_flush_all(struct ion_buffer *buffer)
@@ -382,12 +351,10 @@ static inline void ion_buffer_flush(const void *vaddr, size_t size, int dir)
 static inline void ion_buffer_make_ready(struct ion_buffer *buffer)
 {
 	if (!(buffer->flags & ION_FLAG_READY_TO_USE)) {
-		ion_heap_sync(buffer->heap, buffer->sg_table,
-				DMA_BIDIRECTIONAL, ion_buffer_flush,
-				!(buffer->flags & ION_FLAG_NOZEROED));
+		ion_heap_sync(buffer->heap, buffer->sg_table, DMA_BIDIRECTIONAL,
+			ion_buffer_cached(buffer) ? NULL : ion_buffer_flush,
+			!(buffer->flags & ION_FLAG_NOZEROED));
 		buffer->flags |= ION_FLAG_READY_TO_USE;
-		if (!(buffer->flags & ION_FLAG_CPUMAPPED))
-			buffer->flags |= ION_FLAG_CLEAN;
 	}
 }
 
@@ -447,7 +414,8 @@ struct ion_page_pool {
 
 struct ion_page_pool *ion_page_pool_create(gfp_t gfp_mask, unsigned int order);
 void ion_page_pool_destroy(struct ion_page_pool *);
-void *ion_page_pool_alloc(struct ion_page_pool *);
+void *ion_page_pool_alloc(struct ion_page_pool *pool,
+			  bool try_again, bool *from_pool);
 void ion_page_pool_free(struct ion_page_pool *, struct page *);
 
 /** ion_page_pool_shrink - shrinks the size of the memory cached in the pool

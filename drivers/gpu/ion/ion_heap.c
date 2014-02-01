@@ -192,6 +192,7 @@ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
 {
 	struct ion_buffer *buffer;
 	size_t total_drained = 0;
+	bool by_shrinker = (size != 0);
 
 	if (ion_heap_freelist_size(heap) == 0)
 		return 0;
@@ -209,6 +210,8 @@ size_t ion_heap_freelist_drain(struct ion_heap *heap, size_t size)
 		heap->free_list_size -= buffer->size;
 		total_drained += buffer->size;
 		spin_unlock(&heap->free_lock);
+		if (by_shrinker)
+			buffer->flags |= ION_FLAG_SHRINKER_FREE;
 		ion_buffer_destroy(buffer);
 		spin_lock(&heap->free_lock);
 	}
@@ -296,6 +299,9 @@ void ion_heap_sync(struct ion_heap *heap, struct sg_table *sgt,
 	unsigned long vaddr;
 	size_t sum = 0;
 	pte_t *ptep;
+
+	if (!memzero && !sync)
+		return;
 
 	down(&heap->vm_sem);
 

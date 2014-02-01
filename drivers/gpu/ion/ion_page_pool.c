@@ -96,7 +96,8 @@ static struct page *ion_page_pool_remove(struct ion_page_pool *pool, bool high)
 	return page;
 }
 
-void *ion_page_pool_alloc(struct ion_page_pool *pool)
+void *ion_page_pool_alloc(struct ion_page_pool *pool,
+			  bool try_again, bool *from_pool)
 {
 	struct page *page = NULL;
 
@@ -109,8 +110,12 @@ void *ion_page_pool_alloc(struct ion_page_pool *pool)
 		page = ion_page_pool_remove(pool, false);
 	mutex_unlock(&pool->mutex);
 
-	if (!page)
+	if (!page && try_again) {
 		page = ion_page_pool_alloc_pages(pool);
+		*from_pool = false;
+	} else {
+		*from_pool = true;
+	}
 
 	return page;
 }
@@ -128,7 +133,7 @@ static int ion_page_pool_total(struct ion_page_pool *pool, bool high)
 {
 	int total = 0;
 
-	total += high ? (pool->high_count + pool->low_count) *
+	total = high ? (pool->high_count + pool->low_count) *
 		(1 << pool->order) :
 			pool->low_count * (1 << pool->order);
 	return total;
@@ -138,7 +143,6 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
 				int nr_to_scan)
 {
 	int nr_freed = 0;
-	int i;
 	bool high;
 
 	high = gfp_mask & __GFP_HIGHMEM;
@@ -146,7 +150,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
 	if (nr_to_scan == 0)
 		return ion_page_pool_total(pool, high);
 
-	for (i = 0; i < nr_to_scan; i++) {
+	while (nr_freed < (nr_to_scan * PAGE_SIZE)) {
 		struct page *page;
 
 		mutex_lock(&pool->mutex);

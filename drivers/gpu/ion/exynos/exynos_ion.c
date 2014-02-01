@@ -620,7 +620,6 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 	vunmap(p);
 
 	ion_buffer_set_ready(buffer);
-	ion_buffer_set_clean(buffer);
 
 err_vmap:
 	if (pages_size > PAGE_SIZE)
@@ -877,14 +876,15 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 	if (IS_ERR_OR_NULL(buffer))
 		BUG();
 
+	/*
+	 * mutex lock is required to check the follwoing two flags
+	 * because they are eternally set and never changed
+	 */
+	if (!ion_buffer_cached(buffer) ||
+			ion_buffer_fault_user_mappings(buffer))
+		return;
+
 	mutex_lock(&buffer->lock);
-	ion_buffer_make_ready(buffer);
-
-	if (ion_buffer_fault_user_mappings(buffer))
-		goto out;
-
-	if (!ion_buffer_dirty(buffer))
-		goto out;
 
 	pr_debug("%s: syncing for device %s, buffer: %p, size: %d\n",
 			__func__, dev ? dev_name(dev) : "null", buffer, size);
@@ -901,7 +901,6 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 					buffer->sg_table->orig_nents, dir);
 	}
 
-out:
 	mutex_unlock(&buffer->lock);
 }
 EXPORT_SYMBOL(exynos_ion_sync_dmabuf_for_device);
@@ -952,14 +951,11 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 	if (IS_ERR_OR_NULL(buffer))
 		BUG();
 
+	if (!ion_buffer_cached(buffer) ||
+			ion_buffer_fault_user_mappings(buffer))
+		return;
+
 	mutex_lock(&buffer->lock);
-	ion_buffer_make_ready(buffer);
-
-	if (ion_buffer_fault_user_mappings(buffer))
-		goto out;
-
-	if (!ion_buffer_dirty(buffer))
-		goto out;
 
 	pr_debug("%s: syncing for cpu %s, buffer: %p, size: %d\n",
 			__func__, dev ? dev_name(dev) : "null", buffer, size);
@@ -976,15 +972,6 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 					buffer->sg_table->orig_nents, dir);
 	}
 
-	if (!ion_buffer_cached(buffer) || !ion_buffer_cpumapped(buffer)) {
-		pr_debug("%s: set clean for buffer %p, cached: %d, "
-				"mapped: %d\n", __func__,
-				buffer, ion_buffer_cached(buffer),
-				ion_buffer_cpumapped(buffer));
-		ion_buffer_set_clean(buffer);
-	}
-
-out:
 	mutex_unlock(&buffer->lock);
 }
 EXPORT_SYMBOL(exynos_ion_sync_dmabuf_for_cpu);
