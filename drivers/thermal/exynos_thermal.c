@@ -220,6 +220,10 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define CPU_HOTPLUG_OUT_TEMP	100
 #endif
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+#define CALIB_SEL_MASK			0x00800000
+#endif
+
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
 static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
 static enum mif_noti_state_t mif_old_state = MIF_TH_LV1;
@@ -1081,6 +1085,12 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 
 	/* Save trimming info in order to perform calibration */
 	trim_info = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
+#if defined(CONFIG_SOC_EXYNOS5430)
+	if (trim_info & CALIB_SEL_MASK)
+		pdata->cal_type = TYPE_TWO_POINT_TRIMMING;
+	else
+		pdata->cal_type = TYPE_ONE_POINT_TRIMMING;
+#endif
 	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
 	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
