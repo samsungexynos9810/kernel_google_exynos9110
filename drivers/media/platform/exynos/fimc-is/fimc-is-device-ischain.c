@@ -1927,8 +1927,11 @@ int fimc_is_itf_stream_on(struct fimc_is_device_ischain *device)
 		/* try to find dynamic scenario to apply */
 		scenario_id = fimc_is_dvfs_sel_scenario(FIMC_IS_STATIC_SN, device);
 		if (scenario_id >= 0) {
-			info("[ISC:D:%d] static scenario(%d)\n",
-					device->instance, scenario_id);
+			struct fimc_is_dvfs_scenario_ctrl *static_ctrl =
+				resourcemgr->dvfs_ctrl.static_ctrl;
+			info("[ISC:D:%d] static scenario(%d)-[%s]\n",
+					device->instance, scenario_id,
+					static_ctrl->scenarios[static_ctrl->cur_scenario_idx].scenario_nm);
 			fimc_is_set_dvfs(device, scenario_id);
 		}
 	}
