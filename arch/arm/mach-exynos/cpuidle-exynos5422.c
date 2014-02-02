@@ -267,6 +267,7 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 
 static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+static spinlock_t c2_state_lock;
 static DEFINE_PER_CPU(int, in_c2_state);
 #endif
 
@@ -783,9 +784,11 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 
 	flags = 0;
 	if (index == 2) {
+		spin_lock(&c2_state_lock);
 		per_cpu(in_c2_state, cpuid) = 1;
 		if (can_enter_cluster_off(cpuid))
 			flags = L2_CCI_OFF;
+		spin_unlock(&c2_state_lock);
 	}
 
 	if (flags)
@@ -817,8 +820,11 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	__raw_writel(value, EXYNOS5422_ARM_INTR_SPREAD_ENABLE);
 
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-	if (index == 2)
+	if (index == 2) {
+		spin_lock(&c2_state_lock);
 		per_cpu(in_c2_state, cpuid) = 0;
+		spin_unlock(&c2_state_lock);
+	}
 
 	clear_boot_flag(cpuid, C2_STATE | CHECK_CCI_SNOOP);
 #else
@@ -1026,6 +1032,8 @@ static int __init exynos_init_cpuidle(void)
 		cluster_off_time_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
+
+	spin_lock_init(&c2_state_lock);
 
 	lp_debugfs =
 		debugfs_create_file("lp_cdev_status",
