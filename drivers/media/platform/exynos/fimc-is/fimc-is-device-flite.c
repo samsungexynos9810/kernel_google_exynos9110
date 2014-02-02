@@ -864,13 +864,13 @@ static void tasklet_flite_str0(unsigned long data)
 	if (atomic_read(&flite->bcount) == 2) {
 		if ((bstart == FLITE_A_SLOT_VALID) &&
 			(present != FLITE_A_SLOT_VALID)) {
-			err("invalid state1(sw:%d != hw:%d)", bstart, present);
+			warn("wrong SW buffer slot A(sw:%d != hw:%d)", bstart, present);
 			flite->sw_trigger = bstart = FLITE_B_SLOT_VALID;
 		}
 
 		if ((bstart == FLITE_B_SLOT_VALID) &&
 			(present != FLITE_B_SLOT_VALID)) {
-			err("invalid state2(sw:%d != hw:%d)", bstart, present);
+			warn("wrong SW buffer slot B(sw:%d != hw:%d)", bstart, present);
 			flite->sw_trigger = bstart = FLITE_A_SLOT_VALID;
 		}
 	}
@@ -934,13 +934,13 @@ static void tasklet_flite_str1(unsigned long data)
 	if (atomic_read(&flite->bcount) == 2) {
 		if ((bstart == FLITE_A_SLOT_VALID) &&
 			(present != FLITE_A_SLOT_VALID)) {
-			err("invalid state1(sw:%d != hw:%d)", bstart, present);
+			warn("wrong SW buffer slot A(sw:%d != hw:%d)", bstart, present);
 			flite->sw_trigger = bstart = FLITE_B_SLOT_VALID;
 		}
 
 		if ((bstart == FLITE_B_SLOT_VALID) &&
 			(present != FLITE_B_SLOT_VALID)) {
-			err("invalid state2(sw:%d != hw:%d)", bstart, present);
+			warn("wrong SW buffer slot B(sw:%d != hw:%d)", bstart, present);
 			flite->sw_trigger = bstart = FLITE_A_SLOT_VALID;
 		}
 	}
