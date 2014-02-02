@@ -25,7 +25,6 @@ config ARCH_EXYNOS5
 	select HAVE_ARM_SCU if SMP
 	select HAVE_SMP
 	select HAVE_EXYNOS5_HSI2C if I2C
-	select EXYNOS_CORESIGHT
 	help
 	  Samsung EXYNOS5 (Cortex-A15) SoC based systems
 
@@ -198,6 +197,12 @@ config EXYNOS_CONTENT_PATH_PROTECTION
 	default y
 	help
 	  Enable content path protection of EXYNOS.
+
+config EXYNOS_CORESIGHT
+	bool "Exynos Coresight Debug(Show pc value)"
+	default n
+	help
+	  Enable Coresight debug.
 
 config EXYNOS_ATAGS
 	bool "ATAGS based boot for EXYNOS (deprecated)"
@@ -662,7 +667,4 @@ config EXYNOS_HDMI_RESET_DURING_DSTOP
 config EXYNOS_TOP_RTC_RESET_DURING_DSTOP
 	bool
 
-# Use coresight debugging.
-config EXYNOS_CORESIGHT
-	bool
 endif
