@@ -87,7 +87,7 @@ typedef enum {
 
 /* GPU DVFS HANDLER */
 #if SOC_NAME == 5422
-#define MALI_DVFS_START_FREQ		266
+#define MALI_DVFS_START_FREQ		177
 #define MALI_DVFS_BL_CONFIG_FREQ	266
 #define DEFAULT_WAKEUP_LOCK			1
 #elif SOC_NAME == 5430
