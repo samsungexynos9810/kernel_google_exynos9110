@@ -174,6 +174,45 @@
 		};
 	};
 
+	coresight {
+		compatible = "exynos,coresight";
+		reg = <0x16000000 0x8000>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		css_pc@0 {
+			device_type = "cs";
+			offset = <0x90000>;
+		};
+		css_pc@1 {
+			device_type = "cs";
+			offset = <0x92000>;
+		};
+		css_pc@2 {
+			device_type = "cs";
+			offset = <0x94000>;
+		};
+		css_pc@3 {
+			device_type = "cs";
+			offset = <0x96000>;
+		};
+		css_pc@4 {
+			device_type = "cs";
+			offset = <0x70000>;
+		};
+		css_pc@5 {
+			device_type = "cs";
+			offset = <0x72000>;
+		};
+		css_pc@6 {
+			device_type = "cs";
+			offset = <0x74000>;
+		};
+		css_pc@7 {
+			device_type = "cs";
+			offset = <0x76000>;
+		};
+	};
+
 	mct@101C0000 {
 		compatible = "samsung,exynos4210-mct";
 		reg = <0x101C0000 0x800>;
