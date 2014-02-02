@@ -1187,8 +1187,6 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 
 		exynos_smc_readsfr(PA_FIMC_IS_GIC_C + 0x4, &debug);
 		pr_info("%s : PA_FIMC_IS_GIC_C : 0x%08x\n", __func__, debug);
-		if (debug != 0xFC)
-			merr("secure configuration is fail[0x131E0004:%08X]", device, debug);
 #endif
 
 		/* 5. A5 power on*/
