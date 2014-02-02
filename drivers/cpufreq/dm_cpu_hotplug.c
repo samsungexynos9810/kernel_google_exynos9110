@@ -82,7 +82,10 @@ static unsigned int delay = POLLING_MSEC;
 static unsigned int out_delay = POLLING_MSEC;
 static unsigned int in_delay = POLLING_MSEC;
 
+#if defined(CONFIG_SCHED_HMP)
 static struct workqueue_struct *hotplug_wq;
+#endif
+static struct workqueue_struct *force_hotplug_wq;
 
 static int dm_hotplug_disable = 0;
 
@@ -455,17 +458,28 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 	return ret;
 }
 
-void force_dynamic_hotplug(bool out_flag)
+static bool force_out_flag;
+static void force_dynamic_hotplug_work(struct work_struct *work)
 {
 	enum hotplug_cmd cmd;
 
-	forced_hotplug = out_flag;
+	forced_hotplug = force_out_flag;
 
 	calc_load();
 	cmd = diagnose_condition();
 
 	if (!dynamic_hotplug(cmd))
 		prev_cmd = cmd;
+}
+
+static DECLARE_WORK(force_hotplug_work, force_dynamic_hotplug_work);
+
+void force_dynamic_hotplug(bool out_flag)
+{
+	if (force_hotplug_wq) {
+		force_out_flag = out_flag;
+		queue_work(force_hotplug_wq, &force_hotplug_work);
+	}
 }
 
 #if defined(CONFIG_SCHED_HMP)
@@ -516,7 +530,7 @@ static void event_hotplug_in_work(struct work_struct *work)
 		pr_err("%s: failed hotplug in\n", __func__);
 }
 
-static DECLARE_WORK(hotplug_in_work, &event_hotplug_in_work);
+static DECLARE_WORK(hotplug_in_work, event_hotplug_in_work);
 
 void event_hotplug_in(void)
 {
@@ -838,6 +852,12 @@ static int __init dm_cpu_hotplug_init(void)
 	}
 #endif
 
+	force_hotplug_wq = create_singlethread_workqueue("force-hotplug");
+	if (!force_hotplug_wq) {
+		ret = -ENOMEM;
+		goto err_force_wq;
+	}
+
 	register_pm_notifier(&exynos_dm_hotplug_nb);
 	register_reboot_notifier(&exynos_dm_hotplug_reboot_nb);
 
@@ -851,8 +871,9 @@ static int __init dm_cpu_hotplug_init(void)
 	wake_up_process(dm_hotplug_task);
 
 	return ret;
-
+err_force_wq:
 #if defined(CONFIG_SCHED_HMP)
+	destroy_workqueue(hotplug_wq);
 err_wq:
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
