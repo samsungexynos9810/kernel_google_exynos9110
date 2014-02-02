@@ -152,8 +152,7 @@
 
 	coresight {
 		compatible = "exynos,coresight";
-		reg = <0x10880000 0x40000>;
-		reg1 = <0x10038200 0x4>; /* only set when happned panic */
+		reg = <0x10880000 0x8000>;
 		#address-cells = <1>;
 		#size-cells = <0>;
 		css_pc@0 {
@@ -162,7 +161,31 @@
 		};
 		css_pc@1 {
 			device_type = "cs";
+			offset = <0x21000>;
+		};
+		css_pc@2 {
+			device_type = "cs";
+			offset = <0x23000>;
+		};
+		css_pc@3 {
+			device_type = "cs";
+			offset = <0x25000>;
+		};
+		css_pc@4 {
+			device_type = "cs";
 			offset = <0xE000>;
+		};
+		css_pc@5 {
+			device_type = "cs";
+			offset = <0x10000>;
+		};
+		css_pc@6 {
+			device_type = "cs";
+			offset = <0x12000>;
+		};
+		css_pc@7 {
+			device_type = "cs";
+			offset = <0x14000>;
 		};
 	};
 
