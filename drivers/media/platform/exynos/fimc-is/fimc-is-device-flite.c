@@ -1283,11 +1283,11 @@ clear_status:
 
 		if (flite->overflow_cnt % FLITE_OVERFLOW_COUNT == 0)
 			pr_err("[CamIF%d] OFCR(cnt:%u)\n", flite->instance, flite->overflow_cnt);
-		ciwdofst = readl(flite->base_reg + 0x10);
+		ciwdofst = readl(flite->base_reg + TO_WORD_OFFSET(0x10));
 		ciwdofst  |= (0x1 << 14);
-		writel(ciwdofst, flite->base_reg + 0x10);
+		writel(ciwdofst, flite->base_reg + TO_WORD_OFFSET(0x10));
 		ciwdofst  &= ~(0x1 << 14);
-		writel(ciwdofst, flite->base_reg + 0x10);
+		writel(ciwdofst, flite->base_reg + TO_WORD_OFFSET(0x10));
 		flite->overflow_cnt++;
 	}
 
@@ -1298,11 +1298,11 @@ clear_status:
 
 		if (flite->overflow_cnt % FLITE_OVERFLOW_COUNT == 0)
 			pr_err("[CamIF%d] OFCB(cnt:%u)\n", flite->instance, flite->overflow_cnt);
-		ciwdofst = readl(flite->base_reg + 0x10);
+		ciwdofst = readl(flite->base_reg + TO_WORD_OFFSET(0x10));
 		ciwdofst  |= (0x1 << 15);
-		writel(ciwdofst, flite->base_reg + 0x10);
+		writel(ciwdofst, flite->base_reg + TO_WORD_OFFSET(0x10));
 		ciwdofst  &= ~(0x1 << 15);
-		writel(ciwdofst, flite->base_reg + 0x10);
+		writel(ciwdofst, flite->base_reg + TO_WORD_OFFSET(0x10));
 		flite->overflow_cnt++;
 	}
 
@@ -1313,11 +1313,11 @@ clear_status:
 
 		if (flite->overflow_cnt % FLITE_OVERFLOW_COUNT == 0)
 			pr_err("[CamIF%d] OFY(cnt:%u)\n", flite->instance, flite->overflow_cnt);
-		ciwdofst = readl(flite->base_reg + 0x10);
+		ciwdofst = readl(flite->base_reg + TO_WORD_OFFSET(0x10));
 		ciwdofst  |= (0x1 << 30);
-		writel(ciwdofst, flite->base_reg + 0x10);
+		writel(ciwdofst, flite->base_reg + TO_WORD_OFFSET(0x10));
 		ciwdofst  &= ~(0x1 << 30);
-		writel(ciwdofst, flite->base_reg + 0x10);
+		writel(ciwdofst, flite->base_reg + TO_WORD_OFFSET(0x10));
 		flite->overflow_cnt++;
 	}
 
