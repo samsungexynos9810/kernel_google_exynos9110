@@ -59,7 +59,7 @@ static cputime64_t cluster_off_time = 0;
 static unsigned long long last_time = 0;
 static bool cluster_off_flag = false;
 
-static spinlock_t cluster_ctrl_lock;
+static spinlock_t c2_state_lock;
 static DEFINE_PER_CPU(int, in_c2_state);
 
 #define CLUSTER_OFF_TARGET_RESIDENCY	5000
@@ -324,9 +324,7 @@ static int c2_finisher(unsigned long flags)
 	if (flags == L2_CCI_OFF) {
 		exynos_cpu_sequencer_ctrl(true);
 
-		spin_lock(&cluster_ctrl_lock);
 		cluster_off_flag = true;
-		spin_unlock(&cluster_ctrl_lock);
 		last_time = get_jiffies_64();
 
 		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, flags);
@@ -925,9 +923,11 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (index == 2) {
+		spin_lock(&c2_state_lock);
 		per_cpu(in_c2_state, cpuid) = 1;
 		if (can_enter_cluster_off(cpuid))
 			flags = L2_CCI_OFF;
+		spin_unlock(&c2_state_lock);
 	}
 #endif
 
@@ -947,14 +947,14 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 
 	if (cluster_off_flag && !disabled_c3) {
 		cluster_off_time += get_jiffies_64() - last_time;
-
-		spin_lock(&cluster_ctrl_lock);
 		cluster_off_flag = false;
-		spin_unlock(&cluster_ctrl_lock);
 	}
 
-	if (index == 2)
+	if (index == 2) {
+		spin_lock(&c2_state_lock);
 		per_cpu(in_c2_state, cpuid) = 0;
+		spin_unlock(&c2_state_lock);
+	}
 #endif
 
 	clear_boot_flag(cpuid, C2_STATE);
@@ -1170,7 +1170,7 @@ static int __init exynos_init_cpuidle(void)
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
 
-	spin_lock_init(&cluster_ctrl_lock);
+	spin_lock_init(&c2_state_lock);
 #endif
 
 	lp_debugfs =
