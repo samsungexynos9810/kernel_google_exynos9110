@@ -842,8 +842,8 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 {
 	struct busfreq_data_mif *data = dev_get_drvdata(dev);
 	unsigned long busy_data;
-	unsigned int int_ccnt = 0;
-	unsigned long int_pmcnt = 0;
+	unsigned long long int_ccnt = 0;
+	unsigned long long int_pmcnt = 0;
 
 	rcu_read_lock();
 	stat->current_frequency = opp_get_freq(data->curr_opp);
@@ -864,7 +864,7 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 	stat->busy_time = int_pmcnt;
 
 	if (en_profile)
-		pr_info("%lu,%lu\n", stat->busy_time, stat->total_time);
+		pr_info("%llu,%llu\n", stat->busy_time, stat->total_time);
 
 	return 0;
 }
