@@ -526,6 +526,8 @@ int __init exynos5430_pmu_init(void)
 	 */
 	exynos_use_feedback();
 
+	__raw_writel(0x3A98, EXYNOS5430_OSC_DURATION);
+
 	/* Enable USE_STANDBY_WFI for all CORE */
 	__raw_writel(EXYNOS5_USE_STANDBY_WFI_ALL |
 		EXYNOS_USE_PROLOGNED_LOGIC_RESET, EXYNOS_CENTRAL_SEQ_OPTION);
