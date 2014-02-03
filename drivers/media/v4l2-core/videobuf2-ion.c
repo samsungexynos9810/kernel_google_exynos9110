@@ -1040,6 +1040,8 @@ int vb2_ion_buf_prepare(struct vb2_buffer *vb)
 
 	for (i = 0; i < vb->num_planes; i++) {
 		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
+		if (!buf->vma)
+			return 0;
 		vb2_ion_sync_for_device((void *) &buf->cookie, 0,
 							buf->size, dir);
 	}
@@ -1058,6 +1060,8 @@ int vb2_ion_buf_finish(struct vb2_buffer *vb)
 
 	for (i = 0; i < vb->num_planes; i++) {
 		struct vb2_ion_buf *buf = vb->planes[i].mem_priv;
+		if (!buf->vma)
+			return 0;
 		vb2_ion_sync_for_cpu((void *) &buf->cookie, 0,
 						buf->size, dir);
 	}
