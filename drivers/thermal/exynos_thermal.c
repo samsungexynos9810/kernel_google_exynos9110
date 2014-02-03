@@ -1316,7 +1316,7 @@ static struct notifier_block exynos_pm_nb = {
 	.notifier_call = exynos_pm_notifier,
 };
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 static void exynos_tmu_core_control(bool on)
 {
 	int i;
@@ -1829,7 +1829,7 @@ static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigne
 			dev_err(&exynos_tmu_pdev->dev, "Failed to register thermal interface\n");
 			sysfs_remove_group(&exynos_tmu_pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
 			unregister_pm_notifier(&exynos_pm_nb);
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 			exynos_pm_unregister_notifier(&exynos_pm_dstop_nb);
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -2013,7 +2013,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	}
 
 	register_pm_notifier(&exynos_pm_nb);
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 	exynos_pm_register_notifier(&exynos_pm_dstop_nb);
 #endif
 	ret = sysfs_create_group(&pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
@@ -2048,7 +2048,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
 		exynos_tmu_control(pdev, i, false);
 
 	unregister_pm_notifier(&exynos_pm_nb);
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 	exynos_pm_unregister_notifier(&exynos_pm_dstop_nb);
 #endif
 	exynos_unregister_thermal();
