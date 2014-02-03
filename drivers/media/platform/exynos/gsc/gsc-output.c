@@ -474,6 +474,17 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 		return 0;
 	}
 
+	if (gsc->protected_content && reqbufs->count) {
+		int id = gsc->id + 3;
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 1);
+		gsc_dbg("DRM enable");
+	} else if (gsc->protected_content && !reqbufs->count){
+		int id = gsc->id + 3;
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 0);
+		gsc_dbg("DRM disable");
+		gsc_set_protected_content(gsc, false);
+	}
+
 	ret = vb2_reqbufs(&out->vbq, reqbufs);
 	if (ret)
 		return ret;
@@ -867,19 +878,23 @@ static int gsc_output_close(struct file *file)
 	struct gsc_dev *gsc = video_drvdata(file);
 
 	gsc_dbg("pid: %d, state: 0x%lx", task_pid_nr(current), gsc->state);
-	/* if we didn't properly sequence with the secure side to turn off
-	 * content protection, we may be left in a very bad state and the
-	 * only way to recover this reliably is to reboot.
-	 */
-	BUG_ON(gsc->protected_content);
+
+	/* This is unnormal case */
+	if (gsc->protected_content) {
+		int id = gsc->id + 3;
+		gsc_err("DRM should be disabled before device close");
+		exynos_smc(SMC_PROTECTION_SET, 0, id, 0);
+		gsc_set_protected_content(gsc, false);
+	}
 
 	clear_bit(ST_OUTPUT_OPEN, &gsc->state);
 	vb2_queue_release(&gsc->out.vbq);
 	gsc_ctrls_delete(gsc->out.ctx);
 	v4l2_fh_release(file);
 
-	pm_runtime_put_sync(&gsc->pdev->dev);
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
+	pm_runtime_put_sync(&gsc->pdev->dev);
+
 	return 0;
 }
 
