@@ -372,6 +372,9 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				if (lcd_is_on) {
 					for (i = NR_CA7; i < setup_max_cpus; i++) {
 						if (!cpu_online(i)) {
+							if (i == NR_CA7)
+								set_hmp_boostpulse(100000);
+
 							ret = cpu_up(i);
 							if (ret)
 								goto blk_out;
