@@ -700,6 +700,72 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 	return index;
 }
 
+static struct dentry *lp_debugfs;
+
+static int lp_debug_show(struct seq_file *s, void *unused)
+{
+	int i;
+
+	seq_printf(s, "[ devices status for LP mode ]\n");
+
+	seq_printf(s, "power domain status\n");
+	for (i = 0; i < ARRAY_SIZE(exynos5_power_domain); i++)
+		seq_printf(s, "\tpower_domain : (%d), status : (0x%08x)\n",
+				i, __raw_readl(exynos5_power_domain[i].check_reg) &
+				exynos5_power_domain[i].check_bit);
+
+	seq_printf(s, "clock gating status\n");
+	for (i = 0; i < ARRAY_SIZE(exynos5_clock_gating); i++)
+		seq_printf(s, "\tclock_gating : (%d), status : (0x%08x)\n",
+				i, __raw_readl(exynos5_clock_gating[i].check_reg) &
+				exynos5_clock_gating[i].check_bit);
+
+#if defined(CONFIG_MMC_DW)
+	seq_printf(s, "dw_mci status\n");
+	seq_printf(s, "\tdw_mci operation : (%d)\n", dw_mci_exynos_request_status());
+#endif
+
+#ifdef CONFIG_SAMSUNG_USBPHY
+	seq_printf(s, "usbphy status\n");
+	seq_printf(s, "\tusbphy operation : (%d)\n", samsung_usbphy_check_op());
+#endif
+
+	seq_printf(s, "dstop power domain status\n");
+	for (i = 0; i < ARRAY_SIZE(exynos5_dstop_power_domain); i++)
+		seq_printf(s, "\tdstop power_domain : (%d), status : (0x%08x)\n",
+				i, __raw_readl(exynos5_dstop_power_domain[i].check_reg) &
+				exynos5_dstop_power_domain[i].check_bit);
+
+	seq_printf(s, "\n[ AFTR WAKEUP_STAT ]\n");
+
+	for (i = 0; i < EXYNOS_WAKEUP_STAT_BUF_SIZE; i++) {
+		seq_printf(s, "%10u: WAKEUP_STAT(0x%08x)\n", aftr_wakeup_stat[i].buf_cnt,
+				aftr_wakeup_stat[i].wakeup_stat);
+	}
+
+	seq_printf(s, "\n[ LPA WAKEUP_STAT ]\n");
+
+	for (i = 0; i < EXYNOS_WAKEUP_STAT_BUF_SIZE; i++) {
+		seq_printf(s, "%10u: early_wakeup: %u, WAKEUP_STAT(0x%08x)\n",
+				lpa_wakeup_stat[i].buf_cnt, lpa_wakeup_stat[i].early_wakeup,
+				lpa_wakeup_stat[i].wakeup_stat);
+	}
+
+	return 0;
+}
+
+static int lp_debug_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, lp_debug_show, inode->i_private);
+}
+
+const static struct file_operations lp_cdev_status_fops = {
+	.open           = lp_debug_open,
+	.read           = seq_read,
+	.llseek         = seq_lseek,
+	.release        = single_release,
+};
+
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 #define CHECK_CCI_SNOOP		(1 << 7)
@@ -843,72 +909,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	return index;
 }
 
-static struct dentry *lp_debugfs;
-
-static int lp_debug_show(struct seq_file *s, void *unused)
-{
-	int i;
-
-	seq_printf(s, "[ devices status for LP mode ]\n");
-
-	seq_printf(s, "power domain status\n");
-	for (i = 0; i < ARRAY_SIZE(exynos5_power_domain); i++)
-		seq_printf(s, "\tpower_domain : (%d), status : (0x%08x)\n",
-				i, __raw_readl(exynos5_power_domain[i].check_reg) &
-				exynos5_power_domain[i].check_bit);
-
-	seq_printf(s, "clock gating status\n");
-	for (i = 0; i < ARRAY_SIZE(exynos5_clock_gating); i++)
-		seq_printf(s, "\tclock_gating : (%d), status : (0x%08x)\n",
-				i, __raw_readl(exynos5_clock_gating[i].check_reg) &
-				exynos5_clock_gating[i].check_bit);
-
-#if defined(CONFIG_MMC_DW)
-	seq_printf(s, "dw_mci status\n");
-	seq_printf(s, "\tdw_mci operation : (%d)\n", dw_mci_exynos_request_status());
-#endif
-
-#ifdef CONFIG_SAMSUNG_USBPHY
-	seq_printf(s, "usbphy status\n");
-	seq_printf(s, "\tusbphy operation : (%d)\n", samsung_usbphy_check_op());
-#endif
-
-	seq_printf(s, "dstop power domain status\n");
-	for (i = 0; i < ARRAY_SIZE(exynos5_dstop_power_domain); i++)
-		seq_printf(s, "\tdstop power_domain : (%d), status : (0x%08x)\n",
-				i, __raw_readl(exynos5_dstop_power_domain[i].check_reg) &
-				exynos5_dstop_power_domain[i].check_bit);
-
-	seq_printf(s, "\n[ AFTR WAKEUP_STAT ]\n");
-
-	for (i = 0; i < EXYNOS_WAKEUP_STAT_BUF_SIZE; i++) {
-		seq_printf(s, "%10u: WAKEUP_STAT(0x%08x)\n", aftr_wakeup_stat[i].buf_cnt,
-				aftr_wakeup_stat[i].wakeup_stat);
-	}
-
-	seq_printf(s, "\n[ LPA WAKEUP_STAT ]\n");
-
-	for (i = 0; i < EXYNOS_WAKEUP_STAT_BUF_SIZE; i++) {
-		seq_printf(s, "%10u: early_wakeup: %u, WAKEUP_STAT(0x%08x)\n",
-				lpa_wakeup_stat[i].buf_cnt, lpa_wakeup_stat[i].early_wakeup,
-				lpa_wakeup_stat[i].wakeup_stat);
-	}
-
-	return 0;
-}
-
-static int lp_debug_open(struct inode *inode, struct file *file)
-{
-	return single_open(file, lp_debug_show, inode->i_private);
-}
-
-const static struct file_operations lp_cdev_status_fops = {
-	.open           = lp_debug_open,
-	.read           = seq_read,
-	.llseek         = seq_lseek,
-	.release        = single_release,
-};
-
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 static struct dentry *cluster_off_time_debugfs;
 
@@ -1034,6 +1034,7 @@ static int __init exynos_init_cpuidle(void)
 	}
 
 	spin_lock_init(&c2_state_lock);
+#endif
 
 	lp_debugfs =
 		debugfs_create_file("lp_cdev_status",
@@ -1042,7 +1043,6 @@ static int __init exynos_init_cpuidle(void)
 		lp_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
-#endif
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
 	exynos_enable_idle_clock_down(ARM);
