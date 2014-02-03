@@ -144,6 +144,7 @@ static void audio_buffdone(void *data)
 {
 	struct snd_pcm_substream *substream = data;
 	struct runtime_data *prtd;
+	dma_addr_t src, dst, pos;
 
 	pr_debug("Entered %s\n", __func__);
 
@@ -152,19 +153,27 @@ static void audio_buffdone(void *data)
 
 	prtd = substream->runtime->private_data;
 	if (prtd->state & ST_RUNNING) {
-		prtd->dma_pos += prtd->dma_period;
-		if (prtd->dma_pos >= prtd->dma_end)
-			prtd->dma_pos = prtd->dma_start;
+		prtd->params->ops->getposition(prtd->params->ch, &src, &dst);
+		if (substream->stream == SNDRV_PCM_STREAM_CAPTURE)
+			pos = dst - prtd->dma_start;
+		else
+			pos = src - prtd->dma_start;
 
+		pos /= prtd->dma_period;
+		pos = prtd->dma_start + (pos * prtd->dma_period);
+		if (pos >= prtd->dma_end)
+			pos = prtd->dma_start;
+
+		prtd->dma_pos = pos;
 		snd_pcm_period_elapsed(substream);
 
-		spin_lock(&prtd->lock);
 		if (!samsung_dma_has_circular()) {
+			spin_lock(&prtd->lock);
 			prtd->dma_loaded--;
 			if (!samsung_dma_has_infiniteloop())
 				dma_enqueue(substream);
+			spin_unlock(&prtd->lock);
 		}
-		spin_unlock(&prtd->lock);
 	}
 }
 
