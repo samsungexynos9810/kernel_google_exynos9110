@@ -1026,7 +1026,6 @@ static int __init exynos_init_cpuidle(void)
 		cluster_off_time_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
-#endif
 
 	lp_debugfs =
 		debugfs_create_file("lp_cdev_status",
@@ -1035,6 +1034,7 @@ static int __init exynos_init_cpuidle(void)
 		lp_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
+#endif
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
 	exynos_enable_idle_clock_down(ARM);
