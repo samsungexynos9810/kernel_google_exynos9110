@@ -1583,7 +1583,9 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	if (err)
 		pr_err("%s: Fail to create sysfs file\n", __func__);
 
+#ifdef CONFIG_EXYNOS_THERMAL
 	err = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_mif_attr_group);
+#endif
 
 	pdata = pdev->dev.platform_data;
 	if (!pdata)
