@@ -493,8 +493,6 @@ int exynos5422_fimc_is_cfg_clk(struct platform_device *pdev)
 	exynos5422_cfg_clk_cam(pdev);
 	exynos5422_cfg_clk_isp(pdev);
 
-	exynos5422_fimc_is_print_clk(pdev);
-
 	return 0;
 }
 
@@ -883,8 +881,6 @@ int exynos5430_fimc_is_cfg_clk(struct platform_device *pdev)
 	exynos5430_cfg_clk_cam0(pdev);
 	exynos5430_cfg_clk_cam1(pdev);
 	exynos5430_cfg_clk_isp(pdev);
-
-	//exynos5430_fimc_is_print_clk(pdev);
 
 	return 0;
 }
