@@ -37,7 +37,6 @@
 #define to_s3c_chip(chip)		container_of(chip, struct s3c_chip, chip)
 
 #define pwm_dbg(_pwm, msg...)		dev_dbg(&(_pwm)->pdev->dev, msg)
-#define pwm_info(_pwm, msg...)		dev_info(&(_pwm)->pdev->dev, msg)
 
 #define pwm_tcon_start(pwm)		(1 << (pwm->tcon_base + 0))
 #define pwm_tcon_invert(pwm)		(1 << (pwm->tcon_base + 2))
@@ -168,7 +167,6 @@ static unsigned long pwm_calc_tin(struct pwm_device *pwm, unsigned long freq)
 	unsigned int div;
 
 	tin_parent_rate = clk_get_rate(clk_get_parent(s3c_pwm->clk_div));
-	pr_info("tin parent at %lu\n", tin_parent_rate);
 
 	for (div = 2; div <= 16; div *= 2) {
 		if ((tin_parent_rate / (div << 16)) < freq)
@@ -209,9 +207,6 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 		return 0;
 
 	period = NS_IN_HZ / period_ns;
-
-	pwm_info(s3c, "duty_ns=%d, period_ns=%d (%lu)\n",
-			duty_ns, period_ns, period);
 
 	/* Check to see if we are changing the clock rate of the PWM */
 
