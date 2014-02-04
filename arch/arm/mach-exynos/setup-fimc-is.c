@@ -282,6 +282,8 @@ int exynos5422_fimc_is_clk_gate(u32 clk_gate_id, bool is_on)
 		value |= (1 << 0);
 	if (clk_gate_id & (1 << FIMC_IS_GATE_DRC_IP))
 		value |= (1 << 1);
+	if (clk_gate_id & (1 << FIMC_IS_GATE_FD_IP))
+		value |= (1 << 2);
 	if (clk_gate_id & (1 << FIMC_IS_GATE_SCC_IP))
 		value |= (1 << 3);
 	if (clk_gate_id & (1 << FIMC_IS_GATE_SCP_IP))
