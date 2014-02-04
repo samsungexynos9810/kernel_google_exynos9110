@@ -605,8 +605,10 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 
-	if (status & INTR_MPHY_HIBERN8_EXIT_DONE)
+	if (status & INTR_MPHY_HIBERN8_EXIT_DONE) {
+		mdelay(1);
 		writel(LLI_MOUNT_CTRL, lli->regs + EXYNOS_DME_CSA_SYSTEM_SET);
+	}
 
 	if (status & INTR_PA_PLU_DETECTED)
 		dev_info(dev, "PLU_DETECT\n");
