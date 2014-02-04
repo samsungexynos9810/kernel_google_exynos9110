@@ -1217,6 +1217,9 @@ static void __dw_mci_start_request(struct dw_mci *host,
 	if (host->pdata->sw_timeout)
 		mod_timer(&host->timer,
 			jiffies + msecs_to_jiffies(host->pdata->sw_timeout));
+	else if (mrq->cmd->opcode == MMC_SEND_TUNING_BLOCK ||
+			mrq->cmd->opcode == MMC_SEND_TUNING_BLOCK_HS200)
+		mod_timer(&host->timer, jiffies + msecs_to_jiffies(1000));
 	else
 		mod_timer(&host->timer, jiffies + msecs_to_jiffies(10000));
 
