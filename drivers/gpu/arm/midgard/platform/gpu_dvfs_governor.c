@@ -42,7 +42,7 @@ static char *governor_list[G3D_MAX_GOVERNOR_NUM] = {"Default", "Static", "Booste
 static gpu_dvfs_info gpu_dvfs_infotbl_default[] = {
 /*  vol,clk,min,max,down stay, pm_qos mem, pm_qos int, pm_qos cpu_kfc_min, pm_qos cpu_egl_max */
 #if SOC_NAME == 5422
-	{812500,  177,  0,  90, 2, 0, 206000, 111000,       0, CPU_MAX},
+	{812500,  177,  0,  90, 2, 0, 165000,  83000,       0, CPU_MAX},
 	{862500,  266, 60,  90, 1, 0, 413000, 222000,       0, CPU_MAX},
 	{912500,  350, 70,  90, 1, 0, 728000, 333000,       0, CPU_MAX},
 	{962500,  420, 78,  99, 1, 0, 825000, 400000,       0, CPU_MAX},
