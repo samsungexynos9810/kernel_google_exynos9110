@@ -200,7 +200,7 @@ static inline void event_hotplug_in(void)
 void exynos_set_max_freq(int max_freq, unsigned int cpu);
 void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target);
 #else
-void exynos_set_max_freq(int max_freq, unsigned int cpu) {}
-void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target) {}
+static inline void exynos_set_max_freq(int max_freq, unsigned int cpu) {}
+static inline void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target) {}
 #endif
 #endif

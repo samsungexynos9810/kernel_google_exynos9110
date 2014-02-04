@@ -852,8 +852,10 @@ static int can_enter_cluster_off(int cpu_id)
 	struct clock_event_device *dev;
 	int cpu;
 
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 	if (disabled_c3)
 		return 0;
+#endif
 
 	for_each_cpu_and(cpu, cpu_possible_mask, cpu_coregroup_mask(cpu_id)) {
 		if (cpu_id == cpu)
@@ -946,7 +948,11 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	exynos_cpu_sequencer_ctrl(false);
 
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	if (cluster_off_flag && !disabled_c3) {
+#else
+	if (cluster_off_flag) {
+#endif
 		cluster_off_time += get_jiffies_64() - last_time;
 		cluster_off_flag = false;
 	}
