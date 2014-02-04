@@ -137,7 +137,6 @@ void __init dma_contiguous_reserve(phys_addr_t limit)
 
 static DEFINE_MUTEX(cma_mutex);
 
-#ifndef CMA_NO_MIGRATION
 static __init int cma_activate_area(unsigned long base_pfn, unsigned long count)
 {
 	unsigned long pfn = base_pfn;
@@ -159,12 +158,6 @@ static __init int cma_activate_area(unsigned long base_pfn, unsigned long count)
 	} while (--i);
 	return 0;
 }
-#else
-static __init int cma_activate_area(unsigned long base_pfn, unsigned long count)
-{
-	return 0;
-}
-#endif
 
 static __init struct cma *cma_create_area(unsigned long base_pfn,
 				     unsigned long carved_out_count,
@@ -184,9 +177,6 @@ static __init struct cma *cma_create_area(unsigned long base_pfn,
 	cma->count = count;
 	cma->free_count = count;
 	cma->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
-#ifdef CMA_NO_MIGRATION
-	cma->isolated = true;
-#endif
 
 	if (!cma->bitmap)
 		goto no_mem;
@@ -267,11 +257,7 @@ int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
 	r->size = PAGE_ALIGN(size);
 
 	/* Sanitise input arguments */
-#ifndef CMA_NO_MIGRATION
 	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
-#else
-	alignment = PAGE_SIZE;
-#endif
 	if (base & (alignment - 1)) {
 		pr_err("Invalid alignment of base address %pa\n", &base);
 		return -EINVAL;
@@ -447,7 +433,6 @@ int dma_contiguous_info(struct device *dev, struct cma_info *info)
 	return 0;
 }
 
-#ifndef CMA_NO_MIGRATION
 static void dma_contiguous_deisolate_until(struct device *dev, int idx_until)
 {
 	struct cma *cma = dev_get_cma_area(dev);
@@ -546,4 +531,3 @@ int dma_contiguous_isolate(struct device *dev)
 
 	return 0;
 }
-#endif /* CMA_NO_MIGRATION */

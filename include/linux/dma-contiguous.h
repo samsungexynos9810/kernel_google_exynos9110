@@ -66,9 +66,6 @@ struct cma_info {
 
 #ifdef CONFIG_CMA
 
-/* Not to allow CMA migration */
-#define CMA_NO_MIGRATION
-
 /*
  * There is always at least global CMA area and a few optional device
  * private areas configured in kernel .config.
@@ -88,18 +85,9 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 
 int dma_contiguous_info(struct device *dev, struct cma_info *info);
 
-#ifndef CMA_NO_MIGRATION
 int dma_contiguous_isolate(struct device *dev);
 
 void dma_contiguous_deisolate(struct device *dev);
-#else
-static inline int dma_contiguous_isolate(struct device *dev)
-{
-	return -ENOSYS;
-}
-#define dma_contiguous_deisolate(dev) do { } while (0)
-#endif /* CMA_NO_MIGRATION */
-
 #else
 
 #define MAX_CMA_AREAS	(0)
