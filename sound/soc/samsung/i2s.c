@@ -1153,23 +1153,25 @@ static int samsung_i2s_dai_probe(struct snd_soc_dai *dai)
 		iounmap(i2s->addr);
 		return -ENOENT;
 	}
-	clk_prepare_enable(i2s->clk);
 
 	if (other) {
 		other->addr = i2s->addr;
 		other->clk = i2s->clk;
 	}
 
-	if (i2s->quirks & QUIRK_NEED_RSTCLR)
-		writel(CON_RSTCLR, i2s->addr + I2SCON);
 #ifdef CONFIG_SND_SAMSUNG_IDMA
 	if (i2s->quirks & QUIRK_IDMA)
 		idma_reg_addr_init(i2s->addr,
 					i2s->sec_dai->idma_playback.dma_addr);
 #endif
 probe_exit:
+	clk_prepare_enable(i2s->clk);
+
 	/* Initialize bit slice as I2S HW version */
 	i2s_init_bit_slice(i2s);
+
+	if (i2s->quirks & QUIRK_NEED_RSTCLR)
+		writel(CON_RSTCLR, i2s->addr + I2SCON);
 
 	/* Reset any constraint on RFS and BFS */
 	i2s->rfs = 0;
@@ -1185,6 +1187,7 @@ probe_exit:
 		i2s_set_sysclk(dai, SAMSUNG_I2S_CDCLK,
 				0, SND_SOC_CLOCK_IN);
 
+	clk_disable_unprepare(i2s->clk);
 	return 0;
 }
 
@@ -1198,7 +1201,6 @@ static int samsung_i2s_dai_remove(struct snd_soc_dai *dai)
 		if (i2s->quirks & QUIRK_NEED_RSTCLR)
 			writel(0, i2s->addr + I2SCON);
 
-		clk_disable_unprepare(i2s->clk);
 		clk_put(i2s->clk);
 
 		iounmap(i2s->addr);

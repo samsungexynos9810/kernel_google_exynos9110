@@ -46,6 +46,10 @@
 				 LPASS_INTR_PCM | LPASS_INTR_SB | \
 				 LPASS_INTR_UART | LPASS_INTR_SFR)
 
+/* Default clk gate for slimbus, pcm, i2s, pclk_dbg, ca5 */
+#define INIT_CLK_GATE_MASK	(1 << 11 | 1 << 10 | 1 << 8 | 1 << 7 | \
+				 1 <<  6 | 1 <<  5 | 1 << 1 | 1 << 0)
+
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
 
 /* Audio subsystem version */
@@ -428,12 +432,12 @@ static void lpass_enable(void)
 
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_sramc);
-	clk_prepare_enable(lpass.clk_intr);
-	clk_prepare_enable(lpass.clk_timer);
 
 	lpass_reset_toggle(LPASS_IP_MEM);
 	lpass_reset_toggle(LPASS_IP_I2S);
 	lpass_reset_toggle(LPASS_IP_DMA);
+
+	clk_disable_unprepare(lpass.clk_dmac);
 
 	/* PAD */
 	lpass_release_pad();
@@ -471,10 +475,7 @@ static void lpass_disable(void)
 	/* PAD */
 	lpass_retention_pad();
 
-	clk_disable_unprepare(lpass.clk_dmac);
 	clk_disable_unprepare(lpass.clk_sramc);
-	clk_disable_unprepare(lpass.clk_intr);
-	clk_disable_unprepare(lpass.clk_timer);
 
 	lpass_reg_save();
 
@@ -634,6 +635,15 @@ err1:
 	clk_put(lpass.clk_dmac);
 err0:
 	return -1;
+}
+
+static void clk_init(void)
+{
+	u32 val;
+
+	val = readl(EXYNOS5430_ENABLE_IP_AUD0);
+	val &= ~INIT_CLK_GATE_MASK;
+	writel(val, EXYNOS5430_ENABLE_IP_AUD0);
 }
 
 static void clk_put_all_ass(void)
@@ -831,6 +841,7 @@ static int lpass_probe(struct platform_device *pdev)
 		dev_err(dev, "failed to set clock hierachy\n");
 		return -ENXIO;
 	}
+	clk_init();
 
 #ifdef CONFIG_SND_SAMSUNG_IOMMU
 	lpass.domain = iommu_domain_alloc(pdev->dev.bus);
