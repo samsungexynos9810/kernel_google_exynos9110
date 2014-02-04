@@ -38,8 +38,8 @@
 #define ISP_MAX_VOLT			(1300000)
 
 static unsigned int refer_table_get_asv[2][ARM_ASV_GRP_NR] = {
-	{ 13, 21, 25, 30, 36, 43, 51, 61, 73, 88, 105, 126, 135, 999},
-	{ 59, 65, 69, 72, 74, 76, 78, 80, 83, 85, 88, 91, 93, 999},
+	{ 13, 21, 25, 30, 36, 43, 51, 65, 81, 98, 119, 135, 150, 999},
+	{ 55, 65, 69, 72, 74, 76, 78, 80, 82, 84, 87, 89, 92, 999},
 };
 
 static unsigned int refer_use_table_get_asv[2][ARM_ASV_GRP_NR] = {
