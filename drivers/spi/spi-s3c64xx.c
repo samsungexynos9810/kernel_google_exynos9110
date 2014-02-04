@@ -584,8 +584,9 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 	int ms;
 
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
-	ms = xfer->len * 8 * 2000 / sdd->cur_speed;
-	ms += 10; /* some tolerance */
+	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
+	ms = (ms * 10) + 30; /* some tolerance */
+	ms = max(ms, 100); /* minimum timeout */
 
 	if (dma_mode) {
 		val = msecs_to_jiffies(ms) + 10;
