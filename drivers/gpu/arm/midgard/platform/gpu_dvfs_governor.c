@@ -188,14 +188,8 @@ static int gpu_dvfs_update_asv_table(struct exynos_context *platform, int govern
 {
 	int i, voltage;
 #ifdef CONFIG_DYNIMIC_ABB
-	unsigned int asv_abb = 0;
 	for (i = 0; i < platform->table_size; i++) {
-		asv_abb = get_match_abb(ID_G3D, platform->table[i].clock*1000);
-		if (!asv_abb) {
-			platform->devfreq_g3d_asv_abb[i] = ABB_BYPASS;
-		} else {
-			platform->devfreq_g3d_asv_abb[i] = asv_abb;
-		}
+		platform->devfreq_g3d_asv_abb[i] = get_match_abb(ID_G3D, platform->table[i].clock*1000);
 		GPU_LOG(DVFS_INFO, "DEVFREQ(G3D) : %uKhz, ABB %u\n", platform->table[i].clock*1000, platform->devfreq_g3d_asv_abb[i]);
 #else
 	for (i = 0; i < platform->table_size; i++) {
