@@ -588,7 +588,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 	}, {	/* 206Mhz */
 		.timing_row	= 0x162331C6,
 		.timing_data	= 0x2320082E,
-		.timing_power	= 0x18170225,
+		.timing_power	= 0x181F0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000A0A,
 		.dvfs_con1	= 0x0E0E2121,
@@ -601,7 +601,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 	}, {	/* 165Mhz */
 		.timing_row	= 0x12223185,
 		.timing_data	= 0x2320082E,
-		.timing_power	= 0x14130225,
+		.timing_power	= 0x141F0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000808,
 		.dvfs_con1	= 0x0E0E2121,
@@ -614,7 +614,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 	}, {	/* 138Mhz */
 		.timing_row	= 0x11222144,
 		.timing_data	= 0x2320082E,
-		.timing_power	= 0x10100225,
+		.timing_power	= 0x101F0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000707,
 		.dvfs_con1	= 0x0E0E2121,
@@ -627,7 +627,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 	}, {	/* 103Mhz */
 		.timing_row	= 0x11222103,
 		.timing_data	= 0x2320082E,
-		.timing_power	= 0x100C0225,
+		.timing_power	= 0x101F0225,
 		.rd_fetch	= 0x00000002,
 		.timing_rfcpb	= 0x00000505,
 		.dvfs_con1	= 0x0E0E2121,
@@ -1191,31 +1191,31 @@ static void exynos5_devfreq_mif_dynamic_setting(struct devfreq_data_mif *data,
 
 	if (flag) {
 		tmp = __raw_readl(data->base_drex0 + 0x0004);
-		tmp |= ((0x1 << 5) | (0x1 << 1));
+		tmp |= ((0x1 << 29) | (0x1 << 5) | (0x1 << 1));
 		__raw_writel(tmp, data->base_drex0 + 0x0004);
 		tmp = __raw_readl(data->base_drex1 + 0x0004);
-		tmp |= ((0x1 << 5) | (0x1 << 1));
+		tmp |= ((0x1 << 29) | (0x1 << 5) | (0x1 << 1));
 		__raw_writel(tmp, data->base_drex1 + 0x0004);
 
 		tmp = __raw_readl(data->base_drex0 + 0x0008);
-		tmp |= (0x1 << 4);
+		tmp |= (0x3F);
 		__raw_writel(tmp, data->base_drex0 + 0x0008);
 		tmp = __raw_readl(data->base_drex1 + 0x0008);
-		tmp |= (0x1 << 4);
+		tmp |= (0x3F);
 		__raw_writel(tmp, data->base_drex1 + 0x0008);
 	} else {
 		tmp = __raw_readl(data->base_drex0 + 0x0004);
-		tmp &= ~((0x1 << 5) | (0x1 << 1));
+		tmp &= ~((0x1 << 29) | (0x1 << 5) | (0x1 << 1));
 		__raw_writel(tmp, data->base_drex0 + 0x0004);
 		tmp = __raw_readl(data->base_drex1 + 0x0004);
-		tmp &= ~((0x1 << 5) | (0x1 << 1));
+		tmp &= ~((0x1 << 29) | (0x1 << 5) | (0x1 << 1));
 		__raw_writel(tmp, data->base_drex1 + 0x0004);
 
 		tmp = __raw_readl(data->base_drex0 + 0x0008);
-		tmp &= ~(0x1 << 4);
+		tmp &= ~(0x3F);
 		__raw_writel(tmp, data->base_drex0 + 0x0008);
 		tmp = __raw_readl(data->base_drex1 + 0x0008);
-		tmp &= ~(0x1 << 4);
+		tmp &= ~(0x3F);
 		__raw_writel(tmp, data->base_drex1 + 0x0008);
 	}
 }
