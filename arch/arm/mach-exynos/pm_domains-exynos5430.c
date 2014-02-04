@@ -404,7 +404,11 @@ static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	reg |= ((1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
+#else
 	reg |= (1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
+#endif
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
 	return 0;
@@ -447,7 +451,11 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("disp pre power off\n");
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	reg |= ((1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
+#else
 	reg |= (1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
+#endif
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
 	s3c_pm_do_save(exynos_pd_disp_clk_save,
@@ -467,7 +475,11 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	reg &= ~((1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
+#else
 	reg &= ~(1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
+#endif
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
 	__raw_writel(0x0, EXYNOS5430_SRC_SEL_MIF4);
