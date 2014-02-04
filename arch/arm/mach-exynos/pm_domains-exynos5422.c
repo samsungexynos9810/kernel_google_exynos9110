@@ -738,8 +738,19 @@ static int exynos5_pd_fimc_is_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd)
 {
+	u32 cfg;
+
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
 	exynos5_pd_restore_reg(exynos5422_fimc_is_clk, ARRAY_SIZE(exynos5422_fimc_is_clk));
+
+	/* dynamic clock gating enabled */
+	cfg = __raw_readl(S5P_VA_SYSREG + 0x2004);
+	cfg |= (0x7 << 7);
+	__raw_writel(cfg, S5P_VA_SYSREG + 0x2004);
+
+	cfg = __raw_readl(S5P_VA_SYSREG + 0x2008);
+	cfg |= (0x1f << 0);
+	__raw_writel(cfg, S5P_VA_SYSREG + 0x2008);
 
 	return 0;
 }
