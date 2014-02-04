@@ -1190,6 +1190,13 @@ static void exynos5_devfreq_mif_dynamic_setting(struct devfreq_data_mif *data,
 	unsigned int tmp;
 
 	if (flag) {
+		tmp = __raw_readl(data->base_drex0);
+		tmp |= (0x2 << 6);
+		__raw_writel(tmp, data->base_drex0);
+		tmp = __raw_readl(data->base_drex1);
+		tmp |= (0x2 << 6);
+		__raw_writel(tmp, data->base_drex1);
+
 		tmp = __raw_readl(data->base_drex0 + 0x0004);
 		tmp |= ((0x1 << 29) | (0x1 << 5) | (0x1 << 1));
 		__raw_writel(tmp, data->base_drex0 + 0x0004);
@@ -1204,6 +1211,13 @@ static void exynos5_devfreq_mif_dynamic_setting(struct devfreq_data_mif *data,
 		tmp |= (0x3F);
 		__raw_writel(tmp, data->base_drex1 + 0x0008);
 	} else {
+		tmp = __raw_readl(data->base_drex0);
+		tmp &= ~(0x3 << 6);
+		__raw_writel(tmp, data->base_drex0);
+		tmp = __raw_readl(data->base_drex1);
+		tmp &= ~(0x3 << 6);
+		__raw_writel(tmp, data->base_drex1);
+
 		tmp = __raw_readl(data->base_drex0 + 0x0004);
 		tmp &= ~((0x1 << 29) | (0x1 << 5) | (0x1 << 1));
 		__raw_writel(tmp, data->base_drex0 + 0x0004);
