@@ -903,7 +903,6 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 	unsigned int i;
 	unsigned int ret;
 	unsigned int asv_volt;
-	unsigned int asv_abb = 0;
 
 	/* will add code for ASV information setting function in here */
 
@@ -923,11 +922,9 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 			dev_err(data->dev, "Fail to add opp entries.\n");
 			return ret;
 		}
-		asv_abb = get_match_abb(ID_MIF, mif_bus_opp_list[i].clk);
-		if (!asv_abb)
-			devfreq_mif_asv_abb[i] = ABB_BYPASS;
-		else
-			devfreq_mif_asv_abb[i] = asv_abb;
+
+		devfreq_mif_asv_abb[i] = get_match_abb(ID_MIF, mif_bus_opp_list[i].clk);
+
 		pr_info("DEVFREQ(MIF) : %luKhz, ABB %u\n", mif_bus_opp_list[i].clk, devfreq_mif_asv_abb[i]);
 	}
 

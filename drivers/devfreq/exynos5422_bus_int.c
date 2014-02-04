@@ -1101,7 +1101,6 @@ static int exynos5422_init_int_table(struct busfreq_data_int *data)
 	unsigned int i;
 	unsigned int ret;
 	unsigned int asv_volt;
-	unsigned int asv_abb = 0;
 
 	/* will add code for ASV information setting function in here */
 
@@ -1121,11 +1120,8 @@ static int exynos5422_init_int_table(struct busfreq_data_int *data)
 			dev_err(data->dev, "Fail to add opp entries.\n");
 			return ret;
 		}
-		asv_abb = get_match_abb(ID_INT, int_bus_opp_list[i].freq);
-		if (!asv_abb)
-			devfreq_int_asv_abb[i] = ABB_BYPASS;
-		else
-			devfreq_int_asv_abb[i] = asv_abb;
+
+		devfreq_int_asv_abb[i] = get_match_abb(ID_INT, int_bus_opp_list[i].freq);
 
 		pr_info("DEVFREQ(INT) : %luKhz, ABB %u\n", int_bus_opp_list[i].freq, devfreq_int_asv_abb[i]);
 	}
