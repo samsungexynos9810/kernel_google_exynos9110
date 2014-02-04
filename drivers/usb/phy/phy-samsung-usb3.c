@@ -248,7 +248,7 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
 
 	sphy = phy_to_sphy(phy);
 
-	dev_dbg(sphy->dev, "%s\n", __func__);
+	dev_vdbg(sphy->dev, "%s\n", __func__);
 
 	/* Enable the phy clock */
 	ret = clk_enable(sphy->clk);
@@ -262,7 +262,7 @@ static int samsung_usb3phy_init(struct usb_phy *phy)
 	sphy->usage_count++;
 
 	if (sphy->usage_count - 1) {
-		dev_dbg(sphy->dev, "PHY is already initialized\n");
+		dev_vdbg(sphy->dev, "PHY is already initialized\n");
 		goto exit;
 	}
 
@@ -280,6 +280,8 @@ exit:
 
 	/* Disable the phy clock */
 	clk_disable(sphy->clk);
+
+	dev_dbg(sphy->dev, "end of %s\n", __func__);
 
 	return ret;
 }
@@ -304,7 +306,7 @@ static void samsung_usb3phy_idle(struct samsung_usbphy *sphy)
 	unsigned long flags;
 	int ret;
 
-	dev_dbg(sphy->dev, "%s\n", __func__);
+	dev_vdbg(sphy->dev, "%s\n", __func__);
 
 	ret = clk_enable(sphy->clk);
 	if (ret < 0) {
@@ -317,7 +319,7 @@ static void samsung_usb3phy_idle(struct samsung_usbphy *sphy)
 	if (!sphy->usage_count)
 		__samsung_usb3phy_shutdown(sphy);
 	else
-		dev_dbg(sphy->dev, "%s: PHY is currently in use\n", __func__);
+		dev_vdbg(sphy->dev, "%s: PHY is currently in use\n", __func__);
 
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
@@ -334,7 +336,7 @@ static void samsung_usb3phy_shutdown(struct usb_phy *phy)
 
 	sphy = phy_to_sphy(phy);
 
-	dev_dbg(sphy->dev, "%s\n", __func__);
+	dev_vdbg(sphy->dev, "%s\n", __func__);
 
 	if (clk_enable(sphy->clk)) {
 		dev_err(sphy->dev, "%s: clk_enable failed\n", __func__);
@@ -344,20 +346,22 @@ static void samsung_usb3phy_shutdown(struct usb_phy *phy)
 	spin_lock_irqsave(&sphy->lock, flags);
 
 	if (!sphy->usage_count) {
-		dev_dbg(sphy->dev, "PHY is already shutdown\n");
+		dev_vdbg(sphy->dev, "PHY is already shutdown\n");
 		goto exit;
 	}
 
 	sphy->usage_count--;
 
 	if (sphy->usage_count) {
-		dev_dbg(sphy->dev, "PHY is still in use\n");
+		dev_vdbg(sphy->dev, "PHY is still in use\n");
 		goto exit;
 	}
 
 	__samsung_usb3phy_shutdown(sphy);
 exit:
 	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	dev_dbg(sphy->dev, "end of %s\n", __func__);
 
 	clk_disable(sphy->clk);
 }

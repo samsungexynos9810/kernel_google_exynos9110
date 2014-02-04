@@ -261,7 +261,7 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 
 	sphy = phy_to_sphy(phy);
 
-	dev_dbg(sphy->dev, "%s\n", __func__);
+	dev_vdbg(sphy->dev, "%s\n", __func__);
 
 	host = phy->otg->host;
 
@@ -277,7 +277,7 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 	sphy->usage_count++;
 
 	if (sphy->usage_count - 1) {
-		dev_dbg(sphy->dev, "PHY is already initialized\n");
+		dev_vdbg(sphy->dev, "PHY is already initialized\n");
 		spin_unlock_irqrestore(&sphy->lock, flags);
 		goto exit;
 	}
@@ -320,6 +320,8 @@ exit:
 	/* Disable the phy clock */
 	clk_disable(sphy->clk);
 
+	dev_dbg(sphy->dev, "end of %s\n", __func__);
+
 	return ret;
 }
 
@@ -334,7 +336,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 
 	sphy = phy_to_sphy(phy);
 
-	dev_dbg(sphy->dev, "%s\n", __func__);
+	dev_vdbg(sphy->dev, "%s\n", __func__);
 
 	host = phy->otg->host;
 
@@ -346,7 +348,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 	spin_lock_irqsave(&sphy->lock, flags);
 
 	if (!sphy->usage_count) {
-		dev_dbg(sphy->dev, "PHY is already shutdown\n");
+		dev_vdbg(sphy->dev, "PHY is already shutdown\n");
 		spin_unlock_irqrestore(&sphy->lock, flags);
 		goto exit1;
 	}
@@ -354,7 +356,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 	sphy->usage_count--;
 
 	if (sphy->usage_count) {
-		dev_dbg(sphy->dev, "PHY is still in use\n");
+		dev_vdbg(sphy->dev, "PHY is still in use\n");
 		spin_unlock_irqrestore(&sphy->lock, flags);
 		goto exit2;
 	}
@@ -392,6 +394,8 @@ exit2:
 	pm_runtime_put_noidle(phy->dev);
 exit1:
 	clk_disable(sphy->clk);
+
+	dev_dbg(sphy->dev, "end of %s\n", __func__);
 }
 
 static bool samsung_usb2phy_is_active(struct usb_phy *phy)
