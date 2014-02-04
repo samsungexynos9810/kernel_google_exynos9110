@@ -4451,10 +4451,6 @@ static int s3c_fb_decon_stop(struct s3c_fb *sfb)
 		return 0;
 	}
 
-#ifdef CONFIG_ION_EXYNOS
-	flush_kthread_worker(&sfb->update_regs_worker);
-#endif
-
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 	hw_trigger_mask_enable(sfb, true);
 #endif
@@ -4519,6 +4515,9 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 		goto err;
 	}
 
+#ifdef CONFIG_ION_EXYNOS
+	flush_kthread_worker(&sfb->update_regs_worker);
+#endif
 	ret = s3c_fb_decon_stop(sfb);
 
 	sfb->power_state = POWER_DOWN;
@@ -4645,6 +4644,9 @@ int s3c_fb_suspend(struct device *dev)
 		if (sfb->pdata->lcd_off)
 			sfb->pdata->lcd_off();
 
+#ifdef CONFIG_ION_EXYNOS
+		flush_kthread_worker(&sfb->update_regs_worker);
+#endif
 		ret = s3c_fb_decon_stop(sfb);
 
 		data = readl(sfb->regs + DECON_UPDATE);
