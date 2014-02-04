@@ -24,6 +24,7 @@
 #include "fimc-is-config.h"
 #include "fimc-is-regs.h"
 #include "fimc-is-hw.h"
+#include "fimc-is-device-sensor.h"
 #include "fimc-is-device-csi.h"
 
 #if (FIMC_IS_CSI_VERSION == CSI_VERSION_0000_0000)
@@ -332,12 +333,13 @@ static const struct v4l2_subdev_ops subdev_ops = {
 	.video = &video_ops
 };
 
-int fimc_is_csi_probe(struct fimc_is_device_sensor *device,
+int fimc_is_csi_probe(void *parent,
 	u32 instance)
 {
 	int ret = 0;
 	struct v4l2_subdev *subdev_csi;
 	struct fimc_is_device_csi *csi;
+	struct fimc_is_device_sensor *device = parent;
 
 	BUG_ON(!device);
 

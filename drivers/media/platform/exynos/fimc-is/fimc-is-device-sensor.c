@@ -552,6 +552,11 @@ static int fimc_is_sensor_tag(struct fimc_is_device_sensor *device,
 
 static void fimc_is_sensor_control(struct work_struct *data)
 {
+/*
+ * HAL can't send meta data for vision
+ * We accepted vision control by s_ctrl
+ */
+#if 0
 	struct v4l2_subdev *subdev_module;
 	struct fimc_is_module_enum *module;
 	struct camera2_sensor_ctl *rsensor_ctl;
@@ -568,11 +573,7 @@ static void fimc_is_sensor_control(struct work_struct *data)
 	module = v4l2_get_subdevdata(subdev_module);
 	rsensor_ctl = &device->control_frame->shot->ctl.sensor;
 	csensor_ctl = &device->sensor_ctl;
-/*
- * HAL can't send meta data for vision
- * We accepted vision control by s_ctrl
- */
-#if 0
+
 	if (rsensor_ctl->exposureTime != csensor_ctl->exposureTime) {
 		CALL_MOPS(module, s_exposure, subdev_module, rsensor_ctl->exposureTime);
 		csensor_ctl->exposureTime = rsensor_ctl->exposureTime;
