@@ -3226,9 +3226,6 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	u32 data = 0;
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
-	struct display_driver *dispdrv = get_display_driver();
-
-	dispdrv = get_display_driver();
 
 	if (enable) {
 		dev_dbg(sfb->dev, "Decon start(%d)\n", win->index);
@@ -3250,7 +3247,7 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		writel(data, sfb->regs + WINCON(win->index));
 	}
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_gate_lock(dispdrv, enable);
+	disp_pm_gate_lock(get_display_driver(), enable);
 #endif
 	dev_dbg(sfb->dev, "window via local path started/stopped : %d\n",
 		enable);
@@ -3804,9 +3801,11 @@ static int s3c_fb_debugfs_show(struct seq_file *f, void *offset)
 ssize_t s3c_fb_debugfs_write(struct file *file, const char *userbuf, size_t count, loff_t *off)
 {
 	char buf[20], *p;
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
+#endif
 
 	memset(buf,0x00,sizeof(buf));
 	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
