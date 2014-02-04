@@ -2322,6 +2322,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		shadow_protect_win(sfb->windows[i], 0);
 
+	decon_fb_direct_on_off(sfb, true);
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 	hw_trigger_mask_enable(sfb, false);
 #endif
