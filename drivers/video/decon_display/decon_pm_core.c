@@ -66,6 +66,7 @@ module_param(decon_dbg, int, 0644);
 unsigned int frame_done_count;
 unsigned int te_count;
 
+static void enable_mask(struct display_driver *dispdrv, bool enable);
 void display_block_clock_on(struct display_driver *dispdrv);
 void display_block_clock_off(struct display_driver *dispdrv);
 int display_hibernation_power_on(struct display_driver *dispdrv);
@@ -91,6 +92,7 @@ extern struct pm_ops dsi_pm_ops;
 extern struct mipi_dsim_device *dsim_for_decon;
 
 int init_display_pm_status(struct display_driver *dispdrv) {
+	dispdrv->pm_status.trigger_masked = 1;
 	dispdrv->pm_status.clock_enabled = 0;
 	atomic_set(&dispdrv->pm_status.lock_count, 0);
 	dispdrv->pm_status.clk_idle_count = 0;
@@ -162,9 +164,10 @@ void disp_debug_power_info(void)
 {
 	struct display_driver *dispdrv = get_display_driver();
 
-	pm_info("clk: %d,  \
+	pm_info("mask: %d, clk: %d,  \
 		lock: %d, clk_idle: %d, pwr_idle: %d\n,	\
 		output_on: %d, pwr_state: %d, vsync: %lld, frame_cnt: %d, te_cnt: %d",
+		dispdrv->pm_status.trigger_masked,
 		dispdrv->pm_status.clock_enabled,
 		atomic_read(&dispdrv->pm_status.lock_count),
 		dispdrv->pm_status.clk_idle_count,
@@ -188,6 +191,15 @@ void disp_pm_gate_lock(struct display_driver *dispdrv, bool increase)
 		atomic_inc(&dispdrv->pm_status.lock_count);
 	else
 		atomic_dec(&dispdrv->pm_status.lock_count);
+}
+
+static void enable_mask(struct display_driver *dispdrv, bool enable)
+{
+	/* MASK control */
+	set_hw_trigger_mask(dispdrv->decon_driver.sfb, enable);
+	dispdrv->pm_status.trigger_masked = enable;
+
+	pm_debug("Enable mask, %d", enable);
 }
 
 static void init_gating_idle_count(struct display_driver *dispdrv)
@@ -284,7 +296,13 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 	if (dispdrv->platform_status > DISP_STATUS_PM0 &&
 		atomic_read(&dispdrv->pm_status.lock_count) == 0) {
 		if (dispdrv->pm_status.clock_enabled &&
+			MAX_CLK_GATING_COUNT == 0) {
+			enable_mask(dispdrv, true);
+		}
+
+		if (dispdrv->pm_status.clock_enabled &&
 			MAX_CLK_GATING_COUNT > 0) {
+			enable_mask(dispdrv, true);
 
 			++dispdrv->pm_status.clk_idle_count;
 			if (dispdrv->pm_status.clk_idle_count > MAX_CLK_GATING_COUNT) {
