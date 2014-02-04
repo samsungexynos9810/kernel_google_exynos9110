@@ -23,6 +23,7 @@
 static DEFINE_SPINLOCK(clk_div2_ratio0_lock);
 static DEFINE_SPINLOCK(clk_save_restore_lock);
 void __iomem *hdmi_regs;
+void __iomem *g3d_cci_regs;
 
 struct exynos5422_pd_state {
 	void __iomem *reg;
@@ -115,6 +116,7 @@ static int exynos5_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
 	/* restore mout_aclk_g3d_user parent set to mout_aclk_g3d_sw */
 	exynos5_pd_restore_reg(exynos5422_g3d_clk, ARRAY_SIZE(exynos5422_g3d_clk));
+	__raw_writel(0x1, g3d_cci_regs + 0x4);
 
 	reg = __raw_readl(EXYNOS5_CLK_SRC_TOP5);
 	reg |= (1 << 16);
@@ -867,6 +869,10 @@ struct exynos_pd_callback * exynos_pd_find_callback(struct exynos_pm_domain *pd)
 	hdmi_regs = ioremap(0x14530000, SZ_32);
 	if (IS_ERR_OR_NULL(hdmi_regs))
 		pr_err("PM DOMAIN : can't remap of hdmi phy address\n");
+
+	g3d_cci_regs = ioremap(0x10ce0000, SZ_32);
+	if (IS_ERR_OR_NULL(g3d_cci_regs))
+		pr_err("PM DOMAIN : can't remap of g3d cci phy address\n");
 
 	/* find callback function for power domain */
 	for (i=0, cb = &pd_callback_list[0]; i<ARRAY_SIZE(pd_callback_list); i++, cb++) {
