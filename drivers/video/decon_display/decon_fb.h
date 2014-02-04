@@ -349,9 +349,8 @@ struct s3c_fb {
 
 	struct list_head	update_regs_list;
 	struct mutex		update_regs_list_lock;
-	struct kthread_worker	update_regs_worker;
-	struct task_struct	*update_regs_thread;
-	struct kthread_work	update_regs_work;
+	struct work_struct	update_regs_work;
+	struct workqueue_struct *update_regs_wq;
 
 	struct sw_sync_timeline *timeline;
 	int			timeline_max;
