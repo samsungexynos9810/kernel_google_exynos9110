@@ -168,10 +168,16 @@ struct fimc_is_device_ischain {
 	struct fimc_is_subdev			taac;
 	struct fimc_is_subdev			taap;
 
+	u32					taa_size_forceset;
+	u32					taa_size_changed_fcount;
+
 	struct fimc_is_group			group_isp;
 	u32					chain0_width;
 	u32					chain0_height;
 	struct fimc_is_subdev			drc;
+
+	u32					isp_size_forceset;
+	u32					isp_size_changed_fcount;
 
 	/* chain1 : scc ~ dis */
 	struct fimc_is_subdev			scc;

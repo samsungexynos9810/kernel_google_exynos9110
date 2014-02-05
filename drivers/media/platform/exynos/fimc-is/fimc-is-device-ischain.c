@@ -2368,6 +2368,10 @@ int fimc_is_ischain_probe(struct fimc_is_device_ischain *device,
 	device->dzoom_width	= 0;
 	device->force_down	= false;
 	device->is_region	= NULL;
+	device->taa_size_forceset = 0;
+	device->taa_size_changed_fcount = 0;
+	device->isp_size_forceset = 0;
+	device->isp_size_changed_fcount = 0;
 
 	if (GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0))
 		fimc_is_group_probe(groupmgr, &device->group_3aa, ENTRY_3AA);
@@ -4267,6 +4271,7 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 	u32 crop_x, crop_y, crop_width, crop_height;
 	u32 *input_crop;
 	u32 *output_crop;
+	u32 size_change_request = 0;
 
 	BUG_ON(!device);
 	BUG_ON(!device->is_region);
@@ -4304,10 +4309,21 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 	}
 
 	if (!GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0)) {
-		if ((taa_param->vdma1_input.bds_out_width != output_crop[2]) ||
-			(taa_param->vdma1_input.bds_out_height != output_crop[3]) ||
-			(taa_param->vdma1_input.bayer_crop_width != input_crop[2]) ||
-			(taa_param->vdma1_input.bayer_crop_height != input_crop[3])) {
+
+		size_change_request = ((taa_param->vdma1_input.bds_out_width != output_crop[2]) ||
+				(taa_param->vdma1_input.bds_out_height != output_crop[3]) ||
+				(taa_param->vdma1_input.bayer_crop_width != input_crop[2]) ||
+				(taa_param->vdma1_input.bayer_crop_height != input_crop[3]));
+
+		if (size_change_request || device->taa_size_forceset) {
+			/*
+			 * forcefully set subsequent frame 3aa sizes until firmware acknowledges the
+			 * updation of the changed information
+			 */
+			device->taa_size_forceset = 1;
+			if (size_change_request)
+				device->taa_size_changed_fcount = ldr_frame->fcount;
+
 			ret = fimc_is_ischain_s_3aa_size(device,
 				ldr_frame,
 				input_crop,
@@ -4325,10 +4341,21 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 				output_crop[0], output_crop[1], output_crop[2], output_crop[3]);
 		}
 	} else {
-		if ((input_crop[0] != crop_x) ||
-			(input_crop[1] != crop_y) ||
-			(input_crop[2] != crop_width) ||
-			(input_crop[3] != crop_height)) {
+
+		size_change_request = ((input_crop[0] != crop_x) ||
+				(input_crop[1] != crop_y) ||
+				(input_crop[2] != crop_width) ||
+				(input_crop[3] != crop_height));
+
+		if (size_change_request || device->taa_size_forceset) {
+			/*
+			 * forcefully set subsequent frame 3aa sizes until firmware acknowledges the
+			 * updation of the changed information
+			 */
+			device->taa_size_forceset = 1;
+			if (size_change_request)
+				device->taa_size_changed_fcount = ldr_frame->fcount;
+
 			ret = fimc_is_ischain_s_3aa_size(device,
 				ldr_frame,
 				input_crop,
@@ -5249,6 +5276,7 @@ int fimc_is_ischain_isp_tag(struct fimc_is_device_ischain *device,
 	u32 lindex, hindex, indexes;
 	u32 *input_crop;
 	u32 *output_crop;
+	u32 size_change_request = 0;
 
 	BUG_ON(!device);
 	BUG_ON(!device->is_region);
@@ -5274,8 +5302,14 @@ int fimc_is_ischain_isp_tag(struct fimc_is_device_ischain *device,
 			output_crop[3] = isp_param->otf_output.height;
 		}
 
-		if ((output_crop[2] != isp_param->otf_output.width) ||
-			(output_crop[3] != isp_param->otf_output.height)) {
+		size_change_request = ((output_crop[2] != isp_param->otf_output.width) ||
+				(output_crop[3] != isp_param->otf_output.height));
+
+		if (size_change_request || device->isp_size_forceset) {
+			device->isp_size_forceset = 1;
+			if (size_change_request)
+				device->isp_size_changed_fcount = ldr_frame->fcount;
+
 			ret = fimc_is_ischain_s_chain0_size(device,
 				ldr_frame,
 				output_crop[2],
@@ -5299,8 +5333,15 @@ int fimc_is_ischain_isp_tag(struct fimc_is_device_ischain *device,
 			input_crop[3] = isp_param->vdma1_input.height;
 		}
 
-		if ((input_crop[2] != isp_param->vdma1_input.width) ||
-			(input_crop[3] != isp_param->vdma1_input.height)) {
+		size_change_request = ((input_crop[2] != isp_param->vdma1_input.width) ||
+				(input_crop[3] != isp_param->vdma1_input.height));
+
+		if (size_change_request || device->isp_size_forceset) {
+
+			device->isp_size_forceset = 1;
+			if (size_change_request)
+				device->isp_size_changed_fcount = ldr_frame->fcount;
+
 			ret = fimc_is_ischain_s_chain0_size(device,
 				ldr_frame,
 				input_crop[2],
@@ -5313,8 +5354,8 @@ int fimc_is_ischain_isp_tag(struct fimc_is_device_ischain *device,
 				goto p_err;
 			}
 
-		mrinfo("[ISP] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
-			input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
+			mrinfo("[ISP] in_crop[%d, %d, %d, %d]\n", device, ldr_frame,
+					input_crop[0], input_crop[1], input_crop[2], input_crop[3]);
 		}
 	}
 
@@ -5616,7 +5657,8 @@ static int fimc_is_ischain_scc_tag(struct fimc_is_device_ischain *device,
 			(output_crop[3] != scc_param->output_crop.crop_height) ||
 			(input_crop[2] != scc_param->dma_output.width) ||
 			(input_crop[3] != scc_param->dma_output.height) ||
-			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state) ||
+			device->isp_size_forceset) {
 
 			ret = fimc_is_ischain_scc_start(device,
 				subdev,
@@ -5967,7 +6009,8 @@ static int fimc_is_ischain_scp_tag(struct fimc_is_device_ischain *device,
 			(output_crop[1] != scp_param->output_crop.pos_y) ||
 			(output_crop[2] != scp_param->output_crop.crop_width) ||
 			(output_crop[3] != scp_param->output_crop.crop_height) ||
-			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state)) {
+			!test_bit(FIMC_IS_SUBDEV_START, &subdev->state) ||
+			device->isp_size_forceset) {
 #ifdef SCALER_PARALLEL_MODE
 			ret = fimc_is_ischain_s_chain2_size(device,
 				ldr_frame,

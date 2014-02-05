@@ -1376,6 +1376,11 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 		info("[3A0:D:%d] GRP0 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
 		done_state = VB2_BUF_STATE_ERROR;
+	} else if ((group->device->taa_size_forceset) &&
+			   (ldr_frame->fcount >= group->device->taa_size_changed_fcount)) {
+		/* Acknowledge the group size change settings */
+		group->device->taa_size_forceset = 0;
+		group->device->taa_size_changed_fcount = 0;
 	}
 
 #ifdef DBG_STREAMING
@@ -1413,6 +1418,7 @@ static void wq_func_group_3a0(struct fimc_is_groupmgr *groupmgr,
 	queue_done(vctx, src_queue, ldr_frame->index, done_state);
 }
 
+
 static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_group *group,
 	struct fimc_is_framemgr *ldr_framemgr,
@@ -1435,6 +1441,11 @@ static void wq_func_group_3a1(struct fimc_is_groupmgr *groupmgr,
 		info("[3A1:D:%d] GRP1 NOT DONE(%d, %d)\n", group->instance,
 			ldr_frame->fcount, ldr_frame->index);
 		done_state = VB2_BUF_STATE_ERROR;
+	} else if ((group->device->taa_size_forceset) &&
+			   (ldr_frame->fcount >= group->device->taa_size_changed_fcount)) {
+		/* Acknowledge the group size change settings */
+		group->device->taa_size_forceset = 0;
+		group->device->taa_size_changed_fcount = 0;
 	}
 
 #ifdef DBG_STREAMING
@@ -1497,6 +1508,11 @@ static void wq_func_group_isp(struct fimc_is_groupmgr *groupmgr,
 		info("[ISP:D:%d] GRP2 NOT DONE(%d, %d)\n", group->instance,
 			frame->fcount, frame->index);
 		done_state = VB2_BUF_STATE_ERROR;
+	} else if ((group->device->isp_size_forceset) &&
+			   (frame->fcount >= group->device->isp_size_changed_fcount)) {
+		/* Acknowledge the group size change settings */
+		group->device->isp_size_forceset = 0;
+		group->device->isp_size_changed_fcount = 0;
 	}
 
 #ifdef DBG_STREAMING
