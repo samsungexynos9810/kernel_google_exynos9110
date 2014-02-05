@@ -175,6 +175,13 @@ static void exynos5430_ppmu_update(void)
 	struct devfreq_exynos *devfreq;
 	pfn_ppmu_count pfn_count;
 
+	/* before getting ppmu count, it first should stop ppmu */
+	if (ppmu_count_stop(ppmu,
+				ARRAY_SIZE(ppmu))) {
+		pr_err("DEVFREQ(PPMU) : ppmu can't stop\n");
+		return;
+	}
+
 	list_for_each_entry(devfreq, &exynos_ppmu_list, node) {
 		switch (devfreq->type) {
 		case MIF:
