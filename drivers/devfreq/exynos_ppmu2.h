@@ -280,4 +280,6 @@ int ppmu_count_total(struct ppmu_info *ppmu,
 			pfn_ppmu_count pfn_count,
 			unsigned long long *ccnt,
 			unsigned long long *pmcnt);
+int ppmu_count_stop(struct ppmu_info *ppmu,
+			unsigned int size);
 #endif /* __DEVFREQ_EXYNOS_PPMU2_H */

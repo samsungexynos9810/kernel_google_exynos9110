@@ -186,9 +186,16 @@ int ppmu_set_mode(struct ppmu_info *ppmu,
 		((mode->start_mode & PMNC_MODE_START_MASK) << PMNC_MODE_START_SHIFT) |
 		((mode->dividing_enable & PMNC_MASK) << PMNC_CCNT_DIVIDING_SHIFT) |
 		((mode->ccnt_reset & PMNC_MASK) << PMNC_CCNT_RESET_SHIFT) |
-		((mode->pmcnt_reset & PMNC_MASK) << PMNC_CCNT_RESET_PMCNT_SHIFT) |
-		((mode->count_enable & PMNC_MASK) << PMNC_GLB_CNT_EN_SHIFT));
+		((mode->pmcnt_reset & PMNC_MASK) << PMNC_CCNT_RESET_PMCNT_SHIFT));
+	__raw_writel(tmp, ppmu->base + REG_PMNC);
 
+	tmp = __raw_readl(ppmu->base + REG_PMNC);
+	tmp &= ~((PMNC_MASK << PMNC_CCNT_RESET_SHIFT) |
+		(PMNC_MASK << PMNC_CCNT_RESET_PMCNT_SHIFT));
+	__raw_writel(tmp, ppmu->base + REG_PMNC);
+
+	tmp = __raw_readl(ppmu->base + REG_PMNC);
+	tmp |= ((mode->count_enable & PMNC_MASK) << PMNC_GLB_CNT_EN_SHIFT);
 	__raw_writel(tmp, ppmu->base + REG_PMNC);
 
 	return 0;
@@ -594,18 +601,6 @@ int ppmu_reset(struct ppmu_info *ppmu)
 	if (ppmu_get_check_null(ppmu))
 		return -EINVAL;
 
-	ret = ppmu_get_mode(ppmu, &mode);
-	if (ret)
-		return ret;
-
-	mode.ccnt_reset		= CNT_ENABLE;
-	mode.pmcnt_reset	= CNT_ENABLE;
-	mode.count_enable	= CNT_ENABLE;
-
-	ret = ppmu_set_mode(ppmu, &mode);
-	if (ret)
-		return ret;
-
 	ret = ppmu_set_event0(ppmu, EV_RD_DATA_HS);
 	if (ret)
 		return ret;
@@ -627,7 +622,19 @@ int ppmu_reset(struct ppmu_info *ppmu)
 	if (ret)
 		return ret;
 
-	return ppmu_set_interrupt_flag(ppmu, &status);
+	ret = ppmu_set_interrupt_flag(ppmu, &status);
+	if (ret)
+		return ret;
+
+	ret = ppmu_get_mode(ppmu, &mode);
+	if (ret)
+		return ret;
+
+	mode.ccnt_reset		= CNT_ENABLE;
+	mode.pmcnt_reset	= CNT_ENABLE;
+	mode.count_enable	= CNT_ENABLE;
+
+	return ppmu_set_mode(ppmu, &mode);
 }
 
 int ppmu_disable(struct ppmu_info *ppmu)
@@ -725,6 +732,16 @@ int ppmu_count_total(struct ppmu_info *ppmu,
 			*pmcnt += val_pmcnt3;
 		}
 	}
+
+	return 0;
+}
+
+int ppmu_count_stop(struct ppmu_info *ppmu, unsigned int size)
+{
+	unsigned int i;
+
+	for (i = 0; i < size; ++i)
+		__raw_writel(0x0, ppmu->base + REG_PMNC);
 
 	return 0;
 }
