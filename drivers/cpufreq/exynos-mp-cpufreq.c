@@ -105,6 +105,8 @@ static struct pm_qos_request ipa_max_cpu_qos;
 
 static struct workqueue_struct *cluster_monitor_wq;
 static struct delayed_work monitor_cluster_on;
+static bool CA7_cluster_on = false;
+static bool CA15_cluster_on = false;
 
 /*
  * CPUFREQ init notifier
@@ -198,11 +200,59 @@ static void set_boot_freq(void)
 
 static void cluster_onoff_monitor(struct work_struct *work)
 {
+	struct cpufreq_frequency_table *CA15_freq_table = exynos_info[CA15]->freq_table;
+	struct cpufreq_frequency_table *CA7_freq_table = exynos_info[CA7]->freq_table;
+	unsigned int CA15_old_index = 0, CA7_old_index = 0;
+	unsigned int freq;
+	int i;
+
 	if (exynos_info[CA15]->is_alive)
 		cluster_on[CA15] = exynos_info[CA15]->is_alive();
 
+	if (exynos_info[CA15]->bus_table && exynos_info[CA15]->is_alive) {
+		if (!exynos_info[CA15]->is_alive() && CA15_cluster_on) {
+			pm_qos_update_request(&exynos_mif_qos_CA15, 0);
+			CA15_cluster_on = false;
+		} else if (exynos_info[CA15]->is_alive() && !CA15_cluster_on) {
+			for (i = 0; (CA15_freq_table[i].frequency != CPUFREQ_TABLE_END); i++) {
+				freq = CA15_freq_table[i].frequency;
+				if (freq == CPUFREQ_ENTRY_INVALID)
+					continue;
+				if (freqs[CA15]->old == freq) {
+					CA15_old_index = i;
+					break;
+				}
+			}
+
+			pm_qos_update_request(&exynos_mif_qos_CA15,
+					exynos_info[CA15]->bus_table[CA15_old_index]);
+			CA15_cluster_on = true;
+		}
+	}
+
 	if (exynos_info[CA7]->is_alive)
 		cluster_on[CA7] = exynos_info[CA7]->is_alive();
+
+	if (exynos_info[CA7]->bus_table && exynos_info[CA7]->is_alive) {
+		if (!exynos_info[CA7]->is_alive() && CA7_cluster_on) {
+			pm_qos_update_request(&exynos_mif_qos_CA7, 0);
+			CA7_cluster_on = false;
+		} else if (exynos_info[CA7]->is_alive() && !CA7_cluster_on) {
+			for (i = 0; (CA7_freq_table[i].frequency != CPUFREQ_TABLE_END); i++) {
+				freq = CA7_freq_table[i].frequency;
+				if (freq == CPUFREQ_ENTRY_INVALID)
+					continue;
+				if (freqs[CA7]->old == freq) {
+					CA7_old_index = i;
+					break;
+				}
+			}
+
+			pm_qos_update_request(&exynos_mif_qos_CA7,
+					exynos_info[CA7]->bus_table[CA7_old_index]);
+			CA7_cluster_on = true;
+		}
+	}
 
 	queue_delayed_work_on(0, cluster_monitor_wq, &monitor_cluster_on, msecs_to_jiffies(100));
 }
@@ -364,19 +414,8 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 		goto out;
 	}
 
-	if (old_index == new_index) {
-		if (cur == CA15) {
-			if (pm_qos_request_active(&exynos_mif_qos_CA15))
-				pm_qos_update_request_timeout(&exynos_mif_qos_CA15,
-						exynos_info[cur]->bus_table[new_index], 20 * 1000);
-		} else {
-			if (pm_qos_request_active(&exynos_mif_qos_CA7))
-				pm_qos_update_request_timeout(&exynos_mif_qos_CA7,
-						exynos_info[cur]->bus_table[new_index], 20 * 1000);
-		}
-
+	if (old_index == new_index)
 		goto out;
-	}
 
 	/*
 	 * ARM clock source will be changed APLL to MPLL temporary
@@ -445,12 +484,12 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	if (old_index > new_index) {
 		if (cur == CA15) {
 			if (pm_qos_request_active(&exynos_mif_qos_CA15))
-				pm_qos_update_request_timeout(&exynos_mif_qos_CA15,
-						exynos_info[cur]->bus_table[new_index], 20 * 1000);
+				pm_qos_update_request(&exynos_mif_qos_CA15,
+						exynos_info[cur]->bus_table[new_index]);
 		} else {
 			if (pm_qos_request_active(&exynos_mif_qos_CA7))
-				pm_qos_update_request_timeout(&exynos_mif_qos_CA7,
-						exynos_info[cur]->bus_table[new_index], 20 * 1000);
+				pm_qos_update_request(&exynos_mif_qos_CA7,
+						exynos_info[cur]->bus_table[new_index]);
 		}
 	}
 
@@ -459,12 +498,12 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	if (old_index < new_index) {
 		if (cur == CA15) {
 			if (pm_qos_request_active(&exynos_mif_qos_CA15))
-				pm_qos_update_request_timeout(&exynos_mif_qos_CA15,
-						exynos_info[cur]->bus_table[new_index], 20 * 1000);
+				pm_qos_update_request(&exynos_mif_qos_CA15,
+						exynos_info[cur]->bus_table[new_index]);
 		} else {
 			if (pm_qos_request_active(&exynos_mif_qos_CA7))
-				pm_qos_update_request_timeout(&exynos_mif_qos_CA7,
-						exynos_info[cur]->bus_table[new_index], 20 * 1000);
+				pm_qos_update_request(&exynos_mif_qos_CA7,
+						exynos_info[cur]->bus_table[new_index]);
 		}
 	}
 
