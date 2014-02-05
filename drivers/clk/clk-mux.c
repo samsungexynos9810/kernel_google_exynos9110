@@ -16,6 +16,7 @@
 #include <linux/slab.h>
 #include <linux/io.h>
 #include <linux/err.h>
+#include <linux/delay.h>
 
 /*
  * DOC: basic adjustable multiplexer clock that cannot gate
@@ -108,6 +109,8 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
 			}
 			val = readl(mux->stat_reg);
 			val &= mask;
+
+			udelay(1);
 		} while (val != 0);
 	}
 #endif
