@@ -395,7 +395,8 @@ struct devfreq_pm_domain_link devfreq_int_pm_domain[] = {
 
 static struct devfreq_simple_ondemand_data exynos5_devfreq_int_governor_data = {
 	.pm_qos_class		= PM_QOS_DEVICE_THROUGHPUT,
-	.upthreshold		= 95,
+	.upthreshold		= 70,
+	.downdifferential	= 20,
 	.cal_qos_max		= 400000,
 };
 
@@ -412,6 +413,7 @@ static struct ppmu_info ppmu_int[] = {
 };
 
 static struct devfreq_exynos devfreq_int_exynos = {
+	.type = INT,
 	.ppmu_list = ppmu_int,
 	.ppmu_count = ARRAY_SIZE(ppmu_int),
 };

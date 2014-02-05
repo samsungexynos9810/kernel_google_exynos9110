@@ -367,7 +367,8 @@ enum devfreq_mif_clk devfreq_clk_mif_info_idx[] = {
 
 static struct devfreq_simple_ondemand_data exynos5_devfreq_mif_governor_data = {
 	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
-	.upthreshold		= 95,
+	.upthreshold		= 70,
+	.downdifferential	= 20,
 	.cal_qos_max		= 825000,
 };
 
@@ -392,6 +393,7 @@ static struct ppmu_info ppmu_mif[] = {
 };
 
 static struct devfreq_exynos devfreq_mif_exynos = {
+	.type = MIF,
 	.ppmu_list = ppmu_mif,
 	.ppmu_count = ARRAY_SIZE(ppmu_mif),
 };
