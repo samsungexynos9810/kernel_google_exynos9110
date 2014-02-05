@@ -430,7 +430,6 @@ static int __maybe_unused exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	unsigned int ret = 0;
 	unsigned int cpuid = smp_processor_id();
 
-	local_irq_disable();
 	do_gettimeofday(&before);
 
 	exynos_set_wakeupmask();
@@ -486,7 +485,6 @@ static int __maybe_unused exynos_enter_core0_aftr(struct cpuidle_device *dev,
 
 	do_gettimeofday(&after);
 
-	local_irq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
 
@@ -513,7 +511,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	s3c_pm_do_restore_core(exynos5_set_clksrc,
 			       ARRAY_SIZE(exynos5_set_clksrc));
 
-	local_irq_disable();
 	do_gettimeofday(&before);
 
 	/*
@@ -645,7 +642,6 @@ early_wakeup:
 
 	do_gettimeofday(&after);
 
-	local_irq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
 
@@ -690,13 +686,11 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 	struct timeval before, after;
 	int idle_time;
 
-	local_irq_disable();
 	do_gettimeofday(&before);
 
 	cpu_do_idle();
 
 	do_gettimeofday(&after);
-	local_irq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		(after.tv_usec - before.tv_usec);
 
@@ -831,7 +825,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	if (cpuid < 4)
 		return exynos_enter_idle(dev, drv, 0);
 
-	local_irq_disable();
 	do_gettimeofday(&before);
 
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
@@ -904,7 +897,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	cpu_pm_exit();
 
 	do_gettimeofday(&after);
-	local_irq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
 
