@@ -729,11 +729,12 @@ int fimc_is_queue_stop_streaming(struct fimc_is_queue *queue,
 		goto p_err;
 	}
 
+p_err:
+	/* HACK: this state must be clear only if all ops was finished */
 	clear_bit(FIMC_IS_QUEUE_STREAM_ON, &queue->state);
 	clear_bit(FIMC_IS_QUEUE_BUFFER_READY, &queue->state);
 	clear_bit(FIMC_IS_QUEUE_BUFFER_PREPARED, &queue->state);
 
-p_err:
 	return ret;
 }
 
