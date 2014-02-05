@@ -554,8 +554,35 @@ int exynos5422_fimc_is_set_user_clk_gate(u32 group_id,
 		unsigned long msk_state,
 		struct exynos_fimc_is_clk_gate_info *gate_info) {
 	/* if you want to skip clock on/off, let this func return -1 */
-	/* int ret = -1; */
-	int ret = 0;
+	int ret = -1;
+
+	switch (user_scenario_id) {
+	case CLK_GATE_FULL_BYPASS_SN:
+		if (is_on == true)
+			gate_info->groups[group_id].mask_clk_on_mod &=
+				~((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		else
+			gate_info->groups[group_id].mask_clk_off_self_mod |=
+				((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		ret = 0;
+		break;
+	case CLK_GATE_DIS_SN:
+		if (is_on == true)
+			gate_info->groups[group_id].mask_clk_on_mod |=
+				((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		else
+			gate_info->groups[group_id].mask_clk_off_self_mod |=
+				((1 << FIMC_IS_GATE_DIS_IP) |
+				(1 << FIMC_IS_GATE_3DNR_IP));
+		ret = 0;
+		break;
+	default:
+		ret = 0;
+		break;
+	}
 
 	return ret;
 }
