@@ -280,6 +280,8 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = arm_asv_volt_info[i][target_asv_grp_nr + 1];
 #endif
+			/* add 50mv temporally */
+			asv_inform->asv_volt[i].asv_value += 50000;
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -305,6 +307,8 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = arm_asv_volt_info_v01[i][target_asv_grp_nr + 1];
 #endif
+			/* add 50mv temporally */
+			asv_inform->asv_volt[i].asv_value += 50000;
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -370,6 +374,8 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = kfc_asv_volt_info[i][target_asv_grp_nr + 1];
 #endif
+			/* add 50mv temporally */
+			asv_inform->asv_volt[i].asv_value += 50000;
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -395,6 +401,8 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = kfc_asv_volt_info_v01[i][target_asv_grp_nr + 1];
 #endif
+			/* add 50mv temporally */
+			asv_inform->asv_volt[i].asv_value += 50000;
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -550,6 +558,8 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = mif_asv_volt_info[i][target_asv_grp_nr + 1];
 #endif
+			/* add 50mv temporally */
+			asv_inform->asv_volt[i].asv_value += 50000;
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -575,6 +585,8 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = mif_asv_volt_info_v01[i][target_asv_grp_nr + 1];
 #endif
+			/* add 50mv temporally */
+			asv_inform->asv_volt[i].asv_value += 50000;
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
