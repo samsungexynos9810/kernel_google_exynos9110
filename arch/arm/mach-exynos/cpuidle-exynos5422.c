@@ -424,13 +424,9 @@ static int __maybe_unused exynos_enter_core0_aftr(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
-	struct timeval before, after;
-	int idle_time;
 	unsigned long tmp;
 	unsigned int ret = 0;
 	unsigned int cpuid = smp_processor_id();
-
-	do_gettimeofday(&before);
 
 	exynos_set_wakeupmask();
 
@@ -483,12 +479,6 @@ static int __maybe_unused exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	/* Clear wakeup state register */
 	__raw_writel(0x0, EXYNOS5422_WAKEUP_STAT);
 
-	do_gettimeofday(&after);
-
-	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
-		    (after.tv_usec - before.tv_usec);
-
-	dev->last_residency = idle_time;
 	return index;
 }
 
@@ -496,8 +486,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int lp_mode, int index, int enter_mode)
 {
-	struct timeval before, after;
-	int idle_time, ret = 0;
+	int ret = 0;
 	unsigned long tmp;
 	unsigned int cpuid = smp_processor_id();
 	unsigned int cpu_offset;
@@ -510,8 +499,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 
 	s3c_pm_do_restore_core(exynos5_set_clksrc,
 			       ARRAY_SIZE(exynos5_set_clksrc));
-
-	do_gettimeofday(&before);
 
 	/*
 	 * Unmasking all wakeup source.
@@ -640,13 +627,6 @@ early_wakeup:
 	/* Clear wakeup state register */
 	__raw_writel(0x0, EXYNOS5422_WAKEUP_STAT);
 
-	do_gettimeofday(&after);
-
-	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
-		    (after.tv_usec - before.tv_usec);
-
-	dev->last_residency = idle_time;
-
 	return index;
 }
 
@@ -683,18 +663,7 @@ static int exynos_enter_idle(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
-	struct timeval before, after;
-	int idle_time;
-
-	do_gettimeofday(&before);
-
 	cpu_do_idle();
-
-	do_gettimeofday(&after);
-	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
-		(after.tv_usec - before.tv_usec);
-
-	dev->last_residency = idle_time;
 	return index;
 }
 
@@ -812,10 +781,9 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
-	struct timeval before, after;
-	int idle_time, ret = 0;
 	unsigned int cpuid = smp_processor_id(), cpu_offset = 0;
 	unsigned int value;
+	int ret = 0;
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	unsigned int cluster_id = read_cpuid(CPUID_MPIDR) >> 8 & 0xf;
 	unsigned long flags;
@@ -824,8 +792,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	/* KFC don't use C2 state */
 	if (cpuid < 4)
 		return exynos_enter_idle(dev, drv, 0);
-
-	do_gettimeofday(&before);
 
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
@@ -895,12 +861,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 #endif
 
 	cpu_pm_exit();
-
-	do_gettimeofday(&after);
-	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
-		    (after.tv_usec - before.tv_usec);
-
-	dev->last_residency = idle_time;
 
 	return index;
 }
