@@ -105,19 +105,6 @@ static struct exynos_devfreq_platdata exynos5430_qos_disp = {
 	.default_qos		= 127000,
 };
 
-static struct ppmu_info ppmu_disp[] = {
-	{
-		.base = (void __iomem *)PPMU_D0_RT_ADDR,
-	}, {
-		.base = (void __iomem *)PPMU_D1_RT_ADDR,
-	},
-};
-
-static struct devfreq_exynos devfreq_disp_exynos = {
-	.ppmu_list = ppmu_disp,
-	.ppmu_count = ARRAY_SIZE(ppmu_disp),
-};
-
 static struct pm_qos_request exynos5_disp_qos;
 static struct pm_qos_request boot_disp_qos;
 static struct pm_qos_request min_disp_thermal_qos;
@@ -361,17 +348,9 @@ static int exynos5_devfreq_disp_get_dev_status(struct device *dev,
 	if (!data->use_dvfs)
 		return -EAGAIN;
 
-	if (ppmu_count_total(devfreq_disp_exynos.ppmu_list,
-			devfreq_disp_exynos.ppmu_count,
-			&devfreq_disp_exynos.val_ccnt,
-			&devfreq_disp_exynos.val_pmcnt)) {
-		pr_err("DEVFREQ(DISP) : can't calculate bus status\n");
-		return -EINVAL;
-	}
-
 	stat->current_frequency = data->devfreq->previous_freq;
-	stat->busy_time = devfreq_disp_exynos.val_pmcnt;
-	stat->total_time = devfreq_disp_exynos.val_ccnt;
+	stat->busy_time = 0;
+	stat->total_time = 1;
 
 	return 0;
 }
@@ -383,18 +362,6 @@ static struct devfreq_dev_profile exynos5_devfreq_disp_profile = {
 	.get_dev_status	= exynos5_devfreq_disp_get_dev_status,
 	.max_state	= LV_COUNT,
 };
-
-static int exynos5_devfreq_disp_init_ppmu(void)
-{
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(ppmu_disp); ++i) {
-		if (ppmu_init(&ppmu_disp[i]))
-			return -EINVAL;
-	}
-
-	return 0;
-}
 
 static int exynos5_devfreq_disp_init_clock(void)
 {
@@ -481,11 +448,6 @@ static int exynos5_devfreq_disp_probe(struct platform_device *pdev)
 	struct devfreq_data_disp *data;
 	struct devfreq_notifier_block *devfreq_nb;
 	struct exynos_devfreq_platdata *plat_data;
-
-	if (exynos5_devfreq_disp_init_ppmu()) {
-		ret = -EINVAL;
-		goto err_data;
-	}
 
 	if (exynos5_devfreq_disp_init_clock()) {
 		ret = -EINVAL;
@@ -574,13 +536,6 @@ static int exynos5_devfreq_disp_remove(struct platform_device *pdev)
 
 static int exynos5_devfreq_disp_suspend(struct device *dev)
 {
-	int i;
-
-	for (i = 0; i < ARRAY_SIZE(ppmu_disp); ++i) {
-		if (ppmu_disable(&ppmu_disp[i]))
-			return -EINVAL;
-	}
-
 	if (pm_qos_request_active(&exynos5_disp_qos))
 		pm_qos_update_request(&exynos5_disp_qos, exynos5_devfreq_disp_profile.initial_freq);
 
@@ -589,16 +544,10 @@ static int exynos5_devfreq_disp_suspend(struct device *dev)
 
 static int exynos5_devfreq_disp_resume(struct device *dev)
 {
-	int i;
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
 	if (pm_qos_request_active(&exynos5_disp_qos))
 		pm_qos_update_request(&exynos5_disp_qos, pdata->default_qos);
-
-	for (i = 0; i < ARRAY_SIZE(ppmu_disp); ++i) {
-		if (ppmu_reset(&ppmu_disp[i]))
-			return -EINVAL;
-	}
 
 	return 0;
 }
@@ -680,7 +629,6 @@ module_exit(exynos5_devfreq_disp_exit);
 #include <mach/asv-exynos.h>
 
 #include "exynos5430_ppmu.h"
-#include "exynos_ppmu2.h"
 #include "devfreq_exynos.h"
 #include "governor.h"
 
