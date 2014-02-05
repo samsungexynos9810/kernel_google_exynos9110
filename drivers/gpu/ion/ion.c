@@ -872,6 +872,7 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 		if (ion_buffer_page_is_dirty(page)) {
 			struct scatterlist sg;
 			sg_set_page(&sg, ion_buffer_page(page), PAGE_SIZE, 0);
+			sg_dma_address(&sg) = sg_phys(&sg);
 			dma_sync_sg_for_device(dev, &sg, 1, dir);
 		}
 		ion_buffer_page_clean(buffer->pages + i);
