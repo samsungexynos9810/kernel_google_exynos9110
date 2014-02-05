@@ -584,24 +584,14 @@ static void outer_flush_clip_range(struct fimg2d_bltcmd *cmd)
 static int fimg2d_check_dma_sync(struct fimg2d_bltcmd *cmd)
 {
 	struct mm_struct *mm = cmd->ctx->mm;
-	struct fimg2d_dma *c;
-	enum pt_status pt;
-	int i;
 
 	fimg2d_calc_dma_size(cmd);
 
 	if (fimg2d_check_address(cmd))
 		return -EINVAL;
 
-	for (i = 0; i < MAX_IMAGES; i++) {
-		c = &cmd->dma[i].base;
-		if (!c->size)
-			continue;
-
-		pt = fimg2d_check_pagetable(mm, c->addr, c->size);
-		if (pt == PT_FAULT)
-			return -EFAULT;
-	}
+	if (fimg2d_check_pgd(mm, cmd))
+		return -EFAULT;
 
 #ifndef CCI_SNOOP
 	fimg2d_debug("cache flush\n");
@@ -627,11 +617,34 @@ static int fimg2d_check_dma_sync(struct fimg2d_bltcmd *cmd)
 int fimg2d_check_pgd(struct mm_struct *mm, struct fimg2d_bltcmd *cmd)
 {
 	struct fimg2d_dma *c;
+	struct fimg2d_image *img;
 	enum pt_status pt;
 	int i, ret;
 
+
 	for (i = 0; i < MAX_IMAGES; i++) {
+		img = &cmd->image[i];
+		if (!img->addr.type)
+			continue;
+
 		c = &cmd->dma[i].base;
+		if (!c->size)
+			continue;
+
+		pt = fimg2d_check_pagetable(mm, c->addr, c->size);
+		if (pt == PT_FAULT) {
+			ret = -EFAULT;
+			goto err_pgtable;
+		}
+
+		/* 2nd plane */
+		if (!is_yuvfmt(img->fmt))
+			continue;
+
+		if (img->order != P2_CRCB && img->order != P2_CBCR)
+			continue;
+
+		c = &cmd->dma[i].plane2;
 		if (!c->size)
 			continue;
 
