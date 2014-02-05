@@ -515,7 +515,7 @@ static int __display_hibernation_power_off(struct display_driver *dispdrv)
 
 static void __display_block_clock_on(struct display_driver *dispdrv)
 {
-	/* (MDNIE) -> DSIM -> MIC -> DECON -> SMMU */
+	/* DSIM -> MIC -> DECON -> SMMU */
 	call_pm_ops(dispdrv, dsi_driver, clk_on, dispdrv);
 #ifdef CONFIG_DECON_MIC
 	call_pm_ops(dispdrv, mic_driver, clk_on, dispdrv);
@@ -538,7 +538,7 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 		return -EBUSY;
 	}
 
-	/* SMMU -> DECON -> (MDNIE) -> MIC -> DSIM */
+	/* SMMU -> DECON -> MIC -> DSIM */
 #ifdef CONFIG_ION_EXYNOS
 	if (dispdrv->platform_status > DISP_STATUS_PM0)
 		iovmm_deactivate(dispdrv->decon_driver.sfb->dev);

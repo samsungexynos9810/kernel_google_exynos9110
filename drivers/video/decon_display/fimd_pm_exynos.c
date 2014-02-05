@@ -162,7 +162,6 @@ void init_display_gpio_exynos(void)
 	 *
 	 * FIMD of DISP1_BLK Bypass selection : DISP1BLK_CFG[15]
 	 * ---------------------
-	 *  0 | MIE/MDNIE
 	 *  1 | FIMD : selected
 	 */
 	reg = __raw_readl(S3C_VA_SYS + 0x0214);
