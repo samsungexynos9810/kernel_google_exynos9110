@@ -221,7 +221,11 @@ static int __maybe_unused exynos_check_enter_mode(void)
 			    ARRAY_SIZE(exynos5_dstop_power_domain)))
 		return EXYNOS_CHECK_LPA;
 
+#if defined(CONFIG_CPUIDLE_DSTOP)
 	return EXYNOS_CHECK_DSTOP;
+#else
+	return EXYNOS_CHECK_LPA;
+#endif
 }
 
 static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
