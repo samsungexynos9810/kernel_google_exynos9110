@@ -606,11 +606,21 @@ int ppmu_reset(struct ppmu_info *ppmu)
 	if (ret)
 		return ret;
 
+	ret = ppmu_set_event0(ppmu, EV_RD_DATA_HS);
+	if (ret)
+		return ret;
+
+	ret = ppmu_set_event1(ppmu, EV_WR_DATA_HS);
+	if (ret)
+		return ret;
+
 	ret = ppmu_set_event3(ppmu, EV_RDWR_DATA_HS);
 	if (ret)
 		return ret;
 
 	status.ccnt		= CNT_ENABLE;
+	status.pmcnt0		= CNT_ENABLE;
+	status.pmcnt1		= CNT_ENABLE;
 	status.pmcnt3		= CNT_ENABLE;
 
 	ret = ppmu_counter_enable(ppmu, &status);
@@ -648,10 +658,13 @@ int ppmu_reset_total(struct ppmu_info *ppmu,
 
 int ppmu_count(struct ppmu_info *ppmu,
 		unsigned long long *ccnt,
-		unsigned long long *pmcnt)
+		unsigned long long *pmcnt0,
+		unsigned long long *pmcnt1,
+		unsigned long long *pmcnt3)
 {
 	unsigned int val_ccnt;
-	unsigned long long val_pmcnt3;
+	unsigned int val_pmcnt0;
+	unsigned int val_pmcnt1;
 
 	if (ppmu_get_check_null(ppmu))
 		return -EINVAL;
@@ -659,23 +672,33 @@ int ppmu_count(struct ppmu_info *ppmu,
 	if (ppmu_get_ccnt(ppmu, &val_ccnt))
 		return -EINVAL;
 
-	if (ppmu_get_pmcnt3(ppmu, &val_pmcnt3))
+	if (ppmu_get_pmcnt0(ppmu, &val_pmcnt0))
+		return -EINVAL;
+
+	if (ppmu_get_pmcnt1(ppmu, &val_pmcnt1))
+		return -EINVAL;
+
+	if (ppmu_get_pmcnt3(ppmu, pmcnt3))
 		return -EINVAL;
 
 	*ccnt = val_ccnt;
-	*pmcnt = val_pmcnt3;
+	*pmcnt0 = val_pmcnt0;
+	*pmcnt1 = val_pmcnt1;
 
 	return 0;
 }
 
 int ppmu_count_total(struct ppmu_info *ppmu,
 			unsigned int size,
+			pfn_ppmu_count pfn_count,
 			unsigned long long *ccnt,
 			unsigned long long *pmcnt)
 {
 	unsigned int i;
 	unsigned long long val_ccnt = 0;
-	unsigned long long val_pmcnt = 0;
+	unsigned long long val_pmcnt0 = 0;
+	unsigned long long val_pmcnt1 = 0;
+	unsigned long long val_pmcnt3 = 0;
 
 	if (ccnt == NULL ||
 		pmcnt == NULL) {
@@ -689,14 +712,18 @@ int ppmu_count_total(struct ppmu_info *ppmu,
 	for (i = 0; i < size; ++i)
 		ppmu_disable(ppmu + i);
 
-	for (i = 0; i < size; ++i) {
-		if (ppmu_count(ppmu + i, &val_ccnt, &val_pmcnt))
-			return -EINVAL;
+	if (pfn_count != NULL) {
+		return pfn_count(ppmu, size, ccnt, pmcnt);
+	} else {
+		for (i = 0; i < size; ++i) {
+			if (ppmu_count(ppmu + i, &val_ccnt, &val_pmcnt0, &val_pmcnt1, &val_pmcnt3))
+				return -EINVAL;
 
-		if (*ccnt < val_ccnt)
-			*ccnt = val_ccnt;
+			if (*ccnt < val_ccnt)
+				*ccnt = val_ccnt;
 
-		*pmcnt += val_pmcnt;
+			*pmcnt += val_pmcnt3;
+		}
 	}
 
 	return 0;
