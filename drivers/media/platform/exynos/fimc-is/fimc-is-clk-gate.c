@@ -72,14 +72,14 @@ int fimc_is_wrap_clk_gate_set(struct fimc_is_core *core,
 
 	for (i = 0; i < FIMC_IS_GRP_MAX; i++) {
 		if (msk_group_id & (1 << i))
-			fimc_is_clk_gate_set(core, i, is_on, true);
+			fimc_is_clk_gate_set(core, i, is_on, true, false);
 	}
 
 	return 0;
 }
 
 int fimc_is_clk_gate_set(struct fimc_is_core *core,
-			int group_id, bool is_on, bool skip_set_state)
+			int group_id, bool is_on, bool skip_set_state, bool user_scenario)
 {
 	int ret = 0;
 	int cfg = 0;
@@ -131,7 +131,7 @@ int fimc_is_clk_gate_set(struct fimc_is_core *core,
 	}
 
 	/* Check user scenario */
-	if (gate_info->user_clk_gate) {
+	if (user_scenario && gate_info->user_clk_gate) {
 		if (fimc_is_set_user_clk_gate(group_id,
 					core,
 					is_on,
@@ -199,12 +199,16 @@ int fimc_is_set_user_clk_gate(u32 group_id,
 	u32 user_scenario_id = 0;
 
 	/* deside what user scenario is */
-#if !defined(ENABLE_FULL_BYPASS)
+#if defined(ENABLE_FULL_BYPASS)
+	if (group_id == GROUP_ID_ISP)
+		user_scenario_id = CLK_GATE_FULL_BYPASS_SN;
+#else
 	if (group_id == GROUP_ID_ISP)
 		user_scenario_id = CLK_GATE_NOT_FULL_BYPASS_SN;
+
 #endif
 	if (group_id == GROUP_ID_ISP &&
-		!test_bit(FIMC_IS_SUBDEV_START,
+		test_bit(FIMC_IS_SUBDEV_START,
 			&core->ischain[0].dis.state))
 		user_scenario_id = CLK_GATE_DIS_SN;
 

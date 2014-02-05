@@ -2307,7 +2307,7 @@ static int fimc_is_itf_grp_shot(struct fimc_is_device_ischain *device,
 	/* dynamic clock on */
 	if (sysfs_debug.en_clk_gate &&
 			sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST)
-		fimc_is_clk_gate_set(core, group->id, true, false);
+		fimc_is_clk_gate_set(core, group->id, true, false, true);
 #endif
 	group_id = GROUP_ID(group->id);
 
