@@ -205,7 +205,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_GPU_NUMBER			2
 #endif
 
-#define MIN_TEMP				20
+#define MIN_TEMP				15
 #define MAX_TEMP				125
 
 #define CA7_POLICY_CORE		((exynos_boot_cluster == CA7) ? 0 : 4)
