@@ -114,13 +114,83 @@ static void exynos5430_update_polling(unsigned int period)
 	mutex_unlock(&exynos_ppmu_lock);
 }
 
+static int exynos5430_ppmu_mif_calculatate(struct ppmu_info *ppmu,
+						unsigned int size,
+						unsigned long long *ccnt,
+						unsigned long long *pmcnt)
+{
+	unsigned int i;
+	unsigned long long val_ccnt = 0;
+	unsigned long long val_pmcnt0 = 0;
+	unsigned long long val_pmcnt1 = 0;
+	unsigned long long val_pmcnt3 = 0;
+	unsigned long long drex0_ppmu = 0;
+	unsigned long long drex1_ppmu = 0;
+
+	for (i = 0; i < size; ++i) {
+		if (ppmu_count(ppmu + i, &val_ccnt, &val_pmcnt0, &val_pmcnt1, &val_pmcnt3))
+			return -EINVAL;
+
+		if (*ccnt < val_ccnt)
+			*ccnt = val_ccnt;
+
+		if (i < (size / 2)) {
+			drex0_ppmu += val_pmcnt3;
+		} else {
+			drex1_ppmu += val_pmcnt3;
+		}
+	}
+
+	*pmcnt = max(drex0_ppmu, drex1_ppmu);
+
+	return 0;
+}
+
+static int exynos5430_ppmu_int_calculatate(struct ppmu_info *ppmu,
+						unsigned int size,
+						unsigned long long *ccnt,
+						unsigned long long *pmcnt)
+{
+	unsigned int i;
+	unsigned long long val_ccnt = 0;
+	unsigned long long val_pmcnt0 = 0;
+	unsigned long long val_pmcnt1 = 0;
+	unsigned long long val_pmcnt3 = 0;
+
+	for (i = 0; i < size; ++i) {
+		if (ppmu_count(ppmu + i, &val_ccnt, &val_pmcnt0, &val_pmcnt1, &val_pmcnt3))
+			return -EINVAL;
+
+		if (*ccnt < val_ccnt)
+			*ccnt = val_ccnt;
+
+		*pmcnt = max3(*pmcnt, val_pmcnt0, val_pmcnt1);
+	}
+
+	return 0;
+}
+
 static void exynos5430_ppmu_update(void)
 {
 	struct devfreq_exynos *devfreq;
+	pfn_ppmu_count pfn_count;
 
 	list_for_each_entry(devfreq, &exynos_ppmu_list, node) {
+		switch (devfreq->type) {
+		case MIF:
+			pfn_count = exynos5430_ppmu_mif_calculatate;
+			break;
+		case INT:
+			pfn_count = exynos5430_ppmu_int_calculatate;
+			break;
+		default:
+			pfn_count = NULL;
+			break;
+		}
+
 		if (ppmu_count_total(devfreq->ppmu_list,
 					devfreq->ppmu_count,
+					pfn_count,
 					&devfreq->val_ccnt,
 					&devfreq->val_pmcnt)) {
 			pr_err("DEVFREQ(PPMU) : ppmu can't update data\n");

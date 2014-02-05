@@ -18,6 +18,7 @@
 enum DEVFREQ_TYPE {
 	MIF,
 	INT,
+	DISP,
 	DEVFREQ_TYPE_COUNT,
 };
 
@@ -46,6 +47,7 @@ struct devfreq_exynos {
 	unsigned int ppmu_count;
 	unsigned long long val_ccnt;
 	unsigned long long val_pmcnt;
+	enum DEVFREQ_TYPE type;
 };
 
 int exynos5430_devfreq_init(struct devfreq_exynos *de);
