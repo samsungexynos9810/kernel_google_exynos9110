@@ -130,7 +130,12 @@ ENTRY(cpu_v7_do_resume)
 	mcr	p15, 0, r11, c2, c0, 2	@ TTB control register
 	mrc	p15, 0, r4, c1, c0, 1	@ Read Auxiliary control register
 	teq	r4, r9			@ Is it already set?
-	mcrne	p15, 0, r9, c1, c0, 1	@ No, so write it
+	beq	1f
+	ldr	r0, =SMC_CMD_REG
+	ldr	r1, =SMC_REG_ID_CP15(1, 0, 0, 1)
+	mov	r2, r9
+	smc	0
+1:
 	mcr	p15, 0, r10, c1, c0, 2	@ Co-processor access control
 	ldr	r4, =PRRR		@ PRRR
 	ldr	r5, =NMRR		@ NMRR
