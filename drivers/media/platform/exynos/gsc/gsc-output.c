@@ -261,6 +261,7 @@ static int gsc_subdev_set_crop(struct v4l2_subdev *sd,
 				gsc_err("Scaler setup error");
 				return ret;
 			}
+			gsc_hw_set_in_size(ctx);
 			gsc_hw_set_out_size(ctx);
 			gsc_hw_set_prescaler(ctx);
 			gsc_hw_set_mainscaler(ctx);
