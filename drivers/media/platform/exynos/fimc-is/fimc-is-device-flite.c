@@ -225,9 +225,17 @@
 #define FLITE_REG_WEIGHTX01_1(x)			((x) << 16)
 #define FLITE_REG_WEIGHTX01_0(x)			((x) << 0)
 
+#define FLITE_REG_WEIGHTX23				(0x140)
+#define FLITE_REG_WEIGHTX23_1(x)			((x) << 16)
+#define FLITE_REG_WEIGHTX23_0(x)			((x) << 0)
+
 #define FLITE_REG_WEIGHTY01				(0x15C)
 #define FLITE_REG_WEIGHTY01_1(x)			((x) << 16)
 #define FLITE_REG_WEIGHTY01_0(x)			((x) << 0)
+
+#define FLITE_REG_WEIGHTY23				(0x160)
+#define FLITE_REG_WEIGHTY23_1(x)			((x) << 16)
+#define FLITE_REG_WEIGHTY23_0(x)			((x) << 0)
 
 static void flite_hw_enable_bns(unsigned long __iomem *base_reg, bool enable)
 {
@@ -244,6 +252,11 @@ static void flite_hw_s_coeff_bns(unsigned long __iomem *base_reg,
 	u32 factor_x, u32 factor_y)
 {
 	u32 cfg = 0;
+	u32 factor = 0;
+
+	factor = factor_x * factor_y;
+	if (factor_x != factor_y)
+		err("x y factor is not the same (%d, %d)", factor_x, factor_y);
 
 	/* control */
 	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGCTRL));
@@ -251,16 +264,45 @@ static void flite_hw_s_coeff_bns(unsigned long __iomem *base_reg,
 	cfg |= FLITE_REG_BINNINGCTRL_FACTOR_X(factor_x);
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_BINNINGCTRL));
 
-	/* coefficient */
-	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
-	cfg |= FLITE_REG_WEIGHTX01_1(0x40);
-	cfg |= FLITE_REG_WEIGHTX01_0(0xC0);
-	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
+	switch (factor) {
+	case 9:
+		/* coefficient */
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
+		cfg |= FLITE_REG_WEIGHTX01_1(0x20);	/* weight_x_1 = 32 */
+		cfg |= FLITE_REG_WEIGHTX01_0(0xE0);	/* weight_x_0 = 224 */
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
 
-	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
-	cfg |= FLITE_REG_WEIGHTY01_1(0x40);
-	cfg |= FLITE_REG_WEIGHTY01_0(0xC0);
-	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX23));
+		cfg |= FLITE_REG_WEIGHTX23_1(0xA0);	/* weight_x_3 = 160 */
+		cfg |= FLITE_REG_WEIGHTX23_0(0x60);	/* weight_x_2 = 96 */
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX23));
+
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+		cfg |= FLITE_REG_WEIGHTY01_1(0x20);	/* weight_y_1 = 32 */
+		cfg |= FLITE_REG_WEIGHTY01_0(0xE0);	/* weight_y_0 = 224 */
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY23));
+		cfg |= FLITE_REG_WEIGHTY23_1(0xA0);	/* weight_y_3 = 160 */
+		cfg |= FLITE_REG_WEIGHTY23_0(0x60);	/* weight_y_2 = 96 */
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY23));
+		break;
+	case 16:
+		/* coefficient */
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
+		cfg |= FLITE_REG_WEIGHTX01_1(0x40);
+		cfg |= FLITE_REG_WEIGHTX01_0(0xC0);
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
+
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+		cfg |= FLITE_REG_WEIGHTY01_1(0x40);
+		cfg |= FLITE_REG_WEIGHTY01_0(0xC0);
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
+		break;
+	default:
+		err("unknown factor!! (%d, %d)", factor_x, factor_y);
+		break;
+	}
 }
 
 static void flite_hw_s_size_bns(unsigned long __iomem *base_reg,
