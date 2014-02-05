@@ -516,9 +516,7 @@ enum stats_mode {
 };
 
 enum stats_lowlightmode {
-	STATE_LLS_NONE = 0,
-	STATE_LLS_LEVEL_LOW,
-	STATE_LLS_LEVEL_HIGH
+	STATE_LLS_REQUIRED = 1
 };
 
 struct camera2_stats_ctl {
@@ -542,6 +540,8 @@ struct camera2_stats_dm {
 	enum stats_mode		sharpnessMapMode;
 	/*sharpnessMap*/
 	enum stats_lowlightmode LowLightMode;
+	uint32_t lls_tuning_set_index;
+	uint32_t lls_brightness_index;
 };
 
 
@@ -606,7 +606,8 @@ enum aa_scene_mode {
 	AA_SCENE_MODE_SLOWMOTION_4_8,
 	AA_SCENE_MODE_DUAL_PREVIEW,
 	AA_SCENE_MODE_DUAL_VIDEO,
-	AA_SCENE_MODE_120_PREVIEW
+	AA_SCENE_MODE_120_PREVIEW,
+	AA_SCENE_MODE_LIGHT_TRACE
 };
 
 enum aa_effect_mode {
@@ -652,8 +653,8 @@ enum aa_ae_antibanding_mode {
 	AA_AE_ANTIBANDING_50HZ,
 	AA_AE_ANTIBANDING_60HZ,
 	AA_AE_ANTIBANDING_AUTO,
-	AA_AE_ANTIBANDING_AUTO_50HZ,   // 50Hz + Auto
-	AA_AE_ANTIBANDING_AUTO_60HZ    // 60Hz + Auto
+	AA_AE_ANTIBANDING_AUTO_50HZ,   /*50Hz + Auto*/
+	AA_AE_ANTIBANDING_AUTO_60HZ    /*60Hz + Auto*/
 };
 
 enum aa_awbmode {
@@ -674,10 +675,11 @@ enum aa_afmode {
 	AA_AFMODE_OFF = 1,
 	AA_AFMODE_SLEEP,
 	AA_AFMODE_INFINITY,
+	AA_AFMODE_MACRO,
 
 	/* Single AF. These modes are adjusted when afTrigger is changed from 0 to 1 */
 	AA_AFMODE_AUTO = 11,
-	AA_AFMODE_MACRO,
+	AA_AFMODE_AUTO_MACRO,
 	AA_AFMODE_AUTO_VIDEO,
 	AA_AFMODE_AUTO_FACE,
 
@@ -687,13 +689,22 @@ enum aa_afmode {
 	AA_AFMODE_CONTINUOUS_PICTURE_FACE,
 
 	/* Special modes for PDAF */
-	AA_AFMODE_PDAF_OUTFOCUSING = 31,
-	AA_AFMODE_PDAF_OUTFOCUSING_FACE,
+	AA_AFMODE_PDAF_OUTFOCUSING_AUTO = 31,
+	AA_AFMODE_PDAF_OUTFOCUSING_AUTO_FACE,
 	AA_AFMODE_PDAF_OUTFOCUSING_CONTINUOUS_PICTURE,
 	AA_AFMODE_PDAF_OUTFOCUSING_CONTINUOUS_PICTURE_FACE,
 
 	/* Not supported yet */
 	AA_AFMODE_EDOF = 41,
+};
+
+/* camera2_aa_ctl.afRegions[4] */
+enum aa_afmode_ext {
+	AA_AFMODE_EXT_OFF = 1000,
+	/* Increase macro range for special app */
+	AA_AFMODE_EXT_ADVANCED_MACRO_FOCUS = 1001,
+	/* Set AF region for OCR */
+	AA_AFMODE_EXT_FOCUS_LOCATION = 1002,
 };
 
 enum aa_afstate {
@@ -956,16 +967,16 @@ struct camera2_ipc_udm {
  User-defined metadata for aa.
 */
 struct camera2_internal_udm {
- /** vendor specific data array */
- uint32_t vendorSpecific1[CAMERA2_MAX_VENDER_LENGTH];
- uint32_t vendorSpecific2[CAMERA2_MAX_VENDER_LENGTH];
- /*
-  * vendorSpecific2[0] : info
-  * vendorSpecific2[100] : 0:sirc 1:cml
-  * vendorSpecific2[101] : cml exposure
-  * vendorSpecific2[102] : cml iso(gain)
-  * vendorSpecific2[103] : cml Bv
-  */
+	/** vendor specific data array */
+	uint32_t vendorSpecific1[CAMERA2_MAX_VENDER_LENGTH];
+	uint32_t vendorSpecific2[CAMERA2_MAX_VENDER_LENGTH];
+	/*
+	 * vendorSpecific2[0] : info
+	 * vendorSpecific2[100] : 0:sirc 1:cml
+	 * vendorSpecific2[101] : cml exposure
+	 * vendorSpecific2[102] : cml iso(gain)
+	 * vendorSpecific2[103] : cml Bv
+	 */
 };
 
 /** \brief
@@ -1011,11 +1022,6 @@ struct camera2_bayer_uctl {
 	struct camera2_scaler_ctl ctl;
 };
 
-struct camera2_bayer_udm {
-	uint32_t	width;
-	uint32_t	height;
-};
-
 enum companion_drc_mode {
 	COMPANION_DRC_OFF = 1,
 	COMPANION_DRC_ON,
@@ -1031,10 +1037,25 @@ enum companion_paf_mode {
 	COMPANION_PAF_ON,
 };
 
+enum companion_bypass_mode {
+	COMPANION_FULL_BYPASS_OFF = 1,
+	COMPANION_FULL_BYPASS_ON,
+};
+
+enum companion_lsc_mode {
+	COMPANION_LSC_OFF = 1,
+	COMPANION_LSC_ON,
+};
+
 struct camera2_companion_uctl {
 	enum companion_drc_mode drc_mode;
 	enum companion_wdr_mode wdr_mode;
 	enum companion_paf_mode paf_mode;
+};
+
+struct camera2_bayer_udm {
+	uint32_t	width;
+	uint32_t	height;
 };
 
 struct camera2_pdaf_single_result {
@@ -1051,11 +1072,18 @@ struct camera2_pdaf_multi_result {
 };
 
 struct camera2_pdaf_udm {
-	uint16_t				numCol;	/* width of PDAF map, 0 means no multi PDAF data */
-	uint16_t				numRow;	/* height of PDAF map, 0 means no multi PDAF data */
-	struct camera2_pdaf_multi_result	multiResult[CAMERA2_MAX_PDAF_MULTIROI_COLUMN][CAMERA2_MAX_PDAF_MULTIROI_ROW];
-	struct camera2_pdaf_single_result	singleResult;
-	uint16_t				lensPosResolution;	/* 1023(unsigned 10bit) */
+	uint16_t                numCol; /* width of PDAF map, 0 means no multi PDAF data */
+	uint16_t                numRow; /* height of PDAF map, 0 means no multi PDAF data */
+	struct camera2_pdaf_multi_result    multiResult[CAMERA2_MAX_PDAF_MULTIROI_COLUMN][CAMERA2_MAX_PDAF_MULTIROI_ROW];
+	struct camera2_pdaf_single_result   singleResult;
+	uint16_t                lensPosResolution;  /* 1023(unsigned 10bit) */
+};
+
+struct camera2_companion_udm {
+	enum companion_drc_mode drc_mode;
+	enum companion_wdr_mode wdr_mode;
+	enum companion_paf_mode paf_mode;
+	struct camera2_pdaf_udm pdaf;
 };
 
 /** \brief
@@ -1089,15 +1117,7 @@ struct camera2_uctl {
 	struct camera2_scaler_uctl	scalerUd;
 	/** ispfw specific control(user-defined) of Bcrop1. */
 	struct camera2_bayer_uctl	bayerUd;
-	struct camera2_companion_uctl	companionUd;
-};
-
-struct camera2_companion_udm {
-	enum companion_drc_mode drc_mode;
-	enum companion_wdr_mode wdr_mode;
-	enum companion_paf_mode paf_mode;
-
-	struct camera2_pdaf_udm pdaf;
+	struct camera2_companion_uctl   companionUd;
 };
 
 struct camera2_udm {
@@ -1111,7 +1131,7 @@ struct camera2_udm {
 	struct camera2_internal_udm	internal;
 	/* Add udm for bayer down size. */
 	struct camera2_bayer_udm	bayer;
-	struct camera2_companion_udm	companion;
+	struct camera2_companion_udm    companion;
 };
 
 struct camera2_shot {
@@ -1430,6 +1450,7 @@ typedef struct camera2_ae_udm camera2_ae_udm_t;
 typedef struct camera2_awb_udm camera2_awb_udm_t;
 typedef struct camera2_af_udm camera2_af_udm_t;
 typedef struct camera2_as_udm camera2_as_udm_t;
+typedef struct camera2_ipc_udm camera2_ipc_udm_t;
 typedef struct camera2_internal_udm camera2_internal_udm_t;
 
 typedef struct camera2_flash_uctl camera2_flash_uctl_t;
