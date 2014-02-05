@@ -752,6 +752,16 @@ static int exynos5_pd_fimc_is_power_on_post(struct exynos_pm_domain *pd)
 	cfg |= (0x1f << 0);
 	__raw_writel(cfg, S5P_VA_SYSREG + 0x2008);
 
+	/* static clock gating(DIS) */
+	cfg = __raw_readl(EXYNOS5_CLK_GATE_IP_ISP1);
+	cfg &= ~(0x1 << 1); /* DIS */
+	cfg &= ~(0x1 << 9); /* DIS0_BTS */
+	cfg &= ~(0x1 << 10); /* DIS1_BTS */
+	cfg &= ~(0x1 << 11); /* 3DNR_BTS */
+	cfg &= ~(0x1 << 20); /* DIS0_asyncaxi */
+	cfg &= ~(0x1 << 21); /* DIS1_asyncaxi */
+	__raw_writel(cfg, EXYNOS5_CLK_GATE_IP_ISP1);
+
 	return 0;
 }
 
