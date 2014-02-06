@@ -4127,13 +4127,11 @@ int dw_mci_resume(struct dw_mci *host)
 			dw_mci_ciu_clk_en(host, false);
 			dw_mci_setup_bus(slot, true);
 			atomic_dec_return(&host->ciu_en_win);
-			if (host->pdata->tuned) {
-				if (drv_data && drv_data->misc_control)
-					drv_data->misc_control(host,
-						CTRL_RESTORE_CLKSEL, NULL);
-				mci_writel(host, CDTHRCTL,
-						host->cd_rd_thr << 16 | 1);
-			}
+			if (drv_data && drv_data->misc_control)
+				drv_data->misc_control(host,
+					CTRL_RESTORE_CLKSEL, NULL);
+			mci_writel(host, CDTHRCTL,
+					host->cd_rd_thr << 16 | 1);
 		}
 
 		if (dw_mci_get_cd(slot->mmc))
