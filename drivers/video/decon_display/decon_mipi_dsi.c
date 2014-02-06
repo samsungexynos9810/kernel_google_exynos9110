@@ -276,6 +276,7 @@ static void s5p_mipi_dsi_long_data_wr(struct mipi_dsim_device *dsim, unsigned in
 int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	unsigned int data0, unsigned int data1)
 {
+	int ret = 0;
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv = get_display_driver();
 	disp_pm_gate_lock(dispdrv, true);
@@ -367,7 +368,8 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 			MIPI_WR_TIMEOUT)) {
 				dev_err(dsim->dev, "MIPI DSIM write Timeout!\n");
 				mutex_unlock(&dsim_rd_wr_mutex);
-				return -1;
+				ret = -ETIMEDOUT;
+				goto exit;
 		}
 		break;
 	}
@@ -384,8 +386,13 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 			data_id);
 
 		mutex_unlock(&dsim_rd_wr_mutex);
-		return -EINVAL;
+		ret = -EINVAL;
+		goto exit;
 	}
+
+exit:
+	if (ret == -ETIMEDOUT)
+		s5p_mipi_dsi_init_fifo_pointer(dsim, DSIM_INIT_SFR);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, false);
 #endif

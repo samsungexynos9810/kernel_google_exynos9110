@@ -117,7 +117,7 @@ void s5p_mipi_dsi_init_fifo_pointer(struct mipi_dsim_device *dsim,
 	reg = readl(dsim->reg_base + S5P_DSIM_FIFOCTRL);
 
 	writel(reg & ~(cfg), dsim->reg_base + S5P_DSIM_FIFOCTRL);
-	usleep_range(10000, 12000);
+	/* usleep_range(10000, 12000); */
 	reg |= cfg;
 
 	writel(reg, dsim->reg_base + S5P_DSIM_FIFOCTRL);
@@ -231,9 +231,10 @@ void s5p_mipi_dsi_display_config(struct mipi_dsim_device *dsim)
 
 	if (dsim->lcd_info->mode == VIDEO_MODE)
 		reg |= (1 << 25);
-	else if (dsim->lcd_info->mode == COMMAND_MODE)
+	else if (dsim->lcd_info->mode == COMMAND_MODE) {
 		reg &= ~(1 << 25);
-	else {
+		reg |= (1 << 30);
+	} else {
 		dev_err(dsim->dev, "this ddi is not MIPI interface.\n");
 		return;
 	}

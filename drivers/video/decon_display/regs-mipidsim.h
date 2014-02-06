@@ -109,7 +109,10 @@
 #define S5P_DSIM_PAYLOAD	(0x40)	/* Payload FIFO register */
 #define S5P_DSIM_RXFIFO		(0x44)	/* Read FIFO register */
 
-#define S5P_DSIM_FIFOCTRL	(0x4c)	/* FIFO status and control register */
+#define S5P_DSIM_FIFOCTRL	(0x4C)		/* FIFO status and control register */
+#define DSIM_FULL_PH_SFR	(1 << 23)	/* SFR packet header FIFO full */
+#define DSIM_FULL_PL_SFR	(1 << 21)	/* SFR payload FIFO full */
+#define DSIM_INIT_SFR		(1 << 3)	/* SFR FIFO write point initialize */
 
 #define S5P_DSIM_STEREO_3D	(0x54)	/* Stereo scope 3D register */
 #define S5P_DSIM_PROPRIETARY_3D	(0x58)	/* Proprietary 3D register */
@@ -244,6 +247,9 @@
 #define S5P_DSIM_RXFIFO		(0x44)	/* Read FIFO register */
 
 #define S5P_DSIM_FIFOCTRL	(0x4C)	/* FIFO status and control register */
+#define DSIM_FULL_PH_SFR	(1 << 23)	/* SFR packet header FIFO full */
+#define DSIM_FULL_PL_SFR	(1 << 21)	/* SFR payload FIFO full */
+#define DSIM_INIT_SFR		(1 << 3)	/* SFR FIFO write point initialize */
 
 #define S5P_DSIM_MEMACCHR	(0x50)	/* FIFO memory AC characteristic register */
 #define S5P_DSIM_STEREO_3D	(0x54)	/* Stereo scope 3D register */
@@ -345,6 +351,10 @@
 #define S5P_DSIM_RXFIFO		(0x3c)	/* Read FIFO register */
 #define S5P_DSIM_FIFOTHLD	(0x40)	/* FIFO threshold level register */
 #define S5P_DSIM_FIFOCTRL	(0x44)	/* FIFO status and control register */
+#define DSIM_FULL_PH_SFR	(1 << 23)	/* SFR packet header FIFO full */
+#define DSIM_FULL_PL_SFR	(1 << 21)	/* SFR payload FIFO full */
+#define DSIM_INIT_SFR		(1 << 3)	/* SFR FIFO write point initialize */
+
 #define S5P_DSIM_MEMACCHR	(0x48)	/* FIFO memory AC characteristic register */
 #define S5P_DSIM_PLLCTRL	(0x4c)	/* PLL control register */
 #define S5P_DSIM_PLLTMR		(0x50)	/* PLL timer register */
