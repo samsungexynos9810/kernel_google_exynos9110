@@ -105,7 +105,6 @@ struct check_wakeup_stat {
 };
 
 #define EXYNOS_WAKEUP_STAT_BUF_SIZE	200
-static unsigned int aftr_wakeup_count = 0;
 static unsigned int lpa_wakeup_count = 0;
 static struct check_wakeup_stat aftr_wakeup_stat[EXYNOS_WAKEUP_STAT_BUF_SIZE];
 static struct check_wakeup_stat lpa_wakeup_stat[EXYNOS_WAKEUP_STAT_BUF_SIZE];
@@ -281,12 +280,6 @@ static struct cpuidle_driver exynos_idle_driver = {
 	.owner		= THIS_MODULE,
 };
 
-/* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
-static void exynos_set_wakeupmask(void)
-{
-	__raw_writel(0x40003ffe, EXYNOS5422_WAKEUP_MASK);
-}
-
 static void save_cpu_arch_register(void)
 {
 }
@@ -420,68 +413,6 @@ static struct sleep_save exynos5_set_clksrc[] = {
 	{ .reg = EXYNOS5_CLK_SRC_MASK_PERIC0		, .val = 0xffffffff, },
 	{ .reg = EXYNOS5_CLK_SRC_MASK_PERIC1		, .val = 0xffffffff, },
 };
-
-static int __maybe_unused exynos_enter_core0_aftr(struct cpuidle_device *dev,
-				struct cpuidle_driver *drv,
-				int index)
-{
-	unsigned long tmp;
-	unsigned int ret = 0;
-	unsigned int cpuid = smp_processor_id();
-
-	exynos_set_wakeupmask();
-
-	/* Set value of power down register for aftr mode */
-	exynos_sys_powerdown_conf(SYS_AFTR);
-
-	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
-	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
-
-#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_disable_idle_clock_down(ARM);
-	exynos_disable_idle_clock_down(KFC);
-#endif
-
-	save_cpu_arch_register();
-
-	/* Setting Central Sequence Register for power down mode */
-	tmp = __raw_readl(EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
-	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
-	__raw_writel(tmp, EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
-
-	set_boot_flag(cpuid, C2_STATE);
-
-	cpu_pm_enter();
-
-	ret = cpu_suspend(0, idle_finisher);
-	if (ret) {
-		tmp = __raw_readl(EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
-		tmp |= EXYNOS_CENTRAL_LOWPWR_CFG;
-		__raw_writel(tmp, EXYNOS5422_CENTRAL_SEQ_CONFIGURATION);
-	}
-
-	clear_boot_flag(cpuid, C2_STATE);
-
-	cpu_pm_exit();
-
-	restore_cpu_arch_register();
-
-#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_enable_idle_clock_down(ARM);
-	exynos_enable_idle_clock_down(KFC);
-#endif
-
-	aftr_wakeup_stat[aftr_wakeup_count].buf_cnt = aftr_wakeup_count;
-	aftr_wakeup_stat[aftr_wakeup_count].wakeup_stat = __raw_readl(EXYNOS5422_WAKEUP_STAT);
-	aftr_wakeup_count++;
-	if (aftr_wakeup_count > EXYNOS_WAKEUP_STAT_BUF_SIZE)
-		aftr_wakeup_count = 0;
-
-	/* Clear wakeup state register */
-	__raw_writel(0x0, EXYNOS5422_WAKEUP_STAT);
-
-	return index;
-}
 
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
@@ -654,7 +585,7 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 		return exynos_enter_idle(dev, drv, 0);
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 	else if (exynos_check_aud_pwr() == AUD_PWR_AFTR)
-		return exynos_enter_core0_aftr(dev, drv, new_index);
+		return exynos_enter_idle(dev, drv, 0);
 #endif
 	else
 		return exynos_enter_core0_lpa(dev, drv, SYS_LPA, new_index, enter_mode);
