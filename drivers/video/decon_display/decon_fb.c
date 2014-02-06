@@ -2288,6 +2288,19 @@ static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
 	return ret;
 }
 
+static void decon_fb_direct_on_off(struct s3c_fb *sfb, bool enable)
+{
+	void __iomem *regs = sfb->regs + VIDCON0;
+	u32 data = readl(regs);
+
+	if (enable)
+		data |= VIDCON0_ENVID_F | VIDCON0_ENVID;
+	else
+		data &= ~VIDCON0_ENVID_F & ~VIDCON0_ENVID;
+
+	writel(data, regs);
+}
+
 static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 {
 	unsigned short i;
@@ -4439,19 +4452,6 @@ static int s3c_fb_remove(struct platform_device *pdev)
 	return 0;
 }
 #endif
-
-static void decon_fb_direct_on_off(struct s3c_fb *sfb, bool enable)
-{
-	void __iomem *regs = sfb->regs + VIDCON0;
-	u32 data = readl(regs);
-
-	if (enable)
-		data |= VIDCON0_ENVID_F | VIDCON0_ENVID;
-	else
-		data &= ~VIDCON0_ENVID_F & ~VIDCON0_ENVID;
-
-	writel(data, regs);
-}
 
 #ifndef CONFIG_FB_I80_COMMAND_MODE
 static void decon_fb_perframeoff(struct s3c_fb *sfb)
