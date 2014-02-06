@@ -2994,10 +2994,13 @@ static int s3c_fb_probe_win(struct s3c_fb *sfb, unsigned int win_no,
 #ifdef CONFIG_ION_EXYNOS
 	memset(&win->dma_buf_data, 0, sizeof(win->dma_buf_data));
 #endif
-	ret = s3c_fb_alloc_memory(sfb, win);
-	if (ret) {
-		dev_err(sfb->dev, "failed to allocate display memory\n");
-		return ret;
+	/* alloc only for the default window */
+	if (win->index == 0) {
+		ret = s3c_fb_alloc_memory(sfb, win);
+		if (ret) {
+			dev_err(sfb->dev, "failed to allocate display memory\n");
+			return ret;
+		}
 	}
 
 	/* setup the r/b/g positions for the window's palette */
@@ -4245,8 +4248,8 @@ int create_decon_display_controller(struct platform_device *pdev)
 				       &sfb->windows[win]);
 		if (ret < 0) {
 			dev_err(dev, "failed to create window %d\n", win);
-			for (; win >= 0; win--)
-				s3c_fb_release_win(sfb, sfb->windows[win]);
+			if (win== 0)
+				s3c_fb_release_win(sfb, sfb->windows[0]);
 			goto resource_exception;
 		}
 
@@ -4435,9 +4438,7 @@ static int s3c_fb_remove(struct platform_device *pdev)
 	if (sfb->update_regs_thread)
 		kthread_stop(sfb->update_regs_thread);
 #endif
-	for (win = 0; win < S3C_FB_MAX_WIN; win++)
-		if (sfb->windows[win])
-			s3c_fb_release_win(sfb, sfb->windows[win]);
+	s3c_fb_release_win(sfb, sfb->windows[0]);
 
 	if (sfb->vsync_info.thread)
 		kthread_stop(sfb->vsync_info.thread);
