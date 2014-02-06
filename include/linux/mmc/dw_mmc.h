@@ -302,6 +302,8 @@ struct dw_mci_dma_ops {
 #define DW_MMC_QUIRK_FIXED_VOLTAGE		BIT(7)
 /* Use S/W data timeout */
 #define DW_MMC_QUIRK_SW_DATA_TIMEOUT		BIT(8)
+/* Retry CRC error */
+#define DW_MMC_QUIRK_RETRY_ERROR		BIT(9)
 
 /* Slot level quirks */
 /* This slot has no write protect */
@@ -377,6 +379,7 @@ struct dw_mci_board {
 	/* INT QOS khz */
 	unsigned int qos_int_level;
 
+	u32 error_retry_cnt;
 	/* cd_type: Type of Card Detection method (see cd_types enum above) */
 	enum dw_mci_cd_types cd_type;
 

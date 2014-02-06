@@ -91,6 +91,7 @@ struct idmac_desc {
 #endif /* CONFIG_MMC_DW_IDMAC */
 
 #define DATA_RETRY	1
+#define MAX_RETRY_CNT	1
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
 
@@ -1714,6 +1715,8 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq,
 static void dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd)
 {
 	u32 status = host->cmd_status;
+	struct dw_mci_slot *slot = host->cur_slot;
+	struct mmc_host	*mmc = slot->mmc;
 
 	host->cmd_status = 0;
 
@@ -1742,6 +1745,29 @@ static void dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd
 		cmd->error = 0;
 
 	if (cmd->error) {
+		if ((host->quirks & DW_MMC_QUIRK_RETRY_ERROR)) {
+			if ((status & SDMMC_INT_RTO) &&
+				((cmd->opcode == MMC_SET_BLOCK_COUNT) ||
+				(cmd->opcode == MMC_SEND_TUNING_BLOCK_HS200))) {
+				dev_err(host->dev,
+					"CMD error CMD%02d CLKSEL 0x %08x error %d "
+					"tuning_progress %d status: 0x %08x Count %d\n",
+					cmd->opcode,
+					mci_readl(host, CLKSEL),
+					cmd->error,
+					mmc->tuning_progress,
+					status,
+					host->pdata->error_retry_cnt);
+				if (host->pdata->error_retry_cnt < MAX_RETRY_CNT) {
+					cmd->error = -ETIMEDOUT;
+					cmd->retries = DATA_RETRY;
+					host->pdata->error_retry_cnt++;
+				} else {
+					cmd->retries = 0;
+					host->pdata->error_retry_cnt = 0;
+				}
+			}
+		}
 		/* newer ip versions need a delay between retries */
 		if (host->quirks & DW_MCI_QUIRK_RETRY_DELAY)
 			mdelay(20);
@@ -3493,6 +3519,9 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk	= "sw_data_timeout",
 		.id	= DW_MMC_QUIRK_SW_DATA_TIMEOUT,
+	}, {
+		.quirk	= "error-retry",
+		.id	= DW_MMC_QUIRK_RETRY_ERROR,
 	},
 };
 
