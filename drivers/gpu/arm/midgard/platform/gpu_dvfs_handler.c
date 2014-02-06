@@ -218,7 +218,12 @@ static int gpu_dvfs_on_off(struct kbase_device *kbdev, bool enable)
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
 			kbdev->pm.metrics.timer_active = true;
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
+#if !defined(SLSI_INTEGRATION)
 			hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(platform->polling_speed), HRTIMER_MODE_REL);
+#else
+			kbdev->pm.metric.tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
+			add_timer_on(&kbdev->pm.metrics->tlist, 0);
+#endif
 		}
 	} else if (!enable && platform->dvfs_status) {
 		platform->dvfs_status = false;
@@ -228,7 +233,11 @@ static int gpu_dvfs_on_off(struct kbase_device *kbdev, bool enable)
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
 			kbdev->pm.metrics.timer_active = false;
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
+#if !defined(SLSI_INTEGRATION)
 			hrtimer_cancel(&kbdev->pm.metrics.timer);
+#else
+			del_timer(&kbdev->pm.metrics->tlist);
+#endif
 		}
 	} else {
 		GPU_LOG(DVFS_WARNING, "impossible state to change dvfs status (current: %d, request: %d)\n",

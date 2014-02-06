@@ -35,31 +35,61 @@
    Exceeding this will cause overflow */
 #define KBASE_PM_TIME_SHIFT			8
 
+#if defined(SLSI_INTEGRATION)
+static void dvfs_callback(unsigned long __data)
+#else
 static enum hrtimer_restart dvfs_callback(struct hrtimer *timer)
+#endif
 {
 	unsigned long flags;
 	kbase_pm_dvfs_action action;
 	kbasep_pm_metrics_data *metrics;
+#if defined(SLSI_INTEGRATION)
+	struct exynos_context *platform;
+	u32 cluster;
+	platform = (struct exynos_context *)kbdev->platform_context;
+	clsuter = MPIDR_AFFINITY_LEVEL(cpu_logical_map(smp_processor_id()), 1);
+#endif
 
+#if defined(SLSI_INTEGRATION)
+	struct timer_list *tlist = (struct timer_list *)__data;
+	KBASE_DEBUG_ASSERT(tlist != NULL);
+	metrics = container_of(tlist, kbasep_pm_metrics_data, tlist);
+#else
 	KBASE_DEBUG_ASSERT(timer != NULL);
 
 	metrics = container_of(timer, kbasep_pm_metrics_data, timer);
+#endif
+
 	action = kbase_pm_get_dvfs_action(metrics->kbdev);
 
 	spin_lock_irqsave(&metrics->lock, flags);
 
-	if (metrics->timer_active)
+	if (metrics->timer_active) {
+#if defined(SLSI_INTEGRATION)
+		metrics->tlist.function = dvfs_callback;
+		metrics->tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
+		add_timer_on(&metrics->tlist, 0);
+#else
 		hrtimer_start(timer,
 					  HR_TIMER_DELAY_MSEC(metrics->kbdev->pm.platform_dvfs_frequency),
 					  HRTIMER_MODE_REL);
+#endif
+	}
 
 	spin_unlock_irqrestore(&metrics->lock, flags);
 
+#if !defined(SLSI_INTEGRATION)
 	return HRTIMER_NORESTART;
+#endif
 }
 
 mali_error kbasep_pm_metrics_init(kbase_device *kbdev)
 {
+#if defined(SLSI_INTEGRATION)
+	struct exynos_context *platform;
+	platform = (struct exynos_context *)kbdev->platform_context;
+#endif
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
 	kbdev->pm.metrics.kbdev = kbdev;
@@ -74,10 +104,19 @@ mali_error kbasep_pm_metrics_init(kbase_device *kbdev)
 
 	spin_lock_init(&kbdev->pm.metrics.lock);
 
+#if defined(SLSI_INTEGRATION)
+	/* use timer with core affinity */
+	init_timer(&kbdev->pm.metrics.tlist);
+	kbdev->pm.metrics.tlist.function = dvfs_callback;
+	kbdev->pm.metrics.tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
+	kbdev->pm.metrics.tlist.data = (unsigned long)&kbdev->pm.metrics.tlist;
+	add_timer_on(&kbdev->pm.metrics.tlist, 0);
+#else
 	hrtimer_init(&kbdev->pm.metrics.timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	kbdev->pm.metrics.timer.function = dvfs_callback;
 
 	hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(kbdev->pm.platform_dvfs_frequency), HRTIMER_MODE_REL);
+#endif
 
 	kbase_pm_register_vsync_callback(kbdev);
 #if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
@@ -98,7 +137,11 @@ void kbasep_pm_metrics_term(kbase_device *kbdev)
 	kbdev->pm.metrics.timer_active = MALI_FALSE;
 	spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
 
+#if defined(SLSI_INTEGRATION)
+	del_timer(&kbdev->pm.metrics->tlist);
+#else
 	hrtimer_cancel(&kbdev->pm.metrics.timer);
+#endif
 
 	kbase_pm_unregister_vsync_callback(kbdev);
 }
