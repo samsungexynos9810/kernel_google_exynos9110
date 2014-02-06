@@ -1269,6 +1269,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 
 	exynos5_int_devfreq_profile.freq_table = kzalloc(sizeof(int) * LV_END, GFP_KERNEL);
 	if (exynos5_int_devfreq_profile.freq_table == NULL) {
+		kfree(data);
 		pr_err("DEVFREQ(MIF) : Failed to allocate freq table\n");
 		return -ENOMEM;
 	}
