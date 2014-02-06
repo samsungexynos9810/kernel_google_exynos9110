@@ -1508,22 +1508,7 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on)
 	int			ret = 0;
 
 	if (is_on) {
-		/*
-		 * According to the Databook in case of reconnection and
-		 * role switching the core should be completely reinitialized.
-		 * Exception: first connection as peripheral when core was
-		 * initialized during probing.
-		 */
-		if (dwc->needs_reinit) {
-			ret = dwc3_core_init(dwc);
-			if (ret) {
-				dev_err(dwc->dev, "failed to reinitialize core\n");
-				return ret;
-			}
-
-			dwc3_event_buffers_setup(dwc);
-		}
-
+		dwc3_event_buffers_setup(dwc);
 		ret = dwc3_udc_init(dwc);
 		if (ret) {
 			dev_err(dwc->dev, "failed to initialize udc\n");
@@ -1531,8 +1516,6 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on)
 		}
 
 		dwc3_gadget_enable_irq(dwc);
-
-		dwc->needs_reinit = 0;
 
 		if (dwc->revision <= DWC3_REVISION_187A) {
 			reg &= ~DWC3_DCTL_TRGTULST_MASK;
@@ -1569,20 +1552,12 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on)
 		timeout--;
 		if (!timeout) {
 			dev_vdbg(dwc->dev, "gadget run/stop timeout\n");
-			ret = -ETIMEDOUT;
-			break;
+			return -ETIMEDOUT;
 		}
 		udelay(1);
 	} while (1);
 
-	if (!is_on) {
-		/* when everything is done, shutdown PHYs */
-		dwc3_core_exit(dwc);
-		dwc->needs_reinit = 1;
-	}
-
-	if (!ret)
-		dev_vdbg(dwc->dev, "gadget %s data soft-%s\n",
+	dev_vdbg(dwc->dev, "gadget %s data soft-%s\n",
 			dwc->gadget_driver
 			? dwc->gadget_driver->function : "no-function",
 			is_on ? "connect" : "disconnect");
@@ -1645,6 +1620,8 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 		return 0;
 	}
 
+	if (is_on)
+		dwc3_udc_reset(dwc);
 	ret = dwc3_gadget_run_stop(dwc, is_on);
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
