@@ -127,7 +127,7 @@
 #define EGL_SPD_OPTION_FLAG_OFFSET	(0)
 #define EGL_SPD_OPTION_FLAG_MASK	(0x1)
 #define EGL_SPD_SEL_OFFSET		(1)
-#define EGL_SPD_SEL_MASK		(0x3)
+#define EGL_SPD_SEL_MASK		(0x7)
 
 struct asv_reference {
 	unsigned int asv_version;

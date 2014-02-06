@@ -123,6 +123,7 @@ extern void exynos5430_get_egl_speed_option(unsigned int *opt_flag, unsigned int
 #define EGL_SPD_SEL_1700_MHZ		(0x1)
 #define EGL_SPD_SEL_1900_MHZ		(0x2)
 #define EGL_SPD_SEL_2000_MHZ		(0x3)
+#define EGL_SPD_SEL_2100_MHZ		(0x7)
 #endif
 
 /* define function for common asv */
