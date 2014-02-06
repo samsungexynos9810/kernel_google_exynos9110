@@ -149,24 +149,53 @@ config SOC_EXYNOS5440
 	help
 	  Enable EXYNOS5440 SoC support
 
-config EXYNOS_SNAPSHOT
+menuconfig EXYNOS_SNAPSHOT
 	bool "Enable SnapShot of exynos for debugging"
 	default y
+	depends on ARCH_EXYNOS
 
-config EXYNOS_SNAPSHOT_REG
-	bool "Enable debugging of register access by exynos-snapshot log"
+config EXYNOS_SNAPSHOT_CALLSTACK
+	int "shown callstack level"
 	depends on EXYNOS_SNAPSHOT
-	default n
+	range 1 4
+	default 2
+
+config EXYNOS_SNAPSHOT_IRQ_EXIT
+	bool "Enable debugging of interrupt exit event by kevent"
+	depends on EXYNOS_SNAPSHOT
+	default y
+
+config EXYNOS_SNAPSHOT_IRQ_EXIT_THRESHOLD
+	int "threshold of detection(microsecond)"
+	depends on EXYNOS_SNAPSHOT_IRQ_EXIT
+	range 0 1000000
+	default 0
+
+config EXYNOS_SNAPSHOT_IRQ_DISABLED
+	bool "Enable debugging of interrupt disable period by kevent"
+	depends on EXYNOS_SNAPSHOT
+	default y
+
+config EXYNOS_SNAPSHOT_IRQ_DISABLED_THRESHOLD
+	int "threshold of detection(microsecond)"
+	depends on EXYNOS_SNAPSHOT_IRQ_DISABLED
+	range 0 1000000
+	default 30000
 
 config EXYNOS_SNAPSHOT_HRTIMER
-	bool "Enable debugging of hrtimer by exynos-snapshot log"
+	bool "Enable debugging of hrtimer by kevent"
 	depends on EXYNOS_SNAPSHOT
 	default n
 
 config EXYNOS_SNAPSHOT_SOFTIRQ
-	bool "Enable debugging of softirq by exynos-snapshot log"
+	bool "Enable debugging of softirq by kevent"
 	depends on EXYNOS_SNAPSHOT
 	default n
+
+config EXYNOS_SNAPSHOT_REG
+	bool "Enable debugging of accessing register by kevent"
+	depends on EXYNOS_SNAPSHOT
+	default y
 
 config EXYNOS_SNAPSHOT_HOOK_LOGGER
 	bool "Enable hooking android platform log for ramdump"
@@ -177,11 +206,6 @@ config EXYNOS_SNAPSHOT_PANIC_REBOOT
 	bool "Enable forced reboot after panic for ramdump"
 	depends on EXYNOS_SNAPSHOT
 	default y
-
-config EXYNOS_SNAPSHOT_FORCE_DUMP_MODE
-	bool "Enable forced ramdump mode when reboot, this is usually used for test"
-	depends on EXYNOS_SNAPSHOT
-	default n
 
 config EXYNOS5_DYNAMIC_CPU_HOTPLUG
 	bool "Dynamic CPU Hotplug support"

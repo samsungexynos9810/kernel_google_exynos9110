@@ -39,22 +39,36 @@ enum esslog_flag {
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT
 extern void __exynos_ss_task(int cpu, struct task_struct *task);
-extern void __exynos_ss_irq(unsigned int irq, void *fn, int en);
 extern void __exynos_ss_work(struct worker *worker, struct work_struct *work,
 				work_func_t f, int en);
+extern void __exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en);
+extern void __exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time);
 extern void __exynos_ss_hrtimer(struct hrtimer *timer, s64 *now,
 				enum hrtimer_restart (*fn) (struct hrtimer *),
 				int en);
 extern void __exynos_ss_reg(unsigned int read, unsigned int val,
 			    unsigned int reg, int en);
-extern void exynos_ss_printk(char *fmt, ...);
+extern void exynos_ss_printk(const char *fmt, ...);
 extern void exynos_ss_printkl(unsigned int msg, unsigned int val);
-extern int exynos_ss_save_context(void);
+extern int exynos_ss_set_enable(const char *name, int en);
+extern int exynos_ss_get_enable(const char *name);
+extern int exynos_ss_save_context(struct pt_regs *);
+extern int exynos_ss_save_reg(struct pt_regs *);
 
-static inline void exynos_ss_irq(unsigned int irq, void *fn, int en)
-{
-	__exynos_ss_irq(irq, fn, en);
-}
+#ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_DISABLED
+extern void arch_local_irq_restore(unsigned long flags);
+extern unsigned long arch_local_irq_save(void);
+extern void arch_local_irq_enable(void);
+extern void arch_local_irq_disable(void);
+#endif
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
+#define exynos_ss_irq_exit_var(v)	do {	v = cpu_clock(raw_smp_processor_id());	\
+					} while(0)
+#else
+#define exynos_ss_irq_exit_var(v)	do {	v = 0; \
+					} while(0)
+#endif
 
 static inline void exynos_ss_task(int cpu, struct task_struct *task)
 {
@@ -65,6 +79,18 @@ static inline void exynos_ss_work(struct worker *worker, struct work_struct *wor
 					work_func_t f, int en)
 {
 	__exynos_ss_work(worker, work, f, en);
+}
+
+static inline void exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en)
+{
+	__exynos_ss_irq(irq, fn, irqs_disabled, en);
+}
+
+static inline void exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time)
+{
+#ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
+	__exynos_ss_irq_exit(irq, start_time);
+#endif
 }
 
 static inline void exynos_ss_reg(unsigned int read, unsigned int val,
@@ -83,23 +109,26 @@ static inline void exynos_ss_hrtimer(struct hrtimer *timer, s64 *now,
 #endif
 }
 
-static inline void exynos_ss_softirq(unsigned int irq, void *fn, int en)
+static inline void exynos_ss_softirq(unsigned int irq, void *fn, int irqs_disabled, int en)
 {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SOFTIRQ
-	__exynos_ss_irq(irq, fn, en);
+	__exynos_ss_irq(irq, fn, irqs_disabled, en);
 #endif
 }
 
 #else
 #define exynos_ss_task(a,b)		do { } while(0)
 #define exynos_ss_work(a,b,c,d)		do { } while(0)
-#define exynos_ss_irq(a,b,c)		do { } while(0)
+#define exynos_ss_irq(a,b,c,d)		do { } while(0)
+#define exynos_ss_irq_exit(a,b)		do { } while(0)
+#define exynos_ss_irq_exit_var(v)	do { v = 0; } while(0)
 #define exynos_ss_reg(a,b,c,d)		do { } while(0)
 #define exynos_ss_hrtimer(a,b,c,d)	do { } while(0)
-#define exynos_ss_softirq(a,b,c)	do { } while(0)
+#define exynos_ss_softirq(a,b,c,d)	do { } while(0)
 #define exynos_ss_printk(...)		do { } while(0)
 #define exynos_ss_printkl(a,b)		do { } while(0)
-#define exynos_ss_save_context()	do { } while(0)
+#define exynos_ss_save_context(a)	do { } while(0)
+#define exynos_ss_set_enable(a,b)	do { } while(0)
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
 
 #endif
