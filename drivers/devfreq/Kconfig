@@ -43,6 +43,11 @@ config DEVFREQ_GOV_SIMPLE_USAGE
 	help
 	  Chooses frequency based on the percentage of target device.
 
+config DEVFREQ_GOV_SIMPLE_EXYNOS
+	tristate "Simple Exynos"
+	help
+	  Chooses frequency based on the threshold of target device.
+
 config DEVFREQ_GOV_PERFORMANCE
 	tristate "Performance"
 	help
