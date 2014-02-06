@@ -26,6 +26,7 @@
 #include <linux/cpu.h>
 #include <linux/tick.h>
 #include <linux/hrtimer.h>
+#include <linux/reboot.h>
 #include <linux/debugfs.h>
 #include "../../../drivers/clk/samsung/clk.h"
 
@@ -912,6 +913,23 @@ static struct notifier_block exynos_cpuidle_notifier = {
 	.notifier_call = exynos_cpuidle_notifier_event,
 };
 
+static int exynos_cpuidle_reboot_notifier(struct notifier_block *this,
+				unsigned long event, void *_cmd)
+{
+	switch (event) {
+	case SYSTEM_POWER_OFF:
+	case SYS_RESTART:
+		cpu_idle_poll_ctrl(true);
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block exynos_cpuidle_reboot_nb = {
+	.notifier_call = exynos_cpuidle_reboot_notifier,
+};
+
 static int __init exynos_init_cpuidle(void)
 {
 	int i, max_cpuidle_state, cpu_id, ret;
@@ -979,6 +997,7 @@ static int __init exynos_init_cpuidle(void)
 #endif
 
 	register_pm_notifier(&exynos_cpuidle_notifier);
+	register_reboot_notifier(&exynos_cpuidle_reboot_nb);
 
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	cluster_off_time_debugfs =
