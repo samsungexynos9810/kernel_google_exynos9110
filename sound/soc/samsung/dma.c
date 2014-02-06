@@ -33,6 +33,7 @@
 
 #include "dma.h"
 
+#define PERIOD_MIN		4
 #define ST_RUNNING		(1<<0)
 #define ST_OPENED		(1<<1)
 
@@ -236,13 +237,15 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 	prtd->dma_pos = prtd->dma_start;
 	prtd->dma_end = prtd->dma_start + totbytes;
 	prtd->dram_used = runtime->dma_addr < SRAM_END ? false : true;
+	while ((totbytes / prtd->dma_period) < PERIOD_MIN)
+		prtd->dma_period >>= 1;
 	spin_unlock_irq(&prtd->lock);
 
-	pr_debug("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d #Prds=%d dma_area=0x%x\n",
+	pr_debug("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d(%d) #Prds=%d dma_area=0x%x\n",
 		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? "P" : "C",
 		prtd->dma_start, runtime->dma_bytes,
-		params_period_bytes(params), params_periods(params),
-		(unsigned int)runtime->dma_area);
+		params_period_bytes(params), prtd->dma_period,
+		params_periods(params), (unsigned int)runtime->dma_area);
 
 	return 0;
 }
