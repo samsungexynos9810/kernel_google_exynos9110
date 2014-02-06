@@ -297,6 +297,15 @@ static unsigned int exynos5422_dram_param_2gb[][3] = {
 };
 #endif
 
+static struct devfreq_simple_exynos_data exynos5_mif_governor_data = {
+	.urgentthreshold	= 65,
+	.upthreshold		= 60,
+	.downthreshold		= 45,
+	.idlethreshold		= 30,
+	.cal_qos_max		= 825000,
+	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
+};
+
 /*
  * MIF devfreq notifier
  */
@@ -844,10 +853,34 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 	unsigned long busy_data;
 	unsigned long long int_ccnt = 0;
 	unsigned long long int_pmcnt = 0;
+	unsigned int idx = -1;
+	int above_idx = 0;
+	int below_idx = LV_END - 1;
+	int i;
 
 	rcu_read_lock();
 	stat->current_frequency = opp_get_freq(data->curr_opp);
 	rcu_read_unlock();
+
+	for (i = LV_0; i < LV_END; i++) {
+		if (mif_bus_opp_list[i].clk == stat->current_frequency) {
+			idx = i;
+			above_idx = i - 1;
+			below_idx = i + 1;
+			break;
+		}
+	}
+
+	if (idx < 0)
+		return -EAGAIN;
+
+	if (above_idx < 0)
+		above_idx = 0;
+	if (below_idx >= LV_END)
+		below_idx = LV_END - 1;
+
+	exynos5_mif_governor_data.above_freq = mif_bus_opp_list[above_idx].clk;
+	exynos5_mif_governor_data.below_freq = mif_bus_opp_list[below_idx].clk;
 
 	/*
 	 * Bandwidth of memory interface is 128bits
@@ -930,16 +963,6 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 
 	return 0;
 }
-
-#if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
-static struct devfreq_simple_usage_data exynos5_mif_governor_data = {
-	.upthreshold		= 120,
-	.target_percentage	= 100,
-	.proportional		= 150,
-	.cal_qos_max		= 825000,
-	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
-};
-#endif
 
 #ifdef CONFIG_EXYNOS_THERMAL
 #ifdef NEW_THERMAL
@@ -1194,120 +1217,8 @@ static ssize_t mif_show_state(struct device *dev, struct device_attribute *attr,
 
 static DEVICE_ATTR(mif_time_in_state, 0644, mif_show_state, NULL);
 
-static ssize_t show_upthreshold(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%d\n", exynos5_mif_governor_data.upthreshold);
-}
-
-static ssize_t store_upthreshold(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	unsigned int value;
-	int ret;
-
-	if (count > sizeof(value))
-		goto out;
-
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1 || value > 100)
-		goto out;
-
-	exynos5_mif_governor_data.upthreshold = value;
-out:
-	return count;
-}
-
-static DEVICE_ATTR(upthreshold, S_IRUGO | S_IWUSR, show_upthreshold, store_upthreshold);
-
-static ssize_t show_target_percentage(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%d\n", exynos5_mif_governor_data.target_percentage);
-}
-
-static ssize_t store_target_percentage(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	unsigned int value;
-	int ret;
-
-	if (count > sizeof(value))
-		goto out;
-
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1 || value > 100)
-		goto out;
-
-	exynos5_mif_governor_data.target_percentage = value;
-out:
-	return count;
-}
-
-static DEVICE_ATTR(target_percentage, S_IRUGO | S_IWUSR, show_target_percentage, store_target_percentage);
-
-static ssize_t show_proportional(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%d\n", exynos5_mif_governor_data.proportional);
-}
-
-static ssize_t store_proportional(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	unsigned int value;
-	int ret;
-
-	if (count > sizeof(value))
-		goto out;
-
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1 || value > 100)
-		goto out;
-
-	exynos5_mif_governor_data.proportional = value;
-out:
-	return count;
-}
-
-static DEVICE_ATTR(proportional, S_IRUGO | S_IWUSR, show_proportional, store_proportional);
-
-static ssize_t show_en_profile(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%s\n", en_profile ? "true" : "false");
-}
-
-static ssize_t store_en_profile(struct device *dev,
-		struct device_attribute *attr,
-		const char *buf, size_t count)
-{
-	unsigned int value;
-	int ret;
-
-	if (count > sizeof(value))
-		goto out;
-
-	ret = sscanf(buf, "%u", &value);
-	if (ret != 1 || value > 2)
-		goto out;
-
-	if (value)
-		en_profile = true;
-	else
-		en_profile = false;
-
-out:
-	return count;
-}
-
-static DEVICE_ATTR(en_profile, S_IRUGO | S_IWUSR, show_en_profile, store_en_profile);
-
 static struct attribute *busfreq_mif_entries[] = {
 	&dev_attr_mif_time_in_state.attr,
-	&dev_attr_upthreshold.attr,
-	&dev_attr_target_percentage.attr,
-	&dev_attr_proportional.attr,
-	&dev_attr_en_profile.attr,
 	NULL,
 };
 
@@ -1620,13 +1531,8 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 #endif
 #endif
 	platform_set_drvdata(pdev, data);
-#if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
 	data->devfreq = devfreq_add_device(dev, &exynos5_mif_devfreq_profile,
-			"simple_usage", &exynos5_mif_governor_data);
-#endif
-#if defined(CONFIG_DEVFREQ_GOV_USERSPACE)
-	data->devfreq = devfreq_add_device(dev, &exynos5_mif_devfreq_profile, "user_space", NULL);
-#endif
+			"simple_exynos", &exynos5_mif_governor_data);
 	if (IS_ERR(data->devfreq)) {
 		err = PTR_ERR(data->devfreq);
 		goto err_opp_add;
