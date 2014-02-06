@@ -224,7 +224,7 @@ static int __maybe_unused exynos_check_enter_mode(void)
 #if defined(CONFIG_CPUIDLE_DSTOP)
 	return EXYNOS_CHECK_DSTOP;
 #else
-	return EXYNOS_CHECK_LPA;
+	return EXYNOS_CHECK_DIDLE;
 #endif
 }
 
