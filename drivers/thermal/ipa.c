@@ -1603,7 +1603,7 @@ static int __init get_dt_inform_ipa(void)
 }
 #endif
 
-static int ipa_init(void)
+static int __init ipa_init(void)
 {
 #ifdef CONFIG_OF
 	if (get_dt_inform_ipa()) {
