@@ -43,7 +43,9 @@ static struct clk *mout_egl_pll;
 static struct clk *sclk_bus_pll;
 static struct clk *mout_bus_pll_user;
 static struct clk *fout_egl_pll;
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 static unsigned int spd_option_flag, spd_sel;
+#endif
 
 static unsigned int exynos5430_volt_table_CA15[CPUFREQ_LEVEL_END_CA15];
 
@@ -814,9 +816,9 @@ static void __init set_volt_table_CA15(void)
 				exynos5430_volt_table_CA15[i]);
 	}
 
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	exynos5430_get_egl_speed_option(&spd_option_flag, &spd_sel);
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	if (spd_option_flag == EGL_DISABLE_SPD_OPTION) {
 		max_support_idx_CA15 = L13;	/* 1.2 GHz */
 	} else {
@@ -828,6 +830,8 @@ static void __init set_volt_table_CA15(void)
 			max_support_idx_CA15 = L6;	/* 1.9 GHz */
 		else if (spd_sel == EGL_SPD_SEL_2000_MHZ)
 			max_support_idx_CA15 = L5;	/* 2.0 GHz */
+		else if (spd_sel == EGL_SPD_SEL_2100_MHZ)
+			max_support_idx_CA15 = L4;	/* 2.1 GHz */
 	}
 	min_support_idx_CA15 = L17;	/* 800 MHz */
 
