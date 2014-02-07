@@ -128,85 +128,85 @@ static int sensor_6b2_init(struct v4l2_subdev *subdev, u32 val)
 	pr_info("%s\n", __func__);
 	/* sensor init */
 	/* 8 bit mode */
-	fimc_is_sensor_write(client, 0x7203, 0x40);
-	fimc_is_sensor_write(client, 0x602B, 0x02);
-	fimc_is_sensor_write(client, 0x702A, 0x3D);
-	fimc_is_sensor_write(client, 0x702B, 0xB0);
-	fimc_is_sensor_write(client, 0x7030, 0x0E);
-	fimc_is_sensor_write(client, 0x7031, 0x2F);
+	fimc_is_sensor_write8(client, 0x7203, 0x40);
+	fimc_is_sensor_write8(client, 0x602B, 0x02);
+	fimc_is_sensor_write8(client, 0x702A, 0x3D);
+	fimc_is_sensor_write8(client, 0x702B, 0xB0);
+	fimc_is_sensor_write8(client, 0x7030, 0x0E);
+	fimc_is_sensor_write8(client, 0x7031, 0x2F);
 
 	/* Analog Tuning */
-	fimc_is_sensor_write(client, 0x7067, 0x00);
-	fimc_is_sensor_write(client, 0x7073, 0xFF);
-	fimc_is_sensor_write(client, 0x7074, 0x22);
+	fimc_is_sensor_write8(client, 0x7067, 0x00);
+	fimc_is_sensor_write8(client, 0x7073, 0xFF);
+	fimc_is_sensor_write8(client, 0x7074, 0x22);
 
 	/* Dark Tuning */
-	fimc_is_sensor_write(client, 0x7042, 0x1F);
-	fimc_is_sensor_write(client, 0x7403, 0xC0);
-	fimc_is_sensor_write(client, 0x7245, 0x04);
-	fimc_is_sensor_write(client, 0x7205, 0xA1);
+	fimc_is_sensor_write8(client, 0x7042, 0x1F);
+	fimc_is_sensor_write8(client, 0x7403, 0xC0);
+	fimc_is_sensor_write8(client, 0x7245, 0x04);
+	fimc_is_sensor_write8(client, 0x7205, 0xA1);
 
 	/* Remove Dark Band */
-	fimc_is_sensor_write(client, 0x7430, 0x07);
-	fimc_is_sensor_write(client, 0x705C, 0x7E);
+	fimc_is_sensor_write8(client, 0x7430, 0x07);
+	fimc_is_sensor_write8(client, 0x705C, 0x7E);
 
 	/* Remove  Sun spot */
-	fimc_is_sensor_write(client, 0x702C, 0x3C);
-	fimc_is_sensor_write(client, 0x7075, 0x3D);
+	fimc_is_sensor_write8(client, 0x702C, 0x3C);
+	fimc_is_sensor_write8(client, 0x7075, 0x3D);
 
 	/* Remove CFPN */
-	fimc_is_sensor_write(client, 0x7066, 0x0C);
+	fimc_is_sensor_write8(client, 0x7066, 0x0C);
 
 	/* AE setting */
-	fimc_is_sensor_write(client, 0x6000, 0x44);
-	fimc_is_sensor_write(client, 0x6001, 0x44);
-	fimc_is_sensor_write(client, 0x6002, 0x44);
-	fimc_is_sensor_write(client, 0x6003, 0x44);
-	fimc_is_sensor_write(client, 0x6004, 0x44);
-	fimc_is_sensor_write(client, 0x6005, 0x44);
-	fimc_is_sensor_write(client, 0x6006, 0x44);
-	fimc_is_sensor_write(client, 0x6007, 0x44);
+	fimc_is_sensor_write8(client, 0x6000, 0x44);
+	fimc_is_sensor_write8(client, 0x6001, 0x44);
+	fimc_is_sensor_write8(client, 0x6002, 0x44);
+	fimc_is_sensor_write8(client, 0x6003, 0x44);
+	fimc_is_sensor_write8(client, 0x6004, 0x44);
+	fimc_is_sensor_write8(client, 0x6005, 0x44);
+	fimc_is_sensor_write8(client, 0x6006, 0x44);
+	fimc_is_sensor_write8(client, 0x6007, 0x44);
 
 	/* AE target */
-	fimc_is_sensor_write(client, 0x600A, 0xB4);
+	fimc_is_sensor_write8(client, 0x600A, 0xB4);
 
 	/* speed */
-	fimc_is_sensor_write(client, 0x5034, 0x00);
+	fimc_is_sensor_write8(client, 0x5034, 0x00);
 
 	/* Cintc_min */
-	fimc_is_sensor_write(client, 0x5017, 0x01);
+	fimc_is_sensor_write8(client, 0x5017, 0x01);
 
 	/* Number of pixel */
-	fimc_is_sensor_write(client, 0x5030, 0x4A);
-	fimc_is_sensor_write(client, 0x5031, 0xC0);
+	fimc_is_sensor_write8(client, 0x5030, 0x4A);
+	fimc_is_sensor_write8(client, 0x5031, 0xC0);
 
 	/* G + R Setting */
 	/* Vision Senser Data = 0.5*Gr + 0.5*R */
-	fimc_is_sensor_write(client, 0x6029, 0x02);
-	fimc_is_sensor_write(client, 0x602A, 0x02);
+	fimc_is_sensor_write8(client, 0x6029, 0x02);
+	fimc_is_sensor_write8(client, 0x602A, 0x02);
 
 	/* For Analog Gain 16x */
-	fimc_is_sensor_write(client, 0x7018, 0xCF);
-	fimc_is_sensor_write(client, 0x7019, 0xDB);
-	fimc_is_sensor_write(client, 0x702A, 0x8D);
-	fimc_is_sensor_write(client, 0x702B, 0x60);
-	fimc_is_sensor_write(client, 0x5035, 0x02);
+	fimc_is_sensor_write8(client, 0x7018, 0xCF);
+	fimc_is_sensor_write8(client, 0x7019, 0xDB);
+	fimc_is_sensor_write8(client, 0x702A, 0x8D);
+	fimc_is_sensor_write8(client, 0x702B, 0x60);
+	fimc_is_sensor_write8(client, 0x5035, 0x02);
 
 	/* BIT_RATE_MBPS_alv */
-	fimc_is_sensor_write(client, 0x7351, 0x02);
-	fimc_is_sensor_write(client, 0x7352, 0x48);
-	fimc_is_sensor_write(client, 0x7353, 0x00);
-	fimc_is_sensor_write(client, 0x7354, 0x00);
+	fimc_is_sensor_write8(client, 0x7351, 0x02);
+	fimc_is_sensor_write8(client, 0x7352, 0x48);
+	fimc_is_sensor_write8(client, 0x7353, 0x00);
+	fimc_is_sensor_write8(client, 0x7354, 0x00);
 
-	fimc_is_sensor_write(client, 0x7339, 0x03);
+	fimc_is_sensor_write8(client, 0x7339, 0x03);
 
 	/* Analog gain */
-	fimc_is_sensor_write(client, 0x4204, 0x00);
-	fimc_is_sensor_write(client, 0x4205, 0x32);
+	fimc_is_sensor_write8(client, 0x4204, 0x00);
+	fimc_is_sensor_write8(client, 0x4205, 0x32);
 
 	/* frame rate - default 10fps*/
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_MSB, 0x00);
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_LSB, 0x6A);
+	fimc_is_sensor_write8(client, SENSOR_REG_VIS_DURATION_MSB, 0x00);
+	fimc_is_sensor_write8(client, SENSOR_REG_VIS_DURATION_LSB, 0x6A);
 
 	pr_info("[MOD:D:%d] %s(%d)\n", module->id, __func__, val);
 
@@ -329,9 +329,9 @@ int sensor_6b2_stream_on(struct v4l2_subdev *subdev)
 		goto p_err;
 	}
 
-	ret = fimc_is_sensor_write(client, 0x4100, 1);
+	ret = fimc_is_sensor_write8(client, 0x4100, 1);
 	if (ret) {
-		err("fimc_is_sensor_write is fail(%d)", ret);
+		err("fimc_is_sensor_write8 is fail(%d)", ret);
 		goto p_err;
 	}
 
@@ -361,9 +361,9 @@ int sensor_6b2_stream_off(struct v4l2_subdev *subdev)
 		goto p_err;
 	}
 
-	ret = fimc_is_sensor_write(client, 0x4100, 0);
+	ret = fimc_is_sensor_write8(client, 0x4100, 0);
 	if (ret) {
-		err("fimc_is_sensor_write is fail(%d)", ret);
+		err("fimc_is_sensor_write8 is fail(%d)", ret);
 		goto p_err;
 	}
 
@@ -409,8 +409,8 @@ int sensor_6b2_s_duration(struct v4l2_subdev *subdev, u64 duration)
 	value[0] = result & 0xFF;
 	value[1] = (result >> 8) & 0xFF;
 
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_MSB, value[1]);
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_LSB, value[0]);
+	fimc_is_sensor_write8(client, SENSOR_REG_VIS_DURATION_MSB, value[1]);
+	fimc_is_sensor_write8(client, SENSOR_REG_VIS_DURATION_LSB, value[0]);
 
 p_err:
 	return ret;
@@ -455,7 +455,7 @@ int sensor_6b2_s_exposure(struct v4l2_subdev *subdev, u64 exposure)
 
 	value = exposure & 0xFF;
 
-	fimc_is_sensor_write(client, SENSOR_REG_VIS_AE_TARGET, value);
+	fimc_is_sensor_write8(client, SENSOR_REG_VIS_AE_TARGET, value);
 
 p_err:
 	return ret;

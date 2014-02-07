@@ -64,26 +64,29 @@ u32 notify_fcount_dummy;
 
 #define BINNING(x, y) roundup((x) * 1000 / (y), 250)
 
-int fimc_is_sensor_read(struct i2c_client *client,
-	u32 addr, u8 *val)
+int fimc_is_sensor_read8(struct i2c_client *client,
+	u16 addr, u8 *val)
 {
+	int ret = 0;
 	struct i2c_msg msg[2];
-	u8 *array = (u8*)&addr;
 	u8 wbuf[2];
-	int ret;
 
 	if (!client->adapter) {
 		err("Could not find adapter!\n");
-		return -ENODEV;
+		ret = -ENODEV;
+		goto p_err;
 	}
 
+	/* 1. I2C operation for writing. */
 	msg[0].addr = client->addr;
-	msg[0].flags = 0;
+	msg[0].flags = 0; /* write : 0, read : 1 */
 	msg[0].len = 2;
 	msg[0].buf = wbuf;
-	wbuf[0] = array[1];
-	wbuf[1] = array[0];
+	/* TODO : consider other size of buffer */
+	wbuf[0] = (addr & 0xFF00) >> 8;
+	wbuf[1] = (addr & 0xFF);
 
+	/* 2. I2C operation for reading data. */
 	msg[1].addr = client->addr;
 	msg[1].flags = I2C_M_RD;
 	msg[1].len = 1;
@@ -92,40 +95,152 @@ int fimc_is_sensor_read(struct i2c_client *client,
 	ret = i2c_transfer(client->adapter, msg, 2);
 	if (ret < 0) {
 		err("i2c treansfer fail");
-		return ret;
+		goto p_err;
+	}
+
+#ifdef PRINT_I2CCMD
+	info("I2CR08(%d) [0x%04X] : 0x%04X\n", client->addr, addr, *val);
+#endif
+
+p_err:
+	return ret;
+}
+
+int fimc_is_sensor_read16(struct i2c_client *client,
+	u16 addr, u16 *val)
+{
+	int ret = 0;
+	struct i2c_msg msg[2];
+	u8 wbuf[2], rbuf[2];
+
+	if (!client->adapter) {
+		err("Could not find adapter!\n");
+		ret = -ENODEV;
+		goto p_err;
+	}
+
+	/* 1. I2C operation for writing. */
+	msg[0].addr = client->addr;
+	msg[0].flags = 0; /* write : 0, read : 1 */
+	msg[0].len = 2;
+	msg[0].buf = wbuf;
+	/* TODO : consider other size of buffer */
+	wbuf[0] = (addr & 0xFF00) >> 8;
+	wbuf[1] = (addr & 0xFF);
+
+	/* 2. I2C operation for reading data. */
+	msg[1].addr = client->addr;
+	msg[1].flags = I2C_M_RD;
+	msg[1].len = 2;
+	msg[1].buf = rbuf;
+
+	ret = i2c_transfer(client->adapter, msg, 2);
+	if (ret < 0) {
+		err("i2c treansfer fail");
+		goto p_err;
+	}
+
+	*val = ((rbuf[0] << 8) | rbuf[1]);
+
+#ifdef PRINT_I2CCMD
+	info("I2CR16(%d) [0x%04X] : 0x%04X\n", client->addr, addr, *val);
+#endif
+
+p_err:
+	return ret;
+}
+
+int fimc_is_sensor_write(struct i2c_client *client,
+	u8 *buf, u32 size)
+{
+	int ret = 0;
+	int retry_count = 5;
+	struct i2c_msg msg = {client->addr, 0, size, buf};
+
+	do {
+		ret = i2c_transfer(client->adapter, &msg, 1);
+		if (likely(ret == 1))
+			break;
+		msleep(10);
+	} while (retry_count-- > 0);
+
+	if (ret != 1) {
+		dev_err(&client->dev, "%s: I2C is not working.\n", __func__);
+		return -EIO;
 	}
 
 	return 0;
 }
 
-int fimc_is_sensor_write(struct i2c_client *client,
-	u32 addr, u8 val)
+int fimc_is_sensor_write8(struct i2c_client *client,
+	u16 addr, u8 val)
 {
+	int ret = 0;
 	struct i2c_msg msg[1];
-	u8 *array = (u8*)&addr;
 	u8 wbuf[3];
-	int ret;
 
 	if (!client->adapter) {
 		err("Could not find adapter!\n");
-		return -ENODEV;
+		ret = -ENODEV;
+		goto p_err;
 	}
 
 	msg->addr = client->addr;
 	msg->flags = 0;
 	msg->len = 3;
 	msg->buf = wbuf;
-	wbuf[0] = array[1];
-	wbuf[1] = array[0];
+	wbuf[0] = (addr & 0xFF00) >> 8;
+	wbuf[1] = (addr & 0xFF);
 	wbuf[2] = val;
 
 	ret = i2c_transfer(client->adapter, msg, 1);
 	if (ret < 0) {
 		err("i2c treansfer fail(%d)", ret);
-		return ret;
+		goto p_err;
 	}
 
-	return 0;
+#ifdef PRINT_I2CCMD
+	info("I2CW08(%d) [0x%04X] : 0x%04X\n", client->addr, addr, val);
+#endif
+
+p_err:
+	return ret;
+}
+
+int fimc_is_sensor_write16(struct i2c_client *client,
+	u16 addr, u16 val)
+{
+	int ret = 0;
+	struct i2c_msg msg[1];
+	u8 wbuf[4];
+
+	if (!client->adapter) {
+		err("Could not find adapter!\n");
+		ret = -ENODEV;
+		goto p_err;
+	}
+
+	msg->addr = client->addr;
+	msg->flags = 0;
+	msg->len = 4;
+	msg->buf = wbuf;
+	wbuf[0] = (addr & 0xFF00) >> 8;
+	wbuf[1] = (addr & 0xFF);
+	wbuf[2] = (val & 0xFF00) >> 8;
+	wbuf[3] = (val & 0xFF);
+
+	ret = i2c_transfer(client->adapter, msg, 1);
+	if (ret < 0) {
+		err("i2c treansfer fail(%d)", ret);
+		goto p_err;
+	}
+
+#ifdef PRINT_I2CCMD
+	info("I2CW16(%d) [0x%04X] : 0x%04X\n", client->addr, addr, val);
+#endif
+
+p_err:
+	return ret;
 }
 
 static int get_sensor_mode(struct fimc_is_sensor_cfg *cfg,
