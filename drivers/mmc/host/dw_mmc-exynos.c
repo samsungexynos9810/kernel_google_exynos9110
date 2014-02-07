@@ -958,7 +958,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 
 	/* Short circuit: don't tune again if we already did. */
 	if (host->pdata->tuned) {
-		dw_mci_exynos_set_sample(host, host->pdata->clk_smpl, false);
+		host->drv_data->misc_control(host, CTRL_RESTORE_CLKSEL, NULL);
 		mci_writel(host, CDTHRCTL, host->cd_rd_thr << 16 | 1);
 		return 0;
 	}
