@@ -26,6 +26,7 @@
 #include "fimc-is-hw.h"
 #include "fimc-is-device-sensor.h"
 #include "fimc-is-device-csi.h"
+#include "fimc-is-device-sensor.h"
 
 #if (FIMC_IS_CSI_VERSION == CSI_VERSION_0000_0000)
 extern void s5pcsis_enable_interrupts(unsigned long __iomem *base_reg, struct fimc_is_image *image, bool on);
@@ -36,7 +37,7 @@ extern void s5pcsis_system_enable(unsigned long __iomem *base_reg, int on);
 #endif
 
 static u32 get_hsync_settle(struct fimc_is_sensor_cfg *cfg,
-	u32 cfgs, u32 width, u32 height, u32 framerate)
+	const u32 cfgs, u32 width, u32 height, u32 framerate)
 {
 	u32 settle;
 	u32 max_settle;
@@ -85,6 +86,31 @@ static u32 get_hsync_settle(struct fimc_is_sensor_cfg *cfg,
 	return settle;
 }
 
+#if (FIMC_IS_CSI_VERSION == CSI_VERSION_0310_0100)
+static u32 get_vci_channel(struct fimc_is_vci *vci,
+	const u32 vcis, u32 pixelformat)
+{
+	u32 i;
+	u32 index = vcis;
+
+	BUG_ON(!vci);
+
+	for (i = 0; i < vcis; i++) {
+		if (vci[i].pixelformat == pixelformat) {
+			index = i;
+			break;
+		}
+	}
+
+	if (index == vcis) {
+		err("invalid vc setting(foramt : %d)", pixelformat);
+		BUG();
+	}
+
+	return index;
+}
+#endif
+
 int fimc_is_csi_open(struct v4l2_subdev *subdev)
 {
 	int ret = 0;
@@ -132,8 +158,11 @@ static int csi_init(struct v4l2_subdev *subdev, u32 value)
 	module = (struct fimc_is_module_enum *)value;
 	csi->sensor_cfgs = module->cfgs;
 	csi->sensor_cfg = module->cfg;
+	csi->vcis = module->vcis;
+	csi->vci = module->vci;
 	csi->image.framerate = SENSOR_DEFAULT_FRAMERATE; /* default frame rate */
-	csi->image.num_lanes = module->ext.mipi_lane_num;
+	csi->mode = module->mode;
+	csi->lanes = module->lanes;
 
 p_err:
 	return ret;
@@ -192,8 +221,8 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 		csi->image.window.height,
 		csi->image.framerate);
 
-	info("[CSI:D:%d] settle(%dx%d@%d) = %d\n",
-		csi->instance,
+	minfo("[CSI:D] settle(%dx%d@%d) = %d\n",
+		csi,
 		csi->image.window.width,
 		csi->image.window.height,
 		csi->image.framerate,
@@ -202,18 +231,42 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 #if (FIMC_IS_CSI_VERSION == CSI_VERSION_0000_0000)
 	s5pcsis_reset(base_reg);
 	s5pcsis_set_hsync_settle(base_reg, settle);
-	s5pcsis_set_params(base_reg, &csi->image);
+	s5pcsis_set_params(base_reg, &csi->image, csi->lanes);
 	s5pcsis_system_enable(base_reg, true);
 	s5pcsis_enable_interrupts(base_reg, &csi->image, true);
 #else
 	csi_hw_reset(base_reg);
 	csi_hw_s_settle(base_reg, settle);
-	csi_hw_s_datalane(base_reg, CSI_DATA_LANES_4);
-	csi_hw_s_config(base_reg,
-		CSI_VIRTUAL_CH_0,
-		csi->image.format.pixelformat,
-		csi->image.window.width,
-		csi->image.window.height);
+	csi_hw_s_control(base_reg, csi->mode, csi->lanes);
+	if (csi->mode == CSI_MODE_CH0_ONLY) {
+		csi_hw_s_config(base_reg,
+			CSI_VIRTUAL_CH_0,
+			CSI_VIRTUAL_CH_0,
+			csi->image.format.pixelformat,
+			csi->image.window.width,
+			csi->image.window.height);
+	} else {
+		u32 index = get_vci_channel(csi->vci, csi->vcis, csi->image.format.pixelformat);
+		csi_hw_s_config(base_reg,
+			CSI_VIRTUAL_CH_0,
+			csi->vci[index].vc_map[CSI_VIRTUAL_CH_0],
+			csi->image.format.pixelformat,
+			csi->image.window.width,
+			csi->image.window.height);
+		csi_hw_s_config(base_reg,
+			CSI_VIRTUAL_CH_1,
+			csi->vci[index].vc_map[CSI_VIRTUAL_CH_1],
+			csi->image.format.pixelformat,
+			csi->image.window.width,
+			csi->image.window.height);
+		csi_hw_s_config(base_reg,
+			CSI_VIRTUAL_CH_2,
+			csi->vci[index].vc_map[CSI_VIRTUAL_CH_2],
+			csi->image.format.pixelformat,
+			csi->image.window.width,
+			csi->image.window.height);
+	}
+
 	csi_hw_s_interrupt(base_reg, true);
 	csi_hw_enable(base_reg);
 #endif
@@ -223,6 +276,7 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 
 static int csi_stream_off(struct fimc_is_device_csi *csi)
 {
+	int ret = 0;
 	unsigned long __iomem *base_reg;
 
 	BUG_ON(!csi);
@@ -236,7 +290,8 @@ static int csi_stream_off(struct fimc_is_device_csi *csi)
 	csi_hw_s_interrupt(base_reg, false);
 	csi_hw_disable(base_reg);
 #endif
-	return 0;
+
+	return ret;
 }
 
 static int csi_s_stream(struct v4l2_subdev *subdev, int enable)

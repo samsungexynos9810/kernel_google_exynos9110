@@ -99,6 +99,10 @@ struct fimc_is_module_enum {
 	u32				active_height;
 	u32				max_framerate;
 	u32				position;
+	u32				mode;
+	u32				lanes;
+	u32				vcis; /* vci is valid only if mode is vc mode */
+	struct fimc_is_vci		*vci;
 	u32				cfgs;
 	struct fimc_is_sensor_cfg	*cfg;
 	struct i2c_client		*client;

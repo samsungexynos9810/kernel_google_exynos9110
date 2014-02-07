@@ -13,7 +13,13 @@ struct fimc_is_device_csi {
 	u32				sensor_cfgs;
 	struct fimc_is_sensor_cfg	*sensor_cfg;
 
+	/* for vci setting */
+	u32				vcis;
+	struct fimc_is_vci		*vci;
+
 	/* image configuration */
+	u32				mode;
+	u32				lanes;
 	struct fimc_is_image		image;
 };
 

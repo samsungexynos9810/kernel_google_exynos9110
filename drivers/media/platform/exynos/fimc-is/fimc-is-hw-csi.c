@@ -12,11 +12,13 @@
 #include "fimc-is-config.h"
 #include "fimc-is-type.h"
 #include "fimc-is-regs.h"
+#include "fimc-is-hw.h"
 
 #if (FIMC_IS_CSI_VERSION == CSI_VERSION_0310_0100)
 #define CSI_REG_CTRL					(0x00)
 #define CSI_REG_DPHYCTRL				(0x04)
 #define CSI_REG_INTMSK					(0x10)
+#define CSI_REG_INTSRC					(0x14)
 #define CSI_REG_CONFIG0					(0x08)
 #define CSI_REG_CONFIG1					(0x40)
 #define CSI_REG_CONFIG2					(0x50)
@@ -190,91 +192,98 @@ int csi_hw_s_dphyctrl1(unsigned long __iomem *base_reg,
 	return 0;
 }
 
-int csi_hw_s_datalane(unsigned long __iomem *base_reg,
-	u32 lanes)
+int csi_hw_s_control(unsigned long __iomem *base_reg,
+	u32 mode, u32 lanes)
 {
-	u32 val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
-	val = (val & ~(0x3 << 2)) | ((lanes - 1) << 2);
+	int ret = 0;
+	u32 val;
+
+	val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
+	val = (val & ~(0x3 << 2)) | (lanes << 2);
+	val = (val & ~(0x3 << 22)) | (mode << 22);
+	/* all channel use extclk for wrapper clock source */
+	val |= (0xF << 8);
+	/* output width of CH0 is not 32 bits(normal output) */
+	val &= ~(0x1 << 20);
 	writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
 
-	return 0;
+	return ret;
 }
 
 int csi_hw_s_config(unsigned long __iomem *base_reg,
-	u32 channel, u32 pixelformat, u32 width, u32 height)
+	u32 vc_src, u32 vc_dst, u32 pixelformat, u32 width, u32 height)
 {
 	int ret = 0;
 	u32 val, format;
-
-	if (channel == 0) {
-		val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
-		/* normal output setting(no 32bits aligment) */
-		val &= ~(0x1 << 20);
-		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
-	}
-
-	val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
-	val = (val & ~(0x1 << (8 + channel))) | (0x1 << (8 + channel));
-	writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
 
 	switch (pixelformat) {
 	case V4L2_PIX_FMT_SBGGR8:
 	case V4L2_PIX_FMT_SGBRG8:
 	case V4L2_PIX_FMT_SGRBG8:
 	case V4L2_PIX_FMT_SRGGB8:
-		format = 0x2A;
+		format = HW_FORMAT_RAW8;
 		break;
 	case V4L2_PIX_FMT_SBGGR10:
 	case V4L2_PIX_FMT_SGBRG10:
 	case V4L2_PIX_FMT_SGRBG10:
 	case V4L2_PIX_FMT_SRGGB10:
-		format = 0x2B;
+		format = HW_FORMAT_RAW10;
 		break;
 	case V4L2_PIX_FMT_SBGGR12:
 	case V4L2_PIX_FMT_SGBRG12:
 	case V4L2_PIX_FMT_SGRBG12:
 	case V4L2_PIX_FMT_SRGGB12:
-		format = 0x2B;
-		/* HACK : format = 0x2C; */
+		format = HW_FORMAT_RAW10;
+		/* HACK : format = HW_FORMAT_RAW12; */
+		break;
+	case V4L2_PIX_FMT_YVU420:
+	case V4L2_PIX_FMT_NV21:
+		format = HW_FORMAT_YUV420_8BIT;
+		break;
+	case V4L2_PIX_FMT_YUYV:
+		format = HW_FORMAT_YUV422_8BIT;
+		break;
+	case V4L2_PIX_FMT_JPEG:
+		format = HW_FORMAT_USER;
 		break;
 	default:
-		err("unsupported format(%d)", pixelformat);
+		err("unsupported format(%X)", pixelformat);
 		ret = -EINVAL;
 		goto p_err;
 		break;
 	}
 
-	switch (channel) {
-	case 0:
+	switch (vc_src) {
+	case CSI_VIRTUAL_CH_0:
 		val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG0));
-		val = (val & ~(0x3 << 0)) | (channel << 0);
+		val = (val & ~(0x3 << 0)) | (vc_dst << 0);
 		val = (val & ~(0x3f << 2)) | (format << 2);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG0));
 
 		val = (width << 16) | (height << 0);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_RESOL0));
 		break;
-	case 1:
+	case CSI_VIRTUAL_CH_1:
 		val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG1));
-		val = (val & ~(0x3 << 0)) | (channel << 0);
+		val = (val & ~(0x3 << 0)) | (vc_dst << 0);
 		val = (val & ~(0x3f << 2)) | (format << 2);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG1));
 
 		val = (width << 16) | (height << 0);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_RESOL1));
 		break;
-	case 2:
+	case CSI_VIRTUAL_CH_2:
 		val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG2));
-		val = (val & ~(0x3 << 0)) | (channel << 0);
+		val = (val & ~(0x3 << 0)) | (vc_dst << 0);
 		val = (val & ~(0x3f << 2)) | (format << 2);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG2));
 
 		val = (width << 16) | (height << 0);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_RESOL2));
 		break;
-	case 3:
+	case CSI_VIRTUAL_CH_3:
 		val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG3));
-		val = (val & ~(0x3 << 0)) | (channel << 0);
+		val = (val & ~(0x3 << 0)) | (vc_dst << 0);
 		val = (val & ~(0x3f << 2)) | (format << 2);
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CONFIG3));
 
@@ -282,7 +291,7 @@ int csi_hw_s_config(unsigned long __iomem *base_reg,
 		writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_RESOL3));
 		break;
 	default:
-		err("invalid channel(%d)", channel);
+		err("invalid channel(%d)", vc_src);
 		ret = -EINVAL;
 		goto p_err;
 		break;
@@ -295,10 +304,20 @@ p_err:
 int csi_hw_s_interrupt(unsigned long __iomem *base_reg, bool on)
 {
 	u32 val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_INTMSK));
-	val = on ? (val | 0xF1101117) : (val & ~0xF1101117);
+	val = on ? (val | 0xFFF1FFF7) : (val & ~0xFFF1FFF7);
 	writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_INTMSK));
 
 	return 0;
+}
+
+int csi_hw_g_interrupt(unsigned long __iomem *base_reg)
+{
+	u32 val;
+
+	val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_INTSRC));
+	writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_INTSRC));
+
+	return val;
 }
 
 int csi_hw_enable(unsigned long __iomem *base_reg)
@@ -307,7 +326,7 @@ int csi_hw_enable(unsigned long __iomem *base_reg)
 
 	/* update shadow */
 	val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
-	val |= (0x1 << 16);
+	val |= (0xF << 16);
 	writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
 
 	/* DPHY on */
@@ -465,13 +484,9 @@ void s5pcsis_set_hsync_settle(unsigned long __iomem *base_reg, u32 settle)
 }
 
 void s5pcsis_set_params(unsigned long __iomem *base_reg,
-	struct fimc_is_image *image)
+	struct fimc_is_image *image, u32 lanes)
 {
 	u32 val;
-	u32 num_lanes = 0x3;
-
-	if (image->num_lanes)
-		num_lanes = image->num_lanes - 1;
 
 #if defined(CONFIG_SOC_EXYNOS3470)
 	writel(0x000000AC, base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG)); /* only for carmen */
@@ -481,7 +496,7 @@ void s5pcsis_set_params(unsigned long __iomem *base_reg,
 	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
 	val &= ~S5PCSIS_CTRL_ALIGN_32BIT;
 
-	val |= S5PCSIS_CTRL_NUMOFDATALANE(num_lanes);
+	val |= S5PCSIS_CTRL_NUMOFDATALANE(lanes);
 
 	/* Interleaved data */
 	if (image->format.field == V4L2_FIELD_INTERLACED) {

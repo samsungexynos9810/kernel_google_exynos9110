@@ -35,6 +35,7 @@
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
 #include "../fimc-is-resourcemgr.h"
+#include "../fimc-is-hw.h"
 #include "fimc-is-device-8b1.h"
 
 #define SENSOR_NAME "S5K8B1"
@@ -637,6 +638,8 @@ int sensor_8b1_probe(struct i2c_client *client,
 	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 30;
 	module->position = SENSOR_POSITION_FRONT;
+	module->mode = CSI_MODE_CH0_ONLY;
+	module->lanes = CSI_DATA_LANES_1;
 	module->setfile_name = "setfile_8b1.bin";
 	module->cfgs = ARRAY_SIZE(config_8b1);
 	module->cfg = config_8b1;
@@ -649,7 +652,7 @@ int sensor_8b1_probe(struct i2c_client *client,
 	}
 
 	ext = &module->ext;
-	ext->mipi_lane_num = 1;
+	ext->mipi_lane_num = module->lanes;
 	ext->I2CSclk = I2C_L0;
 	ext->sensor_con.product_name = SENSOR_NAME_S5K8B1;
 	ext->sensor_con.peri_type = SE_I2C;

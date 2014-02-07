@@ -41,10 +41,6 @@
 #include "fimc-is-interface.h"
 #include "fimc-is-device-flite.h"
 
-#define FIMCLITE0_REG_BASE	(S5P_VA_FIMCLITE0)  /* phy : 0x13c0_0000 */
-#define FIMCLITE1_REG_BASE	(S5P_VA_FIMCLITE1)  /* phy : 0x13c1_0000 */
-#define FIMCLITE2_REG_BASE	(S5P_VA_FIMCLITE2)  /* phy : 0x13c9_0000 */
-
 #define FLITE_MAX_RESET_READY_TIME	(20) /* 100ms */
 #define FLITE_MAX_WIDTH_SIZE		(8192)
 #define FLITE_MAX_HEIGHT_SIZE		(8192)
@@ -1838,13 +1834,13 @@ int fimc_is_flite_probe(struct fimc_is_device_sensor *device,
 	init_waitqueue_head(&flite->wait_queue);
 	switch(instance) {
 	case FLITE_ID_A:
-		flite->base_reg = (unsigned long *)S5P_VA_FIMCLITE0;
+		flite->base_reg = (unsigned long *)FIMCLITE0_REG_BASE;
 		break;
 	case FLITE_ID_B:
-		flite->base_reg = (unsigned long *)S5P_VA_FIMCLITE1;
+		flite->base_reg = (unsigned long *)FIMCLITE1_REG_BASE;
 		break;
 	case FLITE_ID_C:
-		flite->base_reg = (unsigned long *)S5P_VA_FIMCLITE2;
+		flite->base_reg = (unsigned long *)FIMCLITE2_REG_BASE;
 		break;
 	default:
 		err("instance is invalid(%d)", instance);
