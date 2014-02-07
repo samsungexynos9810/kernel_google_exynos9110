@@ -48,6 +48,7 @@ static unsigned int spd_option_flag, spd_sel;
 #endif
 
 static unsigned int exynos5430_volt_table_CA15[CPUFREQ_LEVEL_END_CA15];
+static unsigned int exynos5430_abb_table_CA15[CPUFREQ_LEVEL_END_CA15];
 
 static struct cpufreq_frequency_table exynos5430_freq_table_CA15[] = {
 	{L0,  2500 * 1000},
@@ -814,6 +815,12 @@ static void __init set_volt_table_CA15(void)
 
 		pr_info("CPUFREQ of CA15  L%d : %d uV\n", i,
 				exynos5430_volt_table_CA15[i]);
+
+		exynos5430_abb_table_CA15[i] =
+			get_match_abb(ID_ARM, exynos5430_freq_table_CA15[i].frequency);
+
+		pr_info("CPUFREQ of CA15  L%d : ABB %d\n", i,
+				exynos5430_abb_table_CA15[i]);
 	}
 
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
@@ -1004,6 +1011,9 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	info->cpu_clk = fout_egl_pll;
 
 	info->volt_table = exynos5430_volt_table_CA15;
+#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+	info->abb_table = exynos5430_abb_table_CA15;
+#endif
 	info->freq_table = exynos5430_freq_table_CA15;
 	info->set_freq = exynos5430_set_frequency_CA15;
 	info->need_apll_change = exynos5430_pms_change_CA15;
