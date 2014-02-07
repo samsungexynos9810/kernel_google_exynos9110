@@ -373,6 +373,36 @@ static bool samsung_usb3phy_is_active(struct usb_phy *phy)
 	return !!sphy->usage_count;
 }
 
+static int samsung_usb3phy_read(struct usb_phy *phy, u32 reg)
+{
+	struct samsung_usbphy *sphy = phy_to_sphy(phy);
+	unsigned long flags;
+	u32 val;
+
+	spin_lock_irqsave(&sphy->lock, flags);
+	val = readl(sphy->regs + reg);
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	return val;
+}
+
+static int samsung_usb3phy_write(struct usb_phy *phy, u32 val, u32 reg)
+{
+	struct samsung_usbphy *sphy = phy_to_sphy(phy);
+	unsigned long flags;
+
+	spin_lock_irqsave(&sphy->lock, flags);
+	writel(val, sphy->regs + reg);
+	spin_unlock_irqrestore(&sphy->lock, flags);
+
+	return 0;
+}
+
+static struct usb_phy_io_ops samsung_usb3phy_io_ops = {
+	.read		= samsung_usb3phy_read,
+	.write		= samsung_usb3phy_write,
+};
+
 static int
 samsung_usb3phy_lpa_event(struct notifier_block *nb,
 			  unsigned long event,
@@ -450,6 +480,7 @@ static int samsung_usb3phy_probe(struct platform_device *pdev)
 	sphy->phy.shutdown	= samsung_usb3phy_shutdown;
 	sphy->phy.is_active	= samsung_usb3phy_is_active;
 	sphy->phy.tune		= samsung_usb3phy_tune;
+	sphy->phy.io_ops	= &samsung_usb3phy_io_ops;
 	sphy->drv_data		= samsung_usbphy_get_driver_data(pdev);
 	sphy->ref_clk_freq	= samsung_usbphy_get_refclk_freq(sphy);
 
