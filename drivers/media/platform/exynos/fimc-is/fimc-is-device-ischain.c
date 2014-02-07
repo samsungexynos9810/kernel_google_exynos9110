@@ -2595,34 +2595,10 @@ int fimc_is_ischain_open(struct fimc_is_device_ischain *device,
 	fimc_is_subdev_open(&device->fd, NULL, NULL);
 
 	/* for mediaserver force close */
-	ret = fimc_is_resource_get(device->resourcemgr);
+	ret = fimc_is_resource_get(device->resourcemgr, RESOURCE_TYPE_ISCHAIN);
 	if (ret) {
 		merr("fimc_is_resource_get is fail", device);
-		fimc_is_resource_put(device->resourcemgr);
 		goto p_err;
-	}
-
-	if (device->instance == 0) {
-		/* 5. A5 power on */
-		ret = fimc_is_ischain_power(device, 1);
-		if (ret) {
-			err("failed to fimc_is_ischain_power (%d)\n", ret);
-			fimc_is_resource_put(device->resourcemgr);
-			ret = -EINVAL;
-			goto p_err;
-		}
-
-		/* W/A for a lower version MCUCTL */
-		fimc_is_interface_reset(device->interface);
-
-		mdbgd_ischain("power up and loaded firmware\n", device);
-#ifdef ENABLE_CLOCK_GATE
-		if (sysfs_debug.en_clk_gate &&
-				sysfs_debug.clk_gate_mode == CLOCK_GATE_MODE_HOST) {
-			core = (struct fimc_is_core *)device->interface->core;
-			fimc_is_clk_gate_init(core);
-		}
-#endif
 	}
 
 	set_bit(FIMC_IS_ISCHAIN_OPEN, &device->state);
@@ -2708,7 +2684,7 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 	}
 
 	/* for mediaserver force close */
-	ret = fimc_is_resource_put(device->resourcemgr);
+	ret = fimc_is_resource_put(device->resourcemgr, RESOURCE_TYPE_ISCHAIN);
 	if (ret) {
 		merr("fimc_is_resource_put is fail", device);
 		goto exit;

@@ -1049,8 +1049,8 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 	memset(&device->lens_ctl, 0, sizeof(struct camera2_lens_ctl));
 	memset(&device->flash_ctl, 0, sizeof(struct camera2_flash_ctl));
 
-	/* for mediaserver force close */
-	ret = fimc_is_resource_get(device->resourcemgr);
+       /* for mediaserver force close */
+	ret = fimc_is_resource_get(device->resourcemgr, device->instance);
 	if (ret) {
 		merr("fimc_is_resource_get is fail", device);
 		goto p_err;
@@ -1141,15 +1141,9 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 	}
 
 	/* for mediaserver force close */
-	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-		ret = fimc_is_resource_put(device->resourcemgr);
-		if (ret)
-			merr("fimc_is_resource_put is fail", device);
-	} else {
-		notify_fcount_sen0 = (u32 *)notify_fcount_sen0_fw;
-		notify_fcount_sen1 = (u32 *)notify_fcount_sen1_fw;
-		notify_fcount_sen2 = (u32 *)notify_fcount_sen2_fw;
-	}
+	ret = fimc_is_resource_put(device->resourcemgr, device->instance);
+	if (ret)
+		merr("fimc_is_resource_put is fail", device);
 
 	clear_bit(FIMC_IS_SENSOR_OPEN, &device->state);
 
