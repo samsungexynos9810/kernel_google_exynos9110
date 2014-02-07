@@ -798,6 +798,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 	info->pll_safe_idx = L12;
 	info->max_support_idx = max_support_idx_CA7;
 	info->min_support_idx = min_support_idx_CA7;
+	info->boost_freq = exynos5430_freq_table_CA7[L10].frequency;
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	/* booting frequency is 1.3GHz */
 	info->boot_cpu_min_qos = exynos5430_freq_table_CA7[L7].frequency;
