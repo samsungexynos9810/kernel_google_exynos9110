@@ -300,11 +300,22 @@ static void thermal_zone_device_set_polling(struct thermal_zone_device *tz,
 					    int delay)
 {
 	if (delay > 1000)
+#ifdef CONFIG_SCHED_HMP
+		mod_delayed_work_on(0, system_freezable_wq, &tz->poll_queue,
+				 round_jiffies(msecs_to_jiffies(delay)));
+#else
 		mod_delayed_work(system_freezable_wq, &tz->poll_queue,
 				 round_jiffies(msecs_to_jiffies(delay)));
+#endif
 	else if (delay)
+#ifdef CONFIG_SCHED_HMP
+		mod_delayed_work_on(0, system_freezable_wq, &tz->poll_queue,
+				 msecs_to_jiffies(delay));
+#else
 		mod_delayed_work(system_freezable_wq, &tz->poll_queue,
 				 msecs_to_jiffies(delay));
+#endif
+
 	else
 		cancel_delayed_work(&tz->poll_queue);
 }
