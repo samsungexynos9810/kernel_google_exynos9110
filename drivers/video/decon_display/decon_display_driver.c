@@ -216,6 +216,7 @@ static void display_driver_shutdown(struct platform_device *pdev)
 {
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv = get_display_driver();
+	disp_set_pm_status(DISP_STATUS_PM2);
 	disp_pm_gate_lock(dispdrv, true);
 	disp_pm_add_refcount(get_display_driver());
 #endif

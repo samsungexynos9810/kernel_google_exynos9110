@@ -353,6 +353,13 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 	return 0;
 }
 
+void disp_set_pm_status(int flag)
+{
+	struct display_driver *dispdrv = get_display_driver();
+	if ((flag >= DISP_STATUS_PM0) || (flag < DISP_STATUS_PM_MAX))
+		dispdrv->platform_status = flag;
+}
+
 /* disp_pm_add_refcount - it is called in the early start of the
  * update_reg_handler */
 int disp_pm_add_refcount(struct display_driver *dispdrv)
@@ -482,7 +489,8 @@ static void request_dynamic_hotplug(bool hotplug)
 {
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
 	struct display_driver *dispdrv = get_display_driver();
-	if (dispdrv->pm_status.hotplug_gating_on)
+	if ((dispdrv->pm_status.hotplug_gating_on) &&
+		(dispdrv->platform_status == DISP_STATUS_PM1))
 		force_dynamic_hotplug(hotplug);
 #endif
 }

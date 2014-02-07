@@ -20,5 +20,5 @@ int disp_pm_runtime_get_sync(struct display_driver *dispdrv);
 int disp_pm_runtime_put_sync(struct display_driver *dispdrv);
 void disp_pm_gate_lock(struct display_driver *dispdrv, bool increase);
 int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd);
-
+void disp_set_pm_status(int flag);
 #endif
