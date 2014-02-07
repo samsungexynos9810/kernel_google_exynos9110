@@ -25,8 +25,8 @@ struct fimc_is_device_ischain;
 #define SENSOR_MAX_ENUM			20
 #define SENSOR_DEFAULT_FRAMERATE	30
 
-#define SENSOR_DRIVING_MASK		0xF0000000
-#define SENSOR_DRIVING_SHIFT		28
+#define SENSOR_SCENARIO_MASK		0xF0000000
+#define SENSOR_SCENARIO_SHIFT		28
 #define SENSOR_MODULE_MASK		0x0FFFFFFF
 #define SENSOR_MODULE_SHIFT		0
 
@@ -181,11 +181,13 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 int fimc_is_sensor_close(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	u32 input,
-	u32 driving);
+	u32 scenario);
 int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 	struct fimc_is_fmt *format,
 	u32 width,
 	u32 height);
+int fimc_is_sensor_s_ctrl(struct fimc_is_device_sensor *device,
+	struct v4l2_control *ctrl);
 int fimc_is_sensor_buffer_queue(struct fimc_is_device_sensor *device,
 	u32 index);
 int fimc_is_sensor_buffer_finish(struct fimc_is_device_sensor *device,
@@ -208,6 +210,8 @@ int fimc_is_sensor_s_frame_duration(struct fimc_is_device_sensor *device,
 int fimc_is_sensor_s_exposure_time(struct fimc_is_device_sensor *device,
 	u32 exposure_time);
 
+int fimc_is_sensor_g_ctrl(struct fimc_is_device_sensor *device,
+	struct v4l2_control *ctrl);
 int fimc_is_sensor_g_instance(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_framerate(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_fcount(struct fimc_is_device_sensor *device);

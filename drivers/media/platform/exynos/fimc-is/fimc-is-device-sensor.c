@@ -33,6 +33,7 @@
 #include <linux/i2c.h>
 
 #include <mach/map.h>
+#include <mach/devfreq.h>
 #include <mach/regs-clock.h>
 
 #include "fimc-is-core.h"
@@ -51,8 +52,8 @@ extern struct device *camera_front_dev;
 extern struct device *camera_rear_dev;
 
 extern int fimc_is_sen_video_probe(void *data);
-int fimc_is_sensor_runtime_resume(struct device *dev);
-int fimc_is_sensor_runtime_suspend(struct device *dev);
+struct pm_qos_request exynos_sensor_qos_int;
+struct pm_qos_request exynos_sensor_qos_mem;
 
 extern u32 __iomem *notify_fcount_sen0;
 extern u32 __iomem *notify_fcount_sen1;
@@ -533,14 +534,6 @@ static void fimc_is_sensor_dtp(unsigned long data)
 		return;
 	}
 
-	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-		ischain = device->ischain;
-		if (!ischain) {
-			err("ischain is NULL");
-			return;
-		}
-	}
-
 	queue = GET_DST_QUEUE(vctx);
 	framemgr = &queue->framemgr;
 	if ((framemgr->frame_cnt == 0) || (framemgr->frame_cnt >= FRAMEMGR_MAX_REQUEST)) {
@@ -549,10 +542,17 @@ static void fimc_is_sensor_dtp(unsigned long data)
 	}
 
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
+
 	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		ischain = device->ischain;
+		if (!ischain) {
+			err("ischain is NULL");
+			return;
+		}
+
 		set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_3aa.state);
 		set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_isp.state);
-		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &ischain->group_3ax.state))
+		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &ischain->group_3aa.state))
 			up(&ischain->group_3aa.smp_trigger);
 	}
 
@@ -1006,7 +1006,7 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 		dev_set_drvdata(dev, device->pdata);
 
 p_err:
-	info("[SEN:D:%d] %s(%d)\n", instance, __func__, ret);
+	info("[%d][SEN:D] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }
 
@@ -1130,6 +1130,7 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 #else
 	fimc_is_sensor_runtime_suspend(&device->pdev->dev);
 #endif
+
 	/* cancel a work and wait for it to finish */
 	cancel_work_sync(&device->control_work);
 	cancel_work_sync(&device->instant_work);
@@ -1159,11 +1160,12 @@ p_err:
 
 int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	u32 input,
-	u32 drive)
+	u32 scenario)
 {
 	int ret = 0;
 	struct v4l2_subdev *subdev_module;
 	struct v4l2_subdev *subdev_csi;
+	struct v4l2_subdev *subdev_flite;
 	struct fimc_is_module_enum *module;
 	u32 sensor_ch, actuator_ch;
 	u32 sensor_addr, actuator_addr;
@@ -1227,13 +1229,20 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 #endif
 
 	subdev_csi = device->subdev_csi;
+	subdev_flite = device->subdev_flite;
 	device->image.framerate = min_t(u32, SENSOR_DEFAULT_FRAMERATE, module->max_framerate);
 	device->image.window.width = module->pixel_width;
 	device->image.window.height = module->pixel_height;
 	device->image.window.o_width = device->image.window.width;
 	device->image.window.o_height = device->image.window.height;
-	drive ? set_bit(FIMC_IS_SENSOR_DRIVING, &device->state) :
+
+	if (scenario) {
+		device->pdata->scenario = scenario;
+		set_bit(FIMC_IS_SENSOR_DRIVING, &device->state);
+	} else {
+		device->pdata->scenario = SENSOR_SCENARIO_NORMAL;
 		clear_bit(FIMC_IS_SENSOR_DRIVING, &device->state);
+	}
 
 	if (device->subdev_module) {
 		mwarn("subdev_module is already registered", device);
@@ -1246,22 +1255,12 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
+#if defined(CONFIG_PM_DEVFREQ)
 	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-		device->pdata->scenario = SENSOR_SCENARIO_VISION;
-
-		ret = fimc_is_resource_put(device->resourcemgr);
-		if (ret)
-			merr("fimc_is_resource_put is fail", device);
-
-		notify_fcount_sen0_fw = (u32)notify_fcount_sen0;
-		notify_fcount_sen1_fw = (u32)notify_fcount_sen1;
-		notify_fcount_sen2_fw = (u32)notify_fcount_sen2;
-		notify_fcount_sen0 = &notify_fcount_dummy;
-		notify_fcount_sen1 = &notify_fcount_dummy;
-		notify_fcount_sen2 = &notify_fcount_dummy;
-	} else {
-		device->pdata->scenario = SENSOR_SCENARIO_NORMAL;
+		pm_qos_add_request(&exynos_sensor_qos_int, PM_QOS_DEVICE_THROUGHPUT, 533000);
+		pm_qos_add_request(&exynos_sensor_qos_mem, PM_QOS_BUS_THROUGHPUT, 667000);
 	}
+#endif
 
 	/* configuration clock control */
 	ret = fimc_is_sensor_iclk_on(device);
@@ -1274,6 +1273,12 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	ret = fimc_is_sensor_gpio_on(device);
 	if (ret) {
 		merr("fimc_is_sensor_gpio_on is fail(%d)", device, ret);
+		goto p_err;
+	}
+
+	ret = v4l2_subdev_call(subdev_flite, core, init, (u32)module);
+	if (ret) {
+		merr("v4l2_flite_call(init) is fail(%d)", device, ret);
 		goto p_err;
 	}
 
@@ -1294,9 +1299,7 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	device->subdev_module = subdev_module;
 
 p_err:
-	info("[SEN:D:%d] input: %d, drive: %d, ret: %d)\n",
-			device->instance, input, drive, ret);
-
+	minfo("[SEN:D] %s(%d, %d, %d)\n", device, __func__, input, scenario, ret);
 	return ret;
 }
 
@@ -1306,25 +1309,28 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 	u32 height)
 {
 	int ret = 0;
+	struct v4l2_subdev *subdev_module;
 	struct v4l2_subdev *subdev_csi;
 	struct v4l2_subdev *subdev_flite;
 	struct fimc_is_module_enum *module;
 	struct v4l2_mbus_framefmt subdev_format;
 
 	BUG_ON(!device);
+	BUG_ON(!device->subdev_module);
 	BUG_ON(!device->subdev_csi);
 	BUG_ON(!device->subdev_flite);
 	BUG_ON(!device->subdev_module);
 	BUG_ON(!format);
 
-	module = (struct fimc_is_module_enum *)v4l2_get_subdevdata(device->subdev_module);
+	subdev_module = device->subdev_module;
+	subdev_csi = device->subdev_csi;
+	subdev_flite = device->subdev_flite;
+
+	module = (struct fimc_is_module_enum *)v4l2_get_subdevdata(subdev_module);
 	if (!module) {
 		merr("module is NULL", device);
 		goto p_err;
 	}
-
-	subdev_csi = device->subdev_csi;
-	subdev_flite = device->subdev_flite;
 
 	/* Data Type For Comapnion:
 	 * Companion use user defined data type.
@@ -1345,15 +1351,23 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 	subdev_format.width = width;
 	subdev_format.height = height;
 
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		ret = v4l2_subdev_call(subdev_module, video, s_mbus_fmt, &subdev_format);
+		if (ret) {
+			merr("v4l2_module_call(s_format) is fail(%d)", device, ret);
+			goto p_err;
+		}
+	}
+
 	ret = v4l2_subdev_call(subdev_csi, video, s_mbus_fmt, &subdev_format);
 	if (ret) {
-		merr("v4l2_csi_call(s_param) is fail(%d)", device, ret);
+		merr("v4l2_csi_call(s_format) is fail(%d)", device, ret);
 		goto p_err;
 	}
 
 	ret = v4l2_subdev_call(subdev_flite, video, s_mbus_fmt, &subdev_format);
 	if (ret) {
-		merr("v4l2_flite_call(s_param) is fail(%d)", device, ret);
+		merr("v4l2_flite_call(s_format) is fail(%d)", device, ret);
 		goto p_err;
 	}
 
@@ -1392,12 +1406,6 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 
 	cp = &param->parm.capture;
 	tpf = &cp->timeperframe;
-
-	if (!tpf->denominator) {
-		merr("denominator is 0", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
 
 	if (!tpf->numerator) {
 		merr("numerator is 0", device);
@@ -1457,6 +1465,29 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	device->mode = get_sensor_mode(module->cfg, module->cfgs,
 			device->image.window.width, device->image.window.height,
 			framerate);
+
+p_err:
+	return ret;
+}
+
+int fimc_is_sensor_s_ctrl(struct fimc_is_device_sensor *device,
+	struct v4l2_control *ctrl)
+{
+	int ret = 0;
+	struct v4l2_subdev *subdev_module;
+
+	BUG_ON(!device);
+	BUG_ON(!device->subdev_module);
+	BUG_ON(!device->subdev_csi);
+	BUG_ON(!ctrl);
+
+	subdev_module = device->subdev_module;
+
+	ret = v4l2_subdev_call(subdev_module, core, s_ctrl, ctrl);
+	if (ret) {
+		err("s_ctrl is fail(%d)", ret);
+		goto p_err;
+	}
 
 p_err:
 	return ret;
@@ -1568,6 +1599,30 @@ int fimc_is_sensor_s_exposure_time(struct fimc_is_device_sensor *device,
 p_err:
 	return ret;
 }
+
+int fimc_is_sensor_g_ctrl(struct fimc_is_device_sensor *device,
+	struct v4l2_control *ctrl)
+{
+	int ret = 0;
+	struct v4l2_subdev *subdev_module;
+
+	BUG_ON(!device);
+	BUG_ON(!device->subdev_module);
+	BUG_ON(!device->subdev_csi);
+	BUG_ON(!ctrl);
+
+	subdev_module = device->subdev_module;
+
+	ret = v4l2_subdev_call(subdev_module, core, g_ctrl, ctrl);
+	if (ret) {
+		err("g_ctrl is fail(%d)", ret);
+		goto p_err;
+	}
+
+p_err:
+	return ret;
+}
+
 
 int fimc_is_sensor_g_instance(struct fimc_is_device_sensor *device)
 {
@@ -1775,8 +1830,6 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 
 	BUG_ON(!device);
 	BUG_ON(!device->subdev_flite);
-	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state))
-		BUG_ON(!device->ischain);
 
 	subdev_flite = device->subdev_flite;
 	enable = FLITE_ENABLE_FLAG;
@@ -1826,7 +1879,7 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 	set_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 
 p_err:
-	info("[BAK:D:%d] %s(%dx%d, %d)\n", device->instance, __func__,
+	minfo("[SEN:D] %s(%dx%d, %d)\n", device, __func__,
 		device->image.window.width, device->image.window.height, ret);
 	return ret;
 }
@@ -1862,7 +1915,7 @@ int fimc_is_sensor_back_stop(struct fimc_is_device_sensor *device)
 	clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 
 p_err:
-	info("[BAK:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	minfo("[BAK:D] %s(%d)\n", device, __func__, ret);
 	return ret;
 }
 
@@ -1907,7 +1960,7 @@ int fimc_is_sensor_front_start(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
-	mdbgd_front("%s(snesor id : %d, csi ch : %d, size : %d x %d)\n", device,
+	mdbgd_sensor("%s(snesor id : %d, csi ch : %d, size : %d x %d)\n", device,
 		__func__,
 		module->id,
 		device->pdata->csi_ch,
@@ -1951,15 +2004,14 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 	if (ret)
 		merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
 
-	/* HACK */
-	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state))
+	if (device->ischain && IS_ISCHAIN_OTF(device->ischain))
 		set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
 
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
 
 p_err:
-	info("[FRT:D:%d] %s(%d)\n", device->instance, __func__, ret);
+	minfo("[FRT:D] %s(%d)\n", device, __func__, ret);
 	return ret;
 }
 
@@ -1993,8 +2045,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 	device = (struct fimc_is_device_sensor *)platform_get_drvdata(pdev);
 	if (!device) {
 		err("device is NULL");
-		ret = -EINVAL;
-		goto err_dev_null;
+		return -EINVAL;
 	}
 
 #if !defined(CONFIG_SOC_EXYNOS5430)
@@ -2038,9 +2089,15 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 		goto p_err;
 	}
 
+#if defined(CONFIG_PM_DEVFREQ)
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		pm_qos_remove_request(&exynos_sensor_qos_int);
+		pm_qos_remove_request(&exynos_sensor_qos_mem);
+	}
+#endif
+
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
-err_dev_null:
 	return ret;
 }
 
@@ -2063,6 +2120,7 @@ int fimc_is_sensor_runtime_resume(struct device *dev)
 		ret = -EINVAL;
 		goto p_err;
 	}
+
 /* HACK */
 /* at xyref 4415, when runtime_suspend operating, isp0 power is off thoroughly
    so it needs to power on operation at sensor_runtime_resume operation */
