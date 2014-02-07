@@ -1139,7 +1139,10 @@ static ssize_t store_cpufreq_min_limit(struct kobject *kobj, struct attribute *a
 		}
 
 		cpu_input = min(cpu_input, (int)freq_max[CA15]);
-		kfc_input = max_kfc_qos_const.default_value;
+		if (exynos_info[CA7]->boost_freq)
+			kfc_input = exynos_info[CA7]->boost_freq;
+		else
+			kfc_input = max_kfc_qos_const.default_value;
 	} else if (cpu_input < (int)freq_min[CA15]) {
 		if (hmp_boosted) {
 			if (set_hmp_boost(0) < 0)

@@ -42,6 +42,7 @@ struct exynos_dvfs_info {
 	unsigned int	max_support_idx;
 	unsigned int	min_support_idx;
 	unsigned int	cluster_num;
+	unsigned int	boost_freq;	/* use only KFC when enable HMP */
 	unsigned int	boot_freq;
 	unsigned int	boot_cpu_min_qos;
 	unsigned int	boot_cpu_max_qos;
