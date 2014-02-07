@@ -388,8 +388,22 @@ static const struct v4l2_subdev_ops subdev_ops = {
 	.video = &video_ops
 };
 
-int fimc_is_csi_probe(void *parent,
-	u32 instance)
+#ifdef DBG_CSIISR
+static irqreturn_t fimc_is_csi_isr(int irq, void *data)
+{
+	u32 status;
+	struct fimc_is_device_csi *csi;
+
+	csi = data;
+
+	status = csi_hw_g_interrupt(csi->base_reg);
+	info("CSI%d : irq%d(%X)\n",csi->instance, irq, status);
+
+	return IRQ_HANDLED;
+}
+#endif
+
+int fimc_is_csi_probe(void *parent, u32 instance)
 {
 	int ret = 0;
 	struct v4l2_subdev *subdev_csi;
@@ -402,7 +416,7 @@ int fimc_is_csi_probe(void *parent,
 	if (!subdev_csi) {
 		merr("subdev_csi is NULL", device);
 		ret = -ENOMEM;
-		goto err_alloc_subdev_csi;
+		goto p_err;
 	}
 	device->subdev_csi = subdev_csi;
 
@@ -410,16 +424,38 @@ int fimc_is_csi_probe(void *parent,
 	if (!csi) {
 		merr("csi is NULL", device);
 		ret = -ENOMEM;
-		goto err_alloc_csi;
+		goto p_err_free1;
 	}
 
 	csi->instance = instance;
-	switch (instance) {
+	switch(instance) {
 	case CSI_ID_A:
 		csi->base_reg = (unsigned long *)MIPICSI0_REG_BASE;
+#ifdef DBG_CSIISR
+		ret = request_irq(IRQ_MIPICSI0,
+			fimc_is_csi_isr,
+			IRQF_SHARED,
+			"mipi-csi0",
+			csi);
+		if (ret) {
+			err("request_irq(IRQ_MIPICSI0) is fail(%d)", ret);
+			goto p_err_free2;
+		}
+#endif
 		break;
 	case CSI_ID_B:
 		csi->base_reg = (unsigned long *)MIPICSI1_REG_BASE;
+#ifdef DBG_CSIISR
+		ret = request_irq(IRQ_MIPICSI1,
+			fimc_is_csi_isr,
+			IRQF_SHARED,
+			"mipi-csi1",
+			csi);
+		if (ret) {
+			err("request_irq(IRQ_MIPICSI1) is fail(%d)", ret);
+			goto p_err_free2;
+		}
+#endif
 		break;
 	case CSI_ID_C:
 		csi->base_reg = (unsigned long *)MIPICSI2_REG_BASE;
@@ -427,7 +463,7 @@ int fimc_is_csi_probe(void *parent,
 	default:
 		err("instance is invalid(%d)", instance);
 		ret = -EINVAL;
-		goto err_invalid_instance;
+		goto p_err_free2;
 	}
 
 	v4l2_subdev_init(subdev_csi, &subdev_ops);
@@ -437,21 +473,20 @@ int fimc_is_csi_probe(void *parent,
 	ret = v4l2_device_register_subdev(&device->v4l2_dev, subdev_csi);
 	if (ret) {
 		merr("v4l2_device_register_subdev is fail(%d)", device, ret);
-		goto err_reg_v4l2_subdev;
+		goto p_err_free2;
 	}
 
-	info("[%d][CSI:D] %s(%d)\n", instance, __func__, ret);
+	info("[%d][FRT:D] %s(%d)\n", instance, __func__, ret);
 	return 0;
 
-err_reg_v4l2_subdev:
-err_invalid_instance:
+p_err_free2:
 	kfree(csi);
 
-err_alloc_csi:
+p_err_free1:
 	kfree(subdev_csi);
 	device->subdev_csi = NULL;
 
-err_alloc_subdev_csi:
-	err("[FRT:D:%d] %s(%d)\n", instance, __func__, ret);
+p_err:
+	err("[%d][FRT:D] %s(%d)\n", instance, __func__, ret);
 	return ret;
 }

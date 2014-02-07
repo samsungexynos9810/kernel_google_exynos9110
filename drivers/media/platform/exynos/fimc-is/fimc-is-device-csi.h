@@ -23,8 +23,7 @@ struct fimc_is_device_csi {
 	struct fimc_is_image		image;
 };
 
-int __must_check fimc_is_csi_probe(void *parent,
-	u32 instance);
+int __must_check fimc_is_csi_probe(void *parent, u32 instance);
 int __must_check fimc_is_csi_open(struct v4l2_subdev *subdev);
 int __must_check fimc_is_csi_close(struct v4l2_subdev *subdev);
 
