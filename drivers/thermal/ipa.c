@@ -636,6 +636,12 @@ static int debugfs_u32_get(void *data, u64 *val)
 	return 0;
 }
 
+static int debugfs_s32_get(void *data, u64 *val)
+{
+	*val = *(s32 *)data;
+	return 0;
+}
+
 static void setup_debugfs_ctlr(struct ipa_config *config, struct dentry *parent)
 {
 	struct dentry *ctlr_d, *dentry_f;
@@ -701,7 +707,14 @@ static int debugfs_power_set(void *data, u64 val)
 	return 0;
 }
 
+static int debugfs_s32_set(void *data, u64 val)
+{
+	*(s32 *)data = val;
+	return 0;
+}
+
 DEFINE_SIMPLE_ATTRIBUTE(power_fops, debugfs_u32_get, debugfs_power_set, "%llu\n");
+DEFINE_SIMPLE_ATTRIBUTE(signed_fops, debugfs_s32_get, debugfs_s32_set, "%lld\n");
 
 /* Shamelessly ripped from fs/debugfs/file.c */
 static ssize_t read_file_bool(struct file *file, char __user *user_buf,
@@ -801,6 +814,44 @@ static ssize_t enabled_store(struct kobject *kobj,
     return -EINVAL;
 }
 
+static ssize_t hotplug_out_threshold_show(struct kobject *kobj,
+				   struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", arbiter_data.config.hotplug_out_threshold);
+}
+
+static ssize_t hotplug_out_threshold_store(struct kobject *kobj,
+				    struct kobj_attribute *attr,
+				    const char *buf, size_t n)
+{
+	unsigned long val;
+
+	if (kstrtoul(buf, 10, &val))
+		return -EINVAL;
+
+	arbiter_data.config.hotplug_out_threshold = val;
+	return n;
+}
+
+static ssize_t hotplug_in_threshold_show(struct kobject *kobj,
+				   struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", arbiter_data.config.hotplug_in_threshold);
+}
+
+static ssize_t hotplug_in_threshold_store(struct kobject *kobj,
+				    struct kobj_attribute *attr,
+				    const char *buf, size_t n)
+{
+	unsigned long val;
+
+	if (kstrtol(buf, 10, &val))
+		return -EINVAL;
+
+	arbiter_data.config.hotplug_in_threshold = val;
+	return n;
+}
+
 static ssize_t debugfs_enabled_set(struct file *file, const char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
@@ -891,8 +942,8 @@ static struct dentry * setup_debugfs(struct ipa_config *config)
 	if (!dentry_f)
 		pr_warn("unable to create the debugfs file: hotplug_out_threshold\n");
 
-	dentry_f = debugfs_create_u32("hotplug_in_threshold", 0644, ipa_d,
-				      &config->hotplug_in_threshold);
+	dentry_f = debugfs_create_file("hotplug_in_threshold", 0644, ipa_d,
+				      &config->hotplug_in_threshold, &signed_fops);
 	if (!dentry_f)
 		pr_warn("unable to create the debugfs file: hotplug_in_threshold\n");
 
@@ -908,11 +959,15 @@ static struct dentry * setup_debugfs(struct ipa_config *config)
 define_ipa_attr(enabled);
 define_ipa_attr(control_temp);
 define_ipa_attr(tdp);
+define_ipa_attr(hotplug_out_threshold);
+define_ipa_attr(hotplug_in_threshold);
 
 static struct attribute *ipa_attrs[] = {
 	&enabled.attr,
-    &control_temp.attr,
-    &tdp.attr,
+	&control_temp.attr,
+	&tdp.attr,
+	&hotplug_out_threshold.attr,
+	&hotplug_in_threshold.attr,
 	NULL
 };
 
@@ -1173,13 +1228,13 @@ static void arbiter_calc(int currT)
 		 * If we have reached critical thresholds then also
 		 * hotplug cores as approprpiate
 		 */
-		if (deltaT < -config->hotplug_out_threshold && !config->cores_out) {
+		if (deltaT <= -config->hotplug_out_threshold && !config->cores_out) {
 			if (ipa_hotplug(true))
 				pr_err("%s: failed ipa hotplug out\n", __func__);
 			else
 				config->cores_out = 1;
 		}
-		if (deltaT > config->hotplug_in_threshold && config->cores_out) {
+		if (deltaT >= -config->hotplug_in_threshold && config->cores_out) {
 			if (ipa_hotplug(false))
 				pr_err("%s: failed ipa hotplug in\n", __func__);
 			else
@@ -1509,8 +1564,8 @@ static int __init get_dt_inform_ipa(void)
 		pr_err("[%s] There is no Property of hotplug_in_threshold\n", __func__);
 		return -EINVAL;
 	} else {
-		default_config.hotplug_in_threshold = proper_val;
-		pr_info("[IPA] hotplug_in_threshold : %d\n", (u32)proper_val);
+		default_config.hotplug_in_threshold = (int) proper_val;
+		pr_info("[IPA] hotplug_in_threshold : %d\n", (int)proper_val);
 	}
 
 	/* read hotplug_out_threshold */
