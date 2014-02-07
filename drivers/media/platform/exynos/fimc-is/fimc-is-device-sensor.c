@@ -775,18 +775,6 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 	BUG_ON(!device);
 	BUG_ON(!device->vctx);
 
-	frame = (struct fimc_is_frame *)arg;
-	if (frame) {
-		frame->has_fcount = false;
-		buffer_done(device->vctx, frame->index);
-
-		/* device driving */
-		if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-			device->control_frame = frame;
-			schedule_work(&device->control_work);
-		}
-	}
-
 #ifdef ENABLE_DTP
 	if (device->dtp_check) {
 		device->dtp_check = false;
@@ -808,6 +796,18 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 			device->instant_cnt--;
 			if (device->instant_cnt <= 1)
 				wake_up(&device->instant_wait);
+		}
+	}
+
+	frame = (struct fimc_is_frame *)arg;
+	if (frame) {
+		frame->has_fcount = false;
+		buffer_done(device->vctx, frame->index);
+
+		/* device driving */
+		if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+			device->control_frame = frame;
+			schedule_work(&device->control_work);
 		}
 	}
 
