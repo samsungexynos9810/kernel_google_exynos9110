@@ -42,6 +42,8 @@ enum fimc_is_flite_state {
 	FLITE_B_SLOT_VALID,
 	/* finish state */
 	FLITE_LAST_CAPTURE,
+	/* flite join ischain */
+	FLITE_JOIN_ISCHAIN,
 	/* one the fly output */
 	FLITE_OTF_WITH_3AA,
 };

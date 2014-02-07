@@ -1847,27 +1847,10 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 		goto p_err;
 	}
 
-	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-		clear_bit(FLITE_OTF_WITH_3AA, &flite->state);
-		if (IS_ISCHAIN_OTF(device->ischain)) {
-			if (device->ischain->group_3aa.id == GROUP_ID_3A0) {
-				flite->group = GROUP_ID_3A0;
-			} else if (device->ischain->group_3aa.id == GROUP_ID_3A1) {
-				flite->group = GROUP_ID_3A1;
-			} else {
-				merr("invalid otf path(%d)", device, device->ischain->group_3aa.id);
-				ret = -EINVAL;
-				goto p_err;
-			}
-
-			set_bit(FLITE_OTF_WITH_3AA, &flite->state);
-		}
-
-		/* to determine flite buffer done mode (early/normal) */
-		if (flite->chk_early_buf_done) {
-			flite->chk_early_buf_done(flite, device->image.framerate,
-					device->pdev->id);
-		}
+	/* to determine flite buffer done mode (early/normal) */
+	if (flite->chk_early_buf_done) {
+		flite->chk_early_buf_done(flite, device->image.framerate,
+			device->pdev->id);
 	}
 
 	ret = v4l2_subdev_call(subdev_flite, video, s_stream, enable);

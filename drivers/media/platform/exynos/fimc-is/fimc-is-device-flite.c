@@ -1214,16 +1214,18 @@ static void chk_early_buf_done(struct fimc_is_device_flite *flite, u32 framerate
 }
 #endif
 
-static inline void notify_fcount(u32 channel, u32 fcount)
+static inline void notify_fcount(struct fimc_is_device_flite *flite)
 {
-	if (channel == FLITE_ID_A)
-		writel(fcount, notify_fcount_sen0);
-	else if (channel == FLITE_ID_B)
-		writel(fcount, notify_fcount_sen1);
-	else if (channel == FLITE_ID_C)
-		writel(fcount, notify_fcount_sen2);
-	else
-		err("unresolved channel(%d)", channel);
+	if (test_bit(FLITE_JOIN_ISCHAIN, &flite->state)) {
+		if (flite->instance== FLITE_ID_A)
+			writel(atomic_read(&flite->fcount), notify_fcount_sen0);
+		else if (flite->instance == FLITE_ID_B)
+			writel(atomic_read(&flite->fcount), notify_fcount_sen1);
+		else if (flite->instance == FLITE_ID_C)
+			writel(atomic_read(&flite->fcount), notify_fcount_sen2);
+		else
+			err("unresolved channel(%d)", flite->instance);
+	}
 }
 
 static irqreturn_t fimc_is_flite_isr(int irq, void *data)
@@ -1276,7 +1278,7 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 					flite->sw_trigger = FLITE_B_SLOT_VALID;
 				flite->tasklet_param_str = flite->sw_trigger;
 				atomic_inc(&flite->fcount);
-				notify_fcount(flite->instance, atomic_read(&flite->fcount));
+				notify_fcount(flite);
 				tasklet_schedule(&flite->tasklet_flite_str);
 			} else {
 				/* W/A: Skip start tasklet at interrupt lost case */
@@ -1296,7 +1298,7 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 					flite->sw_trigger = FLITE_B_SLOT_VALID;
 				flite->tasklet_param_str = flite->sw_trigger;
 				atomic_inc(&flite->fcount);
-				notify_fcount(flite->instance, atomic_read(&flite->fcount));
+				notify_fcount(flite);
 				if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
 					flite->early_work_skip = true;
 				tasklet_schedule(&flite->tasklet_flite_str);
@@ -1327,7 +1329,7 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				flite->sw_trigger = FLITE_B_SLOT_VALID;
 			flite->tasklet_param_str = flite->sw_trigger;
 			atomic_inc(&flite->fcount);
-			notify_fcount(flite->instance, atomic_read(&flite->fcount));
+			notify_fcount(flite);
 			tasklet_schedule(&flite->tasklet_flite_str);
 		} else {
 			/* W/A: Skip end tasklet at interrupt lost case */
@@ -1435,6 +1437,7 @@ int fimc_is_flite_open(struct v4l2_subdev *subdev,
 	atomic_set(&flite->fcount, 0);
 	atomic_set(&flite->bcount, 0);
 
+	clear_bit(FLITE_JOIN_ISCHAIN, &flite->state);
 	clear_bit(FLITE_OTF_WITH_3AA, &flite->state);
 	clear_bit(FLITE_LAST_CAPTURE, &flite->state);
 	clear_bit(FLITE_A_SLOT_VALID, &flite->state);
@@ -1459,23 +1462,17 @@ int fimc_is_flite_open(struct v4l2_subdev *subdev,
 		if (ret)
 			err("request_irq(L1) failed\n");
 		break;
+#if !defined(CONFIG_ARCH_EXYNOS4)
 	case FLITE_ID_C:
-#if defined(CONFIG_ARCH_EXYNOS4) || defined(CONFIG_SOC_EXYNOS5260)
-		ret = request_irq(IRQ_FIMC_LITE1,
-			fimc_is_flite_isr,
-			IRQF_SHARED,
-			"fimc-lite2",
-			flite);
-#else
 		ret = request_irq(IRQ_FIMC_LITE2,
 			fimc_is_flite_isr,
 			IRQF_SHARED,
 			"fimc-lite2",
 			flite);
-#endif
 		if (ret)
 			err("request_irq(L2) failed\n");
 		break;
+#endif
 	default:
 		err("instance is invalid(%d)", flite->instance);
 		ret = -EINVAL;
@@ -1508,7 +1505,7 @@ int fimc_is_flite_close(struct v4l2_subdev *subdev)
 		free_irq(IRQ_FIMC_LITE1, flite);
 		break;
 	case FLITE_ID_C:
-#if defined(CONFIG_ARCH_EXYNOS4) || defined(CONFIG_SOC_EXYNOS5260)
+#if defined(CONFIG_ARCH_EXYNOS4)
 		free_irq(IRQ_FIMC_LITE1, flite);
 #else
 		free_irq(IRQ_FIMC_LITE2, flite);
@@ -1519,6 +1516,31 @@ int fimc_is_flite_close(struct v4l2_subdev *subdev)
 		ret = -EINVAL;
 		goto p_err;
 	}
+
+p_err:
+	return ret;
+}
+
+/* value : module enum */
+static int flite_init(struct v4l2_subdev *subdev, u32 value)
+{
+	int ret = 0;
+	struct fimc_is_device_flite *flite;
+	struct fimc_is_module_enum *module;
+
+	BUG_ON(!subdev);
+	BUG_ON(!value);
+
+	flite = v4l2_get_subdevdata(subdev);
+	if (!flite) {
+		err("flite is NULL");
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	module = (struct fimc_is_module_enum *)value;
+	flite->module = module->id;
+	flite->csi = flite->instance;
 
 p_err:
 	return ret;
@@ -1554,9 +1576,11 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	clear_bit(FLITE_A_SLOT_VALID, &flite->state);
 	clear_bit(FLITE_B_SLOT_VALID, &flite->state);
 
+	/* 1. init */
 	flite_hw_force_reset(flite->base_reg);
 	init_fimc_lite(flite->base_reg);
 
+	/* 2. dma setting */
 	framemgr_e_barrier_irqs(framemgr, 0, flags);
 
 	if (framemgr->frame_req_cnt >= 1) {
@@ -1581,9 +1605,25 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 
 	flite_hw_set_output_dma(flite->base_reg, buffer_ready, image->format.pixelformat);
 
-	if (test_bit(FLITE_OTF_WITH_3AA, &flite->state)) {
+	/* 3. otf setting */
+	if (device->ischain)
+		set_bit(FLITE_JOIN_ISCHAIN, &flite->state);
+	else
+		clear_bit(FLITE_JOIN_ISCHAIN, &flite->state);
+
+	if (device->ischain && IS_ISCHAIN_OTF(device->ischain)) {
 		tasklet_init(&flite->tasklet_flite_str, tasklet_flite_str0, (unsigned long)subdev);
 		tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
+
+		if (device->ischain->group_3aa.id == GROUP_ID_3A0) {
+			flite->group = GROUP_ID_3A0;
+		} else if (device->ischain->group_3aa.id == GROUP_ID_3A1) {
+			flite->group = GROUP_ID_3A1;
+		} else {
+			merr("invalid otf path(%d)", device, device->ischain->group_3aa.id);
+			ret = -EINVAL;
+			goto p_err;
+		}
 
 		mdbgd_back("Enabling OTF path. target 3aa(%d)\n", flite, flite->group);
 		if (flite->instance == FLITE_ID_A) {
@@ -1603,6 +1643,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 		}
 
 		flite_hw_set_output_local(flite->base_reg, true);
+		set_bit(FLITE_OTF_WITH_3AA, &flite->state);
 	} else {
 		switch (flite->buf_done_mode) {
 		case FLITE_BUF_DONE_NORMAL:
@@ -1621,7 +1662,9 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 			tasklet_init(&flite->tasklet_flite_end, tasklet_flite_end, (unsigned long)subdev);
 			break;
 		}
+
 		flite_hw_set_output_local(flite->base_reg, false);
+		clear_bit(FLITE_OTF_WITH_3AA, &flite->state);
 	}
 
 	/* 4. register setting */
@@ -1828,6 +1871,7 @@ p_err:
 }
 
 static const struct v4l2_subdev_core_ops core_ops = {
+	.init = flite_init,
 	.s_ctrl = flite_s_ctrl,
 };
 
