@@ -1174,12 +1174,16 @@ static void arbiter_calc(int currT)
 		 * hotplug cores as approprpiate
 		 */
 		if (deltaT < -config->hotplug_out_threshold && !config->cores_out) {
-			ipa_hotplug(true);
-			config->cores_out = 1;
+			if (ipa_hotplug(true))
+				pr_err("%s: failed ipa hotplug out\n", __func__);
+			else
+				config->cores_out = 1;
 		}
 		if (deltaT > config->hotplug_in_threshold && config->cores_out) {
-			ipa_hotplug(false);
-			config->cores_out = 0;
+			if (ipa_hotplug(false))
+				pr_err("%s: failed ipa hotplug in\n", __func__);
+			else
+				config->cores_out = 0;
 		}
 	}
 #else

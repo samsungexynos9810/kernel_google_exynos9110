@@ -1226,9 +1226,9 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 }
 
 #if defined(CONFIG_CPU_THERMAL_IPA)
-void ipa_hotplug(bool removecores)
+int ipa_hotplug(bool removecores)
 {
-	big_cores_hotplug(removecores);
+	return big_cores_hotplug(removecores);
 }
 #endif
 
