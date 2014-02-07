@@ -3755,6 +3755,9 @@ int dw_mci_probe(struct dw_mci *host)
 	if (!mci_wait_reset(host->dev, host))
 		return -ENODEV;
 
+	if (!host->dev->dma_mask)
+		dma_set_mask(host->dev, DMA_BIT_MASK(32));
+
 	host->dma_ops = host->pdata->dma_ops;
 	dw_mci_init_dma(host);
 
