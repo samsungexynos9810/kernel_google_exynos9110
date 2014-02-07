@@ -1211,6 +1211,12 @@ int fimc_is_group_process_stop(struct fimc_is_groupmgr *groupmgr,
 				goto check_completion;
 			}
 
+			if (!test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
+				warn("sensor is closed, forcely trigger");
+				up(&group->smp_trigger);
+				goto check_completion;
+			}
+
 			if (!test_bit(FIMC_IS_SENSOR_FRONT_START, &sensor->state)) {
 				warn("front sensor is stopped, forcely trigger");
 				up(&group->smp_trigger);
@@ -1219,12 +1225,6 @@ int fimc_is_group_process_stop(struct fimc_is_groupmgr *groupmgr,
 
 			if (!test_bit(FIMC_IS_SENSOR_BACK_START, &sensor->state)) {
 				warn("back sensor is stopped, forcely trigger");
-				up(&group->smp_trigger);
-				goto check_completion;
-			}
-
-			if (!test_bit(FIMC_IS_SENSOR_OPEN, &sensor->state)) {
-				warn("sensor is closed, forcely trigger");
 				up(&group->smp_trigger);
 				goto check_completion;
 			}

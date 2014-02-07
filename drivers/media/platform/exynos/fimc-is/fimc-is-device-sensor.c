@@ -1981,9 +1981,6 @@ int fimc_is_sensor_front_stop(struct fimc_is_device_sensor *device)
 	if (ret)
 		merr("v4l2_csi_call(s_stream) is fail(%d)", device, ret);
 
-	if (device->ischain && IS_ISCHAIN_OTF(device->ischain))
-		set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
-
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
 
