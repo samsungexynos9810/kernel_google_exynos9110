@@ -111,7 +111,12 @@ struct fimc_is_fmt fimc_is_formats[] = {
 		.name		= "BAYER 16 bit",
 		.pixelformat	= V4L2_PIX_FMT_SBGGR16,
 		.num_planes	= 1 + SPARE_PLANE,
-	},
+	}, {
+		.name		= "JPEG",
+		.pixelformat	= V4L2_PIX_FMT_JPEG,
+		.num_planes	= 1 + SPARE_PLANE,
+		.mbus_code	= V4L2_MBUS_FMT_JPEG_1X8,
+	}
 };
 
 struct fimc_is_fmt *fimc_is_find_format(u32 *pixelformat,
@@ -574,14 +579,12 @@ set_info:
 	for (i = 0; i < frame->planes; i++) {
 		frame->dvaddr_buffer[i] = queue->buf_dva[index][i];
 #ifdef PRINT_BUFADDR
-		pr_info("%04X %d.%d %08X\n", framemgr->id,
-			index, i, frame->dvaddr_buffer[i]);
+		info("%04X %d.%d %08X\n", framemgr->id, index, i, frame->dvaddr_buffer[i]);
 #endif
 	}
 
 	if (framemgr->id & FRAMEMGR_ID_SHOT) {
-		ext_size = sizeof(struct camera2_shot_ext) -
-			sizeof(struct camera2_shot);
+		ext_size = sizeof(struct camera2_shot_ext) - sizeof(struct camera2_shot);
 
 		/* Create Kvaddr for Metadata */
 		queue->buf_kva[index][spare] = vb2->plane_kvaddr(vb, spare);
@@ -595,8 +598,7 @@ set_info:
 		frame->kvaddr_shot = queue->buf_kva[index][spare] + ext_size;
 		frame->cookie_shot = (u32)vb2_plane_cookie(vb, spare);
 		frame->shot = (struct camera2_shot *)frame->kvaddr_shot;
-		frame->shot_ext = (struct camera2_shot_ext *)
-			queue->buf_kva[index][spare];
+		frame->shot_ext = (struct camera2_shot_ext *)queue->buf_kva[index][spare];
 		frame->shot_size = queue->framecfg.size[spare] - ext_size;
 #ifdef MEASURE_TIME
 		frame->tzone = (struct timeval *)frame->shot_ext->timeZone;
@@ -610,8 +612,7 @@ set_info:
 			goto exit;
 		}
 
-		frame->stream = (struct camera2_stream *)
-			queue->buf_kva[index][spare];
+		frame->stream = (struct camera2_stream *)queue->buf_kva[index][spare];
 		frame->stream->address = queue->buf_kva[index][spare];
 		frame->stream_size = queue->framecfg.size[spare];
 	}
