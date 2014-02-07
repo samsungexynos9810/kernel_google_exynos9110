@@ -17,6 +17,7 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 #include <linux/slab.h>
+#include <linux/syscore_ops.h>
 
 #include <mach/asv-exynos.h>
 #include <mach/asv-exynos5430.h>
@@ -24,6 +25,7 @@
 #include <mach/regs-pmu.h>
 
 #include <plat/cpu.h>
+#include <plat/pm.h>
 
 #define CHIP_ID2_REG			(S5P_VA_CHIPID + 0x4)
 #define EXYNOS5430_IDS_OFFSET		(16)
@@ -244,6 +246,72 @@ static unsigned int exynos5430_lock_voltage(unsigned int volt_lock)
 	return lock_voltage;
 }
 
+#ifdef CONFIG_PM
+static void exynos5430_set_abb_bypass(struct asv_info *asv_inform)
+{
+	void __iomem *target_reg;
+	unsigned int target_value;
+
+	target_value = ABB_BYPASS;
+
+	switch (asv_inform->asv_type) {
+	case ID_ARM:
+		target_reg = EXYNOS5430_BB_CON0;
+		break;
+	case ID_KFC:
+		target_reg = EXYNOS5430_BB_CON1;
+		break;
+	case ID_INT:
+		target_reg = EXYNOS5430_BB_CON2;
+		break;
+	case ID_MIF:
+		target_reg = EXYNOS5430_BB_CON3;
+		break;
+	case ID_G3D:
+		target_reg = EXYNOS5430_BB_CON4;
+		break;
+	default:
+		return;
+	}
+
+	set_abb(target_reg, target_value);
+}
+#endif
+
+static void exynos5430_set_abb(struct asv_info *asv_inform)
+{
+	void __iomem *target_reg;
+	unsigned int target_value;
+
+	target_value = asv_inform->abb_info->target_abb;
+
+	switch (asv_inform->asv_type) {
+	case ID_ARM:
+		target_reg = EXYNOS5430_BB_CON0;
+		break;
+	case ID_KFC:
+		target_reg = EXYNOS5430_BB_CON1;
+		break;
+	case ID_INT:
+		target_reg = EXYNOS5430_BB_CON2;
+		break;
+	case ID_MIF:
+		target_reg = EXYNOS5430_BB_CON3;
+		break;
+	case ID_G3D:
+		target_reg = EXYNOS5430_BB_CON4;
+		break;
+	default:
+		return;
+	}
+
+	set_abb(target_reg, target_value);
+}
+
+static struct abb_common exynos5430_abb_common = {
+	.set_target_abb = exynos5430_set_abb,
+};
+
 static unsigned int exynos5430_get_asv_group_arm(struct asv_common *asv_comm)
 {
 	if (asv_ref_info.is_speedgroup)
@@ -261,6 +329,13 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 	if (!asv_inform->asv_volt) {
 		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
+
+	asv_inform->asv_abb  = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_abb) {
+		pr_err("%s: Memory allocation failed for asv abb\n", __func__);
+		kfree(asv_inform->asv_volt);
 		return;
 	}
 
@@ -290,6 +365,9 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 #endif
 			/* add 50mv temporally */
 			asv_inform->asv_volt[i].asv_value += 50000;
+
+			asv_inform->asv_abb[i].asv_freq = arm_asv_volt_info[i][0];
+			asv_inform->asv_abb[i].asv_value = arm_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -317,6 +395,9 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 #endif
 			/* add 50mv temporally */
 			asv_inform->asv_volt[i].asv_value += 50000;
+
+			asv_inform->asv_abb[i].asv_freq = arm_asv_volt_info_v01[i][0];
+			asv_inform->asv_abb[i].asv_value = arm_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -325,11 +406,17 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 	}
 
 	if (show_value) {
-		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
-			pr_info("%s LV%d freq : %d volt : %d\n",
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			pr_info("%s LV%d freq : %d volt : %d abb : %d\n",
 					asv_inform->name, i,
 					asv_inform->asv_volt[i].asv_freq,
-					asv_inform->asv_volt[i].asv_value);
+					asv_inform->asv_volt[i].asv_value,
+					asv_inform->asv_abb[i].asv_value);
+			pr_info("%s LV%d freq : %d abb : %d\n",
+					asv_inform->name, i,
+					asv_inform->asv_abb[i].asv_freq,
+					asv_inform->asv_abb[i].asv_value);
+		}
 	}
 }
 
@@ -355,6 +442,13 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 	if (!asv_inform->asv_volt) {
 		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
+
+	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_abb) {
+		pr_err("%s: Memory allocation failed for asv abb\n", __func__);
+		kfree(asv_inform->asv_volt);
 		return;
 	}
 
@@ -384,6 +478,9 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 #endif
 			/* add 50mv temporally */
 			asv_inform->asv_volt[i].asv_value += 50000;
+
+			asv_inform->asv_abb[i].asv_freq = kfc_asv_volt_info[i][0];
+			asv_inform->asv_abb[i].asv_value = kfc_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -411,6 +508,9 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 #endif
 			/* add 50mv temporally */
 			asv_inform->asv_volt[i].asv_value += 50000;
+
+			asv_inform->asv_abb[i].asv_freq = kfc_asv_volt_info_v01[i][0];
+			asv_inform->asv_abb[i].asv_value = kfc_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -419,11 +519,16 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 	}
 
 	if (show_value) {
-		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 			pr_info("%s LV%d freq : %d volt : %d\n",
 					asv_inform->name, i,
 					asv_inform->asv_volt[i].asv_freq,
 					asv_inform->asv_volt[i].asv_value);
+			pr_info("%s LV%d freq : %d abb : %d\n",
+					asv_inform->name, i,
+					asv_inform->asv_abb[i].asv_freq,
+					asv_inform->asv_abb[i].asv_value);
+		}
 	}
 }
 
@@ -452,6 +557,13 @@ static void exynos5430_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 		return;
 	}
 
+	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_abb) {
+		pr_err("%s: Memory allocation failed for asv abb\n", __func__);
+		kfree(asv_inform->asv_volt);
+		return;
+	}
+
 	if (asv_ref_info.asv_version == ASV_VER_050) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 			asv_inform->asv_volt[i].asv_freq = int_asv_volt_info[i][0];
@@ -476,6 +588,8 @@ static void exynos5430_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = int_asv_volt_info[i][target_asv_grp_nr + 1];
 #endif
+			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info[i][0];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -501,6 +615,8 @@ static void exynos5430_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = int_asv_volt_info_v01[i][target_asv_grp_nr + 1];
 #endif
+			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_v01[i][0];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -509,11 +625,16 @@ static void exynos5430_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 	}
 
 	if (show_value) {
-		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 			pr_info("%s LV%d freq : %d volt : %d\n",
 					asv_inform->name, i,
 					asv_inform->asv_volt[i].asv_freq,
 					asv_inform->asv_volt[i].asv_value);
+			pr_info("%s LV%d freq : %d abb : %d\n",
+					asv_inform->name, i,
+					asv_inform->asv_abb[i].asv_freq,
+					asv_inform->asv_abb[i].asv_value);
+		}
 	}
 }
 
@@ -539,6 +660,13 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 	asv_inform->asv_volt = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
 	if (!asv_inform->asv_volt) {
 		pr_err("%s: Memory allocation failed for asv voltage\n", __func__);
+		return;
+	}
+
+	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_abb) {
+		pr_err("%s: Memory allocation failed for asv abb\n", __func__);
+		kfree(asv_inform->asv_volt);
 		return;
 	}
 
@@ -568,6 +696,9 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 #endif
 			/* add 50mv temporally */
 			asv_inform->asv_volt[i].asv_value += 50000;
+
+			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info[i][0];
+			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -595,6 +726,9 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 #endif
 			/* add 50mv temporally */
 			asv_inform->asv_volt[i].asv_value += 50000;
+
+			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info_v01[i][0];
+			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -603,11 +737,16 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 	}
 
 	if (show_value) {
-		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 			pr_info("%s LV%d freq : %d volt : %d\n",
 					asv_inform->name, i,
 					asv_inform->asv_volt[i].asv_freq,
 					asv_inform->asv_volt[i].asv_value);
+			pr_info("%s LV%d freq : %d abb : %d\n",
+					asv_inform->name, i,
+					asv_inform->asv_abb[i].asv_freq,
+					asv_inform->asv_abb[i].asv_value);
+		}
 	}
 }
 
@@ -636,6 +775,13 @@ static void exynos5430_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 		return;
 	}
 
+	asv_inform->asv_abb = kmalloc((sizeof(struct asv_freq_table) * asv_inform->dvfs_level_nr), GFP_KERNEL);
+	if (!asv_inform->asv_abb) {
+		pr_err("%s: Memory allocation failed for asv abb\n", __func__);
+		kfree(asv_inform->asv_volt);
+		return;
+	}
+
 	if (asv_ref_info.asv_version == ASV_VER_050) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 			asv_inform->asv_volt[i].asv_freq = g3d_asv_volt_info[i][0];
@@ -660,6 +806,8 @@ static void exynos5430_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = g3d_asv_volt_info[i][target_asv_grp_nr + 1];
 #endif
+			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info[i][0];
+			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 	} else if (asv_ref_info.asv_version == ASV_VER_100) {
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -685,6 +833,8 @@ static void exynos5430_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 #else
 			asv_inform->asv_volt[i].asv_value = g3d_asv_volt_info_v01[i][target_asv_grp_nr + 1];
 #endif
+			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info_v01[i][0];
+			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -693,11 +843,16 @@ static void exynos5430_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 	}
 
 	if (show_value) {
-		for (i = 0; i < asv_inform->dvfs_level_nr; i++)
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
 			pr_info("%s LV%d freq : %d volt : %d\n",
 					asv_inform->name, i,
 					asv_inform->asv_volt[i].asv_freq,
 					asv_inform->asv_volt[i].asv_value);
+			pr_info("%s LV%d freq : %d abb : %d\n",
+					asv_inform->name, i,
+					asv_inform->asv_abb[i].asv_freq,
+					asv_inform->asv_abb[i].asv_value);
+		}
 	}
 }
 
@@ -801,6 +956,7 @@ struct asv_info exynos5430_asv_member[] = {
 		.asv_type	= ID_ARM,
 		.name		= "VDD_ARM",
 		.ops		= &exynos5430_asv_ops_arm,
+		.abb_info	= &exynos5430_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(ARM),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(ARM),
 		.max_volt_value = MAX_VOLT(ARM),
@@ -808,6 +964,7 @@ struct asv_info exynos5430_asv_member[] = {
 		.asv_type	= ID_KFC,
 		.name		= "VDD_KFC",
 		.ops		= &exynos5430_asv_ops_kfc,
+		.abb_info	= &exynos5430_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(KFC),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(KFC),
 		.max_volt_value = MAX_VOLT(KFC),
@@ -815,6 +972,7 @@ struct asv_info exynos5430_asv_member[] = {
 		.asv_type	= ID_INT,
 		.name		= "VDD_INT",
 		.ops		= &exynos5430_asv_ops_int,
+		.abb_info	= &exynos5430_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(INT),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(INT),
 		.max_volt_value = MAX_VOLT(INT),
@@ -822,6 +980,7 @@ struct asv_info exynos5430_asv_member[] = {
 		.asv_type	= ID_MIF,
 		.name		= "VDD_MIF",
 		.ops		= &exynos5430_asv_ops_mif,
+		.abb_info	= &exynos5430_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(MIF),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(MIF),
 		.max_volt_value = MAX_VOLT(MIF),
@@ -829,6 +988,7 @@ struct asv_info exynos5430_asv_member[] = {
 		.asv_type	= ID_G3D,
 		.name		= "VDD_G3D",
 		.ops		= &exynos5430_asv_ops_g3d,
+		.abb_info	= &exynos5430_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(G3D),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(G3D),
 		.max_volt_value = MAX_VOLT(G3D),
@@ -853,16 +1013,59 @@ unsigned int exynos5430_regist_asv_member(void)
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static struct sleep_save exynos5430_abb_save[] = {
+	SAVE_ITEM(EXYNOS5430_BB_CON0),
+	SAVE_ITEM(EXYNOS5430_BB_CON1),
+	SAVE_ITEM(EXYNOS5430_BB_CON2),
+	SAVE_ITEM(EXYNOS5430_BB_CON3),
+	SAVE_ITEM(EXYNOS5430_BB_CON4),
+};
+
+static int exynos5430_asv_suspend(void)
+{
+	struct asv_info *exynos_asv_info;
+	int i;
+
+	s3c_pm_do_save(exynos5430_abb_save,
+			ARRAY_SIZE(exynos5430_abb_save));
+
+	for (i = 0; i < ARRAY_SIZE(exynos5430_asv_member); i++) {
+		exynos_asv_info = &exynos5430_asv_member[i];
+		exynos5430_set_abb_bypass(exynos_asv_info);
+	}
+
+	return 0;
+}
+
+static void exynos5430_asv_resume(void)
+{
+	s3c_pm_do_restore_core(exynos5430_abb_save,
+			ARRAY_SIZE(exynos5430_abb_save));
+}
+#else
+#define exynos5430_asv_suspend NULL
+#define exynos5430_asv_resume NULL
+#endif
+
+static struct syscore_ops exynos5430_asv_syscore_ops = {
+        .suspend        = exynos5430_asv_suspend,
+        .resume         = exynos5430_asv_resume,
+};
+
 int exynos5430_init_asv(struct asv_common *asv_info)
 {
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-	pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
-	return -EINVAL;
-#else
 	unsigned int arm_speed_grp, kfc_speed_grp;
 	unsigned int g3d_mif_speed_grp, int_isp_speed_grp;
 	unsigned int asv_tbl_ver_ema;
 	unsigned int egl_speed_option_reg;
+
+#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
+	pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
+	return -EINVAL;
+#endif
+
+	/* TODO HERE : enable abb clokc */
 
 	asv_ref_info.is_speedgroup = true;
 
@@ -987,7 +1190,10 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 	} else {
 		pr_err("EXYNOS5430 ASV : cannot support ASV version (0x%x)\n",
 					asv_ref_info.asv_version);
+		return -EINVAL;
 	}
+
+	register_syscore_ops(&exynos5430_asv_syscore_ops);
 
 	pr_info("EXYNOS5430 ASV : EGL Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
 		egl_fused_info.speed_grp[EXYNOS5430_GRP_L0], egl_fused_info.speed_grp[EXYNOS5430_GRP_L1],
@@ -1016,5 +1222,4 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 	asv_info->regist_asv_member = exynos5430_regist_asv_member;
 
 	return 0;
-#endif
 }
