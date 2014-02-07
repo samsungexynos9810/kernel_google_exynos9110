@@ -77,8 +77,10 @@ struct fimc_is_device_flite {
 
 	u32				overflow_cnt;
 
-	/* which 3aa gorup is connected when otf is enable */
-	u32				group;
+	u32				module; /* which module is connceted */
+	u32				csi; /* which csi channel is connceted */
+	u32				group; /* which 3aa gorup is connected when otf is enable */
+
 	u32				sw_checker;
 	u32				sw_trigger;
 	atomic_t			bcount;

@@ -38,6 +38,7 @@
 #include "fimc-is-time.h"
 #include "fimc-is-core.h"
 #include "fimc-is-regs.h"
+#include "fimc-is-hw.h"
 #include "fimc-is-interface.h"
 #include "fimc-is-device-flite.h"
 
@@ -437,24 +438,59 @@ static void flite_hw_set_capture_stop(unsigned long __iomem *base_reg)
 
 static int flite_hw_set_source_format(unsigned long __iomem *base_reg, struct fimc_is_image *image)
 {
-	u32 cfg = 0;
+	int ret = 0;
+	u32 pixelformat, format, cfg;
 
 	BUG_ON(!image);
 
+	pixelformat = image->format.pixelformat;
 	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
+	switch (pixelformat) {
+	case V4L2_PIX_FMT_SBGGR8:
+	case V4L2_PIX_FMT_SGBRG8:
+	case V4L2_PIX_FMT_SGRBG8:
+	case V4L2_PIX_FMT_SRGGB8:
+		format = HW_FORMAT_RAW8;
+		break;
+	case V4L2_PIX_FMT_SBGGR10:
+	case V4L2_PIX_FMT_SGBRG10:
+	case V4L2_PIX_FMT_SGRBG10:
+	case V4L2_PIX_FMT_SRGGB10:
+		format = HW_FORMAT_RAW10;
+		break;
+	case V4L2_PIX_FMT_SBGGR12:
+	case V4L2_PIX_FMT_SGBRG12:
+	case V4L2_PIX_FMT_SGRBG12:
+	case V4L2_PIX_FMT_SRGGB12:
+		format = HW_FORMAT_RAW10;
+		/*
+		 * HACK : hal send RAW10 for RAW12
+		 * formt = HW_FORMAT_RAW12 << 24;
+		 */
+		break;
+	case V4L2_PIX_FMT_YUYV:
+		format = HW_FORMAT_YUV422_8BIT;
+		break;
+	case V4L2_PIX_FMT_JPEG:
+		format = HW_FORMAT_USER;
+		break;
+	default:
+		err("unsupported format(%X)", pixelformat);
+		format = HW_FORMAT_RAW10;
+		ret = -EINVAL;
+		break;
+	}
+
 #ifdef COLORBAR_MODE
-	cfg |= FLITE_REG_CIGCTRL_YUV422_1P;
+	cfg |= (HW_FORMAT_YUV422_8BIT << 24);
 #else
-	if (image->format.pixelformat == V4L2_PIX_FMT_SGRBG8)
-		cfg |= FLITE_REG_CIGCTRL_RAW8;
-	else
-		cfg |= FLITE_REG_CIGCTRL_RAW10;
+	cfg |= (format << 24);
 #endif
 
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 
-	return 0;
+	return ret;
 }
 
 static void flite_hw_set_dma_fmt(unsigned long __iomem *base_reg,
@@ -507,27 +543,17 @@ static void flite_hw_set_output_local(unsigned long __iomem *base_reg, bool enab
 }
 
 #ifdef COLORBAR_MODE
-/* will use for pattern generation testing */
 static void flite_hw_set_test_pattern_enable(unsigned long __iomem *base_reg)
 {
 	u32 cfg = 0;
 
+	/* will use for pattern generation testing */
 	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 	cfg |= FLITE_REG_CIGCTRL_TEST_PATTERN_COLORBAR;
 
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 #endif
-
-static void flite_hw_set_config_irq(unsigned long __iomem *base_reg)
-{
-	u32 cfg = 0;
-	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
-	cfg &= ~(FLITE_REG_CIGCTRL_INVPOLPCLK | FLITE_REG_CIGCTRL_INVPOLVSYNC
-			| FLITE_REG_CIGCTRL_INVPOLHREF);
-
-	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
-}
 
 static void flite_hw_set_interrupt_source(unsigned long __iomem *base_reg)
 {
@@ -624,6 +650,19 @@ static void flite_hw_force_reset(unsigned long __iomem *base_reg)
 	cfg |= FLITE_REG_CIGCTRL_SWRST;
 	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 	warn("[CamIF] sw reset");
+}
+
+static void flite_hw_set_inverse_polarity(unsigned long __iomem *base_reg)
+{
+	u32 cfg = 0;
+
+	cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
+	cfg &= ~(FLITE_REG_CIGCTRL_INVPOLPCLK | FLITE_REG_CIGCTRL_INVPOLVSYNC
+			| FLITE_REG_CIGCTRL_INVPOLHREF);
+
+	/* cfg |= (FLITE_REG_CIGCTRL_INVPOLPCLK | FLITE_REG_CIGCTRL_INVPOLVSYNC); */
+
+	writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGCTRL));
 }
 
 static void flite_hw_set_camera_type(unsigned long __iomem *base_reg)
@@ -767,20 +806,17 @@ int init_fimc_lite(unsigned long __iomem *base_reg)
 }
 
 static int start_fimc_lite(unsigned long __iomem *base_reg,
-	struct fimc_is_image *image, u32 otf_setting, u32 bns)
+	struct fimc_is_image *image, u32 otf_setting, u32 bns, u32 module)
 {
 	flite_hw_set_cam_channel(base_reg, otf_setting);
 	flite_hw_set_cam_source_size(base_reg, image);
 	flite_hw_set_dma_offset(base_reg, image);
 	flite_hw_set_camera_type(base_reg);
 	flite_hw_set_source_format(base_reg, image);
-	/*flite_hw_set_output_dma(mipi_reg_base, false);
-	flite_hw_set_output_local(base_reg, false);*/
-
+	flite_hw_set_inverse_polarity(base_reg);
 	flite_hw_set_interrupt_source(base_reg);
-	/*flite_hw_set_interrupt_starten0_disable(mipi_reg_base);*/
-	flite_hw_set_config_irq(base_reg);
 	flite_hw_set_window_offset(base_reg, image);
+
 #ifdef COLORBAR_MODE
 	flite_hw_set_test_pattern_enable(base_reg);
 #endif
@@ -790,9 +826,6 @@ static int start_fimc_lite(unsigned long __iomem *base_reg,
 
 	flite_hw_set_last_capture_end_clear(base_reg);
 	flite_hw_set_capture_start(base_reg);
-
-	/*dbg_front("lite config : %08X\n",
-		*((unsigned int*)(base_reg + FLITE_REG_CIFCNTSEQ)));*/
 
 	return 0;
 }
@@ -1007,6 +1040,7 @@ static void tasklet_flite_str1(unsigned long data)
 					msecs_to_jiffies(flite->buf_done_wait_time));
 		}
 	}
+
 	v4l2_subdev_notify(subdev, FLITE_NOTIFY_FSTART, &fcount);
 }
 
@@ -1500,7 +1534,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	struct fimc_is_image *image;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
-	struct fimc_is_device_sensor *sensor = v4l2_get_subdev_hostdata(subdev);
+	struct fimc_is_device_sensor *device = v4l2_get_subdev_hostdata(subdev);
 
 	BUG_ON(!flite);
 	BUG_ON(!flite->framemgr);
@@ -1589,7 +1623,9 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 		}
 		flite_hw_set_output_local(flite->base_reg, false);
 	}
-	start_fimc_lite(flite->base_reg, image, otf_setting, sensor->pdata->is_bns);
+
+	/* 4. register setting */
+	start_fimc_lite(flite->base_reg, image, otf_setting, device->pdata->is_bns, flite->module);
 
 p_err:
 	return ret;
@@ -1625,7 +1661,6 @@ static int flite_stream_off(struct v4l2_subdev *subdev,
 		timetowait = wait_event_timeout(flite->wait_queue,
 			test_bit(FLITE_LAST_CAPTURE, &flite->state),
 			FIMC_IS_FLITE_STOP_TIMEOUT);
-
 		if (!timetowait) {
 			/* forcely stop */
 			stop_fimc_lite(base_reg);
