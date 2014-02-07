@@ -914,14 +914,14 @@ static int force_down_pre(const char *name)
 		__set_mask(EXYNOS5430_LPI_MASK_CAM0_ASYNCBRIDGE);
 		__set_mask(EXYNOS5430_LPI_MASK_CAM0_NOCBUS);
 	} else if (strncmp(name, "pd-cam1", 7) == 0) {
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
+
 		/* in case of cam1, should be clear STANDBY_WFI */
 		reg = __raw_readl(EXYNOS5430_A5IS_OPTION);
 		reg &= ~(1 << 16);
 		__raw_writel(reg, EXYNOS5430_A5IS_OPTION);
-
-		__set_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
-		__set_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
-		__set_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
 	} else if (strncmp(name, "pd-isp", 6) == 0) {
 		__set_mask(EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
 		__set_mask(EXYNOS5430_LPI_MASK_ISP_ASYNCBRIDGE);
@@ -960,7 +960,7 @@ static unsigned int check_power_status(struct exynos_pm_domain *pd, int power_fl
 	return timeout;
 }
 
-#define TIMEOUT_COUNT	100 /* about 1ms, based on 10us */
+#define TIMEOUT_COUNT	5000 /* about 50ms, based on 10us */
 static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_flags)
 {
 	unsigned long timeout;
