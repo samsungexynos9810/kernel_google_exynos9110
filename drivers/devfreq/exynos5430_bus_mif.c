@@ -1657,9 +1657,16 @@ static void exynos5_devfreq_thermal_event(struct devfreq_thermal_work *work)
 	if (work->polling_period == 0)
 		return;
 
+#ifdef CONFIG_SCHED_HMP
+	mod_delayed_work_on(0,
+			work->work_queue,
+			&work->devfreq_mif_thermal_work,
+			msecs_to_jiffies(work->polling_period));
+#else
 	queue_delayed_work(work->work_queue,
-				&work->devfreq_mif_thermal_work,
-				msecs_to_jiffies(work->polling_period));
+			&work->devfreq_mif_thermal_work,
+			msecs_to_jiffies(work->polling_period));
+#endif
 }
 
 static ssize_t mif_show_templvl_ch0_0(struct device *dev, struct device_attribute *attr, char *buf)
