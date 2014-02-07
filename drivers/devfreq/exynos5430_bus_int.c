@@ -135,6 +135,8 @@ struct devfreq_opp_table devfreq_int_opp_list[] = {
 	{LV6,	100000,	 937500},
 };
 
+static unsigned int devfreq_int_asv_abb[LV_COUNT];
+
 struct devfreq_clk_state aclk_g2d_mfc_pll[] = {
 	{MOUT_ACLK_G2D_400_A,	MOUT_MFC_PLL_USER},
 };
@@ -724,9 +726,11 @@ static int exynos5_devfreq_int_target(struct device *dev,
 
 	if (old_freq < *target_freq) {
 		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
+		set_match_abb(ID_INT, devfreq_int_asv_abb[target_idx]);
 		exynos5_devfreq_int_set_freq(int_data, target_idx, old_idx);
 	} else {
 		exynos5_devfreq_int_set_freq(int_data, target_idx, old_idx);
+		set_match_abb(ID_INT, devfreq_int_asv_abb[target_idx]);
 		exynos5_devfreq_int_set_volt(int_data, target_volt, target_volt + VOLT_STEP);
 	}
 out:
@@ -824,6 +828,10 @@ static int exynos5_init_int_table(struct device *dev)
 		} else {
 			pr_info("DEVFREQ(INT) : %uKhz, %uV\n", freq, volt);
 		}
+
+		devfreq_int_asv_abb[i] = get_match_abb(ID_INT, freq);
+
+		pr_info("DEVFREQ(INT) : %uKhz, ABB %u\n", freq, devfreq_int_asv_abb[i]);
 	}
 
 	return 0;

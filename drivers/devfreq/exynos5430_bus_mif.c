@@ -180,6 +180,8 @@ struct devfreq_opp_table devfreq_mif_opp_list[] = {
 	{LV8,	103000,	 875000},
 };
 
+static unsigned int devfreq_mif_asv_abb[LV_COUNT];
+
 struct devfreq_clk_value aclk_clk2x_825[] = {
 	{0x1000, (0x1 << 20), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
@@ -1354,6 +1356,7 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 	exynos5_devfreq_mif_dynamic_setting(mif_data, false);
 	if (old_freq < *target_freq) {
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
+		set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
@@ -1365,6 +1368,7 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
+		set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
 	}
 	exynos5_devfreq_mif_dynamic_setting(mif_data, true);
@@ -1435,6 +1439,10 @@ static int exynos5_init_mif_table(struct device *dev,
 		} else {
 			pr_info("DEVFREQ(MIF) : %uKhz, %uV\n", freq, volt);
 		}
+
+		devfreq_mif_asv_abb[i] = get_match_abb(ID_MIF, freq);
+
+		pr_info("DEVFREQ(MIF) : %uKhz, ABB %u\n", freq, devfreq_mif_asv_abb[i]);
 	}
 
 	return 0;
