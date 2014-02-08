@@ -499,6 +499,14 @@ void show_exynos_pmu(void)
 			__raw_readl(EXYNOS_L2_CONFIGURATION(1)),
 			__raw_readl(EXYNOS_L2_STATUS(1)),
 			__raw_readl(EXYNOS_L2_OPTION(1)));
+	pr_info(" **** CPUSEQ CONFIG : 0x%x  STATUS : 0x%x  OPTION : 0x%x\n",
+			__raw_readl(EXYNOS5430_EAGLE_CPUSEQ_CONFIGURATION),
+			__raw_readl(EXYNOS5430_EAGLE_CPUSEQ_STATUS),
+			__raw_readl(EXYNOS5430_EAGLE_CPUSEQ_OPTION));
+	pr_info(" **** CENTRL CONFIG : 0x%x  STATUS : 0x%x  OPTION : 0x%x\n",
+			__raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION),
+			__raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION + 0x4),
+			__raw_readl(EXYNOS_CENTRAL_SEQ_OPTION));
 	pr_info(" **** LOCAL BLOCK POWER ****\n");
 	EXYNOS5430_PRINT_PMU(GSCL);
 	EXYNOS5430_PRINT_PMU(CAM0);
