@@ -752,8 +752,12 @@ static int on_run(void *data)
 
 		if (prev_cmd != exe_cmd) {
 			ret = dynamic_hotplug(exe_cmd);
-			if (ret < 0)
-				goto failed_out;
+			if (ret < 0) {
+				if (ret == -EBUSY)
+					goto sleep;
+				else
+					goto failed_out;
+			}
 		}
 
 		prev_cmd = exe_cmd;
