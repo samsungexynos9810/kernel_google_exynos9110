@@ -522,24 +522,21 @@ void exynos_gpu_call_notifier(enum gpu_noti_state_t cur_state)
 	}
 }
 
-static void exynos_check_tmu_noti_state(int min_temp, int max_temp)
+static void exynos_check_tmu_noti_state(int temp)
 {
 	enum tmu_noti_state_t cur_state;
 
 	/* check current temperature state */
-	if (max_temp > HOT_CRITICAL_TEMP)
+	if (temp > HOT_CRITICAL_TEMP)
 		cur_state = TMU_CRITICAL;
-	else if (max_temp > HOT_NORMAL_TEMP && max_temp <= HOT_CRITICAL_TEMP)
+	else if (temp > HOT_NORMAL_TEMP && temp <= HOT_CRITICAL_TEMP)
 		cur_state = TMU_HOT;
-	else if (max_temp > COLD_TEMP && max_temp <= HOT_NORMAL_TEMP)
+	else if (temp > COLD_TEMP && temp <= HOT_NORMAL_TEMP)
 		cur_state = TMU_NORMAL;
 	else
 		cur_state = TMU_COLD;
 
-	if (min_temp <= COLD_TEMP)
-		cur_state = TMU_COLD;
-
-	exynos_tmu_call_notifier(cur_state, max_temp);
+	exynos_tmu_call_notifier(cur_state, temp);
 }
 
 static void exynos_check_mif_noti_state(int temp)
@@ -1188,7 +1185,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 		}
 
 	}
-	exynos_check_tmu_noti_state(min, max);
+	exynos_check_tmu_noti_state(max);
 	exynos_check_mif_noti_state(max);
 	exynos_check_gpu_noti_state(gpu_temp);
 
