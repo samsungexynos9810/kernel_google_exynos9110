@@ -39,8 +39,6 @@ struct decon_lcd {
 enum{
 	DISP_STATUS_PM0 = 0,	/* initial status */
 	DISP_STATUS_PM1,	/* platform started */
-	DISP_STATUS_PM2,	/* platform suspended */
-	DISP_STATUS_PM_MAX,
 };
 
 extern struct decon_lcd *decon_get_lcd_info(void);

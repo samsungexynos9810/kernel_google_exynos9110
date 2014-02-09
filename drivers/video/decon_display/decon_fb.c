@@ -1016,7 +1016,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-		disp_set_pm_status(DISP_STATUS_PM2);
 		if (sfb->power_state == POWER_HIBER_DOWN)
 			disp_pm_add_refcount(dispdrv);
 #endif
