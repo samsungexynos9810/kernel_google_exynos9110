@@ -206,21 +206,29 @@ static void exynos_pm_prepare(void)
 	__raw_writel(tmp, EXYNOS5422_PSGEN_OPTION);
 }
 
+#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+extern bool cluster_power_ctrl_en;
+#endif
+
 static int exynos_pm_suspend(void)
 {
 	unsigned long tmp;
 	unsigned int count = 10000;
 
-	do {
-		tmp = __raw_readl(EXYNOS5422_ARM_COMMON_STATUS) & 0x3;
-		udelay(10);
-		count--;
-	} while (tmp && count);
+#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+	if (cluster_power_ctrl_en) {
+		do {
+			tmp = __raw_readl(EXYNOS5422_ARM_COMMON_STATUS) & 0x3;
+			udelay(10);
+			count--;
+		} while (tmp && count);
 
-	if (count == 0) {
-		pr_err("Non-cpu block of A15 cluster is powered on\n");
-		return -EAGAIN;
+		if (count == 0) {
+			pr_err("Non-cpu block of A15 cluster is powered on\n");
+			return -EAGAIN;
+		}
 	}
+#endif
 
 	s3c_pm_do_save(exynos5422_core_save, ARRAY_SIZE(exynos5422_core_save));
 
