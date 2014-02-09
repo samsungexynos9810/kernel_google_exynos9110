@@ -668,6 +668,16 @@ const static struct file_operations lp_cdev_status_fops = {
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 #define CHECK_CCI_SNOOP		(1 << 7)
+bool cluster_power_ctrl_en = true;
+static int __init cluster_power_ctrl(char *str)
+{
+	for (; *str; ++str) {
+		if (strncmp(str, "1", 1) == 0)
+			cluster_power_ctrl_en = false;
+	}
+	return 1;
+}
+__setup("cluster_power=", cluster_power_ctrl);
 
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static bool disabled_c3 = false;
@@ -752,17 +762,15 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 		spin_unlock(&c2_state_lock);
 	}
 
-	if (flags)
+	if (flags && cluster_power_ctrl_en)
 		__raw_writel(0, EXYNOS_COMMON_CONFIGURATION(cluster_id));
-	else
-		__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 
 	ret = cpu_suspend(flags, c2_finisher);
 	if (ret) {
 		__raw_writel(0x3, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
 
-	if (flags)
-		__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
+		if (flags && cluster_power_ctrl_en)
+			__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 	}
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
@@ -944,6 +952,11 @@ static int __init exynos_init_cpuidle(void)
 	}
 
 	spin_lock_init(&c2_state_lock);
+
+	if (cluster_power_ctrl_en)
+		pr_info("[A15] Cluster power controlled normally\n");
+	else
+		pr_info("[A15] Cluster power enabled forcingly\n");
 #endif
 
 	lp_debugfs =
