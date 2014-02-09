@@ -988,6 +988,9 @@ static struct attribute_group devfreq_mif_attr_group = {
 	.attrs  = devfreq_mif_sysfs_entries,
 };
 
+unsigned int thermal_monitor_step_drex0;
+unsigned int thermal_monitor_step_drex1;
+
 static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 {
 	struct delayed_work *d_work = container_of(work, struct delayed_work, work);
@@ -998,30 +1001,83 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 	unsigned long max_freq = exynos5_mif_governor_data.cal_qos_max;
 	bool throttling = false;
 	void __iomem *base_drex = NULL;
+	bool drex0 = thermal_work->channel == THERMAL_CHANNEL0;
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 0;
+	else
+		thermal_monitor_step_drex1 = 0;
 
 	if (thermal_work->channel == THERMAL_CHANNEL0) {
 		base_drex = data_mif->base_drex0;
 	} else if (thermal_work->channel == THERMAL_CHANNEL1) {
 		base_drex = data_mif->base_drex1;
 	}
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 1;
+	else
+		thermal_monitor_step_drex1 = 1;
+
 	__raw_writel(0x09001000, base_drex + 0x10);
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 2;
+	else
+		thermal_monitor_step_drex1 = 2;
+
 	mrstatus = __raw_readl(base_drex + 0x54);
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 3;
+	else
+		thermal_monitor_step_drex1 = 3;
+
 	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
 	if (tmp_thermal_level > max_thermal_level)
 		max_thermal_level = tmp_thermal_level;
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 4;
+	else
+		thermal_monitor_step_drex1 = 4;
 
 	thermal_work->thermal_level_cs0 = tmp_thermal_level;
 
-	if (thermal_work->channel == THERMAL_CHANNEL0)
+	if (thermal_work->channel == THERMAL_CHANNEL0) {
 		devfreq_mif_ch0_work.thermal_level_cs0 = thermal_work->thermal_level_cs0;
-	else if (thermal_work->channel == THERMAL_CHANNEL1)
+	}
+	else if (thermal_work->channel == THERMAL_CHANNEL1) {
 		devfreq_mif_ch1_work.thermal_level_cs0 = thermal_work->thermal_level_cs0;
+	}
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 5;
+	else
+		thermal_monitor_step_drex1 = 5;
 
 	__raw_writel(0x09101000, base_drex + 0x10);
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 6;
+	else
+		thermal_monitor_step_drex1 = 6;
+
 	mrstatus = __raw_readl(base_drex + 0x54);
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 7;
+	else
+		thermal_monitor_step_drex1 = 7;
+
 	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
 	if (tmp_thermal_level > max_thermal_level)
 		max_thermal_level = tmp_thermal_level;
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 8;
+	else
+		thermal_monitor_step_drex1 = 8;
 
 	thermal_work->thermal_level_cs1 = tmp_thermal_level;
 
@@ -1053,21 +1109,48 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 			return;
 	}
 
+	if (drex0)
+		thermal_monitor_step_drex0 = 9;
+	else
+		thermal_monitor_step_drex1 = 9;
+
 	if (throttling){
 		max_freq = mif_bus_opp_list[LV_6].clk;
 	}
 	else
 		max_freq = exynos5_mif_governor_data.cal_qos_max;
 
+	if (drex0)
+		thermal_monitor_step_drex0 = 10;
+	else
+		thermal_monitor_step_drex1 = 10;
+
 	if (thermal_work->max_freq != max_freq) {
 		thermal_work->max_freq = max_freq;
 		mutex_lock(&data_mif->devfreq->lock);
 		data_mif->devfreq->max_freq = max_freq;
+
+		if (drex0)
+			thermal_monitor_step_drex0 = 11;
+		else
+			thermal_monitor_step_drex1 = 11;
+
 		update_devfreq(data_mif->devfreq);
 		mutex_unlock(&data_mif->devfreq->lock);
 	}
 
+	if (drex0)
+		thermal_monitor_step_drex0 = 12;
+	else
+		thermal_monitor_step_drex1 = 12;
+
 	__raw_writel(timingaref_value, base_drex + 0x30);
+
+	if (drex0)
+		thermal_monitor_step_drex0 = 13;
+	else
+		thermal_monitor_step_drex1 = 13;
+
 	exynos5_devfreq_thermal_event(thermal_work);
 }
 
