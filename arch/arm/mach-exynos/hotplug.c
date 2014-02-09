@@ -98,6 +98,10 @@ static inline void cpu_leave_lowpower(void)
 	  : "cc");
 }
 
+#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN) && defined(CONFIG_SOC_EXYNOS5422)
+extern bool cluster_power_ctrl_en;
+#endif
+
 void exynos_power_down_cpu(unsigned int cpu)
 {
 	struct cpumask mask;
@@ -106,8 +110,8 @@ void exynos_power_down_cpu(unsigned int cpu)
 	set_boot_flag(cpu, HOTPLUG);
 	exynos_cpu.power_down(cpu);
 
-#ifdef CONFIG_EXYNOS_CLUSTER_POWER_DOWN
-	if (soc_is_exynos5422()) {
+#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN) && defined(CONFIG_SOC_EXYNOS5422)
+	if (cluster_power_ctrl_en) {
 		u32 cluster_id = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
 		if (type)
 			__raw_writel(0, EXYNOS_COMMON_CONFIGURATION(cluster_id));
