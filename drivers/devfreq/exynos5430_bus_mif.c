@@ -766,7 +766,7 @@ unsigned int timeout_fullhd_camera[][2] = {
 struct devfreq_distriction_level distriction_wqhd[] = {
 	{LV8,   LV2},
 	{LV7,	LV2},
-	{LV6,	LV1},
+	{LV5,	LV1},
 	{LV4,	LV0},
 	{LV3,   LV0},
 	{LV2,	LV0},

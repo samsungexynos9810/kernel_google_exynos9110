@@ -483,8 +483,8 @@ static struct pm_qos_request exynos5_int_bts_qos;
 static struct devfreq_data_int *data_int;
 
 int district_level_by_disp_333[] = {
+	LV2,
 	LV4,
-	LV5,
 	LV6,
 	LV6,
 };
