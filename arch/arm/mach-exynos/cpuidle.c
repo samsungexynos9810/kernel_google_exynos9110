@@ -323,8 +323,9 @@ static int c2_finisher(unsigned long flags)
 
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (flags == L2_CCI_OFF) {
+#if defined(CONFIG_TMP_DISABLE_CLUSTER_DOWN)
 		exynos_cpu_sequencer_ctrl(true);
-
+#endif
 		cluster_off_flag = true;
 		last_time = get_jiffies_64();
 
