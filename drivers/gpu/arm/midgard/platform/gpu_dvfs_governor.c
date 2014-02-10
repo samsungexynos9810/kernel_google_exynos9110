@@ -73,9 +73,6 @@ static gpu_dvfs_info gpu_dvfs_infotbl_default[] = {
 };
 
 
-#ifdef CONFIG_DYNIMIC_ABB
-static int gpu_abb_infobl_default[] = {900000, 900000, 950000, 1000000, 1075000, 1175000};
-#endif /* SOC_NAME */
 
 #ifdef CONFIG_MALI_T6XX_DVFS
 static int gpu_dvfs_governor_default(struct kbase_device *kbdev, int utilization)
@@ -207,10 +204,23 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 	unsigned long flags;
 #ifdef CONFIG_MALI_T6XX_DVFS
 	int i, total = 0;
+	int k;
 #endif /* CONFIG_MALI_T6XX_DVFS */
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
+
+#ifdef CONFIG_DYNIMIC_ABB
+	platform->devfreq_g3d_asv_abb = kzalloc(sizeof(int) * GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default), GFP_KERNEL);
+	if(!platform->devfreq_g3d_asv_abb) {
+		GPU_LOG(DVFS_ERROR, "g3d_asv_abb allocation failed\n");
+		return -1;
+	}
+	for (k = 0; k < GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default) ; k++) {
+		platform->devfreq_g3d_asv_abb[k] = ABB_BYPASS;
+		GPU_LOG(DVFS_INFO, "g3d_asv_abb [%d]\n", platform->devfreq_g3d_asv_abb[k]);
+	}
+#endif
 
 	spin_lock_irqsave(&platform->gpu_dvfs_spinlock, flags);
 
@@ -220,27 +230,18 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_default;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
-#ifdef CONFIG_DYNIMIC_ABB
-		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
-#endif
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_DEFAULT);
 		break;
 	case G3D_DVFS_GOVERNOR_STATIC:
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_static;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
-#ifdef CONFIG_DYNIMIC_ABB
-		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
-#endif
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_STATIC);
 		break;
 	case G3D_DVFS_GOVERNOR_BOOSTER:
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_booster;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
-#ifdef CONFIG_DYNIMIC_ABB
-		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
-#endif
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_BOOSTER);
 		break;
 	default:
@@ -248,9 +249,6 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 		gpu_dvfs_get_next_freq = (GET_NEXT_FREQ)&gpu_dvfs_governor_default;
 		platform->table = gpu_dvfs_infotbl_default;
 		platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
-#ifdef CONFIG_DYNIMIC_ABB
-		platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
-#endif
 		platform->step = gpu_dvfs_get_level(platform, G3D_GOVERNOR_DEFAULT_CLOCK_DEFAULT);
 		break;
 	}
@@ -280,9 +278,6 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 #else
 	platform->table = gpu_dvfs_infotbl_default;
 	platform->table_size = GPU_DVFS_TABLE_SIZE(gpu_dvfs_infotbl_default);
-#ifdef CONFIG_DYNIMIC_ABB
-	platform->devfreq_g3d_asv_abb = gpu_abb_infobl_default;
-#endif /* SOC_NAME */
 	platform->step = gpu_dvfs_get_level(platform, MALI_DVFS_START_FREQ);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 

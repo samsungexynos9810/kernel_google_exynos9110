@@ -87,9 +87,7 @@ struct exynos_context {
 	struct regulator *g3d_regulator;
 
 	gpu_dvfs_info *table;
-#ifdef CONFIG_DYNIMIC_ABB
 	int *devfreq_g3d_asv_abb;
-#endif
 	int table_size;
 	int step;
 #ifdef CONFIG_PM_RUNTIME
