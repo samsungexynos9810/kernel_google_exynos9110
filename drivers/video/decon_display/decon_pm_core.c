@@ -537,6 +537,9 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 		pr_info("%s, DECON does not need power-off\n", __func__);
 		goto done;
 	}
+
+	/* Should be clock on before check a H/W LINECNT */
+	display_block_clock_on(dispdrv);
 	if (get_display_line_count(dispdrv)) {
 		pm_debug("wait until last frame is totally transferred %d:",
 				get_display_line_count(dispdrv));
