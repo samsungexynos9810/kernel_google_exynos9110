@@ -255,6 +255,15 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 			fimg2d_err("2D clock is not set\n");
 #endif
 
+		atomic_set(&ctrl->busy, 1);
+		perf_start(cmd, PERF_SFR);
+		ret = ctrl->configure(ctrl, cmd);
+		perf_end(cmd, PERF_SFR);
+		if (IS_ERR_VALUE(ret)) {
+			fimg2d_err("failed to configure\n");
+			goto fail_n_del;
+		}
+
 		addr_type = cmd->image[IDST].addr.type;
 
 		ctx->vma_lock = vma_lock_mapping(ctx->mm, prefbuf, MAX_IMAGES - 1);
@@ -289,21 +298,6 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 
 			//exynos_sysmmu_set_pbuf(ctrl->dev, nbufs, prefbuf);
 			fimg2d_debug("%s : set smmu prefbuf\n", __func__);
-		}
-
-		atomic_set(&ctrl->busy, 1);
-		perf_start(cmd, PERF_SFR);
-		ret = ctrl->configure(ctrl, cmd);
-		perf_end(cmd, PERF_SFR);
-
-		if (IS_ERR_VALUE(ret)) {
-			fimg2d_err("failed to configure\n");
-#ifdef CONFIG_EXYNOS7_IOMMU
-			iovmm_deactivate(ctrl->dev);
-#else
-			exynos_sysmmu_disable(ctrl->dev);
-#endif
-			goto fail_n_del;
 		}
 
 		fimg2d4x_pre_bitblt(ctrl, cmd);
