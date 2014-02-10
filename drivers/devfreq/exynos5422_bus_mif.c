@@ -933,9 +933,9 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
 static struct devfreq_simple_usage_data exynos5_mif_governor_data = {
-	.upthreshold		= 85,
-	.target_percentage	= 80,
-	.proportional		= 100,
+	.upthreshold		= 120,
+	.target_percentage	= 100,
+	.proportional		= 150,
 	.cal_qos_max		= 825000,
 	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
 };
