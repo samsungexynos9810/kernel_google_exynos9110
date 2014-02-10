@@ -20,6 +20,8 @@
 #include "fimg2d_cache.h"
 #include "fimg2d_helper.h"
 
+int qos_id;
+
 static inline bool is_yuvfmt(enum color_format fmt)
 {
 	switch (fmt) {
@@ -744,6 +746,14 @@ int fimg2d_add_command(struct fimg2d_control *ctrl,
 			cmd->ctx, (unsigned long *)cmd->ctx->mm->pgd,
 			atomic_read(&ctx->ncmd), cmd->blt.seq_no);
 	g2d_spin_unlock(&ctrl->bltlock, flags);
+
+	if ((blt->qos_lv >= G2D_LV0) && (blt->qos_lv < G2D_LV_END)) {
+		ctrl->pre_qos_lv = ctrl->qos_lv;
+		ctrl->qos_lv = blt->qos_lv;
+		fimg2d_debug("pre_qos_lv:%d, qos_lv:%d qos_id:%d\n",
+				ctrl->pre_qos_lv, ctrl->qos_lv, blt->qos_lv);
+	}
+
 	return 0;
 
 err:

@@ -88,6 +88,20 @@ enum fimg2d_qos_status {
 	FIMG2D_QOS_OFF
 };
 
+enum fimg2d_qos_level {
+	G2D_LV0 = 0,
+	G2D_LV1,
+	G2D_LV2,
+	G2D_LV3,
+	G2D_LV4,
+	G2D_LV_END
+};
+
+enum fimg2d_ctx_state {
+	CTX_READY = 0,
+	CTX_ERROR,
+};
+
 enum driver_act {
 	DRV_ACT = 0,
 	DRV_DEACT
@@ -318,6 +332,13 @@ struct fimg2d_dma_group {
 
 #endif /* __KERNEL__ */
 
+struct fimg2d_qos {
+	unsigned int freq_int;
+	unsigned int freq_mif;
+	unsigned int freq_cpu;
+	unsigned int freq_kfc;
+};
+
 /**
  * @start: start address or unique id of image
  */
@@ -427,6 +448,7 @@ struct fimg2d_blit {
 	struct fimg2d_image *dst;
 	enum blit_sync sync;
 	unsigned int seq_no;
+	enum fimg2d_qos_level qos_lv;
 };
 
 #ifdef __KERNEL__
@@ -458,6 +480,7 @@ struct fimg2d_context {
 	wait_queue_head_t wait_q;
 	struct fimg2d_perf perf[MAX_PERF_DESCS];
 	void *vma_lock;
+	unsigned long state;
 };
 
 /**
@@ -529,6 +552,9 @@ struct fimg2d_control {
 	struct clk *clk_parn2;
 	struct clk *clk_chld1;
 	struct clk *clk_chld2;
+	struct fimg2d_qos g2d_qos;
+	enum fimg2d_qos_level qos_lv;
+	enum fimg2d_qos_level pre_qos_lv;
 
 	int (*blit)(struct fimg2d_control *ctrl);
 	int (*configure)(struct fimg2d_control *ctrl,

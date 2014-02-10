@@ -1283,11 +1283,39 @@
 		  clocks = <&clock 234>, <&clock 228>;
 		  clock-names = "clk_g2d", "clk_qeg2d";
 		  ip_ver = <7>; /* IP_VER_G2D_5AR2 */
-		  cpu_min = <0>;
-		  kfc_min = <800000>;
-		  mif_min = <633000>;
-		  int_min = <400000>;
 		  samsung,power-domain = <&pd_g2d>;
+		  g2d_qos_table {
+			  g2d_qos_variant_0 {
+				  freq_int = <400000>;
+				  freq_mif = <825000>;
+				  freq_cpu = <1900000>;
+				  freq_kfc = <1500000>;
+			  };
+			  g2d_qos_variant_1 {
+				  freq_int = <400000>;
+				  freq_mif = <633000>;
+				  freq_cpu = <0>;
+				  freq_kfc = <800000>;
+			  };
+			  g2d_qos_variant_2 {
+				  freq_int = <333000>;
+				  freq_mif = <543000>;
+				  freq_cpu = <0>;
+				  freq_kfc = <800000>;
+			  };
+			  g2d_qos_variant_3 {
+				  freq_int = <222000>;
+				  freq_mif = <413000>;
+				  freq_cpu = <0>;
+				  freq_kfc = <800000>;
+			  };
+			  g2d_qos_variant_4 {
+				  freq_int = <222000>;
+				  freq_mif = <275000>;
+				  freq_cpu = <0>;
+				  freq_kfc = <800000>;
+			  };
+		  };
 	};
 
 	lpass: lpass@03810000 {

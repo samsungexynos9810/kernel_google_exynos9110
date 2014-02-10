@@ -249,6 +249,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 			break;
 
 		ctx = cmd->ctx;
+		ctx->state = CTX_READY;
 
 #ifdef CONFIG_PM_RUNTIME
 		if (fimg2d4x_get_clk_cnt(ctrl->clock) == false)
@@ -261,6 +262,7 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 		perf_end(cmd, PERF_SFR);
 		if (IS_ERR_VALUE(ret)) {
 			fimg2d_err("failed to configure\n");
+			ctx->state = CTX_ERROR;
 			goto fail_n_del;
 		}
 
@@ -276,6 +278,9 @@ int fimg2d4x_bitblt(struct fimg2d_control *ctrl)
 		if (addr_type == ADDR_USER || addr_type == ADDR_USER_CONTIG) {
 			if (!ctx->mm || !ctx->mm->pgd) {
 				atomic_set(&ctrl->busy, 0);
+				fimg2d_err("ctx->mm:0x%p or ctx->mm->pgd:0x%p\n",
+					       ctx->mm, ctx->mm->pgd);
+				ret = -EPERM;
 				goto fail_n_del;
 			}
 			pgd = (unsigned long *)ctx->mm->pgd;
@@ -524,7 +529,7 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 				cmd->dma[ISRC].base.addr,
 				cmd->dma[ISRC].base.size, 0);
 		if (IS_ERR_VALUE(ret)) {
-			fimg2d_err("failed to map src buffer for sysmmu\n");
+			fimg2d_err("failed to map src buffer in plane2 for sysmmu\n");
 			return ret;
 		}
 
@@ -596,7 +601,7 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 				cmd->dma[IDST].base.addr,
 				cmd->dma[IDST].base.size, 0);
 		if (IS_ERR_VALUE(ret)) {
-			fimg2d_err("failed to map src buffer for sysmmu\n");
+			fimg2d_err("failed to map dst buffer for sysmmu\n");
 			return ret;
 		}
 
@@ -606,7 +611,7 @@ static int fimg2d4x_configure(struct fimg2d_control *ctrl,
 					cmd->dma[IDST].plane2.addr,
 					cmd->dma[IDST].plane2.size, 0);
 			if (IS_ERR_VALUE(ret)) {
-				fimg2d_err("failed to map src buffer for sysmmu\n");
+				fimg2d_err("failed to map dst buffer in plane2 for sysmmu\n");
 				return ret;
 			}
 		}
