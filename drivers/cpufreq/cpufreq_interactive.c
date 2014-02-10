@@ -599,26 +599,14 @@ static int cpufreq_interactive_speedchange_task(void *data)
 		}
 
 		set_current_state(TASK_RUNNING);
-		tmp_mask = speedchange_cpumask;
-		cpumask_clear(&speedchange_cpumask);
+		pcpu = &per_cpu(cpuinfo, smp_processor_id());
+		cpumask_and(&tmp_mask, &speedchange_cpumask, pcpu->policy->cpus);
+		cpumask_andnot(&speedchange_cpumask, &speedchange_cpumask, pcpu->policy->cpus);
 		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
 
 		for_each_cpu(cpu, &tmp_mask) {
 			unsigned int j;
 			unsigned int max_freq = 0;
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-			unsigned int smp_id = smp_processor_id();
-
-			if (exynos_boot_cluster == CA7) {
-				if ((smp_id == 0 && cpu >= NR_CA7) ||
-					(smp_id == NR_CA7 && cpu < NR_CA7))
-					continue;
-			} else {
-				if ((smp_id == 0 && cpu >= NR_CA15) ||
-					(smp_id == NR_CA15 && cpu < NR_CA15))
-					continue;
-			}
-#endif
 
 			pcpu = &per_cpu(cpuinfo, cpu);
 
