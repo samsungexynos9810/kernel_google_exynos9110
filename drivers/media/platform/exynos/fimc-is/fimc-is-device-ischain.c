@@ -1263,7 +1263,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 #if defined(CONFIG_SOC_EXYNOS3470)
 		writel(0x0, PMUREG_ISP_ARM_SYS_PWR_REG);
 #else
-		timeout = 1000;
+		timeout = 2000;
 		while ((readl(PMUREG_ISP_STATUS) & 0x1) && timeout) {
 			timeout--;
 			usleep_range(1000, 1000);
