@@ -678,10 +678,10 @@ static void exynos_dwmci_tuning_drv_st(struct dw_mci *host)
 		DRV_STR_LV6
 	};
 
-	priv->drv_str_val++;
+	if (priv->drv_str_val == DRV_STR_LV1)
+		priv->drv_str_val = priv->drv_str_num;
 
-	if (priv->drv_str_val == priv->drv_str_num)
-		priv->drv_str_val = 0x0;
+	priv->drv_str_val--;
 
 	dev_info(host->dev, "Clock GPIO Drive Strength Value: 0x%x\n",
 			priv->drv_str_val);
@@ -883,7 +883,8 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	mci_writel(host, CDTHRCTL, host->cd_rd_thr << 16 | 1);
 
 	/* Restore Base Drive Strength */
-	priv->drv_str_val = priv->drv_str_base_val;
+	if (priv->drv_str_pin)
+		exynos_dwmci_restore_drv_st(host);
 
 	/*
 	 * eMMC 4.5 spec section 6.6.7.1 says the device is guaranteed to
@@ -1013,7 +1014,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		tuning_loop--;
 	} while (!tuned);
 
-	if (priv->drv_str_pin)
+	if (priv->drv_str_pin && (priv->drv_str_val == DRV_STR_LV1))
 		exynos_dwmci_restore_drv_st(host);
 
 	/*
