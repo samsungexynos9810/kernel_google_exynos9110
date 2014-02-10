@@ -73,7 +73,6 @@ int display_hibernation_power_on(struct display_driver *dispdrv);
 int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
-static void decon_hotplug_gating_handler(struct kthread_work *work);
 static void request_dynamic_hotplug(bool hotplug);
 
 struct pm_ops display_block_ops = {
@@ -171,21 +170,6 @@ int init_display_pm(struct display_driver *dispdrv)
 	}
 	init_kthread_work(&dispdrv->pm_status.control_power_gating_work,
 		decon_power_gating_handler);
-
-	init_kthread_worker(&dispdrv->pm_status.control_hotplug_gating);
-
-	dispdrv->pm_status.control_hotplug_gating_thread = kthread_run(kthread_worker_fn,
-			&dispdrv->pm_status.control_hotplug_gating,
-			"decon_hotplug_thread");
-	if (IS_ERR(dispdrv->pm_status.control_hotplug_gating_thread)) {
-		int err = PTR_ERR(dispdrv->pm_status.control_hotplug_gating_thread);
-		dispdrv->pm_status.control_hotplug_gating_thread = NULL;
-
-		pr_err("failed to run control_hotplug_gating_thread\n");
-		return err;
-	}
-	init_kthread_work(&dispdrv->pm_status.control_hotplug_gating_work,
-		decon_hotplug_gating_handler);
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	dispdrv->pm_status.ops = &display_block_ops;
@@ -559,11 +543,6 @@ static void request_dynamic_hotplug(bool hotplug)
 		(dispdrv->platform_status == DISP_STATUS_PM1))
 		force_dynamic_hotplug(hotplug);
 #endif
-}
-
-static void decon_hotplug_gating_handler(struct kthread_work *work)
-{
-	request_dynamic_hotplug(false);
 }
 
 int display_hibernation_power_on(struct display_driver *dispdrv)

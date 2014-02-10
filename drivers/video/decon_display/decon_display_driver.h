@@ -147,9 +147,6 @@ struct display_pm_status {
 	struct kthread_worker	control_power_gating;
 	struct task_struct	*control_power_gating_thread;
 	struct kthread_work	control_power_gating_work;
-	struct kthread_worker	control_hotplug_gating;
-	struct task_struct	*control_hotplug_gating_thread;
-	struct kthread_work	control_hotplug_gating_work;
 	const struct pm_ops *ops;
 	bool clock_gating_on;
 	bool power_gating_on;
