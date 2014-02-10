@@ -1052,30 +1052,10 @@ static int exynos5_devfreq_mif_change_timing_set(struct devfreq_data_mif *data)
 		tmp = __raw_readl(data->base_mif + 0x1004);
 		tmp |= 0x1;
 		__raw_writel(tmp, data->base_mif + 0x1004);
-
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x2 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x2 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB8);
 	} else {
 		tmp = __raw_readl(data->base_mif + 0x1004);
 		tmp &= ~0x1;
 		__raw_writel(tmp, data->base_mif + 0x1004);
-
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x1 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB8);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB8);
-		tmp &= ~(0x3 << 24);
-		tmp |= (0x1 << 24);
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB8);
 	}
 
 	exynos5_devfreq_mif_update_timingset(data);
@@ -1127,39 +1107,6 @@ static int exynos5_devfreq_mif_set_timing_set(struct devfreq_data_mif *data,
 		tmp |= (cur_parameter->timing_rfcpb & TIMING_RFCPB_MASK);
 		__raw_writel(tmp, data->base_drex1 + 0x20);
 		__raw_writel(cur_parameter->rd_fetch, data->base_drex1 + 0x4C);
-	}
-
-	return 0;
-}
-
-static int exynos5_devfreq_mif_set_phy(struct devfreq_data_mif *data,
-					int target_idx)
-{
-	struct devfreq_mif_timing_parameter *cur_parameter;
-	unsigned int tmp;
-
-	cur_parameter = &dmc_timing_parameter[target_idx];
-
-	if (use_mif_timing_set_0) {
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xBC);
-		tmp &= ~(0x1F << 24);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 24));
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xBC);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xBC);
-		tmp &= ~(0x1F << 24);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 24));
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xBC);
-	} else {
-		tmp = __raw_readl(data->base_lpddr_phy0 + 0xBC);
-		tmp &= ~(0x1F << 16);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 16));
-		__raw_writel(tmp, data->base_lpddr_phy0 + 0xBC);
-
-		tmp = __raw_readl(data->base_lpddr_phy1 + 0xBC);
-		tmp &= ~(0x1F << 16);
-		tmp |= (cur_parameter->dvfs_con1 & (0x1F << 16));
-		__raw_writel(tmp, data->base_lpddr_phy1 + 0xBC);
 	}
 
 	return 0;
@@ -1287,13 +1234,39 @@ static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
 
 static void exynos5_devfreq_waiting_pause(struct devfreq_data_mif *data)
 {
-	while ((__raw_readl(data->base_mif + 0x1008) & 0x00070000) != 0);
+	unsigned int timeout = 1000;
+
+	while ((__raw_readl(data->base_mif + 0x1008) & 0x00070000) != 0) {
+		if (timeout == 0) {
+			pr_err("DEVFREQ(MIF) : timeout to wait pause completion\n");
+			return;
+		}
+		udelay(1);
+		timeout--;
+	}
 }
 
 static void exynos5_devfreq_waiting_mux(struct devfreq_data_mif *data)
 {
-	while ((__raw_readl(data->base_mif + 0x0404) & 0x04440000) != 0);
-	while ((__raw_readl(data->base_mif + 0x0704) & 0x00000010) != 0);
+	unsigned int timeout = 1000;
+
+	while ((__raw_readl(data->base_mif + 0x0404) & 0x04440000) != 0) {
+		if (timeout == 0) {
+			pr_err("DEVFREQ(MIF) : timeout to wait mux completion\n");
+			return;
+		}
+		udelay(1);
+		timeout--;
+	}
+	timeout = 1000;
+	while ((__raw_readl(data->base_mif + 0x0704) & 0x00000010) != 0) {
+		if (timeout == 0) {
+			pr_err("DEVFREQ(MIF) : timeout to wait divider completion\n");
+			return;
+		}
+		udelay(1);
+		timeout--;
+	}
 }
 
 static int exynos5_devfreq_mif_set_freq(struct devfreq_data_mif *data,
@@ -1446,19 +1419,17 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
 						true, *target_freq);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
+		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
-		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
-		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 	} else {
 		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
-		exynos5_devfreq_mif_set_phy(mif_data, target_idx);
 		exynos5_devfreq_mif_change_timing_set(mif_data);
-		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
+		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
 		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
 						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
@@ -1799,6 +1770,8 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	struct devfreq_data_mif *data;
 	struct devfreq_notifier_block *devfreq_nb;
 	struct exynos_devfreq_platdata *plat_data;
+	struct opp *target_opp;
+	unsigned long freq;
 
 	if (exynos5_devfreq_mif_init_clock()) {
 		ret = -EINVAL;
@@ -1844,6 +1817,20 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
 	data->vdd_mif = regulator_get(NULL, "vdd_mif");
+
+	rcu_read_lock();
+	freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
+	target_opp = devfreq_recommended_opp(data->dev, &freq, 0);
+	if (IS_ERR(target_opp)) {
+		rcu_read_unlock();
+		dev_err(data->dev, "DEVFREQ(MIF) : Invalid OPP to set voltagen");
+		ret = PTR_ERR(target_opp);
+		goto err_inittable;
+	}
+	data->old_volt = opp_get_voltage(target_opp);
+	rcu_read_unlock();
+	regulator_set_voltage(data->vdd_mif, data->old_volt, data->old_volt + VOLT_STEP);
+
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_mif_profile,
 						"simple_ondemand",
