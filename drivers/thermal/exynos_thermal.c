@@ -226,6 +226,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define BUF_VREF_SEL_2POINT		23
 #endif
 
+extern int gpu_is_power_on(void);
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
 static enum gpu_noti_state_t gpu_old_state = GPU_NORMAL;
 static enum mif_noti_state_t mif_old_state = MIF_TH_LV1;
@@ -1202,6 +1203,8 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 		alltemp[i] = temp;
 
 		if (i == EXYNOS_GPU_NUMBER) {
+			if (soc_is_exynos5430() && !gpu_is_power_on())
+				temp = COLD_TEMP + 1;
 			gpu_temp = temp;
 		} else {
 			if (temp > max)
