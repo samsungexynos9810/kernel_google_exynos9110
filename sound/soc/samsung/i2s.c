@@ -785,6 +785,8 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 	struct platform_device *pdev = NULL;
 	unsigned long flags;
 
+	pr_info("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
+
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&pdev->dev);
@@ -809,6 +811,7 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 
 	spin_unlock_irqrestore(&lock, flags);
 
+	pr_info("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
 	return 0;
 }
 
@@ -820,6 +823,7 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 	struct platform_device *pdev = NULL;
 	unsigned long flags;
 
+	pr_info("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
 	spin_lock_irqsave(&lock, flags);
 
 	i2s->mode &= ~DAI_OPENED;
@@ -845,6 +849,7 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 #else
 	i2s_disable(&pdev->dev);
 #endif
+	pr_info("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
 }
 
 static int config_setup(struct i2s_dai *i2s)

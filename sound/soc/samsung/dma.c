@@ -71,6 +71,8 @@ struct runtime_data {
 	struct s3c_dma_params *params;
 	struct snd_pcm_hardware hw;
 	bool dram_used;
+	dma_addr_t irq_pos;
+	u32 irq_cnt;
 };
 
 static void audio_buffdone(void *data);
@@ -98,7 +100,7 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
 	unsigned int limit;
 	struct samsung_dma_prep dma_info;
 
-	pr_debug("Entered %s\n", __func__);
+	pr_info("Entered %s\n", __func__);
 
 	limit = (prtd->dma_end - prtd->dma_start) / prtd->dma_period;
 
@@ -160,6 +162,8 @@ static void audio_buffdone(void *data)
 		else
 			pos = src - prtd->dma_start;
 
+		prtd->irq_cnt++;
+		prtd->irq_pos = pos;
 		pos /= prtd->dma_period;
 		pos = prtd->dma_start + (pos * prtd->dma_period);
 		if (pos >= prtd->dma_end)
@@ -168,13 +172,13 @@ static void audio_buffdone(void *data)
 		prtd->dma_pos = pos;
 		snd_pcm_period_elapsed(substream);
 
+		spin_lock(&prtd->lock);
 		if (!samsung_dma_has_circular()) {
-			spin_lock(&prtd->lock);
 			prtd->dma_loaded--;
 			if (!samsung_dma_has_infiniteloop())
 				dma_enqueue(substream);
-			spin_unlock(&prtd->lock);
 		}
+		spin_unlock(&prtd->lock);
 	}
 }
 
@@ -241,7 +245,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 		prtd->dma_period >>= 1;
 	spin_unlock_irq(&prtd->lock);
 
-	pr_debug("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d(%d) #Prds=%d dma_area=0x%x\n",
+	pr_info("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d(%d) #Prds=%d dma_area=0x%x\n",
 		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? "P" : "C",
 		prtd->dma_start, runtime->dma_bytes,
 		params_period_bytes(params), prtd->dma_period,
@@ -273,7 +277,7 @@ static int dma_prepare(struct snd_pcm_substream *substream)
 	struct runtime_data *prtd = substream->runtime->private_data;
 	int ret = 0;
 
-	pr_debug("Entered %s\n", __func__);
+	pr_info("Entered %s\n", __func__);
 
 	/* return if this is a bufferless transfer e.g.
 	 * codec <--> BT codec or GSM modem -- lg FIXME */
@@ -284,6 +288,8 @@ static int dma_prepare(struct snd_pcm_substream *substream)
 	prtd->params->ops->flush(prtd->params->ch);
 	prtd->dma_loaded = 0;
 	prtd->dma_pos = prtd->dma_start;
+	prtd->irq_pos = prtd->dma_start;
+	prtd->irq_cnt = 0;
 
 	/* enqueue dma buffers */
 	dma_enqueue(substream);
@@ -377,6 +383,8 @@ static int dma_open(struct snd_pcm_substream *substream)
 	runtime->private_data = prtd;
 	snd_soc_set_runtime_hwparams(substream, &prtd->hw);
 
+	pr_info("%s: prtd = %p\n", __func__, prtd);
+
 	return 0;
 }
 
@@ -390,6 +398,8 @@ static int dma_close(struct snd_pcm_substream *substream)
 	if (!prtd)
 		pr_debug("dma_close called with prtd == NULL\n");
 
+	pr_info("%s: prtd = %p, irq_cnt %u\n",
+			__func__, prtd, prtd->irq_cnt);
 	kfree(prtd);
 
 	return 0;
