@@ -289,12 +289,15 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 			return -EINVAL;
 		}
 	} else {
-		ret = gsc_out_hw_reset_off(gsc);
-		if (ret < 0)
-			return ret;
+		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+			ret = gsc_out_hw_reset_off(gsc);
+			if (ret < 0)
+				return ret;
 
-		INIT_LIST_HEAD(&gsc->out.active_buf_q);
-		clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
+			INIT_LIST_HEAD(&gsc->out.active_buf_q);
+			clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
+			wake_up(&gsc->irq_queue);
+		}
 	}
 
 	return 0;
@@ -781,16 +784,12 @@ static int gsc_out_link_setup(struct media_entity *entity,
 				gsc->pipeline.disp = sd;
 				gsc->out.ctx->out_path = GSC_FIMD;
 				gsc_dbg("LINK Enable(%d)", gsc->id);
-			} else {
-				gsc_err("G-Scaler source pad was linked already");
 			}
 		} else if (!(flags & ~MEDIA_LNK_FL_ENABLED)) {
 			if (gsc->pipeline.disp != NULL) {
 				gsc_dbg("LINK Disable(%d)", gsc->id);
 				gsc->pipeline.disp = NULL;
 				gsc->out.ctx->out_path = 0;
-			} else {
-				gsc_err("G-Scaler source pad was unlinked already");
 			}
 		}
 	}
@@ -875,7 +874,7 @@ static int gsc_output_open(struct file *file)
 static int gsc_output_close(struct file *file)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
-
+	int ret = 0;
 	gsc_dbg("pid: %d, state: 0x%lx", task_pid_nr(current), gsc->state);
 
 	/* This is unnormal case */
@@ -886,15 +885,50 @@ static int gsc_output_close(struct file *file)
 		gsc_set_protected_content(gsc, false);
 	}
 
+	if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+		gsc_info("driver is closed by force");
+		ret = v4l2_subdev_call
+			(gsc->mdev[MDEV_OUTPUT]->gsc_sd[gsc->id], video,
+			 s_stream, false);
+		if (ret) {
+			gsc_err("GSC s_stream(0) failed");
+			return ret;
+		}
+	}
+
+	if (gsc->out.req_cnt) {
+		gsc_info("driver is closed by force");
+		gsc_ctx_state_lock_clear(GSC_SRC_FMT | GSC_DST_FMT |
+				GSC_DST_CROP, gsc->out.ctx);
+
+		ret = v4l2_subdev_call(gsc->pipeline.disp, core, ioctl,
+				S3CFB_FLUSH_WORKQUEUE, NULL);
+		if (ret) {
+			gsc_err("Decon subdev ioctl failed");
+			return ret;
+		}
+	}
+
+	if (gsc->pipeline.disp != NULL) {
+		gsc_dbg("LINK Disable(%d)", gsc->id);
+		gsc->pipeline.disp = NULL;
+		gsc->out.ctx->out_path = 0;
+	}
+
 	clear_bit(ST_OUTPUT_OPEN, &gsc->state);
 	vb2_queue_release(&gsc->out.vbq);
 	gsc_ctrls_delete(gsc->out.ctx);
 	v4l2_fh_release(file);
 
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
-
+	ret = wait_event_timeout(gsc->irq_queue,
+		!test_bit(ST_OUTPUT_STREAMON, &gsc->state),
+		GSC_SHUTDOWN_TIMEOUT);
+	if (ret == 0) {
+		gsc_err("wait timeout");
+		return -EBUSY;
+	}
 	bts_otf_initialize(gsc->id, false);
-
 	pm_runtime_put_sync(&gsc->pdev->dev);
 
 	return 0;
