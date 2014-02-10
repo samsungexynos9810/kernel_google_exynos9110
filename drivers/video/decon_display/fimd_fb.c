@@ -629,8 +629,8 @@ void s3c_fb_hw_trigger_set(struct s3c_fb *sfb, enum trig_con_set mode)
 	unsigned int data;
 
 	data = readl(sfb->regs + TRIGCON);
+	data &= ~(SWTRGCMD_I80_RGB | TRGMODE_I80_RGB);
 	if (mode == TRIG_UNMASK) {
-		data &= ~(SWTRGCMD_I80_RGB | TRGMODE_I80_RGB);
 		data |= HWTRIGEN_PER_RGB | HWTRG_UNMASK_I80_RGB | HWTRGEN_I80_RGB;
 	} else {
 		data |= HWTRIGEN_PER_RGB | HWTRGEN_I80_RGB;
@@ -4029,6 +4029,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	/* use platform specified window as the basis for the lcd timings */
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
+#endif
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 	pm_qos_add_request(&exynos5_fimd_mif_qos, PM_QOS_BUS_THROUGHPUT, 200000);
