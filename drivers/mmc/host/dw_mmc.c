@@ -1763,6 +1763,7 @@ static void dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd
 					host->pdata->error_retry_cnt);
 				if (host->pdata->error_retry_cnt < MAX_RETRY_CNT) {
 					cmd->error = -ETIMEDOUT;
+					cmd->data->error = 0;
 					cmd->retries = DATA_RETRY;
 					host->pdata->error_retry_cnt++;
 				} else {
