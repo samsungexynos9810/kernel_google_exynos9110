@@ -974,24 +974,15 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 			disp_qos = distriction_fullhd[total_layer_count].disp_level;
 	} else if (media_resolution == RESOLUTION_WQHD) {
 		if (media_enabled_fimc_lite) {
-			if (mif_qos > distriction_wqhd_camera[total_layer_count].mif_level)
-				mif_qos = distriction_wqhd_camera[total_layer_count].mif_level;
+			if (mif_qos > distriction_wqhd_camera[total_layer_count + media_enabled_gscl_local].mif_level)
+				mif_qos = distriction_wqhd_camera[total_layer_count + media_enabled_gscl_local].mif_level;
+			if (disp_qos > distriction_wqhd_camera[total_layer_count].disp_level)
+				disp_qos = distriction_wqhd_camera[total_layer_count].disp_level;
 			timeout_table = timeout_wqhd_camera;
 		}
-		if (media_enabled_gscl_local) {
-			if (total_layer_count == NUM_LAYER_5) {
-				pr_err("DEVFREQ(MIF) : can't support mif and disp distriction. using gscl local with 5 windows.\n");
-				goto out;
-			}
-			if (mif_qos > distriction_wqhd_gscl[total_layer_count].mif_level)
-				mif_qos = distriction_wqhd_gscl[total_layer_count].mif_level;
-			if (disp_qos > distriction_wqhd_gscl[total_layer_count].disp_level)
-				disp_qos = distriction_wqhd_gscl[total_layer_count].disp_level;
-			timeout_table = timeout_wqhd_gscl;
-		}
 		if (media_enabled_tv) {
-			if (mif_qos > distriction_wqhd_tv[total_layer_count].mif_level)
-				mif_qos = distriction_wqhd_tv[total_layer_count].mif_level;
+			if (mif_qos > distriction_wqhd_tv[total_layer_count + media_enabled_gscl_local].mif_level)
+				mif_qos = distriction_wqhd_tv[total_layer_count + media_enabled_gscl_local].mif_level;
 			if (disp_qos > distriction_wqhd_tv[total_layer_count].disp_level)
 				disp_qos = distriction_wqhd_tv[total_layer_count].disp_level;
 			timeout_table = timeout_wqhd_tv;
@@ -1002,8 +993,8 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 		}
 		if (!media_enabled_fimc_lite && !media_enabled_gscl_local && !media_enabled_tv)
 			timeout_table = timeout_wqhd;
-		if (mif_qos > distriction_wqhd[total_layer_count].mif_level)
-			mif_qos = distriction_wqhd[total_layer_count].mif_level;
+		if (mif_qos > distriction_wqhd[total_layer_count + media_enabled_gscl_local].mif_level)
+			mif_qos = distriction_wqhd[total_layer_count + media_enabled_gscl_local].mif_level;
 		if (disp_qos > distriction_wqhd[total_layer_count].disp_level)
 			disp_qos = distriction_wqhd[total_layer_count].disp_level;
 	}
