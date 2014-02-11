@@ -778,6 +778,11 @@ failed_out:
 	return ret;
 }
 
+bool is_big_hotpluged(void)
+{
+	return big_hotpluged ? true : false;
+}
+
 static struct dentry *cputime_debugfs;
 
 static int cputime_debug_show(struct seq_file *s, void *unsued)

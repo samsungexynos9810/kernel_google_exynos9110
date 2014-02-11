@@ -288,6 +288,10 @@ static void arbiter_set_cpu_freq_limit(int freq, int idx)
 
 		i++;
 	}
+
+	if (is_big_hotpluged() && (idx == CA7))
+		freq = get_real_max_freq(CA7);
+
 	ipa_set_clamp(cpumask_any(arbiter_data.cl_stats[idx].mask), freq, max_freq);
 
 	thermal_call_chain(freq, idx);
