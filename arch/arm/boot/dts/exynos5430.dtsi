@@ -1275,14 +1275,17 @@
 
 		spd_gscl0: spd-gscl0@105c4000 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_gscl1: spd-gscl1@105c4000 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_gscl2: spd-gscl2@105c4000 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 	};
 
