@@ -261,7 +261,7 @@ static void aud_init_clock(void)
 #endif
 	exynos_set_rate("dout_ass_srp", 100 * 1000000);
 	exynos_set_rate("dout_ass_bus", 50 * 1000000);
-	exynos_set_rate("dout_ass_i2s", 12 * 1000000);
+	exynos_set_rate("dout_ass_i2s", 38 * 1000000);
 }
 
 static void uart_clock_init(void)
