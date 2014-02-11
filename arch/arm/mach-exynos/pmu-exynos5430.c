@@ -544,8 +544,8 @@ int __init exynos5430_pmu_init(void)
 
 	/* L2 use retention disable */
 	tmp = __raw_readl(EXYNOS_L2_OPTION(0));
-	tmp &= ~USE_RETENTION;
-	tmp |= USE_STANDBYWFIL2 | USE_DEACTIVATE_ACP | USE_DEACTIVATE_ACE;
+	tmp &= ~(USE_RETENTION | USE_STANDBYWFIL2);
+	tmp |= USE_DEACTIVATE_ACP | USE_DEACTIVATE_ACE;
 	__raw_writel(tmp, EXYNOS_L2_OPTION(0));
 
 	tmp = __raw_readl(EXYNOS_L2_OPTION(1));
