@@ -26,6 +26,7 @@
 #include <linux/of_address.h>
 #include <mach/videonode.h>
 #include <mach/smc.h>
+#include <mach/bts.h>
 #include <media/videobuf2-core.h>
 #include <media/v4l2-ctrls.h>
 #include <media/v4l2-device.h>

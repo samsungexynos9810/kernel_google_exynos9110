@@ -867,6 +867,8 @@ static int gsc_output_open(struct file *file)
 	iovmm_set_fault_handler(&gsc->pdev->dev,
 			gsc_sysmmu_output_fault_handler, &gsc->out);
 
+	bts_otf_initialize(gsc->id, true);
+
 	return ret;
 }
 
@@ -890,6 +892,9 @@ static int gsc_output_close(struct file *file)
 	v4l2_fh_release(file);
 
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
+
+	bts_otf_initialize(gsc->id, false);
+
 	pm_runtime_put_sync(&gsc->pdev->dev);
 
 	return 0;
