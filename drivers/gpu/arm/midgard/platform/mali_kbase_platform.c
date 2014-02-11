@@ -172,7 +172,6 @@ static kbase_attribute config_attributes[] = {
 		KBASE_CONFIG_ATTR_GPU_FREQ_KHZ_MAX,
 		G3D_MAX_FREQ
 	},
-
 	{
 		KBASE_CONFIG_ATTR_GPU_FREQ_KHZ_MIN,
 		G3D_MIN_FREQ
@@ -180,6 +179,26 @@ static kbase_attribute config_attributes[] = {
 	{
 		KBASE_CONFIG_ATTR_JS_RESET_TIMEOUT_MS,
 		500 /* 500ms before cancelling stuck jobs */
+	},
+	{
+		KBASE_CONFIG_ATTR_JS_SOFT_STOP_TICKS,
+		110 /* 11sec */
+	},
+	{
+		KBASE_CONFIG_ATTR_JS_HARD_STOP_TICKS_SS,
+		120 /* 12sec */
+	},
+	{
+		KBASE_CONFIG_ATTR_JS_RESET_TICKS_SS,
+		130 /* 13sec */
+	},
+	{
+		KBASE_CONFIG_ATTR_JS_HARD_STOP_TICKS_NSS,
+		140 /* 14sec */
+	},
+	{
+		KBASE_CONFIG_ATTR_JS_RESET_TICKS_NSS,
+		150 /* 15sec */
 	},
 	{
 		KBASE_CONFIG_ATTR_CPU_SPEED_FUNC,

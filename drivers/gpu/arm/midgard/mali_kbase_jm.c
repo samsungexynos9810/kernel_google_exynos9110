@@ -1111,7 +1111,6 @@ void kbasep_reset_timeout_worker(struct work_struct *data)
 	/* S.LSI intergration */
 	gpu_register_dump();
 	KBASE_TRACE_DUMP(kbdev);
-	BUG_ON(1);
 
 	bckp_state = kbdev->hwcnt.state;
 	kbdev->hwcnt.state = KBASE_INSTR_STATE_RESETTING;
