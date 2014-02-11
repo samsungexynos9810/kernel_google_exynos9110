@@ -108,6 +108,7 @@ static struct bts_set_table axiqos_##num##_table[] = {	\
 	{WRITE_QOS_CONTROL, 0x1}			\
 }
 
+BTS_TABLE(0x4444);
 BTS_TABLE(0xcccc);
 BTS_TABLE(0xdddd);
 BTS_TABLE(0xeeee);
@@ -285,9 +286,9 @@ static struct bts_info exynos5_bts[] = {
 		.id = BTS_GSCL0,
 		.name = "gscl",
 		.pa_base = EXYNOS5430_PA_BTS_GSCL0,
-		.pd_name = "gscl-local",
+		.pd_name = "spd-gscl0",
 		.clk_name = "gate_bts_gscl0",
-		.table.table_list = axiqos_0xffff_table,
+		.table.table_list = axiqos_0x4444_table,
 		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
 		.on = false,
 	},
@@ -295,26 +296,56 @@ static struct bts_info exynos5_bts[] = {
 		.id = BTS_GSCL1,
 		.name = "gscl1",
 		.pa_base = EXYNOS5430_PA_BTS_GSCL1,
-		.pd_name = "gscl-local",
+		.pd_name = "spd-gscl1",
 		.clk_name = "gate_bts_gscl1",
-		.table.table_list = axiqos_0xffff_table,
-		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
+		.table.table_list = axiqos_0x4444_table,
+		.table.table_num = ARRAY_SIZE(axiqos_0x4444_table),
 		.on = false,
 	},
 	[BTS_IDX_GSCL2] = {
 		.id = BTS_GSCL2,
 		.name = "gscl2",
 		.pa_base = EXYNOS5430_PA_BTS_GSCL2,
-		.pd_name = "gscl-local",
+		.pd_name = "spd-gscl2",
 		.clk_name = "gate_bts_gscl2",
-		.table.table_list = axiqos_0xffff_table,
-		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
+		.table.table_list = axiqos_0x4444_table,
+		.table.table_num = ARRAY_SIZE(axiqos_0x4444_table),
 		.on = false,
 	},
 };
 
 static DEFINE_SPINLOCK(bts_lock);
 static LIST_HEAD(bts_list);
+
+static void set_bts_otf_scen_table(struct bts_info *bts, bool on)
+{
+	int i;
+	struct bts_set_table *table = bts->table.table_list;
+	unsigned int table_num;
+
+	if (on) {
+		table = axiqos_0xffff_table;
+		table_num = ARRAY_SIZE(axiqos_0xffff_table);
+	} else {
+		table = axiqos_0x4444_table;
+		table_num = ARRAY_SIZE(axiqos_0x4444_table);
+	}
+
+	BTS_DBG("[BTS] bts otf scen set: %s, on/off: %d\n", bts->name, on);
+
+	if (on && bts->clk)
+		clk_enable(bts->clk);
+
+	for (i = 0; i < table_num; i++) {
+		__raw_writel(table->val, bts->va_base + table->reg);
+		BTS_DBG1("[BTS] %x-%x\n", table->reg, table->val);
+		table++;
+	}
+
+	if (!on && bts->clk)
+		clk_disable(bts->clk);
+}
+
 
 static void set_bts_ip_table(struct bts_info *bts, bool on)
 {
@@ -354,11 +385,27 @@ void bts_initialize(const char *pd_name, bool on)
 	BTS_DBG("[%s] pd_name: %s, on/off:%x\n", __func__, pd_name, on);
 	list_for_each_entry(bts, &bts_list, list)
 		if (pd_name && bts->pd_name && !strcmp(bts->pd_name, pd_name)) {
-			BTS_DBG("[BTS] %s on/off:%d\n", bts->name, bts->on);
 			bts->on = on;
+			BTS_DBG("[BTS] %s on/off:%d\n", bts->name, bts->on);
 
 			set_bts_ip_table(bts, on);
 		}
+	spin_unlock(&bts_lock);
+}
+
+void bts_otf_initialize(unsigned int id, bool on)
+{
+	BTS_DBG("[%s] pd_name: %s, on/off:%x\n", __func__, exynos5_bts[id + BTS_IDX_GSCL0].pd_name, on);
+
+	spin_lock(&bts_lock);
+
+	if (!exynos5_bts[id + BTS_IDX_GSCL0].on) {
+		spin_unlock(&bts_lock);
+		return;
+	}
+
+	set_bts_otf_scen_table(&exynos5_bts[id + BTS_IDX_GSCL0], on);
+
 	spin_unlock(&bts_lock);
 }
 
