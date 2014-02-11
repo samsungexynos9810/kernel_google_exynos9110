@@ -1225,7 +1225,7 @@
 		samsung,power-domain = <&spd_gscl0>;
 		ip_ver = <1>;
 		mif_min = <160000>;
-		int_min = <111000>;
+		int_min = <83000>;
 	};
 
 	gsc_1: gsc@0x13E10000 {
@@ -1237,7 +1237,7 @@
 		samsung,power-domain = <&spd_gscl1>;
 		ip_ver = <1>;
 		mif_min = <160000>;
-		int_min = <111000>;
+		int_min = <83000>;
 	};
 
 	jpeg_0: jpeg@11F50000 {
