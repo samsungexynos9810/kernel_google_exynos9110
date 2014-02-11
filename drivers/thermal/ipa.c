@@ -1026,7 +1026,7 @@ static void setup_power_tables(void)
 	}
 }
 
-static int read_soc_temperature(void)
+static int __maybe_unused read_soc_temperature(void)
 {
 	void *pdata = arbiter_data.sensor->private_data;
 
@@ -1322,7 +1322,9 @@ static void arbiter_poll(struct work_struct *work)
 
 	get_cluster_stats(arbiter_data.cl_stats);
 
+#ifndef CONFIG_SENSORS_SEC_THERMISTOR
 	arbiter_data.max_sensor_temp = read_soc_temperature();
+#endif
 	arbiter_data.skin_temperature = arbiter_data.sensor->read_skin_temperature();
 	arbiter_data.cp_temperature = get_humidity_sensor_temp();
 
