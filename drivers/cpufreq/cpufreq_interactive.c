@@ -135,7 +135,6 @@ struct cpufreq_interactive_tunables {
 struct cpufreq_interactive_tunables *common_tunables;
 static struct cpufreq_interactive_tunables *tuned_parameters[NR_CPUS] = {NULL, };
 
-static struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
 static struct attribute_group *get_sysfs_attr(void);
 
 static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
@@ -1184,14 +1183,6 @@ static const char *interactive_sysfs[] = {
 	"io_is_busy",
 };
 #endif
-
-static struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy)
-{
-	if (have_governor_per_policy())
-		return &policy->kobj;
-	else
-		return cpufreq_global_kobject;
-}
 
 static struct attribute_group *get_sysfs_attr(void)
 {
