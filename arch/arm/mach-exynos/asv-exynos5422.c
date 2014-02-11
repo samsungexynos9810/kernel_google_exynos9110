@@ -310,7 +310,22 @@ static void exynos5422_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 #endif
 			asv_inform->asv_abb[i].asv_freq = arm_asv_volt_info_evt1_v240[i][0];
 			asv_inform->asv_abb[i].asv_value = arm_asv_abb_info[i][target_asv_grp_nr + 1];
-	}
+		}
+		break;
+	case ASV_TABLE_VER3:
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = arm_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(arm_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ARM)
+				+ set_arm_volt;
+#else
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(arm_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ARM);
+#endif
+			asv_inform->asv_abb[i].asv_freq = arm_asv_volt_info_evt1[i][0];
+			asv_inform->asv_abb[i].asv_value = arm_asv_abb_info[i][target_asv_grp_nr + 1];
+		}
 		break;
 	default:
 		pr_err("EXYNOS5422 ASV : ARM ASV Version is wrong\n");
@@ -398,6 +413,21 @@ static void exynos5422_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_value = kfc_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 		break;
+	case ASV_TABLE_VER3:
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = kfc_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(kfc_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_KFC)
+				+ set_kfc_volt;
+#else
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(kfc_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_KFC);
+#endif
+			asv_inform->asv_abb[i].asv_freq = kfc_asv_volt_info_evt1[i][0];
+			asv_inform->asv_abb[i].asv_value = kfc_asv_abb_info[i][target_asv_grp_nr + 1];
+		}
+		break;
 	default:
 		pr_err("EXYNOS5422 ASV : KFC ASV Version is wrong\n");
 		break;
@@ -465,7 +495,7 @@ static void exynos5422_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 				exynos5422_apply_volt_offset(int_asv_volt_info_evt1_v230[i][target_asv_grp_nr + 1], ID_INT);
 #endif
 			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_evt1_v230[i][0];
-			asv_inform->asv_abb[i].asv_value = int_asv_abb_info[i][target_asv_grp_nr + 1];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v230_v240[i][target_asv_grp_nr + 1];
 		}
 		asv_inform->max_volt_value = INT_V230_MAX_VOLT;
 		break;
@@ -481,9 +511,25 @@ static void exynos5422_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 				exynos5422_apply_volt_offset(int_asv_volt_info_evt1_v240[i][target_asv_grp_nr + 1], ID_INT);
 #endif
 			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_evt1_v240[i][0];
-			asv_inform->asv_abb[i].asv_value = int_asv_abb_info[i][target_asv_grp_nr + 1];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v230_v240[i][target_asv_grp_nr + 1];
 		}
 		asv_inform->max_volt_value = INT_V240_MAX_VOLT;
+		break;
+	case ASV_TABLE_VER3:
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = int_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(int_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_INT)
+				+ set_int_volt;
+#else
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(int_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_INT);
+#endif
+			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_evt1[i][0];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info[i][target_asv_grp_nr + 1];
+		}
+		asv_inform->max_volt_value = INT_MAX_VOLT;
 		break;
 	default:
 		pr_err("EXYNOS5422 ASV : INT ASV Version is wrong\n");
@@ -554,6 +600,7 @@ static void exynos5422_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info_evt1_v230[i][0];
 			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
+		asv_inform->max_volt_value = MIF_V230_MAX_VOLT;
 		break;
 	case ASV_TABLE_VER2:
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -569,6 +616,23 @@ static void exynos5422_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info_evt1_v240[i][0];
 			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
+		asv_inform->max_volt_value = MIF_V240_MAX_VOLT;
+		break;
+	case ASV_TABLE_VER3:
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = mif_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(mif_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_MIF)
+				+ set_mif_volt;
+#else
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(mif_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_MIF);
+#endif
+			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info_evt1[i][0];
+			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info[i][target_asv_grp_nr + 1];
+		}
+		asv_inform->max_volt_value = MIF_MAX_VOLT;
 		break;
 	default:
 		pr_err("EXYNOS5422 ASV : MIF ASV Version is wrong\n");
@@ -637,8 +701,9 @@ static void exynos5422_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 				exynos5422_apply_volt_offset(g3d_asv_volt_info_evt1_v230[i][target_asv_grp_nr + 1], ID_G3D);
 #endif
 			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info_evt1_v230[i][0];
-			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info[i][target_asv_grp_nr + 1];
+			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info_v230_v240[i][target_asv_grp_nr + 1];
 		}
+		asv_inform->max_volt_value = G3D_V230_MAX_VOLT;
 		break;
 	case ASV_TABLE_VER2:
 		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
@@ -652,8 +717,25 @@ static void exynos5422_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 				exynos5422_apply_volt_offset(g3d_asv_volt_info_evt1_v240[i][target_asv_grp_nr + 1], ID_G3D);
 #endif
 			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info_evt1_v240[i][0];
+			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info_v230_v240[i][target_asv_grp_nr + 1];
+		}
+		asv_inform->max_volt_value = G3D_V240_MAX_VOLT;
+		break;
+	case ASV_TABLE_VER3:
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = g3d_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(g3d_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_G3D)
+				+ set_g3d_volt;
+#else
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(g3d_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_G3D);
+#endif
+			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info_evt1[i][0];
 			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
+		asv_inform->max_volt_value = G3D_MAX_VOLT;
 		break;
 	default:
 		pr_err("EXYNOS5422 ASV : G3D ASV Version is wrong\n");
@@ -738,6 +820,20 @@ static void exynos5422_set_asv_info_isp(struct asv_info *asv_inform, bool show_v
 #endif
 		}
 		asv_inform->max_volt_value = ISP_V240_MAX_VOLT;
+		break;
+	case ASV_TABLE_VER3:
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = isp_asv_volt_info_evt1[i][0];
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP)
+				+ set_mif_volt;
+#else
+			asv_inform->asv_volt[i].asv_value =
+				exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP);
+#endif
+		}
+		asv_inform->max_volt_value = ISP_MAX_VOLT;
 		break;
 	default:
 		pr_err("EXYNOS5422 ASV : ISP ASV Version is wrong\n");
@@ -934,8 +1030,21 @@ static int __init asv_exynos5422_init(void)
 	set_ema();
 
 	asv_group_no = exynos5422_get_asv_group_sram();
-	mif_sram_volt = mif_sram_asv_volt_info_evt1[0][asv_group_no];
-	g3d_sram_volt = g3d_sram_asv_volt_info_evt1[0][asv_group_no];
+	switch (asv_table_version) {
+	case ASV_TABLE_VER0:
+	case ASV_TABLE_VER1:
+	case ASV_TABLE_VER2:
+		mif_sram_volt = mif_sram_asv_volt_info_evt1_v230_v240[0][asv_group_no];
+		g3d_sram_volt = g3d_sram_asv_volt_info_evt1_v230_v240[0][asv_group_no];
+		break;
+	case ASV_TABLE_VER3:
+		mif_sram_volt = mif_sram_asv_volt_info_evt1[0][asv_group_no];
+		g3d_sram_volt = g3d_sram_asv_volt_info_evt1[0][asv_group_no];
+		break;
+	default:
+		pr_err("EXYNOS5422 ASV : wrong ASV Table to set sram voltage\n");
+		goto err_mif_sram;
+	}
 
 	pr_info("SRAM ASV group [%d] : MIF(%d), G3D(%d)\n", asv_group_no, mif_sram_volt, g3d_sram_volt);
 
