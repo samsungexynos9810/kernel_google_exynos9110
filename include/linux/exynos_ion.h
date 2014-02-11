@@ -96,6 +96,29 @@ enum {
 /* return value of ion_exynos_contig_region_mask() that indicates error */
 #define EXYNOS_CONTIG_REGION_NOMASK ~0
 
+/****** Exynos custom IOCTL ******/
+#define ION_EXYNOS_SYNC_BY_HANDLE	0x01 /* otherwise, by fd */
+#define ION_EXYNOS_SYNC_INV		0x10 /* otherwise, clean */
+
+struct ion_exynos_sync_data {
+	int flags;
+	union { /* for validation of the given buffer */
+		int dmabuf_fd;
+		ion_user_handle_t handle;
+	};
+#ifdef __KERNEL__
+	unsigned long addr;
+#else
+	void *addr;
+#endif
+	size_t size;
+};
+
+#define ION_IOC_EXYNOS_MAGIC 'E'
+
+#define ION_IOC_EXYNOS_SYNC		\
+	_IOW(ION_IOC_EXYNOS_MAGIC, 0, struct ion_exynos_sync_data)
+
 #ifdef __KERNEL__
 
 #ifdef CONFIG_ION_EXYNOS

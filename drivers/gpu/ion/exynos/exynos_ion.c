@@ -1122,9 +1122,96 @@ err:
 }
 #endif /* CONFIG_ION_EXYNOS_OF */
 
+static long exynos_ion_sync_fd(struct ion_client *client, int fd,
+				unsigned long addr, size_t size)
+{
+	struct ion_handle *handle;
+	struct ion_buffer *buffer;
+	struct mm_struct *mm;
+	struct vm_area_struct *vma;
+	struct dma_buf *dmabuf;
+	int ret = 0;
+
+	handle = ion_import_dma_buf(client, fd);
+	if (IS_ERR(handle)) {
+		pr_info("%s: invalid dmabuf fd %d for sync %lx ~ %lx\n",
+				__func__, fd, addr, addr + size);
+		return PTR_ERR(handle);
+	}
+
+	buffer = ion_handle_buffer(handle);
+	if (!ion_buffer_cached(buffer)
+			|| ion_buffer_fault_user_mappings(buffer))
+		goto no_sync;
+
+	mm = current->active_mm;
+	down_read(&mm->mmap_sem);
+
+	vma = find_vma(mm, addr);
+
+	if (!vma->vm_file || !is_dma_buf_file(vma->vm_file)
+			|| !vma->vm_file->private_data) {
+		/* HACK */
+		pr_info("%s: given fd %d is not dmabuf\n", __func__, fd);
+		ret = -EINVAL;
+		goto err_region;
+	}
+
+	dmabuf = vma->vm_file->private_data;
+	if (dmabuf->priv != (void *)buffer) {
+		/* HACK */
+		pr_info("%s: %#lx ~ %#lx is not the region of dmabuf fd %d\n",
+			__func__, addr, addr + size, fd);
+		ret = -EINVAL;
+		goto err_region;
+	}
+
+	if (!vma || (vma->vm_start > addr) || (vma->vm_end < (addr + size))
+			|| (((vma->vm_end - vma->vm_start) < size))) {
+		pr_info("%s: invalid sync region %lx ~ %lx\n",
+			__func__, addr, addr + size);
+		ret = -EINVAL;
+		goto err_region;
+	}
+
+	dmac_map_area((void *)addr, size, DMA_TO_DEVICE);
+
+err_region:
+	up_read(&mm->mmap_sem);
+no_sync:
+	ion_free(client, handle);
+	return ret;
+}
+
+static long exynos_ion_ioctl(struct ion_client *client,
+			     unsigned int cmd, unsigned long arg)
+{
+	switch (cmd) {
+	case ION_IOC_EXYNOS_SYNC:
+	{
+		struct ion_exynos_sync_data data;
+		if (copy_from_user(&data, (void __user *)arg, sizeof(data)))
+			return -EFAULT;
+
+		if (data.flags & ION_EXYNOS_SYNC_BY_HANDLE) {
+			pr_info("%s: SYNC_BY_HANDLE is not supported\n",
+				__func__);
+			return -EINVAL;
+		}
+
+		return exynos_ion_sync_fd(client, data.dmabuf_fd,
+					data.addr, data.size);
+	}
+	default:
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
 static int __init exynos_ion_probe(struct platform_device *pdev)
 {
-	ion_exynos = ion_device_create(NULL);
+	ion_exynos = ion_device_create(&exynos_ion_ioctl);
 	if (IS_ERR_OR_NULL(ion_exynos)) {
 		kfree(heaps);
 		return PTR_ERR(ion_exynos);
