@@ -18,6 +18,7 @@
 
 #define SHIFT_GSCL_BLK_300_DIV      4
 #define SHIFT_GSCL_BLK_333_432_DIV  6
+#define SHIFT_DISP1_BLK_DIV	16
 #define SHIFT_MSCL_BLK_DIV      28
 #define SHIFT_MFC_BLK_DIV       0
 static DEFINE_SPINLOCK(clk_div2_ratio0_lock);
@@ -304,6 +305,10 @@ static int exynos5_pd_disp1_power_on_post(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
 	exynos5_pd_restore_reg(exynos5422_disp1_clk, ARRAY_SIZE(exynos5422_disp1_clk));
+
+	spin_lock(&clk_div2_ratio0_lock);
+	exynos5_pd_set_fake_rate(EXYNOS5_CLK_DIV2_RATIO0, SHIFT_DISP1_BLK_DIV);
+	spin_unlock(&clk_div2_ratio0_lock);
 
 	reg = __raw_readl(EXYNOS5_CLK_SRC_TOP5);
 	reg |= (1 << 24 | 1 << 5);
