@@ -1828,6 +1828,9 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 		goto err_inittable;
 	}
 	data->old_volt = opp_get_voltage(target_opp);
+#ifdef CONFIG_EXYNOS_THERMAL
+	data->old_volt = get_limit_voltage(data->old_volt, data->volt_offset);
+#endif
 	rcu_read_unlock();
 	regulator_set_voltage(data->vdd_mif, data->old_volt, data->old_volt + VOLT_STEP);
 
