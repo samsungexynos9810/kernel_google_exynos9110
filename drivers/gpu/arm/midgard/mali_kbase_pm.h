@@ -118,11 +118,14 @@ typedef struct kbasep_pm_metrics_data {
 	spinlock_t lock;
 
 	struct hrtimer timer;
+#if defined(SLSI_SUBSTITUTE)
+	struct timer_list tlist;
+#endif
 	mali_bool timer_active;
 
 	void *platform_data;
 	struct kbase_device *kbdev;
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+#if defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
 	atomic_t time_compute_jobs, time_vertex_jobs, time_fragment_jobs;
 #endif
 } kbasep_pm_metrics_data;

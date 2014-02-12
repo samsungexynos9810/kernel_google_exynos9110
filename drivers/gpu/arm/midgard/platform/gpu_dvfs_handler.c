@@ -146,7 +146,7 @@ int kbase_platform_dvfs_event(struct kbase_device *kbdev, u32 utilisation)
 	spin_unlock_irqrestore(&platform->gpu_dvfs_spinlock, flags);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 
-#if defined(SLSI_INTEGRATION) && defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
+#if defined(CL_UTILIZATION_BOOST_BY_TIME_WEIGHT)
 	atomic_set(&kbdev->pm.metrics.time_compute_jobs, 0);
 	atomic_set(&kbdev->pm.metrics.time_vertex_jobs, 0);
 	atomic_set(&kbdev->pm.metrics.time_fragment_jobs, 0);
@@ -218,11 +218,11 @@ static int gpu_dvfs_on_off(struct kbase_device *kbdev, bool enable)
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
 			kbdev->pm.metrics.timer_active = true;
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
-#if !defined(SLSI_INTEGRATION)
+#if !defined(SLSI_SUBSTITUTE)
 			hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(platform->polling_speed), HRTIMER_MODE_REL);
 #else
-			kbdev->pm.metric.tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
-			add_timer_on(&kbdev->pm.metrics->tlist, 0);
+			kbdev->pm.metrics.tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
+			add_timer_on(&kbdev->pm.metrics.tlist, 0);
 #endif
 		}
 	} else if (!enable && platform->dvfs_status) {
@@ -233,10 +233,10 @@ static int gpu_dvfs_on_off(struct kbase_device *kbdev, bool enable)
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
 			kbdev->pm.metrics.timer_active = false;
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
-#if !defined(SLSI_INTEGRATION)
+#if !defined(SLSI_SUBSTITUTE)
 			hrtimer_cancel(&kbdev->pm.metrics.timer);
 #else
-			del_timer(&kbdev->pm.metrics->tlist);
+			del_timer(&kbdev->pm.metrics.tlist);
 #endif
 		}
 	} else {

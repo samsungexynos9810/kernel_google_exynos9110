@@ -51,11 +51,11 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
 			kbdev->pm.metrics.timer_active = true;
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
-#if !defined(SLSI_INTEGRATION)
+#if !defined(SLSI_SUBSTITUTE)
 			hrtimer_start(&kbdev->pm.metrics.timer, HR_TIMER_DELAY_MSEC(platform->polling_speed), HRTIMER_MODE_REL);
 #else
-			kbdev->pm.metric.tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
-			add_timer_on(&kbdev->pm.metrics->tlist, 0);
+			kbdev->pm.metrics.tlist.expires = jiffies + msecs_to_jiffies(platform->polling_speed);
+			add_timer_on(&kbdev->pm.metrics.tlist, 0);
 #endif
 		}
 		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, 0);
@@ -67,10 +67,10 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
 			kbdev->pm.metrics.timer_active = false;
 			spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
-#if !defined(SLSI_INTEGRATION)
+#if !defined(SLSI_SUBSTITUTE)
 			hrtimer_cancel(&kbdev->pm.metrics.timer);
 #else
-			del_timer(&kbdev->pm.metrics->tlist);
+			del_timer(&kbdev->pm.metrics.tlist);
 #endif
 		}
 		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_RESET);
