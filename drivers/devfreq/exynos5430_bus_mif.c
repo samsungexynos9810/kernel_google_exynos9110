@@ -855,6 +855,55 @@ unsigned int timeout_wqhd_camera[][2] = {
 
 extern void exynos5_update_district_disp_level(unsigned int idx);
 
+static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
+					int target_idx)
+{
+	if (timeout_table == NULL) {
+		pr_err("DEVFREQ(MIF) : can't setting timeout value\n");
+		return -EINVAL;
+	}
+	if (media_enabled_fimc_lite) {
+		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
+		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC0);
+		__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
+
+		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
+		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC0);
+		__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
+
+		__raw_writel(0x0fff0fff, data->base_drex0 + 0xC8);
+		__raw_writel(0x0fff0fff, data->base_drex1 + 0xC8);
+	} else {
+		if (wqhd_tv_window5 &&
+				target_idx == LV1) {
+			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xD0);
+			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC8);
+			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC0);
+			__raw_writel(timeout_table[LV2][1], data->base_drex0 + 0x100);
+		} else {
+			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
+			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC8);
+			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC0);
+			__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
+		}
+
+		if (wqhd_tv_window5 &&
+				target_idx == LV1) {
+			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xD0);
+			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC8);
+			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC0);
+			__raw_writel(timeout_table[LV2][1], data->base_drex1 + 0x100);
+		} else {
+			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
+			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC8);
+			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC0);
+			__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
+		}
+	}
+
+	return 0;
+}
+
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value)
 {
 	unsigned int total_layer_count = 0;
@@ -1211,55 +1260,6 @@ static void exynos5_devfreq_mif_dynamic_setting(struct devfreq_data_mif *data,
 	}
 }
 
-static int exynos5_devfreq_mif_set_timeout(struct devfreq_data_mif *data,
-					int target_idx)
-{
-	if (timeout_table == NULL) {
-		pr_err("DEVFREQ(MIF) : can't setting timeout value\n");
-		return -EINVAL;
-	}
-	if (media_enabled_fimc_lite) {
-		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
-		__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC0);
-		__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
-
-		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
-		__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC0);
-		__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
-
-		__raw_writel(0x0fff0fff, data->base_drex0 + 0xC8);
-		__raw_writel(0x0fff0fff, data->base_drex1 + 0xC8);
-	} else {
-		if (wqhd_tv_window5 &&
-				target_idx == LV1) {
-			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xD0);
-			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC8);
-			__raw_writel(timeout_table[LV2][0], data->base_drex0 + 0xC0);
-			__raw_writel(timeout_table[LV2][1], data->base_drex0 + 0x100);
-		} else {
-			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xD0);
-			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC8);
-			__raw_writel(timeout_table[target_idx][0], data->base_drex0 + 0xC0);
-			__raw_writel(timeout_table[target_idx][1], data->base_drex0 + 0x100);
-		}
-
-		if (wqhd_tv_window5 &&
-				target_idx == LV1) {
-			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xD0);
-			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC8);
-			__raw_writel(timeout_table[LV2][0], data->base_drex1 + 0xC0);
-			__raw_writel(timeout_table[LV2][1], data->base_drex1 + 0x100);
-		} else {
-			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xD0);
-			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC8);
-			__raw_writel(timeout_table[target_idx][0], data->base_drex1 + 0xC0);
-			__raw_writel(timeout_table[target_idx][1], data->base_drex1 + 0x100);
-		}
-	}
-
-	return 0;
-}
-
 static void exynos5_devfreq_waiting_pause(struct devfreq_data_mif *data)
 {
 	unsigned int timeout = 1000;
@@ -1435,8 +1435,10 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		goto out;
 	}
 
-	if (old_freq == *target_freq)
+	if (old_freq == *target_freq) {
+		exynos5_devfreq_mif_set_timeout(mif_data, target_idx);
 		goto out;
+	}
 
 	exynos5_devfreq_mif_dynamic_setting(mif_data, false);
 	if (old_freq < *target_freq) {
