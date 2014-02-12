@@ -186,6 +186,10 @@ static kbase_attribute config_attributes[] = {
 		(uintptr_t)&get_cpu_clock_speed
 	},
 	{
+		KBASE_CONFIG_ATTR_PM_GPU_POWEROFF_TICK_NS,
+		20000000
+	},
+	{
 		KBASE_CONFIG_ATTR_END,
 		0
 	}

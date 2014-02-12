@@ -118,7 +118,12 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 		gpu_set_voltage(platform, voltage);
 		GPU_LOG(DVFS_DEBUG, "we set the voltage: %d\n", voltage);
 		break;
+    case GPU_CONTROL_PM_QOS:
+        if (gpu_pm_qos_command(platform, param) < -1)
+            GPU_LOG(DVFS_ERROR, "failed to set the PM_QOS\n");
+            break;
 	default:
+		mutex_unlock(&platform->gpu_clock_lock);
 		return -1;
 	}
 	mutex_unlock(&platform->gpu_clock_lock);
