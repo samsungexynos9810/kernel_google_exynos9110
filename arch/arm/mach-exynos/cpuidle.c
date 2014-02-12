@@ -63,7 +63,7 @@ static bool cluster_off_flag = false;
 static spinlock_t c2_state_lock;
 static DEFINE_PER_CPU(int, in_c2_state);
 
-#define CLUSTER_OFF_TARGET_RESIDENCY	5000
+#define CLUSTER_OFF_TARGET_RESIDENCY	3000
 #endif
 
 #define REG_DIRECTGO_ADDR	(S5P_VA_SYSRAM_NS + 0x24)
@@ -1173,6 +1173,12 @@ static int __init exynos_init_cpuidle(void)
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 		per_cpu(in_c2_state, cpu_id) = 0;
 #endif
+
+		/* Eagle will not change idle time correlation factor */
+		if (cpu_id & 0x4)
+			device->skip_idle_correlation = true;
+		else
+			device->skip_idle_correlation = false;
 
 		if (cpuidle_register_device(device)) {
 			printk(KERN_ERR "CPUidle register device failed\n,");
