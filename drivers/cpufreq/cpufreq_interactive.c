@@ -488,8 +488,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 		pcpu->floor_validate_time = now;
 	}
 
-	if (pcpu->policy->cur == new_freq) {
-		pcpu->target_freq = new_freq;
+	if (pcpu->target_freq == new_freq) {
 		trace_cpufreq_interactive_already(
 			data, cpu_load, pcpu->target_freq,
 			pcpu->policy->cur, new_freq);
@@ -537,7 +536,7 @@ static void cpufreq_interactive_idle_start(void)
 
 	pending = timer_pending(&pcpu->cpu_timer);
 
-	if (pcpu->policy->cur != pcpu->policy->min) {
+	if (pcpu->target_freq != pcpu->policy->min) {
 		/*
 		 * Entering idle while not at lowest speed.  On some
 		 * platforms this can hold the other CPU(s) at that speed
