@@ -257,6 +257,11 @@ again:
 	}
 }
 
+/* In some cases, idle should return RIGHT index to enter
+ * correct idle states.
+ */
+#define CONFIG_SKIP_IDLE_CORRELATION
+
 /**
  * menu_select - selects the next idle state to enter
  * @drv: cpuidle driver containing state data
@@ -300,6 +305,11 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 		data->correction_factor[data->bucket] = RESOLUTION * DECAY;
 
 	/* Make sure to round up for half microseconds */
+#ifdef CONFIG_SKIP_IDLE_CORRELATION
+	if (dev->skip_idle_correlation)
+		data->predicted_us = data->expected_us;
+	else
+#endif
 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
 					 RESOLUTION * DECAY);
 
