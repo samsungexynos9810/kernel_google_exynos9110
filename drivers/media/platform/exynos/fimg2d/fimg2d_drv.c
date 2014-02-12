@@ -118,6 +118,7 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 	defined(CONFIG_FIMG2D_USE_BUS_DEVFREQ)
 	struct fimg2d_platdata *pdata;
 	enum fimg2d_qos_level idx;
+	int ret = 0;
 
 #ifdef CONFIG_OF
 	pdata = ctrl->pdata;
@@ -130,21 +131,24 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 		if (ctrl->pre_qos_lv != ctrl->qos_lv) {
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
 			idx = ctrl->qos_lv;
+			if (idx == 0)
+				ret = set_hmp_boost(true);
+
 			pm_qos_update_request(&ctrl->exynos5_g2d_mif_qos,
 					g2d_qos_table[idx].freq_mif);
 			pm_qos_update_request(&ctrl->exynos5_g2d_int_qos,
 					g2d_qos_table[idx].freq_int);
-			fimg2d_info("idx:%d, freq_mif:%d, freq_int:%d\n",
+			fimg2d_info("idx:%d, freq_mif:%d, freq_int:%d, ret:%d\n",
 					idx, g2d_qos_table[idx].freq_mif,
-					g2d_qos_table[idx].freq_int);
+					g2d_qos_table[idx].freq_int, ret);
 
 #endif
 #if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
 			defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 			pm_qos_update_request(&ctrl->exynos5_g2d_cpu_qos,
-					g2d_qos_table[idx].freq_kfc);
-			pm_qos_update_request(&ctrl->exynos5_g2d_kfc_qos,
 					g2d_qos_table[idx].freq_cpu);
+			pm_qos_update_request(&ctrl->exynos5_g2d_kfc_qos,
+					g2d_qos_table[idx].freq_kfc);
 			fimg2d_debug("idx:%d, freq_cpu:%d, freq_kfc:%d\n",
 					idx, g2d_qos_table[idx].freq_cpu,
 					g2d_qos_table[idx].freq_kfc);
@@ -160,6 +164,9 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 		pm_qos_update_request(&ctrl->exynos5_g2d_cpu_qos, 0);
 		pm_qos_update_request(&ctrl->exynos5_g2d_kfc_qos, 0);
 #endif
+		idx = ctrl->qos_lv;
+		if (idx == 0)
+			ret = set_hmp_boost(false);
 	}
 }
 
