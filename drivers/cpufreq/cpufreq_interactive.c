@@ -32,6 +32,7 @@
 #include <linux/kthread.h>
 #include <linux/slab.h>
 #include <linux/kernel_stat.h>
+#include <linux/pm_qos.h>
 #include <asm/cputime.h>
 #ifdef CONFIG_ANDROID
 #include <asm/uaccess.h>
@@ -1484,6 +1485,168 @@ unsigned int cpufreq_interactive_get_hispeed_freq(int cpu)
 	return tunables->hispeed_freq;
 }
 
+#ifdef CONFIG_ARCH_EXYNOS
+static int cpufreq_interactive_cpu_min_qos_handler(struct notifier_block *b,
+						unsigned long val, void *v)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	struct cpufreq_interactive_tunables *tunables;
+	unsigned long flags;
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+	int cpu = NR_CA7;
+#else
+	int cpu = 0;
+#endif
+
+	pcpu = &per_cpu(cpuinfo, cpu);
+
+	if (!pcpu->governor_enabled)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor)
+		return NOTIFY_BAD;
+
+	if (val < pcpu->policy->cur) {
+		tunables = pcpu->policy->governor_data;
+
+		spin_lock_irqsave(&speedchange_cpumask_lock, flags);
+		cpumask_set_cpu(cpu, &speedchange_cpumask);
+		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+
+		if (tunables->speedchange_task)
+			wake_up_process(tunables->speedchange_task);
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_interactive_cpu_min_qos_notifier = {
+	.notifier_call = cpufreq_interactive_cpu_min_qos_handler,
+};
+
+static int cpufreq_interactive_cpu_max_qos_handler(struct notifier_block *b,
+						unsigned long val, void *v)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	struct cpufreq_interactive_tunables *tunables;
+	unsigned long flags;
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
+	int cpu = NR_CA7;
+#else
+	int cpu = 0;
+#endif
+
+	pcpu = &per_cpu(cpuinfo, cpu);
+
+	if (!pcpu->governor_enabled)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor)
+		return NOTIFY_BAD;
+
+	if (val > pcpu->policy->cur) {
+		tunables = pcpu->policy->governor_data;
+
+		spin_lock_irqsave(&speedchange_cpumask_lock, flags);
+		cpumask_set_cpu(cpu, &speedchange_cpumask);
+		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+
+		if (tunables->speedchange_task)
+			wake_up_process(tunables->speedchange_task);
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_interactive_cpu_max_qos_notifier = {
+	.notifier_call = cpufreq_interactive_cpu_max_qos_handler,
+};
+
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+static int cpufreq_interactive_kfc_min_qos_handler(struct notifier_block *b,
+						unsigned long val, void *v)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	struct cpufreq_interactive_tunables *tunables;
+	unsigned long flags;
+
+	pcpu = &per_cpu(cpuinfo, 0);
+
+	if (!pcpu->governor_enabled)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor)
+		return NOTIFY_BAD;
+
+	if (val < pcpu->policy->cur) {
+		tunables = pcpu->policy->governor_data;
+
+		spin_lock_irqsave(&speedchange_cpumask_lock, flags);
+		cpumask_set_cpu(0, &speedchange_cpumask);
+		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+
+		if (tunables->speedchange_task)
+			wake_up_process(tunables->speedchange_task);
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_interactive_kfc_min_qos_notifier = {
+	.notifier_call = cpufreq_interactive_kfc_min_qos_handler,
+};
+
+static int cpufreq_interactive_kfc_max_qos_handler(struct notifier_block *b,
+						unsigned long val, void *v)
+{
+	struct cpufreq_interactive_cpuinfo *pcpu;
+	struct cpufreq_interactive_tunables *tunables;
+	unsigned long flags;
+
+	pcpu = &per_cpu(cpuinfo, 0);
+
+	if (!pcpu->governor_enabled)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy)
+		return NOTIFY_BAD;
+
+	if (!pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor)
+		return NOTIFY_BAD;
+
+	if (val > pcpu->policy->cur) {
+		tunables = pcpu->policy->governor_data;
+
+		spin_lock_irqsave(&speedchange_cpumask_lock, flags);
+		cpumask_set_cpu(0, &speedchange_cpumask);
+		spin_unlock_irqrestore(&speedchange_cpumask_lock, flags);
+
+		if (tunables->speedchange_task)
+			wake_up_process(tunables->speedchange_task);
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block cpufreq_interactive_kfc_max_qos_notifier = {
+	.notifier_call = cpufreq_interactive_kfc_max_qos_handler,
+};
+#endif
+#endif
+
 static int __init cpufreq_interactive_init(void)
 {
 	unsigned int i;
@@ -1503,6 +1666,15 @@ static int __init cpufreq_interactive_init(void)
 
 	spin_lock_init(&speedchange_cpumask_lock);
 	mutex_init(&gov_lock);
+
+#ifdef CONFIG_ARCH_EXYNOS
+	pm_qos_add_notifier(PM_QOS_CPU_FREQ_MIN, &cpufreq_interactive_cpu_min_qos_notifier);
+	pm_qos_add_notifier(PM_QOS_CPU_FREQ_MAX, &cpufreq_interactive_cpu_max_qos_notifier);
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+	pm_qos_add_notifier(PM_QOS_KFC_FREQ_MIN, &cpufreq_interactive_kfc_min_qos_notifier);
+	pm_qos_add_notifier(PM_QOS_KFC_FREQ_MAX, &cpufreq_interactive_kfc_max_qos_notifier);
+#endif
+#endif
 
 	return cpufreq_register_governor(&cpufreq_gov_interactive);
 }
