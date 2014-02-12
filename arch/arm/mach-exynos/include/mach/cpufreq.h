@@ -176,7 +176,7 @@ extern cluster_type exynos_boot_cluster;
 extern void (*disable_c3_idle)(bool disable);
 #endif
 #ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
-extern void force_dynamic_hotplug(bool out_flag);
+extern void force_dynamic_hotplug(bool out_flag, int delay_msec);
 #endif
 #if defined(CONFIG_SCHED_HMP) && defined(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)
 int big_cores_hotplug(bool out_flag);

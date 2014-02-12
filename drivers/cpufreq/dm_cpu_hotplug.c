@@ -477,7 +477,7 @@ static void force_dynamic_hotplug_work(struct work_struct *work)
 
 static DECLARE_WORK(force_hotplug_work, force_dynamic_hotplug_work);
 
-void force_dynamic_hotplug(bool out_flag)
+void force_dynamic_hotplug(bool out_flag, int delay_msec)
 {
 	if (force_hotplug_wq) {
 		force_out_flag = out_flag;
