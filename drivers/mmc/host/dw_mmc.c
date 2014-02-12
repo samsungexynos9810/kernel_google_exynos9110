@@ -91,7 +91,7 @@ struct idmac_desc {
 #endif /* CONFIG_MMC_DW_IDMAC */
 
 #define DATA_RETRY	1
-#define MAX_RETRY_CNT	1
+#define MAX_RETRY_CNT	2
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
 
@@ -1763,7 +1763,8 @@ static void dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd
 					host->pdata->error_retry_cnt);
 				if (host->pdata->error_retry_cnt < MAX_RETRY_CNT) {
 					cmd->error = -ETIMEDOUT;
-					cmd->data->error = 0;
+					if (cmd->data)
+						cmd->data->error = 0;
 					cmd->retries = DATA_RETRY;
 					host->pdata->error_retry_cnt++;
 				} else {
