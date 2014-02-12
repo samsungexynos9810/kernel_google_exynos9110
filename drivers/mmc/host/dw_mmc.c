@@ -1231,21 +1231,19 @@ static void __dw_mci_start_request(struct dw_mci *host,
 	if (!MMC_CHECK_CMDQ_MODE(host))
 		host->data_status = 0;
 
-	if (cmd->data) {
-		host->mrq_dat = mrq;
+	host->mrq_dat = mrq;
 
-		host->stop_cmdr = 0;
-		host->stop_snd = false;
+	host->stop_cmdr = 0;
+	host->stop_snd = false;
 
-		host->data_status = 0;
-		host->dir_status = 0;
+	host->data_status = 0;
+	host->dir_status = 0;
+	host->pending_events = 0;
+
+	if (MMC_CHECK_CMDQ_MODE(host))
+		clear_bit(EVENT_CMD_COMPLETE, &host->pending_events);
+	else
 		host->pending_events = 0;
-	} else {
-		if (MMC_CHECK_CMDQ_MODE(host))
-			clear_bit(EVENT_CMD_COMPLETE, &host->pending_events);
-		else
-			host->pending_events = 0;
-	}
 
 	if (host->pdata->tp_mon_tbl)
 		host->cmd_cnt++;
