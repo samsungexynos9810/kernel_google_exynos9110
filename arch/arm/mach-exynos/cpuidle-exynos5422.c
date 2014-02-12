@@ -69,7 +69,7 @@ static bool cluster_off_flag = false;
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
 #define C2_TARGET_RESIDENCY			1000
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-#define CLUSTER_OFF_TARGET_RESIDENCY		5000
+#define CLUSTER_OFF_TARGET_RESIDENCY		3000
 #endif
 #endif
 #define LOWPOWER_TARGET_RESIDENCY		5000
@@ -907,6 +907,10 @@ static int __init exynos_init_cpuidle(void)
 			device->state_count--;
 		per_cpu(in_c2_state, cpu_id) = 0;
 #endif
+
+		/* Eagle will not change idle time correlation factor */
+		if (cpu_id ^ 0x4)
+			device->skip_idle_correlation = true;
 
 		if (cpuidle_register_device(device)) {
 			printk(KERN_ERR "CPUidle register device failed\n,");
