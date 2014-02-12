@@ -284,10 +284,6 @@ static int s3c_pm_enter(suspend_state_t state)
 	/* set the irq configuration for wake */
 
 	s3c_pm_configure_extint();
-
-	S3C_PMDBG("sleep: irq wakeup masks: %08lx,%08lx\n",
-	    s3c_irqwake_intmask, s3c_irqwake_eintmask);
-
 	s3c_pm_arch_prepare_irqs();
 
 	/* call cpu specific preparation */
