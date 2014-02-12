@@ -109,6 +109,12 @@ enum is_subscenario_id {
 	ISS_SUB_SCENARIO_VIDEO_HIGH_SPEED = 4,	/* 4: video high speed */
 	ISS_SUB_SCENARIO_STILL_CAPTURE = 5,	/* 5: still capture */
 	ISS_SUB_SCENARIO_FHD_60FPS = 6,		/* 6: video FHD 60fps */
+	ISS_SUB_SCENARIO_UHD_30FPS = 7,         /* 7: video UHD 30fps */
+	ISS_SUB_SCENARIO_WVGA_300FPS = 8,       /* 8: video WVGA 300fps */
+	ISS_SUB_SCENARIO_STILL_PREVIEW_WDR = 9,
+	ISS_SUB_SCENARIO_VIDEO_WDR = 10,
+	ISS_SUB_SCENARIO_STILL_CAPTURE_WDR = 11,
+	ISS_SUB_SCENARIO_UHD_30FPS_WDR = 12,
 
 	ISS_SUB_SCENARIO_FRONT_VT1 = 4,		/* 4: front camera VT1 (Temporary) */
 	ISS_SUB_SCENARIO_FRONT_VT2 = 5,		/* 5: front camera VT2 (Temporary) */
