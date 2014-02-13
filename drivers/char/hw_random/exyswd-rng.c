@@ -19,8 +19,6 @@
 #include <linux/spinlock.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
-#include <linux/syscalls.h>
-#include <linux/sched.h>
 #include <mach/smc.h>
 
 #define HWRNG_RET_OK		0
@@ -29,9 +27,7 @@
 
 uint32_t hwrng_read_flag;
 static struct hwrng rng;
-#ifdef CONFIG_SCHED_HMP
-extern struct cpumask hmp_slow_cpu_mask;
-#endif
+
 spinlock_t hwrandom_lock;
 
 static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
@@ -41,9 +37,6 @@ static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 	uint32_t r_data[2];
 	unsigned long flag;
 	int32_t ret;
-#ifdef CONFIG_SCHED_HMP
-	pid_t pid;
-#endif
 
 	register u32 reg0 __asm__("r0");
 	register u32 reg1 __asm__("r1");
@@ -54,11 +47,6 @@ static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 	reg1 = 0;
 	reg2 = 0;
 	reg3 = 0;
-
-#ifdef CONFIG_SCHED_HMP
-	pid = sys_getpid();
-	sched_setaffinity(pid, &hmp_slow_cpu_mask);
-#endif
 
 	spin_lock_irqsave(&hwrandom_lock, flag);
 	ret = exynos_smc(SMC_CMD_RANDOM, HWRNG_INIT, 0, 0);
