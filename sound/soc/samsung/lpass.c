@@ -20,6 +20,8 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/pm_runtime.h>
+#include <linux/pm_qos.h>
+#include <linux/fb.h>
 #include <linux/iommu.h>
 #include <linux/dma-mapping.h>
 #include <linux/proc_fs.h>
@@ -35,6 +37,20 @@
 
 #include "lpass.h"
 
+#ifdef CONFIG_PM_DEVFREQ
+#define USE_AUD_DEVFREQ
+#ifdef CONFIG_SOC_EXYNOS5422
+#define AUD_MIF_FREQ_DISPON	(275000)
+#define AUD_INT_FREQ_DISPON	(333000)
+#define AUD_MIF_FREQ_DISPOFF	(275000)
+#define AUD_INT_FREQ_DISPOFF	(333000)
+#else
+#define AUD_MIF_FREQ_DISPON	(0)
+#define AUD_INT_FREQ_DISPON	(0)
+#define AUD_MIF_FREQ_DISPOFF	(0)
+#define AUD_INT_FREQ_DISPOFF	(0)
+#endif
+#endif
 
 /* Target clock rate */
 #define TARGET_ACLKENM_RATE	(133000000)
@@ -85,6 +101,13 @@ struct lpass_info {
 	struct clk		*clk_fin_pll;
 	bool			rpm_enabled;
 	atomic_t		use_cnt;
+	bool			display_on;
+#ifdef USE_AUD_DEVFREQ
+	struct pm_qos_request	aud_mif_qos;
+	struct pm_qos_request	aud_int_qos;
+	int			mif_qos;
+	int			int_qos;
+#endif
 } lpass;
 
 struct aud_reg {
@@ -109,6 +132,8 @@ extern int exynos_set_parent(const char *child, const char *parent);
 extern int check_adma_status(void);
 extern int check_fdma_status(void);
 extern int check_esa_status(void);
+
+static void lpass_update_qos(void);
 
 static inline bool is_old_ass(void)
 {
@@ -288,6 +313,8 @@ void lpass_get_sync(struct device *ip_dev)
 			pm_runtime_get_sync(&lpass.pdev->dev);
 		}
 	}
+
+	lpass_update_qos();
 }
 
 void lpass_put_sync(struct device *ip_dev)
@@ -303,6 +330,8 @@ void lpass_put_sync(struct device *ip_dev)
 			pm_runtime_put_sync(&lpass.pdev->dev);
 		}
 	}
+
+	lpass_update_qos();
 }
 
 static void lpass_reg_save(void)
@@ -719,6 +748,10 @@ static int lpass_proc_show(struct seq_file *m, void *v) {
 				si->name, atomic_read(&si->use_cnt));
 	}
 
+#ifdef USE_AUD_DEVFREQ
+	seq_printf(m, "mif: %d, int: %d\n",
+			lpass.mif_qos / 1000, lpass.int_qos / 1000);
+#endif
 	return 0;
 }
 
@@ -788,6 +821,67 @@ static int lpass_get_ver(struct device_node *np)
 	return LPASS_VER_000100;
 }
 #endif
+
+static void lpass_update_qos(void)
+{
+#ifdef USE_AUD_DEVFREQ
+	int mif_qos_new, int_qos_new;
+
+	if (!lpass.enabled) {
+		mif_qos_new = 0;
+		int_qos_new = 0;
+	} else if (lpass.display_on) {
+		mif_qos_new = AUD_MIF_FREQ_DISPON;
+		int_qos_new = AUD_INT_FREQ_DISPON;
+	} else {
+		mif_qos_new = AUD_MIF_FREQ_DISPOFF;
+		int_qos_new = AUD_INT_FREQ_DISPOFF;
+	}
+
+	if (lpass.mif_qos != mif_qos_new) {
+		lpass.mif_qos = mif_qos_new;
+		pm_qos_update_request(&lpass.aud_mif_qos, lpass.mif_qos);
+		pr_debug("%s: mif_qos = %d\n", __func__, lpass.mif_qos);
+	}
+
+	if (lpass.int_qos != int_qos_new) {
+		lpass.int_qos = int_qos_new;
+		pm_qos_update_request(&lpass.aud_int_qos, lpass.int_qos);
+		pr_debug("%s: int_qos = %d\n", __func__, lpass.int_qos);
+	}
+#endif
+}
+
+static int lpass_fb_state_chg(struct notifier_block *nb,
+		unsigned long val, void *data)
+{
+	struct fb_event *evdata = data;
+	unsigned int blank;
+
+	if (val != FB_EVENT_BLANK)
+		return 0;
+
+	blank = *(int *)evdata->data;
+
+	switch (blank) {
+	case FB_BLANK_POWERDOWN:
+		lpass.display_on = false;
+		lpass_update_qos();
+		break;
+	case FB_BLANK_UNBLANK:
+		lpass.display_on = true;
+		lpass_update_qos();
+		break;
+	default:
+		break;
+	}
+
+	return NOTIFY_OK;
+}
+
+static struct notifier_block fb_noti_block = {
+	.notifier_call = lpass_fb_state_chg,
+};
 
 static char banner[] =
 	KERN_INFO "Samsung Low Power Audio Subsystem driver, "\
@@ -881,7 +975,14 @@ static int lpass_probe(struct platform_device *pdev)
 #else
 	lpass_enable();
 #endif
-
+	lpass.display_on = true;
+	fb_register_client(&fb_noti_block);
+#ifdef USE_AUD_DEVFREQ
+	lpass.mif_qos = 0;
+	lpass.int_qos = 0;
+	pm_qos_add_request(&lpass.aud_mif_qos, PM_QOS_BUS_THROUGHPUT, 0);
+	pm_qos_add_request(&lpass.aud_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
+#endif
 	return 0;
 }
 
