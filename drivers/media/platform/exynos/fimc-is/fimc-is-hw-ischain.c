@@ -4,6 +4,8 @@
 #include <linux/errno.h>
 #include <linux/platform_device.h>
 #include <linux/io.h>
+#include <mach/devfreq.h>
+#include <mach/bts.h>
 
 #include <mach/map.h>
 #include <mach/regs-clock.h>

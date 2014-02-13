@@ -88,6 +88,23 @@
 #error fimc-is driver can NOT support this platform
 
 #endif
+
+#if defined(CONFIG_ARM_EXYNOS4415_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS5260_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS3470_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
+#define CONFIG_FIMC_IS_BUS_DEVFREQ
+#endif
+
 /*
  * -----------------------------------------------------------------------------
  * Debug Message Configuration
