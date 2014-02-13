@@ -45,6 +45,8 @@ enum devfreq_isp_idx {
 	LV4,
 	LV5,
 	LV6,
+	LV7,
+	LV8,
 	LV_COUNT,
 };
 
@@ -156,10 +158,12 @@ struct devfreq_opp_table devfreq_isp_opp_list[] = {
 	{LV0,	777000, 950000},
 	{LV1,	666000,	950000},
 	{LV2,	555000,	950000},
-	{LV3,	444000,	950000},
-	{LV4,	333000, 950000},
-	{LV5,	222000,	925000},
-	{LV6,	111000,	925000},
+	{LV3,	466000,	950000},
+	{LV4,	455000,	950000},
+	{LV5,	444000,	950000},
+	{LV6,	333000, 950000},
+	{LV7,	222000,	925000},
+	{LV8,	111000,	925000},
 };
 
 struct devfreq_clk_state mux_sclk_pixelasync_lite_c[] = {
@@ -281,6 +285,8 @@ struct devfreq_clk_info isp_pll[] = {
 	{LV4,	552000000,	0,	NULL},
 	{LV5,	552000000,	0,	NULL},
 	{LV6,	552000000,	0,	NULL},
+	{LV7,	552000000,	0,	NULL},
+	{LV8,	552000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_cam0_552[] = {
@@ -291,6 +297,8 @@ struct devfreq_clk_info aclk_cam0_552[] = {
 	{LV4,	552000000,	0,	NULL},
 	{LV5,	552000000,	0,	NULL},
 	{LV6,	552000000,	0,	NULL},
+	{LV7,	552000000,	0,	NULL},
+	{LV8,	552000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_cam0_400[] = {
@@ -301,6 +309,8 @@ struct devfreq_clk_info aclk_cam0_400[] = {
 	{LV4,	400000000,	0,	NULL},
 	{LV5,	400000000,	0,	NULL},
 	{LV6,	400000000,	0,	NULL},
+	{LV7,	400000000,	0,	NULL},
+	{LV8,	400000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_cam0_333[] = {
@@ -311,6 +321,8 @@ struct devfreq_clk_info aclk_cam0_333[] = {
 	{LV4,	317000000,	0,	NULL},
 	{LV5,	317000000,	0,	NULL},
 	{LV6,	317000000,	0,	NULL},
+	{LV7,	317000000,	0,	NULL},
+	{LV8,	317000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_cam0_bus_400[] = {
@@ -320,7 +332,9 @@ struct devfreq_clk_info aclk_cam0_bus_400[] = {
 	{LV3,	400000000,	0,	NULL},
 	{LV4,	400000000,	0,	NULL},
 	{LV5,	400000000,	0,	NULL},
-	{LV6,	 50000000,	0,	NULL},
+	{LV6,	400000000,	0,	NULL},
+	{LV7,	400000000,	0,	NULL},
+	{LV8,	 50000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_csis0[] = {
@@ -329,8 +343,10 @@ struct devfreq_clk_info aclk_csis0[] = {
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	552000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-	{LV6,	 69000000,	0,	NULL},
+	{LV5,	552000000,	0,	NULL},
+	{LV6,	552000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_lite_a[] = {
@@ -339,18 +355,22 @@ struct devfreq_clk_info aclk_lite_a[] = {
 	{LV2,	552000000,	0,	NULL},
 	{LV3,	552000000,	0,	NULL},
 	{LV4,	552000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-	{LV6,	 69000000,	0,	NULL},
+	{LV5,	552000000,	0,	NULL},
+	{LV6,	552000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_3aa0[] = {
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
-	{LV3,	276000000,	0,	NULL},
-	{LV4,	276000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-	{LV6,	 69000000,	0,	NULL},
+	{LV3,	552000000,	0,	NULL},
+	{LV4,	552000000,	0,	NULL},
+	{LV5,	276000000,	0,	NULL},
+	{LV6,	276000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_csis1[] = {
@@ -361,6 +381,8 @@ struct devfreq_clk_info aclk_csis1[] = {
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
 	{LV6,	 69000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_lite_b[] = {
@@ -371,16 +393,20 @@ struct devfreq_clk_info aclk_lite_b[] = {
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
 	{LV6,	 69000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_3aa1[] = {
 	{LV0,	552000000,	0,	NULL},
 	{LV1,	552000000,	0,	NULL},
 	{LV2,	552000000,	0,	NULL},
-	{LV3,	 79000000,	0,	NULL},
-	{LV4,	 79000000,	0,	NULL},
+	{LV3,	552000000,	0,	NULL},
+	{LV4,	552000000,	0,	NULL},
 	{LV5,	 79000000,	0,	NULL},
 	{LV6,	 79000000,	0,	NULL},
+	{LV7,	 79000000,	0,	NULL},
+	{LV8,	 79000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_lite_d[] = {
@@ -389,8 +415,10 @@ struct devfreq_clk_info aclk_lite_d[] = {
 	{LV2,	 138000000,	0,	NULL},
 	{LV3,	 138000000,	0,	NULL},
 	{LV4,	 138000000,	0,	NULL},
-	{LV5,	 69000000,	0,	NULL},
-	{LV6,	 69000000,	0,	NULL},
+	{LV5,	 138000000,	0,	NULL},
+	{LV6,	 138000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info sclk_pixel_init_552[] = {
@@ -401,6 +429,8 @@ struct devfreq_clk_info sclk_pixel_init_552[] = {
 	{LV4,	 69000000,	0,	NULL},
 	{LV5,	 69000000,	0,	NULL},
 	{LV6,	 69000000,	0,	NULL},
+	{LV7,	 69000000,	0,	NULL},
+	{LV8,	 69000000,	0,	NULL},
 };
 
 struct devfreq_clk_info sclk_pixel_333[] = {
@@ -411,6 +441,8 @@ struct devfreq_clk_info sclk_pixel_333[] = {
 	{LV4,	 40000000,	0,	&sclk_pixelasync_lite_c_list},
 	{LV5,	 40000000,	0,	&sclk_pixelasync_lite_c_list},
 	{LV6,	 40000000,	0,	&sclk_pixelasync_lite_c_list},
+	{LV7,	 40000000,	0,	&sclk_pixelasync_lite_c_list},
+	{LV8,	 40000000,	0,	&sclk_pixelasync_lite_c_list},
 };
 
 struct devfreq_clk_info aclk_cam1_552[] = {
@@ -419,8 +451,10 @@ struct devfreq_clk_info aclk_cam1_552[] = {
 	{LV2,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV3,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
 	{LV4,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
-	{LV5,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
-	{LV6,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
+	{LV5,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
+	{LV6,	552000000,	0,	&aclk_cam1_552_isp_pll_list},
+	{LV7,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
+	{LV8,	400000000,	0,	&aclk_cam1_552_bus_pll_list},
 };
 
 struct devfreq_clk_info aclk_cam1_400[] = {
@@ -429,8 +463,10 @@ struct devfreq_clk_info aclk_cam1_400[] = {
 	{LV2,	400000000,	0,	NULL},
 	{LV3,	400000000,	0,	NULL},
 	{LV4,	400000000,	0,	NULL},
-	{LV5,	267000000,	0,	NULL},
-	{LV6,	267000000,	0,	NULL},
+	{LV5,	400000000,	0,	NULL},
+	{LV6,	400000000,	0,	NULL},
+	{LV7,	267000000,	0,	NULL},
+	{LV8,	267000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_cam1_333[] = {
@@ -441,6 +477,8 @@ struct devfreq_clk_info aclk_cam1_333[] = {
 	{LV4,	317000000,	0,	NULL},
 	{LV5,	317000000,	0,	NULL},
 	{LV6,	317000000,	0,	NULL},
+	{LV7,	317000000,	0,	NULL},
+	{LV8,	317000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_fd_400[] = {
@@ -449,8 +487,10 @@ struct devfreq_clk_info aclk_fd_400[] = {
 	{LV2,	317000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV3,	317000000,	0,	&aclk_fd_400_mfc_pll_list},
 	{LV4,	159000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV5,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
-	{LV6,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
+	{LV5,	317000000,	0,	&aclk_fd_400_mfc_pll_list},
+	{LV6,	159000000,	0,	&aclk_fd_400_mfc_pll_list},
+	{LV7,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
+	{LV8,	 80000000,	0,	&aclk_fd_400_mfc_pll_list},
 };
 
 struct devfreq_clk_info aclk_csis2_333[] = {
@@ -461,6 +501,8 @@ struct devfreq_clk_info aclk_csis2_333[] = {
 	{LV4,	 40000000,	0,	&mux_aclk_csis2_list},
 	{LV5,	 80000000,	0,	&mux_aclk_csis2_list},
 	{LV6,	 40000000,	0,	&mux_aclk_csis2_list},
+	{LV7,	 80000000,	0,	&mux_aclk_csis2_list},
+	{LV8,	 40000000,	0,	&mux_aclk_csis2_list},
 };
 
 struct devfreq_clk_info aclk_lite_c[] = {
@@ -471,6 +513,8 @@ struct devfreq_clk_info aclk_lite_c[] = {
 	{LV4,	 40000000,	0,	&mux_aclk_lite_c_list},
 	{LV5,	 80000000,	0,	&mux_aclk_lite_c_list},
 	{LV6,	 40000000,	0,	&mux_aclk_lite_c_list},
+	{LV7,	 80000000,	0,	&mux_aclk_lite_c_list},
+	{LV8,	 40000000,	0,	&mux_aclk_lite_c_list},
 };
 
 struct devfreq_clk_info aclk_isp_400[] = {
@@ -479,8 +523,10 @@ struct devfreq_clk_info aclk_isp_400[] = {
 	{LV2,	317000000,	0,	&aclk_isp_400_mfc_pll_list},
 	{LV3,	267000000,	0,	&aclk_isp_400_bus_pll_list},
 	{LV4,	159000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV5,	 80000000,	0,	&aclk_isp_400_mfc_pll_list},
-	{LV6,	 80000000,	0,	&aclk_isp_400_mfc_pll_list},
+	{LV5,	267000000,	0,	&aclk_isp_400_bus_pll_list},
+	{LV6,	159000000,	0,	&aclk_isp_400_mfc_pll_list},
+	{LV7,	 80000000,	0,	&aclk_isp_400_mfc_pll_list},
+	{LV8,	 80000000,	0,	&aclk_isp_400_mfc_pll_list},
 };
 
 struct devfreq_clk_info aclk_isp_dis_400[] = {
@@ -489,8 +535,10 @@ struct devfreq_clk_info aclk_isp_dis_400[] = {
 	{LV2,	317000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 	{LV3,	267000000,	0,	&aclk_isp_dis_400_bus_pll_list},
 	{LV4,	159000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
-	{LV5,	 80000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
-	{LV6,	 80000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV5,	267000000,	0,	&aclk_isp_dis_400_bus_pll_list},
+	{LV6,	159000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV7,	 80000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
+	{LV8,	 80000000,	0,	&aclk_isp_dis_400_mfc_pll_list},
 };
 
 struct devfreq_clk_info sclk_lite_freecnt_c[] = {
@@ -501,6 +549,8 @@ struct devfreq_clk_info sclk_lite_freecnt_c[] = {
 	{LV4,	 0,	0,	&sclk_lite_freecnt_c_list},
 	{LV5,	 0,	0,	&sclk_lite_freecnt_c_list},
 	{LV6,	 0,	0,	&sclk_lite_freecnt_c_list},
+	{LV7,	 0,	0,	&sclk_lite_freecnt_c_list},
+	{LV8,	 0,	0,	&sclk_lite_freecnt_c_list},
 };
 
 struct devfreq_clk_info *devfreq_clk_isp_info_list[] = {
