@@ -417,6 +417,8 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 
 	if (timing == MMC_TIMING_MMC_HS200_DDR) {
 		clksel = ((priv->ddr200_timing & 0xfffffff8) | pdata->clk_smpl);
+		if (pdata->is_fine_tuned)
+			clksel |= BIT(6);
 
 		if (!tuning) {
 			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
