@@ -213,9 +213,9 @@ extern bool cluster_power_ctrl_en;
 static int exynos_pm_suspend(void)
 {
 	unsigned long tmp;
-#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	unsigned int count = 10000;
 
+#if defined(CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (cluster_power_ctrl_en) {
 		do {
 			tmp = __raw_readl(EXYNOS5422_ARM_COMMON_STATUS) & 0x3;
