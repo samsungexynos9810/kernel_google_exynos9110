@@ -127,25 +127,43 @@ static int get_sensor_mode(struct fimc_is_sensor_cfg *cfg,
 	u32 cfgs, u32 width, u32 height, u32 framerate)
 {
 	int mode = -1;
+	int idx = -1;
 	u32 i;
 
+	/* find sensor mode by w/h and fps range */
 	for (i = 0; i < cfgs; i++) {
 		if ((cfg[i].width == width) &&
-		    (cfg[i].height == height) &&
-		    (cfg[i].framerate == framerate)) {
-			mode = cfg[i].mode;
-			break;
+				(cfg[i].height == height)) {
+			if (cfg[i].framerate == framerate) {
+				/* You don't need to find another sensor mode */
+				mode = cfg[i].mode;
+				idx = i;
+				break;
+			} else if (cfg[i].framerate > framerate) {
+				/* try to find framerate smaller than previous */
+				if (mode < 0) {
+					mode = cfg[i].mode;
+					idx = i;
+				} else {
+					/* try to compare previous with current */
+					if (cfg[idx].framerate > cfg[i].framerate) {
+						mode = cfg[i].mode;
+						idx = i;
+					}
+				}
+			}
 		}
 	}
 
-	if (mode < 0) {
-		warn("could not find proper sensor mode: %dx%d@%dfps",
+	if (idx < 0)
+		err("could not find proper sensor mode: %dx%d@%dfps",
 			width, height, framerate);
-
-		mode = 0;
-	}
-
-	pr_info("sensor mode(%dx%d@%d) = %d\n", width, height, framerate, mode);
+	else
+		pr_info("sensor mode(%dx%d@%d) = %d\n",
+			cfg[idx].width,
+			cfg[idx].height,
+			cfg[idx].framerate,
+			cfg[idx].mode);
 
 	return mode;
 }
@@ -1192,6 +1210,11 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 			device->image.window.width, device->image.window.height,
 			device->image.framerate);
 
+	/* can't find proper sensor mode */
+	if (device->mode < 0) {
+		ret = -EINVAL;
+		goto p_err;
+	}
 p_err:
 	return ret;
 }

@@ -42,20 +42,14 @@
 static struct fimc_is_sensor_cfg config_2p2[] = {
 	/* 5328x3000@30fps */
 	FIMC_IS_SENSOR_CFG(5328, 3000, 30, 30, 0),
-	/* 5328x3000@15fps, Burst Panorama */
-	FIMC_IS_SENSOR_CFG(5328, 3000, 15, 30, 0),
 	/* 5328x3000@24fps */
 	FIMC_IS_SENSOR_CFG(5328, 3000, 24, 30, 1),
 	/* 4000X3000@30fps */
 	FIMC_IS_SENSOR_CFG(4000, 3000, 30, 23, 2),
-	/* 4000X3000@15fps, Burst Panorama */
-	FIMC_IS_SENSOR_CFG(4000, 3000, 15, 23, 2),
 	/* 4000X3000@24fps */
 	FIMC_IS_SENSOR_CFG(4000, 3000, 24, 23, 3),
 	/* 3008X3000@30fps */
 	FIMC_IS_SENSOR_CFG(3008, 3000, 30, 19, 4),
-	/* 3008X3000@15fps, Burst Panorama */
-	FIMC_IS_SENSOR_CFG(3008, 3000, 15, 19, 4),
 	/* 3008X3000@30fps */
 	FIMC_IS_SENSOR_CFG(3008, 3000, 24, 19, 5),
 	/* 2664X1500@60fps */
