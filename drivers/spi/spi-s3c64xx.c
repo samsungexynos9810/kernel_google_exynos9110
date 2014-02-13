@@ -307,6 +307,7 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
 {
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
+	int ret;
 
 	if (sci->dma_mode == DMA_MODE) {
 		/* Acquire DMA channels */
@@ -314,7 +315,9 @@ static int s3c64xx_spi_prepare_transfer(struct spi_master *spi)
 			usleep_range(10000, 11000);
 	}
 
-	pm_runtime_get_sync(&sdd->pdev->dev);
+	ret = pm_runtime_get_sync(&sdd->pdev->dev);
+	if(ret < 0)
+		return ret;
 
 	if (sci->need_hw_init)
 		s3c64xx_spi_hwinit(sdd, sdd->port_id);
@@ -326,6 +329,7 @@ static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
 {
 	struct s3c64xx_spi_driver_data *sdd = spi_master_get_devdata(spi);
 	struct s3c64xx_spi_info *sci = sdd->cntrlr_info;
+	int ret;
 
 	/* Free DMA channels */
 	if (sci->dma_mode == DMA_MODE) {
@@ -336,7 +340,9 @@ static int s3c64xx_spi_unprepare_transfer(struct spi_master *spi)
 	}
 
 	pm_runtime_mark_last_busy(&sdd->pdev->dev);
-	pm_runtime_put_autosuspend(&sdd->pdev->dev);
+	ret = pm_runtime_put_autosuspend(&sdd->pdev->dev);
+	if(ret < 0)
+		return ret;
 
 	return 0;
 }
