@@ -890,8 +890,8 @@ static int exynos5_mif_bus_get_dev_status(struct device *dev,
 			&int_ccnt, &int_pmcnt);
 
 	/* TODO: ppmu will return 0, when after suspend/resume */
-	if(!(int_ccnt | int_pmcnt))
-		return 0;
+	if (!int_ccnt)
+		return -EAGAIN;
 
 	stat->total_time = int_ccnt;
 	stat->busy_time = int_pmcnt;
