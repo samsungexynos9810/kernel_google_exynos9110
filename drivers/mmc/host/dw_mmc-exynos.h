@@ -16,12 +16,15 @@
 #define SDMMC_CLKSEL_CCLK_SAMPLE(x)	(((x) & 7) << 0)
 #define SDMMC_CLKSEL_CCLK_FINE_SAMPLE(x)	(((x) & 0xF) << 0)
 #define SDMMC_CLKSEL_CCLK_DRIVE(x)	(((x) & 7) << 16)
+#define SDMMC_CLKSEL_CCLK_FINE_DRIVE(x)	(((x) & 3) << 22)
 #define SDMMC_CLKSEL_CCLK_DIVIDER(x)	(((x) & 7) << 24)
 #define SDMMC_CLKSEL_GET_DRV_WD3(x)	(((x) >> 16) & 0x7)
 #define SDMMC_CLKSEL_GET_DIVRATIO(x)	((((x) >> 24) & 0x7) + 1)
-#define SDMMC_CLKSEL_TIMING(x, y, z)	(SDMMC_CLKSEL_CCLK_SAMPLE(x) |	\
-					SDMMC_CLKSEL_CCLK_DRIVE(y) |	\
-					SDMMC_CLKSEL_CCLK_DIVIDER(z))
+#define SDMMC_CLKSEL_TIMING(div, f_drv, drv, sample) \
+	(SDMMC_CLKSEL_CCLK_DIVIDER(div) |	\
+	 SDMMC_CLKSEL_CCLK_FINE_DRIVE(f_drv) |	\
+	 SDMMC_CLKSEL_CCLK_DRIVE(drv) |		\
+	 SDMMC_CLKSEL_CCLK_SAMPLE(sample))
 
 #define SDMMC_CMD_USE_HOLD_REG		BIT(29)
 

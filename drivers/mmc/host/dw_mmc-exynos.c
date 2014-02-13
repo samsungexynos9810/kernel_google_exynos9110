@@ -452,7 +452,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 {
 	struct dw_mci_exynos_priv_data *priv = host->priv;
-	u32 timing[3];
+	u32 timing[4];
 	u32 div = 0;
 
 	struct device_node *np = host->dev->of_node;
@@ -517,18 +517,18 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 		priv->cd_gpio = -1;
 
 	ret = of_property_read_u32_array(np,
-			"samsung,dw-mshc-sdr-timing", timing, 3);
+			"samsung,dw-mshc-sdr-timing", timing, 4);
 	if (ret)
 		return ret;
 
-	priv->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+	priv->sdr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2], timing[3]);
 
 	ret = of_property_read_u32_array(np,
-			"samsung,dw-mshc-ddr-timing", timing, 3);
+			"samsung,dw-mshc-ddr-timing", timing, 4);
 	if (ret)
 		goto err_ref_clk;
 
-	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+	priv->ddr_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2], timing[3]);
 
 	priv->drv_str_pin = of_get_property(np, "clk_pin", NULL);
 	priv->drv_str_addr = of_get_property(np, "clk_addr", NULL);
@@ -551,18 +551,18 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	/* dwmmc0 : eMMC    */
 	case 0:
 		ret = of_property_read_u32_array(np,
-			"samsung,dw-mshc-hs200-timing", timing, 3);
+			"samsung,dw-mshc-hs200-timing", timing, 4);
 		if (ret)
 			goto err_ref_clk;
 
-		priv->hs200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+		priv->hs200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2], timing[3]);
 
 		ret = of_property_read_u32_array(np,
-			"samsung,dw-mshc-ddr200-timing", timing, 3);
+			"samsung,dw-mshc-ddr200-timing", timing, 4);
 		if (ret)
 			goto err_ref_clk;
 
-		priv->ddr200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2]);
+		priv->ddr200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2], timing[3]);
 
 		/* Delay Line */
 		of_property_read_u32(np,
