@@ -136,7 +136,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 
 #define PASSIVE_INTERVAL			100
 #define ACTIVE_INTERVAL				300
-#define IDLE_INTERVAL 				1000
+#define IDLE_INTERVAL 				500
 #define MCELSIUS				1000
 
 #ifdef CONFIG_THERMAL_EMULATION
@@ -1522,10 +1522,10 @@ static struct exynos_tmu_platform_data const exynos5430_evt0_tmu_data = {
 #if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.threshold_falling = 2,
-	.trigger_levels[0] = 80,
-	.trigger_levels[1] = 90,
-	.trigger_levels[2] = 100,
-	.trigger_levels[3] = 110,
+	.trigger_levels[0] = 70,
+	.trigger_levels[1] = 80,
+	.trigger_levels[2] = 90,
+	.trigger_levels[3] = 100,
 	.trigger_levels[4] = 110,
 	.trigger_levels[5] = 110,
 	.trigger_levels[6] = 110,
@@ -1544,6 +1544,17 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.cal_type = TYPE_ONE_POINT_TRIMMING,
 	.efuse_value = 75,
 	.freq_tab[0] = {
+		.freq_clip_max = 1700 * 1000,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.freq_clip_max_kfc = 1500 * 1000,
+#endif
+		.temp_level = 70,
+#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
+		.mask_val = &mp_cluster_cpus[CA15],
+		.mask_val_kfc = &mp_cluster_cpus[CA7],
+#endif
+	},
+	.freq_tab[1] = {
 		.freq_clip_max = 1300 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1500 * 1000,
@@ -1554,7 +1565,7 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
-	.freq_tab[1] = {
+	.freq_tab[2] = {
 		.freq_clip_max = 1100 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1500 * 1000,
@@ -1565,23 +1576,12 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
 #endif
 	},
-	.freq_tab[2] = {
+	.freq_tab[3] = {
 		.freq_clip_max = 800 * 1000,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.freq_clip_max_kfc = 1500 * 1000,
 #endif
 		.temp_level = 100,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[3] = {
-		.freq_clip_max = 800 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 800 * 1000,
-#endif
-		.temp_level = 110,
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 		.mask_val = &mp_cluster_cpus[CA15],
 		.mask_val_kfc = &mp_cluster_cpus[CA7],
