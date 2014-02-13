@@ -408,7 +408,7 @@ static void __init set_volt_table_CA7(void)
 				exynos5422_abb_table_CA7[i]);
 	}
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	max_support_idx_CA7 = L1;
+	max_support_idx_CA7 = L3;
 #else
 	max_support_idx_CA7 = L3;
 #endif
