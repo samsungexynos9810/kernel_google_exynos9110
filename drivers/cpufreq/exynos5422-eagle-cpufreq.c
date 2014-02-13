@@ -270,7 +270,7 @@ static unsigned int exynos5422_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	((325 << 16) | (6 << 8) | (0x0)),
 
 	/* APLL FOUT L12: 1.2GHz */
-	((200 << 16) | (2 << 8) | (0x1)),
+	((100 << 16) | (2 << 8) | (0x0)),
 
 	/* APLL FOUT L13: 1.1GHz */
 	((275 << 16) | (3 << 8) | (0x1)),
@@ -415,7 +415,6 @@ static void exynos5422_set_clkdiv_CA15(unsigned int div_index)
 
 #define CLK_ENA(a) clk_prepare_enable(a)
 #define CLK_DIS(a) clk_disable_unprepare(a)
-#define USING_CCF
 static void exynos5422_set_egl_pll_CA15(unsigned int new_index, unsigned int old_index)
 {
 	unsigned int tmp, pdiv;
@@ -436,7 +435,6 @@ static void exynos5422_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 		>> EXYNOS5_CLKSRC_CPU_MUXCORE_SHIFT);
 		tmp &= 0x7;
 	} while (tmp != 0x2);
-#ifndef USING_CCF
 	/* 2. Set APLL Lock time */
 	pdiv = ((exynos5422_apll_pms_table_CA15[new_index] >> 8) & 0x3f);
 
@@ -453,11 +451,7 @@ static void exynos5422_set_egl_pll_CA15(unsigned int new_index, unsigned int old
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5_APLL_CON0);
 	} while (!(tmp & (0x1 << EXYNOS5_APLLCON0_LOCKED_SHIFT)));
-#else
-	pdiv = 0;
-	clk_set_rate(fout_apll, exynos5422_freq_table_CA15[new_index].frequency*1000);
-	pr_debug("apll set_rate:%ld\n", clk_get_rate(fout_apll));
-#endif
+
 	/* 5. MUX_CORE_SEL = APLL */
 	if (clk_set_parent(mout_cpu, mout_apll))
 		pr_err("Unable to set parent %s of clock %s.\n",

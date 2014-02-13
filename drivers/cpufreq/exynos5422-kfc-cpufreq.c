@@ -138,7 +138,7 @@ static unsigned int exynos5422_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	((325 << 16) | (6 << 8) | (0x0)),
 
 	/* KPLL FOUT L4: 1.2GHz */
-	((200 << 16) | (2 << 8) | (0x1)),
+	((100 << 16) | (2 << 8) | (0x0)),
 
 	/* KPLL FOUT L5: 1.1GHz */
 	((275 << 16) | (3 << 8) | (0x1)),
@@ -266,7 +266,6 @@ static void exynos5422_set_clkdiv_CA7(unsigned int div_index)
 #endif
 }
 
-#define USING_CCF
 static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_index)
 {
 	unsigned int tmp, pdiv;
@@ -290,7 +289,6 @@ static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 		tmp &= 0x7;
 	} while (tmp != 0x2);
 
-#if !defined(USING_CCF)
 	/* 2. Set KPLL Lock time */
 	pdiv = ((exynos5422_kfc_pll_pms_table_CA7[new_index] >> 8) & 0x3f);
 
@@ -307,11 +305,6 @@ static void exynos5422_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5_KPLL_CON0);
 	} while (!(tmp & (0x1 << EXYNOS5_KPLLCON0_LOCKED_SHIFT)));
-#else
-	pdiv = 0;
-	clk_set_rate(fout_kpll, exynos5422_freq_table_CA7[new_index].frequency*1000);
-	pr_debug("kpll set_rate:%ld\n", clk_get_rate(fout_kpll));
-#endif
 
 	/* 5. CLKMUX_CPU_KFC = KPLL */
 	if (clk_set_parent(mout_cpu_kfc, mout_kpll_ctrl))
