@@ -62,11 +62,11 @@
 #define DEC_IBUF_SIZE		(4096)
 #define DEC_OBUF_SIZE		(36864)
 
-#define DEC_AAC_IBUF_SIZE       (4096)
-#define DEC_AAC_OBUF_SIZE       (73728)
+#define DEC_AAC_IBUF_SIZE       (0x10000)
+#define DEC_AAC_OBUF_SIZE       (0x18000)
 
-#define DEC_FLAC_IBUF_SIZE	(0x5000)
-#define DEC_FLAC_OBUF_SIZE	(0x20000)
+#define DEC_FLAC_IBUF_SIZE	(0x10000)
+#define DEC_FLAC_OBUF_SIZE	(0x18000)
 #define DEC_IBUF_NUM		(0x2)
 #define DEC_OBUF_NUM		(0x2)
 
