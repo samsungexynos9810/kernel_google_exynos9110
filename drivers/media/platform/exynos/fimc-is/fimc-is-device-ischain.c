@@ -6605,6 +6605,9 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 #ifdef ENABLE_SETFILE
 	u32 setfile_save;
 #endif
+#ifdef ENABLE_FAST_SHOT
+	uint32_t af_trigger_bk;
+#endif
 
 #ifdef DBG_STREAMING
 	mdbgd_ischain("%s()\n", device, __func__);
@@ -6665,10 +6668,12 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 
 #ifdef ENABLE_FAST_SHOT
 	if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &group->state)) {
+		af_trigger_bk = frame->shot->ctl.aa.afTrigger;
 		memcpy(&frame->shot->ctl.aa, &group->fast_ctl.aa,
 			sizeof(struct camera2_aa_ctl));
 		memcpy(&frame->shot->ctl.scaler, &group->fast_ctl.scaler,
 			sizeof(struct camera2_scaler_ctl));
+		frame->shot->ctl.aa.afTrigger = af_trigger_bk;
 	}
 #endif
 
