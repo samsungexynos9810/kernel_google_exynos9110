@@ -2696,6 +2696,14 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 #endif
 }
 
+static int s3c_fb_release(struct fb_info *info, int user)
+{
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	disp_pm_sched_power_on(get_display_driver(), S3CFB_PLATFORM_RESET);
+#endif
+	return 0;
+}
+
 static struct fb_ops s3c_fb_ops = {
 	.owner		= THIS_MODULE,
 	.fb_check_var	= s3c_fb_check_var,
@@ -2708,6 +2716,7 @@ static struct fb_ops s3c_fb_ops = {
 	.fb_pan_display	= s3c_fb_pan_display,
 	.fb_ioctl	= s3c_fb_ioctl,
 	.fb_mmap	= s3c_fb_mmap,
+	.fb_release     = s3c_fb_release,
 };
 
 
