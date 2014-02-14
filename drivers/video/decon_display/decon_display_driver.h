@@ -158,7 +158,7 @@ struct display_pm_status {
 #define USE_ONLY_POWER_GATING_MODE
 #ifdef USE_ONLY_POWER_GATING_MODE
 #define MAX_CLK_GATING_COUNT 0
-#define MAX_PWR_GATING_COUNT 5
+#define MAX_PWR_GATING_COUNT 3
 #else
 #define MAX_CLK_GATING_COUNT 2
 #define MAX_PWR_GATING_COUNT 10
