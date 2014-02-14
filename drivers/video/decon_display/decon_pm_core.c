@@ -122,6 +122,7 @@ int init_display_pm(struct display_driver *dispdrv)
 	mutex_init(&dispdrv->pm_status.clk_lock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	set_default_hibernation_mode(dispdrv);
+	dispdrv->pm_status.hotplug_delay_msec = MAX_HOTPLUG_DELAY_MSEC;
 #else
 	dispdrv->pm_status.clock_gating_on = false;
 	dispdrv->pm_status.power_gating_on = false;
@@ -214,13 +215,42 @@ static void init_gating_idle_count(struct display_driver *dispdrv)
 	}
 }
 
+static void request_dynamic_hotplug(bool hotplug)
+{
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+	struct display_driver *dispdrv = get_display_driver();
+	if ((dispdrv->pm_status.hotplug_gating_on) &&
+		(dispdrv->platform_status == DISP_STATUS_PM1))
+		force_dynamic_hotplug(hotplug,
+			dispdrv->pm_status.hotplug_delay_msec);
+#endif
+}
+
 void debug_function(struct display_driver *dispdrv, const char *buf)
 {
+	long input_time;
 #ifndef CONFIG_FB_HIBERNATION_DISPLAY
 	pm_info("%s: does not support", __func__);
 	return;
 #endif
 	pm_info("calls [%s] to control gating function\n", buf);
+
+	if (!kstrtol(buf, 10, &input_time)) {
+		if (input_time == 0) {
+			request_dynamic_hotplug(false);
+			dispdrv->pm_status.hotplug_gating_on = false;
+		} else {
+			dispdrv->pm_status.hotplug_delay_msec = input_time;
+			dispdrv->pm_status.hotplug_gating_on = true;
+			if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN) {
+				request_dynamic_hotplug(true);
+			}
+		}
+		pm_info("Hotplug delay time is : %ld ms\n", input_time);
+		pm_info("HOTPLUG GATING MODE: %s\n",
+				dispdrv->pm_status.hotplug_gating_on == true? "TRUE":"FALSE");
+		return;
+	}
 	if (!strcmp(buf, "clk-gate-on")) {
 		dispdrv->pm_status.clock_gating_on = true;
 	} else if (!strcmp(buf, "clk-gate-off")) {
@@ -487,16 +517,6 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 #endif
 	call_pm_ops(dispdrv, dsi_driver, clk_off, dispdrv);
 	return 0;
-}
-
-static void request_dynamic_hotplug(bool hotplug)
-{
-#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
-	struct display_driver *dispdrv = get_display_driver();
-	if ((dispdrv->pm_status.hotplug_gating_on) &&
-		(dispdrv->platform_status == DISP_STATUS_PM1))
-		force_dynamic_hotplug(hotplug);
-#endif
 }
 
 int display_hibernation_power_on(struct display_driver *dispdrv)

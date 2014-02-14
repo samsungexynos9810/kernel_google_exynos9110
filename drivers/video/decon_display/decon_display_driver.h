@@ -153,16 +153,12 @@ struct display_pm_status {
 	bool hotplug_gating_on;
 	int clk_idle_count;
 	int pwr_idle_count;
+	int hotplug_delay_msec;
 };
 
-#define USE_ONLY_POWER_GATING_MODE
-#ifdef USE_ONLY_POWER_GATING_MODE
 #define MAX_CLK_GATING_COUNT 0
 #define MAX_PWR_GATING_COUNT 3
-#else
-#define MAX_CLK_GATING_COUNT 2
-#define MAX_PWR_GATING_COUNT 10
-#endif
+#define MAX_HOTPLUG_DELAY_MSEC 100
 
 /* display_driver - Abstraction for display driver controlling
  * all display system in the system */
