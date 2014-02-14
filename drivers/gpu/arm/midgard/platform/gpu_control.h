@@ -25,7 +25,6 @@ typedef enum {
 	GPU_CONTROL_PREPARE_ON,
 	GPU_CONTROL_IS_POWER_ON,
 	GPU_CONTROL_SET_MARGIN,
-	GPU_CONTROL_PM_QOS,
 } gpu_control_state;
 
 typedef enum {
@@ -61,7 +60,7 @@ typedef enum {
 #define GPU_THROTTLING_105_110  177
 #define GPU_TRIPPING_110        177
 #define VOLTAGE_OFFSET_MARGIN   37500
-#define RUNTIME_PM_DELAY_TIME   30
+#define RUNTIME_PM_DELAY_TIME   50
 #elif SOC_NAME == 5430
 #define GPU_THROTTLING_90_95    420
 #define GPU_THROTTLING_95_100   350
@@ -78,6 +77,7 @@ typedef enum {
 #define GPU_THROTTLING_105_110	160
 #define GPU_TRIPPING_110        160
 #define VOLTAGE_OFFSET_MARGIN	37500
+#define RUNTIME_PM_DELAY_TIME	100
 #else
 #error SOC_NAME should be specified.
 #endif /* SOC_NAME */

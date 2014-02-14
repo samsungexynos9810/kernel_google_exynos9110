@@ -150,25 +150,6 @@ STATIC INLINE void kbase_timeline_pm_cores_func(kbase_device *kbdev,
 
 #endif /* CONFIG_MALI_TRACE_TIMELINE */
 
-static enum hrtimer_restart kbasep_pm_do_gpu_poweroff_callback(struct hrtimer *timer)
-{
-	kbase_device *kbdev;
-
-	kbdev = container_of(timer, kbase_device, pm.gpu_poweroff_timer);
-
-	/* It is safe for this call to do nothing if the work item is already queued.
-	 * The worker function will read the must up-to-date state of kbdev->pm.gpu_poweroff_pending
-	 * under lock.
-	 *
-	 * If a state change occurs while the worker function is processing, this
-	 * call will succeed as a work item can be requeued once it has started
-	 * processing. 
-	 */
-	queue_work(kbdev->pm.gpu_poweroff_wq, &kbdev->pm.gpu_poweroff_work);
-
-	return HRTIMER_NORESTART;
-}
-
 static void kbasep_pm_do_gpu_poweroff_wq(struct work_struct *data)
 {
 	unsigned long flags;
@@ -239,9 +220,6 @@ mali_error kbase_pm_policy_init(kbase_device *kbdev)
 		return MALI_ERROR_OUT_OF_MEMORY;
 	INIT_WORK(&kbdev->pm.gpu_poweroff_work, kbasep_pm_do_gpu_poweroff_wq);
 
-	hrtimer_init(&kbdev->pm.gpu_poweroff_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	kbdev->pm.gpu_poweroff_timer.function = kbasep_pm_do_gpu_poweroff_callback;
-
 	hrtimer_init(&kbdev->pm.shader_poweroff_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	kbdev->pm.shader_poweroff_timer.function = kbasep_pm_do_shader_poweroff_callback;
 
@@ -250,7 +228,7 @@ mali_error kbase_pm_policy_init(kbase_device *kbdev)
 	kbdev->pm.pm_current_policy->init(kbdev);
 
 	kbdev->pm.gpu_poweroff_time = HR_TIMER_DELAY_NSEC(kbasep_get_config_value(kbdev, kbdev->config_attributes, KBASE_CONFIG_ATTR_PM_GPU_POWEROFF_TIME) * 1000);
-	kbdev->pm.shader_poweroff_time = HR_TIMER_DELAY_NSEC(kbasep_get_config_value(kbdev, kbdev->config_attributes, KBASE_CONFIG_ATTR_PM_SHADER_POWEROFF_TIME));
+	kbdev->pm.shader_poweroff_time = HR_TIMER_DELAY_NSEC(kbasep_get_config_value(kbdev, kbdev->config_attributes, KBASE_CONFIG_ATTR_PM_SHADER_POWEROFF_TIME) * 1000);
 
 	return MALI_ERROR_NONE;
 }
@@ -267,9 +245,6 @@ void kbase_pm_cancel_deferred_poweroff(kbase_device *kbdev)
 	lockdep_assert_held(&kbdev->pm.lock);
 
 	if (kbdev->pm.gpu_poweroff_pending) {
-		/* Cancel any pending power off request */
-		hrtimer_cancel(&kbdev->pm.gpu_poweroff_timer);
-		/* If wq is already running but is held off by pm.lock, make sure it has no effect */
 		kbdev->pm.gpu_poweroff_pending = MALI_FALSE;
 	}
 
@@ -303,8 +278,6 @@ void kbase_pm_update_active(kbase_device *kbdev)
 
 		if (kbdev->pm.gpu_poweroff_pending == MALI_TRUE) {
 			/* Cancel any pending power off request */
-			hrtimer_cancel(&kbdev->pm.gpu_poweroff_timer);
-			/* If wq is already running but is held off by pm.lock, make sure it has no effect */
 			kbdev->pm.gpu_poweroff_pending = MALI_FALSE;
 
 			/* If a request was pending then the GPU was still powered, so no need to continue */
@@ -332,7 +305,7 @@ void kbase_pm_update_active(kbase_device *kbdev)
 
 		/* Request power off */
 		kbdev->pm.gpu_poweroff_pending = MALI_TRUE;
-		hrtimer_start(&kbdev->pm.gpu_poweroff_timer, kbdev->pm.gpu_poweroff_time, HRTIMER_MODE_REL);
+		queue_work(kbdev->pm.gpu_poweroff_wq, &kbdev->pm.gpu_poweroff_work);
 	}
 }
 

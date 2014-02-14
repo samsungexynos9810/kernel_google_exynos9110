@@ -143,7 +143,7 @@
 /**
  * Default poweroff tick granuality, in nanoseconds
  */
-#define DEFAULT_PM_SHADER_POWEROFF_TIME 100000 /* 100us */
+#define DEFAULT_PM_SHADER_POWEROFF_TIME 400 /* 400us */
 
 /**
  * Default number of poweroff ticks before shader cores are powered off
@@ -265,8 +265,6 @@ uintptr_t kbasep_get_config_value(struct kbase_device *kbdev, const kbase_attrib
 		return DEFAULT_PM_DVFS_FREQ;
 	case KBASE_CONFIG_ATTR_PM_SHADER_POWEROFF_TIME:
 		return DEFAULT_PM_SHADER_POWEROFF_TIME;
-	case KBASE_CONFIG_ATTR_PM_GPU_POWEROFF_TIME:
-		return DEFAULT_PM_GPU_POWEROFF_TIME;
 	default:
 		KBASE_DEBUG_PRINT_ERROR(KBASE_CORE, "kbasep_get_config_value. Cannot get value of attribute with id=%d and no default value defined", attribute_id);
 		return 0;
@@ -570,15 +568,6 @@ mali_bool kbasep_validate_configuration_attributes(kbase_device *kbdev, const kb
 #if CSTD_CPU_64BIT
 			if ((u64) attributes[i].data > (u64) U32_MAX) {
 				KBASE_DEBUG_PRINT_WARN(KBASE_CORE, "PM shader poweroff time exceeds 32-bits: " "id==%d val==%d", attributes[i].id, (int)attributes[i].data);
-				return MALI_FALSE;
-			}
-#endif
-			break;
-
-		case KBASE_CONFIG_ATTR_PM_GPU_POWEROFF_TIME:
-#if CSTD_CPU_64BIT
-			if ((u64) attributes[i].data > (u64) U32_MAX) {
-				KBASE_DEBUG_PRINT_WARN(KBASE_CORE, "PM GPU poweroff time exceeds 32-bits: " "id==%d val==%d", attributes[i].id, (int)attributes[i].data);
 				return MALI_FALSE;
 			}
 #endif

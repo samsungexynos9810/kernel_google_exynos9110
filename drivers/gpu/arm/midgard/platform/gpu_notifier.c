@@ -147,15 +147,11 @@ static int gpu_power_on(kbase_device *kbdev)
 	int ret_val;
 	struct kbase_os_device *osdev = &kbdev->osdev;
 
-	if (pm_runtime_status_suspended(osdev->dev)) {
-#ifdef CONFIG_MALI_T6XX_DVFS
-		gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_ON, 0);
-#endif /* CONFIG_MALI_T6XX_DVFS */
+	if (pm_runtime_status_suspended(osdev->dev))
 		ret_val = 1;
-	} else {
+	else
 		ret_val = 0;
-	}
-	gpu_control_state_set(kbdev, GPU_CONTROL_PM_QOS, GPU_CONTROL_PM_QOS_SET);
+
 	pm_runtime_resume(osdev->dev);
 
 	return ret_val;
@@ -165,7 +161,6 @@ static void gpu_power_off(kbase_device *kbdev)
 {
 	struct kbase_os_device *osdev = &kbdev->osdev;
 	pm_schedule_suspend(osdev->dev, RUNTIME_PM_DELAY_TIME);
-	gpu_control_state_set(kbdev, GPU_CONTROL_PM_QOS, GPU_CONTROL_PM_QOS_RESET);
 }
 
 static struct notifier_block gpu_pm_nb = {
