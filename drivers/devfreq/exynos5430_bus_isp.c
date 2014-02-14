@@ -1073,6 +1073,7 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	struct exynos_devfreq_platdata *plat_data;
 	struct opp *target_opp;
 	unsigned long freq;
+	unsigned long volt;
 
 	if (exynos5_devfreq_isp_init_clock()) {
 		ret = -EINVAL;
@@ -1119,12 +1120,12 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 		ret = PTR_ERR(target_opp);
 		goto err_inittable;
 	}
-	data->old_volt = opp_get_voltage(target_opp);
+	volt = opp_get_voltage(target_opp);
 #ifdef CONFIG_EXYNOS_THERMAL
-	data->old_volt = get_limit_voltage(data->old_volt, data->volt_offset);
+	volt = get_limit_voltage(volt, data->volt_offset);
 #endif
 	rcu_read_unlock();
-	exynos5_devfreq_isp_set_volt(data, data->old_volt, data->old_volt + VOLT_STEP);
+	exynos5_devfreq_isp_set_volt(data, volt, volt + VOLT_STEP);
 
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_isp_profile,
