@@ -880,7 +880,9 @@ int fimc_is_video_close(struct fimc_is_video_ctx *vctx)
 		BUG_ON(!q_src->vbq);
 		BUG_ON(!q_dst->vbq);
 		fimc_is_queue_close(q_src);
+		vb2_queue_release(q_src->vbq);
 		fimc_is_queue_close(q_dst);
+		vb2_queue_release(q_dst->vbq);
 		kfree(q_src->vbq);
 		kfree(q_dst->vbq);
 		break;
