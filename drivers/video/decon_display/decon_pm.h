@@ -9,6 +9,8 @@
 #ifndef __DECON_DISPLAY_HEADER__
 #define __DECON_DISPLAY_HEADER__
 
+#define S3CFB_PLATFORM_RESET (S3CFB_WIN_CONFIG + 100)
+
 int init_display_pm_status(struct display_driver *dispdrv);
 int init_display_pm(struct display_driver *dispdrv);
 int disp_pm_init_status(struct display_driver *dispdrv);

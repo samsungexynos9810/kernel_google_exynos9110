@@ -24,6 +24,7 @@
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
 #include "decon_pm_exynos.h"
+#include "decon_pm.h"
 
 #ifdef CONFIG_SOC_EXYNOS5430
 #include "regs-decon.h"
@@ -100,6 +101,16 @@ int init_display_pm_status(struct display_driver *dispdrv) {
 	te_count = 0;
 	frame_done_count = 0;
 	return 0;
+}
+
+int disp_pm_set_plat_status(struct display_driver *dispdrv, bool platform_on)
+{
+        if (platform_on)
+                dispdrv->platform_status = DISP_STATUS_PM1;
+        else
+                dispdrv->platform_status = DISP_STATUS_PM0;
+
+        return 0;
 }
 
 int init_display_pm(struct display_driver *dispdrv)
@@ -329,6 +340,13 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 			break;
 		default:
 			return -EBUSY;
+		}
+	} else {
+		switch (cmd) {
+		case S3CFB_PLATFORM_RESET:
+			/* Prevent next clock and power-gating */
+			disp_pm_set_plat_status(dispdrv, false);
+			break;
 		}
 	}
 
