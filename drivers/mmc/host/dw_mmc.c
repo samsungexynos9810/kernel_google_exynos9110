@@ -128,6 +128,9 @@ void dw_mci_ciu_clk_dis(struct dw_mci *host)
 	if (!host->pdata->use_gate_clock)
 		return;
 
+	if (host->pdata->enable_cclk_on_suspend && host->pdata->on_suspend)
+		return;
+
 	if (atomic_read(&host->ciu_en_win)) {
 		dev_err(host->dev, "Not available CIU off: %d\n",
 				atomic_read(&host->ciu_en_win));
@@ -3614,6 +3617,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "clock-gate", NULL))
 		pdata->use_gate_clock = true;
 
+	if (of_find_property(np, "enable-cclk-on-suspend", NULL))
+		pdata->enable_cclk_on_suspend = true;
+
 	if (of_property_read_u32(dev->of_node, "cd-type",
 				&pdata->cd_type))
 		pdata->cd_type = DW_MCI_CD_PERMANENT;
@@ -4056,6 +4062,11 @@ int dw_mci_suspend(struct dw_mci *host)
 	if (host->vmmc)
 		regulator_disable(host->vmmc);
 
+	if (host->pdata->enable_cclk_on_suspend) {
+		host->pdata->on_suspend = true;
+		dw_mci_ciu_clk_en(host, false);
+	}
+
 	return 0;
 }
 EXPORT_SYMBOL(dw_mci_suspend);
@@ -4065,6 +4076,9 @@ int dw_mci_resume(struct dw_mci *host)
 	const struct dw_mci_drv_data *drv_data = host->drv_data;
 
 	int i, ret;
+
+	if (host->pdata->enable_cclk_on_suspend)
+		host->pdata->on_suspend = false;
 
 	host->current_speed = 0;
 
