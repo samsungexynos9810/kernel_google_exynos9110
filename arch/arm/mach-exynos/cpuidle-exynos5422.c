@@ -760,10 +760,9 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	ret = cpu_suspend(flags, c2_finisher);
 	if (ret) {
 		__raw_writel(0x3, EXYNOS_ARM_CORE_CONFIGURATION(cpu_offset));
-
-	if (flags)
-		__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 	}
+
+	__raw_writel(0x3, EXYNOS_COMMON_CONFIGURATION(cluster_id));
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	if (cluster_off_flag && !disabled_c3) {
