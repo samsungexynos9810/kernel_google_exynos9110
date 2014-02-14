@@ -232,6 +232,7 @@ void debug_function(struct display_driver *dispdrv, const char *buf)
 	} else if (!strcmp(buf, "hotplug-gate-on")) {
 		dispdrv->pm_status.hotplug_gating_on = true;
 	} else if (!strcmp(buf, "hotplug-gate-off")) {
+		request_dynamic_hotplug(false);
 		dispdrv->pm_status.hotplug_gating_on = false;
 	} else {
 		pr_err("INVALID parameter: '%s'\n", buf);
@@ -335,6 +336,7 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 		switch (cmd) {
 		case S3CFB_WIN_PSR_EXIT:
 		case S3CFB_WIN_CONFIG:
+			request_dynamic_hotplug(false);
 			queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 				&dispdrv->pm_status.control_power_gating_work);
 			break;
@@ -375,8 +377,10 @@ int disp_pm_add_refcount(struct display_driver *dispdrv)
 
 	flush_kthread_worker(&dispdrv->pm_status.control_clock_gating);
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
-	if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN)
+	if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN) {
+		request_dynamic_hotplug(false);
 		display_hibernation_power_on(dispdrv);
+	}
 
 	display_block_clock_on(dispdrv);
 
