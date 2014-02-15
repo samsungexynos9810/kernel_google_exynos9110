@@ -429,7 +429,7 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 	struct samsung_pin_bank_type *type;
 	struct samsung_pin_bank *bank;
 	void __iomem *reg;
-	u32 mask, shift, data, pin_offset;
+	u32 mask, shift, con, data, pin_offset;
 	unsigned long flags;
 	const struct samsung_pmx_func *func;
 	const struct samsung_pin_group *grp;
@@ -451,11 +451,11 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 
 	spin_lock_irqsave(&bank->slock, flags);
 
-	data = readl(reg + type->reg_offset[PINCFG_TYPE_FUNC]);
-	data &= ~(mask << shift);
+	con = readl(reg + type->reg_offset[PINCFG_TYPE_FUNC]);
+	con &= ~(mask << shift);
 	if (enable)
-		data |= func->val << shift;
-	writel(data, reg + type->reg_offset[PINCFG_TYPE_FUNC]);
+		con |= func->val << shift;
+	writel(con, reg + type->reg_offset[PINCFG_TYPE_FUNC]);
 
 	/*
 	 * The pin could be FUNC mode or INPUT mode. Therefore, its
@@ -467,6 +467,9 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 	writel(data, reg + type->reg_offset[PINCFG_TYPE_DAT]);
 
 	spin_unlock_irqrestore(&bank->slock, flags);
+
+	pr_devel("%s %s(%d)%s => 0x%x(0x%08x)\n", __func__, bank->name,
+		pin_offset, gpio_regs[PINCFG_TYPE_FUNC], func->val, con);
 }
 
 /* enable a specified pinmux by writing to registers */
@@ -529,6 +532,9 @@ static int samsung_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
 
 	spin_unlock_irqrestore(&bank->slock, flags);
 
+	pr_devel("%s %s(%d) %s => %x(0x%08x)\n", __func__, bank->name,
+		pin_offset, gpio_regs[PINCFG_TYPE_FUNC], !input, data);
+
 	return 0;
 }
 
@@ -585,6 +591,9 @@ static int samsung_pinconf_rw(struct pinctrl_dev *pctldev, unsigned int pin,
 
 	spin_unlock_irqrestore(&bank->slock, flags);
 
+	if (set)
+		pr_devel("%s %s(%d) %s => %x (0x%08x)\n", __func__, bank->name,
+			pin_offset, gpio_regs[cfg_type], cfg_value, data);
 	return 0;
 }
 
