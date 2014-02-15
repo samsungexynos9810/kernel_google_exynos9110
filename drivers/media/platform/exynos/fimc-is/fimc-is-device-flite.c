@@ -1229,11 +1229,9 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 			}
 		} else if (status == (2 << 4)) {
 			/* W/A: Skip start tasklet at interrupt lost case */
-			if (flite->sw_checker != EXPECT_FRAME_START) {
+			if (flite->sw_checker != EXPECT_FRAME_START)
 				warn("[CamIF%d] Lost end interupt\n",
 					flite->instance);
-				goto clear_status;
-			}
 #ifdef DBG_FLITEISR
 			printk(KERN_CONT "<");
 #endif
