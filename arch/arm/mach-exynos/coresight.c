@@ -37,28 +37,6 @@ static DEFINE_SPINLOCK(lock);
 static unsigned int exynos_cs_base[NR_CPUS];
 unsigned int exynos_cs_pc[NR_CPUS][ITERATION];
 
-#ifdef CONFIG_SOC_EXYNOS5422
-#define	KFC_MUX_PHY_ADDR	(0x10038200)
-
-static void __iomem *kfc_mux_base;
-
-/*
- * This function will be removed after fixing
- * issue of coresight debug port.
- */
-static void kfc_mux_changing(int en)
-{
-	unsigned int mux_val = readl(kfc_mux_base);
-
-	if (!en)
-		mux_val &= ~(0x1 << 0);
-	else
-		mux_val |= (0x1 << 0);
-
-	writel(mux_val, kfc_mux_base);
-}
-#endif
-
 void exynos_cs_show_pcval(void)
 {
 	unsigned long flags;
@@ -70,12 +48,13 @@ void exynos_cs_show_pcval(void)
 
 	spin_lock_irqsave(&lock, flags);
 
-#ifdef CONFIG_SOC_EXYNOS5422
-	kfc_mux_changing(0);
-#endif
-
 	for (iter = 0; iter < ITERATION; iter++) {
+#ifdef CONFIG_SOC_EXYNOS5422
+		/* Scan A15 only temporarily */
+		for (cpu = 4; cpu < NR_CPUS; cpu++) {
+#else
 		for (cpu = 0; cpu < NR_CPUS; cpu++) {
+#endif
 			void __iomem *base = (void *) exynos_cs_base[cpu];
 
 			if (!exynos_cpu.power_state(cpu)) {
@@ -99,13 +78,14 @@ void exynos_cs_show_pcval(void)
 		}
 	}
 
-#ifdef CONFIG_SOC_EXYNOS5422
-	kfc_mux_changing(1);
-#endif
-
 	spin_unlock_irqrestore(&lock, flags);
 
+#ifdef CONFIG_SOC_EXYNOS5422
+	/* Scan A15 only temporarily */
+	for (cpu = 4; cpu < NR_CPUS; cpu++) {
+#else
 	for (cpu = 0; cpu < NR_CPUS; cpu++) {
+#endif
 		pr_err("CPU[%d] saved pc value\n", cpu);
 		for (iter = 0; iter < ITERATION; iter++) {
 			char buf[KSYM_SYMBOL_LEN];
@@ -169,14 +149,6 @@ static int exynos_cs_init_dt(struct device *dev)
 
 		i++;
 	}
-
-#ifdef CONFIG_SOC_EXYNOS5422
-		kfc_mux_base = devm_ioremap(dev, KFC_MUX_PHY_ADDR, SZ_4);
-		if (!kfc_mux_base) {
-			pr_err("%s: cannont ioremap kfc_mux_base.\n", __func__);
-			return -ENOMEM;
-		}
-#endif
 
 	return 0;
 }
