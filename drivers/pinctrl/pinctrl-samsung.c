@@ -461,7 +461,11 @@ static void samsung_pinmux_setup(struct pinctrl_dev *pctldev, unsigned selector,
 	 * The pin could be FUNC mode or INPUT mode. Therefore, its
 	 * DAT register has to be masked.
 	 */
-	bank->dat_mask &= ~(1 << pin_offset);
+	if (func->val == FUNC_OUTPUT)
+		bank->dat_mask |= (1 << pin_offset);
+	else
+		bank->dat_mask &= ~(1 << pin_offset);
+
 	data = readl(reg + type->reg_offset[PINCFG_TYPE_DAT]);
 	data &= bank->dat_mask;
 	writel(data, reg + type->reg_offset[PINCFG_TYPE_DAT]);
@@ -582,6 +586,8 @@ static int samsung_pinconf_rw(struct pinctrl_dev *pctldev, unsigned int pin,
 		cfg_value = PINCFG_UNPACK_VALUE(*config);
 		data &= ~(mask << shift);
 		data |= (cfg_value << shift);
+		if (cfg_type == PINCFG_TYPE_DAT)
+			data &= bank->dat_mask;
 		writel(data, reg_base + cfg_reg);
 	} else {
 		data >>= shift;
