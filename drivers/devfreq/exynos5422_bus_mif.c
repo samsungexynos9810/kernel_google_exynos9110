@@ -82,11 +82,6 @@ static bool en_profile;
 #define SET_0			0
 #define SET_1			1
 
-#define NEW_THERMAL
-#ifdef CONFIG_EXYNOS_THERMAL
-bool mif_is_probed;
-#endif
-
 static bool mif_transition_disabled;
 static unsigned int enabled_fimc_lite;
 unsigned int enabled_ud_encode;
@@ -143,54 +138,8 @@ struct busfreq_data_mif {
 
 	struct notifier_block tmu_notifier;
 	int busy;
-#ifdef CONFIG_EXYNOS_THERMAL
-#ifdef NEW_THERMAL
-	void __iomem *base_drex0;
-	void __iomem *base_drex1;
-#endif
-#endif
 };
 
-#ifdef CONFIG_EXYNOS_THERMAL
-#ifdef NEW_THERMAL
-#include <linux/workqueue.h>
-#define MRSTATUS_THERMAL_BIT_SHIFT (7)
-#define MRSTATUS_THERMAL_BIT_MASK  (1)
-#define MRSTATUS_THERMAL_LV_MASK   (0x7)
-
-enum devfreq_mif_thermal_autorate {
-	RATE_ONE = 0x0000005D,
-	RATE_HALF = 0x0000002E,
-	RATE_QUARTER = 0x00000017,
-};
-
-enum devfreq_mif_thermal_channel {
-	THERMAL_CHANNEL0,
-	THERMAL_CHANNEL1,
-};
-struct devfreq_thermal_work {
-	struct delayed_work devfreq_mif_thermal_work;
-	enum devfreq_mif_thermal_channel channel;
-	struct workqueue_struct *work_queue;
-	unsigned int polling_period;
-	unsigned long max_freq;
-	unsigned int thermal_level_cs0;
-	unsigned int thermal_level_cs1;
-};
-static struct workqueue_struct *devfreq_mif_thermal_wq_ch0;
-static struct workqueue_struct *devfreq_mif_thermal_wq_ch1;
-static struct devfreq_thermal_work devfreq_mif_ch0_work = {
-	.channel = THERMAL_CHANNEL0,
-	.polling_period = 1000,
-};
-static struct devfreq_thermal_work devfreq_mif_ch1_work = {
-	.channel = THERMAL_CHANNEL1,
-	.polling_period = 1000,
-};
-struct busfreq_data_mif *data_mif;
-
-#endif
-#endif
 enum mif_bus_idx {
 	LV_0 = 0,
 	LV_1,
@@ -752,13 +701,6 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 	target_volt = opp_get_voltage(opp);
 	rcu_read_unlock();
 
-#ifdef CONFIG_EXYNOS_THERMAL
-#ifdef NEW_THERMAL
-	freq = min3(freq,
-			devfreq_mif_ch0_work.max_freq,
-			devfreq_mif_ch1_work.max_freq);
-#endif
-#endif
 	/* get olg opp information */
 	rcu_read_lock();
 	old_freq = opp_get_freq(data->curr_opp);
@@ -964,244 +906,6 @@ static int exynos5422_mif_table(struct busfreq_data_mif *data)
 	return 0;
 }
 
-#ifdef CONFIG_EXYNOS_THERMAL
-#ifdef NEW_THERMAL
-static void exynos5_devfreq_thermal_event(struct devfreq_thermal_work *work)
-{
-	if (work->polling_period == 0)
-		return;
-
-#ifdef CONFIG_SCHED_HMP
-	mod_delayed_work_on(0,
-			work->work_queue,
-			&work->devfreq_mif_thermal_work,
-			msecs_to_jiffies(work->polling_period));
-#else
-	queue_delayed_work(work->work_queue,
-			&work->devfreq_mif_thermal_work,
-			msecs_to_jiffies(work->polling_period));
-#endif
-}
-
-static ssize_t mif_show_templvl_ch0_0(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%u\n", devfreq_mif_ch0_work.thermal_level_cs0);
-}
-static ssize_t mif_show_templvl_ch0_1(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%u\n", devfreq_mif_ch0_work.thermal_level_cs1);
-}
-static ssize_t mif_show_templvl_ch1_0(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%u\n", devfreq_mif_ch1_work.thermal_level_cs0);
-}
-static ssize_t mif_show_templvl_ch1_1(struct device *dev, struct device_attribute *attr, char *buf)
-{
-	return snprintf(buf, PAGE_SIZE, "%u\n", devfreq_mif_ch1_work.thermal_level_cs1);
-}
-
-static DEVICE_ATTR(mif_templvl_ch0_0, 0644, mif_show_templvl_ch0_0, NULL);
-static DEVICE_ATTR(mif_templvl_ch0_1, 0644, mif_show_templvl_ch0_1, NULL);
-static DEVICE_ATTR(mif_templvl_ch1_0, 0644, mif_show_templvl_ch1_0, NULL);
-static DEVICE_ATTR(mif_templvl_ch1_1, 0644, mif_show_templvl_ch1_1, NULL);
-
-static struct attribute *devfreq_mif_sysfs_entries[] = {
-	&dev_attr_mif_templvl_ch0_0.attr,
-	&dev_attr_mif_templvl_ch0_1.attr,
-	&dev_attr_mif_templvl_ch1_0.attr,
-	&dev_attr_mif_templvl_ch1_1.attr,
-	NULL,
-};
-
-static struct attribute_group devfreq_mif_attr_group = {
-	.name   = "temp_level",
-	.attrs  = devfreq_mif_sysfs_entries,
-};
-
-unsigned int thermal_monitor_step_drex0;
-unsigned int thermal_monitor_step_drex1;
-
-static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
-{
-	struct delayed_work *d_work = container_of(work, struct delayed_work, work);
-	struct devfreq_thermal_work *thermal_work =
-		container_of(d_work, struct devfreq_thermal_work, devfreq_mif_thermal_work);
-	unsigned int mrstatus, tmp_thermal_level, max_thermal_level = 0;
-	unsigned int timingaref_value = RATE_ONE;
-	unsigned long max_freq = exynos5_mif_governor_data.cal_qos_max;
-	bool throttling = false;
-	void __iomem *base_drex = NULL;
-	bool drex0 = thermal_work->channel == THERMAL_CHANNEL0;
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 0;
-	else
-		thermal_monitor_step_drex1 = 0;
-
-	if (thermal_work->channel == THERMAL_CHANNEL0) {
-		base_drex = data_mif->base_drex0;
-	} else if (thermal_work->channel == THERMAL_CHANNEL1) {
-		base_drex = data_mif->base_drex1;
-	}
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 1;
-	else
-		thermal_monitor_step_drex1 = 1;
-
-	__raw_writel(0x09001000, base_drex + 0x10);
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 2;
-	else
-		thermal_monitor_step_drex1 = 2;
-
-	mrstatus = __raw_readl(base_drex + 0x54);
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 3;
-	else
-		thermal_monitor_step_drex1 = 3;
-
-	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
-	if (tmp_thermal_level > max_thermal_level)
-		max_thermal_level = tmp_thermal_level;
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 4;
-	else
-		thermal_monitor_step_drex1 = 4;
-
-	thermal_work->thermal_level_cs0 = tmp_thermal_level;
-
-	if (thermal_work->channel == THERMAL_CHANNEL0) {
-		devfreq_mif_ch0_work.thermal_level_cs0 = thermal_work->thermal_level_cs0;
-	}
-	else if (thermal_work->channel == THERMAL_CHANNEL1) {
-		devfreq_mif_ch1_work.thermal_level_cs0 = thermal_work->thermal_level_cs0;
-	}
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 5;
-	else
-		thermal_monitor_step_drex1 = 5;
-
-	__raw_writel(0x09101000, base_drex + 0x10);
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 6;
-	else
-		thermal_monitor_step_drex1 = 6;
-
-	mrstatus = __raw_readl(base_drex + 0x54);
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 7;
-	else
-		thermal_monitor_step_drex1 = 7;
-
-	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
-	if (tmp_thermal_level > max_thermal_level)
-		max_thermal_level = tmp_thermal_level;
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 8;
-	else
-		thermal_monitor_step_drex1 = 8;
-
-	thermal_work->thermal_level_cs1 = tmp_thermal_level;
-
-	if (thermal_work->channel == THERMAL_CHANNEL0)
-		devfreq_mif_ch0_work.thermal_level_cs1 = thermal_work->thermal_level_cs1;
-	else if (thermal_work->channel == THERMAL_CHANNEL1)
-		devfreq_mif_ch1_work.thermal_level_cs1 = thermal_work->thermal_level_cs1;
-
-	switch (max_thermal_level) {
-		case 0:
-		case 1:
-		case 2:
-		case 3:
-			timingaref_value = RATE_HALF;
-			thermal_work->polling_period = 1000;
-			break;
-		case 4:
-			timingaref_value = RATE_HALF;
-			thermal_work->polling_period = 300;
-			break;
-		case 6:
-			throttling = true;
-		case 5:
-			timingaref_value = RATE_QUARTER;
-			thermal_work->polling_period = 100;
-			break;
-		default:
-			pr_err("DEVFREQ(MIF) : can't support memory thermal level\n");
-			return;
-	}
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 9;
-	else
-		thermal_monitor_step_drex1 = 9;
-
-	if (throttling){
-		max_freq = mif_bus_opp_list[LV_6].clk;
-	}
-	else
-		max_freq = exynos5_mif_governor_data.cal_qos_max;
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 10;
-	else
-		thermal_monitor_step_drex1 = 10;
-
-	if (thermal_work->max_freq != max_freq) {
-		thermal_work->max_freq = max_freq;
-		mutex_lock(&data_mif->devfreq->lock);
-		data_mif->devfreq->max_freq = max_freq;
-
-		if (drex0)
-			thermal_monitor_step_drex0 = 11;
-		else
-			thermal_monitor_step_drex1 = 11;
-
-		update_devfreq(data_mif->devfreq);
-		mutex_unlock(&data_mif->devfreq->lock);
-	}
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 12;
-	else
-		thermal_monitor_step_drex1 = 12;
-
-	__raw_writel(timingaref_value, base_drex + 0x30);
-
-	if (drex0)
-		thermal_monitor_step_drex0 = 13;
-	else
-		thermal_monitor_step_drex1 = 13;
-
-	exynos5_devfreq_thermal_event(thermal_work);
-}
-
-static void exynos5_devfreq_init_thermal(void)
-{
-	devfreq_mif_thermal_wq_ch0 = create_freezable_workqueue("devfreq_thermal_wq_ch0");
-	devfreq_mif_thermal_wq_ch1 = create_freezable_workqueue("devfreq_thermal_wq_ch1");
-
-	INIT_DELAYED_WORK(&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
-			exynos5_devfreq_thermal_monitor);
-	INIT_DELAYED_WORK(&devfreq_mif_ch1_work.devfreq_mif_thermal_work,
-			exynos5_devfreq_thermal_monitor);
-
-	devfreq_mif_ch0_work.work_queue = devfreq_mif_thermal_wq_ch0;
-	devfreq_mif_ch1_work.work_queue = devfreq_mif_thermal_wq_ch1;
-
-	exynos5_devfreq_thermal_event(&devfreq_mif_ch0_work);
-	exynos5_devfreq_thermal_event(&devfreq_mif_ch1_work);
-}
-#endif
-#endif
 static ssize_t mif_show_state(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	unsigned int i;
@@ -1324,7 +1028,6 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 			pm_qos_update_request(&exynos5_mif_qos, pdata->default_qos);
 	}
 
-#ifndef NEW_THERMAL
 	switch (event) {
 		case MIF_TH_LV1:
 			__raw_writel(AREF_NORMAL, EXYNOS5_DREXI_0_TIMINGAREF);
@@ -1368,7 +1071,7 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 
 			break;
 	}
-#endif
+
 	return NOTIFY_OK;
 }
 #endif
@@ -1524,11 +1227,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_EXYNOS_THERMAL
 	data->tmu_notifier.notifier_call = exynos5_bus_mif_tmu_notifier;
-#ifdef NEW_THERMAL
-	data->base_drex0 = S5P_VA_DREXI_0;
-	data->base_drex1 = S5P_VA_DREXI_1;
-	data_mif = data;
-#endif
 #endif
 	platform_set_drvdata(pdev, data);
 	data->devfreq = devfreq_add_device(dev, &exynos5_mif_devfreq_profile,
@@ -1579,20 +1277,10 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	if (err)
 		pr_err("%s: Fail to create sysfs file\n", __func__);
 
-#ifdef CONFIG_EXYNOS_THERMAL
-	err = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_mif_attr_group);
-#endif
-
 	pdata = pdev->dev.platform_data;
 	if (!pdata)
 		pdata = &exynos5422_qos_mif;
 
-#ifdef CONFIG_EXYNOS_THERMAL
-#ifdef NEW_THERMAL
-	devfreq_mif_ch0_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
-	devfreq_mif_ch1_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
-#endif
-#endif
 	pm_qos_add_request(&exynos5_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&media_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
@@ -1604,12 +1292,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 #ifdef CONFIG_EXYNOS_THERMAL
 	exynos_tmu_add_notifier(&data->tmu_notifier);
-	mif_is_probed = true;
-#ifdef NEW_THERMAL
-	devfreq_mif_ch0_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
-	devfreq_mif_ch1_work.max_freq = exynos5_mif_governor_data.cal_qos_max;
-	exynos5_devfreq_init_thermal();
-#endif
 #endif
 	return 0;
 
@@ -1639,15 +1321,6 @@ err_regulator:
 static int exynos5_devfreq_remove(struct platform_device *pdev)
 {
 	struct busfreq_data_mif *data = platform_get_drvdata(pdev);
-
-#ifdef CONFIG_EXYNOS_THERMAL
-#ifdef NEW_THERMAL
-	flush_workqueue(devfreq_mif_thermal_wq_ch0);
-	destroy_workqueue(devfreq_mif_thermal_wq_ch0);
-	flush_workqueue(devfreq_mif_thermal_wq_ch1);
-	destroy_workqueue(devfreq_mif_thermal_wq_ch1);
-#endif
-#endif
 
 	devfreq_remove_device(data->devfreq);
 
