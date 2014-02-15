@@ -559,6 +559,9 @@ static void exynos_check_mif_noti_state(int temp)
 		cur_state = MIF_TH_LV3;
 
 	if (cur_state != mif_old_state) {
+#ifdef CONFIG_SOC_EXYNOS5422
+		pr_info("mif temperature state %d to %d\n", mif_old_state, cur_state);
+#endif
 		blocking_notifier_call_chain(&exynos_tmu_notifier, cur_state, &mif_old_state);
 		mif_old_state = cur_state;
 	}
