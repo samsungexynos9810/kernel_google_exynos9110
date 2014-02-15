@@ -297,6 +297,11 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 
 	multiplier = performance_multiplier();
 
+#ifdef CONFIG_SKIP_IDLE_CORRELATION
+       if (dev->skip_idle_correlation)
+               data->correction_factor[data->bucket] = RESOLUTION * DECAY;
+#endif
+
 	/*
 	 * if the correction factor is 0 (eg first time init or cpu hotplug
 	 * etc), we actually want to start out with a unity factor.
@@ -305,11 +310,6 @@ static int menu_select(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 		data->correction_factor[data->bucket] = RESOLUTION * DECAY;
 
 	/* Make sure to round up for half microseconds */
-#ifdef CONFIG_SKIP_IDLE_CORRELATION
-	if (dev->skip_idle_correlation)
-		data->predicted_us = data->expected_us;
-	else
-#endif
 	data->predicted_us = div_round64(data->expected_us * data->correction_factor[data->bucket],
 					 RESOLUTION * DECAY);
 
@@ -370,6 +370,12 @@ static void menu_reflect(struct cpuidle_device *dev, int index)
 {
 	struct menu_device *data = &__get_cpu_var(menu_devices);
 	data->last_state_idx = index;
+
+#ifdef CONFIG_SKIP_IDLE_CORRELATION
+       if (dev->skip_idle_correlation)
+               return;
+#endif
+
 	if (index >= 0)
 		data->needs_update = 1;
 }
