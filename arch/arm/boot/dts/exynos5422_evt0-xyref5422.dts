@@ -881,7 +881,7 @@
 			front_vt2_i2c = <0>;
 
 			rear_preview_fhd_int = <500000>; /* L1 */
-			rear_preview_fhd_cam = <555000>; /* L1 */
+			rear_preview_fhd_cam = <222000>; /* L4 */
 			rear_preview_fhd_mif = <728000>; /* L1 */
 			rear_preview_fhd_i2c = <0>;
 
