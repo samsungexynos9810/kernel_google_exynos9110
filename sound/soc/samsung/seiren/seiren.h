@@ -285,6 +285,7 @@ struct esa_rtd {
 	struct audio_mem_info_t	ibuf_info;
 	struct audio_mem_info_t	obuf_info;
 	struct audio_pcm_config_info_t	pcm_info;
+	unsigned char   block_num;
 	unsigned long	buf_maxsize;	/* IBUF + OBUF */
 	bool		use_sram;
 

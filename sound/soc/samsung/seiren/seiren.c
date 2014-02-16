@@ -146,10 +146,10 @@ static int esa_send_cmd_exe(struct esa_rtd *rtd, unsigned char *ibuf,
 		obuf_ca5_pa = obuf_offset;
 		memcpy(si.sram + ibuf_offset, ibuf, size);
 	} else {		/* DRAM buffer */
-		ibuf_offset = ibuf - si.bufmem;
-		obuf_offset = obuf - si.bufmem;
-		ibuf_ca5_pa = ibuf_offset + BASEMEM_OFFSET;
-		obuf_ca5_pa = obuf_offset + BASEMEM_OFFSET;
+		ibuf_offset = ibuf - si.fwarea[rtd->block_num];
+		obuf_offset = obuf - si.fwarea[rtd->block_num];
+		ibuf_ca5_pa = ibuf_offset + FWAREA_SIZE * rtd->block_num;
+		obuf_ca5_pa = obuf_offset + FWAREA_SIZE * rtd->block_num;
 	}
 
 	writel(rtd->handle_id, si.mailbox + HANDLE_ID);
@@ -325,7 +325,17 @@ static void esa_buffer_init(struct file *file)
 	rtd->obuf_count = obuf_count;
 	rtd->use_sram = use_sram;
 
-	buf = si.bufmem + rtd->idx * BUF_SIZE_MAX;
+	/* You must consider seiren's module arrangement. */
+	if (rtd->idx < 3) {
+		buf = si.fwarea[0] + BASEMEM_OFFSET + rtd->idx * BUF_SIZE_MAX;
+		rtd->block_num = 0;
+	} else if (rtd->idx < 15) {
+		buf = si.fwarea[1] + (rtd->idx - 3) * BUF_SIZE_MAX;
+		rtd->block_num = 1;
+	} else {
+		buf = si.fwarea[2] + (rtd->idx - 15) * BUF_SIZE_MAX;
+		rtd->block_num = 2;
+	}
 	rtd->ibuf0 = buf;
 
 	buf += ibuf_count == 2 ? ibuf_size : 0;
@@ -1076,7 +1086,7 @@ static int esa_prepare_buffer(struct device *dev)
 
 	/* Firmware backup for SRAM */
 	si.fwmem_sram_bak = devm_kzalloc(dev, SRAM_FW_MAX, GFP_KERNEL);
-	if (!si.fwmem) {
+	if (!si.fwmem_sram_bak) {
 		esa_err("Failed to alloc fwmem\n");
 		goto err;
 	}
