@@ -269,7 +269,7 @@ static struct cpuidle_driver exynos_idle_driver = {
 /* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */
 static void exynos_set_wakeupmask(void)
 {
-	__raw_writel(0x1010fe06, EXYNOS5430_WAKEUP_MASK);
+	__raw_writel(0x4010fe06, EXYNOS5430_WAKEUP_MASK);
 	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK1);
 	__raw_writel(0x00000000, EXYNOS5430_WAKEUP_MASK2);
 }
@@ -664,10 +664,10 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	/* Set value of power down register for aftr mode */
 	if (enter_mode == EXYNOS_CHECK_LPA) {
 		exynos_sys_powerdown_conf(SYS_LPA);
-		__raw_writel(0x00001000, EXYNOS5430_WAKEUP_MASK);
+		__raw_writel(0x40001000, EXYNOS5430_WAKEUP_MASK);
 	} else {
 		exynos_sys_powerdown_conf(SYS_DSTOP);
-		__raw_writel(0x00003000, EXYNOS5430_WAKEUP_MASK);
+		__raw_writel(0x40003000, EXYNOS5430_WAKEUP_MASK);
 	}
 
 	/*
