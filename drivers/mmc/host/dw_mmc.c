@@ -4126,6 +4126,9 @@ int dw_mci_resume(struct dw_mci *host)
 		   DW_MCI_ERROR_FLAGS);
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
+	/* For unuse clock gating */
+	dw_mci_ciu_clk_dis(host);
+
 	for (i = 0; i < host->num_slots; i++) {
 		struct dw_mci_slot *slot = host->slot[i];
 		struct mmc_ios ios;

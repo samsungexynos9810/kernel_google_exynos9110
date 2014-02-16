@@ -99,6 +99,15 @@ static void exynos_sfr_save(unsigned int i)
 	dw_mci_save_sfr[i][13] = mci_readl(host, IDINTEN);
 	dw_mci_save_sfr[i][14] = mci_readl(host, CLKSEL);
 	dw_mci_save_sfr[i][15] = mci_readl(host, CDTHRCTL);
+
+	/* For LPA */
+	atomic_inc_return(&host->ciu_en_win);
+	if (host->pdata->enable_cclk_on_suspend) {
+		host->pdata->on_suspend = true;
+		dw_mci_ciu_clk_en(host, false);
+	}
+	atomic_dec_return(&host->ciu_en_win);
+
 }
 
 static void exynos_sfr_restore(unsigned int i)
@@ -143,6 +152,12 @@ static void exynos_sfr_restore(unsigned int i)
 		}
 	}
 	atomic_dec_return(&host->ciu_en_win);
+
+	/* For unuse clock gating */
+	if (host->pdata->enable_cclk_on_suspend) {
+		host->pdata->on_suspend = false;
+		dw_mci_ciu_clk_dis(host);
+	}
 
 	if (startbit_clear == false)
 		dev_err(host->dev, "CMD start bit stuck %02d\n", i);
