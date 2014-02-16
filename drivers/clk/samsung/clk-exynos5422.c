@@ -2020,6 +2020,8 @@ struct samsung_pll_rate_table rpll_rate_table[] = {
 	/* rate		p	m	s	k */
 	{ 300000000U,   2,  100,    2, 0},
 	{ 266000000U,   3,  266,    3, 0},
+	{ 240000000U,	1,   80,    3, 0},
+	{ 133000000U,   3,  266,    4, 0},
 };
 
 struct samsung_pll_rate_table bpll_rate_table[] = {
@@ -2097,6 +2099,7 @@ struct samsung_pll_rate_table kpll_rate_table[] = {
 struct samsung_pll_rate_table dpll_rate_table[] = {
 	/* rate		p	m	s	k */
 	{  66000000U,   4,  352,    5,  0},
+	{  60000000U,   2,  200,    2,  0},
 };
 
 #define EXYNOS5422_PRINT_CMU(name) \
