@@ -203,6 +203,7 @@ static unsigned int mif_fimc_opp_list[][3] = {
 static unsigned int devfreq_mif_asv_abb[LV_END];
 
 static unsigned int (*exynos5422_dram_param)[3];
+static unsigned int *exynos5422_dram_switching_param;
 
 #if defined(SET_DREX_TIMING)
 static unsigned int exynos5422_dram_param_3gb[][3] = {
@@ -241,7 +242,7 @@ static unsigned int exynos5422_dram_param_2gb[][3] = {
 	{0x1B35538A, 0x2720085E, 0x2C1D0225},   /*413Mhz*/
 	{0x12244287, 0x2720085E, 0x1C140225},   /*275Mhz*/
 	{0x112331C6, 0x2720085E, 0x180F0225},   /*206Mhz*/
-	{0x12223185, 0x2720085E, 0x140C0225},   /*165Mhz*/
+	{0x11223185, 0x2720085E, 0x140C0225},   /*165Mhz*/
 	{0x11222144, 0x2720085E, 0x100C0225},   /*138Mhz*/
 };
 #endif
@@ -253,6 +254,14 @@ static struct devfreq_simple_exynos_data exynos5_mif_governor_data = {
 	.idlethreshold		= 30,
 	.cal_qos_max		= 825000,
 	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
+};
+
+static unsigned int exynos5422_dram_switching_param_3gb[3] = {
+	0x2A35538A, 0x2720085E, 0x282C0225	/*400Mhz*/
+};
+
+static unsigned int exynos5422_dram_switching_param_2gb[3] = {
+	0x1A35538A, 0x2720085E, 0x281C0225	/*400Mhz*/
 };
 
 /*
@@ -484,9 +493,9 @@ static void exynos5_set_spll_timing(void)
 {
 	unsigned int spll_timing_row, spll_timing_data, spll_timing_power;
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
-	spll_timing_row = 0x2A35538A;
-	spll_timing_data = 0x2720085E;
-	spll_timing_power = 0x282C0225;
+	spll_timing_row = exynos5422_dram_switching_param[0];
+	spll_timing_data = exynos5422_dram_switching_param[1];
+	spll_timing_power = exynos5422_dram_switching_param[2];
 #else
 	spll_timing_row = exynos5422_dram_param[LV_4][0];
 	spll_timing_data = exynos5422_dram_param[LV_4][1];
@@ -869,11 +878,13 @@ static int exynos5422_dram_parameter(void)
 
 	if (pkg_id == 0x2 || pkg_id == 0x3) {
 		exynos5422_dram_param = exynos5422_dram_param_2gb;
+		exynos5422_dram_switching_param = exynos5422_dram_switching_param_2gb;
 		return 0;
 	}
 
 	if (pkg_id == 0x0 || pkg_id == 0x1 || pkg_id == 0x8) {
 		exynos5422_dram_param = exynos5422_dram_param_3gb;
+		exynos5422_dram_switching_param = exynos5422_dram_switching_param_3gb;
 		return 0;
 	}
 
@@ -1110,6 +1121,11 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+	if (exynos5422_dram_parameter()) {
+		dev_err(dev, "Can't support memory type\n");
+		goto err_regulator;
+	}
+
 	/* Enable pause function for DREX2 DVFS */
 	tmp = __raw_readl(EXYNOS5_DMC_PAUSE_CTRL);
 	tmp |= EXYNOS5_DMC_PAUSE_ENABLE;
@@ -1122,11 +1138,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 
 	/* Setting table for MIF*/
 	exynos5422_mif_table(data);
-
-	if (exynos5422_dram_parameter()) {
-		dev_err(dev, "Can't support memory type\n");
-		goto err_regulator;
-	}
 
 	data->vdd_mif = regulator_get(dev, "vdd_mif");
 	if (IS_ERR(data->vdd_mif)) {

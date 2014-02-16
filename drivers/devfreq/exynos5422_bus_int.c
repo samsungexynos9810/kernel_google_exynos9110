@@ -342,10 +342,10 @@ struct int_clk_info aclk_400_isp[] = {
 struct int_clk_info aclk_333[] = {
 	/* Level, Freq, Parent_Pll */
 	{LV_0,   400000, SW_MUX},
-	{LV_1,   400000, SW_MUX},
-	{LV_1_1, 400000, SW_MUX},
-	{LV_1_2, 400000, SW_MUX},
-	{LV_1_3, 400000, SW_MUX},
+	{LV_1,   222000, C_PLL},
+	{LV_1_1, 167000, C_PLL},
+	{LV_1_2,  84000, C_PLL},
+	{LV_1_3, 111000, C_PLL},
 	{LV_2,   400000, SW_MUX},
 	{LV_3,   333000, C_PLL},
 	{LV_4,   222000, C_PLL},
@@ -471,11 +471,11 @@ struct int_clk_info aclk_333_432_isp[] = {
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 struct int_clk_info aclk_432_scaler[] = {
 	/* Level, Freq, Parent_Pll */
-	{LV_0,   54000, I_PLL},
-	{LV_1,   54000, I_PLL},
-	{LV_1_1, 54000, I_PLL},
-	{LV_1_2, 54000, I_PLL},
-	{LV_1_3, 54000, I_PLL},
+	{LV_0,    54000, I_PLL},
+	{LV_1,    54000, I_PLL},
+	{LV_1_1,  54000, I_PLL},
+	{LV_1_2,  54000, I_PLL},
+	{LV_1_3,  54000, I_PLL},
 };
 struct int_clk_info aclk_266_isp[] = {
 	/* Level, Freq, Parent_Pll */
