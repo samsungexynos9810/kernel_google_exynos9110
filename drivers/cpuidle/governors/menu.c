@@ -371,11 +371,6 @@ static void menu_reflect(struct cpuidle_device *dev, int index)
 	struct menu_device *data = &__get_cpu_var(menu_devices);
 	data->last_state_idx = index;
 
-#ifdef CONFIG_SKIP_IDLE_CORRELATION
-       if (dev->skip_idle_correlation)
-               return;
-#endif
-
 	if (index >= 0)
 		data->needs_update = 1;
 }
