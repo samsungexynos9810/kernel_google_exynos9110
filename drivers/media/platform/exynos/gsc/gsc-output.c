@@ -289,15 +289,20 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 			return -EINVAL;
 		}
 	} else {
+		unsigned long flags;
+		spin_lock_irqsave(&gsc->slock, flags);
 		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 			ret = gsc_out_hw_reset_off(gsc);
-			if (ret < 0)
+			if (ret < 0) {
+				spin_unlock_irqrestore(&gsc->slock, flags);
 				return ret;
+			}
 
 			INIT_LIST_HEAD(&gsc->out.active_buf_q);
 			clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
 			wake_up(&gsc->irq_queue);
 		}
+		spin_unlock_irqrestore(&gsc->slock, flags);
 	}
 
 	return 0;
