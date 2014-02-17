@@ -849,64 +849,6 @@ unsigned int timeout_wqhd_camera[][2] = {
 
 extern void exynos5_update_district_disp_level(unsigned int idx);
 
-static struct devfreq_dynamic_clkgate exynos5_mif_dynamic_clkgates[] = {
-	{.paddr = 0x105E0200,	.vaddr = 0x00,	.bit = 0x20,	.freq = 95000},
-	{.paddr = 0x105E0200,	.vaddr = 0x00,	.bit = 0x4,	.freq = 100000},
-	{.paddr = 0x105E0200,	.vaddr = 0x00,	.bit = 0x1,	.freq = 66000},
-};
-
-static int exynos5_init_mif_dynamic_clkgate(struct platform_device *pdev)
-{
-	unsigned int i;
-	unsigned int list_cnt;
-	list_cnt = ARRAY_SIZE(exynos5_mif_dynamic_clkgates);
-	for (i = 0; i < list_cnt; i++) {
-		exynos5_mif_dynamic_clkgates[i].vaddr =
-			(unsigned long)devm_ioremap(&pdev->dev, exynos5_mif_dynamic_clkgates[i].paddr, SZ_4);
-	}
-	return 0;
-}
-
-static int exynos5_deinit_mif_dynamic_clkgate(struct platform_device *pdev)
-{
-	unsigned int i;
-	unsigned int list_cnt;
-	list_cnt = ARRAY_SIZE(exynos5_mif_dynamic_clkgates);
-	for (i = 0; i < list_cnt; i++)
-		if (exynos5_mif_dynamic_clkgates[i].vaddr)
-			devm_ioremap_release(&pdev->dev, (void *)exynos5_mif_dynamic_clkgates[i].vaddr);
-	return 0;
-}
-
-static void exynos5_enable_dynamic_clkgate(struct devfreq_dynamic_clkgate *clkgate_list,
-						unsigned int list_cnt, bool up_case,
-						unsigned long freq)
-{
-	unsigned int i;
-	unsigned int tmp;
-	void __iomem *reg;
-
-	for (i = 0; i < list_cnt; i++) {
-		if (up_case && clkgate_list[i].freq < freq) {
-			/* disable dynamic clock gating */
-			if (likely(clkgate_list[i].vaddr)) {
-				reg = (void __iomem *)clkgate_list[i].vaddr;
-				tmp = readl(reg);
-				tmp &= ~(clkgate_list[i].bit);
-				writel(tmp, reg);
-			}
-		} else if (!up_case && clkgate_list[i].freq > freq) {
-			/* enable dynamic clock gating */
-			if (likely(clkgate_list[i].vaddr)) {
-				reg = (void __iomem *)clkgate_list[i].vaddr;
-				tmp = readl(reg);
-				tmp |= clkgate_list[i].bit;
-				writel(tmp, reg);
-			}
-		}
-	}
-}
-
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value)
 {
 	unsigned int total_layer_count = 0;
@@ -1415,9 +1357,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 
 	exynos5_devfreq_mif_dynamic_setting(mif_data, false);
 	if (old_freq < *target_freq) {
-		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
-						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
-						true, *target_freq);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_timing_set(mif_data, target_idx);
@@ -1431,9 +1370,6 @@ static int exynos5_devfreq_mif_target(struct device *dev,
 		exynos5_devfreq_mif_set_freq(mif_data, target_idx, old_idx);
 		exynos5_devfreq_mif_set_dll(mif_data, target_volt, target_idx);
 		exynos5_devfreq_mif_set_volt(mif_data, target_volt, target_volt + VOLT_STEP);
-		exynos5_enable_dynamic_clkgate(exynos5_mif_dynamic_clkgates,
-						ARRAY_SIZE(exynos5_mif_dynamic_clkgates),
-						false, *target_freq);
 	}
 	exynos5_devfreq_mif_dynamic_setting(mif_data, true);
 out:
@@ -1805,10 +1741,6 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_inittable;
 
-	ret = exynos5_init_mif_dynamic_clkgate(pdev);
-	if (ret)
-		goto err_inittable;
-
 	platform_set_drvdata(pdev, data);
 
 	devfreq_mif_ch0_work.max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
@@ -1890,8 +1822,6 @@ static int exynos5_devfreq_mif_remove(struct platform_device *pdev)
 	iounmap(data->base_drex1);
 	iounmap(data->base_lpddr_phy0);
 	iounmap(data->base_lpddr_phy1);
-
-	exynos5_deinit_mif_dynamic_clkgate(pdev);
 
 	flush_workqueue(devfreq_mif_thermal_wq_ch0);
 	destroy_workqueue(devfreq_mif_thermal_wq_ch0);
