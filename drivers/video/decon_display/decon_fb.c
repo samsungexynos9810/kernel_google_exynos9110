@@ -2472,7 +2472,13 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 				readl(sfb->regs + SHD_VIDW_BUF_START(i)));
 	}
 
-	while (readl(sfb->regs + DECON_UPDATE) & 0x1);
+	count = 9000;
+	while ((readl(sfb->regs + DECON_UPDATE) & 0x1) && count--) {
+		/*maximum waiting time is 900ms.*/
+		usleep_range(100, 100);
+	}
+	if (!count)
+		pr_info("%s: DECON_UPDATE timedout\n", __func__);
 
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 	hw_trigger_mask_enable(sfb, true);
