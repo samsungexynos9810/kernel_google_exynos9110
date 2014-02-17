@@ -16,9 +16,12 @@
 #include "exynos5430_ppmu.h"
 #include "exynos_ppmu2.h"
 
+#define MIF_DEFAULT_PPMU_WEIGHT	200
+
 static struct workqueue_struct *exynos_ppmu_wq;
 static struct delayed_work exynos_ppmu_work;
 static unsigned long exynos_ppmu_polling_period;
+static unsigned long long mif_weight = MIF_DEFAULT_PPMU_WEIGHT;
 
 static DEFINE_MUTEX(exynos_ppmu_lock);
 static LIST_HEAD(exynos_ppmu_list);
@@ -133,6 +136,8 @@ static int exynos5430_ppmu_mif_calculatate(struct ppmu_info *ppmu,
 
 		if (*ccnt < val_ccnt)
 			*ccnt = val_ccnt;
+
+		val_pmcnt3 = div_u64(val_pmcnt3 * mif_weight, 100);
 
 		if (i < (size / 2)) {
 			drex0_ppmu += val_pmcnt3;

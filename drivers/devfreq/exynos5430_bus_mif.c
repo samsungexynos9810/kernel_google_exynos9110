@@ -371,10 +371,12 @@ enum devfreq_mif_clk devfreq_clk_mif_info_idx[] = {
 	DOUT_SCLK_HPM_MIF,
 };
 
-static struct devfreq_simple_ondemand_data exynos5_devfreq_mif_governor_data = {
+static struct devfreq_simple_exynos_data exynos5_devfreq_mif_governor_data = {
 	.pm_qos_class		= PM_QOS_BUS_THROUGHPUT,
+	.urgentthreshold	= 80,
 	.upthreshold		= 70,
-	.downdifferential	= 20,
+	.downthreshold		= 60,
+	.idlethreshold		= 50,
 	.cal_qos_max		= 825000,
 };
 
@@ -1460,11 +1462,34 @@ static int exynos5_devfreq_mif_get_dev_status(struct device *dev,
 						struct devfreq_dev_status *stat)
 {
 	struct devfreq_data_mif *data = dev_get_drvdata(dev);
+	unsigned int idx = -1;
+	int above_idx = 0;
+	int below_idx = LV_COUNT - 1;
 
 	if (!data->use_dvfs)
 		return -EAGAIN;
 
 	stat->current_frequency = data->devfreq->previous_freq;
+
+	idx = exynos5_devfreq_mif_get_idx(devfreq_mif_opp_list,
+						ARRAY_SIZE(devfreq_mif_opp_list),
+						stat->current_frequency);
+
+	if (idx < 0)
+                return -EAGAIN;
+
+	above_idx = idx - 1;
+	below_idx = idx + 1;
+
+	if (above_idx < 0)
+		above_idx = 0;
+
+	if (below_idx >= LV_COUNT)
+		below_idx = LV_COUNT - 1;
+
+	exynos5_devfreq_mif_governor_data.above_freq = devfreq_mif_opp_list[above_idx].freq;
+	exynos5_devfreq_mif_governor_data.below_freq = devfreq_mif_opp_list[below_idx].freq;
+
 	stat->busy_time = devfreq_mif_exynos.val_pmcnt;
 	stat->total_time = devfreq_mif_exynos.val_ccnt;
 
@@ -1890,7 +1915,7 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_mif_profile,
-						"simple_ondemand",
+						"simple_exynos",
 						&exynos5_devfreq_mif_governor_data);
 
 	exynos5_devfreq_init_thermal();
