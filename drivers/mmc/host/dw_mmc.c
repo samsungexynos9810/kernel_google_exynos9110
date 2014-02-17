@@ -566,6 +566,10 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
 	unsigned int cmd_status = 0;
 	int try = 50;
 
+	atomic_inc_return(&slot->host->ciu_en_win);
+	dw_mci_ciu_clk_en(slot->host, false);
+	atomic_dec_return(&slot->host->ciu_en_win);
+
 	mci_writel(host, CMDARG, arg);
 	wmb();
 	mci_writel(host, CMD, SDMMC_CMD_START | cmd);
