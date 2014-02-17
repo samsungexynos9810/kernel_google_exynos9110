@@ -33,6 +33,13 @@ static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_NOWARN |
 static unsigned int low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_NOWARN);
 static const unsigned int orders[] = {8, 4, 0};
 static const int num_orders = ARRAY_SIZE(orders);
+
+#define PG_ion_frompool		(__NR_PAGEFLAGS + 1)
+#define ion_page_order(page)	(page)->private
+#define ion_set_from_pool(page)	set_bit(PG_ion_frompool, &(page)->flags)
+#define ion_get_from_pool(page)	test_bit(PG_ion_frompool, &(page)->flags)
+#define ion_clear_from_pool(page)	clear_bit(PG_ion_frompool, &(page)->flags)
+
 static int order_to_index(unsigned int order)
 {
 	int i;
@@ -57,13 +64,6 @@ struct ion_system_heap {
 	atomic_t page_idx; /* Max. value is the count of vm_sem */
 	struct vm_struct *reserved_vm_area; /* PAGE_SIZE * VM_PAGE_COUNT*/
 	pte_t **pte; /* pte for reserved_vm_area */
-};
-
-struct page_info {
-	struct page *page;
-	unsigned int order;
-	struct list_head list;
-	bool from_pool;
 };
 
 static struct page *alloc_buffer_page(struct ion_system_heap *heap,
@@ -132,13 +132,12 @@ static void free_buffer_page(struct ion_system_heap *heap,
 }
 
 
-static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
+static struct page *alloc_largest_available(struct ion_system_heap *heap,
 						 struct ion_buffer *buffer,
 						 unsigned long size,
 						 unsigned int max_order)
 {
 	struct page *page;
-	struct page_info *info;
 	int i;
 	bool from_pool = false;
 
@@ -152,13 +151,11 @@ static struct page_info *alloc_largest_available(struct ion_system_heap *heap,
 		if (!page)
 			continue;
 
-		info = kmalloc(sizeof(struct page_info), GFP_KERNEL);
-		if (!info)
-			return NULL;
-		info->page = page;
-		info->order = orders[i];
-		info->from_pool = from_pool;
-		return info;
+		ion_page_order(page) = orders[i];
+		if(from_pool)
+			ion_set_from_pool(page);
+
+		return page;
 	}
 	return NULL;
 }
@@ -263,7 +260,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 	struct scatterlist *sg;
 	int ret;
 	struct list_head pages;
-	struct page_info *info, *tmp_info;
+	struct page *page, *tmp_page;
 	int i = 0;
 	unsigned long size_remaining = PAGE_ALIGN(size);
 	unsigned int max_order = orders[0];
@@ -271,12 +268,12 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 
 	INIT_LIST_HEAD(&pages);
 	while (size_remaining > 0) {
-		info = alloc_largest_available(sys_heap, buffer, size_remaining, max_order);
-		if (!info)
+		page = alloc_largest_available(sys_heap, buffer, size_remaining, max_order);
+		if (!page)
 			goto err;
-		list_add_tail(&info->list, &pages);
-		size_remaining -= (1 << info->order) * PAGE_SIZE;
-		max_order = info->order;
+		list_add_tail(&page->lru, &pages);
+		size_remaining -= (1 << ion_page_order(page)) * PAGE_SIZE;
+		max_order = ion_page_order(page);
 		i++;
 	}
 
@@ -290,14 +287,14 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 
 	sg = table->sgl;
 
-	list_for_each_entry_safe(info, tmp_info, &pages, list) {
-		struct page *page = info->page;
-		sg_set_page(sg, page, (1 << info->order) * PAGE_SIZE, 0);
+	list_for_each_entry_safe(page, tmp_page, &pages, lru) {
+		sg_set_page(sg, page, (1 << ion_page_order(page)) * PAGE_SIZE, 0);
 		sg = sg_next(sg);
-		if (all_pages_from_pool && !info->from_pool)
+		if (all_pages_from_pool && !ion_get_from_pool(page))
 			all_pages_from_pool = false;
-		list_del(&info->list);
-		kfree(info);
+		list_del(&page->lru);
+		ion_clear_from_pool(page);
+		ion_page_order(page) = 0;
 	}
 
 	if (all_pages_from_pool)
@@ -312,9 +309,12 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 err1:
 	kfree(table);
 err:
-	list_for_each_entry(info, &pages, list) {
-		free_buffer_page(sys_heap, buffer, info->page, info->order);
-		kfree(info);
+	list_for_each_entry_safe(page, tmp_page, &pages, lru) {
+		int order = ion_page_order(page);
+		list_del(&page->lru);
+		ion_page_order(page) = 0;
+		ion_clear_from_pool(page);
+		free_buffer_page(sys_heap, buffer, page, order);
 	}
 	return -ENOMEM;
 }
@@ -632,6 +632,9 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 {
 	struct ion_system_heap *heap;
 	int i;
+
+	compiletime_assert((ZONES_PGSHIFT - __NR_PAGEFLAGS) > 0,
+			"No space in pageflags for ion_system_heap");
 
 	heap = kzalloc(sizeof(struct ion_system_heap), GFP_KERNEL);
 	if (!heap)
