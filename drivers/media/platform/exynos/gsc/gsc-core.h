@@ -581,6 +581,7 @@ struct gsc_dev {
 	struct pm_qos_request		exynos5_gsc_int_qos;
 	void __iomem			*sysreg_disp;
 	void __iomem			*sysreg_gscl;
+	struct timer_list		op_timer;
 };
 
 /**
@@ -615,7 +616,6 @@ struct gsc_ctx {
 	struct v4l2_fh		fh;
 	struct v4l2_ctrl_handler ctrl_handler;
 	struct gsc_ctrls	gsc_ctrls;
-	struct timer_list	op_timer;
 	bool			ctrls_rdy;
 	struct work_struct	fence_work;
 	struct list_head	fence_wait_list;

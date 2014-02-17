@@ -1269,10 +1269,14 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 		struct gsc_ctx *ctx =
 			v4l2_m2m_get_curr_priv(gsc->m2m.m2m_dev);
 
-		if (!ctx || !ctx->m2m_ctx)
-			goto isr_unlock;
+		if (timer_pending(&gsc->op_timer))
+			del_timer(&gsc->op_timer);
 
-		del_timer(&ctx->op_timer);
+		if (!ctx || !ctx->m2m_ctx) {
+			gsc_err("ctx : 0x%p", ctx);
+			goto isr_unlock;
+		}
+
 		src_vb = v4l2_m2m_src_buf_remove(ctx->m2m_ctx);
 		dst_vb = v4l2_m2m_dst_buf_remove(ctx->m2m_ctx);
 		if (src_vb && dst_vb) {
@@ -1441,7 +1445,7 @@ int gsc_set_protected_content(struct gsc_dev *gsc, bool enable)
 
 void gsc_dump_registers(struct gsc_dev *gsc)
 {
-	pr_err("dumping registers\n");
+	pr_err("GSC dumping registers\n");
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4, gsc->regs,
 			0x0280, false);
 	pr_err("End of GSC_SFR DUMP\n");
