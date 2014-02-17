@@ -155,7 +155,14 @@ static void complete_soft_job(kbase_jd_atom *katom)
 {
 	kbase_context *kctx = katom->kctx;
 
+#if defined(SLSI_INTEGRATION)
+	struct list_head *entry = (struct list_head *)&katom->dep_item[0];
+#endif
 	mutex_lock(&kctx->jctx.lock);
+#if defined(SLSI_INTEGRATION)
+	/* Do not delete from list if item was removed already */
+	if (!(entry->prev == LIST_POISON2 || entry->next == LIST_POISON1))
+#endif
 	list_del(&katom->dep_item[0]);
 	kbase_finish_soft_job(katom);
 	if (jd_done_nolock(katom))
