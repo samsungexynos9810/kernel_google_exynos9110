@@ -53,7 +53,7 @@
 #define AVI_ITU709			(2 << 6)
 
 /* HDMI audio configuration value */
-#define DEFAULT_SAMPLE_RATE		44100
+#define DEFAULT_SAMPLE_RATE		48000
 #define DEFAULT_BITS_PER_SAMPLE		16
 #define AUDIO_CHANNEL_MASK		(0xFF)
 #define AUDIO_BIT_RATE_MASK		(0x7 << 16)
