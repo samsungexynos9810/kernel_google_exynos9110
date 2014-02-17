@@ -171,6 +171,7 @@ static int dw_mmc_exynos_notifier0(struct notifier_block *self,
 		exynos_sfr_save(0);
 		break;
 	case LPA_ENTER_FAIL:
+		break;
 	case LPA_EXIT:
 		exynos_sfr_restore(0);
 		break;
@@ -187,6 +188,7 @@ static int dw_mmc_exynos_notifier1(struct notifier_block *self,
 		exynos_sfr_save(1);
 		break;
 	case LPA_ENTER_FAIL:
+		break;
 	case LPA_EXIT:
 		exynos_sfr_restore(1);
 		break;
@@ -203,6 +205,7 @@ static int dw_mmc_exynos_notifier2(struct notifier_block *self,
 		exynos_sfr_save(2);
 		break;
 	case LPA_ENTER_FAIL:
+		break;
 	case LPA_EXIT:
 		exynos_sfr_restore(2);
 		break;
