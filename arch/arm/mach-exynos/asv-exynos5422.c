@@ -114,6 +114,7 @@ static int set_kfc_volt = 0;
 static int set_int_volt = 0;
 static int set_mif_volt = 0;
 static int set_g3d_volt = 0;
+static int set_isp_volt = 0;
 
 static int __init get_arm_volt(char *str)
 {
@@ -149,6 +150,13 @@ static int __init get_g3d_volt(char *str)
 	return 0;
 }
 early_param("g3d", get_g3d_volt);
+
+static int __init get_isp_volt(char *str)
+{
+	get_option(&str, &set_isp_volt);
+	return 0;
+}
+early_param("isp", get_isp_volt);
 #endif
 
 unsigned int exynos5422_add_volt_offset(unsigned int voltage, enum volt_offset offset)
@@ -589,7 +597,7 @@ static void exynos5422_set_asv_info_isp(struct asv_info *asv_inform, bool show_v
 #ifdef CONFIG_ASV_MARGIN_TEST
 		asv_inform->asv_volt[i].asv_value =
 			exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP)
-			+ set_mif_volt;
+			+ set_isp_volt;
 #else
 		asv_inform->asv_volt[i].asv_value =
 			exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP);
