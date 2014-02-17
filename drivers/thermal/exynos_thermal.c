@@ -1117,6 +1117,8 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	unsigned int con, interrupt_en;
 	unsigned int triminfo;
+	int status;
+	int timeout = 20000;
 
 	triminfo = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
 
@@ -1135,8 +1137,22 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	if (data->soc != SOC_ARCH_EXYNOS4210)
 		con |= pdata->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+	if (id == EXYNOS_GPU_NUMBER)
+		con |= EXYNOS_MUX_ADDR;
+	else {
+		if (triminfo & CALIB_SEL_MASK)
+			con |= triminfo & VPTAT_CTRL_MASK;
+	}
+#elif defined(CONFIG_SOC_EXYNOS5422)
+	con |= EXYNOS_MUX_ADDR;
+#endif
+	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+	cpu_relax();
+
+
 	if (on) {
-		con |= (EXYNOS_TMU_CORE_ON | EXYNOS_THERM_TRIP_EN);
+		con |= EXYNOS_TMU_CORE_ON;
 		interrupt_en =
 			pdata->trigger_level7_en << FALL_LEVEL7_SHIFT |
 			pdata->trigger_level6_en << FALL_LEVEL6_SHIFT |
@@ -1158,20 +1174,36 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 		con |= EXYNOS_TMU_CORE_OFF;
 		interrupt_en = 0; /* Disable all interrupts */
 	}
+
+	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+	cpu_relax();
+	con &= 0xfffffffe;
+	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
+	while (1) {
+		status = readl(data->base[id] + EXYNOS_TMU_REG_STATUS);
+		if (status & 0x01)
+			break;
+
+		timeout--;
+		if (!timeout) {
+			pr_err("%s: timeout TMU busy\n", __func__);
+			break;
+		}
+
+		cpu_relax();
+		usleep_range(1, 2);
+	};
+
 	con |= EXYNOS_THERM_TRIP_EN;
-#if defined(CONFIG_SOC_EXYNOS5430)
-	if (id == EXYNOS_GPU_NUMBER)
-		con |= EXYNOS_MUX_ADDR;
-	else {
-		if (triminfo & CALIB_SEL_MASK)
-			con |= triminfo & VPTAT_CTRL_MASK;
-	}
-#elif defined(CONFIG_SOC_EXYNOS5422)
-	con |= EXYNOS_MUX_ADDR;
-#endif
+	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
+	cpu_relax();
+
+	con |= EXYNOS_TMU_CORE_ON;
+	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
-	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
 	mutex_unlock(&data->lock);
 }
