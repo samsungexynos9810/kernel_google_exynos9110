@@ -724,17 +724,19 @@ static int exynos_target(struct cpufreq_policy *policy,
 
 	/* frequency and volt scaling */
 	ret = exynos_cpufreq_scale(target_freq, freqs[cur]->old, policy->cpu);
+	if (ret < 0)
+		goto out;
 
 	/* save current frequency */
 	freqs[cur]->old = target_freq;
-
-out:
-	mutex_unlock(&cpufreq_lock);
 
 	if (cur == CA15)
 		g_cpufreq = target_freq;
 	else
 		g_kfcfreq = target_freq;
+
+out:
+	mutex_unlock(&cpufreq_lock);
 
 	return ret;
 }
