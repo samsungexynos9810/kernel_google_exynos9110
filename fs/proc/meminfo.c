@@ -16,6 +16,10 @@
 #include <asm/pgtable.h>
 #include "internal.h"
 
+#ifdef CONFIG_ION_EXYNOS
+unsigned long ion_exynos_report_meminfo(void);
+#endif
+
 void __attribute__((weak)) arch_report_meminfo(struct seq_file *m)
 {
 }
@@ -45,6 +49,9 @@ static int meminfo_proc_show(struct seq_file *m, void *v)
 	if (cached < 0)
 		cached = 0;
 
+#ifdef CONFIG_ION_EXYNOS
+	cached += ion_exynos_report_meminfo();
+#endif
 	get_vmalloc_info(&vmi);
 
 	for (lru = LRU_BASE; lru < NR_LRU_LISTS; lru++)

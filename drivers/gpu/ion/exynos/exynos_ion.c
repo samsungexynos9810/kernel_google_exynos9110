@@ -792,6 +792,27 @@ static int ion_exynos_contig_heap_debug_show(struct ion_heap *heap,
 	return 0;
 }
 
+unsigned long ion_exynos_report_meminfo(void)
+{
+	bool found = false;
+	int i;
+
+	for (i = 0; i < num_heaps; i++) {
+		/* find system heap */
+		if ((1 << heaps[i]->id) && ION_HEAP_SYSTEM_MASK) {
+			found = true;
+			break;
+		}
+	}
+
+	if (!found) {
+		pr_warn("%s: no system heap found\n", __func__);
+		return 0;
+	}
+
+	return ion_system_heap_page_pool_total(heaps[i]);
+}
+
 static struct ion_exynos_contig_heap *__init_contig_heap __initdata;
 
 static struct ion_heap *ion_exynos_contig_heap_create(struct device *dev)
