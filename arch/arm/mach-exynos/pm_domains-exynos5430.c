@@ -86,12 +86,11 @@ static struct exynos5430_pd_state cmutop_cam0[] = {
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<5), },
 };
 
-static struct exynos5430_pd_state cmutop_cam1[] = {
 #if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+static struct exynos5430_pd_state cmutop_cam1[] = {
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP2,	 .val = (1<<16 | 1<<12 | 1<<8), },
-#endif
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<6), },
 };
+#endif
 
 static void exynos5_pd_enable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 {
@@ -740,7 +739,9 @@ static struct sleep_save exynos_pd_cam1_clk_save[] = {
 static int exynos_pd_cam1_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	exynos5_pd_enable_clk(cmutop_cam1, ARRAY_SIZE(cmutop_cam1));
+#endif
 	return 0;
 }
 
@@ -789,7 +790,9 @@ static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
+#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	exynos5_pd_disable_clk(cmutop_cam1, ARRAY_SIZE(cmutop_cam1));
+#endif
 	return 0;
 }
 
