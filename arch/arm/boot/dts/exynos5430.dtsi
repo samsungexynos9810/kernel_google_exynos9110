@@ -1043,6 +1043,7 @@
 		clock-names = "usbhost";
 		usb-phy = <&usb2_phy>;
 		status = "ok";
+		l2-retention = <1>;
 	};
 
 	ohci: usb@15520000 {
