@@ -1492,6 +1492,7 @@ static int cpufreq_interactive_cpu_min_qos_handler(struct notifier_block *b,
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_interactive_tunables *tunables;
 	unsigned long flags;
+	int ret = NOTIFY_OK;
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	int cpu = NR_CA7;
 #else
@@ -1500,15 +1501,20 @@ static int cpufreq_interactive_cpu_min_qos_handler(struct notifier_block *b,
 
 	pcpu = &per_cpu(cpuinfo, cpu);
 
-	if (!pcpu->governor_enabled)
-		return NOTIFY_BAD;
+	mutex_lock(&gov_lock);
+	down_read(&pcpu->enable_sem);
+	if (!pcpu->governor_enabled) {
+		up_read(&pcpu->enable_sem);
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
+	up_read(&pcpu->enable_sem);
 
-	if (!pcpu->policy)
-		return NOTIFY_BAD;
-
-	if (!pcpu->policy->governor_data ||
-		!pcpu->policy->user_policy.governor)
-		return NOTIFY_BAD;
+	if (!pcpu->policy || !pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor) {
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
 
 	if (val < pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
@@ -1520,8 +1526,9 @@ static int cpufreq_interactive_cpu_min_qos_handler(struct notifier_block *b,
 		if (tunables->speedchange_task)
 			wake_up_process(tunables->speedchange_task);
 	}
-
-	return NOTIFY_OK;
+exit:
+	mutex_unlock(&gov_lock);
+	return ret;
 }
 
 static struct notifier_block cpufreq_interactive_cpu_min_qos_notifier = {
@@ -1534,6 +1541,7 @@ static int cpufreq_interactive_cpu_max_qos_handler(struct notifier_block *b,
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_interactive_tunables *tunables;
 	unsigned long flags;
+	int ret = NOTIFY_OK;
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
 	int cpu = NR_CA7;
 #else
@@ -1542,15 +1550,20 @@ static int cpufreq_interactive_cpu_max_qos_handler(struct notifier_block *b,
 
 	pcpu = &per_cpu(cpuinfo, cpu);
 
-	if (!pcpu->governor_enabled)
-		return NOTIFY_BAD;
+	mutex_lock(&gov_lock);
+	down_read(&pcpu->enable_sem);
+	if (!pcpu->governor_enabled) {
+		up_read(&pcpu->enable_sem);
+		ret =  NOTIFY_BAD;
+		goto exit;
+	}
+	up_read(&pcpu->enable_sem);
 
-	if (!pcpu->policy)
-		return NOTIFY_BAD;
-
-	if (!pcpu->policy->governor_data ||
-		!pcpu->policy->user_policy.governor)
-		return NOTIFY_BAD;
+	if (!pcpu->policy || !pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor) {
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
 
 	if (val > pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
@@ -1562,8 +1575,9 @@ static int cpufreq_interactive_cpu_max_qos_handler(struct notifier_block *b,
 		if (tunables->speedchange_task)
 			wake_up_process(tunables->speedchange_task);
 	}
-
-	return NOTIFY_OK;
+exit:
+	mutex_unlock(&gov_lock);
+	return ret;
 }
 
 static struct notifier_block cpufreq_interactive_cpu_max_qos_notifier = {
@@ -1577,18 +1591,24 @@ static int cpufreq_interactive_kfc_min_qos_handler(struct notifier_block *b,
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_interactive_tunables *tunables;
 	unsigned long flags;
+	int ret = NOTIFY_OK;
 
 	pcpu = &per_cpu(cpuinfo, 0);
 
-	if (!pcpu->governor_enabled)
-		return NOTIFY_BAD;
+	mutex_lock(&gov_lock);
+	down_read(&pcpu->enable_sem);
+	if (!pcpu->governor_enabled) {
+		up_read(&pcpu->enable_sem);
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
+	up_read(&pcpu->enable_sem);
 
-	if (!pcpu->policy)
-		return NOTIFY_BAD;
-
-	if (!pcpu->policy->governor_data ||
-		!pcpu->policy->user_policy.governor)
-		return NOTIFY_BAD;
+	if (!pcpu->policy || !pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor) {
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
 
 	if (val < pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
@@ -1600,8 +1620,9 @@ static int cpufreq_interactive_kfc_min_qos_handler(struct notifier_block *b,
 		if (tunables->speedchange_task)
 			wake_up_process(tunables->speedchange_task);
 	}
-
-	return NOTIFY_OK;
+exit:
+	mutex_unlock(&gov_lock);
+	return ret;
 }
 
 static struct notifier_block cpufreq_interactive_kfc_min_qos_notifier = {
@@ -1614,18 +1635,24 @@ static int cpufreq_interactive_kfc_max_qos_handler(struct notifier_block *b,
 	struct cpufreq_interactive_cpuinfo *pcpu;
 	struct cpufreq_interactive_tunables *tunables;
 	unsigned long flags;
+	int ret = NOTIFY_OK;
 
 	pcpu = &per_cpu(cpuinfo, 0);
 
-	if (!pcpu->governor_enabled)
-		return NOTIFY_BAD;
+	mutex_lock(&gov_lock);
+	down_read(&pcpu->enable_sem);
+	if (!pcpu->governor_enabled) {
+		up_read(&pcpu->enable_sem);
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
+	up_read(&pcpu->enable_sem);
 
-	if (!pcpu->policy)
-		return NOTIFY_BAD;
-
-	if (!pcpu->policy->governor_data ||
-		!pcpu->policy->user_policy.governor)
-		return NOTIFY_BAD;
+	if (!pcpu->policy ||!pcpu->policy->governor_data ||
+		!pcpu->policy->user_policy.governor) {
+		ret = NOTIFY_BAD;
+		goto exit;
+	}
 
 	if (val > pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
@@ -1637,8 +1664,9 @@ static int cpufreq_interactive_kfc_max_qos_handler(struct notifier_block *b,
 		if (tunables->speedchange_task)
 			wake_up_process(tunables->speedchange_task);
 	}
-
-	return NOTIFY_OK;
+exit:
+	mutex_unlock(&gov_lock);
+	return ret;
 }
 
 static struct notifier_block cpufreq_interactive_kfc_max_qos_notifier = {
