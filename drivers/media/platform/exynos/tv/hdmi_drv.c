@@ -399,8 +399,10 @@ int hdmi_s_ctrl(struct v4l2_subdev *sd, struct v4l2_control *ctrl)
 		mutex_lock(&hdev->mutex);
 		hdmi_audio_information(hdev, ctrl->value);
 		if (is_hdmi_streaming(hdev)) {
+			hdmi_audio_enable(hdev, 0);
 			hdmi_set_infoframe(hdev);
 			hdmi_reg_i2s_audio_init(hdev);
+			hdmi_audio_enable(hdev, 1);
 		}
 		mutex_unlock(&hdev->mutex);
 		break;
