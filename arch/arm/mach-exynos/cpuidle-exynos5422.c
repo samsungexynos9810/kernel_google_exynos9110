@@ -288,51 +288,12 @@ static void restore_cpu_arch_register(void)
 {
 }
 
-static int idle_finisher(unsigned long flags)
-{
-	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
-	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, 0);
-
-	return 1;
-}
-
-#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
-#if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-#define L2_OFF		(1 << 0)
-#define L2_CCI_OFF	(1 << 1)
-#endif
-
-static int c2_finisher(unsigned long flags)
-{
-	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
-#if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
-	if (flags == L2_CCI_OFF) {
-		last_time = get_jiffies_64();
-		cluster_off_flag = true;
-		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, flags);
-	} else {
-		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
-	}
-#else
-	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
-#endif
-
-	/*
-	 * Secure monitor disables the SMP bit and takes the CPU out of the
-	 * coherency domain.
-	 */
-	local_flush_tlb_all();
-
-	return 1;
-}
-#endif
-
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
 void exynos_enable_idle_clock_down(unsigned int cluster)
 {
 	unsigned int tmp;
 
-	if (cluster) {
+	if (!cluster) {
 		/* For A15 core */
 		tmp = __raw_readl(EXYNOS5422_PWR_CTRL);
 		tmp &= ~((0x7 << 28) | (0x7 << 16) | (1 << 9) | (1 << 8));
@@ -365,7 +326,7 @@ void exynos_disable_idle_clock_down(unsigned int cluster)
 {
 	unsigned int tmp;
 
-	if (cluster) {
+	if (!cluster) {
 		/* For A15 core */
 		tmp = __raw_readl(EXYNOS5422_PWR_CTRL);
 		tmp &= ~((0x7 << 28) | (0x7 << 16) | (1 << 9) | (1 << 8));
@@ -386,6 +347,48 @@ void exynos_disable_idle_clock_down(unsigned int cluster)
 	}
 
 	pr_debug("%s idle clock down is disabled\n", cluster ? "ARM" : "KFC");
+}
+#endif
+
+static int idle_finisher(unsigned long flags)
+{
+	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, 0);
+
+	return 1;
+}
+
+#if defined (CONFIG_EXYNOS_CPUIDLE_C2)
+#if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+#define L2_OFF		(1 << 0)
+#define L2_CCI_OFF	(1 << 1)
+#endif
+
+static int c2_finisher(unsigned long flags)
+{
+	exynos_smc(SMC_CMD_SAVE, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+#if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
+	if (flags == L2_CCI_OFF) {
+		last_time = get_jiffies_64();
+		cluster_off_flag = true;
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+		exynos_enable_idle_clock_down(KFC);
+#endif
+		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CLUSTER, SMC_POWERSTATE_IDLE, flags);
+	} else {
+		exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+	}
+#else
+	exynos_smc(SMC_CMD_SHUTDOWN, OP_TYPE_CORE, SMC_POWERSTATE_IDLE, 0);
+#endif
+
+	/*
+	 * Secure monitor disables the SMP bit and takes the CPU out of the
+	 * coherency domain.
+	 */
+	local_flush_tlb_all();
+
+	return 1;
 }
 #endif
 
@@ -455,11 +458,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 		exynos_sys_powerdown_conf(SYS_LPA);
 	else
 		exynos_sys_powerdown_conf(SYS_DSTOP);
-
-#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_disable_idle_clock_down(ARM);
-	exynos_disable_idle_clock_down(KFC);
-#endif
 
 	save_cpu_arch_register();
 
@@ -540,11 +538,6 @@ early_wakeup:
 	cpu_pm_exit();
 
 	restore_cpu_arch_register();
-
-#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_enable_idle_clock_down(ARM);
-	exynos_enable_idle_clock_down(KFC);
-#endif
 
 	s3c_pm_do_restore_core(exynos5_lpa_save,
 			       ARRAY_SIZE(exynos5_lpa_save));
@@ -785,6 +778,9 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	if (index == 2) {
+#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
+		exynos_disable_idle_clock_down(KFC);
+#endif
 		spin_lock(&c2_state_lock);
 		per_cpu(in_c2_state, cpuid) = 0;
 		spin_unlock(&c2_state_lock);
@@ -958,11 +954,6 @@ static int __init exynos_init_cpuidle(void)
 		lp_debugfs = NULL;
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
-
-#ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_enable_idle_clock_down(ARM);
-	exynos_enable_idle_clock_down(KFC);
-#endif
 
 	return 0;
 }
