@@ -990,12 +990,20 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 
 		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA15]->regulator)
 							- COLD_VOLT_OFFSET);
+
+		if (volt < get_freq_volt(CA15, freqs[CA15]->old))
+			volt = get_freq_volt(CA15, freqs[CA15]->old);
+
 		if (exynos_info[CA15]->set_ema)
 			exynos_info[CA15]->set_ema(volt);
 		regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
 
 		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA7]->regulator)
 							- COLD_VOLT_OFFSET);
+
+		if (volt < get_freq_volt(CA7, freqs[CA7]->old))
+			volt = get_freq_volt(CA7, freqs[CA7]->old);
+
 		regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
 		if (exynos_info[CA7]->set_ema)
 			exynos_info[CA7]->set_ema(volt);
