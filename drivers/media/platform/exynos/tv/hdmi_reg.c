@@ -2144,7 +2144,10 @@ void hdmi_reg_i2s_audio_init(struct hdmi_device *hdev)
 		bit_ch  = 1;
 	} else if (bits_per_sample == 24) {
 		data_num = 3;
-		bit_ch  = 1;
+		if (hdev->audio_master_clk)
+			bit_ch = 1;
+		else
+			bit_ch = 2;
 	} else if (bits_per_sample == 32) {
 		data_num = 1;
 		bit_ch  = 2;
