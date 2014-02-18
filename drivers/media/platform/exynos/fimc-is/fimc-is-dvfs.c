@@ -201,11 +201,13 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_HIGH_SPEED_FPS)
 /* rear camcording FHD*/
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_FHD)
 {
+	u32 mask = (device->setfile & FIMC_IS_SETFILE_MASK);
+	bool setfile_flag = (mask == ISS_SUB_SCENARIO_VIDEO) ||
+				(mask == ISS_SUB_SCENARIO_VIDEO_WDR);
 	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			(device->chain3_width * device->chain3_height <= SIZE_FHD) &&
-			((device->setfile & FIMC_IS_SETFILE_MASK) \
-			 == ISS_SUB_SCENARIO_VIDEO))
+			setfile_flag)
 		return 1;
 	else
 		return 0;
@@ -214,12 +216,14 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_FHD)
 /* rear camcording UHD*/
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_UHD)
 {
+	u32 mask = (device->setfile & FIMC_IS_SETFILE_MASK);
+	bool setfile_flag = (mask == ISS_SUB_SCENARIO_UHD_30FPS) ||
+				(mask == ISS_SUB_SCENARIO_UHD_30FPS_WDR);
 	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			(device->chain3_width * device->chain3_height > SIZE_FHD) &&
 			(device->chain3_width * device->chain3_height <= SIZE_UHD) &&
-			((device->setfile & FIMC_IS_SETFILE_MASK) \
-			 == ISS_SUB_SCENARIO_VIDEO))
+			setfile_flag)
 		return 1;
 	else
 		return 0;
