@@ -192,10 +192,6 @@ int g2d_dynamic_clock_gating(int ip_ver)
 
 	switch (ip_ver) {
 	case IP_VER_G2D_5H:
-		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_NOC_DCG_EN;
-		/* Enable ACLK_G2DND_400, ACLK_G2DNP_133 */
-		writel(0x3, control_reg);
-
 		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_XIU_TOP_DCG_EN;
 		/* Enable G2DX */
 		writel(0x1, control_reg);
