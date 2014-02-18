@@ -142,10 +142,10 @@ typedef enum {
 #define COLD_MINIMUM_VOL		950000
 #define GPU_DEFAULT_VOLTAGE		1037500
 #elif SOC_NAME == 5430
-#define COLD_MINIMUM_VOL		950000
+#define COLD_MINIMUM_VOL		0
 #define GPU_DEFAULT_VOLTAGE		1025000
 #elif SOC_NAME == 5260
-#define COLD_MINIMUM_VOL		950000
+#define COLD_MINIMUM_VOL		0
 #define GPU_DEFAULT_VOLTAGE		900000
 #else
 #error SOC_NAME should be specified.
