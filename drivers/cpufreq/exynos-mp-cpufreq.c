@@ -1901,6 +1901,12 @@ static int __init exynos_cpufreq_init(void)
 	pm_qos_add_notifier(PM_QOS_KFC_FREQ_MIN, &exynos_kfc_min_qos_notifier);
 	pm_qos_add_notifier(PM_QOS_KFC_FREQ_MAX, &exynos_kfc_max_qos_notifier);
 
+	/* blocking frequency scale before acquire boot lock */
+	mutex_lock(&cpufreq_lock);
+	exynos_info[CA7]->blocked = true;
+	exynos_info[CA15]->blocked = true;
+	mutex_unlock(&cpufreq_lock);
+
 	if (cpufreq_register_driver(&exynos_driver)) {
 		pr_err("%s: failed to register cpufreq driver\n", __func__);
 		goto err_cpufreq;
@@ -1968,6 +1974,12 @@ static int __init exynos_cpufreq_init(void)
 		pm_qos_update_request_timeout(&boot_max_cpu_qos,
 					exynos_info[CA15]->boot_cpu_max_qos, 40000 * 1000);
 	}
+
+	/* unblocking frequency scale */
+	mutex_lock(&cpufreq_lock);
+	exynos_info[CA7]->blocked = false;
+	exynos_info[CA15]->blocked = false;
+	mutex_unlock(&cpufreq_lock);
 
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_add_request(&exynos_mif_qos_CA7, PM_QOS_BUS_THROUGHPUT, 0);
