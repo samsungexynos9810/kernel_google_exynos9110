@@ -274,7 +274,10 @@ static int thermal_call_chain(int freq, int idx)
 
 static void arbiter_set_cpu_freq_limit(int freq, int idx)
 {
-	int i, cpu, max_freq;
+	int i, cpu, max_freq, currT;
+	int a7_limit_temp = 0, allowed_diff_temp = 10;
+	struct ipa_config *config = &arbiter_data.config;
+
 	/* if (arbiter_data.cpu_freq_limits[idx] == freq) */
 	/*	return; */
 
@@ -289,7 +292,13 @@ static void arbiter_set_cpu_freq_limit(int freq, int idx)
 		i++;
 	}
 
-	if (is_big_hotpluged() && (idx == CA7))
+	/* To ensure the minimum performance, */
+	/* a7's freq is not limited until a7_limit_temp. */
+
+	currT = arbiter_data.skin_temperature / 10;
+	a7_limit_temp = config->control_temp + config->hotplug_out_threshold + allowed_diff_temp;
+
+	if (is_big_hotpluged() && (idx == CA7) && (currT < a7_limit_temp))
 		freq = get_real_max_freq(CA7);
 
 	ipa_set_clamp(cpumask_any(arbiter_data.cl_stats[idx].mask), freq, max_freq);
