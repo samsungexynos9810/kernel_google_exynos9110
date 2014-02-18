@@ -36,7 +36,6 @@
 #define MIF_VOLT_STEP		(12500)
 #define COLD_VOLT_OFFSET	(37500)
 #define LIMIT_COLD_VOLTAGE	(1250000)
-#define MIN_COLD_VOLTAGE	(950000)
 
 #define TIMING_RFCPB_MASK	(0x3F)
 
@@ -1295,9 +1294,6 @@ static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_of
 	if (voltage + volt_offset > LIMIT_COLD_VOLTAGE)
 		return LIMIT_COLD_VOLTAGE;
 
-	if (volt_offset && (voltage + volt_offset < MIN_COLD_VOLTAGE))
-		return MIN_COLD_VOLTAGE;
-
 	return voltage + volt_offset;
 }
 #endif
@@ -1964,7 +1960,6 @@ module_exit(exynos5_devfreq_mif_exit);
 #define MIF_VOLT_STEP		(12500)
 #define COLD_VOLT_OFFSET	(37500)
 #define LIMIT_COLD_VOLTAGE	(1250000)
-#define MIN_COLD_VOLTAGE	(950000)
 
 #define TIMING_RFCPB_MASK	(0x3F)
 
@@ -3052,9 +3047,6 @@ static unsigned int get_limit_voltage(unsigned int voltage, unsigned int volt_of
 
 	if (voltage + volt_offset > LIMIT_COLD_VOLTAGE)
 		return LIMIT_COLD_VOLTAGE;
-
-	if (volt_offset && (voltage + volt_offset < MIN_COLD_VOLTAGE))
-		return MIN_COLD_VOLTAGE;
 
 	return voltage + volt_offset;
 }
