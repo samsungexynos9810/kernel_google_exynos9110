@@ -2035,4 +2035,8 @@ err_alloc_info_CA7:
 	return ret;
 }
 
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE
+device_initcall(exynos_cpufreq_init);
+#else
 late_initcall(exynos_cpufreq_init);
+#endif
