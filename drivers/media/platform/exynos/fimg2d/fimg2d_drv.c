@@ -53,6 +53,23 @@ static struct fimg2d_qos g2d_qos_table[G2D_LV_END];
 /* To prevent buffer release as memory compaction */
 /* Lock */
 
+
+void fimg2d_power_control(struct fimg2d_control *ctrl, enum fimg2d_pw_status status)
+{
+	if (status == FIMG2D_PW_ON) {
+		if (ip_is_g2d_5h()) {
+			pm_runtime_get_sync(ctrl->dev);
+			fimg2d_debug("Done pm_runtime_get_sync()\n");
+		}
+	} else if (status == FIMG2D_PW_OFF) {
+		if (ip_is_g2d_5h()){
+			pm_runtime_put_sync(ctrl->dev);
+			fimg2d_debug("Done pm_runtime_put_sync()\n");
+		}
+	} else
+		fimg2d_debug("status failed : %d\n", status);
+}
+
 void fimg2d_pm_qos_add(struct fimg2d_control *ctrl)
 {
 #if defined(CONFIG_ARM_EXYNOS_IKS_CPUFREQ) || \
@@ -498,10 +515,13 @@ static long fimg2d_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 		g2d_lock(&ctrl->drvlock);
 		atomic_set(&ctrl->drvact, act);
-		if (act == DRV_ACT)
+		if (act == DRV_ACT) {
+			fimg2d_power_control(ctrl, FIMG2D_PW_OFF);
 			fimg2d_info("fimg2d driver is activated\n");
-		else
+		} else {
+			fimg2d_power_control(ctrl, FIMG2D_PW_ON);
 			fimg2d_info("fimg2d driver is deactivated\n");
+		}
 		g2d_unlock(&ctrl->drvlock);
 		break;
 	}
