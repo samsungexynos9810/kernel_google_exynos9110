@@ -214,7 +214,6 @@ static int exynos_pd_mfc0_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(3, S5P_VA_SYSREG_MFC0 + 0x200);
 	__raw_writel(1, S5P_VA_SYSREG_MFC0 + 0x204);
 
 	return 0;
@@ -264,7 +263,6 @@ static int exynos_pd_mfc1_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(3, S5P_VA_SYSREG_MFC1 + 0x200);
 	__raw_writel(1, S5P_VA_SYSREG_MFC1 + 0x204);
 
 	return 0;
@@ -314,7 +312,6 @@ static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(3, S5P_VA_SYSREG_HEVC + 0x200);
 	__raw_writel(1, S5P_VA_SYSREG_HEVC + 0x204);
 
 	return 0;
@@ -426,7 +423,6 @@ static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 
 	/* Enable DISP dynamic clock gating */
 	reg = ioremap(0x13B80000, SZ_4K);
-	writel(0x3, reg + 0x200);
 	writel(0xf, reg + 0x204);
 	writel(0x1f, reg + 0x208);
 	writel(0x0, reg + 0x500);
@@ -514,7 +510,6 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(3, S5P_VA_SYSREG_MSCL + 0x200);
 	__raw_writel(1, S5P_VA_SYSREG_MSCL + 0x204);
 	__raw_writel(0, S5P_VA_SYSREG_MSCL + 0x500);
 
@@ -616,7 +611,6 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(0x1, S5P_VA_SYSREG_ISP + 0x200);
 	__raw_writel(0x3, S5P_VA_SYSREG_ISP + 0x204);
 	__raw_writel(0x7, S5P_VA_SYSREG_ISP + 0x208);
 	__raw_writel(0x7F, S5P_VA_SYSREG_ISP + 0x20C);
@@ -684,7 +678,6 @@ static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(0x3, S5P_VA_SYSREG_CAM0 + 0x200);
 	__raw_writel(0x3, S5P_VA_SYSREG_CAM0 + 0x204);
 	__raw_writel(0x7, S5P_VA_SYSREG_CAM0 + 0x208);
 	__raw_writel(0x7FF, S5P_VA_SYSREG_CAM0 + 0x20C);
@@ -753,7 +746,6 @@ static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
 	exynos_pd_notify_power_state(pd, true);
 
 	/* dynamic clock gating enabled */
-	__raw_writel(0x3, S5P_VA_SYSREG_CAM1 + 0x200);
 	__raw_writel(0x3, S5P_VA_SYSREG_CAM1 + 0x204);
 	__raw_writel(0x7, S5P_VA_SYSREG_CAM1 + 0x208);
 	__raw_writel(0xFFF, S5P_VA_SYSREG_CAM1 + 0x20C);
