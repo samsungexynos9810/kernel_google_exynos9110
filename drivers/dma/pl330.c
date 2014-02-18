@@ -294,6 +294,16 @@ static unsigned cmd_line;
 #define PL330_DBGMC_START(addr)		do {} while (0)
 #endif
 
+struct mcode_addr {
+	dma_addr_t bus;
+	void *cpu;
+};
+
+struct mcode_addr sram, dram;
+
+#define AUDSS_SRAM		0x03000000
+#define AUDSS_SRAM_SIZE		0x00028000
+
 /* The number of default descriptors */
 
 #define NR_DEFAULT_DESC	16
@@ -405,6 +415,7 @@ struct pl330_req {
 	/* Hook to attach to DMAC's list of reqs with due callback */
 	struct list_head rqd;
 	unsigned int infiniteloop;
+	bool sram;
 };
 
 /*
@@ -1541,8 +1552,25 @@ static int _setup_req(unsigned dry_run, struct pl330_thread *thrd,
 {
 	struct _pl330_req *req = &thrd->req[index];
 	struct pl330_xfer *x;
-	u8 *buf = req->mc_cpu;
+	u8 *buf;
 	int off = 0;
+	unsigned mcbufsize = thrd->dmac->pinfo->mcbufsz;
+
+	if (soc_is_exynos5422()) {
+		if (pxs->r->sram) {
+			req->mc_cpu = sram.cpu + thrd->id * mcbufsize +
+					(mcbufsize / 2) * index;
+			req->mc_bus = sram.bus + thrd->id * mcbufsize +
+					(mcbufsize / 2) * index;
+		} else {
+			req->mc_cpu = dram.cpu + thrd->id * mcbufsize +
+					(mcbufsize / 2) * index;
+			req->mc_bus = dram.bus + thrd->id * mcbufsize +
+					(mcbufsize / 2) * index;
+		}
+	}
+
+	buf = req->mc_cpu;
 
 	PL330_DBGMC_START(req->mc_bus);
 
@@ -2175,8 +2203,13 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 	if (pi->dev->of_node) {
 		addr = of_dma_get_mcode_addr(pi->dev->of_node);
 		if (addr) {
-			set_dma_ops(pi->dev, &arm_exynos_dma_mcode_ops);
-			pl330->mcode_bus = addr;
+			if (soc_is_exynos5430()) {
+				set_dma_ops(pi->dev, &arm_exynos_dma_mcode_ops);
+				pl330->mcode_bus = addr;
+			} else if(soc_is_exynos5422()){
+				sram.bus = addr;
+				sram.cpu = ioremap(addr, chans * pi->mcbufsz);
+			}
 		}
 	}
 
@@ -2187,6 +2220,10 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 	pl330->mcode_cpu = dma_alloc_coherent(pi->dev,
 				chans * pi->mcbufsz,
 				&pl330->mcode_bus, GFP_KERNEL);
+
+	dram.bus = pl330->mcode_bus;
+	dram.cpu = pl330->mcode_cpu;
+
 	if (!pl330->mcode_cpu) {
 		dev_err(pi->dev, "%s:%d Can't allocate memory!\n",
 			__func__, __LINE__);
@@ -2713,7 +2750,7 @@ static int add_desc(struct dma_pl330_dmac *pdmac, gfp_t flg, int count)
 	if (!pdmac)
 		return 0;
 
-	desc = kmalloc(count * sizeof(*desc), flg);
+	desc = kzalloc(count * sizeof(*desc), flg);
 	if (!desc)
 		return 0;
 
@@ -2922,6 +2959,15 @@ static struct dma_async_tx_descriptor *pl330_prep_dma_cyclic(
 		desc->rqcfg.brst_size = pch->burst_sz;
 		desc->rqcfg.brst_len = 1;
 		desc->req.infiniteloop = *infinite;
+
+		if (soc_is_exynos5422()) {
+			if (dma_addr >= AUDSS_SRAM &&
+				dma_addr < (AUDSS_SRAM + AUDSS_SRAM_SIZE))
+				desc->req.sram = true;
+			else
+				desc->req.sram = false;
+		}
+
 		fill_px(&desc->px, dst, src, period_len);
 
 		if (!first)
