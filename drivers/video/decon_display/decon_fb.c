@@ -978,6 +978,8 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 
 static int s3c_fb_enable(struct s3c_fb *sfb);
 static int s3c_fb_disable(struct s3c_fb *sfb);
+static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
+		struct s3c_reg_data *regs, bool enable);
 
 /**
  * s3c_fb_blank() - blank or unblank the given window
@@ -1015,6 +1017,31 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	switch (blank_mode) {
 	case FB_BLANK_POWERDOWN:
 	case FB_BLANK_NORMAL:
+		if (test_bit(S3C_FB_LOCAL,
+				&sfb->windows[0]->state)) {
+			u32 data;
+			shadow_protect_win(sfb->windows[0], 1);
+			set_bit(S3C_FB_READY_TO_LOCAL,
+					&sfb->windows[0]->state);
+			ret = s3c_fb_enable_local_path(sfb, 0,
+					NULL, false);
+			if (ret)
+				pr_err("fail stop localpath\n");
+			clear_bit(S3C_FB_LOCAL,
+				&sfb->windows[0]->state);
+			set_bit(S3C_FB_STOP_DMA,
+				&sfb->windows[0]->state);
+			shadow_protect_win(sfb->windows[0], 0);
+
+			data = readl(sfb->regs + DECON_UPDATE);
+			data |= DECON_UPDATE_STANDALONE_F;
+
+			if (readl(sfb->regs + DECON_UPDATE_SHADOW) & (1<<0))
+				pr_err("Error:0x%x\n",
+				readl(sfb->regs + DECON_UPDATE_SHADOW));
+			writel(data, sfb->regs + DECON_UPDATE);
+		}
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		disp_set_pm_status(DISP_STATUS_PM2);
 		if (sfb->power_state == POWER_HIBER_DOWN)
