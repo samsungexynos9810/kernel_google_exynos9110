@@ -45,6 +45,11 @@
 #define MRSTATUS_THERMAL_BIT_MASK	(1)
 #define MRSTATUS_THERMAL_LV_MASK	(0x7)
 
+#define CTRL_FORCE_SHIFT	(0x7)
+#define CTRL_FORCE_MASK		(0x1FF)
+#define CTRL_LOCK_VALUE_SHIFT	(0x8)
+#define CTRL_LOCK_VALUE_MASK	(0x1FF)
+
 enum devfreq_mif_idx {
 	LV0,
 	LV1,
@@ -1055,22 +1060,90 @@ static int exynos5_devfreq_mif_set_timing_set(struct devfreq_data_mif *data,
 	return 0;
 }
 
+static int exynos5_devfreq_calculate_dll_lock_value(struct devfreq_data_mif *data,
+							unsigned long vdd_mif_l0)
+{
+	return  ((vdd_mif_l0 - DLL_ON_BASE_VOLT + 9999) / 10000) * 2;
+}
+
+static void exynos5_devfreq_set_dll_lock_value(struct devfreq_data_mif *data,
+							unsigned long vdd_mif_l0)
+{
+	/* 9999 make ceiling result */
+	int lock_value_offset = exynos5_devfreq_calculate_dll_lock_value(data, vdd_mif_l0);
+	int ctrl_force, ctrl_force_value;
+
+	ctrl_force = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+	ctrl_force_value = (ctrl_force >> CTRL_FORCE_SHIFT) & CTRL_FORCE_MASK;
+	ctrl_force_value += lock_value_offset;
+	ctrl_force &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+	ctrl_force |= (ctrl_force_value << CTRL_FORCE_SHIFT);
+	__raw_writel(ctrl_force, data->base_lpddr_phy0 + 0xB0);
+
+	ctrl_force = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+	ctrl_force_value = (ctrl_force >> CTRL_FORCE_SHIFT) & CTRL_FORCE_MASK;
+	ctrl_force_value += lock_value_offset;
+	ctrl_force &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+	ctrl_force |= (ctrl_force_value << CTRL_FORCE_SHIFT);
+	__raw_writel(ctrl_force, data->base_lpddr_phy1 + 0xB0);
+}
+
 static int exynos5_devfreq_mif_set_dll(struct devfreq_data_mif *data,
 					unsigned long target_volt,
 					int target_idx)
 {
 	unsigned int tmp;
+	unsigned int lock_value;
+	unsigned int timeout;
 
 	if (target_idx == LV0) {
 		/* only LV0 use DLL tacing mode(CLKM_PHY_C_ENABLE mux gating 1(enable)/0(disable)). */
-		tmp = __raw_readl(data->base_mif + 0x304);
-		tmp |= (0x1 << 12);
-		__raw_writel(tmp, data->base_mif + 0x304);
+		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+		tmp |= (0x1 << 5);
+		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+		tmp |= (0x1 << 5);
+		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
+
+		timeout = 1000;
+		while ((__raw_readl(data->base_lpddr_phy0 + 0xB4) & 0x5) != 0x5) {
+			if (timeout-- == 0) {
+				pr_err("DEVFREQ(MIF) : Timeout to wait dll on(lpddrphy0)\n");
+				return -EINVAL;
+			}
+			udelay(1);
+		}
+		timeout = 1000;
+		while ((__raw_readl(data->base_lpddr_phy1 + 0xB4) & 0x5) != 0x5) {
+			if (timeout-- == 0) {
+				pr_err("DEVFREQ(MIF) : Timeout to wait dll on(lpddrphy1)\n");
+				return -EINVAL;
+			}
+			udelay(1);
+		}
 	} else {
 		/* DLL Tracing off mode */
-		tmp = __raw_readl(data->base_mif + 0x304);
-		tmp &= ~(0x1 << 12);
-		__raw_writel(tmp, data->base_mif + 0x304);
+		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+		tmp &= ~(0x1 << 5);
+		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+		tmp &= ~(0x1 << 5);
+		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
+
+		/* Get Current DLL lock value */
+		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB4);
+		lock_value = (tmp >> CTRL_LOCK_VALUE_SHIFT) & CTRL_LOCK_VALUE_MASK;
+		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+		tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+		tmp |= (lock_value << CTRL_FORCE_SHIFT);
+		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+
+		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB4);
+		lock_value = (tmp >> CTRL_LOCK_VALUE_SHIFT) & CTRL_LOCK_VALUE_MASK;
+		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+		tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+		tmp |= (lock_value << CTRL_FORCE_SHIFT);
+		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
 	}
 
 	return 0;
@@ -1474,6 +1547,8 @@ static struct notifier_block exynos5_mif_reboot_notifier = {
 	.notifier_call = exynos5_devfreq_mif_reboot_notifier,
 };
 
+#define CTRL_FORCE_OFFSET	(8)
+
 #ifdef CONFIG_EXYNOS_THERMAL
 static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned long event,
 						void *v)
@@ -1482,6 +1557,8 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 							tmu_notifier);
 	unsigned int prev_volt, set_volt;
 	unsigned int *on = v;
+	unsigned int tmp;
+	unsigned int ctrl_force_value;
 
 	if (event == TMU_COLD) {
 		if (pm_qos_request_active(&min_mif_thermal_qos))
@@ -1503,6 +1580,21 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 			set_volt = get_limit_voltage(prev_volt, data->volt_offset);
 			regulator_set_voltage(data->vdd_mif, set_volt, set_volt + VOLT_STEP);
 
+			/* Update CTRL FORCE */
+			tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+			ctrl_force_value = (tmp >> CTRL_FORCE_SHIFT) & CTRL_FORCE_MASK;
+			ctrl_force_value += CTRL_FORCE_OFFSET;
+			tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+			tmp |= (ctrl_force_value << CTRL_FORCE_SHIFT);
+			__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+
+			tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+			ctrl_force_value = (tmp >> CTRL_FORCE_SHIFT) & CTRL_FORCE_MASK;
+			ctrl_force_value += CTRL_FORCE_OFFSET;
+			tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+			tmp |= (ctrl_force_value << CTRL_FORCE_SHIFT);
+			__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
+
 			mutex_unlock(&data->lock);
 		} else {
 			mutex_lock(&data->lock);
@@ -1518,6 +1610,21 @@ static int exynos5_devfreq_mif_tmu_notifier(struct notifier_block *nb, unsigned 
 
 			set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
 			regulator_set_voltage(data->vdd_mif, set_volt, set_volt + VOLT_STEP);
+
+			/* Update CTRL FORCE */
+			tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+			ctrl_force_value = (tmp >> CTRL_FORCE_SHIFT) & CTRL_FORCE_MASK;
+			ctrl_force_value -= CTRL_FORCE_OFFSET;
+			tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+			tmp |= (ctrl_force_value << CTRL_FORCE_SHIFT);
+			__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+
+			tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+			ctrl_force_value = (tmp >> CTRL_FORCE_SHIFT) & CTRL_FORCE_MASK;
+			ctrl_force_value -= CTRL_FORCE_OFFSET;
+			tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+			tmp |= (ctrl_force_value << CTRL_FORCE_SHIFT);
+			__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
 
 			mutex_unlock(&data->lock);
 		}
@@ -1769,6 +1876,7 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 #endif
 	rcu_read_unlock();
 	regulator_set_voltage(data->vdd_mif, data->old_volt, data->old_volt + VOLT_STEP);
+	exynos5_devfreq_set_dll_lock_value(data, data->old_volt);
 
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_mif_profile,
