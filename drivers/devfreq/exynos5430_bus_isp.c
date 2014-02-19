@@ -1130,7 +1130,7 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	volt = get_limit_voltage(volt, data->volt_offset);
 #endif
 	rcu_read_unlock();
-	exynos5_devfreq_isp_set_volt(data, volt, volt + VOLT_STEP);
+	exynos5_devfreq_isp_set_volt(data, data->old_volt, data->old_volt + VOLT_STEP, false);
 
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_isp_profile,
