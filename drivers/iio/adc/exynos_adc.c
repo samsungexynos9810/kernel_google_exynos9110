@@ -126,6 +126,7 @@ static void exynos_adc_hw_init(struct exynos_adc *info)
 	}
 
 	clk_prepare_enable(info->clk);
+	enable_irq(info->irq);
 
 	if (info->version == ADC_V2) {
 		con1 = ADC_V2_CON1_SOFT_RESET;
@@ -157,7 +158,7 @@ static void exynos_adc_hw_deinit(struct exynos_adc *info)
 			ADC_V2_CON2_HIGHF | ADC_V2_CON2_C_TIME(0));
 		writel(con2, ADC_V2_CON2(info->regs));
 
-		/* Enable interrupts */
+		/* Disable interrupts */
 		writel(0, ADC_V2_INT_EN(info->regs));
 	} else {
 		/* Enable 12-bit ADC resolution */
@@ -166,6 +167,8 @@ static void exynos_adc_hw_deinit(struct exynos_adc *info)
 		writel(con1, ADC_V1_CON(info->regs));
 	}
 
+
+	disable_irq(info->irq);
 	clk_disable_unprepare(info->clk);
 
 	if (info->vdd) {
@@ -192,7 +195,6 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 
 	mutex_lock(&indio_dev->mlock);
 
-	enable_irq(info->irq);
 	exynos_adc_hw_init(info);
 
 	/* Select the channel to be used and Trigger conversion */
@@ -213,13 +215,12 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 				ADC_V1_CON(info->regs));
 	}
 
-	timeout = wait_for_completion_interruptible_timeout
+	timeout = wait_for_completion_timeout
 			(&info->completion, EXYNOS_ADC_TIMEOUT);
 
 	*val = info->value;
 
 	exynos_adc_hw_deinit(info);
-	disable_irq(info->irq);
 
 	mutex_unlock(&indio_dev->mlock);
 
