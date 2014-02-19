@@ -1244,31 +1244,15 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 
 static int exynos_tmu_read(struct exynos_tmu_data *data)
 {
-	u8 temp_code, status;
+	u8 temp_code;
 	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0;
 	int alltemp[EXYNOS_TMU_COUNT] = {0, };
-	int timeout = 20000;
 	char tmustate_string[20];
 	char *envp[2];
 
 	mutex_lock(&data->lock);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
-		while (1) {
-			status = readb(data->base[i] + EXYNOS_TMU_REG_STATUS);
-			if (status)
-				break;
-
-			timeout--;
-			if (!timeout) {
-				pr_err("%s: timeout TMU busy\n", __func__);
-				break;
-			}
-
-			cpu_relax();
-			usleep_range(1, 2);
-		};
-
 		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
 		temp = code_to_temp(data, temp_code, i);
 		alltemp[i] = temp;
