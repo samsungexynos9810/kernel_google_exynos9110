@@ -55,6 +55,16 @@
 #include <plat/usb-phy.h>
 #include <plat/clock.h>
 
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
+#define CTRL_FORCE_SHIFT        (0x7)
+#define CTRL_FORCE_MASK         (0x1FF)
+#define CTRL_LOCK_VALUE_SHIFT   (0x8)
+#define CTRL_LOCK_VALUE_MASK    (0x1FF)
+
+static void __iomem *regs_lpddrphy0;
+static void __iomem *regs_lpddrphy1;
+#endif
+
 #if defined (CONFIG_SOC_EXYNOS5430_REV_1) && defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 static cputime64_t cluster_off_time = 0;
 static unsigned long long last_time = 0;
@@ -602,34 +612,63 @@ static struct sleep_save exynos5_set_clksrc[] = {
 	{ .reg = EXYNOS5430_ENABLE_IP_CPIF0,	.val = 0x000FF000, },
 };
 
-static void exynos_set_mif_mux_status(void)
+static void exynos_save_mif_dll_status(void)
 {
-	unsigned int tmp;
+	unsigned int tmp, lock_value;
+	bool processed_forcing = false;
 
-	tmp = __raw_readl(EXYNOS5430_SRC_ENABLE_MIF1);
+	tmp = __raw_readl(regs_lpddrphy0 + 0xB0);
 
-	/* 1. If 12bit of CLK_MUX_ENABLE_MIF1 is '1', save '1' */
-	if (tmp & EXYNOS5430_CLKM_PHY_C_ENABLE)
+	/* 1. If 5th bit indicate '1', save '1' */
+	if (tmp & (0x1 << 5)) {
 		__raw_writel(0x1, EXYNOS5430_DREX_CALN2);
+		processed_forcing = true;
+	}
 	else
 		__raw_writel(0x0, EXYNOS5430_DREX_CALN2);
 
 	/* 2. Write 0 to 12bit of CLK_MUX_ENABLE_MIF1 before LPA/DSTOP */
-	tmp &= ~EXYNOS5430_CLKM_PHY_C_ENABLE;
-	__raw_writel(tmp, EXYNOS5430_SRC_ENABLE_MIF1);
+	tmp &= ~(0x1 << 5);
+	__raw_writel(tmp, regs_lpddrphy0 + 0xB0);
+	tmp = __raw_readl(regs_lpddrphy1 + 0xB0);
+	tmp &= ~(0x1 << 5);
+	__raw_writel(tmp, regs_lpddrphy1 + 0xB0);
+
+	if (processed_forcing) {
+		/* Get Current DLL lock value */
+                tmp = __raw_readl(regs_lpddrphy0 + 0xB4);
+                lock_value = (tmp >> CTRL_LOCK_VALUE_SHIFT) & CTRL_LOCK_VALUE_MASK;
+                tmp = __raw_readl(regs_lpddrphy0 + 0xB0);
+                tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+                tmp |= (lock_value << CTRL_FORCE_SHIFT);
+                __raw_writel(tmp, regs_lpddrphy0 + 0xB0);
+
+                tmp = __raw_readl(regs_lpddrphy1 + 0xB4);
+                lock_value = (tmp >> CTRL_LOCK_VALUE_SHIFT) & CTRL_LOCK_VALUE_MASK;
+                tmp = __raw_readl(regs_lpddrphy1 + 0xB0);
+                tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
+                tmp |= (lock_value << CTRL_FORCE_SHIFT);
+                __raw_writel(tmp, regs_lpddrphy1 + 0xB0);
+	}
 }
 
-static void exynos_restore_mif_mux_status(void)
+static void exynos_restore_mif_dll_status(void)
 {
 	unsigned int tmp;
 
-	tmp = __raw_readl(EXYNOS5430_SRC_ENABLE_MIF1);
+	tmp = __raw_readl(regs_lpddrphy0 + 0xB0);
 	if (__raw_readl(EXYNOS5430_DREX_CALN2))
-		tmp |= EXYNOS5430_CLKM_PHY_C_ENABLE;
+		tmp |= (0x1 << 5);
 	else
-		tmp &= ~EXYNOS5430_CLKM_PHY_C_ENABLE;
+		tmp &= ~(0x1 << 5);
+	__raw_writel(tmp, regs_lpddrphy0 + 0xB0);
 
-	__raw_writel(tmp, EXYNOS5430_SRC_ENABLE_MIF1);
+	tmp = __raw_readl(regs_lpddrphy1 + 0xB0);
+	if (__raw_readl(EXYNOS5430_DREX_CALN2))
+		tmp |= (0x1 << 5);
+	else
+		tmp &= ~(0x1 << 5);
+	__raw_writel(tmp, regs_lpddrphy1 + 0xB0);
 }
 
 static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
@@ -704,7 +743,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	/* This is W/A for gating Mclk during LPA/DSTOP */
 	/* Save flag to confirm if current mode is LPA or DSTOP */
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, EXYNOS5430_DREX_CALN1);
-	exynos_set_mif_mux_status();
+	exynos_save_mif_dll_status();
 
 	ret = cpu_suspend(0, idle_finisher);
 	if (ret) {
@@ -713,6 +752,7 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 		__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
 		early_wakeup_flag = 1;
 
+		exynos_restore_mif_dll_status();
 		goto early_wakeup;
 	}
 
@@ -743,7 +783,6 @@ early_wakeup:
 	/* This is W/A for gating Mclk during LPA/DSTOP */
 	/* Clear flag  */
 	__raw_writel(0, EXYNOS5430_DREX_CALN1);
-	exynos_restore_mif_mux_status();
 
 	clear_boot_flag(cpuid, C2_STATE);
 
@@ -1148,6 +1187,11 @@ static int __init exynos_init_cpuidle(void)
 {
 	int i, cpu_id, ret;
 	struct cpuidle_device *device;
+
+#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
+	regs_lpddrphy0 = ioremap(0x10420000, SZ_64K);
+	regs_lpddrphy1 = ioremap(0x10460000, SZ_64K);
+#endif
 
 	exynos_idle_driver.state_count = ARRAY_SIZE(exynos5_cpuidle_set);
 
