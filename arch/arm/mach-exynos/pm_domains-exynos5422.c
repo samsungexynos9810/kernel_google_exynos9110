@@ -55,8 +55,18 @@ static void exynos5_enable_clk(struct exynos5422_pd_state *ptr, int count)
 {
 	spin_lock(&clk_save_restore_lock);
 	for (; count > 0; count--, ptr++) {
-		DEBUG_PRINT_INFO("set %p (change %08lx, was %08x) for power on/off\n", ptr->reg, ptr->set_val, __raw_readl(ptr->reg));
+		DEBUG_PRINT_INFO("set %p (change %08lx, was %08x) for power on/off\n", ptr->reg, __raw_readl(ptr->reg) | ptr->set_val, __raw_readl(ptr->reg));
 		__raw_writel(__raw_readl(ptr->reg) | ptr->set_val, ptr->reg);
+	}
+	spin_unlock(&clk_save_restore_lock);
+}
+
+static void exynos5_disable_clk(struct exynos5422_pd_state *ptr, int count)
+{
+	spin_lock(&clk_save_restore_lock);
+	for (; count > 0; count--, ptr++) {
+		DEBUG_PRINT_INFO("set %p (change %08lx, was %08x) for power on/off\n", ptr->reg, __raw_readl(ptr->reg) & ~(ptr->set_val), __raw_readl(ptr->reg));
+		__raw_writel(__raw_readl(ptr->reg) & ~(ptr->set_val), ptr->reg);
 	}
 	spin_unlock(&clk_save_restore_lock);
 }
@@ -374,7 +384,6 @@ struct exynos5422_pd_state exynos54xx_pwr_reg_gscl[] = {
 static int exynos5_pd_scl_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_save_reg(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
 	exynos5_enable_clk(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
 	exynos5_pwr_reg_set(exynos54xx_pwr_reg_gscl, ARRAY_SIZE(exynos54xx_pwr_reg_gscl));
 
@@ -386,7 +395,6 @@ static int exynos5_pd_scl_power_on_post(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_restore_reg(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
 
 	reg = __raw_readl(EXYNOS5_CLK_SRC_TOP9);
 	reg |= (1 << 28);
@@ -401,7 +409,6 @@ static int exynos5_pd_scl_power_on_post(struct exynos_pm_domain *pd)
 static int exynos5_pd_scl_power_off_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_save_reg(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
 	exynos5_enable_clk(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
 	exynos5_pwr_reg_set(exynos54xx_pwr_reg_gscl, ARRAY_SIZE(exynos54xx_pwr_reg_gscl));
 
@@ -411,10 +418,11 @@ static int exynos5_pd_scl_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos5_pd_scl_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s: %08x %08x\n", __func__, __raw_readl(pd->base), __raw_readl(pd->base+4));
-	exynos5_pd_restore_reg(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
+	exynos5_disable_clk(exynos5422_scl_clk, ARRAY_SIZE(exynos5422_scl_clk));
 
 	return 0;
 }
+
 struct exynos5422_pd_state exynos5422_cam_clk[] = {
 
 	{ .reg = EXYNOS5_CLK_GATE_IP_GSCL0,			.val = 0,
