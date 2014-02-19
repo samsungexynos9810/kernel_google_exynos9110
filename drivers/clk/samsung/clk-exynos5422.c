@@ -1799,14 +1799,10 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 /* CLK_GATE_IP_GSCL1 */
 	CGATE(clk_camif_top_csis0, "clk_camif_top_csis0", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL1, 18, 0, 0),
 	CGATE(gscl_fimc_lite3, "gscl_fimc_lite3", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 17, 0, 0),
-	CGATE(clk_smmu_fimcl3, "clk_smmu_fimcl3", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL1, 16, 0, 0),
 	CGATE(clk_gscl_wrap_b, "clk_gscl_wrap_b", "dout_gscl_wrap_b", EXYNOS5_CLK_GATE_IP_GSCL1, 13, 0, 0),
 	CGATE(clk_gscl_wrap_a, "clk_gscl_wrap_a", "dout_gscl_wrap_a", EXYNOS5_CLK_GATE_IP_GSCL1, 12, 0, 0),
 	CGATE(clk_smmu_gscl1, "clk_smmu_gscl1", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL1, 7, 0, 0),
 	CGATE(clk_smmu_gscl0, "clk_smmu_gscl0", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL1, 6, 0, 0),
-	CGATE(clk_smmu_fimcl1, "clk_smmu_fimcl1", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL1, 4, 0, 0),
-	CGATE(clk_smmu_fimcl0, "clk_smmu_fimcl0", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL1, 3, 0, 0),
-	CGATE(clk_smmu_3aa, "clk_smmu_3aa", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_GSCL1, 2, 0, 0),
 #else
 	/* GSCL */
 	CGATE(clk_gscl0, "clk_gscl0", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 0, 0, 0),
@@ -1942,7 +1938,6 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(clk_xiu_si_gscl_cam, "clk_xiu_si_gscl_cam", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_CAM, 29, 0, 0),
 	CGATE(clk_noc_p_rstop_fimcl, "clk_noc_p_rstop_fimcl", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_CAM, 28, 0, 0),
 	CGATE(clk_camif_top_3aa0, "clk_camif_top_3aa0", "aclk_550_cam", EXYNOS5_CLK_GATE_IP_CAM, 27, 0, 0),
-	CGATE(clk_smmu_3aa0, "clk_smmu_3aa0", "dout2_gscl_blk_333", EXYNOS5_CLK_GATE_IP_CAM, 25, 0, 0),
 #endif
 };
 
