@@ -657,6 +657,20 @@ void show_exynos_pmu(void)
 	EXYNOS5422_PRINT_PMU(PSGEN);
 	EXYNOS5422_PRINT_PMU(PERIC);
 	EXYNOS5422_PRINT_PMU(WCORE);
+	pr_info(" **** POWER MODE FLAGS ****\n");
+	pr_info("      EGL STATES : 0x%x  0x%x  0x%x  0x%x\n",
+			__raw_readl(REG_CPU_STATE_ADDR + 0x0),
+			__raw_readl(REG_CPU_STATE_ADDR + 0x4),
+			__raw_readl(REG_CPU_STATE_ADDR + 0x8),
+			__raw_readl(REG_CPU_STATE_ADDR + 0xC));
+	pr_info("      KFC STATES : 0x%x  0x%x  0x%x  0x%x\n",
+			__raw_readl(REG_CPU_STATE_ADDR + 0x10),
+			__raw_readl(REG_CPU_STATE_ADDR + 0x14),
+			__raw_readl(REG_CPU_STATE_ADDR + 0x18),
+			__raw_readl(REG_CPU_STATE_ADDR + 0x1C));
+	pr_info("      CLUSTER STATES : 0x%x  0x%x\n",
+			__raw_readl(REG_CPU_STATE_ADDR + 0x20),
+			__raw_readl(REG_CPU_STATE_ADDR + 0x24));
 	pr_info(" -----------------------------------------------------------------------------------\n");
 }
 
