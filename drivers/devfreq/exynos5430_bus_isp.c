@@ -1118,6 +1118,7 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	data->dev = &pdev->dev;
 	data->vdd_isp = regulator_get(NULL, "vdd_disp_cam0");
 	freq = DEVFREQ_INITIAL_FREQ;
+	rcu_read_lock();
 	target_opp = devfreq_recommended_opp(data->dev, &freq, 0);
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
