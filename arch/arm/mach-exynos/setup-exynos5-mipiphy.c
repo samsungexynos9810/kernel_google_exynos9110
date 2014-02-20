@@ -51,11 +51,14 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 	u32 cfg;
 	u32 csi_reset = 0;
 	u32 dsi_reset = 0;
+	u32 csi_power_on, dsi_power_on;
 
 	addr_phy = S5P_MIPI_DPHY_CONTROL(id);
 
 	spin_lock_irqsave(&lock, flags);
 
+	csi_power_on = (readl(S5P_VA_PMU + 0x4024)) & 0x1;
+	dsi_power_on = (readl(S5P_VA_PMU + 0x4084)) & 0x1;
 	/* PHY reset */
 	switch(id) {
 	case 0:
@@ -97,13 +100,13 @@ static int __exynos5_mipi_phy_control(int id, bool on, u32 reset)
 	}
 
 	/* CHECK CMA0 PD STATUS */
-	if (readl(S5P_VA_PMU + 0x4024) & 0x1) {
+	if (csi_power_on && (readl(S5P_VA_PMU + 0x4024) & 0x1)) {
 		addr_reset = S5P_VA_SYSREG_CAM0 + 0x1014;
 		csi_reset = __raw_readl(addr_reset);
 	}
 
 	/* CHECK DISP PD STATUS */
-	if (readl(S5P_VA_PMU + 0x4084) & 0x1) {
+	if (dsi_power_on && (readl(S5P_VA_PMU + 0x4084) & 0x1)) {
 		addr_reset = S5P_VA_SYSREG_DISP + 0x000c;
 		dsi_reset = __raw_readl(addr_reset);
 	}
