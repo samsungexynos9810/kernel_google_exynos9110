@@ -1507,6 +1507,8 @@ static int cpufreq_interactive_cpu_min_qos_handler(struct notifier_block *b,
 		goto exit;
 	}
 
+	trace_cpufreq_interactive_cpu_min_qos(cpu, val, pcpu->policy->cur);
+
 	if (val < pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
 
@@ -1556,6 +1558,8 @@ static int cpufreq_interactive_cpu_max_qos_handler(struct notifier_block *b,
 		goto exit;
 	}
 
+	trace_cpufreq_interactive_cpu_max_qos(cpu, val, pcpu->policy->cur);
+
 	if (val > pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
 
@@ -1601,6 +1605,8 @@ static int cpufreq_interactive_kfc_min_qos_handler(struct notifier_block *b,
 		goto exit;
 	}
 
+	trace_cpufreq_interactive_kfc_min_qos(0, val, pcpu->policy->cur);
+
 	if (val < pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
 
@@ -1644,6 +1650,8 @@ static int cpufreq_interactive_kfc_max_qos_handler(struct notifier_block *b,
 		ret = NOTIFY_BAD;
 		goto exit;
 	}
+
+	trace_cpufreq_interactive_kfc_max_qos(0, val, pcpu->policy->cur);
 
 	if (val > pcpu->policy->cur) {
 		tunables = pcpu->policy->governor_data;
