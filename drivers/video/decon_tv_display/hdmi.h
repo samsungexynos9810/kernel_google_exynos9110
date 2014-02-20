@@ -332,8 +332,8 @@ struct hdmi_device {
 	int sample_rate;
 	/** audio bits per sample */
 	int bits_per_sample;
-	/** audio sample size */
-	int sample_size;
+	/** audio bit clock support or not */
+	int audio_master_clk;
 	/** RGB Quantization range and Colorimetry */
 	enum HDMI_COLOR_RANGE color_range;
 	/** HDMI is streaming or not */
