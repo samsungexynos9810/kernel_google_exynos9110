@@ -1206,9 +1206,13 @@ int fimc_is_sensor_s_format(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
-	device->mode = get_sensor_mode(module->cfg, module->cfgs,
-			device->image.window.width, device->image.window.height,
-			device->image.framerate);
+	/* if sensor is driving mode, skip finding sensor mode */
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state))
+		device->mode = get_sensor_mode(module->cfg, module->cfgs,
+				device->image.window.width, device->image.window.height,
+				device->image.framerate);
+	else
+		device->mode = 0;
 
 	/* can't find proper sensor mode */
 	if (device->mode < 0) {
