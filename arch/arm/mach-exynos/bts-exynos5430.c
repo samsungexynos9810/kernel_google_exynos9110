@@ -98,6 +98,29 @@ struct bts_set_table {
 	unsigned int val;
 };
 
+struct bts_scen_status {
+	bool cam;
+	bool decon;
+	bool decontv;
+};
+
+struct bts_scen_status pr_state = {
+	.cam = false,
+	.decon = false,
+	.decontv = false,
+};
+
+#define update_cam(a) (pr_state.cam = a)
+#define update_decon(a) (pr_state.decon = a)
+#define update_decontv(a) (pr_state.decontv = a)
+
+#define BTS_DECON (BTS_DECONM0 | BTS_DECONM1 |			\
+			BTS_DECONM2 | BTS_DECONM3 | BTS_DECONM4)
+#define BTS_DECONTV (BTS_DECONTV_M0 | BTS_DECONTV_M1 |		\
+			BTS_DECONTV_M2 | BTS_DECONTV_M3)
+#define BTS_CAM (BTS_FIMCLITE0 | BTS_FIMCLITE1 |		\
+			BTS_FIMCLITE2 | BTS_FIMCLITE3)
+
 #define BTS_TABLE(num)					\
 static struct bts_set_table axiqos_##num##_table[] = {	\
 	{READ_QOS_CONTROL, 0x0},			\
@@ -117,6 +140,130 @@ BTS_TABLE(0xffff);
 static struct bts_set_table disable_table[] = {
 	{READ_QOS_CONTROL, 0x0},
 	{WRITE_QOS_CONTROL, 0x0},
+};
+
+#define MO_3AA1			(2)
+#define PRIORITY_3AA1		(0x8888)
+
+static struct bts_set_table mo_3aa1_static_table[] = {
+	{READ_QOS_CONTROL, 0x0},
+	{WRITE_QOS_CONTROL, 0x0},
+	{READ_CHANNEL_PRIORITY, PRIORITY_3AA1},
+	{READ_TOKEN_MAX_VALUE, 0xffdf},
+	{READ_BW_UPPER_BOUNDARY, 0x18},
+	{READ_BW_LOWER_BOUNDARY, 0x1},
+	{READ_INITIAL_TOKEN_VALUE, 0x8},
+	{READ_DEMOTION_WINDOW, 0x7fff},
+	{READ_DEMOTION_TOKEN, 0x1},
+	{READ_DEFAULT_WINDOW, 0x7fff},
+	{READ_DEFAULT_TOKEN, 0x1},
+	{READ_PROMOTION_WINDOW, 0x7fff},
+	{READ_PROMOTION_TOKEN, 0x1},
+	{READ_ISSUE_CAPABILITY_UPPER_BOUNDARY, 0x7f - MO_3AA1},
+	{READ_ISSUE_CAPABILITY_LOWER_BOUNDARY, MO_3AA1 - 1},
+	{READ_FLEXIBLE_BLOCKING_CONTROL, 0x3},
+	{READ_FLEXIBLE_BLOCKING_POLARITY, 0x3},
+	{WRITE_CHANNEL_PRIORITY, PRIORITY_3AA1},
+	{WRITE_TOKEN_MAX_VALUE, 0xffdf},
+	{WRITE_BW_UPPER_BOUNDARY, 0x18},
+	{WRITE_BW_LOWER_BOUNDARY, 0x1},
+	{WRITE_INITIAL_TOKEN_VALUE, 0x8},
+	{WRITE_DEMOTION_WINDOW, 0x7fff},
+	{WRITE_DEMOTION_TOKEN, 0x1},
+	{WRITE_DEFAULT_WINDOW, 0x7fff},
+	{WRITE_DEFAULT_TOKEN, 0x1},
+	{WRITE_PROMOTION_WINDOW, 0x7fff},
+	{WRITE_PROMOTION_TOKEN, 0x1},
+	{WRITE_ISSUE_CAPABILITY_UPPER_BOUNDARY, 0x7f - MO_3AA1},
+	{WRITE_ISSUE_CAPABILITY_LOWER_BOUNDARY, MO_3AA1 - 1},
+	{WRITE_FLEXIBLE_BLOCKING_CONTROL, 0x3},
+	{WRITE_FLEXIBLE_BLOCKING_POLARITY, 0x3},
+	{WRITE_QOS_MODE, 0x2},
+	{READ_QOS_MODE, 0x2},
+	{WRITE_QOS_CONTROL, 0x3},
+	{READ_QOS_CONTROL, 0x3},
+};
+
+#define MO_DECON	0xa
+
+static struct bts_set_table mo_decon_static_table[] = {
+	{READ_QOS_CONTROL, 0x0},
+	{WRITE_QOS_CONTROL, 0x0},
+	{READ_CHANNEL_PRIORITY, 0xdddd},
+	{READ_TOKEN_MAX_VALUE, 0xffdf},
+	{READ_BW_UPPER_BOUNDARY, 0x18},
+	{READ_BW_LOWER_BOUNDARY, 0x1},
+	{READ_INITIAL_TOKEN_VALUE, 0x8},
+	{READ_DEMOTION_WINDOW, 0x7fff},
+	{READ_DEMOTION_TOKEN, 0x1},
+	{READ_DEFAULT_WINDOW, 0x7fff},
+	{READ_DEFAULT_TOKEN, 0x1},
+	{READ_PROMOTION_WINDOW, 0x7fff},
+	{READ_PROMOTION_TOKEN, 0x1},
+	{READ_ISSUE_CAPABILITY_UPPER_BOUNDARY, 0x7f - MO_DECON},
+	{READ_ISSUE_CAPABILITY_LOWER_BOUNDARY, MO_DECON - 1},
+	{READ_FLEXIBLE_BLOCKING_CONTROL, 0x3},
+	{READ_FLEXIBLE_BLOCKING_POLARITY, 0x3},
+	{WRITE_CHANNEL_PRIORITY, 0xdddd},
+	{WRITE_TOKEN_MAX_VALUE, 0xffdf},
+	{WRITE_BW_UPPER_BOUNDARY, 0x18},
+	{WRITE_BW_LOWER_BOUNDARY, 0x1},
+	{WRITE_INITIAL_TOKEN_VALUE, 0x8},
+	{WRITE_DEMOTION_WINDOW, 0x7fff},
+	{WRITE_DEMOTION_TOKEN, 0x1},
+	{WRITE_DEFAULT_WINDOW, 0x7fff},
+	{WRITE_DEFAULT_TOKEN, 0x1},
+	{WRITE_PROMOTION_WINDOW, 0x7fff},
+	{WRITE_PROMOTION_TOKEN, 0x1},
+	{WRITE_ISSUE_CAPABILITY_UPPER_BOUNDARY, 0x7f - MO_DECON},
+	{WRITE_ISSUE_CAPABILITY_LOWER_BOUNDARY, MO_DECON - 1},
+	{WRITE_FLEXIBLE_BLOCKING_CONTROL, 0x3},
+	{WRITE_FLEXIBLE_BLOCKING_POLARITY, 0x3},
+	{WRITE_QOS_MODE, 0x2},
+	{READ_QOS_MODE, 0x2},
+	{WRITE_QOS_CONTROL, 0x3},
+	{READ_QOS_CONTROL, 0x3},
+};
+
+#define MO_DECONTV	0xa
+
+static struct bts_set_table mo_decontv_static_table[] = {
+	{READ_QOS_CONTROL, 0x0},
+	{WRITE_QOS_CONTROL, 0x0},
+	{READ_CHANNEL_PRIORITY, 0xcccc},
+	{READ_TOKEN_MAX_VALUE, 0xffdf},
+	{READ_BW_UPPER_BOUNDARY, 0x18},
+	{READ_BW_LOWER_BOUNDARY, 0x1},
+	{READ_INITIAL_TOKEN_VALUE, 0x8},
+	{READ_DEMOTION_WINDOW, 0x7fff},
+	{READ_DEMOTION_TOKEN, 0x1},
+	{READ_DEFAULT_WINDOW, 0x7fff},
+	{READ_DEFAULT_TOKEN, 0x1},
+	{READ_PROMOTION_WINDOW, 0x7fff},
+	{READ_PROMOTION_TOKEN, 0x1},
+	{READ_ISSUE_CAPABILITY_UPPER_BOUNDARY, 0x7f - MO_DECONTV},
+	{READ_ISSUE_CAPABILITY_LOWER_BOUNDARY, MO_DECONTV - 1},
+	{READ_FLEXIBLE_BLOCKING_CONTROL, 0x3},
+	{READ_FLEXIBLE_BLOCKING_POLARITY, 0x3},
+	{WRITE_CHANNEL_PRIORITY, 0xcccc},
+	{WRITE_TOKEN_MAX_VALUE, 0xffdf},
+	{WRITE_BW_UPPER_BOUNDARY, 0x18},
+	{WRITE_BW_LOWER_BOUNDARY, 0x1},
+	{WRITE_INITIAL_TOKEN_VALUE, 0x8},
+	{WRITE_DEMOTION_WINDOW, 0x7fff},
+	{WRITE_DEMOTION_TOKEN, 0x1},
+	{WRITE_DEFAULT_WINDOW, 0x7fff},
+	{WRITE_DEFAULT_TOKEN, 0x1},
+	{WRITE_PROMOTION_WINDOW, 0x7fff},
+	{WRITE_PROMOTION_TOKEN, 0x1},
+	{WRITE_ISSUE_CAPABILITY_UPPER_BOUNDARY, 0x7f - MO_DECONTV},
+	{WRITE_ISSUE_CAPABILITY_LOWER_BOUNDARY, MO_DECONTV - 1},
+	{WRITE_FLEXIBLE_BLOCKING_CONTROL, 0x3},
+	{WRITE_FLEXIBLE_BLOCKING_POLARITY, 0x3},
+	{WRITE_QOS_MODE, 0x2},
+	{READ_QOS_MODE, 0x2},
+	{WRITE_QOS_CONTROL, 0x3},
+	{READ_QOS_CONTROL, 0x3},
 };
 
 #ifdef BTS_DBGGEN
@@ -278,8 +425,8 @@ static struct bts_info exynos5_bts[] = {
 		.pa_base = EXYNOS5430_PA_BTS_3AA1,
 		.pd_name = "pd-cam0",
 		.clk_name = "gate_bts_3aa1",
-		.table.table_list = axiqos_0xeeee_table,
-		.table.table_num = ARRAY_SIZE(axiqos_0xeeee_table),
+		.table.table_list = mo_3aa1_static_table,
+		.table.table_num = ARRAY_SIZE(mo_3aa1_static_table),
 		.on = false,
 	},
 	[BTS_IDX_GSCL0] = {
@@ -289,7 +436,7 @@ static struct bts_info exynos5_bts[] = {
 		.pd_name = "spd-gscl0",
 		.clk_name = "gate_bts_gscl0",
 		.table.table_list = axiqos_0x4444_table,
-		.table.table_num = ARRAY_SIZE(axiqos_0xffff_table),
+		.table.table_num = ARRAY_SIZE(axiqos_0x4444_table),
 		.on = false,
 	},
 	[BTS_IDX_GSCL1] = {
@@ -346,6 +493,65 @@ static void set_bts_otf_scen_table(struct bts_info *bts, bool on)
 		clk_disable(bts->clk);
 }
 
+static void set_bts_cam_scen(unsigned int scen, bool on)
+{
+	struct bts_set_table *table;
+	unsigned int table_num = 0;
+	unsigned int i;
+
+	BTS_DBG("[BTS] cam scen: %u, on:%d\n", scen, on);
+
+	if (on) {
+		if (scen == BTS_DECON) {
+			table = mo_decon_static_table;
+			table_num = ARRAY_SIZE(mo_decon_static_table);
+			goto set_decon;
+		} else if (scen == BTS_DECONTV) {
+			table = mo_decontv_static_table;
+			table_num = ARRAY_SIZE(mo_decontv_static_table);
+			goto set_decontv;
+		}
+	} else {
+		if (scen == BTS_DECON) {
+			table = exynos5_bts[BTS_IDX_DECONM0].table.table_list;
+			table_num = exynos5_bts[BTS_IDX_DECONM0].table.table_num;
+			goto set_decon;
+		} else if (scen == BTS_DECONTV) {
+			table = exynos5_bts[BTS_IDX_DECONTV_M0].table.table_list;
+			table_num = exynos5_bts[BTS_IDX_DECONTV_M0].table.table_num;
+			goto set_decontv;
+		}
+	}
+
+set_decon:
+
+	BTS_DBG("[BTS] cam decon set bts\n");
+	for (i = 0; i < table_num; i++) {
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONM0].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONM1].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONM2].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONM3].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONM4].va_base + table->reg);
+		BTS_DBG1("[BTS] %x-%x\n", table->reg, table->val);
+		table++;
+	}
+
+	return;
+
+set_decontv:
+
+	BTS_DBG("[BTS] cam decontv set bts\n");
+	for (i = 0; i < table_num; i++) {
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONTV_M0].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONTV_M1].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONTV_M2].va_base + table->reg);
+		__raw_writel(table->val, exynos5_bts[BTS_IDX_DECONTV_M3].va_base + table->reg);
+		BTS_DBG1("[BTS] %x-%x\n", table->reg, table->val);
+		table++;
+	}
+
+	return;
+}
 
 static void set_bts_ip_table(struct bts_info *bts, bool on)
 {
@@ -379,6 +585,9 @@ static void set_bts_ip_table(struct bts_info *bts, bool on)
 void bts_initialize(const char *pd_name, bool on)
 {
 	struct bts_info *bts;
+	bool fimc_flag = false;
+	bool decon_state = false;
+	bool decontv_state = false;
 
 	spin_lock(&bts_lock);
 
@@ -388,8 +597,31 @@ void bts_initialize(const char *pd_name, bool on)
 			bts->on = on;
 			BTS_DBG("[BTS] %s on/off:%d\n", bts->name, bts->on);
 
+			if (bts->id & BTS_CAM) {
+				fimc_flag = true;
+				update_cam(on);
+			} else if (bts->id & BTS_DECON) {
+				decon_state = on;
+				update_decon(on);
+			} else if (bts->id & BTS_DECONTV) {
+				decontv_state = on;
+				update_decon(on);
+			}
+
 			set_bts_ip_table(bts, on);
 		}
+
+	if (fimc_flag) {
+		if (pr_state.decon)
+			set_bts_cam_scen(BTS_DECON, on);
+		if (pr_state.decontv)
+			set_bts_cam_scen(BTS_DECONTV, on);
+	} else if (decon_state && pr_state.cam) {
+		set_bts_cam_scen(BTS_DECON, on);
+	} else if (decontv_state && pr_state.cam) {
+		set_bts_cam_scen(BTS_DECONTV, on);
+	}
+
 	spin_unlock(&bts_lock);
 }
 
