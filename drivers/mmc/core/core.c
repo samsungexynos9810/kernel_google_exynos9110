@@ -690,8 +690,14 @@ static int mmc_wait_for_data_req_done(struct mmc_host *host,
 			context_info->is_new_req = false;
 			spin_unlock_irqrestore(&context_info->lock, flags);
 			cmd = mrq->cmd;
-			if (!cmd->error || !cmd->retries ||
-			    mmc_card_removed(host->card)) {
+			if ((mrq->sbc->error == -ETIMEDOUT) && mrq->sbc->retries) {
+				mrq->sbc->retries--;
+				mrq->sbc->error = 0;
+				mmc_host_clk_hold(host);
+				host->ops->request(host, mrq);
+				continue;
+			} else if (!cmd->error || !cmd->retries ||
+				mmc_card_removed(host->card)) {
 				err = host->areq->err_check(host->card,
 							    host->areq);
 				break; /* return err */

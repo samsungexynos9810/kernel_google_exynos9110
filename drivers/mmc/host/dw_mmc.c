@@ -138,6 +138,9 @@ void dw_mci_ciu_clk_dis(struct dw_mci *host)
 		return;
 	}
 
+	if (host->req_state == DW_MMC_REQ_BUSY)
+		return;
+
 	if (atomic_cmpxchg(&host->ciu_clk_cnt, 1, 0))
 		clk_disable_unprepare(gate_clk);
 }
@@ -2059,6 +2062,7 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 			} else {
 				data->bytes_xfered = data->blocks * data->blksz;
 				data->error = 0;
+				host->pdata->error_retry_cnt = 0;
 			}
 
 			if (host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT &&
