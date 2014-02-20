@@ -1842,11 +1842,6 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 		goto err_dev_null;
 	}
 
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (device->mem.alloc_ctx)
-		vb2_ion_detach_iommu(device->mem.alloc_ctx);
-#endif
-
 	subdev_csi = device->subdev_csi;
 	if (!subdev_csi) {
 		merr("subdev_csi is NULL", device);
@@ -1874,6 +1869,11 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 		merr("fimc_is_sensor_mclk_off is fail(%d)", device, ret);
 		goto p_err;
 	}
+
+#if defined(CONFIG_VIDEOBUF2_ION)
+	if (device->mem.alloc_ctx)
+		vb2_ion_detach_iommu(device->mem.alloc_ctx);
+#endif
 
 	ret = v4l2_subdev_call(subdev_csi, core, s_power, 0);
 	if (ret) {
