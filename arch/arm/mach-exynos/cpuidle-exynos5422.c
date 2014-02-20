@@ -546,7 +546,7 @@ early_wakeup:
 	lpa_wakeup_stat[lpa_wakeup_count].wakeup_stat = __raw_readl(EXYNOS5422_WAKEUP_STAT);
 	lpa_wakeup_stat[lpa_wakeup_count].early_wakeup = early_wakeup_flag;
 	lpa_wakeup_count++;
-	if (lpa_wakeup_count > EXYNOS_WAKEUP_STAT_BUF_SIZE)
+	if (lpa_wakeup_count >= EXYNOS_WAKEUP_STAT_BUF_SIZE)
 		lpa_wakeup_count = 0;
 
 	/* Clear wakeup state register */
