@@ -125,7 +125,6 @@ enum trig_con_set {
 #endif
 
 struct s3c_fb;
-static int cur_vsync_status;
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int s3c_fb_hibernation_power_on(struct display_driver *dispdrv);
@@ -1293,10 +1292,10 @@ static int decon_fb_config_eint_for_te(struct s3c_fb *sfb)
 		return -EINVAL;
 	}
 
+	atomic_set(&sfb->vsync_info.eint_refcount, 1);
 	sfb->irq_no = gpio_to_irq(gpio);
 	ret = devm_request_irq(dev, sfb->irq_no, decon_fb_isr_for_eint,
 			IRQF_TRIGGER_RISING, "s3c_fb", sfb);
-	cur_vsync_status = 1;
 
 	return ret;
 }
@@ -4660,10 +4659,10 @@ int s3c_fb_runtime_suspend(struct device *dev)
 	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	if ((sfb->irq_no != 0) && cur_vsync_status &&
-			(sfb->vsync_info.irq_refcount <= 0)) {
+	if ((sfb->irq_no != 0) && (sfb->vsync_info.irq_refcount <= 0) &&
+		(atomic_read(&sfb->vsync_info.eint_refcount) == 1)) {
 		disable_irq(sfb->irq_no);
-		cur_vsync_status = 0;
+		atomic_dec(&sfb->vsync_info.eint_refcount);
 	}
 #endif
 	return 0;
@@ -4703,9 +4702,10 @@ int s3c_fb_runtime_resume(struct device *dev)
 #endif
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	if ((sfb->irq_no != 0) && !cur_vsync_status) {
+	if ((sfb->irq_no != 0) &&
+		(atomic_read(&sfb->vsync_info.eint_refcount) == 0)) {
 		enable_irq(sfb->irq_no);
-		cur_vsync_status = 1;
+		atomic_inc(&sfb->vsync_info.eint_refcount);
 	}
 #endif
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);

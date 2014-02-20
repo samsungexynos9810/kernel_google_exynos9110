@@ -1,7 +1,7 @@
 
 #ifndef __FIMD_FB_H__
 #define __FIMD_FB_H__
-
+#include <linux/types.h>
 /* S3C_FB_MAX_WIN
  * Set to the maximum number of windows that any of the supported hardware
  * can use. Since the platform data uses this for an array size, having it
@@ -301,6 +301,7 @@ struct s3c_fb_vsync {
 	bool			active;
 	int			irq_refcount;
 	struct mutex		irq_lock;
+	atomic_t		eint_refcount;
 	struct task_struct	*thread;
 };
 
