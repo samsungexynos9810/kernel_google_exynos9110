@@ -468,7 +468,7 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	aftr_wakeup_stat[aftr_wakeup_count].wakeup_stat1 = __raw_readl(EXYNOS5430_WAKEUP_STAT1);
 	aftr_wakeup_stat[aftr_wakeup_count].wakeup_stat2 = __raw_readl(EXYNOS5430_WAKEUP_STAT2);
 	aftr_wakeup_count++;
-	if (aftr_wakeup_count > EXYNOS_WAKEUP_STAT_BUF_SIZE)
+	if (aftr_wakeup_count >= EXYNOS_WAKEUP_STAT_BUF_SIZE)
 		aftr_wakeup_count = 0;
 
 	/* Clear wakeup state register */
@@ -805,7 +805,7 @@ early_wakeup:
 	lpa_wakeup_stat[lpa_wakeup_count].wakeup_stat2 = __raw_readl(EXYNOS5430_WAKEUP_STAT2);
 	lpa_wakeup_stat[lpa_wakeup_count].early_wakeup = early_wakeup_flag;
 	lpa_wakeup_count++;
-	if (lpa_wakeup_count > EXYNOS_WAKEUP_STAT_BUF_SIZE)
+	if (lpa_wakeup_count >= EXYNOS_WAKEUP_STAT_BUF_SIZE)
 		lpa_wakeup_count = 0;
 
 	/* Clear wakeup state register */
