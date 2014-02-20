@@ -1801,6 +1801,8 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 	CGATE(gscl_fimc_lite3, "gscl_fimc_lite3", "aclk_333_432_gscl", EXYNOS5_CLK_GATE_IP_GSCL1, 17, 0, 0),
 	CGATE(clk_gscl_wrap_b, "clk_gscl_wrap_b", "dout_gscl_wrap_b", EXYNOS5_CLK_GATE_IP_GSCL1, 13, 0, 0),
 	CGATE(clk_gscl_wrap_a, "clk_gscl_wrap_a", "dout_gscl_wrap_a", EXYNOS5_CLK_GATE_IP_GSCL1, 12, 0, 0),
+	CGATE(clk_smmu_gscl1, "clk_smmu_gscl1", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL1, 7, 0, 0),
+	CGATE(clk_smmu_gscl0, "clk_smmu_gscl0", "dout2_gscl_blk_300", EXYNOS5_CLK_GATE_IP_GSCL1, 6, 0, 0),
 #else
 	/* GSCL */
 	CGATE(clk_gscl0, "clk_gscl0", "aclk_300_gscl", EXYNOS5_CLK_GATE_IP_GSCL0, 0, 0, 0),

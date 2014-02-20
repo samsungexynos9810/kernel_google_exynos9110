@@ -392,6 +392,8 @@
 		reg = <0x13E80000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 1286>, <&clock 1264>;
 		mmu-masters = <&gsc_0>;
 	};
 
@@ -400,6 +402,8 @@
 		reg = <0x13E90000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 2>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 1285>, <&clock 1263>;
 		mmu-masters = <&gsc_1>;
 	};
 
