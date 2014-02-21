@@ -2133,7 +2133,7 @@ void __init exynos5422_clk_init(struct device_node *np)
 			ARRAY_SIZE(exynos5422_fixed_rate_ext_clks),
 			ext_clk_match);
 	samsung_clk_register_pll35xx("fout_apll", "fin_pll",
-			EXYNOS5_APLL_LOCK, EXYNOS5_APLL_CON0, apll_rate_table, ARRAY_SIZE(apll_rate_table));
+			EXYNOS5_APLL_LOCK, EXYNOS5_APLL_CON0, NULL, 0);
 
 	samsung_clk_register_pll35xx("fout_bpll", "fin_pll",
 			EXYNOS5_BPLL_LOCK, EXYNOS5_BPLL_CON0, bpll_rate_table, ARRAY_SIZE(bpll_rate_table));
@@ -2148,7 +2148,7 @@ void __init exynos5422_clk_init(struct device_node *np)
 			EXYNOS5_IPLL_LOCK, EXYNOS5_IPLL_CON0, ipll_rate_table, ARRAY_SIZE(ipll_rate_table));
 
 	samsung_clk_register_pll35xx("fout_kpll", "fin_pll",
-			EXYNOS5_KPLL_LOCK, EXYNOS5_KPLL_CON0, kpll_rate_table, ARRAY_SIZE(kpll_rate_table));
+			EXYNOS5_KPLL_LOCK, EXYNOS5_KPLL_CON0, NULL, 0);
 
 	samsung_clk_register_pll35xx("fout_mpll", "fin_pll",
 			EXYNOS5_MPLL_LOCK, EXYNOS5_MPLL_CON0, mpll_rate_table, ARRAY_SIZE(mpll_rate_table));
