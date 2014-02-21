@@ -389,7 +389,7 @@ enum exynos5422_clks {
 	clk_abb_apbif = 1504,
 	clk_tmu_gpu_apbif,
 	clk_tmu_apbif,
-	clk_rtc,
+	gate_rtc,
 	clk_wdt,
 	clk_st,
 	clk_seckey_apbif = 1510,
@@ -1783,6 +1783,7 @@ struct samsung_gate_clock exynos5422_gate_clks[] __initdata = {
 
 	/* PERIS */
 	CGATE(clk_wdt, "clk_wdt", "aclk_66_psgen", EXYNOS5_CLK_GATE_IP_PERIS, 19, 0, 0),
+	CGATE(gate_rtc, "gate_rtc", "aclk_66_psgen", EXYNOS5_CLK_GATE_IP_PERIS, 20, 0, 0),
 
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
 /* CLK_GATE_IP_GSCL0 */
