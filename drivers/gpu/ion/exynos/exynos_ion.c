@@ -839,8 +839,6 @@ static struct ion_heap *__ion_heap_create(struct ion_platform_heap *heap_data,
 	heap->name = heap_data->name;
 	heap->id = heap_data->id;
 
-	ion_heap_reserve_vm(heap);
-
 	return heap;
 }
 
@@ -852,11 +850,9 @@ void __ion_heap_destroy(struct ion_heap *heap)
 	switch ((int)heap->type) {
 	case ION_HEAP_TYPE_EXYNOS:
 		ion_exynos_heap_destroy(heap);
-		free_vm_area(heap->reserved_vm_area);
 		break;
 	case ION_HEAP_TYPE_EXYNOS_CONTIG:
 		ion_exynos_contig_heap_destroy(heap);
-		free_vm_area(heap->reserved_vm_area);
 		break;
 	default:
 		ion_heap_destroy(heap);
@@ -889,17 +885,13 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 	pr_debug("%s: syncing for device %s, buffer: %p, size: %d\n",
 			__func__, dev ? dev_name(dev) : "null", buffer, size);
 
-	if (ion_buffer_need_flush_all(buffer)) {
+	if (ion_buffer_need_flush_all(buffer))
 		flush_all_cpu_caches();
-	} else if (!IS_ERR_OR_NULL(buffer->vaddr)) {
+	else if (!IS_ERR_OR_NULL(buffer->vaddr))
 		dmac_map_area(buffer->vaddr, size, dir);
-	} else if (buffer->heap->reserved_vm_area) {
-		ion_heap_sync(buffer->heap, buffer->sg_table,
+	else
+		ion_device_sync(buffer->dev, buffer->sg_table,
 					dir, dmac_map_area, false);
-	} else {
-		dma_sync_sg_for_device(dev, buffer->sg_table->sgl,
-					buffer->sg_table->orig_nents, dir);
-	}
 
 	mutex_unlock(&buffer->lock);
 }
@@ -960,17 +952,13 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 	pr_debug("%s: syncing for cpu %s, buffer: %p, size: %d\n",
 			__func__, dev ? dev_name(dev) : "null", buffer, size);
 
-	if (ion_buffer_need_flush_all(buffer)) {
+	if (ion_buffer_need_flush_all(buffer))
 		flush_all_cpu_caches();
-	} else if (!IS_ERR_OR_NULL(buffer->vaddr)) {
+	else if (!IS_ERR_OR_NULL(buffer->vaddr))
 		dmac_unmap_area(buffer->vaddr, size, dir);
-	} else if (buffer->heap->reserved_vm_area) {
-		ion_heap_sync(buffer->heap, buffer->sg_table,
+	else
+		ion_device_sync(buffer->dev, buffer->sg_table,
 					dir, dmac_unmap_area, false);
-	} else {
-		dma_sync_sg_for_cpu(dev, buffer->sg_table->sgl,
-					buffer->sg_table->orig_nents, dir);
-	}
 
 	mutex_unlock(&buffer->lock);
 }

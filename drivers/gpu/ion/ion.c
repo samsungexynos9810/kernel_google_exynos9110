@@ -38,6 +38,9 @@
 #include <linux/idr.h>
 #include <linux/exynos_iovmm.h>
 
+#include <asm/cacheflush.h>
+#include <asm/tlbflush.h>
+
 #include "ion_priv.h"
 
 /**
@@ -59,6 +62,10 @@ struct ion_device {
 			      unsigned long arg);
 	struct rb_root clients;
 	struct dentry *debug_root;
+	struct semaphore vm_sem;
+	atomic_t page_idx;
+	struct vm_struct *reserved_vm_area;
+	pte_t **pte;
 };
 
 /**
@@ -1182,7 +1189,7 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 		return 0;
 	}
 
-	ion_heap_sync(buffer->heap, buffer->sg_table,
+	ion_device_sync(buffer->dev, buffer->sg_table,
 				DMA_BIDIRECTIONAL, ion_buffer_flush, false);
 	dma_buf_put(dmabuf);
 	return 0;
@@ -1563,6 +1570,126 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 	up_write(&dev->lock);
 }
 
+#define VM_PAGE_COUNT_WIDTH 4
+#define VM_PAGE_COUNT 4
+
+static void ion_device_sync_and_unmap(unsigned long vaddr,
+					pte_t *ptep, size_t size,
+					enum dma_data_direction dir,
+					ion_device_sync_func sync, bool memzero)
+{
+	int i;
+
+	flush_cache_vmap(vaddr, vaddr + size);
+
+	if (memzero)
+		memset((void *) vaddr, 0, size);
+
+	if (sync)
+		sync((void *) vaddr, size, dir);
+
+	for (i = 0; i < (size / PAGE_SIZE); i++)
+		pte_clear(&init_mm, (void *) vaddr + (i * PAGE_SIZE), ptep + i);
+
+	flush_cache_vunmap(vaddr, vaddr + size);
+	flush_tlb_kernel_range(vaddr, vaddr + size);
+}
+
+void ion_device_sync(struct ion_device *dev, struct sg_table *sgt,
+			enum dma_data_direction dir,
+			ion_device_sync_func sync, bool memzero)
+{
+	struct scatterlist *sg;
+	int page_idx, pte_idx, i;
+	unsigned long vaddr;
+	size_t sum = 0;
+	pte_t *ptep;
+
+	if (!memzero && !sync)
+		return;
+
+	down(&dev->vm_sem);
+
+	page_idx = atomic_pop(&dev->page_idx, VM_PAGE_COUNT_WIDTH);
+	BUG_ON((page_idx < 0) || (page_idx >= VM_PAGE_COUNT));
+
+	pte_idx = page_idx * (SZ_1M / PAGE_SIZE);
+	ptep = dev->pte[pte_idx];
+	vaddr = (unsigned long) dev->reserved_vm_area->addr +
+				(SZ_1M * page_idx);
+
+	for_each_sg(sgt->sgl, sg, sgt->orig_nents, i) {
+		int j;
+
+		if (!PageHighMem(sg_page(sg))) {
+			if (memzero)
+				memset(page_address(sg_page(sg)),
+							0, sg->length);
+			if (sync)
+				sync(page_address(sg_page(sg)),
+							sg->length, dir);
+			continue;
+		}
+
+		for (j = 0; j < (sg->length / PAGE_SIZE); j++) {
+			set_pte_at(&init_mm, vaddr, ptep,
+					mk_pte(sg_page(sg) + j, PAGE_KERNEL));
+			ptep++;
+			vaddr += PAGE_SIZE;
+			sum += PAGE_SIZE;
+
+			if (sum == SZ_1M) {
+				ptep = dev->pte[pte_idx];
+				vaddr =
+				(unsigned long) dev->reserved_vm_area->addr
+					+ (SZ_1M * page_idx);
+
+				ion_device_sync_and_unmap(vaddr,
+					ptep, sum, dir, sync, memzero);
+				sum = 0;
+			}
+		}
+	}
+
+	if (sum != 0) {
+		ion_device_sync_and_unmap(
+			(unsigned long) dev->reserved_vm_area->addr +
+				(SZ_1M * page_idx),
+			dev->pte[pte_idx], sum, dir, sync, memzero);
+	}
+
+	atomic_push(&dev->page_idx, page_idx, VM_PAGE_COUNT_WIDTH);
+
+	up(&dev->vm_sem);
+}
+
+static int ion_device_reserve_vm(struct ion_device *dev)
+{
+	int i;
+
+	atomic_set(&dev->page_idx, -1);
+
+	for (i = VM_PAGE_COUNT - 1; i >= 0; i--) {
+		BUG_ON(i >= (1 << VM_PAGE_COUNT_WIDTH));
+		atomic_push(&dev->page_idx, i, VM_PAGE_COUNT_WIDTH);
+	}
+
+	sema_init(&dev->vm_sem, VM_PAGE_COUNT);
+	dev->pte = page_address(
+			alloc_pages(GFP_KERNEL,
+				get_order(((SZ_1M / PAGE_SIZE) *
+						VM_PAGE_COUNT) *
+						sizeof(*dev->pte))));
+	dev->reserved_vm_area = alloc_vm_area(SZ_1M *
+						VM_PAGE_COUNT, dev->pte);
+	if (!dev->reserved_vm_area) {
+		pr_err("%s: Failed to allocate vm area\n", __func__);
+		return -ENOMEM;
+	}
+
+	return 0;
+}
+
 struct ion_device *ion_device_create(long (*custom_ioctl)
 				     (struct ion_client *client,
 				      unsigned int cmd,
@@ -1595,6 +1722,11 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	init_rwsem(&idev->lock);
 	plist_head_init(&idev->heaps);
 	idev->clients = RB_ROOT;
+
+	ret = ion_device_reserve_vm(idev);
+	if (ret)
+		panic("ion: failed to reserve vm area\n");
+
 	return idev;
 }
 
@@ -1602,6 +1734,7 @@ void ion_device_destroy(struct ion_device *dev)
 {
 	misc_deregister(&dev->dev);
 	/* XXX need to free the heaps and clients ? */
+	free_vm_area(dev->reserved_vm_area);
 	kfree(dev);
 }
 

@@ -191,10 +191,6 @@ struct ion_heap {
 	spinlock_t free_lock;
 	wait_queue_head_t waitqueue;
 	struct task_struct *task;
-	struct semaphore vm_sem;
-	atomic_t page_idx;
-	struct vm_struct *reserved_vm_area;
-	pte_t **pte;
 	int (*debug_show)(struct ion_heap *heap, struct seq_file *, void *);
 };
 
@@ -339,11 +335,10 @@ void ion_chunk_heap_destroy(struct ion_heap *);
 struct ion_heap *ion_cma_heap_create(struct ion_platform_heap *);
 void ion_cma_heap_destroy(struct ion_heap *);
 
-typedef void (*ion_heap_sync_func)(const void *, size_t, int);
-void ion_heap_sync(struct ion_heap *heap, struct sg_table *sgt,
+typedef void (*ion_device_sync_func)(const void *, size_t, int);
+void ion_device_sync(struct ion_device *dev, struct sg_table *sgt,
 			enum dma_data_direction dir,
-			ion_heap_sync_func sync, bool memzero);
-int ion_heap_reserve_vm(struct ion_heap *heap);
+			ion_device_sync_func sync, bool memzero);
 
 static inline void ion_buffer_flush(const void *vaddr, size_t size, int dir)
 {
@@ -353,7 +348,7 @@ static inline void ion_buffer_flush(const void *vaddr, size_t size, int dir)
 static inline void ion_buffer_make_ready(struct ion_buffer *buffer)
 {
 	if (!(buffer->flags & ION_FLAG_READY_TO_USE)) {
-		ion_heap_sync(buffer->heap, buffer->sg_table, DMA_BIDIRECTIONAL,
+		ion_device_sync(buffer->dev, buffer->sg_table, DMA_BIDIRECTIONAL,
 			ion_buffer_cached(buffer) ? NULL : ion_buffer_flush,
 			!(buffer->flags & ION_FLAG_NOZEROED));
 		buffer->flags |= ION_FLAG_READY_TO_USE;
