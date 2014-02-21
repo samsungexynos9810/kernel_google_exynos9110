@@ -327,7 +327,6 @@ struct ion_heap *ion_heap_create(struct ion_platform_heap *);
 void ion_heap_destroy(struct ion_heap *);
 struct ion_heap *ion_system_heap_create(struct ion_platform_heap *);
 void ion_system_heap_destroy(struct ion_heap *);
-unsigned long ion_system_heap_page_pool_total(struct ion_heap *heap);
 
 struct ion_heap *ion_system_contig_heap_create(struct ion_platform_heap *);
 void ion_system_contig_heap_destroy(struct ion_heap *);

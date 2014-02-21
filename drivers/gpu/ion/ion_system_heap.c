@@ -578,26 +578,6 @@ end:
 
 }
 
-unsigned long ion_system_heap_page_pool_total(struct ion_heap *heap)
-{
-	struct ion_system_heap *sys_heap = container_of(heap,
-							struct ion_system_heap,
-							heap);
-	unsigned long nr_pages = 0;
-	int i;
-
-	for (i = 0; i < num_orders * 2; i++) {
-		struct ion_page_pool *pool = sys_heap->pools[i];
-		nr_pages += ion_page_pool_shrink(pool, __GFP_HIGHMEM, 0);
-	}
-
-	nr_pages += (ion_heap_freelist_size(heap) / PAGE_SIZE);
-
-	pr_debug("%s: total %lu pages cached\n", __func__, nr_pages);
-
-	return nr_pages;
-}
-
 static int ion_system_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 				      void *unused)
 {
