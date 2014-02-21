@@ -86,7 +86,7 @@ static unsigned int clkdiv_cpu0_5422_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 	 * { CPUD, ATB, PCLK_DBG, APLL, ARM2}
 	 */
 	/* ARM L0: 2.4GHz */
-	{ 6, 7, 7, 3, 0 },
+	{ 5, 7, 7, 3, 0 },
 
 	/* ARM L1: 2.3GHz */
 	{ 5, 7, 7, 3, 0 },
@@ -95,10 +95,10 @@ static unsigned int clkdiv_cpu0_5422_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 	{ 5, 7, 7, 3, 0 },
 
 	/* ARM L3: 2.1GHz */
-	{ 5, 7, 7, 3, 0 },
+	{ 4, 7, 7, 3, 0 },
 
 	/* ARM L4: 2.0GHz */
-	{ 5, 7, 7, 3, 0 },
+	{ 4, 7, 7, 3, 0 },
 
 	/* ARM L5: 1.9GHz */
 	{ 4, 7, 7, 3, 0 },
@@ -107,10 +107,10 @@ static unsigned int clkdiv_cpu0_5422_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 	{ 4, 7, 7, 3, 0 },
 
 	/* ARM L7: 1.7GHz */
-	{ 4, 7, 7, 3, 0 },
+	{ 3, 7, 7, 3, 0 },
 
 	/* ARM L8: 1.6GHz */
-	{ 4, 7, 7, 3, 0 },
+	{ 3, 7, 7, 3, 0 },
 
 	/* ARM L9: 1.5GHz */
 	{ 3, 7, 7, 3, 0 },
@@ -119,40 +119,40 @@ static unsigned int clkdiv_cpu0_5422_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 	{ 3, 7, 7, 3, 0 },
 
 	/* ARM L11: 1.3GHz */
-	{ 3, 7, 7, 3, 0 },
+	{ 2, 7, 7, 3, 0 },
 
 	/* ARM L12: 1.2GHz */
-	{ 3, 7, 7, 3, 0 },
+	{ 2, 7, 7, 3, 0 },
 
 	/* ARM L13: 1.1GHz */
-	{ 3, 7, 7, 3, 0 },
+	{ 2, 7, 7, 3, 0 },
 
 	/* ARM L14: 1000MHz */
-	{ 3, 6, 6, 3, 0 },
+	{ 2, 6, 6, 3, 0 },
 
 	/* ARM L15: 900MHz */
-	{ 3, 6, 6, 3, 0 },
+	{ 2, 6, 6, 3, 0 },
 
 	/* ARM L16: 800MHz */
-	{ 3, 5, 5, 3, 0 },
+	{ 2, 5, 5, 3, 0 },
 
 	/* ARM L17: 700MHz */
-	{ 3, 5, 5, 3, 0 },
+	{ 2, 5, 5, 3, 0 },
 
 	/* ARM L18: 600MHz */
-	{ 3, 4, 4, 3, 0 },
+	{ 2, 4, 4, 3, 0 },
 
 	/* ARM L19: 500MHz */
-	{ 3, 3, 3, 3, 0 },
+	{ 2, 3, 3, 3, 0 },
 
 	/* ARM L20: 400MHz */
-	{ 3, 3, 3, 3, 0 },
+	{ 2, 3, 3, 3, 0 },
 
 	/* ARM L21: 300MHz */
-	{ 3, 3, 3, 3, 0 },
+	{ 2, 3, 3, 3, 0 },
 
 	/* ARM L22: 200MHz */
-	{ 3, 3, 3, 3, 0 },
+	{ 2, 3, 3, 3, 0 },
 };
 
 static unsigned int clkdiv_cpu1_5422_CA15[CPUFREQ_LEVEL_END_CA15][2] = {

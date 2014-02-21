@@ -76,13 +76,13 @@ static unsigned int clkdiv_cpu0_5422_CA7[CPUFREQ_LEVEL_END_CA7][5] = {
 	 * { KFC, ACLK, HPM, PCLK, KPLL }
 	 */
 	/* ARM L0: 1.6GHz */
-	{ 0, 2, 7, 5, 3 },
+	{ 0, 3, 7, 5, 3 },
 
 	/* ARM L1: 1.5GMHz */
-	{ 0, 2, 7, 5, 3 },
+	{ 0, 3, 7, 5, 3 },
 
 	/* ARM L2: 1.4GMHz */
-	{ 0, 2, 7, 5, 3 },
+	{ 0, 3, 7, 5, 3 },
 
 	/* ARM L3: 1.3GHz */
 	{ 0, 2, 7, 5, 3 },
