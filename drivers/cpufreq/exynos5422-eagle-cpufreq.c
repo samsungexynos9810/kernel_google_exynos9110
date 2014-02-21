@@ -518,6 +518,7 @@ static void exynos5422_set_frequency_CA15(unsigned int old_index,
 		}
 	}
 
+	clk_set_rate(fout_apll, exynos5422_freq_table_CA15[new_index].frequency * 1000);
 	pr_debug("post clk [%ld]\n", clk_get_rate(dout_cpu));
 }
 

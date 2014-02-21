@@ -374,6 +374,7 @@ unsigned int tmp;
 		}
 	}
 
+	clk_set_rate(fout_kpll, exynos5422_freq_table_CA7[new_index].frequency * 1000);
 	pr_debug("post clk [%ld]\n", clk_get_rate(dout_cpu_kfc));
 }
 
