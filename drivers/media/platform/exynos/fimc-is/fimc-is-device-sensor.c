@@ -795,7 +795,7 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 			}
 		} else {
 			device->instant_cnt--;
-			if (device->instant_cnt <= 1)
+			if (device->instant_cnt == 0)
 				wake_up(&device->instant_wait);
 		}
 	}
@@ -873,7 +873,7 @@ static void fimc_is_sensor_instanton(struct work_struct *data)
 
 		timeout = FIMC_IS_FLITE_STOP_TIMEOUT + msecs_to_jiffies(instant_cnt*60);
 		timetowait = wait_event_timeout(device->instant_wait,
-			(device->instant_cnt <= 1),
+			(device->instant_cnt == 0),
 			timeout);
 		if (!timetowait) {
 			merr("wait_event_timeout is invalid", device);
