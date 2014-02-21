@@ -38,7 +38,7 @@
 
 #include <../drivers/clk/samsung/clk.h>
 
-#define GATE_LOCK_CNT 1
+#define GATE_LOCK_CNT 2
 
 int decon_dbg = 5;
 module_param(decon_dbg, int, 0644);
@@ -327,7 +327,6 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 		atomic_read(&dispdrv->pm_status.lock_count) == 0) {
 		if (dispdrv->pm_status.clock_enabled &&
 			MAX_CLK_GATING_COUNT > 0) {
-
 			++dispdrv->pm_status.clk_idle_count;
 			if (dispdrv->pm_status.clk_idle_count > MAX_CLK_GATING_COUNT) {
 				disp_pm_gate_lock(dispdrv, true);
@@ -339,6 +338,7 @@ void disp_pm_te_triggered(struct display_driver *dispdrv)
 			++dispdrv->pm_status.pwr_idle_count;
 			if (dispdrv->pm_status.power_gating_on &&
 				dispdrv->pm_status.pwr_idle_count > MAX_PWR_GATING_COUNT) {
+				disp_pm_gate_lock(dispdrv, true);
 				queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 						&dispdrv->pm_status.control_power_gating_work);
 			}
@@ -365,6 +365,7 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 	if (sfb->power_state == POWER_HIBER_DOWN) {
 		switch (cmd) {
 		case S3CFB_PLATFORM_RESET:
+			disp_pm_gate_lock(dispdrv, true);
 			queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 				&dispdrv->pm_status.control_power_gating_work);
 			/* Prevent next clock and power-gating */
@@ -373,6 +374,7 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 		case S3CFB_WIN_PSR_EXIT:
 		case S3CFB_WIN_CONFIG:
 			request_dynamic_hotplug(false);
+			disp_pm_gate_lock(dispdrv, true);
 			queue_kthread_work(&dispdrv->pm_status.control_power_gating,
 				&dispdrv->pm_status.control_power_gating_work);
 			break;
@@ -457,6 +459,7 @@ static void decon_power_gating_handler(struct kthread_work *work)
 	} else if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN) {
 		display_hibernation_power_on(dispdrv);
 	}
+	disp_pm_gate_lock(dispdrv, false);
 }
 
 static int __display_hibernation_power_on(struct display_driver *dispdrv)
