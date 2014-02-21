@@ -36,6 +36,8 @@
 #define COLD_VOLT_OFFSET	37500
 #define LIMIT_COLD_VOLTAGE	1250000
 
+#define CONSTRAINT_VOLT		900000
+
 enum devfreq_isp_idx {
 	LV0,
 	LV1,
@@ -821,13 +823,13 @@ static int exynos5_devfreq_isp_set_volt(struct devfreq_data_isp *data,
 	if (data->old_volt == volt)
 		goto out;
 
-	if (!tolower)
+	if (!tolower && (volt >= CONSTRAINT_VOLT))
 		exynos5_int_check_voltage_constraint(volt);
 
 	regulator_set_voltage(data->vdd_isp, volt, volt_range);
 	data->old_volt = volt;
 
-	if (tolower)
+	if (tolower && (volt >= CONSTRAINT_VOLT))
 		exynos5_int_check_voltage_constraint(volt);
 out:
 	return 0;
