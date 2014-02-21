@@ -138,7 +138,7 @@ struct aud_reg {
 struct subip_info {
 	struct device		*dev;
 	const char		*name;
-	void			(*cb)(void);
+	void			(*cb)(struct device *dev);
 	atomic_t		use_cnt;
 	struct list_head	node;
 };
@@ -310,7 +310,7 @@ int lpass_register_subip(struct device *ip_dev, const char *ip_name)
 	return 0;
 }
 
-int lpass_set_gpio_cb(struct device *ip_dev, void (*ip_cb)(void))
+int lpass_set_gpio_cb(struct device *ip_dev, void (*ip_cb)(struct device *dev))
 {
 	struct subip_info *si;
 
@@ -453,7 +453,7 @@ static void lpass_retention_pad(void)
 	/* Powerdown mode for gpio */
 	list_for_each_entry(si, &subip_list, node) {
 		if (si->cb != NULL)
-			(*si->cb)();
+			(*si->cb)(si->dev);
 	}
 
 	/* Set PAD retention */
@@ -467,7 +467,7 @@ static void lpass_release_pad(void)
 	/* Restore gpio */
 	list_for_each_entry(si, &subip_list, node) {
 		if (si->cb != NULL)
-			(*si->cb)();
+			(*si->cb)(si->dev);
 	}
 
 	/* Release PAD retention */
