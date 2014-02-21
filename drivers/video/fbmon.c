@@ -1031,19 +1031,19 @@ int fb_parse_edid(unsigned char *edid, struct fb_var_screeninfo *var)
 	return 1;
 }
 
-void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
+int fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 	unsigned char *block;
 	int i, found = 0;
 
 	if (edid == NULL)
-		return;
+		return -EINVAL;
 
 	if (!(edid_checksum(edid)))
-		return;
+		return -EINVAL;
 
 	if (!(edid_check_header(edid)))
-		return;
+		return -EINVAL;
 
 	memset(specs, 0, sizeof(struct fb_monspecs));
 
@@ -1093,6 +1093,7 @@ void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 		specs->misc &= ~FB_MISC_1ST_DETAIL;
 
 	DPRINTK("========================================\n");
+	return 1;
 }
 
 /**
@@ -1169,14 +1170,14 @@ int fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 	u8 pos = 4, sad_n = 0, svd_n = 0, svsdb_n = 0;
 
 	if (!edid)
-		return 1;
+		return -EINVAL;
 
 	if (!edid_checksum(edid))
-		return 1;
+		return -EINVAL;
 
 	if (edid[0] != 0x2 || edid[1] != 0x3 ||
 	    edid[2] < 4 || edid[2] > 128 - DETAILED_TIMING_DESCRIPTION_SIZE)
-		return 1;
+		return -EINVAL;
 
 	DPRINTK("  Data Block Collection\n");
 
@@ -1743,9 +1744,10 @@ int fb_parse_edid(unsigned char *edid, struct fb_var_screeninfo *var)
 {
 	return 1;
 }
-void fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
+int fb_edid_to_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
 	specs = NULL;
+	return 1;
 }
 int fb_edid_add_monspecs(unsigned char *edid, struct fb_monspecs *specs)
 {
