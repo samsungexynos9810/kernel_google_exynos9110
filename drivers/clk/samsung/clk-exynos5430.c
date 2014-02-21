@@ -3136,14 +3136,14 @@ void __init exynos5430_clk_init(struct device_node *np)
 
 	egl_pll = samsung_clk_register_pll35xx("fout_egl_pll", "fin_pll",
 			EXYNOS5430_EGL_PLL_LOCK,
-			EXYNOS5430_EGL_PLL_CON0, pll_egl_kfc_rate_table, ARRAY_SIZE(pll_egl_kfc_rate_table));
+			EXYNOS5430_EGL_PLL_CON0, NULL, 0);
 
 	if (egl_pll == NULL)
 		panic("%s: Fail to register egl_pll", __func__);
 
 	kfc_pll = samsung_clk_register_pll35xx("fout_kfc_pll", "fin_pll",
 			EXYNOS5430_KFC_PLL_LOCK,
-			EXYNOS5430_KFC_PLL_CON0, pll_egl_kfc_rate_table, ARRAY_SIZE(pll_egl_kfc_rate_table));
+			EXYNOS5430_KFC_PLL_CON0, NULL, 0);
 
 	if (kfc_pll == NULL)
 		panic("%s: Fail to register kfc_pll", __func__);
