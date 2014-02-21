@@ -62,6 +62,7 @@ static int big_hotpluged = 0;
 static unsigned int egl_min_freq;
 static unsigned int kfc_max_freq;
 #endif
+int disable_dm_hotplug_before_suspend = 0;
 
 enum hotplug_cmd {
 	CMD_NORMAL,
@@ -104,6 +105,8 @@ static void exynos_dm_hotplug_enable(void)
 		return;
 	}
 	dm_hotplug_disable--;
+	if (!in_suspend_prepared)
+		disable_dm_hotplug_before_suspend--;
 	mutex_unlock(&dm_hotplug_lock);
 }
 
@@ -111,6 +114,8 @@ static void exynos_dm_hotplug_disable(void)
 {
 	mutex_lock(&dm_hotplug_lock);
 	dm_hotplug_disable++;
+	if (!in_suspend_prepared)
+		disable_dm_hotplug_before_suspend++;
 	mutex_unlock(&dm_hotplug_lock);
 }
 
@@ -555,7 +560,6 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 		break;
 
 	case PM_POST_SUSPEND:
-		in_suspend_prepared = false;
 		exynos_dm_hotplug_enable();
 
 		dm_hotplug_task =
@@ -564,6 +568,8 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 			pr_err("Failed in creation of thread.\n");
 			return -EINVAL;
 		}
+
+		in_suspend_prepared = false;
 
 		wake_up_process(dm_hotplug_task);
 		break;
