@@ -389,6 +389,9 @@ void edid_extension_update(struct fb_monspecs *specs)
 		}
 	}
 
+	if (!specs->videodb)
+		return;
+
 	/* find 3D multi preset */
 	if (specs->vsdb->s3d_multi_present == EDID_3D_STRUCTURE_ALL)
 		for (i = 0; i < specs->videodb_len + 1; i++)
@@ -428,12 +431,11 @@ int edid_update(struct hdmi_device *hdev)
 	if (block_cnt < 0)
 		goto out;
 
-	fb_edid_to_monspecs(edid, &specs);
-	for (i = 1; i < block_cnt; i++) {
+	ret = fb_edid_to_monspecs(edid, &specs);
+	if (ret < 0)
+		goto out;
+	for (i = 1; i < block_cnt; i++)
 		ret = fb_edid_add_monspecs(edid + i * EDID_BLOCK_SIZE, &specs);
-		if (ret < 0)
-			goto out;
-	}
 
 	preferred_preset = hdmi_conf[HDMI_DEFAULT_TIMINGS_IDX].dv_timings;
 	for (i = 0; i < ARRAY_SIZE(edid_presets); i++)
@@ -457,8 +459,10 @@ int edid_update(struct hdmi_device *hdev)
 	}
 
 	/* number of 128bytes blocks to follow */
-	if (block_cnt > 1)
+	if (ret > 0 && block_cnt > 1)
 		edid_extension_update(&specs);
+	else
+		goto out;
 
 	if (!edid_misc)
 		edid_misc = specs.misc;
