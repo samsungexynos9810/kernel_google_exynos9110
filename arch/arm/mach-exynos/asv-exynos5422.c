@@ -495,7 +495,7 @@ static void exynos5422_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 				exynos5422_apply_volt_offset(int_asv_volt_info_evt1_v230[i][target_asv_grp_nr + 1], ID_INT);
 #endif
 			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_evt1_v230[i][0];
-			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v230_v240[i][target_asv_grp_nr + 1];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 		asv_inform->max_volt_value = INT_V230_MAX_VOLT;
 		break;
@@ -511,7 +511,7 @@ static void exynos5422_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 				exynos5422_apply_volt_offset(int_asv_volt_info_evt1_v240[i][target_asv_grp_nr + 1], ID_INT);
 #endif
 			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_evt1_v240[i][0];
-			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v230_v240[i][target_asv_grp_nr + 1];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info[i][target_asv_grp_nr + 1];
 		}
 		asv_inform->max_volt_value = INT_V240_MAX_VOLT;
 		break;
@@ -827,7 +827,7 @@ static void exynos5422_set_asv_info_isp(struct asv_info *asv_inform, bool show_v
 #ifdef CONFIG_ASV_MARGIN_TEST
 			asv_inform->asv_volt[i].asv_value =
 				exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP)
-				+ set_mif_volt;
+				+ set_isp_volt;
 #else
 			asv_inform->asv_volt[i].asv_value =
 				exynos5422_apply_volt_offset(isp_asv_volt_info_evt1[i][target_asv_grp_nr + 1], ID_ISP);
@@ -1030,21 +1030,8 @@ static int __init asv_exynos5422_init(void)
 	set_ema();
 
 	asv_group_no = exynos5422_get_asv_group_sram();
-	switch (asv_table_version) {
-	case ASV_TABLE_VER0:
-	case ASV_TABLE_VER1:
-	case ASV_TABLE_VER2:
-		mif_sram_volt = mif_sram_asv_volt_info_evt1_v230_v240[0][asv_group_no];
-		g3d_sram_volt = g3d_sram_asv_volt_info_evt1_v230_v240[0][asv_group_no];
-		break;
-	case ASV_TABLE_VER3:
-		mif_sram_volt = mif_sram_asv_volt_info_evt1[0][asv_group_no];
-		g3d_sram_volt = g3d_sram_asv_volt_info_evt1[0][asv_group_no];
-		break;
-	default:
-		pr_err("EXYNOS5422 ASV : wrong ASV Table to set sram voltage\n");
-		goto err_mif_sram;
-	}
+	mif_sram_volt = mif_sram_asv_volt_info_evt1[0][asv_group_no];
+	g3d_sram_volt = g3d_sram_asv_volt_info_evt1[0][asv_group_no];
 
 	pr_info("SRAM ASV group [%d] : MIF(%d), G3D(%d)\n", asv_group_no, mif_sram_volt, g3d_sram_volt);
 
