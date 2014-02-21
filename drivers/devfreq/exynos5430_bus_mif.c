@@ -1134,15 +1134,27 @@ static int exynos5_devfreq_mif_set_dll(struct devfreq_data_mif *data,
 		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB4);
 		lock_value = (tmp >> CTRL_LOCK_VALUE_SHIFT) & CTRL_LOCK_VALUE_MASK;
 		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+		tmp |= (0x1 << 5);
+		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
 		tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
 		tmp |= (lock_value << CTRL_FORCE_SHIFT);
+		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
+		tmp = __raw_readl(data->base_lpddr_phy0 + 0xB0);
+		tmp &= ~(0x1 << 5);
 		__raw_writel(tmp, data->base_lpddr_phy0 + 0xB0);
 
 		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB4);
 		lock_value = (tmp >> CTRL_LOCK_VALUE_SHIFT) & CTRL_LOCK_VALUE_MASK;
 		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+		tmp |= (0x1 << 5);
+		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
+		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
 		tmp &= ~(CTRL_FORCE_MASK << CTRL_FORCE_SHIFT);
 		tmp |= (lock_value << CTRL_FORCE_SHIFT);
+		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
+		tmp = __raw_readl(data->base_lpddr_phy1 + 0xB0);
+		tmp &= ~(0x1 << 5);
 		__raw_writel(tmp, data->base_lpddr_phy1 + 0xB0);
 	}
 
