@@ -138,7 +138,7 @@ static unsigned int exynos5422_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	((325 << 16) | (6 << 8) | (0x0)),
 
 	/* KPLL FOUT L4: 1.2GHz */
-	((100 << 16) | (2 << 8) | (0x0)),
+	((200 << 16) | (2 << 8) | (0x1)),
 
 	/* KPLL FOUT L5: 1.1GHz */
 	((275 << 16) | (3 << 8) | (0x1)),
@@ -156,7 +156,7 @@ static unsigned int exynos5422_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	((175 << 16) | (3 << 8) | (0x1)),
 
 	/* KPLL FOUT L10: 600MHz */
-	((100 << 16) | (2 << 8) | (0x1)),
+	((200 << 16) | (2 << 8) | (0x2)),
 
 	/* KPLL FOUT L11: 500MHz */
 	((250 << 16) | (3 << 8) | (0x2)),
@@ -165,7 +165,7 @@ static unsigned int exynos5422_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
 	((200 << 16) | (3 << 8) | (0x2)),
 
 	/* KPLL FOUT L13: 300MHz */
-	((100 << 16) | (2 << 8) | (0x2)),
+	((200 << 16) | (2 << 8) | (0x3)),
 
 	/* KPLL FOUT L14: 200MHz */
 	((200 << 16) | (3 << 8) | (0x3)),

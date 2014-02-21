@@ -270,7 +270,7 @@ static unsigned int exynos5422_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	((325 << 16) | (6 << 8) | (0x0)),
 
 	/* APLL FOUT L12: 1.2GHz */
-	((100 << 16) | (2 << 8) | (0x0)),
+	((200 << 16) | (2 << 8) | (0x1)),
 
 	/* APLL FOUT L13: 1.1GHz */
 	((275 << 16) | (3 << 8) | (0x1)),
@@ -288,7 +288,8 @@ static unsigned int exynos5422_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	((175 << 16) | (3 << 8) | (0x1)),
 
 	/* APLL FOUT L18: 600MHz */
-	((100 << 16) | (2 << 8) | (0x1)),
+	((200 << 16) | (2 << 8) | (0x2)),
+
 	/* APLL FOUT L19: 500MHz */
 	((250 << 16) | (3 << 8) | (0x2)),
 
@@ -296,7 +297,7 @@ static unsigned int exynos5422_apll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
 	((200 << 16) | (3 << 8) | (0x2)),
 
 	/* APLL FOUT L21: 300MHz */
-	((100 << 16) | (2 << 8) | (0x2)),
+	((200 << 16) | (2 << 8) | (0x3)),
 
 	/* APLL FOUT L22: 200MHz */
 	((200 << 16) | (3 << 8) | (0x3)),
