@@ -364,6 +364,12 @@ int disp_pm_sched_power_on(struct display_driver *dispdrv, unsigned int cmd)
 	flush_kthread_worker(&dispdrv->pm_status.control_power_gating);
 	if (sfb->power_state == POWER_HIBER_DOWN) {
 		switch (cmd) {
+		case S3CFB_PLATFORM_RESET:
+			queue_kthread_work(&dispdrv->pm_status.control_power_gating,
+				&dispdrv->pm_status.control_power_gating_work);
+			/* Prevent next clock and power-gating */
+			disp_pm_set_plat_status(dispdrv, false);
+			break;
 		case S3CFB_WIN_PSR_EXIT:
 		case S3CFB_WIN_CONFIG:
 			request_dynamic_hotplug(false);
