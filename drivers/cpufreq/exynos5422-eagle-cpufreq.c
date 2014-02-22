@@ -128,31 +128,31 @@ static unsigned int clkdiv_cpu0_5422_CA15[CPUFREQ_LEVEL_END_CA15][7] = {
 	{ 2, 7, 7, 3, 0 },
 
 	/* ARM L14: 1000MHz */
-	{ 2, 6, 6, 3, 0 },
+	{ 2, 6, 7, 3, 0 },
 
 	/* ARM L15: 900MHz */
-	{ 2, 6, 6, 3, 0 },
+	{ 2, 6, 7, 3, 0 },
 
 	/* ARM L16: 800MHz */
-	{ 2, 5, 5, 3, 0 },
+	{ 2, 5, 7, 3, 0 },
 
 	/* ARM L17: 700MHz */
-	{ 2, 5, 5, 3, 0 },
+	{ 2, 5, 7, 3, 0 },
 
 	/* ARM L18: 600MHz */
-	{ 2, 4, 4, 3, 0 },
+	{ 2, 4, 7, 3, 0 },
 
 	/* ARM L19: 500MHz */
-	{ 2, 3, 3, 3, 0 },
+	{ 2, 3, 7, 3, 0 },
 
 	/* ARM L20: 400MHz */
-	{ 2, 3, 3, 3, 0 },
+	{ 2, 3, 7, 3, 0 },
 
 	/* ARM L21: 300MHz */
-	{ 2, 3, 3, 3, 0 },
+	{ 2, 3, 7, 3, 0 },
 
 	/* ARM L22: 200MHz */
-	{ 2, 3, 3, 3, 0 },
+	{ 2, 3, 7, 3, 0 },
 };
 
 static unsigned int clkdiv_cpu1_5422_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
@@ -390,7 +390,7 @@ static void exynos5422_set_clkdiv_CA15(unsigned int div_index)
 	do {
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5_CLKDIV_STATCPU0);
-	} while (tmp & 0x11111111);
+	} while (tmp & 0x11110010);
 
 #ifdef PRINT_DIV_VAL
 	tmp = __raw_readl(EXYNOS5_CLKDIV_CPU0);
@@ -405,7 +405,7 @@ static void exynos5422_set_clkdiv_CA15(unsigned int div_index)
 	do {
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5_CLKDIV_STATCPU1);
-	} while (tmp & 0x111);
+	} while (tmp & 0x11);
 
 #ifdef PRINT_DIV_VAL
 	tmp = __raw_readl(EXYNOS5_CLKDIV_CPU1);
