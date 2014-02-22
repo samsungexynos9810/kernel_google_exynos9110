@@ -30,6 +30,7 @@
 
 #if defined(CONFIG_PM_DEVFREQ)
 #define ENABLE_DVFS
+#define START_DVFS_LEVEL FIMC_IS_SN_REAR_PREVIEW_FHD
 #endif
 
 #if defined(CONFIG_SOC_EXYNOS5430)

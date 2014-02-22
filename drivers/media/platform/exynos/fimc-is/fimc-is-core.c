@@ -253,10 +253,10 @@ int fimc_is_runtime_suspend(struct device *dev)
 #if defined(CONFIG_PM_DEVFREQ)
 	/* DEVFREQ release */
 	pr_info("[RSC] %s: QoS UNLOCK\n", __func__);
-	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, FIMC_IS_SN_MAX);
-	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, FIMC_IS_SN_MAX);
-	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, FIMC_IS_SN_MAX);
-	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, FIMC_IS_SN_MAX);
+	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, START_DVFS_LEVEL);
+	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, START_DVFS_LEVEL);
+	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, START_DVFS_LEVEL);
+	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, START_DVFS_LEVEL);
 
 	if (int_qos > 0)
 		pm_qos_remove_request(&exynos_isp_qos_int);
@@ -306,10 +306,10 @@ int fimc_is_runtime_resume(struct device *dev)
 	pr_info("FIMC_IS runtime resume in\n");
 
 #if defined(CONFIG_PM_DEVFREQ)
-	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, FIMC_IS_SN_MAX);
-	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, FIMC_IS_SN_MAX);
-	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, FIMC_IS_SN_MAX);
-	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, FIMC_IS_SN_MAX);
+	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, START_DVFS_LEVEL);
+	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, START_DVFS_LEVEL);
+	cam_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_CAM, START_DVFS_LEVEL);
+	disp_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_DISP, START_DVFS_LEVEL);
 
 	/* DEVFREQ lock */
 	if (int_qos > 0)
