@@ -1916,6 +1916,81 @@
 		samsung,power-domain = <&pd_cam1>;
 	};
 
+	/* Companion driver */
+	fimc_is_companion: fimc_is_companion@14180000 {
+		samsung,power-domain = <&pd_cam1>;
+		clock-names =
+			/* SENSOR0 MCLK */
+			"sclk_isp_sensor0",		/* 33 */
+			"mout_sclk_isp_sensor0",	/* 3066 */
+			"dout_sclk_isp_sensor0_a",	/* 4090 */
+			"dout_sclk_isp_sensor0_b",	/* 4091 */
+
+			"mout_bus_pll_user",		/* 3010 */
+			"oscclk",			/* 5000 */
+
+			/* SPI-ISP */
+			"sclk_isp_spi0_top",		/* 30 */
+			"sclk_isp_spi1_top",		/* 31 */
+			"mout_sclk_isp_spi0",		/* 3063 */
+			"mout_sclk_isp_spi1",		/* 3064 */
+
+			"dout_sclk_isp_spi0_a",		/* 4080 */
+			"dout_sclk_isp_spi0_b",		/* 4081 */
+			"dout_sclk_isp_spi1_a",		/* 4082 */
+			"dout_sclk_isp_spi1_b",		/* 4083 */
+
+			"mout_sclk_isp_spi0_user",	/* 3180 */
+			"mout_sclk_isp_spi1_user",	/* 3181 */
+
+			/* CMU TOP */
+			"dout_aclk_cam1_333",		/* 4047 */
+
+			/* USER_MUX_SEL */
+			"aclk_cam1_333",		/* 342 */
+			"mout_aclk_cam1_333_user",	/* 3225 */
+
+			/* MPWM */
+			"dout_pclk_cam1_166",		/* 4183 */
+			"dout_pclk_cam1_83",		/* 4184 */
+			"dout_sclk_isp_mpwm";		/* 4185 */
+		clocks =
+			/* SENSOR0 MCLK */
+			<&clock 33>,
+			<&clock 3066>,
+			<&clock 4090>,
+			<&clock 4091>,
+
+			<&clock 3010>,
+			<&clock 5000>,
+
+			/* SPI-ISP */
+			<&clock 30>,
+			<&clock 31>,
+			<&clock 3063>,
+			<&clock 3064>,
+
+			<&clock 4080>,
+			<&clock 4081>,
+			<&clock 4082>,
+			<&clock 4083>,
+
+			<&clock 3180>,
+			<&clock 3181>,
+
+			/* CMU TOP */
+			<&clock 4047>,
+
+			/* USER_MUX_SEL */
+			<&clock 342>,
+			<&clock 3225>,
+
+			/* MPWM */
+			<&clock 4183>,
+			<&clock 4184>,
+			<&clock 4185>;
+	};
+
 	fimc_is_sensor0: fimc_is_sensor@12100000 {
 		compatible = "samsung,exynos5-fimc-is-sensor";
 		reg = <0x12100000 0x10000>, <0x12120000 0x10000>;
