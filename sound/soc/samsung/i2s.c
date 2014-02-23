@@ -88,6 +88,8 @@ struct i2s_dai {
 #ifndef CONFIG_PM_RUNTIME
 	int enable_cnt;
 #endif
+	struct task_struct *task;
+
 	u32	quirks;
 	u32	suspend_i2smod;
 	u32	suspend_i2scon;
@@ -741,6 +743,11 @@ static int i2s_hw_params(struct snd_pcm_substream *substream,
 
 	i2s->frmclk = params_rate(params);
 
+	if ((mod & MOD_BLC_MASK) == MOD_BLC_24BIT)
+		lpass_uhqa_enable(true);
+	else
+		lpass_uhqa_enable(false);
+
 	return 0;
 }
 
@@ -799,6 +806,9 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 
 	pr_info("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
 
+	i2s->task = current;
+	lpass_task_register(i2s->task);
+
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&pdev->dev);
@@ -836,6 +846,8 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 	unsigned long flags;
 
 	pr_info("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
+	lpass_task_unregister(i2s->task);
+
 	spin_lock_irqsave(&lock, flags);
 
 	i2s->mode &= ~DAI_OPENED;
