@@ -741,6 +741,10 @@ out:
 	return ret;
 }
 
+static void exynos_qos_nop(void *info)
+{
+}
+
 void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
 {
 	unsigned int freq = 0;
@@ -773,7 +777,15 @@ void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
 		     __PRETTY_FUNCTION__, __LINE__, cpu, clamp_freq, freq);
 #endif
 
+	if ((cpu >= NR_CA7) && disable_c3_idle)
+		disable_c3_idle(true);
+
+	smp_call_function_single(cpu, exynos_qos_nop, NULL, 0);
+
 	__cpufreq_driver_target(policy, new_freq, CPUFREQ_RELATION_H);
+
+	if ((cpu >= NR_CA7) && disable_c3_idle)
+		disable_c3_idle(false);
 
 	cpufreq_cpu_put(policy);
 }
@@ -1545,10 +1557,6 @@ static struct notifier_block exynos_cpufreq_reboot_notifier = {
 };
 
 void (*disable_c3_idle)(bool disable);
-
-static void exynos_qos_nop(void *info)
-{
-}
 
 static int exynos_cpu_min_qos_handler(struct notifier_block *b, unsigned long val, void *v)
 {
