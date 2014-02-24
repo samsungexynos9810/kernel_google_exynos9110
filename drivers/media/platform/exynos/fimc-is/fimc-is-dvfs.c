@@ -29,6 +29,7 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_FHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_WHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_PREVIEW_UHD);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1);
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT2);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_PREVIEW);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAPTURE);
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DIS_ENABLE);
@@ -76,6 +77,10 @@ static struct fimc_is_dvfs_scenario static_scenarios[] = {
 		.scenario_id		= FIMC_IS_SN_FRONT_VT1,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_VT1),
 		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1),
+	}, {
+		.scenario_id		= FIMC_IS_SN_FRONT_VT2,
+		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_VT2),
+		.check_func		= GET_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT2),
 	}, {
 		.scenario_id		= FIMC_IS_SN_FRONT_PREVIEW,
 		.scenario_nm		= DVFS_SN_STR(FIMC_IS_SN_FRONT_PREVIEW),
@@ -276,6 +281,17 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT1)
 	if ((device->sensor->pdev->id == SENSOR_POSITION_FRONT) &&
 			((device->setfile & FIMC_IS_SETFILE_MASK) \
 			 == ISS_SUB_SCENARIO_FRONT_VT1))
+		return 1;
+	else
+		return 0;
+}
+
+/* front vt2 */
+DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_FRONT_VT2)
+{
+	if ((device->sensor->pdev->id == SENSOR_POSITION_FRONT) &&
+			((device->setfile & FIMC_IS_SETFILE_MASK) \
+			 == ISS_SUB_SCENARIO_FRONT_VT2))
 		return 1;
 	else
 		return 0;

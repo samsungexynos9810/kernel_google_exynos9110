@@ -118,8 +118,8 @@ enum is_subscenario_id {
 	ISS_SUB_END,
 
 	/* These values will be deprecated */
-	ISS_SUB_SCENARIO_FRONT_VT1 = 4,		/* 4: front camera VT1 (Temporary) */
-	ISS_SUB_SCENARIO_FRONT_VT2 = 5,		/* 5: front camera VT2 (Temporary) */
+	ISS_SUB_SCENARIO_FRONT_VT1 = 4,		/* 4: front camera VT1 for 3G (Temporary) */
+	ISS_SUB_SCENARIO_FRONT_VT2 = 5,		/* 5: front camera VT2 for LTE (Temporary) */
 	ISS_SUB_SCENARIO_FRONT_SMART_STAY = 6,	/* 6: front camera smart stay (Temporary) */
 };
 
