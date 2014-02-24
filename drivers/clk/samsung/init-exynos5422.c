@@ -68,6 +68,7 @@ static void top_clk_enable(void)
 	add_enabler("clk_xiu_mi_gscl_cam");
 	add_enabler("gscl_fimc_lite3");
 	add_enabler("clk_3aa");
+	add_enabler("clk_3aa_2");
 	add_enabler("clk_camif_top_csis0");
 
 	/* SPI  */
