@@ -223,6 +223,7 @@ int fimc_is_sensor_g_bns_ratio(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_bratio(struct fimc_is_device_sensor *device);
 int fimc_is_sensor_g_module(struct fimc_is_device_sensor *device,
 	struct fimc_is_module_enum **module);
+int fimc_is_sensor_gpio_off_softlanding(struct fimc_is_device_sensor *device);
 
 /* sensor driver */
 int fimc_is_sensor_read8(struct i2c_client *client,

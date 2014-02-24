@@ -2020,6 +2020,40 @@ p_err:
 	return ret;
 }
 
+int fimc_is_sensor_gpio_off_softlanding(struct fimc_is_device_sensor *device)
+{
+	int ret = 0;
+	struct exynos_platform_fimc_is_sensor *pdata;
+
+	BUG_ON(!device);
+	BUG_ON(!device->pdev);
+	BUG_ON(!device->pdata);
+
+	pdata = device->pdata;
+
+	if (!test_bit(FIMC_IS_SENSOR_GPIO_ON, &device->state)) {
+		merr("%s : already gpio off", device, __func__);
+		goto p_err;
+	}
+
+	if (!pdata->gpio_cfg) {
+		merr("gpio_cfg is NULL", device);
+		ret = -EINVAL;
+		goto p_err;
+	}
+
+	ret = pdata->gpio_cfg(device->pdev, pdata->scenario, GPIO_SCENARIO_OFF);
+	if (ret) {
+		merr("gpio_cfg is fail(%d)", device, ret);
+		goto p_err;
+	}
+
+	clear_bit(FIMC_IS_SENSOR_GPIO_ON, &device->state);
+
+p_err:
+	return ret;
+}
+
 static int fimc_is_sensor_suspend(struct device *dev)
 {
 	int ret = 0;
@@ -2068,10 +2102,12 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 	}
 
 	/* gpio uninit */
-	ret = fimc_is_sensor_gpio_off(device);
-	if (ret) {
-		merr("fimc_is_sensor_gpio_off is fail(%d)", device, ret);
-		goto p_err;
+	if(device->pdata->is_softlanding == false) {
+		ret = fimc_is_sensor_gpio_off(device);
+		if (ret) {
+			merr("fimc_is_sensor_gpio_off is fail(%d)", device, ret);
+			goto p_err;
+		}
 	}
 
 	/* GSCL internal clock off */

@@ -2685,6 +2685,9 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 			merr("fimc_is_itf_close is fail", device);
 	}
 
+	if(device->sensor->pdata->is_softlanding)
+		fimc_is_sensor_gpio_off_softlanding(device->sensor);
+
 	/* for mediaserver force close */
 	ret = fimc_is_resource_put(device->resourcemgr, RESOURCE_TYPE_ISCHAIN);
 	if (ret) {
