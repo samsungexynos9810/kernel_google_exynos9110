@@ -1275,7 +1275,7 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	spin_unlock(&sfb->slock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
-	if (sfb->power_state == POWER_ON)
+	if (sfb->output_on && sfb->power_state == POWER_ON)
 		disp_pm_te_triggered(get_display_driver());
 #endif
 	return IRQ_HANDLED;
