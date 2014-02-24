@@ -270,6 +270,7 @@ struct exynos_platform_fimc_is_sensor {
 	u32 flash_first_gpio;
 	u32 flash_second_gpio;
 	u32 sensor_id;
+	u32 is_softlanding;
 };
 
 extern int exynos_fimc_is_sensor_pins_cfg(struct platform_device *pdev,
