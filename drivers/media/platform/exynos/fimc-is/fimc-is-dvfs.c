@@ -504,6 +504,21 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 	if (type == FIMC_IS_DYNAMIC_SN)
 		return -EAGAIN;
 
+	{
+		struct fimc_is_core *core;
+		int sensor_cnt = 0;
+		core = (struct fimc_is_core *)device->interface->core;
+		sensor_cnt = fimc_is_get_open_sensor_cnt(core);
+
+		warn("couldn't find static dvfs scenario [sensor:(%d/%d)/fps:%d/setfile:%d/scp size:(%d/%d)]\n",
+				sensor_cnt,
+				device->sensor->pdev->id,
+				fimc_is_sensor_g_framerate(device->sensor),
+				(device->setfile & FIMC_IS_SETFILE_MASK),
+				device->chain3_width,
+				device->chain3_height);
+	}
+
 	static_ctrl->cur_scenario_id = FIMC_IS_SN_DEFAULT;
 	static_ctrl->cur_scenario_idx = -1;
 	static_ctrl->cur_frame_tick = -1;
