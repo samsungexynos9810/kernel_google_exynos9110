@@ -282,12 +282,6 @@ int exynos5422_fimc_is_sensor_mclk_on(struct platform_device *pdev,
 		break;
 	}
 
-	if (scenario != SENSOR_SCENARIO_VISION) {
-		fimc_is_enable_dt(pdev, "clk_3aa");
-		fimc_is_enable_dt(pdev, "clk_camif_top_3aa");
-		fimc_is_enable_dt(pdev, "clk_3aa_2");
-		fimc_is_enable_dt(pdev, "clk_camif_top_3aa0");
-	}
 	fimc_is_enable_dt(pdev, "clk_camif_top_csis0");
 	fimc_is_enable_dt(pdev, "clk_xiu_si_gscl_cam");
 	fimc_is_enable_dt(pdev, "clk_noc_p_rstop_fimcl");

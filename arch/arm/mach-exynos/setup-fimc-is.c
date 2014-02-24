@@ -506,6 +506,11 @@ int exynos5422_fimc_is_clk_on(struct platform_device *pdev)
 	fimc_is_enable_dt(pdev, "sclk_pwm_isp");
 	fimc_is_enable_dt(pdev, "sclk_spi0_isp");
 
+	fimc_is_enable_dt(pdev, "clk_3aa");
+	fimc_is_enable_dt(pdev, "clk_camif_top_3aa");
+	fimc_is_enable_dt(pdev, "clk_3aa_2");
+	fimc_is_enable_dt(pdev, "clk_camif_top_3aa0");
+
 	return 0;
 }
 
@@ -517,6 +522,11 @@ int exynos5422_fimc_is_clk_off(struct platform_device *pdev)
 	fimc_is_disable_dt(pdev, "sclk_uart_isp");
 	fimc_is_disable_dt(pdev, "sclk_pwm_isp");
 	fimc_is_disable_dt(pdev, "sclk_spi0_isp");
+
+	fimc_is_disable_dt(pdev, "clk_3aa");
+	fimc_is_disable_dt(pdev, "clk_camif_top_3aa");
+	fimc_is_disable_dt(pdev, "clk_3aa_2");
+	fimc_is_disable_dt(pdev, "clk_camif_top_3aa0");
 
 	return 0;
 }
