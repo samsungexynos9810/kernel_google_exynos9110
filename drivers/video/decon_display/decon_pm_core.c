@@ -198,7 +198,7 @@ void disp_pm_gate_lock(struct display_driver *dispdrv, bool increase)
 {
 	if (increase)
 		atomic_inc(&dispdrv->pm_status.lock_count);
-	else
+	else if(atomic_read(&dispdrv->pm_status.lock_count) > 0)
 		atomic_dec(&dispdrv->pm_status.lock_count);
 }
 
