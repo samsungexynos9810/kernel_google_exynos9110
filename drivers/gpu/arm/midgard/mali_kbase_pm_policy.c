@@ -227,7 +227,6 @@ mali_error kbase_pm_policy_init(kbase_device *kbdev)
 
 	kbdev->pm.pm_current_policy->init(kbdev);
 
-	kbdev->pm.gpu_poweroff_time = HR_TIMER_DELAY_NSEC(kbasep_get_config_value(kbdev, kbdev->config_attributes, KBASE_CONFIG_ATTR_PM_GPU_POWEROFF_TIME) * 1000);
 	kbdev->pm.shader_poweroff_time = HR_TIMER_DELAY_NSEC(kbasep_get_config_value(kbdev, kbdev->config_attributes, KBASE_CONFIG_ATTR_PM_SHADER_POWEROFF_TIME) * 1000);
 
 	return MALI_ERROR_NONE;
