@@ -236,6 +236,7 @@ struct s3c_reg_data {
 	u32			vidw_buf_size[S3C_FB_MAX_WIN];
 	struct s3c_dma_buf_data	dma_buf_data[S3C_FB_MAX_WIN];
 	unsigned int		bandwidth;
+	unsigned int		num_of_window;
 	u32			win_overlap_cnt;
 	int 			otf_state[S3C_FB_MAX_WIN];
 	u32 			x[S3C_FB_MAX_WIN];

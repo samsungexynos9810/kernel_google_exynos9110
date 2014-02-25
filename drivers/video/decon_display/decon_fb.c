@@ -2169,6 +2169,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 			bw += s3c_fb_calc_bandwidth(config->w, config->h,
 					win->fbinfo->var.bits_per_pixel,
 					win->fps);
+			regs->num_of_window++;
 		}
 	}
 
