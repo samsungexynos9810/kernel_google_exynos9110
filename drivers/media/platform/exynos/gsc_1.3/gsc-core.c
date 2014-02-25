@@ -1299,9 +1299,6 @@ err:
 	return -ENXIO;
 }
 
-#ifdef CONFIG_SOC_EXYNOS5422
-#define gsc_clock_gating(gsc, status) do { } while (0)
-#else
 void gsc_clock_gating(struct gsc_dev *gsc, enum gsc_clk_status status)
 {
 	int clk_cnt;
@@ -1324,7 +1321,6 @@ void gsc_clock_gating(struct gsc_dev *gsc, enum gsc_clk_status status)
 		}
 	}
 }
-#endif
 
 int gsc_set_protected_content(struct gsc_dev *gsc, bool enable)
 {
