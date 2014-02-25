@@ -49,8 +49,4 @@ extern struct iommu_domain *lpass_get_iommu_domain(void);
 extern void lpass_reset(int ip, int op);
 extern void lpass_reset_toggle(int ip);
 
-extern int lpass_task_register(struct task_struct *task);
-extern int lpass_task_unregister(struct task_struct *task);
-extern void lpass_uhqa_enable(bool on);
-
 #endif /* __SOUND_EXYNOS_H */

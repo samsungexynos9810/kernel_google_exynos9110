@@ -20,15 +20,10 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/pm_runtime.h>
-#include <linux/pm_qos.h>
-#include <linux/fb.h>
 #include <linux/iommu.h>
 #include <linux/dma-mapping.h>
 #include <linux/proc_fs.h>
 #include <linux/seq_file.h>
-#include <linux/sched.h>
-#include <linux/sched/rt.h>
-#include <linux/cpu.h>
 
 #include <sound/exynos.h>
 
@@ -40,29 +35,6 @@
 
 #include "lpass.h"
 
-#ifdef CONFIG_SOC_EXYNOS5422
-#define USE_AUD_SCHED
-#define AUD_TASK_MAX		(16)
-#endif
-
-#ifdef CONFIG_PM_DEVFREQ
-#define USE_AUD_DEVFREQ
-#ifdef CONFIG_SOC_EXYNOS5422
-#define AUD_KFC_FREQ_UHQA	(1000000)
-#define AUD_MIF_FREQ_UHQA	(413000)
-#define AUD_INT_FREQ_UHQA	(0)
-#define AUD_KFC_FREQ_NORM	(0)
-#define AUD_MIF_FREQ_NORM	(0)
-#define AUD_INT_FREQ_NORM	(0)
-#else
-#define AUD_KFC_FREQ_UHQA	(1000000)
-#define AUD_MIF_FREQ_UHQA	(413000)
-#define AUD_INT_FREQ_UHQA	(0)
-#define AUD_KFC_FREQ_NORM	(0)
-#define AUD_MIF_FREQ_NORM	(0)
-#define AUD_INT_FREQ_NORM	(0)
-#endif
-#endif
 
 /* Target clock rate */
 #define TARGET_ACLKENM_RATE	(133000000)
@@ -113,20 +85,6 @@ struct lpass_info {
 	struct clk		*clk_fin_pll;
 	bool			rpm_enabled;
 	atomic_t		use_cnt;
-	bool			display_on;
-	bool			uhqa_on;
-#ifdef USE_AUD_SCHED
-	struct task_struct	*task[AUD_TASK_MAX];
-	int			task_cpu[AUD_TASK_MAX];
-#endif
-#ifdef USE_AUD_DEVFREQ
-	struct pm_qos_request	aud_kfc_qos;
-	struct pm_qos_request	aud_mif_qos;
-	struct pm_qos_request	aud_int_qos;
-	int			kfc_qos;
-	int			mif_qos;
-	int			int_qos;
-#endif
 } lpass;
 
 struct aud_reg {
@@ -152,11 +110,6 @@ extern int check_adma_status(void);
 extern int check_fdma_status(void);
 extern int check_esa_status(void);
 
-#ifdef USE_AUD_SCHED
-static void lpass_aud_affinity(int n, int cpu_no);
-#endif
-static void lpass_update_qos(void);
-
 static inline bool is_old_ass(void)
 {
 	return lpass.ver < LPASS_VER_370100 ? true : false;
@@ -179,10 +132,6 @@ int exynos_check_aud_pwr(void)
 #endif
 	if (!lpass.enabled)
 		return AUD_PWR_SLEEP;
-#ifdef CONFIG_SOC_EXYNOS5422
-	else if (lpass.uhqa_on)
-		return AUD_PWR_AFTR;
-#endif
 	else if (!dram_used)
 		return AUD_PWR_LPA;
 
@@ -339,8 +288,6 @@ void lpass_get_sync(struct device *ip_dev)
 			pm_runtime_get_sync(&lpass.pdev->dev);
 		}
 	}
-
-	lpass_update_qos();
 }
 
 void lpass_put_sync(struct device *ip_dev)
@@ -356,49 +303,6 @@ void lpass_put_sync(struct device *ip_dev)
 			pm_runtime_put_sync(&lpass.pdev->dev);
 		}
 	}
-
-	lpass_update_qos();
-}
-
-int lpass_task_register(struct task_struct *task)
-{
-#ifdef USE_AUD_SCHED
-	int n;
-
-	for (n = 0; n < AUD_TASK_MAX; n++) {
-		if (!lpass.task[n]) {
-			lpass.task[n] = task;
-			lpass_aud_affinity(n, 1);
-			return 0;
-		}
-	}
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-int lpass_task_unregister(struct task_struct *task)
-{
-#ifdef USE_AUD_SCHED
-	int n;
-
-	for (n = 0; n < AUD_TASK_MAX; n++) {
-		if (lpass.task[n] == task) {
-			lpass.task[n] = NULL;
-			return 0;
-		}
-	}
-	return 1;
-#else
-	return 0;
-#endif
-}
-
-void lpass_uhqa_enable(bool on)
-{
-	lpass.uhqa_on = on;
-	lpass_update_qos();
 }
 
 static void lpass_reg_save(void)
@@ -802,9 +706,7 @@ static void lpass_init_reg_list(void)
 static int lpass_proc_show(struct seq_file *m, void *v) {
 	struct subip_info *si;
 	int pmode = exynos_check_aud_pwr();
-#ifdef USE_AUD_SCHED
-	int i;
-#endif
+
 	seq_printf(m, "power: %s\n", lpass.enabled ? "on" : "off");
 	seq_printf(m, "canbe: %s\n",
 			(pmode == AUD_PWR_SLEEP) ? "sleep" :
@@ -817,18 +719,6 @@ static int lpass_proc_show(struct seq_file *m, void *v) {
 				si->name, atomic_read(&si->use_cnt));
 	}
 
-	seq_printf(m, "uhqa: %s\n", lpass.uhqa_on ? "on" : "off");
-#ifdef USE_AUD_DEVFREQ
-	seq_printf(m, "kfc: %d, mif: %d, int: %d\n", lpass.kfc_qos / 1000,
-			lpass.mif_qos / 1000, lpass.int_qos / 1000);
-#endif
-#ifdef USE_AUD_SCHED
-	for (i = 0; i < AUD_TASK_MAX; i++) {
-		if (lpass.task[i])
-			seq_printf(m, "task%d: cpu %d, prio %d\n",
-				i, lpass.task_cpu[i], lpass.task[i]->prio);
-	}
-#endif
 	return 0;
 }
 
@@ -898,132 +788,6 @@ static int lpass_get_ver(struct device_node *np)
 	return LPASS_VER_000100;
 }
 #endif
-
-#ifdef USE_AUD_SCHED
-static void lpass_aud_affinity(int n, int cpu_no)
-{
-	struct cpumask thread_cpumask;
-	struct sched_param param_norm = {.sched_priority = 0};
-	struct sched_param param_fifo = {.sched_priority = MAX_RT_PRIO >> 1};
-
-	if (!lpass.task[n])
-		return;
-
-	lpass.task_cpu[n] = cpu_no;
-	cpumask_clear(&thread_cpumask);
-	cpumask_set_cpu(cpu_no, &thread_cpumask);
-	sched_setaffinity(lpass.task[n]->pid, &thread_cpumask);
-
-	if (cpu_no)
-		sched_setscheduler_nocheck(lpass.task[n],
-					   SCHED_NORMAL, &param_norm);
-	else
-		sched_setscheduler_nocheck(lpass.task[n],
-					   SCHED_FIFO, &param_fifo);
-
-	pr_debug("%s: task%d (cpu = %d, prio = %d)\n",
-			__func__, n, cpu_no, lpass.task[n]->prio);
-}
-#endif
-
-static void lpass_update_qos(void)
-{
-#ifdef USE_AUD_DEVFREQ
-	int kfc_qos_new, mif_qos_new, int_qos_new;
-
-	if (!lpass.enabled) {
-		kfc_qos_new = 0;
-		mif_qos_new = 0;
-		int_qos_new = 0;
-	} else if (lpass.uhqa_on) {
-		kfc_qos_new = AUD_KFC_FREQ_UHQA;
-		mif_qos_new = AUD_MIF_FREQ_UHQA;
-		int_qos_new = AUD_INT_FREQ_UHQA;
-	} else {
-		kfc_qos_new = AUD_KFC_FREQ_NORM;
-		mif_qos_new = AUD_MIF_FREQ_NORM;
-		int_qos_new = AUD_INT_FREQ_NORM;
-	}
-
-	if (lpass.kfc_qos != kfc_qos_new) {
-		lpass.kfc_qos = kfc_qos_new;
-		pm_qos_update_request(&lpass.aud_kfc_qos, lpass.kfc_qos);
-		pr_debug("%s: kfc_qos = %d\n", __func__, lpass.kfc_qos);
-	}
-
-	if (lpass.mif_qos != mif_qos_new) {
-		lpass.mif_qos = mif_qos_new;
-		pm_qos_update_request(&lpass.aud_mif_qos, lpass.mif_qos);
-		pr_debug("%s: mif_qos = %d\n", __func__, lpass.mif_qos);
-	}
-
-	if (lpass.int_qos != int_qos_new) {
-		lpass.int_qos = int_qos_new;
-		pm_qos_update_request(&lpass.aud_int_qos, lpass.int_qos);
-		pr_debug("%s: int_qos = %d\n", __func__, lpass.int_qos);
-	}
-#endif
-}
-
-static int lpass_fb_state_chg(struct notifier_block *nb,
-		unsigned long val, void *data)
-{
-	struct fb_event *evdata = data;
-	unsigned int blank;
-
-	if (val != FB_EVENT_BLANK)
-		return 0;
-
-	blank = *(int *)evdata->data;
-
-	switch (blank) {
-	case FB_BLANK_POWERDOWN:
-		lpass.display_on = false;
-		lpass_update_qos();
-		break;
-	case FB_BLANK_UNBLANK:
-		lpass.display_on = true;
-		lpass_update_qos();
-		break;
-	default:
-		break;
-	}
-
-	return NOTIFY_OK;
-}
-
-static struct notifier_block fb_noti_block = {
-	.notifier_call = lpass_fb_state_chg,
-};
-
-static int cpu_hotplug_notify(struct notifier_block *n,
-			      unsigned long action, void *hcpu)
-{
-#ifdef USE_AUD_SCHED
-	int hotcpu = (unsigned long)hcpu;
-	int i;
-
-	switch (action & 0xf) {
-	case CPU_ONLINE:
-		if (hotcpu == 1) {
-			for (i = 0; i < AUD_TASK_MAX; i++)
-				lpass_aud_affinity(i, 1);
-		}
-		break;
-	case CPU_DEAD:
-		if (hotcpu == 1) {
-			for (i = 0; i < AUD_TASK_MAX; i++)
-				lpass_aud_affinity(i, 0);
-		}
-		break;
-	}
-#endif
-	return NOTIFY_OK;
-}
-
-static struct notifier_block cpu_hotplug_notifier = {
-	.notifier_call = cpu_hotplug_notify,
-};
 
 static char banner[] =
 	KERN_INFO "Samsung Low Power Audio Subsystem driver, "\
@@ -1117,17 +881,7 @@ static int lpass_probe(struct platform_device *pdev)
 #else
 	lpass_enable();
 #endif
-	lpass.display_on = true;
-	fb_register_client(&fb_noti_block);
-	register_cpu_notifier(&cpu_hotplug_notifier);
-#ifdef USE_AUD_DEVFREQ
-	lpass.kfc_qos = 0;
-	lpass.mif_qos = 0;
-	lpass.int_qos = 0;
-	pm_qos_add_request(&lpass.aud_kfc_qos, PM_QOS_KFC_FREQ_MIN, 0);
-	pm_qos_add_request(&lpass.aud_mif_qos, PM_QOS_BUS_THROUGHPUT, 0);
-	pm_qos_add_request(&lpass.aud_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
-#endif
+
 	return 0;
 }
 
