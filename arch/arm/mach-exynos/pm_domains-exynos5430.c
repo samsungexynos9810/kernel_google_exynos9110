@@ -630,7 +630,7 @@ static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_ISP1);
-	reg |= (1 << 12 | 1 << 11);
+	reg |= (1 << 12 | 1 << 11 | 1 << 8 | 1 << 7 | 1 << 2);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_ISP1);
 
 	s3c_pm_do_save(exynos_pd_isp_clk_save,
@@ -765,7 +765,7 @@ static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM11);
-	reg |= (1 << 19);
+	reg |= (1 << 19 | 1 << 18 | 1 << 16 | 1 << 15 | 1 << 14 | 1 << 13);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_CAM11);
 
 	s3c_pm_do_save(exynos_pd_cam1_clk_save,
@@ -792,27 +792,118 @@ static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 #define __set_mask(name) __raw_writel(name##_ALL, name)
 #define __clr_mask(name) __raw_writel(~(name##_ALL), name)
 
-static int force_down_pre(const char *name)
+static void reset_a5(void)
 {
 	unsigned int reg;
 
-	if (strncmp(name, "pd-cam0", 7) == 0) {
-		__set_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
-		__set_mask(EXYNOS5430_LPI_MASK_CAM0_ASYNCBRIDGE);
-		__set_mask(EXYNOS5430_LPI_MASK_CAM0_NOCBUS);
-	} else if (strncmp(name, "pd-cam1", 7) == 0) {
-		__set_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
-		__set_mask(EXYNOS5430_LPI_MASK_CAM1_ASYNCBRIDGE);
-		__set_mask(EXYNOS5430_LPI_MASK_CAM1_NOCBUS);
+	/* IP local clock on */
+	reg = __raw_readl(EXYNOS5430_ENABLE_ACLK_CAM11);
+	reg |= (1 << 23);
+	__raw_writel(reg, EXYNOS5430_ENABLE_ACLK_CAM11);
 
-		/* in case of cam1, should be clear STANDBY_WFI */
-		reg = __raw_readl(EXYNOS5430_A5IS_OPTION);
-		reg &= ~(1 << 16);
-		__raw_writel(reg, EXYNOS5430_A5IS_OPTION);
-	} else if (strncmp(name, "pd-isp", 6) == 0) {
-		__set_mask(EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
-		__set_mask(EXYNOS5430_LPI_MASK_ISP_ASYNCBRIDGE);
-		__set_mask(EXYNOS5430_LPI_MASK_ISP_NOCBUS);
+	/* A5 software reset & clear STANDBY_WFI */
+	__raw_writel(0x0, EXYNOS5430_A5IS_OPTION);
+
+	pr_info("%s complete\n", __func__);
+}
+
+static void reset_fd(void)
+{
+	unsigned int reg;
+	u32 timeout;
+
+	/* IP local clock on */
+	reg = __raw_readl(EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
+	reg |= (1 << 3);
+	__raw_writel(reg, EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
+
+	/* check the FD status to make sure it is already idle */
+	if ((__raw_readl(S5P_VA_FIMC_FD + 0x10) & 0x8) == 1) {
+		if ((__raw_readl(S5P_VA_FIMC_FD + 0x0c) & 0x1) == 1) {
+			pr_info("already %s AXI\n", __func__);
+			return;
+		}
+	}
+
+	/* FD software reset */
+	__raw_writel(0x2, S5P_VA_FIMC_FD + 0x4);
+
+	/* Check FD software reset release */
+	timeout = 100; /* 1 ms */
+	reg = __raw_readl(S5P_VA_FIMC_FD + 0x4);
+	while(!(reg & (0x1 << 1)))
+	{
+		if (timeout == 0) {
+			pr_info("%s: timeout\n", __func__);
+			break;
+		}
+
+		--timeout;
+		cpu_relax();
+		usleep_range(8, 10);
+	}
+
+	pr_info("%s complete\n", __func__);
+}
+
+static void reset_flite_c(void)
+{
+	unsigned int reg;
+	struct clk *target;
+	u32 timeout;
+
+	/* IP clock on */
+	target = __clk_lookup("gate_lite_c");
+	if (IS_ERR(target)) {
+		pr_err("%s: could not lookup clock : %s\n", __func__, "gate_lite_c");
+	}
+	clk_prepare(target);
+	clk_enable(target);
+
+	/* Camera interface global capture disable */
+	reg = __raw_readl(S5P_VA_FIMCLITE2 + 0x08);
+	reg &= ~(0x1 << 31);
+	__raw_writel(reg, S5P_VA_FIMCLITE2 + 0x08);
+
+	/* Set SwRst_Req '1' */
+	reg = __raw_readl(S5P_VA_FIMCLITE2 + 0x04);
+	reg |= (0x1 << 19);
+	__raw_writel(reg, S5P_VA_FIMCLITE2 + 0x04);
+
+	/* Check SwRst_Rdy '1' */
+	timeout = 100;
+	reg = __raw_readl(S5P_VA_FIMCLITE2 + 0x04);
+	while(!(reg & (0x1 << 18))) {
+		if (timeout == 0) {
+			pr_warn("%s: timeout\n", __func__);
+			break;
+		}
+
+		--timeout;
+		cpu_relax();
+		usleep_range(8, 10);
+	}
+
+	/* Set SwRst '1' */
+	reg = __raw_readl(S5P_VA_FIMCLITE2 + 0x04);
+	reg |= (0x1 << 17);
+	__raw_writel(reg, S5P_VA_FIMCLITE2 + 0x04);
+
+	clk_disable(target);
+	clk_unprepare(target);
+
+	pr_info("%s complete\n", __func__);
+}
+
+static int force_down_pre(const char *name)
+{
+	if (strncmp(name, "pd-cam1", 7) == 0) {
+		/* A5 reset */
+		reset_a5();
+
+		/* Local IP reset */
+		reset_fd();
+		reset_flite_c();
 	} else {
 		return -EINVAL;
 	}
@@ -847,10 +938,11 @@ static unsigned int check_power_status(struct exynos_pm_domain *pd, int power_fl
 	return timeout;
 }
 
-#define TIMEOUT_COUNT	5000 /* about 50ms, based on 10us */
+#define TIMEOUT_COUNT	50 /* about 50ms, based on 1ms */
 static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_flags)
 {
 	unsigned long timeout;
+	unsigned int force_down = 0;
 
 	if (unlikely(!pd))
 		return -EINVAL;
@@ -868,26 +960,30 @@ static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_fla
 		if (unlikely(!timeout)) {
 			pr_err(PM_DOMAIN_PREFIX "%s can't control power, try again\n", pd->name);
 
-			/* check power ON status */
-			if (__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) {
-				if (force_down_pre(pd->name))
-					pr_warn("%s: failed to make force down state\n", pd->name);
+			__raw_writel(0xf, pd->base);
 
-				timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+			if (force_down_pre(pd->name))
+				pr_warn("%s: failed to make force down state\n", pd->name);
 
-				if (force_down_post(pd->name))
-					pr_warn("%s: failed to restore normal state\n", pd->name);
+			/* sc_feedback to OPTION register */
+			__raw_writel(0x0102, pd->base+0x8);
 
-				if (unlikely(!timeout)) {
-					pr_err(PM_DOMAIN_PREFIX "%s can't control power forcedly, timeout\n",
-							pd->name);
-					mutex_unlock(&pd->access_lock);
-					return -ETIMEDOUT;
-				} else {
-					pr_warn(PM_DOMAIN_PREFIX "%s force power down success\n", pd->name);
-				}
+			/* on/off value to CONFIGURATION register */
+			__raw_writel(power_flags, pd->base);
+
+			timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+
+			if (force_down_post(pd->name))
+				pr_warn("%s: failed to restore normal state\n", pd->name);
+
+			if (unlikely(!timeout)) {
+				pr_err(PM_DOMAIN_PREFIX "%s can't control power%s, timeout\n",
+						pd->name, force_down ? " forcedly" : "");
+				mutex_unlock(&pd->access_lock);
+				return -ETIMEDOUT;
 			} else {
-				pr_warn(PM_DOMAIN_PREFIX "%s power-off already\n", pd->name);
+				pr_warn(PM_DOMAIN_PREFIX "%s%s power down success\n",
+						pd->name, force_down ? " force" : "");
 			}
 		}
 
@@ -913,6 +1009,7 @@ static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_fla
 
 	return 0;
 }
+
 static struct exynos_pd_callback pd_callback_list[] = {
 	{
 		.name = "pd-maudio",
@@ -971,14 +1068,12 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.on_pre = exynos_pd_isp_power_on_pre,
 		.on_post = exynos_pd_isp_power_on_post,
 		.off_pre = exynos_pd_isp_power_off_pre,
-		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_isp_power_off_post,
 	}, {
 		.name = "pd-cam0",
 		.on_pre = exynos_pd_cam0_power_on_pre,
 		.on_post = exynos_pd_cam0_power_on_post,
 		.off_pre = exynos_pd_cam0_power_off_pre,
-		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_cam0_power_off_post,
 	}, {
 		.name = "pd-cam1",
