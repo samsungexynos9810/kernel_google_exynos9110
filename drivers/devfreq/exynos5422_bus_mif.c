@@ -44,10 +44,10 @@
 
 #define SET_DREX_TIMING
 
-inline void REGULATOR_SET_VOLTAGE(struct regulator *a, unsigned long b, unsigned long c)
+inline void REGULATOR_SET_VOLTAGE(struct regulator *a, unsigned long b, unsigned long c, bool is_first_level)
 {
 	bool dynamic_self_refresh_enabled = (__raw_readl(S5P_VA_DREXI_0 + 0x4) & 0x20) ? 1 : 0; /* check default status */
-	if(dynamic_self_refresh_enabled) {
+	if(is_first_level && dynamic_self_refresh_enabled) {
 		pr_debug("MIF:dynamic self-refresh enabled\n");
 		__raw_writel(__raw_readl(S5P_VA_DREXI_0 + 0x4) & ~0x20, S5P_VA_DREXI_0 + 0x4); /* DREX0: MemControl.deref_en = 0 */
 		__raw_writel(__raw_readl(S5P_VA_DREXI_1 + 0x4) & ~0x20, S5P_VA_DREXI_1 + 0x4); /* DREX1: MemControl.deref_en = 0 */
@@ -57,7 +57,7 @@ inline void REGULATOR_SET_VOLTAGE(struct regulator *a, unsigned long b, unsigned
 		__raw_writel(0x08100000, S5P_VA_DREXI_1 + 0x10); /* DREX1 chip1: Exit from self refresh */
 	}
 	regulator_set_voltage(a, b, c);
-	if(dynamic_self_refresh_enabled) {
+	if(is_first_level && dynamic_self_refresh_enabled) {
 		__raw_writel(__raw_readl(S5P_VA_DREXI_0 + 0x4) | 0x20, S5P_VA_DREXI_0 + 0x4); /* DREX0: MemControl.deref_en = 1 */
 		__raw_writel(__raw_readl(S5P_VA_DREXI_1 + 0x4) | 0x20, S5P_VA_DREXI_1 + 0x4); /* DREX1: MemControl.deref_en = 1 */
 	}
@@ -682,6 +682,7 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 	unsigned long target_volt;
 	int i, target_idx = LV_0;
 	bool set_abb_first_than_volt;
+	bool is_first_level;
 
 	if (mif_transition_disabled)
 		return 0;
@@ -726,6 +727,7 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 	}
 
 	set_abb_first_than_volt = is_set_abb_first(ID_MIF, old_freq, freq);
+	is_first_level = (target_idx == LV_0);
 
 	/*
 	 * If target freq is higher than old freq
@@ -736,10 +738,12 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		if ((old_freq < data->mspll_freq) && (freq < data->mspll_freq))
 			REGULATOR_SET_VOLTAGE(data->vdd_mif, data->mspll_volt,
-					data->mspll_volt + MIF_VOLT_STEP);
+					data->mspll_volt + MIF_VOLT_STEP,
+					is_first_level);
 		else
 			REGULATOR_SET_VOLTAGE(data->vdd_mif, target_volt,
-					target_volt + MIF_VOLT_STEP);
+					target_volt + MIF_VOLT_STEP,
+					is_first_level);
 
 		if (!set_abb_first_than_volt)
 			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
@@ -749,7 +753,8 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 			if (set_abb_first_than_volt)
 				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 			REGULATOR_SET_VOLTAGE(data->vdd_mif, target_volt,
-					target_volt + MIF_VOLT_STEP);
+					target_volt + MIF_VOLT_STEP,
+					is_first_level);
 			if (!set_abb_first_than_volt)
 				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		}
@@ -767,7 +772,8 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 			if (set_abb_first_than_volt)
 				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 			REGULATOR_SET_VOLTAGE(data->vdd_mif, data->mspll_volt,
-					data->mspll_volt + MIF_VOLT_STEP);
+					data->mspll_volt + MIF_VOLT_STEP,
+					is_first_level);
 			if (!set_abb_first_than_volt)
 				set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 		}
@@ -775,7 +781,8 @@ static int exynos5_mif_busfreq_target(struct device *dev,
 		exynos5_mif_set_freq(data, old_freq, freq);
 		if (set_abb_first_than_volt)
 			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
-		REGULATOR_SET_VOLTAGE(data->vdd_mif, target_volt, target_volt + MIF_VOLT_STEP);
+		REGULATOR_SET_VOLTAGE(data->vdd_mif, target_volt, target_volt + MIF_VOLT_STEP,
+					is_first_level);
 		if (!set_abb_first_than_volt)
 			set_match_abb(ID_MIF, devfreq_mif_asv_abb[target_idx]);
 	}
@@ -1002,7 +1009,7 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 
 			/* setting voltage for MIF about cold temperature */
 			set_volt = get_limit_voltage(prev_volt, data->volt_offset);
-			REGULATOR_SET_VOLTAGE(data->vdd_mif, set_volt, set_volt + MIF_VOLT_STEP);
+			REGULATOR_SET_VOLTAGE(data->vdd_mif, set_volt, set_volt + MIF_VOLT_STEP, true);
 
 			mutex_unlock(&data->lock);
 		} else {
@@ -1019,7 +1026,7 @@ static int exynos5_bus_mif_tmu_notifier(struct notifier_block *notifier,
 
 			/* restore voltage for MIF */
 			set_volt = get_limit_voltage(prev_volt - COLD_VOLT_OFFSET, data->volt_offset);
-			REGULATOR_SET_VOLTAGE(data->vdd_mif, set_volt, set_volt + MIF_VOLT_STEP);
+			REGULATOR_SET_VOLTAGE(data->vdd_mif, set_volt, set_volt + MIF_VOLT_STEP, true);
 
 			mutex_unlock(&data->lock);
 		}
@@ -1197,7 +1204,7 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	/* support ASV setting */
 	initial_freq = clk_get_rate(data->mclk_cdrex);
 	initial_volt = get_match_volt(ID_MIF, initial_freq/1000);
-	REGULATOR_SET_VOLTAGE(data->vdd_mif, initial_volt, initial_volt);
+	REGULATOR_SET_VOLTAGE(data->vdd_mif, initial_volt, initial_volt, true);
 	current_volt = regulator_get_voltage(data->vdd_mif);
 	if (current_volt != initial_volt)
 		dev_err(dev, "Cannot set default asv voltage\n");
