@@ -1297,7 +1297,8 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 			spin_unlock(&ctx->slock);
 		}
 		pm_runtime_put(&gsc->pdev->dev);
-	} else if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+	} else if (test_bit(ST_OUTPUT_STREAMON, &gsc->state) &&
+			gsc->out.vbq.streaming) {
 		if (!list_empty(&gsc->out.active_buf_q) &&
 		    !list_is_singular(&gsc->out.active_buf_q)) {
 			struct gsc_input_buf *done_buf;

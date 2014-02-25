@@ -298,7 +298,6 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 				return ret;
 			}
 
-			INIT_LIST_HEAD(&gsc->out.active_buf_q);
 			clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
 			wake_up(&gsc->irq_queue);
 		}
@@ -516,6 +515,12 @@ static int gsc_output_streamon(struct file *file, void *priv,
 	struct gsc_output_device *out = &gsc->out;
 	struct media_pad *sink_pad;
 	int ret;
+
+	if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+		gsc_err("gsc didn't stop complete");
+		return -EBUSY;
+	}
+
 	sink_pad = media_entity_remote_source(&out->sd_pads[GSC_PAD_SOURCE]);
 	if (IS_ERR(sink_pad)) {
 		gsc_err("No sink pad conncted with a gscaler source pad");
@@ -669,6 +674,9 @@ static int gsc_out_stop_streaming(struct vb2_queue *q)
 
 	media_entity_pipeline_stop(&gsc->out.vfd->entity);
 
+	if (!list_empty(&gsc->out.active_buf_q))
+		INIT_LIST_HEAD(&gsc->out.active_buf_q);
+
 	return 0;
 }
 
@@ -747,6 +755,7 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 		}
 		gsc_hw_set_input_buf_mask_all(gsc);
 		gsc->out.pending_mask = 0xf;
+		INIT_LIST_HEAD(&gsc->out.active_buf_q);
 	}
 
 	if (gsc->out.req_cnt >= atomic_read(&q->queued_count)) {
