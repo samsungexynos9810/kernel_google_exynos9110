@@ -304,6 +304,8 @@
 		reg = <0x13C40000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <3 4>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 1288>, <&clock 1261>;
 		mmu-masters = <&fimc_is_sensor0>;
 		qos = <15>;
 		prop-map {
@@ -317,6 +319,8 @@
 		reg = <0x13C50000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <24 1>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 1287>, <&clock 1260>;
 		mmu-masters = <&fimc_is_sensor1>;
 		qos = <15>;
 		prop-map {
@@ -330,6 +334,8 @@
 		reg = <0x13D50000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <2 4>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 1282>, <&clock 1281>;
 		mmu-masters = <&fimc_is>;
 		qos = <15>;
 		prop-map {
@@ -343,6 +349,8 @@
 		reg = <0x13CC0000 0x1000>;
 		interrupt-parent = <&combiner>;
 		interrupts = <23 6>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 1289>, <&clock 1263>;
 		mmu-masters = <&fimc_is>;
 	};
 
@@ -350,6 +358,8 @@
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x13CB0000 0x1000>;
 		interrupts = <0 172 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock 5014>, <&clock 5008>;
 		mmu-masters = <&fimc_is>;
 	};
 
