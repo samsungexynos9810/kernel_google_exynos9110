@@ -679,6 +679,7 @@ enum aa_afmode {
 	AA_AFMODE_SLEEP,
 	AA_AFMODE_INFINITY,
 	AA_AFMODE_MACRO,
+	AA_AFMODE_DELAYED_OFF,
 
 	/* Single AF. These modes are adjusted when afTrigger is changed from 0 to 1 */
 	AA_AFMODE_AUTO = 11,
