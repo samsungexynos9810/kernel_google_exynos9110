@@ -102,11 +102,6 @@ enum fimg2d_ctx_state {
 	CTX_ERROR,
 };
 
-enum fimg2d_pw_status {
-	FIMG2D_PW_ON = 0,
-	FIMG2D_PW_OFF
-};
-
 enum driver_act {
 	DRV_ACT = 0,
 	DRV_DEACT
