@@ -140,9 +140,8 @@ p_err:
 int fimc_is_runtime_resume(struct device *dev)
 {
 	int ret = 0;
-#ifndef CONFIG_PM_RUNTIME
 	u32 val;
-#endif
+
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core = (struct fimc_is_core *)platform_get_drvdata(pdev);
 #if defined(CONFIG_PM_DEVFREQ)
@@ -155,6 +154,18 @@ int fimc_is_runtime_resume(struct device *dev)
 	BUG_ON(!core->pdata->clk_on);
 
 	info("FIMC_IS runtime resume in\n");
+
+	val  = __raw_readl(PMUREG_ISP0_STATUS);
+	if((val & 0x7) != 0x7){
+	    err("FIMC_IS runtime resume ISP0 : %d Power down\n",val);
+	    BUG();
+	}
+
+	val = __raw_readl(PMUREG_ISP1_STATUS);
+	if((val & 0x7) != 0x7){
+	    err("FIMC_IS runtime resume ISP1 : %d Power down\n",val);
+	    BUG();
+	}
 
 #ifndef CONFIG_PM_RUNTIME
 	/* ISP0 */
