@@ -298,7 +298,7 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
 	if (nr_to_scan == 0)
 		return ion_page_pool_total(pool, high);
 
-	while (nr_freed < (nr_to_scan * PAGE_SIZE)) {
+	while (nr_freed < nr_to_scan) {
 		struct page *page;
 
 		mutex_lock(&pool->mutex);

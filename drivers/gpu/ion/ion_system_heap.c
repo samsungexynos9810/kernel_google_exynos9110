@@ -24,6 +24,8 @@
 #include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
+#include <linux/swap.h>
+#include <linux/module.h>
 #include <linux/kthread.h>
 #include <asm/tlbflush.h>
 #include "ion_priv.h"
@@ -425,8 +427,14 @@ static struct ion_heap_ops system_heap_ops = {
 	.preload = ion_system_heap_preload_allocate,
 };
 
+#define MAX_POOL_SHRINK_SHIFT		8
+#define DEFAULT_POOL_SHRINK_SHIFT	6
+static int pool_shrink_shift = DEFAULT_POOL_SHRINK_SHIFT;
+module_param_named(shrink_shift, pool_shrink_shift, int, S_IRUGO | S_IWUSR);
+
 static int ion_system_heap_shrink(struct shrinker *shrinker,
-				  struct shrink_control *sc) {
+				  struct shrink_control *sc)
+{
 
 	struct ion_heap *heap = container_of(shrinker, struct ion_heap,
 					     shrinker);
@@ -434,46 +442,74 @@ static int ion_system_heap_shrink(struct shrinker *shrinker,
 							struct ion_system_heap,
 							heap);
 	int nr_total = 0;
-	int nr_freed = 0;
-	int nr_to_scan = sc->nr_to_scan * 16; /* object size: 64KB (order 4) */
+	int nr_freed, nr_freelist, nr_to_scan, other_avail;
+	int shift;
+	int shrink_shift = pool_shrink_shift;
+	gfp_t gfp_mask = sc->gfp_mask | __GFP_HIGHMEM;
 	int i;
 
-	if (nr_to_scan == 0)
-		goto end;
+	for (i = 0; i < num_orders * 2; i++) {
+		struct ion_page_pool *pool = sys_heap->pools[i];
+		nr_total += ion_page_pool_shrink(pool, gfp_mask, 0);
+	}
+	nr_freelist = ion_heap_freelist_size(heap) / PAGE_SIZE;
+	nr_total += nr_freelist;
+
+	if (sc->nr_to_scan == 0)
+		return nr_total;
+	/*
+	 * shrink shift: aging the rate of page returned by shrinker
+	 * -DEFAULT_POOL_SHRINK_SHIFT <= shift <= pool_shrink_shift
+	 */
+	if ((shrink_shift < 0) || (shrink_shift > MAX_POOL_SHRINK_SHIFT))
+		shrink_shift = MAX_POOL_SHRINK_SHIFT;
+	other_avail = global_page_state(NR_FREE_PAGES)
+			+ global_page_state(NR_FILE_PAGES)
+			- nr_total
+			- totalreserve_pages
+			- global_page_state(NR_SHMEM);
+	shift = (other_avail < 0) ? 0 : other_avail / nr_total;
+	shift = shrink_shift - shift;
+	if (shift >= 0) {
+		nr_to_scan = sc->nr_to_scan << shift;
+	} else {
+		shift = -shift;
+		if (shift > DEFAULT_POOL_SHRINK_SHIFT)
+			shift = DEFAULT_POOL_SHRINK_SHIFT;
+		nr_to_scan = sc->nr_to_scan >> shift;
+	}
 
 	/* shrink the free list first, no point in zeroing the memory if
 	   we're just going to reclaim it */
-	nr_freed += ion_heap_freelist_drain(heap, sc->nr_to_scan * PAGE_SIZE) /
+	nr_freed = ion_heap_freelist_drain(heap, nr_to_scan * PAGE_SIZE) /
 		PAGE_SIZE;
 
 	if (nr_freed >= nr_to_scan)
 		goto end;
 
-	nr_to_scan -= nr_freed;
 	/* shrink order: cached pool first, low order pages first */
 	for (i = num_orders - 1; i >= 0; i--) {
 		struct ion_page_pool *pool = sys_heap->pools[i];
 
-		nr_freed = ion_page_pool_shrink(pool, sc->gfp_mask,
+		nr_freed += ion_page_pool_shrink(pool, gfp_mask,
 						 nr_to_scan);
-		nr_to_scan -= nr_freed;
-		if (nr_to_scan <= 0)
+		if (nr_freed >= nr_to_scan)
 			break;
 
 		pool = sys_heap->pools[i + num_orders];
-		nr_freed = ion_page_pool_shrink(pool, sc->gfp_mask,
+		nr_freed += ion_page_pool_shrink(pool, gfp_mask,
 						 nr_to_scan);
-		nr_to_scan -= nr_freed;
-		if (nr_to_scan <= 0)
+		if (nr_freed >= nr_to_scan)
 			break;
 	}
 
 end:
 	/* total number of items is whatever the page pools are holding
 	   plus whatever's in the freelist */
+	nr_total = 0;
 	for (i = 0; i < num_orders * 2; i++) {
 		struct ion_page_pool *pool = sys_heap->pools[i];
-		nr_total += ion_page_pool_shrink(pool, sc->gfp_mask, 0);
+		nr_total += ion_page_pool_shrink(pool, gfp_mask, 0);
 	}
 	nr_total += ion_heap_freelist_size(heap) / PAGE_SIZE;
 	return nr_total;
