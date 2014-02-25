@@ -1214,8 +1214,8 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 
 		info("%s(%d) - A5 Power on\n", __func__, on);
 
-		/* 6. enable A5 */
-		writel(0x00018000, PMUREG_ISP_ARM_OPTION);
+		/* 6. enable A5 & use stand-by WFI */
+		writel((1 << 16 | 1 << 15), PMUREG_ISP_ARM_OPTION);
 		timeout = 1000;
 
 		pr_debug("%s(%d) - A5 enable start...\n", __func__, on);
@@ -1236,19 +1236,13 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 
 		pr_debug("%s(%d) - change A5 state\n", __func__, on);
 	} else {
-		/* 1. disable A5 */
-		if (test_bit(IS_IF_STATE_START, &device->interface->state))
-			writel(0x10000, PMUREG_ISP_ARM_OPTION);
-		else
-			writel(0x00000, PMUREG_ISP_ARM_OPTION);
-
 		/* Check FW state for WFI of A5 */
 		debug = readl(device->interface->regs + ISSR6);
 		printk(KERN_INFO "%s: A5 state(0x%x)\n", __func__, debug);
 #if defined(CONFIG_SOC_EXYNOS3470)
 		bts_initialize("pd-cam", false);
 #endif
-		/* 2. FIMC-IS local power down */
+		/* FIMC-IS local power down */
 #if defined(CONFIG_PM_RUNTIME)
 		rpm_ret = pm_runtime_put_sync(dev);
 		if (rpm_ret < 0)
