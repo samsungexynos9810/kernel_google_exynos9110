@@ -30,8 +30,9 @@ int fimc_is_clk_gate_init(struct fimc_is_core *core)
 	spin_lock_init(&gate_ctrl->lock);
 	core->resourcemgr.clk_gate_ctrl.gate_info = core->pdata->gate_info;
 
-	/* init clock gating region for debug */
-	writel(0x0, core->ischain[0].interface->regs + ISSR53);
+	/* Do not initialize clock gating region for debug(ISSR53).
+	 * Because this region is initialize by A5.
+	 */
 	return 0;
 }
 
