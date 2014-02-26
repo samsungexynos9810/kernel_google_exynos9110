@@ -44,6 +44,7 @@ struct cpu_load_info {
 static DEFINE_PER_CPU(struct cpu_load_info, cur_cpu_info);
 static DEFINE_MUTEX(dm_hotplug_lock);
 static DEFINE_MUTEX(big_hotplug_lock);
+static DEFINE_MUTEX(little_hotplug_in_lock);
 
 static struct task_struct *dm_hotplug_task;
 static unsigned int low_stay_threshold = DEFAULT_LOW_STAY_THRSHD;
@@ -57,6 +58,7 @@ static bool do_enable_hotplug = false;
 static bool do_disable_hotplug = false;
 #if defined(CONFIG_SCHED_HMP)
 static int big_hotpluged = 0;
+static int little_hotplug_in = 0;
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static unsigned int egl_min_freq;
@@ -70,6 +72,8 @@ enum hotplug_cmd {
 	CMD_BIG_IN,
 	CMD_BIG_OUT,
 	CMD_LITTLE_IN,
+	CMD_LITTLE_ONE_IN,
+	CMD_LITTLE_ONE_OUT,
 };
 
 static int on_run(void *data);
@@ -168,6 +172,36 @@ static ssize_t store_enable_dm_hotplug(struct kobject *kobj, struct attribute *a
 	return count;
 }
 
+#if defined(CONFIG_SCHED_HMP)
+static ssize_t show_little_core1_hotplug_in(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	if (exynos_dm_hotplug_disabled())
+		return snprintf(buf, PAGE_SIZE, "dynamic hotplug disabled\n");
+
+	return snprintf(buf, PAGE_SIZE, "%s on low power mode\n",
+			little_hotplug_in ? "hotplug-in" : "hotplug-out");
+}
+
+static ssize_t store_little_core1_hotplug_in(struct kobject *kobj,
+				struct attribute *attr, const char *buf, size_t count)
+{
+	int input_little_hotplug_in;
+
+	if (!sscanf(buf, "%d", &input_little_hotplug_in))
+		return -EINVAL;
+
+	if (input_little_hotplug_in > 1 || input_little_hotplug_in < 0) {
+		pr_err("%s: invalid value (%d)\n", __func__, input_little_hotplug_in);
+		return -EINVAL;
+	}
+
+	little_core1_hotplug_in((bool)input_little_hotplug_in);
+
+	return count;
+}
+#endif
+
 static ssize_t show_stay_threshold(struct kobject *kobj,
 				struct attribute *attr, char *buf)
 {
@@ -227,6 +261,12 @@ static ssize_t store_dm_hotplug_delay(struct kobject *kobj, struct attribute *at
 static struct global_attr enable_dm_hotplug =
 		__ATTR(enable_dm_hotplug, S_IRUGO | S_IWUSR,
 			show_enable_dm_hotplug, store_enable_dm_hotplug);
+
+#if defined(CONFIG_SCHED_HMP)
+static struct global_attr little_core_hotplug_in =
+		__ATTR(little_core_hotplug_in, S_IRUGO | S_IWUSR,
+			show_little_core1_hotplug_in, store_little_core1_hotplug_in);
+#endif
 
 static struct global_attr dm_hotplug_stay_threshold =
 		__ATTR(dm_hotplug_stay_threshold, S_IRUGO | S_IWUSR,
@@ -322,6 +362,7 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 {
 	int i = 0;
 	int ret = 0;
+	int hotplug_out_limit = 0;
 
 	if (exynos_dm_hotplug_disabled())
 		return 0;
@@ -340,11 +381,25 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				}
 			}
 		} else {
-			for (i = setup_max_cpus - 1; i > 0; i--) {
-				if (cpu_online(i)) {
-					ret = cpu_down(i);
+			if (cmd == CMD_LITTLE_ONE_OUT) {
+				if (!in_low_power_mode)
+					goto blk_out;
+
+				if (cpu_online(1)) {
+					ret = cpu_down(1);
 					if (ret)
 						goto blk_out;
+				}
+			} else {
+				if (little_hotplug_in)
+					hotplug_out_limit = 1;
+
+				for (i = setup_max_cpus - 1; i > hotplug_out_limit; i--) {
+					if (cpu_online(i)) {
+						ret = cpu_down(i);
+						if (ret)
+							goto blk_out;
+					}
 				}
 			}
 		}
@@ -364,7 +419,13 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				}
 			}
 		} else {
-			if ((big_hotpluged && !do_disable_hotplug) ||
+			if (cmd == CMD_LITTLE_ONE_IN) {
+				if (!cpu_online(1)) {
+					ret = cpu_up(1);
+					if (ret)
+						goto blk_out;
+				}
+			} else if ((big_hotpluged && !do_disable_hotplug) ||
 				(cmd == CMD_LITTLE_IN)) {
 				for (i = 1; i < NR_CA7; i++) {
 					if (!cpu_online(i)) {
@@ -447,9 +508,11 @@ static int dynamic_hotplug(enum hotplug_cmd cmd)
 		in_low_power_mode = true;
 		delay = in_delay;
 		break;
+	case CMD_LITTLE_ONE_OUT:
 	case CMD_BIG_OUT:
 		ret = __cpu_hotplug(true, cmd);
 		break;
+	case CMD_LITTLE_ONE_IN:
 	case CMD_BIG_IN:
 		ret = __cpu_hotplug(false, cmd);
 		break;
@@ -526,6 +589,45 @@ int big_cores_hotplug(bool out_flag)
 
 out:
 	mutex_unlock(&big_hotplug_lock);
+
+	return ret;
+}
+
+int little_core1_hotplug_in(bool in_flag)
+{
+	int ret = 0;
+
+	mutex_lock(&little_hotplug_in_lock);
+
+	if (in_flag) {
+		if (little_hotplug_in) {
+			little_hotplug_in++;
+			goto out;
+		}
+
+		ret = dynamic_hotplug(CMD_LITTLE_ONE_IN);
+		if (!ret)
+			little_hotplug_in++;
+	} else {
+		if (WARN_ON(!little_hotplug_in)) {
+			pr_err("%s: little core1 already hotplug out\n",
+					__func__);
+			ret = -EINVAL;
+			goto out;
+		}
+
+		if (little_hotplug_in > 1) {
+			little_hotplug_in--;
+			goto out;
+		}
+
+		ret = dynamic_hotplug(CMD_LITTLE_ONE_OUT);
+		if (!ret)
+			little_hotplug_in--;
+	}
+
+out:
+	mutex_unlock(&little_hotplug_in_lock);
 
 	return ret;
 }
@@ -835,6 +937,15 @@ static int __init dm_cpu_hotplug_init(void)
 		goto err_enable_dm_hotplug;
 	}
 
+#if defined(CONFIG_SCHED_HMP)
+	ret = sysfs_create_file(power_kobj, &little_core_hotplug_in.attr);
+	if (ret) {
+		pr_err("%s: failed to create little_core_hotplug_in sysfs interface\n",
+			__func__);
+		goto err_little_core_hotplug_in;
+	}
+#endif
+
 	ret = sysfs_create_file(power_kobj, &dm_hotplug_stay_threshold.attr);
 	if (ret) {
 		pr_err("%s: failed to create dm_hotplug_stay_threshold sysfs interface\n",
@@ -902,6 +1013,8 @@ err_policy:
 err_dm_hotplug_delay:
 	sysfs_remove_file(power_kobj, &dm_hotplug_stay_threshold.attr);
 err_dm_hotplug_stay_threshold:
+	sysfs_remove_file(power_kobj, &little_core_hotplug_in.attr);
+err_little_core_hotplug_in:
 	sysfs_remove_file(power_kobj, &enable_dm_hotplug.attr);
 err_enable_dm_hotplug:
 #endif

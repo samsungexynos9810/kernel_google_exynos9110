@@ -188,10 +188,16 @@ extern void force_dynamic_hotplug(bool out_flag, int delay_msec);
 #endif
 #if defined(CONFIG_SCHED_HMP) && defined(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)
 int big_cores_hotplug(bool out_flag);
+int little_core1_hotplug_in(bool in_flag);
 void event_hotplug_in(void);
 bool is_big_hotpluged(void);
 #else
 static inline int big_cores_hotplug(bool out_flag)
+{
+	return 0;
+}
+
+static inline int little_core1_hotplug_in(bool in_flag)
 {
 	return 0;
 }
