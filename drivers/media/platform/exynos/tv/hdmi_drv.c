@@ -973,24 +973,25 @@ static int hdmi_probe(struct platform_device *pdev)
 		goto fail_clk;
 	}
 
-	/* External hpd */
-	hdmi_dev->ext_irq = gpio_to_irq(hdmi_dev->res.gpio_hpd);
-	ret = devm_request_irq(dev, hdmi_dev->ext_irq, hdmi_irq_handler_ext,
-			IRQ_TYPE_EDGE_BOTH, "hdmi-ext", hdmi_dev);
-	if (ret) {
-		dev_err(dev, "request ext interrupt failed.\n");
-		goto fail_gpio;
-	} else {
-		dev_info(dev, "success request hdmi-ext irq\n");
-	}
-
+	/* register the switch device for HPD */
 	hdmi_dev->hpd_switch.name = "hdmi";
 	ret = switch_dev_register(&hdmi_dev->hpd_switch);
 	if (ret) {
 		dev_err(dev, "request switch class failed.\n");
 		goto fail_gpio;
 	}
+	dev_info(dev, "success register switch device\n");
 
+	/* External hpd */
+	hdmi_dev->ext_irq = gpio_to_irq(hdmi_dev->res.gpio_hpd);
+	ret = devm_request_irq(dev, hdmi_dev->ext_irq, hdmi_irq_handler_ext,
+			IRQ_TYPE_EDGE_BOTH, "hdmi-ext", hdmi_dev);
+	if (ret) {
+		dev_err(dev, "request ext interrupt failed.\n");
+		goto fail_switch;
+	} else {
+		dev_info(dev, "success request hdmi-ext irq\n");
+	}
 	mutex_init(&hdmi_dev->mutex);
 
 	if (soc_is_exynos5250()) {
@@ -1002,7 +1003,7 @@ static int hdmi_probe(struct platform_device *pdev)
 		if (phy_adapter == NULL) {
 			dev_err(dev, "adapter request failed\n");
 			ret = -ENXIO;
-			goto fail_switch;
+			goto fail_mutex;
 		}
 
 		hdmi_dev->phy_sd = v4l2_i2c_new_subdev_board(&hdmi_dev->v4l2_dev,
@@ -1012,7 +1013,7 @@ static int hdmi_probe(struct platform_device *pdev)
 		if (hdmi_dev->phy_sd == NULL) {
 			dev_err(dev, "missing subdev for hdmiphy\n");
 			ret = -ENODEV;
-			goto fail_switch;
+			goto fail_mutex;
 		}
 	}
 
@@ -1045,7 +1046,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* register hdmi subdev as entity */
 	ret = hdmi_register_entity(hdmi_dev);
 	if (ret)
-		goto fail_switch;
+		goto fail_mutex;
 
 	hdmi_entity_info_print(hdmi_dev);
 
@@ -1054,7 +1055,7 @@ static int hdmi_probe(struct platform_device *pdev)
 	/* initialize hdcp resource */
 	ret = hdcp_prepare(hdmi_dev);
 	if (ret)
-		goto fail_switch;
+		goto fail_mutex;
 
 	/* work after booting */
 	queue_delayed_work(system_nrt_wq, &hdmi_dev->hpd_work_ext,
@@ -1068,9 +1069,11 @@ static int hdmi_probe(struct platform_device *pdev)
 
 	return 0;
 
+fail_mutex:
+	mutex_destroy(&hdmi_dev->mutex);
+
 fail_switch:
 	switch_dev_unregister(&hdmi_dev->hpd_switch);
-	mutex_destroy(&hdmi_dev->mutex);
 
 fail_gpio:
 	gpio_free(hdmi_dev->res.gpio_hpd);
