@@ -793,15 +793,13 @@ static int __init asv_exynos5422_init(void)
 
 	set_ema();
 
-	mif_sram_regulator = regulator_get(NULL, "vdd_mifs");
-	g3d_sram_regulator = regulator_get(NULL, "vdd_g3ds");
-
 	asv_group_no = exynos5422_get_asv_group_sram();
 	mif_sram_volt = mif_sram_asv_volt_info_evt1[0][asv_group_no];
 	g3d_sram_volt = g3d_sram_asv_volt_info_evt1[0][asv_group_no];
 
 	pr_info("SRAM ASV group [%d] : MIF(%d), G3D(%d)\n", asv_group_no, mif_sram_volt, g3d_sram_volt);
 
+	mif_sram_regulator = regulator_get(NULL, "vdd_mifs");
 	if (!IS_ERR(mif_sram_regulator))
 		regulator_set_voltage(mif_sram_regulator, mif_sram_volt, mif_sram_volt);
 	else {
@@ -809,6 +807,7 @@ static int __init asv_exynos5422_init(void)
 		goto err_mif_sram;
 	}
 
+	g3d_sram_regulator = regulator_get(NULL, "vdd_g3ds");
 	if (!IS_ERR(g3d_sram_regulator))
 		regulator_set_voltage(g3d_sram_regulator, g3d_sram_volt, g3d_sram_volt);
 	else {
