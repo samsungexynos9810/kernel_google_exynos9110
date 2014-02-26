@@ -1234,7 +1234,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(PA_FIMC_IS_GIC_D + 0x400 + (i * 4)), 0x10101010, 0);
 
 		exynos_smc_readsfr(PA_FIMC_IS_GIC_C + 0x4, &debug);
-		pr_info("%s : PA_FIMC_IS_GIC_C : 0x%08x\n", __func__, debug);
+		info("%s : PA_FIMC_IS_GIC_C : 0x%08x\n", __func__, debug);
+		if (debug == 0x00)
+			merr("secure configuration is fail[0x131E0004:%08X]", device, debug);
 #endif
 
 		/* 5. A5 power on*/
@@ -1316,6 +1318,24 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		if (timeout == 0)
 			err("CAM1 power down failed(CAM1:0x%08x, A5:0x%08x)\n",
 				readl(PMUREG_CAM1_STATUS), readl(PMUREG_ISP_ARM_STATUS));
+#endif /* defined(CONFIG_SOC_EXYNOS5430) */
+#if defined(CONFIG_SOC_EXYNOS4415)
+		timeout = 1000;
+		while ((readl(PMUREG_ISP0_STATUS) & 0x1) && timeout) {
+			timeout--;
+			usleep_range(1000, 1000);
+		}
+		if (timeout == 0)
+			err("ISP0 power down failed(0x%08x)\n", readl(PMUREG_ISP0_STATUS));
+
+		timeout = 1000;
+		while ((readl(PMUREG_ISP1_STATUS) & 0x1) && timeout) {
+			timeout--;
+			usleep_range(1000, 1000);
+		}
+		if (timeout == 0)
+			err("ISP0 power down failed(0x%08x)\n", readl(PMUREG_ISP1_STATUS));
+
 #endif /* defined(CONFIG_SOC_EXYNOS5430) */
 #if defined(CONFIG_SOC_EXYNOS5422)
 #endif /* defined(CONFIG_SOC_EXYNOS5422) */
