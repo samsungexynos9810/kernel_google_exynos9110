@@ -1162,7 +1162,6 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	}
 
 	clk_set_parent(data->mx_mspll_ccore, data->mout_spll);
-	clk_put(data->mout_spll);
 
 	data->fout_spll = clk_get(dev, "fout_spll");
 	if (IS_ERR(data->fout_spll)) {
@@ -1189,7 +1188,7 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	if (IS_ERR(data->clkm_phy0)) {
 		dev_err(dev, "Cannot get clock \"clkm_phy0\"\n");
 		err = PTR_ERR(data->clkm_phy0);
-		goto err_clkm_phy;
+		goto err_clkm_phy0;
 	}
 	data->clkm_phy1 = clk_get(dev, "clkm_phy1");
 	if (IS_ERR(data->clkm_phy1)) {
@@ -1303,21 +1302,22 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	return 0;
 
 err_opp_add:
-	clk_put(data->clkm_phy0);
 	clk_put(data->clkm_phy1);
+err_clkm_phy0:
+	clk_put(data->clkm_phy0);
 err_clkm_phy:
 	clk_put(data->fout_bpll);
 err_fout_bpll:
 	clk_put(data->mout_bpll);
 err_mout_bpll:
-	clk_put(data->mx_mspll_ccore);
-err_mx_mspll_ccore:
-	clk_put(data->mclk_cdrex);
-err_mout_mclk_cdrex:
 	clk_put(data->fout_spll);
 err_fout_spll:
 	clk_put(data->mout_spll);
 err_mout_spll:
+	clk_put(data->mx_mspll_ccore);
+err_mx_mspll_ccore:
+	clk_put(data->mclk_cdrex);
+err_mout_mclk_cdrex:
 	regulator_put(data->vdd_mif);
 err_regulator:
 	kfree(data);
