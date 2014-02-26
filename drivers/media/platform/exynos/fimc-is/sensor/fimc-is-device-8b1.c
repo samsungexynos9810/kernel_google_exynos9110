@@ -477,8 +477,16 @@ int sensor_8b1_s_duration(struct v4l2_subdev *subdev, u64 duration)
 
 	framerate = 1000 * 1000 * 1000 / (u32)duration;
 	result = 1060 / framerate;
+#if 0
 	value[0] = result & 0xFF;
 	value[1] = (result >> 8) & 0xFF;
+#endif
+	/*
+	 * forcely set 10fps for 8b1,
+	 * because the formula to calc framerate setting is confidential.
+	 */
+	value[0] = 0x52;
+	value[1] = 0x0;
 
 	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_MSB, value[1]);
 	fimc_is_sensor_write(client, SENSOR_REG_VIS_DURATION_LSB, value[0]);
