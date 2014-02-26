@@ -37,6 +37,17 @@ enum {
 	AUD_PWR_AFTR,
 };
 
+#ifdef CONFIG_SCHED_HMP
+#define USE_EXYNOS_AUD_SCHED
+enum {
+	AUD_MODE_DEFAULT = 0,
+	AUD_MODE_NORM,
+	AUD_MODE_UHQA,
+};
+
+extern void lpass_task_affinity(pid_t pid, int mode);
+#endif
+
 extern int exynos_check_aud_pwr(void);
 
 extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
