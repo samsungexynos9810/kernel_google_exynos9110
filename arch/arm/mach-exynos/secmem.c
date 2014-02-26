@@ -141,35 +141,9 @@ struct platform_device *get_secmem_dt_index_pdev(struct device_node *np, int idx
 
 int drm_enable_locked(struct secmem_info *info, bool enable)
 {
-	int idx_np;
-	size_t idx_np_size;
-	struct platform_device *pdev;
-	struct device_node *np = NULL;
-	struct device *dev;
-
 	if (drm_onoff == enable) {
 		pr_err("%s: DRM is already %s\n", __func__, drm_onoff ? "on" : "off");
-		return 0;
-	}
-
-	np = get_secmem_dev_node_and_size(&idx_np_size);
-	if (!np) {
-		pr_err("fail to get secmem dev node and size\n");
-		return 0;
-	}
-
-	for (idx_np = 0; idx_np < idx_np_size; idx_np++) {
-		pdev = get_secmem_dt_index_pdev(np, idx_np);
-		if (pdev == NULL) {
-			pr_err("fail to get secmem index pdev\n");
-			return 0;
-		}
-		dev = &pdev->dev;
-
-		if (enable)
-			pm_runtime_get_sync(dev);
-		else
-			pm_runtime_put_sync(dev);
+		return -EINVAL;
 	}
 
 	drm_onoff = enable;
@@ -178,6 +152,38 @@ int drm_enable_locked(struct secmem_info *info, bool enable)
 	 * calling the ioctl or by closing the fd
 	 */
 	info->drm_enabled = enable;
+
+	return 0;
+}
+
+int drm_gsc_enable_locked(bool enable)
+{
+	int idx_np;
+	size_t idx_np_size;
+	struct platform_device *pdev;
+	struct device_node *np = NULL;
+	struct device *dev;
+
+
+	np = get_secmem_dev_node_and_size(&idx_np_size);
+	if (!np) {
+		pr_err("fail to get secmem dev node and size\n");
+		return -EINVAL;
+	}
+
+	for (idx_np = 0; idx_np < idx_np_size; idx_np++) {
+		pdev = get_secmem_dt_index_pdev(np, idx_np);
+		if (pdev == NULL) {
+			pr_err("fail to get secmem index pdev\n");
+			return -EINVAL;
+		}
+		dev = &pdev->dev;
+
+		if (enable)
+			pm_runtime_get_sync(dev);
+		else
+			pm_runtime_put_sync(dev);
+	}
 
 	return 0;
 }
