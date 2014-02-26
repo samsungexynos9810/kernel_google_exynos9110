@@ -1648,6 +1648,7 @@ static int gsc_probe(struct platform_device *pdev)
 
 	return 0;
 err_out:
+	destroy_workqueue(gsc->irq_workqueue);
 	gsc_unregister_output_device(gsc);
 err_m2m:
 	gsc_unregister_m2m_device(gsc);
