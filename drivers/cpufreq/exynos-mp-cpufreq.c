@@ -98,6 +98,10 @@ static struct pm_qos_request min_cpu_qos;
 static struct pm_qos_request max_cpu_qos;
 static struct pm_qos_request min_kfc_qos;
 static struct pm_qos_request max_kfc_qos;
+static struct pm_qos_request min_cpu_qos_real;
+static struct pm_qos_request max_cpu_qos_real;
+static struct pm_qos_request min_kfc_qos_real;
+static struct pm_qos_request max_kfc_qos_real;
 static struct pm_qos_request exynos_mif_qos_CA7;
 static struct pm_qos_request exynos_mif_qos_CA15;
 static struct pm_qos_request ipa_max_kfc_qos;
@@ -1323,7 +1327,7 @@ static ssize_t store_cpu_min_freq(struct kobject *kobj, struct attribute *attr,
 		input = min(input, (int)freq_max[CA15]);
 
 	if (pm_qos_request_active(&min_cpu_qos))
-		pm_qos_update_request(&min_cpu_qos, input);
+		pm_qos_update_request(&min_cpu_qos_real, input);
 
 	return count;
 }
@@ -1340,7 +1344,7 @@ static ssize_t store_cpu_max_freq(struct kobject *kobj, struct attribute *attr,
 		input = max(input, (int)freq_min[CA15]);
 
 	if (pm_qos_request_active(&max_cpu_qos))
-		pm_qos_update_request(&max_cpu_qos, input);
+		pm_qos_update_request(&max_cpu_qos_real, input);
 
 	return count;
 }
@@ -1404,7 +1408,7 @@ static ssize_t store_kfc_min_freq(struct kobject *kobj, struct attribute *attr,
 		input = min(input, (int)freq_max[CA7]);
 
 	if (pm_qos_request_active(&min_kfc_qos))
-		pm_qos_update_request(&min_kfc_qos, input);
+		pm_qos_update_request(&min_kfc_qos_real, input);
 
 	return count;
 }
@@ -1421,7 +1425,7 @@ static ssize_t store_kfc_max_freq(struct kobject *kobj, struct attribute *attr,
 		input = max(input, (int)freq_min[CA7]);
 
 	if (pm_qos_request_active(&max_kfc_qos))
-		pm_qos_update_request(&max_kfc_qos, input);
+		pm_qos_update_request(&max_kfc_qos_real, input);
 
 	return count;
 }
@@ -1956,6 +1960,15 @@ static int __init exynos_cpufreq_init(void)
 	pm_qos_add_request(&min_cpu_qos, PM_QOS_CPU_FREQ_MIN,
 					PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
 	pm_qos_add_request(&max_cpu_qos, PM_QOS_CPU_FREQ_MAX,
+					max_cpu_qos_const.default_value);
+
+	pm_qos_add_request(&min_kfc_qos_real, PM_QOS_KFC_FREQ_MIN,
+					PM_QOS_KFC_FREQ_MIN_DEFAULT_VALUE);
+	pm_qos_add_request(&max_kfc_qos_real, PM_QOS_KFC_FREQ_MAX,
+					max_kfc_qos_const.default_value);
+	pm_qos_add_request(&min_cpu_qos_real, PM_QOS_CPU_FREQ_MIN,
+					PM_QOS_CPU_FREQ_MIN_DEFAULT_VALUE);
+	pm_qos_add_request(&max_cpu_qos_real, PM_QOS_CPU_FREQ_MAX,
 					max_cpu_qos_const.default_value);
 
 	if (exynos_info[CA7]->boot_cpu_min_qos) {
