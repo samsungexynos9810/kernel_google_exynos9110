@@ -1024,7 +1024,6 @@
 			       "mfc_sh",
 			       "g2d_wfd",
 			       "video",
-			       "mfc_input",
 			       "sectbl",
 			       "mfc_fw",
 			       "mfc_nfw",
@@ -1033,14 +1032,13 @@
 		contig = <0 0x400000 0x0>,
 		         <2 0x100000 0x0>,
 		         <10 0x800000 0x0>,
-		         <11 0x7B00000 0x0>,
-		         <7 0xE00000 0x0>,
+		         <11 0x8100000 0x0>,
 		         <9 0x100000 0x0>,
 		         <8 0x100000 0x0>,
 		         <12 0x100000 0x0>,
 		         <13 0x20000 0x0>;
 
-		contig-isolate_on_boot = <0>, <2>, <7>, <8>,
+		contig-isolate_on_boot = <0>, <2>, <8>,
 					  <9>, <10>, <11>, <12>, <13>;
 
 		ion_noncontig_heap {
