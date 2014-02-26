@@ -62,8 +62,6 @@ static int ion_page_pool_add(struct ion_page_pool *pool, struct page *page)
 	}
 	mutex_unlock(&pool->mutex);
 
-	zone_page_state_add(1 << pool->order, page_zone(page), NR_FILE_PAGES);
-
 	return 0;
 }
 
@@ -82,8 +80,6 @@ static struct page *ion_page_pool_remove(struct ion_page_pool *pool, bool high)
 	}
 
 	list_del(&page->lru);
-
-	zone_page_state_add(-(1 << pool->order), page_zone(page), NR_FILE_PAGES);
 
 	return page;
 }
