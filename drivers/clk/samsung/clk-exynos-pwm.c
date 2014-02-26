@@ -135,6 +135,7 @@ void __init exynos_pwm_clk_init(struct device_node *np)
 	reg_tcfg0 = __raw_readl(reg_base + REG_TCFG0);
 	reg_tcfg0 &= ~(MASK_TCFG0_PRESCALE0 | MASK_TCFG0_PRESCALE1);
 	__raw_writel(reg_tcfg0, reg_base + REG_TCFG0);
+	__raw_writel(0, reg_base + REG_TCFG1);
 
 	clk_table[pwm_scaler0] = clk_register_divider(NULL, "pwm-scaler0",
 				"pwm-clock", 0, reg_base + REG_TCFG0, 0, 8,
