@@ -553,7 +553,8 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 	int ret = 0;
 
 	/* fixup of old DRM flags */
-	if (flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK))
+	if (flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK |
+			ION_EXYNOS_MFC_INPUT_MASK))
 		id = ION_EXYNOS_ID_VIDEO;
 
 	dev = device_find_child(contig_heap->dev, &id, ion_cma_device_id_match);
@@ -598,7 +599,8 @@ static void ion_exynos_contig_heap_free(struct ion_buffer *buffer)
 	struct device *dev;
 
 	/* fixup of old DRM flags */
-	if (buffer->flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK))
+	if (buffer->flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK |
+				ION_EXYNOS_MFC_INPUT_MASK))
 		id = ION_EXYNOS_ID_VIDEO;
 
 	dev = device_find_child(contig_heap->dev, &id, ion_cma_device_id_match);
