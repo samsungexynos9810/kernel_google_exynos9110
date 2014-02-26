@@ -32,6 +32,19 @@
 #include <plat/cpu.h>
 
 #include "dmaengine.h"
+
+#include <linux/exynos_ion.h>
+#include <mach/smc.h>
+#define MC_FC_SECURE_DMA	((uint32_t)(0x81000010))
+
+struct ion_info {
+	uint32_t base;
+	size_t size;
+};
+
+static bool secure_dma_mode;
+static struct ion_info secdma_mem_info;
+
 #define PL330_MAX_CHAN		8
 #define PL330_MAX_IRQS		32
 #define PL330_MAX_PERI		32
@@ -1051,17 +1064,45 @@ static bool _until_dmac_idle(struct pl330_thread *thrd)
 	return true;
 }
 
+void set_secure_dma(void)
+{
+	int ret;
+
+	ret = ion_exynos_contig_heap_info(ION_EXYNOS_ID_SECDMA,
+				&secdma_mem_info.base, &secdma_mem_info.size);
+	if (ret) {
+		pr_err("get ion exynos info failed\n");
+		return;
+	}
+	pr_err("[%s] ion base: 0x%x, size:0x%x \n", __func__,
+				secdma_mem_info.base, secdma_mem_info.size);
+
+	secure_dma_mode = true;
+}
+
 static inline void _execute_DBGINSN(struct pl330_thread *thrd,
 		u8 insn[], bool as_manager)
 {
 	void __iomem *regs = thrd->dmac->pinfo->base;
+	struct device_node *np = thrd->dmac->pinfo->dev->of_node;
 	u32 val;
+	int ret;
 
 	val = (insn[0] << 16) | (insn[1] << 24);
 	if (!as_manager) {
 		val |= (1 << 0);
 		val |= (thrd->id << 8); /* Channel Number */
 	}
+
+	if (soc_is_exynos5430() && secure_dma_mode)
+		if (np && of_dma_secure_mode(np)) {
+			ret = exynos_smc(MC_FC_SECURE_DMA, val,
+					*((u32 *)&insn[2]), secdma_mem_info.base);
+			if (ret)
+				 dev_err(thrd->dmac->pinfo->dev, "dma smc failed\n");
+			return;
+		}
+
 	writel(val, regs + DBGINST0);
 
 	val = *((u32 *)&insn[2]);
@@ -2180,7 +2221,14 @@ static int dmac_alloc_threads(struct pl330_dmac *pl330)
 		thrd->id = i;
 		thrd->dmac = pl330;
 		_reset_thread(thrd);
-		thrd->free = true;
+
+		/* Secure Channel */
+		if (i == 0 && soc_is_exynos5430() &&
+			pi->dev->of_node && of_dma_secure_mode(pi->dev->of_node)) {
+			thrd->free = false;
+		} else {
+			thrd->free = true;
+		}
 	}
 
 	/* MANAGER is indexed at the end */
