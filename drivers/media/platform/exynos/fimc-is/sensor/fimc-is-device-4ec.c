@@ -8039,7 +8039,7 @@ int sensor_4ec_probe(struct i2c_client *client,
 	module->pixel_height = 1080 + 10;
 	module->active_width = 1920;
 	module->active_height = 1080;
-	module->max_framerate = 30;
+	module->max_framerate = 120;
 	module->position = SENSOR_POSITION_REAR;
 	module->mode = CSI_MODE_VC_ONLY;
 	module->lanes = CSI_DATA_LANES_4;

@@ -43,6 +43,7 @@
 #include "fimc-is-err.h"
 #include "fimc-is-video.h"
 #include "fimc-is-dt.h"
+#include "fimc-is-dvfs.h"
 
 #include "sensor/fimc-is-device-6b2.h"
 #include "sensor/fimc-is-device-imx135.h"
@@ -1408,12 +1409,13 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	}
 
 	framerate = tpf->denominator / tpf->numerator;
-
-	info("[SEN:D:%d] framerate: req@%dfps, cur@%dfps\n", device->instance,
-		framerate, device->image.framerate);
-
 	subdev_module = device->subdev_module;
 	subdev_csi = device->subdev_csi;
+
+	if (framerate == 0) {
+		mwarn("frame rate 0 request is ignored", device);
+		goto p_err;
+	}
 
 	module = (struct fimc_is_module_enum *)v4l2_get_subdevdata(subdev_module);
 	if (!module) {
@@ -1459,6 +1461,9 @@ int fimc_is_sensor_s_framerate(struct fimc_is_device_sensor *device,
 	device->mode = get_sensor_mode(module->cfg, module->cfgs,
 			device->image.window.width, device->image.window.height,
 			framerate);
+
+	info("[SEN:D:%d] framerate: req@%dfps, cur@%dfps\n", device->instance,
+		framerate, device->image.framerate);
 
 p_err:
 	return ret;
@@ -1824,6 +1829,7 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 
 	BUG_ON(!device);
 	BUG_ON(!device->subdev_flite);
+	BUG_ON(!device->private_data);
 
 	subdev_flite = device->subdev_flite;
 	enable = FLITE_ENABLE_FLAG;
@@ -1841,6 +1847,31 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 		goto p_err;
 	}
 
+#if defined(CONFIG_PM_DEVFREQ)
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+		struct fimc_is_core *core;
+		struct fimc_is_image *image;
+		u32 int_qos, mif_qos, bandwidth;
+
+		core = device->private_data;
+		image= &device->image;
+		bandwidth = image->window.width * image->window.height * image->framerate;
+
+		/* HACK : bandwidth[31b] means recording or capture */
+		if (image->format.pixelformat == V4L2_PIX_FMT_JPEG)
+			bandwidth |= 0x80000000;
+		else
+			bandwidth &= ~0x80000000;
+
+		int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, bandwidth);
+		mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, bandwidth);
+
+		info("[RSC] DVFS LOCK(int(%d), mif(%d))\n", int_qos, mif_qos);
+
+		pm_qos_update_request(&exynos_sensor_qos_int, int_qos);
+		pm_qos_update_request(&exynos_sensor_qos_mem, mif_qos);
+	}
+#endif
 	/* to determine flite buffer done mode (early/normal) */
 	if (flite->chk_early_buf_done) {
 		flite->chk_early_buf_done(flite, device->image.framerate,
