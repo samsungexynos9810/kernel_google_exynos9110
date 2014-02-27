@@ -57,6 +57,7 @@ struct sensor_regset_table {
 	struct sensor_regset stop_stream;
 	struct sensor_regset resol_640_480;
 	struct sensor_regset resol_1024_768;
+	struct sensor_regset resol_1024_576;
 };
 
 #define SENSOR_REGISTER_REGSET(y)		\
@@ -8673,6 +8674,120 @@ static struct sensor_reg sr352_Enterpreview_1024x768_01[] = {
 {0xff, 0x01,}, //delay 10ms
 };
 
+static struct sensor_reg sr352_Enterpreview_1024x576_01[] = {
+
+{0x03, 0xc1,},
+{0x10, 0x06,}, // ssd tranfer disable
+{0xff, 0x01,},
+
+{0x03, 0x00,},
+{0x01, 0x01,},	// Sleep On
+
+{0x03, 0xc1,},
+{0x10, 0x07,}, // ssd tranfer enable
+
+///////////////////////////////////////////
+// 00 Page
+///////////////////////////////////////////
+{0x03, 0x00,},
+{0x10, 0x41,}, // binning + prev1
+{0x17, 0x00,}, // ISP Divider2 1/1
+{0x20, 0x00,},
+{0x21, 0x00,}, // preview row start set
+{0x22, 0x00,},
+{0x23, 0x00,}, // preview col start set
+
+///////////////////////////////////////////////////////////////////////////////
+// b Page
+///////////////////////////////////////////////////////////////////////////////
+{0x03, 0x0b,},
+{0x11, 0x11,}, //Preview 0410
+{0x12, 0x02,}, //Preview1 0410
+
+
+///////////////////////////////////////////
+// 19 Page  Scalor off
+///////////////////////////////////////////
+{0x03, 0x19,}, //Scaler Off
+{0x10, 0x00,},
+{0x14, 0x00,}, //sawtooth off
+
+{0x03, 0xc0,}, //Scaler Off
+{0xa0, 0x00,},
+{0xa6, 0x00,},
+{0xa7, 0x00,},
+
+//--------------------------------------//
+//PWR margin setting
+//--------------------------------------//
+{0x03, 0x11,},
+{0x10, 0x0F,},	//Bit[4]=Low
+{0x70, 0x9E,},	//Bit[0]=Low
+
+{0x03, 0x00,},
+{0x1e, 0x01,}, // frame update
+
+{0x03, 0x00,},
+{0x01, 0x00,},	// sleep off
+
+{0x03, 0xc0,},
+{0x7f, 0x80,},	// DMA on
+{0x7e, 0x01,},	// DMA set
+
+{0xff, 0x01,}, //delay 10ms
+{0x03, 0xc1,},
+{0x10, 0x06,}, // ssd tranfer disable
+{0xff, 0x01,},
+
+{0x03, 0x00,},
+{0x01, 0x01,},	// Sleep On
+
+{0x03, 0xc1,},
+{0x10, 0x07,}, // ssd tranfer enable
+
+///////////////////////////////////////////
+//  Scaler 1024x576
+///////////////////////////////////////////
+{0x03, 0x19,},
+{0x10, 0x00,}, //hw scaler off
+{0x14, 0x03,}, //sawtooth on
+
+//Scaler
+{0x03, 0xc0,},
+{0xa0, 0x00,}, //fw scaler off
+{0xa2, 0x04,}, //width
+{0xa3, 0x00,},
+{0xa4, 0x02,}, //height
+{0xa5, 0x40,},
+{0xa6, 0x00,},	//fw scaler col start
+{0xa7, 0x00,}, //fw scaler row start
+
+{0xa1, 0x00,}, //zoom step
+{0xa0, 0xc0,}, //fw scaler on
+
+{0x03, 0x19,},
+{0x10, 0x07,}, //hw scaler on
+
+///////////////////////////////////////////
+// 05 Page MIPI Size
+///////////////////////////////////////////
+{0x03, 0x05,},  // Page05
+
+{0x30, 0x08,},  // l_pkt_wc_h  // Pre = 1024 * 2 (YUV)
+{0x31, 0x00,},  // l_pkt_wc_l
+//------------------------------------//
+{0x03, 0x00,},
+{0x1e, 0x01,}, // frame update
+
+{0x03, 0x26,},
+{0x30, 0x28,},	// Preview // sleep off
+
+{0x03, 0x00,},
+{0x01, 0x00,},	// Sleep Off
+
+{0xff, 0x01,}, //delay 10ms
+};
+
 #if 0
 static struct sensor_reg sr352_Enterpreview_1024x768[] = {
 
@@ -17119,6 +17234,7 @@ static const struct sensor_regset_table regset_table = {
 	.stop_stream	= SENSOR_REGISTER_REGSET(sr352_stop_stream),
 	.resol_640_480	= SENSOR_REGISTER_REGSET(sr352_Enterpreview_640x480_01),
 	.resol_1024_768	= SENSOR_REGISTER_REGSET(sr352_Enterpreview_1024x768_01),
+	.resol_1024_576	= SENSOR_REGISTER_REGSET(sr352_Enterpreview_1024x576_01),
 };
 
 static struct fimc_is_sensor_cfg settle_sr352[] = {
@@ -17637,6 +17753,8 @@ int sensor_sr352_stream_on(struct v4l2_subdev *subdev)
 		sensor_sr352_apply_set(client, &regset_table.resol_640_480);
 	} else if ((width == 1024) && (height == 768)) {
 		sensor_sr352_apply_set(client, &regset_table.resol_1024_768);
+	} else if (((width == 1024) && (height == 576)) || ((width == 1280) && (height == 720))) {
+		sensor_sr352_apply_set(client, &regset_table.resol_1024_576);
 	} else {
 		BUG();
 	}
@@ -17676,6 +17794,8 @@ int sensor_sr352_stream_off(struct v4l2_subdev *subdev)
 		ret = -EINVAL;
 		goto p_err;
 	}
+
+	sensor_sr352_apply_set(client, &regset_table.stop_stream);
 
 	info("[4EC] stream off\n");
 
