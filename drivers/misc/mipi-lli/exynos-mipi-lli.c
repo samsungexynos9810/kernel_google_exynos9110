@@ -709,6 +709,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 			if (!credit) {
 				dev_err(dev, "ERR: Failed to get TX_CREDITS for LLI");
 				mipi_lli_debug_info();
+				writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 				return IRQ_HANDLED;
 			}
 		}
@@ -719,8 +720,10 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	if (status & INTR_LLI_UNMOUNT_DONE) {
 		lli->state = LLI_UNMOUNTED;
-		dev_err(dev, "Unmount\n");
+		writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 		exynos_lli_init(lli);
+		dev_err(dev, "Unmount\n");
+		return IRQ_HANDLED;
 	}
 
 	writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
