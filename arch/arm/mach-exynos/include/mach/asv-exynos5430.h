@@ -180,15 +180,15 @@ static unsigned int g3d_asv_abb_info_v01[G3D_DVFS_LEVEL_NR][G3D_ASV_GRP_NR + 1] 
 static unsigned int mif_asv_abb_info_v01[MIF_DVFS_LEVEL_NR][MIF_ASV_GRP_NR + 1] = {
 	{ 1066000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS},
 	{  933000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS},
-	{  825000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  633000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  543000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  413000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  275000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  206000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  165000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  138000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  103000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
+	{  825000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  633000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  543000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  413000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  275000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  206000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  165000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  138000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  103000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
 };
 
 static unsigned int int_asv_abb_info_v01[INT_DVFS_LEVEL_NR][INT_ASV_GRP_NR + 1] = {
@@ -197,9 +197,9 @@ static unsigned int int_asv_abb_info_v01[INT_DVFS_LEVEL_NR][INT_ASV_GRP_NR + 1] 
 	{  317000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS},
 	{  267000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS},
 	{  200000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS},
-	{  160000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  133000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110,   ABB_X110},
-	{  100000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140,   ABB_X140},
+	{  160000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  133000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8,        0x8},
+	{  100000, ABB_BYPASS, ABB_BYPASS, ABB_BYPASS,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd,        0xd},
 };
 
 /* ASV_V00 */
