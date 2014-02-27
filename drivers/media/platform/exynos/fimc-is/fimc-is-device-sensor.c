@@ -1270,7 +1270,7 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
-	ret = v4l2_subdev_call(subdev_flite, core, init, (u32)module);
+	ret = v4l2_subdev_call(subdev_flite, core, init, device->pdata->csi_ch);
 	if (ret) {
 		merr("v4l2_flite_call(init) is fail(%d)", device, ret);
 		goto p_err;

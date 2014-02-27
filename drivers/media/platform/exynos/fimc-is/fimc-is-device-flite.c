@@ -793,6 +793,17 @@ u32 flite_hw_get_buffer_seq(unsigned long __iomem *base_reg)
 	return readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIFCNTSEQ));
 }
 
+void flite_hw_set_mux(unsigned long __iomem *base_reg, u32 csi_ch, u32 flite_ch)
+{
+	u32 cfg;
+	if ((csi_ch == 0) && (flite_ch == 1)) {
+		info("[CSI:D] mux setting : CSI0 <-> FLITE1\n");
+		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_CIGENERAL));
+		cfg |= (1 << 12);
+		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_CIGENERAL));
+	}
+}
+
 int init_fimc_lite(unsigned long __iomem *base_reg)
 {
 	int i;
@@ -806,7 +817,11 @@ int init_fimc_lite(unsigned long __iomem *base_reg)
 }
 
 static int start_fimc_lite(unsigned long __iomem *base_reg,
-	struct fimc_is_image *image, u32 otf_setting, u32 bns, u32 module)
+	struct fimc_is_image *image,
+	u32 otf_setting,
+	u32 bns,
+	u32 csi_ch,
+	u32 flite_ch)
 {
 	flite_hw_set_cam_channel(base_reg, otf_setting);
 	flite_hw_set_cam_source_size(base_reg, image);
@@ -816,6 +831,7 @@ static int start_fimc_lite(unsigned long __iomem *base_reg,
 	flite_hw_set_inverse_polarity(base_reg);
 	flite_hw_set_interrupt_source(base_reg);
 	flite_hw_set_window_offset(base_reg, image);
+	flite_hw_set_mux(base_reg, csi_ch, flite_ch);
 
 #ifdef COLORBAR_MODE
 	flite_hw_set_test_pattern_enable(base_reg);
@@ -1462,7 +1478,7 @@ int fimc_is_flite_open(struct v4l2_subdev *subdev,
 		if (ret)
 			err("request_irq(L1) failed\n");
 		break;
-#if !defined(CONFIG_ARCH_EXYNOS4)
+#ifdef IRQ_FIMC_LITE2
 	case FLITE_ID_C:
 		ret = request_irq(IRQ_FIMC_LITE2,
 			fimc_is_flite_isr,
@@ -1504,13 +1520,11 @@ int fimc_is_flite_close(struct v4l2_subdev *subdev)
 	case FLITE_ID_B:
 		free_irq(IRQ_FIMC_LITE1, flite);
 		break;
+#ifdef IRQ_FIMC_LITE2
 	case FLITE_ID_C:
-#if defined(CONFIG_ARCH_EXYNOS4)
-		free_irq(IRQ_FIMC_LITE1, flite);
-#else
 		free_irq(IRQ_FIMC_LITE2, flite);
-#endif
 		break;
+#endif
 	default:
 		err("instance is invalid(%d)", flite->instance);
 		ret = -EINVAL;
@@ -1521,15 +1535,13 @@ p_err:
 	return ret;
 }
 
-/* value : module enum */
+/* value : csi ch */
 static int flite_init(struct v4l2_subdev *subdev, u32 value)
 {
 	int ret = 0;
 	struct fimc_is_device_flite *flite;
-	struct fimc_is_module_enum *module;
 
 	BUG_ON(!subdev);
-	BUG_ON(!value);
 
 	flite = v4l2_get_subdevdata(subdev);
 	if (!flite) {
@@ -1538,9 +1550,7 @@ static int flite_init(struct v4l2_subdev *subdev, u32 value)
 		goto p_err;
 	}
 
-	module = (struct fimc_is_module_enum *)value;
-	flite->module = module->id;
-	flite->csi = flite->instance;
+	flite->csi = value;
 
 p_err:
 	return ret;
@@ -1550,7 +1560,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	struct fimc_is_device_flite *flite)
 {
 	int ret = 0;
-	u32 otf_setting;
+	u32 otf_setting, bns;
 	bool buffer_ready;
 	unsigned long flags;
 	struct fimc_is_image *image;
@@ -1560,11 +1570,13 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 
 	BUG_ON(!flite);
 	BUG_ON(!flite->framemgr);
+	BUG_ON(!device);
 
 	otf_setting = 0;
 	buffer_ready = false;
 	framemgr = flite->framemgr;
 	image = &flite->image;
+	bns = device->pdata->is_bns;
 
 	flite->overflow_cnt = 0;
 	flite->sw_trigger = FLITE_B_SLOT_VALID;
@@ -1668,7 +1680,7 @@ static int flite_stream_on(struct v4l2_subdev *subdev,
 	}
 
 	/* 4. register setting */
-	start_fimc_lite(flite->base_reg, image, otf_setting, device->pdata->is_bns, flite->module);
+	start_fimc_lite(flite->base_reg, image, otf_setting, bns, flite->csi, flite->instance);
 
 p_err:
 	return ret;

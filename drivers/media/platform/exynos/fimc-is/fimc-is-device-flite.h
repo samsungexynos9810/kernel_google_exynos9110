@@ -79,7 +79,6 @@ struct fimc_is_device_flite {
 
 	u32				overflow_cnt;
 
-	u32				module; /* which module is connceted */
 	u32				csi; /* which csi channel is connceted */
 	u32				group; /* which 3aa gorup is connected when otf is enable */
 

@@ -162,7 +162,7 @@
 #define I2C_L1_1			(54000000)
 #define I2C_L2				(21600000)
 #define DVFS_SKIP_FRAME_NUM		(5)
-#elif defined(CONFIG_SOC_EXYNOS3470) || defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS4415)
+#elif defined(CONFIG_SOC_EXYNOS3470) || defined(CONFIG_SOC_EXYNOS3472) ||defined(CONFIG_SOC_EXYNOS5260) || defined(CONFIG_SOC_EXYNOS4415)
 #define DVFS_L0				(266000)
 #define DVFS_MIF_L0			(400000)
 #define I2C_L0				(108000000)
