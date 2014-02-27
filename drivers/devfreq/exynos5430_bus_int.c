@@ -243,23 +243,23 @@ struct devfreq_clk_info aclk_bus1_400[] = {
 };
 
 struct devfreq_clk_info dout_mif_pre[] = {
-	{LV0_A,	800000000,	0,	NULL},
-	{LV0,	800000000,	0,	NULL},
-	{LV1,	800000000,	0,	NULL},
-	{LV2,	800000000,	0,	NULL},
-	{LV3,	800000000,	0,	NULL},
-	{LV4,	800000000,	0,	NULL},
-	{LV5,	800000000,	0,	NULL},
-	{LV6,	800000000,	0,	NULL},
+	{LV0_A,	400000000,	0,	NULL},
+	{LV0,	400000000,	0,	NULL},
+	{LV1,	400000000,	0,	NULL},
+	{LV2,	400000000,	0,	NULL},
+	{LV3,	400000000,	0,	NULL},
+	{LV4,	400000000,	0,	NULL},
+	{LV5,	400000000,	0,	NULL},
+	{LV6,	400000000,	0,	NULL},
 };
 
 struct devfreq_clk_info aclk_bus2_400[] = {
 	{LV0_A,	400000000,	0,	NULL},
 	{LV0,	400000000,	0,	NULL},
-	{LV1,	267000000,	0,	NULL},
-	{LV2,	267000000,	0,	NULL},
+	{LV1,	200000000,	0,	NULL},
+	{LV2,	200000000,	0,	NULL},
 	{LV3,	200000000,	0,	NULL},
-	{LV4,	160000000,	0,	NULL},
+	{LV4,	200000000,	0,	NULL},
 	{LV5,	134000000,	0,	NULL},
 	{LV6,	100000000,	0,	NULL},
 };

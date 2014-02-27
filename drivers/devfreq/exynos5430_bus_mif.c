@@ -178,11 +178,11 @@ struct devfreq_opp_table devfreq_mif_opp_list[] = {
 	{LV1,	633000,	1000000},
 	{LV2,	543000,	 975000},
 	{LV3,	413000,	 950000},
-	{LV4,	275000,  950000},
-	{LV5,	206000,  950000},
-	{LV6,	165000,  925000},
-	{LV7,	138000,  900000},
-	{LV8,	103000,	 875000},
+	{LV4,	272000,  950000},
+	{LV5,	211000,  950000},
+	{LV6,	158000,  925000},
+	{LV7,	136000,  900000},
+	{LV8,	109000,	 875000},
 };
 
 static unsigned int devfreq_mif_asv_abb[LV_COUNT];
@@ -203,24 +203,24 @@ struct devfreq_clk_value aclk_clk2x_413[] = {
 	{0x1000, ((0x1 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
 };
 
-struct devfreq_clk_value aclk_clk2x_275[] = {
-	{0x1000, ((0x2 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
+struct devfreq_clk_value aclk_clk2x_272[] = {
+	{0x1000, (0x1 << 28), ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
 };
 
-struct devfreq_clk_value aclk_clk2x_206[] = {
-	{0x1000, ((0x3 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
+struct devfreq_clk_value aclk_clk2x_211[] = {
+	{0x1000, ((0x2 << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12)), (0xF << 28)},
 };
 
-struct devfreq_clk_value aclk_clk2x_165[] = {
-	{0x1000, ((0x4 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
+struct devfreq_clk_value aclk_clk2x_158[] = {
+	{0x1000, ((0x3 << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12)), (0xF << 28)},
 };
 
-struct devfreq_clk_value aclk_clk2x_138[] = {
-	{0x1000, ((0x5 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
+struct devfreq_clk_value aclk_clk2x_136[] = {
+	{0x1000, (0x3 << 28), ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
 };
 
-struct devfreq_clk_value aclk_clk2x_103[] = {
-	{0x1000, ((0x7 << 28) | (0x1 << 20)), ((0xF << 28) | (0x1 << 16) | (0x1 << 12))},
+struct devfreq_clk_value aclk_clk2x_109[] = {
+	{0x1000, (0x4 << 28), ((0xF << 28) | (0x1 << 20) | (0x1 << 16) | (0x1 << 12))},
 };
 
 struct devfreq_clk_value *aclk_clk2x_list[] = {
@@ -228,11 +228,11 @@ struct devfreq_clk_value *aclk_clk2x_list[] = {
 	aclk_clk2x_633,
 	aclk_clk2x_543,
 	aclk_clk2x_413,
-	aclk_clk2x_275,
-	aclk_clk2x_206,
-	aclk_clk2x_165,
-	aclk_clk2x_138,
-	aclk_clk2x_103,
+	aclk_clk2x_272,
+	aclk_clk2x_211,
+	aclk_clk2x_158,
+	aclk_clk2x_136,
+	aclk_clk2x_109,
 };
 
 struct devfreq_clk_state aclk_mif_400_mem1_pll[] = {
@@ -278,15 +278,15 @@ struct devfreq_clk_info aclk_mif_200[] = {
 };
 
 struct devfreq_clk_info mif_pre[] = {
-	{LV0,   800000000,      0,      NULL},
-	{LV1,   800000000,      0,      NULL},
-	{LV2,   800000000,      0,      NULL},
-	{LV3,   800000000,      0,      NULL},
-	{LV4,   800000000,      0,      NULL},
-	{LV5,   800000000,      0,      NULL},
-	{LV6,   800000000,      0,      NULL},
-	{LV7,   800000000,      0,      NULL},
-	{LV8,   800000000,      0,      NULL},
+	{LV0,   400000000,      0,      NULL},
+	{LV1,   400000000,      0,      NULL},
+	{LV2,   400000000,      0,      NULL},
+	{LV3,   400000000,      0,      NULL},
+	{LV4,   400000000,      0,      NULL},
+	{LV5,   400000000,      0,      NULL},
+	{LV6,   400000000,      0,      NULL},
+	{LV7,   400000000,      0,      NULL},
+	{LV8,   400000000,      0,      NULL},
 };
 
 struct devfreq_clk_info aclk_mifnm[] = {
@@ -305,7 +305,7 @@ struct devfreq_clk_info aclk_mifnd[] = {
 	{LV0,	 80000000,      0,      NULL},
 	{LV1,	 80000000,      0,      NULL},
 	{LV2,	 80000000,      0,      NULL},
-	{LV3,	 80000000,      0,      NULL},
+	{LV3,	 67000000,      0,      NULL},
 	{LV4,	 67000000,      0,      NULL},
 	{LV5,	 67000000,      0,      NULL},
 	{LV6,	 67000000,      0,      NULL},
@@ -379,7 +379,7 @@ static struct devfreq_simple_ondemand_data exynos5_devfreq_mif_governor_data = {
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_mif = {
-	.default_qos		= 275000,
+	.default_qos		= 109000,
 };
 
 static struct ppmu_info ppmu_mif[] = {
@@ -580,7 +580,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 			[2]	= 0x0000060C,
 			[3]	= 0x0010060C,
 		},
-	}, {	/* 275Mhz */
+	}, {	/* 272Mhz */
 		.timing_row	= 0x1D244287,
 		.timing_data	= 0x2320082E,
 		.timing_power	= 0x1C1F0225,
@@ -593,8 +593,8 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 			[2]	= 0x0000060C,
 			[3]	= 0x0010060C,
 		},
-	}, {	/* 206Mhz */
-		.timing_row	= 0x162331C6,
+	}, {	/* 211Mhz */
+		.timing_row	= 0x17233206,
 		.timing_data	= 0x2320082E,
 		.timing_power	= 0x181F0225,
 		.rd_fetch	= 0x00000002,
@@ -606,7 +606,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 			[2]	= 0x0000060C,
 			[3]	= 0x0010060C,
 		},
-	}, {	/* 165Mhz */
+	}, {	/* 158Mhz */
 		.timing_row	= 0x12223185,
 		.timing_data	= 0x2320082E,
 		.timing_power	= 0x141F0225,
@@ -619,7 +619,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 			[2]	= 0x0000060C,
 			[3]	= 0x0010060C,
 		},
-	}, {	/* 138Mhz */
+	}, {	/* 136Mhz */
 		.timing_row	= 0x11222144,
 		.timing_data	= 0x2320082E,
 		.timing_power	= 0x101F0225,
@@ -632,7 +632,7 @@ struct devfreq_mif_timing_parameter dmc_timing_parameter_3gb[] = {
 			[2]	= 0x0000060C,
 			[3]	= 0x0010060C,
 		},
-	}, {	/* 103Mhz */
+	}, {	/* 109Mhz */
 		.timing_row	= 0x11222103,
 		.timing_data	= 0x2320082E,
 		.timing_power	= 0x101F0225,
