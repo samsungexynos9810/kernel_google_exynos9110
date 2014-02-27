@@ -172,13 +172,13 @@ static void audio_buffdone(void *data)
 		prtd->dma_pos = pos;
 		snd_pcm_period_elapsed(substream);
 
-		spin_lock(&prtd->lock);
 		if (!samsung_dma_has_circular()) {
+			spin_lock(&prtd->lock);
 			prtd->dma_loaded--;
 			if (!samsung_dma_has_infiniteloop())
 				dma_enqueue(substream);
+			spin_unlock(&prtd->lock);
 		}
-		spin_unlock(&prtd->lock);
 	}
 }
 
