@@ -97,7 +97,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 2, 7, 7, 7, 3 },
 
 	/* ARM L7: 1.3GHz */
-	{ 0, 0, 2, 7, 7, 7, 3 },
+	{0, 0, 2, 7, 7, 7, 3 },
 
 	/* ARM L8: 1.2GHz */
 	{ 0, 0, 2, 7, 7, 7, 3 },
@@ -106,7 +106,7 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 1, 7, 7, 7, 3 },
 
 	/* ARM L10: 1000MHz */
-	{ 0, 0, 1, 7, 7, 7, 3 },
+	{0, 0, 1, 7, 7, 7, 3 },
 
 	/* ARM L11: 900MHz */
 	{ 0, 0, 1, 7, 7, 7, 3 },
@@ -115,22 +115,22 @@ static unsigned int clkdiv_cpu0_5430_CA7[CPUFREQ_LEVEL_END_CA7][7] = {
 	{ 0, 0, 1, 7, 7, 7, 3 },
 
 	/* ARM L13: 700MHz */
-	{ 0, 0, 1, 6, 6, 6, 3 },
+	{ 0, 0, 1, 7, 6, 7, 3 },
 
 	/* ARM L14: 600MHz */
-	{ 0, 0, 1, 6, 6, 6, 3 },
+	{ 0, 0, 1, 7, 6, 7, 3 },
 
 	/* ARM L15: 500MHz */
-	{ 0, 0, 1, 5, 5, 5, 3 },
+	{ 0, 0, 1, 7, 5, 7, 3 },
 
 	/* ARM L16: 400MHz */
-	{ 0, 0, 1, 5, 5, 5, 3 },
+	{ 0, 0, 1, 7, 5, 7, 3 },
 
 	/* ARM L17: 300MHz */
-	{ 0, 0, 1, 4, 4, 4, 3 },
+	{ 0, 0, 1, 7, 4, 7, 3 },
 
 	/* ARM L18: 200MHz */
-	{ 0, 0, 1, 2, 2, 2, 3 },
+	{ 0, 0, 1, 7, 2, 7, 3 },
 };
 
 static unsigned int clkdiv_cpu1_5430_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
@@ -140,61 +140,61 @@ static unsigned int clkdiv_cpu1_5430_CA7[CPUFREQ_LEVEL_END_CA7][2] = {
 	 */
 
 	/* ARM L0: 2.0GHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L1: 1.9GMHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L2: 1.8GMHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L3: 1.7GHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L4: 1.6GHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L5: 1.5GMHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L6: 1.4GMHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L7: 1.3GHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L8: 1.2GHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L9: 1.1GHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L10: 1000MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L11: 900MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L12: 800MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L13: 700MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L14: 600MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L15: 500MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L16: 400MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L17: 300MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 
 	/* ARM L18: 200MHz */
-	{ 1, 7 },
+	{ 2, 7 },
 };
 
 static unsigned int exynos5430_kfc_pll_pms_table_CA7[CPUFREQ_LEVEL_END_CA7] = {
