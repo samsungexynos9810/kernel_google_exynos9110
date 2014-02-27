@@ -131,6 +131,10 @@ void panic(const char *fmt, ...)
 #if defined(CONFIG_SOC_EXYNOS5422)
 	show_exynos_cmu();
 #endif
+
+#ifdef CONFIG_EXYNOS_CORESIGHT
+	exynos_cs_show_pcval();
+#endif
 	sysrq_sched_debug_show();
 
 	/*
@@ -146,10 +150,6 @@ void panic(const char *fmt, ...)
 	 * situation.
 	 */
 	smp_send_stop();
-
-#ifdef CONFIG_EXYNOS_CORESIGHT
-	exynos_cs_show_pcval();
-#endif
 
 	kmsg_dump(KMSG_DUMP_PANIC);
 
