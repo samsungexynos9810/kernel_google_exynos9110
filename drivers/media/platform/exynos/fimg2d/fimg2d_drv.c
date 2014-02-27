@@ -155,7 +155,7 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 					g2d_qos_table[idx].freq_mif);
 			pm_qos_update_request(&ctrl->exynos5_g2d_int_qos,
 					g2d_qos_table[idx].freq_int);
-			fimg2d_info("idx:%d, freq_mif:%d, freq_int:%d, ret:%d\n",
+			fimg2d_debug("idx:%d, freq_mif:%d, freq_int:%d, ret:%d\n",
 					idx, g2d_qos_table[idx].freq_mif,
 					g2d_qos_table[idx].freq_int, ret);
 
