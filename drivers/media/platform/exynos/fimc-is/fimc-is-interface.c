@@ -1660,7 +1660,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 			if (fcount != ldr_frame->fcount) {
 				while (ldr_frame) {
 					if (fcount == ldr_frame->fcount) {
-						status1 = ISR_DONE;
+						status1 = ISR_NDONE;
 						wq_func_group_3a0(groupmgr, group,
 							ldr_framemgr, ldr_frame,
 							sub_framemgr, vctx, status1);
@@ -1712,7 +1712,7 @@ void wq_func_group(struct fimc_is_groupmgr *groupmgr,
 
 				while (ldr_frame) {
 					if (fcount == ldr_frame->fcount) {
-						status1 = ISR_DONE;
+						status1 = ISR_NDONE;
 						wq_func_group_3a1(groupmgr, group,
 							ldr_framemgr, ldr_frame,
 							sub_framemgr, vctx, status1);
