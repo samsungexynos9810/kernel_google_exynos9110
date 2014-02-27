@@ -23,6 +23,7 @@
 #include <asm/smp_plat.h>
 
 #include <plat/cpu.h>
+#include <mach/map.h>
 #include "common.h"
 
 #define CS_OSLOCK		(0x300)
@@ -34,6 +35,7 @@
 #define ITERATION		(5)
 
 static DEFINE_SPINLOCK(lock);
+static int exynos_cs_init;
 static unsigned int exynos_cs_base[NR_CPUS];
 unsigned int exynos_cs_pc[NR_CPUS][ITERATION];
 
@@ -43,22 +45,17 @@ void exynos_cs_show_pcval(void)
 	unsigned int cpu, iter;
 	unsigned int val = 0;
 
-	if (exynos_cs_base[0] == 0)
+	if (exynos_cs_init < 0)
 		return;
 
 	spin_lock_irqsave(&lock, flags);
 
 	for (iter = 0; iter < ITERATION; iter++) {
-#ifdef CONFIG_SOC_EXYNOS5422
-		/* Scan A15 only temporarily */
-		for (cpu = 4; cpu < NR_CPUS; cpu++) {
-#else
 		for (cpu = 0; cpu < NR_CPUS; cpu++) {
-#endif
 			void __iomem *base = (void *) exynos_cs_base[cpu];
 
-			if (!exynos_cpu.power_state(cpu)) {
-				exynos_cs_pc[cpu][iter] = 0x0;
+			if (base == NULL || !exynos_cpu.power_state(cpu)) {
+				exynos_cs_base[cpu] = 0;
 				continue;
 			}
 
@@ -80,12 +77,10 @@ void exynos_cs_show_pcval(void)
 
 	spin_unlock_irqrestore(&lock, flags);
 
-#ifdef CONFIG_SOC_EXYNOS5422
-	/* Scan A15 only temporarily */
-	for (cpu = 4; cpu < NR_CPUS; cpu++) {
-#else
 	for (cpu = 0; cpu < NR_CPUS; cpu++) {
-#endif
+		if (exynos_cs_base[cpu] == 0)
+			continue;
+
 		pr_err("CPU[%d] saved pc value\n", cpu);
 		for (iter = 0; iter < ITERATION; iter++) {
 			char buf[KSYM_SYMBOL_LEN];
@@ -155,8 +150,6 @@ static int exynos_cs_init_dt(struct device *dev)
 
 static int exynos_cs_probe(struct platform_device *pdev)
 {
-	int ret = 0;
-
 	pr_debug("%s\n", __func__);
 
 	if (!pdev->dev.of_node) {
@@ -164,13 +157,24 @@ static int exynos_cs_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	ret = exynos_cs_init_dt(&pdev->dev);
-	if (ret) {
-		/* mark unable to call exynos_cs_show_pcval */
-		exynos_cs_base[0] = 0;
-	}
+	exynos_cs_init = exynos_cs_init_dt(&pdev->dev);
+	if (exynos_cs_init < 0)
+		return exynos_cs_init;
 
-	return ret;
+	/* Impossible to access KFC coresight before DVFS v2.5. */
+	if (soc_is_exynos5422()) {
+		unsigned int dvfs_id;
+
+		dvfs_id = __raw_readl(S5P_VA_CHIPID + 4);
+		dvfs_id = (dvfs_id >> 8) & 0x3;
+		if (dvfs_id != 0x3) {
+			exynos_cs_base[0] = 0;
+			exynos_cs_base[1] = 0;
+			exynos_cs_base[2] = 0;
+			exynos_cs_base[3] = 0;
+		}
+	}
+	return exynos_cs_init;
 }
 
 static const struct of_device_id of_exynos_cs_matches[] = {
