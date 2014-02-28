@@ -34,6 +34,11 @@ typedef enum {
 	GPU_CONTROL_PM_QOS_RESET,
 } gpu_pmqos_state;
 
+/* GPU feature */
+#if SOC_NAME == 5430
+#define CONFIG_DYNIMIC_ABB	1
+#endif /* SOC_NAME */
+
 /* mali_kbase_platform */
 #if SOC_NAME == 5422
 #ifdef CONFIG_SOC_EXYNOS5422_REV_0
