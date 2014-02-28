@@ -548,8 +548,20 @@ static bool dw_mci_wait_reset(struct device *dev, struct dw_mci *host,
 	unsigned long timeout = jiffies + msecs_to_jiffies(500);
 	unsigned int ctrl;
 
+	/* Interrupt disable */
 	ctrl = mci_readl(host, CTRL);
+	ctrl &= ~(SDMMC_CTRL_INT_ENABLE);
+	mci_writel(host, CTRL, ctrl);
+
+	/* Reset */
 	ctrl |= reset_val;
+	mci_writel(host, CTRL, ctrl);
+
+	/* All interrupt clear */
+	mci_writel(host, RINTSTS, 0xFFFFFFFF);
+
+	/* Interrupt enable */
+	ctrl |= SDMMC_CTRL_INT_ENABLE;
 	mci_writel(host, CTRL, ctrl);
 
 	/* wait till resets clear */
@@ -2171,8 +2183,9 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 				break;
 
 			dw_mci_stop_dma(host);
+			dw_mci_fifo_reset(host->dev, host);
 			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
-			set_bit(EVENT_DATA_COMPLETE, &host->pending_events);
+			set_bit(EVENT_CMD_COMPLETE, &host->pending_events);
 
 			state = STATE_DATA_BUSY;
 			break;

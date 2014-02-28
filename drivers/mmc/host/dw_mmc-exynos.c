@@ -929,13 +929,6 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		mrq.data = &data;
 		host->mrq_cmd = &mrq;
 
-		atomic_inc_return(&host->ciu_en_win);
-		dw_mci_ciu_clk_en(host, true);
-		dw_mci_fifo_reset(host->dev, host);
-		dw_mci_ciu_reset(host->dev, host);
-		dw_mci_ciu_clk_en(host, false);
-		atomic_dec_return(&host->ciu_en_win);
-
 		/*
 		 * DDR200 tuning Sequence with fine tuning setup
 		 *
