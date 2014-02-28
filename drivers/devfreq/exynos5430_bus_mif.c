@@ -1744,6 +1744,9 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 		base_drex = data_mif->base_drex1;
 	}
 
+
+	mutex_lock(&data_mif->lock);
+
 	__raw_writel(0x09001000, base_drex + 0x10);
 	mrstatus = __raw_readl(base_drex + 0x54);
 	tmp_thermal_level = (mrstatus & MRSTATUS_THERMAL_LV_MASK);
@@ -1759,6 +1762,8 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 		max_thermal_level = tmp_thermal_level;
 
 	thermal_work->thermal_level_cs1 = tmp_thermal_level;
+
+	mutex_unlock(&data_mif->lock);
 
 	switch (max_thermal_level) {
 	case 0:
