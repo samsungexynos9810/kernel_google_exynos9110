@@ -52,12 +52,24 @@ static DEFINE_MUTEX(esa_mutex);
 static DECLARE_WAIT_QUEUE_HEAD(esa_wq);
 
 static struct seiren_info si;
+static unsigned int seiren_dbg[SEIREN_DBG_BLK_CNT * INSTANCE_MAX + 1];
 
 static int esa_send_cmd_(u32 cmd_code, bool sram_only);
 static irqreturn_t esa_isr(int irqno, void *id);
 
 #define esa_send_cmd_sram(cmd)	esa_send_cmd_(cmd, true)
 #define esa_send_cmd(cmd)	esa_send_cmd_(cmd, false)
+
+void esa_dbg_write(unsigned int idx, u32 cmd, unsigned int depth)
+{
+	unsigned int head_for_idx = (idx + 1) * SEIREN_DBG_BLK_CNT;
+	unsigned int dbg_cnt_index = head_for_idx + SEIREN_DBG_BLK_CNT - 2;
+	unsigned int dbg_cnt = seiren_dbg[dbg_cnt_index];
+	unsigned int index = head_for_idx + dbg_cnt;
+
+	seiren_dbg[index] = (cmd << 16) | depth;
+	seiren_dbg[dbg_cnt_index] = (dbg_cnt + 1) % (SEIREN_DBG_BLK_CNT -2);
+}
 
 int check_esa_status(void)
 {
@@ -828,6 +840,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 
 	esa_debug("%s: idx:%d, param:%x, cmd:%x\n", __func__,
 				rtd->idx, param, cmd);
+	esa_dbg_write(rtd->idx, cmd, 0);
 
 	mutex_lock(&esa_mutex);
 	pm_runtime_get_sync(&si.pdev->dev);
@@ -837,6 +850,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		rtd->ip_type = (unsigned int) arg;
 		arg = arg << 16;
 		writel(arg, si.mailbox + IP_TYPE);
+		esa_dbg_write(rtd->idx, cmd, 1);
 		ret = esa_send_cmd(CMD_CREATE);
 		if (ret == -EBUSY)
 			break;
@@ -848,9 +862,11 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		esa_debug("CH_CREATE: ret_val:%x, handle_id:%x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
+		esa_dbg_write(rtd->idx, cmd, 2);
 		break;
 	case SEIREN_IOCTL_CH_DESTROY:
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
+		esa_dbg_write(rtd->idx, cmd, 1);
 		ret = esa_send_cmd(CMD_DESTROY);
 		if (ret == -EBUSY)
 			break;
@@ -860,6 +876,7 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		esa_debug("CH_DESTROY: ret_val:%x, handle_id:%x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
+		esa_dbg_write(rtd->idx, cmd, 2);
 		break;
 	case SEIREN_IOCTL_CH_EXE:
 		esa_debug("CH_EXE\n");
@@ -867,11 +884,15 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 		break;
 	case SEIREN_IOCTL_CH_SET_PARAMS:
 		esa_debug("CH_SET_PARAMS\n");
+		esa_dbg_write(rtd->idx, cmd, 1);
 		ret = esa_set_params(file, param, arg);
+		esa_dbg_write(rtd->idx, cmd, 2);
 		break;
 	case SEIREN_IOCTL_CH_GET_PARAMS:
 		esa_debug("CH_GET_PARAMS\n");
+		esa_dbg_write(rtd->idx, cmd, 1);
 		ret = esa_get_params(file, param, arg);
+		esa_dbg_write(rtd->idx, cmd, 2);
 		break;
 	case SEIREN_IOCTL_CH_RESET:
 		esa_debug("CH_RESET\n");
@@ -879,7 +900,9 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	case SEIREN_IOCTL_CH_FLUSH:
 		arg = arg << 16;
 		writel(rtd->handle_id, si.mailbox + HANDLE_ID);
+		esa_dbg_write(rtd->idx, cmd, 1);
 		esa_send_cmd(CMD_RESET);
+		esa_dbg_write(rtd->idx, cmd, 2);
 		esa_debug("CH_FLUSH: val: %x, handle_id : %x\n",
 				readl(si.mailbox + RETURN_CMD),
 				rtd->handle_id);
@@ -894,6 +917,8 @@ static long esa_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 	pm_runtime_mark_last_busy(&si.pdev->dev);
 	pm_runtime_put_sync_autosuspend(&si.pdev->dev);
 	mutex_unlock(&esa_mutex);
+
+	esa_dbg_write(rtd->idx, cmd, 3);
 
 	return ret;
 }
@@ -914,7 +939,7 @@ static int esa_open(struct inode *inode, struct file *file)
 		return -EFAULT;
 	}
 
-	esa_debug("%s: idx:%d\n", __func__, rtd->idx);
+	esa_info("%s: idx:%d\n", __func__, rtd->idx);
 
 	/* initialize */
 	file->private_data = rtd;
@@ -1135,6 +1160,7 @@ static int esa_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	struct resource *res;
 	int ret = 0;
+	int i;
 
 	printk(banner);
 
@@ -1233,6 +1259,9 @@ static int esa_probe(struct platform_device *pdev)
 	esa_debug("bufmem_pa  = %08X\n", si.bufmem_pa);
 	esa_debug("fwmem_pa   = %08X\n", si.fwmem_pa);
 	esa_debug("ca5 opclk  = %ldHz\n", clk_get_rate(si.opclk_ca5));
+	strncpy((char*)seiren_dbg, "SEIREN_DEBUG", 13);
+	for (i = 0 ; i < INSTANCE_MAX ; ++i)
+		seiren_dbg[SEIREN_DBG_BLK_CNT * (i+2) - 1] = i;
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_use_autosuspend(dev);

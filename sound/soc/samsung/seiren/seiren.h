@@ -108,6 +108,8 @@
 #define esa_debug(x...)
 #endif
 
+#define SEIREN_DBG_BLK_CNT	32
+
 enum SEIREN_CMDTYPE {
 	CMD_CREATE = 0x01,
 	CMD_DESTROY,
