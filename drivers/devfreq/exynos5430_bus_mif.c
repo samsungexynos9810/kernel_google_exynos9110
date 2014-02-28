@@ -1740,7 +1740,7 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 	struct devfreq_thermal_work *thermal_work =
 			container_of(d_work, struct devfreq_thermal_work, devfreq_mif_thermal_work);
 	unsigned int mrstatus, tmp_thermal_level, max_thermal_level = 0;
-	unsigned int timingaref_value = RATE_ONE;
+	unsigned int timingaref_value = RATE_HALF;
 	unsigned long max_freq = exynos5_devfreq_mif_governor_data.cal_qos_max;
 	bool throttling = false;
 	void __iomem *base_drex = NULL;
@@ -1772,7 +1772,7 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 	case 1:
 	case 2:
 	case 3:
-		timingaref_value = RATE_ONE;
+		timingaref_value = RATE_HALF;
 		thermal_work->polling_period = 1000;
 		break;
 	case 4:
