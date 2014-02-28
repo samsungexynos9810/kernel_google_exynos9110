@@ -385,14 +385,16 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 				if (!in_low_power_mode)
 					goto blk_out;
 
-				if (cpu_online(1)) {
-					ret = cpu_down(1);
-					if (ret)
-						goto blk_out;
+				for (i = NR_CA7 - 2; i > 0; i--) {
+					if (cpu_online(i)) {
+						ret = cpu_down(i);
+						if (ret)
+							goto blk_out;
+					}
 				}
 			} else {
 				if (little_hotplug_in)
-					hotplug_out_limit = 1;
+					hotplug_out_limit = NR_CA7 - 2;
 
 				for (i = setup_max_cpus - 1; i > hotplug_out_limit; i--) {
 					if (cpu_online(i)) {
@@ -420,10 +422,12 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 			}
 		} else {
 			if (cmd == CMD_LITTLE_ONE_IN) {
-				if (!cpu_online(1)) {
-					ret = cpu_up(1);
-					if (ret)
-						goto blk_out;
+				for (i = 1; i < NR_CA7 - 1; i++) {
+					if (!cpu_online(i)) {
+						ret = cpu_up(i);
+						if (ret)
+							goto blk_out;
+					}
 				}
 			} else if ((big_hotpluged && !do_disable_hotplug) ||
 				(cmd == CMD_LITTLE_IN)) {
