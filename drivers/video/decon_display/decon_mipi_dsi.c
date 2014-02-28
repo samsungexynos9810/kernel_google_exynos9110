@@ -55,6 +55,8 @@
 #include "fimd_fb.h"
 #endif
 
+#define MIPI_BYPASS_MIC_CONFIG
+
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_wr_comp);
 static DECLARE_COMPLETION(dsim_rd_comp);
@@ -213,8 +215,12 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 #ifdef CONFIG_DECON_MIC
 static void decon_mipi_dsi_config_mic(struct mipi_dsim_device *dsim)
 {
+#ifndef MIPI_BYPASS_MIC_CONFIG
+	if (!dsim->lcd_info->mic)
+		return;
 	s5p_mipi_dsi_enable_mic(dsim, true);
 	s5p_mipi_dsi_set_3d_off_mic_on_h_size(dsim);
+#endif
 }
 #endif
 
