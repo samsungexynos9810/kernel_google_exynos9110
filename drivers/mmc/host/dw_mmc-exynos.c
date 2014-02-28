@@ -663,7 +663,7 @@ static void exynos_dwmci_restore_drv_st(struct dw_mci *host)
 #define DRV_STR_LV3 0x2
 #define DRV_STR_LV4 0x3
 #define DRV_STR_LV5 0x4
-#define DRV_STR_LV6 0x6
+#define DRV_STR_LV6 0x5
 
 static void exynos_dwmci_tuning_drv_st(struct dw_mci *host)
 {
@@ -781,13 +781,13 @@ static int __find_median_of_16bits(u32 orig_bits, u16 mask, u8 startbit)
 	return -1;
 }
 
-#define NUM_OF_MASK	6
+#define NUM_OF_MASK	7
 static int find_median_of_16bits(struct dw_mci *host, unsigned int map)
 {
 	u32 orig_bits;
 	u8 i, divratio;
 	int sel = -1;
-	u16 mask[NUM_OF_MASK] = {0x1fff, 0x7ff, 0x1ff, 0x7f, 0x1f, 0x7};
+	u16 mask[NUM_OF_MASK] = {0x1fff, 0x7ff, 0x1ff, 0x7f, 0x1f, 0xf, 0x7};
 
 	/* replicate the map so "arithimetic shift right" shifts in
 	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
