@@ -687,8 +687,7 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 		data &= ~VIDCON0_CLKDIR;
 
 	/* write the timing data to the panel */
-	if (sfb->variant.is_2443)
-		data |= (1 << 5);
+	data |= VIDCON0_VLCKFREE; 
 
 	data &= ~VIDCON0_ENVID;
         data &=	~VIDCON0_ENVID_F;
