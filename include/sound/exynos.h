@@ -45,7 +45,7 @@ enum {
 	AUD_MODE_UHQA,
 };
 
-extern void lpass_task_affinity(pid_t pid, int mode);
+extern void lpass_set_sched(pid_t pid, int mode);
 #endif
 
 extern int exynos_check_aud_pwr(void);

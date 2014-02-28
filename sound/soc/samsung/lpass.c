@@ -49,7 +49,7 @@
 #define USE_AUD_DEVFREQ
 #ifdef CONFIG_SOC_EXYNOS5422
 #define AUD_CPU_FREQ_UHQA	(1000000)
-#define AUD_KFC_FREQ_UHQA	(0)
+#define AUD_KFC_FREQ_UHQA	(1300000)
 #define AUD_MIF_FREQ_UHQA	(413000)
 #define AUD_INT_FREQ_UHQA	(0)
 #define AUD_CPU_FREQ_NORM	(0)
@@ -58,7 +58,7 @@
 #define AUD_INT_FREQ_NORM	(0)
 #else
 #define AUD_CPU_FREQ_UHQA	(1000000)
-#define AUD_KFC_FREQ_UHQA	(0)
+#define AUD_KFC_FREQ_UHQA	(1300000)
 #define AUD_MIF_FREQ_UHQA	(413000)
 #define AUD_INT_FREQ_UHQA	(0)
 #define AUD_CPU_FREQ_NORM	(0)
@@ -355,9 +355,8 @@ void lpass_put_sync(struct device *ip_dev)
 	lpass_update_qos();
 }
 
-void lpass_task_affinity(pid_t pid, int mode)
+void lpass_set_sched(pid_t pid, int mode)
 {
-	struct cpumask thread_cpumask;
 	struct sched_param param_fifo = {.sched_priority = MAX_RT_PRIO >> 1};
 	struct task_struct *task = find_task_by_vpid(pid);
 
@@ -374,22 +373,14 @@ void lpass_task_affinity(pid_t pid, int mode)
 
 	lpass_update_qos();
 
-	if (lpass.uhqa_on) {
-		cpumask_clear(&thread_cpumask);
-		cpumask_set_cpu(AUD_TASK_CPU_UHQ, &thread_cpumask);
-		sched_setaffinity(pid, &thread_cpumask);
-		pr_info("%s: [%s] pid = %d\n",
-			__func__, task ? task->comm : "NULL", pid);
-	} else {
-		if (task) {
-			sched_setscheduler_nocheck(task,
+	if (task) {
+		sched_setscheduler_nocheck(task,
 				SCHED_FIFO, &param_fifo);
-			pr_info("%s: [%s] pid = %d, prio = %d\n",
+		pr_info("%s: [%s] pid = %d, prio = %d\n",
 				__func__, task->comm, pid, task->prio);
-		} else {
-			pr_err("%s: task not found (pid = %d)\n",
+	} else {
+		pr_err("%s: task not found (pid = %d)\n",
 				__func__, pid);
-		}
 	}
 }
 
