@@ -37,6 +37,8 @@
 		broken-cd;
 		bypass-smu;
 		fixed_volt;
+		clock-gate;
+		enable-cclk-on-suspend;
 		only_once_tune;
 		extra_tuning;
 		supports-highspeed;
@@ -70,6 +72,8 @@
 		status = "okay";
 		num-slots = <1>;
 		fixed_volt;
+		clock-gate;
+		enable-cclk-on-suspend;
 		only_once_tune;
 		supports-highspeed;
 		qos_int_level = <133>;
@@ -94,6 +98,8 @@
 		status = "okay";
 		num-slots = <1>;
 		supports-highspeed;
+		clock-gate;
+		enable-cclk-on-suspend;
 		qos_int_level = <133>;
 		cd-type = <1>;
 		fifo-depth = <0x40>;
