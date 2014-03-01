@@ -281,6 +281,7 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct gsc_dev *gsc = entity_data_to_gsc(v4l2_get_subdevdata(sd));
 	int ret;
+	unsigned long flags;
 
 	if (enable) {
 		if (gsc->out.ctx->out_path != GSC_FIMD) {
@@ -288,21 +289,22 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 					gsc->out.ctx->out_path);
 			return -EINVAL;
 		}
+		spin_lock_irqsave(&gsc->slock, flags);
+		if (!test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+			gsc_err("GSC is not ready start");
+			spin_unlock_irqrestore(&gsc->slock, flags);
+			return -EBUSY;
+		}
+		spin_unlock_irqrestore(&gsc->slock, flags);
 		ret = gsc_out_hw_set(gsc->out.ctx);
 		if (ret) {
 			gsc_err("GSC H/W setting is failed");
 			return -EINVAL;
 		}
 	} else {
-		unsigned long flags;
 		spin_lock_irqsave(&gsc->slock, flags);
 		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
-			ret = gsc_out_hw_reset_off(gsc);
-			if (ret < 0) {
-				spin_unlock_irqrestore(&gsc->slock, flags);
-				return ret;
-			}
-
+			gsc_out_hw_reset_off(gsc);
 			clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
 			wake_up(&gsc->irq_queue);
 		}
@@ -676,8 +678,17 @@ static int gsc_out_stop_streaming(struct vb2_queue *q)
 {
 	struct gsc_ctx *ctx = q->drv_priv;
 	struct gsc_dev *gsc = ctx->gsc_dev;
+	int ret = 0;
 
 	media_entity_pipeline_stop(&gsc->out.vfd->entity);
+
+	ret = wait_event_timeout(gsc->irq_queue,
+		!test_bit(ST_OUTPUT_STREAMON, &gsc->state),
+		GSC_SHUTDOWN_TIMEOUT);
+	if (ret == 0) {
+		gsc_err("wait timeout");
+		return -EBUSY;
+	}
 
 	if (!list_empty(&gsc->out.active_buf_q))
 		INIT_LIST_HEAD(&gsc->out.active_buf_q);
@@ -724,6 +735,10 @@ int gsc_out_set_in_addr(struct gsc_dev *gsc, struct gsc_ctx *ctx,
 		gsc_err("Fail to prepare G-Scaler address");
 		return -EINVAL;
 	}
+	if (!ctx->s_frame.addr.y) {
+		gsc_err("source address is null");
+		return -EINVAL;
+	}
 	gsc_hw_set_input_addr(gsc, &ctx->s_frame.addr, index);
 	active_queue_push(&gsc->out, buf, gsc);
 	buf->idx = index;
@@ -741,27 +756,27 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 	unsigned long flags;
 	int ret;
 
-	if (vb->acquire_fence) {
-		ret = sync_fence_wait(vb->acquire_fence, 100);
-		sync_fence_put(vb->acquire_fence);
-		vb->acquire_fence = NULL;
-		if (ret < 0) {
-			gsc_err("synce_fence_wait() timeout");
-			return;
-		}
+	spin_lock_irqsave(&gsc->slock, flags);
+	if (!test_bit(ST_OUTPUT_STREAMON, &gsc->state) && q->streaming) {
+		gsc_info("Already s_stream(0) is called");
+		spin_unlock_irqrestore(&gsc->slock, flags);
+		return;
 	}
 
-	if (!test_and_set_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
+	if (!q->streaming) {
 		gsc_hw_set_sw_reset(gsc);
 		ret = gsc_wait_reset(gsc);
 		if (ret < 0) {
 			gsc_err("gscaler s/w reset timeout");
+			spin_unlock_irqrestore(&gsc->slock, flags);
 			return;
 		}
 		gsc_hw_set_input_buf_mask_all(gsc);
 		gsc->out.pending_mask = 0xf;
 		INIT_LIST_HEAD(&gsc->out.active_buf_q);
+		set_bit(ST_OUTPUT_STREAMON, &gsc->state);
 	}
+	spin_unlock_irqrestore(&gsc->slock, flags);
 
 	if (gsc->out.req_cnt >= atomic_read(&q->queued_count)) {
 		spin_lock_irqsave(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
