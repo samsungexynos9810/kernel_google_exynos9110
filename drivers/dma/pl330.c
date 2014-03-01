@@ -2514,17 +2514,18 @@ static void dma_pl330_rqcb(void *token, enum pl330_op_err err)
 {
 	struct dma_pl330_desc *desc = token;
 	struct dma_pl330_chan *pch = desc->pchan;
+	struct dma_pl330_dmac *pdmac = pch->dmac;
 	unsigned long flags;
 
 	/* If desc aborted */
 	if (!pch)
 		return;
 
-	spin_lock_irqsave(&pch->lock, flags);
+	spin_lock_irqsave(&pdmac->pool_lock, flags);
 
 	desc->status = DONE;
 
-	spin_unlock_irqrestore(&pch->lock, flags);
+	spin_unlock_irqrestore(&pdmac->pool_lock, flags);
 
 	tasklet_schedule(&pch->task);
 }
