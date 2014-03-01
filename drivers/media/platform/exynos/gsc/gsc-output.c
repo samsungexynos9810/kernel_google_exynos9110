@@ -283,6 +283,11 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 	int ret;
 
 	if (enable) {
+		if (gsc->out.ctx->out_path != GSC_FIMD) {
+			gsc_err("output path(%d) is not DECON",
+					gsc->out.ctx->out_path);
+			return -EINVAL;
+		}
 		ret = gsc_out_hw_set(gsc->out.ctx);
 		if (ret) {
 			gsc_err("GSC H/W setting is failed");
