@@ -3261,12 +3261,23 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 {
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
+	struct display_driver *dispdrv;
+
+	dispdrv = get_display_driver();
 
 	switch (cmd) {
 	case S3CFB_FLUSH_WORKQUEUE:
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+		disp_pm_gate_lock(dispdrv, true);
+#endif
+		disp_pm_runtime_get_sync(dispdrv);
 		mutex_lock(&sfb->output_lock);
 		flush_kthread_worker(&sfb->update_regs_worker);
 		mutex_unlock(&sfb->output_lock);
+		disp_pm_runtime_put_sync(dispdrv);
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+		disp_pm_gate_lock(dispdrv, false);
+#endif
 		break;
 
 	case S3CFB_READY_TO_SETBUF:
