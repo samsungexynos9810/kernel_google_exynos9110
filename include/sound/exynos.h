@@ -63,6 +63,9 @@ extern void lpass_get_sync(struct device *ip_dev);
 extern void lpass_put_sync(struct device *ip_dev);
 extern struct iommu_domain *lpass_get_iommu_domain(void);
 
+extern void lpass_add_stream(void);
+extern void lpass_remove_stream(void);
+
 extern void lpass_reset(int ip, int op);
 extern void lpass_reset_toggle(int ip);
 

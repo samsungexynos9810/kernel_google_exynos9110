@@ -744,6 +744,8 @@ static int i2s_hw_params(struct snd_pcm_substream *substream,
 #ifdef USE_EXYNOS_AUD_SCHED
 	if ((mod & MOD_BLC_MASK) == MOD_BLC_24BIT)
 		lpass_set_sched(pid_nr(substream->pid), AUD_MODE_UHQA);
+	else if (mod & (MOD_DC2_EN | MOD_DC1_EN))
+		lpass_set_sched(pid_nr(substream->pid), AUD_MODE_UHQA);
 	else
 		lpass_set_sched(pid_nr(substream->pid), AUD_MODE_NORM);
 #endif
@@ -812,6 +814,8 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 	if (!is_secondary(i2s))
 		lpass_get_cpu_hotplug();
 #endif
+	lpass_add_stream();
+
 	pdev = is_secondary(i2s) ? i2s->pri_dai->pdev : i2s->pdev;
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_get_sync(&pdev->dev);
@@ -874,6 +878,8 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 #else
 	i2s_disable(&pdev->dev);
 #endif
+	lpass_remove_stream();
+
 #ifdef USE_EXYNOS_AUD_CPU_HOTPLUG
 	if (!is_secondary(i2s))
 		lpass_put_cpu_hotplug();

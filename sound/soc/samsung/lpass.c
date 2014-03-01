@@ -53,6 +53,10 @@
 #define AUD_KFC_FREQ_UHQA	(1300000)
 #define AUD_MIF_FREQ_UHQA	(413000)
 #define AUD_INT_FREQ_UHQA	(0)
+#define AUD_CPU_FREQ_HIGH	(0)
+#define AUD_KFC_FREQ_HIGH	(1300000)
+#define AUD_MIF_FREQ_HIGH	(0)
+#define AUD_INT_FREQ_HIGH	(0)
 #define AUD_CPU_FREQ_NORM	(0)
 #define AUD_KFC_FREQ_NORM	(0)
 #define AUD_MIF_FREQ_NORM	(0)
@@ -62,6 +66,10 @@
 #define AUD_KFC_FREQ_UHQA	(1300000)
 #define AUD_MIF_FREQ_UHQA	(413000)
 #define AUD_INT_FREQ_UHQA	(0)
+#define AUD_CPU_FREQ_HIGH	(0)
+#define AUD_KFC_FREQ_HIGH	(1300000)
+#define AUD_MIF_FREQ_HIGH	(0)
+#define AUD_INT_FREQ_HIGH	(0)
 #define AUD_CPU_FREQ_NORM	(0)
 #define AUD_KFC_FREQ_NORM	(0)
 #define AUD_MIF_FREQ_NORM	(0)
@@ -118,6 +126,7 @@ struct lpass_info {
 	struct clk		*clk_fin_pll;
 	bool			rpm_enabled;
 	atomic_t		use_cnt;
+	atomic_t		stream_cnt;
 	bool			display_on;
 	bool			uhqa_on;
 #ifdef USE_AUD_DEVFREQ
@@ -398,6 +407,18 @@ void lpass_put_cpu_hotplug(void)
 	little_core1_hotplug_in(false);
 }
 #endif
+
+void lpass_add_stream(void)
+{
+	atomic_inc(&lpass.stream_cnt);
+	lpass_update_qos();
+}
+
+void lpass_remove_stream(void)
+{
+	atomic_dec(&lpass.stream_cnt);
+	lpass_update_qos();
+}
 
 static void lpass_reg_save(void)
 {
@@ -813,6 +834,7 @@ static int lpass_proc_show(struct seq_file *m, void *v) {
 				si->name, atomic_read(&si->use_cnt));
 	}
 
+	seq_printf(m, "strm: %d\n", atomic_read(&lpass.stream_cnt));
 	seq_printf(m, "uhqa: %s\n", lpass.uhqa_on ? "on" : "off");
 #ifdef USE_AUD_DEVFREQ
 	seq_printf(m, "cpu: %d, kfc: %d\n",
@@ -905,6 +927,11 @@ static void lpass_update_qos(void)
 		kfc_qos_new = AUD_KFC_FREQ_UHQA;
 		mif_qos_new = AUD_MIF_FREQ_UHQA;
 		int_qos_new = AUD_INT_FREQ_UHQA;
+	} else if (atomic_read(&lpass.stream_cnt) > 1) {
+		cpu_qos_new = AUD_CPU_FREQ_HIGH;
+		kfc_qos_new = AUD_KFC_FREQ_HIGH;
+		mif_qos_new = AUD_MIF_FREQ_HIGH;
+		int_qos_new = AUD_INT_FREQ_HIGH;
 	} else {
 		cpu_qos_new = AUD_CPU_FREQ_NORM;
 		kfc_qos_new = AUD_KFC_FREQ_NORM;
@@ -1045,6 +1072,7 @@ static int lpass_probe(struct platform_device *pdev)
 
 	spin_lock_init(&lpass.lock);
 	atomic_set(&lpass.use_cnt, 0);
+	atomic_set(&lpass.stream_cnt, 0);
 	lpass_init_reg_list();
 
 	/* unmask irq source */
