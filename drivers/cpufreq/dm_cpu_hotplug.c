@@ -57,6 +57,7 @@ static bool in_suspend_prepared = false;
 static bool do_enable_hotplug = false;
 static bool do_disable_hotplug = false;
 #if defined(CONFIG_SCHED_HMP)
+static bool do_hotplug_out = false;
 static int big_hotpluged = 0;
 static int little_hotplug_in = 0;
 #endif
@@ -441,6 +442,9 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 			} else {
 				if (lcd_is_on) {
 					for (i = NR_CA7; i < setup_max_cpus; i++) {
+						if (do_hotplug_out)
+							goto blk_out;
+
 						if (!cpu_online(i)) {
 							if (i == NR_CA7)
 								set_hmp_boostpulse(100000);
@@ -460,6 +464,9 @@ static int __ref __cpu_hotplug(bool out_flag, enum hotplug_cmd cmd)
 					}
 				} else {
 					for (i = 1; i < setup_max_cpus; i++) {
+						if (do_hotplug_out && i >= NR_CA7)
+							goto blk_out;
+
 						if (!cpu_online(i)) {
 							ret = cpu_up(i);
 							if (ret)
@@ -565,14 +572,18 @@ int big_cores_hotplug(bool out_flag)
 	mutex_lock(&big_hotplug_lock);
 
 	if (out_flag) {
+		do_hotplug_out = true;
 		if (big_hotpluged) {
 			big_hotpluged++;
+			do_hotplug_out = false;
 			goto out;
 		}
 
 		ret = dynamic_hotplug(CMD_BIG_OUT);
-		if (!ret)
+		if (!ret) {
 			big_hotpluged++;
+			do_hotplug_out = false;
+		}
 	} else {
 		if (WARN_ON(!big_hotpluged)) {
 			pr_err("%s: big cores already hotplug in\n",
