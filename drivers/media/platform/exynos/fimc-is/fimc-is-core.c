@@ -113,11 +113,7 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 {
 	int ret = 0;
 	void *fw_cookie;
-
-	dbg_core("Allocating memory for FIMC-IS firmware.\n");
-
-	fw_cookie = vb2_ion_private_alloc(this->mem.alloc_ctx,
-				FIMC_IS_A5_MEM_SIZE +
+	size_t fw_size =
 #ifdef ENABLE_ODC
 				SIZE_ODC_INTERNAL_BUF * NUM_ODC_INTERNAL_BUF +
 #endif
@@ -127,7 +123,12 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 #ifdef ENABLE_TDNR
 				SIZE_DNR_INTERNAL_BUF * NUM_DNR_INTERNAL_BUF +
 #endif
-				0, 1, 0);
+			FIMC_IS_A5_MEM_SIZE;
+
+	fw_size = PAGE_ALIGN(fw_size);
+	dbg_core("Allocating memory for FIMC-IS firmware.\n");
+
+	fw_cookie = vb2_ion_private_alloc(this->mem.alloc_ctx, fw_size, 1, 0);
 
 	if (IS_ERR(fw_cookie)) {
 		err("Allocating bitprocessor buffer failed");
@@ -157,6 +158,8 @@ static int fimc_is_ischain_allocmem(struct fimc_is_core *this)
 		ret = -EIO;
 		goto exit;
 	}
+
+	vb2_ion_sync_for_device(fw_cookie, 0, fw_size, DMA_BIDIRECTIONAL);
 
 exit:
 	info("[COR] Device virtual for internal: %08x\n", this->minfo.kvaddr);
