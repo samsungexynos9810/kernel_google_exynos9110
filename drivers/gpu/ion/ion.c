@@ -1276,6 +1276,7 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	{
 		struct ion_handle_data data;
 		struct ion_handle *handle;
+		bool valid;
 
 		if (copy_from_user(&data, (void __user *)arg,
 				   sizeof(struct ion_handle_data)))
@@ -1284,7 +1285,19 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		if (IS_ERR(handle))
 			return PTR_ERR(handle);
 		ion_free(client, handle);
-		ion_handle_put(handle);
+		WARN((atomic_read(&handle->ref.refcount) <= 0) ||
+			(handle->client != client),
+			"%s: Unbalenced handle count: %d, client %p:%p\n",
+			__func__, atomic_read(&handle->ref.refcount),
+			handle->client, client);
+		mutex_lock(&client->lock);
+		valid = ion_handle_validate(client, handle);
+		mutex_unlock(&client->lock);
+		WARN(!valid, "%s: invalid handle %p after ion_free\n",
+			__func__, handle);
+		if ((atomic_read(&handle->ref.refcount) > 0) &&
+			(handle->client == client) && valid)
+			ion_handle_put(handle);
 		break;
 	}
 	case ION_IOC_SHARE:
