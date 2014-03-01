@@ -187,7 +187,8 @@ void *vb2_ion_private_alloc(void *alloc_ctx, size_t size, int write, int plane)
 
 	size = PAGE_ALIGN(size);
 
-	flags |= ctx_cached(ctx) ? ION_FLAG_CACHED : 0;
+	flags |= ctx_cached(ctx) ?
+		ION_FLAG_CACHED | ION_FLAG_CACHED_NEEDS_SYNC : 0;
 	buf->handle = ion_alloc(ctx->client, size, ctx->alignment,
 				heapflags, flags);
 	if (IS_ERR(buf->handle)) {
@@ -195,7 +196,24 @@ void *vb2_ion_private_alloc(void *alloc_ctx, size_t size, int write, int plane)
 		goto err_alloc;
 	}
 
-	buf->cookie.sgt = ion_sg_table(ctx->client, buf->handle);
+	buf->dma_buf = ion_share_dma_buf(ctx->client, buf->handle);
+	if (IS_ERR(buf->dma_buf)) {
+		ret = PTR_ERR(buf->dma_buf);
+		goto err_share;
+	}
+
+	buf->attachment = dma_buf_attach(buf->dma_buf, ctx->dev);
+	if (IS_ERR(buf->attachment)) {
+		ret = PTR_ERR(buf->attachment);
+		goto err_attach;
+	}
+
+	buf->cookie.sgt = dma_buf_map_attachment(
+				buf->attachment, DMA_BIDIRECTIONAL);
+	if (IS_ERR(buf->cookie.sgt)) {
+		ret = PTR_ERR(buf->cookie.sgt);
+		goto err_map_dmabuf;
+	}
 
 	buf->ctx = ctx;
 	buf->size = size;
@@ -214,8 +232,7 @@ void *vb2_ion_private_alloc(void *alloc_ctx, size_t size, int write, int plane)
 
 	mutex_lock(&ctx->lock);
 	if (ctx_iommu(ctx) && !ctx->protected) {
-		buf->cookie.ioaddr = iovmm_map(ctx->dev,
-					       buf->cookie.sgt->sgl, 0,
+		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
 					       buf->size, buf->direction, plane);
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
 			ret = (int)buf->cookie.ioaddr;
@@ -231,6 +248,13 @@ err_ion_map_io:
 	if (buf->kva)
 		ion_unmap_kernel(ctx->client, buf->handle);
 err_map_kernel:
+	dma_buf_unmap_attachment(buf->attachment, buf->cookie.sgt,
+				DMA_BIDIRECTIONAL);
+err_map_dmabuf:
+	dma_buf_detach(buf->dma_buf, buf->attachment);
+err_attach:
+	dma_buf_put(buf->dma_buf);
+err_share:
 	ion_free(ctx->client, buf->handle);
 err_alloc:
 	kfree(buf);
@@ -251,8 +275,13 @@ void vb2_ion_private_free(void *cookie)
 	ctx = buf->ctx;
 	mutex_lock(&ctx->lock);
 	if (ctx_iommu(ctx) && !ctx->protected)
-		iovmm_unmap(ctx->dev, buf->cookie.ioaddr);
+		ion_iovmm_unmap(buf->attachment, buf->cookie.ioaddr);
 	mutex_unlock(&ctx->lock);
+
+	dma_buf_unmap_attachment(buf->attachment, buf->cookie.sgt,
+				DMA_BIDIRECTIONAL);
+	dma_buf_detach(buf->dma_buf, buf->attachment);
+	dma_buf_put(buf->dma_buf);
 
 	if (buf->kva)
 		ion_unmap_kernel(ctx->client, buf->handle);
@@ -970,14 +999,14 @@ void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 	dev_dbg(buf->ctx->dev, "syncing for device, dmabuf: %p, kva: %p, "
 		"size: %d, dir: %d\n", buf->dma_buf, buf->kva, size, dir);
 
-	if (buf->dma_buf && buf->ion) {
-		exynos_ion_sync_dmabuf_for_device(buf->ctx->dev,
-						buf->dma_buf, size, dir);
-	} else if (buf->kva) {
+	if (buf->kva) {
 		if ((offset + size) > buf->size)
 			size -= (offset + size) - buf->size;
 		exynos_ion_sync_vaddr_for_device(buf->ctx->dev,
 						buf->kva, size, offset, dir);
+	} else if (buf->dma_buf && buf->ion) {
+		exynos_ion_sync_dmabuf_for_device(buf->ctx->dev,
+						buf->dma_buf, size, dir);
 	} else {
 		exynos_ion_sync_sg_for_device(buf->ctx->dev,
 						buf->cookie.sgt, dir);
@@ -994,14 +1023,14 @@ void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 	dev_dbg(buf->ctx->dev, "syncing for cpu, dmabuf: %p, kva: %p, "
 		"size: %d, dir: %d\n", buf->dma_buf, buf->kva, size, dir);
 
-	if (buf->dma_buf && buf->ion) {
-		exynos_ion_sync_dmabuf_for_cpu(buf->ctx->dev,
-						buf->dma_buf, size, dir);
-	} else if (buf->kva) {
+	if (buf->kva) {
 		if ((offset + size) > buf->size)
 			size -= (offset + size) - buf->size;
 		exynos_ion_sync_vaddr_for_cpu(buf->ctx->dev,
 						buf->kva, size, offset, dir);
+	} else if (buf->dma_buf && buf->ion) {
+		exynos_ion_sync_dmabuf_for_cpu(buf->ctx->dev,
+						buf->dma_buf, size, dir);
 	} else {
 		exynos_ion_sync_sg_for_cpu(buf->ctx->dev,
 						buf->cookie.sgt, dir);
