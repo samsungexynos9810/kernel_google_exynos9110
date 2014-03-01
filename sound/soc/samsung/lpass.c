@@ -38,6 +38,7 @@
 #include <mach/regs-pmu.h>
 #include <mach/regs-clock-exynos5430.h>
 #include <mach/regs-clock-exynos5422.h>
+#include <mach/cpufreq.h>
 
 #include "lpass.h"
 
@@ -383,6 +384,20 @@ void lpass_set_sched(pid_t pid, int mode)
 				__func__, pid);
 	}
 }
+
+#ifdef USE_EXYNOS_AUD_CPU_HOTPLUG
+void lpass_get_cpu_hotplug(void)
+{
+	pr_debug("%s ++\n", __func__);
+	little_core1_hotplug_in(true);
+}
+
+void lpass_put_cpu_hotplug(void)
+{
+	pr_debug("%s --\n", __func__);
+	little_core1_hotplug_in(false);
+}
+#endif
 
 static void lpass_reg_save(void)
 {
