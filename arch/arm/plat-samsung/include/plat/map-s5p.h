@@ -85,6 +85,8 @@
 
 #define S5P_VA_SYSREG		S3C_ADDR(0x02BA0000)
 
+#define S5P_VA_FIMC_FD		S3C_ADDR(0x02BB0000)
+
 #define VA_VIC(x)		(S3C_VA_IRQ + ((x) * 0x10000))
 #define VA_VIC0			VA_VIC(0)
 #define VA_VIC1			VA_VIC(1)
