@@ -1582,7 +1582,7 @@ static inline void __update_group_entity_contrib(struct sched_entity *se) {}
  */
 
 unsigned int hmp_up_threshold = 700;
-unsigned int hmp_down_threshold = 256;
+unsigned int hmp_down_threshold = 400;
 
 /*
  * Needed to determine heaviest tasks etc.
