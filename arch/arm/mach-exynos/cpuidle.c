@@ -506,10 +506,6 @@ static struct sleep_save exynos5_lpa_save[] = {
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MIF1),
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CPIF0),
 
-	SAVE_ITEM(EXYNOS5430_ENABLE_SCLK_FSYS),
-	SAVE_ITEM(EXYNOS5430_ENABLE_ACLK_TOP),
-	SAVE_ITEM(EXYNOS5430_ENABLE_ACLK_MIF3),
-
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP0),
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP1),
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP2),
@@ -521,7 +517,6 @@ static struct sleep_save exynos5_lpa_save[] = {
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_FSYS1),
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_PERIC0),
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_TOP_PERIC1),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_FSYS0),
 
 	SAVE_ITEM(EXYNOS5430_ISP_PLL_CON0),
 	SAVE_ITEM(EXYNOS5430_ISP_PLL_CON1),
@@ -623,11 +618,6 @@ static struct sleep_save exynos5_set_clksrc[] = {
 	{ .reg = EXYNOS5430_ENABLE_IP_KFC1,	.val = 0x00000fff, },
 	{ .reg = EXYNOS5430_ENABLE_IP_MIF1,	.val = 0x01fffff7, },
 	{ .reg = EXYNOS5430_ENABLE_IP_CPIF0,	.val = 0x000FF000, },
-	{ .reg = EXYNOS5430_SRC_SEL_FSYS0,	.val = 0x00000000, },
-	{ .reg = EXYNOS5430_SRC_SEL_BUS2,	.val = 0x00000000, },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_FSYS,	.val = 0x00000000, },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,	.val = 0x03E8FFFD, },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_MIF3,	.val = 0x00000003, },
 };
 
 static void exynos_save_mif_dll_status(void)
@@ -700,7 +690,12 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	unsigned int cpu_offset;
 	unsigned int early_wakeup_flag = 0;
 
+	/*
+	 * Before enter central sequence mode, clock src register have to set
+	 */
 	s3c_pm_do_save(exynos5_lpa_save, ARRAY_SIZE(exynos5_lpa_save));
+	s3c_pm_do_restore_core(exynos5_set_clksrc,
+			       ARRAY_SIZE(exynos5_set_clksrc));
 
 	local_fiq_disable();
 	do_gettimeofday(&before);
@@ -758,12 +753,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, EXYNOS5430_DREX_CALN1);
 	exynos_save_mif_dll_status();
 
-	/*
-	 * Before enter central sequence mode, clock src register have to set
-	 */
-	s3c_pm_do_restore_core(exynos5_set_clksrc,
-			       ARRAY_SIZE(exynos5_set_clksrc));
-
 	ret = cpu_suspend(0, idle_finisher);
 	if (ret) {
 		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
@@ -793,9 +782,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel((1 << 28), EXYNOS5430_PAD_RETENTION_FSYSGENIO_OPTION);
 
 early_wakeup:
-	s3c_pm_do_restore_core(exynos5_lpa_save,
-			       ARRAY_SIZE(exynos5_lpa_save));
-
 	samsung_usb_lpa_resume();
 
 	if (lp_mode == SYS_ALPA)
@@ -816,6 +802,9 @@ early_wakeup:
 	exynos_idle_clock_down(true, ARM);
 	exynos_idle_clock_down(true, KFC);
 #endif
+
+	s3c_pm_do_restore_core(exynos5_lpa_save,
+			       ARRAY_SIZE(exynos5_lpa_save));
 
 	lpa_wakeup_stat[lpa_wakeup_count].buf_cnt = lpa_wakeup_count;
 	lpa_wakeup_stat[lpa_wakeup_count].wakeup_stat = __raw_readl(EXYNOS5430_WAKEUP_STAT);
