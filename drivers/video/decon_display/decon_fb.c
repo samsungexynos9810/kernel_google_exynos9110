@@ -647,7 +647,7 @@ static int s3c_fb_get_overlap_cnt(struct s3c_fb *sfb, struct s3c_fb_win_config *
 
 	for (i = 1; i < sfb->variant.nr_windows; i++) {
 		win_cfg1 = &win_config[i];
-		if (win_cfg1->state == S3C_FB_WIN_STATE_DISABLED)
+		if (win_cfg1->state != S3C_FB_WIN_STATE_BUFFER)
 			continue;
 		r1.left = win_cfg1->x;
 		r1.top = win_cfg1->y;
@@ -676,7 +676,7 @@ static int s3c_fb_get_overlap_cnt(struct s3c_fb *sfb, struct s3c_fb_win_config *
 		}
 		for (j = 0; (j < i) && (overlaps2_cnt < 10); j++) {
 			win_cfg2 = &win_config[j];
-			if (win_cfg2->state == S3C_FB_WIN_STATE_DISABLED)
+			if (win_cfg2->state != S3C_FB_WIN_STATE_BUFFER)
 				continue;
 			r2.left = win_cfg2->x;
 			r2.top = win_cfg2->y;
