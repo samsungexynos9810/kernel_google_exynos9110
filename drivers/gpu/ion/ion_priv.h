@@ -349,7 +349,8 @@ static inline void ion_buffer_make_ready(struct ion_buffer *buffer)
 {
 	if (!(buffer->flags & ION_FLAG_READY_TO_USE)) {
 		ion_device_sync(buffer->dev, buffer->sg_table, DMA_BIDIRECTIONAL,
-			ion_buffer_cached(buffer) ? NULL : ion_buffer_flush,
+			(ion_buffer_cached(buffer) &&
+			 !ion_buffer_fault_user_mappings(buffer)) ? NULL : ion_buffer_flush,
 			!(buffer->flags & ION_FLAG_NOZEROED));
 		buffer->flags |= ION_FLAG_READY_TO_USE;
 	}
