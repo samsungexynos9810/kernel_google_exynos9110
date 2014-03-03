@@ -1089,14 +1089,15 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 			goto done;
 		}
 
+		ldr_frame = &ldr_framemgr->frame[findex];
 		if (status) {
 			info("[%c:D:%d] FRM%d NOT DONE(%d)\n", name,
 				instance, fcount, status);
 			sub_frame->stream->fvalid = 0;
+			clear_bit(out_flag, &ldr_frame->out_flag);
 			goto done;
 		}
 
-		ldr_frame = &ldr_framemgr->frame[findex];
 		if (ldr_frame->fcount != fcount) {
 			err("%c frame mismatched(ldr%d, sub%d)", name,
 				ldr_frame->fcount, fcount);
