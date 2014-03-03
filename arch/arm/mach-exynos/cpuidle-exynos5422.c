@@ -957,4 +957,4 @@ static int __init exynos_init_cpuidle(void)
 
 	return 0;
 }
-device_initcall(exynos_init_cpuidle);
+late_initcall(exynos_init_cpuidle);
