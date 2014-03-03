@@ -93,7 +93,7 @@ out:
 	exynos_smc(SMC_CMD_RANDOM, HWRNG_EXIT, 0, 0);
 	spin_unlock_irqrestore(&hwrandom_lock, flag);
 
-	return max;
+	return ret;
 }
 
 static int exyswd_rng_probe(struct platform_device *pdev)
