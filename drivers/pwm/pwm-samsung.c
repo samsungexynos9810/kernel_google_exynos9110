@@ -167,6 +167,7 @@ static unsigned long pwm_calc_tin(struct pwm_device *pwm, unsigned long freq)
 	unsigned int div;
 
 	tin_parent_rate = clk_get_rate(clk_get_parent(s3c_pwm->clk_div));
+	clk_set_rate(clk_get_parent(s3c_pwm->clk_div),tin_parent_rate);
 
 	for (div = 2; div <= 16; div *= 2) {
 		if ((tin_parent_rate / (div << 16)) < freq)
