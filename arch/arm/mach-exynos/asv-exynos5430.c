@@ -399,6 +399,33 @@ static void exynos5430_set_asv_info_arm(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_freq = arm_asv_volt_info_v01[i][0];
 			asv_inform->asv_abb[i].asv_value = arm_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
+	} else if (asv_ref_info.asv_version == ASV_VER_200) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = arm_asv_volt_info_v10[i][0];
+
+			if (asv_ref_info.is_speedgroup) {
+				if (asv_inform->asv_volt[i].asv_freq >= EGL_GRP_L0_FREQ)
+					target_asv_grp_nr = egl_fused_info.speed_grp[EXYNOS5430_GRP_L0];
+				else if (asv_inform->asv_volt[i].asv_freq >= EGL_GRP_L1_FREQ)
+					target_asv_grp_nr = egl_fused_info.speed_grp[EXYNOS5430_GRP_L1];
+				else
+					target_asv_grp_nr = egl_fused_info.speed_grp[EXYNOS5430_GRP_L2];
+
+				lock_voltage = exynos5430_lock_voltage(egl_fused_info.voltage_lock);
+				if (lock_voltage &&
+						lock_voltage >= arm_asv_volt_info_v10[i][target_asv_grp_nr + 1])
+					arm_asv_volt_info_v10[i][target_asv_grp_nr + 1] = lock_voltage;
+			}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				arm_asv_volt_info_v10[i][target_asv_grp_nr + 1] + set_arm_volt;
+#else
+			asv_inform->asv_volt[i].asv_value = arm_asv_volt_info_v10[i][target_asv_grp_nr + 1];
+#endif
+			asv_inform->asv_abb[i].asv_freq = arm_asv_volt_info_v10[i][0];
+			asv_inform->asv_abb[i].asv_value = arm_asv_abb_info_v10[i][target_asv_grp_nr + 1];
+		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
 				__func__, asv_ref_info.asv_version);
@@ -512,6 +539,33 @@ static void exynos5430_set_asv_info_kfc(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_freq = kfc_asv_volt_info_v01[i][0];
 			asv_inform->asv_abb[i].asv_value = kfc_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
+	} else if (asv_ref_info.asv_version == ASV_VER_200) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = kfc_asv_volt_info_v10[i][0];
+
+			if (asv_ref_info.is_speedgroup) {
+				if (asv_inform->asv_volt[i].asv_freq >= KFC_GRP_L0_FREQ)
+					target_asv_grp_nr = kfc_fused_info.speed_grp[EXYNOS5430_GRP_L0];
+				else if (asv_inform->asv_volt[i].asv_freq >= KFC_GRP_L1_FREQ)
+					target_asv_grp_nr = kfc_fused_info.speed_grp[EXYNOS5430_GRP_L1];
+				else
+					target_asv_grp_nr = kfc_fused_info.speed_grp[EXYNOS5430_GRP_L2];
+
+				lock_voltage = exynos5430_lock_voltage(kfc_fused_info.voltage_lock);
+				if (lock_voltage &&
+						lock_voltage >= kfc_asv_volt_info_v10[i][target_asv_grp_nr + 1])
+					kfc_asv_volt_info_v10[i][target_asv_grp_nr + 1] = lock_voltage;
+			}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				kfc_asv_volt_info_v10[i][target_asv_grp_nr + 1] + set_kfc_volt;
+#else
+			asv_inform->asv_volt[i].asv_value = kfc_asv_volt_info_v10[i][target_asv_grp_nr + 1];
+#endif
+			asv_inform->asv_abb[i].asv_freq = kfc_asv_volt_info_v10[i][0];
+			asv_inform->asv_abb[i].asv_value = kfc_asv_abb_info_v10[i][target_asv_grp_nr + 1];
+		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
 				__func__, asv_ref_info.asv_version);
@@ -617,6 +671,33 @@ static void exynos5430_set_asv_info_int(struct asv_info *asv_inform, bool show_v
 #endif
 			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_v01[i][0];
 			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v01[i][target_asv_grp_nr + 1];
+		}
+	} else if (asv_ref_info.asv_version == ASV_VER_200) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = int_asv_volt_info_v10[i][0];
+
+			if (asv_ref_info.is_speedgroup) {
+				if (asv_inform->asv_volt[i].asv_freq >= INT_GRP_L0_FREQ)
+					target_asv_grp_nr = int_fused_info.speed_grp[EXYNOS5430_GRP_L0];
+				else if (asv_inform->asv_volt[i].asv_freq >= INT_GRP_L1_FREQ)
+					target_asv_grp_nr = int_fused_info.speed_grp[EXYNOS5430_GRP_L1];
+				else
+					target_asv_grp_nr = int_fused_info.speed_grp[EXYNOS5430_GRP_L2];
+
+				lock_voltage = exynos5430_lock_voltage(int_fused_info.voltage_lock);
+				if (lock_voltage &&
+						lock_voltage >= int_asv_volt_info_v10[i][target_asv_grp_nr + 1])
+					int_asv_volt_info_v10[i][target_asv_grp_nr + 1] = lock_voltage;
+			}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				int_asv_volt_info_v10[i][target_asv_grp_nr + 1] + set_int_volt;
+#else
+			asv_inform->asv_volt[i].asv_value = int_asv_volt_info_v10[i][target_asv_grp_nr + 1];
+#endif
+			asv_inform->asv_abb[i].asv_freq = int_asv_volt_info_v10[i][0];
+			asv_inform->asv_abb[i].asv_value = int_asv_abb_info_v10[i][target_asv_grp_nr + 1];
 		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
@@ -730,6 +811,33 @@ static void exynos5430_set_asv_info_mif(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info_v01[i][0];
 			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
+	} else if (asv_ref_info.asv_version == ASV_VER_200) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = mif_asv_volt_info_v10[i][0];
+
+			if (asv_ref_info.is_speedgroup) {
+				if (asv_inform->asv_volt[i].asv_freq >= MIF_GRP_L0_FREQ)
+					target_asv_grp_nr = mif_fused_info.speed_grp[EXYNOS5430_GRP_L0];
+				else if (asv_inform->asv_volt[i].asv_freq >= MIF_GRP_L1_FREQ)
+					target_asv_grp_nr = mif_fused_info.speed_grp[EXYNOS5430_GRP_L1];
+				else
+					target_asv_grp_nr = mif_fused_info.speed_grp[EXYNOS5430_GRP_L2];
+
+				lock_voltage = exynos5430_lock_voltage(mif_fused_info.voltage_lock);
+				if (lock_voltage &&
+						lock_voltage >= mif_asv_volt_info_v10[i][target_asv_grp_nr + 1])
+					mif_asv_volt_info_v10[i][target_asv_grp_nr + 1] = lock_voltage;
+			}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				mif_asv_volt_info_v10[i][target_asv_grp_nr + 1] + set_mif_volt;
+#else
+			asv_inform->asv_volt[i].asv_value = mif_asv_volt_info_v10[i][target_asv_grp_nr + 1];
+#endif
+			asv_inform->asv_abb[i].asv_freq = mif_asv_volt_info_v10[i][0];
+			asv_inform->asv_abb[i].asv_value = mif_asv_abb_info_v10[i][target_asv_grp_nr + 1];
+		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
 				__func__, asv_ref_info.asv_version);
@@ -836,6 +944,33 @@ static void exynos5430_set_asv_info_g3d(struct asv_info *asv_inform, bool show_v
 			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info_v01[i][0];
 			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info_v01[i][target_asv_grp_nr + 1];
 		}
+	} else if (asv_ref_info.asv_version == ASV_VER_200) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = g3d_asv_volt_info_v10[i][0];
+
+			if (asv_ref_info.is_speedgroup) {
+				if (asv_inform->asv_volt[i].asv_freq >= G3D_GRP_L0_FREQ)
+					target_asv_grp_nr = g3d_fused_info.speed_grp[EXYNOS5430_GRP_L0];
+				else if (asv_inform->asv_volt[i].asv_freq >= G3D_GRP_L1_FREQ)
+					target_asv_grp_nr = g3d_fused_info.speed_grp[EXYNOS5430_GRP_L1];
+				else
+					target_asv_grp_nr = g3d_fused_info.speed_grp[EXYNOS5430_GRP_L2];
+
+				lock_voltage = exynos5430_lock_voltage(g3d_fused_info.voltage_lock);
+				if (lock_voltage &&
+						lock_voltage >= g3d_asv_volt_info_v10[i][target_asv_grp_nr + 1])
+					g3d_asv_volt_info_v10[i][target_asv_grp_nr + 1] = lock_voltage;
+			}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				g3d_asv_volt_info_v10[i][target_asv_grp_nr + 1] + set_g3d_volt;
+#else
+			asv_inform->asv_volt[i].asv_value = g3d_asv_volt_info_v10[i][target_asv_grp_nr + 1];
+#endif
+			asv_inform->asv_abb[i].asv_freq = g3d_asv_volt_info_v10[i][0];
+			asv_inform->asv_abb[i].asv_value = g3d_asv_abb_info_v10[i][target_asv_grp_nr + 1];
+		}
 	} else {
 		pr_err("%s: cannot support ASV verison (0x%x)\n",
 				__func__, asv_ref_info.asv_version);
@@ -929,6 +1064,31 @@ static void exynos5430_set_asv_info_isp(struct asv_info *asv_inform, bool show_v
 				isp_asv_volt_info_v01[i][target_asv_grp_nr + 1] + set_isp_volt;
 #else
 			asv_inform->asv_volt[i].asv_value = isp_asv_volt_info_v01[i][target_asv_grp_nr + 1];
+#endif
+		}
+	} else if (asv_ref_info.asv_version == ASV_VER_200) {
+		for (i = 0; i < asv_inform->dvfs_level_nr; i++) {
+			asv_inform->asv_volt[i].asv_freq = isp_asv_volt_info_v10[i][0];
+
+			if (asv_ref_info.is_speedgroup) {
+				if (asv_inform->asv_volt[i].asv_freq >= ISP_GRP_L0_FREQ)
+					target_asv_grp_nr = isp_fused_info.speed_grp[EXYNOS5430_GRP_L0];
+				else if (asv_inform->asv_volt[i].asv_freq >= ISP_GRP_L1_FREQ)
+					target_asv_grp_nr = isp_fused_info.speed_grp[EXYNOS5430_GRP_L1];
+				else
+					target_asv_grp_nr = isp_fused_info.speed_grp[EXYNOS5430_GRP_L2];
+
+				lock_voltage = exynos5430_lock_voltage(isp_fused_info.voltage_lock);
+				if (lock_voltage &&
+						lock_voltage >= isp_asv_volt_info_v10[i][target_asv_grp_nr + 1])
+					isp_asv_volt_info_v10[i][target_asv_grp_nr + 1] = lock_voltage;
+			}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+			asv_inform->asv_volt[i].asv_value =
+				isp_asv_volt_info_v10[i][target_asv_grp_nr + 1] + set_isp_volt;
+#else
+			asv_inform->asv_volt[i].asv_value = isp_asv_volt_info_v10[i][target_asv_grp_nr + 1];
 #endif
 		}
 	} else {
@@ -1133,7 +1293,8 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 		isp_fused_info.speed_grp[EXYNOS5430_GRP_L1] = int_fused_info.speed_grp[EXYNOS5430_GRP_L1];
 		isp_fused_info.speed_grp[EXYNOS5430_GRP_L2] = int_fused_info.speed_grp[EXYNOS5430_GRP_L2];
 		isp_fused_info.voltage_lock = int_fused_info.voltage_lock;
-	} else if (asv_ref_info.asv_version == ASV_VER_100) {
+	} else if (asv_ref_info.asv_version == ASV_VER_100 ||
+			asv_ref_info.asv_version == ASV_VER_200) {
 		egl_fused_info.speed_grp[EXYNOS5430_GRP_L0] =
 			(arm_speed_grp >> ASV_ARM_GRP_0_OFFSET) & ASV_SPEED_GRP_MASK;
 		egl_fused_info.speed_grp[EXYNOS5430_GRP_L1] =
