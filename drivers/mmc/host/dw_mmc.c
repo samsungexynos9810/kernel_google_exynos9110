@@ -2014,6 +2014,9 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 			/* fall through */
 
 		case STATE_DATA_BUSY:
+			if (test_and_clear_bit(EVENT_DATA_ERROR,
+					       &host->pending_events))
+				dw_mci_fifo_reset(host->dev, host);
 			if (!test_and_clear_bit(EVENT_DATA_COMPLETE,
 						&host->pending_events))
 				break;
