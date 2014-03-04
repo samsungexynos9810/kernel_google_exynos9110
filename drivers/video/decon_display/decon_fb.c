@@ -2607,7 +2607,7 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		(cmd != S3CFB_WIN_CONFIG))
 		return 0;
 
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
 	/* Try to scheduled for DISPLAY power_on */
 	if (disp_pm_sched_power_on(get_display_driver(), cmd) < 0)
 		return 0;
@@ -2749,7 +2749,7 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 
 static int s3c_fb_release(struct fb_info *info, int user)
 {
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
 	disp_pm_sched_power_on(get_display_driver(), S3CFB_PLATFORM_RESET);
 #endif
 	return 0;
