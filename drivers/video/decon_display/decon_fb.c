@@ -1122,9 +1122,16 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	struct s3c_fb *sfb	= win->parent;
 	void __iomem *buf	= sfb->regs + win->index * 8;
 	unsigned int start_boff, end_boff;
-	struct display_driver *dispdrv;
+	struct display_driver *dispdrv = get_display_driver();
 
-	dispdrv = get_display_driver();
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
+	/* Try to scheduled for DISPLAY power_on */
+	if (sfb->power_state != POWER_DOWN)
+		disp_pm_add_refcount(dispdrv);
+#endif
+
+	/* support LPM (off charging mode) display based on FBIOPAN_DISPLAY */
+	s3c_fb_set_par(info);
 
 	disp_pm_runtime_get_sync(dispdrv);
 
