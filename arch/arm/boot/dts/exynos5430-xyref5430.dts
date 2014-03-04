@@ -1083,7 +1083,6 @@
 			       "mfc_sh",
 			       "g2d_wfd",
 			       "video",
-			       "mfc_input",
 			       "sectbl",
 			       "mfc_fw",
 			       "mfc_nfw",
