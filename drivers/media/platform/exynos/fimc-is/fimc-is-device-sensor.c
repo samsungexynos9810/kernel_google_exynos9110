@@ -649,6 +649,7 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 {
 	int ret = 0;
 	struct fimc_is_frame *frame;
+	struct fimc_is_group *group_3aa;
 
 	BUG_ON(!device);
 	BUG_ON(!device->vctx);
@@ -673,9 +674,20 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 #endif
 
 	if (device->instant_cnt) {
-		device->instant_cnt--;
-		if (device->instant_cnt <= 1)
-			wake_up(&device->instant_wait);
+		if (IS_ISCHAIN_OTF(device->ischain)) {
+			group_3aa = &device->ischain->group_3aa;
+
+			if (((atomic_read(&group_3aa->sensor_fcount) - group_3aa->async_shots) >= device->instant_cnt)
+				&& (atomic_read(&group_3aa->scount) >= device->instant_cnt)) {
+
+				device->instant_cnt = 0;
+				wake_up(&device->instant_wait);
+			}
+		} else {
+			device->instant_cnt--;
+			if (device->instant_cnt <= 1)
+				wake_up(&device->instant_wait);
+		}
 	}
 
 	return ret;
