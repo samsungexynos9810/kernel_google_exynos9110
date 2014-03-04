@@ -693,6 +693,7 @@ struct devfreq_distriction_level distriction_fullhd[] = {
 	{LV6,	LV2},			/* 165000 */
 	{LV5,	LV2},			/* 206000 */
 	{LV4,	LV2},			/* 275000 */
+	{LV0,	LV0},			/* 825000 */
 };
 
 unsigned int timeout_fullhd[][2] = {
@@ -714,6 +715,7 @@ struct devfreq_distriction_level distriction_fullhd_gscl[] = {
 	{LV4,	LV2},
 	{LV4,	LV2},
 	{LV8,	LV3},
+	{LV0,	LV0},
 };
 
 unsigned int timeout_fullhd_gscl[][2] = {
@@ -735,6 +737,7 @@ struct devfreq_distriction_level distriction_fullhd_tv[] = {
 	{LV4,	LV1},
 	{LV4,	LV1},
 	{LV3,	LV1},
+	{LV0,	LV0},
 };
 
 unsigned int timeout_fullhd_tv[][2] = {
@@ -757,6 +760,7 @@ struct devfreq_distriction_level distriction_fullhd_camera[] = {
 	{LV3,	LV2},
 	{LV3,	LV2},
 	{LV3,	LV2},
+	{LV0,	LV0},
 };
 
 unsigned int timeout_fullhd_camera[][2] = {
@@ -778,6 +782,7 @@ struct devfreq_distriction_level distriction_wqhd[] = {
 	{LV4,	LV0},
 	{LV3,   LV0},
 	{LV2,	LV0},
+	{LV0,	LV0},
 };
 
 unsigned int timeout_wqhd[][2] = {
@@ -799,6 +804,7 @@ struct devfreq_distriction_level distriction_wqhd_gscl[] = {
 	{LV3,   LV0},
 	{LV2,	LV0},
 	{LV2,	LV0},
+	{LV0,	LV0},
 };
 
 unsigned int timeout_wqhd_gscl[][2] = {
@@ -819,6 +825,7 @@ struct devfreq_distriction_level distriction_wqhd_tv[] = {
 	{LV4,	LV1},
 	{LV3,	LV0},
 	{LV2,	LV0},
+	{LV0,	LV0},
 	{LV0,	LV0},
 };
 
@@ -841,6 +848,7 @@ struct devfreq_distriction_level distriction_wqhd_camera[] = {
 	{LV3,	LV0},
 	{LV3,	LV0},
 	{LV3,	LV0},
+	{LV0,	LV0},
 };
 
 unsigned int timeout_wqhd_camera[][2] = {
@@ -939,10 +947,8 @@ void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned in
 
 	total_layer_count = media_num_mixer_layer + media_num_decon_layer;
 
-	if (total_layer_count > 5) {
-		pr_err("DEVFREQ(MIF) : total window count should be between 1 and 5\n");
-		goto out;
-	}
+	if (total_layer_count > 6)
+		total_layer_count = 6;
 
 	if (media_resolution == RESOLUTION_FULLHD) {
 		if (media_enabled_fimc_lite) {
