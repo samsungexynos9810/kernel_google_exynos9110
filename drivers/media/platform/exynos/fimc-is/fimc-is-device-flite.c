@@ -1075,6 +1075,9 @@ static void tasklet_flite_end(unsigned long data)
 			if (!flite_s_use_buffer(flite, bdone)) {
 				set_bit(bdone, &flite->state);
 				fimc_is_frame_trans_req_to_pro(framemgr, frame);
+
+				/* swap process queue list */
+				fimc_is_frame_swap_process_head(framemgr);
 			}
 		} else {
 #ifdef TASKLET_MSG

@@ -231,4 +231,6 @@ int fimc_is_frame_trans_pro_to_fre(struct fimc_is_framemgr *this,
 int fimc_is_frame_trans_com_to_fre(struct fimc_is_framemgr *this,
 	struct fimc_is_frame *frame);
 
+int fimc_is_frame_swap_process_head(struct fimc_is_framemgr *this);
+
 #endif
