@@ -73,7 +73,6 @@ int display_hibernation_power_on(struct display_driver *dispdrv);
 int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
-static void request_dynamic_hotplug(bool hotplug);
 
 struct pm_ops display_block_ops = {
 	.clk_on		= display_block_clock_on,
@@ -113,16 +112,6 @@ int init_display_pm_status(struct display_driver *dispdrv) {
 	te_count = 0;
 	frame_done_count = 0;
 	return 0;
-}
-
-int disp_pm_set_plat_status(struct display_driver *dispdrv, bool platform_on)
-{
-        if (platform_on)
-                dispdrv->platform_status = DISP_STATUS_PM1;
-        else
-                dispdrv->platform_status = DISP_STATUS_PM0;
-
-        return 0;
 }
 
 int init_display_pm(struct display_driver *dispdrv)
@@ -533,16 +522,6 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 #endif
 	call_pm_ops(dispdrv, dsi_driver, clk_off, dispdrv);
 	return 0;
-}
-
-static void request_dynamic_hotplug(bool hotplug)
-{
-#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
-	struct display_driver *dispdrv = get_display_driver();
-	if ((dispdrv->pm_status.hotplug_gating_on) &&
-		(dispdrv->platform_status == DISP_STATUS_PM1))
-		force_dynamic_hotplug(hotplug);
-#endif
 }
 
 int display_hibernation_power_on(struct display_driver *dispdrv)
