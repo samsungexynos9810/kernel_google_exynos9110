@@ -2324,10 +2324,6 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 #endif
 	disp_pm_runtime_get_sync(dispdrv);
 
-	if (sfb->timeline_max - sfb->timeline->value > 2) {
-		pr_info("time_val %d time_max %d\n", sfb->timeline->value, sfb->timeline_max);
-		sw_sync_timeline_inc(sfb->timeline, sfb->timeline_max - sfb->timeline->value - 2);
-	}
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!sfb->windows[i]->local) {
 			old_dma_bufs[i] = sfb->windows[i]->dma_buf_data;
