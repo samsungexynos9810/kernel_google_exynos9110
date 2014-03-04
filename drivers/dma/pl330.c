@@ -1993,6 +1993,11 @@ static int pl330_chan_ctrl(void *ch_id, enum pl330_chan_op op)
 		/* Make sure the channel is stopped */
 		_stop(thrd);
 
+		if (soc_is_exynos5422() && pl330->pinfo->dev->of_node
+			&& of_dma_get_mcode_addr(pl330->pinfo->dev->of_node)) {
+			udelay(10);
+		}
+
 		thrd->req[0].r = NULL;
 		thrd->req[1].r = NULL;
 		mark_free(thrd, 0);
