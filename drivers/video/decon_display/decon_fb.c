@@ -105,8 +105,6 @@ static int prev_gsc_local_cnt = 0;
 
 struct s3c_fb;
 
-static struct dma_buf *g_framebuf;
-
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int decon_hibernation_power_on(struct display_driver *dispdrv);
 int decon_hibernation_power_off(struct display_driver *dispdrv);
@@ -1590,7 +1588,6 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 	dma_buf_put(dma->dma_buf);
 	ion_free(sfb->fb_ion_client, dma->ion_handle);
 	memset(dma, 0, sizeof(struct s3c_dma_buf_data));
-	g_framebuf = NULL;
 }
 
 static u32 s3c_fb_red_length(int format)
@@ -2736,12 +2733,10 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 #ifdef CONFIG_ION_EXYNOS
+	struct s3c_fb_win *win = info->par;
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
 
-	if(g_framebuf == NULL)
-		return 0;
-	else
-		return dma_buf_mmap(g_framebuf, vma, 0);
+	return dma_buf_mmap(win->dma_buf_data.dma_buf, vma, 0);
 #else
 	return 0;
 #endif
@@ -2914,7 +2909,7 @@ static int s3c_fb_alloc_memory(struct s3c_fb *sfb,
 		return -ENOMEM;
 	}
 
-	g_framebuf = buf = ion_share_dma_buf(sfb->fb_ion_client, handle);
+	buf = ion_share_dma_buf(sfb->fb_ion_client, handle);
 	if (IS_ERR_OR_NULL(buf)) {
 		dev_err(sfb->dev, "ion_share_dma_buf() failed\n");
 		goto err_share_dma_buf;
