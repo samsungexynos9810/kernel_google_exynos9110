@@ -100,14 +100,6 @@ static void dwc3_core_soft_reset(struct dwc3 *dwc)
 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
 	reg &= ~DWC3_GCTL_CORESOFTRESET;
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
-
-	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
-	reg &= ~DWC3_GUSB2PHYCFG_SUSPHY;
-	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
-
-	reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
-	reg &= ~DWC3_GUSB3PIPECTL_SUSPHY;
-	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
 }
 
 void dwc3_core_config(struct dwc3 *dwc)
@@ -435,6 +427,14 @@ int dwc3_core_init(struct dwc3 *dwc)
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 
 	dwc3_core_config(dwc);
+
+	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYCFG(0));
+	reg |= DWC3_GUSB2PHYCFG_SUSPHY;
+	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
+
+	reg = dwc3_readl(dwc->regs, DWC3_GUSB3PIPECTL(0));
+	reg |= DWC3_GUSB3PIPECTL_SUSPHY;
+	dwc3_writel(dwc->regs, DWC3_GUSB3PIPECTL(0), reg);
 
 	return 0;
 
