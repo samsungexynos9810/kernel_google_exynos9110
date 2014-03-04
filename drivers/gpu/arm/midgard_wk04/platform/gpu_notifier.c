@@ -144,23 +144,27 @@ static int gpu_pm_notifier(struct notifier_block *nb, unsigned long event, void 
 
 static int gpu_power_on(kbase_device *kbdev)
 {
-	int ret_val;
 	struct kbase_os_device *osdev = &kbdev->osdev;
 
-	if (pm_runtime_status_suspended(osdev->dev))
-		ret_val = 1;
-	else
-		ret_val = 0;
-
-	pm_runtime_resume(osdev->dev);
-
-	return ret_val;
+	if (pm_runtime_resume(osdev->dev)) {
+#ifdef GPU_EARLY_CLK_GATING
+		GPU_LOG(DVFS_INFO, "already power on\n");
+		gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON, 0);
+#endif /* GPU_EARLY_CLK_GATING */
+		return 0;
+	} else {
+		return 1;
+	}
 }
 
 static void gpu_power_off(kbase_device *kbdev)
 {
 	struct kbase_os_device *osdev = &kbdev->osdev;
+	GPU_LOG(DVFS_INFO, "gpu_power_off\n");
 	pm_schedule_suspend(osdev->dev, RUNTIME_PM_DELAY_TIME);
+#ifdef GPU_EARLY_CLK_GATING
+	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_OFF, 0);
+#endif /* GPU_EARLY_CLK_GATING */
 }
 
 static struct notifier_block gpu_pm_nb = {
@@ -193,6 +197,9 @@ static int pm_callback_runtime_on(kbase_device *kbdev)
 	gpu_control_state_set(kbdev, GPU_CONTROL_PREPARE_ON, 0);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON, 0);
+#ifdef GPU_EARLY_CLK_GATING
+	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_ON_POST, 0);
+#endif /* GPU_EARLY_CLK_GATING */
 	gpu_control_state_set(kbdev, GPU_CONTROL_CHANGE_CLK_VOL, platform->cur_clock);
 
 	return 0;
@@ -204,8 +211,11 @@ static void pm_callback_runtime_off(kbase_device *kbdev)
 #ifdef CONFIG_MALI_EXYNOS_TRACE
 	KBASE_TRACE_ADD_EXYNOS(kbdev, LSI_GPU_OFF, NULL, NULL, 0u, 0u);
 #endif /* CONFIG_MALI_EXYNOS_TRACE */
-
+#ifdef GPU_EARLY_CLK_GATING
+	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_OFF_POST, 0);
+#else
 	gpu_control_state_set(kbdev, GPU_CONTROL_CLOCK_OFF, 0);
+#endif /* GPU_EARLY_CLK_GATING */
 }
 
 kbase_pm_callback_conf pm_callbacks = {

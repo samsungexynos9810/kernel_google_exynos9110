@@ -21,6 +21,8 @@
 typedef enum {
 	GPU_CONTROL_CLOCK_ON = 0,
 	GPU_CONTROL_CLOCK_OFF,
+	GPU_CONTROL_CLOCK_ON_POST,
+	GPU_CONTROL_CLOCK_OFF_POST,
 	GPU_CONTROL_CHANGE_CLK_VOL,
 	GPU_CONTROL_PREPARE_ON,
 	GPU_CONTROL_IS_POWER_ON,
@@ -36,7 +38,8 @@ typedef enum {
 
 /* GPU feature */
 #if SOC_NAME == 5430
-#define CONFIG_DYNIMIC_ABB	1
+#define CONFIG_DYNIMIC_ABB     1
+#define GPU_EARLY_CLK_GATING   1
 #endif /* SOC_NAME */
 
 /* mali_kbase_platform */

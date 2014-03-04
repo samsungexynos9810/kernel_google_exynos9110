@@ -146,14 +146,6 @@ extern kbase_pm_callback_conf pm_callbacks;
 extern int get_cpu_clock_speed(u32 *cpu_clock);
 
 static kbase_attribute config_attributes[] = {
-	{
-		KBASE_CONFIG_ATTR_MEMORY_OS_SHARED_MAX,
-		2048 * 1024 * 1024UL /* 2048MB */
-	},
-	{
-		KBASE_CONFIG_ATTR_MEMORY_OS_SHARED_PERF_GPU,
-		KBASE_MEM_PERF_FAST
-	},
 #ifdef CONFIG_MALI_T6XX_RT_PM
 	{
 		KBASE_CONFIG_ATTR_POWER_MANAGEMENT_CALLBACKS,
@@ -190,7 +182,7 @@ static kbase_attribute config_attributes[] = {
 	},
 	{
 		KBASE_CONFIG_ATTR_JS_RESET_TICKS_SS,
-		130 /* 13sec */
+		130 /*13sec */
 	},
 	{
 		KBASE_CONFIG_ATTR_JS_HARD_STOP_TICKS_NSS,
@@ -198,7 +190,7 @@ static kbase_attribute config_attributes[] = {
 	},
 	{
 		KBASE_CONFIG_ATTR_JS_RESET_TICKS_NSS,
-		150 /* 15sec */
+		150 /*15sec */
 	},
 	{
 		KBASE_CONFIG_ATTR_CPU_SPEED_FUNC,

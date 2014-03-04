@@ -147,16 +147,25 @@ int gpu_dcg_disable(struct exynos_context *platform)
 
 int gpu_clock_on(struct exynos_context *platform)
 {
+	int ret = 0;
 	if (!platform)
 		return -ENODEV;
 
+#ifdef CONFIG_PM_RUNTIME
+	if (platform->exynos_pm_domain)
+		mutex_lock(&platform->exynos_pm_domain->access_lock);
+#endif /* CONFIG_PM_RUNTIME */
+
 	if (!gpu_is_power_on()) {
 		GPU_LOG(DVFS_WARNING, "can't set clock on in g3d power off status\n");
-		return -1;
+		ret = -1;
+		goto err_return;
 	}
 
-	if (platform->clk_g3d_status == 1)
-		return 0;
+	if (platform->clk_g3d_status == 1) {
+		ret = 0;
+		goto err_return;
+	}
 
 	if (platform->aclk_g3d) {
 		(void) clk_prepare_enable(platform->aclk_g3d);
@@ -168,20 +177,40 @@ int gpu_clock_on(struct exynos_context *platform)
 #endif
 	platform->clk_g3d_status = 1;
 
-	return 0;
+err_return:
+#ifdef CONFIG_PM_RUNTIME
+	if (platform->exynos_pm_domain)
+		mutex_unlock(&platform->exynos_pm_domain->access_lock);
+#endif /* CONFIG_PM_RUNTIME */
+	return ret;
 }
 
 int gpu_clock_off(struct exynos_context *platform)
 {
+	int ret = 0;
+
 	if (!platform)
 		return -ENODEV;
+
+#ifdef CONFIG_PM_RUNTIME
+	if (platform->exynos_pm_domain)
+		mutex_lock(&platform->exynos_pm_domain->access_lock);
+#endif /* CONFIG_PM_RUNTIME */
 
 #if GPU_DYNAMIC_CLK_GATING
 	gpu_dcg_disable(platform);
 #endif
 
-	if (platform->clk_g3d_status == 0)
-		return 0;
+	if (!gpu_is_power_on()) {
+		GPU_LOG(DVFS_WARNING, "can't set clock off in g3d power off status\n");
+		ret = -1;
+		goto err_return;
+	}
+
+	if (platform->clk_g3d_status == 0) {
+		ret = 0;
+		goto err_return;
+	}
 
 	if (platform->aclk_g3d) {
 		(void)clk_disable_unprepare(platform->aclk_g3d);
@@ -190,7 +219,12 @@ int gpu_clock_off(struct exynos_context *platform)
 
 	platform->clk_g3d_status = 0;
 
-	return 0;
+err_return:
+#ifdef CONFIG_PM_RUNTIME
+	if (platform->exynos_pm_domain)
+		mutex_unlock(&platform->exynos_pm_domain->access_lock);
+#endif /* CONFIG_PM_RUNTIME */
+	return ret;
 }
 
 static int gpu_set_maximum_outstanding_req(int val)

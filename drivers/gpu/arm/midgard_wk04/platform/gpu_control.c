@@ -46,6 +46,10 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 	switch (state) {
 	case GPU_CONTROL_CLOCK_ON:
 		ret = gpu_clock_on(platform);
+#ifdef GPU_EARLY_CLK_GATING
+		break;
+	case GPU_CONTROL_CLOCK_ON_POST:
+#endif /* GPU_EARLY_CLK_GATING*/
 #ifdef CONFIG_MALI_T6XX_DVFS
 		if (!kbdev->pm.metrics.timer_active) {
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
@@ -61,7 +65,11 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, 0);
 #endif /* CONFIG_MALI_T6XX_DVFS */
 		break;
+#ifdef GPU_EARLY_CLK_GATING
+	case GPU_CONTROL_CLOCK_OFF_POST:
+#else
 	case GPU_CONTROL_CLOCK_OFF:
+#endif /* GPU_EARLY_CLK_GATING*/
 #ifdef CONFIG_MALI_T6XX_DVFS
 		if (platform->dvfs_status && kbdev->pm.metrics.timer_active) {
 			spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
@@ -76,6 +84,10 @@ int gpu_control_state_set(struct kbase_device *kbdev, gpu_control_state state, i
 		gpu_pm_qos_command(platform, GPU_CONTROL_PM_QOS_RESET);
 		gpu_dvfs_handler_control(kbdev, GPU_HANDLER_UPDATE_TIME_IN_STATE, platform->cur_clock);
 #endif /* CONFIG_MALI_T6XX_DVFS */
+#ifdef GPU_EARLY_CLK_GATING
+		break;
+	case GPU_CONTROL_CLOCK_OFF:
+#endif /* GPU_EARLY_CLK_GATING*/
 		ret = gpu_clock_off(platform);
 		break;
 	case GPU_CONTROL_CHANGE_CLK_VOL:
