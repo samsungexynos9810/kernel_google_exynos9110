@@ -1497,14 +1497,16 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 			}
 		}
 
-		ldr_frame->fcount = atomic_read(&group->sensor_fcount);
-		atomic_set(&group->backup_fcount, ldr_frame->fcount);
-		ldr_frame->shot->dm.request.frameCount = ldr_frame->fcount;
-		ldr_frame->shot->dm.sensor.timeStamp = fimc_is_get_timestamp();
+		if (!kthread_should_stop()) {
+			ldr_frame->fcount = atomic_read(&group->sensor_fcount);
+			atomic_set(&group->backup_fcount, ldr_frame->fcount);
+			ldr_frame->shot->dm.request.frameCount = ldr_frame->fcount;
+			ldr_frame->shot->dm.sensor.timeStamp = fimc_is_get_timestamp();
 
-		/* real automatic increase */
-		if (async_step && (atomic_read(&group->smp_shot_count) > MIN_OF_SYNC_SHOTS))
-			atomic_inc(&group->sensor_fcount);
+			/* real automatic increase */
+			if (async_step && (atomic_read(&group->smp_shot_count) > MIN_OF_SYNC_SHOTS))
+				atomic_inc(&group->sensor_fcount);
+		}
 	}
 
 	if (test_bit(FIMC_IS_GGROUP_REQUEST_STOP, &groupmgr->group_state[group->id])) {
