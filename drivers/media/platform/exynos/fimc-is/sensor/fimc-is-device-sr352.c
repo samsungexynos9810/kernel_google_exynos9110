@@ -17245,7 +17245,7 @@ static struct fimc_is_sensor_cfg settle_sr352[] = {
 static struct fimc_is_vci vci_sr352[] = {
 	{
 		.pixelformat = V4L2_PIX_FMT_YUYV,
-		.vc_map = {1, 0, 2, 3}
+		.vc_map = {0, 1, 2, 3}
 	}, {
 		.pixelformat = V4L2_PIX_FMT_JPEG,
 		.vc_map = {0, 1, 2, 3}

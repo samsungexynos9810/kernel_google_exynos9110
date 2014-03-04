@@ -237,7 +237,7 @@ static int csi_stream_on(struct fimc_is_device_csi *csi)
 #else
 	csi_hw_reset(base_reg);
 	csi_hw_s_settle(base_reg, settle);
-	csi_hw_s_control(base_reg, csi->mode, csi->lanes);
+	csi_hw_s_control(base_reg, csi->image.format.pixelformat, csi->mode, csi->lanes);
 	if (csi->mode == CSI_MODE_CH0_ONLY) {
 		csi_hw_s_config(base_reg,
 			CSI_VIRTUAL_CH_0,

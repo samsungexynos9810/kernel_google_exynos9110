@@ -193,7 +193,7 @@ int csi_hw_s_dphyctrl1(unsigned long __iomem *base_reg,
 }
 
 int csi_hw_s_control(unsigned long __iomem *base_reg,
-	u32 mode, u32 lanes)
+	u32 pixelformat, u32 mode, u32 lanes)
 {
 	int ret = 0;
 	u32 val;
@@ -201,12 +201,43 @@ int csi_hw_s_control(unsigned long __iomem *base_reg,
 	val = readl(base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
 	val = (val & ~(0x3 << 2)) | (lanes << 2);
 	val = (val & ~(0x3 << 22)) | (mode << 22);
+
 	/* all channel use extclk for wrapper clock source */
 	val |= (0xF << 8);
-	/* output width of CH0 is not 32 bits(normal output) */
-	val &= ~(0x1 << 20);
+
+	switch (pixelformat) {
+	case V4L2_PIX_FMT_SBGGR10:
+	case V4L2_PIX_FMT_SGBRG10:
+	case V4L2_PIX_FMT_SGRBG10:
+	case V4L2_PIX_FMT_SRGGB10:
+	case V4L2_PIX_FMT_SBGGR12:
+	case V4L2_PIX_FMT_SGBRG12:
+	case V4L2_PIX_FMT_SGRBG12:
+	case V4L2_PIX_FMT_SRGGB12:
+	case V4L2_PIX_FMT_JPEG:
+		/* output width of CH0 is not 32 bits(normal output) */
+		val &= ~(1 << 20);
+		break;
+	case V4L2_PIX_FMT_YVU420:
+	case V4L2_PIX_FMT_NV21:
+	case V4L2_PIX_FMT_YUYV:
+	case V4L2_PIX_FMT_SBGGR8:
+	case V4L2_PIX_FMT_SGBRG8:
+	case V4L2_PIX_FMT_SGRBG8:
+	case V4L2_PIX_FMT_SRGGB8:
+		/* output width of CH0 is 32 bits(32bit align) */
+		val |= (1 << 20);
+		break;
+	default:
+		err("unsupported format(%X)", pixelformat);
+		ret = -EINVAL;
+		goto p_err;
+		break;
+	}
+
 	writel(val, base_reg + TO_WORD_OFFSET(CSI_REG_CTRL));
 
+p_err:
 	return ret;
 }
 
