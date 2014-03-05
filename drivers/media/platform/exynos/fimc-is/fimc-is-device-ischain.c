@@ -1160,6 +1160,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 	u32 timeout;
 	u32 debug;
 	int rpm_ret;
+	u32 val;
 
 	struct device *dev = &device->pdev->dev;
 	struct fimc_is_core *core = (struct fimc_is_core *)platform_get_drvdata(device->pdev);
@@ -1221,8 +1222,9 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		}
 
 		writel(device->imemory.dvaddr, device->regs + BBOAR);
-
-		pr_debug("%s(%d) - check dvaddr validate...\n", __func__, on);
+		val = __raw_readl(device->regs + BBOAR);
+		if(device->imemory.dvaddr != val)
+			err("dvaddr : %x , BBOAR : %x", device->imemory.dvaddr,val);
 
 #ifdef CONFIG_ARM_TRUSTZONE
 		exynos_smc(SMC_CMD_REG, SMC_REG_ID_SFR_W(PA_FIMC_IS_GIC_C + 0x4), 0x000000FF, 0);
