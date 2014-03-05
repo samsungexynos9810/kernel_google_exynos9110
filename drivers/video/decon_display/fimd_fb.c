@@ -4195,7 +4195,17 @@ int create_decon_display_controller(struct platform_device *pdev)
 		goto err_fb;
 	}
 
+	/* [W/A] prevent sleep enter during LCD on */
+	ret = device_init_wakeup(sfb->dev, true);
+	if (ret) {
+		dev_err(sfb->dev, "failed to init wakeup device\n");
+		goto err_fb;
+	}
+
+	pm_stay_awake(sfb->dev);
+
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
+
 #if 0
 	bts_initialize("pd-disp1", true);
 #endif
@@ -4393,6 +4403,9 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 		goto err;
 	}
 
+	/* [W/A] prevent sleep enter during LCD on */
+	pm_relax(sfb->dev);
+
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
 
@@ -4440,6 +4453,9 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 		ret = -EBUSY;
 		goto err;
 	}
+
+	/* [W/A] prevent sleep enter during LCD on */
+	pm_stay_awake(sfb->dev);
 
 	pm_runtime_get_sync(sfb->dev);
 
