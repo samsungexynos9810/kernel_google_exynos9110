@@ -262,9 +262,6 @@ static void __fimc_is_fault_handler(struct device *dev)
 		fimc_is_hw_memdump(&core->interface,
 			core->minfo.kvaddr + 0x010F8000 /* TTB_BASE ~ 16KB */,
 			core->minfo.kvaddr + 0x010F8000 + 0x4000);
-		fimc_is_hw_memdump(&core->interface,
-			core->minfo.kvaddr + 0x010FC000 /* GUARD2_BASE ~ 16KB */,
-			core->minfo.kvaddr + 0x010FC000 + 0x4000);
 
 		/* REAR SENSOR */
 		sensor = &core->sensor[0];
