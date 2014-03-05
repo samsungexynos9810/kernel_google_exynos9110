@@ -131,7 +131,7 @@ void exynos_ion_sync_vaddr_for_device(struct device *dev,
 					size_t size,
 					off_t offset,
 					enum dma_data_direction dir);
-void exynos_ion_sync_sg_for_device(struct device *dev,
+void exynos_ion_sync_sg_for_device(struct device *dev, size_t size,
 					struct sg_table *sgt,
 					enum dma_data_direction dir);
 void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
@@ -143,7 +143,7 @@ void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
 					size_t size,
 					off_t offset,
 					enum dma_data_direction dir);
-void exynos_ion_sync_sg_for_cpu(struct device *dev,
+void exynos_ion_sync_sg_for_cpu(struct device *dev, size_t size,
 					struct sg_table *sgt,
 					enum dma_data_direction dir);
 unsigned int ion_exynos_contig_region_mask(char *region_name);

@@ -1008,7 +1008,8 @@ void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 		exynos_ion_sync_dmabuf_for_device(buf->ctx->dev,
 						buf->dma_buf, size, dir);
 	} else {
-		exynos_ion_sync_sg_for_device(buf->ctx->dev,
+		if (buf->cached)
+			exynos_ion_sync_sg_for_device(buf->ctx->dev, size,
 						buf->cookie.sgt, dir);
 	}
 }
@@ -1032,7 +1033,7 @@ void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 		exynos_ion_sync_dmabuf_for_cpu(buf->ctx->dev,
 						buf->dma_buf, size, dir);
 	} else {
-		exynos_ion_sync_sg_for_cpu(buf->ctx->dev,
+		exynos_ion_sync_sg_for_cpu(buf->ctx->dev, size,
 						buf->cookie.sgt, dir);
 	}
 }

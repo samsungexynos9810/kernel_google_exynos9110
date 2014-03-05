@@ -876,14 +876,18 @@ void exynos_ion_sync_vaddr_for_device(struct device *dev,
 }
 EXPORT_SYMBOL(exynos_ion_sync_vaddr_for_device);
 
-void exynos_ion_sync_sg_for_device(struct device *dev,
+void exynos_ion_sync_sg_for_device(struct device *dev, size_t size,
 					struct sg_table *sgt,
 					enum dma_data_direction dir)
 {
 	if (dir == DMA_COHERENT)
 		return;
 
-	dma_sync_sg_for_device(dev, sgt->sgl, sgt->orig_nents, dir);
+	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
+		flush_all_cpu_caches();
+	else
+		ion_device_sync(ion_exynos, sgt,
+					dir, dmac_map_area, false);
 }
 EXPORT_SYMBOL(exynos_ion_sync_sg_for_device);
 
@@ -943,14 +947,18 @@ void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
 }
 EXPORT_SYMBOL(exynos_ion_sync_vaddr_for_cpu);
 
-void exynos_ion_sync_sg_for_cpu(struct device *dev,
+void exynos_ion_sync_sg_for_cpu(struct device *dev, size_t size,
 					struct sg_table *sgt,
 					enum dma_data_direction dir)
 {
-	if (dir == DMA_COHERENT)
+	if (dir == DMA_TO_DEVICE)
 		return;
 
-	dma_sync_sg_for_cpu(dev, sgt->sgl, sgt->orig_nents, dir);
+	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
+		flush_all_cpu_caches();
+	else
+		ion_device_sync(ion_exynos, sgt,
+					dir, ion_buffer_flush, false);
 }
 EXPORT_SYMBOL(exynos_ion_sync_sg_for_cpu);
 
