@@ -428,7 +428,8 @@ static struct ion_heap_ops system_heap_ops = {
 };
 
 #define MAX_POOL_SHRINK_SHIFT		8
-#define DEFAULT_POOL_SHRINK_SHIFT	6
+#define DEFAULT_POOL_SHRINK_SHIFT	7
+#define MIN_POOL_SHRINK_SHIFT		1
 static int pool_shrink_shift = DEFAULT_POOL_SHRINK_SHIFT;
 module_param_named(shrink_shift, pool_shrink_shift, int, S_IRUGO | S_IWUSR);
 
@@ -470,14 +471,9 @@ static int ion_system_heap_shrink(struct shrinker *shrinker,
 			- global_page_state(NR_SHMEM);
 	shift = (other_avail < 0) ? 0 : other_avail / nr_total;
 	shift = shrink_shift - shift;
-	if (shift >= 0) {
-		nr_to_scan = sc->nr_to_scan << shift;
-	} else {
-		shift = -shift;
-		if (shift > DEFAULT_POOL_SHRINK_SHIFT)
-			shift = DEFAULT_POOL_SHRINK_SHIFT;
-		nr_to_scan = sc->nr_to_scan >> shift;
-	}
+	if (shift < MIN_POOL_SHRINK_SHIFT)
+		shift = MIN_POOL_SHRINK_SHIFT;
+	nr_to_scan = sc->nr_to_scan << shift;
 
 	/* shrink the free list first, no point in zeroing the memory if
 	   we're just going to reclaim it */
