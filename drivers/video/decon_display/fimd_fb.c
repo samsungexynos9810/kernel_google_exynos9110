@@ -4025,13 +4025,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 	exynos_create_iovmm(&pdev->dev, 5, 0);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	ret = decon_fb_config_eint_for_te(sfb);
-	if (ret) {
-	dev_err(dev, "failed to request an external interrupt for TE signal\n");
-		goto err_pm_runtime;
-	}
-#endif
 	default_win = sfb->pdata->default_win;
 	for (win = 0; win < fbdrv->variant.nr_windows; win++) {
 		if (!pd->win[win])
@@ -4169,6 +4162,12 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	s3c_fb_activate_window_dma(sfb, default_win);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
+	ret = decon_fb_config_eint_for_te(sfb);
+	if (ret) {
+	dev_err(dev, "failed to request an external interrupt for TE signal\n");
+		goto err_pm_runtime;
+	}
+
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 
@@ -4184,7 +4183,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 
 	s3c_fb_activate_window(sfb, default_win);
-	sfb->output_on = true;
 
 	dev_dbg(sfb->dev, "about to register framebuffer\n");
 
