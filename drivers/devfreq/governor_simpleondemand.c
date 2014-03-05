@@ -108,7 +108,7 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 	/* Keep the current frequency */
 	if (stat.busy_time * 100 >
 	    stat.total_time * (dfso_upthreshold - dfso_downdifferential)) {
-		*freq = stat.current_frequency;
+		*freq = max(stat.current_frequency, pm_qos_min);
 		return 0;
 	}
 
