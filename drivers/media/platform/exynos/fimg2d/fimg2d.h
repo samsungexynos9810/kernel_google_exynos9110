@@ -543,6 +543,7 @@ struct fimg2d_control {
 	atomic_t nctx;
 	atomic_t busy;
 	spinlock_t bltlock;
+	spinlock_t qoslock;
 	struct mutex drvlock;
 	int irq;
 	wait_queue_head_t wait_q;

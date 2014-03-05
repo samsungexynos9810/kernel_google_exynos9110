@@ -136,6 +136,7 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 	struct fimg2d_platdata *pdata;
 	enum fimg2d_qos_level idx;
 	int ret = 0;
+	unsigned long qflags;
 
 #ifdef CONFIG_OF
 	pdata = ctrl->pdata;
@@ -144,10 +145,16 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 #endif
 #endif
 
+	g2d_spin_lock(&ctrl->qoslock, qflags);
+	if ((ctrl->qos_lv >= G2D_LV0) && (ctrl->qos_lv < G2D_LV_END))
+		idx = ctrl->qos_lv;
+	else
+		goto err;
+	g2d_spin_unlock(&ctrl->qoslock, qflags);
+
 	if (status == FIMG2D_QOS_ON) {
 		if (ctrl->pre_qos_lv != ctrl->qos_lv) {
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ
-			idx = ctrl->qos_lv;
 			if (idx == 0)
 				ret = set_hmp_boost(true);
 
@@ -181,10 +188,11 @@ void fimg2d_pm_qos_update(struct fimg2d_control *ctrl, enum fimg2d_qos_status st
 		pm_qos_update_request(&ctrl->exynos5_g2d_cpu_qos, 0);
 		pm_qos_update_request(&ctrl->exynos5_g2d_kfc_qos, 0);
 #endif
-		idx = ctrl->qos_lv;
 		if (idx == 0)
 			ret = set_hmp_boost(false);
 	}
+err:
+	fimg2d_debug("invalid qos_lv:%d\n", ctrl->qos_lv);
 }
 
 static int fimg2d_do_bitblt(struct fimg2d_control *ctrl)
@@ -306,7 +314,7 @@ static int fimg2d_request_bitblt(struct fimg2d_control *ctrl,
 static int fimg2d_open(struct inode *inode, struct file *file)
 {
 	struct fimg2d_context *ctx;
-	unsigned long flags, count;
+	unsigned long flags, qflags, count;
 
 	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
 	if (!ctx) {
@@ -321,8 +329,10 @@ static int fimg2d_open(struct inode *inode, struct file *file)
 	g2d_spin_unlock(&ctrl->bltlock, flags);
 
 	if (count == 1) {
+		g2d_spin_lock(&ctrl->qoslock, qflags);
 		ctrl->pre_qos_lv = G2D_LV3;
 		ctrl->qos_lv = G2D_LV2;
+		g2d_spin_unlock(&ctrl->qoslock, qflags);
 		fimg2d_pm_qos_update(ctrl, FIMG2D_QOS_ON);
 	} else {
 #ifdef CONFIG_FIMG2D_USE_BUS_DEVFREQ

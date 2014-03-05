@@ -681,7 +681,7 @@ err_pgtable:
 int fimg2d_add_command(struct fimg2d_control *ctrl,
 		struct fimg2d_context *ctx, struct fimg2d_blit __user *buf)
 {
-	unsigned long flags;
+	unsigned long flags, qflags;
 	struct fimg2d_blit *blt;
 	struct fimg2d_bltcmd *cmd;
 	int len = sizeof(struct fimg2d_image);
@@ -763,12 +763,19 @@ int fimg2d_add_command(struct fimg2d_control *ctrl,
 			atomic_read(&ctx->ncmd), cmd->blt.seq_no);
 	g2d_spin_unlock(&ctrl->bltlock, flags);
 
+	g2d_spin_lock(&ctrl->qoslock, qflags);
 	if ((blt->qos_lv >= G2D_LV0) && (blt->qos_lv < G2D_LV_END)) {
 		ctrl->pre_qos_lv = ctrl->qos_lv;
 		ctrl->qos_lv = blt->qos_lv;
 		fimg2d_debug("pre_qos_lv:%d, qos_lv:%d qos_id:%d\n",
 				ctrl->pre_qos_lv, ctrl->qos_lv, blt->qos_lv);
+	} else {
+		fimg2d_err("invalid qos_lv:%d\n", blt->qos_lv);
+		g2d_spin_unlock(&ctrl->qoslock, qflags);
+		ret = -EINVAL;
+		goto err;
 	}
+	g2d_spin_unlock(&ctrl->qoslock, qflags);
 
 	return 0;
 
