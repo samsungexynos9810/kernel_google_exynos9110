@@ -753,12 +753,17 @@ void ipa_set_clamp(int cpu, unsigned int clamp_freq, unsigned int gov_target)
 {
 	unsigned int freq = 0;
 	unsigned int new_freq = 0;
+	unsigned int prev_clamp_freq = 0;
 	unsigned int cur = get_cur_cluster(cpu);
 	struct cpufreq_policy *policy;
 
+	prev_clamp_freq = g_clamp_cpufreqs[cur];
 	g_clamp_cpufreqs[cur] = clamp_freq;
 	new_freq = min(clamp_freq, gov_target);
 	freq = exynos_getspeed(cpu);
+
+	if ((freq <= clamp_freq) && (prev_clamp_freq >= clamp_freq))
+		return;
 
 	policy = cpufreq_cpu_get(cpu);
 
