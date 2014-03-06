@@ -60,6 +60,13 @@ static bool do_disable_hotplug = false;
 static bool do_hotplug_out = false;
 static int big_hotpluged = 0;
 static int little_hotplug_in = 0;
+#define DEFAULT_NR_RUN_THRESHD	5
+#define DEFAULT_NR_RUN_RANGE	2
+static unsigned int nr_running_threshold = DEFAULT_NR_RUN_THRESHD;
+static unsigned int nr_running_range = DEFAULT_NR_RUN_RANGE;
+static unsigned int nr_running_count = 0;
+static unsigned long cur_nr_running;
+static bool little_in_by_nr_running = false;
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static unsigned int egl_min_freq;
@@ -201,6 +208,40 @@ static ssize_t store_little_core1_hotplug_in(struct kobject *kobj,
 
 	return count;
 }
+
+static ssize_t show_hotplug_nr_running(struct kobject *kobj,
+				struct attribute *attr, char *buf)
+{
+	return snprintf(buf, PAGE_SIZE, "current_nr_running = %lu, "
+			"nr_running_threshold = %u, nr_running_range = %u\n",
+			cur_nr_running, nr_running_threshold, nr_running_range);
+}
+
+static ssize_t store_hotplug_nr_running(struct kobject *kobj,
+				struct attribute *attr, const char *buf, size_t count)
+{
+	int input_nr_running_thrshd;
+	int input_nr_running_range;
+
+	if (!sscanf(buf, "%d %d", &input_nr_running_thrshd, &input_nr_running_range))
+		return -EINVAL;
+
+	if (input_nr_running_thrshd <= 1 || input_nr_running_range < 1) {
+		pr_err("%s: invalid values (thrshd = %d, range = %d)\n",
+			__func__, input_nr_running_thrshd, input_nr_running_range);
+		pr_err("%s: thrshd is should be over than 1,"
+			" and range is should be over than 0\n", __func__);
+		return -EINVAL;
+	}
+
+	nr_running_threshold = (unsigned int)input_nr_running_thrshd;
+	nr_running_range = (unsigned int)input_nr_running_range;
+
+	pr_info("%s: nr_running_threshold = %u, nr_running_range = %u\n",
+		__func__, nr_running_threshold, nr_running_range);
+
+	return count;
+}
 #endif
 
 static ssize_t show_stay_threshold(struct kobject *kobj,
@@ -267,6 +308,10 @@ static struct global_attr enable_dm_hotplug =
 static struct global_attr little_core_hotplug_in =
 		__ATTR(little_core_hotplug_in, S_IRUGO | S_IWUSR,
 			show_little_core1_hotplug_in, store_little_core1_hotplug_in);
+
+static struct global_attr hotplug_nr_running =
+		__ATTR(hotplug_nr_running, S_IRUGO | S_IWUSR,
+			show_hotplug_nr_running, store_hotplug_nr_running);
 #endif
 
 static struct global_attr dm_hotplug_stay_threshold =
@@ -718,6 +763,33 @@ static struct notifier_block exynos_dm_hotplug_reboot_nb = {
 	.notifier_call = exynos_dm_hotplut_reboot_notifier,
 };
 
+#ifdef CONFIG_SCHED_HMP
+static void update_nr_running_count(void)
+{
+	cur_nr_running = nr_running();
+
+	if (cur_nr_running >= nr_running_threshold) {
+		if (nr_running_count < nr_running_range)
+			nr_running_count++;
+	} else {
+		if (nr_running_count > 0)
+			nr_running_count--;
+	}
+
+	if (nr_running_count) {
+		if (!little_in_by_nr_running) {
+			little_core1_hotplug_in(true);
+			little_in_by_nr_running = true;
+		}
+	} else {
+		if (little_in_by_nr_running) {
+			little_core1_hotplug_in(false);
+			little_in_by_nr_running = false;
+		}
+	}
+}
+#endif
+
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 extern bool cluster_on[CA_END];
 #endif
@@ -759,6 +831,10 @@ static enum hotplug_cmd diagnose_condition(void)
 			egl_cur_freq = 0;
 		cpufreq_cpu_put(policy);
 	}
+#endif
+
+#ifdef CONFIG_SCHED_HMP
+	update_nr_running_count();
 #endif
 
 #if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ)
@@ -959,6 +1035,13 @@ static int __init dm_cpu_hotplug_init(void)
 			__func__);
 		goto err_little_core_hotplug_in;
 	}
+
+	ret = sysfs_create_file(power_kobj, &hotplug_nr_running.attr);
+	if (ret) {
+		pr_err("%s: failed to create hotplug_nr_running sysfs interface\n",
+			__func__);
+		goto err_hotplug_nr_running;
+	}
 #endif
 
 	ret = sysfs_create_file(power_kobj, &dm_hotplug_stay_threshold.attr);
@@ -1028,8 +1111,12 @@ err_policy:
 err_dm_hotplug_delay:
 	sysfs_remove_file(power_kobj, &dm_hotplug_stay_threshold.attr);
 err_dm_hotplug_stay_threshold:
+#if defined(CONFIG_SCHED_HMP)
+	sysfs_remove_file(power_kobj, &hotplug_nr_running.attr);
+err_hotplug_nr_running:
 	sysfs_remove_file(power_kobj, &little_core_hotplug_in.attr);
 err_little_core_hotplug_in:
+#endif
 	sysfs_remove_file(power_kobj, &enable_dm_hotplug.attr);
 err_enable_dm_hotplug:
 #endif
