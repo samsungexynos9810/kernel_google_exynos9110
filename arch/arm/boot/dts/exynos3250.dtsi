@@ -25,6 +25,11 @@
 		reg = <0x10000000 0x100>;
 	};
 
+	aliases {
+		pinctrl0 = &pinctrl_0;
+		pinctrl1 = &pinctrl_1;
+	};
+
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -70,6 +75,23 @@
 			interrupt-map = <0 &gic 0 218 0>,
 					<4 &gic 0 223 0>,
 					<5 &gic 0 226 0>;
+		};
+	};
+
+	pinctrl_0: pinctrl@11400000 {
+		compatible = "samsung,exynos3250-pinctrl";
+		reg = <0x11400000 0x1000>;
+		interrupts = <0 240 0>;
+	};
+
+	pinctrl_1: pinctrl@11000000 {
+		compatible = "samsung,exynos3250-pinctrl";
+		reg = <0x11000000 0x1000>;
+		interrupts = <0 225 0>;
+
+		wakeup-interrupt-controller {
+			compatible = "samsung,exynos4210-wakeup-eint";
+			interrupts = <0 48 0>;
 		};
 	};
 
