@@ -2410,6 +2410,7 @@ static void s3c_fb_update_regs_handler(struct kthread_work *work)
 	mutex_lock(&sfb->update_regs_list_lock);
 	saved_list = sfb->update_regs_list;
 	list_replace_init(&sfb->update_regs_list, &saved_list);
+	mutex_unlock(&sfb->update_regs_list_lock);
 
 	list_for_each_entry_safe(data, next, &saved_list, list) {
 		s3c_fb_update_regs(sfb, data);
@@ -2419,7 +2420,6 @@ static void s3c_fb_update_regs_handler(struct kthread_work *work)
 		list_del(&data->list);
 		kfree(data);
 	}
-	mutex_unlock(&sfb->update_regs_list_lock);
 }
 
 static int s3c_fb_get_user_ion_handle(struct s3c_fb *sfb,
