@@ -137,7 +137,7 @@ int init_display_decon_clocks(struct device *dev)
 	return ret;
 }
 
-int init_display_driver_clocks(struct device *dev)
+int init_display_dsi_clocks(struct device *dev)
 {
 	int ret = 0;
 	return ret;

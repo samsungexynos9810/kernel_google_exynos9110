@@ -78,7 +78,7 @@ struct display_controller_ops {
 /* display_driverr_ops - operations for controlling power of
  * device */
 struct display_driver_ops {
-	int (*init_display_driver_clocks)(struct device *dev);
+	int (*init_display_dsi_clocks)(struct device *dev);
 	int (*enable_display_driver_clocks)(struct device *dev);
 	int (*enable_display_driver_power)(struct device *dev);
 	int (*disable_display_driver_power)(struct device *dev);

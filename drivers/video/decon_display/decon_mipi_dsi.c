@@ -1191,7 +1191,7 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	if (dsim->enabled == true)
 		return 0;
 
-	GET_DISPDRV_OPS(dispdrv).init_display_driver_clocks(dsim->dev);
+	GET_DISPDRV_OPS(dispdrv).init_display_dsi_clocks(dsim->dev);
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(dsim->dev);
 
 	if (dsim->dsim_lcd_drv->resume)
@@ -1326,7 +1326,7 @@ int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv)
 	if (dsim->enabled == true)
 		return 0;
 
-	GET_DISPDRV_OPS(dispdrv).init_display_driver_clocks(dsim->dev);
+	GET_DISPDRV_OPS(dispdrv).init_display_dsi_clocks(dsim->dev);
 
 	/* PPI signal disable + D-PHY reset */
 	s5p_mipi_dsi_d_phy_onoff(dsim, 1);

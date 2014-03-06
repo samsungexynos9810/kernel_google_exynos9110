@@ -49,8 +49,7 @@ int enable_display_decon_runtimepm(struct device *dev);
 int disable_display_decon_runtimepm(struct device *dev);
 int enable_display_dsd_clocks(struct device *dev);
 int disable_display_dsd_clocks(struct device *dev);
-int init_display_driver_clocks(struct device *dev);
-int enable_display_driver_clocks(struct device *dev);
+int init_display_dsi_clocks(struct device *dev);
 int enable_display_driver_power(struct device *dev);
 int disable_display_driver_power(struct device *dev);
 
@@ -79,7 +78,7 @@ static int init_display_operations(void)
 	DT_OPS.get_display_mic_config = get_display_mic_config;
 #endif
 
-	DSI_OPS.init_display_driver_clocks = init_display_driver_clocks;
+	DSI_OPS.init_display_dsi_clocks = init_display_dsi_clocks;
 	DSI_OPS.enable_display_driver_power = enable_display_driver_power;
 	DSI_OPS.disable_display_driver_power = disable_display_driver_power;
 
@@ -166,7 +165,7 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 	 * for each platform device */
 	ret = g_display_driver.dt_ops.parse_display_driver_dt(pdev, &g_display_driver);
 
-	GET_DISPDRV_OPS(&g_display_driver).init_display_driver_clocks(&pdev->dev);
+	GET_DISPDRV_OPS(&g_display_driver).init_display_dsi_clocks(&pdev->dev);
 	GET_DISPCTL_OPS(&g_display_driver).init_display_decon_clocks(&pdev->dev);
 
 	create_disp_components(pdev);
