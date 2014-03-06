@@ -14,6 +14,9 @@
 #ifndef FIMC_IS_FRAME_MGR_H
 #define FIMC_IS_FRAME_MGR_H
 
+#define FIMC_IS_MAX_BUFS            VIDEO_MAX_FRAME
+#define FIMC_IS_MAX_PLANES          VIDEO_MAX_PLANES
+
 #define FRAMEMGR_ID_INVALID	0x000000
 #define FRAMEMGR_ID_SENSOR	0x000100
 #define FRAMEMGR_ID_3AA_GRP	0x000200
@@ -134,8 +137,8 @@ struct fimc_is_frame {
 
 	/* common use */
 	u32			planes;
-	u32			kvaddr_buffer[4];
-	u32			dvaddr_buffer[4];
+	u32			kvaddr_buffer[FIMC_IS_MAX_PLANES];
+	u32			dvaddr_buffer[FIMC_IS_MAX_PLANES];
 
 	/* internal use */
 	enum fimc_is_frame_mem	memory;
