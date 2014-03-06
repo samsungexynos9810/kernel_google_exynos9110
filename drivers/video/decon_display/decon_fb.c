@@ -4222,7 +4222,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 #ifdef CONFIG_DECON_MIC
 	s3c_fb_set_mic_enable(sfb, true);
@@ -4662,7 +4661,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 #ifdef CONFIG_DECON_MIC
 	s3c_fb_set_mic_enable(sfb, true);
@@ -4800,7 +4798,6 @@ int s3c_fb_resume(struct device *dev)
 	decon_fb_set_clkgate_mode(sfb, DECON_CMU_ALL_CLKGATE_ENABLE);
 	decon_fb_blending_bit_count_option(sfb, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_fb_vidout_lcd_on_off(sfb, VIDOUTCON0_LCD_ON_F);
-	s3c_fb_enable_irq(sfb);
 	decon_fb_set_crc(sfb);
 #ifdef CONFIG_DECON_MIC
 	s3c_fb_set_mic_enable(sfb, true);
