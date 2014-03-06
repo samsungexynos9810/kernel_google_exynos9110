@@ -3795,20 +3795,6 @@ static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 #endif
 }
 
-void init_display_gpio_exynos(void);
-
-#ifdef CONFIG_DECON_MIC
-static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
-{
-	u32 reg = 0;
-
-	if (enable)
-		reg = MIC_CTRL_ON_UP | MIC_CTRL_ON_F;
-
-	writel(reg, sfb->regs + MIC_CTRL);
-}
-#endif
-
 static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
 {
 	int i;
@@ -3824,11 +3810,25 @@ static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
 		pd->win[i]->win_mode.xres = lcd_info->xres;
 		pd->win[i]->win_mode.yres = lcd_info->yres;
 		pd->win[i]->virtual_x = lcd_info->xres;
-		pd->win[i]->virtual_y = lcd_info->yres;
+		pd->win[i]->virtual_y = lcd_info->yres * 2;
 		pd->win[i]->width = lcd_info->width;
 		pd->win[i]->height = lcd_info->height;
 	}
 }
+
+void init_display_gpio_exynos(void);
+
+#ifdef CONFIG_DECON_MIC
+static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
+{
+	u32 reg = 0;
+
+	if (enable)
+		reg = MIC_CTRL_ON_UP | MIC_CTRL_ON_F;
+
+	writel(reg, sfb->regs + MIC_CTRL);
+}
+#endif
 
 int create_decon_display_controller(struct platform_device *pdev)
 {
