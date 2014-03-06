@@ -4085,7 +4085,7 @@ static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
 		pd->win[i]->win_mode.xres = lcd_info->xres;
 		pd->win[i]->win_mode.yres = lcd_info->yres;
 		pd->win[i]->virtual_x = lcd_info->xres;
-		pd->win[i]->virtual_y = lcd_info->yres;
+		pd->win[i]->virtual_y = lcd_info->yres * 2;
 		pd->win[i]->width = lcd_info->width;
 		pd->win[i]->height = lcd_info->height;
 	}
