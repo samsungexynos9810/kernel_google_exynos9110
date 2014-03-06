@@ -307,13 +307,6 @@ static unsigned cmd_line;
 #define PL330_DBGMC_START(addr)		do {} while (0)
 #endif
 
-struct mcode_addr {
-	dma_addr_t bus;
-	void *cpu;
-};
-
-struct mcode_addr sram, dram;
-
 #define AUDSS_SRAM		0x03000000
 #define AUDSS_SRAM_SIZE		0x00028000
 
@@ -542,6 +535,10 @@ struct pl330_dmac {
 	u32			mcode_bus;
 	/* CPU address of MicroCode buffer */
 	void			*mcode_cpu;
+	/* BUS address of MicroCode buffer in sram */
+	u32			mcode_bus_sram;
+	/* CPU address of MicroCode buffer in sram */
+	void			*mcode_cpu_sram;
 	/* List of all Channel threads */
 	struct pl330_thread	*channels;
 	/* Pointer to the MANAGER thread */
@@ -1592,6 +1589,7 @@ static int _setup_req(unsigned dry_run, struct pl330_thread *thrd,
 		unsigned index, struct _xfer_spec *pxs)
 {
 	struct _pl330_req *req = &thrd->req[index];
+	struct pl330_dmac *pl330 = thrd->dmac;
 	struct pl330_xfer *x;
 	u8 *buf;
 	int off = 0;
@@ -1599,14 +1597,14 @@ static int _setup_req(unsigned dry_run, struct pl330_thread *thrd,
 
 	if (soc_is_exynos5422()) {
 		if (pxs->r->sram) {
-			req->mc_cpu = sram.cpu + thrd->id * mcbufsize +
+			req->mc_cpu = pl330->mcode_cpu_sram + thrd->id * mcbufsize +
 					(mcbufsize / 2) * index;
-			req->mc_bus = sram.bus + thrd->id * mcbufsize +
+			req->mc_bus = pl330->mcode_bus_sram + thrd->id * mcbufsize +
 					(mcbufsize / 2) * index;
 		} else {
-			req->mc_cpu = dram.cpu + thrd->id * mcbufsize +
+			req->mc_cpu = pl330->mcode_cpu + thrd->id * mcbufsize +
 					(mcbufsize / 2) * index;
-			req->mc_bus = dram.bus + thrd->id * mcbufsize +
+			req->mc_bus = pl330->mcode_bus + thrd->id * mcbufsize +
 					(mcbufsize / 2) * index;
 		}
 	}
@@ -2260,8 +2258,8 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 				set_dma_ops(pi->dev, &arm_exynos_dma_mcode_ops);
 				pl330->mcode_bus = addr;
 			} else if(soc_is_exynos5422()){
-				sram.bus = addr;
-				sram.cpu = ioremap(addr, chans * pi->mcbufsz);
+				pl330->mcode_bus_sram = addr;
+				pl330->mcode_cpu_sram = ioremap(addr, chans * pi->mcbufsz);
 			}
 		}
 	}
@@ -2273,9 +2271,6 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 	pl330->mcode_cpu = dma_alloc_coherent(pi->dev,
 				chans * pi->mcbufsz,
 				&pl330->mcode_bus, GFP_KERNEL);
-
-	dram.bus = pl330->mcode_bus;
-	dram.cpu = pl330->mcode_cpu;
 
 	if (!pl330->mcode_cpu) {
 		dev_err(pi->dev, "%s:%d Can't allocate memory!\n",
