@@ -227,7 +227,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #endif
 
 #define SWTRIP_TEMP				110
-#define SWTRIP_NOISE_COUNT		4
+#define SWTRIP_NOISE_COUNT		1
 
 #define TMU_CONTROL_RSVD_MASK  		0xe08f00fe
 #define TMU_CONTROL_ONOFF_MASK		0xfffffffe
