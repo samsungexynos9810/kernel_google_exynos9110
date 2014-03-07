@@ -470,7 +470,7 @@ static void s5p_mipi_dsi_rx_err_handler(struct mipi_dsim_device *dsim,
 int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	 u32 addr, u32 count, u8 *buf)
 {
-	u32 rx_fifo, txhd, rx_size = 0;
+	u32 rx_fifo, rx_size = 0;
 	int i, j, ret = 0;
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
@@ -482,28 +482,26 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 		return -EINVAL;
 	}
 
+	INIT_COMPLETION(dsim_rd_comp);
+
+	/* Set the maximum packet size returned */
+	s5p_mipi_dsi_wr_data(dsim,
+		MIPI_DSI_SET_MAXIMUM_RETURN_PACKET_SIZE, count, 0);
+
+	/* Read request */
+	s5p_mipi_dsi_wr_data(dsim, data_id, addr, 0);
+	if (!wait_for_completion_interruptible_timeout(&dsim_rd_comp,
+		MIPI_RD_TIMEOUT)) {
+		dev_err(dsim->dev, "MIPI DSIM read Timeout!\n");
+		return -ETIMEDOUT;
+	}
+
 	mutex_lock(&dsim_rd_wr_mutex);
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, true);
 	disp_pm_add_refcount(dispdrv);
 #endif
-	INIT_COMPLETION(dsim_rd_comp);
-
-	/* Set the maximum packet size returned */
-	txhd = MIPI_DSI_SET_MAXIMUM_RETURN_PACKET_SIZE | count << 8;
-	writel(txhd, dsim->reg_base + S5P_DSIM_PKTHDR);
-
-	 /* Read request */
-	txhd = data_id | addr << 8;
-	writel(txhd, dsim->reg_base + S5P_DSIM_PKTHDR);
-
-	if (!wait_for_completion_interruptible_timeout(&dsim_rd_comp,
-		MIPI_RD_TIMEOUT)) {
-		dev_err(dsim->dev, "MIPI DSIM read Timeout!\n");
-		ret = -ETIMEDOUT;
-		goto rx_exit;
-	}
-
 	rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
 
 	/* Parse the RX packet data types */
@@ -526,13 +524,13 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	case MIPI_DSI_RX_GENERIC_LONG_READ_RESPONSE:
 		dev_dbg(dsim->dev, "Long Packet was received from LCD module.\n");
 		rx_size = (rx_fifo & 0x00ffff00) >> 8;
+		dev_info(dsim->dev, "rx fifo : %8x, response : %x, rx_size : %d\n",
+				rx_fifo, rx_fifo & 0xff, rx_size);
 		/* Read data from RX packet payload */
 		for (i = 0; i < rx_size >> 2; i++) {
 			rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
-			buf[0 + i] = (u8)(rx_fifo >> 0) & 0xff;
-			buf[1 + i] = (u8)(rx_fifo >> 8) & 0xff;
-			buf[2 + i] = (u8)(rx_fifo >> 16) & 0xff;
-			buf[3 + i] = (u8)(rx_fifo >> 24) & 0xff;
+			for (j = 0; j < 4; j++)
+				buf[(i*4)+j] = (u8)(rx_fifo >> (j * 8)) & 0xff;
 		}
 		if (rx_size % 4) {
 			rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
@@ -548,12 +546,12 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 
 	rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
 	if (rx_fifo != DSIM_RX_FIFO_READ_DONE) {
-		dev_info(dsim->dev, "[DSIM:WARN]:%s Can't find RX FIFO READ DONE FLAG : %x\n",
+		dev_info(dsim->dev, "%s Can't find RX FIFO READ DONE FLAG : %x\n",
 			__func__, rx_fifo);
 		goto clear_rx_fifo;
 	}
 	ret = rx_size;
-	goto rx_exit;
+	goto exit;
 
 clear_rx_fifo:
 	i = 0;
@@ -562,19 +560,20 @@ clear_rx_fifo:
 		if ((rx_fifo == DSIM_RX_FIFO_READ_DONE) ||
 				(i > DSIM_MAX_RX_FIFO))
 			break;
-		dev_info(dsim->dev, "[DSIM:INFO] : %s clear rx fifo : %08x\n",
-			__func__, rx_fifo);
+		dev_info(dsim->dev, "%s clear rx fifo : %08x\n", __func__, rx_fifo);
 		i++;
 	}
 	ret = 0;
-	goto rx_exit;
+	goto exit;
 
 rx_error:
 	s5p_mipi_dsi_force_dphy_stop_state(dsim, 1);
 	usleep_range(3000, 4000);
 	s5p_mipi_dsi_force_dphy_stop_state(dsim, 0);
 	ret = -EPERM;
-rx_exit:
+	goto exit;
+
+exit:
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, false);
 #endif
