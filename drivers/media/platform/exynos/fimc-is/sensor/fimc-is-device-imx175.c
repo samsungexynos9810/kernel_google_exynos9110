@@ -35,6 +35,7 @@
 #include "../fimc-is-core.h"
 #include "../fimc-is-device-sensor.h"
 #include "../fimc-is-resourcemgr.h"
+#include "../fimc-is-hw.h"
 #include "fimc-is-device-imx175.h"
 
 #define SENSOR_NAME "IMX175"
@@ -115,6 +116,8 @@ int sensor_imx175_probe(struct i2c_client *client,
 	module->pixel_width = module->active_width + 16;
 	module->pixel_height = module->active_height + 10;
 	module->max_framerate = 120;
+	module->mode = CSI_MODE_CH0_ONLY;
+	module->lanes = CSI_DATA_LANES_4;
 	module->setfile_name = "setfile_imx175.bin";
 	module->cfgs = ARRAY_SIZE(config_imx175);
 	module->cfg = config_imx175;
