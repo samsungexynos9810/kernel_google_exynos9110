@@ -1457,6 +1457,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 		goto err_mem_region;
 	}
 
+	/* enable interrupts */
+	s5p_mipi_dsi_set_interrupt(dsim, true);
+
 	/*
 	 * it uses frame done interrupt handler
 	 * only in case of MIPI Video mode.
@@ -1471,6 +1474,8 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->dsim_lcd_drv = dsim->dsim_config->dsim_ddi_pd;
 
 	dsim->timing.bps = 0;
+
+	mutex_init(&dsim_rd_wr_mutex);
 
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
@@ -1500,10 +1505,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	}
 #endif
 
-	/* enable interrupts */
-	s5p_mipi_dsi_set_interrupt(dsim, true);
-
-	mutex_init(&dsim_rd_wr_mutex);
 	return 0;
 
 err_irq:
