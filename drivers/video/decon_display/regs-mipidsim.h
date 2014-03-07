@@ -100,6 +100,7 @@
 #define INTSRC_PLL_STABLE		(1 << 31)
 
 #define INTSRC_SFR_FIFO_EMPTY		(1 << 29)
+#define INTSRC_SFR_PH_FIFO_EMPTY	(1 << 28)
 #define SFR_HEADER_EMPTY		(1 << 22)
 
 #define S5P_DSIM_INTMSK		(0x38)	/* Interrupt mask register */
@@ -237,6 +238,7 @@
 #define INTSRC_PLL_STABLE		(1 << 31)
 
 #define INTSRC_SFR_FIFO_EMPTY		(1 << 29)
+#define INTSRC_SFR_PH_FIFO_EMPTY	(1 << 28)
 #define SFR_HEADER_EMPTY		(1 << 22)
 
 #define S5P_DSIM_INTMSK		(0x38)	/* Interrupt mask register */

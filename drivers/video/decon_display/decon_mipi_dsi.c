@@ -58,6 +58,7 @@
 #define MIPI_BYPASS_MIC_CONFIG
 
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
+static DECLARE_COMPLETION(dsim_ph_wr_comp);
 static DECLARE_COMPLETION(dsim_wr_comp);
 static DECLARE_COMPLETION(dsim_rd_comp);
 
@@ -291,11 +292,10 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 
 	if (dsim->enabled == false || dsim->state != DSIM_STATE_HSCLKEN) {
 		dev_info(dsim->dev, "MIPI DSIM is not ready. enabled %d state %d\n",
-							 dsim->enabled, dsim->state);
+							dsim->enabled, dsim->state);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		disp_pm_gate_lock(dispdrv, false);
 #endif
-
 		return -EINVAL;
 	}
 
@@ -308,7 +308,15 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	case MIPI_DSI_DCS_SHORT_WRITE:
 	case MIPI_DSI_DCS_SHORT_WRITE_PARAM:
 	case MIPI_DSI_SET_MAXIMUM_RETURN_PACKET_SIZE:
+		INIT_COMPLETION(dsim_ph_wr_comp);
+		s5p_mipi_dsi_clear_interrupt(dsim, INTSRC_SFR_PH_FIFO_EMPTY);
 		s5p_mipi_dsi_wr_tx_header(dsim, data_id, data0, data1);
+		if (!wait_for_completion_interruptible_timeout(&dsim_ph_wr_comp,
+			MIPI_WR_TIMEOUT)) {
+				dev_err(dsim->dev, "MIPI DSIM short packet write Timeout! %02X\n", data0);
+				ret = -ETIMEDOUT;
+				goto exit;
+		}
 		break;
 
 	/* general command */
@@ -316,7 +324,15 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	case MIPI_DSI_COLOR_MODE_ON:
 	case MIPI_DSI_SHUTDOWN_PERIPHERAL:
 	case MIPI_DSI_TURN_ON_PERIPHERAL:
+		INIT_COMPLETION(dsim_ph_wr_comp);
+		s5p_mipi_dsi_clear_interrupt(dsim, INTSRC_SFR_PH_FIFO_EMPTY);
 		s5p_mipi_dsi_wr_tx_header(dsim, data_id, data0, data1);
+		if (!wait_for_completion_interruptible_timeout(&dsim_ph_wr_comp,
+			MIPI_WR_TIMEOUT)) {
+				dev_err(dsim->dev, "MIPI DSIM short packet write Timeout! %02X\n", data0);
+				ret = -ETIMEDOUT;
+				goto exit;
+		}
 		break;
 
 	/* packet types for video data */
@@ -332,9 +348,15 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	case MIPI_DSI_GENERIC_READ_REQUEST_1_PARAM:
 	case MIPI_DSI_GENERIC_READ_REQUEST_2_PARAM:
 	case MIPI_DSI_DCS_READ:
+		INIT_COMPLETION(dsim_ph_wr_comp);
 		s5p_mipi_dsi_clear_all_interrupt(dsim);
 		s5p_mipi_dsi_wr_tx_header(dsim, data_id, data0, data1);
-		/* process response func should be implemented. */
+		if (!wait_for_completion_interruptible_timeout(&dsim_ph_wr_comp,
+			MIPI_WR_TIMEOUT)) {
+				dev_err(dsim->dev, "MIPI DSIM short packet write Timeout! %02X\n", data0);
+				ret = -ETIMEDOUT;
+				goto exit;
+		}
 		break;
 
 	/* long packet type and null packet */
@@ -345,12 +367,14 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	case MIPI_DSI_GENERIC_LONG_WRITE:
 	case MIPI_DSI_DCS_LONG_WRITE:
 	{
-		unsigned int size, data_cnt = 0, payload = 0;
+		unsigned int size;
 
 		size = data1 * 4;
 		INIT_COMPLETION(dsim_wr_comp);
+		s5p_mipi_dsi_clear_interrupt(dsim, INTSRC_SFR_FIFO_EMPTY);
 		/* if data count is less then 4, then send 3bytes data.  */
 		if (data1 < 4) {
+			unsigned int payload = 0;
 			payload = *(u8 *)(data0) |
 				*(u8 *)(data0 + 1) << 8 |
 				*(u8 *)(data0 + 2) << 16;
@@ -359,9 +383,9 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 
 			dev_dbg(dsim->dev, "count = %d payload = %x,%x %x %x\n",
 				data1, payload,
-				*(u8 *)(data0 + data_cnt),
-				*(u8 *)(data0 + (data_cnt + 1)),
-				*(u8 *)(data0 + (data_cnt + 2)));
+				*(u8 *)(data0),
+				*(u8 *)(data0 + 1),
+				*(u8 *)(data0 + 2));
 		/* in case that data count is more then 4 */
 		} else
 			s5p_mipi_dsi_long_data_wr(dsim, data0, data1);
@@ -369,11 +393,9 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 		/* put data into header fifo */
 		s5p_mipi_dsi_wr_tx_header(dsim, data_id, data1 & 0xff,
 			(data1 & 0xff00) >> 8);
-
 		if (!wait_for_completion_interruptible_timeout(&dsim_wr_comp,
 			MIPI_WR_TIMEOUT)) {
-				dev_err(dsim->dev, "MIPI DSIM write Timeout!\n");
-				mutex_unlock(&dsim_rd_wr_mutex);
+				dev_err(dsim->dev, "MIPI DSIM write Timeout! %02X\n", *(u8 *)(data0));
 				ret = -ETIMEDOUT;
 				goto exit;
 		}
@@ -387,24 +409,26 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	case MIPI_DSI_PACKED_PIXEL_STREAM_24:
 		break;
 	default:
-		dev_warn(dsim->dev,
-			"data id %x is not supported current DSI spec.\n",
-			data_id);
-
-		mutex_unlock(&dsim_rd_wr_mutex);
+		dev_warn(dsim->dev, "data id %x is not supported current DSI spec.\n", data_id);
 		ret = -EINVAL;
 		goto exit;
 	}
 
 exit:
-	if (ret == -ETIMEDOUT)
+	if (dsim->enabled && (ret == -ETIMEDOUT)) {
+		dev_info(dsim->dev, "0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
+				readl(dsim->reg_base + S5P_DSIM_STATUS),
+				readl(dsim->reg_base + S5P_DSIM_INTSRC),
+				readl(dsim->reg_base + S5P_DSIM_FIFOCTRL),
+				readl(dsim->reg_base + S5P_DSIM_MULTI_PKT));
 		s5p_mipi_dsi_init_fifo_pointer(dsim, DSIM_INIT_SFR);
+	}
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, false);
 #endif
 	mutex_unlock(&dsim_rd_wr_mutex);
-
-	return 0;
+	return ret;
 }
 
 static void s5p_mipi_dsi_rx_err_handler(struct mipi_dsim_device *dsim,
@@ -1124,7 +1148,7 @@ static int s5p_mipi_dsi_set_interrupt(struct mipi_dsim_device *dsim, bool enable
 {
 	unsigned int int_msk;
 
-	int_msk = SFR_PL_FIFO_EMPTY | RX_DAT_DONE | MIPI_FRAME_DONE | ERR_RX_ECC;
+	int_msk = SFR_PL_FIFO_EMPTY | SFR_PH_FIFO_EMPTY | RX_DAT_DONE | MIPI_FRAME_DONE | ERR_RX_ECC;
 
 	if (enable) {
 		/* clear interrupt */
@@ -1162,6 +1186,8 @@ static irqreturn_t s5p_mipi_dsi_interrupt_handler(int irq, void *dev_id)
 	/* Test bit */
 	if (int_src & SFR_PL_FIFO_EMPTY)
 		complete(&dsim_wr_comp);
+	if (int_src & SFR_PH_FIFO_EMPTY)
+		complete(&dsim_ph_wr_comp);
 	if (int_src & RX_DAT_DONE)
 		complete(&dsim_rd_comp);
 	if (int_src & MIPI_FRAME_DONE)
