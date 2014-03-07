@@ -1215,7 +1215,11 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		info("%s(%d) - A5 Power on\n", __func__, on);
 
 		/* 6. enable A5 & use stand-by WFI */
+#if defined(CONFIG_SOC_EXYNOS5430)
+		writel((1 << 15), PMUREG_ISP_ARM_OPTION);
+#else
 		writel((1 << 16 | 1 << 15), PMUREG_ISP_ARM_OPTION);
+#endif
 		timeout = 1000;
 
 		pr_debug("%s(%d) - A5 enable start...\n", __func__, on);
@@ -1236,6 +1240,11 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 
 		pr_debug("%s(%d) - change A5 state\n", __func__, on);
 	} else {
+#if defined(CONFIG_SOC_EXYNOS5430)
+		/* disable A5 */
+		writel(0x0, PMUREG_ISP_ARM_OPTION);
+#endif
+
 		/* Check FW state for WFI of A5 */
 		debug = readl(device->interface->regs + ISSR6);
 		printk(KERN_INFO "%s: A5 state(0x%x)\n", __func__, debug);
