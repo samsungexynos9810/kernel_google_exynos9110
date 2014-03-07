@@ -327,44 +327,42 @@ int fimc_is_gframe_flush(struct fimc_is_groupmgr *groupmgr,
 	return ret;
 }
 
-static void fimc_is_group_3a0_cancel(struct fimc_is_framemgr *ldr_framemgr,
-	struct fimc_is_frame *ldr_frame,
+static void fimc_is_group_3a0_cancel(struct fimc_is_framemgr *framemgr,
+	struct fimc_is_frame *frame,
+	struct fimc_is_queue *queue,
 	struct fimc_is_video_ctx *vctx,
 	u32 instance)
 {
-	struct fimc_is_queue *queue;
-
 	BUG_ON(!vctx);
-	BUG_ON(!ldr_framemgr);
-	BUG_ON(!ldr_frame);
+	BUG_ON(!framemgr);
+	BUG_ON(!frame);
+	BUG_ON(!queue);
 
-	pr_err("[3A0:D:%d] GRP0 CANCEL(%d, %d)\n", instance,
-		ldr_frame->fcount, ldr_frame->index);
+	pr_err("[3A0:D:%d:%d] GRP0 CANCEL(%d, %d)\n", instance,
+		V4L2_TYPE_IS_OUTPUT(queue->vbq->type),
+		frame->fcount, frame->index);
 
-	queue = GET_SRC_QUEUE(vctx);
-
-	fimc_is_frame_trans_req_to_com(ldr_framemgr, ldr_frame);
-	queue_done(vctx, queue, ldr_frame->index, VB2_BUF_STATE_ERROR);
+	fimc_is_frame_trans_req_to_com(framemgr, frame);
+	queue_done(vctx, queue, frame->index, VB2_BUF_STATE_ERROR);
 }
 
-static void fimc_is_group_3a1_cancel(struct fimc_is_framemgr *ldr_framemgr,
-	struct fimc_is_frame *ldr_frame,
+static void fimc_is_group_3a1_cancel(struct fimc_is_framemgr *framemgr,
+	struct fimc_is_frame *frame,
+	struct fimc_is_queue *queue,
 	struct fimc_is_video_ctx *vctx,
 	u32 instance)
 {
-	struct fimc_is_queue *queue;
-
 	BUG_ON(!vctx);
-	BUG_ON(!ldr_framemgr);
-	BUG_ON(!ldr_frame);
+	BUG_ON(!framemgr);
+	BUG_ON(!frame);
+	BUG_ON(!queue);
 
-	pr_err("[3A1:D:%d] GRP1 CANCEL(%d, %d)\n", instance,
-		ldr_frame->fcount, ldr_frame->index);
+	pr_err("[3A1:D:%d:%d] GRP1 CANCEL(%d, %d)\n", instance,
+		V4L2_TYPE_IS_OUTPUT(queue->vbq->type),
+		frame->fcount, frame->index);
 
-	queue = GET_SRC_QUEUE(vctx);
-
-	fimc_is_frame_trans_req_to_com(ldr_framemgr, ldr_frame);
-	queue_done(vctx, queue, ldr_frame->index, VB2_BUF_STATE_ERROR);
+	fimc_is_frame_trans_req_to_com(framemgr, frame);
+	queue_done(vctx, queue, frame->index, VB2_BUF_STATE_ERROR);
 }
 
 static void fimc_is_group_isp_cancel(struct fimc_is_framemgr *framemgr,
@@ -411,6 +409,10 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 	unsigned long flags;
 	struct fimc_is_video_ctx *vctx;
 	struct fimc_is_framemgr *ldr_framemgr;
+	/* for M2M device */
+	struct fimc_is_framemgr *sub_framemgr = NULL;
+	struct fimc_is_queue *ldr_queue, *sub_queue;
+	struct fimc_is_frame *sub_frame;
 
 	BUG_ON(!group);
 	BUG_ON(!ldr_frame);
@@ -431,12 +433,18 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 
 	switch (group->id) {
 	case GROUP_ID_3A0:
+		ldr_queue = GET_SRC_QUEUE(vctx);
 		fimc_is_group_3a0_cancel(ldr_framemgr, ldr_frame,
-			vctx, group->instance);
+			ldr_queue, vctx, group->instance);
+		/* for M2M device */
+		sub_framemgr = GET_DST_FRAMEMGR(vctx);
 		break;
 	case GROUP_ID_3A1:
+		ldr_queue = GET_SRC_QUEUE(vctx);
 		fimc_is_group_3a1_cancel(ldr_framemgr, ldr_frame,
-			vctx, group->instance);
+			ldr_queue, vctx, group->instance);
+		/* for M2M device */
+		sub_framemgr = GET_DST_FRAMEMGR(vctx);
 		break;
 	case GROUP_ID_ISP:
 		fimc_is_group_isp_cancel(ldr_framemgr, ldr_frame,
@@ -452,6 +460,30 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 	}
 
 	framemgr_x_barrier_irqr(ldr_framemgr, 0, flags);
+
+	if (sub_framemgr) {
+		framemgr_e_barrier_irqs(sub_framemgr, 0, flags);
+
+		switch (group->id) {
+			case GROUP_ID_3A0:
+				sub_queue = GET_DST_QUEUE(vctx);
+				fimc_is_frame_request_head(sub_framemgr, &sub_frame);
+				fimc_is_group_3a0_cancel(sub_framemgr, sub_frame,
+						sub_queue, vctx, group->instance);
+				break;
+			case GROUP_ID_3A1:
+				sub_queue = GET_DST_QUEUE(vctx);
+				fimc_is_frame_request_head(sub_framemgr, &sub_frame);
+				fimc_is_group_3a1_cancel(sub_framemgr, sub_frame,
+						sub_queue, vctx, group->instance);
+				break;
+			default:
+				err("unresolved group id %d", group->id);
+				break;
+		}
+
+		framemgr_x_barrier_irqr(sub_framemgr, 0, flags);
+	}
 }
 
 #ifdef DEBUG_AA
