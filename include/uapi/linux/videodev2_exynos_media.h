@@ -291,4 +291,6 @@ enum v4l2_mpeg_mfc51_video_frame_type {
 					(V4L2_CID_MPEG_MFC_BASE + 96)
 #define V4L2_CID_MPEG_MFC_GET_EXT_INFO				\
 					(V4L2_CID_MPEG_MFC_BASE + 97)
+#define V4L2_CID_MPEG_MFC_SET_BUF_PROCESS_TYPE			\
+					(V4L2_CID_MPEG_MFC_BASE + 98)
 #endif /* __LINUX_VIDEODEV2_EXYNOS_MEDIA_H */
