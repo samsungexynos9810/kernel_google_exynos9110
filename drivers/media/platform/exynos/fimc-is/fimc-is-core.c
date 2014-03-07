@@ -248,11 +248,6 @@ int fimc_is_runtime_suspend(struct device *dev)
 
 	pr_info("FIMC_IS runtime suspend in\n");
 
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (core->mem.alloc_ctx)
-		vb2_ion_detach_iommu(core->mem.alloc_ctx);
-#endif
-
 #if defined(CONFIG_PM_DEVFREQ)
 	/* DEVFREQ release */
 	pr_info("[RSC] %s: QoS UNLOCK\n", __func__);
@@ -341,11 +336,6 @@ int fimc_is_runtime_resume(struct device *dev)
 		ret = -EINVAL;
 		goto p_err;
 	}
-
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (core->mem.alloc_ctx)
-		vb2_ion_attach_iommu(core->mem.alloc_ctx);
-#endif
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
 #if defined(CONFIG_SOC_EXYNOS5260)
@@ -968,6 +958,11 @@ static int fimc_is_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, core);
 
 	fimc_is_ishcain_initmem(core);
+
+#if defined(CONFIG_VIDEOBUF2_ION)
+	if (core->mem.alloc_ctx)
+		vb2_ion_attach_iommu(core->mem.alloc_ctx);
+#endif
 
 #if defined(CONFIG_PM_RUNTIME)
 	pm_runtime_enable(&pdev->dev);

@@ -844,6 +844,11 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 		goto p_err;
 	}
 
+#if defined(CONFIG_VIDEOBUF2_ION)
+	if (device->mem.alloc_ctx)
+		vb2_ion_attach_iommu(device->mem.alloc_ctx);
+#endif
+
 #if defined(CONFIG_PM_RUNTIME)
 	pm_runtime_enable(&pdev->dev);
 #endif
@@ -1858,11 +1863,6 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 		goto err_dev_null;
 	}
 
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (device->mem.alloc_ctx)
-		vb2_ion_detach_iommu(device->mem.alloc_ctx);
-#endif
-
 	subdev_csi = device->subdev_csi;
 	if (!subdev_csi) {
 		merr("subdev_csi is NULL", device);
@@ -1936,12 +1936,6 @@ int fimc_is_sensor_runtime_resume(struct device *dev)
 		merr("fimc_is_sensor_mclk_on is fail(%d)", device, ret);
 		goto p_err;
 	}
-
-#if defined(CONFIG_VIDEOBUF2_ION)
-	if (device->mem.alloc_ctx)
-		vb2_ion_attach_iommu(device->mem.alloc_ctx);
-	pr_debug("FIMC_IS runtime resume - ion attach complete\n");
-#endif
 
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
