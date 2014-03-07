@@ -127,4 +127,11 @@
 		clocks = <&clock 203>, <&clock 303>;
                 clock-names = "sclk_uart3", "gate_uart3";
 	};
+
+	sysmmu_fimd: sysmmu@11E20000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11E20000 0x1000>;
+		interrupts = <0 80 0>;
+		/* mmu-masters = <&fimd>; */
+	};
 };
