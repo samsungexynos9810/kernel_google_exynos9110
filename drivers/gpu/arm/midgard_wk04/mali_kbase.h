@@ -107,6 +107,7 @@ void kbase_destroy_context(kbase_context *kctx);
 mali_error kbase_context_set_create_flags(kbase_context *kctx, u32 flags);
 
 mali_error kbase_instr_hwcnt_setup(kbase_context *kctx, kbase_uk_hwcnt_setup *setup);
+mali_error kbase_instr_hwcnt_gpr_setup(kbase_context *kctx, kbase_uk_hwcnt_setup *setup);
 mali_error kbase_instr_hwcnt_enable(kbase_context *kctx, kbase_uk_hwcnt_setup *setup);
 mali_error kbase_instr_hwcnt_disable(kbase_context *kctx);
 mali_error kbase_instr_hwcnt_clear(kbase_context *kctx);

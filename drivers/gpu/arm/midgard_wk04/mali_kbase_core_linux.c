@@ -310,6 +310,11 @@ mali_error kbase_external_buffer_lock(kbase_context *kctx, kbase_uk_ext_buff_kds
 }
 #endif /* CONFIG_KDS */
 
+#ifdef CONFIG_USE_VSYNC_SKIP
+void s3c_fb_extra_vsync_wait_set(int);
+void s3c_fb_extra_vsync_wait_add(int);
+#endif
+
 static mali_error kbase_dispatch(kbase_context *kctx, void * const args, u32 args_size)
 {
 	struct kbase_device *kbdev;
@@ -592,6 +597,18 @@ copy_failed:
 			break;
 		}
 
+	case KBASE_FUNC_HWCNT_GPR_SETUP:
+		{
+			kbase_uk_hwcnt_setup *setup = args;
+
+			if (sizeof(*setup) != args_size)
+				goto bad_size;
+
+			if (MALI_ERROR_NONE != kbase_instr_hwcnt_gpr_setup(kctx, setup))
+				ukh->ret = MALI_ERROR_FUNCTION_FAILED;
+			break;
+		}
+
 	case KBASE_FUNC_HWCNT_DUMP:
 		{
 			/* args ignored */
@@ -605,6 +622,23 @@ copy_failed:
 			/* args ignored */
 			if (MALI_ERROR_NONE != kbase_instr_hwcnt_clear(kctx))
 				ukh->ret = MALI_ERROR_FUNCTION_FAILED;
+			break;
+		}
+
+	case KBASE_FUNC_VSYNC_SKIP:
+		{
+			kbase_uk_vsync_skip *vskip = args;
+
+			if (sizeof(*vskip) != args_size)
+				goto bad_size;
+#ifdef CONFIG_USE_VSYNC_SKIP
+			/* increment vsync skip variable that is used in fimd driver */
+			if (vskip->skip_count == 0) {
+				s3c_fb_extra_vsync_wait_set(0);
+			} else {
+			       s3c_fb_extra_vsync_wait_add(vskip->skip_count);
+			}
+#endif /* CONFIG_USE_VSYNC_SKIP */
 			break;
 		}
 

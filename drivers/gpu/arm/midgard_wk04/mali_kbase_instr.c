@@ -159,7 +159,7 @@ STATIC mali_error kbase_instr_hwcnt_enable_internal(kbase_device *kbdev, kbase_c
 	/* If HW has PRLAM-8186 we can now re-enable the tiler HW counters dump */
 	if (kbase_hw_has_issue(kbdev, BASE_HW_ISSUE_8186))
 		kbase_reg_write(kbdev, GPU_CONTROL_REG(PRFCNT_TILER_EN), setup->tiler_bm, kctx);
-	
+
 	spin_lock_irqsave(&kbdev->hwcnt.lock, flags);
 
 	if (kbdev->hwcnt.state == KBASE_INSTR_STATE_RESETTING) {
@@ -176,6 +176,8 @@ STATIC mali_error kbase_instr_hwcnt_enable_internal(kbase_device *kbdev, kbase_c
 	spin_unlock_irqrestore(&kbdev->hwcnt.lock, flags);
 
 	err = MALI_ERROR_NONE;
+
+	kbdev->hwcnt.active_count = kbdev->pm.active_count;
 
 	KBASE_DEBUG_PRINT_INFO(KBASE_CORE, "HW counters dumping set-up for context %p", kctx);
 	return err;
@@ -311,6 +313,36 @@ mali_error kbase_instr_hwcnt_setup(kbase_context *kctx, kbase_uk_hwcnt_setup *se
 	}
 
  out:
+	return err;
+}
+
+/**
+ * @brief Configure HW counters collection for TE
+ */
+mali_error kbase_instr_hwcnt_gpr_setup(kbase_context *kctx, kbase_uk_hwcnt_setup *setup)
+{
+	mali_error err = MALI_ERROR_FUNCTION_FAILED;
+	kbase_device *kbdev;
+
+	KBASE_DEBUG_ASSERT(NULL != kctx);
+
+	kbdev = kctx->kbdev;
+	KBASE_DEBUG_ASSERT(NULL != kbdev);
+
+	if (NULL == setup) {
+		/* Bad parameter - abort */
+		goto out;
+	}
+
+	if (setup->dump_buffer != 0ULL) {
+		/* Enable HW counters */
+		err = kbase_instr_hwcnt_enable_internal(kbdev, kctx, setup);
+	} else {
+		/* Disable HW counters */
+		err = kbase_instr_hwcnt_disable(kctx);
+	}
+
+out:
 	return err;
 }
 

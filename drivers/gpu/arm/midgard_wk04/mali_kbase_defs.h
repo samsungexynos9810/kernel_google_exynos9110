@@ -651,6 +651,9 @@ struct kbase_device {
 
 		kbase_context *suspended_kctx;
 		kbase_uk_hwcnt_setup suspended_state;
+
+		u32 is_busy;
+		u32 active_count;
 	} hwcnt;
 
 	/* Set when we're about to reset the GPU */

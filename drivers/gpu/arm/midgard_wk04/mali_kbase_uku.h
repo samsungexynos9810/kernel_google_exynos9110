@@ -152,6 +152,14 @@ typedef struct kbase_uk_hwcnt_clear {
 	uk_header header;
 } kbase_uk_hwcnt_clear;
 
+typedef struct kbase_uk_vsync_skip {
+	uk_header header;
+
+	/* IN */
+	u32 skip_count;
+	/* OUT */
+} kbase_uk_vsync_skip;
+
 typedef struct kbase_uk_fence_validate {
 	uk_header header;
 	/* IN */
@@ -329,7 +337,10 @@ typedef enum kbase_uk_function_id {
 	KBASE_FUNC_GET_PROFILING_CONTROLS,
 	KBASE_FUNC_SET_PROFILING_CONTROLS, /* to be used only for testing purposes, otherwise these controls are set through gator API */
 
-	KBASE_FUNC_MEM_ALIAS /* can be moved up along with the other MEM functions on the next API major version upgrade */
+	KBASE_FUNC_MEM_ALIAS, /* can be moved up along with the other MEM functions on the next API major version upgrade */
+
+	KBASE_FUNC_HWCNT_GPR_SETUP,
+	KBASE_FUNC_VSYNC_SKIP
 } kbase_uk_function_id;
 
 #endif				/* _KBASE_UKU_H_ */
