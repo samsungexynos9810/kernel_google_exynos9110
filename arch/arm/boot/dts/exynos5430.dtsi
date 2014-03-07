@@ -442,7 +442,7 @@
 		interrupts = <0 130 0>;
 		clock-names = "sysmmu";
 		clocks = <&clock 2574>;
-		mmu-masters = <&fimc_is_sensor1>;
+		mmu-masters = <&fimc_is_sensor0>;
 		prop-map {
 			iomap = "w";
 		};
@@ -1325,7 +1325,7 @@
 	pd_cam0: pd-cam0@105c4020 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x105c4020 0x20>;
-		parent = <&pd_disp>;
+		parent = <&pd_disp &pd_cam1>;
 		bts-status = "enabled";
 	};
 
@@ -1398,7 +1398,6 @@
 		compatible = "samsung,exynos-pd";
 		reg = <0x105c40a0 0x20>;
 		bts-status = "enabled";
-		parent = <&pd_cam0>;
 	};
 
 	pd_maudio: pd-maudio@105c40c0 {
