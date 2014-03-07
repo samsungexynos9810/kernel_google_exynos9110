@@ -1295,6 +1295,19 @@ void kbasep_js_runpool_requeue_or_kill_ctx(kbase_device *kbdev, kbase_context *k
 		/* In all cases where we had a pm active refcount, release it */
 		kbase_pm_context_idle(kbdev);
 	}
+
+#ifdef SEPERATED_UTILIZATION
+	if (kbdev->js_data.nr_all_contexts_running == 0 ||
+		(kbdev->js_data.nr_all_contexts_running == 1 && kbdev->hwcnt.kctx != NULL)) {
+		/* Either:
+		* a) the last context has just finished (regardless of if hwcnt enabled)
+		* b) or, HW counter collection active, and there's one
+		* context active (which must be the HW counting context)
+		*
+		* Hence, we record going idle */
+		kbase_pm_record_gpu_state(kbdev, MALI_FALSE);
+	}
+#endif
 }
 
 void kbasep_js_runpool_release_ctx_and_katom_retained_state(kbase_device *kbdev, kbase_context *kctx, kbasep_js_atom_retained_state *katom_retained_state)
@@ -1793,6 +1806,15 @@ void kbasep_js_try_schedule_head_ctx(kbase_device *kbdev)
 	KBASE_DEBUG_PRINT_INFO(KBASE_JM, "JS: Dequeue Context %p", head_kctx);
 
 	pm_active_err = kbase_pm_context_active_handle_suspend(kbdev, KBASE_PM_SUSPEND_HANDLER_DONT_INCREASE);
+
+#ifdef SEPERATED_UTILIZATION
+	if (kbdev->hwcnt.kctx != head_kctx) {
+		/* Not a context which runs HW counters collection
+		* so do the recording of GPU being active
+		*/
+		kbase_pm_record_gpu_state(kbdev, MALI_TRUE);
+	}
+#endif
 
 	/*
 	 * Atomic transaction on the Context and Run Pool begins

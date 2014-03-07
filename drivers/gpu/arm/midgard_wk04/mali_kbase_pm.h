@@ -680,6 +680,28 @@ void kbasep_pm_record_gpu_active(struct kbase_device *kbdev);
  */
 void kbasep_pm_record_gpu_idle(struct kbase_device *kbdev);
 
+/** Notify the Power Management Metrics System that the GPU active state might
+ * have changed.
+ *
+ * If it has indeed changed since the last time the Metrics System was
+ * notified, then it calculates the active/idle time. Otherwise, it does
+ * nothing. For example, the caller can signal going idle when the last non-hw
+ * counter context deschedules, and then signals going idle again when the
+ * hwcounter context itself also deschedules.
+ *
+ * If there is only one context left running and that is HW counters
+ * collection, then the caller should set @p is_active to MALI_FALSE. This has
+ * a side effect that counter collecting contexts that also run jobs will be
+ * invisible to utilization metrics. Note that gator cannot run jobs itself, so
+ * is unaffected by this.
+ *
+ * @param kbdev     The kbase device structure for the device (must be a valid
+ *                  pointer)
+ * @param is_active Indicator that GPU must be recorded active (MALI_TRUE), or
+ *                  idle (MALI_FALSE)
+ */
+void kbase_pm_record_gpu_state(struct kbase_device *kbdev, mali_bool is_active);
+
 /** Function to be called by the frame buffer driver to update the vsync metric.
  *
  * This function should be called by the frame buffer driver to update whether the system is hitting the vsync target

@@ -286,7 +286,9 @@ int kbase_pm_context_active_handle_suspend(kbase_device *kbdev, kbase_pm_suspend
 		 * the policy */
 		kbase_pm_update_active(kbdev);
 
+#ifndef SEPERATED_UTILIZATION
 		kbasep_pm_record_gpu_active(kbdev);
+#endif
 	}
 
 	mutex_unlock(&kbdev->pm.lock);
@@ -327,7 +329,9 @@ void kbase_pm_context_idle(kbase_device *kbdev)
 		/* Last context has gone idle */
 		kbase_pm_update_active(kbdev);
 
+#ifndef SEPERATED_UTILIZATION
 		kbasep_pm_record_gpu_idle(kbdev);
+#endif
 
 		/* Wake up anyone waiting for this to become 0 (e.g. suspend). The
 		 * waiters must synchronize with us by locking the pm.lock after

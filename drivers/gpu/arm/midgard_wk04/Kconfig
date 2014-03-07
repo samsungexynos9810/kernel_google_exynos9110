@@ -168,4 +168,11 @@ config MALI_GPU_TRACEPOINTS
 	help
 	  Enables GPU tracepoints using Android trace event definitions.
 
+config MALI_SEPERATED_UTILIZATION
+	bool "Use seperated utilization"
+	depends on MALI_MIDGARD_WK04
+	default n
+	help
+	  Use seperated utilization from Active/Idle.
+
 source "drivers/gpu/arm/midgard_wk04/platform/Kconfig"

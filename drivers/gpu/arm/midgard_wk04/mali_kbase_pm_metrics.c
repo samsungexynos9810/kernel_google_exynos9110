@@ -195,6 +195,50 @@ void kbasep_pm_record_gpu_active(kbase_device *kbdev)
 
 KBASE_EXPORT_TEST_API(kbasep_pm_record_gpu_active)
 
+void kbase_pm_record_gpu_state(kbase_device *kbdev, mali_bool is_active)
+{
+    unsigned long flags;
+    ktime_t now;
+    ktime_t diff;
+
+    KBASE_DEBUG_ASSERT(kbdev != NULL);
+
+    mutex_lock(&kbdev->pm.lock);
+
+    spin_lock_irqsave(&kbdev->pm.metrics.lock, flags);
+
+    now = ktime_get();
+    diff = ktime_sub(now, kbdev->pm.metrics.time_period_start);
+
+    /* Note: We cannot use kbdev->pm.gpu_powered for debug checks that
+     * we're in the right state because:
+     * 1) we may be doing a delayed poweroff, in which case gpu_powered
+     *    might (or might not, depending on timing) still be true soon after
+     *    the call to kbase_pm_context_idle()
+     * 2) hwcnt collection keeps the GPU powered
+     */
+
+    if (!kbdev->pm.metrics.gpu_active && is_active) {
+        /* Going from idle to active, and not already recorded.
+         * Log current time spent idle so far */
+
+        kbdev->pm.metrics.time_idle += (u32) (ktime_to_ns(diff) >> KBASE_PM_TIME_SHIFT);
+    } else if (kbdev->pm.metrics.gpu_active && !is_active) {
+        /* Going from active to idle, and not already recorded.
+         * Log current time spent active so far */
+
+        kbdev->pm.metrics.time_busy += (u32) (ktime_to_ns(diff) >> KBASE_PM_TIME_SHIFT);
+    }
+    kbdev->pm.metrics.time_period_start = now;
+    kbdev->pm.metrics.gpu_active = is_active;
+
+    spin_unlock_irqrestore(&kbdev->pm.metrics.lock, flags);
+
+    mutex_unlock(&kbdev->pm.lock);
+}
+
+KBASE_EXPORT_TEST_API(kbase_pm_record_gpu_state)
+
 void kbase_pm_report_vsync(kbase_device *kbdev, int buffer_updated)
 {
 	unsigned long flags;
