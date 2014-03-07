@@ -1250,11 +1250,23 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 	if (dsim->enabled == false)
 		return 0;
 
+	dsim->dsim_lcd_drv->suspend(dsim);
+	dsim->enabled = false;
+
 	/* disable interrupts */
 	s5p_mipi_dsi_set_interrupt(dsim, false);
 
-	dsim->enabled = false;
-	dsim->dsim_lcd_drv->suspend(dsim);
+	/* disable HS clock */
+	s5p_mipi_dsi_enable_hs_clock(dsim, 0);
+
+	/* make CLK/DATA Lane as LP00 */
+	s5p_mipi_dsi_enable_lane(dsim, DSIM_LANE_CLOCK, 0);
+	s5p_mipi_dsi_enable_lane(dsim, dsim->data_lane, 0);
+
+	s5p_mipi_dsi_set_clock(dsim, dsim->dsim_config->e_byte_clk, 0);
+
+	s5p_mipi_dsi_sw_reset(dsim);
+
 	dsim->state = DSIM_STATE_SUSPEND;
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 
