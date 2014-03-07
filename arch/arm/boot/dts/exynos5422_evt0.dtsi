@@ -1172,6 +1172,26 @@
 				freq_cpu = <0>;
 				freq_kfc = <400000>;
 			};
+			mfc_qos_extra_var_0 {
+				thrd_mb = <0xFFFFFFFF>;
+			};
+			mfc_qos_extra_var_1 {
+				thrd_mb = <0xFFFFFFFF>;
+			};
+			mfc_qos_extra_var_2 {
+				thrd_mb = <0xFFFFFFFF>;
+			};
+			mfc_qos_extra_var_3 {
+				thrd_mb = <0xFFFFFFFF>;
+			};
+			mfc_qos_extra_var_4 {
+				thrd_mb = <489600>;
+				freq_mfc = <400000>;
+				freq_int = <420000>;
+				freq_mif = <825000>;
+				freq_cpu = <0>;
+				freq_kfc = <400000>;
+			};
 		};
 	};
 
