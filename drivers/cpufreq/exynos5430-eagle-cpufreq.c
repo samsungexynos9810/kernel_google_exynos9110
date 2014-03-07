@@ -839,6 +839,8 @@ static void __init set_volt_table_CA15(void)
 			max_support_idx_CA15 = L5;	/* 2.0 GHz */
 		else if (spd_sel == EGL_SPD_SEL_2100_MHZ)
 			max_support_idx_CA15 = L5;	/* 2.0 GHz */
+		else
+			panic("can not support speed select (0x%x)\n", spd_sel);
 	}
 	min_support_idx_CA15 = L17;	/* 800 MHz */
 
