@@ -61,8 +61,8 @@ static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_wr_comp);
 static DECLARE_COMPLETION(dsim_rd_comp);
 
-#define MIPI_WR_TIMEOUT msecs_to_jiffies(32)
-#define MIPI_RD_TIMEOUT msecs_to_jiffies(32)
+#define MIPI_WR_TIMEOUT msecs_to_jiffies(50)
+#define MIPI_RD_TIMEOUT msecs_to_jiffies(50)
 
 static unsigned int dpll_table[15] = {
 	100, 120, 170, 220, 270,
