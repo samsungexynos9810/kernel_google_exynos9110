@@ -916,10 +916,12 @@ static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_fla
 			pr_warn("%s: failed to restore normal state\n", pd->name);
 
 		if (unlikely(!timeout)) {
-			pr_err(PM_DOMAIN_PREFIX "%s can't control power forcedly, timeout\n",
+			pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n",
 					pd->name);
 			mutex_unlock(&pd->access_lock);
 			return -ETIMEDOUT;
+		} else {
+			pr_info(PM_DOMAIN_PREFIX "%s power down success\n", pd->name);
 		}
 
 		if (unlikely(timeout < (TIMEOUT_COUNT >> 1))) {
