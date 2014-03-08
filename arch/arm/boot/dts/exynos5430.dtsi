@@ -1190,7 +1190,7 @@
 		ip_ver = <9>;
 		clock_rate = <552000000>;
 		min_rate = <84000>;
-		num_qos_steps = <5>;
+		num_qos_steps = <6>;
 
 		mfc_qos_table {
 			mfc_qos_variant_0 {
@@ -1227,8 +1227,16 @@
 			};
 			mfc_qos_variant_4 {
 				thrd_mb = <489600>;
-				freq_mfc = <552000>;
+				freq_mfc = <633000>;
 				freq_int = <543000>;
+				freq_mif = <825000>;
+				freq_cpu = <800000>;
+				freq_kfc = <800000>;
+			};
+			mfc_qos_variant_5 {
+				thrd_mb = <489600>;
+				freq_mfc = <500000>;
+				freq_int = <400000>;
 				freq_mif = <825000>;
 				freq_cpu = <800000>;
 				freq_kfc = <800000>;
