@@ -792,50 +792,30 @@ static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 #define __set_mask(name) __raw_writel(name##_ALL, name)
 #define __clr_mask(name) __raw_writel(~(name##_ALL), name)
 
-static void reset_fd(void)
-{
-	unsigned int reg;
-	u32 timeout;
-
-	/* IP local clock on */
-	reg = __raw_readl(EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
-	reg |= (1 << 3);
-	__raw_writel(reg, EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
-
-	/* check the FD status to make sure it is already idle */
-	if ((__raw_readl(S5P_VA_FIMC_FD + 0x10) & 0x8) == 1) {
-		if ((__raw_readl(S5P_VA_FIMC_FD + 0x0c) & 0x1) == 1) {
-			pr_info("already %s AXI\n", __func__);
-			return;
-		}
-	}
-
-	/* FD software reset */
-	__raw_writel(0x2, S5P_VA_FIMC_FD + 0x4);
-
-	/* Check FD software reset release */
-	timeout = 100; /* 1 ms */
-	reg = __raw_readl(S5P_VA_FIMC_FD + 0x4);
-	while(!(reg & (0x1 << 1)))
-	{
-		if (timeout == 0) {
-			pr_info("%s: timeout\n", __func__);
-			break;
-		}
-
-		--timeout;
-		cpu_relax();
-		usleep_range(8, 10);
-	}
-
-	pr_info("%s complete\n", __func__);
-}
-
 static int force_down_pre(const char *name)
 {
-	__raw_writel(0x0, EXYNOS5430_A5IS_OPTION);
+	if (strncmp(name, "pd-cam0", 7) == 0) {
+		/* For prevent FW clock gating */
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_ACLK_CAM0_LOCAL);
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_PCLK_CAM0_LOCAL);
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_SCLK_CAM0_LOCAL);
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_IP_CAM0_LOCAL0);
+		__raw_writel(0x0000001F, EXYNOS5430_ENABLE_IP_CAM0_LOCAL1);
 
-	if (strncmp(name, "pd-cam1", 7) == 0) {
+		/* For prevent HOST clock gating */
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_ACLK_CAM00);
+		__raw_writel(0xFFFFFFFF, EXYNOS5430_ENABLE_ACLK_CAM01);
+		__raw_writel(0x000007FF, EXYNOS5430_ENABLE_ACLK_CAM02);
+		__raw_writel(0x07FFFFFF, EXYNOS5430_ENABLE_PCLK_CAM0);
+		__raw_writel(0x000001FF, EXYNOS5430_ENABLE_SCLK_CAM0);
+		__raw_writel(0x000003FF, EXYNOS5430_ENABLE_IP_CAM00);
+		__raw_writel(0x007FFFFF, EXYNOS5430_ENABLE_IP_CAM01);
+		__raw_writel(0x000007FF, EXYNOS5430_ENABLE_IP_CAM02);
+		__raw_writel(0x0000001F, EXYNOS5430_ENABLE_IP_CAM03);
+
+		/* LPI disable */
+		__set_mask(EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
+	} else if (strncmp(name, "pd-cam1", 7) == 0) {
 		/* For prevent FW clock gating */
 		__raw_writel(0x0000001B, EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
 		__raw_writel(0x00003FFF, EXYNOS5430_ENABLE_PCLK_CAM1_LOCAL);
@@ -854,8 +834,30 @@ static int force_down_pre(const char *name)
 		__raw_writel(0x00000FFF, EXYNOS5430_ENABLE_IP_CAM12);
 
 		/* LPI disable */
-		reset_fd();
+		__set_mask(EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
+	} else if (strncmp(name, "pd-isp", 6) == 0) {
+		/* For prevent FW clock gating */
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_ACLK_ISP_LOCAL);
+		__raw_writel(0x0000003F, EXYNOS5430_ENABLE_PCLK_ISP_LOCAL);
+		__raw_writel(0x0000003F, EXYNOS5430_ENABLE_SCLK_ISP_LOCAL);
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_IP_ISP_LOCAL0);
+		__raw_writel(0x0000000F, EXYNOS5430_ENABLE_IP_ISP_LOCAL1);
+
+		/* For prevent HOST clock gating */
+		__raw_writel(0x0000007F, EXYNOS5430_ENABLE_ACLK_ISP0);
+		__raw_writel(0x0003FFFF, EXYNOS5430_ENABLE_ACLK_ISP1);
+		__raw_writel(0x00007FFF, EXYNOS5430_ENABLE_ACLK_ISP2);
+		__raw_writel(0x07FFFFFF, EXYNOS5430_ENABLE_PCLK_ISP);
+		__raw_writel(0x0000003F, EXYNOS5430_ENABLE_SCLK_ISP);
+		__raw_writel(0x000003FF, EXYNOS5430_ENABLE_IP_ISP0);
+		__raw_writel(0x0000FFFF, EXYNOS5430_ENABLE_IP_ISP1);
+		__raw_writel(0x00007FFF, EXYNOS5430_ENABLE_IP_ISP2);
+		__raw_writel(0x0000000F, EXYNOS5430_ENABLE_IP_ISP3);
+
+		__set_mask(EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
 	} else {
+		pr_err(PM_DOMAIN_PREFIX "%s invalid pd name\n",
+					name);
 		return -EINVAL;
 	}
 
@@ -1001,12 +1003,14 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.on_pre = exynos_pd_isp_power_on_pre,
 		.on_post = exynos_pd_isp_power_on_post,
 		.off_pre = exynos_pd_isp_power_off_pre,
+		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_isp_power_off_post,
 	}, {
 		.name = "pd-cam0",
 		.on_pre = exynos_pd_cam0_power_on_pre,
 		.on_post = exynos_pd_cam0_power_on_post,
 		.off_pre = exynos_pd_cam0_power_off_pre,
+		.off = exynos_pd_power_off_custom,
 		.off_post = exynos_pd_cam0_power_off_post,
 	}, {
 		.name = "pd-cam1",
