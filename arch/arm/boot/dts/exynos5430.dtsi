@@ -457,6 +457,7 @@
 		mmu-masters = <&fimc_is>;
 		prop-map {
 			iomap = "w";
+			block-stop = "yes";
 		};
 	};
 
@@ -467,6 +468,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2572>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_3aa1: sysmmu@0x121A0000 {
@@ -476,6 +480,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2571>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_g2d: sysmmu@0x12450000 {
@@ -581,6 +588,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2670>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_cpu: sysmmu@0x142D0000 {
@@ -590,6 +600,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2667>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_isp: sysmmu@0x14320000 {
@@ -599,6 +612,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2745>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_drc: sysmmu@0x14330000 {
@@ -608,6 +624,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2744>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_scc: sysmmu@0x14340000 {
@@ -617,6 +636,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2743>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_dis0: sysmmu@0x143A0000 {
@@ -626,6 +648,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2742>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_dis1: sysmmu@0x143B0000 {
@@ -635,6 +660,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2741>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_scp: sysmmu@0x143C0000 {
@@ -644,6 +672,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2738>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 	sysmmu_fimc_3dnr: sysmmu@0x143D0000 {
@@ -653,6 +684,9 @@
 		clock-names = "sysmmu";
 		clocks = <&clock 2740>;
 		mmu-masters = <&fimc_is>;
+		prop-map {
+			block-stop = "yes";
+		};
 	};
 
 
