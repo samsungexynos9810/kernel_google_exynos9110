@@ -1397,7 +1397,7 @@
 			dmas = <&adma 1>;
 			dma-names = "tx-sec";
 			samsung,tx-buf = <0x03000000>;
-			samsung,tx-size = <0x8000>;
+			samsung,tx-size = <0x20000>;
 		};
 	};
 
