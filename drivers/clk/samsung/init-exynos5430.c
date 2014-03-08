@@ -487,6 +487,7 @@ void clocks_restore_from_oscclk(void)
 
 	exynos_set_parent("mout_aclk_mscl_400_b", "mout_aclk_mscl_400_a");
 	exynos_set_parent("mout_aclk_g2d_400_b", "mout_aclk_g2d_400_a");
+	exynos_set_parent("mout_mphy_pll", "fin_pll");
 }
 
 void __init exynos5430_clock_init(void)

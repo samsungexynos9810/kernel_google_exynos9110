@@ -1183,8 +1183,10 @@
 		compatible = "samsung,mfc-v6";
 		reg = <0x152E0000 0x10000>;
 		interrupts = <0 358 0>;
-		clock-names = "gate_mfc0", "mout_aclk_mfc0_333_user", "aclk_mfc0_333", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_aclk_mfc0_333", "mout_aclk_mfc0_333_a", "mout_isp_pll";
-		clocks = <&clock 2352>, <&clock 3121>, <&clock 332>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4034>, <&clock 3250>, <&clock 3013>;
+		clock-names = "gate_mfc0", "mout_aclk_mfc0_333_user", "aclk_mfc0_333", "mout_mfc_pll_user", "dout_mfc_pll", "mout_bus_pll_user", "dout_aclk_mfc0_333", "mout_aclk_mfc0_333_a", "mout_isp_pll",
+			"mout_mphy_pll", "fout_mphy_pll", "fin_pll";
+		clocks = <&clock 2352>, <&clock 3121>, <&clock 332>, <&clock 3011>, <&clock 4102>, <&clock 3010>, <&clock 4034>, <&clock 3250>, <&clock 3013>,
+			<&clock 3105>, <&clock 6>, <&clock 1>;
 		samsung,power-domain = <&pd_mfc0>;
 		status = "ok";
 		ip_ver = <9>;
