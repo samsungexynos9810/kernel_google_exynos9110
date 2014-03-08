@@ -874,6 +874,8 @@ static int __init exynos_init_cpuidle(void)
 	__raw_writel(value, EXYNOS_COMMON_OPTION(0));
 #endif
 
+	spin_lock_init(&c2_state_lock);
+
 	/* Setup cpuidle driver */
 	idle_set = exynos5_cpuidle_set;
 	drv->state_count = ARRAY_SIZE(exynos5_cpuidle_set);
@@ -944,7 +946,6 @@ static int __init exynos_init_cpuidle(void)
 		pr_err("%s: debugfs_create_file() failed\n", __func__);
 	}
 
-	spin_lock_init(&c2_state_lock);
 #endif
 
 	lp_debugfs =
