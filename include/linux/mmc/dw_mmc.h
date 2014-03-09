@@ -304,6 +304,8 @@ struct dw_mci_dma_ops {
 #define DW_MMC_QUIRK_SW_DATA_TIMEOUT		BIT(8)
 /* Retry CRC error */
 #define DW_MMC_QUIRK_RETRY_ERROR		BIT(9)
+/* Use CPU mode for tuning */
+#define DW_MMC_QUIRK_USE_CPU_MODE_TUNING	BIT(10)
 
 /* Slot level quirks */
 /* This slot has no write protect */

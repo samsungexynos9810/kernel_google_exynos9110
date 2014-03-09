@@ -887,6 +887,7 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 	struct scatterlist *sg;
 	struct dw_mci_slot *slot = host->cur_slot;
 	struct mmc_card *card = slot->mmc->card;
+	struct mmc_host	*mmc = slot->mmc;
 	unsigned int i, sg_len;
 	unsigned int align_mask = host->align_size - 1;
 
@@ -906,6 +907,11 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 
 	if (data->blksz < (1 << host->data_shift))
 		return -EINVAL;
+
+	if (host->quirks & DW_MMC_QUIRK_USE_CPU_MODE_TUNING) {
+		if (mmc->tuning_progress)
+			return -EINVAL;
+	}
 
 	if (card && mmc_card_sdio(card)) {
 		unsigned int rxwmark_val = 0, msize_val = 0, i;
@@ -1792,6 +1798,7 @@ static void dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd
 		if (cmd->data) {
 			dw_mci_stop_dma(host);
 			host->data = NULL;
+			host->sg = NULL;
 		}
 	}
 }
@@ -3541,6 +3548,9 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk	= "error-retry",
 		.id	= DW_MMC_QUIRK_RETRY_ERROR,
+	}, {
+		.quirk	= "use-cpu-mode-tuning",
+		.id	= DW_MMC_QUIRK_USE_CPU_MODE_TUNING,
 	},
 };
 
