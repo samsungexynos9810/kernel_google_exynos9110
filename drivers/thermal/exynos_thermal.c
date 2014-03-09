@@ -54,6 +54,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_TMU_REG_TRIMINFO			0x0
 #define EXYNOS_TMU_REG_CONTROL			0x20
 #define EXYNOS_TMU_REG_STATUS			0x28
+#define EXYNOS_TMU_REG_SAMPLING_INTERVAL	0x2C
 #define EXYNOS_TMU_REG_CURRENT_TEMP		0x40
 
 #if defined(CONFIG_SOC_EXYNOS5430_REV_0)
@@ -224,6 +225,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define CALIB_SEL_MASK			0x00800000
 #define VPTAT_CTRL_MASK			0x00700000
 #define BUF_VREF_SEL_2POINT		23
+#define IDLE_MAX_TIME			1000
 #endif
 
 #define SWTRIP_TEMP				110
@@ -1064,6 +1066,10 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 				data->base[id] + EXYNOS_THD_TEMP_FALL7_4);
 		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
 				data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
+
+		/* Adjuest sampling interval default -> 1ms */
+		/* W/A for WTSR */
+		writel(0xE10, data->base[id] + EXYNOS_TMU_REG_SAMPLING_INTERVAL);
 #endif
 	}
 out:
@@ -1414,8 +1420,9 @@ static struct notifier_block exynos_pm_nb = {
 #if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 static void exynos_tmu_core_control(bool on)
 {
-	int i;
+	int i, j;
 	unsigned int con;
+	unsigned int status;
 	struct exynos_tmu_data *data = platform_get_drvdata(exynos_tmu_pdev);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
@@ -1423,6 +1430,21 @@ static void exynos_tmu_core_control(bool on)
 		con &= TMU_CONTROL_ONOFF_MASK;
 		con |= (on ? EXYNOS_TMU_CORE_ON : EXYNOS_TMU_CORE_OFF);
 		writel(con, data->base[i] + EXYNOS_TMU_REG_CONTROL);
+	}
+
+	if (!on) {
+		for (j=0; j < IDLE_MAX_TIME; j++) {
+			status = 0;
+
+			for (i = 0; i < EXYNOS_TMU_COUNT; i++)
+				status |= (((readl(data->base[i] + EXYNOS_TMU_REG_STATUS) & 0x1)) << i);
+
+			if (status == 0x1F)
+				break;
+
+			}
+		if (j == (IDLE_MAX_TIME - 1))
+			pr_err ("@@@@@ TMU CHECK BUSY @@@@@@\n");
 	}
 }
 
@@ -1433,6 +1455,7 @@ static int exynos_pm_dstop_notifier(struct notifier_block *notifier,
 	case LPA_ENTER:
 		exynos_tmu_core_control(false);
 		break;
+	case LPA_ENTER_FAIL:
 	case LPA_EXIT:
 		exynos_tmu_core_control(true);
 		break;
