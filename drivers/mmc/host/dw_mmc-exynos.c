@@ -444,6 +444,8 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
 	__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN + rclk_base);
 	__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL + rclk_base);
+	if (timing == MMC_TIMING_MMC_HS200_DDR)
+		__raw_writel(0x1, host->regs + DWMCI_DDR200_ASYNC_FIFO_CTRL + rclk_base);
 }
 
 #ifndef MHZ
