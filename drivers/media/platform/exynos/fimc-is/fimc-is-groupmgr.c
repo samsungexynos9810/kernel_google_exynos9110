@@ -1542,7 +1542,6 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		spin_lock_irq(&gframemgr->frame_slock);
 		fimc_is_gframe_group_head(group, &gframe);
 		if (!gframe) {
-			spin_unlock_irq(&gframemgr->frame_slock);
 			merr("g%dframe is NULL1", group, group->id);
 			warn("GRP%d(res %d, rcnt %d), GRP2(res %d, rcnt %d)",
 				device->group_3aa.id,
@@ -1552,6 +1551,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 				atomic_read(&device->group_isp.rcount));
 			fimc_is_gframe_print_group(group_prev);
 			fimc_is_gframe_print_free(gframemgr);
+			spin_unlock_irq(&gframemgr->frame_slock);
 			ret = -EINVAL;
 			goto p_err;
 		}
@@ -1577,7 +1577,6 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		spin_lock_irq(&gframemgr->frame_slock);
 		fimc_is_gframe_free_head(gframemgr, &gframe);
 		if (!gframe) {
-			spin_unlock_irq(&gframemgr->frame_slock);
 			merr("g%dframe is NULL2", group, group->id);
 			warn("GRP%d(res %d, rcnt %d), GRP2(res %d, rcnt %d)",
 				device->group_3aa.id,
@@ -1587,6 +1586,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 				atomic_read(&device->group_isp.rcount));
 			fimc_is_gframe_print_free(gframemgr);
 			fimc_is_gframe_print_group(group_next);
+			spin_unlock_irq(&gframemgr->frame_slock);
 			ret = -EINVAL;
 			goto p_err;
 		}
@@ -1615,7 +1615,6 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		spin_lock_irq(&gframemgr->frame_slock);
 		fimc_is_gframe_group_head(group, &gframe);
 		if (!gframe) {
-			spin_unlock_irq(&gframemgr->frame_slock);
 			merr("g%dframe is NULL3", group, group->id);
 			warn("GRP%d(res %d, rcnt %d), GRP2(res %d, rcnt %d)",
 				device->group_3aa.id,
@@ -1625,6 +1624,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 				atomic_read(&device->group_isp.rcount));
 			fimc_is_gframe_print_group(group_prev);
 			fimc_is_gframe_print_group(group_next);
+			spin_unlock_irq(&gframemgr->frame_slock);
 			ret = -EINVAL;
 			goto p_err;
 		}
@@ -1651,7 +1651,6 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 		spin_lock_irq(&gframemgr->frame_slock);
 		fimc_is_gframe_free_head(gframemgr, &gframe);
 		if (!gframe) {
-			spin_unlock_irq(&gframemgr->frame_slock);
 			merr("g%dframe is NULL4", group, group->id);
 			warn("GRP%d(res %d, rcnt %d), GRP2(res %d, rcnt %d)",
 				device->group_3aa.id,
@@ -1660,6 +1659,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 				groupmgr->group_smp_res[device->group_isp.id].count,
 				atomic_read(&device->group_isp.rcount));
 			fimc_is_gframe_print_free(gframemgr);
+			spin_unlock_irq(&gframemgr->frame_slock);
 			ret = -EINVAL;
 			goto p_err;
 		}
