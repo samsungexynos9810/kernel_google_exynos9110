@@ -986,7 +986,7 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	plat_data = data->dev->platform_data;
 
 	data->devfreq->min_freq = plat_data->default_qos;
-	data->devfreq->max_freq = devfreq_int_opp_list[LV0].freq;
+	data->devfreq->max_freq = devfreq_int_opp_list[LV0_A].freq;
 
 	register_reboot_notifier(&exynos5_int_reboot_notifier);
 
