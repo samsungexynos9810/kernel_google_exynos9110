@@ -31,6 +31,10 @@
 			compatible = "samsung,exynos3250-oscclk";
 			clock-frequency = <24000000>;
 		};
+		half_mpll {
+			compatible = "samsung,exynos3250-half_mpll";
+			clock-frequency = <400000000>;
+		};
 	};
 
 	gpio_keys {
