@@ -173,7 +173,7 @@ static void kbasep_pm_do_gpu_poweroff_wq(struct work_struct *data)
 
 	if (do_poweroff != MALI_FALSE) {
 		/* Power off the GPU */
-#if SOC_NAME == 5430
+#if 0 // SOC_NAME == 5430
 		kbdev->pm.shader_poweroff_pending = 0;
 #endif /* SOC_NAME */
 		kbase_pm_do_poweroff(kbdev, MALI_FALSE);
