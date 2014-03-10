@@ -872,9 +872,9 @@ static int __init exynos_init_cpuidle(void)
 	value = __raw_readl(EXYNOS_COMMON_OPTION(0));
 	value |= (1 << 30) | (1 << 29) | (1 << 9);
 	__raw_writel(value, EXYNOS_COMMON_OPTION(0));
-#endif
 
 	spin_lock_init(&c2_state_lock);
+#endif
 
 	/* Setup cpuidle driver */
 	idle_set = exynos5_cpuidle_set;
