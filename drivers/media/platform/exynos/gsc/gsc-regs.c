@@ -13,6 +13,7 @@
 
 #include <linux/io.h>
 #include <linux/delay.h>
+#include <linux/ktime.h>
 #include <mach/map.h>
 #include "gsc-core.h"
 
@@ -70,7 +71,6 @@ void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable)
 	u32 cfg = 0;
 
 	if (enable) {
-		gsc_dbg("GSC start(%d)\n", dev->id);
 		/* realtime effort */
 		cfg = readl(dev->regs + GSC_BUSCON);
 		cfg |= GSC_BUSCON_REAL_TIME_ACCESS_EN;
@@ -82,18 +82,20 @@ void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable)
 		gsc_hw_set_smart_if_pix_num(ctx);
 		gsc_hw_set_smart_if_con(dev, true);
 		gsc_hw_set_lookup_table(dev);
-		gsc_hw_set_sfr_update(ctx);
+//		gsc_hw_set_sfr_update(ctx);
 
 		cfg = readl(dev->regs + GSC_ENABLE);
 		cfg |= GSC_ENABLE_ON;
 		cfg |= GSC_ENABLE_QOS_ENABLE;
 		writel(cfg, dev->regs + GSC_ENABLE);
+		printk("GSC start(%d)\n", dev->id);
 	} else {
-		gsc_dbg("GSC stop(%d)\n", dev->id);
 		gsc_hw_set_smart_if_con(dev, false);
 		cfg = readl(dev->regs + GSC_ENABLE);
 		cfg &= ~GSC_ENABLE_ON;
 		writel(cfg, dev->regs + GSC_ENABLE);
+
+		printk("GSC stop(%d)\n", dev->id);
 	}
 }
 
@@ -267,27 +269,30 @@ int gsc_wait_operating(struct gsc_dev *dev)
 
 int gsc_wait_stop(struct gsc_dev *dev)
 {
-	unsigned long timeo = jiffies + 10; /* timeout of 50ms */
 	u32 cfg;
 	int ret;
 
-	while (time_before(jiffies, timeo)) {
+	ktime_t start = ktime_get();
+
+	do {
 		cfg = readl(dev->regs + GSC_ENABLE);
 		if (!(cfg & GSC_ENABLE_STOP_STATUS_STOP_SEQ))
 			return 0;
 		usleep_range(10, 20);
-	}
+	} while(ktime_us_delta(ktime_get(), start) < 1000000);
+
 	/* This is workaround until next chips.
 	 * If fimd is stop than gsc, gsc didn't work complete
 	 */
 
+	gsc_err("Stop timeout!!");
 	gsc_hw_set_sw_reset(dev);
 	ret = gsc_wait_reset(dev);
 	if (ret < 0) {
 		gsc_err("gscaler s/w reset timeout");
 		return ret;
 	}
-	gsc_info("wait time : %d ms", jiffies_to_msecs(jiffies - timeo + 10));
+
 	return 0;
 }
 
@@ -470,6 +475,14 @@ void gsc_hw_set_input_buf_mask_all(struct gsc_dev *dev)
 	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
 }
 
+void gsc_hw_set_input_buf_fixed(struct gsc_dev *dev)
+{
+	u32 cfg = readl(dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
+	cfg &= ~(0x3 << 16);
+
+	writel(cfg, dev->regs + GSC_IN_BASE_ADDR_Y_MASK);
+}
+
 void gsc_hw_set_output_buf_mask_all(struct gsc_dev *dev)
 {
 	u32 cfg;
@@ -542,6 +555,16 @@ void gsc_hw_set_input_addr(struct gsc_dev *dev, struct gsc_addr *addr,
 	writel(addr->cr, dev->regs + GSC_IN_BASE_ADDR_CR(index));
 
 }
+
+void gsc_hw_set_input_addr_fixed(struct gsc_dev *dev, struct gsc_addr *addr)
+{
+	gsc_dbg("src_buf: 0x%X, cb: 0x%X, cr: 0x%X",
+		addr->y, addr->cb, addr->cr);
+	writel(addr->y, dev->regs + GSC_IN_BASE_ADDR_Y(0));
+	writel(addr->cb, dev->regs + GSC_IN_BASE_ADDR_CB(0));
+	writel(addr->cr, dev->regs + GSC_IN_BASE_ADDR_CR(0));
+}
+
 
 void gsc_hw_set_output_addr(struct gsc_dev *dev,
 			     struct gsc_addr *addr, int index)
@@ -923,8 +946,15 @@ void gsc_hw_set_sfr_update(struct gsc_ctx *ctx)
 {
 	struct gsc_dev *dev = ctx->gsc_dev;
 	u32 cfg;
+	ktime_t start = ktime_get();
 
-	cfg = readl(dev->regs + GSC_ENABLE);
+	do {
+		cfg = readl(dev->regs + GSC_ENABLE);
+		if (!(cfg & GSC_ENABLE_SFR_UPDATE))
+			break;
+		udelay(1);
+	} while(ktime_us_delta(ktime_get(), start) < 20000);
+
 	cfg |= GSC_ENABLE_SFR_UPDATE;
 	writel(cfg, dev->regs + GSC_ENABLE);
 }

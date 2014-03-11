@@ -1303,18 +1303,16 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 		    !list_is_singular(&gsc->out.active_buf_q)) {
 			struct gsc_input_buf *done_buf;
 			done_buf = active_queue_pop(&gsc->out, gsc);
-			if (done_buf->idx != gsc_hw_get_curr_in_buf_idx(gsc)) {
-				spin_lock(&gsc->mdev[MDEV_OUTPUT]->slock);
-				gsc_hw_set_input_buf_masking(gsc, done_buf->idx, true);
-				gsc_out_set_pp_pending_bit(gsc, done_buf->idx, true);
-				spin_unlock(&gsc->mdev[MDEV_OUTPUT]->slock);
-				vb2_buffer_done(&done_buf->vb, VB2_BUF_STATE_DONE);
-				list_del(&done_buf->list);
-			}
+			vb2_buffer_done(&done_buf->vb, VB2_BUF_STATE_DONE);
+			list_del(&done_buf->list);
+		} else {
+			gsc_info("active buf q is empty or single");
 		}
-	} else if (test_bit(ST_CAPT_PEND, &gsc->state)) {
-		gsc_cap_irq_handler(gsc);
+		gsc->isr_cnt++;
+	} else {
+		gsc_info("After s_stream(0), ISR is called");
 	}
+
 
 isr_unlock:
 	spin_unlock(&gsc->slock);
@@ -1564,7 +1562,7 @@ struct gsc_variant gsc_variant = {
 	.pix_max		= &gsc_v_max,
 	.pix_min		= &gsc_v_min,
 	.pix_align		= &gsc_v_align,
-	.in_buf_cnt		= 4,
+	.in_buf_cnt		= 10,
 	.out_buf_cnt		= 16,
 	.sc_up_max		= 8,
 	.sc_down_max		= 16,

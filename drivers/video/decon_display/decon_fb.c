@@ -978,7 +978,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb);
 static int s3c_fb_disable(struct s3c_fb *sfb);
 static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 		struct s3c_reg_data *regs, bool enable);
-static void s3c_fb_disable_otf(struct s3c_fb *sfb)
+void s3c_fb_disable_otf(struct s3c_fb *sfb)
 {
 	u32 data;
 	int timecnt = 2000;
@@ -1005,7 +1005,7 @@ static void s3c_fb_disable_otf(struct s3c_fb *sfb)
 			pr_err("%s:fail stop localpath\n", __func__);
 		clear_bit(S3C_FB_LOCAL,
 			&sfb->windows[0]->state);
-		set_bit(S3C_FB_STOP_DMA,
+		set_bit(S3C_FB_DMA,
 			&sfb->windows[0]->state);
 		shadow_protect_win(sfb->windows[0], 0);
 
@@ -1016,6 +1016,7 @@ static void s3c_fb_disable_otf(struct s3c_fb *sfb)
 			pr_err("%s: Error:0x%x\n", __func__,
 			readl(sfb->regs + DECON_UPDATE_SHADOW));
 		writel(data, sfb->regs + DECON_UPDATE);
+		printk("%s\n", __func__);
 	}
 }
 
@@ -1329,7 +1330,6 @@ static irqreturn_t s3c_fb_irq(int irq, void *dev_id)
 	if (irq_sts_reg & VIDINTCON1_INT_FRAME) {
 		/* VSYNC interrupt, accept it */
 		writel(VIDINTCON1_INT_FRAME, regs + VIDINTCON1);
-
 		sfb->vsync_info.timestamp = timestamp;
 		wake_up_interruptible_all(&sfb->vsync_info.wait);
 	}
@@ -2307,19 +2307,6 @@ static void set_reg_data(struct s3c_fb *sfb, int i,
 		regs->dma_buf_data[i];
 }
 
-static int s3c_fb_set_otf_buffer(struct s3c_fb *sfb, int i)
-{
-	int ret = 0;
-	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
-
-	ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id], core, ioctl,
-			GSC_SET_BUF, NULL);
-	if (ret)
-		pr_err("GSC_SET_BUF failed\n");
-
-	return ret;
-}
-
 static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
 {
 	int ret = 0;
@@ -2329,7 +2316,6 @@ static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
 			GSC_SFR_UPDATE, NULL);
 	if (ret)
 		pr_err("GSC_SFR_UPDATE failed\n");
-
 	return ret;
 }
 
@@ -2351,7 +2337,10 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	unsigned short i;
 	unsigned int data;
 	int ret = 0;
-	unsigned long flags;
+
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	hw_trigger_mask_enable(sfb, true);
+#endif
 
 	for (i = 0; i < sfb->variant.nr_windows; i++)
 		shadow_protect_win(sfb->windows[i], 1);
@@ -2369,7 +2358,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 					pr_err("fail stop localpath\n");
 				clear_bit(S3C_FB_LOCAL,
 					&sfb->windows[i]->state);
-				set_bit(S3C_FB_STOP_DMA,
+				set_bit(S3C_FB_DMA,
 					&sfb->windows[i]->state);
 			}
 		} else {
@@ -2384,6 +2373,8 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 					&sfb->windows[i]->state);
 				set_bit(S3C_FB_LOCAL,
 					&sfb->windows[i]->state);
+				clear_bit(S3C_FB_DMA,
+					&sfb->windows[i]->state);
 			} else {
 				ret = s3c_fb_change_frame(sfb, regs, i);
 				if (ret)
@@ -2395,33 +2386,13 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		shadow_protect_win(sfb->windows[i], 0);
 
 	decon_fb_direct_on_off(sfb, true);
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-	hw_trigger_mask_enable(sfb, false);
-#endif
-
 	data = readl(sfb->regs + DECON_UPDATE);
 	data |= DECON_UPDATE_STANDALONE_F;
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-	if (soc_is_exynos5430()) {
-		for (i = 0; i < sfb->variant.nr_windows; i++) {
-			if (test_bit(S3C_FB_STOP_DMA,
-				&sfb->windows[i]->state)) {
-				data |= DECON_UPDATE_SLAVE_SYNC;
-				clear_bit(S3C_FB_STOP_DMA,
-						&sfb->windows[i]->state);
-			} else if (test_bit(S3C_FB_LOCAL,
-					&sfb->windows[i]->state)) {
-				data |= DECON_UPDATE_SLAVE_SYNC;
-			}
-		}
-	}
-#endif
 	if (readl(sfb->regs + DECON_UPDATE_SHADOW) & (1<<0))
 		pr_err("Error:0x%x\n",
 				readl(sfb->regs + DECON_UPDATE_SHADOW));
 
-	spin_lock_irqsave(&sfb->md->slock, flags);
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!WIN_CONFIG_DMA(i)) {
 			ret = s3c_fb_set_sfr_update(sfb, i);
@@ -2432,14 +2403,9 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 	writel(data, sfb->regs + DECON_UPDATE);
 
-	for (i = 0; i < sfb->variant.nr_windows; i++) {
-		if (!WIN_CONFIG_DMA(i)) {
-			ret = s3c_fb_set_otf_buffer(sfb, i);
-			if (ret)
-				pr_err("failed set otf buffer\n");
-		}
-	}
-	spin_unlock_irqrestore(&sfb->md->slock, flags);
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+	hw_trigger_mask_enable(sfb, false);
+#endif
 }
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
@@ -3226,23 +3192,23 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	struct s3c_fb *sfb = win->parent;
 
 	if (enable) {
-		dev_dbg(sfb->dev, "Decon start(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
 		data &= ~(0x07 << 20); /* Masking */
 		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
-#if !defined(CONFIG_SOC_EXYNOS5430_REV_0)
 		if (soc_is_exynos5430()) {
 			data = readl(sfb->regs + DECON_UPDATE_SCHEME);
 			data |= (0x1 << 31);
 			writel(data, sfb->regs + DECON_UPDATE_SCHEME);
 		}
-#endif
+		set_bit(S3C_FB_S_STREAM, &sfb->windows[win->index]->state);
+		printk("Decon start(%d)\n", win->index);
 	} else {
-		dev_dbg(sfb->dev, "Decon stop(%d)\n", win->index);
 		data = readl(sfb->regs + WINCON(win->index));
 		data &= ~(0x07 << 20); /* Masking == diable local path */
 		writel(data, sfb->regs + WINCON(win->index));
+		clear_bit(S3C_FB_S_STREAM, &sfb->windows[win->index]->state);
+		printk("Decon stop(%d)\n", win->index);
 	}
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(get_display_driver(), enable);
@@ -3269,13 +3235,17 @@ static long s3c_fb_sd_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		mutex_lock(&sfb->output_lock);
 		flush_kthread_worker(&sfb->update_regs_worker);
 		mutex_unlock(&sfb->output_lock);
+		hw_trigger_mask_enable(sfb, false);
+		s3c_fb_disable(sfb);
 		disp_pm_runtime_put_sync(dispdrv);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 		disp_pm_gate_lock(dispdrv, false);
 #endif
 		break;
 
-	case S3CFB_READY_TO_SETBUF:
+	case S3CFB_DUMP_REGISTER:
+		dispdrv = get_display_driver();
+		decon_dump_registers(dispdrv);
 		break;
 	default:
 		dev_err(sfb->dev, "unsupported s3c_fb_sd_ioctl\n");

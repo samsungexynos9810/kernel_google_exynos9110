@@ -14,7 +14,7 @@
 #include "decon_debug.h"
 
 #define DUMP_DECON_REGISTER(s) \
-	val = readl(pdispdrv->decon_driver.regs + (s)); \
+	val = readl(pdispdrv->decon_driver.sfb->regs + (s)); \
 	pr_err("[DECON FAULT HANDLER] " #s "	0x%08X\n", val);
 
 #define DUMP_UNDERRUN_REGISTER(s, off) \

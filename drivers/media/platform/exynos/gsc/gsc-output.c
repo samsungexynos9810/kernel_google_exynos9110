@@ -281,7 +281,6 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 {
 	struct gsc_dev *gsc = entity_data_to_gsc(v4l2_get_subdevdata(sd));
 	int ret;
-	unsigned long flags;
 
 	if (enable) {
 		if (gsc->out.ctx->out_path != GSC_FIMD) {
@@ -289,26 +288,21 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 					gsc->out.ctx->out_path);
 			return -EINVAL;
 		}
-		spin_lock_irqsave(&gsc->slock, flags);
 		if (!test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 			gsc_err("GSC is not ready start");
-			spin_unlock_irqrestore(&gsc->slock, flags);
 			return -EBUSY;
 		}
-		spin_unlock_irqrestore(&gsc->slock, flags);
 		ret = gsc_out_hw_set(gsc->out.ctx);
 		if (ret) {
 			gsc_err("GSC H/W setting is failed");
 			return -EINVAL;
 		}
 	} else {
-		spin_lock_irqsave(&gsc->slock, flags);
 		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 			gsc_out_hw_reset_off(gsc);
 			clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
 			wake_up(&gsc->irq_queue);
 		}
-		spin_unlock_irqrestore(&gsc->slock, flags);
 	}
 
 	return 0;
@@ -322,9 +316,7 @@ static long gsc_subdev_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg
 	switch (cmd) {
 	case GSC_SFR_UPDATE:
 		gsc_hw_set_sfr_update(ctx);
-		break;
-	case GSC_SET_BUF:
-		gsc_hw_set_input_apply_pending_bit(gsc);
+		gsc->wq_cnt++;
 		break;
 	default:
 		gsc_err("unsupported gsc_subdev_ioctl");
@@ -460,7 +452,6 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 			    struct v4l2_requestbuffers *reqbufs)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
-	struct gsc_pipeline *p = &gsc->pipeline;
 	struct gsc_output_device *out = &gsc->out;
 	struct gsc_frame *frame;
 	int ret;
@@ -478,14 +469,9 @@ static int gsc_output_reqbufs(struct file *file, void *priv,
 	frame->cacheable = out->ctx->gsc_ctrls.cacheable->val;
 	gsc->vb2->set_cacheable(gsc->alloc_ctx, frame->cacheable);
 
-	if (reqbufs->count == 0) {
-		ret = v4l2_subdev_call(p->disp, core, ioctl,
-				S3CFB_FLUSH_WORKQUEUE, NULL);
-		if (ret) {
-			gsc_err("Decon subdev ioctl failed");
-			return ret;
-		}
-	}
+	if (reqbufs->count)
+		gsc->q_cnt = gsc->dq_cnt = gsc->isr_cnt = gsc->wq_cnt = 0;
+
 
 	if (gsc->protected_content && reqbufs->count) {
 		int id = gsc->id + 3;
@@ -541,15 +527,20 @@ static int gsc_output_streamon(struct file *file, void *priv,
 		return ret;
 	}
 
-	return vb2_streamon(&gsc->out.vbq, type);
+	ret = vb2_streamon(&gsc->out.vbq, type);
+
+	return ret;
 }
 
 static int gsc_output_streamoff(struct file *file, void *priv,
 			    enum v4l2_buf_type type)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
+	int ret = 0;
 
-	return vb2_streamoff(&gsc->out.vbq, type);
+	ret = vb2_streamoff(&gsc->out.vbq, type);
+
+	return ret;
 }
 
 static int gsc_output_qbuf(struct file *file, void *priv,
@@ -557,17 +548,37 @@ static int gsc_output_qbuf(struct file *file, void *priv,
 {
 	struct gsc_dev *gsc = video_drvdata(file);
 	struct gsc_output_device *out = &gsc->out;
+	int ret;
 
-	return vb2_qbuf(&out->vbq, buf);
+	ret = vb2_qbuf(&out->vbq, buf);
+	gsc->q_cnt++;
+
+	return ret;
 }
 
 static int gsc_output_dqbuf(struct file *file, void *priv,
 			   struct v4l2_buffer *buf)
 {
 	struct gsc_dev *gsc = video_drvdata(file);
+	unsigned long flags;
+	int ret = 0;
 
-	return vb2_dqbuf(&gsc->out.vbq, buf,
+	spin_lock_irqsave(&gsc->slock, flags);
+	if (list_empty(&gsc->out.vbq.done_list)) {
+		struct gsc_input_buf *q_buf;
+		if (!list_empty(&gsc->out.active_buf_q)) {
+			q_buf = active_queue_pop(&gsc->out, gsc);
+			vb2_buffer_done(&q_buf->vb, VB2_BUF_STATE_DONE);
+			list_del(&q_buf->list);
+			gsc_info("Done list empty");
+		}
+	}
+	spin_unlock_irqrestore(&gsc->slock, flags);
+	ret = vb2_dqbuf(&gsc->out.vbq, buf,
 			 file->f_flags & O_NONBLOCK);
+	gsc->dq_cnt++;
+
+	return ret;
 }
 
 static int gsc_output_cropcap(struct file *file, void *fh,
@@ -671,6 +682,11 @@ static const struct v4l2_ioctl_ops gsc_output_ioctl_ops = {
 
 static int gsc_out_start_streaming(struct vb2_queue *q, unsigned int count)
 {
+	struct gsc_ctx *ctx = q->drv_priv;
+	struct gsc_dev *gsc = ctx->gsc_dev;
+
+	set_bit(DEBUG_STREAMON, &gsc->state);
+
 	return 0;
 }
 
@@ -684,14 +700,18 @@ static int gsc_out_stop_streaming(struct vb2_queue *q)
 
 	ret = wait_event_timeout(gsc->irq_queue,
 		!test_bit(ST_OUTPUT_STREAMON, &gsc->state),
-		GSC_SHUTDOWN_TIMEOUT);
+		msecs_to_jiffies(2000));
 	if (ret == 0) {
 		gsc_err("wait timeout");
 		return -EBUSY;
 	}
 
-	if (!list_empty(&gsc->out.active_buf_q))
-		INIT_LIST_HEAD(&gsc->out.active_buf_q);
+	ret = gsc_wait_stop(gsc);
+	if (ret < 0) {
+		gsc_err("fail to stop");
+	}
+
+	clear_bit(DEBUG_STREAMON, &gsc->state);
 
 	return 0;
 }
@@ -730,7 +750,8 @@ int gsc_out_set_in_addr(struct gsc_dev *gsc, struct gsc_ctx *ctx,
 {
 	int ret;
 
-	ret = gsc_prepare_addr(ctx, &buf->vb, &ctx->s_frame, &ctx->s_frame.addr);
+	ret = gsc_prepare_addr(ctx, &buf->vb, &ctx->s_frame,
+			&ctx->s_frame.addr);
 	if (ret) {
 		gsc_err("Fail to prepare G-Scaler address");
 		return -EINVAL;
@@ -739,8 +760,9 @@ int gsc_out_set_in_addr(struct gsc_dev *gsc, struct gsc_ctx *ctx,
 		gsc_err("source address is null");
 		return -EINVAL;
 	}
-	gsc_hw_set_input_addr(gsc, &ctx->s_frame.addr, index);
+	buf->addr = ctx->s_frame.addr;
 	active_queue_push(&gsc->out, buf, gsc);
+	gsc_hw_set_input_addr_fixed(gsc, &buf->addr);
 	buf->idx = index;
 
 	return 0;
@@ -756,10 +778,8 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 	unsigned long flags;
 	int ret;
 
-	spin_lock_irqsave(&gsc->slock, flags);
 	if (!test_bit(ST_OUTPUT_STREAMON, &gsc->state) && q->streaming) {
 		gsc_info("Already s_stream(0) is called");
-		spin_unlock_irqrestore(&gsc->slock, flags);
 		return;
 	}
 
@@ -768,28 +788,23 @@ static void gsc_out_buffer_queue(struct vb2_buffer *vb)
 		ret = gsc_wait_reset(gsc);
 		if (ret < 0) {
 			gsc_err("gscaler s/w reset timeout");
-			spin_unlock_irqrestore(&gsc->slock, flags);
 			return;
 		}
-		gsc_hw_set_input_buf_mask_all(gsc);
-		gsc->out.pending_mask = 0xf;
+		gsc_hw_set_input_buf_fixed(gsc);
 		INIT_LIST_HEAD(&gsc->out.active_buf_q);
 		set_bit(ST_OUTPUT_STREAMON, &gsc->state);
 	}
-	spin_unlock_irqrestore(&gsc->slock, flags);
 
+	spin_lock_irqsave(&gsc->slock, flags);
 	if (gsc->out.req_cnt >= atomic_read(&q->queued_count)) {
-		spin_lock_irqsave(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
 		ret = gsc_out_set_in_addr(gsc, ctx, buf, vb->v4l2_buf.index);
 		if (ret) {
 			gsc_err("Failed to prepare G-Scaler address");
-			spin_unlock_irqrestore(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
 		}
-		gsc_out_set_pp_pending_bit(gsc, vb->v4l2_buf.index, false);
-		spin_unlock_irqrestore(&gsc->mdev[MDEV_OUTPUT]->slock, flags);
 	} else {
 		gsc_err("All requested buffers have been queued already");
 	}
+	spin_unlock_irqrestore(&gsc->slock, flags);
 }
 
 static struct vb2_ops gsc_output_qops = {
@@ -868,6 +883,7 @@ static int gsc_output_open(struct file *file)
 
 	if (ret)
 		return ret;
+
 	gsc_dbg("pid: %d, state: 0x%lx", task_pid_nr(current), gsc->state);
 	ret = pm_runtime_get_sync(&gsc->pdev->dev);
 	if (ret < 0) {
@@ -921,17 +937,6 @@ static int gsc_output_close(struct file *file)
 
 	if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 		gsc_info("driver is closed by force");
-		ret = v4l2_subdev_call
-			(gsc->mdev[MDEV_OUTPUT]->gsc_sd[gsc->id], video,
-			 s_stream, false);
-		if (ret) {
-			gsc_err("GSC s_stream(0) failed");
-			return ret;
-		}
-	}
-
-	if (gsc->out.req_cnt) {
-		gsc_info("driver is closed by force");
 		gsc_ctx_state_lock_clear(GSC_SRC_FMT | GSC_DST_FMT |
 				GSC_DST_CROP, gsc->out.ctx);
 
@@ -957,7 +962,7 @@ static int gsc_output_close(struct file *file)
 	gsc_pm_qos_ctrl(gsc, GSC_QOS_OFF, 0, 0);
 	ret = wait_event_timeout(gsc->irq_queue,
 		!test_bit(ST_OUTPUT_STREAMON, &gsc->state),
-		GSC_SHUTDOWN_TIMEOUT);
+		msecs_to_jiffies(1000));
 	if (ret == 0) {
 		gsc_err("wait timeout");
 		return -EBUSY;
@@ -1142,6 +1147,7 @@ int gsc_register_output_device(struct gsc_dev *gsc)
 	q->mem_ops = gsc->vb2->ops;
 	q->timestamp_type = V4L2_BUF_FLAG_TIMESTAMP_COPY;
 	q->buf_struct_size = sizeof(struct gsc_input_buf);
+	q->name = "gsc-output.queue";
 
 	ret = vb2_queue_init(q);
 	if (ret) {

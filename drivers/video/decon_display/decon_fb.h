@@ -429,8 +429,8 @@ enum s3c_fb_blending {
 enum otf_status {
 	S3C_FB_DMA,
 	S3C_FB_LOCAL,
-	S3C_FB_STOP_DMA,
 	S3C_FB_READY_TO_LOCAL,
+	S3C_FB_S_STREAM,
 };
 
 struct s3c_fb_win_config {
