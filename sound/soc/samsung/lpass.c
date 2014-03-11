@@ -124,6 +124,11 @@ struct lpass_info {
 	struct clk		*clk_mout_ass_clk;
 	struct clk		*clk_mout_ass_i2s;
 	struct clk		*clk_fin_pll;
+	struct clk		*clk_fout_aud_pll;
+	struct clk		*clk_mout_aud_pll;
+	struct clk		*clk_mout_aud_pll_user_top;
+	struct clk		*clk_mout_aud_pll_user;
+	struct clk		*clk_mout_aud_pll_sub;
 	bool			rpm_enabled;
 	atomic_t		use_cnt;
 	atomic_t		stream_cnt;
@@ -157,8 +162,6 @@ struct subip_info {
 
 static LIST_HEAD(reg_list);
 static LIST_HEAD(subip_list);
-
-extern int exynos_set_parent(const char *child, const char *parent);
 
 extern int check_adma_status(void);
 extern int check_fdma_status(void);
@@ -499,16 +502,11 @@ static void ass_enable(void)
 	lpass_reg_restore();
 
 	/* ASS_MUX_SEL */
-#ifdef CONFIG_SOC_EXYNOS5422_REV_0
 	clk_set_parent(lpass.clk_mout_dpll_ctrl, lpass.clk_fout_dpll);
 	clk_set_parent(lpass.clk_mout_mau_epll_clk, lpass.clk_mout_dpll_ctrl);
 	clk_set_parent(lpass.clk_mout_mau_epll_clk_user, lpass.clk_mout_mau_epll_clk);
 	clk_set_parent(lpass.clk_mout_ass_clk, lpass.clk_mout_mau_epll_clk_user);
 	clk_set_parent(lpass.clk_mout_ass_i2s, lpass.clk_mout_ass_clk);
-#else
-	exynos_set_parent("mout_ass_clk", "fin_pll");
-	exynos_set_parent("mout_ass_i2s", "mout_ass_clk");
-#endif
 
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_timer);
@@ -535,15 +533,15 @@ static void lpass_enable(void)
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	/* AUD0 */
-	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
-	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_mout_aud_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_sub, lpass.clk_mout_aud_pll_user);
 #else
 	/* AUD0 */
-	exynos_set_parent("mout_aud_pll_user", "fout_aud_pll");
+	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_fout_aud_pll);
 #endif
 	/* TOP1 */
-	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
-	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
+	clk_set_parent(lpass.clk_mout_aud_pll, lpass.clk_fout_aud_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_user_top, lpass.clk_mout_aud_pll);
 
 	clk_prepare_enable(lpass.clk_dmac);
 	clk_prepare_enable(lpass.clk_sramc);
@@ -595,16 +593,16 @@ static void lpass_disable(void)
 	lpass_reg_save();
 
 	/* TOP1 */
-	exynos_set_parent("mout_aud_pll", "fin_pll");
-	exynos_set_parent("mout_aud_pll_user_top", "fin_pll");
+	clk_set_parent(lpass.clk_mout_aud_pll, lpass.clk_fin_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_user_top, lpass.clk_fin_pll);
 
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	/* AUD0 */
-	exynos_set_parent("mout_aud_pll_user", "fin_pll");
-	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_fin_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_sub, lpass.clk_mout_aud_pll_user);
 #else
 	/* AUD0 */
-	exynos_set_parent("mout_aud_pll_user", "fin_pll");
+	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_fin_pll);
 #endif
 
 	/* Enable clocks */
@@ -729,19 +727,68 @@ static int clk_set_heirachy(struct platform_device *pdev)
 		goto err3;
 	}
 
+	lpass.clk_fin_pll = clk_get(dev, "fin_pll");
+	if (IS_ERR(lpass.clk_fin_pll)) {
+		dev_err(dev, "fin_pll clk not found\n");
+		goto err4;
+	}
+
+	lpass.clk_fout_aud_pll = clk_get(dev, "fout_aud_pll");
+	if (IS_ERR(lpass.clk_fout_aud_pll)) {
+		dev_err(dev, "fout_aud_pll clk not found\n");
+		goto err5;
+	}
+
+	lpass.clk_mout_aud_pll = clk_get(dev, "mout_aud_pll");
+	if (IS_ERR(lpass.clk_mout_aud_pll)) {
+		dev_err(dev, "mout_aud_pll clk not found\n");
+		goto err6;
+	}
+
+	lpass.clk_mout_aud_pll_user_top = clk_get(dev, "mout_aud_pll_user_top");
+	if (IS_ERR(lpass.clk_mout_aud_pll_user_top)) {
+		dev_err(dev, "mout_aud_pll_user_top clk not found\n");
+		goto err7;
+	}
+
+	lpass.clk_mout_aud_pll_user = clk_get(dev, "mout_aud_pll_user");
+	if (IS_ERR(lpass.clk_mout_aud_pll_user)) {
+		dev_err(dev, "mout_aud_pll_user clk not found\n");
+		goto err8;
+	}
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	/* AUD0 */
-	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
-	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
-	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
+	lpass.clk_mout_aud_pll_sub = clk_get(dev, "mout_aud_pll_sub");
+	if (IS_ERR(lpass.clk_mout_aud_pll_sub)) {
+		dev_err(dev, "mout_aud_pll_sub clk not found\n");
+		goto err9;
+	}
+#endif
+
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+	clk_set_parent(lpass.clk_mout_aud_pll, lpass.clk_fout_aud_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_mout_aud_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_sub, lpass.clk_mout_aud_pll_user);
 #else
-	/* AUD0 */
-	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
-	exynos_set_parent("mout_aud_pll_user", "fout_aud_pll");
+	clk_set_parent(lpass.clk_mout_aud_pll, lpass.clk_fout_aud_pll);
+	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_fout_aud_pll);
 #endif
 
 	return 0;
 
+#ifdef CONFIG_SOC_EXYNOS5430_REV_0
+err9:
+	clk_put(lpass.clk_mout_aud_pll_user);
+#endif
+err8:
+	clk_put(lpass.clk_mout_aud_pll_user_top);
+err7:
+	clk_put(lpass.clk_mout_aud_pll);
+err6:
+	clk_put(lpass.clk_fout_aud_pll);
+err5:
+	clk_put(lpass.clk_fin_pll);
+err4:
+	clk_put(lpass.clk_timer);
 err3:
 	clk_put(lpass.clk_intr);
 err2:
