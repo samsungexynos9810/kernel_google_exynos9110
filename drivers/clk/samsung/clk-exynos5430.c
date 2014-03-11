@@ -25,7 +25,7 @@ enum exynos5430_clks {
 
 	/* core clocks */
 	fin_pll = 1, mem0_pll, mem1_pll, mfc_pll, bus_pll,
-	mphy_pll, disp_pll, isp_pll, aud_pll, fout_g3d_pll,
+	mphy_pll, disp_pll, isp_pll, aud_pll, fout_g3d_pll, fout_aud_pll,
 
 	/* gate for special clocks (sclk) */
 	sclk_jpeg_mscl = 20,
@@ -3214,6 +3214,7 @@ void __init exynos5430_clk_init(struct device_node *np)
 		panic("%s: Fail to register isp_pll", __func__);
 
 	samsung_clk_add_lookup(g3d_pll, fout_g3d_pll);
+	samsung_clk_add_lookup(aud_pll, fout_aud_pll);
 
 	samsung_clk_register_fixed_rate(exynos5430_fixed_rate_clks,
 			ARRAY_SIZE(exynos5430_fixed_rate_clks));
