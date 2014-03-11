@@ -441,7 +441,7 @@ void s5pcsis_system_enable(unsigned long __iomem *base_reg, int on)
 		val |= S5PCSIS_CTRL_WCLK_EXTCLK;
 	} else
 		val &= ~S5PCSIS_CTRL_ENABLE;
-#if defined(CONFIG_SOC_EXYNOS3470) || defined(CONFIG_SOC_EXYNOS5260)
+#if defined(CONFIG_SOC_EXYNOS5260)
 	/* FIXME: hard coded, only for rhea */
 	writel(0x0000010D, base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
 #else
@@ -453,7 +453,7 @@ void s5pcsis_system_enable(unsigned long __iomem *base_reg, int on)
 		val |= S5PCSIS_DPHYCTRL_ENABLE;
 	else
 		val &= ~S5PCSIS_DPHYCTRL_ENABLE;
-#if defined(CONFIG_SOC_EXYNOS3470) || defined(CONFIG_SOC_EXYNOS5260)
+#if defined(CONFIG_SOC_EXYNOS5260)
 	/* FIXME: hard coded, only for rhea */
 	writel(0x0E00001F, base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
 #else
@@ -505,10 +505,6 @@ void s5pcsis_set_hsync_settle(unsigned long __iomem *base_reg, u32 settle)
 #if defined(CONFIG_SOC_EXYNOS5260)
 	/* FIXME: hard coded, only for rhea */
 	writel(0x0E00001F, base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
-#elif defined(CONFIG_SOC_EXYNOS3470)
-	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
-	val = (val & ~S5PCSIS_DPHYCTRL_HSS_MASK) | (0x6 << 28);
-	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
 #else
 	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_DPHYCTRL));
 #endif
