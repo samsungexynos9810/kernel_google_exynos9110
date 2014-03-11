@@ -234,6 +234,8 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define TMU_CONTROL_RSVD_MASK  		0xe08f00fe
 #define TMU_CONTROL_ONOFF_MASK		0xfffffffe
 
+static bool is_tmu_probed;
+
 static unsigned int swtrip_counter = 0;
 
 extern int gpu_is_power_on(void);
@@ -1417,13 +1419,52 @@ static struct notifier_block exynos_pm_nb = {
 	.notifier_call = exynos_pm_notifier,
 };
 
+#if defined(CONFIG_SOC_EXYNOS5430)
+void exynos_tmu_core_control(bool on, int id)
+{
+	int i;
+	unsigned int con;
+	struct exynos_tmu_data *data;
+
+	if (exynos_tmu_pdev == NULL)
+		return;
+
+	data = platform_get_drvdata(exynos_tmu_pdev);
+
+	if (!is_tmu_probed || data == NULL)
+		return;
+
+	con = readl(data->base[id] + EXYNOS_TMU_REG_CONTROL);
+	con &= TMU_CONTROL_ONOFF_MASK;
+	con |= (on ? EXYNOS_TMU_CORE_ON : EXYNOS_TMU_CORE_OFF);
+	writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
+	if (!on) {
+		for (i = 0; i < IDLE_MAX_TIME; i++) {
+			if (readl(data->base[id] + EXYNOS_TMU_REG_STATUS) & 0x1)
+				break;
+		}
+		if (i == (IDLE_MAX_TIME - 1))
+			pr_err("@@@@@ TMU CHECK BUSY @@@@@@\n");
+	}
+}
+#endif
+
 #if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
-static void exynos_tmu_core_control(bool on)
+static void exynos_tmu_all_cores_control(bool on)
 {
 	int i, j;
 	unsigned int con;
 	unsigned int status;
-	struct exynos_tmu_data *data = platform_get_drvdata(exynos_tmu_pdev);
+	struct exynos_tmu_data *data;
+
+	if (exynos_tmu_pdev == NULL)
+		return;
+
+	data = platform_get_drvdata(exynos_tmu_pdev);
+
+	if (data == NULL)
+		return;
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		con = readl(data->base[i] + EXYNOS_TMU_REG_CONTROL);
@@ -1444,7 +1485,7 @@ static void exynos_tmu_core_control(bool on)
 
 			}
 		if (j == (IDLE_MAX_TIME - 1))
-			pr_err ("@@@@@ TMU CHECK BUSY @@@@@@\n");
+			pr_err("@@@@@ TMU CHECK BUSY @@@@@@\n");
 	}
 }
 
@@ -1453,11 +1494,11 @@ static int exynos_pm_dstop_notifier(struct notifier_block *notifier,
 {
 	switch (pm_event) {
 	case LPA_ENTER:
-		exynos_tmu_core_control(false);
+		exynos_tmu_all_cores_control(false);
 		break;
 	case LPA_ENTER_FAIL:
 	case LPA_EXIT:
-		exynos_tmu_core_control(true);
+		exynos_tmu_all_cores_control(true);
 		break;
 	}
 
@@ -1942,6 +1983,7 @@ static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigne
 	switch (event) {
 	case CPUFREQ_INIT_COMPLETE:
 		ret = exynos_register_thermal(&exynos_sensor_conf);
+		is_tmu_probed = true;
 
 		if (ret) {
 			dev_err(&exynos_tmu_pdev->dev, "Failed to register thermal interface\n");
