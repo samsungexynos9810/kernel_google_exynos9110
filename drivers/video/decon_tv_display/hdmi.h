@@ -67,6 +67,17 @@
 #define HPD_LOW		0
 #define HPD_HIGH	1
 
+/*
+ * HDMI timing distinguish definition
+ * If timings has the same widh and height,
+ * it is low definition as it is low pixelclock.
+ */
+#define HDMI_TIMINGS_1		0x10
+#define HDMI_TIMINGS_2		0x20
+#define HDMI_TIMINGS_3		0x30
+#define HDMI_TIMINGS_4		0x40
+#define HDMI_TIMINGS_5		0x50
+
 enum HDMI_VIDEO_FORMAT {
 	HDMI_VIDEO_FORMAT_2D = 0x0,
 	/** refer to Table 8-12 HDMI_Video_Format in HDMI specification v1.4a */
