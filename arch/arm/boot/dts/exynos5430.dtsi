@@ -2172,7 +2172,17 @@
 				<&clock 2613>,
 
 				<&clock 2635>,
-				<&clock 2636>;
+				<&clock 2636>,
+
+				<&clock 2673>,
+
+				<&clock 2747>,
+
+				<&clock 2750>,
+				<&clock 2751>,
+				<&clock 2752>,
+				<&clock 2753>;
+
 		clock-names =	"sclk_isp_spi0_top", /* 30 */
 				"sclk_isp_spi1_top",
 				"sclk_isp_uart_top",
@@ -2346,7 +2356,16 @@
 				"gate_pixelasyncs_lite_c",
 
 				"gate_lite_c", /* 2635 */
-				"gate_csis2"; /* 2636 */
+				"gate_csis2", /* 2636 */
+
+				"gate_bts_fd", /* 2673 */
+
+				"gate_bts_3dnr", /* 2747 */
+
+				"gate_bts_dis1", /* 2750 */
+				"gate_bts_dis0",
+				"gate_bts_scalerc",
+				"gate_bts_drc";
 
 		samsung,power-domain = <&pd_isp>;
 		status = "ok";
