@@ -17,6 +17,7 @@
 
 #include <mach/pm_domains.h>
 #include <mach/devfreq.h>
+#include <mach/tmu.h>
 
 static DEFINE_SPINLOCK(rpmlock_cmutop);
 
@@ -170,10 +171,22 @@ static struct sleep_save exynos_pd_g3d_clk_save[] = {
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G3D1),
 };
 
+static int exynos_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
+{
+#if defined(CONFIG_EXYNOS_THERMAL) && defined(CONFIG_SOC_EXYNOS5430)
+	exynos_tmu_core_control(false, 2);	/* disable G3D TMU core before G3D is turned off */
+#endif
+	return 0;
+}
+
 static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_g3d_clk_save,
 			ARRAY_SIZE(exynos_pd_g3d_clk_save));
+
+#if defined(CONFIG_EXYNOS_THERMAL) && defined(CONFIG_SOC_EXYNOS5430)
+	exynos_tmu_core_control(true, 2);	/* enable G3D TMU core after G3D is turned on */
+#endif
 
 	DEBUG_PRINT_INFO("EXYNOS5430_DIV_G3D: %08x\n", __raw_readl(EXYNOS5430_DIV_G3D));
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
@@ -600,6 +613,11 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
 	exynos5_pd_enable_clk(cmutop_isp, ARRAY_SIZE(cmutop_isp));
+
+#if defined(CONFIG_EXYNOS_THERMAL) && defined(CONFIG_SOC_EXYNOS5430)
+	exynos_tmu_core_control(false, 4);	/* disable ISP TMU core before ISP is turned off */
+#endif
+
 	return 0;
 }
 
@@ -615,6 +633,10 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 	__raw_writel(0x7, S5P_VA_SYSREG_ISP + 0x208);
 	__raw_writel(0x7F, S5P_VA_SYSREG_ISP + 0x20C);
 	__raw_writel(0x0, S5P_VA_SYSREG_ISP + 0x500);
+
+#if defined(CONFIG_EXYNOS_THERMAL) && defined(CONFIG_SOC_EXYNOS5430)
+	exynos_tmu_core_control(true, 4);	/* enable ISP TMU core after ISP is turned on */
+#endif
 
 	return 0;
 }
@@ -980,6 +1002,7 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_post = exynos_pd_gscl_power_off_post,
 	}, {
 		.name = "pd-g3d",
+		.on_pre = exynos_pd_g3d_power_on_pre,
 		.on_post = exynos_pd_g3d_power_on_post,
 		.off_pre = exynos_pd_g3d_power_off_pre,
 	}, {
