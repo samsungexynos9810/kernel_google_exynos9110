@@ -69,6 +69,10 @@ static const struct decon_tv_porch decon_tv_porchs[] =
 	{"DECONTV_1920x1080I60", 1920, 540, 20, 1, 1, 92, 10, 178, V4L2_FIELD_INTERLACED},
 	{"DECONTV_3840x2160P24", 3840, 2160, 88, 1, 1, 1558, 10, 92, V4L2_FIELD_NONE},
 	{"DECONTV_4096x2160P24", 4096, 2160, 88, 1, 1, 1302, 10, 92, V4L2_FIELD_NONE},
+	{"DECONTV_3840x2160P30", 3840, 2160, 88, 1, 1, 458, 10, 92, V4L2_FIELD_NONE | HDMI_TIMINGS_3},
+	{"DECONTV_3840x2160P25", 3840, 2160, 88, 1, 1, 1338, 10, 92, V4L2_FIELD_NONE | HDMI_TIMINGS_2},
+	{"DECONTV_3840x2160P24", 3840, 2160, 88, 1, 1, 1558, 10, 92, V4L2_FIELD_NONE | HDMI_TIMINGS_1},
+	{"DECONTV_4096x2160P24", 4096, 2160, 88, 1, 1, 1302, 10, 92, V4L2_FIELD_NONE},
 };
 
 const struct decon_tv_porch *find_porch(u32 xres, u32 yres, u32 mode)
@@ -841,7 +845,6 @@ static int dex_set_win_buffer(struct dex_device *dex, struct dex_win *win,
 		ret = -EINVAL;
 		goto fail;
 	}
-
 
 	handle = ion_import_dma_buf(dex->ion_client, win_config->fd);
 	if (IS_ERR(handle)) {

@@ -139,7 +139,7 @@ static int hdmi_set_infoframe(struct hdmi_device *hdev)
 
 	info = hdmi_timing2info(&hdev->cur_timings);
 
-	if (info->is_3d == HDMI_VIDEO_FORMAT_3D) {
+	if (info->is_3d) {
 		infoframe.type = HDMI_PACKET_TYPE_VSI;
 		infoframe.ver = HDMI_VSI_VERSION;
 		infoframe.len = HDMI_VSI_LENGTH;

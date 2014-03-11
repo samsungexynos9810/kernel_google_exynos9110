@@ -81,6 +81,7 @@
 enum HDMI_VIDEO_FORMAT {
 	HDMI_VIDEO_FORMAT_2D = 0x0,
 	/** refer to Table 8-12 HDMI_Video_Format in HDMI specification v1.4a */
+	HDMI_VIDEO_FORMAT_UD = 0x1,
 	HDMI_VIDEO_FORMAT_3D = 0x2
 };
 
