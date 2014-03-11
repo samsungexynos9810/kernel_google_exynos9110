@@ -1765,7 +1765,8 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	return ret;
 
 p_err:
-	fimc_is_group_cancel(group, ldr_frame);
+	if (!kthread_should_stop())
+		fimc_is_group_cancel(group, ldr_frame);
 	if (try_sdown) {
 		atomic_inc(&group->smp_shot_count);
 		up(&group->smp_shot);
