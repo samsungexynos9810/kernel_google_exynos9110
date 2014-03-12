@@ -43,6 +43,14 @@ enum exynos3250_clks {
 	gate_uart0 = 300, gate_uart1, gate_uart2, gate_uart3,
 	gate_i2c0, gate_i2c1, gate_i2c2, gate_i2c3, gate_i2c4, gate_i2c5,
 	gate_i2c6, gate_i2c7,
+
+	mout_fimd0 = 1000, mout_mipi0, mout_aclk_160,
+	dout_fimd0 = 1010, dout_mipi0, dout_mipi0_pre,
+	dout_aclk_160,
+	gate_aclk_fimd0 = 1020, gate_sclk_fimd0, gate_sclk_mipi0,
+	gate_clk_fimd0, gate_clk_dsim0,
+
+	/* End of Clocks */
 	nr_clks,
 };
 
@@ -87,6 +95,17 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			EXYNOS3_CLKGATE_IP_PERIL, 12, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_i2c7, "gate_i2c7", "aclk100",
 			EXYNOS3_CLKGATE_IP_PERIL, 13, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(gate_aclk_fimd0, "gate_aclk_fimd0", NULL,
+			EXYNOS3_CLKGATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(gate_sclk_fimd0, "gate_sclk_fimd0", NULL,
+			EXYNOS3_CLKGATE_SCLK_LCD, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(gate_sclk_mipi0, "gate_sclk_mipi0", NULL,
+			EXYNOS3_CLKGATE_SCLK_LCD, 3, CLK_IGNORE_UNUSED, 0),
+	CGATE(gate_clk_fimd0, "gate_clk_fimd0", NULL,
+			EXYNOS3_CLKGATE_IP_LCD, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(gate_clk_dsim0, "gate_clk_dsim0", NULL,
+			EXYNOS3_CLKGATE_IP_LCD, 3, CLK_IGNORE_UNUSED, 0),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
@@ -109,6 +128,15 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 8, 4, "dout_uart2"),
 	DIV_A(dout_uart3, "dout_uart3", "mout_uart3",
 			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 12, 4, "dout_uart3"),
+
+	DIV_A(dout_fimd0, "dout_fimd0", "mout_fimd0",
+			(unsigned long)EXYNOS3_CLKDIV_LCD, 0, 4, "dout_fimd"),
+	DIV_A(dout_mipi0, "dout_mipi0", "mout_mipi0",
+			(unsigned long)EXYNOS3_CLKDIV_LCD, 16, 4, "dout_mipi0"),
+	DIV_A(dout_mipi0_pre, "dout_mipi0_pre", "dout_mipi0",
+			(unsigned long)EXYNOS3_CLKDIV_LCD, 20, 4, "dout_mipi0_pre"),
+	DIV_A(dout_aclk_160, "dout_aclk_160", "mout_aclk_160",
+			(unsigned long)EXYNOS3_CLKDIV_TOP, 8, 3, "dout_aclk_160"),
 };
 
 PNAME(mout_dclk_gdr)	= { "mout_user_bus_r" };
@@ -136,6 +164,13 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 8, 4, "mout_uart2"),
 	MUX_A(mout_uart3, "mout_uart3", mout_uart_p,
 			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 12, 4, "mout_uart3"),
+
+	MUX_A(mout_fimd0, "mout_fimd0", mout_uart_p,
+			(unsigned long)EXYNOS3_CLKSRC_LCD, 0, 4, "mout_fimd0"),
+	MUX_A(mout_mipi0, "mout_mipi0", mout_uart_p,
+			(unsigned long)EXYNOS3_CLKSRC_LCD, 12, 4, "mout_mipi0"),
+	MUX_A(mout_aclk_160, "mout_aclk_160", mout_uart_p,
+			(unsigned long)EXYNOS3_CLKSRC_TOP0, 20, 0, "mout_aclk_160"),
 };
 
 /* fixed rate clocks generated outside the soc */
