@@ -38,6 +38,7 @@
 #define EXYNOS3_PA_SYSRAM_NS            0x0205F000
 #define EXYNOS3_PA_CHIPID               0x10000000
 #define EXYNOS3_PA_SYSCON               0x10010000
+#define EXYNOS3_PA_PMU		        0x10020000
 #define EXYNOS3_PA_CMU_BUS_TOP          0x10030000
 #define EXYNOS3_PA_CMU_CPU_ISP          0x10040000
 #define EXYNOS3_PA_CMU_ACP              0x10450000
