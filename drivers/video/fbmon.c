@@ -355,6 +355,11 @@ static void parse_vendor_specific_block(struct fb_vendor *vsdb,
 	DPRINTK("   3D present: %d\n", vsdb->s3d_present);
 	DPRINTK("   3D multi present: %d\n", vsdb->s3d_multi_present);
 
+	for (i = 0; i < vsdb->vic_len; i++) {
+		vsdb->vic_data[i] = svsdb[offset + 11 + i];
+		DPRINTK("   HDMI VIC Data[%d]:0x%x\n", i, vsdb->vic_data[i]);
+	}
+
 	offset += vsdb->vic_len;
 	if (vsdb->s3d_multi_present) {
 		vsdb->s3d_structure_all = svsdb[offset + 11] << 8;
