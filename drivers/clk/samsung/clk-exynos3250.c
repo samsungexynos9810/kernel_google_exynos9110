@@ -32,7 +32,8 @@ enum exynos3250_clks {
 
 	fin_pll = 1, fout_mpll, sclk_mpll, half_mpll, mpll_pre_div,
 
-	mout_user_bus_r = 40, mux_gdr, mout_aclk100, aclk100,
+	mout_user_bus_r = 40, mux_gdr, mout_aclk100, aclk100, aclk200,
+	mout_aclk200,
 
 	dclk_gpr = 60, dclk_gdr,
 
@@ -43,21 +44,29 @@ enum exynos3250_clks {
 	gate_uart0 = 300, gate_uart1, gate_uart2, gate_uart3,
 	gate_i2c0, gate_i2c1, gate_i2c2, gate_i2c3, gate_i2c4, gate_i2c5,
 	gate_i2c6, gate_i2c7,
-
+	aclk_mmc0 = 400, gate_mmc0, dout_mmc_a, dout_mmc_b, mout_mmc0,
 	mout_fimd0 = 1000, mout_mipi0, mout_aclk_160,
 	dout_fimd0 = 1010, dout_mipi0, dout_mipi0_pre,
 	dout_aclk_160,
 	gate_aclk_fimd0 = 1020, gate_sclk_fimd0, gate_sclk_mipi0,
 	gate_clk_fimd0, gate_clk_dsim0,
+	nr_clks,
 
 	/* End of Clocks */
-	nr_clks,
 };
 
 static __initdata void *exynos3250_clk_regs[] = {
 	EXYNOS3_CLKGATE_IP_PERIR,
 	EXYNOS3_CLKDIV_RIGHTBUS,
 	EXYNOS3_CLKSRC_RIGHTBUS,
+	EXYNOS3_CLKSRC_MASK_FSYS,
+	EXYNOS3_CLKDIV_FSYS1,
+	EXYNOS3_CLKGATE_BUS_FSYS0,
+	EXYNOS3_CLKGATE_IP_FSYS,
+	EXYNOS3_CLKSRC_FSYS,
+	EXYNOS3_CLKGATE_FSYS,
+
+
 };
 
 #define CGATE_A(_id, cname, pname, o, b, f, gf, a) \
@@ -106,6 +115,10 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			EXYNOS3_CLKGATE_IP_LCD, 0, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_clk_dsim0, "gate_clk_dsim0", NULL,
 			EXYNOS3_CLKGATE_IP_LCD, 3, CLK_IGNORE_UNUSED, 0),
+	CGATE(aclk_mmc0, "aclk_mmc0", "aclk200",
+			EXYNOS3_CLKGATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),
+	CGATE(gate_mmc0, "gate_mmc0", "dout_mmc_b",
+			EXYNOS3_CLKGATE_FSYS, 0, CLK_IGNORE_UNUSED, 0),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
@@ -119,6 +132,12 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	DIV_A(mpll_pre_div, "mpll_pre_div", "half_mpll",
 		(unsigned long)DIV_TOP, 28, 2, "mpll_pre_div"),
 	DIV_A(aclk100, "aclk100", "mout_aclk100", (unsigned long)DIV_TOP, 4, 4, "aclk100"),
+	DIV_A(aclk200, "aclk200", "mout_aclk200", (unsigned long)DIV_TOP, 12, 4, "aclk200"),
+
+	DIV_A(dout_mmc_a, "dout_mmc_a", "mout_mmc0",
+			(unsigned long)EXYNOS3_CLKDIV_FSYS1, 0, 3, "dout_mmc_a"),
+	DIV_A(dout_mmc_b, "dout_mmc_b", "dout_mmc_a",
+			(unsigned long)EXYNOS3_CLKDIV_FSYS1, 8, 8, "dout_mmc_b"),
 
 	DIV_A(dout_uart0, "dout_uart0", "mout_uart0",
 			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 0, 4, "dout_uart0"),
@@ -143,6 +162,8 @@ PNAME(mout_dclk_gdr)	= { "mout_user_bus_r" };
 PNAME(mout_ctrl_user_bus_r)	= { "finpll", "mpll_pre_div" };
 PNAME(mout_uart_p)      = { "xxti", "xusbxti", "none", "none", "none", "none",
 			"mpll_pre_div", "sclk_epll", "sclk_vpll", };
+PNAME(mout_mmc_p)      = { "xxti", "xusbsti", "none", "none", "none", "none",
+			"half_mpll", "sclk_epll", "sclk_vpll" };
 PNAME(mout_mpll)	= { "fin_pll", "fout_mpll", };
 PNAME(sclk_ampll_p3250)	= { "mpll_pre_div", };
 
@@ -155,6 +176,8 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	MUX_A(sclk_mpll, "sclk_mpll", mout_mpll, (unsigned long)SRC_TOP1, 12, 1, "sclk_mpll"),
 	MUX_A(mout_aclk100, "mout_aclk100", sclk_ampll_p3250, (unsigned long)SRC_TOP0,
 					16, 1, "mout_aclk100"),
+	MUX_A(mout_aclk200, "mout_aclk200", sclk_ampll_p3250, (unsigned long)SRC_TOP0,
+					24, 1, "mout_aclk200"),
 
 	MUX_A(mout_uart0, "mout_uart0", mout_uart_p,
 			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 0, 4, "mout_uart0"),
@@ -171,6 +194,8 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 			(unsigned long)EXYNOS3_CLKSRC_LCD, 12, 4, "mout_mipi0"),
 	MUX_A(mout_aclk_160, "mout_aclk_160", mout_uart_p,
 			(unsigned long)EXYNOS3_CLKSRC_TOP0, 20, 0, "mout_aclk_160"),
+	MUX_A(mout_mmc0, "mout_mmc0", mout_mmc_p,
+			(unsigned long)EXYNOS3_CLKSRC_FSYS, 0, 4, "mout_mmc0"),
 };
 
 /* fixed rate clocks generated outside the soc */
