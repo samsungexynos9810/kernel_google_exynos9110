@@ -1255,6 +1255,8 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	int nr_clk;
 	struct clk *tmp_clk = NULL, *tmp_parent_clk = NULL, *tmp_p_parent_clk = NULL;
 	struct int_pm_clks *int_clk;
+	unsigned long volt;
+	int i, index = -1;
 
 	data = kzalloc(sizeof(struct busfreq_data_int), GFP_KERNEL);
 
@@ -1395,7 +1397,19 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 		err = PTR_ERR(opp);
 		goto err_opp_add;
 	}
+	volt = opp_get_voltage(opp);
 	rcu_read_unlock();
+	regulator_set_voltage(data->vdd_int, volt, volt + VOLT_STEP);
+	for (i = LV_0; i < LV_END; i++) {
+		if (int_bus_opp_list[i].freq == exynos5_int_devfreq_profile.initial_freq)
+			index = int_bus_opp_list[i].idx;
+	}
+	if (index < 0) {
+		dev_err(dev, "Cannot find index to set abb\n");
+		err = -EINVAL;
+		goto err_opp_add;
+	}
+	set_match_abb(ID_INT, devfreq_int_asv_abb[index]);
 
 	int_pre_time = get_jiffies_64();
 

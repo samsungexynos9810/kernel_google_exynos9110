@@ -1106,6 +1106,8 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	int err = 0;
 	unsigned long initial_freq;
 	unsigned long initial_volt, current_volt;
+	int index = -1;
+	int i;
 
 	data = kzalloc(sizeof(struct busfreq_data_mif), GFP_KERNEL);
 
@@ -1219,6 +1221,18 @@ static int exynos5_devfreq_probe(struct platform_device *pdev)
 	if (current_volt != initial_volt)
 		dev_err(dev, "Cannot set default asv voltage\n");
 	pr_info("MIF: set ASV freq %ld, voltage %ld\n", initial_freq/1000, current_volt);
+	for (i = LV_0; i < LV_END; i++) {
+		if (mif_bus_opp_list[i].clk == exynos5_mif_devfreq_profile.initial_freq) {
+			index = mif_bus_opp_list[i].idx;
+			break;
+		}
+	}
+	if (index < 0) {
+		dev_err(dev, "Cannot find index to set abb\n");
+		err = -EINVAL;
+		goto err_opp_add;
+	}
+	set_match_abb(ID_MIF, devfreq_mif_asv_abb[index]);
 
 	data->ppmu = exynos5_ppmu_get();
 	if (!data->ppmu)
