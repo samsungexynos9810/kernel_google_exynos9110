@@ -135,6 +135,14 @@
                 clock-names = "sclk_uart3", "gate_uart3";
 	};
 
+	rtc@10070000 {
+		compatible = "samsung,s3c6410-rtc";
+		reg = <0x10070000 0x100>;
+		interrupts = <0 73 0>, <0 74 0>;
+		clocks = <&clock 85>;
+		clock-names = "rtc";
+	};
+
 	sysmmu_fimd: sysmmu@11E20000 {
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x11E20000 0x1000>;
