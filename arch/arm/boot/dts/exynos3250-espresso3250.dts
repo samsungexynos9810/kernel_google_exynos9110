@@ -155,4 +155,36 @@
 			};
 		};
 	};
+
+	dwmmc0@12510000 {
+		status = "okay";
+		num-slots = <1>;
+		broken-cd;
+		bypass-smu;
+		fixed_volt;
+		only_once_tune;
+		extra_tuning;
+		supports-highspeed;
+		enable-cache-control;
+		sw_data_timeout;
+		fifo-depth = <0x80>;
+		card-detect-delay = <200>;
+		samsung,dw-mshc-ciu-div = <3>;
+		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
+		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
+		samsung,dw-mshc-hs200-timing = <3 0 2 0>;
+		samsung,dw-mshc-ddr200-timing = <1 1 2 0>;
+		clk_pin = "gpk0-0";
+		clk_addr = "11000000.pinctrl";
+		clk_val = <0x3>;
+		num-ref-clks = <8>;
+		ciu_clkin = <50 50 50 100 100 100 100 200>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_bus1 &sd0_bus4 &sd0_bus8>;
+
+		slot@0 {
+			reg = <0>;
+			bus-width = <8>;
+		};
+	};
 };
