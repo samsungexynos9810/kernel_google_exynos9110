@@ -24,6 +24,7 @@
 #define DIV_TOP			EXYNOS3_CLK_BUS_TOP_REG(0xc510)
 #define E3250_MPLL_LOCK		EXYNOS3_CLK_BUS_TOP_REG(0xC010)
 #define E3250_MPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC110)
+#define GATE_IP_FSYS		EXYNOS3_CLK_BUS_TOP_REG(0xc940)
 #define SRC_CPU			EXYNOS3_CPU_ISP_REG(0x14200)
 #define SRC_DMC			EXYNOS3_MIF_L_REG(0x0300)
 
@@ -43,7 +44,7 @@ enum exynos3250_clks {
 	dout_uart0 = 250, dout_uart1, dout_uart2, dout_uart3,
 	gate_uart0 = 300, gate_uart1, gate_uart2, gate_uart3,
 	gate_i2c0, gate_i2c1, gate_i2c2, gate_i2c3, gate_i2c4, gate_i2c5,
-	gate_i2c6, gate_i2c7,
+	gate_i2c6, gate_i2c7, pdma0, pdma1,
 	aclk_mmc0 = 400, gate_mmc0, dout_mmc_a, dout_mmc_b, mout_mmc0,
 	mout_fimd0 = 1000, mout_mipi0, mout_aclk_160,
 	dout_fimd0 = 1010, dout_mipi0, dout_mipi0_pre,
@@ -104,7 +105,6 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			EXYNOS3_CLKGATE_IP_PERIL, 12, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_i2c7, "gate_i2c7", "aclk100",
 			EXYNOS3_CLKGATE_IP_PERIL, 13, CLK_IGNORE_UNUSED, 0),
-
 	CGATE(gate_aclk_fimd0, "gate_aclk_fimd0", NULL,
 			EXYNOS3_CLKGATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_sclk_fimd0, "gate_sclk_fimd0", NULL,
@@ -119,6 +119,8 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			EXYNOS3_CLKGATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_mmc0, "gate_mmc0", "dout_mmc_b",
 			EXYNOS3_CLKGATE_FSYS, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(pdma0, "pdma0", "aclk200", GATE_IP_FSYS, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(pdma1, "pdma1", "aclk200", GATE_IP_FSYS, 1, CLK_IGNORE_UNUSED, 0),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
