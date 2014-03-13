@@ -39,7 +39,7 @@ enum exynos3250_clks {
 	dclk_gpr = 60, dclk_gdr,
 
 	clk_mct = 80,
-	mout_uart0, mout_uart1, mout_uart2, mout_uart3,
+	mout_uart0, mout_uart1, mout_uart2, mout_uart3, rtc,
 	sclk_uart0 = 200 , sclk_uart1, sclk_uart2, sclk_uart3,
 	dout_uart0 = 250, dout_uart1, dout_uart2, dout_uart3,
 	gate_uart0 = 300, gate_uart1, gate_uart2, gate_uart3,
@@ -79,7 +79,8 @@ static __initdata void *exynos3250_clk_regs[] = {
 struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	GATE_A(clk_mct, "clk_mct", "dclk_gpr", (unsigned long) EXYNOS3_CLKGATE_IP_PERIR,
 			13, CLK_IGNORE_UNUSED, 0, "mct"),
-
+	CGATE(rtc, "rtc", "aclk66",
+			EXYNOS3_CLKGATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_uart0, "gate_uart0", "dout_uart0",
 			EXYNOS3_CLKGATE_IP_PERIL, 0, CLK_IGNORE_UNUSED, 0),
 	CGATE(gate_uart1, "gate_uart1", "dout_uart1",
