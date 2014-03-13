@@ -89,7 +89,7 @@ unsigned int get_match_abb(enum asv_type_id target_type, unsigned int target_fre
 	}
 
 	/* If there is no matched freq, return default BB value */
-	return ABB_X100;
+	return ABB_BYPASS;
 }
 
 bool is_set_abb_first(enum asv_type_id target_type, unsigned int old_freq, unsigned int target_freq)
@@ -139,10 +139,6 @@ static void set_asv_info(struct asv_common *exynos_asv_common, bool show_volt)
 		pr_info("%s ASV group is %d\n", exynos_asv_info->name,
 						exynos_asv_info->result_asv_grp);
 		exynos_asv_info->ops->set_asv_info(exynos_asv_info, show_volt);
-
-		/* If need to set abb, call abb set function */
-		if (exynos_asv_info->abb_info)
-			exynos_asv_info->abb_info->set_target_abb(exynos_asv_info);
 	}
 }
 
