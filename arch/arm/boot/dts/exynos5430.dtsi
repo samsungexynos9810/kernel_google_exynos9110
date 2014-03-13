@@ -2086,6 +2086,7 @@
 				<&clock 30>,
 				<&clock 31>,
 				<&clock 32>,
+				<&clock 36>,
 
 				<&clock 130>,
 				<&clock 131>,
@@ -2266,6 +2267,7 @@
 				"sclk_isp_spi0_top", /* 30 */
 				"sclk_isp_spi1_top",
 				"sclk_isp_uart_top",
+				"sclk_isp_mctadc_cam1", /* 36 */
 
 				"sclk_isp_spi0", /* 130 */
 				"sclk_isp_spi1",
