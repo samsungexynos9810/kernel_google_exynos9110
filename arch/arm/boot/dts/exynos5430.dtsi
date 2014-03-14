@@ -1935,6 +1935,8 @@
 			"mout_sclk_isp_spi0",		/* 3063 */
 			"mout_sclk_isp_spi1",		/* 3064 */
 
+			"gate_isp_spi1",		/* 2625 */
+			"gate_isp_spi0",		/* 2626 */
 			"dout_sclk_isp_spi0_a",		/* 4080 */
 			"dout_sclk_isp_spi0_b",		/* 4081 */
 			"dout_sclk_isp_spi1_a",		/* 4082 */
@@ -1970,6 +1972,8 @@
 			<&clock 3063>,
 			<&clock 3064>,
 
+			<&clock 2625>,
+			<&clock 2626>,
 			<&clock 4080>,
 			<&clock 4081>,
 			<&clock 4082>,
