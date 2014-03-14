@@ -1473,7 +1473,7 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	}
 
 	if (test_bit(FIMC_IS_GGROUP_REQUEST_STOP, &groupmgr->group_state[group->id])) {
-		merr("cancel by group stop1", group);
+		merr("cancel by group stop #1", group);
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -1529,20 +1529,24 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 			}
 		}
 
-		if (!kthread_should_stop()) {
-			ldr_frame->fcount = atomic_read(&group->sensor_fcount);
-			atomic_set(&group->backup_fcount, ldr_frame->fcount);
-			ldr_frame->shot->dm.request.frameCount = ldr_frame->fcount;
-			ldr_frame->shot->dm.sensor.timeStamp = fimc_is_get_timestamp();
-
-			/* real automatic increase */
-			if (async_step && (atomic_read(&group->smp_shot_count) > MIN_OF_SYNC_SHOTS))
-				atomic_inc(&group->sensor_fcount);
+		if (test_bit(FIMC_IS_GGROUP_REQUEST_STOP, &groupmgr->group_state[group->id])) {
+			err("cancel by group stop #2");
+			ret = -EINVAL;
+			goto p_err;
 		}
+
+		ldr_frame->fcount = atomic_read(&group->sensor_fcount);
+		atomic_set(&group->backup_fcount, ldr_frame->fcount);
+		ldr_frame->shot->dm.request.frameCount = ldr_frame->fcount;
+		ldr_frame->shot->dm.sensor.timeStamp = fimc_is_get_timestamp();
+
+		/* real automatic increase */
+		if (async_step && (atomic_read(&group->smp_shot_count) > MIN_OF_SYNC_SHOTS))
+			atomic_inc(&group->sensor_fcount);
 	}
 
 	if (test_bit(FIMC_IS_GGROUP_REQUEST_STOP, &groupmgr->group_state[group->id])) {
-		err("cancel by group stop2");
+		err("cancel by group stop #3");
 		ret = -EINVAL;
 		goto p_err;
 	}
@@ -1765,8 +1769,9 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 	return ret;
 
 p_err:
-	if (!kthread_should_stop())
+	if (!test_bit(FIMC_IS_GGROUP_REQUEST_STOP, &groupmgr->group_state[group->id]))
 		fimc_is_group_cancel(group, ldr_frame);
+
 	if (try_sdown) {
 		atomic_inc(&group->smp_shot_count);
 		up(&group->smp_shot);
