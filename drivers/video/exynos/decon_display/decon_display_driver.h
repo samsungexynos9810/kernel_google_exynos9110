@@ -12,6 +12,10 @@
 #include <linux/kthread.h>
 #include <linux/platform_device.h>
 
+#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
+#define CONFIG_FB_EXYNOS_FIMD_MC
+#endif
+
 struct decon_lcd {
 	u32	mode;
 	u32	vfp;

@@ -85,8 +85,8 @@
 #define WINCONx_ALPHA_SEL			(1 << 1)
 #define WINCONx_ENWIN				(1 << 0)
 
-#define WINCONx_BPPORDER_C_F_RGB	(1 << 8)
-#define WINCONx_BPPORDER_C_F_BGR	(0 << 8)
+#define WINCONx_BPPORDER_C_F_RGB		(1 << 8)
+#define WINCONx_BPPORDER_C_F_BGR		(0 << 8)
 
 #define WINCON1_ALPHA_MUL_F			(1 << 7)
 #define WINCON2_ALPHA_MUL_F			(1 << 7)
@@ -342,6 +342,7 @@
 #define VIDCON1_VCLK_MASK			(0x3 << 9)
 #define VIDCON1_VCLK_HOLD			(0x0 << 9)
 #define VIDCON1_VCLK_RUN			(0x1 << 9)
+#define VIDCON1_VCLK_RUN_VDEN_DISABLE		(0x3 << 9)
 
 #define VIDCON1_INV_VCLK			(1 << 7)
 #define VIDCON1_INV_HSYNC			(1 << 6)
@@ -353,13 +354,13 @@
 #define VIDCON2					(0x2004)
 
 #define VIDCON2_EN601				(1 << 23)
-#define VIDCON2_RGB_ORDER_O_MASK	(0x7 << 16)
-#define VIDCON2_RGB_ORDER_O_RGB		(0x0 << 16)
-#define VIDCON2_RGB_ORDER_O_GBR		(0x1 << 16)
-#define VIDCON2_RGB_ORDER_O_BRG		(0x2 << 16)
-#define VIDCON2_RGB_ORDER_O_BGR		(0x4 << 16)
-#define VIDCON2_RGB_ORDER_O_RBG		(0x5 << 16)
-#define VIDCON2_RGB_ORDER_O_GRB		(0x6 << 16)
+#define VIDCON2_RGB_ORDER_O_MASK		(0x7 << 16)
+#define VIDCON2_RGB_ORDER_O_RGB			(0x0 << 16)
+#define VIDCON2_RGB_ORDER_O_GBR			(0x1 << 16)
+#define VIDCON2_RGB_ORDER_O_BRG			(0x2 << 16)
+#define VIDCON2_RGB_ORDER_O_BGR			(0x4 << 16)
+#define VIDCON2_RGB_ORDER_O_RBG			(0x5 << 16)
+#define VIDCON2_RGB_ORDER_O_GRB			(0x6 << 16)
 
 /* VIDCON3 */
 #define VIDCON3					(0x2008)
@@ -478,5 +479,3 @@
 #define WINCON_SHADOW(x)			(WINCON(x) + 0x4000)
 #define DECON_UPDATE_SHADOW			(DECON_UPDATE + 0x4000)
 #endif /* _REGS_DECON_H */
-
-#define DECON_MIC_3D_CTRL			(0x20D0)

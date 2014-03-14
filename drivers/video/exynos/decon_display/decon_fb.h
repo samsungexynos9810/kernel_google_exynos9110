@@ -2,6 +2,12 @@
 #ifndef __DECON_FB_H__
 #define __DECON_FB_H__
 
+#include <linux/fb.h>
+#include <linux/kthread.h>
+#include <media/media-entity.h>
+#include <media/v4l2-subdev.h>
+#include <media/exynos_mc.h>
+
 /* S3C_FB_MAX_WIN
  * Set to the maximum number of windows that any of the supported hardware
  * can use. Since the platform data uses this for an array size, having it
@@ -41,9 +47,14 @@ enum s3c_fb_psr_mode {
 	S3C_FB_MIPI_COMMAND_MODE = 2,
 };
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-struct s3c_fb_i80mode {
-	const char *name;
+enum decon_trig_mode {
+	DECON_HW_TRIG = 0,
+	DECON_SW_TRIG
+};
+
+struct decon_fb_videomode {
+	struct fb_videomode videomode;
+
 	u8 cs_setup_time;
 	u8 wr_setup_time;
 	u8 wr_act_time;
@@ -51,18 +62,7 @@ struct s3c_fb_i80mode {
 	u8 auto_cmd_rate;
 	u8 frame_skip:2;
 	u8 rs_pol:1;
-	u32 refresh;
-	u32 left_margin;
-	u32 right_margin;
-	u32 upper_margin;
-	u32 lower_margin;
-	u32 hsync_len;
-	u32 vsync_len;
-	u32 xres;
-	u32 yres;
-	u32 pixclock;
 };
-#endif
 
 /**
  * struct s3c_fb_pd_win - per window setup data
@@ -74,11 +74,7 @@ struct s3c_fb_i80mode {
  */
 
 struct s3c_fb_pd_win {
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	struct s3c_fb_i80mode	win_mode;
-#else
-	struct fb_videomode	win_mode;
-#endif
+	struct decon_fb_videomode win_mode;
 
 	unsigned short		default_bpp;
 	unsigned short		max_bpp;
@@ -344,6 +340,10 @@ struct s3c_fb {
 	struct s3c_fb_vsync	 vsync_info;
 	enum s3c_fb_pm_status	 power_state;
 
+	enum s3c_fb_psr_mode psr_mode;
+	enum decon_trig_mode trig_mode;
+	int probed;
+
 #ifdef CONFIG_ION_EXYNOS
 	struct ion_client	*fb_ion_client;
 
@@ -375,7 +375,7 @@ struct s3c_fb {
 	struct exynos5_bus_mif_handle *fb_mif_handle;
 	struct exynos5_bus_int_handle *fb_int_handle;
 
-	enum s3c_fb_psr_mode psr_mode;
+	struct decon_lcd *lcd_info;
 };
 
 struct s3c_fb_rect {
