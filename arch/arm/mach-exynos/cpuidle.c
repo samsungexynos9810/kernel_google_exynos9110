@@ -822,6 +822,12 @@ early_wakeup:
 
 	do_gettimeofday(&after);
 
+#if defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_EXYNOS_MIPI_LLI)
+	/* LLI_INTR_ENABLE is not retention register
+	   So, when LPA is exiting. it has to be recovered. */
+	mipi_lli_intr_enable();
+#endif
+
 	local_fiq_enable();
 	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
 		    (after.tv_usec - before.tv_usec);
