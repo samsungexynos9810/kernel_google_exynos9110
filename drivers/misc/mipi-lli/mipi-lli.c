@@ -290,6 +290,17 @@ static irqreturn_t mipi_lli_sig_irq(int irq, void *_dev)
 
 	return IRQ_HANDLED;
 }
+/**
+ * mipi_lli_intr_enable
+ */
+void mipi_lli_intr_enable(void)
+{
+	if (!g_lli || !g_lli->driver || !g_lli->driver->suspend)
+		return;
+
+	g_lli->driver->intr_enable(g_lli);
+}
+EXPORT_SYMBOL(mipi_lli_intr_enable);
 
 /**
  * mipi_lli_suspend must call by modem_if.

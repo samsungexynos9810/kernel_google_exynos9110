@@ -446,6 +446,21 @@ static int exynos_lli_clock_gating(struct mipi_lli *lli, int is_gating)
 	return 0;
 }
 
+static int exynos_lli_intr_enable(struct mipi_lli *lli)
+{
+	u32 lli_intr = 0;
+
+	if (mipi_lli_suspended())
+		return -1;
+
+	lli_intr = readl(lli->regs + EXYNOS_DME_LLI_INTR_ENABLE);
+
+	if (lli_intr != 0x3FFFF)
+		writel(0x3FFFF, lli->regs + EXYNOS_DME_LLI_INTR_ENABLE);
+
+	return 0;
+}
+
 #ifdef CONFIG_PM_SLEEP
 /* exynos_lli_suspend must call by modem_if */
 static int exynos_lli_suspend(struct mipi_lli *lli)
@@ -605,6 +620,7 @@ const struct lli_driver exynos_lli_driver = {
 	.read_signal = exynos_lli_read_signal,
 	.loopback_test = exynos_lli_loopback_test,
 	.debug_info = exynos_lli_debug_info,
+	.intr_enable = exynos_lli_intr_enable,
 	.suspend = exynos_lli_suspend,
 	.resume = exynos_lli_resume,
 };
