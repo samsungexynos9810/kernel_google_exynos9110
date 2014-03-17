@@ -655,10 +655,12 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	int clkdiv = s3c_fb_calc_pixclk(sfb, win_mode->pixclock);
 	u32 data = 0;
 
+#if defined (CONFIG_MACH_SMDK5422)
 	data = readl(sfb->regs + VIDCON2);
 	data &= ~(VIDCON2_RGB_ORDER_E_MASK | VIDCON2_RGB_ORDER_O_MASK);
 	data |= VIDCON2_RGB_ORDER_E_BGR | VIDCON2_RGB_ORDER_O_BGR;
 	writel(data, sfb->regs + VIDCON2);
+#endif
 
 	/* Set alpha value width */
 	if (sfb->variant.has_blendcon) {
@@ -692,13 +694,12 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 		data &= ~VIDCON0_CLKDIR;
 
 	/* write the timing data to the panel */
-	data |= VIDCON0_VLCKFREE; 
+	data |= VIDCON0_VLCKFREE;
 
-	data &= ~VIDCON0_ENVID;
-        data &=	~VIDCON0_ENVID_F;
+	data &= ~(VIDCON0_ENVID | VIDCON0_ENVID_F);
 	writel(data, sfb->regs + VIDCON0);
 
-#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
+#if defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
 	s3c_fb_config_i80(sfb, win_mode);
 #endif
 }
@@ -1245,7 +1246,7 @@ static void s3c_fb_enable_irq(struct s3c_fb *sfb)
 	disp_pm_runtime_get_sync(dispdrv);
 	irq_ctrl_reg = readl(regs + VIDINTCON0);
 
-#if  defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
+#if defined (CONFIG_FB_I80_COMMAND_MODE) && !defined (FIMD_VIDEO_PSR)
 	irq_ctrl_reg |= VIDINTCON0_INT_ENABLE;
 	irq_ctrl_reg |= VIDINTCON0_INT_SYSMAINCON;
 	irq_ctrl_reg |= VIDINTCON0_INT_I80IFDONE;
@@ -1282,11 +1283,10 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	ktime_t timestamp = ktime_get();
 
 	spin_lock(&sfb->slock);
-
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
-
 	spin_unlock(&sfb->slock);
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
 	if (sfb->output_on && sfb->power_state == POWER_ON)
@@ -1860,7 +1860,7 @@ static u32 s3c_fb_rgborder(int format)
 	case S3C_FB_PIXEL_FORMAT_RGBX_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_8888:
 	case S3C_FB_PIXEL_FORMAT_RGBA_5551:
-#if defined (CONFIG_MACH_SMDK5422) || defined (CONFIG_SOC_EXYNOS5422_REV_0)
+#if defined (CONFIG_MACH_SMDK5422)
 		return WIN_RGB_ORDER_RGB;
 #else
 		return WIN_RGB_ORDER_BGR;
@@ -1869,7 +1869,7 @@ static u32 s3c_fb_rgborder(int format)
 	case S3C_FB_PIXEL_FORMAT_RGB_565:
 	case S3C_FB_PIXEL_FORMAT_BGRA_8888:
 	case S3C_FB_PIXEL_FORMAT_BGRX_8888:
-#if defined (CONFIG_MACH_SMDK5422) || defined (CONFIG_SOC_EXYNOS5422_REV_0)
+#if defined (CONFIG_MACH_SMDK5422)
 		return WIN_RGB_ORDER_BGR;
 #else
 		return WIN_RGB_ORDER_RGB;
@@ -1879,6 +1879,7 @@ static u32 s3c_fb_rgborder(int format)
 		return 0;
 	}
 }
+
 static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 		struct s3c_fb_win_config *win_config, struct s3c_reg_data *regs)
 {
@@ -2117,6 +2118,7 @@ static int s3c_fb_set_win_config(struct s3c_fb *sfb,
 		fence = sync_fence_create("display", pt);
 		sync_fence_install(fence, fd);
 		win_data->fence = fd;
+
 		sw_sync_timeline_inc(sfb->timeline, 1);
 		goto err;
 	}
@@ -2327,7 +2329,6 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	struct display_driver *dispdrv = get_display_driver();
 
 	memset(&old_dma_bufs, 0, sizeof(old_dma_bufs));
-
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_add_refcount(dispdrv);
 #endif
@@ -3804,7 +3805,7 @@ static int s3c_fb_inquire_version(struct s3c_fb *sfb)
 #endif
 }
 
-static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
+static void fimd_parse_lcd_info(struct s3c_fb_platdata *pd)
 {
 	int i;
 	struct decon_lcd *lcd_info = decon_get_lcd_info();
@@ -3868,7 +3869,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	decon_parse_lcd_info(pd);
+	fimd_parse_lcd_info(pd);
 
 	sfb = devm_kzalloc(dev, sizeof(struct s3c_fb), GFP_KERNEL);
 	if (!sfb) {
@@ -4168,7 +4169,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	sfb->output_on = true;
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
-
 	s3c_fb_activate_window_dma(sfb, default_win);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	ret = decon_fb_config_eint_for_te(sfb);
@@ -4514,14 +4514,17 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
+
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
 		0x29, 0);
 #endif
+
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(reg, sfb->regs + VIDCON0);
+
 	sfb->output_on = true;
 
 err:
@@ -4549,7 +4552,7 @@ int s3c_fb_suspend(struct device *dev)
 			sfb->pdata->lcd_off();
 
 #ifdef CONFIG_ION_EXYNOS
-	flush_kthread_worker(&sfb->update_regs_worker);
+		flush_kthread_worker(&sfb->update_regs_worker);
 #endif
 		ret = s3c_fb_decon_stop(sfb);
 
@@ -4667,9 +4670,11 @@ int s3c_fb_resume(struct device *dev)
 	msleep(12);
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
+
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(reg, sfb->regs + VIDCON0);
+
 	sfb->output_on = true;
 
 err:
@@ -4746,7 +4751,6 @@ int s3c_fb_runtime_resume(struct device *dev)
 	}
 #endif
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
-
 
 	if (sfb->power_state != POWER_HIBER_DOWN)
 		sfb->power_state = POWER_ON;
@@ -4826,6 +4830,7 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 	sfb->output_on = true;
+
 err:
 	mutex_unlock(&sfb->output_lock);
 
