@@ -994,7 +994,7 @@ static void s3c_fb_disable_otf(struct s3c_fb *sfb)
 
 		if (timecnt == 0) {
 			dev_info(sfb->dev, "%s: Failed to wait LINECNT(%d)\n",
-				__func__, data);
+			__func__, data);
 		}
 		shadow_protect_win(sfb->windows[0], 1);
 		set_bit(S3C_FB_READY_TO_LOCAL,
@@ -4287,9 +4287,11 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 
 #if defined(CONFIG_DECON_DEVFREQ)
-#if defined(CONFIG_DECON_LCD_S6E3FA0)
-	exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_FULLHD);
-#endif
+	if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 1080 * 1920)
+		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_FULLHD);
+	else
+		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_WQHD);
+
 	exynos5_update_media_layers(TYPE_DECON, 1);
 	exynos5_update_media_layers(TYPE_GSCL_LOCAL, 0);
 	prev_overlap_cnt = 1;
@@ -4941,6 +4943,7 @@ int decon_hibernation_power_on(struct display_driver *dispdrv)
 	/* use platform specified window as the basis for the lcd timings */
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
+
 	s3c_fb_configure_trigger(sfb);
 	hw_trigger_mask_enable(sfb, true);
 
