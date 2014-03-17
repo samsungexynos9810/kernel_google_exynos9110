@@ -168,76 +168,76 @@ static unsigned int clkdiv_cpu1_5430_CA15[CPUFREQ_LEVEL_END_CA15][2] = {
 	 */
 
 	/* ARM L0: 2.5GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L1: 2.4GMHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L2: 2.3GMHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L3: 2.2GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L4: 2.1GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L5: 2.0GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L6: 1.9GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L7: 1.8GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L8: 1.7GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L9: 1.6GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L10: 1.5GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L11: 1.4GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L12: 1.3GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L13: 1.2GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L14: 1.1GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L15: 1.0GHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L16: 900MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L17: 800MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L18: 700MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L19: 600MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L20: 500MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L21: 400MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L22: 300MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 
 	/* ARM L23: 200MHz */
-	{ 3, 7 },
+	{ 1, 7 },
 };
 
 static unsigned int exynos5430_egl_pll_pms_table_CA15[CPUFREQ_LEVEL_END_CA15] = {
