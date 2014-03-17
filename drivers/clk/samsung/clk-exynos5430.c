@@ -969,6 +969,7 @@ static __initdata void *exynos5430_clk_regs[] = {
 	EXYNOS5430_SRC_ENABLE_TOP_DISP,
 	/* CLK_ENALBE_IP */
 	EXYNOS5430_ENABLE_IP_TOP,
+	EXYNOS5430_EGL_STOPCTRL,
 };
 
 /*
