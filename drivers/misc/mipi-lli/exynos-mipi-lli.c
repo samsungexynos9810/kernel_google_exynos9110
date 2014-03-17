@@ -194,7 +194,7 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	u32 remap_addr;
 
 	/* update lli_link_state as reset */
-	lli->state = LLI_RESET;
+	lli->state = LLI_UNMOUNTED;
 
 	exynos_lli_system_config(lli);
 	/* enable LLI_PHY_CONTROL */

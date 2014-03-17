@@ -106,6 +106,19 @@ int mipi_lli_get_link_status(void)
 EXPORT_SYMBOL(mipi_lli_get_link_status);
 
 /**
+ * mipi_lli_get_link_status
+ *
+ * Returns mipi_lli_link_status.
+ */
+int mipi_lli_set_link_status(int state)
+{
+	g_lli->state = state;
+
+	return 0;
+}
+EXPORT_SYMBOL(mipi_lli_set_link_status);
+
+/**
  * mipi_lli_register_handler
  * @handler: callback function when signal interrupt is occured.
  * @data: parameter when handler is callbacked.
