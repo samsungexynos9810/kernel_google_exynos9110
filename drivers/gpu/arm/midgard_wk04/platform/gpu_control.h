@@ -39,7 +39,6 @@ typedef enum {
 /* GPU feature */
 #if SOC_NAME == 5430
 #define CONFIG_DYNIMIC_ABB     1
-#define GPU_EARLY_CLK_GATING   0
 #endif /* SOC_NAME */
 
 /* mali_kbase_platform */
