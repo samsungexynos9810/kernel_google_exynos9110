@@ -85,6 +85,14 @@ enum mipi_dsim_pixel_format {
 	DSIM_24BPP_888
 };
 
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+enum mipi_dsim_pktgo_state {
+	DSIM_PKTGO_DISABLED,
+	DSIM_PKTGO_STANDBY,
+	DSIM_PKTGO_ENABLED
+};
+#endif
+
 /**
  * struct mipi_dsim_config - interface for configuring mipi-dsi controller.
  *
@@ -289,6 +297,9 @@ struct mipi_dsim_device {
 	unsigned int enabled;
 	struct decon_lcd	*lcd_info;
 	struct dphy_timing_value	timing;
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	int				pktgo;
+#endif
 	spinlock_t slock;
 };
 
@@ -395,6 +406,10 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int
 	data_id, unsigned int data0, unsigned int data1);
 int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	u32 addr, u32 count, u8 *buf);
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+void s5p_mipi_dsi_te_triggered(void);
+void s5p_mipi_dsi_trigger_unmask(void);
+#endif
 
 #if defined(CONFIG_LCD_MIPI_S6E8AB0)
 extern struct mipi_dsim_lcd_driver s6e8ab0_mipi_lcd_driver;

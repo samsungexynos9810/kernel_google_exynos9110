@@ -637,6 +637,11 @@ void s3c_fb_hw_trigger_set(struct s3c_fb *sfb, enum trig_con_set mode)
 		data &= ~(HWTRG_UNMASK_I80_RGB);
 	}
 	writel(data, sfb->regs + TRIGCON);
+
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	if (mode == TRIG_UNMASK)
+		s5p_mipi_dsi_trigger_unmask();
+#endif
 }
 #endif
 
@@ -1286,6 +1291,10 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	/* triggering power event for PM */
 	if (sfb->output_on && sfb->power_state == POWER_ON)
 		disp_pm_te_triggered(get_display_driver());
+#endif
+
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	s5p_mipi_dsi_te_triggered();
 #endif
 	return IRQ_HANDLED;
 }

@@ -581,6 +581,34 @@ exit:
 	return ret;
 }
 
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+void s5p_mipi_dsi_te_triggered(void)
+{
+	struct display_driver *dispdrv = get_display_driver();
+	struct mipi_dsim_device *dsim = dispdrv->dsi_driver.dsim;
+
+	if (!dsim->enabled)
+		return;
+
+	s5p_mipi_dsi_pkt_go_ready(dsim);
+}
+
+void s5p_mipi_dsi_trigger_unmask(void)
+{
+	struct display_driver *dispdrv = get_display_driver();
+	struct mipi_dsim_device *dsim = dispdrv->dsi_driver.dsim;
+
+	if (likely(dsim->pktgo != DSIM_PKTGO_STANDBY))
+		return;
+
+	s5p_mipi_dsi_pkt_go_cnt(dsim, 0xff);
+	s5p_mipi_dsi_pkt_go_enable(dsim, true);
+	dsim->pktgo = DSIM_PKTGO_ENABLED;
+
+	dev_info(dsim->dev, "%s: DSIM_PKTGO_ENABLED", __func__);
+}
+#endif
+
 int s5p_mipi_dsi_pll_on(struct mipi_dsim_device *dsim, unsigned int enable)
 {
 	int sw_timeout;
@@ -1223,7 +1251,6 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 		dsim->dsim_lcd_drv->resume(dsim);
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
-	dsim->enabled = true;
 
 #ifdef CONFIG_DECON_MIC
 	decon_mipi_dsi_config_mic(dsim);
@@ -1235,7 +1262,13 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	/* enable interrupts */
 	s5p_mipi_dsi_set_interrupt(dsim, true);
 
-	usleep_range(1000, 1500);
+	/* usleep_range(1000, 1500); */
+
+	dsim->enabled = true;
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	dsim->pktgo = DSIM_PKTGO_STANDBY;
+#endif
+
 	dsim->dsim_lcd_drv->displayon(dsim);
 
 	return 0;
@@ -1252,6 +1285,9 @@ int s5p_mipi_dsi_disable(struct mipi_dsim_device *dsim)
 
 	dsim->dsim_lcd_drv->suspend(dsim);
 	dsim->enabled = false;
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	dsim->pktgo = DSIM_PKTGO_DISABLED;
+#endif
 
 	/* disable interrupts */
 	s5p_mipi_dsi_set_interrupt(dsim, false);
@@ -1281,6 +1317,9 @@ int s5p_mipi_dsi_lcd_off(struct mipi_dsim_device *dsim)
 	struct display_driver *dispdrv;
 	/* get a reference of the display driver */
 	dispdrv = get_display_driver();
+
+	/* disable interrupts */
+	s5p_mipi_dsi_set_interrupt(dsim, false);
 
 	dsim->enabled = false;
 	dsim->dsim_lcd_drv->suspend(dsim);
@@ -1428,6 +1467,9 @@ int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv)
 	s5p_mipi_dsi_d_phy_onoff(dsim, 0);
 
 	dsim->enabled = false;
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	dsim->pktgo = DSIM_PKTGO_STANDBY;
+#endif
 
 	return 0;
 }
@@ -1487,6 +1529,10 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->timing.bps = 0;
 
 	mutex_init(&dsim_rd_wr_mutex);
+
+#ifdef CONFIG_DECON_MIPI_DSI_PKTGO
+	dsim->pktgo = DSIM_PKTGO_STANDBY;
+#endif
 
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);

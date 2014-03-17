@@ -63,6 +63,11 @@ config DECON_MIPI_DSI
 	depends on DECON
 	default n
 
+config DECON_MIPI_DSI_PKTGO
+	bool "Samsung DECON MIPI-DSI Packet Go"
+	depends on DECON_MIPI_DSI
+	default n
+
 config DECON_LCD
 	depends on DECON
 	bool "Select LCD panel driver"
