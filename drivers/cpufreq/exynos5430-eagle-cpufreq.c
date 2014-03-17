@@ -1027,6 +1027,8 @@ int __init exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *info)
 	__raw_writel(tmp, EXYNOS5430_CLKOUT_CMU_EGL);
 #endif
 
+	__raw_writel(0x00, EXYNOS5430_EGL_STOPCTRL);
+
 	return 0;
 
 err_fout_egl_pll:
