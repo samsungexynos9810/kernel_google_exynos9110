@@ -875,10 +875,12 @@ int fimc_is_group_close(struct fimc_is_groupmgr *groupmgr,
 	 * in group close. This situation caused waiting kthread_stop to finish it
 	 * We should check if there are smp_shot in waiting list.
 	 */
-	while (!list_empty(&group->smp_shot.wait_list)) {
-		warn("group%d frame reqs are waiting in semaphore[%d] when closing",
-				group->id, group->smp_shot.count);
-		up(&group->smp_shot);
+	if (test_bit(FIMC_IS_GROUP_INIT, &group->state)) {
+		while (!list_empty(&group->smp_shot.wait_list)) {
+			warn("group%d frame reqs are waiting in semaphore[%d] when closing",
+					group->id, group->smp_shot.count);
+			up(&group->smp_shot);
+		}
 	}
 
 	if ((refcount == 1) &&
