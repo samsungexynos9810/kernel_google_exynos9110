@@ -25,6 +25,7 @@
 
 /* device list */
 LIST_HEAD(devices);
+atomic_t device_usage = ATOMIC_INIT(0);
 
 static struct mcore_device_t *resolve_device_id(uint32_t device_id)
 {
@@ -71,14 +72,20 @@ enum mc_result mc_open_device(uint32_t device_id)
 	do {
 		struct mcore_device_t *device = resolve_device_id(device_id);
 		if (device != NULL) {
-			MCDRV_DBG_ERROR(mc_kapi,
-					"Device %d already opened", device_id);
-			mc_result = MC_DRV_ERR_INVALID_OPERATION;
+			MCDRV_DBG(mc_kapi,
+				  "Device %d already opened\n", device_id);
+			atomic_inc(&device_usage);
+			mc_result = MC_DRV_OK;
 			break;
 		}
 
 		/* Open new connection to device */
 		dev_con = connection_new();
+		if (dev_con == NULL) {
+			mc_result = MC_DRV_ERR_NO_FREE_MEMORY;
+			break;
+		}
+
 		if (!connection_connect(dev_con, MC_DAEMON_PID)) {
 			MCDRV_DBG_ERROR(
 				mc_kapi,
@@ -144,6 +151,10 @@ enum mc_result mc_open_device(uint32_t device_id)
 		/* there is no payload to read */
 
 		device = mcore_device_create(device_id, dev_con);
+		if (device == NULL) {
+			mc_result = MC_DRV_ERR_NO_FREE_MEMORY;
+			break;
+		}
 		if (!mcore_device_open(device, MC_DRV_MOD_DEVNODE_FULLPATH)) {
 			mcore_device_cleanup(device);
 			MCDRV_DBG_ERROR(mc_kapi,
@@ -154,6 +165,7 @@ enum mc_result mc_open_device(uint32_t device_id)
 		}
 
 		add_device(device);
+		atomic_inc(&device_usage);
 
 	} while (false);
 
@@ -177,6 +189,12 @@ enum mc_result mc_close_device(uint32_t device_id)
 			mc_result = MC_DRV_ERR_UNKNOWN_DEVICE;
 			break;
 		}
+		/* Check if it's not used by other modules */
+		if (!atomic_dec_and_test(&device_usage)) {
+			mc_result = MC_DRV_OK;
+			break;
+		}
+
 		struct connection *dev_con = device->connection;
 
 		/* Return if not all sessions have been closed */
@@ -274,12 +292,12 @@ enum mc_result mc_open_session(struct mc_session_handle *session,
 		}
 		struct connection *dev_con = device->connection;
 
-		/* Get the physical address of the given TCI */
+		/* Get the wsm of the given TCI */
 		struct wsm *wsm =
 			mcore_device_find_contiguous_wsm(device, tci);
 		if (wsm == NULL) {
 			MCDRV_DBG_ERROR(mc_kapi,
-					"Could not resolve TCI phy address ");
+					"Could not resolve TCI address ");
 			mc_result = MC_DRV_ERR_INVALID_PARAMETER;
 			break;
 		}
@@ -292,14 +310,14 @@ enum mc_result mc_open_session(struct mc_session_handle *session,
 		}
 
 		/* Prepare open session command */
-		struct mc_drv_cmd_open_session_t cmdOpenSession = {
+		struct mc_drv_cmd_open_session_t cmd_open_session = {
 			{
 				MC_DRV_CMD_OPEN_SESSION
 			},
 			{
 				session->device_id,
 				*uuid,
-				(uint32_t)(wsm->phys_addr) & 0xFFF,
+				(uint32_t)(wsm->virt_addr) & 0xFFF,
 				wsm->handle,
 				len
 			}
@@ -307,9 +325,9 @@ enum mc_result mc_open_session(struct mc_session_handle *session,
 
 		/* Transmit command data */
 		int len = connection_write_data(dev_con,
-						&cmdOpenSession,
-						sizeof(cmdOpenSession));
-		if (len != sizeof(cmdOpenSession)) {
+						&cmd_open_session,
+						sizeof(cmd_open_session));
+		if (len != sizeof(cmd_open_session)) {
 			MCDRV_DBG_ERROR(mc_kapi,
 					"CMD_OPEN_SESSION writeData failed %d",
 					len);
@@ -370,6 +388,10 @@ enum mc_result mc_open_session(struct mc_session_handle *session,
 
 		/* Set up second channel for notifications */
 		struct connection *session_connection = connection_new();
+		if (session_connection == NULL) {
+			mc_result = MC_DRV_ERR_NO_FREE_MEMORY;
+			break;
+		}
 
 		if (!connection_connect(session_connection, MC_DAEMON_PID)) {
 			MCDRV_DBG_ERROR(
@@ -422,9 +444,13 @@ enum mc_result mc_open_session(struct mc_session_handle *session,
 		/* there is no payload. */
 
 		/* Session established, new session object must be created */
-		mcore_device_create_new_session(device,
-						session->session_id,
-						session_connection);
+		if (!mcore_device_create_new_session(device,
+						     session->session_id,
+						     session_connection)) {
+			connection_cleanup(session_connection);
+			mc_result = MC_DRV_ERR_NO_FREE_MEMORY;
+			break;
+		}
 
 	} while (false);
 
@@ -706,7 +732,6 @@ enum mc_result mc_free_wsm(uint32_t device_id, uint8_t *wsm)
 	MCDRV_DBG_VERBOSE(mc_kapi, "===%s()===", __func__);
 
 	do {
-
 		/* Get the device associated wit the given session */
 		device = resolve_device_id(device_id);
 		if (device == NULL) {
@@ -805,7 +830,7 @@ enum mc_result mc_map(struct mc_session_handle *session_handle, void *buf,
 			{
 				session->session_id,
 				bulk_buf->handle,
-				(uint32_t)bulk_buf->phys_addr_wsm_l2,
+				0,
 				(uint32_t)(bulk_buf->virt_addr) & 0xFFF,
 				bulk_buf->len
 			}
@@ -819,8 +844,8 @@ enum mc_result mc_map(struct mc_session_handle *session_handle, void *buf,
 		/* Read command response */
 		struct mc_drv_response_header_t rsp_header;
 		int len = connection_read_datablock(dev_con,
-						    &rsp_header,
-						    sizeof(rsp_header));
+							&rsp_header,
+							sizeof(rsp_header));
 		if (len != sizeof(rsp_header)) {
 			MCDRV_DBG_ERROR(mc_kapi,
 					"CMD_MAP_BULK_BUF readRsp failed %d",

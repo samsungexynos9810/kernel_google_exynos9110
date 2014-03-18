@@ -46,8 +46,11 @@ static bool sleep_ready(void)
 	if (!ctx->mcp)
 		return false;
 
-	if (!(ctx->mcp->flags.sleep_mode.ReadyToSleep & READY_TO_SLEEP))
+	if (!(ctx->mcp->flags.sleep_mode.ready_to_sleep & READY_TO_SLEEP))
 		return false;
+
+        if (ctx->mcp->flags.schedule)
+                return false;
 
 	return true;
 }
@@ -57,7 +60,7 @@ static void mc_suspend_handler(struct work_struct *work)
 	if (!ctx->mcp)
 		return;
 
-	ctx->mcp->flags.sleep_mode.SleepReq = REQ_TO_SLEEP;
+	ctx->mcp->flags.sleep_mode.sleep_req = REQ_TO_SLEEP;
 	_nsiq();
 }
 DECLARE_WORK(suspend_work, mc_suspend_handler);
@@ -66,9 +69,9 @@ static inline void dump_sleep_params(struct mc_flags *flags)
 {
 	MCDRV_DBG(mcd, "MobiCore IDLE=%d!", flags->schedule);
 	MCDRV_DBG(mcd,
-		  "MobiCore Request Sleep=%d!", flags->sleep_mode.SleepReq);
+		  "MobiCore Request Sleep=%d!", flags->sleep_mode.sleep_req);
 	MCDRV_DBG(mcd,
-		  "MobiCore Sleep Ready=%d!", flags->sleep_mode.ReadyToSleep);
+		  "MobiCore Sleep Ready=%d!", flags->sleep_mode.ready_to_sleep);
 }
 
 static int mc_suspend_notifier(struct notifier_block *nb,
@@ -96,12 +99,12 @@ static int mc_suspend_notifier(struct notifier_block *nb,
 		 */
 		dump_sleep_params(&mcp->flags);
 		if (!sleep_ready()) {
-			ctx->mcp->flags.sleep_mode.SleepReq = REQ_TO_SLEEP;
+			ctx->mcp->flags.sleep_mode.sleep_req = REQ_TO_SLEEP;
 			schedule_work_on(0, &suspend_work);
 			flush_work(&suspend_work);
 			if (!sleep_ready()) {
 				dump_sleep_params(&mcp->flags);
-				ctx->mcp->flags.sleep_mode.SleepReq = 0;
+				ctx->mcp->flags.sleep_mode.sleep_req = 0;
 				MCDRV_DBG_ERROR(mcd, "MobiCore can't SLEEP!");
 				return NOTIFY_BAD;
 			}
@@ -109,7 +112,7 @@ static int mc_suspend_notifier(struct notifier_block *nb,
 		break;
 	case PM_POST_SUSPEND:
 		MCDRV_DBG(mcd, "Resume MobiCore system!");
-		ctx->mcp->flags.sleep_mode.SleepReq = 0;
+		ctx->mcp->flags.sleep_mode.sleep_req = 0;
 		break;
 	default:
 		break;
@@ -123,7 +126,7 @@ static struct notifier_block mc_notif_block = {
 
 #ifdef MC_BL_NOTIFIER
 
-static int bL_switcher_notifier_handler(struct notifier_block *this,
+static int bl_switcher_notifier_handler(struct notifier_block *this,
 			unsigned long event, void *ptr)
 {
 	unsigned int mpidr, cpu, cluster;
@@ -144,7 +147,7 @@ static int bL_switcher_notifier_handler(struct notifier_block *this,
 	switch (event) {
 	case SWITCH_ENTER:
 		if (!sleep_ready()) {
-			ctx->mcp->flags.sleep_mode.SleepReq = REQ_TO_SLEEP;
+			ctx->mcp->flags.sleep_mode.sleep_req = REQ_TO_SLEEP;
 			_nsiq();
 			/* By this time we should be ready for sleep or we are
 			 * in the middle of something important */
@@ -152,13 +155,13 @@ static int bL_switcher_notifier_handler(struct notifier_block *this,
 				dump_sleep_params(&mcp->flags);
 				MCDRV_DBG(mcd,
 					  "MobiCore: Don't allow switch!");
-				ctx->mcp->flags.sleep_mode.SleepReq = 0;
+				ctx->mcp->flags.sleep_mode.sleep_req = 0;
 				return -EPERM;
 			}
 		}
 		break;
 	case SWITCH_EXIT:
-			ctx->mcp->flags.sleep_mode.SleepReq = 0;
+			ctx->mcp->flags.sleep_mode.sleep_req = 0;
 			break;
 	default:
 		MCDRV_DBG(mcd, "MobiCore: Unknown switch event!");
@@ -168,7 +171,7 @@ static int bL_switcher_notifier_handler(struct notifier_block *this,
 }
 
 static struct notifier_block switcher_nb = {
-	.notifier_call = bL_switcher_notifier_handler,
+	.notifier_call = bl_switcher_notifier_handler,
 };
 #endif
 
@@ -184,7 +187,7 @@ int mc_pm_initialize(struct mc_context *context)
 #ifdef MC_BL_NOTIFIER
 	if (register_bL_swicher_notifier(&switcher_nb))
 		MCDRV_DBG_ERROR(mcd,
-				"Failed to register to bL_switcher_notifier");
+				"Failed to register to bl_switcher_notifier");
 #endif
 
 	return ret;
@@ -203,6 +206,12 @@ int mc_pm_free(void)
 	return ret;
 }
 
+bool mc_pm_sleep_ready(void)
+{
+	if (ctx == 0)
+		return true;
+	return sleep_ready();
+}
 #endif /* MC_PM_RUNTIME */
 
 #ifdef MC_CRYPTO_CLOCK_MANAGEMENT

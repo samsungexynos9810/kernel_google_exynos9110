@@ -63,8 +63,11 @@ static int thread_err;
 
 static void log_eol(uint16_t source)
 {
-	if (!strnlen(log_line, LOG_LINE_SIZE))
+	if (!strnlen(log_line, LOG_LINE_SIZE)) {
+		log_line_len = 0;
 		return;
+	}
+
 	prev_eol = true;
 	/* MobiCore Userspace */
 	if (prev_source)
@@ -251,7 +254,7 @@ void mobicore_log_read(void)
  */
 long mobicore_log_setup(void)
 {
-	unsigned long phys_log_buf;
+	phys_addr_t phys_log_buf;
 	union fc_generic fc_log;
 	struct sched_param param = { .sched_priority = 1 };
 
@@ -300,11 +303,12 @@ long mobicore_log_setup(void)
 
 	memset(&fc_log, 0, sizeof(fc_log));
 	fc_log.as_in.cmd = MC_FC_NWD_TRACE;
-	fc_log.as_in.param[0] = phys_log_buf;
-	fc_log.as_in.param[1] = log_size;
+	fc_log.as_in.param[0] = (uint32_t)phys_log_buf;
+	fc_log.as_in.param[1] = (uint32_t)(((uint64_t)phys_log_buf) >> 32);
+	fc_log.as_in.param[2] = log_size;
 
-	MCDRV_DBG(mcd, "fc_log virt=%p phys=%p ",
-		  log_buf, (void *)phys_log_buf);
+	MCDRV_DBG(mcd, "fc_log virt=%p phys=0x%llX",
+		  log_buf, (u64)phys_log_buf);
 	mc_fastcall(&fc_log);
 	MCDRV_DBG(mcd, "fc_log out ret=0x%08x", fc_log.as_out.ret);
 

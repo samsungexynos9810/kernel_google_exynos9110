@@ -35,13 +35,12 @@ int mobicore_release(struct mc_instance *instance);
  * @requested_size:	memory size requested in bytes
  * @handle:		pointer to handle
  * @kernel_virt_addr:	virtual user start address
- * @phys_addr:		physical start address
  *
  * Returns 0 if OK
  */
 int mobicore_allocate_wsm(struct mc_instance *instance,
 			  unsigned long requested_size, uint32_t *handle,
-			  void **virt_kernel_addr, void **phys_addr);
+			  void **virt_kernel_addr);
 
 /*
  * mobicore_free() - Free a WSM buffer allocated with mobicore_allocate_wsm
@@ -58,12 +57,11 @@ int mobicore_free_wsm(struct mc_instance *instance, uint32_t handle);
  * @addr:		address of the buffer (NB it must be kernel virtual!)
  * @len:		buffer length (in bytes)
  * @handle:		unique handle
- * @phys:		pointer for physical address of L2 table
  *
  * Returns 0 if no error
  */
 int mobicore_map_vmem(struct mc_instance *instance, void *addr,
-		      uint32_t len, uint32_t *handle, uint32_t *phys);
+		      uint32_t len, uint32_t *handle);
 
 /*
  * mobicore_unmap_vmem() - Unmap a virtual memory buffer from MobiCore
@@ -73,5 +71,13 @@ int mobicore_map_vmem(struct mc_instance *instance, void *addr,
  * Returns 0 if no error
  */
 int mobicore_unmap_vmem(struct mc_instance *instance, uint32_t handle);
+
+/*
+ * mobicore_sleep_ready() - Test if mobicore can sleep
+ *
+ * Returns true if mobicore can sleep, false if it can't sleep
+ */
+bool mobicore_sleep_ready(void);
+
 
 #endif /* _MC_KERNEL_API_H_ */

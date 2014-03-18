@@ -36,10 +36,10 @@
  */
 #define MC_FC_INIT		-1
 #define MC_FC_INFO		-2
-#define MC_FC_POWER		-3
-#define MC_FC_DUMP		-4
 #define MC_FC_NWD_TRACE		-31 /* Mem trace setup fastcall */
+#ifdef TBASE_CORE_SWITCHER
 #define MC_FC_SWITCH_CORE   0x84000005
+#endif
 
 
 /*
@@ -97,12 +97,13 @@ union mc_fc_info {
 	} as_out;
 };
 
+#ifdef TBASE_CORE_SWITCHER
 /* fast call switch Core parameters */
 union mc_fc_swich_core {
 	union fc_generic as_generic;
 	struct {
 		uint32_t cmd;
-		uint32_t CoreId;
+		uint32_t core_id;
 		uint32_t rfu[2];
 	} as_in;
 	struct {
@@ -112,6 +113,7 @@ union mc_fc_swich_core {
 		uint32_t ext_info;
 	} as_out;
 };
+#endif
 /*
  * _smc() - fast call to MobiCore
  *
@@ -147,6 +149,9 @@ static inline long _smc(void *data)
 			: "+r"(reg0), "+r"(reg1), "+r"(reg2), "+r"(reg3)
 		);
 #ifdef __ARM_VE_A9X4_QEMU__
+		/* Qemu does not return to the address following the SMC
+		   instruction so we have to insert several nop instructions to
+		   workaround this Qemu bug. */
 		__asm__ volatile (
 		    "nop\n"
 		    "nop\n"

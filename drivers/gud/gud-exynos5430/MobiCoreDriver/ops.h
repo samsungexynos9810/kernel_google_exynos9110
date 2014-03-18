@@ -21,11 +21,13 @@ int _nsiq(void);
 uint32_t mc_get_version(void);
 
 int mc_info(uint32_t ext_info_id, uint32_t *state, uint32_t *ext_info);
-int mc_init(uint32_t base, uint32_t  nq_offset, uint32_t  nq_length,
-	    uint32_t mcp_offset, uint32_t  mcp_length);
-int mc_switchCore(uint32_t coreNum);
+int mc_init(phys_addr_t base, uint32_t  nq_length, uint32_t mcp_offset,
+		uint32_t  mcp_length);
+#ifdef TBASE_CORE_SWITCHER
+int mc_switch_core(uint32_t core_num);
+#endif
 
-void mc_fastcall(void *data);
+bool mc_fastcall(void *data);
 
 int mc_fastcall_init(struct mc_context *context);
 void mc_fastcall_destroy(void);

@@ -1,5 +1,5 @@
 #
-# this makefile is called from the kernel make system. Thus we basiclly
+# this makefile is called from the kernel make system. Thus we basically
 # add things to "obj-m" here.
 
 ifeq ($(MODE),release)
@@ -7,6 +7,11 @@ ifeq ($(MODE),release)
 else
     ccflags-y = -DDEBUG
 endif # DEBUG/RELEASE
+
+# CFLAG for testable mode
+ifeq ($(IS_TESTABLE),yes)
+	ccflags-y = -DTEST
+endif
 
 # CFLAGS from the build script
 ifdef MOBICORE_CFLAGS
