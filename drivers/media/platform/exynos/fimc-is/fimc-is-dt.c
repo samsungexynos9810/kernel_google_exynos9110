@@ -26,7 +26,7 @@ static int board_rev = 0;
 static int get_board_rev(struct device *dev)
 {
 	int ret = 0;
-#if 0 // LSI CODE
+#if !defined(CONFIG_USE_VENDER_FEATURE) // LSI CODE
 	int board_rev_pin0, board_rev_pin1;
 	struct device_node *np = dev->of_node;
 
@@ -306,6 +306,7 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 
 	pdata->use_two_spi_line = of_property_read_bool(np,"use_two_spi_line");
 #endif
+#ifdef CONFIG_USE_VENDER_FEATURE
 	retVal = of_property_read_u32(np,"use_vision",&pdata->use_vision);
 	if (retVal) {
 		err("use_vision read is fail(%d)", retVal);
@@ -317,7 +318,7 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 		err("use_sensor_dynamic_voltage_mode read is fail(%d)", retVal);
 		pdata->use_sensor_dynamic_voltage_mode = 0;
 	}
-
+#endif
 	subip_info_np = of_find_node_by_name(np, "subip_info");
 	if (!subip_info_np) {
 		printk(KERN_ERR "%s: can't find fimc_is subip_info node\n", __func__);
@@ -355,11 +356,13 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 #ifdef CONFIG_SOC_EXYNOS5422
 	int gpios_cam_en = 0;
 #endif
-#if 0 /* LSI Patch */
+#if !defined(CONFIG_USE_VENDER_FEATURE) /* LSI Patch */
 	int gpio_cam_en = 0;
+	int gpio_comp_en, gpio_comp_rst;
+#else
+	const char *name;
 #endif
 	int gpio_none = 0;
-	const char *name;
 	u32 id;
 
 	BUG_ON(!pdev);
@@ -435,6 +438,7 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 	DT_READ_U32(dnode, "flash_first_gpio",   pdata->flash_first_gpio );
 	DT_READ_U32(dnode, "flash_second_gpio",  pdata->flash_second_gpio);
 
+#ifdef CONFIG_USE_VENDER_FEATURE
 	ret = of_property_read_string(dnode, "sensor_name", &name);
 	if (ret) {
 		err("sensor_name read is fail(%d)", ret);
@@ -447,7 +451,7 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 		err("sensor_id read is fail(%d)", ret);
 		goto p_err;
 	}
-
+#endif
 	gpio_reset = of_get_named_gpio(dnode, "gpio_reset", 0);
 	if (!gpio_is_valid(gpio_reset)) {
 		dev_err(dev, "failed to get PIN_RESET\n");
@@ -467,7 +471,7 @@ int fimc_is_sensor_parse_dt(struct platform_device *pdev)
 	}
 #endif
 
-#if 0 /* LSI Patch */
+#if !defined(CONFIG_USE_VENDER_FEATURE) /* LSI Patch */
 	/* Optional Feature */
 	gpio_comp_en = of_get_named_gpio(dnode, "gpios_comp_en", 0);
 	if (!gpio_is_valid(gpio_comp_en))
@@ -643,6 +647,7 @@ p_err:
 	return ret;
 }
 
+#ifdef CONFIG_USE_VENDER_FEATURE
 int fimc_is_companion_parse_dt(struct platform_device *pdev)
 {
 	int ret = 0;
@@ -780,6 +785,7 @@ p_err:
 	kfree(pdata);
 	return ret;
 }
+#endif
 #else
 struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 {

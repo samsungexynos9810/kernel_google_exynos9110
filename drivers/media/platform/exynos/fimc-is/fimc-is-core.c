@@ -69,7 +69,9 @@
 #include "sensor/fimc-is-device-4h5.h"
 #include "sensor/fimc-is-device-3l2.h"
 #include "sensor/fimc-is-device-2p2.h"
+#ifdef CONFIG_USE_VENDER_FEATURE
 #include "fimc-is-sec-define.h"
+#endif
 
 #ifdef USE_OWN_FAULT_HANDLER
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0))
@@ -756,6 +758,7 @@ static struct attribute_group fimc_is_debug_attr_group = {
 	.attrs	= fimc_is_debug_entries,
 };
 
+#ifdef CONFIG_USE_VENDER_FEATURE
 static ssize_t camera_front_sensorid_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
@@ -1031,9 +1034,7 @@ static DEVICE_ATTR(rear_calcheck, S_IRUGO,
 		camera_rear_calcheck_show, NULL);
 static DEVICE_ATTR(isp_core, S_IRUGO,
 		camera_isp_core_show, NULL);
-
-
-
+#endif
 
 static int fimc_is_probe(struct platform_device *pdev)
 {
@@ -1071,10 +1072,12 @@ static int fimc_is_probe(struct platform_device *pdev)
 #ifdef CONFIG_COMPANION_USE
 	core->companion_spi_channel = pdata->companion_spi_channel;
 	core->use_two_spi_line = pdata->use_two_spi_line;
+	core->fan53555_client = NULL;
 #endif
+#ifdef CONFIG_USE_VENDER_FEATURE
 	core->use_vision = pdata->use_vision;
 	core->use_sensor_dynamic_voltage_mode = pdata->use_sensor_dynamic_voltage_mode;
-	core->fan53555_client = NULL;
+#endif
 
 	core->pdev = pdev;
 	core->pdata = pdata;
@@ -1305,6 +1308,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 	pm_runtime_enable(&pdev->dev);
 #endif
 
+#ifdef CONFIG_USE_VENDER_FEATURE
 	if (camera_class == NULL) {
 		camera_class = class_create(THIS_MODULE, "camera");
 		if (IS_ERR(camera_class)) {
@@ -1395,6 +1399,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 		}
 	}
 	sysfs_core = core;
+#endif
 
 #ifdef USE_OWN_FAULT_HANDLER
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 9, 0))
@@ -1455,6 +1460,7 @@ static const struct dev_pm_ops fimc_is_pm_ops = {
 	.runtime_resume		= fimc_is_runtime_resume,
 };
 
+#ifdef CONFIG_USE_VENDER_FEATURE
 #if defined(CONFIG_COMPANION_USE) || defined(CONFIG_CAMERA_EEPROM_SUPPORT)
 static int fimc_is_i2c0_probe(struct i2c_client *client,
 				  const struct i2c_device_id *id)
@@ -1562,6 +1568,7 @@ static int of_fimc_is_spi_dt(struct device *dev, struct fimc_is_spi_gpio *spi_gp
 	return 0;
 }
 #endif
+#endif
 
 #ifdef CONFIG_OF
 static int fimc_is_spi_probe(struct spi_device *spi)
@@ -1616,7 +1623,7 @@ static int fimc_is_spi_remove(struct spi_device *spi)
 	return 0;
 }
 
-#ifdef CONFIG_COMPANION_USE
+#if defined(CONFIG_USE_VENDER_FEATURE) && defined(CONFIG_COMPANION_USE)
 static int fimc_is_fan53555_probe(struct i2c_client *client,
 				  const struct i2c_device_id *id)
 {

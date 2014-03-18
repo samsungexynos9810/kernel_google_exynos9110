@@ -487,7 +487,7 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 		framemgr_x_barrier_irqr(sub_framemgr, 0, flags);
 	}
 }
-
+#ifdef CONFIG_USE_VENDER_FEATURE
 /* Flash Mode Control */
 #ifdef CONFIG_LEDS_LM3560
 extern int lm3560_reg_update_export(u8 reg, u8 mask, u8 data);
@@ -529,11 +529,10 @@ static void fimc_is_group_set_torch(struct fimc_is_group *group,
 		default:
 			break;
 		}
-
-
 	}
 	return;
 }
+#endif
 
 #ifdef DEBUG_AA
 static void fimc_is_group_debug_aa_shot(struct fimc_is_group *group,
@@ -1778,9 +1777,10 @@ int fimc_is_group_start(struct fimc_is_groupmgr *groupmgr,
 #ifdef DEBUG_AA
 	fimc_is_group_debug_aa_shot(group, ldr_frame);
 #endif
-
+#ifdef CONFIG_USE_VENDER_FEATURE
 	/* Flash Mode Control */
 	fimc_is_group_set_torch(group, ldr_frame);
+#endif
 
 #ifdef ENABLE_DVFS
 	mutex_lock(&resourcemgr->dvfs_ctrl.lock);

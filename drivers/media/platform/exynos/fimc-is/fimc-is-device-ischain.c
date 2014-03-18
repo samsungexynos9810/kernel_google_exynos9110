@@ -58,11 +58,18 @@
 #include "fimc-is-companion.h"
 #include "fimc-is-clk-gate.h"
 #include "fimc-is-dvfs.h"
-#include "fimc-is-sec-define.h"
 #include "fimc-is-device-companion.h"
+#ifdef CONFIG_USE_VENDER_FEATURE
+#include "fimc-is-sec-define.h"
+#endif
 
 #include <linux/pinctrl/consumer.h>
 #include <mach/pinctrl-samsung.h>
+
+#if !defined(CONFIG_USE_VENDER_FEATURE)
+#define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
+#define FIMC_IS_FW_SDCARD				"/data/fimc_is_fw2.bin"
+#endif
 
 #define SDCARD_FW
 #define FIMC_IS_FW				"fimc_is_fw2.bin"
@@ -113,8 +120,12 @@ extern bool crc32_check;
 extern bool crc32_header_check;
 
 static int cam_id;
+#ifdef CONFIG_USE_VENDER_FEATURE
 extern bool is_dumped_fw_loading_needed;
 extern char fw_core_version;
+#else
+bool is_dumped_fw_loading_needed = false;
+#endif
 
 static int isfw_debug_open(struct inode *inode, struct file *file)
 {
@@ -806,6 +817,7 @@ static int fimc_is_ischain_loadfirm(struct fimc_is_device_ischain *device)
 	set_fs(KERNEL_DS);
 	fp = filp_open(FIMC_IS_FW_SDCARD, O_RDONLY, 0);
 	if (IS_ERR(fp)) {
+#ifdef CONFIG_USE_VENDER_FEATURE
 		if (is_dumped_fw_loading_needed &&
 			device->pdev->id == SENSOR_POSITION_REAR) {
 			snprintf(fw_path, sizeof(fw_path), "%s%s",
@@ -822,6 +834,7 @@ static int fimc_is_ischain_loadfirm(struct fimc_is_device_ischain *device)
 					fw_path, fsize);
 			}
 		} else
+#endif
 			goto request_fw;
 	}
 
@@ -929,6 +942,7 @@ static int fimc_is_ischain_loadsetf(struct fimc_is_device_ischain *device,
 		FIMC_IS_SETFILE_SDCARD_PATH, setfile_name);
 	fp = filp_open(setfile_path, O_RDONLY, 0);
 	if (IS_ERR(fp)) {
+#ifdef CONFIG_USE_VENDER_FEATURE
 		if (is_dumped_fw_loading_needed &&
 			device->pdev->id == SENSOR_POSITION_REAR) {
 			memset(setfile_path, 0x00, sizeof(setfile_path));
@@ -942,6 +956,7 @@ static int fimc_is_ischain_loadsetf(struct fimc_is_device_ischain *device,
 				goto out;
 			}
 		} else
+#endif
 			goto request_fw;
 	}
 
@@ -1038,6 +1053,7 @@ static int fimc_is_ischain_loadcalb(struct fimc_is_device_ischain *device,
 	struct fimc_is_module_enum *active_sensor)
 {
 	int ret = 0;
+#ifdef CONFIG_USE_VENDER_FEATURE
 	char *cal_ptr;
 	struct fimc_is_from_info *sysfs_finfo;
 	char *cal_buf;
@@ -1083,7 +1099,7 @@ static int fimc_is_ischain_loadcalb(struct fimc_is_device_ischain *device,
 		mwarn("calibration loading is fail", device);
 	else
 		mwarn("calibration loading is success", device);
-
+#endif
 	return ret;
 }
 
@@ -2701,7 +2717,7 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 
 	clear_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state);
 	clear_bit(FIMC_IS_ISCHAIN_OPEN, &device->state);
-#if CONFIG_COMPANION_USE
+#ifdef CONFIG_COMPANION_USE
 	fimc_is_set_spi_config(spi_gpio, FIMC_IS_SPI_OUTPUT, true);
 #endif
 

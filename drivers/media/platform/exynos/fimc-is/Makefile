@@ -1,8 +1,5 @@
 fimc-is-objs	:= fimc-is-core.o \
 		fimc-is-mem.o \
-		fimc-is-spi.o \
-		crc32.o \
-		fimc-is-sec-define.o \
 		fimc-is-framemgr.o \
 		fimc-is-groupmgr.o \
 		fimc-is-resourcemgr.o \
@@ -38,7 +35,10 @@ fimc-is-objs	:= fimc-is-core.o \
 		sensor/fimc-is-device-imx175.o \
 		sensor/fimc-is-device-4h5.o
 
-obj-$(CONFIG_COMPANION_USE)	:= fimc-is-companion.o \
+obj-$(CONFIG_USE_VENDER_FEATURE) := fimc-is-spi.o \
+				crc32.o \
+				fimc-is-sec-define.o
+obj-$(CONFIG_COMPANION_USE)	+= fimc-is-companion.o \
 				fimc-is-fan53555.o \
 				fimc-is-device-companion.o \
 				fimc-is-video-companion.o
