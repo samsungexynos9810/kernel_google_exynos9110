@@ -219,6 +219,7 @@ struct exynos_sensor_pin {
 	int voltage;
 };
 
+#ifdef CONFIG_USE_VENDER_FEATURE
 #define SET_PIN(p, id1, id2, n, _pin, _value, _name, _time, _act) \
 		p->pin_ctrls[id1][id2][n].pin = _pin; \
 		p->pin_ctrls[id1][id2][n].delay = _time; \
@@ -226,6 +227,13 @@ struct exynos_sensor_pin {
 		p->pin_ctrls[id1][id2][n].name = _name; \
 		p->pin_ctrls[id1][id2][n].act = _act; \
 		p->pin_ctrls[id1][id2][n].voltage = 0;
+#else
+#define SET_PIN(d, s, c, i, p, v, n, a)	\
+		(d)->pin_ctrls[s][c][i].pin     = p;    \
+		(d)->pin_ctrls[s][c][i].value   = v;    \
+		(d)->pin_ctrls[s][c][i].name    = n;    \
+		(d)->pin_ctrls[s][c][i].act     = a;
+#endif
 
 /*
  * struct exynos_platform_fimc_is_sensor - platform data for exynos_sensor driver

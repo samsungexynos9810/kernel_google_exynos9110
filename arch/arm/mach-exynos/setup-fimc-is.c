@@ -356,13 +356,13 @@ int exynos5422_cfg_clk_sclk(struct platform_device *pdev)
 	pr_info("%s\n", __func__);
 #ifndef CONFIG_COMPANION_USE
 	/* SCLK_SPI0_ISP */
-	fimc_is_set_parent_dt(pdev, "mout_spi0_isp", "mout_spll_ctrl");
-	fimc_is_set_rate_dt(pdev, "dout_spi0_isp", 200 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_spi0_isp_pre", 100 * 1000000);
+	fimc_is_set_parent_dt(pdev, "mout_spi0_isp", "fin_pll");
+	fimc_is_set_rate_dt(pdev, "dout_spi0_isp", 24 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_spi0_isp_pre", 24 * 1000000);
 	/* SCLK_SPI1_ISP */
-	fimc_is_set_parent_dt(pdev, "mout_spi1_isp", "mout_spll_ctrl");
-	fimc_is_set_rate_dt(pdev, "dout_spi1_isp", 200 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_spi1_isp_pre", 100 * 1000000);
+	fimc_is_set_parent_dt(pdev, "mout_spi1_isp", "fin_pll");
+	fimc_is_set_rate_dt(pdev, "dout_spi1_isp", 24 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_spi1_isp_pre", 24 * 1000000);
 #endif
 	/* SCLK_UART_ISP */
 	fimc_is_set_parent_dt(pdev, "mout_uart_isp", "fin_pll");
@@ -506,6 +506,7 @@ int exynos5422_fimc_is_clk_on(struct platform_device *pdev)
 
 	fimc_is_enable_dt(pdev, "sclk_uart_isp");
 	fimc_is_enable_dt(pdev, "sclk_pwm_isp");
+	fimc_is_enable_dt(pdev, "sclk_spi0_isp");
 
 	fimc_is_enable_dt(pdev, "clk_3aa");
 	fimc_is_enable_dt(pdev, "clk_camif_top_3aa");
@@ -522,6 +523,7 @@ int exynos5422_fimc_is_clk_off(struct platform_device *pdev)
 	exynos5422_cfg_clk_div_max(pdev);
 	fimc_is_disable_dt(pdev, "sclk_uart_isp");
 	fimc_is_disable_dt(pdev, "sclk_pwm_isp");
+	fimc_is_disable_dt(pdev, "sclk_spi0_isp");
 
 	fimc_is_disable_dt(pdev, "clk_3aa");
 	fimc_is_disable_dt(pdev, "clk_camif_top_3aa");
@@ -892,6 +894,7 @@ int exynos5430_cfg_clk_cam1(struct platform_device *pdev)
 	/* CAM1 QE CLK GATE */
 	fimc_is_enable_dt(pdev, "gate_bts_fd");
 	fimc_is_disable_dt(pdev, "gate_bts_fd");
+
 	return 0;
 }
 
@@ -1337,4 +1340,3 @@ int exynos_fimc_is_print_pwr(struct platform_device *pdev)
 #endif
 	return 0;
 }
-
