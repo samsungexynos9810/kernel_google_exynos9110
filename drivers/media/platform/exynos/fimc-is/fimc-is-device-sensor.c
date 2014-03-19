@@ -47,6 +47,9 @@
 #include "sensor/fimc-is-device-imx135.h"
 #include "fimc-is-device-sensor.h"
 
+extern struct device *camera_front_dev;
+extern struct device *camera_rear_dev;
+
 extern int fimc_is_sen_video_probe(void *data);
 
 extern u32 __iomem *notify_fcount_sen0;
@@ -777,6 +780,7 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 	atomic_t device_id;
 	struct fimc_is_core *core;
 	struct fimc_is_device_sensor *device;
+	struct device *dev;
 	void *pdata;
 
 	BUG_ON(!pdev);
@@ -878,6 +882,10 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 		merr("fimc_is_sensor_video_probe is fail(%d)", device, ret);
 		goto p_err;
 	}
+
+	dev = pdev->id ? camera_front_dev : camera_rear_dev;
+	if (dev)
+		dev_set_drvdata(dev, device->pdata);
 
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", instance, __func__, ret);
@@ -1087,12 +1095,14 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	module->ext.flash_con.peri_setting.gpio.first_gpio_port_no = device->pdata->flash_first_gpio;
 	module->ext.flash_con.peri_setting.gpio.second_gpio_port_no = device->pdata->flash_second_gpio;
 
+#ifdef CONFIG_COMPANION_USE
 	/* Data Type For Comapnion:
 	 * Companion use user defined data type.
 	 */
 	if (module->ext.companion_con.product_name &&
 	module->ext.companion_con.product_name != COMPANION_NAME_NOTHING)
 		device->image.format.field = V4L2_FIELD_INTERLACED;
+#endif
 
 	subdev_csi = device->subdev_csi;
 	device->image.framerate = min_t(u32, SENSOR_DEFAULT_FRAMERATE, module->max_framerate);

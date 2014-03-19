@@ -208,7 +208,8 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_FHD)
 {
 	u32 mask = (device->setfile & FIMC_IS_SETFILE_MASK);
 	bool setfile_flag = (mask == ISS_SUB_SCENARIO_VIDEO) ||
-				(mask == ISS_SUB_SCENARIO_VIDEO_WDR);
+			(mask == ISS_SUB_SCENARIO_VIDEO_WDR);
+
 	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			(device->chain3_width * device->chain3_height <= SIZE_FHD) &&
@@ -223,7 +224,8 @@ DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_REAR_CAMCORDING_UHD)
 {
 	u32 mask = (device->setfile & FIMC_IS_SETFILE_MASK);
 	bool setfile_flag = (mask == ISS_SUB_SCENARIO_UHD_30FPS) ||
-				(mask == ISS_SUB_SCENARIO_UHD_30FPS_WDR);
+			(mask == ISS_SUB_SCENARIO_UHD_30FPS_WDR);
+
 	if ((device->sensor->pdev->id == SENSOR_POSITION_REAR) &&
 			(fimc_is_sensor_g_framerate(device->sensor) <= 30) &&
 			(device->chain3_width * device->chain3_height > SIZE_FHD) &&
@@ -511,12 +513,12 @@ int fimc_is_dvfs_sel_scenario(u32 type, struct fimc_is_device_ischain *device)
 		sensor_cnt = fimc_is_get_open_sensor_cnt(core);
 
 		warn("couldn't find static dvfs scenario [sensor:(%d/%d)/fps:%d/setfile:%d/scp size:(%d/%d)]\n",
-				sensor_cnt,
-				device->sensor->pdev->id,
-				fimc_is_sensor_g_framerate(device->sensor),
-				(device->setfile & FIMC_IS_SETFILE_MASK),
-				device->chain3_width,
-				device->chain3_height);
+			sensor_cnt,
+			device->sensor->pdev->id,
+			fimc_is_sensor_g_framerate(device->sensor),
+			(device->setfile & FIMC_IS_SETFILE_MASK),
+			device->chain3_width,
+			device->chain3_height);
 	}
 
 	static_ctrl->cur_scenario_id = FIMC_IS_SN_DEFAULT;

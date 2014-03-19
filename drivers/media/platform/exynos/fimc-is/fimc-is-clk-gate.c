@@ -31,8 +31,8 @@ int fimc_is_clk_gate_init(struct fimc_is_core *core)
 	core->resourcemgr.clk_gate_ctrl.gate_info = core->pdata->gate_info;
 
 	/* Do not initialize clock gating region for debug(ISSR53).
-	 * Because this region is initialize by A5.
-	 */
+	  * Because this region is initialize by A5.
+	  */
 	return 0;
 }
 

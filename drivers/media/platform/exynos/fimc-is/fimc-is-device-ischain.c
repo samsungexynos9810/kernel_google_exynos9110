@@ -58,11 +58,15 @@
 #include "fimc-is-companion.h"
 #include "fimc-is-clk-gate.h"
 #include "fimc-is-dvfs.h"
+#include "fimc-is-sec-define.h"
+#include "fimc-is-device-companion.h"
+
+#include <linux/pinctrl/consumer.h>
+#include <mach/pinctrl-samsung.h>
 
 #define SDCARD_FW
-#define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
 #define FIMC_IS_FW				"fimc_is_fw2.bin"
-#define FIMC_IS_FW_SDCARD			"/data/fimc_is_fw2.bin"
+
 
 #define FIMC_IS_FW_BASE_MASK			((1 << 26) - 1)
 #define FIMC_IS_VERSION_SIZE			42
@@ -70,7 +74,6 @@
 #define FIMC_IS_SETFILE_VER_SIZE		52
 
 #define FIMC_IS_CAL_SDCARD			"/data/cal_data.bin"
-/*#define FIMC_IS_MAX_CAL_SIZE			(20 * 1024)*/
 #define FIMC_IS_MAX_FW_SIZE			(2048 * 1024)
 #define FIMC_IS_CAL_START_ADDR			(0x013D0000)
 #define FIMC_IS_CAL_RETRY_CNT			(2)
@@ -101,14 +104,17 @@ static struct dentry		*debugfs_file;
 #define SETFILE_SIZE	0x6000
 #define READ_SIZE		0x100
 
-#define HEADER_CRC32_LEN (128 / 2)
-#define OEM_CRC32_LEN (192 / 2)
-#define AWB_CRC32_LEN (32 / 2)
-#define SHADING_CRC32_LEN (2336 / 2)
-
 static char fw_name[100];
+//static char setf_name[100];
+
+#define FIMC_IS_MAX_CAL_SIZE	(64 * 1024)
+#define FIMC_IS_DEFAULT_CAL_SIZE	(20 * 1024)
+extern bool crc32_check;
+extern bool crc32_header_check;
+
 static int cam_id;
-bool is_dumped_fw_loading_needed = false;
+extern bool is_dumped_fw_loading_needed;
+extern char fw_core_version;
 
 static int isfw_debug_open(struct inode *inode, struct file *file)
 {
@@ -800,7 +806,23 @@ static int fimc_is_ischain_loadfirm(struct fimc_is_device_ischain *device)
 	set_fs(KERNEL_DS);
 	fp = filp_open(FIMC_IS_FW_SDCARD, O_RDONLY, 0);
 	if (IS_ERR(fp)) {
-		goto request_fw;
+		if (is_dumped_fw_loading_needed &&
+			device->pdev->id == SENSOR_POSITION_REAR) {
+			snprintf(fw_path, sizeof(fw_path), "%s%s",
+				FIMC_IS_FW_DUMP_PATH, FIMC_IS_FW);
+			fp = filp_open(fw_path, O_RDONLY, 0);
+			if (IS_ERR(fp)) {
+				fp = NULL;
+				ret = -EIO;
+				set_fs(old_fs);
+				goto out;
+			} else {
+				fsize = fp->f_path.dentry->d_inode->i_size;
+				pr_info("start, file path %s, size %ld Bytes\n",
+					fw_path, fsize);
+			}
+		} else
+			goto request_fw;
 	}
 
 	location = 1;
@@ -907,7 +929,20 @@ static int fimc_is_ischain_loadsetf(struct fimc_is_device_ischain *device,
 		FIMC_IS_SETFILE_SDCARD_PATH, setfile_name);
 	fp = filp_open(setfile_path, O_RDONLY, 0);
 	if (IS_ERR(fp)) {
-		goto request_fw;
+		if (is_dumped_fw_loading_needed &&
+			device->pdev->id == SENSOR_POSITION_REAR) {
+			memset(setfile_path, 0x00, sizeof(setfile_path));
+			snprintf(setfile_path, sizeof(setfile_path), "%s%s",
+				FIMC_IS_FW_DUMP_PATH, setfile_name);
+			fp = filp_open(setfile_path, O_RDONLY, 0);
+			if (IS_ERR(fp)) {
+				ret = -EIO;
+				fp = NULL;
+				set_fs(old_fs);
+				goto out;
+			}
+		} else
+			goto request_fw;
 	}
 
 	location = 1;
@@ -1002,69 +1037,37 @@ out:
 static int fimc_is_ischain_loadcalb(struct fimc_is_device_ischain *device,
 	struct fimc_is_module_enum *active_sensor)
 {
-#if 1
-	return 0;
-#else
 	int ret = 0;
-	char *buf = NULL;
 	char *cal_ptr;
+	struct fimc_is_from_info *sysfs_finfo;
+	char *cal_buf;
 
-	struct file *fp = NULL;
-	mm_segment_t old_fs;
-	long fsize, nread;
-	char calfile_path[256];
-
+	struct fimc_is_core *core = (struct fimc_is_core *)platform_get_drvdata(device->pdev);
 	mdbgd_ischain("%s\n", device, __func__);
 
 	cal_ptr = (char *)(device->imemory.kvaddr + FIMC_IS_CAL_START_ADDR);
 
-	old_fs = get_fs();
-	set_fs(KERNEL_DS);
-	memset(calfile_path, 0x00, sizeof(calfile_path));
-	snprintf(calfile_path, sizeof(calfile_path), "%s", FIMC_IS_CAL_SDCARD);
-	fp = filp_open(calfile_path, O_RDONLY, 0);
-	if (IS_ERR(fp)) {
-		mwarn("failed to filp_open", device);
-		memset((void *)cal_ptr, 0xCC, FIMC_IS_MAX_CAL_SIZE);
-		fp = NULL;
-		ret = -EIO;
-		goto out;
-	}
+	fimc_is_sec_get_sysfs_finfo(&sysfs_finfo);
+	fimc_is_sec_get_cal_buf(&cal_buf);
 
-	fsize = fp->f_path.dentry->d_inode->i_size;
-	if (fsize != FIMC_IS_MAX_CAL_SIZE) {
-		merr("cal_data.bin file size is invalid(%ld size)",
-			device, fsize);
-		memset((void *)cal_ptr, 0xAC, FIMC_IS_MAX_CAL_SIZE);
-		ret = -EINVAL;
-		goto out;
-	}
-
-	mdbgd_ischain("start, file path %s, size %ld Bytes\n", device, calfile_path, fsize);
-	buf = vmalloc(fsize);
-	if (!buf) {
-		dev_err(&device->pdev->dev,
-			"failed to allocate memory\n");
-		ret = -ENOMEM;
-		goto out;
-	}
-	nread = vfs_read(fp, (char __user *)buf, fsize, &fp->f_pos);
-	if (nread != fsize) {
-		dev_err(&device->pdev->dev,
-			"failed to read firmware file, %ld Bytes\n", nread);
-		ret = -EIO;
-		goto out;
-	}
-
-	info("CAL DATA : MAP ver : %c%c%c%c\n", buf[0x60], buf[0x61],
-		buf[0x62], buf[0x63]);
+	info("CAL DATA : MAP ver : %c%c%c%c\n", cal_buf[0x60], cal_buf[0x61],
+		cal_buf[0x62], cal_buf[0x63]);
 
 	/* CRC check */
-	if (CRC32_CHECK == true) {
-		memcpy((void *)(cal_ptr) ,(void *)buf, nread);
+	if (crc32_check == true) {
+#ifdef CONFIG_COMPANION_USE
+		if (fimc_is_comp_is_compare_ver(core) >= FROM_VERSION_V004) {
+			memcpy((void *)(cal_ptr) ,(void *)cal_buf, FIMC_IS_MAX_CAL_SIZE);
+			info("Camera : the dumped Cal. data was applied successfully.\n");
+		} else {
+			info("Camera : Did not load dumped Cal. Sensor version is lower than V004.\n");
+		}
+#else
+		memcpy((void *)(cal_ptr) ,(void *)cal_buf, FIMC_IS_MAX_CAL_SIZE);
 		info("Camera : the dumped Cal. data was applied successfully.\n");
+#endif
 	} else {
-		if (CRC32_HEADER_CHECK == true) {
+		if (crc32_header_check == true) {
 			pr_err("Camera : CRC32 error but only header section is no problem.\n");
 			memset((void *)(cal_ptr + 0x1000), 0xFF, FIMC_IS_MAX_CAL_SIZE - 0x1000);
 		} else {
@@ -1074,22 +1077,14 @@ static int fimc_is_ischain_loadcalb(struct fimc_is_device_ischain *device,
 		}
 	}
 
-out:
 	fimc_is_ischain_cache_flush(device, FIMC_IS_CAL_START_ADDR,
 		FIMC_IS_MAX_CAL_SIZE);
-
-	if (buf)
-		vfree(buf);
-	if (fp)
-		filp_close(fp, current->files);
-
-	set_fs(old_fs);
-
 	if (ret)
 		mwarn("calibration loading is fail", device);
+	else
+		mwarn("calibration loading is success", device);
 
 	return ret;
-#endif
 }
 
 static void fimc_is_ischain_forcedown(struct fimc_is_device_ischain *this,
@@ -1171,6 +1166,22 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 #endif
 		snprintf(fw_name, sizeof(fw_name), "%s", FIMC_IS_FW);
 
+#if 0
+		ret = fimc_is_sec_fw_sel(core, dev, fw_name, setf_name, 0);
+		if (ret < 0) {
+			err("failed to select firmware (%d)", ret);
+			clear_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
+			goto exit;
+		}
+#endif
+#ifdef CONFIG_COMPANION_USE
+//		ret = fimc_is_sec_concord_fw_sel(core, dev, device->pdata, companion_fw_name, master_setf_name, mode_setf_name, 0);
+		/*if (ret < 0) {
+			err("failed to select companion firmware (%d)", ret);
+			clear_bit(FIMC_IS_ISCHAIN_LOADED, &device->state);
+			goto exit;
+		}*/
+#endif
 		/* 3. Load IS firmware */
 		ret = fimc_is_ischain_loadfirm(device);
 		if (ret) {
@@ -2624,6 +2635,9 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *leader;
 	struct fimc_is_queue *queue;
 	struct fimc_is_core *core;
+#ifdef CONFIG_COMPANION_USE
+	struct fimc_is_spi_gpio *spi_gpio;
+#endif
 	BUG_ON(!device);
 
 	groupmgr = device->groupmgr;
@@ -2632,6 +2646,9 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 	queue = GET_SRC_QUEUE(vctx);
 	core = (struct fimc_is_core *)device->interface->core;
 	refcount = atomic_read(&vctx->video->refcount);
+#ifdef CONFIG_COMPANION_USE
+	spi_gpio = &core->spi_gpio;
+#endif
 	if (refcount < 0) {
 		merr("invalid ischain refcount", device);
 		ret = -ENODEV;
@@ -2684,6 +2701,9 @@ int fimc_is_ischain_close(struct fimc_is_device_ischain *device,
 
 	clear_bit(FIMC_IS_ISCHAIN_OPEN_SENSOR, &device->state);
 	clear_bit(FIMC_IS_ISCHAIN_OPEN, &device->state);
+#if CONFIG_COMPANION_USE
+	fimc_is_set_spi_config(spi_gpio, FIMC_IS_SPI_OUTPUT, true);
+#endif
 
 #ifdef ENABLE_CLOCK_GATE
 	if (sysfs_debug.en_clk_gate &&
@@ -2704,8 +2724,12 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 	int ret = 0;
 	struct fimc_is_module_enum *module;
 	struct fimc_is_device_sensor *sensor;
+#ifdef CONFIG_COMPANION_USE
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(device->pdev);
+	/* Workaround for Host to use ISP-SPI. Will be removed later.*/
+//	struct fimc_is_spi_gpio *spi_gpio = &core->spi_gpio;
+#endif
 
 	BUG_ON(!device);
 	BUG_ON(!device->sensor);
@@ -2749,28 +2773,43 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 			/* Load calibration data from sensor */
 			ret = fimc_is_ischain_loadcalb(device, NULL);
 			if (ret) {
-				err("loadcalb fail");
-				goto p_err;
+				err("loadcalb fail, load default caldata\n");
 			}
 		}
 	}
 
+#ifdef CONFIG_COMPANION_USE
+	if(core->companion->companion_status != FIMC_IS_COMPANION_IDLE) {
+		pr_info("[ISC:D:%d] fimc_is_companion_wait wait(%d)\n", device->instance,core->companion->companion_status);
+		fimc_is_companion_wait(core->companion);
+		pr_info("[ISC:D:%d] fimc_is_companion_wait wake up(%d)\n", device->instance,core->companion->companion_status);
+	}
+
+	fimc_is_s_int_comb_isp(core, false, INTMR2_INTMCIS22);
+
+#if 0
 	/* FW loading of peripheral device */
 	if ((module->position == SENSOR_POSITION_REAR)
 		&& !test_bit(FIMC_IS_ISCHAIN_REPROCESSING, &device->state)) {
-		/* set target spi channel */
-		if (TARGET_SPI_CH_FOR_PERI == 0)
-			core->t_spi = core->spi0;
-		else
-			core->t_spi = core->spi1;
+		// Workaround for Host to use ISP-SPI. Will be removed later.
+		/* set pin output for Host to use SPI*/
+		pin_config_set(FIMC_IS_SPI_PINNAME, spi_gpio->spi_ssn,
+					PINCFG_PACK(PINCFG_TYPE_FUNC, FUNC_OUTPUT));
+
+		fimc_is_set_spi_config(spi_gpio, FIMC_IS_SPI_FUNC, false);
 
 		if (fimc_is_comp_is_valid(core) == 0) {
+			if(core->fan53555_client != NULL)
+				fimc_is_power_binning(core);
 			ret = fimc_is_comp_loadfirm(core);
 			if (ret) {
 				err("fimc_is_comp_loadfirm() fail");
 				goto p_err;
 			}
-
+			ret = fimc_is_comp_loadcal(core);
+			if (ret) {
+				err("fimc_is_comp_loadcal() fail");
+			}
 			ret = fimc_is_comp_loadsetf(core);
 			if (ret) {
 				err("fimc_is_comp_loadsetf() fail");
@@ -2780,7 +2819,23 @@ int fimc_is_ischain_init(struct fimc_is_device_ischain *device,
 			module->ext.companion_con.product_name
 				= COMPANION_NAME_NOTHING;
 		}
+		// Workaround for Host to use ISP-SPI. Will be removed later.
+		/* Set SPI pins to low before changing pin function */
+		pin_config_set(FIMC_IS_SPI_PINNAME, spi_gpio->spi_sclk,
+					PINCFG_PACK(PINCFG_TYPE_DAT, 0));
+		pin_config_set(FIMC_IS_SPI_PINNAME, spi_gpio->spi_ssn,
+					PINCFG_PACK(PINCFG_TYPE_DAT, 0));
+		pin_config_set(FIMC_IS_SPI_PINNAME, spi_gpio->spi_miso,
+					PINCFG_PACK(PINCFG_TYPE_DAT, 0));
+		pin_config_set(FIMC_IS_SPI_PINNAME, spi_gpio->spi_mois,
+					PINCFG_PACK(PINCFG_TYPE_DAT, 0));
+
+		/* Set pin function for A5 to use SPI */
+		pin_config_set(FIMC_IS_SPI_PINNAME, spi_gpio->spi_ssn,
+					PINCFG_PACK(PINCFG_TYPE_FUNC, 2));
 	}
+#endif
+#endif
 
 	if ((device->instance) == 0) {
 		ret = fimc_is_itf_enum(device);

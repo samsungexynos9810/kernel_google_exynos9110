@@ -27,6 +27,9 @@ struct pm_qos_request exynos_isp_qos_int;
 struct pm_qos_request exynos_isp_qos_mem;
 struct pm_qos_request exynos_isp_qos_cam;
 struct pm_qos_request exynos_isp_qos_disp;
+#ifdef CONFIG_SOC_EXYNOS5422
+struct pm_qos_request max_cpu_qos;
+#endif
 
 int fimc_is_resource_probe(struct fimc_is_resourcemgr *resourcemgr,
 	void *private_data)

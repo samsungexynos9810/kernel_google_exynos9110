@@ -18,6 +18,7 @@
 #include "fimc-is-subdev-ctrl.h"
 #include "fimc-is-groupmgr.h"
 #include "fimc-is-resourcemgr.h"
+#include "fimc-is-interface.h"
 
 #define SENSOR_MAX_CTL			0x10
 #define SENSOR_MAX_CTL_MASK		(SENSOR_MAX_CTL-1)
@@ -42,6 +43,18 @@
 #define FIMC_IS_SCP_CRANGE_SHIFT	16
 #define FIMC_IS_CRANGE_FULL		0
 #define FIMC_IS_CRANGE_LIMITED		1
+
+#ifdef CONFIG_COMPANION_USE
+#if defined(CONFIG_SOC_EXYNOS5422)
+#define FIMC_IS_SPI_PINNAME "14000000.pinctrl"
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS5430)
+#define FIMC_IS_SPI_PINNAME "14cc0000.pinctrl"
+#endif
+#define FIMC_IS_SPI_OUTPUT	1
+#define FIMC_IS_SPI_FUNC	2
+#endif
 
 /*global state*/
 enum fimc_is_ischain_state {
@@ -69,13 +82,66 @@ struct fimc_is_from_info {
 	u32		shading_end_addr;
 	u32		setfile_start_addr;
 	u32		setfile_end_addr;
-
+#ifdef CONFIG_COMPANION_USE
+	u32		concord_master_setfile_start_addr;
+	u32		concord_master_setfile_end_addr;
+	u32		concord_mode_setfile_start_addr;
+	u32		concord_mode_setfile_end_addr;
+	u32		lsc_gain_start_addr;
+	u32		lsc_gain_end_addr;
+	u32		pdaf_start_addr;
+	u32		pdaf_end_addr;
+	u32		coefficient_cal_start_addr;
+	u32		coefficient_cal_end_addr;
+	u32		pdaf_cal_start_addr;
+	u32		pdaf_cal_end_addr;
+	u32		concord_cal_start_addr;
+	u32		concord_cal_end_addr;
+	u32		concord_bin_start_addr;
+	u32		concord_bin_end_addr;
+	u32		lsc_i0_gain_addr;
+	u32		lsc_j0_gain_addr;
+	u32		lsc_a_gain_addr;
+	u32		lsc_k4_gain_addr;
+	u32		lsc_scale_gain_addr;
+	u32		wcoefficient1_addr;
+	u32		coef1_start;
+	u32		coef1_end;
+	u32		coef2_start;
+	u32		coef2_end;
+	u32		coef3_start;
+	u32		coef3_end;
+	u32		coef4_start;
+	u32		coef4_end;
+	u32		coef5_start;
+	u32		coef5_end;
+	u32		coef6_start;
+	u32		coef6_end;
+	u32		af_inf_addr;
+	u32		af_macro_addr;
+	u32		lsc_gain_crc_addr;
+	u32		pdaf_crc_addr;
+	u32		coef1_crc_addr;
+	u32		coef2_crc_addr;
+	u32		coef3_crc_addr;
+	u32		coef4_crc_addr;
+	u32		coef5_crc_addr;
+	u32		coef6_crc_addr;
+	char		concord_header_ver[12];
+	bool		is_c1_caldata_read;
+	char		load_c1_fw_name[30];
+	char		load_c1_mastersetf_name[30];
+	char		load_c1_modesetf_name[30];
+#endif
 	char		header_ver[12];
 	char		cal_map_ver[4];
 	char		setfile_ver[7];
 	char		oem_ver[12];
 	char		awb_ver[12];
 	char		shading_ver[12];
+	char		load_fw_name[30];
+	char		load_setfile_name[30];
+	bool		is_caldata_read;
 };
 
 
