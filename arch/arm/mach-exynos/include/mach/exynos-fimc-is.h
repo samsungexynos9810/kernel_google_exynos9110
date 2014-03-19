@@ -212,6 +212,12 @@ struct exynos_platform_fimc_is {
 
 	/* For host clock gating */
 	struct exynos_fimc_is_clk_gate_info *gate_info;
+#ifdef CONFIG_COMPANION_USE
+	u32	companion_spi_channel;
+	bool	use_two_spi_line;
+#endif
+	u32	use_vision;
+	u32	use_sensor_dynamic_voltage_mode;
 };
 
 extern struct device *fimc_is_dev;

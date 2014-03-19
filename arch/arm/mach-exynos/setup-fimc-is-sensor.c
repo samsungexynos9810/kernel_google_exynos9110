@@ -40,14 +40,21 @@
 #include <mach/exynos-fimc-is-sensor.h>
 
 static int exynos_fimc_is_sensor_pin_control(struct platform_device *pdev,
-	int pin, char *name, u32 act, u32 channel)
+	struct exynos_sensor_pin *pin_ctrls, int channel)
 {
 	int ret = 0;
 	char ch_name[30];
+
+	int pin = pin_ctrls->pin;
+	int delay = pin_ctrls->delay;
+	char* name = pin_ctrls->name;
+	enum pin_act act = pin_ctrls->act;
+	int voltage = pin_ctrls->voltage;
+
 	struct pinctrl *pinctrl_ch;
 
 	snprintf(ch_name, sizeof(ch_name), "%s%d", name, channel);
-	pr_info("%s(pin(%d), act(%d), ch(%s))\n", __func__, pin, act, ch_name);
+	pr_info("%s(pin(%d), act(%d), ch(%s), delay(%d), voltage(%d))\n", __func__, pin, act, ch_name, delay, voltage);
 
 	switch (act) {
 	case PIN_PULL_NONE:
@@ -55,12 +62,14 @@ static int exynos_fimc_is_sensor_pin_control(struct platform_device *pdev,
 	case PIN_OUTPUT_HIGH:
 		if (gpio_is_valid(pin)) {
 			gpio_request_one(pin, GPIOF_OUT_INIT_HIGH, "CAM_GPIO_OUTPUT_HIGH");
+			usleep_range(delay, delay);
 			gpio_free(pin);
 		}
 		break;
 	case PIN_OUTPUT_LOW:
 		if (gpio_is_valid(pin)) {
 			gpio_request_one(pin, GPIOF_OUT_INIT_LOW, "CAM_GPIO_OUTPUT_LOW");
+			usleep_range(delay, delay);
 			gpio_free(pin);
 		}
 		break;
@@ -98,6 +107,14 @@ static int exynos_fimc_is_sensor_pin_control(struct platform_device *pdev,
 				return PTR_ERR(regulator);
 			}
 
+			if(voltage > 0) {
+				pr_info("%s : regulator_set_voltage(%d)\n",__func__, voltage);
+				ret = regulator_set_voltage(regulator, voltage, voltage);
+				if(ret) {
+					pr_err("%s : regulator_set_voltage(%d) fail\n", __func__, ret);
+				}
+			}
+
 			if (regulator_is_enabled(regulator)) {
 				pr_warning("%s regulator is already enabled\n", name);
 				regulator_put(regulator);
@@ -110,7 +127,7 @@ static int exynos_fimc_is_sensor_pin_control(struct platform_device *pdev,
 				regulator_put(regulator);
 				return ret;
 			}
-
+			usleep_range(delay, delay);
 			regulator_put(regulator);
 		}
 		break;
@@ -136,7 +153,7 @@ static int exynos_fimc_is_sensor_pin_control(struct platform_device *pdev,
 				regulator_put(regulator);
 				return ret;
 			}
-
+			usleep_range(delay, delay);
 			regulator_put(regulator);
 		}
 		break;
@@ -172,9 +189,7 @@ int exynos_fimc_is_sensor_pins_cfg(struct platform_device *pdev,
 		}
 
 		ret = exynos_fimc_is_sensor_pin_control(pdev,
-			pin_ctrls[scenario][enable][i].pin,
-			pin_ctrls[scenario][enable][i].name,
-			pin_ctrls[scenario][enable][i].act,
+			&pin_ctrls[scenario][enable][i],
 			pdata->csi_ch);
 		if (ret) {
 			pr_err("exynos5_fimc_is_sensor_gpio(%d, %s, %d, %d) is fail(%d)",

@@ -354,14 +354,16 @@ int exynos5422_cfg_clk_div_max(struct platform_device *pdev)
 int exynos5422_cfg_clk_sclk(struct platform_device *pdev)
 {
 	pr_info("%s\n", __func__);
+#ifndef CONFIG_COMPANION_USE
 	/* SCLK_SPI0_ISP */
-	fimc_is_set_parent_dt(pdev, "mout_spi0_isp", "fin_pll");
-	fimc_is_set_rate_dt(pdev, "dout_spi0_isp", 24 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_spi0_isp_pre", 24 * 1000000);
+	fimc_is_set_parent_dt(pdev, "mout_spi0_isp", "mout_spll_ctrl");
+	fimc_is_set_rate_dt(pdev, "dout_spi0_isp", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_spi0_isp_pre", 100 * 1000000);
 	/* SCLK_SPI1_ISP */
-	fimc_is_set_parent_dt(pdev, "mout_spi1_isp", "fin_pll");
-	fimc_is_set_rate_dt(pdev, "dout_spi1_isp", 24 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_spi1_isp_pre", 24 * 1000000);
+	fimc_is_set_parent_dt(pdev, "mout_spi1_isp", "mout_spll_ctrl");
+	fimc_is_set_rate_dt(pdev, "dout_spi1_isp", 200 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_spi1_isp_pre", 100 * 1000000);
+#endif
 	/* SCLK_UART_ISP */
 	fimc_is_set_parent_dt(pdev, "mout_uart_isp", "fin_pll");
 	fimc_is_set_rate_dt(pdev, "dout_uart_isp", (24* 1000000));
@@ -504,7 +506,6 @@ int exynos5422_fimc_is_clk_on(struct platform_device *pdev)
 
 	fimc_is_enable_dt(pdev, "sclk_uart_isp");
 	fimc_is_enable_dt(pdev, "sclk_pwm_isp");
-	fimc_is_enable_dt(pdev, "sclk_spi0_isp");
 
 	fimc_is_enable_dt(pdev, "clk_3aa");
 	fimc_is_enable_dt(pdev, "clk_camif_top_3aa");
@@ -521,7 +522,6 @@ int exynos5422_fimc_is_clk_off(struct platform_device *pdev)
 	exynos5422_cfg_clk_div_max(pdev);
 	fimc_is_disable_dt(pdev, "sclk_uart_isp");
 	fimc_is_disable_dt(pdev, "sclk_pwm_isp");
-	fimc_is_disable_dt(pdev, "sclk_spi0_isp");
 
 	fimc_is_disable_dt(pdev, "clk_3aa");
 	fimc_is_disable_dt(pdev, "clk_camif_top_3aa");
@@ -682,6 +682,7 @@ int exynos5430_fimc_is_clk_gate(u32 clk_gate_id, bool is_on)
 int exynos5430_cfg_clk_div_max(struct platform_device *pdev)
 {
 	/* SCLK */
+#ifndef CONFIG_COMPANION_USE
 	/* SCLK_SPI0 */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "oscclk");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 1);
@@ -693,6 +694,7 @@ int exynos5430_cfg_clk_div_max(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 1);
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 1);
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1_user", "oscclk");
+#endif
 
 	/* SCLK_UART */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart", "oscclk");
@@ -768,22 +770,19 @@ int exynos5430_cfg_clk_div_max(struct platform_device *pdev)
 
 int exynos5430_cfg_clk_sclk(struct platform_device *pdev)
 {
+#ifndef CONFIG_COMPANION_USE
 	/* SCLK_SPI0 */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0", "mout_bus_pll_user");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_a", 275 * 1000000);
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi0_b", 46 * 1000000);
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi0_user", "sclk_isp_spi0_top");
 
+#endif
 	/* SCLK_SPI1 */
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1", "mout_bus_pll_user");
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_a", 275 * 1000000);
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_spi1_b", 46 * 1000000);
 	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_spi1_user", "sclk_isp_spi1_top");
-
-	/* SCLK_UART */
-	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart", "mout_bus_pll_user");
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_uart", 207 * 1000000);
-	fimc_is_set_parent_dt(pdev, "mout_sclk_isp_uart_user", "sclk_isp_uart_top");
 
 	return 0;
 }
@@ -890,6 +889,9 @@ int exynos5430_cfg_clk_cam1(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 83 * 1000000);
 	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 83 * 1000000);
 
+	/* CAM1 QE CLK GATE */
+	fimc_is_enable_dt(pdev, "gate_bts_fd");
+	fimc_is_disable_dt(pdev, "gate_bts_fd");
 	return 0;
 }
 
@@ -905,6 +907,18 @@ int exynos5430_cfg_clk_isp(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout_pclk_isp", 83 * 1000000);
 	/* DIS */
 	fimc_is_set_rate_dt(pdev, "dout_pclk_isp_dis", 207 * 1000000);
+
+	/* ISP QE CLK GATE */
+	fimc_is_enable_dt(pdev, "gate_bts_3dnr");
+	fimc_is_enable_dt(pdev, "gate_bts_dis1");
+	fimc_is_enable_dt(pdev, "gate_bts_dis0");
+	fimc_is_enable_dt(pdev, "gate_bts_scalerc");
+	fimc_is_enable_dt(pdev, "gate_bts_drc");
+	fimc_is_disable_dt(pdev, "gate_bts_3dnr");
+	fimc_is_disable_dt(pdev, "gate_bts_dis1");
+	fimc_is_disable_dt(pdev, "gate_bts_dis0");
+	fimc_is_disable_dt(pdev, "gate_bts_scalerc");
+	fimc_is_disable_dt(pdev, "gate_bts_drc");
 
 	return 0;
 }
@@ -969,6 +983,8 @@ int exynos5430_fimc_is_clk_on(struct platform_device *pdev)
 int exynos5430_fimc_is_clk_off(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
+
+	exynos5430_cfg_clk_div_max(pdev);
 
 	return 0;
 }
@@ -1065,6 +1081,7 @@ int exynos5430_fimc_is_print_clk(struct platform_device *pdev)
 	pr_info("EXYNOS5430_DIV_TOP0(0x%08X)\n", readl(EXYNOS5430_DIV_TOP0));
 	pr_info("EXYNOS5430_DIV_TOP_CAM10(0x%08X)\n", readl(EXYNOS5430_DIV_TOP_CAM10));
 	pr_info("EXYNOS5430_DIV_TOP_CAM11(0x%08X)\n", readl(EXYNOS5430_DIV_TOP_CAM11));
+	pr_info("EXYNOS5430_ENABLE_SCLK_TOP_CAM1(0x%08X)\n", readl(EXYNOS5430_ENABLE_SCLK_TOP_CAM1));
 	pr_info("EXYNOS5430_ENABLE_IP_TOP(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_TOP));
 	/* CMU_CAM0_DUMP */
 	pr_info("EXYNOS5430_SRC_SEL_CAM00(0x%08X)\n", readl(EXYNOS5430_SRC_SEL_CAM00));
@@ -1110,6 +1127,7 @@ int exynos5430_fimc_is_print_clk(struct platform_device *pdev)
 	pr_info("EXYNOS5430_DIV_CAM11(0x%08X)\n", readl(EXYNOS5430_DIV_CAM11));
 	pr_info("EXYNOS5430_DIV_STAT_CAM10(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM10));
 	pr_info("EXYNOS5430_DIV_STAT_CAM11(0x%08X)\n", readl(EXYNOS5430_DIV_STAT_CAM11));
+	pr_info("EXYNOS5430_ENABLE_SCLK_CAM1(0x%08X)\n", readl(EXYNOS5430_ENABLE_SCLK_CAM1));
 	pr_info("EXYNOS5430_ENABLE_IP_CAM10(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM10));
 	pr_info("EXYNOS5430_ENABLE_IP_CAM11(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM11));
 	pr_info("EXYNOS5430_ENABLE_IP_CAM12(0x%08X)\n", readl(EXYNOS5430_ENABLE_IP_CAM12));
@@ -1319,3 +1337,4 @@ int exynos_fimc_is_print_pwr(struct platform_device *pdev)
 #endif
 	return 0;
 }
+
