@@ -938,6 +938,44 @@
 		};
 	};
 
+	mipi-lli@10F24000 {
+		modem-name = "ss300";
+		modems {
+			ss300 {
+				/* enable scrambler */
+				scrambler = <1>;
+				/* do not control automode by AP */
+				automode = <0>;
+			};
+
+			xmm7260 {
+				/* disable scrambler */
+				scrambler = <0>;
+				/* do not control automode by AP */
+				automode = <0>;
+			};
+		};
+
+		mphy {
+			modem-name = "ss300";
+			modems {
+				ss300 {
+					/* initial-gear is HS-G2 */
+					init-gear = <2 2 1>;
+					/* use shared reference clock for MPHY */
+					shd-refclk = <1>;
+				};
+
+				xmm7260 {
+					/* initial-gear is HS-G1 */
+					init-gear = <2 1 1>;
+					/* use shared reference clock for MPHY */
+					shd-refclk = <1>;
+				};
+			};
+		};
+	};
+
 	fimc_is_sensor0: fimc_is_sensor@12100000 {
 		scenario = <0>;
 		gpio_reset = <&gpc0 1 0x1>;
