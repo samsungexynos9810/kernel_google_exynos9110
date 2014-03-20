@@ -205,6 +205,9 @@ static const struct clk_ops samsung_pll35xx_clk_ops = {
 	.recalc_rate = samsung_pll35xx_recalc_rate,
 	.round_rate = samsung_pll_round_rate,
 	.set_rate = samsung_pll35xx_set_rate,
+	.enable = samsung_pll_clk_enable,
+	.disable = samsung_pll_clk_disable,
+	.is_enabled = samsung_pll_clk_is_enabled,
 };
 
 static const struct clk_ops samsung_pll35xx_clk_min_ops = {
