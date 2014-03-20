@@ -19,6 +19,8 @@ struct samsung_clk_pll {
 	void __iomem		*con_reg;
 	const struct samsung_pll_rate_table *rate_table;
 	unsigned int rate_count;
+	unsigned int bit_enable;
+	unsigned int bit_lockstat;
 };
 
 #define to_clk_pll(_hw) container_of(_hw, struct samsung_clk_pll, hw)
@@ -52,6 +54,48 @@ static long samsung_pll_round_rate(struct clk_hw *hw,
 
 	/* return minimum supported value */
 	return rate_table[i - 1].rate;
+}
+
+static int samsung_pll_clk_enable(struct clk_hw *hw)
+{
+	u32 tmp, pll_con0;
+	struct samsung_clk_pll *pll = to_clk_pll(hw);
+
+	pll_con0 = __raw_readl(pll->con_reg);
+
+	/* PLL enable */
+	pll_con0 |= (1 << pll->bit_enable);
+	__raw_writel(pll_con0, pll->con_reg);
+
+	/* wait_lock_time */
+	do {
+		cpu_relax();
+		tmp = __raw_readl(pll->con_reg);
+	} while (!(tmp & (1 << pll->bit_lockstat)));
+
+	return 0;
+}
+
+static void samsung_pll_clk_disable(struct clk_hw *hw)
+{
+	u32 pll_con0;
+	struct samsung_clk_pll *pll = to_clk_pll(hw);
+
+	pll_con0 = __raw_readl(pll->con_reg);
+
+	/* PLL enable */
+	pll_con0 &= ~(1 << pll->bit_enable);
+	__raw_writel(pll_con0, pll->con_reg);
+}
+
+static int samsung_pll_clk_is_enabled(struct clk_hw *hw)
+{
+	u32 pll_con0;
+	struct samsung_clk_pll *pll = to_clk_pll(hw);
+
+	pll_con0 = __raw_readl(pll->con_reg);
+
+	return (pll_con0 & (1 << pll->bit_enable)) ? true : false;
 }
 
 /*
@@ -212,6 +256,8 @@ struct clk * __init samsung_clk_register_pll35xx(const char *name,
 	pll->con_reg = con_reg;
 	pll->rate_table = rate_table;
 	pll->rate_count = rate_count;
+	pll->bit_enable = PLL35XX_PLL_ENABLE_SHIFT;
+	pll->bit_lockstat = PLL35XX_LOCK_STAT_SHIFT;
 
 	clk = clk_register(NULL, &pll->hw);
 	if (IS_ERR(clk)) {
@@ -308,55 +354,13 @@ static int samsung_pll36xx_set_rate(struct clk_hw *hw, unsigned long drate,
 	return 0;
 }
 
-static int samsung_pll36xx_clk_enable(struct clk_hw *hw)
-{
-	u32 tmp, pll_con0;
-	struct samsung_clk_pll *pll = to_clk_pll(hw);
-
-	pll_con0 = __raw_readl(pll->con_reg);
-
-	/* PLL enable */
-	pll_con0 |= (1 << PLL36XX_ENABLE_SHIFT);
-	__raw_writel(pll_con0, pll->con_reg);
-
-	/* wait_lock_time */
-	do {
-		cpu_relax();
-		tmp = __raw_readl(pll->con_reg);
-	} while (!(tmp & (1 << PLL36XX_LOCK_STAT_SHIFT)));
-
-	return 0;
-}
-
-static void samsung_pll36xx_clk_disable(struct clk_hw *hw)
-{
-	u32 pll_con0;
-	struct samsung_clk_pll *pll = to_clk_pll(hw);
-
-	pll_con0 = __raw_readl(pll->con_reg);
-
-	/* PLL enable */
-	pll_con0 &= ~(1 << PLL36XX_ENABLE_SHIFT);
-	__raw_writel(pll_con0, pll->con_reg);
-}
-
-static int samsung_pll36xx_clk_is_enabled(struct clk_hw *hw)
-{
-	u32 pll_con0;
-	struct samsung_clk_pll *pll = to_clk_pll(hw);
-
-	pll_con0 = __raw_readl(pll->con_reg);
-
-	return (pll_con0 & (1 << PLL36XX_ENABLE_SHIFT)) ? true : false;
-}
-
 static const struct clk_ops samsung_pll36xx_clk_ops = {
 	.recalc_rate = samsung_pll36xx_recalc_rate,
 	.set_rate = samsung_pll36xx_set_rate,
 	.round_rate = samsung_pll_round_rate,
-	.enable = samsung_pll36xx_clk_enable,
-	.disable = samsung_pll36xx_clk_disable,
-	.is_enabled = samsung_pll36xx_clk_is_enabled,
+	.enable = samsung_pll_clk_enable,
+	.disable = samsung_pll_clk_disable,
+	.is_enabled = samsung_pll_clk_is_enabled,
 };
 
 static const struct clk_ops samsung_pll36xx_clk_min_ops = {
@@ -409,6 +413,8 @@ struct clk * __init samsung_clk_register_pll36xx(const char *name,
 	pll->con_reg = con_reg;
 	pll->rate_table = rate_table;
 	pll->rate_count = rate_count;
+	pll->bit_enable = PLL36XX_ENABLE_SHIFT;
+	pll->bit_lockstat = PLL36XX_LOCK_STAT_SHIFT;
 
 	clk = clk_register(NULL, &pll->hw);
 	if (IS_ERR(clk)) {
