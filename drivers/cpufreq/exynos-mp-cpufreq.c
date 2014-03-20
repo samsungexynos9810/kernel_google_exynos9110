@@ -1922,10 +1922,12 @@ static int __init exynos_cpufreq_init(void)
 	pm_qos_add_notifier(PM_QOS_KFC_FREQ_MAX, &exynos_kfc_max_qos_notifier);
 
 	/* blocking frequency scale before acquire boot lock */
+#if !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE) && !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
 	mutex_lock(&cpufreq_lock);
 	exynos_info[CA7]->blocked = true;
 	exynos_info[CA15]->blocked = true;
 	mutex_unlock(&cpufreq_lock);
+#endif
 
 	if (cpufreq_register_driver(&exynos_driver)) {
 		pr_err("%s: failed to register cpufreq driver\n", __func__);
@@ -2021,10 +2023,12 @@ static int __init exynos_cpufreq_init(void)
 	}
 
 	/* unblocking frequency scale */
+#if !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE) && !defined(CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE)
 	mutex_lock(&cpufreq_lock);
 	exynos_info[CA7]->blocked = false;
 	exynos_info[CA15]->blocked = false;
 	mutex_unlock(&cpufreq_lock);
+#endif
 
 	if (exynos_info[CA7]->bus_table)
 		pm_qos_add_request(&exynos_mif_qos_CA7, PM_QOS_BUS_THROUGHPUT, 0);
