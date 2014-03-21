@@ -249,7 +249,8 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	writel(0x1, lli->regs + EXYNOS_PA_MK0_INSERTION_ENABLE);
 	writel((128<<0) | (1<<12), lli->regs + EXYNOS_PA_MK0_CONTROL);
 	/* Set Scrambler enable */
-	writel(1, lli->regs + EXYNOS_PA_USR_SCRAMBLER_ENABLE);
+	if (lli->modem_info.scrambler)
+		writel(1, lli->regs + EXYNOS_PA_USR_SCRAMBLER_ENABLE);
 
 	/* MPHY configuration */
 	if (phy->init)
@@ -629,9 +630,8 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 {
 	struct device *dev = _dev;
 	struct mipi_lli *lli = dev_get_drvdata(dev);
-	struct exynos_mphy *phy;
-	int status;
 	static int pa_err_cnt = 0;
+	int status;
 
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 
@@ -646,16 +646,8 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	if (status & INTR_PA_PLU_DONE) {
 		dev_info(dev, "PLU_DONE\n");
 
-		phy = dev_get_drvdata(lli->mphy);
-
-		if (phy) {
-			if (phy->is_shared_clk)
-				exynos_mipi_lli_set_automode(lli, true);
-			else
-				exynos_mipi_lli_set_automode(lli, false);
-		} else {
-			dev_err(dev, "Failed to get exynos_mphy\n");
-		}
+		if (lli->modem_info.automode)
+			exynos_mipi_lli_set_automode(lli, true);
 	}
 
 	if ((status & INTR_RESET_ON_ERROR_DETECTED)) {

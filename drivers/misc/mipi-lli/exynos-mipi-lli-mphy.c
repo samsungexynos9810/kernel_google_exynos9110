@@ -25,18 +25,27 @@ struct device *lli_mphy;
 
 int exynos_mphy_init(struct exynos_mphy *phy)
 {
+	int gear = phy->default_mode & 0x7;
+
 	writel(0x45, phy->loc_regs + PHY_TX_HS_SYNC_LENGTH(0));
 	/* if TX_LCC is disable, M-TX should enter SLEEP or STALL state
 	based on the current value of the TX_MODE upon getting a TOB REQ */
 	writel(0x0, phy->loc_regs + PHY_TX_LCC_ENABLE(0));
 
-	/* use HS-G2 for LLI initialization.
-	   This value has to keep synchronization with CP
-	   before the LLI mount occurs. */
-	writel(0x2, phy->loc_regs + PHY_TX_MODE(0));
-	writel(0x2, phy->loc_regs + PHY_RX_MODE(0));
-	writel(0x2, phy->loc_regs + PHY_TX_HSGEAR(0));
-	writel(0x2, phy->loc_regs + PHY_RX_HSGEAR(0));
+	if (phy->default_mode & OPMODE_HS) {
+		writel(0x2, phy->loc_regs + PHY_TX_MODE(0));
+		writel(0x2, phy->loc_regs + PHY_RX_MODE(0));
+	}
+
+	if (gear > 0x1) {
+		writel(gear, phy->loc_regs + PHY_TX_HSGEAR(0));
+		writel(gear, phy->loc_regs + PHY_RX_HSGEAR(0));
+	}
+
+	if (phy->default_mode & HS_RATE_B) {
+		writel(0x2, phy->loc_regs + PHY_TX_HSRATE_SERIES(0));
+		writel(0x2, phy->loc_regs + PHY_RX_HSRATE_SERIES(0));
+	}
 
 	return 0;
 }
