@@ -124,6 +124,71 @@ static int exynos_mphy_shutdown(struct exynos_mphy *phy)
 	return 0;
 }
 
+static int exynos_mipi_lli_mphy_get_setting(struct exynos_mphy *phy)
+{
+	struct device_node *modem_node;
+	struct device_node *mphy_node = phy->dev->of_node;
+	const char *modem_name;
+	const __be32 *prop;
+
+	modem_name = (char *)of_get_property(mphy_node, "modem-name", NULL);
+	if (!modem_name) {
+		dev_err(phy->dev, "parsing err : modem-name\n");
+		goto parsing_err;
+	}
+	modem_node = of_get_child_by_name(mphy_node, "modems");
+	if (!modem_node) {
+		dev_err(phy->dev, "parsing err : modems node\n");
+		goto parsing_err;
+	}
+	modem_node = of_get_child_by_name(modem_node, modem_name);
+	if (!modem_node) {
+		dev_err(phy->dev, "parsing err : modem node\n");
+		goto parsing_err;
+	}
+
+	prop = of_get_property(modem_node, "init-gear", NULL);
+	if (prop) {
+		int value = 0;
+
+		value = be32_to_cpu(prop[0]);
+		if (value == 0x2)
+			phy->default_mode = OPMODE_HS;
+		else
+			phy->default_mode = OPMODE_PWM;
+
+		value = be32_to_cpu(prop[1]);
+		if (value > 0x0 && value < 0x8)
+			phy->default_mode |= value;
+		else
+			phy->default_mode |= GEAR_1;
+
+		value = be32_to_cpu(prop[2]);
+		if (value == 0x2)
+			phy->default_mode |= HS_RATE_B;
+		else
+			phy->default_mode |= HS_RATE_A;
+	}
+	else {
+		phy->default_mode = OPMODE_PWM | GEAR_1 | HS_RATE_A;
+	}
+
+	prop = of_get_property(modem_node, "shd-refclk", NULL);
+	if (prop)
+		phy->is_shared_clk = be32_to_cpup(prop) ? true : false;
+	else
+		phy->is_shared_clk = true;
+
+parsing_err:
+	dev_err(phy->dev, "modem_name:%s, gear:%s-G%d%s, shdclk:%d\n",
+			modem_name,
+			phy->default_mode & OPMODE_HS ? "HS" : "PWM",
+			phy->default_mode & 0x7,
+			phy->default_mode & HS_RATE_B ? "B" : "A",
+			phy->is_shared_clk);
+	return 0;
+}
+
 static int exynos_mipi_lli_mphy_probe(struct platform_device *pdev)
 {
 	struct exynos_mphy *mphy;
@@ -159,8 +224,9 @@ static int exynos_mipi_lli_mphy_probe(struct platform_device *pdev)
 	mphy->shutdown = exynos_mphy_shutdown;
 
 	mphy->lane = 1;
-	mphy->default_mode = PWM_G1;
-	mphy->is_shared_clk = true;
+	mphy->default_mode = OPMODE_PWM | GEAR_1 | HS_RATE_A;
+	mphy->is_shared_clk= true;
+	exynos_mipi_lli_mphy_get_setting(mphy);
 
 	platform_set_drvdata(pdev, mphy);
 	lli_mphy = dev;

@@ -187,8 +187,17 @@ enum phy_sfr_type {
 };
 
 enum phy_mode_type {
-	PWM_G1, PWM_G2, PWM_G3, PWM_G4, PWM_G5, PWM_G6, PWM_G7,
-	HS_G1, HS_G2, HS_G3,
+	GEAR_1 = 0x1,
+	GEAR_2 = 0x2,
+	GEAR_3 = 0x3,
+	GEAR_4 = 0x4,
+	GEAR_5 = 0x5,
+	GEAR_6 = 0x6,
+	GEAR_7 = 0x7,
+	OPMODE_PWM = 0x10,
+	OPMODE_HS = 0x20,
+	HS_RATE_A = 0x100,
+	HS_RATE_B = 0x200,
 };
 
 struct exynos_mphy {

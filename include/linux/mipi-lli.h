@@ -53,6 +53,12 @@ struct mipi_lli_clks {
 	struct clk	*fout_mphy_pll;
 };
 
+struct mipi_lli_modem {
+	char	*name;
+	bool	scrambler;
+	bool	automode;
+};
+
 struct mipi_lli {
 	const struct lli_driver *driver;	/* hw-specific hooks */
 
@@ -65,6 +71,7 @@ struct mipi_lli {
 	unsigned long		flags;
 
 	struct mipi_lli_clks	clks;
+	struct mipi_lli_modem	modem_info;
 
 	unsigned int		irq;		/* irq allocated */
 	unsigned int		irq_sig;	/* irq_sig allocated */

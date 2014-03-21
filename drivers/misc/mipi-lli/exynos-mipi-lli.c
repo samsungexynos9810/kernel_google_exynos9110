@@ -747,6 +747,53 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	return IRQ_HANDLED;
 }
 
+int mipi_lli_get_setting(struct mipi_lli *lli)
+{
+	struct device_node *lli_node = lli->dev->of_node;
+	struct device_node *modem_node;
+	const char *modem_name;
+	const __be32 *prop;
+
+	modem_name = of_get_property(lli_node, "modem-name", NULL);
+	if (!modem_name) {
+		dev_err(lli->dev, "parsing err : modem-name node\n");
+		goto parsing_err;
+	}
+	modem_node = of_get_child_by_name(lli_node, "modems");
+	if (!modem_node) {
+		dev_err(lli->dev, "parsing err : modems node\n");
+		goto parsing_err;
+	}
+	modem_node = of_get_child_by_name(modem_node, modem_name);
+	if (!modem_node) {
+		dev_err(lli->dev, "parsing err : modem node\n");
+		goto parsing_err;
+	}
+
+	lli->modem_info.name = devm_kzalloc(lli->dev, strlen(modem_name),
+			GFP_KERNEL);
+	strncpy(lli->modem_info.name, modem_name, strlen(modem_name));
+
+	prop = of_get_property(modem_node, "scrambler", NULL);
+	if (prop)
+		lli->modem_info.scrambler = be32_to_cpup(prop) ? true : false;
+	else
+		lli->modem_info.scrambler = false;
+
+	prop = of_get_property(modem_node, "automode", NULL);
+	if (prop)
+		lli->modem_info.automode = be32_to_cpup(prop) ? true : false;
+	else
+		lli->modem_info.scrambler = false;
+
+parsing_err:
+	dev_err(lli->dev, "modem_name:%s, scrambler:%d, automode:%d\n",
+			modem_name,
+			lli->modem_info.scrambler,
+			lli->modem_info.automode);
+	return 0;
+}
+
 static int exynos_mipi_lli_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -832,6 +879,8 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 	lli->sys_regs = sysregs;
 	lli->pmu_regs = pmuregs;
 	lli->is_master = false;
+
+	mipi_lli_get_setting(lli);
 
 	ret = request_irq(irq, exynos_mipi_lli_irq, 0, dev_name(dev), dev);
 	if (ret < 0)
