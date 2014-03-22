@@ -15,7 +15,7 @@
 
 #include <plat/map-base.h>
 
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 /*
  * The virtual and physical address of UART is aligned to 1MiB boundary usally.
  * However, the Exynos5430's UART physical address is alignd to 64KB boundary.
@@ -41,6 +41,7 @@
 #define EXYNOS5250_PA_SYSRAM_NS		0x0204F000
 #define EXYNOS5422_PA_SYSRAM_NS		0x02073000
 #define EXYNOS5430_PA_SYSRAM_NS		0x0207F000
+#define EXYNOS5433_PA_SYSRAM_NS		0x0207F000
 
 #define EXYNOS4_PA_FIMC0		0x11800000
 #define EXYNOS4_PA_FIMC1		0x11810000
