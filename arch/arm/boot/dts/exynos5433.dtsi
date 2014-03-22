@@ -1,0 +1,189 @@
+/*
+ * SAMSUNG EXYNOS5433 SoC device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * SAMSUNG EXYNOS5433 SoC device nodes are listed in this file.
+ * EXYNOS5433 based board files can include this file and provide
+ * values for board specfic bindings.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include "skeleton.dtsi"
+/include/ "exynos5433-pinctrl.dtsi"
+/ {
+	compatible = "samsung,exynos5433";
+
+	interrupt-parent = <&gic>;
+
+	aliases {
+		pinctrl0 = &pinctrl_0;
+		pinctrl1 = &pinctrl_1;
+		pinctrl2 = &pinctrl_2;
+		pinctrl3 = &pinctrl_3;
+		pinctrl4 = &pinctrl_4;
+		pinctrl5 = &pinctrl_5;
+		pinctrl6 = &pinctrl_6;
+		pinctrl7 = &pinctrl_7;
+		pinctrl8 = &pinctrl_8;
+		pinctrl9 = &pinctrl_9;
+	};
+
+	chipid@10000000 {
+		compatible = "samsung,exynos4210-chipid";
+		reg = <0x10000000 0x100>;
+	};
+
+	cpus {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		cpu@0 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <0x0>;
+		};
+	};
+
+	clock: clock-controller@0x11900000 {
+		compatible = "samsung,exynos5433-clock";
+		reg = <0x11900000 0x1000>;
+		#clock-cells = <1>;
+	};
+
+	gic:interrupt-controller@11001000 {
+		compatible = "arm,cortex-a15-gic";
+		#interrupt-cells = <3>;
+		interrupt-controller;
+		reg =	<0x11001000 0x1000>,
+			<0x11002000 0x1000>,
+			<0x11004000 0x2000>,
+			<0x11006000 0x2000>;
+		interrupts = <1 9 0xf04>;
+	};
+
+	mct@101C0000 {
+		compatible = "samsung,exynos4210-mct";
+		reg = <0x101C0000 0x800>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		interrupt-parent = <&mct_map>;
+		interrupts =	<0>, <1>, <2>, <3>,
+				<4>, <5>, <6>, <7>,
+				<8>, <9>, <10>, <11>;
+		clocks = <&clock 1>, <&clock 14>;
+		clock-names = "fin_pll", "mct";
+
+		mct_map: mct-map {
+			#interrupt-cells = <1>;
+			#address-cells = <0>;
+			#size-cells = <0>;
+			interrupt-map = <0 &gic 0 102 0>,
+					<1 &gic 0 103 0>,
+					<2 &gic 0 104 0>,
+					<3 &gic 0 105 0>,
+					<4 &gic 0 106 0>,
+					<5 &gic 0 107 0>,
+					<6 &gic 0 108 0>,
+					<7 &gic 0 109 0>,
+					<8 &gic 0 110 0>,
+					<9 &gic 0 111 0>,
+					<10 &gic 0 112 0>,
+					<11 &gic 0 113 0>;
+		};
+	};
+
+	serial@14C10000 {
+		compatible = "samsung,exynos5430-uart";
+		reg = <0x14C10000 0x100>;
+		interrupts = <0 421 0>;
+		clocks = <&clock 11>, <&clock 20>;
+		clock-names = "uart0", "gate_uart0";
+	};
+
+	serial@14C20000 {
+		compatible = "samsung,exynos5430-uart";
+		reg = <0x14C20000 0x100>;
+		interrupts = <0 422 0>;
+		clocks = <&clock 12>, <&clock 21>;
+		clock-names = "uart1", "gate_uart1";
+	};
+
+	serial@14C30000 {
+		compatible = "samsung,exynos5430-uart";
+		reg = <0x14C30000 0x100>;
+		interrupts = <0 423 0>;
+		clocks = <&clock 13>, <&clock 22>;
+		clock-names = "uart2", "gate_uart2";
+	};
+
+	pinctrl_0: pinctrl@10580000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x10580000 0x1000>;
+		interrupts = <0 16 0>;
+
+		wakeup-interrupt-controller {
+			compatible = "samsung,exynos4210-wakeup-eint";
+			interrupt-parent = <&gic>;
+			interrupts = <0 16 0>;
+		};
+	};
+
+	pinctrl_1: pinctrl@114B0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x114B0000 0x1000>;
+		interrupts = <0 68 0>;
+	};
+
+	pinctrl_2: pinctrl@10FE0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x10FE0000 0x1000>;
+		interrupts = <0 179 0>;
+	};
+
+	pinctrl_3: pinctrl@14CA0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x14CA0000 0x1000>;
+		interrupts = <0 413 0>;
+	};
+
+	pinctrl_4: pinctrl@14CB0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x14CB0000 0x1000>;
+		interrupts = <0 414 0>;
+	};
+
+	pinctrl_5: pinctrl@15690000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x15690000 0x1000>;
+		interrupts = <0 229 0>;
+	};
+
+	pinctrl_6: pinctrl@11090000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x11090000 0x1000>;
+		interrupts = <0 325 0>;
+	};
+
+	pinctrl_7: pinctrl@14CD0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x14CD0000 0x1000>;
+		interrupts = <0 441 0>;
+	};
+
+	pinctrl_8: pinctrl@14CC0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x14CC0000 0x1100>;
+		interrupts = <0 440 0>;
+	};
+
+	pinctrl_9: pinctrl@14CE0000 {
+		compatible = "samsung,exynos5433-pinctrl";
+		reg = <0x14CE0000 0x1100>;
+		interrupts = <0 442 0>;
+	};
+};
