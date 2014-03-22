@@ -127,6 +127,7 @@ bool dma_release_from_contiguous(struct device *dev, struct page *pages,
 	return false;
 }
 
+static inline
 int dma_contiguous_info(struct device *dev, struct cma_info *info)
 {
 	return -ENOSYS;
