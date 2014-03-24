@@ -1088,6 +1088,7 @@ static void wq_func_subdev(struct fimc_is_subdev *leader,
 			sub_frame->stream->fvalid = 0;
 			goto done;
 		}
+
 		ldr_frame = &ldr_framemgr->frame[findex];
 		if (status) {
 			info("[%c:D:%d] FRM%d NOT DONE(%d)\n", name,

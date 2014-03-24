@@ -18077,4 +18077,3 @@ module_exit(sensor_sr352_unload);
 MODULE_AUTHOR("Gilyeon lim");
 MODULE_DESCRIPTION("Sensor sr352 driver");
 MODULE_LICENSE("GPL v2");
-

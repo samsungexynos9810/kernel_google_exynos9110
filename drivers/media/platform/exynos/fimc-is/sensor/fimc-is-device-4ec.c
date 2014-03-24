@@ -2154,7 +2154,7 @@ static const u32 s5k4ecgx_init_reg2[] = {
 //==================================================================================
 
 0x002A0F30,
-0x0F120001,   	 //AFC_D_ConvAccelerPower
+0x0F120001,	//AFC_D_ConvAccelerPower
 
 // Auto Flicker (60Mhz start)
 0x002A0F2A,
@@ -3582,11 +3582,11 @@ static const u32 s5k4ecgx_init_reg2[] = {
 0x0F120100,
 
 0x002A022C,
-0x0F120001, 	//REG_TC_IPRM_InitParamsUpdated
+0x0F120001,	//REG_TC_IPRM_InitParamsUpdated
 
 /*TODO: Dummy register because of a bug of reading regsters as burst*/
 0x002A022C,
-0x0F120001 	//REG_TC_IPRM_InitParamsUpdated
+0x0F120001	//REG_TC_IPRM_InitParamsUpdated
 };
 
 

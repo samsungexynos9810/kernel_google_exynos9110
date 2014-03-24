@@ -266,23 +266,23 @@ static void flite_hw_s_coeff_bns(unsigned long __iomem *base_reg,
 	case 9:
 		/* coefficient */
 		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
-		cfg |= FLITE_REG_WEIGHTX01_1(0x20);	/* weight_x_1 = 32 */
-		cfg |= FLITE_REG_WEIGHTX01_0(0xE0);	/* weight_x_0 = 224 */
+		cfg |= FLITE_REG_WEIGHTX01_1(0x20);
+		cfg |= FLITE_REG_WEIGHTX01_0(0xE0);
 		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX01));
 
 		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX23));
-		cfg |= FLITE_REG_WEIGHTX23_1(0xA0);	/* weight_x_3 = 160 */
-		cfg |= FLITE_REG_WEIGHTX23_0(0x60);	/* weight_x_2 = 96 */
+		cfg |= FLITE_REG_WEIGHTX23_1(0xA0);
+		cfg |= FLITE_REG_WEIGHTX23_0(0x60);
 		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTX23));
 
 		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
-		cfg |= FLITE_REG_WEIGHTY01_1(0x20);	/* weight_y_1 = 32 */
-		cfg |= FLITE_REG_WEIGHTY01_0(0xE0);	/* weight_y_0 = 224 */
+		cfg |= FLITE_REG_WEIGHTY01_1(0x20);
+		cfg |= FLITE_REG_WEIGHTY01_0(0xE0);
 		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY01));
 
 		cfg = readl(base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY23));
-		cfg |= FLITE_REG_WEIGHTY23_1(0xA0);	/* weight_y_3 = 160 */
-		cfg |= FLITE_REG_WEIGHTY23_0(0x60);	/* weight_y_2 = 96 */
+		cfg |= FLITE_REG_WEIGHTY23_1(0xA0);
+		cfg |= FLITE_REG_WEIGHTY23_0(0x60);
 		writel(cfg, base_reg + TO_WORD_OFFSET(FLITE_REG_WEIGHTY23));
 		break;
 	case 16:

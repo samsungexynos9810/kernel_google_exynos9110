@@ -2039,4 +2039,3 @@ module_exit(sensor_sr030_unload);
 MODULE_AUTHOR("Gilyeon lim");
 MODULE_DESCRIPTION("Sensor sr325 driver");
 MODULE_LICENSE("GPL v2");
-

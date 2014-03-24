@@ -31,8 +31,8 @@ int fimc_is_clk_gate_init(struct fimc_is_core *core)
 	core->resourcemgr.clk_gate_ctrl.gate_info = core->pdata->gate_info;
 
 	/* Do not initialize clock gating region for debug(ISSR53).
-	  * Because this region is initialize by A5.
-	  */
+	 * Because this region is initialize by A5.
+	 */
 	return 0;
 }
 
@@ -106,7 +106,6 @@ inline bool fimc_is_group_otf(struct fimc_is_device_ischain *device, int group_i
 		return false;
 }
 
-
 int fimc_is_clk_gate_set(struct fimc_is_core *core,
 			int group_id, bool is_on, bool skip_set_state, bool user_scenario)
 {
@@ -156,7 +155,6 @@ int fimc_is_clk_gate_set(struct fimc_is_core *core,
 				pr_info("%s lock(on) due to instance(%d)\n", __func__, i);
 				goto exit;
 			}
-
 			/* don't off! if there is at least this group that is OTF */
 			if (fimc_is_group_otf(&core->ischain[i], group_id)) {
 				pr_debug("%s don't off!! this instance(%d) group(%d) is OTF\n",

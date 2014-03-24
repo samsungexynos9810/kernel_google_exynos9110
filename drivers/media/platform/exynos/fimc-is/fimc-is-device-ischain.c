@@ -5830,7 +5830,6 @@ p_err:
 	return ret;
 }
 
-
 static int fimc_is_ischain_scp_start(struct fimc_is_device_ischain *device,
 	struct fimc_is_subdev *subdev,
 	struct fimc_is_frame *frame,
@@ -6674,6 +6673,7 @@ int fimc_is_ischain_3aa_callback(struct fimc_is_device_ischain *device,
 #ifdef ENABLE_SETFILE
 	u32 setfile_save;
 #endif
+
 #ifdef ENABLE_FAST_SHOT
 	uint32_t af_trigger_bk;
 #endif

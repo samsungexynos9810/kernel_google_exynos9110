@@ -16,7 +16,6 @@
 #define SENSOR_SR030_NAME	SENSOR_NAME_SR030
 #define SENSOR_SR030_DRIVING
 
-
 struct fimc_is_module_sr030 {
 	struct fimc_is_image	image;
 
@@ -46,4 +45,3 @@ int sensor_sr030_probe(struct i2c_client *client,
 	const struct i2c_device_id *id);
 
 #endif
-

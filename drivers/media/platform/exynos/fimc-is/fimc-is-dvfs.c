@@ -148,7 +148,6 @@ static inline int fimc_is_get_open_sensor_cnt(struct fimc_is_core *core) {
 /* dual capture */
 DECLARE_DVFS_CHK_FUNC(FIMC_IS_SN_DUAL_CAPTURE)
 {
-
 	struct fimc_is_core *core;
 	int sensor_cnt = 0;
 	core = (struct fimc_is_core *)device->interface->core;
