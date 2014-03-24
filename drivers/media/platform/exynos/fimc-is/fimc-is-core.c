@@ -81,7 +81,7 @@
 #endif
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 9))
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0))
 #define PM_QOS_CAM_THROUGHPUT	PM_QOS_RESERVED
 #endif
 
@@ -235,6 +235,283 @@ exit:
 	return ret;
 }
 
+#ifdef CONFIG_USE_VENDER_FEATURE
+static ssize_t camera_front_sensorid_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct exynos_platform_fimc_is_sensor *sensor = dev_get_drvdata(dev);
+
+	dev_info(dev, "%s: E", __func__);
+
+	if (unlikely(!sensor)) {
+		dev_err(dev, "%s: sensor null\n", __func__);
+		return -EFAULT;
+	}
+
+	return sprintf(buf, "%d\n", sensor->sensor_id);
+}
+
+static ssize_t camera_rear_sensorid_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct exynos_platform_fimc_is_sensor *sensor = dev_get_drvdata(dev);
+
+	dev_info(dev, "%s: E", __func__);
+
+	if (unlikely(!sensor)) {
+		dev_err(dev, "%s: sensor null\n", __func__);
+		return -EFAULT;
+	}
+
+	return sprintf(buf, "%d\n", sensor->sensor_id);
+}
+
+static DEVICE_ATTR(front_sensorid, S_IRUGO, camera_front_sensorid_show, NULL);
+static DEVICE_ATTR(rear_sensorid, S_IRUGO, camera_rear_sensorid_show, NULL);
+
+static ssize_t camera_front_camtype_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char type[50] = "SLSI_S5K6B2YX_FIMC_IS";
+#if defined(CONFIG_CAMERA_SENSOR_8B1)
+	strcpy(type, "SLSI_S5K8B1YX_FIMC_IS");
+#endif
+	return sprintf(buf, "%s\n", type);
+}
+
+static ssize_t camera_front_camfw_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char type[50] = "S5K6B2YX";
+#if defined(CONFIG_CAMERA_SENSOR_8B1)
+	strcpy(type, "S5K8B1YX");
+#endif
+	return sprintf(buf, "%s N\n", type);
+}
+
+static DEVICE_ATTR(front_camtype, S_IRUGO,
+		camera_front_camtype_show, NULL);
+static DEVICE_ATTR(front_camfw, S_IRUGO, camera_front_camfw_show, NULL);
+
+static struct fimc_is_from_info *pinfo = NULL;
+static struct fimc_is_from_info *finfo = NULL;
+
+int read_from_firmware_version(void)
+{
+	char fw_name[100];
+	char setf_name[100];
+	char master_setf_name[100];
+	char mode_setf_name[100];
+	struct device *is_dev = &sysfs_core->ischain[0].pdev->dev;
+
+	fimc_is_sec_get_sysfs_pinfo(&pinfo);
+	fimc_is_sec_get_sysfs_finfo(&finfo);
+
+	if (!finfo->is_caldata_read) {
+		if (finfo->bin_start_addr != 0x80000) {
+			//fimc_is_sec_set_camid(CAMERA_DUAL_FRONT);
+#if defined(CONFIG_PM_RUNTIME)
+			pr_debug("pm_runtime_suspended = %d\n",
+			pm_runtime_suspended(is_dev));
+			pm_runtime_get_sync(is_dev);
+#else
+			fimc_is_runtime_resume(is_dev);
+			printk(KERN_INFO "%s(%d) - fimc_is runtime resume complete\n", __func__, on);
+#endif
+			fimc_is_sec_fw_sel(sysfs_core, is_dev, fw_name, setf_name, 1);
+#ifdef CONFIG_COMPANION_USE
+			fimc_is_sec_concord_fw_sel(sysfs_core, is_dev, fw_name, master_setf_name, mode_setf_name, 1);
+#endif
+#if defined(CONFIG_PM_RUNTIME)
+			pm_runtime_put_sync(is_dev);
+			pr_debug("pm_runtime_suspended = %d\n",
+				pm_runtime_suspended(is_dev));
+#else
+			fimc_is_runtime_suspend(is_dev);
+#endif
+		}
+	}
+	return 0;
+}
+
+static ssize_t camera_rear_camtype_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char type[] = "SLSI_S5K2P2_FIMC_IS";
+#if 0
+	char type_unknown[] = "UNKNOWN_UNKNOWN_FIMC_IS";
+
+	read_from_firmware_version(false);
+	if (fimc_is_sec_fw_module_compare(FW_2P2, finfo->header_ver))
+		return sprintf(buf, "%s\n", type);
+	else
+		return sprintf(buf, "%s\n", type_unknown);
+#endif
+	return sprintf(buf, "%s\n", type);
+}
+
+static ssize_t camera_rear_camfw_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char command_ack[20] = {0, };
+	char *loaded_fw;
+
+	read_from_firmware_version();
+	fimc_is_sec_get_loaded_fw(&loaded_fw);
+
+	if(fw_version_crc_check) {
+		if (crc32_fw_check && crc32_check_factory && crc32_c1_fw_check && crc32_c1_check_factory) {
+			return sprintf(buf, "%s %s\n", finfo->header_ver, loaded_fw);
+		} else {
+			strcpy(command_ack, "NG_");
+			if (!crc32_fw_check)
+				strcat(command_ack, "FW");
+			if (!crc32_check_factory)
+				strcat(command_ack, "CD");
+			if (!crc32_c1_fw_check)
+				strcat(command_ack, "FW1");
+			if (!crc32_c1_check_factory)
+				strcat(command_ack, "CD1");
+			if (finfo->header_ver[3] == 'Q')
+				strcat(command_ack, "_Q");
+			return sprintf(buf, "%s %s\n", finfo->header_ver, command_ack);
+		}
+	} else {
+		strcpy(command_ack, "NG_FWCDFW1CD1");
+		return sprintf(buf, "%s %s\n", finfo->header_ver, command_ack);
+	}
+}
+
+static ssize_t camera_rear_camfw_full_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char command_ack[20] = {0, };
+	char *loaded_fw;
+
+	read_from_firmware_version();
+	fimc_is_sec_get_loaded_fw(&loaded_fw);
+
+	if(fw_version_crc_check) {
+		if (crc32_fw_check && crc32_check_factory && crc32_c1_fw_check && crc32_c1_check_factory) {
+			return sprintf(buf, "%s %s %s\n", finfo->header_ver, pinfo->header_ver, loaded_fw);
+		} else {
+			strcpy(command_ack, "NG_");
+			if (!crc32_fw_check)
+				strcat(command_ack, "FW");
+			if (!crc32_check_factory)
+				strcat(command_ack, "CD");
+			if (!crc32_c1_fw_check)
+				strcat(command_ack, "FW1");
+			if (!crc32_c1_check_factory)
+				strcat(command_ack, "CD1");
+			if (finfo->header_ver[3] == 'Q')
+				strcat(command_ack, "_Q");
+			return sprintf(buf, "%s %s %s\n", finfo->header_ver, pinfo->header_ver, command_ack);
+		}
+	} else {
+		strcpy(command_ack, "NG_FWCDFW1CD1");
+		return sprintf(buf, "%s %s %s\n", finfo->header_ver, pinfo->header_ver, command_ack);
+	}
+}
+
+static ssize_t camera_rear_companionfw_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char *loaded_c1_fw;
+
+	read_from_firmware_version();
+	fimc_is_sec_get_loaded_c1_fw(&loaded_c1_fw);
+
+	return sprintf(buf, "%s %s\n",
+		finfo->concord_header_ver, loaded_c1_fw);
+}
+
+static ssize_t camera_rear_companionfw_full_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char *loaded_c1_fw;
+
+	read_from_firmware_version();
+	fimc_is_sec_get_loaded_c1_fw(&loaded_c1_fw);
+
+	return sprintf(buf, "%s %s %s\n",
+		finfo->concord_header_ver, pinfo->concord_header_ver, loaded_c1_fw);
+}
+
+
+static ssize_t camera_rear_camfw_write(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t size)
+{
+	ssize_t ret = -EINVAL;
+
+	if ((size == 1 || size == 2) && (buf[0] == 'F' || buf[0] == 'f')) {
+		fimc_is_sec_set_force_caldata_dump(true);
+		ret = size;
+	} else {
+		fimc_is_sec_set_force_caldata_dump(false);
+	}
+	return ret;
+}
+
+static ssize_t camera_rear_calcheck_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	char rear_sensor[10] = {0, };
+	char rear_companion[10] = {0, };
+
+	read_from_firmware_version();
+
+	if (crc32_check_factory)
+		strcpy(rear_sensor, "Normal");
+	else
+		strcpy(rear_sensor, "Abnormal");
+
+	if (crc32_c1_check_factory)
+		strcpy(rear_companion, "Normal");
+	else
+		strcpy(rear_companion, "Abnormal");
+
+	return sprintf(buf, "%s %s %s\n", rear_sensor, rear_companion, "Null");
+}
+
+static ssize_t camera_isp_core_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int voltage = 0;
+	char companion_voltage[10] = {0, };
+
+	voltage = fimc_is_power_binning(sysfs_core);
+	if (voltage == FAN53555_VOUT_0P88)
+		strcpy(companion_voltage, "0.88");
+	else if (voltage == FAN53555_VOUT_0P90)
+		strcpy(companion_voltage, "0.90");
+	else if (voltage == FAN53555_VOUT_0P93)
+		strcpy(companion_voltage, "0.93");
+	else if (voltage == FAN53555_VOUT_0P95)
+		strcpy(companion_voltage, "0.95");
+	else if (voltage == FAN53555_VOUT_0P98)
+		strcpy(companion_voltage, "0.98");
+	else
+		strcpy(companion_voltage, "1.00"); /* defualt voltage */
+
+	return sprintf(buf, "%s\n", companion_voltage);
+}
+
+static DEVICE_ATTR(rear_camtype, S_IRUGO,
+		camera_rear_camtype_show, NULL);
+static DEVICE_ATTR(rear_camfw, S_IRUGO,
+		camera_rear_camfw_show, camera_rear_camfw_write);
+static DEVICE_ATTR(rear_camfw_full, S_IRUGO,
+		camera_rear_camfw_full_show, NULL);
+static DEVICE_ATTR(rear_companionfw, S_IRUGO,
+		camera_rear_companionfw_show, NULL);
+static DEVICE_ATTR(rear_companionfw_full, S_IRUGO,
+		camera_rear_companionfw_full_show, NULL);
+static DEVICE_ATTR(rear_calcheck, S_IRUGO,
+		camera_rear_calcheck_show, NULL);
+static DEVICE_ATTR(isp_core, S_IRUGO,
+		camera_isp_core_show, NULL);
+#endif
 static int fimc_is_suspend(struct device *dev)
 {
 	pr_debug("FIMC_IS Suspend\n");
@@ -595,284 +872,6 @@ static struct attribute_group fimc_is_debug_attr_group = {
 	.attrs	= fimc_is_debug_entries,
 };
 
-#ifdef CONFIG_USE_VENDER_FEATURE
-static ssize_t camera_front_sensorid_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct exynos_platform_fimc_is_sensor *sensor = dev_get_drvdata(dev);
-
-	dev_info(dev, "%s: E", __func__);
-
-	if (unlikely(!sensor)) {
-		dev_err(dev, "%s: sensor null\n", __func__);
-		return -EFAULT;
-	}
-
-	return sprintf(buf, "%d\n", sensor->sensor_id);
-}
-
-static ssize_t camera_rear_sensorid_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	struct exynos_platform_fimc_is_sensor *sensor = dev_get_drvdata(dev);
-
-	dev_info(dev, "%s: E", __func__);
-
-	if (unlikely(!sensor)) {
-		dev_err(dev, "%s: sensor null\n", __func__);
-		return -EFAULT;
-	}
-
-	return sprintf(buf, "%d\n", sensor->sensor_id);
-}
-
-static DEVICE_ATTR(front_sensorid, S_IRUGO, camera_front_sensorid_show, NULL);
-static DEVICE_ATTR(rear_sensorid, S_IRUGO, camera_rear_sensorid_show, NULL);
-
-static ssize_t camera_front_camtype_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char type[50] = "SLSI_S5K6B2YX_FIMC_IS";
-#if defined(CONFIG_CAMERA_SENSOR_8B1)
-	strcpy(type, "SLSI_S5K8B1YX_FIMC_IS");
-#endif
-	return sprintf(buf, "%s\n", type);
-}
-
-static ssize_t camera_front_camfw_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char type[50] = "S5K6B2YX";
-#if defined(CONFIG_CAMERA_SENSOR_8B1)
-	strcpy(type, "S5K8B1YX");
-#endif
-	return sprintf(buf, "%s N\n", type);
-}
-
-static DEVICE_ATTR(front_camtype, S_IRUGO,
-		camera_front_camtype_show, NULL);
-static DEVICE_ATTR(front_camfw, S_IRUGO, camera_front_camfw_show, NULL);
-
-static struct fimc_is_from_info *pinfo = NULL;
-static struct fimc_is_from_info *finfo = NULL;
-
-int read_from_firmware_version(void)
-{
-	char fw_name[100];
-	char setf_name[100];
-	char master_setf_name[100];
-	char mode_setf_name[100];
-	struct device *is_dev = &sysfs_core->ischain[0].pdev->dev;
-
-	fimc_is_sec_get_sysfs_pinfo(&pinfo);
-	fimc_is_sec_get_sysfs_finfo(&finfo);
-
-	if (!finfo->is_caldata_read) {
-		if (finfo->bin_start_addr != 0x80000) {
-			//fimc_is_sec_set_camid(CAMERA_DUAL_FRONT);
-#if defined(CONFIG_PM_RUNTIME)
-			pr_debug("pm_runtime_suspended = %d\n",
-			pm_runtime_suspended(is_dev));
-			pm_runtime_get_sync(is_dev);
-#else
-			fimc_is_runtime_resume(is_dev);
-			printk(KERN_INFO "%s(%d) - fimc_is runtime resume complete\n", __func__, on);
-#endif
-			fimc_is_sec_fw_sel(sysfs_core, is_dev, fw_name, setf_name, 1);
-#ifdef CONFIG_COMPANION_USE
-			fimc_is_sec_concord_fw_sel(sysfs_core, is_dev, fw_name, master_setf_name, mode_setf_name, 1);
-#endif
-#if defined(CONFIG_PM_RUNTIME)
-			pm_runtime_put_sync(is_dev);
-			pr_debug("pm_runtime_suspended = %d\n",
-				pm_runtime_suspended(is_dev));
-#else
-			fimc_is_runtime_suspend(is_dev);
-#endif
-		}
-	}
-	return 0;
-}
-
-static ssize_t camera_rear_camtype_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char type[] = "SLSI_S5K2P2_FIMC_IS";
-#if 0
-	char type_unknown[] = "UNKNOWN_UNKNOWN_FIMC_IS";
-
-	read_from_firmware_version(false);
-	if (fimc_is_sec_fw_module_compare(FW_2P2, finfo->header_ver))
-		return sprintf(buf, "%s\n", type);
-	else
-		return sprintf(buf, "%s\n", type_unknown);
-#endif
-	return sprintf(buf, "%s\n", type);
-}
-
-static ssize_t camera_rear_camfw_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char command_ack[20] = {0, };
-	char *loaded_fw;
-
-	read_from_firmware_version();
-	fimc_is_sec_get_loaded_fw(&loaded_fw);
-
-	if(fw_version_crc_check) {
-		if (crc32_fw_check && crc32_check_factory && crc32_c1_fw_check && crc32_c1_check_factory) {
-			return sprintf(buf, "%s %s\n", finfo->header_ver, loaded_fw);
-		} else {
-			strcpy(command_ack, "NG_");
-			if (!crc32_fw_check)
-				strcat(command_ack, "FW");
-			if (!crc32_check_factory)
-				strcat(command_ack, "CD");
-			if (!crc32_c1_fw_check)
-				strcat(command_ack, "FW1");
-			if (!crc32_c1_check_factory)
-				strcat(command_ack, "CD1");
-			if (finfo->header_ver[3] == 'Q')
-				strcat(command_ack, "_Q");
-			return sprintf(buf, "%s %s\n", finfo->header_ver, command_ack);
-		}
-	} else {
-		strcpy(command_ack, "NG_FWCDFW1CD1");
-		return sprintf(buf, "%s %s\n", finfo->header_ver, command_ack);
-	}
-}
-
-static ssize_t camera_rear_camfw_full_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char command_ack[20] = {0, };
-	char *loaded_fw;
-
-	read_from_firmware_version();
-	fimc_is_sec_get_loaded_fw(&loaded_fw);
-
-	if(fw_version_crc_check) {
-		if (crc32_fw_check && crc32_check_factory && crc32_c1_fw_check && crc32_c1_check_factory) {
-			return sprintf(buf, "%s %s %s\n", finfo->header_ver, pinfo->header_ver, loaded_fw);
-		} else {
-			strcpy(command_ack, "NG_");
-			if (!crc32_fw_check)
-				strcat(command_ack, "FW");
-			if (!crc32_check_factory)
-				strcat(command_ack, "CD");
-			if (!crc32_c1_fw_check)
-				strcat(command_ack, "FW1");
-			if (!crc32_c1_check_factory)
-				strcat(command_ack, "CD1");
-			if (finfo->header_ver[3] == 'Q')
-				strcat(command_ack, "_Q");
-			return sprintf(buf, "%s %s %s\n", finfo->header_ver, pinfo->header_ver, command_ack);
-		}
-	} else {
-		strcpy(command_ack, "NG_FWCDFW1CD1");
-		return sprintf(buf, "%s %s %s\n", finfo->header_ver, pinfo->header_ver, command_ack);
-	}
-}
-
-static ssize_t camera_rear_companionfw_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char *loaded_c1_fw;
-
-	read_from_firmware_version();
-	fimc_is_sec_get_loaded_c1_fw(&loaded_c1_fw);
-
-	return sprintf(buf, "%s %s\n",
-		finfo->concord_header_ver, loaded_c1_fw);
-}
-
-static ssize_t camera_rear_companionfw_full_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char *loaded_c1_fw;
-
-	read_from_firmware_version();
-	fimc_is_sec_get_loaded_c1_fw(&loaded_c1_fw);
-
-	return sprintf(buf, "%s %s %s\n",
-		finfo->concord_header_ver, pinfo->concord_header_ver, loaded_c1_fw);
-}
-
-
-static ssize_t camera_rear_camfw_write(struct device *dev,
-		struct device_attribute *attr, const char *buf, size_t size)
-{
-	ssize_t ret = -EINVAL;
-
-	if ((size == 1 || size == 2) && (buf[0] == 'F' || buf[0] == 'f')) {
-		fimc_is_sec_set_force_caldata_dump(true);
-		ret = size;
-	} else {
-		fimc_is_sec_set_force_caldata_dump(false);
-	}
-	return ret;
-}
-
-static ssize_t camera_rear_calcheck_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	char rear_sensor[10] = {0, };
-	char rear_companion[10] = {0, };
-
-	read_from_firmware_version();
-
-	if (crc32_check_factory)
-		strcpy(rear_sensor, "Normal");
-	else
-		strcpy(rear_sensor, "Abnormal");
-
-	if (crc32_c1_check_factory)
-		strcpy(rear_companion, "Normal");
-	else
-		strcpy(rear_companion, "Abnormal");
-
-	return sprintf(buf, "%s %s %s\n", rear_sensor, rear_companion, "Null");
-}
-
-static ssize_t camera_isp_core_show(struct device *dev,
-		struct device_attribute *attr, char *buf)
-{
-	int voltage = 0;
-	char companion_voltage[10] = {0, };
-
-	voltage = fimc_is_power_binning(sysfs_core);
-	if (voltage == FAN53555_VOUT_0P88)
-		strcpy(companion_voltage, "0.88");
-	else if (voltage == FAN53555_VOUT_0P90)
-		strcpy(companion_voltage, "0.90");
-	else if (voltage == FAN53555_VOUT_0P93)
-		strcpy(companion_voltage, "0.93");
-	else if (voltage == FAN53555_VOUT_0P95)
-		strcpy(companion_voltage, "0.95");
-	else if (voltage == FAN53555_VOUT_0P98)
-		strcpy(companion_voltage, "0.98");
-	else
-		strcpy(companion_voltage, "1.00"); /* defualt voltage */
-
-	return sprintf(buf, "%s\n", companion_voltage);
-}
-
-static DEVICE_ATTR(rear_camtype, S_IRUGO,
-		camera_rear_camtype_show, NULL);
-static DEVICE_ATTR(rear_camfw, S_IRUGO,
-		camera_rear_camfw_show, camera_rear_camfw_write);
-static DEVICE_ATTR(rear_camfw_full, S_IRUGO,
-		camera_rear_camfw_full_show, NULL);
-static DEVICE_ATTR(rear_companionfw, S_IRUGO,
-		camera_rear_companionfw_show, NULL);
-static DEVICE_ATTR(rear_companionfw_full, S_IRUGO,
-		camera_rear_companionfw_full_show, NULL);
-static DEVICE_ATTR(rear_calcheck, S_IRUGO,
-		camera_rear_calcheck_show, NULL);
-static DEVICE_ATTR(isp_core, S_IRUGO,
-		camera_isp_core_show, NULL);
-#endif
-
 static int fimc_is_probe(struct platform_device *pdev)
 {
 	struct exynos_platform_fimc_is *pdata;
@@ -1136,9 +1135,11 @@ static int fimc_is_probe(struct platform_device *pdev)
 
 	fimc_is_ishcain_initmem(core);
 
+#if defined(CONFIG_SOC_EXYNOS5430)
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (core->mem.alloc_ctx)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);
+#endif
 #endif
 
 #if defined(CONFIG_PM_RUNTIME)

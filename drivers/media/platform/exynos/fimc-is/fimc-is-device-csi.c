@@ -24,7 +24,6 @@
 #include "fimc-is-config.h"
 #include "fimc-is-regs.h"
 #include "fimc-is-hw.h"
-#include "fimc-is-device-sensor.h"
 #include "fimc-is-device-csi.h"
 #include "fimc-is-device-sensor.h"
 

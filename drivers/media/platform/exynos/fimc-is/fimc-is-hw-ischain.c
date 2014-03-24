@@ -281,12 +281,14 @@ int fimc_is_runtime_suspend(struct device *dev)
 #endif /* CONFIG_SOC_EXYNOS5422 */
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
+	/* BTS */
 #if defined(CONFIG_SOC_EXYNOS5260)
 	bts_initialize("spd-flite-a", false);
 	bts_initialize("spd-flite-b", false);
 #elif defined(CONFIG_SOC_EXYNOS3470)
 	bts_initialize("pd-cam", false);
 #else
+	/* media layer */
 	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
 	bts_initialize("pd-fimclite", false);
 #endif
@@ -336,6 +338,10 @@ int fimc_is_runtime_resume(struct device *dev)
 	/* EGL Lock */
 	pm_qos_add_request(&max_cpu_qos, PM_QOS_CPU_FREQ_MAX, 1600000);
 #endif /* CONFIG_SOC_EXYNOS5422 */
+
+	/* HACK: DVFS lock sequence is change.
+	 * DVFS level should be locked after power on.
+	 */
 #if defined(CONFIG_PM_DEVFREQ)
 	int_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_INT, START_DVFS_LEVEL);
 	mif_qos = fimc_is_get_qos(core, FIMC_IS_DVFS_MIF, START_DVFS_LEVEL);
@@ -378,17 +384,21 @@ int fimc_is_runtime_resume(struct device *dev)
 #endif
 
 #if defined(CONFIG_FIMC_IS_BUS_DEVFREQ)
+	/* BTS */
 #if defined(CONFIG_SOC_EXYNOS5260)
 	bts_initialize("spd-flite-a", true);
 	bts_initialize("spd-flite-b", true);
 #elif defined(CONFIG_SOC_EXYNOS3470)
 	bts_initialize("pd-cam", true);
-#endif
+#else
+	/* media layer */
 	bts_initialize("pd-fimclite", true);
 	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
 #endif
+#endif
 
 	pr_info("FIMC-IS runtime resume out\n");
+
 	return 0;
 
 p_err:

@@ -828,10 +828,6 @@ static int fimc_is_ischain_loadfirm(struct fimc_is_device_ischain *device)
 				ret = -EIO;
 				set_fs(old_fs);
 				goto out;
-			} else {
-				fsize = fp->f_path.dentry->d_inode->i_size;
-				pr_info("start, file path %s, size %ld Bytes\n",
-					fw_path, fsize);
 			}
 		} else
 #endif
@@ -842,7 +838,7 @@ static int fimc_is_ischain_loadfirm(struct fimc_is_device_ischain *device)
 	fw_requested = 0;
 	fsize = fp->f_path.dentry->d_inode->i_size;
 	pr_info("start, file path %s, size %ld Bytes\n",
-		is_dumped_fw_loading_needed ? fw_path : FIMC_IS_FW_SDCARD, fsize);
+			is_dumped_fw_loading_needed ? fw_path : FIMC_IS_FW_SDCARD, fsize);
 	buf = vmalloc(fsize);
 	if (!buf) {
 		dev_err(&device->pdev->dev,

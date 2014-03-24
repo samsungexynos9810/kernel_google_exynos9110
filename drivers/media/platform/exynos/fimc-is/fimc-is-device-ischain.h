@@ -18,7 +18,6 @@
 #include "fimc-is-subdev-ctrl.h"
 #include "fimc-is-groupmgr.h"
 #include "fimc-is-resourcemgr.h"
-#include "fimc-is-interface.h"
 
 #define SENSOR_MAX_CTL			0x10
 #define SENSOR_MAX_CTL_MASK		(SENSOR_MAX_CTL-1)

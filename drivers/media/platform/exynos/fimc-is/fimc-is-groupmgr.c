@@ -1185,6 +1185,7 @@ int fimc_is_group_process_stop(struct fimc_is_groupmgr *groupmgr,
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_device_ischain *device;
 	struct fimc_is_device_sensor *sensor;
+	u32 group_id;
 
 	BUG_ON(!groupmgr);
 	BUG_ON(!group);
@@ -1276,9 +1277,8 @@ check_completion:
 			ret = -EINVAL;
 		}
 	} else {
-		u32 group_id = group->id;
 		/* if there's only one group of isp, send group id by 3a0 */
-		if ((group_id == GROUP_ID_ISP) &&
+		if ((group->id == GROUP_ID_ISP) &&
 				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a0) == 0 &&
 				GET_FIMC_IS_NUM_OF_SUBIP2(device, 3a1) == 0)
 			group_id = GROUP_ID(GROUP_ID_3A0);
