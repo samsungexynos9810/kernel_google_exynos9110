@@ -468,14 +468,16 @@ static void fimc_is_group_cancel(struct fimc_is_group *group,
 			case GROUP_ID_3A0:
 				sub_queue = GET_DST_QUEUE(vctx);
 				fimc_is_frame_request_head(sub_framemgr, &sub_frame);
-				fimc_is_group_3a0_cancel(sub_framemgr, sub_frame,
-						sub_queue, vctx, group->instance);
+				if (sub_frame)
+					fimc_is_group_3a0_cancel(sub_framemgr, sub_frame,
+							sub_queue, vctx, group->instance);
 				break;
 			case GROUP_ID_3A1:
 				sub_queue = GET_DST_QUEUE(vctx);
 				fimc_is_frame_request_head(sub_framemgr, &sub_frame);
-				fimc_is_group_3a1_cancel(sub_framemgr, sub_frame,
-						sub_queue, vctx, group->instance);
+				if (sub_frame)
+					fimc_is_group_3a1_cancel(sub_framemgr, sub_frame,
+							sub_queue, vctx, group->instance);
 				break;
 			default:
 				err("unresolved group id %d", group->id);
