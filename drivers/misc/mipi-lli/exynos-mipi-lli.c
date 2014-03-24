@@ -367,7 +367,7 @@ static int exynos_lli_read_signal(struct mipi_lli *lli)
 		writel(intr_msb, lli->regs + EXYNOS_TL_SIGNAL_CLR_MSB);
 
 	/* TODO: change to dev_dbg */
-	dev_info(lli->dev, "LSB = %x, MSB = %x\n", intr_lsb, intr_msb);
+	dev_dbg(lli->dev, "LSB = %x, MSB = %x\n", intr_lsb, intr_msb);
 
 	return intr_lsb;
 }
