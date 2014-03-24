@@ -393,6 +393,22 @@ int exynos5430_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 		fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_400", 400 * 1000000);
 		fimc_is_set_rate_dt(pdev, "dout_aclk_cam0_200", 200 * 1000000);
 		fimc_is_set_rate_dt(pdev, "dout_pclk_cam0_50", 50 * 1000000);
+
+		/* FIMC-LITE2 PIXELASYNC */
+		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 1);
+		fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 1);
+		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 1);
+
+		/* FIMC-LITE2 PIXELASYNC */
+		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_a", "mout_aclk_cam0_552_user");
+		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_b", "mout_sclk_pixelasync_lite_c_init_a");
+		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 552 * 1000000);
+		fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 276 * 1000000);
+
+		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_a", "mout_aclk_cam0_552_user");
+		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_b", "mout_aclk_cam0_333_user");
+		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 333 * 1000000);
+
 		break;
 	case 1:
 		/* USER_MUX_SEL */
@@ -445,11 +461,6 @@ int exynos5430_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 		fimc_is_set_rate_dt(pdev, "dout_aclk_lite_c", 1);
 		fimc_is_set_rate_dt(pdev, "dout_pclk_lite_c", 1);
 
-		/* FIMC-LITE2 PIXELASYNC */
-		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 1);
-		fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 1);
-		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 1);
-
 		/* USER_MUX_SEL */
 		fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_552_user", "aclk_cam1_552");
 		fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_400_user", "aclk_cam1_400");
@@ -462,16 +473,6 @@ int exynos5430_fimc_is_sensor_iclk_cfg(struct platform_device *pdev,
 		fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_a", "mout_aclk_cam1_400_user");
 		fimc_is_set_parent_dt(pdev, "mout_aclk_csis2_b", "mout_aclk_cam1_333_user");
 		fimc_is_set_rate_dt(pdev, "dout_aclk_csis2_a", 333 * 1000000);
-
-		/* FIMC-LITE2 PIXELASYNC */
-		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_a", "mout_aclk_cam0_552_user");
-		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_init_b", "mout_sclk_pixelasync_lite_c_init_a");
-		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c_init", 552 * 1000000);
-		fimc_is_set_rate_dt(pdev, "dout_pclk_pixelasync_lite_c", 276 * 1000000);
-
-		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_a", "mout_aclk_cam0_552_user");
-		fimc_is_set_parent_dt(pdev, "mout_sclk_pixelasync_lite_c_b", "mout_aclk_cam0_333_user");
-		fimc_is_set_rate_dt(pdev, "dout_sclk_pixelasync_lite_c", 333 * 1000000);
 		break;
 	default:
 		pr_err("channel is invalid(%d)\n", channel);
