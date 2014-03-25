@@ -61,7 +61,7 @@ int exynos_mphy_cmn_init(struct exynos_mphy *phy)
 
 	/* Basic tune for series-A */
 	writel(0x0A, phy->loc_regs + (0x0A*4));
-	writel(0x07, phy->loc_regs + (0x11*4));
+	writel(0x03, phy->loc_regs + (0x11*4));
 	writel(0x98, phy->loc_regs + (0x19*4));
 	writel(0x03, phy->loc_regs + (0x12*4));
 	writel(0x03, phy->loc_regs + (0x13*4));
