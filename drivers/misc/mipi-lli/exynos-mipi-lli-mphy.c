@@ -63,10 +63,10 @@ int exynos_mphy_cmn_init(struct exynos_mphy *phy)
 	writel(0x0A, phy->loc_regs + (0x0A*4));
 	writel(0x07, phy->loc_regs + (0x11*4));
 	writel(0x98, phy->loc_regs + (0x19*4));
-	writel(0x07, phy->loc_regs + (0x12*4));
+	writel(0x03, phy->loc_regs + (0x12*4));
 	writel(0x03, phy->loc_regs + (0x13*4));
 	writel(0x03, phy->loc_regs + (0x14*4));
-	writel(0x08, phy->loc_regs + (0x16*4));
+	writel(0x00, phy->loc_regs + (0x16*4));
 	writel(0x01, phy->loc_regs + (0x17*4));
 	writel(0x07, phy->loc_regs + (0x44*4));
 	writel(0x01, phy->loc_regs + (0x4D*4));
@@ -99,7 +99,7 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 	writel(0x02, phy->loc_regs + (0x16*4));
 	writel(0x8F, phy->loc_regs + (0x45*4));
 	/* For PWM3,4,5G */
-	writel(0x1A, phy->loc_regs + (0x40*4));
+	writel(0x08, phy->loc_regs + (0x40*4));
 
 	/* Reset-On-Error REQ timing configuration */
 	writel(0x1D, phy->loc_regs + (0x77*4));
@@ -112,12 +112,11 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 
 	/* Basic tune for series-A */
 	/* for TX */
-	writel(0x10, phy->loc_regs + (0x75*4));
 	writel(0x02, phy->loc_regs + (0x76*4));
 	writel(0x01, phy->loc_regs + (0x84*4));
 	writel(0xAA, phy->loc_regs + (0x85*4));
 	/* for RX */
-	writel(0xDC, phy->loc_regs + (0x0A*4));
+	writel(0xBC, phy->loc_regs + (0x0A*4));
 	writel(0x00, phy->loc_regs + (0x1A*4));
 	writel(0xDB, phy->loc_regs + (0x2F*4));
 	writel(0xC0, phy->loc_regs + (0x2E*4));
