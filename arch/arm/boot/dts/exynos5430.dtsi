@@ -883,32 +883,42 @@
 		pinctrl-1 = <&disp_tesoff>;
 
 		clock-names =
-			"mout_sclk_dsd_a", "mout_mfc_pll_div2",
-			/* Clocks for the DECON driver */
-			"gate_decon",
-			"sclk_decon_eclk", "sclk_decon_vclk",
-			"mout_sclk_decon_eclk_a", "mout_bus_pll_div2", "mout_disp_pll",
-			"aclk_disp_333", "sclk_decon_eclk_disp",
-			"sclk_decon_vclk_disp", "sclk_dsd_disp",
-			"mout_aclk_disp_333_user",
-			"mout_sclk_decon_eclk_user", "mout_sclk_decon_vclk_user",
-			"mout_sclk_dsd_user", "mout_sclk_decon_eclk",
-			"dout_aclk_disp_333", "dout_sclk_decon_eclk",
-			/* Clocks for the MIPI-DSI driver */
-			"phyclk_mipidphy_rxclkesc0_phy", "phyclk_mipidphy_bitclkdiv8_phy",
-			"mout_phyclk_mipidphy_rxclkesc0_user", "mout_phyclk_mipidphy_bitclkdiv8_user";
+			"gate_dsd", "gate_decon", "gate_mic", "gate_dsim0",
+			"aclk_disp_333", "dout_aclk_disp_333", "dout_mfc_pll", "dout_pclk_disp",
+			"dout_sclk_dsd", "mout_sclk_dsd_c", "mout_sclk_dsd_b", "mout_sclk_dsd_a",
+			"mout_mfc_pll_div2", "mout_sclk_dsd_user", "sclk_dsd_disp",
+			"dout_sclk_decon_eclk", "dout_sclk_decon_eclk_disp", "dout_sclk_decon_vclk", "dout_sclk_decon_vclk_disp",
+			"dout_sclk_dsim0", "dout_sclk_dsim0_disp",
+			"mout_aclk_disp_333_a", "mout_aclk_disp_333_b", "mout_aclk_disp_333_user", "mout_bus_pll_div2",
+			"mout_disp_pll", "mout_mfc_pll_div2", "mout_sclk_decon_eclk", "mout_sclk_decon_eclk_a",
+			"mout_sclk_decon_eclk_b", "mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_user",
+			"mout_sclk_decon_vclk", "mout_sclk_decon_vclk_a", "mout_sclk_decon_vclk_b", "mout_sclk_decon_vclk_c",
+			"mout_sclk_decon_vclk_user", "mout_sclk_dsd_a", "mout_sclk_dsd_user", "mout_sclk_dsim0",
+			"mout_sclk_dsim0_a", "mout_sclk_dsim0_b", "mout_sclk_dsim0_c", "mout_sclk_dsim0_user",
+			"oscclk", "sclk_decon_eclk_disp",
+			"sclk_dsim0_disp",
+			"mout_phyclk_mipidphy_rxclkesc0_user", "phyclk_mipidphy_rxclkesc0_phy",
+			"mout_phyclk_mipidphy_bitclkdiv8_user", "phyclk_mipidphy_bitclkdiv8_phy",
+			"disp_pll";
+
 		clocks =
-			/* Clocks for the DECON driver */
-			 <&clock 3100>, <&clock 3242>,
-			 <&clock 2114>,
-			 <&clock 100>, <&clock 101>,
-			 <&clock 3090>, <&clock 3243>, <&clock 3124>,
-			 <&clock 321>, <&clock 81>, <&clock 82>, <&clock 83>,
-			 <&clock 3125>, <&clock 3130>, <&clock 3132>,
-			 <&clock 3134>, <&clock 3131>, <&clock 4116>, <&clock 4117>,
-			 /* Clocks for the MIPI-DSI driver */
-			 <&clock 5025>, <&clock 5026>,
-			 <&clock 3137>, <&clock 3138>;
+			/*gate_dsd*/ <&clock 2103>, /*gate_decon*/ <&clock 2114>, /*gate_mic*/ <&clock 2104>, /*gate_dsim0*/ <&clock 2110>,
+			/*aclk_disp_333*/ <&clock 321>, /*dout_aclk_disp_333*/ <&clock 4116>, /*dout_mfc_pll*/ <&clock 4102>, /*dout_pclk_disp*/ <&clock 4140>,
+			/*dout_sclk_dsd*/ <&clock 4119>, /*mout_sclk_dsd_c*/ <&clock 3102>, /*mout_sclk_dsd_b*/ <&clock 3101>, /*mout_sclk_dsd_a*/ <&clock 3100>,
+			/*mout_mfc_pll_div2*/ <&clock 3242>, /*mout_sclk_dsd_user*/ <&clock 3134>, /*sclk_dsd_disp*/ <&clock 83>,
+
+			/*dout_sclk_decon_eclk*/ <&clock 4117>, /*dout_sclk_decon_eclk_disp*/ <&clock 4141>, /*dout_sclk_decon_vclk*/ <&clock 4118>, /*dout_sclk_decon_vclk_disp*/ <&clock 4142>,
+			/*dout_sclk_dsim0*/ <&clock 4201>, /*dout_sclk_dsim0_disp*/ <&clock 4144>,
+			/*mout_aclk_disp_333_a*/ <&clock 3086>, /*mout_aclk_disp_333_b*/ <&clock 3087>, /*mout_aclk_disp_333_user*/ <&clock 3125>, /*mout_bus_pll_div2*/ <&clock 3243>,
+			/*mout_disp_pll*/ <&clock 3124>, /*mout_mfc_pll_div2*/ <&clock 3242>, /*mout_sclk_decon_eclk*/ <&clock 3131>, /*mout_sclk_decon_eclk_a*/ <&clock 3090>,
+			/*mout_sclk_decon_eclk_b*/ <&clock 3091>, /*mout_sclk_decon_eclk_c*/ <&clock 3092>, /*mout_sclk_decon_eclk_user*/ <&clock 3130>,
+			/*mout_sclk_decon_vclk*/ <&clock 3133>, /*mout_sclk_decon_vclk_a*/ <&clock 3093>, /*mout_sclk_decon_vclk_b*/ <&clock 3094>, /*mout_sclk_decon_vclk_c*/ <&clock 3095>,
+			/*mout_sclk_decon_vclk_user*/ <&clock 3132>, /*mout_sclk_dsd_a*/ <&clock 3100>, /*mout_sclk_dsd_user*/ <&clock 3134>, /*mout_sclk_dsim0*/ <&clock 3269>,
+			/*mout_sclk_dsim0_a*/ <&clock 3263>, /*mout_sclk_dsim0_b*/ <&clock 3264>, /*mout_sclk_dsim0_c*/ <&clock 3265>, /*mout_sclk_dsim0_user*/ <&clock 3268>,
+			/*oscclk*/ <&clock 5000>, /*sclk_decon_eclk_disp*/ <&clock 81>, /*sclk_dsim0_disp*/ <&clock 85>,
+			/*mout_phyclk_mipidphy_rxclkesc0_user*/ <&clock 3137>, /*phyclk_mipidphy_rxclkesc0_phy*/ <&clock 5025>,
+			/*mout_phyclk_mipidphy_bitclkdiv8_user*/ <&clock 3138>, /*phyclk_mipidphy_bitclkdiv8_phy*/ <&clock 5026>,
+			/*disp_pll*/ <&clock 7>;
 
 		decon: decon_ctrl {
 			samsung,vidcon0 = <0x00>;
