@@ -135,6 +135,10 @@ struct samsung_mux_clock {
 
 #define MUX_STAT(_id, cname, pnames, o, s, w, so, ss, sw)			\
 	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, NULL, so, ss, sw)
+#define CMX_S_A(_id, o, s, w, a, so, ss, sw) \
+		MUX_S_A(_id, #_id, _id##_p, (unsigned long)o, s, w, a, (unsigned long)so, ss, sw)
+#define MUX_S_A(_id, cname, pnames, o, s, w, a, so, ss, sw)			\
+	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, a, so, ss, sw)
 #else
 struct samsung_mux_clock {
 	unsigned int		id;
@@ -276,6 +280,9 @@ struct samsung_gate_clock {
 
 #define GATE_DA(_id, dname, cname, pname, o, b, f, gf, a)	\
 	__GATE(_id, dname, cname, pname, o, b, f, gf, a, 0)
+
+#define CGTE_A(_id, pname, o, b, f, gf, a) \
+	GATE_A(_id, #_id, pname, (unsigned long)o, b, f, gf, a)
 
 #define PNAME(x) static const char *x[] __initdata
 
