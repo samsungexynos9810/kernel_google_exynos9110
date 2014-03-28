@@ -295,7 +295,7 @@ struct mmc_host {
 #define MMC_CAP2_HS200_1_8V_DDR	(1 << 12)	/* can support */
 #define MMC_CAP2_HS200_1_2V_DDR	(1 << 13)	/* can support */
 #define MMC_CAP2_HS200_DDR	(MMC_CAP2_HS200_1_8V_DDR | \
-				 MMC_CAP2_HS200_1_2V_SDR)
+				 MMC_CAP2_HS200_1_2V_DDR)
 #define MMC_CAP2_CMDQ		(MMC_CAP2_CACHE_CTRL | \
 				(1 << 15))	/* Allow command queuing */
 #define MMC_CAP2_DEVICE_DRIVER	(1 << 16)	/* */
