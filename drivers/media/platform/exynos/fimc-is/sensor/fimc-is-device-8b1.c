@@ -364,9 +364,16 @@ p_err:
 	return ret;
 }
 
+static int sensor_8b1_s_format(struct v4l2_subdev *subdev, struct v4l2_mbus_framefmt *fmt)
+{
+	/* TODO */
+	return 0;
+}
+
 static const struct v4l2_subdev_video_ops video_ops = {
 	.s_stream = sensor_8b1_s_stream,
-	.s_parm = sensor_8b1_s_param
+	.s_parm = sensor_8b1_s_param,
+	.s_mbus_fmt = sensor_8b1_s_format
 };
 
 static const struct v4l2_subdev_ops subdev_ops = {
