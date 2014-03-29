@@ -85,6 +85,7 @@ struct decon_lcd {
 	u32	hs_clk;
 	u32	esc_clk;
 	u32	fps;
+	u32	mic;
 };
 */
 

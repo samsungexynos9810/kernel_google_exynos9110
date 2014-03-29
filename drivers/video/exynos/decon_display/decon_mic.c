@@ -18,9 +18,7 @@
 
 #include "decon_mic.h"
 #include "decon_display_driver.h"
-#include "decon_mipi_dsi_lowlevel.h"
 #include "decon_mipi_dsi.h"
-#include "regs-mipidsim.h"
 #include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"

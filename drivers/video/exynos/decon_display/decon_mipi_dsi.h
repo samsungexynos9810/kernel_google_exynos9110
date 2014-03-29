@@ -301,6 +301,7 @@ struct mipi_dsim_device {
 	int				pktgo;
 #endif
 	spinlock_t slock;
+	struct mutex lock;
 };
 
 /**
@@ -381,9 +382,6 @@ enum {
 #define DFVCO_MAX_HZ		(1000 * MHZ)
 
 #define TRY_GET_FIFO_TIMEOUT	(5000 * 2)
-
-#define DSIM_ESCCLK_ON		(0x1)
-#define DSIM_ESCCLK_OFF		(0x0)
 
 /* DSIM Interrupt Sources */
 #define SFR_PL_FIFO_EMPTY	(1 << 29)
