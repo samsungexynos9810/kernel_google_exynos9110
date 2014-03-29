@@ -338,7 +338,7 @@ int sensor_6b2_stream_on(struct v4l2_subdev *subdev)
 	}
 
 	ret = fimc_is_sensor_write8(client, 0x4100, 1);
-	if (ret) {
+	if (ret < 0) {
 		err("fimc_is_sensor_write8 is fail(%d)", ret);
 		goto p_err;
 	}
@@ -370,7 +370,7 @@ int sensor_6b2_stream_off(struct v4l2_subdev *subdev)
 	}
 
 	ret = fimc_is_sensor_write8(client, 0x4100, 0);
-	if (ret) {
+	if (ret < 0) {
 		err("fimc_is_sensor_write8 is fail(%d)", ret);
 		goto p_err;
 	}
