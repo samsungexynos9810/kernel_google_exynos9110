@@ -66,7 +66,8 @@ enum exynos_sensor_id {
 	SENSOR_NAME_SR030		 = 57,
 
 	SENSOR_NAME_IMX135		 = 101, /* 101 ~ 200 Sony sensors */
-	SENSOR_NAME_IMX175		 = 102,
+	SENSOR_NAME_IMX134		 = 102,
+	SENSOR_NAME_IMX175		 = 103,
 
 	SENSOR_NAME_SR261		 = 201, /* 201 ~ 300 Other vendor sensors */
 
@@ -199,7 +200,7 @@ struct sensor_open_extended {
 #define SENSOR_SCENARIO_NORMAL		0
 #define SENSOR_SCENARIO_VISION		1
 #define SENSOR_SCENARIO_EXTERNAL	2
-#define SENSOR_SCENARIO_MAX			10
+#define SENSOR_SCENARIO_MAX		10
 
 enum pin_act {
 	PIN_PULL_NONE = 0,
@@ -227,29 +228,22 @@ struct exynos_sensor_pin {
 
 #ifdef CONFIG_USE_VENDER_FEATURE
 #define SET_PIN(p, id1, id2, n, _pin, _value, _name, _time, _act) \
-		p->pin_ctrls[id1][id2][n].pin = _pin; \
-		p->pin_ctrls[id1][id2][n].delay = _time; \
-		p->pin_ctrls[id1][id2][n].value = _value; \
-		p->pin_ctrls[id1][id2][n].name = _name; \
-		p->pin_ctrls[id1][id2][n].act = _act; \
-		p->pin_ctrls[id1][id2][n].voltage = 0;
+		(p)->pin_ctrls[id1][id2][n].pin = _pin; \
+		(p)->pin_ctrls[id1][id2][n].delay = _time; \
+		(p)->pin_ctrls[id1][id2][n].value = _value; \
+		(p)->pin_ctrls[id1][id2][n].name = _name; \
+		(p)->pin_ctrls[id1][id2][n].act = _act; \
+		(p)->pin_ctrls[id1][id2][n].voltage = 0;
 #else
-#define SET_PIN(d, s, c, i, p, v, n, a)	\
-		(d)->pin_ctrls[s][c][i].pin     = p;    \
-		(d)->pin_ctrls[s][c][i].value   = v;    \
-		(d)->pin_ctrls[s][c][i].name    = n;    \
+#define SET_PIN(d, s, c, i, p , v, n, a) \
+		(d)->pin_ctrls[s][c][i].pin     = p; \
+		(d)->pin_ctrls[s][c][i].value   = v; \
+		(d)->pin_ctrls[s][c][i].name    = n; \
 		(d)->pin_ctrls[s][c][i].act     = a;
 #endif
 
 /*
  * struct exynos_platform_fimc_is_sensor - platform data for exynos_sensor driver
- * @irq: GPIO getting the irq pin of exynos_sensor
- * @gpio_rst: GPIO driving the reset pin of exynos_sensor
- * @enable_rst: the pin state when reset pin is enabled
- * @clk_on/off: sensor clock on/off
- * @set_power: an additional callback to a board setup code
- *			to be called after enabling and before disabling
- *			the exynos_sensor device supply regulators
  */
 struct exynos_platform_fimc_is_sensor {
 	int (*gpio_cfg)(struct platform_device *pdev, u32 scenario, u32 enable);
@@ -269,8 +263,8 @@ struct exynos_platform_fimc_is_sensor {
 	u32 is_bns;
 	u32 flash_first_gpio;
 	u32 flash_second_gpio;
-	u32 sensor_id;
 	u32 is_softlanding;
+	u32 sensor_id;
 };
 
 extern int exynos_fimc_is_sensor_pins_cfg(struct platform_device *pdev,
