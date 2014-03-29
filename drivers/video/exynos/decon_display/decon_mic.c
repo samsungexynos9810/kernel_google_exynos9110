@@ -15,6 +15,7 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/io.h>
+#include <mach/regs-clock.h>
 
 #include "decon_mic.h"
 #include "decon_display_driver.h"
@@ -22,6 +23,7 @@
 #include "decon_fb.h"
 #include "decon_dt.h"
 #include "decon_pm.h"
+#include "mic_reg.h"
 
 #ifdef CONFIG_OF
 static const struct of_device_id exynos5_mic[] = {
@@ -30,19 +32,6 @@ static const struct of_device_id exynos5_mic[] = {
 };
 MODULE_DEVICE_TABLE(of, exynos5_mic);
 #endif
-
-enum mic_on_off {
-	DECON_MIC_OFF = 0,
-	DECON_MIC_ON = 1
-};
-
-struct decon_mic {
-	struct device *dev;
-	void __iomem *reg_base;
-	struct decon_lcd *lcd;
-	struct mic_config *mic_config;
-	bool decon_mic_on;
-};
 
 struct decon_mic *mic_for_decon;
 EXPORT_SYMBOL(mic_for_decon);
@@ -83,120 +72,6 @@ static int decon_mic_set_sys_reg(struct decon_mic *mic, bool enable)
 	return 0;
 }
 
-static void decon_mic_set_image_size(struct decon_mic *mic)
-{
-	u32 data = 0;
-	struct decon_lcd *lcd = mic->lcd;
-
-	data = (lcd->yres << DECON_MIC_IMG_V_SIZE_SHIFT)
-		| (lcd->xres << DECON_MIC_IMG_H_SIZE_SHIFT);
-
-	writel(data, mic->reg_base + DECON_MIC_IMG_SIZE);
-}
-
-static unsigned int decon_mic_calc_bs_size(struct decon_mic *mic)
-{
-	struct decon_lcd *lcd = mic->lcd;
-	u32 temp1, temp2, bs_size;
-
-	temp1 = lcd->xres / 4 * 2;
-	temp2 = lcd->xres % 4;
-	bs_size = temp1 + temp2;
-
-	return bs_size;
-}
-
-#ifdef CONFIG_SOC_EXYNOS5422
-static void decon_mic_set_porch_timing(struct decon_mic *mic)
-{
-	struct decon_lcd *lcd = mic->lcd;
-	u32 data, v_period, h_period;
-
-	v_period = lcd->vsa + lcd->yres + lcd->vbp + lcd->vfp;
-	data = lcd->vsa << DECON_MIC_V_PULSE_WIDTH_SHIFT
-			| v_period << DECON_MIC_V_PERIOD_LINE_SHIFT;
-	writel(data, mic->reg_base + DECON_MIC_V_TIMING_0);
-
-	data = lcd->vbp << DECON_MIC_V_VBP_SIZE_SHIFT
-			| lcd->vfp << DECON_MIC_V_VFP_SIZE_SHIFT;
-	writel(data, mic->reg_base + DECON_MIC_V_TIMING_1);
-
-	h_period = lcd->hsa + lcd->xres + lcd->hbp + lcd->hfp;
-	data = lcd->hsa << DECON_MIC_INPUT_H_PULSE_WIDTH_SHIFT
-			| h_period << DECON_MIC_INPUT_H_PERIOD_PIXEL_SHIFT;
-
-	writel(data, mic->reg_base + DECON_MIC_INPUT_TIMING_0);
-
-	data = lcd->hbp << DECON_MIC_INPUT_HBP_SIZE_SHIFT
-			| lcd->hfp << DECON_MIC_INPUT_HFP_SIZE_SHIFT;
-
-	writel(data, mic->reg_base + DECON_MIC_INPUT_TIMING_1);
-}
-
-static void decon_mic_set_output_timing(struct decon_mic *mic)
-{
-	struct decon_lcd *lcd = mic->lcd;
-	u32 data, h_period_2d;
-	u32 hsa_2d = lcd->hsa;
-	u32 hbp_2d = lcd->hbp;
-	u32 bs_2d = decon_mic_calc_bs_size(mic);
-	u32 hfp_2d = lcd->hfp + bs_2d;
-
-	h_period_2d = hsa_2d + hbp_2d + bs_2d + hfp_2d;
-
-	data = hsa_2d << DECON_MIC_OUT_H_PULSE_WIDTH_SHIFT
-			| h_period_2d << DECON_MIC_OUT_H_PERIOD_PIXEL_SHIFT;
-
-	writel(data, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_0);
-
-	data = hbp_2d << DECON_MIC_OUT_HBP_SIZE_SHIFT
-			| hfp_2d << DECON_MIC_OUT_HFP_SIZE_SHIFT;
-
-	writel(data, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_1);
-
-	writel(bs_2d, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_2);
-}
-#else
-static void decon_mic_set_2d_bit_stream_size(struct decon_mic *mic)
-{
-	u32 data;
-
-	data = decon_mic_calc_bs_size(mic);
-
-	writel(data, mic->reg_base + DECON_MIC_2D_OUTPUT_TIMING_2);
-}
-#endif
-
-static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
-{
-	u32 data = readl(mic->reg_base);
-
-	if (enable) {
-#ifdef CONFIG_SOC_EXYNOS5422
-		data &= ~(DECON_MIC_CORE_MASK | DECON_MIC_MODE_MASK |
-			DECON_MIC_CORE_NEW_MASK | DECON_MIC_PSR_MASK |
-			DECON_MIC_BS_SWAP_MASK | DECON_MIC_ON_MASK |
-			DECON_MIC_UPDATE_REG_MASK);
-		data |= DECON_MIC_CORE_ENABLE |
-			DECON_MIC_NEW_CORE | DECON_MIC_ON_REG | DECON_MIC_UPDATE_REG;
-#else
-		data |= DECON_MIC_OLD_CORE | DECON_MIC_CORE_ENABLE
-			| DECON_MIC_UPDATE_REG | DECON_MIC_ON_REG;
-#endif
-
-#if defined(CONFIG_FB_I80_COMMAND_MODE)
-		data |= DECON_MIC_COMMAND_MODE;
-#else
-		data |= DECON_MIC_VIDEO_MODE;
-#endif
-	} else {
-		data &= ~DECON_MIC_CORE_ENABLE;
-		data |= DECON_MIC_UPDATE_REG;
-	}
-
-	writel(data, mic->reg_base);
-}
-
 int decon_mic_enable(struct decon_mic *mic)
 {
 	if (!mic->lcd->mic)
@@ -204,20 +79,8 @@ int decon_mic_enable(struct decon_mic *mic)
 	if (mic->decon_mic_on == true)
 		return 0;
 
-#ifdef CONFIG_SOC_EXYNOS5422
-	decon_mic_set_porch_timing(mic);
-#else
 	decon_mic_set_sys_reg(mic, DECON_MIC_ON);
-#endif
-
-	decon_mic_set_image_size(mic);
-
-#ifdef CONFIG_SOC_EXYNOS5422
-	decon_mic_set_output_timing(mic);
-#else
-	decon_mic_set_2d_bit_stream_size(mic);
-#endif
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_ON);
+	mic_reg_start(mic->lcd);
 
 	mic->decon_mic_on = true;
 
@@ -233,9 +96,8 @@ int decon_mic_disable(struct decon_mic *mic)
 	if (mic->decon_mic_on == false)
 		return 0;
 
+	mic_reg_stop(mic->lcd);
 	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
-
-	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
 
 	mic->decon_mic_on = false;
 
@@ -255,7 +117,7 @@ int create_decon_mic(struct platform_device *pdev)
 
 	mic = devm_kzalloc(dev, sizeof(struct decon_mic), GFP_KERNEL);
 	if (!mic) {
-		dev_err(dev, "no memory for mic driver");
+		mic_err("no memory for mic driver");
 		return -ENOMEM;
 	}
 
@@ -269,27 +131,27 @@ int create_decon_mic(struct platform_device *pdev)
 
 	res = dispdrv->mic_driver.regs;
 	if (!res) {
-		dev_err(dev, "failed to find resource\n");
+		mic_err("failed to find resource\n");
 		return -ENOENT;
 	}
 
 	mic->reg_base = ioremap(res->start, resource_size(res));
 	if (!mic->reg_base) {
-		dev_err(dev, "failed to map registers\n");
+		mic_err("failed to map registers\n");
 		return -ENXIO;
 	}
-
-	decon_mic_enable(mic);
 
 	mic_for_decon = mic;
 
 	dispdrv->mic_driver.mic = mic;
+
+	decon_mic_enable(mic);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	dispdrv->mic_driver.ops->pwr_on = decon_mic_hibernation_power_on;
 	dispdrv->mic_driver.ops->pwr_off = decon_mic_hibernation_power_off;
 #endif
 
-	dev_info(dev, "MIC driver has been probed\n");
+	mic_info("MIC driver has been probed\n");
 	return 0;
 }
 

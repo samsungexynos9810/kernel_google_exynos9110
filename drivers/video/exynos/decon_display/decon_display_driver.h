@@ -16,6 +16,16 @@
 #define CONFIG_FB_EXYNOS_FIMD_MC
 #endif
 
+/* command mode is defined 0 in DT */
+#define VIDEO_MODE	1
+#define COMMAND_MODE	0
+
+enum mic_ver {
+	MIC_VER_1_1,
+	MIC_VER_1_2, /* as a default */
+	MIC_VER_2_0,
+};
+
 struct decon_lcd {
 	u32	mode;
 	u32	vfp;
@@ -38,6 +48,7 @@ struct decon_lcd {
 	u32	fps;
 
 	u32	mic;
+	enum mic_ver mic_ver;
 };
 
 enum{

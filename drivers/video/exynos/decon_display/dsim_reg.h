@@ -26,10 +26,6 @@
 
 #define DSIM_FIFO_CTRL_INIT_SFR		(1 << 2)
 
-/* command mode is defined 0 in DT */
-#define VIDEO_MODE	1
-#define COMMAND_MODE	0
-
 /*
 struct decon_lcd {
 	u32	mode;
