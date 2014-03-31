@@ -59,21 +59,16 @@
 #include "fimc-is-clk-gate.h"
 #include "fimc-is-dvfs.h"
 #include "fimc-is-device-companion.h"
-#ifdef CONFIG_USE_VENDER_FEATURE
-#include "fimc-is-sec-define.h"
-#endif
-
 #include <linux/pinctrl/consumer.h>
 #include <mach/pinctrl-samsung.h>
 
-#if !defined(CONFIG_USE_VENDER_FEATURE)
-#define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
-#define FIMC_IS_FW_SDCARD				"/data/fimc_is_fw2.bin"
-#endif
-
+#ifdef CONFIG_USE_VENDER_FEATURE
+#include "fimc-is-sec-define.h"
+#else
 #define SDCARD_FW
+#define FIMC_IS_SETFILE_SDCARD_PATH		"/data/"
 #define FIMC_IS_FW				"fimc_is_fw2.bin"
-
+#define FIMC_IS_FW_SDCARD			"/data/fimc_is_fw2.bin"
 
 #define FIMC_IS_FW_BASE_MASK			((1 << 26) - 1)
 #define FIMC_IS_VERSION_SIZE			42
@@ -85,7 +80,7 @@
 #define FIMC_IS_CAL_START_ADDR			(0x013D0000)
 #define FIMC_IS_CAL_RETRY_CNT			(2)
 #define FIMC_IS_FW_RETRY_CNT			(2)
-
+#endif
 
 /* Default setting values */
 #define DEFAULT_PREVIEW_STILL_WIDTH		(1280) /* sensor margin : 16 */
