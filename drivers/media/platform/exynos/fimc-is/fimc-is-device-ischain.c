@@ -4391,12 +4391,12 @@ int fimc_is_ischain_3aa_tag(struct fimc_is_device_ischain *device,
 				(taa_param->vdma1_input.bayer_crop_width != input_crop[2]) ||
 				(taa_param->vdma1_input.bayer_crop_height != input_crop[3]));
 
-		if (size_change_request || device->taa_size_forceset) {
+		if (size_change_request || device->isp_size_forceset) {
 			/*
 			 * forcefully set subsequent frame 3aa sizes until firmware acknowledges the
 			 * updation of the changed information
 			 */
-			device->taa_size_forceset = 1;
+			device->isp_size_forceset = 1;
 			if (size_change_request)
 				device->taa_size_changed_fcount = ldr_frame->fcount;
 
