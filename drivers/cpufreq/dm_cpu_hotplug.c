@@ -43,6 +43,7 @@ struct cpu_load_info {
 
 static DEFINE_PER_CPU(struct cpu_load_info, cur_cpu_info);
 static DEFINE_MUTEX(dm_hotplug_lock);
+static DEFINE_MUTEX(thread_lock);
 static DEFINE_MUTEX(big_hotplug_lock);
 static DEFINE_MUTEX(little_hotplug_in_lock);
 
@@ -714,14 +715,20 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 {
 	switch (pm_event) {
 	case PM_SUSPEND_PREPARE:
+		mutex_lock(&thread_lock);
 		in_suspend_prepared = true;
 		if (dynamic_hotplug(CMD_LOW_POWER))
 			prev_cmd = CMD_LOW_POWER;
 		exynos_dm_hotplug_disable();
-		kthread_stop(dm_hotplug_task);
+		if (dm_hotplug_task) {
+			kthread_stop(dm_hotplug_task);
+			dm_hotplug_task = NULL;
+		}
+		mutex_unlock(&thread_lock);
 		break;
 
 	case PM_POST_SUSPEND:
+		mutex_lock(&thread_lock);
 		exynos_dm_hotplug_enable();
 
 		dm_hotplug_task =
@@ -734,6 +741,7 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 		in_suspend_prepared = false;
 
 		wake_up_process(dm_hotplug_task);
+		mutex_unlock(&thread_lock);
 		break;
 	}
 
@@ -751,8 +759,13 @@ static int exynos_dm_hotplut_reboot_notifier(struct notifier_block *this,
 	switch (code) {
 	case SYSTEM_POWER_OFF:
 	case SYS_RESTART:
+		mutex_lock(&thread_lock);
 		exynos_dm_hotplug_disable();
-		kthread_stop(dm_hotplug_task);
+		if (dm_hotplug_task) {
+			kthread_stop(dm_hotplug_task);
+			dm_hotplug_task = NULL;
+		}
+		mutex_unlock(&thread_lock);
 		break;
 	}
 
