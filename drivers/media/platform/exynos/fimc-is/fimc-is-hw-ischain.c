@@ -288,11 +288,11 @@ int fimc_is_runtime_suspend(struct device *dev)
 #elif defined(CONFIG_SOC_EXYNOS3470)
 	bts_initialize("pd-cam", false);
 #else
-	/* media layer */
-	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
 	bts_initialize("pd-fimclite", false);
 #endif
-#endif
+	/* media layer */
+	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
+#endif /* CONFIG_FIMC_IS_BUS_DEVFREQ */
 
 	if (CALL_POPS(core, clk_off, core->pdev) < 0) {
 		err("clk_off is fail\n");
@@ -391,11 +391,11 @@ int fimc_is_runtime_resume(struct device *dev)
 #elif defined(CONFIG_SOC_EXYNOS3470)
 	bts_initialize("pd-cam", true);
 #else
-	/* media layer */
 	bts_initialize("pd-fimclite", true);
+#endif
+	/* media layer */
 	exynos5_update_media_layers(TYPE_FIMC_LITE, true);
-#endif
-#endif
+#endif /* CONFIG_FIMC_IS_BUS_DEVFREQ */
 
 	pr_info("FIMC-IS runtime resume out\n");
 
