@@ -1268,6 +1268,8 @@ static void s3c24xx_serial_pm(struct uart_port *port, unsigned int level,
 		} else {
 			clk_disable_unprepare(ourport->clk);
 		}
+#else
+		clk_disable_unprepare(ourport->clk);
 #endif
 		break;
 
@@ -1306,6 +1308,11 @@ static void s3c24xx_serial_pm(struct uart_port *port, unsigned int level,
 					s3c24xx_port_to_cfg(port));
 		}
 
+#else
+		clk_prepare_enable(ourport->clk);
+
+		s3c24xx_serial_resetport(port,
+				s3c24xx_port_to_cfg(port));
 #endif
 		break;
 	default:
