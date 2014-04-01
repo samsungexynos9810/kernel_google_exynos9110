@@ -477,4 +477,28 @@
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		status = "disabled";
 	};
+
+	sysmmu_decon0x: sysmmu@0x13A00000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13A00000 0x1000>;
+		interrupts = <0 192 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2125>;
+		mmu-masters = <&decon_fb>;
+		prop-map {
+			winmap = <0x7>;
+		};
+	};
+
+	sysmmu_decon1x: sysmmu@0x13A10000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13A10000 0x1000>;
+		interrupts = <0 194 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2124>;
+		mmu-masters = <&decon_fb>;
+		prop-map {
+			winmap = <0x18>;
+		};
+	};
 };
