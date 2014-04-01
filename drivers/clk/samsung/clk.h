@@ -91,7 +91,7 @@ struct samsung_fixed_factor_clock {
  * @alias: optional clock alias name to be assigned to this clock.
  */
 
-#if defined(CONFIG_SOC_EXYNOS5430)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 struct samsung_mux_clock {
 	unsigned int		id;
 	const char		*dev_name;
