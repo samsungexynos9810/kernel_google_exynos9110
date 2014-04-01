@@ -344,7 +344,12 @@ static int exynos_lli_get_status(struct mipi_lli *lli)
 static int exynos_lli_send_signal(struct mipi_lli *lli, u32 cmd)
 {
 	if (lli->state) {
+#ifdef CONFIG_LTE_MODEM_XMM7260
+		writel(cmd, lli->remote_regs + EXYNOS_TL_SIGNAL_SET_LSB
+				+ 0x20C);
+#else
 		writel(cmd, lli->remote_regs + EXYNOS_TL_SIGNAL_SET_LSB);
+#endif
 	} else {
 		int is_mounted = 0;
 
