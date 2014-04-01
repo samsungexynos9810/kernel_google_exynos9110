@@ -1251,7 +1251,8 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	}
 
 #if defined(CONFIG_PM_DEVFREQ)
-	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state) &&
+		(device->pdata->scenario == SENSOR_SCENARIO_EXTERNAL)) {
 		pm_qos_add_request(&exynos_sensor_qos_int, PM_QOS_DEVICE_THROUGHPUT, 533000);
 		pm_qos_add_request(&exynos_sensor_qos_mem, PM_QOS_BUS_THROUGHPUT, 667000);
 	}
@@ -1848,7 +1849,8 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 	}
 
 #if defined(CONFIG_PM_DEVFREQ)
-	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state) &&
+		(device->pdata->scenario == SENSOR_SCENARIO_EXTERNAL)) {
 		struct fimc_is_core *core;
 		struct fimc_is_image *image;
 		u32 int_qos, mif_qos, bandwidth;
@@ -2131,7 +2133,8 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 	}
 
 #if defined(CONFIG_PM_DEVFREQ)
-	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
+	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state) &&
+		(device->pdata->scenario == SENSOR_SCENARIO_EXTERNAL)) {
 		pm_qos_remove_request(&exynos_sensor_qos_int);
 		pm_qos_remove_request(&exynos_sensor_qos_mem);
 	}
