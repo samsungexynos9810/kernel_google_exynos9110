@@ -19,7 +19,7 @@
 
 /* PMU(Power Management Unit) support */
 enum sys_powerdown {
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	SYS_AFTR,
 	SYS_LPD,
 	SYS_LPA,

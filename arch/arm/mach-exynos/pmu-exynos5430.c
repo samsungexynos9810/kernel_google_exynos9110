@@ -270,29 +270,40 @@ unsigned int exynos5430_cluster_state(unsigned int cluster)
 	return ret ? 1 : 0;
 }
 
+#ifdef CONFIG_SCHED_HMP
 extern struct cpumask hmp_slow_cpu_mask;
 extern struct cpumask hmp_fast_cpu_mask;
 
 #define cpu_online_hmp(cpu, mask)      cpumask_test_cpu((cpu), mask)
+#endif
 
 bool exynos5430_is_last_core(unsigned int cpu)
 {
+#ifdef CONFIG_SCHED_HMP
 	unsigned int cluster = MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1);
+#endif
 	unsigned int cpu_id;
 	struct cpumask mask, mask_and_online;
 
+#ifdef CONFIG_SCHED_HMP
 	if (cluster)
 		cpumask_copy(&mask, &hmp_slow_cpu_mask);
 	else
 		cpumask_copy(&mask, &hmp_fast_cpu_mask);
+#endif
 
 	cpumask_and(&mask_and_online, &mask, cpu_online_mask);
 
 	for_each_cpu(cpu_id, &mask) {
 		if (cpu_id == cpu)
 			continue;
+#ifdef CONFIG_SCHED_HMP
 		if (cpu_online_hmp(cpu_id, &mask_and_online))
 			return false;
+#else
+		if (cpu_online(cpu_id))
+			return false;
+#endif
 	}
 
 	return true;

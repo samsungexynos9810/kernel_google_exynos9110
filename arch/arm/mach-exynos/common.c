@@ -667,6 +667,11 @@ static struct map_desc exynos5433_iodesc0[] __initdata = {
 		.pfn            = __phys_to_pfn(EXYNOS5_PA_SYSRAM),
 		.length         = SZ_4K,
 		.type           = MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn            = __phys_to_pfn(EXYNOS5433_PA_SYSRAM_NS),
+		.length         = SZ_4K,
+		.type           = MT_DEVICE,
 	},
 
 };
@@ -906,7 +911,7 @@ void __init exynos_init_time(void)
 					EXYNOS4_IRQ_MCT_L0, EXYNOS4_IRQ_MCT_L1);
 	}
 
-	if(soc_is_exynos5430())
+	if(soc_is_exynos5430() || soc_is_exynos5433())
 		exynos5430_pmu_init();
 	if(soc_is_exynos5422())
 		exynos5422_pmu_init();

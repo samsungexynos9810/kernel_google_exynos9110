@@ -72,7 +72,7 @@ void exynos4212_register_clocks(void);
 #define exynos4212_register_clocks()
 #endif
 
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 int exynos5430_pmu_init(void);
 #else
 #define exynos5430_pmu_init()
