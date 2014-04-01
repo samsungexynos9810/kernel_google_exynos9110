@@ -56,7 +56,7 @@ static inline void __iomem *cpu_boot_reg(int phys_cpu)
 	boot_reg = cpu_boot_reg_base();
 	boot_reg += cluster ? 0 : 0x10;
 
-	if (soc_is_exynos4412() || soc_is_exynos5430())
+	if (soc_is_exynos4412() || soc_is_exynos5430() || soc_is_exynos5433())
 		boot_reg += 4 * core;
 
 	return boot_reg;
@@ -133,7 +133,7 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 
 		udelay(10);
 
-		if (soc_is_exynos5430()) {
+		if (soc_is_exynos5433() || soc_is_exynos5430()) {
 			val = __raw_readl(EXYNOS_ARM_CORE_STATUS(4 + phys_cpu));
 			val |= (0xF << 8);
 			__raw_writel(val, EXYNOS_ARM_CORE_STATUS(4 + phys_cpu));
@@ -201,7 +201,7 @@ static int __cpuinit exynos_boot_secondary(unsigned int cpu, struct task_struct 
 		if (call_firmware_op(set_cpu_boot_addr, phys_cpu, boot_addr))
 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
 
-		if (soc_is_exynos5430() || soc_is_exynos5422()) {
+		if (soc_is_exynos5433() || soc_is_exynos5430() || soc_is_exynos5422()) {
 			dsb_sev();
 		} else {
 			call_firmware_op(cpu_boot, phys_cpu);
@@ -279,7 +279,7 @@ static void __init exynos_smp_prepare_cpus(unsigned int max_cpus)
 			__raw_writel(boot_addr, cpu_boot_reg(phys_cpu));
 	}
 
-	if (soc_is_exynos5430()) {
+	if (soc_is_exynos5430() || soc_is_exynos5433()) {
 		void __iomem *noncpu_config_reg;
 		unsigned int tmp;
 		unsigned int cluster
