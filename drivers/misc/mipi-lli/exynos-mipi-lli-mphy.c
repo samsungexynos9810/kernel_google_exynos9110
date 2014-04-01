@@ -105,8 +105,6 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 	/* Basic tune for series-A */
 	/* for TX */
 	writel(0x02, phy->loc_regs + (0x76*4));
-	/* Reset-On-Error REQ timing configuration */
-	writel(0x1D, phy->loc_regs + (0x77*4));
 	writel(0x01, phy->loc_regs + (0x84*4));
 	writel(0xAA, phy->loc_regs + (0x85*4));
 	/* for RX */
@@ -118,6 +116,26 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 	writel(0xAB, phy->loc_regs + (0x2F*4));
 	writel(0x08, phy->loc_regs + (0x40*4));
 	writel(0x8F, phy->loc_regs + (0x45*4));
+
+	/* setting values for each mphy cfg clk */
+	{
+		/* for tx */
+		{
+			/* tx_line_reset_nvalue when cfg clk is 100Mhz */
+			writel(0x0E, phy->loc_regs + (0x77*4));
+			/* tx_line_reset_pvalue when cfg clk is 100Mhz */
+			writel(0x49, phy->loc_regs + (0x7D*4));
+		}
+		/* for rx */
+		{
+			/* rx_line_reset_value when cfg clk is 100Mhz */
+			writel(0x19, phy->loc_regs + (0x17*4));
+			/* h8_wait_value when cfg clk is 100Mhz */
+			writel(0x0C, phy->loc_regs + (0x31*4));
+			writel(0x35, phy->loc_regs + (0x32*4));
+			writel(0x00, phy->loc_regs + (0x33*4));
+		}
+	}
 
 	/* PLL power off */
 	writel(0x0, phy->loc_regs + (0x1A*4));
