@@ -485,6 +485,10 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	u32 clksel, rddqs, dline;
 	u32 cclkin;
 	unsigned char timing = ios->timing;
+	unsigned char timing_org = timing;
+
+	if (timing == MMC_TIMING_MMC_HS200_DDR_ES)
+		timing = MMC_TIMING_MMC_HS200_DDR;
 
 	if (timing > MMC_TIMING_MMC_HS200_DDR) {
 		pr_err("%s: timing(%d): not suppored\n", __func__, timing);
@@ -508,7 +512,9 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 			clksel |= BIT(6);
 
 		if (!tuning) {
-		rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
+			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
+			if (timing_org == MMC_TIMING_MMC_HS200_DDR_ES)
+				rddqs |= DWMCI_RESP_RCLK_MODE;
 			if (priv->delay_line)
 				dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
 				DWMCI_RD_DQS_DELAY_CTRL(priv->delay_line);
