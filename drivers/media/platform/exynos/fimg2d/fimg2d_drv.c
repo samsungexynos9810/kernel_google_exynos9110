@@ -738,6 +738,8 @@ static int fimg2d_probe(struct platform_device *pdev)
 		goto irq_free;
 	}
 
+	spin_lock_init(&ctrl->qoslock);
+
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_enable(ctrl->dev);
 	fimg2d_info("enable runtime pm\n");
