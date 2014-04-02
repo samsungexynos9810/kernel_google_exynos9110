@@ -16,6 +16,7 @@
 #include <linux/mmc/host.h>
 #include <linux/mmc/mmc.h>
 #include <linux/mmc/dw_mmc.h>
+#include <linux/dma-mapping.h>
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #include <linux/gpio.h>
@@ -1282,12 +1283,15 @@ static const struct of_device_id dw_mci_exynos_match[] = {
 };
 MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
 
+static u64 exynos_dwmci_dmamask = DMA_BIT_MASK(32);
+
 static int dw_mci_exynos_probe(struct platform_device *pdev)
 {
 	const struct dw_mci_drv_data *drv_data;
 	const struct of_device_id *match;
 
 	match = of_match_node(dw_mci_exynos_match, pdev->dev.of_node);
+	pdev->dev.dma_mask = &exynos_dwmci_dmamask;
 	drv_data = match->data;
 	return dw_mci_pltfm_register(pdev, drv_data);
 }
