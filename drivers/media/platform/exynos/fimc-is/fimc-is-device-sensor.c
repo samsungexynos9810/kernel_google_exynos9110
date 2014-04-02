@@ -1846,8 +1846,8 @@ int fimc_is_sensor_back_start(struct fimc_is_device_sensor *device)
 		goto p_err;
 	}
 
-	/* to determine flite buffer done mode (early/normal) */
-	if (flite->chk_early_buf_done) {
+	/* to determine flite buffer done mode (early/normal) when not vision mode */
+	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state) && flite->chk_early_buf_done) {
 		flite->chk_early_buf_done(flite, device->image.framerate,
 			device->pdev->id);
 	}
