@@ -589,6 +589,12 @@ enum exynos5433_clks {
 	gate_bts_decontv_m0, gate_xiu_tv1x,
 	gate_xiu_tv0x,
 
+	/* gates for Exynos5433 */
+	gate_hsi2c4 = 2900, gate_hsi2c5, gate_hsi2c6, gate_hsi2c7,
+	gate_hsi2c8, gate_hsi2c9, gate_hsi2c10, gate_hsi2c11,
+	pclk_hsi2c4 = 2910, pclk_hsi2c5, pclk_hsi2c6, pclk_hsi2c7,
+	pclk_hsi2c8, pclk_hsi2c9, pclk_hsi2c10, pclk_hsi2c11,
+
 	/* MUX */
 	/* eagle & kfc mux */
 	mout_egl_pll = 3000,
@@ -2129,6 +2135,14 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(pclk_hsi2c1, "pclk_hsi2c1", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 9, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_hsi2c2, "pclk_hsi2c2", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 10, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_hsi2c3, "pclk_hsi2c3", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 11, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c4, "pclk_hsi2c4", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c5, "pclk_hsi2c5", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 1, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c6, "pclk_hsi2c6", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 2, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c7, "pclk_hsi2c7", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 3, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c8, "pclk_hsi2c8", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 4, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c9, "pclk_hsi2c9", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 5, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c10, "pclk_hsi2c10", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 6, CLK_IGNORE_UNUSED, 0),
+	CGTE(pclk_hsi2c11, "pclk_hsi2c11", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC1, 7, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_uart0, "pclk_uart0", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 12, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_uart1, "pclk_uart1", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 13, CLK_IGNORE_UNUSED, 0),
 	CGTE(pclk_uart2, "pclk_uart2", "aclk_peric_66", EXYNOS5430_ENABLE_PCLK_PERIC, 14, CLK_IGNORE_UNUSED, 0),
@@ -2670,6 +2684,14 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(gate_uart2, "gate_uart2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 14, 0, 0),
 	CGTE(gate_uart1, "gate_uart1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 13, 0, 0),
 	CGTE(gate_uart0, "gate_uart0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 12, 0, 0),
+	CGTE(gate_hsi2c11, "gate_hsi2c11", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 7, 0, 0),
+	CGTE(gate_hsi2c10, "gate_hsi2c10", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 6, 0, 0),
+	CGTE(gate_hsi2c9, "gate_hsi2c9", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 5, 0, 0),
+	CGTE(gate_hsi2c8, "gate_hsi2c8", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 4, 0, 0),
+	CGTE(gate_hsi2c7, "gate_hsi2c7", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 3, 0, 0),
+	CGTE(gate_hsi2c6, "gate_hsi2c6", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 2, 0, 0),
+	CGTE(gate_hsi2c5, "gate_hsi2c5", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 1, 0, 0),
+	CGTE(gate_hsi2c4, "gate_hsi2c4", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 0, 0, 0),
 	CGTE(gate_hsi2c3, "gate_hsi2c3", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 11, 0, 0),
 	CGTE(gate_hsi2c2, "gate_hsi2c2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 10, 0, 0),
 	CGTE(gate_hsi2c1, "gate_hsi2c1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 9, 0, 0),
