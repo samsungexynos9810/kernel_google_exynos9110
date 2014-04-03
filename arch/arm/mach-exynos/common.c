@@ -802,7 +802,22 @@ static struct map_desc exynos5433_iodesc0[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_PERIS),
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
-	},
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_DISP,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_DISP),
+		.length         = SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM0,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM0),
+		.length         = SZ_8K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM1,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM1),
+		.length         = SZ_8K,
+		.type		= MT_DEVICE,
+	}
 };
 
 static struct map_desc exynos5440_iodesc0[] __initdata = {

@@ -70,7 +70,7 @@
 						EXYNOS_PMUREG(0x070C))
 #define EXYNOS5_USBHOST_PHY_ENABLE		(1 << 0)
 
-#define S5P_MIPI_DPHY_CONTROL(n)		((soc_is_exynos5250() || soc_is_exynos5430()) ? \
+#define S5P_MIPI_DPHY_CONTROL(n)		((soc_is_exynos5250() || soc_is_exynos5430() || soc_is_exynos5433()) ? \
 						EXYNOS_PMUREG(0x0710 + (n) * 4) :\
 						EXYNOS_PMUREG(0x0714 + (n) * 4))
 #define S5P_MIPI_DPHY_ENABLE			(1 << 0)
