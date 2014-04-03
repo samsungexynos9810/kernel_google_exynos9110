@@ -300,13 +300,6 @@ int fimc_is_runtime_suspend(struct device *dev)
 		goto p_err;
 	}
 
-#if defined(CONFIG_SOC_EXYNOS3470)
-	ret = mali_dvfs_level_unlock();
-	if (ret < 0) {
-		err("mali_dvfs_level_unlock was fail(%d)\n", ret);
-		goto p_err;
-	}
-#endif
 	pr_info("FIMC_IS runtime suspend out\n");
 
 p_err:
@@ -326,13 +319,6 @@ int fimc_is_runtime_resume(struct device *dev)
 
 	pm_stay_awake(dev);
 	pr_info("FIMC_IS runtime resume in\n");
-#if defined(CONFIG_SOC_EXYNOS3470)
-	ret = mali_dvfs_level_lock();
-	if (ret < 0) {
-		err("mali_dvfs_level_lock was fail(%d)\n", ret);
-		goto p_err;
-	}
-#endif
 
 #ifdef CONFIG_SOC_EXYNOS5422
 	/* EGL Lock */
