@@ -3238,6 +3238,7 @@ void __init exynos5430_clk_init(struct device_node *np)
 
 	if (isp_pll == NULL)
 		panic("%s: Fail to register isp_pll", __func__);
+	set_pll35xx_ops(isp_pll, FULL_PLL_OPS);
 
 	samsung_clk_add_lookup(mphy_pll, fout_mphy_pll);
 	samsung_clk_add_lookup(g3d_pll, fout_g3d_pll);
