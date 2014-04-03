@@ -501,4 +501,92 @@
 			winmap = <0x18>;
 		};
 	};
+
+	/* disp_driver */
+	decon_fb: decon_fb {
+		compatible = "samsung,exynos5-disp_driver";
+
+		reg = <0x13800000 0x40000>, <0x13900000 0x40000>, <0x13930000 0x48>;
+
+		/*samsung,power-domain = <&spd_decon>;*/
+
+		/* interrupt num */
+		interrupts = <0 201 0>, <0 202 0>, <0 203 0>, <0 205 0>;
+
+		/* GPIO & pin control */
+		gpios = <&gpf1 3 0xf>;
+
+		pinctrl-names = "turnon_tes", "turnoff_tes";
+		pinctrl-0 = <&disp_teson>;
+		pinctrl-1 = <&disp_tesoff>;
+
+		clock-names =
+			"gate_dsd", "gate_decon", "gate_mic", "gate_dsim0",
+			"aclk_disp_333", "dout_aclk_disp_333", "dout_mfc_pll", "dout_pclk_disp",
+			"dout_sclk_dsd", "mout_sclk_dsd_c", "mout_sclk_dsd_b", "mout_sclk_dsd_a",
+			"mout_mfc_pll_div2", "mout_sclk_dsd_user", "sclk_dsd_disp",
+			"dout_sclk_decon_eclk", "dout_sclk_decon_eclk_disp", "dout_sclk_decon_vclk", "dout_sclk_decon_vclk_disp",
+			"dout_sclk_dsim0", "dout_sclk_dsim0_disp",
+			"mout_aclk_disp_333_a", "mout_aclk_disp_333_b", "mout_aclk_disp_333_user", "mout_bus_pll_div2",
+			"mout_disp_pll", "mout_mfc_pll_div2", "mout_sclk_decon_eclk", "mout_sclk_decon_eclk_a",
+			"mout_sclk_decon_eclk_b", "mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_user",
+			"mout_sclk_decon_vclk", "mout_sclk_decon_vclk_a", "mout_sclk_decon_vclk_b", "mout_sclk_decon_vclk_c",
+			"mout_sclk_decon_vclk_user", "mout_sclk_dsd_a", "mout_sclk_dsd_user", "mout_sclk_dsim0",
+			"mout_sclk_dsim0_a", "mout_sclk_dsim0_b", "mout_sclk_dsim0_c", "mout_sclk_dsim0_user",
+			"oscclk", "sclk_decon_eclk_disp",
+			"sclk_dsim0_disp",
+			"mout_phyclk_mipidphy_rxclkesc0_user", "phyclk_mipidphy_rxclkesc0_phy",
+			"mout_phyclk_mipidphy_bitclkdiv8_user", "phyclk_mipidphy_bitclkdiv8_phy",
+			"disp_pll";
+
+		clocks =
+			/*gate_dsd*/ <&clock 2103>, /*gate_decon*/ <&clock 2114>, /*gate_mic*/ <&clock 2104>, /*gate_dsim0*/ <&clock 2110>,
+			/*aclk_disp_333*/ <&clock 321>, /*dout_aclk_disp_333*/ <&clock 4116>, /*dout_mfc_pll*/ <&clock 4102>, /*dout_pclk_disp*/ <&clock 4140>,
+			/*dout_sclk_dsd*/ <&clock 4119>, /*mout_sclk_dsd_c*/ <&clock 3102>, /*mout_sclk_dsd_b*/ <&clock 3101>, /*mout_sclk_dsd_a*/ <&clock 3100>,
+			/*mout_mfc_pll_div2*/ <&clock 3242>, /*mout_sclk_dsd_user*/ <&clock 3134>, /*sclk_dsd_disp*/ <&clock 83>,
+
+			/*dout_sclk_decon_eclk*/ <&clock 4117>, /*dout_sclk_decon_eclk_disp*/ <&clock 4141>, /*dout_sclk_decon_vclk*/ <&clock 4118>, /*dout_sclk_decon_vclk_disp*/ <&clock 4142>,
+			/*dout_sclk_dsim0*/ <&clock 4201>, /*dout_sclk_dsim0_disp*/ <&clock 4144>,
+			/*mout_aclk_disp_333_a*/ <&clock 3086>, /*mout_aclk_disp_333_b*/ <&clock 3087>, /*mout_aclk_disp_333_user*/ <&clock 3125>, /*mout_bus_pll_div2*/ <&clock 3243>,
+			/*mout_disp_pll*/ <&clock 3124>, /*mout_mfc_pll_div2*/ <&clock 3242>, /*mout_sclk_decon_eclk*/ <&clock 3131>, /*mout_sclk_decon_eclk_a*/ <&clock 3090>,
+			/*mout_sclk_decon_eclk_b*/ <&clock 3091>, /*mout_sclk_decon_eclk_c*/ <&clock 3092>, /*mout_sclk_decon_eclk_user*/ <&clock 3130>,
+			/*mout_sclk_decon_vclk*/ <&clock 3133>, /*mout_sclk_decon_vclk_a*/ <&clock 3093>, /*mout_sclk_decon_vclk_b*/ <&clock 3094>, /*mout_sclk_decon_vclk_c*/ <&clock 3095>,
+			/*mout_sclk_decon_vclk_user*/ <&clock 3132>, /*mout_sclk_dsd_a*/ <&clock 3100>, /*mout_sclk_dsd_user*/ <&clock 3134>, /*mout_sclk_dsim0*/ <&clock 3269>,
+			/*mout_sclk_dsim0_a*/ <&clock 3263>, /*mout_sclk_dsim0_b*/ <&clock 3264>, /*mout_sclk_dsim0_c*/ <&clock 3265>, /*mout_sclk_dsim0_user*/ <&clock 3268>,
+			/*oscclk*/ <&clock 5000>, /*sclk_decon_eclk_disp*/ <&clock 81>, /*sclk_dsim0_disp*/ <&clock 85>,
+			/*mout_phyclk_mipidphy_rxclkesc0_user*/ <&clock 3137>, /*phyclk_mipidphy_rxclkesc0_phy*/ <&clock 5025>,
+			/*mout_phyclk_mipidphy_bitclkdiv8_user*/ <&clock 3138>, /*phyclk_mipidphy_bitclkdiv8_phy*/ <&clock 5026>,
+			/*disp_pll*/ <&clock 7>;
+
+		decon: decon_ctrl {
+			samsung,vidcon0 = <0x00>;
+			samsung,vidcon1 = <0x80>;
+			samsung,default_win = <0>;
+
+			fb_driver_data {
+				fb_variant {
+					nr_windows = <5>;
+					vidtcon = <0x2020>;
+					wincon = <0x20>;
+					winmap = <0x270>;
+					keycon = <0x230>;
+					osd = <0xB0>;
+					osd_stride = <16>;
+					buf_start = <0x150>;
+					buf_size  = <0x200>;
+					buf_end   = <0x1A0>;
+					palette_0 = <0x2400>;
+					palette_1 = <0x2800>;
+					palette_2 = <0x2c00>;
+					palette_3 = <0x3000>;
+					palette_4 = <0x3400>;
+					has_shadowcon = <1>;
+					has_blendcon  = <1>;
+					has_alphacon  = <1>;
+					has_fixvclk   = <1>;
+				};
+			};
+		};
+	};
+
 };
