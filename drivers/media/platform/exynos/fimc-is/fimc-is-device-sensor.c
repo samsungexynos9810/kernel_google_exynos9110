@@ -2055,10 +2055,12 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 
 	info("%s\n", __func__);
 
+	BUG_ON(!pdev);
+
 	device = (struct fimc_is_device_sensor *)platform_get_drvdata(pdev);
 	if (!device) {
-		err("device is NULL");
-		return -EINVAL;
+		merr("device is NULL", device);
+		goto p_err;
 	}
 
 #if !defined(CONFIG_SOC_EXYNOS5430)
@@ -2069,40 +2071,29 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 #endif
 
 	subdev_csi = device->subdev_csi;
-	if (!subdev_csi) {
-		merr("subdev_csi is NULL", device);
-		ret = -EINVAL;
-		goto p_err;
-	}
+	if (!subdev_csi)
+		mwarn("subdev_csi is NULL", device);
 
 	/* gpio uninit */
 	if(device->pdata->is_softlanding == false) {
 		ret = fimc_is_sensor_gpio_off(device);
-		if (ret) {
-			merr("fimc_is_sensor_gpio_off is fail(%d)", device, ret);
-			goto p_err;
-		}
+		if (ret)
+			mwarn("fimc_is_sensor_gpio_off is fail(%d)", device, ret);
 	}
 
 	/* GSCL internal clock off */
 	ret = fimc_is_sensor_iclk_off(device);
-	if (ret) {
-		merr("fimc_is_sensor_iclk_off is fail(%d)", device, ret);
-		goto p_err;
-	}
+	if (ret)
+		mwarn("fimc_is_sensor_iclk_off is fail(%d)", device, ret);
 
 	/* Sensor clock on */
 	ret = fimc_is_sensor_mclk_off(device);
-	if (ret) {
-		merr("fimc_is_sensor_mclk_off is fail(%d)", device, ret);
-		goto p_err;
-	}
+	if (ret)
+		mwarn("fimc_is_sensor_mclk_off is fail(%d)", device, ret);
 
 	ret = v4l2_subdev_call(subdev_csi, core, s_power, 0);
-	if (ret) {
-		merr("v4l2_csi_call(s_power) is fail(%d)", device, ret);
-		goto p_err;
-	}
+	if (ret)
+		mwarn("v4l2_csi_call(s_power) is fail(%d)", device, ret);
 
 #if defined(CONFIG_PM_DEVFREQ)
 	if (test_bit(FIMC_IS_SENSOR_DRIVING, &device->state) &&
@@ -2114,7 +2105,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
-	return ret;
+	return 0;
 }
 
 int fimc_is_sensor_runtime_resume(struct device *dev)

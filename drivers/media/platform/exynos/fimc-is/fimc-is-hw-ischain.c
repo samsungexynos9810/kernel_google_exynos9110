@@ -31,8 +31,8 @@ extern struct pm_qos_request max_cpu_qos;
 #if (FIMC_IS_VERSION == FIMC_IS_VERSION_250)
 int fimc_is_runtime_suspend(struct device *dev)
 {
-	int ret = 0;
 #ifndef CONFIG_PM_RUNTIME
+	int ret = 0;
 	u32 val;
 #endif
 	struct platform_device *pdev = to_platform_device(dev);
@@ -65,10 +65,8 @@ int fimc_is_runtime_suspend(struct device *dev)
 
 	/* 2. change to OSCCLK */
 	ret = core->pdata->clk_off(pdev);
-	if (ret) {
-		err("clk_off is fail(%d)", ret);
-		goto p_err;
-	}
+	if (ret)
+		warn("clk_off is fail(%d)", ret);
 
 	/* 3. set feedback mode */
 	val = __raw_readl(PMUREG_ISP1_OPTION);
@@ -129,12 +127,9 @@ int fimc_is_runtime_suspend(struct device *dev)
 		pm_qos_remove_request(&exynos_isp_qos_mem);
 #endif
 
-#ifndef CONFIG_PM_RUNTIME
-p_err:
-#endif
 	info("FIMC_IS runtime suspend out\n");
 	pm_relax(dev);
-	return ret;
+	return 0;
 }
 
 int fimc_is_runtime_resume(struct device *dev)
@@ -239,13 +234,16 @@ p_err:
 #else
 int fimc_is_runtime_suspend(struct device *dev)
 {
-	int ret = 0;
 	struct platform_device *pdev = to_platform_device(dev);
 	struct fimc_is_core *core
 		= (struct fimc_is_core *)platform_get_drvdata(pdev);
 #if defined(CONFIG_PM_DEVFREQ)
 	int int_qos, mif_qos, cam_qos, disp_qos;
 #endif
+
+	BUG_ON(!core);
+	BUG_ON(!core->pdata);
+	BUG_ON(!core->pdata->clk_off);
 
 	pr_info("FIMC_IS runtime suspend in\n");
 
@@ -294,17 +292,13 @@ int fimc_is_runtime_suspend(struct device *dev)
 	exynos5_update_media_layers(TYPE_FIMC_LITE, false);
 #endif /* CONFIG_FIMC_IS_BUS_DEVFREQ */
 
-	if (CALL_POPS(core, clk_off, core->pdev) < 0) {
-		err("clk_off is fail\n");
-		ret = -EINVAL;
-		goto p_err;
-	}
+	if (CALL_POPS(core, clk_off, pdev) < 0)
+		warn("clk_off is fail\n");
 
 	pr_info("FIMC_IS runtime suspend out\n");
 
-p_err:
 	pm_relax(dev);
-	return ret;
+	return 0;
 }
 
 int fimc_is_runtime_resume(struct device *dev)
