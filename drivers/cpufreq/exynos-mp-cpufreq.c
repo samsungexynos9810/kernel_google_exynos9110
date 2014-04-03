@@ -76,9 +76,11 @@ static DEFINE_MUTEX(cpufreq_scale_lock);
 
 bool exynos_cpufreq_init_done;
 static bool suspend_prepared = false;
+bool cluster_on[CA_END] = {true, };
+#ifdef CONFIG_PM
 static bool hmp_boosted = false;
 static bool egl_hotplugged = false;
-bool cluster_on[CA_END] = {true, };
+#endif
 
 /* Include CPU mask of each cluster */
 cluster_type exynos_boot_cluster;
@@ -1080,6 +1082,7 @@ static struct cpufreq_driver exynos_driver = {
 };
 
 /************************** sysfs interface ************************/
+#ifdef CONFIG_PM
 static ssize_t show_cpufreq_table(struct kobject *kobj,
 				struct attribute *attr, char *buf)
 {
@@ -1272,6 +1275,7 @@ static ssize_t store_cpufreq_max_limit(struct kobject *kobj, struct attribute *a
 
 	return count;
 }
+#endif
 
 static ssize_t show_cpu_freq_table(struct kobject *kobj,
 				struct attribute *attr, char *buf)
