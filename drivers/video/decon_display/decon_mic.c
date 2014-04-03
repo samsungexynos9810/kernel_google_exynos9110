@@ -63,7 +63,11 @@ static int decon_mic_set_sys_reg(struct decon_mic *mic, bool enable)
 
 	if (enable) {
 		data = readl(sysreg_va) & ~(0xf);
+#ifndef CONFIG_SOC_EXYNOS5433
 		data |= (1 << 3) | (1 << 2) | (1 << 1) | (1 << 0);
+#else
+		data |= (1 << 4) | (1 << 5) | (1 << 1) | (1 << 0);
+#endif
 		writel(data, sysreg_va);
 		iounmap(sysreg_va);
 

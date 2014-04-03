@@ -24,7 +24,7 @@
 #include "decon_dt.h"
 #include "decon_pm.h"
 
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 #include "decon_fb.h"
 #else
 #include "fimd_fb.h"
@@ -87,7 +87,7 @@ static int init_display_operations(void)
 	DECON_OPS.disable_display_decon_clocks = disable_display_decon_clocks;
 	DECON_OPS.enable_display_decon_runtimepm = enable_display_decon_runtimepm;
 	DECON_OPS.disable_display_decon_runtimepm = disable_display_decon_runtimepm;
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	DECON_OPS.enable_display_dsd_clocks = enable_display_dsd_clocks;
 	DECON_OPS.disable_display_dsd_clocks = disable_display_dsd_clocks;
 #endif

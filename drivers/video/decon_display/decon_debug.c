@@ -29,8 +29,10 @@
 	val = readl(regs+(off)); \
 	pr_err("[UNDERRUN DUMP] " #s "	0x%08X\n", val);
 
-
-#ifdef CONFIG_SOC_EXYNOS5430
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#define CONFIG_SOC_EXYNOS543x
+#endif
+#ifdef CONFIG_SOC_EXYNOS543x
 
 static int g_silent;
 static struct delayed_work g_clear_silent;
@@ -46,7 +48,7 @@ static void decon_dump_underrun_exynos5430(struct display_driver *pdispdrv)
 {
 	void __iomem *regs;
 	u32 val;
-#ifdef CONFIG_SOC_EXYNOS5430
+#ifdef CONFIG_SOC_EXYNOS543x
 
 	if (g_silent == 0)
 		INIT_DELAYED_WORK(&g_clear_silent, clear_silent_work);;
@@ -245,7 +247,7 @@ static void decon_dump_registers_exynos5430(struct display_driver *pdispdrv)
  * Dump all main registers in the DECON. */
 void decon_dump_registers(struct display_driver *pdispdrv)
 {
-#ifdef CONFIG_SOC_EXYNOS5430
+#ifdef CONFIG_SOC_EXYNOS543x
 	decon_dump_registers_exynos5430(pdispdrv);
 #endif
 }
@@ -253,7 +255,7 @@ void decon_dump_registers(struct display_driver *pdispdrv)
 /* decon_dump_underrun - dump values when underrun is occured */
 void decon_dump_underrun(struct display_driver *pdispdrv)
 {
-#ifdef CONFIG_SOC_EXYNOS5430
+#ifdef CONFIG_SOC_EXYNOS543x
 	decon_dump_underrun_exynos5430(pdispdrv);
 #endif
 }

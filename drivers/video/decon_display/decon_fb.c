@@ -26,7 +26,9 @@
 #include <linux/kthread.h>
 #include <linux/of_gpio.h>
 #include <linux/of.h>
+#ifndef CONFIG_SOC_EXYNOS5433
 #define CONFIG_FB_EXYNOS_FIMD_MC
+#endif
 #if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-common.h>
@@ -2188,6 +2190,7 @@ err:
 static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 		struct s3c_reg_data *regs, bool enable)
 {
+#ifdef CONFIG_FB_EXYNOS_FIMD_MC
 	struct v4l2_subdev_crop crop;
 	int ret = 0;
 	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
@@ -2237,10 +2240,14 @@ static int s3c_fb_enable_local_path(struct s3c_fb *sfb,	int i,
 	}
 err:
 	return ret;
+#else
+	return 0;
+#endif
 }
 static int s3c_fb_change_frame(struct s3c_fb *sfb,
 		struct s3c_reg_data *regs, int i)
 {
+#ifdef CONFIG_FB_EXYNOS_FIMD_MC
 	struct v4l2_subdev_crop crop;
 	int ret = 0;
 	u32 data = 0;
@@ -2277,6 +2284,9 @@ static int s3c_fb_change_frame(struct s3c_fb *sfb,
 				regs->y[i], regs->w[i], regs->h[i]);
 err:
 	return ret;
+#else
+	return 0;
+#endif
 }
 
 static void set_reg_data(struct s3c_fb *sfb, int i,
@@ -2306,7 +2316,7 @@ static void set_reg_data(struct s3c_fb *sfb, int i,
 	sfb->windows[i]->dma_buf_data =
 		regs->dma_buf_data[i];
 }
-
+#ifdef CONFIG_FB_EXYNOS_FIMD_MC
 static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
 {
 	int ret = 0;
@@ -2318,7 +2328,7 @@ static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
 		pr_err("GSC_SFR_UPDATE failed\n");
 	return ret;
 }
-
+#endif
 static void decon_fb_direct_on_off(struct s3c_fb *sfb, bool enable)
 {
 	void __iomem *regs = sfb->regs + VIDCON0;
@@ -2395,9 +2405,11 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!WIN_CONFIG_DMA(i)) {
+#ifdef CONFIG_FB_EXYNOS_FIMD_MC
 			ret = s3c_fb_set_sfr_update(sfb, i);
 			if (ret)
 				pr_err("failed set sfr update\n");
+#endif
 		}
 	}
 
@@ -3196,7 +3208,7 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		data &= ~(0x07 << 20); /* Masking */
 		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
-		if (soc_is_exynos5430()) {
+		if (soc_is_exynos5430() || soc_is_exynos5433()) {
 			data = readl(sfb->regs + DECON_UPDATE_SCHEME);
 			data |= (0x1 << 31);
 			writel(data, sfb->regs + DECON_UPDATE_SCHEME);
@@ -4419,6 +4431,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	dispdrv->decon_driver.ops->pwr_on = decon_hibernation_power_on;
 	dispdrv->decon_driver.ops->pwr_off = decon_hibernation_power_off;
 #endif
+	dev_info(dev, "create_decon_display_controller finished\n");
 	return 0;
 
 err_fb:
@@ -4552,7 +4565,7 @@ static int s3c_fb_decon_stop(struct s3c_fb *sfb)
 		ret = -EBUSY;
 	}
 
-	if (soc_is_exynos5430())
+	if (soc_is_exynos5430() || soc_is_exynos5433())
 		ret = decon_fb_reset(sfb);
 
 	if (ret == 0)
