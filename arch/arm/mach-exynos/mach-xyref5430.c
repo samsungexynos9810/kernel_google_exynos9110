@@ -23,6 +23,10 @@
 #include <plat/mfc.h>
 
 #include "common.h"
+/* for mipi-lli reserve */
+#ifdef CONFIG_MIPI_LLI
+#include <linux/mipi-lli.h>
+#endif
 
 static void __init xyref5430_dt_map_io(void)
 {
@@ -41,6 +45,14 @@ static char const *xyref5430_dt_compat[] __initdata = {
 
 static void __init xyref5430_reserve(void)
 {
+#ifdef CONFIG_MIPI_LLI
+	/* mipi-lli */
+	lli_phys_addr = memblock_alloc_base(MIPI_LLI_RESERVE_SIZE,
+			MIPI_LLI_RESERVE_SIZE, MEMBLOCK_ALLOC_ANYWHERE);
+	pr_info("memblock_reserve: [%#08lx-%#08lx] for mipi-lli\n",
+			(unsigned long)lli_phys_addr,
+			(unsigned long)lli_phys_addr + MIPI_LLI_RESERVE_SIZE);
+#endif
 	init_exynos_ion_contig_heap();
 }
 
