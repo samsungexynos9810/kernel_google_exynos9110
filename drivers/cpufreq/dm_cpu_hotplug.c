@@ -734,6 +734,7 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 		dm_hotplug_task =
 			kthread_create(on_run, NULL, "thread_hotplug");
 		if (IS_ERR(dm_hotplug_task)) {
+			mutex_unlock(&thread_lock);
 			pr_err("Failed in creation of thread.\n");
 			return -EINVAL;
 		}
