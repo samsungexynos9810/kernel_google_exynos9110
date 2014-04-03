@@ -24,6 +24,7 @@
 
 #include <plat/gpio-cfg.h>
 
+#include <mach/exynos-dwmci.h>
 #include <mach/exynos-pm.h>
 #include <mach/pinctrl-samsung.h>
 
@@ -58,7 +59,7 @@ int dw_mci_exynos_request_status(void)
 {
 	int ret = DW_MMC_REQ_BUSY, i;
 
-	for (i = 0;i < dw_mci_host_count; i++) {
+	for (i = 0; i < dw_mci_host_count; i++) {
 		struct dw_mci *host = dw_mci_lpa_host[i];
 		if (host->req_state == DW_MMC_REQ_BUSY) {
 			ret = DW_MMC_REQ_BUSY;
@@ -68,6 +69,77 @@ int dw_mci_exynos_request_status(void)
 	}
 
 	return ret;
+}
+
+void dw_mci_reg_dump(struct dw_mci *host)
+{
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
+
+	dev_err(host->dev, ": ============== REGISTER DUMP ==============\n");
+	dev_err(host->dev, ": CTRL:	0x%08x\n", mci_readl(host, CTRL));
+	dev_err(host->dev, ": PWREN:	0x%08x\n", mci_readl(host, PWREN));
+	dev_err(host->dev, ": CLKDIV:	0x%08x\n", mci_readl(host, CLKDIV));
+	dev_err(host->dev, ": CLKSRC:	0x%08x\n", mci_readl(host, CLKSRC));
+	dev_err(host->dev, ": CLKENA:	0x%08x\n", mci_readl(host, CLKENA));
+	dev_err(host->dev, ": TMOUT:	0x%08x\n", mci_readl(host, TMOUT));
+	dev_err(host->dev, ": CTYPE:	0x%08x\n", mci_readl(host, CTYPE));
+	dev_err(host->dev, ": BLKSIZ:	0x%08x\n", mci_readl(host, BLKSIZ));
+	dev_err(host->dev, ": BYTCNT:	0x%08x\n", mci_readl(host, BYTCNT));
+	dev_err(host->dev, ": INTMSK:	0x%08x\n", mci_readl(host, INTMASK));
+	dev_err(host->dev, ": CMDARG:	0x%08x\n", mci_readl(host, CMDARG));
+	dev_err(host->dev, ": CMD:	0x%08x\n", mci_readl(host, CMD));
+	dev_err(host->dev, ": RESP0:	0x%08x\n", mci_readl(host, RESP0));
+	dev_err(host->dev, ": RESP1:	0x%08x\n", mci_readl(host, RESP1));
+	dev_err(host->dev, ": RESP2:	0x%08x\n", mci_readl(host, RESP2));
+	dev_err(host->dev, ": RESP3:	0x%08x\n", mci_readl(host, RESP3));
+	dev_err(host->dev, ": MINTSTS:	0x%08x\n", mci_readl(host, MINTSTS));
+	dev_err(host->dev, ": RINTSTS:	0x%08x\n", mci_readl(host, RINTSTS));
+	dev_err(host->dev, ": STATUS:	0x%08x\n", mci_readl(host, STATUS));
+	dev_err(host->dev, ": FIFOTH:	0x%08x\n", mci_readl(host, FIFOTH));
+	dev_err(host->dev, ": CDETECT:	0x%08x\n", mci_readl(host, CDETECT));
+	dev_err(host->dev, ": WRTPRT:	0x%08x\n", mci_readl(host, WRTPRT));
+	dev_err(host->dev, ": GPIO:	0x%08x\n", mci_readl(host, GPIO));
+	dev_err(host->dev, ": TCBCNT:	0x%08x\n", mci_readl(host, TCBCNT));
+	dev_err(host->dev, ": TBBCNT:	0x%08x\n", mci_readl(host, TBBCNT));
+	dev_err(host->dev, ": DEBNCE:	0x%08x\n", mci_readl(host, DEBNCE));
+	dev_err(host->dev, ": USRID:	0x%08x\n", mci_readl(host, USRID));
+	dev_err(host->dev, ": VERID:	0x%08x\n", mci_readl(host, VERID));
+	dev_err(host->dev, ": HCON:	0x%08x\n", mci_readl(host, HCON));
+	dev_err(host->dev, ": UHS_REG:	0x%08x\n", mci_readl(host, UHS_REG));
+	dev_err(host->dev, ": BMOD:	0x%08x\n", mci_readl(host, BMOD));
+	dev_err(host->dev, ": PLDMND:	0x%08x\n", mci_readl(host, PLDMND));
+#if defined(CONFIG_SOC_EXYNOS5433)
+	dev_err(host->dev, ": DBADDRL:	0x%08x\n", mci_readl(host, DBADDRL));
+	dev_err(host->dev, ": DBADDRU:	0x%08x\n", mci_readl(host, DBADDRU));
+	dev_err(host->dev, ": DSCADDRL:	0x%08x\n", mci_readl(host, DSCADDRL));
+	dev_err(host->dev, ": DSCADDRU:	0x%08x\n", mci_readl(host, DSCADDRU));
+	dev_err(host->dev, ": BUFADDR:	0x%08x\n", mci_readl(host, BUFADDR));
+	dev_err(host->dev, ": BUFADDRU:	0x%08x\n", mci_readl(host, BUFADDRU));
+#else
+	dev_err(host->dev, ": DBADDR:	0x%08x\n", mci_readl(host, DBADDR));
+	dev_err(host->dev, ": DSCADDR:	0x%08x\n", mci_readl(host, DSCADDR));
+	dev_err(host->dev, ": BUFADDR:	0x%08x\n", mci_readl(host, BUFADDR));
+#endif
+
+	dev_err(host->dev, ": IDSTS:	0x%08x\n", mci_readl(host, IDSTS));
+	dev_err(host->dev, ": IDINTEN:	0x%08x\n", mci_readl(host, IDINTEN));
+	dev_err(host->dev, ": SHA_CMD_IS:	0x%08x\n", mci_readl(host, SHA_CMD_IS));
+	if (drv_data && drv_data->register_dump)
+		drv_data->register_dump(host);
+	dw_mci_cmd_reg_summary(host);
+	dw_mci_status_reg_summary(host);
+	dev_err(host->dev, ": ============== STATUS DUMP ================\n");
+	dev_err(host->dev, ": cmd_status:      0x%08x\n", host->cmd_status);
+	dev_err(host->dev, ": data_status:     0x%08x\n", host->data_status);
+	dev_err(host->dev, ": pending_events:  0x%08lx\n", host->pending_events);
+	dev_err(host->dev, ": completed_events:0x%08lx\n", host->completed_events);
+	dev_err(host->dev, ": state:           %d\n", host->state_cmd);
+	dev_err(host->dev, ": gate-clk:            %s\n",
+			      atomic_read(&host->ciu_clk_cnt) ?
+			      "enable" : "disable");
+	dev_err(host->dev, ": ciu_en_win:           %d\n",
+			atomic_read(&host->ciu_en_win));
+	dev_err(host->dev, ": ===========================================\n");
 }
 
 /*
@@ -254,39 +326,37 @@ void dw_mci_exynos_unregister_notifier(struct dw_mci *host)
  */
 void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 {
-	volatile unsigned int reg = __raw_readl(host->regs +
-					DWMCI_MPSECURITY);
+	volatile unsigned int reg = __raw_readl(host->regs + SDMMC_MPSECURITY);
 	/* Extended Descriptor On */
-	__raw_writel(reg | (1 << 31), host->regs + DWMCI_MPSECURITY);
+	mci_writel(host, MPSECURITY, reg | (0 << 31));
 
 #ifndef CONFIG_MMC_DW_FMP_DM_CRYPT
-	__raw_writel(0, host->regs + DWMCI_MPSBEGIN0);
-	__raw_writel(DWMCI_BLOCK_NUM, host->regs + DWMCI_MPSEND0);
-	__raw_writel(DWMCI_MPSCTRL_SECURE_READ_BIT |
+	mci_writel(host, MPSBEGIN0, 0);
+	mci_writel(host, MPSEND0, DWMCI_BLOCK_NUM);
+	mci_writel(host, MPSCTRL0, DWMCI_MPSCTRL_SECURE_READ_BIT |
 		DWMCI_MPSCTRL_SECURE_WRITE_BIT |
 		DWMCI_MPSCTRL_NON_SECURE_READ_BIT |
 		DWMCI_MPSCTRL_NON_SECURE_WRITE_BIT |
-		DWMCI_MPSCTRL_VALID, host->regs + DWMCI_MPSCTRL0);
+		DWMCI_MPSCTRL_VALID);
 #else
 	/* FMP Bypass Partition */
-	__raw_writel(DW_MMC_BYPASS_SECTOR, host->regs + DWMCI_MPSBEGIN0);
-	__raw_writel(DW_MMC_BYPASS_SECTOR, host->regs + DWMCI_MPSEND0);
-	__raw_writel(DWMCI_MPSCTRL_SECURE_READ_BIT |
+	mci_writel(host, MPSBEGIN0, DW_MMC_BYPASS_SECTOR);
+	mci_writel(host, MPSEND0, DW_MMC_BYPASS_SECTOR);
+	mci_writel(host, MPSCTRL0, DWMCI_MPSCTRL_SECURE_READ_BIT |
 		DWMCI_MPSCTRL_SECURE_WRITE_BIT |
 		DWMCI_MPSCTRL_NON_SECURE_READ_BIT |
 		DWMCI_MPSCTRL_NON_SECURE_WRITE_BIT |
-		DWMCI_MPSCTRL_VALID, host->regs + DWMCI_MPSCTRL0);
+		DWMCI_MPSCTRL_VALID);
 
 	/* Encryption Enabled Partition */
-	__raw_writel(DW_MMC_ENCRYPTION_SECTOR, host->regs +
-		DWMCI_MPSBEGIN1);
-	__raw_writel(DWMCI_BLOCK_NUM, host->regs + DWMCI_MPSEND1);
-	__raw_writel(DWMCI_MPSCTRL_SECURE_READ_BIT |
+	mci_writel(host, MPSBEGIN1, DW_MMC_ENCRYPTION_SECTOR);
+	mci_writel(host, MPSEND1, DWMCI_BLOCK_NUM);
+	mci_writel(host, MPSCTRL1, DWMCI_MPSCTRL_SECURE_READ_BIT |
 		DWMCI_MPSCTRL_SECURE_WRITE_BIT |
 		DWMCI_MPSCTRL_NON_SECURE_READ_BIT |
 		DWMCI_MPSCTRL_NON_SECURE_WRITE_BIT |
 		DWMCI_MPSCTRL_ENCRYPTION |
-		DWMCI_MPSCTRL_VALID, host->regs + DWMCI_MPSCTRL1);
+		DWMCI_MPSCTRL_VALID);
 #endif
 }
 
@@ -310,27 +380,27 @@ static void dw_mci_exynos_register_dump(struct dw_mci *host)
 
 	dev_err(host->dev, ": CLKSEL:	0x%08x\n", mci_readl(host, CLKSEL));
 	if (host->pdata->quirks & DW_MCI_QUIRK_BYPASS_SMU) {
-		dev_err(host->dev, ": DWMCI_EMMCP_BASE:	0x%08x\n",
-			__raw_readl(host->regs + DWMCI_EMMCP_BASE));
-		dev_err(host->dev, ": DWMCI_MPSECURITY:	0x%08x\n",
-			__raw_readl(host->regs + DWMCI_MPSECURITY));
-		dev_err(host->dev, ": DWMCI_MPSTAT:	0x%08x\n",
-			__raw_readl(host->regs + DWMCI_MPSTAT));
+		dev_err(host->dev, ": EMMCP_BASE:	0x%08x\n",
+			mci_readl(host, EMMCP_BASE));
+		dev_err(host->dev, ": MPSECURITY:	0x%08x\n",
+			mci_readl(host, MPSECURITY));
+		dev_err(host->dev, ": MPSTAT:	0x%08x\n",
+			mci_readl(host, MPSTAT));
 		for (i = 0; i < 8; i++) {
-			dev_err(host->dev, ": DWMCI_MPSBEGIN%d:	0x%08x\n", i,
-				__raw_readl(host->regs + DWMCI_MPSBEGIN0 + (0x10 * i)));
-			dev_err(host->dev, ": DWMCI_MPSEND%d:	0x%08x\n", i,
-				__raw_readl(host->regs + DWMCI_MPSEND0 + (0x10 * i)));
-			dev_err(host->dev, ": DWMCI_MPSCTRL%d:	0x%08x\n", i,
-				__raw_readl(host->regs + DWMCI_MPSCTRL0 + (0x10 * i)));
+			dev_err(host->dev, ": MPSBEGIN%d:	0x%08x\n", i,
+				__raw_readl(host->regs + SDMMC_MPSBEGIN0 + (0x10 * i)));
+			dev_err(host->dev, ": MPSEND%d:	0x%08x\n", i,
+				__raw_readl(host->regs + SDMMC_MPSEND0 + (0x10 * i)));
+			dev_err(host->dev, ": MPSCTRL%d:	0x%08x\n", i,
+				__raw_readl(host->regs + SDMMC_MPSCTRL0 + (0x10 * i)));
 		}
 	}
-	dev_err(host->dev, ": DWMCI_DDR200_RDDQS_EN:	0x%08x\n",
-		__raw_readl(host->regs + DWMCI_DDR200_RDDQS_EN + 0x70));
-	dev_err(host->dev, ": DWMCI_DDR200_ASYNC_FIFO_CTRL:	0x%08x\n",
-		__raw_readl(host->regs + DWMCI_DDR200_ASYNC_FIFO_CTRL + 0x70));
-	dev_err(host->dev, ": DWMCI_DDR200_DLINE_CTRL:	0x%08x\n",
-		__raw_readl(host->regs + DWMCI_DDR200_DLINE_CTRL + 0x70));
+	dev_err(host->dev, ": DDR200_RDDQS_EN:	0x%08x\n",
+		mci_readl(host, DDR200_RDDQS_EN));
+	dev_err(host->dev, ": DDR200_ASYNC_FIFO_CTRL:	0x%08x\n",
+		mci_readl(host, DDR200_ASYNC_FIFO_CTRL));
+	dev_err(host->dev, ": DDR200_DLINE_CTRL:	0x%08x\n",
+		mci_readl(host, DDR200_DLINE_CTRL));
 }
 static void dw_mci_exynos_prepare_command(struct dw_mci *host, u32 *cmdr)
 {
@@ -391,7 +461,6 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	u32 *clk_tbl = priv->ref_clk;
 	u32 clksel, rddqs, dline;
 	u32 cclkin;
-	u32 rclk_base;
 	unsigned char timing = ios->timing;
 
 	if (timing > MMC_TIMING_MMC_HS200_DDR) {
@@ -402,12 +471,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	cclkin = clk_tbl[timing];
 	rddqs = DWMCI_DDR200_RDDQS_EN_DEF;
 	dline = DWMCI_DDR200_DLINE_CTRL_DEF;
-#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5430)
-	rclk_base = 0x70;
-#else
-	rclk_base = 0x0;
-#endif
-	clksel = __raw_readl(host->regs + DWMCI_CLKSEL);
+	clksel = mci_readl(host, CLKSEL);
 
 	if (host->bus_hz != cclkin) {
 		dw_mci_exynos_set_bus_hz(host, cclkin);
@@ -421,7 +485,7 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 			clksel |= BIT(6);
 
 		if (!tuning) {
-			rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
+		rddqs |= (DWMCI_RDDQS_EN | DWMCI_AXI_NON_BLOCKING_WRITE);
 			if (priv->delay_line)
 				dline = DWMCI_FIFO_CLK_DELAY_CTRL(0x2) |
 				DWMCI_RD_DQS_DELAY_CTRL(priv->delay_line);
@@ -441,11 +505,11 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 		clksel = priv->sdr_timing;
 	}
 
-	__raw_writel(clksel, host->regs + DWMCI_CLKSEL);
-	__raw_writel(rddqs, host->regs + DWMCI_DDR200_RDDQS_EN + rclk_base);
-	__raw_writel(dline, host->regs + DWMCI_DDR200_DLINE_CTRL + rclk_base);
+	mci_writel(host, CLKSEL, clksel);
+	mci_writel(host, DDR200_RDDQS_EN, rddqs);
+	mci_writel(host, DDR200_DLINE_CTRL, dline);
 	if (timing == MMC_TIMING_MMC_HS200_DDR)
-		__raw_writel(0x1, host->regs + DWMCI_DDR200_ASYNC_FIFO_CTRL + rclk_base);
+		mci_writel(host, DDR200_ASYNC_FIFO_CTRL, 0x1);
 }
 
 #ifndef MHZ
@@ -556,7 +620,6 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 			"samsung,dw-mshc-hs200-timing", timing, 4);
 		if (ret)
 			goto err_ref_clk;
-
 		priv->hs200_timing = SDMMC_CLKSEL_TIMING(timing[0], timing[1], timing[2], timing[3]);
 
 		ret = of_property_read_u32_array(np,
@@ -806,10 +869,11 @@ static int find_median_of_16bits(struct dw_mci *host, unsigned int map)
 		i = 3;
 	}
 
-	for (i = 0; i < NUM_OF_MASK; i++)
-		if (-1 != (sel = __find_median_of_16bits(orig_bits,
-				mask[i], NUM_OF_MASK-i)))
+	for (i = 0; i < NUM_OF_MASK; i++) {
+		sel = __find_median_of_16bits(orig_bits, mask[i], NUM_OF_MASK-i);
+		if (-1 != sel)
 			break;
+	}
 
 	return sel;
 }
@@ -1039,7 +1103,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 		dw_mci_exynos_set_sample(host, best_sample, false);
 	} else {
 		/* Failed. Just restore and return error */
-		dev_err(host->dev,"tuning err\n");
+		dev_err(host->dev, "tuning err\n");
 		mci_writel(host, CDTHRCTL, 0 << 16 | 0);
 		dw_mci_exynos_set_sample(host, orig_sample, false);
 		ret = -EIO;
@@ -1103,7 +1167,7 @@ static int dw_mci_exynos_check_cd_gpio(struct dw_mci *host)
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 
 	if (gpio_is_valid(priv->cd_gpio))
-		ret = gpio_get_value(priv->cd_gpio)? 0 : 1;
+		ret = gpio_get_value(priv->cd_gpio) ? 0 : 1;
 
 	return ret;
 }
@@ -1186,6 +1250,8 @@ static const struct of_device_id dw_mci_exynos_match[] = {
 	{ .compatible = "samsung,exynos5422-dw-mshc",
 			.data = &exynos_drv_data, },
 	{ .compatible = "samsung,exynos5430-dw-mshc",
+			.data = &exynos_drv_data, },
+	{ .compatible = "samsung,exynos5433-dw-mshc",
 			.data = &exynos_drv_data, },
 	{},
 };
