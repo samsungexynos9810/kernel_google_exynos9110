@@ -12,16 +12,7 @@
 #include <linux/errno.h>
 #include "clk.h"
 #include "clk-pll.h"
-
-struct samsung_clk_pll {
-	struct clk_hw		hw;
-	void __iomem		*lock_reg;
-	void __iomem		*con_reg;
-	const struct samsung_pll_rate_table *rate_table;
-	unsigned int rate_count;
-	unsigned int bit_enable;
-	unsigned int bit_lockstat;
-};
+#include <linux/clk-private.h>
 
 #define to_clk_pll(_hw) container_of(_hw, struct samsung_clk_pll, hw)
 
@@ -201,7 +192,17 @@ static int samsung_pll35xx_set_rate(struct clk_hw *hw, unsigned long drate,
 	return 0;
 }
 
-static const struct clk_ops samsung_pll35xx_clk_ops = {
+static const struct clk_ops samsung_pll35xx_clk_simple_ops = {
+	.recalc_rate = samsung_pll35xx_recalc_rate,
+};
+
+static const struct clk_ops samsung_pll35xx_clk_normal_ops = {
+	.recalc_rate = samsung_pll35xx_recalc_rate,
+	.round_rate = samsung_pll_round_rate,
+	.set_rate = samsung_pll35xx_set_rate,
+};
+
+static const struct clk_ops samsung_pll35xx_clk_full_ops = {
 	.recalc_rate = samsung_pll35xx_recalc_rate,
 	.round_rate = samsung_pll_round_rate,
 	.set_rate = samsung_pll35xx_set_rate,
@@ -210,9 +211,25 @@ static const struct clk_ops samsung_pll35xx_clk_ops = {
 	.is_enabled = samsung_pll_clk_is_enabled,
 };
 
-static const struct clk_ops samsung_pll35xx_clk_min_ops = {
-	.recalc_rate = samsung_pll35xx_recalc_rate,
-};
+int set_pll35xx_ops(struct clk *clk, unsigned int ops_type)
+{
+	if (clk == NULL)
+		return -EINVAL;
+
+	switch (ops_type) {
+		case NORMAL_PLL_OPS :
+			clk->ops = &samsung_pll35xx_clk_normal_ops;
+			break;
+		case FULL_PLL_OPS :
+			clk->ops = &samsung_pll35xx_clk_full_ops;
+			break;
+		default :
+			clk->ops = &samsung_pll35xx_clk_simple_ops;
+			break;
+	}
+
+	return 0;
+}
 
 /**
  * samsung_clk_register_pll35xx - register a 35xx compatible PLL
@@ -227,7 +244,6 @@ static const struct clk_ops samsung_pll35xx_clk_min_ops = {
  *     first.
  * @rate_count: The number of rates in rate_table.
  */
-
 struct clk * __init samsung_clk_register_pll35xx(const char *name,
 			const char *pname, void __iomem *lock_reg,
 			void __iomem *con_reg,
@@ -250,9 +266,9 @@ struct clk * __init samsung_clk_register_pll35xx(const char *name,
 	init.num_parents = 1;
 
 	if (rate_table && rate_count)
-		init.ops = &samsung_pll35xx_clk_ops;
+		init.ops = &samsung_pll35xx_clk_normal_ops;
 	else
-		init.ops = &samsung_pll35xx_clk_min_ops;
+		init.ops = &samsung_pll35xx_clk_simple_ops;
 
 	pll->hw.init = &init;
 	pll->lock_reg = lock_reg;
