@@ -549,7 +549,15 @@ static int samsung_usb3phy_resume(struct device *dev)
 
 	return 0;
 }
-#endif
+
+static const struct dev_pm_ops samsung_usb3phy_dev_pm_ops = {
+	.resume		= samsung_usb3phy_resume,
+};
+
+#define DEV_PM_OPS     (&samsung_usb3phy_dev_pm_ops)
+#else
+#define DEV_PM_OPS     NULL
+#endif /* CONFIG_PM_SLEEP */
 
 static struct samsung_usbphy_drvdata usb3phy_exynos5250 = {
 	.cpu_type		= TYPE_EXYNOS5250,
@@ -567,10 +575,6 @@ static struct samsung_usbphy_drvdata usb3phy_exynos5 = {
 	.cpu_type		= TYPE_EXYNOS5,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
 	.need_crport_tuning	= false,
-};
-
-static const struct dev_pm_ops samsung_usb3phy_dev_pm_ops = {
-	.resume		= samsung_usb3phy_resume,
 };
 
 #ifdef CONFIG_OF
@@ -614,7 +618,7 @@ static struct platform_driver samsung_usb3phy_driver = {
 		.name	= "samsung-usb3phy",
 		.owner	= THIS_MODULE,
 		.of_match_table = of_match_ptr(samsung_usbphy_dt_match),
-		.pm	= &samsung_usb3phy_dev_pm_ops,
+		.pm	= DEV_PM_OPS,
 	},
 };
 
