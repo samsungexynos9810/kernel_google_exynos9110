@@ -2000,7 +2000,11 @@
 			     <0 166 0>; /* ISP_GIC */
 		pinctrl-names = "default";
 		pinctrl-0 = <&fimc_is_uart &fimc_is_flash>;
-		clocks =	<&clock 30>,
+		clocks =	<&clock 1>,
+
+				<&clock 8>,
+
+				<&clock 30>,
 				<&clock 31>,
 				<&clock 32>,
 
@@ -2027,6 +2031,8 @@
 				<&clock 1231>,
 
 				<&clock 3010>,
+
+				<&clock 3013>,
 
 				<&clock 3063>,
 				<&clock 3064>,
@@ -2173,18 +2179,12 @@
 				<&clock 2613>,
 
 				<&clock 2635>,
-				<&clock 2636>,
+				<&clock 2636>;
+		clock-names =	"fin_pll", /* 1 */
 
-				<&clock 2673>,
+				"fout_isp_pll", /* 8 */
 
-				<&clock 2747>,
-
-				<&clock 2750>,
-				<&clock 2751>,
-				<&clock 2752>,
-				<&clock 2753>;
-
-		clock-names =	"sclk_isp_spi0_top", /* 30 */
+				"sclk_isp_spi0_top", /* 30 */
 				"sclk_isp_spi1_top",
 				"sclk_isp_uart_top",
 
@@ -2211,6 +2211,8 @@
 				"sclk_phyclk_rxbyteclkhs0_s2a",
 
 				"mout_bus_pll_user", /* 3010 */
+
+				"mout_isp_pll", /* 3013 */
 
 				"mout_sclk_isp_spi0", /* 3063 */
 				"mout_sclk_isp_spi1",
