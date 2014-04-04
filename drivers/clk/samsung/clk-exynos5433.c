@@ -316,7 +316,7 @@ enum exynos5433_clks {
 	gate_mphy = 2160, gate_sysreg_fsys, gate_pmu_fsys, gate_gpio_fsys,
 	gate_tsi, gate_mmc2, gate_mmc1, gate_mmc0,
 	gate_ufs = 2170, gate_sromc, gate_usbhost20,
-	gate_usbdrd30, gate_pdma,
+	gate_usbdrd30, gate_pdma0, gate_pdma1,
 
 	/* fsys1 ip gate */
 	gate_ppmu_fsys = 2180, gate_smmu_mmc2, gate_smmu_mmc1,
@@ -2450,6 +2450,7 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(gate_disp0nd_333, "gate_disp0nd_333", NULL, EXYNOS5430_ENABLE_IP_DISP1, 0, CLK_IGNORE_UNUSED, 0),
 
 	/* FSYS0 */
+	CGTE(gate_pdma1, "gate_pdma1", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 15, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_mphy, "gate_mphy", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 14, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_sysreg_fsys, "gate_sysreg_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 13, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_pmu_fsys, "gate_pmu_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 12, CLK_IGNORE_UNUSED, 0),
@@ -2462,7 +2463,7 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(gate_sromc, "gate_sromc", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 4, 0, 0),
 	CGTE(gate_usbhost20, "gate_usbhost20", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 3, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_usbdrd30, "gate_usbdrd30", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 1, CLK_IGNORE_UNUSED, 0),
-	CGTE(gate_pdma, "gate_pdma", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 0, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_pdma0, "gate_pdma0", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 0, CLK_IGNORE_UNUSED, 0),
 
 	/* FSYS1 */
 	CGTE(gate_ppmu_fsys, "gate_ppmu_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS1, 21, 0, 0),
