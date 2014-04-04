@@ -425,6 +425,7 @@ void clocks_to_oscclk(void)
 	exynos_set_parent("mout_aud_pll_user_top", "fin_pll");
 	exynos_set_parent("mout_mphy_pll_user", "fin_pll");
 	exynos_set_parent("mout_disp_pll", "fin_pll");
+	exynos_set_parent("mout_isp_pll", "fin_pll");
 
 	exynos_set_parent("mout_aclk_mscl_400_b", "mout_mphy_pll_user");
 	exynos_set_parent("mout_aclk_g2d_400_b", "mout_mphy_pll_user");
