@@ -31,6 +31,9 @@
 		pinctrl7 = &pinctrl_7;
 		pinctrl8 = &pinctrl_8;
 		pinctrl9 = &pinctrl_9;
+		mshc0 = &dwmmc_0;
+		mshc1 = &dwmmc_1;
+		mshc2 = &dwmmc_2;
 	};
 
 	chipid@10000000 {
@@ -255,6 +258,51 @@
 		compatible = "samsung,exynos-pwm-clock";
 		reg = <0x14DD0000 0x50>;
 		#clock-cells = <1>;
+	};
+
+	dwmmc_0: dwmmc0@15540000 {
+		compatible = "samsung,exynos5433-dw-mshc";
+		reg = <0x15540000 0x2000>;
+		interrupts = <0 225 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 565>, <&clock 141>, <&clock 4212>,
+			<&clock 3050>, <&clock 3051>, <&clock 3052>, <&clock 3053>,
+			<&clock 4070>, <&clock 4071>;
+		clock-names = "biu", "gate_ciu", "gate_mmc",
+			"mout_sclk_mmc_a", "mout_sclk_mmc_b", "mout_sclk_mmc_c", "mout_sclk_mmc_d",
+			"dout_mmc_a", "dout_mmc_b";
+		status = "disabled";
+	};
+
+	dwmmc_1: dwmmc1@15550000 {
+		compatible = "samsung,exynos5433-dw-mshc";
+		reg = <0x15550000 0x2000>;
+		interrupts = <0 226 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 566>, <&clock 142>, <&clock 4211>,
+			<&clock 3054>, <&clock 3055>,
+			<&clock 4072>, <&clock 4073>;
+		clock-names = "biu", "gate_ciu", "gate_mmc",
+			"mout_sclk_mmc_a", "mout_sclk_mmc_b",
+			"dout_mmc_a", "dout_mmc_b";
+		status = "disabled";
+	};
+
+	dwmmc_2: dwmmc2@15560000 {
+		compatible = "samsung,exynos5433-dw-mshc";
+		reg = <0x15560000 0x2000>;
+		interrupts = <0 227 0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 567>, <&clock 143>, <&clock 4210>,
+			<&clock 3056>, <&clock 3057>,
+			<&clock 4074>, <&clock 4075>;
+		clock-names = "biu", "gate_ciu", "gate_mmc",
+			"mout_sclk_mmc_a", "mout_sclk_mmc_b",
+			"dout_mmc_a", "dout_mmc_b";
+		status = "disabled";
 	};
 
 	serial@14C10000 {
