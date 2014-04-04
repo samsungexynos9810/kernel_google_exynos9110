@@ -17,6 +17,7 @@
 
 #include "clk.h"
 #include "clk-pll.h"
+#include "clk-exynos5433.h"
 
 enum exynos5433_clks {
 	none,
@@ -3219,7 +3220,8 @@ void __init exynos5433_clk_init(struct device_node *np)
 	samsung_clk_register_gate(exynos5433_gate_clks,
 			ARRAY_SIZE(exynos5433_gate_clks));
 
-	//exynos5433_clock_init();
+	exynos5433_clock_init();
+
 	pr_info("Exynos5433: Clock setup completed\n");
 }
 CLK_OF_DECLARE(exynos5433_clk, "samsung,exynos5433-clock", exynos5433_clk_init);
