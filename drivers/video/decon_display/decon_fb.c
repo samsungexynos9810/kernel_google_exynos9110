@@ -965,8 +965,6 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 {
 	u32 data;
 
-	writel(0x1000000, sfb->regs + WINxMAP(index));
-
 	data = readl(sfb->regs + VIDCON0);
 	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
@@ -4075,10 +4073,19 @@ static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
 
 static void s3c_fb_clear_fb(struct s3c_fb *sfb, unsigned int index)
 {
+	u32 reg;
 	writel(0x1000000, sfb->regs + WINxMAP(index));
 	hw_trigger_mask_enable(sfb, false);
+	reg = readl(sfb->regs + DECON_UPDATE);
+	reg |= DECON_UPDATE_STANDALONE_F;
+	writel(reg, sfb->regs + DECON_UPDATE);
 	//wait until the GRAM is cleared.
-	msleep(16);
+	msleep(17);
+	/*disable winmap. So that, buf memcpy mechanism works fine */
+	writel(0, sfb->regs + WINxMAP(index));
+	reg = readl(sfb->regs + DECON_UPDATE);
+	reg |= DECON_UPDATE_STANDALONE_F;
+	writel(reg, sfb->regs + DECON_UPDATE);
 }
 
 int create_decon_display_controller(struct platform_device *pdev)
