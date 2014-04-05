@@ -330,6 +330,25 @@ void mipi_lli_resume(void)
 
 EXPORT_SYMBOL(mipi_lli_resume);
 
+void __iomem *mipi_lli_vmap(phys_addr_t phys_addr, size_t size)
+{
+	int i;
+	struct page **pages;
+	unsigned int num_pages = (size >> PAGE_SHIFT);
+	void *pv;
+
+	pages = kmalloc(num_pages * sizeof(*pages), GFP_KERNEL);
+	for (i = 0; i < num_pages; i++) {
+		pages[i] = phys_to_page(phys_addr);
+		phys_addr += PAGE_SIZE;
+	}
+
+	pv = vmap(pages, num_pages, VM_MAP, pgprot_noncached(PAGE_KERNEL));
+	kfree(pages);
+
+	return (void __iomem *)pv;
+}
+
 int mipi_lli_add_driver(struct device *dev,
 			const struct lli_driver *lli_driver,
 			int irq)
@@ -353,14 +372,18 @@ int mipi_lli_add_driver(struct device *dev,
 	if (ret < 0)
 		return ret;
 
-	lli->shdmem_addr = dmam_alloc_coherent(dev,
-					       IPC_MEMSIZE,
-					       &lli->phy_addr,
-					       GFP_KERNEL);
+	if (!lli_phys_addr) {
+		dev_err(dev, "phys_addr was not reserved by memblock\n");
+		return -ENOMEM;
+	}
+
+	lli->phy_addr = lli_phys_addr;
+	lli->shdmem_addr = mipi_lli_vmap(lli_phys_addr, MIPI_LLI_RESERVE_SIZE);
+
 	if (!lli->shdmem_addr)
 		return -ENOMEM;
 
-	lli->shdmem_size = IPC_MEMSIZE;
+	lli->shdmem_size = MIPI_LLI_RESERVE_SIZE;
 
 	dev_info(dev, "alloc share IPC memory addr = %p[%x]\n",
 		 lli->shdmem_addr,
@@ -378,6 +401,8 @@ EXPORT_SYMBOL(mipi_lli_add_driver);
 void mipi_lli_remove_driver(struct mipi_lli *lli)
 {
 	free_irq(lli->irq_sig, lli);
+	vunmap(lli->shdmem_addr);
+
 	g_lli = NULL;
 }
 EXPORT_SYMBOL(mipi_lli_remove_driver);
