@@ -635,6 +635,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	struct device *dev = _dev;
 	struct mipi_lli *lli = dev_get_drvdata(dev);
 	static int pa_err_cnt = 0;
+	static int roe_cnt = 0;
 	int status;
 
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
@@ -655,13 +656,23 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if ((status & INTR_RESET_ON_ERROR_DETECTED)) {
-		dev_err(dev, "Error detected\n");
-		writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
+		dev_err(dev, "Error detected ++ roe_cnt = %d\n", ++roe_cnt);
+		writel(INTR_RESET_ON_ERROR_DETECTED,
+				lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
+		exynos_lli_init(lli);
+		dev_err(dev, "Error detected -- lli_reloaded\n");
+
+		return IRQ_HANDLED;
 	}
 
 	if (status & INTR_RESET_ON_ERROR_SENT) {
-		dev_err(dev, "Error sent\n");
-		writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
+		dev_err(dev, "Error sent ++ roe_cnt = %d\n", ++roe_cnt);
+		writel(INTR_RESET_ON_ERROR_SENT,
+				lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
+		exynos_lli_init(lli);
+		dev_err(dev, "Error sent -- lli_reloaded\n");
+
+		return IRQ_HANDLED;
 	}
 
 	if (status & INTR_PA_ERROR_INDICATION) {
@@ -734,7 +745,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 		lli->state = LLI_UNMOUNTED;
 		writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 		exynos_lli_init(lli);
-		dev_err(dev, "Unmount\n");
+		dev_err(dev, "Unmount : %d\n", roe_cnt);
 		return IRQ_HANDLED;
 	}
 
