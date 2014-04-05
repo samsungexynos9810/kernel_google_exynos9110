@@ -35,6 +35,7 @@
 #define IPC_MEMSIZE	(4 * SZ_1M)
 
 static struct mipi_lli *g_lli;
+phys_addr_t lli_phys_addr;
 
 /**
  * mipi_lli_request_sh_region

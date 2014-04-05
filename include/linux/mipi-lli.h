@@ -16,6 +16,14 @@
 #include <linux/miscdevice.h>
 #include <linux/clk.h>
 
+#ifdef CONFIG_LTE_MODEM_XMM7260
+#define MIPI_LLI_RESERVE_SIZE SZ_8M
+#else
+#define MIPI_LLI_RESERVE_SIZE SZ_4M
+#endif
+
+extern phys_addr_t lli_phys_addr;
+
 enum mipi_lli_link_status {
 	LLI_UNMOUNTED,
 	LLI_MOUNTED,
