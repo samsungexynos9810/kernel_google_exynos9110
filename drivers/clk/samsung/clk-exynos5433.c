@@ -593,6 +593,7 @@ enum exynos5433_clks {
 	/* gates for Exynos5433 */
 	gate_hsi2c4 = 2900, gate_hsi2c5, gate_hsi2c6, gate_hsi2c7,
 	gate_hsi2c8, gate_hsi2c9, gate_hsi2c10, gate_hsi2c11,
+	gate_spi3, gate_spi4,
 	pclk_hsi2c4 = 2910, pclk_hsi2c5, pclk_hsi2c6, pclk_hsi2c7,
 	pclk_hsi2c8, pclk_hsi2c9, pclk_hsi2c10, pclk_hsi2c11,
 
@@ -1477,7 +1478,7 @@ struct samsung_mux_clock exynos5433_mux_clks[] __initdata = {
 	CMX_STAT(mout_aclk_mfc_400_b, EXYNOS5430_SRC_SEL_TOP4, 4, 1, EXYNOS5430_SRC_STAT_TOP4, 4, 3),
 	CMX_STAT(mout_aclk_mfc_400_c, EXYNOS5430_SRC_SEL_TOP4, 8, 1, EXYNOS5430_SRC_STAT_TOP4, 8, 3),
 	CMX_STAT(mout_aclk_mfc_400_user, EXYNOS5430_SRC_SEL_MFC0, 0, 1, EXYNOS5430_SRC_STAT_MFC0, 0, 3),
-	
+
 	CMX_STAT(mout_sclk_usbhost30, EXYNOS5430_SRC_SEL_FSYS1, 4, 1, EXYNOS5430_SRC_STAT_TOP_FSYS1, 4, 1),
 	CMX_STAT(mout_sclk_pcie_100, EXYNOS5430_SRC_SEL_FSYS1, 12, 1, EXYNOS5430_SRC_STAT_TOP_FSYS1, 12, 1),
 	CMX_STAT(mout_sclk_spi3, EXYNOS5430_SRC_SEL_TOP_PERIC0, 24, 1, EXYNOS5430_SRC_STAT_TOP_PERIC0, 24, 3),
@@ -1647,7 +1648,7 @@ struct samsung_div_clock exynos5433_div_clks[] __initdata = {
 	CDIV(dout_aclk_isp_d_200, "mout_aclk_isp_400_user", EXYNOS5430_DIV_ISP, 4, 3),
 	CDIV(dout_pclk_isp, "mout_aclk_isp_400_user", EXYNOS5430_DIV_ISP, 8, 3),
 	CDIV(dout_pclk_isp_dis, "mout_aclk_isp_dis_400_user", EXYNOS5430_DIV_ISP, 12, 3),
-	
+
 	/* additional clocks on exynos5433 series */
 	CDIV(dout_aclk_mfc_400, "mout_aclk_mfc_400_c", EXYNOS5430_DIV_TOP1, 12, 3),
 	CDIV(dout_pclk_mfc, "mout_aclk_mfc_400_user", EXYNOS5430_DIV_MFC0, 0, 2),
@@ -2674,6 +2675,8 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(gate_spdif, "gate_spdif", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 26, 0, 0),
 	CGTE(gate_pcm1, "gate_pcm1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 25, 0, 0),
 	CGTE(gate_i2s1, "gate_i2s1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 24, 0, 0),
+	CGTE(gate_spi4, "gate_spi4", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 9, 0, 0),
+	CGTE(gate_spi3, "gate_spi3", NULL, EXYNOS5430_ENABLE_IP_PERIC2, 8, 0, 0),
 	CGTE(gate_spi2, "gate_spi2", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 23, 0, 0),
 	CGTE(gate_spi1, "gate_spi1", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 22, 0, 0),
 	CGTE(gate_spi0, "gate_spi0", NULL, EXYNOS5430_ENABLE_IP_PERIC0, 21, 0, 0),
