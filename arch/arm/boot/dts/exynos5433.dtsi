@@ -387,9 +387,65 @@
 		pinctrl-0 = <&spi2_bus>;
 	};
 
+	spi_3: spi@14d50000 {
+		compatible = "samsung,exynos5410-spi";
+		reg = <0x14d50000 0x100>;
+		interrupts = <0 447 0>;
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2908>, <&clock 4086>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi3_bus>;
+	};
+
+	spi_4: spi@14d00000 {
+		compatible = "samsung,exynos5410-spi";
+		reg = <0x14d00000 0x100>;
+		interrupts = <0 412 0>;
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2909>, <&clock 4088>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&spi4_bus>;
+	};
+
+	spi_5: spi@141a0000 {
+		compatible = "samsung,exynos5410-spi";
+		reg = <0x141a0000 0x100>;
+		interrupts = <0 164 0>; /* NON */
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2625>, <&clock 4081>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_spi_pin0>;
+		domain = "cam0";
+		/* samsung,power-domain = <&pd_cam0>; */
+	};
+
+	spi_6: spi@141b0000 {
+		compatible = "samsung,exynos5410-spi";
+		reg = <0x141b0000 0x100>;
+		interrupts = <0 175 0>; /* NON */
+		swap-mode;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		clocks = <&clock 2625>, <&clock 4083>;
+		clock-names = "spi", "spi_busclk0";
+		pinctrl-names = "default";
+		pinctrl-0 = <&fimc_is_spi_pin1>;
+		domain = "cam1";
+		/* samsung,power-domain = <&pd_cam1>; */
+	};
+
 	hsi2c_0: hsi2c@14E40000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14E40000 0x1000>;
 		interrupts = <0 428 0>;
 		#address-cells = <1>;
@@ -403,7 +459,7 @@
 
 	hsi2c_1: hsi2c@14E50000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14E50000 0x1000>;
 		interrupts = <0 429 0>;
 		#address-cells = <1>;
@@ -417,7 +473,7 @@
 
 	hsi2c_2: hsi2c@14E60000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14E60000 0x1000>;
 		interrupts = <0 430 0>;
 		#address-cells = <1>;
@@ -431,7 +487,7 @@
 
 	hsi2c_3: hsi2c@14E70000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14E70000 0x1000>;
 		interrupts = <0 431 0>;
 		#address-cells = <1>;
@@ -445,7 +501,7 @@
 
 	hsi2c_4: hsi2c@14EC0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14EC0000 0x1000>;
 		interrupts = <0 424 0>;
 		#address-cells = <1>;
@@ -459,7 +515,7 @@
 
 	hsi2c_5: hsi2c@14ED0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14ED0000 0x1000>;
 		interrupts = <0 425 0>;
 		#address-cells = <1>;
@@ -473,7 +529,7 @@
 
 	hsi2c_6: hsi2c@14EE0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14EE0000 0x1000>;
 		interrupts = <0 426 0>;
 		#address-cells = <1>;
@@ -487,7 +543,7 @@
 
 	hsi2c_7: hsi2c@14EF0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14EF0000 0x1000>;
 		interrupts = <0 427 0>;
 		#address-cells = <1>;
@@ -501,7 +557,7 @@
 
 	hsi2c_8: hsi2c@14D90000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14D90000 0x1000>;
 		interrupts = <0 443 0>;
 		#address-cells = <1>;
@@ -515,7 +571,7 @@
 
 	hsi2c_9: hsi2c@14DA0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14DA0000 0x1000>;
 		interrupts = <0 444 0>;
 		#address-cells = <1>;
@@ -529,7 +585,7 @@
 
 	hsi2c_10: hsi2c@14DE0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14DE0000 0x1000>;
 		interrupts = <0 445 0>;
 		#address-cells = <1>;
@@ -543,7 +599,7 @@
 
 	hsi2c_11: hsi2c@14DF0000 {
 		compatible = "samsung,exynos5-hsi2c";
-		samsung,polling-mode;
+		samsung,check-transdone-int;
 		reg = <0x14DF0000 0x1000>;
 		interrupts = <0 446 0>;
 		#address-cells = <1>;
