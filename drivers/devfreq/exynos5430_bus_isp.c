@@ -2257,6 +2257,9 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct devfreq_data_isp *data;
 	struct exynos_devfreq_platdata *plat_data;
+	struct opp *target_opp;
+	unsigned long freq;
+	unsigned long volt;
 
 	if (exynos5_devfreq_isp_init_clock()) {
 		ret = -EINVAL;
@@ -2294,6 +2297,22 @@ static int exynos5_devfreq_isp_probe(struct platform_device *pdev)
 	data->volt_offset = 0;
 	data->dev = &pdev->dev;
 	data->vdd_isp = regulator_get(NULL, "vdd_disp_cam0");
+	freq = DEVFREQ_INITIAL_FREQ;
+	rcu_read_lock();
+	target_opp = devfreq_recommended_opp(data->dev, &freq, 0);
+	if (IS_ERR(target_opp)) {
+		rcu_read_unlock();
+		dev_err(data->dev, "DEVFREQ(ISP) : Invalid OPP to set voltage");
+		ret = PTR_ERR(target_opp);
+		goto err_inittable;
+	}
+	volt = opp_get_voltage(target_opp);
+#ifdef CONFIG_EXYNOS_THERMAL
+	volt = get_limit_voltage(volt, data->volt_offset);
+#endif
+	rcu_read_unlock();
+	exynos5_devfreq_isp_set_volt(data, volt, volt + VOLT_STEP);
+
 	data->devfreq = devfreq_add_device(data->dev,
 						&exynos5_devfreq_isp_profile,
 						"simple_ondemand",

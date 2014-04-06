@@ -338,7 +338,7 @@ static bool exynos5422_pms_change_CA7(unsigned int old_index,
 static void exynos5422_set_frequency_CA7(unsigned int old_index,
 					 unsigned int new_index)
 {
-unsigned int tmp;
+	unsigned int tmp;
 
 	if (old_index > new_index) {
 		if (!exynos5422_pms_change_CA7(old_index, new_index)) {
@@ -406,7 +406,7 @@ static void __init set_volt_table_CA7(void)
 #else
 	max_support_idx_CA7 = L3;
 #endif
-	min_support_idx_CA7 = L8;
+	min_support_idx_CA7 = L11;
 }
 
 static bool exynos5422_is_alive_CA7(void)

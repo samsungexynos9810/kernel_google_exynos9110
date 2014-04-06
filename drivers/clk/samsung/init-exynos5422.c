@@ -288,6 +288,18 @@ static void mscl_init_clock(void)
 			exynos_get_rate("aclk_400_mscl"));
 }
 
+static void spi_clock_init(void)
+{
+	exynos_set_parent("mout_spi0", "mout_dpll_ctrl");
+	exynos_set_parent("mout_spi1", "mout_dpll_ctrl");
+	exynos_set_parent("mout_spi2", "mout_dpll_ctrl");
+
+	/* dout_spix_pre should be 100Mhz */
+	exynos_set_rate("dout_spi0", 100000000);
+	exynos_set_rate("dout_spi1", 100000000);
+	exynos_set_rate("dout_spi2", 100000000);
+}
+
 void g2d_init_clock(void)
 {
 	int clk_rate1;
@@ -410,6 +422,11 @@ void mmc_clock_init(void)
 	pr_info("mmc2: dout_mmc2 %d\n", exynos_get_rate("dout_mmc2"));
 }
 
+void isp_init_clock(void)
+{
+    exynos_set_parent("mout_isp_sensor", "fin_pll");
+}
+
 void __init exynos5422_clock_init(void)
 {
 /* EXYNOS5422 C2 enable support */
@@ -421,10 +438,12 @@ void __init exynos5422_clock_init(void)
 	uart_clock_init();
 	mmc_clock_init();
 	mscl_init_clock();
+	spi_clock_init();
 	g2d_init_clock();
 	pwm_init_clock();
 	gsc_clock_init();
 	jpeg_clock_init();
 	mfc_clock_init();
 	crypto_init_clock();
+	isp_init_clock();
 }

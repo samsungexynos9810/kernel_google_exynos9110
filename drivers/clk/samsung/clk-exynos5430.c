@@ -25,7 +25,7 @@ enum exynos5430_clks {
 
 	/* core clocks */
 	fin_pll = 1, mem0_pll, mem1_pll, mfc_pll, bus_pll,
-	fout_mphy_pll, disp_pll, isp_pll, aud_pll, fout_g3d_pll, fout_aud_pll,
+	mphy_pll, disp_pll, isp_pll, aud_pll, fout_g3d_pll, fout_aud_pll,
 
 	/* gate for special clocks (sclk) */
 	sclk_jpeg_mscl = 20,
@@ -1696,13 +1696,13 @@ struct samsung_gate_clock exynos5430_gate_clks[] __initdata = {
 	CGTE(sclk_jpeg_mscl, "sclk_jpeg_mscl", "dout_sclk_jpeg", EXYNOS5430_ENABLE_SCLK_TOP_MSCL, 0, CLK_IGNORE_UNUSED, 0),
 
 	/* sclk TOP_CAM1 */
-	CGTE(sclk_isp_spi0_cam1, "sclk_isp_spi0_cam1", "dout_sclk_isp_spi0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_isp_spi1_cam1, "sclk_isp_spi1_cam1", "dout_sclk_isp_spi1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 1, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_isp_uart_cam1, "sclk_isp_uart_cam1", "dout_sclk_isp_uart", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 2, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_isp_mctadc_cam1, "sclk_isp_mctadc_cam1", "oscclk", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 0, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_isp_sensor0, "sclk_isp_sensor0", "dout_sclk_isp_sensor0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 5, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_isp_sensor1, "sclk_isp_sensor1", "dout_sclk_isp_sensor1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 6, CLK_IGNORE_UNUSED, 0),
-	CGTE(sclk_isp_sensor2, "sclk_isp_sensor2", "dout_sclk_isp_sensor2_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 7, CLK_IGNORE_UNUSED, 0),
+	CGTE(sclk_isp_spi0_cam1, "sclk_isp_spi0_cam1", "dout_sclk_isp_spi0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 0, 0, 0),
+	CGTE(sclk_isp_spi1_cam1, "sclk_isp_spi1_cam1", "dout_sclk_isp_spi1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 1, 0, 0),
+	CGTE(sclk_isp_uart_cam1, "sclk_isp_uart_cam1", "dout_sclk_isp_uart", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 2, 0, 0),
+	CGTE(sclk_isp_mctadc_cam1, "sclk_isp_mctadc_cam1", "oscclk", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 4, 0, 0),
+	CGTE(sclk_isp_sensor0, "sclk_isp_sensor0", "dout_sclk_isp_sensor0_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 5, 0, 0),
+	CGTE(sclk_isp_sensor1, "sclk_isp_sensor1", "dout_sclk_isp_sensor1_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 6, 0, 0),
+	CGTE(sclk_isp_sensor2, "sclk_isp_sensor2", "dout_sclk_isp_sensor2_b", EXYNOS5430_ENABLE_SCLK_TOP_CAM1, 7, 0, 0),
 
 	/* sclk TOP_FSYS */
 	CGTE(sclk_usbdrd30_fsys, "sclk_usbdrd30_fsys", "dout_usbdrd30", EXYNOS5430_ENABLE_SCLK_TOP_FSYS, 0, CLK_IGNORE_UNUSED, 0),
@@ -3141,8 +3141,10 @@ struct samsung_pll_rate_table pll_aud_rate_table[] = {
 
 struct samsung_pll_rate_table pll_disp_rate_table[] = {
 	/* rate		p	m	s	k */
+	{ 278000000U,	3,	278,	3,	0},
 	{ 250000000U,	3,	250,	3,	0},
 	{ 142000000U,	3,	142,	3,	0},
+	{ 136000000U,	3,	136,	3,	0},
 };
 
 /* register exynos5430 clocks */
@@ -3237,7 +3239,6 @@ void __init exynos5430_clk_init(struct device_node *np)
 	if (isp_pll == NULL)
 		panic("%s: Fail to register isp_pll", __func__);
 
-	samsung_clk_add_lookup(mphy_pll, fout_mphy_pll);
 	samsung_clk_add_lookup(g3d_pll, fout_g3d_pll);
 	samsung_clk_add_lookup(aud_pll, fout_aud_pll);
 

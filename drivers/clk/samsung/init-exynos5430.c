@@ -72,13 +72,6 @@ static void top_clk_enable(void)
 
 	add_enabler("sclk_jpeg_top");
 
-	add_enabler("sclk_isp_spi0_top");
-	add_enabler("sclk_isp_spi1_top");
-	add_enabler("sclk_isp_uart_top");
-	add_enabler("sclk_isp_sensor0");
-	add_enabler("sclk_isp_sensor1");
-	add_enabler("sclk_isp_sensor2");
-
 	add_enabler("sclk_hdmi_spdif_top");
 
 	add_enabler("sclk_usbdrd30_top");

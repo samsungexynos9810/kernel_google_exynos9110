@@ -1979,29 +1979,45 @@ static int __init exynos_cpufreq_init(void)
 	if (exynos_info[CA7]->boot_cpu_min_qos) {
 		pm_qos_add_request(&boot_min_kfc_qos, PM_QOS_KFC_FREQ_MIN,
 					PM_QOS_KFC_FREQ_MIN_DEFAULT_VALUE);
+		if (!exynos_info[CA7]->boot_cpu_min_qos_timeout)
+			exynos_info[CA7]->boot_cpu_min_qos_timeout = 40 * USEC_PER_SEC;
+
 		pm_qos_update_request_timeout(&boot_min_kfc_qos,
-					exynos_info[CA7]->boot_cpu_min_qos, 40000 * 1000);
+					exynos_info[CA7]->boot_cpu_min_qos,
+					exynos_info[CA7]->boot_cpu_min_qos_timeout);
 	}
 
 	if (exynos_info[CA7]->boot_cpu_max_qos) {
 		pm_qos_add_request(&boot_max_kfc_qos, PM_QOS_KFC_FREQ_MAX,
 					max_kfc_qos_const.default_value);
+		if (!exynos_info[CA7]->boot_cpu_max_qos_timeout)
+			exynos_info[CA7]->boot_cpu_max_qos_timeout = 40 * USEC_PER_SEC;
+
 		pm_qos_update_request_timeout(&boot_max_kfc_qos,
-					exynos_info[CA7]->boot_cpu_max_qos, 40000 * 1000);
+					exynos_info[CA7]->boot_cpu_max_qos,
+					exynos_info[CA7]->boot_cpu_max_qos_timeout);
 	}
 
 	if (exynos_info[CA15]->boot_cpu_min_qos) {
 		pm_qos_add_request(&boot_min_cpu_qos, PM_QOS_CPU_FREQ_MIN,
 					max_cpu_qos_const.default_value);
+		if (!exynos_info[CA15]->boot_cpu_min_qos_timeout)
+			exynos_info[CA15]->boot_cpu_min_qos_timeout = 40 * USEC_PER_SEC;
+
 		pm_qos_update_request_timeout(&boot_min_cpu_qos,
-					exynos_info[CA15]->boot_cpu_min_qos, 40000 * 1000);
+					exynos_info[CA15]->boot_cpu_min_qos,
+					exynos_info[CA15]->boot_cpu_min_qos_timeout);
 	}
 
 	if (exynos_info[CA15]->boot_cpu_max_qos) {
 		pm_qos_add_request(&boot_max_cpu_qos, PM_QOS_CPU_FREQ_MAX,
 					PM_QOS_CPU_FREQ_MAX_DEFAULT_VALUE);
+		if (!exynos_info[CA15]->boot_cpu_max_qos_timeout)
+			exynos_info[CA15]->boot_cpu_max_qos_timeout = 40 * USEC_PER_SEC;
+
 		pm_qos_update_request_timeout(&boot_max_cpu_qos,
-					exynos_info[CA15]->boot_cpu_max_qos, 40000 * 1000);
+					exynos_info[CA15]->boot_cpu_max_qos,
+					exynos_info[CA15]->boot_cpu_max_qos_timeout);
 	}
 
 	/* unblocking frequency scale */

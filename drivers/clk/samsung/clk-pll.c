@@ -142,7 +142,8 @@ static int samsung_pll35xx_set_rate(struct clk_hw *hw, unsigned long drate,
 		tmp |= (rate->mdiv << PLL35XX_MDIV_SHIFT) |
 				(rate->pdiv << PLL35XX_PDIV_SHIFT) |
 				(rate->sdiv << PLL35XX_SDIV_SHIFT);
-		tmp |= 1 << PLL35XX_PLL_ENABLE_SHIFT;
+		tmp |= (1 << PLL35XX_PLL_ENABLE_SHIFT);
+
 		__raw_writel(tmp, pll->con_reg);
 
 		/* wait_lock_time */

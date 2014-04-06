@@ -1912,7 +1912,7 @@ static inline struct  exynos_tmu_platform_data *exynos_get_driver_data(
 			platform_get_device_id(pdev)->driver_data;
 }
 
-/* sysfs interface : /sys/devices/10060000.tmu/temp */
+/* sysfs interface : /sys/devices/platform/exynos5-tmu/temp */
 static ssize_t
 exynos_thermal_sensor_temp(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -1941,8 +1941,48 @@ exynos_thermal_sensor_temp(struct device *dev,
 
 static DEVICE_ATTR(temp, S_IRUSR | S_IRGRP, exynos_thermal_sensor_temp, NULL);
 
+/* sysfs interface : /sys/devices/platform/exynos5-tmu/curr_temp */
+static ssize_t
+exynos_thermal_curr_temp(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	struct exynos_tmu_data *data = th_zone->sensor_conf->private_data;
+	unsigned long temp[EXYNOS_TMU_COUNT];
+	int i, len = 0;
+
+	if (!(soc_is_exynos5422()))
+		return -EPERM;
+
+	if (EXYNOS_TMU_COUNT < 4)
+		return -EPERM;
+
+	mutex_lock(&data->lock);
+
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+		u8 temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
+		if (temp_code == 0xff)
+			temp[i] = 0;
+		else
+			temp[i] = code_to_temp(data, temp_code, i) * 10;
+	}
+
+	mutex_unlock(&data->lock);
+
+	/* rearrange temperature with core order
+	   sensor0 -> 3 -> 2 -> 1 */
+	len += sprintf(&buf[len], "%ld,", temp[0]);
+	len += sprintf(&buf[len], "%ld,", temp[3]);
+	len += sprintf(&buf[len], "%ld,", temp[2]);
+	len += sprintf(&buf[len], "%ld\n", temp[1]);
+
+	return len;
+}
+
+static DEVICE_ATTR(curr_temp, S_IRUGO, exynos_thermal_curr_temp, NULL);
+
 static struct attribute *exynos_thermal_sensor_attributes[] = {
 	&dev_attr_temp.attr,
+	&dev_attr_curr_temp.attr,
 	NULL
 };
 
@@ -2189,7 +2229,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 #endif
 	ret = sysfs_create_group(&pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
 	if (ret)
-		dev_err(&exynos_tmu_pdev->dev, "cannot create thermal sensor attributes\n");
+		dev_err(&pdev->dev, "cannot create thermal sensor attributes\n");
 
 	is_cpu_hotplugged_out = false;
 

@@ -797,6 +797,166 @@ static int exynos5_pd_fimc_is_power_off_post(struct exynos_pm_domain *pd)
 }
 #endif
 
+/* helpers for special power-off sequence with LPI control */
+#define __set_mask(name) __raw_writel(name##_ALL, name)
+#define __clr_mask(name) __raw_writel(~(name##_ALL), name)
+
+static int force_down_pre(const char *name, int step)
+{
+	int reg;
+
+	if (strncmp(name, "pd-isp", 6) == 0) {
+		if (step == 1) {	/* disable WFI waiting */
+			reg = __raw_readl(EXYNOS5422_ISP_ARM_OPTION);
+			reg &= ~(1 << 16);
+			__raw_writel(reg, EXYNOS5422_ISP_ARM_OPTION);
+		} else if (step == 2) {	/* LPI bus masking */
+			reg = __raw_readl(EXYNOS5422_LPI_BUS_MASK0);
+			reg |= EXYNOS5422_LPI_BUS_MASK0_IS_ALL;
+			__raw_writel(reg, EXYNOS5422_LPI_BUS_MASK0);
+		} else if (step == 3) {	/* LPI (FD) masking */
+			reg = __raw_readl(EXYNOS5422_LPI_MASK0);
+			reg |= EXYNOS5422_LPI_MASK0_FIMC_FD;
+			__raw_writel(reg, EXYNOS5422_LPI_MASK0);
+		} else if (step == 4) {	/* LPI (OTHERS) masking */
+			reg = __raw_readl(EXYNOS5422_LPI_MASK0);
+			reg |= EXYNOS5422_LPI_MASK0_IS_OHTERS;
+			__raw_writel(reg, EXYNOS5422_LPI_MASK0);
+		}
+	} else {
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int force_down_post(const char *name, int step)
+{
+	int reg;
+
+	if (strncmp(name, "pd-isp", 6) == 0) {
+		if (step >= 1) {	/* enable WFI waiting */
+			reg = __raw_readl(EXYNOS5422_ISP_ARM_OPTION);
+			reg |= (1 << 16);
+			__raw_writel(reg, EXYNOS5422_ISP_ARM_OPTION);
+		}
+
+		if (step >= 2) {	/* LPI bus unmasking */
+			reg = __raw_readl(EXYNOS5422_LPI_BUS_MASK0);
+			reg &= ~(EXYNOS5422_LPI_BUS_MASK0_IS_ALL);
+			__raw_writel(reg, EXYNOS5422_LPI_BUS_MASK0);
+		}
+
+		if (step >= 3) {	/* LPI (FD) unmasking */
+			reg = __raw_readl(EXYNOS5422_LPI_MASK0);
+			reg &= ~(EXYNOS5422_LPI_MASK0_FIMC_FD);
+			__raw_writel(reg, EXYNOS5422_LPI_MASK0);
+		}
+
+		if (step >= 4) {	/* LPI (OTHERS) unmasking */
+			reg = __raw_readl(EXYNOS5422_LPI_MASK0);
+			reg &= ~(EXYNOS5422_LPI_MASK0_IS_OHTERS);
+			__raw_writel(reg, EXYNOS5422_LPI_MASK0);
+		}
+	} else {
+		return -EINVAL;
+	}
+
+    return 0;
+}
+
+static unsigned int check_power_status(struct exynos_pm_domain *pd, int power_flags,
+                    unsigned int timeout)
+{
+    /* check STATUS register */
+    while ((__raw_readl(pd->base+0x4) & EXYNOS_INT_LOCAL_PWR_EN) != power_flags) {
+        if (timeout == 0) {
+            pr_err("%s@%p: %08x, %08x, %08x\n",
+                    pd->genpd.name,
+                    pd->base,
+                    __raw_readl(pd->base),
+                    __raw_readl(pd->base+4),
+                    __raw_readl(pd->base+8));
+            return 0;
+        }
+        --timeout;
+        cpu_relax();
+        usleep_range(8, 10);
+    }
+
+    return timeout;
+}
+
+#define TIMEOUT_COUNT   100 /* about 1ms, based on 10us */
+#define MAX_STEP	4
+static int exynos_pd_power_off_custom(struct exynos_pm_domain *pd, int power_flags)
+{
+	unsigned long timeout;
+	int step = 0;
+
+	if (unlikely(!pd))
+		return -EINVAL;
+
+	mutex_lock(&pd->access_lock);
+	if (likely(pd->base)) {
+		/* sc_feedback to OPTION register */
+		__raw_writel(pd->pd_option, pd->base+0x8);
+
+		/* on/off value to CONFIGURATION register */
+		__raw_writel(power_flags, pd->base);
+
+		timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+
+		if (unlikely(!timeout)) {
+			while ((!timeout) && (step <= MAX_STEP)) {
+				step++;
+				pr_err(PM_DOMAIN_PREFIX "%s can't control power, try again: step(%d)\n",
+						pd->name, step);
+
+				if (force_down_pre(pd->name, step))
+					pr_warn("%s: failed to make force down state\n", pd->name);
+
+				timeout = check_power_status(pd, power_flags, TIMEOUT_COUNT);
+
+				if (likely(timeout))
+					pr_warn(PM_DOMAIN_PREFIX "%s force power down success at step%d\n",
+							pd->name, step);
+			}
+
+			if (force_down_post(pd->name, step))
+				pr_warn("%s: failed to restore normal state\n", pd->name);
+
+			if (unlikely(!timeout)) {
+				pr_err(PM_DOMAIN_PREFIX "%s can't control power forcedly, timeout\n",
+						pd->name);
+				mutex_unlock(&pd->access_lock);
+				return -ETIMEDOUT;
+			}
+		}
+
+		if (unlikely(timeout < (TIMEOUT_COUNT >> 1))) {
+			pr_warn("%s@%p: %08x, %08x, %08x\n",
+				pd->name,
+					pd->base,
+					__raw_readl(pd->base),
+					__raw_readl(pd->base+4),
+					__raw_readl(pd->base+8));
+			pr_warn(PM_DOMAIN_PREFIX "long delay found during %s is %s\n",
+					pd->name, power_flags ? "on":"off");
+		}
+	}
+	pd->status = power_flags;
+	mutex_unlock(&pd->access_lock);
+
+	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
+			pd->genpd.name, pd->base,
+			__raw_readl(pd->base),
+			__raw_readl(pd->base+4),
+			__raw_readl(pd->base+8));
+
+	return 0;
+}
+
 static struct exynos_pd_callback pd_callback_list[] = {
 	{
 		.on_pre = exynos5_pd_g3d_power_on_pre,
@@ -861,6 +1021,7 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.on_pre = exynos5_pd_fimc_is_power_on_pre,
 			.on_post = exynos5_pd_fimc_is_power_on_post,
 			.name = "pd-isp",
+			.off = exynos_pd_power_off_custom,
 			.off_pre = exynos5_pd_fimc_is_power_off_pre,
 			.off_post = exynos5_pd_fimc_is_power_off_post,
 	} , {

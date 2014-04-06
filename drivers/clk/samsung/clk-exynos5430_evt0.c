@@ -2952,6 +2952,14 @@ struct samsung_pll_rate_table pll_bus_rate_table[] = {
 	{ 200000000U,	3,	100,	2,	0},
 };
 
+struct samsung_pll_rate_table pll_disp_rate_table[] = {
+	/* rate		p	m	s	k */
+	{ 278000000U,	3,	278,	3,	0},
+	{ 250000000U,	3,	250,	3,	0},
+	{ 142000000U,	3,	142,	3,	0},
+	{ 136000000U,	3,	136,	3,	0},
+};
+
 /* register exynos5430 clocks */
 void __init exynos5430_clk_init(struct device_node *np)
 {
@@ -2999,7 +3007,7 @@ void __init exynos5430_clk_init(struct device_node *np)
 
 	disp_pll = samsung_clk_register_pll35xx("fout_disp_pll", "fin_pll",
 			EXYNOS5430_DISP_PLL_LOCK,
-			EXYNOS5430_DISP_PLL_CON0, NULL, 0);
+			EXYNOS5430_DISP_PLL_CON0, pll_disp_rate_table, ARRAY_SIZE(pll_disp_rate_table));
 
 	isp_pll = samsung_clk_register_pll35xx("fout_isp_pll", "fin_pll",
 			EXYNOS5430_ISP_PLL_LOCK,
