@@ -194,6 +194,14 @@ static void exynos_lli_system_config(struct mipi_lli *lli)
 
 static int exynos_lli_init(struct mipi_lli *lli)
 {
+	/* LLI Interrupt enable */
+	writel(0x3FFFF, lli->regs + EXYNOS_DME_LLI_INTR_ENABLE);
+	writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
+	return 0;
+}
+
+static int exynos_lli_setting(struct mipi_lli *lli)
+{
 	struct exynos_mphy *phy = dev_get_drvdata(lli->mphy);
 	u32 remap_addr;
 
@@ -203,8 +211,6 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	exynos_lli_system_config(lli);
 	/* enable LLI_PHY_CONTROL */
 	writel(1, lli->pmu_regs);
-	/* software reset */
-	writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
 
 	/* set_system clk period */
 	writel(SYSTEM_CLOCK_PERIOD, lli->regs + EXYNOS_PA_SYSTEM_CLK_PERIOD);
@@ -279,6 +285,8 @@ static int exynos_lli_init(struct mipi_lli *lli)
 	writel(((0x1F<<1) | 1), lli->regs + EXYNOS_IAL_BE_SNF_FIFO);
 
 	writel(0x1000, lli->regs + EXYNOS_PA_WORSTCASE_RTT);
+
+	dev_err(lli->dev, "MIPI LLI is initialized\n");
 
 	return 0;
 }
@@ -640,6 +648,11 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 
+	if (status & INTR_SW_RESET_DONE) {
+		dev_err(dev, "SW_RESET_DONE ++\n");
+		exynos_lli_setting(lli);
+	}
+
 	if (status & INTR_MPHY_HIBERN8_EXIT_DONE) {
 		mdelay(1);
 		writel(LLI_MOUNT_CTRL, lli->regs + EXYNOS_DME_CSA_SYSTEM_SET);
@@ -657,20 +670,11 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	if ((status & INTR_RESET_ON_ERROR_DETECTED)) {
 		dev_err(dev, "Error detected ++ roe_cnt = %d\n", ++roe_cnt);
-		writel(INTR_RESET_ON_ERROR_DETECTED,
-				lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
-		exynos_lli_init(lli);
-		dev_err(dev, "Error detected -- lli_reloaded\n");
-
-		return IRQ_HANDLED;
 	}
 
 	if (status & INTR_RESET_ON_ERROR_SENT) {
 		dev_err(dev, "Error sent ++ roe_cnt = %d\n", ++roe_cnt);
-		writel(INTR_RESET_ON_ERROR_SENT,
-				lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
-		exynos_lli_init(lli);
-		dev_err(dev, "Error sent -- lli_reloaded\n");
+		writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
 
 		return IRQ_HANDLED;
 	}
@@ -744,7 +748,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	if (status & INTR_LLI_UNMOUNT_DONE) {
 		lli->state = LLI_UNMOUNTED;
 		writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
-		exynos_lli_init(lli);
+		writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
 		dev_err(dev, "Unmount : %d\n", roe_cnt);
 		return IRQ_HANDLED;
 	}
