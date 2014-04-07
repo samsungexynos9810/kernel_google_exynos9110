@@ -19,7 +19,17 @@
 #include "clk.h"
 #include "clk-pll.h"
 
+static void usb_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_usbdrd30_user", "oscclk");
+
+	exynos_set_parent("mout_phyclk_usbdrd30_udrd30_phyclock",
+			"phyclk_usbdrd30_udrd30_phyclock_phy");
+	exynos_set_parent("mout_phyclk_usbdrd30_udrd30_pipe_pclk",
+			"phyclk_usbdrd30_udrd30_pipe_pclk_phy");
+}
+
 void __init exynos5433_clock_init(void)
 {
-	/* To do */
+	usb_init_clock();
 }
