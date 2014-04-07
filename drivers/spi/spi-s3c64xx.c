@@ -1393,14 +1393,15 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 			return PTR_ERR(sci);
 	}
 
-#ifndef CONFIG_VIDEO_EXYNOS_FIMC_IS
-	if (sci->domain != DOMAIN_TOP)
-		return -ENODEV;
-#endif
 	if (!sci) {
 		dev_err(&pdev->dev, "platform_data missing!\n");
 		return -ENODEV;
 	}
+
+#ifndef CONFIG_VIDEO_EXYNOS_FIMC_IS
+	if (sci->domain != DOMAIN_TOP)
+		return -ENODEV;
+#endif
 
 	mem_res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (mem_res == NULL) {
@@ -1530,7 +1531,6 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto err2;
 	}
-
 
 	/* Setup Deufult Mode */
 	s3c64xx_spi_hwinit(sdd, sdd->port_id);

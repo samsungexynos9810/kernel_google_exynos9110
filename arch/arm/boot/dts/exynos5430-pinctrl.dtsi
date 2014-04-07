@@ -757,6 +757,20 @@
 			samsung,pin-pud = <2>;
 			samsung,pin-drv = <0>;
 		};
+
+		pwm_tout0: pwm-tout0 {
+			samsung,pins = "gpd2-4";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <3>;
+			samsung,pin-drv = <0>;
+		};
+
+		pwm_tout1: pwm-tout1 {
+			samsung,pins = "gpd2-5";
+			samsung,pin-function = <2>;
+			samsung,pin-pud = <3>;
+			samsung,pin-drv = <0>;
+		};
 	};
 
 	pinctrl@14CE0000 {

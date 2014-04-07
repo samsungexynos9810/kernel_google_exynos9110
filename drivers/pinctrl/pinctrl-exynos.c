@@ -31,6 +31,7 @@
 #include <linux/err.h>
 
 #include <mach/pinctrl-samsung.h>
+#include <plat/cpu.h>
 #include "pinctrl-exynos.h"
 
 /* bank type for non-alive type (DRV bit field: 2) */
@@ -692,20 +693,25 @@ static void exynos_pinctrl_suspend_inttype(
 						+ bank->eint_offset);
 }
 
-static void exynos5430_evt0_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
+static void exynos5430_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
 	int i;
-	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
-		if (bank->eint_type == EINT_TYPE_GPIO)
+	for (i = 0; i < ctrl->nr_banks; ++i, ++bank) {
+		if (bank->eint_type == EINT_TYPE_GPIO) {
 			exynos_pinctrl_suspend_bank(drvdata, bank);
-		else if (bank->eint_type == EINT_TYPE_WKUP
+		} else if (bank->eint_type == EINT_TYPE_WKUP
 			|| bank->eint_type == EINT_TYPE_WKUP_MUX) {
-			exynos_pinctrl_suspend_inttype(drvdata, bank);
+			if (samsung_rev() == EXYNOS5430_REV_0)
+				exynos_pinctrl_suspend_inttype(drvdata, bank);
+			else
+				exynos_pinctrl_suspend_bank(drvdata, bank);
+
 			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN, 0,
 				       0, drvdata, bank);
 		}
+	}
 }
 
 static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
@@ -743,17 +749,14 @@ static void exynos_pinctrl_resume_bank(
 						+ 2 * bank->eint_offset + 4);
 }
 
-static void exynos5430_evt0_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
+static void exynos5430_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
 	int i;
 
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank)
-		if (bank->eint_type == EINT_TYPE_GPIO
-			|| bank->eint_type == EINT_TYPE_WKUP
-			|| bank->eint_type == EINT_TYPE_WKUP_MUX)
-			exynos_pinctrl_resume_bank(drvdata, bank);
+		exynos_pinctrl_resume_bank(drvdata, bank);
 }
 
 static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
@@ -1284,8 +1287,8 @@ struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
 		.eint_wkup_init = exynos_eint_wkup_init,
-		.suspend	= exynos5430_evt0_pinctrl_suspend,
-		.resume		= exynos5430_evt0_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl0",
 	}, {
 		/* pin-controller instance 1 data */
@@ -1301,8 +1304,8 @@ struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos5430_evt0_pinctrl_suspend,
-		.resume		= exynos5430_evt0_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl2",
 	}, {
 		/* pin-controller instance 3 data */
@@ -1313,8 +1316,8 @@ struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos5430_evt0_pinctrl_suspend,
-		.resume		= exynos5430_evt0_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl3",
 	}, {
 		/* pin-controller instance 4 data */
@@ -1325,8 +1328,8 @@ struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos5430_evt0_pinctrl_suspend,
-		.resume		= exynos5430_evt0_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl4",
 	}, {
 		/* pin-controller instance 5 data */
@@ -1337,8 +1340,8 @@ struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos5430_evt0_pinctrl_suspend,
-		.resume		= exynos5430_evt0_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl5",
 	}, {
 		/* pin-controller instance 6 data */
@@ -1349,8 +1352,8 @@ struct samsung_pin_ctrl exynos5430_evt0_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos5430_evt0_pinctrl_suspend,
-		.resume		= exynos5430_evt0_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl6",
 	},
 };
@@ -1374,8 +1377,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
 		.eint_wkup_init = exynos_eint_wkup_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl0",
 	}, {
 		/* pin-controller instance 1 data */
@@ -1391,8 +1394,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl2",
 	}, {
 		/* pin-controller instance 3 data */
@@ -1403,8 +1406,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl3",
 	}, {
 		/* pin-controller instance 4 data */
@@ -1415,8 +1418,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl4",
 	}, {
 		/* pin-controller instance 5 data */
@@ -1427,8 +1430,8 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl5",
 	}, {
 		/* pin-controller instance 6 data */
@@ -1439,8 +1442,20 @@ struct samsung_pin_ctrl exynos5430_pin_ctrl[] = {
 		.geint_pend	= EXYNOS_GPIO_EPEND_OFFSET,
 		.svc		= EXYNOS_SVC_OFFSET,
 		.eint_gpio_init = exynos_eint_gpio_init,
-		.suspend	= exynos_pinctrl_suspend,
-		.resume		= exynos_pinctrl_resume,
+		.suspend	= exynos5430_pinctrl_suspend,
+		.resume		= exynos5430_pinctrl_resume,
 		.label		= "exynos5430-gpio-ctrl6",
 	},
 };
+
+#if defined(CONFIG_SOC_EXYNOS5430)
+u32 exynos_eint_to_pin_num(int eint)
+{
+	return exynos5430_pin_ctrl[0].base + eint;
+}
+#elif defined(CONFIG_SOC_EXYNOS5422)
+u32 exynos_eint_to_pin_num(int eint)
+{
+	return exynos5422_pin_ctrl[0].base + eint + 8;
+}
+#endif

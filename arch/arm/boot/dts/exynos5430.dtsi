@@ -312,6 +312,7 @@
 			compatible = "samsung,exynos4210-wakeup-eint";
 			interrupt-parent = <&gic>;
 			interrupts = <0 16 0>;
+			samsung,eint-flt-conf;
 		};
 	};
 
@@ -2462,7 +2463,14 @@
 		clock-names = "rate_rtc", "gate_rtc";
 	};
 
-	adc@14D10000 {
+	persistent_clock@10590000 {
+		compatible = "samsung,exynos_persistent_clock";
+		reg = <0x10590000 0x100>;
+		clocks = <&clock 2515>;
+		clock-names = "gate_rtc";
+	};
+
+	exynos_adc: adc@14D10000 {
 		compatible = "samsung,exynos-adc-v2";
 		reg = <0x14D10000 0x100>;
 		interrupts = <0 438 0>;
