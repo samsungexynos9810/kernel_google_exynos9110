@@ -359,6 +359,7 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&spi0_bus>;
+		status = "disabled";
 	};
 
 	spi_1: spi@14d30000 {
@@ -372,6 +373,7 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&spi1_bus>;
+		status = "disabled";
 	};
 
 	spi_2: spi@14d40000 {
@@ -385,6 +387,7 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&spi2_bus>;
+		status = "disabled";
 	};
 
 	spi_3: spi@14d50000 {
@@ -398,6 +401,7 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&spi3_bus>;
+		status = "disabled";
 	};
 
 	spi_4: spi@14d00000 {
@@ -411,6 +415,7 @@
 		clock-names = "spi", "spi_busclk0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&spi4_bus>;
+		status = "disabled";
 	};
 
 	spi_5: spi@141a0000 {
@@ -426,6 +431,7 @@
 		pinctrl-0 = <&fimc_is_spi_pin0>;
 		domain = "cam0";
 		/* samsung,power-domain = <&pd_cam0>; */
+		status = "disabled";
 	};
 
 	spi_6: spi@141b0000 {
@@ -441,6 +447,7 @@
 		pinctrl-0 = <&fimc_is_spi_pin1>;
 		domain = "cam1";
 		/* samsung,power-domain = <&pd_cam1>; */
+		status = "disabled";
 	};
 
 	hsi2c_0: hsi2c@14E40000 {
