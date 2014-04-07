@@ -222,8 +222,10 @@ static void samsung_usb3phy_crport_ctrl(struct samsung_usbphy *sphy,
 static void samsung_usb3phy_tune(struct usb_phy *phy)
 {
 	struct samsung_usbphy *sphy;
+	u32 refclk;
 
 	sphy = phy_to_sphy(phy);
+	refclk = sphy->ref_clk_freq;
 
 	if (sphy->drv_data->need_crport_tuning) {
 		u32 temp;
@@ -237,6 +239,22 @@ static void samsung_usb3phy_tune(struct usb_phy *phy)
 		temp = TX_VBOOSTLEVEL_OVRD_IN_VBOOST_5420;
 		samsung_usb3phy_crport_ctrl(sphy,
 			EXYNOS5_DRD_PHYSS_TX_VBOOSTLEVEL_OVRD_IN, temp);
+
+		switch (refclk) {
+		case FSEL_CLKSEL_50M:
+			temp = RXDET_MEAS_TIME_50M;
+			break;
+		case FSEL_CLKSEL_20M:
+		case FSEL_CLKSEL_19200K:
+			temp = RXDET_MEAS_TIME_20M;
+			break;
+		case FSEL_CLKSEL_24M:
+		default:
+			temp = RXDET_MEAS_TIME_24M;
+			break;
+		}
+		samsung_usb3phy_crport_ctrl(sphy,
+			EXYNOS5_DRD_PHYSS_RXDET_MEAS_TIME, temp);
 	}
 }
 
