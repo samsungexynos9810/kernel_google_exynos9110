@@ -1269,14 +1269,14 @@ struct samsung_fixed_rate_clock exynos5433_fixed_rate_clks[] __initdata = {
 		MUX_STAT(_id, #_id, _id##_p, (unsigned long)o, s, w, (unsigned long)so, ss, sw)
 struct samsung_mux_clock exynos5433_mux_clks[] __initdata = {
 	/* EAGLE */
-	CMX_STAT(mout_egl_pll, EXYNOS5430_SRC_SEL_EGL0, 0, 1, EXYNOS5430_SRC_STAT_EGL0, 0, 3),
-	CMX_STAT(mout_bus_pll_egl_user, EXYNOS5430_SRC_SEL_EGL1, 0, 1, EXYNOS5430_SRC_STAT_EGL1, 0, 3),
-	CMX_STAT(mout_egl, EXYNOS5430_SRC_SEL_EGL2, 0, 1, EXYNOS5430_SRC_STAT_EGL2, 0, 3),
+	CMX_S_A(mout_egl_pll, EXYNOS5430_SRC_SEL_EGL0, 0, 1, "mout_egl_pll", EXYNOS5430_SRC_STAT_EGL0, 0, 3),
+	CMX_S_A(mout_bus_pll_egl_user, EXYNOS5430_SRC_SEL_EGL1, 0, 1, "mout_bus_pll_egl_user", EXYNOS5430_SRC_STAT_EGL1, 0, 3),
+	CMX_S_A(mout_egl, EXYNOS5430_SRC_SEL_EGL2, 0, 1, "mout_egl", EXYNOS5430_SRC_STAT_EGL2, 0, 3),
 
 	/* KFC */
-	CMX_STAT(mout_kfc_pll, EXYNOS5430_SRC_SEL_KFC0, 0, 1, EXYNOS5430_SRC_STAT_KFC0, 0, 3),
-	CMX_STAT(mout_bus_pll_kfc_user, EXYNOS5430_SRC_SEL_KFC1, 0, 1, EXYNOS5430_SRC_STAT_KFC1, 0, 3),
-	CMX_STAT(mout_kfc, EXYNOS5430_SRC_SEL_KFC2, 0, 1, EXYNOS5430_SRC_STAT_KFC2, 0, 3),
+	CMX_S_A(mout_kfc_pll, EXYNOS5430_SRC_SEL_KFC0, 0, 1, "mout_kfc_pll", EXYNOS5430_SRC_STAT_KFC0, 0, 3),
+	CMX_S_A(mout_bus_pll_kfc_user, EXYNOS5430_SRC_SEL_KFC1, 0, 1, "mout_bus_pll_kfc_user", EXYNOS5430_SRC_STAT_KFC1, 0, 3),
+	CMX_S_A(mout_kfc, EXYNOS5430_SRC_SEL_KFC2, 0, 1, "mout_kfc", EXYNOS5430_SRC_STAT_KFC2, 0, 3),
 
 	/* TOP */
 	CMX_STAT(mout_bus_pll_user, EXYNOS5430_SRC_SEL_TOP1, 0, 1, EXYNOS5430_SRC_STAT_TOP1, 0, 3),
@@ -1729,7 +1729,7 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(sclk_spdif_peric, "sclk_spdif_peric", "mout_sclk_spdif", EXYNOS5430_ENABLE_SCLK_TOP_PERIC, 9, CLK_IGNORE_UNUSED, 0),
 
 	/* MIF */
-	CGTE(sclk_bus_pll, "sclk_bus_pll", "mout_bus_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 2, CLK_IGNORE_UNUSED, 0),
+	CGTE_A(sclk_bus_pll, "mout_bus_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 2, CLK_IGNORE_UNUSED, 0, "sclk_bus_pll"),
 	CGTE(sclk_mfc_pll, "sclk_mfc_pll", "mout_mfc_pll_div2", EXYNOS5430_ENABLE_SCLK_MIF, 3, CLK_IGNORE_UNUSED, 0),
 	CGTE(sclk_hpm_mif, "sclk_hpm_mif", "dout_sclk_hpm_mif", EXYNOS5430_ENABLE_SCLK_MIF, 4, CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_cpif_200, "aclk_cpif_200", "dout_aclk_cpif_200", EXYNOS5430_ENABLE_ACLK_MIF3, 0, CLK_IGNORE_UNUSED, 0),
