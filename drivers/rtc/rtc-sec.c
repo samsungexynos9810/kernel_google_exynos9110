@@ -428,7 +428,7 @@ static bool s2m_is_jigonb_low(struct s2m_rtc_info *info)
 	return !(val & mask);
 }
 
-static void __devinit s2m_rtc_enable_wtsr_smpl(struct s2m_rtc_info *info,
+static void s2m_rtc_enable_wtsr_smpl(struct s2m_rtc_info *info,
 						struct sec_platform_data *pdata)
 {
 	u8 val;
