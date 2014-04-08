@@ -15,6 +15,8 @@
 #include <mach/map.h>
 #if defined(CONFIG_SOC_EXYNOS5422)
 #include <mach/regs-pmu-exynos5422.h>
+#elif defined(CONFIG_SOC_EXYNOS5433)
+#include <mach/regs-pmu-exynos5433.h>
 #endif
 
 #define EXYNOS_PMUREG(x)			(S5P_VA_PMU + (x))
@@ -65,7 +67,7 @@
 #define EXYNOS5_USBDEV1_PHY_CONTROL		EXYNOS_PMUREG(0x0708)
 #define EXYNOS5_USBDEV1_PHY_ENABLE		(1 << 0)
 
-#define EXYNOS5_USBHOST_PHY_CONTROL		((soc_is_exynos5250() ||  soc_is_exynos5430()) ? \
+#define EXYNOS5_USBHOST_PHY_CONTROL		((soc_is_exynos5250() ||  soc_is_exynos5430() || soc_is_exynos5433()) ? \
 						EXYNOS_PMUREG(0x0708) :\
 						EXYNOS_PMUREG(0x070C))
 #define EXYNOS5_USBHOST_PHY_ENABLE		(1 << 0)
@@ -346,7 +348,7 @@
 			(EXYNOS_COMMON_CONFIGURATION(_nr) + 0x8)
 
 #define EXYNOS_ARM_L2_CONFIGURATION		EXYNOS_PMUREG(0x2600)
-#define EXYNOS_L2_CONFIGURATION(_nr)		(soc_is_exynos5430() ? \
+#define EXYNOS_L2_CONFIGURATION(_nr)		((soc_is_exynos5430() || soc_is_exynos5433()) ? \
 			(EXYNOS_ARM_L2_CONFIGURATION + ((_nr) * 0x20)) :\
 			(EXYNOS_ARM_L2_CONFIGURATION + ((_nr) * 0x80)))
 

@@ -40,7 +40,7 @@ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-smc.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= firmware.o
 obj-$(CONFIG_SOC_EXYNOS5430)	+= pmu-exynos5430.o
-obj-$(CONFIG_SOC_EXYNOS5433)	+= pmu-exynos5430.o
+obj-$(CONFIG_SOC_EXYNOS5433)	+= pmu-exynos5433.o
 obj-$(CONFIG_SOC_EXYNOS5422)	+= pmu-exynos5422.o
 
 obj-$(CONFIG_EXYNOS_SNAPSHOT)	+= exynos-ss.o

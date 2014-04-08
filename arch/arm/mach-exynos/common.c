@@ -1060,8 +1060,10 @@ void __init exynos_init_time(void)
 					EXYNOS4_IRQ_MCT_L0, EXYNOS4_IRQ_MCT_L1);
 	}
 
-	if(soc_is_exynos5430() || soc_is_exynos5433())
+	if(soc_is_exynos5430())
 		exynos5430_pmu_init();
+	if (soc_is_exynos5433())
+		exynos5433_pmu_init();
 	if(soc_is_exynos5422())
 		exynos5422_pmu_init();
 }
