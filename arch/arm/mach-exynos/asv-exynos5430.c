@@ -1220,11 +1220,6 @@ int exynos5430_init_asv(struct asv_common *asv_info)
 	unsigned int asv_tbl_ver_ema;
 	unsigned int egl_speed_option_reg;
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-	pr_err("EXYNOS5430 ASV : cannot support Rev0\n");
-	return -EINVAL;
-#endif
-
 	/* TODO HERE : enable abb clokc */
 
 	asv_ref_info.is_speedgroup = true;
