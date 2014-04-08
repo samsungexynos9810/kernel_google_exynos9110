@@ -44,7 +44,8 @@ phys_addr_t lli_phys_addr;
  *
  * Returns a pointer to the allocated shared memory buffer address.
  */
-void __iomem *mipi_lli_request_sh_region(u32 sh_addr, u32 size)
+void __iomem *mipi_lli_request_sh_region(unsigned long sh_addr,
+					unsigned long size)
 {
 	if (!g_lli)
 		return NULL;
@@ -178,7 +179,7 @@ EXPORT_SYMBOL(mipi_lli_send_interrupt);
  */
 void mipi_lli_reset_interrupt(void)
 {
-	if (!g_lli || !g_lli->driver || !g_lli->driver->read_signal)
+	if (!g_lli || !g_lli->driver || !g_lli->driver->reset_signal)
 		return;
 
 	g_lli->driver->reset_signal(g_lli);
