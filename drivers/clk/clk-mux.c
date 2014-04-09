@@ -92,7 +92,7 @@ static int clk_mux_set_parent(struct clk_hw *hw, u8 index)
 	val |= index << mux->shift;
 	writel(val, mux->reg);
 
-#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined (CONFIG_SOC_EXYNOS5430)
 	if (mux->stat_reg) {
 		unsigned int timeout = 1000;
 		unsigned int mask = BIT(mux->stat_shift + mux->stat_width - 1);
@@ -124,7 +124,7 @@ const struct clk_ops clk_mux_ops = {
 };
 EXPORT_SYMBOL_GPL(clk_mux_ops);
 
-#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined (CONFIG_SOC_EXYNOS5430)
 struct clk *clk_register_mux_table(struct device *dev, const char *name,
 		const char **parent_names, u8 num_parents, unsigned long flags,
 		void __iomem *reg, u8 shift, u32 mask,
@@ -157,11 +157,11 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
 	/* struct clk_mux assignments */
 	mux->reg = reg;
 	mux->shift = shift;
-	#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	mux->stat_reg = stat_reg;
 	mux->stat_shift = stat_shift;
 	mux->stat_width = stat_width;
-	#endif
+#endif
 	mux->mask = mask;
 	mux->flags = clk_mux_flags;
 	mux->lock = lock;
@@ -176,7 +176,7 @@ struct clk *clk_register_mux_table(struct device *dev, const char *name,
 	return clk;
 }
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 struct clk *clk_register_mux(struct device *dev, const char *name,
 		const char **parent_names, u8 num_parents, unsigned long flags,
 		void __iomem *reg, u8 shift, u8 width, u8 clk_mux_flags, spinlock_t *lock,

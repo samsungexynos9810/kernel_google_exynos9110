@@ -164,7 +164,7 @@ void __init exynos_pwm_clk_init(struct device_node *np)
 				"pwm-scaler1", 0, reg_base + REG_TCFG1, 16, 4,
 				0, pwm_div_table , &lock);
 
-	#if defined (CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined (CONFIG_SOC_EXYNOS5430)
 	clk_table[pwm_tin0] = clk_register_mux(NULL, "pwm-tin0",
 				pwm_tin0_p, ARRAY_SIZE(pwm_tin0_p), 0,
 				reg_base + REG_TCFG1, 3, 0, 0, &lock, 0, 0, 0);
@@ -184,7 +184,7 @@ void __init exynos_pwm_clk_init(struct device_node *np)
 	clk_table[pwm_tin4] = clk_register_mux(NULL, "pwm-tin4",
 				pwm_tin4_p, ARRAY_SIZE(pwm_tin4_p), 0,
 				reg_base + REG_TCFG1, 19, 0, 0, &lock, 0, 0, 0);
-	#else
+#else
 	clk_table[pwm_tin0] = clk_register_mux(NULL, "pwm-tin0",
 				pwm_tin0_p, ARRAY_SIZE(pwm_tin0_p), 0,
 				reg_base + REG_TCFG1, 3, 0, 0, &lock);
@@ -204,7 +204,7 @@ void __init exynos_pwm_clk_init(struct device_node *np)
 	clk_table[pwm_tin4] = clk_register_mux(NULL, "pwm-tin4",
 				pwm_tin4_p, ARRAY_SIZE(pwm_tin4_p), 0,
 				reg_base + REG_TCFG1, 19, 0, 0, &lock);
-	#endif
+#endif
 
 	pr_info("Exynos: pwm: clock setup completed\n");
 }

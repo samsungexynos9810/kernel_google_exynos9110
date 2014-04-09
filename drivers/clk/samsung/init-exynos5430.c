@@ -119,22 +119,12 @@ static void clkout_init_clock(void)
 
 static void aud_init_clock(void)
 {
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	/* AUD0 */
-	exynos_set_parent("mout_aud_pll_user", "mout_aud_pll");
-	exynos_set_parent("mout_aud_pll_sub", "mout_aud_pll_user");
-
-	/* AUD1 */
-	exynos_set_parent("mout_sclk_i2s", "mout_aud_pll_user");
-	exynos_set_parent("mout_sclk_pcm", "mout_aud_pll_user");
-#else
 	/* AUD0 */
 	exynos_set_parent("mout_aud_pll_user", "fout_aud_pll");
 
 	/* AUD1 */
 	exynos_set_parent("mout_sclk_aud_i2s", "mout_aud_pll_user");
 	exynos_set_parent("mout_sclk_aud_pcm", "mout_aud_pll_user");
-#endif
 
 	exynos_set_rate("fout_aud_pll", 196608010);
 	exynos_set_rate("dout_aud_ca5", 196608010);
