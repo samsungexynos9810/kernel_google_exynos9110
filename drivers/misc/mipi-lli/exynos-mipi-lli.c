@@ -97,7 +97,7 @@ static int exynos_lli_debug_info(struct mipi_lli *lli)
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[MPHY-STD]0x%x : 0x%08x\n",
-				0x10F20000 + phy_std_debug_info[i],
+				0x10F20000 + (phy_std_debug_info[i] / 4),
 				readl(phy->loc_regs + phy_std_debug_info[i]));
 	}
 
@@ -106,7 +106,7 @@ static int exynos_lli_debug_info(struct mipi_lli *lli)
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[MPHY-CMN]0x%x : 0x%08x\n",
-				0x10F20000 + phy_cmn_debug_info[i],
+				0x10F20000 + (phy_cmn_debug_info[i] / 4),
 				readl(phy->loc_regs + phy_cmn_debug_info[i]));
 	}
 	writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
@@ -116,7 +116,7 @@ static int exynos_lli_debug_info(struct mipi_lli *lli)
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[MPHY-OVTM]0x%x : 0x%08x\n",
-				0x10F20000 + phy_ovtm_debug_info[i],
+				0x10F20000 + (phy_ovtm_debug_info[i] / 4),
 				readl(phy->loc_regs + phy_ovtm_debug_info[i]));
 	}
 	writel(0x0, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
