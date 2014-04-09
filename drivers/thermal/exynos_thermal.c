@@ -57,14 +57,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_TMU_REG_SAMPLING_INTERVAL	0x2C
 #define EXYNOS_TMU_REG_CURRENT_TEMP		0x40
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-/* Exynos5430 specific registers */
-#define EXYNOS_THD_TEMP_RISE			0x50
-#define EXYNOS_THD_TEMP_FALL			0x60
-#define EXYNOS_TMU_REG_INTEN			0xB0
-#define EXYNOS_TMU_REG_INTSTAT			0xB4
-#define EXYNOS_TMU_REG_INTCLEAR			0xB8
-#elif defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define EXYNOS_THD_TEMP_RISE			0x50
 #define EXYNOS_THD_TEMP_FALL			0x60
 #define EXYNOS_THD_TEMP_RISE3_0			0x50
@@ -113,7 +106,7 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_EMUL_CON				0x80
 
 #define EXYNOS_TRIMINFO_RELOAD			0x1
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define EXYNOS_TMU_CLEAR_RISE_INT      		0xff
 #define EXYNOS_TMU_CLEAR_FALL_INT      		(0xff << 16)
 #else
@@ -149,17 +142,12 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #endif /* CONFIG_THERMAL_EMULATION */
 
 /* CPU Zone information */
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 #define PANIC_ZONE      			10
-#else
-#define PANIC_ZONE      			6
-#endif
 #define WARN_ZONE       			3
 #define MONITOR_ZONE    			2
 #define SAFE_ZONE       			1
 
 /* Rising, Falling interrupt bit number*/
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 #define RISE_LEVEL1_SHIFT      			1
 #define RISE_LEVEL2_SHIFT      			2
 #define RISE_LEVEL3_SHIFT			3
@@ -175,23 +163,6 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define FALL_LEVEL5_SHIFT      			21
 #define FALL_LEVEL6_SHIFT      			22
 #define FALL_LEVEL7_SHIFT      			23
-#else
-#define RISE_LEVEL1_SHIFT			4
-#define RISE_LEVEL2_SHIFT			8
-#define RISE_LEVEL3_SHIFT			12
-#define RISE_LEVEL4_SHIFT      			0
-#define RISE_LEVEL5_SHIFT      			0
-#define RISE_LEVEL6_SHIFT      			0
-#define RISE_LEVEL7_SHIFT      			0
-#define FALL_LEVEL0_SHIFT			16
-#define FALL_LEVEL1_SHIFT			20
-#define FALL_LEVEL2_SHIFT			24
-#define FALL_LEVEL3_SHIFT			28
-#define FALL_LEVEL4_SHIFT      			0
-#define FALL_LEVEL5_SHIFT      			0
-#define FALL_LEVEL6_SHIFT      			0
-#define FALL_LEVEL7_SHIFT      			0
-#endif
 
 #define GET_ZONE(trip) (trip + 2)
 #define GET_TRIP(zone) (zone - 2)
@@ -966,7 +937,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	unsigned int status;
 	unsigned int rising_threshold = 0, falling_threshold = 0;
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	unsigned int rising_threshold7_4 = 0, falling_threshold7_4 = 0;
 #endif
 	int ret = 0, threshold_code, i, trigger_levs = 0;
@@ -1034,7 +1005,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 		writel(falling_threshold, data->base[id] + EXYNOS_THD_TEMP_FALL);
 		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT, data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
 	} else if (data->soc == SOC_ARCH_EXYNOS5430) {
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 		for (i = 0; i < trigger_levs; i++) {
 			threshold_code = temp_to_code(data,
 					pdata->trigger_levels[i], id);
@@ -1578,81 +1549,6 @@ static struct exynos_tmu_platform_data const exynos_default_tmu_data = {
 #define EXYNOS_TMU_DRV_DATA (NULL)
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-static struct exynos_tmu_platform_data const exynos5430_evt0_tmu_data = {
-	.threshold_falling = 2,
-	.trigger_levels[0] = 55,
-	.trigger_levels[1] = 60,
-	.trigger_levels[2] = 65,
-	.trigger_levels[3] = 110,
-	.trigger_level0_en = 1,
-	.trigger_level1_en = 1,
-	.trigger_level2_en = 1,
-	.trigger_level3_en = 1,
-	.trigger_level4_en = 0,
-	.trigger_level5_en = 0,
-	.trigger_level6_en = 0,
-	.trigger_level7_en = 0,
-	.gain = 8,
-	.reference_voltage = 16,
-	.noise_cancel_mode = 7,
-	.cal_type = TYPE_ONE_POINT_TRIMMING,
-	.efuse_value = 55,
-	.freq_tab[0] = {
-		.freq_clip_max = 1000 * 1000,	/* max frequency of Eagle is 1.0Ghz temporarily. */
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1200 * 1000,
-#endif
-		.temp_level = 55,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[1] = {
-		.freq_clip_max = 1000 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1000 * 1000,
-#endif
-		.temp_level = 60,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[2] = {
-		.freq_clip_max = 800 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 800 * 1000,
-#endif
-		.temp_level = 65,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[3] = {
-		.freq_clip_max = 700 * 1000,	/* eagle need to be hotplugged-out */
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 700 * 1000,
-#endif
-		.temp_level = 70,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.size[THERMAL_TRIP_ACTIVE] = 1,
-	.size[THERMAL_TRIP_PASSIVE] = 3,
-	.freq_tab_count = 4,
-	.type = SOC_ARCH_EXYNOS,
-};
-#define EXYNOS5430_EVT0_TMU_DRV_DATA (&exynos5430_evt0_tmu_data)
-#else
-#define EXYNOS5430_EVT0_TMU_DRV_DATA (NULL)
-#endif
-
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.threshold_falling = 2,
 	.trigger_levels[0] = 70,
@@ -1748,9 +1644,6 @@ static struct exynos_tmu_platform_data const exynos5430_tmu_data = {
 	.type = SOC_ARCH_EXYNOS5430,
 };
 #define EXYNOS5430_TMU_DRV_DATA (&exynos5430_tmu_data)
-#else
-#define EXYNOS5430_TMU_DRV_DATA (NULL)
-#endif
 
 #if defined(CONFIG_SOC_EXYNOS5422)
 static struct exynos_tmu_platform_data const exynos5_tmu_data = {
@@ -1853,11 +1746,7 @@ static const struct of_device_id exynos_tmu_match[] = {
 	},
 	{
 		.compatible = "samsung,exynos5430-tmu",
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-		.data = (void *)EXYNOS5430_EVT0_TMU_DRV_DATA,
-#else
 		.data = (void *)EXYNOS5430_TMU_DRV_DATA,
-#endif
 	},
 	{
 		.compatible = "samsung,exynos5422-tmu",
@@ -1879,11 +1768,7 @@ static struct platform_device_id exynos_tmu_driver_ids[] = {
 	},
 	{
 		.name		= "exynos5430-tmu",
-#if defined(CONFIG_SOC_EXYNOS5430_REV_0)
-		.driver_data	= (kernel_ulong_t)EXYNOS5430_EVT0_TMU_DRV_DATA,
-#else
 		.driver_data	= (kernel_ulong_t)EXYNOS5430_TMU_DRV_DATA,
-#endif
 	},
 	{
 		.name		= "exynos5422-tmu",
@@ -2003,7 +1888,7 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	pr_info("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CURRENT_TEMP);
 	pr_info("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE3_0);
 	pr_info("THRESHOLD_TEMP_RISE3_0[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE7_4);
@@ -2012,11 +1897,6 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	pr_info("THRESHOLD_TEMP_FALL3_0[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL7_4);
 	pr_info("THRESHOLD_TEMP_FALL7_4[%d] = 0x%x\n", id, reg_data);
-#else
-	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE);
-	pr_info("THRESHOLD_TEMP_RISE[%d] = 0x%x\n", id, reg_data);
-	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_FALL);
-	pr_info("THRESHOLD_TEMP_FALL[%d] = 0x%x\n", id, reg_data);
 #endif
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_INTEN);
 	pr_info("INTEN[%d] = 0x%x\n", id, reg_data);
@@ -2071,7 +1951,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
 	int ret, i, count = 0;
 	int trigger_level_en[TRIP_EN_COUNT];
-#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+#if defined(CONFIG_SOC_EXYNOS5430)
 	unsigned int spd_option_flag, spd_sel;
 #endif
 
@@ -2086,7 +1966,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#ifdef CONFIG_SOC_EXYNOS5430_REV_1
+#if defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_get_egl_speed_option(&spd_option_flag, &spd_sel);
 	if (spd_option_flag == EGL_DISABLE_SPD_OPTION)
 		pdata->freq_tab[0].freq_clip_max = 1200 * 1000;
