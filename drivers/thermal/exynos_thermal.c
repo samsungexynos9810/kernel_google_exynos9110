@@ -221,15 +221,10 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define IDLE_MAX_TIME			1000
 #endif
 
-#define SWTRIP_TEMP				110
-#define SWTRIP_NOISE_COUNT		1
-
 #define TMU_CONTROL_RSVD_MASK  		0xe08f00fe
 #define TMU_CONTROL_ONOFF_MASK		0xfffffffe
 
 static bool is_tmu_probed;
-
-static unsigned int swtrip_counter = 0;
 
 extern int gpu_is_power_on(void);
 static enum tmu_noti_state_t tmu_old_state = TMU_NORMAL;
@@ -1248,8 +1243,6 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	u8 temp_code;
 	int temp, i, max = INT_MIN, min = INT_MAX, gpu_temp = 0;
 	int alltemp[EXYNOS_TMU_COUNT] = {0, };
-	char tmustate_string[20];
-	char *envp[2];
 
 	mutex_lock(&data->lock);
 
@@ -1269,19 +1262,6 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 				min = temp;
 		}
 
-	}
-
-	if (max >= SWTRIP_TEMP)
-		swtrip_counter++;
-	else
-		swtrip_counter = 0;
-
-	if (swtrip_counter >= SWTRIP_NOISE_COUNT) {
-		snprintf(tmustate_string, sizeof(tmustate_string), "TMUSTATE=%d", 3);
-		envp[0] = tmustate_string;
-		envp[1] = NULL;
-		pr_err("[TMU] SW trip by reaching trip temp(%d)!\n", SWTRIP_TEMP);
-		kobject_uevent_env(&th_zone->therm_dev->device.kobj, KOBJ_CHANGE, envp);
 	}
 
 	exynos_check_tmu_noti_state(max);
