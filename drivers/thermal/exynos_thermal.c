@@ -1203,38 +1203,41 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 			pdata->trigger_level2_en << RISE_LEVEL2_SHIFT |
 			pdata->trigger_level1_en << RISE_LEVEL1_SHIFT |
 			pdata->trigger_level0_en;
+
+		__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+		cpu_relax();
+		con &= TMU_CONTROL_ONOFF_MASK;
+		__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
+		while (1) {
+			status = readl(data->base[id] + EXYNOS_TMU_REG_STATUS);
+			if (status & 0x01)
+				break;
+
+			timeout--;
+			if (!timeout) {
+				pr_err("%s: timeout TMU busy\n", __func__);
+				break;
+			}
+
+			cpu_relax();
+			usleep_range(1, 2);
+		};
+
+		con |= EXYNOS_TMU_CORE_ON;
+		__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
+		cpu_relax();
+
+		con |= EXYNOS_THERM_TRIP_EN;
+		__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
+
 	} else {
 		con |= EXYNOS_TMU_CORE_OFF;
 		interrupt_en = 0; /* Disable all interrupts */
+		__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 	}
 
-	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
-	cpu_relax();
-	con &= TMU_CONTROL_ONOFF_MASK;
-	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
-
-	while (1) {
-		status = readl(data->base[id] + EXYNOS_TMU_REG_STATUS);
-		if (status & 0x01)
-			break;
-
-		timeout--;
-		if (!timeout) {
-			pr_err("%s: timeout TMU busy\n", __func__);
-			break;
-		}
-
-		cpu_relax();
-		usleep_range(1, 2);
-	};
-
-	con |= EXYNOS_TMU_CORE_ON;
-	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
-
-	cpu_relax();
-
-	con |= EXYNOS_THERM_TRIP_EN;
-	__raw_writel(con, data->base[id] + EXYNOS_TMU_REG_CONTROL);
 
 	writel(interrupt_en, data->base[id] + EXYNOS_TMU_REG_INTEN);
 
