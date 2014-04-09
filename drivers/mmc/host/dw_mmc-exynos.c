@@ -167,11 +167,15 @@ static void exynos_sfr_save(unsigned int i)
 	dw_mci_save_sfr[i][9] = mci_readl(host, UHS_REG);
 	dw_mci_save_sfr[i][10] = mci_readl(host, BMOD);
 	dw_mci_save_sfr[i][11] = mci_readl(host, PLDMND);
-	dw_mci_save_sfr[i][12] = mci_readl(host, DBADDR);
-	dw_mci_save_sfr[i][13] = mci_readl(host, IDINTEN);
-	dw_mci_save_sfr[i][14] = mci_readl(host, CLKSEL);
-	dw_mci_save_sfr[i][15] = mci_readl(host, CDTHRCTL);
-
+	dw_mci_save_sfr[i][12] = mci_readl(host, IDINTEN);
+	dw_mci_save_sfr[i][13] = mci_readl(host, CLKSEL);
+	dw_mci_save_sfr[i][14] = mci_readl(host, CDTHRCTL);
+#if defined(CONFIG_SOC_EXYNOS5433)
+	dw_mci_save_sfr[i][15] = mci_readl(host, DBADDRL);
+	dw_mci_save_sfr[i][16] = mci_readl(host, DBADDRU);
+#else
+	dw_mci_save_sfr[i][15] = mci_readl(host, DBADDR);
+#endif
 	/* For LPA */
 	atomic_inc_return(&host->ciu_en_win);
 	if (host->pdata->enable_cclk_on_suspend) {
@@ -179,7 +183,6 @@ static void exynos_sfr_save(unsigned int i)
 		dw_mci_ciu_clk_en(host, false);
 	}
 	atomic_dec_return(&host->ciu_en_win);
-
 }
 
 static void exynos_sfr_restore(unsigned int i)
@@ -202,11 +205,15 @@ static void exynos_sfr_restore(unsigned int i)
 	mci_writel(host, UHS_REG, dw_mci_save_sfr[i][9]);
 	mci_writel(host, BMOD  , dw_mci_save_sfr[i][10]);
 	mci_writel(host, PLDMND, dw_mci_save_sfr[i][11]);
-	mci_writel(host, DBADDR, dw_mci_save_sfr[i][12]);
-	mci_writel(host, IDINTEN, dw_mci_save_sfr[i][13]);
-	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][14]);
-	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][15]);
-
+	mci_writel(host, IDINTEN, dw_mci_save_sfr[i][12]);
+	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][13]);
+	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][14]);
+#if defined(CONFIG_SOC_EXYNOS5433)
+	mci_writel(host, DBADDRL, dw_mci_save_sfr[i][15]);
+	mci_writel(host, DBADDRU, dw_mci_save_sfr[i][16]);
+#else
+	mci_writel(host, DBADDR, dw_mci_save_sfr[i][15]);
+#endif
 	atomic_inc_return(&host->ciu_en_win);
 	dw_mci_ciu_clk_en(host, false);
 
