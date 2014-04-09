@@ -61,6 +61,10 @@ static u32 exynos_lli_cal_remap(u32 base_addr, unsigned long size)
 	if (size != (1 << bit_pos))
 		return 0;
 
+	/* check base_address is aligned with size */
+	if (base_addr & (size - 1))
+		return 0;
+
 	remap_addr = (base_addr >> bit_pos) << LLI_REMAP_BASE_ADDR_SHIFT;
 	remap_addr |= bit_pos;
 	remap_addr |= LLI_REMAP_ENABLE;
