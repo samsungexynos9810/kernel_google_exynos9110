@@ -717,7 +717,7 @@ static int exynos_dm_hotplug_notifier(struct notifier_block *notifier,
 	case PM_SUSPEND_PREPARE:
 		mutex_lock(&thread_lock);
 		in_suspend_prepared = true;
-		if (dynamic_hotplug(CMD_LOW_POWER))
+		if (!dynamic_hotplug(CMD_LOW_POWER))
 			prev_cmd = CMD_LOW_POWER;
 		exynos_dm_hotplug_disable();
 		if (dm_hotplug_task) {
