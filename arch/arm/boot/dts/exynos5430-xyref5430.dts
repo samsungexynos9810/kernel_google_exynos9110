@@ -47,10 +47,10 @@
 		fifo-depth = <0x80>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
-		samsung,dw-mshc-sdr-timing = <3 0 2 0>;
+		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
 		samsung,dw-mshc-ddr-timing = <3 0 3 2>;
 		samsung,dw-mshc-hs200-timing = <3 0 3 0>;
-		samsung,dw-mshc-ddr200-timing = <1 1 2 0>;
+		samsung,dw-mshc-ddr200-timing = <1 0 6 0>;
 		samsung,dw-mshc-ddr200-delay-line = <100>;
 		clk_pin = "gpr0-0";
 		clk_addr = "15690000.pinctrl";
