@@ -55,15 +55,9 @@ static struct exynos_pmu_conf exynos5430_pmu_config[] = {
 	{ EXYNOS5430_KFC_L2_SYS_PWR_REG,			{ 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x7} }, /*_10C4 */
 	{ EXYNOS5430_CLKSTOP_CMU_TOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1100 */
 	{ EXYNOS5430_CLKRUN_CMU_TOP_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1104 */
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	{ EXYNOS5430_RESET_CMU_TOP_SYS_PWR_REG,			{ 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x0} }, /* 110C */
-	{ EXYNOS5430_CLKRUN_CMU_MIF_SYS_PWR_REG,		{ 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1124 */
-	{ EXYNOS5430_RESET_CMU_MIF_SYS_PWR_REG,			{ 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x0} }, /* 112C */
-#else
 	{ EXYNOS5430_RESET_CMU_TOP_SYS_PWR_REG,			{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 110C */
 	{ EXYNOS5430_CLKRUN_CMU_MIF_SYS_PWR_REG,		{ 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x0} }, /* 1124 */
 	{ EXYNOS5430_RESET_CMU_MIF_SYS_PWR_REG,			{ 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 112C */
-#endif
 	{ EXYNOS5430_RESET_CPUCLKSTOP_SYS_PWR_REG,		{ 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x0} }, /* 111C */
 	{ EXYNOS5430_CLKSTOP_CMU_MIF_SYS_PWR_REG,		{ 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1120 */
 	{ EXYNOS5_DDRPHY_DLLLOCK_SYS_PWR_REG,			{ 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1} }, /* 1138 */
@@ -91,13 +85,8 @@ static struct exynos_pmu_conf exynos5430_pmu_config[] = {
 	{ EXYNOS5430_PAD_RETENTION_EBIB_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1234 */
 	{ EXYNOS5430_PAD_RETENTION_SPI_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1238 */
 	{ EXYNOS5430_PAD_RETENTION_MIF_SYS_PWR_REG,		{ 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 123C */
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-	{ EXYNOS5_PAD_ISOLATION_SYS_PWR_REG,			{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1240 */
-	{ EXYNOS5430_PAD_ISOLATION_MIF_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1250 */
-#else
 	{ EXYNOS5_PAD_ISOLATION_SYS_PWR_REG,			{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x1} }, /* 1240 */
 	{ EXYNOS5430_PAD_ISOLATION_MIF_SYS_PWR_REG,		{ 0x1, 0x1, 0x0, 0x0, 0x0, 0x0, 0x1} }, /* 1250 */
-#endif
 	{ EXYNOS5430_PAD_RETENTION_USBXTI_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1244 */
 	{ EXYNOS5430_PAD_RETENTION_BOOTLDO_SYS_PWR_REG,		{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1248 */
 	{ EXYNOS5430_PAD_RETENTION_FSYSGENIO_SYS_PWR_REG,	{ 0x1, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0} }, /* 1254 */
@@ -363,14 +352,12 @@ static void exynos_use_feedback(void)
 void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 {
 	unsigned int i;
-#ifdef CONFIG_SOC_EXYNOS5430_REV_1
 	unsigned int tmp;
 
 	/* Enable non retention flip-flop reset */
 	tmp = __raw_readl(EXYNOS_PMU_SPARE0);
 	tmp |= EXYNOS_EN_NONRET_RESET;
 	__raw_writel(tmp, EXYNOS_PMU_SPARE0);
-#endif
 
 	for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
 		__raw_writel(exynos_pmu_config[i].val[mode],
@@ -571,12 +558,10 @@ int __init exynos5430_pmu_init(void)
 	tmp |= EXYNOS_PS_HOLD_EN;
 	__raw_writel(tmp, EXYNOS_PS_HOLD_CONTROL);
 
-#ifdef CONFIG_SOC_EXYNOS5430_REV_1
 	/* Enable non retention flip-flop reset */
 	tmp = __raw_readl(EXYNOS_PMU_SPARE0);
 	tmp |= EXYNOS_EN_NONRET_RESET;
 	__raw_writel(tmp, EXYNOS_PMU_SPARE0);
-#endif
 
 	exynos_pmu_config = exynos5430_pmu_config;
 	exynos_cpu.power_up = exynos5430_secondary_up;
