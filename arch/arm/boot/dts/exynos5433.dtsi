@@ -648,7 +648,110 @@
 		interrupts = <0 282 0>, <0 283 0>, <0 281 0>;
 		clocks = <&clock 1>, <&clock 10>, <&clock 1000>, <&clock 3120>, <&clock 4132>, <&clock 5072>;
 		clock-names = "fin_pll", "fout_g3d_pll", "aclk_g3d", "mout_g3d_pll", "dout_aclk_g3d", "mout_aclk_g3d";
-		/*samsung,power-domain = <&pd_g3d>;*/
+		samsung,power-domain = <&pd_g3d>;
+	};
+
+	pd_gscl: pd-gscl@105c4000 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4000 0x20>;
+	};
+
+	pd_cam0: pd-cam0@105c4020 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4020 0x20>;
+		parent = <&pd_disp &pd_cam1>;
+	};
+
+	pd_mscl: pd-mscl@105c4040 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4040 0x20>;
+	};
+
+	pd_g3d: pd-g3d@105c4060 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4060 0x20>;
+	};
+
+	pd_disp: pd-disp@105c4080 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4080 0x20>;
+
+		spd_decon: spd-decon@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_mipi_dsi: spd-mipi-dsi@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_mic: spd-mic@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_mdnie: spd-mdnie@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_decon_tv: spd-decon-tv@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_hdmi: spd-hdmi@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_hdmi_phy: spd-hdmi-phy@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_mipi_dphy_m4s4: spd-mipi-dphy-m4s4@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+
+		spd_pll_disp: spd-pll-disp@105c4080 {
+			compatible = "samsung,exynos-spd";
+		};
+	};
+
+	pd_cam1: pd-cam1@105c40a0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c40a0 0x20>;
+	};
+
+	pd_maudio: pd-maudio@105c40c0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c40c0 0x20>;
+	};
+
+	pd_fsys: pd-fsys@105c40e0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c40e0 0x20>;
+	};
+
+	pd_bus2: pd-bus2@105c4100 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4100 0x20>;
+	};
+
+	pd_g2d: pd-g2d@105c4120 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4120 0x20>;
+	};
+
+	pd_isp: pd-isp@105c4140 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4140 0x20>;
+		parent = <&pd_cam1 &pd_cam0>;
+	};
+
+	pd_mfc: pd-mfc@105c4180 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c4180 0x20>;
+	};
+
+	pd_hevc: pd-hevc@105c41c0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x105c41c0 0x20>;
 	};
 
 	amba {
@@ -709,7 +812,7 @@
 
 		reg = <0x13800000 0x40000>, <0x13900000 0x40000>, <0x13930000 0x48>;
 
-		/*samsung,power-domain = <&spd_decon>;*/
+		samsung,power-domain = <&spd_decon>;
 
 		/* interrupt num */
 		interrupts = <0 201 0>, <0 202 0>, <0 203 0>, <0 205 0>;
