@@ -19,6 +19,8 @@
 #include <mach/regs-clock-exynos5422.h>
 #elif defined(CONFIG_SOC_EXYNOS5430)
 #include <mach/regs-clock-exynos5430.h>
+#elif defined(CONFIG_SOC_EXYNOS5433)
+#include <mach/regs-clock-exynos5433.h>
 #endif
 
 #define EXYNOS_CLKREG(x)			(S5P_VA_CMU + (x))
