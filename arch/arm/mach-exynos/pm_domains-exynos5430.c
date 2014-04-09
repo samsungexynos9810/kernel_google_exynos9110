@@ -26,56 +26,56 @@ struct exynos5430_pd_state {
 	unsigned long val;
 };
 
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 static struct exynos5430_pd_state cmutop_maudio[] = {
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP0,	.val = (1<<4), },
 };
 #endif
 
 static struct exynos5430_pd_state cmutop_mfc0[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP4,	.val = (1<<8 | 1<<4 | 1<<0), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<1), },
 };
 
 static struct exynos5430_pd_state cmutop_mfc1[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP4,	.val = (1<<24 | 1<<20 | 1<<16), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<2), },
 };
 
 static struct exynos5430_pd_state cmutop_hevc[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP2,	.val = (1<<28), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<3), },
 };
 
 static struct exynos5430_pd_state cmutop_gscl[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP3,	.val = (1<<8), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<7), },
 };
 
 static struct exynos5430_pd_state cmutop_mscl[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP_MSCL, .val = (1<<8 | 1<<4 | 1<<0), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<10), },
 };
 
 static struct exynos5430_pd_state cmutop_g2d[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP3,	.val = (1<<4 | 1<<0), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<0), },
 };
 
 static struct exynos5430_pd_state cmutop_isp[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP0,	 .val = (1<<4), },
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP2,	 .val = (1<<4 | 1<<0), },
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP_CAM1, .val = (1<<8 | 1<<4 | 1<<0), },
@@ -88,7 +88,7 @@ static struct exynos5430_pd_state cmutop_cam0[] = {
 };
 
 static struct exynos5430_pd_state cmutop_cam1[] = {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	{ .reg = EXYNOS5430_SRC_ENABLE_TOP2,	 .val = (1<<16 | 1<<12 | 1<<8), },
 #endif
 	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,.val = (1<<7 | 1<<5 | 1<<4 | 1<<1 | 1<<0), },
@@ -120,12 +120,10 @@ static void exynos5_pd_disable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 #ifdef CONFIG_SOC_EXYNOS5430
 static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned int turn_on)
 {
-#ifndef CONFIG_SOC_EXYNOS5430_REV_0
 #ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
 	exynos5_int_notify_power_status(pd->genpd.name, true);
 	exynos5_isp_notify_power_status(pd->genpd.name, true);
 	exynos5_disp_notify_power_status(pd->genpd.name, true);
-#endif
 #endif
 }
 
@@ -136,7 +134,7 @@ static struct sleep_save exynos_pd_maudio_clk_save[] = {
 
 static int exynos_pd_maudio_power_on_pre(struct exynos_pm_domain *pd)
 {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	exynos5_pd_enable_clk(cmutop_maudio, ARRAY_SIZE(cmutop_maudio));
 #endif
 	return 0;
@@ -163,7 +161,7 @@ static int exynos_pd_maudio_power_off_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_maudio_power_off_post(struct exynos_pm_domain *pd)
 {
-#if defined(EXYNOS5430_CLK_SRC_GATING) && defined(CONFIG_SOC_EXYNOS5430_REV_1)
+#if defined(EXYNOS5430_CLK_SRC_GATING)
 	exynos5_pd_disable_clk(cmutop_maudio, ARRAY_SIZE(cmutop_maudio));
 #endif
 	return 0;
@@ -415,11 +413,7 @@ static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg |= ((1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
-#else
-	reg |= (1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
-#endif
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
 	return 0;
@@ -461,11 +455,7 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("disp pre power off\n");
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg |= ((1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
-#else
-	reg |= (1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
-#endif
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
 	s3c_pm_do_save(exynos_pd_disp_clk_save,
@@ -485,11 +475,7 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
-#if defined(CONFIG_SOC_EXYNOS5430_REV_1)
 	reg &= ~((1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
-#else
-	reg &= ~(1<<7 | 1<<6 | 1<<5 | 1<<2 | 1<<1);
-#endif
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
 
 	__raw_writel(0x0, EXYNOS5430_SRC_SEL_MIF4);
