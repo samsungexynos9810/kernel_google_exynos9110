@@ -2070,8 +2070,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 {
 	struct exynos_tmu_data *data;
 	struct exynos_tmu_platform_data *pdata = pdev->dev.platform_data;
-	int ret, i, count = 0;
-	int trigger_level_en[TRIP_EN_COUNT];
+	int ret, i;
 #if defined(CONFIG_SOC_EXYNOS5430)
 	unsigned int spd_option_flag, spd_sel;
 #endif
@@ -2176,27 +2175,11 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 
 	/* Register the sensor with thermal management interface */
 	(&exynos_sensor_conf)->private_data = data;
-	exynos_sensor_conf.trip_data.trip_count = pdata->trigger_level0_en +
-			pdata->trigger_level1_en + pdata->trigger_level2_en +
-			pdata->trigger_level3_en + pdata->trigger_level4_en +
-			pdata->trigger_level5_en + pdata->trigger_level6_en +
-			pdata->trigger_level7_en;
+	exynos_sensor_conf.trip_data.trip_count = pdata->freq_tab_count;
 
-	trigger_level_en[0] = pdata->trigger_level0_en;
-	trigger_level_en[1] = pdata->trigger_level1_en;
-	trigger_level_en[2] = pdata->trigger_level2_en;
-	trigger_level_en[3] = pdata->trigger_level3_en;
-	trigger_level_en[4] = pdata->trigger_level4_en;
-	trigger_level_en[5] = pdata->trigger_level5_en;
-	trigger_level_en[6] = pdata->trigger_level6_en;
-	trigger_level_en[7] = pdata->trigger_level7_en;
-
-	for (i = 0; i < TRIP_EN_COUNT; i++) {
-		if (trigger_level_en[i]) {
-			exynos_sensor_conf.trip_data.trip_val[count] =
-				pdata->threshold + pdata->freq_tab[i].temp_level;
-			count++;
-		}
+	for (i = 0; i < pdata->freq_tab_count; i++) {
+		exynos_sensor_conf.trip_data.trip_val[i] =
+			pdata->threshold + pdata->freq_tab[i].temp_level;
 	}
 
 	exynos_sensor_conf.trip_data.trigger_falling = pdata->threshold_falling;
