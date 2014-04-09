@@ -63,6 +63,7 @@ struct ion_device {
 			      unsigned long arg);
 	struct rb_root clients;
 	struct dentry *debug_root;
+	struct dentry *buffer_debug_file;
 	struct semaphore vm_sem;
 	atomic_t page_idx;
 	struct vm_struct *reserved_vm_area;
@@ -136,6 +137,71 @@ static inline void ion_buffer_page_clean(struct page **page)
 	*page = (struct page *)((unsigned long)(*page) & ~(1UL));
 }
 
+static struct ion_task *ion_buffer_task_lookup(struct ion_buffer *buffer,
+							struct device *master)
+{
+	bool found = false;
+	struct ion_task *task, *tmp;
+
+	list_for_each_entry_safe(task, tmp, &buffer->master_list, list) {
+		if (task->master == master) {
+			found = true;
+			break;
+		}
+	}
+
+	return found ? task : NULL;
+}
+
+static void ion_buffer_task_add(struct ion_buffer *buffer,
+					struct device *master)
+{
+	struct ion_task *task;
+
+	task = ion_buffer_task_lookup(buffer, master);
+	if (!task) {
+		task = kzalloc(sizeof(*task), GFP_KERNEL);
+		if (task) {
+			task->master = master;
+			kref_init(&task->ref);
+			list_add_tail(&task->list, &buffer->master_list);
+		}
+	} else {
+		kref_get(&task->ref);
+	}
+}
+
+static void __ion_buffer_task_remove(struct kref *kref)
+{
+	struct ion_task *task = container_of(kref, struct ion_task, ref);
+
+	list_del(&task->list);
+	kfree(task);
+}
+
+static void ion_buffer_task_remove(struct ion_buffer *buffer,
+					struct device *master)
+{
+	struct ion_task *task, *tmp;
+
+	list_for_each_entry_safe(task, tmp, &buffer->master_list, list) {
+		if (task->master == master) {
+			kref_put(&task->ref, __ion_buffer_task_remove);
+			break;
+		}
+	}
+}
+
+static void ion_buffer_task_remove_all(struct ion_buffer *buffer)
+{
+	struct ion_task *task, *tmp;
+
+	list_for_each_entry_safe(task, tmp, &buffer->master_list, list) {
+		list_del(&task->list);
+		kfree(task);
+	}
+}
+
 /* this function should only be called while dev->lock is held */
 static void ion_buffer_add(struct ion_device *dev,
 			   struct ion_buffer *buffer)
@@ -160,6 +226,14 @@ static void ion_buffer_add(struct ion_device *dev,
 
 	rb_link_node(&buffer->node, parent, p);
 	rb_insert_color(&buffer->node, &dev->buffers);
+
+	/* debugfs */
+	INIT_LIST_HEAD(&buffer->master_list);
+	get_task_comm(buffer->task_comm, current->group_leader);
+	get_task_comm(buffer->thread_comm, current);
+	buffer->pid = task_pid_nr(current->group_leader);
+	buffer->tid = task_pid_nr(current);
+	ion_buffer_task_add(buffer, dev->dev.this_device);
 }
 
 /* this function should only be called while dev->lock is held */
@@ -279,6 +353,7 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 	buffer->heap->ops->free(buffer);
 	if (buffer->pages)
 		vfree(buffer->pages);
+	ion_buffer_task_remove_all(buffer);
 	kfree(buffer);
 }
 
@@ -837,6 +912,8 @@ static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
 	struct ion_buffer *buffer = dmabuf->priv;
 
 	ion_buffer_sync_for_device(buffer, attachment->dev, direction);
+	ion_buffer_task_add(buffer, attachment->dev);
+
 	return buffer->sg_table;
 }
 
@@ -844,6 +921,10 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 			      struct sg_table *table,
 			      enum dma_data_direction direction)
 {
+	struct dma_buf *dmabuf = attachment->dmabuf;
+	struct ion_buffer *buffer = dmabuf->priv;
+
+	ion_buffer_task_remove(buffer, attachment->dev);
 }
 
 struct ion_vma_list {
@@ -1725,6 +1806,153 @@ static int ion_device_reserve_vm(struct ion_device *dev)
 	return 0;
 }
 
+static void ion_buffer_dump_flags(struct seq_file *s, struct ion_buffer *buffer)
+{
+	seq_printf(s, "(");
+
+	if (ion_buffer_fault_user_mappings(buffer))
+		seq_printf(s, "cached|faultmap");
+	else if (ion_buffer_cached(buffer))
+		seq_printf(s, "cached|needsync");
+	else
+		seq_printf(s, "noncached");
+
+	if (buffer->flags & ION_FLAG_NOZEROED)
+		seq_printf(s, "|nozeroed");
+	if (buffer->flags & ION_FLAG_SHRINKER_FREE)
+		seq_printf(s, "|shrink");
+	if (buffer->flags & ION_FLAG_BUFFER_MIGRATED)
+		seq_printf(s, "|migrated");
+	if (buffer->flags & ION_FLAG_READY_TO_USE)
+		seq_printf(s, "|ready");
+
+	if (!strncmp(buffer->heap->name, "exynos_contig_heap", 18))
+		seq_printf(s, "|region%u",
+				__ffs((buffer->flags & 0xffff0000)) - 16);
+
+	seq_printf(s, ")\n");
+}
+
+static struct ion_handle *ion_handle_lookup(struct ion_client *client,
+					    struct ion_buffer *buffer);
+static void ion_buffer_dump_clients(struct ion_buffer *buffer, char *str)
+{
+	struct ion_device *dev = buffer->dev;
+	struct rb_node *n;
+	const char *delim = "|";
+	size_t total_len = 0;
+
+	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
+		struct ion_client *client = rb_entry(n,
+						struct ion_client, node);
+		struct ion_handle *handle;
+		handle = ion_handle_lookup(client, buffer);
+		if (!IS_ERR(handle)) {
+			const char *name;
+			size_t len = strlen(client->name);
+			if (len > 9) {
+				name = client->name + 9;
+				len -= 9;
+			} else {
+				name = client->name;
+			}
+			if (strlen(str) > 0) {
+				strncat((char *)(str + total_len),
+							delim, strlen(delim));
+				total_len += strlen(delim);
+			}
+			strncat((char *)(str + total_len), name, len);
+			total_len += len;
+		}
+	}
+}
+
+static void ion_buffer_dump_tasks(struct ion_buffer *buffer, char *str)
+{
+	struct ion_task *task, *tmp;
+	const char *delim = "|";
+	size_t total_len = 0;
+
+	list_for_each_entry_safe(task, tmp, &buffer->master_list, list) {
+		const char *name;
+		size_t len = strlen(dev_name(task->master));
+		if (!strncmp(dev_name(task->master), "ion", len)) {
+			name = dev_name(task->master);
+		} else {
+			name = dev_name(task->master) + 9;
+			len -= 9;
+		}
+		strncat((char *)(str + total_len), name, len);
+		if (!list_is_last(&task->list, &buffer->master_list)) {
+			strncat((char *)(str + total_len + 1),
+						delim, strlen(delim));
+			total_len += strlen(delim);
+		}
+		total_len += len;
+	}
+}
+
+static int ion_debug_buffer_show(struct seq_file *s, void *unused)
+{
+	struct ion_device *dev = s->private;
+	struct rb_node *n;
+	size_t total_size = 0;
+
+	seq_printf(s, "%20.s %16.s %4.s %16.s %4.s %10.s %4.s %3.s %6.s "
+			"%16.s %16.s %9.s\n",
+			"heap", "task", "pid", "thread", "tid",
+			"size", "kmap", "ref", "handle",
+			"master", "client", "flag");
+	seq_printf(s, "------------------------------------------"
+			"----------------------------------------"
+			"----------------------------------------"
+			"--------------------------------------\n");
+
+	mutex_lock(&dev->buffer_lock);
+	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
+		struct ion_buffer *buffer = rb_entry(n, struct ion_buffer,
+						     node);
+		char client_name[64] = {0, };
+		char master_name[64] = {0, };
+		ion_buffer_dump_clients(buffer, client_name);
+		ion_buffer_dump_tasks(buffer, master_name);
+		total_size += buffer->size;
+		seq_printf(s, "%20.s %16.s %4u %16.s %4u %10u %4d %3d %6d "
+				"%16.s %16.s %9lx", buffer->heap->name,
+				buffer->task_comm, buffer->pid,
+				buffer->thread_comm,
+				buffer->tid, buffer->size, buffer->kmap_cnt,
+				atomic_read(&buffer->ref.refcount),
+				buffer->handle_count, master_name,
+				client_name, buffer->flags);
+		ion_buffer_dump_flags(s, buffer);
+	}
+	mutex_unlock(&dev->buffer_lock);
+
+	seq_printf(s, "------------------------------------------"
+			"----------------------------------------"
+			"----------------------------------------"
+			"--------------------------------------\n");
+	seq_printf(s, "%16.s %16u\n", "total ", total_size);
+	seq_printf(s, "------------------------------------------"
+			"----------------------------------------"
+			"----------------------------------------"
+			"--------------------------------------\n");
+	return 0;
+}
+
+static int ion_debug_buffer_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ion_debug_buffer_show, inode->i_private);
+}
+
+static const struct file_operations debug_buffer_fops = {
+	.open = ion_debug_buffer_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 struct ion_device *ion_device_create(long (*custom_ioctl)
 				     (struct ion_client *client,
 				      unsigned int cmd,
@@ -1752,6 +1980,9 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	if (!idev->debug_root)
 		pr_err("ion: failed to create debug files.\n");
 
+	idev->buffer_debug_file = debugfs_create_file("ion_buffer", 0444,
+						 idev->debug_root, idev,
+						 &debug_buffer_fops);
 	idev->custom_ioctl = custom_ioctl;
 	idev->buffers = RB_ROOT;
 	mutex_init(&idev->buffer_lock);

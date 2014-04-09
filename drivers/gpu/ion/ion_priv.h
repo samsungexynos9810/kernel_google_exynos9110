@@ -92,7 +92,19 @@ struct ion_buffer {
 	int handle_count;
 	char task_comm[TASK_COMM_LEN];
 	pid_t pid;
+
+	/* for debugfs */
+	struct list_head master_list;
+	char thread_comm[TASK_COMM_LEN];
+	pid_t tid;
 };
+
+struct ion_task {
+	struct list_head list;
+	struct kref ref;
+	struct device *master;
+};
+
 void ion_buffer_destroy(struct ion_buffer *buffer);
 
 /**
