@@ -43,6 +43,9 @@ static int gpu_get_asv_table(struct kbase_device *kbdev, char *buf, size_t buf_s
 	cnt += snprintf(buf+cnt, buf_size-cnt, "GPU, vol, min, max, down_stay, mif, int, cpu\n");
 
 	for (i = platform->table_size-1; i >= 0; i--) {
+		if (platform->table[i-1].max_threshold == 100)
+			continue;
+
 		cnt += snprintf(buf+cnt, buf_size-cnt, "%d, %7d, %2d, %3d, %d, %6d, %6d, %7d\n",
 		platform->table[i].clock, platform->table[i].voltage, platform->table[i].min_threshold,
 		platform->table[i].max_threshold, platform->table[i].stay_count, platform->table[i].mem_freq,
@@ -65,6 +68,9 @@ static int gpu_get_dvfs_table(struct kbase_device *kbdev, char *buf, size_t buf_
 		return 0;
 
 	for (i = platform->table_size-1; i >= 0; i--) {
+		if (platform->table[i-1].max_threshold == 100)
+			continue;
+
 		cnt += snprintf(buf+cnt, buf_size-cnt, " %d", platform->table[i].clock);
 	}
 	cnt += snprintf(buf+cnt, buf_size-cnt, "\n");
