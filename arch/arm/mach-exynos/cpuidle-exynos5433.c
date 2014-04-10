@@ -254,9 +254,6 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.name                   = "C2",
 		.desc                   = "ARM power down",
 	},
-#endif
-// Cluster Power Down and C3 state idle(AFTR, LPA, etc...) does not support yet
-#if 0
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 	[2] = {
 		.enter                  = exynos_enter_c2,
@@ -270,6 +267,7 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 #else
 	[2] = {
 #endif
+#endif
 		.enter                  = exynos_enter_lowpower,
 		.exit_latency           = 300,
 		.target_residency       = 5000,
@@ -277,7 +275,6 @@ static struct cpuidle_state exynos5_cpuidle_set[] __initdata = {
 		.name                   = "C3",
 		.desc                   = "System power down",
 	},
-#endif
 };
 
 static DEFINE_PER_CPU(struct cpuidle_device, exynos_cpuidle_device);
@@ -295,7 +292,6 @@ static void exynos_set_wakeupmask(void)
 	__raw_writel(0x00000000, EXYNOS5433_WAKEUP_MASK2);
 }
 
-#if defined(CONFIG_APPLY_ARM_TRUSTZONE)
 static void save_cpu_arch_register(void)
 {
 }
@@ -303,27 +299,6 @@ static void save_cpu_arch_register(void)
 static void restore_cpu_arch_register(void)
 {
 }
-#else
-static unsigned int g_pwr_ctrl, g_diag_reg;
-
-static void save_cpu_arch_register(void)
-{
-	/*read power control register*/
-	asm("mrc p15, 0, %0, c15, c0, 0" : "=r"(g_pwr_ctrl) : : "cc");
-	/*read diagnostic register*/
-	asm("mrc p15, 0, %0, c15, c0, 1" : "=r"(g_diag_reg) : : "cc");
-	return;
-}
-
-static void restore_cpu_arch_register(void)
-{
-	/*write power control register*/
-	asm("mcr p15, 0, %0, c15, c0, 0" : : "r"(g_pwr_ctrl) : "cc");
-	/*write diagnostic register*/
-	asm("mcr p15, 0, %0, c15, c0, 1" : : "r"(g_diag_reg) : "cc");
-	return;
-}
-#endif
 
 static int idle_finisher(unsigned long flags)
 {
@@ -653,7 +628,7 @@ static void exynos_restore_mif_dll_status(void)
 	__raw_writel(tmp, regs_lpddrphy1 + 0xB0);
 }
 
-static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
+static int __maybe_unused exynos_enter_core0_lpa(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int lp_mode, int index, int enter_mode)
 {
@@ -810,7 +785,7 @@ early_wakeup:
 	return index;
 }
 
-static int __maybe_unused exynos_enter_lowpower(struct cpuidle_device *dev,
+static int exynos_enter_lowpower(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
 {
@@ -830,6 +805,10 @@ static int __maybe_unused exynos_enter_lowpower(struct cpuidle_device *dev,
 #endif
 
 	enter_mode = exynos_check_enter_mode();
+
+	return exynos_enter_core0_aftr(dev, drv, new_index);
+// LPA, ALPA, DSTOP is not supported yet
+#if 0
 	if (enter_mode == EXYNOS_CHECK_DIDLE)
 		return exynos_enter_core0_aftr(dev, drv, new_index);
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
@@ -838,6 +817,7 @@ static int __maybe_unused exynos_enter_lowpower(struct cpuidle_device *dev,
 	else
 #endif
 		return exynos_enter_core0_lpa(dev, drv, SYS_LPA, new_index, enter_mode);
+#endif
 }
 
 #if defined (CONFIG_EXYNOS_CPUIDLE_C2)
