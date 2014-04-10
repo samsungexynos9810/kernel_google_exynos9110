@@ -984,27 +984,6 @@ static int exynos_enter_c2(struct cpuidle_device *dev,
 	return index;
 }
 
-static int exynos_enter_idle(struct cpuidle_device *dev,
-                                struct cpuidle_driver *drv,
-                                int index)
-{
-	struct timeval before, after;
-	int idle_time;
-
-	local_fiq_disable();
-	do_gettimeofday(&before);
-
-	cpu_do_idle();
-
-	do_gettimeofday(&after);
-	local_fiq_enable();
-	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
-		(after.tv_usec - before.tv_usec);
-
-	dev->last_residency = idle_time;
-	return index;
-}
-
 #if defined (CONFIG_EXYNOS_CLUSTER_POWER_DOWN)
 static struct dentry *cluster_off_time_debugfs;
 
@@ -1029,6 +1008,27 @@ const static struct file_operations cluster_off_time_fops = {
 };
 #endif
 #endif
+
+static int exynos_enter_idle(struct cpuidle_device *dev,
+                                struct cpuidle_driver *drv,
+                                int index)
+{
+	struct timeval before, after;
+	int idle_time;
+
+	local_fiq_disable();
+	do_gettimeofday(&before);
+
+	cpu_do_idle();
+
+	do_gettimeofday(&after);
+	local_fiq_enable();
+	idle_time = (after.tv_sec - before.tv_sec) * USEC_PER_SEC +
+		(after.tv_usec - before.tv_usec);
+
+	dev->last_residency = idle_time;
+	return index;
+}
 
 static struct dentry *lp_debugfs;
 
