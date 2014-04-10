@@ -628,6 +628,7 @@ static int exynos_lli_loopback_test(struct mipi_lli *lli)
 
 	return 0;
 }
+
 const struct lli_driver exynos_lli_driver = {
 	.init = exynos_lli_init,
 	.set_master = exynos_lli_set_master,
@@ -650,7 +651,9 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	static int pa_err_cnt = 0;
 	static int roe_cnt = 0;
 	int status;
+	struct exynos_mphy *phy;
 
+	phy = dev_get_drvdata(lli->mphy);
 	status = readl(lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 
 	if (status & INTR_SW_RESET_DONE) {
@@ -659,8 +662,19 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_MPHY_HIBERN8_EXIT_DONE) {
+		dev_info(dev, "HIBERN8_EXIT_DONE\n");
+		dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+				readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
+				readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 		mdelay(1);
 		writel(LLI_MOUNT_CTRL, lli->regs + EXYNOS_DME_CSA_SYSTEM_SET);
+	}
+
+	if (status & INTR_MPHY_HIBERN8_ENTER_DONE) {
+		dev_info(dev, "HIBERN8_ENTER_DONE\n");
+		dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+				readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
+				readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 	}
 
 	if (status & INTR_PA_PLU_DETECTED)
@@ -668,7 +682,9 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	if (status & INTR_PA_PLU_DONE) {
 		dev_info(dev, "PLU_DONE\n");
-
+		dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+				readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
+				readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 		if (lli->modem_info.automode)
 			exynos_mipi_lli_set_automode(lli, true);
 	}
@@ -708,13 +724,8 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 	if (status & INTR_LLI_MOUNT_DONE) {
 		static bool is_first = true;
-		struct exynos_mphy *phy;
 		int credit = 0;
 		int rx_fsm_state, tx_fsm_state, afc_val, csa_status;
-
-		phy = dev_get_drvdata(lli->mphy);
-
-		udelay(10);
 
 		rx_fsm_state = readl(phy->loc_regs + PHY_RX_FSM_STATE(0));
 		tx_fsm_state = readl(phy->loc_regs + PHY_TX_FSM_STATE(0));
@@ -729,17 +740,28 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 			is_first = false;
 		}
 
-		dev_err(dev, "rx_fsm = %x, tx_fsm = %x, afc_val= %x, csa_status = %x\n"
-				,rx_fsm_state, tx_fsm_state, afc_val, csa_status);
+		dev_err(dev, "rx_fsm = %x, tx_fsm = %x, afc = %x, status = %x\n"
+				,rx_fsm_state, tx_fsm_state,
+				afc_val, csa_status);
 		dev_err(dev, "pa_err_cnt : %d\n", pa_err_cnt);
 
 		if (!credit) {
-			mdelay(2);
-			credit = readl(lli->regs + EXYNOS_DL_DBG_TX_CREDTIS);
-			dev_err(dev, "waiting 2ms to get TX_CREDITS for LLI.\n");
+			u32 udelay = 0;
+			for (udelay = 0 ; udelay < 10000 ; udelay++) {
+				udelay(1);
+				credit = readl(lli->regs + EXYNOS_DL_DBG_TX_CREDTIS);
+
+				if (credit)
+					break;
+			}
+			dev_err(dev, "waiting %dus to get TX_CREDITS.\n", udelay);
+			dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+					readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
+					readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 
 			if (!credit) {
-				dev_err(dev, "ERR: Failed to get TX_CREDITS for LLI");
+				dev_err(dev, "Failed to get TX_CREDITS.");
+				dev_err(dev, "ERR: Mount failed\n");
 				mipi_lli_debug_info();
 				writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 				return IRQ_HANDLED;
