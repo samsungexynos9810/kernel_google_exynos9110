@@ -167,10 +167,11 @@ int gpu_clock_on(struct exynos_context *platform)
 		goto err_return;
 	}
 
-	if (platform->aclk_g3d) {
-		(void) clk_prepare_enable(platform->aclk_g3d);
-		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_ON, NULL, NULL, 0u, 0u);
-	}
+	if (!gpu_is_clock_on(platform))
+		if (platform->aclk_g3d) {
+			(void) clk_prepare_enable(platform->aclk_g3d);
+			KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_ON, NULL, NULL, 0u, 0u);
+		}
 
 #if GPU_DYNAMIC_CLK_GATING
 	gpu_dcg_enable(platform);
@@ -200,23 +201,22 @@ int gpu_clock_off(struct exynos_context *platform)
 #if GPU_DYNAMIC_CLK_GATING
 	gpu_dcg_disable(platform);
 #endif
-
 	if (!gpu_is_power_on()) {
 		GPU_LOG(DVFS_WARNING, "can't set clock off in g3d power off status\n");
 		ret = -1;
 		goto err_return;
 	}
-
 	if (platform->clk_g3d_status == 0) {
 		ret = 0;
 		goto err_return;
 	}
 
+#if 0
 	if (platform->aclk_g3d) {
 		(void)clk_disable_unprepare(platform->aclk_g3d);
 		KBASE_TRACE_ADD_EXYNOS(pkbdev, LSI_CLOCK_OFF, NULL, NULL, 0u, 0u);
 	}
-
+#endif
 	platform->clk_g3d_status = 0;
 
 err_return:
@@ -291,7 +291,6 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 	long g3d_rate_prev = -1;
 	unsigned long g3d_rate = freq * MHZ;
 	int ret = 0;
-	printk("~~~~~~~~~~~~~~ gpu_set_clock +++\n");
 	if (platform->aclk_g3d == 0)
 		return -1;
 
@@ -319,7 +318,6 @@ int gpu_set_clock(struct exynos_context *platform, int freq)
 		ret = gpu_set_maximum_outstanding_req(L2CONFIG_MO_1BY8);
 		if ( ret < 0)
 			GPU_LOG(DVFS_ERROR, "failed to set MO (%d)\n", ret);
-printk("~~~~~~~~~~~~~~ gpu_set_clock #1\n");
 		/*change here for future stable clock changing*/
 		ret = clk_set_parent(platform->mout_g3d_pll, platform->fin_pll);
 		if (ret < 0) {
@@ -333,11 +331,17 @@ printk("~~~~~~~~~~~~~~ gpu_set_clock #1\n");
 			GPU_LOG(DVFS_ERROR, "failed to clk_set_rate [fout_g3d_pll]\n");
 			goto err;
 		}
-printk("~~~~~~~~~~~~~~ gpu_set_clock #2\n");
 		/*restore parent*/
 		ret = clk_set_parent(platform->mout_g3d_pll, platform->fout_g3d_pll);
 		if (ret < 0) {
 			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_g3d_pll]\n");
+			goto err;
+		}
+
+		/*restore parent*/
+		ret = clk_set_parent(platform->mout_aclk_g3d, platform->aclk_g3d);
+		if (ret < 0) {
+			GPU_LOG(DVFS_ERROR, "failed to clk_set_parent [mout_ack_g3d]\n");
 			goto err;
 		}
 
@@ -359,7 +363,6 @@ err:
 	if (platform->exynos_pm_domain)
 		mutex_unlock(&platform->exynos_pm_domain->access_lock);
 #endif /* CONFIG_PM_RUNTIME */
-printk("~~~~~~~~~~~~~~ gpu_set_clock --- (%d)\n", ret);
 	return ret;
 }
 
@@ -398,6 +401,12 @@ static int gpu_get_clock(kbase_device *kbdev)
 	platform->mout_g3d_pll = clk_get(kbdev->osdev.dev, "mout_g3d_pll");
 	if (IS_ERR(platform->mout_g3d_pll)) {
 		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_g3d_pll]\n");
+		return -1;
+	}
+
+	platform->mout_aclk_g3d = clk_get(kbdev->osdev.dev, "mout_aclk_g3d");
+	if (IS_ERR(platform->mout_aclk_g3d)) {
+		GPU_LOG(DVFS_ERROR, "failed to clk_get [mout_aclk_g3d]\n");
 		return -1;
 	}
 
