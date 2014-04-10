@@ -139,6 +139,7 @@ struct samsung_pin_bank {
 	enum eint_type	eint_type;
 	u32		eint_mask;
 	u32		eint_offset;
+	u32		eint_ext_offset;
 	u32		dat_mask;
 	char		*name;
 	void		*soc_priv;
@@ -220,6 +221,7 @@ struct samsung_pin_ctrl {
 struct samsung_pinctrl_drv_data {
 	struct list_head		node;
 	void __iomem			*virt_base;
+	void __iomem			*virt_ext_base;
 	struct device			*dev;
 	int				irq;
 

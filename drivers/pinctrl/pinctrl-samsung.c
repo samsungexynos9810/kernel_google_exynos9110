@@ -407,15 +407,16 @@ static void pin_to_reg_bank(struct samsung_pinctrl_drv_data *drvdata,
 			unsigned pin, void __iomem **reg, u32 *offset,
 			struct samsung_pin_bank **bank)
 {
-	struct samsung_pin_bank *b;
-
-	b = drvdata->ctrl->pin_banks;
+	struct samsung_pin_bank *b = drvdata->ctrl->pin_banks;
+	void __iomem *reg_ext_base;
 
 	while ((pin >= b->pin_base) &&
 			((b->pin_base + b->nr_pins - 1) < pin))
 		b++;
 
-	*reg = drvdata->virt_base + b->pctl_offset;
+	reg_ext_base = b->eint_ext_offset ?
+			drvdata->virt_ext_base : drvdata->virt_base;
+	*reg = reg_ext_base + b->pctl_offset;
 	*offset = pin - b->pin_base;
 	if (bank)
 		*bank = b;
@@ -503,15 +504,18 @@ static int samsung_pinmux_gpio_set_direction(struct pinctrl_dev *pctldev,
 	struct samsung_pin_bank *bank;
 	struct samsung_pinctrl_drv_data *drvdata;
 	void __iomem *reg;
+	void __iomem *reg_ext_base;
 	u32 data, pin_offset, mask, shift;
 	unsigned long flags;
 
 	bank = gc_to_pin_bank(range->gc);
 	type = bank->type;
 	drvdata = pinctrl_dev_get_drvdata(pctldev);
+	reg_ext_base = bank->eint_ext_offset ?
+			drvdata->virt_ext_base : drvdata->virt_base;
 
 	pin_offset = offset - bank->pin_base;
-	reg = drvdata->virt_base + bank->pctl_offset +
+	reg = reg_ext_base + bank->pctl_offset +
 					type->reg_offset[PINCFG_TYPE_FUNC];
 
 	mask = (1 << type->fld_width[PINCFG_TYPE_FUNC]) - 1;
@@ -598,7 +602,7 @@ static int samsung_pinconf_rw(struct pinctrl_dev *pctldev, unsigned int pin,
 	spin_unlock_irqrestore(&bank->slock, flags);
 
 	if (set)
-		pr_devel("%s %s(%d) %s => %x (0x%08x)\n", __func__, bank->name,
+		pr_debug("%s %s(%d) %s => %x (0x%08x)\n", __func__, bank->name,
 			pin_offset, gpio_regs[cfg_type], cfg_value, data);
 	return 0;
 }
@@ -707,9 +711,11 @@ static void samsung_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
 	struct samsung_pin_bank_type *type = bank->type;
 	unsigned long flags;
 	void __iomem *reg;
+	void __iomem *reg_ext_base = (bank->eint_ext_offset) ?
+		bank->drvdata->virt_ext_base : bank->drvdata->virt_base;
 	u32 data;
 
-	reg = bank->drvdata->virt_base + bank->pctl_offset;
+	reg = reg_ext_base + bank->pctl_offset;
 
 	spin_lock_irqsave(&bank->slock, flags);
 
@@ -730,8 +736,10 @@ static int samsung_gpio_get(struct gpio_chip *gc, unsigned offset)
 	u32 data;
 	struct samsung_pin_bank *bank = gc_to_pin_bank(gc);
 	struct samsung_pin_bank_type *type = bank->type;
+	void __iomem *reg_ext_base = (bank->eint_ext_offset) ?
+		bank->drvdata->virt_ext_base : bank->drvdata->virt_base;
 
-	reg = bank->drvdata->virt_base + bank->pctl_offset;
+	reg = reg_ext_base + bank->pctl_offset;
 
 	data = readl(reg + type->reg_offset[PINCFG_TYPE_DAT]);
 	data >>= offset;
@@ -990,13 +998,14 @@ static void samsung_init_dat_mask(struct samsung_pinctrl_drv_data *drvdata)
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
 	u32 val, i, cnt, func, mask, width;
-
+	void __iomem *reg_ext_base = (bank->eint_ext_offset) ?
+		drvdata->virt_ext_base : drvdata->virt_base;
 
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank) {
 		width = bank->type->fld_width[PINCFG_TYPE_FUNC];
 		mask = (1 << width) - 1;
 
-		val = readl(drvdata->virt_base + bank->pctl_offset +
+		val = readl(reg_ext_base + bank->pctl_offset +
 				bank->type->reg_offset[PINCFG_TYPE_FUNC]);
 
 		bank->dat_mask = 0;
@@ -1205,6 +1214,7 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	struct samsung_pin_ctrl *ctrl;
 	struct resource *res;
+	resource_size_t size;
 	int ret;
 
 	if (!dev->of_node) {
@@ -1228,9 +1238,24 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
 	drvdata->dev = dev;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	drvdata->virt_base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(drvdata->virt_base))
-		return PTR_ERR(drvdata->virt_base);
+	if (res) {
+		drvdata->virt_base = devm_ioremap_resource(&pdev->dev, res);
+		if (IS_ERR(drvdata->virt_base))
+			return PTR_ERR(drvdata->virt_base);
+	}
+
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
+
+	if (res) {
+		size = resource_size(res);
+		if (res->flags & IORESOURCE_CACHEABLE)
+			drvdata->virt_ext_base = devm_ioremap(&pdev->dev, res->start, size);
+		else
+			drvdata->virt_ext_base = devm_ioremap_nocache(&pdev->dev, res->start, size);
+
+		if (IS_ERR(drvdata->virt_ext_base))
+			dev_err(dev, "sub register does not exist");
+	}
 
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	if (res)
@@ -1283,11 +1308,12 @@ static void samsung_pinctrl_save_regs(
 				struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
-	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
 	for (i = 0; i < ctrl->nr_banks; i++) {
 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+		void __iomem *virt_base = bank->eint_ext_offset ?
+				drvdata->virt_ext_base : drvdata->virt_base;
 		void __iomem *reg = virt_base + bank->pctl_offset;
 
 		u8 *offs = bank->type->reg_offset;
@@ -1322,11 +1348,12 @@ static void samsung_pinctrl_restore_regs(
 				struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
-	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
 	for (i = 0; i < ctrl->nr_banks; i++) {
 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+		void __iomem *virt_base = bank->eint_ext_offset ?
+				drvdata->virt_ext_base : drvdata->virt_base;
 		void __iomem *reg = virt_base + bank->pctl_offset;
 
 		u8 *offs = bank->type->reg_offset;
@@ -1370,11 +1397,12 @@ static void samsung_pinctrl_set_pdn_previos_state(
 			struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
-	void __iomem *virt_base = drvdata->virt_base;
 	int i;
 
 	for (i = 0; i < ctrl->nr_banks; i++) {
 		struct samsung_pin_bank *bank = &ctrl->pin_banks[i];
+		void __iomem *virt_base = bank->eint_ext_offset ?
+				drvdata->virt_ext_base : drvdata->virt_base;
 		void __iomem *reg = virt_base + bank->pctl_offset;
 
 		u8 *offs = bank->type->reg_offset;
