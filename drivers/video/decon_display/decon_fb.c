@@ -4081,6 +4081,8 @@ static void s3c_fb_clear_fb(struct s3c_fb *sfb, unsigned int index)
 	writel(reg, sfb->regs + DECON_UPDATE);
 	//wait until the GRAM is cleared.
 	msleep(17);
+	/* keep the Trigger Masked until the SYSMMU is Enabled. */
+	hw_trigger_mask_enable(sfb, true);
 	/*disable winmap. So that, buf memcpy mechanism works fine */
 	writel(0, sfb->regs + WINxMAP(index));
 	reg = readl(sfb->regs + DECON_UPDATE);
