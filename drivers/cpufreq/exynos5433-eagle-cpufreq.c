@@ -323,7 +323,11 @@ static void __init set_volt_table_CA15(void)
 				exynos5433_abb_table_CA15[i]);
 	}
 
+#if defined(CONFIG_CPU_THERMAL) && defined(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)
 	max_support_idx_CA15 = L5;	/* 2.0 GHz */
+#else
+	max_support_idx_CA15 = L13;	/* 1.2 GHz */
+#endif
 	min_support_idx_CA15 = L17;	/* 800 MHz */
 
 	pr_info("CPUFREQ of CA15 max_freq : L%d %u khz\n", max_support_idx_CA15,
