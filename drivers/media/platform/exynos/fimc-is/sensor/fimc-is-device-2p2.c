@@ -149,15 +149,20 @@ int sensor_2p2_probe(struct i2c_client *client,
 #ifdef CONFIG_LEDS_MAX77804
 	ext->flash_con.product_name = FLADRV_NAME_MAX77693;
 #endif
-#ifdef CONFIG_LEDS_LM3560
+#if defined(CONFIG_LEDS_LM3560) || !defined(CONFIG_USE_VENDER_FEATURE)
 	ext->flash_con.product_name = FLADRV_NAME_LM3560;
 #endif
 #ifdef CONFIG_LEDS_SKY81296
 	ext->flash_con.product_name = FLADRV_NAME_SKY81296;
 #endif
 	ext->flash_con.peri_type = SE_GPIO;
+#ifdef CONFIG_USE_VENDER_FEATURE
 	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 1;
 	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 2;
+#else
+	ext->flash_con.peri_setting.gpio.first_gpio_port_no = 2;
+	ext->flash_con.peri_setting.gpio.second_gpio_port_no = 3;
+#endif
 
 	ext->from_con.product_name = FROMDRV_NAME_NOTHING;
 
