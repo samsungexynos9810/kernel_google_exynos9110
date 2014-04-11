@@ -41,6 +41,8 @@
 		gsc2 = &gsc_2;
 		jpeg0 = &jpeg_0;
 		fimg2d0 = &fimg2d_0;
+		scaler0 = &scaler_0;
+		scaler1 = &scaler_1;
 	};
 
 	chipid@10000000 {
@@ -695,6 +697,24 @@
 		mmu-masters = <&fimg2d_0>;
 	};
 
+	sysmmu_scaler0: sysmmu@0x15040000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15040000 0x1000>;
+		interrupts = <0 404 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2410>;
+		mmu-masters = <&scaler_0>;
+	};
+
+	sysmmu_scaler1: sysmmu@0x15050000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15050000 0x1000>;
+		interrupts = <0 406 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2411>;
+		mmu-masters = <&scaler_1>;
+	};
+
 	mali {
 		compatible = "arm,mali";
 		reg = <0x14AC0000 0x5000>;
@@ -1014,6 +1034,24 @@
 		       <&clock 3117>, <&clock 3116>;
 		samsung,power-domain = <&spd_jpeg>;
 		ip_ver = <2>;
+	};
+
+	scaler_0: scaler@15000000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x15000000 0x1300>;
+		interrupts = <0 402 0>;
+		clock-names = "gate", "mux_user", "mux_src";
+		clocks = <&clock 2394>, <&clock 3115>, <&clock 346>;
+		samsung,power-domain = <&spd_mscl0>;
+	};
+
+	scaler_1: scaler@15010000 {
+		compatible = "samsung,exynos5-scaler";
+		reg = <0x15010000 0x1300>;
+		interrupts = <0 403 0>;
+		clock-names = "gate", "mux_user", "mux_src";
+		clocks = <&clock 2393>, <&clock 3115>, <&clock 346>;
+		samsung,power-domain = <&spd_mscl1>;
 	};
 
 	/* disp_driver */
