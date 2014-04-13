@@ -951,4 +951,41 @@
 		clock-names = "pclk_tmu0_apbif", "pclk_tmu0_apbif",
 			"pclk_tmu1_apbif", "pclk_tmu1_apbif", "pclk_tmu1_apbif";
 	};
+
+	sss@11100000 {
+		compatible = "samsung,exynos5-sss";
+		reg = <0x11100000 0x8000>;
+		interrupts = <0 315 0>;
+		clocks = <&clock 2334>;
+		clock-names = "secss";
+	};
+
+	slimsss@11140000 {
+		compatible = "samsung,exynos5-slimsss";
+		reg = <0x11140000 0x1000>;
+		interrupts = <0 312 0>;
+		clocks = <&clock 2335>;
+		clock-names = "slimsss";
+	};
+
+	pcie@15700000 {
+		compatible = "samsung,exynos5433-pcie", "snps,dw-pcie";
+		reg = <0x156b0000 0x1000
+			0x15680000 0x1000
+			0x156f0000 0x2000
+			0x105c0000 0x4>;
+		interrupts = <0 245 0>;
+		clocks = <&clock 2176>;
+		clock-names = "pcie";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pcie_bus>;
+		#address-cells = <3>;
+		#size-cells = <2>;
+		device_type = "pci";
+		ranges = <0x00000800 0 0x0c000000 0x0c000000 0 0x00001000   /* configuration space */
+			  0x81000000 0 0          0x0c001000 0 0x00010000   /* downstream I/O */
+			  0x82000000 0 0x0c011000 0x0c011000 0 0x3feefff>; /* non-prefetchable memory */
+		num-lanes = <1>;
+		msi-base = <200>;
+	};
 };
