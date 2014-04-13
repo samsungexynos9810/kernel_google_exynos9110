@@ -23,6 +23,10 @@
 #include "pcie-designware.h"
 
 /* Synopsis specific PCIE configuration registers */
+#define PCIE_LINK_CAP			0x70
+#define PCIE_ACK_F_ASPM_CONTROL		0x70C
+#define PCIE_MISC_CONTROL		0x8BC
+
 #define PCIE_PORT_LINK_CONTROL		0x710
 #define PORT_LINK_MODE_MASK		(0x3f << 16)
 #define PORT_LINK_MODE_1_LANES		(0x1 << 16)
@@ -736,6 +740,9 @@ void dw_pcie_setup_rc(struct pcie_port *pp)
 	u32 membase;
 	u32 memlimit;
 
+	/* DBI_RO_WR_EN */
+	dw_pcie_writel_rc(pp, 1, dbi_base + PCIE_MISC_CONTROL);
+
 	/* set the number of lines as 4 */
 	dw_pcie_readl_rc(pp, dbi_base + PCIE_PORT_LINK_CONTROL, &val);
 	val &= ~PORT_LINK_MODE_MASK;
@@ -767,6 +774,16 @@ void dw_pcie_setup_rc(struct pcie_port *pp)
 		break;
 	}
 	dw_pcie_writel_rc(pp, val, dbi_base + PCIE_LINK_WIDTH_SPEED_CONTROL);
+
+	/* set max link width & speed : Gen1, Lane1 */
+	dw_pcie_readl_rc(pp, dbi_base + PCIE_LINK_CAP, &val);
+	val &= 0xfffffc00;
+	dw_pcie_writel_rc(pp, val, dbi_base + PCIE_LINK_CAP);
+
+	/* set N_FTS : 255 */
+	dw_pcie_readl_rc(pp, dbi_base + PCIE_ACK_F_ASPM_CONTROL, &val);
+	val &= 0xffff00ff;
+	dw_pcie_writel_rc(pp, val, dbi_base + PCIE_ACK_F_ASPM_CONTROL);
 
 	/* setup RC BARs */
 	dw_pcie_writel_rc(pp, 0x00000004, dbi_base + PCI_BASE_ADDRESS_0);

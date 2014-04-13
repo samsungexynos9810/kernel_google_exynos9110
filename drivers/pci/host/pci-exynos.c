@@ -32,6 +32,7 @@ struct exynos_pcie {
 	void __iomem		*elbi_base;
 	void __iomem		*phy_base;
 	void __iomem		*block_base;
+	void __iomem		*pmu_base;
 	int			reset_gpio;
 	struct clk		*clk;
 	struct clk		*bus_clk;
@@ -50,13 +51,13 @@ struct exynos_pcie {
 #define PCIE_IRQ_EN_LEVEL		0x010
 #define IRQ_MSI_ENABLE			(0x1 << 2)
 #define PCIE_IRQ_EN_SPECIAL		0x014
-#define PCIE_PWR_RESET			0x018
-#define PCIE_CORE_RESET			0x01c
-#define PCIE_CORE_RESET_ENABLE		(0x1 << 0)
-#define PCIE_STICKY_RESET		0x020
-#define PCIE_NONSTICKY_RESET		0x024
+#define PCIE_SW_WAKE			0x018
+#define PCIE_BUS_NUM			0x01c
+#define PCIE_RADM_MSG_LTR		0x020
+#define PCIE_APP_LTR_LATENCY		0x024
 #define PCIE_APP_INIT_RESET		0x028
 #define PCIE_APP_LTSSM_ENABLE		0x02c
+#define PCIE_L1_BUG_FIX_ENABLE		0x038
 #define PCIE_ELBI_RDLH_LINKUP		0x064
 #define PCIE_ELBI_LTSSM_ENABLE		0x1
 #define PCIE_ELBI_SLV_AWMISC		0x11c
@@ -64,10 +65,10 @@ struct exynos_pcie {
 #define PCIE_ELBI_SLV_DBI_ENABLE	(0x1 << 21)
 
 /* PCIe Purple registers */
-#define PCIE_PHY_GLOBAL_RESET		0x000
-#define PCIE_PHY_COMMON_RESET		0x004
+#define PCIE_PHY_GLOBAL_RESET		0x1040
+#define PCIE_PHY_COMMON_RESET		0x1020
 #define PCIE_PHY_CMN_REG		0x008
-#define PCIE_PHY_MAC_RESET		0x00c
+#define PCIE_PHY_MAC_RESET		0x208
 #define PCIE_PHY_PLL_LOCKED		0x010
 #define PCIE_PHY_TRSVREG_RESET		0x020
 #define PCIE_PHY_TRSV_RESET		0x024
@@ -91,6 +92,9 @@ struct exynos_pcie {
 #define PCIE_PHY_TRSV3_EMP_LVL		0x2c4
 #define PCIE_PHY_TRSV3_RXCDR		0x2ec
 #define PCIE_PHY_TRSV3_LVCC		0x31c
+
+/* PCIe PMU registers */
+#define PCIE_PHY_CONTROL		0x730
 
 static void exynos_pcie_sideband_dbi_w_mode(struct pcie_port *pp, bool on)
 {
@@ -124,166 +128,52 @@ static void exynos_pcie_sideband_dbi_r_mode(struct pcie_port *pp, bool on)
 	}
 }
 
-static void exynos_pcie_assert_core_reset(struct pcie_port *pp)
-{
-	u32 val;
-	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-	void __iomem *elbi_base = exynos_pcie->elbi_base;
-
-	val = readl(elbi_base + PCIE_CORE_RESET);
-	val &= ~PCIE_CORE_RESET_ENABLE;
-	writel(val, elbi_base + PCIE_CORE_RESET);
-	writel(0, elbi_base + PCIE_PWR_RESET);
-	writel(0, elbi_base + PCIE_STICKY_RESET);
-	writel(0, elbi_base + PCIE_NONSTICKY_RESET);
-}
-
-static void exynos_pcie_deassert_core_reset(struct pcie_port *pp)
-{
-	u32 val;
-	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-	void __iomem *elbi_base = exynos_pcie->elbi_base;
-	void __iomem *block_base = exynos_pcie->block_base;
-
-	val = readl(elbi_base + PCIE_CORE_RESET);
-	val |= PCIE_CORE_RESET_ENABLE;
-	writel(val, elbi_base + PCIE_CORE_RESET);
-	writel(1, elbi_base + PCIE_STICKY_RESET);
-	writel(1, elbi_base + PCIE_NONSTICKY_RESET);
-	writel(1, elbi_base + PCIE_APP_INIT_RESET);
-	writel(0, elbi_base + PCIE_APP_INIT_RESET);
-	writel(1, block_base + PCIE_PHY_MAC_RESET);
-}
-
 static void exynos_pcie_assert_phy_reset(struct pcie_port *pp)
 {
 	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
 	void __iomem *block_base = exynos_pcie->block_base;
+	u32 val;
 
-	writel(0, block_base + PCIE_PHY_MAC_RESET);
-	writel(1, block_base + PCIE_PHY_GLOBAL_RESET);
-}
+	/* PHY Global Reset */
+	val = readl(block_base + PCIE_PHY_GLOBAL_RESET);
+	val &= ~(0x1);
+	writel(val, block_base + PCIE_PHY_GLOBAL_RESET);
 
-static void exynos_pcie_deassert_phy_reset(struct pcie_port *pp)
-{
-	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-	void __iomem *elbi_base = exynos_pcie->elbi_base;
-	void __iomem *block_base = exynos_pcie->block_base;
+	/* PHY Common Reset */
+	val = readl(block_base + PCIE_PHY_COMMON_RESET);
+	val &= ~(0x1);
+	writel(val, block_base + PCIE_PHY_COMMON_RESET);
 
-	writel(0, block_base + PCIE_PHY_GLOBAL_RESET);
-	writel(1, elbi_base + PCIE_PWR_RESET);
-	writel(0, block_base + PCIE_PHY_COMMON_RESET);
-	writel(0, block_base + PCIE_PHY_CMN_REG);
-	writel(0, block_base + PCIE_PHY_TRSVREG_RESET);
-	writel(0, block_base + PCIE_PHY_TRSV_RESET);
-}
-
-static void exynos_pcie_init_phy(struct pcie_port *pp)
-{
-	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-	void __iomem *phy_base = exynos_pcie->phy_base;
-
-	/* DCC feedback control off */
-	writel(0x29, phy_base + PCIE_PHY_DCC_FEEDBACK);
-
-	/* set TX/RX impedance */
-	writel(0xd5, phy_base + PCIE_PHY_IMPEDANCE);
-
-	/* set 50Mhz PHY clock */
-	writel(0x14, phy_base + PCIE_PHY_PLL_DIV_0);
-	writel(0x12, phy_base + PCIE_PHY_PLL_DIV_1);
-
-	/* set TX Differential output for lane 0 */
-	writel(0x7f, phy_base + PCIE_PHY_TRSV0_DRV_LVL);
-
-	/* set TX Pre-emphasis Level Control for lane 0 to minimum */
-	writel(0x0, phy_base + PCIE_PHY_TRSV0_EMP_LVL);
-
-	/* set RX clock and data recovery bandwidth */
-	writel(0xe7, phy_base + PCIE_PHY_PLL_BIAS);
-	writel(0x82, phy_base + PCIE_PHY_TRSV0_RXCDR);
-	writel(0x82, phy_base + PCIE_PHY_TRSV1_RXCDR);
-	writel(0x82, phy_base + PCIE_PHY_TRSV2_RXCDR);
-	writel(0x82, phy_base + PCIE_PHY_TRSV3_RXCDR);
-
-	/* change TX Pre-emphasis Level Control for lanes */
-	writel(0x39, phy_base + PCIE_PHY_TRSV0_EMP_LVL);
-	writel(0x39, phy_base + PCIE_PHY_TRSV1_EMP_LVL);
-	writel(0x39, phy_base + PCIE_PHY_TRSV2_EMP_LVL);
-	writel(0x39, phy_base + PCIE_PHY_TRSV3_EMP_LVL);
-
-	/* set LVCC */
-	writel(0x20, phy_base + PCIE_PHY_TRSV0_LVCC);
-	writel(0xa0, phy_base + PCIE_PHY_TRSV1_LVCC);
-	writel(0xa0, phy_base + PCIE_PHY_TRSV2_LVCC);
-	writel(0xa0, phy_base + PCIE_PHY_TRSV3_LVCC);
-}
-
-static void exynos_pcie_assert_reset(struct pcie_port *pp)
-{
-	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
-
-	if (exynos_pcie->reset_gpio >= 0)
-		devm_gpio_request_one(pp->dev, exynos_pcie->reset_gpio,
-				GPIOF_OUT_INIT_HIGH, "RESET");
-	return;
+	/* PHY Mac Reset */
+	val = readl(block_base + PCIE_PHY_MAC_RESET);
+	val |= 0x1 << 4;
+	writel(val, block_base + PCIE_PHY_MAC_RESET);
 }
 
 static int exynos_pcie_establish_link(struct pcie_port *pp)
 {
-	u32 val;
-	int count = 0;
 	struct exynos_pcie *exynos_pcie = to_exynos_pcie(pp);
 	void __iomem *elbi_base = exynos_pcie->elbi_base;
-	void __iomem *block_base = exynos_pcie->block_base;
-	void __iomem *phy_base = exynos_pcie->phy_base;
+	void __iomem *pmu_base = exynos_pcie->pmu_base;
 
 	if (dw_pcie_link_up(pp)) {
 		dev_err(pp->dev, "Link already up\n");
 		return 0;
 	}
 
-	/* assert reset signals */
-	exynos_pcie_assert_core_reset(pp);
+	writel(1, pmu_base + PCIE_PHY_CONTROL);
+
 	exynos_pcie_assert_phy_reset(pp);
 
-	/* de-assert phy reset */
-	exynos_pcie_deassert_phy_reset(pp);
-
-	/* initialize phy */
-	exynos_pcie_init_phy(pp);
-
-	/* pulse for common reset */
-	writel(1, block_base + PCIE_PHY_COMMON_RESET);
-	udelay(500);
-	writel(0, block_base + PCIE_PHY_COMMON_RESET);
-
-	/* de-assert core reset */
-	exynos_pcie_deassert_core_reset(pp);
-
+	exynos_pcie_sideband_dbi_r_mode(pp, true);
+	exynos_pcie_sideband_dbi_w_mode(pp, true);
 	/* setup root complex */
 	dw_pcie_setup_rc(pp);
-
-	/* assert reset signal */
-	exynos_pcie_assert_reset(pp);
+	exynos_pcie_sideband_dbi_r_mode(pp, false);
+	exynos_pcie_sideband_dbi_w_mode(pp, false);
 
 	/* assert LTSSM enable */
 	writel(PCIE_ELBI_LTSSM_ENABLE, elbi_base + PCIE_APP_LTSSM_ENABLE);
-
-	/* check if the link is up or not */
-	while (!dw_pcie_link_up(pp)) {
-		mdelay(100);
-		count++;
-		if (count == 10) {
-			while (readl(phy_base + PCIE_PHY_PLL_LOCKED) == 0) {
-				val = readl(block_base + PCIE_PHY_PLL_LOCKED);
-				dev_info(pp->dev, "PLL Locked: 0x%x\n", val);
-			}
-			dev_err(pp->dev, "PCIe Link Fail\n");
-			return -EINVAL;
-		}
-	}
-
 	dev_info(pp->dev, "Link up\n");
 
 	return 0;
@@ -439,7 +329,7 @@ static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
 {
 	int ret;
 
-	pp->irq = platform_get_irq(pdev, 1);
+	pp->irq = platform_get_irq(pdev, 0);
 	if (!pp->irq) {
 		dev_err(&pdev->dev, "failed to get irq\n");
 		return -ENODEV;
@@ -467,7 +357,6 @@ static int add_pcie_port(struct pcie_port *pp, struct platform_device *pdev)
 		return ret;
 	}
 #endif
-
 	pp->root_bus_nr = -1;
 	pp->ops = &exynos_pcie_host_ops;
 
@@ -489,6 +378,7 @@ static int __init exynos_pcie_probe(struct platform_device *pdev)
 	struct resource *elbi_base;
 	struct resource *phy_base;
 	struct resource *block_base;
+	struct resource *pmu_base;
 	int ret;
 
 	exynos_pcie = devm_kzalloc(&pdev->dev, sizeof(*exynos_pcie),
@@ -513,16 +403,6 @@ static int __init exynos_pcie_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	exynos_pcie->bus_clk = devm_clk_get(&pdev->dev, "pcie_bus");
-	if (IS_ERR(exynos_pcie->bus_clk)) {
-		dev_err(&pdev->dev, "Failed to get pcie bus clock\n");
-		ret = PTR_ERR(exynos_pcie->bus_clk);
-		goto fail_clk;
-	}
-	ret = clk_prepare_enable(exynos_pcie->bus_clk);
-	if (ret)
-		goto fail_clk;
-
 	elbi_base = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	exynos_pcie->elbi_base = devm_ioremap_resource(&pdev->dev, elbi_base);
 	if (IS_ERR(exynos_pcie->elbi_base))
@@ -538,8 +418,13 @@ static int __init exynos_pcie_probe(struct platform_device *pdev)
 	if (IS_ERR(exynos_pcie->block_base))
 		return PTR_ERR(exynos_pcie->block_base);
 
+	pmu_base = platform_get_resource(pdev, IORESOURCE_MEM, 3);
+	exynos_pcie->pmu_base = devm_ioremap_resource(&pdev->dev, pmu_base);
+	if (IS_ERR(exynos_pcie->pmu_base))
+		return PTR_ERR(exynos_pcie->pmu_base);
+
 	ret = add_pcie_port(pp, pdev);
-	if (ret < 0)
+	if (ret > 0)
 		goto fail_bus_clk;
 
 	platform_set_drvdata(pdev, exynos_pcie);
@@ -547,8 +432,8 @@ static int __init exynos_pcie_probe(struct platform_device *pdev)
 
 fail_bus_clk:
 	clk_disable_unprepare(exynos_pcie->bus_clk);
-fail_clk:
-	clk_disable_unprepare(exynos_pcie->clk);
+//fail_clk:
+//	clk_disable_unprepare(exynos_pcie->clk);
 	return ret;
 }
 
@@ -563,7 +448,7 @@ static int __exit exynos_pcie_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id exynos_pcie_of_match[] = {
-	{ .compatible = "samsung,exynos5440-pcie", },
+	{ .compatible = "samsung,exynos5433-pcie", },
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_pcie_of_match);

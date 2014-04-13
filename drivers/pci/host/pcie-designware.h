@@ -59,7 +59,7 @@ int cfg_read(void *addr, int where, int size, u32 *val);
 int cfg_write(void *addr, int where, int size, u32 val);
 int dw_pcie_wr_own_conf(struct pcie_port *pp, int where, int size, u32 val);
 int dw_pcie_rd_own_conf(struct pcie_port *pp, int where, int size, u32 *val);
-#if CONFIG_PCI_MSI
+#ifdef CONFIG_PCI_MSI
 void dw_handle_msi_irq(struct pcie_port *pp);
 void dw_pcie_msi_init(struct pcie_port *pp);
 #endif
