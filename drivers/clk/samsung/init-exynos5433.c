@@ -29,7 +29,24 @@ static void usb_init_clock(void)
 			"phyclk_usbdrd30_udrd30_pipe_pclk_phy");
 }
 
+void crypto_init_clock(void)
+{
+	exynos_set_rate("dout_aclk_imem_sssx_266", 160 * 1000000);
+	exynos_set_rate("dout_aclk_imem_200", 160 * 1000000);
+}
+
+static void pcie_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_pcie_100", "mout_bus_pll_user");
+	exynos_set_parent("dout_sclk_pcie_100", "mout_sclk_pcie_100");
+	exynos_set_parent("sclk_pcie_100_fsys", "dout_sclk_pcie_100");
+	exynos_set_parent("mout_sclk_pcie_100_user", "sclk_pcie_100_fsys");
+	exynos_set_rate("dout_sclk_pcie_100", 100000000);
+}
+
 void __init exynos5433_clock_init(void)
 {
 	usb_init_clock();
+	crypto_init_clock();
+	pcie_init_clock();
 }

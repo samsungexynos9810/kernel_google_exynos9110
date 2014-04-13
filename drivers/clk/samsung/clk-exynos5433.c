@@ -56,7 +56,7 @@ enum exynos5433_clks {
 
 	sclk_isp_spi0 = 130, sclk_isp_spi1, sclk_isp_uart, sclk_isp_mtcadc,
 
-	sclk_usbdrd30 = 140, sclk_mmc0, sclk_mmc1, sclk_mmc2, sclk_ufsunipro, sclk_mphy,
+	sclk_usbdrd30 = 140, sclk_mmc0, sclk_mmc1, sclk_mmc2, sclk_ufsunipro, sclk_mphy, sclk_pcie,
 
 	/* gate clocks */
 	aclk_cpif_200 = 320, aclk_disp_333, aclk_bus1_400, aclk_bus2_400, aclk_bus0_400,
@@ -317,7 +317,7 @@ enum exynos5433_clks {
 	gate_mphy = 2160, gate_sysreg_fsys, gate_pmu_fsys, gate_gpio_fsys,
 	gate_tsi, gate_mmc2, gate_mmc1, gate_mmc0,
 	gate_ufs = 2170, gate_sromc, gate_usbhost20,
-	gate_usbdrd30, gate_pdma0, gate_pdma1,
+	gate_usbdrd30, gate_pdma0, gate_pdma1, gate_pcie,
 
 	/* fsys1 ip gate */
 	gate_ppmu_fsys = 2180, gate_smmu_mmc2, gate_smmu_mmc1,
@@ -693,6 +693,7 @@ enum exynos5433_clks {
 	mout_sclk_ufsunipro_user, mout_ufs_pll_user,
 	mout_phyclk_lli_mphy_to_ufs_user,
 	mout_sclk_mphy_fsys,
+	mout_sclk_pcie_100_user,
 	mout_phyclk_usbdrd30_udrd30_phyclock = 3150,
 	mout_phyclk_usbdrd30_udrd30_pipe_pclk,
 	mout_phyclk_usbhost20_phy_freeclk,
@@ -1061,7 +1062,7 @@ PNAME(mout_sclk_isp_sensor0_p)	= { "oscclk", "mout_bus_pll_user" };
 PNAME(mout_sclk_isp_sensor1_p)	= { "oscclk", "mout_bus_pll_user" };
 PNAME(mout_sclk_isp_sensor2_p)	= { "oscclk", "mout_bus_pll_user" };
 PNAME(mout_sclk_hdmi_spdif_p)	= { "dout_sclk_audio1", "ioclk_spdif_extclk" };
-PNAME(mout_sclk_pcie_100_p)	= { "oscclk", "mout_bus_pll_user" };
+PNAME(mout_sclk_pcie_100_user_p) = { "oscclk", "sclk_pcie_100_fsys" };
 
 /* MIF */
 PNAME(mout_mem0_pll_p)		= { "fin_pll", "fout_mem0_pll" };
@@ -1166,6 +1167,7 @@ PNAME(mout_phyclk_ufs_tx0_symbol_user_p) = { "oscclk", "phyclk_ufs_tx0_symbol_ph
 PNAME(mout_phyclk_ufs_tx1_symbol_user_p) = { "oscclk", "phyclk_ufs_tx1_symbol_phy" };
 PNAME(mout_phyclk_ufs_rx0_symbol_user_p) = { "oscclk", "phyclk_ufs_rx0_symbol_phy" };
 PNAME(mout_phyclk_ufs_rx1_symbol_user_p) = { "oscclk", "phyclk_ufs_rx1_symbol_phy" };
+PNAME(mout_sclk_pcie_100_p)= { "oscclk", "mout_bus_pll_user" };
 
 /* AUD0 */
 PNAME(mout_aud_pll_user_p)	= { "fin_pll", "fout_aud_pll" };
@@ -1480,7 +1482,8 @@ struct samsung_mux_clock exynos5433_mux_clks[] __initdata = {
 	CMX_STAT(mout_aclk_mfc_400_user, EXYNOS5430_SRC_SEL_MFC0, 0, 1, EXYNOS5430_SRC_STAT_MFC0, 0, 3),
 
 	CMX_STAT(mout_sclk_usbhost30, EXYNOS5430_SRC_SEL_FSYS1, 4, 1, EXYNOS5430_SRC_STAT_TOP_FSYS1, 4, 1),
-	CMX_STAT(mout_sclk_pcie_100, EXYNOS5430_SRC_SEL_FSYS1, 12, 1, EXYNOS5430_SRC_STAT_TOP_FSYS1, 12, 1),
+	CMX_STAT(mout_sclk_pcie_100_user, EXYNOS5430_SRC_SEL_FSYS1, 28, 1, EXYNOS5430_SRC_STAT_FSYS1, 28, 3),
+	CMX_STAT(mout_sclk_pcie_100, EXYNOS5430_SRC_SEL_TOP_FSYS1, 12, 1, EXYNOS5430_SRC_STAT_TOP_FSYS1, 12, 3),
 	CMX_STAT(mout_sclk_spi3, EXYNOS5430_SRC_SEL_TOP_PERIC0, 24, 1, EXYNOS5430_SRC_STAT_TOP_PERIC0, 24, 3),
 	CMX_STAT(mout_sclk_spi4, EXYNOS5430_SRC_SEL_TOP_PERIC0, 28, 1, EXYNOS5430_SRC_STAT_TOP_PERIC0, 28, 3),
 
@@ -1798,6 +1801,7 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(phyclk_ufs_tx1_symbol, "phyclk_ufs_tx1_symbol", "mout_phyclk_ufs_tx1_symbol_user", EXYNOS5430_ENABLE_SCLK_FSYS, 14, CLK_IGNORE_UNUSED, 0),
 	CGTE(phyclk_ufs_rx0_symbol, "phyclk_ufs_rx0_symbol", "mout_phyclk_ufs_rx0_symbol_user", EXYNOS5430_ENABLE_SCLK_FSYS, 15, CLK_IGNORE_UNUSED, 0),
 	CGTE(phyclk_ufs_rx1_symbol, "phyclk_ufs_rx1_symbol", "mout_phyclk_ufs_rx1_symbol_user", EXYNOS5430_ENABLE_SCLK_FSYS, 16, CLK_IGNORE_UNUSED, 0),
+	CGTE(sclk_pcie, "sclk_pcie", "mout_sclk_pcie_100_user", EXYNOS5430_ENABLE_SCLK_FSYS, 21, CLK_IGNORE_UNUSED, 0),
 
 	/* BUS1 */
 	CGTE(aclk_bus1nd_400, "aclk_bus1nd_400", "mout_aclk_bus1_400_user", EXYNOS5430_ENABLE_ACLK_BUS1, 0, CLK_IGNORE_UNUSED, 0),
@@ -2452,6 +2456,8 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(gate_disp0nd_333, "gate_disp0nd_333", NULL, EXYNOS5430_ENABLE_IP_DISP1, 0, CLK_IGNORE_UNUSED, 0),
 
 	/* FSYS0 */
+	//CGTE(gate_pcie_phy, "gate_pcie_phy", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 18, CLK_IGNORE_UNUSED, 0),
+	CGTE(gate_pcie, "gate_pcie", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 17, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_pdma1, "gate_pdma1", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 15, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_mphy, "gate_mphy", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 14, CLK_IGNORE_UNUSED, 0),
 	CGTE(gate_sysreg_fsys, "gate_sysreg_fsys", NULL, EXYNOS5430_ENABLE_IP_FSYS0, 13, CLK_IGNORE_UNUSED, 0),
