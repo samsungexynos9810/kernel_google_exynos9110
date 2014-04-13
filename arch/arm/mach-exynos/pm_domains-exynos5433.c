@@ -133,25 +133,20 @@ static struct sleep_save exynos_pd_g3d_clk_save[] = {
 
 static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
-	printk("%s %d\n", __func__, __LINE__);
 	s3c_pm_do_restore_core(exynos_pd_g3d_clk_save,
 			ARRAY_SIZE(exynos_pd_g3d_clk_save));
-	printk("%s %d\n", __func__, __LINE__);
 
 	DEBUG_PRINT_INFO("EXYNOS5430_DIV_G3D: %08x\n", __raw_readl(EXYNOS5430_DIV_G3D));
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
-	printk("%s %d\n", __func__, __LINE__);
 
 	return 0;
 }
 
 static int exynos_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
 {
-	printk("%s %d\n", __func__, __LINE__);
 	s3c_pm_do_save(exynos_pd_g3d_clk_save,
 			ARRAY_SIZE(exynos_pd_g3d_clk_save));
 
-	printk("%s %d\n", __func__, __LINE__);
 	return 0;
 }
 
@@ -341,7 +336,7 @@ static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_disp_clk_save,
 			ARRAY_SIZE(exynos_pd_disp_clk_save));
 
-	// Change parent DISP_PLL_SEL to osc clk.
+	// Change parent osc clk to DISP_PLL_SEL.
 	reg = __raw_readl(EXYNOS5430_SRC_SEL_DISP0);
 	reg |= (1 << 0);
 	__raw_writel(reg, EXYNOS5430_SRC_SEL_DISP0);
