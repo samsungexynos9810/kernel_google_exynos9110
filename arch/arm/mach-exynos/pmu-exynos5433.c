@@ -126,7 +126,6 @@ void __iomem *exynos_list_feed[] = {
 	EXYNOS_ARM_CORE_OPTION(7),
 	EXYNOS5433_EAGLE_NONCPU_OPTION,
 	EXYNOS5433_KFC_NONCPU_OPTION,
-#if 0
 	EXYNOS5_TOP_PWR_OPTION,
 	EXYNOS5_TOP_PWR_SYSMEM_OPTION,
 	EXYNOS5433_GSCL_OPTION,
@@ -142,7 +141,6 @@ void __iomem *exynos_list_feed[] = {
 	EXYNOS5433_ISP_OPTION,
 	EXYNOS5433_MFC_OPTION,
 	EXYNOS5433_HEVC_OPTION,
-#endif
 };
 
 void set_boot_flag(unsigned int cpu, unsigned int mode)
