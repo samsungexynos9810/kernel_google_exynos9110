@@ -926,7 +926,6 @@ static int s3c64xx_spi_transfer_one_message(struct spi_master *master,
 				use_dma = 0;
 			} else {
 				use_dma = 1;
-				cs->cs_mode = AUTO_CS_MODE;
 			}
 		}
 try_transfer:
@@ -1064,8 +1063,15 @@ static struct s3c64xx_spi_csinfo *s3c64xx_get_slave_ctrldata(
 	of_property_read_u32(data_np, "samsung,spi-feedback-delay", &fb_delay);
 	cs->fb_delay = fb_delay;
 
-	of_property_read_u32(data_np, "samsung,spi-chip-select-mode", &cs_mode);
-	cs->cs_mode = cs_mode;
+	if (of_property_read_u32(data_np,
+			    "samsung,spi-chip-select-mode", &cs_mode)) {
+		cs->cs_mode = AUTO_CS_MODE;
+	} else {
+		if (cs_mode)
+			cs->cs_mode = AUTO_CS_MODE;
+		else
+			cs->cs_mode = MANUAL_CS_MODE;
+	}
 
 	of_node_put(data_np);
 	return cs;
