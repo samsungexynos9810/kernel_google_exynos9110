@@ -1705,7 +1705,9 @@ static int s5p_mfc_open(struct file *file)
 	int ret = 0;
 	enum s5p_mfc_node_type node;
 	struct video_device *vdev = NULL;
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 	int prot_flag = 0;
+#endif
 
 	mfc_debug(2, "mfc driver open called\n");
 
@@ -2009,7 +2011,9 @@ static int s5p_mfc_release(struct file *file)
 	struct s5p_mfc_ctx *ctx = fh_to_mfc_ctx(file->private_data);
 	struct s5p_mfc_dev *dev = NULL;
 	struct s5p_mfc_enc *enc = NULL;
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 	int ret = 0;
+#endif
 
 	dev = ctx->dev;
 	if (!dev) {
@@ -2124,6 +2128,8 @@ static int s5p_mfc_release(struct file *file)
 
 				mfc_info_dev("Failed to release MFC inst[%d:%d]\n",
 						dev->num_drm_inst, dev->num_inst);
+
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 				if (ctx->is_drm && dev->num_drm_inst == 0) {
 					ret = s5p_mfc_secmem_isolate_and_protect(0);
 					if (ret)
@@ -2133,7 +2139,7 @@ static int s5p_mfc_release(struct file *file)
 					if (ret < 0)
 						mfc_err("Fail to lock DRM enabled. ret = %d\n", ret);
 				}
-
+#endif
 				if (dev->num_inst == 0) {
 					s5p_mfc_deinit_hw(dev);
 					del_timer_sync(&dev->watchdog_timer);
@@ -2149,10 +2155,12 @@ static int s5p_mfc_release(struct file *file)
 					dev->fw_status = 0;
 					dev->drm_fw_status = 0;
 
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 					if (dev->is_support_smc) {
 						s5p_mfc_release_sec_pgtable(dev);
 						dev->is_support_smc = 0;
 					}
+#endif
 				}
 
 
@@ -2172,6 +2180,7 @@ static int s5p_mfc_release(struct file *file)
 		dev->num_drm_inst--;
 	dev->num_inst--;
 
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 	if (ctx->is_drm && dev->num_drm_inst == 0) {
 		ret = s5p_mfc_secmem_isolate_and_protect(0);
 		if (ret)
@@ -2181,6 +2190,7 @@ static int s5p_mfc_release(struct file *file)
 		if (ret < 0)
 			mfc_err("Fail to lock DRM enabled. ret = %d\n", ret);
 	}
+#endif
 
 	if (dev->num_inst == 0) {
 		s5p_mfc_deinit_hw(dev);
@@ -2197,10 +2207,12 @@ static int s5p_mfc_release(struct file *file)
 		dev->fw_status = 0;
 		dev->drm_fw_status = 0;
 
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 		if (dev->is_support_smc) {
 			s5p_mfc_release_sec_pgtable(dev);
 			dev->is_support_smc = 0;
 		}
+#endif
 	}
 
 	/* Free resources */
