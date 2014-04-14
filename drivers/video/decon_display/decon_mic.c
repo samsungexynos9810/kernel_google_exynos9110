@@ -71,9 +71,11 @@ static int decon_mic_set_sys_reg(struct decon_mic *mic, bool enable)
 		writel(data, sysreg_va);
 		iounmap(sysreg_va);
 
+#ifndef CONFIG_SOC_EXYNOS5433
 		sysreg_va = ioremap(mic->mic_config->sysreg2, 0x4);
 		writel(0x80000000, sysreg_va);
 		iounmap(sysreg_va);
+#endif
 	} else {
 		data = readl(sysreg_va) & ~(0xf);
 		writel(data, sysreg_va);
