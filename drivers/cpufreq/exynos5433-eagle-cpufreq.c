@@ -324,7 +324,7 @@ static void __init set_volt_table_CA15(void)
 	}
 
 #if defined(CONFIG_CPU_THERMAL) && defined(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)
-	max_support_idx_CA15 = L5;	/* 2.0 GHz */
+	max_support_idx_CA15 = L6;	/* 1.9 GHz */
 #else
 	max_support_idx_CA15 = L13;	/* 1.2 GHz */
 #endif
