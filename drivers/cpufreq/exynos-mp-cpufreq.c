@@ -452,8 +452,11 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 	/* When the new frequency is higher than current frequency */
 	if ((freqs[cur]->new > freqs[cur]->old) && !safe_volt){
 		/* Firstly, voltage up to increase frequency */
-		if (!set_abb_first_than_volt)
-			regulator_set_voltage(regulator, volt, volt);
+		if (!set_abb_first_than_volt) {
+			ret = regulator_set_voltage(regulator, volt, volt);
+			if (ret)
+				goto out;
+		}
 
 		if (exynos_info[cur]->abb_table) {
 			if (cur == CA7)
@@ -462,16 +465,22 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 				set_match_abb(ID_ARM, exynos_info[cur]->abb_table[new_index]);
 		}
 
-		if (set_abb_first_than_volt)
-			regulator_set_voltage(regulator, volt, volt);
+		if (set_abb_first_than_volt) {
+			ret = regulator_set_voltage(regulator, volt, volt);
+			if (ret)
+				goto out;
+		}
 
 		if (exynos_info[cur]->set_ema)
 			exynos_info[cur]->set_ema(volt);
 	}
 
 	if (safe_volt) {
-		if (!set_abb_first_than_volt)
-			regulator_set_voltage(regulator, safe_volt, safe_volt);
+		if (!set_abb_first_than_volt) {
+			ret = regulator_set_voltage(regulator, safe_volt, safe_volt);
+			if (ret)
+				goto out;
+		}
 
 		if (exynos_info[cur]->abb_table) {
 			if (cur == CA7)
@@ -480,8 +489,11 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 				set_match_abb(ID_ARM, exynos_info[cur]->abb_table[new_index]);
 		}
 
-		if (set_abb_first_than_volt)
-			regulator_set_voltage(regulator, volt, volt);
+		if (set_abb_first_than_volt) {
+			ret = regulator_set_voltage(regulator, volt, volt);
+			if (ret)
+				goto out;
+		}
 
 		if (exynos_info[cur]->set_ema)
 			exynos_info[cur]->set_ema(safe_volt);
@@ -539,16 +551,22 @@ static int exynos_cpufreq_scale(unsigned int target_freq,
 				set_abb_first_than_volt = is_set_abb_first(ID_ARM, freqs[cur]->old, freqs[cur]->new);
 		}
 
-		if (!set_abb_first_than_volt)
-			regulator_set_voltage(regulator, volt, volt);
+		if (!set_abb_first_than_volt) {
+			ret = regulator_set_voltage(regulator, volt, volt);
+			if (ret)
+				goto out;
+		}
 		if (exynos_info[cur]->abb_table) {
 			if (cur == CA7)
 				set_match_abb(ID_KFC, exynos_info[cur]->abb_table[new_index]);
 			else
 				set_match_abb(ID_ARM, exynos_info[cur]->abb_table[new_index]);
 		}
-		if (set_abb_first_than_volt)
-			regulator_set_voltage(regulator, volt, volt);
+		if (set_abb_first_than_volt) {
+			ret = regulator_set_voltage(regulator, volt, volt);
+			if (ret)
+				goto out;
+		}
 	}
 
 	if (freqs[cur]->new < freqs[cur]->old) {
@@ -985,6 +1003,7 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 {
 	int volt;
 	int *on = v;
+	int ret = NOTIFY_OK;
 
 	if (event != TMU_COLD)
 		return NOTIFY_OK;
@@ -997,12 +1016,22 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 			volt_offset = COLD_VOLT_OFFSET;
 
 		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA15]->regulator));
-		regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
+		ret = regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
+		if (ret) {
+			ret = NOTIFY_BAD;
+			goto out;
+		}
+
 		if (exynos_info[CA15]->set_ema)
 			exynos_info[CA15]->set_ema(volt);
 
 		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA7]->regulator));
-		regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
+		ret = regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
+		if (ret) {
+			ret = NOTIFY_BAD;
+			goto out;
+		}
+
 		if (exynos_info[CA7]->set_ema)
 			exynos_info[CA7]->set_ema(volt);
 	} else {
@@ -1019,7 +1048,11 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 
 		if (exynos_info[CA15]->set_ema)
 			exynos_info[CA15]->set_ema(volt);
-		regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
+		ret = regulator_set_voltage(exynos_info[CA15]->regulator, volt, volt);
+		if (ret) {
+			ret = NOTIFY_BAD;
+			goto out;
+		}
 
 		volt = get_limit_voltage(regulator_get_voltage(exynos_info[CA7]->regulator)
 							- COLD_VOLT_OFFSET);
@@ -1027,7 +1060,12 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 		if (volt < get_freq_volt(CA7, freqs[CA7]->old))
 			volt = get_freq_volt(CA7, freqs[CA7]->old);
 
-		regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
+		ret = regulator_set_voltage(exynos_info[CA7]->regulator, volt, volt);
+		if (ret) {
+			ret = NOTIFY_BAD;
+			goto out;
+		}
+
 		if (exynos_info[CA7]->set_ema)
 			exynos_info[CA7]->set_ema(volt);
 	}
@@ -1035,7 +1073,7 @@ static int exynos_cpufreq_tmu_notifier(struct notifier_block *notifier,
 out:
 	mutex_unlock(&cpufreq_lock);
 
-	return NOTIFY_OK;
+	return ret;
 }
 
 static struct notifier_block exynos_tmu_nb = {
