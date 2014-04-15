@@ -998,10 +998,11 @@ static void samsung_init_dat_mask(struct samsung_pinctrl_drv_data *drvdata)
 	struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
 	struct samsung_pin_bank *bank = ctrl->pin_banks;
 	u32 val, i, cnt, func, mask, width;
-	void __iomem *reg_ext_base = (bank->eint_ext_offset) ?
-		drvdata->virt_ext_base : drvdata->virt_base;
+	void __iomem *reg_ext_base;
 
 	for (i = 0; i < ctrl->nr_banks; ++i, ++bank) {
+		reg_ext_base = (bank->eint_ext_offset) ?
+				drvdata->virt_ext_base : drvdata->virt_base;
 		width = bank->type->fld_width[PINCFG_TYPE_FUNC];
 		mask = (1 << width) - 1;
 
@@ -1245,7 +1246,6 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
 	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-
 	if (res) {
 		size = resource_size(res);
 		if (res->flags & IORESOURCE_CACHEABLE)
