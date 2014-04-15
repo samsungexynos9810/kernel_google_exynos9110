@@ -299,12 +299,10 @@ static int exynos_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
 static struct sleep_save exynos_pd_disp_clk_save[] = {
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_DISP0),
 	SAVE_ITEM(EXYNOS5430_ENABLE_IP_DISP1),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF3),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_DISP1),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF4),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF5),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_MIF6),
-	SAVE_ITEM(EXYNOS5430_SRC_SEL_DISP0),
+	SAVE_ITEM(EXYNOS5430_DISP_PLL_LOCK),
+	SAVE_ITEM(EXYNOS5430_DISP_PLL_CON0),
+	SAVE_ITEM(EXYNOS5430_DISP_PLL_CON1),
+	SAVE_ITEM(EXYNOS5430_DISP_PLL_FREQ_DET),
 };
 
 /* exynos_pd_disp_power_on_pre - setup before power on.
@@ -330,16 +328,10 @@ static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 {
-	unsigned int reg;
 	/*exynos_pd_notify_power_state(pd, true);*/
 
 	s3c_pm_do_restore_core(exynos_pd_disp_clk_save,
 			ARRAY_SIZE(exynos_pd_disp_clk_save));
-
-	// Change parent osc clk to DISP_PLL_SEL.
-	reg = __raw_readl(EXYNOS5430_SRC_SEL_DISP0);
-	reg |= (1 << 0);
-	__raw_writel(reg, EXYNOS5430_SRC_SEL_DISP0);
 
 	return 0;
 }
@@ -359,11 +351,6 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
 	reg |= ((1 << 9) | (1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
-
-	// Change parent DISP_PLL_SEL to osc clk.
-	reg = __raw_readl(EXYNOS5430_SRC_SEL_DISP0);
-	reg &= ~(1 << 0);
-	__raw_writel(reg, EXYNOS5430_SRC_SEL_DISP0);
 
 	if (!IS_ERR_OR_NULL(decon_vidcon0)) {
 		do {
