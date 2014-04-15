@@ -62,9 +62,9 @@ static gpu_dvfs_info gpu_dvfs_infotbl_default[] = {
 	{1150000, 600, 78, 100, 1, 0, 825000, 413000, 1500000, 1800000},
 #elif SOC_NAME == 5433
 	{1000000, 160,  0,  90, 1, 0, 136000, 133000,  500000, CPU_MAX},
-	{1000000, 266, 80,  90, 1, 0, 211000, 160000,  500000, CPU_MAX},
-	{1025000, 350, 80,  90, 1, 0, 413000, 200000,  500000, CPU_MAX},
-	{1025000, 420, 80,  99, 1, 0, 543000, 267000,  900000, 1800000},
+	{1000000, 266, 80, 100, 1, 0, 211000, 160000,  500000, CPU_MAX},
+	{1025000, 350, 80, 100, 1, 0, 413000, 200000,  500000, CPU_MAX},
+	{1025000, 420, 80, 100, 1, 0, 543000, 267000,  900000, 1800000},
 	{1075000, 500, 98, 100, 1, 0, 633000, 317000, 1500000, 1800000},
 	{1125000, 550, 78, 100, 1, 0, 825000, 413000, 1500000, 1800000},
 	{1150000, 600, 78, 100, 1, 0, 825000, 413000, 1500000, 1800000},
@@ -212,8 +212,10 @@ int gpu_dvfs_governor_init(struct kbase_device *kbdev, int governor_type)
 	unsigned long flags;
 #ifdef CONFIG_MALI_T6XX_DVFS
 	int i, total = 0;
-	int k;
 #endif /* CONFIG_MALI_T6XX_DVFS */
+#ifdef CONFIG_DYNIMIC_ABB
+	int k;
+#endif
 	struct exynos_context *platform = (struct exynos_context *) kbdev->platform_context;
 	if (!platform)
 		return -ENODEV;
