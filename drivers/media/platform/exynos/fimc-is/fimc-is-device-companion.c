@@ -240,7 +240,7 @@ static int fimc_is_companion_gpio_on(struct fimc_is_device_companion *device)
 	pdata = device->pdata;
 #if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	pin_ctrls = pdata->pin_ctrls;
-	core = device->core;
+	core = (struct fimc_is_core *)dev_get_drvdata(fimc_is_dev);
 #endif
 
 	if (test_bit(FIMC_IS_COMPANION_GPIO_ON, &device->state)) {
@@ -326,7 +326,7 @@ int fimc_is_companion_open(struct fimc_is_device_companion *device)
 
 	BUG_ON(!device);
 
-	core = device->core;
+	core = (struct fimc_is_core *)dev_get_drvdata(fimc_is_dev);
 	spi_gpio = &core->spi_gpio;
 
 	if (test_bit(FIMC_IS_COMPANION_OPEN, &device->state)) {
@@ -478,7 +478,6 @@ static int fimc_is_companion_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, device);
 	device_init_wakeup(&pdev->dev, true);
 	core->companion = device;
-	device->core = core;
 
 	/* init state */
 	clear_bit(FIMC_IS_COMPANION_OPEN, &device->state);
