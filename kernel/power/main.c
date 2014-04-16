@@ -639,7 +639,7 @@ static int __init pm_init(void)
 		return error;
 	pm_print_times_init();
 
-#if defined(CONFIG_SOC_EXYNOS5433) || (defined(CONFIG_SOC_EXYNOS5422) && !defined(CONFIG_SOC_EXYNOS5422_REV_0))
+#if defined(CONFIG_SOC_EXYNOS5422) && !defined(CONFIG_SOC_EXYNOS5422_REV_0)
 	pm_wake_lock("aa");
 #endif
 	return pm_autosleep_init();
