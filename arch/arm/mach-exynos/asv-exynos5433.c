@@ -887,34 +887,6 @@ static struct syscore_ops exynos5433_asv_syscore_ops = {
         .resume         = exynos5433_asv_resume,
 };
 
-static void exynos5433_asv_print_efuse_info(void)
-{
-	pr_info("EXYNOS5433 ASV : EGL Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
-		egl_fused_info.speed_grp[EXYNOS5433_GRP_L0], egl_fused_info.speed_grp[EXYNOS5433_GRP_L1],
-		egl_fused_info.speed_grp[EXYNOS5433_GRP_L2], egl_fused_info.voltage_lock);
-
-	pr_info("EXYNOS5433 ASV : KFC Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
-		kfc_fused_info.speed_grp[EXYNOS5433_GRP_L0], kfc_fused_info.speed_grp[EXYNOS5433_GRP_L1],
-		kfc_fused_info.speed_grp[EXYNOS5433_GRP_L2], kfc_fused_info.voltage_lock);
-
-	pr_info("EXYNOS5433 ASV : G3D Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
-		g3d_fused_info.speed_grp[EXYNOS5433_GRP_L0], g3d_fused_info.speed_grp[EXYNOS5433_GRP_L1],
-		g3d_fused_info.speed_grp[EXYNOS5433_GRP_L2], g3d_fused_info.voltage_lock);
-
-	pr_info("EXYNOS5433 ASV : MIF Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
-		mif_fused_info.speed_grp[EXYNOS5433_GRP_L0], mif_fused_info.speed_grp[EXYNOS5433_GRP_L1],
-		mif_fused_info.speed_grp[EXYNOS5433_GRP_L2], mif_fused_info.voltage_lock);
-
-	pr_info("EXYNOS5433 ASV : INT Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
-		int_fused_info.speed_grp[EXYNOS5433_GRP_L0], int_fused_info.speed_grp[EXYNOS5433_GRP_L1],
-		int_fused_info.speed_grp[EXYNOS5433_GRP_L2], int_fused_info.voltage_lock);
-
-	pr_info("EXYNOS5433 ASV : ISP Speed Grp : L0(%d), L1(%d), L2(%d) : volt_lock(%d)\n",
-		isp_fused_info.speed_grp[EXYNOS5433_GRP_L0], isp_fused_info.speed_grp[EXYNOS5433_GRP_L1],
-		isp_fused_info.speed_grp[EXYNOS5433_GRP_L2], isp_fused_info.voltage_lock);
-
-}
-
 int exynos5433_init_asv(struct asv_common *asv_info)
 {
 	unsigned int chip_ids_egl, chip_grp_fused;
@@ -933,13 +905,7 @@ int exynos5433_init_asv(struct asv_common *asv_info)
 		asv_ref_info.is_speedgroup = true;
 		pr_info("EXYNOS5433 ASV : Use Fused ASV speed group\n");
 	}
-
-	asv_ref_info.asv_version = 0x0;
-	pr_info("EXYNOS5433 ASV : ASV version (0x%x)\n", asv_ref_info.asv_version);
-
 	register_syscore_ops(&exynos5433_asv_syscore_ops);
-
-	exynos5433_asv_print_efuse_info();
 
 	asv_info->regist_asv_member = exynos5433_regist_asv_member;
 
