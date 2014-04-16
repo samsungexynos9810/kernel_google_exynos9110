@@ -35,6 +35,10 @@
 		mshc1 = &dwmmc_1;
 		mshc2 = &dwmmc_2;
 		mfc0 = &mfc_0;
+		mdev0 = &mdev_0;
+		gsc0 = &gsc_0;
+		gsc1 = &gsc_1;
+		gsc2 = &gsc_2;
 	};
 
 	chipid@10000000 {
@@ -695,15 +699,54 @@
 
 		spd_gscl0: spd-gscl0@105c4000 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_gscl1: spd-gscl1@105c4000 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_gscl2: spd-gscl2@105c4000 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
+	};
+
+	mdev_0: mdev_output {
+		compatible = "samsung,exynos5-mdev";
+	};
+
+	sysreg_localout: sysreg_localout@0x13B80000 {
+		compatible = "samsung,exynos5-sysreg_localout";
+		reg = <0x13B80000 0x2000>, <0x13CB0000 0x2000>;
+	};
+
+	sysmmu_gscl0: sysmmu@0x13C80000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13C80000 0x1000>;
+		interrupts = <0 288 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2283>;
+		mmu-masters = <&gsc_0>;
+	};
+
+	sysmmu_gscl1: sysmmu@0x13C90000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13C90000 0x1000>;
+		interrupts = <0 290 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2284>;
+		mmu-masters = <&gsc_1>;
+	};
+
+	sysmmu_gscl2: sysmmu@0x13CA0000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x13CA0000 0x1000>;
+		interrupts = <0 292 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2285>;
+		mmu-masters = <&gsc_2>;
 	};
 
 	pd_cam0: pd-cam0@105c4020 {
@@ -889,6 +932,52 @@
 			#dma-channels = <6>;
 			#dma-requests = <16>;
 		};
+	};
+
+	gsc_0: gsc@13C00000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13C00000 0x1000>;
+		interrupts = <0 297 0>;
+		clocks = <&clock 2265>, <&clock 3113>, <&clock 343>,
+		       <&clock 3114>, <&clock 344> ;
+		clock-names = "gate_gscl", "mout_aclk_gscl_333_user",
+			"aclk_gscl_333", "mout_aclk_gscl_111_user",
+			"aclk_gscl_111";
+		ip_ver = <2>;
+		mif_min = <158000>;
+		int_min = <111000>;
+		samsung,power-domain = <&spd_gscl0>;
+	};
+
+	gsc_1: gsc@0x13C10000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13C10000 0x1000>;
+		interrupts = <0 298 0>;
+		clocks = <&clock 2264>, <&clock 3113>, <&clock 343>,
+		       <&clock 3114>, <&clock 344> ;
+		clock-names = "gate_gscl", "mout_aclk_gscl_333_user",
+			"aclk_gscl_333", "mout_aclk_gscl_111_user",
+			"aclk_gscl_111";
+
+		ip_ver = <2>;
+		mif_min = <158000>;
+		int_min = <111000>;
+		samsung,power-domain = <&spd_gscl1>;
+	};
+
+	gsc_2: gsc@0x13C20000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x13C20000 0x1000>;
+		interrupts = <0 299 0>;
+		clocks = <&clock 2263>, <&clock 3113>, <&clock 343>,
+		       <&clock 3114>, <&clock 344> ;
+		clock-names = "gate_gscl", "mout_aclk_gscl_333_user",
+			"aclk_gscl_333", "mout_aclk_gscl_111_user",
+			"aclk_gscl_111";
+		ip_ver = <2>;
+		mif_min = <158000>;
+		int_min = <111000>;
+		samsung,power-domain = <&spd_gscl2>;
 	};
 
 	/* disp_driver */
