@@ -141,16 +141,6 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define EXYNOS_EMUL_ENABLE			0x1
 #endif /* CONFIG_THERMAL_EMULATION */
 
-/* CPU Zone information */
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
-#define PANIC_ZONE      			10
-#else
-#define PANIC_ZONE      			6
-#endif
-#define WARN_ZONE       			3
-#define MONITOR_ZONE    			2
-#define SAFE_ZONE       			1
-
 /* Rising, Falling interrupt bit number*/
 #if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 #define RISE_LEVEL1_SHIFT      			1
@@ -185,9 +175,6 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #define FALL_LEVEL6_SHIFT      			0
 #define FALL_LEVEL7_SHIFT      			0
 #endif
-
-#define GET_ZONE(trip) (trip + 2)
-#define GET_TRIP(zone) (zone - 2)
 
 #define EXYNOS_ZONE_COUNT			1
 #define EXYNOS_TMU_COUNT			5
@@ -342,14 +329,16 @@ static int exynos_set_mode(struct thermal_zone_device *thermal,
 static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
 				 enum thermal_trip_type *type)
 {
-	unsigned int cur_zone;
-	cur_zone = GET_ZONE(trip);
+	int active_size, passive_size;
 
-	if (cur_zone >= MONITOR_ZONE && cur_zone < WARN_ZONE)
+	active_size = th_zone->sensor_conf->cooling_data.size[THERMAL_TRIP_ACTIVE];
+	passive_size = th_zone->sensor_conf->cooling_data.size[THERMAL_TRIP_PASSIVE];
+
+	if (trip < active_size)
 		*type = THERMAL_TRIP_ACTIVE;
-	else if (cur_zone >= WARN_ZONE && cur_zone < PANIC_ZONE)
+	else if (trip >= active_size && trip < active_size + passive_size)
 		*type = THERMAL_TRIP_PASSIVE;
-	else if (cur_zone >= PANIC_ZONE)
+	else if (trip >= active_size + passive_size)
 		*type = THERMAL_TRIP_CRITICAL;
 	else
 		return -EINVAL;
@@ -361,7 +350,12 @@ static int exynos_get_trip_type(struct thermal_zone_device *thermal, int trip,
 static int exynos_get_trip_temp(struct thermal_zone_device *thermal, int trip,
 				unsigned long *temp)
 {
-	if (trip < GET_TRIP(MONITOR_ZONE) || trip > GET_TRIP(PANIC_ZONE))
+	int active_size, passive_size;
+
+	active_size = th_zone->sensor_conf->cooling_data.size[THERMAL_TRIP_ACTIVE];
+	passive_size = th_zone->sensor_conf->cooling_data.size[THERMAL_TRIP_PASSIVE];
+
+	if (trip < 0 || trip > active_size + passive_size)
 		return -EINVAL;
 
 	*temp = th_zone->sensor_conf->trip_data.trip_val[trip];
@@ -376,8 +370,13 @@ static int exynos_get_crit_temp(struct thermal_zone_device *thermal,
 				unsigned long *temp)
 {
 	int ret;
+	int active_size, passive_size;
+
+	active_size = th_zone->sensor_conf->cooling_data.size[THERMAL_TRIP_ACTIVE];
+	passive_size = th_zone->sensor_conf->cooling_data.size[THERMAL_TRIP_PASSIVE];
+
 	/* Panic zone */
-	ret = exynos_get_trip_temp(thermal, GET_TRIP(PANIC_ZONE), temp);
+	ret = exynos_get_trip_temp(thermal, active_size + passive_size, temp);
 	return ret;
 }
 
@@ -453,6 +452,7 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
 {
 	int ret = 0, i, tab_size;
 	struct thermal_sensor_conf *data = th_zone->sensor_conf;
+	enum thermal_trip_type type = 0;
 
 	if (th_zone->bind == false)
 		return 0;
@@ -473,9 +473,10 @@ static int exynos_unbind(struct thermal_zone_device *thermal,
 
 	/* Bind the thermal zone to the cpufreq cooling device */
 	for (i = 0; i < tab_size; i++) {
-		switch (GET_ZONE(i)) {
-		case MONITOR_ZONE:
-		case WARN_ZONE:
+		exynos_get_trip_type(th_zone->therm_dev, i, &type);
+		switch (type) {
+		case THERMAL_TRIP_ACTIVE:
+		case THERMAL_TRIP_PASSIVE:
 			if (thermal_zone_unbind_cooling_device(thermal, i,
 								cdev)) {
 				pr_err("error unbinding cdev inst=%d\n", i);
@@ -715,6 +716,7 @@ static void exynos_report_trigger(void)
 	unsigned int i;
 	char data[10];
 	char *envp[] = { data, NULL };
+	enum thermal_trip_type type = 0;
 
 	if (!th_zone || !th_zone->therm_dev)
 		return;
@@ -738,10 +740,11 @@ static void exynos_report_trigger(void)
 	}
 
 	if (th_zone->mode == THERMAL_DEVICE_ENABLED) {
-		if (GET_ZONE(i) > WARN_ZONE)
-			th_zone->therm_dev->passive_delay = PASSIVE_INTERVAL;
-		else
+		exynos_get_trip_type(th_zone->therm_dev, i, &type);
+		if (type == THERMAL_TRIP_ACTIVE)
 			th_zone->therm_dev->passive_delay = ACTIVE_INTERVAL;
+		else
+			th_zone->therm_dev->passive_delay = PASSIVE_INTERVAL;
 	}
 
 	snprintf(data, sizeof(data), "%u", i);
@@ -2206,6 +2209,9 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 			exynos_sensor_conf.cooling_data.freq_data[i].mask_val =
 				cpu_all_mask;
 	}
+
+	exynos_sensor_conf.cooling_data.size[THERMAL_TRIP_ACTIVE] = pdata->size[THERMAL_TRIP_ACTIVE];
+	exynos_sensor_conf.cooling_data.size[THERMAL_TRIP_PASSIVE] = pdata->size[THERMAL_TRIP_PASSIVE];
 
 	register_pm_notifier(&exynos_pm_nb);
 #if (defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)) && defined(CONFIG_CPU_IDLE)
