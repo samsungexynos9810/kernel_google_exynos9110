@@ -127,5 +127,8 @@ struct exynos_tmu_platform_data {
 	struct freq_clip_table freq_tab[8];
 	int size[THERMAL_TRIP_CRITICAL + 1];
 	unsigned int freq_tab_count;
+
+	int hotplug_out_threshold;
+	int hotplug_in_threshold;
 };
 #endif /* _LINUX_EXYNOS_THERMAL_H */
