@@ -6,6 +6,11 @@ menuconfig DECON
 	select S5P_DEV_MIPI_DSIM0
 	depends on FB
 
+config USE_VSYNC_SKIP
+	bool "Vsync Skip Enable"
+	depends on DECON
+	default n
+
 config DECON_FB
 	bool "Samsung DECON Framebuffer driver"
 	depends on DECON

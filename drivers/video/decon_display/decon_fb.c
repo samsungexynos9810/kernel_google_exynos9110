@@ -142,6 +142,10 @@ static dma_addr_t g_fb_dummy_buf;
 #define DUMMY_HEIGHT    1
 #endif
 
+#ifdef CONFIG_USE_VSYNC_SKIP
+static atomic_t extra_vsync_wait;
+#endif /* CONFIG_USE_VSYNC_SKIP */
+
 void debug_function(struct display_driver *dispdrv, const char *buf);
 
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
@@ -512,6 +516,28 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 
 	return data;
 }
+
+#ifdef CONFIG_USE_VSYNC_SKIP
+void s3c_fb_extra_vsync_wait_set(int set_count)
+{
+	atomic_set(&extra_vsync_wait, set_count);
+}
+
+int s3c_fb_extra_vsync_wait_get(void)
+{
+	return atomic_read(&extra_vsync_wait);
+}
+
+void s3c_fb_extra_vsync_wait_add(int skip_count)
+{
+	atomic_add(skip_count, &extra_vsync_wait);
+}
+
+void s3c_fb_extra_vsync_wait_sub(int skip_count)
+{
+	atomic_sub(skip_count, &extra_vsync_wait);
+}
+#endif /* CONFIG_USE_VSYNC_SKIP*/
 
 static inline u32 blendeq(enum s3c_fb_blending blending, u8 transp_length,
 		int plane_alpha)
@@ -1035,6 +1061,10 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	struct display_driver *dispdrv;
 
 	dev_info(sfb->dev, "blank mode %d\n", blank_mode);
+
+#ifdef CONFIG_USE_VSYNC_SKIP
+	s3c_fb_extra_vsync_wait_set(ERANGE);
+#endif /* CONFIG_USE_VSYNC_SKIP */
 
 	dispdrv = get_display_driver();
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
@@ -2465,8 +2495,26 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 #endif
 
 	do {
+#ifdef CONFIG_USE_VSYNC_SKIP
+		int vsync_wait_cnt = 0;
+#endif /* CONFIG_USE_VSYNC_SKIP */
 		__s3c_fb_update_regs(sfb, regs);
 		s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
+#ifdef CONFIG_USE_VSYNC_SKIP
+		vsync_wait_cnt = s3c_fb_extra_vsync_wait_get();
+		s3c_fb_extra_vsync_wait_set(0);
+
+		if (vsync_wait_cnt < ERANGE && regs->num_of_window <= 2) {
+			while ((vsync_wait_cnt--) > 0) {
+				if((s3c_fb_extra_vsync_wait_get() >= ERANGE)) {
+					s3c_fb_extra_vsync_wait_set(0);
+					break;
+				}
+
+				s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
+			}
+		}
+#endif /* CONFIG_USE_VSYNC_SKIP */
 		wait_for_vsync = false;
 
 		for (i = 0; i < sfb->variant.nr_windows; i++) {
