@@ -829,7 +829,10 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 	/* Set the descriptor base address */
 	mci_writel(host, DBADDR, host->sg_dma);
 
-	host->align_size = (host->data_shift == 3) ? 8 : 4;
+	if (host->quirks & DW_MMC_QUIRK_NOT_ALLOW_SINGLE_DMA)
+		host->align_size = 32;
+	else
+		host->align_size = (host->data_shift == 3) ? 8 : 4;
 
 	return 0;
 }
@@ -878,42 +881,25 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 	}
 
 	if (card && mmc_card_sdio(card)) {
-		unsigned int rxwmark_val = 0, msize_val = 0, i;
-		unsigned int msize[8] = {1, 4, 8, 16, 32, 64, 128, 256};
+		unsigned int rxwmark_val = 0, txwmark_val = 0, msize_val = 0;
 
-		for (i = 1; i < sizeof(msize) / sizeof(unsigned int); i++) {
-			if (data->blksz != 0 &&
-					(data->blksz / (1 << host->data_shift)) % msize[i] == 0)
-				continue;
-			else
-				break;
-		}
-		if (data->blksz < host->fifo_depth / 2) {
-			if (i > 1) {
-				msize_val = i - 1;
-				rxwmark_val = msize[i - 1] - 1;
-			} else {
-				msize_val = 0;
-				rxwmark_val = 1;
-			}
+		if (data->blksz >= (4 * (1 << host->data_shift))) {
+			msize_val = 1;
+			rxwmark_val = 3;
+			txwmark_val = 4;
 		} else {
-			if (i > 5) {
-				msize_val = i - 5;
-				rxwmark_val = msize[i - 5] - 1;
-			} else {
-				msize_val = 0;
-				rxwmark_val = 1;
-			}
+			msize_val = 0;
+			rxwmark_val = 1;
+			txwmark_val = host->fifo_depth / 2;
 		}
 
 		host->fifoth_val = ((msize_val << 28) | (rxwmark_val << 16) |
-				((host->fifo_depth / 2) << 0));
-
+				(txwmark_val << 0));
 		dev_dbg(host->dev,
-			"data->blksz: %d data->blocks %d Transfer Size %d  "
-			"msize_val : %d, rxwmark_val : %d i : %d host->fifoth_val: 0x%08x\n",
-			data->blksz, data->blocks, (data->blksz * data->blocks),
-			msize_val, rxwmark_val, i, host->fifoth_val);
+				"data->blksz: %d data->blocks %d Transfer Size %d  "
+				"msize_val : %d, rxwmark_val : %d host->fifoth_val: 0x%08x\n",
+				data->blksz, data->blocks, (data->blksz * data->blocks),
+				msize_val, rxwmark_val, host->fifoth_val);
 
 		mci_writel(host, FIFOTH, host->fifoth_val);
 
@@ -3523,6 +3509,9 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk	= "fix-fmp-size-mismatch",
 		.id	= DW_MMC_QUIRK_FMP_SIZE_MISMATCH,
+	}, {
+		.quirk	= "not-allow-single-dma",
+		.id	= DW_MMC_QUIRK_NOT_ALLOW_SINGLE_DMA,
 	},
 };
 
