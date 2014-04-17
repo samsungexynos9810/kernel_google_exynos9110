@@ -1297,7 +1297,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			err("CAM0 power down failed(0x%08x)\n",
 				readl(PMUREG_CAM0_STATUS));
 
-		timeout = 1000;
+		timeout = 2000;
 		while ((readl(PMUREG_CAM1_STATUS) & 0x1) && timeout) {
 			timeout--;
 			usleep_range(1000, 1000);
