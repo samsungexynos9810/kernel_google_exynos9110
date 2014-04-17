@@ -580,6 +580,14 @@ static struct list_head exp_fn_list;
 static struct synaptics_rmi4_f51_handle *f51;
 #endif
 
+#ifdef CONFIG_USE_VSYNC_SKIP
+void s3c_fb_extra_vsync_wait_set(int);
+#endif
+
+#ifdef CONFIG_USE_VSYNC_SKIP
+void s3c_fb_extra_vsync_wait_set(int);
+#endif
+
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static ssize_t synaptics_rmi4_full_pm_cycle_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
@@ -1365,6 +1373,14 @@ static int synaptics_rmi4_f12_abs_report(struct synaptics_rmi4_data *rmi4_data,
 		input_mt_sync(rmi4_data->input_dev);
 #endif
 	}
+
+#ifdef CONFIG_USE_VSYNC_SKIP
+	s3c_fb_extra_vsync_wait_set(ERANGE);
+#endif /* CONFIG_USE_VSYNC_SKIP */
+
+#ifdef CONFIG_USE_VSYNC_SKIP
+	s3c_fb_extra_vsync_wait_set(ERANGE);
+#endif /* CONFIG_USE_VSYNC_SKIP */
 
 	input_sync(rmi4_data->input_dev);
 
