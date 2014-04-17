@@ -1146,7 +1146,6 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 		merr("fimc_is_resource_put is fail", device);
 
 	clear_bit(FIMC_IS_SENSOR_OPEN, &device->state);
-
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
@@ -1254,6 +1253,8 @@ module_retry:
 	if (ret) {
 		merr("v4l2_device_register_subdev is fail(%d)", device, ret);
 		goto p_err;
+	} else {
+		device->subdev_module = subdev_module;
 	}
 
 #if defined(CONFIG_PM_DEVFREQ)
@@ -1298,9 +1299,8 @@ module_retry:
 		}
 	}
 
-	device->subdev_module = subdev_module;
-
 p_err:
+
 	minfo("[SEN:D] %s(%d, %d, %d)\n", device, __func__, input, scenario, ret);
 	return ret;
 }
