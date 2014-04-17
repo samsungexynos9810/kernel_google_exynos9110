@@ -58,8 +58,6 @@
 #define MCT_L_TCON_INT_START		(1 << 1)
 #define MCT_L_TCON_TIMER_START		(1 << 0)
 
-#define TICK_BASE_CNT	1
-
 enum {
 	MCT_INT_SPI,
 	MCT_INT_PPI
@@ -85,6 +83,7 @@ static void __iomem *reg_base;
 static unsigned long clk_rate;
 static unsigned int mct_int_type;
 static int mct_irqs[MCT_NR_IRQS];
+static int tick_base_cnt;
 
 struct mct_clock_event_device {
 	struct clock_event_device *evt;
@@ -391,7 +390,8 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
 		exynos4_mct_tick_start(cycles_per_jiffy, 1, mevt);
 		break;
 	case CLOCK_EVT_MODE_RESUME:
-		exynos4_mct_write(TICK_BASE_CNT, mevt->base + MCT_L_TCNTB_OFFSET);
+		if (!soc_is_exynos5433())
+			exynos4_mct_write(tick_base_cnt, mevt->base + MCT_L_TCNTB_OFFSET);
 		break;
 
 	case CLOCK_EVT_MODE_ONESHOT:
@@ -446,7 +446,12 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
 	evt->set_mode = exynos4_tick_set_mode;
 	evt->features = CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT;
 	evt->rating = 450;
-	exynos4_mct_write(TICK_BASE_CNT, mevt->base + MCT_L_TCNTB_OFFSET);
+	tick_base_cnt = 0;
+
+	if (!soc_is_exynos5433()) {
+		tick_base_cnt = 1;
+		exynos4_mct_write(tick_base_cnt, mevt->base + MCT_L_TCNTB_OFFSET);
+	}
 
 	if (mct_int_type == MCT_INT_SPI) {
 		struct irqaction *mct_irq = this_cpu_ptr(&percpu_mct_irq);
@@ -459,7 +464,7 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
 		enable_percpu_irq(mct_irqs[MCT_L0_IRQ], 0);
 	}
 
-	clockevents_config_and_register(evt, clk_rate / (TICK_BASE_CNT + 1),
+	clockevents_config_and_register(evt, clk_rate / (tick_base_cnt + 1),
 					0xf, 0x7fffffff);
 
 	return 0;
