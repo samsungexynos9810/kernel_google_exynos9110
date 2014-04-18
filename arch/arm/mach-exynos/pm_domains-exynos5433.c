@@ -13,6 +13,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <mach/tmu.h>
 #include "pm_domains-exynos5433.h"
 
 static void exynos5_pd_enable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
@@ -81,6 +82,7 @@ static int exynos_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
 	exynos5_pd_enable_clk(iptop_g3d, ARRAY_SIZE(iptop_g3d));
 	exynos5_pd_enable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));
 
+	exynos_tmu_core_control(false, 2);	/* disable G3D TMU core before G3D is turned off */
 	return 0;
 }
 
@@ -93,6 +95,8 @@ static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
 
 	/*exynos5_pd_disable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));*/
+
+	exynos_tmu_core_control(true, 2);	/* enable G3D TMU core after G3D is turned on */
 
 	return 0;
 }
@@ -504,6 +508,8 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 	exynos5_pd_enable_clk(iptop_isp, ARRAY_SIZE(iptop_isp));
 	exynos5_pd_enable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));
 
+	exynos_tmu_core_control(false, 4);	/* disable ISP TMU core before ISP is turned off */
+
 	return 0;
 }
 
@@ -515,6 +521,8 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 			ARRAY_SIZE(exynos_pd_isp_clk_save));
 
 	/*exynos5_pd_disable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
+
+	exynos_tmu_core_control(true, 4);	/* enable ISP TMU core after ISP is turned on */
 
 	return 0;
 }
