@@ -64,11 +64,11 @@ enum asv_type_id {
 	ID_INT,
 	ID_MIF,
 	ID_G3D,
+	ID_ISP,
 	ID_INT_MIF_L0,
 	ID_INT_MIF_L1,
 	ID_INT_MIF_L2,
 	ID_INT_MIF_L3,
-	ID_ISP,
 	ASV_TYPE_END,
 };
 
