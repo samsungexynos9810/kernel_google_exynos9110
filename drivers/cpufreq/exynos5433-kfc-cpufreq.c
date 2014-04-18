@@ -186,11 +186,12 @@ static void exynos5433_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5430_SRC_STAT_KFC2);
 		tmp &= EXYNOS5430_SRC_STAT_KFC2_KFC_MASK;
+		tmp >>= EXYNOS5430_SRC_STAT_KFC2_KFC_SHIFT;
 	} while (tmp != 0x2);
 
 	/* 3. Set KFC_PLL Lock time */
-	pdiv = ((exynos5433_apll_freq_CA7[new_index].mps >>
-				 EXYNOS5430_PLL_PDIV_SHIFT) & EXYNOS5430_PLL_PDIV_MASK);
+	pdiv = ((exynos5433_apll_freq_CA7[new_index].mps &
+				 EXYNOS5430_PLL_PDIV_MASK) >> EXYNOS5430_PLL_PDIV_SHIFT);
 
 	__raw_writel((pdiv * 150), EXYNOS5430_KFC_PLL_LOCK);
 
@@ -216,6 +217,7 @@ static void exynos5433_set_kfc_pll_CA7(unsigned int new_index, unsigned int old_
 		cpu_relax();
 		tmp = __raw_readl(EXYNOS5430_SRC_STAT_KFC2);
 		tmp &= EXYNOS5430_SRC_STAT_KFC2_KFC_MASK;
+		tmp >>= EXYNOS5430_SRC_STAT_KFC2_KFC_SHIFT;
 	} while (tmp != 0x1);
 
 	/* 7. restore original div value */
