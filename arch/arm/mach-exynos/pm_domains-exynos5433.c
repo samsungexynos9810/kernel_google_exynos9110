@@ -76,6 +76,14 @@ static int exynos_pd_maudio_power_off_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+static int exynos_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
+{
+	exynos5_pd_enable_clk(iptop_g3d, ARRAY_SIZE(iptop_g3d));
+	exynos5_pd_enable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));
+
+	return 0;
+}
+
 static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_g3d_clk_save,
@@ -84,13 +92,25 @@ static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 	DEBUG_PRINT_INFO("EXYNOS5430_DIV_G3D: %08x\n", __raw_readl(EXYNOS5430_DIV_G3D));
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
 
+	/*exynos5_pd_disable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));*/
+
 	return 0;
 }
 
 static int exynos_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
 {
+	/*exynos5_pd_enable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));*/
+
 	s3c_pm_do_save(exynos_pd_g3d_clk_save,
 			ARRAY_SIZE(exynos_pd_g3d_clk_save));
+
+	return 0;
+}
+
+static int exynos_pd_g3d_power_off_post(struct exynos_pm_domain *pd)
+{
+	exynos5_pd_disable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));
+	exynos5_pd_disable_clk(iptop_g3d, ARRAY_SIZE(iptop_g3d));
 
 	return 0;
 }
@@ -102,7 +122,9 @@ static int exynos_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_mfc_power_on_pre(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_enable_clk(cmutop_mfc, ARRAY_SIZE(cmutop_mfc));
+	exynos5_pd_enable_clk(iptop_mfc, ARRAY_SIZE(iptop_mfc));
+	exynos5_pd_enable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
+
 	return 0;
 }
 
@@ -113,15 +135,17 @@ static int exynos_pd_mfc_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_mfc_clk_save,
 			ARRAY_SIZE(exynos_pd_mfc_clk_save));
 
+	exynos5_pd_disable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
+
 	return 0;
 }
 
 static int exynos_pd_mfc_power_off_pre(struct exynos_pm_domain *pd)
 {
+	exynos5_pd_enable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
+
 	s3c_pm_do_save(exynos_pd_mfc_clk_save,
 			ARRAY_SIZE(exynos_pd_mfc_clk_save));
-
-	exynos5_pd_enable_clk(cmutop_mfc, ARRAY_SIZE(cmutop_mfc));
 
 	return 0;
 }
@@ -133,7 +157,9 @@ static int exynos_pd_mfc_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_mfc_power_off_post(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_disable_clk(cmutop_mfc, ARRAY_SIZE(cmutop_mfc));
+	exynos5_pd_disable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
+	exynos5_pd_disable_clk(iptop_mfc, ARRAY_SIZE(iptop_mfc));
+
 	return 0;
 }
 
@@ -144,7 +170,9 @@ static int exynos_pd_mfc_power_off_post(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_hevc_power_on_pre(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_enable_clk(cmutop_hevc, ARRAY_SIZE(cmutop_hevc));
+	exynos5_pd_enable_clk(iptop_hevc, ARRAY_SIZE(iptop_hevc));
+	exynos5_pd_enable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));
+
 	return 0;
 }
 
@@ -155,15 +183,17 @@ static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_hevc_clk_save,
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
 
+	/*exynos5_pd_disable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));*/
+
 	return 0;
 }
 
 static int exynos_pd_hevc_power_off_pre(struct exynos_pm_domain *pd)
 {
+	/*exynos5_pd_enable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));*/
+
 	s3c_pm_do_save(exynos_pd_hevc_clk_save,
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
-
-	exynos5_pd_enable_clk(cmutop_hevc, ARRAY_SIZE(cmutop_hevc));
 
 	return 0;
 }
@@ -175,7 +205,9 @@ static int exynos_pd_hevc_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_hevc_power_off_post(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_disable_clk(cmutop_hevc, ARRAY_SIZE(cmutop_hevc));
+	exynos5_pd_disable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));
+	exynos5_pd_disable_clk(iptop_hevc, ARRAY_SIZE(iptop_hevc));
+
 	return 0;
 }
 
@@ -186,7 +218,9 @@ static int exynos_pd_hevc_power_off_post(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_gscl_power_on_pre(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_enable_clk(cmutop_gscl, ARRAY_SIZE(cmutop_gscl));
+	exynos5_pd_enable_clk(iptop_gscl, ARRAY_SIZE(iptop_gscl));
+	exynos5_pd_enable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));
+
 	return 0;
 }
 
@@ -197,15 +231,17 @@ static int exynos_pd_gscl_power_on_post(struct exynos_pm_domain *pd)
 
 	/*exynos_pd_notify_power_state(pd, true);*/
 
+	/*exynos5_pd_disable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));*/
+
 	return 0;
 }
 
 static int exynos_pd_gscl_power_off_pre(struct exynos_pm_domain *pd)
 {
+	/*exynos5_pd_enable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));*/
+
 	s3c_pm_do_save(exynos_pd_gscl_clk_save,
 			ARRAY_SIZE(exynos_pd_gscl_clk_save));
-
-	exynos5_pd_enable_clk(cmutop_gscl, ARRAY_SIZE(cmutop_gscl));
 
 	return 0;
 }
@@ -217,7 +253,9 @@ static int exynos_pd_gscl_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_disable_clk(cmutop_gscl, ARRAY_SIZE(cmutop_gscl));
+	exynos5_pd_disable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));
+	exynos5_pd_disable_clk(iptop_gscl, ARRAY_SIZE(iptop_gscl));
+
 	return 0;
 }
 
@@ -228,11 +266,9 @@ static int exynos_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
 {
-	unsigned int reg;
-
-	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
-	reg |= ((1 << 9) | (1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
-	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
+	exynos5_pd_enable_clk(ipmif_disp, ARRAY_SIZE(ipmif_disp));
+	exynos5_pd_enable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));
+	exynos5_pd_enable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));
 
 	return 0;
 }
@@ -249,6 +285,9 @@ static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_disp_clk_save,
 			ARRAY_SIZE(exynos_pd_disp_clk_save));
 
+	/*exynos5_pd_disable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));*/
+	/*exynos5_pd_disable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));*/
+
 	return 0;
 }
 
@@ -264,9 +303,9 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 	unsigned timeout = 1000;
 
 	DEBUG_PRINT_INFO("disp pre power off\n");
-	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
-	reg |= ((1 << 9) | (1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
-	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
+
+	/*exynos5_pd_enable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));*/
+	/*exynos5_pd_enable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));*/
 
 	if (!IS_ERR_OR_NULL(decon_vidcon0)) {
 		do {
@@ -320,9 +359,9 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-	reg = __raw_readl(EXYNOS5430_ENABLE_IP_MIF3);
-	reg &= ~((1 << 9) | (1 << 8 ) | (1 << 7) | (1 << 6) | (1 << 5) | (1 << 1));
-	__raw_writel(reg, EXYNOS5430_ENABLE_IP_MIF3);
+	exynos5_pd_disable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));
+	exynos5_pd_disable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));
+	exynos5_pd_disable_clk(ipmif_disp, ARRAY_SIZE(ipmif_disp));
 
 	reg = __raw_readl(EXYNOS5430_SRC_SEL_MIF4);
 	reg &= ~((1 << 24) | (1 << 20) | (1 << 16) | (1 << 8) | (1 << 4) | (1 << 0));
@@ -347,7 +386,11 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 static int exynos_pd_mscl_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
-	exynos5_pd_enable_clk(cmutop_mscl, ARRAY_SIZE(cmutop_mscl));
+
+	exynos5_pd_enable_clk(iptop_mscl, ARRAY_SIZE(iptop_mscl));
+	exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
+	exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
+
 	return 0;
 }
 
@@ -358,12 +401,16 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_mscl_clk_save,
 			ARRAY_SIZE(exynos_pd_mscl_clk_save));
 
+	/*exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
+	/*exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
+
 	return 0;
 }
 
 static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_enable_clk(cmutop_mscl, ARRAY_SIZE(cmutop_mscl));
+	/*exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
+	/*exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
 
 	s3c_pm_do_save(exynos_pd_mscl_clk_save,
 			ARRAY_SIZE(exynos_pd_mscl_clk_save));
@@ -379,7 +426,11 @@ static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
-	exynos5_pd_disable_clk(cmutop_mscl, ARRAY_SIZE(cmutop_mscl));
+
+	exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
+	exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
+	exynos5_pd_disable_clk(iptop_mscl, ARRAY_SIZE(iptop_mscl));
+
 	return 0;
 }
 
@@ -391,7 +442,10 @@ static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 static int exynos_pd_g2d_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
-	exynos5_pd_enable_clk(cmutop_g2d, ARRAY_SIZE(cmutop_g2d));
+
+	exynos5_pd_enable_clk(iptop_g2d, ARRAY_SIZE(iptop_g2d));
+	exynos5_pd_enable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));
+
 	return 0;
 }
 
@@ -402,12 +456,14 @@ static int exynos_pd_g2d_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_g2d_clk_save,
 			ARRAY_SIZE(exynos_pd_g2d_clk_save));
 
+	/*exynos5_pd_disable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));*/
+
 	return 0;
 }
 
 static int exynos_pd_g2d_power_off_pre(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_enable_clk(cmutop_g2d, ARRAY_SIZE(cmutop_g2d));
+	/*exynos5_pd_enable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));*/
 
 	s3c_pm_do_save(exynos_pd_g2d_clk_save,
 			ARRAY_SIZE(exynos_pd_g2d_clk_save));
@@ -423,7 +479,10 @@ static int exynos_pd_g2d_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos_pd_g2d_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
-	exynos5_pd_disable_clk(cmutop_g2d, ARRAY_SIZE(cmutop_g2d));
+
+	exynos5_pd_disable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));
+	exynos5_pd_disable_clk(iptop_g2d, ARRAY_SIZE(iptop_g2d));
+
 	return 0;
 }
 
@@ -435,7 +494,9 @@ static int exynos_pd_g2d_power_off_post(struct exynos_pm_domain *pd)
 static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
-	exynos5_pd_enable_clk(cmutop_isp, ARRAY_SIZE(cmutop_isp));
+
+	exynos5_pd_enable_clk(iptop_isp, ARRAY_SIZE(iptop_isp));
+	exynos5_pd_enable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));
 
 	return 0;
 }
@@ -446,6 +507,8 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 
 	s3c_pm_do_restore_core(exynos_pd_isp_clk_save,
 			ARRAY_SIZE(exynos_pd_isp_clk_save));
+
+	/*exynos5_pd_disable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
 
 	return 0;
 }
@@ -458,6 +521,8 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
+
+	/*exynos5_pd_enable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
 
 	/* For prevent FW clock gating */
 	__raw_writel(0x0000007F, EXYNOS5430_ENABLE_ACLK_ISP_LOCAL);
@@ -479,8 +544,6 @@ static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
 
 	__raw_writel(0x0000003F, EXYNOS5430_LPI_MASK_ISP_BUSMASTER);
 
-	exynos5_pd_enable_clk(cmutop_isp, ARRAY_SIZE(cmutop_isp));
-
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_ISP1);
 	reg |= (1 << 12 | 1 << 11 | 1 << 8 | 1 << 7 | 1 << 2);
@@ -500,7 +563,10 @@ static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
-	exynos5_pd_disable_clk(cmutop_isp, ARRAY_SIZE(cmutop_isp));
+
+	exynos5_pd_disable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));
+	exynos5_pd_disable_clk(iptop_isp, ARRAY_SIZE(iptop_isp));
+
 	return 0;
 }
 
@@ -512,7 +578,10 @@ static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 static int exynos_pd_cam0_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
-	exynos5_pd_enable_clk(cmutop_cam0, ARRAY_SIZE(cmutop_cam0));
+
+	exynos5_pd_enable_clk(iptop_cam0, ARRAY_SIZE(iptop_cam0));
+	exynos5_pd_enable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));
+
 	return 0;
 }
 
@@ -522,6 +591,8 @@ static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 
 	s3c_pm_do_restore_core(exynos_pd_cam0_clk_save,
 			ARRAY_SIZE(exynos_pd_cam0_clk_save));
+
+	/*exynos5_pd_disable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));*/
 
 	return 0;
 }
@@ -534,6 +605,8 @@ static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 static int exynos_pd_cam0_power_off_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
+
+	/*exynos5_pd_enable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));*/
 
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
 	/* For prevent FW clock gating */
@@ -557,9 +630,6 @@ static int exynos_pd_cam0_power_off_pre(struct exynos_pm_domain *pd)
 	/* LPI disable */
 	__raw_writel(0x0000001F, EXYNOS5430_LPI_MASK_CAM0_BUSMASTER);
 
-	/* Clock on */
-	exynos5_pd_enable_clk(cmutop_cam0, ARRAY_SIZE(cmutop_cam0));
-
 	/* Related async-bridge clock on */
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM01);
 	reg |= (1 << 12);
@@ -579,7 +649,10 @@ static int exynos_pd_cam0_power_off_pre(struct exynos_pm_domain *pd)
 static int exynos_pd_cam0_power_off_post(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
-	exynos5_pd_disable_clk(cmutop_cam0, ARRAY_SIZE(cmutop_cam0));
+
+	exynos5_pd_disable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));
+	exynos5_pd_disable_clk(iptop_cam0, ARRAY_SIZE(iptop_cam0));
+
 	return 0;
 }
 
@@ -591,7 +664,11 @@ static int exynos_pd_cam0_power_off_post(struct exynos_pm_domain *pd)
 static int exynos_pd_cam1_power_on_pre(struct exynos_pm_domain *pd)
 {
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
-	exynos5_pd_enable_clk(cmutop_cam1, ARRAY_SIZE(cmutop_cam1));
+
+	exynos5_pd_enable_clk(iptop_cam1, ARRAY_SIZE(iptop_cam1));
+	exynos5_pd_enable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));
+	exynos5_pd_enable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));
+
 	return 0;
 }
 
@@ -601,6 +678,9 @@ static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
 
 	s3c_pm_do_restore_core(exynos_pd_cam1_clk_save,
 			ARRAY_SIZE(exynos_pd_cam1_clk_save));
+
+	/*exynos5_pd_disable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));*/
+	/*exynos5_pd_disable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));*/
 
 	return 0;
 }
@@ -615,6 +695,9 @@ static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
+
+	/*exynos5_pd_enable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));*/
+	/*exynos5_pd_enable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));*/
 
 	/* For prevent FW clock gating */
 	__raw_writel(0x0000001F, EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
@@ -636,8 +719,6 @@ static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
 	/* LPI disable */
 	__raw_writel(0x00000003, EXYNOS5430_LPI_MASK_CAM1_BUSMASTER);
 
-	exynos5_pd_enable_clk(cmutop_cam1, ARRAY_SIZE(cmutop_cam1));
-
 	reg = __raw_readl(EXYNOS5430_ENABLE_IP_CAM11);
 	reg |= (1 << 19 | 1 << 18 | 1 << 16 | 1 << 15 | 1 << 14 | 1 << 13);
 	__raw_writel(reg, EXYNOS5430_ENABLE_IP_CAM11);
@@ -658,7 +739,10 @@ static int exynos_pd_cam1_power_off_post(struct exynos_pm_domain *pd)
 	unsigned int reg;
 
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
-	exynos5_pd_disable_clk(cmutop_cam1, ARRAY_SIZE(cmutop_cam1));
+
+	exynos5_pd_disable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));
+	exynos5_pd_disable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));
+	exynos5_pd_disable_clk(iptop_cam1, ARRAY_SIZE(iptop_cam1));
 
 	reg = __raw_readl(EXYNOS5430_SRC_SEL_TOP_CAM1);
 	reg &= ~((1 << 24) | (1 << 20) | (1 << 16) | (1 << 8) | (1 << 4) | (1 << 0));
@@ -764,8 +848,10 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_post = exynos_pd_gscl_power_off_post,
 	}, {
 		.name = "pd-g3d",
+		.on_pre = exynos_pd_g3d_power_on_pre,
 		.on_post = exynos_pd_g3d_power_on_post,
 		.off_pre = exynos_pd_g3d_power_off_pre,
+		.off_post = exynos_pd_g3d_power_off_post,
 	}, {
 		.name = "pd-disp",
 		.on_pre = exynos_pd_disp_power_on_pre,
