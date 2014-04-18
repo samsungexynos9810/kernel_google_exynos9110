@@ -13,52 +13,7 @@
  * published by the Free Software Foundation.
  */
 
-#include <plat/pm.h>
-
-#include <mach/pm_domains.h>
-#include <mach/devfreq.h>
-
-static DEFINE_SPINLOCK(rpmlock_cmutop);
-
-void __iomem *decon_vidcon0;
-void __iomem *decontv_vidcon0;
-
-struct exynos5430_pd_state {
-	void __iomem *reg;
-	unsigned long val;
-};
-
-static struct exynos5430_pd_state cmutop_mfc[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<1), },
-};
-
-static struct exynos5430_pd_state cmutop_hevc[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<3), },
-};
-
-static struct exynos5430_pd_state cmutop_gscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<7), },
-};
-
-static struct exynos5430_pd_state cmutop_mscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<10), },
-};
-
-static struct exynos5430_pd_state cmutop_g2d[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<0), },
-};
-
-static struct exynos5430_pd_state cmutop_isp[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<4), },
-};
-
-static struct exynos5430_pd_state cmutop_cam0[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<5), },
-};
-
-static struct exynos5430_pd_state cmutop_cam1[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<6), },
-};
+#include "pm_domains-exynos5433.h"
 
 static void exynos5_pd_enable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 {
@@ -95,11 +50,6 @@ static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned i
 }
 */
 
-static struct sleep_save exynos_pd_maudio_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_AUD1),
-};
-
 /* exynos_pd_maudio_power_on_post - callback after power on.
  * @pd: power domain.
  */
@@ -126,11 +76,6 @@ static int exynos_pd_maudio_power_off_pre(struct exynos_pm_domain *pd)
 	return 0;
 }
 
-static struct sleep_save exynos_pd_g3d_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G3D0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G3D1),
-};
-
 static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 {
 	s3c_pm_do_restore_core(exynos_pd_g3d_clk_save,
@@ -149,12 +94,6 @@ static int exynos_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
 
 	return 0;
 }
-
-static struct sleep_save exynos_pd_mfc_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC00),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC01),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MFC0_SECURE_SMMU_MFC),
-};
 
 /* exynos_pd_mfc_power_on_pre - setup before power on.
  * @pd: power domain.
@@ -198,12 +137,6 @@ static int exynos_pd_mfc_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
-static struct sleep_save exynos_pd_hevc_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_HEVC0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_HEVC1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_HEVC_SECURE_SMMU_HEVC),
-};
-
 /* exynos_pd_hevc_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -246,14 +179,6 @@ static int exynos_pd_hevc_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
-static struct sleep_save exynos_pd_gscl_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_GSCL_SECURE_SMMU_GSCL2),
-};
-
 /* exynos_pd_gscl_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -295,15 +220,6 @@ static int exynos_pd_gscl_power_off_post(struct exynos_pm_domain *pd)
 	exynos5_pd_disable_clk(cmutop_gscl, ARRAY_SIZE(cmutop_gscl));
 	return 0;
 }
-
-static struct sleep_save exynos_pd_disp_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_DISP0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_DISP1),
-	SAVE_ITEM(EXYNOS5430_DISP_PLL_LOCK),
-	SAVE_ITEM(EXYNOS5430_DISP_PLL_CON0),
-	SAVE_ITEM(EXYNOS5430_DISP_PLL_CON1),
-	SAVE_ITEM(EXYNOS5430_DISP_PLL_FREQ_DET),
-};
 
 /* exynos_pd_disp_power_on_pre - setup before power on.
  * @pd: power domain.
@@ -423,14 +339,6 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
-static struct sleep_save exynos_pd_mscl_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_MSCL_SECURE_SMMU_JPEG),
-};
-
 /* exynos_pd_mscl_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -475,12 +383,6 @@ static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
-static struct sleep_save exynos_pd_g2d_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G2D0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G2D1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_G2D_SECURE_SMMU_G2D),
-};
-
 /* exynos_pd_g2d_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -524,13 +426,6 @@ static int exynos_pd_g2d_power_off_post(struct exynos_pm_domain *pd)
 	exynos5_pd_disable_clk(cmutop_g2d, ARRAY_SIZE(cmutop_g2d));
 	return 0;
 }
-
-static struct sleep_save exynos_pd_isp_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP0),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP1),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP2),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_ISP3),
-};
 
 /* exynos_pd_isp_power_on_pre - setup before power on.
  * @pd: power domain.
@@ -608,13 +503,6 @@ static int exynos_pd_isp_power_off_post(struct exynos_pm_domain *pd)
 	exynos5_pd_disable_clk(cmutop_isp, ARRAY_SIZE(cmutop_isp));
 	return 0;
 }
-
-static struct sleep_save exynos_pd_cam0_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM00),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM01),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM02),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM03),
-};
 
 /* exynos_pd_cam0_power_on_pre - setup before power on.
  * @pd: power domain.
@@ -694,12 +582,6 @@ static int exynos_pd_cam0_power_off_post(struct exynos_pm_domain *pd)
 	exynos5_pd_disable_clk(cmutop_cam0, ARRAY_SIZE(cmutop_cam0));
 	return 0;
 }
-
-static struct sleep_save exynos_pd_cam1_clk_save[] = {
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM10),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM11),
-	SAVE_ITEM(EXYNOS5430_ENABLE_IP_CAM12),
-};
 
 /* exynos_pd_cam1_power_on_pre - setup before power on.
  * @pd: power domain.
