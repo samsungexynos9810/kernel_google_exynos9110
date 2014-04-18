@@ -425,11 +425,17 @@ static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 {
+	unsigned int reg;
+
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
 
 	exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
 	exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
 	exynos5_pd_disable_clk(iptop_mscl, ARRAY_SIZE(iptop_mscl));
+
+	reg = __raw_readl(EXYNOS5430_SRC_SEL_TOP_MSCL);
+	reg &= ~((1 << 8 ) | (1 << 4) | (1 << 0));
+	__raw_writel(reg, EXYNOS5430_SRC_SEL_TOP_MSCL);
 
 	return 0;
 }
