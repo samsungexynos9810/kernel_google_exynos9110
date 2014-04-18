@@ -39,6 +39,7 @@
 		gsc0 = &gsc_0;
 		gsc1 = &gsc_1;
 		gsc2 = &gsc_2;
+		jpeg0 = &jpeg_0;
 	};
 
 	chipid@10000000 {
@@ -749,6 +750,15 @@
 		mmu-masters = <&gsc_2>;
 	};
 
+	sysmmu_jpeg: sysmmu@0x15060000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x15060000 0x1000>;
+		interrupts = <0 408 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2412>;
+		mmu-masters = <&jpeg_0>;
+	};
+
 	pd_cam0: pd-cam0@105c4020 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x105c4020 0x20>;
@@ -978,6 +988,22 @@
 		mif_min = <158000>;
 		int_min = <111000>;
 		samsung,power-domain = <&spd_gscl2>;
+	};
+
+	jpeg_0: jpeg0@15020000 {
+		compatible = "samsung,fimp_v4";
+		reg = <0x15020000 0x10000>;
+		interrupts = <0 411 0>;
+		clock-names = "gate_jpeg",
+			"mout_aclk_mscl_400_user", "aclk_mscl_400",
+			"mout_sclk_jpeg_user", "sclk_jpeg_mscl",
+			"mout_sclk_jpeg", "mout_sclk_jpeg_user";
+		clocks = <&clock 2392>,
+		       <&clock 3115>, <&clock 346>,
+		       <&clock 3116>, <&clock 20>,
+		       <&clock 3117>, <&clock 3116>;
+		samsung,power-domain = <&spd_jpeg>;
+		ip_ver = <2>;
 	};
 
 	/* disp_driver */
