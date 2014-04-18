@@ -1,3 +1,13 @@
+/*
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *              http://www.samsung.com
+ *		Taikyung yu(taikyung.yu@samsung.com)
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
 #include <mach/devfreq.h>
 #include <linux/pm_qos.h>
 #include <linux/regulator/consumer.h>
