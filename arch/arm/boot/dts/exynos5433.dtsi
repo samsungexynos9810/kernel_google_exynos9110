@@ -1456,6 +1456,88 @@
 			 <&clock 876>;
 		clock-names = "pclk_tmu0_apbif", "pclk_tmu0_apbif",
 			"pclk_tmu1_apbif", "pclk_tmu1_apbif", "pclk_tmu1_apbif";
+
+		/* For DTM platform data */
+		threshold_falling = <2>;
+		gain = <8>;
+		reference_voltage = <16>;
+		noise_cancel_mode = <4>;
+		cal_type = <1>;	/* 1: ONE_POINT_TRIMMING, 2: TWO_POINT_TRIMMING */
+		efuse_value = <75>;
+		trigger_level_count = <8>;
+		throttle_count = <6>;
+		throttle_active_count = <1>;
+		throttle_passive_count = <5>;
+		hotplug_out_threshold = <95>;
+		hotplug_in_threshold = <80>;
+
+		trigger_level_table {
+			trigger_level_0 {
+				temp = <70>;
+				enable = <1>;
+			};
+			trigger_level_1 {
+				temp = <75>;
+				enable = <1>;
+			};
+			trigger_level_2 {
+				temp = <80>;
+				enable = <1>;
+			};
+			trigger_level_3 {
+				temp = <85>;
+				enable = <1>;
+			};
+			trigger_level_4 {
+				temp = <95>;
+				enable = <1>;
+			};
+			trigger_level_5 {
+				temp = <105>;
+				enable = <1>;
+			};
+			trigger_level_6 {
+				temp = <110>;
+				enable = <0>;
+			};
+			trigger_level_7 {	/* H/W Tripping temp */
+				temp = <115>;
+				enable = <1>;
+			};
+		};
+
+		throttle_table {
+			throttle_tab_0 {
+				temp = <70>;
+				freq_clip_max = <1400000>;
+				freq_clip_max_kfc = <1500000>;
+			};
+			throttle_tab_1 {
+				temp = <75>;
+				freq_clip_max = <1200000>;
+				freq_clip_max_kfc = <1500000>;
+			};
+			throttle_tab_2 {
+				temp = <80>;
+				freq_clip_max = <1000000>;
+				freq_clip_max_kfc = <1500000>;
+			};
+			throttle_tab_3 {
+				temp = <85>;
+				freq_clip_max = <800000>;
+				freq_clip_max_kfc = <1500000>;
+			};
+			throttle_tab_4 {
+				temp = <95>;
+				freq_clip_max = <800000>;
+				freq_clip_max_kfc = <1000000>;
+			};
+			throttle_tab_5 {
+				temp = <105>;
+				freq_clip_max = <800000>;
+				freq_clip_max_kfc = <500000>;
+			};
+		};
 	};
 
 	sss@11100000 {
