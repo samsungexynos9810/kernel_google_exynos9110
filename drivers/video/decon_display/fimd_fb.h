@@ -2,6 +2,16 @@
 #ifndef __FIMD_FB_H__
 #define __FIMD_FB_H__
 #include <linux/types.h>
+
+#if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
+#include <media/v4l2-subdev.h>
+#include <media/v4l2-common.h>
+#include <media/v4l2-dev.h>
+#include <media/v4l2-device.h>
+#include <media/exynos_mc.h>
+#include <plat/map-base.h>
+#endif
+
 /* S3C_FB_MAX_WIN
  * Set to the maximum number of windows that any of the supported hardware
  * can use. Since the platform data uses this for an array size, having it
