@@ -40,6 +40,7 @@
 		gsc1 = &gsc_1;
 		gsc2 = &gsc_2;
 		jpeg0 = &jpeg_0;
+		fimg2d0 = &fimg2d_0;
 	};
 
 	chipid@10000000 {
@@ -685,6 +686,15 @@
 		mmu-masters = <&hevc>;
 	};
 
+	sysmmu_g2d: sysmmu@0x12450000 {
+		compatible = "samsung,exynos5430-sysmmu";
+		reg = <0x12450000 0x1000>;
+		interrupts = <0 257 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock 2233>;
+		mmu-masters = <&fimg2d_0>;
+	};
+
 	mali {
 		compatible = "arm,mali";
 		reg = <0x14AC0000 0x5000>;
@@ -1089,6 +1099,50 @@
 					has_alphacon  = <1>;
 					has_fixvclk   = <1>;
 				};
+			};
+		};
+	};
+
+	fimg2d_0: fimg2d@12400000 {
+		compatible = "samsung,s5p-fimg2d";
+		reg = <0x12400000 0x1000>;
+		interrupts = <0 259 0>;
+		/* gate_g2d, gate_qe_g2d, mout_aclk_g2d_400_user, aclk_g2d_400, mout_aclk_g2d_266_user, aclk_g2d_266 */
+		clocks = <&clock 2213>, <&clock 2221>, <&clock 3111>, <&clock 330>, <&clock 3112>, <&clock 331>;
+		clock-names = "fimg2d", "gate_qe_g2d", "mux_400_child", "mux_400_parent", "mux_266_child", "mux_266_parent";
+		ip_ver = <6>; /* IP_VER_G2D_5H */
+		samsung,power-domain = <&pd_g2d>;
+		g2d_qos_table {
+			g2d_qos_variant_0 {
+				freq_int = <400000>;
+				freq_mif = <825000>;
+				freq_cpu = <1500000>;
+				freq_kfc = <1500000>;
+			};
+			g2d_qos_variant_1 {
+				freq_int = <400000>;
+				freq_mif = <825000>;
+				freq_cpu = <0>;
+				freq_kfc = <800000>;
+			};
+			g2d_qos_variant_2 {
+				freq_int = <317000>;
+				freq_mif = <533000>;
+				freq_cpu = <0>;
+				freq_kfc = <800000>;
+			};
+			g2d_qos_variant_3 {
+				freq_int = <267000>;
+				freq_mif = <413000>;
+				freq_cpu = <0>;
+				freq_kfc = <800000>;
+			};
+			g2d_qos_variant_4 {
+				freq_int = <267000>;
+				freq_mif = <413000>;
+				freq_cpu = <0>;
+				freq_kfc = <500000>;
+
 			};
 		};
 	};
