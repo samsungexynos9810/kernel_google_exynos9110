@@ -31,20 +31,15 @@ config FB_I80_COMMAND_MODE
 	depends on EXYNOS_DECON_DISPLAY
 	default n
 
-choice
-	prompt "I80 Trigger Mode"
+config FB_I80_HW_TRIGGER
+	bool "I80 Hardware Trigger Mode"
 	depends on FB_I80_COMMAND_MODE
-	default FB_I80_HW_TRIGGER
+	default y
 
-	config FB_I80_HW_TRIGGER
-	prompt "I80 Hardware Trigger Mode"
-	bool
-
-	config FB_I80_SW_TRIGGER
-	prompt "I80 Software Trigger Mode"
-	bool
-
-endchoice
+config FB_I80_SW_TRIGGER
+	bool "I80 Software Trigger Mode"
+	depends on FB_I80_COMMAND_MODE
+	default n
 
 config FB_HIBERNATION_DISPLAY
 	bool "FB Hibernation Display MODE"

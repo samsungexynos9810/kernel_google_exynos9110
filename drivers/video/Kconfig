@@ -2308,7 +2308,7 @@ config FB_MB862XX
 
 config S5P_LCD_INIT
 	bool "LCD init in kernel"
-	depends on DECON
+	depends on EXYNOS_DECON
 	default y
 
 choice
