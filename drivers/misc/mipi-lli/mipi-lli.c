@@ -103,7 +103,7 @@ EXPORT_SYMBOL(mipi_lli_suspended);
  */
 int mipi_lli_get_link_status(void)
 {
-	return g_lli->state;
+	return atomic_read(&g_lli->state);
 }
 EXPORT_SYMBOL(mipi_lli_get_link_status);
 
@@ -114,7 +114,7 @@ EXPORT_SYMBOL(mipi_lli_get_link_status);
  */
 int mipi_lli_set_link_status(int state)
 {
-	g_lli->state = state;
+	atomic_set(&g_lli->state, state);
 
 	return 0;
 }

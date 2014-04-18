@@ -206,7 +206,7 @@ static int exynos_lli_setting(struct mipi_lli *lli)
 	u32 remap_addr;
 
 	/* update lli_link_state as reset */
-	lli->state = LLI_UNMOUNTED;
+	atomic_set(&lli->state, LLI_UNMOUNTED);
 
 	exynos_lli_system_config(lli);
 	/* enable LLI_PHY_CONTROL */
@@ -343,7 +343,7 @@ static int exynos_lli_get_status(struct mipi_lli *lli)
 
 static int exynos_lli_send_signal(struct mipi_lli *lli, u32 cmd)
 {
-	if (lli->state) {
+	if (atomic_read(&lli->state) == LLI_MOUNTED) {
 #ifdef CONFIG_LTE_MODEM_XMM7260
 		writel(cmd, lli->remote_regs + EXYNOS_TL_SIGNAL_SET_LSB
 				+ 0x20C);
@@ -773,7 +773,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_LLI_UNMOUNT_DONE) {
-		lli->state = LLI_UNMOUNTED;
+		atomic_set(&lli->state, LLI_UNMOUNTED);
 		writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 		writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
 		dev_err(dev, "Unmount\n");

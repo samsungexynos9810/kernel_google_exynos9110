@@ -96,7 +96,7 @@ struct mipi_lli {
 	void __iomem		*shdmem_addr;
 	u32			shdmem_size;
 	dma_addr_t		phy_addr;
-	int			state;
+	atomic_t		state;
 	bool			is_master;
 	bool			is_suspended;
 	bool			is_runtime_suspended;
