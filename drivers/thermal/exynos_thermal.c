@@ -196,9 +196,6 @@ static struct cpumask mp_cluster_cpus[CA_END];
 #if defined(CONFIG_SOC_EXYNOS5430)
 #define CPU_HOTPLUG_IN_TEMP	95
 #define CPU_HOTPLUG_OUT_TEMP	105
-#elif defined(CONFIG_SOC_EXYNOS5433)
-#define CPU_HOTPLUG_IN_TEMP	80
-#define CPU_HOTPLUG_OUT_TEMP	95
 #elif defined(CONFIG_SOC_EXYNOS5422)
 #define CPU_HOTPLUG_IN_TEMP	95
 #define CPU_HOTPLUG_OUT_TEMP	100
@@ -1745,97 +1742,6 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 
 #if defined(CONFIG_SOC_EXYNOS5433)
 static struct exynos_tmu_platform_data const exynos5433_tmu_data = {
-	.threshold_falling = 2,
-	.trigger_levels[0] = 70,
-	.trigger_levels[1] = 75,
-	.trigger_levels[2] = 80,
-	.trigger_levels[3] = 85,
-	.trigger_levels[4] = 95,
-	.trigger_levels[5] = 105,
-	.trigger_levels[6] = 105,
-	.trigger_levels[7] = 115,
-	.trigger_level0_en = 1,
-	.trigger_level1_en = 1,
-	.trigger_level2_en = 1,
-	.trigger_level3_en = 1,
-	.trigger_level4_en = 1,
-	.trigger_level5_en = 1,
-	.trigger_level6_en = 1,
-	.trigger_level7_en = 1,
-	.gain = 8,
-	.reference_voltage = 16,
-	.noise_cancel_mode = 4,
-	.cal_type = TYPE_ONE_POINT_TRIMMING,
-	.efuse_value = 75,
-	.freq_tab[0] = {
-		.freq_clip_max = 1400 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1500 * 1000,
-#endif
-		.temp_level = 70,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[1] = {
-		.freq_clip_max = 1200 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1500 * 1000,
-#endif
-		.temp_level = 75,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[2] = {
-		.freq_clip_max = 1000 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1500 * 1000,
-#endif
-		.temp_level = 80,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[3] = {
-		.freq_clip_max = 800 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1500 * 1000,
-#endif
-		.temp_level = 85,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[4] = {
-		.freq_clip_max = 800 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 1000 * 1000,
-#endif
-		.temp_level = 95,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.freq_tab[5] = {
-		.freq_clip_max = 800 * 1000,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.freq_clip_max_kfc = 500 * 1000,
-#endif
-		.temp_level = 105,
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-		.mask_val = &mp_cluster_cpus[CA15],
-		.mask_val_kfc = &mp_cluster_cpus[CA7],
-#endif
-	},
-	.size[THERMAL_TRIP_ACTIVE] = 1,
-	.size[THERMAL_TRIP_PASSIVE] = 5,
-	.freq_tab_count = 6,
 	.type = SOC_ARCH_EXYNOS543X,
 };
 #define EXYNOS5433_TMU_DRV_DATA (&exynos5433_tmu_data)
