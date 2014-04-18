@@ -650,6 +650,8 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	struct mipi_lli *lli = dev_get_drvdata(dev);
 	static int pa_err_cnt = 0;
 	static int roe_cnt = 0;
+	static int mnt_cnt = 0;
+	static int mnt_fail_cnt = 0;
 	int status;
 	struct exynos_mphy *phy;
 
@@ -662,8 +664,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_MPHY_HIBERN8_EXIT_DONE) {
-		dev_info(dev, "HIBERN8_EXIT_DONE\n");
-		dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+		dev_info(dev, "HIBERN8_EXIT_DONE: rx=%x, tx=%x\n",
 				readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
 				readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 		mdelay(1);
@@ -671,8 +672,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_MPHY_HIBERN8_ENTER_DONE) {
-		dev_info(dev, "HIBERN8_ENTER_DONE\n");
-		dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+		dev_info(dev, "HIBERN8_ENTER_DONE: rx=%x, tx=%x\n",
 				readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
 				readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 	}
@@ -681,10 +681,10 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 		dev_info(dev, "PLU_DETECT\n");
 
 	if (status & INTR_PA_PLU_DONE) {
-		dev_info(dev, "PLU_DONE\n");
-		dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+		dev_info(dev, "PLU_DONE: rx=%x, tx=%x\n",
 				readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
 				readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
+
 		if (lli->modem_info.automode)
 			exynos_mipi_lli_set_automode(lli, true);
 	}
@@ -701,7 +701,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 	}
 
 	if (status & INTR_PA_ERROR_INDICATION) {
-		dev_err(dev, "PA_REASON %x\n",
+		dev_err_ratelimited(dev, "PA_REASON %x\n",
 			readl(lli->regs + EXYNOS_DME_LLI_PA_INTR_REASON));
 		pa_err_cnt++;
 	}
@@ -740,10 +740,9 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 			is_first = false;
 		}
 
-		dev_err(dev, "rx_fsm = %x, tx_fsm = %x, afc = %x, status = %x\n"
-				,rx_fsm_state, tx_fsm_state,
-				afc_val, csa_status);
-		dev_err(dev, "pa_err_cnt : %d\n", pa_err_cnt);
+		dev_err(dev, "rx=%x, tx=%x, afc=%x, status=%x, pa_err=%x\n"
+				,rx_fsm_state, tx_fsm_state, afc_val,
+				csa_status, pa_err_cnt);
 
 		if (!credit) {
 			u32 udelay = 0;
@@ -754,29 +753,30 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 				if (credit)
 					break;
 			}
-			dev_err(dev, "waiting %dus to get TX_CREDITS.\n", udelay);
-			dev_err(dev, "rx_fsm = %x, tx_fsm = %x\n",
+			dev_err(dev, "waiting %dus for CREDITS: tx=%x, rx=%x\n",
+					udelay,
 					readl(phy->loc_regs + PHY_RX_FSM_STATE(0)),
 					readl(phy->loc_regs + PHY_TX_FSM_STATE(0)));
 
 			if (!credit) {
-				dev_err(dev, "Failed to get TX_CREDITS.");
-				dev_err(dev, "ERR: Mount failed\n");
+				dev_err(dev, "ERR: Mount failed : %d\n",
+						++mnt_fail_cnt);
 				mipi_lli_debug_info();
 				writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 				return IRQ_HANDLED;
 			}
 		}
 
-		lli->state = LLI_MOUNTED;
-		dev_err(dev, "Mount\n");
+		atomic_set(&lli->state, LLI_MOUNTED);
+		dev_err(dev, "Mount: ok:%d fail:%d roe:%d\n",
+				++mnt_cnt, mnt_fail_cnt, roe_cnt);
 	}
 
 	if (status & INTR_LLI_UNMOUNT_DONE) {
 		lli->state = LLI_UNMOUNTED;
 		writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
 		writel(1, lli->regs + EXYNOS_DME_LLI_RESET);
-		dev_err(dev, "Unmount : %d\n", roe_cnt);
+		dev_err(dev, "Unmount\n");
 		return IRQ_HANDLED;
 	}
 
