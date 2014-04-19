@@ -1163,25 +1163,32 @@ int fimc_is_sensor_s_input(struct fimc_is_device_sensor *device,
 	struct fimc_is_module_enum *module;
 	u32 sensor_ch, actuator_ch;
 	u32 sensor_addr, actuator_addr;
-	u32 i;
+	u32 i = 0;
 
 	BUG_ON(!device);
 	BUG_ON(!device->pdata);
 	BUG_ON(!device->subdev_csi);
 	BUG_ON(input >= SENSOR_NAME_END);
 
-	for (i = 0; i < SENSOR_MAX_ENUM; i++) {
+module_retry:
+	do {
 		if (&device->module_enum[i] &&
 		device->module_enum[i].id == input) {
 			module = &device->module_enum[i];
 			break;
 		}
-	}
+	} while (++i < SENSOR_MAX_ENUM);
 
-	if (i == SENSOR_MAX_ENUM) {
+	if (i >= SENSOR_MAX_ENUM) {
 		merr("module is not probed", device);
 		ret = -EINVAL;
 		goto p_err;
+	}
+
+	if (scenario != SENSOR_SCENARIO_NORMAL &&
+		module->client == NULL) {
+		i++;
+		goto module_retry;
 	}
 
 	subdev_module = module->subdev;

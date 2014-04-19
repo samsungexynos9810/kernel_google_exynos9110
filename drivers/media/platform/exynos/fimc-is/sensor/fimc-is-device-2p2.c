@@ -183,11 +183,11 @@ int sensor_2p2_probe(struct i2c_client *client,
 	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 #endif
 
-#ifdef DEFAULT_S5K2P2_DRIVING
-	v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
-#else
-	v4l2_subdev_init(subdev_module, &subdev_ops);
-#endif
+	if (client)
+		v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
+	else
+		v4l2_subdev_init(subdev_module, &subdev_ops);
+
 	v4l2_set_subdevdata(subdev_module, module);
 	v4l2_set_subdev_hostdata(subdev_module, device);
 	snprintf(subdev_module->name, V4L2_SUBDEV_NAME_SIZE, "sensor-subdev.%d", module->id);

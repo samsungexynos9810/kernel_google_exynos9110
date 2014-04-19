@@ -671,7 +671,7 @@ int sensor_8b1_probe(struct i2c_client *client,
 
 	ext->companion_con.product_name = COMPANION_NAME_NOTHING;
 
-	if(core->use_vision) {
+	if (client) {
 		v4l2_i2c_subdev_init(subdev_module, client, &subdev_ops);
 		subdev_module->internal_ops = &internal_ops;
 	} else {

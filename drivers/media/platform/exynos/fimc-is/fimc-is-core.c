@@ -964,101 +964,77 @@ static int fimc_is_probe(struct platform_device *pdev)
 	/* group initialization */
 	fimc_is_groupmgr_probe(&core->groupmgr);
 
-#ifndef SENSOR_S5K6B2_DRIVING
 	ret = sensor_6b2_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_6b2_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-	if(!core->use_vision) {
-		ret = sensor_8b1_probe(NULL, NULL);
-		if (ret) {
-			err("sensor_8b1_probe is fail(%d)", ret);
-			goto p_err3;
-		}
+	ret = sensor_8b1_probe(NULL, NULL);
+	if (ret) {
+		err("sensor_8b1_probe is fail(%d)", ret);
+		goto p_err3;
 	}
 
-#ifndef SENSOR_S5K6A3_DRIVING
 	ret = sensor_6a3_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_6a3_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_IMX135_DRIVING
 	ret = sensor_imx135_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_imx135_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K3L2_DRIVING
 	ret = sensor_3l2_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_3l2_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K2P2_DRIVING
 	ret = sensor_2p2_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_2p2_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K3H5_DRIVING
 	ret = sensor_3h5_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_3h5_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K3H7_DRIVING
 	ret = sensor_3h7_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_3h7_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K3H7_SUNNY_DRIVING
 	ret = sensor_3h7_sunny_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_3h7_sunny_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K4E5_DRIVING
 	ret = sensor_4e5_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_4e5_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_IMX175_DRIVING
 	ret = sensor_imx175_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_imx175_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
-#ifndef SENSOR_S5K4H5_DRIVING
 	ret = sensor_4h5_probe(NULL, NULL);
 	if (ret) {
 		err("sensor_4h5_probe is fail(%d)", ret);
 		goto p_err3;
 	}
-#endif
 
 	/* device entity - ischain0 */
 	fimc_is_ischain_probe(&core->ischain[0],
