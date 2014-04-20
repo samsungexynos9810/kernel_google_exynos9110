@@ -305,7 +305,6 @@ struct fimc_is_core {
 	u32					companion_spi_channel;
 	bool					use_two_spi_line;
 #endif
-	u32					use_vision;
 	u32					use_sensor_dynamic_voltage_mode;
 };
 

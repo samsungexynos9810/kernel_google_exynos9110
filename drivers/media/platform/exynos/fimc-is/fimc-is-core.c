@@ -911,7 +911,6 @@ static int fimc_is_probe(struct platform_device *pdev)
 	core->fan53555_client = NULL;
 #endif
 #ifdef CONFIG_USE_VENDER_FEATURE
-	core->use_vision = pdata->use_vision;
 	core->use_sensor_dynamic_voltage_mode = pdata->use_sensor_dynamic_voltage_mode;
 #endif
 

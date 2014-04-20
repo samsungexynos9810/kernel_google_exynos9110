@@ -307,12 +307,6 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	pdata->use_two_spi_line = of_property_read_bool(np,"use_two_spi_line");
 #endif
 #ifdef CONFIG_USE_VENDER_FEATURE
-	retVal = of_property_read_u32(np,"use_vision",&pdata->use_vision);
-	if (retVal) {
-		err("use_vision read is fail(%d)", retVal);
-		pdata->use_vision = 0;
-	}
-
 	retVal = of_property_read_u32(np,"use_sensor_dynamic_voltage_mode",&pdata->use_sensor_dynamic_voltage_mode);
 	if (retVal) {
 		err("use_sensor_dynamic_voltage_mode read is fail(%d)", retVal);
