@@ -19,8 +19,8 @@ config CAMERA_SENSOR_8B1
         help
           Use 8B1 camera sensor.
 config USE_VENDER_FEATURE
-		bool "Use vendor specific features"
-		depends on SEC_DEBUG
-		default n
-		help
-		  Enable to use the vender.
+	bool "Use vendor specific features"
+        depends on VIDEO_EXYNOS_FIMC_IS
+	default n
+	help
+	  Enable to use the vender.
