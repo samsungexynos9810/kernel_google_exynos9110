@@ -91,7 +91,6 @@ struct samsung_fixed_factor_clock {
  * @alias: optional clock alias name to be assigned to this clock.
  */
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 struct samsung_mux_clock {
 	unsigned int		id;
 	const char		*dev_name;
@@ -139,45 +138,6 @@ struct samsung_mux_clock {
 		MUX_S_A(_id, #_id, _id##_p, (unsigned long)o, s, w, a, (unsigned long)so, ss, sw)
 #define MUX_S_A(_id, cname, pnames, o, s, w, a, so, ss, sw)			\
 	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, a, so, ss, sw)
-#else
-struct samsung_mux_clock {
-	unsigned int		id;
-	const char		*dev_name;
-	const char		*name;
-	const char		**parent_names;
-	u8			num_parents;
-	unsigned long		flags;
-	unsigned long		offset;
-	u8			shift;
-	u8			width;
-	u8			mux_flags;
-	const char		*alias;
-};
-
-#define __MUX(_id, dname, cname, pnames, o, s, w, f, mf, a)	\
-{							\
-	.id		= _id,				\
-	.dev_name	= dname,			\
-	.name		= cname,			\
-	.parent_names	= pnames,			\
-	.num_parents	= ARRAY_SIZE(pnames),		\
-	.flags		= f,				\
-	.offset		= o,				\
-	.shift		= s,				\
-	.width		= w,				\
-	.mux_flags	= mf,				\
-	.alias		= a,				\
-}
-
-#define MUX(_id, cname, pnames, o, s, w)			\
-	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, NULL)
-
-#define MUX_A(_id, cname, pnames, o, s, w, a)			\
-	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, a)
-
-#define MUX_F(_id, cname, pnames, o, s, w, f, mf)		\
-	__MUX(_id, NULL, cname, pnames, o, s, w, f, mf, NULL)
-#endif
 
 /**
  * @id: platform specific id of the clock.

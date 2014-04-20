@@ -22,12 +22,23 @@
 
 #undef MUX
 #define MUX(_id, cname, pnames, o, s, w, f)                       \
-	__MUX(_id, NULL, cname, pnames, o, s, w, f, 0, NULL)
+	__MUX(_id, NULL, cname, pnames, o, s, w, f, 0, NULL, 0, 0, 0)
 
 #undef DIV
 #define DIV(_id, cname, pname, o, s, w)                                \
 	__DIV(_id, NULL, cname, pname, o, s, w, CLK_GET_RATE_NOCACHE, 0, NULL)
 
+#undef MUX_STAT
+#define MUX_STAT(_id, cname, pnames, o, s, w, so, ss, sw)			\
+	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, NULL, 0, 0, 0)
+
+#undef CMX_S_A
+#define CMX_S_A(_id, o, s, w, a, so, ss, sw) \
+		MUX_S_A(_id, #_id, _id##_p, (unsigned long)o, s, w, a, 0, 0, 0)
+
+#undef MUX_S_A
+#define MUX_S_A(_id, cname, pnames, o, s, w, a, so, ss, sw)			\
+	__MUX(_id, NULL, cname, pnames, o, s, w, 0, 0, a, 0, 0, 0)
 
 
 enum exynos5422_clks {
