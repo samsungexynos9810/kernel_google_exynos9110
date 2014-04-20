@@ -216,7 +216,6 @@ struct exynos_platform_fimc_is {
 	u32	companion_spi_channel;
 	bool	use_two_spi_line;
 #endif
-	u32	use_vision;
 	u32	use_sensor_dynamic_voltage_mode;
 };
 
