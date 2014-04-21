@@ -166,9 +166,9 @@ int exynos5430_fimc_is_companion_iclk_cfg(struct platform_device *pdev,
 	/* USER_MUX_SEL */
 	fimc_is_set_parent_dt(pdev, "mout_aclk_cam1_333_user", "aclk_cam1_333");
 	/* MPWM */
-	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_166", 166 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 83 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 83 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_166", 167 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 84 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 84 * 1000000);
 
 	return ret;
 }

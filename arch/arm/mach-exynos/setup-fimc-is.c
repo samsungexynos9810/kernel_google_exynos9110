@@ -909,9 +909,9 @@ int exynos5430_cfg_clk_cam1(struct platform_device *pdev)
 	fimc_is_set_rate_dt(pdev, "dout_aclk_csis2_a", 333 * 1000000);
 
 	/* MPWM */
-	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_166", 166 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 83 * 1000000);
-	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 83 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_166", 167 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_pclk_cam1_83", 84 * 1000000);
+	fimc_is_set_rate_dt(pdev, "dout_sclk_isp_mpwm", 84 * 1000000);
 
 	/* CAM1 QE CLK GATE */
 	fimc_is_enable_dt(pdev, "gate_bts_fd");
