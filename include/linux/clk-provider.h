@@ -448,6 +448,11 @@ const char *of_clk_get_parent_name(struct device_node *np, int index);
 
 void of_clk_init(const struct of_device_id *matches);
 
+/*
+ * samsung specific clk_get API which uses register address and bit field
+ */
+extern struct clk *samsung_clk_get_by_reg(unsigned long offset, u8 bit_idx);
+
 #define CLK_OF_DECLARE(name, compat, fn)			\
 	static const struct of_device_id __clk_of_table_##name	\
 		__used __section(__clk_of_table)		\
