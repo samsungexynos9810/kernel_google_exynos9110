@@ -46,7 +46,7 @@ static struct devfreq_simple_ondemand_data exynos5_devfreq_disp_governor_data = 
 };
 
 static struct exynos_devfreq_platdata exynos5430_qos_disp = {
-	.default_qos		= 133000,
+	.default_qos		= 134000,
 };
 
 static struct pm_qos_request exynos5_disp_qos;

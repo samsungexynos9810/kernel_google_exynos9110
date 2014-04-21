@@ -44,7 +44,7 @@ static struct devfreq_simple_exynos_data exynos5_devfreq_mif_governor_data = {
 };
 
 static struct exynos_devfreq_platdata exynos5433_qos_mif = {
-	.default_qos		= 109000,
+	.default_qos		= 103000,
 };
 
 static struct ppmu_info ppmu_mif[] = {
