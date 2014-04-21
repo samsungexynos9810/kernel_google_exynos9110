@@ -271,6 +271,12 @@ static ssize_t store_mipi_lli_control(struct device *dev,
 		mipi_lli_send_signal_test(lli);
 	else if (command == 6)
 		lli->driver->loopback_test(lli);
+	else if (command == 98)
+		print_hex_dump(KERN_INFO, "llimem: ", DUMP_PREFIX_OFFSET, 16, 1,
+				g_lli->shdmem_addr + SZ_1K, 512, true);
+	else if (command == 99)
+		print_hex_dump(KERN_INFO, "llimem: ", DUMP_PREFIX_OFFSET, 16, 1,
+				g_lli->shdmem_addr + SZ_1K + 512, 512, true);
 	else
 		dev_err(dev, "Un-support control command\n");
 

@@ -61,6 +61,14 @@ struct mipi_lli_clks {
 	struct clk	*fout_mphy_pll;
 };
 
+struct mipi_lli_dump {
+	u32	clk[32];
+	u32	lli[1024];
+	u32	mphy_std[1024];
+	u32	mphy_cmn[1024];
+	u32	mphy_ovtm[1024];
+};
+
 struct mipi_lli_modem {
 	char	*name;
 	bool	scrambler;
@@ -78,8 +86,10 @@ struct mipi_lli {
 	 */
 	unsigned long		flags;
 
-	struct mipi_lli_clks	clks;
 	struct mipi_lli_modem	modem_info;
+	struct mipi_lli_clks	clks;
+	struct mipi_lli_dump	dump;
+	struct work_struct	wq_print_dump;
 
 	unsigned int		irq;		/* irq allocated */
 	unsigned int		irq_sig;	/* irq_sig allocated */

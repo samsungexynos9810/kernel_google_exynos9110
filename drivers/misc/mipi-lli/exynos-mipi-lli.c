@@ -72,25 +72,26 @@ static u32 exynos_lli_cal_remap(u32 base_addr, unsigned long size)
 	return remap_addr;
 }
 
-static int exynos_lli_debug_info(struct mipi_lli *lli)
+static void exynos_lli_print_dump(struct work_struct *work)
 {
-	struct exynos_mphy *phy = dev_get_drvdata(lli->mphy);
+	struct mipi_lli *lli = container_of(work, struct mipi_lli,
+			wq_print_dump);
+	struct mipi_lli_dump *dump = &lli->dump;
 	int len = 0, i = 0;
 
 	len = sizeof(lli_debug_clk_info) / sizeof(lli_debug_clk_info[0]);
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[LLI-CLK]0x%p : 0x%08x\n",
-				lli_debug_clk_info[i],
-				readl(lli_debug_clk_info[i]));
+				lli_debug_clk_info[i], dump->clk[i]);
 	}
 
 	len = sizeof(lli_debug_info) / sizeof(lli_debug_info[0]);
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[LLI]0x%x : 0x%08x\n",
-				0x10F24000 + lli_debug_info[i],
-				readl(lli->regs + lli_debug_info[i]));
+				0x10F24000 + (lli_debug_info[i]),
+				dump->lli[i]);
 	}
 
 	len = sizeof(phy_std_debug_info) / sizeof(phy_std_debug_info[0]);
@@ -98,28 +99,68 @@ static int exynos_lli_debug_info(struct mipi_lli *lli)
 	{
 		dev_err(lli->dev, "[MPHY-STD]0x%x : 0x%08x\n",
 				0x10F20000 + (phy_std_debug_info[i] / 4),
-				readl(phy->loc_regs + phy_std_debug_info[i]));
+				dump->mphy_std[i]);
 	}
 
-	writel(0x1, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
 	len = sizeof(phy_cmn_debug_info) / sizeof(phy_cmn_debug_info[0]);
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[MPHY-CMN]0x%x : 0x%08x\n",
 				0x10F20000 + (phy_cmn_debug_info[i] / 4),
-				readl(phy->loc_regs + phy_cmn_debug_info[i]));
+				dump->mphy_cmn[i]);
 	}
-	writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
 
-	writel(0x1, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
 	len = sizeof(phy_ovtm_debug_info) / sizeof(phy_ovtm_debug_info[0]);
 	for (i = 0; i < len; i++)
 	{
 		dev_err(lli->dev, "[MPHY-OVTM]0x%x : 0x%08x\n",
 				0x10F20000 + (phy_ovtm_debug_info[i] / 4),
-				readl(phy->loc_regs + phy_ovtm_debug_info[i]));
+				dump->mphy_ovtm[i]);
 	}
+
+	memset(dump, 0, sizeof(struct mipi_lli_dump));
+}
+
+static int exynos_lli_reg_dump(struct mipi_lli *lli)
+{
+	struct exynos_mphy *phy = dev_get_drvdata(lli->mphy);
+	struct mipi_lli_dump *dump = &lli->dump;
+	int len = 0, i = 0;
+
+	memset(dump, 0, sizeof(struct mipi_lli_dump));
+
+	len = sizeof(lli_debug_clk_info) / sizeof(lli_debug_clk_info[0]);
+	for (i = 0; i < len; i++)
+		dump->clk[i] = readl(lli_debug_clk_info[i]);
+
+	len = sizeof(lli_debug_info) / sizeof(lli_debug_info[0]);
+	for (i = 0; i < len; i++){
+		dump->lli[i] = readl(lli->regs + lli_debug_info[i]);
+	}
+
+	len = sizeof(phy_std_debug_info) / sizeof(phy_std_debug_info[0]);
+	for (i = 0; i < len; i++)
+		dump->mphy_std[i] = readl(phy->loc_regs + phy_std_debug_info[i]);
+
+	len = sizeof(phy_cmn_debug_info) / sizeof(phy_cmn_debug_info[0]);
+	writel(0x1, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+	for (i = 0; i < len; i++)
+		dump->mphy_cmn[i] = readl(phy->loc_regs + phy_cmn_debug_info[i]);
+	writel(0x0, lli->regs + EXYNOS_PA_MPHY_CMN_ENABLE);
+
+	len = sizeof(phy_ovtm_debug_info) / sizeof(phy_ovtm_debug_info[0]);
+	writel(0x1, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
+	for (i = 0; i < len; i++)
+		dump->mphy_ovtm[i] = readl(phy->loc_regs + phy_ovtm_debug_info[i]);
 	writel(0x0, lli->regs + EXYNOS_PA_MPHY_OV_TM_ENABLE);
+
+	return 0;
+}
+
+static int exynos_lli_debug_info(struct mipi_lli *lli)
+{
+	exynos_lli_reg_dump(lli);
+	schedule_work(&lli->wq_print_dump);
 
 	return 0;
 }
@@ -746,7 +787,7 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 
 		if (!credit) {
 			u32 udelay = 0;
-			for (udelay = 0 ; udelay < 10000 ; udelay++) {
+			for (udelay = 0 ; udelay < 200 ; udelay++) {
 				udelay(1);
 				credit = readl(lli->regs + EXYNOS_DL_DBG_TX_CREDTIS);
 
@@ -763,13 +804,15 @@ static irqreturn_t exynos_mipi_lli_irq(int irq, void *_dev)
 						++mnt_fail_cnt);
 				mipi_lli_debug_info();
 				writel(status, lli->regs + EXYNOS_DME_LLI_INTR_STATUS);
+				dev_err(dev, "DUMP: ok:%d fail:%d roe:%d",
+						mnt_cnt, mnt_fail_cnt, roe_cnt);
 				return IRQ_HANDLED;
 			}
 		}
 
 		atomic_set(&lli->state, LLI_MOUNTED);
-		dev_err(dev, "Mount: ok:%d fail:%d roe:%d\n",
-				++mnt_cnt, mnt_fail_cnt, roe_cnt);
+		dev_err(dev, "Mount : ok:%d fail:%d roe:%d pa_err:%d\n",
+				++mnt_cnt, mnt_fail_cnt, roe_cnt, pa_err_cnt);
 	}
 
 	if (status & INTR_LLI_UNMOUNT_DONE) {
@@ -917,6 +960,7 @@ static int exynos_mipi_lli_probe(struct platform_device *pdev)
 	lli->sys_regs = sysregs;
 	lli->pmu_regs = pmuregs;
 	lli->is_master = false;
+	INIT_WORK(&lli->wq_print_dump, exynos_lli_print_dump);
 
 	mipi_lli_get_setting(lli);
 
