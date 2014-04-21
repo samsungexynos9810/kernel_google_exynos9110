@@ -57,7 +57,8 @@
 #include <linux/debugfs.h>
 #endif
 
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ) || \
+	defined(CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ)
 #define CONFIG_DECON_DEVFREQ
 #include <mach/devfreq.h>
 #include <mach/bts.h>
