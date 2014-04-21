@@ -683,6 +683,7 @@ int exynos5430_fimc_is_clk_gate(u32 clk_gate_id, bool is_on)
 	return 0;
 }
 
+#ifdef CONFIG_SOC_EXYNOS5430
 static int exynos5430_cfg_clk_isp_pll_on(struct platform_device *pdev)
 {
 	pr_info("%s\n", __func__);
@@ -702,6 +703,7 @@ static int exynos5430_cfg_clk_isp_pll_off(struct platform_device *pdev)
 
 	return 0;
 }
+#endif
 
 int exynos5430_cfg_clk_div_max(struct platform_device *pdev)
 {
@@ -952,7 +954,9 @@ int exynos5430_fimc_is_cfg_clk(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
+#ifdef CONFIG_SOC_EXYNOS5430
 	exynos5430_cfg_clk_isp_pll_on(pdev);
+#endif
 	exynos5430_cfg_clk_div_max(pdev);
 
 	/* initialize Clocks */
@@ -1010,8 +1014,11 @@ int exynos5430_fimc_is_clk_off(struct platform_device *pdev)
 {
 	pr_debug("%s\n", __func__);
 
+#ifdef CONFIG_SOC_EXYNOS5430
 	exynos5430_cfg_clk_isp_pll_off(pdev);
-
+#else
+	exynos5430_cfg_clk_div_max(pdev);
+#endif
 	return 0;
 }
 
