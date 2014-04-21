@@ -35,6 +35,8 @@
 #include <mach/regs-clock-exynos5422.h>
 #elif defined(CONFIG_SOC_EXYNOS5430)
 #include <mach/regs-clock-exynos5430.h>
+#elif defined(CONFIG_SOC_EXYNOS5433)
+#include <mach/regs-clock-exynos5433.h>
 #endif
 
 struct platform_device; /* don't need the contents */
@@ -598,7 +600,7 @@ int exynos5422_fimc_is_set_user_clk_gate(u32 group_id,
 
 	return ret;
 }
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 int exynos5430_fimc_is_clk_gate(u32 clk_gate_id, bool is_on)
 {
 	int cfg = 0;
@@ -1261,7 +1263,7 @@ int exynos_fimc_is_cfg_clk(struct platform_device *pdev)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_cfg_clk(pdev);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_cfg_clk(pdev);
 #endif
 	return 0;
@@ -1272,7 +1274,7 @@ int exynos_fimc_is_cfg_cam_clk(struct platform_device *pdev)
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_cfg_clk_sclk(pdev);
 	exynos5422_cfg_clk_cam(pdev);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_cfg_clk_sclk(pdev);
 	exynos5430_cfg_clk_cam1(pdev);
 #endif
@@ -1283,7 +1285,7 @@ int exynos_fimc_is_clk_on(struct platform_device *pdev)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_clk_on(pdev);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_clk_on(pdev);
 #endif
 	return 0;
@@ -1293,7 +1295,7 @@ int exynos_fimc_is_clk_off(struct platform_device *pdev)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_clk_off(pdev);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_clk_off(pdev);
 #endif
 	return 0;
@@ -1303,7 +1305,7 @@ int exynos_fimc_is_print_clk(struct platform_device *pdev)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_print_clk(pdev);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_print_clk(pdev);
 #endif
 	return 0;
@@ -1316,7 +1318,7 @@ int exynos_fimc_is_set_user_clk_gate(u32 group_id, bool is_on,
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_set_user_clk_gate(group_id, is_on, user_scenario_id, msk_state, gate_info);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_set_user_clk_gate(group_id, is_on, user_scenario_id, msk_state, gate_info);
 #endif
 	return 0;
@@ -1326,7 +1328,7 @@ int exynos_fimc_is_clk_gate(u32 clk_gate_id, bool is_on)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_clk_gate(clk_gate_id, is_on);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_clk_gate(clk_gate_id, is_on);
 #endif
 	return 0;
@@ -1336,7 +1338,7 @@ int exynos_fimc_is_sensor_power_on(struct platform_device *pdev, int sensor_id)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_sensor_power_on(pdev, sensor_id);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_sensor_power_on(pdev, sensor_id);
 #endif
 	return 0;
@@ -1346,7 +1348,7 @@ int exynos_fimc_is_sensor_power_off(struct platform_device *pdev, int sensor_id)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_sensor_power_off(pdev, sensor_id);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_sensor_power_off(pdev, sensor_id);
 #endif
 	return 0;
@@ -1356,7 +1358,7 @@ int exynos_fimc_is_print_pwr(struct platform_device *pdev)
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_print_pwr(pdev);
-#elif defined(CONFIG_SOC_EXYNOS5430)
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
 	exynos5430_fimc_is_print_pwr(pdev);
 #endif
 	return 0;
