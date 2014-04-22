@@ -2066,7 +2066,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 
 	device = (struct fimc_is_device_sensor *)platform_get_drvdata(pdev);
 	if (!device) {
-		merr("device is NULL", device);
+		err("device is NULL");
 		goto p_err;
 	}
 
