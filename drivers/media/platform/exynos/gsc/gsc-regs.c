@@ -969,19 +969,30 @@ void gsc_hw_set_mixer(int id)
 
 	writel(cfg, SYSREG_DISP1BLK_CFG);
 }
-
 void gsc_hw_set_local_dst(struct gsc_dev* dev, int out, bool on)
 {
 	u32 cfg = readl(dev->sysreg_disp + DSD_CFG);
 
-	if (on) {
-		cfg &= ~((0x3 << (4 + dev->id * 2)) | (0x1 << (0 + dev->id)));
-		cfg |= (0x1 << (4 + dev->id * 2));
-		writel(cfg, dev->sysreg_disp + DSD_CFG);
-		writel(0x80000000, dev->sysreg_disp + DSD_RESERVE10);
+	if (soc_is_exynos5430()) {
+		if (on) {
+			cfg &= ~((0x3 << (4 + dev->id * 2)) |
+				(0x1 << (0 + dev->id)));
+			cfg |= (0x1 << (4 + dev->id * 2));
+			writel(cfg, dev->sysreg_disp + DSD_CFG);
+			writel(0x80000000,dev->sysreg_disp + DSD_RESERVE10);
+		} else {
+			cfg &= ~(0x3 << (4 + dev->id * 2));
+			writel(cfg, dev->sysreg_disp + DSD_CFG);
+		}
 	} else {
-		cfg &= ~(0x3 << (4 + dev->id * 2));
-		writel(cfg, dev->sysreg_disp + DSD_CFG);
+		if (on) {
+			cfg &= ~(0x3 << (3 + (dev->id * 2)));
+			cfg |= (0 << (3 + ((dev->id) * 2)));
+			writel(cfg, dev->sysreg_disp + DSD_CFG);
+		} else {
+			cfg &= ~(0x3 << (3 + (dev->id * 2)));
+			writel(cfg, dev->sysreg_disp + DSD_CFG);
+		}
 	}
 }
 
