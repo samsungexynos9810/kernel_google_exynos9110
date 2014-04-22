@@ -524,6 +524,7 @@ int __init exynos5433_pmu_init(void)
 		EXYNOS_USE_PROLOGNED_LOGIC_RESET, EXYNOS_CENTRAL_SEQ_OPTION);
 
 	exynos_cpu_reset_assert_ctrl(true, ARM);
+	exynos_cpu_reset_assert_ctrl(true, KFC);
 
 	/* L2 use retention disable */
 	tmp = __raw_readl(EXYNOS_L2_OPTION(0));
