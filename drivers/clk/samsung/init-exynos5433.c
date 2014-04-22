@@ -15,6 +15,8 @@
 #include <linux/of_address.h>
 #include <mach/regs-clock-exynos5433.h>
 #include <mach/regs-pmu.h>
+#include <mach/regs-audss.h>
+#include <mach/map.h>
 
 #include "clk.h"
 #include "clk-pll.h"
@@ -169,6 +171,55 @@ void jpeg_init_clock(void)
 	pr_debug("jpeg: sclk_jpeg %d\n", exynos_get_rate("dout_sclk_jpeg"));
 }
 
+static void clkout_init_clock(void)
+{
+	writel(0x1000, EXYNOS_PMU_DEBUG);
+}
+
+static void aud_init_clock(void)
+{
+	/* AUD0 */
+	exynos_set_parent("mout_aud_pll_user", "fout_aud_pll");
+
+	/* AUD1 */
+	exynos_set_parent("mout_sclk_aud_i2s", "mout_aud_pll_user");
+	exynos_set_parent("mout_sclk_aud_pcm", "mout_aud_pll_user");
+
+	exynos_set_rate("fout_aud_pll", 196608010);
+	exynos_set_rate("dout_aud_ca5", 196608010);
+	exynos_set_rate("dout_aclk_aud", 65536010);
+	exynos_set_rate("dout_pclk_dbg_aud", 32768010);
+
+	exynos_set_rate("dout_sclk_aud_i2s", 49152004);
+	exynos_set_rate("dout_sclk_aud_pcm", 2048002);
+	exynos_set_rate("dout_sclk_aud_slimbus", 24576002);
+	exynos_set_rate("dout_sclk_aud_uart", 196608010);
+
+	/* TOP1 */
+	exynos_set_parent("mout_aud_pll", "fout_aud_pll");
+	exynos_set_parent("mout_aud_pll_user_top", "mout_aud_pll");
+
+	/* TOP_PERIC1 */
+	exynos_set_parent("mout_sclk_audio0", "mout_aud_pll_user_top");
+	exynos_set_parent("mout_sclk_audio1", "mout_aud_pll_user_top");
+	exynos_set_parent("mout_sclk_spdif", "dout_sclk_audio0");
+	exynos_set_rate("dout_sclk_audio0", 24576002);
+	exynos_set_rate("dout_sclk_audio1", 49152004);
+	exynos_set_rate("dout_sclk_pcm1", 2048002);
+	exynos_set_rate("dout_sclk_i2s1", 49152004);
+}
+
+void adma_init_clock(void)
+{
+	unsigned int reg;
+
+	reg = __raw_readl(EXYNOS_LPASSREG(0x8));
+	reg &= ~0x1;
+	__raw_writel(reg, EXYNOS_LPASSREG(0x8));
+	reg |= 0x1;
+	__raw_writel(reg, EXYNOS_LPASSREG(0x8));
+}
+
 static void spi_init_clock(void)
 {
 	exynos_set_parent("mout_sclk_spi0", "mout_bus_pll_user");
@@ -198,6 +249,9 @@ static void uart_init_clock(void)
 void __init exynos5433_clock_init(void)
 {
 	top_clk_enable();
+	clkout_init_clock();
+	aud_init_clock();
+	adma_init_clock();
 	usb_init_clock();
 	crypto_init_clock();
 	pcie_init_clock();
