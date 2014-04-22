@@ -100,6 +100,7 @@ enum {
 	LPASS_VER_100100 = 16,		/* gaia/adonis */
 	LPASS_VER_110100,		/* ares */
 	LPASS_VER_370100 = 32,		/* rhea/helsinki */
+	LPASS_VER_370200,		/* helsinki prime */
 	LPASS_VER_MAX
 };
 
@@ -1194,6 +1195,7 @@ static const int lpass_ver_data[] = {
 	[LPASS_VER_100100] = LPASS_VER_100100,
 	[LPASS_VER_110100] = LPASS_VER_110100,
 	[LPASS_VER_370100] = LPASS_VER_370100,
+	[LPASS_VER_370200] = LPASS_VER_370200,
 };
 
 static struct platform_device_id lpass_driver_ids[] = {
@@ -1208,6 +1210,9 @@ MODULE_DEVICE_TABLE(platform, lpass_driver_ids);
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_lpass_match[] = {
 	{
+		.compatible	= "samsung,exynos5433-lpass",
+		.data		= &lpass_ver_data[LPASS_VER_370200],
+	}, {
 		.compatible	= "samsung,exynos5430-lpass",
 		.data		= &lpass_ver_data[LPASS_VER_370100],
 	}, {
