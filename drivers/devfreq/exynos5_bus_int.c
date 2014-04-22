@@ -26,7 +26,6 @@
 #include <mach/regs-clock-exynos5433.h>
 
 #include "exynos5433_ppmu.h"
-#include "exynos_ppmu2.h"
 #include "devfreq_exynos.h"
 #include "governor.h"
 
