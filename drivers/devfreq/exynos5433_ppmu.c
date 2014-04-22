@@ -14,7 +14,7 @@
 #include <linux/platform_device.h>
 
 #include "exynos5433_ppmu.h"
-#include "exynos_ppmu2.h"
+#include "exynos_ppmu_fw.h"
 
 #define MIF_DEFAULT_PPMU_WEIGHT	200
 
@@ -222,6 +222,11 @@ int exynos5433_ppmu_activate(void)
 			goto err;
 		}
 
+		if (ppmu_init_fw(&ppmu[i])) {
+			mutex_unlock(&exynos_ppmu_lock);
+			goto err;
+		}
+
 		if (ppmu_reset(&ppmu[i])) {
 			mutex_unlock(&exynos_ppmu_lock);
 			goto err;
@@ -319,10 +324,25 @@ static int exynos5433_ppmu_suspend(struct device *dev)
 
 static int exynos5433_ppmu_resume(struct device *dev)
 {
+	int i;
+
+	mutex_lock(&exynos_ppmu_lock);
+	for (i = 0; i < PPMU_COUNT; ++i) {
+		if (ppmu_init_fw(&ppmu[i])) {
+			mutex_unlock(&exynos_ppmu_lock);
+			goto err;
+		}
+	}
+	mutex_unlock(&exynos_ppmu_lock);
+
 	exynos5433_ppmu_reset();
 	exynos5433_update_polling(100);
 
 	return 0;
+err:
+	pr_err("DEVFREQ(PPMU) : ppmu can't resume.\n");
+
+	return -EINVAL;
 }
 
 static struct dev_pm_ops exynos5433_ppmu_pm = {

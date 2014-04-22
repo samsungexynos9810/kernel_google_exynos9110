@@ -15,7 +15,7 @@
 
 #include <linux/notifier.h>
 
-#include "exynos_ppmu2.h"
+#include "exynos_ppmu_fw.h"
 
 enum DEVFREQ_TYPE {
 	MIF,
