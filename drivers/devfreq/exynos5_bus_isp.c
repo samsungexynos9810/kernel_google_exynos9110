@@ -23,7 +23,7 @@
 #include <mach/tmu.h>
 #include <mach/asv-exynos.h>
 
-#include "exynos5430_ppmu.h"
+#include "exynos5433_ppmu.h"
 #include "exynos_ppmu2.h"
 #include "devfreq_exynos.h"
 #include "governor.h"
@@ -55,7 +55,7 @@ static struct devfreq_simple_ondemand_data exynos5_devfreq_isp_governor_data = {
 	.cal_qos_max		= 777000,
 };
 
-static struct exynos_devfreq_platdata exynos5430_qos_isp = {
+static struct exynos_devfreq_platdata exynos5433_qos_isp = {
 	.default_qos		= 111000,
 };
 
@@ -332,9 +332,9 @@ static struct platform_device exynos5_devfreq_isp_device = {
 
 static int exynos5_devfreq_isp_qos_init(void)
 {
-	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
-	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
-	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5430_qos_isp.default_qos);
+	pm_qos_add_request(&exynos5_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5433_qos_isp.default_qos);
+	pm_qos_add_request(&min_isp_thermal_qos, PM_QOS_CAM_THROUGHPUT, exynos5433_qos_isp.default_qos);
+	pm_qos_add_request(&boot_isp_qos, PM_QOS_CAM_THROUGHPUT, exynos5433_qos_isp.default_qos);
 
 	return 0;
 }
@@ -344,7 +344,7 @@ static int __init exynos5_devfreq_isp_init(void)
 {
 	int ret;
 
-	exynos5_devfreq_isp_device.dev.platform_data = &exynos5430_qos_isp;
+	exynos5_devfreq_isp_device.dev.platform_data = &exynos5433_qos_isp;
 
 	ret = platform_device_register(&exynos5_devfreq_isp_device);
 	if (ret)

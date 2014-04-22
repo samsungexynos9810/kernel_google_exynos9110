@@ -20,7 +20,7 @@
 
 #include <mach/asv-exynos.h>
 
-#include "exynos5430_ppmu.h"
+#include "exynos5433_ppmu.h"
 #include "exynos_ppmu2.h"
 #include "devfreq_exynos.h"
 #include "governor.h"
@@ -45,7 +45,7 @@ static struct devfreq_simple_ondemand_data exynos5_devfreq_disp_governor_data = 
 	.cal_qos_max		= 334000,
 };
 
-static struct exynos_devfreq_platdata exynos5430_qos_disp = {
+static struct exynos_devfreq_platdata exynos5433_qos_disp = {
 	.default_qos		= 134000,
 };
 
@@ -64,7 +64,7 @@ void exynos5_update_district_disp_level(unsigned int idx)
 	if (idx != LV3)
 		pm_qos_update_request(&exynos5_disp_bts_qos, devfreq_disp_opp_list[idx].freq);
 	else
-		pm_qos_update_request(&exynos5_disp_bts_qos, exynos5430_qos_disp.default_qos);
+		pm_qos_update_request(&exynos5_disp_bts_qos, exynos5433_qos_disp.default_qos);
 }
 
 static int exynos5_devfreq_disp_target(struct device *dev,
@@ -306,10 +306,10 @@ static struct platform_device exynos5_devfreq_disp_device = {
 
 static int __init exynos5_devfreq_disp_qos_init(void)
 {
-	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&boot_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
-	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5430_qos_disp.default_qos);
+	pm_qos_add_request(&exynos5_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5433_qos_disp.default_qos);
+	pm_qos_add_request(&min_disp_thermal_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5433_qos_disp.default_qos);
+	pm_qos_add_request(&boot_disp_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5433_qos_disp.default_qos);
+	pm_qos_add_request(&exynos5_disp_bts_qos, PM_QOS_DISPLAY_THROUGHPUT, exynos5433_qos_disp.default_qos);
 	pm_qos_update_request_timeout(&exynos5_disp_qos,
 					exynos5_devfreq_disp_profile.initial_freq, 40000 * 1000);
 
@@ -321,7 +321,7 @@ static int __init exynos5_devfreq_disp_init(void)
 {
 	int ret;
 
-	exynos5_devfreq_disp_device.dev.platform_data = &exynos5430_qos_disp;
+	exynos5_devfreq_disp_device.dev.platform_data = &exynos5433_qos_disp;
 
 	ret = platform_device_register(&exynos5_devfreq_disp_device);
 	if (ret)

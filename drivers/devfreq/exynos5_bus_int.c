@@ -23,9 +23,9 @@
 #include <mach/tmu.h>
 #include <mach/asv-exynos.h>
 #include <mach/pm_domains.h>
-#include <mach/regs-clock-exynos5430.h>
+#include <mach/regs-clock-exynos5433.h>
 
-#include "exynos5430_ppmu.h"
+#include "exynos5433_ppmu.h"
 #include "exynos_ppmu2.h"
 #include "devfreq_exynos.h"
 #include "governor.h"
@@ -50,7 +50,7 @@ static struct devfreq_simple_ondemand_data exynos5_devfreq_int_governor_data = {
 	.cal_qos_max		= 400000,
 };
 
-static struct exynos_devfreq_platdata exynos5430_qos_int = {
+static struct exynos_devfreq_platdata exynos5433_qos_int = {
 	.default_qos		= 100000,
 };
 
@@ -281,8 +281,8 @@ static int exynos5_devfreq_int_probe(struct platform_device *pdev)
 	devfreq_nb->df = data->devfreq;
 	devfreq_nb->nb.notifier_call = exynos5_devfreq_int_notifier;
 
-	exynos5430_devfreq_register(&devfreq_int_exynos);
-	exynos5430_ppmu_register_notifier(INT, &devfreq_nb->nb);
+	exynos5433_devfreq_register(&devfreq_int_exynos);
+	exynos5433_ppmu_register_notifier(INT, &devfreq_nb->nb);
 
 	plat_data = data->dev->platform_data;
 
@@ -369,10 +369,10 @@ static struct platform_device exynos5_devfreq_int_device = {
 
 static int __init exynos5_devfreq_int_qos_init(void)
 {
-	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5430_qos_int.default_qos);
-	pm_qos_add_request(&min_int_thermal_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5430_qos_int.default_qos);
-	pm_qos_add_request(&boot_int_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5430_qos_int.default_qos);
-	pm_qos_add_request(&exynos5_int_bts_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5430_qos_int.default_qos);
+	pm_qos_add_request(&exynos5_int_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5433_qos_int.default_qos);
+	pm_qos_add_request(&min_int_thermal_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5433_qos_int.default_qos);
+	pm_qos_add_request(&boot_int_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5433_qos_int.default_qos);
+	pm_qos_add_request(&exynos5_int_bts_qos, PM_QOS_DEVICE_THROUGHPUT, exynos5433_qos_int.default_qos);
 	pm_qos_update_request_timeout(&exynos5_int_qos,
 					exynos5_devfreq_int_profile.initial_freq, 40000 * 1000);
 
@@ -384,7 +384,7 @@ static int __init exynos5_devfreq_int_init(void)
 {
 	int ret;
 
-	exynos5_devfreq_int_device.dev.platform_data = &exynos5430_qos_int;
+	exynos5_devfreq_int_device.dev.platform_data = &exynos5433_qos_int;
 
 	ret = platform_device_register(&exynos5_devfreq_int_device);
 	if (ret)

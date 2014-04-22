@@ -22,9 +22,9 @@
 #include <mach/tmu.h>
 #include <mach/devfreq.h>
 #include <mach/asv-exynos.h>
-#include <mach/regs-clock-exynos5430.h>
+#include <mach/regs-clock-exynos5433.h>
 
-#include "exynos5430_ppmu.h"
+#include "exynos5433_ppmu.h"
 #include "exynos_ppmu2.h"
 #include "devfreq_exynos.h"
 #include "governor.h"
@@ -388,8 +388,8 @@ static int exynos5_devfreq_mif_probe(struct platform_device *pdev)
 	devfreq_nb->df = data->devfreq;
 	devfreq_nb->nb.notifier_call = exynos5_devfreq_mif_notifier;
 
-	exynos5430_devfreq_register(&devfreq_mif_exynos);
-	exynos5430_ppmu_register_notifier(MIF, &devfreq_nb->nb);
+	exynos5433_devfreq_register(&devfreq_mif_exynos);
+	exynos5433_ppmu_register_notifier(MIF, &devfreq_nb->nb);
 
 	plat_data = data->dev->platform_data;
 
