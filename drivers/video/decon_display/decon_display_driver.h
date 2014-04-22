@@ -10,9 +10,7 @@
 #define __DECON_DISPLAY_DRIVER_HEADER__
 
 #include <linux/kthread.h>
-
-#define COMMAND_MODE	1
-#define VIDEO_MODE	0
+#include <linux/platform_device.h>
 
 struct decon_lcd {
 	u32	mode;
@@ -34,6 +32,8 @@ struct decon_lcd {
 	u32	esc_clk;
 
 	u32	fps;
+
+	u32	mic;
 };
 
 enum{

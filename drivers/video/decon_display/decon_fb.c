@@ -4079,11 +4079,15 @@ static void s3c_fb_set_mic_enable(struct s3c_fb *sfb, bool enable)
 {
 	void __iomem *regs = sfb->regs + DECON_MIC_3D_CTRL;
 	u32 data = readl(regs);
+	struct decon_lcd *lcd_info = decon_get_lcd_info();
+
+	data &= ~1;
 
 	if (enable)
-		data |= 1;
+		data |= lcd_info->mic;
 	else
 		data &= ~1;
+
 	writel(data, regs);
 }
 #endif

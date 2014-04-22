@@ -1034,7 +1034,7 @@ int s5p_mipi_dsi_set_display_mode(struct mipi_dsim_device *dsim,
 	hsync_len = dsim->lcd_info->hsa;
 
 	/* in case of VIDEO MODE (RGB INTERFACE) */
-	if (dsim->lcd_info->mode == VIDEO_MODE) {
+	if (dsim->dsim_config->e_interface == DSIM_VIDEO) {
 		s5p_mipi_dsi_set_main_disp_vporch(dsim,
 				6, /* cmd allow */
 				2, /* stable vfp */

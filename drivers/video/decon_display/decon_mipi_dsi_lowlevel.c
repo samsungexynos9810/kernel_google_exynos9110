@@ -229,9 +229,9 @@ void s5p_mipi_dsi_display_config(struct mipi_dsim_device *dsim)
 		~(0x3 << 26) & ~(1 << 25) & ~(0x3 << 18) & ~(0x7 << 12) &
 		~(0x3 << 16) & ~(0x7 << 8);
 
-	if (dsim->lcd_info->mode == VIDEO_MODE)
+	if (dsim->dsim_config->e_interface == DSIM_VIDEO)
 		reg |= (1 << 25);
-	else if (dsim->lcd_info->mode == COMMAND_MODE) {
+	else if (dsim->dsim_config->e_interface == DSIM_COMMAND) {
 		reg &= ~(1 << 25);
 		reg |= (1 << 30);
 	} else {

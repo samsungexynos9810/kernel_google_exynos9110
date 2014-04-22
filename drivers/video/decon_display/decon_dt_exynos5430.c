@@ -84,6 +84,7 @@ struct mic_config g_mic_config;
 
 static struct display_gpio g_disp_gpios;
 struct mipi_dsim_lcd_config g_lcd_config;
+struct decon_lcd g_decon_lcd;
 
 static int parse_decon_platdata(struct device_node *np)
 {
@@ -367,6 +368,51 @@ int parse_decon_mic_dt_exynos5430(struct device_node *np)
 }
 #endif
 
+/* should be fixed: remove decon_lcd struct */
+struct decon_lcd *decon_get_lcd_info(void)
+{
+	return &g_decon_lcd;
+}
+
+int parse_lcd_drvdata(struct device_node *np)
+{
+	int ret, idx = 0;
+	u32 temp, res[3];
+	struct device_node *node;
+
+	node = of_parse_phandle(np, "lcd_info", idx);
+	pr_info("%s is founded\n", of_node_full_name(node));
+
+	DT_READ_U32_OPTIONAL(node, "mode", g_decon_lcd.mode);
+	DT_READ_U32_OPTIONAL(node, "mode", g_dsim_config.e_interface);
+
+	ret = of_property_read_u32_array(node, "resolution", res, 2);
+	g_decon_lcd.xres = res[0];
+	g_decon_lcd.yres = res[1];
+
+	ret = of_property_read_u32_array(node, "size", res, 2);
+	g_decon_lcd.width = res[0];
+	g_decon_lcd.height = res[1];
+
+	DT_READ_U32_OPTIONAL(node, "timing,refresh", g_decon_lcd.fps);
+
+	ret = of_property_read_u32_array(node, "timing,h-porch", res, 3);
+	g_decon_lcd.hbp = res[0];
+	g_decon_lcd.hfp = res[1];
+	g_decon_lcd.hsa = res[2];
+
+	ret = of_property_read_u32_array(node, "timing,v-porch", res, 3);
+	g_decon_lcd.vbp = res[0];
+	g_decon_lcd.vfp = res[1];
+	g_decon_lcd.vsa = res[2];
+
+	DT_READ_U32_OPTIONAL(node, "timing,dsi-hs-clk", g_decon_lcd.hs_clk);
+	DT_READ_U32_OPTIONAL(node, "timing,dsi-escape-clk", g_decon_lcd.esc_clk);
+	DT_READ_U32_OPTIONAL(node, "mic", g_decon_lcd.mic);
+
+	return 0;
+}
+
 /* parse_all_dt_exynos5430 -
  * this function is for parsing TOP device tree of the display subsystem */
 static int parse_all_dt_exynos5430(struct device_node *parent)
@@ -409,6 +455,7 @@ static int parse_all_dt_exynos5430(struct device_node *parent)
 		return ret;
 	}
 #endif
+	parse_lcd_drvdata(parent);
 
 	return ret;
 }

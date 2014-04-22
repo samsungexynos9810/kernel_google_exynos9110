@@ -111,7 +111,6 @@ static unsigned int decon_mic_calc_bs_size(struct decon_mic *mic)
 static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
 {
 	u32 data = readl(mic->reg_base);
-	struct decon_lcd *lcd = mic->lcd;
 
 	if (enable) {
 #ifdef CONFIG_SOC_EXYNOS5422
@@ -126,10 +125,11 @@ static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
 			| DECON_MIC_UPDATE_REG | DECON_MIC_ON_REG;
 #endif
 
-		if (lcd->mode == COMMAND_MODE)
-			data |= DECON_MIC_COMMAND_MODE;
-		else
-			data |= DECON_MIC_VIDEO_MODE;
+#if defined(CONFIG_FB_I80_COMMAND_MODE)
+		data |= DECON_MIC_COMMAND_MODE;
+#else
+		data |= DECON_MIC_VIDEO_MODE;
+#endif
 	} else {
 		data &= ~DECON_MIC_CORE_ENABLE;
 		data |= DECON_MIC_UPDATE_REG;
