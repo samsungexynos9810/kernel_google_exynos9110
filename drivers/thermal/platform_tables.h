@@ -131,133 +131,83 @@ struct coefficients gpu_coeffs[NR_GPU_COEFFS] = {
 		.frequency	= 533,
 	},
 };
-#elif defined(CONFIG_SOC_EXYNOS5430_REV_1)
-#define NR_A7_COEFFS 8
-#define NR_A15_COEFFS 14
+#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#define NR_A7_COEFFS 11
+#define NR_A15_COEFFS 12
 #define NR_GPU_COEFFS 7
 
 struct coefficients a7_cpu_coeffs[NR_A7_COEFFS] = {
 	{
-		.power		= 82,
+		.frequency	= 500,
+	},
+	{
+		.frequency	= 600,
+	},
+	{
+		.frequency	= 700,
+	},
+	{
 		.frequency	= 800,
 	},
 	{
-		.power		= 99,
 		.frequency	= 900,
 	},
 	{
-		.power		= 118,
 		.frequency	= 1000,
 	},
 	{
-		.power		= 143,
 		.frequency	= 1100,
 	},
 	{
-		.power		= 169,
 		.frequency	= 1200,
 	},
 	{
-		.power		= 204,
 		.frequency	= 1300,
 	},
 	{
-		.power		= 250,
 		.frequency	= 1400,
 	},
 	{
-		.power		= 289,
 		.frequency	= 1500,
 	},
 };
 
 struct coefficients a15_cpu_coeffs[NR_A15_COEFFS] = {
 	{
-		.power		= 356,
 		.frequency	= 800,
 	},
 	{
-		.power		= 423,
 		.frequency	= 900,
 	},
 	{
-		.power		= 495,
 		.frequency	= 1000,
 	},
 	{
-		.power		= 572,
 		.frequency	= 1100,
 	},
 	{
-		.power		= 656,
 		.frequency	= 1200,
 	},
 	{
-		.power		= 746,
 		.frequency	= 1300,
 	},
 	{
-		.power		= 842,
 		.frequency	= 1400,
 	},
 	{
-		.power		= 944,
 		.frequency	= 1500,
 	},
 	{
-		.power		= 1077,
 		.frequency	= 1600,
 	},
 	{
-		.power		= 1221,
 		.frequency	= 1700,
 	},
 	{
-		.power		= 1377,
 		.frequency	= 1800,
 	},
 	{
-		.power		= 1638,
 		.frequency	= 1900,
-	},
-	{
-		.power		= 1888,
-		.frequency	= 2000,
-	},
-	{
-		.power		= 2012,
-		.frequency	= 2100,
-	},
-};
-
-struct coefficients gpu_coeffs[NR_GPU_COEFFS] = {
-	{
-		.power		= 365,
-		.frequency	= 100,
-	},
-	{
-		.power		= 645,
-		.frequency	= 177,
-	},
-	{
-		.power		= 1062,
-		.frequency	= 266,
-	},
-	{
-		.power		= 1569,
-		.frequency	= 350,
-	},
-	{
-		.power		= 2101,
-		.frequency	= 420,
-	},
-	{
-		.power		= 2597,
-		.frequency	= 480,
-	},
-	{
-		.power		= 3110,
-		.frequency	= 533,
 	},
 };
 #else
