@@ -131,9 +131,9 @@ int exynos_mphy_ovtm_init(struct exynos_mphy *phy)
 			/* rx_line_reset_value when cfg clk is 100Mhz */
 			writel(0x19, phy->loc_regs + (0x17*4));
 			/* h8_wait_value when cfg clk is 100Mhz */
-			writel(0x0C, phy->loc_regs + (0x31*4));
-			writel(0x35, phy->loc_regs + (0x32*4));
-			writel(0x00, phy->loc_regs + (0x33*4));
+			writel(0x16, phy->loc_regs + (0x31*4));
+			writel(0xE3, phy->loc_regs + (0x32*4));
+			writel(0x60, phy->loc_regs + (0x33*4));
 		}
 	}
 
