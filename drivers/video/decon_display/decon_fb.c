@@ -4429,10 +4429,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	s3c_fb_activate_window_dma(sfb, default_win);
 	s3c_fb_activate_window(sfb, default_win);
 	s3c_fb_clear_fb(sfb, default_win);
-	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(120);
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	ret = decon_fb_config_eint_for_te(sfb);
@@ -4744,10 +4740,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
-	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(12);
 	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
@@ -4874,10 +4866,6 @@ int s3c_fb_resume(struct device *dev)
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
 
-	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
-		0x29, 0);
-
-	msleep(12);
 	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);

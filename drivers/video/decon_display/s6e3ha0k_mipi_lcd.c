@@ -300,12 +300,10 @@ int init_lcd(struct mipi_dsim_device *dsim)
 				ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0)) == -1)
 		printk(KERN_ERR "fail to write KEY_OFF_F0 command.\n");
 	msleep(50);
-/*
+
 	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE,
 			0x29, 0x0) == -1)
 		printk(KERN_ERR "fail to write Disp_on init command.\n");
-	msleep(150);
-*/
 
 	return 0;
 }
