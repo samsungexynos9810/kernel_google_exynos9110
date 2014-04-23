@@ -13,7 +13,6 @@
 #include <linux/clk.h>
 #include <linux/fs.h>
 #include <linux/fb.h>
-#include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
 #include <linux/pm_runtime.h>
 #include <linux/lcd.h>
@@ -155,7 +154,7 @@ static void register_debug_features(void)
 /* s5p_decon_disp_probe - probe function of the display driver */
 static int s5p_decon_disp_probe(struct platform_device *pdev)
 {
-	int ret = -1;
+	int ret;
 
 	init_display_operations();
 

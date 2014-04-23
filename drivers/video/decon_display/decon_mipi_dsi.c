@@ -55,8 +55,6 @@
 #include "fimd_fb.h"
 #endif
 
-#define MIPI_BYPASS_MIC_CONFIG
-
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
 static DECLARE_COMPLETION(dsim_ph_wr_comp);
 static DECLARE_COMPLETION(dsim_wr_comp);
@@ -216,12 +214,14 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 #ifdef CONFIG_DECON_MIC
 static void decon_mipi_dsi_config_mic(struct mipi_dsim_device *dsim)
 {
-#ifndef MIPI_BYPASS_MIC_CONFIG
+#if defined(CONFIG_SOC_EXYNOS5422)
+	return;
+#endif
+
 	if (!dsim->lcd_info->mic)
 		return;
 	s5p_mipi_dsi_enable_mic(dsim, true);
 	s5p_mipi_dsi_set_3d_off_mic_on_h_size(dsim);
-#endif
 }
 #endif
 
@@ -933,12 +933,12 @@ int s5p_mipi_dsi_set_clock(struct mipi_dsim_device *dsim,
 		s5p_mipi_dsi_enable_esc_clk_on_lane(dsim,
 			(DSIM_LANE_CLOCK | dsim->data_lane), 1);
 
-		dev_info(dsim->dev, "byte clock is %luMHz\n",
+		dev_dbg(dsim->dev, "byte clock is %luMHz\n",
 			dsim->byte_clk);
-		dev_info(dsim->dev, "escape clock that user's need is %lu\n",
+		dev_dbg(dsim->dev, "escape clock that user's need is %lu\n",
 			dsim->dsim_config->esc_clk);
-		dev_info(dsim->dev, "escape clock divider is %x\n", esc_div);
-		dev_info(dsim->dev, "escape clock is %luMHz\n",
+		dev_dbg(dsim->dev, "escape clock divider is %x\n", esc_div);
+		dev_dbg(dsim->dev, "escape clock is %luMHz\n",
 			(dsim->byte_clk / esc_div));
 
 		if ((dsim->byte_clk / esc_div) > dsim->escape_clk) {

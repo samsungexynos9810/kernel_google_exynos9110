@@ -51,7 +51,6 @@ struct display_driver;
 
 /* display_gpio - GPIOs resource for the display subsystem */
 struct display_gpio {
-	int num;
 	unsigned id[MAX_GPIO];
 };
 
@@ -79,7 +78,6 @@ struct display_controller_ops {
  * device */
 struct display_driver_ops {
 	int (*init_display_dsi_clocks)(struct device *dev);
-	int (*enable_display_driver_clocks)(struct device *dev);
 	int (*enable_display_driver_power)(struct device *dev);
 	int (*disable_display_driver_power)(struct device *dev);
 	int (*reset_display_driver_panel)(struct device *dev);

@@ -136,6 +136,7 @@ static atomic_t extra_vsync_wait;
 #endif /* CONFIG_USE_VSYNC_SKIP */
 
 void debug_function(struct display_driver *dispdrv, const char *buf);
+static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout);
 
 static void decon_fb_set_buffer_mode(struct s3c_fb *sfb,
 			u32 win_no, u32 bufmode, u32 bufsel)
@@ -980,6 +981,8 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 {
 	u32 data;
 
+	/* writel(0x1000000, sfb->regs + WINxMAP(index)); */
+
 	data = readl(sfb->regs + VIDCON0);
 	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
@@ -1049,7 +1052,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	int ret = 0;
 	struct display_driver *dispdrv;
 
-	dev_info(sfb->dev, "blank mode %d\n", blank_mode);
+	dev_info(sfb->dev, "+%s: %d\n", __func__, blank_mode);
 
 #ifdef CONFIG_USE_VSYNC_SKIP
 	s3c_fb_extra_vsync_wait_set(ERANGE);
@@ -1119,6 +1122,9 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 	if (blank_mode == FB_BLANK_POWERDOWN || blank_mode == FB_BLANK_NORMAL)
 		init_display_pm_status(dispdrv);
 #endif
+
+	dev_info(sfb->dev, "-%s: %d, %d\n", __func__, blank_mode, ret);
+
 	return ret;
 }
 
@@ -1189,6 +1195,14 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	writel(info->fix.smem_start + end_boff, buf + sfb->variant.buf_end);
 
 	shadow_protect_win(win, 0);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	hw_trigger_mask_enable(sfb, false);
+
+	s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
+
+	hw_trigger_mask_enable(sfb, true);
+#endif
 
 	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
@@ -1327,7 +1341,7 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	spin_unlock(&sfb->slock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
-	if (sfb->power_state == POWER_ON)
+	if (sfb->output_on && sfb->power_state == POWER_ON)
 		disp_pm_te_triggered(get_display_driver());
 #endif
 
@@ -2758,7 +2772,7 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 
 static int s3c_fb_release(struct fb_info *info, int user)
 {
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_sched_power_on(get_display_driver(), S3CFB_PLATFORM_RESET);
 #endif
 	return 0;
@@ -3238,6 +3252,9 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 	u32 data = 0;
 	struct s3c_fb_win *win = v4l2_subdev_to_s3c_fb_win(sd);
 	struct s3c_fb *sfb = win->parent;
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
+	struct display_driver *dispdrv = get_display_driver();
+#endif
 
 	if (enable) {
 		data = readl(sfb->regs + WINCON(win->index));
@@ -3259,7 +3276,7 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		printk("Decon stop(%d)\n", win->index);
 	}
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
-	disp_pm_gate_lock(get_display_driver(), enable);
+	disp_pm_gate_lock(dispdrv, enable);
 #endif
 	dev_dbg(sfb->dev, "window via local path started/stopped : %d\n",
 		enable);
@@ -3817,11 +3834,9 @@ static int s3c_fb_debugfs_show(struct seq_file *f, void *offset)
 ssize_t s3c_fb_debugfs_write(struct file *file, const char *userbuf, size_t count, loff_t *off)
 {
 	char buf[20], *p;
-#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
-#endif
 
 	memset(buf,0x00,sizeof(buf));
 	if (copy_from_user(buf, userbuf, min(count, sizeof(buf))))
@@ -4328,7 +4343,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 
 #if defined(CONFIG_DECON_DEVFREQ)
-	if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 1080 * 1920)
+	if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 720 * 1280)
+		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_HD);
+	else if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 1080 * 1920)
 		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_FULLHD);
 	else
 		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_WQHD);
@@ -4446,7 +4463,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 #endif
 #ifdef CONFIG_ION_EXYNOS
-	s3c_fb_wait_for_vsync(sfb, 3000);
+	s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
 	ret = iovmm_activate(&pdev->dev);
 	if (ret < 0) {
 		dev_err(sfb->dev, "failed to activate vmm\n");
@@ -4475,6 +4492,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	pm_stay_awake(sfb->dev);
+	dev_warn(sfb->dev, "pm_stay_awake");
 
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
 
@@ -4641,6 +4659,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	/* [W/A] prevent sleep enter during LCD on */
 	pm_relax(sfb->dev);
+	dev_warn(sfb->dev, "pm_relax");
 
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
@@ -4688,6 +4707,7 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 
 	/* [W/A] prevent sleep enter during LCD on */
 	pm_stay_awake(sfb->dev);
+	dev_warn(sfb->dev, "pm_stay_awake");
 
 	pm_runtime_get_sync(sfb->dev);
 
@@ -4744,12 +4764,15 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
+
 	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
 	reg |= DECON_UPDATE_STANDALONE_F;
 	writel(reg, sfb->regs + DECON_UPDATE);
 	sfb->output_on = true;
+
+	ret = 0;
 
 err:
 	mutex_unlock(&sfb->output_lock);

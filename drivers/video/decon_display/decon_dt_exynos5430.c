@@ -301,7 +301,7 @@ struct mic_config *get_display_mic_config(void)
 
 static int parse_dsi_drvdata(struct device_node *np)
 {
-	u32 temp;
+	u32 temp, i;
 
 	DT_READ_U32_OPTIONAL(np, "e_interface", g_dsim_config.e_interface);
 	DT_READ_U32_OPTIONAL(np, "e_pixel_format",
@@ -329,8 +329,10 @@ static int parse_dsi_drvdata(struct device_node *np)
 	DT_READ_U32_OPTIONAL(np, "bta_timeout", g_dsim_config.bta_timeout);
 	DT_READ_U32_OPTIONAL(np, "rx_timeout", g_dsim_config.rx_timeout);
 
-	g_disp_gpios.num++;
-	g_disp_gpios.id[0] = of_get_gpio(np, 0);
+	/* should be fixed */
+	for (i = 0; i < of_gpio_count(np); i++)
+		g_disp_gpios.id[i] = of_get_gpio(np, i);
+
 	return 0;
 }
 

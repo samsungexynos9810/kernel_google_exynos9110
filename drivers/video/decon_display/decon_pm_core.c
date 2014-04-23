@@ -73,6 +73,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv);
 int display_hibernation_power_off(struct display_driver *dispdrv);
 static void decon_clock_gating_handler(struct kthread_work *work);
 static void decon_power_gating_handler(struct kthread_work *work);
+static void request_dynamic_hotplug(bool hotplug);
 
 struct pm_ops display_block_ops = {
 	.clk_on		= display_block_clock_on,
@@ -208,17 +209,6 @@ static void init_gating_idle_count(struct display_driver *dispdrv)
 		dispdrv->pm_status.pwr_idle_count = 0;
 		spin_unlock_irqrestore(&dispdrv->pm_status.slock, flags);
 	}
-}
-
-static void request_dynamic_hotplug(bool hotplug)
-{
-#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
-	struct display_driver *dispdrv = get_display_driver();
-	if ((dispdrv->pm_status.hotplug_gating_on) &&
-		(dispdrv->platform_status == DISP_STATUS_PM1))
-		force_dynamic_hotplug(hotplug,
-			dispdrv->pm_status.hotplug_delay_msec);
-#endif
 }
 
 void debug_function(struct display_driver *dispdrv, const char *buf)
@@ -426,7 +416,8 @@ int disp_pm_dec_refcount(struct display_driver *dispdrv)
 {
 	++frame_done_count;
 
-	if (!dispdrv->pm_status.clock_gating_on) return 0;
+	if (!dispdrv->pm_status.clock_gating_on)
+		return 0;
 
 	return 0;
 }
@@ -524,6 +515,17 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 	return 0;
 }
 
+static void request_dynamic_hotplug(bool hotplug)
+{
+#ifdef CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG
+	struct display_driver *dispdrv = get_display_driver();
+	if ((dispdrv->pm_status.hotplug_gating_on) &&
+		(dispdrv->platform_status == DISP_STATUS_PM1))
+		force_dynamic_hotplug(hotplug,
+			dispdrv->pm_status.hotplug_delay_msec);
+#endif
+}
+
 int display_hibernation_power_on(struct display_driver *dispdrv)
 {
 	int ret = 0;
@@ -589,8 +591,6 @@ done:
 
 void display_block_clock_on(struct display_driver *dispdrv)
 {
-	if (!dispdrv->pm_status.clock_gating_on) return;
-
 	if (!get_display_power_status()) {
 		pm_info("Requested a pm_runtime_get_sync, but power still off");
 		pm_runtime_get_sync(dispdrv->display_driver);
@@ -610,8 +610,6 @@ void display_block_clock_on(struct display_driver *dispdrv)
 
 void display_block_clock_off(struct display_driver *dispdrv)
 {
-	if (!dispdrv->pm_status.clock_gating_on) return;
-
 	mutex_lock(&dispdrv->pm_status.clk_lock);
 	if (dispdrv->pm_status.clock_enabled) {
 		pm_debug("+");
