@@ -939,7 +939,7 @@ struct devfreq_distriction_level distriction_wqhd[] = {
 	{MIF_LV8,   	DISP_LV2},
 	{MIF_LV7,	DISP_LV2},
 	{MIF_LV5,	DISP_LV1},
-	{MIF_LV4,	DISP_LV0},
+	{MIF_LV3,	DISP_LV0},
 	{MIF_LV3,   	DISP_LV0},
 	{MIF_LV2,	DISP_LV0},
 	{MIF_LV0,	DISP_LV0},
@@ -951,8 +951,8 @@ unsigned int timeout_wqhd[][2] = {
 	{0x02000200,	0x000000FF},
 	{0x00800080,	0x000000FF},
 	{0x00800080,	0x000000FF},
-	{0x00400040,	0x000000FF},
-	{0x00400040,	0x000000FF},
+	{0x00000000,	0x000000FF},
+	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 	{0x00000000,	0x000000FF},
 };
@@ -2341,8 +2341,8 @@ static int exynos5_devfreq_int_init_pm_domain(void)
 #endif
 
 int district_level_by_disp_333[] = {
-	INT_LV3,
-	INT_LV5,
+	INT_LV2,
+	INT_LV4,
 	INT_LV6,
 	INT_LV6,
 };
