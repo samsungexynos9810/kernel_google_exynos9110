@@ -156,6 +156,13 @@ config EXYNOS5430_BTS
 	help
 	  Enable BTS (Bus traffic shaper) support
 
+config EXYNOS5433_BTS
+	bool "Bus traffic shaper support"
+	default y
+	depends on SOC_EXYNOS5433
+	help
+	  Enable BTS (Bus traffic shaper) support
+
 config EXYNOS5422_BTS
 	bool "Bus traffic shaper support"
 	default y
