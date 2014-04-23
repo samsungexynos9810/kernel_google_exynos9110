@@ -15,6 +15,7 @@
 
 #include <linux/sched.h>
 #include <plat/map-base.h>
+#include <mach/exynos-ss-soc.h>
 
 struct worker;
 struct work_struct;

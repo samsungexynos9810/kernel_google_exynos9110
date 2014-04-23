@@ -269,7 +269,8 @@ static struct ess_reg_list ess_reg_exlist[] = {
  *  because they are called very often.
  *  physical address, size ex) {0x10C00000, 0x1000},
  */
-	{0, 0},
+	{ESS_REG_MCT_ADDR, ESS_REG_MCT_SIZE},
+	{ESS_REG_UART_ADDR, ESS_REG_UART_SIZE},
 	{0, 0},
 	{0, 0},
 	{0, 0},
