@@ -1010,6 +1010,7 @@
 		compatible = "samsung,exynos-pd";
 		reg = <0x105c4020 0x20>;
 		parent = <&pd_disp &pd_cam1>;
+		bts-status = "enabled";
 	};
 
 	pd_mscl: pd-mscl@105c4040 {
@@ -1040,6 +1041,7 @@
 
 		spd_decon: spd-decon@105c4080 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_mipi_dsi: spd-mipi-dsi@105c4080 {
@@ -1056,6 +1058,7 @@
 
 		spd_decon_tv: spd-decon-tv@105c4080 {
 			compatible = "samsung,exynos-spd";
+			bts-status = "enabled";
 		};
 
 		spd_hdmi: spd-hdmi@105c4080 {
@@ -1078,6 +1081,7 @@
 	pd_cam1: pd-cam1@105c40a0 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x105c40a0 0x20>;
+		bts-status = "enabled";
 	};
 
 	pd_maudio: pd-maudio@105c40c0 {
