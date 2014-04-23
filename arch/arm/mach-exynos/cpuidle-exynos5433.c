@@ -412,7 +412,6 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_idle_clock_down(false, ARM);
 	exynos_idle_clock_down(false, KFC);
 #endif
 
@@ -441,7 +440,6 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	restore_cpu_arch_register();
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_idle_clock_down(true, ARM);
 	exynos_idle_clock_down(true, KFC);
 #endif
 
@@ -673,7 +671,6 @@ static int __maybe_unused exynos_enter_core0_lpa(struct cpuidle_device *dev,
 	__raw_writel(0xFFFF0000, EXYNOS5433_WAKEUP_MASK2);
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_idle_clock_down(false, ARM);
 	exynos_idle_clock_down(false, KFC);
 #endif
 
@@ -748,7 +745,6 @@ early_wakeup:
 	restore_cpu_arch_register();
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_idle_clock_down(true, ARM);
 	exynos_idle_clock_down(true, KFC);
 #endif
 
@@ -1212,7 +1208,6 @@ static int __init exynos_init_cpuidle(void)
 	}
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-	exynos_idle_clock_down(true, ARM);
 	exynos_idle_clock_down(true, KFC);
 #endif
 
