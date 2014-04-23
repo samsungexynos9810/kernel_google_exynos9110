@@ -108,48 +108,6 @@ static unsigned int decon_mic_calc_bs_size(struct decon_mic *mic)
 	return bs_size;
 }
 
-static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
-{
-	u32 data = readl(mic->reg_base);
-
-	if (enable) {
-#ifdef CONFIG_SOC_EXYNOS5422
-		data &= ~(DECON_MIC_CORE_MASK | DECON_MIC_MODE_MASK |
-			DECON_MIC_CORE_NEW_MASK | DECON_MIC_PSR_MASK |
-			DECON_MIC_BS_SWAP_MASK | DECON_MIC_ON_MASK |
-			DECON_MIC_UPDATE_REG_MASK);
-		data |= DECON_MIC_CORE_ENABLE |
-			DECON_MIC_NEW_CORE | DECON_MIC_ON_REG | DECON_MIC_UPDATE_REG;
-#else
-		data |= DECON_MIC_OLD_CORE | DECON_MIC_CORE_ENABLE
-			| DECON_MIC_UPDATE_REG | DECON_MIC_ON_REG;
-#endif
-
-#if defined(CONFIG_FB_I80_COMMAND_MODE)
-		data |= DECON_MIC_COMMAND_MODE;
-#else
-		data |= DECON_MIC_VIDEO_MODE;
-#endif
-	} else {
-		data &= ~DECON_MIC_CORE_ENABLE;
-		data |= DECON_MIC_UPDATE_REG;
-	}
-
-	writel(data, mic->reg_base);
-}
-
-int decon_mic_sw_reset(struct decon_mic *mic)
-{
-	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
-
-	u32 data = readl(regs);
-
-	data |= DECON_MIC_SW_RST;
-	writel(data, regs);
-
-	return 0;
-}
-
 #ifdef CONFIG_SOC_EXYNOS5422
 static void decon_mic_set_porch_timing(struct decon_mic *mic)
 {
@@ -211,12 +169,43 @@ static void decon_mic_set_2d_bit_stream_size(struct decon_mic *mic)
 }
 #endif
 
+static void decon_mic_set_mic_base_operation(struct decon_mic *mic, bool enable)
+{
+	u32 data = readl(mic->reg_base);
+
+	if (enable) {
+#ifdef CONFIG_SOC_EXYNOS5422
+		data &= ~(DECON_MIC_CORE_MASK | DECON_MIC_MODE_MASK |
+			DECON_MIC_CORE_NEW_MASK | DECON_MIC_PSR_MASK |
+			DECON_MIC_BS_SWAP_MASK | DECON_MIC_ON_MASK |
+			DECON_MIC_UPDATE_REG_MASK);
+		data |= DECON_MIC_CORE_ENABLE |
+			DECON_MIC_NEW_CORE | DECON_MIC_ON_REG | DECON_MIC_UPDATE_REG;
+#else
+		data |= DECON_MIC_OLD_CORE | DECON_MIC_CORE_ENABLE
+			| DECON_MIC_UPDATE_REG | DECON_MIC_ON_REG;
+#endif
+
+#if defined(CONFIG_FB_I80_COMMAND_MODE)
+		data |= DECON_MIC_COMMAND_MODE;
+#else
+		data |= DECON_MIC_VIDEO_MODE;
+#endif
+	} else {
+		data &= ~DECON_MIC_CORE_ENABLE;
+		data |= DECON_MIC_UPDATE_REG;
+	}
+
+	writel(data, mic->reg_base);
+}
+
 int decon_mic_enable(struct decon_mic *mic)
 {
+	if (!mic->lcd->mic)
+		return 0;
 	if (mic->decon_mic_on == true)
 		return 0;
 
-	decon_mic_sw_reset(mic);
 #ifdef CONFIG_SOC_EXYNOS5422
 	decon_mic_set_porch_timing(mic);
 #else
@@ -234,19 +223,25 @@ int decon_mic_enable(struct decon_mic *mic)
 
 	mic->decon_mic_on = true;
 
+	dev_info(mic->dev, "MIC driver is ON;\n");
+
 	return 0;
 }
 
 int decon_mic_disable(struct decon_mic *mic)
 {
+	if (!mic->lcd->mic)
+		return 0;
 	if (mic->decon_mic_on == false)
 		return 0;
 
 	decon_mic_set_sys_reg(mic, DECON_MIC_OFF);
-	decon_mic_sw_reset(mic);
+
 	decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF);
 
 	mic->decon_mic_on = false;
+
+	dev_info(mic->dev, "MIC driver is OFF;\n");
 
 	return 0;
 }
@@ -301,15 +296,40 @@ int create_decon_mic(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
+static int decon_mic_sw_reset(struct decon_mic *mic)
+{
+	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
+
+	u32 data = readl(regs);
+
+	data |= DECON_MIC_SW_RST;
+	writel(data, regs);
+
+	return 0;
+}
+
+
 int decon_mic_hibernation_power_on(struct display_driver *dispdrv)
 {
-	decon_mic_enable(dispdrv->mic_driver.mic);
+	struct decon_mic *mic = dispdrv->mic_driver.mic;
+
+	decon_mic_enable(mic);
+
 	return 0;
 }
 
 int decon_mic_hibernation_power_off(struct display_driver *dispdrv)
 {
-	decon_mic_disable(dispdrv->mic_driver.mic);
+	struct decon_mic *mic = dispdrv->mic_driver.mic;
+
+	/* decon_mic_set_mic_base_operation(mic, DECON_MIC_OFF); */
+	decon_mic_sw_reset(mic); /* should be fixed */
+	/* decon_mic_set_sys_reg(mic, DECON_MIC_OFF); */
+
+	decon_mic_disable(mic);
+
+	mic->decon_mic_on = false;
+
 	return 0;
 }
 #endif
