@@ -19,6 +19,65 @@
 #include "clk.h"
 #include "clk-pll.h"
 
+struct clk_enabler {
+	struct clk		*clk;
+	struct list_head	node;
+};
+
+static LIST_HEAD(clk_enabler_list);
+
+static inline void add_enabler(const char *name)
+{
+	struct clk_enabler *ce;
+	struct clk *clock;
+	clock = __clk_lookup(name);
+
+	if (IS_ERR(clock))
+		return;
+
+	ce = kzalloc(sizeof(struct clk_enabler), GFP_KERNEL);
+	if (!ce)
+		return;
+
+	ce->clk = clock;
+	list_add(&ce->node, &clk_enabler_list);
+}
+
+static void top_clk_enable(void)
+{
+	struct clk_enabler *ce;
+
+	add_enabler("sclk_mfc_pll");
+	add_enabler("sclk_bus_pll");
+	add_enabler("sclk_mphy_pll");
+	add_enabler("aclk_cpif_200");
+	add_enabler("aclk_isp_dis_400");
+	add_enabler("aclk_isp_400");
+	add_enabler("aclk_cam0_552");
+	add_enabler("aclk_cam0_400");
+	add_enabler("aclk_cam0_333");
+	add_enabler("aclk_cam1_552");
+	add_enabler("aclk_cam1_400");
+	add_enabler("aclk_cam1_333");
+	add_enabler("aclk_gscl_333");
+	add_enabler("aclk_gscl_111");
+	add_enabler("aclk_mscl_400");
+	add_enabler("sclk_jpeg_mscl");
+	add_enabler("aclk_g2d_400");
+	add_enabler("aclk_g2d_266");
+	add_enabler("aclk_hevc_400");
+	add_enabler("aclk_disp_333");
+	add_enabler("aclk_bus0_400");
+	add_enabler("aclk_bus1_400");
+	add_enabler("aclk_bus2_400");
+
+	list_for_each_entry(ce, &clk_enabler_list, node) {
+		clk_prepare(ce->clk);
+		clk_enable(ce->clk);
+	}
+
+	pr_info("Clock enables : TOP, MIF\n");
+}
 static void usb_init_clock(void)
 {
 	exynos_set_parent("mout_sclk_usbdrd30_user", "oscclk");
@@ -46,6 +105,7 @@ static void pcie_init_clock(void)
 
 void __init exynos5433_clock_init(void)
 {
+	top_clk_enable();
 	usb_init_clock();
 	crypto_init_clock();
 	pcie_init_clock();
