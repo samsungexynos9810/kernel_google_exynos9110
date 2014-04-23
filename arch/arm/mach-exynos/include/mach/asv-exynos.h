@@ -79,7 +79,28 @@ struct asv_common {
 	unsigned int	hpm_value;
 	unsigned int	(*init)(void);
 	unsigned int	(*regist_asv_member)(void);
+	struct asv_common_ops_cal	*ops_cal;
 };
+
+/* operation for CAL */
+struct asv_ops_cal {
+	s32		(*get_max_lv)(u32 id);
+	s32 		(*get_min_lv)(u32 id);
+	u32		(*get_vol)(u32, s32 eLvl);
+	u32		(*get_freq)(u32 id, s32 eLvl);
+	u32 		(*get_abb)(u32 id, s32 eLvl);
+	bool		(*get_use_abb)(u32 id);
+	void		(*set_abb)(u32 id, u32 eAbb);
+};
+
+struct asv_common_ops_cal {
+	void	(*init)(void);
+	u32	(*get_table_ver)(void);
+	bool	(*is_fused_sp_gr)(void);
+	u32	(*get_asv_gr)(void);
+	u32	(*get_ids)(void);
+};
+
 
 struct asv_freq_table {
 	unsigned int	asv_freq;
@@ -99,6 +120,7 @@ struct asv_info {
 	struct asv_freq_table	*asv_volt;
 	struct asv_freq_table	*asv_abb;
 	struct abb_common	*abb_info;
+	struct asv_ops_cal	*ops_cal;
 };
 
 /* Struct for ABB function */
