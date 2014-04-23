@@ -661,7 +661,7 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 	if (ipinr < NR_IPI)
 		__inc_irq_stat(cpu, ipi_irqs[ipinr]);
 
-	exynos_ss_irq(ipinr, do_IPI, 0, ESS_FLAG_IN);
+	exynos_ss_irq(ipinr, do_IPI, irqs_disabled(), ESS_FLAG_IN);
 
 	switch (ipinr) {
 	case IPI_WAKEUP:
@@ -706,7 +706,7 @@ void handle_IPI(int ipinr, struct pt_regs *regs)
 		       cpu, ipinr);
 		break;
 	}
-	exynos_ss_irq(ipinr, do_IPI, 0, ESS_FLAG_OUT);
+	exynos_ss_irq(ipinr, do_IPI, irqs_disabled(), ESS_FLAG_OUT);
 
 	set_irq_regs(old_regs);
 }
