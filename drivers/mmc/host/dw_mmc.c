@@ -763,6 +763,30 @@ static void dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
 
 	dw_mci_translate_sglist(host, host->data, sg_len);
 
+	if (host->data->blocks == 1 &&
+			host->quirks & DW_MMC_QUIRK_FMP_SIZE_MISMATCH) {
+		unsigned int blksz = host->data->blksz;
+
+		if (blksz == 8) {
+			/* Use AXI single burst when sending 8 bytes */
+			mci_writel(host, AXI_BURST_LEN,
+					DWMCI_BURST_LENGTH_CTRL(0));
+		} else if (blksz == 64) {
+			/*
+			 * Use AXI 4 burst and set sector size for EMMCP
+			 * with real block size  when sending 64 bytes
+			 */
+			u32 sector_size;
+
+			mci_writel(host, AXI_BURST_LEN,
+					DWMCI_BURST_LENGTH_CTRL(0x3));
+			sector_size = mci_readl(host, SECTOR_NUM_INC);
+			sector_size &= ~(DWMCI_SECTOR_SIZE_MASK);
+			sector_size |= DWMCI_SECTOR_SIZE_CTRL(blksz);
+			mci_writel(host, SECTOR_NUM_INC, sector_size);
+		}
+	}
+
 	/* Select IDMAC interface */
 	temp = mci_readl(host, CTRL);
 	temp |= SDMMC_CTRL_USE_IDMAC;
@@ -965,8 +989,10 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
 	if (!host->use_dma)
 		return -ENODEV;
 
-	if (host->use_dma && host->dma_ops->init)
+	if (host->use_dma && host->dma_ops->init && host->dma_ops->reset) {
 		host->dma_ops->init(host);
+		host->dma_ops->reset(host);
+	}
 
 	sg_len = dw_mci_pre_dma_transfer(host, data, 0);
 	if (sg_len < 0) {
@@ -3494,6 +3520,9 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk	= "use-cpu-mode-tuning",
 		.id	= DW_MMC_QUIRK_USE_CPU_MODE_TUNING,
+	}, {
+		.quirk	= "fix-fmp-size-mismatch",
+		.id	= DW_MMC_QUIRK_FMP_SIZE_MISMATCH,
 	},
 };
 

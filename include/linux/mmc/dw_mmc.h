@@ -306,6 +306,8 @@ struct dw_mci_dma_ops {
 #define DW_MMC_QUIRK_RETRY_ERROR		BIT(9)
 /* Use CPU mode for tuning */
 #define DW_MMC_QUIRK_USE_CPU_MODE_TUNING	BIT(10)
+/* W/A to fix AXI hang-up for mismatch of sector size*/
+#define DW_MMC_QUIRK_FMP_SIZE_MISMATCH		BIT(11)
 
 /* Slot level quirks */
 /* This slot has no write protect */
