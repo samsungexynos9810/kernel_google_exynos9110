@@ -1534,9 +1534,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->pktgo = DSIM_PKTGO_STANDBY;
 #endif
 
+#ifdef CONFIG_S5P_LCD_INIT
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
-	dsim->dsim_lcd_drv->probe(dsim);
 
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
 
@@ -1547,7 +1547,16 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
+
+	dsim->dsim_lcd_drv->probe(dsim);
 	dsim->dsim_lcd_drv->displayon(dsim);
+#else
+	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
+
+	dsim->enabled = true;
+	dsim->state = DSIM_STATE_HSCLKEN;
+	dsim->dsim_lcd_drv->probe(dsim);
+#endif
 	dsim_for_decon = dsim;
 	dev_info(&pdev->dev, "mipi-dsi driver(%s mode) has been probed.\n",
 		(dsim->dsim_config->e_interface == DSIM_COMMAND) ?

@@ -4313,6 +4313,14 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 	}
 
+#ifdef CONFIG_FB_I80_HW_TRIGGER
+#ifdef CONFIG_S5P_LCD_INIT
+	/* it is required for the scenarios that directly writes FB data into mapped address */
+	hw_trigger_mask_enable(sfb, false);
+#else
+	hw_trigger_mask_enable(sfb, true);
+#endif
+#endif
 	/* use platform specified window as the basis for the lcd timings */
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
 #ifdef CONFIG_FB_I80_COMMAND_MODE
@@ -4446,10 +4454,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 #endif
 
-#ifdef CONFIG_FB_I80_HW_TRIGGER
-	/* it is required for the scenarios that directly writes FB data into mapped address */
-	hw_trigger_mask_enable(sfb, false);
-#endif
 	sfb->output_on = true;
 
 	dev_dbg(sfb->dev, "about to register framebuffer\n");
