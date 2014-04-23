@@ -52,6 +52,7 @@ int disable_display_dsd_clocks(struct device *dev);
 int init_display_dsi_clocks(struct device *dev);
 int enable_display_driver_power(struct device *dev);
 int disable_display_driver_power(struct device *dev);
+int reset_display_driver_panel(struct device *dev);
 
 int parse_display_driver_dt(struct platform_device *np, struct display_driver *ddp);
 struct s3c_fb_driverdata *get_display_drvdata(void);
@@ -81,6 +82,7 @@ static int init_display_operations(void)
 	DSI_OPS.init_display_dsi_clocks = init_display_dsi_clocks;
 	DSI_OPS.enable_display_driver_power = enable_display_driver_power;
 	DSI_OPS.disable_display_driver_power = disable_display_driver_power;
+	DSI_OPS.reset_display_driver_panel = reset_display_driver_panel;
 
 	DECON_OPS.init_display_decon_clocks = init_display_decon_clocks;
 	DECON_OPS.enable_display_decon_clocks = enable_display_decon_clocks;

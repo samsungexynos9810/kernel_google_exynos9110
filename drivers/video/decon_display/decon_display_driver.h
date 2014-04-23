@@ -82,6 +82,7 @@ struct display_driver_ops {
 	int (*enable_display_driver_clocks)(struct device *dev);
 	int (*enable_display_driver_power)(struct device *dev);
 	int (*disable_display_driver_power)(struct device *dev);
+	int (*reset_display_driver_panel)(struct device *dev);
 };
 
 /* display_dt_ops - operations for parsing device tree */

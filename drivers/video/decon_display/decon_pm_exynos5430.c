@@ -338,39 +338,29 @@ int enable_display_driver_power(struct device *dev)
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
 	struct pinctrl *pinctrl;
 #endif
-	int id;
-	int ret = 0;
 	struct display_driver *dispdrv;
 	struct display_gpio *gpio;
+	int ret = 0;
 
+	/* Turn-On VDDR */
 	dispdrv = get_display_driver();
-
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
-	id = gpio_request(gpio->id[0], "lcd_reset");
-	if (id < 0) {
+	ret = gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_power");
+	if (ret < 0) {
 		pr_err("Failed to get gpio number for the lcd power\n");
-		return -EINVAL;
+		return ret;
 	}
-	gpio_direction_output(gpio->id[0], 0x01);
+	gpio_free(gpio->id[1]);
 
-	gpio_set_value(gpio->id[0], 1);
-	usleep_range(5000, 6000);
-
-	gpio_set_value(gpio->id[0], 0);
-	usleep_range(5000, 6000);
-	msleep(20);
-
-	gpio_set_value(gpio->id[0], 1);
-	usleep_range(5000, 6000);
+	/* Wait 10ms */
+	usleep_range(10000, 11000);
 
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
 	pinctrl = devm_pinctrl_get_select(dev, "turnon_tes");
 	if (IS_ERR(pinctrl))
 		pr_err("failed to get tes pinctrl - ON");
 #endif
-	gpio_free(gpio->id[0]);
-
-	return ret;
+	return 0;
 }
 
 int disable_display_driver_power(struct device *dev)
@@ -378,20 +368,29 @@ int disable_display_driver_power(struct device *dev)
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
 	struct pinctrl *pinctrl;
 #endif
-	int id;
-	int ret = 0;
 	struct display_driver *dispdrv;
 	struct display_gpio *gpio;
+	int ret;
 
 	dispdrv = get_display_driver();
-
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
-	id = gpio_request(gpio->id[0], "lcd_reset");
-	if (id < 0) {
-		pr_err("Failed to get gpio number for the lcd power\n");
+
+	ret = gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_reset");
+	if (ret < 0) {
+		pr_err("Failed to get gpio number for the lcd_reset\n");
 		return -EINVAL;
 	}
-	gpio_set_value(gpio->id[0], 0);
+	gpio_free(gpio->id[0]);
+
+	/* Turn-Off VDDR */
+	ret = gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_LOW, "lcd_power");
+	if (ret < 0) {
+		pr_err("Failed to get gpio number for the lcd_reset\n");
+		return -EINVAL;
+	}
+	gpio_free(gpio->id[1]);
+
+	/* Wait 5ms */
 	usleep_range(5000, 6000);
 
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
@@ -399,9 +398,29 @@ int disable_display_driver_power(struct device *dev)
 	if (IS_ERR(pinctrl))
 		pr_err("failed to get tes pinctrl - OFF");
 #endif
+
+	return 0;
+}
+
+int reset_display_driver_panel(struct device *dev)
+{
+	struct display_driver *dispdrv;
+	struct display_gpio *gpio;
+
+	dispdrv = get_display_driver();
+
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	usleep_range(5000, 6000);
+	gpio_set_value(gpio->id[0], 0);
+	usleep_range(5000, 6000);
+	gpio_set_value(gpio->id[0], 1);
 	gpio_free(gpio->id[0]);
 
-	return ret;
+	/* Wait 10ms */
+	usleep_range(10000, 11000);
+
+	return 0;
 }
 
 int enable_display_decon_runtimepm(struct device *dev)

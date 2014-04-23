@@ -1273,6 +1273,8 @@ int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim)
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
 
+	GET_DISPDRV_OPS(dispdrv).reset_display_driver_panel(dsim->dev);
+
 #ifdef CONFIG_DECON_MIC
 	decon_mipi_dsi_config_mic(dsim);
 #endif
@@ -1564,6 +1566,7 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	s5p_mipi_dsi_init_link(dsim);
 
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
+	GET_DISPDRV_OPS(dispdrv).reset_display_driver_panel(dsim->dev);
 
 	dsim->enabled = true;
 #ifdef CONFIG_DECON_MIC
