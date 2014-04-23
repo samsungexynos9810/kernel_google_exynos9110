@@ -146,7 +146,9 @@ static int exynos_genpd_power_on(struct generic_pm_domain *genpd)
 	if (pd->cb && pd->cb->on_post)
 		pd->cb->on_post(pd);
 
-#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
+	|| defined(CONFIG_EXYNOS5433_BTS)
+
 	/* enable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, true);
@@ -174,7 +176,8 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 		return -EINVAL;
 	}
 
-#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
+	|| defined(CONFIG_EXYNOS5433_BTS)
 	/* disable bts features if exists */
 	if (pd->bts)
 		bts_initialize(pd->name, false);
@@ -197,7 +200,8 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 
 #ifdef CONFIG_OF
 
-#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
+	|| (CONFIG_EXYNOS5433_BTS)
 /**
  *  of_device_bts_is_available - check if bts feature is enabled or not
  *
@@ -236,7 +240,8 @@ static void exynos_pm_powerdomain_init(struct exynos_pm_domain *pd)
 	pd->status = true;
 	pd->check_status = exynos_pd_status;
 
-#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
+	|| defined(CONFIG_EXYNOS5433_BTS)
 	do {
 		int ret;
 

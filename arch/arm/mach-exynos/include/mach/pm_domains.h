@@ -73,7 +73,8 @@ struct exynos_pm_domain {
 	struct exynos_pd_callback *cb;
 	unsigned int status;
 	unsigned int pd_option;
-#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
+	|| defined(CONFIG_EXYNOS5433_BTS)
 	unsigned int bts;
 #endif
 
