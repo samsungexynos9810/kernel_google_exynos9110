@@ -713,3 +713,42 @@ void s5p_mipi_dsi_enable_main_standby(struct mipi_dsim_device *dsim,
 	reg |= enable << 31;
 	writel(reg, dsim->reg_base + S5P_DSIM_MDRESOL);
 }
+
+int s5p_mipi_dsi_pkt_go_enable(struct mipi_dsim_device *dsim, bool enable)
+{
+	unsigned int reg;
+
+	reg = readl(dsim->reg_base + S5P_DSIM_MULTI_PKT);
+	reg &= ~(DSIM_PKT_GO_EN);
+	if (enable)
+		reg |= (DSIM_PKT_GO_EN);
+	writel(reg, dsim->reg_base + S5P_DSIM_MULTI_PKT);
+
+	return 0;
+}
+
+int s5p_mipi_dsi_pkt_go_ready(struct mipi_dsim_device *dsim)
+{
+	unsigned int reg;
+
+	reg = readl(dsim->reg_base + S5P_DSIM_MULTI_PKT);
+	reg |= (DSIM_PKT_GO_RDY);
+	writel(reg, dsim->reg_base + S5P_DSIM_MULTI_PKT);
+
+	return 0;
+}
+
+#ifdef CONFIG_SOC_EXYNOS5422
+int s5p_mipi_dsi_pkt_go_cnt(struct mipi_dsim_device *dsim, unsigned int count)
+{
+	unsigned int reg;
+
+	reg = readl(dsim->reg_base + S5P_DSIM_MULTI_PKT);
+	reg &= ~(DSIM_PKT_SEND_CNT_MASK);
+	if (count)
+		reg |= (count << DSIM_PKT_SEND_CNT_SHIFT);
+	writel(reg, dsim->reg_base + S5P_DSIM_MULTI_PKT);
+
+	return 0;
+}
+#endif

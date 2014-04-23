@@ -130,6 +130,8 @@
 #define S5P_DSIM_PRO_ON_MIC_ON_HFP	(0x74)
 
 #define S5P_DSIM_MULTI_PKT		(0x78)
+#define DSIM_PKT_GO_RDY			(1 << 16)	/* The send command packet(s) on this frame VFP */
+#define DSIM_PKT_GO_EN			(1 << 30)	/* The send command packet(s) per frame enable */
 
 #define S5P_DSIM_PLLCTRL	(0x94)	/* PLL control register */
 #define DSIM_PLL_EN_SHIFT		(23)

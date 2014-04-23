@@ -124,4 +124,10 @@ unsigned int s5p_mipi_dsi_is_ulps_lane_state(struct mipi_dsim_device *dsim,
 	unsigned int enable);
 void s5p_mipi_dsi_enable_main_standby(struct mipi_dsim_device *dsim,
 	unsigned int enable);
+int s5p_mipi_dsi_pkt_go_enable(struct mipi_dsim_device *dsim, bool enable);
+int s5p_mipi_dsi_pkt_go_ready(struct mipi_dsim_device *dsim);
+#ifdef CONFIG_SOC_EXYNOS5422
+int s5p_mipi_dsi_pkt_go_cnt(struct mipi_dsim_device *dsim, unsigned int count);
+#endif
+
 #endif /* _S5P_MIPI_DSI_LOWLEVEL_H */
