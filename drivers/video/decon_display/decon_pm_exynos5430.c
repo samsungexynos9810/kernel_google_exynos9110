@@ -20,6 +20,8 @@
 
 #include <linux/platform_device.h>
 #include <mach/map.h>
+#include <mach/regs-clock-exynos5430.h>
+#include <mach/regs-pmu.h>
 
 #include "regs-decon.h"
 #include "decon_display_driver.h"
@@ -27,15 +29,13 @@
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
 
-#include <../drivers/clk/samsung/clk.h>
-
 #define TEMPORARY_RECOVER_CMU(addr, mask, bits, value) do {\
-	regs = ioremap(addr, 0x4); \
+	regs = addr; \
 	data = readl(regs) & ~((mask) << (bits)); \
 	data |= ((value & mask) << (bits)); \
 	writel(data, regs); \
-	iounmap(regs); \
 	} while (0)
+
 
 /* temporary helper function to clock setup */
 struct clk_cmu {
@@ -111,10 +111,9 @@ static int exynos_display_set_parent(struct device *dev, const char *child, cons
 	}
 
 	r = clk_set_parent(c, p);
-	if (r < 0) {
-		pr_info("failed %s: %s, %s, %d\n", __func__, child, parent, r);
-		BUG();
-	} else {
+	if (r < 0)
+		pr_info("failed %s: %s, %s, %d, %08x\n", __func__, child, parent, r, __raw_readl(EXYNOS5430_SRC_ENABLE_DISP3));
+	else {
 		mux = container_of(c->hw, struct clk_mux, hw);
 		val = readl(mux->reg) >> mux->shift;
 		val &= mux->mask;
@@ -207,7 +206,9 @@ int init_display_decon_clocks(struct device *dev)
 	struct display_driver *dispdrv = get_display_driver();
 #endif
 
-	if (lcd->xres * lcd->yres == 1080 * 1920)
+	if (lcd->xres * lcd->yres == 720 * 1280)
+		exynos_display_set_rate(dev, "disp_pll", 63 * MHZ);
+	else if (lcd->xres * lcd->yres == 1080 * 1920)
 		exynos_display_set_rate(dev, "disp_pll", 142 * MHZ);
 	else if (lcd->xres * lcd->yres == 1440 * 2560)
 		exynos_display_set_rate(dev, "disp_pll", 250 * MHZ);
@@ -228,7 +229,29 @@ int init_display_decon_clocks(struct device *dev)
 	exynos_display_set_parent(dev, "mout_sclk_dsd_a", "mout_mfc_pll_div2");
 	exynos_display_set_parent(dev, "mout_sclk_dsd_user", "sclk_dsd_disp");
 
-	if (lcd->xres * lcd->yres == 1080 * 1920) {
+	if (lcd->xres * lcd->yres == 720 * 1280) {
+		exynos_display_set_divide(dev, "dout_sclk_decon_eclk", 11);
+		exynos_display_set_parent(dev, "mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_b");
+		exynos_display_set_parent(dev, "mout_sclk_decon_eclk_b", "mout_sclk_decon_eclk_a");
+		exynos_display_set_parent(dev, "mout_sclk_decon_eclk_a", "mout_bus_pll_div2");
+		exynos_display_set_divide(dev, "dout_sclk_decon_eclk_disp", 0);
+		exynos_display_set_parent(dev, "mout_sclk_decon_eclk", "mout_sclk_decon_eclk_user");
+		exynos_display_set_parent(dev, "mout_sclk_decon_eclk_user", "sclk_decon_eclk_disp");
+		exynos_display_set_divide(dev, "dout_sclk_decon_vclk", 0);
+		exynos_display_set_parent(dev, "mout_sclk_decon_vclk_c", "mout_sclk_decon_vclk_b");
+		exynos_display_set_parent(dev, "mout_sclk_decon_vclk_b", "mout_sclk_decon_vclk_a");
+		exynos_display_set_parent(dev, "mout_sclk_decon_vclk_a", "oscclk");
+		exynos_display_set_divide(dev, "dout_sclk_decon_vclk_disp", 0);
+		exynos_display_set_parent(dev, "mout_sclk_decon_vclk", "mout_disp_pll");
+		exynos_display_set_parent(dev, "mout_disp_pll", "disp_pll");
+		exynos_display_set_divide(dev, "dout_sclk_dsim0", 11);
+		exynos_display_set_parent(dev, "mout_sclk_dsim0_c", "mout_sclk_dsim0_b");
+		exynos_display_set_parent(dev, "mout_sclk_dsim0_b", "mout_sclk_dsim0_a");
+		exynos_display_set_parent(dev, "mout_sclk_dsim0_a", "mout_bus_pll_div2");
+		exynos_display_set_divide(dev, "dout_sclk_dsim0_disp", 0);
+		exynos_display_set_parent(dev, "mout_sclk_dsim0", "mout_sclk_dsim0_user");
+		exynos_display_set_parent(dev, "mout_sclk_dsim0_user", "sclk_dsim0_disp");
+	} else if (lcd->xres * lcd->yres == 1080 * 1920) {
 		exynos_display_set_divide(dev, "dout_sclk_decon_eclk", 4);
 		exynos_display_set_parent(dev, "mout_sclk_decon_eclk_c", "mout_sclk_decon_eclk_b");
 		exynos_display_set_parent(dev, "mout_sclk_decon_eclk_b", "mout_sclk_decon_eclk_a");
@@ -326,7 +349,6 @@ int disable_display_decon_clocks(struct device *dev)
 	dispdrv = get_display_driver();
 
 	dispdrv->pm_status.ops->clk_off(dispdrv);
-	exynos_display_set_parent(dev, "mout_aclk_disp_333_user", "oscclk");
 #endif
 
 	return 0;
@@ -467,8 +489,7 @@ int disable_display_dsd_clocks(struct device *dev, bool enable)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 bool check_camera_is_running(void)
 {
-	/* CAM1 STATUS */
-	if (readl(S5P_VA_PMU + 0x40A4) & 0x1)
+	if (readl(EXYNOS5430_CAM0_STATUS) & 0x1)
 		return true;
 	else
 		return false;
@@ -476,8 +497,7 @@ bool check_camera_is_running(void)
 
 bool get_display_power_status(void)
 {
-	/* DISP_STATUS */
-	if (readl(S5P_VA_PMU + 0x4084) & 0x1)
+	if (readl(EXYNOS5430_DISP_STATUS) & 0x1)
 		return true;
 	else
 		return false;
@@ -502,7 +522,9 @@ int get_display_line_count(struct display_driver *dispdrv)
 
 	return (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT);
 }
+#endif
 
+#ifdef CONFIG_FB_HIBERNATION_DISPLAY
 void set_default_hibernation_mode(struct display_driver *dispdrv)
 {
 	bool clock_gating = false;
@@ -531,9 +553,9 @@ int decon_vclk_eclk_mux_control(bool enable)
 	u32 data = 0x00;
 
 	if (enable)
-		TEMPORARY_RECOVER_CMU(0x13B9030C, 0x11, 0, 0x11);
+		TEMPORARY_RECOVER_CMU(EXYNOS5430_SRC_ENABLE_DISP3, 0x11, 0, 0x11);
 	else
-		TEMPORARY_RECOVER_CMU(0x13B9030C, 0x11, 0, 0x0);
+		TEMPORARY_RECOVER_CMU(EXYNOS5430_SRC_ENABLE_DISP3, 0x11, 0, 0x0);
 	return ret;
 }
 
@@ -557,6 +579,11 @@ void decon_clock_on(struct display_driver *dispdrv)
 void mic_clock_on(struct display_driver *dispdrv)
 {
 #ifdef CONFIG_DECON_MIC
+	struct decon_lcd *lcd = decon_get_lcd_info();
+
+	if (!lcd->mic)
+		return;
+
 	if (!dispdrv->mic_driver.clk) {
 		dispdrv->mic_driver.clk = clk_get(dispdrv->display_driver, "gate_mic");
 		if (IS_ERR(dispdrv->mic_driver.clk)) {
@@ -601,6 +628,11 @@ void dsi_clock_off(struct display_driver *dispdrv)
 void mic_clock_off(struct display_driver *dispdrv)
 {
 #ifdef CONFIG_DECON_MIC
+	struct decon_lcd *lcd = decon_get_lcd_info();
+
+	if (!lcd->mic)
+		return;
+
 	clk_disable(dispdrv->mic_driver.clk);
 	clk_unprepare(dispdrv->mic_driver.clk);
 #endif
