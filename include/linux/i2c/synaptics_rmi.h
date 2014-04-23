@@ -29,9 +29,11 @@ struct synaptics_rmi_f1a_button_map {
 	unsigned char *map;
 };
 
+#ifdef SYNAPTICS_RMI_INFORM_CHARGER
 struct synaptics_rmi_callbacks {
-	void (*inform_charger)(struct synaptics_rmi_callbacks *, bool);
+	void (*inform_charger)(struct synaptics_rmi_callbacks *, int);
 };
+#endif
 
 /**
  * struct synaptics_rmi4_platform_data - rmi4 platform data
@@ -42,32 +44,38 @@ struct synaptics_rmi_callbacks {
  * @irq_type: irq type
  * @gpio_config: pointer to gpio configuration function
  * @f1a_button_map: pointer to 0d button map
+ * @charger_noti_type: define method to notify the connection of charger.
  */
 struct synaptics_rmi4_platform_data {
 	bool x_flip;
 	bool y_flip;
 	unsigned int sensor_max_x;
 	unsigned int sensor_max_y;
+	unsigned int num_of_rx;
+	unsigned int num_of_tx;
 	unsigned char max_touch_width;
 	unsigned char panel_revision;	/* to identify panel info */
 	bool regulator_en;
 	unsigned gpio;
 	int irq_type;
 	int (*gpio_config)(unsigned interrupt_gpio, bool configure);
-	int (*power)(bool on);
+	int (*power)(void *data, bool on);
 #ifdef NO_0D_WHILE_2D
 	int (*led_power_on) (bool);
 #endif
 	unsigned char (*get_ddi_type)(void);	/* to indentify ddi type */
 	void (*enable_sync)(bool on);
 	const char *firmware_name;
-	const char *fac_firmware_name;
-    int num_of_rx;
-    int num_of_tx;
-#ifdef CONFIG_SEC_TSP_FACTORY
-	int bootmode;
+	const char *project_name;
+	const char *model_name;
+#ifdef SYNAPTICS_RMI_INFORM_CHARGER
+	void (*register_cb)(struct synaptics_rmi_callbacks *);
 #endif
+	bool charger_noti_type;
 	struct synaptics_rmi_f1a_button_map *f1a_button_map;
+
+	const char *regulator_dvdd;
+	const char *regulator_avdd;
 };
 
 extern unsigned int lcdtype;
