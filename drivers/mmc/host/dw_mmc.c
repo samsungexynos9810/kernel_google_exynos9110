@@ -67,6 +67,33 @@
 	 host->cur_slot->mmc->card->ext_csd.cmdq_mode_en)
 
 #ifdef CONFIG_MMC_DW_IDMAC
+#ifdef CONFIG_MMC_DW_64_IDMAC
+struct idmac_desc {		/* 64bit */
+	u32		des0;	/* Control Descriptor */
+#define IDMAC_DES0_DIC	BIT(1)
+#define IDMAC_DES0_LD	BIT(2)
+#define IDMAC_DES0_FD	BIT(3)
+#define IDMAC_DES0_CH	BIT(4)
+#define IDMAC_DES0_ER	BIT(5)
+#define IDMAC_DES0_CES	BIT(30)
+#define IDMAC_DES0_OWN	BIT(31)
+	u32		des1;
+#define IDMAC_SET_BUFFER1_SIZE(d, s) \
+	((d)->des2 = ((d)->des2 & 0x03ffe000) | ((s) & 0x1fff))
+	u32		des2;
+	u32		des3;
+	u32		des4;
+	u32		des5;
+	u32		des6;
+	u32		des7;
+	u32		des8;
+	u32		des9;
+	u32		des10;
+	u32		des11;
+#define IDMAC_NEXT_DESC_ADDR(d) \
+	((d)->des6)
+};
+#else
 struct idmac_desc {
 	u32		des0;	/* Control Descriptor */
 #define IDMAC_DES0_DIC	BIT(1)
@@ -76,19 +103,19 @@ struct idmac_desc {
 #define IDMAC_DES0_ER	BIT(5)
 #define IDMAC_DES0_CES	BIT(30)
 #define IDMAC_DES0_OWN	BIT(31)
-
-	u32		des1;	/* Buffer sizes */
+	u32		des1;	/* 32bit Buffer sizes */
 #define IDMAC_SET_BUFFER1_SIZE(d, s) \
 	((d)->des1 = ((d)->des1 & 0x03ffe000) | ((s) & 0x1fff))
-
-	u32		des2;	/* buffer 1 physical address */
-
-	u32		des3;	/* buffer 2 physical address */
-	u32		des4;	/* Sector Key */
+	u32		des2;	/* 32bit buffer 1 physical address */
+	u32		des3;	/* 32bit buffer 2 physical address */
+	u32		des4;	/* sector key */
 	u32		des5;	/* Application Key 0 */
 	u32		des6;	/* Application Key 1 */
 	u32		des7;	/* Application Key 2 */
+#define IDMAC_NEXT_DESC_ADDR(d) \
+	((d)->des3)
 };
+#endif
 #endif /* CONFIG_MMC_DW_IDMAC */
 
 #define DATA_RETRY	1
@@ -720,12 +747,30 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 
 			/* Buffer length */
 			sz_per_desc = min(left, rw_size);
+#ifdef CONFIG_MMC_DW_64_IDMAC /*64bit*/
+			desc->des1 = 0;
+			desc->des2 = length;
+			IDMAC_SET_BUFFER1_SIZE(desc, sz_per_desc);
+			/* Physical address to DMA to/from */
+			desc->des4 = mem_addr;
+			desc->des5 = 0;
+			desc->des7 = 0;
+#else /*32bit*/
 			desc->des1 = length;
 			IDMAC_SET_BUFFER1_SIZE(desc, sz_per_desc);
-
 			/* Physical address to DMA to/from */
 			desc->des2 = mem_addr;
+#endif
 #ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
+#ifdef CONFIG_MMC_DW_64_IDMAC /*64bit*/
+			if (sector_key == DW_MMC_ENCRYPTION_SECTOR) {
+				desc->des8 = sector;
+				desc->des9 = 0;
+				desc->des10 = 0;
+				desc->des11 = 0;
+			} else
+				desc->des8 = DW_MMC_BYPASS_SECTOR;
+#else /*32bit*/
 			if (sector_key == DW_MMC_ENCRYPTION_SECTOR) {
 				desc->des4 = sector;
 				desc->des5 = 0;
@@ -733,9 +778,14 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 				desc->des7 = 0;
 			} else
 				desc->des4 = DW_MMC_BYPASS_SECTOR;
+#endif
 			sector += rw_size / DW_MMC_SECTOR_SIZE;
 #else
+#ifdef CONFIG_MMC_DW_64_IDMAC /*64bit*/
+			desc->des8 = DW_MMC_BYPASS_SECTOR;
+#else /*32bit*/
 			desc->des4 = DW_MMC_BYPASS_SECTOR;
+#endif
 #endif
 			desc++;
 			desc_cnt++;
@@ -814,10 +864,10 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 	/* Forward link the descriptor list */
 	for (i = 0, p = host->sg_cpu; i < host->ring_size *
 		MMC_DW_IDMAC_MULTIPLIER - 1; i++, p++)
-		p->des3 = host->sg_dma + (sizeof(struct idmac_desc) * (i + 1));
+		IDMAC_NEXT_DESC_ADDR(p) = host->sg_dma + (sizeof(struct idmac_desc) * (i + 1));
 
 	/* Set the last descriptor as the end-of-ring descriptor */
-	p->des3 = host->sg_dma;
+	IDMAC_NEXT_DESC_ADDR(p) = host->sg_dma;
 	p->des0 = IDMAC_DES0_ER;
 
 	mci_writel(host, BMOD, SDMMC_IDMAC_SWRESET);
@@ -826,9 +876,12 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 	mci_writel(host, IDINTEN, SDMMC_IDMAC_INT_NI | SDMMC_IDMAC_INT_RI |
 		   SDMMC_IDMAC_INT_TI);
 
+#ifdef CONFIG_MMC_DW_64_IDMAC
 	/* Set the descriptor base address */
+	mci_writel(host, DBADDRL, host->sg_dma);
+#else
 	mci_writel(host, DBADDR, host->sg_dma);
-
+#endif
 	if (host->quirks & DW_MMC_QUIRK_NOT_ALLOW_SINGLE_DMA)
 		host->align_size = 32;
 	else
