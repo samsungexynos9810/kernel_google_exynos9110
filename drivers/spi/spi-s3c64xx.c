@@ -1500,9 +1500,6 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		pm_runtime_set_autosuspend_delay(&pdev->dev,
 					SPI_AUTOSUSPEND_TIMEOUT);
 
-	pm_runtime_enable(&pdev->dev);
-	pm_runtime_get_sync(&pdev->dev);
-
 	if (sci->cfg_gpio && sci->cfg_gpio()) {
 		dev_err(&pdev->dev, "Unable to config gpio\n");
 		ret = -EBUSY;
@@ -1537,6 +1534,9 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		ret = -EBUSY;
 		goto err2;
 	}
+
+	pm_runtime_enable(&pdev->dev);
+	pm_runtime_get_sync(&pdev->dev);
 
 	/* Setup Deufult Mode */
 	s3c64xx_spi_hwinit(sdd, sdd->port_id);
