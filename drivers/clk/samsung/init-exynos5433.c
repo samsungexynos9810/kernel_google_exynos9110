@@ -169,6 +169,31 @@ void jpeg_init_clock(void)
 	pr_debug("jpeg: sclk_jpeg %d\n", exynos_get_rate("dout_sclk_jpeg"));
 }
 
+static void spi_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_spi0", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_spi1", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_spi2", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_spi3", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_spi4", "mout_bus_pll_user");
+
+	/* dout_sclk_spi_a should be 100Mhz */
+	exynos_set_rate("dout_sclk_spi0_a", 100000000);
+	exynos_set_rate("dout_sclk_spi1_a", 100000000);
+	exynos_set_rate("dout_sclk_spi2_a", 100000000);
+	exynos_set_rate("dout_sclk_spi3_a", 100000000);
+	exynos_set_rate("dout_sclk_spi4_a", 100000000);
+}
+
+static void uart_init_clock(void)
+{
+	exynos_set_parent("mout_sclk_uart0", "mout_bus_pll_user");
+	exynos_set_parent("mout_sclk_uart2", "mout_bus_pll_user");
+
+	/* Set dout_sclk_uart to 200Mhz */
+	exynos_set_rate("dout_sclk_uart0", 200000000);
+	exynos_set_rate("dout_sclk_uart1", 200000000);
+}
 
 void __init exynos5433_clock_init(void)
 {
@@ -178,4 +203,6 @@ void __init exynos5433_clock_init(void)
 	pcie_init_clock();
 	g2d_init_clock();
 	jpeg_init_clock();
+	uart_init_clock();
+	spi_init_clock();
 }
