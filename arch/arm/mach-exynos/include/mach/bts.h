@@ -11,13 +11,14 @@
 #ifndef __EXYNOS_BTS_H_
 #define __EXYNOS_BTS_H_
 
-#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
+	|| defined(CONFIG_EXYNOS5433_BTS)
 void bts_initialize(const char *pd_name, bool on);
 #else
 #define bts_initialize(a, b) do {} while (0)
 #endif
 
-#if defined(CONFIG_EXYNOS5430_BTS)
+#if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5433_BTS)
 void bts_otf_initialize(unsigned int id, bool on);
 #else
 #define bts_otf_initialize(a, b) do {} while (0)
