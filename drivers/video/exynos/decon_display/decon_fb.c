@@ -3677,6 +3677,13 @@ int create_decon_display_controller(struct platform_device *pdev)
 	decon_reg_set_regs_data(default_win, &win_regs);
 	decon_reg_shadow_protect_win(default_win, 0);
 
+	/*
+	 * LCD on function is moved from dsim probe.
+	 * Garbage data could be displayed on LCD because of gap between dsim and
+	 * decon probe time.
+	 */
+	dispdrv->dsi_driver.dsim->dsim_lcd_drv->displayon(dispdrv->dsi_driver.dsim);
+
 	s3c_fb_to_psr_info(sfb, &psr);
 	decon_reg_start(&psr);
 

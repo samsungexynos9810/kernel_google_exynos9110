@@ -885,7 +885,7 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	dsim->enabled = true;
 
-	dsim->dsim_lcd_drv->displayon(dsim);
+	/* displayon function is moved to decon probe */
 #else
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
 
