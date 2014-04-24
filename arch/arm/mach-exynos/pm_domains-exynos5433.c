@@ -390,6 +390,53 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 	return 0;
 }
 
+struct exynos5433_mscl_clk {
+	struct clk *aclk_mscl_400;
+	struct clk *fin_pll;
+	struct clk *mout_aclk_mscl_400_user;
+};
+
+static int exynos_pd_mscl_init(struct exynos_pm_domain *pd)
+{
+	struct exynos5433_mscl_clk *msclclk;
+
+	msclclk = kmalloc(sizeof(*msclclk), GFP_KERNEL);
+	if (!msclclk) {
+		pr_err("%s: failed to allocate private data\n", __func__);
+		return -ENOMEM;
+	}
+
+	msclclk->aclk_mscl_400 = clk_get(NULL, "gate_aclk_mscl_400");
+	if (IS_ERR(msclclk->aclk_mscl_400)) {
+		pr_err("%s: failed to get aclk_mscl_400\n", __func__);
+		goto err_aclk;
+	}
+
+	msclclk->mout_aclk_mscl_400_user =
+		clk_get(NULL, "mux_aclk_mscl_400_user");
+	if (IS_ERR(msclclk->mout_aclk_mscl_400_user)) {
+		pr_err("%s: failed to get mout_aclk_mscl_400_user\n", __func__);
+		goto err_mout;
+	}
+
+	msclclk->fin_pll = clk_get(NULL, "fin_pll");
+	if (IS_ERR(msclclk->fin_pll)) {
+		pr_err("%s: failed to get fin_pll\n", __func__);
+		goto err_fin;
+	}
+
+	pd->priv = msclclk;
+
+	return 0;
+err_fin:
+	clk_put(msclclk->mout_aclk_mscl_400_user);
+err_mout:
+	clk_put(msclclk->aclk_mscl_400);
+err_aclk:
+	kfree(msclclk);
+	return -ENOENT;
+}
+
 /* exynos_pd_mscl_power_on_pre - setup before power on.
  * @pd: power domain.
  *
@@ -397,13 +444,15 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_mscl_power_on_pre(struct exynos_pm_domain *pd)
 {
+	struct exynos5433_mscl_clk *msclclk = pd->priv;
+
 	DEBUG_PRINT_INFO("%s is preparing power-on sequence.\n", pd->name);
 
 	exynos5_pd_enable_clk(iptop_mscl, ARRAY_SIZE(iptop_mscl));
 	exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
 	exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
 
-	return 0;
+	return clk_prepare_enable(msclclk->aclk_mscl_400);
 }
 
 static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
@@ -425,13 +474,16 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 
 static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
 {
+	struct exynos5433_mscl_clk *msclclk = pd->priv;
+
 	/*exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
 	/*exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
 
 	s3c_pm_do_save(exynos_pd_mscl_clk_save,
 			ARRAY_SIZE(exynos_pd_mscl_clk_save));
 
-	return 0;
+	return clk_set_parent(msclclk->mout_aclk_mscl_400_user,
+				msclclk->fin_pll);
 }
 
 /* exynos_pd_mscl_power_off_post - clean up after power off.
@@ -441,9 +493,12 @@ static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 {
+	struct exynos5433_mscl_clk *msclclk = pd->priv;
 	unsigned int reg;
 
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
+
+	clk_disable_unprepare(msclclk->aclk_mscl_400);
 
 	exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
 	exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
@@ -904,6 +959,7 @@ static struct exynos_pd_callback pd_callback_list[] = {
 		.off_post = exynos_pd_disp_power_off_post,
 	}, {
 		.name = "pd-mscl",
+		.init = exynos_pd_mscl_init,
 		.on_pre = exynos_pd_mscl_power_on_pre,
 		.on_post = exynos_pd_mscl_power_on_post,
 		.off_pre = exynos_pd_mscl_power_off_pre,
