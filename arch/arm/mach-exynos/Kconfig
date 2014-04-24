@@ -169,6 +169,37 @@ config SOC_EXYNOS5440
 	help
 	  Enable EXYNOS5440 SoC support
 
+menuconfig EXYNOS_CORESIGHT
+	bool "Enable Coresight of exynos"
+	depends on ARCH_EXYNOS
+	default n
+
+config EXYNOS_CORESIGHT_PC_INFO
+	bool "Show Porgram Counter information"
+	depends on EXYNOS_CORESIGHT
+	default y
+	help
+	  Show Program Counter information When kernel panic.
+
+config PC_ITERATION
+	int "Number of Program Coutner information"
+	depends on EXYNOS_CORESIGHT_PC_INFO
+	range 1 10
+	default 5
+	help
+	  Print out Program Counter as iteration value.
+
+config EXYNOS_CORESIGHT_MAINTAIN_DBG_REG
+	bool "Save/Restore Debug Registers"
+	depends on EXYNOS_CORESIGHT
+	default n
+	help
+	  When core power is down, debug registers are not mainained data
+	  and OS-lock is set. To maintain data, debug registers's data must
+	  save in /restore from memory. If OS-lock is set, debugging to use
+	  trace32 is impossible. So OS-lock must clear when core power is up.
+	  This config must enable only using iTSP program.
+
 menuconfig EXYNOS_SNAPSHOT
 	bool "Enable SnapShot of exynos for debugging"
 	default y
@@ -252,12 +283,6 @@ config EXYNOS_CONTENT_PATH_PROTECTION
 	default y
 	help
 	  Enable content path protection of EXYNOS.
-
-config EXYNOS_CORESIGHT
-	bool "Exynos Coresight Debug(Show pc value)"
-	default n
-	help
-	  Enable Coresight debug.
 
 config EXYNOS_ATAGS
 	bool "ATAGS based boot for EXYNOS (deprecated)"
@@ -767,13 +792,6 @@ config MACH_XYREF5430
 	help
 	  Machine support for Samsung EXYNOS5430 machine with device tree enabled.
 	  Select this if a fdt blob is available for the EXYNOS5430 SoC based board.
-
-config EXYNOS54XX_DEBUG
-	bool "ARM Debug architecture v7.1 support"
-	depends on SOC_EXYNOS5430
-	default y
-	help
-	  Enable preserve debug logic state.
 
 if ARCH_EXYNOS4
 
