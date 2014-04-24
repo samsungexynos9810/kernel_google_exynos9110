@@ -53,6 +53,7 @@ enum fimg2d_ip_version {
 	IP_VER_G2D_5V,
 	IP_VER_G2D_5H,
 	IP_VER_G2D_5AR2,
+	IP_VER_G2D_5HP,
 };
 
 enum g2d_shared_val {

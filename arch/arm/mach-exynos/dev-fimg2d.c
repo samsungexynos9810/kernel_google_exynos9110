@@ -78,6 +78,7 @@ int g2d_cci_snoop_init(int ip_ver)
 		break;
 
 	case IP_VER_G2D_5H:
+	case IP_VER_G2D_5HP:
 		sysreg_g2d_base = ioremap(EXYNOS5430_PA_SYSREG_G2D, 0x2000);
 		if (!sysreg_g2d_base) {
 			pr_err("syrreg_g2d_base ioremap is failed\n");
@@ -108,6 +109,7 @@ void g2d_cci_snoop_remove(int ip_ver)
 	switch (ip_ver) {
 	case IP_VER_G2D_5R:
 	case IP_VER_G2D_5H:
+	case IP_VER_G2D_5HP:
 	case IP_VER_G2D_5AR:
 	case IP_VER_G2D_5AR2:
 		iounmap(sysreg_g2d_base);
@@ -150,6 +152,7 @@ int g2d_cci_snoop_control(int ip_ver
 		break;
 
 	case IP_VER_G2D_5H:
+	case IP_VER_G2D_5HP:
 
 		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_USER_CON;
 
@@ -192,6 +195,7 @@ int g2d_dynamic_clock_gating(int ip_ver)
 
 	switch (ip_ver) {
 	case IP_VER_G2D_5H:
+	case IP_VER_G2D_5HP:
 		control_reg = sysreg_g2d_base + EXYNOS5430_G2D_XIU_TOP_DCG_EN;
 		/* Enable G2DX */
 		writel(0x1, control_reg);
