@@ -1879,12 +1879,14 @@ static void exynos5_devfreq_thermal_monitor(struct work_struct *work)
 	case 4:
 		timingaref_value = RATE_HALF;
 		thermal_work->polling_period = 300;
+		pr_info("MIF: max_thermal_level is %d\n", max_thermal_level);
 		break;
 	case 6:
 		throttling = true;
 	case 5:
 		timingaref_value = RATE_QUARTER;
 		thermal_work->polling_period = 100;
+		pr_info("MIF: max_thermal_level is %d, so it need throttling\n", max_thermal_level);
 		break;
 	default:
 		pr_err("DEVFREQ(MIF) : can't support memory thermal level\n");
