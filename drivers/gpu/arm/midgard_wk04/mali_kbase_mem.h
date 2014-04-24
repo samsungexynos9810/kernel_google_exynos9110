@@ -202,6 +202,8 @@ typedef struct kbase_va_region {
 
 /* VA managed by us */
 #define KBASE_REG_CUSTOM_VA         (1ul << 8)
+#define KBASE_REG_CUSTOM_PMEM       (1ul << 18)
+#define KBASE_REG_CUSTOM_TMEM       (1ul << 19)
 
 /* inner shareable coherency */
 #define KBASE_REG_SHARE_IN          (1ul << 9)
@@ -593,6 +595,9 @@ int kbase_alloc_phy_pages_helper(struct kbase_mem_phy_alloc * alloc, size_t nr_p
 * @param[in] nr_pages_to_free number of physical pages to free
 */
 int kbase_free_phy_pages_helper(struct kbase_mem_phy_alloc * alloc, size_t nr_pages_to_free);
+
+int kbase_alloc_phy_pages_helper_gpu(struct kbase_va_region * reg, size_t nr_pages_to_free);
+int kbase_free_phy_pages_helper_gpu(struct kbase_va_region * reg, size_t nr_pages_to_free);
 
 #ifdef CONFIG_MALI_NO_MALI
 static inline void kbase_wait_write_flush(kbase_context *kctx)

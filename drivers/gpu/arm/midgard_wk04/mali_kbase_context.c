@@ -37,6 +37,7 @@ kbase_context *kbase_create_context(kbase_device *kbdev)
 {
 	kbase_context *kctx;
 	mali_error mali_err;
+	char current_name[sizeof(current->comm)];
 
 	KBASE_DEBUG_ASSERT(kbdev != NULL);
 
@@ -60,12 +61,16 @@ kbase_context *kbase_create_context(kbase_device *kbdev)
 	spin_lock_init(&kctx->mm_update_lock);
 	kctx->process_mm = NULL;
 	atomic_set(&kctx->nonmapped_pages, 0);
+	get_task_comm(current_name, current);
+	strncpy((char *)(&kctx->name), current_name, 32);
 
 	if (MALI_ERROR_NONE != kbase_mem_allocator_init(&kctx->osalloc, MEMPOOL_PAGES))
 		goto free_kctx;
 
 	kctx->pgd_allocator = &kctx->osalloc;
 	atomic_set(&kctx->used_pages, 0);
+	atomic_set(&kctx->used_pmem_pages, 0);
+	atomic_set(&kctx->used_tmem_pages, 0);
 
 	if (kbase_jd_init(kctx))
 		goto free_allocator;

@@ -813,6 +813,7 @@ int kbase_mem_commit(kbase_context * kctx, mali_addr64 gpu_addr, u64 new_pages, 
 		}
 		err = kbase_mmu_insert_pages(kctx, reg->start_pfn + old_pages, phy_pages + old_pages, delta, reg->flags);
 		if (MALI_ERROR_NONE != err) {
+			kbase_free_phy_pages_helper_gpu(reg, delta);
 			kbase_free_phy_pages_helper(reg->alloc, delta);
 			*failure_reason = BASE_BACKING_THRESHOLD_ERROR_OOM;
 			goto out_unlock;
@@ -852,7 +853,7 @@ int kbase_mem_commit(kbase_context * kctx, mali_addr64 gpu_addr, u64 new_pages, 
 			/* Wait for GPU to flush write buffer before freeing physical pages */
 			kbase_wait_write_flush(kctx);
 		}
-
+		kbase_free_phy_pages_helper_gpu(reg, delta);
 		kbase_free_phy_pages_helper(reg->alloc, delta);
 	}
 

@@ -34,6 +34,7 @@ static int kbasep_gpu_memory_seq_show(struct seq_file *sfile, void *data)
 	ssize_t ret = 0;
 	struct list_head *entry;
 	const struct list_head *kbdev_list;
+	size_t free_size = 0;
 	kbdev_list = kbase_dev_list_get();
 	list_for_each(entry, kbdev_list) {
 		struct kbase_device *kbdev = NULL;
@@ -41,17 +42,46 @@ static int kbasep_gpu_memory_seq_show(struct seq_file *sfile, void *data)
 
 		kbdev = list_entry(entry, struct kbase_device, osdev.entry);
 		/* output the total memory usage and cap for this device */
-		ret = seq_printf(sfile, "%-16s  %10u\n", \
+		mutex_lock(&kbdev->kctx_list_lock);
+		list_for_each_entry(element, &kbdev->kctx_list, link) {
+			free_size += atomic_read(&(element->kctx->osalloc.free_list_size));
+		}
+		mutex_unlock(&kbdev->kctx_list_lock);
+		ret = seq_printf(sfile, "===========================================================\n");
+		ret = seq_printf(sfile, " %16s  %18s  %20s\n", \
+				"dev name", \
+				"total used pages", \
+				"total shrink pages");
+		ret = seq_printf(sfile, "-----------------------------------------------------------\n");
+		ret = seq_printf(sfile, " %16s  %18u  %20u\n", \
 				kbdev->osdev.devname, \
-				atomic_read(&(kbdev->memdev.used_pages)));
+				atomic_read(&(kbdev->memdev.used_pages)), \
+				free_size);
+		ret = seq_printf(sfile, "===========================================================\n\n");
+		ret = seq_printf(sfile, "%28s     %10s  %12s  %10s  %10s  %10s  %10s\n", \
+				"context name", \
+				"context addr", \
+				"used pages", \
+				"shrink pages", \
+				"pmem pages", \
+				"tmem pages", \
+				"others");
+		ret = seq_printf(sfile, "====================================================");
+		ret = seq_printf(sfile, "=========================================================\n");
 		mutex_lock(&kbdev->kctx_list_lock);
 		list_for_each_entry(element, &kbdev->kctx_list, link) {
 			/* output the memory usage and cap for each kctx
 			* opened on this device */
-			ret = seq_printf(sfile, "  %s-0x%p %10u\n", \
-				"kctx",
+
+			ret = seq_printf(sfile, "  (%24s), %s-0x%p    %12u  %10u  %10u  %10u  %10u\n", \
+				element->kctx->name, \
+				"kctx", \
 				element->kctx, \
-				atomic_read(&(element->kctx->used_pages)));
+				atomic_read(&(element->kctx->used_pages)),
+				atomic_read(&(element->kctx->osalloc.free_list_size)),
+				atomic_read(&(element->kctx->used_pmem_pages)),
+				atomic_read(&(element->kctx->used_tmem_pages)),
+				atomic_read(&(element->kctx->used_pages)) - atomic_read(&(element->kctx->used_pmem_pages)) - atomic_read(&(element->kctx->used_tmem_pages)));
 		}
 		mutex_unlock(&kbdev->kctx_list_lock);
 	}

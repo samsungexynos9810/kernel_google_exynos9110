@@ -509,6 +509,8 @@ mali_error kbase_mem_init(struct kbase_device *kbdev)
 
 	/* Initialize memory usage */
 	atomic_set(&memdev->used_pages, 0);
+	atomic_set(&memdev->used_pmem_pages, 0);
+	atomic_set(&memdev->used_tmem_pages, 0);
 
 	/* nothing to do, zero-inited when kbase_device was created */
 	return MALI_ERROR_NONE;
@@ -957,6 +959,7 @@ mali_error kbase_mem_free_region(kbase_context *kctx, kbase_va_region *reg)
 	}
 
 	/* This will also free the physical pages */
+	kbase_free_phy_pages_helper_gpu(reg, reg->alloc->nents);
 	kbase_free_alloced_region(reg);
 
  out:
@@ -1062,6 +1065,11 @@ void kbase_update_region_flags(struct kbase_va_region *reg, unsigned long flags)
 	else if (flags & BASE_MEM_COHERENT_SYSTEM)
 		reg->flags |= KBASE_REG_SHARE_BOTH;
 
+	if (flags & BASE_MEM_FOR_PMEM)
+		reg->flags |= KBASE_REG_CUSTOM_PMEM;
+	else if (flags & BASE_MEM_FOR_TMEM)
+		reg->flags |= KBASE_REG_CUSTOM_TMEM;
+
 }
 KBASE_EXPORT_TEST_API(kbase_update_region_flags)
 
@@ -1119,6 +1127,43 @@ int kbase_free_phy_pages_helper(struct kbase_mem_phy_alloc * alloc, size_t nr_pa
 	kbase_process_page_usage_dec(alloc->imported.kctx, nr_pages_to_free);
 	kbase_atomic_sub_pages(nr_pages_to_free, &alloc->imported.kctx->used_pages);
 	kbase_atomic_sub_pages(nr_pages_to_free, &alloc->imported.kctx->kbdev->memdev.used_pages);
+
+	return 0;
+}
+
+int kbase_alloc_phy_pages_helper_gpu(struct kbase_va_region * reg, size_t nr_pages_to_free)
+{
+	if (0 == nr_pages_to_free)
+		return 0;
+
+	if (reg->flags & KBASE_REG_CUSTOM_PMEM)
+	{
+		kbase_atomic_add_pages(nr_pages_to_free, &reg->alloc->imported.kctx->used_pmem_pages);
+		kbase_atomic_add_pages(nr_pages_to_free, &reg->alloc->imported.kctx->kbdev->memdev.used_pmem_pages);
+	}
+	else if (reg->flags & KBASE_REG_CUSTOM_TMEM)
+	{
+		kbase_atomic_add_pages(nr_pages_to_free, &reg->alloc->imported.kctx->used_tmem_pages);
+		kbase_atomic_add_pages(nr_pages_to_free, &reg->alloc->imported.kctx->kbdev->memdev.used_tmem_pages);
+	}
+
+	return 0;
+}
+int kbase_free_phy_pages_helper_gpu(struct kbase_va_region * reg, size_t nr_pages_to_free)
+{
+	if (0 == nr_pages_to_free)
+		return 0;
+
+	if (reg->flags & KBASE_REG_CUSTOM_PMEM)
+	{
+		kbase_atomic_sub_pages(nr_pages_to_free, &reg->alloc->imported.kctx->used_pmem_pages);
+		kbase_atomic_sub_pages(nr_pages_to_free, &reg->alloc->imported.kctx->kbdev->memdev.used_pmem_pages);
+	}
+	else if (reg->flags & KBASE_REG_CUSTOM_TMEM)
+	{
+		kbase_atomic_sub_pages(nr_pages_to_free, &reg->alloc->imported.kctx->used_tmem_pages);
+		kbase_atomic_sub_pages(nr_pages_to_free, &reg->alloc->imported.kctx->kbdev->memdev.used_tmem_pages);
+	}
 
 	return 0;
 }
@@ -1195,6 +1240,8 @@ int kbase_alloc_phy_pages(struct kbase_va_region *reg, size_t vsize, size_t size
 
 	if (MALI_ERROR_NONE != kbase_alloc_phy_pages_helper(reg->alloc, size))
 		goto out_term;
+
+	kbase_alloc_phy_pages_helper_gpu(reg, size);
 
 	return 0;
 

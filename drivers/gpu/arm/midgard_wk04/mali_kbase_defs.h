@@ -434,7 +434,8 @@ typedef enum {
 typedef struct kbasep_mem_device {
 	atomic_t used_pages;   /* Tracks usage of OS shared memory. Updated
 				   when OS memory is allocated/freed. */
-
+	atomic_t used_pmem_pages;
+	atomic_t used_tmem_pages;
 } kbasep_mem_device;
 
 
@@ -809,6 +810,11 @@ struct kbase_context {
 #endif
 
 	int legacy_app;
+
+	atomic_t used_pmem_pages;
+	atomic_t used_tmem_pages;
+
+	char name[32];
 };
 
 typedef enum kbase_reg_access_type {

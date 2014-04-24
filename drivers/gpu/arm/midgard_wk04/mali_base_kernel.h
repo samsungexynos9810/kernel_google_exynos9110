@@ -133,7 +133,9 @@ enum {
 	BASE_MEM_COHERENT_LOCAL = (1U << 11),  /**< Page coherence Inner shareable */
 	BASE_MEM_CACHED_CPU = (1U << 12),      /**< Should be cached on the CPU */
 
-	BASE_MEM_SAME_VA = (1U << 13) /**< Must have same VA on both the GPU and the CPU */
+	BASE_MEM_SAME_VA = (1U << 13), /**< Must have same VA on both the GPU and the CPU */
+	BASE_MEM_FOR_PMEM = (1U << 14),
+	BASE_MEM_FOR_TMEM = (1U << 15)
 };
 
 /**
@@ -183,7 +185,7 @@ typedef enum base_mem_import_type {
  *
  * Must be kept in sync with the ::base_mem_alloc_flags flags
  */
-#define BASE_MEM_FLAGS_NR_BITS  14
+#define BASE_MEM_FLAGS_NR_BITS  16
 
 /**
  * @brief Result codes of changing the size of the backing store allocated to a tmem region
