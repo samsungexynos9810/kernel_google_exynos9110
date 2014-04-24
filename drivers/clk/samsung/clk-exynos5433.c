@@ -1387,7 +1387,7 @@ struct samsung_mux_clock exynos5433_mux_clks[] __initdata = {
 	CMX_STAT(mout_aclk_gscl_333_user, EXYNOS5430_SRC_SEL_GSCL, 0, 1, EXYNOS5430_SRC_STAT_GSCL, 0, 3),
 	CMX_STAT(mout_aclk_gscl_111_user, EXYNOS5430_SRC_SEL_GSCL, 4, 1, EXYNOS5430_SRC_STAT_GSCL, 4, 3),
 
-	CMX_STAT(mout_aclk_mscl_400_user, EXYNOS5430_SRC_SEL_MSCL0, 0, 1, EXYNOS5430_SRC_STAT_MSCL0, 0, 3),
+	CMX_S_A(mout_aclk_mscl_400_user, EXYNOS5430_SRC_SEL_MSCL0, 0, 1, "mux_aclk_mscl_400_user", EXYNOS5430_SRC_STAT_MSCL0, 0, 3),
 	CMX_STAT(mout_sclk_jpeg_user, EXYNOS5430_SRC_SEL_MSCL0, 4, 1, EXYNOS5430_SRC_STAT_MSCL0, 4, 3),
 	CMX_STAT(mout_sclk_jpeg, EXYNOS5430_SRC_SEL_MSCL1, 0, 1, EXYNOS5430_SRC_STAT_MSCL1, 0, 3),
 
@@ -1703,7 +1703,7 @@ struct samsung_gate_clock exynos5433_gate_clks[] __initdata = {
 	CGTE(aclk_gscl_333, "aclk_gscl_333", "dout_aclk_gscl_333", EXYNOS5430_ENABLE_ACLK_TOP, 14, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_gscl_111, "aclk_gscl_111", "dout_aclk_gscl_111", EXYNOS5430_ENABLE_ACLK_TOP, 15, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_fsys_200, "aclk_fsys_200", "dout_aclk_fsys_200", EXYNOS5430_ENABLE_ACLK_TOP, 18, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-	CGTE(aclk_mscl_400, "aclk_mscl_400", "dout_aclk_mscl_400", EXYNOS5430_ENABLE_ACLK_TOP, 19, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
+	GATE_A(aclk_mscl_400, "aclk_mscl_400", "dout_aclk_mscl_400", (unsigned long)EXYNOS5430_ENABLE_ACLK_TOP, 19, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0, "gate_aclk_mscl_400"),
 	CGTE(aclk_peris_66, "aclk_peris_66", "dout_aclk_peris_66_b", EXYNOS5430_ENABLE_ACLK_TOP, 21, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_peric_66, "aclk_peric_66", "dout_aclk_peric_66_b", EXYNOS5430_ENABLE_ACLK_TOP, 22, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
 	CGTE(aclk_imem_266, "aclk_imem_266", "dout_aclk_imem_266", EXYNOS5430_ENABLE_ACLK_TOP, 23, CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
