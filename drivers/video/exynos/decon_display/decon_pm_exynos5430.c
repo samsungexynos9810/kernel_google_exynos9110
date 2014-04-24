@@ -20,7 +20,13 @@
 
 #include <linux/platform_device.h>
 #include <mach/map.h>
+
+#if defined(CONFIG_SOC_EXYNOS5433)
+#include <mach/regs-clock-exynos5433.h>
+#else
 #include <mach/regs-clock-exynos5430.h>
+#endif
+
 #include <mach/regs-pmu.h>
 
 #include "regs-decon.h"
@@ -489,7 +495,11 @@ int disable_display_dsd_clocks(struct device *dev, bool enable)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 bool check_camera_is_running(void)
 {
+#if defined(CONFIG_SOC_EXYNOS5433)
+	if (readl(EXYNOS5433_CAM0_STATUS) & 0x1)
+#else
 	if (readl(EXYNOS5430_CAM0_STATUS) & 0x1)
+#endif
 		return true;
 	else
 		return false;
@@ -497,7 +507,11 @@ bool check_camera_is_running(void)
 
 bool get_display_power_status(void)
 {
+#if defined(CONFIG_SOC_EXYNOS5433)
+	if (readl(EXYNOS5433_DISP_STATUS) & 0x1)
+#else
 	if (readl(EXYNOS5430_DISP_STATUS) & 0x1)
+#endif
 		return true;
 	else
 		return false;
