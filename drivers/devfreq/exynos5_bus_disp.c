@@ -104,8 +104,10 @@ static int exynos5_devfreq_disp_target(struct device *dev,
 		goto out;
 	}
 
-	if (old_freq == *target_freq)
+	if (old_freq == *target_freq) {
+		exynos5_update_district_int_level(target_idx);
 		goto out;
+	}
 
 	pr_debug("DISP %lu ================> %lu\n", old_freq, *target_freq);
 
