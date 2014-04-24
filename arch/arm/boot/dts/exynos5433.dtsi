@@ -1367,9 +1367,9 @@
 		reg = <0x12400000 0x1000>;
 		interrupts = <0 259 0>;
 		/* gate_g2d, gate_qe_g2d, mout_aclk_g2d_400_user, aclk_g2d_400, mout_aclk_g2d_266_user, aclk_g2d_266 */
-		clocks = <&clock 2213>, <&clock 2221>, <&clock 3111>, <&clock 330>, <&clock 3112>, <&clock 331>;
-		clock-names = "fimg2d", "gate_qe_g2d", "mux_400_child", "mux_400_parent", "mux_266_child", "mux_266_parent";
-		ip_ver = <6>; /* IP_VER_G2D_5H */
+		clocks = <&clock 1>, <&clock 2213>, <&clock 2221>, <&clock 3111>, <&clock 330>, <&clock 3112>, <&clock 331>;
+		clock-names = "fin_pll", "fimg2d", "gate_qe_g2d", "mux_400_child", "mux_400_parent", "mux_266_child", "mux_266_parent";
+		ip_ver = <8>; /* IP_VER_G2D_5HP */
 		samsung,power-domain = <&pd_g2d>;
 		g2d_qos_table {
 			g2d_qos_variant_0 {
