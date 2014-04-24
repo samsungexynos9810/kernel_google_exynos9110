@@ -778,7 +778,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 {
 	struct mipi_dsim_device *dsim = NULL;
 	struct display_driver *dispdrv;
+#if defined(CONFIG_S5P_LCD_INIT)
 	struct dsim_clks clks;
+#endif
 	int ret = -1;
 
 	/* get a reference of the display driver */
@@ -886,9 +888,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->dsim_lcd_drv->displayon(dsim);
 #else
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
-
-	/* Clear RX FIFO to prevent obnormal read opeation */
-	s5p_mipi_dsi_clear_rx_fifo(dsim);
 
 	dsim->enabled = true;
 	dsim->state = DSIM_STATE_HSCLKEN;

@@ -3431,15 +3431,17 @@ int create_decon_display_controller(struct platform_device *pdev)
 	struct s3c_fb *sfb;
 	struct fb_info *fbinfo;
 	struct display_driver *dispdrv;
-	struct decon_regs_data win_regs;
-	struct decon_psr_info psr;
-	struct decon_init_param p;
 	struct decon_lcd *lcd_info;
 	int win;
 	int default_win;
 	int i;
 	int ret = 0;
+#if defined(CONFIG_S5P_LCD_INIT)
 	u32 line_length;
+	struct decon_init_param p;
+	struct decon_psr_info psr;
+	struct decon_regs_data win_regs;
+#endif
 
 	dispdrv = get_display_driver();
 
@@ -3653,6 +3655,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	fbinfo = sfb->windows[default_win]->fbinfo;
 
+#if defined(CONFIG_S5P_LCD_INIT)
 	decon_reg_shadow_protect_win(default_win, 1);
 
 	s3c_fb_to_init_param(sfb, &p);
@@ -3682,6 +3685,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 	decon_reg_set_winmap(default_win, 0x000000 /* black */, 1);
 
 	msleep(16);
+#else
+	decon_reg_set_trigger(sfb->trig_mode, DECON_TRIG_DISABLE);
+#endif
 
 	platform_set_drvdata(pdev, sfb);
 
