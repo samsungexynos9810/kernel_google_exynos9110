@@ -483,6 +483,9 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	struct dw_mci_board *pdata = host->pdata;
 	u32 *clk_tbl = priv->ref_clk;
 	u32 clksel, rddqs, dline;
+#if defined(CONFIG_SOC_EXYNOS5433)
+	u32 en_shift;
+#endif
 	u32 cclkin;
 	unsigned char timing = ios->timing;
 	unsigned char timing_org = timing;
@@ -499,7 +502,10 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	rddqs = DWMCI_DDR200_RDDQS_EN_DEF;
 	dline = DWMCI_DDR200_DLINE_CTRL_DEF;
 	clksel = mci_readl(host, CLKSEL);
-
+#if defined(CONFIG_SOC_EXYNOS5433)
+	en_shift = mci_readl(host, DDR200_ENABLE_SHIFT)
+		& ~(DWMCI_ENABLE_SHIFT_MASK);
+#endif
 	if (host->bus_hz != cclkin) {
 		dw_mci_exynos_set_bus_hz(host, cclkin, timing);
 		host->bus_hz = cclkin;
@@ -523,6 +529,9 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 				DWMCI_RD_DQS_DELAY_CTRL(90);
 			host->quirks &= ~DW_MCI_QUIRK_NO_DETECT_EBIT;
 		}
+#if defined(CONFIG_SOC_EXYNOS5433)
+		en_shift |= DWMCI_ENABLE_SHIFT(1);
+#endif
 	} else if (timing == MMC_TIMING_MMC_HS200 ||
 			timing == MMC_TIMING_UHS_SDR104) {
 		clksel = (clksel & 0xfff8ffff) | (priv->selclk_drv << 16);
@@ -537,6 +546,9 @@ static void dw_mci_exynos_set_ios(struct dw_mci *host, unsigned int tuning, stru
 	mci_writel(host, CLKSEL, clksel);
 	mci_writel(host, DDR200_RDDQS_EN, rddqs);
 	mci_writel(host, DDR200_DLINE_CTRL, dline);
+#if defined(CONFIG_SOC_EXYNOS5433)
+	mci_writel(host, DDR200_ENABLE_SHIFT, en_shift);
+#endif
 	if (timing == MMC_TIMING_MMC_HS200_DDR)
 		mci_writel(host, DDR200_ASYNC_FIFO_CTRL, 0x1);
 }
