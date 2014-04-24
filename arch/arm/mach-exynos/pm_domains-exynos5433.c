@@ -39,17 +39,14 @@ static void exynos5_pd_disable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 	spin_unlock(&rpmlock_cmutop);
 }
 
-/*
-#ifdef CONFIG_SOC_EXYNOS5430
 static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned int turn_on)
 {
-#ifdef CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ
+#ifdef CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ
 	exynos5_int_notify_power_status(pd->genpd.name, true);
 	exynos5_isp_notify_power_status(pd->genpd.name, true);
 	exynos5_disp_notify_power_status(pd->genpd.name, true);
 #endif
 }
-*/
 
 /* exynos_pd_maudio_power_on_post - callback after power on.
  * @pd: power domain.
@@ -134,10 +131,10 @@ static int exynos_pd_mfc_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_mfc_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_mfc_clk_save,
 			ARRAY_SIZE(exynos_pd_mfc_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	exynos5_pd_disable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
 
@@ -182,10 +179,10 @@ static int exynos_pd_hevc_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_hevc_clk_save,
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));*/
 
@@ -233,7 +230,7 @@ static int exynos_pd_gscl_power_on_post(struct exynos_pm_domain *pd)
 	s3c_pm_do_restore_core(exynos_pd_gscl_clk_save,
 			ARRAY_SIZE(exynos_pd_gscl_clk_save));
 
-	/*exynos_pd_notify_power_state(pd, true);*/
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));*/
 
@@ -284,10 +281,10 @@ static int exynos_pd_disp_power_on_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_disp_clk_save,
 			ARRAY_SIZE(exynos_pd_disp_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));*/
 	/*exynos5_pd_disable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));*/
@@ -400,10 +397,10 @@ static int exynos_pd_mscl_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 {
-	/* exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_mscl_clk_save,
 			ARRAY_SIZE(exynos_pd_mscl_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
 	/*exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
@@ -461,10 +458,10 @@ static int exynos_pd_g2d_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_g2d_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_g2d_clk_save,
 			ARRAY_SIZE(exynos_pd_g2d_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));*/
 
@@ -515,10 +512,10 @@ static int exynos_pd_isp_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_isp_clk_save,
 			ARRAY_SIZE(exynos_pd_isp_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
 
@@ -601,10 +598,10 @@ static int exynos_pd_cam0_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_cam0_clk_save,
 			ARRAY_SIZE(exynos_pd_cam0_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));*/
 
@@ -688,10 +685,10 @@ static int exynos_pd_cam1_power_on_pre(struct exynos_pm_domain *pd)
 
 static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
 {
-	/*exynos_pd_notify_power_state(pd, true);*/
-
 	s3c_pm_do_restore_core(exynos_pd_cam1_clk_save,
 			ARRAY_SIZE(exynos_pd_cam1_clk_save));
+
+	exynos_pd_notify_power_state(pd, true);
 
 	/*exynos5_pd_disable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));*/
 	/*exynos5_pd_disable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));*/
