@@ -437,6 +437,19 @@ static __init int exynos_pm_dt_parse_domains(void)
 
 		platform_set_drvdata(pdev, pd);
 
+		if (pd->cb->init) {
+			ret = pd->cb->init(pd);
+			if (ret) {
+				iounmap(pd->base);
+				kfree(pd->genpd.name);
+				kfree(pd);
+				pr_err(PM_DOMAIN_PREFIX
+					"%s: Failed to init domain %s\n",
+					__func__, np->name);
+				return ret;
+			}
+		}
+
 		exynos_pm_powerdomain_init(pd);
 
 		/* add LOGICAL sub-domain
