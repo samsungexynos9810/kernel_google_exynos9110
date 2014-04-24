@@ -213,6 +213,7 @@ static void fimg2d4x_pre_bitblt(struct fimg2d_control *ctrl,
 		break;
 
 	case IP_VER_G2D_5H:
+	case IP_VER_G2D_5HP:
 #ifndef CCI_SNOOP
 		/* disable cci path */
 		g2d_cci_snoop_control(ctrl->pdata->ip_ver,

@@ -57,12 +57,14 @@ static struct fimg2d_qos g2d_qos_table[G2D_LV_END];
 void fimg2d_power_control(struct fimg2d_control *ctrl, enum fimg2d_pw_status status)
 {
 	if (status == FIMG2D_PW_ON) {
-		if (ip_is_g2d_5h()) {
+		if (ip_is_g2d_5h() || ip_is_g2d_5hp()) {
 			pm_runtime_get_sync(ctrl->dev);
 			fimg2d_debug("Done pm_runtime_get_sync()\n");
 		}
 	} else if (status == FIMG2D_PW_OFF) {
-		if (ip_is_g2d_5h()){
+		if (ip_is_g2d_5hp())
+			exynos5433_fimg2d_clk_set_osc(ctrl);
+		if (ip_is_g2d_5h() || ip_is_g2d_5hp()){
 			pm_runtime_put_sync(ctrl->dev);
 			fimg2d_debug("Done pm_runtime_put_sync()\n");
 		}
@@ -846,6 +848,7 @@ static int fimg2d_suspend(struct device *dev)
 		mdelay(POLL_TIMEOUT);
 	}
 	g2d_unlock(&ctrl->drvlock);
+	exynos5433_fimg2d_clk_set_osc(ctrl);
 	fimg2d_info("suspend... done\n");
 	return 0;
 }
@@ -853,6 +856,7 @@ static int fimg2d_suspend(struct device *dev)
 static int fimg2d_resume(struct device *dev)
 {
 	unsigned long flags;
+	int ret = 0;
 
 	g2d_lock(&ctrl->drvlock);
 	g2d_spin_lock(&ctrl->bltlock, flags);
@@ -863,15 +867,22 @@ static int fimg2d_resume(struct device *dev)
 	if (ip_is_g2d_5ar2()) {
 		fimg2d_clk_on(ctrl);
 		fimg2d_clk_off(ctrl);
+	} else if (ip_is_g2d_5hp()) {
+		ret = exynos5430_fimg2d_clk_set(ctrl);
+		if (ret) {
+			fimg2d_err("failed to exynos5430_fimg2d_clk_set()\n");
+			return -ENOENT;
+		}
 	}
 	fimg2d_info("resume... done\n");
-	return 0;
+	return ret;
 }
 
 #ifdef CONFIG_PM_RUNTIME
 static int fimg2d_runtime_suspend(struct device *dev)
 {
 	fimg2d_debug("runtime suspend... done\n");
+	exynos5433_fimg2d_clk_set_osc(ctrl);
 	return 0;
 }
 
@@ -885,7 +896,7 @@ static int fimg2d_runtime_resume(struct device *dev)
 			fimg2d_err("failed to fimg2d_clk_set_gate()\n");
 			ret = -ENOENT;
 		}
-	} else if (ip_is_g2d_5h()) {
+	} else if (ip_is_g2d_5h() || ip_is_g2d_5hp()) {
 		ret = exynos5430_fimg2d_clk_set(ctrl);
 		if (ret) {
 			fimg2d_err("failed to exynos5430_fimg2d_clk_set()\n");
