@@ -23,10 +23,6 @@
 #include <linux/delay.h>
 #include <media/exynos_mc.h>
 
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-#define CONFIG_FB_EXYNOS_FIMD_MC
-#endif
-
 #include "decon_fb.h"
 #include "regs-decon.h"
 #include "decon_display_driver.h"

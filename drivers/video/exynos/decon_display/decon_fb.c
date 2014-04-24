@@ -27,15 +27,6 @@
 #include <linux/of_gpio.h>
 #include <linux/of.h>
 
-#if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
-#include <media/v4l2-subdev.h>
-#include <media/v4l2-common.h>
-#include <media/v4l2-dev.h>
-#include <media/v4l2-device.h>
-#include <media/exynos_mc.h>
-#include <plat/map-base.h>
-#endif
-
 #include <mach/map.h>
 #include <mach/regs-clock.h>
 #include <plat/cpu.h>

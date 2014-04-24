@@ -2,11 +2,18 @@
 #ifndef __DECON_FB_H__
 #define __DECON_FB_H__
 
+#if defined(CONFIG_FB_EXYNOS_FIMD_MC) || defined(CONFIG_FB_EXYNOS_FIMD_MC_WB)
+#include <media/v4l2-subdev.h>
+#include <media/v4l2-common.h>
+#include <media/v4l2-dev.h>
+#include <media/v4l2-device.h>
+#include <media/exynos_mc.h>
+#include <plat/map-base.h>
+#endif
+
 #include <linux/fb.h>
 #include <linux/kthread.h>
 #include <media/media-entity.h>
-#include <media/v4l2-subdev.h>
-#include <media/exynos_mc.h>
 
 /* S3C_FB_MAX_WIN
  * Set to the maximum number of windows that any of the supported hardware

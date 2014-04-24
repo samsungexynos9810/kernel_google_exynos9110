@@ -26,6 +26,11 @@ config DECON_MIPI_DSI_PKTGO
 	depends on DECON_MIPI_DSI
 	default n
 
+config FB_EXYNOS_FIMD_MC
+	bool "DECON/FIMD MEDIA CONTROLLER Support"
+	depends on EXYNOS_DECON
+	default y
+
 config FB_I80_COMMAND_MODE
 	bool "DECON FB I80 MODE"
 	depends on EXYNOS_DECON_DISPLAY

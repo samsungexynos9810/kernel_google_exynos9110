@@ -12,10 +12,6 @@
 #include <linux/kthread.h>
 #include <linux/platform_device.h>
 
-#ifdef CONFIG_VIDEO_V4L2_SUBDEV_API
-#define CONFIG_FB_EXYNOS_FIMD_MC
-#endif
-
 /* command mode is defined 0 in DT */
 #define VIDEO_MODE	1
 #define COMMAND_MODE	0
