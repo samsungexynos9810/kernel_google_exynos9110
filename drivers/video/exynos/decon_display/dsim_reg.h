@@ -65,6 +65,18 @@ static inline struct mipi_dsim_device *get_dsim_drvdata(void)
 	return dispdrv->dsi_driver.dsim;
 }
 
+static inline int dsim_wr_data(u32 id, u32 d0, u32 d1)
+{
+	int ret;
+	struct mipi_dsim_device *dsim = get_dsim_drvdata();
+
+	ret = s5p_mipi_dsi_wr_data(dsim, id, d0, d1);
+	if (ret)
+		return ret;
+
+	return 0;
+}
+
 /* register access subroutines */
 static inline u32 dsim_read(u32 reg_id)
 {

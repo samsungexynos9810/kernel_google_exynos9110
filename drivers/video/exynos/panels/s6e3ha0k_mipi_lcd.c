@@ -16,34 +16,16 @@
 #include <video/mipi_display.h>
 #include <linux/platform_device.h>
 
-#include "s6e3ha0k_gamma.h"
 #include "../decon_display/decon_mipi_dsi.h"
-#include "../decon_display/decon_display_driver.h"
+#include "lcd_ctrl.h"
 
-#define GAMMA_PARAM_SIZE 26
 #define MAX_BRIGHTNESS 255
 #define MIN_BRIGHTNESS 0
 #define DEFAULT_BRIGHTNESS 0
 
+
 static struct mipi_dsim_device *dsim_base;
 static struct backlight_device *bd;
-
-static u8 SEQ_TEST_KEY_ON_F0[] = {0xF0, 0x5A, 0x5A};
-static u8 SEQ_MIPI_SINGLE_DSI_SET1[] = {0xF2, 0x07, 0x00, 0x01, 0xA4, 0x03, 0x0d, 0xA0};
-static u8 SEQ_MIPI_SINGLE_DSI_SET2[] = {0xF9, 0x29};
-static u8 SEQ_TEST_KEY_ON_FC[] = {0xFC, 0x5A, 0x5A};
-static u8 SEQ_REG_FF[] = {0xFF, 0x00, 0x00, 0x20, 0x00};
-static u8 SEQ_TEST_KEY_OFF_FC[] = {0xFC, 0xA5, 0xA5};
-//static u8 SEQ_SLEEP_OUT[] = {0x11};
-static u8 SEQ_CAPS_ELVSS_SET[] = {0xB6,
-	0x98, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x55, 0x54,
-	0x20, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x22, 0x22, 0x10};
-//static u8 SEQ_TE_ON[] = {0x35};
-static u8 SEQ_TOUCH_HSYNC_ON[] = {0xBD, 0x05};
-static u8 SEQ_TOUCH_VSYNC_ON[] = {0xFF, 0x02};
-static u8 SEQ_PENTILE_CONTROL[] = {0xC0, 0x74, 0x00, 0xD8, 0xD8};
-static u8 SEQ_TEST_KEY_OFF_F0[] = {0xF0, 0xA5, 0xA5};
-//static u8 SEQ_DISP_ON[] = {0x29};
 
 static int s6e3ha0k_get_brightness(struct backlight_device *bd)
 {
@@ -199,119 +181,14 @@ static int s6e3ha0k_probe(struct mipi_dsim_device *dsim)
 	return 0;
 }
 
-int init_lcd(struct mipi_dsim_device *dsim)
-{
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_ON_F0,
-				ARRAY_SIZE(SEQ_TEST_KEY_ON_F0)) == -1)
-		printk(KERN_ERR "fail to write F0 init command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_MIPI_SINGLE_DSI_SET1,
-				ARRAY_SIZE(SEQ_MIPI_SINGLE_DSI_SET1)) == -1)
-		printk(KERN_ERR "fail to write DSI_SET1 command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			(unsigned int)SEQ_MIPI_SINGLE_DSI_SET2[0],
-			(unsigned int)SEQ_MIPI_SINGLE_DSI_SET2[1]) == -1)
-		printk(KERN_ERR "fail to write DSI_SET2 command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_ON_FC,
-				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
-		printk(KERN_ERR "fail to write FC init command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_REG_FF,
-				ARRAY_SIZE(SEQ_REG_FF)) == -1)
-		printk(KERN_ERR "fail to write SEQ_REG_FF command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_OFF_FC,
-				ARRAY_SIZE(SEQ_TEST_KEY_OFF_FC)) == -1)
-		printk(KERN_ERR "fail to write FC OFF command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE,
-			0x11, 0x0) == -1)
-		printk(KERN_ERR "fail to write Exit_sleep init command.\n");
-
-	msleep(100);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_CAPS_ELVSS_SET,
-				ARRAY_SIZE(SEQ_CAPS_ELVSS_SET)) == -1)
-		printk(KERN_ERR "fail to write SEQ_CAPS_ELVSS_SET command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_OFF_F0,
-				ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0)) == -1)
-		printk(KERN_ERR "fail to write KEY_OFF_F0 command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			0x35, 0x0) == -1)
-		printk(KERN_ERR "fail to write TE_on init command.\n");
-	msleep(50);
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_ON_F0,
-				ARRAY_SIZE(SEQ_TEST_KEY_ON_F0)) == -1)
-		printk(KERN_ERR "fail to write KEY_OFF_F0 command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_ON_FC,
-				ARRAY_SIZE(SEQ_TEST_KEY_ON_FC)) == -1)
-		printk(KERN_ERR "fail to write FC init command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			(unsigned int)SEQ_TOUCH_HSYNC_ON[0],
-			(unsigned int)SEQ_TOUCH_HSYNC_ON[1]) == -1)
-		printk(KERN_ERR "fail to write SEQ_TOUCH_HSYNC_ON command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			(unsigned int)SEQ_TOUCH_VSYNC_ON[0],
-			(unsigned int)SEQ_TOUCH_VSYNC_ON[1]) == -1)
-		printk(KERN_ERR "fail to write SEQ_TOUCH_VSYNC_ON command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_OFF_FC,
-				ARRAY_SIZE(SEQ_TEST_KEY_OFF_FC)) == -1)
-		printk(KERN_ERR "fail to write KEY_OFF_FC command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_PENTILE_CONTROL,
-				ARRAY_SIZE(SEQ_PENTILE_CONTROL)) == -1)
-		printk(KERN_ERR "fail to write SEQ_PENTILE_CONTROL command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)SEQ_TEST_KEY_OFF_F0,
-				ARRAY_SIZE(SEQ_TEST_KEY_OFF_F0)) == -1)
-		printk(KERN_ERR "fail to write KEY_OFF_F0 command.\n");
-	msleep(50);
-
-	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE,
-			0x29, 0x0) == -1)
-		printk(KERN_ERR "fail to write Disp_on init command.\n");
-
-	return 0;
-}
-
 static int s6e3ha0k_displayon(struct mipi_dsim_device *dsim)
 {
-	init_lcd(dsim);
-	return 0;
+	struct decon_lcd *lcd = decon_get_lcd_info();
+
+	lcd_init(lcd);
+	update_brightness(bd->props.brightness);
+	lcd_enable();
+	return 1;
 }
 
 static int s6e3ha0k_suspend(struct mipi_dsim_device *dsim)
