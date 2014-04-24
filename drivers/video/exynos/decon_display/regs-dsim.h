@@ -49,6 +49,10 @@
 #define DSIM_CONFIG_EOT_R03_DISABLE		(1 << 28)	/* disable EoT packet generation for V1.01r03 */
 #define DSIM_CONFIG_BURST_MODE			(1 << 26)
 #define DSIM_CONFIG_VIDEO_MODE			(1 << 25)
+#define DSIM_CONFIG_HSE_DISABLE			(1 << 23)
+#define DSIM_CONFIG_HFP_DISABLE			(1 << 22)
+#define DSIM_CONFIG_HBP_DISABLE			(1 << 21)
+#define DSIM_CONFIG_HSA_DISABLE			(1 << 20)
 #define DSIM_CONFIG_PIXEL_FORMAT(_x)		((_x) << 12)
 #define DSIM_CONFIG_PIXEL_FORMAT_MASK		(0x7 << 12)
 #define DSIM_CONFIG_NUM_OF_DATA_LANE(x)		((x) << 5)
@@ -81,8 +85,8 @@
 #define DSIM_MVPORCH_CMD_ALLOW_MASK		(0xf << 28)
 #define DSIM_MVPORCH_STABLE_VFP(_x)		((_x) << 16)
 #define DSIM_MVPORCH_STABLE_VFP_MASK		(0x7ff << 16)
-#define DSIM_MVPORCH_VFP(_x)			((_x) << 0)
-#define DSIM_MVPORCH_VFP_MASK			(0x7ff << 0)
+#define DSIM_MVPORCH_VBP(_x)			((_x) << 0)
+#define DSIM_MVPORCH_VBP_MASK			(0x7ff << 0)
 
 /* Main display Hporch register */
 #define DSIM_MHPORCH				(0x28)

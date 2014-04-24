@@ -21,7 +21,7 @@
 
 /* If below values depend on panel. These values wil be move to panel file.
  * And these values are valid in case of video mode only. */
-#define DSIM_CMD_ALLOW_VALUE		6
+#define DSIM_CMD_ALLOW_VALUE		4
 #define DSIM_STABLE_VFP_VALUE		2
 
 /* DPHY timing table */
@@ -142,6 +142,11 @@ const u32 b_dphyctl[14] = {
 void dsim_reg_sw_reset(void)
 {
 	dsim_write_mask(DSIM_SWRST, ~0, DSIM_SWRST_RESET);
+}
+
+void dsim_reg_funtion_reset(void)
+{
+	dsim_write_mask(DSIM_SWRST, ~0, DSIM_SWRST_FUNCRST);
 }
 
 void dsim_reg_dp_dn_swap(u32 en)
@@ -275,7 +280,7 @@ void dsim_reg_set_esc_clk_prescaler(u32 en, u32 p)
 	dsim_write_mask(DSIM_CLKCTRL, val, mask);
 }
 
-void dsim_reg_set_esc_clk_on_lane(u32 lane, u32 en)
+void dsim_reg_set_esc_clk_on_lane(u32 en, u32 lane)
 {
 	u32 val = en ? DSIM_CLKCTRL_LANE_ESCCLK_EN(lane) : 0;
 
@@ -351,8 +356,8 @@ void dsim_reg_set_porch(struct decon_lcd *lcd)
 	if (lcd->mode == VIDEO_MODE) {
 		val = DSIM_MVPORCH_CMD_ALLOW(DSIM_CMD_ALLOW_VALUE) |
 			DSIM_MVPORCH_STABLE_VFP(DSIM_STABLE_VFP_VALUE) |
-			DSIM_MVPORCH_VFP(lcd->vfp);
-		mask = DSIM_MVPORCH_CMD_ALLOW_MASK | DSIM_MVPORCH_VFP_MASK |
+			DSIM_MVPORCH_VBP(lcd->vbp);
+		mask = DSIM_MVPORCH_CMD_ALLOW_MASK | DSIM_MVPORCH_VBP_MASK |
 			DSIM_MVPORCH_STABLE_VFP_MASK;
 		dsim_write_mask(DSIM_MVPORCH, val, mask);
 
@@ -369,10 +374,8 @@ void dsim_reg_set_porch(struct decon_lcd *lcd)
 	else
 		width = lcd->xres;
 
-	val = DSIM_MDRESOL_VRESOL(lcd->yres) | DSIM_MDRESOL_HRESOL(width) |
-		DSIM_MDRESOL_STAND_BY;
-	mask = DSIM_MDRESOL_STAND_BY | DSIM_MDRESOL_VRESOL_MASK |
-		DSIM_MDRESOL_HRESOL_MASK;
+	val = DSIM_MDRESOL_VRESOL(lcd->yres) | DSIM_MDRESOL_HRESOL(width);
+	mask = DSIM_MDRESOL_VRESOL_MASK | DSIM_MDRESOL_HRESOL_MASK;
 	dsim_write_mask(DSIM_MDRESOL, val, mask);
 }
 
@@ -384,18 +387,18 @@ void dsim_reg_set_config(u32 mode, u32 data_lane_cnt)
 	if (mode == VIDEO_MODE) {
 		val = DSIM_CONFIG_VIDEO_MODE;
 	} else if (mode == COMMAND_MODE) {
-		val = DSIM_CONFIG_CLKLANE_STOP_START;
+		val = DSIM_CONFIG_CLKLANE_STOP_START;   /* In Command mode Clk lane stop disable */
 	} else {
 		dsim_err("This DDI is not MIPI interface.\n");
 		return;
 	}
 
-	val |= DSIM_CONFIG_BURST_MODE | DSIM_CONFIG_EOT_R03_DISABLE |
+	val |= DSIM_CONFIG_BURST_MODE | DSIM_CONFIG_EOT_R03_DISABLE | DSIM_CONFIG_HFP_DISABLE |
 		DSIM_CONFIG_NUM_OF_DATA_LANE(data_lane_cnt - 1) |
 		DSIM_CONFIG_PIXEL_FORMAT(DSIM_PIXEL_FORMAT_RGB24);
 
 	mask = DSIM_CONFIG_CLKLANE_STOP_START | DSIM_CONFIG_EOT_R03_DISABLE |
-		DSIM_CONFIG_BURST_MODE | DSIM_CONFIG_VIDEO_MODE |
+		DSIM_CONFIG_BURST_MODE | DSIM_CONFIG_VIDEO_MODE | DSIM_CONFIG_HFP_DISABLE |
 		DSIM_CONFIG_PIXEL_FORMAT_MASK | DSIM_CONFIG_NUM_OF_DATA_LANE_MASK;
 
 	dsim_write_mask(DSIM_CONFIG, val, mask);
@@ -685,10 +688,11 @@ static int dsim_reg_get_dphy_timing(u32 hs_clk, u32 esc_clk, struct dphy_timing_
  */
 void dsim_reg_init(struct decon_lcd *lcd_info, u32 data_lane_cnt)
 {
-	dsim_reg_sw_reset();
-	dsim_reg_dp_dn_swap(0);
+	/* phy reset is called in stead of s/w reset*/
+	dsim_reg_funtion_reset();
+	/* dsim_reg_dp_dn_swap(0); discard in Helsinki-Prime */
 
-	/* BTA sequence counters */
+	/* set counter */
 	dsim_reg_set_stop_state_cnt();
 	dsim_reg_set_bta_timeout();
 	dsim_reg_set_lpdr_timeout();
@@ -763,7 +767,7 @@ int dsim_reg_set_clocks(struct dsim_clks *clks, u32 lane, u32 en)
 		dsim_reg_set_dphy_timing_values(&t);
 
 		/* DPHY uses PLL output */
-		dsim_reg_pll_bypass(0);
+		/* dsim_reg_pll_bypass(0); discard in Helsinki-Prime */
 
 		/* enable PLL */
 		dsim_reg_enable_pll(1);
@@ -775,10 +779,10 @@ int dsim_reg_set_clocks(struct dsim_clks *clks, u32 lane, u32 en)
 		dsim_reg_set_esc_clk_prescaler(1, esc_div);
 
 		/* escape clock on lane */
-		dsim_reg_set_esc_clk_on_lane(lane, 1);
+		dsim_reg_set_esc_clk_on_lane(1, lane);
 
 	} else {
-		dsim_reg_set_esc_clk_on_lane(lane, 0);
+		dsim_reg_set_esc_clk_on_lane(0, lane);
 		dsim_reg_set_esc_clk_prescaler(0, 0);
 
 		dsim_reg_set_byte_clock(0);
@@ -793,6 +797,7 @@ int dsim_reg_set_lanes(u32 lanes, u32 en)
 	int ret;
 
 	dsim_reg_enable_lane(lanes, en);
+	udelay(200);
 	if (en) {
 		ret = dsim_reg_wait_lane_stop_state();
 		if (ret)
@@ -815,7 +820,11 @@ int dsim_reg_set_hs_clock(u32 en)
 		ret = dsim_reg_wait_hs_clk_ready();
 		if (ret)
 			return ret;
+		/* MD standby on */
+		dsim_reg_set_standby(1);
 	} else {
+		/* MD stand_by off */
+		dsim_reg_set_standby(0);
 		dsim_reg_enable_hs_clock(0);
 	}
 

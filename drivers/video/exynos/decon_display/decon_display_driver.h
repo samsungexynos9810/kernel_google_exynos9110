@@ -45,6 +45,7 @@ struct decon_lcd {
 
 	u32	mic;
 	enum mic_ver mic_ver;
+	u32	mic_bitstream_swap;
 };
 
 enum{

@@ -15,6 +15,7 @@
 
 /* header files */
 #include <linux/io.h>
+#include <linux/delay.h>
 
 #include "decon_mic.h"
 #include "regs-mic.h"
@@ -81,7 +82,8 @@ int mic_reg_stop(struct decon_lcd *lcd);
 void mic_reg_sw_reset(void);
 void mic_reg_set_image_size(struct decon_lcd *lcd);
 void mic_reg_set_mic_base_operation(struct decon_lcd *lcd, bool enable);
+void mic_reg_set_update(void);
 void mic_reg_set_porch_timing(struct decon_lcd *lcd);
-void mic_reg_set_output_timing(struct decon_lcd *lcd, u32 bs_2d);
+void mic_reg_set_output_timing(struct decon_lcd *lcd);
 
 #endif /* _MIC_REG_H */

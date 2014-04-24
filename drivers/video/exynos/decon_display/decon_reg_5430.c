@@ -189,7 +189,8 @@ void decon_reg_configure_lcd(struct decon_lcd *lcd_info)
 	decon_reg_set_rgb_order(DECON_RGB);
 	decon_reg_set_porch(lcd_info);
 
-	decon_reg_set_linecnt_op_threshold(lcd_info->yres - 1);
+	if (lcd_info->mode == VIDEO_MODE)
+		decon_reg_set_linecnt_op_threshold(lcd_info->yres - 1);
 
 	decon_reg_set_clkval(0);
 
