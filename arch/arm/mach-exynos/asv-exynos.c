@@ -25,6 +25,24 @@
 static LIST_HEAD(asv_list);
 static DEFINE_MUTEX(asv_mutex);
 
+#ifdef CONFIG_ASV_MARGIN_TEST
+#define MARGIN_UNIT	(12500)
+static int offset_percent;
+static int percent_range;
+static int __init get_offset_volt(char *str)
+{
+	get_option(&str, &offset_percent);
+	return 0;
+}
+early_param("volt_offset_percent", get_offset_volt);
+static int __init get_percent_value(char *str)
+{
+	get_option(&str, &percent_range);
+	return 0;
+}
+early_param("volt_percent_range", get_percent_value);
+#endif
+
 void add_asv_member(struct asv_info *exynos_asv_info)
 {
 	mutex_lock(&asv_mutex);
@@ -49,6 +67,11 @@ unsigned int get_match_volt(enum asv_type_id target_type, unsigned int target_fr
 	unsigned int target_dvfs_level;
 	unsigned int i;
 
+#ifdef CONFIG_ASV_MARGIN_TEST
+	int ret = 0;
+	int temp1;
+#endif
+
 	if (!match_asv_info) {
 		pr_info("EXYNOS ASV: failed to get_match_volt(type: %d)\n", target_type);
 		return 0;
@@ -57,9 +80,37 @@ unsigned int get_match_volt(enum asv_type_id target_type, unsigned int target_fr
 	target_dvfs_level = match_asv_info->dvfs_level_nr;
 
 	for (i = 0; i < target_dvfs_level; i++) {
-		if (match_asv_info->asv_volt[i].asv_freq == target_freq)
+		if (match_asv_info->asv_volt[i].asv_freq == target_freq) {
+#ifndef CONFIG_ASV_MARGIN_TEST
 			return match_asv_info->asv_volt[i].asv_value;
+#else
+			ret = match_asv_info->asv_volt[i].asv_value;
+			break;
+#endif
+		}
 	}
+
+#ifdef CONFIG_ASV_MARGIN_TEST
+	if (ret) {
+		temp1 = ret + ((ret * offset_percent)/100);
+		if (offset_percent < -percent_range) {
+			if (((ret * offset_percent)/100) % MARGIN_UNIT != 0)
+				temp1 -= ((ret * offset_percent)/100) % MARGIN_UNIT;
+		} else if (offset_percent < 0) {
+			if (((ret * offset_percent)/100) % MARGIN_UNIT != 0)
+				temp1 -= MARGIN_UNIT + ((ret * offset_percent)/100) % MARGIN_UNIT;
+		} else if (offset_percent <= percent_range) {
+			if ((ret * offset_percent/100) % MARGIN_UNIT != 0)
+				temp1 += MARGIN_UNIT - ((ret * offset_percent)/100) % MARGIN_UNIT;
+		} else {
+			if (((ret * offset_percent)/100) % MARGIN_UNIT != 0)
+				temp1 -= ((ret * offset_percent)/100) % MARGIN_UNIT;
+		}
+		pr_info("volt offset percent=%d, prev=%u, volt=%u, id=%d",
+				offset_percent, ret, temp1, target_type);
+		return (unsigned int)temp1;
+	}
+#endif
 
 	/* If there is no matched freq, return max supplied voltage */
 	return match_asv_info->max_volt_value;
