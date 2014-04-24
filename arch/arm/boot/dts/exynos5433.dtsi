@@ -1339,7 +1339,7 @@
 			fb_driver_data {
 				fb_variant {
 					nr_windows = <5>;
-					vidtcon = <0x2020>;
+					vidtcon = <0x2010>;
 					wincon = <0x20>;
 					winmap = <0x270>;
 					keycon = <0x230>;

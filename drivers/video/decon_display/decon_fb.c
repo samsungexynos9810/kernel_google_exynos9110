@@ -596,19 +596,40 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 	data |= VIDOUTCON0_I80IF_F;
 	writel(data, sfb->regs + VIDOUTCON0);
 #endif
-	data = VIDTCON0_VBPD(win_mode->upper_margin - 1)
+	if (soc_is_exynos5433()) {
+		/* VIDTCON00 */
+		data = VIDTCON0_VBPD(win_mode->upper_margin - 1)
+			| (win_mode->lower_margin - 1);
+		writel(data, sfb->regs + sfb->variant.vidtcon);
+		/* VIDTCON01 */
+		data =  (win_mode->vsync_len - 1) << 16;
+		writel(data, sfb->regs + sfb->variant.vidtcon + 0x4);
+		/* VIDTCON10 */
+		data = VIDTCON1_HBPD(win_mode->left_margin - 1)
+			| (win_mode->right_margin - 1);
+		writel(data, sfb->regs + sfb->variant.vidtcon + 0x8);
+		/* VIDTCON11 */
+		data = (win_mode->hsync_len - 1) << 16;
+		writel(data, sfb->regs + sfb->variant.vidtcon + 0xC);
+		/* VIDTCON2 */
+		data = VIDTCON2_LINEVAL(win_mode->yres - 1)
+			| VIDTCON2_HOZVAL(win_mode->xres - 1);
+		writel(data, sfb->regs + sfb->variant.vidtcon + 0x18);
+	} else {
+		data = VIDTCON0_VBPD(win_mode->upper_margin - 1)
 			| VIDTCON0_VFPD(win_mode->lower_margin - 1)
 			| VIDTCON0_VSPW(win_mode->vsync_len - 1);
-	writel(data, sfb->regs + sfb->variant.vidtcon);
-	data = VIDTCON1_HBPD(win_mode->left_margin - 1)
+		writel(data, sfb->regs + sfb->variant.vidtcon);
+		data = VIDTCON1_HBPD(win_mode->left_margin - 1)
 			| VIDTCON1_HFPD(win_mode->right_margin - 1)
 			| VIDTCON1_HSPW(win_mode->hsync_len - 1);
-	/* VIDTCON1 */
-	writel(data, sfb->regs + sfb->variant.vidtcon + 4);
-	data = VIDTCON2_LINEVAL(win_mode->yres - 1)
+		/* VIDTCON1 */
+		writel(data, sfb->regs + sfb->variant.vidtcon + 4);
+		data = VIDTCON2_LINEVAL(win_mode->yres - 1)
 			| VIDTCON2_HOZVAL(win_mode->xres - 1);
-	/* VIDTCON2 */
-	writel(data, sfb->regs + sfb->variant.vidtcon + 8);
+		/* VIDTCON2 */
+		writel(data, sfb->regs + sfb->variant.vidtcon + 8);
+	}
 
 #ifndef CONFIG_FB_I80_COMMAND_MODE
 	writel(win_mode->yres-1, sfb->regs + LINECNT_OP_THRESHOLD);
