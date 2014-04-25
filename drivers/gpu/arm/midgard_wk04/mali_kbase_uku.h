@@ -340,7 +340,10 @@ typedef enum kbase_uk_function_id {
 	KBASE_FUNC_MEM_ALIAS, /* can be moved up along with the other MEM functions on the next API major version upgrade */
 
 	KBASE_FUNC_HWCNT_GPR_SETUP,
-	KBASE_FUNC_VSYNC_SKIP
+	KBASE_FUNC_VSYNC_SKIP,
+#ifdef SLSI_INTEGRATION
+	KBASE_FUNC_DESTROY_SURFACE
+#endif
 } kbase_uk_function_id;
 
 #endif				/* _KBASE_UKU_H_ */

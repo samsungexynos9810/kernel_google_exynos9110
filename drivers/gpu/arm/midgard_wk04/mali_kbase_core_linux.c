@@ -315,6 +315,9 @@ void s3c_fb_extra_vsync_wait_set(int);
 void s3c_fb_extra_vsync_wait_add(int);
 #endif
 
+#ifdef SLSI_INTEGRATION
+extern int kbase_mem_free_list_cleanup(kbase_context *kctx);
+#endif
 static mali_error kbase_dispatch(kbase_context *kctx, void * const args, u32 args_size)
 {
 	struct kbase_device *kbdev;
@@ -381,6 +384,14 @@ static mali_error kbase_dispatch(kbase_context *kctx, void * const args, u32 arg
 
 	/* setup complete, perform normal operation */
 	switch (id) {
+#ifdef SLSI_INTEGRATION
+	case KBASE_FUNC_DESTROY_SURFACE:
+		{
+			int ret;
+			ret = kbase_mem_free_list_cleanup(kctx);
+			break;
+		}
+#endif
 	case KBASE_FUNC_MEM_ALLOC:
 		{
 			kbase_uk_mem_alloc *mem = args;
@@ -976,7 +987,11 @@ static int kbase_release(struct inode *inode, struct file *filp)
 	return 0;
 }
 
+#ifdef SLSI_INTEGRATION
+#define CALL_MAX_SIZE 537
+#else
 #define CALL_MAX_SIZE 536
+#endif
 
 static long kbase_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {

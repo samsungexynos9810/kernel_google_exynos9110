@@ -198,6 +198,30 @@ err_out_roll_back:
 }
 KBASE_EXPORT_TEST_API(kbase_mem_allocator_alloc)
 
+#ifdef SLSI_INTEGRATION
+int kbase_mem_free_list_cleanup(kbase_context *kctx)
+{
+	int tofree,i=0;
+	kbase_mem_allocator *allocator = kctx.osalloc;
+	tofree = MAX(MEM_FREE_LIMITS, atomic_read(&allocator->free_list_size)) - MEM_FREE_LIMITS;
+	if (tofree > 0)
+	{
+		mutex_lock(&allocator->free_list_lock);
+		struct page * p;
+		for(i=0; i < tofree; i++)
+		{
+			p = list_first_entry(&allocator->free_list_head, struct page, lru);
+			list_del(&p->lru);
+			__free_page(p);
+		}
+		atomic_set(&allocator->free_list_size, MEM_FREE_LIMITS);
+		mutex_unlock(&allocator->free_list_lock);
+	}
+	return tofree;
+}
+KBASE_EXPORT_TEST_API(kbase_mem_free_list_cleanup)
+#endif
+
 void kbase_mem_allocator_free(kbase_mem_allocator *allocator, size_t nr_pages, phys_addr_t *pages, mali_bool sync_back)
 {
 	int i = 0;
