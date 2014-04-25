@@ -271,6 +271,10 @@
 #define S5P_DSIM_PRO_ON_MIC_ON_HFP	(0x74)
 
 #define S5P_DSIM_MULTI_PKT		(0x78)
+#define DSIM_PKT_SEND_CNT_SHIFT (16)    /* The send command packet(s) send point indicator */
+#define DSIM_PKT_SEND_CNT_MASK  ((0xfff) << DSIM_PKT_SEND_CNT_SHIFT)
+#define DSIM_PKT_GO_RDY                 (1 << 28)       /* The send command packet(s) on this frame VFP */
+#define DSIM_PKT_GO_EN                  (1 << 29)       /* The send command packet(s) per frame enable */
 
 #define S5P_DSIM_PLLCTRL_1G	(0x90)	/* PLL control register */
 #define S5P_DSIM_PLLCTRL	(0x94)	/* PLL control register */

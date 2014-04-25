@@ -209,7 +209,6 @@ void init_display_gpio_exynos(void)
 
 }
 
-
 int enable_display_driver_power(struct device *dev)
 {
 	struct display_gpio *gpio;
@@ -261,6 +260,26 @@ int disable_display_driver_power(struct device *dev)
 	gpio_free(gpio->id[0]);
 
 	return ret;
+}
+
+int reset_display_driver_panel(struct device *dev)
+{
+	struct display_gpio *gpio;
+	struct display_driver *dispdrv;
+
+	dispdrv = get_display_driver();
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+
+	usleep_range(5000, 6000);
+	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	usleep_range(5000, 6000);
+	gpio_set_value(gpio->id[1], 0);
+	usleep_range(5000, 6000);
+	gpio_set_value(gpio->id[1], 1);
+	usleep_range(5000, 6000);
+	gpio_free(gpio->id[1]);
+
+	return 0;
 }
 
 int enable_display_decon_clocks(struct device *dev)
@@ -316,11 +335,6 @@ int enable_display_decon_clocks(struct device *dev)
 	return ret;
 }
 
-int enable_display_driver_clocks(struct device *dev)
-{
-	return 0;
-}
-
 int disable_display_decon_clocks(struct device *dev)
 {
 	struct display_driver *dispdrv;
@@ -341,7 +355,6 @@ int disable_display_decon_clocks(struct device *dev)
 
 	clk_disable_unprepare(dispdrv->dsi_driver.clk);
 #endif
-
 	return 0;
 }
 

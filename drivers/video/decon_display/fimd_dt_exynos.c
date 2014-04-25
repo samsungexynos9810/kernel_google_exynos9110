@@ -88,6 +88,7 @@ struct mic_config g_mic_config;
 static struct display_gpio g_disp_gpios;
 
 struct mipi_dsim_lcd_config g_lcd_config;
+struct decon_lcd g_decon_lcd;
 
 static int parse_fimd_platdata(struct device_node *np)
 {
@@ -332,6 +333,11 @@ struct mipi_dsim_lcd_config *get_display_lcd_drvdata(void)
 	return &g_lcd_config;
 }
 
+struct decon_lcd *decon_get_lcd_info(void)
+{
+	return &g_decon_lcd;
+}
+
 #ifdef CONFIG_DECON_MIC
 struct mic_config *get_display_mic_config(void)
 {
@@ -341,7 +347,7 @@ struct mic_config *get_display_mic_config(void)
 
 static int parse_dsi_drvdata(struct device_node *np)
 {
-	u32 temp;
+	u32 temp, i;
 
 	DT_READ_U32_OPTIONAL(np, "e_interface", g_dsim_config.e_interface);
 	DT_READ_U32_OPTIONAL(np, "e_pixel_format",
@@ -369,15 +375,47 @@ static int parse_dsi_drvdata(struct device_node *np)
 	DT_READ_U32_OPTIONAL(np, "bta_timeout", g_dsim_config.bta_timeout);
 	DT_READ_U32_OPTIONAL(np, "rx_timeout", g_dsim_config.rx_timeout);
 
-	/* for power1 */
-	g_disp_gpios.num++;
-	g_disp_gpios.id[0] = of_get_gpio(np, 0);
-#ifdef CONFIG_S5P_DP
-	g_disp_gpios.id[0] = of_get_gpio(np, 0);
-#endif
-	g_disp_gpios.num++;
-	g_disp_gpios.id[1] = of_get_gpio(np, 1);
+	for (i = 0; i < of_gpio_count(np); i++)
+		g_disp_gpios.id[i] = of_get_gpio(np, i);
+
 	return 0;
+}
+
+int parse_lcd_drvdata(struct device_node *np)
+{
+	int ret;
+	u32 temp, res[3];
+	struct device_node *node;
+
+	node = of_parse_phandle(np, "lcd_info", 0);
+	DT_READ_U32_OPTIONAL(node, "mode", g_decon_lcd.mode);
+	DT_READ_U32_OPTIONAL(node, "mode", g_dsim_config.e_interface);
+
+	ret = of_property_read_u32_array(node, "resolution", res, 2);
+	g_decon_lcd.xres = res[0];
+	g_decon_lcd.yres = res[1];
+
+	ret = of_property_read_u32_array(node, "size", res, 2);
+	g_decon_lcd.width = res[0];
+	g_decon_lcd.height = res[1];
+
+	DT_READ_U32_OPTIONAL(node, "timing,refresh", g_decon_lcd.fps);
+
+	ret = of_property_read_u32_array(node, "timing,h-porch", res, 3);
+	g_decon_lcd.hbp = res[0];
+	g_decon_lcd.hfp = res[1];
+	g_decon_lcd.hsa = res[2];
+
+	ret = of_property_read_u32_array(node, "timing,v-porch", res, 3);
+	g_decon_lcd.vbp = res[0];
+	g_decon_lcd.vfp = res[1];
+	g_decon_lcd.vsa = res[2];
+
+	DT_READ_U32_OPTIONAL(node, "timing,dsi-hs-clk", g_decon_lcd.hs_clk);
+	DT_READ_U32_OPTIONAL(node, "timing,dsi-escape-clk", g_decon_lcd.esc_clk);
+	DT_READ_U32_OPTIONAL(node, "mic", g_decon_lcd.mic);
+
+	return ret;
 }
 
 int parse_display_dsi_dt_exynos(struct device_node *np)
@@ -434,6 +472,12 @@ static int parse_all_dt_exynos(struct device_node *parent)
 	ret = parse_display_dsi_dt_exynos(node);
 	if (ret < 0) {
 		pr_err("parsing for display controller was failed.\n");
+		return ret;
+	}
+
+	ret = parse_lcd_drvdata(parent);
+	if (ret < 0) {
+		pr_err("parsing for lcd_info was failed.\n");
 		return ret;
 	}
 

@@ -4343,9 +4343,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 #endif
 
 #if defined(CONFIG_DECON_DEVFREQ)
-	if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 720 * 1280)
-		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_HD);
-	else if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 1080 * 1920)
+	if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 1080 * 1920)
 		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_FULLHD);
 	else
 		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_WQHD);
