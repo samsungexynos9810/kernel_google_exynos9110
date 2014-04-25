@@ -59,7 +59,7 @@
 #include <linux/debugfs.h>
 #endif
 
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ) || defined(CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ)
 #define CONFIG_DECON_DEVFREQ
 #include <mach/devfreq.h>
 #include <mach/bts.h>
@@ -3577,9 +3577,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 #if defined(CONFIG_DECON_DEVFREQ)
-	if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 720 * 1280)
-		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_HD);
-	else if ((pd->win[default_win]->win_mode.xres * pd->win[default_win]->win_mode.yres) == 1080 * 1920)
+	if ((pd->win[default_win]->win_mode.videomode.xres * pd->win[default_win]->win_mode.videomode.yres) == 1080 * 1920)
 		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_FULLHD);
 	else
 		exynos5_update_media_layers(TYPE_RESOLUTION, RESOLUTION_WQHD);
