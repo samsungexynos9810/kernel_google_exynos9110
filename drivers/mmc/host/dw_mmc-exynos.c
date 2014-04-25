@@ -655,6 +655,8 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 	 */
 	if (of_find_property(np, "use-fine-tuning", NULL))
 		priv->ctrl_flag |= DW_MMC_EXYNOS_USE_FINE_TUNING;
+	if (of_find_property(np, "bypass-for-allpass", NULL))
+		priv->ctrl_flag |= DW_MMC_EXYNOS_BYPASS_FOR_ALL_PASS;
 
 	id = of_alias_get_id(host->dev->of_node, "mshc");
 	switch (id) {
@@ -816,7 +818,7 @@ static s8 exynos_dwmci_extra_tuning(u8 map)
  * each value that works, return the "middle" bit position of any sequential
  * bits.
  */
-static int find_median_of_bits(struct dw_mci *host, unsigned int map)
+static int find_median_of_bits(struct dw_mci *host, unsigned int map, bool force)
 {
 	unsigned int i, testbits, orig_bits;
 	u8 divratio;
@@ -825,7 +827,7 @@ static int find_median_of_bits(struct dw_mci *host, unsigned int map)
 	/* replicate the map so "arithimetic shift right" shifts in
 	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
 	 */
-	if (map == 0xFF)
+	if (map == 0xFF && force == false)
 		return sel;
 
 	testbits = orig_bits = map | (map << 8);
@@ -891,7 +893,7 @@ static int __find_median_of_16bits(u32 orig_bits, u16 mask, u8 startbit)
 }
 
 #define NUM_OF_MASK	7
-static int find_median_of_16bits(struct dw_mci *host, unsigned int map)
+static int find_median_of_16bits(struct dw_mci *host, unsigned int map, bool force)
 {
 	u32 orig_bits;
 	u8 i, divratio;
@@ -901,7 +903,7 @@ static int find_median_of_16bits(struct dw_mci *host, unsigned int map)
 	/* replicate the map so "arithimetic shift right" shifts in
 	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
 	 */
-	if (map == 0xFFFF)
+	if (map == 0xFFFF && force == false)
 		return sel;
 
 	divratio = (mci_readl(host, CLKSEL) >> 24) & 0x7;
@@ -949,6 +951,8 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	bool en_fine_tuning = false;
 	bool is_fine_tuning = false;
 	unsigned int abnormal_result = 0xFF;
+	u8 all_pass_count = 0;
+	bool bypass = false;
 
 	if (priv->ctrl_flag & DW_MMC_EXYNOS_USE_FINE_TUNING) {
 		en_fine_tuning = true;
@@ -1096,12 +1100,27 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 			/*
 			 * Get at middle clock sample values.
 			 */
+			if (priv->ctrl_flag & DW_MMC_EXYNOS_BYPASS_FOR_ALL_PASS)
+				bypass = (all_pass_count >= 2) ? true : false;
 			if (en_fine_tuning)
 				best_sample = find_median_of_16bits(host,
-						sample_good);
+						sample_good, bypass);
 			else
 				best_sample = find_median_of_bits(host,
-						sample_good);
+						sample_good, bypass);
+
+			if (sample_good == abnormal_result)
+				all_pass_count++;
+			if (bypass) {
+				dev_info(host->dev, "Bypassed for all pass at 3 times\n");
+				if (en_fine_tuning) {
+					best_sample = 4;
+					sample_good = 0x7FFF;
+				} else {
+					best_sample = 4;
+					sample_good = 0x7F;
+				}
+			}
 
 			dev_info(host->dev, "sample_good: 0x %02x best_sample: 0x %02x\n",
 					sample_good, best_sample);
@@ -1125,6 +1144,9 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	} while (!tuned);
 
 	if (priv->drv_str_pin && (priv->drv_str_val == DRV_STR_LV1))
+		exynos_dwmci_restore_drv_st(host);
+
+	if (bypass)
 		exynos_dwmci_restore_drv_st(host);
 
 	/*
