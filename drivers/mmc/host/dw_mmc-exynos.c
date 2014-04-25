@@ -991,8 +991,10 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci *host, u32 opcode)
 	mci_writel(host, CDTHRCTL, host->cd_rd_thr << 16 | 1);
 
 	/* Restore Base Drive Strength */
-	if (priv->drv_str_pin)
+	if (priv->drv_str_pin) {
 		exynos_dwmci_restore_drv_st(host);
+		priv->drv_str_val = priv->drv_str_base_val;
+	}
 
 	/*
 	 * eMMC 4.5 spec section 6.6.7.1 says the device is guaranteed to
