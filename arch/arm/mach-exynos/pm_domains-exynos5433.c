@@ -498,7 +498,8 @@ static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is clearing power-off sequence.\n", pd->name);
 
-	clk_disable_unprepare(msclclk->aclk_mscl_400);
+	if (msclclk->aclk_mscl_400->enable_count > 0)
+		clk_disable_unprepare(msclclk->aclk_mscl_400);
 
 	exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
 	exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
