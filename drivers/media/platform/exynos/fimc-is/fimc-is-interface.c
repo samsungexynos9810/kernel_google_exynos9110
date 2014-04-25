@@ -37,6 +37,39 @@ u32 __iomem *last_fcount1;
 
 extern struct fimc_is_sysfs_debug sysfs_debug;
 
+/* func to register error report callback */
+int fimc_is_set_err_report_vendor(struct fimc_is_interface *itf,
+		void *err_report_data,
+		int (*err_report_vendor)(void *data, u32 err_report_type))
+{
+	if (itf) {
+		itf->err_report_data = err_report_data;
+		itf->err_report_vendor = err_report_vendor;
+	}
+
+	return 0;
+}
+
+/* main func to handle error report */
+static int fimc_is_err_report_handler(struct fimc_is_interface *itf, struct fimc_is_msg *msg)
+{
+	err("IHC_REPORT_ERR(%d,%d,%d,%d,%d) is occured",
+			msg->instance,
+			msg->group,
+			msg->parameter1,
+			msg->parameter2,
+			msg->parameter3);
+
+	/*
+	 * if vendor error report func was registered,
+	 * call the func.
+	 */
+	if (itf->err_report_vendor)
+		itf->err_report_vendor(itf->err_report_data, msg->parameter2);
+
+	return 0;
+}
+
 int print_fre_work_list(struct fimc_is_work_list *this)
 {
 	struct list_head *temp;
@@ -990,7 +1023,7 @@ static void wq_func_general(struct work_struct *data)
 #if (FW_HAS_REPORT_ERR_CMD)
 		case IHC_REPORT_ERR:
 			err("IHC_REPORT_ERR is occured");
-			fimc_is_hw_logdump(itf);
+			fimc_is_err_report_handler(itf, msg);
 			break;
 #endif
 		default:
@@ -2292,6 +2325,7 @@ int fimc_is_interface_probe(struct fimc_is_interface *this,
 	init_work_list(&this->work_list[INTR_SHOT_DONE],
 		TRACE_WORK_ID_SHOT, MAX_WORK_COUNT);
 
+	this->err_report_vendor = NULL;
 #ifdef MEASURE_TIME
 #ifdef INTERFACE_TIME
 	{
