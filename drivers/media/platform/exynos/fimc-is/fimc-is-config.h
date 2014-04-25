@@ -26,7 +26,7 @@
 #define ENABLE_FAST_SHOT
 #define USE_OWN_FAULT_HANDLER
 /* #define ENABLE_MIF_400 */
-/* #define ENABLE_DTP */
+#define ENABLE_DTP
 
 #define CSI_VERSION_0000_0000	0x0
 #define CSI_VERSION_0310_0100	0x03100100

@@ -515,19 +515,27 @@ p_err:
 static void fimc_is_sensor_dtp(unsigned long data)
 {
 	struct fimc_is_video_ctx *vctx;
-	struct fimc_is_device_sensor *device;
-	struct fimc_is_device_ischain *ischain;
+	struct fimc_is_device_sensor *device = (struct fimc_is_device_sensor *)data;
 	struct fimc_is_queue *queue;
 	struct fimc_is_framemgr *framemgr;
 	struct fimc_is_frame *frame;
 	unsigned long flags;
 	u32 i;
 
-	BUG_ON(!data);
+	BUG_ON(!device);
 
 	err("DTP is detected, forcely reset");
 
-	device = (struct fimc_is_device_sensor *)data;
+	set_bit(FIMC_IS_SENSOR_FRONT_DTP_STOP, &device->state);
+	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
+
+	if (device->ischain) {
+		set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_3aa.state);
+		set_bit(FIMC_IS_GROUP_FORCE_STOP, &device->ischain->group_isp.state);
+		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &device->ischain->group_3aa.state))
+			up(&device->ischain->group_3aa.smp_trigger);
+	}
+
 	vctx = device->vctx;
 	if (!vctx) {
 		err("vctx is NULL");
@@ -536,24 +544,9 @@ static void fimc_is_sensor_dtp(unsigned long data)
 
 	queue = GET_DST_QUEUE(vctx);
 	framemgr = &queue->framemgr;
-	if ((framemgr->frame_cnt == 0) || (framemgr->frame_cnt >= FRAMEMGR_MAX_REQUEST)) {
+	if ((framemgr->frame_cnt == 0) || (framemgr->frame_cnt > FRAMEMGR_MAX_REQUEST)) {
 		err("frame count of framemgr is invalid(%d)", framemgr->frame_cnt);
 		return;
-	}
-
-	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
-
-	if (!test_bit(FIMC_IS_SENSOR_DRIVING, &device->state)) {
-		ischain = device->ischain;
-		if (!ischain) {
-			err("ischain is NULL");
-			return;
-		}
-
-		set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_3aa.state);
-		set_bit(FIMC_IS_GROUP_FORCE_STOP, &ischain->group_isp.state);
-		if (test_bit(FIMC_IS_GROUP_OTF_INPUT, &ischain->group_3aa.state))
-			up(&ischain->group_3aa.smp_trigger);
 	}
 
 	framemgr_e_barrier_irqs(framemgr, 0, flags);
@@ -850,14 +843,8 @@ static void fimc_is_sensor_instanton(struct work_struct *data)
 	device = container_of(data, struct fimc_is_device_sensor, instant_work);
 	instant_cnt = device->instant_cnt;
 
-	ret = fimc_is_sensor_start(device);
-	if (ret) {
-		merr("fimc_is_sensor_start is fail(%d)\n", device, ret);
-		goto p_err;
-	}
-
+	clear_bit(FIMC_IS_SENSOR_FRONT_DTP_STOP, &device->state);
 	clear_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
-	set_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
 
 #ifdef ENABLE_DTP
 	if (device->dtp_check) {
@@ -866,6 +853,13 @@ static void fimc_is_sensor_instanton(struct work_struct *data)
 		info("DTP checking...\n");
 	}
 #endif
+
+	ret = fimc_is_sensor_start(device);
+	if (ret) {
+		merr("fimc_is_sensor_start is fail(%d)\n", device, ret);
+		goto p_err;
+	}
+	set_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
 
 	if (instant_cnt) {
 		u32 timetowait, timetoelapse, timeout;
@@ -952,7 +946,12 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 
 	/* 3. state init*/
 	clear_bit(FIMC_IS_SENSOR_OPEN, &device->state);
+	clear_bit(FIMC_IS_SENSOR_MCLK_ON, &device->state);
+	clear_bit(FIMC_IS_SENSOR_ICLK_ON, &device->state);
+	clear_bit(FIMC_IS_SENSOR_GPIO_ON, &device->state);
+	clear_bit(FIMC_IS_SENSOR_DRIVING, &device->state);
 	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
+	clear_bit(FIMC_IS_SENSOR_FRONT_DTP_STOP, &device->state);
 	clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 	clear_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
 
@@ -1033,10 +1032,15 @@ int fimc_is_sensor_open(struct fimc_is_device_sensor *device,
 		goto p_err;
 	}
 
-	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
-	clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
+	clear_bit(FIMC_IS_SENSOR_MCLK_ON, &device->state);
+	clear_bit(FIMC_IS_SENSOR_ICLK_ON, &device->state);
+	clear_bit(FIMC_IS_SENSOR_GPIO_ON, &device->state);
 	clear_bit(FIMC_IS_SENSOR_DRIVING, &device->state);
+	clear_bit(FIMC_IS_SENSOR_FRONT_START, &device->state);
+	clear_bit(FIMC_IS_SENSOR_FRONT_DTP_STOP, &device->state);
+	clear_bit(FIMC_IS_SENSOR_BACK_START, &device->state);
 	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
+
 	device->vctx = vctx;
 	device->fcount = 0;
 	device->instant_cnt = 0;
@@ -1146,6 +1150,8 @@ int fimc_is_sensor_close(struct fimc_is_device_sensor *device)
 		merr("fimc_is_resource_put is fail", device);
 
 	clear_bit(FIMC_IS_SENSOR_OPEN, &device->state);
+	set_bit(FIMC_IS_SENSOR_BACK_NOWAIT_STOP, &device->state);
+
 p_err:
 	info("[SEN:D:%d] %s(%d)\n", device->instance, __func__, ret);
 	return ret;
