@@ -319,12 +319,10 @@ int init_lcd(struct mipi_dsim_device *dsim)
 	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
 			(unsigned int)D0[0], (unsigned int)D0[1]) == -1)
 		printk(KERN_ERR "fail to write D0 init command.\n");
-	/* This command has been moved to DECON driver
+
 	if (s5p_mipi_dsi_wr_data(dsim_base, MIPI_DSI_DCS_SHORT_WRITE,
 			0x29, 0x0) == -1)
 		printk(KERN_ERR "fail to write Disp_on init command.\n");
-	msleep(150);
-	*/
 
 	return 0;
 }
