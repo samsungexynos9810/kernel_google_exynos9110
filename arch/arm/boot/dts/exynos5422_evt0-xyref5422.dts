@@ -631,6 +631,8 @@
 
 /*disp_driver {*/
 	fimd_fb: fimd_fb {
+		lcd_info = <&s6e3fa0>;
+
 		gpios = <&gpx0 2 0xf>;
 		fimd: fimd_ctrl {
 			samsung,left_margin = <10>;
@@ -791,6 +793,17 @@
 			bta_timeout = <0xff>;
 			/* lp rx timeout 0 ~ 0xffff */
 			rx_timeout = <0xffff>;
+		};
+		s6e3fa0: s6e3fa0_fhd {
+			mode = <0>;
+			resolution = <1080 1920>;
+			size = <70 121>;
+			timing,refresh = <60>;
+			timing,h-porch = <1 1 1>;
+			timing,v-porch = <10 1 1>;
+			timing,dsi-hs-clk = <1100>;
+			timing,dsi-escape-clk = <20>;
+			mic = <0>;
 		};
 	};
 
