@@ -158,11 +158,11 @@ int create_decon_mic(struct platform_device *pdev)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 static int decon_mic_sw_reset(struct decon_mic *mic)
 {
-	void __iomem *regs = mic->reg_base + DECON_MIC_OP;
+	void __iomem *regs = mic->reg_base + MIC_OP;
 
 	u32 data = readl(regs);
 
-	data |= DECON_MIC_SW_RST;
+	data |= MIC_OP_SW_RST;
 	writel(data, regs);
 
 	return 0;
