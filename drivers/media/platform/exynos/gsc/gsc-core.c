@@ -1248,6 +1248,9 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 	struct gsc_dev *gsc = priv;
 	int gsc_irq;
 
+	if (!test_bit(ST_M2M_RUN, &gsc->state) &&
+		!test_bit(ST_OUTPUT_STREAMON, &gsc->state))
+		return IRQ_HANDLED;
 #ifdef GSC_PERF
 	gsc->end_time = sched_clock();
 	gsc_dbg("OPERATION-TIME: %llu\n", gsc->end_time - gsc->start_time);
@@ -1305,14 +1308,9 @@ static irqreturn_t gsc_irq_handler(int irq, void *priv)
 			done_buf = active_queue_pop(&gsc->out, gsc);
 			vb2_buffer_done(&done_buf->vb, VB2_BUF_STATE_DONE);
 			list_del(&done_buf->list);
-		} else {
-			gsc_info("active buf q is empty or single");
 		}
 		gsc->isr_cnt++;
-	} else {
-		gsc_info("After s_stream(0), ISR is called");
 	}
-
 
 isr_unlock:
 	spin_unlock(&gsc->slock);

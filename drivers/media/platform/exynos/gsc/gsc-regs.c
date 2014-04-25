@@ -88,14 +88,13 @@ void gsc_hw_enable_localout(struct gsc_ctx *ctx, bool enable)
 		cfg |= GSC_ENABLE_ON;
 		cfg |= GSC_ENABLE_QOS_ENABLE;
 		writel(cfg, dev->regs + GSC_ENABLE);
-		printk("GSC start(%d)\n", dev->id);
+		gsc_dbg("GSC start(%d)", dev->id);
 	} else {
 		gsc_hw_set_smart_if_con(dev, false);
 		cfg = readl(dev->regs + GSC_ENABLE);
 		cfg &= ~GSC_ENABLE_ON;
 		writel(cfg, dev->regs + GSC_ENABLE);
-
-		printk("GSC stop(%d)\n", dev->id);
+		gsc_hw_set_sfr_update(ctx);
 	}
 }
 
@@ -276,8 +275,10 @@ int gsc_wait_stop(struct gsc_dev *dev)
 
 	do {
 		cfg = readl(dev->regs + GSC_ENABLE);
-		if (!(cfg & GSC_ENABLE_STOP_STATUS_STOP_SEQ))
+		if (!(cfg & GSC_ENABLE_STOP_STATUS_STOP_SEQ)) {
+			gsc_dbg("GSC stop(%d)", dev->id);
 			return 0;
+		}
 		usleep_range(10, 20);
 	} while(ktime_us_delta(ktime_get(), start) < 1000000);
 

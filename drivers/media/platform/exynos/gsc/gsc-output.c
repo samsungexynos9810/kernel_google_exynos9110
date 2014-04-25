@@ -300,8 +300,6 @@ static int gsc_subdev_s_stream(struct v4l2_subdev *sd, int enable)
 	} else {
 		if (test_bit(ST_OUTPUT_STREAMON, &gsc->state)) {
 			gsc_out_hw_reset_off(gsc);
-			clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
-			wake_up(&gsc->irq_queue);
 		}
 	}
 
@@ -318,6 +316,14 @@ static long gsc_subdev_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg
 		gsc_hw_set_sfr_update(ctx);
 		gsc->wq_cnt++;
 		break;
+
+	case GSC_WAIT_STOP:
+		gsc_wait_stop(gsc);
+		clear_bit(ST_OUTPUT_STREAMON, &gsc->state);
+		wake_up(&gsc->irq_queue);
+		gsc->wq_cnt++;
+		break;
+
 	default:
 		gsc_err("unsupported gsc_subdev_ioctl");
 		return -EINVAL;
@@ -527,6 +533,12 @@ static int gsc_output_streamon(struct file *file, void *priv,
 		return ret;
 	}
 
+	/*
+	 * This is for setting out_path when platform
+	 * missed link_setup function
+	 */
+	gsc->out.ctx->out_path = GSC_FIMD;
+
 	ret = vb2_streamon(&gsc->out.vbq, type);
 
 	return ret;
@@ -539,7 +551,6 @@ static int gsc_output_streamoff(struct file *file, void *priv,
 	int ret = 0;
 
 	ret = vb2_streamoff(&gsc->out.vbq, type);
-
 	return ret;
 }
 
@@ -574,6 +585,7 @@ static int gsc_output_dqbuf(struct file *file, void *priv,
 		}
 	}
 	spin_unlock_irqrestore(&gsc->slock, flags);
+
 	ret = vb2_dqbuf(&gsc->out.vbq, buf,
 			 file->f_flags & O_NONBLOCK);
 	gsc->dq_cnt++;
@@ -697,18 +709,12 @@ static int gsc_out_stop_streaming(struct vb2_queue *q)
 	int ret = 0;
 
 	media_entity_pipeline_stop(&gsc->out.vfd->entity);
-
 	ret = wait_event_timeout(gsc->irq_queue,
 		!test_bit(ST_OUTPUT_STREAMON, &gsc->state),
 		msecs_to_jiffies(2000));
 	if (ret == 0) {
 		gsc_err("wait timeout");
 		return -EBUSY;
-	}
-
-	ret = gsc_wait_stop(gsc);
-	if (ret < 0) {
-		gsc_err("fail to stop");
 	}
 
 	clear_bit(DEBUG_STREAMON, &gsc->state);
