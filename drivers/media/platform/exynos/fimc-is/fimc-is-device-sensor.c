@@ -773,6 +773,9 @@ static int fimc_is_sensor_notify_by_fend(struct fimc_is_device_sensor *device, v
 		device->dtp_check = false;
 		del_timer(&device->dtp_timer);
 	}
+
+	if (device->bad_frame)
+		fimc_is_sensor_dtp((unsigned long)device);
 #endif
 
 	if (device->instant_cnt) {

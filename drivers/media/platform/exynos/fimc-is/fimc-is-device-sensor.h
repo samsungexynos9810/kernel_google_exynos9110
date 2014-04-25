@@ -171,6 +171,7 @@ struct fimc_is_device_sensor {
 
 	/* ENABLE_DTP */
 	bool						dtp_check;
+	bool						bad_frame;
 	struct timer_list				dtp_timer;
 
 	struct exynos_platform_fimc_is_sensor		*pdata;

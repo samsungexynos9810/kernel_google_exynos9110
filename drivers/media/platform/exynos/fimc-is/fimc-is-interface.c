@@ -53,6 +53,14 @@ int fimc_is_set_err_report_vendor(struct fimc_is_interface *itf,
 /* main func to handle error report */
 static int fimc_is_err_report_handler(struct fimc_is_interface *itf, struct fimc_is_msg *msg)
 {
+	struct fimc_is_device_ischain *device;
+	struct fimc_is_core *core;
+	unsigned long dtp_wait_time;
+
+	core = itf->core;
+	device = &core->ischain[msg->instance];
+	dtp_wait_time = device->sensor->dtp_timer.expires;
+
 	err("IHC_REPORT_ERR(%d,%d,%d,%d,%d) is occured",
 			msg->instance,
 			msg->group,
@@ -67,6 +75,45 @@ static int fimc_is_err_report_handler(struct fimc_is_interface *itf, struct fimc
 	if (itf->err_report_vendor)
 		itf->err_report_vendor(itf->err_report_data, msg->parameter2);
 
+	switch (msg->parameter2) {
+		case REPORT_ERR_CIS_ID:
+			warn("Occured the ERR_ID");
+			break;
+		case REPORT_ERR_CIS_ECC:
+			warn("Occured the ERR_ECC");
+		case REPORT_ERR_CIS_CRC:
+			warn("Occured the ERR_CRC");
+#ifdef ENABLE_DTP
+			if (dtp_wait_time >= jiffies)
+				device->sensor->bad_frame = true;
+#endif
+
+			break;
+		case REPORT_ERR_CIS_OVERFLOW_VC0:
+			warn("Occured the OVERFLOW_VC0");
+			break;
+		case REPORT_ERR_CIS_LOST_FE_VC0:
+			warn("Occured the LOST_FE_VC0");
+			break;
+		case REPORT_ERR_CIS_LOST_FS_VC0:
+			warn("Occured the LOST_FS_VC0");
+			break;
+		case REPORT_ERR_CIS_SOT_VC0:
+			warn("Occured the SOT_VC0");
+			break;
+		case REPORT_ERR_CIS_SOT_VC1:
+			warn("Occured the SOT_VC1");
+			break;
+		case REPORT_ERR_CIS_SOT_VC2:
+			warn("Occured the SOT_VC2");
+			break;
+		case REPORT_ERR_CIS_SOT_VC3:
+			warn("Occured the SOT_VC3");
+			break;
+		default:
+			warn("parameter is default");
+			break;
+	}
 	return 0;
 }
 
