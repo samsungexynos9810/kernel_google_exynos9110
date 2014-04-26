@@ -744,6 +744,10 @@ static int clk_set_heirachy(struct platform_device *pdev)
 	}
 #endif
 
+/* HACK: AUD_PLL always on */
+#ifdef CONFIG_SOC_EXYNOS5433
+	clk_prepare_enable(lpass.clk_fout_aud_pll);
+#endif
 #ifdef CONFIG_SOC_EXYNOS5430_REV_0
 	clk_set_parent(lpass.clk_mout_aud_pll, lpass.clk_fout_aud_pll);
 	clk_set_parent(lpass.clk_mout_aud_pll_user, lpass.clk_mout_aud_pll);
