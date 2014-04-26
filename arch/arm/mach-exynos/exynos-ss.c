@@ -96,7 +96,7 @@ struct exynos_ss_log {
 		int irq;
 		void *fn;
 		int preempt;
-		int irqs_disabled;
+		int curr_disabled;
 		int en;
 	} irq[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 
@@ -112,8 +112,8 @@ struct exynos_ss_log {
 	struct irqs_disabled_log {
 		unsigned long long time;
 		unsigned long long latency;
-		int disabled;
-		int irqs_disabled;
+		int try_disabled;
+		int curr_disabled;
 		void *caller[ESS_CALLSTACK_MAX_NUM];
 	} irqs_disabled[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 #endif
@@ -870,7 +870,7 @@ void __exynos_ss_work(struct worker *worker, struct work_struct *work,
 	ess_log->work[cpu][i].en = en;
 }
 
-void __exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en)
+void __exynos_ss_irq(unsigned int irq, void *fn, int curr_disabled, int en)
 {
 	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
 	int cpu = raw_smp_processor_id();
@@ -890,7 +890,7 @@ void __exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en)
 	ess_log->irq[cpu][i].irq = irq;
 	ess_log->irq[cpu][i].fn = (void *)fn;
 	ess_log->irq[cpu][i].preempt = preempt_count();
-	ess_log->irq[cpu][i].irqs_disabled = irqs_disabled;
+	ess_log->irq[cpu][i].curr_disabled = curr_disabled;
 	ess_log->irq[cpu][i].en = en;
 }
 
@@ -927,7 +927,7 @@ void __exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time)
 #endif
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_DISABLED
-static inline void __exynos_ss_irqs_disabled(unsigned irqs_disabled, int disabled)
+static inline void __exynos_ss_irqs_disabled(unsigned curr_disabled, int try_disabled)
 {
 	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
 	int cpu = raw_smp_processor_id();
@@ -937,9 +937,9 @@ static inline void __exynos_ss_irqs_disabled(unsigned irqs_disabled, int disable
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
-	if (disabled && irqs_disabled)
+	if (try_disabled && curr_disabled)
 		return;
-	if(!disabled && !irqs_disabled)
+	if(!try_disabled && !curr_disabled)
 		return;
 
 	i = atomic_inc_return(&ess_log->irqs_disabled_log_idx[cpu]);
@@ -949,24 +949,24 @@ static inline void __exynos_ss_irqs_disabled(unsigned irqs_disabled, int disable
 		if (likely(i != 0)) {
 			i = (i & (ARRAY_SIZE(ess_log->irqs_disabled[0]) - 1));
 			prev = i - 1;
-			if (disabled) {
-				if (unlikely(ess_log->irqs_disabled[cpu][prev].disabled == true))
+			if (try_disabled) {
+				if (unlikely(ess_log->irqs_disabled[cpu][prev].try_disabled == true))
 					break;
 			} else {
-				if (unlikely(ess_log->irqs_disabled[cpu][prev].disabled == false))
+				if (unlikely(ess_log->irqs_disabled[cpu][prev].try_disabled == false))
 					break;
 				latency = time - ess_log->irqs_disabled[cpu][prev].time;
 				if (likely(latency < ess_irqdisabled_threshold * 1000))
 					break;
 			}
 		}
-		if (unlikely(i == 0 && !disabled))
+		if (unlikely(i == 0 && !try_disabled))
 			break;
 
 		ess_log->irqs_disabled[cpu][i].latency = latency;
 		ess_log->irqs_disabled[cpu][i].time = time;
-		ess_log->irqs_disabled[cpu][i].disabled = disabled;
-		ess_log->irqs_disabled[cpu][i].irqs_disabled = irqs_disabled;
+		ess_log->irqs_disabled[cpu][i].try_disabled = try_disabled;
+		ess_log->irqs_disabled[cpu][i].curr_disabled = curr_disabled;
 
 		for (j = 0; j < ess_callstack; j++) {
 			ess_log->irqs_disabled[cpu][i].caller[j] =
@@ -982,14 +982,23 @@ static inline void __exynos_ss_irqs_disabled(unsigned irqs_disabled, int disable
 
 void arch_local_irq_restore(unsigned long flags)
 {
-	if (flags & PSR_I_BIT)
+	if (flags & PSR_I_BIT) {
+		asm volatile(
+			"	msr	cpsr_c, %0	@ local_irq_restore"
+			:
+			: "r" (flags)
+			: "memory", "cc");
+
+		__exynos_ss_irqs_disabled(irqs_disabled(), 1);
+	} else {
 		__exynos_ss_irqs_disabled(irqs_disabled(), 0);
 
-	asm volatile(
-		"	msr	cpsr_c, %0	@ local_irq_restore"
-		:
-		: "r" (flags)
-		: "memory", "cc");
+		asm volatile(
+			"	msr	cpsr_c, %0	@ local_irq_restore"
+			:
+			: "r" (flags)
+			: "memory", "cc");
+	}
 }
 
 unsigned long arch_local_irq_save(void)
