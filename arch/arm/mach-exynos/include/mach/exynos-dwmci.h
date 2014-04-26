@@ -42,6 +42,10 @@
 #define SDMMC_DSCADDR		(SDMMC_IDINTEN + SFR_OFFSET)
 #define SDMMC_BUFADDR		(SDMMC_DSCADDR + SFR_OFFSET)
 #define SDMMC_CLKSEL		(SDMMC_BUFADDR + SFR_OFFSET) /* specific to Samsung Exynos */
+
+#define SDMMC_AXI_BURST_LEN	0xffff	/*not used*/
+#define SDMMC_SECTOR_NUM_INC	0xffff	/*not used*/
+
 #endif
 
 #define SDMMC_CDTHRCTL		0x100
