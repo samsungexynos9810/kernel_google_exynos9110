@@ -84,5 +84,8 @@ struct exynos_pm_domain {
 };
 
 struct exynos_pd_callback * exynos_pd_find_callback(struct exynos_pm_domain *pd);
+#if defined(CONFIG_SOC_EXYNOS5433)
+int exynos_pd_clk_get(struct exynos_pm_domain *pd);
+#endif
 
 #endif /* __ASM_ARCH_PM_RUNTIME_H */

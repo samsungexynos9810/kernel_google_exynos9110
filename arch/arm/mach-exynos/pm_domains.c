@@ -421,7 +421,13 @@ static __init int exynos_pm_dt_parse_domains(void)
 		pd->on = exynos_pd_power;
 		pd->off = exynos_pd_power;
 		pd->cb = exynos_pd_find_callback(pd);
-
+#ifdef CONFIG_SOC_EXYNOS5433
+		ret = exynos_pd_clk_get(pd);
+		if (ret) {
+			pr_err(PM_DOMAIN_PREFIX "%s: failed to get pd clk\n", __func__);
+			return ret;
+		}
+#endif
 		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
 		if (ret)
 			pd->pd_option = 0x0102;

@@ -18,15 +18,106 @@
 #include <mach/devfreq.h>
 #include "pm_domains-exynos5433-cal.h"
 
-static DEFINE_SPINLOCK(rpmlock_cmutop);
-
 void __iomem *decon_vidcon0;
 void __iomem *decontv_vidcon0;
 void __iomem *sysreg_disp;
 
+bool is_mfc_clk_en = false;
+bool is_hevc_clk_en = false;
+bool is_gscl_clk_en = false;
+bool is_mscl_clk_en = false;
+bool is_g2d_clk_en = false;
+bool is_g3d_clk_en = false;
+bool is_isp_clk_en = false;
+bool is_cam0_clk_en = false;
+bool is_cam1_clk_en = false;
+bool is_disp_clk_en = false;
+
+struct exynos5433_pd_clk {
+	const char *name;
+	unsigned int num_iptop;
+	unsigned int num_aclktop;
+	unsigned int num_sclktop;
+	struct exynos5430_pd_state *iptop;
+	struct exynos5430_pd_state *aclktop;
+	struct exynos5430_pd_state *sclktop;
+};
+
 extern void exynos5_int_notify_power_status(const char *pd_name, unsigned int turn_on);
 extern void exynos5_isp_notify_power_status(const char *pd_name, unsigned int turn_on);
 extern void exynos5_disp_notify_power_status(const char *pd_name, unsigned int turn_on);
+
+static struct exynos5433_pd_clk pd_clk_list[] = {
+	{
+		.name = "pd-maudio",
+	}, {
+		.name = "pd-mfc",
+		.num_iptop = ARRAY_SIZE(iptop_mfc),
+		.num_aclktop = ARRAY_SIZE(aclktop_mfc),
+		.iptop = iptop_mfc,
+		.aclktop = aclktop_mfc,
+	}, {
+		.name = "pd-hevc",
+		.num_iptop = ARRAY_SIZE(iptop_hevc),
+		.num_aclktop = ARRAY_SIZE(aclktop_hevc),
+		.iptop = iptop_hevc,
+		.aclktop = aclktop_hevc,
+	}, {
+		.name = "pd-gscl",
+		.num_iptop = ARRAY_SIZE(iptop_gscl),
+		.num_aclktop = ARRAY_SIZE(aclktop_gscl),
+		.iptop = iptop_gscl,
+		.aclktop = aclktop_gscl,
+	}, {
+		.name = "pd-mscl",
+		.num_iptop = ARRAY_SIZE(iptop_mscl),
+		.num_aclktop = ARRAY_SIZE(aclktop_mscl),
+		.num_sclktop = ARRAY_SIZE(sclktop_mscl),
+		.iptop = iptop_mscl,
+		.aclktop = aclktop_mscl,
+		.sclktop = sclktop_mscl,
+	}, {
+		.name = "pd-g2d",
+		.num_iptop = ARRAY_SIZE(iptop_g2d),
+		.num_aclktop = ARRAY_SIZE(aclktop_g2d),
+		.iptop = iptop_g2d,
+		.aclktop = aclktop_g2d,
+	}, {
+		.name = "pd-isp",
+		.num_iptop = ARRAY_SIZE(iptop_isp),
+		.num_aclktop = ARRAY_SIZE(aclktop_isp),
+		.iptop = iptop_isp,
+		.aclktop = aclktop_isp,
+	}, {
+		.name = "pd-cam0",
+		.num_iptop = ARRAY_SIZE(iptop_cam0),
+		.num_aclktop = ARRAY_SIZE(aclktop_cam0),
+		.iptop = iptop_cam0,
+		.aclktop = aclktop_cam0,
+	}, {
+		.name = "pd-cam1",
+		.num_iptop = ARRAY_SIZE(iptop_cam1),
+		.num_aclktop = ARRAY_SIZE(aclktop_cam1),
+		.num_sclktop = ARRAY_SIZE(sclktop_cam1),
+		.iptop = iptop_cam1,
+		.aclktop = aclktop_cam1,
+		.sclktop = sclktop_cam1,
+	}, {
+		.name = "pd-g3d",
+		.num_iptop = ARRAY_SIZE(iptop_g3d),
+		.num_aclktop = ARRAY_SIZE(aclktop_g3d),
+		.iptop = iptop_g3d,
+		.aclktop = aclktop_g3d,
+	}, {
+		.name = "pd-disp",
+		.num_iptop = ARRAY_SIZE(ipmif_disp),
+		.num_aclktop = ARRAY_SIZE(aclkmif_disp),
+		.num_sclktop = ARRAY_SIZE(sclkmif_disp),
+		.iptop = ipmif_disp,
+		.aclktop = aclkmif_disp,
+		.sclktop = sclkmif_disp,
+	},
+};
 
 static struct sleep_save exynos_pd_maudio_clk_save[] = {
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_AUD0),

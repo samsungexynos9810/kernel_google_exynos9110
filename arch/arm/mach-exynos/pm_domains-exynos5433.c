@@ -18,25 +18,14 @@
 
 static void exynos5_pd_enable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 {
-	int i;
-	unsigned long val;
-	spin_lock(&rpmlock_cmutop);
-	for (i = 0; i < nr_regs; i++, ptr++) {
-		val = __raw_readl(ptr->reg);
-		__raw_writel(val | ptr->val, ptr->reg);
-	}
-	spin_unlock(&rpmlock_cmutop);
+	for (; nr_regs > 0; nr_regs--, ptr++)
+		clk_prepare_enable(ptr->clock);
 }
 
 static void exynos5_pd_disable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 {
-	unsigned long val;
-	spin_lock(&rpmlock_cmutop);
-	for (; nr_regs > 0; nr_regs--, ptr++) {
-		val = __raw_readl(ptr->reg);
-		__raw_writel(val & ~(ptr->val), ptr->reg);
-	}
-	spin_unlock(&rpmlock_cmutop);
+	for (; nr_regs > 0; nr_regs--, ptr++)
+		clk_disable_unprepare(ptr->clock);
 }
 
 static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned int turn_on)
@@ -80,6 +69,7 @@ static int exynos_pd_g3d_power_on_pre(struct exynos_pm_domain *pd)
 	exynos5_pd_enable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));
 
 	exynos_tmu_core_control(false, 2);	/* disable G3D TMU core before G3D is turned off */
+
 	return 0;
 }
 
@@ -91,8 +81,6 @@ static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 	DEBUG_PRINT_INFO("EXYNOS5430_DIV_G3D: %08x\n", __raw_readl(EXYNOS5430_DIV_G3D));
 	DEBUG_PRINT_INFO("EXYNOS5430_SRC_SEL_G3D: %08x\n", __raw_readl(EXYNOS5430_SRC_SEL_G3D));
 
-	/*exynos5_pd_disable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));*/
-
 	exynos_tmu_core_control(true, 2);	/* enable G3D TMU core after G3D is turned on */
 
 	return 0;
@@ -100,7 +88,11 @@ static int exynos_pd_g3d_power_on_post(struct exynos_pm_domain *pd)
 
 static int exynos_pd_g3d_power_off_pre(struct exynos_pm_domain *pd)
 {
-	/*exynos5_pd_enable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));*/
+	if (is_g3d_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_g3d, ARRAY_SIZE(iptop_g3d));
+		exynos5_pd_enable_clk(aclktop_g3d, ARRAY_SIZE(aclktop_g3d));
+		is_g3d_clk_en = true;
+	}
 
 	s3c_pm_do_save(exynos_pd_g3d_clk_save,
 			ARRAY_SIZE(exynos_pd_g3d_clk_save));
@@ -139,14 +131,16 @@ static int exynos_pd_mfc_power_on_post(struct exynos_pm_domain *pd)
 	/* dynamic clock gating enabled */
 	__raw_writel(1, S5P_VA_SYSREG_MFC0 + 0x204);
 
-	exynos5_pd_disable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
-
 	return 0;
 }
 
 static int exynos_pd_mfc_power_off_pre(struct exynos_pm_domain *pd)
 {
-	exynos5_pd_enable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
+	if (is_mfc_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_mfc, ARRAY_SIZE(iptop_mfc));
+		exynos5_pd_enable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
+		is_mfc_clk_en = true;
+	}
 
 	s3c_pm_do_save(exynos_pd_mfc_clk_save,
 			ARRAY_SIZE(exynos_pd_mfc_clk_save));
@@ -190,14 +184,16 @@ static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 	/* dynamic clock gating enabled */
 	__raw_writel(1, S5P_VA_SYSREG_HEVC + 0x204);
 
-	/*exynos5_pd_disable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));*/
-
 	return 0;
 }
 
 static int exynos_pd_hevc_power_off_pre(struct exynos_pm_domain *pd)
 {
-	/*exynos5_pd_enable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));*/
+	if (is_hevc_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_hevc, ARRAY_SIZE(iptop_hevc));
+		exynos5_pd_enable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));
+		is_hevc_clk_en = true;
+	}
 
 	s3c_pm_do_save(exynos_pd_hevc_clk_save,
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
@@ -238,14 +234,16 @@ static int exynos_pd_gscl_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
-	/*exynos5_pd_disable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));*/
-
 	return 0;
 }
 
 static int exynos_pd_gscl_power_off_pre(struct exynos_pm_domain *pd)
 {
-	/*exynos5_pd_enable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));*/
+	if (is_gscl_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_gscl, ARRAY_SIZE(iptop_gscl));
+		exynos5_pd_enable_clk(aclktop_gscl, ARRAY_SIZE(aclktop_gscl));
+		is_gscl_clk_en = true;
+	}
 
 	s3c_pm_do_save(exynos_pd_gscl_clk_save,
 			ARRAY_SIZE(exynos_pd_gscl_clk_save));
@@ -297,9 +295,6 @@ static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 	writel(0x1f, sysreg_disp + 0x208);
 	writel(0x0, sysreg_disp + 0x500);
 
-	/*exynos5_pd_disable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));*/
-	/*exynos5_pd_disable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));*/
-
 	return 0;
 }
 
@@ -316,8 +311,12 @@ static int exynos_pd_disp_power_off_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("disp pre power off\n");
 
-	/*exynos5_pd_enable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));*/
-	/*exynos5_pd_enable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));*/
+	if (is_disp_clk_en == false) {
+		exynos5_pd_enable_clk(ipmif_disp, ARRAY_SIZE(ipmif_disp));
+		exynos5_pd_enable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));
+		exynos5_pd_enable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));
+		is_disp_clk_en = true;
+	}
 
 	if (!IS_ERR_OR_NULL(decon_vidcon0)) {
 		do {
@@ -466,9 +465,6 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 	__raw_writel(1, S5P_VA_SYSREG_MSCL + 0x204);
 	__raw_writel(0, S5P_VA_SYSREG_MSCL + 0x500);
 
-	/*exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
-	/*exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
-
 	return 0;
 }
 
@@ -476,8 +472,12 @@ static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
 {
 	struct exynos5433_mscl_clk *msclclk = pd->priv;
 
-	/*exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
-	/*exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
+	if (is_mscl_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_mscl, ARRAY_SIZE(iptop_mscl));
+		exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
+		exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
+		is_mscl_clk_en = true;
+	}
 
 	s3c_pm_do_save(exynos_pd_mscl_clk_save,
 			ARRAY_SIZE(exynos_pd_mscl_clk_save));
@@ -534,14 +534,16 @@ static int exynos_pd_g2d_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
-	/*exynos5_pd_disable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));*/
-
 	return 0;
 }
 
 static int exynos_pd_g2d_power_off_pre(struct exynos_pm_domain *pd)
 {
-	/*exynos5_pd_enable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));*/
+	if (is_g2d_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_g2d, ARRAY_SIZE(iptop_g2d));
+		exynos5_pd_enable_clk(aclktop_g2d, ARRAY_SIZE(aclktop_g2d));
+		is_g2d_clk_en = true;
+	}
 
 	s3c_pm_do_save(exynos_pd_g2d_clk_save,
 			ARRAY_SIZE(exynos_pd_g2d_clk_save));
@@ -594,8 +596,6 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 	__raw_writel(0x7F, S5P_VA_SYSREG_ISP + 0x20C);
 	__raw_writel(0x0, S5P_VA_SYSREG_ISP + 0x500);;
 
-	/*exynos5_pd_disable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
-
 	exynos_tmu_core_control(true, 4);	/* enable ISP TMU core after ISP is turned on */
 
 	return 0;
@@ -610,7 +610,11 @@ static int exynos_pd_isp_power_off_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-	/*exynos5_pd_enable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
+	if (is_isp_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_isp, ARRAY_SIZE(iptop_isp));
+		exynos5_pd_enable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));
+		is_isp_clk_en = true;
+	}
 
 	/* For prevent FW clock gating */
 	__raw_writel(0x0000007F, EXYNOS5430_ENABLE_ACLK_ISP_LOCAL);
@@ -686,8 +690,6 @@ static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 	__raw_writel(0x7FF, S5P_VA_SYSREG_CAM0 + 0x20C);
 	__raw_writel(0x0, S5P_VA_SYSREG_CAM0 + 0x500);
 
-	/*exynos5_pd_disable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));*/
-
 	return 0;
 }
 
@@ -700,7 +702,11 @@ static int exynos_pd_cam0_power_off_pre(struct exynos_pm_domain *pd)
 {
 	unsigned int reg;
 
-	/*exynos5_pd_enable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));*/
+	if (is_cam0_clk_en == false) {
+		exynos5_pd_enable_clk(iptop_cam0, ARRAY_SIZE(iptop_cam0));
+		exynos5_pd_enable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));
+		is_cam0_clk_en = true;
+	}
 
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
 	/* For prevent FW clock gating */
@@ -779,9 +785,6 @@ static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
 	__raw_writel(0xFFF, S5P_VA_SYSREG_CAM1 + 0x20C);
 	__raw_writel(0x0, S5P_VA_SYSREG_CAM1 + 0x500);
 
-	/*exynos5_pd_disable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));*/
-	/*exynos5_pd_disable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));*/
-
 	return 0;
 }
 
@@ -796,8 +799,12 @@ static int exynos_pd_cam1_power_off_pre(struct exynos_pm_domain *pd)
 
 	DEBUG_PRINT_INFO("%s is preparing power-off sequence.\n", pd->name);
 
-	/*exynos5_pd_enable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));*/
-	/*exynos5_pd_enable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));*/
+	if (is_cam1_clk_en ==false) {
+		exynos5_pd_enable_clk(iptop_cam1, ARRAY_SIZE(iptop_cam1));
+		exynos5_pd_enable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));
+		exynos5_pd_enable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));
+		is_cam1_clk_en = true;
+	}
 
 	/* For prevent FW clock gating */
 	__raw_writel(0x0000001F, EXYNOS5430_ENABLE_ACLK_CAM1_LOCAL);
@@ -1023,4 +1030,47 @@ struct exynos_pd_callback * exynos_pd_find_callback(struct exynos_pm_domain *pd)
 
 	pd->cb = cb;
 	return cb;
+}
+
+int exynos_pd_clk_get(struct exynos_pm_domain *pd)
+{
+	int i = 0, match = 0;
+	struct exynos5430_pd_state *iptop = NULL, *aclktop = NULL, *sclktop = NULL;
+
+	for (i = 0; i < ARRAY_SIZE(pd_clk_list); i++) {
+		if (strcmp(pd_clk_list[i].name, pd->name))
+			continue;
+		DEBUG_PRINT_INFO("%s: found clk name list\n", pd->name);
+		match = i;
+		iptop = pd_clk_list[i].iptop;
+		aclktop = pd_clk_list[i].aclktop;
+		sclktop = pd_clk_list[i].sclktop;
+		break;
+	}
+
+	for (i = 0; i < pd_clk_list[match].num_iptop; i++) {
+		iptop[i].clock = samsung_clk_get_by_reg((unsigned long)iptop[i].reg, iptop[i].bit_offset);
+		if (IS_ERR(iptop[i].clock)) {
+			pr_err(PM_DOMAIN_PREFIX "clk_get of %s's iptop clock has been failed\n", pd_clk_list[match].name);
+			return -ENODEV;
+		}
+	}
+
+	for (i = 0; i < pd_clk_list[match].num_aclktop; i++) {
+		aclktop[i].clock = samsung_clk_get_by_reg((unsigned long)aclktop[i].reg, aclktop[i].bit_offset);
+		if (IS_ERR(aclktop[i].clock)) {
+			pr_err(PM_DOMAIN_PREFIX "clk_get of %s's aclktop clock has been failed\n", pd_clk_list[match].name);
+			return -ENODEV;
+		}
+	}
+
+	for (i = 0; i < pd_clk_list[match].num_sclktop; i++) {
+		sclktop[i].clock = samsung_clk_get_by_reg((unsigned long)sclktop[i].reg, sclktop[i].bit_offset);
+		if (IS_ERR(sclktop[i].clock)) {
+			pr_err(PM_DOMAIN_PREFIX "clk_get of %s's sclktop clock has been failed\n", pd_clk_list[match].name);
+			return -ENODEV;
+		}
+	}
+
+	return 0;
 }
