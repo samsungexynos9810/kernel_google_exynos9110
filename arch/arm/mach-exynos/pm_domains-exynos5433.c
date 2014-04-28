@@ -136,6 +136,9 @@ static int exynos_pd_mfc_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
+	/* dynamic clock gating enabled */
+	__raw_writel(1, S5P_VA_SYSREG_MFC0 + 0x204);
+
 	exynos5_pd_disable_clk(aclktop_mfc, ARRAY_SIZE(aclktop_mfc));
 
 	return 0;
@@ -183,6 +186,9 @@ static int exynos_pd_hevc_power_on_post(struct exynos_pm_domain *pd)
 			ARRAY_SIZE(exynos_pd_hevc_clk_save));
 
 	exynos_pd_notify_power_state(pd, true);
+
+	/* dynamic clock gating enabled */
+	__raw_writel(1, S5P_VA_SYSREG_HEVC + 0x204);
 
 	/*exynos5_pd_disable_clk(aclktop_hevc, ARRAY_SIZE(aclktop_hevc));*/
 
@@ -285,6 +291,11 @@ static int exynos_pd_disp_power_on_post(struct exynos_pm_domain *pd)
 			ARRAY_SIZE(exynos_pd_disp_clk_save));
 
 	exynos_pd_notify_power_state(pd, true);
+
+	/* Enable DISP dynamic clock gating */
+	writel(0xf, sysreg_disp + 0x204);
+	writel(0x1f, sysreg_disp + 0x208);
+	writel(0x0, sysreg_disp + 0x500);
 
 	/*exynos5_pd_disable_clk(aclkmif_disp, ARRAY_SIZE(aclkmif_disp));*/
 	/*exynos5_pd_disable_clk(sclkmif_disp, ARRAY_SIZE(sclkmif_disp));*/
@@ -402,6 +413,10 @@ static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
+	/* dynamic clock gating enabled */
+	__raw_writel(1, S5P_VA_SYSREG_MSCL + 0x204);
+	__raw_writel(0, S5P_VA_SYSREG_MSCL + 0x500);
+
 	/*exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));*/
 	/*exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));*/
 
@@ -517,6 +532,12 @@ static int exynos_pd_isp_power_on_post(struct exynos_pm_domain *pd)
 
 	exynos_pd_notify_power_state(pd, true);
 
+	/* dynamic clock gating enabled */
+	__raw_writel(0x3, S5P_VA_SYSREG_ISP + 0x204);
+	__raw_writel(0x7, S5P_VA_SYSREG_ISP + 0x208);
+	__raw_writel(0x7F, S5P_VA_SYSREG_ISP + 0x20C);
+	__raw_writel(0x0, S5P_VA_SYSREG_ISP + 0x500);;
+
 	/*exynos5_pd_disable_clk(aclktop_isp, ARRAY_SIZE(aclktop_isp));*/
 
 	exynos_tmu_core_control(true, 4);	/* enable ISP TMU core after ISP is turned on */
@@ -602,6 +623,12 @@ static int exynos_pd_cam0_power_on_post(struct exynos_pm_domain *pd)
 			ARRAY_SIZE(exynos_pd_cam0_clk_save));
 
 	exynos_pd_notify_power_state(pd, true);
+
+	/* dynamic clock gating enabled */
+	__raw_writel(0x3, S5P_VA_SYSREG_CAM0 + 0x204);
+	__raw_writel(0x7, S5P_VA_SYSREG_CAM0 + 0x208);
+	__raw_writel(0x7FF, S5P_VA_SYSREG_CAM0 + 0x20C);
+	__raw_writel(0x0, S5P_VA_SYSREG_CAM0 + 0x500);
 
 	/*exynos5_pd_disable_clk(aclktop_cam0, ARRAY_SIZE(aclktop_cam0));*/
 
@@ -689,6 +716,12 @@ static int exynos_pd_cam1_power_on_post(struct exynos_pm_domain *pd)
 			ARRAY_SIZE(exynos_pd_cam1_clk_save));
 
 	exynos_pd_notify_power_state(pd, true);
+
+	/* dynamic clock gating enabled */
+	__raw_writel(0x3, S5P_VA_SYSREG_CAM1 + 0x204);
+	__raw_writel(0x7, S5P_VA_SYSREG_CAM1 + 0x208);
+	__raw_writel(0xFFF, S5P_VA_SYSREG_CAM1 + 0x20C);
+	__raw_writel(0x0, S5P_VA_SYSREG_CAM1 + 0x500);
 
 	/*exynos5_pd_disable_clk(aclktop_cam1, ARRAY_SIZE(aclktop_cam1));*/
 	/*exynos5_pd_disable_clk(sclktop_cam1, ARRAY_SIZE(sclktop_cam1));*/
@@ -917,6 +950,10 @@ struct exynos_pd_callback * exynos_pd_find_callback(struct exynos_pm_domain *pd)
 	decontv_vidcon0 = ioremap(EXYNOS5433_PA_DECONTV, SZ_4K);
 	if (IS_ERR_OR_NULL(decontv_vidcon0))
 		pr_err("PM DOMAIN : ioremap of decontv VIDCON0 register fail\n");
+
+	sysreg_disp = ioremap(EXYNOS5433_PA_SYSREG_DISP, SZ_4K);
+	if (IS_ERR_OR_NULL(sysreg_disp))
+		pr_err("PM DOMAIN : ioremap of SYSREG_DISP fail\n");
 
 	/* find callback function for power domain */
 	for (i=0, cb = &pd_callback_list[0]; i<ARRAY_SIZE(pd_callback_list); i++, cb++) {

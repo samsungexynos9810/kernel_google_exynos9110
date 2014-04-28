@@ -21,6 +21,7 @@ static DEFINE_SPINLOCK(rpmlock_cmutop);
 
 void __iomem *decon_vidcon0;
 void __iomem *decontv_vidcon0;
+void __iomem *sysreg_disp;
 
 extern void exynos5_int_notify_power_status(const char *pd_name, unsigned int turn_on);
 extern void exynos5_isp_notify_power_status(const char *pd_name, unsigned int turn_on);
