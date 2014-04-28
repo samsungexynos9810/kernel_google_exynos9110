@@ -14,6 +14,7 @@
 #define EXYNOS_SNAPSHOT_H
 
 #include <linux/sched.h>
+#include <linux/ktime.h>
 #include <plat/map-base.h>
 #include <mach/exynos-ss-soc.h>
 
@@ -42,6 +43,7 @@ enum esslog_flag {
 extern void __exynos_ss_task(int cpu, struct task_struct *task);
 extern void __exynos_ss_work(struct worker *worker, struct work_struct *work,
 				work_func_t f, int en);
+extern void __exynos_ss_clockevent(unsigned long long clc, int64_t delta, ktime_t next_event);
 extern void __exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en);
 extern void __exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time);
 extern void __exynos_ss_hrtimer(struct hrtimer *timer, s64 *now,
@@ -82,6 +84,11 @@ static inline void exynos_ss_work(struct worker *worker, struct work_struct *wor
 	__exynos_ss_work(worker, work, f, en);
 }
 
+static inline void exynos_ss_clockevent(unsigned long long clc, int64_t delta, ktime_t next_event)
+{
+	__exynos_ss_clockevent(clc, delta, next_event);
+}
+
 static inline void exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en)
 {
 	__exynos_ss_irq(irq, fn, irqs_disabled, en);
@@ -120,6 +127,7 @@ static inline void exynos_ss_softirq(unsigned int irq, void *fn, int irqs_disabl
 #else
 #define exynos_ss_task(a,b)		do { } while(0)
 #define exynos_ss_work(a,b,c,d)		do { } while(0)
+#define exynos_ss_clockevent(a,b,c)	do { } while(0)
 #define exynos_ss_irq(a,b,c,d)		do { } while(0)
 #define exynos_ss_irq_exit(a,b)		do { } while(0)
 #define exynos_ss_irq_exit_var(v)	do { v = 0; } while(0)

@@ -91,6 +91,13 @@ struct exynos_ss_log {
 		int en;
 	} work[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 
+	struct clockevent_log {
+		unsigned long long time;
+		unsigned long long clc;
+		int64_t	delta;
+		ktime_t	next_event;
+	} clockevent[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
+
 	struct irq_log {
 		unsigned long long time;
 		int irq;
@@ -157,6 +164,7 @@ struct exynos_ss_log {
 #endif
 	atomic_t task_log_idx[ESS_NR_CPUS];
 	atomic_t work_log_idx[ESS_NR_CPUS];
+	atomic_t clockevent_log_idx[ESS_NR_CPUS];
 	atomic_t irq_log_idx[ESS_NR_CPUS];
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
 	atomic_t irq_exit_log_idx[ESS_NR_CPUS];
@@ -734,6 +742,7 @@ static void __init exynos_ss_fixmap_header(void)
 	for (i = 0; i < ESS_NR_CPUS; i++) {
 		atomic_set(&(ess_log->task_log_idx[i]), -1);
 		atomic_set(&(ess_log->work_log_idx[i]), -1);
+		atomic_set(&(ess_log->clockevent_log_idx[i]), -1);
 		atomic_set(&(ess_log->irq_log_idx[i]), -1);
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
 		atomic_set(&(ess_log->irq_exit_log_idx[i]), -1);
@@ -868,6 +877,24 @@ void __exynos_ss_work(struct worker *worker, struct work_struct *work,
 	ess_log->work[cpu][i].work = work;
 	ess_log->work[cpu][i].f = f;
 	ess_log->work[cpu][i].en = en;
+}
+
+void __exynos_ss_clockevent(unsigned long long clc, int64_t delta, ktime_t next_event)
+{
+	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	int cpu = raw_smp_processor_id();
+	unsigned i;
+
+	if (unlikely(!ess_base.enabled || !item->entry.enabled))
+		return;
+
+	i = atomic_inc_return(&ess_log->clockevent_log_idx[cpu]) &
+	    (ARRAY_SIZE(ess_log->clockevent[0]) - 1);
+
+	ess_log->clockevent[cpu][i].time = cpu_clock(cpu);
+	ess_log->clockevent[cpu][i].clc = clc;
+	ess_log->clockevent[cpu][i].delta = delta;
+	ess_log->clockevent[cpu][i].next_event = next_event;
 }
 
 void __exynos_ss_irq(unsigned int irq, void *fn, int curr_disabled, int en)
