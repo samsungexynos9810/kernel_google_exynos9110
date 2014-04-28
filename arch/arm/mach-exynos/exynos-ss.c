@@ -931,57 +931,52 @@ static inline void __exynos_ss_irqs_disabled(unsigned curr_disabled, int try_dis
 {
 	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
 	int cpu = raw_smp_processor_id();
-	unsigned long long time;
 	unsigned long long latency = 0;
-	unsigned i, j, prev;
+	unsigned long long time = 0;
+	unsigned j, curr;
+	long prev;
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
-	if (try_disabled && curr_disabled)
-		return;
-	if(!try_disabled && !curr_disabled)
-		return;
 
-	i = atomic_inc_return(&ess_log->irqs_disabled_log_idx[cpu]);
-	time = cpu_clock(cpu);
-
-	do {
-		if (likely(i != 0)) {
-			i = (i & (ARRAY_SIZE(ess_log->irqs_disabled[0]) - 1));
-			prev = i - 1;
-			if (try_disabled) {
-				if (unlikely(ess_log->irqs_disabled[cpu][prev].try_disabled == true))
-					break;
-			} else {
-				if (unlikely(ess_log->irqs_disabled[cpu][prev].try_disabled == false))
-					break;
-				latency = time - ess_log->irqs_disabled[cpu][prev].time;
-				if (likely(latency < ess_irqdisabled_threshold * 1000))
-					break;
-			}
+	prev = atomic_read(&ess_log->irqs_disabled_log_idx[cpu]);
+	if (likely(prev > -1)) {
+		prev = ((unsigned long)prev & (ARRAY_SIZE(ess_log->irqs_disabled[0]) - 1));
+		if (unlikely(ess_log->irqs_disabled[cpu][prev].try_disabled == try_disabled))
+			return;
+		time = cpu_clock(cpu);
+		if (!try_disabled) {
+			latency = time - ess_log->irqs_disabled[cpu][prev].time;
+			/* remove status under threshold */
+			if (likely(latency < ess_irqdisabled_threshold * 1000))
+				return;
 		}
-		if (unlikely(i == 0 && !try_disabled))
-			break;
+	} else {
+		/* We need only irq disable function at the first time */
+		if (!try_disabled)
+			return;
+		time = cpu_clock(cpu);
+	}
 
-		ess_log->irqs_disabled[cpu][i].latency = latency;
-		ess_log->irqs_disabled[cpu][i].time = time;
-		ess_log->irqs_disabled[cpu][i].try_disabled = try_disabled;
-		ess_log->irqs_disabled[cpu][i].curr_disabled = curr_disabled;
+	/* It should be saved to the new array */
+	curr = atomic_inc_return(&ess_log->irqs_disabled_log_idx[cpu]) &
+		    (ARRAY_SIZE(ess_log->irqs_disabled[0]) - 1);
 
-		for (j = 0; j < ess_callstack; j++) {
-			ess_log->irqs_disabled[cpu][i].caller[j] =
-					(void *)(return_address(j + 1) - sizeof(int));
-		}
-		/*  return is correct */
-		return;
-	} while(0);
+	ess_log->irqs_disabled[cpu][curr].latency = latency;
+	ess_log->irqs_disabled[cpu][curr].time = time;
+	ess_log->irqs_disabled[cpu][curr].try_disabled = try_disabled;
+	ess_log->irqs_disabled[cpu][curr].curr_disabled = curr_disabled;
 
-	/*  If it may be arrived here, it's exception */
-	atomic_dec(&ess_log->irqs_disabled_log_idx[cpu]);
+	for (j = 0; j < ess_callstack; j++) {
+		ess_log->irqs_disabled[cpu][curr].caller[j] =
+				(void *)(return_address(j + 1) - sizeof(int));
+	}
 }
 
 void arch_local_irq_restore(unsigned long flags)
 {
+	unsigned irqs_disabled = irqs_disabled();
+
 	if (flags & PSR_I_BIT) {
 		asm volatile(
 			"	msr	cpsr_c, %0	@ local_irq_restore"
@@ -989,9 +984,9 @@ void arch_local_irq_restore(unsigned long flags)
 			: "r" (flags)
 			: "memory", "cc");
 
-		__exynos_ss_irqs_disabled(irqs_disabled(), 1);
+		__exynos_ss_irqs_disabled(irqs_disabled, 1);
 	} else {
-		__exynos_ss_irqs_disabled(irqs_disabled(), 0);
+		__exynos_ss_irqs_disabled(irqs_disabled, 0);
 
 		asm volatile(
 			"	msr	cpsr_c, %0	@ local_irq_restore"
