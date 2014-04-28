@@ -232,7 +232,7 @@ static unsigned ess_callstack = CONFIG_EXYNOS_SNAPSHOT_CALLSTACK;
  *  evince memory-map of snapshot
  */
 static struct exynos_ss_item ess_items[] = {
-	{"log_kevents",	{SZ_4M,		0, 0, true}, NULL ,NULL},
+	{"log_kevents",	{SZ_8M,		0, 0, true}, NULL ,NULL},
 	{"log_kernel",	{SZ_2M,		0, 0, true}, NULL ,NULL},
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
 	{"log_main",	{SZ_2M + SZ_1M,	0, 0, true}, NULL ,NULL},
