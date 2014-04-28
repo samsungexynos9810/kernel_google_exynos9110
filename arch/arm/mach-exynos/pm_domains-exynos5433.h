@@ -1,7 +1,7 @@
 /*
  * Exynos Generic power domain support.
  *
- * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com
  *
  * Implementation of Exynos specific power domain control which is used in
@@ -16,6 +16,7 @@
 #include <plat/pm.h>
 #include <mach/pm_domains.h>
 #include <mach/devfreq.h>
+#include "pm_domains-exynos5433-cal.h"
 
 static DEFINE_SPINLOCK(rpmlock_cmutop);
 
@@ -26,122 +27,6 @@ void __iomem *sysreg_disp;
 extern void exynos5_int_notify_power_status(const char *pd_name, unsigned int turn_on);
 extern void exynos5_isp_notify_power_status(const char *pd_name, unsigned int turn_on);
 extern void exynos5_disp_notify_power_status(const char *pd_name, unsigned int turn_on);
-
-struct exynos5430_pd_state {
-	void __iomem *reg;
-	unsigned long val;
-};
-
-/* BLK_MFC clocks */
-static struct exynos5430_pd_state iptop_mfc[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<1), },
-};
-static struct exynos5430_pd_state aclktop_mfc[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,    .val = (1<<3), },
-};
-
-/* BLK_HEVC clocks */
-static struct exynos5430_pd_state iptop_hevc[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<3), },
-};
-static struct exynos5430_pd_state aclktop_hevc[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,    .val = (1<<5), },
-};
-
-/* BLK_GSCL clocks */
-static struct exynos5430_pd_state iptop_gscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<7), },
-};
-static struct exynos5430_pd_state aclktop_gscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,    .val = (1<<14), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,    .val = (1<<15), },
-};
-
-/* BLK_MSCL clocks */
-static struct exynos5430_pd_state iptop_mscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<10), },
-};
-static struct exynos5430_pd_state aclktop_mscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<19), },
-};
-static struct exynos5430_pd_state sclktop_mscl[] = {
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_MSCL,       .val = (1<<0), },
-};
-
-/* BLK_G2D clocks */
-static struct exynos5430_pd_state iptop_g2d[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	.val = (1<<0), },
-};
-static struct exynos5430_pd_state aclktop_g2d[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,    .val = (1<<0), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,    .val = (1<<2), },
-};
-
-/* BLK_ISP clocks */
-static struct exynos5430_pd_state iptop_isp[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<4), },
-};
-static struct exynos5430_pd_state aclktop_isp[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<6), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<7), },
-};
-
-/* BLK_CAM0 clocks */
-static struct exynos5430_pd_state iptop_cam0[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<5), },
-};
-static struct exynos5430_pd_state aclktop_cam0[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<8), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<9), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<10), },
-};
-
-/* BLK_CAM1 clocks */
-static struct exynos5430_pd_state iptop_cam1[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,	 .val = (1<<6), },
-};
-static struct exynos5430_pd_state aclktop_cam1[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<11), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<12), },
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<13), },
-};
-static struct exynos5430_pd_state sclktop_cam1[] = {
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<0), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<1), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<2), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<4), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<5), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<6), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_TOP_CAM1,        .val = (1<<7), },
-};
-
-/* BLK_G3D clocks */
-static struct exynos5430_pd_state iptop_g3d[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_TOP,       .val = (1<<18), },
-};
-static struct exynos5430_pd_state aclktop_g3d[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_TOP,     .val = (1<<30), },
-};
-
-/* BLK_DISP clocks */
-static struct exynos5430_pd_state ipmif_disp[] = {
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF3,      .val = (1<<1), },
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF3,      .val = (1<<5), },
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF3,      .val = (1<<6), },
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF3,      .val = (1<<7), },
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF3,      .val = (1<<8), },
-	{ .reg = EXYNOS5430_ENABLE_IP_MIF3,      .val = (1<<9), },
-};
-static struct exynos5430_pd_state aclkmif_disp[] = {
-	{ .reg = EXYNOS5430_ENABLE_ACLK_MIF3,    .val = (1<<1), },
-};
-static struct exynos5430_pd_state sclkmif_disp[] = {
-	{ .reg = EXYNOS5430_ENABLE_SCLK_MIF,     .val = (1<<5), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_MIF,     .val = (1<<6), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_MIF,     .val = (1<<7), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_MIF,     .val = (1<<8), },
-	{ .reg = EXYNOS5430_ENABLE_SCLK_MIF,     .val = (1<<9), },
-};
 
 static struct sleep_save exynos_pd_maudio_clk_save[] = {
 	SAVE_ITEM(EXYNOS5430_SRC_SEL_AUD0),
