@@ -1332,16 +1332,21 @@ static void dw_mci_start_request(struct dw_mci *host,
 static void dw_mci_queue_request(struct dw_mci *host, struct dw_mci_slot *slot,
 				 struct mmc_request *mrq)
 {
+	bool in_tasklet = (host->tasklet_state == 0)
+			|| !(host->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION);
+
 	dev_vdbg(&slot->mmc->class_dev, "queue request: state=%d\n",
 		 host->state_cmd);
 
-	if (host->state_cmd == STATE_IDLE && host->tasklet_state == 0) {
+	if (host->state_cmd == STATE_IDLE && in_tasklet) {
 		slot->mrq = mrq;
 		host->state_cmd = STATE_SENDING_CMD;
 		dw_mci_start_request(host, slot);
 	} else {
-		list_add_tail(&mrq->hlist, &slot->mrq_list);
+		if (host->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)
+			list_add_tail(&mrq->hlist, &slot->mrq_list);
 		list_add_tail(&slot->queue_node, &host->queue);
+		dev_info(host->dev, "QUEUED!! (%d, %d )", host->state_cmd, host->state_dat);
 	}
 }
 
@@ -1734,6 +1739,21 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq,
 	host->req_state = DW_MMC_REQ_IDLE;
 
 	(*state) = STATE_IDLE;
+
+	/* SDIO,SD case */
+	if (!(host->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)) {
+		host->cur_slot->mrq = NULL;
+		host->mrq_cmd = NULL;
+		host->mrq_dat = NULL;
+		if (!list_empty(&host->queue)) {
+			struct dw_mci_slot *slot;
+			slot = list_entry(host->queue.next,
+					struct dw_mci_slot, queue_node);
+			list_del_init(&slot->queue_node);
+			host->state_cmd = STATE_SENDING_CMD;
+			dw_mci_start_request(host, slot);
+		}
+	}
 
 	spin_unlock(&host->lock);
 	mmc_request_done(prev_mmc, mrq);
@@ -2257,6 +2277,14 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	if (done_dat)
 		host->state_dat = STATE_IDLE;
 
+	/* SDIO,SD case */
+	if (!(host->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)) {
+		if (done_cmd || done_dat)
+			goto req_end;
+		else
+			goto unlock;
+	}
+
 	if (host->state_cmd == STATE_IDLE) {
 		if (!list_empty(&host->cur_slot->mrq_list)) {
 			host->cur_slot->mrq = list_first_entry(
@@ -2286,6 +2314,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	}
 	host->tasklet_state = 0;
 
+req_end:
 	if (done_cmd)
 		dw_mci_request_end(host, mrq_cmd, &host->state_cmd);
 
@@ -3101,6 +3130,7 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 				 */
 				sg_miter_stop(&host->sg_miter);
 				host->sg = NULL;
+				dw_mci_ciu_reset(host->dev, host);
 				dw_mci_fifo_reset(host->dev, host);
 #ifdef CONFIG_MMC_DW_IDMAC
 				dw_mci_idma_reset_dma(host);
