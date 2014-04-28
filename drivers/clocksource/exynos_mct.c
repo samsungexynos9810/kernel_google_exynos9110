@@ -327,6 +327,18 @@ static void exynos4_clockevent_init(void)
 
 static DEFINE_PER_CPU(struct mct_clock_event_device, percpu_mct_tick);
 
+int exynos4_mct_tick_dump(int timer)
+{
+	pr_info("mct_tick%d - TCNTB:%08X, TCNTO:%08X, ICNTB:%08X, ICNTO:%08X\n",
+		timer, __raw_readl(reg_base + EXYNOS4_MCT_L_BASE(timer)),
+		__raw_readl(reg_base + EXYNOS4_MCT_L_BASE(timer) + 0x4),
+		__raw_readl(reg_base + EXYNOS4_MCT_L_BASE(timer) + 0x8),
+		__raw_readl(reg_base + EXYNOS4_MCT_L_BASE(timer) + 0xC));
+
+	return 0;
+}
+EXPORT_SYMBOL(exynos4_mct_tick_dump);
+
 /* Clock event handling */
 static void exynos4_mct_tick_stop(struct mct_clock_event_device *mevt, int force)
 {
