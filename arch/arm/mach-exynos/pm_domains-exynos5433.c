@@ -48,17 +48,10 @@ static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned i
  */
 static int exynos_pd_maudio_power_on_post(struct exynos_pm_domain *pd)
 {
-	unsigned int reg;
-
 	DEBUG_PRINT_INFO("%s\n", __func__);
 
 	s3c_pm_do_restore_core(exynos_pd_maudio_clk_save,
 			ARRAY_SIZE(exynos_pd_maudio_clk_save));
-
-	/* PAD retention release */
-	reg = __raw_readl(EXYNOS_PAD_RET_MAUDIO_OPTION);
-	reg |= (1 << 28);
-	__raw_writel(reg, EXYNOS_PAD_RET_MAUDIO_OPTION);
 
 	return 0;
 }
