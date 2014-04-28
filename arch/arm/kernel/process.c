@@ -393,6 +393,7 @@ void __show_regs(struct pt_regs *regs)
 	 *  to true.
 	 */
 	exynos_ss_set_enable("log_kevents", false);
+	exynos_ss_early_dump();
 	show_regs_print_info(KERN_DEFAULT);
 
 	print_symbol("PC is at %s\n", instruction_pointer(regs));

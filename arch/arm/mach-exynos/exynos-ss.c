@@ -346,6 +346,13 @@ static void exynos_ss_save_mmu(struct exynos_ss_mmu_reg *mmu_reg)
 	);
 }
 
+int exynos_ss_early_dump(void)
+{
+	/*  This function is for tracing registers more early */
+	return 0;
+}
+EXPORT_SYMBOL(exynos_ss_early_dump);
+
 int exynos_ss_output_dump(void)
 {
 	/*
