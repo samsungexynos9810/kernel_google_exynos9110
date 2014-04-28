@@ -353,7 +353,7 @@ int exynos_ss_early_dump(void)
 }
 EXPORT_SYMBOL(exynos_ss_early_dump);
 
-int exynos_ss_output_dump(void)
+int exynos_ss_dump(void)
 {
 	/*
 	 *  Output CPU Memory Error syndrome Register
@@ -374,7 +374,7 @@ int exynos_ss_output_dump(void)
 	}
 	return 0;
 }
-EXPORT_SYMBOL(exynos_ss_output_dump);
+EXPORT_SYMBOL(exynos_ss_dump);
 
 int exynos_ss_save_reg(struct pt_regs *regs)
 {
@@ -398,7 +398,7 @@ int exynos_ss_save_context(struct pt_regs *regs)
 	spin_lock_irqsave(&ess_lock, flags);
 	exynos_ss_save_mmu(per_cpu(ess_mmu_reg, smp_processor_id()));
 	exynos_ss_save_reg(regs);
-	exynos_ss_output_dump();
+	exynos_ss_dump();
 	pr_emerg("exynos-snapshot: context saved(CPU:%d)\n",
 						smp_processor_id());
 	flush_cache_all();
