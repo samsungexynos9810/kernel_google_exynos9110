@@ -172,33 +172,12 @@ static void exynos4_mct_frc_start(u32 hi, u32 lo)
 
 static notrace u32 exynos4_read_sched_clock(void)
 {
-	static u32 val;
-
-	if (soc_is_exynos5430()) {
-#ifdef CONFIG_SOC_EXYNOS5430_REV_0
-		static DEFINE_SPINLOCK(exynos_mct_spinlock);
-		unsigned long flags;
-
-		local_irq_save(flags);
-		if (spin_trylock(&exynos_mct_spinlock)) {
-			val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-			spin_unlock(&exynos_mct_spinlock);
-		} else {
-			spin_unlock_wait(&exynos_mct_spinlock);
-		}
-		local_irq_restore(flags);
-#else
-		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-#endif
-	} else {
-		val = __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
-	}
-
-	return val;
+	return __raw_readl(reg_base + EXYNOS4_MCT_G_CNT_L);
 }
 
 static cycle_t exynos4_frc_read(struct clocksource *cs)
 {
+	/* Exynos series supports only 32bit clocksource */
 	return (cycle_t)exynos4_read_sched_clock();
 }
 
