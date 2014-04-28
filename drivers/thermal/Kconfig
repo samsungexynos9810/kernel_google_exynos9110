@@ -122,6 +122,13 @@ config EXYNOS_THERMAL
 	  If you say yes here you get support for TMU (Thermal Management
 	  Unit) on SAMSUNG EXYNOS series of SoC.
 
+config EXYNOS_SWTRIP
+	bool "SW TRIP Feature on Samsung EXYNOS"
+	depends on (ARCH_EXYNOS4 || ARCH_EXYNOS5)
+	depends on EXYNOS_THERMAL
+	help
+	  Support for SWTRIP uevent on SAMSUNG EXYNOS series of SOC
+
 config DOVE_THERMAL
 	tristate "Temperature sensor on Marvell Dove SoCs"
 	depends on ARCH_DOVE
