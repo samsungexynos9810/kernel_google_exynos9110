@@ -818,6 +818,26 @@ static struct map_desc exynos5433_iodesc0[] __initdata = {
 		.length         = SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_ISP,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_ISP),
+		.length         = SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_MFC0,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_MFC0),
+		.length         = SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_HEVC,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_HEVC),
+		.length         = SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSREG_MSCL,
+		.pfn		= __phys_to_pfn(EXYNOS5430_PA_MSCLSYS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
 		.virtual	= (unsigned long)S5P_VA_CHIPID3,
 		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID3),
 		.length		= SZ_4K,
