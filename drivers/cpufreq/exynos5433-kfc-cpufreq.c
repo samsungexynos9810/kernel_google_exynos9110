@@ -35,7 +35,7 @@ static int min_support_idx_CA7 = (CPUFREQ_LEVEL_END_CA7 - 1);
 
 static struct clk *mout_kfc;
 static struct clk *mout_kfc_pll;
-static struct clk *sclk_bus_pll;
+static struct clk *mout_bus_pll_div2;
 static struct clk *mout_bus_pll_user;
 static struct clk *fout_kfc_pll;
 
@@ -339,9 +339,9 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 		goto err_mout_kfc_pll;
 	}
 
-	sclk_bus_pll = clk_get(NULL, "sclk_bus_pll");
-	if (IS_ERR(sclk_bus_pll)) {
-		pr_err("failed get sclk_bus_pll clk\n");
+	mout_bus_pll_div2 = clk_get(NULL, "mout_bus_pll_div2");
+	if (IS_ERR(mout_bus_pll_div2)) {
+		pr_err("failed get mout_bus_pll_div2 clk\n");
 		goto err_sclk_bus_pll;
 	}
 
@@ -351,9 +351,9 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 		goto err_mout_bus_pll_user;
 	}
 
-	if (clk_set_parent(mout_bus_pll_user, sclk_bus_pll)) {
+	if (clk_set_parent(mout_bus_pll_user, mout_bus_pll_div2)) {
 		pr_err("Unable to set parent %s of clock %s.\n",
-				sclk_bus_pll->name, mout_bus_pll_user->name);
+				mout_bus_pll_div2->name, mout_bus_pll_user->name);
 		goto err_clk_set_parent;
 	}
 
@@ -367,7 +367,7 @@ int __init exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *info)
 
 	clk_put(mout_kfc);
 	clk_put(mout_kfc_pll);
-	clk_put(sclk_bus_pll);
+	clk_put(mout_bus_pll_div2);
 	clk_put(mout_bus_pll_user);
 	clk_put(fout_kfc_pll);
 
@@ -403,7 +403,7 @@ err_fout_kfc_pll:
 err_clk_set_parent:
 	clk_put(mout_bus_pll_user);
 err_mout_bus_pll_user:
-	clk_put(sclk_bus_pll);
+	clk_put(mout_bus_pll_div2);
 err_sclk_bus_pll:
 	clk_put(mout_kfc_pll);
 err_mout_kfc_pll:
