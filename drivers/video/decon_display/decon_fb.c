@@ -4685,6 +4685,18 @@ err:
 	return ret;
 }
 
+static int s3c_fb_win_map_on(struct s3c_fb *sfb, int idx)
+{
+	u32 data;
+
+	writel(WINxMAP_MAP, sfb->regs + WINxMAP(idx));
+	data = readl(sfb->regs + WINCON(idx));
+	data |= WINCONx_ENWIN;
+	writel(data, sfb->regs + WINCON(idx));
+
+	return 0;
+}
+
 /**
  * s3c_fb_enable() - Enable the main LCD output
  * @sfb: The main framebuffer state.
@@ -4757,19 +4769,22 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	}
 #endif
 
+	/*
+	 * It is better to clear the GRAM before enabling the LCD.
+	 * It avoids garbage display while LCD on/off
+	 */
+	s3c_fb_win_map_on(sfb, default_win);
 	hw_trigger_mask_enable(sfb, false);
 
 #ifdef CONFIG_S5P_DP
 	writel(DPCLKCON_ENABLE, sfb->regs + DPCLKCON);
 #endif
-
 	decon_fb_direct_on_off(sfb, true);
 
 	reg = readl(sfb->regs + DECON_UPDATE);
 	reg |= DECON_UPDATE_STANDALONE_F;
 	writel(reg, sfb->regs + DECON_UPDATE);
 	sfb->output_on = true;
-
 	ret = 0;
 
 err:
