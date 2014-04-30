@@ -962,6 +962,15 @@ static int dw_mci_pre_dma_transfer(struct dw_mci *host,
 			mci_writel(host, CDTHRCTL, data->blksz << 16 | 1);
 	}
 
+	if (data->blocks == 1 &&
+			host->quirks & DW_MMC_QUIRK_FMP_SIZE_MISMATCH) {
+		if (data->blksz == 64) {
+			host->fifoth_val = ((2 << 28) |	(7 << 16) |
+					((host->fifo_depth - 8)<< 0));
+			mci_writel(host, FIFOTH, host->fifoth_val);
+		}
+	}
+
 	for_each_sg(data->sg, sg, data->sg_len, i) {
 		if (sg->offset & align_mask || sg->length & align_mask)
 			return -EINVAL;
