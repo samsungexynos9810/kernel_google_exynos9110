@@ -1,9 +1,9 @@
-/* linux/arch/arm/mach-exynos/asv-exynos5433.c
+/* linux/arch/arm/mach-exynos/asv-exynos5.c
  *
  * Copyright (c) 2013 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com/
  *
- * EXYNOS5433 - ASV(Adoptive Support Voltage) driver
+ * EXYNOS5 - ASV(Adoptive Support Voltage) driver
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -100,7 +100,7 @@ static int __init get_isp_volt(char *str)
 }
 early_param("isp", get_isp_volt);
 
-static int exynos5433_get_margin_test_param(enum asv_type_id target_type)
+static int exynos5_get_margin_test_param(enum asv_type_id target_type)
 {
 	int add_volt = 0;
 
@@ -132,13 +132,13 @@ static int exynos5433_get_margin_test_param(enum asv_type_id target_type)
 #endif
 
 #ifdef CONFIG_PM
-static void exynos5433_set_abb_bypass(struct asv_info *asv_inform)
+static void exynos5_set_abb_bypass(struct asv_info *asv_inform)
 {
 	DVFS_SetABB(asv_inform->asv_type, ABB_BYPASS);
 }
 #endif
 
-static void exynos5433_set_abb(struct asv_info *asv_inform)
+static void exynos5_set_abb(struct asv_info *asv_inform)
 {
 	unsigned int target_value;
 	target_value = asv_inform->abb_info->target_abb;
@@ -146,11 +146,11 @@ static void exynos5433_set_abb(struct asv_info *asv_inform)
 	DVFS_SetABB(asv_inform->asv_type, target_value);
 }
 
-static struct abb_common exynos5433_abb_common = {
-	.set_target_abb = exynos5433_set_abb,
+static struct abb_common exynos5_abb_common = {
+	.set_target_abb = exynos5_set_abb,
 };
 
-static unsigned int exynos5433_get_asv_group(struct asv_common *asv_comm)
+static unsigned int exynos5_get_asv_group(struct asv_common *asv_comm)
 {
 	int asv_group;
 	asv_group = (int) DVFS_GetIdsGroup();
@@ -161,7 +161,7 @@ static unsigned int exynos5433_get_asv_group(struct asv_common *asv_comm)
 	return asv_group;
 }
 
-static void exynos5433_set_asv_info(struct asv_info *asv_inform, bool show_value)
+static void exynos5_set_asv_info(struct asv_info *asv_inform, bool show_value)
 {
 	unsigned int i;
 	bool useABB;
@@ -227,75 +227,75 @@ static void exynos5433_set_asv_info(struct asv_info *asv_inform, bool show_value
 		}
 	}
 }
-static struct asv_ops exynos5433_asv_ops = {
-       .get_asv_group  = exynos5433_get_asv_group,
-       .set_asv_info   = exynos5433_set_asv_info,
+static struct asv_ops exynos5_asv_ops = {
+       .get_asv_group  = exynos5_get_asv_group,
+       .set_asv_info   = exynos5_set_asv_info,
 };
 
-struct asv_info exynos5433_asv_member[] = {
+struct asv_info exynos5_asv_member[] = {
 	{
 		.asv_type	= ID_ARM,
 		.name		= "VDD_ARM",
-		.ops		= &exynos5433_asv_ops,
-		.abb_info	= &exynos5433_abb_common,
+		.ops		= &exynos5_asv_ops,
+		.abb_info	= &exynos5_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(ARM),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(ARM),
 		.max_volt_value = MAX_VOLT(ARM),
 	}, {
 		.asv_type	= ID_KFC,
 		.name		= "VDD_KFC",
-		.ops		= &exynos5433_asv_ops,
-		.abb_info	= &exynos5433_abb_common,
+		.ops		= &exynos5_asv_ops,
+		.abb_info	= &exynos5_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(KFC),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(KFC),
 		.max_volt_value = MAX_VOLT(KFC),
 	}, {
 		.asv_type	= ID_INT,
 		.name		= "VDD_INT",
-		.ops		= &exynos5433_asv_ops,
-		.abb_info	= &exynos5433_abb_common,
+		.ops		= &exynos5_asv_ops,
+		.abb_info	= &exynos5_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(INT),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(INT),
 		.max_volt_value = MAX_VOLT(INT),
 	}, {
 		.asv_type	= ID_MIF,
 		.name		= "VDD_MIF",
-		.ops		= &exynos5433_asv_ops,
-		.abb_info	= &exynos5433_abb_common,
+		.ops		= &exynos5_asv_ops,
+		.abb_info	= &exynos5_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(MIF),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(MIF),
 		.max_volt_value = MAX_VOLT(MIF),
 	}, {
 		.asv_type	= ID_G3D,
 		.name		= "VDD_G3D",
-		.ops		= &exynos5433_asv_ops,
-		.abb_info	= &exynos5433_abb_common,
+		.ops		= &exynos5_asv_ops,
+		.abb_info	= &exynos5_abb_common,
 		.asv_group_nr	= ASV_GRP_NR(G3D),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(G3D),
 		.max_volt_value = MAX_VOLT(G3D),
 	}, {
 		.asv_type	= ID_ISP,
 		.name		= "VDD_ISP",
-		.ops		= &exynos5433_asv_ops,
+		.ops		= &exynos5_asv_ops,
 		.asv_group_nr	= ASV_GRP_NR(ISP),
 		.dvfs_level_nr	= DVFS_LEVEL_NR(ISP),
 		.max_volt_value = MAX_VOLT(ISP),
 	},
 };
 
-unsigned int exynos5433_regist_asv_member(void)
+unsigned int exynos5_regist_asv_member(void)
 {
 	unsigned int i;
 
 	/* Regist asv member into list */
-	for (i = 0; i < ARRAY_SIZE(exynos5433_asv_member); i++)
-		add_asv_member(&exynos5433_asv_member[i]);
+	for (i = 0; i < ARRAY_SIZE(exynos5_asv_member); i++)
+		add_asv_member(&exynos5_asv_member[i]);
 
 	return 0;
 }
 
 #ifdef CONFIG_PM
-static struct sleep_save exynos5433_abb_save[] = {
+static struct sleep_save exynos5_abb_save[] = {
 	SAVE_ITEM(EXYNOS5430_BB_CON0),
 	SAVE_ITEM(EXYNOS5430_BB_CON1),
 	SAVE_ITEM(EXYNOS5430_BB_CON2),
@@ -303,38 +303,38 @@ static struct sleep_save exynos5433_abb_save[] = {
 	SAVE_ITEM(EXYNOS5430_BB_CON4),
 };
 
-static int exynos5433_asv_suspend(void)
+static int exynos5_asv_suspend(void)
 {
 	struct asv_info *exynos_asv_info;
 	int i;
 
-	s3c_pm_do_save(exynos5433_abb_save,
-			ARRAY_SIZE(exynos5433_abb_save));
+	s3c_pm_do_save(exynos5_abb_save,
+			ARRAY_SIZE(exynos5_abb_save));
 
-	for (i = 0; i < ARRAY_SIZE(exynos5433_asv_member); i++) {
-		exynos_asv_info = &exynos5433_asv_member[i];
-		exynos5433_set_abb_bypass(exynos_asv_info);
+	for (i = 0; i < ARRAY_SIZE(exynos5_asv_member); i++) {
+		exynos_asv_info = &exynos5_asv_member[i];
+		exynos5_set_abb_bypass(exynos_asv_info);
 	}
 
 	return 0;
 }
 
-static void exynos5433_asv_resume(void)
+static void exynos5_asv_resume(void)
 {
-	s3c_pm_do_restore_core(exynos5433_abb_save,
-			ARRAY_SIZE(exynos5433_abb_save));
+	s3c_pm_do_restore_core(exynos5_abb_save,
+			ARRAY_SIZE(exynos5_abb_save));
 }
 #else
-#define exynos5433_asv_suspend NULL
-#define exynos5433_asv_resume NULL
+#define exynos5_asv_suspend NULL
+#define exynos5_asv_resume NULL
 #endif
 
-static struct syscore_ops exynos5433_asv_syscore_ops = {
-	.suspend	= exynos5433_asv_suspend,
-	.resume		= exynos5433_asv_resume,
+static struct syscore_ops exynos5_asv_syscore_ops = {
+	.suspend	= exynos5_asv_suspend,
+	.resume		= exynos5_asv_resume,
 };
 
-int exynos5433_init_asv(struct asv_common *asv_info)
+int exynos5_init_asv(struct asv_common *asv_info)
 {
 	DVFS_Initialze();	/* CAL initiallize */
 
@@ -346,9 +346,9 @@ int exynos5433_init_asv(struct asv_common *asv_info)
 	else
 		pr_info("ASV: Use not Speed Group\n");
 
-	register_syscore_ops(&exynos5433_asv_syscore_ops);
+	register_syscore_ops(&exynos5_asv_syscore_ops);
 
-	asv_info->regist_asv_member = exynos5433_regist_asv_member;
+	asv_info->regist_asv_member = exynos5_regist_asv_member;
 
 	return 0;
 }
