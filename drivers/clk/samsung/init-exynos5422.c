@@ -132,6 +132,7 @@ static void top_clk_enable(void)
 	add_enabler("sclk_isp1_isp");
 	add_enabler("sclk_pwm_isp");
 	add_enabler("aclk_333");
+
 #else
 	add_enabler("pclk_66_gpio");
 	add_enabler("aclk_66_peric");
