@@ -428,7 +428,6 @@ static int exynos_pd_disp_power_off_post(struct exynos_pm_domain *pd)
 }
 
 struct exynos5433_mscl_clk {
-	struct clk *aclk_mscl_400;
 	struct clk *fin_pll;
 	struct clk *mout_aclk_mscl_400_user;
 };
@@ -441,12 +440,6 @@ static int exynos_pd_mscl_init(struct exynos_pm_domain *pd)
 	if (!msclclk) {
 		pr_err("%s: failed to allocate private data\n", __func__);
 		return -ENOMEM;
-	}
-
-	msclclk->aclk_mscl_400 = clk_get(NULL, "gate_aclk_mscl_400");
-	if (IS_ERR(msclclk->aclk_mscl_400)) {
-		pr_err("%s: failed to get aclk_mscl_400\n", __func__);
-		goto err_aclk;
 	}
 
 	msclclk->mout_aclk_mscl_400_user =
@@ -468,8 +461,6 @@ static int exynos_pd_mscl_init(struct exynos_pm_domain *pd)
 err_fin:
 	clk_put(msclclk->mout_aclk_mscl_400_user);
 err_mout:
-	clk_put(msclclk->aclk_mscl_400);
-err_aclk:
 	kfree(msclclk);
 	return -ENOENT;
 }
@@ -481,15 +472,13 @@ err_aclk:
  */
 static int exynos_pd_mscl_power_on_pre(struct exynos_pm_domain *pd)
 {
-	struct exynos5433_mscl_clk *msclclk = pd->priv;
-
 	DEBUG_PRINT_INFO("%s\n", __func__);
 
 	exynos5_pd_enable_clk(iptop_mscl, ARRAY_SIZE(iptop_mscl));
 	exynos5_pd_enable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
 	exynos5_pd_enable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
 
-	return clk_prepare_enable(msclclk->aclk_mscl_400);
+	return 0;
 }
 
 static int exynos_pd_mscl_power_on_post(struct exynos_pm_domain *pd)
@@ -535,13 +524,9 @@ static int exynos_pd_mscl_power_off_pre(struct exynos_pm_domain *pd)
  */
 static int exynos_pd_mscl_power_off_post(struct exynos_pm_domain *pd)
 {
-	struct exynos5433_mscl_clk *msclclk = pd->priv;
 	unsigned int reg;
 
 	DEBUG_PRINT_INFO("%s\n", __func__);
-
-	if (msclclk->aclk_mscl_400->enable_count > 0)
-		clk_disable_unprepare(msclclk->aclk_mscl_400);
 
 	exynos5_pd_disable_clk(aclktop_mscl, ARRAY_SIZE(aclktop_mscl));
 	exynos5_pd_disable_clk(sclktop_mscl, ARRAY_SIZE(sclktop_mscl));
