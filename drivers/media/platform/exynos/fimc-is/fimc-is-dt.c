@@ -299,15 +299,15 @@ struct exynos_platform_fimc_is *fimc_is_parse_dt(struct device *dev)
 	dev->platform_data = pdata;
 
 #ifdef CONFIG_COMPANION_USE
-	retVal = of_property_read_u32(np,"companion_spi_channel",&pdata->companion_spi_channel);
+	retVal = of_property_read_u32(np, "companion_spi_channel", &pdata->companion_spi_channel);
 	if (retVal) {
 		err("spi_channel read is fail(%d)", retVal);
 	}
 
-	pdata->use_two_spi_line = of_property_read_bool(np,"use_two_spi_line");
+	pdata->use_two_spi_line = of_property_read_bool(np, "use_two_spi_line");
 #endif
 #ifdef CONFIG_USE_VENDER_FEATURE
-	retVal = of_property_read_u32(np,"use_sensor_dynamic_voltage_mode",&pdata->use_sensor_dynamic_voltage_mode);
+	retVal = of_property_read_u32(np, "use_sensor_dynamic_voltage_mode", &pdata->use_sensor_dynamic_voltage_mode);
 	if (retVal) {
 		err("use_sensor_dynamic_voltage_mode read is fail(%d)", retVal);
 		pdata->use_sensor_dynamic_voltage_mode = 0;
