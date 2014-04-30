@@ -36,7 +36,7 @@ static void exynos5_pd_disable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 
 static void exynos_pd_notify_power_state(struct exynos_pm_domain *pd, unsigned int turn_on)
 {
-#ifdef CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ
+#if defined(CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ) && defined(CONFIG_PM_RUNTIME)
 	exynos5_int_notify_power_status(pd->genpd.name, true);
 	exynos5_isp_notify_power_status(pd->genpd.name, true);
 	exynos5_disp_notify_power_status(pd->genpd.name, true);
