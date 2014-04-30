@@ -194,7 +194,7 @@
 		interrupts =	<0>, <1>, <2>, <3>,
 				<4>, <5>, <6>, <7>,
 				<8>, <9>, <10>, <11>;
-		clocks = <&clock 1>, <&clock 14>;
+		clocks = <&clock 1>, <&clock 868>;
 		clock-names = "fin_pll", "mct";
 
 		mct_map: mct-map {
