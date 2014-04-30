@@ -21,14 +21,28 @@
 #include <linux/pm_runtime.h>
 #include <mach/smc.h>
 
-#define HWRNG_RET_OK		0
-#define HWRNG_RET_INVALID_ERROR	1
-#define HWRNG_RET_RETRY_ERROR	2
+#define HWRNG_RET_OK			0
+#define HWRNG_RET_INVALID_ERROR		1
+#define HWRNG_RET_RETRY_ERROR		2
+#define HWRNG_RET_INVALID_FLAG_ERROR	3
+#define HWRNG_RET_TEST_ERROR		4
+
+#define EXYRNG_MAX_FAILURES		25
 
 uint32_t hwrng_read_flag;
 static struct hwrng rng;
 
 spinlock_t hwrandom_lock;
+static size_t test_failures;
+#if defined(CONFIG_EXYRNG_FAIL_POLICY_DISABLE)
+static int hwrng_disabled;
+#endif
+
+#ifdef CONFIG_EXYRNG_DEBUG
+#define exyrng_debug(args...)	printk(KERN_INFO args)
+#else
+#define exyrng_debug(args...)
+#endif
 
 static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 {
@@ -42,6 +56,11 @@ static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 	register u32 reg1 __asm__("r1");
 	register u32 reg2 __asm__("r2");
 	register u32 reg3 __asm__("r3");
+
+#if defined(CONFIG_EXYRNG_FAIL_POLICY_DISABLE)
+	if (hwrng_disabled)
+		return -EPERM;
+#endif
 
 	reg0 = 0;
 	reg1 = 0;
@@ -72,6 +91,29 @@ static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 		if (ret == HWRNG_RET_RETRY_ERROR) {
 			usleep_range(50, 100);
 			continue;
+		}
+
+		if (ret == HWRNG_RET_TEST_ERROR) {
+			if (++test_failures > EXYRNG_MAX_FAILURES) {
+#if defined(CONFIG_EXYRNG_FAIL_POLICY_DISABLE)
+				hwrng_disabled = 1;
+				printk("[ExyRNG] disabled for continuous test failures\n");
+#elif defined(CONFIG_EXYRNG_FAIL_POLICY_RESET)
+				panic("[ExyRNG] It failed to health tests."
+				"It means that it detects the malfunction of TRNG(HW) "
+				"which generates random numbers. If it doesn't "
+				"offer enough entropy, it should not be used. "
+				"The system reset could be a way to solve it."
+				"The health tests are designed to have the false"
+				"positive rate of approximately once per billion"
+				"based on min-entropy of TRNG.\n");
+#else
+				test_failures = 0;
+#endif
+			}
+			exyrng_debug("[ExyRNG] failed to continuous test\n");
+			ret = -EAGAIN;
+			goto out;
 		}
 
 		if (ret != HWRNG_RET_OK) {
