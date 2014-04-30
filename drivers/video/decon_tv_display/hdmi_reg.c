@@ -2248,7 +2248,8 @@ void hdmi_reg_infoframe(struct hdmi_device *hdev,
 		hdmi_writeb(hdev, HDMI_AVI_BYTE(2), aspect_ratio |
 				AVI_SAME_AS_PIC_ASPECT_RATIO);
 		dev_dbg(dev, "VIC code = %d\n", vic);
-		hdmi_writeb(hdev, HDMI_AVI_BYTE(4), vic);
+		if (info->is_3d != HDMI_VIDEO_FORMAT_UD)
+			hdmi_writeb(hdev, HDMI_AVI_BYTE(4), vic);
 		chksum = hdmi_chksum(hdev, HDMI_AVI_BYTE(1), infoframe->len, hdr_sum);
 		dev_dbg(dev, "AVI checksum = 0x%x\n", chksum);
 		hdmi_writeb(hdev, HDMI_AVI_CHECK_SUM, chksum);
