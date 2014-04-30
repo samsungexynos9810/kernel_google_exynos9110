@@ -28,9 +28,11 @@ static void exynos5_pd_enable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 static void exynos5_pd_disable_clk(struct exynos5430_pd_state *ptr, int nr_regs)
 {
 	for (; nr_regs > 0; nr_regs--, ptr++) {
-		clk_disable_unprepare(ptr->clock);
-		DEBUG_PRINT_INFO("clock name : %s, usage_count : %d, SFR : 0x%x\n",
-			ptr->clock->name, ptr->clock->enable_count, __raw_readl(ptr->reg));
+		if (ptr->clock->enable_count > 0) {
+			clk_disable_unprepare(ptr->clock);
+			DEBUG_PRINT_INFO("clock name : %s, usage_count : %d, SFR : 0x%x\n",
+				ptr->clock->name, ptr->clock->enable_count, __raw_readl(ptr->reg));
+		}
 	}
 }
 
