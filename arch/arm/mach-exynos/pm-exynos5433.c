@@ -35,6 +35,7 @@
 #include <mach/pm-core.h>
 #include <mach/pmu.h>
 #include <mach/smc.h>
+#include <mach/pmu_cal_sys.h>
 
 #define REG_INFORM0			(S5P_VA_SYSRAM_NS + 0x8)
 #define REG_INFORM1			(S5P_VA_SYSRAM_NS + 0xC)

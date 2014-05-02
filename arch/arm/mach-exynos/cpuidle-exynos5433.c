@@ -45,6 +45,8 @@
 #include <mach/smc.h>
 #include <mach/cpufreq.h>
 #include <mach/exynos-pm.h>
+#include <mach/pmu_cal_sys.h>
+
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 #include <sound/exynos.h>
 #endif

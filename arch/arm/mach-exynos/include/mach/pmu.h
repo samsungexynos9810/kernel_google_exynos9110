@@ -19,13 +19,21 @@
 
 /* PMU(Power Management Unit) support */
 enum sys_powerdown {
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	SYS_AFTR,
 	SYS_LPD,
 	SYS_LPA,
 	SYS_ALPA,
 	SYS_DSTOP,
 	SYS_DSTOP_PSR,
+#elif defined(CONFIG_SOC_EXYNOS5433)
+	SYS_AFTR,
+	SYS_STOP,
+	SYS_DSTOP,
+	SYS_DSTOP_PSR,
+	SYS_LPD,
+	SYS_LPA,
+	SYS_ALPA,
 #else
 	SYS_AFTR,
 	SYS_LPA,
@@ -71,7 +79,9 @@ struct exynos_pmu_conf {
 
 extern void set_boot_flag(unsigned int cpu, unsigned int mode);
 extern void clear_boot_flag(unsigned int cpu, unsigned int mode);
+#ifndef CONFIG_CAL_SYS_PWRDOWN
 extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
+#endif
 extern void exynos_xxti_sys_powerdown(bool enable);
 extern void s3c_cpu_resume(void);
 extern void exynos_set_core_flag(void);
@@ -82,5 +92,8 @@ extern void exynos_lpi_mask_ctrl(bool on);
 extern void exynos_set_dummy_state(bool on);
 extern void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type);
 extern void exynos_cpu_sequencer_ctrl(bool enable);
+#ifndef CONFIG_CAL_SYS_PWRDOWN
+extern void exynos_central_sequencer_ctrl(bool enable);
+#endif
 
 #endif /* __ASM_ARCH_PMU_H */
