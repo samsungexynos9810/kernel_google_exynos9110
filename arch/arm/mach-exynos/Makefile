@@ -48,6 +48,11 @@ obj-$(CONFIG_SOC_EXYNOS5430)	+= pmu-exynos5430.o
 obj-$(CONFIG_SOC_EXYNOS5433)	+= pmu-exynos5433.o
 obj-$(CONFIG_SOC_EXYNOS5422)	+= pmu-exynos5422.o
 
+obj-$(CONFIG_CAL_SYS_PWRDOWN)	+= pmu_cal_sys.o
+ifeq ($(CONFIG_SOC_EXYNOS5433),y)
+obj-$(CONFIG_CAL_SYS_PWRDOWN)	+= pmu_cal_sys_exynos5433.o
+endif
+
 obj-$(CONFIG_EXYNOS_SNAPSHOT)	+= exynos-ss.o
 obj-$(CONFIG_EXYNOS54XX_DEBUG)	+= debug_exynos54XX.o
 obj-$(CONFIG_EXYNOS_CORESIGHT)	+= coresight.o
