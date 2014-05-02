@@ -984,8 +984,8 @@
 		modem-name = "ss300";
 		modems {
 			ss300 {
-				/* enable scrambler */
-				scrambler = <1>;
+				/* disable scrambler */
+				scrambler = <0>;
 				/* do not control automode by AP */
 				automode = <0>;
 			};
