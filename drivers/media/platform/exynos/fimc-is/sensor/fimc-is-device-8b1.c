@@ -479,7 +479,6 @@ int sensor_8b1_s_duration(struct v4l2_subdev *subdev, u64 duration)
 
 	/*
 	 * forcely set 10fps for 8b1,
-	 * because the formula to calc framerate setting is confidential.
 	 */
 	value[0] = 0x52;
 	value[1] = 0x0;
