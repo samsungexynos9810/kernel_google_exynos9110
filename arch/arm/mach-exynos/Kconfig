@@ -233,7 +233,7 @@ config EXYNOS_SNAPSHOT_SOFTIRQ
 config EXYNOS_SNAPSHOT_REG
 	bool "Enable debugging of accessing register by kevent"
 	depends on EXYNOS_SNAPSHOT
-	default y
+	default n
 
 config EXYNOS_SNAPSHOT_HOOK_LOGGER
 	bool "Enable hooking android platform log for ramdump"
