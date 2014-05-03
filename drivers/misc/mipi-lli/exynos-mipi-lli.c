@@ -298,7 +298,11 @@ static int exynos_lli_setting(struct mipi_lli *lli)
 
 	writel(0x40, lli->regs + EXYNOS_PA_NACK_RTT);
 	writel(0x1, lli->regs + EXYNOS_PA_MK0_INSERTION_ENABLE);
+#if defined(CONFIG_UMTS_MODEM_SS300) || defined(CONFIG_UMTS_MODEM_SS303)
+	writel((128<<0) | (15<<8) | (1<<12), lli->regs + EXYNOS_PA_MK0_CONTROL);
+#else
 	writel((128<<0) | (1<<12), lli->regs + EXYNOS_PA_MK0_CONTROL);
+#endif
 	/* Set Scrambler enable */
 	if (lli->modem_info.scrambler)
 		writel(1, lli->regs + EXYNOS_PA_USR_SCRAMBLER_ENABLE);
