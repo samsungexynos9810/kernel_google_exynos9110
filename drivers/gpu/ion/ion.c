@@ -37,6 +37,7 @@
 #include <linux/dma-buf.h>
 #include <linux/idr.h>
 #include <linux/exynos_iovmm.h>
+#include <linux/highmem.h>
 
 #include <asm/cacheflush.h>
 #include <asm/tlbflush.h>
@@ -1639,8 +1640,29 @@ void ion_device_sync(struct ion_device *dev, struct sg_table *sgt,
 				memset(page_address(sg_page(sg)),
 							0, sg->length);
 			if (sync)
-				sync(page_address(sg_page(sg)),
+				sync(page_address(sg_page(sg)) + sg->offset,
 							sg->length, dir);
+			continue;
+		}
+
+		if (!IS_ALIGNED(sg->length | sg->offset, PAGE_SIZE)) {
+			void *va;
+			size_t len = sg->length + sg->offset;
+			size_t orglen = len;
+			off_t off = sg->offset;
+
+			BUG_ON(memzero);
+
+			for (j = 0; j < (PAGE_ALIGN(orglen) / PAGE_SIZE); j++) {
+				size_t pagelen;
+				pagelen = (len > PAGE_SIZE) ?
+						PAGE_SIZE : len;
+				va = kmap(sg_page(sg) + j);
+				sync(va + off, pagelen - off, dir);
+				kunmap(sg_page(sg) + j);
+				off = 0;
+				len -= pagelen;
+			}
 			continue;
 		}
 
