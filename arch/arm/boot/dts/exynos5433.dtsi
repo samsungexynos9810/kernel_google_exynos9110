@@ -2335,4 +2335,56 @@
 			version_mcuctl = <221>;
 		};
 	};
+
+	mipi-lli@10F24000 {
+		compatible = "samsung,exynos-mipi-lli";
+		reg = <0x10F24000 0x4000>,
+		      <0x10F34000 0x4000>,
+		      <0x10FD0000 0x2000>,
+		      <0x105C0720 0x4>;
+		interrupts = <0 184 0>, <0 185 0>;
+		clocks = <&clock 320>,
+			/* To gate/ungate LLI clocks */
+			<&clock 2093>,
+			<&clock 2050>,
+			<&clock 2074>, <&clock 2073>,
+			<&clock 2072>, <&clock 2071>,
+			<&clock 2070>, <&clock 2065>,
+			<&clock 2064>,
+			<&clock 2063>, <&clock 2062>,
+			<&clock 2061>, <&clock 2060>,
+			/* For mux initialization of clocks */
+			<&clock 3103>, <&clock 5014>,
+			<&clock 3104>, <&clock 5015>,
+			<&clock 3105>, <&clock 6>,
+			/* For setting aclk_cpif_200 div */
+			<&clock 4114>, <&clock 4104>;
+
+
+		clock-names = "aclk_cpif_200",
+			/* To gate/ungate LLI clocks */
+			"gate_cpifnm_200",
+			"gate_mphy_pll",
+			"gate_lli_svc_loc", "gate_lli_svc_rem",
+			"gate_lli_ll_init", "gate_lli_be_init",
+			"gate_lli_ll_targ", "gate_lli_be_targ",
+			"gate_lli_cmn_cfg",
+			"gate_lli_tx0_cfg", "gate_lli_rx0_cfg",
+			"gate_lli_tx0_symbol", "gate_lli_rx0_symbol",
+			/* For mux initialization of clocks */
+			"mout_phyclk_lli_tx0_symbol_user", "phyclk_lli_tx0_symbol",
+			"mout_phyclk_lli_rx0_symbol_user", "phyclk_lli_rx0_symbol",
+			"mout_mphy_pll", "fout_mphy_pll",
+			/* For setting aclk_cpif_200 div */
+			"dout_aclk_cpif_200", "dout_mif_pre";
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		mphy {
+			compatible = "samsung,exynos-mipi-lli-mphy";
+			reg = <0x10F20000 0x4000>;
+		};
+	};
 };
