@@ -108,7 +108,7 @@ int init_display_decon_clocks(struct device *dev)
 
 #if defined(CONFIG_DECON_LCD_S6E8AA0)
 	DISPLAY_SET_RATE(dout_fimd1, 67 * MHZ);
-#elif defined(CONFIG_DECON_LCD_S6E3FA0)
+#elif defined(CONFIG_DECON_LCD_S6E3FA0) || defined(CONFIG_DECON_LCD_S6E3FA2)
 	DISPLAY_SET_RATE(dout_fimd1, 133 * MHZ);
 #else
 	DISPLAY_SET_RATE(dout_fimd1, 266 * MHZ);
@@ -225,14 +225,6 @@ int enable_display_driver_power(struct device *dev)
 	usleep_range(5000, 6000);
 	gpio_free(gpio->id[0]);
 
-	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
-	usleep_range(5000, 6000);
-	gpio_set_value(gpio->id[1], 0);
-	usleep_range(5000, 6000);
-	gpio_set_value(gpio->id[1], 1);
-	usleep_range(5000, 6000);
-	gpio_free(gpio->id[1]);
-
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && !defined(CONFIG_FB_I80_SW_TRIGGER)
 	pinctrl = devm_pinctrl_get_select(dev, "turnon_tes");
 	if (IS_ERR(pinctrl))
@@ -299,7 +291,7 @@ int enable_display_decon_clocks(struct device *dev)
 
 #if defined(CONFIG_DECON_LCD_S6E8AA0)
 	DISPLAY_INLINE_SET_RATE(dout_fimd1, 67 * MHZ);
-#elif defined(CONFIG_DECON_LCD_S6E3FA0)
+#elif defined(CONFIG_DECON_LCD_S6E3FA0) || defined(CONFIG_DECON_LCD_S6E3FA2)
 	DISPLAY_INLINE_SET_RATE(dout_fimd1, 133 * MHZ);
 #else
 	DISPLAY_INLINE_SET_RATE(dout_fimd1, 266 * MHZ);
