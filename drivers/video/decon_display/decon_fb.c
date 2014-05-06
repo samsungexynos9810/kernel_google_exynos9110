@@ -2349,7 +2349,7 @@ static void set_reg_data(struct s3c_fb *sfb, int i,
 		regs->dma_buf_data[i];
 }
 #ifdef CONFIG_FB_EXYNOS_FIMD_MC
-static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
+static int gsc_subdev_set_sfr_update(struct s3c_fb *sfb, int i)
 {
 	int ret = 0;
 	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
@@ -2358,6 +2358,19 @@ static int s3c_fb_set_sfr_update(struct s3c_fb *sfb, int i)
 			GSC_SFR_UPDATE, NULL);
 	if (ret)
 		pr_err("GSC_SFR_UPDATE failed\n");
+	return ret;
+}
+
+static int gsc_subdev_wait_stop(struct s3c_fb *sfb, int i)
+{
+	int ret = 0;
+	int gsc_id = sfb->md->gsc_sd[i]->grp_id;
+
+	ret = v4l2_subdev_call(sfb->md->gsc_sd[gsc_id], core, ioctl,
+			GSC_WAIT_STOP, NULL);
+	if (ret)
+		pr_err("GSC_WAIT_STOP failed\n");
+
 	return ret;
 }
 #endif
@@ -2398,8 +2411,6 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 						regs, false);
 				if (ret)
 					pr_err("fail stop localpath\n");
-				clear_bit(S3C_FB_LOCAL,
-					&sfb->windows[i]->state);
 				set_bit(S3C_FB_DMA,
 					&sfb->windows[i]->state);
 			}
@@ -2438,7 +2449,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	for (i = 0; i < sfb->variant.nr_windows; i++) {
 		if (!WIN_CONFIG_DMA(i)) {
 #ifdef CONFIG_FB_EXYNOS_FIMD_MC
-			ret = s3c_fb_set_sfr_update(sfb, i);
+			ret = gsc_subdev_set_sfr_update(sfb, i);
 			if (ret)
 				pr_err("failed set sfr update\n");
 #endif
@@ -2450,6 +2461,17 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 	hw_trigger_mask_enable(sfb, false);
 #endif
+	for (i = 0; i < sfb->variant.nr_windows; i++) {
+		if (WIN_CONFIG_DMA(i) &&
+			test_bit(S3C_FB_LOCAL, &sfb->windows[i]->state)) {
+			ret = gsc_subdev_wait_stop(sfb, i);
+			if (ret)
+				pr_err("failed set wait stop\n");
+			clear_bit(S3C_FB_LOCAL,
+				&sfb->windows[i]->state);
+		}
+	}
+
 }
 
 static void s3c_fd_fence_wait(struct s3c_fb *sfb, struct sync_fence *fence)
@@ -3267,13 +3289,11 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 			writel(data, sfb->regs + DECON_UPDATE_SCHEME);
 		}
 		set_bit(S3C_FB_S_STREAM, &sfb->windows[win->index]->state);
-		printk("Decon start(%d)\n", win->index);
 	} else {
 		data = readl(sfb->regs + WINCON(win->index));
 		data &= ~(0x07 << 20); /* Masking == diable local path */
 		writel(data, sfb->regs + WINCON(win->index));
 		clear_bit(S3C_FB_S_STREAM, &sfb->windows[win->index]->state);
-		printk("Decon stop(%d)\n", win->index);
 	}
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, enable);
