@@ -26,9 +26,6 @@
 #include <mali_midg_regmap.h>
 
 #define MEMPOOL_PAGES 16384
-#ifdef
-#define MEM_FREE_LIMITS 1280
-#endif
 
 /**
  * @brief Create a kernel base context.

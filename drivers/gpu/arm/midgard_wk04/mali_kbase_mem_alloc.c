@@ -27,6 +27,10 @@
 #include <linux/mm.h>
 #include <linux/atomic.h>
 
+#ifdef SLSI_INTEGRATION
+#define MEM_FREE_LIMITS 1280
+#endif
+
 static unsigned long kbase_mem_allocator_count(struct shrinker *s,
 						struct shrink_control *sc)
 {
@@ -202,12 +206,12 @@ KBASE_EXPORT_TEST_API(kbase_mem_allocator_alloc)
 int kbase_mem_free_list_cleanup(kbase_context *kctx)
 {
 	int tofree,i=0;
-	kbase_mem_allocator *allocator = kctx.osalloc;
+	kbase_mem_allocator *allocator = &kctx->osalloc;
 	tofree = MAX(MEM_FREE_LIMITS, atomic_read(&allocator->free_list_size)) - MEM_FREE_LIMITS;
 	if (tofree > 0)
 	{
-		mutex_lock(&allocator->free_list_lock);
 		struct page * p;
+		mutex_lock(&allocator->free_list_lock);
 		for(i=0; i < tofree; i++)
 		{
 			p = list_first_entry(&allocator->free_list_head, struct page, lru);
