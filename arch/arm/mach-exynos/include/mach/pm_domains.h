@@ -41,7 +41,7 @@
 #define pr_fmt(fmt) fmt
 #endif
 
-#ifdef PM_DOMAIN_DEBUG
+#ifdef CONFIG_PM_DOMAIN_DEBUG
 #define DEBUG_PRINT_INFO(fmt, ...) printk(PM_DOMAIN_PREFIX pr_fmt(fmt), ##__VA_ARGS__)
 #else
 #define DEBUG_PRINT_INFO(fmt, ...)

@@ -161,6 +161,9 @@ config PM_RUNTIME_TEST_SYSFS
 	  power domain in Exynos. When you write power domain name you can test
 	  the power domain.
 
+config PM_DOMAIN_DEBUG
+	bool "Runtime PM debug message" if PM_RUNTIME
+
 config PM
 	def_bool y
 	depends on PM_SLEEP || PM_RUNTIME
