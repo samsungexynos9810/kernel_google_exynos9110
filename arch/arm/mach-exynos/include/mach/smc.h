@@ -67,6 +67,7 @@
 #define HWRNG_INIT		0x0
 #define HWRNG_EXIT		0x1
 #define HWRNG_GET_DATA		0x2
+#define HWRNG_RESUME		0x3
 
 #ifndef __ASSEMBLY__
 extern int exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);

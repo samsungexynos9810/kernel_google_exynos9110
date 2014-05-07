@@ -221,6 +221,9 @@ static int exyswd_rng_resume(struct device *dev)
 	unsigned long flag;
 
 	spin_lock_irqsave(&hwrandom_lock, flag);
+#if defined(CONFIG_EXYRNG_FIPS_COMPLIANCE)
+	exynos_smc(SMC_CMD_RANDOM, HWRNG_RESUME, 0, 0);
+#endif
 	if (hwrng_read_flag)
 		exynos_smc(SMC_CMD_RANDOM, HWRNG_INIT, 0, 0);
 	spin_unlock_irqrestore(&hwrandom_lock, flag);
