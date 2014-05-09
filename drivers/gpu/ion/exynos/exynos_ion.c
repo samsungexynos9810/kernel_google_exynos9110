@@ -1056,7 +1056,7 @@ static long exynos_ion_sync_fd(struct ion_client *client, int fd,
 	struct ion_buffer *buffer;
 	struct mm_struct *mm;
 	struct vm_area_struct *vma;
-	struct dma_buf *dmabuf;
+	struct dma_buf *dmabuf = NULL;
 	int ret = 0;
 
 	handle = ion_import_dma_buf(client, fd);
@@ -1076,15 +1076,17 @@ static long exynos_ion_sync_fd(struct ion_client *client, int fd,
 
 	vma = find_vma(mm, addr);
 
-	if (!vma || !vma->vm_file || !is_dma_buf_file(vma->vm_file)
-			|| !vma->vm_file->private_data) {
+	if (vma->vm_file)
+		dmabuf = get_dma_buf_file(vma->vm_file);
+
+	if (!vma->vm_file || !dmabuf) {
 		/* HACK */
-		pr_info("%s: given fd %d is not dmabuf\n", __func__, fd);
+		pr_info("%s: given region %#zx@%#lx is not dmabuf mapped\n",
+			__func__, size, addr);
 		ret = -EINVAL;
-		goto err_region;
+		goto err_dmabuf_file;
 	}
 
-	dmabuf = vma->vm_file->private_data;
 	if (dmabuf->priv != (void *)buffer) {
 		/* HACK */
 		pr_info("%s: %#lx ~ %#lx is not the region of dmabuf fd %d\n",
@@ -1104,6 +1106,8 @@ static long exynos_ion_sync_fd(struct ion_client *client, int fd,
 	dmac_map_area((void *)addr, size, DMA_TO_DEVICE);
 
 err_region:
+	dma_buf_put(dmabuf);
+err_dmabuf_file:
 	up_read(&mm->mmap_sem);
 no_sync:
 	ion_free(client, handle);
