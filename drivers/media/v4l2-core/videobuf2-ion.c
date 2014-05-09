@@ -866,7 +866,10 @@ static void *vb2_ion_get_userptr(void *alloc_ctx, unsigned long vaddr,
 		return ERR_PTR(-ENOMEM);
 	}
 
-	if (!vma->vm_file || !is_dma_buf_file(vma->vm_file)) {
+	if (vma->vm_file)
+		buf->dma_buf = get_dma_buf_file(vma->vm_file);
+
+	if (!vma->vm_file || !buf->dma_buf) {
 		buf->dma_buf = vb2_ion_get_user_pages(vaddr, size, write);
 
 		if (IS_ERR(buf->dma_buf)) {
@@ -877,9 +880,7 @@ static void *vb2_ion_get_userptr(void *alloc_ctx, unsigned long vaddr,
 			goto err_get_user_pages;
 		}
 	} else {
-		buf->dma_buf = vma->vm_file->private_data; /* ad-hoc */
 		buf->cookie.offset = vaddr - vma->vm_start;
-		get_dma_buf(buf->dma_buf);
 		buf->ion = true;
 	}
 
