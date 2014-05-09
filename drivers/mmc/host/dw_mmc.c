@@ -123,6 +123,218 @@ struct idmac_desc {
 #define DRTO		200
 #define DRTO_MON_PERIOD	50
 
+#if defined(CONFIG_MMC_DW_DEBUG)
+static struct dw_mci_debug_data dw_mci_debug __cacheline_aligned;
+
+/* Add sysfs for read cmd_logs */
+static ssize_t dw_mci_debug_log_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	ssize_t total_len = 0;
+	int j = 0, k = 0;
+	struct dw_mci_cmd_log *cmd_log;
+	unsigned int offset;
+
+	struct mmc_host *mmc = container_of(dev, struct mmc_host, class_dev);
+	struct dw_mci *host = dw_mci_debug.host[mmc->index];
+
+	/*
+	 * print cmd_log from prev. 24 to last
+	 * guess Max buf size is about 1KB
+	 */
+	 if (host->debug_info->en_logging & DW_MCI_DEBUG_ON_CMD) {
+		 offset = atomic_read(&host->debug_info->cmd_log_count) - 13;
+		 offset &= DWMCI_LOG_MAX - 1;
+		 total_len += sprintf(buf + (sizeof(char)*6), "HOST%1d\n", mmc->index);
+		 cmd_log = host->debug_info->cmd_log;
+		 for (j = 0; j < 14; j++) {
+			 total_len += sprintf(buf+(sizeof(char)*71*j)+
+				 (sizeof(char)*(2*k+6*(k+1))),
+				 "%04d:%2d,0x%08x,%04d,%016llu,%016llu,%02x,%04x,%03d.\n",
+				 offset,
+				 cmd_log[offset].cmd, cmd_log[offset].arg,
+				 cmd_log[offset].data_size, cmd_log[offset].send_time,
+				 cmd_log[offset].done_time, cmd_log[offset].seq_status,
+				 cmd_log[offset].rint_sts, cmd_log[offset].status_count);
+			 offset++;
+		 }
+		 total_len += sprintf(buf + (sizeof(char)*2), "\n\n");
+		 k++;
+	 }
+
+	return total_len;
+}
+
+static ssize_t dw_mci_debug_log_control(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf,
+		size_t len)
+{
+	int enable = 0;
+	int ret = 0;
+	struct mmc_host *mmc = container_of(dev, struct mmc_host, class_dev);
+	struct dw_mci *host = dw_mci_debug.host[mmc->index];
+
+	ret = kstrtoint(buf, 0, &enable);
+	if (ret)
+		goto out;
+
+	host->debug_info->en_logging = enable;
+	printk("%s: en_logging is %d.\n",
+			mmc_hostname(host->cur_slot->mmc),
+			host->debug_info->en_logging);
+
+ out:
+	return len;
+}
+DEVICE_ATTR(dwmci_debug, 0777, dw_mci_debug_log_show, dw_mci_debug_log_control);
+
+/*
+ * new_cmd : has to be true Only send_command.(except CMD13)
+ * flags :
+ * 0x1 : send_cmd : start_command(all)
+ * 0x2 : resp(CD) : set done_time without data case
+ * 0x4 : data_done(DTO) : set done_time with data case
+ * 0x8 : error interrupt occurs : set rint_sts read from RINTSTS
+ */
+static void dw_mci_debug_cmd_log(struct mmc_command *cmd, struct dw_mci *host,
+		bool new_cmd, u8 flags, u32 rintsts)
+{
+	int cpu = raw_smp_processor_id();
+	unsigned int count;
+	struct dw_mci_cmd_log *cmd_log = host->debug_info->cmd_log;
+
+	if (!(host->debug_info->en_logging & DW_MCI_DEBUG_ON_CMD))
+		return;
+
+	if (!new_cmd) {
+		count = atomic_read(&host->debug_info->cmd_log_count) &
+							(DWMCI_LOG_MAX - 1);
+		if (flags & DW_MCI_FLAG_SEND_CMD)	/* CMD13 */
+			cmd_log[count].status_count++;
+		if (flags & DW_MCI_FLAG_CD) {
+			cmd_log[count].seq_status |= DW_MCI_FLAG_CD;
+			cmd_log[count].done_time = cpu_clock(cpu);
+		}
+		if (flags & DW_MCI_FLAG_DTO) {
+			cmd_log[count].seq_status |= DW_MCI_FLAG_DTO;
+			cmd_log[count].done_time = cpu_clock(cpu);
+		}
+		if (flags & DW_MCI_FLAG_ERROR) {
+			cmd_log[count].seq_status |= DW_MCI_FLAG_ERROR;
+			cmd_log[count].rint_sts |= (rintsts & 0xFFFF);
+		}
+	} else {
+		count = atomic_inc_return(&host->debug_info->cmd_log_count) &
+							(DWMCI_LOG_MAX - 1);
+		cmd_log[count].cmd = cmd->opcode;
+		cmd_log[count].arg = cmd->arg;
+		if (cmd->data)
+			cmd_log[count].data_size = cmd->data->blocks;
+		else
+			cmd_log[count].data_size = 0;
+
+		cmd_log[count].send_time = cpu_clock(cpu);
+
+		cmd_log[count].done_time = 0x0;
+		cmd_log[count].seq_status = DW_MCI_FLAG_SEND_CMD;
+		if (!flags & DW_MCI_FLAG_SEND_CMD)
+			cmd_log[count].seq_status |= DW_MCI_FLAG_NEW_CMD_ERR;
+
+		cmd_log[count].rint_sts = 0x0;
+		cmd_log[count].status_count = 0;
+	}
+}
+
+static void dw_mci_debug_req_log(struct dw_mci *host, struct mmc_request *mrq,
+		enum dw_mci_req_log_state log_state, enum dw_mci_state state)
+{
+	int cpu = raw_smp_processor_id();
+	unsigned int count;
+	struct dw_mci_req_log *req_log = host->debug_info->req_log;
+
+	if (!(host->debug_info->en_logging & DW_MCI_DEBUG_ON_REQ))
+		return;
+
+	count = atomic_inc_return(&host->debug_info->req_log_count)
+					& (DWMCI_REQ_LOG_MAX - 1);
+	if (log_state == STATE_REQ_START) {
+		req_log[count].info0 = mrq->cmd->opcode;
+		req_log[count].info1 = mrq->cmd->arg;
+		if (mrq->data) {
+			req_log[count].info2 = (u32)mrq->data->blksz;
+			req_log[count].info3 = (u32)mrq->data->blocks;
+		} else {
+			req_log[count].info2 = 0;
+			req_log[count].info3 = 0;
+		}
+	} else {
+		req_log[count].info0 = host->cmd_status;
+		req_log[count].info1 = host->data_status;
+		req_log[count].info2 = 0;
+		req_log[count].info3 = 0;
+	}
+	req_log[count].log_state = log_state;
+	req_log[count].pending_events = host->pending_events;
+	req_log[count].completed_events = host->completed_events;
+	req_log[count].timestamp = cpu_clock(cpu);
+	req_log[count].state_cmd = (log_state == STATE_REQ_CMD_PROCESS) ?
+						state : host->state_cmd;
+	req_log[count].state_dat = (log_state == STATE_REQ_DATA_PROCESS) ?
+						state : host->state_dat;
+}
+
+static void dw_mci_debug_init(struct dw_mci *host)
+{
+	unsigned int host_index;
+	unsigned int info_index;
+
+	host_index = dw_mci_debug.host_count++;
+	if (host_index < DWMCI_DBG_NUM_HOST) {
+		dw_mci_debug.host[host_index] = host;
+		if (DWMCI_DBG_MASK_INFO & DWMCI_DBG_BIT_HOST(host_index)) {
+			static atomic_t temp_cmd_log_count = ATOMIC_INIT(-1);
+			static atomic_t temp_req_log_count = ATOMIC_INIT(-1);
+			int sysfs_err = 0;
+
+			info_index = dw_mci_debug.info_count++;
+			dw_mci_debug.info_index[host_index] = info_index;
+			host->debug_info = &dw_mci_debug.debug_info[info_index];
+			host->debug_info->en_logging = DW_MCI_DEBUG_ON_CMD
+					| DW_MCI_DEBUG_ON_REQ;
+			host->debug_info->cmd_log_count = temp_cmd_log_count;
+			host->debug_info->req_log_count = temp_req_log_count;
+
+			sysfs_err = sysfs_create_file(&(host->slot[0]->mmc->class_dev.kobj),
+						&(dev_attr_dwmci_debug.attr));
+			pr_info("%s: create debug_log sysfs : %s.....\n", __func__,
+					sysfs_err ? "failed" : "successed");
+			dev_info(host->dev, "host %d debug On\n", host_index);
+		} else {
+			dw_mci_debug.info_index[host_index] = 0xFF;
+		}
+	}
+}
+#else
+static inline int dw_mci_debug_cmd_log(struct mmc_command *cmd,
+		struct dw_mci *host, bool new_cmd, u8 flags, u32 rintsts)
+{
+	return 0;
+}
+
+static inline int dw_mci_debug_req_log(struct dw_mci *host,
+		struct mmc_request *mrq, enum dw_mci_req_log_state log_state,
+		enum dw_mci_state state)
+{
+	return 0;
+}
+
+static inline int dw_mci_debug_init(struct dw_mci *host)
+{
+	return 0;
+}
+#endif
+
 int dw_mci_ciu_clk_en(struct dw_mci *host, bool force_gating)
 {
 	int ret = 1;
@@ -484,6 +696,17 @@ static void dw_mci_start_command(struct dw_mci *host,
 			}
 		}
 	}
+
+	/* needed to
+	 * add get node parse_dt for check to enable logging
+	 * if defined(CMD_LOGGING)
+	 * set en_logging to true
+	 * init cmd_log_count
+	 */
+	if (cmd->opcode == MMC_SEND_STATUS)
+		dw_mci_debug_cmd_log(cmd, host, false, DW_MCI_FLAG_SEND_CMD, 0);
+	else
+		dw_mci_debug_cmd_log(cmd, host, true, DW_MCI_FLAG_SEND_CMD, 0);
 
 	mci_writel(host, CMDARG, cmd->arg);
 	wmb();
@@ -1311,6 +1534,8 @@ static void __dw_mci_start_request(struct dw_mci *host,
 		wmb();
 	}
 
+	dw_mci_debug_req_log(host, mrq, STATE_REQ_START, 0);
+
 	dw_mci_start_command(host, cmd, cmdflags);
 
 	if (mrq->stop)
@@ -1751,6 +1976,8 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq,
 
 	(*state) = STATE_IDLE;
 
+	dw_mci_debug_req_log(host, mrq, STATE_REQ_END, 0);
+
 	/* SDIO,SD case */
 	if (!(host->quirks & DW_MCI_QUIRK_BROKEN_CARD_DETECTION)) {
 		host->cur_slot->mrq = NULL;
@@ -1938,6 +2165,9 @@ static int dw_mci_tasklet_cmd(struct dw_mci *host)
 						host->stop_snd = true;
 					}
 					state = STATE_SENDING_STOP;
+					dw_mci_debug_req_log(host,
+						host->mrq_cmd,
+						STATE_REQ_CMD_PROCESS, state);
 				}
 				break;
 			}
@@ -1954,6 +2184,8 @@ static int dw_mci_tasklet_cmd(struct dw_mci *host)
 			}
 
 			prev_state = state = STATE_SENDING_DATA;
+			dw_mci_debug_req_log(host, host->mrq_cmd,
+					STATE_REQ_CMD_PROCESS, state);
 			if (host->quirks & DW_MMC_QUIRK_SW_DATA_TIMEOUT) {
 				if (cmd->data &&
 					(cmd->data->flags & MMC_DATA_READ)) {
@@ -2046,6 +2278,9 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 						host->stop_snd = true;
 					}
 					state = STATE_DATA_ERROR;
+					dw_mci_debug_req_log(host,
+						host->mrq_dat,
+						STATE_REQ_DATA_PROCESS, state);
 				}
 				break;
 			}
@@ -2056,6 +2291,8 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 
 			set_bit(EVENT_XFER_COMPLETE, &host->completed_events);
 			prev_state = state = STATE_DATA_BUSY;
+			dw_mci_debug_req_log(host, host->mrq_dat,
+					STATE_REQ_DATA_PROCESS, state);
 			/* fall through */
 
 		case STATE_DATA_BUSY:
@@ -2163,6 +2400,8 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 			}
 
 			prev_state = state = STATE_SENDING_STOP;
+			dw_mci_debug_req_log(host, host->mrq_dat,
+					STATE_REQ_DATA_PROCESS, state);
 			if (!data->error) {
 				if (data->stop) {
 					BUG_ON(!data->stop);
@@ -2235,6 +2474,8 @@ static int dw_mci_tasklet_dat(struct dw_mci *host)
 			set_bit(EVENT_CMD_COMPLETE, &host->pending_events);
 
 			state = STATE_DATA_BUSY;
+			dw_mci_debug_req_log(host, host->mrq_dat,
+					STATE_REQ_DATA_PROCESS, state);
 			break;
 
 		default:
@@ -2268,8 +2509,11 @@ static void dw_mci_tasklet_func(unsigned long priv)
 	done_cmd = dw_mci_tasklet_cmd(host);
 	mrq_cmd = host->mrq_cmd;
 
-	if (done_cmd)
+	if (done_cmd) {
 		host->state_cmd = STATE_IDLE;
+		dw_mci_debug_req_log(host, mrq_cmd, STATE_REQ_CMD_PROCESS,
+				host->state_cmd);
+	}
 
 	if (host->state_cmd == STATE_SENDING_DATA ||
 	    host->state_cmd == STATE_DATA_BUSY ||
@@ -2279,6 +2523,8 @@ static void dw_mci_tasklet_func(unsigned long priv)
 		host->mrq_dat = host->mrq_cmd;
 		host->state_cmd = STATE_IDLE;
 		host->mrq_cmd = NULL;
+		dw_mci_debug_req_log(host, host->mrq_dat,
+				STATE_REQ_DATA_PROCESS,	host->state_dat);
 	}
 
 	/* data state */
@@ -2807,6 +3053,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 
 		if (pending & SDMMC_INT_HLE) {
 			mci_writel(host, RINTSTS, SDMMC_INT_HLE);
+			dw_mci_debug_cmd_log(host->cmd, host, false,
+					DW_MCI_FLAG_ERROR, status);
 			host->cmd_status = pending;
 			tasklet_schedule(&host->tasklet);
 			ret = IRQ_HANDLED;
@@ -2814,6 +3062,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 
 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
 			mci_writel(host, RINTSTS, DW_MCI_CMD_ERROR_FLAGS);
+			dw_mci_debug_cmd_log(host->cmd, host, false,
+					DW_MCI_FLAG_ERROR, status);
 			host->cmd_status = pending;
 			ret = IRQ_HANDLED;
 		}
@@ -2841,6 +3091,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			}
 			/* if there is an error report DATA_ERROR */
 			mci_writel(host, RINTSTS, DW_MCI_DATA_ERROR_FLAGS);
+			dw_mci_debug_cmd_log(host->cmd, host, false,
+					DW_MCI_FLAG_ERROR, status);
 			host->data_status = pending;
 			smp_wmb();
 			set_bit(EVENT_DATA_ERROR, &host->pending_events);
@@ -2853,6 +3105,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 
 		if (pending & SDMMC_INT_DATA_OVER) {
 			mci_writel(host, RINTSTS, SDMMC_INT_DATA_OVER);
+			dw_mci_debug_cmd_log(host->cmd, host, false,
+					DW_MCI_FLAG_DTO, 0);
 			if (!host->data_status)
 				host->data_status = pending;
 			smp_wmb();
@@ -2881,6 +3135,8 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 
 		if (pending & SDMMC_INT_CMD_DONE) {
 			mci_writel(host, RINTSTS, SDMMC_INT_CMD_DONE);
+			dw_mci_debug_cmd_log(host->cmd, host, false,
+					DW_MCI_FLAG_CD, 0);
 			dw_mci_cmd_interrupt(host, pending);
 			ret = IRQ_HANDLED;
 		}
@@ -4090,6 +4346,8 @@ int dw_mci_probe(struct dw_mci *host)
 		else
 			init_slots++;
 	}
+
+	dw_mci_debug_init(host);
 
 	if (init_slots) {
 		dev_info(host->dev, "%d slots initialized\n", init_slots);
