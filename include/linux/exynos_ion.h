@@ -152,7 +152,19 @@ int ion_exynos_contig_heap_isolate(int region_id);
 void ion_exynos_contig_heap_deisolate(int region_id);
 int init_exynos_ion_contig_heap(void);
 #else
-static inline int init_exynos_ion_contig_heap(void)
+static inline void exynos_ion_sync_for_device(struct device *dev,
+					struct dma_buf *dbuf,
+					void *vaddr, size_t size,
+					off_t offset, struct sg_table *sgt,
+					enum dma_data_direction dir)
+{
+}
+
+static inline void exynos_ion_sync_for_cpu(struct device *dev,
+					struct dma_buf *dbuf,
+					void *vaddr, size_t size,
+					off_t offset, struct sg_table *sgt,
+					enum dma_data_direction dir)
 {
 	return 0;
 }
