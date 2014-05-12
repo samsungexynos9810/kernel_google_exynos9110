@@ -202,6 +202,7 @@ struct cal_tmu_data {
 	addr_u32 base[EXYNOS_TMU_COUNT];
 	u8 temp_error1[EXYNOS_TMU_COUNT];
 	u8 temp_error2[EXYNOS_TMU_COUNT];
+	u8 vptat[EXYNOS_TMU_COUNT];
 	u8 gain;
 	u8 reference_voltage;
 	u8 noise_cancel_mode;
@@ -211,6 +212,7 @@ struct cal_tmu_data {
 
 void cal_tmu_control(struct cal_tmu_data *data, int id, bool on);
 int cal_tmu_code_to_temp(struct cal_tmu_data *data, unsigned char temp_code, int id);
+int cal_tmu_temp_to_code(struct cal_tmu_data *data, unsigned char temp, int id);
 int cal_tmu_read(struct cal_tmu_data *data, int id);
 
 #endif /* __CAL_TMU_H */

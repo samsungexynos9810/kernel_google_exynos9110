@@ -90,8 +90,6 @@ struct exynos_tmu_data {
 	enum soc_type soc;
 	struct work_struct irq_work;
 	struct mutex lock;
-	u8 temp_error1[EXYNOS_TMU_COUNT];
-	u8 temp_error2[EXYNOS_TMU_COUNT];
 	struct cal_tmu_data *cal_data;
 };
 
@@ -699,63 +697,6 @@ static void exynos_unregister_thermal(void)
 	pr_info("Exynos: Kernel Thermal management unregistered\n");
 }
 
-/*
- * TMU treats temperature as a mapped temperature code.
- * The temperature is converted differently depending on the calibration type.
- */
-static int temp_to_code(struct exynos_tmu_data *data, u8 temp, int id)
-{
-	struct exynos_tmu_platform_data *pdata = data->pdata;
-	int temp_code;
-	int fuse_id = 0;
-
-	if (temp > MAX_TEMP)
-		temp_code = MAX_TEMP;
-	else if (temp < MIN_TEMP)
-		temp_code = MIN_TEMP;
-
-	if (soc_is_exynos5422()) {
-		switch (id) {
-		case 0:
-			fuse_id = 0;
-			break;
-		case 1:
-			fuse_id = 1;
-			break;
-		case 2:
-			fuse_id = 3;
-			break;
-		case 3:
-			fuse_id = 4;
-			break;
-		case 4:
-			fuse_id = 2;
-			break;
-		default:
-			pr_err("unknown sensor id on Exynos5422\n");
-			break;
-		}
-	} else {
-		fuse_id = id;
-	}
-
-	switch (pdata->cal_type) {
-	case TYPE_TWO_POINT_TRIMMING:
-		temp_code = (temp - 25) *
-		    (data->temp_error2[fuse_id] - data->temp_error1[fuse_id]) /
-		    (85 - 25) + data->temp_error1[fuse_id];
-		break;
-	case TYPE_ONE_POINT_TRIMMING:
-		temp_code = temp + data->temp_error1[fuse_id] - 25;
-		break;
-	default:
-		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
-		break;
-	}
-
-	return temp_code;
-}
-
 static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 {
 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
@@ -793,7 +734,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 
 	if (data->soc == SOC_ARCH_EXYNOS4210) {
 		/* Write temperature code for threshold */
-		threshold_code = temp_to_code(data, pdata->threshold, 0);
+		threshold_code = cal_tmu_temp_to_code(data->cal_data, pdata->threshold, 0);
 		if (threshold_code < 0) {
 			ret = threshold_code;
 			goto out;
@@ -809,7 +750,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	} else if (data->soc == SOC_ARCH_EXYNOS) {
 		/* Write temperature code for rising and falling threshold */
 		for (i = 0; i < trigger_levs; i++) {
-			threshold_code = temp_to_code(data,
+			threshold_code = cal_tmu_temp_to_code(data->cal_data,
 					pdata->trigger_levels[i], id);
 			if (threshold_code < 0) {
 				ret = threshold_code;
@@ -817,7 +758,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 			}
 			rising_threshold |= threshold_code << 8 * i;
 			if (pdata->threshold_falling) {
-				threshold_code = temp_to_code(data,
+				threshold_code = cal_tmu_temp_to_code(data->cal_data,
 						pdata->trigger_levels[i] -
 						pdata->threshold_falling, id);
 				if (threshold_code > 0)
@@ -832,7 +773,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	} else if (data->soc == SOC_ARCH_EXYNOS543X) {
 #if defined(CONFIG_SOC_EXYNOS5430)
 		for (i = 0; i < trigger_levs; i++) {
-			threshold_code = temp_to_code(data,
+			threshold_code = cal_tmu_temp_to_code(data->cal_data,
 					pdata->trigger_levels[i], id);
 			if (threshold_code < 0) {
 				ret = threshold_code;
@@ -843,7 +784,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 			else
 				rising_threshold7_4 |= threshold_code << (8 * (i - 4));
 			if (pdata->threshold_falling) {
-				threshold_code = temp_to_code(data,
+				threshold_code = cal_tmu_temp_to_code(data->cal_data,
 						pdata->trigger_levels[i] -
 						pdata->threshold_falling, id);
 				if (threshold_code > 0) {
@@ -909,17 +850,20 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 	else
 		pdata->cal_type = TYPE_ONE_POINT_TRIMMING;
 #endif
-	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
-	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
+	data->cal_data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
+	data->cal_data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
 #if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	if (data->temp_error1[id] == 0)
 		data->temp_error1[id] = pdata->efuse_value;
 #else
-	if ((EFUSE_MIN_VALUE > data->temp_error1[id]) || (data->temp_error1[id] > EFUSE_MAX_VALUE) ||
-			(data->temp_error1[id] == 0))
-		data->temp_error1[id] = pdata->efuse_value;
+	if ((EFUSE_MIN_VALUE > data->cal_data->temp_error1[id]) || (data->cal_data->temp_error1[id] > EFUSE_MAX_VALUE) ||
+			(data->cal_data->temp_error1[id] == 0))
+		data->cal_data->temp_error1[id] = pdata->efuse_value;
 #endif
+
+	data->cal_data->vptat[id] = trim_info & VPTAT_CTRL_MASK;
+
 	mutex_unlock(&data->lock);
 }
 
@@ -1021,7 +965,7 @@ static int exynos_tmu_set_emulation(void *drv_data, unsigned long temp)
 			temp /= MCELSIUS;
 
 			reg = (EXYNOS_EMUL_TIME << EXYNOS_EMUL_TIME_SHIFT) |
-				(temp_to_code(data, temp, i)
+				(cal_tmu_temp_to_code(data->cal_data, temp, i)
 				 << EXYNOS_EMUL_DATA_SHIFT) | EXYNOS_EMUL_ENABLE;
 		} else {
 			reg &= ~EXYNOS_EMUL_ENABLE;
@@ -1518,18 +1462,13 @@ exynos_thermal_sensor_temp(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct exynos_tmu_data *data = th_zone->sensor_conf->private_data;
-	u8 temp_code;
 	unsigned long temp[EXYNOS_TMU_COUNT] = {0,};
 	int i, len = 0;
 
 	mutex_lock(&data->lock);
 
-	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
-		temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
-		if (temp_code == 0xff)
-			continue;
-		temp[i] = cal_tmu_code_to_temp(data->cal_data, temp_code, i) * MCELSIUS;
-	}
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
+		temp[i] = cal_tmu_read(data->cal_data, i) * MCELSIUS;
 
 	mutex_unlock(&data->lock);
 
@@ -1559,11 +1498,7 @@ exynos_thermal_curr_temp(struct device *dev,
 	mutex_lock(&data->lock);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
-		u8 temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
-		if (temp_code == 0xff)
-			temp[i] = 0;
-		else
-			temp[i] = cal_tmu_code_to_temp(data->cal_data, temp_code, i) * 10;
+		temp[i] = cal_tmu_read(data->cal_data, i) * 10;
 	}
 
 	mutex_unlock(&data->lock);
@@ -1594,11 +1529,8 @@ static void exynos_set_cal_data(struct exynos_tmu_data *data)
 {
 	int i;
 
-	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
+	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
 		data->cal_data->base[i] = data->base[i];
-		data->cal_data->temp_error1[i] = data->temp_error1[i];
-		data->cal_data->temp_error2[i] = data->temp_error2[i];
-	}
 
 	data->cal_data->gain = data->pdata->gain;
 	data->cal_data->reference_voltage = data->pdata->reference_voltage;
@@ -1783,11 +1715,11 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, data);
 	mutex_init(&data->lock);
 
+	exynos_set_cal_data(data);
+
 	/* Save the eFuse value before initializing TMU */
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++)
 		exynos_tmu_get_efuse(pdev, i);
-
-	exynos_set_cal_data(data);
 
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
 		ret = exynos_tmu_initialize(pdev, i);
@@ -1802,8 +1734,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 
 	mutex_lock(&data->lock);
 	for (i = 0; i < EXYNOS_TMU_COUNT; i++) {
-		unsigned int temp_code = readb(data->base[i] + EXYNOS_TMU_REG_CURRENT_TEMP);
-		int temp = cal_tmu_code_to_temp(data->cal_data, temp_code, i);
+		int temp = cal_tmu_read(data->cal_data, i);
 		pr_debug("[TMU]temp[%d] : %d\n", i, temp);
 	}
 	mutex_unlock(&data->lock);

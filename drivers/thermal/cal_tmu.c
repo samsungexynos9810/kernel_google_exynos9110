@@ -14,7 +14,6 @@
 void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 {
 	unsigned int con, interrupt_en;
-	unsigned int triminfo;
 	int status;
 	int timeout = 20000;
 	int rsvd = 0;
@@ -38,18 +37,17 @@ void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 			break;
 		}
 
-		usleep_range(1,2);
+		usleep_range(1, 2);
 	};
 	timeout = 20000;
 
-	triminfo = Inp32(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
 	rsvd = (Inp32(data->base[id] + EXYNOS_TMU_REG_CONTROL) & TMU_CONTROL_RSVD_MASK);
 
 	con = data->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 		data->gain << EXYNOS_TMU_GAIN_SHIFT;
 #if defined(CONFIG_SOC_EXYNOS5430)
 	if (id == EXYNOS_GPU_NUMBER) {
-		if (triminfo & CALIB_SEL_MASK)
+		if (data->cal_type == TYPE_TWO_POINT_TRIMMING)
 			con = BUF_VREF_SEL_2POINT << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 				data->gain << EXYNOS_TMU_GAIN_SHIFT;
 	}
@@ -61,8 +59,8 @@ void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 	if (id == EXYNOS_GPU_NUMBER)
 		con |= EXYNOS_MUX_ADDR;
 	else {
-		if (triminfo & CALIB_SEL_MASK)
-			con |= triminfo & VPTAT_CTRL_MASK;
+		if (data->cal_type == TYPE_TWO_POINT_TRIMMING)
+			con |= data->vptat[id];
 	}
 #elif defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS3250)
 	con |= EXYNOS_MUX_ADDR;
@@ -109,7 +107,7 @@ void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 				break;
 			}
 
-			usleep_range(1,2);
+			usleep_range(1, 2);
 		};
 
 		con |= EXYNOS_TMU_CORE_ON;
@@ -174,6 +172,56 @@ int cal_tmu_code_to_temp(struct cal_tmu_data *data, unsigned char temp_code, int
 
 	return temp;
 }
+
+int cal_tmu_temp_to_code(struct cal_tmu_data *data, unsigned char  temp, int id)
+{
+	int temp_code;
+	int fuse_id = 0;
+
+	if (temp > MAX_TEMP)
+		temp_code = MAX_TEMP;
+	else if (temp < MIN_TEMP)
+		temp_code = MIN_TEMP;
+
+#ifdef CONFIG_SOC_EXYNOS5422
+	switch (id) {
+	case 0:
+		fuse_id = 0;
+		break;
+	case 1:
+		fuse_id = 1;
+		break;
+	case 2:
+		fuse_id = 3;
+		break;
+	case 3:
+		fuse_id = 4;
+		break;
+	case 4:
+		fuse_id = 2;
+		break;
+	}
+#else
+	fuse_id = id;
+#endif
+
+	switch (data->cal_type) {
+	case TYPE_TWO_POINT_TRIMMING:
+		temp_code = (temp - 25) *
+		    (data->temp_error2[fuse_id] - data->temp_error1[fuse_id]) /
+		    (85 - 25) + data->temp_error1[fuse_id];
+		break;
+	case TYPE_ONE_POINT_TRIMMING:
+		temp_code = temp + data->temp_error1[fuse_id] - 25;
+		break;
+	default:
+		temp_code = temp + EXYNOS_TMU_DEF_CODE_TO_TEMP_OFFSET;
+		break;
+	}
+
+	return temp_code;
+}
+
 
 int cal_tmu_read(struct cal_tmu_data *data, int id)
 {
