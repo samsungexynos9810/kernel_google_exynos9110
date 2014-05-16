@@ -17,6 +17,10 @@
 
 #include <mach/pm_domains.h>
 
+#if defined(CONFIG_SOC_EXYNOS5433)
+char *pd_name[] = {"pd-maudio", "pd-mfc", "pd-hevc", "pd-gscl", "pd-g3d", "pd-disp", "pd-mscl", "pd-g2d", "pd-isp", "pd-cam0", "pd-cam1",};
+#endif
+
 struct platform_device exynos_device_runtime_pm = {
 	.name	= "runtime_pm_test",
 	.id	= -1,
@@ -39,6 +43,9 @@ static ssize_t show_power_domain(struct device *dev, struct device_attribute *at
 		if (!pdev)
 			continue;
 		pd = platform_get_drvdata(pdev);
+		if (strcmp(pd->name, dev_name(dev)))
+			continue;
+
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%-8s - %-3s, ", pd->genpd.name, pd->check_status(pd) ? "on" : "off");
 		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%08x %08x %08x\n",
 					__raw_readl(pd->base+0x0),
@@ -217,25 +224,25 @@ static int exynos_pd_longrun_test(struct device *dev, const char * device_name)
 
 static ssize_t store_power_domain_test(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
-	char device_name[32], test_name[32];
+	char test_name[32];
 
-	sscanf(buf, "%s %s", device_name, test_name);
+	sscanf(buf, "%s", test_name);
 
 	switch (test_name[0]) {
 	case '1':
-		exynos_pd_power_on(dev, device_name);
+		exynos_pd_power_on(dev, dev_name(dev));
 		break;
 
 	case '0':
-		exynos_pd_power_off(dev, device_name);
+		exynos_pd_power_off(dev, dev_name(dev));
 		break;
 
 	case 't':
-		exynos_pd_longrun_test(dev, device_name);
+		exynos_pd_longrun_test(dev, dev_name(dev));
 		break;
 
 	default:
-		printk("echo \"device\" \"test\" > control\n");
+		printk("echo \"test\" > control\n");
 	}
 
 	return count;
