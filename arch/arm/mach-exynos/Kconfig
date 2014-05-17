@@ -209,7 +209,7 @@ config EXYNOS_SNAPSHOT_CALLSTACK
 	int "shown callstack level"
 	depends on EXYNOS_SNAPSHOT
 	range 1 4
-	default 2
+	default 4
 
 config EXYNOS_SNAPSHOT_IRQ_EXIT
 	bool "Enable debugging of interrupt exit event by kevent"
