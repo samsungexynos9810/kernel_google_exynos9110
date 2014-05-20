@@ -30,7 +30,7 @@ static ssize_t show_power_domain(struct device *dev, struct device_attribute *at
 {
 	struct device_node *np;
 	struct platform_device *pdev;
-	int ret = 0;
+	int ret = 0, result = 0;
 
 	for_each_compatible_node(np, NULL, "samsung,exynos-pd") {
 		struct exynos_pm_domain *pd;
@@ -46,11 +46,14 @@ static ssize_t show_power_domain(struct device *dev, struct device_attribute *at
 		if (strcmp(pd->name, dev_name(dev)))
 			continue;
 
-		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%-8s - %-3s, ", pd->genpd.name, pd->check_status(pd) ? "on" : "off");
-		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%08x %08x %08x\n",
-					__raw_readl(pd->base+0x0),
-					__raw_readl(pd->base+0x4),
-					__raw_readl(pd->base+0x8));
+		if (pd->check_status(pd) == EXYNOS_INT_LOCAL_PWR_EN)
+			result = 1;
+		else if (pd->check_status(pd) == 0)
+			result = 0;
+		else
+			result = -1;
+
+		ret += snprintf(buf+ret, PAGE_SIZE-ret, "%d\n", result);
 	}
 
 	return ret;
