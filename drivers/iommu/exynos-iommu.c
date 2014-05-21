@@ -1668,7 +1668,7 @@ int exynos_sysmmu_map_user_pages(struct device *dev,
 
 			pent_first = pent;
 			do {
-				if (pte_none(*pte))
+				if (!pte_present(*pte))
 					goto out_unmap;
 
 				if (write && (!pte_write(*pte) ||
