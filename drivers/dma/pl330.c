@@ -603,6 +603,7 @@ struct dma_pl330_chan {
 
 	/* for cyclic capability */
 	bool cyclic;
+	bool on_trigger;
 };
 
 struct dma_pl330_dmac {
@@ -2485,8 +2486,11 @@ static inline void handle_cyclic_desc_list(struct list_head *list)
 		callback = desc->txd.callback;
 
 		DBG_PRINT("[%s] before callback\n", __func__);
-		if (callback)
+		if (callback && !pch->on_trigger)
 			callback(desc->txd.callback_param);
+
+		if (pch->on_trigger)
+			pch->on_trigger = 0;
 		DBG_PRINT("[%s] after callback\n", __func__);
 	}
 
@@ -2735,6 +2739,8 @@ pl330_tx_status(struct dma_chan *chan, dma_cookie_t cookie,
 
 static void pl330_issue_pending(struct dma_chan *chan)
 {
+	struct dma_pl330_chan *ch = to_pchan(chan);
+	ch->on_trigger = 1;
 	pl330_tasklet((unsigned long) to_pchan(chan));
 }
 
