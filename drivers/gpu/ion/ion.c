@@ -353,7 +353,9 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 	buffer->heap->ops->free(buffer);
 	if (buffer->pages)
 		vfree(buffer->pages);
+	mutex_lock(&buffer->lock);
 	ion_buffer_task_remove_all(buffer);
+	mutex_unlock(&buffer->lock);
 	kfree(buffer);
 }
 
@@ -912,7 +914,10 @@ static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
 	struct ion_buffer *buffer = dmabuf->priv;
 
 	ion_buffer_sync_for_device(buffer, attachment->dev, direction);
+
+	mutex_lock(&buffer->lock);
 	ion_buffer_task_add(buffer, attachment->dev);
+	mutex_unlock(&buffer->lock);
 
 	return buffer->sg_table;
 }
@@ -924,7 +929,9 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 	struct dma_buf *dmabuf = attachment->dmabuf;
 	struct ion_buffer *buffer = dmabuf->priv;
 
+	mutex_lock(&buffer->lock);
 	ion_buffer_task_remove(buffer, attachment->dev);
+	mutex_unlock(&buffer->lock);
 }
 
 struct ion_vma_list {
