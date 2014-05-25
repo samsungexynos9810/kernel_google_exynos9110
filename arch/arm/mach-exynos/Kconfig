@@ -309,13 +309,6 @@ config EXYNOS_SETUP_MIPIPHY
 	help
 	  Compile in common setup code for MIPI-CSIS devices
 
-config EXYNOS_CONTENT_PATH_PROTECTION
-	bool "Exynos Content Path Protection"
-	depends on (ARM_TRUSTZONE && ARCH_EXYNOS5)
-	default y
-	help
-	  Enable content path protection of EXYNOS.
-
 config EXYNOS_ASV
 	bool "ASV support for Exynos"
 	default y
