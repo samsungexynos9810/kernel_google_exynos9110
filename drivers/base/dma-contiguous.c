@@ -270,7 +270,8 @@ int __init dma_declare_contiguous(struct device *dev, phys_addr_t size,
 #ifndef CMA_NO_MIGRATION
 	alignment = PAGE_SIZE << max(MAX_ORDER - 1, pageblock_order);
 #else
-	alignment = PAGE_SIZE;
+	/* constraints for memory protection */
+	alignment = (size < SZ_1M) ? (SZ_4K << get_order(size)): SZ_1M;
 #endif
 	if (base & (alignment - 1)) {
 		pr_err("Invalid alignment of base address %pa\n", &base);
