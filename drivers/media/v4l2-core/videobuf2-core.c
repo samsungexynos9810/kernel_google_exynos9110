@@ -1403,7 +1403,19 @@ int vb2_qbuf(struct vb2_queue *q, struct v4l2_buffer *b)
 		fd = get_unused_fd();
 		if (fd >= 0) {
 			pt = sw_sync_pt_create(q->timeline, q->timeline_max);
+			if (!pt) {
+				dprintk(1, "qbuf: failed to create sync_pt\n");
+				ret = -ENOMEM;
+				goto unlock;
+			}
 			fence = sync_fence_create("vb2", pt);
+			if (!fence) {
+				sync_pt_free(pt);
+				dprintk(1, "qbuf: failed to craete fence\n");
+				ret = -ENOMEM;
+				goto unlock;
+			}
+
 			sync_fence_install(fence, fd);
 			vb->v4l2_buf.reserved = fd;
 		} else {
