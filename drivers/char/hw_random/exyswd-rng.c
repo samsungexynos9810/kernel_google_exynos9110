@@ -28,6 +28,7 @@
 #define HWRNG_RET_TEST_ERROR		4
 
 #define EXYRNG_MAX_FAILURES		25
+#define EXYRNG_START_UP_SIZE		4096
 
 uint32_t hwrng_read_flag;
 static struct hwrng rng;
@@ -37,12 +38,58 @@ static size_t test_failures;
 #if defined(CONFIG_EXYRNG_FAIL_POLICY_DISABLE)
 static int hwrng_disabled;
 #endif
+static int start_up_test;
 
 #ifdef CONFIG_EXYRNG_DEBUG
 #define exyrng_debug(args...)	printk(KERN_INFO args)
 #else
 #define exyrng_debug(args...)
 #endif
+
+void exynos_swd_test_fail(void)
+{
+#if defined(CONFIG_EXYRNG_FAIL_POLICY_DISABLE)
+	hwrng_disabled = 1;
+	printk("[ExyRNG] disabled for test failures\n");
+#else /* defined(CONFIG_EXYRNG_POLICY_RESET) */
+	panic("[ExyRNG] It failed to health tests. It means that it detects "
+	"the malfunction of TRNG(HW) which generates random numbers. If it "
+	"doesn't offer enough entropy, it should not be used. The system "
+	"reset could be a way to solve it. The health tests are designed "
+	"to have the false positive rate of approximately once per billion "
+	"based on min-entropy of TRNG.\n");
+#endif
+}
+
+static int exynos_swd_startup_test(void)
+{
+	uint32_t start_up_size;
+	int ret = 0;
+
+	start_up_size = EXYRNG_START_UP_SIZE;
+
+	while (start_up_size) {
+		ret = exynos_smc(SMC_CMD_RANDOM, HWRNG_GET_DATA, 1, 0);
+		if (ret == HWRNG_RET_RETRY_ERROR) {
+			usleep_range(50, 100);
+			continue;
+		}
+
+		if (ret == HWRNG_RET_TEST_ERROR) {
+			exynos_swd_test_fail();
+			return -EFAULT;
+		}
+
+		if (ret != HWRNG_RET_OK) {
+			return -EFAULT;
+			exyrng_debug("[ExyRNG] failed to get random\n");
+		}
+
+		start_up_size -= 32;
+	}
+
+	return 0;
+}
 
 static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 {
@@ -77,6 +124,14 @@ static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 	hwrng_read_flag = 1;
 	spin_unlock_irqrestore(&hwrandom_lock, flag);
 
+	if (start_up_test) {
+		if (exynos_swd_startup_test())
+			goto out;
+
+		start_up_test = 0;
+		exyrng_debug("[ExyRNG] passed the start-up test\n");
+	}
+
 	while (read_size) {
 		spin_lock_irqsave(&hwrandom_lock, flag);
 		ret = exynos_smc(SMC_CMD_RANDOM, HWRNG_GET_DATA, 0, 0);
@@ -95,18 +150,8 @@ static int exynos_swd_read(struct hwrng *rng, void *data, size_t max, bool wait)
 
 		if (ret == HWRNG_RET_TEST_ERROR) {
 			if (++test_failures > EXYRNG_MAX_FAILURES) {
-#if defined(CONFIG_EXYRNG_FAIL_POLICY_DISABLE)
-				hwrng_disabled = 1;
-				printk("[ExyRNG] disabled for continuous test failures\n");
-#elif defined(CONFIG_EXYRNG_FAIL_POLICY_RESET)
-				panic("[ExyRNG] It failed to health tests."
-				"It means that it detects the malfunction of TRNG(HW) "
-				"which generates random numbers. If it doesn't "
-				"offer enough entropy, it should not be used. "
-				"The system reset could be a way to solve it."
-				"The health tests are designed to have the false"
-				"positive rate of approximately once per billion"
-				"based on min-entropy of TRNG.\n");
+#if defined(CONFIG_EXYRNG_FIPS_COMPLIANCE)
+				exynos_swd_test_fail();
 #else
 				test_failures = 0;
 #endif
@@ -144,6 +189,9 @@ static int exyswd_rng_probe(struct platform_device *pdev)
 	rng.read = exynos_swd_read;
 
 	spin_lock_init(&hwrandom_lock);
+#if defined(CONFIG_EXYRNG_FIPS_COMPLIANCE)
+	start_up_test = 1;
+#endif
 
 	return hwrng_register(&rng);
 }
