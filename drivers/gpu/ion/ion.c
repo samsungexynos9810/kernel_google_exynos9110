@@ -1813,31 +1813,23 @@ static int ion_device_reserve_vm(struct ion_device *dev)
 	return 0;
 }
 
-static void ion_buffer_dump_flags(struct seq_file *s, struct ion_buffer *buffer)
+static void ion_buffer_dump_flags(struct seq_file *s, unsigned long flags)
 {
-	seq_printf(s, "(");
-
-	if (ion_buffer_fault_user_mappings(buffer))
+	if ((flags & ION_FLAG_CACHED) && !(flags & ION_FLAG_CACHED_NEEDS_SYNC))
 		seq_printf(s, "cached|faultmap");
-	else if (ion_buffer_cached(buffer))
+	else if (flags & ION_FLAG_CACHED)
 		seq_printf(s, "cached|needsync");
 	else
 		seq_printf(s, "noncached");
 
-	if (buffer->flags & ION_FLAG_NOZEROED)
+	if (flags & ION_FLAG_NOZEROED)
 		seq_printf(s, "|nozeroed");
-	if (buffer->flags & ION_FLAG_SHRINKER_FREE)
+	if (flags & ION_FLAG_SHRINKER_FREE)
 		seq_printf(s, "|shrink");
-	if (buffer->flags & ION_FLAG_BUFFER_MIGRATED)
+	if (flags & ION_FLAG_BUFFER_MIGRATED)
 		seq_printf(s, "|migrated");
-	if (buffer->flags & ION_FLAG_READY_TO_USE)
+	if (flags & ION_FLAG_READY_TO_USE)
 		seq_printf(s, "|ready");
-
-	if (!strncmp(buffer->heap->name, "exynos_contig_heap", 18))
-		seq_printf(s, "|region%u",
-				__ffs((buffer->flags & 0xffff0000)) - 16);
-
-	seq_printf(s, ")\n");
 }
 
 static struct ion_handle *ion_handle_lookup(struct ion_client *client,
@@ -1932,7 +1924,12 @@ static int ion_debug_buffer_show(struct seq_file *s, void *unused)
 				atomic_read(&buffer->ref.refcount),
 				buffer->handle_count, master_name,
 				client_name, buffer->flags);
-		ion_buffer_dump_flags(s, buffer);
+		seq_printf(s, "(");
+		ion_buffer_dump_flags(s, buffer->flags);
+		if (!strncmp(buffer->heap->name, "exynos_contig_heap", 18))
+			seq_printf(s, "|region%u",
+				__ffs((buffer->flags & 0xffff0000)) - 16);
+		seq_printf(s, ")\n");
 	}
 	mutex_unlock(&dev->buffer_lock);
 
