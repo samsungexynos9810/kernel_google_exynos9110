@@ -68,6 +68,11 @@ struct ion_device {
 	atomic_t page_idx;
 	struct vm_struct *reserved_vm_area;
 	pte_t **pte;
+
+	/* event log */
+	struct dentry *event_debug_file;
+	struct ion_eventlog eventlog[ION_EVENT_LOG_MAX];
+	atomic_t event_idx;
 };
 
 /**
@@ -116,6 +121,64 @@ struct ion_handle {
 	unsigned int kmap_cnt;
 	int id;
 };
+
+static inline void ION_EVENT_ALLOC(struct ion_buffer *buffer, ktime_t begin)
+{
+	struct ion_device *dev = buffer->dev;
+	int idx = atomic_inc_return(&dev->event_idx);
+	struct ion_eventlog *log = &dev->eventlog[idx % ION_EVENT_LOG_MAX];
+	struct ion_event_alloc *data = &log->data.alloc;
+
+	log->type = ION_EVENT_TYPE_ALLOC;
+	log->begin = begin;
+	log->done = ktime_get();
+	data->id = (unsigned long) buffer;
+	data->heap = buffer->heap;
+	data->size = buffer->size;
+	data->flags = buffer->flags;
+}
+
+static inline void ION_EVENT_FREE(struct ion_buffer *buffer, ktime_t begin)
+{
+	struct ion_device *dev = buffer->dev;
+	int idx = atomic_inc_return(&dev->event_idx) % ION_EVENT_LOG_MAX;
+	struct ion_eventlog *log = &dev->eventlog[idx];
+	struct ion_event_free *data = &log->data.free;
+
+	log->type = ION_EVENT_TYPE_FREE;
+	log->begin = begin;
+	log->done = ktime_get();
+	data->id = (unsigned long) buffer;
+	data->heap = buffer->heap;
+	data->size = buffer->size;
+	data->shrinker = (buffer->flags & ION_FLAG_SHRINKER_FREE);
+}
+
+static inline void ION_EVENT_MMAP(struct ion_buffer *buffer, ktime_t begin)
+{
+	struct ion_device *dev = buffer->dev;
+	int idx = atomic_inc_return(&dev->event_idx) % ION_EVENT_LOG_MAX;
+	struct ion_eventlog *log = &dev->eventlog[idx];
+	struct ion_event_mmap *data = &log->data.mmap;
+
+	log->type = ION_EVENT_TYPE_MMAP;
+	log->begin = begin;
+	log->done = ktime_get();
+	data->id = (unsigned long) buffer;
+	data->heap = buffer->heap;
+	data->size = buffer->size;
+}
+
+inline void ION_EVENT_SHRINK(struct ion_device *dev, size_t size)
+{
+	int idx = atomic_inc_return(&dev->event_idx) % ION_EVENT_LOG_MAX;
+	struct ion_eventlog *log = &dev->eventlog[idx];
+
+	log->type = ION_EVENT_TYPE_SHRINK;
+	log->begin = ktime_get();
+	log->done = ktime_set(0, 0);
+	log->data.shrink.size = size;
+}
 
 static inline struct page *ion_buffer_page(struct page *page)
 {
@@ -340,6 +403,8 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 	struct ion_iovm_map *iovm_map;
 	struct ion_iovm_map *tmp;
 
+	ION_EVENT_BEGIN();
+
 	if (WARN_ON(buffer->kmap_cnt > 0))
 		buffer->heap->ops->unmap_kernel(buffer->heap, buffer);
 
@@ -356,6 +421,8 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 	mutex_lock(&buffer->lock);
 	ion_buffer_task_remove_all(buffer);
 	mutex_unlock(&buffer->lock);
+
+	ION_EVENT_FREE(buffer, ION_EVENT_DONE());
 	kfree(buffer);
 }
 
@@ -558,6 +625,8 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 	struct ion_heap *heap;
 	int ret;
 
+	ION_EVENT_BEGIN();
+
 	pr_debug("%s: len %d align %d heap_id_mask %u flags %x\n", __func__,
 		 len, align, heap_id_mask, flags);
 	/*
@@ -605,6 +674,8 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 		ion_handle_put(handle);
 		handle = ERR_PTR(ret);
 	}
+
+	ION_EVENT_ALLOC(buffer, ION_EVENT_DONE());
 
 	return handle;
 }
@@ -1053,6 +1124,8 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	struct ion_buffer *buffer = dmabuf->priv;
 	int ret = 0;
 
+	ION_EVENT_BEGIN();
+
 	if (buffer->flags & ION_FLAG_NOZEROED) {
 		pr_err("%s: mmap non-zeroed buffer to user is prohibited!\n",
 			__func__);
@@ -1076,6 +1149,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 		vma->vm_private_data = buffer;
 		vma->vm_ops = &ion_vma_ops;
 		ion_vm_open(vma);
+		ION_EVENT_MMAP(buffer, ION_EVENT_DONE());
 		return 0;
 	}
 
@@ -1094,6 +1168,8 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 	if (ret)
 		pr_err("%s: failure mapping buffer to userspace\n",
 		       __func__);
+
+	ION_EVENT_MMAP(buffer, ION_EVENT_DONE());
 
 	return ret;
 }
@@ -1957,6 +2033,98 @@ static const struct file_operations debug_buffer_fops = {
 	.release = single_release,
 };
 
+static void ion_debug_event_show_one(struct seq_file *s,
+					struct ion_eventlog *log)
+{
+	struct timeval tv = ktime_to_timeval(log->begin);
+	long elapsed = ktime_us_delta(log->done, log->begin);
+
+	if (elapsed == 0)
+		return;
+
+	seq_printf(s, "[%06ld.%06ld] ", tv.tv_sec, tv.tv_usec);
+
+	switch (log->type) {
+	case ION_EVENT_TYPE_ALLOC:
+		{
+		struct ion_event_alloc *data = &log->data.alloc;
+		seq_printf(s, "%8s  %08lx  %18s  %11d  ", "alloc",
+				data->id, data->heap->name, data->size);
+		break;
+		}
+	case ION_EVENT_TYPE_FREE:
+		{
+		struct ion_event_free *data = &log->data.free;
+		seq_printf(s, "%8s  %08lx  %18s  %11d  ", "free",
+				data->id, data->heap->name, data->size);
+		break;
+		}
+	case ION_EVENT_TYPE_MMAP:
+		{
+		struct ion_event_mmap *data = &log->data.mmap;
+		seq_printf(s, "%8s  %08lx  %18s  %11d  ", "mmap",
+				data->id, data->heap->name, data->size);
+		break;
+		}
+	case ION_EVENT_TYPE_SHRINK:
+		{
+		struct ion_event_shrink *data = &log->data.shrink;
+		seq_printf(s, "%8s  %08lx  %18s  %11d  ", "shrink",
+				0l, "ion_noncontig_heap", data->size);
+		elapsed = 0;
+		break;
+		}
+	}
+
+	seq_printf(s, "%9ld", elapsed);
+
+	if (elapsed > 100 * USEC_PER_MSEC)
+		seq_printf(s, " *");
+
+	if (log->type == ION_EVENT_TYPE_ALLOC) {
+		seq_printf(s, "  ");
+		ion_buffer_dump_flags(s, log->data.alloc.flags);
+	}
+
+	if (log->type == ION_EVENT_TYPE_FREE && log->data.free.shrinker)
+		seq_printf(s, " shrinker");
+
+	seq_printf(s, "\n");
+}
+
+static int ion_debug_event_show(struct seq_file *s, void *unused)
+{
+	struct ion_device *dev = s->private;
+	int index = atomic_read(&dev->event_idx) % ION_EVENT_LOG_MAX;
+	int last = index;
+
+	seq_printf(s, "%13s %10s  %8s  %18s  %11s %10s %24s\n", "timestamp",
+			"type", "id", "heap", "size", "time (us)", "remarks");
+	seq_printf(s, "-------------------------------------------");
+	seq_printf(s, "-------------------------------------------");
+	seq_printf(s, "-----------------------------------------\n");
+
+	do {
+		if (++index >= ION_EVENT_LOG_MAX)
+			index = 0;
+		ion_debug_event_show_one(s, &dev->eventlog[index]);
+	} while (index != last);
+
+	return 0;
+}
+
+static int ion_debug_event_open(struct inode *inode, struct file *file)
+{
+	return single_open(file, ion_debug_event_show, inode->i_private);
+}
+
+static const struct file_operations debug_event_fops = {
+	.open = ion_debug_event_open,
+	.read = seq_read,
+	.llseek = seq_lseek,
+	.release = single_release,
+};
+
 struct ion_device *ion_device_create(long (*custom_ioctl)
 				     (struct ion_client *client,
 				      unsigned int cmd,
@@ -1987,6 +2155,10 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	idev->buffer_debug_file = debugfs_create_file("ion_buffer", 0444,
 						 idev->debug_root, idev,
 						 &debug_buffer_fops);
+	idev->event_debug_file = debugfs_create_file("eventlog", 0444,
+						 idev->debug_root, idev,
+						 &debug_event_fops);
+	atomic_set(&idev->event_idx, -1);
 	idev->custom_ioctl = custom_ioctl;
 	idev->buffers = RB_ROOT;
 	mutex_init(&idev->buffer_lock);

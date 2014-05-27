@@ -442,4 +442,54 @@ void ion_page_pool_preload_prepare(struct ion_page_pool *pool, long num_pages);
 long ion_page_pool_preload(struct ion_page_pool *pool,
 			   struct ion_page_pool *alt_pool,
 			   unsigned int alloc_flags, long num_pages);
+
+#define ION_EVENT_LOG_MAX	1024
+#define ION_EVENT_BEGIN()	ktime_t begin = ktime_get()
+#define ION_EVENT_DONE()	begin
+
+typedef enum ion_event_type {
+	ION_EVENT_TYPE_ALLOC = 0,
+	ION_EVENT_TYPE_FREE,
+	ION_EVENT_TYPE_MMAP,
+	ION_EVENT_TYPE_SHRINK,
+} ion_event_t;
+
+struct ion_event_alloc {
+	unsigned long id;
+	struct ion_heap *heap;
+	size_t size;
+	unsigned long flags;
+};
+
+struct ion_event_free {
+	unsigned long id;
+	struct ion_heap *heap;
+	size_t size;
+	bool shrinker;
+};
+
+struct ion_event_mmap {
+	unsigned long id;
+	struct ion_heap *heap;
+	size_t size;
+};
+
+struct ion_event_shrink {
+	size_t size;
+};
+
+struct ion_eventlog {
+	ion_event_t type;
+	union {
+		struct ion_event_alloc alloc;
+		struct ion_event_free free;
+		struct ion_event_mmap mmap;
+		struct ion_event_shrink shrink;
+	} data;
+	ktime_t begin;
+	ktime_t done;
+};
+
+inline void ION_EVENT_SHRINK(struct ion_device *dev, size_t size);
+
 #endif /* _ION_PRIV_H */

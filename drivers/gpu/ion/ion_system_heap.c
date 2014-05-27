@@ -499,6 +499,9 @@ static int ion_system_heap_shrink(struct shrinker *shrinker,
 			break;
 	}
 
+	if (nr_to_scan > 0)
+		ION_EVENT_SHRINK(heap->dev, nr_freed * PAGE_SIZE);
+
 end:
 	/* total number of items is whatever the page pools are holding
 	   plus whatever's in the freelist */
