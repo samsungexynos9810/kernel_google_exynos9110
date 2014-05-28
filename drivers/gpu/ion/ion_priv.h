@@ -93,17 +93,20 @@ struct ion_buffer {
 	char task_comm[TASK_COMM_LEN];
 	pid_t pid;
 
-	/* for debugfs */
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
 	struct list_head master_list;
 	char thread_comm[TASK_COMM_LEN];
 	pid_t tid;
+#endif
 };
 
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
 struct ion_task {
 	struct list_head list;
 	struct kref ref;
 	struct device *master;
 };
+#endif
 
 void ion_buffer_destroy(struct ion_buffer *buffer);
 
@@ -443,6 +446,7 @@ long ion_page_pool_preload(struct ion_page_pool *pool,
 			   struct ion_page_pool *alt_pool,
 			   unsigned int alloc_flags, long num_pages);
 
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
 #define ION_EVENT_LOG_MAX	1024
 #define ION_EVENT_BEGIN()	ktime_t begin = ktime_get()
 #define ION_EVENT_DONE()	begin
@@ -491,5 +495,10 @@ struct ion_eventlog {
 };
 
 inline void ION_EVENT_SHRINK(struct ion_device *dev, size_t size);
+#else
+#define ION_EVENT_BEGIN()		do { } while (0)
+#define ION_EVENT_DONE()		do { } while (0)
+#define ION_EVENT_SHRINK(dev, size)	do { } while (0)
+#endif
 
 #endif /* _ION_PRIV_H */

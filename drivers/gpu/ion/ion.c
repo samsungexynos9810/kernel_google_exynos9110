@@ -63,16 +63,18 @@ struct ion_device {
 			      unsigned long arg);
 	struct rb_root clients;
 	struct dentry *debug_root;
-	struct dentry *buffer_debug_file;
 	struct semaphore vm_sem;
 	atomic_t page_idx;
 	struct vm_struct *reserved_vm_area;
 	pte_t **pte;
 
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
 	/* event log */
+	struct dentry *buffer_debug_file;
 	struct dentry *event_debug_file;
 	struct ion_eventlog eventlog[ION_EVENT_LOG_MAX];
 	atomic_t event_idx;
+#endif
 };
 
 /**
@@ -122,6 +124,27 @@ struct ion_handle {
 	int id;
 };
 
+static inline struct page *ion_buffer_page(struct page *page)
+{
+	return (struct page *)((unsigned long)page & ~(1UL));
+}
+
+static inline bool ion_buffer_page_is_dirty(struct page *page)
+{
+	return !!((unsigned long)page & 1UL);
+}
+
+static inline void ion_buffer_page_dirty(struct page **page)
+{
+	*page = (struct page *)((unsigned long)(*page) | 1UL);
+}
+
+static inline void ion_buffer_page_clean(struct page **page)
+{
+	*page = (struct page *)((unsigned long)(*page) & ~(1UL));
+}
+
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
 static inline void ION_EVENT_ALLOC(struct ion_buffer *buffer, ktime_t begin)
 {
 	struct ion_device *dev = buffer->dev;
@@ -180,26 +203,6 @@ inline void ION_EVENT_SHRINK(struct ion_device *dev, size_t size)
 	log->data.shrink.size = size;
 }
 
-static inline struct page *ion_buffer_page(struct page *page)
-{
-	return (struct page *)((unsigned long)page & ~(1UL));
-}
-
-static inline bool ion_buffer_page_is_dirty(struct page *page)
-{
-	return !!((unsigned long)page & 1UL);
-}
-
-static inline void ion_buffer_page_dirty(struct page **page)
-{
-	*page = (struct page *)((unsigned long)(*page) | 1UL);
-}
-
-static inline void ion_buffer_page_clean(struct page **page)
-{
-	*page = (struct page *)((unsigned long)(*page) & ~(1UL));
-}
-
 static struct ion_task *ion_buffer_task_lookup(struct ion_buffer *buffer,
 							struct device *master)
 {
@@ -214,6 +217,15 @@ static struct ion_task *ion_buffer_task_lookup(struct ion_buffer *buffer,
 	}
 
 	return found ? task : NULL;
+}
+
+static void ion_buffer_set_task_info(struct ion_buffer *buffer)
+{
+	INIT_LIST_HEAD(&buffer->master_list);
+	get_task_comm(buffer->task_comm, current->group_leader);
+	get_task_comm(buffer->thread_comm, current);
+	buffer->pid = task_pid_nr(current->group_leader);
+	buffer->tid = task_pid_nr(current);
 }
 
 static void ion_buffer_task_add(struct ion_buffer *buffer,
@@ -232,6 +244,14 @@ static void ion_buffer_task_add(struct ion_buffer *buffer,
 	} else {
 		kref_get(&task->ref);
 	}
+}
+
+static void ion_buffer_task_add_lock(struct ion_buffer *buffer,
+					struct device *master)
+{
+	mutex_lock(&buffer->lock);
+	ion_buffer_task_add(buffer, master);
+	mutex_unlock(&buffer->lock);
 }
 
 static void __ion_buffer_task_remove(struct kref *kref)
@@ -255,15 +275,36 @@ static void ion_buffer_task_remove(struct ion_buffer *buffer,
 	}
 }
 
+static void ion_buffer_task_remove_lock(struct ion_buffer *buffer,
+					struct device *master)
+{
+	mutex_lock(&buffer->lock);
+	ion_buffer_task_remove(buffer, master);
+	mutex_unlock(&buffer->lock);
+}
+
 static void ion_buffer_task_remove_all(struct ion_buffer *buffer)
 {
 	struct ion_task *task, *tmp;
 
+	mutex_lock(&buffer->lock);
 	list_for_each_entry_safe(task, tmp, &buffer->master_list, list) {
 		list_del(&task->list);
 		kfree(task);
 	}
+	mutex_unlock(&buffer->lock);
 }
+#else
+#define ION_EVENT_ALLOC(buffer, begin)			do { } while (0)
+#define ION_EVENT_FREE(buffer, begin)			do { } while (0)
+#define ION_EVENT_MMAP(buffer, begin)			do { } while (0)
+#define ion_buffer_set_task_info(buffer)		do { } while (0)
+#define ion_buffer_task_add(buffer, master)		do { } while (0)
+#define ion_buffer_task_add_lock(buffer, master)	do { } while (0)
+#define ion_buffer_task_remove(buffer, master)		do { } while (0)
+#define ion_buffer_task_remove_lock(buffer, master)	do { } while (0)
+#define ion_buffer_task_remove_all(buffer)		do { } while (0)
+#endif
 
 /* this function should only be called while dev->lock is held */
 static void ion_buffer_add(struct ion_device *dev,
@@ -290,12 +331,7 @@ static void ion_buffer_add(struct ion_device *dev,
 	rb_link_node(&buffer->node, parent, p);
 	rb_insert_color(&buffer->node, &dev->buffers);
 
-	/* debugfs */
-	INIT_LIST_HEAD(&buffer->master_list);
-	get_task_comm(buffer->task_comm, current->group_leader);
-	get_task_comm(buffer->thread_comm, current);
-	buffer->pid = task_pid_nr(current->group_leader);
-	buffer->tid = task_pid_nr(current);
+	ion_buffer_set_task_info(buffer);
 	ion_buffer_task_add(buffer, dev->dev.this_device);
 }
 
@@ -418,11 +454,10 @@ void ion_buffer_destroy(struct ion_buffer *buffer)
 	buffer->heap->ops->free(buffer);
 	if (buffer->pages)
 		vfree(buffer->pages);
-	mutex_lock(&buffer->lock);
-	ion_buffer_task_remove_all(buffer);
-	mutex_unlock(&buffer->lock);
 
+	ion_buffer_task_remove_all(buffer);
 	ION_EVENT_FREE(buffer, ION_EVENT_DONE());
+
 	kfree(buffer);
 }
 
@@ -986,9 +1021,7 @@ static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
 
 	ion_buffer_sync_for_device(buffer, attachment->dev, direction);
 
-	mutex_lock(&buffer->lock);
-	ion_buffer_task_add(buffer, attachment->dev);
-	mutex_unlock(&buffer->lock);
+	ion_buffer_task_add_lock(buffer, attachment->dev);
 
 	return buffer->sg_table;
 }
@@ -997,12 +1030,7 @@ static void ion_unmap_dma_buf(struct dma_buf_attachment *attachment,
 			      struct sg_table *table,
 			      enum dma_data_direction direction)
 {
-	struct dma_buf *dmabuf = attachment->dmabuf;
-	struct ion_buffer *buffer = dmabuf->priv;
-
-	mutex_lock(&buffer->lock);
-	ion_buffer_task_remove(buffer, attachment->dev);
-	mutex_unlock(&buffer->lock);
+	ion_buffer_task_remove_lock(attachment->dmabuf->priv, attachment->dev);
 }
 
 struct ion_vma_list {
@@ -1889,6 +1917,7 @@ static int ion_device_reserve_vm(struct ion_device *dev)
 	return 0;
 }
 
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
 static void ion_buffer_dump_flags(struct seq_file *s, unsigned long flags)
 {
 	if ((flags & ION_FLAG_CACHED) && !(flags & ION_FLAG_CACHED_NEEDS_SYNC))
@@ -2124,6 +2153,7 @@ static const struct file_operations debug_event_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
+#endif
 
 struct ion_device *ion_device_create(long (*custom_ioctl)
 				     (struct ion_client *client,
@@ -2152,13 +2182,22 @@ struct ion_device *ion_device_create(long (*custom_ioctl)
 	if (!idev->debug_root)
 		pr_err("ion: failed to create debug files.\n");
 
-	idev->buffer_debug_file = debugfs_create_file("ion_buffer", 0444,
+#ifdef CONFIG_ION_EXYNOS_STAT_LOG
+	idev->buffer_debug_file = debugfs_create_file("buffer", 0444,
 						 idev->debug_root, idev,
 						 &debug_buffer_fops);
-	idev->event_debug_file = debugfs_create_file("eventlog", 0444,
+	if (!idev->buffer_debug_file)
+		pr_err("%s: failed to create buffer debug file\n", __func__);
+
+	idev->event_debug_file = debugfs_create_file("event", 0444,
 						 idev->debug_root, idev,
 						 &debug_event_fops);
+	if (!idev->event_debug_file)
+		pr_err("%s: failed to create event debug file\n", __func__);
+
 	atomic_set(&idev->event_idx, -1);
+#endif
+
 	idev->custom_ioctl = custom_ioctl;
 	idev->buffers = RB_ROOT;
 	mutex_init(&idev->buffer_lock);
