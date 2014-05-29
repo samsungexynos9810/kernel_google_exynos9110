@@ -363,24 +363,25 @@ static int jpeg_m2m_open(struct file *file)
 {
 	struct jpeg_dev *jpeg = video_drvdata(file);
 	struct jpeg_ctx *ctx = NULL;
-	int ret = 0;
+	int ret = -ENOMEM;
 
 	ctx = kzalloc(sizeof *ctx, GFP_KERNEL);
 	if (!ctx) {
 		printk(KERN_ERR "ctx is null\n");
+		return -ENOMEM;
 	}
 
 	ctx->param.tables = kzalloc(sizeof(struct jpeg_tables), GFP_KERNEL);
 	if (!ctx->param.tables) {
 		printk(KERN_ERR "jpeg_tables is null\n");
-		return -ENOMEM;
+		goto err_table;
 	}
 	memset(ctx->param.tables, 0, sizeof(struct jpeg_tables));
 
 	ctx->param.tinfo = kzalloc(sizeof(struct jpeg_tables_info), GFP_KERNEL);
 	if (!ctx->param.tinfo) {
 		printk(KERN_ERR "jpeg_tables_info is null\n");
-		return -ENOMEM;
+		goto err_tinfo;
 	}
 
 	file->private_data = ctx;
@@ -395,13 +396,19 @@ static int jpeg_m2m_open(struct file *file)
 
 	if (IS_ERR(ctx->m2m_ctx)) {
 		ret = PTR_ERR(ctx->m2m_ctx);
-		kfree(ctx);
-		return ret;
+		goto err_ctx;
 	}
 
 	pm_runtime_get_sync(&jpeg->plat_dev->dev);
 
 	return 0;
+err_ctx:
+	kfree(ctx->param.tinfo);
+err_tinfo:
+	kfree(ctx->param.tables);
+err_table:
+	kfree(ctx);
+	return ret;
 }
 
 static int jpeg_m2m_release(struct file *file)
