@@ -1076,6 +1076,14 @@ static long exynos_ion_sync_fd(struct ion_client *client, int fd,
 
 	vma = find_vma(mm, addr);
 
+	if (!vma || (vma->vm_start > addr) || (vma->vm_end < (addr + size))
+			|| (((vma->vm_end - vma->vm_start) < size))) {
+		pr_info("%s: invalid sync region %lx ~ %lx\n",
+			__func__, addr, addr + size);
+		ret = -EINVAL;
+		goto err_vma;
+	}
+
 	if (vma->vm_file)
 		dmabuf = get_dma_buf_file(vma->vm_file);
 
@@ -1095,19 +1103,12 @@ static long exynos_ion_sync_fd(struct ion_client *client, int fd,
 		goto err_region;
 	}
 
-	if (!vma || (vma->vm_start > addr) || (vma->vm_end < (addr + size))
-			|| (((vma->vm_end - vma->vm_start) < size))) {
-		pr_info("%s: invalid sync region %lx ~ %lx\n",
-			__func__, addr, addr + size);
-		ret = -EINVAL;
-		goto err_region;
-	}
-
 	dmac_map_area((void *)addr, size, DMA_TO_DEVICE);
 
 err_region:
 	dma_buf_put(dmabuf);
 err_dmabuf_file:
+err_vma:
 	up_read(&mm->mmap_sem);
 no_sync:
 	ion_free(client, handle);
