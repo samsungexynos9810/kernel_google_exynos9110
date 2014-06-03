@@ -100,23 +100,31 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13800000 0x100>;
 		interrupts = <0 109 0>;
+		clocks = <&clock 200>, <&clock 300>;
+                clock-names = "sclk_uart0", "gate_uart0";
 	};
 
 	serial@13810000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13810000 0x100>;
 		interrupts = <0 110 0>;
+		clocks = <&clock 201>, <&clock 301>;
+                clock-names = "sclk_uart1", "gate_uart1";
 	};
 
 	serial@13820000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13820000 0x100>;
 		interrupts = <0 111 0>;
+		clocks = <&clock 202>, <&clock 302>;
+                clock-names = "sclk_uart2", "gate_uart2";
 	};
 
 	serial@13830000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13830000 0x100>;
 		interrupts = <0 112 0>;
+		clocks = <&clock 203>, <&clock 303>;
+                clock-names = "sclk_uart3", "gate_uart3";
 	};
 };
