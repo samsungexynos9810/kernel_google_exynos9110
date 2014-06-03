@@ -33,6 +33,27 @@
 
 #include <plat/map-s5p.h>
 
+/** EXYNOS3250 Part **/
+#define EXYNOS3_PA_SYSRAM               0x02020000
+#define EXYNOS3_PA_SYSRAM_NS            0x0205F000
+#define EXYNOS3_PA_CHIPID               0x10000000
+#define EXYNOS3_PA_SYSCON               0x10010000
+#define EXYNOS3_PA_CMU_BUS_TOP          0x10030000
+#define EXYNOS3_PA_CMU_CPU_ISP          0x10040000
+#define EXYNOS3_PA_CMU_ACP              0x10450000
+#define EXYNOS3_PA_CMU_DMC              0x105C0000
+
+#define EXYNOS3_PA_SYSTIMER             0x10050000
+#define EXYNOS3_PA_GIC_CPU              0x10482000
+#define EXYNOS3_PA_GIC_DIST             0x10481000
+
+#define EXYNOS3_PA_UART                 0x13800000
+
+#define EXYNOS3_PA_UART0                0x13800000
+#define EXYNOS3_PA_UART1                0x13810000
+#define EXYNOS3_PA_UART2                0x13820000
+#define EXYNOS3_PA_UART3                0x13830000
+
 #define EXYNOS4_PA_SYSRAM0		0x02025000
 #define EXYNOS4_PA_SYSRAM1		0x02020000
 #define EXYNOS5_PA_SYSRAM		0x02020000
@@ -453,6 +474,11 @@
 #define EXYNOS5430_PA_MSCLSYS		0x150E0000
 
 #define S3C_VA_UARTx(x)			(S3C_VA_UART + ((x) * S3C_UART_OFFSET))
+
+#define EXYNOS3_VA_CMU_BUS_TOP		(S5P_VA_CMU) /* 0x1003_0000*/
+#define EXYNOS3_VA_CMU_CPU_ISP		(S5P_VA_CMU + (SZ_64K * 1)) /* 0x1004_0000 */
+#define EXYNOS3_VA_CMU_ACP		(S5P_VA_CMU + (SZ_64K * 2)) /* 0x1045_0000 */
+#define EXYNOS3_VA_CMU_DMC		(S5P_VA_CMU + (SZ_64K * 3)) /* 0x105c_0000 */
 
 #define EXYNOS5430_VA_CMU_TOP		(S5P_VA_CMU + (SZ_4K * 0))
 #define EXYNOS5430_VA_CMU_EGL		(S5P_VA_CMU + (SZ_4K * 1))
