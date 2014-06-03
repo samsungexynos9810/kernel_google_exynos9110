@@ -1706,3 +1706,65 @@ struct samsung_pin_ctrl exynos5433_pin_ctrl[] = {
 		.label		= "exynos5433-gpio-ctrl9",
 	},
 };
+/* pin banks of exynos3250  pin-controller  */
+
+static struct samsung_pin_bank exynos3250_pin_banks0[] = {
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x000, "gpa0", 0x00),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 6, 0x020, "gpa1", 0x04),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x040, "gpb" , 0x08),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 5, 0x060, "gpc0", 0x0c),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 5, 0x080, "gpc1", 0x10),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 4, 0x0a0, "gpd0", 0x14),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 4, 0x0c0, "gpd1", 0x18),
+};
+
+static struct samsung_pin_bank exynos3250_pin_banks1[] = {
+	EXYNOS_PIN_BANK_EINTN(bank_type_0, 8, 0x120, "gpe0"),
+	EXYNOS_PIN_BANK_EINTN(bank_type_0, 8, 0x140, "gpe1"),
+	EXYNOS_PIN_BANK_EINTN(bank_type_0, 3, 0x160, "gpe2"),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x040, "gpk0", 0x08),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 7, 0x060, "gpk1", 0x0c),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 7, 0x080, "gpk2", 0x10),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 4, 0x0c0, "gpl0", 0x18),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x260, "gpm0", 0x24),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 7, 0x280, "gpm1", 0x28),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 5, 0x2a0, "gpm2", 0x2c),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2c0, "gpm3", 0x30),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2d0, "gpm4", 0x34),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc00, "gpx0", 0x00),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc20, "gpx1", 0x04),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc40, "gpx2", 0x08),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc60, "gpx3", 0x0c),
+};
+
+struct samsung_pin_ctrl exynos3250_pin_ctrl[] = {
+	{
+		/* pin-controller instance 0 data */
+		.pin_banks      = exynos3250_pin_banks0,
+		.nr_banks       = ARRAY_SIZE(exynos3250_pin_banks0),
+		.geint_con      = EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask     = EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend     = EXYNOS_GPIO_EPEND_OFFSET,
+		.svc            = EXYNOS_SVC_OFFSET,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.suspend        = exynos_pinctrl_suspend,
+		.resume         = exynos_pinctrl_resume,
+		.label          = "exynos3250-gpio-ctrl0",
+	}, {
+		/* pin-controller instance 1 data */
+		.pin_banks      = exynos3250_pin_banks1,
+		.nr_banks       = ARRAY_SIZE(exynos3250_pin_banks1),
+		.geint_con      = EXYNOS_GPIO_ECON_OFFSET,
+		.geint_mask     = EXYNOS_GPIO_EMASK_OFFSET,
+		.geint_pend     = EXYNOS_GPIO_EPEND_OFFSET,
+		.weint_con      = EXYNOS_WKUP_ECON_OFFSET,
+		.weint_mask     = EXYNOS_WKUP_EMASK_OFFSET,
+		.weint_pend     = EXYNOS_WKUP_EPEND_OFFSET,
+		.svc            = EXYNOS_SVC_OFFSET,
+		.suspend        = exynos_pinctrl_suspend,
+		.resume         = exynos_pinctrl_resume,
+		.eint_gpio_init = exynos_eint_gpio_init,
+		.eint_wkup_init = exynos_eint_wkup_init,
+		.label          = "exynos3250-gpio-ctrl1",
+	}
+};
