@@ -15,6 +15,7 @@ config ARCH_EXYNOS3
 	bool "SAMSUNG EXYNOS3"
 	default y
 	select HAVE_ARM_SCU if SMP
+	select HAVE_SMP
 	help
 	  Samsung EXYNOS3 SoCs based systems
 

@@ -146,7 +146,16 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 
 			val = ((1 << 20) | (1 << 8)) << phys_cpu;
 			__raw_writel(val, EXYNOS_SWRESET);
+		} else if (soc_is_exynos3250()) {
+
+			val = __raw_readl(EXYNOS_ARM_CORE1_STATUS);
+			val |= (0x3 << 8);
+			__raw_writel(val, EXYNOS_ARM_CORE1_STATUS);
+
+			pr_info("cpu%d: SWRESET\n", phys_cpu);
+			__raw_writel(((1 << 4) << phys_cpu), EXYNOS_SWRESET);
 		}
+
 	}
 
 	return 0;
