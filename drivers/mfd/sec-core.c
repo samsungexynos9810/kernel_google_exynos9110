@@ -74,6 +74,12 @@ static struct mfd_cell s2mps13_devs[] = {
 	},
 };
 
+static struct mfd_cell s2mps14_devs[] = {
+	{
+		.name = "s2mps14-pmic",
+	},
+};
+
 #ifdef CONFIG_OF
 static struct of_device_id sec_dt_match[] = {
 	{	.compatible = "samsung,s5m8767-pmic",
@@ -84,6 +90,9 @@ static struct of_device_id sec_dt_match[] = {
 	},
 	{	.compatible = "samsung,s2mps11-pmic",
 		.data = (void *)S2MPS11X,
+	},
+	{	.compatible = "samsung,s2mps14-pmic",
+		.data = (void *)S2MPS14X,
 	},
 	{},
 };
@@ -351,6 +360,10 @@ static int sec_pmic_probe(struct i2c_client *i2c,
 	case S2MPS13X:
 		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps13_devs,
 				      ARRAY_SIZE(s2mps13_devs), NULL, 0, NULL);
+		break;
+	case S2MPS14X:
+		ret = mfd_add_devices(sec_pmic->dev, -1, s2mps14_devs,
+				      ARRAY_SIZE(s2mps14_devs), NULL, 0, NULL);
 		break;
 	default:
 		/* If this happens the probe function is problem */
