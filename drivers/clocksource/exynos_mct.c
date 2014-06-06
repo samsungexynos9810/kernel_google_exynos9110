@@ -83,7 +83,9 @@ static void __iomem *reg_base;
 static unsigned long clk_rate;
 static unsigned int mct_int_type;
 static int mct_irqs[MCT_NR_IRQS];
+#ifdef CONFIG_LOCAL_TIMERS
 static int tick_base_cnt;
+#endif
 
 struct mct_clock_event_device {
 	struct clock_event_device *evt;
