@@ -16,6 +16,8 @@
 
 #include "skeleton.dtsi"
 #include "exynos3250-pinctrl.dtsi"
+#include <dt-bindings/clk/exynos3250-clk.h>
+
 / {
 	compatible = "samsung,exynos3250";
 
@@ -82,7 +84,7 @@
 		interrupt-controller;
 		interrupts = <0 218 0> , <0 0 0>, <0 0 0>, <0 0 0>,
 				<0 223 0>, <0 226 0>;
-		clocks = <&clock 1>, <&clock 80>;
+		clocks = <&clock FIN_PLL>, <&clock CLK_MCT>;
 		clock-names = "fin_pll", "mct";
 	};
 
@@ -107,7 +109,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13800000 0x100>;
 		interrupts = <0 109 0>;
-		clocks = <&clock 200>, <&clock 300>;
+		clocks = <&clock SCLK_UART0>, <&clock GATE_UART0>;
                 clock-names = "sclk_uart0", "gate_uart0";
 	};
 
@@ -115,7 +117,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13810000 0x100>;
 		interrupts = <0 110 0>;
-		clocks = <&clock 201>, <&clock 301>;
+		clocks = <&clock SCLK_UART1>, <&clock GATE_UART1>;
                 clock-names = "sclk_uart1", "gate_uart1";
 	};
 
@@ -123,7 +125,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13820000 0x100>;
 		interrupts = <0 111 0>;
-		clocks = <&clock 202>, <&clock 302>;
+		clocks = <&clock SCLK_UART2>, <&clock GATE_UART2>;
                 clock-names = "sclk_uart2", "gate_uart2";
 	};
 
@@ -131,7 +133,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13830000 0x100>;
 		interrupts = <0 112 0>;
-		clocks = <&clock 203>, <&clock 303>;
+		clocks = <&clock SCLK_UART3>, <&clock GATE_UART3>;
                 clock-names = "sclk_uart3", "gate_uart3";
 	};
 
@@ -139,7 +141,7 @@
 		compatible = "samsung,s3c6410-rtc";
 		reg = <0x10070000 0x100>;
 		interrupts = <0 73 0>, <0 74 0>;
-		clocks = <&clock 85>;
+		clocks = <&clock CLK_RTC>;
 		clock-names = "rtc";
 	};
 
@@ -156,7 +158,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x13860000 0x100>;
 		interrupts = <0 113 0>;
-		clocks = <&clock 304>, <&clock 304>;
+		clocks = <&clock GATE_I2C0>, <&clock GATE_I2C0>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c0_bus>;
@@ -169,7 +171,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x13870000 0x100>;
 		interrupts = <0 114 0>;
-		clocks = <&clock 305>, <&clock 305>;
+		clocks = <&clock GATE_I2C1>, <&clock GATE_I2C1>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c1_bus>;
@@ -182,7 +184,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x13880000 0x100>;
 		interrupts = <0 115 0>;
-		clocks = <&clock 306>, <&clock 306>;
+		clocks = <&clock GATE_I2C2>, <&clock GATE_I2C2>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c2_bus>;
@@ -195,7 +197,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x13890000 0x100>;
 		interrupts = <0 116 0>;
-		clocks = <&clock 307>, <&clock 307>;
+		clocks = <&clock GATE_I2C3>, <&clock GATE_I2C3>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c3_bus>;
@@ -208,7 +210,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x138A0000 0x100>;
 		interrupts = <0 117 0>;
-		clocks = <&clock 308>, <&clock 308>;
+		clocks = <&clock GATE_I2C4>, <&clock GATE_I2C4>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c4_bus>;
@@ -221,7 +223,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x138B0000 0x100>;
 		interrupts = <0 118 0>;
-		clocks = <&clock 309>, <&clock 309>;
+		clocks = <&clock GATE_I2C5>, <&clock GATE_I2C5>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c5_bus>;
@@ -234,7 +236,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x138C0000 0x100>;
 		interrupts = <0 119 0>;
-		clocks = <&clock 310>, <&clock 310>;
+		clocks = <&clock GATE_I2C6>, <&clock GATE_I2C6>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c6_bus>;
@@ -247,7 +249,7 @@
 		compatible = "samsung,s3c2440-i2c";
 		reg = <0x138D0000 0x100>;
 		interrupts = <0 120 0>;
-		clocks = <&clock 311>, <&clock 311>;
+		clocks = <&clock GATE_I2C7>, <&clock GATE_I2C7>;
 		clock-names = "rate_i2c", "gate_i2c";
 		pinctrl-names = "default";
 		pinctrl-0 = <&i2c7_bus>;
@@ -260,7 +262,7 @@
 		compatible = "samsung,exynos3250-dw-mshc";
 		reg = <0x12510000 0x2000>;
 		interrupts = <0 142 0>;
-		clocks = <&clock 400>, <&clock 401>, <&clock 402>, <&clock 403>;
+		clocks = <&clock ACLK_MMC0>, <&clock GATE_MMC0>, <&clock DOUT_MMC_A>, <&clock DOUT_MMC_B>;
 		clock-names = "biu", "gate_ciu", "dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
 	};
@@ -276,7 +278,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x12680000 0x1000>;
 			interrupts = <0 138 0>;
-			clocks = <&clock 312>;
+			clocks = <&clock CLK_PDMA0>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <8>;
@@ -287,7 +289,7 @@
 			compatible = "arm,pl330", "arm,primecell";
 			reg = <0x12690000 0x1000>;
 			interrupts = <0 139 0>;
-			clocks = <&clock 313>;
+			clocks = <&clock CLK_PDMA1>;
 			clock-names = "apb_pclk";
 			#dma-cells = <1>;
 			#dma-channels = <8>;
