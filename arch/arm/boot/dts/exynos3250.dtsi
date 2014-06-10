@@ -15,7 +15,6 @@
  */
 
 #include "skeleton.dtsi"
-#include "exynos3250-pinctrl.dtsi"
 #include <dt-bindings/clk/exynos3250-clk.h>
 
 / {
@@ -297,3 +296,5 @@
 		};
 	};
 };
+
+#include "exynos3250-pinctrl.dtsi"
