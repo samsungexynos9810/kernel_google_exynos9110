@@ -11,7 +11,6 @@
 
 #define CLK_FIN_PLL		1
 #define FOUT_MPLL		2
-#define HALF_MPLL		3
 
 /* Muxes */
 #define CLK_MOUT_MPLL		16

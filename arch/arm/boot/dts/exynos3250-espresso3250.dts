@@ -31,10 +31,14 @@
 			compatible = "samsung,exynos3250-oscclk";
 			clock-frequency = <24000000>;
 		};
-		half_mpll {
-			compatible = "samsung,exynos3250-half_mpll";
-			clock-frequency = <400000000>;
+
+		xusbxti: clock@0 {
+			compatible = "fixed-clock";
+			clock-frequency = <0>;
+			#clock-cells = <0>;
+			clock-output-names = "xusbxti";
 		};
+
 	};
 
 	gpio_keys {

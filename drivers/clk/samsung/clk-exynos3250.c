@@ -41,10 +41,19 @@ PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 					"none",	"dout_mpll_pre",
 					"sclk_epll", "sclk_vpll" };
 PNAME(mout_mmc_p)		= { "xxti", "xusbsti", "none", "none", "none",
-					"none", "half_mpll",
+					"none", "sclk_mpll_mif",
 					"sclk_epll", "sclk_vpll" };
 PNAME(mout_mpll_p)		= { "fin_pll", "fout_mpll" };
 PNAME(group_div_mpll_pre)	= { "dout_mpll_pre" };
+
+static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
+	FFACTOR(0, "sclk_mpll_1600", "mout_mpll", 1, 1, 0),
+	FFACTOR(0, "sclk_mpll_mif", "mout_mpll", 1, 2, 0),
+	FFACTOR(0, "sclk_bpll", "fout_bpll", 1, 2, 0),
+	FFACTOR(0, "div_cam_blk_320", "sclk_mpll_1600", 1, 5, 0),
+	FFACTOR(0, "div_lcd_blk_145", "sclk_mpll_1600", 1, 11, 0),
+};
+
 
 #define CMUX(_id, cname, pnames, o, s, w) \
 	MUX(_id, cname, pnames, (unsigned long)o, s, w)
@@ -83,7 +92,7 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_GPR, "dout_gpr", "dout_gdr", DIV_RIGHTBUS, 4, 3),
 	CDIV(CLK_DIV_GDR, "dout_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 4),
 
-	CDIV(CLK_DIV_MPLL_PRE, "dout_mpll_pre", "half_mpll", DIV_TOP, 28, 2),
+	CDIV(CLK_DIV_MPLL_PRE, "dout_mpll_pre", "sclk_mpll_mif", DIV_TOP, 28, 2),
 	CDIV(CLK_DIV_ACLK_200, "dout_aclk_200", "mout_aclk200", DIV_TOP, 12, 4),
 	CDIV(CLK_DIV_ACLK_160, "dout_aclk_160", "mout_aclk_160", DIV_TOP, 8, 3),
 	CDIV(CLK_DIV_ACLK_100, "dout_aclk_100", "mout_aclk100", DIV_TOP, 4, 4),
@@ -164,12 +173,10 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 /* fixed rate clocks generated outside the soc */
 struct samsung_fixed_rate_clock exynos3250_fixed_rate_ext_clks[] __initdata = {
 	FRATE(CLK_FIN_PLL, "fin_pll", NULL, CLK_IS_ROOT, 0),
-	FRATE(HALF_MPLL, "half_mpll", NULL, CLK_IS_ROOT, 0),
 };
 
 static __initdata struct of_device_id ext_clk_match[] = {
 	{ .compatible = "samsung,exynos3250-oscclk", .data = (void *)0, },
-	{ .compatible = "samsung,exynos3250-half_mpll", .data = (void *)1, },
 	{ },
 };
 
@@ -193,6 +200,8 @@ void __init exynos3250_clk_init(struct device_node *np)
 	samsung_clk_of_register_fixed_ext(exynos3250_fixed_rate_ext_clks,
 			ARRAY_SIZE(exynos3250_fixed_rate_ext_clks),
 			ext_clk_match);
+	samsung_clk_register_fixed_factor(fixed_factor_clks,
+			ARRAY_SIZE(fixed_factor_clks));
 	samsung_clk_register_mux(exynos3250_mux_clks,
 			ARRAY_SIZE(exynos3250_mux_clks));
 	samsung_clk_register_div(exynos3250_div_clks,
