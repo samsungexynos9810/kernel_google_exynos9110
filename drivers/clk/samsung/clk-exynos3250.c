@@ -20,161 +20,150 @@
 #include "clk.h"
 #include "clk-pll.h"
 
-#define SRC_TOP0		EXYNOS3_CLK_BUS_TOP_REG(0xc210)
-#define SRC_TOP1		EXYNOS3_CLK_BUS_TOP_REG(0xc214)
-#define DIV_TOP			EXYNOS3_CLK_BUS_TOP_REG(0xc510)
 #define E3250_MPLL_LOCK		EXYNOS3_CLK_BUS_TOP_REG(0xC010)
 #define E3250_MPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC110)
-#define GATE_IP_FSYS		EXYNOS3_CLK_BUS_TOP_REG(0xc940)
-#define SRC_CPU			EXYNOS3_CPU_ISP_REG(0x14200)
-#define SRC_DMC			EXYNOS3_MIF_L_REG(0x0300)
 
 static __initdata void *exynos3250_clk_regs[] = {
-	EXYNOS3_CLKGATE_IP_PERIR,
-	EXYNOS3_CLKDIV_RIGHTBUS,
-	EXYNOS3_CLKSRC_RIGHTBUS,
-	EXYNOS3_CLKSRC_MASK_FSYS,
-	EXYNOS3_CLKDIV_FSYS1,
-	EXYNOS3_CLKGATE_BUS_FSYS0,
-	EXYNOS3_CLKGATE_IP_FSYS,
-	EXYNOS3_CLKSRC_FSYS,
-	EXYNOS3_CLKGATE_FSYS,
+	GATE_IP_PERIR,
+	DIV_RIGHTBUS,
+	SRC_RIGHTBUS,
+	SRC_MASK_FSYS,
+	DIV_FSYS1,
+	GATE_BUS_FSYS0,
+	GATE_IP_FSYS,
+	SRC_FSYS,
+	GATE_SCLK_FSYS,
 };
 
-#define CGATE_A(_id, cname, pname, o, b, f, gf, a) \
-	GATE_A(_id, cname, pname, (unsigned long)o, b, f, gf, a)
+PNAME(mout_gdr_p)		= { "mout_mpll_user_r" };
+PNAME(mout_mpll_user_r_p)	= { "finpll", "dout_mpll_pre" };
+PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
+					"none",	"dout_mpll_pre",
+					"sclk_epll", "sclk_vpll" };
+PNAME(mout_mmc_p)		= { "xxti", "xusbsti", "none", "none", "none",
+					"none", "half_mpll",
+					"sclk_epll", "sclk_vpll" };
+PNAME(mout_mpll_p)		= { "fin_pll", "fout_mpll" };
+PNAME(group_div_mpll_pre)	= { "dout_mpll_pre" };
 
-#define CGATE(_id, cname, pname, o, b, f, gf) \
-	GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
+#define CMUX(_id, cname, pnames, o, s, w) \
+	MUX(_id, cname, pnames, (unsigned long)o, s, w)
+#define CMUX_A(_id, cname, pnames, o, s, w, a) \
+	MUX_A(_id, cname, pnames, (unsigned long)o, s, w, a)
 
-struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
-	GATE_A(CLK_MCT, "clk_mct", "dclk_gpr", (unsigned long) EXYNOS3_CLKGATE_IP_PERIR,
-			13, CLK_IGNORE_UNUSED, 0, "mct"),
-	CGATE(CLK_RTC, "rtc", "aclk66",
-			EXYNOS3_CLKGATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_UART0, "gate_uart0", "dout_uart0",
-			EXYNOS3_CLKGATE_IP_PERIL, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_UART1, "gate_uart1", "dout_uart1",
-			EXYNOS3_CLKGATE_IP_PERIL, 1, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_UART2, "gate_uart2", "dout_uart2",
-			EXYNOS3_CLKGATE_IP_PERIL, 2, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_UART3, "gate_uart3", "dout_uart3",
-			EXYNOS3_CLKGATE_IP_PERIL, 3, CLK_IGNORE_UNUSED, 0),
+struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
+	CMUX(CLK_MOUT_MPLL_USER_R, "mout_mpll_user_r", mout_mpll_user_r_p,
+		SRC_RIGHTBUS, 4, 1),
+	CMUX(CLK_MOUT_GDR, "mout_gdr", mout_gdr_p, SRC_RIGHTBUS, 0, 1),
 
-	CGATE(GATE_I2C0, "gate_i2c0", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 6, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C1, "gate_i2c1", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 7, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C2, "gate_i2c2", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 8, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C3, "gate_i2c3", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 9, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C4, "gate_i2c4", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 10, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C5, "gate_i2c5", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 11, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C6, "gate_i2c6", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 12, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_I2C7, "gate_i2c7", "aclk100",
-			EXYNOS3_CLKGATE_IP_PERIL, 13, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_ACLK_FIMD0, "gate_aclk_fimd0", NULL,
-			EXYNOS3_CLKGATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_SCLK_FIMD0, "gate_sclk_fimd0", NULL,
-			EXYNOS3_CLKGATE_SCLK_LCD, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_SCLK_MIPI0, "gate_sclk_mipi0", NULL,
-			EXYNOS3_CLKGATE_SCLK_LCD, 3, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_CLK_FIMD0, "gate_clk_fimd0", NULL,
-			EXYNOS3_CLKGATE_IP_LCD, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_CLK_DSIM0, "gate_clk_dsim0", NULL,
-			EXYNOS3_CLKGATE_IP_LCD, 3, CLK_IGNORE_UNUSED, 0),
-	CGATE(ACLK_MMC0, "aclk_mmc0", "aclk200",
-			EXYNOS3_CLKGATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),
-	CGATE(GATE_MMC0, "gate_mmc0", "dout_mmc_b",
-			EXYNOS3_CLKGATE_FSYS, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_PDMA0, "pdma0", "aclk200", GATE_IP_FSYS, 0, CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_PDMA1, "pdma1", "aclk200", GATE_IP_FSYS, 1, CLK_IGNORE_UNUSED, 0),
+	CMUX_A(CLK_MOUT_MPLL, "mout_mpll", mout_mpll_p,
+		SRC_TOP1, 12, 1, "sclk_mpll"),
+
+	CMUX(CLK_MOUT_ACLK_200, "mout_aclk200", group_div_mpll_pre,
+		SRC_TOP0, 24, 1),
+	CMUX(CLK_MOUT_ACLK_160, "mout_aclk_160", group_sclk_p, SRC_TOP0, 20, 0),
+	CMUX(CLK_MOUT_ACLK_100, "mout_aclk100", group_div_mpll_pre,
+		SRC_TOP0, 16, 1),
+
+	CMUX(CLK_MOUT_UART3, "mout_uart3", group_sclk_p, SRC_PERIL0, 12, 4),
+	CMUX(CLK_MOUT_UART2, "mout_uart2", group_sclk_p, SRC_PERIL0, 8, 4),
+	CMUX(CLK_MOUT_UART1, "mout_uart1", group_sclk_p, SRC_PERIL0, 4, 4),
+	CMUX(CLK_MOUT_UART0, "mout_uart0", group_sclk_p, SRC_PERIL0, 0, 4),
+
+	CMUX(CLK_MOUT_MIPI0, "mout_mipi0", group_sclk_p, SRC_LCD, 12, 4),
+	CMUX(CLK_MOUT_FIMD0, "mout_fimd0", group_sclk_p, SRC_LCD, 0, 4),
+
+	CMUX(CLK_MOUT_MMC0, "mout_mmc0", mout_mmc_p, SRC_FSYS, 0, 4),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
 			DIV(_id, cname, pname, (unsigned long)o, s, w)
 
 struct samsung_div_clock exynos3250_div_clks[] __initdata = {
-	DIV_A(DCLK_GPR, "dclk_gpr", "dclk_gdr", (unsigned long) EXYNOS3_CLKDIV_RIGHTBUS,
-			4, 3, "div_gpr"),
-	DIV_A(DCLK_GDR, "dclk_gdr", "mux_gdr", (unsigned long) EXYNOS3_CLKDIV_RIGHTBUS,
-			0, 4, "div_gdr"),
-	DIV_A(MPLL_PRE_DIV, "mpll_pre_div", "half_mpll",
-		(unsigned long)DIV_TOP, 28, 2, "mpll_pre_div"),
-	DIV_A(ACLK100, "aclk100", "mout_aclk100", (unsigned long)DIV_TOP, 4, 4, "aclk100"),
-	DIV_A(ACLK200, "aclk200", "mout_aclk200", (unsigned long)DIV_TOP, 12, 4, "aclk200"),
+	CDIV(CLK_DIV_GPR, "dout_gpr", "dout_gdr", DIV_RIGHTBUS, 4, 3),
+	CDIV(CLK_DIV_GDR, "dout_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 4),
 
-	DIV_A(DOUT_MMC_A, "dout_mmc_a", "mout_mmc0",
-			(unsigned long)EXYNOS3_CLKDIV_FSYS1, 0, 3, "dout_mmc_a"),
-	DIV_A(DOUT_MMC_B, "dout_mmc_b", "dout_mmc_a",
-			(unsigned long)EXYNOS3_CLKDIV_FSYS1, 8, 8, "dout_mmc_b"),
+	CDIV(CLK_DIV_MPLL_PRE, "dout_mpll_pre", "half_mpll", DIV_TOP, 28, 2),
+	CDIV(CLK_DIV_ACLK_200, "dout_aclk_200", "mout_aclk200", DIV_TOP, 12, 4),
+	CDIV(CLK_DIV_ACLK_160, "dout_aclk_160", "mout_aclk_160", DIV_TOP, 8, 3),
+	CDIV(CLK_DIV_ACLK_100, "dout_aclk_100", "mout_aclk100", DIV_TOP, 4, 4),
 
-	DIV_A(DOUT_UART0, "dout_uart0", "mout_uart0",
-			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 0, 4, "dout_uart0"),
-	DIV_A(DOUT_UART1, "dout_uart1", "mout_uart1",
-			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 4, 4, "dout_uart1"),
-	DIV_A(DOUT_UART2, "dout_uart2", "mout_uart2",
-			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 8, 4, "dout_uart2"),
-	DIV_A(DOUT_UART3, "dout_uart3", "mout_uart3",
-			(unsigned long)EXYNOS3_CLKDIV_PERIL0, 12, 4, "dout_uart3"),
+	CDIV(CLK_DIV_MMC0_PRE, "dout_mmc0_pre", "dout_mmc0", DIV_FSYS1, 8, 8),
+	CDIV(CLK_DIV_MMC0, "dout_mmc0", "mout_mmc0", DIV_FSYS1, 0, 3),
 
-	DIV_A(DOUT_FIMD0, "dout_fimd0", "mout_fimd0",
-			(unsigned long)EXYNOS3_CLKDIV_LCD, 0, 4, "dout_fimd"),
-	DIV_A(DOUT_MIPI0, "dout_mipi0", "mout_mipi0",
-			(unsigned long)EXYNOS3_CLKDIV_LCD, 16, 4, "dout_mipi0"),
-	DIV_A(DOUT_MIPI0_PRE, "dout_mipi0_pre", "dout_mipi0",
-			(unsigned long)EXYNOS3_CLKDIV_LCD, 20, 4, "dout_mipi0_pre"),
-	DIV_A(DOUT_ACLK_160, "dout_aclk_160", "mout_aclk_160",
-			(unsigned long)EXYNOS3_CLKDIV_TOP, 8, 3, "dout_aclk_160"),
+	CDIV(CLK_DIV_UART3, "dout_uart3", "mout_uart3",	DIV_PERIL0, 12, 4),
+	CDIV(CLK_DIV_UART2, "dout_uart2", "mout_uart2",	DIV_PERIL0, 8, 4),
+	CDIV(CLK_DIV_UART1, "dout_uart1", "mout_uart1",	DIV_PERIL0, 4, 4),
+	CDIV(CLK_DIV_UART0, "dout_uart0", "mout_uart0",	DIV_PERIL0, 0, 4),
+
+	CDIV(CLK_DIV_MIPI0_PRE, "dout_mipi0_pre", "dout_mipi0",	DIV_LCD, 20, 4),
+	CDIV(CLK_DIV_MIPI0, "dout_mipi0", "mout_mipi0", DIV_LCD, 16, 4),
+	CDIV(CLK_DIV_FIMD0, "dout_fimd0", "mout_fimd0", DIV_LCD, 0, 4),
 };
 
-PNAME(mout_dclk_gdr)	= { "mout_user_bus_r" };
-PNAME(mout_ctrl_user_bus_r)	= { "finpll", "mpll_pre_div" };
-PNAME(mout_uart_p)      = { "xxti", "xusbxti", "none", "none", "none", "none",
-			"mpll_pre_div", "sclk_epll", "sclk_vpll", };
-PNAME(mout_mmc_p)      = { "xxti", "xusbsti", "none", "none", "none", "none",
-			"half_mpll", "sclk_epll", "sclk_vpll" };
-PNAME(mout_mpll)	= { "fin_pll", "fout_mpll", };
-PNAME(sclk_ampll_p3250)	= { "mpll_pre_div", };
+#define CGATE(_id, cname, pname, o, b, f, gf) \
+	GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
-#define CMUX(_id, cname, pnames, o, s, w) \
-	MUX(_id, cname, pnames, (unsigned long)o, s, w)
+struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
+	CGATE(CLK_RTC, "rtc", "aclk66",
+			GATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_MCT, "mct", "dout_gpr",
+			GATE_IP_PERIR, 13, CLK_IGNORE_UNUSED, 0),
 
-struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
-	MUX(MUX_GDR, "mux_gdr", mout_dclk_gdr, (unsigned long) EXYNOS3_CLKSRC_RIGHTBUS, 0, 1),
-	MUX(MOUT_USER_BUS_R, "mout_user_bus_r", mout_ctrl_user_bus_r, (unsigned long) EXYNOS3_CLKSRC_RIGHTBUS, 4, 1),
-	MUX_A(SCLK_MPLL, "sclk_mpll", mout_mpll, (unsigned long)SRC_TOP1, 12, 1, "sclk_mpll"),
-	MUX_A(MOUT_ACLK100, "mout_aclk100", sclk_ampll_p3250, (unsigned long)SRC_TOP0,
-					16, 1, "mout_aclk100"),
-	MUX_A(MOUT_ACLK200, "mout_aclk200", sclk_ampll_p3250, (unsigned long)SRC_TOP0,
-					24, 1, "mout_aclk200"),
+	CGATE(CLK_UART3, "uart3", "dout_uart3",
+			GATE_IP_PERIL, 3, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_UART2, "uart2", "dout_uart2",
+			GATE_IP_PERIL, 2, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_UART1, "uart1", "dout_uart1",
+			GATE_IP_PERIL, 1, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_UART0, "uart0", "dout_uart0",
+			GATE_IP_PERIL, 0, CLK_IGNORE_UNUSED, 0),
 
-	MUX_A(MOUT_UART0, "mout_uart0", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 0, 4, "mout_uart0"),
-	MUX_A(MOUT_UART1, "mout_uart1", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 4, 4, "mout_uart1"),
-	MUX_A(MOUT_UART2, "mout_uart2", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 8, 4, "mout_uart2"),
-	MUX_A(MOUT_UART3, "mout_uart3", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_PERIL0, 12, 4, "mout_uart3"),
+	CGATE(CLK_I2C7, "i2c7", "dout_aclk_100",
+			GATE_IP_PERIL, 13, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C6, "i2c6", "dout_aclk_100",
+			GATE_IP_PERIL, 12, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C5, "i2c5", "dout_aclk_100",
+			GATE_IP_PERIL, 11, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C4, "i2c4", "dout_aclk_100",
+			GATE_IP_PERIL, 10, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C3, "i2c3", "dout_aclk_100",
+			GATE_IP_PERIL, 9, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C2, "i2c2", "dout_aclk_100",
+			GATE_IP_PERIL, 8, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C1, "i2c1", "dout_aclk_100",
+			GATE_IP_PERIL, 7, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C0, "i2c0", "dout_aclk_100",
+			GATE_IP_PERIL, 6, CLK_IGNORE_UNUSED, 0),
 
-	MUX_A(MOUT_FIMD0, "mout_fimd0", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_LCD, 0, 4, "mout_fimd0"),
-	MUX_A(MOUT_MIPI0, "mout_mipi0", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_LCD, 12, 4, "mout_mipi0"),
-	MUX_A(MOUT_ACLK_160, "mout_aclk_160", mout_uart_p,
-			(unsigned long)EXYNOS3_CLKSRC_TOP0, 20, 0, "mout_aclk_160"),
-	MUX_A(MOUT_MMC0, "mout_mmc0", mout_mmc_p,
-			(unsigned long)EXYNOS3_CLKSRC_FSYS, 0, 4, "mout_mmc0"),
+	CGATE(CLK_ACLK_FIMD0, "aclk_fimd0", NULL,
+			GATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_SCLK_MIPI0, "sclk_mipi0", NULL,
+			GATE_SCLK_LCD, 3, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SCLK_FIMD0, "sclk_fimd0", NULL,
+			GATE_SCLK_LCD, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_CLK_DSIM0, "gate_clk_dsim0", NULL,
+			GATE_IP_LCD, 3, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_FIMD0, "fimd0", NULL,
+			GATE_IP_LCD, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_ACLK_MMC0, "aclk_mmc0", "dout_aclk_200",
+			GATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_MMC0, "mmc0", "dout_mmc0_pre",
+			GATE_SCLK_FSYS, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_PDMA1, "pdma1", "dout_aclk_200",
+			GATE_IP_FSYS, 1, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_PDMA0, "pdma0", "dout_aclk_200",
+			GATE_IP_FSYS, 0, CLK_IGNORE_UNUSED, 0),
 };
 
 /* fixed rate clocks generated outside the soc */
 struct samsung_fixed_rate_clock exynos3250_fixed_rate_ext_clks[] __initdata = {
-	FRATE(FIN_PLL, "fin_pll", NULL, CLK_IS_ROOT, 0),
+	FRATE(CLK_FIN_PLL, "fin_pll", NULL, CLK_IS_ROOT, 0),
 	FRATE(HALF_MPLL, "half_mpll", NULL, CLK_IS_ROOT, 0),
 };
 
@@ -211,8 +200,6 @@ void __init exynos3250_clk_init(struct device_node *np)
 	samsung_clk_register_gate(exynos3250_gate_clks,
 			ARRAY_SIZE(exynos3250_gate_clks));
 
-	pr_info("MPLL = %ld\n", _get_rate("sclk_mpll"));
-	pr_info("MPLL_PRE_DIV = %ld\n", _get_rate("mpll_pre_div"));
 	pr_info("Exynos3250: clock setup completed\n");
 }
 
