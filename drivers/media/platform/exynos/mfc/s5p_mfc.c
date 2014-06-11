@@ -1917,10 +1917,10 @@ static int s5p_mfc_open(struct file *file)
 			mfc_err_ctx("power on failed\n");
 			goto err_pwr_enable;
 		}
-
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433) || defined(CONFIG_SOC_EXYNOS5422)
 		/* Set clock source again after power on */
 		s5p_mfc_set_clock_parent(dev);
-
+#endif
 		dev->curr_ctx = ctx->num;
 		dev->preempt_ctx = MFC_NO_INSTANCE_SET;
 		dev->curr_ctx_drm = ctx->is_drm;
