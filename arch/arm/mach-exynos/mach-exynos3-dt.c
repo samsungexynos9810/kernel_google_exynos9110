@@ -14,6 +14,7 @@
 #include <linux/memblock.h>
 #include <linux/io.h>
 #include <linux/clocksource.h>
+#include <linux/exynos_ion.h>
 
 #include <asm/mach/arch.h>
 #include <mach/regs-pmu.h>
@@ -39,7 +40,7 @@ static char const *exynos3_dt_compat[] __initdata = {
 
 static void __init exynos3_reserve(void)
 {
-	/* TO BE IMPLEMENTED*/
+	init_exynos_ion_contig_heap();
 }
 
 DT_MACHINE_START(EXYNOS3_DT, "Samsung Exynos3 (Flattened Device Tree)")
