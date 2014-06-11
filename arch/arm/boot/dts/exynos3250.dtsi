@@ -34,6 +34,7 @@
 		i2c6 = &i2c_6;
 		i2c7 = &i2c_7;
 		mshc0 = &dwmmc_0;
+		mfc0 = &mfc_0;
 	};
 
 	chipid@10000000 {
@@ -268,6 +269,55 @@
 		clock-names = 	"biu", "gate_ciu",
 				"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
+	};
+
+	mfc_0: mfc@13400000 {
+		compatible = "samsung,mfc-v6";
+		reg = <0x13400000 0x10000>;
+		interrupts = <0 102 0>;
+		clocks = <&clock CLK_MFC>, <&clock CLK_MOUT_MFC_0>,
+			<&clock CLK_SCLK_MFC>;
+		clock-names = "mfc", "mout_mfc0",
+				"sclk_mfc";
+		status = "ok";
+		ip_ver = <7>;
+		clock_rate = <200000000>;
+		min_rate = <84000>;
+		num_qos_steps = <4>;
+		mfc_qos_table {
+			mfc_qos_variant_0 {
+				thrd_mb = <0>;
+				freq_mfc = <111000>;
+				freq_int = <100000>;
+				freq_mif = <200000>;
+				freq_cpu = <0>;
+				freq_kfc = <0>;
+			};
+			mfc_qos_variant_1 {
+				thrd_mb = <122400>;
+				freq_mfc = <167000>;
+				freq_int = <133000>;
+				freq_mif = <200000>;
+				freq_cpu = <0>;
+				freq_kfc = <0>;
+			};
+			mfc_qos_variant_2 {
+				thrd_mb = <162792>;
+				freq_mfc = <167000>;
+				freq_int = <160000>;
+				freq_mif = <400000>;
+				freq_cpu = <0>;
+				freq_kfc = <0>;
+			};
+			mfc_qos_variant_3 {
+				thrd_mb = <195840>;
+				freq_mfc = <200000>;
+				freq_int = <200000>;
+				freq_mif = <400000>;
+				freq_cpu = <0>;
+				freq_kfc = <0>;
+			};
+		};
 	};
 
 	amba {
