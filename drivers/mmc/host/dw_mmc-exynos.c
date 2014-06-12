@@ -1321,7 +1321,9 @@ static const struct of_device_id dw_mci_exynos_match[] = {
 			.data = &exynos_drv_data, },
 	{ .compatible = "samsung,exynos5433-dw-mshc",
 			.data = &exynos_drv_data, },
-	{},
+        { .compatible = "samsung,exynos3250-dw-mshc",
+                        .data = &exynos_drv_data, },
+        {},
 };
 MODULE_DEVICE_TABLE(of, dw_mci_exynos_match);
 
