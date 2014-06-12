@@ -152,7 +152,7 @@ int ion_exynos_contig_heap_isolate(int region_id);
 void ion_exynos_contig_heap_deisolate(int region_id);
 int init_exynos_ion_contig_heap(void);
 #else
-int init_exynos_ion_contig_heap(void);
+static inline int init_exynos_ion_contig_heap(void)
 {
 	return 0;
 }
