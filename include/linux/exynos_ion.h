@@ -150,21 +150,11 @@ unsigned int ion_exynos_contig_region_mask(char *region_name);
 int ion_exynos_contig_heap_info(int region_id, phys_addr_t *phys, size_t *size);
 int ion_exynos_contig_heap_isolate(int region_id);
 void ion_exynos_contig_heap_deisolate(int region_id);
+int init_exynos_ion_contig_heap(void);
 #else
-void exynos_ion_sync_for_device(struct device *dev,
-					struct dma_buf *dbuf,
-					void *vaddr, size_t size,
-					off_t offset, struct sg_table *sgt,
-					enum dma_data_direction dir)
+int init_exynos_ion_contig_heap(void);
 {
-}
-
-void exynos_ion_sync_for_cpu(struct device *dev,
-					struct dma_buf *dbuf,
-					void *vaddr, size_t size,
-					off_t offset, struct sg_table *sgt,
-					enum dma_data_direction dir)
-{
+	return 0;
 }
 
 static inline int ion_exynos_contig_region_mask(char *region_name)
@@ -183,18 +173,14 @@ static inline int ion_exynos_contig_heap_isolate(int region_id)
 	return -ENOSYS;
 }
 
-#define ion_exynos_contig_heap_deisolate(region_id) do { } while (0);
-
-#endif
-
-#if defined(CONFIG_ION_EXYNOS)
-int init_exynos_ion_contig_heap(void);
-#else
 static inline int fdt_init_exynos_ion(void)
 {
 	return 0;
 }
+#define ion_exynos_contig_heap_deisolate(region_id) do { } while (0);
+
 #endif
+
 
 #endif /* __KERNEL */
 
