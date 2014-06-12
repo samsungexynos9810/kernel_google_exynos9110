@@ -44,12 +44,15 @@ PNAME(mout_mpll_user_p)		= { "fin_pll", "dout_mpll_pre" };
 PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 					"none",	"dout_mpll_pre",
 					"sclk_epll", "sclk_vpll" };
+PNAME(group_sclk_fimd0_p)	= { "xxti", "xusbxti", "m_bitclkhsdiv4_2l",
+					"none", "none",	"none",	"dout_mpll_pre",
+					"sclk_epll", "sclk_vpll",
+					"div_lcd_blk_145" };
 PNAME(mout_mmc_p)		= { "xxti", "xusbsti", "none", "none", "none",
 					"none", "sclk_mpll_mif",
 					"sclk_epll", "sclk_vpll" };
 PNAME(mout_mpll_p)		= { "fin_pll", "fout_mpll" };
 PNAME(mout_vpllsrc_p)		= { "fin_pll", "none" };
-PNAME(group_div_mpll_pre)	= { "dout_mpll_pre" };
 PNAME(mout_g3d_p)		= { "mout_g3d_0", "mout_g3d_1" };
 PNAME(group_div_mpll_pre_p)	= { "dout_mpll_pre" };
 PNAME(group_epll_vpll_p)	= { "mout_epll", "mout_vpll" };
@@ -84,10 +87,11 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_VPLLSRC, "mout_vpllsrc", mout_vpllsrc_p,
 		SRC_TOP1, 0, 1),
 
-	CMUX(CLK_MOUT_ACLK_200, "mout_aclk200", group_div_mpll_pre,
+	CMUX(CLK_MOUT_ACLK_200, "mout_aclk200", group_div_mpll_pre_p,
 		SRC_TOP0, 24, 1),
-	CMUX(CLK_MOUT_ACLK_160, "mout_aclk_160", group_sclk_p, SRC_TOP0, 20, 0),
-	CMUX(CLK_MOUT_ACLK_100, "mout_aclk100", group_div_mpll_pre,
+	CMUX(CLK_MOUT_ACLK_160, "mout_aclk_160", group_div_mpll_pre_p,
+		SRC_TOP0, 20, 0),
+	CMUX(CLK_MOUT_ACLK_100, "mout_aclk100", group_div_mpll_pre_p,
 		SRC_TOP0, 16, 1),
 	CMUX(CLK_MOUT_VPLL, "mout_vpll", mout_vpll_p, SRC_TOP0, 8, 1),
 	CMUX(CLK_MOUT_EPLL, "mout_epll", mout_epll_p, SRC_TOP0, 4, 1),
@@ -98,7 +102,7 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_UART0, "mout_uart0", group_sclk_p, SRC_PERIL0, 0, 4),
 
 	CMUX(CLK_MOUT_MIPI0, "mout_mipi0", group_sclk_p, SRC_LCD, 12, 4),
-	CMUX(CLK_MOUT_FIMD0, "mout_fimd0", group_sclk_p, SRC_LCD, 0, 4),
+	CMUX(CLK_MOUT_FIMD0, "mout_fimd0", group_sclk_fimd0_p, SRC_LCD, 0, 4),
 
 	CMUX(CLK_MOUT_MMC0, "mout_mmc0", mout_mmc_p, SRC_FSYS, 0, 4),
 
@@ -175,15 +179,17 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_ACLK_FIMD0, "aclk_fimd0", NULL,
 			GATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),
 
-	CGATE(CLK_SCLK_MIPI0, "sclk_mipi0", NULL,
-			GATE_SCLK_LCD, 3, CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_SCLK_FIMD0, "sclk_fimd0", NULL,
-			GATE_SCLK_LCD, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SCLK_MIPIDPHY2L, "sclk_mipidphy2l", "dout_mipi0",
+			GATE_SCLK_LCD, 4, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_MIPI0, "sclk_mipi0", "dout_mipi0_pre",
+			GATE_SCLK_LCD, 3, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_FIMD0, "sclk_fimd0", "dout_fimd0",
+			GATE_SCLK_LCD, 0, CLK_SET_RATE_PARENT, 0),
 
-	CGATE(CLK_CLK_DSIM0, "gate_clk_dsim0", NULL,
-			GATE_IP_LCD, 3, CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_FIMD0, "fimd0", NULL,
-			GATE_IP_LCD, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUFIMD0, "smmufimd0", "dout_aclk_160", GATE_IP_LCD, 4, 0, 0),
+	CGATE(CLK_DSIM0, "dsim0", "dout_aclk_160", GATE_IP_LCD, 3, 0, 0),
+	CGATE(CLK_FIMD0, "fimd0", "dout_aclk_160", GATE_IP_LCD, 0, 0, 0),
+
 
 	CGATE(CLK_ACLK_MMC0, "aclk_mmc0", "dout_aclk_200",
 			GATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),

@@ -83,14 +83,15 @@
 #define CLK_SCLK_FIMD0		151
 #define CLK_SCLK_MIPI0		152
 #define CLK_FIMD0		153
-#define CLK_CLK_DSIM0		154
+#define CLK_DSIM0		154
 #define CLK_ASYNC_G3D		155
 #define CLK_SCLK_G3D		156
 #define CLK_SMMUG3D		157
 #define CLK_QEG3D		158
 #define CLK_PPMUG3D		159
 #define CLK_G3D			160
-
+#define CLK_SMMUFIMD0		161
+#define CLK_SCLK_MIPIDPHY2L	162
 #define NR_CLKS			256
 
 #endif /*_DT_BINDINGS_CLK_EXYNOS3250_H */
