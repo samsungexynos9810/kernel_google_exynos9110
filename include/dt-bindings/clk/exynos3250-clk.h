@@ -10,7 +10,8 @@
 #define _DT_BINDINGS_CLK_EXYNOS3250_H
 
 #define CLK_FIN_PLL		1
-#define FOUT_MPLL		2
+#define CLK_FOUT_MPLL		2
+#define CLK_FOUT_VPLL		3
 
 /* Muxes */
 #define CLK_MOUT_MPLL		16
@@ -26,6 +27,14 @@
 #define CLK_MOUT_FIMD0		26
 #define CLK_MOUT_MIPI0		27
 #define CLK_MOUT_ACLK_160	28
+#define CLK_MOUT_MPLL_USER_L	29
+#define CLK_MOUT_GDL		30
+#define CLK_MOUT_G3D		31
+#define CLK_MOUT_G3D_1		32
+#define CLK_MOUT_G3D_0		33
+#define CLK_MOUT_EPLL		34
+#define CLK_MOUT_VPLL		35
+#define CLK_MOUT_VPLLSRC	36
 
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
@@ -43,6 +52,9 @@
 #define CLK_DIV_MIPI0		76
 #define CLK_DIV_MIPI0_PRE	77
 #define CLK_DIV_ACLK_160	78
+#define CLK_DIV_GPL		79
+#define CLK_DIV_GDL		80
+#define CLK_DIV_G3D		81
 
 /* gate and special clocks */
 #define CLK_MCT			128
@@ -72,6 +84,13 @@
 #define CLK_SCLK_MIPI0		152
 #define CLK_FIMD0		153
 #define CLK_CLK_DSIM0		154
+#define CLK_ASYNC_G3D		155
+#define CLK_SCLK_G3D		156
+#define CLK_SMMUG3D		157
+#define CLK_QEG3D		158
+#define CLK_PPMUG3D		159
+#define CLK_G3D			160
+
 #define NR_CLKS			256
 
 #endif /*_DT_BINDINGS_CLK_EXYNOS3250_H */
