@@ -265,10 +265,16 @@
 #define EXYNOS_PS_HOLD_OUTPUT_HIGH			(3 << 8)
 
 /* For XXX_IP_CONFIGURATION(Power Domain) */
-#ifdef CONFIG_SOC_EXYNOS5422
+#if defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS3250)
 #define EXYNOS_INT_LOCAL_PWR_EN				0x7
 #else
 #define EXYNOS_INT_LOCAL_PWR_EN				0xf
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS3250)
+#define EXYNOS_SC_FEEDBACK				0x1
+#else
+#define EXYNOS_SC_FEEDBACK				0x0102
 #endif
 
 /* For SYS_PWR_REG */

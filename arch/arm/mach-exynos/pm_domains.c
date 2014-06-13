@@ -430,7 +430,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 #endif
 		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
 		if (ret)
-			pd->pd_option = 0x0102;
+			pd->pd_option = EXYNOS_SC_FEEDBACK;
 		else
 			pd->pd_option = val;
 
