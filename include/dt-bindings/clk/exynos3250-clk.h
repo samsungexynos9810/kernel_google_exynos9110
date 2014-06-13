@@ -12,6 +12,7 @@
 #define CLK_FIN_PLL		1
 #define CLK_FOUT_MPLL		2
 #define CLK_FOUT_VPLL		3
+#define CLK_FOUT_UPLL		4
 
 /* Muxes */
 #define CLK_MOUT_MPLL		16
@@ -35,7 +36,7 @@
 #define CLK_MOUT_EPLL		34
 #define CLK_MOUT_VPLL		35
 #define CLK_MOUT_VPLLSRC	36
-
+#define CLK_MOUT_UPLL		37
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
 #define CLK_DIV_ACLK_100	65
@@ -101,6 +102,9 @@
 #define CLK_SCLK_UART0		167
 #define CLK_WDT			168
 #define CLK_KEYIF		169
+#define CLK_USBOTG		170
+#define CLK_USBHOST		171
+#define CLK_SCLK_UPLL		172
 
 #define NR_CLKS			256
 

@@ -24,6 +24,8 @@
 #define MPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC110)
 #define VPLL_LOCK		EXYNOS3_CLK_BUS_TOP_REG(0xC020)
 #define VPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC120)
+#define UPLL_LOCK		EXYNOS3_CLK_BUS_TOP_REG(0xC030)
+#define UPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC130)
 
 static __initdata void *exynos3250_clk_regs[] = {
 	GATE_IP_PERIR,
@@ -55,6 +57,7 @@ PNAME(group_div_mpll_pre_p)	= { "dout_mpll_pre", "none" };
 PNAME(group_epll_vpll_p)	= { "mout_epll", "mout_vpll" };
 PNAME(mout_epll_p)		= { "fin_pll", "mout_epll" };
 PNAME(mout_vpll_p)		= { "fin_pll", "fout_vpll" };
+PNAME(mout_upll_p)             = { "fin_pll", "fout_upll", };
 
 static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
 	FFACTOR(0, "sclk_mpll_1600", "mout_mpll", 1, 1, 0),
@@ -79,6 +82,7 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 		SRC_RIGHTBUS, 4, 1),
 	CMUX(CLK_MOUT_GDR, "mout_gdr", mout_gdr_p, SRC_RIGHTBUS, 0, 1),
 
+	CMUX(CLK_MOUT_UPLL, "mout_upll", mout_upll_p, SRC_TOP1, 28, 1),
 	CMUX_A(CLK_MOUT_MPLL, "mout_mpll", mout_mpll_p,
 		SRC_TOP1, 12, 1, "sclk_mpll"),
 	CMUX(CLK_MOUT_VPLLSRC, "mout_vpllsrc", mout_vpllsrc_p,
@@ -205,11 +209,15 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_ACLK_MMC0, "aclk_mmc0", "dout_aclk_200",
 			GATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),
 
+	CGATE(CLK_SCLK_UPLL, "sclk_upll", "mout_upll",
+			GATE_SCLK_FSYS, 10, 0, 0),
 	CGATE(CLK_SCLK_MMC1, "sclk_mmc1", "dout_mmc1_pre",
 			GATE_SCLK_FSYS, 1, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_MMC0, "sclk_mmc0", "dout_mmc0_pre",
 			GATE_SCLK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
 
+	CGATE(CLK_USBOTG, "usbotg", "div_aclk_200", GATE_IP_FSYS, 13, 0, 0),
+	CGATE(CLK_USBHOST, "usbhost", "div_aclk_200", GATE_IP_FSYS, 12, 0, 0),
 	CGATE(CLK_SDMMC1, "sdmmc1", "dout_aclk_200", GATE_IP_FSYS, 6, 0, 0),
 	CGATE(CLK_SDMMC0, "sdmmc0", "dout_aclk_200", GATE_IP_FSYS, 5, 0, 0),
 	CGATE(CLK_PDMA1, "pdma1", "dout_aclk_200",
@@ -241,8 +249,25 @@ static __initdata struct of_device_id ext_clk_match[] = {
 	{ },
 };
 
-static struct samsung_pll_rate_table exynos3_mpll_div[] = {
-	{ 800000000, 3, 200, 1, 0},
+static struct samsung_pll_rate_table exynos3250_pll_rates[] = {
+	PLL_35XX_RATE(1200000000, 400, 4, 1),
+	PLL_35XX_RATE(1100000000, 275, 3, 1),
+	PLL_35XX_RATE(1066000000, 533, 6, 1),
+	PLL_35XX_RATE(1000000000, 250, 3, 1),
+	PLL_35XX_RATE( 960000000, 320, 4, 1),
+	PLL_35XX_RATE( 900000000, 300, 4, 1),
+	PLL_35XX_RATE( 850000000, 425, 6, 1),
+	PLL_35XX_RATE( 800000000, 200, 3, 1),
+	PLL_35XX_RATE( 700000000, 175, 3, 1),
+	PLL_35XX_RATE( 667000000, 667, 12, 1),
+	PLL_35XX_RATE( 600000000, 400, 4, 2),
+	PLL_35XX_RATE( 533000000, 533, 6, 2),
+	PLL_35XX_RATE( 520000000, 260, 3, 2),
+	PLL_35XX_RATE( 500000000, 250, 3, 2),
+	PLL_35XX_RATE( 400000000, 200, 3, 2),
+	PLL_35XX_RATE( 200000000, 200, 3, 3),
+	PLL_35XX_RATE( 100000000, 200, 3, 4),
+	{ /* sentinel */ }
 };
 
 static struct samsung_pll_rate_table exynos3250_vpll_rates[] = {
@@ -278,11 +303,11 @@ static struct samsung_pll_rate_table exynos3250_vpll_rates[] = {
 
 void __init exynos3250_clk_init(struct device_node *np)
 {
-	struct clk *mpll, *vpll;
+	struct clk *mpll, *vpll, *upll;
 
 	mpll = samsung_clk_register_pll35xx("fout_mpll", "fin_pll",
-		MPLL_LOCK, MPLL_CON0, exynos3_mpll_div,
-		sizeof(exynos3_mpll_div));
+		MPLL_LOCK, MPLL_CON0, exynos3250_pll_rates,
+		sizeof(exynos3250_pll_rates));
 
 	samsung_clk_add_lookup(mpll, CLK_FOUT_MPLL);
 
@@ -291,6 +316,12 @@ void __init exynos3250_clk_init(struct device_node *np)
 		sizeof(exynos3250_vpll_rates));
 
 	samsung_clk_add_lookup(vpll, CLK_FOUT_VPLL);
+
+	upll = samsung_clk_register_pll35xx("fout_upll", "fin_pll",
+		UPLL_LOCK, UPLL_CON0, exynos3250_pll_rates,
+		sizeof(exynos3250_pll_rates));
+
+	samsung_clk_add_lookup(upll, CLK_FOUT_UPLL);
 
 	samsung_clk_init(np, 0, NR_CLKS, (unsigned long *)exynos3250_clk_regs,
 			ARRAY_SIZE(exynos3250_clk_regs), NULL, 0);
