@@ -201,7 +201,7 @@ static int exynos_genpd_power_off(struct generic_pm_domain *genpd)
 #ifdef CONFIG_OF
 
 #if defined(CONFIG_EXYNOS5430_BTS) || defined(CONFIG_EXYNOS5422_BTS)	\
-	|| (CONFIG_EXYNOS5433_BTS)
+	|| defined(CONFIG_EXYNOS5433_BTS)
 /**
  *  of_device_bts_is_available - check if bts feature is enabled or not
  *
