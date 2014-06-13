@@ -165,6 +165,24 @@
 		mmu-masters = <&mfc_0>;
 	};
 
+	sysmmu_gscl0: sysmmu@11A20000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11A20000 0x1000>;
+		interrupts = <0 152 0>, <0 153 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock CLK_SMMUGSCALER0>, <&clock CLK_GSCALER0>;
+		mmu-masters = <&gsc_0>;
+	};
+
+	sysmmu_gscl1: sysmmu@11A30000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11A30000 0x1000>;
+		interrupts = <0 157 0>, <0 158 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock CLK_SMMUGSCALER1>, <&clock CLK_GSCALER1>;
+		mmu-masters = <&gsc_1>;
+	};
+
 	i2c_0: i2c@13860000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
