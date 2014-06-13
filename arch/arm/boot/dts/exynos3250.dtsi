@@ -35,6 +35,8 @@
 		i2c7 = &i2c_7;
 		mshc0 = &dwmmc_0;
 		mfc0 = &mfc_0;
+		gsc0 = &gsc_0;
+		gsc1 = &gsc_1;
 	};
 
 	chipid@10000000 {
@@ -327,6 +329,32 @@
 				freq_kfc = <0>;
 			};
 		};
+	};
+
+	gsc_0: gsc@11850000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x11850000 0x1000>;
+		interrupts = <0 167 0>;
+		clocks = <&clock CLK_GSCALER0>, <&clock CLK_MOUT_CAM_BLK>,
+			<&clock CLK_CAM_BLK_320>;
+		clock-names = "gscl", "sclk_cam_blk",
+				"cam_blk_320";
+		ip_ver = <1>;
+		mif_min = <160000>;
+		int_min = <111000>;
+	};
+
+	gsc_1: gsc@11860000 {
+		compatible = "samsung,exynos5-gsc";
+		reg = <0x11860000 0x1000>;
+		interrupts = <0 168 0>;
+		clocks = <&clock CLK_GSCALER1>, <&clock CLK_MOUT_CAM_BLK>,
+			<&clock CLK_CAM_BLK_320>;
+		clock-names = "gscl", "sclk_cam_blk",
+				"cam_blk_320";
+		ip_ver = <1>;
+		mif_min = <160000>;
+		int_min = <111000>;
 	};
 
 	amba {
