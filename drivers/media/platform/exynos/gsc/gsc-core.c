@@ -29,10 +29,18 @@
 #include <linux/exynos_iovmm.h>
 #include <media/v4l2-ioctl.h>
 #include "gsc-core.h"
+
+#if defined(CONFIG_SOC_EXYNOS3250)
+static char *gsc_clocks[GSC_MAX_CLOCKS] = {
+	"gscl", "sclk_cam_blk", "cam_blk_320"
+};
+#else
 static char *gsc_clocks[GSC_MAX_CLOCKS] = {
 	"gate_gscl", "mout_aclk_gscl_333_user", "aclk_gscl_333",
 	"mout_aclk_gscl_111_user", "aclk_gscl_111"
 };
+#endif
+
 int gsc_dbg = 6;
 module_param(gsc_dbg, int, 0644);
 

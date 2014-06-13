@@ -74,7 +74,11 @@ extern int gsc_dbg;
 				__func__, __LINE__, ##args);		\
 	} while (0)
 
+#if defined(CONFIG_SOC_EXYNOS3250)
+#define GSC_MAX_CLOCKS			3
+#else
 #define GSC_MAX_CLOCKS			5
+#endif
 #define GSC_SHUTDOWN_TIMEOUT		((100*HZ)/1000)
 #define GSC_MAX_DEVS			4
 #define WORKQUEUE_NAME_SIZE		32
