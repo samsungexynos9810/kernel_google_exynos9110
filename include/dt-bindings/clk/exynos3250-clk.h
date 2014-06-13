@@ -55,6 +55,8 @@
 #define CLK_DIV_GPL		79
 #define CLK_DIV_GDL		80
 #define CLK_DIV_G3D		81
+#define CLK_DIV_MMC1_PRE	82
+#define CLK_DIV_MMC1		83
 
 /* gate and special clocks */
 #define CLK_MCT			128
@@ -78,7 +80,7 @@
 #define CLK_PDMA0		146
 #define CLK_PDMA1		147
 #define CLK_ACLK_MMC0		148
-#define CLK_MMC0		149
+#define CLK_SCLK_MMC0		149
 #define CLK_ACLK_FIMD0		150
 #define CLK_SCLK_FIMD0		151
 #define CLK_SCLK_MIPI0		152
@@ -92,6 +94,14 @@
 #define CLK_G3D			160
 #define CLK_SMMUFIMD0		161
 #define CLK_SCLK_MIPIDPHY2L	162
+#define CLK_SCLK_MMC1		163
+#define CLK_SDMMC1		164
+#define CLK_SDMMC0		165
+#define CLK_SCLK_UART1		166
+#define CLK_SCLK_UART0		167
+#define CLK_WDT			168
+#define CLK_KEYIF		169
+
 #define NR_CLKS			256
 
 #endif /*_DT_BINDINGS_CLK_EXYNOS3250_H */

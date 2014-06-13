@@ -46,15 +46,12 @@ PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 					"sclk_epll", "sclk_vpll" };
 PNAME(group_sclk_fimd0_p)	= { "xxti", "xusbxti", "m_bitclkhsdiv4_2l",
 					"none", "none",	"none",	"dout_mpll_pre",
-					"sclk_epll", "sclk_vpll",
-					"div_lcd_blk_145" };
-PNAME(mout_mmc_p)		= { "xxti", "xusbsti", "none", "none", "none",
-					"none", "sclk_mpll_mif",
-					"sclk_epll", "sclk_vpll" };
+					"sclk_epll", "sclk_vpll", "none",
+					"none", "none", "div_lcd_blk_145" };
 PNAME(mout_mpll_p)		= { "fin_pll", "fout_mpll" };
 PNAME(mout_vpllsrc_p)		= { "fin_pll", "none" };
 PNAME(mout_g3d_p)		= { "mout_g3d_0", "mout_g3d_1" };
-PNAME(group_div_mpll_pre_p)	= { "dout_mpll_pre" };
+PNAME(group_div_mpll_pre_p)	= { "dout_mpll_pre", "none" };
 PNAME(group_epll_vpll_p)	= { "mout_epll", "mout_vpll" };
 PNAME(mout_epll_p)		= { "fin_pll", "mout_epll" };
 PNAME(mout_vpll_p)		= { "fin_pll", "fout_vpll" };
@@ -104,7 +101,7 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_MIPI0, "mout_mipi0", group_sclk_p, SRC_LCD, 12, 4),
 	CMUX(CLK_MOUT_FIMD0, "mout_fimd0", group_sclk_fimd0_p, SRC_LCD, 0, 4),
 
-	CMUX(CLK_MOUT_MMC0, "mout_mmc0", mout_mmc_p, SRC_FSYS, 0, 4),
+	CMUX(CLK_MOUT_MMC0, "mout_mmc0", group_sclk_p, SRC_FSYS, 0, 4),
 
 	CMUX(CLK_MOUT_G3D, "mout_g3d", mout_g3d_p, SRC_G3D, 8, 1),
 	CMUX(CLK_MOUT_G3D_1, "mout_g3d_1", group_epll_vpll_p, SRC_G3D, 4, 1),
@@ -113,6 +110,8 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 
 #define CDIV(_id, cname, pname, o, s, w) \
 			DIV(_id, cname, pname, (unsigned long)o, s, w)
+#define CDIV_F(_id, cname, pname, o, s, w, f, df) \
+			DIV_F(_id, cname, pname, (unsigned long)o, s, w, f, df)
 
 struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_GPL, "dout_gpl", "dout_gdl", DIV_LEFTBUS, 4, 3),
@@ -126,7 +125,12 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_ACLK_160, "dout_aclk_160", "mout_aclk_160", DIV_TOP, 8, 3),
 	CDIV(CLK_DIV_ACLK_100, "dout_aclk_100", "mout_aclk100", DIV_TOP, 4, 4),
 
-	CDIV(CLK_DIV_MMC0_PRE, "dout_mmc0_pre", "dout_mmc0", DIV_FSYS1, 8, 8),
+	CDIV_F(CLK_DIV_MMC1_PRE, "dout_mmc1_pre", "dout_mmc1", DIV_FSYS1, 24, 8,
+			CLK_SET_RATE_PARENT, 0),
+	CDIV(CLK_DIV_MMC1, "dout_mmc1", "mout_mmc1", DIV_FSYS1, 16, 4),
+
+	CDIV_F(CLK_DIV_MMC0_PRE, "dout_mmc0_pre", "dout_mmc0", DIV_FSYS1, 8, 8,
+			CLK_SET_RATE_PARENT, 0),
 	CDIV(CLK_DIV_MMC0, "dout_mmc0", "mout_mmc0", DIV_FSYS1, 0, 3),
 
 	CDIV(CLK_DIV_UART3, "dout_uart3", "mout_uart3",	DIV_PERIL0, 12, 4),
@@ -145,9 +149,16 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
 struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
-	CGATE(CLK_RTC, "rtc", "aclk66",
+	CGATE(CLK_SCLK_UART1, "sclk_uart1", "dout_uart1",
+			GATE_SCLK_PERIL, 1, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_UART0, "sclk_uart0", "dout_uart0",
+			GATE_SCLK_PERIL, 0, CLK_SET_RATE_PARENT, 0),
+
+	CGATE(CLK_KEYIF, "keyif", "div_aclk_100", GATE_IP_PERIR, 16, 0, 0),
+	CGATE(CLK_RTC, "rtc", "dout_aclk_100",
 			GATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_MCT, "mct", "dout_gpr",
+	CGATE(CLK_WDT, "wdt", "div_aclk_100", GATE_IP_PERIR, 14, 0, 0),
+	CGATE(CLK_MCT, "mct", "dout_aclk_100",
 			GATE_IP_PERIR, 13, CLK_IGNORE_UNUSED, 0),
 
 	CGATE(CLK_UART3, "uart3", "dout_uart3",
@@ -194,9 +205,13 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_ACLK_MMC0, "aclk_mmc0", "dout_aclk_200",
 			GATE_BUS_FSYS0, 5, CLK_IGNORE_UNUSED, 0),
 
-	CGATE(CLK_MMC0, "mmc0", "dout_mmc0_pre",
-			GATE_SCLK_FSYS, 0, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SCLK_MMC1, "sclk_mmc1", "dout_mmc1_pre",
+			GATE_SCLK_FSYS, 1, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_MMC0, "sclk_mmc0", "dout_mmc0_pre",
+			GATE_SCLK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
 
+	CGATE(CLK_SDMMC1, "sdmmc1", "dout_aclk_200", GATE_IP_FSYS, 6, 0, 0),
+	CGATE(CLK_SDMMC0, "sdmmc0", "dout_aclk_200", GATE_IP_FSYS, 5, 0, 0),
 	CGATE(CLK_PDMA1, "pdma1", "dout_aclk_200",
 			GATE_IP_FSYS, 1, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_PDMA0, "pdma0", "dout_aclk_200",

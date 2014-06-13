@@ -261,8 +261,10 @@
 		compatible = "samsung,exynos3250-dw-mshc";
 		reg = <0x12510000 0x2000>;
 		interrupts = <0 142 0>;
-		clocks = <&clock CLK_ACLK_MMC0>, <&clock CLK_MMC0>, <&clock CLK_DIV_MMC0>, <&clock CLK_DIV_MMC0_PRE>;
-		clock-names = "biu", "gate_ciu", "dout_mmc_a", "dout_mmc_b";
+		clocks = <&clock CLK_SDMMC0>, <&clock CLK_SCLK_MMC0>,
+			<&clock CLK_DIV_MMC0>, <&clock CLK_DIV_MMC0_PRE>;
+		clock-names = 	"biu", "gate_ciu",
+				"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
 	};
 
