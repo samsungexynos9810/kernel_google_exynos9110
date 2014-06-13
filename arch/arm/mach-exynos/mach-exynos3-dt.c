@@ -43,7 +43,7 @@ static void __init exynos3_reserve(void)
 	init_exynos_ion_contig_heap();
 }
 
-DT_MACHINE_START(EXYNOS3_DT, "Samsung Exynos3 (Flattened Device Tree)")
+DT_MACHINE_START(EXYNOS3_DT, "Exynos3")
 	.init_irq	= exynos3_init_irq,
 	.smp		= smp_ops(exynos_smp_ops),
 	.map_io		= exynos3_dt_map_io,
