@@ -295,7 +295,7 @@ static mali_bool deinit_mali_clock(void)
 	return MALI_TRUE;
 }
 
-static _mali_osk_errcode_t enable_mali_clocks(struct device *dev)
+static _mali_osk_errcode_t enable_mali_clocks(void)
 {
 	int err;
 	err = clk_enable(mali_clock);
@@ -315,23 +315,23 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 	MALI_SUCCESS;
 }
 
-_mali_osk_errcode_t mali_platform_init(struct device *dev)
+_mali_osk_errcode_t mali_platform_init(void)
 {
 	MALI_CHECK(init_mali_clock(), _MALI_OSK_ERR_FAULT);
-	mali_platform_power_mode_change(dev, MALI_POWER_MODE_ON);
+	mali_platform_power_mode_change(MALI_POWER_MODE_ON);
 
 	MALI_SUCCESS;
 }
 
-_mali_osk_errcode_t mali_platform_deinit(struct device *dev)
+_mali_osk_errcode_t mali_platform_deinit(void)
 {
-	mali_platform_power_mode_change(dev, MALI_POWER_MODE_DEEP_SLEEP);
+	mali_platform_power_mode_change(MALI_POWER_MODE_DEEP_SLEEP);
 	deinit_mali_clock();
 
 	MALI_SUCCESS;
 }
 
-_mali_osk_errcode_t mali_platform_power_mode_change(struct device *dev, mali_power_mode power_mode)
+_mali_osk_errcode_t mali_platform_power_mode_change(mali_power_mode power_mode)
 {
 	switch (power_mode)
 	{
@@ -340,7 +340,7 @@ _mali_osk_errcode_t mali_platform_power_mode_change(struct device *dev, mali_pow
 					nPowermode ? "powering on" : "already on"));
 		if (nPowermode == MALI_POWER_MODE_LIGHT_SLEEP || nPowermode == MALI_POWER_MODE_DEEP_SLEEP)	{
 			MALI_DEBUG_PRINT(4, ("enable clock\n"));
-			enable_mali_clocks(dev);
+			enable_mali_clocks();
 			nPowermode = power_mode;
 		}
 		break;

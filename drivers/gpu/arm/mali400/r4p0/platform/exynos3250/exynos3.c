@@ -56,20 +56,20 @@ static struct mali_gpu_device_data mali_gpu_data =
 	.utilization_interval = 1000, /* 1000ms */
 };
 
-int mali_platform_device_register(void)
+int mali_platform_device_register(struct platform_device *exynos4_device_g3d)
 {
 	int err;
 
 	MALI_DEBUG_PRINT(4, ("mali_platform_device_register() called\n"));
 
 	/* Connect resources to the device */
-	err = platform_device_add_resources(&exynos4_device_g3d, mali_gpu_resources, sizeof(mali_gpu_resources) / sizeof(mali_gpu_resources[0]));
+	err = platform_device_add_resources(exynos4_device_g3d, mali_gpu_resources, sizeof(mali_gpu_resources) / sizeof(mali_gpu_resources[0]));
 	if (0 == err)
 	{
-		err = platform_device_add_data(&exynos4_device_g3d, &mali_gpu_data, sizeof(mali_gpu_data));
+		err = platform_device_add_data(exynos4_device_g3d, &mali_gpu_data, sizeof(mali_gpu_data));
 		if (0 == err)
 		{
-			mali_platform_init(&(exynos4_device_g3d.dev));
+			mali_platform_init();
 
 #ifdef CONFIG_PM_RUNTIME
 			pm_runtime_set_autosuspend_delay(&(exynos4_device_g3d.dev), 1000);
@@ -87,5 +87,5 @@ void mali_platform_device_unregister(void)
 {
 	MALI_DEBUG_PRINT(4, ("mali_platform_device_unregister() called\n"));
 
-	mali_platform_deinit(&(exynos4_device_g3d.dev));
+	mali_platform_deinit();
 }

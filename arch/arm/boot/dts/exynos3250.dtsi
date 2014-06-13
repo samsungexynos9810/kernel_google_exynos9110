@@ -295,6 +295,11 @@
 			#dma-requests = <32>;
 		};
 	};
+
+	mali {
+                compatible = "arm,mali400";
+                reg = <0x13000000 0x5000>;
+        };
 };
 
 #include "exynos3250-pinctrl.dtsi"
