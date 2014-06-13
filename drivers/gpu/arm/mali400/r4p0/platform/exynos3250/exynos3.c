@@ -69,7 +69,7 @@ int mali_platform_device_register(struct platform_device *exynos4_device_g3d)
 		err = platform_device_add_data(exynos4_device_g3d, &mali_gpu_data, sizeof(mali_gpu_data));
 		if (0 == err)
 		{
-			mali_platform_init();
+			mali_platform_init(exynos4_device_g3d);
 
 #ifdef CONFIG_PM_RUNTIME
 			pm_runtime_set_autosuspend_delay(&(exynos4_device_g3d.dev), 1000);

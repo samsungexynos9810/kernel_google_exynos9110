@@ -353,24 +353,11 @@ int mali_module_init(void)
 	mali_init_cpu_time_counters_on_all_cpus(1);
 #endif
 
-	/* Initialize module wide settings */
-#if defined(MALI_FAKE_PLATFORM_DEVICE)
-	MALI_DEBUG_PRINT(2, ("mali_module_init() registering device\n"));
-	err = mali_platform_device_register(mali_platform_device);
-	if (0 != err) {
-		return err;
-	}
-#endif
-
-	MALI_DEBUG_PRINT(2, ("mali_module_init() registering driver\n"));
 
 	err = platform_driver_register(&mali_platform_driver);
 
 	if (0 != err) {
 		MALI_DEBUG_PRINT(2, ("mali_module_init() Failed to register driver (%d)\n", err));
-#if defined(MALI_FAKE_PLATFORM_DEVICE)
-		mali_platform_device_unregister();
-#endif
 		mali_platform_device = NULL;
 		return err;
 	}
@@ -400,10 +387,6 @@ void mali_module_exit(void)
 
 	platform_driver_unregister(&mali_platform_driver);
 
-#if defined(MALI_FAKE_PLATFORM_DEVICE)
-	MALI_DEBUG_PRINT(2, ("mali_module_exit() unregistering device\n"));
-	mali_platform_device_unregister();
-#endif
 
 	MALI_PRINT(("Mali device driver unloaded\n"));
 }
@@ -422,6 +405,16 @@ static int mali_probe(struct platform_device *pdev)
 
 	mali_platform_device = pdev;
 
+	/* Initialize module wide settings */
+#if defined(MALI_FAKE_PLATFORM_DEVICE)
+	MALI_DEBUG_PRINT(2, ("mali_module_init() registering device\n"));
+	err = mali_platform_device_register(mali_platform_device);
+	if (0 != err) {
+		return err;
+	}
+#endif
+
+	MALI_DEBUG_PRINT(2, ("mali_module_init() registering driver\n"));
 	if (_MALI_OSK_ERR_OK == _mali_osk_wq_init()) {
 		/* Initialize the Mali GPU HW specified by pdev */
 		if (_MALI_OSK_ERR_OK == mali_initialize_subsystems()) {
@@ -437,6 +430,9 @@ static int mali_probe(struct platform_device *pdev)
 					MALI_PRINT_ERROR(("mali_probe(): failed to register sysfs entries"));
 				}
 				mali_miscdevice_unregister();
+#if defined(MALI_FAKE_PLATFORM_DEVICE)
+				mali_platform_device_unregister();
+#endif
 			} else {
 				MALI_PRINT_ERROR(("mali_probe(): failed to register Mali misc device."));
 			}
@@ -458,6 +454,10 @@ static int mali_remove(struct platform_device *pdev)
 	mali_miscdevice_unregister();
 	mali_terminate_subsystems();
 	_mali_osk_wq_term();
+#if defined(MALI_FAKE_PLATFORM_DEVICE)
+	MALI_DEBUG_PRINT(2, ("mali_module_exit() unregistering device\n"));
+	mali_platform_device_unregister();
+#endif
 	mali_platform_device = NULL;
 	return 0;
 }

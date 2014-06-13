@@ -72,10 +72,10 @@ _mali_osk_mutex_t *mali_dvfs_lock;
 module_param(mali_gpu_clk, int, S_IRUSR | S_IRGRP | S_IROTH);
 MODULE_PARM_DESC(mali_gpu_clk, "Mali Current Clock");
 
-mali_bool mali_clk_get(void)
+mali_bool mali_clk_get(struct platform_device *pdev)
 {
 	if (ext_xtal_clock == NULL)	{
-		ext_xtal_clock = clk_get(NULL, EXTXTALCLK_NAME);
+		ext_xtal_clock = clk_get(&pdev->dev, EXTXTALCLK_NAME);
 		if (IS_ERR(ext_xtal_clock)) {
 			MALI_PRINT(("MALI Error : failed to get source ext_xtal_clock\n"));
 			return MALI_FALSE;
@@ -83,7 +83,7 @@ mali_bool mali_clk_get(void)
 	}
 
 	if (vpll_src_clock == NULL)	{
-		vpll_src_clock = clk_get(NULL, VPLLSRCCLK_NAME);
+		vpll_src_clock = clk_get(&pdev->dev, VPLLSRCCLK_NAME);
 		if (IS_ERR(vpll_src_clock)) {
 			MALI_PRINT(("MALI Error : failed to get source vpll_src_clock\n"));
 			return MALI_FALSE;
@@ -91,7 +91,7 @@ mali_bool mali_clk_get(void)
 	}
 
 	if (fout_vpll_clock == NULL) {
-		fout_vpll_clock = clk_get(NULL, FOUTVPLLCLK_NAME);
+		fout_vpll_clock = clk_get(&pdev->dev, FOUTVPLLCLK_NAME);
 		if (IS_ERR(fout_vpll_clock)) {
 			MALI_PRINT(("MALI Error : failed to get source fout_vpll_clock\n"));
 			return MALI_FALSE;
@@ -100,7 +100,7 @@ mali_bool mali_clk_get(void)
 
 	if (mpll_clock == NULL)
 	{
-		mpll_clock = clk_get(NULL,MPLLCLK_NAME);
+		mpll_clock = clk_get(&pdev->dev,MPLLCLK_NAME);
 
 		if (IS_ERR(mpll_clock)) {
 			MALI_PRINT( ("MALI Error : failed to get source mpll clock\n"));
@@ -110,7 +110,7 @@ mali_bool mali_clk_get(void)
 
 	if (mali_mout0_clock == NULL)
 	{
-		mali_mout0_clock = clk_get(NULL, GPUMOUT0CLK_NAME);
+		mali_mout0_clock = clk_get(&pdev->dev, GPUMOUT0CLK_NAME);
 
 		if (IS_ERR(mali_mout0_clock)) {
 			MALI_PRINT( ( "MALI Error : failed to get source mali mout0 clock\n"));
@@ -119,7 +119,7 @@ mali_bool mali_clk_get(void)
 	}
 
 	if (sclk_vpll_clock == NULL) {
-		sclk_vpll_clock = clk_get(NULL, SCLVPLLCLK_NAME);
+		sclk_vpll_clock = clk_get(&pdev->dev, SCLVPLLCLK_NAME);
 		if (IS_ERR(sclk_vpll_clock)) {
 			MALI_PRINT(("MALI Error : failed to get source sclk_vpll_clock\n"));
 			return MALI_FALSE;
@@ -127,7 +127,7 @@ mali_bool mali_clk_get(void)
 	}
 
 	if (mali_parent_clock == NULL) {
-		mali_parent_clock = clk_get(NULL, GPUMOUT1CLK_NAME);
+		mali_parent_clock = clk_get(&pdev->dev, GPUMOUT1CLK_NAME);
 
 		if (IS_ERR(mali_parent_clock)) {
 			MALI_PRINT(("MALI Error : failed to get source mali parent clock\n"));
@@ -136,7 +136,7 @@ mali_bool mali_clk_get(void)
 	}
 
 	if (mali_clock == NULL) {
-		mali_clock = clk_get(NULL, GPUCLK_NAME);
+		mali_clock = clk_get(&pdev->dev, GPUCLK_NAME);
 
 		if (IS_ERR(mali_clock)) {
 			MALI_PRINT(("MALI Error : failed to get source mali clock\n"));
@@ -198,7 +198,7 @@ void mali_clk_put(mali_bool binc_mali_clock)
 	}
 }
 
-void mali_clk_set_rate(unsigned int clk, unsigned int mhz)
+void mali_clk_set_rate(struct platform_device *pdev, unsigned int clk, unsigned int mhz)
 {
 	int err;
 	unsigned long rate = (unsigned long)clk * (unsigned long)mhz;
@@ -206,7 +206,7 @@ void mali_clk_set_rate(unsigned int clk, unsigned int mhz)
 	_mali_osk_mutex_wait(mali_dvfs_lock);
 	MALI_DEBUG_PRINT(3, ("Mali platform: Setting frequency to %d mhz\n", clk));
 
-	if (mali_clk_get() == MALI_FALSE) {
+	if (mali_clk_get(pdev) == MALI_FALSE) {
 		_mali_osk_mutex_signal(mali_dvfs_lock);
 		return;
 	}
@@ -225,7 +225,7 @@ void mali_clk_set_rate(unsigned int clk, unsigned int mhz)
 	_mali_osk_mutex_signal(mali_dvfs_lock);
 }
 
-static mali_bool init_mali_clock(void)
+static mali_bool init_mali_clock(struct platform_device *pdev)
 {
 	int err = 0;
 	mali_bool ret = MALI_TRUE;
@@ -239,15 +239,15 @@ static mali_bool init_mali_clock(void)
 	if (mali_dvfs_lock == NULL)
 		return _MALI_OSK_ERR_FAULT;
 
-	if (!mali_clk_get())
+	if (!mali_clk_get(pdev))
 	{
 		MALI_PRINT(("Error: Failed to get Mali clock\n"));
 		goto err_clk;
 	}
 
-	err = clk_set_rate(fout_vpll_clock, (unsigned int)mali_gpu_clk * GPU_MHZ);
+/*	err = clk_set_rate(fout_vpll_clock, (unsigned int)mali_gpu_clk * GPU_MHZ);
 	if (err > 0)
-		MALI_PRINT_ERROR(("Failed to set fout_vpll clock: %d\n", err));
+		MALI_PRINT_ERROR(("Failed to set fout_vpll clock: %d\n", err));*/
 
 	err = clk_set_parent(vpll_src_clock, ext_xtal_clock);
 	if (err)
@@ -273,7 +273,7 @@ static mali_bool init_mali_clock(void)
 		atomic_set(&clk_active, 1);
 	}
 
-	mali_clk_set_rate((unsigned int)mali_gpu_clk, GPU_MHZ);
+	mali_clk_set_rate(pdev,(unsigned int)mali_gpu_clk, GPU_MHZ);
 	MALI_PRINT(("init_mali_clock mali_clock %x\n", mali_clock));
 	mali_clk_put(MALI_FALSE);
 
@@ -314,9 +314,9 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 	MALI_SUCCESS;
 }
 
-_mali_osk_errcode_t mali_platform_init(void)
+_mali_osk_errcode_t mali_platform_init(struct platform_device *pdev)
 {
-	MALI_CHECK(init_mali_clock(), _MALI_OSK_ERR_FAULT);
+	MALI_CHECK(init_mali_clock(pdev), _MALI_OSK_ERR_FAULT);
 	mali_platform_power_mode_change(MALI_POWER_MODE_ON);
 
 	MALI_SUCCESS;
