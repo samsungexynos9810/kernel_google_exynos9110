@@ -473,6 +473,24 @@ static inline void i2s_fifo(struct i2s_dai *i2s, u32 flush)
 	writel(readl(fic) & ~flush, fic);
 }
 
+/* Clear Tx FIFO of i2s v5 */
+static inline void i2s_fifo_tx_clear(struct i2s_dai *i2s)
+{
+	void __iomem *txd;
+	int n;
+
+	if (!i2s)
+		return;
+
+	if (is_secondary(i2s))
+		txd = i2s->addr + I2STXDS;
+	else
+		txd = i2s->addr + I2STXD;
+
+	for (n = 0; n < 64; n++)
+		writel(0, txd);
+}
+
 static int i2s_set_sysclk(struct snd_soc_dai *dai,
 	  int clk_id, unsigned int rfs, int dir)
 {
@@ -839,6 +857,11 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 	if (!any_active(i2s) && (i2s->quirks & QUIRK_NEED_RSTCLR))
 		writel(CON_RSTCLR, i2s->addr + I2SCON);
 
+	if (!any_tx_active(i2s) && (i2s->quirks & QUIRK_SEC_DAI)) {
+		i2s_fifo(i2s, FIC_TXFLUSH);
+		i2s_fifo(other, FIC_TXFLUSH);
+	}
+
 	spin_unlock_irqrestore(&lock, flags);
 
 	pr_debug("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
@@ -985,7 +1008,10 @@ static int i2s_trigger(struct snd_pcm_substream *substream,
 			i2s_fifo(i2s, FIC_RXFLUSH);
 		} else {
 			i2s_txctrl(i2s, 0);
-			i2s_fifo(i2s, FIC_TXFLUSH);
+			if (i2s->quirks & QUIRK_SEC_DAI)
+				i2s_fifo_tx_clear(i2s);
+			else
+				i2s_fifo(i2s, FIC_TXFLUSH);
 		}
 
 		local_irq_restore(flags);
