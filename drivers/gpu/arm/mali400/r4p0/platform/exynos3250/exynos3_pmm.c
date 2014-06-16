@@ -245,9 +245,9 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 		goto err_clk;
 	}
 
-/*	err = clk_set_rate(fout_vpll_clock, (unsigned int)mali_gpu_clk * GPU_MHZ);
-	if (err > 0)
-		MALI_PRINT_ERROR(("Failed to set fout_vpll clock: %d\n", err));*/
+	err = clk_set_rate(fout_vpll_clock, (unsigned int)mali_gpu_clk * GPU_MHZ);
+	if (err)
+		MALI_PRINT_ERROR(("Failed to set fout_vpll clock:\n"));
 
 	err = clk_set_parent(vpll_src_clock, ext_xtal_clock);
 	if (err)
