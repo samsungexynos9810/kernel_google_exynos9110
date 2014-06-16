@@ -47,6 +47,7 @@
 #define GPUMOUT1CLK_NAME "mout_g3d1"
 #define MPLLCLK_NAME     "mout_mpll"
 #define GPUMOUT0CLK_NAME "mout_g3d0"
+#define GPUMOUTCLK_NAME "mout_g3d"
 #define GPUCLK_NAME      "sclk_g3d"
 #define CLK_DIV_STAT_G3D 0x1003C62C
 #define CLK_DESC         "clk-divider-status"
@@ -55,6 +56,7 @@ static struct clk *ext_xtal_clock = NULL;
 static struct clk *vpll_src_clock = NULL;
 static struct clk *mpll_clock = NULL;
 static struct clk *mali_mout0_clock = NULL;
+static struct clk *mali_mout_clock = NULL;
 static struct clk *fout_vpll_clock = NULL;
 static struct clk *sclk_vpll_clock = NULL;
 static struct clk *mali_parent_clock = NULL;
@@ -118,6 +120,16 @@ mali_bool mali_clk_get(struct platform_device *pdev)
 		}
 	}
 
+	if (mali_mout_clock == NULL)
+	{
+		mali_mout_clock = clk_get(&pdev->dev, GPUMOUTCLK_NAME);
+
+		if (IS_ERR(mali_mout_clock)) {
+			MALI_PRINT( ( "MALI Error : failed to get source mali mout clock\n"));
+			return MALI_FALSE;
+		}
+	}
+
 	if (sclk_vpll_clock == NULL) {
 		sclk_vpll_clock = clk_get(&pdev->dev, SCLVPLLCLK_NAME);
 		if (IS_ERR(sclk_vpll_clock)) {
@@ -177,6 +189,12 @@ void mali_clk_put(mali_bool binc_mali_clock)
 	{
 		clk_put(mali_mout0_clock);
 		mali_mout0_clock = NULL;
+	}
+
+	if (mali_mout_clock)
+	{
+		clk_put(mali_mout_clock);
+		mali_mout_clock = NULL;
 	}
 
 	if (vpll_src_clock)
@@ -261,7 +279,7 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 	if (err)
 		MALI_PRINT_ERROR(("mali_parent_clock set parent to sclk_vpll_clock failed\n"));
 
-	err = clk_set_parent(mali_clock, mali_parent_clock);
+	err = clk_set_parent(mali_mout_clock, mali_parent_clock);
 	if (err)
 		MALI_PRINT_ERROR(("mali_clock set parent to mali_parent_clock failed\n"));
 
