@@ -1238,6 +1238,8 @@ void __init exynos_init_time(void)
 		exynos5433_pmu_init();
 	if(soc_is_exynos5422())
 		exynos5422_pmu_init();
+	if (soc_is_exynos3250())
+		exynos3250_pmu_init();
 }
 
 static unsigned int max_combiner_nr(void)
