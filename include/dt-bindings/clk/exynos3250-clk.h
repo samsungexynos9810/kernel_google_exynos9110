@@ -37,6 +37,10 @@
 #define CLK_MOUT_VPLL		35
 #define CLK_MOUT_VPLLSRC	36
 #define CLK_MOUT_UPLL		37
+#define CLK_MOUT_MFC		38
+#define CLK_MOUT_MFC_1		39
+#define CLK_MOUT_MFC_0		40
+
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
 #define CLK_DIV_ACLK_100	65
@@ -58,6 +62,7 @@
 #define CLK_DIV_G3D		81
 #define CLK_DIV_MMC1_PRE	82
 #define CLK_DIV_MMC1		83
+#define CLK_DIV_MFC		84
 
 /* gate and special clocks */
 #define CLK_MCT			128
@@ -105,6 +110,12 @@
 #define CLK_USBOTG		170
 #define CLK_USBHOST		171
 #define CLK_SCLK_UPLL		172
+#define CLK_ASYNC_MFCL		173
+#define CLK_SCLK_MFC		174
+#define CLK_QEMFC		175
+#define CLK_PPMUMFC_L		176
+#define CLK_SMMUMFC_L		177
+#define CLK_MFC			178
 
 #define NR_CLKS			256
 
