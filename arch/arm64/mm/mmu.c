@@ -37,6 +37,12 @@
 
 #include "mm.h"
 
+#include <asm/mach/map.h>
+#include <linux/vmalloc.h>
+#include <asm/mach/arch.h>
+
+static int iotable_on;
+
 /*
  * Empty_zero_page is a special page that is used for zero-initialized data
  * and COW.
@@ -150,7 +156,10 @@ static void __init alloc_init_pte(pmd_t *pmd, unsigned long addr,
 
 	pte = pte_offset_kernel(pmd, addr);
 	do {
-		set_pte(pte, pfn_pte(pfn, prot));
+		if (iotable_on == 1)
+			set_pte(pte, pfn_pte(pfn, pgprot_iotable_init(PAGE_KERNEL_EXEC)));
+		else
+			set_pte(pte, pfn_pte(pfn, prot));
 		pfn++;
 	} while (pte++, addr += PAGE_SIZE, addr != end);
 }
@@ -463,3 +472,66 @@ void vmemmap_free(unsigned long start, unsigned long end)
 {
 }
 #endif	/* CONFIG_SPARSEMEM_VMEMMAP */
+
+/* For compatible with Exynos */
+
+LIST_HEAD(static_vmlist);
+
+void __init add_static_vm_early(struct static_vm *svm)
+{
+	struct static_vm *curr_svm;
+	struct vm_struct *vm;
+	void *vaddr;
+
+	vm = &svm->vm;
+	vm_area_add_early(vm);
+	vaddr = vm->addr;
+
+	list_for_each_entry(curr_svm, &static_vmlist, list) {
+		vm = &curr_svm->vm;
+
+		if (vm->addr > vaddr)
+			break;
+	}
+	list_add_tail(&svm->list, &curr_svm->list);
+}
+
+static void __init *early_alloc_aligned(unsigned long sz, unsigned long align)
+{
+	void *ptr = __va(memblock_alloc(sz, align));
+	memset(ptr, 0, sz);
+	return ptr;
+}
+
+/*
+ * Create the architecture specific mappings
+ */
+void __init iotable_init(struct map_desc *io_desc, int nr)
+{
+	struct map_desc *md;
+	struct vm_struct *vm;
+	struct static_vm *svm;
+	phys_addr_t phys;
+
+	if (!nr)
+		return;
+
+	svm = early_alloc_aligned(sizeof(*svm) * nr, __alignof__(*svm));
+
+	iotable_on = 1;
+
+	for (md = io_desc; nr; md++, nr--) {
+		phys = __pfn_to_phys(md->pfn);
+		create_mapping(phys, md->virtual, md->length);
+		vm = &svm->vm;
+		vm->addr = (void *)(md->virtual & PAGE_MASK);
+		vm->size = PAGE_ALIGN(md->length + (md->virtual & ~PAGE_MASK));
+		vm->phys_addr = __pfn_to_phys(md->pfn);
+		vm->flags = VM_IOREMAP | VM_ARM_STATIC_MAPPING;
+		vm->flags |= VM_ARM_MTYPE(md->type);
+		vm->caller = iotable_init;
+		add_static_vm_early(svm++);
+	}
+
+	iotable_on = 0;
+}
