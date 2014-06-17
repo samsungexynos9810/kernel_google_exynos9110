@@ -72,9 +72,9 @@ int mali_platform_device_register(struct platform_device *exynos4_device_g3d)
 			mali_platform_init(exynos4_device_g3d);
 
 #ifdef CONFIG_PM_RUNTIME
-			pm_runtime_set_autosuspend_delay(&(exynos4_device_g3d.dev), 1000);
-			pm_runtime_use_autosuspend(&(exynos4_device_g3d.dev));
-			pm_runtime_enable(&(exynos4_device_g3d.dev));
+			pm_runtime_set_autosuspend_delay(&exynos4_device_g3d->dev, 1000);
+			pm_runtime_use_autosuspend(&exynos4_device_g3d->dev);
+			pm_runtime_enable(&exynos4_device_g3d->dev);
 #endif
 			return 0;
 		}
