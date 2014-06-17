@@ -152,7 +152,7 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_FIMD0, "dout_fimd0", "mout_fimd0", DIV_LCD, 0, 4),
 	CDIV(CLK_DIV_G3D, "dout_g3d", "mout_g3d", DIV_G3D, 0, 4),
 
-	CDIV(CLK_DIV_MFC, "div_mfc", "mout_mfc", DIV_MFC, 0, 4),
+	CDIV(CLK_DIV_MFC, "dout_mfc", "mout_mfc", DIV_MFC, 0, 4),
 };
 
 #define CGATE(_id, cname, pname, o, b, f, gf) \
@@ -164,10 +164,10 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SCLK_UART0, "sclk_uart0", "dout_uart0",
 			GATE_SCLK_PERIL, 0, CLK_SET_RATE_PARENT, 0),
 
-	CGATE(CLK_KEYIF, "keyif", "div_aclk_100", GATE_IP_PERIR, 16, 0, 0),
+	CGATE(CLK_KEYIF, "keyif", "dout_aclk_100", GATE_IP_PERIR, 16, 0, 0),
 	CGATE(CLK_RTC, "rtc", "dout_aclk_100",
 			GATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_WDT, "wdt", "div_aclk_100", GATE_IP_PERIR, 14, 0, 0),
+	CGATE(CLK_WDT, "wdt", "dout_aclk_100", GATE_IP_PERIR, 14, 0, 0),
 	CGATE(CLK_MCT, "mct", "dout_aclk_100",
 			GATE_IP_PERIR, 13, CLK_IGNORE_UNUSED, 0),
 
@@ -222,8 +222,8 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SCLK_MMC0, "sclk_mmc0", "dout_mmc0_pre",
 			GATE_SCLK_FSYS, 0, CLK_SET_RATE_PARENT, 0),
 
-	CGATE(CLK_USBOTG, "usbotg", "div_aclk_200", GATE_IP_FSYS, 13, 0, 0),
-	CGATE(CLK_USBHOST, "usbhost", "div_aclk_200", GATE_IP_FSYS, 12, 0, 0),
+	CGATE(CLK_USBOTG, "usbotg", "dout_aclk_200", GATE_IP_FSYS, 13, 0, 0),
+	CGATE(CLK_USBHOST, "usbhost", "dout_aclk_200", GATE_IP_FSYS, 12, 0, 0),
 	CGATE(CLK_SDMMC1, "sdmmc1", "dout_aclk_200", GATE_IP_FSYS, 6, 0, 0),
 	CGATE(CLK_SDMMC0, "sdmmc0", "dout_aclk_200", GATE_IP_FSYS, 5, 0, 0),
 	CGATE(CLK_PDMA1, "pdma1", "dout_aclk_200",
@@ -233,10 +233,10 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 
 	CGATE(CLK_ASYNC_G3D, "async_g3d", "dout_aclk_100", GATE_IP_LEFTBUS, 6,
 			CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_ASYNC_MFCL, "async_mfcl", "div_aclk_100", GATE_IP_LEFTBUS, 4,
+	CGATE(CLK_ASYNC_MFCL, "async_mfcl", "dout_aclk_100", GATE_IP_LEFTBUS, 4,
 			CLK_IGNORE_UNUSED, 0),
 
-	CGATE(CLK_SCLK_MFC, "sclk_mfc", "div_mfc",
+	CGATE(CLK_SCLK_MFC, "sclk_mfc", "dout_mfc",
 			GATE_SCLK_MFC, 0, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_G3D, "sclk_g3d", "dout_g3d",
 			GATE_SCLK_G3D, 0, CLK_SET_RATE_PARENT, 0),
@@ -248,12 +248,12 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_G3D, "g3d", "dout_aclk_200", GATE_IP_G3D, 0, 0, 0),
 
-	CGATE(CLK_QEMFC, "qemfc", "div_aclk_200", GATE_IP_MFC, 5,
+	CGATE(CLK_QEMFC, "qemfc", "dout_aclk_200", GATE_IP_MFC, 5,
 			CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_PPMUMFC_L, "ppmumfc_l", "div_aclk_200", GATE_IP_MFC, 3,
+	CGATE(CLK_PPMUMFC_L, "ppmumfc_l", "dout_aclk_200", GATE_IP_MFC, 3,
 			CLK_IGNORE_UNUSED, 0),
-	CGATE(CLK_SMMUMFC_L, "smmumfc_l", "div_aclk_200", GATE_IP_MFC, 1, 0, 0),
-	CGATE(CLK_MFC, "mfc", "div_aclk_200", GATE_IP_MFC, 0, 0, 0),
+	CGATE(CLK_SMMUMFC_L, "smmumfc_l", "dout_aclk_200", GATE_IP_MFC, 1, 0, 0),
+	CGATE(CLK_MFC, "mfc", "dout_aclk_200", GATE_IP_MFC, 0, 0, 0),
 
 };
 
