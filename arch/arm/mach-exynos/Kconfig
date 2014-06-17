@@ -307,9 +307,15 @@ config EXYNOS_CONTENT_PATH_PROTECTION
 	help
 	  Enable content path protection of EXYNOS.
 
+config EXYNOS_ASV
+	bool "ASV support for Exynos"
+	default y
+	help
+	  Support to provide ABB and ASV voltage values.
+
 config ASV_MARGIN_TEST
 	bool "Enable margin test"
-	depends on ARM_ATAG_DTB_COMPAT
+	depends on EXYNOS_ASV
 	default n
 	help
 	  Support to ASV voltage margin test
