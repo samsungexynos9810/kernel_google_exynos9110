@@ -34,6 +34,9 @@ ifeq ($(CONFIG_SOC_EXYNOS5422),y)
 obj-$(CONFIG_SUSPEND)		+= pm-exynos5422.o
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle-exynos5422.o
 endif
+ifeq ($(CONFIG_SOC_EXYNOS3250),y)
+obj-$(CONFIG_CPU_IDLE)		+= cpuidle-exynos3250.o
+endif
 obj-$(CONFIG_CPU_IDLE)		+= exynos-pm.o
 obj-$(CONFIG_PM_RUNTIME)	+= pm_domains.o
 obj-$(CONFIG_PM_RUNTIME_TEST_SYSFS)	+= pm_domains_sysfs.o
