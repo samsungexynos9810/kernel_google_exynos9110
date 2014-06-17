@@ -366,6 +366,7 @@
 		reg = <0x10023ca0 0x20>;
 		status = "disabled";
 	};
+
 	fimd_fb: fimd_fb {
                 compatible = "samsung,exynos3-disp_driver";
                 reg = <0x11c00000 0x40000>, <0x11c80000 0x8000>;
@@ -424,6 +425,20 @@
                         };
                 };
         };
+	
+	usb2_phy: usb2phy@125B0000 {
+		compatible = "samsung,exynos3-usb2phy";
+		reg = <0x125B0000 0x100>;
+		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_USBOTG>;
+		clock-names = "xusbxti", "otg";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		usbphy-sys {
+			reg = <0x10020704 0x4>;
+		};
+	};
 };
 
 #include "exynos3250-pinctrl.dtsi"
