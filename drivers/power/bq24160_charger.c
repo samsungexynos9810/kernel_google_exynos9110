@@ -91,6 +91,7 @@
 #define MIN_MAX_CHARGE_VOLTAGE  4200
 #define MAX_MAX_CHARGE_VOLTAGE  MAX_CHARGE_VOLTAGE
 #define CHARGE_VOLTAGE_STEP     20
+#define ESPRESSO3250_MAX_CHG_VOLT  4100
 #define XYREF5430_MAX_CHG_VOLT	4100
 
 /* Values in mA */
@@ -107,6 +108,7 @@
 /* Values in mA */
 #define MIN_CHARGE_CURRENT_LIMIT_USB 100
 #define MIN_CHARGE_CURRENT_LIMIT_IN 1500
+#define ESPRESSO3250_CURRENT_LIMIT_USB	900
 #define XYREF5430_CURRENT_LIMIT_USB	900
 
 /* Vender Part Revision  */
@@ -119,8 +121,8 @@
 #define CURRENT_DEPEND_ON_PRODUCT USHRT_MAX
 
 /* Value in hour */
+#define ESPRESSO3250_SAFETY_TIME	360
 #define XYREF5430_SAFETY_TIME	360
-
 /*
  * Delay time until enabling charge to prevent back boost.
  * Add a margin of 20ms from I2C timing analyzing.
@@ -313,7 +315,7 @@ static void bq24160_start_delayed_enable(struct bq24160_data *bd,
 					unsigned long delay);
 static void bq24160_start_watchdog_reset(struct bq24160_data *bd);
 static void bq24160_stop_watchdog_reset(struct bq24160_data *bd);
-static int xyref5430_set_values(struct bq24160_data *bd);
+static int set_board_values(struct bq24160_data *bd);
 static int bq24160_set_input_current_limit_usb(struct bq24160_data *bd, u16 ma);
 static int bq24160_set_input_current_limit_in(struct bq24160_data *bd, u16 ma);
 
@@ -744,14 +746,14 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 				}
 			} else if (bd->cached_status.stat == STAT_IN_READY || bd->cached_status.stat == STAT_USB_READY) {
 				if (old_status.stat == STAT_NO_VALID_SOURCE) {
-					xyref5430_set_values(bd);
+					set_board_values(bd);
 					bq24160_start_watchdog_reset(bd);
 					bq24160_hz_enable(bd, 0);
 					bq24160_set_ce(bd, 0);
 				}
 			} else if (bd->cached_status.stat == STAT_CHARGING_FROM_IN || bd->cached_status.stat == STAT_CHARGING_FROM_USB) {
 				if (old_status.stat == STAT_NO_VALID_SOURCE) {
-					xyref5430_set_values(bd);
+					set_board_values(bd);
 					bq24160_start_watchdog_reset(bd);
 					bq24160_hz_enable(bd, 0);
 					bq24160_set_ce(bd, 0);
@@ -1194,28 +1196,50 @@ static int bq24160_set_init_values(struct bq24160_data *bd)
 	return 0;
 }
 
-static int xyref5430_set_values(struct bq24160_data *bd)
+static int set_board_values(struct bq24160_data *bd)
 {
 	s32 data;
 	s32 rc;
+        if (of_machine_is_compatible("samsung,exynos3250")){
 
-	dev_info(&bd->clientp->dev, "Set xyref5430 values\n");
+            dev_info(&bd->clientp->dev, "Set espresso3250 values\n");
+            data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
+            if (data < 0)
+                return data;
 
-	data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
-	if (data < 0)
-		return data;
+            data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
+            rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
+            if (rc < 0)
+                return rc;
 
-	data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
-	rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
-	if (rc < 0)
-		return rc;
+        /* Sets any charging relates registers */
+            (void)bq24160_set_charger_voltage(ESPRESSO3250_MAX_CHG_VOLT);
+            (void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
+            (void)bq24160_set_input_current_limit_usb(bd, ESPRESSO3250_CURRENT_LIMIT_USB);
+            (void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
+            (void)bq24160_set_charger_safety_timer(ESPRESSO3250_SAFETY_TIME);
+
+        } else {
+            dev_info(&bd->clientp->dev, "Set xyref5430 values\n");
+
+            data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
+            if (data < 0)
+                return data;
+
+            data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
+            rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
+            if (rc < 0)
+                return rc;
 
 	/* Sets any charging relates registers */
-	(void)bq24160_set_charger_voltage(XYREF5430_MAX_CHG_VOLT);
-	(void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
-	(void)bq24160_set_input_current_limit_usb(bd, XYREF5430_CURRENT_LIMIT_USB);
-	(void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
-	(void)bq24160_set_charger_safety_timer(XYREF5430_SAFETY_TIME);
+            (void)bq24160_set_charger_voltage(XYREF5430_MAX_CHG_VOLT);
+            (void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
+            (void)bq24160_set_input_current_limit_usb(bd, XYREF5430_CURRENT_LIMIT_USB);
+            (void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
+            (void)bq24160_set_charger_safety_timer(XYREF5430_SAFETY_TIME);
+
+        }
+
 
 	return 0;
 
@@ -1998,7 +2022,7 @@ static int bq24160_probe(struct i2c_client *client,
 	     STAT_IN_READY == bd->cached_status.stat)) {
 		dev_info(&client->dev, "Charging started by boot\n");
 		bd->boot_initiated_charging = 1;
-		xyref5430_set_values(bd);
+		set_board_values(bd);
 		bq24160_check_status(bd);
 		bq24160_update_power_supply(bd);
 		bq24160_start_watchdog_reset(bd);
