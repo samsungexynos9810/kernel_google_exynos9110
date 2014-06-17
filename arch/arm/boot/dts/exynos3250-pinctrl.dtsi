@@ -456,8 +456,8 @@
 		samsung,pin-drv = <0>;
 	};
 
-	pmic_irq: ext-int7 {
-		samsung,pins = "gpx0-7";
+	pmic_irq: ext-int2 {
+		samsung,pins = "gpx0-2";
 		samsung,pin-function = <0xf>;
 		samsung,pin-pud = <3>;
 		samsung,pin-drv = <3>;
