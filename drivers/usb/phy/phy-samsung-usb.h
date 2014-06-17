@@ -47,6 +47,11 @@
 #define RSTCON_HLINK_SWRST			(0x1 << 1)
 #define RSTCON_SWRST				(0x1 << 0)
 
+/* For Exynos3 */
+#define PHYCLK1_COMMON_ON_N                     (0x1 << 7)
+#define PHYCLK0_COMMON_ON_N                     (0x1 << 4)
+#define PHYCLK_REF_CLKSEL			(0x2 << 8)
+
 /* EXYNOS5 */
 #define EXYNOS5_PHY_HOST_CTRL0			(0x00)
 
@@ -266,6 +271,7 @@
 
 enum samsung_cpu_type {
 	TYPE_S3C64XX,
+	TYPE_EXYNOS3,
 	TYPE_EXYNOS4210,
 	TYPE_EXYNOS5250,
 	TYPE_EXYNOS5,

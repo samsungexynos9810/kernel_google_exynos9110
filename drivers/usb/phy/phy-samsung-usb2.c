@@ -179,6 +179,12 @@ static void samsung_usb2phy_enable(struct samsung_usbphy *sphy)
 	case TYPE_EXYNOS4210:
 		phypwr &= ~PHYPWR_NORMAL_MASK_PHY0;
 		rstcon |= RSTCON_SWRST;
+		break;
+	case TYPE_EXYNOS3:
+		phyclk &= ~(PHYCLK0_COMMON_ON_N | PHYCLK1_COMMON_ON_N);
+		phyclk |= PHYCLK_REF_CLKSEL; 
+		phypwr &= ~PHYPWR_NORMAL_MASK_PHY0;
+		rstcon |= RSTCON_SWRST;
 	default:
 		break;
 	}
@@ -240,6 +246,7 @@ static void samsung_usb2phy_disable(struct samsung_usbphy *sphy)
 		phypwr |= PHYPWR_NORMAL_MASK;
 		break;
 	case TYPE_EXYNOS4210:
+	case TYPE_EXYNOS3:
 		phypwr |= PHYPWR_NORMAL_MASK_PHY0;
 	default:
 		break;
@@ -635,6 +642,11 @@ static const struct samsung_usbphy_drvdata usb2phy_s3c64xx = {
 	.devphy_en_mask		= S3C64XX_USBPHY_ENABLE,
 };
 
+static const struct samsung_usbphy_drvdata usb2phy_exynos3 = {
+	.cpu_type		= TYPE_EXYNOS3,
+	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
+};
+
 static const struct samsung_usbphy_drvdata usb2phy_exynos4 = {
 	.cpu_type		= TYPE_EXYNOS4210,
 	.devphy_en_mask		= EXYNOS_USBPHY_ENABLE,
@@ -658,6 +670,9 @@ static const struct of_device_id samsung_usbphy_dt_match[] = {
 	{
 		.compatible = "samsung,s3c64xx-usb2phy",
 		.data = &usb2phy_s3c64xx,
+	}, {
+		.compatible = "samsung,exynos3-usb2phy",
+		.data = &usb2phy_exynos3,
 	}, {
 		.compatible = "samsung,exynos4210-usb2phy",
 		.data = &usb2phy_exynos4,
