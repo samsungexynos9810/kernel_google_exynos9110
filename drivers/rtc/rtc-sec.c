@@ -24,6 +24,7 @@
 #include <linux/mfd/samsung/irq.h>
 #include <linux/mfd/samsung/s2mps11.h>
 #include <linux/mfd/samsung/s2mps13.h>
+#include <linux/mfd/samsung/s2mps14.h>
 
 struct s2m_rtc_info {
 	struct device		*dev;
@@ -281,6 +282,9 @@ static int s2m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	alrm->pending = 0;
 
 	switch (info->iodev->device_type) {
+	case S2MPS14X:
+		ret = S2MPS14_REG_ST2;
+		break;
 	case S2MPS11X:
 		reg = S2MPS11_REG_ST2;
 		break;
@@ -564,6 +568,9 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	info->iodev = iodev;
 
 	switch (iodev->device_type) {
+	case S2MPS14X:
+		info->irq = irq_base + S2MPS14_IRQ_RTCA0;
+		break;
 	case S2MPS13X:
 		info->irq = irq_base + S2MPS13_IRQ_RTCA0;
 		info->use_alarm_workaround = true;
@@ -609,6 +616,7 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 		goto err_rtc_dev_register;
 	}
 	enable_irq(info->irq);
+
 	return 0;
 
 err_rtc_dev_register:

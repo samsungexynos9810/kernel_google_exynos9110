@@ -77,6 +77,8 @@ static struct mfd_cell s2mps13_devs[] = {
 static struct mfd_cell s2mps14_devs[] = {
 	{
 		.name = "s2mps14-pmic",
+	}, {
+		.name = "s2m-rtc",
 	},
 };
 
