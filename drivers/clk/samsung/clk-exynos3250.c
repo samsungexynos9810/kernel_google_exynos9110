@@ -41,7 +41,7 @@ static __initdata void *exynos3250_clk_regs[] = {
 
 PNAME(mout_gdl_p)		= { "mout_mpll_user_l" };
 PNAME(mout_gdr_p)		= { "mout_mpll_user_r" };
-PNAME(mout_mpll_user_r_p)	= { "finpll", "dout_mpll_pre" };
+PNAME(mout_mpll_user_r_p)	= { "fin_pll", "dout_mpll_pre" };
 PNAME(mout_mpll_user_p)		= { "fin_pll", "dout_mpll_pre" };
 PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 					"none",	"dout_mpll_pre",
