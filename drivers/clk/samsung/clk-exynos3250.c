@@ -66,6 +66,14 @@ static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
 	FFACTOR(0, "sclk_bpll", "fout_bpll", 1, 2, 0),
 	FFACTOR(0, "div_cam_blk_320", "sclk_mpll_1600", 1, 5, 0),
 	FFACTOR(0, "div_lcd_blk_145", "sclk_mpll_1600", 1, 11, 0),
+	/* HACK:
+	 * As per user manual:
+	 * We can use XTCXO or XUSBXTI as main clock source.
+	 * It's selected by XOSCSEL pad, while XOSCSEL = 0, clock source is from XTCXO
+	 * While XOSCSEL = 1, clock source is from XUSBXTI
+	 * So till this detection machnism happens let clock source be XUSBXTI (24MHz)
+	 */
+	FFACTOR(CLK_FIN_PLL, "fin_pll", "xusbxti", 1, 1, 0),
 };
 
 
@@ -261,16 +269,6 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 
 };
 
-/* fixed rate clocks generated outside the soc */
-struct samsung_fixed_rate_clock exynos3250_fixed_rate_ext_clks[] __initdata = {
-	FRATE(CLK_FIN_PLL, "fin_pll", NULL, CLK_IS_ROOT, 0),
-};
-
-static __initdata struct of_device_id ext_clk_match[] = {
-	{ .compatible = "samsung,exynos3250-oscclk", .data = (void *)0, },
-	{ },
-};
-
 static struct samsung_pll_rate_table exynos3250_pll_rates[] = {
 	PLL_35XX_RATE(1200000000, 400, 4, 1),
 	PLL_35XX_RATE(1100000000, 275, 3, 1),
@@ -348,10 +346,6 @@ void __init exynos3250_clk_init(struct device_node *np)
 
 	samsung_clk_add_lookup(upll, CLK_FOUT_UPLL);
 
-
-	samsung_clk_of_register_fixed_ext(exynos3250_fixed_rate_ext_clks,
-			ARRAY_SIZE(exynos3250_fixed_rate_ext_clks),
-			ext_clk_match);
 	samsung_clk_register_fixed_factor(fixed_factor_clks,
 			ARRAY_SIZE(fixed_factor_clks));
 	samsung_clk_register_mux(exynos3250_mux_clks,
