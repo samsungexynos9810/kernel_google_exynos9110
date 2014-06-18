@@ -426,6 +426,16 @@
                 };
         };
 	
+	usb_otg: usb@12480000 {
+		compatible = "samsung,exynos3-hsotg";
+		reg = <0x12480000 0x11000>;
+		interrupts = <0 141 0>;
+		clocks = <&clock CLK_USBOTG>;
+		clock-names = "otg";
+		status = "ok";
+		usb-phy = <&usb2_phy>;
+	};
+
 	usb2_phy: usb2phy@125B0000 {
 		compatible = "samsung,exynos3-usb2phy";
 		reg = <0x125B0000 0x100>;
