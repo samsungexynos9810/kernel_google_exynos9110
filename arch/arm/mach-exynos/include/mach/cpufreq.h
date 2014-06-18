@@ -114,6 +114,33 @@ static inline int exynos4x12_cpufreq_init(struct exynos_dvfs_info *info)
 extern int exynos5250_cpufreq_init(struct exynos_dvfs_info *);
 extern int exynos5_cpufreq_CA7_init(struct exynos_dvfs_info *);
 extern int exynos5_cpufreq_CA15_init(struct exynos_dvfs_info *);
+#elif defined(CONFIG_ARCH_EXYNOS3)
+extern int exynos3250_cpufreq_init(struct exynos_dvfs_info *);
+static inline int exynos4210_cpufreq_init(struct exynos_dvfs_info *info)
+{
+	return 0;
+}
+
+static inline int exynos4x12_cpufreq_init(struct exynos_dvfs_info *info)
+{
+	return 0;
+}
+
+static inline int exynos5250_cpufreq_init(struct exynos_dvfs_info *info)
+{
+	return 0;
+}
+
+static inline int exynos5410_cpufreq_CA7_init(struct exynos_dvfs_info *info)
+{
+	return 0;
+}
+
+static inline int exynos5410_cpufreq_CA15_init(struct exynos_dvfs_info *info)
+{
+	return 0;
+}
+
 #else
 	#warning "Should define CONFIG_ARCH_EXYNOS4(5)\n"
 #endif
