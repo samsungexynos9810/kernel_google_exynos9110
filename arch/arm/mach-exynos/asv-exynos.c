@@ -156,7 +156,9 @@ static int __init asv_init(void)
 	}
 
 	/* Define init function for each SoC types */
-	if (soc_is_exynos5430()) {
+	if (soc_is_exynos3250()) {
+		ret = exynos3250_init_asv(exynos_asv_common);
+	} else if (soc_is_exynos5430()) {
 		ret = exynos5430_init_asv(exynos_asv_common);
 	} else if (soc_is_exynos5422()) {
 		ret = exynos5422_init_asv(exynos_asv_common);

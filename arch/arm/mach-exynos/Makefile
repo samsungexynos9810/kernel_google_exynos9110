@@ -20,6 +20,9 @@ obj-$(CONFIG_SOC_EXYNOS5422)	+= asv-exynos.o asv-exynos5422.o pm_domains-exynos5
 obj-$(CONFIG_EXYNOS5430_BTS)	+= bts-exynos5430.o
 obj-$(CONFIG_EXYNOS5433_BTS)	+= bts-exynos5433.o
 obj-$(CONFIG_EXYNOS5422_BTS)	+= bts-exynos5422.o
+ifeq ($(CONFIG_SOC_EXYNOS3250),y)
+obj-$(CONFIG_EXYNOS_ASV)	+= asv-exynos.o asv-exynos3250.o
+endif
 ifeq ($(CONFIG_SOC_EXYNOS5430),y)
 obj-$(CONFIG_SUSPEND)		+= pm-exynos5430.o
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o

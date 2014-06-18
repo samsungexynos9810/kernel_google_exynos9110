@@ -46,6 +46,12 @@
 #define ABB_INIT		(0x80000080)
 #define ABB_INIT_BYPASS		(0x80000000)
 
+#define ABB_ENABLE_SEL_OFFSET	(31)
+#define ABB_ENABLE_SET_MASK	(0x1 << ABB_ENABLE_SEL_OFFSET)
+#define ABB_ENABLE_PMOS_OFFSET	(7)
+#define ABB_ENABLE_PMOS_MASK	(0x1 << ABB_ENABLE_PMOS_OFFSET)
+#define ABB_CODE_PMOS_OFFSET	(0)
+#define ABB_CODE_PMOS_MASK	(0x1F << ABB_CODE_PMOS_OFFSET)
 static inline void set_abb(void __iomem *target_reg, unsigned int target_value)
 {
 	unsigned int tmp;
@@ -157,6 +163,7 @@ extern unsigned int set_match_abb(enum asv_type_id target_type, unsigned int tar
 extern bool is_set_abb_first(enum asv_type_id target_type, unsigned int old_freq, unsigned int target_freq);
 
 /* define function for initialize of SoC */
+extern int exynos3250_init_asv(struct asv_common *asv_info);
 extern int exynos5410_init_asv(struct asv_common *asv_info);
 extern int exynos5422_init_asv(struct asv_common *asv_info);
 extern int exynos5430_init_asv(struct asv_common *asv_info);
