@@ -108,7 +108,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13800000 0x100>;
 		interrupts = <0 109 0>;
-		clocks = <&clock SCLK_UART0>, <&clock CLK_UART0>;
+		clocks = <&clock CLK_SCLK_UART0>, <&clock CLK_UART0>;
                 clock-names = "sclk_uart0", "gate_uart0";
 	};
 
@@ -116,7 +116,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13810000 0x100>;
 		interrupts = <0 110 0>;
-		clocks = <&clock SCLK_UART1>, <&clock CLK_UART1>;
+		clocks = <&clock CLK_SCLK_UART1>, <&clock CLK_UART1>;
                 clock-names = "sclk_uart1", "gate_uart1";
 	};
 
@@ -124,7 +124,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13820000 0x100>;
 		interrupts = <0 111 0>;
-		clocks = <&clock SCLK_UART2>, <&clock CLK_UART2>;
+		clocks = <&clock CLK_SCLK_UART2>, <&clock CLK_UART2>;
                 clock-names = "sclk_uart2", "gate_uart2";
 	};
 
@@ -132,7 +132,7 @@
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13830000 0x100>;
 		interrupts = <0 112 0>;
-		clocks = <&clock SCLK_UART3>, <&clock CLK_UART3>;
+		clocks = <&clock CLK_SCLK_UART3>, <&clock CLK_UART3>;
                 clock-names = "sclk_uart3", "gate_uart3";
 	};
 

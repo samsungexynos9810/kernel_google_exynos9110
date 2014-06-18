@@ -159,6 +159,10 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
 struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
+	CGATE(CLK_SCLK_UART3, "sclk_uart3", "dout_uart3",
+			GATE_SCLK_PERIL, 3, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_UART2, "sclk_uart2", "dout_uart2",
+			GATE_SCLK_PERIL, 2, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_UART1, "sclk_uart1", "dout_uart1",
 			GATE_SCLK_PERIL, 1, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_UART0, "sclk_uart0", "dout_uart0",

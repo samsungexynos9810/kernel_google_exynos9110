@@ -67,10 +67,10 @@
 /* gate and special clocks */
 #define CLK_MCT			128
 #define CLK_RTC			129
-#define SCLK_UART0		130
-#define SCLK_UART1		131
-#define SCLK_UART2		132
-#define SCLK_UART3		133
+#define CLK_SCLK_UART0		130
+#define CLK_SCLK_UART1		131
+#define CLK_SCLK_UART2		132
+#define CLK_SCLK_UART3		133
 #define CLK_UART0		134
 #define CLK_UART1		135
 #define CLK_UART2		136
@@ -103,19 +103,17 @@
 #define CLK_SCLK_MMC1		163
 #define CLK_SDMMC1		164
 #define CLK_SDMMC0		165
-#define CLK_SCLK_UART1		166
-#define CLK_SCLK_UART0		167
-#define CLK_WDT			168
-#define CLK_KEYIF		169
-#define CLK_USBOTG		170
-#define CLK_USBHOST		171
-#define CLK_SCLK_UPLL		172
-#define CLK_ASYNC_MFCL		173
-#define CLK_SCLK_MFC		174
-#define CLK_QEMFC		175
-#define CLK_PPMUMFC_L		176
-#define CLK_SMMUMFC_L		177
-#define CLK_MFC			178
+#define CLK_WDT			166
+#define CLK_KEYIF		167
+#define CLK_USBOTG		168
+#define CLK_USBHOST		169
+#define CLK_SCLK_UPLL		170
+#define CLK_ASYNC_MFCL		171
+#define CLK_SCLK_MFC		172
+#define CLK_QEMFC		173
+#define CLK_PPMUMFC_L		174
+#define CLK_SMMUMFC_L		175
+#define CLK_MFC			176
 
 #define NR_CLKS			256
 
