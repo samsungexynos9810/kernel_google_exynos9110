@@ -290,6 +290,10 @@
 		};
 	};
 
+	mdev_0: mdev_output {
+		compatible = "samsung,exynos5-mdev";
+	};
+
 	 fimd_fb: fimd_fb {
                 /* gpx0[6]- TE external interrupt pin */
                 gpios = <&gpx0 4 0xf>;
