@@ -121,6 +121,7 @@ obj-$(CONFIG_EXYNOS4_SETUP_SDHCI_GPIO)	+= setup-sdhci-gpio.o
 obj-$(CONFIG_EXYNOS4_SETUP_USB_PHY)	+= setup-usb-phy.o
 obj-$(CONFIG_EXYNOS_SETUP_SPI)		+= setup-spi.o
 obj-$(CONFIG_EXYNOS5_SETUP_MIPIPHY)	+= setup-exynos5-mipiphy.o
+obj-$(CONFIG_EXYNOS_SETUP_MIPIPHY)      += setup-exynos-mipiphy.o
 obj-$(CONFIG_EXYNOS_CONTENT_PATH_PROTECTION) += secmem.o
 
 # HMP
