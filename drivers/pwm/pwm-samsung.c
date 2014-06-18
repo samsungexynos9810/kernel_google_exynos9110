@@ -221,6 +221,9 @@ static int s3c_pwm_config(struct pwm_chip *chip, struct pwm_device *pwm,
 		tin_rate = clk_get_rate(s3c_pwm->clk_tin);
 	}
 
+	if(!tin_rate)
+		return -EFAULT;
+
 	/* Note, counters count down */
 	tin_ns = NS_IN_HZ / tin_rate;
 
