@@ -129,6 +129,7 @@ struct s3c_udc {
 	struct usb_gadget gadget;
 	struct usb_gadget_driver *driver;
 	struct platform_device *dev;
+	struct usb_phy *phy;
 	struct clk *clk;
 	spinlock_t lock;
 
