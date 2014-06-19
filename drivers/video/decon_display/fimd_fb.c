@@ -286,35 +286,6 @@ static int s3c_fb_check_var(struct fb_var_screeninfo *var,
 	dev_dbg(sfb->dev, "%s: verified parameters\n", __func__);
 	return 0;
 }
-
-/**
- * s3c_fb_calc_pixclk() - calculate the divider to create the pixel clock.
- * @sfb: The hardware state.
- * @pixclock: The pixel clock wanted, in picoseconds.
- *
- * Given the specified pixel clock, work out the necessary divider to get
- * close to the output frequency.
- */
-static int s3c_fb_calc_pixclk(struct s3c_fb *sfb, unsigned int pixclk)
-{
-	unsigned long clk;
-	unsigned long long tmp;
-	unsigned int result;
-	
-	if (sfb->variant.has_clksel)
-		clk = clk_get_rate(sfb->bus_clk);
-	else
-		clk = clk_get_rate(sfb->lcd_clk);
-
-	tmp = (unsigned long long)clk;
-	tmp *= pixclk;
-
-	do_div(tmp, 1000000000UL);
-	result = (unsigned int)tmp / 1000;
-
-	return result;
-}
-
 /**
  * shadow_protect_win() - disable updating values from shadow registers at vsync
  *
@@ -596,7 +567,6 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 		struct fb_videomode *win_mode)
 #endif
 {
-	int clkdiv = s3c_fb_calc_pixclk(sfb, win_mode->pixclock);
 	u32 data = 0;
 
 	data = readl(sfb->regs + VIDCON2);

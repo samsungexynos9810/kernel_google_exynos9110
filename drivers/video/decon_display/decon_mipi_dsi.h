@@ -417,6 +417,7 @@ extern struct mipi_dsim_lcd_driver s6e3fa2_mipi_lcd_driver;
 #elif defined(CONFIG_DECON_LCD_S6E63J0X03)
 extern struct mipi_dsim_lcd_driver s6e63j0x03_mipi_lcd_driver;
 #endif
+extern struct mipi_dsim_lcd_driver nt35510_mipi_lcd_driver;
 
 extern int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim,
 	unsigned int data_id, unsigned int data0, unsigned int data1);

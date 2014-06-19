@@ -14,11 +14,11 @@
 #include <linux/delay.h>
 #include <linux/gpio.h>
 #include <linux/backlight.h>
-
+#include <linux/slab.h>
 #include <video/mipi_display.h>
-#include <plat/dsim.h>
-#include <plat/mipi_dsi.h>
-#include <plat/gpio-cfg.h>
+#include "decon_mipi_dsi.h"
+#include "decon_display_driver.h"
+
 
 #define GAMMA_PARAM_SIZE 26
 #define MAX_BRIGHTNESS 255
@@ -84,7 +84,37 @@ struct lcd_info {
 	unsigned int			ldi_enable;
 	struct mutex                    bl_lock;
 };
+
+struct decon_lcd nt35510_lcd_info = {
+        .mode = COMMAND_MODE,
+
+        .vfp = 1,
+        .vbp = 1,
+        .hfp = 1,
+        .hbp = 1,
+
+        .vsa = 1,
+        .hsa = 1,
+
+        .xres = 480,
+        .yres = 800,
+
+        .width = 56,
+        .height = 94,
+
+        /* Mhz */
+        .hs_clk = 500,
+        .esc_clk = 20,
+
+        .fps = 60,
+};
+
 static struct lcd_info *g_lcd;
+
+struct decon_lcd * decon_get_lcd_info()
+{
+        return &nt35510_lcd_info;
+}
 
 static int update_brightness(struct lcd_info *lcd, u8 force)
 {
@@ -168,7 +198,7 @@ int nt35510_probe(struct mipi_dsim_device *dsim)
 
 	g_lcd = lcd;
 
-	lcd->bd = backlight_device_register("pwm-backlight.0", dsim->dev,
+	lcd->bd =  backlight_device_register("pwm-backlight.0", /*dsim->dev*/NULL,
 			lcd, &ktd283_backlight_ops, NULL);
 	if (IS_ERR(lcd->bd))
 		printk(KERN_ALERT "failed to register backlight device\n");

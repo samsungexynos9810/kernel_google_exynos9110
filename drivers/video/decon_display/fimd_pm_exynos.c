@@ -115,7 +115,7 @@ int init_display_driver_clocks(struct device *dev)
 	/* 1. Set [LCD0_BLK:sclk_mipi0]: display special mipi-dsim */
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0_pre, dout_mipi0);
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0, mout_mipi0);
-	DISPLAY_CLOCK_SET_PARENT(mout_mipi0, dount_mpll_pre);
+	DISPLAY_CLOCK_SET_PARENT(mout_mipi0, dout_mpll_pre);
 	DISPLAY_SET_RATE(dout_mipi0_pre, 50 * MHZ);
 
 	return ret;
