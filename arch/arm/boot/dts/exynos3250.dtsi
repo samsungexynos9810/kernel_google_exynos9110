@@ -364,6 +364,64 @@
 		reg = <0x10023ca0 0x20>;
 		status = "disabled";
 	};
+	fimd_fb: fimd_fb {
+                compatible = "samsung,exynos3-disp_driver";
+                reg = <0x11c00000 0x40000>, <0x11c80000 0x8000>;
+
+                /*  VSYNC IRQ, FIFO IRQ, I80 IRQ, DSIM IRQ */
+                interrupts = <0 85 0>, <0 84 0>, <0 86 0>, <0 83 0>;
+
+                /*int-mipi-dsi0 = 113;
+                int-mipi-dsi1 = 114;*/
+
+                /* Clocks for the DECON/MIPI-DSI driver */
+                clocks = <&clock 1000>, <&clock 1001>, <&clock 1002>,
+                        <&clock 1010>, <&clock 1011>, <&clock 1012>,
+                        <&clock 1013>,
+                        <&clock 1020>, <&clock 1021>, <&clock 1022>,
+                        <&clock 1023>, <&clock 1024>;
+                clock-names = "mout_fimd0", "mout_mipi0", "mout_aclk_160",
+                        "dout_fimd0", "dout_mipi0", "dout_mipi0_pre",
+                        "dout_aclk_160",
+                        "gate_aclk_fimd0", "gate_sclk_fimd0", "gate_sclk_mipi0",
+                        "gate_clk_fimd0", "gate_clk_dsim0";
+
+                /* TE pin */
+                /*
+                pinctrl-names = "turnon_tes", "turnoff_tes";
+                pinctrl-0 = <&disp_teson>;
+                pinctrl-1 = <&disp_tesoff>;
+                */
+		fimd: fimd_ctrl {
+                        samsung,vidcon0 = <0x8000>;
+                        samsung,vidcon1 = <0x80>;
+                        samsung,default_win = <0>;
+                        fb_driver_data {
+                                        fb_variant {
+                                                        nr_windows = <5>;
+                                                        vidcon1 = <0x20004>;
+                                                        vidtcon = <0x20010>;
+                                                        wincon = <0x20>;
+                                                        winmap = <0x180>;
+                                                        keycon = <0x140>;
+                                                        osd = <0x40>;
+                                                        osd_stride = <16>;
+                                                        buf_start = <0xA0>;
+                                                        buf_size  = <0x100>;
+                                                        buf_end   = <0xD0>;
+                                                        palette_0 = <0x2400>;
+                                                        palette_1 = <0x2800>;
+                                                        palette_2 = <0x2c00>;
+                                                        palette_3 = <0x3000>;
+                                                        palette_4 = <0x3400>;
+                                                        has_shadowcon = <1>;
+                                                        has_blendcon  = <1>;
+                                                        has_alphacon  = <1>;
+                                                        has_fixvclk   = <1>;
+                                        };
+                        };
+                };
+        };
 };
 
 #include "exynos3250-pinctrl.dtsi"
