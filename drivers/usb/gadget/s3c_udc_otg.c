@@ -30,7 +30,6 @@
 #include <plat/cpu.h>
 
 #include "regs-otg.h"
-#include "usb-phy.h"
 #include "udc-hs.h"
 
 #include "s3c_udc.h"
@@ -103,6 +102,12 @@ static char *state_names[] = {
 #define	DRIVER_DESC	"S3C HS USB OTG Device Driver,"\
 				"(c) 2008-2009 Samsung Electronics"
 #define	DRIVER_VERSION	"15 March 2009"
+
+enum s5p_usb_phy_type {
+	S5P_USB_PHY_DEVICE,
+	S5P_USB_PHY_HOST,
+	S5P_USB_PHY_DRD,
+};
 
 struct s3c_udc	*the_controller;
 
