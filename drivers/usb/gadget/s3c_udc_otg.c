@@ -22,16 +22,17 @@
  *
  */
 
-#include <linux/clk.h>
-#include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
+#include <linux/clk.h>
+#include <linux/dma-mapping.h>
 #include <linux/usb/phy.h>
+
 #include <plat/cpu.h>
 
 #include "regs-otg.h"
 #include "udc-hs.h"
-
 #include "s3c_udc.h"
 
 #undef DEBUG_S3C_UDC_SETUP

@@ -22,33 +22,8 @@
 #ifndef __S3C_UDC_H
 #define __S3C_UDC_H
 
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/ioport.h>
-#include <linux/types.h>
-#include <linux/version.h>
-#include <linux/errno.h>
-#include <linux/delay.h>
-#include <linux/sched.h>
-#include <linux/slab.h>
-#include <linux/init.h>
-#include <linux/timer.h>
-#include <linux/list.h>
-#include <linux/interrupt.h>
-#include <linux/proc_fs.h>
-#include <linux/mm.h>
-#include <linux/device.h>
-#include <linux/dma-mapping.h>
-#include <linux/io.h>
-
-#include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
-
-#include <asm/byteorder.h>
-#include <asm/dma.h>
-#include <asm/irq.h>
-#include <asm/system.h>
-#include <asm/unaligned.h>
+#include <linux/proc_fs.h>
 
 /* Max packet size */
 #if defined(CONFIG_USB_GADGET_S3C_FS)
