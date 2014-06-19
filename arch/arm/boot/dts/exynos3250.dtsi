@@ -375,16 +375,16 @@
                 int-mipi-dsi1 = 114;*/
 
                 /* Clocks for the DECON/MIPI-DSI driver */
-                clocks = <&clock 1000>, <&clock 1001>, <&clock 1002>,
-                        <&clock 1010>, <&clock 1011>, <&clock 1012>,
-                        <&clock 1013>,
-                        <&clock 1020>, <&clock 1021>, <&clock 1022>,
-                        <&clock 1023>, <&clock 1024>;
+                clocks = <&clock CLK_MOUT_FIMD0>, <&clock CLK_MOUT_MIPI0>, <&clock CLK_MOUT_ACLK_160>,
+                        <&clock CLK_DIV_FIMD0>, <&clock CLK_DIV_MIPI0>, <&clock CLK_DIV_MIPI0_PRE>,
+                        <&clock CLK_DIV_ACLK_160>,
+                        <&clock CLK_ACLK_FIMD0>, <&clock CLK_SCLK_FIMD0>, <&clock CLK_SCLK_MIPI0>,
+                        <&clock CLK_FIMD0>, <&clock CLK_DSIM0>;
                 clock-names = "mout_fimd0", "mout_mipi0", "mout_aclk_160",
                         "dout_fimd0", "dout_mipi0", "dout_mipi0_pre",
                         "dout_aclk_160",
-                        "gate_aclk_fimd0", "gate_sclk_fimd0", "gate_sclk_mipi0",
-                        "gate_clk_fimd0", "gate_clk_dsim0";
+                        "aclk_fimd0", "sclk_fimd0", "sclk_mipi0",
+                        "fimd0", "dsim0";
 
                 /* TE pin */
                 /*
