@@ -379,12 +379,12 @@
                         <&clock CLK_DIV_FIMD0>, <&clock CLK_DIV_MIPI0>, <&clock CLK_DIV_MIPI0_PRE>,
                         <&clock CLK_DIV_ACLK_160>,
                         <&clock CLK_ACLK_FIMD0>, <&clock CLK_SCLK_FIMD0>, <&clock CLK_SCLK_MIPI0>,
-                        <&clock CLK_FIMD0>, <&clock CLK_DSIM0>;
+                        <&clock CLK_FIMD0>, <&clock CLK_DSIM0>, <&clock CLK_DIV_MPLL_PRE>;
                 clock-names = "mout_fimd0", "mout_mipi0", "mout_aclk_160",
                         "dout_fimd0", "dout_mipi0", "dout_mipi0_pre",
                         "dout_aclk_160",
                         "aclk_fimd0", "sclk_fimd0", "sclk_mipi0",
-                        "fimd0", "dsim0";
+                        "fimd0", "dsim0", "dout_mpll_pre";
 
                 /* TE pin */
                 /*
