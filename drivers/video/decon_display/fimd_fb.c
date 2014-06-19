@@ -3157,7 +3157,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 		goto err_lcd_clk;
 	}
 #endif
-	sfb->bus_clk = clk_get(dev, "gate_sclk_fimd0");
+	sfb->bus_clk = clk_get(dev, "sclk_fimd0");
 	if (IS_ERR(sfb->bus_clk)) {
 		dev_err(dev, "failed to get bus clock\n");
 		ret = PTR_ERR(sfb->bus_clk);
@@ -3165,7 +3165,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	if (!s3c_fb_inquire_version(sfb)) {
-		sfb->axi_disp1 = clk_get(dev, "gate_aclk_fimd0");
+		sfb->axi_disp1 = clk_get(dev, "aclk_fimd0");
 		if (IS_ERR(sfb->axi_disp1)) {
 			dev_err(dev, "failed to get axi bus clock\n");
 			ret = PTR_ERR(sfb->axi_disp1);
@@ -3174,7 +3174,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	if (!sfb->variant.has_clksel) {
-		sfb->lcd_clk = clk_get(dev, "gate_clk_fimd0");
+		sfb->lcd_clk = clk_get(dev, "fimd0");
 		if (IS_ERR(sfb->lcd_clk)) {
 			dev_err(dev, "failed to get lcd clock\n");
 			ret = PTR_ERR(sfb->lcd_clk);

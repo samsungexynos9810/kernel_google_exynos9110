@@ -29,7 +29,7 @@
 #include <../drivers/clk/samsung/clk.h>
 
 static struct clk *g_mout_fimd0;
-static struct clk *g_mpll_pre_div;
+static struct clk *g_dout_mpll_pre;
 static struct clk *g_dout_fimd0;
 static struct clk *g_mout_aclk_160;
 static struct clk *g_dout_aclk_160;
@@ -96,12 +96,12 @@ int init_display_decon_clocks(struct device *dev)
 	/* Set parent clock and rate */
 	/* 1. Set [LCD0_BLK:sclk_fimd0]: display special pixel clock */
 	DISPLAY_CLOCK_SET_PARENT(dout_fimd0, mout_fimd0);
-	DISPLAY_CLOCK_SET_PARENT(mout_fimd0, mpll_pre_div);
+	DISPLAY_CLOCK_SET_PARENT(mout_fimd0, dout_mpll_pre);
 	DISPLAY_SET_RATE(dout_fimd0, 50 * MHZ);
 
 	/* 2. Set [CMU_TOP:aclk_160] : display top clock(dedicated for LCD_BLK) */
 	DISPLAY_CLOCK_SET_PARENT(dout_aclk_160, mout_aclk_160);
-	DISPLAY_CLOCK_SET_PARENT(mout_aclk_160, mpll_pre_div);
+	DISPLAY_CLOCK_SET_PARENT(mout_aclk_160, dout_mpll_pre);
 	DISPLAY_SET_RATE(dout_aclk_160, 100 * MHZ);
 
 	return ret;
@@ -115,7 +115,7 @@ int init_display_driver_clocks(struct device *dev)
 	/* 1. Set [LCD0_BLK:sclk_mipi0]: display special mipi-dsim */
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0_pre, dout_mipi0);
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0, mout_mipi0);
-	DISPLAY_CLOCK_SET_PARENT(mout_mipi0, mpll_pre_div);
+	DISPLAY_CLOCK_SET_PARENT(mout_mipi0, dount_mpll_pre);
 	DISPLAY_SET_RATE(dout_mipi0_pre, 50 * MHZ);
 
 	return ret;
@@ -256,12 +256,12 @@ int enable_display_decon_clocks(struct device *dev)
 	/* Set INLINE parent clock and rate */
 	/* 1. Set [LCD0_BLK:sclk_fimd0]: display special pixel clock */
 	DISPLAY_CLOCK_INLINE_SET_PARENT(dout_fimd0, mout_fimd0);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd0, mpll_pre_div);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd0, dout_mpll_pre);
 	DISPLAY_INLINE_SET_RATE(dout_fimd0, 50 * MHZ);
 
 	/* 2. Set [CMU_TOP:aclk_160] : display top clock(dedicated for LCD_BLK) */
 	DISPLAY_CLOCK_INLINE_SET_PARENT(dout_aclk_160, mout_aclk_160);
-	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_160, mpll_pre_div);
+	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_aclk_160, dout_mpll_pre);
 	DISPLAY_INLINE_SET_RATE(dout_aclk_160, 100 * MHZ);
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY_CLOCK_GATING
