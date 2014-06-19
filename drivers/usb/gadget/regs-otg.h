@@ -12,7 +12,7 @@
 #define __ASM_ARCH_REGS_USB_OTG_HS_H
 
 /* USB2.0 OTG Controller register */
-#define S3C_USBOTG_PHYREG(x)		((x) + S3C_VA_HSPHY)
+#define S3C_USBOTG_PHYREG(x)		(x)
 #define S3C_USBOTG_PHYPWR		S3C_USBOTG_PHYREG(0x0)
 #define S3C_USBOTG_PHYCLK		S3C_USBOTG_PHYREG(0x4)
 #define S3C_USBOTG_RSTCON		S3C_USBOTG_PHYREG(0x8)
@@ -39,13 +39,15 @@
 
 /* Host Mode Registers */
 /* Host Global Registers */
+/* Not Applicable in case of Exynos3250 */
+#ifndef CONFIG_MACH_EXYNOS3
+
 #define S3C_UDC_OTG_HCFG		S3C_USBOTGREG(0x400)
 #define S3C_UDC_OTG_HFIR		S3C_USBOTGREG(0x404)
 #define S3C_UDC_OTG_HFNUM		S3C_USBOTGREG(0x408)
 #define S3C_UDC_OTG_HPTXSTS		S3C_USBOTGREG(0x410)
 #define S3C_UDC_OTG_HAINT		S3C_USBOTGREG(0x414)
 #define S3C_UDC_OTG_HAINTMSK		S3C_USBOTGREG(0x418)
-
 /* Host Port Control & Status Registers */
 #define S3C_UDC_OTG_HPRT		S3C_USBOTGREG(0x440)
 
@@ -57,6 +59,7 @@
 #define S3C_UDC_OTG_HCTSIZ0		S3C_USBOTGREG(0x510)
 #define S3C_UDC_OTG_HCDMA0		S3C_USBOTGREG(0x514)
 
+#endif
 /* Device Mode Registers */
 /*------------------------------------------------ */
 /* Device Global Registers */
@@ -71,9 +74,16 @@
 #define S3C_UDC_OTG_DTKNQR2		S3C_USBOTGREG(0x824)
 #define S3C_UDC_OTG_DVBUSDIS		S3C_USBOTGREG(0x828)
 #define S3C_UDC_OTG_DVBUSPULSE		S3C_USBOTGREG(0x82C)
+
+/* Exynos3250 has different registers at 0x830 and 0x834 */
+#ifndef CONFIG_MACH_EXYNOS3
 #define S3C_UDC_OTG_DTKNQR3		S3C_USBOTGREG(0x830)
 #define S3C_UDC_OTG_DTKNQR4		S3C_USBOTGREG(0x834)
-
+#else
+#define S3C_UDC_OTG_DTHRCTL		S3C_USBOTGREG(0x830)
+#define S3C_UDC_OTG_DIEPEMPMSK		S3C_USBOTGREG(0x834)
+#endif
+ 
 /*------------------------------------------------ */
 /* Device Logical IN Endpoint-Specific Registers */
 #define S3C_UDC_OTG_DIEPCTL(n)		S3C_USBOTGREG(0x900 + n*0x20)
