@@ -252,11 +252,9 @@
 		};
 	};
 
-	i2c@6b {
-		compatible = "i2c-gpio";
-		gpios = <&gpa1 2 0 /* sda */
-			&gpa1 3 0 >; /* scl */
-		i2c-gpio,delay-us = <2>;	/* ~100kHz */
+	i2c@13890000 {
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
 		#address-cells = <1>;
 		#size-cells = <0>;
 		status = "okay";
@@ -264,7 +262,9 @@
 		bq24160_charger@6b {
 			compatible = "ti,bq24160";
 			reg = <0x6b>;
-			gpios = <&gpx2 1 0xf>;
+			gpios = <&gpx2 1 1>;
+			interrupts = <1 0 0>;
+			interrupt-parent = <&gpx2>;
 			pinctrl-names = "default";
 			pinctrl-0 = <&chg_irq>;
 			dev_name = "bq24160";
