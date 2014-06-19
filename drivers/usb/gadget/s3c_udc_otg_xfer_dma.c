@@ -105,14 +105,14 @@ static inline void s3c_udc_pre_setup(struct s3c_udc *dev, bool need_nak)
 static int aligned_map_buf(struct s3c_request *req, int in)
 {
 	if ((u32)req->req.buf & 3) {
-		DEBUG("Buffer is not aligned %x\n", req->req.buf);
+		DEBUG_UDC("Buffer is not aligned %p\n", req->req.buf);
 		req->not_aligned = true;
 
 		/* Allocate bounce buffer */
 		req->bounce_buf = req->req.buf;
 		req->req.buf = kmalloc(req->req.length, GFP_ATOMIC);
 		if (!req->req.buf) {
-			DEBUG("%s: cannot allocate bounce buffer\n",
+			DEBUG_UDC("%s: cannot allocate bounce buffer\n",
 			__func__);
 			req->req.buf = req->bounce_buf;
 			return -ENOMEM;
@@ -623,21 +623,21 @@ static int s3c_queue(struct usb_ep *_ep, struct usb_request *_req,
 	req = container_of(_req, struct s3c_request, req);
 	if (unlikely(!_req || !_req->complete ||
 			!_req->buf || !list_empty(&req->queue))) {
-		DEBUG("%s: bad params\n", __func__);
+		DEBUG_UDC("%s: bad params\n", __func__);
 		return -EINVAL;
 	}
 
 	ep = container_of(_ep, struct s3c_ep, ep);
 
 	if (unlikely(!_ep || (!ep->desc && ep->ep.name != ep0name))) {
-		DEBUG("%s: bad ep\n", __func__);
+		DEBUG_UDC("%s: bad ep\n", __func__);
 		return -EINVAL;
 	}
 
 	ep_num = ep_index(ep);
 	dev = ep->dev;
 	if (unlikely(!dev->driver || dev->gadget.speed == USB_SPEED_UNKNOWN)) {
-		DEBUG("%s: bogus device state %p\n", __func__, dev->driver);
+		DEBUG_UDC("%s: bogus device state %p\n", __func__, dev->driver);
 		return -ESHUTDOWN;
 	}
 
@@ -647,7 +647,7 @@ static int s3c_queue(struct usb_ep *_ep, struct usb_request *_req,
 	_req->actual = 0;
 
 	/* kickstart this i/o queue? */
-	DEBUG("\n*** %s: %s-%s req = %p, len = %d, buf = %p"
+	DEBUG_UDC("\n*** %s: %s-%s req = %p, len = %d, buf = %p"
 		"Q empty = %d, stopped = %d\n",
 		__func__, _ep->name, ep_is_in(ep) ? "in" : "out",
 		_req, _req->length, _req->buf,
@@ -668,7 +668,7 @@ static int s3c_queue(struct usb_ep *_ep, struct usb_request *_req,
 				setdma_tx(ep, req);
 			else {
 				done(ep, req, 0);
-				DEBUG("%s: Not yet Set_configureation,"
+				DEBUG_UDC("%s: Not yet Set_configureation,"
 					"ep_num = %d, req = %p\n",
 					__func__, ep_num, req);
 				req = 0;
@@ -788,7 +788,7 @@ static void s3c_ep0_read(struct s3c_udc *dev)
 	if (!list_empty(&ep->queue))
 		req = list_entry(ep->queue.next, struct s3c_request, queue);
 	else {
-		DEBUG("%s: ---> BUG\n", __func__);
+		DEBUG_UDC("%s: ---> BUG\n", __func__);
 		BUG();
 		return;
 	}
@@ -891,7 +891,7 @@ static void s3c_udc_ep_set_stall(struct s3c_ep *ep)
 	u32		ep_ctrl = 0;
 
 	ep_num = ep_index(ep);
-	DEBUG("%s: ep_num = %d, ep_type = %d\n", __func__, ep_num, ep->ep_type);
+	DEBUG_UDC("%s: ep_num = %d, ep_type = %d\n", __func__, ep_num, ep->ep_type);
 
 	if (ep_is_in(ep)) {
 		ep_ctrl = __raw_readl(dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num));
@@ -903,7 +903,7 @@ static void s3c_udc_ep_set_stall(struct s3c_ep *ep)
 		ep_ctrl |= DEPCTL_STALL;
 
 		__raw_writel(ep_ctrl, dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num));
-		DEBUG("%s: set stall, DIEPCTL%d = 0x%x\n",
+		DEBUG_UDC("%s: set stall, DIEPCTL%d = 0x%x\n",
 			__func__, ep_num,
 			__raw_readl(dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num)));
 	} else {
@@ -913,7 +913,7 @@ static void s3c_udc_ep_set_stall(struct s3c_ep *ep)
 		ep_ctrl |= DEPCTL_STALL;
 
 		__raw_writel(ep_ctrl, dev->regs + S3C_UDC_OTG_DOEPCTL(ep_num));
-		DEBUG("%s: set stall, DOEPCTL%d = 0x%x\n",
+		DEBUG_UDC("%s: set stall, DOEPCTL%d = 0x%x\n",
 			__func__, ep_num,
 			__raw_readl(dev->regs + S3C_UDC_OTG_DOEPCTL(ep_num)));
 	}
@@ -926,7 +926,7 @@ void s3c_udc_ep_clear_stall(struct s3c_ep *ep)
 	u32		ep_ctrl = 0;
 
 	ep_num = ep_index(ep);
-	DEBUG("%s: ep_num = %d, ep_type = %d\n", __func__, ep_num, ep->ep_type);
+	DEBUG_UDC("%s: ep_num = %d, ep_type = %d\n", __func__, ep_num, ep->ep_type);
 
 	if (ep_is_in(ep)) {
 		ep_ctrl = __raw_readl(dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num));
@@ -945,7 +945,7 @@ void s3c_udc_ep_clear_stall(struct s3c_ep *ep)
 			ep_ctrl |= DEPCTL_SETD0PID; /* DATA0 */
 
 		__raw_writel(ep_ctrl, dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num));
-		DEBUG("%s: cleared stall, DIEPCTL%d = 0x%x\n",
+		DEBUG_UDC("%s: cleared stall, DIEPCTL%d = 0x%x\n",
 			__func__, ep_num,
 			__raw_readl(dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num)));
 	} else {
@@ -959,7 +959,7 @@ void s3c_udc_ep_clear_stall(struct s3c_ep *ep)
 			ep_ctrl |= DEPCTL_SETD0PID; /* DATA0 */
 
 		__raw_writel(ep_ctrl, dev->regs + S3C_UDC_OTG_DOEPCTL(ep_num));
-		DEBUG("%s: cleared stall, DOEPCTL%d = 0x%x\n",
+		DEBUG_UDC("%s: cleared stall, DOEPCTL%d = 0x%x\n",
 			__func__, ep_num,
 			__raw_readl(dev->regs + S3C_UDC_OTG_DOEPCTL(ep_num)));
 	}
@@ -977,14 +977,14 @@ static int s3c_udc_set_halt(struct usb_ep *_ep, int value)
 
 	if (unlikely(!_ep || !ep->desc || ep_num == EP0_CON ||
 			ep->desc->bmAttributes == USB_ENDPOINT_XFER_ISOC)) {
-		DEBUG("%s: %s bad ep or descriptor\n", __func__, ep->ep.name);
+		DEBUG_UDC("%s: %s bad ep or descriptor\n", __func__, ep->ep.name);
 		return -EINVAL;
 	}
 
 	/* Attempt to halt IN ep will fail if any transfer requests
 	 * are still queue */
 	if (value && ep_is_in(ep) && !list_empty(&ep->queue)) {
-		DEBUG("%s: %s queue not empty, req = %p\n",
+		DEBUG_UDC("%s: %s queue not empty, req = %p\n",
 			__func__, ep->ep.name,
 			list_entry(ep->queue.next, struct s3c_request, queue));
 
@@ -992,7 +992,7 @@ static int s3c_udc_set_halt(struct usb_ep *_ep, int value)
 	}
 
 	dev = ep->dev;
-	DEBUG("%s: ep_num = %d, value = %d\n", __func__, ep_num, value);
+	DEBUG_UDC("%s: ep_num = %d, value = %d\n", __func__, ep_num, value);
 
 	spin_lock_irqsave(&dev->lock, flags);
 
@@ -1026,7 +1026,7 @@ void s3c_udc_ep_activate(struct s3c_ep *ep)
 		daintmsk = (1 << ep_num) << DAINT_OUT_BIT;
 	}
 
-	DEBUG("%s: EPCTRL%d = 0x%x, ep_is_in = %d\n",
+	DEBUG_UDC("%s: EPCTRL%d = 0x%x, ep_is_in = %d\n",
 		__func__, ep_num, ep_ctrl, ep_is_in(ep));
 
 	/* If the EP is already active don't change the EP Control
@@ -1045,14 +1045,14 @@ void s3c_udc_ep_activate(struct s3c_ep *ep)
 		if (ep_is_in(ep)) {
 			__raw_writel(ep_ctrl,
 				dev->regs + S3C_UDC_OTG_DIEPCTL(ep_num));
-			DEBUG("%s: USB Ative EP%d, DIEPCTRL%d = 0x%x\n",
+			DEBUG_UDC("%s: USB Ative EP%d, DIEPCTRL%d = 0x%x\n",
 				__func__, ep_num, ep_num,
 				__raw_readl(dev->regs +
 					S3C_UDC_OTG_DIEPCTL(ep_num)));
 		} else {
 			__raw_writel(ep_ctrl,
 				dev->regs + S3C_UDC_OTG_DOEPCTL(ep_num));
-			DEBUG("%s: USB Ative EP%d, DOEPCTRL%d = 0x%x\n",
+			DEBUG_UDC("%s: USB Ative EP%d, DOEPCTRL%d = 0x%x\n",
 				__func__, ep_num, ep_num,
 				__raw_readl(dev->regs +
 					S3C_UDC_OTG_DOEPCTL(ep_num)));
@@ -1062,7 +1062,7 @@ void s3c_udc_ep_activate(struct s3c_ep *ep)
 	/* Unmask EP Interrtupt */
 	__raw_writel(__raw_readl(dev->regs + S3C_UDC_OTG_DAINTMSK)|daintmsk,
 			dev->regs + S3C_UDC_OTG_DAINTMSK);
-	DEBUG("%s: DAINTMSK = 0x%x\n", __func__,
+	DEBUG_UDC("%s: DAINTMSK = 0x%x\n", __func__,
 		__raw_readl(dev->regs + S3C_UDC_OTG_DAINTMSK));
 }
 

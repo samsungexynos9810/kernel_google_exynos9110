@@ -24,10 +24,11 @@
 #include <linux/clk.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
-#include <plat/regs-otg.h>
-#include <plat/usb-phy.h>
-#include <plat/udc-hs.h>
 #include <plat/cpu.h>
+
+#include "regs-otg.h"
+#include "usb-phy.h"
+#include "udc-hs.h"
 
 #include "s3c_udc.h"
 
@@ -73,9 +74,9 @@ static char *state_names[] = {
 #endif
 
 #ifdef DEBUG_S3C_UDC
-#define DEBUG(fmt, args...) printk(fmt, ##args)
+#define DEBUG_UDC(fmt, args...) printk(fmt, ##args)
 #else
-#define DEBUG(fmt, args...) do {} while (0)
+#define DEBUG_UDC(fmt, args...) do {} while (0)
 #endif
 
 #ifdef DEBUG_S3C_UDC_ISR
@@ -443,7 +444,7 @@ static void done(struct s3c_ep *ep, struct s3c_request *req, int status)
 	struct s3c_udc *udc = ep->dev;
 	u32 ctrl, ret;
 
-	DEBUG("%s: %s %p, req = %p, stopped = %d\n",
+	DEBUG_UDC("%s: %s %p, req = %p, stopped = %d\n",
 		__func__, ep->ep.name, ep, &req->req, stopped);
 
 	list_del_init(&req->queue);
@@ -515,7 +516,7 @@ out:
 	}
 
 	if (status && status != -ESHUTDOWN) {
-		DEBUG("complete %s req %p stat %d len %u/%u\n",
+		DEBUG_UDC("complete %s req %p stat %d len %u/%u\n",
 			ep->ep.name, &req->req, status,
 			req->req.actual, req->req.length);
 	}
@@ -537,7 +538,7 @@ static void nuke(struct s3c_ep *ep, int status)
 {
 	struct s3c_request *req;
 
-	DEBUG("%s: %s %p\n", __func__, ep->ep.name, ep);
+	DEBUG_UDC("%s: %s %p\n", __func__, ep->ep.name, ep);
 
 	/* called with irqs blocked */
 	while (!list_empty(&ep->queue)) {
@@ -731,14 +732,14 @@ static int s3c_ep_enable(struct usb_ep *_ep,
 	struct s3c_udc *dev;
 	unsigned long flags;
 
-	DEBUG("%s: %p\n", __func__, _ep);
+	DEBUG_UDC("%s: %p\n", __func__, _ep);
 	ep = container_of(_ep, struct s3c_ep, ep);
 	if (!_ep || !desc || ep->desc || _ep->name == ep0name
 	    || desc->bDescriptorType != USB_DT_ENDPOINT
 	    || ep->bEndpointAddress != desc->bEndpointAddress
 	    || ep_maxpacket(ep) < le16_to_cpu(desc->wMaxPacketSize)) {
 
-		DEBUG("%s: bad ep or descriptor\n", __func__);
+		DEBUG_UDC("%s: bad ep or descriptor\n", __func__);
 		return -EINVAL;
 	}
 
@@ -748,7 +749,7 @@ static int s3c_ep_enable(struct usb_ep *_ep,
 	    && ep->bmAttributes != USB_ENDPOINT_XFER_BULK
 	    && desc->bmAttributes != USB_ENDPOINT_XFER_INT) {
 
-		DEBUG("%s: %s type mismatch\n", __func__, _ep->name);
+		DEBUG_UDC("%s: %s type mismatch\n", __func__, _ep->name);
 		return -EINVAL;
 	}
 
@@ -757,14 +758,14 @@ static int s3c_ep_enable(struct usb_ep *_ep,
 	     && le16_to_cpu(desc->wMaxPacketSize) != ep_maxpacket(ep))
 	    || !desc->wMaxPacketSize) {
 
-		DEBUG("%s: bad %s maxpacket\n", __func__, _ep->name);
+		DEBUG_UDC("%s: bad %s maxpacket\n", __func__, _ep->name);
 		return -ERANGE;
 	}
 
 	dev = ep->dev;
 	if (!dev->driver || dev->gadget.speed == USB_SPEED_UNKNOWN) {
 
-		DEBUG("%s: bogus device state\n", __func__);
+		DEBUG_UDC("%s: bogus device state\n", __func__);
 		return -ESHUTDOWN;
 	}
 
@@ -780,7 +781,7 @@ static int s3c_ep_enable(struct usb_ep *_ep,
 	s3c_udc_ep_activate(ep);
 	spin_unlock_irqrestore(&ep->dev->lock, flags);
 
-	DEBUG("%s: enabled %s, stopped = %d, maxpacket = %d\n",
+	DEBUG_UDC("%s: enabled %s, stopped = %d, maxpacket = %d\n",
 		__func__, _ep->name, ep->stopped, ep->ep.maxpacket);
 	return 0;
 }
@@ -792,11 +793,11 @@ static int s3c_ep_disable(struct usb_ep *_ep)
 	struct s3c_ep *ep;
 	unsigned long flags;
 
-	DEBUG("%s: %p\n", __func__, _ep);
+	DEBUG_UDC("%s: %p\n", __func__, _ep);
 
 	ep = container_of(_ep, struct s3c_ep, ep);
 	if (!_ep || !ep->desc) {
-		DEBUG("%s: %s not enabled\n", __func__,
+		DEBUG_UDC("%s: %s not enabled\n", __func__,
 		      _ep ? ep->ep.name : NULL);
 		return -EINVAL;
 	}
@@ -811,7 +812,7 @@ static int s3c_ep_disable(struct usb_ep *_ep)
 
 	spin_unlock_irqrestore(&ep->dev->lock, flags);
 
-	DEBUG("%s: disabled %s\n", __func__, _ep->name);
+	DEBUG_UDC("%s: disabled %s\n", __func__, _ep->name);
 	return 0;
 }
 
@@ -820,7 +821,7 @@ static struct usb_request *s3c_alloc_request(struct usb_ep *ep,
 {
 	struct s3c_request *req;
 
-	DEBUG("%s: %s %p\n", __func__, ep->name, ep);
+	DEBUG_UDC("%s: %s %p\n", __func__, ep->name, ep);
 
 	req = kmalloc(sizeof *req, gfp_flags);
 	if (!req)
@@ -835,7 +836,7 @@ static void s3c_free_request(struct usb_ep *ep, struct usb_request *_req)
 {
 	struct s3c_request *req;
 
-	DEBUG("%s: %p\n", __func__, ep);
+	DEBUG_UDC("%s: %p\n", __func__, ep);
 
 	req = container_of(_req, struct s3c_request, req);
 	WARN_ON(!list_empty(&req->queue));
@@ -849,7 +850,7 @@ static int s3c_dequeue(struct usb_ep *_ep, struct usb_request *_req)
 	struct s3c_request *req;
 	unsigned long flags;
 
-	DEBUG("%s: %p\n", __func__, _ep);
+	DEBUG_UDC("%s: %p\n", __func__, _ep);
 
 	ep = container_of(_ep, struct s3c_ep, ep);
 	if (!_ep || ep->ep.name == ep0name)
@@ -882,11 +883,11 @@ static int s3c_fifo_status(struct usb_ep *_ep)
 
 	ep = container_of(_ep, struct s3c_ep, ep);
 	if (!_ep) {
-		DEBUG("%s: bad ep\n", __func__);
+		DEBUG_UDC("%s: bad ep\n", __func__);
 		return -ENODEV;
 	}
 
-	DEBUG("%s: %d\n", __func__, ep_index(ep));
+	DEBUG_UDC("%s: %d\n", __func__, ep_index(ep));
 
 	/* LPD can't report unclaimed bytes from IN fifos */
 	if (ep_is_in(ep))
@@ -903,11 +904,11 @@ static void s3c_fifo_flush(struct usb_ep *_ep)
 
 	ep = container_of(_ep, struct s3c_ep, ep);
 	if (unlikely(!_ep || (!ep->desc && ep->ep.name != ep0name))) {
-		DEBUG("%s: bad ep\n", __func__);
+		DEBUG_UDC("%s: bad ep\n", __func__);
 		return;
 	}
 
-	DEBUG("%s: %d\n", __func__, ep_index(ep));
+	DEBUG_UDC("%s: %d\n", __func__, ep_index(ep));
 }
 
 /* ---------------------------------------------------------------------------
@@ -921,13 +922,13 @@ static int s3c_udc_get_frame(struct usb_gadget *_gadget)
 	/*fram count number [21:8]*/
 	unsigned int frame = __raw_readl(dev->regs + S3C_UDC_OTG_DSTS);
 
-	DEBUG("%s: %p\n", __func__, _gadget);
+	DEBUG_UDC("%s: %p\n", __func__, _gadget);
 	return frame & 0x3ff00;
 }
 
 static int s3c_udc_wakeup(struct usb_gadget *_gadget)
 {
-	DEBUG("%s: %p\n", __func__, _gadget);
+	DEBUG_UDC("%s: %p\n", __func__, _gadget);
 	return -ENOTSUPP;
 }
 
@@ -947,7 +948,7 @@ static void s3c_udc_soft_connect(void)
 	struct s3c_udc *dev = the_controller;
 	u32 uTemp;
 
-	DEBUG("[%s]\n", __func__);
+	DEBUG_UDC("[%s]\n", __func__);
 	uTemp = __raw_readl(dev->regs + S3C_UDC_OTG_DCTL);
 	uTemp = uTemp & ~SOFT_DISCONNECT;
 	__raw_writel(uTemp, dev->regs + S3C_UDC_OTG_DCTL);
@@ -959,7 +960,7 @@ static void s3c_udc_soft_disconnect(void)
 	u32 uTemp;
 	unsigned long flags;
 
-	DEBUG("[%s]\n", __func__);
+	DEBUG_UDC("[%s]\n", __func__);
 	uTemp = __raw_readl(dev->regs + S3C_UDC_OTG_DCTL);
 	uTemp |= SOFT_DISCONNECT;
 	__raw_writel(uTemp, dev->regs + S3C_UDC_OTG_DCTL);
@@ -992,7 +993,7 @@ static const struct usb_gadget_ops s3c_udc_ops = {
 
 static void nop_release(struct device *dev)
 {
-	DEBUG("%s %s\n", __func__, dev->bus_id);
+	DEBUG_UDC("%s %d\n", __func__, __LINE__);
 }
 
 static struct s3c_udc memory = {
@@ -1250,7 +1251,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	unsigned int irq;
 	int retval;
 
-	DEBUG("%s: %p\n", __func__, pdev);
+	DEBUG_UDC("%s: %p\n", __func__, pdev);
 
 	pdata = pdev->dev.platform_data;
 	if (!pdata) {
@@ -1278,13 +1279,13 @@ static int s3c_udc_probe(struct platform_device *pdev)
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (!res) {
-		DEBUG(KERN_ERR "cannot find register resource 0\n");
+		DEBUG_UDC(KERN_ERR "cannot find register resource 0\n");
 		return -EINVAL;
 	}
 
 	dev->regs = devm_request_and_ioremap(&pdev->dev, res);
 	if (!dev->regs) {
-		DEBUG(KERN_ERR "cannot request_and_map registers\n");
+		DEBUG_UDC(KERN_ERR "cannot request_and_map registers\n");
 		return -EADDRNOTAVAIL;
 	}
 	udc_reinit(dev);
@@ -1300,7 +1301,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 			&dev->usb_ctrl_dma, GFP_KERNEL);
 
 	if (!dev->usb_ctrl) {
-		DEBUG(KERN_ERR "%s: can't get usb_ctrl dma memory\n",
+		DEBUG_UDC(KERN_ERR "%s: can't get usb_ctrl dma memory\n",
 			driver_name);
 		retval = -ENOMEM;
 		goto err_get_ctrl_buf;
@@ -1311,7 +1312,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 			&dev->ep0_data_dma, GFP_KERNEL);
 
 	if (!dev->ep0_data) {
-		DEBUG(KERN_ERR "%s: can't get ep0_data dma memory\n",
+		DEBUG_UDC(KERN_ERR "%s: can't get ep0_data dma memory\n",
 			driver_name);
 		retval = -ENOMEM;
 		goto err_get_data_buf;
@@ -1327,7 +1328,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	    request_irq(irq, s3c_udc_irq, 0, driver_name, dev);
 
 	if (retval != 0) {
-		DEBUG(KERN_ERR "%s: can't get irq %i, err %d\n", driver_name,
+		DEBUG_UDC(KERN_ERR "%s: can't get irq %i, err %d\n", driver_name,
 		      dev->irq, retval);
 		retval = -EBUSY;
 		clk_disable(dev->clk);
@@ -1375,7 +1376,7 @@ static int s3c_udc_remove(struct platform_device *pdev)
 {
 	struct s3c_udc *dev = platform_get_drvdata(pdev);
 
-	DEBUG("%s: %p\n", __func__, pdev);
+	DEBUG_UDC("%s: %p\n", __func__, pdev);
 
 	remove_proc_files();
 	usb_gadget_unregister_driver(dev->driver);
@@ -1470,7 +1471,7 @@ static int __init udc_init(void)
 
 	ret = platform_driver_register(&s3c_udc_driver);
 	if (!ret)
-		printk(KERN_INFO "%s : %s\n"
+		pr_info("%s : %s\n"
 			"%s : version %s\n",
 			driver_name, DRIVER_DESC,
 			driver_name, DRIVER_VERSION);
