@@ -274,7 +274,7 @@
 
 	 fimd_fb: fimd_fb {
                 /* gpx0[6]- TE external interrupt pin */
-                gpios = <&gpx0 6 0xf>;
+                gpios = <&gpx0 4 0xf>;
                 fimd: fimd_ctrl {
                         samsung,left_margin = <1>;
                         samsung,right_margin = <1>;
@@ -377,8 +377,8 @@
                 };
 
                 mipi_dsi: mipi_dsi {
-                        /* gpx2[2]-DISP_SEL(power1), gpe0[1]-Reset, gpe0[2]-LCD_BL_ON(power2) */
-                        gpios = <&gpx2 2 0x1>, <&gpe0 1 0x1>, <&gpe0 2 0x1>;
+                        /* gpc0[0]-DISP_SEL(power1), gpc0[1]-Reset, gpc0[4]-LCD_BL_ON(power2) */
+                        gpios = <&gpc0 0 0x1>, <&gpc0 1 0x1>, <&gpc0 4 0x1>;
                         interrupt-parent = <&gic>;
                         interrupts = <0 83 0>;
 
