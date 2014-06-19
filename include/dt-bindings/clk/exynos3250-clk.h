@@ -40,6 +40,8 @@
 #define CLK_MOUT_MFC		38
 #define CLK_MOUT_MFC_1		39
 #define CLK_MOUT_MFC_0		40
+#define CLK_MOUT_CAM_BLK	41
+#define CLK_MOUT_CAM1		42
 
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
@@ -63,6 +65,9 @@
 #define CLK_DIV_MMC1_PRE	82
 #define CLK_DIV_MMC1		83
 #define CLK_DIV_MFC		84
+#define CLK_DIV_CAM_BLK		85
+#define CLK_CAM_BLK_320         86
+#define CLK_DIV_CAM1		87
 
 /* gate and special clocks */
 #define CLK_MCT			128
@@ -114,6 +119,24 @@
 #define CLK_PPMUMFC_L		174
 #define CLK_SMMUMFC_L		175
 #define CLK_MFC			176
+#define CLK_SCLK_JPEG		177
+#define CLK_QEJPEG		178
+#define CLK_PIXELASYNCM1	179
+#define CLK_PIXELASYNCM0	180
+#define CLK_PPMUCAMIF		181
+#define CLK_QEM2MSCALER		182
+#define CLK_QESCALER1		183
+#define CLK_QESCALER0		184
+#define CLK_SMMUJPEG		185
+#define CLK_SMMUM2MSCALER	186
+#define CLK_SMMUGSCALER1	187
+#define CLK_SMMUGSCALER0	188
+#define CLK_JPEG		189
+#define CLK_M2MSCALER		190
+#define CLK_GSCALER1		191
+#define CLK_GSCALER0		192
+#define CLK_ASYNC_CAMX		193
+#define CLK_SCLK_CAM1		194
 
 #define NR_CLKS			256
 

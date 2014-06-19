@@ -59,12 +59,16 @@ PNAME(mout_epll_p)		= { "fin_pll", "mout_epll" };
 PNAME(mout_vpll_p)		= { "fin_pll", "fout_vpll" };
 PNAME(mout_upll_p)		= { "fin_pll", "fout_upll", };
 PNAME(mout_mfc_p)		= { "mout_mfc_0", "mout_mfc_1" };
+PNAME(mout_cam_blk_p)		= { "xxti", "xusbxti", "none", "none", "none",
+					"none", "dout_mpll_pre", "sclk_epll",
+					"sclk_vpll", "none", "none", "none",
+					"div_cam_blk_320" };
 
 static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
 	FFACTOR(0, "sclk_mpll_1600", "mout_mpll", 1, 1, 0),
 	FFACTOR(0, "sclk_mpll_mif", "mout_mpll", 1, 2, 0),
 	FFACTOR(0, "sclk_bpll", "fout_bpll", 1, 2, 0),
-	FFACTOR(0, "div_cam_blk_320", "sclk_mpll_1600", 1, 5, 0),
+	FFACTOR(CLK_CAM_BLK_320, "div_cam_blk_320", "sclk_mpll_1600", 1, 5, 0),
 	FFACTOR(0, "div_lcd_blk_145", "sclk_mpll_1600", 1, 11, 0),
 	/* HACK:
 	 * As per user manual:
@@ -123,6 +127,9 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_MFC, "mout_mfc", mout_mfc_p, SRC_MFC, 8, 1),
 	CMUX(CLK_MOUT_MFC_1, "mout_mfc_1", group_epll_vpll_p, SRC_MFC, 4, 1),
 	CMUX(CLK_MOUT_MFC_0, "mout_mfc_0", group_div_mpll_pre_p, SRC_MFC, 0, 1),
+
+	CMUX(CLK_MOUT_CAM1, "mout_cam1", group_sclk_p, SRC_CAM, 20, 4),
+	CMUX(CLK_MOUT_CAM_BLK, "mout_cam_blk", mout_cam_blk_p, SRC_CAM, 0, 4),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
@@ -161,6 +168,9 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_G3D, "dout_g3d", "mout_g3d", DIV_G3D, 0, 4),
 
 	CDIV(CLK_DIV_MFC, "dout_mfc", "mout_mfc", DIV_MFC, 0, 4),
+
+	CDIV(CLK_DIV_CAM1, "dout_cam1", "mout_cam1", DIV_CAM, 20, 4),
+	CDIV(CLK_DIV_CAM_BLK, "dout_cam_blk", "mout_cam_blk", DIV_CAM, 0, 4),
 };
 
 #define CGATE(_id, cname, pname, o, b, f, gf) \
@@ -248,10 +258,19 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_ASYNC_MFCL, "async_mfcl", "dout_aclk_100", GATE_IP_LEFTBUS, 4,
 			CLK_IGNORE_UNUSED, 0),
 
+	CGATE(CLK_ASYNC_CAMX, "async_camx", "dout_aclk_100",
+			GATE_IP_RIGHTBUS, 2, CLK_IGNORE_UNUSED, 0),
+
 	CGATE(CLK_SCLK_MFC, "sclk_mfc", "dout_mfc",
 			GATE_SCLK_MFC, 0, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_G3D, "sclk_g3d", "dout_g3d",
 			GATE_SCLK_G3D, 0, CLK_SET_RATE_PARENT, 0),
+
+	CGATE(CLK_SCLK_JPEG, "sclk_jpeg", "dout_cam_blk",
+			GATE_SCLK_CAM, 8, CLK_SET_RATE_PARENT, 0),
+
+	CGATE(CLK_SCLK_CAM1, "sclk_cam1", "dout_cam1",
+			GATE_SCLK_ISP, 4, CLK_SET_RATE_PARENT, 0),
 
 	CGATE(CLK_SMMUG3D, "smmug3d", "dout_aclk_200", GATE_IP_G3D, 3, 0, 0),
 	CGATE(CLK_QEG3D, "qeg3d", "dout_aclk_200", GATE_IP_G3D, 2,
@@ -267,6 +286,36 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SMMUMFC_L, "smmumfc_l", "dout_aclk_200", GATE_IP_MFC, 1, 0, 0),
 	CGATE(CLK_MFC, "mfc", "dout_aclk_200", GATE_IP_MFC, 0, 0, 0),
 
+	CGATE(CLK_QEJPEG, "qejpeg", "div_cam_blk_320",
+			GATE_IP_CAM, 19, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_PIXELASYNCM1, "pixelasyncm1", "div_cam_blk_320",
+			GATE_IP_CAM, 18, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_PIXELASYNCM0, "pixelasyncm0", "div_cam_blk_320",
+			GATE_IP_CAM, 17, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_PPMUCAMIF, "ppmucamif", "div_cam_blk_320",
+			GATE_IP_CAM, 16, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_QEM2MSCALER, "qem2mscaler", "div_cam_blk_320",
+			GATE_IP_CAM, 14, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_QESCALER1, "qescaler1", "div_cam_blk_320",
+			GATE_IP_CAM, 13, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_QESCALER0, "qescaler0", "div_cam_blk_320",
+			GATE_IP_CAM, 12, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUJPEG, "smmujpeg", "div_cam_blk_320",
+			GATE_IP_CAM, 11, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUM2MSCALER, "smmum2mscaler", "div_cam_blk_320",
+			GATE_IP_CAM, 9, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUGSCALER1, "smmugscaler1", "div_cam_blk_320",
+			GATE_IP_CAM, 8, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUGSCALER0, "smmugscaler0", "div_cam_blk_320",
+			GATE_IP_CAM, 7, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_JPEG, "jpeg", "div_cam_blk_320",
+			GATE_IP_CAM, 6, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_M2MSCALER, "m2mscaler", "div_cam_blk_320",
+			GATE_IP_CAM, 2, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_GSCALER1, "gscaler1", "div_cam_blk_320",
+			GATE_IP_CAM, 1, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_GSCALER0, "gscaler0", "div_cam_blk_320",
+			GATE_IP_CAM, 0, CLK_IGNORE_UNUSED, 0),
 };
 
 static struct samsung_pll_rate_table exynos3250_pll_rates[] = {
