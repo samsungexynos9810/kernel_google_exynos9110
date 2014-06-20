@@ -49,6 +49,7 @@
 #define GPUMOUT0CLK_NAME "mout_g3d0"
 #define GPUMOUTCLK_NAME "mout_g3d"
 #define GPUCLK_NAME      "sclk_g3d"
+#define GPU_NAME      "g3d"
 #define CLK_DIV_STAT_G3D 0x1003C62C
 #define CLK_DESC         "clk-divider-status"
 
@@ -61,6 +62,7 @@ static struct clk *fout_vpll_clock = NULL;
 static struct clk *sclk_vpll_clock = NULL;
 static struct clk *mali_parent_clock = NULL;
 static struct clk *mali_clock = NULL;
+static struct clk *g3d_clock = NULL;
 
 /* PegaW1 */
 int mali_gpu_clk = 160;
@@ -155,6 +157,14 @@ mali_bool mali_clk_get(struct platform_device *pdev)
 			return MALI_FALSE;
 		}
 	}
+	if (g3d_clock == NULL) {
+		g3d_clock = clk_get(&pdev->dev, GPU_NAME);
+
+		if (IS_ERR(g3d_clock)) {
+			MALI_PRINT(("MALI Error : failed to get mali g3d clock\n"));
+			return MALI_FALSE;
+		}
+	}
 
 	return MALI_TRUE;
 }
@@ -213,6 +223,12 @@ void mali_clk_put(mali_bool binc_mali_clock)
 	{
 		clk_put(mali_clock);
 		mali_clock = NULL;
+	}
+
+	if (g3d_clock)
+	{
+		clk_put(g3d_clock);
+		g3d_clock = NULL;
 	}
 }
 
@@ -284,7 +300,7 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 		MALI_PRINT_ERROR(("mali_clock set parent to mali_parent_clock failed\n"));
 
 	if (!atomic_read(&clk_active)) {
-		if (clk_prepare_enable(mali_clock) < 0) {
+		if ((clk_prepare_enable(mali_clock)  < 0) || (clk_prepare_enable(g3d_clock)  < 0)) {
 			MALI_PRINT(("Error: Failed to enable clock\n"));
 			goto err_clk;
 		}
@@ -305,7 +321,7 @@ err_clk:
 
 static mali_bool deinit_mali_clock(void)
 {
-	if (mali_clock == 0)
+	if (mali_clock == 0 || g3d_clock == 0)
 		return MALI_TRUE;
 
 	mali_clk_put(MALI_TRUE);
@@ -316,6 +332,7 @@ static _mali_osk_errcode_t enable_mali_clocks(void)
 {
 	int err;
 	err = clk_prepare_enable(mali_clock);
+	err = clk_prepare_enable(g3d_clock);
 	MALI_DEBUG_PRINT(3,("enable_mali_clocks mali_clock %p error %d \n", mali_clock, err));
 
 	MALI_SUCCESS;
@@ -325,7 +342,8 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 {
 	if (atomic_read(&clk_active)) {
 		clk_disable_unprepare(mali_clock);
-		MALI_DEBUG_PRINT(3, ("disable_mali_clocks mali_clock %p\n", mali_clock));
+		clk_disable_unprepare(g3d_clock);
+		MALI_DEBUG_PRINT(3, ("disable_mali_clocks mali_clock %p g3d %p\n", mali_clock,g3d_clock));
 		atomic_set(&clk_active, 0);
 	}
 

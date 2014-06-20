@@ -307,10 +307,10 @@
 		<&clock CLK_FOUT_VPLL>, <&clock CLK_MOUT_VPLL>,
 		<&clock CLK_MOUT_G3D_1>, <&clock CLK_MOUT_MPLL>,
 		<&clock CLK_MOUT_G3D_0>, <&clock CLK_MOUT_G3D>,
-		<&clock CLK_SCLK_G3D>;
+		<&clock CLK_SCLK_G3D>, <&clock CLK_G3D>;
 		clock-names = "ext_xtal", "mout_vpllsrc", "fout_vpll",
 		"mout_vpll", "mout_g3d1", "mout_mpll", "mout_g3d0", "mout_g3d",
-		"sclk_g3d";
+		"sclk_g3d", "g3d";
         };
 
 	pd_cam: pd-cam@0x10023c00 {
