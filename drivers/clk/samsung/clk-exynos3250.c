@@ -47,10 +47,10 @@ PNAME(mout_mpll_user_r_p)	= { "fin_pll", "dout_mpll_pre" };
 PNAME(mout_mpll_user_p)		= { "fin_pll", "dout_mpll_pre" };
 PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 					"none",	"dout_mpll_pre",
-					"sclk_epll", "sclk_vpll" };
+					"mout_epll", "mout_vpll" };
 PNAME(group_sclk_fimd0_p)	= { "xxti", "xusbxti", "m_bitclkhsdiv4_2l",
 					"none", "none",	"none",	"dout_mpll_pre",
-					"sclk_epll", "sclk_vpll", "none",
+					"mout_epll", "mout_vpll", "none",
 					"none", "none", "div_lcd_blk_145" };
 PNAME(mout_mpll_p)		= { "fin_pll", "fout_mpll" };
 PNAME(mout_vpllsrc_p)		= { "fin_pll", "none" };
@@ -62,14 +62,14 @@ PNAME(mout_vpll_p)		= { "fin_pll", "fout_vpll" };
 PNAME(mout_upll_p)		= { "fin_pll", "fout_upll", };
 PNAME(mout_mfc_p)		= { "mout_mfc_0", "mout_mfc_1" };
 PNAME(mout_cam_blk_p)		= { "xxti", "xusbxti", "none", "none", "none",
-					"none", "dout_mpll_pre", "sclk_epll",
-					"sclk_vpll", "none", "none", "none",
+					"none", "dout_mpll_pre", "mout_epll",
+					"mout_vpll", "none", "none", "none",
 					"div_cam_blk_320" };
 PNAME(mout_mpll_user_sel_p)	= { "fin_pll", "dout_mpll_pre" };
 PNAME(mout_apll_sel_p)		= { "fin_pll", "fout_apll" };
 PNAME(mout_core_sel_p)		= { "mout_apll_sel", "mout_mpll_user_sel" };
 PNAME(mout_aclk_400_mcuisp_p)	= { "dout_mpll_pre", "none" };
-PNAME(mout_aclk_266_0_p)	= { "dout_mpll_pre", "sclk_vpll" };
+PNAME(mout_aclk_266_0_p)	= { "dout_mpll_pre", "mout_vpll" };
 PNAME(mout_aclk_266_1_p)	= { "mout_epll", "none" };
 PNAME(mout_aclk_266_p)		= { "mout_aclk_266_0", "mout_aclk_266_1" };
 PNAME(mout_aclk_400_mcuisp_sub_p) = { "fin_pll", "dout_aclk_400_mcuisp" };
