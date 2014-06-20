@@ -68,6 +68,12 @@ PNAME(mout_cam_blk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 PNAME(mout_mpll_user_sel_p)	= { "fin_pll", "dout_mpll_pre" };
 PNAME(mout_apll_sel_p)		= { "fin_pll", "fout_apll" };
 PNAME(mout_core_sel_p)		= { "mout_apll_sel", "mout_mpll_user_sel" };
+PNAME(mout_aclk_400_mcuisp_p)	= { "dout_mpll_pre", "none" };
+PNAME(mout_aclk_266_0_p)	= { "dout_mpll_pre", "sclk_vpll" };
+PNAME(mout_aclk_266_1_p)	= { "mout_epll", "none" };
+PNAME(mout_aclk_266_p)		= { "mout_aclk_266_0", "mout_aclk_266_1" };
+PNAME(mout_aclk_400_mcuisp_sub_p) = { "fin_pll", "dout_aclk_400_mcuisp" };
+PNAME(mout_aclk_266_sub_p)	= { "fin_pll", "dout_aclk_266" };
 
 static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
 	FFACTOR(0, "sclk_mpll_1600", "mout_mpll", 1, 1, 0),
@@ -101,8 +107,14 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_GDR, "mout_gdr", mout_gdr_p, SRC_RIGHTBUS, 0, 1),
 
 	CMUX(CLK_MOUT_UPLL, "mout_upll", mout_upll_p, SRC_TOP1, 28, 1),
+	CMUX(CLK_MOUT_ACLK_400_MCUISP_SUB, "mout_aclk_400_mcuisp_sub",
+		mout_aclk_400_mcuisp_sub_p, SRC_TOP1, 24, 1),
+	CMUX(CLK_MOUT_ACLK_266_SUB, "mout_aclk_266_sub", mout_aclk_266_sub_p,
+		SRC_TOP1, 20, 1),
 	CMUX_A(CLK_MOUT_MPLL, "mout_mpll", mout_mpll_p,
 		SRC_TOP1, 12, 1, "sclk_mpll"),
+	CMUX(CLK_MOUT_ACLK_400_MCUISP, "mout_aclk_400_mcuisp",
+		mout_aclk_400_mcuisp_p, SRC_TOP1, 8, 1),
 	CMUX(CLK_MOUT_VPLLSRC, "mout_vpllsrc", mout_vpllsrc_p,
 		SRC_TOP1, 0, 1),
 
@@ -112,6 +124,12 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 		SRC_TOP0, 20, 0),
 	CMUX(CLK_MOUT_ACLK_100, "mout_aclk100", group_div_mpll_pre_p,
 		SRC_TOP0, 16, 1),
+	CMUX(CLK_MOUT_ACLK_266_1, "mout_aclk_266_1", mout_aclk_266_1_p,
+		SRC_TOP0, 14, 1),
+	CMUX(CLK_MOUT_ACLK_266_0, "mout_aclk_266_0", mout_aclk_266_0_p,
+		SRC_TOP0, 13, 1),
+	CMUX(CLK_MOUT_ACLK_266, "mout_aclk_266", mout_aclk_266_p,
+		SRC_TOP0, 12, 1),
 	CMUX(CLK_MOUT_VPLL, "mout_vpll", mout_vpll_p, SRC_TOP0, 8, 1),
 	CMUX(CLK_MOUT_EPLL, "mout_epll", mout_epll_p, SRC_TOP0, 4, 1),
 
@@ -158,9 +176,12 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_GDR, "dout_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 4),
 
 	CDIV(CLK_DIV_MPLL_PRE, "dout_mpll_pre", "sclk_mpll_mif", DIV_TOP, 28, 2),
+	CDIV(CLK_DIV_ACLK_400_MCUISP, "dout_aclk_400_mcuisp",
+			"mout_aclk_400_mcuisp", DIV_TOP, 24, 3),
 	CDIV(CLK_DIV_ACLK_200, "dout_aclk_200", "mout_aclk200", DIV_TOP, 12, 4),
 	CDIV(CLK_DIV_ACLK_160, "dout_aclk_160", "mout_aclk_160", DIV_TOP, 8, 3),
 	CDIV(CLK_DIV_ACLK_100, "dout_aclk_100", "mout_aclk100", DIV_TOP, 4, 4),
+	CDIV(CLK_DIV_ACLK_266, "dout_aclk_266", "mout_aclk_266", DIV_TOP, 0, 2),
 
 	CDIV_F(CLK_DIV_MMC1_PRE, "dout_mmc1_pre", "dout_mmc1", DIV_FSYS1, 24, 8,
 			CLK_SET_RATE_PARENT, 0),
@@ -189,6 +210,15 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_SPI1, "dout_spi1", "mout_spi1", DIV_PERIL1, 16, 4),
 	CDIV(CLK_DIV_SPI0_PRE, "dout_spi0_pre", "dout_spi0", DIV_PERIL1, 8, 4),
 	CDIV(CLK_DIV_SPI0, "dout_spi0", "mout_spi0", DIV_PERIL1, 0, 4),
+
+	CDIV(CLK_DIV_ISP1, "dout_isp1", "mout_aclk_266_sub", DIV_ISP0, 4, 2),
+	CDIV(CLK_DIV_ISP0, "dout_isp0", "mout_aclk_266_sub", DIV_ISP0, 0, 2),
+
+	CDIV(CLK_DIV_MCUISP1, "dout_mcuisp1", "mout_aclk_400_mcuisp_sub",
+			DIV_ISP1, 8, 2),
+	CDIV(CLK_DIV_MCUISP0, "dout_mcuisp0", "mout_aclk_400_mcuisp_sub",
+			DIV_ISP1, 4, 2),
+	CDIV(CLK_DIV_MPWM, "dout_mpwm", "dout_isp1", DIV_ISP1, 0, 2),
 };
 
 #define CGATE(_id, cname, pname, o, b, f, gf) \
@@ -343,6 +373,21 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			GATE_IP_CAM, 1, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_GSCALER0, "gscaler0", "div_cam_blk_320",
 			GATE_IP_CAM, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_HCLK_AXI_DIV1, "hclk_axi_div1", "dout_isp1",
+			GATE_BUS_ISP0, 24, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_ACLK_AXI_DIV0, "aclk_axi_div0", "dout_isp0",
+			GATE_BUS_ISP0, 23, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_ACLK_MCUISP, "aclk_mcuisp", "mout_aclk_400_mcuisp_sub",
+			GATE_BUS_ISP0, 6, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_ACLK_AXI_266, "aclk_axi266", "mout_aclk_266_sub",
+			GATE_BUS_ISP0, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_PCLKDBG_MCUISP, "pclkdbg_mcuisp", "dout_mcuisp1",
+			GATE_BUS_ISP3, 3, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_SCLK_MPWM_ISP, "sclk_mpwm_isp", "dout_mpwm",
+			GATE_IP_SCLK_ISP, 0, CLK_IGNORE_UNUSED, 0),
 };
 
 static struct samsung_pll_rate_table exynos3250_pll_rates[] = {
