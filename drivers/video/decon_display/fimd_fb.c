@@ -965,7 +965,6 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 	shadowcon |= SHADOWCON_CHx_ENABLE(index);
 	writel(shadowcon, sfb->regs + SHADOWCON);
 
-	writel(WINxMAP_MAP | WINxMAP_MAP_COLOUR(0x00ffff), sfb->regs + WINxMAP(index));
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
