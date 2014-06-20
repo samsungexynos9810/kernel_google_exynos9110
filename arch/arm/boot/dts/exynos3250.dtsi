@@ -148,7 +148,9 @@
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x11E20000 0x1000>;
 		interrupts = <0 80 0>;
-		/* mmu-masters = <&fimd>; */
+		clock-names = "sysmmu", "master";
+                clocks = <&clock CLK_SMMUFIMD0>, <&clock CLK_FIMD0>;
+		mmu-masters = <&fimd_fb>; 
 	};
 
 	i2c_0: i2c@13860000 {
