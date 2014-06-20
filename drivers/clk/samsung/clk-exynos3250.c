@@ -130,6 +130,9 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 
 	CMUX(CLK_MOUT_CAM1, "mout_cam1", group_sclk_p, SRC_CAM, 20, 4),
 	CMUX(CLK_MOUT_CAM_BLK, "mout_cam_blk", mout_cam_blk_p, SRC_CAM, 0, 4),
+
+	CMUX(CLK_MOUT_SPI1, "mout_spi1", group_sclk_p, SRC_PERIL1, 20, 4),
+	CMUX(CLK_MOUT_SPI0, "mout_spi0", group_sclk_p, SRC_PERIL1, 16, 4),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
@@ -171,6 +174,11 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 
 	CDIV(CLK_DIV_CAM1, "dout_cam1", "mout_cam1", DIV_CAM, 20, 4),
 	CDIV(CLK_DIV_CAM_BLK, "dout_cam_blk", "mout_cam_blk", DIV_CAM, 0, 4),
+
+	CDIV(CLK_DIV_SPI1_PRE, "dout_spi1_pre", "dout_spi1", DIV_PERIL1, 24, 4),
+	CDIV(CLK_DIV_SPI1, "dout_spi1", "mout_spi1", DIV_PERIL1, 16, 4),
+	CDIV(CLK_DIV_SPI0_PRE, "dout_spi0_pre", "dout_spi0", DIV_PERIL1, 8, 4),
+	CDIV(CLK_DIV_SPI0, "dout_spi0", "mout_spi0", DIV_PERIL1, 0, 4),
 };
 
 #define CGATE(_id, cname, pname, o, b, f, gf) \
@@ -185,6 +193,11 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			GATE_SCLK_PERIL, 1, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_UART0, "sclk_uart0", "dout_uart0",
 			GATE_SCLK_PERIL, 0, CLK_SET_RATE_PARENT, 0),
+
+	CGATE(CLK_SCLK_SPI1, "sclk_spi1", "dout_spi1_pre",
+			GATE_SCLK_PERIL, 7, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_SPI0, "sclk_spi0", "dout_spi0_pre",
+			GATE_SCLK_PERIL, 6, CLK_SET_RATE_PARENT, 0),
 
 	CGATE(CLK_KEYIF, "keyif", "dout_aclk_100", GATE_IP_PERIR, 16, 0, 0),
 	CGATE(CLK_RTC, "rtc", "dout_aclk_100",
@@ -218,6 +231,10 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			GATE_IP_PERIL, 7, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_I2C0, "i2c0", "dout_aclk_100",
 			GATE_IP_PERIL, 6, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SPI1, "spi1", "dout_aclk_100",
+			GATE_IP_PERIL, 17, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SPI0, "spi0", "dout_aclk_100",
+			GATE_IP_PERIL, 16, CLK_IGNORE_UNUSED, 0),
 
 	CGATE(CLK_ACLK_FIMD0, "aclk_fimd0", NULL,
 			GATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),

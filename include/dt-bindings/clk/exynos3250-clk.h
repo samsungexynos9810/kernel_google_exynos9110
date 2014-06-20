@@ -42,6 +42,8 @@
 #define CLK_MOUT_MFC_0		40
 #define CLK_MOUT_CAM_BLK	41
 #define CLK_MOUT_CAM1		42
+#define CLK_MOUT_SPI0		43
+#define CLK_MOUT_SPI1		44
 
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
@@ -68,6 +70,10 @@
 #define CLK_DIV_CAM_BLK		85
 #define CLK_CAM_BLK_320         86
 #define CLK_DIV_CAM1		87
+#define CLK_DIV_SPI0		88
+#define CLK_DIV_SPI0_PRE	89
+#define CLK_DIV_SPI1		90
+#define CLK_DIV_SPI1_PRE	91
 
 /* gate and special clocks */
 #define CLK_MCT			128
@@ -137,6 +143,10 @@
 #define CLK_GSCALER0		192
 #define CLK_ASYNC_CAMX		193
 #define CLK_SCLK_CAM1		194
+#define CLK_SCLK_SPI0		195
+#define CLK_SCLK_SPI1		196
+#define CLK_SPI0		197
+#define CLK_SPI1		198
 
 #define NR_CLKS			256
 
