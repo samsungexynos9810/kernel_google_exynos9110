@@ -360,7 +360,7 @@ static int parse_dsi_drvdata(struct device_node *np)
 	g_disp_gpios.id[0] = of_get_gpio(np, 0);
 	g_disp_gpios.num++;
 	g_disp_gpios.id[1] = of_get_gpio(np, 1);
-#if defined(CONFIG_MACH_UNIVERSAL3250)
+#if defined(CONFIG_MACH_UNIVERSAL3250) || defined(CONFIG_SOC_EXYNOS3250)
 	g_disp_gpios.num++;
 	g_disp_gpios.id[2] = of_get_gpio(np, 2);
 #endif

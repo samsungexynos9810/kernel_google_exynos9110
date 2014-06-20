@@ -110,7 +110,6 @@ int init_display_decon_clocks(struct device *dev)
 int init_display_driver_clocks(struct device *dev)
 {
 	int ret = 0;
-
 	/* Set parent clock and rate */
 	/* 1. Set [LCD0_BLK:sclk_mipi0]: display special mipi-dsim */
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0_pre, dout_mipi0);
@@ -150,28 +149,23 @@ int enable_display_driver_power(struct device *dev)
 	dispdrv = get_display_driver();
 
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
-	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_power");
-	usleep_range(5000, 6000);
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_power");
+	usleep_range(20000, 21000);
+	gpio_set_value(gpio->id[0],0);
+	usleep_range(20000, 21000);
 	gpio_free(gpio->id[0]);
 
 	gpio_request_one(gpio->id[2], GPIOF_OUT_INIT_HIGH, "lcd_power2");
-	usleep_range(5000, 6000);
-	gpio_set_value(gpio->id[2], 0);
-	usleep_range(5000, 6000);
+	usleep_range(20000, 21000);
 	gpio_set_value(gpio->id[2], 1);
-	usleep_range(5000, 6000);
+	usleep_range(20000, 21000);
 	gpio_free(gpio->id[2]);
 
 	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
-	usleep_range(5000, 6000);
+	usleep_range(20000, 21000);
 	gpio_set_value(gpio->id[1], 0);
-	usleep_range(5000, 6000);
+	usleep_range(20000, 21000);
 	gpio_set_value(gpio->id[1], 1);
-	usleep_range(5000, 6000);
-	gpio_set_value(gpio->id[1], 0);
-	usleep_range(5000, 6000);
-	gpio_set_value(gpio->id[1], 1);
-	usleep_range(5000, 6000);
 	gpio_free(gpio->id[1]);
 	
 	return ret;
