@@ -459,6 +459,15 @@
 		timeout-sec = <30>;
 		pmu_wdt_reset_type = <0>;
 	};
+
+	tmu@100C0000 {
+		compatible = "samsung,exynos3250-tmu";
+		reg = <0x100C0000 0x100>;
+		interrupt-parent = <&gic>;
+		interrupts = <0 216 0>;
+		clocks = <&clock CLK_TMU_APBIF>;
+		clock-names = "tmu_apbif";
+	};
 };
 
 #include "exynos3250-pinctrl.dtsi"
