@@ -20,6 +20,7 @@
 
 #include <mach/regs-pmu.h>
 #include <mach/regs-clock.h>
+#include <mach/exynos-pm.h>
 #include <mach/pmu.h>
 #include <mach/smc.h>
 
@@ -35,6 +36,15 @@
 #endif
 
 #define EXYNOS_CHECK_DIRECTGO	0xFCBA0D10
+
+#if defined(CONFIG_MMC_DW)
+extern int dw_mci_exynos_request_status(void);
+#endif
+
+#ifdef CONFIG_SAMSUNG_USBPHY
+extern int samsung_usbphy_check_op(void);
+extern void samsung_usb_lpa_resume(void);
+#endif
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
 			struct cpuidle_driver *drv,
@@ -68,6 +78,73 @@ static struct cpuidle_driver exynos_idle_driver = {
 	.name		= "exynos_idle",
 	.owner		= THIS_MODULE,
 };
+
+struct check_reg_lpa {
+	void __iomem	*check_reg;
+	unsigned int	check_bit;
+};
+
+/*
+ * List of check power domain list for LPA mode
+ * These register are have to power off to enter LPA mode
+ */
+static struct check_reg_lpa exynos_power_domain[] = {
+	{.check_reg = EXYNOS3_LCD0_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS3_CAM_STATUS,       .check_bit = 0x7},
+	{.check_reg = EXYNOS3_G3D_STATUS,	.check_bit = 0x7},
+	{.check_reg = EXYNOS3_MFC_STATUS,	.check_bit = 0x7},
+	/* need to add ISP check */
+};
+
+/*
+ * List of check clock gating list for LPA mode
+ * If clock of list is not gated, system can not enter LPA mode.
+ */
+static struct check_reg_lpa exynos_clock_gating[] = {
+	{.check_reg = EXYNOS3_CLKGATE_IP_MFC,	.check_bit = 0x00000001},
+	{.check_reg = EXYNOS3_CLKGATE_IP_FSYS,	.check_bit = 0x00000001},
+	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,	.check_bit = 0x00033FC0},
+};
+
+static int exynos_check_reg_status(struct check_reg_lpa *reg_list,
+				    unsigned int list_cnt)
+{
+	unsigned int i;
+	unsigned int tmp;
+
+	for (i = 0; i < list_cnt; i++) {
+		tmp = __raw_readl(reg_list[i].check_reg);
+		if (tmp & reg_list[i].check_bit)
+			return -EBUSY;
+	}
+
+	return 0;
+}
+
+static int __maybe_unused exynos_check_enter_mode(void)
+{
+	/* Check power domain */
+	if (exynos_check_reg_status(exynos_power_domain,
+			    ARRAY_SIZE(exynos_power_domain)))
+		return EXYNOS_CHECK_DIDLE;
+
+	/* Check clock gating */
+	if (exynos_check_reg_status(exynos_clock_gating,
+			    ARRAY_SIZE(exynos_clock_gating)))
+		return EXYNOS_CHECK_DIDLE;
+
+#if defined(CONFIG_MMC_DW)
+	if (dw_mci_exynos_request_status())
+		return EXYNOS_CHECK_DIDLE;
+#endif
+
+#ifdef CONFIG_SAMSUNG_USBPHY
+	if (samsung_usbphy_check_op())
+		return EXYNOS_CHECK_DIDLE;
+#endif
+
+	return EXYNOS_CHECK_LPA;
+}
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
 void exynos3250_enable_idle_clock_down(void)
@@ -199,6 +276,61 @@ static int exynos_enter_core0_aftr(struct cpuidle_device *dev,
 	return index;
 }
 
+static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
+				struct cpuidle_driver *drv,
+				int index)
+{
+	unsigned long tmp;
+	unsigned int ret;
+	unsigned int cpuid = smp_processor_id();
+
+	exynos_set_wakeupmask();
+
+	exynos3250_disable_idle_clock_down();
+
+	/* Set value of power down register for aftr mode */
+	exynos_sys_powerdown_conf(SYS_LPA);
+
+	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
+	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
+
+	save_cpu_arch_register();
+
+	/* Setting Central Sequence Register for power down mode */
+	tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	tmp &= ~EXYNOS_CENTRAL_LOWPWR_CFG;
+	__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+
+	set_boot_flag(cpuid, C2_STATE);
+
+	cpu_pm_enter();
+	exynos_lpa_enter();
+
+	ret = cpu_suspend(0, idle_finisher);
+	if (ret) {
+		tmp = __raw_readl(EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+		tmp |= EXYNOS_CENTRAL_LOWPWR_CFG;
+		__raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
+	}
+
+#ifdef CONFIG_SAMSUNG_USBPHY
+	samsung_usb_lpa_resume();
+#endif
+	clear_boot_flag(cpuid, C2_STATE);
+
+	exynos_lpa_exit();
+	cpu_pm_exit();
+
+	restore_cpu_arch_register();
+
+	exynos3250_enable_idle_clock_down();
+
+	/* Clear wakeup state register */
+	__raw_writel(0x0, EXYNOS_WAKEUP_STAT);
+
+	return index;
+}
+
 static int exynos_enter_idle(struct cpuidle_device *dev,
 				struct cpuidle_driver *drv,
 				int index)
@@ -217,7 +349,10 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 	if (num_online_cpus() > 1)
 		return exynos_enter_idle(dev, drv, 0);
 
-	return exynos_enter_core0_aftr(dev, drv, new_index);
+	if (exynos_check_enter_mode() == EXYNOS_CHECK_DIDLE)
+		return exynos_enter_core0_aftr(dev, drv, new_index);
+	else
+		return exynos_enter_core0_lpa(dev, drv, new_index);
 }
 
 static int __init exynos_init_cpuidle(void)
