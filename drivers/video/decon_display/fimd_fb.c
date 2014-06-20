@@ -3193,7 +3193,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	/* setup vmm */
-	exynos_create_iovmm(&pdev->dev, 1, 0);
+	exynos_create_iovmm(&pdev->dev, fbdrv->variant.nr_windows, 0);
 #endif
 
 	default_win = sfb->pdata->default_win;
@@ -3222,7 +3222,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	prev_overlap_cnt = 1;
 #endif
 	/* we have the register setup, start allocating framebuffers */
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < fbdrv->variant.nr_windows; i++) {
 		win = i;
 		if (i == 0)
 			win = default_win;
