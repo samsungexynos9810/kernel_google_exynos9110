@@ -64,7 +64,7 @@ void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 		if (triminfo & CALIB_SEL_MASK)
 			con |= triminfo & VPTAT_CTRL_MASK;
 	}
-#elif defined(CONFIG_SOC_EXYNOS5422)
+#elif defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS3250)
 	con |= EXYNOS_MUX_ADDR;
 #endif
 
