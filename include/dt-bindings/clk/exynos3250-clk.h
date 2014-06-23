@@ -52,6 +52,7 @@
 #define CLK_MOUT_ACLK_266	48
 #define CLK_MOUT_ACLK_400_MCUISP_SUB 49
 #define CLK_MOUT_ACLK_266_SUB	50
+#define CLK_MOUT_MMC1		51
 
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
@@ -120,7 +121,6 @@
 #define CLK_DSIM0		154
 #define CLK_ASYNC_G3D		155
 #define CLK_SCLK_G3D		156
-#define CLK_SMMUG3D		157
 #define CLK_QEG3D		158
 #define CLK_PPMUG3D		159
 #define CLK_G3D			160

@@ -145,6 +145,7 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_MIPI0, "mout_mipi0", group_sclk_p, SRC_LCD, 12, 4),
 	CMUX(CLK_MOUT_FIMD0, "mout_fimd0", group_sclk_fimd0_p, SRC_LCD, 0, 4),
 
+	CMUX(CLK_MOUT_MMC1, "mout_mmc1", group_sclk_p, SRC_FSYS, 4, 3),
 	CMUX(CLK_MOUT_MMC0, "mout_mmc0", group_sclk_p, SRC_FSYS, 0, 4),
 
 	CMUX(CLK_MOUT_G3D, "mout_g3d", mout_g3d_p, SRC_G3D, 8, 1),
@@ -333,7 +334,6 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SCLK_CAM1, "sclk_cam1", "dout_cam1",
 			GATE_SCLK_ISP, 4, CLK_SET_RATE_PARENT, 0),
 
-	CGATE(CLK_SMMUG3D, "smmug3d", "dout_aclk_200", GATE_IP_G3D, 3, 0, 0),
 	CGATE(CLK_QEG3D, "qeg3d", "dout_aclk_200", GATE_IP_G3D, 2,
 			CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_PPMUG3D, "ppmug3d", "dout_aclk_200", GATE_IP_G3D, 1,
