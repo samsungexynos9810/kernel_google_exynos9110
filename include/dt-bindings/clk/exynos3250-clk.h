@@ -13,6 +13,8 @@
 #define CLK_FOUT_MPLL		2
 #define CLK_FOUT_VPLL		3
 #define CLK_FOUT_UPLL		4
+#define CLK_FOUT_EPLL		5
+#define CLK_FOUT_BPLL		6
 
 /* Muxes */
 #define CLK_MOUT_MPLL		16
