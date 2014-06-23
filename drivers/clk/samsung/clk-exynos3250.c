@@ -78,6 +78,8 @@ PNAME(mout_aclk_266_1_p)	= { "mout_epll", "none" };
 PNAME(mout_aclk_266_p)		= { "mout_aclk_266_0", "mout_aclk_266_1" };
 PNAME(mout_aclk_400_mcuisp_sub_p) = { "fin_pll", "dout_aclk_400_mcuisp" };
 PNAME(mout_aclk_266_sub_p)	= { "fin_pll", "dout_aclk_266" };
+PNAME(mout_isp_p)		= { "fin_pll", "xusbxti", "dout_mpll_pre",
+					"mout_epll", "mout_vpll" };
 
 static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
 	FFACTOR(0, "sclk_mpll_1600", "mout_mpll", 1, 1, 0),
@@ -166,6 +168,10 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 		"mout_core"),
 	CMUX_A(0, "mout_apll_sel", mout_apll_sel_p, SRC_CPU, 0, 1,
 		"mout_apll"),
+
+	CMUX(CLK_MOUT_UART_ISP, "mout_uart_isp", mout_isp_p, SRC_ISP, 12, 3),
+	CMUX(CLK_MOUT_SPI1_ISP, "mout_spi1_isp", mout_isp_p, SRC_ISP, 8, 3),
+	CMUX(CLK_MOUT_SPI0_ISP, "mout_spi0_isp", mout_isp_p, SRC_ISP, 4, 3),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
@@ -215,6 +221,17 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_SPI1, "dout_spi1", "mout_spi1", DIV_PERIL1, 16, 4),
 	CDIV(CLK_DIV_SPI0_PRE, "dout_spi0_pre", "dout_spi0", DIV_PERIL1, 8, 4),
 	CDIV(CLK_DIV_SPI0, "dout_spi0", "mout_spi0", DIV_PERIL1, 0, 4),
+
+	CDIV(CLK_DIV_UART_ISP, "dout_uart_isp", "mout_uart_isp",
+			DIV_ISP, 28, 3),
+	CDIV(CLK_DIV_SPI1_ISP_PRE, "dout_spi1_isp_pre", "dout_spi1_isp",
+			DIV_ISP, 20, 7),
+	CDIV(CLK_DIV_SPI1_ISP, "dout_spi1_isp", "mout_spi1_isp",
+			DIV_ISP, 16, 3),
+	CDIV(CLK_DIV_SPI0_ISP_PRE, "dout_spi0_isp_pre", "dout_spi0_isp",
+			DIV_ISP, 8, 7),
+	CDIV(CLK_DIV_SPI0_ISP, "dout_spi0_isp", "mout_spi0_isp",
+			DIV_ISP, 4, 3),
 
 	CDIV(CLK_DIV_ISP1, "dout_isp1", "mout_aclk_266_sub", DIV_ISP0, 4, 2),
 	CDIV(CLK_DIV_ISP0, "dout_isp0", "mout_aclk_266_sub", DIV_ISP0, 0, 2),
@@ -335,6 +352,12 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 
 	CGATE(CLK_SCLK_CAM1, "sclk_cam1", "dout_cam1",
 			GATE_SCLK_ISP, 4, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_UART_ISP, "sclk_uart_isp", "dout_uart_isp",
+			GATE_SCLK_ISP, 3, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_SPI1_ISP, "sclk_spi1_isp", "dout_spi1_isp_pre",
+			GATE_SCLK_ISP, 2, CLK_SET_RATE_PARENT, 0),
+	CGATE(CLK_SCLK_SPI0_ISP, "sclk_spi0_isp", "dout_spi0_isp_pre",
+			GATE_SCLK_ISP, 1, CLK_SET_RATE_PARENT, 0),
 
 	CGATE(CLK_QEG3D, "qeg3d", "dout_aclk_200", GATE_IP_G3D, 2,
 			CLK_IGNORE_UNUSED, 0),
