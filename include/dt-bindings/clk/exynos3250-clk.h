@@ -180,6 +180,10 @@
 #define CLK_SCLK_UART_ISP	206
 #define CLK_SCLK_SPI1_ISP	207
 #define CLK_SCLK_SPI0_ISP	208
+#define CLK_CSIS1		209
+#define CLK_CSIS0		210
+#define CLK_LITE1		211
+#define CLK_LITE0		212
 
 #define NR_CLKS			256
 

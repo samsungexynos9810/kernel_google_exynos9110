@@ -417,6 +417,15 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 
 	CGATE(CLK_SCLK_MPWM_ISP, "sclk_mpwm_isp", "dout_mpwm",
 			GATE_IP_SCLK_ISP, 0, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_CSIS1, "csis1", NULL,
+			GATE_IP_ISP0, 13, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_CSIS0, "csis0", NULL,
+			GATE_IP_ISP0, 6, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_LITE1, "lite1", NULL,
+			GATE_IP_ISP0, 4, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_LITE0, "lite0", NULL,
+			GATE_IP_ISP0, 3, CLK_IGNORE_UNUSED, 0),
 };
 
 static struct samsung_pll_rate_table exynos3250_pll_rates[] = {
