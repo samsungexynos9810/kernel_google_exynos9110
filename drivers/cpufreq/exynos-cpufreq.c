@@ -21,6 +21,7 @@
 #include <plat/cpu.h>
 
 #include <mach/cpufreq.h>
+#include <mach/asv-exynos.h>
 
 static struct exynos_dvfs_info *exynos_info;
 
@@ -139,6 +140,9 @@ static int exynos_cpufreq_scale(unsigned int target_freq)
 				__func__, arm_volt);
 			goto out;
 		}
+#if defined(CONFIG_SOC_EXYNOS3250) && defined(CONFIG_EXYNOS_ASV)
+		exynos_set_abb(ID_ARM, exynos_info->abb_table[index]);
+#endif
 	}
 
 	if (safe_arm_volt) {
@@ -166,6 +170,9 @@ static int exynos_cpufreq_scale(unsigned int target_freq)
 				__func__, arm_volt);
 			goto out;
 		}
+#if defined(CONFIG_SOC_EXYNOS3250) && defined(CONFIG_EXYNOS_ASV)
+		exynos_set_abb(ID_ARM, exynos_info->abb_table[index]);
+#endif
 	}
 
 out:
