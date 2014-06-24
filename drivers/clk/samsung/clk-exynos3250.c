@@ -244,6 +244,8 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SCLK_SPI0, "sclk_spi0", "dout_spi0_pre",
 			GATE_SCLK_PERIL, 6, CLK_SET_RATE_PARENT, 0),
 
+	CGATE(CLK_TMU_APBIF, "tmu_apbif", "dout_aclk_100",
+				GATE_IP_PERIR, 17, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_KEYIF, "keyif", "dout_aclk_100", GATE_IP_PERIR, 16, 0, 0),
 	CGATE(CLK_RTC, "rtc", "dout_aclk_100",
 			GATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),

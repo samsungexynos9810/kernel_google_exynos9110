@@ -168,6 +168,7 @@
 #define CLK_HCLK_AXI_DIV1	202
 #define CLK_PCLKDBG_MCUISP	203
 #define CLK_SCLK_MPWM_ISP	204
+#define CLK_TMU_APBIF		205
 
 #define NR_CLKS			256
 
