@@ -204,6 +204,7 @@ arch_initcall(exynos_pm_drvinit);
 
 static void exynos_show_wakeup_reason_eint(void)
 {
+#if 0
 	int bit;
 	int reg_eintstart;
 	long unsigned int ext_int_pend;
@@ -237,6 +238,7 @@ static void exynos_show_wakeup_reason_eint(void)
 
 	if (!found)
 		pr_info("Resume caused by unknown EINT\n");
+#endif
 }
 
 static void exynos_show_wakeup_reason(void)
