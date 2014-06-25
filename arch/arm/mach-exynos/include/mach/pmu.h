@@ -37,7 +37,9 @@ enum sys_powerdown {
 #else
 	SYS_AFTR,
 	SYS_LPA,
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	SYS_DSTOP,
+#endif
 #endif
 	SYS_SLEEP,
 	NUM_SYS_POWERDOWN,
@@ -79,6 +81,7 @@ struct exynos_pmu_conf {
 
 extern void set_boot_flag(unsigned int cpu, unsigned int mode);
 extern void clear_boot_flag(unsigned int cpu, unsigned int mode);
+extern void exynos_reset_assert_ctrl(bool on);
 #ifndef CONFIG_CAL_SYS_PWRDOWN
 extern void exynos_sys_powerdown_conf(enum sys_powerdown mode);
 #endif

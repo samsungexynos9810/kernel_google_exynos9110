@@ -38,6 +38,7 @@
 #include <mach/regs-gpio.h>
 #include <mach/regs-clock.h>
 #include <mach/regs-pmu.h>
+#include <mach/regs-clock-exynos3.h>
 #include <mach/pm-core.h>
 #include <mach/pmu.h>
 #include <mach/smc.h>
@@ -183,7 +184,7 @@ void exynos3_scu_enable(void __iomem *scu_base)
 
 static struct subsys_interface exynos3_pm_interface = {
 	.name		= "exynos_pm",
-	.subsys		= &exynos3_subsys,
+	.subsys		= &exynos_subsys,
 	.add_dev	= exynos_pm_add,
 };
 

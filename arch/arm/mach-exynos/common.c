@@ -1379,7 +1379,7 @@ static void __init exynos4_init_uarts(struct s3c2410_uartcfg *cfg, int no)
 	s3c24xx_init_uartdevs("exynos4210-uart", exynos4_uart_resources, cfg, no);
 }
 
-static void __iomem *exynos_eint_base;
+void __iomem *exynos_eint_base;
 
 static DEFINE_SPINLOCK(eint_lock);
 
