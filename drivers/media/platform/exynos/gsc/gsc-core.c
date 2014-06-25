@@ -1473,7 +1473,9 @@ static int gsc_runtime_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gsc_dev *gsc = (struct gsc_dev *)platform_get_drvdata(pdev);
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	gsc_hw_set_dynamic_clock_gating(gsc);
+#endif
 
 	if (clk_set_parent(gsc->clock[CLK_CHILD],
 			gsc->clock[CLK_PARENT])) {
@@ -1481,7 +1483,7 @@ static int gsc_runtime_resume(struct device *dev)
 			gsc_clocks[CLK_CHILD], gsc_clocks[CLK_PARENT]);
 		return -EINVAL;
 	}
-
+#if !defined (CONFIG_SOC_EXYNOS3250)
 	if (clk_set_parent(gsc->clock[CLK_S_CHILD],
 			gsc->clock[CLK_S_PARENT])) {
 		dev_err(dev, "Unable to set parent %s of clock %s.\n",
@@ -1489,7 +1491,7 @@ static int gsc_runtime_resume(struct device *dev)
 			gsc_clocks[CLK_S_PARENT]);
 		return -EINVAL;
 	}
-
+#endif
 	gsc_clock_gating(gsc, GSC_CLK_ON);
 
 	return 0;
@@ -1751,7 +1753,9 @@ static int gsc_probe(struct platform_device *pdev)
 	exynos_create_iovmm(&pdev->dev, 3, 3);
 	gsc->vb2->resume(gsc->alloc_ctx);
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	gsc_hw_set_dynamic_clock_gating(gsc);
+#endif
 
 	gsc_pm_runtime_enable(&pdev->dev);
 
