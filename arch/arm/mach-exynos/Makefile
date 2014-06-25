@@ -43,8 +43,10 @@ endif
 obj-$(CONFIG_CPU_IDLE)		+= exynos-pm.o
 obj-$(CONFIG_PM_RUNTIME)	+= pm_domains.o
 obj-$(CONFIG_PM_RUNTIME_TEST_SYSFS)	+= pm_domains_sysfs.o
-ifeq ($(CONFIG_PM_RUNTIME),y)
-obj-$(CONFIG_SOC_EXYNOS3250)	+= pm_domains-exynos3250.o
+
+ifeq ($(CONFIG_SOC_EXYNOS3250),y)
+obj-$(CONFIG_SUSPEND)		+= pm-exynos3250.o
+obj-$(CONFIG_PM_RUNTIME)	+= pm_domains-exynos3250.o
 endif
 
 obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
