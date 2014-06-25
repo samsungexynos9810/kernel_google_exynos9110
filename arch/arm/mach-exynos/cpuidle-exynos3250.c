@@ -70,7 +70,7 @@ static struct cpuidle_driver exynos_idle_driver = {
 };
 
 #ifdef CONFIG_EXYNOS_IDLE_CLOCK_DOWN
-static void exynos3250_enable_idle_clock_down(void)
+void exynos3250_enable_idle_clock_down(void)
 {
 	unsigned int tmp;
 
@@ -86,7 +86,7 @@ static void exynos3250_enable_idle_clock_down(void)
 	__raw_writel(tmp, EXYNOS3_PWR_CTRL2);
 }
 
-static void exynos3250_disable_idle_clock_down(void)
+void exynos3250_disable_idle_clock_down(void)
 {
 	unsigned int tmp;
 
@@ -99,8 +99,8 @@ static void exynos3250_disable_idle_clock_down(void)
 	__raw_writel(tmp, EXYNOS3_PWR_CTRL2);
 }
 #else
-static void exynos3250_enable_idle_clock_down(void) { }
-static void exynos3250_disable_idle_clock_down(void) { }
+void exynos3250_enable_idle_clock_down(void) { }
+void exynos3250_disable_idle_clock_down(void) { }
 #endif
 
 /* Ext-GIC nIRQ/nFIQ is the only wakeup source in AFTR */

@@ -280,7 +280,7 @@ static int exynos_pm_suspend(void)
 	__raw_writel(tmp, EXYNOS3_CENTRAL_SEQ_CONFIGURATION_COREBLK);
 
 #ifdef CONFIG_CPU_IDLE
-	exynos_disable_idle_clock_down();
+	exynos3250_disable_idle_clock_down();
 #endif
 	exynos_reset_assert_ctrl(false);
 
@@ -333,7 +333,7 @@ static void exynos_pm_resume(void)
 #endif
 early_wakeup:
 #ifdef CONFIG_CPU_IDLE
-	exynos_enable_idle_clock_down();
+	exynos3250_enable_idle_clock_down();
 #endif
 	exynos_reset_assert_ctrl(true);
 	__raw_writel(0x0, REG_INFORM1);

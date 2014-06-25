@@ -89,8 +89,15 @@ extern void exynos_xxti_sys_powerdown(bool enable);
 extern void s3c_cpu_resume(void);
 extern void exynos_set_core_flag(void);
 extern void exynos_l2_common_pwr_ctrl(void);
+
+#if defined(CONFIG_SOC_EXYNOS3250)
+extern void exynos3250_enable_idle_clock_down(void);
+extern void exynos3250_disable_idle_clock_down(void);
+#else
 extern void exynos_enable_idle_clock_down(unsigned int cluster);
 extern void exynos_disable_idle_clock_down(unsigned int cluster);
+#endif
+
 extern void exynos_lpi_mask_ctrl(bool on);
 extern void exynos_set_dummy_state(bool on);
 extern void exynos_pmu_wdt_control(bool on, unsigned int pmu_wdt_reset_type);
