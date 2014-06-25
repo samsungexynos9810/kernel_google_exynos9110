@@ -169,9 +169,6 @@ void exynos3_scu_enable(void __iomem *scu_base)
 	if (scu_ctrl & 1)
 		return;
 
-	if (soc_is_exynos4412() && (samsung_rev() >= EXYNOS4412_REV_1_0))
-		scu_ctrl |= (1<<3);
-
 	scu_ctrl |= 1;
 	__raw_writel(scu_ctrl, scu_base);
 
