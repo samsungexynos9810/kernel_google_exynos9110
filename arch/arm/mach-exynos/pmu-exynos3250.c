@@ -48,6 +48,7 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_DIS_IRQ_ISP_ARM_CENTRAL_SYS_PWR_REG,		{ 0x0, 0x0, 0x0} },
 	{ EXYNOS3_ARM_COMMON_SYS_PWR_REG,			{ 0x0, 0x0, 0x2} },
 	{ EXYNOS3_ARM_L2_SYS_PWR_REG,				{ 0x0, 0x0, 0x3} },
+	{ EXYNOS3_ARM_L2_OPTION,				{ 0x10, 0x10, 0x0} },
 	{ EXYNOS3_CMU_ACLKSTOP_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_CMU_SCLKSTOP_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_CMU_RESET_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
