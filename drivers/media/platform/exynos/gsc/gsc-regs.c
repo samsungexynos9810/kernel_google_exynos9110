@@ -985,6 +985,15 @@ void gsc_hw_set_local_dst(struct gsc_dev* dev, int out, bool on)
 			cfg &= ~(0x3 << (4 + dev->id * 2));
 			writel(cfg, dev->sysreg_disp + DSD_CFG);
 		}
+	} else if (soc_is_exynos3250()){
+		if (on) {
+			cfg |= (GSC_OUT_DST_FIMD_SEL(dev->id));
+			writel(cfg, dev->sysreg_disp + DSD_CFG);
+		} else {
+			cfg &= ~((GSC_OUT_DST_FIMD_SEL(dev->id)));
+			writel(cfg, dev->sysreg_disp + DSD_CFG);
+		}
+
 	} else {
 		if (on) {
 			cfg &= ~(0x3 << (3 + (dev->id * 2)));

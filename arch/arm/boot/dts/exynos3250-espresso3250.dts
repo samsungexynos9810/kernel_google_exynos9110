@@ -290,6 +290,11 @@
 		};
 	};
 
+	sysreg_localout: sysreg_localout@10010000 {
+		compatible = "samsung,exynos5-sysreg_localout";
+		reg = <0x10010000 0x2000>;
+	};
+
 	mdev_0: mdev_output {
 		compatible = "samsung,exynos5-mdev";
 	};

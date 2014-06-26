@@ -41,7 +41,11 @@
 #define SYSREG_GSCBLK_CFG2		(S3C_VA_SYS + 0x2000)
 #define PXLASYNC_LO_MASK_CAMIF_GSCL(x)	(1 << (x))
 
+#if defined(CONFIG_SOC_EXYNOS3250)
+#define DSD_CFG                         (0x0210)
+#else
 #define DSD_CFG				(0x1000)
+#endif
 #define DSD_CFG_MUX			(0x1004)
 #define DSD_RESERVE10			(0x1048)
 

@@ -1087,12 +1087,13 @@ int gsc_get_sysreg_addr(struct gsc_dev *gsc)
 			gsc_err("Failed to get address.");
 			return -ENOMEM;
 		}
-
+#if !defined(CONFIG_SOC_EXYNOS3250)
 		gsc->sysreg_gscl = of_iomap(nd, 1);
 		if (!gsc->sysreg_gscl) {
 			gsc_err("Failed to get address.");
 			return -ENOMEM;
 		}
+#endif
 	} else {
 		gsc_err("failed have populated device tree");
 		return -EIO;
