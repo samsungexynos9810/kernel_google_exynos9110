@@ -29,8 +29,85 @@
 
 #define CLK_DEBUG
 
+#if defined(CONFIG_ARCH_EXYNOS3)
 
-#if defined(CONFIG_ARCH_EXYNOS4)
+#define MFC_PARENT_CLK_NAME     "mout_mfc0"
+#define MFC_CLKNAME             "sclk_mfc"
+#define MFC_GATE_CLK_NAME       "mfc"
+
+int s5p_mfc_init_pm(struct s5p_mfc_dev *dev)
+{
+	struct clk *parent, *sclk;
+	int ret = 0;
+
+	parent = clk_get(dev->device, MFC_PARENT_CLK_NAME);
+	if (IS_ERR(parent)) {
+		printk(KERN_ERR "failed to get parent clock\n");
+		ret = -ENOENT;
+		goto err_p_clk;
+	}
+
+
+	ret = clk_prepare(parent);
+	if (ret) {
+		printk(KERN_ERR "clk_prepare() failed\n");
+		goto err_s_clk;
+	}
+
+	sclk = clk_get(dev->device, MFC_CLKNAME);
+	if (IS_ERR(sclk)) {
+		printk(KERN_ERR "failed to get source clock\n");
+		ret = -ENOENT;
+		goto err_clk;
+	}
+
+	ret = clk_prepare_enable(sclk);
+	if (ret) {
+		printk(KERN_ERR "clk_prepare_enable() failed\n");
+		goto err_g_clk;
+	}
+
+	clk_set_parent(sclk, parent);
+	clk_set_rate(sclk, 200 * 1000000);
+
+	/* clock for gating */
+	dev->pm.clock = clk_get(dev->device, MFC_GATE_CLK_NAME);
+	if (IS_ERR(dev->pm.clock)) {
+		printk(KERN_ERR "failed to get clock-gating control\n");
+		ret = -ENOENT;
+		goto err_gdu_clk;
+	}
+
+	ret = clk_prepare(dev->pm.clock);
+	if (ret) {
+		printk(KERN_ERR "clk_prepare() failed\n");
+		goto err_pc_clk;
+	}
+
+	atomic_set(&dev->pm.power, 0);
+	atomic_set(&dev->clk_ref, 0);
+
+
+	dev->pm.device = dev->device;
+	pm_runtime_enable(dev->pm.device);
+
+	return 0;
+
+err_pc_clk:
+	clk_put(dev->pm.clock);
+err_gdu_clk:
+	clk_disable_unprepare(sclk);
+err_g_clk:
+	clk_put(sclk);
+err_clk:
+	clk_unprepare(parent);
+err_s_clk:
+	clk_put(parent);
+err_p_clk:
+	return ret;
+}
+
+#elif defined(CONFIG_ARCH_EXYNOS4)
 
 #define MFC_PARENT_CLK_NAME	"mout_mfc0"
 #define MFC_CLKNAME		"sclk_mfc"
