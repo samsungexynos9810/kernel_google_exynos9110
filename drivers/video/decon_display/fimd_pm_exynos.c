@@ -181,13 +181,13 @@ int disable_display_driver_power(struct device *dev)
 
 	/* Reset */
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
-	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_LOW, "lcd_reset");
-	usleep_range(5000, 6000);
+	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	usleep_range(20000, 21000);
 	gpio_free(gpio->id[1]);
 	/* Power */
-	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_power");
-	usleep_range(5000, 6000);
-	gpio_free(gpio->id[0]);
+	gpio_request_one(gpio->id[2], GPIOF_OUT_INIT_LOW, "lcd_power");
+	usleep_range(20000, 21000);
+	gpio_free(gpio->id[2]);
 
 	return ret;
 }
