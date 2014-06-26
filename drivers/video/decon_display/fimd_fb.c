@@ -3133,6 +3133,13 @@ int create_decon_display_controller(struct platform_device *pdev)
 		goto err_sfb;
 	}
 
+	dispdrv->dsi_driver.clk = clk_get(dev, "dsim0");
+        if (IS_ERR(dispdrv->dsi_driver.clk)) {
+                dev_err(dev, "failed to get dsim clock\n");
+                ret = PTR_ERR(dispdrv->dsi_driver.clk);
+		goto err_dsim;
+        }
+
 	if (!s3c_fb_inquire_version(sfb)) {
 		sfb->axi_disp1 = clk_get(dev, "aclk_fimd0");
 		if (IS_ERR(sfb->axi_disp1)) {
@@ -3343,6 +3350,9 @@ err_axi_clk:
 		clk_put(sfb->axi_disp1);
 	}
 err_bus_clk:
+	clk_disable_unprepare(dispdrv->dsi_driver.clk);
+	clk_put(dispdrv->dsi_driver.clk);
+err_dsim:
 	clk_disable_unprepare(sfb->bus_clk);
 	clk_put(sfb->bus_clk);
 err_sfb:
