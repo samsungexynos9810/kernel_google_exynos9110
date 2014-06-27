@@ -264,7 +264,13 @@ config EXYNOS_SNAPSHOT_PANIC_REBOOT
 	default y
 
 config EXYNOS5_DYNAMIC_CPU_HOTPLUG
-	bool "Dynamic CPU Hotplug support"
+	bool "Exynos5 Dynamic CPU Hotplug support"
+	depends on CPU_FREQ
+	help
+		Enable Dynamic CPU Hotplug
+
+config EXYNOS3_DYNAMIC_CPU_HOTPLUG
+	bool "Exynos3 Dynamic CPU Hotplug support"
 	depends on CPU_FREQ
 	help
 		Enable Dynamic CPU Hotplug

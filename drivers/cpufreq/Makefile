@@ -64,6 +64,7 @@ obj-$(CONFIG_ARM_EXYNOS5422_CPUFREQ)	+= exynos5422-eagle-cpufreq.o exynos5422-kf
 obj-$(CONFIG_ARM_EXYNOS5433_CPUFREQ)	+= exynos5433-eagle-cpufreq.o exynos5433-kfc-cpufreq.o
 obj-$(CONFIG_ARM_EXYNOS5440_CPUFREQ)	+= exynos5440-cpufreq.o
 obj-$(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)	+= dm_cpu_hotplug.o
+obj-$(CONFIG_EXYNOS3_DYNAMIC_CPU_HOTPLUG)     += dm_cpu_hotplug_exynos3250.o
 obj-$(CONFIG_ARM_HIGHBANK_CPUFREQ)	+= highbank-cpufreq.o
 obj-$(CONFIG_ARM_IMX6Q_CPUFREQ)		+= imx6q-cpufreq.o
 obj-$(CONFIG_ARM_INTEGRATOR)		+= integrator-cpufreq.o
