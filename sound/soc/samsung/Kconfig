@@ -252,6 +252,19 @@ config SND_SOC_LITTLEMILL
 	select MFD_WM8994
 	select SND_SOC_WM8994
 
+config SND_SOC_SAMSUNG_ESPRESSO3250_WM5110
+        tristate "SoC I2S Audio support for WM5110 on ESPRESSO3250"
+        depends on SND_SOC_SAMSUNG
+        depends on I2C=y && GENERIC_HARDIRQS
+        select SND_SAMSUNG_I2S
+        select SND_SOC_DUMMY_CODEC
+        select SND_SOC_FLORIDA
+        select MFD_ARIZONA_SPI
+        select MFD_ARIZONA
+        select MFD_FLORIDA
+        help
+          Say Y if you want to add support for SoC audio on the ESPRESSO.
+
 config SND_SOC_SAMSUNG_XYREF5430_ES515
 	tristate "SoC I2S Audio support for eS515 on XYREF5430"
 	depends on SND_SOC_SAMSUNG
