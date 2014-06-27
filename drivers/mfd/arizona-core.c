@@ -749,6 +749,7 @@ static int arizona_of_get_core_pdata(struct arizona *arizona)
 
 	arizona_of_get_named_gpio(arizona, "wlf,reset", true, &pdata->reset);
 	arizona_of_get_named_gpio(arizona, "wlf,ldoena", true, &pdata->ldoena);
+	arizona_of_get_named_gpio(arizona, "wlf,irq-gpio", true, &pdata->irq_gpio);
 
 	arizona_of_get_micd_ranges(arizona, "wlf,micd-ranges");
 	arizona_of_get_micd_configs(arizona, "wlf,micd-configs");
