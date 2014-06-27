@@ -60,7 +60,7 @@
 #define L2_AUX_VAL 0x7C470001
 #define L2_AUX_MASK 0xC200ffff
 
-#define REG_CPU_STATE_ADDR     (S5P_VA_SYSRAM_NS + 0x28)
+#define REG_CPU_STATE_ADDR	(S5P_VA_SYSRAM_NS + 0x28)
 
 static const char name_exynos3250[] = "EXYNOS3250";
 static const char name_exynos4210[] = "EXYNOS4210";
@@ -86,11 +86,11 @@ struct exynos_cpu_power_ops exynos_cpu;
 
 static struct cpu_table cpu_ids[] __initdata = {
 	{
-		.idcode         = EXYNOS3250_SOC_ID,
-		.idmask         = EXYNOS3_SOC_MASK,
-		.map_io         = exynos3_map_io,
-		.init           = exynos_init,
-		.name           = name_exynos3250,
+		.idcode		= EXYNOS3250_SOC_ID,
+		.idmask		= EXYNOS3_SOC_MASK,
+		.map_io		= exynos3_map_io,
+		.init		= exynos_init,
+		.name		= name_exynos3250,
 	}, {
 		.idcode		= EXYNOS4210_CPU_ID,
 		.idmask		= EXYNOS4_CPU_MASK,
@@ -163,65 +163,65 @@ static struct map_desc exynos_iodesc[] __initdata = {
 
 static struct map_desc exynos3_iodesc[] __initdata = {
 	{
-		.virtual        = (unsigned long)S3C_VA_SYS,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_SYSCON),
-		.length         = SZ_64K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S3C_VA_SYS,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSCON),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSTIMER,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_SYSTIMER),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSTIMER,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSTIMER),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSRAM,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_SYSRAM),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSRAM,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSRAM),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSRAM_NS,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_SYSRAM_NS),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSRAM_NS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)EXYNOS3_VA_CMU_BUS_TOP,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_CMU_BUS_TOP),
-		.length         = SZ_64K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_BUS_TOP,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_BUS_TOP),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)EXYNOS3_VA_CMU_CPU_ISP,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_CMU_CPU_ISP),
-		.length         = SZ_64K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_CPU_ISP,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_CPU_ISP),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)EXYNOS3_VA_CMU_ACP,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_CMU_ACP),
-		.length         = 64 * SZ_1K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_ACP,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_ACP),
+		.length		= 64 * SZ_1K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)EXYNOS3_VA_CMU_DMC,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_CMU_DMC),
-		.length         = 64 * SZ_1K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_DMC,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_DMC),
+		.length		= 64 * SZ_1K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S3C_VA_UART,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_UART),
-		.length         = SZ_512K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S3C_VA_UART,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_UART),
+		.length		= SZ_512K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_GIC_CPU,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_GIC_CPU),
-		.length         = SZ_8K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_GIC_CPU,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_GIC_CPU),
+		.length		= SZ_8K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_GIC_DIST,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_GIC_DIST),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_GIC_DIST,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_GIC_DIST),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_PMU,
-		.pfn            = __phys_to_pfn(EXYNOS3_PA_PMU),
-		.length         = SZ_64K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PMU,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_PMU),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_PPMU_CPU,
 		.pfn		= __phys_to_pfn(EXYNOS3250_PA_PPMU_CPU),
@@ -386,35 +386,35 @@ static struct map_desc exynos5422_iodesc[] __initdata = {
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
-		.virtual    = (unsigned long)S5P_VA_PPMU_DREX0_0,
-		.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX0_0),
-		.length     = SZ_8K,
-		.type       = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PPMU_DREX0_0,
+		.pfn		= __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX0_0),
+		.length		= SZ_8K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual    = (unsigned long)S5P_VA_PPMU_DREX0_1,
-		.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX0_1),
-		.length     = SZ_8K,
-		.type       = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PPMU_DREX0_1,
+		.pfn		= __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX0_1),
+		.length		= SZ_8K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual    = (unsigned long)S5P_VA_PPMU_DREX1_0,
-		.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX1_0),
-		.length     = SZ_8K,
-		.type       = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PPMU_DREX1_0,
+		.pfn		= __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX1_0),
+		.length		= SZ_8K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual    = (unsigned long)S5P_VA_PPMU_DREX1_1,
-			.pfn        = __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX1_1),
-			.length     = SZ_8K,
-			.type       = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PPMU_DREX1_1,
+		.pfn		= __phys_to_pfn(EXYNOS5422_PA_PPMU_DREX1_1),
+		.length		= SZ_8K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual    = (unsigned long)S5P_VA_DREXI_0,
-			.pfn        = __phys_to_pfn(EXYNOS5_PA_DREXI_0),
-			.length     = SZ_64K,
-			.type       = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_DREXI_0,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_DREXI_0),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual    = (unsigned long)S5P_VA_DREXI_1,
-			.pfn        = __phys_to_pfn(EXYNOS5_PA_DREXI_1),
-			.length     = SZ_64K,
-			.type       = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_DREXI_1,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_DREXI_1),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_FIMCLITE0,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_FIMC_LITE0),
@@ -505,20 +505,20 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 		.length		= SZ_256K,
 		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_PMU,
-		.pfn            = __phys_to_pfn(EXYNOS5430_PA_PMU),
-		.length         = SZ_64K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PMU,
+		.pfn		= __phys_to_pfn(EXYNOS5430_PA_PMU),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSRAM,
-		.pfn            = __phys_to_pfn(EXYNOS5_PA_SYSRAM),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSRAM,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSRAM),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSRAM_NS,
-		.pfn            = __phys_to_pfn(EXYNOS5430_PA_SYSRAM_NS),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn		= __phys_to_pfn(EXYNOS5430_PA_SYSRAM_NS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_TOP,
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_TOP),
@@ -692,17 +692,17 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM0,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM0),
-		.length         = SZ_8K,
+		.length		= SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM1,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM1),
-		.length         = SZ_8K,
+		.length		= SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_ISP,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_ISP),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_PMU_LPI_CAM0,
@@ -727,22 +727,22 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_HEVC,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_HEVC),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_MFC0,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_MFC0),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_MFC1,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_MFC1),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_DISP,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_DISP),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	},
 
@@ -755,20 +755,20 @@ static struct map_desc exynos5433_iodesc0[] __initdata = {
 		.length		= SZ_256K,
 		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_PMU,
-		.pfn            = __phys_to_pfn(EXYNOS5430_PA_PMU),
-		.length         = SZ_64K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_PMU,
+		.pfn		= __phys_to_pfn(EXYNOS5430_PA_PMU),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSRAM,
-		.pfn            = __phys_to_pfn(EXYNOS5_PA_SYSRAM),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSRAM,
+		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSRAM),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
-		.virtual        = (unsigned long)S5P_VA_SYSRAM_NS,
-		.pfn            = __phys_to_pfn(EXYNOS5433_PA_SYSRAM_NS),
-		.length         = SZ_4K,
-		.type           = MT_DEVICE,
+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn		= __phys_to_pfn(EXYNOS5433_PA_SYSRAM_NS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_TOP,
 		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_TOP),
@@ -902,32 +902,32 @@ static struct map_desc exynos5433_iodesc0[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_DISP,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_DISP),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM0,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM0),
-		.length         = SZ_8K,
+		.length		= SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM1,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM1),
-		.length         = SZ_8K,
+		.length		= SZ_8K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_ISP,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_ISP),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_MFC0,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_MFC0),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_HEVC,
 		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_HEVC),
-		.length         = SZ_4K,
+		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSREG_MSCL,
@@ -1302,7 +1302,7 @@ void __init exynos4_init_irq(void)
 
 	if (!of_have_populated_dt())
 		combiner_init(S5P_VA_COMBINER_BASE, NULL,
-			      max_combiner_nr(), COMBINER_IRQ(0, 0));
+				max_combiner_nr(), COMBINER_IRQ(0, 0));
 
 	gic_arch_extn.irq_set_wake = s3c_irq_wake;
 }
@@ -1520,7 +1520,7 @@ static void exynos_irq_eint_unmask(struct irq_data *data)
 static inline void exynos_irq_eint_ack(struct irq_data *data)
 {
 	__raw_writel(EINT_OFFSET_BIT(data->irq),
-		     EINT_PEND(exynos_eint_base, data->irq));
+			EINT_PEND(exynos_eint_base, data->irq));
 }
 
 static void exynos_irq_eint_maskack(struct irq_data *data)
