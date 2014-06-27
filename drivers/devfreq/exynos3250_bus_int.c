@@ -28,6 +28,8 @@
 #include <mach/asv-exynos.h>
 
 #include "exynos3250_ppmu.h"
+#include "devfreq_exynos.h"
+#include "governor.h"
 
 #define SAFE_INT_VOLT(x)	(x + 25000)
 #define INT_TIMEOUT_VAL		10000
@@ -38,7 +40,7 @@ cputime64_t int_pre_time;
 
 static LIST_HEAD(int_dvfs_list);
 
-struct busfreq_data_int {
+struct devfreq_data_int {
 	struct device *dev;
 	struct devfreq *devfreq;
 	struct opp *curr_opp;
@@ -134,12 +136,12 @@ static unsigned int exynos3250_int_acp0_div[][5] = {
 
 static unsigned int exynos3250_int_mfc_div[] = {
 /* SCLK_MFC */
-        1,      /* L0 */
-        1,      /* L1 */
-        1,      /* L2 */
-        2,      /* L3 */
-        3,      /* L4 */
-        4,      /* L5 */
+	1,	/* L0 */
+	1,	/* L1 */
+	1,	/* L2 */
+	2,	/* L3 */
+	3,	/* L4 */
+	4,	/* L5 */
 };
 
 static void exynos3250_int_update_state(unsigned int target_freq)
@@ -281,12 +283,12 @@ static enum int_bus_idx exynos3250_find_int_bus_idx(unsigned long target_freq)
 	return LV_END;
 }
 
-static int exynos3250_int_busfreq_target(struct device *dev,
-				      unsigned long *_freq, u32 flags)
+static int exynos3250_int_devfreq_target(struct device *dev,
+					unsigned long *_freq, u32 flags)
 {
 	int err = 0;
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
-	struct busfreq_data_int *data = platform_get_drvdata(pdev);
+	struct devfreq_data_int *data = platform_get_drvdata(pdev);
 	struct opp *opp;
 	unsigned long freq;
 	unsigned long old_freq;
@@ -333,9 +335,9 @@ static int exynos3250_int_busfreq_target(struct device *dev,
 }
 
 static int exynos3250_int_bus_get_dev_status(struct device *dev,
-				      struct devfreq_dev_status *stat)
+					struct devfreq_dev_status *stat)
 {
-	struct busfreq_data_int *data = dev_get_drvdata(dev);
+	struct devfreq_data_int *data = dev_get_drvdata(dev);
 	unsigned long busy_data;
 	unsigned int int_ccnt = 0;
 	unsigned long int_pmcnt = 0;
@@ -371,11 +373,11 @@ static struct devfreq_simple_ondemand_data exynos3250_int_governor_data = {
 static struct devfreq_dev_profile exynos3250_int_devfreq_profile = {
 	.initial_freq	= 133000,
 	.polling_ms	= 100,
-	.target		= exynos3250_int_busfreq_target,
+	.target		= exynos3250_int_devfreq_target,
 	.get_dev_status	= exynos3250_int_bus_get_dev_status,
 };
 
-static int exynos3250_init_int_table(struct busfreq_data_int *data)
+static int exynos3250_init_int_table(struct devfreq_data_int *data)
 {
 	unsigned int i;
 	unsigned int ret;
@@ -516,13 +518,13 @@ static ssize_t int_show_state(struct device *dev, struct device_attribute *attr,
 }
 
 static DEVICE_ATTR(int_time_in_state, 0644, int_show_state, NULL);
-static struct attribute *busfreq_int_entries[] = {
+static struct attribute *devfreq_int_entries[] = {
 	&dev_attr_int_time_in_state.attr,
 	NULL,
 };
-static struct attribute_group busfreq_int_attr_group = {
+static struct attribute_group devfreq_int_attr_group = {
 	.name	= "time_in_state",
-	.attrs	= busfreq_int_entries,
+	.attrs	= devfreq_int_entries,
 };
 
 static struct exynos_devfreq_platdata default_qos_int_pd = {
@@ -541,15 +543,15 @@ static struct notifier_block exynos3250_int_reboot_notifier = {
 	.notifier_call = exynos3250_int_reboot_notifier_call,
 };
 
-static __devinit int exynos3250_busfreq_int_probe(struct platform_device *pdev)
+static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 {
-	struct busfreq_data_int *data;
+	struct devfreq_data_int *data;
 	struct opp *opp;
 	struct device *dev = &pdev->dev;
 	struct exynos_devfreq_platdata *pdata;
 	int err = 0;
 
-	data = kzalloc(sizeof(struct busfreq_data_int), GFP_KERNEL);
+	data = kzalloc(sizeof(struct devfreq_data_int), GFP_KERNEL);
 
 	if (data == NULL) {
 		dev_err(dev, "Cannot allocate memory for INT.\n");
@@ -567,7 +569,7 @@ static __devinit int exynos3250_busfreq_int_probe(struct platform_device *pdev)
 	if (IS_ERR(opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
-			       exynos3250_int_devfreq_profile.initial_freq);
+				exynos3250_int_devfreq_profile.initial_freq);
 		err = PTR_ERR(opp);
 		goto err_opp_add;
 	}
@@ -591,17 +593,13 @@ static __devinit int exynos3250_busfreq_int_probe(struct platform_device *pdev)
 	if (!data->ppmu)
 		goto err_ppmu_get;
 
-#if defined(CONFIG_DEVFREQ_GOV_PM_QOS)
-	data->devfreq = devfreq_add_device(dev, &exynos3250_int_devfreq_profile,
-			&devfreq_pm_qos, &exynos3250_devfreq_int_pm_qos_data);
-#endif
 #if defined(CONFIG_DEVFREQ_GOV_USERSPACE)
 	data->devfreq = devfreq_add_device(dev, &exynos3250_int_devfreq_profile,
-			&devfreq_userspace, NULL);
+			"userspace", NULL);
 #endif
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 	data->devfreq = devfreq_add_device(dev, &exynos3250_int_devfreq_profile,
-			&devfreq_simple_ondemand, &exynos3250_int_governor_data);
+			"simple_ondemand", &exynos3250_int_governor_data);
 	data->devfreq->max_freq = exynos3250_int_governor_data.cal_qos_max;
 #endif
 	if (IS_ERR(data->devfreq)) {
@@ -614,7 +612,7 @@ static __devinit int exynos3250_busfreq_int_probe(struct platform_device *pdev)
 	int_dev = data->dev;
 
 	/* Create file for time_in_state */
-	err = sysfs_create_group(&data->devfreq->dev.kobj, &busfreq_int_attr_group);
+	err = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_int_attr_group);
 
 	/* Add sysfs for freq_table */
 	err = device_create_file(&data->devfreq->dev, &dev_attr_freq_table);
@@ -645,9 +643,9 @@ err_opp_add:
 	return err;
 }
 
-static __devexit int exynos3250_busfreq_int_remove(struct platform_device *pdev)
+static int exynos3250_devfreq_int_remove(struct platform_device *pdev)
 {
-	struct busfreq_data_int *data = platform_get_drvdata(pdev);
+	struct devfreq_data_int *data = platform_get_drvdata(pdev);
 
 	devfreq_remove_device(data->devfreq);
 	if (data->vdd_int)
@@ -659,10 +657,10 @@ static __devexit int exynos3250_busfreq_int_remove(struct platform_device *pdev)
 
 #define INT_COLD_OFFSET	50000
 
-static int exynos3250_busfreq_int_suspend(struct device *dev)
+static int exynos3250_devfreq_int_suspend(struct device *dev)
 {
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
-	struct busfreq_data_int *data = platform_get_drvdata(pdev);
+	struct devfreq_data_int *data = platform_get_drvdata(pdev);
 	unsigned int temp_volt;
 
 	if (pm_qos_request_active(&exynos3250_int_qos))
@@ -675,7 +673,7 @@ static int exynos3250_busfreq_int_suspend(struct device *dev)
 	return 0;
 }
 
-static int exynos3250_busfreq_int_resume(struct device *dev)
+static int exynos3250_devfreq_int_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
@@ -685,29 +683,40 @@ static int exynos3250_busfreq_int_resume(struct device *dev)
 	return 0;
 }
 
-static const struct dev_pm_ops exynos3250_busfreq_int_pm = {
-	.suspend	= exynos3250_busfreq_int_suspend,
-	.resume		= exynos3250_busfreq_int_resume,
+static const struct dev_pm_ops exynos3250_devfreq_int_pm = {
+	.suspend	= exynos3250_devfreq_int_suspend,
+	.resume		= exynos3250_devfreq_int_resume,
 };
 
-static struct platform_driver exynos3250_busfreq_int_driver = {
-	.probe	= exynos3250_busfreq_int_probe,
-	.remove	= __devexit_p(exynos3250_busfreq_int_remove),
+static struct platform_driver exynos3250_devfreq_int_driver = {
+	.probe	= exynos3250_devfreq_int_probe,
+	.remove	= exynos3250_devfreq_int_remove,
 	.driver = {
-		.name	= "exynos3250-busfreq-int",
+		.name	= "exynos3250-devfreq-int",
 		.owner	= THIS_MODULE,
-		.pm	= &exynos3250_busfreq_int_pm,
+		.pm	= &exynos3250_devfreq_int_pm,
 	},
 };
 
-static int __init exynos3250_busfreq_int_init(void)
-{
-	return platform_driver_register(&exynos3250_busfreq_int_driver);
-}
-late_initcall(exynos3250_busfreq_int_init);
+static struct platform_device exynos3250_devfreq_int_device = {
+	.name	= "exynos3250-devfreq-int",
+	.id	= -1,
+};
 
-static void __exit exynos3250_busfreq_int_exit(void)
+static int __init exynos3250_devfreq_int_init(void)
 {
-	platform_driver_unregister(&exynos3250_busfreq_int_driver);
+	int ret;
+
+	ret = platform_device_register(&exynos3250_devfreq_int_device);
+	if (ret)
+		return ret;
+
+	return platform_driver_register(&exynos3250_devfreq_int_driver);
 }
-module_exit(exynos3250_busfreq_int_exit);
+late_initcall(exynos3250_devfreq_int_init);
+
+static void __exit exynos3250_devfreq_int_exit(void)
+{
+	platform_driver_unregister(&exynos3250_devfreq_int_driver);
+}
+module_exit(exynos3250_devfreq_int_exit);

@@ -178,8 +178,8 @@ static struct timing_parameter mif_timing_parameter[] = {
 
 static struct workqueue_struct *devfreq_mif_thermal_wq_ch0;
 static struct devfreq_thermal_work devfreq_mif_ch0_work = {
-        .channel = THERMAL_CHANNEL0,
-        .polling_period = 1000,
+	.channel = THERMAL_CHANNEL0,
+	.polling_period = 1000,
 };
 
 static bool use_timing_set_0;
@@ -350,13 +350,13 @@ static int exynos3250_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 		exynos3250_mif_set_div(target_idx);
 
 		if(target_idx == LV0)
-		    exynos3250_devfreq_pass_sclk_dphy(data, true);
+			exynos3250_devfreq_pass_sclk_dphy(data, true);
 	} else {
 		exynos3250_devfreq_mif_timing_parameter(data, target_idx);
 		exynos3250_devfreq_mif_change_timing_set(data);
 
 		if(old_idx == LV0)
-		    exynos3250_devfreq_pass_sclk_dphy(data, false);
+			exynos3250_devfreq_pass_sclk_dphy(data, false);
 
 		exynos3250_mif_set_div(target_idx);
 		exynos3250_devfreq_set_dll_voltage(data, target_idx, 0);
@@ -366,8 +366,8 @@ static int exynos3250_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 }
 
 static int exynos3250_devfreq_mif_target(struct device *dev,
-					    unsigned long *target_freq,
-					    u32 flags)
+						unsigned long *target_freq,
+						u32 flags)
 {
 	int ret = 0;
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
@@ -419,7 +419,7 @@ out:
 }
 
 static int exynos3250_mif_bus_get_dev_status(struct device *dev,
-				      struct devfreq_dev_status *stat)
+					struct devfreq_dev_status *stat)
 {
 
 	struct devfreq_data_mif *data = dev_get_drvdata(dev);
@@ -550,7 +550,7 @@ static ssize_t mif_show_freq(struct device *dev, struct device_attribute *attr, 
 
 static DEVICE_ATTR(mif_time_in_state, 0644, mif_show_state, NULL);
 
-static DEVICE_ATTR(available_frequencies, S_IRUGO, mif_show_freq, NULL);
+static DEVICE_ATTR(freq_table, S_IRUGO, mif_show_freq, NULL);
 
 static struct attribute *devfreq_mif_sysfs_entries[] = {
 	&dev_attr_mif_time_in_state.attr,
@@ -653,7 +653,7 @@ static void exynos3250_devfreq_init_thermal(void)
 	exynos3250_devfreq_thermal_event(&devfreq_mif_ch0_work);
 }
 
-static __devinit int exynos3250_busfreq_mif_probe(struct platform_device *pdev)
+static int exynos3250_devfreq_mif_probe(struct platform_device *pdev)
 {
 	int ret = 0, target_idx;
 	struct devfreq_data_mif *data;
@@ -672,7 +672,7 @@ static __devinit int exynos3250_busfreq_mif_probe(struct platform_device *pdev)
 		goto err_drex;
 	}
 
-	data->base_pmu_mif = ioremap(EXYNOS3_PA_PMU_MIF, SZ_16K);
+	data->base_pmu_mif = ioremap(EXYNOS3_PA_PMU, SZ_16K);
 	if(!data->base_pmu_mif){
 		pr_err("DEVFREQ(MIF) : base_pmu_mif ioremap is failed \n");
 		goto err_pmu_mif;
@@ -718,12 +718,12 @@ static __devinit int exynos3250_busfreq_mif_probe(struct platform_device *pdev)
 #endif
 
 #if defined(CONFIG_DEVFREQ_GOV_USERSPACE)
-	data->devfreq = devfreq_add_device(data->dev, &exynos3250_mif_devfreq_profile, &devfreq_userspace, NULL);
+	data->devfreq = devfreq_add_device(data->dev, &exynos3250_mif_devfreq_profile, "userspace", NULL);
 #endif
 
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 	data->devfreq = devfreq_add_device(data->dev, &exynos3250_mif_devfreq_profile,
-					&devfreq_simple_ondemand, &exynos3250_mif_governor_data);
+					"simple_ondemand", &exynos3250_mif_governor_data);
 #endif
 	if (IS_ERR(data->devfreq)) {
 		ret = PTR_ERR(data->devfreq);
@@ -741,7 +741,7 @@ static __devinit int exynos3250_busfreq_mif_probe(struct platform_device *pdev)
 	}
 
 	/* Add sysfs for freq_table */
-	ret = device_create_file(&data->devfreq->dev, &dev_attr_available_frequencies);
+	ret = device_create_file(&data->devfreq->dev, &dev_attr_freq_table);
 	if (ret) {
 		pr_err("DEVFREQ(MIF) : Failed create available_frequencies sysfs\n");
 		goto err_devfreq_add;
@@ -779,13 +779,13 @@ err_data:
 	return ret;
 }
 
-static __devexit int exynos3250_busfreq_mif_remove(struct platform_device *pdev)
+static int exynos3250_devfreq_mif_remove(struct platform_device *pdev)
 {
 
 	struct devfreq_data_mif *data = platform_get_drvdata(pdev);
 
 	if (data->base_drex)
-	    iounmap(data->base_drex);
+		iounmap(data->base_drex);
 	devfreq_remove_device(data->devfreq);
 	if (data->vdd_mif)
 		regulator_put(data->vdd_mif);
@@ -798,7 +798,7 @@ static __devexit int exynos3250_busfreq_mif_remove(struct platform_device *pdev)
 
 #define MIF_COLD_OFFSET	50000
 
-static int exynos3250_busfreq_mif_suspend(struct device *dev)
+static int exynos3250_devfreq_mif_suspend(struct device *dev)
 {
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct devfreq_data_mif *data = platform_get_drvdata(pdev);
@@ -817,7 +817,7 @@ static int exynos3250_busfreq_mif_suspend(struct device *dev)
 	return 0;
 }
 
-static int exynos3250_busfreq_mif_resume(struct device *dev)
+static int exynos3250_devfreq_mif_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
@@ -827,29 +827,39 @@ static int exynos3250_busfreq_mif_resume(struct device *dev)
 	return 0;
 }
 
-static const struct dev_pm_ops exynos3250_busfreq_mif_pm = {
-	.suspend = exynos3250_busfreq_mif_suspend,
-	.resume	= exynos3250_busfreq_mif_resume,
+static const struct dev_pm_ops exynos3250_devfreq_mif_pm = {
+	.suspend = exynos3250_devfreq_mif_suspend,
+	.resume	= exynos3250_devfreq_mif_resume,
 };
 
-static struct platform_driver exynos3250_busfreq_mif_driver = {
-	.probe	= exynos3250_busfreq_mif_probe,
-	.remove	= __devexit_p(exynos3250_busfreq_mif_remove),
+static struct platform_driver exynos3250_devfreq_mif_driver = {
+	.probe	= exynos3250_devfreq_mif_probe,
+	.remove	= exynos3250_devfreq_mif_remove,
 	.driver = {
-		.name	= "exynos3250-busfreq-mif",
+		.name	= "exynos3250-devfreq-mif",
 		.owner	= THIS_MODULE,
-		.pm	= &exynos3250_busfreq_mif_pm,
+		.pm	= &exynos3250_devfreq_mif_pm,
 	},
 };
 
-static int __init exynos3250_busfreq_mif_init(void)
+static struct platform_device exynos3250_devfreq_mif_device = {
+	.name	= "exynos3250-devfreq-mif",
+	.id	= -1,
+};
+static int __init exynos3250_devfreq_mif_init(void)
 {
-	return platform_driver_register(&exynos3250_busfreq_mif_driver);
-}
-late_initcall(exynos3250_busfreq_mif_init);
+	int ret;
 
-static void __exit exynos3250_busfreq_mif_exit(void)
-{
-	platform_driver_unregister(&exynos3250_busfreq_mif_driver);
+	ret = platform_device_register(&exynos3250_devfreq_mif_device);
+	if (ret)
+		return ret;
+
+	return platform_driver_register(&exynos3250_devfreq_mif_driver);
 }
-module_exit(exynos3250_busfreq_mif_exit);
+late_initcall(exynos3250_devfreq_mif_init);
+
+static void __exit exynos3250_devfreq_mif_exit(void)
+{
+	platform_driver_unregister(&exynos3250_devfreq_mif_driver);
+}
+module_exit(exynos3250_devfreq_mif_exit);
