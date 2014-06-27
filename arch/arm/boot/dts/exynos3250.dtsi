@@ -309,6 +309,7 @@
 			<&clock CLK_SCLK_MFC>;
 		clock-names = "mfc", "mout_mfc0",
 				"sclk_mfc";
+		samsung,power-domain = <&pd_mfc>;
 		status = "ok";
 		ip_ver = <7>;
 		clock_rate = <200000000>;
@@ -446,7 +447,6 @@
 	pd_mfc: pd-mfc@0x10023c40 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10023c40 0x10>;
-		status = "disabled";
 	};
 
 	pd_g3d: pd-g3d@0x10023c60 {
