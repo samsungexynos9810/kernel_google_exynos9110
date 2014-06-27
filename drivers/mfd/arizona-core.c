@@ -867,6 +867,10 @@ int arizona_dev_init(struct arizona *arizona)
 		goto err_early;
 	}
 
+	gpio_request(arizona->pdata.ldoena, "codec_ldoena");
+	gpio_direction_output(arizona->pdata.ldoena, 1);
+	gpio_free(arizona->pdata.ldoena);
+
 	if (arizona->pdata.reset) {
 		/* Start out with /RESET low to put the chip into reset */
 		ret = gpio_request_one(arizona->pdata.reset,
