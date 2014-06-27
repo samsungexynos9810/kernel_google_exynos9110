@@ -27,6 +27,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of.h>
 #include <mach/map.h>
+#include <mach/bts.h>
 #include <plat/cpu.h>
 
 #include "regs-fimd.h"
