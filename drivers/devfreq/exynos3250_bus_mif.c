@@ -821,6 +821,9 @@ static int exynos3250_devfreq_mif_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
 
+	if (!pdata)
+		pdata = &default_qos_mif_pd;
+
 	if (pm_qos_request_active(&exynos3250_mif_qos))
 		pm_qos_update_request(&exynos3250_mif_qos, pdata->default_qos);
 
