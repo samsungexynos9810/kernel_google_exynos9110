@@ -840,6 +840,10 @@ void s3c_fb_i80mode_to_var(struct fb_var_screeninfo *var,
 	var->xoffset = 0;
 	var->yoffset = 0;
 	var->pixclock = mode->pixclock;
+	var->left_margin = mode->left_margin;
+	var->right_margin = mode->right_margin;
+	var->upper_margin = mode->upper_margin;
+	var->lower_margin = mode->lower_margin;
 }
 #endif
 
@@ -2513,7 +2517,7 @@ static void s3c_fb_missing_pixclock_for_i80(struct s3c_fb_i80mode *mode)
 	u32 div;
 
 	div  = mode->xres;
-	div *= mode->yres;
+	div *= mode->yres * 2;
 	div *= mode->refresh ? : 60;
 
 	do_div(pixclk, div);
@@ -3064,6 +3068,9 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 #if defined(CONFIG_FB_I80_COMMAND_MODE) || defined(CONFIG_FB_I80IF)
 	sfb->psr_mode = S3C_FB_MIPI_COMMAND_MODE;
+#elif defined(CONFIG_S5P_DP_PSR)
+	sfb->psr_mode = S3C_FB_DP_PSR_MODE;
+#else
 	sfb->psr_mode = S3C_FB_VIDEO_MODE;
 #endif
 	dev_info(dev, "PSR mode is %d(0: VIDEO, 1: DP, 2: MIPI)\n", sfb->psr_mode);
