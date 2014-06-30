@@ -359,6 +359,7 @@
 			<&clock CLK_CAM_BLK_320>;
 		clock-names = "gscl", "sclk_cam_blk",
 				"cam_blk_320";
+		samsung,power-domain = <&spd_gsc0>;
 		ip_ver = <1>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -372,6 +373,7 @@
 			<&clock CLK_CAM_BLK_320>;
 		clock-names = "gscl", "sclk_cam_blk",
 				"cam_blk_320";
+		samsung,power-domain = <&spd_gsc1>;
 		ip_ver = <1>;
 		mif_min = <160000>;
 		int_min = <111000>;
@@ -423,7 +425,6 @@
 	pd_cam: pd-cam@0x10023c00 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10023c00 0x10>;
-		status = "disabled";
 		spd_gsc0: spd_gsc0@0x10023c00 {
 			compatible = "samsung,exynos-spd";
 		};
