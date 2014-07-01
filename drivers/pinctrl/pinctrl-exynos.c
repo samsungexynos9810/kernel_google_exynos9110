@@ -1730,7 +1730,7 @@ static struct samsung_pin_bank exynos3250_pin_banks1[] = {
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 7, 0x280, "gpm1", 0x28),
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 5, 0x2a0, "gpm2", 0x2c),
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2c0, "gpm3", 0x30),
-	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2d0, "gpm4", 0x34),
+	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2e0, "gpm4", 0x34),
 	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc00, "gpx0", 0x00),
 	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc20, "gpx1", 0x04),
 	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc40, "gpx2", 0x08),
