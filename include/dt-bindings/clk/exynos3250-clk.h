@@ -184,6 +184,20 @@
 #define CLK_CSIS0		210
 #define CLK_LITE1		211
 #define CLK_LITE0		212
+#define CLK_SMMUISP		213
+#define CLK_SMMUDRC		214
+#define CLK_SMMUFD		215
+#define CLK_SMMULITE0		216
+#define CLK_SMMULITE1		217
+#define CLK_SMMUSCALERC		218
+#define CLK_SMMUISPCX		219
+#define CLK_MASK_CAM1		220
+#define CLK_MASK_CAM_BLK	221
+#define CLK_MCUISP		222
+#define CLK_PCLK_I2C1ISP	223
+#define CLK_PCLK_I2C0ISP	224
+#define CLK_I2C1ISP		225
+#define CLK_I2C0ISP		226
 
 #define NR_CLKS			256
 

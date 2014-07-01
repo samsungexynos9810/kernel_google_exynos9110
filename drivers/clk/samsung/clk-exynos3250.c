@@ -359,6 +359,11 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SCLK_SPI0_ISP, "sclk_spi0_isp", "dout_spi0_isp_pre",
 			GATE_SCLK_ISP, 1, CLK_SET_RATE_PARENT, 0),
 
+	CGATE(CLK_MASK_CAM1, "mask_cam1", "dout_cam1",
+			SRC_MASK_CAM, 20, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_MASK_CAM_BLK, "mask_camblk", "dout_cam_blk",
+			SRC_MASK_CAM, 0, CLK_IGNORE_UNUSED, 0),
+
 	CGATE(CLK_QEG3D, "qeg3d", "dout_aclk_200", GATE_IP_G3D, 2,
 			CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_PPMUG3D, "ppmug3d", "dout_aclk_200", GATE_IP_G3D, 1,
@@ -412,20 +417,46 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_ACLK_AXI_266, "aclk_axi266", "mout_aclk_266_sub",
 			GATE_BUS_ISP0, 0, CLK_IGNORE_UNUSED, 0),
 
+	CGATE(CLK_PCLK_I2C1ISP, "pclk_i2c1isp", "dout_aclk_100",
+			GATE_BUS_ISP2, 26, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_PCLK_I2C0ISP, "pclk_i2c0isp", "dout_aclk_100",
+			GATE_BUS_ISP2, 25, CLK_IGNORE_UNUSED, 0),
+
 	CGATE(CLK_PCLKDBG_MCUISP, "pclkdbg_mcuisp", "dout_mcuisp1",
 			GATE_BUS_ISP3, 3, CLK_IGNORE_UNUSED, 0),
 
 	CGATE(CLK_SCLK_MPWM_ISP, "sclk_mpwm_isp", "dout_mpwm",
 			GATE_IP_SCLK_ISP, 0, CLK_IGNORE_UNUSED, 0),
 
+	CGATE(CLK_I2C1ISP, "i2c1isp", NULL,
+			GATE_IP_ISP0, 26, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2C0ISP, "i2c0isp", NULL,
+			GATE_IP_ISP0, 25, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_CSIS1, "csis1", NULL,
 			GATE_IP_ISP0, 13, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMULITE1, "smmulite1", NULL,
+			GATE_IP_ISP0, 12, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMULITE0, "smmulite0", NULL,
+			GATE_IP_ISP0, 11, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUFD, "smmufd", NULL,
+			GATE_IP_ISP0, 10, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUDRC, "smmudrc", NULL,
+			GATE_IP_ISP0, 9, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUISP, "smmuisp", NULL,
+			GATE_IP_ISP0, 8, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_CSIS0, "csis0", NULL,
 			GATE_IP_ISP0, 6, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_MCUISP, "mcuisp", NULL,
+			GATE_IP_ISP0, 5, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_LITE1, "lite1", NULL,
 			GATE_IP_ISP0, 4, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_LITE0, "lite0", NULL,
 			GATE_IP_ISP0, 3, CLK_IGNORE_UNUSED, 0),
+
+	CGATE(CLK_SMMUSCALERC, "smmuscalerc", NULL,
+			GATE_IP_ISP1, 15, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SMMUISPCX, "smmuispcx", NULL,
+			GATE_IP_ISP1, 4, CLK_IGNORE_UNUSED, 0),
 };
 
 static struct samsung_pll_rate_table exynos3250_pll_rates[] = {
