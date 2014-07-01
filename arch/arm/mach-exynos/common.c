@@ -247,6 +247,21 @@ static struct map_desc exynos3_iodesc[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS3250_PA_PPMU_LEFT),
 		.length		= SZ_8K,
 		.type		= MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_FIMCLITE0,
+		.pfn            = __phys_to_pfn(EXYNOS3_PA_FIMC_LITE0),
+		.length         = SZ_64K,
+		.type           = MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_FIMCLITE1,
+		.pfn            = __phys_to_pfn(EXYNOS3_PA_FIMC_LITE1),
+		.length         = SZ_64K,
+		.type           = MT_DEVICE,
+	}, {
+		.virtual        = (unsigned long)S5P_VA_MIPICSI0,
+		.pfn            = __phys_to_pfn(EXYNOS3_PA_MIPI_CSI0),
+		.length         = SZ_64K,
+		.type           = MT_DEVICE,
 	},
 };
 
