@@ -223,24 +223,24 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_SPI0, "dout_spi0", "mout_spi0", DIV_PERIL1, 0, 4),
 
 	CDIV(CLK_DIV_UART_ISP, "dout_uart_isp", "mout_uart_isp",
-			DIV_ISP, 28, 3),
+			DIV_ISP, 28, 4),
 	CDIV(CLK_DIV_SPI1_ISP_PRE, "dout_spi1_isp_pre", "dout_spi1_isp",
-			DIV_ISP, 20, 7),
+			DIV_ISP, 20, 8),
 	CDIV(CLK_DIV_SPI1_ISP, "dout_spi1_isp", "mout_spi1_isp",
-			DIV_ISP, 16, 3),
+			DIV_ISP, 16, 4),
 	CDIV(CLK_DIV_SPI0_ISP_PRE, "dout_spi0_isp_pre", "dout_spi0_isp",
-			DIV_ISP, 8, 7),
+			DIV_ISP, 8, 8),
 	CDIV(CLK_DIV_SPI0_ISP, "dout_spi0_isp", "mout_spi0_isp",
-			DIV_ISP, 4, 3),
+			DIV_ISP, 4, 4),
 
-	CDIV(CLK_DIV_ISP1, "dout_isp1", "mout_aclk_266_sub", DIV_ISP0, 4, 2),
-	CDIV(CLK_DIV_ISP0, "dout_isp0", "mout_aclk_266_sub", DIV_ISP0, 0, 2),
+	CDIV(CLK_DIV_ISP1, "dout_isp1", "mout_aclk_266_sub", DIV_ISP0, 4, 3),
+	CDIV(CLK_DIV_ISP0, "dout_isp0", "mout_aclk_266_sub", DIV_ISP0, 0, 3),
 
 	CDIV(CLK_DIV_MCUISP1, "dout_mcuisp1", "mout_aclk_400_mcuisp_sub",
-			DIV_ISP1, 8, 2),
+			DIV_ISP1, 8, 3),
 	CDIV(CLK_DIV_MCUISP0, "dout_mcuisp0", "mout_aclk_400_mcuisp_sub",
-			DIV_ISP1, 4, 2),
-	CDIV(CLK_DIV_MPWM, "dout_mpwm", "dout_isp1", DIV_ISP1, 0, 2),
+			DIV_ISP1, 4, 3),
+	CDIV(CLK_DIV_MPWM, "dout_mpwm", "dout_isp1", DIV_ISP1, 0, 3),
 };
 
 #define CGATE(_id, cname, pname, o, b, f, gf) \
