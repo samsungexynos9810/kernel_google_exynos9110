@@ -459,7 +459,6 @@
 	pd_lcd0: pd-lcd0@0x10023c80 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10023c80 0x10>;
-		status = "disabled";
 		spd_fimd0: spd_fimd0@0x10023c80 {
 			compatible = "samsung,exynos-spd";
 		};
@@ -495,6 +494,7 @@
                         "dout_aclk_160",
                         "aclk_fimd0", "sclk_fimd0", "sclk_mipi0",
                         "fimd0", "dsim0", "dout_mpll_pre";
+		samsung,power-domain = <&pd_lcd0>;
 
                 /* TE pin */
                 /*
