@@ -1252,6 +1252,17 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		pm_runtime_put_sync(dev);
 		mdbgd_ischain("pm_runtime_suspended = %d\n", device, pm_runtime_suspended(dev));
 
+		/* A5 power off*/
+		timeout = 1000;
+		writel(0x0, PMUREG_ISP_ARM_CONFIGURATION);
+		while ((__raw_readl(PMUREG_ISP_ARM_STATUS) & 0x1) && timeout) {
+			timeout--;
+			udelay(1);
+		}
+		if (timeout == 0)
+			err("A5 power down failed(status:%x)\n",
+				__raw_readl(PMUREG_ISP_ARM_STATUS));
+
 #if defined(CONFIG_SOC_EXYNOS3470)
 		writel(0x0, PMUREG_ISP_ARM_SYS_PWR_REG);
 #elif defined(CONFIG_SOC_EXYNOS3250)
