@@ -1671,9 +1671,20 @@ static int __init exynos_init_irq_eint(void)
 			wkup_np = of_find_compatible_node(pctrl_np, NULL,
 							wkup_compat);
 			if (wkup_np)
-				return -ENODEV;
+				break;
 		}
 	}
+
+	if (!wkup_np)
+		return -ENODEV;
+
+	if (soc_is_exynos3250()) {
+		exynos_eint_base = of_iomap(pctrl_np, 0);
+		if(!exynos_eint_base)
+			pr_warn("%s: failed to map exynos_eint_base, \
+					S2R may not work!!\n", __func__);
+	}
+	return 0;
 #endif
 	if (soc_is_exynos5440())
 		return 0;
