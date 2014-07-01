@@ -337,8 +337,10 @@ int s5p_mfc_clock_on(struct s5p_mfc_dev *dev)
 	int state, val;
 	unsigned long flags;
 
-#ifdef CONFIG_MFC_USE_BUS_DEVFREQ
+#if defined(CONFIG_ARCH_EXYNOS5)
+#ifdef (CONFIG_MFC_USE_BUS_DEVFREQ)
 	s5p_mfc_clock_set_rate(dev, dev->curr_rate);
+#endif
 #endif
 	ret = clk_enable(dev->pm.clock);
 	if (ret < 0)
