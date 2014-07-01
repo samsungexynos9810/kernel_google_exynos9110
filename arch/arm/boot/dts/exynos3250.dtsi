@@ -184,6 +184,69 @@
 		mmu-masters = <&gsc_1>;
 	};
 
+	sysmmu_fimc_isp: sysmmu@12260000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x12260000 0x1000>;
+		interrupts = <0 202 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMUISP>;
+		mmu-masters = <&fimc_is>;
+	};
+
+	sysmmu_fimc_drc: sysmmu@12270000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x12270000 0x1000>;
+		interrupts = <0 203 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMUDRC>;
+		mmu-masters = <&fimc_is>;
+	};
+
+	sysmmu_fimc_scc: sysmmu@12280000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x12280000 0x1000>;
+		interrupts = <0 207 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMUSCALERC>;
+		mmu-masters = <&fimc_is>;
+	};
+
+	sysmmu_fimc_fd: sysmmu@122A0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x122A0000 0x1000>;
+		interrupts = <0 204 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMUFD>;
+		mmu-masters = <&fimc_is>;
+	};
+
+	sysmmu_fimc_cpu: sysmmu@122B0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x122B0000 0x1000>;
+		interrupts = <0 237 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMUISPCX>;
+		mmu-masters = <&fimc_is>;
+	};
+
+	sysmmu_flite_a: sysmmu@122C0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x122C0000 0x1000>;
+		interrupts = <0 200 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMULITE0>;
+		mmu-masters = <&fimc_is_sensor0>;
+	};
+
+	sysmmu_flite_b: sysmmu@122D0000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x122D0000 0x1000>;
+		interrupts = <0 201 0>;
+		clock-names = "sysmmu";
+		clocks = <&clock CLK_SMMULITE1>;
+		mmu-masters = <&fimc_is_sensor0>;
+	};
+
 	i2c_0: i2c@13860000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
