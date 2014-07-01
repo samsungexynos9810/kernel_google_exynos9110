@@ -443,7 +443,7 @@ static __init int exynos_pm_dt_parse_domains(void)
 
 		platform_set_drvdata(pdev, pd);
 
-		if (pd->cb->init) {
+		if (pd->cb && pd->cb->init) {
 			ret = pd->cb->init(pd);
 			if (ret) {
 				iounmap(pd->base);
