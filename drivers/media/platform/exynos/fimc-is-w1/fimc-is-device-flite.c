@@ -1578,7 +1578,7 @@ static int flite_stream_off(struct v4l2_subdev *subdev,
 		}
 	} else {
 		if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
-			flush_delayed_work_sync(&flite->early_work_wq);
+			flush_delayed_work(&flite->early_work_wq);
 		/*
 		 * DTP test can make iommu fault because senosr is streaming
 		 * therefore it need  force reset

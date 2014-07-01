@@ -18,6 +18,7 @@
 #include <linux/of.h>
 #include <linux/of_gpio.h>
 #endif
+#include <linux/slab.h>
 
 #include "fimc-is-dt.h"
 

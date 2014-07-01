@@ -18,6 +18,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/spi/spi.h>
 #include <mach/videonode.h>
 #include <media/exynos_mc.h>
 #include <asm/cacheflush.h>
