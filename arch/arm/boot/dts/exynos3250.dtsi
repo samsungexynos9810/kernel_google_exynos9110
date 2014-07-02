@@ -642,7 +642,6 @@
 		interrupts = <0 141 0>;
 		clocks = <&clock CLK_USBOTG>;
 		clock-names = "otg";
-		status = "ok";
 		usb-phy = <&usb2_phy>;
 	};
 

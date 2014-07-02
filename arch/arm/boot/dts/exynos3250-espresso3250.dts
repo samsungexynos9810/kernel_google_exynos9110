@@ -211,6 +211,19 @@
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
+
+				ldo6_reg: LDO6 {
+                                        regulator-name = "VDD_USB_AP_1.0V";
+                                        regulator-min-microvolt = <1000000>;
+                                        regulator-max-microvolt = <1000000>;
+                                        regulator-always-on;
+                                };
+
+				ldo8_reg: LDO8 {
+                                        regulator-name = "VDD_UOTG_AP_3.3V";
+                                        regulator-min-microvolt = <3300000>;
+                                        regulator-max-microvolt = <3300000>;
+                                };
 			};
 		};
 	};
@@ -588,6 +601,12 @@
 		i2c_ch = <0>;
 		i2c_addr = <0x20>;
 		is_bns = <0>;
+		status = "okay";
+	};
+
+	usb@12480000 {
+		vusb_d-supply = <&ldo6_reg>;
+		vusb_a-supply = <&ldo8_reg>;
 		status = "okay";
 	};
 };
