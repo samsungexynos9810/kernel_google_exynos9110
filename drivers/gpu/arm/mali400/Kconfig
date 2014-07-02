@@ -22,7 +22,7 @@ config MALI_VER_R4P0_REL0
 	  Choose this option to select DDK version.
 
 if MALI_VER_R4P0_REL0
-source "drivers/gpu/arm/mali400/r4p0/Kconfig"
+source "drivers/gpu/arm/mali400/r4p0_rel0/Kconfig"
 endif
 
 #endchoice
