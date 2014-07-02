@@ -97,7 +97,7 @@ int init_display_decon_clocks(struct device *dev)
 	/* 1. Set [LCD0_BLK:sclk_fimd0]: display special pixel clock */
 	DISPLAY_CLOCK_SET_PARENT(dout_fimd0, mout_fimd0);
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd0, dout_mpll_pre);
-	DISPLAY_SET_RATE(dout_fimd0, 50 * MHZ);
+	DISPLAY_SET_RATE(dout_fimd0, 100 * MHZ);
 
 	/* 2. Set [CMU_TOP:aclk_160] : display top clock(dedicated for LCD_BLK) */
 	DISPLAY_CLOCK_SET_PARENT(dout_aclk_160, mout_aclk_160);
@@ -251,7 +251,7 @@ int enable_display_decon_clocks(struct device *dev)
 	/* 1. Set [LCD0_BLK:sclk_fimd0]: display special pixel clock */
 	DISPLAY_CLOCK_INLINE_SET_PARENT(dout_fimd0, mout_fimd0);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd0, dout_mpll_pre);
-	DISPLAY_INLINE_SET_RATE(dout_fimd0, 50 * MHZ);
+	DISPLAY_INLINE_SET_RATE(dout_fimd0, 100 * MHZ);
 
 	/* 2. Set [CMU_TOP:aclk_160] : display top clock(dedicated for LCD_BLK) */
 	DISPLAY_CLOCK_INLINE_SET_PARENT(dout_aclk_160, mout_aclk_160);
