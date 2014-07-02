@@ -505,6 +505,7 @@
 		clock-names = "ext_xtal", "mout_vpllsrc", "fout_vpll",
 		"mout_vpll", "mout_g3d1", "mout_mpll", "mout_g3d0", "mout_g3d",
 		"sclk_g3d", "g3d";
+		samsung,power-domain = <&pd_g3d>;
         };
 
 	pd_cam: pd-cam@0x10023c00 {
@@ -538,7 +539,6 @@
 	pd_g3d: pd-g3d@0x10023c60 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10023c60 0x10>;
-		status = "disabled";
 	};
 
 	pd_lcd0: pd-lcd0@0x10023c80 {
