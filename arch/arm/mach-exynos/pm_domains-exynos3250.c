@@ -128,6 +128,46 @@ static int exynos3_pd_mfc_on_post(struct exynos_pm_domain *domain)
 	return 0;
 }
 
+static struct exynos3_pd_reg_state exynos3_lcd0_clk_reg[] = {
+	{ .reg = EXYNOS3_CLKSRC_MASK_LCD,
+		.set_val = ((0x1 << 12)|(0x1))},
+	{ .reg = EXYNOS3_CLKGATE_BUS_LCD,
+		.set_val = ((0x7F << 14)|(0x3 << 9)|(0x1F << 3)|(0x1))},
+	{ .reg = EXYNOS3_CLKGATE_SCLK_LCD,
+		.set_val = ((0x3 << 3)|(0x3))},
+	{ .reg = EXYNOS3_CLKGATE_IP_LCD,
+		.set_val = ((0x3F << 2)|(0x1))},
+};
+
+static struct exynos3_pd_reg_state exynos3_lcd0_pwr_reg[] = {
+	{ .reg = EXYNOS3_CMU_CLKSTOP_LCD0_SYS_PWR_REG,	.set_val = 0},
+	{ .reg = EXYNOS3_CMU_RESET_LCD0_SYS_PWR_REG,	.set_val = 0},
+};
+
+static int exynos3_pd_lcd0_on_pre(struct exynos_pm_domain *domain)
+{
+	DEBUG_PRINT_INFO("%s pre power on/off\n", "LCD0");
+
+	exynos3_pd_save_reg(exynos3_lcd0_clk_reg,
+				ARRAY_SIZE(exynos3_lcd0_clk_reg));
+	exynos3_enable_clk(exynos3_lcd0_clk_reg,
+				ARRAY_SIZE(exynos3_lcd0_clk_reg));
+	exynos3_pwr_reg_set(exynos3_lcd0_pwr_reg,
+				ARRAY_SIZE(exynos3_lcd0_pwr_reg));
+
+	return 0;
+}
+
+static int exynos3_pd_lcd0_on_post(struct exynos_pm_domain *domain)
+{
+	DEBUG_PRINT_INFO("%s post power on/off\n", "LCD0");
+
+	exynos3_pd_restore_reg(exynos3_lcd0_clk_reg,
+				ARRAY_SIZE(exynos3_lcd0_clk_reg));
+
+	return 0;
+}
+
 static struct exynos3_pd_reg_state exynos3_cam_clk_reg[] = {
 	{ .reg = EXYNOS3_CLKSRC_MASK_CAM,
 		.set_val = ((0x1 << 20)|(0x1))},
@@ -304,6 +344,12 @@ static struct exynos_pd_callback pd_callback_list[] = {
 			.on_post = exynos3_pd_mfc_on_post,
 			.off_pre = exynos3_pd_mfc_on_pre,
 			.off_post = exynos3_pd_mfc_on_post,
+	} , {
+			.name = "pd-lcd0",
+			.on_pre = exynos3_pd_lcd0_on_pre,
+			.on_post = exynos3_pd_lcd0_on_post,
+			.off_pre = exynos3_pd_lcd0_on_pre,
+			.off_post = exynos3_pd_lcd0_on_post,
 	} , {
 			.name = "pd-cam",
 			.on_pre = exynos3_pd_cam_on_pre,
