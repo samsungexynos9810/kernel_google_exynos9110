@@ -366,7 +366,7 @@ static struct devfreq_pm_qos_data exynos3250_devfreq_int_pm_qos_data = {
 static struct devfreq_simple_ondemand_data exynos3250_int_governor_data = {
 	.pm_qos_class	= PM_QOS_DEVICE_THROUGHPUT,
 	.upthreshold	= 15,
-	.cal_qos_max = 133000,
+	.cal_qos_max = 135000,
 };
 #endif
 
