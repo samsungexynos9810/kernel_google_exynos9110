@@ -198,6 +198,7 @@
 #define CLK_PCLK_I2C0ISP	224
 #define CLK_I2C1ISP		225
 #define CLK_I2C0ISP		226
+#define CLK_PWM			227
 
 #define NR_CLKS			256
 

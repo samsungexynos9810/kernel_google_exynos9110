@@ -279,6 +279,7 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_UART0, "uart0", "dout_uart0",
 			GATE_IP_PERIL, 0, CLK_IGNORE_UNUSED, 0),
 
+	CGATE(CLK_PWM, "pwm-clock", "dout_aclk_100", GATE_IP_PERIL, 24, 0, 0),
 	CGATE(CLK_I2C7, "i2c7", "dout_aclk_100",
 			GATE_IP_PERIL, 13, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_I2C6, "i2c6", "dout_aclk_100",
