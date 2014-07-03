@@ -838,6 +838,20 @@
 		pinctrl-0 = <&spi1_bus>;
 		status = "disabled";
 	};
+
+	i2s: i2s@13970000 {
+		compatible = "samsung,i2s-v5";
+		reg = <0x13970000 0x100>;
+		interrupts = <0 126 0>;
+		dmas = <&pdma0 14
+			&pdma0 13>;
+		dma-names = "tx", "rx";
+		clocks = <&clock CLK_I2S>;
+		clock-names = "iis";
+		samsung,supports-rstclr;
+		pinctrl-names = "idle" ,"default";
+		pinctrl-0 = <&i2s2_bus>;
+	};
 };
 
 #include "exynos3250-pinctrl.dtsi"
