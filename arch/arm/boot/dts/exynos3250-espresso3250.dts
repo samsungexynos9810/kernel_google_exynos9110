@@ -675,4 +675,17 @@
 			};
 		};
 	};
+
+	sound {
+		compatible = "samsung,espresso-wm5110";
+		samsung,audio-cpu = <&i2s>;
+		samsung,audio-codec = <&audio_codec>;
+		clocks = <&clock CLK_MOUT_EPLL>,
+			<&clock CLK_FOUT_EPLL>,
+			<&clock CLK_MOUT_AUDIO>,
+			<&clock CLK_SCLK_I2S>;
+		clock-names = "mout_epll", "fout_epll",
+				"mout_audio", "sclk_i2s";
+		status = "okay";
+	};
 };
