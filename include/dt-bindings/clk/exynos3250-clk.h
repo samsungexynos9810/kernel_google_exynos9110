@@ -57,6 +57,7 @@
 #define CLK_MOUT_SPI1_ISP	53
 #define CLK_MOUT_SPI0_ISP	54
 #define CLK_MOUT_TSADC		55
+#define CLK_MOUT_AUDIO		56
 
 /* Dividers */
 #define CLK_DIV_MPLL_PRE	64
@@ -101,6 +102,8 @@
 #define CLK_DIV_SPI0_ISP	103
 #define CLK_DIV_TSADC_PRE	104
 #define CLK_DIV_TSADC		105
+#define CLK_DIV_AUDIO		106
+#define CLK_DIV_I2S		107
 
 /* gate and special clocks */
 #define CLK_MCT			128
@@ -204,6 +207,8 @@
 #define CLK_PWM			227
 #define CLK_TSADC		228
 #define CLK_SCLK_TSADC		229
+#define CLK_I2S			230
+#define CLK_SCLK_I2S		231
 
 #define NR_CLKS			256
 

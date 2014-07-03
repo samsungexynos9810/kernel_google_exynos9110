@@ -173,6 +173,7 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_UART_ISP, "mout_uart_isp", mout_isp_p, SRC_ISP, 12, 3),
 	CMUX(CLK_MOUT_SPI1_ISP, "mout_spi1_isp", mout_isp_p, SRC_ISP, 8, 3),
 	CMUX(CLK_MOUT_SPI0_ISP, "mout_spi0_isp", mout_isp_p, SRC_ISP, 4, 3),
+	CMUX(CLK_MOUT_AUDIO, "mout_audio", group_sclk_p, SRC_PERIL1, 4, 4),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
@@ -211,6 +212,9 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_UART2, "dout_uart2", "mout_uart2",	DIV_PERIL0, 8, 4),
 	CDIV(CLK_DIV_UART1, "dout_uart1", "mout_uart1",	DIV_PERIL0, 4, 4),
 	CDIV(CLK_DIV_UART0, "dout_uart0", "mout_uart0",	DIV_PERIL0, 0, 4),
+
+	CDIV(CLK_DIV_AUDIO, "dout_audio", "mout_audio", DIV_PERIL4, 16, 4),
+	CDIV(CLK_DIV_I2S, "dout_i2s", "dout_audio", DIV_PERIL5, 8, 6),
 
 	CDIV(CLK_DIV_MIPI0_PRE, "dout_mipi0_pre", "dout_mipi0",	DIV_LCD, 20, 4),
 	CDIV(CLK_DIV_MIPI0, "dout_mipi0", "mout_mipi0", DIV_LCD, 16, 4),
@@ -268,6 +272,8 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 
 	CGATE(CLK_TMU_APBIF, "tmu_apbif", "dout_aclk_100",
 				GATE_IP_PERIR, 17, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_SCLK_I2S, "sclk_i2s", "dout_i2s",
+				GATE_SCLK_PERIL, 18, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_KEYIF, "keyif", "dout_aclk_100", GATE_IP_PERIR, 16, 0, 0),
 	CGATE(CLK_RTC, "rtc", "dout_aclk_100",
 			GATE_IP_PERIR, 15, CLK_IGNORE_UNUSED, 0),
@@ -305,6 +311,8 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			GATE_IP_PERIL, 17, CLK_IGNORE_UNUSED, 0),
 	CGATE(CLK_SPI0, "spi0", "dout_aclk_100",
 			GATE_IP_PERIL, 16, CLK_IGNORE_UNUSED, 0),
+	CGATE(CLK_I2S, "iis", "dout_aclk_100",
+			GATE_IP_PERIL, 21, CLK_IGNORE_UNUSED, 0),
 
 	CGATE(CLK_ACLK_FIMD0, "aclk_fimd0", NULL,
 			GATE_BUS_LCD, 0, CLK_IGNORE_UNUSED, 0),
