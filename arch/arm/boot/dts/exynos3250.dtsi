@@ -38,6 +38,7 @@
 		gsc0 = &gsc_0;
 		gsc1 = &gsc_1;
 		mdev0 = &mdev_0;
+		jpeg0 = &jpeg_0;
 	};
 
 	chipid@10000000 {
@@ -190,6 +191,15 @@
 		clock-names = "sysmmu", "master";
 		clocks = <&clock CLK_SMMUGSCALER1>, <&clock CLK_GSCALER1>;
 		mmu-masters = <&gsc_1>;
+	};
+
+	sysmmu_jpeg: sysmmu@0x11A60000 {
+		compatible = "samsung,exynos4210-sysmmu";
+		reg = <0x11A60000 0x1000>;
+		interrupts = <0 156 0>;
+		clock-names = "sysmmu", "master";
+		clocks = <&clock CLK_SMMUJPEG>, <&clock CLK_JPEG>;
+		mmu-masters = <&jpeg_0>;
 	};
 
 	sysmmu_fimc_isp: sysmmu@12260000 {
@@ -789,6 +799,16 @@
 			"pwm-tin0", "pwm-tin1",
 			"pwm-tin2", "pwm-tin3";
 		status = "disabled";
+	};
+
+	jpeg_0: jpeg@11830000 {
+		compatible = "samsung,jpeg-hx2";
+		reg = <0x11830000 0x1000>;
+		interrupts = <0 171 0>;
+		clock-names = "jpeg";
+		clocks = <&clock CLK_JPEG>;
+		ip_ver = <2>;
+		samsung,power-domain = <&spd_jpeg>;
 	};
 };
 
