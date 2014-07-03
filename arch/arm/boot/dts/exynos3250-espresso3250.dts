@@ -632,4 +632,47 @@
 		vusb_a-supply = <&ldo8_reg>;
 		status = "okay";
 	};
+
+	spi@13930000 {
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		audio_codec: WM5110@0 {
+			compatible = "wlf,wm5110";
+			spi-max-frequency = <20000000>;
+			reg = <0x0>;
+
+			wlf,reset = <&gpm0 4 1>;
+			wlf,ldoena = <&gpx3 3 1>;
+			wlf,irq-gpio = <&gpx3 4 0xF>;
+
+			pinctrl-names = "default";
+			pinctrl-0 = <&codec_reset>;
+
+			AVDD-supply = <&ldo23_reg>;
+			LDOVDD-supply = <&ldo23_reg>;
+			CPVDD-supply = <&ldo23_reg>;
+			MICVDD-supply = <&ldo23_reg>;
+			DBVDD1-supply = <&ldo23_reg>;
+			DBVDD2-supply = <&ldo23_reg>;
+			DBVDD3-supply = <&ldo23_reg>;
+			SPKVDDL-supply = <&ldo17_reg>;
+			SPKVDDR-supply = <&ldo17_reg>;
+			DCVDD-supply = <&dcvdd>;
+
+			wlf,gpio-defaults = <
+				0xA101  /* AIF1TXLRCLK */
+				0xA101
+				0xA101
+				0xA101
+				0xA101
+			>;
+
+			controller-data {
+				cs-gpio = <&gpb 5 1>;
+				samsung,spi-feedback-delay = <2>;
+			};
+		};
+	};
 };

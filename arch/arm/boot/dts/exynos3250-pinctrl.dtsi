@@ -530,4 +530,9 @@
 		samsung,pin-pud = <0>;
 		samsung,pin-drv = <0>;
 	};
+
+	codec_reset: codec-reset {
+                samsung,pins = "gpm0-4";
+                samsung,pin-con-pdn = <3>;
+        };
 };
