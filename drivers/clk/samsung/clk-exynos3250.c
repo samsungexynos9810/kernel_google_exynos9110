@@ -349,7 +349,7 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			GATE_SCLK_G3D, 0, CLK_SET_RATE_PARENT, 0),
 
 	CGATE(CLK_SCLK_JPEG, "sclk_jpeg", "dout_cam_blk",
-			GATE_SCLK_CAM, 8, CLK_SET_RATE_PARENT, 0),
+			GATE_SCLK_CAM, 8, CLK_IGNORE_UNUSED, 0),
 
 	CGATE(CLK_SCLK_CAM1, "sclk_cam1", "dout_cam1",
 			GATE_SCLK_ISP, 4, CLK_SET_RATE_PARENT, 0),
