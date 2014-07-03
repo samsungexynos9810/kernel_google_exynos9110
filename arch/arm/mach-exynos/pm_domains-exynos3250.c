@@ -38,7 +38,17 @@ static void exynos3_pd_restore_reg(struct exynos3_pd_reg_state *ptr, int count)
 	}
 }
 
-static void exynos3_enable_clk(struct exynos3_pd_reg_state *ptr, int count)
+static void exynos3_disable_bits(struct exynos3_pd_reg_state *ptr, int count)
+{
+	for (; count > 0; count--, ptr++) {
+		DEBUG_PRINT_INFO("%s : set %p (change %08lx, was %08x)\n",
+			__func__, ptr->reg, __raw_readl(ptr->reg) &
+			~(ptr->set_val), __raw_readl(ptr->reg));
+		__raw_writel(__raw_readl(ptr->reg) & ~(ptr->set_val), ptr->reg);
+	}
+}
+
+static void exynos3_enable_bits(struct exynos3_pd_reg_state *ptr, int count)
 {
 	for (; count > 0; count--, ptr++) {
 		DEBUG_PRINT_INFO("%s : set %p (change %08lx, was %08x)\n",
@@ -74,7 +84,7 @@ static int exynos3_pd_g3d_on_pre(struct exynos_pm_domain *domain)
 
 	exynos3_pd_save_reg(exynos3_g3d_clk_reg,
 				ARRAY_SIZE(exynos3_g3d_clk_reg));
-	exynos3_enable_clk(exynos3_g3d_clk_reg,
+	exynos3_enable_bits(exynos3_g3d_clk_reg,
 				ARRAY_SIZE(exynos3_g3d_clk_reg));
 	exynos3_pwr_reg_set(exynos3_g3d_pwr_reg,
 				ARRAY_SIZE(exynos3_g3d_pwr_reg));
@@ -110,7 +120,7 @@ static int exynos3_pd_mfc_on_pre(struct exynos_pm_domain *domain)
 
 	exynos3_pd_save_reg(exynos3_mfc_clk_reg,
 				ARRAY_SIZE(exynos3_mfc_clk_reg));
-	exynos3_enable_clk(exynos3_mfc_clk_reg,
+	exynos3_enable_bits(exynos3_mfc_clk_reg,
 				ARRAY_SIZE(exynos3_mfc_clk_reg));
 	exynos3_pwr_reg_set(exynos3_mfc_pwr_reg,
 				ARRAY_SIZE(exynos3_mfc_pwr_reg));
@@ -139,6 +149,14 @@ static struct exynos3_pd_reg_state exynos3_lcd0_clk_reg[] = {
 		.set_val = ((0x3F << 2)|(0x1))},
 };
 
+static struct exynos3_pd_reg_state exynos3_lcd0_lpi_pwr_reg1[] = {
+	{ .reg = EXYNOS3_LPI_MASK1,	                .set_val = 0x1 << 20},
+};
+
+static struct exynos3_pd_reg_state exynos3_lcd0_lpi_pwr_reg2[] = {
+	{ .reg = EXYNOS3_LPI_DENIAL_MASK1,	        .set_val = 0x1 << 20},
+};
+
 static struct exynos3_pd_reg_state exynos3_lcd0_pwr_reg[] = {
 	{ .reg = EXYNOS3_CMU_CLKSTOP_LCD0_SYS_PWR_REG,	.set_val = 0},
 	{ .reg = EXYNOS3_CMU_RESET_LCD0_SYS_PWR_REG,	.set_val = 0},
@@ -150,7 +168,15 @@ static int exynos3_pd_lcd0_on_pre(struct exynos_pm_domain *domain)
 
 	exynos3_pd_save_reg(exynos3_lcd0_clk_reg,
 				ARRAY_SIZE(exynos3_lcd0_clk_reg));
-	exynos3_enable_clk(exynos3_lcd0_clk_reg,
+	exynos3_pd_save_reg(exynos3_lcd0_lpi_pwr_reg1,
+				ARRAY_SIZE(exynos3_lcd0_lpi_pwr_reg1));
+	exynos3_pd_save_reg(exynos3_lcd0_lpi_pwr_reg2,
+				ARRAY_SIZE(exynos3_lcd0_lpi_pwr_reg2));
+	exynos3_enable_bits(exynos3_lcd0_lpi_pwr_reg1,
+				ARRAY_SIZE(exynos3_lcd0_lpi_pwr_reg1));
+	exynos3_disable_bits(exynos3_lcd0_lpi_pwr_reg2,
+				ARRAY_SIZE(exynos3_lcd0_lpi_pwr_reg2));
+	exynos3_enable_bits(exynos3_lcd0_clk_reg,
 				ARRAY_SIZE(exynos3_lcd0_clk_reg));
 	exynos3_pwr_reg_set(exynos3_lcd0_pwr_reg,
 				ARRAY_SIZE(exynos3_lcd0_pwr_reg));
@@ -164,6 +190,10 @@ static int exynos3_pd_lcd0_on_post(struct exynos_pm_domain *domain)
 
 	exynos3_pd_restore_reg(exynos3_lcd0_clk_reg,
 				ARRAY_SIZE(exynos3_lcd0_clk_reg));
+	exynos3_pd_restore_reg(exynos3_lcd0_lpi_pwr_reg1,
+				ARRAY_SIZE(exynos3_lcd0_lpi_pwr_reg1));
+	exynos3_pd_restore_reg(exynos3_lcd0_lpi_pwr_reg2,
+				ARRAY_SIZE(exynos3_lcd0_lpi_pwr_reg2));
 
 	return 0;
 }
@@ -193,7 +223,7 @@ static int exynos3_pd_cam_on_pre(struct exynos_pm_domain *domain)
 
 	exynos3_pd_save_reg(exynos3_cam_clk_reg,
 				ARRAY_SIZE(exynos3_cam_clk_reg));
-	exynos3_enable_clk(exynos3_cam_clk_reg,
+	exynos3_enable_bits(exynos3_cam_clk_reg,
 				ARRAY_SIZE(exynos3_cam_clk_reg));
 	exynos3_pwr_reg_set(exynos3_cam_pwr_reg,
 				ARRAY_SIZE(exynos3_cam_pwr_reg));
@@ -250,7 +280,7 @@ static int exynos3_pd_isp_on_pre(struct exynos_pm_domain *domain)
 
 	exynos3_pd_save_reg(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
-	exynos3_enable_clk(exynos3_isp_clk_reg,
+	exynos3_enable_bits(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
 	exynos3_pwr_reg_set(exynos3_isp_pwr_reg,
 				ARRAY_SIZE(exynos3_isp_pwr_reg));
@@ -275,9 +305,9 @@ static int exynos3_pd_isp_off_pre(struct exynos_pm_domain *domain)
 	exynos3_pd_save_reg(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
 
-	exynos3_enable_clk(exynos3_isp_sclks_reg,
+	exynos3_enable_bits(exynos3_isp_sclks_reg,
 				ARRAY_SIZE(exynos3_isp_sclks_reg));
-	exynos3_enable_clk(exynos3_isp_clk_reg,
+	exynos3_enable_bits(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
 
 	exynos3_pwr_reg_set(exynos3_isp_pwr_reg,
