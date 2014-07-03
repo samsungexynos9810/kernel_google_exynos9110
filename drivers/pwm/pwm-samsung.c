@@ -413,6 +413,7 @@ static int s3c_pwm_clk_init(struct platform_device *pdev,
 {
 	struct device *dev = &pdev->dev;
 	static struct clk *clk_scaler[2];
+	int ret;
 
 	s3c->clk = devm_clk_get(dev, "gate_timers");
 	if (IS_ERR(s3c->clk)) {
@@ -427,6 +428,18 @@ static int s3c_pwm_clk_init(struct platform_device *pdev,
 
 	if (IS_ERR(clk_scaler[0]) || IS_ERR(clk_scaler[1])) {
 		pr_err("failed to get scaler clocks\n");
+		return -EINVAL;
+	}
+
+	ret = clk_set_parent(clk_scaler[0], s3c->clk);
+	if (ret) {
+		pr_err("failed to parent for pwm-scaler0\n");
+		return -EINVAL;
+	}
+
+	ret = clk_set_parent(clk_scaler[1], s3c->clk);
+	if (ret) {
+		pr_err("failed to parent for pwm-scaler1\n");
 		return -EINVAL;
 	}
 
