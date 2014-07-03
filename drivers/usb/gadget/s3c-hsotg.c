@@ -2431,7 +2431,7 @@ irq_retry:
 	if (gintsts & GINTSTS_OTGInt) {
 		u32 otgint = readl(hsotg->regs + GOTGINT);
 
-		dev_info(hsotg->dev, "OTGInt: %08x\n", otgint);
+		dev_dbg(hsotg->dev, "OTGInt: %08x\n", otgint);
 
 		writel(otgint, hsotg->regs + GOTGINT);
 	}
@@ -2482,7 +2482,7 @@ irq_retry:
 
 		u32 usb_status = readl(hsotg->regs + GOTGCTL);
 
-		dev_info(hsotg->dev, "%s: USBRst\n", __func__);
+		dev_dbg(hsotg->dev, "%s: USBRst\n", __func__);
 		dev_dbg(hsotg->dev, "GNPTXSTS=%08x\n",
 			readl(hsotg->regs + GNPTXSTS));
 
@@ -2541,7 +2541,7 @@ irq_retry:
 	}
 
 	if (gintsts & GINTSTS_USBSusp) {
-		dev_info(hsotg->dev, "GINTSTS_USBSusp\n");
+		dev_dbg(hsotg->dev, "GINTSTS_USBSusp\n");
 		writel(GINTSTS_USBSusp, hsotg->regs + GINTSTS);
 
 		call_gadget(hsotg, suspend);
@@ -2549,7 +2549,7 @@ irq_retry:
 	}
 
 	if (gintsts & GINTSTS_WkUpInt) {
-		dev_info(hsotg->dev, "GINTSTS_WkUpIn\n");
+		dev_dbg(hsotg->dev, "GINTSTS_WkUpIn\n");
 		writel(GINTSTS_WkUpInt, hsotg->regs + GINTSTS);
 
 		call_gadget(hsotg, resume);
@@ -2567,7 +2567,7 @@ irq_retry:
 	 */
 
 	if (gintsts & GINTSTS_GOUTNakEff) {
-		dev_info(hsotg->dev, "GOUTNakEff triggered\n");
+		dev_dbg(hsotg->dev, "GOUTNakEff triggered\n");
 
 		writel(DCTL_CGOUTNak, hsotg->regs + DCTL);
 
@@ -2575,7 +2575,7 @@ irq_retry:
 	}
 
 	if (gintsts & GINTSTS_GINNakEff) {
-		dev_info(hsotg->dev, "GINNakEff triggered\n");
+		dev_dbg(hsotg->dev, "GINNakEff triggered\n");
 
 		writel(DCTL_CGNPInNAK, hsotg->regs + DCTL);
 
@@ -2744,7 +2744,7 @@ static int s3c_hsotg_ep_disable(struct usb_ep *ep)
 	u32 epctrl_reg;
 	u32 ctrl;
 
-	dev_info(hsotg->dev, "%s(ep %p)\n", __func__, ep);
+	dev_dbg(hsotg->dev, "%s(ep %p)\n", __func__, ep);
 
 	if (ep == &hsotg->eps[0].ep) {
 		dev_err(hsotg->dev, "%s: called for ep0\n", __func__);
@@ -3748,7 +3748,7 @@ static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
 	int ret = 0;
 
 	if (hsotg->driver)
-		dev_info(hsotg->dev, "suspending usb gadget %s\n",
+		dev_dbg(hsotg->dev, "suspending usb gadget %s\n",
 			 hsotg->driver->driver.name);
 
 	spin_lock_irqsave(&hsotg->lock, flags);
@@ -3776,7 +3776,7 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
 	int ret = 0;
 
 	if (hsotg->driver) {
-		dev_info(hsotg->dev, "resuming usb gadget %s\n",
+		dev_dbg(hsotg->dev, "resuming usb gadget %s\n",
 			 hsotg->driver->driver.name);
 		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
 				      hsotg->supplies);
