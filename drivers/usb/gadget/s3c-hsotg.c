@@ -1274,6 +1274,11 @@ static void s3c_hsotg_process_control(struct s3c_hsotg *hsotg,
 		case USB_REQ_SET_FEATURE:
 			ret = s3c_hsotg_process_req_feature(hsotg, ctrl);
 			break;
+
+		case USB_REQ_SET_CONFIGURATION:
+			hsotg->phy->state = OTG_STATE_B_IDLE;
+			hsotg->phy->last_event = USB_EVENT_VBUS;
+			break;
 		}
 	}
 
@@ -2498,7 +2503,8 @@ irq_retry:
 				s3c_hsotg_core_init(hsotg);
 				hsotg->last_rst = jiffies;
 			}
-		}
+		} else
+			hsotg->phy->last_event = USB_EVENT_NONE;
 	}
 
 	/* check both FIFOs */

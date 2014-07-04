@@ -413,7 +413,8 @@ static bool samsung_usb2phy_is_active(struct usb_phy *phy)
 
 	spin_lock_irqsave(&sphy->lock, flags);
 
-	if (!sphy->usage_count || pm_runtime_suspended(sphy->dev))
+	if (!sphy->usage_count || pm_runtime_suspended(sphy->dev) ||
+		phy->last_event == USB_EVENT_NONE)
 		ret = false;
 	else
 		ret = true;
