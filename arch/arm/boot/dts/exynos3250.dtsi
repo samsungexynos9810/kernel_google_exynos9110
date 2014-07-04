@@ -111,6 +111,8 @@
 	serial@13800000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13800000 0x100>;
+		dmas = <&pdma0 16 &pdma0 15>;
+		dma-names = "tx", "rx";
 		interrupts = <0 109 0>;
 		clocks = <&clock CLK_SCLK_UART0>, <&clock CLK_UART0>;
                 clock-names = "sclk_uart0", "gate_uart0";
@@ -119,6 +121,8 @@
 	serial@13810000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13810000 0x100>;
+		dmas = <&pdma1 16 &pdma1 15>;
+		dma-names = "tx", "rx";
 		interrupts = <0 110 0>;
 		clocks = <&clock CLK_SCLK_UART1>, <&clock CLK_UART1>;
                 clock-names = "sclk_uart1", "gate_uart1";
@@ -127,6 +131,8 @@
 	serial@13820000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13820000 0x100>;
+		dmas = <&pdma0 18 &pdma0 17>;
+		dma-names = "tx", "rx";
 		interrupts = <0 111 0>;
 		clocks = <&clock CLK_SCLK_UART2>, <&clock CLK_UART2>;
                 clock-names = "sclk_uart2", "gate_uart2";
@@ -135,6 +141,8 @@
 	serial@13830000 {
 		compatible = "samsung,exynos4210-uart";
 		reg = <0x13830000 0x100>;
+		dmas = <&pdma1 18 &pdma1 17>;
+		dma-names = "tx", "rx";
 		interrupts = <0 112 0>;
 		clocks = <&clock CLK_SCLK_UART3>, <&clock CLK_UART3>;
                 clock-names = "sclk_uart3", "gate_uart3";
