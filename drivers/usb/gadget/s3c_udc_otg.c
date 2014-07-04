@@ -723,12 +723,17 @@ static void set_max_pktsize(struct s3c_udc *udc, enum usb_device_speed speed)
 	}
 
 	udc->ep[0].ep.maxpacket = ep0_fifo_size;
+	usb_ep_set_maxpacket_limit(&udc->ep[0].ep, ep0_fifo_size);
+
 	for (i = 1; i < S3C_MAX_ENDPOINTS; i++) {
 		/* fullspeed limitations don't apply to isochronous endpoints */
 		if (udc->ep[i].bmAttributes == USB_ENDPOINT_XFER_ISOC)
 			udc->ep[i].ep.maxpacket = ep_fifo_size2;
 		else
 			udc->ep[i].ep.maxpacket = ep_fifo_size;
+
+		usb_ep_set_maxpacket_limit(&udc->ep[i].ep,
+				udc->ep[i].ep.maxpacket);
 	}
 
 	/* EP0 - Control IN (64 bytes)*/
