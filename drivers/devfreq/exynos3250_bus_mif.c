@@ -746,9 +746,7 @@ static int exynos3250_devfreq_mif_probe(struct platform_device *pdev)
 		pr_err("DEVFREQ(MIF) : Failed create available_frequencies sysfs\n");
 		goto err_devfreq_add;
 	}
-#ifdef CONFIG_EXYNOS_THERMAL
 	exynos3250_devfreq_init_thermal();
-#endif
 	pdata = data->dev->platform_data;
 	if (!pdata)
 		pdata = &default_qos_mif_pd;
