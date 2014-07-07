@@ -76,6 +76,7 @@ enum adc_version {
 
 #define MAX_ADC_V2_CHANNELS	10
 #define MAX_ADC_V1_CHANNELS	8
+#define MAX_ADC_EXYNOS3250_CHANNELS	2
 
 /* Bit definitions common for ADC_V1 and ADC_V2 */
 #define ADC_CON_EN_START	(1u << 0)
@@ -311,6 +312,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
 	struct device_node *np = pdev->dev.of_node;
 	struct iio_dev *indio_dev = NULL;
 	struct resource	*mem;
+	struct clk *mout_adcif, *p_adcif;
 	int ret = -ENODEV;
 	int irq;
 
@@ -352,6 +354,27 @@ static int exynos_adc_probe(struct platform_device *pdev)
 							PTR_ERR(info->clk));
 		ret = PTR_ERR(info->clk);
 		goto err_iio;
+	}
+
+	mout_adcif = devm_clk_get(&pdev->dev, "m_adcif");
+	if (IS_ERR(mout_adcif)) {
+		dev_dbg(&pdev->dev, "failed getting clock, err = %ld\n",
+							PTR_ERR(mout_adcif));
+	}
+
+	p_adcif = devm_clk_get(&pdev->dev, "p_adcif");
+
+	if (IS_ERR(p_adcif)) {
+		dev_dbg(&pdev->dev, "failed getting clock, err = %ld\n",
+							PTR_ERR(p_adcif));
+	}
+
+	if (!IS_ERR(p_adcif) && !IS_ERR(mout_adcif)) {
+		ret = clk_set_parent(mout_adcif, p_adcif);
+		if (ret) {
+			dev_err(&pdev->dev, "failed to set parent clock\n");
+			goto err_iio;
+		}
 	}
 
 	irq = platform_get_irq(pdev, 0);
@@ -396,10 +419,14 @@ static int exynos_adc_probe(struct platform_device *pdev)
 	indio_dev->modes = INDIO_DIRECT_MODE;
 	indio_dev->channels = exynos_adc_iio_channels;
 
-	if (info->version == ADC_V1)
+	if (info->version == ADC_V1) {
 		indio_dev->num_channels = MAX_ADC_V1_CHANNELS;
-	else
-		indio_dev->num_channels = MAX_ADC_V2_CHANNELS;
+	} else {
+		if (of_machine_is_compatible("samsung,exynos3250"))
+			indio_dev->num_channels = MAX_ADC_EXYNOS3250_CHANNELS;
+		else
+			indio_dev->num_channels = MAX_ADC_V2_CHANNELS;
+	}
 
 	ret = iio_device_register(indio_dev);
 	if (ret)
