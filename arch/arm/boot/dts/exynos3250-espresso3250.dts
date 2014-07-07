@@ -185,6 +185,13 @@
 					regulator-initial-mode = <1>;
 				};
 
+				ldo17_reg: LDO17 {
+					regulator-name = "vcc_peri_3.3";
+					regulator-min-microvolt = <3300000>;
+					regulator-max-microvolt = <3300000>;
+					regulator-ramp-delay = <12000>;
+				};
+
 				ldo19_reg: LDO19 {
 					regulator-name = "vdd_tsp_1.8";
 					regulator-min-microvolt = <800000>;
@@ -224,8 +231,24 @@
                                         regulator-min-microvolt = <3300000>;
                                         regulator-max-microvolt = <3300000>;
                                 };
+
+				ldo23_reg: LDO23 {
+					regulator-name = "vcc_peri_1.8";
+					regulator-min-microvolt = <1800000>;
+					regulator-max-microvolt = <1800000>;
+					regulator-always-on;
+					regulator-ramp-delay = <12000>;
+				};
 			};
 		};
+	};
+
+	dcvdd: fixed-regulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "dcvdd-supply";
+		regulator-min-microvolt = <1200000>;
+		regulator-max-microvolt = <1200000>;
+		regulator-always-on;
 	};
 
 	i2c0_isp: i2c@12130000 {
