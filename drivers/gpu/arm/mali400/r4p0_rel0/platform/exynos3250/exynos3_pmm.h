@@ -35,6 +35,24 @@ typedef enum mali_power_mode_tag
 	MALI_POWER_MODE_DEEP_SLEEP,
 } mali_power_mode;
 
+/** @brief Platform specific handling of GPU utilization data
+*
+* When GPU utilization data is enabled, this function will be
+* periodically called.
+*
+* @param utilization The workload utilization of the Mali GPU. 0 = no utilization, 256 = full utilization.
+*/
+void mali_gpu_utilization_handler(struct mali_gpu_utilization_data *data);
+
+#ifdef CONFIG_REGULATOR
+void mali_regulator_set_voltage(int vol_level);
+#endif
+
+#ifdef CONFIG_MALI_DVFS
+ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, char *buf);
+ssize_t set_time_in_state(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+#endif
+
 /** @brief Platform specific setup and initialisation of MALI
  *
  * This is called from the entrypoint of the driver to initialize the platform
