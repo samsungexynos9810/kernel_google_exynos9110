@@ -808,6 +808,7 @@
 		clocks = <&clock CLK_JPEG>;
 		ip_ver = <2>;
 		samsung,power-domain = <&spd_jpeg>;
+	};
 
 	adc: adc@126C0000 {
 		compatible = "samsung,exynos-adc-v2";
