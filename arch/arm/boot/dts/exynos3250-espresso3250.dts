@@ -270,6 +270,7 @@
 		fixed_volt;
 		only_once_tune;
 		extra_tuning;
+		supports-hs200-1-8v-mode;
 		supports-highspeed;
 		enable-cache-control;
 		sw_data_timeout;
@@ -291,6 +292,32 @@
 		slot@0 {
 			reg = <0>;
 			bus-width = <8>;
+		};
+	};
+
+	dwmmc2@12530000 {
+		status = "okay";
+		num-slots = <1>;
+		bypass-smu;
+		supports-highspeed;
+		cd-type = <1>;
+		fifo-depth = <0x80>;
+		card-detect-delay = <200>;
+		samsung,dw-mshc-ciu-div = <3>;
+		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
+		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
+		clk_pin = "gpk2-0";
+		clk_addr = "11000000.pinctrl";
+		clk_val = <0x3>;
+		num-ref-clks = <8>;
+		ciu_clkin = <25 50 50 100 200 100 200 200>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sd2_clk &sd2_cmd &sd2_cd &sd2_bus1 &sd2_bus4>;
+
+		slot@0 {
+			reg = <0>;
+			bus-width = <4>;
+			disable-wp;
 		};
 	};
 
