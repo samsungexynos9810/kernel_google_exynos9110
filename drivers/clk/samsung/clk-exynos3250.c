@@ -571,7 +571,7 @@ void __init exynos3250_clk_init(struct device_node *np)
 
 	samsung_clk_add_lookup(mpll, CLK_FOUT_MPLL);
 
-	vpll = samsung_clk_register_pll35xx("fout_vpll", "mout_vpllsrc",
+	vpll = samsung_clk_register_pll36xx("fout_vpll", "mout_vpllsrc",
 		VPLL_LOCK, VPLL_CON0, exynos3250_vpll_rates,
 		sizeof(exynos3250_vpll_rates));
 
