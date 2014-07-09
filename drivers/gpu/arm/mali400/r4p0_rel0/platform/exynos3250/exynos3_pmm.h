@@ -43,14 +43,21 @@ typedef enum mali_power_mode_tag
 * @param utilization The workload utilization of the Mali GPU. 0 = no utilization, 256 = full utilization.
 */
 void mali_gpu_utilization_handler(struct mali_gpu_utilization_data *data);
-
+#ifdef CONFIG_MALI400_DEBUG_SYS
+int mali400_create_sysfs_file(struct device *dev);
+void mali400_remove_sysfs_file(struct device *dev);
+ssize_t show_mali_gpu_clk(struct device *dev, struct device_attribute *attr, char *buf);
+ssize_t show_dvfs_status(struct device *dev, struct device_attribute *attr, char *buf);
+#endif
 #ifdef CONFIG_REGULATOR
 void mali_regulator_set_voltage(int vol_level);
 #endif
 
 #ifdef CONFIG_MALI_DVFS
+ssize_t show_mali_freq_table(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t set_time_in_state(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+ssize_t show_mali_gpu_vol(struct device *dev, struct device_attribute *attr, char *buf);
 #endif
 
 /** @brief Platform specific setup and initialisation of MALI
@@ -67,7 +74,7 @@ _mali_osk_errcode_t mali_platform_init(struct platform_device *pdev);
  *
  * @return _MALI_OSK_ERR_OK on success otherwise, a suitable _mali_osk_errcode_t error.
  */
-_mali_osk_errcode_t mali_platform_deinit(void);
+_mali_osk_errcode_t mali_platform_deinit(struct platform_device *pdev);
 
 /** @brief Platform specific powerdown sequence of MALI
  *

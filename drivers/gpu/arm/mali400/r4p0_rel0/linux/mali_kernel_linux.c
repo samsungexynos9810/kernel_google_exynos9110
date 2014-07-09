@@ -148,7 +148,7 @@ static int mali_driver_runtime_idle(struct device *dev);
 
 #if defined(MALI_FAKE_PLATFORM_DEVICE)
 extern int mali_platform_device_register(struct platform_device *pdev);
-extern int mali_platform_device_unregister(void);
+extern int mali_platform_device_unregister(struct platform_device *pdev);
 #endif
 
 /* Linux power management operations provided by the Mali device driver */
@@ -431,7 +431,7 @@ static int mali_probe(struct platform_device *pdev)
 				}
 				mali_miscdevice_unregister();
 #if defined(MALI_FAKE_PLATFORM_DEVICE)
-				mali_platform_device_unregister();
+				mali_platform_device_unregister(mali_platform_device);
 #endif
 			} else {
 				MALI_PRINT_ERROR(("mali_probe(): failed to register Mali misc device."));
@@ -456,7 +456,7 @@ static int mali_remove(struct platform_device *pdev)
 	_mali_osk_wq_term();
 #if defined(MALI_FAKE_PLATFORM_DEVICE)
 	MALI_DEBUG_PRINT(2, ("mali_module_exit() unregistering device\n"));
-	mali_platform_device_unregister();
+	mali_platform_device_unregister(pdev);
 #endif
 	mali_platform_device = NULL;
 	return 0;

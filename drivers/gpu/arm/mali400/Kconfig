@@ -26,6 +26,12 @@ source "drivers/gpu/arm/mali400/r4p0_rel0/Kconfig"
 endif
 
 #endchoice
+config MALI400_DEBUG_SYS
+	bool "Enable sysfs for mali400"
+	depends on MALI400 && SYSFS
+	default n
+	help
+	  Enables sysfs for mali400 device. Set/Monitor Mali400  Device
 
 config VIDEO_SAMSUNG
 	bool "Samsung Multimedia Devices"

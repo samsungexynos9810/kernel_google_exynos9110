@@ -77,6 +77,10 @@ int mali_platform_device_register(struct platform_device *exynos4_device_g3d)
 			pm_runtime_use_autosuspend(&exynos4_device_g3d->dev);
 			pm_runtime_enable(&exynos4_device_g3d->dev);
 #endif
+#ifdef CONFIG_MALI400_DEBUG_SYS
+	if (mali400_create_sysfs_file(&exynos4_device_g3d->dev))
+		return -ENOENT;
+#endif /* CONFIG_MALI_T6XX_DEBUG_SYS */
 			return 0;
 		}
 
@@ -84,9 +88,12 @@ int mali_platform_device_register(struct platform_device *exynos4_device_g3d)
 	return err;
 }
 
-void mali_platform_device_unregister(void)
+void mali_platform_device_unregister(struct platform_device *exynos4_device_g3d)
 {
 	MALI_DEBUG_PRINT(4, ("mali_platform_device_unregister() called\n"));
 
-	mali_platform_deinit();
+	mali_platform_deinit(exynos4_device_g3d);
+#ifdef CONFIG_MALI400_DEBUG_SYS
+	mali400_remove_sysfs_file(&exynos4_device_g3d->dev);
+#endif /* CONFIG_MALI_T6XX_DEBUG_SYS */
 }
