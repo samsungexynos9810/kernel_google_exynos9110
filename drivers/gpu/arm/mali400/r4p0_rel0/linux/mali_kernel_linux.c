@@ -488,14 +488,14 @@ static int mali_driver_suspend_scheduler(struct device *dev)
 {
 	mali_pm_os_suspend();
 	/* MALI_SEC */
-	mali_platform_power_mode_change(MALI_POWER_MODE_DEEP_SLEEP);
+	mali_platform_power_mode_change(dev, MALI_POWER_MODE_DEEP_SLEEP);
 	return 0;
 }
 
 static int mali_driver_resume_scheduler(struct device *dev)
 {
 	/* MALI_SEC */
-	mali_platform_power_mode_change(MALI_POWER_MODE_ON);
+	mali_platform_power_mode_change(dev, MALI_POWER_MODE_ON);
 	mali_pm_os_resume();
 	return 0;
 }
@@ -505,14 +505,14 @@ static int mali_driver_runtime_suspend(struct device *dev)
 {
 	mali_pm_runtime_suspend();
 	/* MALI_SEC */
-	mali_platform_power_mode_change(MALI_POWER_MODE_LIGHT_SLEEP);
+	mali_platform_power_mode_change(dev, MALI_POWER_MODE_LIGHT_SLEEP);
 	return 0;
 }
 
 static int mali_driver_runtime_resume(struct device *dev)
 {
 	/* MALI_SEC */
-	mali_platform_power_mode_change(MALI_POWER_MODE_ON);
+	mali_platform_power_mode_change(dev, MALI_POWER_MODE_ON);
 	mali_pm_runtime_resume();
 	return 0;
 }

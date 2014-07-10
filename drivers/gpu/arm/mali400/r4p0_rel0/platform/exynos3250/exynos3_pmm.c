@@ -632,23 +632,15 @@ mali_bool mali_dvfs_handler(unsigned int utilization)
 }
 #endif
 
-static mali_bool init_mali_clock(struct platform_device *pdev)
+static mali_bool configure_mali_clocks(struct platform_device *pdev)
 {
 	int err = 0;
 	mali_bool ret = MALI_TRUE;
-	nPowermode = MALI_POWER_MODE_DEEP_SLEEP;
-
-	if (mali_clock != 0)
-		return ret; /* already initialized */
-
-	mali_dvfs_lock = _mali_osk_mutex_init(_MALI_OSK_LOCKFLAG_ORDERED, 0);
-
-	if (mali_dvfs_lock == NULL)
-		return _MALI_OSK_ERR_FAULT;
 
 	if (!mali_clk_get(pdev))
 	{
-		MALI_PRINT(("Error: Failed to get Mali clock\n"));
+		MALI_PRINT_ERROR(("Failed to get Mali clock\n"));
+		ret = MALI_FALSE;
 		goto err_clk;
 	}
 
@@ -673,15 +665,41 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 		MALI_PRINT_ERROR(("mali_clock set parent to mali_parent_clock failed\n"));
 
 	if (!atomic_read(&clk_active)) {
-		if ((clk_prepare_enable(mali_clock)  < 0) || (clk_prepare_enable(g3d_clock)  < 0)) {
-			MALI_PRINT(("Error: Failed to enable clock\n"));
+		if ((clk_prepare_enable(mali_clock)  < 0)
+				|| (clk_prepare_enable(g3d_clock)  < 0)) {
+			MALI_PRINT_ERROR(("Failed to enable clock\n"));
 			goto err_clk;
 		}
 		atomic_set(&clk_active, 1);
 	}
 
 	mali_clk_set_rate(pdev,(unsigned int)mali_gpu_clk, GPU_MHZ);
-	MALI_PRINT(("init_mali_clock mali_clock %x\n", mali_clock));
+	mali_clk_put(MALI_FALSE);
+
+	return MALI_TRUE;
+err_clk:
+	mali_clk_put(MALI_TRUE);
+	return ret;
+}
+
+static mali_bool init_mali_clock(struct platform_device *pdev)
+{
+	mali_bool ret = MALI_TRUE;
+	nPowermode = MALI_POWER_MODE_DEEP_SLEEP;
+
+	if (mali_clock != 0)
+		return ret; /* already initialized */
+
+	mali_dvfs_lock = _mali_osk_mutex_init(_MALI_OSK_LOCKFLAG_ORDERED, 0);
+
+	if (mali_dvfs_lock == NULL)
+		return _MALI_OSK_ERR_FAULT;
+
+        ret = configure_mali_clocks(pdev);
+
+	if (ret != MALI_TRUE)
+		goto err_mali_clock;
+
 #ifdef CONFIG_MALI_DVFS
 #ifdef CONFIG_REGULATOR
 	g3d_regulator = regulator_get(NULL, "vdd_int");
@@ -717,9 +735,7 @@ err_regulator:
 	regulator_put(g3d_regulator);
 #endif
 #endif
-err_clk:
-	mali_clk_put(MALI_TRUE);
-
+err_mali_clock:
 	return ret;
 }
 
@@ -738,12 +754,24 @@ static mali_bool deinit_mali_clock(void)
 	return MALI_TRUE;
 }
 
-static _mali_osk_errcode_t enable_mali_clocks(void)
+static _mali_osk_errcode_t enable_mali_clocks(struct device *dev)
 {
 	int err;
+	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	err = clk_prepare_enable(mali_clock);
 	err = clk_prepare_enable(g3d_clock);
+
 	MALI_DEBUG_PRINT(3,("enable_mali_clocks mali_clock %p error %d \n", mali_clock, err));
+	/*
+	 * Right now we are configuring clock each time, during runtime
+	 * s2r and s2r as it has been observed mali failed to enter into
+	 * deep sleep state during s2r.
+	 * If this gets fixed we *MUST* remove LIGHT_SLEEP condition from below
+	 */
+	if (nPowermode == MALI_POWER_MODE_DEEP_SLEEP ||
+			nPowermode == MALI_POWER_MODE_LIGHT_SLEEP)
+		configure_mali_clocks(pdev);
+
 
 	/* set clock rate */
 #ifdef CONFIG_MALI_DVFS
@@ -760,6 +788,7 @@ static _mali_osk_errcode_t enable_mali_clocks(void)
 		set_mali_dvfs_current_step(mali_runtime_resume.step);
 	}
 #endif
+
 	MALI_SUCCESS;
 }
 
@@ -796,14 +825,14 @@ _mali_osk_errcode_t mali_platform_init(struct platform_device *pdev)
 	dvfs_status = "on";
 #endif
 	MALI_CHECK(init_mali_clock(pdev), _MALI_OSK_ERR_FAULT);
-	mali_platform_power_mode_change(MALI_POWER_MODE_ON);
+	mali_platform_power_mode_change(&pdev->dev, MALI_POWER_MODE_ON);
 
 	MALI_SUCCESS;
 }
 
 _mali_osk_errcode_t mali_platform_deinit(struct platform_device *pdev)
 {
-	mali_platform_power_mode_change(MALI_POWER_MODE_DEEP_SLEEP);
+	mali_platform_power_mode_change(&pdev->dev, MALI_POWER_MODE_DEEP_SLEEP);
 	deinit_mali_clock();
 
 #ifdef CONFIG_MALI_DVFS
@@ -817,7 +846,7 @@ _mali_osk_errcode_t mali_platform_deinit(struct platform_device *pdev)
 	MALI_SUCCESS;
 }
 
-_mali_osk_errcode_t mali_platform_power_mode_change(mali_power_mode power_mode)
+_mali_osk_errcode_t mali_platform_power_mode_change(struct device *dev, mali_power_mode power_mode)
 {
 	switch (power_mode)
 	{
@@ -826,7 +855,7 @@ _mali_osk_errcode_t mali_platform_power_mode_change(mali_power_mode power_mode)
 					nPowermode ? "powering on" : "already on"));
 		if (nPowermode == MALI_POWER_MODE_LIGHT_SLEEP || nPowermode == MALI_POWER_MODE_DEEP_SLEEP)	{
 			MALI_DEBUG_PRINT(4, ("enable clock\n"));
-			enable_mali_clocks();
+			enable_mali_clocks(dev);
 			nPowermode = power_mode;
 		}
 		break;
