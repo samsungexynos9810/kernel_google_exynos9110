@@ -323,7 +323,7 @@ static void exynos3250_devfreq_mif_change_timing_set(struct devfreq_data_mif *da
 
 	tmp = __raw_readl(data->base_pmu_mif + 0x054);
 	tmp &= ~(0x1 << 31);
-	tmp |= ((!use_timing_set_0 & 0x1) << 31);
+	tmp |= ((use_timing_set_0 & 0x1) << 31);
 	__raw_writel(tmp, data->base_pmu_mif + 0x054);
 }
 
@@ -589,8 +589,8 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 	void __iomem *base_drex = data_mif->base_drex;
 
 	tmp = __raw_readl(base_drex + 0x4);
-	tmp &= ~MEMCONTROL_MRR_BYTE_SHIFT;
-	tmp |= 0x1;
+	tmp &= ~MEMCONTROL_MRR_BYTE_MASK;
+	tmp |= 0x1 << MEMCONTROL_MRR_BYTE_SHIFT;
 	__raw_writel(tmp, base_drex + 0x4);
 	__raw_writel(0x09001000, base_drex + 0x10);
 	mrstatus = __raw_readl(base_drex + 0x54);
