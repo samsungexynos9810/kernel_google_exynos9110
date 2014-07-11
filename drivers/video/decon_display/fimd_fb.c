@@ -452,7 +452,8 @@ static inline u32 wincon(u32 bits_per_pixel, u32 transp_length, u32 red_length)
 			data |= WINCON0_BPPMODE_24BPP_888;
 
 		data |= WINCONx_WSWP;
-		data |= WINCONx_BURSTLEN_16WORD;
+
+		data |= WINCONx_BURSTLEN_8WORD;
 		break;
 	}
 
