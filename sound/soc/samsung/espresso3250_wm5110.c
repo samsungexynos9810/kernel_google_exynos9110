@@ -480,7 +480,6 @@ static int espresso_set_bias_level(struct snd_soc_card *card,
 		}
 		break;
 	case SND_SOC_BIAS_OFF:
-		espresso_set_mic_cp(card, false);
 		espresso_set_sysclk(card, false);
 		espresso_enable_mclk(false);
 		break;
