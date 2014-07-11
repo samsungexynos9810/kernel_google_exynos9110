@@ -805,7 +805,7 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 	struct platform_device *pdev = NULL;
 	unsigned long flags;
 
-	pr_info("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
+	pr_debug("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
 
 #ifdef USE_EXYNOS_AUD_SCHED
 	lpass_set_sched(pid_nr(substream->pid), AUD_MODE_DEFAULT);
@@ -841,7 +841,7 @@ static int i2s_startup(struct snd_pcm_substream *substream,
 
 	spin_unlock_irqrestore(&lock, flags);
 
-	pr_info("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
+	pr_debug("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
 	return 0;
 }
 
@@ -853,7 +853,7 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 	struct platform_device *pdev = NULL;
 	unsigned long flags;
 
-	pr_info("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
+	pr_debug("%s : %s ++\n", __func__, is_secondary(i2s)? "sec" : "pri");
 	spin_lock_irqsave(&lock, flags);
 
 	i2s->mode &= ~DAI_OPENED;
@@ -886,7 +886,7 @@ static void i2s_shutdown(struct snd_pcm_substream *substream,
 	if (!is_secondary(i2s))
 		lpass_put_cpu_hotplug();
 #endif
-	pr_info("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
+	pr_debug("%s : %s --\n", __func__, is_secondary(i2s)? "sec" : "pri");
 }
 
 static int config_setup(struct i2s_dai *i2s)

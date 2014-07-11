@@ -100,7 +100,7 @@ static void dma_enqueue(struct snd_pcm_substream *substream)
 	unsigned int limit;
 	struct samsung_dma_prep dma_info;
 
-	pr_info("Entered %s\n", __func__);
+	pr_debug("Entered %s\n", __func__);
 
 	limit = (prtd->dma_end - prtd->dma_start) / prtd->dma_period;
 
@@ -245,7 +245,7 @@ static int dma_hw_params(struct snd_pcm_substream *substream,
 		prtd->dma_period >>= 1;
 	spin_unlock_irq(&prtd->lock);
 
-	pr_info("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d(%d) #Prds=%d dma_area=0x%x\n",
+	pr_debug("ADMA:%s:DmaAddr=@%x Total=%d PrdSz=%d(%d) #Prds=%d dma_area=0x%x\n",
 		(substream->stream == SNDRV_PCM_STREAM_PLAYBACK) ? "P" : "C",
 		prtd->dma_start, runtime->dma_bytes,
 		params_period_bytes(params), prtd->dma_period,
@@ -277,7 +277,7 @@ static int dma_prepare(struct snd_pcm_substream *substream)
 	struct runtime_data *prtd = substream->runtime->private_data;
 	int ret = 0;
 
-	pr_info("Entered %s\n", __func__);
+	pr_debug("Entered %s\n", __func__);
 
 	/* return if this is a bufferless transfer e.g.
 	 * codec <--> BT codec or GSM modem -- lg FIXME */
@@ -383,7 +383,7 @@ static int dma_open(struct snd_pcm_substream *substream)
 	runtime->private_data = prtd;
 	snd_soc_set_runtime_hwparams(substream, &prtd->hw);
 
-	pr_info("%s: prtd = %p\n", __func__, prtd);
+	pr_debug("%s: prtd = %p\n", __func__, prtd);
 
 	return 0;
 }
@@ -398,7 +398,7 @@ static int dma_close(struct snd_pcm_substream *substream)
 	if (!prtd)
 		pr_debug("dma_close called with prtd == NULL\n");
 
-	pr_info("%s: prtd = %p, irq_cnt %u\n",
+	pr_debug("%s: prtd = %p, irq_cnt %u\n",
 			__func__, prtd, prtd->irq_cnt);
 	kfree(prtd);
 
@@ -501,7 +501,7 @@ static int preallocate_dma_buffer_of(struct snd_pcm *pcm, int stream,
 			pr_err("%s: Failed to iommu_map: %d\n", __func__, ret);
 			return -ENOMEM;
 		}
-		pr_info("%s: DmaAddr-iommu %08X dma_buf_pa %08X\n",
+		pr_debug("%s: DmaAddr-iommu %08X dma_buf_pa %08X\n",
 				__func__, dma_addr, dma_buf_pa);
 	} else {
 		buf->area = ioremap(buf->addr, size);
