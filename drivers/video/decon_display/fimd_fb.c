@@ -124,7 +124,12 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout);
 #if defined(CONFIG_ION_EXYNOS)
 static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 {
-#ifdef CONFIG_FB_EXYNOS_FIMD_V8
+	int i;
+	for (i = 0; i < sfb->variant.nr_windows; i++)
+	if(sfb->windows[i]->dma_buf_data.dma_buf)
+	printk("w:%u,h:%u,s:%u,o:%u,b_a:%#010lx, b_s:%x, w_s:%x\n",
+				sfb->windows[i]->fbinfo->var.xres, sfb->windows[i]->fbinfo->var.yres, (sfb->windows[i]->fbinfo->var.xres_virtual*sfb->windows[i]->fbinfo->var.bits_per_pixel)/8,(unsigned int)(sfb->windows[i]->fbinfo->fix.smem_start - sfb->windows[i]->dma_buf_data.dma_addr),(long unsigned int)(sfb->windows[i]->dma_buf_data.dma_addr),sfb->windows[i]->dma_buf_data.dma_buf->size,sfb->windows[i]->fbinfo->fix.smem_len);
+	
 	pr_err("dumping registers\n");
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4, sfb->regs,
 			0x0280, false);
@@ -134,7 +139,6 @@ static void s3c_fb_dump_registers(struct s3c_fb *sfb)
 	pr_err("...\n");
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
 			sfb->regs + 0x20000, 0x20, false);
-#endif
 }
 #endif
 
@@ -1530,7 +1534,7 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 	}
 
 	dma->dma_addr = ion_iovmm_map(dma->attachment, 0,
-			dma->dma_buf->size, DMA_TO_DEVICE, win_no);
+			dma->dma_buf->size , DMA_TO_DEVICE, win_no);
 	if (!dma->dma_addr || IS_ERR_VALUE(dma->dma_addr)) {
 		dev_err(sfb->dev, "iovmm_map() failed: %d\n", dma->dma_addr);
 		goto err_iovmm_map;
@@ -1774,7 +1778,6 @@ static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 	int ret;
 	size_t buf_size, window_size;
 	u8 alpha0, alpha1;
-
 	if (win_config->format >= S3C_FB_PIXEL_FORMAT_MAX) {
 		dev_err(sfb->dev, "unknown pixel format %u\n",
 				win_config->format);
@@ -1884,6 +1887,7 @@ static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 		goto err_offset;
 	}
 
+
 	win->fbinfo->fix.smem_start = dma_buf_data.dma_addr
 			+ win_config->offset;
 	win->fbinfo->fix.smem_len = window_size;
@@ -1960,7 +1964,6 @@ static int s3c_fb_set_win_buffer(struct s3c_fb *sfb, struct s3c_fb_win *win,
 		regs->blendeq[win_no - 1] = blendeq(win_config->blending,
 				win->fbinfo->var.transp.length, win_config->plane_alpha);
 	}
-
 	return 0;
 
 err_offset:
@@ -2859,20 +2862,16 @@ static ssize_t s3c_fb_psr_info(struct device *dev,
 }
 
 static DEVICE_ATTR(psr_info, S_IRUGO, s3c_fb_psr_info, NULL);
-
 #ifdef CONFIG_ION_EXYNOS
-int s3c_fb_sysmmu_fault_handler(struct device *dev, const char *mmuname,
-		int itype, unsigned long pgtable_base,
-		unsigned long fault_addr)
+int s3c_fb_sysmmu_fault_handler(struct iommu_domain *iodmn, struct device *dev,
+                unsigned long addr, int id, void *param)
 {
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
-
-	pr_err("FIMD1 PAGE FAULT occurred at 0x%lx (Page table base: 0x%lx)\n",
-			fault_addr, pgtable_base);
+	pr_err("FIMD1 PAGE FAULT occurred at 0x%lx \n",	addr);
 
 	s3c_fb_dump_registers(sfb);
 
@@ -3209,6 +3208,8 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	/* setup vmm */
 	exynos_create_iovmm(&pdev->dev, fbdrv->variant.nr_windows, 0);
+	iovmm_set_fault_handler(&pdev->dev,
+                s3c_fb_sysmmu_fault_handler, sfb);
 #endif
 
 	default_win = sfb->pdata->default_win;

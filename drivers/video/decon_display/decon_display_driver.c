@@ -122,31 +122,6 @@ static int create_disp_components(struct platform_device *pdev)
 	return ret;
 }
 
-#ifdef CONFIG_EXYNOS_IOVMM
-/* disp_driver_fault_handler - fault handler for display device driver */
-int disp_driver_fault_handler(struct iommu_domain *iodmn, struct device *dev,
-	unsigned long addr, int id, void *param)
-{
-	struct display_driver *dispdrv;
-
-	dispdrv = (struct display_driver*)param;
-	return 0;
-}
-#endif
-
-/* register_debug_features - for registering debug features.
- * currently registered features are like as follows...
- * - iovmm falult handler
- * - ... */
-static void register_debug_features(void)
-{
-#ifdef CONFIG_EXYNOS_IOVMM
-	/* 1. fault handler registration */
-	iovmm_set_fault_handler(g_display_driver.display_driver,
-		disp_driver_fault_handler, &g_display_driver);
-#endif
-}
-
 /* s5p_decon_disp_probe - probe function of the display driver */
 static int s5p_decon_disp_probe(struct platform_device *pdev)
 {
@@ -166,9 +141,6 @@ static int s5p_decon_disp_probe(struct platform_device *pdev)
 	GET_DISPCTL_OPS(&g_display_driver).init_display_decon_clocks(&pdev->dev);
 
 	create_disp_components(pdev);
-
-	register_debug_features();
-
 
 	return ret;
 }
