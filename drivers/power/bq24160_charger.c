@@ -729,7 +729,7 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 	 * always updated when receiving this.
 	 * 300 ms according to TI.
 	 */
-	msleep(300);
+	mdelay(300);
 
 	if (!bq24160_check_status(bd) &&
 	    memcmp(&bd->cached_status, &old_status, sizeof(bd->cached_status))) {
@@ -1979,7 +1979,7 @@ static int bq24160_probe(struct i2c_client *client,
 	wake_lock_init(&bd->wake_lock, WAKE_LOCK_SUSPEND,
 		       "bq24160_watchdog_lock");
 
-	bd->wq = create_singlethread_workqueue("bq24160worker");
+	bd->wq = create_freezable_workqueue("bq24160worker");
 	if (!bd->wq) {
 		dev_err(&client->dev, "Failed creating workqueue\n");
 		rc = -ENOMEM;
