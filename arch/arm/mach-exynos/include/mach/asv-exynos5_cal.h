@@ -15,33 +15,6 @@
 #define __ASM_ARCH_NEW_EXYNOS5_ASV_CAL_H __FILE__
 
 /* Use by ASV drvier */
-#ifdef CONFIG_SOC_EXYNOS5433
-
-#include <linux/io.h>
-#include <mach/map.h>
-
-u32 re_err(void);
-
-#define Assert(b) (!(b) ? re_err() : 0)
-
-#define SetBits(uAddr, uBaseBit, uMaskValue, uSetValue) \
-	do { \
-		__raw_writel((__raw_readl((volatile u32 *)uAddr) & \
-		 ~((uMaskValue) << (uBaseBit))) | \
-		 (((uMaskValue) & (uSetValue)) << (uBaseBit)), uAddr) \
-	} while (0);
-
-#define GetBits(uAddr, uBaseBit, uMaskValue) \
-	((__raw_readl((volatile u32*) uAddr) >> (uBaseBit)) & (uMaskValue))
-
-#define CHIPID_BASE		S5P_VA_CHIPID
-#define CHIPID_ASV_TBL_BASE	S5P_VA_CHIPID2
-#define CHIPID_ABB_TBL_BASE	S5P_VA_CHIPID3
-#define SYSREG_EGL_BASE		S5P_VA_CHIPID4
-#define CHIPID_ABBG_BASE	S5P_VA_CHIPID5
-
-/* Use by CAL */
-#else
 
 #ifndef __cplusplus
 #define false		(0)
@@ -86,8 +59,6 @@ u32 stop (void)
 #define CHIPID_ABB_TBL_BASE	0x105D0000
 #define SYSREG_EGL_BASE		0x11810000
 #define CHIPID_ABBG_BASE	0x105C0000
-
-#endif
 
 /* COMMON code */
 #define ENABLE		(1)

@@ -14,11 +14,9 @@ obj-				:=
 
 obj-$(CONFIG_ARCH_EXYNOS)	+= common.o
 obj-$(CONFIG_SOC_EXYNOS5430)	+= asv-exynos.o asv-exynos5430.o pm_domains-exynos5430.o
-obj-$(CONFIG_SOC_EXYNOS5433)	+= asv-exynos.o asv-exynos5.o pm_domains-exynos5433.o asv-exynos5433_cal.o
 obj-$(CONFIG_SOC_EXYNOS5422)	+= asv-exynos.o asv-exynos5422.o pm_domains-exynos5422.o
 
 obj-$(CONFIG_EXYNOS5430_BTS)	+= bts-exynos5430.o
-obj-$(CONFIG_EXYNOS5433_BTS)	+= bts-exynos5433.o
 obj-$(CONFIG_EXYNOS5422_BTS)	+= bts-exynos5422.o
 ifeq ($(CONFIG_SOC_EXYNOS3250),y)
 obj-$(CONFIG_EXYNOS_ASV)	+= asv-exynos.o asv-exynos3250.o
@@ -26,10 +24,6 @@ endif
 ifeq ($(CONFIG_SOC_EXYNOS5430),y)
 obj-$(CONFIG_SUSPEND)		+= pm-exynos5430.o
 obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
-endif
-ifeq ($(CONFIG_SOC_EXYNOS5433),y)
-obj-$(CONFIG_SUSPEND)		+= pm-exynos5433.o
-obj-$(CONFIG_CPU_IDLE)		+= cpuidle-exynos5433.o
 endif
 obj-$(CONFIG_CPUIDLE_TEST_SYSFS)	+= cpuidle_sysfs.o
 
@@ -56,14 +50,10 @@ obj-$(CONFIG_HOTPLUG_CPU)	+= hotplug.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= exynos-smc.o
 obj-$(CONFIG_ARCH_EXYNOS)	+= firmware.o
 obj-$(CONFIG_SOC_EXYNOS5430)	+= pmu-exynos5430.o
-obj-$(CONFIG_SOC_EXYNOS5433)	+= pmu-exynos5433.o
 obj-$(CONFIG_SOC_EXYNOS5422)	+= pmu-exynos5422.o
 obj-$(CONFIG_SOC_EXYNOS3250)	+= pmu-exynos3250.o
 
 obj-$(CONFIG_CAL_SYS_PWRDOWN)	+= pmu_cal_sys.o
-ifeq ($(CONFIG_SOC_EXYNOS5433),y)
-obj-$(CONFIG_CAL_SYS_PWRDOWN)	+= pmu_cal_sys_exynos5433.o
-endif
 
 obj-$(CONFIG_EXYNOS_SNAPSHOT)	+= exynos-ss.o
 obj-$(CONFIG_EXYNOS54XX_DEBUG)	+= debug_exynos54XX.o
