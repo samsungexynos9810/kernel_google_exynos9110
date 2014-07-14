@@ -79,12 +79,6 @@ int exynos5430_pmu_init(void);
 #define exynos5430_pmu_init()
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-int exynos5433_pmu_init(void);
-#else
-#define exynos5433_pmu_init()
-#endif
-
 #ifdef CONFIG_SOC_EXYNOS5422
 int exynos5422_pmu_init(void);
 #else

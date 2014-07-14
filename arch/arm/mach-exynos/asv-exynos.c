@@ -213,8 +213,6 @@ static int __init asv_init(void)
 		ret = exynos5430_init_asv(exynos_asv_common);
 	} else if (soc_is_exynos5422()) {
 		ret = exynos5422_init_asv(exynos_asv_common);
-	} else if (soc_is_exynos5433()) {
-		ret = exynos5_init_asv(exynos_asv_common);
 	} else {
 		pr_err("ASV : Unknown SoC type\n");
 		ret = -EINVAL;

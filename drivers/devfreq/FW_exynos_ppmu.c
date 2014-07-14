@@ -18,28 +18,16 @@
 		BaseAddr = PPMU IP BASE ADDRESS
 */
 
-#ifdef CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ
-static s32 ppmu_version;
-#endif
 
 s32 PPMU_GetVersion(addr_u32 BaseAddr)
 {
 	u32 uVersion;
-
-#ifdef CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ
-	if (ppmu_version != 0)
-		return ppmu_version;
-#endif
 
 	uVersion = (Inp32(BaseAddr) & 0x000f0000) >> 16;
 	if (uVersion == 2)
 		uVersion = 2;
 	else
 		uVersion = 1;
-
-#ifdef CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ
-	ppmu_version = uVersion;
-#endif
 
 	return uVersion;
 }

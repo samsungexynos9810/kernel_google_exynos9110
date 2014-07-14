@@ -13,9 +13,6 @@
 #define __PMU_CAL_SYS_H__
 
 #ifdef CONFIG_CAL_SYS_PWRDOWN
-#if defined(CONFIG_SOC_EXYNOS5433)
-#include <mach/pmu_cal_sys_exynos5433.h>
-#endif
 
 extern void (*exynos_sys_powerdown_conf)(enum sys_powerdown mode);
 extern void (*exynos_central_sequencer_ctrl)(bool enable);

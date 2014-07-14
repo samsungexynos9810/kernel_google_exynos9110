@@ -69,14 +69,12 @@ static const char name_exynos4412[] = "EXYNOS4412";
 static const char name_exynos5250[] = "EXYNOS5250";
 static const char name_exynos5422[] = "EXYNOS5422";
 static const char name_exynos5430[] = "EXYNOS5430";
-static const char name_exynos5433[] = "EXYNOS5433";
 static const char name_exynos5440[] = "EXYNOS5440";
 
 static void exynos3_map_io(void);
 static void exynos4_map_io(void);
 static void exynos5_map_io(void);
 static void exynos5430_map_io(void);
-static void exynos5433_map_io(void);
 static void exynos5440_map_io(void);
 static void exynos4_init_uarts(struct s3c2410_uartcfg *cfg, int no);
 static int exynos_init(void);
@@ -130,12 +128,6 @@ static struct cpu_table cpu_ids[] __initdata = {
 		.map_io		= exynos5430_map_io,
 		.init		= exynos_init,
 		.name		= name_exynos5430,
-	}, {
-		.idcode		= EXYNOS5433_SOC_ID,
-		.idmask		= EXYNOS5_SOC_MASK,
-		.map_io		= exynos5433_map_io,
-		.init		= exynos_init,
-		.name		= name_exynos5433,
 	}, {
 		.idcode		= EXYNOS5440_SOC_ID,
 		.idmask		= EXYNOS5_SOC_MASK,
@@ -763,274 +755,6 @@ static struct map_desc exynos5430_iodesc0[] __initdata = {
 
 };
 
-static struct map_desc exynos5433_iodesc0[] __initdata = {
-	{
-		.virtual	= (unsigned long)S3C_VA_UART,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_UART),
-		.length		= SZ_256K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_PMU,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_PMU),
-		.length		= SZ_64K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSRAM,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSRAM),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
-		.pfn		= __phys_to_pfn(EXYNOS5433_PA_SYSRAM_NS),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_TOP,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_TOP),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_EGL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_EGL),
-		.length		= SZ_8K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_KFC,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_KFC),
-		.length		= SZ_8K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_AUD,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_AUD),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_BUS1,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_BUS1),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_BUS2,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_BUS2),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_CAM0,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_CAM0),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_CAM0_LOCAL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_CAM0_LOCAL),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	},{
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_CAM1,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_CAM1),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_CAM1_LOCAL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_CAM1_LOCAL),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_CPIF,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_CPIF),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_DISP,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_DISP),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_FSYS,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_FSYS),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_G2D,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_G2D),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_G3D,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_G3D),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_GSCL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_GSCL),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_HEVC,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_HEVC),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_IMEM,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_IMEM),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_ISP,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_ISP),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_ISP_LOCAL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_ISP_LOCAL),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_MFC0,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_MFC0),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_MFC1,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_MFC1),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_MIF,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_MIF),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_MSCL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_MSCL),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_PERIC,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_PERIC),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_CMU_PERIS,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_CMU_PERIS),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_DISP,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_DISP),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM0,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM0),
-		.length		= SZ_8K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_CAM1,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_CAM1),
-		.length		= SZ_8K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_ISP,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_ISP),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_MFC0,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_MFC0),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_HEVC,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_SYSREG_HEVC),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_SYSREG_MSCL,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_MSCLSYS),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_CHIPID3,
-		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID3),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_CHIPID4,
-		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID4),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_CHIPID5,
-		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID5),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_CHIPID6,
-		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID6),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	},{
-		.virtual	= (unsigned long)EXYNOS5430_VA_PMU_LPI_CAM0,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_PMU_LPI_CAM0),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_PMU_LPI_CAM1,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_PMU_LPI_CAM1),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)EXYNOS5430_VA_PMU_LPI_ISP,
-		.pfn		= __phys_to_pfn(EXYNOS5430_PA_PMU_LPI_ISP),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_FIMCLITE0,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_FIMC_LITE0),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_FIMCLITE1,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_FIMC_LITE1),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_FIMCLITE2,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_FIMC_LITE2),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_FIMCLITE3,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_FIMC_LITE3),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_MIPICSI0,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_MIPI_CSIS0),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_MIPICSI1,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_MIPI_CSIS1),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_MIPICSI2,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_MIPI_CSIS2),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_FIMC_FD,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_FIMC_FD),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	}, {
-		.virtual	= (unsigned long)S5P_VA_LPASS,
-		.pfn		= __phys_to_pfn(EXYNOS5_PA_LPASS),
-		.length		= SZ_4K,
-		.type		= MT_DEVICE,
-	},
-};
 
 static struct map_desc exynos5440_iodesc0[] __initdata = {
 	{
@@ -1225,10 +949,6 @@ static void __init exynos5430_map_io(void)
 	iotable_init(exynos5430_iodesc0, ARRAY_SIZE(exynos5430_iodesc0));
 }
 
-static void __init exynos5433_map_io(void)
-{
-	iotable_init(exynos5433_iodesc0, ARRAY_SIZE(exynos5433_iodesc0));
-}
 
 static void __init exynos5440_map_io(void)
 {
@@ -1274,8 +994,6 @@ void __init exynos_init_time(void)
 
 	if(soc_is_exynos5430())
 		exynos5430_pmu_init();
-	if (soc_is_exynos5433())
-		exynos5433_pmu_init();
 	if(soc_is_exynos5422())
 		exynos5422_pmu_init();
 	if (soc_is_exynos3250())
@@ -1676,7 +1394,6 @@ static int __init exynos_init_irq_eint(void)
 		{ .compatible = "samsung,exynos5422-pinctrl", },
 		{ .compatible = "samsung,exynos5430-evt0-pinctrl", },
 		{ .compatible = "samsung,exynos5430-pinctrl", },
-		{ .compatible = "samsung,exynos5433-pinctrl", },
 	};
 	struct device_node *pctrl_np, *wkup_np;
 	const char *wkup_compat = "samsung,exynos4210-wakeup-eint";

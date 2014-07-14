@@ -318,56 +318,6 @@ struct clk *exynos_clk_register_gate(struct device *dev, const char *name,
 	return clk;
 }
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-struct dummy_gate_clk {
-	unsigned long	offset;
-	u8		bit_idx;
-	struct clk	*clk;
-};
-
-static struct dummy_gate_clk **gate_clk_list;
-static unsigned int gate_clk_nr = 0;
-
-int samsung_add_clk_gate_list(struct clk *clk, unsigned long offset, u8 bit_idx, const char *name)
-{
-	struct dummy_gate_clk *tmp_clk;
-
-	if (!clk || !offset)
-		return -EINVAL;
-
-	tmp_clk = kzalloc(sizeof(struct dummy_gate_clk *), GFP_KERNEL);
-	if (!tmp_clk) {
-		pr_err("%s: fail to alloc for gate_clk\n", __func__);
-		return -ENOMEM;
-	}
-
-	tmp_clk->offset = offset;
-	tmp_clk->bit_idx = bit_idx;
-	tmp_clk->clk = clk;
-
-	gate_clk_list[gate_clk_nr] = tmp_clk;
-
-	gate_clk_nr++;
-
-	return 0;
-}
-
-struct clk *samsung_clk_get_by_reg(unsigned long offset, u8 bit_idx)
-{
-	unsigned int i;
-
-	for(i = 0; i < gate_clk_nr; i++) {
-		if (gate_clk_list[i]->offset == offset) {
-			if (gate_clk_list[i]->bit_idx == bit_idx)
-				return gate_clk_list[i]->clk;
-		}
-	}
-
-	pr_err("%s: Fail to get clk by register offset\n", __func__);
-
-	return 0;
-}
-#endif
 
 /* register a list of gate clocks */
 void __init samsung_clk_register_gate(struct samsung_gate_clock *list,
@@ -376,15 +326,6 @@ void __init samsung_clk_register_gate(struct samsung_gate_clock *list,
 	struct clk *clk;
 	unsigned int idx, ret;
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-	bool gate_list_fail = false;
-
-	gate_clk_list = kzalloc(sizeof(struct dummy_gate_clk *) * nr_clk, GFP_KERNEL);
-	if (!gate_clk_list) {
-		pr_err("%s: can not alloc for gate clock list\n", __func__);
-		gate_list_fail = true;
-	}
-#endif
 	for (idx = 0; idx < nr_clk; idx++, list++) {
 		if (list->flags & CLK_GATE_MULTI_BIT_SET)
 			clk = exynos_clk_register_gate(NULL, list->name, list->parent_name,
@@ -411,11 +352,6 @@ void __init samsung_clk_register_gate(struct samsung_gate_clock *list,
 		}
 
 		samsung_clk_add_lookup(clk, list->id);
-#if defined(CONFIG_SOC_EXYNOS5433)
-		/* Make list for gate clk to used by samsung_clk_get_by_reg */
-		if (!gate_list_fail)
-			samsung_add_clk_gate_list(clk, (unsigned long)(reg_base + list->offset), list->bit_idx, list->name);
-#endif
 	}
 }
 

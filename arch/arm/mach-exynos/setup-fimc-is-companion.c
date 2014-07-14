@@ -34,8 +34,6 @@
 #include <mach/regs-clock-exynos5422.h>
 #elif defined(CONFIG_SOC_EXYNOS5430)
 #include <mach/regs-clock-exynos5430.h>
-#elif defined(CONFIG_SOC_EXYNOS5433)
-#include <mach/regs-clock-exynos5433.h>
 #endif
 
 #include <mach/exynos-fimc-is.h>
@@ -125,7 +123,7 @@ int exynos5422_fimc_is_companion_mclk_off(struct platform_device *pdev,
 
 	return 0;
 }
-#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 int exynos5430_fimc_is_companion_iclk_div_max(struct platform_device *pdev)
 {
 	/* SCLK */
@@ -239,7 +237,7 @@ int exynos_fimc_is_companion_iclk_cfg(struct platform_device *pdev,
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_companion_iclk_cfg(pdev, scenario, channel);
-#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_fimc_is_companion_iclk_cfg(pdev, scenario, channel);
 #endif
 	return 0;
@@ -251,7 +249,7 @@ int exynos_fimc_is_companion_iclk_on(struct platform_device *pdev,
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_companion_iclk_on(pdev, scenario, channel);
-#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_fimc_is_companion_iclk_on(pdev, scenario, channel);
 #endif
 	return 0;
@@ -263,7 +261,7 @@ int exynos_fimc_is_companion_iclk_off(struct platform_device *pdev,
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_companion_iclk_off(pdev, scenario, channel);
-#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_fimc_is_companion_iclk_off(pdev, scenario, channel);
 #endif
 	return 0;
@@ -275,7 +273,7 @@ int exynos_fimc_is_companion_mclk_on(struct platform_device *pdev,
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_companion_mclk_on(pdev, scenario, channel);
-#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_fimc_is_companion_mclk_on(pdev, scenario, channel);
 #endif
 	return 0;
@@ -287,7 +285,7 @@ int exynos_fimc_is_companion_mclk_off(struct platform_device *pdev,
 {
 #if defined(CONFIG_SOC_EXYNOS5422)
 	exynos5422_fimc_is_companion_mclk_off(pdev, scenario, channel);
-#elif defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#elif defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_fimc_is_companion_mclk_off(pdev, scenario, channel);
 #endif
 	return 0;

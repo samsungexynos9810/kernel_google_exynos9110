@@ -42,14 +42,11 @@ static inline void s3c_pm_arch_prepare_irqs(void)
 	S3C_PMDBG("sleep: irq wakeup masks: %08lx,%08lx\n",
 			s3c_irqwake_intmask, eintmask);
 
-	if (soc_is_exynos5430() || soc_is_exynos5433()) {
+	if (soc_is_exynos5430()) {
 		__raw_writel(eintmask, EXYNOS5430_EINT_WAKEUP_MASK);
 		__raw_writel(s3c_irqwake_intmask & ~(1 << 31), EXYNOS5430_WAKEUP_MASK);
 		__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK1);
 		__raw_writel(0xFFFF0000, EXYNOS5430_WAKEUP_MASK2);
-#if defined (CONFIG_SOC_EXYNOS5433)
-		__raw_writel(0xFFFFFFFF, EXYNOS5433_EINT_WAKEUP_MASK1);
-#endif
 	} else {
 		__raw_writel(eintmask, EXYNOS_EINT_WAKEUP_MASK);
 		__raw_writel(s3c_irqwake_intmask & ~(1 << 31), EXYNOS_WAKEUP_MASK);

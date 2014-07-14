@@ -19,8 +19,6 @@
 #include <mach/regs-clock-exynos5422.h>
 #elif defined(CONFIG_SOC_EXYNOS5430)
 #include <mach/regs-clock-exynos5430.h>
-#elif defined(CONFIG_SOC_EXYNOS5433)
-#include <mach/regs-clock-exynos5433.h>
 #elif defined(CONFIG_SOC_EXYNOS3250)
 #include <mach/regs-clock-exynos3.h>
 #endif

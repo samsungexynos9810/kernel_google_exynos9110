@@ -13,14 +13,6 @@
 #ifndef __PPMUx_H__
 #define __PPMUx_H__
 
-#ifdef CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ
-#include <linux/io.h>
-
-#define Outp32(addr, data)      (__raw_writel(data, addr))
-#define Inp32(addr)             (__raw_readl(addr))
-
-typedef void __iomem *addr_u32;
-#else
 #define Outp32(addr, data) (*(volatile u32 *)(addr) = (data))
 #define Inp32(addr) (*(volatile u32 *)(addr))
 
@@ -29,7 +21,6 @@ typedef unsigned long long u64;
 typedef signed long s32;
 
 typedef unsigned long addr_u32;
-#endif	/* CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ */
 
 
 /* for PPMU V2.0 Register */

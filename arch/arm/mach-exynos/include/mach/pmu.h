@@ -26,14 +26,6 @@ enum sys_powerdown {
 	SYS_ALPA,
 	SYS_DSTOP,
 	SYS_DSTOP_PSR,
-#elif defined(CONFIG_SOC_EXYNOS5433)
-	SYS_AFTR,
-	SYS_STOP,
-	SYS_DSTOP,
-	SYS_DSTOP_PSR,
-	SYS_LPD,
-	SYS_LPA,
-	SYS_ALPA,
 #else
 	SYS_AFTR,
 	SYS_LPA,

@@ -16,7 +16,7 @@
 #define PART_NUMBER_A15		(0x0f)
 
 	.macro addruart, rp, rv, tmp
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 		ldr	\rp, =EXYNOS5430_PA_UART
 #elif CONFIG_SOC_EXYNOS3250
 		ldr     \rp, =EXYNOS3_PA_UART

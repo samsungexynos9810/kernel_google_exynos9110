@@ -383,7 +383,6 @@ static inline void exynos4_tick_set_mode(enum clock_event_mode mode,
 		exynos4_mct_tick_start(cycles_per_jiffy, 1, mevt);
 		break;
 	case CLOCK_EVT_MODE_RESUME:
-		if (!soc_is_exynos5433())
 			exynos4_mct_write(tick_base_cnt, mevt->base + MCT_L_TCNTB_OFFSET);
 		break;
 
@@ -441,10 +440,8 @@ static int __cpuinit exynos4_local_timer_setup(struct clock_event_device *evt)
 	evt->rating = 450;
 	tick_base_cnt = 0;
 
-	if (!soc_is_exynos5433()) {
-		tick_base_cnt = 1;
-		exynos4_mct_write(tick_base_cnt, mevt->base + MCT_L_TCNTB_OFFSET);
-	}
+	tick_base_cnt = 1;
+	exynos4_mct_write(tick_base_cnt, mevt->base + MCT_L_TCNTB_OFFSET);
 
 	if (mct_int_type == MCT_INT_SPI) {
 		struct irqaction *mct_irq = this_cpu_ptr(&percpu_mct_irq);
