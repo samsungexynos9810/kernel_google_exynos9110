@@ -120,17 +120,6 @@ config ARM_EXYNOS5430_BUS_DEVFREQ
 	help
 	  This adds the DEVFREQ driver for Exynos5 series memory and int.
 
-config ARM_EXYNOS5433_BUS_DEVFREQ
-	bool "ARM Exynos5433 Memory Bus DEVFREQ Driver"
-	default y
-	depends on SOC_EXYNOS5433
-	select ARCH_HAS_OPP
-	select PM_OPP
-	select DEVFREQ_GOV_SIMPLE_ONDEMAND
-	select DEVFREQ_GOV_SIMPLE_EXYNOS
-	help
-	  This adds the DEVFREQ driver for Exynos5 series memory and int.
-
 choice
 	prompt "ARM Exynos5430 DEVFREQ Driver for CAM"
 	depends on ARM_EXYNOS5430_BUS_DEVFREQ
@@ -145,24 +134,6 @@ config ARM_EXYNOS5430_BUS_DEVFREQ_CAM_16M
 config ARM_EXYNOS5430_BUS_DEVFREQ_CAM_13M
 	bool "ARM Exynos5430 DEVFREQ for CAM 13M"
 	depends on ARM_EXYNOS5430_BUS_DEVFREQ
-	help
-	 This adds the DVFS table for CAM 13M
-endchoice
-
-choice
-	prompt "ARM Exynos5433 DEVFREQ Driver for CAM"
-	depends on ARM_EXYNOS5433_BUS_DEVFREQ
-	default ARM_EXYNOS5433_BUS_DEVFREQ_CAM_16M
-
-config ARM_EXYNOS5433_BUS_DEVFREQ_CAM_16M
-	bool "ARM Exynos5433 DEVFREQ for CAM 16M"
-	depends on ARM_EXYNOS5433_BUS_DEVFREQ
-	help
-	 This adds the DVFS table for CAM 16M
-
-config ARM_EXYNOS5433_BUS_DEVFREQ_CAM_13M
-	bool "ARM Exynos5433 DEVFREQ for CAM 13M"
-	depends on ARM_EXYNOS5433_BUS_DEVFREQ
 	help
 	 This adds the DVFS table for CAM 13M
 endchoice

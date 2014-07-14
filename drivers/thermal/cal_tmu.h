@@ -51,7 +51,7 @@ enum calibration_type {
 #define EXYNOS_TMU_REG_SAMPLING_INTERVAL	0x2C
 #define EXYNOS_TMU_REG_CURRENT_TEMP		0x40
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define EXYNOS_THD_TEMP_RISE			0x50
 #define EXYNOS_THD_TEMP_FALL			0x60
 #define EXYNOS_THD_TEMP_RISE3_0			0x50
@@ -98,14 +98,14 @@ enum calibration_type {
 #define EXYNOS_TRIMINFO_CONFIG			0x10
 #define EXYNOS_TRIMINFO_CONTROL			0x14
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define EXYNOS_EMUL_CON				0x110
 #else
 #define EXYNOS_EMUL_CON				0x80
 #endif
 
 #define EXYNOS_TRIMINFO_RELOAD			0x1
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define EXYNOS_TMU_CLEAR_RISE_INT      		0xff
 #define EXYNOS_TMU_CLEAR_FALL_INT      		(0xff << 16)
 #else
@@ -141,7 +141,7 @@ enum calibration_type {
 #endif /* CONFIG_THERMAL_EMULATION */
 
 /* Rising, Falling interrupt bit number*/
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define RISE_LEVEL1_SHIFT      			1
 #define RISE_LEVEL2_SHIFT      			2
 #define RISE_LEVEL3_SHIFT				3
@@ -185,7 +185,7 @@ enum calibration_type {
 #define EXYNOS_GPU_NUMBER			2
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define CALIB_SEL_MASK			0x00800000
 #define VPTAT_CTRL_MASK			0x00700000
 #define BUF_VREF_SEL_2POINT		23

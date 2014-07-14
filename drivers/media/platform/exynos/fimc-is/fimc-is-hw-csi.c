@@ -432,7 +432,7 @@ void s5pcsis_system_enable(unsigned long __iomem *base_reg, int on)
 
 	val = readl(base_reg + TO_WORD_OFFSET(S5PCSIS_CTRL));
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433) || defined(CONFIG_SOC_EXYNOS5422)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	val |= S5PCSIS_CTRL_WCLK_EXTCLK;
 #endif
 
@@ -477,7 +477,7 @@ static void __s5pcsis_set_format(unsigned long __iomem *base_reg,
 	else
 		val = (val & ~S5PCSIS_CFG_FMT_MASK) | S5PCSIS_CFG_FMT_RAW10;
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433) || defined(CONFIG_SOC_EXYNOS5422)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	val |= S5PCSIS_CFG_END_INTERVAL(1);
 #endif
 	writel(val, base_reg + TO_WORD_OFFSET(S5PCSIS_CONFIG));

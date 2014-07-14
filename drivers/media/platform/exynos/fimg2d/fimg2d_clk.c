@@ -135,14 +135,6 @@ int exynos5430_fimg2d_clk_set(struct fimg2d_control *ctrl)
 
 	return 0;
 }
-
-int exynos5433_fimg2d_clk_set_osc(struct fimg2d_control *ctrl)
-{
-	clk_set_parent(ctrl->clk_chld1, ctrl->clk_osc);
-	clk_set_parent(ctrl->clk_chld2, ctrl->clk_osc);
-
-	return 0;
-}
 #endif
 
 int fimg2d_clk_setup(struct fimg2d_control *ctrl)

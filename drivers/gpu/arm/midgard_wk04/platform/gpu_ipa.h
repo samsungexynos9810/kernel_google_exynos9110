@@ -9,8 +9,6 @@
 #define POWER_COEFF_GPU 59 /* all core on param */
 #elif SOC_NAME == 5430
 #define POWER_COEFF_GPU 46 /* Scale_to_Helsinki (0.777777778) value was multiplied */
-#elif SOC_NAME == 5433
-#define POWER_COEFF_GPU 46 /* Scale_to_Helsinki (0.777777778) value was multiplied */
 #endif
 
 int gpu_ipa_dvfs_get_norm_utilisation(struct kbase_device *kbdev);

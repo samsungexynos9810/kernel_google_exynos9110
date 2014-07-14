@@ -70,12 +70,6 @@ config ARM_EXYNOS5422_CPUFREQ
 	  This adds the CPUFreq driver for Samsung EXYNOS5422
 	  SoC.
 
-config ARM_EXYNOS5433_CPUFREQ
-	def_bool SOC_EXYNOS5433
-	help
-	  This adds the CPUFreq driver for Samsung EXYNOS5433
-	  SoC.
-
 config ARM_EXYNOS5440_CPUFREQ
 	def_bool SOC_EXYNOS5440
 	depends on HAVE_CLK && PM_OPP && OF

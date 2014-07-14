@@ -48,7 +48,7 @@
 #include "decon_pm.h"
 #include "dsim_reg.h"
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #include "decon_fb.h"
 #else
 #include <mach/regs-pmu.h>
@@ -84,7 +84,7 @@ int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv);
 int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	exynos5_dism_phy_enable(0, enable);
 #else
 	unsigned int reg;

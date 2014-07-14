@@ -59,7 +59,7 @@
 #include <linux/debugfs.h>
 #endif
 
-#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ) || defined(CONFIG_ARM_EXYNOS5433_BUS_DEVFREQ)
+#if defined(CONFIG_ARM_EXYNOS5430_BUS_DEVFREQ)
 #define CONFIG_DECON_DEVFREQ
 #include <mach/devfreq.h>
 #include <mach/bts.h>
@@ -2707,7 +2707,7 @@ static int s3c_fb_sd_s_stream(struct v4l2_subdev *sd, int enable)
 		data &= ~(0x07 << 20); /* Masking */
 		data |=  (0x01 << 20); /* On GSC#0 and enable */
 		writel(data, sfb->regs + WINCON(win->index));
-		if (soc_is_exynos5430() || soc_is_exynos5433()) {
+		if (soc_is_exynos5430()) {
 			data = readl(sfb->regs + DECON_UPDATE_SCHEME);
 			data |= (0x1 << 31);
 			writel(data, sfb->regs + DECON_UPDATE_SCHEME);

@@ -74,13 +74,6 @@ struct exynos_context {
 	struct clk *aclk_g3d;
 	struct clk *mout_g3d_pll;
 	struct clk *dout_aclk_g3d;
-#elif SOC_NAME == 5433
-	struct clk *fin_pll;
-	struct clk *fout_g3d_pll;
-	struct clk *aclk_g3d;
-	struct clk *mout_g3d_pll;
-	struct clk *dout_aclk_g3d;
-	struct clk *mout_aclk_g3d;
 #elif SOC_NAME == 5260
 	struct clk *fout_vpll;
 	struct clk *ext_xtal;

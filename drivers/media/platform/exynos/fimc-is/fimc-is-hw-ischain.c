@@ -247,7 +247,7 @@ int fimc_is_runtime_suspend(struct device *dev)
 
 	pr_info("FIMC_IS runtime suspend in\n");
 
-#if !(defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433))
+#if !(defined(CONFIG_SOC_EXYNOS5430))
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (core->mem.alloc_ctx)
 		vb2_ion_detach_iommu(core->mem.alloc_ctx);
@@ -355,7 +355,7 @@ int fimc_is_runtime_resume(struct device *dev)
 		ret = -EINVAL;
 		goto p_err;
 	}
-#if !(defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433))
+#if !(defined(CONFIG_SOC_EXYNOS5430))
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (core->mem.alloc_ctx)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);

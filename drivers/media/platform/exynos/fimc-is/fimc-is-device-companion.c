@@ -227,7 +227,7 @@ static int fimc_is_companion_gpio_on(struct fimc_is_device_companion *device)
 {
 	int ret = 0;
 	struct exynos_platform_fimc_is_sensor *pdata;
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	struct fimc_is_core *core;
 	struct fimc_is_from_info *sysfs_finfo;
 	struct exynos_sensor_pin (*pin_ctrls)[2][GPIO_CTRL_MAX];
@@ -238,7 +238,7 @@ static int fimc_is_companion_gpio_on(struct fimc_is_device_companion *device)
 	BUG_ON(!device->pdata);
 
 	pdata = device->pdata;
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	pin_ctrls = pdata->pin_ctrls;
 	core = (struct fimc_is_core *)dev_get_drvdata(fimc_is_dev);
 #endif
@@ -254,7 +254,7 @@ static int fimc_is_companion_gpio_on(struct fimc_is_device_companion *device)
 		goto p_err;
 	}
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if(core->use_sensor_dynamic_voltage_mode) {
 		fimc_is_sec_get_sysfs_finfo(&sysfs_finfo);
 		if (sysfs_finfo->header_ver[0] == 'F' && sysfs_finfo->header_ver[4] == 'L') {

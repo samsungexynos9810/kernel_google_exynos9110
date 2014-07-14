@@ -1236,7 +1236,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		info("%s(%d) - A5 Power on\n", __func__, on);
 
 		/* 6. enable A5 & use stand-by WFI */
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 		writel((1 << 15), PMUREG_ISP_ARM_OPTION);
 #else
 		writel((1 << 16 | 1 << 15), PMUREG_ISP_ARM_OPTION);
@@ -1287,7 +1287,7 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 			err("ISP power down failed(0x%08x)\n",
 				readl(PMUREG_ISP_STATUS));
 #endif
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 		timeout = 1000;
 		while ((readl(PMUREG_CAM0_STATUS) & 0x1) && timeout) {
 			timeout--;

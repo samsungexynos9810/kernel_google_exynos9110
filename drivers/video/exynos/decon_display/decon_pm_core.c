@@ -26,7 +26,7 @@
 #include "decon_pm_exynos.h"
 #include "decon_pm.h"
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #include "regs-decon.h"
 #include "decon_fb.h"
 #else

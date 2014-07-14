@@ -968,7 +968,7 @@ static int fimc_is_sensor_probe(struct platform_device *pdev)
 		goto p_err;
 	}
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (device->mem.alloc_ctx)
 		vb2_ion_attach_iommu(device->mem.alloc_ctx);
@@ -2079,7 +2079,7 @@ int fimc_is_sensor_runtime_suspend(struct device *dev)
 		goto p_err;
 	}
 
-#if !(defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433))
+#if !(defined(CONFIG_SOC_EXYNOS5430))
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (device->mem.alloc_ctx)
 		vb2_ion_detach_iommu(device->mem.alloc_ctx);
@@ -2177,7 +2177,7 @@ int fimc_is_sensor_runtime_resume(struct device *dev)
 		goto p_err;
 	}
 
-#if !(defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433))
+#if !(defined(CONFIG_SOC_EXYNOS5430))
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (device->mem.alloc_ctx)
 		vb2_ion_attach_iommu(device->mem.alloc_ctx);

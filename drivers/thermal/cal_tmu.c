@@ -47,7 +47,7 @@ void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 
 	con = data->reference_voltage << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
 		data->gain << EXYNOS_TMU_GAIN_SHIFT;
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if (id == EXYNOS_GPU_NUMBER) {
 		if (triminfo & CALIB_SEL_MASK)
 			con = BUF_VREF_SEL_2POINT << EXYNOS_TMU_REF_VOLTAGE_SHIFT |
@@ -57,7 +57,7 @@ void cal_tmu_control(struct cal_tmu_data *data, int id, bool on)
 
 	con |= data->noise_cancel_mode << EXYNOS_TMU_TRIP_MODE_SHIFT;
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if (id == EXYNOS_GPU_NUMBER)
 		con |= EXYNOS_MUX_ADDR;
 	else {

@@ -61,7 +61,6 @@ obj-$(CONFIG_ARM_EXYNOS4X12_CPUFREQ)	+= exynos4x12-cpufreq.o
 obj-$(CONFIG_ARM_EXYNOS5250_CPUFREQ)	+= exynos5250-cpufreq.o
 obj-$(CONFIG_ARM_EXYNOS5430_CPUFREQ)	+= exynos5430-eagle-cpufreq.o exynos5430-kfc-cpufreq.o
 obj-$(CONFIG_ARM_EXYNOS5422_CPUFREQ)	+= exynos5422-eagle-cpufreq.o exynos5422-kfc-cpufreq.o
-obj-$(CONFIG_ARM_EXYNOS5433_CPUFREQ)	+= exynos5433-eagle-cpufreq.o exynos5433-kfc-cpufreq.o
 obj-$(CONFIG_ARM_EXYNOS5440_CPUFREQ)	+= exynos5440-cpufreq.o
 obj-$(CONFIG_EXYNOS5_DYNAMIC_CPU_HOTPLUG)	+= dm_cpu_hotplug.o
 obj-$(CONFIG_EXYNOS3_DYNAMIC_CPU_HOTPLUG)     += dm_cpu_hotplug_exynos3250.o

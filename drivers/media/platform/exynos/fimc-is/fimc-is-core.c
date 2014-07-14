@@ -1110,7 +1110,7 @@ static int fimc_is_probe(struct platform_device *pdev)
 
 	fimc_is_ishcain_initmem(core);
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #if defined(CONFIG_VIDEOBUF2_ION)
 	if (core->mem.alloc_ctx)
 		vb2_ion_attach_iommu(core->mem.alloc_ctx);

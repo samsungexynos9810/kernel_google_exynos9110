@@ -369,52 +369,6 @@
 #define VIDCON4					(0x200C)
 #define VIDCON4_FIFOCNT_START_EN		(1 << 0)
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-/* VIDTCON00 */
-#define VIDTCON00				(0x2010)
-
-#define VIDTCON00_VBPD_MASK			(0xffff << 16)
-#define VIDTCON00_VBPD_SHIFT			(16)
-#define VIDTCON00_VBPD_LIMIT			(0xffff)
-#define VIDTCON00_VBPD(_x)			((_x) << 16)
-
-#define VIDTCON00_VFPD_MASK			(0xffff << 0)
-#define VIDTCON00_VFPD_SHIFT			(0)
-#define VIDTCON00_VFPD_LIMIT			(0xffff)
-#define VIDTCON00_VFPD(_x)			((_x) << 0)
-
-/* VIDTCON01 */
-#define VIDTCON01				(0x2014)
-
-#define VIDTCON01_VSPW_MASK			(0xffff << 16)
-#define VIDTCON01_VSPW_SHIFT			(16)
-#define VIDTCON01_VSPW_LIMIT			(0xffff)
-#define VIDTCON01_VSPW(_x)			((_x) << 16)
-
-/* VIDTCON10 */
-#define VIDTCON10				(0x2018)
-
-#define VIDTCON10_HBPD_MASK			(0xffff << 16)
-#define VIDTCON10_HBPD_SHIFT			(16)
-#define VIDTCON10_HBPD_LIMIT			(0xffff)
-#define VIDTCON10_HBPD(_x)			((_x) << 16)
-
-#define VIDTCON10_HFPD_MASK			(0xffff << 0)
-#define VIDTCON10_HFPD_SHIFT			(0)
-#define VIDTCON10_HFPD_LIMIT			(0xffff)
-#define VIDTCON10_HFPD(_x)			((_x) << 0)
-
-
-/* VIDTCON11 */
-#define VIDTCON11				(0x201c)
-
-#define VIDTCON11_HSPW_MASK			(0xffff << 16)
-#define VIDTCON11_HSPW_SHIFT			(16)
-#define VIDTCON11_HSPW_LIMIT			(0xffff)
-#define VIDTCON11_HSPW(_x)			((_x) << 16)
-
-
-#else
 /* VIDTCON0 */
 #define VIDTCON0				(0x2020)
 
@@ -450,7 +404,6 @@
 #define VIDTCON1_HSPW_SHIFT			(0)
 #define VIDTCON1_HSPW_LIMIT			(0xff)
 #define VIDTCON1_HSPW(_x)			((_x) << 0)
-#endif
 /* VIDTCON2 */
 #define VIDTCON2				(0x2028)
 

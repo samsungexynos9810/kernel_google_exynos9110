@@ -1561,8 +1561,6 @@ static const struct of_device_id samsung_pinctrl_dt_match[] = {
 		.data = (void *)exynos5430_evt0_pin_ctrl },
 	{ .compatible = "samsung,exynos5430-pinctrl",
 		.data = (void *)exynos5430_pin_ctrl },
-	{ .compatible = "samsung,exynos5433-pinctrl",
-		.data = (void *)exynos5433_pin_ctrl },
 #endif
 #ifdef CONFIG_PINCTRL_S3C64XX
 	{ .compatible = "samsung,s3c64xx-pinctrl",

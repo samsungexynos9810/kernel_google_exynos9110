@@ -504,7 +504,7 @@ static int exynos_get_trend(struct thermal_zone_device *thermal,
 	return 0;
 }
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 static int __ref exynos_throttle_cpu_hotplug(struct thermal_zone_device *thermal)
 {
 	int ret = 0;
@@ -561,7 +561,7 @@ static struct thermal_zone_device_ops const exynos_dev_ops = {
 	.get_trip_type = exynos_get_trip_type,
 	.get_trip_temp = exynos_get_trip_temp,
 	.get_crit_temp = exynos_get_crit_temp,
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	.throttle_cpu_hotplug = exynos_throttle_cpu_hotplug,
 #endif
 };
@@ -762,7 +762,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	unsigned int status;
 	unsigned int rising_threshold = 0, falling_threshold = 0;
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	unsigned int rising_threshold7_4 = 0, falling_threshold7_4 = 0;
 #endif
 	int ret = 0, threshold_code, i, trigger_levs = 0;
@@ -830,7 +830,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 		writel(falling_threshold, data->base[id] + EXYNOS_THD_TEMP_FALL);
 		writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT, data->base[id] + EXYNOS_TMU_REG_INTCLEAR);
 	} else if (data->soc == SOC_ARCH_EXYNOS543X) {
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 		for (i = 0; i < trigger_levs; i++) {
 			threshold_code = temp_to_code(data,
 					pdata->trigger_levels[i], id);
@@ -903,7 +903,7 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 
 	/* Save trimming info in order to perform calibration */
 	trim_info = readl(data->base[id] + EXYNOS_TMU_REG_TRIMINFO);
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	if (trim_info & CALIB_SEL_MASK)
 		pdata->cal_type = TYPE_TWO_POINT_TRIMMING;
 	else
@@ -912,7 +912,7 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 	data->temp_error1[id] = trim_info & EXYNOS_TMU_TRIM_TEMP_MASK;
 	data->temp_error2[id] = ((trim_info >> 8) & EXYNOS_TMU_TRIM_TEMP_MASK);
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5422)
 	if (data->temp_error1[id] == 0)
 		data->temp_error1[id] = pdata->efuse_value;
 #else
@@ -950,7 +950,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 		alltemp[i] = temp;
 
 		if (i == EXYNOS_GPU_NUMBER) {
-			if ((soc_is_exynos5430() || soc_is_exynos5433()) && !gpu_is_power_on())
+			if ((soc_is_exynos5430() && !gpu_is_power_on())
 				temp = COLD_TEMP + 1;
 			gpu_temp = temp;
 		} else {
@@ -1105,7 +1105,7 @@ static struct notifier_block exynos_pm_nb = {
 	.notifier_call = exynos_pm_notifier,
 };
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 void exynos_tmu_core_control(bool on, int id)
 {
 	int i;
@@ -1136,7 +1136,7 @@ void exynos_tmu_core_control(bool on, int id)
 }
 #endif
 
-#if (defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)) && defined(CONFIG_CPU_IDLE)
+#if (defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 static void exynos_tmu_all_cores_control(bool on)
 {
 	int i, j;
@@ -1445,15 +1445,6 @@ static struct exynos_tmu_platform_data const exynos5_tmu_data = {
 #define EXYNOS5422_TMU_DRV_DATA (NULL)
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-static struct exynos_tmu_platform_data const exynos5433_tmu_data = {
-	.type = SOC_ARCH_EXYNOS543X,
-};
-#define EXYNOS5433_TMU_DRV_DATA (&exynos5433_tmu_data)
-#else
-#define EXYNOS5433_TMU_DRV_DATA (NULL)
-#endif
-
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_tmu_match[] = {
 	{
@@ -1476,10 +1467,6 @@ static const struct of_device_id exynos_tmu_match[] = {
 		.compatible = "samsung,exynos5422-tmu",
 		.data = (void *)EXYNOS5422_TMU_DRV_DATA,
 	},
-	{
-		.compatible = "samsung,exynos5433-tmu",
-		.data = (void *)EXYNOS5433_TMU_DRV_DATA,
-	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_tmu_match);
@@ -1501,10 +1488,6 @@ static struct platform_device_id exynos_tmu_driver_ids[] = {
 	{
 		.name		= "exynos5422-tmu",
 		.driver_data	= (kernel_ulong_t)EXYNOS5422_TMU_DRV_DATA,
-	},
-	{
-		.name		= "exynos5433-tmu",
-		.driver_data	= (kernel_ulong_t)EXYNOS5433_TMU_DRV_DATA,
 	},
 	{ },
 };
@@ -1645,7 +1628,7 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	pr_info("TMU_CONTROL[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_TMU_REG_CURRENT_TEMP);
 	pr_info("CURRENT_TEMP[%d] = 0x%x\n", id, reg_data);
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE3_0);
 	pr_info("THRESHOLD_TEMP_RISE3_0[%d] = 0x%x\n", id, reg_data);
 	reg_data = readl(data->base[id] + EXYNOS_THD_TEMP_RISE7_4);
@@ -1668,131 +1651,6 @@ static void exynos_tmu_regdump(struct platform_device *pdev, int id)
 	mutex_unlock(&data->lock);
 }
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-static int parse_trigger_data(struct device_node *np, struct exynos_tmu_platform_data *pdata, int i)
-{
-	int ret = 0;
-	u32 enable, temp;
-	struct device_node *np_trigger;
-	char node_name[16];
-
-	snprintf(node_name, sizeof(node_name), "trigger_level_%d", i);
-
-	np_trigger = of_find_node_by_name(np, node_name);
-	if (!np_trigger)
-		return -EINVAL;
-
-	of_property_read_u32(np_trigger, "temp", &temp);
-	of_property_read_u32(np_trigger, "enable", &enable);
-
-	pdata->trigger_levels[i] = temp;
-	switch (i) {
-	case 0:
-		pdata->trigger_level0_en = (enable == 0) ? 0 : 1;
-		break;
-	case 1:
-		pdata->trigger_level1_en = (enable == 0) ? 0 : 1;
-		break;
-	case 2:
-		pdata->trigger_level2_en = (enable == 0) ? 0 : 1;
-		break;
-	case 3:
-		pdata->trigger_level3_en = (enable == 0) ? 0 : 1;
-		break;
-	case 4:
-		pdata->trigger_level4_en = (enable == 0) ? 0 : 1;
-		break;
-	case 5:
-		pdata->trigger_level5_en = (enable == 0) ? 0 : 1;
-		break;
-	case 6:
-		pdata->trigger_level6_en = (enable == 0) ? 0 : 1;
-		break;
-	case 7:
-		pdata->trigger_level7_en = (enable == 0) ? 0 : 1;
-		break;
-	}
-
-	return ret;
-}
-
-static int parse_throttle_data(struct device_node *np, struct exynos_tmu_platform_data *pdata, int i)
-{
-	int ret = 0;
-	struct device_node *np_throttle;
-	char node_name[15];
-
-	snprintf(node_name, sizeof(node_name), "throttle_tab_%d", i);
-
-	np_throttle = of_find_node_by_name(np, node_name);
-	if (!np_throttle)
-		return -EINVAL;
-
-	of_property_read_u32(np_throttle, "temp", &pdata->freq_tab[i].temp_level);
-	of_property_read_u32(np_throttle, "freq_clip_max", &pdata->freq_tab[i].freq_clip_max);
-
-#ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
-	of_property_read_u32(np_throttle, "freq_clip_max_kfc", &pdata->freq_tab[i].freq_clip_max_kfc);
-	pdata->freq_tab[i].mask_val = &mp_cluster_cpus[CA15];
-	pdata->freq_tab[i].mask_val_kfc = &mp_cluster_cpus[CA7];
-#endif
-
-	return ret;
-}
-
-
-static int exynos_tmu_parse_dt(struct device_node *np, struct exynos_tmu_platform_data *pdata)
-{
-	u32 value, cal_type, trigger_level_count;
-	int ret = 0, i;
-
-	if (!np)
-		return -EINVAL;
-
-	of_property_read_u32(np, "threshold_falling", &value);
-	pdata->threshold_falling = value;
-	of_property_read_u32(np, "gain", &value);
-	pdata->gain = value;
-	of_property_read_u32(np, "reference_voltage", &value);
-	pdata->reference_voltage = value;
-	of_property_read_u32(np, "noise_cancel_mode", &value);
-	pdata->noise_cancel_mode = value;
-	of_property_read_u32(np, "cal_type", &cal_type);
-	of_property_read_u32(np, "efuse_value", &pdata->efuse_value);
-	of_property_read_u32(np, "trigger_level_count", &trigger_level_count);
-	of_property_read_u32(np, "throttle_count", &pdata->freq_tab_count);
-	of_property_read_u32(np, "throttle_active_count", &pdata->size[THERMAL_TRIP_ACTIVE]);
-	of_property_read_u32(np, "throttle_passive_count", &pdata->size[THERMAL_TRIP_PASSIVE]);
-	of_property_read_u32(np, "hotplug_out_threshold", &pdata->hotplug_out_threshold);
-	of_property_read_u32(np, "hotplug_in_threshold", &pdata->hotplug_in_threshold);
-
-	for (i = 0; i < trigger_level_count; i++) {
-		ret = parse_trigger_data(np, pdata, i);
-		if (ret) {
-			pr_err("Failed to load trigger data(%d)\n", i);
-			return -EINVAL;
-		}
-	}
-
-	for (i = 0; i < pdata->freq_tab_count; i++) {
-		ret = parse_throttle_data(np, pdata, i);
-		if (ret) {
-			pr_err("Failed to load throttle data(%d)\n", i);
-			return -EINVAL;
-		}
-	}
-
-	if (cal_type == 1)
-		pdata->cal_type = TYPE_ONE_POINT_TRIMMING;
-	else if (cal_type == 2)
-		pdata->cal_type = TYPE_TWO_POINT_TRIMMING;
-	else
-		pdata->cal_type = TYPE_NONE;
-
-	return ret;
-}
-#endif
-
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
 static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigned long event, void *v)
 {
@@ -1807,7 +1665,7 @@ static int exynos5_tmu_cpufreq_notifier(struct notifier_block *notifier, unsigne
 			dev_err(&exynos_tmu_pdev->dev, "Failed to register thermal interface\n");
 			sysfs_remove_group(&exynos_tmu_pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
 			unregister_pm_notifier(&exynos_pm_nb);
-#if (defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)) && defined(CONFIG_CPU_IDLE)
+#if (defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 			exynos_pm_unregister_notifier(&exynos_pm_dstop_nb);
 #endif
 #ifdef CONFIG_ARM_EXYNOS_MP_CPUFREQ
@@ -1852,16 +1710,8 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-	ret = exynos_tmu_parse_dt(pdev->dev.of_node, pdata);
-	if (ret) {
-		dev_err(&pdev->dev, "Failed to load platform data from device tree.\n");
-		return -ENODEV;
-	}
-#else
 	pdata->hotplug_in_threshold = CPU_HOTPLUG_IN_TEMP;
 	pdata->hotplug_out_threshold = CPU_HOTPLUG_OUT_TEMP;
-#endif
 
 #if defined(CONFIG_SOC_EXYNOS5430)
 	exynos5430_get_egl_speed_option(&spd_option_flag, &spd_sel);
@@ -1997,7 +1847,7 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	exynos_sensor_conf.cooling_data.size[THERMAL_TRIP_PASSIVE] = pdata->size[THERMAL_TRIP_PASSIVE];
 
 	register_pm_notifier(&exynos_pm_nb);
-#if (defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)) && defined(CONFIG_CPU_IDLE)
+#if (defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 	exynos_pm_register_notifier(&exynos_pm_dstop_nb);
 #endif
 	ret = sysfs_create_group(&pdev->dev.kobj, &exynos_thermal_sensor_attr_group);
@@ -2032,7 +1882,7 @@ static int exynos_tmu_remove(struct platform_device *pdev)
 		exynos_tmu_control(pdev, i, false);
 
 	unregister_pm_notifier(&exynos_pm_nb);
-#if (defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)) && defined(CONFIG_CPU_IDLE)
+#if (defined(CONFIG_SOC_EXYNOS5430) && defined(CONFIG_CPU_IDLE)
 	exynos_pm_unregister_notifier(&exynos_pm_dstop_nb);
 #endif
 	exynos_unregister_thermal();

@@ -121,19 +121,6 @@ void decon_reg_set_porch(struct decon_lcd *info)
 {
 	u32 val = 0;
 
-#if defined(CONFIG_SOC_EXYNOS5433)
-	val = VIDTCON00_VBPD(info->vbp - 1) | VIDTCON00_VFPD(info->vfp - 1);
-	decon_write(VIDTCON00, val);
-
-	val = VIDTCON01_VSPW(info->vsa - 1);
-	decon_write(VIDTCON01, val);
-
-	val = VIDTCON10_HBPD(info->hbp - 1) | VIDTCON10_HFPD(info->hfp - 1);
-	decon_write(VIDTCON10, val);
-
-	val = VIDTCON11_HSPW(info->hsa - 1);
-	decon_write(VIDTCON11, val);
-#else
 	val = VIDTCON0_VBPD(info->vbp - 1) | VIDTCON0_VFPD(info->vfp - 1) |
 		VIDTCON0_VSPW(info->vsa - 1);
 	decon_write(VIDTCON0, val);
@@ -141,7 +128,6 @@ void decon_reg_set_porch(struct decon_lcd *info)
 	val = VIDTCON1_HBPD(info->hbp - 1) | VIDTCON1_HFPD(info->hfp - 1) |
 		VIDTCON1_HSPW(info->hsa - 1);
 	decon_write(VIDTCON1, val);
-#endif
 
 	val = VIDTCON2_LINEVAL(info->yres - 1) | VIDTCON2_HOZVAL(info->xres - 1);
 	decon_write(VIDTCON2, val);

@@ -62,8 +62,6 @@ void fimg2d_power_control(struct fimg2d_control *ctrl, enum fimg2d_pw_status sta
 			fimg2d_debug("Done pm_runtime_get_sync()\n");
 		}
 	} else if (status == FIMG2D_PW_OFF) {
-		if (ip_is_g2d_5hp())
-			exynos5433_fimg2d_clk_set_osc(ctrl);
 		if (ip_is_g2d_5h() || ip_is_g2d_5hp()){
 			pm_runtime_put_sync(ctrl->dev);
 			fimg2d_debug("Done pm_runtime_put_sync()\n");
@@ -848,7 +846,6 @@ static int fimg2d_suspend(struct device *dev)
 		mdelay(POLL_TIMEOUT);
 	}
 	g2d_unlock(&ctrl->drvlock);
-	exynos5433_fimg2d_clk_set_osc(ctrl);
 	fimg2d_info("suspend... done\n");
 	return 0;
 }
@@ -882,7 +879,6 @@ static int fimg2d_resume(struct device *dev)
 static int fimg2d_runtime_suspend(struct device *dev)
 {
 	fimg2d_debug("runtime suspend... done\n");
-	exynos5433_fimg2d_clk_set_osc(ctrl);
 	return 0;
 }
 

@@ -48,7 +48,7 @@
 #define FIMC_IS_SPI_PINNAME "14000000.pinctrl"
 #endif
 
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define FIMC_IS_SPI_PINNAME "14cc0000.pinctrl"
 #endif
 #define FIMC_IS_SPI_OUTPUT	1

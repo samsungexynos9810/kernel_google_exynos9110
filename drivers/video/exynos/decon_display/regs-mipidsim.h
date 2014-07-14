@@ -12,7 +12,7 @@
 
 #ifndef _REGS_MIPIDSIM_H
 #define _REGS_MIPIDSIM_H
-#if defined(CONFIG_SOC_EXYNOS5430) || defined(CONFIG_SOC_EXYNOS5433)
+#if defined(CONFIG_SOC_EXYNOS5430)
 #define S5P_DSIM_STATUS		(0x4)	/* Status register */
 #define DSIM_STOP_STATE_DAT(x)	(((x) & 0xf) << 0)
 #define DSIM_ULPS_DAT(x)	(((x) & 0xf) << 4)
