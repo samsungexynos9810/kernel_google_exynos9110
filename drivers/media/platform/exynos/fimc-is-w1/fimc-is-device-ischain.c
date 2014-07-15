@@ -1207,6 +1207,16 @@ int fimc_is_ischain_power(struct fimc_is_device_ischain *device, int on)
 		if (debug != 0xFC)
 			merr("secure configuration is fail[0x131E0004:%08X]", device, debug);
 #endif
+		/* A5 power off*/
+		timeout = 1000;
+		writel(0x0, PMUREG_ISP_ARM_CONFIGURATION);
+		while ((__raw_readl(PMUREG_ISP_ARM_STATUS) & 0x1) && timeout) {
+			timeout--;
+			udelay(1);
+		}
+		if (timeout == 0)
+			err("A5 power down failed(status:%x)\n",
+				__raw_readl(PMUREG_ISP_ARM_STATUS));
 
 		/* 5. A5 power on*/
 		writel(0x1, PMUREG_ISP_ARM_CONFIGURATION);
