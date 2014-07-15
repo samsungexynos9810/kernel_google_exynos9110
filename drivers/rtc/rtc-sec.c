@@ -283,7 +283,7 @@ static int s2m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 	switch (info->iodev->device_type) {
 	case S2MPS14X:
-		ret = S2MPS14_REG_ST2;
+		reg = S2MPS14_REG_ST2;
 		break;
 	case S2MPS11X:
 		reg = S2MPS11_REG_ST2;
