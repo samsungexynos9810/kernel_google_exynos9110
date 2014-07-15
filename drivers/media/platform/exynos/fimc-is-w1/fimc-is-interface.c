@@ -2564,7 +2564,7 @@ int fimc_is_hw_enum(struct fimc_is_interface *this)
 	 * this mean sensor numbers
 	 * signel sensor: 1, dual sensor: 2, triple sensor: 3
 	 */
-	msg.parameter2 = 3;
+	msg.parameter2 = 1;
 	msg.parameter3 = 0;
 	msg.parameter4 = 0;
 
