@@ -1194,30 +1194,6 @@ static irqreturn_t fimc_is_flite_isr(int irq, void *data)
 				warn("[CamIF%d] invalid interrupt interval",
 					flite->instance);
 				goto clear_status;
-#ifdef DBG_FLITEISR
-				printk(KERN_CONT "<");
-#endif
-				/* frame start interrupt */
-				flite->sw_checker = EXPECT_FRAME_END;
-				if (flite->sw_trigger)
-					flite->sw_trigger = FLITE_A_SLOT_VALID;
-				else
-					flite->sw_trigger = FLITE_B_SLOT_VALID;
-				flite->tasklet_param_str = flite->sw_trigger;
-				atomic_inc(&flite->fcount);
-				notify_fcount(flite->instance, atomic_read(&flite->fcount));
-				if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
-					flite->early_work_skip = true;
-				tasklet_schedule(&flite->tasklet_flite_str);
-#ifdef DBG_FLITEISR
-				printk(KERN_CONT ">");
-#endif
-				/* frame end interrupt */
-				flite->sw_checker = EXPECT_FRAME_START;
-				flite->tasklet_param_end = flite->sw_trigger;
-				if (flite->buf_done_mode == FLITE_BUF_DONE_EARLY)
-					tasklet_schedule(&flite->tasklet_flite_early_end);
-				tasklet_schedule(&flite->tasklet_flite_end);
 			}
 		} else if (status == (2 << 4)) {
 			/* W/A: Skip start tasklet at interrupt lost case */
