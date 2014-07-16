@@ -214,6 +214,7 @@
 #define CLK_SCLK_I2S		231
 #define CLK_SCLK_MMC2		232
 #define CLK_SDMMC2		233
+#define CLK_SMIES		234
 
 #define NR_CLKS			256
 
