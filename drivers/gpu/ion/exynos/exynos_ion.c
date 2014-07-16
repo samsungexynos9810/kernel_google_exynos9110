@@ -550,7 +550,6 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 	struct ion_exynos_contig_heap *contig_heap =
 			container_of(heap, struct ion_exynos_contig_heap, heap);
 	struct device *dev;
-	int ret = 0;
 
 	/* fixup of old DRM flags */
 	if (flags & (ION_EXYNOS_FIMD_VIDEO_MASK | ION_EXYNOS_MFC_OUTPUT_MASK |
@@ -584,11 +583,7 @@ static int ion_exynos_contig_heap_allocate(struct ion_heap *heap,
 		return -ENOMEM;
 	}
 
-	if (ret)
-		dma_release_from_contiguous(dev,
-				buffer->priv_virt, buffer->size >> PAGE_SHIFT);
-
-	return ret;
+	return 0;
 }
 
 static void ion_exynos_contig_heap_free(struct ion_buffer *buffer)
