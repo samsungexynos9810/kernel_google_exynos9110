@@ -591,6 +591,29 @@
 		status = "disabled";
 	};
 
+	smies: smies@11c90000 {
+		compatible = "samsung,exynos3-smies";
+		reg = <0x11c90000 0x200>;
+		clocks = <&clock CLK_SMIES>;
+		clock-names = "smies";
+		sae_on			= <1>;
+		scr_on			= <1>;
+		gamma_on		= <1>;
+		dither_on		= <0>;
+		sae_skin_check		= <0>;
+		sae_gain		= <0>;
+		scr_r			= <0xff0000>;
+		scr_g			= <0x00ff00>;
+		scr_b			= <0x0000ff>;
+		scr_c			= <0x00ffff>;
+		scr_m			= <0xff00ff>;
+		scr_y			= <0xffff00>;
+		scr_white              = <0xffffff>;
+		scr_black              = <0x000000>;
+		width                  = <480>;
+		height                 = <800>;
+	};
+
 	fimd_fb: fimd_fb {
                 compatible = "samsung,exynos3-disp_driver";
                 reg = <0x11c00000 0x40000>, <0x11c80000 0x8000>;
