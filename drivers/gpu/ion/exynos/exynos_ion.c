@@ -1076,7 +1076,7 @@ static long exynos_ion_sync_fd(struct ion_client *client, int fd,
 
 	vma = find_vma(mm, addr);
 
-	if (!vma->vm_file || !is_dma_buf_file(vma->vm_file)
+	if (!vma || !vma->vm_file || !is_dma_buf_file(vma->vm_file)
 			|| !vma->vm_file->private_data) {
 		/* HACK */
 		pr_info("%s: given fd %d is not dmabuf\n", __func__, fd);

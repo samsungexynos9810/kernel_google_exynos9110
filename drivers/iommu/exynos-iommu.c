@@ -1524,6 +1524,9 @@ static int __sysmmu_unmap_user_pages(struct device *dev,
 	 * The caller must check the range of address space before calling this.
 	 */
 	vma = find_vma(mm, vaddr);
+	if (!vma)
+		goto out_up;
+
 	is_pfnmap = vma->vm_flags & VM_PFNMAP;
 
 	start = vaddr & PAGE_MASK;
@@ -1556,6 +1559,7 @@ static int __sysmmu_unmap_user_pages(struct device *dev,
 	} while (start != end);
 
 	spin_unlock_irqrestore(&priv->pgtablelock, flags);
+out_up:
 	up_read(&mm->mmap_sem);
 
 	TRACE_LOG_DEV(dev, "%s: unmap done @ %#lx\n", __func__, start);
