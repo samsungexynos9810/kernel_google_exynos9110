@@ -11,6 +11,7 @@
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/of.h>
+#include <linux/of_platform.h>
 #include <linux/fb.h>
 #include <linux/of_gpio.h>
 #include <linux/platform_device.h>
@@ -263,6 +264,19 @@ static int parse_display_dt_exynos(struct device_node *np)
 	return ret;
 }
 
+#if defined(CONFIG_FB_SMIES)
+static int parse_smies_dt_node(struct platform_device *pdev,
+	struct display_driver *ddp)
+{
+	struct device_node *smies_node;
+	smies_node = of_find_node_by_name(NULL,"smies");
+	if(!smies_node)
+		return -EINVAL;
+	ddp->smies_pdev = of_find_device_by_node(smies_node);
+	return 0;
+}
+#endif
+
 static int parse_interrupt_dt_exynos(struct platform_device *pdev,
 	struct display_driver *ddp)
 {
@@ -444,6 +458,13 @@ int parse_display_driver_dt(struct platform_device *pdev,
 		*(unsigned int *)ddp->decon_driver.regs, *(unsigned int *)ddp->dsi_driver.regs);
 
 	/* starts to parse device tree */
+#if defined(CONFIG_FB_SMIES)
+	ret = parse_smies_dt_node(pdev, ddp);
+	if (ret < 0) {
+		pr_err("smies dt node parse error\n");
+		return -EINVAL;
+	}
+#endif
 	ret = parse_interrupt_dt_exynos(pdev, ddp);
 	if (ret < 0) {
 		pr_err("interrupt parse error system\n");

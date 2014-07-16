@@ -131,7 +131,9 @@ void init_display_gpio_exynos(void)
 	 */
 	reg = __raw_readl(S3C_VA_SYS + 0x0210);
 	reg &= ~(1 << 1);
+#if !defined(CONFIG_FB_SMIES)
 	reg |= (1 << 1);
+#endif
 	__raw_writel(reg, S3C_VA_SYS + 0x0210);
 	reg = __raw_readl(S3C_VA_SYS + 0x0210);
 	reg &= ~(3 << 10);

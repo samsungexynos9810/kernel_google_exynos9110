@@ -8,29 +8,13 @@
  * published by the Free Software FoundatIon.
  */
 
-#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
-#include <linux/dma-mapping.h>
-#include <linux/slab.h>
-#include <linux/init.h>
 #include <linux/clk.h>
 #include <linux/fb.h>
-#include <linux/io.h>
-#include <linux/uaccess.h>
-#include <linux/interrupt.h>
 #include <linux/pm_runtime.h>
-#include <linux/delay.h>
-#include <linux/kthread.h>
 
-#include <mach/exynos5_bus.h>
-#include <mach/map.h>
-#include <mach/bts.h>
-#include <plat/regs-smies.h>
-#include <plat/fb.h>
-#include <plat/cpu.h>
-#include <plat/smies.h>
-
+#include "regs-smies.h"
 #include "s5p_smies.h"
 
 static const u32 gamma_curve_linear[65] = {
@@ -309,7 +293,6 @@ int smies_enable_by_fimd(struct device *dev)
 	struct s5p_smies_device *smies = platform_get_drvdata(pdev);
 
 	dev_dbg(dev, "%s: state(%d)\n", __func__, smies->state);
-
 	mutex_lock(&smies->mutex);
 
 	if (smies->state == SMIES_ENABLED) {
@@ -353,7 +336,40 @@ int smies_enable_by_fimd(struct device *dev)
 	return 0;
 }
 
-static int __devinit smies_probe(struct platform_device *pdev)
+static const struct of_device_id exynos_smies_match[] = {
+        {
+                .compatible = "samsung,exynos3-smies",
+        },
+	{},
+};
+
+MODULE_DEVICE_TABLE(of, exynos_smies_match);
+
+static void smies_parse_dt(struct device_node *np, struct s5p_smies_device *smies)
+{
+        struct s5p_smies_platdata *pdata = smies->pdata;
+
+        if (!np)
+                return;
+	of_property_read_u32(np, "sae_on", &pdata->sae_on);
+        of_property_read_u32(np, "scr_on", &pdata->scr_on);
+        of_property_read_u32(np, "gamma_on", &pdata->gamma_on);
+        of_property_read_u32(np, "dither_on", &pdata->dither_on);
+        of_property_read_u32(np, "sae_skin_check", &pdata->sae_skin_check);
+        of_property_read_u32(np, "sae_gain", &pdata->sae_gain);
+        of_property_read_u32(np, "scr_r", &pdata->scr_r);
+        of_property_read_u32(np, "scr_g", &pdata->scr_g);
+        of_property_read_u32(np, "scr_b", &pdata->scr_b);
+        of_property_read_u32(np, "scr_c", &pdata->scr_c);
+        of_property_read_u32(np, "scr_m", &pdata->scr_m);
+        of_property_read_u32(np, "scr_y", &pdata->scr_y);
+        of_property_read_u32(np, "scr_white", &pdata->scr_white);
+        of_property_read_u32(np, "scr_black", &pdata->scr_black);
+        of_property_read_u32(np, "width", &pdata->width);
+        of_property_read_u32(np, "height", &pdata->height);
+}
+
+static int smies_probe(struct platform_device *pdev)
 {
 
 	struct device *dev = &pdev->dev;
@@ -361,7 +377,6 @@ static int __devinit smies_probe(struct platform_device *pdev)
 	struct s5p_smies_device *smies;
 	struct resource *res;
 	int ret;
-
 	dev_dbg(dev, "probe start\n");
 
 	smies = kzalloc(sizeof(struct s5p_smies_device), GFP_KERNEL);
@@ -372,12 +387,16 @@ static int __devinit smies_probe(struct platform_device *pdev)
 	}
 
 	smies->dev = dev;
-	smies->pdata = pd;
-
+	smies->smies_on = smies_enable_by_fimd;
+	smies->smies_off = smies_disable_by_fimd;
+	smies->pdata = kzalloc(sizeof(struct s5p_smies_platdata), GFP_KERNEL);
+	pd = smies->pdata;
 	spin_lock_init(&smies->slock);
 	mutex_init(&smies->mutex);
+	smies_parse_dt(dev->of_node,smies);
 
-	smies->clock = clk_get(NULL, SMIES_CLK_NAME);
+
+	smies->clock = clk_get(dev, SMIES_CLK_NAME);
 	if (IS_ERR_OR_NULL(smies->clock)) {
 		dev_err(dev, "failed to get smies clock\n");
 		ret = -ENXIO;
@@ -412,11 +431,9 @@ static int __devinit smies_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, smies);
 
-#if defined(CONFIG_FB_SMIES_ENABLE_BOOTTIME)
 	ret = smies_enable_by_fimd(dev);
 	if (!ret)
 		dev_info(dev, "SMIES enabled\n");
-#endif
 	dev_info(dev, "probe succeeded\n");
 
 	return 0;
@@ -433,7 +450,7 @@ err:
 
 }
 
-static int __devexit smies_remove(struct platform_device *pdev)
+static int smies_remove(struct platform_device *pdev)
 {
 	struct s5p_smies_device *smies = platform_get_drvdata(pdev);
 
@@ -454,7 +471,7 @@ static int smies_runtime_suspend(struct device *dev)
 	struct s5p_smies_device *smies = platform_get_drvdata(pdev);
 
 	dev_dbg(dev, "%s +\n", __func__);
-	clk_disable(smies->clock);
+	clk_disable_unprepare(smies->clock);
 	dev_dbg(dev, "%s -\n", __func__);
 
 	return 0;
@@ -466,7 +483,7 @@ static int smies_runtime_resume(struct device *dev)
 	struct s5p_smies_device *smies = platform_get_drvdata(pdev);
 
 	dev_dbg(dev, "%s +\n", __func__);
-	clk_enable(smies->clock);
+	clk_prepare_enable(smies->clock);
 	dev_dbg(dev, "%s -\n", __func__);
 
 	return 0;
@@ -481,11 +498,12 @@ static const struct dev_pm_ops smies_pm_ops = {
 
 static struct platform_driver s5p_smies_driver = {
 	.probe		= smies_probe,
-	.remove		= __devexit_p(smies_remove),
+	.remove		= smies_remove,
 	.driver		= {
 		.name	= "s5p-smies",
 		.owner	= THIS_MODULE,
 		.pm	= &smies_pm_ops,
+		.of_match_table = exynos_smies_match,
 	},
 };
 

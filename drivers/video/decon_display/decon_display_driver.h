@@ -165,6 +165,9 @@ struct display_pm_status {
 struct display_driver {
 	/* platform driver for display system */
 	struct device *display_driver;
+#if defined(CONFIG_FB_SMIES)
+	struct platform_device *smies_pdev;
+#endif
 	struct display_component_decon decon_driver;
 	struct display_component_dsi dsi_driver;
 	struct display_component_mic mic_driver;

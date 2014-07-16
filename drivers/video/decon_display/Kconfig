@@ -63,6 +63,11 @@ config DECON_MIPI_DSI
 	depends on DECON
 	default n
 
+config FB_SMIES
+	bool "Samsung SMIES driver"
+	depends on DECON
+	default n
+
 config DECON_LCD
 	depends on DECON
 	bool "Select LCD panel driver"

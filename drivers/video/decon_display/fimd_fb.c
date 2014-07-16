@@ -44,7 +44,9 @@
 #endif
 
 #include <video/mipi_display.h>
-
+#if defined(CONFIG_FB_SMIES)
+#include "s5p_smies.h"
+#endif
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi.h"
 #include "fimd_fb.h"
@@ -587,6 +589,13 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 		writel(data, sfb->regs + BLENDCON);
 	}
 
+#if defined(CONFIG_FB_SMIES)
+        data = readl(sfb->regs + sfb->variant.vidtcon + 0xc);
+        data |= VIDTCON3_VSYNCEN;
+        writel(data, sfb->regs + sfb->variant.vidtcon + 0xc);
+#endif
+
+
 	data = VIDTCON0_VBPD(win_mode->upper_margin - 1)
 			| VIDTCON0_VFPD(win_mode->lower_margin - 1)
 			| VIDTCON0_VSPW(win_mode->vsync_len - 1);
@@ -609,7 +618,9 @@ static void s3c_fb_configure_lcd(struct s3c_fb *sfb,
 
 	/* write the timing data to the panel */
 	data |= VIDCON0_VLCKFREE;
-
+#if defined(CONFIG_FB_SMIES)
+	data |= VIDCON0_HIVCLK;
+#endif
 	data &= ~VIDCON0_ENVID;
         data &=	~VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
@@ -1028,6 +1039,10 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 			disp_pm_add_refcount(dispdrv);
 #endif
 		ret = s3c_fb_disable(sfb);
+#if defined(CONFIG_FB_SMIES)
+		 if (sfb->smies->smies_off)
+                        sfb->smies->smies_off(sfb->smies->dev);
+#endif
 		s5p_mipi_dsi_disable(dsim_for_decon);
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 		pm_qos_update_request(&exynos_fimd_mif_qos, 0);
@@ -1048,6 +1063,10 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #endif
 		s5p_mipi_dsi_enable(dsim_for_decon);
 		ret = s3c_fb_enable(sfb);
+#if defined(CONFIG_FB_SMIES)
+		 if (sfb->smies->smies_on)
+                        sfb->smies->smies_on(sfb->smies->dev);
+#endif
 		break;
 
 	case FB_BLANK_VSYNC_SUSPEND:
@@ -3036,7 +3055,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	int i;
 	int ret = 0;
 	u32 reg;
-
 	dispdrv = get_display_driver();
 	fbdrv = dispdrv->dt_ops.get_display_drvdata();
 
@@ -3060,10 +3078,12 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	dev_dbg(dev, "allocate new framebuffer %p\n", sfb);
-
 	sfb->dev = dev;
 	sfb->pdata = pd;
 	sfb->variant = fbdrv->variant;
+#if defined(CONFIG_FB_SMIES)
+	sfb->smies = platform_get_drvdata(dispdrv->smies_pdev);
+#endif
 
 #if defined(CONFIG_FB_I80_COMMAND_MODE) || defined(CONFIG_FB_I80IF)
 	sfb->psr_mode = S3C_FB_MIPI_COMMAND_MODE;
@@ -3178,6 +3198,11 @@ int create_decon_display_controller(struct platform_device *pdev)
 	sfb->power_state = POWER_ON;
 	writel(pd->vidcon1, sfb->regs + sfb->variant.vidcon1);
 
+#if defined(CONFIG_FB_SMIES)
+        reg = readl(sfb->regs + sfb->variant.vidtcon + 0xc);
+        reg |= VIDTCON3_VSYNCEN;
+        writel(reg, sfb->regs + sfb->variant.vidtcon + 0xc);
+#endif
 	/* set video clock running at under-run */
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);

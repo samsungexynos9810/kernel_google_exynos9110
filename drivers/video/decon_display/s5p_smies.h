@@ -14,10 +14,7 @@
 #ifndef SAMSUMG_SMIES_H
 #define SAMSUNG_SMIES_H
 
-#include <plat/smies.h>
-#include <plat/map-base.h>
-
-#define SMIES_CLK_NAME		"smie"
+#define SMIES_CLK_NAME		"smies"
 #define SMIES_GAMMALUT_CNT	65
 #define SYSREG_LCDBLK_CFG	(S3C_VA_SYS + 0x0210)
 #define LCDBLK_CFG_FIMDBYPASS	(1 << 1)
@@ -44,6 +41,24 @@ enum SMIES_GAMMA_CUV {
 	SMIES_CUV_2_2,
 };
 
+struct s5p_smies_platdata {
+        int sae_on;
+        int scr_on;
+        int gamma_on;
+        int dither_on;
+        int sae_skin_check;
+        u32 sae_gain;
+        u32 scr_r;
+        u32 scr_g;
+        u32 scr_b;
+        u32 scr_c;
+        u32 scr_m;
+        u32 scr_y;
+        u32 scr_white;
+        u32 scr_black;
+        u32 width;
+        u32 height;
+};
 struct s5p_smies_device {
 	spinlock_t slock;
 	struct mutex mutex;
@@ -55,6 +70,8 @@ struct s5p_smies_device {
 	struct s5p_smies_platdata *pdata;
 
 	enum SMIES_STATE state;
+	int (*smies_on)(struct device *dev);
+	int (*smies_off)(struct device *dev);
 };
 
 static inline

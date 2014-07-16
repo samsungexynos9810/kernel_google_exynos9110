@@ -344,6 +344,9 @@ struct s3c_fb {
 	struct s3c_fb_debug	debug_data;
 #endif
 	enum s3c_fb_psr_mode psr_mode;
+#if defined(CONFIG_FB_SMIES)
+	struct s5p_smies_device *smies;
+#endif
 };
 
 struct s3c_fb_rect {
