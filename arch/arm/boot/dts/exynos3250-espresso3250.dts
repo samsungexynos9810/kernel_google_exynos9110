@@ -161,8 +161,6 @@
 					regulator-name = "vt_cam_sensor_a2v8";
 					regulator-min-microvolt = <2800000>;
 					regulator-max-microvolt = <2800000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -209,8 +207,6 @@
 					regulator-name = "vt_cam_core_1v8";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <1800000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -642,6 +638,8 @@
 	fimc_is_sensor0: fimc_is_sensor@120A0000 {
 		scenario = <0>;
 		gpio_reset = <&gpm3 2 0x1>;
+		cam_core-supply = <&ldo21_reg>;
+		cam_sensor-supply = <&ldo13_reg>;
 		id = <0>;
 		mclk_ch = <1>;
 		csi_ch = <0>;
