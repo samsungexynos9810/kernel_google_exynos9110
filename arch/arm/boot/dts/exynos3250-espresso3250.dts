@@ -179,8 +179,6 @@
 					regulator-name = "vdd_lcd_3.3";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -203,8 +201,6 @@
 					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <800000>;
 					regulator-max-microvolt = <2375000>;
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
@@ -392,6 +388,8 @@
 	 fimd_fb: fimd_fb {
                 /* gpx0[6]- TE external interrupt pin */
                 gpios = <&gpx0 4 0xf>;
+		lcd-3.0-supply = <&ldo16_reg>;
+		lcd-1.8-supply = <&ldo20_reg>;
                 fimd: fimd_ctrl {
                         samsung,left_margin = <1>;
                         samsung,right_margin = <1>;
