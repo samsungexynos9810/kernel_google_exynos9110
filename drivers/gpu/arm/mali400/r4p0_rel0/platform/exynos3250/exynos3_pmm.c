@@ -383,7 +383,7 @@ void mali_clk_put(mali_bool binc_mali_clock)
 		mali_clock = NULL;
 	}
 
-	if (g3d_clock)
+	if (binc_mali_clock && g3d_clock)
 	{
 		clk_put(g3d_clock);
 		g3d_clock = NULL;
@@ -802,6 +802,7 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 	if (atomic_read(&clk_active)) {
 		clk_disable_unprepare(mali_clock);
 		clk_disable_unprepare(g3d_clock);
+		deinit_mali_clock();
 		MALI_DEBUG_PRINT(3, ("disable_mali_clocks mali_clock %p g3d %p\n", mali_clock,g3d_clock));
 		atomic_set(&clk_active, 0);
 	}
