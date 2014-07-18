@@ -331,65 +331,31 @@ mali_bool mali_clk_get(struct platform_device *pdev)
 
 void mali_clk_put(mali_bool binc_mali_clock)
 {
+
 	if (mali_parent_clock)
-	{
 		clk_put(mali_parent_clock);
-		mali_parent_clock = NULL;
-	}
 
 	if (sclk_vpll_clock)
-	{
 		clk_put(sclk_vpll_clock);
-		sclk_vpll_clock = NULL;
-	}
 
 	if (binc_mali_clock && fout_vpll_clock)
-	{
 		clk_put(fout_vpll_clock);
-		fout_vpll_clock = NULL;
-	}
 
 	if (mpll_clock)
-	{
 		clk_put(mpll_clock);
-		mpll_clock = NULL;
-	}
 
 	if (mali_mout0_clock)
-	{
 		clk_put(mali_mout0_clock);
-		mali_mout0_clock = NULL;
-	}
 
 	if (mali_mout_clock)
-	{
 		clk_put(mali_mout_clock);
-		mali_mout_clock = NULL;
-	}
 
 	if (vpll_src_clock)
-	{
 		clk_put(vpll_src_clock);
-		vpll_src_clock = NULL;
-	}
 
 	if (ext_xtal_clock)
-	{
 		clk_put(ext_xtal_clock);
-		ext_xtal_clock = NULL;
-	}
 
-	if (binc_mali_clock && mali_clock)
-	{
-		clk_put(mali_clock);
-		mali_clock = NULL;
-	}
-
-	if (binc_mali_clock && g3d_clock)
-	{
-		clk_put(g3d_clock);
-		g3d_clock = NULL;
-	}
 }
 
 void mali_dvfs_clk_set_rate(unsigned int clk, unsigned int mhz)
@@ -665,7 +631,6 @@ static mali_bool configure_mali_clocks(struct platform_device *pdev)
 	err = clk_set_parent(mali_mout_clock, mali_parent_clock);
 	if (err)
 		MALI_PRINT_ERROR(("mali_clock set parent to mali_parent_clock failed\n"));
-
 	if (!atomic_read(&clk_active)) {
 		if ((clk_prepare_enable(mali_clock)  < 0)
 				|| (clk_prepare_enable(g3d_clock)  < 0)) {
@@ -698,6 +663,9 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 		return _MALI_OSK_ERR_FAULT;
 
         ret = configure_mali_clocks(pdev);
+	/* The VPLL clock should not be clock-gated for it caused
+	 * hangs in S2R */
+	clk_prepare_enable(fout_vpll_clock);
 
 	if (ret != MALI_TRUE)
 		goto err_mali_clock;
@@ -754,8 +722,11 @@ static _mali_osk_errcode_t enable_mali_clocks(struct device *dev)
 {
 	int err;
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
-	err = clk_prepare_enable(mali_clock);
-	err = clk_prepare_enable(g3d_clock);
+	if (!atomic_read(&clk_active)) {
+		err = clk_prepare_enable(mali_clock);
+		err = clk_prepare_enable(g3d_clock);
+		atomic_set(&clk_active, 1);
+	}
 
 	MALI_DEBUG_PRINT(3,("enable_mali_clocks mali_clock %p error %d \n", mali_clock, err));
 	/*
@@ -797,7 +768,9 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 
 	if (atomic_read(&clk_active)) {
 		clk_disable_unprepare(mali_clock);
+		clk_put(mali_clock);
 		clk_disable_unprepare(g3d_clock);
+		clk_put(g3d_clock);
 		deinit_mali_clock();
 		MALI_DEBUG_PRINT(3, ("disable_mali_clocks mali_clock %p g3d %p\n", mali_clock,g3d_clock));
 		atomic_set(&clk_active, 0);
@@ -831,6 +804,7 @@ _mali_osk_errcode_t mali_platform_deinit(struct platform_device *pdev)
 {
 	mali_platform_power_mode_change(&pdev->dev, MALI_POWER_MODE_DEEP_SLEEP);
 	deinit_mali_clock();
+	clk_disable_unprepare(fout_vpll_clock);
 
 #ifdef CONFIG_MALI_DVFS
 	pm_qos_remove_request(&exynos_g3d_int_qos);
