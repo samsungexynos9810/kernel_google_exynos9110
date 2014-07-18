@@ -147,8 +147,10 @@ DEVICE_ATTR(mali_avlbl_freq, S_IRUGO,show_mali_freq_table, NULL);
 MODULE_PARM_DESC(mali_avlbl_freq, "Mali allowed frequencies");
 DEVICE_ATTR(time_in_state, S_IRUGO|S_IWUSR, show_time_in_state, set_time_in_state);
 MODULE_PARM_DESC(time_in_state, "Time-in-state of Mali DVFS");
+#ifdef CONFIG_REGULATOR
 DEVICE_ATTR(mali_gpu_vol, S_IRUGO, show_mali_gpu_vol, NULL);
 MODULE_PARM_DESC(mali_gpu_vol, "Mali Current Voltage");
+#endif
 #endif
 DEVICE_ATTR(dvfs_status, S_IRUGO, show_dvfs_status, NULL);
 MODULE_PARM_DESC(time_in_state, "Mali DVFS status in kernel");
@@ -702,12 +704,15 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 
 #ifdef CONFIG_MALI_DVFS
 #ifdef CONFIG_REGULATOR
+	if(g3d_regulator == NULL) {
 	g3d_regulator = regulator_get(NULL, "vdd_int");
 
 	if (IS_ERR(g3d_regulator)) {
 		MALI_PRINT(("MALI Error : failed to get vdd_int for g3d\n"));
 		ret = MALI_FALSE;
-		goto err_regulator;
+		regulator_put(g3d_regulator);
+		g3d_regulator = NULL;
+		return MALI_FALSE;
 	}
 
 	mali_gpu_vol = mali_runtime_resume.vol;
@@ -723,6 +728,7 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 #if defined(EXYNOS4_ASV_ENABLED) && defined(EXYNOS4_ABB_ENABLED)
 	exynos_set_abb(ID_G3D, get_match_abb(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT));
 #endif
+	}
 #endif
 #endif
 	mali_clk_put(MALI_FALSE);
@@ -730,10 +736,6 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 	return MALI_TRUE;
 
 #ifdef CONFIG_MALI_DVFS
-#ifdef CONFIG_REGULATOR
-err_regulator:
-	regulator_put(g3d_regulator);
-#endif
 #endif
 err_mali_clock:
 	return ret;
@@ -744,12 +746,6 @@ static mali_bool deinit_mali_clock(void)
 	if (mali_clock == 0 || g3d_clock == 0)
 		return MALI_TRUE;
 
-#ifdef CONFIG_REGULATOR
-	if (g3d_regulator) {
-		regulator_put(g3d_regulator);
-		g3d_regulator = NULL;
-	}
-#endif
 	mali_clk_put(MALI_TRUE);
 	return MALI_TRUE;
 }
@@ -843,6 +839,12 @@ _mali_osk_errcode_t mali_platform_deinit(struct platform_device *pdev)
 		_mali_osk_mem_unmapioregion(CLK_DIV_STAT_G3D, 0x20, clk_register_map);
 		clk_register_map = NULL;
 	}
+#ifdef CONFIG_REGULATOR
+	if (g3d_regulator) {
+		regulator_put(g3d_regulator);
+		g3d_regulator = NULL;
+	}
+#endif
 #endif
 	MALI_SUCCESS;
 }
@@ -907,14 +909,14 @@ ssize_t show_mali_freq_table(struct device *dev, struct device_attribute *attr, 
 	ret += snprintf(buf + ret, PAGE_SIZE - ret, "%s\n", mali_freq_table);
 	return ret;
 }
-
+#ifdef CONFIG_REGULATOR
 ssize_t show_mali_gpu_vol(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;
 	ret += snprintf(buf + ret, PAGE_SIZE - ret, "%d\n", regulator_get_voltage(g3d_regulator));
 	return ret;
 }
-
+#endif
 ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	ssize_t ret = 0;

@@ -57,7 +57,9 @@ void mali_regulator_set_voltage(int vol_level);
 ssize_t show_mali_freq_table(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t show_time_in_state(struct device *dev, struct device_attribute *attr, char *buf);
 ssize_t set_time_in_state(struct device *dev, struct device_attribute *attr, const char *buf, size_t count);
+#ifdef CONFIG_REGULATOR
 ssize_t show_mali_gpu_vol(struct device *dev, struct device_attribute *attr, char *buf);
+#endif
 #endif
 
 /** @brief Platform specific setup and initialisation of MALI
