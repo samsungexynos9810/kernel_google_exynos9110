@@ -2,6 +2,7 @@
 #ifndef __FIMD_FB_H__
 #define __FIMD_FB_H__
 #include <linux/types.h>
+#include <linux/regulator/consumer.h>
 /* S3C_FB_MAX_WIN
  * Set to the maximum number of windows that any of the supported hardware
  * can use. Since the platform data uses this for an array size, having it
@@ -229,6 +230,11 @@ struct s3c_reg_data {
 };
 #endif
 
+static const char * const lcd_supply_names[] = {
+	"lcd-3.0",
+	"lcd-1.8",
+};
+
 /**
  * struct s3c_fb_win - per window private data for each framebuffer.
  * @windata: The platform data supplied for the window configuration.
@@ -314,6 +320,7 @@ struct s3c_fb {
 	struct clk              *lcd_clk;
 	struct clk              *axi_disp1;
 	void __iomem		*regs;
+	struct regulator_bulk_data supplies[ARRAY_SIZE(lcd_supply_names)];
 	struct s3c_fb_variant	 variant;
 
 	bool			output_on;

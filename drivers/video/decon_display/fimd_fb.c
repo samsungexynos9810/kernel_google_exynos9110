@@ -3122,6 +3122,14 @@ int create_decon_display_controller(struct platform_device *pdev)
 	sfb->timeline_max = 1;
 	/* XXX need to cleanup on errors */
 #endif
+	for (i = 0; i < ARRAY_SIZE(sfb->supplies); i++)
+		sfb->supplies[i].supply = lcd_supply_names[i];
+	ret = devm_regulator_bulk_get(sfb->dev, ARRAY_SIZE(sfb->supplies),
+                                 sfb->supplies);
+	if (ret) {
+		dev_err(sfb->dev, "failed to request supplies for lcd: %d\n", ret);
+	}
+
 	pm_runtime_enable(sfb->dev);
 
 	sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
@@ -3778,6 +3786,11 @@ int s3c_fb_runtime_suspend(struct device *dev)
 	ret = s3c_fb_decon_stop(sfb);
 
 	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
+	ret = regulator_bulk_disable(ARRAY_SIZE(sfb->supplies),
+                                    sfb->supplies);
+	if (ret) {
+		dev_err(sfb->dev, "failed to disable supplies for lcd: %d\n", ret);
+	}
 
 	return 0;
 }
@@ -3787,7 +3800,7 @@ int s3c_fb_runtime_resume(struct device *dev)
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 	struct s3c_fb_platdata *pd;
-	u32 reg;
+	u32 reg, ret;
 
 	dispdrv = get_display_driver();
 	if (!dispdrv) {
@@ -3800,6 +3813,12 @@ int s3c_fb_runtime_resume(struct device *dev)
 		return 0;
 	}
 	pd = sfb->pdata;
+	ret = regulator_bulk_enable(ARRAY_SIZE(sfb->supplies),
+                                    sfb->supplies);
+	if (ret) {
+		dev_err(sfb->dev, "failed to enable supplies for lcd: %d\n", ret);
+	}
+
 
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
 
