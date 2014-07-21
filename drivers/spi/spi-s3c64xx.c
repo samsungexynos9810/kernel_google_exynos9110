@@ -1570,6 +1570,9 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 	list_add_tail(&sci->node, &drvdata_list);
 #endif
 
+	clk_disable_unprepare(sdd->src_clk);
+	clk_disable_unprepare(sdd->clk);
+
 	dev_dbg(&pdev->dev, "Samsung SoC SPI Driver loaded for Bus SPI-%d with %d Slaves attached\n",
 					sdd->port_id, master->num_chipselect);
 	dev_dbg(&pdev->dev, "\tIOmem=[0x%x-0x%x]\tDMA=[Rx-%d, Tx-%d]\n",
