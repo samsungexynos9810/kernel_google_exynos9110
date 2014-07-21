@@ -1619,7 +1619,68 @@ int exynos3250_fimc_is_clk_on(struct platform_device *pdev)
 
 int exynos3250_fimc_is_clk_off(struct platform_device *pdev)
 {
-	pr_debug("%s\n", __func__);
+	struct clk *mcuisp = NULL;
+	struct clk *csis0 = NULL;
+	struct clk *csis1 = NULL;
+	struct clk *lite0 = NULL;
+	struct clk *lite1 = NULL;
+	struct clk *sclk_cam1 = NULL;
+
+	pr_info("%s\n",__func__);
+
+	mcuisp = clk_get(&pdev->dev, "mcuisp");
+	if (IS_ERR(mcuisp)) {
+		pr_err("%s : clk_get(mcuisp) failed\n", __func__);
+		return PTR_ERR(mcuisp);
+	}
+
+	clk_disable_unprepare(mcuisp);
+	clk_put(mcuisp);
+
+	csis0 = clk_get(&pdev->dev, "csis0");
+	if (IS_ERR(csis0)) {
+		pr_err("%s : clk_get(csis0) failed\n", __func__);
+		return PTR_ERR(csis0);
+	}
+
+	clk_disable_unprepare(csis0);
+	clk_put(csis0);
+
+	csis1 = clk_get(&pdev->dev, "csis1");
+	if (IS_ERR(csis1)) {
+		pr_err("%s : clk_get(csis1) failed\n", __func__);
+		return PTR_ERR(csis1);
+	}
+
+	clk_disable_unprepare(csis1);
+	clk_put(csis1);
+
+	lite0 = clk_get(&pdev->dev, "lite0");
+	if (IS_ERR(lite0)) {
+		pr_err("%s : clk_get(lite0) failed\n", __func__);
+		return PTR_ERR(lite0);
+	}
+
+	clk_disable_unprepare(lite0);
+	clk_put(lite0);
+
+	lite1 = clk_get(&pdev->dev, "lite1");
+	if (IS_ERR(lite1)) {
+		pr_err("%s : clk_get(lite1) failed\n", __func__);
+		return PTR_ERR(lite1);
+	}
+
+	clk_disable_unprepare(lite1);
+	clk_put(lite1);
+
+	sclk_cam1 = clk_get(&pdev->dev, "sclk_cam1");
+	if (IS_ERR(sclk_cam1)) {
+		pr_err("%s : clk_get(sclk_cam1) failed\n", __func__);
+		return PTR_ERR(sclk_cam1);
+	}
+	clk_disable_unprepare(sclk_cam1);
+	clk_put(sclk_cam1);
+
 	return 0;
 }
 
