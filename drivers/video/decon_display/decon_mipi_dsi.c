@@ -39,6 +39,7 @@
 #include <plat/cpu.h>
 
 #include <mach/map.h>
+#include <mach/exynos-mipiphy.h>
 
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi_lowlevel.h"
@@ -188,17 +189,7 @@ int s5p_mipi_dsi_hibernation_power_off(struct display_driver *dispdrv);
 
 int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 {
-	unsigned int reg;
-
-	reg = readl(S5P_MIPI_DPHY_CONTROL(0)) & ~(1 << 0);
-	reg |= (enable << 0);
-	writel(reg, S5P_MIPI_DPHY_CONTROL(0));
-
-	reg = readl(S5P_MIPI_DPHY_CONTROL(0)) & ~(1 << 2);
-	reg |= (enable << 2);
-	writel(reg, S5P_MIPI_DPHY_CONTROL(0));
-
-	return 0;
+	return exynos_dsim_phy_enable(0, enable);
 }
 
 static void s5p_mipi_dsi_long_data_wr(struct mipi_dsim_device *dsim, unsigned int data0, unsigned int data1)
