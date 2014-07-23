@@ -562,7 +562,7 @@ static struct attribute_group devfreq_mif_attr_group = {
 };
 
 static struct exynos_devfreq_platdata default_qos_mif_pd = {
-	.default_qos = 200000,
+	.default_qos = 50000,
 };
 
 static int exynos3250_mif_reboot_notifier_call(struct notifier_block *this,

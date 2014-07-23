@@ -528,7 +528,7 @@ static struct attribute_group devfreq_int_attr_group = {
 };
 
 static struct exynos_devfreq_platdata default_qos_int_pd = {
-	.default_qos = 133000,
+	.default_qos = 50000,
 };
 
 static int exynos3250_int_reboot_notifier_call(struct notifier_block *this,
