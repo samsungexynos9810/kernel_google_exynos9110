@@ -558,79 +558,29 @@
 
 	fimc_is@14000000 {
 		fimc_is_dvfs {
-			default_int = <667000>; /* L0 */
-			default_cam = <666000>; /* L0 */
-			default_mif = <800000>; /* L0 */
+			default_int = <134000>; /* L1 */
+			default_cam = <320000>; /* L0 */
+			default_mif = <400000>; /* L0 */
 			default_i2c = <0>;
 
-			front_preview_int = <667000>; /* L0 */
-			front_preview_cam = <222000>; /* L4 */
-			front_preview_mif = <800000>; /* L0 */
-			front_preview_i2c = <0>;
-
-			front_capture_int = <667000>; /* L0 */
-			front_capture_cam = <222000>; /* L4 */
-			front_capture_mif = <800000>; /* L0 */
-			front_capture_i2c = <0>;
-
-			front_camcording_int = <667000>; /* L0 */
-			front_camcording_cam = <222000>; /* L4 */
-			front_camcording_mif = <800000>; /* L0 */
-			front_camcording_i2c = <0>;
-
-			front_vt1_int = <667000>; /* L0 */
-			front_vt1_cam = <222000>; /* L4 */
-			front_vt1_mif = <800000>; /* L0 */
-			front_vt1_i2c = <0>;
-
-			front_vt2_int = <667000>; /* L0 */
-			front_vt2_cam = <222000>; /* L4 */
-			front_vt2_mif = <800000>; /* L0 */
-			front_vt2_i2c = <0>;
-
-			rear_preview_int = <667000>; /* L0 */
-			rear_preview_cam = <333000>; /* L3 */
-			rear_preview_mif = <800000>; /* L0 */
+			rear_preview_int = <134000>; /* L1 */
+			rear_preview_cam = <320000>; /* L0 */
+			rear_preview_mif = <400000>; /* L0 */
 			rear_preview_i2c = <0>;
 
-			rear_capture_int = <667000>; /* L0 */
-			rear_capture_cam = <444000>; /* L2 */
-			rear_capture_mif = <800000>; /* L0 */
+			rear_capture_int = <134000>; /* L1 */
+			rear_capture_cam = <320000>; /* L0 */
+			rear_capture_mif = <400000>; /* L0 */
 			rear_capture_i2c = <0>;
 
-			rear_camcording_int = <667000>; /* L0 */
-			rear_camcording_cam = <333000>; /* L3 */
-			rear_camcording_mif = <800000>; /* L0 */
+			rear_camcording_int = <134000>; /* L1 */
+			rear_camcording_cam = <320000>; /* L0 */
+			rear_camcording_mif = <400000>; /* L0 */
 			rear_camcording_i2c = <0>;
 
-			dual_preview_int = <667000>; /* L0 */
-			dual_preview_cam = <555000>; /* L1 */
-			dual_preview_mif = <800000>; /* L0 */
-			dual_preview_i2c = <0>;
-
-			dual_capture_int = <667000>; /* L0 */
-			dual_capture_cam = <666000>; /* L0 */
-			dual_capture_mif = <800000>; /* L0 */
-			dual_capture_i2c = <0>;
-
-			dual_camcording_int = <667000>; /* L0 */
-			dual_camcording_cam = <555000>; /* L1 */
-			dual_camcording_mif = <800000>; /* L0 */
-			dual_camcording_i2c = <0>;
-
-			high_speed_fps_int = <667000>; /* L0 */
-			high_speed_fps_cam = <666000>; /* L0 */
-			high_speed_fps_mif = <800000>; /* L0 */
-			high_speed_fps_i2c = <0>;
-
-			dis_enable_int = <667000>; /* L0 */
-			dis_enable_cam = <666000>; /* L0 */
-			dis_enable_mif = <800000>; /* L0 */
-			dis_enable_i2c = <0>;
-
-			max_int = <667000>; /* L0 */
-			max_cam = <666000>; /* L0 */
-			max_mif = <800000>; /* L0 */
+			max_int = <134000>; /* L1 */
+			max_cam = <320000>; /* L0 */
+			max_mif = <400000>; /* L0 */
 			max_i2c = <0>;
 		};
 	};
