@@ -1407,7 +1407,6 @@ int exynos3250_fimc_is_cfg_clk(struct platform_device *pdev)
 
 	clk_set_parent(dout_aclk_266, mout_aclk_266_0);
 	clk_set_parent(aclk_266, dout_aclk_266);
-	clk_set_rate(dout_aclk_266, 100 * 1000000);
 
 	isp_266 = clk_get_rate(aclk_266);
 	pr_info("isp_266 : %ld\n", isp_266);
