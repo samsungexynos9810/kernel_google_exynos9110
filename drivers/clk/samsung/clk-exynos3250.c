@@ -537,7 +537,7 @@ struct samsung_gate_clock exynos3250_unused_gate_clks[] __initdata = {
 	CGATE(0, "qe_scalerc",	NULL,	GATE_IP_ISP1,	19, 0, 0),
 	CGATE(0, "spi1_isp",	NULL,	GATE_IP_ISP1,	13, 0, 0),
 	CGATE(0, "ASYNCAXIM",	NULL,	GATE_IP_ISP1,	0, 0, 0),
-	CGATE(0, "spi1_isp",	NULL,	EXYNOS3_CLKGATE_IP_ISP,	2, 0, 0),
+	CGATE(0, "ip_spi1_isp",	NULL,	EXYNOS3_CLKGATE_IP_ISP,	2, 0, 0),
 	CGATE(0, "monocnt",	NULL,	GATE_IP_PERIR, 22, 0, 0),
 	CGATE(0, "provisionkey2",NULL,	GATE_IP_PERIR, 20, 0, 0),
 	CGATE(0, "provisionkey1",NULL,	GATE_IP_PERIR, 19, 0, 0),
