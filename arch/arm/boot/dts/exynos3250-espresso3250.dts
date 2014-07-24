@@ -161,7 +161,6 @@
 					regulator-name = "vt_cam_sensor_a2v8";
 					regulator-min-microvolt = <2800000>;
 					regulator-max-microvolt = <2800000>;
-					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
 
@@ -169,7 +168,6 @@
 					regulator-name = "vdd_tsp_3.3";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
 
@@ -177,7 +175,6 @@
 					regulator-name = "vdd_lcd_3.3";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
 
@@ -185,21 +182,18 @@
 					regulator-name = "vcc_peri_3.3";
 					regulator-min-microvolt = <3300000>;
 					regulator-max-microvolt = <3300000>;
-					regulator-ramp-delay = <12000>;
 				};
 
 				ldo19_reg: LDO19 {
 					regulator-name = "vdd_tsp_1.8";
 					regulator-min-microvolt = <800000>;
 					regulator-max-microvolt = <2375000>;
-					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
 				ldo20_reg: LDO20 {
 					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <800000>;
 					regulator-max-microvolt = <2375000>;
-					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
 
@@ -207,7 +201,6 @@
 					regulator-name = "vt_cam_core_1v8";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <1800000>;
-					regulator-ramp-delay = <12000>;
 					regulator-initial-mode = <1>;
 				};
 
@@ -229,7 +222,6 @@
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <1800000>;
 					regulator-always-on;
-					regulator-ramp-delay = <12000>;
 				};
 			};
 		};
