@@ -2584,7 +2584,6 @@ static int s3c_fb_alloc_memory(struct s3c_fb *sfb,
 #if defined(CONFIG_ION_EXYNOS)
 	struct ion_handle *handle;
 	struct dma_buf *buf;
-	void *vaddr;
 	unsigned int ret;
 #endif
 	dev_dbg(sfb->dev, "allocating memory for display\n");
@@ -2618,10 +2617,6 @@ static int s3c_fb_alloc_memory(struct s3c_fb *sfb,
 		dev_err(sfb->dev, "ion_share_dma_buf() failed\n");
 		goto err_share_dma_buf;
 	}
-
-	vaddr = ion_map_kernel(sfb->fb_ion_client, handle);
-
-	fbi->screen_base = vaddr;
 
 	ret = s3c_fb_map_ion_handle(sfb, &win->dma_buf_data, handle, buf, win->index);
 	if (!ret)
