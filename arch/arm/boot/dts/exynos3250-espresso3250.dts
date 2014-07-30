@@ -274,7 +274,6 @@
 		fixed_volt;
 		only_once_tune;
 		extra_tuning;
-		supports-hs200-1-8v-mode;
 		supports-highspeed;
 		enable-cache-control;
 		sw_data_timeout;
@@ -285,12 +284,9 @@
 		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
 		samsung,dw-mshc-hs200-timing = <3 0 2 0>;
 		samsung,dw-mshc-ddr200-timing = <1 1 2 0>;
-		clk_pin = "gpk0-0";
-		clk_addr = "11000000.pinctrl";
-		clk_val = <0x3>;
 		num-ref-clks = <8>;
 		sd-cdn = <&gpk0 2 0x1>;
-		ciu_clkin = <50 50 50 100 100 100 100 200>;
+		ciu_clkin = <25 50 50 100 100 100 100 200>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_bus1 &sd0_bus4 &sd0_bus8>;
 
@@ -311,9 +307,6 @@
 		samsung,dw-mshc-ciu-div = <3>;
 		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
 		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
-		clk_pin = "gpk2-0";
-		clk_addr = "11000000.pinctrl";
-		clk_val = <0x3>;
 		num-ref-clks = <8>;
 		ciu_clkin = <25 50 50 100 200 100 200 200>;
 		pinctrl-names = "default";
