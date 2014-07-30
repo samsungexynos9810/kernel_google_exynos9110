@@ -289,6 +289,7 @@
 		clk_addr = "11000000.pinctrl";
 		clk_val = <0x3>;
 		num-ref-clks = <8>;
+		sd-cdn = <&gpk0 2 0x1>;
 		ciu_clkin = <50 50 50 100 100 100 100 200>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_bus1 &sd0_bus4 &sd0_bus8>;
