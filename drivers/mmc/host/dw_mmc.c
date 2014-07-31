@@ -1610,21 +1610,23 @@ static int dw_mci_3_3v_signal_voltage_switch(struct dw_mci_slot *slot)
 	u32 reg;
 	int ret = 0;
 
-	if (host->vqmmc) {
-		ret = regulator_set_voltage(host->vqmmc, 3300000, 3300000);
-		if (ret) {
-			dev_warn(host->dev, "Switching to 3.3V signalling "
-					"voltage failed\n");
-			return -EIO;
+	if (!(host->quirks & DW_MMC_QUIRK_FIXED_VOLTAGE)) {
+		if (host->vqmmc) {
+			ret = regulator_set_voltage(host->vqmmc, 3300000, 3300000);
+			if (ret) {
+				dev_warn(host->dev, "Switching to 3.3V signalling "
+						"voltage failed\n");
+				return -EIO;
+			}
+		} else {
+			reg = mci_readl(slot->host, UHS_REG);
+			reg &= ~(0x1 << slot->id);
+			mci_writel(slot->host, UHS_REG, reg);
 		}
-	} else {
-		reg = mci_readl(slot->host, UHS_REG);
-		reg &= ~(0x1 << slot->id);
-		mci_writel(slot->host, UHS_REG, reg);
-	}
 
-	/* Wait for 5ms */
-	usleep_range(5000, 5500);
+		/* Wait for 10ms */
+		usleep_range(5000, 5500);
+	}
 
 	return ret;
 }
