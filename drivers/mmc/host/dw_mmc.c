@@ -1623,8 +1623,8 @@ static int dw_mci_3_3v_signal_voltage_switch(struct dw_mci_slot *slot)
 		mci_writel(slot->host, UHS_REG, reg);
 	}
 
-	/* Wait for 5ms */
-	usleep_range(5000, 5500);
+	/* Wait for 10ms */
+	usleep_range(7000, 10000);
 
 	return ret;
 }
@@ -1673,8 +1673,8 @@ out:
 		mci_writel(slot->host, UHS_REG, reg);
 	}
 
-	/* Wait for 5ms */
-	usleep_range(5000, 5500);
+	/* Wait for 10ms */
+	usleep_range(7000, 10000);
 
 	dw_mci_ciu_clk_en(host, false);
 	reg = mci_readl(host, CLKENA);
