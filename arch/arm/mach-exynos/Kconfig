@@ -219,7 +219,7 @@ config EXYNOS_SNAPSHOT_REG
 
 config EXYNOS_SNAPSHOT_HOOK_LOGGER
 	bool "Enable hooking android platform log for ramdump"
-	depends on EXYNOS_SNAPSHOT
+	depends on EXYNOS_SNAPSHOT && ANDROID_LOGGER
 	default y
 
 config EXYNOS_SNAPSHOT_PANIC_REBOOT
