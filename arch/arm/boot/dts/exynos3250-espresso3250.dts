@@ -375,7 +375,7 @@
 			pinctrl-names = "default";
 			pinctrl-0 = <&chg_irq>;
 			dev_name = "bq24160";
-			support_boot_charging = <0>;
+			support_boot_charging = <1>;
 		};
 	};
 

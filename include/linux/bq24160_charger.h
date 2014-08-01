@@ -8,7 +8,7 @@ struct bq24160_platform_data {
 	char **supplied_to;
 	size_t num_supplicants;
 
-	unsigned char support_boot_charging;
+	unsigned int support_boot_charging;
 	void (*notify_vbus_drop)(void);
 	int (*gpio_configure)(int);
 };

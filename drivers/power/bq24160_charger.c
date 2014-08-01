@@ -1903,11 +1903,10 @@ static struct bq24160_platform_data *bq24160_parse_dt(struct device *dev)
 		return ERR_PTR(-EINVAL);
 	}
 
-	if (of_property_read_u8(np, "support_boot_charging", &pdata->support_boot_charging)) {
+	if (of_property_read_u32(np, "support_boot_charging", &pdata->support_boot_charging)) {
 		dev_err(dev, "failed to get support_boot_charging\n");
 		return ERR_PTR(-EINVAL);
 	}
-
 	return pdata;
 }
 #endif
@@ -2013,7 +2012,6 @@ static int bq24160_probe(struct i2c_client *client,
 
 	bq24160_check_status(bd);
 	bq24160_update_power_supply(bd);
-	pdata->support_boot_charging = 1;
 
 	if (pdata && pdata->support_boot_charging &&
 	    (STAT_CHARGING_FROM_USB == bd->cached_status.stat ||
