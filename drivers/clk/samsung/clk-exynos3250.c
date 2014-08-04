@@ -159,7 +159,7 @@ static struct samsung_fixed_factor_clock fixed_factor_clks[] __initdata = {
 #define CMUX_A(_id, cname, pnames, o, s, w, a) \
 	MUX_A(_id, cname, pnames, (unsigned long)o, s, w, a)
 
-struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
+static struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_MPLL_USER_L, "mout_mpll_user_l", mout_mpll_user_p,
 			SRC_LEFTBUS, 4, 1),
 	CMUX(CLK_MOUT_GDL, "mout_gdl", mout_gdl_p, SRC_LEFTBUS, 0, 1),
@@ -238,7 +238,7 @@ struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 #define CDIV_F(_id, cname, pname, o, s, w, f, df) \
 			DIV_F(_id, cname, pname, (unsigned long)o, s, w, f, df)
 
-struct samsung_div_clock exynos3250_div_clks[] __initdata = {
+static struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_GPL, "dout_gpl", "dout_gdl", DIV_LEFTBUS, 4, 3),
 	CDIV(CLK_DIV_GDL, "dout_gdl", "mout_gdl", DIV_LEFTBUS, 0, 4),
 
@@ -316,7 +316,7 @@ struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 #define CGATE(_id, cname, pname, o, b, f, gf) \
 	GATE(_id, cname, pname, (unsigned long)o, b, f, gf)
 
-struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
+static struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 	CGATE(CLK_SCLK_UART3, "sclk_uart3", "dout_uart3",
 			GATE_SCLK_PERIL, 3, CLK_SET_RATE_PARENT, 0),
 	CGATE(CLK_SCLK_UART2, "sclk_uart2", "dout_uart2",
@@ -523,7 +523,7 @@ struct samsung_gate_clock exynos3250_gate_clks[] __initdata = {
 			GATE_IP_ISP1, 4, 0, 0),
 };
 
-struct samsung_gate_clock exynos3250_unused_gate_clks[] __initdata = {
+static struct samsung_gate_clock exynos3250_unused_gate_clks[] __initdata = {
 	CGATE(0, "ppmuacp", 	NULL,	GATE_IP_ACP0,	16, 0, 0),
 	CGATE(0, "id_remapper",	NULL,	GATE_IP_ACP0,	13, 0, 0),
 	CGATE(0, "wdt_isp",	NULL,	GATE_IP_ISP0,	30, 0, 0),
