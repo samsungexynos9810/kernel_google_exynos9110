@@ -217,7 +217,10 @@ static void alloc_init_pmd(pud_t *pud, unsigned long addr, unsigned long end,
 		if (((addr | next | phys) & ~SECTION_MASK) == 0 &&
 		      block_mappings_allowed(pgtable_alloc)) {
 			pmd_t old_pmd =*pmd;
-			pmd_set_huge(pmd, phys, prot);
+			set_pmd(pmd, __pmd(phys |
+					   pgprot_val(mk_sect_prot(prot))));
+			if (iotable_on == 1)
+				set_pmd(pmd, __pmd(phys | PROT_SECT_NORMAL_NC));
 			/*
 			 * Check for previous table entries created during
 			 * boot (__create_page_tables) and flush them.
