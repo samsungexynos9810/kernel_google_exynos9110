@@ -1180,7 +1180,6 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
 }
 
 static void s3c_hsotg_enqueue_setup(struct s3c_hsotg *hsotg);
-static void s3c_hsotg_disconnect(struct s3c_hsotg *hsotg);
 
 /**
  * s3c_hsotg_stall_ep0 - stall ep0
@@ -1257,7 +1256,6 @@ static void s3c_hsotg_process_control(struct s3c_hsotg *hsotg,
 	if ((ctrl->bRequestType & USB_TYPE_MASK) == USB_TYPE_STANDARD) {
 		switch (ctrl->bRequest) {
 		case USB_REQ_SET_ADDRESS:
-			s3c_hsotg_disconnect(hsotg);
 			dcfg = readl(hsotg->regs + DCFG);
 			dcfg &= ~DCFG_DevAddr_MASK;
 			dcfg |= ctrl->wValue << DCFG_DevAddr_SHIFT;
@@ -2505,8 +2503,10 @@ irq_retry:
 				s3c_hsotg_core_init(hsotg);
 				hsotg->last_rst = jiffies;
 			}
-		} else
+		} else {
+			s3c_hsotg_disconnect(hsotg);
 			hsotg->phy->last_event = USB_EVENT_NONE;
+		}
 	}
 
 	/* check both FIFOs */
