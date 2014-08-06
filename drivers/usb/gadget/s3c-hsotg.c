@@ -1264,6 +1264,7 @@ static void s3c_hsotg_process_control(struct s3c_hsotg *hsotg,
 			dev_info(hsotg->dev, "new address %d\n", ctrl->wValue);
 
 			ret = s3c_hsotg_send_reply(hsotg, ep0, NULL, 0);
+			mdelay(50);
 			return;
 
 		case USB_REQ_GET_STATUS:
