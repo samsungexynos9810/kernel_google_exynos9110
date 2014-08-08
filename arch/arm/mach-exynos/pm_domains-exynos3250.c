@@ -260,7 +260,7 @@ static struct exynos3_pd_reg_state exynos3_isp_sclks_reg[] = {
 		.set_val = ((0x7F << 15)|(0x3 << 12)|(0x3 << 3)|(0x1))},
 	{.reg = EXYNOS3_CLKGATE_IP_ISP0,
 		.set_val = ((0x3 << 30)|(0x1 << 28)|(0xF << 23)|(0x3 << 20)|
-			(0x3FFFF))},
+			(0x7FFFF))},
 	{.reg = EXYNOS3_CLKGATE_IP_ISP1,
 		.set_val = ((0x7F << 15)|(0x3 << 12)|(0x1 << 4)|(0x1))},
 	{.reg = EXYNOS3_CLKGATE_SCLK_ISP,
