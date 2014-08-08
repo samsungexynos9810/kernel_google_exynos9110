@@ -1091,7 +1091,7 @@ static int exynos_pm_notifier(struct notifier_block *notifier,
 	case PM_SUSPEND_PREPARE:
 		is_suspending = true;
 		exynos_tmu_call_notifier(TMU_COLD, 0);
-		exynos_gpu_call_notifier(TMU_COLD);
+		exynos_gpu_call_notifier(GPU_COLD);
 		break;
 	case PM_POST_SUSPEND:
 		is_suspending = false;
