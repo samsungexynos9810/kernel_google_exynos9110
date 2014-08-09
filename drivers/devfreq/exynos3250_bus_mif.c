@@ -352,13 +352,12 @@ static int exynos3250_devfreq_mif_set_freq(struct devfreq_data_mif *data,
 		if(target_idx == LV0)
 			exynos3250_devfreq_pass_sclk_dphy(data, true);
 	} else {
-		exynos3250_devfreq_mif_timing_parameter(data, target_idx);
-		exynos3250_devfreq_mif_change_timing_set(data);
-
 		if(old_idx == LV0)
 			exynos3250_devfreq_pass_sclk_dphy(data, false);
 
 		exynos3250_mif_set_div(target_idx);
+		exynos3250_devfreq_mif_timing_parameter(data, target_idx);
+		exynos3250_devfreq_mif_change_timing_set(data);
 		exynos3250_devfreq_set_dll_voltage(data, target_idx, 0);
 	}
 
