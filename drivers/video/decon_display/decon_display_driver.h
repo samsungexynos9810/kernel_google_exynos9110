@@ -157,7 +157,7 @@ struct display_pm_status {
 };
 
 #define MAX_CLK_GATING_COUNT 0
-#define MAX_PWR_GATING_COUNT 3
+#define MAX_PWR_GATING_COUNT 5
 #define MAX_HOTPLUG_DELAY_MSEC 100
 
 /* display_driver - Abstraction for display driver controlling

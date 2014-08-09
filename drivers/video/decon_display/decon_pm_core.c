@@ -527,6 +527,7 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 	}
 
 	pm_runtime_get_sync(dispdrv->display_driver);
+	sfb->power_state = POWER_HIBER_ON;
 	__display_hibernation_power_on(dispdrv);
 	sfb->power_state = POWER_ON;
 

@@ -22,6 +22,7 @@ enum s3c_fb_pm_status {
 	POWER_ON = 0,
 	POWER_DOWN = 1,
 	POWER_HIBER_DOWN = 2,
+	POWER_HIBER_ON = 3,
 };
 
 enum s3c_fb_psr_mode {

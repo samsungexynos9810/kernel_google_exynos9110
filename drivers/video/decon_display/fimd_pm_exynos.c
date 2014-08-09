@@ -323,7 +323,7 @@ bool check_camera_is_running(void)
 bool get_display_power_status(void)
 {
 	/* DISP_STATUS */
-	if (readl(S5P_VA_PMU + 0x3C840) & 0x1)
+	if (readl(S5P_VA_PMU + 0x3C84) & 0x1)
 		return true;
 	else
 		return false;
@@ -331,9 +331,10 @@ bool get_display_power_status(void)
 
 int get_display_line_count(struct display_driver *dispdrv)
 {
-	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
-
-	return (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT);
+/*need to find proper fix or reason for this*/
+//	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
+//	return (readl(sfb->regs + VIDCON1) >> VIDCON1_LINECNT_SHIFT);
+	return 0;
 }
 
 void set_default_hibernation_mode(struct display_driver *dispdrv)

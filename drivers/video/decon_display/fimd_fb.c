@@ -1158,9 +1158,6 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 
         s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-        s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
-#endif
 	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
 }
@@ -1219,12 +1216,12 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 
-	spin_unlock(&sfb->slock);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
 	if (sfb->power_state == POWER_ON)
 		disp_pm_te_triggered(get_display_driver());
 #endif
+	spin_unlock(&sfb->slock);
 	return IRQ_HANDLED;
 }
 
@@ -3491,6 +3488,9 @@ static int s3c_fb_decon_stop(struct s3c_fb *sfb)
 	if (!sfb->output_on) {
 		return 0;
 	}
+#ifdef CONFIG_ION_EXYNOS
+        flush_kthread_worker(&sfb->update_regs_worker);
+#endif
 
 #ifdef CONFIG_FB_I80_HW_TRIGGER
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
@@ -3752,7 +3752,6 @@ int s3c_fb_resume(struct device *dev)
 		0x29, 0);
 
 	msleep(12);
-	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
 	reg = readl(sfb->regs + VIDCON0);
 	reg |= VIDCON0_ENVID | VIDCON0_ENVID_F;
@@ -3781,12 +3780,14 @@ int s3c_fb_runtime_suspend(struct device *dev)
 	ret = s3c_fb_decon_stop(sfb);
 
 	GET_DISPCTL_OPS(dispdrv).disable_display_decon_clocks(sfb->dev);
-	ret = regulator_bulk_disable(ARRAY_SIZE(sfb->supplies),
-                                    sfb->supplies);
-	if (ret) {
-		dev_err(sfb->dev, "failed to disable supplies for lcd: %d\n", ret);
-	}
 
+	if (sfb->power_state != POWER_HIBER_DOWN) {
+		ret = regulator_bulk_disable(ARRAY_SIZE(sfb->supplies),
+                                  sfb->supplies);
+		if (ret) {
+			dev_err(sfb->dev, "failed to disable supplies for lcd: %d\n", ret);
+		}
+	}
 	return 0;
 }
 
@@ -3808,13 +3809,13 @@ int s3c_fb_runtime_resume(struct device *dev)
 		return 0;
 	}
 	pd = sfb->pdata;
-	ret = regulator_bulk_enable(ARRAY_SIZE(sfb->supplies),
+	if (sfb->power_state != POWER_HIBER_ON) {
+		ret = regulator_bulk_enable(ARRAY_SIZE(sfb->supplies),
                                     sfb->supplies);
-	if (ret) {
-		dev_err(sfb->dev, "failed to enable supplies for lcd: %d\n", ret);
+		if (ret) {
+			dev_err(sfb->dev, "failed to enable supplies for lcd: %d\n", ret);
+		}
 	}
-
-
 	GET_DISPCTL_OPS(dispdrv).enable_display_decon_clocks(dev);
 
 
@@ -3850,6 +3851,10 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 		ret = -EBUSY;
 		goto err;
 	}
+#if defined(CONFIG_FB_SMIES)
+                 if (sfb->smies->smies_on)
+                        sfb->smies->smies_on(sfb->smies->dev);
+#endif
 
 	writel(pd->vidcon1, sfb->regs +  sfb->variant.vidcon1);
 	writel(REG_CLKGATE_MODE_NON_CLOCK_GATE,
@@ -3859,7 +3864,7 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 	if (sfb->variant.has_fixvclk) {
 		reg = readl(sfb->regs +  sfb->variant.vidcon1);
 		reg &= ~VIDCON1_VCLK_MASK;
-		reg |= VIDCON1_VCLK_MASK;
+		reg |= VIDCON1_VCLK_HOLD;
 		writel(reg, sfb->regs +  sfb->variant.vidcon1);
 	}
 
@@ -3870,6 +3875,9 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 	/* use platform specified window as the basis for the lcd timings */
 	default_win = sfb->pdata->default_win;
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
+#if defined(CONFIG_FB_I80_COMMAND_MODE)
+        s3c_fb_config_i80(sfb, &pd->win[default_win]->win_mode);
+#endif
 
 #ifdef CONFIG_ION_EXYNOS
 	ret = iovmm_activate(sfb->dev);
@@ -3901,6 +3909,14 @@ int s3c_fb_hibernation_power_off(struct display_driver *dispdrv)
 	bts_scen_update(TYPE_LAYERS, 0);
 	exynos5_update_media_layers(TYPE_FIMD1, 0);
 	prev_overlap_cnt = 0;
+#endif
+#ifdef CONFIG_ION_EXYNOS
+        iovmm_deactivate(sfb->dev);
+#endif
+
+#if defined(CONFIG_FB_SMIES)
+                 if (sfb->smies->smies_off)
+                        sfb->smies->smies_off(sfb->smies->dev);
 #endif
 	mutex_unlock(&sfb->output_lock);
 
