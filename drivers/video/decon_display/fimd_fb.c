@@ -2250,7 +2250,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 	if (regs->bandwidth > FHD_MAX_BW_PER_WINDOW) {
-		pm_qos_update_request(&exynos_fimd_mif_qos, 400000);
+		pm_qos_update_request(&exynos_fimd_mif_qos, 200000);
 		pm_qos_update_request(&exynos_fimd_int_qos, 100000);
 		bts_set_bw(regs->bandwidth);
 	}
