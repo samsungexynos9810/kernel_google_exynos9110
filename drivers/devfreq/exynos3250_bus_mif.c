@@ -39,6 +39,7 @@
 #define MRSTATUS_THERMAL_LV_MASK	(0x7 << MRSTATUS_THERMAL_LV_SHIFT)
 
 static struct pm_qos_request exynos3250_mif_qos;
+static struct pm_qos_request exynos3250_boot_mif_qos;
 
 static LIST_HEAD(mif_dvfs_list);
 
@@ -751,6 +752,9 @@ static int exynos3250_devfreq_mif_probe(struct platform_device *pdev)
 		pdata = &default_qos_mif_pd;
 	/* Register notify */
 	pm_qos_add_request(&exynos3250_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+	pm_qos_add_request(&exynos3250_boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+	pm_qos_update_request_timeout(&exynos3250_boot_mif_qos,
+		exynos3250_mif_devfreq_profile.initial_freq, 25000 * 1000);
 
 	register_reboot_notifier(&exynos3250_mif_reboot_notifier);
 
