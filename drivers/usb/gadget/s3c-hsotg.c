@@ -2487,12 +2487,20 @@ irq_retry:
 	if (gintsts & GINTSTS_USBRst) {
 
 		u32 usb_status = readl(hsotg->regs + GOTGCTL);
+		u32 dcfg = readl(hsotg->regs + DCFG);
 
 		dev_dbg(hsotg->dev, "%s: USBRst\n", __func__);
 		dev_dbg(hsotg->dev, "GNPTXSTS=%08x\n",
 			readl(hsotg->regs + GNPTXSTS));
 
 		writel(GINTSTS_USBRst, hsotg->regs + GINTSTS);
+
+		/* USBCV Chapter 9 needs after reset device should enter into
+		 * default state (address 0)
+		 */
+		dcfg &= ~DCFG_DevAddr_MASK;
+		dcfg |= 0 << DCFG_DevAddr_SHIFT;
+		writel(dcfg, hsotg->regs + DCFG);
 
 		if (usb_status & GOTGCTL_BSESVLD) {
 			if (time_after(jiffies, hsotg->last_rst +
