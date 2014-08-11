@@ -36,6 +36,7 @@
 
 static struct device *int_dev;
 static struct pm_qos_request exynos3250_int_qos;
+static struct pm_qos_request exynos3250_miflock_qos;
 cputime64_t int_pre_time;
 
 static LIST_HEAD(int_dvfs_list);
@@ -325,6 +326,14 @@ static int exynos3250_int_devfreq_target(struct device *dev,
 	} else {
 		err = exynos3250_int_set_div(exynos3250_find_int_bus_idx(freq));
 		regulator_set_voltage(data->vdd_int, target_volt, SAFE_INT_VOLT(target_volt));
+	}
+
+	if (freq > int_bus_opp_list[LV_3].clk) {
+		if (pm_qos_request_active(&exynos3250_miflock_qos))
+			pm_qos_update_request(&exynos3250_miflock_qos, 200000);
+	} else {
+		if (pm_qos_request_active(&exynos3250_miflock_qos))
+			pm_qos_update_request(&exynos3250_miflock_qos, 0);
 	}
 
 	data->curr_opp = opp;
@@ -625,6 +634,7 @@ static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 
 	/* Register Notify */
 	pm_qos_add_request(&exynos3250_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
+	pm_qos_add_request(&exynos3250_miflock_qos, PM_QOS_BUS_THROUGHPUT, 0);
 
 	register_reboot_notifier(&exynos3250_int_reboot_notifier);
 
