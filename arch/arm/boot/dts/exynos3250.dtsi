@@ -588,7 +588,6 @@
 	pd_isp: pd-isp@0x10023ca0 {
 		compatible = "samsung,exynos-pd";
 		reg = <0x10023ca0 0x20>;
-		status = "disabled";
 	};
 
 	smies: smies@11c90000 {
@@ -722,6 +721,7 @@
 		interrupts = <0 198 0>;
 		pinctrl-names =	"ch0";
 		pinctrl-0 = <&fimc_is_ch0_i2c &fimc_is_ch0_mclk>;
+		samsung,power-domain = <&pd_isp>;
 	};
 
 	fimc_is: fimc_is@14000000 {
