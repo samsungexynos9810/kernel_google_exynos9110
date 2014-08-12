@@ -55,7 +55,7 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_DRAM_FREQ_DOWN_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_DDRPHY_DLLOFF_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_LPDDR_PHY_DLL_LOCK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
-	{ EXYNOS3_CMU_ACLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
+	{ EXYNOS3_CMU_ACLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_SCLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_RESET_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_APLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
@@ -82,13 +82,13 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_TOP_BUS_SYS_PWR_REG,			        { 0x3, 0x0, 0x0} },
 	{ EXYNOS3_TOP_RETENTION_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_TOP_PWR_SYS_PWR_REG,				{ 0x3, 0x3, 0x3} },
-	{ EXYNOS3_TOP_BUS_COREBLK_SYS_PWR_REG,			{ 0x3, 0x3, 0x0} },
+	{ EXYNOS3_TOP_BUS_COREBLK_SYS_PWR_REG,			{ 0x3, 0x0, 0x0} },
 	{ EXYNOS3_TOP_RETENTION_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_TOP_PWR_COREBLK_SYS_PWR_REG,			{ 0x3, 0x3, 0x3} },
 	{ EXYNOS3_LOGIC_RESET_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_OSCCLK_GATE_SYS_PWR_REG,			{ 0x1, 0x0, 0x1} },
 	{ EXYNOS3_LOGIC_RESET_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
-	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
+	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
 	{ EXYNOS3_PAD_RETENTION_DRAM_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_PAD_RETENTION_MAUDIO_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_PAD_RETENTION_GPIO_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
@@ -160,6 +160,7 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 				exynos_pmu_config[i].reg);
 
 	exynos3250_init_pmu();
+
 	if (mode == SYS_SLEEP) {
 		__raw_writel(0x00000BB8, EXYNOS3_XUSBXTI_DURATION);
 		__raw_writel(0x00000BB8, EXYNOS3_XXTI_DURATION);
