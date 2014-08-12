@@ -268,14 +268,37 @@ static struct exynos3_pd_reg_state exynos3_isp_sclks_reg[] = {
 };
 
 static struct exynos3_pd_reg_state exynos3_isp_pwr_reg[] = {
+	{.reg = EXYNOS3_ISP_OPTION,			.set_val = 2},
 	{.reg = EXYNOS3_CMU_CLKSTOP_ISP_SYS_PWR_REG,	.set_val = 0},
 	{.reg = EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,	.set_val = 0},
 	{.reg = EXYNOS3_CMU_RESET_ISP_SYS_PWR_REG,	.set_val = 0},
 	{.reg = EXYNOS3_ISP_ARM_SYS_PWR_REG,		.set_val = 0},
+	{.reg = EXYNOS3_ISP_CONFIGURATION,		.set_val = 7},
+};
+
+static struct exynos3_pd_reg_state exynos3_isp_pwr_reg_off[] = {
+	{.reg = EXYNOS3_ISP_OPTION,			.set_val = 2},
+	{.reg = EXYNOS3_CMU_CLKSTOP_ISP_SYS_PWR_REG,	.set_val = 0},
+	{.reg = EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,	.set_val = 0},
+	{.reg = EXYNOS3_CMU_RESET_ISP_SYS_PWR_REG,	.set_val = 0},
+	{.reg = EXYNOS3_ISP_ARM_SYS_PWR_REG,		.set_val = 0},
+	{.reg = EXYNOS3_ISP_CONFIGURATION,		.set_val = 0},
+};
+
+static struct exynos3_pd_reg_state exynos3_isp_pwr_reg_force_off[] = {
+	{.reg = EXYNOS3_ISP_OPTION,			.set_val = 2},
+	{.reg = EXYNOS3_CMU_CLKSTOP_ISP_SYS_PWR_REG,	.set_val = 0},
+	{.reg = EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,	.set_val = 0},
+	{.reg = EXYNOS3_CMU_RESET_ISP_SYS_PWR_REG,	.set_val = 0},
+	{.reg = EXYNOS3_ISP_ARM_SYS_PWR_REG,		.set_val = 0},
+	{.reg = EXYNOS3_ISP_CONFIGURATION,		.set_val = 0},
+	{.reg = EXYNOS3_LPI_MASK0,			.set_val = 0x4fc8},
+	{.reg = EXYNOS3_ISP_ARM_CONFIGURATION,		.set_val = 0},
 };
 
 static int exynos3_pd_isp_on_pre(struct exynos_pm_domain *domain)
 {
+	unsigned long timeout;
 	DEBUG_PRINT_INFO("%s pre power on/off\n", "ISP");
 
 	exynos3_pd_save_reg(exynos3_isp_clk_reg,
@@ -284,6 +307,12 @@ static int exynos3_pd_isp_on_pre(struct exynos_pm_domain *domain)
 				ARRAY_SIZE(exynos3_isp_clk_reg));
 	exynos3_pwr_reg_set(exynos3_isp_pwr_reg,
 				ARRAY_SIZE(exynos3_isp_pwr_reg));
+
+	timeout = 50;
+	while(((__raw_readl(EXYNOS3_ISP_STATUS) & 0x7) != 0x7) && timeout) {
+		timeout--;
+		usleep_range(80, 100);
+	}
 
 	return 0;
 }
@@ -310,9 +339,58 @@ static int exynos3_pd_isp_off_pre(struct exynos_pm_domain *domain)
 	exynos3_enable_bits(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
 
-	exynos3_pwr_reg_set(exynos3_isp_pwr_reg,
-				ARRAY_SIZE(exynos3_isp_pwr_reg));
+	exynos3_pwr_reg_set(exynos3_isp_pwr_reg_off,
+				ARRAY_SIZE(exynos3_isp_pwr_reg_off));
+
 	return 0;
+}
+
+static void exynos3_pd_isp_force_poweroff(void)
+{
+#define SMMU_FIMC_ISP 0x12260000
+#define SMMU_FIMC_DRC 0x12270000
+#define SMMU_FIMC_SCC 0x12280000
+#define SMMU_FIMC_FD  0x122A0000
+#define SMMU_FIMC_CPU 0x122B0000
+	unsigned long timeout;
+	unsigned int tmp, i;
+	void __iomem *reg;
+	unsigned int isp_sysmmu_reg_force_off[] = {
+		SMMU_FIMC_ISP,
+		SMMU_FIMC_DRC,
+		SMMU_FIMC_SCC,
+		SMMU_FIMC_FD,
+		SMMU_FIMC_CPU,
+	};
+	unsigned int nelem = ARRAY_SIZE(isp_sysmmu_reg_force_off);
+
+	/* First enable the SysMMUs with blocking mode */
+	for (i = 0; i < nelem; i++) {
+		reg = ioremap(isp_sysmmu_reg_force_off[i], 0x20);
+		if (reg == NULL)
+			continue;
+		__raw_writel(0x3, reg);
+		timeout = 50;
+		while(((__raw_readl(reg + 0x8) & 0x1) != 0x1) && timeout) {
+			timeout--;
+			usleep_range(80, 100);
+		}
+		iounmap(reg);
+	}
+
+	exynos3_pwr_reg_set(exynos3_isp_pwr_reg_force_off,
+			ARRAY_SIZE(exynos3_isp_pwr_reg_force_off));
+
+	timeout = 50;
+	do {
+		tmp = (__raw_readl(EXYNOS3_ISP_ARM_STATUS) & 0x1);
+		if (timeout == 0) {
+			pr_err("PM DOMAIN : %s can't turn off forcefully!, timeout\n", "ISP_ARM");
+			break;
+		}
+		--timeout;
+		usleep_range(80, 100);
+	} while (tmp);
 }
 
 static int exynos3_pd_isp_off_post(struct exynos_pm_domain *domain)
@@ -351,8 +429,13 @@ static int exynos3_pd_isp_off_post(struct exynos_pm_domain *domain)
 		} while (tmp != 0);
 	}
 
+	/*
+	 * ISP ARM is turned OFF from the driver. If its not off properly,
+	 * initiate force power off sequence
+	 */
+	tmp = (__raw_readl(EXYNOS3_ISP_ARM_STATUS) & 0x1);
 	if(tmp != 0)
-	    __raw_writel(0x00000000, EXYNOS3_ISP_ARM_OPTION);
+		exynos3_pd_isp_force_poweroff();
 
 	exynos3_pd_restore_reg(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
