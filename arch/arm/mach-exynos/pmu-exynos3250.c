@@ -55,17 +55,14 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_DRAM_FREQ_DOWN_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_DDRPHY_DLLOFF_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_LPDDR_PHY_DLL_LOCK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
-	{ EXYNOS3_CMU_ACLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_SCLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_RESET_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_APLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
-	{ EXYNOS3_MPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_BPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_VPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_EPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_UPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_EPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
-	{ EXYNOS3_MPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_BPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_CLKSTOP_CAM_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_CLKSTOP_MFC_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
@@ -82,13 +79,11 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_TOP_BUS_SYS_PWR_REG,			        { 0x3, 0x0, 0x0} },
 	{ EXYNOS3_TOP_RETENTION_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_TOP_PWR_SYS_PWR_REG,				{ 0x3, 0x3, 0x3} },
-	{ EXYNOS3_TOP_BUS_COREBLK_SYS_PWR_REG,			{ 0x3, 0x0, 0x0} },
 	{ EXYNOS3_TOP_RETENTION_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
 	{ EXYNOS3_TOP_PWR_COREBLK_SYS_PWR_REG,			{ 0x3, 0x3, 0x3} },
 	{ EXYNOS3_LOGIC_RESET_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_OSCCLK_GATE_SYS_PWR_REG,			{ 0x1, 0x0, 0x1} },
 	{ EXYNOS3_LOGIC_RESET_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
-	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
 	{ EXYNOS3_PAD_RETENTION_DRAM_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_PAD_RETENTION_MAUDIO_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_PAD_RETENTION_GPIO_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
@@ -119,6 +114,26 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_ISP_SYS_PWR_REG,				{ 0x7, 0x0, 0x0} },
 	{ EXYNOS3_MAUDIO_SYS_PWR_REG,				{ 0x7, 0x0, 0x0} },
 	{ EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
+	{ PMU_TABLE_END,},
+};
+
+static struct exynos_pmu_conf exynos3250_pmu_config_extra[] = {
+	/* { .reg = address, .val = { AFTR, W-AFTR, SLEEP } */
+	{ EXYNOS3_CMU_ACLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x0} },
+	{ EXYNOS3_MPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
+	{ EXYNOS3_MPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
+	{ EXYNOS3_TOP_BUS_COREBLK_SYS_PWR_REG,			{ 0x3, 0x0, 0x0} },
+	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
+	{ PMU_TABLE_END,},
+};
+
+static struct exynos_pmu_conf exynos3250_pmu_config_audio[] = {
+	/* { .reg = address, .val = { AFTR, W-AFTR, SLEEP } */
+	{ EXYNOS3_CMU_ACLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x0} },
+	{ EXYNOS3_MPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
+	{ EXYNOS3_MPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
+	{ EXYNOS3_TOP_BUS_COREBLK_SYS_PWR_REG,			{ 0x3, 0x3, 0x0} },
+	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
 	{ PMU_TABLE_END,},
 };
 
@@ -155,9 +170,21 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 {
 	unsigned int i;
 
-	for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
-		__raw_writel(exynos_pmu_config[i].val[mode],
-				exynos_pmu_config[i].reg);
+	if (unlikely(mode == SYS_WAFTR_AUDIO)) {
+		for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
+			__raw_writel(exynos_pmu_config[i].val[SYS_AFTR],
+					exynos_pmu_config[i].reg);
+		for (i = 0; (exynos3250_pmu_config_audio[i].reg != PMU_TABLE_END) ; i++)
+			__raw_writel(exynos3250_pmu_config_audio[i].val[SYS_AFTR],
+					exynos3250_pmu_config_audio[i].reg);
+	} else {
+		for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
+			__raw_writel(exynos_pmu_config[i].val[mode],
+					exynos_pmu_config[i].reg);
+		for (i = 0; (exynos3250_pmu_config_extra[i].reg != PMU_TABLE_END) ; i++)
+			__raw_writel(exynos3250_pmu_config_extra[i].val[mode],
+					exynos3250_pmu_config_extra[i].reg);
+	}
 
 	exynos3250_init_pmu();
 

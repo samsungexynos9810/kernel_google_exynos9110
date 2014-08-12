@@ -34,6 +34,9 @@ enum sys_powerdown {
 #endif
 #endif
 	SYS_SLEEP,
+#if defined(CONFIG_SOC_EXYNOS3250)
+	SYS_WAFTR_AUDIO,
+#endif
 	NUM_SYS_POWERDOWN,
 };
 #define PMU_TABLE_END	NULL

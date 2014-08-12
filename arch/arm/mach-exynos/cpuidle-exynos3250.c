@@ -109,6 +109,10 @@ static struct check_reg_lpa exynos_clock_gating[] = {
 #endif
 };
 
+static struct check_reg_lpa audio_clock_gating[] = {
+	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,   .check_bit = 0x00200000},
+};
+
 static int exynos_check_reg_status(struct check_reg_lpa *reg_list,
 				    unsigned int list_cnt)
 {
@@ -291,8 +295,11 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 
 	exynos3250_disable_idle_clock_down();
 
-	/* Set value of power down register for aftr mode */
-	exynos_sys_powerdown_conf(SYS_LPA);
+	if (exynos_check_reg_status(audio_clock_gating,
+			ARRAY_SIZE(audio_clock_gating)))
+		exynos_sys_powerdown_conf(SYS_WAFTR_AUDIO);
+	else
+		exynos_sys_powerdown_conf(SYS_LPA);
 
 	__raw_writel(virt_to_phys(s3c_cpu_resume), REG_DIRECTGO_ADDR);
 	__raw_writel(EXYNOS_CHECK_DIRECTGO, REG_DIRECTGO_FLAG);
