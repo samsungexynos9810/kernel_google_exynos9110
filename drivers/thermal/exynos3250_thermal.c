@@ -37,6 +37,7 @@
 #include <linux/cpu_cooling.h>
 #include <linux/of.h>
 #include <linux/suspend.h>
+#include <linux/clk.h>
 #include <plat/cpu.h>
 #include <mach/tmu.h>
 #include <mach/cpufreq.h>
@@ -60,6 +61,7 @@ struct exynos_tmu_data {
 	u8 temp_error1;
 	u8 temp_error2;
 	struct cal_tmu_data *cal_data;
+	struct clk *clk;
 };
 
 struct	thermal_trip_point_conf {
@@ -479,6 +481,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	int timeout = 20000;
 
 	mutex_lock(&data->lock);
+	clk_enable(data->clk);
 
 	while (1) {
 		status = readb(data->base + EXYNOS_TMU_REG_STATUS);
@@ -524,6 +527,7 @@ static int exynos_tmu_initialize(struct platform_device *pdev, int id)
 	writel(falling_threshold, data->base + EXYNOS_THD_TEMP_FALL);
 	writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT, data->base + EXYNOS_TMU_REG_INTCLEAR);
 out:
+	clk_disable(data->clk);
 	mutex_unlock(&data->lock);
 
 	return ret;
@@ -537,6 +541,7 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 	int timeout = 5;
 
 	mutex_lock(&data->lock);
+	clk_enable(data->clk);
 
 	__raw_writel(EXYNOS_TRIMINFO_RELOAD1,
 			data->base + EXYNOS_TRIMINFO_CONFIG);
@@ -561,6 +566,7 @@ static void exynos_tmu_get_efuse(struct platform_device *pdev, int id)
 			(data->temp_error1 == 0))
 		data->temp_error1 = pdata->efuse_value;
 
+	clk_disable(data->clk);
 	mutex_unlock(&data->lock);
 }
 
@@ -569,9 +575,9 @@ static void exynos_tmu_control(struct platform_device *pdev, int id, bool on)
 	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
 
 	mutex_lock(&data->lock);
-
+	clk_enable(data->clk);
 	cal_tmu_control(data->cal_data, id, on);
-
+	clk_disable(data->clk);
 	mutex_unlock(&data->lock);
 }
 
@@ -580,7 +586,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	int temp, max = INT_MIN, min = INT_MAX;
 
 	mutex_lock(&data->lock);
-
+	clk_enable(data->clk);
 	temp = cal_tmu_read(data->cal_data, 0);
 
 	if (temp > max)
@@ -588,6 +594,7 @@ static int exynos_tmu_read(struct exynos_tmu_data *data)
 	if (temp < min)
 		min = temp;
 
+	clk_disable(data->clk);
 	mutex_unlock(&data->lock);
 
 	return max;
@@ -599,9 +606,10 @@ static void exynos_tmu_work(struct work_struct *work)
 			struct exynos_tmu_data, irq_work);
 
 	mutex_lock(&data->lock);
+	clk_enable(data->clk);
 	writel(EXYNOS_TMU_CLEAR_RISE_INT | EXYNOS_TMU_CLEAR_FALL_INT,
 			data->base + EXYNOS_TMU_REG_INTCLEAR);
-
+	clk_disable(data->clk);
 	mutex_unlock(&data->lock);
 	exynos_report_trigger();
 	enable_irq(data->irq);
@@ -794,6 +802,18 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	exynos_cpufreq_init_register_notifier(&exynos_cpufreq_nb);
 	INIT_WORK(&data->irq_work, exynos_tmu_work);
 
+	data->clk = devm_clk_get(&pdev->dev, "tmu_apbif");
+        if (IS_ERR(data->clk)) {
+                dev_err(&pdev->dev, "Failed to get clock\n");
+                return  PTR_ERR(data->clk);
+        }
+
+	ret = clk_prepare(data->clk);
+        if (ret) {
+                dev_err(&pdev->dev, "Failed to prepare clock\n");
+                return ret;
+        }
+
 	data->irq = platform_get_irq(pdev, 0);
 	if (data->irq < 0) {
 		ret = data->irq;
@@ -882,15 +902,19 @@ err_get_resource:
 		free_irq(data->irq, data);
 err_request_irq:
 err_get_irq:
-
+	clk_unprepare(data->clk);
 	return ret;
 }
 
 static int exynos_tmu_remove(struct platform_device *pdev)
 {
+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
+
 	exynos_tmu_control(pdev, 0, false);
 
 	exynos_unregister_thermal();
+
+	clk_unprepare(data->clk);
 
 	platform_set_drvdata(pdev, NULL);
 
