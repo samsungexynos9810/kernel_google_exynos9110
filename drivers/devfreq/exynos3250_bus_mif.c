@@ -111,7 +111,7 @@ static struct devfreq_pm_qos_data exynos3250_devfreq_mif_pm_qos_data = {
 #if defined(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
 static struct devfreq_simple_ondemand_data exynos3250_mif_governor_data = {
 	.pm_qos_class	= PM_QOS_BUS_THROUGHPUT,
-	.upthreshold	= 30,
+	.upthreshold	= 20,
 	.cal_qos_max	= 400000,
 };
 #endif
