@@ -603,7 +603,7 @@ static unsigned long s5p_mipi_dsi_change_pll(struct mipi_dsim_device *dsim,
 	s5p_mipi_dsi_pll_stable_time(dsim, dsim->dsim_config->pll_stable_time);
 
 	/* Enable PLL */
-	dev_info(dsim->dev, "FOUT of mipi dphy pll is %luMHz\n",
+	dev_dbg(dsim->dev, "FOUT of mipi dphy pll is %luMHz\n",
 		(dpll_out / MHZ));
 
 	return dpll_out;
@@ -661,7 +661,7 @@ static int s5p_mipi_dsi_set_clock(struct mipi_dsim_device *dsim,
 		/* escape clock on lane */
 		s5p_mipi_dsi_enable_esc_clk_on_lane(dsim, (DSIM_LANE_CLOCK | dsim->data_lane), 1);
 
-		dev_info(dsim->dev, "escape_clk = %lu, byte_clk = %lu, esc_div = %d\n", escape_clk, byte_clk, esc_div);
+		dev_dbg(dsim->dev, "escape_clk = %lu, byte_clk = %lu, esc_div = %d\n", escape_clk, byte_clk, esc_div);
 
 		if ((byte_clk / esc_div) > escape_clk) {
 			esc_clk_error_rate = escape_clk / (byte_clk / esc_div);
