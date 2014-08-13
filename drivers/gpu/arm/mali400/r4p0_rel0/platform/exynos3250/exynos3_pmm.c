@@ -416,7 +416,8 @@ void mali_clk_set_rate(struct platform_device *pdev, unsigned int clk, unsigned 
 	GPU_MHZ = mhz;
 
 	mali_gpu_clk = rate / mhz;
-	MALI_PRINT(("Mali frequency %dMhz\n", rate / mhz));
+	MALI_DEBUG_PRINT(1, ("Mali frequency %dMhz\n", rate / mhz));
+
 	mali_clk_put(MALI_FALSE);
 
 	_mali_osk_mutex_signal(mali_dvfs_lock);
