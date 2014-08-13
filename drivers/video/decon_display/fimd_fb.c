@@ -3358,10 +3358,10 @@ int create_decon_display_controller(struct platform_device *pdev)
 err_fb:
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
+#endif
 
 err_iovmm:
 	device_remove_file(sfb->dev, &dev_attr_psr_info);
-#endif
 
 err_create_psr_info_file:
 	device_remove_file(sfb->dev, &dev_attr_vsync);

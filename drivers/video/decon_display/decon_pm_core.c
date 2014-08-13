@@ -477,19 +477,12 @@ static int __display_hibernation_power_off(struct display_driver *dispdrv)
 
 static void __display_block_clock_on(struct display_driver *dispdrv)
 {
-	/* DSIM -> MIC -> DECON -> SMMU */
+	/* DSIM -> MIC -> DECON */
 	call_pm_ops(dispdrv, dsi_driver, clk_on, dispdrv);
 #ifdef CONFIG_DECON_MIC
 	call_pm_ops(dispdrv, mic_driver, clk_on, dispdrv);
 #endif
 	call_pm_ops(dispdrv, decon_driver, clk_on, dispdrv);
-
-#ifdef CONFIG_ION_EXYNOS
-	if (dispdrv->platform_status > DISP_STATUS_PM0) {
-		if (iovmm_activate(dispdrv->decon_driver.sfb->dev) < 0)
-			pr_err("%s: failed to reactivate vmm\n", __func__);
-	}
-#endif
 }
 
 static int __display_block_clock_off(struct display_driver *dispdrv)
@@ -500,11 +493,7 @@ static int __display_block_clock_off(struct display_driver *dispdrv)
 		return -EBUSY;
 	}
 
-	/* SMMU -> DECON -> MIC -> DSIM */
-#ifdef CONFIG_ION_EXYNOS
-	if (dispdrv->platform_status > DISP_STATUS_PM0)
-		iovmm_deactivate(dispdrv->decon_driver.sfb->dev);
-#endif
+	/* SMMU -> DECON -> MIC*/
 	call_pm_ops(dispdrv, decon_driver, clk_off, dispdrv);
 #ifdef CONFIG_DECON_MIC
 	call_pm_ops(dispdrv, mic_driver, clk_off, dispdrv);
