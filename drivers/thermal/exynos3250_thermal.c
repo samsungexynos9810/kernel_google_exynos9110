@@ -932,9 +932,13 @@ static int exynos_tmu_suspend(struct device *dev)
 static int exynos_tmu_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
+	struct exynos_tmu_data *data = platform_get_drvdata(pdev);
 
+	exynos_tmu_get_efuse(pdev, 0);
+	exynos_set_cal_data(data);
 	exynos_tmu_initialize(pdev, 0);
 	exynos_tmu_control(pdev, 0, true);
+	exynos_tmu_regdump(pdev, 0);
 
 	return 0;
 }
