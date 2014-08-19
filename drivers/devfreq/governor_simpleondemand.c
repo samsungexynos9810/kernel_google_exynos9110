@@ -59,6 +59,13 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 	}
 
 	err = devfreq_update_stats(df);
+	if (df->profile->get_dev_status) {
+		err = df->profile->get_dev_status(df->dev.parent, &stat);
+	} else {
+		*freq = pm_qos_min;
+		return 0;
+	}
+
 	if (err)
 		return err;
 
