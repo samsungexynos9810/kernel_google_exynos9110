@@ -324,12 +324,10 @@
                 compatible = "samsung,exynos5430-ion";
 
 		contig-names = "mfc_sh",
-				"video",
 				"mfc_fw",
 				"mfc_nfw";
 
 		contig = <2 0x100000 0x0>,
-			<11 0xA00000 0x0>,
 			<8 0x100000 0x0>,
 			<12 0x100000 0x0>;
 
