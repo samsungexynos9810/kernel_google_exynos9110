@@ -273,77 +273,7 @@ static struct exynos3_pd_reg_state exynos3_isp_pwr_reg[] = {
 	{.reg = EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,	.set_val = 0},
 	{.reg = EXYNOS3_CMU_RESET_ISP_SYS_PWR_REG,	.set_val = 0},
 	{.reg = EXYNOS3_ISP_ARM_SYS_PWR_REG,		.set_val = 0},
-	{.reg = EXYNOS3_ISP_CONFIGURATION,		.set_val = 7},
 };
-
-static struct exynos3_pd_reg_state exynos3_isp_pwr_reg_off[] = {
-	{.reg = EXYNOS3_ISP_OPTION,			.set_val = 2},
-	{.reg = EXYNOS3_CMU_CLKSTOP_ISP_SYS_PWR_REG,	.set_val = 0},
-	{.reg = EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,	.set_val = 0},
-	{.reg = EXYNOS3_CMU_RESET_ISP_SYS_PWR_REG,	.set_val = 0},
-	{.reg = EXYNOS3_ISP_ARM_SYS_PWR_REG,		.set_val = 0},
-	{.reg = EXYNOS3_ISP_CONFIGURATION,		.set_val = 0},
-};
-
-static struct exynos3_pd_reg_state exynos3_isp_pwr_reg_force_off[] = {
-	{.reg = EXYNOS3_ISP_OPTION,			.set_val = 2},
-	{.reg = EXYNOS3_CMU_CLKSTOP_ISP_SYS_PWR_REG,	.set_val = 0},
-	{.reg = EXYNOS3_CMU_SYSCLK_ISP_SYS_PWR_REG,	.set_val = 0},
-	{.reg = EXYNOS3_CMU_RESET_ISP_SYS_PWR_REG,	.set_val = 0},
-	{.reg = EXYNOS3_ISP_ARM_SYS_PWR_REG,		.set_val = 0},
-	{.reg = EXYNOS3_ISP_CONFIGURATION,		.set_val = 0},
-	{.reg = EXYNOS3_LPI_MASK0,			.set_val = 0x4fc8},
-	{.reg = EXYNOS3_ISP_ARM_CONFIGURATION,		.set_val = 0},
-};
-
-static int exynos3_pd_isp_on_pre(struct exynos_pm_domain *domain)
-{
-	unsigned long timeout;
-	DEBUG_PRINT_INFO("%s pre power on/off\n", "ISP");
-
-	exynos3_pd_save_reg(exynos3_isp_clk_reg,
-				ARRAY_SIZE(exynos3_isp_clk_reg));
-	exynos3_enable_bits(exynos3_isp_clk_reg,
-				ARRAY_SIZE(exynos3_isp_clk_reg));
-	exynos3_pwr_reg_set(exynos3_isp_pwr_reg,
-				ARRAY_SIZE(exynos3_isp_pwr_reg));
-
-	timeout = 50;
-	while(((__raw_readl(EXYNOS3_ISP_STATUS) & 0x7) != 0x7) && timeout) {
-		timeout--;
-		usleep_range(80, 100);
-	}
-
-	return 0;
-}
-
-static int exynos3_pd_isp_on_post(struct exynos_pm_domain *domain)
-{
-	DEBUG_PRINT_INFO("%s post power on/off\n", "ISP");
-
-	exynos3_pd_restore_reg(exynos3_isp_clk_reg,
-				ARRAY_SIZE(exynos3_isp_clk_reg));
-
-	return 0;
-}
-
-static int exynos3_pd_isp_off_pre(struct exynos_pm_domain *domain)
-{
-	DEBUG_PRINT_INFO("%s pre power off\n", "ISP");
-
-	exynos3_pd_save_reg(exynos3_isp_clk_reg,
-				ARRAY_SIZE(exynos3_isp_clk_reg));
-
-	exynos3_enable_bits(exynos3_isp_sclks_reg,
-				ARRAY_SIZE(exynos3_isp_sclks_reg));
-	exynos3_enable_bits(exynos3_isp_clk_reg,
-				ARRAY_SIZE(exynos3_isp_clk_reg));
-
-	exynos3_pwr_reg_set(exynos3_isp_pwr_reg_off,
-				ARRAY_SIZE(exynos3_isp_pwr_reg_off));
-
-	return 0;
-}
 
 static void exynos3_pd_isp_force_poweroff(void)
 {
@@ -353,7 +283,7 @@ static void exynos3_pd_isp_force_poweroff(void)
 #define SMMU_FIMC_FD  0x122A0000
 #define SMMU_FIMC_CPU 0x122B0000
 	unsigned long timeout;
-	unsigned int tmp, i;
+	unsigned int i;
 	void __iomem *reg;
 	unsigned int isp_sysmmu_reg_force_off[] = {
 		SMMU_FIMC_ISP,
@@ -378,71 +308,102 @@ static void exynos3_pd_isp_force_poweroff(void)
 		iounmap(reg);
 	}
 
-	exynos3_pwr_reg_set(exynos3_isp_pwr_reg_force_off,
-			ARRAY_SIZE(exynos3_isp_pwr_reg_force_off));
+	__raw_writel(0x4fc8, EXYNOS3_LPI_MASK0);
+	__raw_writel(0, EXYNOS3_ISP_ARM_CONFIGURATION);
 
-	timeout = 50;
+	timeout = 500;
 	do {
-		tmp = (__raw_readl(EXYNOS3_ISP_ARM_STATUS) & 0x1);
 		if (timeout == 0) {
 			pr_err("PM DOMAIN : %s can't turn off forcefully!, timeout\n", "ISP_ARM");
 			break;
 		}
 		--timeout;
 		usleep_range(80, 100);
-	} while (tmp);
-}
+	} while (__raw_readl(EXYNOS3_ISP_ARM_STATUS) & 0x1);
 
-static int exynos3_pd_isp_off_post(struct exynos_pm_domain *domain)
-{
-	unsigned int tmp;
-	unsigned long timeout;
+	__raw_writel(0, EXYNOS3_ISP_CONFIGURATION);
 
-	DEBUG_PRINT_INFO("%s post power off : ISP ARM control\n", "ISP");
-
-	/* Wait max 70ms */
-	timeout = 700;
-
+	timeout = 750;
 	do {
-		tmp = (__raw_readl(EXYNOS3_ISP_STATUS) & 0x7);
 		if (timeout == 0) {
-			pr_err("PM DOMAIN : %s can't turn off, timeout\n", "ISP_ARM");
+			pr_err("PM DOMAIN : %s can't turn off forcefully!, timeout\n", "ISP_DOMAIN");
 			break;
 		}
 		--timeout;
-		cpu_relax();
 		usleep_range(80, 100);
-	} while (tmp != 0);
+	} while (__raw_readl(EXYNOS3_ISP_STATUS) & EXYNOS_INT_LOCAL_PWR_EN);
 
-	if(tmp != 0){
-		/* Wait max 5ms */
-		timeout = 50;
-		do {
-			tmp = (__raw_readl(EXYNOS3_ISP_STATUS) & 0x7);
+}
+
+static int exynos3_pd_isp_power(struct exynos_pm_domain *pd, int power_flags)
+{
+	unsigned long timeout;
+	int ret = 0;
+
+	if (unlikely(!pd))
+		return -EINVAL;
+
+	mutex_lock(&pd->access_lock);
+
+	exynos3_pd_save_reg(exynos3_isp_clk_reg,
+				ARRAY_SIZE(exynos3_isp_clk_reg));
+
+	if (!power_flags)
+		exynos3_enable_bits(exynos3_isp_sclks_reg,
+				ARRAY_SIZE(exynos3_isp_sclks_reg));
+
+	exynos3_enable_bits(exynos3_isp_clk_reg,
+				ARRAY_SIZE(exynos3_isp_clk_reg));
+
+	exynos3_pwr_reg_set(exynos3_isp_pwr_reg,
+				ARRAY_SIZE(exynos3_isp_pwr_reg));
+
+	/* on/off value to CONFIGURATION register */
+	__raw_writel(power_flags, EXYNOS3_ISP_CONFIGURATION);
+
+	/* Wait max 75ms */
+	timeout = 750;
+		/* check STATUS register */
+		while ((__raw_readl(EXYNOS3_ISP_STATUS) &
+				EXYNOS_INT_LOCAL_PWR_EN) != power_flags) {
 			if (timeout == 0) {
-				pr_err("PM DOMAIN : %s can't turn off, timeout\n", "ISP_ARM");
+				pr_err("%s@%p: %08x, %08x, %08x\n",
+					pd->genpd.name,
+					pd->base,
+					__raw_readl(pd->base),
+					__raw_readl(pd->base+4),
+					__raw_readl(pd->base+8));
+				pr_err(PM_DOMAIN_PREFIX "%s can't control power, timeout\n", pd->name);
 				break;
 			}
 			--timeout;
 			cpu_relax();
 			usleep_range(80, 100);
-		} while (tmp != 0);
+		}
+
+	if (timeout == 0 && power_flags == 0) {
+		if ((__raw_readl(EXYNOS3_ISP_ARM_STATUS) & 0x1) != 0)
+			exynos3_pd_isp_force_poweroff();
 	}
 
-	/*
-	 * ISP ARM is turned OFF from the driver. If its not off properly,
-	 * initiate force power off sequence
-	 */
-	tmp = (__raw_readl(EXYNOS3_ISP_ARM_STATUS) & 0x1);
-	if(tmp != 0)
-		exynos3_pd_isp_force_poweroff();
+	if ((__raw_readl(EXYNOS3_ISP_STATUS) & EXYNOS_INT_LOCAL_PWR_EN) != power_flags)
+		ret = -ETIMEDOUT;
+	else
+		pd->status = power_flags;
 
 	exynos3_pd_restore_reg(exynos3_isp_clk_reg,
 				ARRAY_SIZE(exynos3_isp_clk_reg));
 
-	return 0;
-}
+	mutex_unlock(&pd->access_lock);
 
+	DEBUG_PRINT_INFO("%s@%p: %08x, %08x, %08x\n",
+	pd->genpd.name, pd->base,
+	__raw_readl(pd->base),
+	__raw_readl(pd->base+4),
+	__raw_readl(pd->base+8));
+
+	return ret;
+}
 
 static struct exynos_pd_callback pd_callback_list[] = {
 	{
@@ -471,10 +432,8 @@ static struct exynos_pd_callback pd_callback_list[] = {
 			.off_post = exynos3_pd_cam_on_post,
 	} , {
 			.name = "pd-isp",
-			.on_pre = exynos3_pd_isp_on_pre,
-			.on_post = exynos3_pd_isp_on_post,
-			.off_pre = exynos3_pd_isp_off_pre,
-			.off_post = exynos3_pd_isp_off_post,
+			.on = exynos3_pd_isp_power,
+			.off = exynos3_pd_isp_power,
 	}
 };
 
