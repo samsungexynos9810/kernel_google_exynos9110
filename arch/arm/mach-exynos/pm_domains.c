@@ -414,9 +414,17 @@ static __init int exynos_pm_dt_parse_domains(void)
 		pd->name = pd->genpd.name;
 		pd->genpd.of_node = np;
 		pd->base = of_iomap(np, 0);
-		pd->on = exynos_pd_power;
-		pd->off = exynos_pd_power;
 		pd->cb = exynos_pd_find_callback(pd);
+		if (pd->cb && pd->cb->on)
+			pd->on = pd->cb->on;
+		else
+			pd->on = exynos_pd_power;
+
+		if (pd->cb && pd->cb->off)
+			pd->off = pd->cb->off;
+		else
+			pd->off = exynos_pd_power;
+
 		ret = of_property_read_u32_index(np, "pd-option", 0, &val);
 		if (ret)
 			pd->pd_option = EXYNOS_SC_FEEDBACK;
