@@ -279,7 +279,7 @@ config EXYNOS5_SETUP_MIPIPHY
 
 config EXYNOS_SETUP_MIPIPHY
 	bool
-	depends on (VIDEO_EXYNOS_FIMC_IS)
+	depends on (VIDEO_EXYNOS_FIMC_IS || DECON_MIPI_DSI)
 	default y
 	help
 	  Compile in common setup code for MIPI-CSIS devices
