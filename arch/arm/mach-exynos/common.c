@@ -145,24 +145,27 @@ static struct map_desc exynos_iodesc[] __initdata = {
 		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID),
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
-	}, {
+	},
+#ifdef CONFIG_OF
+	{
 		.virtual	= (unsigned long)S5P_VA_CHIPID2,
 		.pfn		= __phys_to_pfn(EXYNOS_PA_CHIPID2),
 		.length		= SZ_4K,
 		.type		= MT_DEVICE,
 	},
+#endif
 };
 
 static struct map_desc exynos3_iodesc[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_SYS,
 		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSCON),
-		.length		= SZ_64K,
+		.length		= SZ_2K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSTIMER,
 		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSTIMER),
-		.length		= SZ_4K,
+		.length		= SZ_2K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_SYSRAM,
@@ -187,12 +190,12 @@ static struct map_desc exynos3_iodesc[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)EXYNOS3_VA_CMU_ACP,
 		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_ACP),
-		.length		= 64 * SZ_1K,
+		.length		= SZ_64K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)EXYNOS3_VA_CMU_DMC,
 		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_DMC),
-		.length		= 64 * SZ_1K,
+		.length		= SZ_64K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S3C_VA_UART,
@@ -212,7 +215,7 @@ static struct map_desc exynos3_iodesc[] __initdata = {
 	}, {
 		.virtual	= (unsigned long)S5P_VA_PMU,
 		.pfn		= __phys_to_pfn(EXYNOS3_PA_PMU),
-		.length		= SZ_64K,
+		.length		= SZ_16K,
 		.type		= MT_DEVICE,
 	}, {
 		.virtual	= (unsigned long)S5P_VA_PPMU_CPU,
