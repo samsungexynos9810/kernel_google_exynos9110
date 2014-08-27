@@ -453,10 +453,10 @@ static mali_bool set_mali_dvfs_status(u32 step,mali_bool boostup)
 		mali_regulator_set_voltage(mali_dvfs[step].int_freq);
 #endif
 		/*change the clock*/
-		mali_dvfs_clk_set_rate(mali_dvfs[step].clock, mali_dvfs[step].freq);
+		mali_dvfs_clk_set_rate(mali_dvfs[step].clock, GPU_MHZ);
 	} else {
 		/*change the clock*/
-		mali_dvfs_clk_set_rate(mali_dvfs[step].clock, mali_dvfs[step].freq);
+		mali_dvfs_clk_set_rate(mali_dvfs[step].clock, GPU_MHZ);
 #ifdef CONFIG_REGULATOR
 		mali_regulator_set_voltage(mali_dvfs[step].int_freq);
 #endif
