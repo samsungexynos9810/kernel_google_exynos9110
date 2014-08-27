@@ -32,6 +32,22 @@
 #define VPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC120)
 #define UPLL_LOCK		EXYNOS3_CLK_BUS_TOP_REG(0xC030)
 #define UPLL_CON0		EXYNOS3_CLK_BUS_TOP_REG(0xC130)
+#define PWR_CTRL1		EXYNOS3_CPU_ISP_REG(0x5020)
+#define PWR_CTRL2		EXYNOS3_CPU_ISP_REG(0x5024)
+
+/* Below definitions are used for PWR_CTRL settings */
+#define PWR_CTRL1_CORE2_DOWN_RATIO(x)		(((x) & 0x7) << 28)
+#define PWR_CTRL1_CORE1_DOWN_RATIO(x)		(((x) & 0x7) << 16)
+#define PWR_CTRL1_DIV2_DOWN_EN			(1 << 9)
+#define PWR_CTRL1_DIV1_DOWN_EN			(1 << 8)
+#define PWR_CTRL1_USE_CORE3_WFE			(1 << 7)
+#define PWR_CTRL1_USE_CORE2_WFE			(1 << 6)
+#define PWR_CTRL1_USE_CORE1_WFE			(1 << 5)
+#define PWR_CTRL1_USE_CORE0_WFE			(1 << 4)
+#define PWR_CTRL1_USE_CORE3_WFI			(1 << 3)
+#define PWR_CTRL1_USE_CORE2_WFI			(1 << 2)
+#define PWR_CTRL1_USE_CORE1_WFI			(1 << 1)
+#define PWR_CTRL1_USE_CORE0_WFI			(1 << 0)
 
 static __initdata void *exynos3250_clk_regs[] = {
 	BPLL_LOCK,
@@ -88,6 +104,8 @@ static __initdata void *exynos3250_clk_regs[] = {
 	GATE_IP_CAM,
 	GATE_IP_PERIR,
 	GATE_IP_ACP0,
+	PWR_CTRL1,
+	PWR_CTRL2,
 };
 
 PNAME(mout_gdl_p)		= { "mout_mpll_user_l" };
@@ -607,6 +625,27 @@ static struct samsung_pll_rate_table exynos3250_epll_rates[] = {
        { /* sentinel */ }
 };
 
+static void __init exynos3_core_down_clock(void)
+{
+        unsigned int tmp;
+
+        /*
+         * Enable arm clock down (in idle) and set arm divider
+         * ratios in WFI/WFE state.
+         */
+        tmp = (PWR_CTRL1_CORE2_DOWN_RATIO(7) | PWR_CTRL1_CORE1_DOWN_RATIO(7) |
+                PWR_CTRL1_DIV2_DOWN_EN | PWR_CTRL1_DIV1_DOWN_EN |
+                PWR_CTRL1_USE_CORE1_WFE | PWR_CTRL1_USE_CORE0_WFE |
+                PWR_CTRL1_USE_CORE1_WFI | PWR_CTRL1_USE_CORE0_WFI);
+        __raw_writel(tmp, PWR_CTRL1);
+
+        /*
+         * Disable the clock up feature on Exynos4x12, in case it was
+         * enabled by bootloader.
+         */
+        __raw_writel(0x0, PWR_CTRL2);
+}
+
 void __init exynos3250_clk_init(struct device_node *np)
 {
 	struct clk *apll, *bpll, *epll, *mpll, *vpll, *upll;
@@ -660,6 +699,8 @@ void __init exynos3250_clk_init(struct device_node *np)
 			ARRAY_SIZE(exynos3250_gate_clks));
 	samsung_clk_register_gate(exynos3250_unused_gate_clks,
 			ARRAY_SIZE(exynos3250_unused_gate_clks));
+
+	exynos3_core_down_clock();
 
 	pr_info("Exynos3250: clock setup completed\n");
 }
