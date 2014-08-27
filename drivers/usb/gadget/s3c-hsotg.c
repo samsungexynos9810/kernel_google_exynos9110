@@ -35,6 +35,9 @@
 #include <linux/usb/gadget.h>
 #include <linux/usb/phy.h>
 #include <linux/platform_data/s3c-hsotg.h>
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+#include <linux/wakelock.h>
+#endif
 
 #include <mach/map.h>
 
@@ -188,6 +191,9 @@ struct s3c_hsotg {
 	unsigned int		setup;
 	unsigned long           last_rst;
 	struct s3c_hsotg_ep	*eps;
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+	struct wake_lock	wake_lock;
+#endif
 };
 
 /**
@@ -2437,7 +2443,9 @@ irq_retry:
 		u32 otgint = readl(hsotg->regs + GOTGINT);
 
 		dev_dbg(hsotg->dev, "OTGInt: %08x\n", otgint);
-
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+		wake_unlock(&hsotg->wake_lock);
+#endif
 		writel(otgint, hsotg->regs + GOTGINT);
 	}
 
@@ -2447,6 +2455,9 @@ irq_retry:
 	}
 
 	if (gintsts & GINTSTS_EnumDone) {
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+		wake_lock(&hsotg->wake_lock);
+#endif
 		writel(GINTSTS_EnumDone, hsotg->regs + GINTSTS);
 
 		s3c_hsotg_irq_enumdone(hsotg);
@@ -3619,6 +3630,9 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 
 	spin_lock_init(&hsotg->lock);
 
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+	wake_lock_init(&hsotg->wake_lock, WAKE_LOCK_SUSPEND, "s3c-hsotg");
+#endif
 	hsotg->irq = ret;
 
 	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
@@ -3729,6 +3743,9 @@ err_supplies:
 	s3c_hsotg_phy_disable(hsotg);
 err_clk:
 	clk_disable_unprepare(hsotg->clk);
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+	wake_lock_destroy(&hsotg->wake_lock);
+#endif
 
 	return ret;
 }
@@ -3752,6 +3769,9 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
 
 	s3c_hsotg_phy_disable(hsotg);
 	clk_disable_unprepare(hsotg->clk);
+#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
+	wake_lock_destroy(&hsotg->wake_lock);
+#endif
 
 	return 0;
 }

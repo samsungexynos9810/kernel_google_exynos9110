@@ -276,6 +276,12 @@ config USB_S3C_HSOTG
 	  The Samsung S3C64XX USB2.0 high-speed gadget controller
 	  integrated into the S3C64XX series SoC.
 
+config USB_S3C_HSOTG_ENABLE_WAKELOCK
+	tristate "S3C HS/OtG USB Device controller driver can take wake_lock"
+	depends on USB_S3C_HSOTG
+	help
+	  Say "y" if USB gadget controller can hold wake_lock.
+
 config USB_S3C_OTGD
 	tristate "S3C HS USB OTG Device"
 	help
