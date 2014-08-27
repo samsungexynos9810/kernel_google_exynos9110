@@ -24,7 +24,9 @@
 #include <linux/platform_device.h>
 #include <linux/i2c.h>
 #include <linux/timer.h>
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 #include <linux/wakelock.h>
+#endif
 #include <linux/workqueue.h>
 #include <linux/slab.h>
 
@@ -290,7 +292,9 @@ struct bq24160_data {
 	struct workqueue_struct *wq;
 	struct bq24160_status_data cached_status;
 	struct mutex lock;
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	struct wake_lock wake_lock;
+#endif
 	struct bq24160_platform_data *control;
 
 	int ext_status;
@@ -824,8 +828,10 @@ static void bq24160_start_watchdog_reset(struct bq24160_data *bd)
 	}
 	MUTEX_UNLOCK(&bd->lock);
 
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	wake_lock(&bd->wake_lock);
 	dev_info(&bd->clientp->dev, "wake locked\n");
+#endif
 
 	(void)queue_delayed_work(bd->wq, &bd->work, 0);
 }
@@ -853,8 +859,10 @@ static void bq24160_stop_watchdog_reset(struct bq24160_data *bd)
 
 	cancel_delayed_work(&bd->work);
 
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	wake_unlock(&bd->wake_lock);
 	dev_info(&bd->clientp->dev, "wake unlocked\n");
+#endif
 }
 
 static void bq24160_reset_watchdog_worker(struct work_struct *work)
@@ -1811,7 +1819,9 @@ static int __exit bq24160_remove(struct i2c_client *client)
 
 	destroy_workqueue(bd->wq);
 
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	wake_lock_destroy(&bd->wake_lock);
+#endif
 
 #ifdef DEBUG_FS
 	debug_remove_attrs(bd->bat_ps.dev);
@@ -1975,8 +1985,10 @@ static int bq24160_probe(struct i2c_client *client,
 	}
 
 	mutex_init(&bd->lock);
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	wake_lock_init(&bd->wake_lock, WAKE_LOCK_SUSPEND,
 		       "bq24160_watchdog_lock");
+#endif
 
 	bd->wq = create_freezable_workqueue("bq24160worker");
 	if (!bd->wq) {
@@ -2066,7 +2078,9 @@ probe_exit_unregister:
 probe_exit_work_queue:
 	destroy_workqueue(bd->wq);
 probe_exit_free:
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	wake_lock_destroy(&bd->wake_lock);
+#endif
 	kfree(bd);
 probe_exit_hw_deinit:
 	if (pdata && pdata->gpio_configure)

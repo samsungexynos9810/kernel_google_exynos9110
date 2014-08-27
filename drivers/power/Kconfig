@@ -343,6 +343,12 @@ config CHARGER_BQ24160
 
 	  You'll need this driver to charge batteries on Xyref5430 board.
 
+config CHARGER_BQ24160_ENABLE_WAKELOCK
+	tristate "TI BQ24160 battery charger driver can take wakelock for USB Charging"
+	depends on CHARGER_BQ24160
+	help
+	  Say Y to enable wake_lock support in TI BQ24160 battery charger driver.
+
 config CHARGER_SMB347
 	tristate "Summit Microelectronics SMB347 Battery Charger"
 	depends on I2C
