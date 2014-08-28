@@ -1291,6 +1291,13 @@ static int __init __fdt_init_exynos_ion(unsigned long node, const char *uname,
 			return 0;
 		}
 
+#ifdef CONFIG_BOARD_HAS_LOWRAM
+		if(!strcmp(exynos_ion_contig_region[contig_region_cursor].name, "mfc_fw")) {
+			exynos_ion_contig_region[contig_region_cursor].size =0;
+			contig_region_cursor++;
+			continue;
+		}
+#endif
 		exynos_ion_contig_region[contig_region_cursor].id =
 						be32_to_cpu(prop[i]);
 		exynos_ion_contig_region[contig_region_cursor].size =
@@ -1331,6 +1338,8 @@ int __init init_exynos_ion_contig_heap(void)
 					(contig_region_cursor > 0)) {
 		int i, ret;
 		for (i = 0; i < contig_region_cursor; i++) {
+			if (exynos_ion_contig_region[i].size == 0)
+				continue;
 			ret = dma_declare_contiguous(
 				&exynos_ion_contig_region[i].dev,
 				exynos_ion_contig_region[i].size,
