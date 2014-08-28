@@ -19,7 +19,6 @@
 	compatible = "samsung,ESPRESSO3250", "samsung,exynos3250";
 
 	chosen {
-		bootargs = "console=ttySAC2,115200 vmalloc=256M ess_setup=0x46000000";
 	};
 
 	memory {
