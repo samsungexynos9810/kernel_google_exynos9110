@@ -235,7 +235,7 @@ config EXYNOS5_DYNAMIC_CPU_HOTPLUG
 
 config EXYNOS3_DYNAMIC_CPU_HOTPLUG
 	bool "Exynos3 Dynamic CPU Hotplug support"
-	depends on CPU_FREQ
+	depends on CPU_FREQ && HOTPLUG_CPU
 	help
 		Enable Dynamic CPU Hotplug
 
