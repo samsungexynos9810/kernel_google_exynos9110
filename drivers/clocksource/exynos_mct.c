@@ -218,11 +218,38 @@ static void exynos4_mct_comp0_stop(void)
 	exynos4_mct_write(0, EXYNOS4_MCT_G_INT_ENB);
 }
 
+/**
+ * exynos4_read_count_64 - Read all 64-bits of the global counter
+ *
+ * This will read all 64-bits of the global counter taking care to make sure
+ * that the upper and lower half match.  Note that reading the MCT can be quite
+ * slow (hundreds of nanoseconds) so you should use the 32-bit (lower half
+ * only) version when possible.
+ *
+ * Returns the number of cycles in the global counter.
+*/
+static u64 exynos4_read_count_64(void)
+{
+        unsigned int lo, hi;
+        u32 hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
+
+        do {
+                hi = hi2;
+                lo = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_L);
+                hi2 = readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_U);
+        } while (hi != hi2);
+
+        return ((cycle_t)hi << 32) | lo;
+}
+
+
+
 static void exynos4_mct_comp0_start(enum clock_event_mode mode,
 				    unsigned long cycles)
 {
 	unsigned int tcon;
 	cycle_t comp_cycle;
+	unsigned long flags;
 
 	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
 
@@ -231,7 +258,13 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
 		exynos4_mct_write(cycles, EXYNOS4_MCT_G_COMP0_ADD_INCR);
 	}
 
-	comp_cycle = exynos4_frc_read(&mct_frc) + cycles;
+	/*
+	 * Turn off interrupts to make sure the timer is fully programmed
+	 * before it is scheduled to fire.
+	 */
+	local_irq_save(flags);
+
+	comp_cycle = exynos4_read_count_64() + cycles;
 	exynos4_mct_write((u32)comp_cycle, EXYNOS4_MCT_G_COMP0_L);
 	exynos4_mct_write((u32)(comp_cycle >> 32), EXYNOS4_MCT_G_COMP0_U);
 
@@ -239,6 +272,8 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
 
 	tcon |= MCT_G_TCON_COMP0_ENABLE;
 	exynos4_mct_write(tcon , EXYNOS4_MCT_G_TCON);
+
+	local_irq_restore(flags);
 }
 
 static int exynos4_comp_set_next_event(unsigned long cycles,
@@ -300,7 +335,7 @@ static void exynos4_clockevent_init(void)
 {
 	mct_comp_device.cpumask = cpumask_of(0);
 	clockevents_config_and_register(&mct_comp_device, clk_rate,
-					0xf, 0xffffffff);
+					0xff, 0xffffffff);
 	setup_irq(mct_irqs[MCT_G0_IRQ], &mct_comp_event_irq);
 }
 
