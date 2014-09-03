@@ -3618,6 +3618,15 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	int idx, ret;
 	u32 clock_frequency;
 
+#ifdef CONFIG_BOARD_HAS_LOWRAM
+	/* don't support sdcard on lowram device
+	 *	0=eMMC
+	 *	2=sdcard
+	 */
+	if (of_alias_get_id(np, "mshc") == 2)
+		return ERR_PTR(-ENODEV);
+#endif
+
 	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
 	if (!pdata) {
 		dev_err(dev, "could not allocate memory for pdata\n");
