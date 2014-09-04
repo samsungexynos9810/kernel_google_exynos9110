@@ -244,7 +244,7 @@ int exynos3250_ppmu_get_busy(struct exynos3250_ppmu_handle *handle,
 			max_pmcnt = temp_pmcnt;
 
 		temp = handle->ppmu[i].count[PPMU_PMNCNT3] * 100;
-		if (handle->ppmu[i].count > 0 && temp > 0)
+		if (handle->ppmu[i].ccnt > 0 && temp > 0)
 			temp /= handle->ppmu[i].ccnt;
 
 		if (temp > busy)
