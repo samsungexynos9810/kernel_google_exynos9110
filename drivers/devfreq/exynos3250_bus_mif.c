@@ -38,6 +38,8 @@
 #define MRSTATUS_THERMAL_LV_SHIFT	(5)
 #define MRSTATUS_THERMAL_LV_MASK	(0x7 << MRSTATUS_THERMAL_LV_SHIFT)
 
+#define MAX_MIFFREQ (CONFIG_EXYNOS3250_MAX_MIFFREQ * 1000)
+
 static struct pm_qos_request exynos3250_mif_qos;
 static struct pm_qos_request exynos3250_boot_mif_qos;
 
@@ -112,7 +114,11 @@ static struct devfreq_pm_qos_data exynos3250_devfreq_mif_pm_qos_data = {
 static struct devfreq_simple_ondemand_data exynos3250_mif_governor_data = {
 	.pm_qos_class	= PM_QOS_BUS_THROUGHPUT,
 	.upthreshold	= 20,
+#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
+	.cal_qos_max	= MAX_MIFFREQ,
+#else
 	.cal_qos_max	= 400000,
+#endif
 };
 #endif
 
@@ -490,6 +496,10 @@ static int exynos3250_mif_table(struct devfreq_data_mif *data)
 	/* will add code for ASV information setting function in here */
 
 	for (i = 0; i < ARRAY_SIZE(devfreq_mif_opp_list); i++) {
+#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
+		if (MAX_MIFFREQ < devfreq_mif_opp_list[i].freq)
+			continue;
+#endif
 		devfreq_mif_opp_list[i].volt = get_match_volt(ID_MIF, devfreq_mif_opp_list[i].freq);
 		if (devfreq_mif_opp_list[i].volt == 0) {
 			dev_err(data->dev, "Invalid value\n");
@@ -522,6 +532,10 @@ static ssize_t mif_show_state(struct device *dev, struct device_attribute *attr,
 	ssize_t cnt_remain = (ssize_t)(PAGE_SIZE - 1);
 
 	for (i = LV0; i < LV_COUNT; i++) {
+#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
+		if (MAX_MIFFREQ < devfreq_mif_opp_list[i].freq)
+			continue;
+#endif
 		len += snprintf(buf + len, cnt_remain, "%ld %llu\n",
 				devfreq_mif_opp_list[i].freq,
 				(unsigned long long)devfreq_mif_time_in_state[i]);
@@ -538,6 +552,10 @@ static ssize_t mif_show_freq(struct device *dev, struct device_attribute *attr, 
 	ssize_t cnt_remain = (ssize_t)(PAGE_SIZE - 1);
 
 	for (i = LV_COUNT - 1; i >= 0; i--) {
+#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
+		if (MAX_MIFFREQ < devfreq_mif_opp_list[i].freq)
+			continue;
+#endif
 		len += snprintf(buf + len, cnt_remain, "%ld ",
 				devfreq_mif_opp_list[i].freq);
 		cnt_remain = (ssize_t)(PAGE_SIZE - len - 1);

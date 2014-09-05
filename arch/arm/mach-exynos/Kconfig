@@ -338,6 +338,23 @@ config EXYNOS3250_MAX_INTFREQ
 	  It limits max_freq of INT to the provided value.
 	  provide valid INT freq value[135/134/133/100/80/50 MHz].
 
+config EXYNOS_LOCK_MAX_MIFFREQ
+	bool "Lock maximum MIF frequency"
+	depends on PM_DEVFREQ
+	default n
+	help
+	  Support for locking maximum MIF frequency level.
+
+config EXYNOS3250_MAX_MIFFREQ
+	int "MHz : Maximum MIF frequency to be allowed"
+	depends on ARM_EXYNOS3250_BUS_DEVFREQ
+	depends on EXYNOS_LOCK_MAX_MIFFREQ
+	range 50 400
+	default 400
+	help
+	  It limits max_freq of MIF to the provided value.
+	  Provide valid MIF freq value[400/200/133/100/50 MHz].
+
 if EXYNOS_ATAGS
 
 config EXYNOS_DEV_DMA
