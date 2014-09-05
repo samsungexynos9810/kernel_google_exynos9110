@@ -1765,7 +1765,10 @@ static void s3c24xx_serial_resetport(struct uart_port *port,
 
 	ucon &= ucon_mask;
 	wr_regl(port, S3C2410_UCON,  ucon | cfg->ucon);
-
+#ifdef CONFIG_SERIAL_SAMSUNG_LOOPBACK_MODE
+	if (port->line == 0)
+		wr_regl(port, S3C2410_UCON,  ucon | cfg->ucon | (1 << 5));
+#endif
 	/* reset both fifos */
 	wr_regl(port, S3C2410_UFCON, cfg->ufcon | S3C2410_UFCON_RESETBOTH);
 	wr_regl(port, S3C2410_UFCON, cfg->ufcon);
