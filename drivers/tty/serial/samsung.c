@@ -2592,7 +2592,8 @@ static struct s3c24xx_serial_drv_data exynos4210_serial_drv_data = {
 		.ufcon		= S5PV210_UFCON_DEFAULT,
 		.has_fracval	= 1,
 	},
-	.fifosize = { 256, 64, 16, 256 },
+/* For 3250 */
+	.fifosize = { 256, 64, 256, 16 },
 };
 
 static struct s3c24xx_serial_drv_data exynos5430_serial_drv_data = {
