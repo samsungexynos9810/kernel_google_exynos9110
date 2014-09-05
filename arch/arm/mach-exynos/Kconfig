@@ -355,6 +355,25 @@ config EXYNOS3250_MAX_MIFFREQ
 	  It limits max_freq of MIF to the provided value.
 	  Provide valid MIF freq value[400/200/133/100/50 MHz].
 
+choice
+	prompt "Lock maximum G3D frequency"
+	default EXYNOS_MAX_G3DFREQ_266
+	depends on SOC_EXYNOS3250
+	depends on MALI_VER_R4P0_REL0
+	help
+	 It limits maximum frequency of MALI G3D to the provided value.
+
+config EXYNOS_MAX_G3DFREQ_266
+	bool "266MHz"
+
+config EXYNOS_MAX_G3DFREQ_160
+	bool "160MHz"
+
+config EXYNOS_MAX_G3DFREQ_80
+	bool "80MHz"
+
+endchoice
+
 if EXYNOS_ATAGS
 
 config EXYNOS_DEV_DMA

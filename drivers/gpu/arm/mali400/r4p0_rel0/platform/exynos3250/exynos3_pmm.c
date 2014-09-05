@@ -55,7 +55,14 @@
 
 #include <linux/pm_qos.h>
 static struct pm_qos_request exynos_g3d_int_qos;
+
+#if defined(CONFIG_EXYNOS_MAX_G3DFREQ_80)
+#define MALI_DVFS_STEPS 2
+#elif defined(CONFIG_EXYNOS_MAX_G3DFREQ_160)
+#define MALI_DVFS_STEPS 3
+#else
 #define MALI_DVFS_STEPS 6
+#endif
 
 #define MALI_DVFS_WATING 10 /* msec */
 #define MALI_DVFS_DEFAULT_STEP 0
@@ -87,11 +94,15 @@ mali_runtime_resume_table mali_runtime_resume = {80, 50000, 0};
 mali_dvfs_table mali_dvfs[MALI_DVFS_STEPS]={
 	{80, 	1000000, 50000, 0, 	70},
 	{80, 	1000000, 80000, 62, 	90},
+#if defined(CONFIG_EXYNOS_MAX_G3DFREQ_266) || defined(CONFIG_EXYNOS_MAX_G3DFREQ_160)
 	{160, 	1000000, 100000, 85, 	90},
+#if defined(CONFIG_EXYNOS_MAX_G3DFREQ_266)
 	{266, 	1000000, 133000, 85,  	100}, /* No ISP */
 	{266, 	1000000, 134000, 85,  	100}, /* ISP */
-	{266, 	1000000, 135000, 85,  	100} };/* ISP Boost */
-
+	{266, 	1000000, 135000, 85,  	100}  /* ISP Boost */
+#endif
+#endif
+};
 
 char *mali_freq_table = "266 160 80";
 typedef struct mali_dvfs_statusTag{
