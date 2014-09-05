@@ -33,6 +33,7 @@
 
 #define SAFE_INT_VOLT(x)	(x + 25000)
 #define INT_TIMEOUT_VAL		10000
+#define MAX_INTFREQ (CONFIG_EXYNOS3250_MAX_INTFREQ * 1000)
 
 static struct device *int_dev;
 static struct pm_qos_request exynos3250_int_qos;
@@ -375,7 +376,11 @@ static struct devfreq_pm_qos_data exynos3250_devfreq_int_pm_qos_data = {
 static struct devfreq_simple_ondemand_data exynos3250_int_governor_data = {
 	.pm_qos_class	= PM_QOS_DEVICE_THROUGHPUT,
 	.upthreshold	= 15,
+#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
+	.cal_qos_max = MAX_INTFREQ,
+#else
 	.cal_qos_max = 135000,
+#endif
 };
 #endif
 
@@ -469,6 +474,10 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 
 	/* will add code for ASV information setting function in here */
 	for (i = 0; i < ARRAY_SIZE(int_bus_opp_list); i++) {
+#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
+		if (MAX_INTFREQ < int_bus_opp_list[i].clk)
+			continue;
+#endif
 		int_bus_opp_list[i].volt = get_match_volt(ID_INT, int_bus_opp_list[i].clk);
 		if (int_bus_opp_list[i].volt == 0) {
 			dev_err(data->dev, "Invalid value\n");
@@ -501,6 +510,10 @@ static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr
 
 	rcu_read_lock();
 	for (i = 0; i < ARRAY_SIZE(int_bus_opp_list); i++) {
+#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
+		if (MAX_INTFREQ < int_bus_opp_list[i].clk)
+			continue;
+#endif
 		opp = opp_find_freq_exact(int_dev, int_bus_opp_list[i].clk, true);
 		if (!IS_ERR_OR_NULL(opp))
 			count += snprintf(&buf[count], PAGE_SIZE-count, "%lu ", opp_get_freq(opp));
@@ -519,9 +532,14 @@ static ssize_t int_show_state(struct device *dev, struct device_attribute *attr,
 	ssize_t len = 0;
 	ssize_t write_cnt = (ssize_t)((PAGE_SIZE / LV_END) - 2);
 
-	for (i = LV_0; i < LV_END; i++)
+	for (i = LV_0; i < LV_END; i++) {
+#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
+		if (MAX_INTFREQ < int_bus_opp_list[i].clk)
+			continue;
+#endif
 		len += snprintf(buf + len, write_cnt, "%ld %llu\n", int_bus_opp_list[i].clk,
 				(unsigned long long)int_bus_opp_list[i].time_in_state);
+	}
 
 	return len;
 }

@@ -321,6 +321,23 @@ config EXYNOS3250_MAX_CPUFREQ
 	  It limits max_freq of CPU to the provided value.
 	  Provide a valid cpu_freq value[1000/900/800/700/600/.../200/100].
 
+config EXYNOS_LOCK_MAX_INTFREQ
+	bool "Lock maximum INT frequency"
+	depends on PM_DEVFREQ
+	default n
+	help
+	  Support for locking maximum INT frequency level.
+
+config EXYNOS3250_MAX_INTFREQ
+	int "MHz : Maximum INT frequency to be allowed"
+	depends on ARM_EXYNOS3250_BUS_DEVFREQ
+	depends on EXYNOS_LOCK_MAX_INTFREQ
+	range 50 135
+	default 135
+	help
+	  It limits max_freq of INT to the provided value.
+	  provide valid INT freq value[135/134/133/100/80/50 MHz].
+
 if EXYNOS_ATAGS
 
 config EXYNOS_DEV_DMA
