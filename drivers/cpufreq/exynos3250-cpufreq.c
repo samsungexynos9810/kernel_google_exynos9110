@@ -287,7 +287,9 @@ int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 	int i;
 	unsigned int tmp;
 	unsigned long rate;
-
+#ifdef CONFIG_EXYNOS_LOCK_MAX_CPUFREQ
+	unsigned int new_idx = 0, pll_safe_volt = 0;
+#endif
 	cpu_clk = clk_get(NULL, "fout_apll");
 	if (IS_ERR(cpu_clk))
 		return PTR_ERR(cpu_clk);
@@ -350,6 +352,50 @@ int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 	set_volt_table();
 #endif
 	info->volt_table = exynos3250_volt_table;
+
+#ifdef CONFIG_EXYNOS_LOCK_MAX_CPUFREQ
+#define MAX_CPUFREQ (CONFIG_EXYNOS3250_MAX_CPUFREQ * 1000)
+	if (rate > MAX_CPUFREQ) {
+		pr_warn("%s: CPU max_freq: %u KHz but mout_mpll: %lu KHz\n",
+			__func__, MAX_CPUFREQ, rate);
+		pll_safe_volt = exynos3250_volt_table[info->pll_safe_idx];
+	}
+
+	for (i = 0; i < CPUFREQ_LEVEL_END; i++) {
+		if (exynos3250_freq_table[i].frequency <= MAX_CPUFREQ) {
+			exynos3250_freq_table[new_idx].frequency =
+					exynos3250_freq_table[i].frequency;
+
+			if (rate == exynos3250_freq_table[new_idx].frequency)
+				info->pll_safe_idx = new_idx;
+
+			exynos3250_clkdiv_table[new_idx].clkdiv0 =
+					exynos3250_clkdiv_table[i].clkdiv0;
+			exynos3250_clkdiv_table[new_idx].clkdiv1 =
+					exynos3250_clkdiv_table[i].clkdiv1;
+#ifdef CONFIG_EXYNOS_ASV
+			exynos3250_cpu_asv_abb[new_idx] =
+					exynos3250_cpu_asv_abb[i];
+#endif
+			exynos3250_volt_table[new_idx] = exynos3250_volt_table[i];
+
+			new_idx++;
+		}
+		if (new_idx - 1 != i)
+			exynos3250_freq_table[i].frequency = CPUFREQ_ENTRY_INVALID;
+	}
+
+	if (new_idx < CPUFREQ_LEVEL_END)
+		exynos3250_freq_table[new_idx].frequency = CPUFREQ_TABLE_END;
+
+	if (rate > MAX_CPUFREQ) {
+		/* keep safe_arm_volt at end of table */
+		exynos3250_volt_table[CPUFREQ_LEVEL_END - 1] = pll_safe_volt;
+		info->pll_safe_idx = CPUFREQ_LEVEL_END - 1;
+	}
+
+	info->min_support_idx = new_idx - 1;
+#endif
 
 	return 0;
 

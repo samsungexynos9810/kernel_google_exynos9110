@@ -304,6 +304,23 @@ config ASV_MARGIN_TEST
 	help
 	  Support to ASV voltage margin test
 
+config EXYNOS_LOCK_MAX_CPUFREQ
+	bool "Lock maximum CPU frequency"
+	depends on ARM_EXYNOS_CPUFREQ
+	default n
+	help
+	  Support for locking maximum CPU frequency level.
+
+config EXYNOS3250_MAX_CPUFREQ
+	int "MHz : Maximum CPU frequency to be allowed"
+	depends on ARM_EXYNOS3250_CPUFREQ
+	depends on EXYNOS_LOCK_MAX_CPUFREQ
+	range 100 1000
+	default 1000
+	help
+	  It limits max_freq of CPU to the provided value.
+	  Provide a valid cpu_freq value[1000/900/800/700/600/.../200/100].
+
 if EXYNOS_ATAGS
 
 config EXYNOS_DEV_DMA
