@@ -292,9 +292,10 @@ static int exynos3250_devfreq_set_dll_voltage(struct devfreq_data_mif *data,
 	unsigned long target_volt;
 	unsigned int tmp;
 	struct opp *target_opp;
+	unsigned long freq = devfreq_mif_opp_list[target_idx].freq;
 
 	rcu_read_lock();
-	target_opp = devfreq_recommended_opp(data->dev, &devfreq_mif_opp_list[target_idx].freq, 0);
+	target_opp = devfreq_recommended_opp(data->dev, &freq, 0);
 	if (IS_ERR(target_opp)) {
 		rcu_read_unlock();
 		dev_err(data->dev, "DEVFREQ(MIF) : Invalid OPP to find\n");
