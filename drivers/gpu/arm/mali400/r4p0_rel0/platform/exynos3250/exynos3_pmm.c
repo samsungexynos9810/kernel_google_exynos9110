@@ -53,9 +53,6 @@
 
 #ifdef CONFIG_MALI_DVFS
 
-#include <linux/pm_qos.h>
-static struct pm_qos_request exynos_g3d_int_qos;
-
 #if defined(CONFIG_EXYNOS_MAX_G3DFREQ_80)
 #define MALI_DVFS_STEPS 2
 #elif defined(CONFIG_EXYNOS_MAX_G3DFREQ_160)
@@ -75,7 +72,7 @@ static int bMaliDvfsRun = 0;
 typedef struct mali_dvfs_tableTag{
 	unsigned int clock;
 	unsigned int freq;
-	unsigned int vol;
+	unsigned int int_freq;
 	unsigned int downthreshold;
 	unsigned int upthreshold;
 }mali_dvfs_table;
@@ -223,19 +220,23 @@ void mali400_remove_sysfs_file(struct device *dev)
 	device_remove_file(dev, &dev_attr_dvfs_status);
 }
 #endif
+
 #ifdef CONFIG_MALI_DVFS
 #ifdef CONFIG_REGULATOR
-void mali_regulator_set_voltage(int vol_level)
+extern int g3d_regulator_set_voltage(int int_target_freq);
+extern void int_g3d_regulator_init(struct regulator *regulator);
+void mali_regulator_set_voltage(int int_target_freq)
 {
+	int g3d_voltage;
 	_mali_osk_mutex_wait(mali_dvfs_lock);
-	if(IS_ERR_OR_NULL(g3d_regulator))
-	{
+	if(IS_ERR_OR_NULL(g3d_regulator)) {
 		MALI_DEBUG_PRINT(1, ("error on mali_regulator_set_voltage : g3d_regulator is null\n"));
 		_mali_osk_mutex_signal(mali_dvfs_lock);
 		return;
 	}
-	MALI_DEBUG_PRINT(1, ("= regulator_set_voltage: %d, %d \n", min_uV, max_uV));
-	pm_qos_update_request(&exynos_g3d_int_qos, vol_level);
+	g3d_voltage = g3d_regulator_set_voltage(int_target_freq);
+	MALI_DEBUG_PRINT(1, ("= regulator_set_voltage: %d \n", g3d_voltage));
+
 	mali_gpu_vol = regulator_get_voltage(g3d_regulator);
 	MALI_DEBUG_PRINT(1, ("Mali voltage: %d\n", mali_gpu_vol));
 	_mali_osk_mutex_signal(mali_dvfs_lock);
@@ -445,10 +446,11 @@ mali_bool set_mali_dvfs_current_step(unsigned int step)
 
 static mali_bool set_mali_dvfs_status(u32 step,mali_bool boostup)
 {
+
 	if(boostup)	{
 #ifdef CONFIG_REGULATOR
 		/*change the voltage*/
-		mali_regulator_set_voltage(mali_dvfs[step].vol);
+		mali_regulator_set_voltage(mali_dvfs[step].int_freq);
 #endif
 		/*change the clock*/
 		mali_dvfs_clk_set_rate(mali_dvfs[step].clock, mali_dvfs[step].freq);
@@ -456,7 +458,7 @@ static mali_bool set_mali_dvfs_status(u32 step,mali_bool boostup)
 		/*change the clock*/
 		mali_dvfs_clk_set_rate(mali_dvfs[step].clock, mali_dvfs[step].freq);
 #ifdef CONFIG_REGULATOR
-		mali_regulator_set_voltage(mali_dvfs[step].vol);
+		mali_regulator_set_voltage(mali_dvfs[step].int_freq);
 #endif
 	}
 
@@ -685,28 +687,26 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 #ifdef CONFIG_MALI_DVFS
 #ifdef CONFIG_REGULATOR
 	if(g3d_regulator == NULL) {
-	g3d_regulator = regulator_get(NULL, "vdd_int");
+		g3d_regulator = regulator_get(NULL, "vdd_int");
+		if (IS_ERR(g3d_regulator)) {
+			MALI_PRINT(("MALI Error : failed to get vdd_int for g3d\n"));
+			ret = MALI_FALSE;
+			regulator_put(g3d_regulator);
+			g3d_regulator = NULL;
+			return MALI_FALSE;
+		}
 
-	if (IS_ERR(g3d_regulator)) {
-		MALI_PRINT(("MALI Error : failed to get vdd_int for g3d\n"));
-		ret = MALI_FALSE;
-		regulator_put(g3d_regulator);
-		g3d_regulator = NULL;
-		return MALI_FALSE;
-	}
+		int_g3d_regulator_init(g3d_regulator);
 
-	mali_gpu_vol = mali_runtime_resume.vol;
+		mali_gpu_vol = mali_runtime_resume.vol;
 #ifdef EXYNOS4_ASV_ENABLED
-	mali_gpu_vol = get_match_volt(ID_G3D, mali_gpu_clk * GPU_ASV_VOLT);
-	mali_runtime_resume.vol = get_match_volt(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT);
+		mali_gpu_vol = get_match_volt(ID_G3D, mali_gpu_clk * GPU_ASV_VOLT);
+		mali_runtime_resume.vol = get_match_volt(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT);
 #endif
-
-	//regulator_enable(g3d_regulator);
-	mali_regulator_set_voltage(mali_gpu_vol);
-
-
+		//regulator_enable(g3d_regulator);
+		mali_regulator_set_voltage(mali_gpu_vol);
 #if defined(EXYNOS4_ASV_ENABLED) && defined(EXYNOS4_ABB_ENABLED)
-	exynos_set_abb(ID_G3D, get_match_abb(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT));
+		exynos_set_abb(ID_G3D, get_match_abb(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT));
 #endif
 	}
 #endif
@@ -795,8 +795,6 @@ _mali_osk_errcode_t mali_platform_init(struct platform_device *pdev)
 {
 	atomic_set(&clk_active, 0);
 #ifdef CONFIG_MALI_DVFS
-	pm_qos_add_request(&exynos_g3d_int_qos, PM_QOS_DEVICE_THROUGHPUT, 0);
-
 	if (!clk_register_map)
 		clk_register_map = _mali_osk_mem_mapioregion(CLK_DIV_STAT_G3D, 0x20, CLK_DESC);
 
@@ -819,7 +817,6 @@ _mali_osk_errcode_t mali_platform_deinit(struct platform_device *pdev)
 	clk_disable_unprepare(fout_vpll_clock);
 
 #ifdef CONFIG_MALI_DVFS
-	pm_qos_remove_request(&exynos_g3d_int_qos);
 	deinit_mali_dvfs_status();
 	if (clk_register_map) {
 		_mali_osk_mem_unmapioregion(CLK_DIV_STAT_G3D, 0x20, clk_register_map);

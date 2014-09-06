@@ -22,6 +22,7 @@
 #include <linux/reboot.h>
 #include <linux/kobject.h>
 #include <linux/clk.h>
+#include <linux/mutex.h>
 
 #include <mach/regs-clock.h>
 #include <mach/devfreq.h>
@@ -284,6 +285,53 @@ static enum int_bus_idx exynos3250_find_int_bus_idx(unsigned long target_freq)
 
 	return LV_END;
 }
+struct regulator *int_regulator = NULL;
+struct mutex int_g3d_lock;
+void int_g3d_regulator_init(struct regulator *regulator)
+{
+	if (int_regulator == NULL) {
+		mutex_init(&int_g3d_lock);
+		int_regulator = regulator;
+	}
+	return;
+}
+
+static int int_g3d_regulator_set_voltage(int min_uV, int max_uV, enum asv_type_id target_type)
+{
+	static int int_min_uV =0, int_max_uV =0, g3d_min_uV = 0, g3d_max_uV = 0;
+
+	BUG_ON(!int_regulator);
+	mutex_lock(&int_g3d_lock);
+	if (target_type == ID_G3D) {
+		g3d_min_uV = min_uV;
+		g3d_max_uV = max_uV;
+	} else if (target_type == ID_INT) {
+		int_min_uV = min_uV;
+		int_max_uV = max_uV;
+	}
+
+	if (g3d_min_uV < int_min_uV)
+		regulator_set_voltage(int_regulator, int_min_uV, int_max_uV);
+	else
+		regulator_set_voltage(int_regulator, g3d_min_uV, g3d_max_uV);
+
+	mutex_unlock(&int_g3d_lock);
+	return 0;
+}
+
+int g3d_regulator_set_voltage(int target_freq)
+{
+	int g3d_voltage = 0, i;
+
+	for (i = LV_0; i < LV_END; i++) {
+		if (int_bus_opp_list[i].clk == target_freq) {
+			g3d_voltage = int_bus_opp_list[i].volt;
+			break;
+		}
+	}
+	int_g3d_regulator_set_voltage(g3d_voltage, SAFE_INT_VOLT(g3d_voltage), ID_G3D);
+	return g3d_voltage;
+}
 
 static int exynos3250_int_devfreq_target(struct device *dev,
 					unsigned long *_freq, u32 flags)
@@ -322,11 +370,11 @@ static int exynos3250_int_devfreq_target(struct device *dev,
 	mutex_lock(&data->lock);
 
 	if (old_freq < freq) {
-		regulator_set_voltage(data->vdd_int, target_volt, SAFE_INT_VOLT(target_volt));
+		int_g3d_regulator_set_voltage(target_volt, SAFE_INT_VOLT(target_volt), ID_INT);
 		err = exynos3250_int_set_div(exynos3250_find_int_bus_idx(freq));
 	} else {
 		err = exynos3250_int_set_div(exynos3250_find_int_bus_idx(freq));
-		regulator_set_voltage(data->vdd_int, target_volt, SAFE_INT_VOLT(target_volt));
+		int_g3d_regulator_set_voltage(target_volt, SAFE_INT_VOLT(target_volt), ID_INT);
 	}
 
 	if (freq > int_bus_opp_list[LV_3].clk) {
@@ -614,6 +662,7 @@ static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 		err = PTR_ERR(data->vdd_int);
 		goto err_regulator;
 	}
+	int_g3d_regulator_init(data->vdd_int);
 
 	/* Init PPMU for INT devfreq */
 	data->ppmu = exynos3250_ppmu_get(PPMU_SET_INT);
@@ -687,16 +736,14 @@ static int exynos3250_devfreq_int_remove(struct platform_device *pdev)
 
 static int exynos3250_devfreq_int_suspend(struct device *dev)
 {
-	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
-	struct devfreq_data_int *data = platform_get_drvdata(pdev);
 	unsigned int temp_volt;
 
 	if (pm_qos_request_active(&exynos3250_int_qos))
 		pm_qos_update_request(&exynos3250_int_qos, exynos3250_int_devfreq_profile.initial_freq);
 
 	temp_volt = get_match_volt(ID_INT, int_bus_opp_list[0].clk);
-	regulator_set_voltage(data->vdd_int, (temp_volt + INT_COLD_OFFSET),
-				SAFE_INT_VOLT(temp_volt + INT_COLD_OFFSET));
+	int_g3d_regulator_set_voltage((temp_volt + INT_COLD_OFFSET),
+				SAFE_INT_VOLT(temp_volt + INT_COLD_OFFSET), ID_INT);
 
 	return 0;
 }
