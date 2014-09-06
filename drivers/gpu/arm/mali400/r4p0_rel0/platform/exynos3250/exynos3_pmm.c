@@ -704,7 +704,7 @@ static mali_bool init_mali_clock(struct platform_device *pdev)
 		mali_runtime_resume.vol = get_match_volt(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT);
 #endif
 		//regulator_enable(g3d_regulator);
-		mali_regulator_set_voltage(mali_gpu_vol);
+		//mali_regulator_set_voltage(mali_gpu_vol);
 #if defined(EXYNOS4_ASV_ENABLED) && defined(EXYNOS4_ABB_ENABLED)
 		exynos_set_abb(ID_G3D, get_match_abb(ID_G3D, mali_runtime_resume.clk * GPU_ASV_VOLT));
 #endif
