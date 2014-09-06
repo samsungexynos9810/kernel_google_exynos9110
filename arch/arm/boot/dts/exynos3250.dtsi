@@ -119,6 +119,8 @@
 		interrupts = <0 109 0>;
 		clocks = <&clock CLK_SCLK_UART0>, <&clock CLK_UART0>;
                 clock-names = "sclk_uart0", "gate_uart0";
+		int_qos_val = <135000>;
+		qos_timeout = <1000000>;
 	};
 
 	serial@13810000 {
@@ -129,6 +131,8 @@
 		interrupts = <0 110 0>;
 		clocks = <&clock CLK_SCLK_UART1>, <&clock CLK_UART1>;
                 clock-names = "sclk_uart1", "gate_uart1";
+		int_qos_val = <135000>;
+		qos_timeout = <1000000>;
 	};
 
 	serial@13820000 {
@@ -149,6 +153,8 @@
 		interrupts = <0 112 0>;
 		clocks = <&clock CLK_SCLK_UART3>, <&clock CLK_UART3>;
                 clock-names = "sclk_uart3", "gate_uart3";
+		int_qos_val = <135000>;
+		qos_timeout = <1000000>;
 	};
 
 	rtc@10070000 {
