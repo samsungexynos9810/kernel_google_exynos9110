@@ -16,6 +16,7 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/cpufreq.h>
+#include <linux/pm_qos.h>
 
 #include <mach/asv-exynos.h>
 #include <mach/regs-clock.h>
@@ -165,6 +166,21 @@ static unsigned int exynos3250_apll_pms_table[CPUFREQ_LEVEL_END] = {
 	((200<<16)|(3<<8)|(0x4)),
 };
 
+static struct pm_qos_request exynos3250_mif_qos;
+
+static int exynos3250_mif_qos_table[CPUFREQ_LEVEL_END] = {
+	[L0] = 200000,		/* KHz */
+	[L1] = 200000,
+	[L2] = 133000,
+	[L3] = 133000,
+	[L4] = 100000,
+	[L5] = 0,
+	[L6] = 0,
+	[L7] = 0,
+	[L8] = 0,
+	[L9] = 0,
+};
+
 static void exynos3250_set_clkdiv(unsigned int div_index)
 {
 	unsigned int tmp;
@@ -229,6 +245,9 @@ static void exynos3250_set_frequency(unsigned int old_index,
 		/* 2. Change the system clock divider values */
 		exynos3250_set_clkdiv(new_index);
 	}
+
+	pm_qos_update_request(&exynos3250_mif_qos,
+				exynos3250_mif_qos_table[new_index]);
 }
 
 bool exynos3250_pms_change(unsigned int old_index, unsigned int new_index)
@@ -378,6 +397,8 @@ int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 					exynos3250_cpu_asv_abb[i];
 #endif
 			exynos3250_volt_table[new_idx] = exynos3250_volt_table[i];
+			exynos3250_mif_qos_table[new_idx] =
+					exynos3250_mif_qos_table[i];
 
 			new_idx++;
 		}
@@ -396,6 +417,7 @@ int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 
 	info->min_support_idx = new_idx - 1;
 #endif
+	pm_qos_add_request(&exynos3250_mif_qos, PM_QOS_BUS_THROUGHPUT, 0);
 
 	return 0;
 
