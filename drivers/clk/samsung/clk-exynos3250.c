@@ -115,6 +115,10 @@ PNAME(mout_mpll_user_p)		= { "fin_pll", "dout_mpll_pre" };
 PNAME(group_sclk_p)		= { "xxti", "xusbxti", "none", "none", "none",
 					"none",	"dout_mpll_pre",
 					"mout_epll", "mout_vpll" };
+PNAME(group_sclk_audio_p)       = { "audiocdclk", "none",
+					"none", "none", "xxti", "xusbxti",
+					"dout_mpll_pre", "mout_epll",
+					"mout_vpll" };
 PNAME(group_sclk_fimd0_p)	= { "xxti", "xusbxti", "m_bitclkhsdiv4_2l",
 					"none", "none",	"none",	"dout_mpll_pre",
 					"mout_epll", "mout_vpll", "none",
@@ -237,7 +241,7 @@ static struct samsung_mux_clock exynos3250_mux_clks[] __initdata = {
 	CMUX(CLK_MOUT_UART_ISP, "mout_uart_isp", mout_isp_p, SRC_ISP, 12, 3),
 	CMUX(CLK_MOUT_SPI1_ISP, "mout_spi1_isp", mout_isp_p, SRC_ISP, 8, 3),
 	CMUX(CLK_MOUT_SPI0_ISP, "mout_spi0_isp", mout_isp_p, SRC_ISP, 4, 3),
-	CMUX(CLK_MOUT_AUDIO, "mout_audio", group_sclk_p, SRC_PERIL1, 4, 4),
+	CMUX(CLK_MOUT_AUDIO, "mout_audio", group_sclk_audio_p, SRC_PERIL1, 4, 4),
 };
 
 #define CDIV(_id, cname, pname, o, s, w) \
