@@ -278,7 +278,7 @@ static struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 
 	CDIV_F(CLK_DIV_MMC0_PRE, "dout_mmc0_pre", "dout_mmc0", DIV_FSYS1, 8, 8,
 			CLK_SET_RATE_PARENT, 0),
-	CDIV(CLK_DIV_MMC0, "dout_mmc0", "mout_mmc0", DIV_FSYS1, 0, 3),
+	CDIV(CLK_DIV_MMC0, "dout_mmc0", "mout_mmc0", DIV_FSYS1, 0, 4),
 
 	CDIV(CLK_DIV_UART3, "dout_uart3", "mout_uart3",	DIV_PERIL0, 12, 4),
 	CDIV(CLK_DIV_UART2, "dout_uart2", "mout_uart2",	DIV_PERIL0, 8, 4),
@@ -298,9 +298,9 @@ static struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_CAM1, "dout_cam1", "mout_cam1", DIV_CAM, 20, 4),
 	CDIV(CLK_DIV_CAM_BLK, "dout_cam_blk", "mout_cam_blk", DIV_CAM, 0, 4),
 
-	CDIV(CLK_DIV_SPI1_PRE, "dout_spi1_pre", "dout_spi1", DIV_PERIL1, 24, 4),
+	CDIV(CLK_DIV_SPI1_PRE, "dout_spi1_pre", "dout_spi1", DIV_PERIL1, 24, 8),
 	CDIV(CLK_DIV_SPI1, "dout_spi1", "mout_spi1", DIV_PERIL1, 16, 4),
-	CDIV(CLK_DIV_SPI0_PRE, "dout_spi0_pre", "dout_spi0", DIV_PERIL1, 8, 4),
+	CDIV(CLK_DIV_SPI0_PRE, "dout_spi0_pre", "dout_spi0", DIV_PERIL1, 8, 8),
 	CDIV(CLK_DIV_SPI0, "dout_spi0", "mout_spi0", DIV_PERIL1, 0, 4),
 
 	CDIV(CLK_DIV_UART_ISP, "dout_uart_isp", "mout_uart_isp",
