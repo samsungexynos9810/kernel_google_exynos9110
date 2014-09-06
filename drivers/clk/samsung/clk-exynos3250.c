@@ -259,10 +259,10 @@ static struct samsung_div_clock exynos3250_div_clks[] __initdata = {
 	CDIV(CLK_DIV_MPLL_PRE, "dout_mpll_pre", "sclk_mpll_mif", DIV_TOP, 28, 2),
 	CDIV(CLK_DIV_ACLK_400_MCUISP, "dout_aclk_400_mcuisp",
 			"mout_aclk_400_mcuisp", DIV_TOP, 24, 3),
-	CDIV(CLK_DIV_ACLK_200, "dout_aclk_200", "mout_aclk200", DIV_TOP, 12, 4),
+	CDIV(CLK_DIV_ACLK_200, "dout_aclk_200", "mout_aclk200", DIV_TOP, 12, 3),
 	CDIV(CLK_DIV_ACLK_160, "dout_aclk_160", "mout_aclk_160", DIV_TOP, 8, 3),
 	CDIV(CLK_DIV_ACLK_100, "dout_aclk_100", "mout_aclk100", DIV_TOP, 4, 4),
-	CDIV(CLK_DIV_ACLK_266, "dout_aclk_266", "mout_aclk_266", DIV_TOP, 0, 2),
+	CDIV(CLK_DIV_ACLK_266, "dout_aclk_266", "mout_aclk_266", DIV_TOP, 0, 3),
 
 	CDIV_F(CLK_DIV_TSADC_PRE, "dout_tsadc_pre", "dout_tsadc", DIV_FSYS0, 8,
 			8, CLK_SET_RATE_PARENT, 0),
