@@ -419,7 +419,7 @@ int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 
 	if ((clk_get_rate(cpu_clk) / 1000) >
 		exynos3250_freq_table[L0].frequency) {
-		pr_info("%s: Setting initial freq : %lu \n", __func__,
+		pr_info("%s: Setting initial freq : %d \n", __func__,
 				exynos3250_freq_table[L0].frequency);
 		/* Change the apll m,p,s value */
 		exynos3250_set_apll(L0);
