@@ -2046,7 +2046,7 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 
 	if (of_property_read_u32(pdev->dev.of_node, "int_qos_val",
 						&ourport->int_qos_val))
-		ourport->cpu_qos_val = 0;
+		ourport->int_qos_val = 0;
 
 	if (of_property_read_u32(pdev->dev.of_node, "irq_affinity",
 						&ourport->uart_irq_affinity))
