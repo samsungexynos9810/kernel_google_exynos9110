@@ -416,6 +416,16 @@ int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 	}
 
 	info->min_support_idx = new_idx - 1;
+
+	if ((clk_get_rate(cpu_clk) / 1000) >
+		exynos3250_freq_table[L0].frequency) {
+		pr_info("%s: Setting initial freq : %lu \n", __func__,
+				exynos3250_freq_table[L0].frequency);
+		/* Change the apll m,p,s value */
+		exynos3250_set_apll(L0);
+		/* Change the system clock divider values */
+		exynos3250_set_clkdiv(L0);
+	}
 #endif
 	pm_qos_add_request(&exynos3250_mif_qos, PM_QOS_BUS_THROUGHPUT, 0);
 
