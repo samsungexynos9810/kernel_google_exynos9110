@@ -334,8 +334,13 @@ static struct irqaction mct_comp_event_irq = {
 static void exynos4_clockevent_init(void)
 {
 	mct_comp_device.cpumask = cpumask_of(0);
+#ifndef CONFIG_LOCAL_TIMERS
+	clockevents_config_and_register(&mct_comp_device, clk_rate,
+					0x3ff, 0xffffffff);
+#else
 	clockevents_config_and_register(&mct_comp_device, clk_rate,
 					0xff, 0xffffffff);
+#endif
 	setup_irq(mct_irqs[MCT_G0_IRQ], &mct_comp_event_irq);
 }
 
