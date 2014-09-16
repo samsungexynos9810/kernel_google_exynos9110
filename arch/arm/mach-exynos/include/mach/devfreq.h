@@ -59,4 +59,21 @@ void exynos5_mif_transition_disable(bool disable);
 void exynos5_update_media_layers(enum devfreq_media_type media_type, unsigned int value);
 #endif /* CONFIG_ARM_EXYNOS5422_BUS_DEVFREQ */
 
+#if defined(CONFIG_MALI_DVFS) || defined (CONFIG_REGULATOR)
+#include <linux/regulator/consumer.h>
+
+#ifdef CONFIG_ARM_EXYNOS3250_BUS_DEVFREQ
+extern int g3d_regulator_set_voltage(int int_target_freq);
+extern void int_g3d_regulator_init(struct regulator *regulator);
+#else
+static inline int g3d_regulator_set_voltage(int int_target_freq)
+{
+	return -EINVAL;
+}
+static inline void int_g3d_regulator_init(struct regulator *regulator)
+{
+	return;
+}
+#endif /* CONFIG_ARM_EXYNOS3250_BUS_DEVFREQ */
+#endif /* CONFIG_MALI_DVFS || CONFIG_REGULATOR */
 #endif

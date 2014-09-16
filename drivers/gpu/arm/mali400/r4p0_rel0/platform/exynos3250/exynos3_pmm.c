@@ -35,6 +35,7 @@
 #define EXYNOS4_ASV_ENABLED
 #endif
 #endif
+#include <mach/devfreq.h>
 
 /* Some defines changed names in later Odroid-A kernels. Make sure it works for both. */
 #ifndef S5P_G3D_CONFIGURATION
@@ -48,7 +49,6 @@
 #endif
 
 #include <asm/io.h>
-#include <mach/regs-pmu.h>
 #include <linux/workqueue.h>
 
 #ifdef CONFIG_MALI_DVFS
@@ -223,8 +223,6 @@ void mali400_remove_sysfs_file(struct device *dev)
 
 #ifdef CONFIG_MALI_DVFS
 #ifdef CONFIG_REGULATOR
-extern int g3d_regulator_set_voltage(int int_target_freq);
-extern void int_g3d_regulator_init(struct regulator *regulator);
 void mali_regulator_set_voltage(int int_target_freq)
 {
 	int g3d_voltage;
