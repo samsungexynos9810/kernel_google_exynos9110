@@ -2121,7 +2121,9 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 static int s3c24xx_serial_remove(struct platform_device *dev)
 {
 	struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
+#if defined(CONFIG_SERIAL_SAMSUNG_DMA) || defined(CONFIG_PM_DEVFREQ)
 	struct s3c24xx_uart_port *ourport = to_ourport(port);
+#endif
 #ifdef CONFIG_SERIAL_SAMSUNG_DMA
 	struct exynos_uart_dma *uart_dma = &ourport->uart_dma;
 
