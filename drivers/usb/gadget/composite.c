@@ -1484,6 +1484,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
 	 * when we delegate to it.
 	 */
 	req->zero = 0;
+	req->context = cdev;
 	req->complete = composite_setup_complete;
 	req->length = 0;
 	gadget->ep0->driver_data = cdev;
@@ -1699,6 +1700,7 @@ unknown:
 			int				count = 0;
 
 			req = cdev->os_desc_req;
+			req->context = cdev;
 			req->complete = composite_setup_complete;
 			buf = req->buf;
 			os_desc_cfg = cdev->os_desc_config;
@@ -1761,6 +1763,7 @@ unknown:
 				break;
 			}
 			req->length = value;
+			req->context = cdev;
 			req->zero = value < w_length;
 			value = usb_ep_queue(gadget->ep0, req, GFP_ATOMIC);
 			if (value < 0) {
@@ -1832,6 +1835,7 @@ unknown:
 	/* respond with data transfer before status phase? */
 	if (value >= 0 && value != USB_GADGET_DELAYED_STATUS) {
 		req->length = value;
+		req->context = cdev;
 		req->zero = value < w_length;
 		value = usb_ep_queue(gadget->ep0, req, GFP_ATOMIC);
 		if (value < 0) {
@@ -1979,6 +1983,7 @@ int composite_dev_prepare(struct usb_composite_driver *composite,
 		goto fail_dev;
 
 	cdev->req->complete = composite_setup_complete;
+	cdev->req->context = cdev;
 	gadget->ep0->driver_data = cdev;
 
 	cdev->driver = composite;
@@ -2023,6 +2028,7 @@ int composite_os_desc_req_prepare(struct usb_composite_dev *cdev,
 		kfree(cdev->os_desc_req);
 		goto end;
 	}
+	cdev->os_desc_req->context = cdev;
 	cdev->os_desc_req->complete = composite_setup_complete;
 end:
 	return ret;
@@ -2244,6 +2250,7 @@ void usb_composite_setup_continue(struct usb_composite_dev *cdev)
 	} else if (--cdev->delayed_status == 0) {
 		DBG(cdev, "%s: Completing delayed status\n", __func__);
 		req->length = 0;
+		req->context = cdev;
 		value = usb_ep_queue(cdev->gadget->ep0, req, GFP_ATOMIC);
 		if (value < 0) {
 			DBG(cdev, "ep_queue --> %d\n", value);
