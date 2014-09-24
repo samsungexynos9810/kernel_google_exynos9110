@@ -270,6 +270,7 @@
 		num-slots = <1>;
 		broken-cd;
 		bypass-smu;
+		clock-gate;
 		fixed_volt;
 		only_once_tune;
 		extra_tuning;
