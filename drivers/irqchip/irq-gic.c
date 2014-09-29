@@ -307,22 +307,41 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	u32 val, mask, bit;
 	unsigned long flags;
 
-	if (!force)
-		cpu = cpumask_any_and(mask_val, cpu_online_mask);
-	else
-		cpu = cpumask_first(mask_val);
-
-	if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
-		return -EINVAL;
-
 	raw_spin_lock_irqsave(&irq_controller_lock, flags);
+	if (unlikely(d->common->state_use_accessors & IRQD_GIC_MULTI_TARGET)) {
+		struct cpumask temp_mask;
+
+		bit = 0;
+		if (!cpumask_and(&temp_mask, mask_val, cpu_online_mask))
+			goto err_out;
+
+		for_each_cpu(cpu, &temp_mask) {
+			if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
+				goto err_out;
+			bit |= gic_cpu_map[cpu];
+		}
+		bit <<= shift;
+	} else {
+		if (!force)
+			cpu = cpumask_any_and(mask_val, cpu_online_mask);
+		else
+			cpu = cpumask_first(mask_val);
+
+		if (cpu >= NR_GIC_CPU_IF || cpu >= nr_cpu_ids)
+			goto err_out;
+
+		bit = gic_cpu_map[cpu] << shift;
+	}
 	mask = 0xff << shift;
-	bit = gic_cpu_map[cpu] << shift;
 	val = readl_relaxed(reg) & ~mask;
 	writel_relaxed(val | bit, reg);
 	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
 
 	return IRQ_SET_MASK_OK;
+
+err_out:
+	raw_spin_unlock_irqrestore(&irq_controller_lock, flags);
+	return -EINVAL;
 }
 #endif
 
