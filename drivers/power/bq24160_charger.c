@@ -1752,6 +1752,32 @@ int bq24160_set_ext_charging_status(int status)
 }
 EXPORT_SYMBOL_GPL(bq24160_set_ext_charging_status);
 
+int bq24160_get_ext_charging_status(void)
+{
+	struct power_supply *psy = power_supply_get_by_name(BQ24160_NAME);
+	struct bq24160_data *bd;
+	int ret=0;
+
+	if (!psy)
+		return -EINVAL;
+	bd = container_of(psy, struct bq24160_data, bat_ps);
+
+	if( STAT_CHARGING_FROM_USB == bd->cached_status.stat ||
+		STAT_CHARGING_FROM_IN == bd->cached_status.stat ||
+		STAT_USB_READY == bd->cached_status.stat ||
+		STAT_IN_READY == bd->cached_status.stat ||
+		STAT_CHARGE_DONE == bd->cached_status.stat){
+			ret = EXT_CHG_STAT_VALID_CHARGER_CONNECTED;
+			printk("CHARGER_CONNECTED: %d\n",bd->cached_status.stat);
+	}else{
+			ret = EXT_CHG_STAT_VALID_CHARGER_NOT_CONNECTED;
+			printk("CHARGER_NOT_CONNECTED: %d\n",bd->cached_status.stat);
+	}
+	return ret;
+}
+EXPORT_SYMBOL_GPL(bq24160_get_ext_charging_status);
+
+
 bool bq24160_is_restricted_by_charger_revision(int batt_voltage,
 				u16 chg_voltage_now, u16 chg_current_now)
 {

@@ -962,6 +962,14 @@ static void s3c24xx_serial_shutdown(struct uart_port *port)
 		tx_enabled(port) = 0;
 		ourport->tx_claimed = 0;
 
+#ifdef CONFIG_SERIAL_SAMSUNG_DMA
+		/* Free DMA tx channels */
+		if (uart_dma->use_dma == 1) {
+			uart_dma->ops->release(uart_dma->tx.ch,
+					&samsung_uart_dma_client);
+			dbg("%s tx free DMA : %x\n", __func__, port->mapbase);
+		}
+#endif
 	}
 
 	if (ourport->rx_claimed) {
@@ -976,6 +984,8 @@ static void s3c24xx_serial_shutdown(struct uart_port *port)
 			uart_dma->rx.busy = 0;
 			dma_unmap_single(port->dev, uart_dma->rx_dst_addr,
 					uart_dma->rx.req_size, DMA_FROM_DEVICE);
+			uart_dma->ops->release(uart_dma->rx.ch,
+					&samsung_uart_dma_client);
 			kfree(uart_dma->rx_buff);
 			dbg("%s rx free DMA : %x\n", __func__, port->mapbase);
 		}
@@ -1083,6 +1093,9 @@ static int s3c64xx_serial_startup(struct uart_port *port)
 		/* initialize err_occurred */
 		ourport->err_occurred = 0;
 
+		/* Acquire DMA channels */
+		while (!acquire_dma(uart_dma))
+			msleep(10);
 
 		/* Alloc buffer for dma */
 		uart_dma->rx_buff = kmalloc(RX_BUFFER_SIZE, GFP_KERNEL);
@@ -2106,12 +2119,6 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 	if (ret < 0)
 		dev_err(&pdev->dev, "failed to add clock source attr.\n");
 #endif
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-	/* Acquire DMA channels */
-	if (uart_dma->use_dma)
-		while (!acquire_dma(uart_dma))
-			msleep(10);
-#endif
 	return 0;
 
  probe_err:
@@ -2121,22 +2128,7 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 static int s3c24xx_serial_remove(struct platform_device *dev)
 {
 	struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
-#if defined(CONFIG_SERIAL_SAMSUNG_DMA) || defined(CONFIG_PM_DEVFREQ)
 	struct s3c24xx_uart_port *ourport = to_ourport(port);
-#endif
-#ifdef CONFIG_SERIAL_SAMSUNG_DMA
-	struct exynos_uart_dma *uart_dma = &ourport->uart_dma;
-
-	/* Free DMA rx/tx channels */
-	if (uart_dma->use_dma == 1) {
-		uart_dma->ops->release(uart_dma->tx.ch,
-				&samsung_uart_dma_client);
-
-		uart_dma->ops->release(uart_dma->rx.ch,
-				&samsung_uart_dma_client);
-		dbg("%s rx/tx free DMA : %x\n", __func__, port->mapbase);
-	}
-#endif
 
 #ifdef CONFIG_PM_DEVFREQ
 	if (ourport->mif_qos_val && ourport->qos_timeout)
@@ -2357,8 +2349,8 @@ s3c24xx_serial_get_options(struct uart_port *port, int *baud,
 		case S3C2410_LCON_CS7:
 			*bits = 7;
 			break;
-		default:
 		case S3C2410_LCON_CS8:
+		default:
 			*bits = 8;
 			break;
 		}

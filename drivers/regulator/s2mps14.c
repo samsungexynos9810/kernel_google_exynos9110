@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/module.h>
 #include <linux/regmap.h>
+#include <linux/debugfs.h>
 #include <linux/regulator/of_regulator.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/driver.h>
@@ -307,6 +308,174 @@ static int s2mps14_pmic_dt_parse_pdata(struct sec_pmic_dev *iodev,
 }
 #endif /* CONFIG_OF */
 
+#ifdef CONFIG_DEBUG_FS
+static ssize_t data_read(struct file *file, char __user *data, size_t count, loff_t *ppos)
+{
+	ssize_t size = 0;
+	struct regulator_dev *rdev = file->private_data;
+	struct s2mps14_info *info = rdev_get_drvdata(rdev);
+	int reg_id = rdev_get_id(rdev);
+
+	pr_debug("%s: count=%zu, ppos=%lld\n", __func__, count, *ppos);
+
+	switch (info->opmode[reg_id] >> S2MPS14_ENABLE_SHIFT) {
+		case SEC_OPMODE_OFF:
+			size = simple_read_from_buffer(data, count, ppos, "OFF\n", sizeof("OFF\n"));
+			break;
+		case SEC_OPMODE_SUSPEND:
+			size = simple_read_from_buffer(data, count, ppos, "SUSPEND\n", sizeof("SUSPEND\n"));
+			break;
+		case SEC_OPMODE_LOWPOWER:
+			size = simple_read_from_buffer(data, count, ppos, "LOWPOWER\n", sizeof("LOWPOWER\n"));
+			break;
+		case SEC_OPMODE_ON:
+			size = simple_read_from_buffer(data, count, ppos, "ON\n", sizeof("ON\n"));
+			break;
+		default:
+			pr_err("opmode_data of %s is invalid:%d\n", rdev->desc->name, info->opmode[reg_id]);
+			break;
+	}
+
+	pr_debug("%s: size=%zd, *ppos=%lld\n", __func__, size, *ppos);
+	return size;
+}
+
+static ssize_t data_write(struct file *file, const char __user *data, size_t count, loff_t *ppos)
+{
+	ssize_t size;
+	struct regulator_dev *rdev = file->private_data;
+	struct s2mps14_info *info = rdev_get_drvdata(rdev);
+	int reg_id = rdev_get_id(rdev);
+	char buffer[9];
+
+	size = simple_write_to_buffer(buffer, ARRAY_SIZE(buffer), ppos, data, count);
+
+	if (size > 0) {
+		if (strncasecmp("OFF", buffer, sizeof("OFF") - 1) == 0) {
+			info->opmode[reg_id] = SEC_OPMODE_OFF << S2MPS14_ENABLE_SHIFT;
+		} else if (strncasecmp("SUSPEND", buffer, sizeof("SUSPEND") - 1) == 0) {
+			info->opmode[reg_id] = SEC_OPMODE_SUSPEND << S2MPS14_ENABLE_SHIFT;
+		} else if (strncasecmp("LOWPOWER", buffer, sizeof("LOWPOWER") - 1) == 0) {
+			info->opmode[reg_id] = SEC_OPMODE_LOWPOWER << S2MPS14_ENABLE_SHIFT;
+		} else if (strncasecmp("ON", buffer, sizeof("ON") - 1) == 0) {
+			info->opmode[reg_id] = SEC_OPMODE_ON << S2MPS14_ENABLE_SHIFT;
+		} else {
+			buffer[ARRAY_SIZE(buffer) - 1] = '\0';
+			pr_err("%s is not recognizable.\n", buffer);
+		}
+	}
+
+	s2m_enable(rdev);
+
+	pr_debug("%s: size=%zd\n", __func__, size);
+	return size;
+}
+
+static ssize_t all_data_read(struct file *file, char __user *data, size_t count, loff_t *ppos)
+{
+	int i;
+	ssize_t size;
+	struct s2mps14_info *info = file->private_data;
+	char *p, *buffer = (char *)kzalloc(PAGE_SIZE, GFP_KERNEL);
+
+	pr_debug("%s: count=%zu, ppos=%lld\n", __func__, count, *ppos);
+
+	p = buffer;
+	size = snprintf(p, PAGE_SIZE - (p - buffer), "NAME\tSW Mode\tRegister value \n==============================\n");
+	if (size > 0) {
+		p += size;
+	} else {
+		pr_err("Title cannot be printed.\n");
+	}
+
+	for (i = 0; i < ARRAY_SIZE(info->rdev); i++) {
+		struct regulator_dev *rdev = info->rdev[i];
+		if (!IS_ERR_OR_NULL(rdev)) {
+			int id = rdev_get_id(rdev);
+			unsigned ret, mode, voltage, value;
+
+			voltage = 0;
+			mode = 0;
+			ret = regmap_read(rdev->regmap, regulators[S2MPS14_DESC_TYPE0][id].enable_reg, &value);
+			if (ret < 0) {
+				pr_err("failure regmap_read\n");
+			}
+			else {
+				mode = (value & 0xc0) >> 0x6;
+				voltage = (value & 0x3F);
+			}
+
+			switch (info->opmode[id] >> S2MPS14_ENABLE_SHIFT) {
+				case SEC_OPMODE_OFF:
+					size = snprintf(p, PAGE_SIZE - (p - buffer), "%s\t%s\tmode:0x%x vol:0x%x\n", rdev->desc->name, "OFF",mode,voltage);
+					break;
+				case SEC_OPMODE_SUSPEND:
+					size = snprintf(p, PAGE_SIZE - (p - buffer), "%s\t%s\tmode:0x%x vol:0x%x\n", rdev->desc->name, "SUSPEND",mode,voltage);
+					break;
+				case SEC_OPMODE_LOWPOWER:
+					size = snprintf(p, PAGE_SIZE - (p - buffer), "%s\t%s\tmode:0x%x vol:0x%x\n", rdev->desc->name, "LOWPOWER",mode,voltage);
+					break;
+				case SEC_OPMODE_ON:
+					size = snprintf(p, PAGE_SIZE - (p - buffer), "%s\t%s\tmode:0x%x vol:0x%x\n", rdev->desc->name, "ON",mode,voltage);
+					break;
+				default:
+					pr_err("opmode_data of %s is invalid:%d\n", rdev->desc->name, info->opmode[id]);
+					continue;
+			}
+			if (size > 0) {
+				p += size;
+			} else {
+				pr_err("opmode_data of %s cannot be printed:%d\n", rdev->desc->name, info->opmode[id]);
+			}
+		}
+	}
+
+	size = simple_read_from_buffer(data, count, ppos, buffer, p - buffer + 1);
+
+	pr_debug("%s: size=%zd, *ppos=%lld\n", __func__, size, *ppos);
+	kfree(buffer);
+	return size;
+}
+
+static const struct file_operations data_ops = {
+	.open		= simple_open,
+	.read		= data_read,
+	.write		= data_write,
+	.llseek		= no_llseek,
+};
+
+static const struct file_operations all_data_ops = {
+	.open		= simple_open,
+	.read		= all_data_read,
+	.llseek		= no_llseek,
+};
+
+static void initialize_debug_fs(struct s2mps14_info *info) {
+	struct dentry *root, *reg_dir;
+	int i;
+
+	pr_debug("%s is called.\n", __func__);
+
+	root = debugfs_create_dir("s2mps14", NULL);
+	if (IS_ERR(root)) {
+		pr_err("Debug fs for GPIO power down setting is failed. (%ld)\n", PTR_ERR(root));
+	}
+
+	debugfs_create_file("mode", S_IRUGO, root, info, &all_data_ops);
+
+	for (i = 0; i < ARRAY_SIZE(info->rdev); i++) {
+		struct regulator_dev *rdev = info->rdev[i];
+		if (!IS_ERR_OR_NULL(rdev)) {
+			pr_debug("%s: %s\n", __func__, rdev->desc->name);
+			reg_dir = debugfs_create_dir(rdev->desc->name, root);
+			debugfs_create_file("mode", S_IRUGO|S_IWUSR, reg_dir, rdev, &data_ops);
+		}
+	}
+}
+#else
+static void initialize_debug_fs(struct s2mps14_info *info) {}
+#endif
+
 static int s2mps14_pmic_probe(struct platform_device *pdev)
 {
 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
@@ -352,6 +521,8 @@ static int s2mps14_pmic_probe(struct platform_device *pdev)
 			goto err;
 		}
 	}
+
+	initialize_debug_fs(s2mps14);
 
 	return 0;
 err:

@@ -9,6 +9,8 @@
  * the Free Software Foundation.
  */
 
+#define DRIVER_NAME "edt-ft5x06"
+
 struct edt_ft5x06_platform_data {
 	int irq_pin;
 	int reset_pin;

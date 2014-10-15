@@ -23,6 +23,7 @@ void exynos_init_io(struct map_desc *mach_desc, int size);
 void exynos3_init_irq(void);
 void exynos4_init_irq(void);
 void exynos5_init_irq(void);
+void exynos3_restart(char mode, const char *cmd);
 void exynos4_restart(char mode, const char *cmd);
 void exynos5_restart(char mode, const char *cmd);
 void exynos_init_late(void);

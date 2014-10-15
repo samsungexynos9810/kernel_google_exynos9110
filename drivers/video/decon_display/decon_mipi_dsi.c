@@ -192,6 +192,7 @@ int s5p_dsim_init_d_phy(struct mipi_dsim_device *dsim, unsigned int enable)
 	return exynos_dsim_phy_enable(0, enable);
 }
 
+#ifndef CONFIG_LCD_MIPI_SHIRI
 static void s5p_mipi_dsi_long_data_wr(struct mipi_dsim_device *dsim, unsigned int data0, unsigned int data1)
 {
 	unsigned int data_cnt = 0, payload = 0;
@@ -241,6 +242,7 @@ static void s5p_mipi_dsi_long_data_wr(struct mipi_dsim_device *dsim, unsigned in
 		}
 	}
 }
+#endif
 
 int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 	unsigned int data0, unsigned int data1)
@@ -305,6 +307,23 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 
 	case MIPI_DSI_GENERIC_LONG_WRITE:
 	case MIPI_DSI_DCS_LONG_WRITE:
+#ifdef CONFIG_LCD_MIPI_SHIRI
+	{
+		u32 uCnt = 0;
+		u32* pWordPtr = (u32*)data0;
+
+		do
+		{
+			s5p_mipi_dsi_wr_tx_data(dsim, pWordPtr[uCnt]);
+		}while(((data1-1) / 4) > uCnt++);
+
+		/* put data into header fifo */
+		s5p_mipi_dsi_wr_tx_header(dsim, (unsigned char) data_id,
+			(unsigned char) (((unsigned short) data1) & 0xff),
+			(unsigned char) ((((unsigned short) data1) & 0xff00) >> 8));
+
+	}
+#else
 	{
 		unsigned int size;
 
@@ -340,6 +359,7 @@ int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim, unsigned int data_id,
 		}
 		break;
 	}
+#endif	
 
 	/* packet typo for video data */
 	case MIPI_DSI_PACKED_PIXEL_STREAM_16:
@@ -1283,9 +1303,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 		goto err_mem_region;
 	}
 
-	/* enable interrupts */
-	s5p_mipi_dsi_set_interrupt(dsim, true);
-
 	/*
 	 * it uses frame done interrupt handler
 	 * only in case of MIPI Video mode.
@@ -1303,9 +1320,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	mutex_init(&dsim_rd_wr_mutex);
 
+#ifdef CONFIG_S5P_LCD_INIT
 	s5p_mipi_dsi_init_dsim(dsim);
 	s5p_mipi_dsi_init_link(dsim);
-	dsim->dsim_lcd_drv->probe(dsim);
 
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
 
@@ -1313,7 +1330,23 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	s5p_mipi_dsi_set_data_transfer_mode(dsim, 0);
 	s5p_mipi_dsi_set_display_mode(dsim, dsim->dsim_config);
 	s5p_mipi_dsi_set_hs_enable(dsim);
+
+	/*
+	 * dsim sfr access function must be called after s5p_mipi_dsi_init_dsim
+	 * function. Because dsim sw reset function in s5p_mipi_dsi_init_dsim
+	 * initializes all dsim sfr
+	 */
+	s5p_mipi_dsi_set_interrupt(dsim, true);
+
+	dsim->dsim_lcd_drv->probe(dsim);
 	dsim->dsim_lcd_drv->displayon(dsim);
+#else
+	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
+
+	dsim->enabled = true;
+	dsim->state = DSIM_STATE_HSCLKEN;
+	dsim->dsim_lcd_drv->probe(dsim);
+#endif
 	dsim_for_decon = dsim;
 	dev_info(&pdev->dev, "mipi-dsi driver(%s mode) has been probed.\n",
 		(dsim->dsim_config->e_interface == DSIM_COMMAND) ?

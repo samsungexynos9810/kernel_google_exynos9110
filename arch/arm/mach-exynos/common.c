@@ -775,6 +775,11 @@ static struct samsung_pwm_variant exynos4_pwm_variant = {
 	.tclk_mask	= 0,
 };
 
+void exynos3_restart(char mode, const char *cmd)
+{
+	__raw_writel(0x1, EXYNOS_SWRESET);
+}
+
 void exynos4_restart(char mode, const char *cmd)
 {
 	__raw_writel(0x1, S5P_SWRESET);

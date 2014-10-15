@@ -265,6 +265,17 @@ config SND_SOC_SAMSUNG_ESPRESSO3250_WM5110
         help
           Say Y if you want to add support for SoC audio on the ESPRESSO.
 
+config SND_SOC_SAMSUNG_SHIRI_AK4678
+    tristate "SoC I2S Audio support for AK4678 on Shiri board"
+    depends on SND_SOC_SAMSUNG
+    depends on I2C=y
+    select SND_SAMSUNG_I2S
+    #select SND_SAMSUNG_IDMA
+    #select SND_SAMSUNG_AUDSS
+    select SND_SOC_AK4678
+    help
+      Say Y if you want to add support for SoC audio on the Shiri board.
+
 config SND_SOC_SAMSUNG_XYREF5430_ES515
 	tristate "SoC I2S Audio support for eS515 on XYREF5430"
 	depends on SND_SOC_SAMSUNG

@@ -46,6 +46,7 @@ struct dw_mci_exynos_priv_data {
 	u32			drv_str_num;
 	int			cd_gpio;
 	int			sd_gpio;
+	int			sd2_pwr_gpio;
 	u32			caps;
 	u32			ctrl_flag;
 	u32			ignore_phase;

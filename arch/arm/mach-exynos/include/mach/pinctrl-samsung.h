@@ -231,7 +231,7 @@ struct samsung_pinctrl_drv_data {
 
 	const struct samsung_pin_group	*pin_groups;
 	unsigned int			nr_groups;
-	const struct samsung_pmx_func	*pmx_functions;
+	struct samsung_pmx_func	*pmx_functions;
 	unsigned int			nr_functions;
 	bool				eint_flt_config;
 };

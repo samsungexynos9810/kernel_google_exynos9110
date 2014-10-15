@@ -29,6 +29,7 @@
 #include <linux/irqdomain.h>
 #include <linux/spinlock.h>
 #include <linux/syscore_ops.h>
+#include <linux/debugfs.h>
 
 #include <mach/pinctrl-samsung.h>
 #include <mach/exynos-pm.h>
@@ -1301,6 +1302,415 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
 
 	return 0;
 }
+
+#ifdef CONFIG_DEBUG_FS
+#define BUFFER_SIZE (PAGE_SIZE << 1)
+
+struct pd_gpio_debugfs_data {
+	char *buffer;
+	size_t data_size;
+};
+
+struct value_name_map {
+	unsigned int value;
+	char name[16];
+};
+
+static const struct value_name_map gpio_conf_name_table[] = {
+	{0x0, "INPUT"},
+	{0x1, "OUTPUT"},
+	{0x2, "SFN(2)"},
+	{0x3, "SFN(3)"},
+	{0x4, "SFN(4)"},
+	{0x5, "SFN(5)"},
+	{0x6, "SFN(6)"},
+	{0x7, "SFN(7)"},
+	{0x8, "SFN(8)"},
+	{0x9, "SFN(9)"},
+	{0xa, "SFN(a)"},
+	{0xb, "SFN(b)"},
+	{0xc, "SFN(c)"},
+	{0xd, "SFN(d)"},
+	{0xe, "SFN(e)"},
+	{0xf, "SFN(f)"}
+};
+
+static const struct value_name_map gpio_pull_name_table[] = {
+	{0, "PULL_NONE"},
+	{1, "PULL_DOWN"},
+	{2, "PULL_UP"}
+};
+
+static const struct value_name_map gpio_pd_conf_name_table[] = {
+	{0, "OUT0"},
+	{1, "OUT1"},
+	{2, "INPUT"},
+	{3, "PREV"}
+};
+
+static const struct value_name_map gpio_pd_pull_name_table[] = {
+	{0, "PULL_NONE"},
+	{1, "PULL_DOWN"},
+	{2, "RESERVED"},
+	{3, "PULL_UP"}
+};
+
+static unsigned int name_to_value(const struct value_name_map *first, const struct value_name_map *last, const char *name)
+{
+	pr_debug("%s: name=%s\n", __func__, name);
+	do {
+		if (strncasecmp(first->name, name, sizeof(first->name)) == 0) {
+			pr_debug("%s: value=%u\n", __func__, first->value);
+			return (int)first->value;
+		}
+	} while (++first <= last);
+
+	pr_err("%s: No matching name: name=%s, value=%u\n", __func__, name, first->value);
+	return 0;
+}
+
+static const char *value_to_name(const struct value_name_map *first, const struct value_name_map *last, unsigned int value)
+{
+	pr_debug("%s: value=%u\n", __func__, value);
+	do {
+		if (first->value == value) {
+			pr_debug("%s: name=%s\n", __func__, first->name);
+			return first->name;
+		}
+	} while (++first <= last);
+
+	pr_err("%s: No matching value: name=%s, value=%u\n", __func__, first->name, value);
+	return "";
+}
+
+static unsigned int name_to_gpio_conf(const char *name) {
+	return name_to_value(&gpio_conf_name_table[0],
+			&gpio_conf_name_table[ARRAY_SIZE(gpio_conf_name_table) - 1],
+			name);
+}
+
+static const char *gpio_conf_to_name(unsigned int gpio_conf) {
+	return value_to_name(&gpio_conf_name_table[0],
+			&gpio_conf_name_table[ARRAY_SIZE(gpio_conf_name_table) - 1],
+			gpio_conf);
+}
+
+static unsigned int name_to_gpio_pull(const char *name) {
+	return name_to_value(&gpio_pull_name_table[0],
+			&gpio_pull_name_table[ARRAY_SIZE(gpio_pull_name_table) - 1],
+			name);
+}
+
+static const char *gpio_pull_to_name(unsigned int gpio_pull) {
+	return value_to_name(&gpio_pull_name_table[0],
+			&gpio_pull_name_table[ARRAY_SIZE(gpio_pull_name_table) - 1],
+			gpio_pull);;
+}
+
+static unsigned int name_to_gpio_pd_conf(const char *name) {
+	return name_to_value(&gpio_pd_conf_name_table[0],
+			&gpio_pd_conf_name_table[ARRAY_SIZE(gpio_pd_conf_name_table) - 1],
+			name);
+}
+
+static const char *gpio_pd_conf_to_name(unsigned int gpio_pd_conf) {
+	return value_to_name(&gpio_pd_conf_name_table[0],
+			&gpio_pd_conf_name_table[ARRAY_SIZE(gpio_pd_conf_name_table) - 1],
+			gpio_pd_conf);
+}
+
+static unsigned int name_to_gpio_pd_pull(const char *name) {
+	return name_to_value(&gpio_pd_pull_name_table[0],
+			&gpio_pd_pull_name_table[ARRAY_SIZE(gpio_pd_pull_name_table) - 1],
+			name);
+}
+
+static const char *gpio_pd_pull_to_name(unsigned int gpio_pd_pull) {
+	return value_to_name(&gpio_pd_pull_name_table[0],
+			&gpio_pd_pull_name_table[ARRAY_SIZE(gpio_pd_pull_name_table) - 1],
+			gpio_pd_pull);
+}
+
+static ssize_t pd_gpio_read(struct file *file, char __user *data, size_t count, loff_t *ppos)
+{
+	struct pd_gpio_debugfs_data *private_data = (struct pd_gpio_debugfs_data *)file->private_data;
+	ssize_t size = simple_read_from_buffer(data, count, ppos, private_data->buffer, private_data->data_size);
+
+	return size;
+}
+static ssize_t pd_gpio_write(struct file *file, const char __user *data, size_t count, loff_t *ppos)
+{
+	struct pd_gpio_debugfs_data *private_data = (struct pd_gpio_debugfs_data *)file->private_data;
+	ssize_t size = simple_write_to_buffer(private_data->buffer, BUFFER_SIZE, ppos, data, count);
+
+	if (size > 0) {
+		private_data->data_size += size;
+	}
+	pr_debug("%s: size=%zd\n", __func__, size);
+	return size;
+}
+
+static int pd_gpio_open(struct inode *inode, struct file *file)
+{
+	struct pd_gpio_debugfs_data *data;
+
+	data = (struct pd_gpio_debugfs_data *)kmalloc(sizeof(struct pd_gpio_debugfs_data), GFP_KERNEL);
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+
+	data->buffer = (char *)kmalloc(BUFFER_SIZE, GFP_KERNEL);
+	if (IS_ERR(data->buffer)) {
+		kfree(data);
+		return PTR_ERR(data->buffer);
+	}
+
+	if ((file->f_flags & O_ACCMODE) == O_RDONLY) {
+		struct samsung_pinctrl_drv_data *drvdata;
+		char *p = data->buffer;
+
+		list_for_each_entry(drvdata, &drvdata_list, node) {
+			struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+			struct pinctrl_state *state_sleep = ctrl->pins_sleep;
+			struct pinctrl_setting *setting;
+			int conf = -1, value = -1, pull = -1, pd_conf = -1, pd_pull = -1;
+
+			if (IS_ERR_OR_NULL(state_sleep)) {
+				continue;
+			}
+
+			pr_debug("%s\n", drvdata->ctrl->label);
+			list_for_each_entry(setting, &state_sleep->settings, node) {
+				const char *pin_name = NULL;
+				unsigned long *config;
+
+				switch (setting->type) {
+				case PIN_MAP_TYPE_MUX_GROUP:
+					conf = drvdata->pmx_functions[setting->data.mux.func].val;
+					pr_debug("PIN_MAP_TYPE_MUX_GROUP: PINCFG_TYPE_FUNC:%d\n", conf);
+					break;
+				case PIN_MAP_TYPE_CONFIGS_PIN:
+				case PIN_MAP_TYPE_CONFIGS_GROUP:
+					pin_name = samsung_get_group_name(setting->pctldev, setting->data.configs.group_or_pin);
+					for (config = setting->data.configs.configs;
+							config < setting->data.configs.configs + setting->data.configs.num_configs;
+							config++) {
+						enum pincfg_type cfg_type = PINCFG_UNPACK_TYPE(*config);
+						int cfg_value = PINCFG_UNPACK_VALUE(*config);
+
+						switch (cfg_type) {
+						case PINCFG_TYPE_FUNC:
+							conf = cfg_value;
+							pr_debug("%s: PINCFG_TYPE_FUNC:%d\n",
+									(setting->type == PIN_MAP_TYPE_CONFIGS_PIN ?
+											"PIN_MAP_TYPE_CONFIGS_PIN" :
+											"PIN_MAP_TYPE_CONFIGS_GROUP"),
+									cfg_value);
+							break;
+						case PINCFG_TYPE_DAT:
+							value = cfg_value;
+							pr_debug("PINCFG_TYPE_DAT:%d\n", cfg_value);
+							break;
+						case PINCFG_TYPE_PUD:
+							pull = cfg_value;
+							pr_debug("PINCFG_TYPE_PUD:%d\n", cfg_value);
+							break;
+						case PINCFG_TYPE_CON_PDN:
+							pd_conf = cfg_value;
+							pr_debug("PINCFG_TYPE_CON_PDN:%d\n", cfg_value);
+							break;
+						case PINCFG_TYPE_PUD_PDN:
+							pd_pull = cfg_value;
+							pr_debug("PINCFG_TYPE_PUD_PDN:%d\n", cfg_value);
+							break;
+						default:
+							pr_err("Unsupported power down configuration: %s, %d, %d\n",
+									pin_name, cfg_type, cfg_value);
+						}
+					}
+					break;
+				default:
+					pr_warn("Unknown setting type is founded: %d\n", setting->type);
+				}
+				pr_debug("conf:%d, value:%d, pull:%d, pd_conf:%d, pd_pull:%d\n", conf, value, pull, pd_conf, pd_pull);
+				if (pd_conf != -1 && pd_pull != -1) {
+					p += snprintf(p, BUFFER_SIZE - (p - data->buffer),
+							"%s\t%7s\t%10s\n",
+							pin_name,
+							gpio_pd_conf_to_name(pd_conf),
+							gpio_pd_pull_to_name(pd_pull));
+					conf = value = pull = pd_conf = pd_pull = -1;
+				} else if (conf != -1 && pull != -1) {
+					p += snprintf(p, BUFFER_SIZE - (p - data->buffer),
+							"%s\t%7s\t%10s\t%d\n",
+							pin_name,
+							gpio_conf_to_name(conf),
+							gpio_pull_to_name(pull),
+							value);
+					conf = value = pull = pd_conf = pd_pull = -1;
+				}
+			}
+		}
+		data->data_size = p - data->buffer + 1;
+	} else {
+		data->data_size = 0;
+	}
+
+	file->private_data = data;
+
+	return 0;
+}
+
+static int pd_gpio_release(struct inode *inode, struct file *file)
+{
+	if ((file->f_flags & O_ACCMODE) == O_WRONLY || (file->f_flags & O_ACCMODE) == O_RDWR) {
+		struct pd_gpio_debugfs_data *data;
+		char *p, *gpio_name, *gpio_setting_name, *gpio_pull_name;
+		int gpio_value;
+
+		data = (struct pd_gpio_debugfs_data *)file->private_data;
+		if (data == NULL) {
+			return 0;
+		}
+
+		p = data->buffer;
+
+		while (p - data->buffer < data->data_size) {
+			struct samsung_pinctrl_drv_data *drvdata;
+			bool founded = false;
+
+			if (p) {
+				p = skip_spaces(p);
+				gpio_name = strsep(&p, " \t\n");
+			} else {
+				pr_err("GPIO name is not founded.\n");
+				break;
+			}
+			if (p) {
+				p = skip_spaces(p);
+				gpio_setting_name = strsep(&p, " \t\n");
+			} else {
+				pr_err("GPIO function setting is not founded.\n");
+				gpio_setting_name = "NULL";
+			}
+			if (p) {
+				p = skip_spaces(p);
+				gpio_pull_name = strsep(&p, " \t\n");
+			} else {
+				pr_err("GPIO pull setting is not founded.\n");
+				gpio_pull_name = "NULL";
+			}
+			if (p) {
+				char *gpio_value_name;
+				p = skip_spaces(p);
+				gpio_value_name = strsep(&p, " \t\n");
+				if (kstrtoint(gpio_value_name, 10, &gpio_value) < 0) {
+					pr_err("GPIO value conversion error\n");
+					gpio_value = -1;
+				}
+			} else {
+				gpio_value = -1;
+			}
+
+			pr_debug("%s: token1=%s, token2=%s, token3=%s, token4=%d\n", __func__,
+					gpio_name, gpio_setting_name, gpio_pull_name, gpio_value);
+
+			list_for_each_entry(drvdata, &drvdata_list, node) {
+				struct samsung_pin_ctrl *ctrl = drvdata->ctrl;
+				struct pinctrl_state *state_sleep = ctrl->pins_sleep;
+				struct pinctrl_setting *setting;
+
+				if (IS_ERR_OR_NULL(state_sleep)) {
+					continue;
+				}
+
+				list_for_each_entry(setting, &state_sleep->settings, node) {
+					switch (setting->type) {
+					case PIN_MAP_TYPE_MUX_GROUP:
+						if (strcmp(samsung_get_group_name(setting->pctldev,
+								setting->data.mux.group), gpio_name) == 0) {
+							drvdata->pmx_functions[setting->data.mux.func].val =
+									name_to_gpio_conf(gpio_setting_name);
+							pr_debug("PIN_MAP_TYPE_MUX_GROUP: PINCFG_TYPE_FUNC:%d\n",
+									drvdata->pmx_functions[setting->data.mux.func].val);
+						}
+						break;
+					case PIN_MAP_TYPE_CONFIGS_PIN:
+					case PIN_MAP_TYPE_CONFIGS_GROUP:
+						if (strcmp(gpio_name, samsung_get_group_name(setting->pctldev,
+								setting->data.configs.group_or_pin)) == 0) {
+							unsigned long *configs = setting->data.configs.configs;
+							unsigned *num_configs = &setting->data.configs.num_configs;
+							struct samsung_pin_bank *bank;
+
+							*num_configs = 0;
+							for (bank = drvdata->ctrl->pin_banks;
+									bank - drvdata->ctrl->pin_banks < drvdata->ctrl->nr_banks;
+									bank++) {
+								if (strstr(gpio_name, bank->name)) {
+									if (bank->type->fld_width[PINCFG_TYPE_CON_PDN]) {
+										add_config(drvdata->dev, &configs, num_configs,
+												PINCFG_PACK(PINCFG_TYPE_CON_PDN, name_to_gpio_pd_conf(gpio_setting_name)));
+										pr_debug("PINCFG_TYPE_CON_PDN:%s\n", gpio_setting_name);
+										add_config(drvdata->dev, &configs, num_configs,
+												PINCFG_PACK(PINCFG_TYPE_PUD_PDN, name_to_gpio_pd_pull(gpio_pull_name)));
+										pr_debug("PINCFG_TYPE_PUD_PDN:%s\n", gpio_pull_name);
+									} else {
+										add_config(drvdata->dev, &configs, num_configs,
+												PINCFG_PACK(PINCFG_TYPE_PUD, name_to_gpio_pull(gpio_pull_name)));
+										pr_debug("PINCFG_TYPE_PUD:%s\n", gpio_pull_name);
+										if (gpio_value != -1 && strcasecmp(gpio_setting_name, "OUTPUT") == 0) {
+											add_config(drvdata->dev, &configs, num_configs,
+													PINCFG_PACK(PINCFG_TYPE_DAT, gpio_value));
+											pr_debug("PINCFG_TYPE_DAT:%d\n", gpio_value);
+										}
+									}
+									break;
+								}
+							}
+							founded = true;
+						}
+						break;
+					default:
+						break;
+					}
+				}
+				if (founded) {
+					break;
+				}
+			}
+		}
+		kfree(data->buffer);
+		kfree(data);
+	}
+	return 0;
+}
+
+static const struct file_operations pd_gpio_operations = {
+	.owner		= THIS_MODULE,
+	.open		= pd_gpio_open,
+	.read		= pd_gpio_read,
+	.write		= pd_gpio_write,
+	.release	= pd_gpio_release,
+	.llseek		= no_llseek,
+};
+
+static __init int pd_gpio_debugfs_init(void)
+{
+	struct dentry *root;
+
+	pr_debug("%s is called.\n", __func__);
+
+	root = debugfs_create_file("pd_gpio", S_IFREG|S_IRUGO|S_IWUSR, NULL, NULL, &pd_gpio_operations);
+	if (IS_ERR(root)) {
+		pr_err("Debug fs for GPIO power down setting is failed. (%ld)\n", PTR_ERR(root));
+		return PTR_ERR(root);
+	}
+
+	return 0;
+}
+late_initcall(pd_gpio_debugfs_init);
+#endif
 
 #if defined(CONFIG_PM) || defined(CONFIG_CPU_IDLE)
 /* save gpio registers */

@@ -97,7 +97,7 @@ int init_display_decon_clocks(struct device *dev)
 	/* 1. Set [LCD0_BLK:sclk_fimd0]: display special pixel clock */
 	DISPLAY_CLOCK_SET_PARENT(dout_fimd0, mout_fimd0);
 	DISPLAY_CLOCK_SET_PARENT(mout_fimd0, dout_mpll_pre);
-	DISPLAY_SET_RATE(dout_fimd0, 100 * MHZ);
+	DISPLAY_SET_RATE(dout_fimd0, 25 * MHZ);
 
 	/* 2. Set [CMU_TOP:aclk_160] : display top clock(dedicated for LCD_BLK) */
 	DISPLAY_CLOCK_SET_PARENT(dout_aclk_160, mout_aclk_160);
@@ -115,7 +115,7 @@ int init_display_driver_clocks(struct device *dev)
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0_pre, dout_mipi0);
 	DISPLAY_CLOCK_SET_PARENT(dout_mipi0, mout_mipi0);
 	DISPLAY_CLOCK_SET_PARENT(mout_mipi0, dout_mpll_pre);
-	DISPLAY_SET_RATE(dout_mipi0_pre, 50 * MHZ);
+	DISPLAY_SET_RATE(dout_mipi0_pre, 100 * MHZ);
 
 	return ret;
 }
@@ -151,24 +151,9 @@ int enable_display_driver_power(struct device *dev)
 	dispdrv = get_display_driver();
 
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
-	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_power");
-	usleep_range(20000, 21000);
-	gpio_set_value(gpio->id[0],0);
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
 	usleep_range(20000, 21000);
 	gpio_free(gpio->id[0]);
-
-	gpio_request_one(gpio->id[2], GPIOF_OUT_INIT_HIGH, "lcd_power2");
-	usleep_range(20000, 21000);
-	gpio_set_value(gpio->id[2], 1);
-	usleep_range(20000, 21000);
-	gpio_free(gpio->id[2]);
-
-	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
-	usleep_range(20000, 21000);
-	gpio_set_value(gpio->id[1], 0);
-	usleep_range(20000, 21000);
-	gpio_set_value(gpio->id[1], 1);
-	gpio_free(gpio->id[1]);
 	
 	return ret;
 }
@@ -181,18 +166,34 @@ int disable_display_driver_power(struct device *dev)
 
 	dispdrv = get_display_driver();
 
-	/* Reset */
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
-	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	/* Reset */
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_reset");
 	usleep_range(20000, 21000);
-	gpio_free(gpio->id[1]);
-	/* Power */
-	gpio_request_one(gpio->id[2], GPIOF_OUT_INIT_LOW, "lcd_power");
-	usleep_range(20000, 21000);
-	gpio_free(gpio->id[2]);
+	gpio_free(gpio->id[0]);
 
 	return ret;
 }
+
+#ifndef CONFIG_BACKLIGHT_PWM
+void backlight_en(int en)
+{
+	struct display_gpio *gpio;
+	struct display_driver *dispdrv;
+
+	dispdrv = get_display_driver();
+
+	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+	gpio_request_one(gpio->id[1], GPIOF_OUT_INIT_LOW, "bl_en");
+	msleep(50);
+	if(en)
+	{
+		gpio_set_value(gpio->id[1], 1);
+		usleep_range(20000, 21000);
+	}
+	gpio_free(gpio->id[1]);
+}
+#endif
 
 void fimd_clock_on(struct display_driver *dispdrv)
 {
@@ -253,7 +254,7 @@ int enable_display_decon_clocks(struct device *dev)
 	/* 1. Set [LCD0_BLK:sclk_fimd0]: display special pixel clock */
 	DISPLAY_CLOCK_INLINE_SET_PARENT(dout_fimd0, mout_fimd0);
 	DISPLAY_CLOCK_INLINE_SET_PARENT(mout_fimd0, dout_mpll_pre);
-	DISPLAY_INLINE_SET_RATE(dout_fimd0, 100 * MHZ);
+	DISPLAY_INLINE_SET_RATE(dout_fimd0, 25 * MHZ);
 
 	/* 2. Set [CMU_TOP:aclk_160] : display top clock(dedicated for LCD_BLK) */
 	DISPLAY_CLOCK_INLINE_SET_PARENT(dout_aclk_160, mout_aclk_160);

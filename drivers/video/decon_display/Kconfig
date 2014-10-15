@@ -88,6 +88,10 @@ config DECON_LCD_S6E3FA2
 	depends on DECON_LCD && DECON_MIPI_DSI
 	tristate "S6E3FA2 AMOLED FULL HD LCD driver(1080 x 1920)"
 
+config LCD_MIPI_SHIRI
+	depends on DECON_LCD && DECON_MIPI_DSI
+	tristate "SHIRI LCD driver(240 x 240)"
+
 config LCD_MIPI_NT35510
 	depends on DECON_LCD && DECON_MIPI_DSI
 	tristate "NT35510 LCD driver(480 x 800)"

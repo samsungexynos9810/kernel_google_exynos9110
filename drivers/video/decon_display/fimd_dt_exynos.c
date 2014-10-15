@@ -73,6 +73,8 @@ struct mipi_dsim_config g_dsim_config = {
 	.dsim_ddi_pd = &s6e63j0x03_mipi_lcd_driver,
 #elif defined(CONFIG_LCD_MIPI_NT35510)
 	.dsim_ddi_pd = &nt35510_mipi_lcd_driver,
+#elif defined(CONFIG_LCD_MIPI_SHIRI)
+	.dsim_ddi_pd = &shiri_mipi_lcd_driver,
 #endif
 };
 
@@ -374,7 +376,7 @@ static int parse_dsi_drvdata(struct device_node *np)
 	g_disp_gpios.id[0] = of_get_gpio(np, 0);
 	g_disp_gpios.num++;
 	g_disp_gpios.id[1] = of_get_gpio(np, 1);
-#if defined(CONFIG_MACH_UNIVERSAL3250) || defined(CONFIG_SOC_EXYNOS3250)
+#if defined(CONFIG_MACH_UNIVERSAL3250)
 	g_disp_gpios.num++;
 	g_disp_gpios.id[2] = of_get_gpio(np, 2);
 #endif

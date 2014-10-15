@@ -16,7 +16,7 @@
 
 #include "skeleton.dtsi"
 #include <dt-bindings/clk/exynos3250-clk.h>
-
+/include/ "exynos3250-pinctrl.dtsi"
 / {
 	compatible = "samsung,exynos3250";
 
@@ -24,7 +24,7 @@
 
 	aliases {
 		pinctrl0 = &pinctrl_0;
-                pinctrl1 = &pinctrl_1;
+		pinctrl1 = &pinctrl_1;
 		i2c0 = &i2c_0;
 		i2c1 = &i2c_1;
 		i2c2 = &i2c_2;
@@ -103,10 +103,14 @@
 	pinctrl_1: pinctrl@11000000 {
 		compatible = "samsung,exynos3250-pinctrl";
 		reg = <0x11000000 0x1000>;
-		interrupts = <0 225 0>;
-
+		interrupts = <0 32 0>, <0 33 0>, <0 34 0>, <0 35 0>,
+			     <0 36 0>, <0 37 0>, <0 38 0>, <0 39 0>,
+			     <0 40 0>, <0 41 0>, <0 42 0>, <0 43 0>,
+			     <0 44 0>, <0 45 0>, <0 46 0>, <0 47 0>,
+			     <0 225 0>;
 		wakeup-interrupt-controller {
 			compatible = "samsung,exynos4210-wakeup-eint";
+			interrupt-parent = <&gic>;
 			interrupts = <0 48 0>;
 		};
 	};
@@ -170,8 +174,8 @@
 		reg = <0x11E20000 0x1000>;
 		interrupts = <0 80 0>;
 		clock-names = "sysmmu", "master";
-                clocks = <&clock CLK_SMMUFIMD0>, <&clock CLK_FIMD0>;
-		mmu-masters = <&fimd_fb>; 
+		clocks = <&clock CLK_SMMUFIMD0>, <&clock CLK_FIMD0>;
+		mmu-masters = <&fimd_fb>;
 	};
 
 	sysmmu_mfc0: sysmmu@13620000 {
@@ -673,12 +677,12 @@
                                                         has_shadowcon = <1>;
                                                         has_blendcon  = <1>;
                                                         has_alphacon  = <1>;
-                                                        has_fixvclk   = <1>;
+                                                        has_fixvclk   = <0>;
                                         };
                         };
                 };
         };
-	
+
 	usb_otg: usb@12480000 {
 		compatible = "samsung,exynos3-hsotg";
 		reg = <0x12480000 0x11000>;
@@ -896,5 +900,3 @@
 		pinctrl-0 = <&i2s2_bus>;
 	};
 };
-
-#include "exynos3250-pinctrl.dtsi"

@@ -36,6 +36,50 @@ config NFC_MEI_PHY
 
 	  If unsure, say N.
 
+config SEC_NFC
+    bool "Samsung NFC driver"
+    default y
+    help
+      SAMSUNG NFC Driver.
+      This driver provides support for SAMSUNG NFC products.
+      You should select your NFC product and interface.
+
+      Say Y here to compile support for SAMSUNG NFC driver into the
+      kernel.
+choice
+    prompt "SEC NFC Products"
+    depends on SEC_NFC
+    default SEC_NFC_PRODUCT_N5
+config SEC_NFC_PRODUCT_N3
+    bool "N3"
+config SEC_NFC_PRODUCT_N5
+    bool "N5"
+endchoice
+
+choice
+    prompt "SEC NFC Interface"
+    depends on SEC_NFC
+    default SEC_NFC_IF_I2C
+config SEC_NFC_IF_UART
+    bool "UART"
+config SEC_NFC_IF_I2C
+    bool "I2C"
+config SEC_NFC_IF_I2C_GPIO
+    bool "I2C-GPIO (S/W-I2C)"
+    select I2C_ALGOBIT
+endchoice
+
+config SEC_NFC_PROJECT_K_MINI
+    bool "for K mini project (use clock buffer)"
+    depends on SEC_NFC_PRODUCT_N5
+    default y
+    help
+      Use clock buffer.
+      This option should be enable at K mini project.
+      You should select if your NFC solution needs clock buffer.
+
+      Say Y here to compile support for clock buffer in the kernel.
+
 source "drivers/nfc/pn544/Kconfig"
 source "drivers/nfc/microread/Kconfig"
 

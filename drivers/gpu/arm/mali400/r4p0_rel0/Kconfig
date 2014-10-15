@@ -22,7 +22,7 @@ config MALI400_INTERNAL_PROFILING
 config MALI_DVFS
 	bool "Enable mali DVFS"
 	depends on MALI400 && PM
-	default y
+	default n
 	---help---
 		This enables Mali driver DVFS.
 

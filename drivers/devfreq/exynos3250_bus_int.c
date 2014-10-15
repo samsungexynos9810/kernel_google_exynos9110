@@ -39,6 +39,7 @@
 static struct device *int_dev;
 static struct pm_qos_request exynos3250_int_qos;
 static struct pm_qos_request exynos3250_miflock_qos;
+static struct pm_qos_request exynos3250_boot_int_qos;
 cputime64_t int_pre_time;
 
 static LIST_HEAD(int_dvfs_list);
@@ -702,6 +703,12 @@ static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 	/* Register Notify */
 	pm_qos_add_request(&exynos3250_int_qos, PM_QOS_DEVICE_THROUGHPUT, pdata->default_qos);
 	pm_qos_add_request(&exynos3250_miflock_qos, PM_QOS_BUS_THROUGHPUT, 0);
+	/* int max freq for fast booting */
+	pm_qos_add_request(&exynos3250_boot_int_qos, PM_QOS_DEVICE_THROUGHPUT, \
+				exynos3250_int_devfreq_profile.initial_freq);
+	pm_qos_update_request_timeout(&exynos3250_boot_int_qos, \
+				exynos3250_int_devfreq_profile.initial_freq, \
+				40000 * 1000);
 
 	register_reboot_notifier(&exynos3250_int_reboot_notifier);
 

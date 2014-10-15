@@ -2309,7 +2309,7 @@ config FB_MB862XX
 config S5P_LCD_INIT
 	bool "LCD init in kernel"
 	depends on EXYNOS_DECON || DECON
-	default y
+	default n
 
 choice
 	prompt "GDC variant"

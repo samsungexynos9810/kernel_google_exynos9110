@@ -771,10 +771,18 @@ static int exynos3250_devfreq_mif_probe(struct platform_device *pdev)
 		pdata = &default_qos_mif_pd;
 	/* Register notify */
 	pm_qos_add_request(&exynos3250_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
+#if 1 //For fast booting.
+	/* mif max freq for fast booting */
+	pm_qos_add_request(&exynos3250_boot_mif_qos, PM_QOS_BUS_THROUGHPUT, \
+				exynos3250_mif_devfreq_profile.initial_freq);
+	pm_qos_update_request_timeout(&exynos3250_boot_mif_qos, \
+				exynos3250_mif_devfreq_profile.initial_freq, \
+				40000 * 1000);
+#else
 	pm_qos_add_request(&exynos3250_boot_mif_qos, PM_QOS_BUS_THROUGHPUT, pdata->default_qos);
 	pm_qos_update_request_timeout(&exynos3250_boot_mif_qos,
 		exynos3250_mif_devfreq_profile.initial_freq, 25000 * 1000);
-
+#endif
 	register_reboot_notifier(&exynos3250_mif_reboot_notifier);
 
 	data->use_dvfs = true;
