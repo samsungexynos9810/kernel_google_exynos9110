@@ -24,7 +24,19 @@ gpv6-1    OUT0   PULL_NONE
 gpv6-2    OUT0   PULL_NONE
 ......
 
-2.3. Changing the GPIO power down configuration
+2.3. Each field is,
+(1) Normal GPIO (Other than GPX): [GPIO]  [STATUS]  [PULL]
+[GPIO]: gpio name
+[STATUS]: OUT0(output low), OUT1(output high), INPUT(input), PREV(preserve normal status)
+[PULL]: PULL_UP(pull up), PULL_DOWN(pull down)
+
+(2) Alive GPIO (GPX): [GPIO]  [STATUS]  [PULL]  [OUTPUT]
+[GPIO]: gpio name
+[STATUS]: INPUT(input), OUTPUT(output), SFN(x)(special function x. Ex. SFN(f)=external interrupt)
+[PULL]: PULL_UP(pull up), PULL_DOWN(pull down)
+[OUTPUT]: If STATUS is OUTPUT, 0 is low and 1 is high. If STATUS is not OUTPUT, it would be ignored.
+
+2.4. Changing the GPIO power down configuration
 (1) Turn the device on and access the terminal.
 (2) Change directory to debug fs.
 $ cd /sys/kernel/debug

@@ -112,6 +112,19 @@ static struct check_reg_lpa exynos_clock_gating[] = {
 static struct check_reg_lpa audio_clock_gating[] = {
 	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,   .check_bit = 0x00200000},
 };
+#if defined(CONFIG_MTK_COMBO_MT66XX)
+int exynos_bt_op_f = 0;
+
+EXPORT_SYMBOL(exynos_bt_op_f);
+
+static int exynos_check_bt_operation(void)
+{
+	if (exynos_bt_op_f == 0) {
+		return 0;
+	}
+	return 1;
+}
+#endif
 
 static int exynos_check_reg_status(struct check_reg_lpa *reg_list,
 				    unsigned int list_cnt)
@@ -147,6 +160,11 @@ static int __maybe_unused exynos_check_enter_mode(void)
 
 #ifdef CONFIG_SAMSUNG_USBPHY
 	if (samsung_usbphy_check_op())
+		return EXYNOS_CHECK_DIDLE;
+#endif
+
+#if defined(CONFIG_MTK_COMBO_MT66XX)
+     if (exynos_check_bt_operation())
 		return EXYNOS_CHECK_DIDLE;
 #endif
 

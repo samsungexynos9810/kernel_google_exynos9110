@@ -1579,28 +1579,28 @@ static int pd_gpio_release(struct inode *inode, struct file *file)
 			struct samsung_pinctrl_drv_data *drvdata;
 			bool founded = false;
 
-			if (p) {
+			if (p && (p - data->buffer < data->data_size)) {
 				p = skip_spaces(p);
 				gpio_name = strsep(&p, " \t\n");
 			} else {
 				pr_err("GPIO name is not founded.\n");
 				break;
 			}
-			if (p) {
+			if (p && (p - data->buffer < data->data_size)) {
 				p = skip_spaces(p);
 				gpio_setting_name = strsep(&p, " \t\n");
 			} else {
 				pr_err("GPIO function setting is not founded.\n");
 				gpio_setting_name = "NULL";
 			}
-			if (p) {
+			if (p && (p - data->buffer < data->data_size)) {
 				p = skip_spaces(p);
 				gpio_pull_name = strsep(&p, " \t\n");
 			} else {
 				pr_err("GPIO pull setting is not founded.\n");
 				gpio_pull_name = "NULL";
 			}
-			if (p) {
+			if (p && (p - data->buffer < data->data_size)) {
 				char *gpio_value_name;
 				p = skip_spaces(p);
 				gpio_value_name = strsep(&p, " \t\n");

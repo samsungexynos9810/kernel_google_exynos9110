@@ -1076,6 +1076,9 @@ unsigned long arch_local_irq_save(void)
 	return flags;
 }
 
+EXPORT_SYMBOL(arch_local_irq_save);
+EXPORT_SYMBOL(arch_local_irq_restore);
+
 void arch_local_irq_disable(void)
 {
 	unsigned irqs_disabled = irqs_disabled();

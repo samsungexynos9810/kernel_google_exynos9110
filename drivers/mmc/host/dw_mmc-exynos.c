@@ -618,18 +618,6 @@ static int dw_mci_exynos_parse_dt(struct dw_mci *host)
 		priv->drv_str_pin, priv->drv_str_addr,
 		priv->drv_str_val, priv->drv_str_num);
 
-	if (of_get_property(np, "sd-cdn", NULL))
-		priv->sd_gpio = of_get_named_gpio(np, "sd-cdn", 0);
-
-	if (gpio_is_valid(priv->sd_gpio))
-		gpio_request_one(priv->sd_gpio, GPIOF_DIR_OUT | GPIOF_INIT_HIGH, "SD-CDN-GPIO");
-
-	if (of_get_property(np, "sd2-pwren", NULL))
-		priv->sd2_pwr_gpio = of_get_named_gpio(np, "sd2-pwren", 0);
-
-	if (gpio_is_valid(priv->sd2_pwr_gpio))
-		gpio_request_one(priv->sd2_pwr_gpio, GPIOF_DIR_OUT | GPIOF_INIT_HIGH, "SD2-PWR-GPIO");
-
 	/*
 	 * Exynos-dependent generic control flag
 	 */

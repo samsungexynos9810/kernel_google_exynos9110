@@ -32,6 +32,31 @@
 
 #include "phy-samsung-usb.h"
 
+static int phystate = 0;
+static int samsung_usb2phy_runtime_suspend(struct device *dev);
+static int samsung_usb2phy_runtime_resume(struct device *dev);
+
+static ssize_t phystate_show(struct device *pdev, struct device_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%d\n", phystate);
+}
+
+static ssize_t phystate_store(struct device *pdev, struct device_attribute *attr, const char *buf, size_t size)
+{
+	sscanf(buf, "%d", &phystate);
+
+	if(phystate == 1)
+		samsung_usb2phy_runtime_resume(pdev);
+	else if(phystate == 0)
+		samsung_usb2phy_runtime_suspend(pdev);
+	else
+		return size;
+
+	return size;
+}
+
+static DEVICE_ATTR(phystate, S_IRWXUGO, phystate_show, phystate_store);
+
 static int samsung_usbphy_set_host(struct usb_otg *otg, struct usb_bus *host)
 {
 	if (!otg)
@@ -319,16 +344,11 @@ static int samsung_usb2phy_init(struct usb_phy *phy)
 
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
-	pm_runtime_set_active(phy->dev);
-	pm_runtime_enable(phy->dev);
 exit:
-	pm_runtime_get_noresume(phy->dev);
-
 	/* Disable the phy clock */
 	clk_disable(sphy->clk);
 
 	dev_dbg(sphy->dev, "end of %s\n", __func__);
-
 	return ret;
 }
 
@@ -395,10 +415,7 @@ static void samsung_usb2phy_shutdown(struct usb_phy *phy)
 
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
-	pm_runtime_disable(phy->dev);
-	pm_runtime_set_suspended(phy->dev);
 exit2:
-	pm_runtime_put_noidle(phy->dev);
 exit1:
 	clk_disable(sphy->clk);
 
@@ -517,6 +534,10 @@ static int samsung_usb2phy_probe(struct platform_device *pdev)
 		goto err1;
 	}
 
+	pm_runtime_enable(dev);
+
+	device_create_file(dev, &dev_attr_phystate);
+
 	return 0;
 
 err1:
@@ -528,6 +549,8 @@ err1:
 static int samsung_usb2phy_remove(struct platform_device *pdev)
 {
 	struct samsung_usbphy *sphy = platform_get_drvdata(pdev);
+
+	pm_runtime_disable(&pdev->dev);
 
 	usb_remove_phy(&sphy->phy);
 	clk_unprepare(sphy->clk);
@@ -550,11 +573,7 @@ static int samsung_usb2phy_runtime_suspend(struct device *dev)
 	int ret;
 
 	dev_dbg(dev, "%s\n", __func__);
-
-	if (sphy->drv_data->cpu_type != TYPE_EXYNOS5) {
-		dev_info(dev, "Runtime PM is not supported for this cpu type\n");
-		return 0;
-	}
+	mdelay(4);
 
 	/* Enable the phy clock */
 	ret = clk_enable(sphy->clk);
@@ -564,19 +583,9 @@ static int samsung_usb2phy_runtime_suspend(struct device *dev)
 	}
 
 	spin_lock_irqsave(&sphy->lock, flags);
-
-	phyctrl = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
-	phyctrl |= HOST_CTRL0_FORCESUSPEND;
-	writel(phyctrl, regs + EXYNOS5_PHY_HOST_CTRL0);
-
-	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL1);
-	phyctrl |= HSIC_CTRL_FORCESUSPEND;
-	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL1);
-
-	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL2);
-	phyctrl |= HSIC_CTRL_FORCESUSPEND;
-	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL2);
-
+	phyctrl = readl(regs + EXYNOS3_PHY_CTRL);
+	phyctrl |= PHY0_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS3_PHY_CTRL);
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */
@@ -595,11 +604,6 @@ static int samsung_usb2phy_runtime_resume(struct device *dev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	if (sphy->drv_data->cpu_type != TYPE_EXYNOS5) {
-		dev_info(dev, "Runtime PM is not supported for this cpu type\n");
-		return 0;
-	}
-
 	/* Enable the phy clock */
 	ret = clk_enable(sphy->clk);
 	if (ret) {
@@ -608,19 +612,9 @@ static int samsung_usb2phy_runtime_resume(struct device *dev)
 	}
 
 	spin_lock_irqsave(&sphy->lock, flags);
-
-	phyctrl = readl(regs + EXYNOS5_PHY_HOST_CTRL0);
-	phyctrl &= ~HOST_CTRL0_FORCESUSPEND;
-	writel(phyctrl, regs + EXYNOS5_PHY_HOST_CTRL0);
-
-	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL1);
-	phyctrl &= ~HSIC_CTRL_FORCESUSPEND;
-	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL1);
-
-	phyctrl = readl(regs + EXYNOS5_PHY_HSIC_CTRL2);
-	phyctrl &= ~HSIC_CTRL_FORCESUSPEND;
-	writel(phyctrl, regs + EXYNOS5_PHY_HSIC_CTRL2);
-
+	phyctrl = readl(regs + EXYNOS3_PHY_CTRL);
+	phyctrl &= ~PHY0_FORCESUSPEND;
+	writel(phyctrl, regs + EXYNOS3_PHY_CTRL);
 	spin_unlock_irqrestore(&sphy->lock, flags);
 
 	/* Disable the phy clock */

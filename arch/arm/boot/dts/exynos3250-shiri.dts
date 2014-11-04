@@ -208,7 +208,9 @@
 					regulator-name = "vdd_tsp_1.8";
 					regulator-min-microvolt = <800000>;
 					regulator-max-microvolt = <2375000>;
-					regulator-initial-mode = <1>;
+					regulator-initial-mode = <3>;
+					regulator-always-on;
+					regulator-boot-on;
 				};
 
 				ldo20_reg: LDO20 {
@@ -321,7 +323,7 @@
 		samsung,dw-mshc-hs200-timing = <3 0 2 0>;
 		samsung,dw-mshc-ddr200-timing = <1 1 2 0>;
 		num-ref-clks = <8>;
-		sd-cdn = <&gpk0 2 0x1>;
+		gpios = <&gpk0 2 0x1>;
 		ciu_clkin = <25 50 50 100 200 100 200 200>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_bus1 &sd0_bus4 &sd0_bus8>;
@@ -330,6 +332,41 @@
 			reg = <0>;
 			bus-width = <8>;
 		};
+	};
+
+	dwmmc1@12520000 {
+		status = "okay";
+		num-slots = <1>;
+		bypass-smu;
+		only_once_tune;
+		supports-highspeed;
+		supports-sdr104-mode;
+		sw_data_timeout;
+		use-broken-voltage;
+		pm-ignore-notify;
+		fixed_volt;
+		cd-type = <2>;
+		fifo-depth = <0x80>;
+		card-detect-delay = <200>;
+		non-removable;
+		enable-cclk-on-suspend;
+		keep-power-in-suspend;
+		enable-sdio-wakeup;
+		samsung,dw-mshc-ciu-div = <3>;
+		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
+		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
+		clk_str_num = <4>;
+		num-ref-clks = <8>;
+		ciu_clkin = <25 50 50 100 200 100 200 200>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sd1_clk &sd1_cmd &sd1_bus1 &sd1_bus4>;
+
+		slot@0 {
+			reg = <0>;
+			bus-width = <4>;
+			disable-wp;
+		};
+
 	};
 
 	dwmmc2@12530000 {
@@ -689,6 +726,9 @@
 		vusb_d-supply = <&ldo6_reg>;
 		vusb_a-supply = <&ldo8_reg>;
 		status = "okay";
+		samsung,vbus-gpio = <&gpx1 2 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&usbdetect_irq>;
 	};
 
 	spi@13930000 {
@@ -755,4 +795,19 @@
 				"mout_audio", "sclk_i2s";
 		status = "okay";
 	};
+
+	serial@13800000 {
+		status = "okay";
+	};
+
+	mtk_wmt {
+		compatible = "mtk,mt6620";
+
+		mtk_wmt,pmu = <&gpe1 6 0x1>;
+		mtk_wmt,eedi = <&gpe1 5 0x1>;
+		mtk_wmt,rst = <&gpe1 4 0x1>;
+		mtk_wmt,bgf_int = <&gpx3 3 0x1>;
+		mtk_wmt,wifi_int = <&gpx3 4 0x1>;
+	};
+
 };

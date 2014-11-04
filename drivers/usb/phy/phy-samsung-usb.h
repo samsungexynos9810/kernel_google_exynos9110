@@ -51,6 +51,8 @@
 #define PHYCLK1_COMMON_ON_N                     (0x1 << 7)
 #define PHYCLK0_COMMON_ON_N                     (0x1 << 4)
 #define PHYCLK_REF_CLKSEL			(0x2 << 8)
+#define EXYNOS3_PHY_CTRL		(0x00)
+#define PHY0_FORCESUSPEND		(0x1 << 0)
 
 /* EXYNOS5 */
 #define EXYNOS5_PHY_HOST_CTRL0			(0x00)

@@ -37,7 +37,7 @@ BUCK3   SUSPEND
 $ cd /sys/kernel/debug/s2mps14
 (3) Change directory to specific regulator
 $ cd /LDO1
-(3) Cat mode
+(4) Cat mode
 $ cat mode
 NORMAL
 

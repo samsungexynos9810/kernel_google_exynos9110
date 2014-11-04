@@ -10,7 +10,7 @@
  * published by the Free Software Foundation.
  *
  */
- 
+
 
 #include <linux/module.h>
 #include <linux/init.h>
@@ -621,6 +621,8 @@ static const struct snd_kcontrol_new ak4678_snd_controls[] = {
 	SOC_SINGLE_TLV("SVOLB Volume",
 		       AK4678_22_SIDETONE_VOLUMEB, 0, 4, 1, svolb_tlv),
 
+	SOC_SINGLE("Mic1 Bias Level Up", AK4678_02_POWER_MANAGEMENT2, 1, 1, 0),
+	SOC_SINGLE("Mic2 Bias Level Up", AK4678_02_POWER_MANAGEMENT2, 3, 1, 0),
 	SOC_SINGLE("Left Mic Gain", AK4678_07_MIC_AMP_GAIN, 0, 13, 0),
 	SOC_SINGLE("Right Mic Gain", AK4678_07_MIC_AMP_GAIN, 4, 13, 0),
 	SOC_SINGLE("High Path Filter 1", AK4678_19_FILTER_SELECT0, 5, 3, 0),
@@ -1655,7 +1657,7 @@ static int ak4678_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 	u8 pll = 0;
 	u8 delay = 0;
 	u8 mode = 0;
-	
+
 
 	if (freq_out == AK4678_BICKO_64FS)
 		mode |= AK4678_PLL_MODE_SELECT_1_BCKO;
@@ -1778,7 +1780,7 @@ static int ak4678_set_dai_startup(struct snd_pcm_substream *substream,
 
 	ret = snd_soc_read(codec, AK4678_00_POWER_MANAGEMENT0);
 	gprintk("reg(0x00) = value(0x%x)\n", ret);
-	
+
 	ret = snd_soc_write(codec, AK4678_00_POWER_MANAGEMENT0, AK4678_PMVCM);
 
 	gprintk("ret = %d\n", ret);
@@ -2088,10 +2090,10 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 		printk("ak4678 reset fail\n");
 		return ret;
 	}
-	
-	
-	ak4678_codec = codec;	
-	
+
+
+	ak4678_codec = codec;
+
 	/*  Dummy command */
 	ak4678_write(codec, AK4678_00_POWER_MANAGEMENT0, 0x0);
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
@@ -2136,12 +2138,12 @@ static int ak4678_suspend(struct device *dev)
 	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
 
 	gprintk("enter\n");
-	
+
 	if (ak4678->suspended) {
 		printk("Already in suspend state\n");
 		return 0;
 	}
-	
+
 #ifdef GHC_USE_PDN
 	gpio_set_value(ak4678->pdn, 0);
 #endif
@@ -2168,7 +2170,7 @@ static int ak4678_resume(struct device *dev)
 	snd_soc_cache_sync(codec);
 	gprintk("reg %x = value%x\n", AK4678_0C_CP_CONTROL, snd_soc_read(codec, AK4678_0C_CP_CONTROL));
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-	
+
 	ak4678->suspended = false;
 	gprintk("leave\n");
 
@@ -2216,22 +2218,22 @@ static int ak4678_i2c_parse_dt(struct i2c_client *i2c, struct ak4678_priv *p)
 
 	if (!np)
 		return -1;
-		
+
 	p->pdn = of_get_named_gpio(np, "ak4678,pdn-gpio", 0);
 	if (p->pdn < 0) {
 		printk("Looking up %s property in node %s failed %d\n",
 				"ak4678,pdn-gpio", dev->of_node->full_name,
 				p->pdn);
 		p->pdn = -1;
-		
+
 		return -1;
 	}
-		
+
 	if( !gpio_is_valid(p->pdn) ) {
 		printk(KERN_ERR "ak4678 pdn pin(%u) is invalid\n", p->pdn);
 		return -1;
 	}
-	
+
 	gprintk("p->pdn = %u\n", p->pdn);
 
 	return 0;
@@ -2264,7 +2266,7 @@ static int ak4678_i2c_probe(struct i2c_client *client,
 			printk("ak4678 PDN pin error\n");
 		}
 	}
-	
+
 	ak4678->suspended = false;
 
 

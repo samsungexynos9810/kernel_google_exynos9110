@@ -34,6 +34,7 @@
 		i2c6 = &i2c_6;
 		i2c7 = &i2c_7;
 		mshc0 = &dwmmc_0;
+		mshc1 = &dwmmc_1;
 		mshc2 = &dwmmc_2;
 		mfc0 = &mfc_0;
 		gsc0 = &gsc_0;
@@ -412,6 +413,19 @@
 		clocks = <&clock CLK_SDMMC0>, <&clock CLK_SCLK_MMC0>,
 			<&clock CLK_DIV_MMC0>, <&clock CLK_DIV_MMC0_PRE>;
 		clock-names = 	"biu", "gate_ciu",
+				"dout_mmc_a", "dout_mmc_b";
+		status = "disabled";
+	};
+
+	dwmmc_1: dwmmc1@12520000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		compatible = "samsung,exynos3250-dw-mshc";
+		reg = <0x12520000 0x2000>;
+		interrupts = <0 143 0>;
+		clocks = <&clock CLK_SDMMC1>, <&clock CLK_SCLK_MMC1>,
+			<&clock CLK_DIV_MMC1>, <&clock CLK_DIV_MMC1_PRE>;
+		clock-names =   "biu", "gate_ciu",
 				"dout_mmc_a", "dout_mmc_b";
 		status = "disabled";
 	};

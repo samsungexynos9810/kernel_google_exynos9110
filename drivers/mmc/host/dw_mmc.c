@@ -3298,6 +3298,38 @@ static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#if defined(CONFIG_MTK_COMBO_MT66XX)
+int wifi_on = 0;
+EXPORT_SYMBOL(wifi_on);
+static struct platform_device *wifi_status_cb_devid;
+static void (*wifi_status_cb) (struct platform_device *dev, int state);
+
+int MTK6220_wifi_set_carddetect(int val)
+{
+	printk("%s: %d\n", __func__, val);
+	if (wifi_on != val) {
+		wifi_on = val;
+		if (wifi_status_cb) {
+			wifi_status_cb(wifi_status_cb_devid, val);
+		} else
+			printk("%s: Nobody to notify\n", __func__);
+	}
+	return 0;
+}
+EXPORT_SYMBOL(MTK6220_wifi_set_carddetect);
+
+int MTK6220_wifi_status_register(
+                void (*cb)(struct platform_device *dev, int state))
+{
+        printk("%s: \n", __func__);
+
+        if (wifi_status_cb)
+                return -EBUSY;
+        wifi_status_cb = cb;
+        return 0;
+}
+#endif
+
 static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
@@ -3462,8 +3494,19 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 	/* Card initially undetected */
 	slot->last_detect_state = 0;
 
+#if defined(CONFIG_MTK_COMBO_MT66XX)
+	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL) {
+		if (!host->pdata->ext_cd_init) {
+	        printk("%s: set ext_cd_init \n", __func__);
+			wifi_status_cb_devid = to_platform_device(host->dev);
+			host->pdata->ext_cd_init = MTK6220_wifi_status_register;
+		}
+		host->pdata->ext_cd_init(&dw_mci_notify_change);
+	}
+#else
 	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL)
 		host->pdata->ext_cd_init(&dw_mci_notify_change);
+#endif
 
 	/*
 	 * Card may have been plugged in prior to boot so we
@@ -3703,6 +3746,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 
 	if (of_find_property(np, "keep-power-in-suspend", NULL))
 		pdata->pm_caps |= MMC_PM_KEEP_POWER;
+
+	if (of_find_property(np, "pm-ignore-notify", NULL))
+		pdata->pm_caps |= MMC_PM_IGNORE_PM_NOTIFY;
 
 	if (of_find_property(np, "enable-sdio-wakeup", NULL))
 		pdata->pm_caps |= MMC_PM_WAKE_SDIO_IRQ;
