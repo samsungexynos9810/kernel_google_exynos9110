@@ -162,9 +162,12 @@ struct samsung_div_clock {
 	u8			width;
 	u8			div_flags;
 	const char		*alias;
+	unsigned long		stat_offset;
+	u8			stat_shift;
+	u8			stat_width;
 };
 
-#define __DIV(_id, dname, cname, pname, o, s, w, f, df, a)	\
+#define __DIV(_id, dname, cname, pname, o, s, w, f, df, a, so, ss, sw)	\
 	{							\
 		.id		= _id,				\
 		.dev_name	= dname,			\
@@ -176,16 +179,25 @@ struct samsung_div_clock {
 		.width		= w,				\
 		.div_flags	= df,				\
 		.alias		= a,				\
+		.stat_offset	= so,				\
+		.stat_shift	= ss,				\
+		.stat_width	= sw,				\
 	}
 
 #define DIV(_id, cname, pname, o, s, w)				\
-	__DIV(_id, NULL, cname, pname, o, s, w, 0, 0, NULL)
+	__DIV(_id, NULL, cname, pname, o, s, w, 0, 0, NULL, 0, 0, 0)
 
 #define DIV_A(_id, cname, pname, o, s, w, a)			\
-	__DIV(_id, NULL, cname, pname, o, s, w, 0, 0, a)
+	__DIV(_id, NULL, cname, pname, o, s, w, 0, 0, a, 0, 0, 0)
 
 #define DIV_F(_id, cname, pname, o, s, w, f, df)		\
-	__DIV(_id, NULL, cname, pname, o, s, w, f, df, NULL)
+	__DIV(_id, NULL, cname, pname, o, s, w, f, df, NULL, 0, 0, 0)
+
+#define DIV_F_STAT(_id, cname, pname, o, s, w, f, df, so, ss, sw)	\
+	__DIV(_id, NULL, cname, pname, o, s, w, f, df, NULL, so, ss, sw)
+
+#define DIV_STAT(_id, cname, pname, o, s, w, so, ss, sw)	\
+	__DIV(_id, NULL, cname, pname, o, s, w, 0, 0, NULL, so, ss, sw)
 
 /**
  * struct samsung_gate_clock: information about gate clock
