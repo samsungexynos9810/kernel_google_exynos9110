@@ -458,7 +458,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 						 (exynos3250_int_lbus_div[i][1] << EXYNOS3_CLKDIV_GPL_SHIFT));
 		tmp_int_table->lbus.reg_mask = (EXYNOS3_CLKDIV_GDL_MASK |\
 						EXYNOS3_CLKDIV_STAT_GPL_MASK);
-		tmp_int_table->lbus.wait_reg = EXYNOS3_CLKDIV_STAT_LEFTBUS;
+		tmp_int_table->lbus.wait_reg = DIV_STAT_LEFTBUS;
 		tmp_int_table->lbus.wait_mask = (EXYNOS3_CLKDIV_STAT_GPL_MASK |\
 						 EXYNOS3_CLKDIV_STAT_GDL_MASK);
 
@@ -468,7 +468,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 						 (exynos3250_int_rbus_div[i][1] << EXYNOS3_CLKDIV_GPR_SHIFT));
 		tmp_int_table->rbus.reg_mask = (EXYNOS3_CLKDIV_GDR_MASK |\
 						EXYNOS3_CLKDIV_STAT_GPR_MASK);
-		tmp_int_table->rbus.wait_reg = EXYNOS3_CLKDIV_STAT_RIGHTBUS;
+		tmp_int_table->rbus.wait_reg = DIV_STAT_RIGHTBUS;
 		tmp_int_table->rbus.wait_mask = (EXYNOS3_CLKDIV_STAT_GPR_MASK |\
 						 EXYNOS3_CLKDIV_STAT_GDR_MASK);
 
@@ -484,7 +484,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 						EXYNOS3_CLKDIV_ACLK_200_MASK |
 						EXYNOS3_CLKDIV_ACLK_100_MASK |
 						EXYNOS3_CLKDIV_ACLK_400_MASK);
-		tmp_int_table->top.wait_reg = EXYNOS3_CLKDIV_STAT_TOP;
+		tmp_int_table->top.wait_reg = DIV_STAT_TOP;
 		tmp_int_table->top.wait_mask = (EXYNOS3_CLKDIV_STAT_ACLK_266_MASK |
 						 EXYNOS3_CLKDIV_STAT_ACLK_160_MASK |
 						 EXYNOS3_CLKDIV_STAT_ACLK_200_MASK |
@@ -504,7 +504,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 						EXYNOS3_CLKDIV_ACP_DMC_MASK |
 						EXYNOS3_CLKDIV_ACP_DMCD_MASK |
 						EXYNOS3_CLKDIV_ACP_DMCP_MASK);
-		tmp_int_table->acp0.wait_reg = EXYNOS3_CLKDIV_STAT_ACP0;
+		tmp_int_table->acp0.wait_reg = DIV_STAT_ACP0;
 		tmp_int_table->acp0.wait_mask = (EXYNOS3_CLKDIV_STAT_ACP_MASK |
 						 EXYNOS3_CLKDIV_STAT_ACP_PCLK_MASK |
 						 EXYNOS3_CLKDIV_STAT_ACP_DMC_SHIFT |
@@ -515,7 +515,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 		tmp_int_table->mfc.target_reg = EXYNOS3_CLKDIV_MFC;
 		tmp_int_table->mfc.reg_value = (exynos3250_int_mfc_div[i] << EXYNOS3_CLKDIV_MFC_SHIFT);
 		tmp_int_table->mfc.reg_mask = EXYNOS3_CLKDIV_MFC_MASK;
-		tmp_int_table->mfc.wait_reg = EXYNOS3_CLKDIV_STAT_MFC;
+		tmp_int_table->mfc.wait_reg = DIV_STAT_MFC;
 		tmp_int_table->mfc.wait_mask = EXYNOS3_CLKDIV_STAT_MFC_MASK;
 
 		list_add(&tmp_int_table->list, &int_dvfs_list);
