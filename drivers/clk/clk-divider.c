@@ -222,6 +222,25 @@ static int clk_divider_set_rate(struct clk_hw *hw, unsigned long rate,
 	val |= value << divider->shift;
 	writel(val, divider->reg);
 
+	if (divider->stat_reg) {
+		unsigned int timeout = 1000;
+		unsigned int mask = BIT(divider->stat_shift + divider->stat_width - 1);
+		do {
+			--timeout;
+			if (timeout == 0) {
+				pr_err("clk_divider_set_rate (%s) is timeout.\n",
+					 __clk_get_name(hw->clk));
+				pr_err("DIVIDER_REG: %08x, DIV_STAT_REG: %08x\n",
+					__raw_readl(divider->reg), __raw_readl(divider->stat_reg));
+				if (divider->lock)
+					spin_unlock_irqrestore(divider->lock, flags);
+				return -ETIMEDOUT;
+			}
+			val = readl(divider->stat_reg);
+			val &= mask;
+		} while (val != 0);
+	}
+
 	if (divider->lock)
 		spin_unlock_irqrestore(divider->lock, flags);
 
@@ -239,7 +258,8 @@ static struct clk *_register_divider(struct device *dev, const char *name,
 		const char *parent_name, unsigned long flags,
 		void __iomem *reg, u8 shift, u8 width,
 		u8 clk_divider_flags, const struct clk_div_table *table,
-		spinlock_t *lock)
+		spinlock_t *lock, void __iomem *stat_reg, u8 stat_shift,
+		u8 stat_width)
 {
 	struct clk_divider *div;
 	struct clk *clk;
@@ -266,6 +286,9 @@ static struct clk *_register_divider(struct device *dev, const char *name,
 	div->lock = lock;
 	div->hw.init = &init;
 	div->table = table;
+	div->stat_reg = stat_reg;
+	div->stat_shift = stat_shift;
+	div->stat_width = stat_width;
 
 	/* register the clock */
 	clk = clk_register(dev, &div->hw);
@@ -274,6 +297,33 @@ static struct clk *_register_divider(struct device *dev, const char *name,
 		kfree(div);
 
 	return clk;
+}
+
+/**
+ * clk_register_divider_stat - register a divider clock with STAT register
+ * with the clock framework
+ * @dev: device registering this clock
+ * @name: name of this clock
+ * @parent_name: name of clock's parent
+ * @flags: framework-specific flags
+ * @reg: register address to adjust divider
+ * @shift: number of bits to shift the bitfield
+ * @width: width of the bitfield
+ * @clk_divider_flags: divider-specific flags for this clock
+ * @lock: shared register lock for this clock
+ * @stat_reg: divider stat register offset
+ * @stat_shift: divider stat register bit shift
+ * @stat_width: divider stat register bit width
+ */
+struct clk *clk_register_divider_stat(struct device *dev, const char *name,
+		const char *parent_name, unsigned long flags,
+		void __iomem *reg, u8 shift, u8 width,
+		u8 clk_divider_flags, spinlock_t *lock,
+		void __iomem *stat_reg, u8 stat_shift, u8 stat_width)
+{
+	return _register_divider(dev, name, parent_name, flags, reg, shift,
+			width, clk_divider_flags, NULL, lock, stat_reg,
+			stat_shift, stat_width);
 }
 
 /**
@@ -294,7 +344,7 @@ struct clk *clk_register_divider(struct device *dev, const char *name,
 		u8 clk_divider_flags, spinlock_t *lock)
 {
 	return _register_divider(dev, name, parent_name, flags, reg, shift,
-			width, clk_divider_flags, NULL, lock);
+			width, clk_divider_flags, NULL, lock, NULL, 0, 0);
 }
 
 /**
@@ -318,5 +368,5 @@ struct clk *clk_register_divider_table(struct device *dev, const char *name,
 		spinlock_t *lock)
 {
 	return _register_divider(dev, name, parent_name, flags, reg, shift,
-			width, clk_divider_flags, table, lock);
+			width, clk_divider_flags, table, lock, NULL, 0, 0);
 }
