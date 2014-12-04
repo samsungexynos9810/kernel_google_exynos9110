@@ -104,7 +104,7 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 	unsigned int timeout;
 
 	if (exynos_cpu.power_state(phys_cpu)) {
-		printk(KERN_WARNING "%s: Already enabled core power.\n",
+		printk(KERN_DEBUG "%s: Already enabled core power.\n",
 			 __func__);
 		return 0;
 	}
@@ -152,7 +152,7 @@ static int exynos_power_up_cpu(unsigned int phys_cpu)
 			val |= (0x3 << 8);
 			__raw_writel(val, EXYNOS_ARM_CORE1_STATUS);
 
-			pr_info("cpu%d: SWRESET\n", phys_cpu);
+			printk(KERN_DEBUG "cpu%d: SWRESET\n", phys_cpu);
 			__raw_writel(((1 << 4) << phys_cpu), EXYNOS_SWRESET);
 		}
 
