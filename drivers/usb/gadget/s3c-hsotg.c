@@ -201,6 +201,7 @@ struct s3c_hsotg {
 	struct wake_lock	wake_lock;
 #endif
 	struct delayed_work s3c_hsotg_work;
+    struct usb_ctrlrequest *usb_ctrl;
 };
 
 /**
@@ -1114,6 +1115,75 @@ static struct s3c_hsotg_req *get_ep_head(struct s3c_hsotg_ep *hs_ep)
 	return list_first_entry(&hs_ep->queue, struct s3c_hsotg_req, queue);
 }
 
+#define EP0_CON     0
+#define TEST_SELECTOR_MASK  0xFF
+/* Set into the test mode for Test Mode set_feature request */
+static inline void set_test_mode(struct s3c_hsotg *hsotg)
+{
+	u32 ep_ctrl, dctl;
+	u8 test_selector = (hsotg->usb_ctrl->wIndex>>8) &
+		TEST_SELECTOR_MASK;
+
+	if (test_selector > 0 && test_selector < 6) {
+		ep_ctrl = __raw_readl(hsotg->regs + DIEPCTL(EP0_CON));
+
+		__raw_writel(1<<19 | 0<<0,
+			hsotg->regs + DIEPTSIZ(EP0_CON));
+		__raw_writel(ep_ctrl | DxEPCTL_EPEna | DxEPCTL_CNAK
+			| EP0_CON<<DxEPCTL_NextEp_SHIFT,
+			hsotg->regs + DIEPCTL(EP0_CON));
+	}
+
+	switch (test_selector) {
+	case TEST_J_SEL:
+		/* some delay is necessary like printk() or udelay() */
+		printk(KERN_INFO "Test mode selector in set_feature request is"
+			"TEST J\n");
+
+		dctl = __raw_readl(hsotg->regs + DCTL);
+		__raw_writel((dctl & ~(DCTL_TstCtl_MASK)) | TEST_J_MODE,
+			hsotg->regs + DCTL);
+		break;
+	case TEST_K_SEL:
+		/* some delay is necessary like printk() or udelay() */
+		printk(KERN_INFO "Test mode selector in set_feature request is"
+			"TEST K\n");
+
+		dctl = __raw_readl(hsotg->regs + DCTL);
+		__raw_writel((dctl&~(DCTL_TstCtl_MASK))|TEST_K_MODE,
+			hsotg->regs + DCTL);
+		break;
+	case TEST_SE0_NAK_SEL:
+		/* some delay is necessary like printk() or udelay() */
+		printk(KERN_INFO "Test mode selector in set_feature request is"
+			"TEST SE0 NAK\n");
+
+		dctl = __raw_readl(hsotg->regs + DCTL);
+		__raw_writel((dctl & ~(DCTL_TstCtl_MASK)) | TEST_SE0_NAK_MODE,
+			hsotg->regs + DCTL);
+		break;
+	case TEST_PACKET_SEL:
+		/* some delay is necessary like printk() or udelay() */
+		printk(KERN_INFO "Test mode selector in set_feature request is"
+			"TEST PACKET\n");
+
+		dctl = __raw_readl(hsotg->regs + DCTL);
+		__raw_writel((dctl & ~(DCTL_TstCtl_MASK)) | TEST_PACKET_MODE,
+				hsotg->regs + DCTL);
+		break;
+	case TEST_FORCE_ENABLE_SEL:
+		/* some delay is necessary like printk() or udelay() */
+		printk(KERN_INFO "Test mode selector in set_feature request is"
+					"TEST FORCE ENABLE\n");
+
+		dctl = __raw_readl(hsotg->regs + DCTL);
+		__raw_writel((dctl & ~(DCTL_TstCtl_MASK)) |
+				TEST_FORCE_ENABLE_MODE,
+				hsotg->regs + DCTL);
+		break;
+	}
+}
+
 /**
  * s3c_hsotg_process_req_featire - process request {SET,CLEAR}_FEATURE
  * @hsotg: The device state
@@ -1129,11 +1199,21 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
 	struct s3c_hsotg_ep *ep;
 	int ret;
 	bool halted;
+    hsotg->usb_ctrl = ctrl;
 
 	dev_dbg(hsotg->dev, "%s: %s_FEATURE\n",
 		__func__, set ? "SET" : "CLEAR");
 
-	if (ctrl->bRequestType == USB_RECIP_ENDPOINT) {
+    switch (ctrl->bRequestType & USB_RECIP_MASK) {
+    case USB_RECIP_DEVICE:
+        switch (ctrl->wValue) {
+        case USB_DEVICE_TEST_MODE:
+            dev_dbg(hsotg->dev, "\tSET_FEATURE: USB_DEVICE_TEST_MODE\n");
+            set_test_mode(hsotg);
+            break;
+        }
+
+    case USB_RECIP_ENDPOINT:
 		ep = ep_from_windex(hsotg, le16_to_cpu(ctrl->wIndex));
 		if (!ep) {
 			dev_dbg(hsotg->dev, "%s: no endpoint for 0x%04x\n",
@@ -1186,8 +1266,9 @@ static int s3c_hsotg_process_req_feature(struct s3c_hsotg *hsotg,
 		default:
 			return -ENOENT;
 		}
-	} else
+    default:
 		return -ENOENT;  /* currently only deal with endpoint */
+    }
 
 	return 1;
 }
