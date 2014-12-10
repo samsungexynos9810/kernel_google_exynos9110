@@ -222,7 +222,8 @@
 					regulator-name = "vdd_tsp_3.3";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-initial-mode = <1>;
+					regulator-initial-mode = <3>;
+					regulator-always-on;
 				};
 
 				ldo16_reg: LDO16 {
