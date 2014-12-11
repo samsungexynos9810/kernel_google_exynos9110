@@ -39,7 +39,7 @@ struct ak4678seq_t {
 	u16 data;
 };
 
-#define AK4678_DEBUG
+#undef AK4678_DEBUG
 
 #ifdef AK4678_DEBUG
 #define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
