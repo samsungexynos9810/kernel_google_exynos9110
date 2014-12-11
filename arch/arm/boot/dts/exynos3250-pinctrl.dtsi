@@ -464,6 +464,13 @@
 			samsung,pin-drv = <3>;
 		};
 
+		gauge_irq: ext-int18 {
+			samsung,pins = "gpx2-2";
+			samsung,pin-function = <0xf>;
+			samsung,pin-pud = <3>;
+			samsung,pin-drv = <3>;
+		};
+
 		eint23: ext-int23 {
 			samsung,pins = "gpx2-7";
 			samsung,pin-function = <0xf>;
