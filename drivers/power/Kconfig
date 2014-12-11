@@ -343,6 +343,13 @@ config CHARGER_BQ24160
 
 	  You'll need this driver to charge batteries on Xyref5430 board.
 
+if CHARGER_BQ24160
+
+config SHIRIPRO_CHARGER
+        bool "Enable wakeup from touch"
+        default y
+endif
+
 config CHARGER_BQ24160_ENABLE_WAKELOCK
 	tristate "TI BQ24160 battery charger driver can take wakelock for USB Charging"
 	depends on CHARGER_BQ24160

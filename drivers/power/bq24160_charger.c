@@ -88,13 +88,50 @@
 #define REG_NTC_LOW_CHG_BIT	     0
 
 /* Values in mV */
-#define MIN_CHARGE_VOLTAGE      3820
+#ifdef CONFIG_SHIRIPRO_CHARGER
+
+#define MIN_CHARGE_VOLTAGE      			3600
 #define MAX_CHARGE_VOLTAGE      4440
 #define MIN_MAX_CHARGE_VOLTAGE  4200
 #define MAX_MAX_CHARGE_VOLTAGE  MAX_CHARGE_VOLTAGE
 #define CHARGE_VOLTAGE_STEP     20
-#define ESPRESSO3250_MAX_CHG_VOLT  4440
-#define XYREF5430_MAX_CHG_VOLT	4100
+#define MAX_CHG_VOLT  4400
+
+/* Values in mA */
+#define MIN_CHARGE_CURRENT 100
+#define LOW_CHARGE_CURRENT 150
+#define MAX_CHARGE_CURRENT 1500
+#define CHARGE_CURRENT_STEP 75
+
+
+/* Values in mA */
+#define MIN_CHARGE_TERM_CURRENT 50
+#define MAX_CHARGE_TERM_CURRENT 400
+#define CHARGE_TERM_CURRENT_STEP 50
+
+/* Values in mA */
+#define MIN_CHARGE_CURRENT_LIMIT_USB 100
+#define MIN_CHARGE_CURRENT_LIMIT_IN 1500
+#define CURRENT_LIMIT_USB	500
+
+/* Vender Part Revision  */
+#define VENDOR_REV_23 0x05
+
+#define STOP_CHARGE_VOLTAGE_REV_23 4000
+#define START_CHARGE_VOLTAGE_REV_23 3900
+
+
+/* Value in hour */
+#define SAFETY_TIME	360
+
+#else
+
+#define MIN_CHARGE_VOLTAGE     	3820
+#define MAX_CHARGE_VOLTAGE      4440
+#define MIN_MAX_CHARGE_VOLTAGE  4200
+#define MAX_MAX_CHARGE_VOLTAGE  MAX_CHARGE_VOLTAGE
+#define CHARGE_VOLTAGE_STEP     20
+#define MAX_CHG_VOLT  4440
 
 /* Values in mA */
 #define MIN_CHARGE_CURRENT 275
@@ -110,21 +147,25 @@
 /* Values in mA */
 #define MIN_CHARGE_CURRENT_LIMIT_USB 100
 #define MIN_CHARGE_CURRENT_LIMIT_IN 1500
-#define ESPRESSO3250_CURRENT_LIMIT_USB	100
-#define XYREF5430_CURRENT_LIMIT_USB	900
+#define CURRENT_LIMIT_USB	100
 
 /* Vender Part Revision  */
 #define VENDOR_REV_23 0x05
 
+
 #define STOP_CHARGE_VOLTAGE_REV_23 4000
 #define START_CHARGE_VOLTAGE_REV_23 3900
+
+#define SAFETY_TIME	360
+#endif
+
+
+
 
 
 #define CURRENT_DEPEND_ON_PRODUCT USHRT_MAX
 
-/* Value in hour */
-#define ESPRESSO3250_SAFETY_TIME	360
-#define XYREF5430_SAFETY_TIME	360
+
 /*
  * Delay time until enabling charge to prevent back boost.
  * Add a margin of 20ms from I2C timing analyzing.
@@ -150,9 +191,7 @@
 #define CHK_MASK(mask, data) ((data) & (mask))
 #define DATA_MASK(mask, data) ((data) << (ffs(mask) - 1))
 
-#define DEBUG
 #define DEBUGFS
-
 
 #ifdef DEBUG
 #define MUTEX_LOCK(x) do {					      \
@@ -176,7 +215,6 @@
 #define SAMSUNG_BAT_NUM		0
 #define SAMSUNG_USB_NUM		1
 #define SAMSUNG_AC_NUM		2
-
 
 enum bq24160_status {
 	STAT_NO_VALID_SOURCE,
@@ -324,8 +362,6 @@ static int bq24160_set_input_current_limit_usb(struct bq24160_data *bd, u16 ma);
 static int bq24160_set_input_current_limit_in(struct bq24160_data *bd, u16 ma);
 
 #ifdef DEBUG_FS
-
-
 static int read_sysfs_interface(const char *pbuf, s32 *pvalue, u8 base)
 {
 	long long val;
@@ -385,6 +421,7 @@ static ssize_t store_chg_volt(struct device *pdev,
 
 	return rc;
 }
+
 static ssize_t store_chg_curr(struct device *pdev,
 			      struct device_attribute *attr,
 			      const char *pbuf,
@@ -405,6 +442,7 @@ static ssize_t store_chg_curr(struct device *pdev,
 
 	return rc;
 }
+
 static ssize_t store_chg_curr_term(struct device *pdev,
 				   struct device_attribute *attr,
 				   const char *pbuf,
@@ -426,6 +464,7 @@ static ssize_t store_chg_curr_term(struct device *pdev,
 
 	return rc;
 }
+
 static ssize_t store_input_curr_lim_usb(struct device *pdev,
 				    struct device_attribute *attr,
 				    const char *pbuf,
@@ -450,6 +489,7 @@ static ssize_t store_input_curr_lim_usb(struct device *pdev,
 
 	return rc;
 }
+
 static ssize_t store_input_curr_lim_in(struct device *pdev,
 				    struct device_attribute *attr,
 				    const char *pbuf,
@@ -534,9 +574,9 @@ static void debug_remove_attrs(struct device *dev)
 }
 #endif /* DEBUG_FS */
 
-#ifdef DEBUG
 static void bq24160_dump_registers(struct bq24160_data *bd)
 {
+#ifdef DEBUG
 	u8 i;
 	s32 data[8];
 
@@ -548,8 +588,8 @@ static void bq24160_dump_registers(struct bq24160_data *bd)
 	}
 
 	dev_info(&bd->clientp->dev, "Regdump 0: 0x%.2x, 1: 0x%.2x, 2: 0x%.2x, 3: 0x%.2x, 4: 0x%.2x, 5: 0x%2.x, 6: 0x%2.x, 7: 0x%.2x\n", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-}
 #endif
+}
 
 static s32 bq24160_i2c_read_byte(struct i2c_client *client, u8 command)
 {
@@ -878,9 +918,7 @@ static void bq24160_reset_watchdog_worker(struct work_struct *work)
 		bq24160_i2c_write_byte(bd->clientp, REG_STATUS, data);
 	}
 	/*bq24160_check_status(bd);*/
-#ifdef DEBUG
-	/*bq24160_dump_registers(bd);*/
-#endif
+	bq24160_dump_registers(bd);
 
 	(void)queue_delayed_work(bd->wq, &bd->work, HZ * WATCHDOG_TIMER);
 }
@@ -1208,46 +1246,24 @@ static int set_board_values(struct bq24160_data *bd)
 {
 	s32 data;
 	s32 rc;
-        if (of_machine_is_compatible("samsung,exynos3250")){
 
-            dev_info(&bd->clientp->dev, "Set espresso3250 values\n");
-            data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
-            if (data < 0)
-                return data;
+        dev_info(&bd->clientp->dev, "Set board values\n");
+        printk("Set SHIRI PRO values\n");
+        data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
+        if (data < 0)
+		return data;
 
-            data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
-            rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
-            if (rc < 0)
+        data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
+        rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
+        if (rc < 0)
                 return rc;
 
         /* Sets any charging relates registers */
-            (void)bq24160_set_charger_voltage(ESPRESSO3250_MAX_CHG_VOLT);
-            (void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
-            (void)bq24160_set_input_current_limit_usb(bd, ESPRESSO3250_CURRENT_LIMIT_USB);
-            (void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
-            (void)bq24160_set_charger_safety_timer(ESPRESSO3250_SAFETY_TIME);
-
-        } else {
-            dev_info(&bd->clientp->dev, "Set xyref5430 values\n");
-
-            data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
-            if (data < 0)
-                return data;
-
-            data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
-            rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
-            if (rc < 0)
-                return rc;
-
-	/* Sets any charging relates registers */
-            (void)bq24160_set_charger_voltage(XYREF5430_MAX_CHG_VOLT);
-            (void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
-            (void)bq24160_set_input_current_limit_usb(bd, XYREF5430_CURRENT_LIMIT_USB);
-            (void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
-            (void)bq24160_set_charger_safety_timer(XYREF5430_SAFETY_TIME);
-
-        }
-
+        (void)bq24160_set_charger_voltage(MAX_CHG_VOLT);
+        (void)bq24160_set_charger_current(MAX_CHARGE_CURRENT);
+        (void)bq24160_set_input_current_limit_usb(bd, CURRENT_LIMIT_USB);
+        (void)bq24160_set_input_current_limit_in(bd, MAX_CHARGE_CURRENT);
+        (void)bq24160_set_charger_safety_timer(SAFETY_TIME);
 
 	return 0;
 
