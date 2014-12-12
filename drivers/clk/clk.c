@@ -2212,7 +2212,6 @@ int __clk_init(struct device *dev, struct clk *clk)
 	else
 		clk->rate = 0;
 
-	clk_debug_register(clk);
 	/*
 	 * walk the list of orphan clocks and reparent any that are children of
 	 * this clock
@@ -2246,6 +2245,9 @@ int __clk_init(struct device *dev, struct clk *clk)
 	kref_init(&clk->ref);
 out:
 	clk_prepare_unlock();
+
+	if (!ret)
+		clk_debug_register(clk);
 
 	return ret;
 }
