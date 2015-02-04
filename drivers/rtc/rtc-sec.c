@@ -303,6 +303,41 @@ out:
 	return ret;
 }
 
+/* This is a workaround for the problem that RTC TIME is overwirted by write
+ * buffer when setting RTC ALARM. It is quite rare but it does happen. The root
+ * cuase is that clear signal of RUDR & WUDR is 1 clock delay while it should be
+ * 2 clock delay.
+ * This workaround is not dependent on system time.
+ */
+static int alarm_work_around(struct s2m_rtc_info *info)
+{
+
+	u8 data[NR_RTC_CNT_REGS];
+	int ret;
+
+	ret = s2m_rtc_update(info, S2M_RTC_READ);
+	if (ret < 0)
+		goto out;
+
+	ret = sec_rtc_bulk_read(info->iodev, S2M_RTC_SEC, NR_RTC_CNT_REGS,
+			data);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: fail to read time reg(%d)\n", __func__,
+			ret);
+		goto out;
+	}
+	ret = sec_rtc_bulk_write(info->iodev, S2M_RTC_SEC, NR_RTC_CNT_REGS,
+			data);
+	if (ret < 0) {
+		dev_err(info->dev, "%s: fail to write time reg(%d)\n", __func__,
+			ret);
+		goto out;
+	}
+
+out:
+	return ret;
+}
+
 static int s2m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 {
 	struct s2m_rtc_info *info = dev_get_drvdata(dev);
@@ -394,6 +429,11 @@ static int s2m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	int ret, i;
 
 	mutex_lock(&info->lock);
+
+	ret = alarm_work_around(info);
+	if (ret < 0)
+		goto out;
+
 	ret = s2m_tm_to_data(&alrm->time, data);
 	if (ret < 0)
 		goto out;
