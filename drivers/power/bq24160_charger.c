@@ -767,7 +767,6 @@ static void bq24160_update_power_supply(struct bq24160_data *bd)
 static irqreturn_t bq24160_thread_irq(int irq, void *data)
 {
 	struct bq24160_data *bd = (struct bq24160_data *)data;
-	printk("=================CHARGER-IRQ================\n");
 	if (delayed_work_pending(&bd->irq_work))
 		cancel_delayed_work(&bd->irq_work);
 	schedule_delayed_work(&bd->irq_work, msecs_to_jiffies(90));
