@@ -192,7 +192,7 @@ static inline void ION_EVENT_MMAP(struct ion_buffer *buffer, ktime_t begin)
 	data->size = buffer->size;
 }
 
-inline void ION_EVENT_SHRINK(struct ion_device *dev, size_t size)
+void ION_EVENT_SHRINK(struct ion_device *dev, size_t size)
 {
 	int idx = atomic_inc_return(&dev->event_idx) % ION_EVENT_LOG_MAX;
 	struct ion_eventlog *log = &dev->eventlog[idx];
