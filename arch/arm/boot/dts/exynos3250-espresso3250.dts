@@ -280,8 +280,8 @@
 		fifo-depth = <0x80>;
 		card-detect-delay = <200>;
 		samsung,dw-mshc-ciu-div = <3>;
-		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
-		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
+		samsung,dw-mshc-sdr-timing = <1 0 4 0>;
+		samsung,dw-mshc-ddr-timing = <1 0 2 0>;
 		samsung,dw-mshc-hs200-timing = <3 0 2 0>;
 		samsung,dw-mshc-ddr200-timing = <1 1 2 0>;
 		num-ref-clks = <8>;
@@ -306,8 +306,8 @@
 		fifo-depth = <0x80>;
 		card-detect-delay = <250>;
 		samsung,dw-mshc-ciu-div = <3>;
-		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
-		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
+		samsung,dw-mshc-sdr-timing = <1 0 4 0>;
+		samsung,dw-mshc-ddr-timing = <1 0 2 0>;
 		num-ref-clks = <8>;
 		ciu_clkin = <25 50 50 100 200 100 200 200>;
 		pinctrl-names = "default";
