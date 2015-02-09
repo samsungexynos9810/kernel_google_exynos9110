@@ -102,11 +102,7 @@ static struct check_reg_lpa exynos_power_domain[] = {
  */
 static struct check_reg_lpa exynos_clock_gating[] = {
 	{.check_reg = EXYNOS3_CLKGATE_IP_MFC,	.check_bit = 0x00000001},
-/* TOP can be powered on during lpa mode.*/
-#if 0
-	{.check_reg = EXYNOS3_CLKGATE_IP_FSYS,	.check_bit = 0x00000001},
-	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,	.check_bit = 0x00033FC0},
-#endif
+	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,	.check_bit = 0x00013FC0},
 };
 
 static struct check_reg_lpa audio_clock_gating[] = {
