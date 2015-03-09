@@ -30,9 +30,6 @@
 #include <linux/clk.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_platform.h>
-#include <linux/gpio.h>
-#include <linux/of_gpio.h>
-#include <linux/pm_runtime.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -73,8 +70,6 @@ static const char * const s3c_hsotg_supply_names[] = {
 
 struct s3c_hsotg;
 struct s3c_hsotg_req;
-int vbus_state;
-int boot_done;
 
 /**
  * struct s3c_hsotg_ep - driver endpoint definition.
@@ -176,7 +171,6 @@ struct s3c_hsotg {
 
 	void __iomem		*regs;
 	int			irq;
-	int	detect_irq;
 	struct clk		*clk;
 
 	struct regulator_bulk_data supplies[ARRAY_SIZE(s3c_hsotg_supply_names)];
@@ -200,8 +194,7 @@ struct s3c_hsotg {
 #ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 	struct wake_lock	wake_lock;
 #endif
-	struct delayed_work s3c_hsotg_work;
-    struct usb_ctrlrequest *usb_ctrl;
+    	struct usb_ctrlrequest *usb_ctrl;
 };
 
 /**
@@ -2505,44 +2498,6 @@ static void s3c_hsotg_core_init(struct s3c_hsotg *hsotg)
 	__bic32(hsotg->regs + DCTL, DCTL_SftDiscon);
 }
 
-/* USB detect interrupt */
-static irqreturn_t s3c_vbus_detect_irq(int irq, void *pw)
-{
-	struct s3c_hsotg *hsotg = pw;
-
-	dev_dbg(hsotg->dev, "%s\n", __func__);
-
-	queue_delayed_work(system_nrt_wq, &hsotg->s3c_hsotg_work, 0);
-
-	return IRQ_HANDLED;
-}
-
-static void s3c_hsotg_work(struct work_struct *work)
-{
-	struct s3c_hsotg *hsotg = container_of(work, struct s3c_hsotg, s3c_hsotg_work.work);
-	int gpio;
-
-	dev_dbg(hsotg->dev, "%s\n", __func__);
-
-	gpio = of_get_named_gpio(hsotg->dev->of_node, "samsung,vbus-gpio", 0);
-	if (!gpio_is_valid(gpio)) {
-		dev_err(hsotg->dev, "failed to get interrupt gpio\n");
-		return;
-	}
-
-	vbus_state = gpio_get_value(gpio);
-	dev_dbg(hsotg->dev, "%s : %d\n", __func__, vbus_state);
-
-	if(vbus_state)
-	{
-		pm_runtime_get_sync(hsotg->dev);
-	}
-	else
-	{
-		/* pm_runtime_put_sync after disconnected */
-	}
-}
-
 /**
  * s3c_hsotg_irq - handle device interrupt
  * @irq: The IRQ number triggered
@@ -2647,20 +2602,10 @@ irq_retry:
 
 				s3c_hsotg_core_init(hsotg);
 				hsotg->last_rst = jiffies;
-				if(boot_done == 0)
-					boot_done = 1;
 			}
 		} else {
 			s3c_hsotg_disconnect(hsotg);
 			hsotg->phy->last_event = USB_EVENT_NONE;
-			if(boot_done == 0)
-			{
-				boot_done = 1;
-				pm_runtime_get_sync(hsotg->dev);
-				pm_runtime_put_sync(hsotg->dev);
-			}
-			else
-				pm_runtime_put_sync(hsotg->dev);
 		}
 	}
 
@@ -3717,7 +3662,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 	struct s3c_hsotg *hsotg;
 	struct resource *res;
 	int epnum;
-	int gpio;
 	int ret;
 	int i;
 
@@ -3759,8 +3703,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 		goto err_clk;
 	}
 
-	INIT_DELAYED_WORK(&hsotg->s3c_hsotg_work, s3c_hsotg_work);
-
 	ret = platform_get_irq(pdev, 0);
 	if (ret < 0) {
 		dev_err(dev, "cannot find IRQ\n");
@@ -3772,7 +3714,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 #ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 	wake_lock_init(&hsotg->wake_lock, WAKE_LOCK_SUSPEND, "s3c-hsotg");
 #endif
-
 	hsotg->irq = ret;
 
 	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
@@ -3783,22 +3724,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 	}
 
 	dev_info(dev, "regs %p, irq %d\n", hsotg->regs, hsotg->irq);
-
-	/* USB detect IRQ */
-	gpio = of_get_named_gpio(dev->of_node, "samsung,vbus-gpio", 0);
-	if (!gpio_is_valid(gpio)) {
-		dev_err(dev, "failed to get interrupt gpio\n");
-		return -EINVAL;
-	}
-	hsotg->detect_irq = gpio_to_irq(gpio);
-
-	ret = devm_request_irq(&pdev->dev, hsotg->detect_irq, s3c_vbus_detect_irq,
-			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING, "USB_DETECT", hsotg);
-	if (ret < 0) {
-		dev_err(dev, "cannot claim USB detect IRQ\n");
-		goto err_clk;
-	}
-	pm_runtime_enable(hsotg->dev);
 
 	hsotg->gadget.max_speed = USB_SPEED_HIGH;
 	hsotg->gadget.ops = &s3c_hsotg_gadget_ops;
@@ -3887,10 +3812,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_ep_mem;
 
-	/* work after booting */
-	boot_done = 0;
-	queue_delayed_work(system_nrt_wq, &hsotg->s3c_hsotg_work, msecs_to_jiffies(10000));
-
 	s3c_hsotg_create_debug(hsotg);
 
 	s3c_hsotg_dump(hsotg);
@@ -3927,7 +3848,6 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
 		usb_gadget_unregister_driver(hsotg->driver);
 	}
 
-	pm_runtime_disable(hsotg->dev);
 	s3c_hsotg_phy_disable(hsotg);
 	clk_disable_unprepare(hsotg->clk);
 #ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
@@ -3937,38 +3857,8 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
 	return 0;
 }
 
-#ifdef CONFIG_PM_RUNTIME
-static int s3c_hsotg_runtime_suspend(struct device *dev)
+static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	struct platform_device *pdev = to_platform_device(dev);
-	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
-	int ret = 0;
-
-	dev_dbg(hsotg->dev, "%s\n", __func__);
-	ret = pm_runtime_put_sync(hsotg->phy->dev);
-
-	return ret;
-}
-
-static int s3c_hsotg_runtime_resume(struct device *dev)
-{
-	struct platform_device *pdev = to_platform_device(dev);
-	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
-	int ret = 0;
-
-	dev_dbg(hsotg->dev, "%s\n", __func__);
-	ret = pm_runtime_get_sync(hsotg->phy->dev);
-
-	return ret;
-}
-#else
-#define s3c_hsotg_runtime_suspend	NULL
-#define s3c_hsotg_runtime_resume	NULL
-#endif
-
-static int s3c_hsotg_suspend(struct device *dev)
-{
-	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
 	unsigned long flags;
 	int ret = 0;
@@ -3995,9 +3885,8 @@ static int s3c_hsotg_suspend(struct device *dev)
 	return ret;
 }
 
-static int s3c_hsotg_resume(struct device *dev)
+static int s3c_hsotg_resume(struct platform_device *pdev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
 	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
 	unsigned long flags;
 	int ret = 0;
@@ -4015,23 +3904,8 @@ static int s3c_hsotg_resume(struct device *dev)
 	s3c_hsotg_core_init(hsotg);
 	spin_unlock_irqrestore(&hsotg->lock, flags);
 
-	if(pm_runtime_suspended(hsotg->dev))
-		pm_runtime_get_sync(hsotg->dev);
-
-	/* Update runtime PM status and clear runtime_error */
-	pm_runtime_disable(hsotg->dev);
-	pm_runtime_set_active(hsotg->dev);
-	pm_runtime_enable(hsotg->dev);
-
 	return ret;
 }
-
-static const struct dev_pm_ops s3c_hsotg_pm_ops = {
-	.suspend	= s3c_hsotg_suspend,
-	.resume		= s3c_hsotg_resume,
-	.runtime_suspend	= s3c_hsotg_runtime_suspend,
-	.runtime_resume		= s3c_hsotg_runtime_resume,
-};
 
 #ifdef CONFIG_OF
 static const struct of_device_id s3c_hsotg_of_ids[] = {
@@ -4046,11 +3920,12 @@ static struct platform_driver s3c_hsotg_driver = {
 	.driver		= {
 		.name	= "s3c-hsotg",
 		.owner	= THIS_MODULE,
-		.pm		= &s3c_hsotg_pm_ops,
 		.of_match_table = of_match_ptr(s3c_hsotg_of_ids),
 	},
 	.probe		= s3c_hsotg_probe,
 	.remove		= s3c_hsotg_remove,
+	.suspend	= s3c_hsotg_suspend,
+	.resume		= s3c_hsotg_resume,
 };
 
 module_platform_driver(s3c_hsotg_driver);
