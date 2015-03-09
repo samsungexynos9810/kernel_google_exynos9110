@@ -609,6 +609,10 @@
 		vusb_d-supply = <&ldo6_reg>;
 		vusb_a-supply = <&ldo8_reg>;
 		status = "okay";
+		samsung,vbus-gpio = <&gpx1 2 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&usbdetect_irq>;
+
 	};
 
 	spi@13930000 {
