@@ -1263,6 +1263,9 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 	spin_unlock(&sfb->slock);
 
+	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
+        // enable/disable irq with LPD 
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
 	if (sfb->power_state == POWER_ON)
