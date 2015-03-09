@@ -325,8 +325,9 @@ struct bq24160_data {
 	struct power_supply usb_ps;
 	struct power_supply ac_ps;
 	struct i2c_client *clientp;
-	struct delayed_work work;
+	struct delayed_work watchdog_work;
 	struct delayed_work enable_work;
+	 struct delayed_work irq_work;
 	struct workqueue_struct *wq;
 	struct bq24160_status_data cached_status;
 	struct mutex lock;
@@ -766,6 +767,19 @@ static void bq24160_update_power_supply(struct bq24160_data *bd)
 static irqreturn_t bq24160_thread_irq(int irq, void *data)
 {
 	struct bq24160_data *bd = (struct bq24160_data *)data;
+	printk("=================CHARGER-IRQ================\n");
+	if (delayed_work_pending(&bd->irq_work))
+		cancel_delayed_work(&bd->irq_work);
+	schedule_delayed_work(&bd->irq_work, msecs_to_jiffies(90));
+	return IRQ_HANDLED;
+}
+
+static void	bq24160_irq_delay_work_func(struct work_struct *work)
+{
+	struct delayed_work *dwork =
+		container_of(work, struct delayed_work, work);
+	struct bq24160_data *bd =
+		container_of(dwork, struct bq24160_data, irq_work);
 	struct bq24160_status_data old_status = bd->cached_status;
 
 	dev_dbg(&bd->clientp->dev, "Receiving threaded interrupt\n");
@@ -773,6 +787,9 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 	 * always updated when receiving this.
 	 * 300 ms according to TI.
 	 */
+#ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
+	wake_lock_timeout(&bd->wake_lock, HZ*5);
+#endif
 	mdelay(300);
 
 	if (!bq24160_check_status(bd) &&
@@ -783,32 +800,39 @@ static irqreturn_t bq24160_thread_irq(int irq, void *data)
 		if (bd->cached_status.stat != old_status.stat) {
 			if (bd->cached_status.stat == STAT_NO_VALID_SOURCE) {
 				if (old_status.stat == STAT_CHARGING_FROM_IN || old_status.stat == STAT_CHARGING_FROM_USB
-						|| old_status.stat == STAT_IN_READY || old_status.stat == STAT_USB_READY) {
+					|| old_status.stat == STAT_IN_READY || old_status.stat == STAT_USB_READY
+					|| old_status.stat == STAT_CHARGE_DONE || old_status.stat == STAT_NA
+					|| old_status.stat == STAT_FAULT) {
+					if(bd->watchdog_enable_vote >= 1)
+							bq24160_stop_watchdog_reset(bd);
 					bq24160_hz_enable(bd, 1);
 					bq24160_set_ce(bd, 1);
-					bq24160_stop_watchdog_reset(bd);
+
 				}
 			} else if (bd->cached_status.stat == STAT_IN_READY || bd->cached_status.stat == STAT_USB_READY) {
-				if (old_status.stat == STAT_NO_VALID_SOURCE) {
+				if (old_status.stat == STAT_NO_VALID_SOURCE || old_status.stat == STAT_CHARGE_DONE) {
 					set_board_values(bd);
 					bq24160_start_watchdog_reset(bd);
 					bq24160_hz_enable(bd, 0);
 					bq24160_set_ce(bd, 0);
+					if(bd->watchdog_enable_vote == 0)
+						bq24160_start_watchdog_reset(bd);
 				}
 			} else if (bd->cached_status.stat == STAT_CHARGING_FROM_IN || bd->cached_status.stat == STAT_CHARGING_FROM_USB) {
 				if (old_status.stat == STAT_NO_VALID_SOURCE) {
 					set_board_values(bd);
-					bq24160_start_watchdog_reset(bd);
+					if(bd->watchdog_enable_vote == 0)
+						bq24160_start_watchdog_reset(bd);
 					bq24160_hz_enable(bd, 0);
 					bq24160_set_ce(bd, 0);
 				}
 			}
+#ifdef DEBUG
 			bq24160_dump_registers(bd);
+#endif
 		}
 		bq24160_update_power_supply(bd);
 	}
-
-	return IRQ_HANDLED;
 }
 
 static void bq24160_hz_enable(struct bq24160_data *bd, int enable)
@@ -869,11 +893,11 @@ static void bq24160_start_watchdog_reset(struct bq24160_data *bd)
 	MUTEX_UNLOCK(&bd->lock);
 
 #ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
-	wake_lock(&bd->wake_lock);
+	wake_lock_timeout(&bd->wake_lock, HZ);
 	dev_info(&bd->clientp->dev, "wake locked\n");
 #endif
 
-	(void)queue_delayed_work(bd->wq, &bd->work, 0);
+	(void)queue_delayed_work(bd->wq, &bd->watchdog_work, 0);
 }
 
 static void bq24160_stop_watchdog_reset(struct bq24160_data *bd)
@@ -897,10 +921,9 @@ static void bq24160_stop_watchdog_reset(struct bq24160_data *bd)
 	bd->chg_disabled_by_input_current = 0;
 	MUTEX_UNLOCK(&bd->lock);
 
-	cancel_delayed_work(&bd->work);
+	cancel_delayed_work(&bd->watchdog_work);
 
 #ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
-	wake_unlock(&bd->wake_lock);
 	dev_info(&bd->clientp->dev, "wake unlocked\n");
 #endif
 }
@@ -910,7 +933,7 @@ static void bq24160_reset_watchdog_worker(struct work_struct *work)
 	struct delayed_work *dwork =
 		container_of(work, struct delayed_work, work);
 	struct bq24160_data *bd =
-		container_of(dwork, struct bq24160_data, work);
+		container_of(dwork, struct bq24160_data, watchdog_work);
 	s32 data = bq24160_i2c_read_byte(bd->clientp, REG_STATUS);
 
 	if (data >= 0) {
@@ -920,7 +943,7 @@ static void bq24160_reset_watchdog_worker(struct work_struct *work)
 	/*bq24160_check_status(bd);*/
 	bq24160_dump_registers(bd);
 
-	(void)queue_delayed_work(bd->wq, &bd->work, HZ * WATCHDOG_TIMER);
+	(void)queue_delayed_work(bd->wq, &bd->watchdog_work, HZ * WATCHDOG_TIMER);
 }
 
 static bool bq24160_is_disabled_charger(struct bq24160_data *bd)
@@ -1226,7 +1249,7 @@ static int bq24160_set_init_values(struct bq24160_data *bd)
 	if (data < 0)
 		return data;
 
-	data = SET_BIT(REG_CONTROL_EN_STAT_BIT, 1, data);
+	data = SET_BIT(REG_CONTROL_EN_STAT_BIT, 0, data);
 	rc = bq24160_i2c_write_byte(bd->clientp, REG_CONTROL, data);
 	if (rc < 0)
 		return rc;
@@ -1247,11 +1270,11 @@ static int set_board_values(struct bq24160_data *bd)
 	s32 data;
 	s32 rc;
 
-        dev_info(&bd->clientp->dev, "Set board values\n");
-        printk("Set SHIRI PRO values\n");
-        data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
-        if (data < 0)
-		return data;
+	if (of_machine_is_compatible("samsung,exynos3250")){
+		dev_info(&bd->clientp->dev, "Set espresso3250 values\n");
+		data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
+		if (data < 0)
+			return data;
 
         data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
         rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
@@ -1853,8 +1876,8 @@ static int __exit bq24160_remove(struct i2c_client *client)
 
 	free_irq(client->irq, bd);
 
-	if (delayed_work_pending(&bd->work))
-		cancel_delayed_work_sync(&bd->work);
+	if (delayed_work_pending(&bd->watchdog_work))
+		cancel_delayed_work_sync(&bd->watchdog_work);
 
 	if (delayed_work_pending(&bd->enable_work))
 		cancel_delayed_work_sync(&bd->enable_work);
@@ -1928,7 +1951,6 @@ static struct power_supply samsung_power_supplies[] = {
 #ifdef CONFIG_OF
 static struct bq24160_platform_data *bq24160_parse_dt(struct device *dev)
 {
-	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	struct bq24160_platform_data *pdata;
 	struct device_node *np = dev->of_node;
 	int gpio;
@@ -1945,23 +1967,70 @@ static struct bq24160_platform_data *bq24160_parse_dt(struct device *dev)
 
 	gpio = of_get_gpio(np, 0);
 	if (!gpio_is_valid(gpio)) {
-		dev_err(dev, "failed to get interrupt gpio\n");
+		dev_err(dev, "failed to get gpio_chg_stat gpio\n");
 		return ERR_PTR(-EINVAL);
 	}
-	client->irq = gpio_to_irq(gpio);
+	pdata->gpio_chg_stat = gpio;
 
 	if (of_property_read_string(np, "dev_name", &pdata->name)) {
 		dev_err(dev, "failed to get name\n");
 		return ERR_PTR(-EINVAL);
 	}
 
-	if (of_property_read_u32(np, "support_boot_charging", &pdata->support_boot_charging)) {
+	if (of_property_read_u8(np, "support_boot_charging", &pdata->support_boot_charging)) {
 		dev_err(dev, "failed to get support_boot_charging\n");
 		return ERR_PTR(-EINVAL);
 	}
+
 	return pdata;
 }
 #endif
+
+void bq24160_charger_set_gpio(struct bq24160_data *bd)
+{
+	int gpio = 0;
+	struct bq24160_platform_data *pdata = bd->control;
+
+	gpio = pdata->gpio_chg_stat;
+	if (gpio_request(gpio, "CHG_STAT")) {
+		pr_err("%s : CHG_INT request port erron", __func__);
+	} else {
+		gpio_direction_input(gpio);
+		gpio_free(gpio);
+	}
+}
+
+#ifdef CONFIG_PM
+static int bq24160_charger_suspend(struct device *dev);
+static int bq24160_charger_resume(struct device *dev);
+
+static int bq24160_charger_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static int bq24160_charger_resume(struct device *dev)
+{
+	struct bq24160_data *bd = dev_get_drvdata(dev);
+	bq24160_check_status(bd);
+	if(bd->cached_status.stat == STAT_IN_READY || bd->cached_status.stat == STAT_USB_READY \
+			|| bd->cached_status.stat == STAT_CHARGING_FROM_IN || bd->cached_status.stat == STAT_CHARGING_FROM_USB) {
+					bq24160_hz_enable(bd, 0);
+					bq24160_set_ce(bd, 0);
+					set_board_values(bd);
+					if(bd->watchdog_enable_vote == 0)
+						bq24160_start_watchdog_reset(bd);
+	}
+	dev_info(&bd->clientp->dev, "resume status:%d\n",bd->cached_status.stat);
+	return 0;
+}
+
+static const struct dev_pm_ops bq24160_charger_pm_ops = {
+	.suspend = bq24160_charger_suspend,
+	.resume  = bq24160_charger_resume,
+};
+#endif
+
 
 static int bq24160_probe(struct i2c_client *client,
 			 const struct i2c_device_id *id)
@@ -2032,16 +2101,16 @@ static int bq24160_probe(struct i2c_client *client,
 		       "bq24160_watchdog_lock");
 #endif
 
-	bd->wq = create_freezable_workqueue("bq24160worker");
+	bd->wq = create_singlethread_workqueue("bq24160worker");
 	if (!bd->wq) {
 		dev_err(&client->dev, "Failed creating workqueue\n");
 		rc = -ENOMEM;
 		goto probe_exit_free;
 	}
 
-	INIT_DELAYED_WORK(&bd->work, bq24160_reset_watchdog_worker);
-	INIT_DELAYED_WORK(&bd->enable_work,
-				bq24160_delayed_enable_worker);
+	INIT_DELAYED_WORK(&bd->watchdog_work, bq24160_reset_watchdog_worker);
+	INIT_DELAYED_WORK(&bd->enable_work, 	bq24160_delayed_enable_worker);
+	INIT_DELAYED_WORK(&bd->irq_work, bq24160_irq_delay_work_func);
 
 	rc = power_supply_register(&client->dev, &bd->bat_ps);
 	if (rc) {
@@ -2064,14 +2133,17 @@ static int bq24160_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, bd);
 
+	bq24160_charger_set_gpio(bd);
 	bq24160_check_status(bd);
 	bq24160_update_power_supply(bd);
+	pdata->support_boot_charging = 1;
 
 	if (pdata && pdata->support_boot_charging &&
 	    (STAT_CHARGING_FROM_USB == bd->cached_status.stat ||
 	     STAT_CHARGING_FROM_IN == bd->cached_status.stat ||
 	     STAT_USB_READY == bd->cached_status.stat ||
-	     STAT_IN_READY == bd->cached_status.stat)) {
+	     STAT_IN_READY == bd->cached_status.stat ||
+	     STAT_CHARGE_DONE == bd->cached_status.stat)) {
 		dev_info(&client->dev, "Charging started by boot\n");
 		bd->boot_initiated_charging = 1;
 		set_board_values(bd);
@@ -2081,11 +2153,13 @@ static int bq24160_probe(struct i2c_client *client,
 	} else {
 		dev_info(&client->dev, "Not initialized by boot\n");
 		rc = bq24160_reset_charger(bd);
-		if (rc)
-			goto probe_exit_unregister;
-
+		bq24160_start_watchdog_reset(bd);
 	}
+
+#ifdef DEBUG
 	bq24160_dump_registers(bd);
+#endif
+
 
 	rc = request_threaded_irq(client->irq, NULL, bq24160_thread_irq,
 				  IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
@@ -2140,6 +2214,9 @@ static struct of_device_id ti_bq24160_dt_ids[] = {
 static struct i2c_driver bq24160_driver = {
 	.driver = {
 		   .name = BQ24160_NAME,
+#ifdef CONFIG_PM
+		.pm	= &bq24160_charger_pm_ops,
+#endif
 		   .owner = THIS_MODULE,
 #ifdef CONFIG_OF
 		   .of_match_table = of_match_ptr(ti_bq24160_dt_ids),

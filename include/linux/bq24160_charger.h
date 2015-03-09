@@ -11,7 +11,9 @@ struct bq24160_platform_data {
 	char **supplied_to;
 	size_t num_supplicants;
 
-	unsigned int support_boot_charging;
+	unsigned char support_boot_charging;
+	unsigned int gpio_led_red;
+	unsigned int gpio_chg_stat;
 	void (*notify_vbus_drop)(void);
 	int (*gpio_configure)(int);
 };
