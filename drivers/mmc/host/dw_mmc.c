@@ -3760,8 +3760,10 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 		host->pdata->ext_cd_init(&dw_mci_notify_change);
 	}
 #else
-	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL)
-		host->pdata->ext_cd_init(&dw_mci_notify_change);
+	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL) {
+		if (host->pdata->ext_cd_init)
+			host->pdata->ext_cd_init(&dw_mci_notify_change);
+	}
 #endif
 
 	/*
