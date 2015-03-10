@@ -1269,11 +1269,10 @@ static int set_board_values(struct bq24160_data *bd)
 	s32 data;
 	s32 rc;
 
-	if (of_machine_is_compatible("samsung,exynos3250")){
-		dev_info(&bd->clientp->dev, "Set espresso3250 values\n");
-		data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
-		if (data < 0)
-			return data;
+	dev_info(&bd->clientp->dev, "Set espresso3250 values\n");
+	data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
+	if (data < 0)
+		return data;
 
         data = SET_BIT(REG_NTC_TS_EN_BIT, 0, data);
         rc = bq24160_i2c_write_byte(bd->clientp, REG_NTC, data);
