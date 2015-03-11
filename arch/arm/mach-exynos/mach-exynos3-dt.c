@@ -67,6 +67,14 @@ static void __init exynos3_dt_map_io(void)
 	exynos_init_io(NULL, 0);
 }
 
+static struct platform_device exynos3_device_bluetooth = {
+	.name = "rfkill",
+	.id = -1,
+};
+
+static struct platform_device *exynos3_devices[] __initdata = {
+	&exynos3_device_bluetooth,
+};
 #if defined(CONFIG_SOC_EXYNOS3250)
 static void __init espresso3250_power_off_init(void)
 {
@@ -82,6 +90,8 @@ static void __init exynos3_dt_machine_init(void)
 	espresso3250_power_off_init();
 #endif
 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+
+	platform_add_devices(exynos3_devices, ARRAY_SIZE(exynos3_devices));
 }
 
 static char const *exynos3_dt_compat[] __initdata = {
