@@ -876,4 +876,15 @@
 		mtk_wmt,wifi_int = <&gpx3 4 0x1>;
 	};
 
+	realtek_rt8723 {
+                compatible = "realtek,rtl8723";
+
+                realtek,pwr_en = <&gpe1 3 0x1>;
+                realtek,chip_en = <&gpe1 6 0x1>;
+                realtek,wl_wake_int = <&gpx2 3 0x1>;
+                realtek,bt_wake_int = <&gpx2 4 0x1>;
+                realtek,bt_dis = <&gpx3 1 0x1>;
+                realtek,wl_dis = <&gpx3 2 0x1>;
+        };
+
 };
