@@ -94,6 +94,16 @@ config BT_HCIUART_3WIRE
 
 	  Say Y here to compile support for Three-wire UART protocol.
 
+config BT_HCIUART_RTK
+	bool "Realtek Rfkill protocol support"
+	depends on BT_HCIUART
+	help
+	  Realtek rfkill is using for gpio control
+
+	  Say Y here to compile support for Realtek RFKILL protocol
+
+
+
 config BT_HCIBCM203X
 	tristate "HCI BCM203x USB driver"
 	depends on USB
