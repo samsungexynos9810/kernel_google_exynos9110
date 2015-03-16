@@ -202,30 +202,22 @@
 
 		PIN_IN(gpx0-0, DOWN);
 		PIN_IN(gpx0-1, DOWN);
-		PIN_IN(gpx0-2, NONE);
-		PIN_IN(gpx0-3, NONE);
 		PIN_IN(gpx0-4, DOWN);
-		PIN_IN(gpx0-5, NONE);
 		PIN_IN(gpx0-6, DOWN);
 		PIN_IN(gpx0-7, DOWN);
 
 		PIN_IN(gpx1-0, DOWN);
 		PIN_IN(gpx1-1, DOWN);
-		PIN_IN(gpx1-2, NONE);
 		PIN_IN(gpx1-3, NONE);
 		PIN_IN(gpx1-4, DOWN);
 		PIN_IN(gpx1-5, DOWN);
-		PIN_IN(gpx1-6, NONE);
 		PIN_IN(gpx1-7, DOWN);
 
 		PIN_IN(gpx2-0, DOWN);
-		PIN_IN(gpx2-1, NONE);
-		PIN_IN(gpx2-2, NONE);
 		PIN_IN(gpx2-3, DOWN);
 		PIN_IN(gpx2-4, DOWN);
 		PIN_IN(gpx2-5, DOWN);
 		PIN_IN(gpx2-6, DOWN);
-		/*PIN_IN(gpx2-7, DOWN);*/
 
 		PIN_IN(gpx3-0, NONE);
 		PIN_IN(gpx3-1, DOWN);
