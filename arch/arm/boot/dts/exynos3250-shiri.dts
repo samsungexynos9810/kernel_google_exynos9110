@@ -229,9 +229,7 @@
 					regulator-name = "vdd_lcd_3.3";
 					regulator-min-microvolt = <1800000>;
 					regulator-max-microvolt = <3375000>;
-					regulator-initial-mode = <3>;
-					regulator-always-on;
-					regulator-boot-on;
+					regulator-initial-mode = <1>;
 				};
 
 				ldo17_reg: LDO17 {
