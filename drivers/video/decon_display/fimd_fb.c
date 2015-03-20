@@ -3396,17 +3396,13 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	/* [W/A] prevent sleep enter during LCD on */
-#ifndef CONFIG_DECON_DISPLAY_ALWAYS_ON
 	ret = device_init_wakeup(sfb->dev, true);
 	if (ret) {
 		dev_err(sfb->dev, "failed to init wakeup device\n");
 		goto err_fb;
 	}
-#endif
 
-#ifndef CONFIG_DECON_DISPLAY_ALWAYS_ON
 	pm_stay_awake(sfb->dev);
-#endif
 
 	dev_info(sfb->dev, "window %d: fb %s\n", default_win, fbinfo->fix.id);
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
@@ -3596,9 +3592,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	}
 
 	/* [W/A] prevent sleep enter during LCD on */
-#ifndef CONFIG_DECON_DISPLAY_ALWAYS_ON
 	pm_relax(sfb->dev);
-#endif
 
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
@@ -3644,9 +3638,8 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 	}
 
 	/* [W/A] prevent sleep enter during LCD on */
-#ifndef CONFIG_DECON_DISPLAY_ALWAYS_ON
 	pm_stay_awake(sfb->dev);
-#endif
+
 	pm_runtime_get_sync(sfb->dev);
 
 	/* setup gpio and output polarity controls */
