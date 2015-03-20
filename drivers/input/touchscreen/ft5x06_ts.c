@@ -226,10 +226,6 @@ struct ft5x06_ts_data {
 #endif
 };
 
-#ifdef CONFIG_TOUCHSCREEN_ENABLE_WAKEUP
-static int wakeup_from_touch = 0;
-#endif
-
 static int ft5x06_i2c_read(struct i2c_client *client, char *writebuf,
 			   int writelen, char *readbuf, int readlen)
 {
@@ -343,11 +339,6 @@ static irqreturn_t ft5x06_ts_interrupt(int irq, void *dev_id)
 		pr_err("%s: Invalid data\n", __func__);
 		return IRQ_HANDLED;
 	}
-
-#ifdef CONFIG_TOUCHSCREEN_ENABLE_WAKEUP
-        if(!wakeup_from_touch)
-                wakeup_from_touch = 1;
-#endif
 
 	ip_dev = data->input_dev;
 	buf = data->tch_data;
@@ -546,15 +537,6 @@ pwr_deinit:
 #ifdef CONFIG_PM
 static int ft5x06_ts_suspend(struct device *dev)
 {
-#ifdef CONFIG_TOUCHSCREEN_ENABLE_WAKEUP
-        struct i2c_client *client = to_i2c_client(dev);
-
-        if (device_may_wakeup(&client->dev))
-                enable_irq_wake(client->irq);
-
-        wakeup_from_touch = 0;
-        return 0;
-#else
 	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
 	char txbuf[2], i;
 	int err;
@@ -611,26 +593,10 @@ pwr_off_fail:
 	}
 	enable_irq(data->client->irq);
 	return err;
-#endif
 }
 
 static int ft5x06_ts_resume(struct device *dev)
 {
-#ifdef CONFIG_TOUCHSCREEN_ENABLE_WAKEUP
-        struct i2c_client *client = to_i2c_client(dev);
-        struct ft5x06_ts_data *data = i2c_get_clientdata(client);
-
-        if (device_may_wakeup(&client->dev))
-                disable_irq_wake(client->irq);
-        if (wakeup_from_touch)
-        {
-                input_event(data->input_dev, EV_KEY, KEY_POWER, 1);
-                input_sync(data->input_dev);
-                input_event(data->input_dev, EV_KEY, KEY_POWER, 0);
-                input_sync(data->input_dev);
-        }
-        return 0;
-#else
 	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
 	int err;
 
@@ -666,11 +632,10 @@ static int ft5x06_ts_resume(struct device *dev)
 	data->suspended = false;
 
 	return 0;
-#endif
 }
 
 static const struct dev_pm_ops ft5x06_ts_pm_ops = {
-#if ((!defined(CONFIG_FB) && !defined(CONFIG_HAS_EARLYSUSPEND)) || defined(CONFIG_TOUCHSCREEN_ENABLE_WAKEUP))
+#if (!defined(CONFIG_FB) && !defined(CONFIG_HAS_EARLYSUSPEND))
 	.suspend = ft5x06_ts_suspend,
 	.resume = ft5x06_ts_resume,
 #endif
@@ -1557,9 +1522,6 @@ static int ft5x06_ts_probe(struct i2c_client *client,
 	__set_bit(EV_KEY, input_dev->evbit);
 	__set_bit(EV_ABS, input_dev->evbit);
 	__set_bit(BTN_TOUCH, input_dev->keybit);
-#ifdef CONFIG_TOUCHSCREEN_ENABLE_WAKEUP
-	__set_bit(KEY_POWER, input_dev->keybit);
-#endif
 	__set_bit(INPUT_PROP_DIRECT, input_dev->propbit);
 
 	input_mt_init_slots(input_dev, pdata->num_max_touches, 0);
@@ -1666,9 +1628,6 @@ static int ft5x06_ts_probe(struct i2c_client *client,
 		goto free_reset_gpio;
 	}
 
-#ifdef CONFIG_TOUCHSCREEN_ENABLE_WAKEUP
-	device_init_wakeup(&client->dev, true);
-#endif
 	err = device_create_file(&client->dev, &dev_attr_fw_name);
 	if (err) {
 		dev_err(&client->dev, "sys file creation failed\n");
