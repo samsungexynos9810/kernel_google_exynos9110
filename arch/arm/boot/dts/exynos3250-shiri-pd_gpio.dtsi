@@ -202,7 +202,6 @@
 
 		PIN_IN(gpx0-0, DOWN);
 		PIN_IN(gpx0-1, DOWN);
-		PIN_IN(gpx0-4, DOWN);
 		PIN_IN(gpx0-6, DOWN);
 		PIN_IN(gpx0-7, DOWN);
 
