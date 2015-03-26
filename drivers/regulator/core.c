@@ -2679,6 +2679,38 @@ static int regulator_map_voltage(struct regulator_dev *rdev, int min_uV,
 	return regulator_map_voltage_iterate(rdev, min_uV, max_uV);
 }
 
+/**
+ * regulator_get_max_support_voltage - standard get_max_supporting_volt()
+ *
+ * @rdev: Regulator to operate on
+ *
+ * This function returns maximum supporting voltage of given regulator.
+ * When one regulator buck (or ldo) is shared between multiple consumers,
+ * any consumer can get maximum supporting voltage from this function,
+ * lust like sysfs supports max_uV.
+ */
+int regulator_get_max_support_voltage(struct regulator *regulator)
+{
+	return regulator->rdev->constraints->max_uV;
+}
+EXPORT_SYMBOL_GPL(regulator_get_max_support_voltage);
+
+/**
+ * regulator_get_min_support_voltage - standard get_min_supporting_volt()
+ *
+ * @rdev: Regulator to operate on
+ *
+ * This function returns minimum supporting voltage of given regulator.
+ * When one regulator buck (or ldo) is shared between multiple consumers,
+ * any consumer can get minimum supporting voltage from this function,
+ * lust like sysfs supports min_uV.
+ */
+int regulator_get_min_support_voltage(struct regulator *regulator)
+{
+	return regulator->rdev->constraints->min_uV;
+}
+EXPORT_SYMBOL_GPL(regulator_get_min_support_voltage);
+
 static int _regulator_call_set_voltage(struct regulator_dev *rdev,
 				       int min_uV, int max_uV,
 				       unsigned *selector)
