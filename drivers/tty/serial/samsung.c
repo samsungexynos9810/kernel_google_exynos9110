@@ -2394,11 +2394,37 @@ static struct s3c24xx_serial_drv_data exynos5433_serial_drv_data = {
 	.fifosize = { 64, 256, 16, 256 },
 };
 
+static struct s3c24xx_serial_drv_data exynos8890_serial_drv_data = {
+	.info = &(struct s3c24xx_uart_info) {
+		.name		= "Samsung Exynos8 UART",
+		.type		= PORT_S3C6400,
+		.has_divslot	= 1,
+		.rx_fifomask	= S5PV210_UFSTAT_RXMASK,
+		.rx_fifoshift	= S5PV210_UFSTAT_RXSHIFT,
+		.rx_fifofull	= S5PV210_UFSTAT_RXFULL,
+		.tx_fifofull	= S5PV210_UFSTAT_TXFULL,
+		.tx_fifomask	= S5PV210_UFSTAT_TXMASK,
+		.tx_fifoshift	= S5PV210_UFSTAT_TXSHIFT,
+		.def_clk_sel	= S3C2410_UCON_CLKSEL0,
+		.num_clks	= 1,
+		.clksel_mask	= 0,
+		.clksel_shift	= 0,
+	},
+	.def_cfg = &(struct s3c2410_uartcfg) {
+		.ucon		= S5PV210_UCON_DEFAULT,
+		.ufcon		= S5PV210_UFCON_DEFAULT,
+		.has_fracval	= 1,
+	},
+	.fifosize = { 256, 256, 16, 64, 256, 64 },
+};
+
 #define EXYNOS4210_SERIAL_DRV_DATA ((kernel_ulong_t)&exynos4210_serial_drv_data)
 #define EXYNOS5433_SERIAL_DRV_DATA ((kernel_ulong_t)&exynos5433_serial_drv_data)
+#define EXYNOS8890_SERIAL_DRV_DATA ((kernel_ulong_t)&exynos8890_serial_drv_data)
 #else
 #define EXYNOS4210_SERIAL_DRV_DATA (kernel_ulong_t)NULL
 #define EXYNOS5433_SERIAL_DRV_DATA (kernel_ulong_t)NULL
+#define EXYNOS8890_SERIAL_DRV_DATA (kernel_ulong_t)NULL
 #endif
 
 static const struct platform_device_id s3c24xx_serial_driver_ids[] = {
@@ -2423,6 +2449,9 @@ static const struct platform_device_id s3c24xx_serial_driver_ids[] = {
 	}, {
 		.name		= "exynos5433-uart",
 		.driver_data	= EXYNOS5433_SERIAL_DRV_DATA,
+	}, {
+		.name		= "exynos8890-uart",
+		.driver_data	= EXYNOS8890_SERIAL_DRV_DATA,
 	},
 	{ },
 };
@@ -2444,6 +2473,8 @@ static const struct of_device_id s3c24xx_uart_dt_match[] = {
 		.data = (void *)EXYNOS4210_SERIAL_DRV_DATA },
 	{ .compatible = "samsung,exynos5433-uart",
 		.data = (void *)EXYNOS5433_SERIAL_DRV_DATA },
+	{ .compatible = "samsung,exynos8890-uart",
+		.data = (void *)EXYNOS8890_SERIAL_DRV_DATA },
 	{},
 };
 MODULE_DEVICE_TABLE(of, s3c24xx_uart_dt_match);
