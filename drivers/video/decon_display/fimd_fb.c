@@ -115,6 +115,10 @@ extern struct ion_device *ion_exynos;
 extern void backlight_en(int en);
 #endif
 
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+int ambient_enable;
+#endif
+
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_fimd[] = {
 	{ .compatible = "samsung,exynos-fimd" },
@@ -2417,7 +2421,23 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		struct s3c_fb_user_ion_client user_ion_client;
 		struct s3c_fb_win_config_data win_data;
 		u32 vsync;
+		u32 ambient_mode;
 	} p;
+
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+	switch (cmd) {
+		case S3CFB_AMBIENT_ENTER:
+			if (get_user(p.ambient_mode, (int __user *)arg)) {
+				ret = -EFAULT;
+				break;
+			}
+			ambient_enable = p.ambient_mode;
+			return 0;
+			break;
+		default:
+			break;
+		}
+#endif
 
 	if ((sfb->power_state == POWER_DOWN) &&
 			(cmd != S3CFB_WIN_CONFIG))
@@ -3592,7 +3612,12 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	}
 
 	/* [W/A] prevent sleep enter during LCD on */
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+	if (!ambient_enable)
+		pm_relax(sfb->dev);
+#else
 	pm_relax(sfb->dev);
+#endif
 
 	if (sfb->pdata->backlight_off)
 		sfb->pdata->backlight_off();
