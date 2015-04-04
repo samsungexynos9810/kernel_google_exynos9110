@@ -33,6 +33,11 @@ choice
 
 endchoice
 
+config FB_AMBIENT_SUPPORT
+	bool "Ambient display mode"
+	depends on DECON
+	default n
+
 config FB_HIBERNATION_DISPLAY
 	bool "FB Hibernation Display MODE"
 	depends on FB_I80_COMMAND_MODE
