@@ -226,6 +226,10 @@ struct ft5x06_ts_data {
 #endif
 };
 
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+extern int ambient_enable;
+#endif
+
 static int ft5x06_i2c_read(struct i2c_client *client, char *writebuf,
 			   int writelen, char *readbuf, int readlen)
 {
@@ -540,6 +544,11 @@ static int ft5x06_ts_suspend(struct device *dev)
 	struct ft5x06_ts_data *data = dev_get_drvdata(dev);
 	char txbuf[2], i;
 	int err;
+
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+	if (ambient_enable)
+		return 0;
+#endif
 
 	if (data->loading_fw) {
 		dev_info(dev, "Firmware loading in process...\n");
