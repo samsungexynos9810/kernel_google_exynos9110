@@ -231,7 +231,7 @@
 		pwm0_out: pwm0-out {
 			samsung,pins = "gpd0-0";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <3>;
+			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 		};
 
