@@ -777,6 +777,15 @@ static struct samsung_pwm_variant exynos4_pwm_variant = {
 
 void exynos3_restart(char mode, const char *cmd)
 {
+	int inform;
+
+	inform = readl(EXYNOS_INFORM4);
+
+        if(!strncmp(cmd,"bootloader",10))
+		__raw_writel(0xD, EXYNOS_INFORM4);
+	else
+		__raw_writel(0x0, EXYNOS_INFORM4);
+
 	__raw_writel(0x1, EXYNOS_SWRESET);
 }
 
