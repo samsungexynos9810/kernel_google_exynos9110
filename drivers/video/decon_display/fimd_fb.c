@@ -1084,6 +1084,13 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 			backlight_en(0);
 #endif
 			ret = s3c_fb_disable(sfb);
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+			if (ambient_enter)
+				goto blank_exit;
+#endif
+#endif
+
 #if defined(CONFIG_FB_SMIES)
 			if (sfb->smies->smies_off)
 				sfb->smies->smies_off(sfb->smies->dev);
@@ -1126,6 +1133,8 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 		default:
 			ret = -EINVAL;
 	}
+
+blank_exit:
 
 	disp_pm_runtime_put_sync(dispdrv);
 
@@ -3603,6 +3612,17 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 	struct display_driver *dispdrv;
 
 	dispdrv = get_display_driver();
+
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+	if (ambient_enter){
+		dispdrv->pm_status.pwr_idle_count = MAX_PWR_GATING_COUNT; //for entering hibernation forcely
+		disp_pm_te_triggered(get_display_driver());
+		pm_relax(sfb->dev);
+		return 0;
+	}
+#endif
+#endif
 
 	mutex_lock(&sfb->output_lock);
 

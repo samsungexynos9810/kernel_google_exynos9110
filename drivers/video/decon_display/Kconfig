@@ -38,6 +38,11 @@ config FB_AMBIENT_SUPPORT
 	depends on DECON
 	default n
 
+config FB_AMBIENT_SLEEP_SUPPORT
+       bool "Ambient display mode  with sleep mode"
+       depends on FB_AMBIENT_SUPPORT
+       default n
+
 config FB_HIBERNATION_DISPLAY
 	bool "FB Hibernation Display MODE"
 	depends on FB_I80_COMMAND_MODE
