@@ -786,6 +786,9 @@ void exynos3_restart(char mode, const char *cmd)
 	else
 		__raw_writel(0x0, EXYNOS_INFORM4);
 
+	if(!strncmp(cmd,"recovery",8))
+		__raw_writel(0xf, EXYNOS_INFORM4);
+
 	__raw_writel(0x1, EXYNOS_SWRESET);
 }
 
