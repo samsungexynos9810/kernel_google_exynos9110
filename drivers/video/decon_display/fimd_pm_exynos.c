@@ -28,6 +28,10 @@
 
 #include <../drivers/clk/samsung/clk.h>
 
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+extern int ambient_enter;
+#endif
+
 static struct clk *g_mout_fimd0;
 static struct clk *g_dout_mpll_pre;
 static struct clk *g_dout_fimd0;
@@ -142,6 +146,28 @@ void init_display_gpio_exynos(void)
 }
 
 
+#ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
+void backlight_en(int en)
+{
+       struct display_gpio *gpio;
+       struct display_driver *dispdrv;
+
+       dispdrv = get_display_driver();
+
+       gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+
+       if(en)
+       {
+           gpio_request_one(gpio->id[1], 0x0, "bl_en");
+           gpio_set_value(gpio->id[1], 1);
+       } else {
+           gpio_request_one(gpio->id[1], 0x0, "bl_en");
+           gpio_set_value(gpio->id[1], 0);
+       }
+       gpio_free(gpio->id[1]);
+}
+#endif
+
 int enable_display_driver_power(struct device *dev)
 {
 	struct display_gpio *gpio;
@@ -154,6 +180,11 @@ int enable_display_driver_power(struct device *dev)
 	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
 	usleep_range(20000, 21000);
 	gpio_free(gpio->id[0]);
+
+#ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
+	if (!ambient_enter)
+		backlight_en(1);
+#endif
 	
 	return ret;
 }
@@ -167,6 +198,12 @@ int disable_display_driver_power(struct device *dev)
 	dispdrv = get_display_driver();
 
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+
+#ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
+	if (!ambient_enter)
+		backlight_en(0);
+#endif
+
 	/* Reset */
 	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_reset");
 	usleep_range(20000, 21000);
