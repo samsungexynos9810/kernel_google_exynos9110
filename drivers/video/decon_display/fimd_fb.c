@@ -116,7 +116,7 @@ extern void backlight_en(int en);
 #endif
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT
-int ambient_enable;
+int ambient_enter;
 #endif
 
 #ifdef CONFIG_OF
@@ -2421,17 +2421,17 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 		struct s3c_fb_user_ion_client user_ion_client;
 		struct s3c_fb_win_config_data win_data;
 		u32 vsync;
-		u32 ambient_mode;
+		u32 ambient_enter;
 	} p;
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT
 	switch (cmd) {
 		case S3CFB_AMBIENT_ENTER:
-			if (get_user(p.ambient_mode, (int __user *)arg)) {
+			if (get_user(p.ambient_enter, (int __user *)arg)) {
 				ret = -EFAULT;
 				break;
 			}
-			ambient_enable = p.ambient_mode;
+			ambient_enter = p.ambient_enter;
 			return 0;
 			break;
 		default:
@@ -3613,7 +3613,7 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	/* [W/A] prevent sleep enter during LCD on */
 #ifdef CONFIG_FB_AMBIENT_SUPPORT
-	if (!ambient_enable)
+	if (!ambient_enter)
 		pm_relax(sfb->dev);
 #else
 	pm_relax(sfb->dev);
