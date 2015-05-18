@@ -507,6 +507,11 @@ int display_hibernation_power_on(struct display_driver *dispdrv)
 	int ret = 0;
 	struct s3c_fb *sfb = dispdrv->decon_driver.sfb;
 
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+	pm_stay_awake(sfb->dev);
+#endif
+#endif
 	pm_debug("##### +");
 	disp_pm_gate_lock(dispdrv, true);
 	mutex_lock(&dispdrv->pm_status.pm_lock);
@@ -559,6 +564,11 @@ int display_hibernation_power_off(struct display_driver *dispdrv)
 
 	request_dynamic_hotplug(true);
 	pm_debug("##### -\n");
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+	pm_relax(sfb->dev);
+#endif
+#endif
 done:
 	mutex_unlock(&dispdrv->pm_status.pm_lock);
 	disp_pm_gate_lock(dispdrv, false);
