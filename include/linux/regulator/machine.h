@@ -148,6 +148,11 @@ struct regulation_constraints {
 	unsigned soft_start:1;	/* ramp voltage slowly */
 	unsigned pull_down:1;	/* pull down resistor when regulator off */
 	unsigned over_current_protection:1; /* auto disable on over current */
+
+	/* expected consumer
+	 * will not set lower voltage unless all consumer is registered
+	 */
+	unsigned int expected_consumer;
 };
 
 /**

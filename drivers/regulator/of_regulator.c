@@ -29,6 +29,7 @@ static void of_get_regulation_constraints(struct device_node *np,
 					const struct regulator_desc *desc)
 {
 	const __be32 *min_uV, *max_uV;
+	const __be32 *expected_consumer;
 	struct regulation_constraints *constraints = &(*init_data)->constraints;
 	struct regulator_state *suspend_state;
 	struct device_node *suspend_np;
@@ -162,6 +163,13 @@ static void of_get_regulation_constraints(struct device_node *np,
 		suspend_state = NULL;
 		suspend_np = NULL;
 	}
+
+	/* If expected-consumer is not null, regulator will not set lower voltage
+	 * unless all consuler list is registered.
+	 */
+	expected_consumer = of_get_property(np, "regulator-expected-consumer", NULL);
+	if (expected_consumer)
+		constraints->expected_consumer = be32_to_cpu(*expected_consumer);
 }
 
 /**
