@@ -2902,6 +2902,10 @@ static int regulator_set_voltage_unlocked(struct regulator *regulator,
 	regulator->min_uV = min_uV;
 	regulator->max_uV = max_uV;
 
+	if ((rdev->open_count < rdev->constraints->expected_consumer)
+			&& rdev->constraints->expected_consumer)
+		goto out;
+
 	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
 	if (ret < 0)
 		goto out2;
