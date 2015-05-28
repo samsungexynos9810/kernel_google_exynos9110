@@ -169,7 +169,7 @@
 		PIN_SLP(gpe1-0, OUT0,  NONE);
 		PIN_SLP(gpe1-1, OUT1,  DOWN);
 		PIN_SLP(gpe1-2, INPUT, DOWN);
-		PIN_SLP(gpe1-3, INPUT, DOWN);
+		PIN_SLP(gpe1-3, OUT1, UP);
 		PIN_SLP(gpe1-4, PREV, UP);
 		PIN_SLP(gpe1-5, OUT1, UP);
 		PIN_SLP(gpe1-6, PREV, UP);
@@ -264,12 +264,10 @@
 
 		PIN_IN(gpx2-0, DOWN);
 		PIN_IN(gpx2-3, DOWN);
-		PIN_IN(gpx2-4, DOWN);
 		PIN_IN(gpx2-5, DOWN);
 		PIN_IN(gpx2-6, DOWN);
 
 		PIN_IN(gpx3-0, NONE);
-		PIN_IN(gpx3-1, DOWN);
 		PIN_IN(gpx3-2, DOWN);
 		PIN_IN(gpx3-3, NONE);
 		PIN_IN(gpx3-4, NONE);
@@ -290,7 +288,7 @@
 		PIN_SLP(gpe1-0, OUT0,  NONE);
 		PIN_SLP(gpe1-1, OUT1,  DOWN);
 		PIN_SLP(gpe1-2, INPUT, DOWN);
-		PIN_SLP(gpe1-3, INPUT, DOWN);
+		PIN_SLP(gpe1-3, OUT1, UP);
 		PIN_SLP(gpe1-4, PREV, UP);
 		PIN_SLP(gpe1-5, OUT1, UP);
 		PIN_SLP(gpe1-6, PREV, UP);
@@ -385,12 +383,10 @@
 
 		PIN_IN(gpx2-0, DOWN);
 		PIN_IN(gpx2-3, DOWN);
-		PIN_IN(gpx2-4, DOWN);
 		PIN_IN(gpx2-5, DOWN);
 		PIN_IN(gpx2-6, DOWN);
 
 		PIN_IN(gpx3-0, NONE);
-		PIN_IN(gpx3-1, DOWN);
 		PIN_IN(gpx3-2, DOWN);
 		PIN_IN(gpx3-3, NONE);
 		PIN_IN(gpx3-4, NONE);
