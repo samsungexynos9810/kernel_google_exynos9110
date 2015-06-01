@@ -206,7 +206,7 @@ static void exynos_set_wakeupmask(void)
 {
 	unsigned int origin = __raw_readl(EXYNOS_WAKEUP_MASK);
 
-	origin = (origin & ~((0x1<<14)|(0x3<<9)|(0x1<<5)|(0x3<<1))) | (0x1 << 30);
+	origin = (origin & ~((0x1<<5)|(0x1<<1))) | (0x1 << 30);
 	__raw_writel(origin, EXYNOS_WAKEUP_MASK);
 	__raw_writel(0x0, EXYNOS_WAKEUP_MASK2);
 }
