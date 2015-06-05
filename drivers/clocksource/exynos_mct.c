@@ -223,7 +223,7 @@ static u64 notrace exynos4_read_sched_clock(void)
 	return exynos4_read_count_32();
 }
 
-#ifdef CONFIG_ARM
+#if !IS_ENABLED(CONFIG_ARM64) && !IS_ENABLED(CONFIG_ARM_ARCH_TIMER)
 static struct delay_timer exynos4_delay_timer;
 
 static cycles_t exynos4_read_current_timer(void)
@@ -238,7 +238,7 @@ static void __init exynos4_clocksource_init(void)
 {
 	exynos4_mct_frc_start();
 
-#ifdef CONFIG_ARM
+#if !IS_ENABLED(CONFIG_ARM64) && !IS_ENABLED(CONFIG_ARM_ARCH_TIMER)
 	exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
 	exynos4_delay_timer.freq = clk_rate;
 	register_current_timer_delay(&exynos4_delay_timer);
