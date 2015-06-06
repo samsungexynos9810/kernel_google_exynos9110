@@ -928,4 +928,6 @@ config TOUCHSCREEN_ENABLE_WAKEUP
         default n
 endif
 
+source "drivers/input/touchscreen/cyttsp5/Kconfig"
+
 endif
