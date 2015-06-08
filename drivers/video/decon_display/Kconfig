@@ -102,6 +102,9 @@ config LCD_MIPI_SHIRI
 	depends on DECON_LCD && DECON_MIPI_DSI
 	tristate "SHIRI LCD driver(240 x 240)"
 
+config LCD_MIPI_SHARP
+	depends on DECON_LCD && DECON_MIPI_DSI
+	tristate "SHARP LCD driver(320 x 300)"
 config LCD_MIPI_NT35510
 	depends on DECON_LCD && DECON_MIPI_DSI
 	tristate "NT35510 LCD driver(480 x 800)"
