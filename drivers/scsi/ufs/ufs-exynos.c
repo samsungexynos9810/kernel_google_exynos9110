@@ -867,7 +867,7 @@ static void exynos_ufs_set_unipro_pclk(struct exynos_ufs *ufs)
 
 	f_min = ufs->pclk_avail_min;
 	f_max = ufs->pclk_avail_max;
-	pclk_rate = clk_get_rate(ufs->pclk);
+	pclk_rate = 132000000;//clk_get_rate(ufs->pclk);
 
 	do {
 		pclk_rate /= (div + 1);
@@ -888,7 +888,7 @@ static void exynos_ufs_set_unipro_pclk(struct exynos_ufs *ufs)
 
 static void exynos_ufs_set_unipro_mclk(struct exynos_ufs *ufs)
 {
-	ufs->mclk_rate = clk_get_rate(ufs->clk_unipro);
+	ufs->mclk_rate = 336000000;//clk_get_rate(ufs->clk_unipro);
 }
 
 static void exynos_ufs_set_unipro_clk(struct exynos_ufs *ufs)
@@ -1623,6 +1623,7 @@ static int exynos_ufs_init(struct ufs_hba *hba)
 	exynos_ufs_ctrl_hci_core_clk(ufs, false);
 	exynos_ufs_config_smu(ufs);
 
+	return 0;
 	if (!head || list_empty(head))
 		goto out;
 
