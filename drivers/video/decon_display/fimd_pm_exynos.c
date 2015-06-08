@@ -147,6 +147,7 @@ void init_display_gpio_exynos(void)
 
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
+#ifdef CONFIG_BACKLIGHT_PWM
 void backlight_en(int en)
 {
        struct display_gpio *gpio;
@@ -166,6 +167,7 @@ void backlight_en(int en)
        }
        gpio_free(gpio->id[1]);
 }
+#endif
 #endif
 
 int enable_display_driver_power(struct device *dev)
@@ -192,8 +194,10 @@ int enable_display_driver_power(struct device *dev)
 	gpio_free(gpio->id[0]);
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
+#ifdef CONFIG_BACKLIGHT_PWM
 	if (!ambient_enter)
 		backlight_en(1);
+#endif
 #endif
 	
 	return ret;
@@ -210,8 +214,10 @@ int disable_display_driver_power(struct device *dev)
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
+#ifdef CONFIG_BACKLIGHT_PWM
 	if (!ambient_enter)
 		backlight_en(0);
+#endif
 #endif
 
 	/* Reset */
