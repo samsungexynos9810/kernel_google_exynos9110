@@ -212,7 +212,7 @@ int disable_display_driver_power(struct device *dev)
 	return ret;
 }
 
-#ifndef CONFIG_BACKLIGHT_PWM
+#if !defined(CONFIG_BACKLIGHT_PWM) && !defined(CONFIG_BACKLIGHT_BD82103)
 void backlight_en(int en)
 {
 	struct display_gpio *gpio;

@@ -111,7 +111,7 @@ extern int s5p_mipi_dsi_enable(struct mipi_dsim_device *dsim);
 #ifdef CONFIG_ION_EXYNOS
 extern struct ion_device *ion_exynos;
 #endif
-#ifndef CONFIG_BACKLIGHT_PWM
+#if !defined(CONFIG_BACKLIGHT_PWM) && !defined(CONFIG_BACKLIGHT_BD82103)
 extern void backlight_en(int en);
 #endif
 
@@ -1080,7 +1080,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 			if (sfb->power_state == POWER_HIBER_DOWN)
 				disp_pm_add_refcount(dispdrv);
 #endif
-#ifndef CONFIG_BACKLIGHT_PWM
+#if !defined(CONFIG_BACKLIGHT_PWM) && !defined(CONFIG_BACKLIGHT_BD82103)
 			backlight_en(0);
 #endif
 
@@ -1124,7 +1124,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 #if defined(CONFIG_FB_I80_COMMAND_MODE)
 			s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 #endif
-#ifndef CONFIG_BACKLIGHT_PWM
+#if !defined(CONFIG_BACKLIGHT_PWM) && !defined(CONFIG_BACKLIGHT_BD82103)
 			backlight_en(1);
 #endif
 			break;
