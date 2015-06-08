@@ -11,6 +11,7 @@
 */
 
 /dts-v1/;
+/include/ "exynos3250-pinctrl.dtsi"
 #include "exynos3250.dtsi"
 
 

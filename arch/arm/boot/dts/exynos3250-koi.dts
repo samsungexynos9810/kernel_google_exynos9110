@@ -11,6 +11,7 @@
 */
 
 /dts-v1/;
+/include/ "exynos3250-koi-pinctrl.dtsi"
 #include "exynos3250.dtsi"
 #include "exynos3250-koi-pd_gpio.dtsi"
 
