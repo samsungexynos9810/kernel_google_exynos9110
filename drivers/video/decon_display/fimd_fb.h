@@ -232,7 +232,11 @@ struct s3c_reg_data {
 #endif
 
 static const char * const lcd_supply_names[] = {
+#ifdef CONFIG_LCD_MIPI_SHARP
+	"lcd-3.1",
+#else
 	"lcd-3.0",
+#endif
 	"lcd-1.8",
 };
 

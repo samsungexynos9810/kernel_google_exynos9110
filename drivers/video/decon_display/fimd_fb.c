@@ -3883,8 +3883,18 @@ int s3c_fb_runtime_suspend(struct device *dev)
 #endif
 
 	if (sfb->power_state != POWER_HIBER_DOWN) {
+#ifdef CONFIG_LCD_MIPI_SHARP
+		// enable vdd lcd 3.1 (VCI)
+		ret = regulator_disable(sfb->supplies[1].consumer);
+		if (ret) {
+			dev_err(sfb->dev, "failed to disable supplies for lcd: %d\n", ret);
+		}
+		// enable vdd_lcd_1.8 (VDDI)
+		ret = regulator_disable(sfb->supplies[0].consumer);
+#else
 		ret = regulator_bulk_disable(ARRAY_SIZE(sfb->supplies),
                                   sfb->supplies);
+#endif
 		if (ret) {
 			dev_err(sfb->dev, "failed to disable supplies for lcd: %d\n", ret);
 		}
@@ -3911,8 +3921,18 @@ int s3c_fb_runtime_resume(struct device *dev)
 	}
 	pd = sfb->pdata;
 	if (sfb->power_state != POWER_HIBER_ON) {
-		ret = regulator_bulk_enable(ARRAY_SIZE(sfb->supplies),
-                                    sfb->supplies);
+#ifdef CONFIG_LCD_MIPI_SHARP
+		// enable vdd_lcd_1.8 (VDDI)
+		ret = regulator_enable(sfb->supplies[1].consumer);
+		if (ret) {
+			dev_err(sfb->dev, "failed to enable supplies for lcd: %d\n", ret);
+		}
+		// enable vdd lcd 3.1 (VCI)
+		ret = regulator_enable(sfb->supplies[0].consumer);
+#else
+                ret = regulator_bulk_enable(ARRAY_SIZE(sfb->supplies),
+                                   sfb->supplies);
+#endif
 		if (ret) {
 			dev_err(sfb->dev, "failed to enable supplies for lcd: %d\n", ret);
 		}

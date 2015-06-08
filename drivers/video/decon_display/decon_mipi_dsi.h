@@ -420,6 +420,8 @@ extern struct mipi_dsim_lcd_driver s6e63j0x03_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver nt35510_mipi_lcd_driver;
 #elif defined(CONFIG_LCD_MIPI_SHIRI)
 extern struct mipi_dsim_lcd_driver shiri_mipi_lcd_driver;
+#elif defined(CONFIG_LCD_MIPI_SHARP)
+extern struct mipi_dsim_lcd_driver sharp_mipi_lcd_driver;
 #endif
 
 extern int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim,

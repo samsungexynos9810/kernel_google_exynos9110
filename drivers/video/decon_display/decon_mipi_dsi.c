@@ -1341,8 +1341,9 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 	dsim->dsim_lcd_drv->probe(dsim);
 	dsim->dsim_lcd_drv->displayon(dsim);
 #else
+#ifndef CONFIG_LCD_MIPI_SHARP
 	GET_DISPDRV_OPS(dispdrv).enable_display_driver_power(&pdev->dev);
-
+#endif
 	dsim->enabled = true;
 	dsim->state = DSIM_STATE_HSCLKEN;
 	dsim->dsim_lcd_drv->probe(dsim);

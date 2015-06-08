@@ -75,6 +75,8 @@ struct mipi_dsim_config g_dsim_config = {
 	.dsim_ddi_pd = &nt35510_mipi_lcd_driver,
 #elif defined(CONFIG_LCD_MIPI_SHIRI)
 	.dsim_ddi_pd = &shiri_mipi_lcd_driver,
+#elif defined(CONFIG_LCD_MIPI_SHARP)
+	.dsim_ddi_pd = &sharp_mipi_lcd_driver,
 #endif
 };
 

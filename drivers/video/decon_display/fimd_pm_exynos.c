@@ -177,8 +177,18 @@ int enable_display_driver_power(struct device *dev)
 	dispdrv = get_display_driver();
 
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
+#ifdef CONFIG_LCD_MIPI_SHARP
+	msleep(10);
+	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
+	msleep(10);
+	gpio_set_value_cansleep(gpio->id[0], 0);
+	usleep_range(10, 10);
+	gpio_set_value_cansleep(gpio->id[0], 1);
+	msleep(10);
+#else
 	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
 	usleep_range(20000, 21000);
+#endif
 	gpio_free(gpio->id[0]);
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT //HACK for suspend/resume flickering issue minimization
