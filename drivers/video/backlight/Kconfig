@@ -201,11 +201,22 @@ config BACKLIGHT_EP93XX
 
 config BACKLIGHT_GENERIC
 	tristate "Generic (aka Sharp Corgi) Backlight Driver"
-	default y
+	default n
 	help
 	  Say y to enable the generic platform backlight driver previously
 	  known as the Corgi backlight driver. If you have a Sharp Zaurus
 	  SL-C7xx, SL-Cxx00 or SL-6000x say y.
+
+config BACKLIGHT_BD82103
+	tristate "Backlight Driver for BD82103"
+	help
+	  This module is Backlight Driver for BD82103.
+
+config BACKLIGHT_SUBCPU
+	tristate "Control Baclight from SubCPU"
+	depends on BACKLIGHT_BD82103
+	help
+	  say y to control backlight from SubCPU
 
 config BACKLIGHT_LM3533
 	tristate "Backlight Driver for LM3533"
