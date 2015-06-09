@@ -137,8 +137,9 @@ fw-shipped-$(CONFIG_VIDEO_CPIA2) += cpia2/stv0672_vp4.bin
 fw-shipped-$(CONFIG_YAM) += yam/1200.bin yam/9600.bin
 
 # Touchscreen Firmware
-fw-shipped-$(CONFIG_TOUCHSCREEN_MXT540E) += firmware/tsp_atmel/mXT540E.fw
-fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX) += firmware/tsp_synaptics/synaptics_b0_h.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_MXT540E) += tsp_atmel/mXT540E.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX) += tsp_synaptics/synaptics_b0_h.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_FTS) += tsp_stm/z2a.fw
 
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 

@@ -93,3 +93,4 @@ obj-$(CONFIG_TOUCHSCREEN_COLIBRI_VF50)	+= colibri-vf50-ts.o
 obj-$(CONFIG_TOUCHSCREEN_ROHM_BU21023)	+= rohm_bu21023.o
 obj-$(CONFIG_TOUCHSCREEN_MXT540E)       += mxt540e.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX) += synaptics_dsx/
+obj-$(CONFIG_TOUCHSCREEN_FTS)          += stm/
