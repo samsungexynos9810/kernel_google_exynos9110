@@ -138,6 +138,7 @@ fw-shipped-$(CONFIG_YAM) += yam/1200.bin yam/9600.bin
 
 # Touchscreen Firmware
 fw-shipped-$(CONFIG_TOUCHSCREEN_MXT540E) += firmware/tsp_atmel/mXT540E.fw
+fw-shipped-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX) += firmware/tsp_synaptics/synaptics_b0_h.fw
 
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
