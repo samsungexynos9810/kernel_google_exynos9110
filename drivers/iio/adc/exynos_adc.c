@@ -184,6 +184,49 @@ static int exynos_adc_enable_clk(struct exynos_adc *info)
 	return 0;
 }
 
+static int exynos_adc_enable_access(struct exynos_adc *info)
+{
+	int ret;
+
+	if (info->needs_adc_phy)
+		regmap_write(info->pmu_map, info->data->phy_offset, 1);
+
+	if (info->vdd) {
+		ret = regulator_enable(info->vdd);
+		if (ret)
+			return ret;
+	}
+
+	ret = exynos_adc_prepare_clk(info);
+	if (ret)
+		goto err_disable_reg;
+
+	ret = exynos_adc_enable_clk(info);
+	if (ret)
+		goto err_unprepare_clk;;
+
+	return 0;
+
+err_unprepare_clk:
+	exynos_adc_unprepare_clk(info);
+err_disable_reg:
+	if (info->vdd)
+		regulator_disable(info->vdd);
+
+	return ret;
+}
+
+static void exynos_adc_disable_access(struct exynos_adc *info)
+{
+	exynos_adc_disable_clk(info);
+	exynos_adc_unprepare_clk(info);
+	if (info->vdd)
+		regulator_disable(info->vdd);
+
+	if (info->needs_adc_phy)
+		regmap_write(info->pmu_map, info->data->phy_offset, 0);
+}
+
 static void exynos_adc_v1_init_hw(struct exynos_adc *info)
 {
 	u32 con1;
@@ -461,8 +504,9 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 	mutex_lock(&indio_dev->mlock);
 	reinit_completion(&info->completion);
 
-	if (info->needs_adc_phy)
-		regmap_write(info->pmu_map, info->data->phy_offset, 1);
+	ret = exynos_adc_enable_access(info);
+	if (ret)
+		goto err_unlock;
 
 	/* Select the channel to be used and Trigger conversion */
 	if (info->data->start_conv)
@@ -481,9 +525,8 @@ static int exynos_read_raw(struct iio_dev *indio_dev,
 		ret = IIO_VAL_INT;
 	}
 
-	if (info->needs_adc_phy)
-		regmap_write(info->pmu_map, info->data->phy_offset, 0);
-
+	exynos_adc_disable_access(info);
+err_unlock:
 	mutex_unlock(&indio_dev->mlock);
 
 	return ret;
@@ -511,11 +554,21 @@ static int exynos_adc_reg_access(struct iio_dev *indio_dev,
 			      unsigned *readval)
 {
 	struct exynos_adc *info = iio_priv(indio_dev);
+	int ret;
 
 	if (readval == NULL)
 		return -EINVAL;
 
+	mutex_lock(&indio_dev->mlock);
+	ret = exynos_adc_enable_access(info);
+	if (ret)
+		goto err_unlock;
+
 	*readval = readl(info->regs + reg);
+
+	exynos_adc_disable_access(info);
+err_unlock:
+	mutex_unlock(&indio_dev->mlock);
 
 	return 0;
 }
@@ -639,18 +692,9 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		info->vdd = NULL;
 	}
 
-	if (info->vdd) {
-		ret = regulator_enable(info->vdd);
-		if (ret)
-			return ret;
-	}
-	ret = exynos_adc_prepare_clk(info);
+	ret = exynos_adc_enable_access(info);
 	if (ret)
-		goto err_disable_reg;
-
-	ret = exynos_adc_enable_clk(info);
-	if (ret)
-		goto err_unprepare_clk;
+		goto err_access;
 
 	platform_set_drvdata(pdev, indio_dev);
 
@@ -662,7 +706,7 @@ static int exynos_adc_probe(struct platform_device *pdev)
 	indio_dev->channels = exynos_adc_iio_channels;
 	indio_dev->num_channels = info->data->num_channels;
 
-	ret = request_irq(info->irq, exynos_adc_isr,
+	ret = devm_request_irq(&pdev->dev, info->irq, exynos_adc_isr,
 					0, dev_name(&pdev->dev), info);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed requesting irq, irq = %d\n",
@@ -670,18 +714,18 @@ static int exynos_adc_probe(struct platform_device *pdev)
 		goto err_disable_clk;
 	}
 
+	exynos_adc_disable_access(info);
 	ret = iio_device_register(indio_dev);
 	if (ret)
 		goto err_irq;
-
-	if (info->data->init_hw)
-		info->data->init_hw(info);
 
 	ret = of_platform_populate(np, exynos_adc_match, NULL, &indio_dev->dev);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "failed adding child nodes\n");
 		goto err_of_populate;
 	}
+
+	dev_info(&pdev->dev, "Probed successfully driver.\n");
 
 	return 0;
 
@@ -694,12 +738,9 @@ err_irq:
 err_disable_clk:
 	if (info->data->exit_hw)
 		info->data->exit_hw(info);
-	exynos_adc_disable_clk(info);
-err_unprepare_clk:
-	exynos_adc_unprepare_clk(info);
-err_disable_reg:
-	if (info->vdd)
-		regulator_disable(info->vdd);
+
+	exynos_adc_disable_access(info);
+err_access:
 	return ret;
 }
 
@@ -707,17 +748,21 @@ static int exynos_adc_remove(struct platform_device *pdev)
 {
 	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
 	struct exynos_adc *info = iio_priv(indio_dev);
+	int ret;
 
 	device_for_each_child(&indio_dev->dev, NULL,
 				exynos_adc_remove_devices);
 	iio_device_unregister(indio_dev);
 	free_irq(info->irq, info);
+
+	ret = exynos_adc_enable_access(info);
+	if (ret)
+		return ret;
+
 	if (info->data->exit_hw)
 		info->data->exit_hw(info);
-	exynos_adc_disable_clk(info);
-	exynos_adc_unprepare_clk(info);
-	if (info->vdd)
-		regulator_disable(info->vdd);
+
+	exynos_adc_disable_access(info);
 
 	return 0;
 }
@@ -727,12 +772,16 @@ static int exynos_adc_suspend(struct device *dev)
 {
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct exynos_adc *info = iio_priv(indio_dev);
+	int ret;
+
+	ret = exynos_adc_enable_access(info);
+	if (ret)
+		return ret;
 
 	if (info->data->exit_hw)
 		info->data->exit_hw(info);
-	exynos_adc_disable_clk(info);
-	if (info->vdd)
-		regulator_disable(info->vdd);
+
+	exynos_adc_disable_access(info);
 
 	return 0;
 }
@@ -743,18 +792,14 @@ static int exynos_adc_resume(struct device *dev)
 	struct exynos_adc *info = iio_priv(indio_dev);
 	int ret;
 
-	if (info->vdd) {
-		ret = regulator_enable(info->vdd);
-		if (ret)
-			return ret;
-	}
-
-	ret = exynos_adc_enable_clk(info);
+	ret = exynos_adc_enable_access(info);
 	if (ret)
 		return ret;
 
 	if (info->data->init_hw)
 		info->data->init_hw(info);
+
+	exynos_adc_disable_access(info);
 
 	return 0;
 }
@@ -770,7 +815,6 @@ static struct platform_driver exynos_adc_driver = {
 	.driver		= {
 		.name	= "exynos-adc",
 		.of_match_table = exynos_adc_match,
-		.pm	= &exynos_adc_pm_ops,
 	},
 };
 
