@@ -307,6 +307,9 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 
 	exynos_set_wakeupmask();
 
+	/* Set EINT MASK for external wakeup sources */
+	__raw_writel(0xff6dffdb, EXYNOS_EINT_WAKEUP_MASK);
+
 	exynos3250_disable_idle_clock_down();
 
 	if (exynos_check_reg_status(audio_clock_gating,
@@ -411,6 +414,10 @@ static int __init exynos_init_cpuidle(void)
 		return -EIO;
 		}
 	}
+
+	/* Initially mask all sources: */
+	/* ST[14] MMC1/0[10:9] KEY[5] RTC_TICK[2] RTC_ALARM[1] */
+	__raw_writel((0x1<<14)|(0x3<<9)|(0x1<<5)|(0x3<<1), EXYNOS_WAKEUP_MASK);
 
 	return 0;
 }
