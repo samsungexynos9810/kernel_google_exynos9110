@@ -74,6 +74,7 @@
 #include <linux/binfmts.h>
 #include <linux/context_tracking.h>
 #include <linux/compiler.h>
+#include <linux/exynos-ss.h>
 
 #include <asm/switch_to.h>
 #include <asm/tlb.h>
@@ -3378,6 +3379,7 @@ static void __sched notrace __schedule(bool preempt)
 		raw_spin_unlock_irq(&rq->lock);
 	}
 
+	exynos_ss_task(cpu, rq->curr);
 	balance_callback(rq);
 }
 
