@@ -10,4 +10,37 @@ config EXYNOS_CHIPID
 	depends on ARCH_EXYNOS
 	select SOC_BUS
 
-endif #SOC_EXYNOS
+config EXYNOS_REBOOT
+	bool "Exynos Chip Reboot Driver Support"
+	depends on ARCH_EXYNOS
+
+config PWRCAL
+	bool "Exynos Power Chip Abstraction Layer"
+	help
+	Support Power CAL for Exynos SoC.
+
+config ECT
+	bool "Enable Exynos Characteristic Table File"
+	default n
+	depends on ARCH_EXYNOS
+
+config ECT_DUMP
+	bool "Enable Exynos Characteristic Table File Dump sysfs"
+	default n
+	depends on ECT
+
+config EXYNOS_PD
+	bool "Exynos PM domain Support"
+	depends on ARCH_EXYNOS
+	depends on PM
+	select PM_GENERIC_DOMAINS
+
+config SAMSUNG_DMADEV
+	bool
+	select ARM_AMBA
+	select DMADEVICES
+	select PL330_DMA if (ARCH_EXYNOS8)
+	help
+	  Use DMA device engine for PL330 DMAC.
+
+endif #SOC_SAMSUNG
