@@ -30,6 +30,8 @@
 #include <linux/spinlock.h>
 #include <linux/syscore_ops.h>
 
+#include <soc/samsung/exynos-pm.h>
+
 #include "pinctrl-samsung.h"
 #include "../core.h"
 
