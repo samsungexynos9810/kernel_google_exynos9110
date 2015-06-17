@@ -184,7 +184,6 @@ extern void exynos_trace_stop(void);
 #endif
 
 /* defines for MNGS reset */
-
 #define PEND_MNGS                       (1 << 1)
 #define PEND_APOLLO                     (1 << 0)
 #define DEFAULT_VAL_CPU_RESET_DISABLE   0xFFFFFFFC

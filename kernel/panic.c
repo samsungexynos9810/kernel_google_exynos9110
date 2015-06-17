@@ -25,6 +25,7 @@
 #include <linux/nmi.h>
 #include <linux/console.h>
 #include <linux/exynos-ss.h>
+#include <asm/core_regs.h>
 #include "sched/sched.h"
 
 #include <asm/core_regs.h>
@@ -81,9 +82,7 @@ void panic(const char *fmt, ...)
 	long i, i_next = 0;
 	int state = 0;
 
-	/*
-	 * TODO: exynos_trace_stop();
-	*/
+	 exynos_trace_stop();
 
 	/*
 	 * Disable local interrupts. This will prevent panic_smp_self_stop

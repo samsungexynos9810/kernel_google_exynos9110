@@ -160,5 +160,46 @@ config EXYNOS_CORESIGHT_MAINTAIN_DBG_REG
           save in /restore from memory. If OS-lock is set, debugging to use
           trace32 is impossible. So OS-lock must clear when core power is up.
           This config must enable only using iTSP program.
+
+menuconfig EXYNOS_CORESIGHT_ETM
+        bool "Enable ETM driver of exynos"
+        depends on ARCH_EXYNOS
+        default n
+        help
+          ETM driver is a driver for debugging. Also this driver enable ETR of
+          coresight feature.
+
+config EXYNOS_CORESIGHT_ETB
+        bool "This system has ETB feature"
+        depends on EXYNOS_CORESIGHT_ETM && SOC_EXYNOS7580
+        default n
+        help
+          ETB driver is the sink part of coresight components. Some coresights has
+          ETR.
+
+config EXYNOS_CORESIGHT_ETF
+        bool "This system has ETF feature"
+        depends on EXYNOS_CORESIGHT_ETM
+        default n
+        help
+          ETF driver is the sink part of coresight components. Some coresights has
+          ETR.
+
+config EXYNOS_CORESIGHT_ETR
+        bool "This system has ETR feature"
+        depends on EXYNOS_CORESIGHT_ETF && EXYNOS_SNAPSHOT
+        default n
+        help
+          ETR driver is a driver for debugging. Also this driver is thr sink part of
+          coresight feature. Coresight consists of source, link, sink part.
+          This routes to DRAM or USB.
+
+
+config EXYNOS_CORESIGHT_ETM_SYSFS
+        bool "This system has ETM Sysfs feature"
+        depends on EXYNOS_CORESIGHT_ETM
+        default n
+        help
+          Show ETM, FUNNEL, ETB, ETF and ETR status through sysfs.
 endif
 #
