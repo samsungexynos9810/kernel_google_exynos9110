@@ -27,6 +27,8 @@
 #include <linux/exynos-ss.h>
 #include "sched/sched.h"
 
+#include <asm/core_regs.h>
+
 #define PANIC_TIMER_STEP 100
 #define PANIC_BLINK_SPD 18
 
@@ -145,9 +147,7 @@ void panic(const char *fmt, ...)
 
 	kmsg_dump(KMSG_DUMP_PANIC);
 
-	/*
-	 * TODO: exynos_cs_show_pcval();
-	 */
+	exynos_cs_show_pcval();
 
 	exynos_ss_post_panic();
 
