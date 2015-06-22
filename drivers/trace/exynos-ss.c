@@ -823,6 +823,13 @@ int exynos_ss_post_reboot(void)
 		core = mpidr_cpu_num(mpidr) ^ 4;
 		exynos_ss_set_core_panic_stat(ESS_SIGN_RESET, core);
 	}
+	exynos_ss_report_reason(ESS_SIGN_NORMAL_REBOOT);
+	exynos_ss_scratch_reg(ESS_SIGN_RESET);
+
+	pr_emerg("exynos-snapshot: normal reboot done\n");
+
+	exynos_ss_save_context(NULL);
+	flush_cache_all();
 
 	return 0;
 }
@@ -1787,12 +1794,8 @@ static int exynos_ss_reboot_handler(struct notifier_block *nb,
 	if (unlikely(!ess_base.enabled))
 		return 0;
 
-	pr_emerg("exynos-snapshot: normal reboot [%s]\n", __func__);
-	exynos_ss_report_reason(ESS_SIGN_NORMAL_REBOOT);
-	exynos_ss_scratch_reg(ESS_SIGN_RESET);
-	exynos_ss_save_context(NULL);
+	pr_emerg("exynos-snapshot: normal reboot starting\n");
 
-	flush_cache_all();
 	return 0;
 }
 
