@@ -149,6 +149,16 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
 			return;
 		}
 
+	__raw_writel(mask, reg_base + stat_addr);
+
+	printk(KERN_ERR "[%s]value=%d addr=0x%X\n", __func__, value, (u32)addr);
+
+	for (i = 0; i < loops_per_jiffy / 1000 * HZ; i++)
+		if (__raw_readl(reg_base + stat_addr) & mask) {
+			__raw_writel(mask, reg_base + stat_addr);
+			return;
+		}
+
 	panic("MCT hangs after writing %d (offset:0x%lx)\n", value, offset);
 }
 
@@ -402,6 +412,7 @@ static int exynos4_mct_tick_clear(struct mct_clock_event_device *mevt)
 
 	/* Clear the MCT tick interrupt */
 	if (__raw_readl(reg_base + mevt->base + MCT_L_INT_CSTAT_OFFSET) & 1) {
+		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
 		exynos4_mct_write(0x1, mevt->base + MCT_L_INT_CSTAT_OFFSET);
 		return 1;
 	} else {
