@@ -151,8 +151,6 @@ static void exynos4_mct_write(unsigned int value, unsigned long offset)
 
 	__raw_writel(mask, reg_base + stat_addr);
 
-	printk(KERN_ERR "[%s]value=%d addr=0x%X\n", __func__, value, (u32)addr);
-
 	for (i = 0; i < loops_per_jiffy / 1000 * HZ; i++)
 		if (__raw_readl(reg_base + stat_addr) & mask) {
 			__raw_writel(mask, reg_base + stat_addr);
@@ -247,6 +245,7 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
 {
 	unsigned int tcon;
 	cycle_t comp_cycle;
+	unsigned long flags;
 
 	tcon = __raw_readl(reg_base + EXYNOS4_MCT_G_TCON);
 
@@ -254,6 +253,13 @@ static void exynos4_mct_comp0_start(enum clock_event_mode mode,
 		tcon |= MCT_G_TCON_COMP0_AUTO_INC;
 		exynos4_mct_write(cycles, EXYNOS4_MCT_G_COMP0_ADD_INCR);
 	}
+
+	/*
+	 * Turn off interrupts to make sure the timer is fully programmed
+	 * before it is scheduled to fire.
+	 */
+	local_irq_save(flags);
+
 
 	comp_cycle = exynos4_frc_read(&mct_frc) + cycles;
 	exynos4_mct_write((u32)comp_cycle, EXYNOS4_MCT_G_COMP0_L);
@@ -324,7 +330,7 @@ static void exynos4_clockevent_init(void)
 {
 	mct_comp_device.cpumask = cpumask_of(0);
 	clockevents_config_and_register(&mct_comp_device, clk_rate,
-					0xf, 0xffffffff);
+					0xff, 0xffffffff);
 	setup_irq(mct_irqs[MCT_G0_IRQ], &mct_comp_event_irq);
 }
 
