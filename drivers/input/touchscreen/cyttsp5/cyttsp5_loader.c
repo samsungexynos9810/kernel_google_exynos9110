@@ -476,8 +476,6 @@ static int cyttsp5_upgrade_firmware(struct device *dev, const u8 *fw_img,
 	bool wait_for_calibration_complete = false;
 	int rc;
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_LDR_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0)
 		goto exit;
@@ -522,8 +520,6 @@ static int cyttsp5_upgrade_firmware(struct device *dev, const u8 *fw_img,
 exit:
 	if (!rc)
 		cmd->request_restart(dev, true);
-
-	pm_runtime_put_sync(dev);
 
 	if (wait_for_calibration_complete)
 		wait_for_completion(&ld->calibration_complete);
@@ -859,8 +855,6 @@ static int cyttsp5_upgrade_ttconfig(struct device *dev,
 	dev_dbg(dev, "%s: size:%d row_size=%d row_count=%d\n",
 		__func__, table_size, row_size, row_count);
 
-	pm_runtime_get_sync(dev);
-
 	rc = cmd->request_exclusive(dev, CY_LDR_REQUEST_EXCLUSIVE_TIMEOUT);
 	if (rc < 0)
 		goto exit;
@@ -939,8 +933,6 @@ release:
 exit:
 	if (!rc)
 		cmd->request_restart(dev, true);
-
-	pm_runtime_put_sync(dev);
 
 	if (wait_for_calibration_complete)
 		wait_for_completion(&ld->calibration_complete);

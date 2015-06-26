@@ -86,6 +86,8 @@ obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS)	+= setup-fimc-is.o
 obj-$(CONFIG_VIDEO_EXYNOS_FIMC_IS)	+= setup-fimc-is-sensor.o
 obj-$(CONFIG_COMPANION_USE)		+= setup-fimc-is-companion.o
 
+obj-$(CONFIG_KOI_BLUETOOTH)             += board-shiri-bluetooth.o
+
 # device support
 
 obj-y					+= dev-uart.o

@@ -35,7 +35,7 @@
 #define MT_PARAM_FUZZ(md, sig_ost) PARAM_FUZZ(md->pdata->frmwrk, sig_ost)
 #define MT_PARAM_FLAT(md, sig_ost) PARAM_FLAT(md->pdata->frmwrk, sig_ost)
 
-static void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md)
+void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md)
 {
 	int max = md->si->tch_abs[CY_TCH_T].max;
 
@@ -409,8 +409,6 @@ static int cyttsp5_mt_suspend_attention(struct device *dev)
 	md->is_suspended = true;
 	mutex_unlock(&md->mt_lock);
 
-	pm_runtime_put(dev);
-
 	return 0;
 }
 
@@ -418,8 +416,6 @@ static int cyttsp5_mt_resume_attention(struct device *dev)
 {
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_mt_data *md = &cd->md;
-
-	pm_runtime_get(dev);
 
 	mutex_lock(&md->mt_lock);
 	md->is_suspended = false;
@@ -433,8 +429,6 @@ static int cyttsp5_mt_open(struct input_dev *input)
 	struct device *dev = input->dev.parent;
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_mt_data *md = &cd->md;
-
-	pm_runtime_get_sync(dev);
 
 	mutex_lock(&md->mt_lock);
 	md->is_suspended = false;
@@ -488,7 +482,6 @@ static void cyttsp5_mt_close(struct input_dev *input)
 
 	mutex_lock(&md->mt_lock);
 	if (!md->is_suspended) {
-		pm_runtime_put(dev);
 		md->is_suspended = true;
 	}
 	mutex_unlock(&md->mt_lock);

@@ -28,6 +28,8 @@
 #include "cyttsp5_regs.h"
 #include <linux/kthread.h>
 
+#define DONT_SLEEP
+
 #define CY_CORE_STARTUP_RETRY_COUNT		3
 
 MODULE_FIRMWARE(CY_FW_FILE_NAME);
@@ -1511,6 +1513,7 @@ int _cyttsp5_request_hid_output_set_param(struct device *dev,
 	return cyttsp5_hid_output_set_param_(cd, param_id, value);
 }
 
+#ifndef DONT_SLEEP
 static int cyttsp5_hid_output_enter_easywake_state_(
 		struct cyttsp5_core_data *cd, u8 data, u8 *return_data)
 {
@@ -1530,6 +1533,7 @@ static int cyttsp5_hid_output_enter_easywake_state_(
 	*return_data = cd->response_buf[5];
 	return rc;
 }
+#endif
 
 static int cyttsp5_hid_output_verify_config_block_crc_(
 		struct cyttsp5_core_data *cd, u8 ebid, u8 *status,
@@ -3561,7 +3565,7 @@ static void cyttsp5_watchdog_timer(unsigned long handle)
 	if (!work_pending(&cd->watchdog_work))
 		schedule_work(&cd->watchdog_work);
 }
-
+#ifndef DONT_SLEEP
 static int cyttsp5_put_device_into_easy_wakeup_(struct cyttsp5_core_data *cd)
 {
 	int rc;
@@ -3693,7 +3697,7 @@ static int cyttsp5_wakeup_host(struct cyttsp5_core_data *cd)
 exit:
 	return rc;
 }
-
+#endif
 static void cyttsp5_get_touch_axis(struct cyttsp5_core_data *cd,
 	int *axis, int size, int max, u8 *data, int bofs)
 {
@@ -3868,9 +3872,18 @@ static int cyttsp5_parse_input(struct cyttsp5_core_data *cd)
 	report_id = cd->input_buf[2];
 	dev_vdbg(cd->dev, "%s: report_id:%X\n", __func__, report_id);
 
+#ifndef DONT_SLEEP
 	/* Check wake-up report */
 	if (report_id == HID_WAKEUP_REPORT_ID) {
 		cyttsp5_wakeup_host(cd);
+		return 0;
+	}
+#endif
+
+	if (cd->touch_wake) {
+		/* attention WAKE */
+		call_atten_cb(cd, CY_ATTEN_WAKE, 0);
+		cd->touch_wake = false;
 		return 0;
 	}
 
@@ -3896,27 +3909,7 @@ static int cyttsp5_read_input(struct cyttsp5_core_data *cd)
 {
 	struct device *dev = cd->dev;
 	int rc;
-	int t;
 
-	/* added as workaround to CDT170960: easywake failure */
-	/* Interrupt for easywake, wait for bus controller to wake */
-	mutex_lock(&cd->system_lock);
-	if (!IS_DEEP_SLEEP_CONFIGURED(cd->easy_wakeup_gesture)) {
-		if (cd->sleep_state == SS_SLEEP_ON) {
-			mutex_unlock(&cd->system_lock);
-			if (!dev->power.is_suspended)
-				goto read;
-			t = wait_event_timeout(cd->wait_q,
-					(cd->wait_until_wake == 1),
-					msecs_to_jiffies(2000));
-			if (IS_TMO(t))
-				cyttsp5_queue_startup(cd);
-			goto read;
-		}
-	}
-	mutex_unlock(&cd->system_lock);
-
-read:
 	rc = cyttsp5_adap_read_default_nosize(cd, cd->input_buf, CY_MAX_INPUT);
 	if (rc) {
 		dev_err(dev, "%s: Error getting report, r=%d\n",
@@ -3931,6 +3924,12 @@ static irqreturn_t cyttsp5_irq(int irq, void *handle)
 {
 	struct cyttsp5_core_data *cd = handle;
 	int rc;
+
+	if (cd->irq_wake) {
+		wake_lock_timeout(&cd->touch_wake_lock, 20 * HZ);
+		cd->touch_wake = true;
+		usleep_range(20000, 21000);
+	}
 
 	rc = cyttsp5_read_input(cd);
 	if (!rc)
@@ -4132,6 +4131,7 @@ static int _cyttsp5_request_stop_wd(struct device *dev)
 	return 0;
 }
 
+#ifndef DONT_SLEEP
 static int cyttsp5_core_wake_device_from_deep_sleep_(
 		struct cyttsp5_core_data *cd)
 {
@@ -4168,6 +4168,7 @@ static int cyttsp5_core_wake_device_(struct cyttsp5_core_data *cd)
 
 	return cyttsp5_core_wake_device_from_deep_sleep_(cd);
 }
+#endif
 
 static int cyttsp5_restore_parameters_(struct cyttsp5_core_data *cd)
 {
@@ -4193,6 +4194,7 @@ exit:
 	return rc;
 }
 
+#ifndef DONT_SLEEP
 static int _fast_startup(struct cyttsp5_core_data *cd)
 {
 	int retry = CY_CORE_STARTUP_RETRY_COUNT;
@@ -4316,6 +4318,7 @@ static int cyttsp5_core_wake(struct cyttsp5_core_data *cd)
 
 	return rc;
 }
+#endif
 
 static int cyttsp5_get_ic_crc_(struct cyttsp5_core_data *cd, u8 ebid)
 {
@@ -4597,55 +4600,19 @@ static void cyttsp5_startup_work_function(struct work_struct *work)
 			__func__, rc);
 }
 
-/*
- * CONFIG_PM_RUNTIME option is removed in 3.19.0.
- */
-#if defined(CONFIG_PM_RUNTIME) || \
-		(LINUX_VERSION_CODE >= KERNEL_VERSION(3, 19, 0))
-static int cyttsp5_core_rt_suspend(struct device *dev)
-{
-	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
-	int rc;
-
-	rc = cyttsp5_core_sleep(cd);
-	if (rc < 0) {
-		dev_err(dev, "%s: Error on sleep\n", __func__);
-		return -EAGAIN;
-	}
-	return 0;
-}
-
-static int cyttsp5_core_rt_resume(struct device *dev)
-{
-	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
-	int rc;
-
-	rc = cyttsp5_core_wake(cd);
-	if (rc < 0) {
-		dev_err(dev, "%s: Error on wake\n", __func__);
-		return -EAGAIN;
-	}
-
-	return 0;
-}
-#endif
-
 #if defined(CONFIG_PM_SLEEP)
 static int cyttsp5_core_suspend(struct device *dev)
 {
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 
-	cyttsp5_core_sleep(cd);
-
-	if (!(cd->cpdata->flags & CY_CORE_FLAG_WAKE_ON_GESTURE))
-		return 0;
+	cancel_work_sync(&cd->startup_work);
+	cyttsp5_stop_wd_timer(cd);
 
 	/*
 	 * This will not prevent resume
 	 * Required to prevent interrupts before i2c awake
 	 */
-	disable_irq(cd->irq);
-	cd->irq_disabled = 1;
+	cyttsp5_mt_lift_all(&cd->md);
 
 	if (device_may_wakeup(dev)) {
 		dev_vdbg(dev, "%s Device MAY wakeup\n", __func__);
@@ -4662,17 +4629,10 @@ static int cyttsp5_core_resume(struct device *dev)
 {
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 
-	if (!(cd->cpdata->flags & CY_CORE_FLAG_WAKE_ON_GESTURE))
-		goto exit;
-
 	/*
 	 * I2C bus pm does not call suspend if device runtime suspended
 	 * This flag is cover that case
 	 */
-	if (cd->irq_disabled) {
-		enable_irq(cd->irq);
-		cd->irq_disabled = 0;
-	}
 
 	if (device_may_wakeup(dev)) {
 		dev_vdbg(dev, "%s Device MAY wakeup\n", __func__);
@@ -4684,8 +4644,7 @@ static int cyttsp5_core_resume(struct device *dev)
 		dev_dbg(dev, "%s Device MAY NOT wakeup\n", __func__);
 	}
 
-exit:
-	cyttsp5_core_wake(cd);
+	cyttsp5_start_wd_timer(cd);
 
 	return 0;
 }
@@ -4717,8 +4676,6 @@ static int cyttsp5_pm_notifier(struct notifier_block *nb,
 
 const struct dev_pm_ops cyttsp5_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(cyttsp5_core_suspend, cyttsp5_core_resume)
-	SET_RUNTIME_PM_OPS(cyttsp5_core_rt_suspend, cyttsp5_core_rt_resume,
-			NULL)
 };
 EXPORT_SYMBOL_GPL(cyttsp5_pm_ops);
 
@@ -4898,6 +4855,7 @@ static ssize_t cyttsp5_drv_debug_store(struct device *dev,
 	}
 
 	switch (value) {
+#ifndef DONT_SLEEP
 	case CY_DBG_SUSPEND:
 		dev_info(dev, "%s: SUSPEND (cd=%p)\n", __func__, cd);
 		rc = cyttsp5_core_sleep(cd);
@@ -4917,6 +4875,7 @@ static ssize_t cyttsp5_drv_debug_store(struct device *dev,
 		else
 			dev_info(dev, "%s: Resume succeeded\n", __func__);
 		break;
+#endif
 	case CY_DBG_SOFT_RESET:
 		dev_info(dev, "%s: SOFT RESET (cd=%p)\n", __func__, cd);
 		rc = cyttsp5_hw_soft_reset(cd);
@@ -5507,8 +5466,6 @@ static int cyttsp5_setup_irq_gpio(struct cyttsp5_core_data *cd)
 	int rc;
 
 	/* Initialize IRQ */
-//	cd->irq = gpio_to_irq(cd->cpdata->irq_gpio);
-//	pr_info("%s: cd->irq = %d\n", __func__, cd->irq);
 	if (cd->irq < 0)
 		return -EINVAL;
 
@@ -5635,7 +5592,6 @@ int cyttsp5_probe(const struct cyttsp5_bus_ops *ops, struct device *dev,
 	setup_timer(&cd->watchdog_timer, cyttsp5_watchdog_timer,
 			(unsigned long)cd);
 
-//	pr_info("%s: client->irq = %d\n", __func__, irq);
 	cd->irq = irq;
 	rc = cyttsp5_setup_irq_gpio(cd);
 	if (rc < 0) {
@@ -5660,9 +5616,8 @@ int cyttsp5_probe(const struct cyttsp5_bus_ops *ops, struct device *dev,
 		dev_err(dev, "%s: Error, device_init_wakeup rc:%d\n",
 				__func__, rc);
 
-	pm_runtime_get_noresume(dev);
-	pm_runtime_set_active(dev);
-	pm_runtime_enable(dev);
+	wake_lock_init(&cd->touch_wake_lock,
+		WAKE_LOCK_SUSPEND, "touch_wake_lock");
 
 	/*
 	 * call startup directly to ensure that the device
@@ -5670,8 +5625,6 @@ int cyttsp5_probe(const struct cyttsp5_bus_ops *ops, struct device *dev,
 	 */
 	dev_dbg(dev, "%s: call startup\n", __func__);
 	rc = cyttsp5_startup(cd, false);
-
-	pm_runtime_put_sync(dev);
 
 	/* Do not fail probe if startup fails but the device is detected */
 	if (rc == -ENODEV) {
@@ -5719,7 +5672,6 @@ error_startup_btn:
 error_startup_mt:
 	cyttsp5_mt_release(dev);
 error_startup:
-	pm_runtime_disable(dev);
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0))
 	device_wakeup_disable(dev);
 #endif
@@ -5727,6 +5679,7 @@ error_startup:
 	cancel_work_sync(&cd->startup_work);
 	cyttsp5_stop_wd_timer(cd);
 	cyttsp5_free_si_ptrs(cd);
+	wake_lock_destroy(&cd->touch_wake_lock);
 	remove_sysfs_interfaces(dev);
 error_attr_create:
 	free_irq(cd->irq, cd);
@@ -5770,9 +5723,6 @@ int cyttsp5_release(struct cyttsp5_core_data *cd)
 	 * Suspend the device before freeing the startup_work and stopping
 	 * the watchdog since sleep function restarts watchdog on failure
 	 */
-	pm_runtime_suspend(dev);
-	pm_runtime_disable(dev);
-
 	cancel_work_sync(&cd->startup_work);
 
 	cyttsp5_stop_wd_timer(cd);

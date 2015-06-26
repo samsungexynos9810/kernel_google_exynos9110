@@ -42,7 +42,13 @@ static int cyttsp5_i2c_read_default(struct device *dev, void *buf, int size)
 
 	rc = i2c_master_recv(client, buf, size);
 
-	return (rc < 0) ? rc : rc != size ? -EIO : 0;
+	if (rc < 0) {
+		return rc;
+	} else if (rc != size) {
+		pr_info("%s: rc=%d, size=%d\n", __func__, rc, size);
+		return -EIO;
+	}
+	return 0;
 }
 
 static int cyttsp5_i2c_read_default_nosize(struct device *dev, u8 *buf, u32 max)
@@ -61,8 +67,12 @@ static int cyttsp5_i2c_read_default_nosize(struct device *dev, u8 *buf, u32 max)
 	msgs[0].len = 2;
 	msgs[0].buf = buf;
 	rc = i2c_transfer(client->adapter, msgs, msg_count);
-	if (rc < 0 || rc != msg_count)
-		return (rc < 0) ? rc : -EIO;
+	if (rc < 0) {
+		return rc;
+	} else if ( rc != msg_count) {
+		pr_info("%s: rc=%d, msg_count=%d\n", __func__, rc, msg_count);
+		return -EIO;
+	}
 
 	size = get_unaligned_le16(&buf[0]);
 	if (!size || size == 2)
@@ -72,8 +82,13 @@ static int cyttsp5_i2c_read_default_nosize(struct device *dev, u8 *buf, u32 max)
 		return -EINVAL;
 
 	rc = i2c_master_recv(client, buf, size);
-
-	return (rc < 0) ? rc : rc != (int)size ? -EIO : 0;
+	if (rc < 0) {
+		return rc;
+	} else if (rc != size) {
+		pr_info("%s: rc=%d, size=%d\n", __func__, rc, size);
+		return -EIO;
+	}
+	return 0;
 }
 
 static int cyttsp5_i2c_write_read_specific(struct device *dev, u8 write_len,

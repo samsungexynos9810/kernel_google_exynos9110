@@ -117,6 +117,7 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ PMU_TABLE_END,},
 };
 
+#if 0 /* if casio board enter this mode bluetooth and spi is disabled */
 static struct exynos_pmu_conf exynos3250_pmu_config_extra[] = {
 	/* { .reg = address, .val = { AFTR, W-AFTR, SLEEP } */
 	{ EXYNOS3_CMU_ACLKSTOP_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x0} },
@@ -126,6 +127,7 @@ static struct exynos_pmu_conf exynos3250_pmu_config_extra[] = {
 	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x0, 0x1} },
 	{ PMU_TABLE_END,},
 };
+#endif
 
 static struct exynos_pmu_conf exynos3250_pmu_config_audio[] = {
 	/* { .reg = address, .val = { AFTR, W-AFTR, SLEEP } */
@@ -181,9 +183,9 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 		for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
 			__raw_writel(exynos_pmu_config[i].val[mode],
 					exynos_pmu_config[i].reg);
-		for (i = 0; (exynos3250_pmu_config_extra[i].reg != PMU_TABLE_END) ; i++)
-			__raw_writel(exynos3250_pmu_config_extra[i].val[mode],
-					exynos3250_pmu_config_extra[i].reg);
+		for (i = 0; (exynos3250_pmu_config_audio[i].reg != PMU_TABLE_END) ; i++)
+			__raw_writel(exynos3250_pmu_config_audio[i].val[mode],
+					exynos3250_pmu_config_audio[i].reg);
 	}
 
 	exynos3250_init_pmu();

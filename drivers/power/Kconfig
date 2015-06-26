@@ -224,6 +224,11 @@ config BATTERY_S3C_ADC
 	help
 	  Say Y here to enable support for iPAQ h1930/h1940/rx1950 battery
 
+config BATTERY_SUBCPU
+	tristate "Get Battery property from subCPU"
+	help
+		For Casio board.
+
 config CHARGER_88PM860X
 	tristate "Marvell 88PM860x Charger driver"
 	depends on MFD_88PM860X && BATTERY_88PM860X

@@ -277,6 +277,13 @@ config BOARD_HAS_LOWRAM
 		Enable this if you have low memory on board
 		or you want to enable low memory support in kernel.
 
+config KOI_BLUETOOTH
+        bool "KOI board bluetooth"
+        depends on SOC_EXYNOS3250
+        default y
+        help
+            KOI board bluetooth.
+
 config EXYNOS_CONTENT_PATH_PROTECTION
 	bool "Exynos Content Path Protection"
 	depends on (ARM_TRUSTZONE && ARCH_EXYNOS5)

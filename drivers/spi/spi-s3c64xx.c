@@ -41,6 +41,10 @@
 
 #include <mach/exynos-pm.h>
 
+#if defined(CONFIG_MULTI_SENSORS)
+#include "../misc/MSensorsDrv.h"
+#endif
+
 #ifdef CONFIG_EXYNOS_SPI_RESET_DURING_DSTOP
 static LIST_HEAD(drvdata_list);
 #endif
@@ -547,6 +551,12 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
 static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 						struct spi_device *spi)
 {
+#if defined(CONFIG_MULTI_SENSORS)
+	struct s3c64xx_spi_csinfo *cs;
+	cs = spi->controller_data;
+	if(cs->line != (unsigned)NULL)
+		gpio_set_value(cs->line, 1);
+#else
 	struct s3c64xx_spi_csinfo *cs;
 
 	if (sdd->tgl_spi != NULL) { /* If last device toggled after mssg */
@@ -580,27 +590,40 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 				S3C64XX_SPI_SLAVE_SIG_INACT : 0,
 			       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 	}
+#endif
 }
 
 static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 				struct spi_transfer *xfer, int dma_mode)
 {
 	void __iomem *regs = sdd->regs;
-	unsigned long val;
+	unsigned long val, ret;
+	unsigned int cnt = 0;
 	int ms;
 
 	/* millisecs to xfer 'len' bytes @ 'cur_speed' */
 	ms = xfer->len * 8 * 1000 / sdd->cur_speed;
 	ms = (ms * 10) + 30; /* some tolerance */
 	ms = max(ms, 100); /* minimum timeout */
+	ms += 20000;
 
 	if (dma_mode) {
-		val = msecs_to_jiffies(ms) + 10;
-		val = wait_for_completion_timeout(&sdd->xfer_completion, val);
+		while (1) {
+			val = msecs_to_jiffies(ms) + 10;
+			ret = wait_for_completion_timeout(&sdd->xfer_completion, val);
+			if (ret) {
+				val = ret;
+				break;
+			} else {
+				cnt++;
+				pr_info("%s: continuing wait %d\n", __func__, cnt);
+			}
+		}
 	} else {
 		u32 status;
 		val = msecs_to_loops(ms);
 		do {
+			msleep_interruptible(30);
 			status = readl(regs + S3C64XX_SPI_STATUS);
 		} while (RX_FIFO_LVL(status, sdd) < xfer->len && --val);
 	}
@@ -661,6 +684,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 						struct spi_device *spi)
 {
+#if !defined(CONFIG_MULTI_SENSORS)
 	struct s3c64xx_spi_csinfo *cs = spi->controller_data;
 
 	if (sdd->tgl_spi == spi)
@@ -675,6 +699,7 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 			? 0 : S3C64XX_SPI_SLAVE_SIG_INACT,
 		       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 	}
+#endif
 }
 
 static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
@@ -697,6 +722,10 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	val &= ~(S3C64XX_SPI_CH_SLAVE |
 			S3C64XX_SPI_CPOL_L |
 			S3C64XX_SPI_CPHA_B);
+
+#if defined(CONFIG_MULTI_SENSORS)
+	val |= S3C64XX_SPI_CH_SLAVE;
+#endif
 
 	if (sdd->cur_mode & SPI_CPOL)
 		val |= S3C64XX_SPI_CPOL_L;
@@ -935,6 +964,9 @@ try_transfer:
 		sdd->state &= ~RXBUSY;
 		sdd->state &= ~TXBUSY;
 
+#if defined(CONFIG_MULTI_SENSORS)
+		enable_datapath(sdd, spi, xfer, use_dma);
+#else
 		if (cs->cs_mode == AUTO_CS_MODE) {
 			/* Slave Select */
 			enable_cs(sdd, spi);
@@ -946,18 +978,19 @@ try_transfer:
 			/* Slave Select */
 			enable_cs(sdd, spi);
 		}
-
+#endif
 		spin_unlock_irqrestore(&sdd->lock, flags);
 
+		gpio_set_value(cs->line, 1);	// MAIN_SUB_INT
 		status = wait_for_xfer(sdd, xfer, use_dma);
-
+		gpio_set_value(cs->line, 0);	// MAIN_SUB_INT
 
 		if (status) {
-			dev_err(&spi->dev, "I/O Error: rx-%d tx-%d res:rx-%c tx-%c len-%d\n",
+			dev_err(&spi->dev, "I/O Error: rx-%d tx-%d res:rx-%c tx-%c len-%d status=%d\n",
 				xfer->rx_buf ? 1 : 0, xfer->tx_buf ? 1 : 0,
 				(sdd->state & RXBUSY) ? 'f' : 'p',
 				(sdd->state & TXBUSY) ? 'f' : 'p',
-				xfer->len);
+				xfer->len, status);
 
 			if (use_dma) {
 				if (xfer->tx_buf != NULL
@@ -973,7 +1006,7 @@ try_transfer:
 
 		if (xfer->delay_usecs)
 			udelay(xfer->delay_usecs);
-
+#if !defined(CONFIG_MULTI_SENSORS)
 		if (xfer->cs_change) {
 			/* Hint that the next mssg is gonna be
 			   for the same device */
@@ -981,7 +1014,7 @@ try_transfer:
 						&msg->transfers))
 				cs_toggle = 1;
 		}
-
+#endif
 		msg->actual_length += xfer->len;
 
 		flush_fifo(sdd);
@@ -1105,8 +1138,13 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 
 	if (!spi_get_ctldata(spi)) {
 		if(cs->line != (unsigned)NULL) {
+#if defined(CONFIG_MULTI_SENSORS)
+			err = gpio_request_one(cs->line, GPIOF_OUT_INIT_LOW,
+					       dev_name(&spi->dev));
+#else
 			err = gpio_request_one(cs->line, GPIOF_OUT_INIT_HIGH,
 					       dev_name(&spi->dev));
+#endif
 			if (err) {
 				dev_err(&spi->dev,
 					"Failed to get /CS gpio [%d]: %d\n",
@@ -1553,10 +1591,13 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err3;
 	}
 
+#if defined(CONFIG_MULTI_SENSORS)
+	writel(0, sdd->regs + S3C64XX_SPI_INT_EN);
+#else
 	writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
 	       S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
 	       sdd->regs + S3C64XX_SPI_INT_EN);
-
+#endif
 	pm_runtime_mark_last_busy(&pdev->dev);
 	pm_runtime_put_autosuspend(&pdev->dev);
 
@@ -1760,7 +1801,11 @@ static struct s3c64xx_spi_port_config s5pv210_spi_port_config = {
 };
 
 static struct s3c64xx_spi_port_config exynos4_spi_port_config = {
+#if defined(CONFIG_MULTI_SENSORS)
+	.fifo_lvl_mask	= { 0x1ff, 0x04, 0x7F },
+#else
 	.fifo_lvl_mask	= { 0x1ff, 0x7F, 0x7F },
+#endif
 	.rx_lvl_offset	= 15,
 	.tx_st_done	= 25,
 	.high_speed	= true,

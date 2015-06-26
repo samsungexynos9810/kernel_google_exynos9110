@@ -18,7 +18,7 @@
 #include "../../misc/MSensorsDrv.h"
 #endif
 
-#define DRIVER_NAME	"nsw-bl"
+#define DRIVER_NAME	"bd82103"
 
 #define BRIGHTNESS_MAX	0xff
 #define BRIGHTNESS_INIT 0x50
@@ -109,11 +109,14 @@ static int bd82103_update_status(struct backlight_device *bd)
 	struct bd82103_chip_data *pchip = bl_get_data(bd);
 	int intensity = bd->props.brightness;
 
+#ifndef CONFIG_FB_AMBIENT_SUPPORT
+	/* for ambient debugging */
 	if (bd->props.power != FB_BLANK_UNBLANK ||
 	    bd->props.state & BL_CORE_FBBLANK ||
 	    bd->props.state & BL_CORE_SUSPENDED ||
 	    bd->props.power == FB_BLANK_POWERDOWN)
 		intensity = 0;
+#endif
 
 #ifndef CONFIG_BACKLIGHT_SUBCPU
 	// return from black window
@@ -194,7 +197,7 @@ static const struct of_device_id bd82103_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, bd82103_of_match);
 
-static struct platform_driver nsw_bl_driver = {
+static struct platform_driver bd82103_driver = {
 	.driver		= {
 		.name	= DRIVER_NAME,
 		.owner = THIS_MODULE,
@@ -203,7 +206,7 @@ static struct platform_driver nsw_bl_driver = {
 	.probe		= bd82103_probe,
 	.remove		= bd82103_remove,
 };
-module_platform_driver(nsw_bl_driver);
+module_platform_driver(bd82103_driver);
 
 MODULE_DESCRIPTION("Backlight driver for bd82103");
 MODULE_AUTHOR("Itsuki Yamashita");

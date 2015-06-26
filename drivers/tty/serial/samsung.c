@@ -851,14 +851,20 @@ static irqreturn_t s3c64xx_serial_handle_irq(int irq, void *id)
 	struct uart_port *port = &ourport->port;
 	unsigned int pend = rd_regl(port, S3C64XX_UINTP);
 	irqreturn_t ret = IRQ_HANDLED;
+	unsigned int status;
 
 #ifdef CONFIG_PM_DEVFREQ
-	if ((ourport->baudclk_rate >= 1000000) && (ourport->mif_qos_val || ourport->cpu_qos_val
-			|| ourport->int_qos_val) && ourport->qos_timeout)
+	if ((ourport->baudclk_rate >= 1000000)
+         && (ourport->mif_qos_val || ourport->cpu_qos_val || ourport->int_qos_val)
+         && ourport->qos_timeout )
 		schedule_delayed_work(&ourport->qos_work,
 						msecs_to_jiffies(100));
 #endif
-
+	if (pend & 0x08) {
+		status = rd_regb(port, S3C2410_UMSTAT) & S3C2410_UMSTAT_CTS;
+		uart_handle_cts_change(port, status);
+		wr_regl(port, S3C64XX_UINTP, 0x08);
+	}
 	if (pend & S3C64XX_UINTM_RXD_MSK) {
 		ret = s3c24xx_serial_rx_chars(irq, id);
 		wr_regl(port, S3C64XX_UINTP, S3C64XX_UINTM_RXD_MSK);
@@ -1073,7 +1079,7 @@ static int s3c64xx_serial_startup(struct uart_port *port)
 	ourport->cfg->wake_peer[port->line] =
 				s3c2410_serial_wake_peer[port->line];
 
-	wr_regl(port, S3C64XX_UINTM, 0xf);
+	wr_regl(port, S3C64XX_UINTM, 0x7);
 
 	ret = request_threaded_irq(port->irq, NULL, s3c64xx_serial_handle_irq,
 			IRQF_ONESHOT, s3c24xx_serial_portname(port), ourport);
@@ -1286,7 +1292,7 @@ static void s3c24xx_serial_pm(struct uart_port *port, unsigned int level,
 				s3c24xx_serial_save_restore(port, level);
 
 				/* Keep all interrupts masked and cleared */
-				wr_regl(port, S3C64XX_UINTM, 0xf);
+				wr_regl(port, S3C64XX_UINTM, 0x7);
 				wr_regl(port, S3C64XX_UINTP, 0xf);
 				wr_regl(port, S3C64XX_UINTSP, 0xf);
 
@@ -1537,7 +1543,7 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	if (termios->c_cflag & CSTOPB)
 		ulcon |= S3C2410_LCON_STOPB;
 
-	umcon = (termios->c_cflag & CRTSCTS) ? S3C2410_UMCOM_AFC : 0;
+	umcon = (termios->c_cflag & CRTSCTS) ? (S3C2410_UMCOM_AFC | 1<<3) : 0;
 
 	if (termios->c_cflag & PARENB) {
 		if (termios->c_cflag & PARODD)
@@ -1622,6 +1628,7 @@ static void s3c24xx_serial_release_port(struct uart_port *port)
 static int s3c24xx_serial_request_port(struct uart_port *port)
 {
 	const char *name = s3c24xx_serial_portname(port);
+
 	return request_mem_region(port->mapbase, MAP_SIZE, name) ? 0 : -EBUSY;
 }
 
@@ -1648,9 +1655,12 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
 	return 0;
 }
 
+extern void bcm_bt_lpm_exit_lpm_locked(struct uart_port *uport);
 static void s3c24xx_serial_wake_peer(struct uart_port *port)
 {
 	struct s3c2410_uartcfg *cfg = s3c24xx_port_to_cfg(port);
+
+	bcm_bt_lpm_exit_lpm_locked(port);
 
 	if (cfg->wake_peer[port->line])
 		cfg->wake_peer[port->line](port);
@@ -1845,7 +1855,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		return -EINVAL;
 	}
 
-	dbg("resource %p (%lx..%lx)\n", res, res->start, res->end);
+	dbg("resource %p (%lx..%lx)\n", res, (long unsigned int)res->start, (long unsigned int)res->end);
 
 	port->membase = devm_ioremap(port->dev, res->start, resource_size(res));
 	if (!port->membase) {
@@ -1899,8 +1909,8 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	}
 
 	dbg("port: map=%08x, mem=%08x, irq=%d (%d,%d), clock=%ld\n",
-	    port->mapbase, port->membase, port->irq,
-	    ourport->rx_irq, ourport->tx_irq, port->uartclk);
+	    (unsigned int)port->mapbase, (unsigned int)port->membase, port->irq,
+	    ourport->rx_irq, ourport->tx_irq, (long int)port->uartclk);
 
 #ifdef CONFIG_SERIAL_SAMSUNG_DMA
 	/* set tx/rx fifo base for dma */

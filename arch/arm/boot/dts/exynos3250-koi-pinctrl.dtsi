@@ -435,20 +435,13 @@
 			samsung,pin-drv = <3>;
 		};
 
-		non_eint1: ext-int1 {
-			samsung,pins = "gpx0-1";
-			samsung,pin-function = <0>;
-			samsung,pin-pud = <1>;
-			samsung,pin-drv = <3>;
-		};
-
 		non_eint3: ext-int3 {
 			samsung,pins = "gpx0-3";
 			samsung,pin-function = <0>;	/* input */
 			samsung,pin-pud = <1>;		/* pull down */
 			samsung,pin-drv = <3>;
 		};
-		
+
 		touch_irq: ext-int5 {
 			samsung,pins = "gpx0-5";
 			samsung,pin-function = <0xf>;
@@ -457,7 +450,7 @@
 		};
 
 		usbdetect_irq: ext-int10 {
-			samsung,pins = "gpx1-0";	
+			samsung,pins = "gpx1-0";
 			samsung,pin-function = <0xf>;
 			samsung,pin-pud = <3>;
 			samsung,pin-drv = <3>;

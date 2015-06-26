@@ -58,6 +58,7 @@
 #include <linux/uaccess.h>
 #include <linux/workqueue.h>
 #include <linux/version.h>
+#include <linux/wakelock.h>
 #include <linux/cyttsp5_core.h>
 
 #define CY_FW_FILE_PREFIX	"cyttsp5_fw"
@@ -115,7 +116,7 @@
 
 /*  Timeout in ms */
 #define CY_REQUEST_EXCLUSIVE_TIMEOUT		8000
-#define CY_WATCHDOG_TIMEOUT			1000
+#define CY_WATCHDOG_TIMEOUT			0
 #define CY_HID_RESET_TIMEOUT			5000
 #define CY_HID_GET_HID_DESCRIPTOR_TIMEOUT	500
 #define CY_HID_GET_REPORT_DESCRIPTOR_TIMEOUT	500
@@ -892,6 +893,8 @@ struct cyttsp5_core_data {
 	int irq;
 	bool irq_enabled;
 	bool irq_wake;
+	bool touch_wake;
+	struct wake_lock touch_wake_lock;
 	bool irq_disabled;
 	u8 easy_wakeup_gesture;
 	bool wake_initiated_by_device;
@@ -1096,5 +1099,6 @@ void cyttsp5_unregister_module(struct cyttsp5_module *module);
 
 void *cyttsp5_get_module_data(struct device *dev,
 		struct cyttsp5_module *module);
+void cyttsp5_mt_lift_all(struct cyttsp5_mt_data *md);
 
 #endif /* _CYTTSP5_REGS_H */
