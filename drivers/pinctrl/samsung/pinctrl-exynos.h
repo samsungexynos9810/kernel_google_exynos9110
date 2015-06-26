@@ -57,7 +57,36 @@
 #define EXYNOS_EINT_MAX_PER_BANK	8
 #define EXYNOS_EINT_NR_WKUP_EINT
 
-#define EXYNOS_PIN_BANK_EINTN(types, pins, reg, id)	\
+#define EXYNOS_PIN_BANK_EINTN(pins, reg, id)		\
+	{						\
+		.type		= &bank_type_off,	\
+		.pctl_offset	= reg,			\
+		.nr_pins	= pins,			\
+		.eint_type	= EINT_TYPE_NONE,	\
+		.name		= id			\
+	}
+
+#define EXYNOS_PIN_BANK_EINTG(pins, reg, id, offs)	\
+	{						\
+		.type		= &bank_type_off,	\
+		.pctl_offset	= reg,			\
+		.nr_pins	= pins,			\
+		.eint_type	= EINT_TYPE_GPIO,	\
+		.eint_offset	= offs,			\
+		.name		= id			\
+	}
+
+#define EXYNOS_PIN_BANK_EINTW(pins, reg, id, offs)	\
+	{						\
+		.type		= &bank_type_alive,	\
+		.pctl_offset	= reg,			\
+		.nr_pins	= pins,			\
+		.eint_type	= EINT_TYPE_WKUP,	\
+		.eint_offset	= offs,			\
+		.name		= id			\
+	}
+
+#define EXYNOS8_PIN_BANK_EINTN(types, pins, reg, id)	\
 	{						\
 		.type		= &types,		\
 		.pctl_offset	= reg,			\
@@ -66,7 +95,7 @@
 		.name		= id			\
 	}
 
-#define EXYNOS_PIN_BANK_EINTG(types, pins, reg, id, offs)	\
+#define EXYNOS8_PIN_BANK_EINTG(types, pins, reg, id, offs)	\
 	{						\
 		.type		= &types,		\
 		.pctl_offset	= reg,			\
@@ -76,7 +105,7 @@
 		.name		= id			\
 	}
 
-#define EXYNOS_PIN_BANK_EINTW(types, pins, reg, id, offs)	\
+#define EXYNOS8_PIN_BANK_EINTW(types, pins, reg, id, offs)	\
 	{						\
 		.type		= &types,		\
 		.pctl_offset	= reg,			\
