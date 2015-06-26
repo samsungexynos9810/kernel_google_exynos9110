@@ -32,14 +32,15 @@
 
 //#include "../function/f_fs.c"
 //#include "../function/f_audio_source.c"
-//#include "../function/f_mass_storage.c"
+#include "../function/f_mass_storage.c"
 #include "../function/f_adb.c"
 #include "../function/f_mtp.c"
 #include "../function/f_accessory.c"
 #define USB_ETH_RNDIS y
-//#include "../function/f_rndis.c"
-//#include "../function/rndis.c"
-//#include "../function/u_ether.c"
+#include "../function/f_rndis.c"
+#include "../function/rndis.c"
+#include "../function/u_ether.c"
+
 
 MODULE_AUTHOR("Mike Lockwood");
 MODULE_DESCRIPTION("Android Composite USB Driver");
@@ -90,9 +91,6 @@ struct android_dev {
 	struct list_head enabled_functions;
 	struct usb_composite_dev *cdev;
 	struct device *dev;
-
-	void (*setup_complete)(struct usb_ep *ep,
-				struct usb_request *req);
 
 	bool enabled;
 	int disable_depth;
@@ -151,7 +149,7 @@ static struct usb_configuration android_config_driver = {
 	.unbind		= android_unbind_config,
 	.bConfigurationValue = 1,
 	.bmAttributes	= USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
-	.MaxPower	= 500, /* 500ma */
+	.MaxPower	= 96, /* 96ma */
 };
 
 static void android_work(struct work_struct *data)
@@ -206,10 +204,10 @@ static void android_disable(struct android_dev *dev)
 		usb_remove_config(cdev, &android_config_driver);
 	}
 }
-#if 0
+
 /*-------------------------------------------------------------------------*/
 /* Supported functions initialization */
-
+#if 0
 struct functionfs_config {
 	bool opened;
 	bool enabled;
@@ -365,7 +363,6 @@ static void functionfs_release_dev_callback(struct ffs_data *ffs_data)
 {
 }
 #endif
-
 struct adb_data {
 	bool opened;
 	bool enabled;
@@ -457,7 +454,7 @@ static void adb_closed_callback(void)
 
 	mutex_unlock(&dev->mutex);
 }
-#if 0
+
 #define MAX_ACM_INSTANCES 4
 struct acm_function_config {
 	int instances;
@@ -586,7 +583,7 @@ static struct android_usb_function acm_function = {
 	.unbind_config	= acm_function_unbind_config,
 	.attributes	= acm_function_attributes,
 };
-#endif
+
 
 static int
 mtp_function_init(struct android_usb_function *f,
@@ -650,7 +647,7 @@ static struct android_usb_function ptp_function = {
 	.bind_config	= ptp_function_bind_config,
 };
 
-#if 0
+
 struct rndis_function_config {
 	u8      ethaddr[ETH_ALEN];
 	u32     vendorID;
@@ -684,11 +681,6 @@ rndis_function_bind_config(struct android_usb_function *f,
 	struct eth_dev *dev;
 	struct rndis_function_config *rndis = f->config;
 
-	/* To-Do */
-	char *dev_addr = NULL;
-	char *host_addr = NULL;
-	unsigned int	qmult = 0;
-
 	if (!rndis) {
 		pr_err("%s: rndis_pdata\n", __func__);
 		return -1;
@@ -698,8 +690,7 @@ rndis_function_bind_config(struct android_usb_function *f,
 		rndis->ethaddr[0], rndis->ethaddr[1], rndis->ethaddr[2],
 		rndis->ethaddr[3], rndis->ethaddr[4], rndis->ethaddr[5]);
 
-	dev = gether_setup_name(c->cdev->gadget, dev_addr, host_addr,
-			rndis->ethaddr, qmult, "rndis");
+	dev = gether_setup_name(c->cdev->gadget, rndis->ethaddr, "rndis");
 	if (IS_ERR(dev)) {
 		ret = PTR_ERR(dev);
 		pr_err("%s: gether_setup failed\n", __func__);
@@ -847,9 +838,8 @@ static struct android_usb_function rndis_function = {
 	.unbind_config	= rndis_function_unbind_config,
 	.attributes	= rndis_function_attributes,
 };
-#endif
 
-#if 0
+
 struct mass_storage_function_config {
 	struct fsg_config fsg;
 	struct fsg_common *common;
@@ -859,7 +849,7 @@ static int mass_storage_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
 	struct mass_storage_function_config *config;
-	struct fsg_common *common = NULL;
+	struct fsg_common *common;
 	int err;
 
 	config = kzalloc(sizeof(struct mass_storage_function_config),
@@ -869,15 +859,15 @@ static int mass_storage_function_init(struct android_usb_function *f,
 
 	config->fsg.nluns = 1;
 	config->fsg.luns[0].removable = 1;
-#if 0
+
 	common = fsg_common_init(NULL, cdev, &config->fsg);
-#endif
 	if (IS_ERR(common)) {
 		kfree(config);
 		return PTR_ERR(common);
 	}
+
 	err = sysfs_create_link(&f->dev->kobj,
-				&common->luns[0]->dev.kobj,
+				&common->luns[0].dev.kobj,
 				"lun");
 	if (err) {
 		kfree(config);
@@ -938,7 +928,7 @@ static struct android_usb_function mass_storage_function = {
 	.bind_config	= mass_storage_function_bind_config,
 	.attributes	= mass_storage_function_attributes,
 };
-#endif
+
 #if 0
 static int accessory_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
@@ -972,7 +962,6 @@ static struct android_usb_function accessory_function = {
 	.ctrlrequest	= accessory_function_ctrlrequest,
 };
 #endif
-
 #if 0
 static int audio_source_function_init(struct android_usb_function *f,
 			struct usb_composite_dev *cdev)
@@ -1010,7 +999,7 @@ static void audio_source_function_unbind_config(struct android_usb_function *f,
 	config->device = -1;
 }
 
-ssize_t audio_source_pcm_show(struct device *dev,
+static ssize_t audio_source_pcm_show(struct device *dev,
 		struct device_attribute *attr, char *buf)
 {
 	struct android_usb_function *f = dev_get_drvdata(dev);
@@ -1020,14 +1009,14 @@ ssize_t audio_source_pcm_show(struct device *dev,
 	return sprintf(buf, "%d %d\n", config->card, config->device);
 }
 
-DEVICE_ATTR(pcm, S_IRUGO, audio_source_pcm_show, NULL);
+static DEVICE_ATTR(pcm, S_IRUGO, audio_source_pcm_show, NULL);
 
-struct device_attribute *audio_source_function_attributes[] = {
+static struct device_attribute *audio_source_function_attributes[] = {
 	&dev_attr_pcm,
 	NULL
 };
 
-struct android_usb_function audio_source_function = {
+static struct android_usb_function audio_source_function = {
 	.name		= "audio_source",
 	.init		= audio_source_function_init,
 	.cleanup	= audio_source_function_cleanup,
@@ -1036,15 +1025,14 @@ struct android_usb_function audio_source_function = {
 	.attributes	= audio_source_function_attributes,
 };
 #endif
-
 static struct android_usb_function *supported_functions[] = {
 //	&ffs_function,
 	&adb_function,
-//	&acm_function,
+	&acm_function,
 	&mtp_function,
-//	&ptp_function,
-//	&rndis_function,
-//	&mass_storage_function,
+	&ptp_function,
+	&rndis_function,
+	&mass_storage_function,
 //	&accessory_function,
 //	&audio_source_function,
 	NULL
@@ -1270,7 +1258,6 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 
 	sscanf(buff, "%d", &enabled);
 	if (enabled && !dev->enabled) {
-		cdev->next_string_id = 0;
 		/*
 		 * Update values in composite driver's copy of
 		 * device descriptor.
@@ -1421,9 +1408,6 @@ static int android_bind(struct usb_composite_dev *cdev)
 	struct usb_gadget	*gadget = cdev->gadget;
 	int			id, ret;
 
-	/* Save the default handler */
-	dev->setup_complete = cdev->req->complete;
-
 	/*
 	 * Start disconnected. Userspace will connect the gadget once
 	 * it is done configuring the functions.
@@ -1490,7 +1474,6 @@ android_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *c)
 
 	req->zero = 0;
 	req->length = 0;
-	req->complete = dev->setup_complete;
 	gadget->ep0->driver_data = cdev;
 
 	list_for_each_entry(f, &dev->enabled_functions, enabled_list) {
@@ -1603,7 +1586,7 @@ static int __init init(void)
 	err = usb_composite_probe(&android_usb_driver);
 	if (err) {
 		pr_err("%s: failed to probe driver %d", __func__, err);
-		goto err_probe;
+		goto err_create;
 	}
 
 	/* HACK: exchange composite's setup with ours */
@@ -1612,8 +1595,6 @@ static int __init init(void)
 
 	return 0;
 
-err_probe:
-	device_destroy(android_class, dev->dev->devt);
 err_create:
 	kfree(dev);
 err_dev:
