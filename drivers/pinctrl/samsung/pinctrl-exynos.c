@@ -474,6 +474,35 @@ static void exynos_irq_demux_eint16_31(struct irq_desc *desc)
 	chained_irq_exit(chip, desc);
 }
 
+static void exynos_eint_flt_config(int en, int sel, int width,
+				   struct samsung_pinctrl_drv_data *d,
+				   struct samsung_pin_bank *bank)
+{
+	unsigned int flt_reg, flt_con;
+	unsigned int val, shift;
+	int i;
+
+	flt_con = 0;
+
+	if (en)
+		flt_con |= EXYNOS_EINT_FLTCON_EN;
+
+	if (sel)
+		flt_con |= EXYNOS_EINT_FLTCON_SEL;
+
+	flt_con |= EXYNOS_EINT_FLTCON_WIDTH(width);
+
+	flt_reg = EXYNOS_GPIO_EFLTCON_OFFSET + 2 * bank->eint_offset;
+	for (i = 0; i < bank->nr_pins >> 1; i++) {
+		shift = i * EXYNOS_EINT_FLTCON_LEN;
+		val = readl(d->virt_base + flt_reg);
+		val &= ~(EXYNOS_EINT_FLTCON_MASK << shift);
+		val |= (flt_con << shift);
+		writel(val, d->virt_base + flt_reg);
+		writel(val, d->virt_base + flt_reg + 0x4);
+	}
+};
+
 /*
  * exynos_eint_wkup_init() - setup handling of external wakeup interrupts.
  * @d: driver data of samsung pinctrl driver.
@@ -504,6 +533,11 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 	}
 	if (!wkup_np)
 		return -ENODEV;
+
+	if (of_property_read_bool(wkup_np, "samsung,eint-flt-conf")) {
+		pr_info("%s: Need to configure eint filter\n", __func__);
+		d->eint_flt_config = true;
+	}
 
 	bank = d->pin_banks;
 	for (i = 0; i < d->nr_banks; ++i, ++bank) {
@@ -575,6 +609,13 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 		muxed_data->banks[idx++] = bank;
 	}
 	muxed_data->nr_banks = muxed_banks;
+
+	if (d->eint_flt_config) {
+		bank = d->ctrl->pin_banks;
+		for (i = 0; i < d->ctrl->nr_banks; ++i, ++bank)
+			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+				 EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
+	}
 
 	return 0;
 }

@@ -182,6 +182,9 @@ struct samsung_pin_bank {
  * struct samsung_pin_ctrl: represent a pin controller.
  * @pin_banks: list of pin banks included in this controller.
  * @nr_banks: number of pin banks.
+ * @weint_fltcon: offset of the ext-wakeup filter controller registers.
+ * @base: starting system wide pin number.
+ * @nr_pins: number of pins supported by the controller.
  * @eint_gpio_init: platform specific callback to setup the external gpio
  *	interrupts for the controller.
  * @eint_wkup_init: platform specific callback to setup the external wakeup
@@ -190,6 +193,8 @@ struct samsung_pin_bank {
 struct samsung_pin_ctrl {
 	const struct samsung_pin_bank_data *pin_banks;
 	u32		nr_banks;
+
+	u32		weint_fltcon;
 
 	int		(*eint_gpio_init)(struct samsung_pinctrl_drv_data *);
 	int		(*eint_wkup_init)(struct samsung_pinctrl_drv_data *);
@@ -212,6 +217,7 @@ struct samsung_pin_ctrl {
  * @nr_function: number of such pin functions.
  * @pin_base: starting system wide pin number.
  * @nr_pins: number of pins supported by the controller.
+ * @eint_flt_config: flags to configure external interrupt filter.
  */
 struct samsung_pinctrl_drv_data {
 	struct list_head		node;
@@ -232,8 +238,11 @@ struct samsung_pinctrl_drv_data {
 	unsigned int			pin_base;
 	unsigned int			nr_pins;
 
+	bool				eint_flt_config;
+
 	void (*suspend)(struct samsung_pinctrl_drv_data *);
 	void (*resume)(struct samsung_pinctrl_drv_data *);
+
 };
 
 /**
