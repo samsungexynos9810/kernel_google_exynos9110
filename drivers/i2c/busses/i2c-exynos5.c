@@ -32,7 +32,7 @@
 #endif
 
 #ifdef CONFIG_CPU_IDLE
-#include <soc/samsung/exynos-pm.h>
+#include <mach/exynos-pm.h>
 #endif
 #ifdef CONFIG_EXYNOS_APM
 #include <mach/apm-exynos.h>
