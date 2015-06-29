@@ -248,7 +248,7 @@ static int rfkill_bluetooth_remove(struct platform_device *dev)
 
 static int bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 {
-	printk("bluetooth suspend -->enter \n");
+	printk(KERN_DEBUG "bluetooth suspend -->enter \n");
 //	if(test_bit(BT_ACTIVE, &flags)) {
 		if(enable_irq_wake(bt_wake_host_irq))
 			printk("Couldn't enable hostwake IRQ wakeup mode\n");
@@ -256,19 +256,19 @@ static int bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 //		clear_bit(BT_ACTIVE, &flags);
 //		set_bit(BT_SUSPEND, &flags);
 //	}
-	printk("bluetooth suspend <--leave\n");
+	printk(KERN_DEBUG "bluetooth suspend <--leave\n");
 	return 0;
 }
 static int bluetooth_resume(struct platform_device *pdev)
 {
-	printk("bluetooth resume -->enter \n");
+	printk(KERN_DEBUG "bluetooth resume -->enter \n");
 //	if (test_bit(BT_SUSPEND, &flags)) {
 		if(disable_irq_wake(bt_wake_host_irq))
 			printk("Couldn't disable hostwake IRQ wakeup mode\n");
 //		clear_bit(BT_SUSPEND, &flags);
 //		set_bit(BT_ACTIVE, &flags);
 //	}
-	printk("bluetooth resume <---leave\n");
+	printk(KERN_DEBUG "bluetooth resume <---leave\n");
 	return 0;
 }
 

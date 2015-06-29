@@ -938,7 +938,7 @@ static int exynos_tmu_resume(struct device *dev)
 	exynos_set_cal_data(data);
 	exynos_tmu_initialize(pdev, 0);
 	exynos_tmu_control(pdev, 0, true);
-	exynos_tmu_regdump(pdev, 0);
+	//exynos_tmu_regdump(pdev, 0);
 
 	return 0;
 }

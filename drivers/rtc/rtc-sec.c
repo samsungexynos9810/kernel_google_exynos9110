@@ -139,7 +139,7 @@ static int s2m_rtc_read_time(struct device *dev, struct rtc_time *tm)
 		goto out;
 	}
 
-	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
+	dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
 			__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
 			data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
 			data[RTC_SEC], data[RTC_WEEKDAY],
@@ -162,7 +162,7 @@ static int s2m_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	if (ret < 0)
 		return ret;
 
-	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
+	dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
 			__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
 			data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
 			data[RTC_SEC], data[RTC_WEEKDAY],
@@ -240,7 +240,7 @@ static int s2m_rtc_check_rtc_time(struct s2m_rtc_info *info)
 				"rtc_time: %lu\n", __func__, sys_time.tv_sec,
 				rtc_time);
 
-		dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
+		dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
 				__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
 				data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
 				data[RTC_SEC], data[RTC_WEEKDAY],
@@ -307,7 +307,7 @@ static int s2m_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 
 	s2m_data_to_tm(data, &alrm->time);
 
-	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(%d)\n", __func__,
+	dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(%d)\n", __func__,
 			alrm->time.tm_year + 1900, alrm->time.tm_mon + 1,
 			alrm->time.tm_mday, alrm->time.tm_hour,
 			alrm->time.tm_min, alrm->time.tm_sec,
@@ -376,7 +376,7 @@ static int s2m_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 	if (ret < 0)
 		goto out;
 
-	dev_info(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
+	dev_dbg(info->dev, "%s: %d-%02d-%02d %02d:%02d:%02d(0x%02x)%s\n",
 			__func__, data[RTC_YEAR] + 2000, data[RTC_MONTH],
 			data[RTC_DATE], data[RTC_HOUR] & 0x1f, data[RTC_MIN],
 			data[RTC_SEC], data[RTC_WEEKDAY],
@@ -428,7 +428,7 @@ static irqreturn_t s2m_rtc_alarm_irq(int irq, void *data)
 	if (!info->rtc_dev)
 		return IRQ_HANDLED;
 
-	dev_info(info->dev, "%s:irq(%d)\n", __func__, irq);
+	dev_dbg(info->dev, "%s:irq(%d)\n", __func__, irq);
 
 	rtc_update_irq(info->rtc_dev, 1, RTC_IRQF | RTC_AF);
 
@@ -486,7 +486,7 @@ static void s2m_rtc_enable_wtsr_smpl(struct s2m_rtc_info *info,
 		| WTSR_TIMER_BITS(pdata->wtsr_smpl->wtsr_timer_val)
 		| SMPL_TIMER_BITS(pdata->wtsr_smpl->smpl_timer_val);
 
-	dev_info(info->dev, "%s: WTSR: %s, SMPL: %s\n", __func__,
+	dev_dbg(info->dev, "%s: WTSR: %s, SMPL: %s\n", __func__,
 			pdata->wtsr_smpl->wtsr_en ? "enable" : "disable",
 			pdata->wtsr_smpl->smpl_en ? "enable" : "disable");
 
@@ -505,7 +505,7 @@ static void s2m_rtc_disable_wtsr_smpl(struct s2m_rtc_info *info,
 {
 	int ret;
 
-	dev_info(info->dev, "%s: disable WTSR\n", __func__);
+	dev_dbg(info->dev, "%s: disable WTSR\n", __func__);
 	ret = sec_rtc_update(info->iodev, S2M_RTC_WTSR_SMPL, 0,
 			WTSR_EN_MASK | SMPL_EN_MASK);
 	if (ret < 0)
@@ -577,7 +577,7 @@ static int s2m_rtc_init_reg(struct s2m_rtc_info *info,
 	}
 
 	if (pdata->init_time) {
-		dev_info(info->dev, "%s: initialize RTC time\n", __func__);
+		dev_dbg(info->dev, "%s: initialize RTC time\n", __func__);
 		ret = s2m_rtc_set_time(info->dev, pdata->init_time);
 	}
 	return ret;

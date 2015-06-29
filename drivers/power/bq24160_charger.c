@@ -706,7 +706,7 @@ static int bq24160_check_status(struct bq24160_data *bd)
 	 * of workaround, not update the status that shown to other driver.
 	 */
 	if (bd->restricted_enable_charger) {
-		dev_info(&bd->clientp->dev,
+		dev_dbg(&bd->clientp->dev,
 			"Charger status: %d (disabling charge interval)\n",
 			bd->cached_status.stat);
 		bd->status_update_disregard = 1;
@@ -793,7 +793,7 @@ static void	bq24160_irq_delay_work_func(struct work_struct *work)
 
 	if (!bq24160_check_status(bd) &&
 	    memcmp(&bd->cached_status, &old_status, sizeof(bd->cached_status))) {
-		dev_info(&bd->clientp->dev, "Charger status: %d->%d\n",
+		dev_dbg(&bd->clientp->dev, "Charger status: %d->%d\n",
 			old_status.stat, bd->cached_status.stat);
 
 		if (bd->cached_status.stat != old_status.stat) {
@@ -893,7 +893,7 @@ static void bq24160_start_watchdog_reset(struct bq24160_data *bd)
 
 #ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
 	wake_lock_timeout(&bd->wake_lock, HZ);
-	dev_info(&bd->clientp->dev, "wake locked\n");
+	dev_dbg(&bd->clientp->dev, "wake locked\n");
 #endif
 
 	(void)queue_delayed_work(bd->wq, &bd->watchdog_work, 0);
@@ -923,7 +923,7 @@ static void bq24160_stop_watchdog_reset(struct bq24160_data *bd)
 	cancel_delayed_work(&bd->watchdog_work);
 
 #ifdef CONFIG_CHARGER_BQ24160_ENABLE_WAKELOCK
-	dev_info(&bd->clientp->dev, "wake unlocked\n");
+	dev_dbg(&bd->clientp->dev, "wake unlocked\n");
 #endif
 }
 
@@ -986,7 +986,7 @@ static void bq24160_delayed_enable_worker(struct work_struct *work)
 
 	if (bq24160_is_disabled_charger(bd)) {
 		if (!disabled) {
-			dev_info(&bd->clientp->dev, "Disabling charger\n");
+			dev_dbg(&bd->clientp->dev, "Disabling charger\n");
 			bq24160_hz_enable(bd, 1);
 			bq24160_set_ce(bd, 1);
 		} else {
@@ -1019,7 +1019,7 @@ static void bq24160_delayed_enable_worker(struct work_struct *work)
 				return;
 			} else if (bd->restricted_enable_charger ==
 						PHASE_CEZ_LO) {
-				dev_info(&bd->clientp->dev,
+				dev_dbg(&bd->clientp->dev,
 					"Enabling charger\n");
 				bq24160_hz_enable(bd, 0);
 				bq24160_set_ce(bd, 0);
@@ -1213,12 +1213,12 @@ int bq24160_setup_exchanged_power_supply(u8 connection)
 	bq24160_set_ce(bd, 1);
 
 	if (connection == USB_CHG || connection == WALL_CHG) {
-		dev_info(&bd->clientp->dev,
+		dev_dbg(&bd->clientp->dev,
 		"Setting USB: OTG_Lock OFF, SUPPLY_SEL=USB\n");
 		(void)bq24160_otg_lock(bd, 0);
 		bq24160_set_supply_sel(bd, SUPPLY_SEL_USB);
 	} else {
-		dev_info(&bd->clientp->dev,
+		dev_dbg(&bd->clientp->dev,
 		"Setting IN: OTG_Lock ON, SUPPLY_SEL=IN\n");
 		(void)bq24160_otg_lock(bd, 1);
 		bq24160_set_supply_sel(bd, SUPPLY_SEL_IN);
@@ -1241,7 +1241,7 @@ static int bq24160_set_init_values(struct bq24160_data *bd)
 	s32 data;
 	s32 rc;
 
-	dev_info(&bd->clientp->dev, "Set init values\n");
+	dev_dbg(&bd->clientp->dev, "Set init values\n");
 
 	/* Enable status interrupts */
 	data = bq24160_i2c_read_byte(bd->clientp, REG_CONTROL);
@@ -1269,7 +1269,7 @@ static int set_board_values(struct bq24160_data *bd)
 	s32 data;
 	s32 rc;
 
-	dev_info(&bd->clientp->dev, "Set espresso3250 values\n");
+	dev_dbg(&bd->clientp->dev, "Set espresso3250 values\n");
 	data = bq24160_i2c_read_byte(bd->clientp, REG_NTC);
 	if (data < 0)
 		return data;
@@ -1300,7 +1300,7 @@ int bq24160_turn_on_charger(u8 usb_compliant)
 		return -EAGAIN;
 	bd = container_of(psy, struct bq24160_data, bat_ps);
 
-	dev_info(&bd->clientp->dev, "Turning on charger. USB-%s mode\n",
+	dev_dbg(&bd->clientp->dev, "Turning on charger. USB-%s mode\n",
 		 usb_compliant ? "Host" : "Dedicated");
 
 	bd->usb_compliant_mode = usb_compliant;
@@ -1331,7 +1331,7 @@ int bq24160_turn_off_charger(void)
 		return -EAGAIN;
 	bd = container_of(psy, struct bq24160_data, bat_ps);
 
-	dev_info(&bd->clientp->dev, "Turning off charger\n");
+	dev_dbg(&bd->clientp->dev, "Turning off charger\n");
 
 	if (delayed_work_pending(&bd->enable_work))
 		cancel_delayed_work(&bd->enable_work);
@@ -1383,7 +1383,7 @@ int bq24160_set_otg_lock(int lock)
 		return 0;
 	}
 
-	dev_info(&bd->clientp->dev, "OTG lock request: %d\n", lock);
+	dev_dbg(&bd->clientp->dev, "OTG lock request: %d\n", lock);
 
 	if (lock)
 		bq24160_start_watchdog_reset(bd);
@@ -1422,7 +1422,7 @@ int bq24160_set_charger_voltage(u16 mv)
 
 	voreg = (min_t(u16, mv, MAX_CHARGE_VOLTAGE) - MIN_CHARGE_VOLTAGE) /
 		CHARGE_VOLTAGE_STEP;
-	dev_info(&bd->clientp->dev, "Setting charger voltage to %u mV\n",
+	dev_dbg(&bd->clientp->dev, "Setting charger voltage to %u mV\n",
 		 MIN_CHARGE_VOLTAGE + voreg * CHARGE_VOLTAGE_STEP);
 	data = bq24160_i2c_read_byte(bd->clientp, REG_BR_VOLTAGE);
 	if (data < 0)
@@ -1480,14 +1480,14 @@ int bq24160_set_charger_current(u16 ma)
 	if (ma < LOW_CHARGE_CURRENT ||
 	    (ma <= MAX_CHARGE_CURRENT / 2 && ma == ma_set)) {
 		bq24160_low_chg_enable(bd, 1);
-		dev_info(&bd->clientp->dev,
+		dev_dbg(&bd->clientp->dev,
 			"Setting charger current to %u mA\n", ma_set);
 	} else {
 		vichrg = (min_t(u16, ma, MAX_CHARGE_CURRENT) -
 			LOW_CHARGE_CURRENT) / CHARGE_CURRENT_STEP;
 		ma_set = LOW_CHARGE_CURRENT + vichrg * CHARGE_CURRENT_STEP;
 		bq24160_low_chg_enable(bd, 0);
-		dev_info(&bd->clientp->dev,
+		dev_dbg(&bd->clientp->dev,
 			 "Setting charger current to %u mA\n", ma_set);
 	}
 
@@ -1536,7 +1536,7 @@ int bq24160_set_charger_termination_current(u16 ma)
 	if (ma < MIN_CHARGE_TERM_CURRENT) {
 		if (CHK_BIT(REG_CONTROL_TE_BIT, data)) {
 			data = SET_BIT(REG_CONTROL_TE_BIT, 0, data);
-			dev_info(&bd->clientp->dev,
+			dev_dbg(&bd->clientp->dev,
 				 "Disable charge current termination\n");
 			rc = bq24160_i2c_write_byte(bd->clientp,
 							REG_CONTROL, data);
@@ -1545,7 +1545,7 @@ int bq24160_set_charger_termination_current(u16 ma)
 	}
 	if (!CHK_BIT(REG_CONTROL_TE_BIT, data)) {
 		data = SET_BIT(REG_CONTROL_TE_BIT, 1, data);
-		dev_info(&bd->clientp->dev,
+		dev_dbg(&bd->clientp->dev,
 			 "Enable charge current termination\n");
 		rc = bq24160_i2c_write_byte(bd->clientp, REG_CONTROL, data);
 		if (rc < 0)
@@ -1567,7 +1567,7 @@ int bq24160_set_charger_termination_current(u16 ma)
 
 	data = SET_MASK(REG_TERMINATION_ITERM_MASK,
 			DATA_MASK(REG_TERMINATION_ITERM_MASK, viterm), data);
-	dev_info(&bd->clientp->dev, "Charge current termination set to %u mA\n",
+	dev_dbg(&bd->clientp->dev, "Charge current termination set to %u mA\n",
 		 25 + viterm * 25);
 	return bq24160_i2c_write_byte(bd->clientp, REG_TERMINATION, data);
 }
@@ -1603,7 +1603,7 @@ int bq24160_set_charger_safety_timer(u16 minutes)
 	    DATA_MASK(REG_NTC_TMR_MASK, safety_timer))
 		return 0;
 
-	dev_info(&bd->clientp->dev, "Set safety timer to %s\n",
+	dev_dbg(&bd->clientp->dev, "Set safety timer to %s\n",
 		 hwtime[safety_timer]);
 
 	data = SET_MASK(REG_NTC_TMR_MASK,
@@ -1636,7 +1636,7 @@ static int bq24160_set_input_current_limit_usb(struct bq24160_data *bd, u16 ma)
 	else
 		iusb_lim = IUSB_LIM_1500MA;
 
-	dev_info(&bd->clientp->dev,
+	dev_dbg(&bd->clientp->dev,
 		 "Setting input charger current(USB) to %s\n",
 		 hwlim[iusb_lim]);
 
@@ -1668,7 +1668,7 @@ static int bq24160_set_input_current_limit_in(struct bq24160_data *bd, u16 ma)
 	else
 		iin_lim = IIN_LIM_2500MA;
 
-	dev_info(&bd->clientp->dev, "Setting input charger current(IN) to %s\n",
+	dev_dbg(&bd->clientp->dev, "Setting input charger current(IN) to %s\n",
 		 hwlim[iin_lim]);
 
 	data = bq24160_i2c_read_byte(bd->clientp, REG_BR_VOLTAGE);
@@ -1849,7 +1849,7 @@ void bq24160_get_restricted_setting(u16 *chg_voltage, u16 *chg_current)
 
 	bd = container_of(psy, struct bq24160_data, bat_ps);
 
-	dev_info(&bd->clientp->dev,
+	dev_dbg(&bd->clientp->dev,
 		"Get restricted charge voltage and current "
 		"depending on vendor_revision\n");
 
@@ -2019,7 +2019,7 @@ static int bq24160_charger_resume(struct device *dev)
 					if(bd->watchdog_enable_vote == 0)
 						bq24160_start_watchdog_reset(bd);
 	}
-	dev_info(&bd->clientp->dev, "resume status:%d\n",bd->cached_status.stat);
+	dev_dbg(&bd->clientp->dev, "resume status:%d\n",bd->cached_status.stat);
 	return 0;
 }
 
@@ -2039,7 +2039,7 @@ static int bq24160_probe(struct i2c_client *client,
 	s32 buf;
 	int rc = 0;
 
-	dev_info(&client->dev, "probe\n");
+	dev_dbg(&client->dev, "probe\n");
 	if (!pdata) {
 		dev_err(&client->dev, "No platform data found\n");
 		return -EINVAL;
@@ -2061,7 +2061,7 @@ static int bq24160_probe(struct i2c_client *client,
 
 
 	if (((buf & REG_VENDOR_CODE_MASK) >> 5) == REG_VENDOR_CODE) {
-		dev_info(&client->dev, "Found bq24160, rev 0x%.2x\n",
+		dev_dbg(&client->dev, "Found bq24160, rev 0x%.2x\n",
 			 buf & REG_VENDOR_REV_MASK);
 	} else {
 		dev_err(&client->dev, "Invalid vendor code\n");
@@ -2142,14 +2142,14 @@ static int bq24160_probe(struct i2c_client *client,
 	     STAT_USB_READY == bd->cached_status.stat ||
 	     STAT_IN_READY == bd->cached_status.stat ||
 	     STAT_CHARGE_DONE == bd->cached_status.stat)) {
-		dev_info(&client->dev, "Charging started by boot\n");
+		dev_dbg(&client->dev, "Charging started by boot\n");
 		bd->boot_initiated_charging = 1;
 		set_board_values(bd);
 		bq24160_check_status(bd);
 		bq24160_update_power_supply(bd);
 		bq24160_start_watchdog_reset(bd);
 	} else {
-		dev_info(&client->dev, "Not initialized by boot\n");
+		dev_dbg(&client->dev, "Not initialized by boot\n");
 		rc = bq24160_reset_charger(bd);
 		bq24160_start_watchdog_reset(bd);
 	}
@@ -2181,7 +2181,7 @@ static int bq24160_probe(struct i2c_client *client,
 
 #ifdef DEBUG_FS
 	if (debug_create_attrs(bd->bat_ps.dev))
-		dev_info(&client->dev, "Debug support failed\n");
+		dev_err(&client->dev, "Debug support failed\n");
 #endif
 
 	atomic_set(&bq24160_init_ok, 1);
