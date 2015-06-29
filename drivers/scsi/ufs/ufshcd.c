@@ -4964,9 +4964,15 @@ static int __ufshcd_setup_clocks(struct ufs_hba *hba, bool on,
 	struct list_head *head = &hba->clk_list_head;
 	const char *ref_clk = "ref_clk";
 	unsigned long flags;
+	bool internal_control = ufshcd_is_link_hibern8(hba);
 
 	if (!head || list_empty(head))
 		goto out;
+
+	if (internal_control) {
+		if (hba->vops && hba->vops->clock_control_notify)
+			hba->vops->clock_control_notify(hba, on, PRE_CHANGE);
+	}
 
 	list_for_each_entry(clki, head, list) {
 		if (!IS_ERR_OR_NULL(clki->clk)) {
@@ -4988,6 +4994,11 @@ static int __ufshcd_setup_clocks(struct ufs_hba *hba, bool on,
 			dev_dbg(hba->dev, "%s: clk: %s %sabled\n", __func__,
 					clki->name, on ? "en" : "dis");
 		}
+	}
+
+	if (internal_control) {
+		if (hba->vops && hba->vops->clock_control_notify)
+			hba->vops->clock_control_notify(hba, on, POST_CHANGE);
 	}
 
 	if (hba->vops && hba->vops->setup_clocks)
