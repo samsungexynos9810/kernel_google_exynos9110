@@ -430,6 +430,12 @@ config USB_ANDROID_SAMSUNG_COMPOSITE
 	  Multi Configuration.
 	  If you enable this option, android composite will be changed.
 
+config USB_RNDIS_MULTIPACKET
+	boolean "Samsung Rndis Multi Packet support"
+	depends on USB_G_ANDROID
+	help
+		Rndis Multipacket Support.
+
 config USB_ANDROID_RNDIS_DWORD_ALIGNED
 	boolean "Use double word aligned"
 	depends on USB_G_ANDROID
