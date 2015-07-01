@@ -93,6 +93,8 @@
 #include <linux/types.h>
 #include <linux/zsmalloc.h>
 #include <linux/zpool.h>
+#include <linux/freezer.h>
+#include <linux/kthread.h>
 
 /*
  * This must be power of 2 and greater than of equal to sizeof(link_free).
@@ -171,6 +173,26 @@ enum fullness_group {
 };
 
 /*
+ * struct zs_page_pool - page pool struct
+ * @task:	task struct of page pool thread
+ * @list:	plist node for list of pool
+ * @lock:	lock protecting this struct
+ * @gfp_flag:	gfp flag
+ * @count:	number of pages in the pool
+ * @max:	max size of page pool and set by zs_malloc(0)
+ * This has pre-allocated pages for zs_malloc.
+ */
+struct zs_page_pool {
+	struct task_struct *task;
+	struct list_head list;
+	spinlock_t lock;
+	gfp_t gfp_flag;
+	int count;
+	int max;
+	wait_queue_head_t waitqueue;
+};
+
+/*
  * We assign a page to ZS_ALMOST_EMPTY fullness group when:
  *	n <= N / f, where
  * n = number of allocated objects
@@ -218,6 +240,8 @@ struct zs_pool {
 
 	gfp_t flags;	/* allocation flags used when growing pool */
 	atomic_long_t pages_allocated;
+
+	struct zs_page_pool *page_pool;
 };
 
 /*
@@ -238,6 +262,74 @@ struct mapping_area {
 	char *vm_addr; /* address of kmap_atomic()'ed pages */
 	enum zs_mapmode vm_mm; /* mapping mode */
 };
+
+#define ZS_PAGE_POOL_SIZE	256
+
+static int zs_page_pool(void *p)
+{
+	struct zs_page_pool *pool = (struct zs_page_pool *)p;
+	struct page *page;
+
+	while (true) {
+		wait_event_freezable(pool->waitqueue,
+				pool->count < pool->max);
+		page = alloc_page(pool->gfp_flag);
+		if (!page)
+			continue;
+		spin_lock(&pool->lock);
+		list_add_tail(&page->lru, &pool->list);
+		pool->count++;
+		spin_unlock(&pool->lock);
+	}
+
+	return 0;
+}
+
+static struct page *zs_alloc_page_pool(struct zs_page_pool *pool)
+{
+	struct page *page = NULL;
+
+	if (!pool)
+		return NULL;
+
+	spin_lock(&pool->lock);
+	if (pool->count) {
+		page = list_first_entry(&pool->list, struct page, lru);
+		list_del(&page->lru);
+		pool->count--;
+	}
+	spin_unlock(&pool->lock);
+
+	return page;
+}
+
+static struct zs_page_pool *zs_page_pool_create(gfp_t flags)
+{
+	struct zs_page_pool *pool = kzalloc(sizeof(struct zs_page_pool),
+			GFP_KERNEL);
+	if (!pool)
+		return NULL;
+
+	INIT_LIST_HEAD(&pool->list);
+	spin_lock_init(&pool->lock);
+	pool->gfp_flag = flags;
+	init_waitqueue_head(&pool->waitqueue);
+
+	pool->task = kthread_run(zs_page_pool, pool, "zspool");
+	if (IS_ERR(pool->task)) {
+		pr_err("Failed to start zs_page_pool\n");
+		pool->task = NULL;
+	}
+
+	return pool;
+}
+
+void zs_page_pool_destroy(struct zs_page_pool *pool)
+{
+	if (pool->task)
+		kthread_stop(pool->task);
+	kfree(pool);
+}
 
 /* zpool driver */
 
@@ -663,7 +755,8 @@ static void init_zspage(struct page *first_page, struct size_class *class)
 /*
  * Allocate a zspage for the given size class
  */
-static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
+static struct page *alloc_zspage(struct size_class *class, gfp_t flags,
+		struct zs_page_pool *page_pool)
 {
 	int i, error;
 	struct page *first_page = NULL, *uninitialized_var(prev_page);
@@ -682,8 +775,10 @@ static struct page *alloc_zspage(struct size_class *class, gfp_t flags)
 	error = -ENOMEM;
 	for (i = 0; i < class->pages_per_zspage; i++) {
 		struct page *page;
-
-		page = alloc_page(flags);
+		page = zs_alloc_page_pool(page_pool);
+		if (!page) {
+			page = alloc_page(flags);
+		}
 		if (!page)
 			goto cleanup;
 
@@ -963,6 +1058,8 @@ struct zs_pool *zs_create_pool(gfp_t flags)
 
 	pool->flags = flags;
 
+	pool->page_pool = zs_page_pool_create(flags);
+
 	return pool;
 }
 EXPORT_SYMBOL_GPL(zs_create_pool);
@@ -1005,7 +1102,14 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
 	struct page *first_page, *m_page;
 	unsigned long m_objidx, m_offset;
 
-	if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
+	if (!size) {
+		if (unlikely(!pool->page_pool->max))
+			pool->page_pool->max = ZS_PAGE_POOL_SIZE;
+		wake_up(&pool->page_pool->waitqueue);
+		return 0;
+	}
+
+	if (unlikely(size > ZS_MAX_ALLOC_SIZE))
 		return 0;
 
 	class_idx = get_size_class_index(size);
@@ -1017,7 +1121,8 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
 
 	if (!first_page) {
 		spin_unlock(&class->lock);
-		first_page = alloc_zspage(class, pool->flags);
+
+		first_page = alloc_zspage(class, pool->flags, pool->page_pool);
 		if (unlikely(!first_page))
 			return 0;
 
