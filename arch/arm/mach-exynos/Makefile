@@ -115,5 +115,8 @@ obj-$(CONFIG_EXYNOS5_SETUP_MIPIPHY)	+= setup-exynos5-mipiphy.o
 obj-$(CONFIG_EXYNOS_SETUP_MIPIPHY)      += setup-exynos-mipiphy.o
 obj-$(CONFIG_EXYNOS_CONTENT_PATH_PROTECTION) += secmem.o
 
+# PSM, Power Saving Manager
+obj-$(CONFIG_EXYNOS_PSM)		+= exynos-psm.o
+
 # HMP
 obj-$(CONFIG_SCHED_HMP)			+= core_sysfs.o

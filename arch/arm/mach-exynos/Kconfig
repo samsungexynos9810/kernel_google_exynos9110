@@ -812,6 +812,64 @@ endif
 
 endmenu
 
+config EXYNOS_PSM
+	bool "Power Saving Manager"
+	depends on MACH_EXYNOS3_DT
+	help
+	  This provides aggressive power saving features
+
+config EXYNOS_PSM_CPU_HOTPLUG
+	bool "On demand polling of CPU Hotplug"
+	depends on EXYNOS_PSM
+	default y
+	help
+	  This is an aggressive power saving feature for dynamic cpu hotplug.
+	  Normally, the check routine for cpu dynamic hotplug occurs periodically.
+	  However, if you enable this feature, the check routine won't occur
+	  until display is updated.
+
+config EXYNOS_PSM_DVFS
+	bool "On demand polling of DVFS"
+	depends on EXYNOS_PSM
+	default y
+	help
+	  his is an aggressive power saving feature for DVFS.
+	  Normally, the check routine for DVFS occurs periodically.
+	  However, if you enable this feature, the check routine won't occur
+	  until display is updated.
+
+config EXYNOS_PSM_WORKQUEUE
+	bool "On demand polling of Workqueue"
+	depends on EXYNOS_PSM
+	default y
+	help
+	  his is an aggressive power saving feature for the power of static scenarios.
+	  This is almost same with EXYNOS_PSM_DVFS, but is applied to the general purpose.
+
+config EXYNOS_PSM_DEBUG
+	bool "Enable PSM debug message"
+	depends on EXYNOS_PSM
+	default n
+
+choice
+	prompt "Type of Periodic work"
+	default DELAYED_INVOKING
+	help
+		This option sets which type of Workqueue shall be used for periodic execution.
+		Such as, DEVFREQ, MIF DTM, Cluster On/Off Monitoring, PPMU Monitoring, and Main DTM
+
+config EXYNOS_PSM_DELAYED_INVOKING
+	bool "Use delayed workqueue"
+	help
+		Use the INIT_DELAYED_WORK()
+
+config EXYNOS_PSM_DEFERRABLE_INVOKING
+	bool "Use deferrable workqueue"
+	help
+		Use the INIT_DEFERRABLE_WORK()
+
+endchoice
+
 # Reset IPs during LPA/DSTOP
 config EXYNOS_HSI2C_RESET_DURING_DSTOP
 	bool
