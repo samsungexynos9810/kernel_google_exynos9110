@@ -30,7 +30,9 @@
 #include "fimd_fb.h"
 
 #include <mach/cpufreq.h>
-
+#ifdef CONFIG_EXYNOS_PSM
+#include <mach/exynos-psm.h>
+#endif
 #include <../drivers/clk/samsung/clk.h>
 
 #define GATE_LOCK_CNT 2
@@ -441,8 +443,14 @@ static void decon_power_gating_handler(struct kthread_work *work)
 			display_hibernation_power_off(dispdrv);
 			init_gating_idle_count(dispdrv);
 		}
+#ifdef CONFIG_EXYNOS_PSM
+		psm_trigger_update(DECON_DISPLAY, PSM_INACTIVE);
+#endif
 	} else if (dispdrv->decon_driver.sfb->power_state == POWER_HIBER_DOWN) {
 		display_hibernation_power_on(dispdrv);
+#ifdef CONFIG_EXYNOS_PSM
+		psm_trigger_update(DECON_DISPLAY, PSM_ACTIVE);
+#endif
 	}
 	disp_pm_gate_lock(dispdrv, false);
 }
