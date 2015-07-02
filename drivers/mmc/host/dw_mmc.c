@@ -4290,7 +4290,11 @@ int dw_mci_probe(struct dw_mci *host)
 
 	pm_qos_add_request(&host->pm_qos_int, PM_QOS_DEVICE_THROUGHPUT, 0);
 	if (host->pdata->tp_mon_tbl) {
+#if defined(CONFIG_EXYNOS_PSM_DEFERRABLE_INVOKING)
+		INIT_DEFERRABLE_WORK(&host->tp_mon, dw_mci_tp_mon);
+#else
 		INIT_DELAYED_WORK(&host->tp_mon, dw_mci_tp_mon);
+#endif
 		pm_qos_add_request(&host->pm_qos_mif,
 					PM_QOS_BUS_THROUGHPUT, 0);
 		pm_qos_add_request(&host->pm_qos_cpu,
