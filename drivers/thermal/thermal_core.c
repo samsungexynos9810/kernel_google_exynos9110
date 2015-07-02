@@ -35,6 +35,9 @@
 #include <linux/reboot.h>
 #include <net/netlink.h>
 #include <net/genetlink.h>
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+#include <mach/exynos-psm.h>
+#endif
 
 #include "thermal_core.h"
 
@@ -296,6 +299,38 @@ exit:
 	mutex_unlock(&thermal_list_lock);
 }
 
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+static struct psm_listener_info psm_thermal_info;
+
+static int psm_thermal_vsync_notifier(struct notifier_block *this,
+				unsigned long vsync, void *_cmd)
+{
+	PSM_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
+	if (!vsync) {
+		atomic_set(&psm_thermal_info.is_vsync_requested, 0);
+	} else {
+		atomic_set(&psm_thermal_info.is_vsync_requested, 1);
+		if (atomic_read(&psm_thermal_info.sleep)) {
+			struct thermal_zone_device *pos;
+			PSM_DBG("Wakeup from long sleep & flushing wq\n");
+			mutex_lock(&thermal_list_lock);
+			list_for_each_entry(pos, &thermal_tz_list, node) {
+#ifdef CONFIG_SCHED_HMP
+				queue_delayed_work_on(0, system_freezable_wq, &pos->poll_queue,
+					0);
+#else
+				queue_delayed_work(system_freezable_wq, &pos->poll_queue,
+					0);
+#endif
+			}
+			mutex_unlock(&thermal_list_lock);
+		}
+	}
+	return 0;
+}
+#endif
+
+
 static void thermal_zone_device_set_polling(struct thermal_zone_device *tz,
 					    int delay)
 {
@@ -324,11 +359,22 @@ static void monitor_thermal_zone(struct thermal_zone_device *tz)
 {
 	mutex_lock(&tz->lock);
 
-	if (tz->passive)
+	if (tz->passive) {
 		thermal_zone_device_set_polling(tz, tz->passive_delay);
-	else if (tz->polling_delay)
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+		if (atomic_read(&psm_thermal_info.sleep))
+			PSM_INFO("[%d]s polling\n", tz->passive_delay/1000);
+		atomic_set(&psm_thermal_info.sleep, 0);
+#endif
+	} else if (tz->polling_delay) {
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+		thermal_zone_device_set_polling(tz, 0);
+		atomic_set(&psm_thermal_info.sleep, 1);
+		PSM_INFO("sleep\n");
+#else
 		thermal_zone_device_set_polling(tz, tz->polling_delay);
-	else
+#endif
+	} else
 		thermal_zone_device_set_polling(tz, 0);
 
 	mutex_unlock(&tz->lock);
@@ -1744,8 +1790,11 @@ struct thermal_zone_device *thermal_zone_device_register(const char *type,
 	/* Bind cooling devices for this zone */
 	bind_tz(tz);
 
+#if defined(CONFIG_DEFERRABLE_INVOKING) || defined(CONFIG_HYBRID_INVOKING)
+	INIT_DEFERRABLE_WORK(&(tz->poll_queue), thermal_zone_device_check);
+#else
 	INIT_DELAYED_WORK(&(tz->poll_queue), thermal_zone_device_check);
-
+#endif
 	thermal_zone_device_update(tz);
 
 	if (!result)
@@ -2002,6 +2051,13 @@ static int __init thermal_init(void)
 	result = genetlink_init();
 	if (result)
 		goto unregister_class;
+
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+	atomic_set(&psm_thermal_info.is_vsync_requested, 0);
+	atomic_set(&psm_thermal_info.sleep, 0);
+	psm_thermal_info.nb.notifier_call = psm_thermal_vsync_notifier;
+	register_psm_notifier(&psm_thermal_info.nb);
+#endif
 
 	return 0;
 
