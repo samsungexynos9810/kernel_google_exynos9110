@@ -28,6 +28,9 @@
 #include <mach/devfreq.h>
 #include <mach/smc.h>
 #include <mach/asv-exynos.h>
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+#include <mach/exynos-psm.h>
+#endif
 
 #include "devfreq_exynos.h"
 #include "exynos3250_ppmu.h"
@@ -188,6 +191,10 @@ static struct devfreq_thermal_work devfreq_mif_ch0_work = {
 	.channel = THERMAL_CHANNEL0,
 	.polling_period = 1000,
 };
+
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+static struct psm_listener_info psm_bus_mif_info;
+#endif
 
 static bool use_timing_set_0;
 static struct devfreq_data_mif *data_mif;
@@ -432,7 +439,7 @@ static int exynos3250_mif_bus_get_dev_status(struct device *dev,
 	struct devfreq_data_mif *data = dev_get_drvdata(dev);
 
 	unsigned long busy_data;
-	unsigned int mif_ccnt = 0;
+	unsigned long mif_ccnt = 0;
 	unsigned long mif_pmcnt = 0;
 
 	if (!data_mif->use_dvfs)
@@ -580,6 +587,36 @@ static struct attribute_group devfreq_mif_attr_group = {
 	.attrs	= devfreq_mif_sysfs_entries,
 };
 
+static ssize_t store_upthreshold(struct device *dev, struct device_attribute *attr,
+			      const char *buf, size_t count)
+{
+	unsigned int value;
+	int ret;
+
+	ret = sscanf(buf, "%u", &value);
+	if (ret != 1)
+		return -EINVAL;
+
+	if ((value < 0) || (value > 99)) {
+		ret = -EINVAL;
+		goto unlock;
+	}
+
+	exynos3250_mif_governor_data.upthreshold = value;
+	ret = count;
+unlock:
+	return ret;
+
+}
+
+static ssize_t show_upthreshold(struct device *dev, struct device_attribute *attr,
+			     char *buf)
+{
+	return sprintf(buf, "%u\n", exynos3250_mif_governor_data.upthreshold);
+}
+
+static DEVICE_ATTR(upthreshold, S_IRUGO | S_IWUSR, show_upthreshold, store_upthreshold);
+
 static struct exynos_devfreq_platdata default_qos_mif_pd = {
 	.default_qos = 50000,
 };
@@ -595,6 +632,36 @@ static int exynos3250_mif_reboot_notifier_call(struct notifier_block *this,
 static struct notifier_block exynos3250_mif_reboot_notifier = {
 	.notifier_call = exynos3250_mif_reboot_notifier_call,
 };
+
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+static int psm_bus_mif_vsync_notifier(struct notifier_block *this,
+				unsigned long vsync, void *_cmd)
+{
+	PSM_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
+	if (!vsync) {
+		atomic_set(&psm_bus_mif_info.is_vsync_requested, 0);
+	} else {
+		atomic_set(&psm_bus_mif_info.is_vsync_requested, 1);
+		if (atomic_read(&psm_bus_mif_info.sleep)) {
+			PSM_DBG("flushing work for the queue\n");
+			queue_delayed_work(devfreq_mif_thermal_wq_ch0,
+				&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
+				0);
+		}
+	}
+
+	return 0;
+}
+
+static void psm_devfreq_init(void)
+{
+	atomic_set(&psm_bus_mif_info.is_vsync_requested, 0);
+	atomic_set(&psm_bus_mif_info.sleep, 0);
+	psm_bus_mif_info.nb.notifier_call = psm_bus_mif_vsync_notifier;
+	register_psm_notifier(&psm_bus_mif_info.nb);
+}
+#endif
+
 
 static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 {
@@ -626,17 +693,33 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 		case 2:
 		case 3:
 			timingaref_value = RATE_ONE;
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+			thermal_work->polling_period = 0;
+			atomic_set(&psm_bus_mif_info.sleep, 1);
+			PSM_INFO("sleep\n");
+#else
 			thermal_work->polling_period = 1000;
+#endif
 			break;
 		case 4:
 			timingaref_value = RATE_HALF;
 			thermal_work->polling_period = 300;
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+			if (atomic_read(&psm_bus_mif_info.sleep))
+				PSM_INFO("Normal polling");
+			atomic_set(&psm_bus_mif_info.sleep, 0);
+#endif
 			break;
 		case 6:
 			throttling = true;
 		case 5:
 			timingaref_value = RATE_QUARTER;
 			thermal_work->polling_period = 100;
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+			if (atomic_read(&psm_bus_mif_info.sleep))
+				PSM_INFO("Normal polling");
+			atomic_set(&psm_bus_mif_info.sleep, 0);
+#endif
 			break;
 		default:
 			pr_err("DEVFREQ(MIF) : can't support memory thermal level\n");
@@ -662,11 +745,19 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 
 static void exynos3250_devfreq_init_thermal(void)
 {
+#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+	psm_devfreq_init();
+#endif
+
 	devfreq_mif_thermal_wq_ch0 = create_freezable_workqueue("devfreq_thermal_wq_ch0");
 
+#if defined(CONFIG_DEFERRABLE_INVOKING)
+	INIT_DEFERRABLE_WORK(&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
+			exynos3250_devfreq_thermal_monitor);
+#else
 	INIT_DELAYED_WORK(&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
 			exynos3250_devfreq_thermal_monitor);
-
+#endif
 	devfreq_mif_ch0_work.work_queue = devfreq_mif_thermal_wq_ch0;
 
 	exynos3250_devfreq_thermal_event(&devfreq_mif_ch0_work);
@@ -765,6 +856,10 @@ static int exynos3250_devfreq_mif_probe(struct platform_device *pdev)
 		pr_err("DEVFREQ(MIF) : Failed create available_frequencies sysfs\n");
 		goto err_devfreq_add;
 	}
+
+	/* Add sysfs for threshold */
+	ret = device_create_file(&data->devfreq->dev, &dev_attr_upthreshold);
+
 	exynos3250_devfreq_init_thermal();
 	pdata = data->dev->platform_data;
 	if (!pdata)
