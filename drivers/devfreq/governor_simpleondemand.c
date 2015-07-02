@@ -55,7 +55,9 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 
 	if (err)
 		return err;
-
+#if defined(CONFIG_EXYNOS_PSM_DVFS)
+	df->locked_min_freq = pm_qos_min;
+#endif
 	if (data) {
 		if (data->upthreshold)
 			dfso_upthreshold = data->upthreshold;

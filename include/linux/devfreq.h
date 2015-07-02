@@ -173,6 +173,9 @@ struct devfreq {
 	unsigned int *trans_table;
 	unsigned long *time_in_state;
 	unsigned long last_stat_updated;
+#if defined(CONFIG_EXYNOS_PSM_DVFS)
+	unsigned long locked_min_freq;
+#endif
 };
 
 #if defined(CONFIG_PM_DEVFREQ)
