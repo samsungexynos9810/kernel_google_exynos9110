@@ -20,6 +20,13 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <mach/exynos-psmw.h>
+#ifdef CONFIG_EXYNOS_PSMW_MEM
+#include <linux/io.h>
+#include <mach/map.h>
+
+#define MEMCONTROL		0x04
+#define PRECHCONFIG0	0x14
+#endif
 
 #define TAIL_PERIOD		200
 
@@ -91,14 +98,43 @@ void psmw_trigger_update(enum psmw_trigger who, enum psmw_event event)
 	wake_up_process(psmw_task);
 }
 
-void psmw_notify_active(void)
+void psmw_notify_active(void *data)
 {
+#ifdef CONFIG_EXYNOS_PSMW_MEM
+	unsigned int reg;
+	void __iomem *drex_base = (void __iomem *)data;
+
+	/* Active precharge power down : 0x0 [3:2] */
+	reg = __raw_readl(drex_base + MEMCONTROL);
+	reg &= ~(0x3 << 2);
+	__raw_writel(reg, drex_base + MEMCONTROL);
+
+	/* Open page policy : 0x0 [19:16], each bit means a memory sport */
+	reg = __raw_readl(drex_base + PRECHCONFIG0);
+	reg &= ~(0xf << 16);
+	__raw_writel(reg, drex_base + PRECHCONFIG0);
+#endif
 	PSMW_INFO("active zone ######################################## [START]\n");
 	blocking_notifier_call_chain(&psmw_notifier_list, 1, NULL);
 }
 
-void psmw_notify_inactive(void)
+void psmw_notify_inactive(void *data)
 {
+#ifdef CONFIG_EXYNOS_PSMW_MEM
+	unsigned int reg;
+	void __iomem *drex_base = (void __iomem *)data;
+
+	/* Forced precharge power down : 0x1 [3:2] */
+	reg = __raw_readl(drex_base + MEMCONTROL);
+	reg &= ~(0x3 << 2);
+	reg |= (0x1 << 2);
+	__raw_writel(reg, drex_base + MEMCONTROL);
+
+	/* Open page policy : 0xf [19:16], each bit means a memory sport */
+	reg = __raw_readl(drex_base + PRECHCONFIG0);
+	reg |= (0xf << 16);
+	__raw_writel(reg, drex_base + PRECHCONFIG0);
+#endif
 	PSMW_INFO("active zone ======================================= [END]\n");
 	blocking_notifier_call_chain(&psmw_notifier_list, 0, NULL);
 }
@@ -106,7 +142,18 @@ void psmw_notify_inactive(void)
 static int psmw_handle(void *data) {
 	int tail_activate = 0;
 	int integratedStatus = 0;
-
+#ifdef CONFIG_EXYNOS_PSMW_MEM
+	unsigned int reg;
+	void __iomem *drex_base = ioremap(EXYNOS3_PA_DMC, SZ_64K);
+	if(!drex_base) {
+		pr_err("[PSMW]: %s: failed to ioremap for drex\n", __func__);
+		return -1;
+	}
+	reg = __raw_readl(drex_base + MEMCONTROL);
+	if(!(reg & (1<<1))) {
+		pr_err("[PSMW]: Dynamic Power Down is not enabled \n", __func__);
+	}
+#endif
 	do {
 		PSMW_DBG("[sleep] integratedStatus [0x%x], ActiveStatus [0x%x]\n",
 												integratedStatus, ActiveStatus);
@@ -119,7 +166,7 @@ static int psmw_handle(void *data) {
 			mutex_lock(&psmw_lock);
 			if (ActiveStatus != 0) {
 				integratedStatus = 1;
-				psmw_notify_active();
+				psmw_notify_active(drex_base);
 			}
 			mutex_unlock(&psmw_lock);
 		} else {
@@ -137,13 +184,13 @@ static int psmw_handle(void *data) {
 					mutex_lock(&psmw_lock);
 					// Stop working
 					if(ActiveStatus == 0)
-						psmw_notify_inactive();
+						psmw_notify_inactive(drex_base);
 					else
 						integratedStatus = 1;
 					mutex_unlock(&psmw_lock);
 				} else {
 					// Stop working immediately.
-					psmw_notify_inactive();
+					psmw_notify_inactive(drex_base);
 				}
 			}
 			if((tail_activate != 1) && (ActiveStatus & (1 << TOUCH_SCREEN)) &&

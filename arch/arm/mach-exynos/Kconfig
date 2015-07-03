@@ -833,7 +833,7 @@ config EXYNOS_PSMW_DVFS
 	depends on EXYNOS_PSMW
 	default y
 	help
-	  his is an aggressive power saving feature for DVFS.
+	  This is an aggressive power saving feature for DVFS.
 	  Normally, the check routine for DVFS occurs periodically.
 	  However, if you enable this feature, the check routine won't occur
 	  until display is updated.
@@ -843,11 +843,18 @@ config EXYNOS_PSMW_WORKQUEUE
 	depends on EXYNOS_PSMW
 	default y
 	help
-	  his is an aggressive power saving feature for the power of static scenarios.
-	  This is almost same with EXYNOS_PSMW_DVFS, but is applied to the general purpose.
+	  This is an aggressive power saving feature for some workqueues.
+
+config EXYNOS_PSMW_MEM
+	bool "Dynamic DRAM policy"
+	depends on EXYNOS_PSMW
+	default y
+	help
+	  This is an aggressive power saving feature for the system memory.
+	  Especially, LPDDR DRAM has some policies and modes that could be adaptively applied.
 
 config EXYNOS_PSMW_DEBUG
-	bool "Enable PSM debug message"
+	bool "Enable PSMW debug message"
 	depends on EXYNOS_PSMW
 	default n
 
@@ -855,19 +862,17 @@ choice
 	prompt "Type of Periodic work"
 	default DELAYED_INVOKING
 	help
-		This option sets which type of Workqueue shall be used for periodic execution.
-		Such as, DEVFREQ, MIF DTM, Cluster On/Off Monitoring, PPMU Monitoring, and Main DTM
+	  This option sets which type of workqueue shall be used for periodic execution.
 
 config EXYNOS_PSMW_DELAYED_INVOKING
 	bool "Use delayed workqueue"
 	help
-		Use the INIT_DELAYED_WORK()
+	  Use the INIT_DELAYED_WORK()
 
 config EXYNOS_PSMW_DEFERRABLE_INVOKING
 	bool "Use deferrable workqueue"
 	help
-		Use the INIT_DEFERRABLE_WORK()
-
+	  Use the INIT_DEFERRABLE_WORK()
 endchoice
 
 # Reset IPs during LPA/DSTOP
