@@ -28,8 +28,8 @@
 #include <mach/devfreq.h>
 #include <mach/smc.h>
 #include <mach/asv-exynos.h>
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-#include <mach/exynos-psm.h>
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+#include <mach/exynos-psmw.h>
 #endif
 
 #include "devfreq_exynos.h"
@@ -192,8 +192,8 @@ static struct devfreq_thermal_work devfreq_mif_ch0_work = {
 	.polling_period = 1000,
 };
 
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-static struct psm_listener_info psm_bus_mif_info;
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+static struct psmw_listener_info psmw_bus_mif_info;
 #endif
 
 static bool use_timing_set_0;
@@ -633,17 +633,17 @@ static struct notifier_block exynos3250_mif_reboot_notifier = {
 	.notifier_call = exynos3250_mif_reboot_notifier_call,
 };
 
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-static int psm_bus_mif_vsync_notifier(struct notifier_block *this,
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+static int psmw_bus_mif_vsync_notifier(struct notifier_block *this,
 				unsigned long vsync, void *_cmd)
 {
-	PSM_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
+	PSMW_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
 	if (!vsync) {
-		atomic_set(&psm_bus_mif_info.is_vsync_requested, 0);
+		atomic_set(&psmw_bus_mif_info.is_vsync_requested, 0);
 	} else {
-		atomic_set(&psm_bus_mif_info.is_vsync_requested, 1);
-		if (atomic_read(&psm_bus_mif_info.sleep)) {
-			PSM_DBG("flushing work for the queue\n");
+		atomic_set(&psmw_bus_mif_info.is_vsync_requested, 1);
+		if (atomic_read(&psmw_bus_mif_info.sleep)) {
+			PSMW_DBG("flushing work for the queue\n");
 			queue_delayed_work(devfreq_mif_thermal_wq_ch0,
 				&devfreq_mif_ch0_work.devfreq_mif_thermal_work,
 				0);
@@ -653,12 +653,12 @@ static int psm_bus_mif_vsync_notifier(struct notifier_block *this,
 	return 0;
 }
 
-static void psm_devfreq_init(void)
+static void psmw_devfreq_init(void)
 {
-	atomic_set(&psm_bus_mif_info.is_vsync_requested, 0);
-	atomic_set(&psm_bus_mif_info.sleep, 0);
-	psm_bus_mif_info.nb.notifier_call = psm_bus_mif_vsync_notifier;
-	register_psm_notifier(&psm_bus_mif_info.nb);
+	atomic_set(&psmw_bus_mif_info.is_vsync_requested, 0);
+	atomic_set(&psmw_bus_mif_info.sleep, 0);
+	psmw_bus_mif_info.nb.notifier_call = psmw_bus_mif_vsync_notifier;
+	register_psmw_notifier(&psmw_bus_mif_info.nb);
 }
 #endif
 
@@ -693,10 +693,10 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 		case 2:
 		case 3:
 			timingaref_value = RATE_ONE;
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
 			thermal_work->polling_period = 0;
-			atomic_set(&psm_bus_mif_info.sleep, 1);
-			PSM_INFO("sleep\n");
+			atomic_set(&psmw_bus_mif_info.sleep, 1);
+			PSMW_INFO("sleep\n");
 #else
 			thermal_work->polling_period = 1000;
 #endif
@@ -704,10 +704,10 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 		case 4:
 			timingaref_value = RATE_HALF;
 			thermal_work->polling_period = 300;
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-			if (atomic_read(&psm_bus_mif_info.sleep))
-				PSM_INFO("Normal polling");
-			atomic_set(&psm_bus_mif_info.sleep, 0);
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+			if (atomic_read(&psmw_bus_mif_info.sleep))
+				PSMW_INFO("Normal polling");
+			atomic_set(&psmw_bus_mif_info.sleep, 0);
 #endif
 			break;
 		case 6:
@@ -715,10 +715,10 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 		case 5:
 			timingaref_value = RATE_QUARTER;
 			thermal_work->polling_period = 100;
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-			if (atomic_read(&psm_bus_mif_info.sleep))
-				PSM_INFO("Normal polling");
-			atomic_set(&psm_bus_mif_info.sleep, 0);
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+			if (atomic_read(&psmw_bus_mif_info.sleep))
+				PSMW_INFO("Normal polling");
+			atomic_set(&psmw_bus_mif_info.sleep, 0);
 #endif
 			break;
 		default:
@@ -745,8 +745,8 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 
 static void exynos3250_devfreq_init_thermal(void)
 {
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-	psm_devfreq_init();
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+	psmw_devfreq_init();
 #endif
 
 	devfreq_mif_thermal_wq_ch0 = create_freezable_workqueue("devfreq_thermal_wq_ch0");

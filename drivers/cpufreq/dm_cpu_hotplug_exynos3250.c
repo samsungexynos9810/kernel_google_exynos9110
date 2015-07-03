@@ -4,17 +4,17 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <linux/suspend.h>
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
-#include <mach/exynos-psm.h>
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
+#include <mach/exynos-psmw.h>
 #endif
 
 #define NORMALMIN_FREQ	250000
 #define POLLING_MSEC	100
 
 static DEFINE_MUTEX(dm_hotplug_lock);
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 static struct task_struct *dm_hotplug_task;
-static struct psm_listener_info psm_dm_cpu_info;
+static struct psmw_listener_info psmw_dm_cpu_info;
 #endif
 
 static unsigned int cur_load_freq;
@@ -111,13 +111,13 @@ static int low_stay;
 static enum hotplug_mode diagnose_condition(void)
 {
 	int ret;
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	unsigned int normal_min_freq = cpufreq_interactive_get_hispeed_freq(0);
 #endif
 
 	ret = CHP_NORMAL;
 
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	if (cur_load_freq > normal_min_freq)
 		low_stay = 0;
 	else if (cur_load_freq <= normal_min_freq && low_stay <= 5)
@@ -127,7 +127,7 @@ static enum hotplug_mode diagnose_condition(void)
 		low_stay = 0;
 	else if (cur_load_freq <= NORMALMIN_FREQ && low_stay <= 5)
 		low_stay++;
-#endif	// CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#endif	// CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	if (low_stay > 5)
 		ret = CHP_LOW_POWER;
 
@@ -152,30 +152,30 @@ static void calc_load(void)
 	return;
 }
 
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
-static int psm_dm_cpu_hotplut_vsync_notifier(struct notifier_block *this,
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
+static int psmw_dm_cpu_hotplut_vsync_notifier(struct notifier_block *this,
 				unsigned long vsync, void *_cmd)
 {
-	PSM_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
+	PSMW_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
 	if (!vsync) {
-		atomic_set(&psm_dm_cpu_info.is_vsync_requested, 0);
+		atomic_set(&psmw_dm_cpu_info.is_vsync_requested, 0);
 	}
 	else {
-		atomic_set(&psm_dm_cpu_info.is_vsync_requested, 1);
-		if (atomic_read(&psm_dm_cpu_info.sleep))
+		atomic_set(&psmw_dm_cpu_info.is_vsync_requested, 1);
+		if (atomic_read(&psmw_dm_cpu_info.sleep))
 			wake_up_process(dm_hotplug_task);
 	}
 	return NOTIFY_DONE;
 }
 
-static void dm_cpu_hotplug_psm_init(void)
+static void dm_cpu_hotplug_psmw_init(void)
 {
-	atomic_set(&psm_dm_cpu_info.is_vsync_requested, 0);
-	atomic_set(&psm_dm_cpu_info.sleep, 0);
-	psm_dm_cpu_info.nb.notifier_call = psm_dm_cpu_hotplut_vsync_notifier;
-	register_psm_notifier(&psm_dm_cpu_info.nb);
+	atomic_set(&psmw_dm_cpu_info.is_vsync_requested, 0);
+	atomic_set(&psmw_dm_cpu_info.sleep, 0);
+	psmw_dm_cpu_info.nb.notifier_call = psmw_dm_cpu_hotplut_vsync_notifier;
+	register_psmw_notifier(&psmw_dm_cpu_info.nb);
 }
-#endif // CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#endif // CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 
 static int thread_run_flag;
 
@@ -202,24 +202,24 @@ static int on_run(void *data)
 				exe_mode = prev_mode;
 
 		prev_mode = exe_mode;
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
-		if (atomic_read(&psm_dm_cpu_info.is_vsync_requested) ||
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
+		if (atomic_read(&psmw_dm_cpu_info.is_vsync_requested) ||
 													num_online_cpus() != 1) {
-			atomic_set(&psm_dm_cpu_info.sleep, 0);
+			atomic_set(&psmw_dm_cpu_info.sleep, 0);
 			set_current_state(TASK_INTERRUPTIBLE);
 			schedule_timeout_interruptible(msecs_to_jiffies(POLLING_MSEC));
 			set_current_state(TASK_RUNNING);
 		} else {
-			atomic_set(&psm_dm_cpu_info.sleep, 1);
-			PSM_INFO("thread_hotplug_func: sleep\n");
+			atomic_set(&psmw_dm_cpu_info.sleep, 1);
+			PSMW_INFO("thread_hotplug_func: sleep\n");
 			set_current_state(TASK_INTERRUPTIBLE);
 			schedule();
 			set_current_state(TASK_RUNNING);
-			PSM_INFO("thread_hotplug_func: wakeup\n");
+			PSMW_INFO("thread_hotplug_func: wakeup\n");
 		}
 #else
 		msleep(POLLING_MSEC);
-#endif // CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#endif // CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	}
 
 	return 0;
@@ -232,25 +232,25 @@ void dm_cpu_hotplug_exit(void)
 
 static int __init dm_cpu_hotplug_init(void)
 {
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	dm_hotplug_task = kthread_run(&on_run, NULL, "thread_hotplug_func");
 	if (IS_ERR(dm_hotplug_task)) {
 		pr_err("Failed in creation of thread.\n");
 		goto err_hotplug_init;
 	}
-	dm_cpu_hotplug_psm_init();
-#else // CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+	dm_cpu_hotplug_psmw_init();
+#else // CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	struct task_struct *k;
 
 	k = kthread_run(&on_run, NULL, "thread_hotplug_func");
 	if (IS_ERR(k))
 		pr_err("Failed in creation of thread.\n");
-#endif // CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#endif // CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	exynos_dm_hotplug_disable = false;
 
 	register_pm_notifier(&exynos_dm_hotplug_nb);
 
-#ifdef CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	wake_up_process(dm_hotplug_task);
 	return 0;
 
@@ -259,7 +259,7 @@ err_hotplug_init:
 	return -EBUSY;
 #else
 	return 0;
-#endif //CONFIG_EXYNOS_PSM_CPU_HOTPLUG
+#endif //CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 }
 
 late_initcall(dm_cpu_hotplug_init);

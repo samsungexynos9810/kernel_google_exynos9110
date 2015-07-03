@@ -35,8 +35,8 @@
 #include <linux/reboot.h>
 #include <net/netlink.h>
 #include <net/genetlink.h>
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-#include <mach/exynos-psm.h>
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+#include <mach/exynos-psmw.h>
 #endif
 
 #include "thermal_core.h"
@@ -299,20 +299,20 @@ exit:
 	mutex_unlock(&thermal_list_lock);
 }
 
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-static struct psm_listener_info psm_thermal_info;
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+static struct psmw_listener_info psmw_thermal_info;
 
-static int psm_thermal_vsync_notifier(struct notifier_block *this,
+static int psmw_thermal_vsync_notifier(struct notifier_block *this,
 				unsigned long vsync, void *_cmd)
 {
-	PSM_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
+	PSMW_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
 	if (!vsync) {
-		atomic_set(&psm_thermal_info.is_vsync_requested, 0);
+		atomic_set(&psmw_thermal_info.is_vsync_requested, 0);
 	} else {
-		atomic_set(&psm_thermal_info.is_vsync_requested, 1);
-		if (atomic_read(&psm_thermal_info.sleep)) {
+		atomic_set(&psmw_thermal_info.is_vsync_requested, 1);
+		if (atomic_read(&psmw_thermal_info.sleep)) {
 			struct thermal_zone_device *pos;
-			PSM_DBG("Wakeup from long sleep & flushing wq\n");
+			PSMW_DBG("Wakeup from long sleep & flushing wq\n");
 			mutex_lock(&thermal_list_lock);
 			list_for_each_entry(pos, &thermal_tz_list, node) {
 #ifdef CONFIG_SCHED_HMP
@@ -361,16 +361,16 @@ static void monitor_thermal_zone(struct thermal_zone_device *tz)
 
 	if (tz->passive) {
 		thermal_zone_device_set_polling(tz, tz->passive_delay);
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-		if (atomic_read(&psm_thermal_info.sleep))
-			PSM_INFO("[%d]s polling\n", tz->passive_delay/1000);
-		atomic_set(&psm_thermal_info.sleep, 0);
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+		if (atomic_read(&psmw_thermal_info.sleep))
+			PSMW_INFO("[%d]s polling\n", tz->passive_delay/1000);
+		atomic_set(&psmw_thermal_info.sleep, 0);
 #endif
 	} else if (tz->polling_delay) {
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
 		thermal_zone_device_set_polling(tz, 0);
-		atomic_set(&psm_thermal_info.sleep, 1);
-		PSM_INFO("sleep\n");
+		atomic_set(&psmw_thermal_info.sleep, 1);
+		PSMW_INFO("sleep\n");
 #else
 		thermal_zone_device_set_polling(tz, tz->polling_delay);
 #endif
@@ -2052,11 +2052,11 @@ static int __init thermal_init(void)
 	if (result)
 		goto unregister_class;
 
-#ifdef CONFIG_EXYNOS_PSM_WORKQUEUE
-	atomic_set(&psm_thermal_info.is_vsync_requested, 0);
-	atomic_set(&psm_thermal_info.sleep, 0);
-	psm_thermal_info.nb.notifier_call = psm_thermal_vsync_notifier;
-	register_psm_notifier(&psm_thermal_info.nb);
+#ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
+	atomic_set(&psmw_thermal_info.is_vsync_requested, 0);
+	atomic_set(&psmw_thermal_info.sleep, 0);
+	psmw_thermal_info.nb.notifier_call = psmw_thermal_vsync_notifier;
+	register_psmw_notifier(&psmw_thermal_info.nb);
 #endif
 
 	return 0;
