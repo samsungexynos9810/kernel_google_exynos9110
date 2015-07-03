@@ -40,6 +40,10 @@
 
 #include <linux/vmalloc.h>
 
+#if defined(CONFIG_AP_PARAM)
+#include <soc/samsung/ap_param_parser.h>
+#endif
+
 static int iotable_on;
 
 /*
@@ -360,6 +364,10 @@ void __init paging_init(void)
 	void *zero_page;
 
 	map_mem();
+
+#if defined(CONFIG_AP_PARAM)
+	ap_param_init_map_io();
+#endif
 
 	/*
 	 * Finally flush the caches and tlb to ensure that we're in a
