@@ -41,7 +41,7 @@ enum psmw_trigger {
 };
 
 enum psmw_event {
-	PSMW_ACTIVE,
+	PSMW_ACTIVE = 1,
 	PSMW_INACTIVE,
 };
 
