@@ -737,14 +737,14 @@ static void ufshcd_gate_work(struct work_struct *work)
 			spin_lock_irqsave(hba->host->host_lock, flags);
 			hba->clk_gating.state = __CLKS_ON;
 			spin_unlock_irqrestore(hba->host->host_lock, flags);
-
 			hba->clk_gating.is_suspended = true;
+			ssleep(1);
 			ufshcd_host_reset_and_restore(hba);
 			spin_lock_irqsave(hba->host->host_lock, flags);
 			hba->clk_gating.state = CLKS_ON;
 			spin_unlock_irqrestore(hba->host->host_lock, flags);
 			hba->clk_gating.is_suspended = false;
-
+			scsi_unblock_requests(hba->host);
 			goto out;
 		}
 		ufshcd_set_link_hibern8(hba);
@@ -2603,8 +2603,16 @@ static int ufshcd_link_hibern8_ctrl(struct ufs_hba *hba, bool en)
 	else
 		ret = ufshcd_uic_hibern8_exit(hba);
 
-	if (ret)
+	if (ret || (hba->saved_err & INT_FATAL_ERRORS) ||
+	    ((hba->saved_err & UIC_ERROR) &&
+	     ((hba->saved_uic_err & UFSHCD_UIC_DL_PA_INIT_ERROR) ||
+	      (hba->saved_uic_err & UFSHCD_UIC_DL_ERROR)))) {
+		if (!ret)
+			ret = hba->saved_err;
+		hba->saved_err = 0;
+		hba->saved_uic_err = 0;
 		goto out;
+	}
 
 	if (hba->debug.flag & UFSHCD_DEBUG_LEVEL2) {
 		if (en)
@@ -2617,6 +2625,9 @@ static int ufshcd_link_hibern8_ctrl(struct ufs_hba *hba, bool en)
 		hba->vops->hibern8_notify(hba, en, POST_CHANGE);
 
 out:
+	hba->tcx_replay_timer_expired_cnt = 0;
+	hba->fcx_protection_timer_expired_cnt = 0;
+
 	return ret;
 }
 
@@ -3937,6 +3948,10 @@ static void ufshcd_check_errors(struct ufs_hba *hba)
 			/* transfer error masks to sticky bits */
 			hba->saved_err |= hba->errors;
 			hba->saved_uic_err |= hba->uic_error;
+
+			/* not allow er_work in link transition */
+			if (ufshcd_in_link_transition(hba))
+				return;
 
 			hba->ufshcd_state = UFSHCD_STATE_ERROR;
 			schedule_work(&hba->eh_work);
@@ -5553,16 +5568,16 @@ disable_clks:
 #endif
 
 	/*
-	 * Disable the host irq as host controller as there won't be any
-	 * host controller trasanction expected till resume.
-	 */
-	ufshcd_disable_irq(hba);
-
-	/*
 	 * Flush pending works before clock is disabled
 	 */
 	cancel_work_sync(&hba->eh_work);
 	cancel_work_sync(&hba->eeh_work);
+
+	/*
+	 * Disable the host irq as host controller as there won't be any
+	 * host controller trasanction expected till resume.
+	 */
+	ufshcd_disable_irq(hba);
 
 	if (gating_allowed) {
 		if (!ufshcd_is_link_active(hba))
@@ -5573,6 +5588,7 @@ disable_clks:
 	}
 
 	hba->clk_gating.state = CLKS_OFF;
+
 	/*
 	 * Call vendor specific suspend callback. As these callbacks may access
 	 * vendor specific host controller register space call them before the
@@ -5591,6 +5607,10 @@ disable_clks:
 	goto out;
 
 set_link_active:
+	ret = ufshcd_enable_irq(hba);
+	if (ret)
+		goto out;
+
 	if (ufshcd_is_link_hibern8(hba)) {
 		ufshcd_set_link_trans_active(hba);
 		if (!ufshcd_link_hibern8_ctrl(hba, false))
