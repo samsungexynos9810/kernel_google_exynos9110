@@ -24,7 +24,9 @@
 
 static BLOCKING_NOTIFIER_HEAD(psmw_notifier_list);
 static DEFINE_MUTEX(psmw_lock);
+#ifdef CONFIG_EXYNOS_PSMW_MEM
 static void __iomem *psmw_drex_base = NULL;
+#endif
 static enum psmw_event psmw_active_state = 0;
 
 /**
