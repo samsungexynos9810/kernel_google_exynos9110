@@ -223,6 +223,7 @@
                                         regulator-name = "VDD_UOTG_AP_3.3V";
                                         regulator-min-microvolt = <3000000>;
                                         regulator-max-microvolt = <3000000>;
+					regulator-initial-mode = <1>;
                                 };
 
 				ldo15_reg: LDO15 {
