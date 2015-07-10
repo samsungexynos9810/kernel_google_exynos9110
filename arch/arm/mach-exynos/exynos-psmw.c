@@ -18,8 +18,14 @@
 #include <linux/io.h>
 #include <mach/map.h>
 
-#define MEMCONTROL		0x04
-#define PRECHCONFIG0	0x14
+#define MEMCONTROL			0x04
+#define PRECHCONFIG0		0x14
+#define PWRDNCONFIG			0x28
+
+#define DSREF_CYC_SHIFT		16
+#define DPWRDN_CYC_MASK		0xff
+
+#define CYC_SHIFT_LVL		2
 #endif
 
 static BLOCKING_NOTIFIER_HEAD(psmw_notifier_list);
@@ -60,17 +66,25 @@ int unregister_psmw_notifier(struct notifier_block *nb)
 void psmw_notify_active(void)
 {
 #ifdef CONFIG_EXYNOS_PSMW_MEM
-	unsigned int reg;
+	unsigned int reg, tmp1, tmp2;
 
 	/* Active precharge power down : 0x0 [3:2] */
 	reg = __raw_readl(psmw_drex_base + MEMCONTROL);
 	reg &= ~(0x3 << 2);
 	__raw_writel(reg, psmw_drex_base + MEMCONTROL);
 
-	/* Open page policy : 0x0 [19:16], each bit means a memory sport */
+	/* Open page policy : 0x0 [19:16], each bit means a memory port */
 	reg = __raw_readl(psmw_drex_base + PRECHCONFIG0);
 	reg &= ~(0xf << 16);
 	__raw_writel(reg, psmw_drex_base + PRECHCONFIG0);
+
+	/* increase dsref_cyc & dpwrdn_cyc about 2 times */
+	reg = __raw_readl(psmw_drex_base + PWRDNCONFIG);
+	tmp1 = (reg >> DSREF_CYC_SHIFT) << (DSREF_CYC_SHIFT + CYC_SHIFT_LVL);
+	tmp2 = ((reg & DPWRDN_CYC_MASK) << CYC_SHIFT_LVL) & DPWRDN_CYC_MASK;
+	__raw_writel(tmp1 | tmp2, psmw_drex_base + PWRDNCONFIG);
+	PSMW_INFO("PWRDNCONFIG [0x%x] \n", __raw_readl(psmw_drex_base + PWRDNCONFIG));
+
 #endif
 	blocking_notifier_call_chain(&psmw_notifier_list, 1, NULL);
 	PSMW_INFO("inactive zone ======================================= [END]\n");
@@ -79,7 +93,7 @@ void psmw_notify_active(void)
 void psmw_notify_inactive(void)
 {
 #ifdef CONFIG_EXYNOS_PSMW_MEM
-	unsigned int reg;
+	unsigned int reg, tmp1, tmp2;
 
 	/* Forced precharge power down : 0x1 [3:2] */
 	reg = __raw_readl(psmw_drex_base + MEMCONTROL);
@@ -87,10 +101,17 @@ void psmw_notify_inactive(void)
 	reg |= (0x1 << 2);
 	__raw_writel(reg, psmw_drex_base + MEMCONTROL);
 
-	/* Open page policy : 0xf [19:16], each bit means a memory sport */
+	/* close page policy : 0xf [19:16], each bit means a memory port */
 	reg = __raw_readl(psmw_drex_base + PRECHCONFIG0);
 	reg |= (0xf << 16);
 	__raw_writel(reg, psmw_drex_base + PRECHCONFIG0);
+
+	/* reduce dsref_cyc & dpwrdn_cyc about 1/2 times */
+	reg = __raw_readl(psmw_drex_base + PWRDNCONFIG);
+	tmp1 = (reg >> (DSREF_CYC_SHIFT + CYC_SHIFT_LVL)) << DSREF_CYC_SHIFT;
+	tmp2 = (reg & DPWRDN_CYC_MASK) >> CYC_SHIFT_LVL;
+	__raw_writel(tmp1 | tmp2, psmw_drex_base + PWRDNCONFIG);
+	PSMW_INFO("PWRDNCONFIG [0x%x] \n", __raw_readl(psmw_drex_base + PWRDNCONFIG));
 #endif
 	PSMW_INFO("inactive zone ######################################## [START]\n");
 	blocking_notifier_call_chain(&psmw_notifier_list, 0, NULL);
@@ -148,6 +169,9 @@ static int __init psmw_init(void)
 	reg = __raw_readl(psmw_drex_base + MEMCONTROL);
 	if(!(reg & (1<<1))) {
 		pr_err("[PSMW]: %s: Dynamic Power Down is not enabled \n", __func__);
+	}
+	if(!(reg & (1<<5))) {
+		pr_err("[PSMW]: %s: Dynamic Self Refresh is not enabled \n", __func__);
 	}
 #endif
 
