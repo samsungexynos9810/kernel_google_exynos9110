@@ -294,13 +294,6 @@
 		};
 	};
 
-	dcvdd: fixed-regulator@0 {
-		compatible = "regulator-fixed";
-		regulator-name = "dcvdd-supply";
-		regulator-min-microvolt = <1200000>;
-		regulator-max-microvolt = <1200000>;
-	};
-
 	i2c0_isp: i2c@12130000 {
 		status = "okay";
 		samsung,i2c-sda-delay = <100>;
@@ -423,37 +416,6 @@
 		#size-cells = <0>;
 		status = "okay";
 
-		touchscreen@38 {
-			compatible = "focaltech,5x06";
-			reg = <0x38>;
-			interrupt-parent = <&gpx0>;
-			interrupts = <5 0 0>;
-			pinctrl-names = "default";
-			pinctrl-0 = <&touch_irq>;
-			focaltech,name = "ft5336";
-			focaltech,family-id = <0x14>;
-			focaltech,reset-gpio = <&gpx2 5 0x1>;
-			focaltech,irq-gpio = <&gpx0 5 0x1>;
-			focaltech,display-coords = <0 0 240 240>;
-			focaltech,panel-coords = <0 0 240 240>;
-			focaltech,button-map= <139 102 158>;
-			focaltech,no-force-update;
-			focaltech,i2c-pull-up;
-			focaltech,group-id = <1>;
-			focaltech,hard-reset-delay-ms = <20>;
-			focaltech,soft-reset-delay-ms = <200>;
-			focaltech,num-max-touches = <5>;
-			#focaltech,fw-name = "ft_8926_qrd_fw.bin";
-			focaltech,fw-delay-aa-ms = <30>;
-			focaltech,fw-delay-55-ms = <30>;
-			#focaltech,fw-upgrade-id1 = <0x79>;
-			#focaltech,fw-upgrade-id2 = <0x08>;
-			focaltech,fw-delay-readid-ms = <10>;
-			focaltech,fw-delay-era-flsh-ms = <2000>;
-			focaltech,fw-auto-cal;
-			focaltech,ignore-id-check;
-		};
-
 		touchscreen@24 {
 			compatible = "cy,cyttsp5_i2c_adapter";
 			reg = <0x24>;
@@ -496,26 +458,6 @@
 		};
 	};
 
-//	i2c@13880000 {
-//		samsung,i2c-sda-delay = <100>;
-//		samsung,i2c-max-bus-freq = <400000>;
-//		#address-cells = <1>;
-//		#size-cells = <0>;
-//		status = "okay";
-//
-//		bq24160_charger@6b {
-//			compatible = "ti,bq24160";
-//			reg = <0x6b>;
-//			gpios = <&gpx2 1 1>;
-//			interrupts = <1 0 0>;
-//			interrupt-parent = <&gpx2>;
-//			pinctrl-names = "default";
-//			pinctrl-0 = <&chg_irq>;
-//			dev_name = "bq24160";
-//			support_boot_charging = <1>;
-//		};
-//	};
-
 	i2c@138D0000 {
 		samsung,i2c-sda-delay = <25>;
 		samsung,i2c-max-bus-freq = <400000>;
@@ -554,17 +496,6 @@
 				0x15 0xE0 0x11 0xE0 0x11 0x00 0x11 0x00	>;
 		};
 
-
-		sec-nfc@27 {
-			compatible = "sec-nfc";
-			reg = <0x27>;
-			interrupts = <0 0 0>;
-			interrupt-parent = <&gpx3>;
-			sec-nfc,ven-gpio = <&gpe0 0 0>;
-			sec-nfc,irq-gpio = <&gpx3 0 0>;
-			sec-nfc,firm-gpio = <&gpe0 1 0>;
-			sec-nfc,pwr-gpio = <&gpe0 4 0>;
-		};
 	};
 
 
@@ -752,35 +683,6 @@
                 };
         };
 
-	fimc_is@14000000 {
-		fimc_is_dvfs {
-			default_int = <134000>; /* L1 */
-			default_cam = <320000>; /* L0 */
-			default_mif = <400000>; /* L0 */
-			default_i2c = <0>;
-
-			rear_preview_int = <134000>; /* L1 */
-			rear_preview_cam = <320000>; /* L0 */
-			rear_preview_mif = <400000>; /* L0 */
-			rear_preview_i2c = <0>;
-
-			rear_capture_int = <134000>; /* L1 */
-			rear_capture_cam = <320000>; /* L0 */
-			rear_capture_mif = <400000>; /* L0 */
-			rear_capture_i2c = <0>;
-
-			rear_camcording_int = <134000>; /* L1 */
-			rear_camcording_cam = <320000>; /* L0 */
-			rear_camcording_mif = <400000>; /* L0 */
-			rear_camcording_i2c = <0>;
-
-			max_int = <134000>; /* L1 */
-			max_cam = <320000>; /* L0 */
-			max_mif = <400000>; /* L0 */
-			max_i2c = <0>;
-		};
-	};
-
 	usb@12480000 {
 		vusb_d-supply = <&ldo6_reg>;
 		vusb_a-supply = <&ldo8_reg>;
@@ -806,44 +708,6 @@
 				samsung,spi-feedback-delay = <0>;
 			};
 		};
-#if 0
-		audio_codec: WM5110@0 {
-			compatible = "wlf,wm5110";
-			spi-max-frequency = <20000000>;
-			reg = <0x0>;
-
-			wlf,reset = <&gpm0 4 1>;
-			wlf,ldoena = <&gpx3 3 1>;
-			wlf,irq-gpio = <&gpx3 4 0xF>;
-
-			pinctrl-names = "default";
-			pinctrl-0 = <&codec_reset>;
-
-			AVDD-supply = <&ldo23_reg>;
-			LDOVDD-supply = <&ldo23_reg>;
-			CPVDD-supply = <&ldo23_reg>;
-			MICVDD-supply = <&ldo23_reg>;
-			DBVDD1-supply = <&ldo23_reg>;
-			DBVDD2-supply = <&ldo23_reg>;
-			DBVDD3-supply = <&ldo23_reg>;
-			SPKVDDL-supply = <&ldo17_reg>;
-			SPKVDDR-supply = <&ldo17_reg>;
-			DCVDD-supply = <&dcvdd>;
-
-			wlf,gpio-defaults = <
-				0xA101  /* AIF1TXLRCLK */
-				0xA101
-				0xA101
-				0xA101
-				0xA101
-			>;
-
-			controller-data {
-				cs-gpio = <&gpb 5 1>;
-				samsung,spi-feedback-delay = <2>;
-			};
-		};
-#endif
 	};
 
 	gaudio_codec: ak4678 {
@@ -878,16 +742,6 @@
 
 	serial@13800000 {
 		status = "okay";
-	};
-
-	mtk_wmt {
-		compatible = "mtk,mt6620";
-
-		mtk_wmt,pmu = <&gpe1 6 0x1>;
-		mtk_wmt,eedi = <&gpe1 5 0x1>;
-		mtk_wmt,rst = <&gpe1 4 0x1>;
-		mtk_wmt,bgf_int = <&gpx3 3 0x1>;
-		mtk_wmt,wifi_int = <&gpx3 4 0x1>;
 	};
 
 	backlight: bd82103 {
