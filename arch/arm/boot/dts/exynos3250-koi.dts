@@ -744,6 +744,14 @@
 		status = "okay";
 	};
 
+	serial@13810000 {
+		status = "okay";
+	};
+
+	serial@13820000 {
+		status = "okay";
+	};
+
 	backlight: bd82103 {
 		compatible = "rohm,bd82103";
 		gpios = <&gpd0 0 0x1>;
