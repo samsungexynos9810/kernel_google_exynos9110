@@ -185,6 +185,46 @@
 					regulator-initial-mode = <1>;
 				};
 
+				ldo2_reg: LDO2 {
+					regulator-always-on;
+					regulator-initial-mode = <1>;
+                                };
+
+				ldo3_reg: LDO3 {
+                                        regulator-name = "LDO3";
+					regulator-initial-mode = <3>;
+					regulator-always-on;
+                                };
+
+				ldo4_reg: LDO4 {
+					regulator-always-on;
+                                        regulator-initial-mode = <1>;
+                                };
+
+				ldo5_reg: LDO5 {
+					regulator-always-on;
+                                        regulator-initial-mode = <1>;
+                                };
+
+				ldo6_reg: LDO6 {
+                                        regulator-name = "VDD_USB_AP_1.0V";
+                                        regulator-min-microvolt = <1000000>;
+                                        regulator-max-microvolt = <1000000>;
+                                        regulator-always-on;
+					regulator-initial-mode = <1>;
+                                };
+
+				ldo7_reg: LDO7 {
+					regulator-always-on;
+                                        regulator-initial-mode = <1>;
+                                };
+
+				ldo8_reg: LDO8 {
+                                        regulator-name = "VDD_UOTG_AP_3.3V";
+                                        regulator-min-microvolt = <3000000>;
+                                        regulator-max-microvolt = <3000000>;
+                                };
+
 				ldo15_reg: LDO15 {
 					regulator-name = "vdd_tsp_3.1";
 					regulator-min-microvolt = <1800000>;
@@ -229,20 +269,6 @@
 					regulator-always-on;
 				};
 
-				ldo6_reg: LDO6 {
-                                        regulator-name = "VDD_USB_AP_1.0V";
-                                        regulator-min-microvolt = <1000000>;
-                                        regulator-max-microvolt = <1000000>;
-                                        regulator-always-on;
-					regulator-initial-mode = <1>;
-                                };
-
-				ldo8_reg: LDO8 {
-                                        regulator-name = "VDD_UOTG_AP_3.3V";
-                                        regulator-min-microvolt = <3000000>;
-                                        regulator-max-microvolt = <3000000>;
-                                };
-
 				ldo23_reg: LDO23 {
 					regulator-name = "vdd_aud_1.8";
 					regulator-min-microvolt = <800000>;
@@ -252,31 +278,6 @@
 					regulator-boot-on;
 				};
 
-				ldo2_reg: LDO2 {
-					regulator-always-on;
-					regulator-initial-mode = <1>;
-                                };
-
-				ldo3_reg: LDO3 {
-                                        regulator-name = "LDO3";
-					regulator-initial-mode = <3>;
-					regulator-always-on;
-                                };
-
-				ldo4_reg: LDO4 {
-					regulator-always-on;
-                                        regulator-initial-mode = <1>;
-                                };
-
-				ldo5_reg: LDO5 {
-					regulator-always-on;
-                                        regulator-initial-mode = <1>;
-                                };
-
-				ldo7_reg: LDO7 {
-					regulator-always-on;
-                                        regulator-initial-mode = <1>;
-                                };
 			};
 		};
 	};
