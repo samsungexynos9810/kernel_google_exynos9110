@@ -1147,8 +1147,6 @@ blank_exit:
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	disp_pm_gate_lock(dispdrv, false);
-	if (blank_mode == FB_BLANK_POWERDOWN || blank_mode == FB_BLANK_NORMAL)
-		init_display_pm_status(dispdrv);
 #endif
 	return ret;
 }
