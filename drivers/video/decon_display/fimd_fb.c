@@ -1123,7 +1123,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 			s5p_mipi_dsi_enable(dsim_for_decon);
 			ret = s3c_fb_enable(sfb);
 #if defined(CONFIG_FB_SMIES)
-			if (sfb->smies->smies_on)
+			if (sfb->smies->smies_on && (sfb->smies->state != SMIES_ENABLED))
 				sfb->smies->smies_on(sfb->smies->dev);
 #endif
 
