@@ -97,7 +97,7 @@ static const u8 ak4678_reg[AK4678_MAX_REGISTERS] = {
 	0x00,			/*      0x04    AK4678_04_PLL_MODE_SELECT1      */
 	0x02,			/*      0x05    AK4678_05_FORMAT_SELECT */
 	0x00,			/*      0x06    AK4678_06_MIC_SIGNAL_SELECT     */
-	0x55,			/*      0x07    AK4678_07_MIC_AMP_GAIN          */
+	0x33,			/*      0x07    AK4678_07_MIC_AMP_GAIN          */
 	0x00,			/*      0x08    AK4678_08_DIGITL_MIC    */
 	0x00,			/*      0x09    AK4678_09_DAC_PATH_SELECT       */
 	0x00,			/*      0x0A    AK4678_0A_LINE_MANAGEMENT       */
@@ -2102,7 +2102,7 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 	snd_soc_write(codec, AK4678_10_SPRC_VOLUME, 0xc);
 
 	/* set mic gain 12 dB */
-	snd_soc_write(codec, AK4678_07_MIC_AMP_GAIN, 0x99);
+	snd_soc_write(codec, AK4678_07_MIC_AMP_GAIN, 0x33);
 
 	ak4678_set_reg_digital_effect(codec);
 
