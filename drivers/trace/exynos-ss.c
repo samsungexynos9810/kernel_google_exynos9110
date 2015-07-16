@@ -219,7 +219,16 @@ struct exynos_ss_log {
 		int en;
 	} regulator[ESS_LOG_MAX_NUM];
 #endif
-
+#ifdef CONFIG_EXYNOS_SNAPSHOT_THERMAL
+	struct thermal_log {
+		unsigned long long time;
+		int cpu;
+		struct exynos_tmu_platform_data *data;
+		unsigned int temp;
+		char* cooling_device;
+		unsigned int cooling_state;
+	} thermal[ESS_LOG_MAX_NUM];
+#endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_MBOX
 	struct mailbox_log {
 		unsigned long long time;
@@ -292,6 +301,9 @@ struct exynos_ss_log_idx {
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_REGULATOR
 	atomic_t regulator_log_idx;
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_REGULATOR
+	atomic_t thermal_log_idx;
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_MBOX
 	atomic_t mailbox_log_idx;
@@ -1374,6 +1386,9 @@ static void __init exynos_ss_fixmap_header(void)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_REGULATOR
 	atomic_set(&(ess_idx.regulator_log_idx), -1);
 #endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_THERMAL
+	atomic_set(&(ess_idx.thermal_log_idx), -1);
+#endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_MBOX
 	atomic_set(&(ess_idx.mailbox_log_idx), -1);
 #endif
@@ -1631,6 +1646,28 @@ void exynos_ss_regulator(char* f_name, unsigned int addr, unsigned int volt, int
 		ess_log->regulator[i].reg = addr;
 		ess_log->regulator[i].en = en;
 		ess_log->regulator[i].voltage = volt;
+	}
+}
+#endif
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_THERMAL
+void exynos_ss_thermal(void *data, unsigned int temp, char *name, unsigned int max_cooling)
+{
+	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+
+	if (unlikely(!ess_base.enabled || !item->entry.enabled))
+		return;
+	{
+		int cpu = raw_smp_processor_id();
+		unsigned long i = atomic_inc_return(&ess_idx.thermal_log_idx) &
+				(ARRAY_SIZE(ess_log->thermal) - 1);
+
+		ess_log->thermal[i].time = cpu_clock(cpu);
+		ess_log->thermal[i].cpu = cpu;
+		ess_log->thermal[i].data = (struct exynos_tmu_platform_data *)data;
+		ess_log->thermal[i].temp = temp;
+		ess_log->thermal[i].cooling_device = name;
+		ess_log->thermal[i].cooling_state = max_cooling;
 	}
 }
 #endif

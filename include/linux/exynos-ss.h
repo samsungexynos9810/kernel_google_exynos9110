@@ -46,6 +46,12 @@ extern void exynos_ss_regulator(char* f_name, unsigned int addr, unsigned int vo
 #define exynos_ss_regulator(a,b,c,d)         do { } while(0)
 #endif
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_THERMAL
+extern void exynos_ss_thermal(void *data, unsigned int temp, char *name, unsigned int max_cooling);
+#else
+#define exynos_ss_thermal(a,b,c,d)	do { } while(0)
+#endif
+
 #ifdef CONFIG_EXYNOS_SNAPSHOT_MBOX
 extern void exynos_ss_mailbox(void *msg, int mode, char* f_name, void *volt);
 #else
@@ -133,6 +139,7 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_cpuidle(a,b,c,d)	do { } while(0)
 #define exynos_ss_suspend(a,b,c)	do { } while(0)
 #define exynos_ss_regulator(a,b,c,d)	do { } while(0)
+#define exynos_ss_thermal(a,b,c,d)	do { } while(0)
 #define exynos_ss_mailbox(a,b,c,d)	do { } while(0)
 #define exynos_ss_irq(a,b,c,d)		do { } while(0)
 #define exynos_ss_irq_exit(a,b)		do { } while(0)
