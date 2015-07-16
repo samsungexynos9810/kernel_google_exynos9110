@@ -58,6 +58,14 @@ struct logger_log {
 	size_t			w_off;
 	size_t			head;
 	size_t			size;
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	bool			ess_hook;
+	char			*ess_buf;
+	char			*ess_sync_buf;
+	size_t			ess_size;
+	size_t			ess_sync_size;
+	size_t			header_size;
+#endif
 	struct list_head	logs;
 };
 
@@ -410,6 +418,91 @@ static void fix_up_readers(struct logger_log *log, size_t len)
 			reader->r_off = get_next_entry(log, reader->r_off, len);
 }
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+#define ESS_MAX_BUF_SIZE	(SZ_4K)
+#define ESS_MAX_SYNC_BUF_SIZE	(SZ_1K)
+#define ESS_MAX_TIMEBUF_SIZE	(20)
+
+static void (*func_hook_logger)(const char *name, const char *buf, size_t size);
+void register_hook_logger(void (*func)(const char *name, const char *buf, size_t size))
+{
+	func_hook_logger = func;
+}
+EXPORT_SYMBOL(register_hook_logger);
+
+static int reparse_hook_logger_header(struct logger_log *log,
+				      struct logger_entry *entry)
+{
+	struct tm tmBuf;
+	char timeBuf[ESS_MAX_TIMEBUF_SIZE];
+	char process[16];
+	u64 tv_kernel;
+	unsigned long rem_nsec;
+
+	tv_kernel = local_clock();
+	rem_nsec = do_div(tv_kernel, 1000000000);
+
+	time_to_tm(entry->sec, 0, &tmBuf);
+
+	strncpy(process, current->comm, sizeof(process));
+
+	snprintf(timeBuf, sizeof(timeBuf), "%02d-%02d %02d:%02d:%02d",
+			tmBuf.tm_mon + 1, tmBuf.tm_mday,
+			tmBuf.tm_hour, tmBuf.tm_min, tmBuf.tm_sec);
+
+	snprintf(log->ess_buf, ESS_MAX_BUF_SIZE, "[%5lu.%06lu][%d:%16s] %s.%03d %5d %5d  ",
+			(unsigned long)tv_kernel, rem_nsec / 1000,
+			raw_smp_processor_id(), process,
+			timeBuf, entry->nsec / 1000000,
+			entry->pid,
+			entry->tid);
+
+	return log->header_size = strlen(log->ess_buf);
+}
+
+static size_t copy_hook_logger(struct logger_log *log, char *buf, size_t count,
+				size_t filled_size, size_t max_size)
+{
+	size_t len = min(count, log->size - log->w_off);
+	size_t m_off = (size_t)buf + filled_size;
+
+	if (max_size <= filled_size) {
+		pr_err("%s: failed to hooking platform log - count: %zu max: %zu, fill: %zu\n",
+			__func__, count, max_size, filled_size);
+		return filled_size;
+	}
+
+	/* Considering count size */
+	if (filled_size + count < max_size) {
+		memcpy((void *)m_off, log->buffer + log->w_off, len);
+		if (count != len)
+			memcpy((void *)m_off + len, log->buffer, count - len);
+		filled_size += count;
+	} else {
+		/* Cut off over max_size in count == len */
+		if (count == len) {
+			memcpy((void *)m_off, log->buffer + log->w_off,
+					max_size - filled_size - 1);
+		} else {
+			/* Considering len size */
+			if (filled_size + len < max_size) {
+				/* Enough to fill len size */
+				memcpy((void *)m_off, log->buffer + log->w_off, len);
+				/* Cut off over max_size */
+				memcpy((void *)(m_off + len), log->buffer,
+						max_size - filled_size - len - 1);
+			} else {
+				/* Cut off over max size */
+				memcpy((void *)m_off, log->buffer + log->w_off,
+						max_size - filled_size - 1);
+			}
+		}
+		filled_size = max_size;
+	}
+	return filled_size;
+}
+#endif
+
 /*
  * logger_write_iter - our write method, implementing support for write(),
  * writev(), and aio_write(). Writes are our fast path, and we try to optimize
@@ -420,7 +513,7 @@ static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	struct logger_log *log = file_get_log(iocb->ki_filp);
 	struct logger_entry header;
 	struct timespec now;
-	size_t len, count, w_off;
+	size_t len, count;
 
 	count = min_t(size_t, iocb->ki_nbytes, LOGGER_ENTRY_MAX_PAYLOAD);
 
@@ -452,12 +545,17 @@ static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	memcpy(log->buffer + log->w_off, &header, len);
 	memcpy(log->buffer, (char *)&header + len, sizeof(header) - len);
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	if (func_hook_logger && log->ess_buf)
+		log->ess_size = reparse_hook_logger_header(log, &header);
+#endif
+
 	/* Work with a copy until we are ready to commit the whole entry */
-	w_off =  logger_offset(log, log->w_off + sizeof(struct logger_entry));
+	log->w_off = logger_offset(log, log->w_off + sizeof(struct logger_entry));
 
-	len = min(count, log->size - w_off);
+	len = min(count, log->size - log->w_off);
 
-	if (copy_from_iter(log->buffer + w_off, len, from) != len) {
+	if (copy_from_iter(log->buffer + log->w_off, len, from) != len) {
 		/*
 		 * Note that by not updating log->w_off, this abandons the
 		 * portion of the new entry that *was* successfully
@@ -473,7 +571,68 @@ static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
 		return -EFAULT;
 	}
 
-	log->w_off = logger_offset(log, w_off + count);
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	/*
+	 *  There are times when log buffer is just 1 bytes
+	 *  for sync with kernel log buffer
+	 */
+	if (log->ess_sync_buf && len > 1 &&
+		log->ess_sync_size < ESS_MAX_SYNC_BUF_SIZE - 1 &&
+		strncmp(log->buffer + log->w_off, "!@", 2) == 0) {
+		log->ess_sync_size = copy_hook_logger(log,
+						      log->ess_sync_buf,
+						      count,
+						      log->ess_sync_size,
+						      ESS_MAX_SYNC_BUF_SIZE);
+	}
+	if (func_hook_logger && log->ess_hook) {
+		if (log->ess_size < ESS_MAX_BUF_SIZE - 1) {
+			log->ess_size = copy_hook_logger(log,
+							 log->ess_buf,
+							 count,
+							 log->ess_size,
+							 ESS_MAX_BUF_SIZE);
+		}
+	}
+#endif
+
+	log->w_off = logger_offset(log, log->w_off + count);
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	if (func_hook_logger && log->ess_hook) {
+		/* it is allowed to hook if ess_size < ESS_MAX_BUF_SIZE */
+		if (log->ess_size < ESS_MAX_BUF_SIZE) {
+			char *eatnl = log->ess_buf + log->ess_size - 1;
+
+			if (log->ess_size > log->header_size) {
+				static const char* kPrioChars = "!.VDIWEFS";
+				unsigned char prio = log->ess_buf[log->header_size];
+
+				log->ess_buf[log->header_size - 1] =
+					prio < strlen(kPrioChars) ? kPrioChars[prio] : '?';
+				log->ess_buf[log->header_size] = ' ';
+			}
+			*eatnl = '\n';
+			while (--eatnl >= log->ess_buf) {
+				if (*eatnl == '\n' || *eatnl == '\0')
+					*eatnl = ' ';
+			};
+			func_hook_logger(log->misc.name, log->ess_buf, log->ess_size);
+		}
+	}
+	/* if it is kernel sync logs */
+	if (log->ess_sync_buf && log->ess_sync_size) {
+		/* save code to prevent overflow during printk */
+		if (log->ess_sync_size < ESS_MAX_SYNC_BUF_SIZE)
+			log->ess_sync_buf[log->ess_sync_size - 1] = '\0';
+		else
+			log->ess_sync_buf[ESS_MAX_SYNC_BUF_SIZE - 1] = '\0';
+		pr_info("%s\n", log->ess_sync_buf);
+		/* clear ess_sync_buf */
+		memset(log->ess_sync_buf, 0, ESS_MAX_SYNC_BUF_SIZE);
+		log->ess_sync_size = 0;
+	}
+#endif
 	mutex_unlock(&log->mutex);
 
 	/* wake up any blocked readers */
@@ -747,6 +906,27 @@ static int __init create_log(char *log_name, int size)
 
 	pr_info("created %luK log '%s'\n",
 		(unsigned long) log->size >> 10, log->misc.name);
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	buffer = vmalloc(ESS_MAX_SYNC_BUF_SIZE);
+	if (buffer)
+		log->ess_sync_buf = buffer;
+	else
+		pr_err("failed to vmalloc ess_sync_buf %s log\n",
+				log->misc.name);
+
+	if (exynos_ss_get_enable(log->misc.name) == true) {
+		buffer = vmalloc(ESS_MAX_BUF_SIZE);
+		if (!buffer) {
+			pr_err("failed to use hooking platform %s log\n", log->misc.name);
+		} else {
+			log->ess_buf = buffer;
+			log->ess_hook = true;
+			pr_info("Enable to hook %s, Buffer:%p\n",
+					log->misc.name, log->ess_buf);
+		}
+	}
+#endif
 
 	return 0;
 
