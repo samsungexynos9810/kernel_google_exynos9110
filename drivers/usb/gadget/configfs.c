@@ -1647,9 +1647,11 @@ static struct config_group *gadgets_make(
 		const char *name)
 {
 	struct gadget_info *gi;
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
 	struct device_attribute **attrs;
 	struct device_attribute *attr;
 	int err;
+#endif
 
 	gi = kzalloc(sizeof(*gi), GFP_KERNEL);
 	if (!gi)
@@ -1727,16 +1729,18 @@ err1:
 
 	device_destroy(android_device->class,
 				android_device->devt);
-#endif
 err:
+#endif
 	kfree(gi);
 	return ERR_PTR(-ENOMEM);
 }
 
 static void gadgets_drop(struct config_group *group, struct config_item *item)
 {
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
 	struct device_attribute **attrs;
 	struct device_attribute *attr;
+#endif
 
 	config_item_put(item);
 
