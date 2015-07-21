@@ -1114,6 +1114,12 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 			exynos5_update_media_layers(TYPE_FIMD1, 1);
 			prev_overlap_cnt = 1;
 #endif
+#ifdef CONFIG_FB_AMBIENT_SUPPORT
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+			if (ambient_enter)
+				goto blank_exit;
+#endif
+#endif
 			s5p_mipi_dsi_enable(dsim_for_decon);
 			ret = s3c_fb_enable(sfb);
 #if defined(CONFIG_FB_SMIES)
