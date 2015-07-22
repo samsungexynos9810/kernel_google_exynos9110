@@ -61,6 +61,8 @@
 #define L2_AUX_MASK 0xC200ffff
 
 #define REG_CPU_STATE_ADDR	(S5P_VA_SYSRAM_NS + 0x28)
+#define EXYNOS_RECOVERY_MODE	0xf
+#define EXYNOS_NEED_UPDATE	6
 
 static const char name_exynos3250[] = "EXYNOS3250";
 static const char name_exynos4210[] = "EXYNOS4210";
@@ -781,13 +783,14 @@ void exynos3_restart(char mode, const char *cmd)
 
 	inform = readl(EXYNOS_INFORM4);
 
-        if(!strncmp(cmd,"bootloader",10))
+        if(!strncmp(cmd,"bootloader",10)){
 		__raw_writel(0xD, EXYNOS_INFORM4);
-	else
-		__raw_writel(0x0, EXYNOS_INFORM4);
-
-	if(!strncmp(cmd,"recovery",8))
-		__raw_writel(0xf, EXYNOS_INFORM4);
+	} else if(!strncmp(cmd,"recovery",8)){
+		__raw_writel(EXYNOS_RECOVERY_MODE, EXYNOS_INFORM4);
+	} else {
+		if(inform != EXYNOS_NEED_UPDATE)
+			__raw_writel(0x0, EXYNOS_INFORM4);
+	}
 
 	__raw_writel(0x1, EXYNOS_SWRESET);
 }
