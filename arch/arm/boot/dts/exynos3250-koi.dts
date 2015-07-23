@@ -244,8 +244,6 @@
 					regulator-min-microvolt = <3100000>;
 					regulator-max-microvolt = <3100000>;
 					regulator-initial-mode = <1>;
-					regulator-always-on;
-					regulator-boot-on;
 				};
 
 				ldo19_reg: LDO19 {
@@ -274,8 +272,6 @@
 					regulator-min-microvolt = <800000>;
 					regulator-max-microvolt = <2375000>;
 					regulator-initial-mode = <1>;
-					regulator-always-on;
-					regulator-boot-on;
 				};
 
 			};
@@ -292,6 +288,8 @@
 			compatible = "akm,ak4678";
 			reg = <0x12>;
 			ak4678,pdn-gpio = <&gpm0 4 0x1>;
+			vdd_18-supply = <&ldo23_reg>;
+			vdd_30-supply = <&ldo17_reg>;
 		};
 	};
 
