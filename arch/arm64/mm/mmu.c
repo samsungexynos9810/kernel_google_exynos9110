@@ -40,8 +40,8 @@
 
 #include <linux/vmalloc.h>
 
-#if defined(CONFIG_AP_PARAM)
-#include <soc/samsung/ap_param_parser.h>
+#if defined(CONFIG_ECT)
+#include <soc/samsung/ect_parser.h>
 #endif
 
 static int iotable_on;
@@ -365,8 +365,8 @@ void __init paging_init(void)
 
 	map_mem();
 
-#if defined(CONFIG_AP_PARAM)
-	ap_param_init_map_io();
+#if defined(CONFIG_ECT)
+	ect_init_map_io();
 #endif
 
 	/*
