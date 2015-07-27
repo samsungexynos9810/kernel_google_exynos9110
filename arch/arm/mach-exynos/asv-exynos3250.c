@@ -160,9 +160,6 @@ static unsigned int exynos3250_get_asv_group_arm(struct asv_common *asv_comm)
 	unsigned int i;
 	struct asv_info *target_asv_info = asv_get(ID_ARM);
 
-	/* Temporarily fix to ASV 2 Group */
-	return 2;
-
 	if (is_special_lot)
 		return special_lot_group;
 
@@ -224,9 +221,6 @@ static unsigned int exynos3250_get_asv_group_int(struct asv_common *asv_comm)
 	unsigned int i;
 	struct asv_info *target_asv_info = asv_get(ID_INT);
 
-	/* Temporarily fix to ASV 2 Group */
-	return 2;
-
 	if (is_special_lot)
 		return special_lot_group;
 
@@ -276,9 +270,6 @@ static unsigned int exynos3250_get_asv_group_mif(struct asv_common *asv_comm)
 {
 	unsigned int i;
 	struct asv_info *target_asv_info = asv_get(ID_MIF);
-
-	/* Temporarily fix to ASV 2 Group */
-	return 2;
 
 	if (is_special_lot)
 		return special_lot_group;
