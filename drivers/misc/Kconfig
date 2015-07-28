@@ -518,6 +518,13 @@ config SHIRI_VIBRATOR
 	help
 	  The SHIRI_VIBRATOR is the vibrator driver for Shiri.
 
+config KOI_VIBRATOR
+	tristate "Koi vibrator support"
+    depends on MULTI_SENSORS
+	default y
+	help
+	  The KOI_VIBRATOR is the vibrator driver for Koi.
+
 config LATTICE_ECP3_CONFIG
 	tristate "Lattice ECP3 FPGA bitstream configuration via SPI"
 	depends on SPI && SYSFS
