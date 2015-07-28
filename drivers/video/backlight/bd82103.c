@@ -21,7 +21,7 @@
 #define DRIVER_NAME	"bd82103"
 
 #define BRIGHTNESS_MAX	0xff
-#define BRIGHTNESS_INIT 0x50
+#define BRIGHTNESS_INIT 0x80
 
 #define T_ACC		1    //intial waiting time [ms]
 #define T_HI		50   //pulse length of hi  [ns]
@@ -53,7 +53,6 @@ static int initialize_gpio(int gpio)
 		err = gpio_direction_output(gpio, 1);
 		if (err)
 			printk("%s : set_direction for reset gpio failed", __func__);
-		gpio_set_value_cansleep(gpio, 1);
 #endif
 	}
 	return 0;
@@ -76,7 +75,7 @@ static int get_pulse_num(int intensity)
 	return pulse_num;
 }
 
-static int ctrl_brightness(int intensity, int gpio)
+static int ctrl_brightness(int pre_intensity, int intensity, int gpio)
 {
 	unsigned char pulse_num;
 #ifndef CONFIG_BACKLIGHT_SUBCPU
@@ -88,10 +87,13 @@ static int ctrl_brightness(int intensity, int gpio)
 #ifdef CONFIG_BACKLIGHT_SUBCPU
 	return SUB_LCDBrightnessSet(pulse_num);
 #else
-	if (intensity == 0){
+	if (intensity == 0) {
 		gpio_set_value_cansleep(gpio, 0);
-	}
-	else {
+	} else {
+		if (pre_intensity == 0) {
+			gpio_set_value_cansleep(gpio, 1);
+			msleep(T_ACC);
+		}
 		for (i = 0; i < pulse_num;  i++) {
 			gpio_set_value_cansleep(gpio, 0);
 			ndelay(T_LOW);
@@ -140,7 +142,7 @@ static int bd82103_update_status(struct backlight_device *bd)
 		msleep(T_ACC);
 	}
 #endif
-	ctrl_brightness(intensity, pchip->gpio);
+	ctrl_brightness(pchip->bl_intensity, intensity, pchip->gpio);
 	pchip->bl_intensity = intensity;
 
 	return 0;
@@ -176,10 +178,7 @@ static int bd82103_probe(struct platform_device *pdev)
 		return PTR_ERR(pchip->bd);
 
 	initialize_gpio(pchip->gpio);
-#ifndef CONFIG_BACKLIGHT_SUBCPU
-	msleep(T_ACC);
-#endif
-	if (ctrl_brightness(BRIGHTNESS_INIT, pchip->gpio)) {
+	if (ctrl_brightness(0, BRIGHTNESS_INIT, pchip->gpio)) {
 		gpio_free(pchip->gpio);
 		backlight_device_unregister(pchip->bd);
 		return -EPROBE_DEFER;
