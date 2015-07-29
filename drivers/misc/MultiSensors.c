@@ -26,6 +26,7 @@
 #include <linux/power_supply.h>
 
 #include "../power/subcpu_battery.h"
+#include "../video/backlight/bd82103.h"
 #include "MSensorsDrv.h"
 
 #define MAIN_CPU_VERSION	"V1.19"
@@ -636,6 +637,16 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	dev_dbg(&st->sdev->dev, "Msensors_Write Start count=%d\n", count);
 
 	ret = copy_from_user(&write_buff[1], buf, count);
+
+	/* [for demo] if pnlcd on/off command is issued, backlight off/on */
+	if (write_buff[1] == SUB_COM_SETID_DEMO_CMD &&
+			write_buff[2] == SUB_LCD_CONTROL) {
+		if (write_buff[3] & SUB_LCD_ONOFF_MASK)
+			on_off_light_for_pnlcd_demo(0);
+		else
+			on_off_light_for_pnlcd_demo(1);
+	}
+
 	if(!ret)
 	{
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
