@@ -255,7 +255,6 @@ static void cyttsp5_get_mt_touches(struct cyttsp5_mt_data *md,
 		} else
 			cyttsp5_report_event(md, CY_ABS_D_OST, 0);
 
-
 		/* all devices: position and pressure fields */
 		for (j = 0; j <= CY_ABS_W_OST; j++) {
 			if (!si->tch_abs[j].report)
@@ -289,12 +288,26 @@ cyttsp5_get_mt_touches_pr_tch:
 			tch->abs[CY_TCH_O],
 			tch->abs[CY_TCH_TIP]);
 	}
-
 	if (md->mt_function.final_sync)
 		md->mt_function.final_sync(md->input,
 				si->tch_abs[CY_TCH_T].max, mt_sync_count, ids);
 
 	md->num_prv_rec = num_cur_tch;
+}
+
+static void report_palm(struct cyttsp5_mt_data *md)
+{
+	input_report_key(md->input, KEY_SLEEP, 1);
+	input_sync(md->input);
+	input_report_key(md->input, KEY_SLEEP, 0);
+	input_sync(md->input);
+}
+
+static struct delayed_work work_palm;
+static bool palm_ignore;
+static void work_palm_ignore_off(struct work_struct *work)
+{
+	palm_ignore = false;
 }
 
 /* read xy_data for all current touches */
@@ -306,6 +319,7 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 	struct cyttsp5_touch tch;
 	u8 num_cur_tch;
 	int rc = 0;
+	static int palm_on;
 
 	cyttsp5_get_touch_hdr(md, &tch, si->xy_mode + 3);
 
@@ -322,16 +336,34 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 			num_cur_tch = 0;
 	}
 
-	if (num_cur_tch == 0 && md->num_prv_rec == 0)
+	if (num_cur_tch == 0 && md->num_prv_rec == 0 && palm_on == 0)
 		goto cyttsp5_xy_worker_exit;
 
 	/* extract xy_data for all currently reported touches */
 	dev_vdbg(dev, "%s: extract data num_cur_tch=%d\n", __func__,
 		num_cur_tch);
-	if (num_cur_tch)
-		cyttsp5_get_mt_touches(md, &tch, num_cur_tch);
-	else
-		cyttsp5_mt_lift_all(md);
+
+	if (!palm_on) {
+		if (tch.hdr[CY_TCH_LO]) {
+			cyttsp5_mt_lift_all(md);
+			report_palm(md);
+			pr_info("palm on\n");
+			palm_on = 1;
+		} else if (num_cur_tch) {
+			if (palm_ignore == false) {
+				cyttsp5_get_mt_touches(md, &tch, num_cur_tch);
+			}
+		} else {
+			cyttsp5_mt_lift_all(md);
+		}
+	} else {
+		if (tch.hdr[CY_TCH_LO] == 0 && num_cur_tch == 0) {
+			palm_ignore = true;
+			schedule_delayed_work(&work_palm, msecs_to_jiffies(1000));
+			pr_info("palm off\n");
+			palm_on = 0;
+		}
+	}
 
 	rc = 0;
 
@@ -501,6 +533,8 @@ static int cyttsp5_setup_input_device(struct device *dev)
 	__set_bit(EV_ABS, md->input->evbit);
 	__set_bit(EV_REL, md->input->evbit);
 	__set_bit(EV_KEY, md->input->evbit);
+	__set_bit(KEY_SLEEP, md->input->keybit);
+	INIT_DELAYED_WORK(&work_palm, work_palm_ignore_off);
 #ifdef INPUT_PROP_DIRECT
 	__set_bit(INPUT_PROP_DIRECT, md->input->propbit);
 #endif

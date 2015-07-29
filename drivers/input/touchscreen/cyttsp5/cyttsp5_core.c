@@ -3880,12 +3880,12 @@ static int cyttsp5_parse_input(struct cyttsp5_core_data *cd)
 	}
 #endif
 
-	if (cd->touch_wake) {
+//	if (cd->touch_wake) {
 		/* attention WAKE */
-		call_atten_cb(cd, CY_ATTEN_WAKE, 0);
-		cd->touch_wake = false;
-		return 0;
-	}
+//		call_atten_cb(cd, CY_ATTEN_WAKE, 0);
+//		cd->touch_wake = false;
+//		return 0;
+//	}
 
 	/* update watchdog expire time */
 	mod_timer_pending(&cd->watchdog_timer, jiffies +
