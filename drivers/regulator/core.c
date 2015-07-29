@@ -2791,7 +2791,7 @@ EXPORT_SYMBOL_GPL(regulator_get_current_limit);
 int regulator_set_mode(struct regulator *regulator, unsigned int mode)
 {
 	struct regulator_dev *rdev = regulator->rdev;
-	int ret;
+	int ret = 0;
 	int regulator_curr_mode;
 
 	mutex_lock(&rdev->mutex);
@@ -2811,10 +2811,15 @@ int regulator_set_mode(struct regulator *regulator, unsigned int mode)
 		}
 	}
 
+#ifdef CONFIG_REGULATOR_S2MPS14
+	if (regulator->always_on)
+		goto out;
+#else
 	/* constraints check */
 	ret = regulator_mode_constrain(rdev, &mode);
 	if (ret < 0)
 		goto out;
+#endif
 
 	ret = rdev->desc->ops->set_mode(rdev, mode);
 out:

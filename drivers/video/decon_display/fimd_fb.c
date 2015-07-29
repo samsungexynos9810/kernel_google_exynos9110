@@ -3868,7 +3868,9 @@ int s3c_fb_runtime_suspend(struct device *dev)
 {
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
-	int ret;
+	int ret,i;
+
+
 
 	dispdrv = get_display_driver();
 	sfb = dispdrv->decon_driver.sfb;
@@ -3889,6 +3891,15 @@ int s3c_fb_runtime_suspend(struct device *dev)
 #endif
 
 	if (sfb->power_state != POWER_HIBER_DOWN) {
+		for(i=0;i<(ARRAY_SIZE(sfb->supplies)); i++) {
+			// Suspend state controlled by pwren
+			ret =regulator_set_mode(sfb->supplies[i].consumer,1);
+			if (ret) {
+				dev_err(sfb->dev, "failed to set mode 1 for\
+					 supply %d  for lcd: %d\n",i, ret);
+			}
+		}
+
 #ifdef CONFIG_LCD_MIPI_SHARP
 		// enable vdd lcd 3.1 (VCI)
 		ret = regulator_disable(sfb->supplies[1].consumer);
@@ -3913,7 +3924,8 @@ int s3c_fb_runtime_resume(struct device *dev)
 	struct s3c_fb *sfb;
 	struct display_driver *dispdrv;
 	struct s3c_fb_platdata *pd;
-	u32 reg, ret;
+	u32 reg;
+	int ret, i;
 
 	dispdrv = get_display_driver();
 	if (!dispdrv) {
@@ -3926,7 +3938,15 @@ int s3c_fb_runtime_resume(struct device *dev)
 		return 0;
 	}
 	pd = sfb->pdata;
-	if (sfb->power_state != POWER_HIBER_ON) {
+	if ((sfb->power_state == POWER_DOWN) || (sfb->power_state == POWER_ON)) {
+		for(i=0;i<(ARRAY_SIZE(sfb->supplies)); i++) {
+			// Always on mode
+			ret =regulator_set_mode(sfb->supplies[i].consumer,3);
+			if (ret) {
+				dev_err(sfb->dev, "failed to set mode 3 for\
+					 supply %d  for lcd: %d\n",i, ret);
+			}
+		}
 #ifdef CONFIG_LCD_MIPI_SHARP
 		// enable vdd_lcd_1.8 (VDDI)
 		ret = regulator_enable(sfb->supplies[1].consumer);
