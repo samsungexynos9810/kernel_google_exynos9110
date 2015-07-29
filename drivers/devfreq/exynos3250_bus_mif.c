@@ -655,7 +655,7 @@ static int psmw_bus_mif_vsync_notifier(struct notifier_block *this,
 
 static void psmw_devfreq_init(void)
 {
-	atomic_set(&psmw_bus_mif_info.is_vsync_requested, 0);
+	atomic_set(&psmw_bus_mif_info.is_vsync_requested, 1);
 	atomic_set(&psmw_bus_mif_info.sleep, 0);
 	psmw_bus_mif_info.nb.notifier_call = psmw_bus_mif_vsync_notifier;
 	register_psmw_notifier(&psmw_bus_mif_info.nb);
@@ -694,9 +694,15 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 		case 3:
 			timingaref_value = RATE_ONE;
 #ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
-			thermal_work->polling_period = 0;
-			atomic_set(&psmw_bus_mif_info.sleep, 1);
-			PSMW_INFO("sleep\n");
+			if (atomic_read(&psmw_bus_mif_info.is_vsync_requested)) {
+				thermal_work->polling_period = 1000;
+				atomic_set(&psmw_bus_mif_info.sleep, 0);
+				PSMW_INFO("Normal polling\n");
+			} else {
+				thermal_work->polling_period = 0;
+				atomic_set(&psmw_bus_mif_info.sleep, 1);
+				PSMW_INFO("sleep\n");
+			}
 #else
 			thermal_work->polling_period = 1000;
 #endif
@@ -706,7 +712,7 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 			thermal_work->polling_period = 300;
 #ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
 			if (atomic_read(&psmw_bus_mif_info.sleep))
-				PSMW_INFO("Normal polling");
+				PSMW_INFO("Normal polling\n");
 			atomic_set(&psmw_bus_mif_info.sleep, 0);
 #endif
 			break;
@@ -717,7 +723,7 @@ static void exynos3250_devfreq_thermal_monitor(struct work_struct *work)
 			thermal_work->polling_period = 100;
 #ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
 			if (atomic_read(&psmw_bus_mif_info.sleep))
-				PSMW_INFO("Normal polling");
+				PSMW_INFO("Normal polling\n");
 			atomic_set(&psmw_bus_mif_info.sleep, 0);
 #endif
 			break;

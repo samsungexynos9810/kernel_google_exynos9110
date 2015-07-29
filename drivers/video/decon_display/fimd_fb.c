@@ -71,6 +71,12 @@ static int prev_overlap_cnt;
 static struct pm_qos_request exynos_fimd_int_qos;
 static struct pm_qos_request exynos_fimd_mif_qos;
 #endif
+
+#ifdef CONFIG_EXYNOS_PSMW
+#include <mach/exynos-psmw.h>
+static bool is_booted = false;
+#endif
+
 /* This driver will export a number of framebuffer interfaces depending
  * on the configuration passed in via the platform data. Each fb instance
  * maps to a hardware window. Currently there is no support for runtime
@@ -1074,6 +1080,12 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 
 	switch (blank_mode) {
 		case FB_BLANK_POWERDOWN:
+#ifdef CONFIG_EXYNOS_PSMW
+			if (!is_booted) {
+				is_booted = true;
+				psmw_trigger_update(FIMD_FB, PSMW_ENABLE);
+			}
+#endif
 		case FB_BLANK_NORMAL:
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 			disp_set_pm_status(DISP_STATUS_PM2);
