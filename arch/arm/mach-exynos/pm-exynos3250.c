@@ -210,6 +210,7 @@ static void exynos_show_wakeup_reason_eint(void)
 	unsigned long eint_wakeup_mask;
 	bool found = 0;
 	extern void __iomem *exynos_eint_base;
+	int ext_ent;
 
 	eint_wakeup_mask = __raw_readl(EXYNOS_EINT_WAKEUP_MASK);
 
@@ -217,19 +218,20 @@ static void exynos_show_wakeup_reason_eint(void)
 		ext_int_pend =
 			__raw_readl(EINT_PEND(exynos_eint_base,
 					      IRQ_EINT(reg_eintstart)));
-
 		for_each_set_bit(bit, &ext_int_pend, 8) {
 			int irq = IRQ_EINT(reg_eintstart) + bit;
-			struct irq_desc *desc = irq_to_desc(irq);
+ 			struct irq_desc *desc = irq_to_desc(irq);
+
+			ext_ent= irq - IRQ_EINT(0);
 
 			if (eint_wakeup_mask & (1 << (reg_eintstart + bit)))
 				continue;
 
 			if (desc && desc->action && desc->action->name)
-				pr_info("Resume caused by IRQ %d, %s\n", irq,
+				pr_info("Resume caused by External Hardware Interrupt %d, %s\n", ext_ent,
 					desc->action->name);
 			else
-				pr_info("Resume caused by IRQ %d\n", irq);
+				pr_info("Resume caused by External Hardware Interrupt %d\n", ext_ent);
 
 			found = 1;
 		}
