@@ -1418,15 +1418,24 @@ static int __init exynos_init_irq_eint(void)
 		{ .compatible = "samsung,exynos5430-evt0-pinctrl", },
 		{ .compatible = "samsung,exynos5430-pinctrl", },
 	};
-	struct device_node *pctrl_np, *wkup_np;
-	const char *wkup_compat = "samsung,exynos4210-wakeup-eint";
+
+	struct device_node *pctrl_np, *np, *wkup_np = NULL;
+	/* list of external wakeup controllers supported */
+	static const struct of_device_id exynos_wkup_irq_ids[] = {
+		{ .compatible = "samsung,exynos4210-wakeup-eint", },
+		{ }
+	};
 
 	for_each_matching_node(pctrl_np, exynos_pinctrl_ids) {
 		if (of_device_is_available(pctrl_np)) {
-			wkup_np = of_find_compatible_node(pctrl_np, NULL,
-							wkup_compat);
-			if (wkup_np)
-				break;
+			for_each_child_of_node(pctrl_np, np) {
+				if (of_match_node(exynos_wkup_irq_ids, np)) {
+					wkup_np = np;
+					break;
+				}
+			}
+		if (wkup_np)
+			break;
 		}
 	}
 
