@@ -437,14 +437,6 @@ static int s3c24xx_serial_start_tx_dma(struct s3c24xx_uart_port *ourport,
 	struct circ_buf *xmit = &port->state->xmit;
 	struct s3c24xx_uart_dma *dma = ourport->dma;
 
-	while (xmit->tail & (dma_get_cache_alignment() - 1)) {
-		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
-			return 1;
-		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
-		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
-		port->icount.tx++;
-		count--;
-	}
 
 	if (ourport->tx_mode != S3C24XX_TX_DMA)
 		enable_tx_dma(ourport);
@@ -487,11 +479,12 @@ static void s3c24xx_serial_start_next_tx(struct s3c24xx_uart_port *ourport)
 		return;
 	}
 
-	if (!ourport->dma || !ourport->dma->tx_chan || count < TX_DMA_THRESH)
+	if (!ourport->dma || !ourport->dma->tx_chan ||
+	    count < TX_DMA_THRESH ||
+	    xmit->tail & (dma_get_cache_alignment() - 1))
 		s3c24xx_serial_start_tx_pio(ourport);
 	else
-		if (s3c24xx_serial_start_tx_dma(ourport, count))
-			s3c24xx_serial_start_tx_pio(ourport);
+		s3c24xx_serial_start_tx_dma(ourport, count);
 }
 
 void s3c24xx_serial_start_tx(struct uart_port *port)
@@ -899,15 +892,19 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 	struct uart_port *port = &ourport->port;
 	struct circ_buf *xmit = &port->state->xmit;
 	unsigned long flags;
-	int count;
+	int count, dma_count = 0;
 
 	spin_lock_irqsave(&port->lock, flags);
 
 	count = CIRC_CNT_TO_END(xmit->head, xmit->tail, UART_XMIT_SIZE);
 
 	if (ourport->dma && ourport->dma->tx_chan && count >= TX_DMA_THRESH) {
-		s3c24xx_serial_start_tx_dma(ourport, count);
-		goto out;
+		int align = dma_get_cache_alignment() -
+			(xmit->tail & (dma_get_cache_alignment() - 1));
+		if (count-align >= TX_DMA_THRESH) {
+			dma_count = count-align;
+			count = align;
+		}
 	}
 
 	if (port->x_char) {
@@ -928,14 +925,24 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 
 	/* try and drain the buffer... */
 
-	count = port->fifosize;
-	while (!uart_circ_empty(xmit) && count-- > 0) {
+	if (count > port->fifosize) {
+		count = port->fifosize;
+		dma_count = 0;
+	}
+
+	while (!uart_circ_empty(xmit) && count > 0) {
 		if (rd_regl(port, S3C2410_UFSTAT) & ourport->info->tx_fifofull)
 			break;
 
 		wr_regb(port, S3C2410_UTXH, xmit->buf[xmit->tail]);
 		xmit->tail = (xmit->tail + 1) & (UART_XMIT_SIZE - 1);
 		port->icount.tx++;
+		count--;
+	}
+
+	if (!count && dma_count) {
+		s3c24xx_serial_start_tx_dma(ourport, dma_count);
+		goto out;
 	}
 
 	if (uart_circ_chars_pending(xmit) < WAKEUP_CHARS) {
