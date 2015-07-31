@@ -23,11 +23,14 @@
 #define IRQ_SPI(x)			(x + 32)
 
 /* COMBINER */
-
+#ifndef CONFIG_SOC_EXYNOS3250
 #define MAX_IRQ_IN_COMBINER		8
 #define COMBINER_GROUP(x)		((x) * MAX_IRQ_IN_COMBINER + IRQ_SPI(128))
+#else
+#define MAX_IRQ_IN_COMBINER		0
+#define COMBINER_GROUP(x)		((x) * MAX_IRQ_IN_COMBINER + IRQ_SPI(256))
+#endif
 #define COMBINER_IRQ(x, y)		(COMBINER_GROUP(x) + y)
-
 /* For EXYNOS4 and EXYNOS5 */
 
 #define EXYNOS_IRQ_EINT16_31		IRQ_SPI(32)
