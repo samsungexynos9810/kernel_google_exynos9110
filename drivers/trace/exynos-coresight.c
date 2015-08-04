@@ -39,6 +39,8 @@
 #define OS_LOCK_FLAG		(DBG_REG_MAX_SIZE - 1)
 #define ITERATION		CONFIG_PC_ITERATION
 #define CORE_CNT		CONFIG_NR_CPUS
+#define MSB_PADDING		(0xFFFFFFC000000000)
+#define MSB_MASKING		(0x0001ffc000000000)
 
 struct cs_dbg_cpu {
 	void __iomem		*base;
@@ -156,7 +158,10 @@ void exynos_cs_show_pcval(void)
 			dbg_os_lock(base);
 			DBG_LOCK(base);
 
-			exynos_cs_pc[cpu][iter] = val;
+			if(MSB_MASKING == (MSB_MASKING & val)) {
+				exynos_cs_pc[cpu][iter] = MSB_PADDING | val;
+			}
+			else exynos_cs_pc[cpu][iter] = val;
 		}
 	}
 
