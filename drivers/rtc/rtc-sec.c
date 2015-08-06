@@ -25,6 +25,9 @@
 #include <linux/mfd/samsung/s2mps11.h>
 #include <linux/mfd/samsung/s2mps13.h>
 #include <linux/mfd/samsung/s2mps14.h>
+#if defined(CONFIG_RTC_SYNC_SUBCPU)
+ #include "../misc/MSensorsDrv.h"
+#endif
 
 struct s2m_rtc_info {
 	struct device		*dev;
@@ -178,6 +181,9 @@ static int s2m_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	}
 
 	ret = s2m_rtc_update(info, S2M_RTC_WRITE_TIME);
+#if defined(CONFIG_RTC_SYNC_SUBCPU)
+	SUBCPU_rtc_set_time(data);
+#endif
 out:
 	mutex_unlock(&info->lock);
 	return ret;
@@ -590,6 +596,12 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 	struct s2m_rtc_info *info;
 	int irq_base;
 	int ret;
+#if defined(CONFIG_RTC_SYNC_SUBCPU)
+	u8 data[NR_RTC_CNT_REGS];
+
+	if (SUBCPU_rtc_read_time(data))
+		return -EPROBE_DEFER;
+#endif
 
 	info = devm_kzalloc(&pdev->dev, sizeof(struct s2m_rtc_info),
 				GFP_KERNEL);
@@ -625,6 +637,9 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 
+#if defined(CONFIG_RTC_SYNC_SUBCPU)
+	s2m_data_to_tm(data, pdata->init_time);
+#endif
 	ret = s2m_rtc_init_reg(info, pdata);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);

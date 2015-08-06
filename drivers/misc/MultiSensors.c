@@ -24,6 +24,7 @@
 #include <linux/interrupt.h>
 #include <linux/unistd.h>
 #include <linux/power_supply.h>
+#include <linux/mfd/samsung/rtc.h>
 
 #include "../power/subcpu_battery.h"
 #include "../video/backlight/bd82103.h"
@@ -1027,64 +1028,24 @@ void SUB_VibratorSet(int timeout)
 	Set_WriteDataBuff( &write_buff[0], (void*)0 );
 }
 
-int flag_cb_rtcread;
-void CB_SUB_RTCRead(void)
+int SUBCPU_rtc_read_time(uint8_t *data)
 {
-	flag_cb_rtcread = 1;
-}
+	/* if RTC was not set, return error */
+	if (HeaderData[3] == 0) return 1;
 
-int SUB_RTCRead(u8 *data)
-{
-	struct Msensors_state *st = g_st;
-	unsigned char write_buff[WRITE_DATA_SIZE];
-	int loopcnt = 0;
-
-	if( ThreaadRunFlg == 0 ) //TEMS.259 2015.02.21 anzai
-	{
-		dev_dbg(&st->sdev->dev, "SUB_RTCRead-Case1: thread not running\n");
-		memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
-		SpiSendBuff[0] = SUB_COM_TYPE_RES_NOMAL;
-		SpiSendBuff[1] = 0x24;
-		PreSendType =  SpiSendBuff[0];
-		Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], WRITE_DATA_SIZE);
-		request_interval=(INTERVAL_INIT - INTERVAL_SUBMIT);
-
-		/* Get Header Data */
-		memcpy(&HeaderData[0], &SpiRecvBuff[0], HEADER_DATA_SIZE);
-	}
-	else if (SetCommandOnly == 0)
-	{
-		dev_dbg(&st->sdev->dev, "SUB_RTCRead-Case2: thread is running\n");
-		memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-		write_buff[0] = SUB_COM_TYPE_READ;
-		write_buff[1] = SUB_COM_GETID_RTC;
-
-		flag_cb_rtcread = 0;
-		Set_WriteDataBuff( &write_buff[0], CB_SUB_RTCRead );
-		msleep(60);
-		loopcnt = 0;
-	}
-
-	data[ENUM_RTC_DATA_HOURDISP] = 0;
-	data[ENUM_RTC_DATA_AMPM]     = 0;
-	data[ENUM_RTC_DATA_YEAR]     = HeaderData[3]>>1;
-	data[ENUM_RTC_DATA_MONTH]    = ((HeaderData[3] & 0x01) << 3 ) + (HeaderData[4] >> 5);
-	data[ENUM_RTC_DATA_DAY]      = HeaderData[4] & 0x1F;
-	data[ENUM_RTC_DATA_WEEK]     = HeaderData[5] >> 5;
-	data[ENUM_RTC_DATA_HOUR]     = HeaderData[5] & 0x1F;
-	data[ENUM_RTC_DATA_MIN]      = HeaderData[6];
-	data[ENUM_RTC_DATA_SEC]      = HeaderData[7];
-
-	dev_dbg(&st->sdev->dev, "SUB_RTCRead: %02d:%02d:%02d (%d) %02d:%02d:%02d\n",
-		data[ENUM_RTC_DATA_YEAR], data[ENUM_RTC_DATA_MONTH], data[ENUM_RTC_DATA_DAY],
-		data[ENUM_RTC_DATA_WEEK],
-		data[ENUM_RTC_DATA_HOUR], data[ENUM_RTC_DATA_MIN], data[ENUM_RTC_DATA_SEC]);
+	data[RTC_YEAR]  = (uint8_t)(HeaderData[3] >> 1);
+	data[RTC_MONTH] = (uint8_t)(((HeaderData[3] & 0x01) << 3) |
+			                    ((HeaderData[4] & 0xE0) >> 5));
+	data[RTC_DATE]  = (uint8_t)(HeaderData[4] & 0x1F);
+	data[RTC_WEEKDAY] = BIT((uint8_t)(HeaderData[5] >> 5));
+	data[RTC_HOUR]  = (uint8_t)(HeaderData[5] & 0x1F);
+	data[RTC_MIN]   = HeaderData[6];
+	data[RTC_SEC]   = HeaderData[7];
 
 	return 0;
 }
 
-int SUB_RTCSet(u8 *data)
+int SUBCPU_rtc_set_time(uint8_t *data)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
@@ -1092,39 +1053,14 @@ int SUB_RTCSet(u8 *data)
 
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_RTC;
-	memcpy(&write_buff[2], data, SUB_COM_DATA_SIZE_RTC);
-
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
-
-	HeaderData[3]  = ( data[ENUM_RTC_DATA_YEAR] << 1 );
-	HeaderData[3] |= ( data[ENUM_RTC_DATA_MONTH] >> 3 ) & 0x01;
-	HeaderData[4]  = ( data[ENUM_RTC_DATA_MONTH] & 0x07 ) << 5;
-	HeaderData[4] |= ( data[ENUM_RTC_DATA_DAY] & 0x1F );
-	HeaderData[5]  = ( data[ENUM_RTC_DATA_WEEK] << 5 );
-	HeaderData[5] |= ( data[ENUM_RTC_DATA_HOUR] & 0x1F );
-	HeaderData[6]  = data[ENUM_RTC_DATA_MIN];
-	HeaderData[7]  = data[ENUM_RTC_DATA_SEC];
-
-	return 0;
-}
-
-int SUB_RTC_alarm_Set(u8 *data, bool enabled)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_ALERM;
-	write_buff[2] = enabled;
-	write_buff[3]  = ( data[ENUM_RTC_DATA_YEAR] << 1 );
-	write_buff[3] |= ( data[ENUM_RTC_DATA_MONTH] >> 3 ) & 0x01;
-	write_buff[4]  = ( data[ENUM_RTC_DATA_MONTH] & 0x07 ) << 5;
-	write_buff[4] |= ( data[ENUM_RTC_DATA_DAY] & 0x1F );
-	write_buff[5]  = ( data[ENUM_RTC_DATA_WEEK] << 5 );
-	write_buff[5] |= ( data[ENUM_RTC_DATA_HOUR] & 0x1F );
-	write_buff[6]  = data[ENUM_RTC_DATA_MIN];
-	write_buff[7]  = data[ENUM_RTC_DATA_SEC];
+	write_buff[3]  = ( data[RTC_YEAR] << 1 );
+	write_buff[3] |= ( data[RTC_MONTH] >> 3 ) & 0x01;
+	write_buff[4]  = ( data[RTC_MONTH] & 0x07 ) << 5;
+	write_buff[4] |= ( data[RTC_DATE] & 0x1F );
+	write_buff[5]  = ( (__fls(data[RTC_WEEKDAY])) << 5 );
+	write_buff[5] |= ( data[RTC_HOUR] & 0x1F );
+	write_buff[6]  = data[RTC_MIN];
+	write_buff[7]  = data[RTC_SEC];
 
 	Set_WriteDataBuff( &write_buff[0], (void*)0 );
 

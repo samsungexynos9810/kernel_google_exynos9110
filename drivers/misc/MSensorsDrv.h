@@ -138,21 +138,6 @@
 
 #define SUB_LCD_CONTROL				(0)
 #define SUB_LCD_ONOFF_MASK			(0x80)
-/*============================================================================*/
-/* enum */
-/*============================================================================*/
-typedef enum{
-	ENUM_RTC_DATA_HOURDISP = 0,
-	ENUM_RTC_DATA_AMPM,
-	ENUM_RTC_DATA_YEAR,
-	ENUM_RTC_DATA_MONTH,
-	ENUM_RTC_DATA_DAY,
-	ENUM_RTC_DATA_WEEK,
-	ENUM_RTC_DATA_HOUR,
-	ENUM_RTC_DATA_MIN,
-	ENUM_RTC_DATA_SEC,
-	ENUM_RTC_DATA_NUM,
-}ENUM_RTC_DATA;
 
 /*============================================================================*/
 /* struct */
@@ -184,8 +169,8 @@ struct Msensors_data {
 /*============================================================================*/
 extern int SUB_VibratorEnable(int enable);
 extern void SUB_VibratorSet(int timeout);
-extern int SUB_RTCRead(unsigned char *data);
-extern int SUB_RTCSet(unsigned char *data);
+extern int SUBCPU_rtc_set_time(uint8_t *data);
+extern int SUBCPU_rtc_read_time(uint8_t *data);
 extern int SUB_BatteryVoltageRead(void);
 extern int SUB_BatteryLevelRead(void);
 extern int SUB_BatteryTemperatureRead(void);
@@ -195,7 +180,6 @@ extern int SUB_KeyModeChange(unsigned char KeyMode);
 extern int SUB_IsTheaterMode(unsigned char flg_bl_dark);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
 extern int SUB_DemoCommandSend(unsigned char* demo_cmd);
-extern int SUB_RTC_alarm_Set(u8 *data, bool enabled);
 extern int MSensors_get_timeout_value(void);
 
 #endif	/* __MULTISENSORS_H */

@@ -904,6 +904,12 @@ config RTC_DRV_SEC
 	  This driver can also be built as a module. If so, the module
 	  will be called rtc-sec.
 
+config RTC_SYNC_SUBCPU
+	tristate "Sync RTC with SUBCPU"
+	depends on RTC_DRV_SEC
+	help
+	  If you say yes, spi transfer RTC of EXYNOS to SUBCPU
+
 config RTC_DRV_EP93XX
 	tristate "Cirrus Logic EP93XX"
 	depends on ARCH_EP93XX
