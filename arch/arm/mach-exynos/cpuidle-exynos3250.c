@@ -106,7 +106,7 @@ static struct check_reg_lpa exynos_clock_gating[] = {
 };
 
 static struct check_reg_lpa audio_clock_gating[] = {
-	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,   .check_bit = 0x00200000},
+	{.check_reg = EXYNOS3_CLKGATE_IP_PERIL,   .check_bit = 0x00200001},
 };
 #if defined(CONFIG_MTK_COMBO_MT66XX)
 int exynos_bt_op_f = 0;
