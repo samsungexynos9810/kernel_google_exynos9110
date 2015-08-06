@@ -60,6 +60,7 @@
 #define SUB_COM_SETID_RTC			(0x50)		/* RTC */
 #define SUB_COM_SETID_ALERM			(0x51)		/* Alarm */
 #define SUB_COM_SETID_KEYMODE			(0x52)		/* Key Mode */
+#define SUB_COM_SETID_THEATER_MODE	(0x53)		/* Theater mode flg */
 #define SUB_COM_SETID_SUB_FIRM_UPDATE		(0x99)		/* SUB-CPU Firmware Update */
 #define SUB_COM_SETID_DEMO_CMD			(0xFE)		/* Demo Command */
 #define SUB_COM_SETID_DEMO			(0xFF)		/* Demo ID */
@@ -191,6 +192,7 @@ extern int SUB_BatteryTemperatureRead(void);
 extern int SUB_BatteryStatusRead(void);
 extern void Msensors_Spi_Recv(void);
 extern int SUB_KeyModeChange(unsigned char KeyMode);
+extern int SUB_IsTheaterMode(unsigned char flg_bl_dark);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
 extern int SUB_DemoCommandSend(unsigned char* demo_cmd);
 extern int SUB_RTC_alarm_Set(u8 *data, bool enabled);

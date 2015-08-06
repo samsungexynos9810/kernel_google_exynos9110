@@ -79,6 +79,7 @@ static STR_PriorityTbl Write_Priority_Tbl[] = {
 	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_RTC,		SUB_COM_OVERWRITE },	/* RTC */
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_RTC,		SUB_COM_OVERWRITE },	/* RTC */
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_MAIN_STATUS,	SUB_COM_OVERWRITE },	/* MAIN status */
+	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_THEATER_MODE,	SUB_COM_OVERWRITE },	/* MAIN LCD Brightness is 0 or not */
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_LCD_SET,		SUB_COM_OVERWRITE },	/* LCD Brightness Settiong */
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_KEYMODE,		SUB_COM_OVERWRITE },	/* Key Mode */
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_SENSOR_PERIOD,	SUB_COM_OVERWRITE },	/* Sensor Data Send Period */
@@ -1139,6 +1140,20 @@ int SUB_KeyModeChange(unsigned char KeyMode)
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_KEYMODE;
 	write_buff[2] = KeyMode;	/* key mode */
+
+	Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	return 0;
+}
+
+int SUB_IsTheaterMode(unsigned char flg_theater_mode)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
+
+	write_buff[0] = SUB_COM_TYPE_WRITE;
+	write_buff[1] = SUB_COM_SETID_THEATER_MODE;
+	write_buff[2] = flg_theater_mode;	/* theater mode:1 else:0 */
 
 	Set_WriteDataBuff( &write_buff[0], (void*)0 );
 	return 0;

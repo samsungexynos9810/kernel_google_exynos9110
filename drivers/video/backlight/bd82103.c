@@ -14,9 +14,7 @@
 
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
-#ifdef CONFIG_BACKLIGHT_SUBCPU
 #include "../../misc/MSensorsDrv.h"
-#endif
 
 #define DRIVER_NAME	"bd82103"
 
@@ -34,6 +32,7 @@ struct bd82103_chip_data {
 
 	int gpio;
 	int bl_intensity;
+	unsigned char flg_theater_mode;
 };
 static struct bd82103_chip_data g_pchip;
 
@@ -126,6 +125,16 @@ static int bd82103_update_status(struct backlight_device *bd)
 	struct bd82103_chip_data *pchip = &g_pchip;
 	int intensity = bd->props.brightness;
 
+	/* detect theater mode */
+	if (bd->props.power == FB_BLANK_UNBLANK) {
+		if (intensity == 0 && pchip->flg_theater_mode != 1) {
+			pchip->flg_theater_mode = 1;
+			SUB_IsTheaterMode(pchip->flg_theater_mode);
+		} else if (intensity != 0 && pchip->flg_theater_mode == 1) {
+			pchip->flg_theater_mode = 0;
+			SUB_IsTheaterMode(pchip->flg_theater_mode);
+		}
+	}
 #ifndef CONFIG_FB_AMBIENT_SUPPORT
 	/* for ambient debugging */
 	if (bd->props.power != FB_BLANK_UNBLANK ||
@@ -184,6 +193,7 @@ static int bd82103_probe(struct platform_device *pdev)
 		return -EPROBE_DEFER;
 	}
 	pchip->bl_intensity = BRIGHTNESS_INIT;
+	pchip->flg_theater_mode = 0xFF;
 
 	return 0;
 }
