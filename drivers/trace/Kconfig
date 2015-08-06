@@ -82,6 +82,14 @@ config EXYNOS_SNAPSHOT_HOOK_LOGGER
 	depends on EXYNOS_SNAPSHOT
 	default y
 
+config EXYNOS_SNAPSHOT_PSTORE
+	bool "Enable supporting pstore fs for logging and hooking"
+	depends on EXYNOS_SNAPSHOT_HOOK_LOGGER
+	select PSTORE
+	select PSTORE_RAM
+	select PSTORE_PMSG
+	default y
+
 config EXYNOS_SNAPSHOT_PANIC_REBOOT
 	bool "Enable forced reboot after panic for ramdump"
 	depends on EXYNOS_SNAPSHOT
