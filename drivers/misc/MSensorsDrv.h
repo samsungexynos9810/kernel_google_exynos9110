@@ -21,7 +21,12 @@
 #define SUB_COM_TYPE_RES_NOMAL			(0xA0)		/* Nomal Response */
 #define SUB_COM_TYPE_WRITE			(0xA1)		/* Write Request */
 #define SUB_COM_TYPE_READ			(0xA2)		/* Read Request */
+#define SUB_COM_TYPE_SET_FW_DATA		(0xAE)		/* Set SUBCPU FW Data */
+#define SUB_COM_TYPE_SET_FW_SIZE		(0xAF)		/* Set SUBCPU FW Size */
 #define SUB_COM_TYPE_BIT_HEAD			(0x80)		/* HEADER Information */
+#define SUB_COM_TYPE_FWUP_READY			(0x81)		/* SubCPU is ready for FWUpdate */
+#define SUB_COM_TYPE_FW_REQ_DATA		(0x40)		/* SubCPU Request FW Data */
+#define SUB_COM_TYPE_FW_REQ_HEAD		(0x8F)		/* SubCPU Request FW Header */
 #define SUB_COM_TYPE_GETDATA			(0xF1)		/* GetData */
 #define SUB_COM_TYPE_SENSOR			(0xF2)		/* Sensor Data(Get Data Non) */
 #define SUB_COM_TYPE_SENSOR_GETDATA		(0xF3)		/* Sensor Data(Get Data True) */
