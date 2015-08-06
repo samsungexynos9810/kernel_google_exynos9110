@@ -446,7 +446,9 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 #endif
 	int not_using_ect = true;
 	u32 freq_array[6];
+/*
 	u32 volt_array[4];
+*/
 
 	if (!np)
 		return -ENODEV;
@@ -580,6 +582,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 		return -EINVAL;
 	}
 
+/*
 	if (data->use_regulator) {
 		if (of_property_read_string(np, "reg_name", &data->regulator_name))
 			return -ENODEV;
@@ -606,6 +609,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 			return -EINVAL;
 		}
 	}
+*/
 
 	if (of_property_read_u32(np, "boot_qos_timeout", &data->boot_qos_timeout)) {
 		data->boot_qos_timeout = 40;	/* dafault timeout is 40 second */
@@ -753,6 +757,7 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 
 	if (turn_on) {
 		if (!data->vdd) {
+			/*
 			data->vdd = regulator_get(NULL, data->regulator_name);
 			if (IS_ERR(data->vdd)) {
 				dev_err(data->dev, "%s: failed get regulator(%s)\n",
@@ -760,10 +765,13 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 				ret = -ENODEV;
 				goto out;
 			}
+			*/
 
 			rcu_read_lock();
 			freq = (unsigned long)data->old_freq;
 			target_opp = devfreq_recommended_opp(data->dev, &freq, 0);
+
+			/*
 			if (IS_ERR(target_opp)) {
 				rcu_read_unlock();
 				dev_err(data->dev, "not found valid OPP table for sync\n");
@@ -771,19 +779,23 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 				ret = PTR_ERR(target_opp);
 				goto out;
 			}
+			*/
 			data->new_volt = dev_pm_opp_get_voltage(target_opp);
 			rcu_read_unlock();
 
+			/*
 			ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
 			if (ret) {
 				dev_err(data->dev, "failed set voltage for sync voltage (%d:%luKhz:%uuV)\n",
 						type, freq, data->new_volt);
 				goto out;
 			}
+			*/
 
 			data->old_volt = data->new_volt;
 		}
 	} else {
+		/*
 		if (data->vdd_dummy) {
 			ret = regulator_set_voltage(data->vdd_dummy, 1, data->reg_max_volt);
 			if (ret) {
@@ -800,6 +812,7 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 
 		if (data->vdd_dummy)
 			regulator_sync_voltage(data->vdd_dummy);
+		*/
 	}
 
 out:
@@ -845,6 +858,7 @@ static int exynos_devfreq_set_voltage(struct device *dev, u32 *target_volt,
 					struct exynos_devfreq_data *data)
 {
 	int ret = 0;
+	return 0;
 
 	if (!data->use_regulator)
 		return ret;
@@ -859,10 +873,12 @@ static int exynos_devfreq_set_voltage(struct device *dev, u32 *target_volt,
 	if (data->ops.set_voltage_prepare)
 		data->ops.set_voltage_prepare(data);
 
+	/*
 	ret = regulator_set_voltage(data->vdd, *target_volt, data->reg_max_volt);
 	if (ret)
 		dev_err(data->dev, "failed set voltage : %s, %uuV\n",
 				data->regulator_name, *target_volt);
+	*/
 
 	if (data->ops.set_voltage_post)
 		data->ops.set_voltage_post(data);
@@ -1507,23 +1523,27 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 
 	if (data->use_regulator) {
 		data->volt_offset = 0;
+		/*
 		data->vdd = regulator_get(NULL, data->regulator_name);
 		if (IS_ERR(data->vdd)) {
 			dev_err(data->dev, "failed get regulator(%s)\n", data->regulator_name);
 			ret = -ENODEV;
 			goto err_regulator;
 		}
+		*/
 		data->ops.set_voltage = exynos_devfreq_set_voltage;
 	}
 
 	/* This dummy regulator is for sync voltage */
 	if (data->use_regulator_dummy) {
+		/*
 		data->vdd_dummy = regulator_get(NULL, data->regulator_name);
 		if (IS_ERR(data->vdd_dummy)) {
 			dev_err(data->dev, "failed get dummy regulator(%s)\n", data->regulator_name);
 			ret = -ENODEV;
 			goto err_regulator_dummy;
 		}
+		*/
 	}
 
 	data->old_freq = data->devfreq_profile.initial_freq;
@@ -1534,6 +1554,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_old_idx;
 	}
 
+	/*
 	data->new_volt = regulator_get_voltage(data->vdd);
 	ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
 	if (ret) {
@@ -1541,6 +1562,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 				data->old_freq, data->new_volt);
 		goto err_set_voltage;
 	}
+	*/
 
 	data->old_volt = data->new_volt;
 
