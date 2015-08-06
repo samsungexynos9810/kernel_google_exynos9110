@@ -10,8 +10,6 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 
-#define BAT_DEBUG
-
 #define FAKE_BATT_LEVEL		80
 
 #define CHG_STAT_MASK		0x07
@@ -56,7 +54,7 @@ static enum power_supply_property sub_battery_props[] = {
 
 static int sub_bat_voltage(uint8_t volt_low, uint8_t volt_high)
 {
-	int volt = (int)(volt_low | volt_high << 8);
+	int volt = (uint16_t)(volt_low | volt_high << 8);
 	volt *= 1000;
 
 	return volt;
@@ -64,7 +62,7 @@ static int sub_bat_voltage(uint8_t volt_low, uint8_t volt_high)
 
 static int sub_bat_temperature(uint8_t temp_low, uint8_t temp_high)
 {
-	return (int)(temp_low | temp_high << 8);
+	return (int16_t)(temp_low | temp_high << 8);
 }
 
 static int sub_bat_soc(uint8_t soc)
@@ -87,7 +85,6 @@ static int sub_bat_present(uint8_t chg_status)
 
 void subcpu_battery_update_status(uint8_t* data)
 {
-#if !defined(BAT_DEBUG)
 	struct sub_battery *sb = &g_sb;
 
 	sb->status =
@@ -107,7 +104,6 @@ void subcpu_battery_update_status(uint8_t* data)
 		power_supply_changed(&sb->battery);
 	else
 		sb->sb_status = SB_PROP_SET;
-#endif
 }
 
 static int sub_bat_get_property(struct power_supply *psy,
