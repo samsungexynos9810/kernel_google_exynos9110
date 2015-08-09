@@ -35,6 +35,7 @@
 #include <asm/ptrace.h>
 #include <asm/memory.h>
 #include <asm/map.h>
+#include <soc/samsung/exynos-pmu.h>
 
 /*  Size domain */
 #define ESS_KEEP_HEADER_SZ		(SZ_256 * 3)
@@ -531,12 +532,10 @@ static void exynos_ss_save_mmu(struct exynos_ss_mmu_reg *mmu_reg)
 #endif
 }
 
-#if 0
 static void exynos_ss_core_power_stat(unsigned int val, unsigned cpu)
 {
 	__raw_writel(val, (S5P_VA_SS_CORE_POWER_STAT + cpu * 4));
 }
-#endif
 
 static unsigned int exynos_ss_get_core_panic_stat(unsigned cpu)
 {
@@ -600,7 +599,6 @@ EXPORT_SYMBOL(exynos_ss_set_hardlockup);
 
 int exynos_ss_prepare_panic(void)
 {
-#if 0
 	unsigned cpu;
 
 	for (cpu = 0; cpu < ESS_NR_CPUS; cpu++) {
@@ -612,7 +610,6 @@ int exynos_ss_prepare_panic(void)
 	/* stop to watchdog for preventing unexpected reset
 	 * during printing panic message */
 	no_wdt_dev = s3c2410wdt_set_emergency_stop();
-#endif
 	return 0;
 }
 EXPORT_SYMBOL(exynos_ss_prepare_panic);
