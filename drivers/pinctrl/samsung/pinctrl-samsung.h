@@ -217,7 +217,6 @@ struct samsung_pin_ctrl {
  * @nr_function: number of such pin functions.
  * @pin_base: starting system wide pin number.
  * @nr_pins: number of pins supported by the controller.
- * @eint_flt_config: flags to configure external interrupt filter.
  */
 struct samsung_pinctrl_drv_data {
 	struct list_head		node;
@@ -238,11 +237,8 @@ struct samsung_pinctrl_drv_data {
 	unsigned int			pin_base;
 	unsigned int			nr_pins;
 
-	bool				eint_flt_config;
-
 	void (*suspend)(struct samsung_pinctrl_drv_data *);
 	void (*resume)(struct samsung_pinctrl_drv_data *);
-
 };
 
 /**

@@ -306,6 +306,35 @@ struct exynos_eint_gpio_save {
 	u32 eint_fltcon1;
 };
 
+static void exynos_eint_flt_config(int en, int sel, int width,
+				   struct samsung_pinctrl_drv_data *d,
+				   struct samsung_pin_bank *bank)
+{
+	unsigned int flt_reg, flt_con;
+	unsigned int val, shift;
+	int i;
+
+	flt_con = 0;
+
+	if (en)
+		flt_con |= EXYNOS_EINT_FLTCON_EN;
+
+	if (sel)
+		flt_con |= EXYNOS_EINT_FLTCON_SEL;
+
+	flt_con |= EXYNOS_EINT_FLTCON_WIDTH(width);
+
+	flt_reg = EXYNOS_GPIO_EFLTCON_OFFSET + 2 * bank->eint_offset;
+	for (i = 0; i < bank->nr_pins >> 1; i++) {
+		shift = i * EXYNOS_EINT_FLTCON_LEN;
+		val = readl(d->virt_base + flt_reg);
+		val &= ~(EXYNOS_EINT_FLTCON_MASK << shift);
+		val |= (flt_con << shift);
+		writel(val, d->virt_base + flt_reg);
+		writel(val, d->virt_base + flt_reg + 0x4);
+	}
+};
+
 /*
  * exynos_eint_gpio_init() - setup handling of external gpio interrupts.
  * @d: driver data of samsung pinctrl driver.
@@ -350,6 +379,10 @@ static int exynos_eint_gpio_init(struct samsung_pinctrl_drv_data *d)
 		}
 
 		bank->irq_chip = &exynos_gpio_irq_chip;
+
+		/* Setting Digital Filter */
+		exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+					EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
 	}
 
 	return 0;
@@ -486,33 +519,23 @@ static void exynos_irq_demux_eint16_31(struct irq_desc *desc)
 	chained_irq_exit(chip, desc);
 }
 
-static void exynos_eint_flt_config(int en, int sel, int width,
-				   struct samsung_pinctrl_drv_data *d,
-				   struct samsung_pin_bank *bank)
+static int exynos_wkup_irq_map(struct irq_domain *h, unsigned int virq,
+					irq_hw_number_t hw)
 {
-	unsigned int flt_reg, flt_con;
-	unsigned int val, shift;
-	int i;
+	struct samsung_pin_bank *b = h->host_data;
 
-	flt_con = 0;
+	irq_set_chip_and_handler(virq, &b->irq_chip->chip,
+					handle_level_irq);
+	irq_set_chip_data(virq, h->host_data);
+	return 0;
+}
 
-	if (en)
-		flt_con |= EXYNOS_EINT_FLTCON_EN;
-
-	if (sel)
-		flt_con |= EXYNOS_EINT_FLTCON_SEL;
-
-	flt_con |= EXYNOS_EINT_FLTCON_WIDTH(width);
-
-	flt_reg = EXYNOS_GPIO_EFLTCON_OFFSET + 2 * bank->eint_offset;
-	for (i = 0; i < bank->nr_pins >> 1; i++) {
-		shift = i * EXYNOS_EINT_FLTCON_LEN;
-		val = readl(d->virt_base + flt_reg);
-		val &= ~(EXYNOS_EINT_FLTCON_MASK << shift);
-		val |= (flt_con << shift);
-		writel(val, d->virt_base + flt_reg);
-		writel(val, d->virt_base + flt_reg + 0x4);
-	}
+/*
+ * irq domain callbacks for external wakeup interrupt controller.
+ */
+static const struct irq_domain_ops exynos_wkup_irqd_ops = {
+	.map	= exynos_wkup_irq_map,
+	.xlate	= irq_domain_xlate_twocell,
 };
 
 /*
@@ -545,11 +568,6 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 	}
 	if (!wkup_np)
 		return -ENODEV;
-
-	if (of_property_read_bool(wkup_np, "samsung,eint-flt-conf")) {
-		pr_info("%s: Need to configure eint filter\n", __func__);
-		d->eint_flt_config = true;
-	}
 
 	bank = d->pin_banks;
 	for (i = 0; i < d->nr_banks; ++i, ++bank) {
@@ -591,6 +609,9 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 							 exynos_irq_eint0_15,
 							 &weint_data[idx]);
 		}
+		/* Setting Digital Filter */
+		exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+					EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
 	}
 
 	if (!muxed_banks)
@@ -622,13 +643,6 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 	}
 	muxed_data->nr_banks = muxed_banks;
 
-	if (d->eint_flt_config) {
-		bank = d->ctrl->pin_banks;
-		for (i = 0; i < d->ctrl->nr_banks; ++i, ++bank)
-			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
-				 EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
-	}
-
 	return 0;
 }
 
@@ -654,11 +668,18 @@ static void exynos_pinctrl_suspend_bank(
 static void exynos_pinctrl_suspend(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_bank *bank = drvdata->pin_banks;
+	struct samsung_pinctrl_drv_data *d = bank->drvdata;
 	int i;
 
 	for (i = 0; i < drvdata->nr_banks; ++i, ++bank)
 		if (bank->eint_type == EINT_TYPE_GPIO)
 			exynos_pinctrl_suspend_bank(drvdata, bank);
+		else if (bank->eint_type == EINT_TYPE_WKUP ||
+			bank->eint_type == EINT_TYPE_WKUP_MUX) {
+			/* Setting Analog Filter */
+			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+					0, 0, d, bank);
+		}
 }
 
 static void exynos_pinctrl_resume_bank(
@@ -689,11 +710,18 @@ static void exynos_pinctrl_resume_bank(
 static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 {
 	struct samsung_pin_bank *bank = drvdata->pin_banks;
+	struct samsung_pinctrl_drv_data *d = bank->drvdata;
 	int i;
 
 	for (i = 0; i < drvdata->nr_banks; ++i, ++bank)
-		if (bank->eint_type == EINT_TYPE_GPIO)
+		if (bank->eint_type == EINT_TYPE_GPIO) {
 			exynos_pinctrl_resume_bank(drvdata, bank);
+		} else if (bank->eint_type == EINT_TYPE_WKUP ||
+			bank->eint_type == EINT_TYPE_WKUP_MUX) {
+			/* Setting Digital Filter */
+			exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+					EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
+		}
 }
 
 /* pin banks of s5pv210 pin-controller */
