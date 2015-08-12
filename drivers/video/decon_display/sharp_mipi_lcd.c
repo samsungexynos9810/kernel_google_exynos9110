@@ -31,7 +31,7 @@ struct decon_lcd sharp_mipi_lcd_info = {
         .hs_clk = 166,
         .esc_clk = 7,
 
-        .fps = 60,
+        .fps = 58,
 };
 
 struct decon_lcd * decon_get_lcd_info()
