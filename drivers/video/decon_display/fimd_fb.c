@@ -1286,9 +1286,7 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 {
 	struct s3c_fb *sfb = dev_id;
 	ktime_t timestamp = ktime_get();
-
 	spin_lock(&sfb->slock);
-
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 	spin_unlock(&sfb->slock);
@@ -3122,6 +3120,7 @@ static void decon_parse_lcd_info(struct s3c_fb_platdata *pd)
 		pd->win[i]->win_mode.vsync_len = lcd_info->vsa;
 		pd->win[i]->win_mode.xres = lcd_info->xres;
 		pd->win[i]->win_mode.yres = lcd_info->yres;
+		pd->win[i]->win_mode.refresh = lcd_info->fps;
 		pd->win[i]->virtual_x = lcd_info->xres;
 		pd->win[i]->virtual_y = lcd_info->yres * 2;
 		pd->win[i]->width = lcd_info->width;
