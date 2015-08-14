@@ -1941,6 +1941,8 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	seq_printf(s, "%16s %16s %16s\n", "client", "pid", "size");
 	seq_puts(s, "----------------------------------------------------\n");
 
+	down_read(&dev->lock);
+
 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
 		struct ion_client *client = rb_entry(n, struct ion_client,
 						     node);
@@ -1988,6 +1990,8 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 
 	if (heap->debug_show)
 		heap->debug_show(heap, s, unused);
+
+	up_read(&dev->lock);
 
 	return 0;
 }
