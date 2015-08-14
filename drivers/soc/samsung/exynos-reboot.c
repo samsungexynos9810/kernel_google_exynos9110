@@ -60,6 +60,7 @@ int soc_has_mongoose(void)
 #define RESET_DISABLE_PRESET_DBG		(1 << 18)
 #define DFD_EDPCSR_DUMP_EN			(1 << 0)
 #define RESET_DISABLE_L2RESET			(1 << 16)
+#define RESET_DISABLE_WDT_L2RESET		(1 << 31)
 
 #define EXYNOS_PMU_CPU_RESET_DISABLE_FROM_SOFTRESET	(0x041C)
 #define EXYNOS_PMU_CPU_RESET_DISABLE_FROM_WDTRESET	(0x0414)
@@ -104,7 +105,7 @@ static void mngs_reset_control(int en)
 		writel(reg_val, exynos_pmu_base + EXYNOS_PMU_ATLAS_DBG_RESET);
 
                 reg_val = readl(exynos_pmu_base + EXYNOS_PMU_ATLAS_NONCPU_RESET);
-                reg_val |= (RESET_DISABLE_L2RESET);
+                reg_val |= (RESET_DISABLE_L2RESET | RESET_DISABLE_WDT_L2RESET);
                 writel(reg_val, exynos_pmu_base + EXYNOS_PMU_ATLAS_NONCPU_RESET);
 	} else {
 		/* reset enable for MNGS */
