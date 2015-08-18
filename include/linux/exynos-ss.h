@@ -22,7 +22,7 @@ extern void exynos_ss_task(int cpu, void *v_task);
 extern void exynos_ss_work(void *worker, void *work, void *fn, int en);
 extern void exynos_ss_cpuidle(int index, unsigned state, int diff, int en);
 extern void exynos_ss_suspend(void *fn, void *dev, int en);
-extern void exynos_ss_irq(unsigned int irq, void *fn, int irqs_disabled, int en);
+extern void exynos_ss_irq(unsigned int irq, void *fn, unsigned int val, int en);
 extern int exynos_ss_set_enable(const char *name, int en);
 extern int exynos_ss_get_enable(const char *name);
 extern int exynos_ss_save_context(void *regs);
@@ -154,8 +154,8 @@ enum esslog_flag {
 	ESS_FLAG_ON = 2,
 	ESS_FLAG_OUT = 3,
 	ESS_FLAG_SOFTIRQ = 10000,
-	ESS_FLAG_SOFTIRQ_HI_TASKLET,
-	ESS_FLAG_SOFTIRQ_TASKLET,
+	ESS_FLAG_SOFTIRQ_HI_TASKLET = 10100,
+	ESS_FLAG_SOFTIRQ_TASKLET = 10200,
 	ESS_FLAG_CALL_TIMER_FN = 20000
 };
 

@@ -134,8 +134,8 @@ struct exynos_ss_log {
 		unsigned long long time;
 		int irq;
 		void *fn;
-		int preempt;
-		int curr_disabled;
+		unsigned int preempt;
+		unsigned int val;
 		int en;
 	} irq[ESS_NR_CPUS][ESS_LOG_MAX_NUM * 2];
 
@@ -150,7 +150,7 @@ struct exynos_ss_log {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SPINLOCK
 	struct spinlock_log {
 		unsigned long long time;
-		unsigned long long index;
+		unsigned long long jiffies;
 		struct task_struct *owner;
 		char *task_comm;
 		unsigned int owner_cpu;
@@ -1427,7 +1427,7 @@ void exynos_ss_mailbox(void *msg, int mode, char* f_name, void *volt)
 }
 #endif
 
-void exynos_ss_irq(unsigned int irq, void *fn, int curr_disabled, int en)
+void exynos_ss_irq(unsigned int irq, void *fn, unsigned int val, int en)
 {
 	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
 
@@ -1451,7 +1451,7 @@ void exynos_ss_irq(unsigned int irq, void *fn, int curr_disabled, int en)
 		ess_log->irq[cpu][i].irq = irq;
 		ess_log->irq[cpu][i].fn = (void *)fn;
 		ess_log->irq[cpu][i].preempt = preempt_count();
-		ess_log->irq[cpu][i].curr_disabled = curr_disabled;
+		ess_log->irq[cpu][i].val = val;
 		ess_log->irq[cpu][i].en = en;
 	}
 }
@@ -1549,8 +1549,12 @@ void exynos_ss_spinlock(void *v_lock, int en)
 		raw_spinlock_t *lock = (raw_spinlock_t *)v_lock;
 		struct task_struct *task = (struct task_struct *)lock->owner;
 
-		ess_log->spinlock[cpu][i].time = jiffies_64;
-		ess_log->spinlock[cpu][i].index = index;
+#ifdef CONFIG_ARM_ARCH_TIMER
+		ess_log->spinlock[cpu][i].time = cpu_clock(cpu);
+#else
+		ess_log->spinlock[cpu][i].time = index;
+#endif
+		ess_log->spinlock[cpu][i].jiffies = jiffies_64;
 		ess_log->spinlock[cpu][i].owner = task;
 		ess_log->spinlock[cpu][i].task_comm = task->comm;
 		ess_log->spinlock[cpu][i].owner_cpu = lock->owner_cpu;
