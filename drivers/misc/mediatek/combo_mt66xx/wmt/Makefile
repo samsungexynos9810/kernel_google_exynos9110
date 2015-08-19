@@ -8,7 +8,6 @@ ccflags-y += -DREMOVE_MK_NODE=1
 ifeq ($(strip $(MTK_WCN_CMB_SDIO_EINT)), y)
 ccflags-y += -DMTK_CMB_SDIO_EINT
 endif
-ccflags-y += -Wno-error
 
 #stub to build-in
 obj-y += platform/vendor/mtk_wcn_cmb_stub.o
