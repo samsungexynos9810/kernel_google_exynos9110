@@ -449,7 +449,7 @@
 			samsung,pin-drv = <3>;
 		};
 
-		usbdetect_irq: ext-int10 {
+		usbdetect_irq: ext-int8 {
 			samsung,pins = "gpx1-0";
 			samsung,pin-function = <0xf>;
 			samsung,pin-pud = <3>;
