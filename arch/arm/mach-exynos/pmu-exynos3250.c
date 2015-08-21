@@ -174,7 +174,7 @@ void exynos_sys_powerdown_conf(enum sys_powerdown mode)
 
 	if (unlikely(mode == SYS_WAFTR_AUDIO)) {
 		for (i = 0; (exynos_pmu_config[i].reg != PMU_TABLE_END) ; i++)
-			__raw_writel(exynos_pmu_config[i].val[SYS_AFTR],
+			__raw_writel(exynos_pmu_config[i].val[SYS_LPA],
 					exynos_pmu_config[i].reg);
 		for (i = 0; (exynos3250_pmu_config_audio[i].reg != PMU_TABLE_END) ; i++)
 			__raw_writel(exynos3250_pmu_config_audio[i].val[SYS_AFTR],
