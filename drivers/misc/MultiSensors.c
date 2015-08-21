@@ -112,7 +112,8 @@ static STR_PriorityTbl Write_Priority_Tbl[] = {
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ALERM,		SUB_COM_OVERWRITE },	/* Alarm */
 	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BUZ_SET,		SUB_COM_NON_OVERWRITE },/* Buzzer Settiong */
 	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_SUB_CPU_VER,	SUB_COM_OVERWRITE },	/* SUB-CPU Version */
-	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_POWER_PROP,		SUB_COM_OVERWRITE },	/* Battery % */
+	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_POWER_PROP1,		SUB_COM_OVERWRITE },	/* Battery information1 */
+	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_POWER_PROP2,		SUB_COM_OVERWRITE },	/* Battery information2 */
 	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_USB,		SUB_COM_OVERWRITE },	/* USB Status */
 };
 
@@ -414,6 +415,8 @@ static int SensorReadThread(void *p)
 				if (recv_buf[recv_index] == SUB_COM_GETID_SUB_CPU_VER)
 				{
 					memcpy(SubCpuVersion, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
+					dev_info(&st->sdev->dev, "subcpu FW version:%02x:%02x:%02x\n",
+							SubCpuVersion[0], SubCpuVersion[1], SubCpuVersion[2]);
 					if (flg_first) {
 						if (is_subcpu_need_update(SubCpuVersion[0],
 								SubCpuVersion[1], SubCpuVersion[2])) {
@@ -425,9 +428,13 @@ static int SensorReadThread(void *p)
 						flg_first = 0;
 					}
 				}
-				else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP)
+				else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1)
 				{
-					subcpu_battery_update_status(recv_buf);
+					subcpu_battery_update_status1(recv_buf);
+				}
+				else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP2)
+				{
+					subcpu_battery_update_status2(recv_buf);
 				}
 				else if (recv_buf[recv_index] == SUB_COM_GETID_USB)
 				{
@@ -1083,10 +1090,15 @@ static void sub_HeaderInfoProc(void)
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
 	/* charger or battery property changed */
-	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG))
-	{
+	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG1)) {
 		write_buff[0] = SUB_COM_TYPE_READ;
-		write_buff[1] = SUB_COM_GETID_POWER_PROP;
+		write_buff[1] = SUB_COM_GETID_POWER_PROP1;
+		Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	}
+
+	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG2)) {
+		write_buff[0] = SUB_COM_TYPE_READ;
+		write_buff[1] = SUB_COM_GETID_POWER_PROP2;
 		Set_WriteDataBuff( &write_buff[0], (void*)0 );
 	}
 }

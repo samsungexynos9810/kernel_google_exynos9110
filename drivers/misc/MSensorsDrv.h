@@ -70,8 +70,8 @@
 #define SUB_COM_SETID_DEMO_CMD			(0xFE)		/* Demo Command */
 #define SUB_COM_SETID_DEMO			(0xFF)		/* Demo ID */
 #define SUB_COM_GETID_SUB_CPU_VER		(0x00)		/* SUB-CPU Version */
-#define SUB_COM_GETID_RESERVED1			(0x01)		/* Reserved */
-#define SUB_COM_GETID_POWER_PROP		(0x02)		/* Power Property  */
+#define SUB_COM_GETID_POWER_PROP1		(0x01)		/* Power Property1 */
+#define SUB_COM_GETID_POWER_PROP2		(0x02)		/* Power Property2 */
 #define SUB_COM_GETID_USB			(0x03)		/* USB Status */
 #define SUB_COM_GETID_RTC			(0x50)		/* RTC */
 #define SUB_COM_SENSID_ACCELE			(0x01)		/* Acceleration Data */
@@ -119,8 +119,8 @@
 
 #define SUB_COM_SEND_DUMMY			(0xFF)		/* Send Dummy Data */
 
-#define SUB_ALERT_BIT_POWER_CHG			(0)		/* Power property changed */
-#define SUB_ALERT_BIT_RESERVE1			(1)		/* Reserve 1 */
+#define SUB_ALERT_BIT_POWER_CHG2		(0)		/* Power property changed2  */
+#define SUB_ALERT_BIT_POWER_CHG1		(1)		/* Power property changed1 */
 #define SUB_ALERT_BIT_RESERVE2			(2)		/* Reserve 2 */
 #define SUB_ALERT_BIT_RESERVE3			(3)		/* Reserve 3 */
 #define SUB_ALERT_BIT_RESERVE4			(4)		/* Reserve 4 */
