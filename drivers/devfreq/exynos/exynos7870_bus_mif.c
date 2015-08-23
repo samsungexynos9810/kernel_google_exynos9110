@@ -114,7 +114,6 @@ static int exynos7870_devfreq_mif_get_switch_voltage(u32 cur_freq, u32 new_freq,
 		else
 			data->switch_volt = data->new_volt;
 
-out:
 	//pr_info("Selected switching voltage: %uuV\n", data->switch_volt);
 	return 0;
 }
