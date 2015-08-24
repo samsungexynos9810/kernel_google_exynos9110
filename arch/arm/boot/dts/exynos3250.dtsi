@@ -39,7 +39,6 @@
 		mfc0 = &mfc_0;
 		gsc0 = &gsc_0;
 		gsc1 = &gsc_1;
-		mdev0 = &mdev_0;
 		jpeg0 = &jpeg_0;
 		spi0 = &spi_0;
 		spi1 = &spi_1;

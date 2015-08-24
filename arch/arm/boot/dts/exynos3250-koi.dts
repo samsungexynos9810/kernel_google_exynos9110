@@ -294,17 +294,6 @@
 		};
 	};
 
-	i2c0_isp: i2c@12130000 {
-		status = "okay";
-		samsung,i2c-sda-delay = <100>;
-		samsung,i2c-max-bus-freq = <400000>;
-
-		fimc-is-vision@20 {
-			compatible = "samsung,exynos5-fimc-is-sensor-6b2";
-			reg = <0x20>;
-		};
-	};
-
 	dwmmc0@12510000 {
 		status = "okay";
 		num-slots = <1>;
@@ -496,16 +485,6 @@
 				0x15 0xE0 0x11 0xE0 0x11 0x00 0x11 0x00	>;
 		};
 
-	};
-
-
-	sysreg_localout: sysreg_localout@10010000 {
-		compatible = "samsung,exynos5-sysreg_localout";
-		reg = <0x10010000 0x2000>;
-	};
-
-	mdev_0: mdev_output {
-		compatible = "samsung,exynos5-mdev";
 	};
 
 	 fimd_fb: fimd_fb {
