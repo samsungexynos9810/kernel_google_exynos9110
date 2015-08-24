@@ -32,6 +32,7 @@
 #include <linux/platform_device.h>
 #include <linux/pstore_ram.h>
 #include <linux/clk-private.h>
+#include <linux/input.h>
 
 #include <asm/cacheflush.h>
 #include <asm/ptrace.h>
@@ -995,6 +996,50 @@ static void exynos_ss_dump_task_info(void)
 	}
 	pr_info(" ----------------------------------------------------------------------------------------------------------------------------\n");
 }
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CRASH_KEY
+void exynos_ss_check_crash_key(unsigned int code, int value)
+{
+	static bool volup_p;
+	static bool voldown_p;
+	static int loopcount;
+
+	static const unsigned int VOLUME_UP = KEY_VOLUMEUP;
+	static const unsigned int VOLUME_DOWN = KEY_VOLUMEDOWN;
+
+	if (code == KEY_POWER)
+		pr_info("exynos-snapshot: POWER-KEY %s\n", value ? "pressed" : "released");
+
+	/* Enter Forced Upload
+	 *  Hold volume down key first
+	 *  and then press power key twice
+	 *  and volume up key should not be pressed
+	 */
+	if (value) {
+		if (code == VOLUME_UP)
+			volup_p = true;
+		if (code == VOLUME_DOWN)
+			voldown_p = true;
+		if (!volup_p && voldown_p) {
+			if (code == KEY_POWER) {
+				pr_info
+				    ("exynos-snapshot: count for entering forced upload [%d]\n",
+				     ++loopcount);
+				if (loopcount == 2) {
+					panic("Crash Key");
+				}
+			}
+		}
+	} else {
+		if (code == VOLUME_UP)
+			volup_p = false;
+		if (code == VOLUME_DOWN) {
+			loopcount = 0;
+			voldown_p = false;
+		}
+	}
+}
+#endif
 
 static int exynos_ss_reboot_handler(struct notifier_block *nb,
 				    unsigned long l, void *p)

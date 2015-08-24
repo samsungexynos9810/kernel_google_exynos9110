@@ -31,6 +31,7 @@
 #include <linux/of_gpio.h>
 #include <linux/of_irq.h>
 #include <linux/spinlock.h>
+#include <linux/exynos-ss.h>
 
 struct gpio_button_data {
 	const struct gpio_keys_button *button;
@@ -356,6 +357,8 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 	}
 
 	state = (state ? 1 : 0) ^ button->active_low;
+	exynos_ss_check_crash_key(button->code, state);
+
 	if (type == EV_ABS) {
 		if (state)
 			input_event(input, type, button->code, button->value);

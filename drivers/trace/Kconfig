@@ -100,6 +100,11 @@ config EXYNOS_SNAPSHOT_WATCHDOG_RESET
 	depends on EXYNOS_SNAPSHOT && EXYNOS_SNAPSHOT_PANIC_REBOOT
 	default y
 
+config EXYNOS_SNAPSHOT_CRASH_KEY
+	bool "Support Crash Key to artificial panic for debugging"
+	depends on EXYNOS_SNAPSHOT && KEYBOARD_GPIO
+	default y
+
 config EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	bool "Support minimized feature configuration"
 	depends on EXYNOS_SNAPSHOT

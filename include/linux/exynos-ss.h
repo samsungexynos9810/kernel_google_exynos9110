@@ -114,6 +114,12 @@ extern int exynos_ss_hook_pmsg(char *buffer, size_t count);
 #define exynos_ss_hook_pmsg(a,b)	do { } while(0)
 #endif
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CRASH_KEY
+void exynos_ss_check_crash_key(unsigned int code, int value);
+#else
+#define exynos_ss_check_crash_key(a,b)	do { } while(0);
+#endif
+
 #else
 #define exynos_ss_task(a,b)		do { } while(0)
 #define exynos_ss_work(a,b,c,d)		do { } while(0)
@@ -145,6 +151,7 @@ extern int exynos_ss_hook_pmsg(char *buffer, size_t count);
 #define exynos_ss_get_hardlockup()	do { } while(0)
 #define exynos_ss_get_item_size(a)	do { } while(0)
 #define exynos_ss_get_item_paddr(a)	do { } while(0)
+#define exynos_ss_check_crash_key(a,b)	do { } while(0);
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
 
 /**
