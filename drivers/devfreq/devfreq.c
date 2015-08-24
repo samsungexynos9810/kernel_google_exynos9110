@@ -255,7 +255,7 @@ static int psmw_dvfs_vsync_notifier(struct notifier_block *this,
 
 static void psmw_dvfs_init(void)
 {
-	atomic_set(&psmw_devfreq_info.is_vsync_requested, 0);
+	atomic_set(&psmw_devfreq_info.is_vsync_requested, 1);
 	psmw_devfreq_info.nb.notifier_call = psmw_dvfs_vsync_notifier;
 	register_psmw_notifier(&psmw_devfreq_info.nb);
 }
@@ -1123,7 +1123,7 @@ static void __exit devfreq_exit(void)
 {
 #ifdef CONFIG_EXYNOS_PSMW_DVFS
 	if (!IS_ERR(devfreq_flush_task)) {
-		atomic_set(&psmw_devfreq_info.is_vsync_requested, 0);
+		atomic_set(&psmw_devfreq_info.is_vsync_requested, 1);
 		unregister_psmw_notifier(&psmw_devfreq_info.nb);
 	}
 

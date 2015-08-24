@@ -170,7 +170,7 @@ static int psmw_dm_cpu_hotplut_vsync_notifier(struct notifier_block *this,
 
 static void dm_cpu_hotplug_psmw_init(void)
 {
-	atomic_set(&psmw_dm_cpu_info.is_vsync_requested, 0);
+	atomic_set(&psmw_dm_cpu_info.is_vsync_requested, 1);
 	atomic_set(&psmw_dm_cpu_info.sleep, 0);
 	psmw_dm_cpu_info.nb.notifier_call = psmw_dm_cpu_hotplut_vsync_notifier;
 	register_psmw_notifier(&psmw_dm_cpu_info.nb);

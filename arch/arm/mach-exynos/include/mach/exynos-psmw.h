@@ -38,11 +38,14 @@ struct psmw_listener_info {
 enum psmw_trigger {
 	TOUCH_SCREEN = 0,
 	DECON_DISPLAY,
+	FIMD_FB,
 };
 
 enum psmw_event {
 	PSMW_ACTIVE = 1,
 	PSMW_INACTIVE,
+	PSMW_ENABLE,
+	PSMW_DISABLE,
 };
 
 extern int register_psmw_notifier(struct notifier_block *nb);
