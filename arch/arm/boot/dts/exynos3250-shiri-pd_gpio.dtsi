@@ -169,10 +169,10 @@
 		PIN_SLP(gpe1-0, OUT0,  NONE);
 		PIN_SLP(gpe1-1, OUT1,  DOWN);
 		PIN_SLP(gpe1-2, INPUT, DOWN);
-		PIN_SLP(gpe1-3, OUT1, UP);
-		PIN_SLP(gpe1-4, PREV, UP);
-		PIN_SLP(gpe1-5, OUT1, UP);
-		PIN_SLP(gpe1-6, PREV, UP);
+		PIN_SLP(gpe1-3, INPUT, DOWN);
+		PIN_SLP(gpe1-4, INPUT, DOWN);
+		PIN_SLP(gpe1-5, INPUT, DOWN);
+		PIN_SLP(gpe1-6, INPUT, DOWN);
 		PIN_SLP(gpe1-7, INPUT, DOWN);
 
 		PIN_SLP(gpe2-0, INPUT, DOWN);
