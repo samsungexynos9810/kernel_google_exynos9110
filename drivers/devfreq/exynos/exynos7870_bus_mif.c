@@ -1,4 +1,4 @@
-/* linux/drivers/devfreq/exynos7870_bus_mif.c
+/* linux/drivers/devfreq/exynos/exynos7870_bus_mif.c
  *
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com
@@ -20,6 +20,7 @@
 #include <linux/device.h>
 #include <linux/platform_device.h>
 #include <linux/list.h>
+#include <linux/clk.h>
 #include <linux/workqueue.h>
 
 #include <soc/samsung/exynos-devfreq.h>
@@ -121,7 +122,7 @@ static int exynos7870_devfreq_mif_get_switch_voltage(u32 cur_freq, u32 new_freq,
 static int exynos7870_devfreq_mif_get_freq(struct device *dev, u32 *cur_freq,
 					struct exynos_devfreq_data *data)
 {
-	*cur_freq = (u32)cal_dfs_get_rate(dvfs_mif);
+	*cur_freq = (u32)clk_get_rate(data->clk);
 	if (*cur_freq == 0) {
 		dev_err(dev, "failed get frequency from CAL\n");
 		return -EINVAL;
@@ -133,7 +134,7 @@ static int exynos7870_devfreq_mif_get_freq(struct device *dev, u32 *cur_freq,
 static int exynos7870_devfreq_mif_change_to_switch_freq(struct device *dev,
 					struct exynos_devfreq_data *data)
 {
-	if (cal_dfs_set_rate_switch(dvfs_mif, data->switch_freq)) {
+	if (clk_set_rate(data->sw_clk, data->switch_freq)) {
 		dev_err(dev, "failed to set switching frequency by CAL (%uKhz for %uKhz)\n",
 				data->switch_freq, data->new_freq);
 		return -EINVAL;
@@ -145,7 +146,7 @@ static int exynos7870_devfreq_mif_change_to_switch_freq(struct device *dev,
 static int exynos7870_devfreq_mif_restore_from_switch_freq(struct device *dev,
 					struct exynos_devfreq_data *data)
 {
-	if (cal_dfs_set_rate(dvfs_mif, data->new_freq)) {
+	if (clk_set_rate(data->clk, data->new_freq)) {
 		dev_err(dev, "failed to set frequency by CAL (%uKhz)\n",
 				data->new_freq);
 		return -EINVAL;
@@ -217,7 +218,7 @@ static int exynos7870_devfreq_mif_init_freq_table(struct device *dev,
 	dev_info(dev, "min_freq: %uKhz, max_freq: %uKhz\n",
 			data->min_freq, data->max_freq);
 
-	cur_freq = cal_dfs_get_rate(dvfs_mif);
+	cur_freq = clk_get_rate(data->clk);
 	dev_info(dev, "current frequency: %uKhz\n", cur_freq);
 
 	for (i = 0; i < data->max_state; i++) {
@@ -303,12 +304,28 @@ static int exynos7870_mif_ppmu_unregister(struct device *dev,
 static int exynos7870_devfreq_mif_init(struct device *dev,
 					struct exynos_devfreq_data *data)
 {
+	data->clk = clk_get(dev, "dvfs_mif");
+	if (IS_ERR_OR_NULL(data->clk)) {
+		dev_err(dev, "failed get dvfs vclk\n");
+		return -ENODEV;
+	}
+
+	data->sw_clk = clk_get(dev, "dvfs_mif_sw");
+	if (IS_ERR_OR_NULL(data->sw_clk)) {
+		dev_err(dev, "failed get dvfs sw vclk\n");
+		clk_put(data->clk);
+		return -ENODEV;
+	}
+
 	return 0;
 }
 
 static int exynos7870_devfreq_mif_exit(struct device *dev,
 					struct exynos_devfreq_data *data)
 {
+	clk_put(data->sw_clk);
+	clk_put(data->clk);
+
 	return 0;
 }
 
