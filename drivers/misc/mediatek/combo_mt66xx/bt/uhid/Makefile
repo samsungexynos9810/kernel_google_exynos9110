@@ -42,5 +42,5 @@
 # published by the Free Software Foundation.
 
 obj-$(CONFIG_MTK_COMBO_BT)		+= bt_uhid.o
-
+bt_uhid-objs := bt_uhid_obj.o
 # EOF

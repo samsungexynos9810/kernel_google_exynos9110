@@ -31,8 +31,7 @@ MODULE_NAME := wlan_mt6620
 
 ccflags-y += -D_HIF_SDIO=1
 
-# nermy - Debug
-#ccflags-y += -DDBG=1
+ccflags-y += -DDBG=1
 ccflags-y += -I$(src)/os -I$(src)/os/linux/include -I$(src)/os/linux/hif/sdio/include
 ccflags-y += -I$(src)/include -I$(src)/include/nic -I$(src)/include/mgmt
 
