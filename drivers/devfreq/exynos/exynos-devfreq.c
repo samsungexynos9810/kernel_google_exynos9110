@@ -1597,25 +1597,25 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		}
 	}
 
-	/* if polling_ms is 0, update_devfreq function is called by ppmu */
-	if (data->devfreq_profile.polling_ms == 0) {
-		data->ppmu_nb = kzalloc(sizeof(struct devfreq_notifier_block), GFP_KERNEL);
-		if (data->ppmu_nb == NULL) {
-			dev_err(data->dev, "failed to allocate notifier block\n");
-			ret = -ENOMEM;
-			goto err_ppmu_nb;
+	if (data->use_ppmu) {
+		/* if polling_ms is 0, update_devfreq function is called by ppmu */
+		if (data->devfreq_profile.polling_ms == 0) {
+			data->ppmu_nb = kzalloc(sizeof(struct devfreq_notifier_block), GFP_KERNEL);
+			if (data->ppmu_nb == NULL) {
+				dev_err(data->dev, "failed to allocate notifier block\n");
+				ret = -ENOMEM;
+				goto err_ppmu_nb;
+			}
+
+			data->ppmu_nb->df = data->devfreq;
+			data->ppmu_nb->nb.notifier_call = exynos_devfreq_notifier;
+			data->last_monitor_jiffies = get_jiffies_64();
 		}
 
-		data->ppmu_nb->df = data->devfreq;
-		data->ppmu_nb->nb.notifier_call = exynos_devfreq_notifier;
-		data->last_monitor_jiffies = get_jiffies_64();
-	}
-
-	/*
-	 * The PPMU data should be register.
-	 * And if polling_ms is 0, ppmu notifier should be register in callback.
-	 */
-	if (data->use_ppmu) {
+		/*
+		 * The PPMU data should be register.
+		 * And if polling_ms is 0, ppmu notifier should be register in callback.
+		 */
 		if (data->ops.ppmu_register) {
 			ret = data->ops.ppmu_register(data->dev, data);
 			if (ret) {
