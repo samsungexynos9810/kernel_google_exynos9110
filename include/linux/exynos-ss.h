@@ -120,6 +120,12 @@ void exynos_ss_check_crash_key(unsigned int code, int value);
 #define exynos_ss_check_crash_key(a,b)	do { } while(0);
 #endif
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+void exynos_ss_dump_sfr(void);
+#else
+#define exynos_ss_dump_sfr()		do { } while(0)
+#endif
+
 #else
 #define exynos_ss_task(a,b)		do { } while(0)
 #define exynos_ss_work(a,b,c,d)		do { } while(0)
@@ -144,6 +150,7 @@ void exynos_ss_check_crash_key(unsigned int code, int value);
 #define exynos_ss_set_enable(a,b)	do { } while(0)
 #define exynos_ss_get_enable(a)		do { } while(0)
 #define exynos_ss_dump_panic(a,b)	do { } while(0)
+#define exynos_ss_dump_sfr()		do { } while(0)
 #define exynos_ss_prepare_panic()	do { } while(0)
 #define exynos_ss_post_panic()		do { } while(0)
 #define exynos_ss_post_reboot()		do { } while(0)

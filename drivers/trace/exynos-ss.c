@@ -33,6 +33,7 @@
 #include <linux/pstore_ram.h>
 #include <linux/clk-private.h>
 #include <linux/input.h>
+#include <linux/of_address.h>
 
 #include <asm/cacheflush.h>
 #include <asm/ptrace.h>
@@ -60,12 +61,13 @@
 #define ESS_NR_CPUS			NR_CPUS
 
 /* Items domain */
-#define ESS_ITEMS_NUM			5
+#define ESS_ITEMS_NUM			6
 #define ESS_ITEMS_KEVENTS		0
 #define ESS_ITEMS_LOG_KERNEL		1
-#define ESS_ITEMS_LOG_MAIN		2
-#define ESS_ITEMS_LOG_RADIO		3
-#define ESS_ITEMS_LOG_ETM		4
+#define ESS_ITEMS_LOG_PLATFORM		2
+#define ESS_ITEMS_LOG_SFR		3
+#define ESS_ITEMS_LOG_PSTORE		4
+#define ESS_ITEMS_LOG_ETM		5
 
 /* Sign domain */
 #define ESS_SIGN_RESET			0x0
@@ -338,10 +340,23 @@ struct exynos_ss_mmu_reg {
 };
 #endif
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+struct exynos_ss_sfrdump {
+	char *name;
+	void __iomem *reg;
+	unsigned int phy_reg;
+	unsigned int num;
+	struct device_node *node;
+	struct list_head list;
+};
+#endif
+
 struct exynos_ss_interface {
 	struct exynos_ss_log *info_event;
 	struct exynos_ss_item info_log[ESS_ITEMS_NUM];
+	struct list_head sfrdump_list;
 };
+
 #ifdef CONFIG_S3C2410_WATCHDOG
 extern int s3c2410wdt_set_emergency_stop(void);
 #else
@@ -360,6 +375,7 @@ extern void register_hook_logbuf(void (*)(const char *, size_t));
 extern void register_hook_logger(void (*)(const char *, const char *, size_t));
 
 static DEFINE_SPINLOCK(ess_lock);
+typedef int (*ess_initcall_t)(const struct device_node *);
 static unsigned ess_callstack = CONFIG_EXYNOS_SNAPSHOT_CALLSTACK;
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SOFTIRQ
@@ -389,14 +405,18 @@ static struct exynos_ss_item ess_items[] = {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	{"log_platform",{SZ_4M,		0, 0, true}, NULL ,NULL},
-#endif
+#else
 	{"log_platform",{SZ_2M,		0, 0, true}, NULL ,NULL},
+#endif
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+	{"log_sfr",	{SZ_4M,		0, 0, true}, NULL ,NULL},
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
 	{"log_pstore",	{SZ_2M,		0, 0, true}, NULL ,NULL},
 #endif
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
-	{"log_etm",	{SZ_16M,	0, 0, true}, NULL ,NULL},
+	{"log_etm",	{SZ_8M,		0, 0, true}, NULL ,NULL},
 #endif
 };
 
@@ -622,6 +642,7 @@ int exynos_ss_post_panic(void)
 {
 	exynos_ss_save_context(NULL);
 	flush_cache_all();
+	exynos_ss_dump_sfr();
 
 	if (!no_wdt_dev) {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET
@@ -846,7 +867,7 @@ static inline void exynos_ss_hook_logger(const char *name,
 	struct exynos_ss_item *item = NULL;
 	unsigned long i;
 
-	for (i = ESS_ITEMS_LOG_MAIN; i < ARRAY_SIZE(ess_items); i++) {
+	for (i = ESS_ITEMS_LOG_PLATFORM; i < ARRAY_SIZE(ess_items); i++) {
 		if (!strncmp(ess_items[i].name, name, strlen(name))) {
 			item = &ess_items[i];
 			break;
@@ -996,6 +1017,130 @@ static void exynos_ss_dump_task_info(void)
 	}
 	pr_info(" ----------------------------------------------------------------------------------------------------------------------------\n");
 }
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+void exynos_ss_dump_sfr(void)
+{
+	struct exynos_ss_sfrdump *sfrdump;
+	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_LOG_SFR];
+	struct list_head *entry;
+	struct device_node *np;
+	unsigned int reg, offset, val, size;
+	int i, ret;
+	static char buf[SZ_64];
+
+	if (list_empty(&ess_info.sfrdump_list) || unlikely(!item) ||
+		unlikely(item->entry.enabled == false)) {
+		pr_emerg("exynos-snapshot: %s: No information\n", __func__);
+		return;
+	}
+
+	list_for_each(entry, &ess_info.sfrdump_list) {
+		sfrdump = list_entry(entry, struct exynos_ss_sfrdump, list);
+		np = of_node_get(sfrdump->node);
+		for (i = 0; i < SZ_256; i++) {
+			ret = of_property_read_u32_index(np, "addr", i, &reg);
+			if (ret < 0) {
+				pr_err("exynos-snapshot: failed to get address information - %s\n",
+					sfrdump->name);
+				break;
+			}
+			if (reg == 0xFFFFFFFF)
+				break;
+			offset = reg - sfrdump->phy_reg;
+			if (reg < offset) {
+				pr_err("exynos-snapshot: invalid address information - %s: 0x%08x\n",
+				sfrdump->name, reg);
+				break;
+			}
+			val = __raw_readl(sfrdump->reg + offset);
+			snprintf(buf, SZ_64, "0x%X = 0x%0X\n",reg, val);
+			size = strlen(buf);
+			if (unlikely((exynos_ss_check_eob(item, size))))
+				item->curr_ptr = item->head_ptr;
+			memcpy(item->curr_ptr, buf, strlen(buf));
+			item->curr_ptr += strlen(buf);
+		}
+		of_node_put(np);
+		pr_info("exynos-snapshot: complete to dump %s\n", sfrdump->name);
+	}
+
+}
+
+static int exynos_ss_sfr_dump_init(struct device_node *np)
+{
+	struct device_node *dump_np;
+	struct exynos_ss_sfrdump *sfrdump;
+	char *dump_str;
+
+	unsigned int phy_regs[2];
+	int count, ret, i;
+
+	ret = of_property_count_strings(np, "sfr-dump-list");
+	if (ret < 0) {
+		pr_err("failed to get sfr-dump-list\n");
+		return ret;
+	}
+	count = ret;
+
+	INIT_LIST_HEAD(&ess_info.sfrdump_list);
+	for (i = 0; i < count; i++) {
+		ret = of_property_read_string_index(np, "sfr-dump-list", i,
+						(const char **)&dump_str);
+		if (ret < 0) {
+			pr_err("failed to get sfr-dump-list\n");
+			continue;
+		}
+
+		dump_np = of_get_child_by_name(np, dump_str);
+		if (!dump_np) {
+			pr_err("failed to get %s node, count:%d\n", dump_str, count);
+			continue;
+		}
+
+		sfrdump = kzalloc(sizeof(struct exynos_ss_sfrdump), GFP_KERNEL);
+		if (!sfrdump) {
+			pr_err("failed to get memory region of exynos_ss_sfrdump\n");
+			of_node_put(dump_np);
+			continue;
+		}
+
+		ret = of_property_read_u32_array(dump_np, "reg", phy_regs, 2);
+		if (ret < 0) {
+			pr_err("failed to get register information\n");
+			of_node_put(dump_np);
+			kfree(sfrdump);
+			continue;
+		}
+
+		sfrdump->reg = ioremap(phy_regs[0], phy_regs[1]);
+		if (!sfrdump->reg) {
+			pr_err("failed to get i/o address %s node\n", dump_str);
+			of_node_put(dump_np);
+			kfree(sfrdump);
+			continue;
+		}
+		sfrdump->name = dump_str;
+
+		ret = of_property_count_u32_elems(dump_np, "addr");
+		if (ret < 0) {
+			pr_err("failed to get addr count\n");
+			of_node_put(dump_np);
+			kfree(sfrdump);
+			continue;
+		}
+		sfrdump->phy_reg = phy_regs[0];
+		sfrdump->num = ret;
+		sfrdump->node = dump_np;
+		list_add(&sfrdump->list, &ess_info.sfrdump_list);
+
+		pr_info("success to regsiter %s\n", sfrdump->name);
+		of_node_put(dump_np);
+	}
+	return ret;
+}
+
+#endif
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_CRASH_KEY
 void exynos_ss_check_crash_key(unsigned int code, int value)
@@ -1319,6 +1464,50 @@ static int __init exynos_ss_fixmap(void)
 	return 0;
 }
 
+static int exynos_ss_init_dt_parse(struct device_node *np)
+{
+	int ret = 0;
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+	struct device_node *sfr_dump_np = of_get_child_by_name(np, "dump-info");
+	if (!sfr_dump_np) {
+		pr_err("failed to get dump-info node\n");
+		ret = -ENODEV;
+	} else {
+		ret = exynos_ss_sfr_dump_init(sfr_dump_np);
+		if (ret) {
+			pr_err("failed to register sfr dump node\n");
+			ret = -ENODEV;
+			of_node_put(sfr_dump_np);
+		}
+	}
+	of_node_put(np);
+#endif
+	/* TODO: adding more dump information */
+	return ret;
+}
+
+static const struct of_device_id ess_of_match[] __initconst = {
+	{ .compatible = "samsung,exynos-snapshot",     .data = exynos_ss_init_dt_parse},
+	{},
+};
+
+static int __init exynos_ss_init_dt(void)
+{
+	struct device_node *np;
+	const struct of_device_id *matched_np;
+	ess_initcall_t init_fn;
+
+	np = of_find_matching_node_and_match(NULL, ess_of_match, &matched_np);
+
+	if (!np) {
+		pr_info("%s: error\n", __func__);
+		return -ENODEV;
+	}
+
+	init_fn = (ess_initcall_t)matched_np->data;
+	return init_fn(np);
+}
+
 static int __init exynos_ss_init(void)
 {
 	if (ess_base.vaddr && ess_base.paddr) {
@@ -1330,6 +1519,7 @@ static int __init exynos_ss_init(void)
 	 *  And then, the debug buffer is shown.
 	 */
 		exynos_ss_fixmap();
+		exynos_ss_init_dt();
 		exynos_ss_scratch_reg(ESS_SIGN_SCRATCH);
 		exynos_ss_set_enable("base", true);
 
