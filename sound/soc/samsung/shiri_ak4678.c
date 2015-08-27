@@ -142,7 +142,6 @@ static int set_aud_sclk(struct snd_soc_card *card, unsigned long epll, unsigned 
 	gprintk("sclk_i2s rate = %ld\n", clk_get_rate(sclk_i2s));
 	gprintk("clk_prepare_enable......sclk_i2s\n");
 
-
 	writel(0x10008, EXYNOS3_CLK_BUS_TOP_REG(0xCA00));
 	writel(0x0100, EXYNOS_PMU_DEBUG);
 
@@ -422,14 +421,15 @@ static int shiri_ak4678_probe(struct platform_device *pdev)
 	int ret;
 	struct device_node *np = pdev->dev.of_node;
 	struct snd_soc_card *card = &shiri;
-#ifdef CONFIG_SND_SAMSUNG_I2S_MASTER
-	struct clk *sclk_i2s;
-#endif
+	struct clk *fout_epll;
 
 	gprintk("start \n");
 	/* register card */
 	card->dev = &pdev->dev;
 
+	fout_epll = clk_get(NULL, "fout_epll");
+	if (IS_ERR(fout_epll))
+		pr_err("%s: failed to get fout_epll\n", __func__);
 
 	if (np) {
 
@@ -455,15 +455,8 @@ static int shiri_ak4678_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-#ifdef CONFIG_SND_SAMSUNG_I2S_MASTER
-	sclk_i2s = clk_get(card->dev, "sclk_i2s");
-	if (IS_ERR(sclk_i2s)) {
-		pr_err("%s: failed to get sclk_i2s\n", __func__);
-		ret = PTR_ERR(sclk_i2s);
-	} else {
-		clk_prepare_enable(sclk_i2s);
-	}
-#endif
+	clk_prepare_enable(fout_epll);
+
 	gprintk("ak4678-dai: register card %s -> %s\n", card->dai_link->codec_dai_name, card->dai_link->cpu_dai_name);
 
 	return ret;
@@ -471,17 +464,7 @@ static int shiri_ak4678_probe(struct platform_device *pdev)
 }
 static int shiri_ak4678_remove(struct platform_device *pdev)
 {
-#ifdef CONFIG_SND_SAMSUNG_I2S_MASTER
-	struct clk *sclk_i2s;
-#endif
 	snd_soc_unregister_card(&shiri);
-#ifdef CONFIG_SND_SAMSUNG_I2S_MASTER
-	sclk_i2s = clk_get(shiri.dev, "sclk_i2s");
-	if (IS_ERR(sclk_i2s)) 
-		pr_err("%s: failed to get sclk_i2s\n", __func__);
-	else
-		clk_disable_unprepare(sclk_i2s);
-#endif
 	return 0;
 }
 

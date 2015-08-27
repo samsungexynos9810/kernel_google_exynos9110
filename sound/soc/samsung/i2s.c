@@ -1357,12 +1357,18 @@ static inline int samsung_i2s_get_driver_data(struct platform_device *pdev)
 static int i2s_runtime_suspend(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
+	struct clk *sclk_i2s;
 
 	pr_debug("%s entered\n", __func__);
+
+	sclk_i2s = clk_get(&i2s->pdev->dev, "sclk_i2s");
+	if (IS_ERR(sclk_i2s))
+		pr_err("%s: failed to get sclk_i2s\n", __func__);
 
 	i2s_cfg_gpio(i2s, "idle");
 	i2s_reg_save(i2s);
 	clk_disable_unprepare(i2s->clk);
+	clk_disable_unprepare(sclk_i2s);
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 	lpass_put_sync(dev);
 #endif
@@ -1372,12 +1378,18 @@ static int i2s_runtime_suspend(struct device *dev)
 static int i2s_runtime_resume(struct device *dev)
 {
 	struct i2s_dai *i2s = dev_get_drvdata(dev);
+	struct clk *sclk_i2s;
 
 	pr_debug("%s entered\n", __func__);
+
+	sclk_i2s = clk_get(&i2s->pdev->dev, "sclk_i2s");
+	if (IS_ERR(sclk_i2s))
+		pr_err("%s: failed to get sclk_i2s\n", __func__);
 
 #ifdef CONFIG_SND_SAMSUNG_AUDSS
 	lpass_get_sync(dev);
 #endif
+	clk_prepare_enable(sclk_i2s);
 	clk_prepare_enable(i2s->clk);
 	i2s_reg_restore(i2s);
 	i2s_cfg_gpio(i2s, "default");
