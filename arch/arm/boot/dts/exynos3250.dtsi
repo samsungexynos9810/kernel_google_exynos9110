@@ -942,8 +942,8 @@
 		dmas = <&pdma0 14
 			&pdma0 13>;
 		dma-names = "tx", "rx";
-		clocks = <&clock CLK_I2S>;
-		clock-names = "iis";
+		clocks = <&clock CLK_I2S>, <&clock CLK_SCLK_I2S>;
+		clock-names = "iis", "sclk_i2s";
 		samsung,supports-rstclr;
 		pinctrl-names = "default", "idle";
 		pinctrl-0 = <&i2s2_bus>;
