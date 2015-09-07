@@ -369,6 +369,8 @@ enum {
 	DSIM_LANE_DATA3	= (1 << 4),
 };
 
+#define DSIM_RX_FIFO_MAX_DEPTH		64
+
 #define FIN_HZ			(24 * MHZ)
 
 #define DFIN_PLL_MIN_HZ		(6 * MHZ)

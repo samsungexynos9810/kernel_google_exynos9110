@@ -502,6 +502,14 @@ unsigned int s5p_mipi_dsi_get_fifo_state(struct mipi_dsim_device *dsim)
 
 	return ret;
 }
+unsigned int s5p_mipi_dsi_rx_fifo_is_empty(struct mipi_dsim_device *dsim)
+{
+	unsigned int reg;
+
+	reg = readl(dsim->reg_base + S5P_DSIM_FIFOCTRL);
+
+	return (reg & DSIM_EMPTY_RX) ? 1 : 0;
+}
 
 void s5p_mipi_dsi_wr_tx_header(struct mipi_dsim_device *dsim,
 	unsigned int id, unsigned int data0, unsigned int data1)

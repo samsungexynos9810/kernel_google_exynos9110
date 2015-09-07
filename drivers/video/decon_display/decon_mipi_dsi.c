@@ -56,7 +56,7 @@ static DECLARE_COMPLETION(dsim_wr_comp);
 static DECLARE_COMPLETION(dsim_rd_comp);
 
 #define MIPI_WR_TIMEOUT msecs_to_jiffies(50)
-#define MIPI_RD_TIMEOUT msecs_to_jiffies(50)
+#define MIPI_RD_TIMEOUT msecs_to_jiffies(100)
 
 static unsigned int dpll_table[15] = {
 	100, 120, 170, 220, 270,
@@ -431,6 +431,8 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 {
 	u32 rx_fifo, rx_size = 0;
 	int i, j, ret = 0;
+	u32 rx_fifo_depth = DSIM_RX_FIFO_MAX_DEPTH;
+
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	struct display_driver *dispdrv = get_display_driver();
@@ -442,6 +444,10 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	}
 
 	INIT_COMPLETION(dsim_rd_comp);
+
+	/* Init RX FIFO before read and clear DSIM_INTSRC */
+	s5p_mipi_dsi_init_fifo_pointer(dsim, DSIM_INIT_RX);
+	s5p_mipi_dsi_clear_interrupt(dsim,INTSRC_RX_DATA_DONE);
 
 	/* Set the maximum packet size returned */
 	s5p_mipi_dsi_wr_data(dsim,
@@ -461,76 +467,60 @@ int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	disp_pm_gate_lock(dispdrv, true);
 	disp_pm_add_refcount(dispdrv);
 #endif
-	rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
-
-	/* Parse the RX packet data types */
-	switch (rx_fifo & 0xff) {
-	case MIPI_DSI_RX_ACKNOWLEDGE_AND_ERROR_REPORT:
-		s5p_mipi_dsi_rx_err_handler(dsim, rx_fifo);
-		goto rx_error;
-	case MIPI_DSI_RX_END_OF_TRANSMISSION:
-		dev_dbg(dsim->dev, "EoTp was received from LCD module.\n");
-		break;
-	case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_1BYTE:
-	case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_2BYTE:
-	case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_1BYTE:
-	case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_2BYTE:
-		dev_dbg(dsim->dev, "Short Packet was received from LCD module.\n");
-		for (i = 0; i <= count; i++)
-			buf[i] = (rx_fifo >> (8 + i * 8)) & 0xff;
-		break;
-	case MIPI_DSI_RX_DCS_LONG_READ_RESPONSE:
-	case MIPI_DSI_RX_GENERIC_LONG_READ_RESPONSE:
-		dev_dbg(dsim->dev, "Long Packet was received from LCD module.\n");
-		rx_size = (rx_fifo & 0x00ffff00) >> 8;
-		dev_info(dsim->dev, "rx fifo : %8x, response : %x, rx_size : %d\n",
-				rx_fifo, rx_fifo & 0xff, rx_size);
-		/* Read data from RX packet payload */
-		for (i = 0; i < rx_size >> 2; i++) {
-			rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
-			for (j = 0; j < 4; j++)
-				buf[(i*4)+j] = (u8)(rx_fifo >> (j * 8)) & 0xff;
-		}
-		if (rx_size % 4) {
-			rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
-			for (j = 0; j < rx_size % 4; j++)
-				buf[4 * i + j] =
-					(u8)(rx_fifo >> (j * 8)) & 0xff;
-		}
-		break;
-	default:
-		dev_err(dsim->dev, "Packet format is invaild.\n");
-		goto rx_error;
-	}
-
-	rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
-	if (rx_fifo != DSIM_RX_FIFO_READ_DONE) {
-		dev_info(dsim->dev, "%s Can't find RX FIFO READ DONE FLAG : %x\n",
-			__func__, rx_fifo);
-		goto clear_rx_fifo;
-	}
-	ret = rx_size;
-	goto exit;
-
-clear_rx_fifo:
-	i = 0;
-	while (1) {
+	do {
 		rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
-		if ((rx_fifo == DSIM_RX_FIFO_READ_DONE) ||
-				(i > DSIM_MAX_RX_FIFO))
-			break;
-		dev_info(dsim->dev, "%s clear rx fifo : %08x\n", __func__, rx_fifo);
-		i++;
-	}
-	ret = 0;
-	goto exit;
 
-rx_error:
-	s5p_mipi_dsi_force_dphy_stop_state(dsim, 1);
-	usleep_range(3000, 4000);
-	s5p_mipi_dsi_force_dphy_stop_state(dsim, 0);
-	ret = -EPERM;
-	goto exit;
+		/* Parse the RX packet data types */
+		switch (rx_fifo & 0xff) {
+		case MIPI_DSI_RX_ACKNOWLEDGE_AND_ERROR_REPORT:
+			s5p_mipi_dsi_rx_err_handler(dsim, rx_fifo);
+			if (ret < 0) {
+				goto exit;
+			}
+			break;
+		case MIPI_DSI_RX_END_OF_TRANSMISSION:
+			dev_dbg(dsim->dev, "EoTp was received from LCD module.\n");
+			break;
+		case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_1BYTE:
+		case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_2BYTE:
+		case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_1BYTE:
+		case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_2BYTE:
+			dev_dbg(dsim->dev, "Short Packet was received from LCD module.\n");
+			for (i = 0; i <= count; i++)
+				buf[i] = (rx_fifo >> (8 + i * 8)) & 0xff;
+			break;
+		case MIPI_DSI_RX_DCS_LONG_READ_RESPONSE:
+		case MIPI_DSI_RX_GENERIC_LONG_READ_RESPONSE:
+			dev_dbg(dsim->dev, "Long Packet was received from LCD module.\n");
+			rx_size = (rx_fifo & 0x00ffff00) >> 8;
+			dev_info(dsim->dev, "rx fifo : %8x, response : %x, rx_size : %d\n",
+					rx_fifo, rx_fifo & 0xff, rx_size);
+			/* Read data from RX packet payload */
+			for (i = 0; i < rx_size >> 2; i++) {
+				rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
+				for (j = 0; j < 4; j++)
+					buf[(i*4)+j] = (u8)(rx_fifo >> (j * 8)) & 0xff;
+			}
+			if (rx_size % 4) {
+				rx_fifo = readl(dsim->reg_base + S5P_DSIM_RXFIFO);
+				for (j = 0; j < rx_size % 4; j++)
+					buf[4 * i + j] =
+						(u8)(rx_fifo >> (j * 8)) & 0xff;
+			}
+			break;
+		default:
+			dev_err(dsim->dev, "Packet format is invaild.\n");
+			ret = -EBUSY;
+			break;
+		}
+	} while (!s5p_mipi_dsi_rx_fifo_is_empty(dsim) && --rx_fifo_depth);
+
+
+	ret = rx_size;
+	if (!rx_fifo_depth) {
+		dev_err(dsim->dev, "Check DPHY values about HS clk.\n");
+		ret = -EBUSY;
+	}
 
 exit:
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY

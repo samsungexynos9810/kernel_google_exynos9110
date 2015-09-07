@@ -63,6 +63,7 @@
 #define INTSRC_PLL_STABLE		(1 << 31)
 #define INTSRC_SFR_FIFO_EMPTY		(1 << 29)
 #define INTSRC_FRAME_DONE		(1 << 24)
+#define INTSRC_RX_DATA_DONE		(1 << 18)
 
 #define S5P_DSIM_INTMSK		(0x30)	/* Interrupt mask register */
 #define INTMSK_FRAME_DONE		(1 << 24)
@@ -76,8 +77,10 @@
 #define S5P_DSIM_RXFIFO		(0x3c)	/* Read FIFO register */
 #define S5P_DSIM_FIFOTHLD	(0x40)	/* FIFO threshold level register */
 #define S5P_DSIM_FIFOCTRL	(0x44)	/* FIFO status and control register */
+#define DSIM_EMPTY_RX		(1 << 24)	/* Rx fifo empty */
 #define DSIM_FULL_PH_SFR	(1 << 23)	/* SFR packet header FIFO full */
 #define DSIM_FULL_PL_SFR	(1 << 21)	/* SFR payload FIFO full */
+#define DSIM_INIT_RX		(1 << 4)	/* MD fifo read point initialize */
 #define DSIM_INIT_SFR		(1 << 3)	/* SFR FIFO write point initialize */
 
 #define S5P_DSIM_MEMACCHR	(0x48)	/* FIFO memory AC characteristic register */

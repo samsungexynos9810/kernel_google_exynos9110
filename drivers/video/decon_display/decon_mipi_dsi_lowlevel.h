@@ -97,6 +97,8 @@ void s5p_mipi_dsi_clear_interrupt(struct mipi_dsim_device *dsim,
 void s5p_mipi_dsi_clear_all_interrupt(struct mipi_dsim_device *dsim);
 unsigned int s5p_mipi_dsi_is_pll_stable(struct mipi_dsim_device *dsim);
 unsigned int s5p_mipi_dsi_get_fifo_state(struct mipi_dsim_device *dsim);
+unsigned int s5p_mipi_dsi_rx_fifo_is_empty(struct mipi_dsim_device *dsim);
+
 unsigned int _s5p_mipi_dsi_get_frame_done_status(struct mipi_dsim_device *dsim);
 void _s5p_mipi_dsi_clear_frame_done(struct mipi_dsim_device *dsim);
 void s5p_mipi_dsi_wr_tx_header(struct mipi_dsim_device *dsim,
