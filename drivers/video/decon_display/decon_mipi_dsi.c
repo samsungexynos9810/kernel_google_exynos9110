@@ -1184,6 +1184,20 @@ int s5p_mipi_dsi_ulps_enable(struct mipi_dsim_device *dsim,
 	return ret;
 }
 
+int s5p_mipi_lp_enable(struct mipi_dsim_device *dsim)
+{
+       s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 1);
+
+       return 0;
+}
+
+int s5p_mipi_lp_disable(struct mipi_dsim_device *dsim)
+{
+       s5p_mipi_dsi_set_cpu_transfer_mode(dsim, 0);
+
+       return 0;
+}
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 int s5p_mipi_dsi_hibernation_power_on(struct display_driver *dispdrv)
 {

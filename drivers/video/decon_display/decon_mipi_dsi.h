@@ -432,6 +432,9 @@ extern int s5p_mipi_dsi_wr_data(struct mipi_dsim_device *dsim,
 extern int s5p_mipi_dsi_rd_data(struct mipi_dsim_device *dsim, u32 data_id,
 	u32 addr, u32 count, u8 *buf);
 
+extern int s5p_mipi_lp_enable(struct mipi_dsim_device *dsim);
+extern int s5p_mipi_lp_disable(struct mipi_dsim_device *dsim);
+
 enum mipi_ddi_interface {
 	RGB_IF = 0x4000,
 	I80_IF = 0x8000,
