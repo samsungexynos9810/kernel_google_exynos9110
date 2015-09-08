@@ -210,7 +210,6 @@
                                         regulator-name = "VDD_USB_AP_1.0V";
                                         regulator-min-microvolt = <1000000>;
                                         regulator-max-microvolt = <1000000>;
-                                        regulator-always-on;
 					regulator-initial-mode = <1>;
                                 };
 
@@ -492,6 +491,7 @@
                 gpios = <&gpx0 4 0xf>;
 		lcd-3.1-supply = <&ldo16_reg>;
 		lcd-1.8-supply = <&ldo20_reg>;
+		mipi-pll-supply = <&ldo6_reg>;
                 fimd: fimd_ctrl {
                         samsung,left_margin = <1>;
                         samsung,right_margin = <1>;
