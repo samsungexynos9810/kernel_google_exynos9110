@@ -25,6 +25,7 @@
 #include <linux/unistd.h>
 #include <linux/power_supply.h>
 #include <linux/mfd/samsung/rtc.h>
+#include <linux/wakelock.h>
 
 #include "../power/subcpu_battery.h"
 #include "../video/backlight/bd82103.h"
@@ -37,18 +38,10 @@
 
 #define MINOR_COUNT 	(1)
 
-#define INTERVAL_STARTUP	(5000)
-#define INTERVAL_MAX		(MSENSORS_BATCH_MAX_TIME_NS / 1000000)		/* ns -> ms */
-#define INTERVAL_MIN		(100)
-#define INTERVAL_INIT		(1000)
-#define INTERVAL_SET		(30)
-#define INTERVAL_SUBMIT		(70)
-#define SPI_ERROR_COUNT_MAX	(5)
-
-#define SUB_COM_OVERWRITE (1)
-#define SUB_COM_NON_OVERWRITE	(0)
-
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
+#define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
+#define WRITE_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_HEAD_SIZE_SETDATA)
+#define WRITE_DATABUFF_SIZE 32
 
 #define INC_INDEX(a, r)	\
 do {	\
@@ -59,86 +52,26 @@ do {	\
 } while(0)
 
 struct Msensors_state {
-	struct mutex lock;
 	struct spi_device *sdev;
 	struct cdev cdev;
 	unsigned int sub_main_int;
 };
 
-
-typedef struct {
-	unsigned char	m_type;
-	unsigned char	m_id;
-	unsigned char	m_over;
-}STR_PriorityTbl;
-
-static STR_PriorityTbl Write_Priority_Tbl[] = {
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_DEMO_CMD,		SUB_COM_NON_OVERWRITE },/* Demo Command */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_VIB_SET,		SUB_COM_NON_OVERWRITE },/* Vibrator Settiong */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_SUB_FIRM_UPDATE,	SUB_COM_OVERWRITE },	/* SUB-CPU Firmware Update */
-	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_RTC,		SUB_COM_OVERWRITE },	/* RTC */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_RTC,		SUB_COM_OVERWRITE },	/* RTC */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_MAIN_STATUS,	SUB_COM_OVERWRITE },	/* MAIN status */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_THEATER_MODE,	SUB_COM_OVERWRITE },	/* MAIN LCD Brightness is 0 or not */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_LCD_SET,		SUB_COM_OVERWRITE },	/* LCD Brightness Settiong */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_KEYMODE,		SUB_COM_OVERWRITE },	/* Key Mode */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_SENSOR_PERIOD,	SUB_COM_OVERWRITE },	/* Sensor Data Send Period */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_FIFO_FLUSH,	SUB_COM_OVERWRITE },	/* FIFO flash */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_ACCELE,	SUB_COM_OVERWRITE },	/* Acceleration Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_MAG,		SUB_COM_OVERWRITE },	/* Magnetic Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_GYRO,		SUB_COM_OVERWRITE },	/* Gyroscope Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_PRESS,		SUB_COM_OVERWRITE },	/* Pressure Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_BHA,	SUB_COM_OVERWRITE },	/* BHA Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_STPCOUNTER,	SUB_COM_OVERWRITE },	/* Step Counter Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_HZ_STPDETECTOR,	SUB_COM_OVERWRITE },	/* Step Detector Hz */
-
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_ACCELE,	SUB_COM_OVERWRITE },	/* Acceleration Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_MAG,		SUB_COM_OVERWRITE },	/* Magnetic Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_GYRO,		SUB_COM_OVERWRITE },	/* Gyroscope Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_PRESS,		SUB_COM_OVERWRITE },	/* Pressure Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_BHA,	SUB_COM_OVERWRITE },	/* BHA Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_STPCOUNTER,	SUB_COM_OVERWRITE },	/* Step Counter Hz */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BATCH_STPDETECTOR,	SUB_COM_OVERWRITE },	/* Step Detector Hz */
-
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_ACCELE,	SUB_COM_OVERWRITE },	/* Acceleratio Non/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_MAG,	SUB_COM_OVERWRITE },	/* Magnetic ON/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_GYRO,	SUB_COM_OVERWRITE },	/* Gyroscope ON/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_PRESS,	SUB_COM_OVERWRITE },	/* Pressure ON/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_BHA,	SUB_COM_OVERWRITE },	/* BHA ON/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_STPCOUNTER,	SUB_COM_OVERWRITE },	/* Step Counter ON/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_STPDETECTOR,SUB_COM_OVERWRITE },	/* Step Detector ON/OFF */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ONOFF_WRIST_TILT,	SUB_COM_OVERWRITE },	/* Wrist Tilt ON/OFF */
-
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_ALERM,		SUB_COM_OVERWRITE },	/* Alarm */
-	{ SUB_COM_TYPE_WRITE, 	SUB_COM_SETID_BUZ_SET,		SUB_COM_NON_OVERWRITE },/* Buzzer Settiong */
-	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_SUB_CPU_VER,	SUB_COM_OVERWRITE },	/* SUB-CPU Version */
-	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_POWER_PROP1,		SUB_COM_OVERWRITE },	/* Battery information1 */
-	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_POWER_PROP2,		SUB_COM_OVERWRITE },	/* Battery information2 */
-	{ SUB_COM_TYPE_READ, 	SUB_COM_GETID_USB,		SUB_COM_OVERWRITE },	/* USB Status */
+struct WriteDataBuf {
+	unsigned char	m_data[WRITE_DATA_SIZE];
+	unsigned char	m_used;
+	struct list_head bqueue;
 };
 
-#define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
-#define WRITE_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_HEAD_SIZE_SETDATA)
-#define WRITE_DATABUFF_SIZE ( sizeof(Write_Priority_Tbl) / sizeof(STR_PriorityTbl) )
-
-typedef void (*Write_cb)(void);
-
-typedef struct {
-	unsigned char	m_data[WRITE_DATA_SIZE];
-	unsigned char	m_sendcomp;
-	Write_cb	m_cb;
-}STR_WriteTbl;
-
-STR_WriteTbl WriteDataBuf[WRITE_DATABUFF_SIZE];
-atomic_t WriteDataNum;
+static spinlock_t slock;
+static struct WriteDataBuf WriteDataBuf[WRITE_DATABUFF_SIZE];
+static struct list_head wd_queue;
 
 static struct Msensors_state 	*g_st=0;
 static dev_t 			dev_id;
 static struct class		*Msensors_class;
 static struct device		*class_dev;
 static struct task_struct	*pSensorReadThread;
-static unsigned int		sensorReadThreaad_interval=(INTERVAL_INIT - INTERVAL_SUBMIT);
-static unsigned int		request_interval=0;
 
 static struct Msensors_data	Msensors_data_buff[MSENSORS_DATA_MAX];
 static unsigned int		dataBuffReadIndex;
@@ -147,35 +80,54 @@ static unsigned int		PacketDataNum=0;
 static unsigned int		PreSendType=0;
 static unsigned int		SpiDataLen=0;
 static unsigned int		SpiErrorCount=0;	/*** pet yasui ADD ***/
-       unsigned char		HeaderData[HEADER_DATA_SIZE];
+static unsigned char		HeaderData[HEADER_DATA_SIZE];
 static unsigned char 		SpiSendBuff[SPI_DATA_MAX];
 static unsigned char 		SpiRecvBuff[SPI_DATA_MAX];
-static unsigned char		ThreaadRunFlg=0;
 static unsigned char		HeaderRcvFlg=0;
-static unsigned char		SetCommandOnly=0;
 static unsigned char		Flg_driver_ready = 0;
+static unsigned char		Flg_driver_probed = 0;
+static unsigned char		Flg_driver_shutdown = 0;
 
-/*** for SubCpuEdit.c ***/
-unsigned char SubCpuVersion[SUB_COM_DATA_SIZE_GETDATA];
-unsigned char SubUsbStatus[SUB_COM_DATA_SIZE_GETDATA];
-unsigned char SubDateTime[SUB_COM_DATA_SIZE_GETDATA];
-/*** for SubCpuEdit.c ***/
+static unsigned char SubCpuVersion[SUB_COM_DATA_SIZE_GETDATA];
+static unsigned char SubAccelAdj[SUB_COM_DATA_SIZE_GETDATA];
 
-
-/** FWUpdate **/
 static const char path[] = "/data/local/tmp/SUB_CPU_TZ.srec";
 static	int Totallen = 0;
 static	int Now_len = 1;
 static uint8_t gFlg_AutoUpdate = 0;
-static wait_queue_head_t wait_fwu;
-static int fwupdate_complete;
+static wait_queue_head_t wait_ioctl;
+static int ioctl_complete;
 static struct sub_FW_data *gSUBCPU_Firmware;
-/**************/
 
-static void sub_HeaderInfoProc(void);
+static wait_queue_head_t wait_rd;
+static wait_queue_head_t wait_subint;
+static int sub_main_int_occur;
+static int64_t soc_time;
+
 static int SensorFWUpdateLoop(void);
-static int Msensors_resume(struct device *dev);//TEMS.198 2015.01.24 anzai
-int Set_WriteDataBuff( unsigned char* write_buff, Write_cb cb );
+
+
+static struct WriteDataBuf *allocWbBuf(void)
+{
+	int i;
+	unsigned long flags;
+
+	for (i = 0; i < WRITE_DATABUFF_SIZE; i++) {
+		spin_lock_irqsave(&slock, flags);
+		if (WriteDataBuf[i].m_used == 0) {
+			WriteDataBuf[i].m_used = 1;
+			spin_unlock_irqrestore(&slock, flags);
+			return &WriteDataBuf[i];
+		}
+		spin_unlock_irqrestore(&slock, flags);
+	}
+	return NULL;
+}
+
+static void freeWbBuf(struct WriteDataBuf *wb)
+{
+	wb->m_used = 0;
+}
 
 static ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count )
 {
@@ -194,20 +146,13 @@ static ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, cha
 
 	tx_type = (unsigned char)send_buf[0];
 
-	if((tx_type == SUB_COM_TYPE_WRITE) || (tx_type == SUB_COM_TYPE_READ))
-	{
-		xfer.cs_change = 1;
-	}
-
 	SpiDataLen = (unsigned int)count;
 
 	spi_message_init(&msg);
 	spi_message_add_tail(&xfer, &msg);
 	ret_spi = spi_sync(st->sdev, &msg);
 	if (ret_spi)
-	{
 		ret = -EIO;
-	}
 
 	return ret;
 }
@@ -232,23 +177,17 @@ static int Msensors_Close(struct inode *inode, struct file *file)
 	return 0;
 }
 
-static int Get_WriteDataBuffIdx( void )
-{
-	int i;
-
-	for (i = 0; i < WRITE_DATABUFF_SIZE; i++) {
-		if (WriteDataBuf[i].m_sendcomp == 1)
-			return i;
-	}
-	return -1;
-}
-
 static int64_t getTimestamp(void)
 {
     struct timespec t;
     t.tv_sec = t.tv_nsec = 0;
     ktime_get_ts(&t);
     return (int64_t)t.tv_sec * 1000000000LL + t.tv_nsec;
+}
+
+void Msensors_SetTimestamp(void)
+{
+	soc_time = getTimestamp();
 }
 
 static uint8_t is_subcpu_need_update(uint8_t maj, uint8_t min, uint8_t rev)
@@ -267,13 +206,40 @@ static uint8_t is_subcpu_need_update(uint8_t maj, uint8_t min, uint8_t rev)
 	return ret;
 }
 
+static int Set_WriteDataBuff(unsigned char* write_buff)
+{
+	struct WriteDataBuf *wb;
+	unsigned long flags;
+
+	if (Flg_driver_probed == 0 || Flg_driver_shutdown) {
+		dev_info(&g_st->sdev->dev, "write command type:%02x id:%02x ignored.\n"
+				,write_buff[1] , write_buff[2]);
+		return -EPROBE_DEFER;
+	}
+
+retry:
+	wb = allocWbBuf();
+	if (wb) {
+		memcpy(wb->m_data, &write_buff[0], WRITE_DATA_SIZE);
+		spin_lock_irqsave(&slock, flags);
+		list_add_tail(&wb->bqueue, &wd_queue);
+		spin_unlock_irqrestore(&slock, flags);
+		sub_main_int_occur = 1;
+		wake_up_interruptible(&wait_subint);
+	} else if (Flg_driver_ready) {
+		msleep(10);
+		goto retry;
+	}
+	return 0;
+}
+
 static void start_subcpu_update(void)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_SUB_FIRM_UPDATE;
-	Set_WriteDataBuff(&write_buff[0], (void*)0);
+	Set_WriteDataBuff(&write_buff[0]);
 }
 
 static int SensorFWUpdateLoop_auto(void)
@@ -324,10 +290,25 @@ update_finish:
 	return 0;
 }
 
-static wait_queue_head_t wait;
-static wait_queue_head_t wait_subint;
-static int sub_main_int_occur;
-static spinlock_t slock;
+static void sub_HeaderInfoProc(void)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
+
+	/* charger or battery property changed */
+	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG1)) {
+		write_buff[0] = SUB_COM_TYPE_READ;
+		write_buff[1] = SUB_COM_GETID_POWER_PROP1;
+		Set_WriteDataBuff(&write_buff[0]);
+	}
+
+	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG2)) {
+		write_buff[0] = SUB_COM_TYPE_READ;
+		write_buff[1] = SUB_COM_GETID_POWER_PROP2;
+		Set_WriteDataBuff(&write_buff[0]);
+	}
+}
 
 static int SensorReadThread(void *p)
 {
@@ -340,18 +321,13 @@ static int SensorReadThread(void *p)
 	int recv_index;
 	int next_recv_size;
 	unsigned char* recv_buf = &SpiRecvBuff[0];
-	int64_t soc_time, event_time;
+	int64_t event_time, last_event_time = 0;
 	uint32_t elapsed_time = 0;
-	int bidx;
 	unsigned long flags;
 	static uint8_t flg_first = 1;
+	struct WriteDataBuf *wb;
 
-	ThreaadRunFlg = 1;
 	HeaderRcvFlg = 0;
-
-	spin_lock_init(&slock);
-
-	request_interval=(INTERVAL_INIT - INTERVAL_SUBMIT);
 
 	while (!kthread_should_stop()) {
 
@@ -363,8 +339,7 @@ static int SensorReadThread(void *p)
 		type = recv_buf[SUB_COM_HEAD_INDEX_TYPE];
 
 		/* HEADER Information */
-		if(type == SUB_COM_TYPE_BIT_HEAD )
-		{
+		if (type == SUB_COM_TYPE_BIT_HEAD) {
 			/* Get Header Data */
 			memcpy(&HeaderData[0], &recv_buf[0], HEADER_DATA_SIZE);
 			HeaderRcvFlg = 1;
@@ -378,25 +353,20 @@ static int SensorReadThread(void *p)
 			/* Calc sensors data size */
 			next_recv_size += sensor_num * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE );
 			PacketDataNum = sensor_num;
-			if(PreSendType==SUB_COM_TYPE_READ)
-			{
+			if (PreSendType==SUB_COM_TYPE_READ) {
 				next_recv_size += SUB_COM_DATA_SIZE_GETDATA + SUB_COM_ID_SIZE;
 				if(PacketDataNum == 0)
 					send_type = SUB_COM_TYPE_GETDATA;
 				else
 					send_type = SUB_COM_TYPE_SENSOR_GETDATA;
-			}
-			else
-			{
+			} else {
 				if(PacketDataNum == 0)
 					send_type = SUB_COM_TYPE_RES_NOMAL;
 				else
 					send_type = SUB_COM_TYPE_SENSOR;
 			}
-		}
+		} else if (type == SUB_COM_TYPE_FWUP_READY) {
 		/* FW Update Response */
-		else if(type == SUB_COM_TYPE_FWUP_READY)
-		{
 			/* Thread Start */
 			if (gFlg_AutoUpdate) {
 				gFlg_AutoUpdate = 0;
@@ -404,16 +374,12 @@ static int SensorReadThread(void *p)
 			} else {
 				SensorFWUpdateLoop();
 			}
-		}
+		} else {
 		/* Data */
-		else
-		{
 			recv_index = SUB_COM_DATA_INDEX_ID;
-			if(( type == SUB_COM_TYPE_GETDATA ) ||		/* Get Data Only */
-			   ( type == SUB_COM_TYPE_SENSOR_GETDATA ))	/* Get Data and Sensor Data */
-			{
-				if (recv_buf[recv_index] == SUB_COM_GETID_SUB_CPU_VER)
-				{
+			if ((type == SUB_COM_TYPE_GETDATA ) ||		/* Get Data Only */
+				(type == SUB_COM_TYPE_SENSOR_GETDATA )) {	/* Get Data and Sensor Data */
+				if (recv_buf[recv_index] == SUB_COM_GETID_SUB_CPU_VER) {
 					memcpy(SubCpuVersion, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
 					dev_info(&st->sdev->dev, "subcpu FW version:%02x:%02x:%02x\n",
 							SubCpuVersion[0], SubCpuVersion[1], SubCpuVersion[2]);
@@ -427,37 +393,24 @@ static int SensorReadThread(void *p)
 						}
 						flg_first = 0;
 					}
-				}
-				else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1)
-				{
+				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1) {
 					subcpu_battery_update_status1(recv_buf);
-				}
-				else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP2)
-				{
+				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP2) {
 					subcpu_battery_update_status2(recv_buf);
+				} else if (recv_buf[recv_index] == SUB_COM_GETID_ACC_ADJ) {
+					memcpy(SubAccelAdj, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
+					ioctl_complete = 1;
+					wake_up_interruptible(&wait_ioctl);
 				}
-				else if (recv_buf[recv_index] == SUB_COM_GETID_USB)
-				{
-					memcpy(SubUsbStatus, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
-				}
-				else if (recv_buf[recv_index] == SUB_COM_GETID_RTC)
-				{
-					memcpy(SubDateTime, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
-				}
-
 				/* Get Data Proc */
 				recv_index += SUB_COM_DATA_SIZE_GETDATA + SUB_COM_ID_SIZE;
 			}
 
-
-			if(( type == SUB_COM_TYPE_SENSOR ) ||		/* Sensor Data Only */
-			   ( type == SUB_COM_TYPE_SENSOR_GETDATA ))	/* Get Data and Sensor Data */
-			{
-				soc_time = getTimestamp();
+			if ((type == SUB_COM_TYPE_SENSOR) ||		/* Sensor Data Only */
+				(type == SUB_COM_TYPE_SENSOR_GETDATA)) {	/* Get Data and Sensor Data */
 				event_time = soc_time - elapsed_time * 1000000LL;
 				/* Sensor Data Proc */
-				for ( cnt= 0; cnt < PacketDataNum; cnt++ )
-				{
+				for (cnt= 0; cnt < PacketDataNum; cnt++) {
 					sensor_type = recv_buf[recv_index++];
 
 					if (sensor_type == 0) {
@@ -465,6 +418,9 @@ static int SensorReadThread(void *p)
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
+						if (last_event_time > event_time)
+							event_time = last_event_time;
+						last_event_time = event_time;
 						Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
 						Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
 						memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
@@ -477,36 +433,40 @@ static int SensorReadThread(void *p)
 					}
 					recv_index += SUB_COM_DATA_SIZE_PACKET;
 				}
-				wake_up_interruptible_sync(&wait);
+				wake_up_interruptible_sync(&wait_rd);
 			}
 		}
 
-		bidx = -1;
-		if( send_type == SUB_COM_TYPE_RES_NOMAL )
-		{
+		wb = NULL;
+		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
 			next_recv_size += SUB_COM_HEAD_SIZE_SETDATA + SUB_COM_ID_SIZE;
-			bidx = Get_WriteDataBuffIdx();
-			if (bidx != -1) {
-				send_type = WriteDataBuf[bidx].m_data[0];
-				memcpy(&SpiSendBuff[0], &WriteDataBuf[bidx].m_data[0], WRITE_DATA_SIZE);
+			if (!list_empty(&wd_queue)) {
+				wb = list_first_entry(&wd_queue, struct WriteDataBuf, bqueue);
+				send_type = wb->m_data[0];
+				memcpy(&SpiSendBuff[0], wb->m_data, WRITE_DATA_SIZE);
 			}
 		}
 		/* Next SPI Send Proc */
 		SpiSendBuff[SUB_COM_HEAD_INDEX_TYPE] = send_type;
 		PreSendType =  send_type;
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
-			wait_event_interruptible(wait_subint, sub_main_int_occur);
+			wait_event_interruptible(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
 			sub_main_int_occur = 0;
 		}
+		if (Flg_driver_shutdown)
+			break;
+
+		while (!Flg_driver_ready)
+			msleep(10);
+
 		Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], next_recv_size);
-		if (bidx != -1) {
-			if (WriteDataBuf[bidx].m_cb)
-				WriteDataBuf[bidx].m_cb();
-			atomic_dec(&WriteDataNum);
-			WriteDataBuf[bidx].m_sendcomp = 0;
+		if (wb) {
+			spin_lock_irqsave(&slock, flags);
+			list_del(&wb->bqueue);
+			spin_unlock_irqrestore(&slock, flags);
+			freeWbBuf(wb);
 		}
 	}
-	ThreaadRunFlg = 0;
 
 	return 0;
 }
@@ -533,21 +493,17 @@ static int SensorFWUpdateLoop(void)
 	filp = filp_open(path, O_RDONLY, 0);
 	set_fs(oldfs);
 
-	if(IS_ERR(filp))
-	{
+	if (IS_ERR(filp)) {
 		dev_dbg(&st->sdev->dev, "File Open Error\n");
 		return 0;
-	}
-	else
-	{
+	} else {
 		oldfs = get_fs();
 		set_fs(get_ds());
 		readsize = filp->f_op->read(filp, buf, (sizeof(buf)-1), &filp->f_pos);
 		set_fs(oldfs);
 
 		t = memchr(buf, '\n', readsize);
-		if(t != NULL)
-		{
+		if (t != NULL) {
 			len = ++t - buf;
 			memset(buf2, 0x00, sizeof(buf2));
 			memcpy(buf2, buf, len);
@@ -558,9 +514,7 @@ static int SensorFWUpdateLoop(void)
 	Now_len = 1; //init
 
 	if(buf2[0] != 'S')
-	{
 		dev_dbg(&st->sdev->dev, "Error Not S-Record %d \n", buf2[0]);
-	}
 
 	memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 	memset(&SpiRecvBuff[0], 0x00, WRITE_DATA_SIZE);
@@ -575,8 +529,6 @@ static int SensorFWUpdateLoop(void)
 	PreSendType =  SpiSendBuff[0];
 	Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], WRITE_DATA_SIZE);
 
-	request_interval=(INTERVAL_INIT - INTERVAL_SUBMIT);
-
 	while (!kthread_should_stop()) {
 		next_recv_size = SUB_COM_TYPE_SIZE;
 		send_type = SUB_COM_TYPE_RES_NOMAL;
@@ -586,38 +538,28 @@ static int SensorFWUpdateLoop(void)
 		type = recv_buf[SUB_COM_HEAD_INDEX_TYPE];
 
 		/* HEADER Information */
-		if(type == SUB_COM_TYPE_FW_REQ_DATA)
-		{
+		if (type == SUB_COM_TYPE_FW_REQ_DATA) {
 			SpiSendBuff[0] = SUB_COM_TYPE_SET_FW_DATA;
 			memcpy(&SpiSendBuff[1], buf2, len);
 			PreSendType = SpiSendBuff[0];
 			Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], 1 + len);
 			dev_dbg(&st->sdev->dev, "Snd Data = %s \n",buf2);
-		}
-		else if(type == SUB_COM_TYPE_FW_REQ_HEAD)
-		{
+		} else if(type == SUB_COM_TYPE_FW_REQ_HEAD) {
 			oldfs = get_fs();
 			set_fs(get_ds());
 			readsize = filp->f_op->read(filp, buf, (sizeof(buf)-1), &filp->f_pos);
 			set_fs(oldfs);
 
-			if(readsize == 0)
-			{
+			if (readsize == 0) {
 				dev_dbg(&st->sdev->dev, "FWUpdate Complete!!!!\n");
 				filp_close(filp, NULL);
-				fwupdate_complete = 1;
-				wake_up_interruptible(&wait_fwu);
-
-				/* Communicate with SUB_CPU */
-				/* Thread Start */
-			//	(void)Msensors_resume(NULL);//TEMS.198 2015.01.24 anzai
-
+				ioctl_complete = 1;
+				wake_up_interruptible(&wait_ioctl);
 				return 0;
 			}
 
 			t = memchr(buf, '\n', readsize);
-			if(t != NULL)
-			{
+			if (t != NULL) {
 				len = ++t - buf;
 				memset(buf2, 0x00, sizeof(buf2));
 				memcpy(buf2, buf, len);
@@ -638,9 +580,7 @@ static int SensorFWUpdateLoop(void)
 			PreSendType =  SpiSendBuff[0];
 			Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], WRITE_DATA_SIZE);
 			dev_dbg(&st->sdev->dev, "FWUp (%04d/%04d)line \n",Now_len,Totallen);
-		}
-		else
-		{
+		} else {
 			dev_dbg(&st->sdev->dev, "FWUp RecvDeta Error (%04d/%04d)line \n",Now_len,Totallen);
 		}
 	}
@@ -666,9 +606,8 @@ static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t
 	}
 
 	/* Wait until dataBuffWriteIndex moved */
-	wait_event_interruptible(wait, dataBuffWriteIndex != dataBuffReadIndex);
-	for(cnt=0; cnt<data_num; cnt++)
-	{
+	wait_event_interruptible(wait_rd, dataBuffWriteIndex != dataBuffReadIndex);
+	for (cnt = 0; cnt < data_num; cnt++) {
 		if( dataBuffWriteIndex == dataBuffReadIndex )
 			break; 	/* no data */
 		memcpy(&tmp_buf[buf_index], &Msensors_data_buff[dataBuffReadIndex], size);
@@ -676,11 +615,10 @@ static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t
 		INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
 	}
 	ret = copy_to_user(buf, tmp_buf, buf_index);
-	if(ret<0)
-        {
-	        kfree(tmp_buf);
+	if (ret < 0) {
+		kfree(tmp_buf);
 		goto error_ret;
-        }
+	}
 	ret = buf_index;
 
 	kfree(tmp_buf);
@@ -689,41 +627,6 @@ error_ret:
 	return ret;
 }
 
-int Set_WriteDataBuff( unsigned char* write_buff, Write_cb cb )
-{
-	int i;
-
-	if (!(Flg_driver_ready)) {
-		printk("command ignored. MultiSensors is not ready.\n");
-		return -EPROBE_DEFER;
-	}
-
-	mutex_lock(&g_st->lock);
-	for(i=0; i<WRITE_DATABUFF_SIZE; i++)
-	{
-		if(( write_buff[0] == Write_Priority_Tbl[i].m_type ) &&
-		   ( write_buff[1] == Write_Priority_Tbl[i].m_id ))
-		{
-			if ( WriteDataBuf[i].m_sendcomp == 1 ) {
-				continue;
-			}
-
-			memcpy(&WriteDataBuf[i].m_data[0], &write_buff[0], WRITE_DATA_SIZE);
-			WriteDataBuf[i].m_cb = cb;
-
-			atomic_inc(&WriteDataNum);
-			WriteDataBuf[i].m_sendcomp = 1;
-			if( ThreaadRunFlg == 1 )
-			{
-				sub_main_int_occur = 1;
-				wake_up_interruptible(&wait_subint);
-			}
-			break;
-		}
-	}
-	mutex_unlock(&g_st->lock);
-	return 0;
-}
 
 static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count, loff_t* offset )
 {
@@ -745,12 +648,10 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 			on_off_light_for_pnlcd_demo(1);
 	}
 
-	if(!ret)
-	{
+	if (!ret) {
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
-		Set_WriteDataBuff( &write_buff[0], (void*)0 );
-		if( write_buff[1] == SUB_COM_SETID_FIFO_FLUSH )
-		{
+		Set_WriteDataBuff(&write_buff[0]);
+		if (write_buff[1] == SUB_COM_SETID_FIFO_FLUSH) {
 			Msensors_data_buff[0].sensor_type = MSENSORS_TYPE_META;
 			Msensors_data_buff[0].handle = write_buff[2];
 			dataBuffReadIndex = 0;
@@ -759,11 +660,6 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	}
 
 	return ret;
-}
-
-void CB_Ioctl(void)
-{
-	sensorReadThreaad_interval = request_interval;
 }
 
 static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -780,8 +676,8 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int len=0;
 	mm_segment_t oldfs;
 
-	if(cmd == 1)
-	{
+	pr_info("%s: cmd %d\n", __func__, cmd);
+	if (cmd == IOC_FW_UPDATE) {
 		st = file->private_data;
 
 		/* Open the file and count lines */
@@ -789,8 +685,7 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		set_fs(get_ds());
 		filp = filp_open(path, O_RDONLY, 0);
 		set_fs(oldfs);
-		if(IS_ERR(filp))
-		{
+		if (IS_ERR(filp)) {
 			dev_dbg(&st->sdev->dev, "File Open Error\n");
 			return -1;
 		}
@@ -798,17 +693,14 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		/* Read line by line */
 		Totallen = 0;
 		readsize = 1;
-		while(readsize != 0)
-		{
+		while (readsize != 0) {
 			oldfs = get_fs();
 			set_fs(get_ds());
 			readsize = filp->f_op->read(filp, buf, (sizeof(buf)-1), &filp->f_pos);
 			set_fs(oldfs);
-			if(readsize != 0)
-			{
+			if (readsize != 0) {
 				t = memchr(buf, '\n', readsize);
-				if(t != NULL)
-				{
+				if (t != NULL) {
 					len = ++t - buf;
 					memset(buf2, 0x00, sizeof(buf2));
 					memcpy(buf2, buf, len);
@@ -825,13 +717,24 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 		write_buff[0] = SUB_COM_TYPE_WRITE;
 		write_buff[1] = SUB_COM_SETID_SUB_FIRM_UPDATE;
-		fwupdate_complete = 0;
-		Set_WriteDataBuff(&write_buff[0], (void*)0);
-		wait_event_interruptible(wait_fwu, fwupdate_complete == 1);
+		ioctl_complete = 0;
+		Set_WriteDataBuff(&write_buff[0]);
+		wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
+	} else if (cmd == IOC_ACCEL_ADJ) {
+		/* accelerometer factory adjustment */
+		write_buff[0] = SUB_COM_TYPE_READ;
+		write_buff[1] = SUB_COM_GETID_ACC_ADJ;
+		Set_WriteDataBuff(&write_buff[0]);
+		ioctl_complete = 0;
+		wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
+		ret = copy_to_user((void __user *)arg, SubAccelAdj, 3);
+	} else if (cmd == IOC_GET_VERSION) {
+		ret = copy_to_user((void __user *)arg, SubCpuVersion, 3);
 	} else {
-		copy_to_user((void __user *)arg, SubCpuVersion, 3);
+		ret = -1;
+		pr_info("%s: unknown command %x\n", __func__, cmd);
 	}
-	return 0;
+	return ret;
 }
 
 static struct file_operations Msensors_fops = {
@@ -859,16 +762,15 @@ static void Msensors_init(struct Msensors_state *st)
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 	write_buff[0] = SUB_COM_TYPE_READ;
 	write_buff[1] = SUB_COM_GETID_SUB_CPU_VER;
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
-
-	request_interval=(INTERVAL_INIT - INTERVAL_SUBMIT);
+	Set_WriteDataBuff(&write_buff[0]);
 }
 
+static struct wake_lock wlock;
 static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 {
 	sub_main_int_occur = 1;
 	wake_up_interruptible(&wait_subint);
-
+	wake_lock_timeout(&wlock, HZ/5);
 	return IRQ_HANDLED;
 }
 
@@ -883,15 +785,15 @@ static int Msensors_probe(struct spi_device *spi)
 	gSUBCPU_Firmware = kzalloc(sizeof(SUBCPU_Firmware), GFP_KERNEL);
 	memcpy(gSUBCPU_Firmware, SUBCPU_Firmware, sizeof(SUBCPU_Firmware));
 
-	init_waitqueue_head(&wait);
+	init_waitqueue_head(&wait_rd);
 	init_waitqueue_head(&wait_subint);
-	init_waitqueue_head(&wait_fwu);
+	init_waitqueue_head(&wait_ioctl);
+	spin_lock_init(&slock);
+	INIT_LIST_HEAD(&wd_queue);
+	wake_lock_init(&wlock, WAKE_LOCK_SUSPEND, "multisensors");
 	dataBuffReadIndex = 0;
 	dataBuffWriteIndex = 0;
-	memset((unsigned char*)&WriteDataBuf[0], 0x00, sizeof(WriteDataBuf));
 	memset(&HeaderData[0], 0x00, HEADER_DATA_SIZE);
-
-	SetCommandOnly = 0;
 
 	st = kzalloc(sizeof *st, GFP_KERNEL);
 	if (st == NULL) {
@@ -921,7 +823,6 @@ static int Msensors_probe(struct spi_device *spi)
 
 	st->sdev = spi_dev_get(spi);
 	spi_set_drvdata(spi, st);
-	mutex_init(&st->lock);
 
 	spi->max_speed_hz = 1024 * 1024;
 	spi->mode = SPI_MODE_1;	/* CPHA=1 CPOL=0 */
@@ -953,6 +854,7 @@ static int Msensors_probe(struct spi_device *spi)
 	disable_irq_wake(irq);
 
 	Flg_driver_ready = 1;
+	Flg_driver_probed = 1;
 	Msensors_init(st);
 
 	pSensorReadThread = kthread_run(SensorReadThread, st,DRV_NAME);
@@ -975,23 +877,20 @@ static void Msensors_shutdown(struct spi_device *spi)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
-	SetCommandOnly = 1;
-
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_MAIN_STATUS;
 	write_buff[2] = 0x2;	/* shutdown */
 
-	Set_WriteDataBuff( &write_buff[0], (void *)0 );
+	Set_WriteDataBuff(&write_buff[0]);
 
-	Flg_driver_ready = 0;
-	while (atomic_read(&WriteDataNum) > 0)
-	{
+	while (!list_empty(&wd_queue))
 		msleep(10);
-	}
 
-	dev_dbg(&spi->dev, "Msensors_shutdown %d\n", ThreaadRunFlg);
+//	kthread_stop(pSensorReadThread);
+	Flg_driver_shutdown = 1;
+	wake_up_interruptible(&wait_subint);
 }
 
 static int Msensors_suspend(struct device *dev)
@@ -999,20 +898,17 @@ static int Msensors_suspend(struct device *dev)
 	int irq;	/* for SUB_MAIN_INT resumu */
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
-	SetCommandOnly = 1;
-
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_MAIN_STATUS;
 	write_buff[2] = 0x1;	/* suspend */
 
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
-	Flg_driver_ready = 0;
-	while (atomic_read(&WriteDataNum) > 0)
-	{
+	Set_WriteDataBuff(&write_buff[0]);
+	while (!list_empty(&wd_queue))
 		msleep(10);
-	}
+
+	Flg_driver_ready = 0;
 
 	/* for SUB_MAIN_INT resume */
 	irq = gpio_to_irq(g_st->sub_main_int);
@@ -1026,8 +922,6 @@ static int Msensors_resume(struct device *dev)
 	unsigned char write_buff[WRITE_DATA_SIZE];
 	int irq;	/* for SUB_MAIN_INT resumu */
 
-	SetCommandOnly = 0;
-
 	/* for SUB_MAIN_INT resume */
 	irq = gpio_to_irq(g_st->sub_main_int);
 	disable_irq_wake(irq);
@@ -1036,7 +930,6 @@ static int Msensors_resume(struct device *dev)
 	/* Write Buffer Clear for Resume */
 	dataBuffReadIndex = 0;
 	dataBuffWriteIndex = 0;
-	memset((unsigned char*)&WriteDataBuf[0], 0x00, sizeof(WriteDataBuf));
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 
@@ -1044,7 +937,7 @@ static int Msensors_resume(struct device *dev)
 	write_buff[1] = SUB_COM_SETID_MAIN_STATUS;
 	write_buff[2] = 0x0;	/* Nomal */
 
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	Set_WriteDataBuff(&write_buff[0]);
 
 	return 0;
 }
@@ -1083,40 +976,6 @@ static struct spi_driver Msensors_driver = {
 };
 module_spi_driver(Msensors_driver);
 
-static void sub_HeaderInfoProc(void)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	/* charger or battery property changed */
-	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG1)) {
-		write_buff[0] = SUB_COM_TYPE_READ;
-		write_buff[1] = SUB_COM_GETID_POWER_PROP1;
-		Set_WriteDataBuff( &write_buff[0], (void*)0 );
-	}
-
-	if (HeaderData[2] & (1 << SUB_ALERT_BIT_POWER_CHG2)) {
-		write_buff[0] = SUB_COM_TYPE_READ;
-		write_buff[1] = SUB_COM_GETID_POWER_PROP2;
-		Set_WriteDataBuff( &write_buff[0], (void*)0 );
-	}
-}
-
-int SUB_VibratorEnable(int enable)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_VIB_SET;
-	write_buff[2] = enable;	/* on / off */
-
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
-	return 0;
-}
-
 void SUB_VibratorSet(int timeout)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
@@ -1128,7 +987,7 @@ void SUB_VibratorSet(int timeout)
 	write_buff[2] = (timeout >> 0) & 0xFF;	/* ms */
 	write_buff[3] = (timeout >> 8) & 0xFF;	/* ms */
 
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	Set_WriteDataBuff(&write_buff[0]);
 }
 
 int SUBCPU_rtc_read_time(uint8_t *data)
@@ -1165,22 +1024,8 @@ int SUBCPU_rtc_set_time(uint8_t *data)
 	write_buff[6]  = data[RTC_MIN];
 	write_buff[7]  = data[RTC_SEC];
 
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	Set_WriteDataBuff(&write_buff[0]);
 
-	return 0;
-}
-
-int SUB_KeyModeChange(unsigned char KeyMode)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_KEYMODE;
-	write_buff[2] = KeyMode;	/* key mode */
-
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
 	return 0;
 }
 
@@ -1194,10 +1039,11 @@ int SUB_IsTheaterMode(unsigned char flg_theater_mode)
 	write_buff[1] = SUB_COM_SETID_THEATER_MODE;
 	write_buff[2] = flg_theater_mode;	/* theater mode:1 else:0 */
 
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	Set_WriteDataBuff(&write_buff[0]);
 	return 0;
 }
 
+#ifdef CONFIG_BACKLIGHT_SUBCPU
 int SUB_LCDBrightnessSet(unsigned char LCDBrightness)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
@@ -1208,22 +1054,9 @@ int SUB_LCDBrightnessSet(unsigned char LCDBrightness)
 	write_buff[1] = SUB_COM_SETID_LCD_SET;
 	write_buff[2] = LCDBrightness;	/* LCD brightness */
 
-	return Set_WriteDataBuff( &write_buff[0], (void*)0 );
+	return Set_WriteDataBuff(&write_buff[0]);
 }
-
-int SUB_DemoCommandSend(unsigned char* demo_cmd)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_DEMO_CMD;
-	memcpy(&write_buff[2], &demo_cmd[0], DEMO_CMD_DATA_MAX);	/* Demo command */
-
-	Set_WriteDataBuff( &write_buff[0], (void*)0 );
-	return 0;
-}
+#endif
 
 MODULE_AUTHOR("PET");
 MODULE_DESCRIPTION("MultiSensors driver");

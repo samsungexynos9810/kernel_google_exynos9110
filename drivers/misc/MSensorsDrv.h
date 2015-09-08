@@ -66,14 +66,18 @@
 #define SUB_COM_SETID_ALERM			(0x51)		/* Alarm */
 #define SUB_COM_SETID_KEYMODE			(0x52)		/* Key Mode */
 #define SUB_COM_SETID_THEATER_MODE	(0x53)		/* Theater mode flg */
+#define SUB_COM_SETID_SHIPPING_MODE	(0x54)		/* Request shipping mode */
+#define SUB_COM_SETID_CTRL_GREEN_LED	(0x55)	/* on/off green led */
+#define SUB_COM_SETID_LIMIT_CHARGING	(0x56)	/* limit charging by threshold */
 #define SUB_COM_SETID_SUB_FIRM_UPDATE		(0x99)		/* SUB-CPU Firmware Update */
 #define SUB_COM_SETID_DEMO_CMD			(0xFE)		/* Demo Command */
 #define SUB_COM_SETID_DEMO			(0xFF)		/* Demo ID */
+
 #define SUB_COM_GETID_SUB_CPU_VER		(0x00)		/* SUB-CPU Version */
 #define SUB_COM_GETID_POWER_PROP1		(0x01)		/* Power Property1 */
 #define SUB_COM_GETID_POWER_PROP2		(0x02)		/* Power Property2 */
-#define SUB_COM_GETID_USB			(0x03)		/* USB Status */
-#define SUB_COM_GETID_RTC			(0x50)		/* RTC */
+#define SUB_COM_GETID_ACC_ADJ		(0x04)		/* Accele Adjust */
+
 #define SUB_COM_SENSID_ACCELE			(0x01)		/* Acceleration Data */
 #define SUB_COM_SENSID_MAG			(0x02)		/* Magnetic Data */
 #define SUB_COM_SENSID_GYRO			(0x03)		/* Gyroscope Data */
@@ -144,6 +148,12 @@
 #define SUB_LCD_CONTROL				(0)
 #define SUB_LCD_ONOFF_MASK			(0x80)
 
+
+#define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
+#define IOC_FW_UPDATE	_IOR('K', 1, unsigned char *)
+#define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
+
+
 /*============================================================================*/
 /* struct */
 /*============================================================================*/
@@ -172,20 +182,12 @@ struct Msensors_data {
 /*============================================================================*/
 /* extern(func) */
 /*============================================================================*/
-extern int SUB_VibratorEnable(int enable);
 extern void SUB_VibratorSet(int timeout);
 extern int SUBCPU_rtc_set_time(uint8_t *data);
 extern int SUBCPU_rtc_read_time(uint8_t *data);
-extern int SUB_BatteryVoltageRead(void);
-extern int SUB_BatteryLevelRead(void);
-extern int SUB_BatteryTemperatureRead(void);
-extern int SUB_BatteryStatusRead(void);
-extern void Msensors_Spi_Recv(void);
-extern int SUB_KeyModeChange(unsigned char KeyMode);
 extern int SUB_IsTheaterMode(unsigned char flg_bl_dark);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
-extern int SUB_DemoCommandSend(unsigned char* demo_cmd);
-extern int MSensors_get_timeout_value(void);
+void Msensors_SetTimestamp(void);
 
 #endif	/* __MULTISENSORS_H */
 /* PET nishino ADD End */
