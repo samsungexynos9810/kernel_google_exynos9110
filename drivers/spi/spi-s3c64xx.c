@@ -547,16 +547,10 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
 	writel(modecfg, regs + S3C64XX_SPI_MODE_CFG);
 	writel(chcfg, regs + S3C64XX_SPI_CH_CFG);
 }
-
+#if !defined(CONFIG_MULTI_SENSORS)
 static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 						struct spi_device *spi)
 {
-#if defined(CONFIG_MULTI_SENSORS)
-	struct s3c64xx_spi_csinfo *cs;
-	cs = spi->controller_data;
-	if(cs->line != (unsigned)NULL)
-		gpio_set_value(cs->line, 1);
-#else
 	struct s3c64xx_spi_csinfo *cs;
 
 	if (sdd->tgl_spi != NULL) { /* If last device toggled after mssg */
@@ -590,8 +584,8 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 				S3C64XX_SPI_SLAVE_SIG_INACT : 0,
 			       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 	}
-#endif
 }
+#endif
 
 static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 				struct spi_transfer *xfer, int dma_mode)
@@ -981,9 +975,16 @@ try_transfer:
 #endif
 		spin_unlock_irqrestore(&sdd->lock, flags);
 
+#if defined(CONFIG_MULTI_SENSORS)
+		spin_lock_irqsave(&sdd->lock, flags);
 		gpio_set_value(cs->line, 1);	// MAIN_SUB_INT
+		Msensors_SetTimestamp();
+		spin_unlock_irqrestore(&sdd->lock, flags);
 		status = wait_for_xfer(sdd, xfer, use_dma);
 		gpio_set_value(cs->line, 0);	// MAIN_SUB_INT
+#else
+		status = wait_for_xfer(sdd, xfer, use_dma);
+#endif
 
 		if (status) {
 			dev_err(&spi->dev, "I/O Error: rx-%d tx-%d res:rx-%c tx-%c len-%d status=%d\n",
