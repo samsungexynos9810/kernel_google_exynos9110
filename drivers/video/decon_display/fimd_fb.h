@@ -240,6 +240,10 @@ static const char * const lcd_supply_names[] = {
 	"lcd-1.8",
 };
 
+static const char * const mipi_supply_names[] = {
+	"mipi-pll",
+};
+
 /**
  * struct s3c_fb_win - per window private data for each framebuffer.
  * @windata: The platform data supplied for the window configuration.
@@ -326,6 +330,7 @@ struct s3c_fb {
 	struct clk              *axi_disp1;
 	void __iomem		*regs;
 	struct regulator_bulk_data supplies[ARRAY_SIZE(lcd_supply_names)];
+	struct regulator_bulk_data mipi_supplies[ARRAY_SIZE(mipi_supply_names)];
 	struct s3c_fb_variant	 variant;
 
 	bool			output_on;

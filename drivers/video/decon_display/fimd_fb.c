@@ -3218,6 +3218,12 @@ int create_decon_display_controller(struct platform_device *pdev)
 		dev_err(sfb->dev, "failed to request supplies for lcd: %d\n", ret);
 	}
 
+	sfb->mipi_supplies[0].supply = mipi_supply_names[0];
+	sfb->mipi_supplies[0].consumer = devm_regulator_get(sfb->dev, sfb->mipi_supplies[0].supply);
+	if (ret) {
+		dev_err(sfb->dev, "failed to request supplies for mipi: %d\n", ret);
+	}
+
 	pm_runtime_enable(sfb->dev);
 
 	sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
@@ -3925,6 +3931,9 @@ int s3c_fb_runtime_suspend(struct device *dev)
 			dev_err(sfb->dev, "failed to disable supplies for lcd: %d\n", ret);
 		}
 	}
+		ret = regulator_disable(sfb->mipi_supplies[0].consumer);
+		if (ret)
+			dev_err(sfb->dev, "failed to disable supplies for mipi-pll-supply: %d\n", ret);
 	return 0;
 }
 
@@ -3947,6 +3956,10 @@ int s3c_fb_runtime_resume(struct device *dev)
 		return 0;
 	}
 	pd = sfb->pdata;
+	ret = regulator_enable(sfb->mipi_supplies[0].consumer);
+	if (ret) {
+		dev_err(sfb->dev, "failed to enable supplies for mipi: %d\n", ret);
+	}
 	if ((sfb->power_state == POWER_DOWN) || (sfb->power_state == POWER_ON)) {
 		for(i=0;i<(ARRAY_SIZE(sfb->supplies)); i++) {
 			// Always on mode
