@@ -24,6 +24,7 @@
 enum subcpu_power_data1 {
 	PWR_PROP_CURR_LOW = 0x02,
 	PWR_PROP_CURR_HIGH,
+	PWR_PROP_HEALTH,
 };
 
 enum subcpu_power_data2 {
@@ -33,6 +34,11 @@ enum subcpu_power_data2 {
 	PWR_PROP_TEMP_HIGH,
 	PWR_PROP_VOLT_LOW,
 	PWR_PROP_VOLT_HIGH,
+};
+
+enum subcpu_health {
+	PWR_HEALTH_NORMAL = 0x00,
+	PWR_HEALTH_LOW_TEMP_BURN,
 };
 
 struct sub_battery {
@@ -47,6 +53,7 @@ struct sub_battery {
 	int voltage;
 	int current_now;
 	int status;
+	int health;
 	int bat_present;
 	int is_ac_online;
 
@@ -60,6 +67,7 @@ static enum power_supply_property sub_battery_props[] = {
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_TEMP,
 	POWER_SUPPLY_PROP_STATUS,
+	POWER_SUPPLY_PROP_HEALTH,
 	POWER_SUPPLY_PROP_PRESENT,
 };
 
@@ -102,6 +110,25 @@ static int sub_bat_status(uint8_t chg_status)
 	return chg_status & CHG_STAT_MASK;
 }
 
+static int sub_bat_health(uint8_t health)
+{
+	int ret;
+
+	switch (health) {
+	case PWR_HEALTH_NORMAL:
+		ret = POWER_SUPPLY_HEALTH_GOOD;
+		break;
+	case PWR_HEALTH_LOW_TEMP_BURN:
+		ret = POWER_SUPPLY_HEALTH_OVERHEAT;
+		break;
+	default:
+		ret = POWER_SUPPLY_HEALTH_UNKNOWN;
+		break;
+	}
+
+	return ret;
+}
+
 static int sub_bat_present(uint8_t chg_status)
 {
 	if (chg_status & BAT_PRESENT_MASK)
@@ -128,6 +155,7 @@ void subcpu_battery_update_status1(uint8_t* data)
 
 	sb->current_now =
 		sub_bat_current(data[PWR_PROP_CURR_LOW], data[PWR_PROP_CURR_HIGH]);
+	sb->health = sub_bat_health(data[PWR_PROP_HEALTH]);
 }
 
 void subcpu_battery_update_status2(uint8_t* data)
@@ -176,6 +204,9 @@ static int sub_bat_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_STATUS:
 		val->intval = sb->status;
 		break;
+	case POWER_SUPPLY_PROP_HEALTH:
+		val->intval = sb->health;
+		break;
 	case POWER_SUPPLY_PROP_PRESENT:
 		val->intval = sb->bat_present;
 		break;
@@ -221,6 +252,7 @@ static int sub_bat_probe(struct platform_device *pdev)
 		sb->voltage		= 0;
 		sb->current_now		= 0;
 		sb->status 		= POWER_SUPPLY_STATUS_CHARGING;
+		sb->health		= POWER_SUPPLY_HEALTH_GOOD;
 		sb->bat_present = 1;
 	}
 
