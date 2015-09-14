@@ -125,6 +125,8 @@ extern void backlight_en(int en);
 int ambient_enter;
 #endif
 
+int first_unblank;
+
 #ifdef CONFIG_OF
 static const struct of_device_id exynos_fimd[] = {
 	{ .compatible = "samsung,exynos-fimd" },
@@ -801,11 +803,6 @@ static int s3c_fb_set_par(struct fb_info *info)
 
 	dev_dbg(sfb->dev, "setting framebuffer parameters\n");
 
-	if (unlikely(!sfb->output_on)) {
-		dev_err(sfb->dev, "%s::output_on is FALSE\n", __func__);
-		return -EINVAL;
-	}
-
 	disp_pm_runtime_get_sync(dispdrv);
 
 	if (sfb->power_state == POWER_DOWN)
@@ -1033,10 +1030,6 @@ static void s3c_fb_activate_window_dma(struct s3c_fb *sfb, unsigned int index)
 	shadowcon |= SHADOWCON_CHx_ENABLE(index);
 	writel(shadowcon, sfb->regs + SHADOWCON);
 
-
-#ifdef CONFIG_FB_I80_COMMAND_MODE
-	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
-#endif
 	data = readl(sfb->regs + VIDCON0);
 	data |= VIDCON0_ENVID | VIDCON0_ENVID_F;
 	writel(data, sfb->regs + VIDCON0);
@@ -1119,6 +1112,7 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 			break;
 
 		case FB_BLANK_UNBLANK:
+			first_unblank = true;
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 			pm_qos_update_request(&exynos_fimd_mif_qos, 200000);
 #elif defined(CONFIG_FIMD_USE_WIN_OVERLAP_CNT)
@@ -1139,9 +1133,6 @@ static int s3c_fb_blank(int blank_mode, struct fb_info *info)
 				sfb->smies->smies_on(sfb->smies->dev);
 #endif
 
-#if defined(CONFIG_FB_I80_COMMAND_MODE)
-			s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
-#endif
 #if !defined(CONFIG_BACKLIGHT_PWM) && !defined(CONFIG_BACKLIGHT_BD82103)
 			backlight_en(1);
 #endif
@@ -1183,10 +1174,14 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	unsigned int start_boff, end_boff;
 	struct display_driver *dispdrv = get_display_driver();
 
+	if(!first_unblank) return 0;
+
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY_POWER_GATING
 	/* Try to scheduled for DISPLAY power_on */
-	if (sfb->power_state != POWER_DOWN)
+	if(sfb->power_state == POWER_HIBER_DOWN)
 		disp_pm_add_refcount(dispdrv);
+	else if(sfb->power_state == POWER_DOWN)
+		return 0;
 #endif
 
 	/* support LPM (off charging mode) display based on FBIOPAN_DISPLAY */
@@ -1235,6 +1230,10 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 #endif
 
 	s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
+
+#ifdef CONFIG_FB_I80_COMMAND_MODE
+	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
+#endif
 
 	disp_pm_runtime_put_sync(dispdrv);
 	return 0;
@@ -1290,9 +1289,6 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 	spin_unlock(&sfb->slock);
-
-	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
-        // enable/disable irq with LPD 
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
@@ -3353,9 +3349,12 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	/* use platform specified window as the basis for the lcd timings */
-#ifdef CONFIG_FB_I80_HW_TRIGGER
+#ifdef CONFIG_S5P_LCD_INIT
+	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
+#else
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
+
 	s3c_fb_configure_lcd(sfb, &pd->win[default_win]->win_mode);
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 	pm_qos_add_request(&exynos_fimd_mif_qos, PM_QOS_BUS_THROUGHPUT, 200000);
@@ -3407,6 +3406,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	}
 
 	sfb->output_on = true;
+	first_unblank = false;
 	s3c_fb_set_par(sfb->windows[default_win]->fbinfo);
 
 	s3c_fb_activate_window_dma(sfb, default_win);
@@ -3416,12 +3416,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	dev_err(dev, "failed to request an external interrupt for TE signal\n");
 		goto err_pm_runtime;
 	}
-
-#ifdef CONFIG_S5P_LCD_INIT
-	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
-#else
-	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
-#endif
 #endif
 
 #ifdef CONFIG_ION_EXYNOS
@@ -3785,6 +3779,7 @@ int s3c_fb_suspend(struct device *dev)
 		iovmm_deactivate(dev);
 #endif
 		disp_pm_runtime_put_sync(dispdrv);
+
 		sfb->output_on = false;
 	}
 	mutex_unlock(&sfb->output_lock);
@@ -4065,7 +4060,6 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
 	}
 #endif
 
-	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 	sfb->output_on = true;
 err:
 	mutex_unlock(&sfb->output_lock);
