@@ -46,6 +46,8 @@
 #include "dw_mmc.h"
 #include "dw_mmc-exynos.h"
 
+#include <mach/board-wifi-bcm.h>
+
 #ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
 #include "../card/queue.h"
 #endif
@@ -3586,6 +3588,9 @@ int MTK6220_wifi_status_register(
 }
 #endif
 
+void (*wifi_status_cb) (struct platform_device *dev, int state);
+struct platform_device *wifi_status_cb_devid;
+int wcf_status_register(void (*cb)(struct platform_device *dev, int state));
 static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
@@ -3749,8 +3754,16 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 
 	/* Card initially undetected */
 	slot->last_detect_state = 0;
-
-#if defined(CONFIG_MTK_COMBO_MT66XX)
+#if defined(CONFIG_BCMDHD)
+        if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL) {
+		if (!host->pdata->ext_cd_init) {
+			printk("%s: set ext_cd_init \n", __func__);
+			wifi_status_cb_devid = to_platform_device(host->dev);
+			host->pdata->ext_cd_init = wcf_status_register;
+		}
+		host->pdata->ext_cd_init(&dw_mci_notify_change);
+        }
+#elif defined(CONFIG_MTK_COMBO_MT66XX)
 	if (host->pdata->cd_type == DW_MCI_CD_EXTERNAL) {
 		if (!host->pdata->ext_cd_init) {
 	        printk("%s: set ext_cd_init \n", __func__);

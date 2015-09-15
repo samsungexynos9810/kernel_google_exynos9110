@@ -55,10 +55,11 @@
 	pinctrl-0 = <&sleep0>;
 	pinctrl-1 = <&ambient>;
 	sleep0: sleep-state {
-		PIN_SLP(gpa0-0, INPUT, DOWN);// UART0_RX(BT)
-		PIN_SLP(gpa0-1, INPUT, DOWN);// UART0_TX(BT)
-		PIN_SLP(gpa0-2, INPUT, DOWN);// UART0_CTS(BT)
-		PIN_SLP(gpa0-3, OUT1,  NONE);// UART0_RTS(BT)
+		PIN_SLP(gpa0-0, PREV,  NONE);// UART0_RX(BT)
+		PIN_SLP(gpa0-1, PREV,  NONE);// UART0_TX(BT)
+		PIN_SLP(gpa0-2, PREV,  NONE);// UART0_CTS(BT)
+		PIN_SLP(gpa0-3, PREV,  NONE);// UART0_RTS(BT)
+
 		PIN_SLP(gpa0-4, INPUT, DOWN);// UART1_RX(SUB)
 		PIN_SLP(gpa0-5, OUT0,  NONE);// UART1_TX(SUB)
 		PIN_SLP(gpa0-6, INPUT, DOWN);// UART1_CTS(SUB)
@@ -103,10 +104,11 @@
 		PIN_SLP(gpd1-3, INPUT, DOWN);// I2C1_SCL(AKM)
 	};
 	ambient: ambient-state {
-		PIN_SLP(gpa0-0, INPUT, DOWN);// UART0_RX(BT)
-		PIN_SLP(gpa0-1, INPUT, DOWN);// UART0_TX(BT)
-		PIN_SLP(gpa0-2, INPUT, DOWN);// UART0_CTS(BT)
-		PIN_SLP(gpa0-3, OUT1,  NONE);// UART0_RTS(BT)
+		PIN_SLP(gpa0-0, PREV,  NONE);// UART0_RX(BT)
+		PIN_SLP(gpa0-1, PREV,  NONE);// UART0_TX(BT)
+		PIN_SLP(gpa0-2, PREV,  NONE);// UART0_CTS(BT)
+		PIN_SLP(gpa0-3, PREV,  NONE);// UART0_RTS(BT)
+
 		PIN_SLP(gpa0-4, INPUT, DOWN);// UART1_RX(SUB)
 		PIN_SLP(gpa0-5, OUT0,  NONE);// UART1_TX(SUB)
 		PIN_SLP(gpa0-6, INPUT, DOWN);// UART1_CTS(SUB)
@@ -188,13 +190,12 @@
 		PIN_SLP(gpk0-6, INPUT, NONE);// MMC_D3
 		PIN_SLP(gpk0-7, INPUT, NONE);// ???
 
-		PIN_SLP(gpk1-0, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-1, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-2, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-3, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-4, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-5, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-6, INPUT, DOWN);// NC
+		PIN_SLP(gpk1-0, PREV,  NONE);// MMC_CLK
+		PIN_SLP(gpk1-1, PREV,  NONE);// MMC_CMD
+		PIN_SLP(gpk1-3, PREV,  NONE);// MMC_D0
+		PIN_SLP(gpk1-4, PREV,  NONE);// MMC_D1
+		PIN_SLP(gpk1-5, PREV,  NONE);// MMC_D2
+		PIN_SLP(gpk1-6, PREV,  NONE);// MMC_D3
 
 		PIN_SLP(gpk2-0, INPUT, DOWN);// MMC2_CLK
 		PIN_SLP(gpk2-1, INPUT, NONE);// MMC2_CMD
@@ -259,13 +260,11 @@
 		PIN_IN(gpx2-0, DOWN);// NC
 		PIN_IN(gpx2-1, DOWN);// NC
 		PIN_IN(gpx2-2, DOWN);// NC
-		PIN_IN(gpx2-3, DOWN);// NC
 		PIN_IN(gpx2-4, DOWN);// NC
 		PIN_OUT(gpx2-5);// TP_RST
 
 		PIN_IN(gpx3-0, DOWN);// NC
 		PIN_IN(gpx3-1, DOWN);// NC
-		PIN_IN(gpx3-2, DOWN);// NC
 		PIN_IN(gpx3-3, DOWN);// NC
 		PIN_IN(gpx3-4, DOWN);// NC
 		PIN_IN(gpx3-5, DOWN);// NC
@@ -304,13 +303,12 @@
 		PIN_SLP(gpk0-6, INPUT, NONE);// MMC_D3
 		PIN_SLP(gpk0-7, INPUT, NONE);// ???
 
-		PIN_SLP(gpk1-0, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-1, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-2, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-3, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-4, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-5, INPUT, DOWN);// NC
-		PIN_SLP(gpk1-6, INPUT, DOWN);// NC
+		PIN_SLP(gpk1-0, PREV,  NONE);// MMC_CLK
+		PIN_SLP(gpk1-1, PREV,  NONE);// MMC_CMD
+		PIN_SLP(gpk1-3, PREV,  NONE);// MMC_D0
+		PIN_SLP(gpk1-4, PREV,  NONE);// MMC_D1
+		PIN_SLP(gpk1-5, PREV,  NONE);// MMC_D2
+		PIN_SLP(gpk1-6, PREV,  NONE);// MMC_D3
 
 		PIN_SLP(gpk2-0, INPUT, DOWN);// MMC2_CLK
 		PIN_SLP(gpk2-1, INPUT, NONE);// MMC2_CMD
@@ -375,13 +373,11 @@
 		PIN_IN(gpx2-0, DOWN);// NC
 		PIN_IN(gpx2-1, DOWN);// NC
 		PIN_IN(gpx2-2, DOWN);// NC
-		PIN_IN(gpx2-3, DOWN);// NC
 		PIN_IN(gpx2-4, DOWN);// NC
 		PIN_OUT(gpx2-5);// TP_RST
 
 		PIN_IN(gpx3-0, DOWN);// NC
 		PIN_IN(gpx3-1, DOWN);// NC
-		PIN_IN(gpx3-2, DOWN);// NC
 		PIN_IN(gpx3-3, DOWN);// NC
 		PIN_IN(gpx3-4, DOWN);// NC
 		PIN_IN(gpx3-5, DOWN);// NC

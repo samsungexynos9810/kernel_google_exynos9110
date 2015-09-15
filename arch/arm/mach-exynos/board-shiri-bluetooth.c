@@ -49,6 +49,11 @@
 #define	BT_PWR_ON		(0x1)
 #define BT_PWR_OFF		(0x0)
 
+#define WLAN_POWER		147
+
+#define BT_MAIN_TX_GPIO	        1
+#define BT_MAIN_RTS_GPIO	3
+
 #undef DEBUG_PRINT
 
 #ifdef DEBUG_PRINT
@@ -57,7 +62,10 @@
 #define PR_INFO(a, args...)
 #endif
 
+static int pendingflag_probe = 0; //PENDING!
+
 static struct rfkill *bt_rfkill;
+
 
 struct bcm_bt_lpm {
 	int wake;
@@ -72,21 +80,81 @@ struct bcm_bt_lpm {
 	char wake_lock_name[100];
 } bt_lpm;
 
+
 static void bluetooth_power_init(void)
 {
 	struct regulator *regulator = NULL;
 	struct regulator_dev *rdev;
-
 	regulator = regulator_get(NULL, "vdd_bt_dual_1v8");
 	if(regulator == NULL) {
 		pr_err("bluetooth regulator get error\n");
 		return;
 	}
 	rdev = regulator->rdev;
-
-	regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00);	/* 32kHzBT_EN OFF */
-
+	if(rdev->use_count == 0) {
+		regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00);	/* 32kHzBT_EN OFF */
+	}
 	regulator_put(regulator);
+	return;
+}
+
+
+/* cf. arch\arm\mach-exynos\include\mach\pinctrl-samsung.h */
+static void bluetooth_set_pincntl(int onoff) {
+	int ret;
+	if(onoff == BT_PWR_ON) {
+		PR_INFO("%s() ON\n", __func__);
+
+		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0002);/* 1byte:disable 0byte:pud */
+
+		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0200);/* 1byte:UART_0_RXD 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0200);/* 1byte:UART_0_TXD 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0200);/* 1byte:UART_0_CTSn 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0200);/* 1byte:UART_0_RTSn 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:Output 0byte:func */
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
+
+		gpio_direction_output(BT_WAKE_GPIO, 0);
+	} else { // BT off
+		if(gpio_get_value(WLAN_POWER) == 0) { // WLAN off
+			PR_INFO("%s() ON  wlan = off\n", __func__);
+
+			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);/* 1byte:pull down 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0102);/* 1byte:pull down 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0102);/* 1byte:pull down 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0102);/* 1byte:pull down 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud */
+
+			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0100);/* 1byte:output 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0100);/* 1byte:output 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0100);/* 1byte:output 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0100);/* 1byte:output 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0100);/* 1byte:output 0byte:func */
+		} else { // WLAN on
+			PR_INFO("%s() ON  wlan = on\n", __func__);
+
+			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0002);/* 1byte:disable 0byte:pud */
+			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud */
+
+			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);/* 1byte:input 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);/* 1byte:input 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);/* 1byte:input 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0000);/* 1byte:input 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);/* 1byte:input 0byte:func */
+		}
+	}
 
 	return;
 }
@@ -108,47 +176,25 @@ static void bluetooth_power(int onoff)
 	pre_use_count = rdev->use_count;
 	if(onoff == BT_PWR_ON){
 		rc = regulator_enable(regulator);
-		regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x04);	/* 32kHzBT_EN ON */
-
-		/* cf. arch\arm\mach-exynos\include\mach\pinctrl-samsung.h */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0002);/* 1byte:disable 0byte:pud */
-
-		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0200);/* 1byte:UART_0_RXD 0byte:func */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0200);/* 1byte:UART_0_TXD 0byte:func */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0200);/* 1byte:UART_0_CTSn 0byte:func */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0200);/* 1byte:UART_0_RTSn 0byte:func */
-		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:Output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
-	}else{
-		if(rdev->use_count != 0)
-		{
-			rc = regulator_disable(regulator);
-			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00);	/* 32kHzBT_EN OFF */
-
-			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud */
-
-			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);/* 1byte:input 0byte:func */
+		if(rdev->use_count == 1) {
+			PR_INFO("%s() CLK ON rdev->usecount = %d\n", __func__, rdev->use_count);
+			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x04);	/* 32kHzBT_EN ON */
 		}
+
+		bluetooth_set_pincntl(onoff);
+
+	}else{
+		rc = regulator_disable(regulator);
+		if(rdev->use_count == 0) {
+			PR_INFO("%s() CLK OFF rdev->usecount = %d\n", __func__, rdev->use_count);
+			regmap_update_bits(rdev->regmap, 0x0C, 0x04, 0x00); /* 32kHzBT_EN OFF */
+		}
+
+		bluetooth_set_pincntl(onoff);
 	}
 
 	PR_INFO("bluetooth regulator turn on onoff=%d use_count=%d -> %d rc=%d\n",
 				onoff, pre_use_count, rdev->use_count, rc);
-
 	if (rc < 0) {
 		printk("%s: bluetooth %sable fail %d\n", __func__, onoff ? "en" : "dis", rc);
 
@@ -157,28 +203,24 @@ static void bluetooth_power(int onoff)
 
 regs_fail:
 	regulator_put(regulator);
-
 	return;
 }
 
 static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 {
-	struct regulator *regulator = NULL;
-	int ena = 0;
-
-	regulator = regulator_get(NULL, "vdd_bt_dual_1v8");
-	if(regulator == NULL) {
-		pr_err("bluetooth regulator get error\n");
+	int val_power = 0;
+	if(pendingflag_probe == 1){ 
+		// PENDING! BT is kept OFF when it probed.
+		// Because of WIFI probe issue.
+		pendingflag_probe = 0;
 		return 1;
 	}
-	ena = regulator_is_enabled(regulator);
-	regulator_put(regulator);
-	if (blocked == 0 && ena != 0)
-	{
+
+	val_power = gpio_get_value(BT_RESET_GPIO);
+	if( blocked == 0 && val_power != 0) {
 		return 1;	/* already power on */
 	}
-	if (blocked != 0 && ena == 0)
-	{
+	if( blocked == 1 && val_power == 0) {
 		return 1;	/* already power off */
 	}
 
@@ -197,8 +239,9 @@ static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 		msleep(20);
 		bluetooth_power(BT_PWR_OFF);
 	}
-
+	PR_INFO("bcm4330_bt_rfkill_set_power() blocked=%d end\n",blocked);
 	return 0;
+
 }
 
 static const struct rfkill_ops bcm4330_bt_rfkill_ops = {
@@ -318,6 +361,23 @@ static int bcm_bt_lpm_init(struct platform_device *pdev)
 		return ret;
 	}
 
+	ret = gpio_request(BT_MAIN_TX_GPIO, "bcm4343_tx_gpio");
+	if (unlikely(ret)) {
+		pr_err("Request is denyed:bluetooth tx gpio\n");
+		gpio_free(BT_WAKE_GPIO);
+		gpio_free(BT_HOST_WAKE_GPIO);
+		return ret;
+	}
+
+	ret = gpio_request(BT_MAIN_RTS_GPIO, "bcm4343_rts_gpio");
+	if (unlikely(ret)) {
+		pr_err("Request is denyed:bluetooth rts gpio\n");
+		gpio_free(BT_WAKE_GPIO);
+		gpio_free(BT_HOST_WAKE_GPIO);
+		gpio_free(BT_MAIN_TX_GPIO);
+		return rc;
+	}
+
 	snprintf(bt_lpm.wake_lock_name, sizeof(bt_lpm.wake_lock_name),
 			"BTLowPower");
 	wake_lock_init(&bt_lpm.wake_lock, WAKE_LOCK_SUSPEND,
@@ -331,9 +391,9 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 {
 	int rc = 0;
 	int ret = 0;
+	pendingflag_probe = 1; //PENDING
 
 	PR_INFO("bcm4330_bluetooth_probe\n");
-
 	rc = gpio_request(BT_RESET_GPIO, "bcm4330_nreset_gpip");
 	if (unlikely(rc)) {
 		return rc;
@@ -350,21 +410,6 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 	}
 
 	bluetooth_power_init();
-
-	ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);/* 1byte:pull down 0byte:pud */
-	ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0102);/* 1byte:pull down 0byte:pud */
-	ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0102);/* 1byte:pull down 0byte:pud */
-	ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-	ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
-	ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud */
-
-	ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);/* 1byte:input 0byte:func */
-	ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);/* 1byte:input 0byte:func */
-	ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
-	ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);/* 1byte:input 0byte:func */
-	ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0000);/* 1byte:input 0byte:func */
-	ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);/* 1byte:input 0byte:func */
-
 	rc = rfkill_register(bt_rfkill);
 
 	if (unlikely(rc)) {
@@ -395,27 +440,69 @@ static int bcm4330_bluetooth_remove(struct platform_device *pdev)
 	gpio_free(BT_WAKE_GPIO);
 	gpio_free(BT_HOST_WAKE_GPIO);
 
+	gpio_free(BT_MAIN_TX_GPIO);
+	gpio_free(BT_MAIN_RTS_GPIO);
+
 	wake_lock_destroy(&bt_lpm.wake_lock);
 	return 0;
 }
 
 int bcm4430_bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 {
+	int ret;
 	int irq = gpio_to_irq(BT_HOST_WAKE_GPIO);
-	PR_INFO("bcm4430_bluetooth_suspend\n");
+
+	if(gpio_get_value(BT_RESET_GPIO) == BT_PWR_ON) { // BT on, suspend
+		PR_INFO("%s() BT ON\n", __FUNCTION__);
+		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0302);/* 1byte:pull up 0byte:pud RX*/
+		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0302);/* 1byte:pull up 0byte:pud TX*/
+		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud CTS*/
+		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0302);/* 1byte:pull up 0byte:pud RTS*/
+		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud MAIN_DUAL_WKUP*/
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud DUAL_MAIN_WKUP*/
+
+		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);/* 1byte:input 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0100);/* 1byte:output 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0100);/* 1byte:output 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);/* 1byte:input 0byte:func
+ */		
+		gpio_direction_output(BT_MAIN_TX_GPIO, 1);
+		gpio_direction_output(BT_MAIN_RTS_GPIO, 1);
+		
+	} else {
+		PR_INFO("%s(): BT OFF\n", __FUNCTION__);
+	}
+
 
 	enable_irq_wake(irq);
-
 	return 0;
 }
 
 int bcm4430_bluetooth_resume(struct platform_device *pdev)
 {
+	int ret;
 	int irq = gpio_to_irq(BT_HOST_WAKE_GPIO);
-	PR_INFO("bcm4430_bluetooth_resume\n");
 
 	disable_irq_wake(irq);
 
+	if(gpio_get_value(BT_RESET_GPIO) == BT_PWR_ON) { // BT on, resume
+		PR_INFO("%s(): BT ON\n", __FUNCTION__);
+		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0002);/* 1byte:disable 0byte:pud */
+		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0002);/* 1byte:disable 0byte:pud */
+
+		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0200);/* 1byte:UART_0_RXD 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0200);/* 1byte:UART_0_TXD 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0200);/* 1byte:UART_0_CTSn 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0200);/* 1byte:UART_0_RTSn 0byte:func */
+		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:Output 0byte:func */
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
+	} 
 	return 0;
 }
 
@@ -424,15 +511,6 @@ struct bluetooth_bcm4330_platform_data {
 };
 
 static struct bluetooth_bcm4330_platform_data bluetooth_bcm4330_platform;
-
-
-static struct platform_device bcm4330_bluetooth_platform_device = {
-	.name = "bcm4330_bluetooth",
-	.id   = -1,
-	.dev = {
-		.platform_data = &bluetooth_bcm4330_platform,
-	},
-};
 
 static struct of_device_id bluetooth_bcm4330_of_match[] = {
 	{ .compatible = "bt_host_wake", },
@@ -454,18 +532,11 @@ static struct platform_driver bcm4330_bluetooth_platform_driver = {
 static int __init bcm4330_bluetooth_init(void)
 {
 	int ret;
-
-	ret = platform_device_register(&bcm4330_bluetooth_platform_device);
-	if (ret)
-		printk(KERN_ERR "Fail to register bcm4330 platform device\n");
-
-	PR_INFO("bcm4330_bluetooth_init() ret=0x%x\n",ret);
 	return platform_driver_register(&bcm4330_bluetooth_platform_driver);
 }
 
 static void __exit bcm4330_bluetooth_exit(void)
 {
-	platform_device_unregister(&bcm4330_bluetooth_platform_device);
 	platform_driver_unregister(&bcm4330_bluetooth_platform_driver);
 }
 

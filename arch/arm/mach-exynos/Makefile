@@ -120,3 +120,6 @@ obj-$(CONFIG_EXYNOS_PSMW)		+= exynos-psmw.o
 
 # HMP
 obj-$(CONFIG_SCHED_HMP)			+= core_sysfs.o
+
+# WIFI
+obj-$(CONFIG_WIFI_CONTROL_FUNC)         += board-wifi-bcm.o
