@@ -151,8 +151,9 @@ static void bluetooth_set_pincntl(int onoff) {
 			ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0000);/* 1byte:input 0byte:func */
 			ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
 			ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0000);/* 1byte:input 0byte:func */
-			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);/* 1byte:input 0byte:func */
+			ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0100);/* 1byte:output 0byte:func */
+
 		}
 	}
 
@@ -466,7 +467,7 @@ int bcm4430_bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0100);/* 1byte:output 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0000);/* 1byte:input 0byte:func
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func
  */		
 		gpio_direction_output(BT_MAIN_TX_GPIO, 1);
 		gpio_direction_output(BT_MAIN_RTS_GPIO, 1);
