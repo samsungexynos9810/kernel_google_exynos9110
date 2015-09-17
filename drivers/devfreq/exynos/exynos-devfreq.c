@@ -1564,8 +1564,13 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 								data->max_freq);
 	pm_qos_add_request(&data->default_pm_qos, (int)data->pm_qos_class, data->default_qos);
 	pm_qos_add_request(&data->boot_pm_qos, (int)data->pm_qos_class, data->default_qos);
-	pm_qos_update_request_timeout(&data->boot_pm_qos, data->devfreq_profile.initial_freq,
-					data->boot_qos_timeout * USEC_PER_SEC);
+	if(data->boot_qos_timeout) {
+		dev_info(data->dev, "Booting lock frequency is %ldkHz for %ds.\n",
+				data->devfreq_profile.initial_freq, data->boot_qos_timeout);
+		pm_qos_update_request_timeout(&data->boot_pm_qos, data->devfreq_profile.initial_freq,
+						data->boot_qos_timeout * USEC_PER_SEC);
+	} else
+		dev_info(data->dev, "Booting lock is disabled.\n");
 
 	if (data->ops.init) {
 		ret = data->ops.init(data->dev, data);
@@ -1653,7 +1658,8 @@ err_ppmu_nb:
 	if (data->ops.exit)
 		data->ops.exit(data->dev, data);
 err_devfreq_init:
-	pm_qos_remove_request(&data->boot_pm_qos);
+	if(data->boot_qos_timeout)
+		pm_qos_remove_request(&data->boot_pm_qos);
 	pm_qos_remove_request(&data->default_pm_qos);
 	if (data->pm_qos_class_max)
 		pm_qos_remove_request(&data->sys_pm_qos_max);
@@ -1710,7 +1716,8 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 	if (data->ops.exit)
 		data->ops.exit(data->dev, data);
 
-	pm_qos_remove_request(&data->boot_pm_qos);
+	if(data->boot_qos_timeout)
+		pm_qos_remove_request(&data->boot_pm_qos);
 	pm_qos_remove_request(&data->default_pm_qos);
 	if (data->pm_qos_class_max)
 		pm_qos_remove_request(&data->sys_pm_qos_max);
