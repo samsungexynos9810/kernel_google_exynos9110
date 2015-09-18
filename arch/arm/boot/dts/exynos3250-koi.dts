@@ -330,9 +330,7 @@
 		num-slots = <1>;
 		bypass-smu;
 		clock-gate;
-		only_once_tune;
 		supports-highspeed;
-		supports-sdr104-mode;
 		sw_data_timeout;
 		use-broken-voltage;
 		pm-ignore-notify;
@@ -348,8 +346,8 @@
 		samsung,dw-mshc-sdr-timing = <3 0 2 1>;
 		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
 		clk_str_num = <4>;
-		num-ref-clks = <8>;
-		ciu_clkin = <25 50 50 100 200 100 200 200>;
+		num-ref-clks = <3>;
+		ciu_clkin = <25 50 50>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&sd1_clk &sd1_cmd &sd1_bus1 &sd1_bus4>;
 
