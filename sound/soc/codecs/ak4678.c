@@ -32,6 +32,12 @@
 
 #include "ak4678.h"
 
+/* load parameter from boot */
+int MicGain = 13;
+int IDVol = 169;
+module_param(MicGain, int, S_IRUGO|S_IWUSR);
+module_param(IDVol, int, S_IRUGO|S_IWUSR);
+
 /* ghcstop_caution: not use pdn pin */
 #define GHC_USE_PDN	1
 //#undef GHC_USE_PDN
@@ -2049,6 +2055,20 @@ static int ak4678_set_reg_digital_effect(struct snd_soc_codec *codec)
 	return (0);
 }
 
+static int ak4678_set_reg_mic_volume(struct snd_soc_codec *codec)
+{
+	u32 data;
+	MicGain &=0xF;
+	data = (MicGain & 0xF) |  ((MicGain & 0xF) << 4);
+	gprintk("update MicGain = %d\n",MicGain);
+	ak4678_write_reg_cache(codec, AK4678_07_MIC_AMP_GAIN, data );
+	snd_soc_write(codec, AK4678_07_MIC_AMP_GAIN, data);
+	gprintk("update DigitalVolume = %d\n",IDVol);
+	ak4678_write_reg_cache(codec, AK4678_11_LIN_VOLUME, IDVol );
+	snd_soc_write(codec, AK4678_11_LIN_VOLUME, IDVol);
+	return (0);
+}
+
 int ak4678_reset(struct ak4678_priv *ak4678)
 {
 #ifdef GHC_USE_PDN
@@ -2191,6 +2211,7 @@ static int ak4678_runtime_resume(struct device *dev)
 	gprintk("reg %x = value%x\n", AK4678_0C_CP_CONTROL, snd_soc_read(codec, AK4678_0C_CP_CONTROL));
 
 	ak4678_set_reg_digital_effect(codec);
+	ak4678_set_reg_mic_volume(codec);
 
 	codec->cache_sync = 1;
 	snd_soc_cache_sync(codec);
