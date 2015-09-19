@@ -186,6 +186,35 @@ static void sync_fence_free(struct kref *kref)
 	kfree(fence);
 }
 
+static LLIST_HEAD(delayed_free_list);
+
+static void sync_fence_free_work(struct work_struct *unused)
+{
+	struct llist_node *node, *next;
+
+	for (node = llist_del_all(&delayed_free_list); node; node = next) {
+		struct sync_fence *fence;
+
+		next = llist_next(node);
+
+		fence = llist_entry(node, struct sync_fence, rmnode);
+		sync_fence_free(&fence->kref);
+	}
+}
+
+static DECLARE_DELAYED_WORK(sync_fence_delayed_work, sync_fence_free_work);
+
+static void sync_fence_delayed_free(struct kref *kref) {
+	struct sync_fence *fence = container_of(kref, struct sync_fence, kref);
+
+	/*
+	 * pend the worker for a jiffie to prevent superfluous invokation of
+	 * workers.
+	 */
+	llist_add(&fence->rmnode, &delayed_free_list);
+	schedule_delayed_work(&sync_fence_delayed_work, 1);
+}
+
 static void fence_check_cb_func(struct fence *f, struct fence_cb *cb)
 {
 	struct sync_fence_cb *check;
@@ -197,7 +226,7 @@ static void fence_check_cb_func(struct fence *f, struct fence_cb *cb)
 	if (atomic_dec_and_test(&fence->status))
 		wake_up_all(&fence->wq);
 
-	kref_put(&fence->kref, sync_fence_free);
+	kref_put(&fence->kref, sync_fence_delayed_free);
 }
 
 /* TODO: implement a create which takes more that one sync_pt */
