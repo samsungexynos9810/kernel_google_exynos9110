@@ -21,6 +21,8 @@
 #include "internal.h"
 
 static DEFINE_MUTEX(pmsg_lock);
+static char *pmsg_buffer;
+#define PMSG_MAX_BOUNCE_BUFFER_SIZE (2*PAGE_SIZE)
 
 static ssize_t write_pmsg(struct file *file, const char __user *buf,
 			  size_t count, loff_t *ppos)
@@ -103,6 +105,13 @@ void pstore_register_pmsg(void)
 					NULL, "%s%d", PMSG_NAME, 0);
 	if (IS_ERR(pmsg_device)) {
 		pr_err("failed to create device\n");
+		goto err_device;
+	}
+
+	pmsg_buffer = vmalloc(PMSG_MAX_BOUNCE_BUFFER_SIZE);
+
+	if (!pmsg_buffer) {
+		pr_err("failed to create pmsg buffer\n");
 		goto err_device;
 	}
 	return;
