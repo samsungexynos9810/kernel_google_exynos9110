@@ -1489,6 +1489,14 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		}
 	}
 
+	if (data->ops.init) {
+		ret = data->ops.init(data->dev, data);
+		if (ret) {
+			dev_err(data->dev, "failed devfreq init\n");
+			goto err_devfreq_init;
+		}
+	}
+
 	data->devfreq_profile.freq_table = kzalloc(sizeof(int) * data->max_state, GFP_KERNEL);
 	if (data->devfreq_profile.freq_table == NULL) {
 		dev_err(data->dev, "failed to allocate for freq_table\n");
@@ -1564,14 +1572,6 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 								data->max_freq);
 	pm_qos_add_request(&data->default_pm_qos, (int)data->pm_qos_class, data->default_qos);
 	pm_qos_add_request(&data->boot_pm_qos, (int)data->pm_qos_class, data->default_qos);
-
-	if (data->ops.init) {
-		ret = data->ops.init(data->dev, data);
-		if (ret) {
-			dev_err(data->dev, "failed devfreq init\n");
-			goto err_devfreq_init;
-		}
-	}
 
 	if (data->use_ppmu) {
 		/* if polling_ms is 0, update_devfreq function is called by ppmu */
