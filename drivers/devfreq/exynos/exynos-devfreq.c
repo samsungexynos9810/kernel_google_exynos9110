@@ -1564,8 +1564,6 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 								data->max_freq);
 	pm_qos_add_request(&data->default_pm_qos, (int)data->pm_qos_class, data->default_qos);
 	pm_qos_add_request(&data->boot_pm_qos, (int)data->pm_qos_class, data->default_qos);
-	pm_qos_update_request_timeout(&data->boot_pm_qos, data->devfreq_profile.initial_freq,
-					data->boot_qos_timeout * USEC_PER_SEC);
 
 	if (data->ops.init) {
 		ret = data->ops.init(data->dev, data);
@@ -1633,6 +1631,9 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 #endif
 
 	data->devfreq_disabled = false;
+
+	pm_qos_update_request_timeout(&data->boot_pm_qos, data->devfreq_profile.initial_freq,
+					data->boot_qos_timeout * USEC_PER_SEC);
 
 	dev_info(data->dev, "devfreq is initialized!!\n");
 
