@@ -161,8 +161,6 @@ static bool __init_pages_for_preload(struct page *page, int order,
 		va = page_address(page);
 	}
 
-	if (zero)
-		memset(va, 0, n_pages * PAGE_SIZE);
 	if (flush)
 		dmac_flush_range(va, va + n_pages * PAGE_SIZE);
 

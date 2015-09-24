@@ -128,7 +128,6 @@ int ion_heap_buffer_zero(struct ion_buffer *buffer)
 			ret = map_vm_area(vm_struct, pgprot, &pages);
 			if (ret)
 				goto end;
-			memset(vm_struct->addr, 0, PAGE_SIZE);
 			unmap_kernel_range((unsigned long)vm_struct->addr,
 					   PAGE_SIZE);
 		}

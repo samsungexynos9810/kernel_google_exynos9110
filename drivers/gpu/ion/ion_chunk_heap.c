@@ -176,7 +176,6 @@ struct ion_heap *ion_chunk_heap_create(struct ion_platform_heap *heap_data)
 		ret = map_vm_area(vm_struct, pgprot, &pages);
 		if (ret)
 			goto error_map_vm_area;
-		memset(vm_struct->addr, 0, PAGE_SIZE);
 		unmap_kernel_range((unsigned long)vm_struct->addr, PAGE_SIZE);
 	}
 	free_vm_area(vm_struct);

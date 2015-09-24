@@ -1788,9 +1788,6 @@ static void ion_device_sync_and_unmap(unsigned long vaddr,
 
 	flush_cache_vmap(vaddr, vaddr + size);
 
-	if (memzero)
-		memset((void *) vaddr, 0, size);
-
 	if (sync)
 		sync((void *) vaddr, size, dir);
 
@@ -1828,9 +1825,6 @@ void ion_device_sync(struct ion_device *dev, struct sg_table *sgt,
 		int j;
 
 		if (!PageHighMem(sg_page(sg))) {
-			if (memzero)
-				memset(page_address(sg_page(sg)),
-							0, sg->length);
 			if (sync)
 				sync(page_address(sg_page(sg)) + sg->offset,
 							sg->length, dir);
