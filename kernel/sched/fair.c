@@ -9904,7 +9904,7 @@ static int __init register_sched_cpufreq_notifier(void)
 		/* safe defaults */
 		freq_scale[ret].cpufreq_max = 1024;
 		freq_scale[ret].cpufreq_min = 1024;
-		freq_scale[ret].thermal_max = 1024;
+		freq_scale[ret].thermal_max = UINT_MAX;
 		freq_scale[ret].thermal_min = 0;
 		freq_scale[ret].curr_scale = 1024;
 
