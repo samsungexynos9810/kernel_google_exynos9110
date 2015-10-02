@@ -1439,6 +1439,8 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 {
 	int ret = 0;
 	struct exynos_devfreq_data *data;
+	struct dev_pm_opp *init_opp;
+	unsigned long init_freq = 0;
 
 	data = kzalloc(sizeof(struct exynos_devfreq_data), GFP_KERNEL);
 	if (data == NULL) {
@@ -1542,7 +1544,20 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_old_idx;
 	}
 
-	data->new_volt = regulator_get_voltage(data->vdd);
+	rcu_read_lock();
+	init_freq = (unsigned long)data->old_freq;
+	init_opp = devfreq_recommended_opp(data->dev, &init_freq, 0);
+	if (IS_ERR(init_opp)) {
+		rcu_read_unlock();
+		dev_err(data->dev, "not found valid OPP table for sync\n");
+		ret = PTR_ERR(init_opp);
+		goto err_get_opp;
+	}
+	data->new_volt = dev_pm_opp_get_voltage(init_opp);
+	rcu_read_unlock();
+
+	dev_info(data->dev, "Initial Frequency: %ld, Initial Voltage: %d\n", init_freq, data->new_volt);
+
 	ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
 	if (ret) {
 		dev_err(data->dev, "failed set voltage in probe (%ukhz:%uuV)\n",
@@ -1662,6 +1677,7 @@ err_devfreq_init:
 	devfreq_remove_device(data->devfreq);
 err_devfreq:
 err_set_voltage:
+err_get_opp:
 err_old_idx:
 	if (data->use_regulator_dummy) {
 		if (data->vdd_dummy)
