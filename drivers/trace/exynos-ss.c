@@ -653,25 +653,25 @@ EXPORT_SYMBOL(exynos_ss_prepare_panic);
 
 int exynos_ss_post_panic(void)
 {
-	exynos_ss_save_context(NULL);
-	flush_cache_all();
 	exynos_ss_dump_sfr();
 
+	exynos_ss_save_context(NULL);
+	flush_cache_all();
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	if (!no_wdt_dev) {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET
-		if (ess_hardlockup || num_online_cpus() > 1)
-			goto loop;
+		if (ess_hardlockup || num_online_cpus() > 1) {
+			/* for stall cpu */
+			while(1)
+				wfi();
+		}
 #endif
 	}
-#ifndef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
-	return 0;
-#endif
 	arm_pm_restart(0, "sw reset");
-#ifdef CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET
-loop:
 #endif
+	/* for stall cpu when not enabling panic reboot */
 	while(1)
-		cpu_relax();
+		wfi();
 
 	/* Never run this function */
 	pr_emerg("exynos-snapshot: %s DO NOT RUN this function (CPU:%d)\n",

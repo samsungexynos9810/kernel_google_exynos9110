@@ -718,7 +718,7 @@ static void ipi_cpu_stop(unsigned int cpu, struct pt_regs *regs)
 	exynos_ss_save_context(regs);
 
 	while (1)
-		cpu_relax();
+		wfi();
 }
 
 /*
