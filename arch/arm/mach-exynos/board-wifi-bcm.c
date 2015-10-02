@@ -22,6 +22,7 @@
 #include <linux/irq.h>
 #include <linux/if.h>
 #include <linux/random.h>
+#include <linux/module.h>
 #include <linux/netdevice.h>
 #include <linux/skbuff.h>
 #include <linux/wlan_plat.h>
@@ -243,8 +244,7 @@ static void bcm_wifi_set_pincntl(int en_wifi) {
 int bcm_wifi_set_power(int enable)
 {
 	int ret = 0;
-	int config = 0;
-
+	
 	struct regulator *regulator = NULL;
 	struct regulator_dev *rdev;
 	u32 pre_use_count;
@@ -397,7 +397,6 @@ static int bcm_wifi_carddetect(int val)
 }
 
 #define ETHER_ADDR_LEN    6
-#define FILE_WIFI_MACADDR "/persist/wifi/.macaddr"
 
 static inline int xdigit (char c)
 {
@@ -456,16 +455,14 @@ struct ether_addr * ether_aton (const char *asc)
 	return ether_aton_r(asc, &addr);
 }
 
+static char *wifimac = "00:00:00:00:00:00";
+module_param(wifimac, charp, S_IRUGO);
+#define CASIO_MAC "08:00:74:"
+
 static int bcm_wifi_get_mac_addr(unsigned char *buf)
 {
 	int ret = 0;
 
-	mm_segment_t oldfs;
-	struct kstat stat;
-	struct file* fp;
-	int readlen = 0;
-	char macread[128] = {0,};
-	uint rand_mac;
 	static unsigned char mymac[ETHER_ADDR_LEN] = {0,};
 	const unsigned char nullmac[ETHER_ADDR_LEN] = {0,};
 	const unsigned char bcastmac[] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -475,91 +472,39 @@ static int bcm_wifi_get_mac_addr(unsigned char *buf)
 
 	memset(buf, 0x00, ETHER_ADDR_LEN);
 
-	oldfs = get_fs();
-	set_fs(get_ds());
-
-	ret = vfs_stat(FILE_WIFI_MACADDR, &stat);
-	if (ret) {
-		set_fs(oldfs);
-		pr_err("%s: Failed to get information from file %s (%d)\n",
-				__FUNCTION__, FILE_WIFI_MACADDR, ret);
-		goto random_mac;
-	}
-	set_fs(oldfs);
-
-	fp = filp_open(FILE_WIFI_MACADDR, O_RDONLY, 0);
-	if (IS_ERR(fp)) {
-		pr_err("%s: Failed to read error %s\n",
-				__FUNCTION__, FILE_WIFI_MACADDR);
-		goto random_mac;
+	unsigned char* macbin;
+	if (strncmp(wifimac, CASIO_MAC, 9) != 0) {
+		pr_err("%s: Mac Address is not defined\n",
+				__FUNCTION__);
+		goto error_mac;
 	}
 
-#ifdef WIFI_MAC_FORMAT_ASCII
-	readlen = kernel_read(fp, fp->f_pos, macread, 17); // 17 = 12 + 5
-#else
-	readlen = kernel_read(fp, fp->f_pos, macread, 6);
-#endif
-	if (readlen > 0) {
-		unsigned char* macbin;
-#ifdef WIFI_MAC_FORMAT_ASCII
-		struct ether_addr* convmac = ether_aton( macread );
+	struct ether_addr* convmac = ether_aton( wifimac );
 
-		if (convmac == NULL) {
-			pr_err("%s: Invalid Mac Address Format %s\n",
-					__FUNCTION__, macread );
-			goto random_mac;
-		}
-
-		macbin = convmac->ether_addr_octet;
-#else
-		macbin = (unsigned char*)macread;
-#endif
-		pr_info("%s: READ MAC ADDRESS %02X:%02X:%02X:%02X:%02X:%02X\n",
-				__FUNCTION__,
-				macbin[0], macbin[1], macbin[2],
-				macbin[3], macbin[4], macbin[5]);
-
-		if (memcmp(macbin, nullmac, ETHER_ADDR_LEN) == 0 ||
-				memcmp(macbin, bcastmac, ETHER_ADDR_LEN) == 0) {
-			filp_close(fp, NULL);
-			goto random_mac;
-		}
-		memcpy(buf, macbin, ETHER_ADDR_LEN);
-	} else {
-		filp_close(fp, NULL);
-		goto random_mac;
+	if (convmac == NULL) {
+		pr_err("%s: Invalid Mac Address Format %s\n",
+				__FUNCTION__, wifimac );
+		goto error_mac;
 	}
 
-	filp_close(fp, NULL);
+	macbin = convmac->ether_addr_octet;
+
+	pr_info("%s: READ MAC ADDRESS %02X:%02X:%02X:%02X:%02X:%02X\n",
+			__FUNCTION__,
+			macbin[0], macbin[1], macbin[2],
+			macbin[3], macbin[4], macbin[5]);
+
+	if (memcmp(macbin, nullmac, ETHER_ADDR_LEN) == 0 ||
+			memcmp(macbin, bcastmac, ETHER_ADDR_LEN) == 0) {
+		goto error_mac;
+	}
+	memcpy(buf, macbin, ETHER_ADDR_LEN);
+
 	return ret;
 
-random_mac:
-
-	pr_debug("%s: %p\n", __func__, buf);
-
-	if (memcmp( mymac, nullmac, ETHER_ADDR_LEN) != 0) {
-		/* Mac displayed from UI is never updated..
-		   So, mac obtained on initial time is used */
-		memcpy(buf, mymac, ETHER_ADDR_LEN);
-		return 0;
-	}
-
-	prandom_seed((uint)jiffies);
-	rand_mac = prandom_u32();
-	buf[0] = 0x00;
-	buf[1] = 0x90;
-	buf[2] = 0x4c;
-	buf[3] = (unsigned char)rand_mac;
-	buf[4] = (unsigned char)(rand_mac >> 8);
-	buf[5] = (unsigned char)(rand_mac >> 16);
-
-	memcpy(mymac, buf, 6);
-
-	pr_info("[%s] Exiting. MAC %02X:%02X:%02X:%02X:%02X:%02X\n",
-			__FUNCTION__,
-			buf[0], buf[1], buf[2], buf[3], buf[4], buf[5] );
-
-	return 0;
+error_mac:
+	pr_err("%s: READ MAC ADDRESS is failed. Get the default device MAC address directly from firmware.\n",__FUNCTION__);
+	return 1;
 }
 
 #define COUNTRY_BUF_SZ	4
