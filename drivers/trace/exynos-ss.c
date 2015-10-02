@@ -409,18 +409,12 @@ static int ess_hardlockup = false;
  *  evince memory-map of snapshot
  */
 static struct exynos_ss_item ess_items[] = {
+/*****************************************************************/
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	{"log_kevents",	{SZ_8M,		0, 0, true}, NULL ,NULL, 0},
-#else
-	{"log_kevents",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
-#endif
 	{"log_kernel",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
-#ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	{"log_platform",{SZ_4M,		0, 0, true}, NULL ,NULL, 0},
-#else
-	{"log_platform",{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
-#endif
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
 	{"log_sfr",	{SZ_4M,		0, 0, true}, NULL ,NULL, 0},
@@ -431,6 +425,18 @@ static struct exynos_ss_item ess_items[] = {
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
 	{"log_etm",	{SZ_8M,		0, 0, true}, NULL ,NULL, 0},
 #endif
+/*****************************************************************/
+#else
+	{"log_kevents",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_kernel",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+#ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
+	{"log_platform",{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
+	{"log_pstore",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+#endif
+#endif
+/*****************************************************************/
 };
 
 /*

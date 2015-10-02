@@ -112,7 +112,7 @@ config EXYNOS_SNAPSHOT_CRASH_KEY
 
 config EXYNOS_SNAPSHOT_SFRDUMP
 	bool "Support dump of sfr region for debugging"
-	depends on EXYNOS_SNAPSHOT
+	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default y
 
 config EXYNOS_SNAPSHOT_MINIMIZED_MODE
