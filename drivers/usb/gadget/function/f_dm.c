@@ -317,7 +317,6 @@ dm_unbind(struct usb_configuration *c, struct usb_function *f)
 	if (gadget_is_dualspeed(c->cdev->gadget))
 		usb_free_descriptors(f->hs_descriptors);
 	usb_free_descriptors(f->fs_descriptors);
-	kfree(func_to_dm(f));
 	printk(KERN_DEBUG "usb: %s\n", __func__);
 }
 
@@ -446,10 +445,14 @@ static struct usb_function_instance *dm_alloc_inst(void)
 {
 		return alloc_inst_dm(true);
 }
+
 static void dm_free(struct usb_function *f)
 {
-	/*NO-OP: no function specific resource allocation in dm_alloc*/
+	struct f_dm	*dm = func_to_dm(f);
+
+	kfree(dm);
 }
+
 struct usb_function *function_alloc_dm(struct usb_function_instance *fi, bool dm_config)
 {
 
