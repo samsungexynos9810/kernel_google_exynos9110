@@ -545,6 +545,12 @@ config SRAM
 	  the genalloc API. It is supposed to be used for small on-chip SRAM
 	  areas found on many SoCs.
 
+config UID_CPUTIME
+	tristate "Per-UID cpu time statistics"
+	depends on PROFILING
+	help
+	  Per UID based cpu time statistics exported to /proc/uid_cputime
+
 config AUTO_SLEEP_WAKEUP_TEST
 	bool "The dummy driver for auto sleep wakeup test"
 	default n
