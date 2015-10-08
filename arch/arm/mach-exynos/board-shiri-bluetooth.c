@@ -62,10 +62,7 @@
 #define PR_INFO(a, args...)
 #endif
 
-static int pendingflag_probe = 0; //PENDING!
-
 static struct rfkill *bt_rfkill;
-
 
 struct bcm_bt_lpm {
 	int wake;
@@ -119,9 +116,26 @@ static void bluetooth_set_pincntl(int onoff) {
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:Output 0byte:func */
 		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
 
+		if(gpio_get_value(WLAN_POWER) == 0) { // WLAN OFF
+			ret = pin_config_set("11000000.pinctrl", "gpk1-0", 0x0002);/* 1byte:pull up 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-1", 0x0302);/* 1byte:pull up 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-3", 0x0302);/* 1byte:pull up 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-4", 0x0302);/* 1byte:pull up 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-5", 0x0302);/* 1byte:pull up 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-6", 0x0302);/* 1byte:pull up 0byte:pud */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0002);/* 1byte:disable 0byte:pud */
+
+			ret = pin_config_set("11000000.pinctrl", "gpk1-0", 0x0200);/* 1byte:SDIO 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-1", 0x0200);/* 1byte:SDIO 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-3", 0x0200);/* 1byte:SDIO 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-4", 0x0200);/* 1byte:SDIO 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-5", 0x0200);/* 1byte:SDIO 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpk1-6", 0x0200);/* 1byte:SDIO 0byte:func */
+			ret = pin_config_set("11000000.pinctrl", "gpx2-3", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
+		}
 		gpio_direction_output(BT_WAKE_GPIO, 0);
 	} else { // BT off
-		if(gpio_get_value(WLAN_POWER) == 0) { // WLAN off
+		if(gpio_get_value(WLAN_POWER) == 0) { // WLAN OFF
 			PR_INFO("%s() ON  wlan = off\n", __func__);
 
 			ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0102);/* 1byte:pull down 0byte:pud */
@@ -210,12 +224,6 @@ regs_fail:
 static int bcm4330_bt_rfkill_set_power(void *data, bool blocked)
 {
 	int val_power = 0;
-	if(pendingflag_probe == 1){ 
-		// PENDING! BT is kept OFF when it probed.
-		// Because of WIFI probe issue.
-		pendingflag_probe = 0;
-		return 1;
-	}
 
 	val_power = gpio_get_value(BT_RESET_GPIO);
 	if( blocked == 0 && val_power != 0) {
@@ -392,7 +400,6 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 {
 	int rc = 0;
 	int ret = 0;
-	pendingflag_probe = 1; //PENDING
 
 	PR_INFO("bcm4330_bluetooth_probe\n");
 	rc = gpio_request(BT_RESET_GPIO, "bcm4330_nreset_gpip");
@@ -455,6 +462,7 @@ int bcm4430_bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 
 	if(gpio_get_value(BT_RESET_GPIO) == BT_PWR_ON) { // BT on, suspend
 		PR_INFO("%s() BT ON\n", __FUNCTION__);
+
 		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0302);/* 1byte:pull up 0byte:pud RX*/
 		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0302);/* 1byte:pull up 0byte:pud TX*/
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud CTS*/
@@ -467,8 +475,8 @@ int bcm4430_bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0100);/* 1byte:output 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func
- */		
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */		
+
 		gpio_direction_output(BT_MAIN_TX_GPIO, 1);
 		gpio_direction_output(BT_MAIN_RTS_GPIO, 1);
 		
