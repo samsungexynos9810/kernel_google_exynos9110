@@ -89,7 +89,7 @@ static unsigned char		Flg_driver_probed = 0;
 static unsigned char		Flg_driver_shutdown = 0;
 
 static unsigned char SubCpuVersion[SUB_COM_DATA_SIZE_GETDATA];
-static unsigned char SubAccelAdj[SUB_COM_DATA_SIZE_GETDATA];
+static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
 static const char path[] = "/data/local/tmp/SUB_CPU_TZ.srec";
 static	int Totallen = 0;
@@ -397,8 +397,8 @@ static int SensorReadThread(void *p)
 					subcpu_battery_update_status1(recv_buf);
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP2) {
 					subcpu_battery_update_status2(recv_buf);
-				} else if (recv_buf[recv_index] == SUB_COM_GETID_ACC_ADJ) {
-					memcpy(SubAccelAdj, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
+				} else if (recv_buf[recv_index] < SUB_COM_GETID_NUM) {
+					memcpy(SubReadData, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
 					ioctl_complete = 1;
 					wake_up_interruptible(&wait_ioctl);
 				}
@@ -639,15 +639,6 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 
 	ret = copy_from_user(&write_buff[1], buf, count);
 
-	/* [for demo] if pnlcd on/off command is issued, backlight off/on */
-	if (write_buff[1] == SUB_COM_SETID_DEMO_CMD &&
-			write_buff[2] == SUB_LCD_CONTROL) {
-		if (write_buff[3] & SUB_LCD_ONOFF_MASK)
-			on_off_light_for_pnlcd_demo(0);
-		else
-			on_off_light_for_pnlcd_demo(1);
-	}
-
 	if (!ret) {
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
 		Set_WriteDataBuff(&write_buff[0]);
@@ -659,10 +650,20 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 		}
 	}
 
+	/* [for demo] if pnlcd on/off command is issued, backlight off/on */
+	if (write_buff[1] == SUB_COM_SETID_DEMO_CMD &&
+			write_buff[2] == SUB_LCD_CONTROL) {
+		if (write_buff[3] & SUB_LCD_ONOFF_MASK) {
+			msleep(300);
+			on_off_light_for_pnlcd_demo(0);
+		} else
+			on_off_light_for_pnlcd_demo(1);
+	}
+
 	return ret;
 }
 
-static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static int ioctl_fwupdate(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	struct Msensors_state *st;
 	int ret;
@@ -676,8 +677,6 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int len=0;
 	mm_segment_t oldfs;
 
-	pr_info("%s: cmd %d\n", __func__, cmd);
-	if (cmd == IOC_FW_UPDATE) {
 		st = file->private_data;
 
 		/* Open the file and count lines */
@@ -720,14 +719,32 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ioctl_complete = 0;
 		Set_WriteDataBuff(&write_buff[0]);
 		wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
+
+	return ret;
+}
+
+static void sub_read_command(uint8_t command)
+{
+	unsigned char write_buff[WRITE_DATA_SIZE];
+
+	write_buff[0] = SUB_COM_TYPE_READ;
+	write_buff[1] = command;
+	Set_WriteDataBuff(&write_buff[0]);
+	ioctl_complete = 0;
+	wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
+}
+
+static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	int ret;
+
+	pr_info("%s: cmd %d\n", __func__, cmd);
+	if (cmd == IOC_FW_UPDATE) {
+		ret = ioctl_fwupdate(file, cmd, arg);
 	} else if (cmd == IOC_ACCEL_ADJ) {
 		/* accelerometer factory adjustment */
-		write_buff[0] = SUB_COM_TYPE_READ;
-		write_buff[1] = SUB_COM_GETID_ACC_ADJ;
-		Set_WriteDataBuff(&write_buff[0]);
-		ioctl_complete = 0;
-		wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
-		ret = copy_to_user((void __user *)arg, SubAccelAdj, 3);
+		sub_read_command(SUB_COM_GETID_ACC_ADJ);
+		ret = copy_to_user((void __user *)arg, SubReadData, 3);
 	} else if (cmd == IOC_GET_VERSION) {
 		ret = copy_to_user((void __user *)arg, SubCpuVersion, 3);
 	} else {
@@ -735,6 +752,57 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		pr_info("%s: unknown command %x\n", __func__, cmd);
 	}
 	return ret;
+}
+
+static ssize_t read_i2c_status_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	sub_read_command(SUB_COM_GETID_I2C_STATUS);
+	return sprintf(buf, "i2c_status: %d\n", SubReadData[0]);
+}
+
+
+static ssize_t read_acc_offset_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	int16_t *offset;
+
+	sub_read_command(SUB_COM_GETID_ACC_READ_OFFSET);
+	offset = (int16_t *)SubReadData;
+	return sprintf(buf, "acc_offset: %d,%d,%d\n",
+		offset[0], offset[1], offset[2]);
+}
+
+static ssize_t read_acc_gain_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
+{
+	uint16_t *gain;
+
+	sub_read_command(SUB_COM_GETID_ACC_READ_GAIN);
+	gain = (int16_t *)SubReadData;
+	return sprintf(buf, "acc_gain: %d,%d,%d\n",
+		gain[0], gain[1], gain[2]);
+}
+
+static struct device_attribute attributes[] = {
+	__ATTR(i2c_status, S_IRUGO, read_i2c_status_show, NULL),
+	__ATTR(acc_offset, S_IRUGO, read_acc_offset_show, NULL),
+	__ATTR(acc_gain, S_IRUGO, read_acc_gain_show, NULL),
+};
+
+static int add_sysfs_interfaces(struct device *dev)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(attributes); i++)
+		if (device_create_file(dev, attributes + i))
+			goto undo;
+	return 0;
+undo:
+	for (i--; i >= 0; i--)
+		device_remove_file(dev, attributes + i);
+	dev_err(dev, "%s: failed to create sysfs interface\n", __func__);
+	return -ENODEV;
 }
 
 static struct file_operations Msensors_fops = {
@@ -850,6 +918,8 @@ static int Msensors_probe(struct spi_device *spi)
 		gpio_free(st->sub_main_int);
 		return ret;
 	}
+
+	add_sysfs_interfaces(&spi->dev);
 
 	disable_irq_wake(irq);
 
