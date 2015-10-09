@@ -9,26 +9,24 @@
 #include <linux/mutex.h>
 #include <linux/fb.h>
 #include <linux/backlight.h>
-#include <linux/lcd.h>
 #include <linux/delay.h>
-
-#include <linux/gpio.h>
 #include <linux/of_gpio.h>
 #include "../../misc/MSensorsDrv.h"
 
 #define DRIVER_NAME	"bd82103"
 
 #define BRIGHTNESS_MAX	0xff
-#define BRIGHTNESS_INIT 0x80
+#define BRIGHTNESS_INIT 0x80 /* this value should equal to uboot setting */
 
-#define T_ACC		1    //intial waiting time [ms]
-#define T_HI		50   //pulse length of hi  [ns]
-#define T_LOW		300  //pulse length of low [ns]
-#define T_LAT		1    //waiting time after setting [ms]
+#define T_ACC		10   /* intial waiting time [ms] */
+#define T_LAT		10   /* waiting time after setting [ms] */
 
 struct bd82103_chip_data {
 	struct device *dev;
 	struct backlight_device *bd;
+#ifndef CONFIG_BACKLIGHT_SUBCPU
+	spinlock_t slock;
+#endif
 
 	int gpio;
 	int bl_intensity;
@@ -36,23 +34,21 @@ struct bd82103_chip_data {
 };
 static struct bd82103_chip_data g_pchip;
 
-static int initialize_gpio(int gpio)
+static int initialize_gpio(struct bd82103_chip_data *pchip)
 {
 	int err;
 
-	if(gpio_is_valid(gpio)){
-		err = gpio_request(gpio, "bd82103_ctrl");
+	if(gpio_is_valid(pchip->gpio)){
+		err = gpio_request(pchip->gpio, "bd82103_ctrl");
 		if (err)
-			printk("%s : reset gpio request failed", __func__);
+			dev_err(pchip->dev, "gpio request failed");
 #ifdef CONFIG_BACKLIGHT_SUBCPU
-		err = gpio_direction_input(gpio);
-		if (err)
-			printk("%s : set_direction for reset gpio failed", __func__);
+		err = gpio_direction_input(pchip->gpio);
 #else
-		err = gpio_direction_output(gpio, 1);
-		if (err)
-			printk("%s : set_direction for reset gpio failed", __func__);
+		err = gpio_direction_output(pchip->gpio, 1);
 #endif
+		if (err)
+			dev_err(pchip->dev, "set direction of gpio failed");
 	}
 	return 0;
 }
@@ -74,36 +70,38 @@ static int get_pulse_num(int intensity)
 	return pulse_num;
 }
 
-static int ctrl_brightness(int pre_intensity, int intensity, int gpio)
+static void ctrl_brightness(struct bd82103_chip_data *pchip, int intensity)
 {
 	unsigned char pulse_num;
 #ifndef CONFIG_BACKLIGHT_SUBCPU
+	unsigned long flags;
 	int i;
 #endif
 
 	pulse_num = get_pulse_num(intensity);
+	if (get_pulse_num(pchip->bl_intensity) == pulse_num)
+		return;
 
 #ifdef CONFIG_BACKLIGHT_SUBCPU
-	return SUB_LCDBrightnessSet(pulse_num);
+	SUB_LCDBrightnessSet((intensity >> 4) + 1);
 #else
 	if (intensity == 0) {
-		gpio_set_value_cansleep(gpio, 0);
+		gpio_set_value_cansleep(pchip->gpio, 0);
 	} else {
-		if (pre_intensity == 0) {
-			gpio_set_value_cansleep(gpio, 1);
+		if (pchip->bl_intensity == 0) {
+			gpio_set_value_cansleep(pchip->gpio, 1);
 			msleep(T_ACC);
 		}
+		spin_lock_irqsave(&pchip->slock, flags);
 		for (i = 0; i < pulse_num;  i++) {
-			gpio_set_value_cansleep(gpio, 0);
-			ndelay(T_LOW);
-			gpio_set_value_cansleep(gpio, 1);
-			ndelay(T_HI);
+			gpio_set_value(pchip->gpio, 0);
+			gpio_set_value(pchip->gpio, 1);
 		}
+		spin_unlock_irqrestore(&pchip->slock, flags);
 	}
 	msleep(T_LAT);
-
-	return 0;
 #endif
+	pchip->bl_intensity = intensity;
 }
 
 void on_off_light_for_pnlcd_demo(uint8_t sw)
@@ -111,13 +109,10 @@ void on_off_light_for_pnlcd_demo(uint8_t sw)
 	struct bd82103_chip_data *pchip = &g_pchip;
 	int intensity = pchip->bd->props.brightness;
 
-	if (sw) {
-		ctrl_brightness(pchip->bl_intensity, intensity, pchip->gpio);
-		pchip->bl_intensity = intensity;
-	} else {
-		ctrl_brightness(pchip->bl_intensity, 0, pchip->gpio);
-		pchip->bl_intensity = 0;
-	}
+	if (sw)
+		ctrl_brightness(pchip, intensity);
+	else
+		ctrl_brightness(pchip, 0);
 }
 
 static int bd82103_update_status(struct backlight_device *bd)
@@ -144,15 +139,7 @@ static int bd82103_update_status(struct backlight_device *bd)
 		intensity = 0;
 #endif
 
-#ifndef CONFIG_BACKLIGHT_SUBCPU
-	// return from black window
-	if (pchip->bl_intensity==0 && intensity != 0){
-		gpio_set_value_cansleep(pchip->gpio, 1);
-		msleep(T_ACC);
-	}
-#endif
-	ctrl_brightness(pchip->bl_intensity, intensity, pchip->gpio);
-	pchip->bl_intensity = intensity;
+	ctrl_brightness(pchip, intensity);
 
 	return 0;
 }
@@ -176,23 +163,24 @@ static int bd82103_probe(struct platform_device *pdev)
 
 	pchip->dev = &pdev->dev;
 	pchip->gpio = of_get_gpio(pdev->dev.of_node, 0);
+#ifndef CONFIG_BACKLIGHT_SUBCPU
+	spin_lock_init(&pchip->slock);
+#endif
 
 	// initialize
 	props.brightness = BRIGHTNESS_INIT;
 	props.max_brightness = BRIGHTNESS_MAX;
 	props.power = FB_BLANK_UNBLANK;
 	props.type = BACKLIGHT_RAW;
+
 	pchip->bd = backlight_device_register(DRIVER_NAME, pchip->dev, pchip, &bd82103_bd_ops, &props);
 	if (IS_ERR(pchip->bd))
 		return PTR_ERR(pchip->bd);
-
-	initialize_gpio(pchip->gpio);
-	if (ctrl_brightness(0, BRIGHTNESS_INIT, pchip->gpio)) {
-		gpio_free(pchip->gpio);
-		backlight_device_unregister(pchip->bd);
-		return -EPROBE_DEFER;
-	}
-	pchip->bl_intensity = BRIGHTNESS_INIT;
+	initialize_gpio(pchip);
+	pchip->bl_intensity = 0;
+#ifndef CONFIG_BACKLIGHT_SUBCPU
+	ctrl_brightness(pchip, BRIGHTNESS_INIT);
+#endif
 	pchip->flg_theater_mode = 0xFF;
 
 	return 0;
