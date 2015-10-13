@@ -59,15 +59,7 @@
 #define ESS_CALLSTACK_MAX_NUM		4
 #define ESS_ITERATION			5
 #define ESS_NR_CPUS			NR_CPUS
-
-/* Items domain */
-#define ESS_ITEMS_NUM			6
-#define ESS_ITEMS_KEVENTS		0
-#define ESS_ITEMS_LOG_KERNEL		1
-#define ESS_ITEMS_LOG_PLATFORM		2
-#define ESS_ITEMS_LOG_SFR		3
-#define ESS_ITEMS_LOG_PSTORE		4
-#define ESS_ITEMS_LOG_ETM		5
+#define ESS_ITEM_MAX_NUM		10
 
 /* Sign domain */
 #define ESS_SIGN_RESET			0x0
@@ -94,6 +86,7 @@ struct exynos_ss_base {
 	size_t size;
 	size_t vaddr;
 	size_t paddr;
+	unsigned int persist;
 	unsigned int enabled;
 };
 
@@ -364,10 +357,25 @@ struct exynos_ss_sfrdump {
 };
 #endif
 
+struct exynos_ss_desc {
+	struct list_head sfrdump_list;
+	spinlock_t lock;
+
+	unsigned int kevents_num;
+	unsigned int log_kernel_num;
+	unsigned int log_platform_num;
+	unsigned int log_sfr_num;
+	unsigned int log_pstore_num;
+	unsigned int log_etm_num;
+
+	unsigned int callstack;
+	int hardlockup;
+	int no_wdt_dev;
+};
+
 struct exynos_ss_interface {
 	struct exynos_ss_log *info_event;
-	struct exynos_ss_item info_log[ESS_ITEMS_NUM];
-	struct list_head sfrdump_list;
+	struct exynos_ss_item info_log[ESS_ITEM_MAX_NUM];
 };
 
 #ifdef CONFIG_S3C2410_WATCHDOG
@@ -387,18 +395,7 @@ extern void register_hook_logbuf(void (*)(const char *, size_t));
 #endif
 extern void register_hook_logger(void (*)(const char *, const char *, size_t));
 
-static DEFINE_SPINLOCK(ess_lock);
 typedef int (*ess_initcall_t)(const struct device_node *);
-static unsigned ess_callstack = CONFIG_EXYNOS_SNAPSHOT_CALLSTACK;
-
-#ifdef CONFIG_EXYNOS_SNAPSHOT_SOFTIRQ
-static unsigned ess_softirq = true;
-#else
-static unsigned ess_softirq = false;
-#endif
-
-static int no_wdt_dev = 0;
-static int ess_hardlockup = false;
 
 /*
  * ---------------------------------------------------------------------------
@@ -411,47 +408,45 @@ static int ess_hardlockup = false;
 static struct exynos_ss_item ess_items[] = {
 /*****************************************************************/
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
-	{"log_kevents",	{SZ_8M,		0, 0, true}, NULL ,NULL, 0},
-	{"log_kernel",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_kevents",	{SZ_8M,		0, 0, false, true}, NULL ,NULL, 0},
+	{"log_kernel",	{SZ_2M,		0, 0, false, true}, NULL ,NULL, 0},
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
-	{"log_platform",{SZ_4M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_platform",{SZ_4M,		0, 0, false, true}, NULL ,NULL, 0},
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
-	{"log_sfr",	{SZ_4M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_sfr",	{SZ_4M,		0, 0, false, true}, NULL ,NULL, 0},
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
-	{"log_pstore",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_pstore",	{SZ_2M,		0, 0, true, true}, NULL ,NULL, 0},
 #endif
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
-	{"log_etm",	{SZ_8M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_etm",	{SZ_8M,		0, 0, true, true}, NULL ,NULL, 0},
 #endif
-/*****************************************************************/
-#else
-	{"log_kevents",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
-	{"log_kernel",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+#else /* MINIMIZED MODE */
+	{"log_kevents",	{SZ_2M,		0, 0, false, true}, NULL ,NULL, 0},
+	{"log_kernel",	{SZ_2M,		0, 0, false, true}, NULL ,NULL, 0},
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HOOK_LOGGER
-	{"log_platform",{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_platform",{SZ_2M,		0, 0, false, true}, NULL ,NULL, 0},
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
-	{"log_pstore",	{SZ_2M,		0, 0, true}, NULL ,NULL, 0},
+	{"log_pstore",	{SZ_2M,		0, 0, true, true}, NULL ,NULL, 0},
 #endif
 #endif
-/*****************************************************************/
 };
 
 /*
  *  including or excluding options
  *  if you want to except some interrupt, it should be written in this array
  */
-static unsigned int ess_irqlog_exlist[] = {
+static int ess_irqlog_exlist[] = {
 /*  interrupt number ex) 152, 153, 154, */
-	0,0,0,0,0,0,0,0,
+	-1,
 };
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
-static unsigned int ess_irqexit_exlist[] = {
+static int ess_irqexit_exlist[] = {
 /*  interrupt number ex) 152, 153, 154, */
-	0,0,0,0,0,0,0,0,
+	-1,
 };
 
 static unsigned ess_irqexit_threshold =
@@ -501,6 +496,7 @@ static struct exynos_ss_interface ess_info;
 static struct exynos_ss_base ess_base;
 static struct exynos_ss_log_idx ess_idx;
 static struct exynos_ss_log *ess_log = NULL;
+static struct exynos_ss_desc ess_desc;
 
 DEFINE_PER_CPU(struct pt_regs *, ess_core_reg);
 DEFINE_PER_CPU(struct exynos_ss_mmu_reg *, ess_mmu_reg);
@@ -626,16 +622,16 @@ EXPORT_SYMBOL(exynos_ss_get_item_paddr);
 
 int exynos_ss_get_hardlockup(void)
 {
-	return ess_hardlockup;
+	return ess_desc.hardlockup;
 }
 EXPORT_SYMBOL(exynos_ss_get_hardlockup);
 
 int exynos_ss_set_hardlockup(int val)
 {
 	unsigned long flags;
-	spin_lock_irqsave(&ess_lock, flags);
-	ess_hardlockup = val;
-	spin_unlock_irqrestore(&ess_lock, flags);
+	spin_lock_irqsave(&ess_desc.lock, flags);
+	ess_desc.hardlockup = val;
+	spin_unlock_irqrestore(&ess_desc.lock, flags);
 	return 0;
 }
 EXPORT_SYMBOL(exynos_ss_set_hardlockup);
@@ -652,7 +648,8 @@ int exynos_ss_prepare_panic(void)
 	}
 	/* stop to watchdog for preventing unexpected reset
 	 * during printing panic message */
-	no_wdt_dev = s3c2410wdt_set_emergency_stop();
+	ess_desc.no_wdt_dev = s3c2410wdt_set_emergency_stop();
+
 	return 0;
 }
 EXPORT_SYMBOL(exynos_ss_prepare_panic);
@@ -661,20 +658,16 @@ int exynos_ss_post_panic(void)
 {
 	exynos_ss_dump_sfr();
 
-	exynos_ss_save_context(NULL);
+       	exynos_ss_save_context(NULL);
 	flush_cache_all();
-#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
-	if (!no_wdt_dev) {
+
+	if (!ess_desc.no_wdt_dev) {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET
-		if (ess_hardlockup || num_online_cpus() > 1) {
-			/* for stall cpu */
-			while(1)
-				wfi();
-		}
+		if (ess_desc.hardlockup || num_online_cpus() > 1)
+			goto loop;
 #endif
 	}
 	arm_pm_restart(0, "sw reset");
-#endif
 	/* for stall cpu when not enabling panic reboot */
 	while(1)
 		wfi();
@@ -916,7 +909,7 @@ static inline void exynos_ss_hook_logger(const char *name,
 	struct exynos_ss_item *item = NULL;
 	unsigned long i;
 
-	for (i = ESS_ITEMS_LOG_PLATFORM; i < ARRAY_SIZE(ess_items); i++) {
+	for (i = ess_desc.log_platform_num; i < ARRAY_SIZE(ess_items); i++) {
 		if (!strncmp(ess_items[i].name, name, strlen(name))) {
 			item = &ess_items[i];
 			break;
@@ -939,7 +932,7 @@ static inline void exynos_ss_hook_logger(const char *name,
 static inline void exynos_ss_hook_logbuf(const char buf)
 {
 	unsigned int last_buf;
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_LOG_KERNEL];
+	struct exynos_ss_item *item = &ess_items[ess_desc.log_kernel];
 
 	if (likely(ess_base.enabled == true && item->entry.enabled == true)) {
 		if (exynos_ss_check_eob(item, 1))
@@ -956,7 +949,7 @@ static inline void exynos_ss_hook_logbuf(const char buf)
 #else
 static inline void exynos_ss_hook_logbuf(const char *buf, size_t size)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_LOG_KERNEL];
+	struct exynos_ss_item *item = &ess_items[ess_desc.log_kernel_num];
 
 	if (likely(ess_base.enabled == true && item->entry.enabled == true)) {
 		size_t last_buf, align;
@@ -1071,30 +1064,30 @@ static void exynos_ss_dump_task_info(void)
 void exynos_ss_dump_sfr(void)
 {
 	struct exynos_ss_sfrdump *sfrdump;
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_LOG_SFR];
+	struct exynos_ss_item *item = &ess_items[ess_desc.log_sfr_num];
 	struct list_head *entry;
 	struct device_node *np;
 	unsigned int reg, offset, val, size;
 	int i, ret;
 	static char buf[SZ_64];
 
-	if (list_empty(&ess_info.sfrdump_list) || unlikely(!item) ||
+	if (list_empty(&ess_desc.sfrdump_list) || unlikely(!item) ||
 		unlikely(item->entry.enabled == false)) {
 		pr_emerg("exynos-snapshot: %s: No information\n", __func__);
 		return;
 	}
 
-	list_for_each(entry, &ess_info.sfrdump_list) {
+	list_for_each(entry, &ess_desc.sfrdump_list) {
 		sfrdump = list_entry(entry, struct exynos_ss_sfrdump, list);
 		np = of_node_get(sfrdump->node);
-		for (i = 0; i < SZ_256; i++) {
+		for (i = 0; i < SZ_2K; i++) {
 			ret = of_property_read_u32_index(np, "addr", i, &reg);
 			if (ret < 0) {
 				pr_err("exynos-snapshot: failed to get address information - %s\n",
 					sfrdump->name);
 				break;
 			}
-			if (reg == 0xFFFFFFFF)
+			if (reg == 0xFFFFFFFF || reg == 0)
 				break;
 			offset = reg - sfrdump->phy_reg;
 			if (reg < offset) {
@@ -1132,7 +1125,7 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 	}
 	count = ret;
 
-	INIT_LIST_HEAD(&ess_info.sfrdump_list);
+	INIT_LIST_HEAD(&ess_desc.sfrdump_list);
 	for (i = 0; i < count; i++) {
 		ret = of_property_read_string_index(np, "sfr-dump-list", i,
 						(const char **)&dump_str);
@@ -1181,7 +1174,7 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 		sfrdump->phy_reg = phy_regs[0];
 		sfrdump->num = ret;
 		sfrdump->node = dump_np;
-		list_add(&sfrdump->list, &ess_info.sfrdump_list);
+		list_add(&sfrdump->list, &ess_desc.sfrdump_list);
 
 		pr_info("success to regsiter %s\n", sfrdump->name);
 		of_node_put(dump_np);
@@ -1278,7 +1271,7 @@ static struct notifier_block nb_panic_block = {
 
 static unsigned int __init exynos_ss_remap(unsigned int base, unsigned int size)
 {
-	static struct map_desc ess_iodesc[ESS_ITEMS_NUM];
+	struct map_desc ess_iodesc[ESS_ITEM_MAX_NUM];
 	unsigned long i;
 
 	for (i = 0; i < ARRAY_SIZE(ess_items); i++) {
@@ -1401,9 +1394,9 @@ static void __init exynos_ss_fixmap_header(void)
 	size_t *addr;
 	int i;
 
-	vaddr = ess_items[ESS_ITEMS_KEVENTS].entry.vaddr;
-	paddr = ess_items[ESS_ITEMS_KEVENTS].entry.paddr;
-	size = ess_items[ESS_ITEMS_KEVENTS].entry.size;
+	vaddr = ess_items[ess_desc.kevents_num].entry.vaddr;
+	paddr = ess_items[ess_desc.kevents_num].entry.paddr;
+	size = ess_items[ess_desc.kevents_num].entry.size;
 
 	/*  set to confirm exynos-snapshot */
 	addr = (size_t *)vaddr;
@@ -1470,6 +1463,33 @@ static void __init exynos_ss_fixmap_header(void)
 	memset((size_t *)(vaddr + ESS_KEEP_HEADER_SZ), 0, size - ESS_KEEP_HEADER_SZ);
 }
 
+static int __init exynos_ss_init_desc(void)
+{
+	unsigned int i, len;
+
+	/* initialize ess_desc */
+	memset((struct exynos_ss_desc *)&ess_desc, 0, sizeof(struct exynos_ss_desc));
+	ess_desc.callstack = CONFIG_EXYNOS_SNAPSHOT_CALLSTACK;
+	spin_lock_init(&ess_desc.lock);
+
+	for (i = 0; i < ARRAY_SIZE(ess_items); i++) {
+		len = strlen(ess_items[i].name);
+		if (!strncmp(ess_items[i].name, "log_kevents", len))
+			ess_desc.kevents_num = i;
+		else if (!strncmp(ess_items[i].name, "log_kernel", len))
+			ess_desc.log_kernel_num = i;
+		else if (!strncmp(ess_items[i].name, "log_platform", len))
+			ess_desc.log_platform_num = i;
+		else if (!strncmp(ess_items[i].name, "log_sfr", len))
+			ess_desc.log_sfr_num = i;
+		else if (!strncmp(ess_items[i].name, "log_pstore", len))
+			ess_desc.log_pstore_num = i;
+		else if (!strncmp(ess_items[i].name, "log_etm", len))
+			ess_desc.log_etm_num = i;
+	}
+	return 0;
+}
+
 static int __init exynos_ss_fixmap(void)
 {
 	size_t last_buf, align;
@@ -1503,8 +1523,9 @@ static int __init exynos_ss_fixmap(void)
 				memset((size_t *)vaddr, 0, size);
 			}
 		} else {
-			/*  initialized log to 0 */
-			memset((size_t *)vaddr, 0, size);
+			/*  initialized log to 0 if persist == false */
+			if (ess_items[i].entry.persist == false)
+				memset((size_t *)vaddr, 0, size);
 		}
 		ess_info.info_log[i - 1].name = kstrdup(ess_items[i].name, GFP_KERNEL);
 		ess_info.info_log[i - 1].head_ptr =
@@ -1512,6 +1533,8 @@ static int __init exynos_ss_fixmap(void)
 		ess_info.info_log[i - 1].curr_ptr = NULL;
 		ess_info.info_log[i - 1].entry.size = size;
 	}
+
+	/* output the information of exynos-snapshot */
 	exynos_ss_output();
 	return 0;
 }
@@ -1526,7 +1549,7 @@ static int exynos_ss_init_dt_parse(struct device_node *np)
 		ret = -ENODEV;
 	} else {
 		ret = exynos_ss_sfr_dump_init(sfr_dump_np);
-		if (ret) {
+		if (ret < 0) {
 			pr_err("failed to register sfr dump node\n");
 			ret = -ENODEV;
 			of_node_put(sfr_dump_np);
@@ -1570,6 +1593,7 @@ static int __init exynos_ss_init(void)
 	 *  --> @virtual_addr | @phy_addr | @buffer_size | @magic_key(0xDBDBDBDB)
 	 *  And then, the debug buffer is shown.
 	 */
+		exynos_ss_init_desc();
 		exynos_ss_fixmap();
 		exynos_ss_init_dt();
 		exynos_ss_scratch_reg(ESS_SIGN_SCRATCH);
@@ -1591,7 +1615,7 @@ early_initcall(exynos_ss_init);
 
 void exynos_ss_task(int cpu, void *v_task)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1607,7 +1631,7 @@ void exynos_ss_task(int cpu, void *v_task)
 
 void exynos_ss_work(void *worker, void *work, void *fn, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1627,7 +1651,7 @@ void exynos_ss_work(void *worker, void *work, void *fn, int en)
 
 void exynos_ss_cpuidle(int index, unsigned state, int diff, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1647,7 +1671,7 @@ void exynos_ss_cpuidle(int index, unsigned state, int diff, int en)
 
 void exynos_ss_suspend(void *fn, void *dev, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1666,7 +1690,7 @@ void exynos_ss_suspend(void *fn, void *dev, int en)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_REGULATOR
 void exynos_ss_regulator(char* f_name, unsigned int addr, unsigned int volt, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1690,7 +1714,7 @@ void exynos_ss_regulator(char* f_name, unsigned int addr, unsigned int volt, int
 #ifdef CONFIG_EXYNOS_SNAPSHOT_THERMAL
 void exynos_ss_thermal(void *data, unsigned int temp, char *name, unsigned int max_cooling)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1712,7 +1736,7 @@ void exynos_ss_thermal(void *data, unsigned int temp, char *name, unsigned int m
 #ifdef CONFIG_EXYNOS_SNAPSHOT_MBOX
 void exynos_ss_mailbox(void *msg, int mode, char* f_name, void *volt)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 	u32 *msg_data = (u32 *)msg;
 	u32 *volt_data = (u32 *)volt;
 	int cnt;
@@ -1739,9 +1763,9 @@ void exynos_ss_mailbox(void *msg, int mode, char* f_name, void *volt)
 }
 #endif
 
-void exynos_ss_irq(unsigned int irq, void *fn, unsigned int val, int en)
+void exynos_ss_irq(int irq, void *fn, unsigned int val, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1749,12 +1773,10 @@ void exynos_ss_irq(unsigned int irq, void *fn, unsigned int val, int en)
 		int cpu = raw_smp_processor_id();
 		unsigned long i;
 
-		for (i = 0; i < ARRAY_SIZE(ess_irqlog_exlist); i++)
-			if (irq == 0 || irq == ess_irqlog_exlist[i])
+		for (i = 0; i < ARRAY_SIZE(ess_irqlog_exlist); i++) {
+			if (irq == ess_irqlog_exlist[i])
 				return;
-
-		if (!ess_softirq && ESS_FLAG_SOFTIRQ <= irq)
-			return;
+		}
 
 		i = atomic_inc_return(&ess_idx.irq_log_idx[cpu]) &
 				(ARRAY_SIZE(ess_log->irq[0]) - 1);
@@ -1771,7 +1793,7 @@ void exynos_ss_irq(unsigned int irq, void *fn, unsigned int val, int en)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
 void exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 	unsigned long i;
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
@@ -1850,7 +1872,7 @@ static inline void arch_local_irq_restore(unsigned long flags)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SPINLOCK
 void exynos_ss_spinlock(void *v_lock, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1872,7 +1894,7 @@ void exynos_ss_spinlock(void *v_lock, int en)
 		ess_log->spinlock[cpu][i].owner_cpu = lock->owner_cpu;
 		ess_log->spinlock[cpu][i].en = en;
 
-		for (j = 0; j < ess_callstack; j++) {
+		for (j = 0; j < ess_desc.callstack; j++) {
 			ess_log->spinlock[cpu][i].caller[j] =
 				(void *)((size_t)return_address(j + 1));
 		}
@@ -1883,7 +1905,7 @@ void exynos_ss_spinlock(void *v_lock, int en)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_DISABLED
 void exynos_ss_irqs_disabled(unsigned long flags)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 	int cpu = raw_smp_processor_id();
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
@@ -1899,7 +1921,7 @@ void exynos_ss_irqs_disabled(unsigned long flags)
 		ess_log->irqs_disabled[cpu][0].task = NULL;
 		ess_log->irqs_disabled[cpu][0].task_comm = NULL;
 
-		for (j = 0; j < ess_callstack; j++) {
+		for (j = 0; j < ess_desc.callstack; j++) {
 			ess_log->irqs_disabled[cpu][0].caller[j] = NULL;
 		}
 
@@ -1913,7 +1935,7 @@ void exynos_ss_irqs_disabled(unsigned long flags)
 		ess_log->irqs_disabled[cpu][i].task = get_current();
 		ess_log->irqs_disabled[cpu][i].task_comm = get_current()->comm;
 
-		for (j = 0; j < ess_callstack; j++) {
+		for (j = 0; j < ess_desc.callstack; j++) {
 			ess_log->irqs_disabled[cpu][i].caller[j] =
 				(void *)((size_t)return_address(j + 1));
 		}
@@ -1924,7 +1946,7 @@ void exynos_ss_irqs_disabled(unsigned long flags)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
 void exynos_ss_clk(void *clock, const char *func_name, int mode)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1944,7 +1966,7 @@ void exynos_ss_clk(void *clock, const char *func_name, int mode)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_FREQ
 void exynos_ss_freq(int type, unsigned long old_freq, unsigned long target_freq, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -1966,7 +1988,7 @@ void exynos_ss_freq(int type, unsigned long old_freq, unsigned long target_freq,
 #ifdef CONFIG_EXYNOS_SNAPSHOT_HRTIMER
 void exynos_ss_hrtimer(void *timer, s64 *now, void *fn, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -2022,7 +2044,7 @@ out:
 
 void exynos_ss_reg(unsigned int read, size_t val, size_t reg, int en)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 	int cpu = raw_smp_processor_id();
 	unsigned long i, j;
 	size_t phys_reg, start_addr, end_addr;
@@ -2055,7 +2077,7 @@ void exynos_ss_reg(unsigned int read, size_t val, size_t reg, int en)
 	ess_log->reg[cpu][i].reg = phys_reg;
 	ess_log->reg[cpu][i].en = en;
 
-	for (j = 0; j < ess_callstack; j++) {
+	for (j = 0; j < ess_desc.callstack; j++) {
 		ess_log->reg[cpu][i].caller[j] =
 			(void *)((size_t)return_address(j + 1));
 	}
@@ -2065,7 +2087,7 @@ void exynos_ss_reg(unsigned int read, size_t val, size_t reg, int en)
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 void exynos_ss_clockevent(unsigned long long clc, int64_t delta, void *next_event)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -2085,7 +2107,7 @@ void exynos_ss_clockevent(unsigned long long clc, int64_t delta, void *next_even
 
 void exynos_ss_printk(const char *fmt, ...)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -2104,7 +2126,7 @@ void exynos_ss_printk(const char *fmt, ...)
 		ess_log->printk[i].time = cpu_clock(cpu);
 		ess_log->printk[i].cpu = cpu;
 
-		for (j = 0; j < ess_callstack; j++) {
+		for (j = 0; j < ess_desc.callstack; j++) {
 			ess_log->printk[i].caller[j] =
 				(void *)((size_t)return_address(j));
 		}
@@ -2113,7 +2135,7 @@ void exynos_ss_printk(const char *fmt, ...)
 
 void exynos_ss_printkl(size_t msg, size_t val)
 {
-	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
@@ -2127,7 +2149,7 @@ void exynos_ss_printkl(size_t msg, size_t val)
 		ess_log->printkl[i].msg = msg;
 		ess_log->printkl[i].val = val;
 
-		for (j = 0; j < ess_callstack; j++) {
+		for (j = 0; j < ess_desc.callstack; j++) {
 			ess_log->printkl[i].caller[j] =
 				(void *)((size_t)return_address(j));
 		}
@@ -2135,7 +2157,6 @@ void exynos_ss_printkl(size_t msg, size_t val)
 }
 #endif
 
-#ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
 #include "android_logger.h"
 
 #define LOGGER_SKIP_COUNT		(4)
@@ -2296,12 +2317,13 @@ EXPORT_SYMBOL(exynos_ss_hook_pmsg);
  *  To support pstore/pmsg/pstore_ram, following is implementation for exynos-snapshot
  *  ess_ramoops platform_device is used by pstore fs.
  */
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
 static struct ramoops_platform_data ess_ramoops_data = {
-	.mem_size	= SZ_2M,
-	.record_size	= SZ_256K,
-	.console_size	= SZ_256K,
-	.ftrace_size	= SZ_256K,
-	.pmsg_size	= SZ_256K,
+	.record_size	= SZ_512K,
+	.console_size	= SZ_512K,
+	.ftrace_size	= SZ_512K,
+	.pmsg_size	= SZ_512K,
 	.dump_oops	= 1,
 };
 
@@ -2314,6 +2336,7 @@ static struct platform_device ess_ramoops = {
 
 static int __init ess_pstore_init(void)
 {
+	ess_ramoops_data.mem_size = exynos_ss_get_item_size("log_pstore");
 	ess_ramoops_data.mem_address = exynos_ss_get_item_paddr("log_pstore");
 	return platform_device_register(&ess_ramoops);
 }
@@ -2390,7 +2413,7 @@ static ssize_t ess_callstack_show(struct kobject *kobj,
 {
 	ssize_t n = 0;
 
-	n = scnprintf(buf, 24, "callstack depth : %d\n", ess_callstack);
+	n = scnprintf(buf, 24, "callstack depth : %d\n", ess_desc.callstack);
 
 	return n;
 }
@@ -2404,7 +2427,7 @@ static ssize_t ess_callstack_store(struct kobject *kobj, struct kobj_attribute *
 	pr_info("callstack depth(min 1, max 4) : %lu\n", callstack);
 
 	if (callstack < 5 && callstack > 0) {
-		ess_callstack = callstack;
+		ess_desc.callstack = callstack;
 		pr_info("success inserting %lu to callstack value\n", callstack);
 	}
 	return count;

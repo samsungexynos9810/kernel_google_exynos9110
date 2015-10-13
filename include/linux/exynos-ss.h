@@ -22,7 +22,7 @@ extern void exynos_ss_task(int cpu, void *v_task);
 extern void exynos_ss_work(void *worker, void *work, void *fn, int en);
 extern void exynos_ss_cpuidle(int index, unsigned state, int diff, int en);
 extern void exynos_ss_suspend(void *fn, void *dev, int en);
-extern void exynos_ss_irq(unsigned int irq, void *fn, unsigned int val, int en);
+extern void exynos_ss_irq(int irq, void *fn, unsigned int val, int en);
 extern int exynos_ss_try_enable(const char *name, unsigned long long duration);
 extern int exynos_ss_set_enable(const char *name, int en);
 extern int exynos_ss_get_enable(const char *name);

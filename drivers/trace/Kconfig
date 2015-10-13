@@ -57,11 +57,6 @@ config EXYNOS_SNAPSHOT_HRTIMER
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default n
 
-config EXYNOS_SNAPSHOT_SOFTIRQ
-	bool "Enable debugging of softirq by kevent"
-	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
-	default y
-
 config EXYNOS_SNAPSHOT_REG
 	bool "Enable debugging of accessing register by kevent"
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
@@ -88,8 +83,8 @@ config EXYNOS_SNAPSHOT_HOOK_LOGGER
 	default y
 
 config EXYNOS_SNAPSHOT_PSTORE
-	bool "Enable supporting pstore fs for logging and hooking"
-	depends on EXYNOS_SNAPSHOT_HOOK_LOGGER
+	bool "Enable supporting ramoops driver for pstore filesystem"
+	depends on EXYNOS_SNAPSHOT
 	select PSTORE
 	select PSTORE_RAM
 	select PSTORE_PMSG
