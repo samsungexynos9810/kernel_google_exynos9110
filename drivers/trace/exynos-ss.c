@@ -1942,7 +1942,7 @@ void exynos_ss_clk(void *clock, const char *func_name, int mode)
 #endif
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_FREQ
-void exynos_ss_freq(int type, unsigned long freq, int en)
+void exynos_ss_freq(int type, unsigned long old_freq, unsigned long target_freq, int en)
 {
 	struct exynos_ss_item *item = &ess_items[ESS_ITEMS_KEVENTS];
 
@@ -1956,8 +1956,8 @@ void exynos_ss_freq(int type, unsigned long freq, int en)
 		ess_log->freq[i].time = cpu_clock(cpu);
 		ess_log->freq[i].cpu = cpu;
 		ess_log->freq[i].freq_name = ess_freq_name[type];
-		ess_log->freq[i].old_freq = (en == ESS_FLAG_IN) ? freq : 0;
-		ess_log->freq[i].target_freq = (en == ESS_FLAG_OUT) ? freq : 0;
+		ess_log->freq[i].old_freq = old_freq;
+		ess_log->freq[i].target_freq = target_freq;
 		ess_log->freq[i].en = en;
 	}
 }

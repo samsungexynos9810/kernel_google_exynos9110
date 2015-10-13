@@ -101,9 +101,9 @@ extern void exynos_ss_clk(void *clock, const char *func_name, int mode);
 #endif
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_FREQ
-void exynos_ss_freq(int type, unsigned long freq, int en);
+void exynos_ss_freq(int type, unsigned long old_freq, unsigned long target_freq, int en);
 #else
-#define exynos_ss_freq(a,b,c)	do { } while(0);
+#define exynos_ss_freq(a,b,c,d)	do { } while(0);
 #endif
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
@@ -147,7 +147,7 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_irqs_disabled(a)	do { } while(0)
 #define exynos_ss_spinlock(a,b)		do { } while(0)
 #define exynos_ss_clk(a,b,c)		do { } while(0)
-#define exynos_ss_freq(a,b,c)		do { } while(0)
+#define exynos_ss_freq(a,b,c,d)		do { } while(0)
 #define exynos_ss_irq_exit_var(v)	do { v = 0; } while(0)
 #define exynos_ss_reg(a,b,c,d)		do { } while(0)
 #define exynos_ss_hrtimer(a,b,c,d)	do { } while(0)
