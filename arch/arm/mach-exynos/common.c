@@ -63,6 +63,7 @@
 #define REG_CPU_STATE_ADDR	(S5P_VA_SYSRAM_NS + 0x28)
 #define EXYNOS_RECOVERY_MODE	0xf
 #define EXYNOS_NEED_UPDATE	6
+#define EXYNOS_INFORM_PANIC 0xa
 
 static const char name_exynos3250[] = "EXYNOS3250";
 static const char name_exynos4210[] = "EXYNOS4210";
@@ -783,7 +784,10 @@ void exynos3_restart(char mode, const char *cmd)
 
 	inform = readl(EXYNOS_INFORM4);
 
-        if(!strncmp(cmd,"bootloader",10)){
+	if (cmd == NULL) {
+		/* called from emergency_restart() from panic() */
+		__raw_writel(EXYNOS_INFORM_PANIC, EXYNOS_INFORM4);
+	} else if(!strncmp(cmd,"bootloader",10)){
 		__raw_writel(0xD, EXYNOS_INFORM4);
 	} else if(!strncmp(cmd,"recovery",8)){
 		__raw_writel(EXYNOS_RECOVERY_MODE, EXYNOS_INFORM4);
