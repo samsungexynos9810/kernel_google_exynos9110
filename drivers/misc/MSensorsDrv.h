@@ -76,7 +76,11 @@
 #define SUB_COM_GETID_SUB_CPU_VER		(0x00)		/* SUB-CPU Version */
 #define SUB_COM_GETID_POWER_PROP1		(0x01)		/* Power Property1 */
 #define SUB_COM_GETID_POWER_PROP2		(0x02)		/* Power Property2 */
+#define SUB_COM_GETID_I2C_STATUS		(0x03)
 #define SUB_COM_GETID_ACC_ADJ		(0x04)		/* Accele Adjust */
+#define SUB_COM_GETID_ACC_READ_OFFSET	(0x05)
+#define SUB_COM_GETID_ACC_READ_GAIN		(0x06)
+#define SUB_COM_GETID_NUM	(0x07)	/* Number of GETIDs */
 
 #define SUB_COM_SENSID_ACCELE			(0x01)		/* Acceleration Data */
 #define SUB_COM_SENSID_MAG			(0x02)		/* Magnetic Data */
