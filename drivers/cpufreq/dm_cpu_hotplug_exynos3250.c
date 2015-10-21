@@ -118,15 +118,17 @@ static enum hotplug_mode diagnose_condition(void)
 	ret = CHP_NORMAL;
 
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
-	if (cur_load_freq > normal_min_freq)
-		low_stay = 0;
-	else if (cur_load_freq <= normal_min_freq && low_stay <= 5)
-		low_stay++;
-#else
-	if (cur_load_freq > NORMALMIN_FREQ)
-		low_stay = 0;
-	else if (cur_load_freq <= NORMALMIN_FREQ && low_stay <= 5)
-		low_stay++;
+	if (atomic_read(&psmw_dm_cpu_info.is_vsync_requested)) {
+		if (cur_load_freq > NORMALMIN_FREQ)
+			low_stay = 0;
+		else if (cur_load_freq <= NORMALMIN_FREQ && low_stay <= 5)
+			low_stay++;
+	} else {
+		if (cur_load_freq > normal_min_freq)
+			low_stay = 0;
+		else if (cur_load_freq <= normal_min_freq && low_stay <= 5)
+			low_stay++;
+	}
 #endif	// CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	if (low_stay > 5)
 		ret = CHP_LOW_POWER;
