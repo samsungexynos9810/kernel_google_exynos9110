@@ -1826,16 +1826,18 @@ static struct notifier_block nb_panic_block = {
 	.notifier_call = exynos_ss_panic_handler,
 };
 
-void exynos_ss_panic_handler_safe(struct pt_regs *regs)
+void exynos_ss_panic_handler_safe(void)
 {
-	char text[1024];
+	char *cpu_num[SZ_16] = {"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+	char text[SZ_32] = "safe panic handler at cpu ";
+	int cpu = get_current_cpunum();
 	size_t len;
 
 	if (unlikely(!ess_base.enabled))
 		return;
 
-	snprintf(text, 1024, "safe panic handler at cpu %d", (int)raw_smp_processor_id());
-	len = (size_t)strnlen(text, 1024);
+	strncat(text, cpu_num[cpu], 1);
+	len = strnlen(text, SZ_32);
 
 	exynos_ss_report_reason(ESS_SIGN_SAFE_FAULT);
 	exynos_ss_dump_panic(text, len);
