@@ -70,6 +70,7 @@
 #define ESS_SIGN_ALIVE			0xFACE
 #define ESS_SIGN_DEAD			0xDEAD
 #define ESS_SIGN_PANIC			0xBABA
+#define ESS_SIGN_SAFE_FAULT		0xFAFA
 #define ESS_SIGN_NORMAL_REBOOT		0xCAFE
 #define ESS_SIGN_FORCE_REBOOT		0xDAFE
 
@@ -423,6 +424,7 @@ struct exynos_ss_interface {
 
 #ifdef CONFIG_S3C2410_WATCHDOG
 extern int s3c2410wdt_set_emergency_stop(void);
+extern int s3c2410wdt_set_emergency_reset(unsigned int timeout);
 #else
 #define s3c2410wdt_set_emergency_stop()	(-1)
 #endif
@@ -1313,6 +1315,19 @@ static struct notifier_block nb_panic_block = {
 	.notifier_call = exynos_ss_panic_handler,
 };
 
+void exynos_ss_panic_handler_safe(struct pt_regs *regs)
+{
+	char text[1024];
+	size_t len;
+
+	snprintf(text, 1024, "safe panic handler at cpu %d", (int)raw_smp_processor_id());
+	len = (size_t)strnlen(text, 1024);
+
+	exynos_ss_report_reason(ESS_SIGN_SAFE_FAULT);
+	exynos_ss_dump_panic(text, len);
+	s3c2410wdt_set_emergency_reset(100);
+
+}
 static unsigned int __init exynos_ss_remap(unsigned int base, unsigned int size)
 {
 	struct map_desc ess_iodesc[ESS_ITEM_MAX_NUM];

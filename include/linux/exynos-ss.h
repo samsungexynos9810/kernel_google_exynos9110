@@ -15,6 +15,7 @@
 #define EXYNOS_SNAPSHOT_H
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT
+#include <asm/ptrace.h>
 #include "exynos-ss-soc.h"
 
 /* mandatory */
@@ -36,6 +37,7 @@ extern int exynos_ss_set_hardlockup(int);
 extern int exynos_ss_get_hardlockup(void);
 extern unsigned int exynos_ss_get_item_size(char *);
 extern unsigned int exynos_ss_get_item_paddr(char *);
+extern void exynos_ss_panic_handler_safe(struct pt_regs *regs);
 #ifdef CONFIG_EXYNOS_DRAMTEST
 extern int disable_mc_powerdn(void);
 #endif
