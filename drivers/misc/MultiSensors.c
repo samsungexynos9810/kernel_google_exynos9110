@@ -69,7 +69,6 @@ static unsigned char		Flg_driver_ready = 0;
 static unsigned char		Flg_driver_probed = 0;
 static unsigned char		Flg_driver_shutdown = 0;
 
-static unsigned char SubCpuVersion[SUB_COM_DATA_SIZE_GETDATA];
 static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
 static wait_queue_head_t wait_ioctl;
@@ -79,6 +78,11 @@ static wait_queue_head_t wait_rd;
 static wait_queue_head_t wait_subint;
 static int sub_main_int_occur;
 static int64_t soc_time;
+
+struct Msensors_state *get_msensors_state(void)
+{
+	return g_st;
+}
 
 static struct WriteDataBuf *allocWbBuf(void)
 {
@@ -165,6 +169,9 @@ int Set_WriteDataBuff(unsigned char* write_buff)
 {
 	struct WriteDataBuf *wb;
 	unsigned long flags;
+
+	if (g_st->fw.status == MSENSORS_FW_UP_UPDATING)
+		return -EPROBE_DEFER;
 
 	if (Flg_driver_probed == 0 || Flg_driver_shutdown) {
 		dev_info(&g_st->sdev->dev, "write command type:%02x id:%02x ignored.\n"
@@ -260,15 +267,17 @@ static int SensorReadThread(void *p)
 					send_type = SUB_COM_TYPE_SENSOR;
 			}
 		} else if (type == SUB_COM_TYPE_FWUP_READY) {
+			st->fw.status = MSENSORS_FW_UP_READY;
+			wake_up_interruptible(&st->fw.wait);
+			wait_event_interruptible(st->fw.wait,
+					st->fw.status == MSENSORS_FW_UP_WAIT_RESET);
 		} else {
 		/* Data */
 			recv_index = SUB_COM_DATA_INDEX_ID;
 			if ((type == SUB_COM_TYPE_GETDATA ) ||		/* Get Data Only */
 				(type == SUB_COM_TYPE_SENSOR_GETDATA )) {	/* Get Data and Sensor Data */
 				if (recv_buf[recv_index] == SUB_COM_GETID_SUB_CPU_VER) {
-					memcpy(SubCpuVersion, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
-					dev_info(&st->sdev->dev, "subcpu FW version:%02x:%02x:%02x\n",
-							SubCpuVersion[0], SubCpuVersion[1], SubCpuVersion[2]);
+					Msensors_set_fw_version(st, &recv_buf[recv_index + 1]);
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1) {
 					subcpu_battery_update_status1(recv_buf);
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP2) {
@@ -442,8 +451,6 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		/* accelerometer factory adjustment */
 		sub_read_command(SUB_COM_GETID_ACC_ADJ);
 		ret = copy_to_user((void __user *)arg, SubReadData, 3);
-	} else if (cmd == IOC_GET_VERSION) {
-		ret = copy_to_user((void __user *)arg, SubCpuVersion, 3);
 	} else {
 		ret = -1;
 		pr_info("%s: unknown command %x\n", __func__, cmd);
@@ -513,19 +520,12 @@ static struct file_operations Msensors_fops = {
 
 static void Msensors_init(struct Msensors_state *st)
 {
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
 	memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
 	st->spi.send_buf[0] = SUB_COM_TYPE_WRITE;
 	st->spi.send_buf[1] = SUB_COM_SETID_MAIN_STATUS;
 	st->spi.send_buf[2] = 0x0;	/* Nomal */
 	st->spi.pre_send_type =  st->spi.send_buf[0];
 	Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], WRITE_DATA_SIZE);
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-	write_buff[0] = SUB_COM_TYPE_READ;
-	write_buff[1] = SUB_COM_GETID_SUB_CPU_VER;
-	Set_WriteDataBuff(&write_buff[0]);
 }
 
 static struct wake_lock wlock;
@@ -625,6 +625,7 @@ static int Msensors_probe(struct spi_device *spi)
 		ret = PTR_ERR(st->spi.sensor_read_thread);
 		goto error_free_dev;
 	}
+	msensors_fw_up_init(st);
 
 	dev_dbg(&spi->dev, "Msensors_probe End\n");
 	return 0;

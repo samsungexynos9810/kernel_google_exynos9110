@@ -163,9 +163,26 @@
 #define WRITE_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_HEAD_SIZE_SETDATA)
 #define WRITE_DATABUFF_SIZE 32
 
+enum {
+	MSENSORS_FW_UP_IDLE = 0,
+	MSENSORS_FW_UP_WAIT,
+	MSENSORS_FW_UP_READY,
+	MSENSORS_FW_UP_UPDATING,
+	MSENSORS_FW_UP_WAIT_RESET,
+};
+
 /*============================================================================*/
 /* struct */
 /*============================================================================*/
+struct Msensors_fw {
+	wait_queue_head_t wait;
+	int status;
+	int ver_loaded;
+	uint8_t maj_ver;
+	uint8_t min_ver;
+	uint8_t revision;
+};
+
 struct Msensors_spi {
 	struct task_struct *sensor_read_thread;
 	unsigned char send_buf[SPI_DATA_MAX];
@@ -178,6 +195,7 @@ struct Msensors_state {
 	struct cdev cdev;
 	unsigned int sub_main_int;
 	struct Msensors_spi spi;
+	struct Msensors_fw fw;
 };
 
 struct Msensors_data {
@@ -205,6 +223,7 @@ struct Msensors_data {
 /*============================================================================*/
 /* extern(func) */
 /*============================================================================*/
+struct Msensors_state *get_msensors_state(void);
 int Set_WriteDataBuff(unsigned char* write_buff);
 ssize_t Msensors_Spi_Send(struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count);
 extern void SUB_VibratorSet(int timeout);
@@ -213,6 +232,8 @@ extern int SUBCPU_rtc_read_time(uint8_t *data);
 extern int SUB_IsTheaterMode(unsigned char flg_bl_dark);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
 void Msensors_SetTimestamp(void);
+void msensors_fw_up_init(struct Msensors_state *st);
+void Msensors_set_fw_version(struct Msensors_state *st, uint8_t *data);
 
 #endif	/* __MULTISENSORS_H */
 /* PET nishino ADD End */
