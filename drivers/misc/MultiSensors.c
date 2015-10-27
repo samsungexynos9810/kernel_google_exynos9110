@@ -37,11 +37,6 @@
 
 #define MINOR_COUNT 	(1)
 
-#define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
-#define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
-#define WRITE_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_HEAD_SIZE_SETDATA)
-#define WRITE_DATABUFF_SIZE 32
-
 #define INC_INDEX(a, r)	\
 do {	\
 	if ((a) < ((r)-1))	\
@@ -49,12 +44,6 @@ do {	\
 	else		\
 		(a)=0;	\
 } while(0)
-
-struct Msensors_state {
-	struct spi_device *sdev;
-	struct cdev cdev;
-	unsigned int sub_main_int;
-};
 
 struct WriteDataBuf {
 	unsigned char	m_data[WRITE_DATA_SIZE];
@@ -70,16 +59,12 @@ static struct Msensors_state 	*g_st=0;
 static dev_t 			dev_id;
 static struct class		*Msensors_class;
 static struct device		*class_dev;
-static struct task_struct	*pSensorReadThread;
 
 static struct Msensors_data	Msensors_data_buff[MSENSORS_DATA_MAX];
 static unsigned int		dataBuffReadIndex;
 static unsigned int		dataBuffWriteIndex;
 static unsigned int		PacketDataNum=0;
-static unsigned int		PreSendType=0;
 static unsigned char		HeaderData[HEADER_DATA_SIZE];
-static unsigned char 		SpiSendBuff[SPI_DATA_MAX];
-static unsigned char 		SpiRecvBuff[SPI_DATA_MAX];
 static unsigned char		Flg_driver_ready = 0;
 static unsigned char		Flg_driver_probed = 0;
 static unsigned char		Flg_driver_shutdown = 0;
@@ -117,7 +102,7 @@ static void freeWbBuf(struct WriteDataBuf *wb)
 	wb->m_used = 0;
 }
 
-static ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count )
+ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count )
 {
 	struct spi_message msg;
 	struct spi_transfer xfer;
@@ -176,7 +161,7 @@ void Msensors_SetTimestamp(void)
 	soc_time = getTimestamp();
 }
 
-static int Set_WriteDataBuff(unsigned char* write_buff)
+int Set_WriteDataBuff(unsigned char* write_buff)
 {
 	struct WriteDataBuf *wb;
 	unsigned long flags;
@@ -233,7 +218,7 @@ static int SensorReadThread(void *p)
 	int cnt;
 	int recv_index;
 	int next_recv_size;
-	unsigned char* recv_buf = &SpiRecvBuff[0];
+	unsigned char* recv_buf = &st->spi.recv_buf[0];
 	int64_t event_time, last_event_time = 0;
 	uint32_t elapsed_time = 0;
 	unsigned long flags;
@@ -243,7 +228,7 @@ static int SensorReadThread(void *p)
 
 		next_recv_size = SUB_COM_TYPE_SIZE;
 		send_type = SUB_COM_TYPE_RES_NOMAL;
-		memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
+		memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
 
 		/* Get Type */
 		type = recv_buf[SUB_COM_HEAD_INDEX_TYPE];
@@ -262,7 +247,7 @@ static int SensorReadThread(void *p)
 			/* Calc sensors data size */
 			next_recv_size += sensor_num * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE );
 			PacketDataNum = sensor_num;
-			if (PreSendType==SUB_COM_TYPE_READ) {
+			if (st->spi.pre_send_type==SUB_COM_TYPE_READ) {
 				next_recv_size += SUB_COM_DATA_SIZE_GETDATA + SUB_COM_ID_SIZE;
 				if(PacketDataNum == 0)
 					send_type = SUB_COM_TYPE_GETDATA;
@@ -334,12 +319,12 @@ static int SensorReadThread(void *p)
 			if (!list_empty(&wd_queue)) {
 				wb = list_first_entry(&wd_queue, struct WriteDataBuf, bqueue);
 				send_type = wb->m_data[0];
-				memcpy(&SpiSendBuff[0], wb->m_data, WRITE_DATA_SIZE);
+				memcpy(&st->spi.send_buf[0], wb->m_data, WRITE_DATA_SIZE);
 			}
 		}
 		/* Next SPI Send Proc */
-		SpiSendBuff[SUB_COM_HEAD_INDEX_TYPE] = send_type;
-		PreSendType =  send_type;
+		st->spi.send_buf[SUB_COM_HEAD_INDEX_TYPE] = send_type;
+		st->spi.pre_send_type =  send_type;
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
 			wait_event_interruptible(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
 			sub_main_int_occur = 0;
@@ -350,7 +335,7 @@ static int SensorReadThread(void *p)
 		while (!Flg_driver_ready)
 			msleep(10);
 
-		Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], next_recv_size);
+		Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], next_recv_size);
 		if (wb) {
 			spin_lock_irqsave(&slock, flags);
 			list_del(&wb->bqueue);
@@ -530,12 +515,12 @@ static void Msensors_init(struct Msensors_state *st)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
-	memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
-	SpiSendBuff[0] = SUB_COM_TYPE_WRITE;
-	SpiSendBuff[1] = SUB_COM_SETID_MAIN_STATUS;
-	SpiSendBuff[2] = 0x0;	/* Nomal */
-	PreSendType =  SpiSendBuff[0];
-	Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], WRITE_DATA_SIZE);
+	memset(&st->spi.send_buf[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
+	st->spi.send_buf[0] = SUB_COM_TYPE_WRITE;
+	st->spi.send_buf[1] = SUB_COM_SETID_MAIN_STATUS;
+	st->spi.send_buf[2] = 0x0;	/* Nomal */
+	st->spi.pre_send_type =  st->spi.send_buf[0];
+	Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], WRITE_DATA_SIZE);
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 	write_buff[0] = SUB_COM_TYPE_READ;
@@ -634,9 +619,10 @@ static int Msensors_probe(struct spi_device *spi)
 	Flg_driver_probed = 1;
 	Msensors_init(st);
 
-	pSensorReadThread = kthread_run(SensorReadThread, st,DRV_NAME);
-	if (IS_ERR(pSensorReadThread)) {
-		ret = PTR_ERR(pSensorReadThread);
+	st->spi.pre_send_type = 0;
+	st->spi.sensor_read_thread = kthread_run(SensorReadThread, st,DRV_NAME);
+	if (IS_ERR(st->spi.sensor_read_thread)) {
+		ret = PTR_ERR(st->spi.sensor_read_thread);
 		goto error_free_dev;
 	}
 
@@ -665,7 +651,6 @@ static void Msensors_shutdown(struct spi_device *spi)
 	while (!list_empty(&wd_queue))
 		msleep(10);
 
-//	kthread_stop(pSensorReadThread);
 	Flg_driver_shutdown = 1;
 	wake_up_interruptible(&wait_subint);
 }
