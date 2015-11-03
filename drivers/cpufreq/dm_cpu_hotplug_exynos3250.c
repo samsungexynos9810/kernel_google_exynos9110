@@ -10,6 +10,7 @@
 
 #define NORMALMIN_FREQ	250000
 #define POLLING_MSEC	100
+#define LOW_STAY_THRSHD	5
 
 static DEFINE_MUTEX(dm_hotplug_lock);
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
@@ -112,25 +113,30 @@ static enum hotplug_mode diagnose_condition(void)
 {
 	int ret;
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
-	unsigned int normal_min_freq = cpufreq_interactive_get_hispeed_freq(0);
+	unsigned int normal_max_freq = cpufreq_interactive_get_hispeed_freq(0);
 #endif
 
 	ret = CHP_NORMAL;
 
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	if (atomic_read(&psmw_dm_cpu_info.is_vsync_requested)) {
-		if (cur_load_freq > NORMALMIN_FREQ)
+		if (cur_load_freq >= NORMALMIN_FREQ)
 			low_stay = 0;
-		else if (cur_load_freq <= NORMALMIN_FREQ && low_stay <= 5)
+		else if (low_stay <= LOW_STAY_THRSHD)
 			low_stay++;
 	} else {
-		if (cur_load_freq > normal_min_freq)
+		if (cur_load_freq >= normal_max_freq)
 			low_stay = 0;
-		else if (cur_load_freq <= normal_min_freq && low_stay <= 5)
+		else if (low_stay <= LOW_STAY_THRSHD)
 			low_stay++;
 	}
+#else
+	if (cur_load_freq >= normal_max_freq)
+		low_stay = 0;
+	else if (low_stay <= LOW_STAY_THRSHD)
+		low_stay++;
 #endif	// CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
-	if (low_stay > 5)
+	if (low_stay > LOW_STAY_THRSHD)
 		ret = CHP_LOW_POWER;
 
 	return ret;
