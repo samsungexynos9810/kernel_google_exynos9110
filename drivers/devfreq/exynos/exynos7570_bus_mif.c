@@ -104,16 +104,7 @@ static int exynos7570_devfreq_mif_get_switch_freq(u32 cur_freq, u32 new_freq,
 static int exynos7570_devfreq_mif_get_switch_voltage(u32 cur_freq, u32 new_freq,
 						struct exynos_devfreq_data *data)
 {
-	if (DEVFREQ_MIF_SWITCH_FREQ >= cur_freq)
-		if (new_freq >= DEVFREQ_MIF_SWITCH_FREQ)
-			data->switch_volt = data->new_volt;
-		else
-			data->switch_volt = sw_volt_table;
-	else
-		if (cur_freq >= new_freq)
-			data->switch_volt = data->old_volt;
-		else
-			data->switch_volt = data->new_volt;
+	data->switch_volt = sw_volt_table;
 
 	return 0;
 }
@@ -124,18 +115,6 @@ static int exynos7570_devfreq_mif_get_freq(struct device *dev, u32 *cur_freq,
 	*cur_freq = (u32)clk_get_rate(data->clk);
 	if (*cur_freq == 0) {
 		dev_err(dev, "failed get frequency from CAL\n");
-		return -EINVAL;
-	}
-
-	return 0;
-}
-
-static int exynos7570_devfreq_mif_change_to_switch_freq(struct device *dev,
-					struct exynos_devfreq_data *data)
-{
-	if (clk_set_rate(data->sw_clk, data->switch_freq)) {
-		dev_err(dev, "failed to set switching frequency by CAL (%uKhz for %uKhz)\n",
-				data->switch_freq, data->new_freq);
 		return -EINVAL;
 	}
 
@@ -259,10 +238,9 @@ static int exynos7570_devfreq_mif_get_volt_table(struct device *dev, u32 *volt_t
 		volt_table[i] = (u32)mif_rate_volt[i].volt;
 
 		/* Fill switch voltage table */
-		if (!sw_volt_table &&
-			data->opp_list[i].freq < DEVFREQ_MIF_SWITCH_FREQ)
-			sw_volt_table = (u32)mif_rate_volt[i-1].volt;
 	}
+	if (!sw_volt_table)
+		sw_volt_table = (u32)mif_rate_volt[0].volt;
 
 	dev_info(dev, "SW_volt %uuV in freq %uKhz\n",
 			sw_volt_table, DEVFREQ_MIF_SWITCH_FREQ);
@@ -320,7 +298,6 @@ static int __init exynos7570_devfreq_mif_init_prepare(struct exynos_devfreq_data
 	data->ops.get_switch_freq = exynos7570_devfreq_mif_get_switch_freq;
 	data->ops.get_switch_voltage = exynos7570_devfreq_mif_get_switch_voltage;
 	data->ops.get_freq = exynos7570_devfreq_mif_get_freq;
-	data->ops.change_to_switch_freq = exynos7570_devfreq_mif_change_to_switch_freq;
 	data->ops.restore_from_switch_freq = exynos7570_devfreq_mif_restore_from_switch_freq;
 	data->ops.init_freq_table = exynos7570_devfreq_mif_init_freq_table;
 	data->ops.cl_dvfs_start = exynos7570_devfreq_cl_dvfs_start;
