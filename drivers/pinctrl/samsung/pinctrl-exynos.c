@@ -574,6 +574,10 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 		if (bank->eint_type != EINT_TYPE_WKUP)
 			continue;
 
+		/* Setting Digital Filter */
+		exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
+				EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
+
 		bank->irq_domain = irq_domain_add_linear(bank->of_node,
 				bank->nr_pins, &exynos_eint_irqd_ops, bank);
 		if (!bank->irq_domain) {
@@ -609,9 +613,6 @@ static int exynos_eint_wkup_init(struct samsung_pinctrl_drv_data *d)
 							 exynos_irq_eint0_15,
 							 &weint_data[idx]);
 		}
-		/* Setting Digital Filter */
-		exynos_eint_flt_config(EXYNOS_EINT_FLTCON_EN,
-					EXYNOS_EINT_FLTCON_SEL, 0, d, bank);
 	}
 
 	if (!muxed_banks)
