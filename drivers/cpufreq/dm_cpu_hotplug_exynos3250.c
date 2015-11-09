@@ -16,6 +16,7 @@ static DEFINE_MUTEX(dm_hotplug_lock);
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 static struct task_struct *dm_hotplug_task;
 static struct psmw_listener_info psmw_dm_cpu_info;
+extern int ambient_enter;
 #endif
 
 static unsigned int cur_load_freq;
@@ -42,11 +43,13 @@ static int __ref __cpu_hotplug(struct cpumask *be_out_cpus)
 
 	for (i = 1; i < NR_CPUS; i++) {
 		if (cpumask_test_cpu(i, be_out_cpus)) {
+			PSMW_DBG("CPU[%d] DOWN \n", i);
 			ret = cpu_down(i);
 			if (ret)
 				break;
 		} else {
 			ret = cpu_up(i);
+			PSMW_DBG("CPU[%d] UP \n", i);
 			if (ret)
 				break;
 		}
@@ -114,6 +117,8 @@ static enum hotplug_mode diagnose_condition(void)
 	int ret;
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	unsigned int normal_max_freq = cpufreq_interactive_get_hispeed_freq(0);
+	if (ambient_enter)
+		return CHP_LOW_POWER;
 #endif
 
 	ret = CHP_NORMAL;
