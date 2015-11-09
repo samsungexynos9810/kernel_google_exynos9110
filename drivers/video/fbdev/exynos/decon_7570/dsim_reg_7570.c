@@ -1,4 +1,4 @@
-/* dsim_reg_7870.c
+/* dsim_reg_7570.c
  *
  * Copyright 2015 Samsung Electronics
  *      Jiun Yu <jiun.yu@samsung.com>

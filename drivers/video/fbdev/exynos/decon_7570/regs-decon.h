@@ -1,5 +1,5 @@
 /*
- * drivers/video/fbdev/exynos/decon_7870/regs-decon.h
+ * drivers/video/fbdev/exynos/decon_7570/regs-decon.h
  *
  * Register definition file for Samsung DECON driver
  *

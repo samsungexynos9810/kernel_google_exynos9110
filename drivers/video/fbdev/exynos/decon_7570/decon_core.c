@@ -914,7 +914,7 @@ int decon_enable(struct decon_device *decon)
 	}
 #endif
 	if (decon->pdata->psr_mode != DECON_VIDEO_MODE) {
-#ifdef CONFIG_EXYNOS7870_DISPLAY_TE_IRQ_GPIO
+#ifdef CONFIG_EXYNOS7570_DISPLAY_TE_IRQ_GPIO
 		if (!decon->eint_en_status) {
 			enable_irq(decon->irq);
 			decon->eint_en_status = true;
@@ -960,7 +960,7 @@ int decon_disable(struct decon_device *decon)
 
 	if (decon->pdata->psr_mode != DECON_VIDEO_MODE) {
 		decon_reg_set_int(DECON_INT, &psr, DSI_MODE_SINGLE, 0);
-#ifdef CONFIG_EXYNOS7870_DISPLAY_TE_IRQ_GPIO
+#ifdef CONFIG_EXYNOS7570_DISPLAY_TE_IRQ_GPIO
 		if ((decon->vsync_info.irq_refcount <= 0) &&
 			decon->eint_en_status) {
 			disable_irq(decon->irq);
@@ -2282,7 +2282,7 @@ static int decon_set_win_config(struct decon_device *decon,
 		/*
 		 * Because BURSTLEN field does not have shadow register,
 		 * this bit field should be retain always.
-		 * exynos7870 must be set 16 burst
+		 * exynos7570 must be set 16 burst
 		 */
 		regs->wincon[i] |= WINCON_BURSTLEN_16WORD;
 

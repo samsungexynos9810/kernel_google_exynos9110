@@ -20,7 +20,7 @@
 #include <media/v4l2-subdev.h>
 
 #include "../../../../soc/samsung/pwrcal/pwrcal.h"
-#include "../../../../soc/samsung/pwrcal/S5E7870/S5E7870-vclk.h"
+#include "../../../../soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
 #include "decon.h"
 #include "dsim.h"
 #include "decon_helper.h"
@@ -824,11 +824,11 @@ int decon_int_register_irq(struct platform_device *pdev, struct decon_device *de
 
 int decon_fb_config_eint_for_te(struct platform_device *pdev, struct decon_device *decon)
 {
-#ifdef CONFIG_EXYNOS7870_DISPLAY_TE_IRQ_GPIO
+#ifdef CONFIG_EXYNOS7570_DISPLAY_TE_IRQ_GPIO
 	struct device *dev = decon->dev;
 	int gpio;
 #endif
-#ifdef CONFIG_EXYNOS7870_DISPLAY_TE_IRQ_GIC
+#ifdef CONFIG_EXYNOS7570_DISPLAY_TE_IRQ_GIC
 	struct device *dev = decon->dev;
 	struct resource *res;
 #endif
@@ -837,7 +837,7 @@ int decon_fb_config_eint_for_te(struct platform_device *pdev, struct decon_devic
 	if (decon->pdata->psr_mode != DECON_MIPI_COMMAND_MODE)
 		return 0;
 
-#ifdef CONFIG_EXYNOS7870_DISPLAY_TE_IRQ_GPIO
+#ifdef CONFIG_EXYNOS7570_DISPLAY_TE_IRQ_GPIO
 	/* Get IRQ resource and register IRQ handler. */
 	gpio = of_get_gpio(dev->of_node, 0);
 	if (gpio < 0) {
@@ -854,7 +854,7 @@ int decon_fb_config_eint_for_te(struct platform_device *pdev, struct decon_devic
 				decon->irq, gpio, ret);
 #endif
 
-#ifdef CONFIG_EXYNOS7870_DISPLAY_TE_IRQ_GIC
+#ifdef CONFIG_EXYNOS7570_DISPLAY_TE_IRQ_GIC
 	/* TE SIGNAL */
 	res = platform_get_resource(pdev, IORESOURCE_IRQ, 3);
 	if (res) {

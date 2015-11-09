@@ -1,4 +1,4 @@
-/* linux/drivers/video/fbdev/exynos/decon_7870/panels/ea8064g_param.h
+/* linux/drivers/video/fbdev/exynos/decon_7570/panels/ea8064g_param.h
  *
  * Copyright (c) 2015 Samsung Electronics Co., Ltd.
  *

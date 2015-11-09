@@ -1,4 +1,4 @@
-/* linux/drivers/video/fbdev/exynos/decon_7870/dsim.h
+/* linux/drivers/video/fbdev/exynos/decon_7570/dsim.h
  *
  * Header file for Samsung MIPI-DSI common driver.
  *

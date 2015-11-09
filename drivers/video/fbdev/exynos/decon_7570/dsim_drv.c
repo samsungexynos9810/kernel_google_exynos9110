@@ -1,4 +1,4 @@
-/* linux/drivers/video/fbdev/exynos/decon_7870/dsim_drv.c
+/* linux/drivers/video/fbdev/exynos/decon_7570/dsim_drv.c
  *
  * Samsung SoC MIPI-DSIM driver.
  *

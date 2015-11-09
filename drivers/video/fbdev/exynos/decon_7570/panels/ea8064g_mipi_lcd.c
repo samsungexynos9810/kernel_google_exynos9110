@@ -1,4 +1,4 @@
-/* drivers/video/fbdev/exynos/decon_7870/panels/ea8064g_mipi_lcd.c
+/* drivers/video/fbdev/exynos/decon_7570/panels/ea8064g_mipi_lcd.c
  *
  * Samsung SoC MIPI LCD driver.
  *

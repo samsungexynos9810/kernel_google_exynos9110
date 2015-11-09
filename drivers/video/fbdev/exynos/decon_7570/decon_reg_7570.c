@@ -1,4 +1,4 @@
-/* drivers/video/fbdev/exynos/decon_7870/decon_reg_7870.c
+/* drivers/video/fbdev/exynos/decon_7570/decon_reg_7570.c
  *
  * Copyright 2015 Samsung Electronics
  *
@@ -361,7 +361,7 @@ void decon_reg_init(u32 id, enum decon_dsi_mode dsi_mode,
 	decon_reg_set_vidout(id, psr, dsi_mode, 1);
 	decon_reg_set_crc(id, 0);
 
-	/* Does exynos7870 decon always use DECON_VCLK_HOLD ?  No */
+	/* Does exynos7570 decon always use DECON_VCLK_HOLD ?  No */
 	if (psr->psr_mode == DECON_MIPI_COMMAND_MODE)
 		decon_reg_set_fixvclk(id, 0, DECON_VCLK_RUN_VDEN_DISABLE);
 	else
@@ -391,7 +391,7 @@ void decon_reg_init_probe(u32 id, enum decon_dsi_mode dsi_mode,
 	decon_reg_blend_alpha_bits(id, BLENDCON_NEW_8BIT_ALPHA_VALUE);
 	decon_reg_set_vidout(id, psr, dsi_mode, 1);
 
-	/* Does exynos7870 decon always use DECON_VCLK_HOLD ? */
+	/* Does exynos7570 decon always use DECON_VCLK_HOLD ? */
 	if (psr->psr_mode == DECON_MIPI_COMMAND_MODE)
 		decon_reg_set_fixvclk(id, 0, DECON_VCLK_RUN_VDEN_DISABLE);
 	else
