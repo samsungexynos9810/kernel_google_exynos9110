@@ -122,7 +122,8 @@ extern void backlight_en(int en);
 #endif
 
 #ifdef CONFIG_FB_AMBIENT_SUPPORT
-int ambient_enter;
+int ambient_enter = 0;
+EXPORT_SYMBOL(ambient_enter);
 #endif
 
 int first_unblank;
