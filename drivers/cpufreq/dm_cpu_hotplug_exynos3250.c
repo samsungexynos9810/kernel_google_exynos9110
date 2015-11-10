@@ -8,9 +8,10 @@
 #include <mach/exynos-psmw.h>
 #endif
 
-#define NORMALMIN_FREQ	250000
-#define POLLING_MSEC	100
-#define LOW_STAY_THRSHD	5
+#define NORMALMIN_FREQ	500000
+#define POLLING_MSEC	200
+#define LOW_STAY_THRSHD	3
+#define HI_CNT_THRSHD	3
 
 static DEFINE_MUTEX(dm_hotplug_lock);
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
@@ -48,8 +49,8 @@ static int __ref __cpu_hotplug(struct cpumask *be_out_cpus)
 			if (ret)
 				break;
 		} else {
-			ret = cpu_up(i);
 			PSMW_DBG("CPU[%d] UP \n", i);
+			ret = cpu_up(i);
 			if (ret)
 				break;
 		}
@@ -110,40 +111,61 @@ static struct notifier_block exynos_dm_hotplug_nb = {
 	.priority = 1,
 };
 
-static int low_stay;
+static int low_stay = 0;
+static int hi_cnt = 0;
+static int prev_ret = 0;
 
 static enum hotplug_mode diagnose_condition(void)
 {
 	int ret;
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	unsigned int normal_max_freq = cpufreq_interactive_get_hispeed_freq(0);
-	if (ambient_enter)
+	PSMW_DBG("\n cur_load_freq [%d] MHz  \n", cur_load_freq/1000);
+	if (ambient_enter) {
+		low_stay = LOW_STAY_THRSHD + 1;
+		hi_cnt = 0;
 		return CHP_LOW_POWER;
+	}
 #endif
 
 	ret = CHP_NORMAL;
 
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	if (atomic_read(&psmw_dm_cpu_info.is_vsync_requested)) {
-		if (cur_load_freq >= NORMALMIN_FREQ)
+		if (cur_load_freq >= NORMALMIN_FREQ) {
 			low_stay = 0;
-		else if (low_stay <= LOW_STAY_THRSHD)
+			if (hi_cnt <= HI_CNT_THRSHD)
+				hi_cnt++;
+		}
+		else if (low_stay <= LOW_STAY_THRSHD) {
 			low_stay++;
+			hi_cnt = 0;
+		}
 	} else {
 		if (cur_load_freq >= normal_max_freq)
 			low_stay = 0;
-		else if (low_stay <= LOW_STAY_THRSHD)
-			low_stay++;
+			if (hi_cnt <= HI_CNT_THRSHD)
+				hi_cnt++;
+		else if (low_stay <= LOW_STAY_THRSHD) {
+			low_stay += 2;
+			hi_cnt = 0;
+		}
 	}
+	if (low_stay >= LOW_STAY_THRSHD ||
+				(prev_ret != CHP_NORMAL && !low_stay && hi_cnt < HI_CNT_THRSHD))
+		ret = CHP_LOW_POWER;
 #else
 	if (cur_load_freq >= normal_max_freq)
 		low_stay = 0;
 	else if (low_stay <= LOW_STAY_THRSHD)
 		low_stay++;
-#endif	// CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
-	if (low_stay > LOW_STAY_THRSHD)
+	if (low_stay >= LOW_STAY_THRSHD)
 		ret = CHP_LOW_POWER;
+#endif	// CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 
+	PSMW_DBG("low_stay [%d] hi_cnt [%d] ,return [%s] \n", low_stay, hi_cnt,
+					(ret == CHP_LOW_POWER) ? "CHP_LOW_POWER" :" CHP_NORMAL");
+	prev_ret = ret;
 	return ret;
 }
 
