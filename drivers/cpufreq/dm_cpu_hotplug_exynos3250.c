@@ -121,7 +121,7 @@ static enum hotplug_mode diagnose_condition(void)
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	unsigned int normal_max_freq = cpufreq_interactive_get_hispeed_freq(0);
 	PSMW_DBG("\n cur_load_freq [%d] MHz  \n", cur_load_freq/1000);
-	if (ambient_enter) {
+	if (!atomic_read(&psmw_dm_cpu_info.is_vsync_requested) || ambient_enter) {
 		low_stay = LOW_STAY_THRSHD + 1;
 		hi_cnt = 0;
 		return CHP_LOW_POWER;
