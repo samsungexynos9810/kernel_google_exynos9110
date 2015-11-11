@@ -120,10 +120,12 @@ static enum hotplug_mode diagnose_condition(void)
 	int ret;
 #ifdef CONFIG_EXYNOS_PSMW_CPU_HOTPLUG
 	unsigned int normal_max_freq = cpufreq_interactive_get_hispeed_freq(0);
-	PSMW_DBG("\n cur_load_freq [%d] MHz  \n", cur_load_freq/1000);
+	PSMW_DBG("\ncur_load_freq [%d] MHz  \n", cur_load_freq/1000);
 	if (!atomic_read(&psmw_dm_cpu_info.is_vsync_requested) || ambient_enter) {
 		low_stay = LOW_STAY_THRSHD + 1;
 		hi_cnt = 0;
+		prev_ret = CHP_LOW_POWER;
+		PSMW_DBG("just return CHP_LOW_POWER\n");
 		return CHP_LOW_POWER;
 	}
 #endif
@@ -151,9 +153,17 @@ static enum hotplug_mode diagnose_condition(void)
 			hi_cnt = 0;
 		}
 	}
-	if (low_stay >= LOW_STAY_THRSHD ||
-				(prev_ret != CHP_NORMAL && !low_stay && hi_cnt < HI_CNT_THRSHD))
+	if (low_stay >= LOW_STAY_THRSHD) {
 		ret = CHP_LOW_POWER;
+	}
+	else if (!low_stay) {
+		if (prev_ret == CHP_LOW_POWER && hi_cnt < HI_CNT_THRSHD)
+			ret = CHP_LOW_POWER;
+	}
+	else {
+		if (prev_ret == CHP_LOW_POWER && low_stay < LOW_STAY_THRSHD)
+			ret = CHP_LOW_POWER;
+	}
 #else
 	if (cur_load_freq >= normal_max_freq)
 		low_stay = 0;
