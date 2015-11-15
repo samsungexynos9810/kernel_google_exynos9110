@@ -2297,10 +2297,26 @@ int i2c_master_send(const struct i2c_client *client, const char *buf, int count)
 	struct i2c_adapter *adap = client->adapter;
 	struct i2c_msg msg;
 
-	msg.addr = client->addr;
-	msg.flags = client->flags & I2C_M_TEN;
-	msg.len = count;
-	msg.buf = (char *)buf;
+	if (client->flags & I2C_CLIENT_SPEEDY) {
+		/*
+		 * The upper 4bit of 12bit speedy slave address is for device id.
+		 * 8bit is for device register offset.
+		 */
+		msg.addr = buf[0] + ((client->addr & 0xf) << 8);
+		msg.flags = I2C_CLIENT_SPEEDY;
+		/*
+		 * The first data(register address) is moved to
+		 * speedy slave address, we don't need to transfer
+		 * the first data
+		 */
+		msg.len = count - 1;
+		msg.buf = (char *)(buf + 1);
+	} else {
+		msg.addr = client->addr;
+		msg.flags = client->flags & I2C_M_TEN;
+		msg.len = count;
+		msg.buf = (char *)buf;
+	}
 
 	ret = i2c_transfer(adap, &msg, 1);
 
@@ -2326,11 +2342,27 @@ int i2c_master_recv(const struct i2c_client *client, char *buf, int count)
 	struct i2c_msg msg;
 	int ret;
 
-	msg.addr = client->addr;
-	msg.flags = client->flags & I2C_M_TEN;
-	msg.flags |= I2C_M_RD;
-	msg.len = count;
-	msg.buf = buf;
+	if (client->flags & I2C_CLIENT_SPEEDY) {
+		/*
+		 * The upper 4bit of 12bit speedy slave address is for device id.
+		 * 8bit is for device register offset.
+		 */
+		msg.addr = buf[0] + ((client->addr & 0xf) << 8);
+		msg.flags = I2C_M_RD | I2C_CLIENT_SPEEDY;
+		/*
+		 * The first data(register address) is moved to
+		 * speedy slave address, we don't need to transfer
+		 * the first data
+		 */
+		msg.len = count - 1;
+		msg.buf = (char *)(buf + 1);
+	} else {
+		msg.addr = client->addr;
+		msg.flags = client->flags & I2C_M_TEN;
+		msg.flags |= I2C_M_RD;
+		msg.len = count;
+		msg.buf = buf;
+	}
 
 	ret = i2c_transfer(adap, &msg, 1);
 
@@ -2853,25 +2885,38 @@ static s32 i2c_smbus_xfer_emulated(struct i2c_adapter *adapter, u16 addr,
 	  simpler. */
 	unsigned char msgbuf0[I2C_SMBUS_BLOCK_MAX+3];
 	unsigned char msgbuf1[I2C_SMBUS_BLOCK_MAX+2];
-	int num = read_write == I2C_SMBUS_READ ? 2 : 1;
+
 	int i;
 	u8 partial_pec = 0;
 	int status;
-	struct i2c_msg msg[2] = {
-		{
-			.addr = addr,
-			.flags = flags,
-			.len = 1,
-			.buf = msgbuf0,
-		}, {
-			.addr = addr,
-			.flags = flags | I2C_M_RD,
-			.len = 0,
-			.buf = msgbuf1,
-		},
-	};
 
-	msgbuf0[0] = command;
+	int num;
+	struct i2c_msg msg[2];
+
+	if (flags & I2C_CLIENT_SPEEDY)
+		num = 1;
+	else
+		num = read_write == I2C_SMBUS_READ ? 2 : 1;
+
+	if (flags & I2C_CLIENT_SPEEDY) {
+		msg[0].addr = command + ((addr & 0xf) << 8);
+		msg[0].flags = flags;
+		msg[0].len = 1;
+		msg[0].buf = msgbuf0;
+	} else {
+		msg[0].addr = addr;
+		msg[0].flags = flags;
+		msg[0].len = 1;
+		msg[0].buf = msgbuf0;
+
+		msg[1].addr = addr;
+		msg[1].flags = flags | I2C_M_RD;
+		msg[1].len = 0;
+		msg[1].buf = msgbuf1;
+
+		msgbuf0[0] = command;
+	}
+
 	switch (size) {
 	case I2C_SMBUS_QUICK:
 		msg[0].len = 0;
@@ -2888,20 +2933,39 @@ static s32 i2c_smbus_xfer_emulated(struct i2c_adapter *adapter, u16 addr,
 		}
 		break;
 	case I2C_SMBUS_BYTE_DATA:
-		if (read_write == I2C_SMBUS_READ)
-			msg[1].len = 1;
-		else {
-			msg[0].len = 2;
-			msgbuf0[1] = data->byte;
+		if (read_write == I2C_SMBUS_READ) {
+			if (flags & I2C_CLIENT_SPEEDY) {
+				msg[0].flags = I2C_M_RD | flags;
+				msg[0].len = 1;
+			} else
+				msg[1].len = 1;
+		} else {
+			if (flags & I2C_CLIENT_SPEEDY) {
+				msg[0].len = 1;
+				msgbuf0[0] = data->byte;
+			} else {
+				msg[0].len = 2;
+				msgbuf0[1] = data->byte;
+			}
 		}
 		break;
 	case I2C_SMBUS_WORD_DATA:
-		if (read_write == I2C_SMBUS_READ)
-			msg[1].len = 2;
-		else {
-			msg[0].len = 3;
-			msgbuf0[1] = data->word & 0xff;
-			msgbuf0[2] = data->word >> 8;
+		if (read_write == I2C_SMBUS_READ) {
+			if (flags & I2C_CLIENT_SPEEDY) {
+				msg[0].flags = I2C_M_RD | flags;
+				msg[0].len = 2;
+			} else
+				msg[1].len = 2;
+		} else {
+			if (flags & I2C_CLIENT_SPEEDY) {
+				msg[0].len = 2;
+				msgbuf0[0] = data->word & 0xff;
+				msgbuf0[1] = data->word >> 8;
+			} else {
+				msg[0].len = 3;
+				msgbuf0[1] = data->word & 0xff;
+				msgbuf0[2] = data->word >> 8;
+			}
 		}
 		break;
 	case I2C_SMBUS_PROC_CALL:
@@ -2947,17 +3011,33 @@ static s32 i2c_smbus_xfer_emulated(struct i2c_adapter *adapter, u16 addr,
 		break;
 	case I2C_SMBUS_I2C_BLOCK_DATA:
 		if (read_write == I2C_SMBUS_READ) {
-			msg[1].len = data->block[0];
+			if (flags & I2C_CLIENT_SPEEDY) {
+				msg[0].flags = I2C_M_RD | flags;
+				msg[0].len = data->block[0];
+			} else
+				msg[1].len = data->block[0];
 		} else {
-			msg[0].len = data->block[0] + 1;
-			if (msg[0].len > I2C_SMBUS_BLOCK_MAX + 1) {
-				dev_err(&adapter->dev,
-					"Invalid block write size %d\n",
-					data->block[0]);
-				return -EINVAL;
+			if (flags & I2C_CLIENT_SPEEDY) {
+				msg[0].len = data->block[0];
+				if (msg[0].len > I2C_SMBUS_BLOCK_MAX) {
+					dev_err(&adapter->dev,
+						"Invalid block write size %d\n",
+						data->block[0]);
+					return -EINVAL;
+				}
+				for (i = 1; i <= data->block[0]; i++)
+					msgbuf0[i-1] = data->block[i];
+			} else {
+				msg[0].len = data->block[0] + 1;
+				if (msg[0].len > I2C_SMBUS_BLOCK_MAX + 1) {
+					dev_err(&adapter->dev,
+						"Invalid block write size %d\n",
+						data->block[0]);
+					return -EINVAL;
+				}
+				for (i = 1; i <= data->block[0]; i++)
+					msgbuf0[i] = data->block[i];
 			}
-			for (i = 1; i <= data->block[0]; i++)
-				msgbuf0[i] = data->block[i];
 		}
 		break;
 	default:
@@ -2997,15 +3077,26 @@ static s32 i2c_smbus_xfer_emulated(struct i2c_adapter *adapter, u16 addr,
 			data->byte = msgbuf0[0];
 			break;
 		case I2C_SMBUS_BYTE_DATA:
-			data->byte = msgbuf1[0];
+			if (flags & I2C_CLIENT_SPEEDY)
+				data->byte = msgbuf0[0];
+			else
+				data->byte = msgbuf1[0];
 			break;
 		case I2C_SMBUS_WORD_DATA:
 		case I2C_SMBUS_PROC_CALL:
-			data->word = msgbuf1[0] | (msgbuf1[1] << 8);
+			if (flags & I2C_CLIENT_SPEEDY)
+				data->word = msgbuf0[0] | (msgbuf0[1] << 8);
+			else
+				data->word = msgbuf1[0] | (msgbuf1[1] << 8);
 			break;
 		case I2C_SMBUS_I2C_BLOCK_DATA:
-			for (i = 0; i < data->block[0]; i++)
-				data->block[i+1] = msgbuf1[i];
+			if (flags & I2C_CLIENT_SPEEDY) {
+				for (i = 0; i < data->block[0]; i++)
+					data->block[i+1] = msgbuf0[i];
+			} else {
+				for (i = 0; i < data->block[0]; i++)
+					data->block[i+1] = msgbuf1[i];
+			}
 			break;
 		case I2C_SMBUS_BLOCK_DATA:
 		case I2C_SMBUS_BLOCK_PROC_CALL:
@@ -3045,7 +3136,7 @@ s32 i2c_smbus_xfer(struct i2c_adapter *adapter, u16 addr, unsigned short flags,
 	trace_smbus_read(adapter, addr, flags, read_write,
 			 command, protocol);
 
-	flags &= I2C_M_TEN | I2C_CLIENT_PEC | I2C_CLIENT_SCCB;
+	flags &= I2C_M_TEN | I2C_CLIENT_SPEEDY | I2C_CLIENT_PEC | I2C_CLIENT_SCCB;
 
 	if (adapter->algo->smbus_xfer) {
 		i2c_lock_adapter(adapter);
