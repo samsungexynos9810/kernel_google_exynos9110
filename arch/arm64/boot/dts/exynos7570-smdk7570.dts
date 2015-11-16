@@ -1,0 +1,112 @@
+/*
+ * SAMSUNG UNIVERSAL8890 board device tree source
+ *
+ * Copyright (c) 2013 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/dts-v1/;
+#include "exynos7570.dtsi"
+
+/ {
+	model = "Exynos 7570 SMDK board";
+	compatible = "samsung,exynos7570", "samsung,exynos4210";
+
+	memory@40000000 {
+		device_type = "memory";
+		reg = <0x0 0x40000000 0x60000000>;
+	};
+
+	chosen {
+		bootargs = "earlycon=exynos,0x13820000,115200n8 console=ttySAC0,115200 clk_ignore_unused androidboot.hardware=samsungexynos7570 androidboot.selinux=disabled firmware_class.path=/vendor/firmware";
+		linux,initrd-start = <0x52000000>;
+		linux,initrd-end = <0x521FFFFF>;
+	};
+
+	fixed-rate-clocks {
+		oscclk {
+			compatible = "samsung,exynos7570-oscclk";
+			clock-frequency = <1150000>;
+		};
+	};
+
+	serial_0: uart@13820000 {
+		status = "okay";
+	};
+
+	dwmmc0@13540000 {
+		status = "okay";
+		num-slots = <1>;
+		broken-cd;
+		bypass-smu;
+		fixed_voltage;
+		cap-mmc-highspeed;
+//		clock-gate;
+//		mmc-hs200-1_8v;
+//		mmc-hs400-1_8v;
+//		supports-hs400-enhanced-strobe;
+		use-fine-tuning;
+		bypass-for-allpass;
+		card-init-hwacg-ctrl;
+		fifo-depth = <0x40>;
+		non-removable;
+		card-detect-delay = <200>;
+		clock-frequency = <800000000>;
+		samsung,dw-mshc-ciu-div = <3>;
+		samsung,dw-mshc-txdt-crc-timer-fastlimit = <0x12>;
+		samsung,dw-mshc-txdt-crc-timer-initval = <0x14>;
+		samsung,dw-mshc-ddr200-delay-line = <0x50>;
+		samsung,dw-mshc-sdr-timing = <3 0 4 0>;
+		samsung,dw-mshc-ddr-timing = <3 0 4 2>;
+		samsung,dw-mshc-hs200-timing = <3 0 3 0>;
+		samsung,dw-mshc-ddr200-timing = <1 0 4 0>;
+		samsung,dw-mshc-ddr200-ulp-timing = <3 0 4 0>;
+		clk_pin = "gpr0-0";
+		clk_addr = "13750000.pinctrl";
+		num-ref-clks = <10>;
+		pinctrl-names = "default";
+		ciu_clkin = <25 50 50 100 200 100 50 200 200 200>;
+		pinctrl-0 = <&sd0_clk &sd0_cmd &sd0_rdqs &sd0_bus1 &sd0_bus4 &sd0_bus8>;
+		slot@0 {
+			reg = <0>;
+			bus-width = <8>;
+		};
+	};
+
+	ion {
+		compatible = "samsung,exynos5430-ion";
+	};
+
+	decon_fb@14830000 {
+		psr_mode = <0>; /* 0: video mode, 1: DP command mode, 2: MIPI command mode */
+		/* vclk = 207Mhz */
+		disp-vclk = <207000000>;
+		/* aclk = 208Mhz */
+		disp-dvfs = <208000000>;
+		status = "okay";
+	};
+
+	dsim_0: dsim@14800000 {
+		lcd_info = <&emul_disp>;
+	};
+
+	emul_disp: emul_disp_fhd {
+		mode = <0>; /* 0: video mode, 1: DP command mode, 2: MIPI command mode */
+		/* HD(720 x 1280) */
+		resolution = <720 1280>;
+		size = <70 121>;
+		timing,refresh = <60>;
+		/* hbp, hfp, hsa */
+		timing,h-porch = <1 1837 1>;
+		/* vbp, vfp vsa */
+		timing,v-porch = <12 16 1>;
+		timing,dsi-hs-clk = <1100>;
+		timing,pms = <3 127 0>;
+		timing,dsi-escape-clk = <20>;
+	};
+
+};
