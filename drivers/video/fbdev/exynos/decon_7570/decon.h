@@ -43,14 +43,15 @@ extern int decon_log_level;
  * Real number of  HW layers (or Active layers) will be
  * provided by device tree.
  */
-#define MAX_DECON_WIN		(7)
+
+#define MAX_DECON_WIN		(3)
 
 #define DECON_INT		(0)
 
 #define DRIVER_NAME		"decon"
 #define MAX_NAME_SIZE		32
 
-#define MAX_DECON_PADS		9
+#define MAX_DECON_PADS		4
 
 #define MAX_BUF_PLANE_CNT	3
 #define DECON_ENTER_LPD_CNT	3
@@ -145,8 +146,6 @@ struct exynos_decon_platdata {
 	enum decon_dsi_mode	dsi_mode;
 	int	max_win;
 	int	default_win;
-	u32	disp_pll_clk;
-	u32	disp_eclk;
 	u32	disp_vclk;
 	u32	disp_dvfs;
 };
@@ -206,10 +205,7 @@ struct decon_win_rect {
 };
 
 struct decon_resources {
-	struct clk *dpll;		/* Display PLL */
 	struct clk *core_clk;		/* Core CLock, APB, BUS */
-	struct clk *eclk;		/* ECLK from MIF */
-	struct clk *eclk_leaf;		/* ECLK Local (DISP PLL or MIF) */
 	struct clk *vclk;		/* VCLK from MIF */
 	struct clk *vclk_leaf;		/* VCLK Local (DISP PLL or MIF) */
 };

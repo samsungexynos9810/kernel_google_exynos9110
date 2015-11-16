@@ -70,18 +70,12 @@ static atomic_t extra_vsync_wait;
 void decon_dump(struct decon_device *decon)
 {
 	dev_err(decon->dev, "=== DECON CLK VALUES ===\n");
-	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.dpll),
-			clk_get_rate(decon->res.dpll) / MHZ);
 	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.core_clk),
 			clk_get_rate(decon->res.core_clk) / MHZ);
 	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.vclk),
 			clk_get_rate(decon->res.vclk) / MHZ);
-	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.eclk),
-			clk_get_rate(decon->res.eclk) / MHZ);
 	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.vclk_leaf),
 			clk_get_rate(decon->res.vclk_leaf) / MHZ);
-	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.eclk_leaf),
-			clk_get_rate(decon->res.eclk_leaf) / MHZ);
 
 	dev_err(decon->dev, "=== DECON SFR DUMP ===\n");
 
@@ -789,6 +783,7 @@ static int decon_win_update_disp_config(struct decon_device *decon,
 	if (lcd_info.mic_enabled)
 		decon_reg_config_mic(DECON_INT, 0, &lcd_info);
 	decon_reg_set_porch(DECON_INT, 0, &lcd_info);
+	decon_reg_set_resolution(DECON_INT, 0, &lcd_info);
 	decon_win_update_dbg("[WIN_UPDATE]%s : vfp %d vbp %d vsa %d hfp %d hbp %d hsa %d w %d h %d\n",
 			__func__,
 			lcd_info.vfp, lcd_info.vbp, lcd_info.vsa,
@@ -2495,18 +2490,12 @@ static struct fb_ops decon_fb_ops = {
 /* ---------- POWER MANAGEMENT ----------- */
 void decon_clocks_info(struct decon_device *decon)
 {
-	decon_info("%s: %ld Mhz\n", __clk_get_name(decon->res.dpll),
-			clk_get_rate(decon->res.dpll) / MHZ);
 	decon_info("%s: %ld Mhz\n", __clk_get_name(decon->res.core_clk),
 			clk_get_rate(decon->res.core_clk) / MHZ);
 	decon_info("%s: %ld Mhz\n", __clk_get_name(decon->res.vclk),
 			clk_get_rate(decon->res.vclk) / MHZ);
-	decon_info("%s: %ld Mhz\n", __clk_get_name(decon->res.eclk),
-			clk_get_rate(decon->res.eclk) / MHZ);
 	decon_info("%s: %ld Mhz\n", __clk_get_name(decon->res.vclk_leaf),
 			clk_get_rate(decon->res.vclk_leaf) / MHZ);
-	decon_info("%s: %ld Mhz\n", __clk_get_name(decon->res.eclk_leaf),
-			clk_get_rate(decon->res.eclk_leaf) / MHZ);
 }
 
 void decon_put_clocks(struct decon_device *decon)
@@ -2514,9 +2503,6 @@ void decon_put_clocks(struct decon_device *decon)
 	clk_put(decon->res.core_clk);
 	clk_put(decon->res.vclk);
 	clk_put(decon->res.vclk_leaf);
-	clk_put(decon->res.eclk);
-	clk_put(decon->res.eclk_leaf);
-	clk_put(decon->res.dpll);
 }
 
 static int decon_runtime_resume(struct device *dev)
@@ -2528,32 +2514,24 @@ static int decon_runtime_resume(struct device *dev)
 	decon_dbg("decon %s +\n", __func__);
 	mutex_lock(&decon->mutex);
 
-	clk_prepare_enable(decon->res.dpll);
-
-	/* VCLK will be derived from Disp PLL */
+	/* VCLK  */
 	clk_prepare_enable(decon->res.vclk_leaf);
 
-	/* ECLK will be derived from MIF/DISP_PLL */
-	clk_prepare_enable(decon->res.eclk);
-	clk_prepare_enable(decon->res.eclk_leaf);
+	clk_prepare_enable(decon->res.vclk);
 
-	/* APB, BUS clocks, VCLK, ECLK */
+	/* No ECLK in java */
+
+	/* APB, BUS clocks, VCLK */
 	clk_prepare_enable(decon->res.core_clk);
 
 	decon_int_set_clocks(decon);
 
-	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.dpll),
-			clk_get_rate(decon->res.dpll) / MHZ);
 	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.core_clk),
 			clk_get_rate(decon->res.core_clk) / MHZ);
 	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.vclk),
 			clk_get_rate(decon->res.vclk) / MHZ);
-	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.eclk),
-			clk_get_rate(decon->res.eclk) / MHZ);
 	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.vclk_leaf),
 			clk_get_rate(decon->res.vclk_leaf) / MHZ);
-	decon_dbg("%s: %ld Mhz\n", __clk_get_name(decon->res.eclk_leaf),
-			clk_get_rate(decon->res.eclk_leaf) / MHZ);
 
 	if (decon->state == DECON_STATE_INIT)
 		decon_clocks_info(decon);
@@ -2574,10 +2552,8 @@ static int decon_runtime_suspend(struct device *dev)
 	mutex_lock(&decon->mutex);
 
 	clk_disable_unprepare(decon->res.core_clk);
-	clk_disable_unprepare(decon->res.eclk_leaf);
-	clk_disable_unprepare(decon->res.eclk);
+	clk_disable_unprepare(decon->res.vclk);
 	clk_disable_unprepare(decon->res.vclk_leaf);
-	clk_disable_unprepare(decon->res.dpll);
 
 	mutex_unlock(&decon->mutex);
 	decon_dbg("decon %s -\n", __func__);
@@ -2965,14 +2941,6 @@ static void decon_parse_pdata(struct decon_device *decon, struct device *dev)
 		/* single DSI: 0, dual DSI: 1 */
 		of_property_read_u32(dev->of_node, "dsi_mode",
 				&decon->pdata->dsi_mode);
-		/* disp_pll */
-		of_property_read_u32(dev->of_node, "disp-pll-clk",
-				&decon->pdata->disp_pll_clk);
-
-		/* disp_eclk */
-		of_property_read_u32(dev->of_node, "disp-eclk",
-				&decon->pdata->disp_eclk);
-
 		/* disp_vclk */
 		of_property_read_u32(dev->of_node, "disp-vclk",
 				&decon->pdata->disp_vclk);

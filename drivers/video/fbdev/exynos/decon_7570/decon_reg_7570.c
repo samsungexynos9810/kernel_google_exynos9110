@@ -149,6 +149,17 @@ void decon_reg_set_porch(u32 id, int dsi_idx, struct decon_lcd *info)
 	decon_write(id, VIDTCON4(dsi_idx), val);
 }
 
+
+void decon_reg_set_resolution(u32 id, int dsi_idx, struct decon_lcd *info)
+{
+	u32 val = 0;
+
+	/* from LCD info */
+	val = VIDTCON5_LINEVAL(info->yres - 1) |
+			VIDTCON5_HOZVAL(info->xres - 1);
+	decon_write(id, VIDTCON5(dsi_idx), val);
+}
+
 void decon_reg_set_linecnt_op_threshold(u32 id, int dsi_idx, u32 th)
 {
 	decon_write(id, LINECNT_OP_THRESHOLD(dsi_idx), th);
@@ -186,6 +197,7 @@ void decon_reg_configure_lcd(u32 id, enum decon_dsi_mode dsi_mode,
 {
 	decon_reg_set_rgb_order(id, 0, DECON_RGB);
 	decon_reg_set_porch(id, 0, lcd_info);
+	decon_reg_set_resolution(id, 0, lcd_info);
 	if (lcd_info->mic_enabled)
 		decon_reg_config_mic(id, 0, lcd_info);
 
@@ -399,6 +411,7 @@ void decon_reg_init_probe(u32 id, enum decon_dsi_mode dsi_mode,
 
 	decon_reg_set_rgb_order(id, 0, DECON_RGB);
 	decon_reg_set_porch(id, 0, lcd_info);
+	decon_reg_set_resolution(id, 0, lcd_info);
 	if (lcd_info->mic_enabled)
 		decon_reg_config_mic(id, 0, lcd_info);
 

@@ -121,6 +121,7 @@ void decon_reg_set_fixvclk(u32 id, int dsi_idx, enum decon_hold_scheme mode);
 void decon_reg_clear_win(u32 id, int win_idx);
 void decon_reg_set_rgb_order(u32 id, int dsi_idx, enum decon_rgb_order order);
 void decon_reg_set_porch(u32 id, int dsi_idx, struct decon_lcd *info);
+void decon_reg_set_resolution(u32 id, int dsi_idx, struct decon_lcd *info);
 void decon_reg_set_linecnt_op_threshold(u32 id, int dsi_idx, u32 th);
 void decon_reg_set_clkval(u32 id, u32 clkdiv);
 void decon_reg_direct_on_off(u32 id, u32 en);

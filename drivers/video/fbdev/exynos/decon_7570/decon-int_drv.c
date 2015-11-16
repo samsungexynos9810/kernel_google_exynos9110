@@ -134,27 +134,9 @@ irq_end:
 
 int decon_int_get_clocks(struct decon_device *decon)
 {
-	decon->res.dpll = clk_get(decon->dev, "disp_pll");
-	if (IS_ERR_OR_NULL(decon->res.dpll)) {
-		decon_err("failed to get disp_pll\n");
-		return -ENODEV;
-	}
-
 	decon->res.core_clk = clk_get(decon->dev, "decon_core");
 	if (IS_ERR_OR_NULL(decon->res.core_clk)) {
 		decon_err("failed to get decon_core\n");
-		return -ENODEV;
-	}
-
-	decon->res.eclk = clk_get(decon->dev, "eclk_user");
-	if (IS_ERR_OR_NULL(decon->res.eclk)) {
-		decon_err("failed to get eclk_user\n");
-		return -ENODEV;
-	}
-
-	decon->res.eclk_leaf = clk_get(decon->dev, "eclk_leaf");
-	if (IS_ERR_OR_NULL(decon->res.eclk_leaf)) {
-		decon_err("failed to get eclk_leaf\n");
 		return -ENODEV;
 	}
 
@@ -177,19 +159,11 @@ void decon_int_set_clocks(struct decon_device *decon)
 {
 	struct device *dev = decon->dev;
 
-	/* DISP PLL*/
-	decon_clk_set_rate(dev, decon->res.dpll,
-			NULL, decon->pdata->disp_pll_clk);
-
 	/* VCLK  - Derived from DISP PLL */
+	decon_clk_set_rate(dev, decon->res.vclk,
+			NULL, decon->pdata->disp_vclk);
 	decon_clk_set_rate(dev, decon->res.vclk_leaf,
 			NULL, decon->pdata->disp_vclk);
-
-	/* ECLK - Derived from MIF */
-	decon_clk_set_rate(dev, decon->res.eclk,
-			NULL, decon->pdata->disp_eclk);
-	decon_clk_set_rate(dev, decon->res.eclk_leaf,
-			NULL, decon->pdata->disp_eclk);
 
 	/* TODO: PCLK */
 	/* TODO: ACLK */
@@ -198,12 +172,11 @@ void decon_int_set_clocks(struct decon_device *decon)
 	if (!IS_ENABLED(CONFIG_PM_DEVFREQ))
 		cal_dfs_set_rate(dvfs_disp, decon->pdata->disp_dvfs);
 
-	decon_dbg("%s:dpll %ld core %ld vclk %ld eclk %ld Mhz\n",
+	decon_dbg("%s:core %ld vclk_leaf %ld vclk %ld Mhz\n",
 		__func__,
-		clk_get_rate(decon->res.dpll) / MHZ,
 		clk_get_rate(decon->res.core_clk) / MHZ,
 		clk_get_rate(decon->res.vclk_leaf) / MHZ,
-		clk_get_rate(decon->res.eclk_leaf) / MHZ);
+		clk_get_rate(decon->res.vclk) / MHZ);
 
 	return;
 }

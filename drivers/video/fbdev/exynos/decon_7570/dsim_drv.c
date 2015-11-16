@@ -1273,17 +1273,16 @@ static int dsim_probe(struct platform_device *pdev)
 		goto err_irq;
 
 #if IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA0)
-       dsim->panel_ops = &s6e8aa0_mipi_lcd_driver;
+	dsim->panel_ops = &s6e8aa0_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6D78A)
-       dsim->panel_ops = &s6d78a_mipi_lcd_driver;
+	dsim->panel_ops = &s6d78a_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E3FA0)
 	dsim->panel_ops = &s6e3fa0_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_EA8064G)
 	dsim->panel_ops = &ea8064g_mipi_lcd_driver;
 #else
-       dsim->panel_ops = &s6d78a_mipi_lcd_driver;
- #endif
-
+	dsim->panel_ops = &s6d78a_mipi_lcd_driver;
+#endif
 	dsim->timing.bps = 0;
 
 	mutex_init(&dsim_rd_wr_mutex);
