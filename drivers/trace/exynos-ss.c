@@ -1613,6 +1613,51 @@ static int __init exynos_ss_init(void)
 }
 early_initcall(exynos_ss_init);
 
+#ifdef CONFIG_ARM64
+static inline unsigned long pure_arch_local_irq_save(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"mrs	%0, daif		// arch_local_irq_save\n"
+		"msr	daifset, #2"
+		: "=r" (flags)
+		:
+		: "memory");
+
+	return flags;
+}
+
+static inline void pure_arch_local_irq_restore(unsigned long flags)
+{
+	asm volatile(
+		"msr    daif, %0                // arch_local_irq_restore"
+		:
+		: "r" (flags)
+		: "memory");
+}
+#else
+static inline unsigned long arch_local_irq_save(void)
+{
+	unsigned long flags;
+
+	asm volatile(
+		"	mrs	%0, cpsr	@ arch_local_irq_save\n"
+		"	cpsid	i"
+		: "=r" (flags) : : "memory", "cc");
+	return flags;
+}
+
+static inline void arch_local_irq_restore(unsigned long flags)
+{
+	asm volatile(
+		"	msr	cpsr_c, %0	@ local_irq_restore"
+		:
+		: "r" (flags)
+		: "memory", "cc");
+}
+#endif
+
 void exynos_ss_task(int cpu, void *v_task)
 {
 	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
@@ -1766,18 +1811,22 @@ void exynos_ss_mailbox(void *msg, int mode, char* f_name, void *volt)
 void exynos_ss_irq(int irq, void *fn, unsigned int val, int en)
 {
 	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
+	unsigned long flags;
 
 	if (unlikely(!ess_base.enabled || !item->entry.enabled))
 		return;
+
+	flags = pure_arch_local_irq_save();
 	{
 		int cpu = raw_smp_processor_id();
 		unsigned long i;
 
 		for (i = 0; i < ARRAY_SIZE(ess_irqlog_exlist); i++) {
-			if (irq == ess_irqlog_exlist[i])
+			if (irq == ess_irqlog_exlist[i]) {
+				pure_arch_local_irq_restore(flags);
 				return;
+			}
 		}
-
 		i = atomic_inc_return(&ess_idx.irq_log_idx[cpu]) &
 				(ARRAY_SIZE(ess_log->irq[0]) - 1);
 
@@ -1788,6 +1837,7 @@ void exynos_ss_irq(int irq, void *fn, unsigned int val, int en)
 		ess_log->irq[cpu][i].val = val;
 		ess_log->irq[cpu][i].en = en;
 	}
+	pure_arch_local_irq_restore(flags);
 }
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
@@ -1821,51 +1871,6 @@ void exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time)
 		} else
 			atomic_dec(&ess_idx.irq_exit_log_idx[cpu]);
 	}
-}
-#endif
-
-#ifdef CONFIG_ARM64
-static inline unsigned long pure_arch_local_irq_save(void)
-{
-	unsigned long flags;
-
-	asm volatile(
-		"mrs	%0, daif		// arch_local_irq_save\n"
-		"msr	daifset, #2"
-		: "=r" (flags)
-		:
-		: "memory");
-
-	return flags;
-}
-
-static inline void pure_arch_local_irq_restore(unsigned long flags)
-{
-	asm volatile(
-		"msr    daif, %0                // arch_local_irq_restore"
-		:
-		: "r" (flags)
-		: "memory");
-}
-#else
-static inline unsigned long arch_local_irq_save(void)
-{
-	unsigned long flags;
-
-	asm volatile(
-		"	mrs	%0, cpsr	@ arch_local_irq_save\n"
-		"	cpsid	i"
-		: "=r" (flags) : : "memory", "cc");
-	return flags;
-}
-
-static inline void arch_local_irq_restore(unsigned long flags)
-{
-	asm volatile(
-		"	msr	cpsr_c, %0	@ local_irq_restore"
-		:
-		: "r" (flags)
-		: "memory", "cc");
 }
 #endif
 
