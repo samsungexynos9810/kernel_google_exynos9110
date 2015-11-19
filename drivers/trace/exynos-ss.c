@@ -102,13 +102,13 @@ struct exynos_ss_log {
 	struct task_log {
 		unsigned long long time;
 		struct task_struct *task;
-		char *task_comm;
+		char task_comm[TASK_COMM_LEN];
 	} task[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 
 	struct work_log {
 		unsigned long long time;
 		struct worker *worker;
-		struct work_struct *work;
+		char task_comm[TASK_COMM_LEN];
 		work_func_t fn;
 		int en;
 	} work[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
@@ -150,9 +150,12 @@ struct exynos_ss_log {
 	struct spinlock_log {
 		unsigned long long time;
 		unsigned long long jiffies;
-		struct task_struct *owner;
-		char *task_comm;
-		unsigned int owner_cpu;
+#ifdef CONFIG_DEBUG_SPINLOCK
+		unsigned int magic, owner_cpu;
+		struct task_struct *task;
+		u16 next;
+		u16 owner;
+#endif
 		int en;
 		void *caller[ESS_CALLSTACK_MAX_NUM];
 	} spinlock[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
@@ -239,8 +242,8 @@ struct exynos_ss_log {
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	struct clockevent_log {
 		unsigned long long time;
-		unsigned long long clc;
-		int64_t	delta;
+		unsigned long long mct_cycle;
+		int64_t	delta_ns;
 		ktime_t	next_event;
 	} clockevent[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 
@@ -1670,11 +1673,13 @@ void exynos_ss_task(int cpu, void *v_task)
 
 		ess_log->task[cpu][i].time = cpu_clock(cpu);
 		ess_log->task[cpu][i].task = (struct task_struct *)v_task;
-		ess_log->task[cpu][i].task_comm = ess_log->task[cpu][i].task->comm;
+		strncpy(ess_log->task[cpu][i].task_comm,
+			ess_log->task[cpu][i].task->comm,
+			TASK_COMM_LEN);
 	}
 }
 
-void exynos_ss_work(void *worker, void *work, void *fn, int en)
+void exynos_ss_work(void *worker, void *v_task, void *fn, int en)
 {
 	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
 
@@ -1685,10 +1690,10 @@ void exynos_ss_work(void *worker, void *work, void *fn, int en)
 		int cpu = raw_smp_processor_id();
 		unsigned long i = atomic_inc_return(&ess_idx.work_log_idx[cpu]) &
 					(ARRAY_SIZE(ess_log->work[0]) - 1);
-
+		struct task_struct *task = (struct task_struct *)v_task;
 		ess_log->work[cpu][i].time = cpu_clock(cpu);
 		ess_log->work[cpu][i].worker = (struct worker *)worker;
-		ess_log->work[cpu][i].work = (struct work_struct *)work;
+		strncpy(ess_log->work[cpu][i].task_comm, task->comm, TASK_COMM_LEN);
 		ess_log->work[cpu][i].fn = (work_func_t)fn;
 		ess_log->work[cpu][i].en = en;
 	}
@@ -1850,7 +1855,7 @@ void exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time)
 		return;
 
 	for (i = 0; i < ARRAY_SIZE(ess_irqexit_exlist); i++)
-		if (irq == 0 || irq == ess_irqexit_exlist[i])
+		if (irq == ess_irqexit_exlist[i])
 			return;
 	{
 		int cpu = raw_smp_processor_id();
@@ -1886,17 +1891,19 @@ void exynos_ss_spinlock(void *v_lock, int en)
 		unsigned index = atomic_inc_return(&ess_idx.spinlock_log_idx[cpu]);
 		unsigned long j, i = index & (ARRAY_SIZE(ess_log->spinlock[0]) - 1);
 		raw_spinlock_t *lock = (raw_spinlock_t *)v_lock;
-		struct task_struct *task = (struct task_struct *)lock->owner;
-
 #ifdef CONFIG_ARM_ARCH_TIMER
 		ess_log->spinlock[cpu][i].time = cpu_clock(cpu);
 #else
 		ess_log->spinlock[cpu][i].time = index;
 #endif
 		ess_log->spinlock[cpu][i].jiffies = jiffies_64;
-		ess_log->spinlock[cpu][i].owner = task;
-		ess_log->spinlock[cpu][i].task_comm = task->comm;
+#ifdef CONFIG_DEBUG_SPINLOCK
+		ess_log->spinlock[cpu][i].task = (struct task_struct *)lock->owner;
 		ess_log->spinlock[cpu][i].owner_cpu = lock->owner_cpu;
+		ess_log->spinlock[cpu][i].magic = lock->magic;
+		ess_log->spinlock[cpu][i].next = lock->raw_lock.next;
+		ess_log->spinlock[cpu][i].owner = lock->raw_lock.owner;
+#endif
 		ess_log->spinlock[cpu][i].en = en;
 
 		for (j = 0; j < ess_desc.callstack; j++) {
@@ -2104,8 +2111,8 @@ void exynos_ss_clockevent(unsigned long long clc, int64_t delta, void *next_even
 			(ARRAY_SIZE(ess_log->clockevent[0]) - 1);
 
 		ess_log->clockevent[cpu][i].time = cpu_clock(cpu);
-		ess_log->clockevent[cpu][i].clc = clc;
-		ess_log->clockevent[cpu][i].delta = delta;
+		ess_log->clockevent[cpu][i].mct_cycle = clc;
+		ess_log->clockevent[cpu][i].delta_ns = delta;
 		ess_log->clockevent[cpu][i].next_event = *((ktime_t *)next_event);
 	}
 }

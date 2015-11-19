@@ -19,7 +19,7 @@
 
 /* mandatory */
 extern void exynos_ss_task(int cpu, void *v_task);
-extern void exynos_ss_work(void *worker, void *work, void *fn, int en);
+extern void exynos_ss_work(void *worker, void *v_task, void *fn, int en);
 extern void exynos_ss_cpuidle(int index, unsigned state, int diff, int en);
 extern void exynos_ss_suspend(void *fn, void *dev, int en);
 extern void exynos_ss_irq(int irq, void *fn, unsigned int val, int en);
