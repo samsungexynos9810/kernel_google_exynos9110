@@ -459,6 +459,11 @@
 		compatible = "samsung,exynos-pd";
 		reg = <0x0 0x11C84020 0x20>;
 		cal_id = <0xB1380000>;
+
+		spd_disp: spd-disp@11C84020 {
+			compatible = "samsung,exynos-spd";
+		};
+
 	};
 
 	pd_isp: pd-isp@11C84040 {
@@ -487,11 +492,6 @@
 		clocks = <&clock 203>;
 		clock-names = "vclk_g3d";
 		samsung,power-domain = <&pd_g3d>;
-	};
-
-	decon_0: decon_fb@14830000 {
-		compatible = "samsung,exynos5-decon_driver";
-		#pb-id-cells = <0>;
 	};
 
 	iommu-domain_disp {
@@ -535,10 +535,7 @@
 		reg = <0x0 0x14800000 0x100>;
 
 		interrupts = <0 207 0>;
-#if 0
 		samsung,power-domain = <&spd_disp>;
-		status = "disabled";
-#endif
 
 		phys = <&mipi_phy_dsim 0>;
 		phy-names = "dsim_dphy";
@@ -562,11 +559,9 @@
 
 		reg = <0x0 0x14830000 0x8000>;
 		#pb-id-cells = <0>;
-//		status = "disabled";
 
-#if 0
 		samsung,power-domain = <&spd_disp>;
-#endif
+
 		/* int_0: fifo_irq, int_1: vsync_irq, int_2: frame_done_irq, 3: te_irq */
 		interrupts = <0 201 0>, <0 202 0>, <0 203 0>, <0 360 0>;
 
