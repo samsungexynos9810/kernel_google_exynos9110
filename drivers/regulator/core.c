@@ -2860,10 +2860,6 @@ static int regulator_set_voltage_unlocked(struct regulator *regulator,
 	int best_supply_uV = 0;
 	int supply_change_uV = 0;
 
-	if ((rdev->open_count < rdev->constraints->expected_consumer)
-			&& rdev->constraints->expected_consumer)
-		goto out;
-
 	/* If we're setting the same range as last time the change
 	 * should be a noop (some cpufreq implementations use the same
 	 * voltage for multiple frequencies, for example).
