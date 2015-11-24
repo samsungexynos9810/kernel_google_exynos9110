@@ -324,6 +324,7 @@ struct exynos_ss_mmu_reg {
 	long TPIDRRO_EL0;
 	long TPIDR_EL1;
 	long MAIR_EL1;
+	long ELR_EL1;
 };
 
 #else
@@ -504,34 +505,36 @@ static struct exynos_ss_desc ess_desc;
 DEFINE_PER_CPU(struct pt_regs *, ess_core_reg);
 DEFINE_PER_CPU(struct exynos_ss_mmu_reg *, ess_mmu_reg);
 
-static void exynos_ss_save_mmu(struct exynos_ss_mmu_reg *mmu_reg)
+static void exynos_ss_save_system(struct exynos_ss_mmu_reg *mmu_reg)
 {
 #ifdef CONFIG_ARM64
 	asm("mrs x1, SCTLR_EL1\n\t"		/* SCTLR_EL1 */
-	    "str x1, [%0]\n\t"
-	    "mrs x1, TTBR0_EL1\n\t"		/* TTBR0_EL1 */
-	    "str x1, [%0,#8]\n\t"
-	    "mrs x1, TTBR1_EL1\n\t"		/* TTBR1_EL1 */
-	    "str x1, [%0,#16]\n\t"
-	    "mrs x1, TCR_EL1\n\t"		/* TCR_EL1 */
-	    "str x1, [%0,#24]\n\t"
-	    "mrs x1, ESR_EL1\n\t"		/* ESR_EL1 */
-	    "str x1, [%0,#32]\n\t"
-	    "mrs x1, FAR_EL1\n\t"		/* FAR_EL1 */
-	    "str x1, [%0,#40]\n\t"
-	    /* Don't populate AFSR0_EL1 and AFSR1_EL1 */
-	    "mrs x1, CONTEXTIDR_EL1\n\t"	/* CONTEXTIDR_EL1 */
-	    "str x1, [%0,#48]\n\t"
-	    "mrs x1, TPIDR_EL0\n\t"		/* TPIDR_EL0 */
-	    "str x1, [%0,#56]\n\t"
-	    "mrs x1, TPIDRRO_EL0\n\t"		/* TPIDRRO_EL0 */
-	    "str x1, [%0,#64]\n\t"
-	    "mrs x1, TPIDR_EL1\n\t"		/* TPIDR_EL1 */
-	    "str x1, [%0,#72]\n\t"
-	    "mrs x1, MAIR_EL1\n\t"		/* MAIR_EL1 */
-	    "str x1, [%0,#80]\n\t" :		/* output */
-	    : "r"(mmu_reg)			/* input */
-	    : "%x1", "memory"			/* clobbered register */
+		"str x1, [%0]\n\t"
+		"mrs x1, TTBR0_EL1\n\t"		/* TTBR0_EL1 */
+		"str x1, [%0,#8]\n\t"
+		"mrs x1, TTBR1_EL1\n\t"		/* TTBR1_EL1 */
+		"str x1, [%0,#16]\n\t"
+		"mrs x1, TCR_EL1\n\t"		/* TCR_EL1 */
+		"str x1, [%0,#24]\n\t"
+		"mrs x1, ESR_EL1\n\t"		/* ESR_EL1 */
+		"str x1, [%0,#32]\n\t"
+		"mrs x1, FAR_EL1\n\t"		/* FAR_EL1 */
+		"str x1, [%0,#40]\n\t"
+		/* Don't populate AFSR0_EL1 and AFSR1_EL1 */
+		"mrs x1, CONTEXTIDR_EL1\n\t"	/* CONTEXTIDR_EL1 */
+		"str x1, [%0,#48]\n\t"
+		"mrs x1, TPIDR_EL0\n\t"		/* TPIDR_EL0 */
+		"str x1, [%0,#56]\n\t"
+		"mrs x1, TPIDRRO_EL0\n\t"		/* TPIDRRO_EL0 */
+		"str x1, [%0,#64]\n\t"
+		"mrs x1, TPIDR_EL1\n\t"		/* TPIDR_EL1 */
+		"str x1, [%0,#72]\n\t"
+		"mrs x1, MAIR_EL1\n\t"		/* MAIR_EL1 */
+		"str x1, [%0,#80]\n\t"
+		"mrs x1, ELR_EL1\n\t"		/* ELR_EL1 */
+		"str x1, [%0, #88]\n\t" :	/* output */
+		: "r"(mmu_reg)			/* input */
+		: "%x1", "memory"			/* clobbered register */
 	);
 
 #else
@@ -734,7 +737,7 @@ int exynos_ss_dump(void)
 }
 EXPORT_SYMBOL(exynos_ss_dump);
 
-int exynos_ss_save_reg(void *v_regs)
+int exynos_ss_save_core(void *v_regs)
 {
 	register unsigned long sp asm ("sp");
 	struct pt_regs *regs = (struct pt_regs *)v_regs;
@@ -786,7 +789,7 @@ int exynos_ss_save_reg(void *v_regs)
 						smp_processor_id());
 	return 0;
 }
-EXPORT_SYMBOL(exynos_ss_save_reg);
+EXPORT_SYMBOL(exynos_ss_save_core);
 
 int exynos_ss_save_context(void *v_regs)
 {
@@ -799,8 +802,8 @@ int exynos_ss_save_context(void *v_regs)
 
 	/* If it was already saved the context information, it should be skipped */
 	if (exynos_ss_get_core_panic_stat(smp_processor_id()) !=  ESS_SIGN_PANIC) {
-		exynos_ss_save_mmu(per_cpu(ess_mmu_reg, smp_processor_id()));
-		exynos_ss_save_reg(regs);
+		exynos_ss_save_system(per_cpu(ess_mmu_reg, smp_processor_id()));
+		exynos_ss_save_core(regs);
 		exynos_ss_dump();
 		exynos_ss_set_core_panic_stat(ESS_SIGN_PANIC, smp_processor_id());
 		pr_emerg("exynos-snapshot: context saved(CPU:%d)\n",
