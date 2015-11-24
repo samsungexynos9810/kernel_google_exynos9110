@@ -44,7 +44,7 @@ extern int decon_log_level;
  * provided by device tree.
  */
 
-#define MAX_DECON_WIN		(3)
+#define MAX_DECON_WIN		(7)
 
 #define DECON_INT		(0)
 
