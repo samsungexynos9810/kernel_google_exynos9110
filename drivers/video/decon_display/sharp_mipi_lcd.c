@@ -28,7 +28,7 @@ struct decon_lcd sharp_mipi_lcd_info = {
         .height = 32,
 
         /* Mhz */
-        .hs_clk = 166,
+        .hs_clk = 168,
         .esc_clk = 7,
 
         .fps = 58,

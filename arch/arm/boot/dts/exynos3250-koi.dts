@@ -640,8 +640,8 @@
                            - 3. LCD_S6E3FA0(VIDEO): p - 4, m - 75, s - 1
                            - 4. LCD_S6E3HA0(COMMAND): p - 2, m - 46, s - 1
                            - 5. LCD_S6E63J0X03(CMD):  p - 3, m - 125, s -1 */
-                        p = <2>;
-                        m = <60>;
+                        p = <4>;
+                        m = <112>;
                         s = <2>;
 
                         /* D-PHY PLL stable time spec :min = 200usec ~ max 400usec */
