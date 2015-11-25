@@ -8,7 +8,7 @@
 #include "decon_mipi_dsi.h"
 #include "decon_display_driver.h"
 
-#include "sharp_mipi_lcd.h"
+#include "sharp_mipi_lcd_commands.h"
 
 struct decon_lcd sharp_mipi_lcd_info = {
         .mode = COMMAND_MODE,
@@ -39,82 +39,148 @@ struct decon_lcd * decon_get_lcd_info()
         return &sharp_mipi_lcd_info;
 }
 
-static void sharp_power_sequence_on(struct mipi_dsim_device *dsim)
+static void sharp_mipi_select_page(struct mipi_dsim_device *dsim, uint8_t page)
 {
-	int i;
+	int ret;
 
-	unsigned char PWRON_CMD_01[2]	= {0xFF, 0x24 };
-	// SHARP_PWRON_CMDS1 (defined in the header file)
-	// SHARP_PWRON_CMDS2 (defined in the header file)
-	// SHARP_PWRON_CMDS3 (defined in the header file)
-	unsigned char PWRON_CMD_02[2]	= {0x42, 0x21 };
-	unsigned char PWRON_CMD_03[2]	= {0xFF, 0x10 };
-	unsigned char PWRON_CMD_04[2]	= {0xB3, 0x00 };
-	unsigned char PWRON_CMD_05[2]	= {0xBB, 0x10 };
-	unsigned char PWRON_CMD_06[2]	= {0x3A, 0x06 }; // PIXEL FORMAT
-	unsigned char PWRON_CMD_07[6]	= {0x3B, 0x00, 0x08, 0x08, 0x20, 0x20 };
-	unsigned char PWRON_CMD_08[2]	= {0x35, 0x00 }; // TEAR ON
-	unsigned char PWRON_CMD_09[2]	= {0x11, 0x00 }; // EXIT SLEEP MODE
-	// WRITE PIXEL DATA (2C, 3C)
-	unsigned char PWRON_CMD_10[2]	= {0x29, 0x00 }; // DISPLAY ON
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			0xFF, page);
+	if (ret)
+		dev_err(dsim->dev, "failed to select page 0x%02x: %d\n", page, ret);
+	udelay(300);
+}
 
+static int sharp_get_display_id1(struct mipi_dsim_device *dsim)
+{
+	uint8_t read_data;
+	int ret;
 
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_01[0], PWRON_CMD_01[1]) == -1)
-		printk("MIPI DSI failed to write CMD01\n");
-	udelay(100);
-
-	for (i = 0; i < ARRAY_SIZE(SHARP_PWRON_CMDS1); i++) {
-		if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-				SHARP_PWRON_CMDS1[i][0], SHARP_PWRON_CMDS1[i][1])==-1)
-			printk("MIPI DSI failed to write CMDS1");
+	ret = s5p_mipi_dsi_rd_data(dsim, MIPI_DSI_DCS_READ, 0xA1, 0x01, &read_data);
+	if (ret) {
+		dev_err(dsim->dev, "failed to read display id1: %d\n", ret);
+		return -1;
 	}
-	udelay(100);
 
-	for (i = 0; i < ARRAY_SIZE(SHARP_PWRON_CMDS2); i++) {
-		if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-				SHARP_PWRON_CMDS2[i][0], SHARP_PWRON_CMDS2[i][1])==-1)
-			printk("MIPI DSI failed to write CMDS2");
+	return read_data;
+}
+
+static int sharp_get_display_id2(struct mipi_dsim_device *dsim)
+{
+	uint8_t read_data;
+	int ret;
+
+	ret = s5p_mipi_dsi_rd_data(dsim, MIPI_DSI_DCS_READ, 0xC5, 0x01, &read_data);
+	if (ret) {
+		dev_err(dsim->dev, "failed to read display id2: %d\n", ret);
+		return -1;
 	}
-	udelay(100);
 
-	for (i = 0; i < ARRAY_SIZE(SHARP_PWRON_CMDS3); i++) {
-		if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-				SHARP_PWRON_CMDS3[i][0], SHARP_PWRON_CMDS3[i][1])==-1)
-			printk("MIPI DSI failed to write CMDS3");
+	return read_data;
+}
+
+static void sharp_init_commands(struct mipi_dsim_device *dsim, int id1)
+{
+	int i, ret, id2;
+
+	sharp_mipi_select_page(dsim, 0x24);
+	id2 = sharp_get_display_id2(dsim);
+	for (i = 0; i < ARRAY_SIZE(SHARP_INIT_CMDS1); i++) {
+		ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+				SHARP_INIT_CMDS1[i][0], SHARP_INIT_CMDS1[i][1]);
+		if (ret)
+			dev_err(dsim->dev, "failed to write CMDS1[%d]: %d\n", i, ret);
 	}
-	udelay(100);
 
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_02[0], PWRON_CMD_02[1]) == -1)
-		printk("MIPI DSI failed to write CMD02\n");
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_03[0], PWRON_CMD_03[1]) == -1)
-		printk("MIPI DSI failed to write CMD03\n");
-	udelay(100);
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_04[0], PWRON_CMD_04[1]) == -1)
-		printk("MIPI DSI failed to write CMD04\n");
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_05[0], PWRON_CMD_05[1]) == -1)
-		printk("MIPI DSI failed to write CMD05\n");
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_06[0], PWRON_CMD_06[1]) == -1)
-		printk("MIPI DSI failed to write CMD06\n");
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_LONG_WRITE,
-			(unsigned int)PWRON_CMD_07, ARRAY_SIZE(PWRON_CMD_07)) == -1)
-		printk("MIPI DSI failed to write CMD07\n");
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
-			PWRON_CMD_08[0], PWRON_CMD_08[1]) == -1)
-		printk("MIPI DSI failed to write CMD08\n");
+	sharp_mipi_select_page(dsim, 0x20);
+	if (id1 == 0x01 || id2 == 0xA1) {
+		ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+				0xFB, 0x01);
+		if (ret)
+			dev_err(dsim->dev, "failed to write extra CMDS2: %d\n", ret);
+	}
+	for (i = 0; i < ARRAY_SIZE(SHARP_INIT_CMDS2); i++) {
+		ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+				SHARP_INIT_CMDS2[i][0], SHARP_INIT_CMDS2[i][1]);
+		if (ret)
+			dev_err(dsim->dev, "failed to write CMDS2[%d]: %d\n", i, ret);
+	}
 
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_09[0], PWRON_CMD_09[1]) == -1)
-		printk("MIPI DSI failed to write CMD09\n");
-	mdelay(120);
-	if (s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
-			PWRON_CMD_10[0], PWRON_CMD_10[1]) == -1)
-		printk("MIPI DSI failed to write CMD10\n");
+	sharp_mipi_select_page(dsim, 0x21);
+	if (id1 == 0x01 || id2 == 0xA1) {
+		ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+				0xFB, 0x01);
+		if (ret)
+			dev_err(dsim->dev, "failed to write extra CMDS3: %d\n", ret);
+	}
+	for (i = 0; i < ARRAY_SIZE(SHARP_INIT_CMDS3); i++) {
+		ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+				SHARP_INIT_CMDS3[i][0], SHARP_INIT_CMDS3[i][1]);
+		if (ret)
+			dev_err(dsim->dev, "failed to write CMDS3[%d]: %d\n", i, ret);
+	}
+
+	sharp_mipi_select_page(dsim, 0xE0);
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			0x42, 0x21);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMDS4: %d\n", ret);
+}
+
+static void sharp_power_on_sequence(struct mipi_dsim_device *dsim)
+{
+	int ret;
+
+	unsigned char PWRON_CMD_01[2]	= {0xFB, 0x01 };
+	unsigned char PWRON_CMD_02[2]	= {0xB3, 0x00 };
+	unsigned char PWRON_CMD_03[2]	= {0xBB, 0x10 };
+	unsigned char PWRON_CMD_04[2]	= {0x3A, 0x06 }; /* PIXEL FORMAT */
+	unsigned char PWRON_CMD_05[6]	= {0x3B, 0x00, 0x08, 0x08, 0x20, 0x20 };
+	unsigned char PWRON_CMD_06[2]	= {0x35, 0x00 }; /* TEAR ON */
+	unsigned char PWRON_CMD_07[2]	= {0x11, 0x00 }; /* EXIT SLEEP MODE */
+	unsigned char PWRON_CMD_08[2]	= {0x29, 0x00 }; /* DISPLAY ON */
+
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			PWRON_CMD_01[0], PWRON_CMD_01[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD01: %d\n", ret);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			PWRON_CMD_02[0], PWRON_CMD_02[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD02: %d\n", ret);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			PWRON_CMD_03[0], PWRON_CMD_03[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD03: %d\n", ret);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			PWRON_CMD_04[0], PWRON_CMD_04[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD04: %d\n", ret);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			(unsigned int)PWRON_CMD_05, ARRAY_SIZE(PWRON_CMD_05));
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD05: %d\n", ret);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+			PWRON_CMD_06[0], PWRON_CMD_06[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD06: %d\n", ret);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+			PWRON_CMD_07[0], PWRON_CMD_07[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD07: %d\n", ret);
+	msleep(130);
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+			PWRON_CMD_08[0], PWRON_CMD_08[1]);
+	if (ret)
+		dev_err(dsim->dev, "failed to write CMD08: %d\n", ret);
+	msleep(50);
 }
 
 static void sharp_power_sequence_off(struct mipi_dsim_device *dsim)
@@ -123,26 +189,37 @@ static void sharp_power_sequence_off(struct mipi_dsim_device *dsim)
 			MIPI_DCS_SET_DISPLAY_OFF, 0x00);
 	s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
 			MIPI_DCS_ENTER_SLEEP_MODE, 0x00);
-	mdelay(100);
+	msleep(110);
 }
 
-static int init_lcd(struct mipi_dsim_device *dsim)
+static void init_lcd(struct mipi_dsim_device *dsim)
 {
-	sharp_power_sequence_on(dsim);
+	int ret;
 
-	return 1;
+	sharp_mipi_select_page(dsim, 0x10);
+	ret = sharp_get_display_id1(dsim);
+	/* if device is older than PVT */
+	if (ret != 0x02) {
+		sharp_init_commands(dsim, ret);
+		sharp_mipi_select_page(dsim, 0x10);
+	}
 }
 
 static int sharp_mipi_lcd_suspend(struct mipi_dsim_device *dsim)
 {
+	s5p_mipi_lp_enable(dsim);
 	sharp_power_sequence_off(dsim);
+	s5p_mipi_lp_disable(dsim);
 
 	return 1;
 }
 
 static int sharp_mipi_lcd_displayon(struct mipi_dsim_device *dsim)
 {
+	s5p_mipi_lp_enable(dsim);
 	init_lcd(dsim);
+	sharp_power_on_sequence(dsim);
+	s5p_mipi_lp_disable(dsim);
 
 	return 1;
 }
