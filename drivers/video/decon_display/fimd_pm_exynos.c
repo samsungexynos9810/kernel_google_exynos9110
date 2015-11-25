@@ -174,19 +174,35 @@ int enable_display_driver_power(struct device *dev)
 {
 	struct display_gpio *gpio;
 	struct display_driver *dispdrv;
+	struct s3c_fb *sfb;
 	int ret = 0;
 
 	dispdrv = get_display_driver();
+	sfb = dispdrv->decon_driver.sfb;
+
+#ifdef CONFIG_LCD_MIPI_SHARP
+	// enable vdd_lcd_1.8 (VDDI)
+	ret = regulator_enable(sfb->supplies[1].consumer);
+	if (ret) {
+		dev_err(sfb->dev, "failed to enable VDD18_LCD: %d\n", ret);
+	}
+	msleep(10);
+	// enable vdd lcd 3.1 (VCI)
+	ret = regulator_enable(sfb->supplies[0].consumer);
+	if (ret) {
+		dev_err(sfb->dev, "failed to enable VDD31_LCD: %d\n", ret);
+	}
+#endif
 
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
 #ifdef CONFIG_LCD_MIPI_SHARP
-	msleep(10);
+	msleep(20);
 	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
-	msleep(10);
+	msleep(12);
 	gpio_set_value_cansleep(gpio->id[0], 0);
-	usleep_range(10, 10);
+	msleep(1);
 	gpio_set_value_cansleep(gpio->id[0], 1);
-	msleep(10);
+	msleep(12);
 #else
 	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_HIGH, "lcd_reset");
 	usleep_range(20000, 21000);
@@ -207,9 +223,11 @@ int disable_display_driver_power(struct device *dev)
 {
 	struct display_gpio *gpio;
 	struct display_driver *dispdrv;
+	struct s3c_fb *sfb;
 	int ret = 0;
 
 	dispdrv = get_display_driver();
+	sfb = dispdrv->decon_driver.sfb;
 
 	gpio = dispdrv->dt_ops.get_display_dsi_reset_gpio();
 
@@ -224,6 +242,20 @@ int disable_display_driver_power(struct device *dev)
 	gpio_request_one(gpio->id[0], GPIOF_OUT_INIT_LOW, "lcd_reset");
 	usleep_range(20000, 21000);
 	gpio_free(gpio->id[0]);
+
+#ifdef CONFIG_LCD_MIPI_SHARP
+	// disable vdd lcd 3.1 (VCI)
+	ret = regulator_disable(sfb->supplies[0].consumer);
+	if (ret) {
+		dev_err(sfb->dev, "failed to disable VDD31_LCD: %d\n", ret);
+	}
+	msleep(10);
+	// disable vdd_lcd_1.8 (VDDI)
+	ret = regulator_disable(sfb->supplies[1].consumer);
+	if (ret) {
+		dev_err(sfb->dev, "failed to disable VDD18_LCD: %d\n", ret);
+	}
+#endif
 
 	return ret;
 }
