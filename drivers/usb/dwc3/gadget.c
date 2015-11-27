@@ -2658,7 +2658,9 @@ static void dwc3_gadget_wakeup_interrupt(struct dwc3 *dwc)
 	 * implemented.
 	 */
 
-	dwc->gadget_driver->resume(&dwc->gadget);
+	if (dwc->gadget_driver && dwc->gadget_driver->resume) {
+		dwc->gadget_driver->resume(&dwc->gadget);
+	}
 }
 
 static void dwc3_gadget_linksts_change_interrupt(struct dwc3 *dwc,
