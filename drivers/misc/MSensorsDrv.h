@@ -10,7 +10,8 @@
 /*============================================================================*/
 /* include */
 /*============================================================================*/
-
+#include <linux/types.h>
+#include <linux/cdev.h>
 
 /*============================================================================*/
 /* define */
@@ -157,9 +158,28 @@
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
 
 
+#define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
+#define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
+#define WRITE_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_HEAD_SIZE_SETDATA)
+#define WRITE_DATABUFF_SIZE 32
+
 /*============================================================================*/
 /* struct */
 /*============================================================================*/
+struct Msensors_spi {
+	struct task_struct *sensor_read_thread;
+	unsigned char send_buf[SPI_DATA_MAX];
+	unsigned char recv_buf[SPI_DATA_MAX];
+	unsigned int  pre_send_type;
+};
+
+struct Msensors_state {
+	struct spi_device *sdev;
+	struct cdev cdev;
+	unsigned int sub_main_int;
+	struct Msensors_spi spi;
+};
+
 struct Msensors_data {
 	__u64 timestamp;
 	char sensor_type;
@@ -185,6 +205,8 @@ struct Msensors_data {
 /*============================================================================*/
 /* extern(func) */
 /*============================================================================*/
+int Set_WriteDataBuff(unsigned char* write_buff);
+ssize_t Msensors_Spi_Send(struct Msensors_state *st, char* send_buf, char* recv_buf, size_t count);
 extern void SUB_VibratorSet(int timeout);
 extern int SUBCPU_rtc_set_time(uint8_t *data);
 extern int SUBCPU_rtc_read_time(uint8_t *data);
