@@ -564,6 +564,11 @@ config MULTI_SENSORS
 		include sensor value, battery status, charger status, rtc,
 		enable vibration, etc...
 
+config MULTI_SENSORS_FW_UPDATE
+	tristate "update multi deivice hub by firmware class"
+	depends on MULTI_SENSORS
+	default y
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
