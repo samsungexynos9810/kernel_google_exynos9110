@@ -30,7 +30,6 @@
 #include "../power/subcpu_battery.h"
 #include "../video/backlight/bd82103.h"
 #include "MSensorsDrv.h"
-#include "MultiSensors_FW.h"
 
 #define DRV_NAME	"MultiSensors"
 #define DRV_NAME_CD 	"MultiSensors_CD"
@@ -78,12 +77,9 @@ static unsigned int		dataBuffReadIndex;
 static unsigned int		dataBuffWriteIndex;
 static unsigned int		PacketDataNum=0;
 static unsigned int		PreSendType=0;
-static unsigned int		SpiDataLen=0;
-static unsigned int		SpiErrorCount=0;	/*** pet yasui ADD ***/
 static unsigned char		HeaderData[HEADER_DATA_SIZE];
 static unsigned char 		SpiSendBuff[SPI_DATA_MAX];
 static unsigned char 		SpiRecvBuff[SPI_DATA_MAX];
-static unsigned char		HeaderRcvFlg=0;
 static unsigned char		Flg_driver_ready = 0;
 static unsigned char		Flg_driver_probed = 0;
 static unsigned char		Flg_driver_shutdown = 0;
@@ -91,21 +87,13 @@ static unsigned char		Flg_driver_shutdown = 0;
 static unsigned char SubCpuVersion[SUB_COM_DATA_SIZE_GETDATA];
 static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
-static const char path[] = "/data/local/tmp/SUB_CPU_TZ.srec";
-static	int Totallen = 0;
-static	int Now_len = 1;
-static uint8_t gFlg_AutoUpdate = 0;
 static wait_queue_head_t wait_ioctl;
 static int ioctl_complete;
-static struct sub_FW_data *gSUBCPU_Firmware;
 
 static wait_queue_head_t wait_rd;
 static wait_queue_head_t wait_subint;
 static int sub_main_int_occur;
 static int64_t soc_time;
-
-static int SensorFWUpdateLoop(void);
-
 
 static struct WriteDataBuf *allocWbBuf(void)
 {
@@ -145,8 +133,6 @@ static ssize_t Msensors_Spi_Send( struct Msensors_state *st, char* send_buf, cha
 	xfer.delay_usecs = 0;
 
 	tx_type = (unsigned char)send_buf[0];
-
-	SpiDataLen = (unsigned int)count;
 
 	spi_message_init(&msg);
 	spi_message_add_tail(&xfer, &msg);
@@ -190,22 +176,6 @@ void Msensors_SetTimestamp(void)
 	soc_time = getTimestamp();
 }
 
-static uint8_t is_subcpu_need_update(uint8_t maj, uint8_t min, uint8_t rev)
-{
-	uint8_t ret = 0;
-	uint32_t version = (uint32_t)(maj << 16 | min << 8 | rev);
-
-	if (version !=
-		(SUB_CPU_VER_MAJ << 16 | SUB_CPU_VER_MIN << 8 | SUB_CPU_REVISION)) {
-		if (rev < 100) {
-			gFlg_AutoUpdate = 1;
-			ret = 1;
-		}
-	}
-
-	return ret;
-}
-
 static int Set_WriteDataBuff(unsigned char* write_buff)
 {
 	struct WriteDataBuf *wb;
@@ -230,63 +200,6 @@ retry:
 		msleep(10);
 		goto retry;
 	}
-	return 0;
-}
-
-static void start_subcpu_update(void)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_SUB_FIRM_UPDATE;
-	Set_WriteDataBuff(&write_buff[0]);
-}
-
-static int SensorFWUpdateLoop_auto(void)
-{
-	struct Msensors_state *st = g_st;
-	int line_len, line_now, line_total;
-
-	line_total = SUB_FW_TOTAL_LEN;
-	line_now = 1;
-
-	while (!kthread_should_stop()) {
-		line_len = gSUBCPU_Firmware[line_now-1].len;
-
-		switch (SpiRecvBuff[SUB_COM_HEAD_INDEX_TYPE]) {
-		case SUB_COM_TYPE_FWUP_READY:
-		case SUB_COM_TYPE_FW_REQ_HEAD:
-			memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-			SpiSendBuff[0] = SUB_COM_TYPE_SET_FW_SIZE;
-			SpiSendBuff[1] = (uint8_t)(line_len & 0x00FF);
-			SpiSendBuff[2] = (uint8_t)((line_len & 0xFF00) >> 8);
-			SpiSendBuff[3] = (uint8_t)(line_now & 0x00FF);
-			SpiSendBuff[4] = (uint8_t)((line_now & 0xFF00) >> 8);
-			SpiSendBuff[5] = (uint8_t)(line_total & 0x00FF);
-			SpiSendBuff[6] = (uint8_t)((line_total & 0xFF00) >> 8);
-			PreSendType =  SpiSendBuff[0];
-			Msensors_Spi_Send(st, SpiSendBuff, SpiRecvBuff, WRITE_DATA_SIZE);
-			break;
-		case SUB_COM_TYPE_FW_REQ_DATA:
-			memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, 1 + line_len);
-			SpiSendBuff[0] = SUB_COM_TYPE_SET_FW_DATA;
-			memcpy(&SpiSendBuff[1], gSUBCPU_Firmware[line_now-1].data, line_len);
-			PreSendType = SpiSendBuff[0];
-			Msensors_Spi_Send(st, SpiSendBuff, SpiRecvBuff, 1 + line_len);
-			if (line_now == line_total) {
-				dev_info(&st->sdev->dev, "subcpu FW update Complete!\n");
-				goto update_finish;
-			}
-			line_now++;
-			break;
-		default:
-			dev_info(&st->sdev->dev,
-					"FWUp RecvDeta Error (%04d/%04d)line \n", line_now, line_total);
-			goto update_finish;
-		}
-	}
-update_finish:
-	kfree(gSUBCPU_Firmware);
 	return 0;
 }
 
@@ -324,10 +237,7 @@ static int SensorReadThread(void *p)
 	int64_t event_time, last_event_time = 0;
 	uint32_t elapsed_time = 0;
 	unsigned long flags;
-	static uint8_t flg_first = 1;
 	struct WriteDataBuf *wb;
-
-	HeaderRcvFlg = 0;
 
 	while (!kthread_should_stop()) {
 
@@ -342,7 +252,6 @@ static int SensorReadThread(void *p)
 		if (type == SUB_COM_TYPE_BIT_HEAD) {
 			/* Get Header Data */
 			memcpy(&HeaderData[0], &recv_buf[0], HEADER_DATA_SIZE);
-			HeaderRcvFlg = 1;
 
 			/* Sub Header Infomation Proc */
 			sub_HeaderInfoProc();
@@ -366,14 +275,6 @@ static int SensorReadThread(void *p)
 					send_type = SUB_COM_TYPE_SENSOR;
 			}
 		} else if (type == SUB_COM_TYPE_FWUP_READY) {
-		/* FW Update Response */
-			/* Thread Start */
-			if (gFlg_AutoUpdate) {
-				gFlg_AutoUpdate = 0;
-				SensorFWUpdateLoop_auto();
-			} else {
-				SensorFWUpdateLoop();
-			}
 		} else {
 		/* Data */
 			recv_index = SUB_COM_DATA_INDEX_ID;
@@ -383,16 +284,6 @@ static int SensorReadThread(void *p)
 					memcpy(SubCpuVersion, &recv_buf[recv_index + 1], SUB_COM_DATA_SIZE_GETDATA);
 					dev_info(&st->sdev->dev, "subcpu FW version:%02x:%02x:%02x\n",
 							SubCpuVersion[0], SubCpuVersion[1], SubCpuVersion[2]);
-					if (flg_first) {
-						if (is_subcpu_need_update(SubCpuVersion[0],
-								SubCpuVersion[1], SubCpuVersion[2])) {
-							dev_info(&st->sdev->dev, "subcpu FW update Start!\n");
-							start_subcpu_update();
-						} else {
-							kfree(gSUBCPU_Firmware);
-						}
-						flg_first = 0;
-					}
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP1) {
 					subcpu_battery_update_status1(recv_buf);
 				} else if (recv_buf[recv_index] == SUB_COM_GETID_POWER_PROP2) {
@@ -471,122 +362,6 @@ static int SensorReadThread(void *p)
 	return 0;
 }
 
-static int SensorFWUpdateLoop(void)
-{
-	struct Msensors_state *st = g_st;
-	unsigned char type;
-	unsigned char send_type;
-	int next_recv_size;
-	unsigned char* recv_buf = &SpiRecvBuff[0];
-
-	struct file* filp=NULL;
-	int readsize=1;
-	char buf[256] = {0};
-	char buf2[256] = {0};
-	mm_segment_t oldfs;
-	char* t;
-	int len=0;
-
-	/* Open and get line 1 */
-	oldfs = get_fs();
-	set_fs(get_ds());
-	filp = filp_open(path, O_RDONLY, 0);
-	set_fs(oldfs);
-
-	if (IS_ERR(filp)) {
-		dev_dbg(&st->sdev->dev, "File Open Error\n");
-		return 0;
-	} else {
-		oldfs = get_fs();
-		set_fs(get_ds());
-		readsize = filp->f_op->read(filp, buf, (sizeof(buf)-1), &filp->f_pos);
-		set_fs(oldfs);
-
-		t = memchr(buf, '\n', readsize);
-		if (t != NULL) {
-			len = ++t - buf;
-			memset(buf2, 0x00, sizeof(buf2));
-			memcpy(buf2, buf, len);
-			filp->f_pos = (filp->f_pos - (readsize - len));
-		}
-	}
-
-	Now_len = 1; //init
-
-	if(buf2[0] != 'S')
-		dev_dbg(&st->sdev->dev, "Error Not S-Record %d \n", buf2[0]);
-
-	memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-	memset(&SpiRecvBuff[0], 0x00, WRITE_DATA_SIZE);
-	SpiSendBuff[0] = SUB_COM_TYPE_SET_FW_SIZE;
-	SpiSendBuff[1] = (unsigned char)(len & 0x00FF);
-	SpiSendBuff[2] = (unsigned char)((len & 0xFF00) >> 8);
-	SpiSendBuff[3] = (unsigned char)(Now_len & 0x00FF);
-	SpiSendBuff[4] = (unsigned char)((Now_len & 0xFF00) >> 8);
-	SpiSendBuff[5] = (unsigned char)(Totallen & 0x00FF);
-	SpiSendBuff[6] = (unsigned char)((Totallen & 0xFF00) >> 8);
-
-	PreSendType =  SpiSendBuff[0];
-	Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], WRITE_DATA_SIZE);
-
-	while (!kthread_should_stop()) {
-		next_recv_size = SUB_COM_TYPE_SIZE;
-		send_type = SUB_COM_TYPE_RES_NOMAL;
-		memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
-
-		/* Get Type */
-		type = recv_buf[SUB_COM_HEAD_INDEX_TYPE];
-
-		/* HEADER Information */
-		if (type == SUB_COM_TYPE_FW_REQ_DATA) {
-			SpiSendBuff[0] = SUB_COM_TYPE_SET_FW_DATA;
-			memcpy(&SpiSendBuff[1], buf2, len);
-			PreSendType = SpiSendBuff[0];
-			Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], 1 + len);
-			dev_dbg(&st->sdev->dev, "Snd Data = %s \n",buf2);
-		} else if(type == SUB_COM_TYPE_FW_REQ_HEAD) {
-			oldfs = get_fs();
-			set_fs(get_ds());
-			readsize = filp->f_op->read(filp, buf, (sizeof(buf)-1), &filp->f_pos);
-			set_fs(oldfs);
-
-			if (readsize == 0) {
-				dev_dbg(&st->sdev->dev, "FWUpdate Complete!!!!\n");
-				filp_close(filp, NULL);
-				ioctl_complete = 1;
-				wake_up_interruptible(&wait_ioctl);
-				return 0;
-			}
-
-			t = memchr(buf, '\n', readsize);
-			if (t != NULL) {
-				len = ++t - buf;
-				memset(buf2, 0x00, sizeof(buf2));
-				memcpy(buf2, buf, len);
-				filp->f_pos = (filp->f_pos - (readsize - len));
-			}
-
-			Now_len++;
-
-			memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-			SpiSendBuff[0] = SUB_COM_TYPE_SET_FW_SIZE;
-			SpiSendBuff[1] = (unsigned char)(len & 0x00FF);
-			SpiSendBuff[2] = (unsigned char)((len & 0xFF00) >> 8);
-			SpiSendBuff[3] = (unsigned char)(Now_len & 0x00FF);
-			SpiSendBuff[4] = (unsigned char)((Now_len & 0xFF00) >> 8);
-			SpiSendBuff[5] = (unsigned char)(Totallen & 0x00FF);
-			SpiSendBuff[6] = (unsigned char)((Totallen & 0xFF00) >> 8);
-
-			PreSendType =  SpiSendBuff[0];
-			Msensors_Spi_Send(st, &SpiSendBuff[0], &SpiRecvBuff[0], WRITE_DATA_SIZE);
-			dev_dbg(&st->sdev->dev, "FWUp (%04d/%04d)line \n",Now_len,Totallen);
-		} else {
-			dev_dbg(&st->sdev->dev, "FWUp RecvDeta Error (%04d/%04d)line \n",Now_len,Totallen);
-		}
-	}
-	return 0;
-}
-
 static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t* offset )
 {
 	int cnt=0;
@@ -627,7 +402,6 @@ error_ret:
 	return ret;
 }
 
-
 static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count, loff_t* offset )
 {
 	struct Msensors_state *st;
@@ -663,66 +437,6 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	return ret;
 }
 
-static int ioctl_fwupdate(struct file *file, unsigned int cmd, unsigned long arg)
-{
-	struct Msensors_state *st;
-	int ret;
-	int tmp_interval;
-	unsigned char write_buff[WRITE_DATA_SIZE];
-	struct file* filp=NULL;
-	int readsize=1;
-	char buf[256] = {0};
-	char buf2[256] = {0};
-	char* t;
-	int len=0;
-	mm_segment_t oldfs;
-
-		st = file->private_data;
-
-		/* Open the file and count lines */
-		oldfs = get_fs();
-		set_fs(get_ds());
-		filp = filp_open(path, O_RDONLY, 0);
-		set_fs(oldfs);
-		if (IS_ERR(filp)) {
-			dev_dbg(&st->sdev->dev, "File Open Error\n");
-			return -1;
-		}
-
-		/* Read line by line */
-		Totallen = 0;
-		readsize = 1;
-		while (readsize != 0) {
-			oldfs = get_fs();
-			set_fs(get_ds());
-			readsize = filp->f_op->read(filp, buf, (sizeof(buf)-1), &filp->f_pos);
-			set_fs(oldfs);
-			if (readsize != 0) {
-				t = memchr(buf, '\n', readsize);
-				if (t != NULL) {
-					len = ++t - buf;
-					memset(buf2, 0x00, sizeof(buf2));
-					memcpy(buf2, buf, len);
-					filp->f_pos = (filp->f_pos - (readsize - len));
-				}
-				Totallen++;
-			}
-		}
-		filp_close(filp, NULL);
-
-		/* Request FW update to SUBCPU */
-		memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-		ret = copy_from_user((unsigned char*)&tmp_interval, (unsigned char*)arg, sizeof(int));
-
-		write_buff[0] = SUB_COM_TYPE_WRITE;
-		write_buff[1] = SUB_COM_SETID_SUB_FIRM_UPDATE;
-		ioctl_complete = 0;
-		Set_WriteDataBuff(&write_buff[0]);
-		wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
-
-	return ret;
-}
-
 static void sub_read_command(uint8_t command)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
@@ -739,9 +453,7 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	int ret;
 
 	pr_info("%s: cmd %d\n", __func__, cmd);
-	if (cmd == IOC_FW_UPDATE) {
-		ret = ioctl_fwupdate(file, cmd, arg);
-	} else if (cmd == IOC_ACCEL_ADJ) {
+	if (cmd == IOC_ACCEL_ADJ) {
 		/* accelerometer factory adjustment */
 		sub_read_command(SUB_COM_GETID_ACC_ADJ);
 		ret = copy_to_user((void __user *)arg, SubReadData, 3);
@@ -818,8 +530,6 @@ static void Msensors_init(struct Msensors_state *st)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
-	SpiErrorCount = 0;
-
 	memset(&SpiSendBuff[0], SUB_COM_SEND_DUMMY, SPI_DATA_MAX);
 	SpiSendBuff[0] = SUB_COM_TYPE_WRITE;
 	SpiSendBuff[1] = SUB_COM_SETID_MAIN_STATUS;
@@ -849,9 +559,6 @@ static int Msensors_probe(struct spi_device *spi)
 	struct Msensors_state *st;
 
 	dev_dbg(&spi->dev, "Msensors_probe Start\n");
-
-	gSUBCPU_Firmware = kzalloc(sizeof(SUBCPU_Firmware), GFP_KERNEL);
-	memcpy(gSUBCPU_Firmware, SUBCPU_Firmware, sizeof(SUBCPU_Firmware));
 
 	init_waitqueue_head(&wait_rd);
 	init_waitqueue_head(&wait_subint);

@@ -154,7 +154,6 @@
 
 
 #define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
-#define IOC_FW_UPDATE	_IOR('K', 1, unsigned char *)
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
 
 
