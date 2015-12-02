@@ -302,8 +302,8 @@ static int SensorReadThread(void *p)
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
-						if (last_event_time > event_time)
-							event_time = last_event_time;
+						if (last_event_time >= event_time)
+							event_time = last_event_time + 1000LL;
 						last_event_time = event_time;
 						Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
 						Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
