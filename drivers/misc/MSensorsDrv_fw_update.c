@@ -132,7 +132,7 @@ void Msensors_set_fw_version(struct Msensors_state *st, uint8_t *data)
 		st->fw.maj_ver, st->fw.min_ver, st->fw.revision);
 
 	st->fw.ver_loaded = 1;
-	wake_up_interruptible(&st->fw.wait);
+	wake_up(&st->fw.wait);
 }
 
 static void get_msensors_version(void)
@@ -213,7 +213,7 @@ static void _msensors_firmware_cont(const struct firmware *fw, void *context)
 	}
 
 	if (st->fw.ver_loaded == 0)
-		wait_event_interruptible(st->fw.wait, st->fw.ver_loaded == 1);
+		wait_event(st->fw.wait, st->fw.ver_loaded == 1);
 
 	if (!(need_update(st, (uint8_t *)fw->data, fw->size))) {
 		release_firmware(fw);
@@ -223,13 +223,13 @@ static void _msensors_firmware_cont(const struct firmware *fw, void *context)
 	}
 
 	start_msensors_update();
-	wait_event_interruptible(st->fw.wait, st->fw.status == MSENSORS_FW_UP_READY);
+	wait_event(st->fw.wait, st->fw.status == MSENSORS_FW_UP_READY);
 	st->fw.status = MSENSORS_FW_UP_UPDATING;
 	msensor_do_update(st, (uint8_t *)fw->data, fw->size);
 	release_firmware(fw);
 	st->fw.status = MSENSORS_FW_UP_WAIT_RESET;
 	show_fw_status(st);
-	wake_up_interruptible(&st->fw.wait);
+	wake_up(&st->fw.wait);
 }
 
 static int update_firmware_from_class(struct device *dev)

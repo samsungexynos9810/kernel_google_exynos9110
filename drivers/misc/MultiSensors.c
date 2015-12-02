@@ -186,7 +186,7 @@ retry:
 		list_add_tail(&wb->bqueue, &wd_queue);
 		spin_unlock_irqrestore(&slock, flags);
 		sub_main_int_occur = 1;
-		wake_up_interruptible(&wait_subint);
+		wake_up(&wait_subint);
 	} else if (Flg_driver_ready) {
 		msleep(10);
 		goto retry;
@@ -267,8 +267,8 @@ static int SensorReadThread(void *p)
 			}
 		} else if (type == SUB_COM_TYPE_FWUP_READY) {
 			st->fw.status = MSENSORS_FW_UP_READY;
-			wake_up_interruptible(&st->fw.wait);
-			wait_event_interruptible(st->fw.wait,
+			wake_up(&st->fw.wait);
+			wait_event(st->fw.wait,
 					st->fw.status == MSENSORS_FW_UP_WAIT_RESET);
 		} else {
 		/* Data */
@@ -334,7 +334,7 @@ static int SensorReadThread(void *p)
 		st->spi.send_buf[SUB_COM_HEAD_INDEX_TYPE] = send_type;
 		st->spi.pre_send_type =  send_type;
 		if (send_type == SUB_COM_TYPE_RES_NOMAL) {
-			wait_event_interruptible(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
+			wait_event(wait_subint, sub_main_int_occur | Flg_driver_shutdown);
 			sub_main_int_occur = 0;
 		}
 		if (Flg_driver_shutdown)
@@ -351,14 +351,12 @@ static int SensorReadThread(void *p)
 			freeWbBuf(wb);
 		}
 	}
-
 	return 0;
 }
 
 static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t* offset )
 {
 	int cnt=0;
-	char* tmp_buf;
 	int buf_index=0;
 	int size = sizeof(struct Msensors_data);
 	int ret;
@@ -366,33 +364,27 @@ static ssize_t Msensors_Read( struct file* file, char* buf, size_t count, loff_t
 	struct Msensors_state *st;
 
 	st = file->private_data;
-
-	tmp_buf = kzalloc(sizeof(struct Msensors_data) * count, GFP_KERNEL);
-	if (tmp_buf == NULL) {
-		ret = -ENOMEM;
-		goto error_ret;
-	}
-
+retrywait:
 	/* Wait until dataBuffWriteIndex moved */
-	wait_event_interruptible(wait_rd, dataBuffWriteIndex != dataBuffReadIndex);
-	for (cnt = 0; cnt < data_num; cnt++) {
-		if( dataBuffWriteIndex == dataBuffReadIndex )
-			break; 	/* no data */
-		memcpy(&tmp_buf[buf_index], &Msensors_data_buff[dataBuffReadIndex], size);
+	ret = wait_event_interruptible(wait_rd, dataBuffWriteIndex != dataBuffReadIndex);
+	if (ret < 0) {
+		return ret;
+	}
+	while (cnt < data_num) {
+		if (dataBuffWriteIndex == dataBuffReadIndex) {
+			if (cnt == 0)
+				goto retrywait;
+			else
+				break;	/* no data */
+		}
+		if (copy_to_user(buf+buf_index, &Msensors_data_buff[dataBuffReadIndex], size))
+			return -EFAULT;
 		buf_index += size;
+		cnt++;
 		INC_INDEX(dataBuffReadIndex, MSENSORS_DATA_MAX);
 	}
-	ret = copy_to_user(buf, tmp_buf, buf_index);
-	if (ret < 0) {
-		kfree(tmp_buf);
-		goto error_ret;
-	}
-	ret = buf_index;
 
-	kfree(tmp_buf);
-
-error_ret:
-	return ret;
+	return buf_index;
 }
 
 static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count, loff_t* offset )
@@ -409,12 +401,6 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	if (!ret) {
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
 		Set_WriteDataBuff(&write_buff[0]);
-		if (write_buff[1] == SUB_COM_SETID_FIFO_FLUSH) {
-			Msensors_data_buff[0].sensor_type = MSENSORS_TYPE_META;
-			Msensors_data_buff[0].handle = write_buff[2];
-			dataBuffReadIndex = 0;
-			dataBuffWriteIndex = 1;
-		}
 	}
 
 	/* [for demo] if pnlcd on/off command is issued, backlight off/on */
@@ -430,15 +416,17 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	return ret;
 }
 
-static void sub_read_command(uint8_t command)
+static int sub_read_command(uint8_t command)
 {
+	int ret;
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
 	write_buff[0] = SUB_COM_TYPE_READ;
 	write_buff[1] = command;
 	Set_WriteDataBuff(&write_buff[0]);
 	ioctl_complete = 0;
-	wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
+	ret = wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
+	return ret;
 }
 
 static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -448,12 +436,15 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	pr_info("%s: cmd %d\n", __func__, cmd);
 	if (cmd == IOC_ACCEL_ADJ) {
 		/* accelerometer factory adjustment */
-		sub_read_command(SUB_COM_GETID_ACC_ADJ);
+		ret = sub_read_command(SUB_COM_GETID_ACC_ADJ);
+		if (ret < 0)
+			goto exit_ioctl;
 		ret = copy_to_user((void __user *)arg, SubReadData, 3);
 	} else {
 		ret = -1;
 		pr_info("%s: unknown command %x\n", __func__, cmd);
 	}
+exit_ioctl:
 	return ret;
 }
 
@@ -531,7 +522,7 @@ static struct wake_lock wlock;
 static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 {
 	sub_main_int_occur = 1;
-	wake_up_interruptible(&wait_subint);
+	wake_up(&wait_subint);
 	wake_lock_timeout(&wlock, HZ/5);
 	return IRQ_HANDLED;
 }
@@ -652,7 +643,7 @@ static void Msensors_shutdown(struct spi_device *spi)
 		msleep(10);
 
 	Flg_driver_shutdown = 1;
-	wake_up_interruptible(&wait_subint);
+	wake_up(&wait_subint);
 }
 
 static int Msensors_suspend(struct device *dev)
@@ -689,9 +680,6 @@ static int Msensors_resume(struct device *dev)
 	disable_irq_wake(irq);
 
 	Flg_driver_ready = 1;
-	/* Write Buffer Clear for Resume */
-	dataBuffReadIndex = 0;
-	dataBuffWriteIndex = 0;
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
 

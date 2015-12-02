@@ -92,7 +92,6 @@
 #define SUB_COM_SENSID_STPDETECTOR		(0x07)		/* Step Detector Data */
 #define SUB_COM_SENSID_NUM			(0x08)		/* Number of SENSIDs */
 
-#define MSENSORS_TYPE_META			(0x00)		/* Sensor Type Meta */
 #define MSENSORS_TYPE_ACCELERATION		(0x01)		/* Sensor Type Acceleration */
 #define MSENSORS_TYPE_MAGNETIC_FIELD		(0x02)		/* Sensor Type Magnetic */
 #define MSENSORS_TYPE_GYRO			(0x03)		/* Sensor Type Gyroscope */
@@ -101,8 +100,7 @@
 #define MSENSORS_TYPE_STEP_COUNTER		(0x06)		/* Sensor Type Step Counter */
 #define MSENSORS_TYPE_STEP_DETECTOR		(0x07)		/* Sensor Type Step Detector */
 #define MSENSORS_TYPE_WRIST_TILT	(0x08)
-#define MSENSORS_TYPE_NUM			(0x09)		/* Number of Sensor Types */
-#define MSENSORS_TYPE_INVALID			(0xFF)		/* Invalid Sensor Type */
+#define MSENSORS_TYPE_META			(0x09)		/* Number of Sensor Types */
 
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
 #define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
