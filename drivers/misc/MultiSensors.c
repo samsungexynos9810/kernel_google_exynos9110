@@ -28,7 +28,6 @@
 #include <linux/wakelock.h>
 
 #include "../power/subcpu_battery.h"
-#include "../video/backlight/bd82103.h"
 #include "MSensorsDrv.h"
 
 #define DRV_NAME	"MultiSensors"
@@ -402,16 +401,6 @@ static ssize_t Msensors_Write( struct file* file, const char* buf, size_t count,
 	if (!ret) {
 		write_buff[0] = SUB_COM_TYPE_WRITE;	//0xA1
 		Set_WriteDataBuff(&write_buff[0]);
-	}
-
-	/* [for demo] if pnlcd on/off command is issued, backlight off/on */
-	if (write_buff[1] == SUB_COM_SETID_DEMO_CMD &&
-			write_buff[2] == SUB_LCD_CONTROL) {
-		if (write_buff[3] & SUB_LCD_ONOFF_MASK) {
-			msleep(300);
-			on_off_light_for_pnlcd_demo(0);
-		} else
-			on_off_light_for_pnlcd_demo(1);
 	}
 
 	return ret;

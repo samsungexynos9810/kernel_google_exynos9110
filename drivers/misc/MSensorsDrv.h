@@ -149,9 +149,6 @@
 #define PARAM_INDEX_GYRO_Z                  	(  4U)
 #define PARAM_INDEX_PRESS                   	(  0U)
 
-#define SUB_LCD_CONTROL				(0)
-#define SUB_LCD_ONOFF_MASK			(0x80)
-
 
 #define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)

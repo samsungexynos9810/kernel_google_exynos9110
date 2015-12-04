@@ -32,7 +32,6 @@ struct bd82103_chip_data {
 	int bl_intensity;
 	unsigned char flg_theater_mode;
 };
-static struct bd82103_chip_data g_pchip;
 
 static int initialize_gpio(struct bd82103_chip_data *pchip)
 {
@@ -104,20 +103,9 @@ static void ctrl_brightness(struct bd82103_chip_data *pchip, int intensity)
 	pchip->bl_intensity = intensity;
 }
 
-void on_off_light_for_pnlcd_demo(uint8_t sw)
-{
-	struct bd82103_chip_data *pchip = &g_pchip;
-	int intensity = pchip->bd->props.brightness;
-
-	if (sw)
-		ctrl_brightness(pchip, intensity);
-	else
-		ctrl_brightness(pchip, 0);
-}
-
 static int bd82103_update_status(struct backlight_device *bd)
 {
-	struct bd82103_chip_data *pchip = &g_pchip;
+	struct bd82103_chip_data *pchip = bl_get_data(bd);
 	int intensity = bd->props.brightness;
 
 	/* detect theater mode */
@@ -146,7 +134,7 @@ static int bd82103_update_status(struct backlight_device *bd)
 
 static int bd82103_get_brightness(struct backlight_device *bd)
 {
-	struct bd82103_chip_data *pchip = &g_pchip;
+	struct bd82103_chip_data *pchip = bl_get_data(bd);
 
 	return pchip->bl_intensity;
 }
@@ -158,8 +146,12 @@ static const struct backlight_ops bd82103_bd_ops = {
 
 static int bd82103_probe(struct platform_device *pdev)
 {
-	struct bd82103_chip_data *pchip = &g_pchip;
+	struct bd82103_chip_data *pchip = NULL;
 	struct backlight_properties props;
+
+	pchip = devm_kzalloc(&pdev->dev, sizeof(struct bd82103_chip_data), GFP_KERNEL);
+	if (!pchip)
+		return -ENOMEM;
 
 	pchip->dev = &pdev->dev;
 	pchip->gpio = of_get_gpio(pdev->dev.of_node, 0);
@@ -188,7 +180,7 @@ static int bd82103_probe(struct platform_device *pdev)
 
 static int bd82103_remove(struct platform_device *pdev)
 {
-	struct bd82103_chip_data *pchip = &g_pchip;
+	struct bd82103_chip_data *pchip = platform_get_drvdata(pdev);
 
 	pchip->bd->props.brightness = 0;
 	backlight_update_status(pchip->bd);
