@@ -54,12 +54,8 @@
 
 extern struct dsim_device *dsim0_for_decon;
 extern struct dsim_device *dsim1_for_decon;
-extern struct mipi_dsim_lcd_driver s6e3ha0_mipi_lcd_driver;
-extern struct mipi_dsim_lcd_driver s6e3ha2k_mipi_lcd_driver;
-extern struct mipi_dsim_lcd_driver s6e3hf2_mipi_lcd_driver;
-extern struct mipi_dsim_lcd_driver s6e3hf2_wqhd_mipi_lcd_driver;
+extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
-extern struct mipi_dsim_lcd_driver ea8064g_mipi_lcd_driver;
 
 enum mipi_dsim_pktgo_state {
 	DSIM_PKTGO_DISABLED,

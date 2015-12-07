@@ -64,19 +64,19 @@ void lcd_init(struct decon_lcd * lcd)
 {
 	/*level1_command (to be added)*/
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) apply_level_1_key,
+		(unsigned long) apply_level_1_key,
 		ARRAY_SIZE(apply_level_1_key)) == -1)
 		dsim_err("failed to send apply_level_1_key_command.\n");
 
 	/*level2_command*/
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) apply_level_2_key,
+		(unsigned long) apply_level_2_key,
 		ARRAY_SIZE(apply_level_2_key)) == -1)
 		dsim_err("failed to send apply_level_2_key_command.\n");
 
 	/*sleep out */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) sleep_out,
+		(unsigned long) sleep_out,
 		ARRAY_SIZE(sleep_out)) == -1)
 		dsim_err("failed to send sleep_out_command.\n");
 
@@ -85,67 +85,67 @@ void lcd_init(struct decon_lcd * lcd)
 
 	/*panel_condition_set */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) panel_condition_set,
+		(unsigned long) panel_condition_set,
 		ARRAY_SIZE(panel_condition_set)) == -1)
 		dsim_err("failed to send panel_condition_set_command.\n");
 
 	/*panel_condition_update */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) panel_condition_update,
+		(unsigned long) panel_condition_update,
 		ARRAY_SIZE(panel_condition_update)) == -1)
 		dsim_err("failed to send panel_condition_update_command.\n");
 
 	/*gamma_condition_set */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) gamma_condition_set,
+		(unsigned long) gamma_condition_set,
 		ARRAY_SIZE(gamma_condition_set)) == -1)
 		dsim_err("failed to send gamma_condition_set_command.\n");
 
 	/*gamma_condition_update */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) gamma_update,
+		(unsigned long) gamma_update,
 		ARRAY_SIZE(gamma_update)) == -1)
 		dsim_err("failed to send gamma_update_command.\n");
 
 	/*source control */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) etc_set_source_ctrl,
+		(unsigned long) etc_set_source_ctrl,
 		ARRAY_SIZE(etc_set_source_ctrl)) == -1)
 		dsim_err("failed to etc_set_source_ctrl_command.\n");
 
 	/*pentile control */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) etc_set_pentile_ctrl,
+		(unsigned long) etc_set_pentile_ctrl,
 		ARRAY_SIZE(etc_set_pentile_ctrl)) == -1)
 		dsim_err("failed to send etc_set_pentile_ctrl_command.\n");
 
 	/*nvm setting */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) elvss_NVM_set,
+		(unsigned long) elvss_NVM_set,
 		ARRAY_SIZE(elvss_NVM_set)) == -1)
 		dsim_err("failed to send elvss_NVM_set_command.\n");
 
 	/*power control */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) etc_set_power_ctrl,
+		(unsigned long) etc_set_power_ctrl,
 		ARRAY_SIZE(etc_set_power_ctrl)) == -1)
 		dsim_err("failed to send etc_set_power_ctrl_command.\n");
 
 	/*dynamic elvss control */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) elvss_ctrl_set,
+		(unsigned long) elvss_ctrl_set,
 		ARRAY_SIZE(elvss_ctrl_set)) == -1)
 		dsim_err("failed to send dyanmic_elvss_ctrl_set_command.\n");
 
 	/*acl control1 */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) acl_ctrl1,
+		(unsigned long) acl_ctrl1,
 		ARRAY_SIZE(acl_ctrl1)) == -1)
 		dsim_err("failed to send acl_ctrl1_command.\n");
 
 	/*acl control2 */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned int) acl_ctrl2,
+		(unsigned long) acl_ctrl2,
 		ARRAY_SIZE(acl_ctrl2)) == -1)
 		dsim_err("failed to send acl_ctrl2_command.\n");
 
