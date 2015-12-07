@@ -3487,8 +3487,11 @@ static int decon_probe(struct platform_device *pdev)
 
 	decon_reg_activate_window(DECON_INT, win_idx);
 
+#ifdef BRINGUP_DEBUG
+	decon_reg_set_winmap(DECON_INT, win_idx, 0x0000ff /* blue */, 1);
+#else
 	decon_reg_set_winmap(DECON_INT, win_idx, 0x000000 /* black */, 1);
-
+#endif
 	if (decon->pdata->trig_mode == DECON_HW_TRIG)
 		decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
 				decon->pdata->trig_mode, DECON_TRIG_ENABLE);
@@ -3518,7 +3521,45 @@ decon_init_done:
 	}
 
 	decon_info("decon registered successfully");
+#ifdef BRINGUP_DEBUG
+	decon_dump(decon);
+	{
+		/* check CMU mux of display setting */
 
+		void __iomem *cmu_sfr;
+		u32 reg;
+		cmu_sfr = ioremap(0x148d0224, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x148d0224 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x148d0228, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x148d0228 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x148d0824, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x148d0824 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x148d0828, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x148d0828 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x10460234, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x10460234 cmu_sfr : 0x%08x\n", __func__, reg);
+		cmu_sfr = ioremap(0x10460238, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x10460238 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x148d0210, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x148d0210 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x148d0214, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		printk("%s, 0x148d0214 cmu_sfr : 0x%08x\n", __func__, reg);
+	}
+#endif
 	return 0;
 
 fail_thread:
