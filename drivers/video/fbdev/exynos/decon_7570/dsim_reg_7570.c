@@ -400,13 +400,13 @@ void dsim_reg_set_porch(u32 id, struct decon_lcd *lcd)
 		dsim_reg_set_cmdallow(id, DSIM_CMD_ALLOW_VALUE);
 		dsim_reg_set_stable_vfp(id, DSIM_STABLE_VFP_VALUE);
 		dsim_reg_set_vbp(id, lcd->vbp);
-		dsim_reg_set_hfp(id, lcd->hfp);
+		dsim_reg_set_hfp(id, lcd->dsim_hfp);
 		dsim_reg_set_hbp(id, lcd->hbp);
 		dsim_reg_set_vsa(id, lcd->vsa);
 		dsim_reg_set_hsa(id, lcd->hsa);
 	} else if (lcd->mode == DECON_MIPI_COMMAND_MODE) {
 		dsim_reg_set_vbp(id, lcd->vbp);
-		dsim_reg_set_hfp(id, lcd->hfp);
+		dsim_reg_set_hfp(id, lcd->dsim_hfp);
 		dsim_reg_set_vsa(id, lcd->vsa);
 		dsim_reg_set_hsa(id, lcd->hsa);
 	} else {

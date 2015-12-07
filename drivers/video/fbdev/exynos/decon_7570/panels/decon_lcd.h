@@ -44,7 +44,8 @@ struct decon_lcd {
 	enum decon_psr_mode mode;
 	unsigned int vfp;
 	unsigned int vbp;
-	unsigned int hfp;
+	unsigned int dsim_hfp;
+	unsigned int decon_hfp;
 	unsigned int hbp;
 
 	unsigned int vsa;

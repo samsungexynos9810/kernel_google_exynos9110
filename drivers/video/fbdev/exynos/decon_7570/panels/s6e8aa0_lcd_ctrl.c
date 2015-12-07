@@ -35,7 +35,8 @@ struct decon_lcd s6e8aa0_lcd_info = {
 
 	.vfp = 0x1,
 	.vbp = 0xD,
-	.hfp = 0x18,
+	.dsim_hfp = 0x18,
+	.decon_hfp = 0x18,
 	.hbp = 0x18,
 
 	.vsa = 0x02,

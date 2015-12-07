@@ -646,7 +646,7 @@ static void decon_parse_lcd_info(struct decon_device *decon)
 
 	for (i = 0; i < decon->pdata->max_win; i++) {
 		decon->windows[i]->win_mode.videomode.left_margin = lcd_info->hbp;
-		decon->windows[i]->win_mode.videomode.right_margin = lcd_info->hfp;
+		decon->windows[i]->win_mode.videomode.right_margin = lcd_info->decon_hfp;
 		decon->windows[i]->win_mode.videomode.upper_margin = lcd_info->vbp;
 		decon->windows[i]->win_mode.videomode.lower_margin = lcd_info->vfp;
 		decon->windows[i]->win_mode.videomode.hsync_len = lcd_info->hsa;

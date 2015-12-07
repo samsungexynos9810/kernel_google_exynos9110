@@ -138,7 +138,7 @@ void decon_reg_set_porch(u32 id, int dsi_idx, struct decon_lcd *info)
 	val = VIDTCON1_VSPW(info->vsa - 1);
 	decon_write(id, VIDTCON1(dsi_idx), val);
 
-	val = VIDTCON2_HBPD(info->hbp - 1) | VIDTCON2_HFPD(info->hfp - 1);
+	val = VIDTCON2_HBPD(info->hbp - 1) | VIDTCON2_HFPD(info->decon_hfp - 1);
 	decon_write(id, VIDTCON2(dsi_idx), val);
 
 	val = VIDTCON3_HSPW(info->hsa - 1);

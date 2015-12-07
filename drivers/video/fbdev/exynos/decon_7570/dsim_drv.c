@@ -1147,7 +1147,7 @@ int dsim_create_rw_test_sysfs(struct dsim_device *dsim)
 
 static int dsim_parse_lcd_info(struct dsim_device *dsim)
 {
-	u32 res[3];
+	u32 res[4];
 	struct device_node *node;
 
 	node = of_parse_phandle(dsim->dev->of_node, "lcd_info", 0);
@@ -1169,11 +1169,12 @@ static int dsim_parse_lcd_info(struct dsim_device *dsim)
 	of_property_read_u32(node, "timing,refresh", &dsim->lcd_info.fps);
 	dsim_dbg("LCD refresh rate(%d)\n", dsim->lcd_info.fps);
 
-	of_property_read_u32_array(node, "timing,h-porch", res, 3);
+	of_property_read_u32_array(node, "timing,h-porch", res, 4);
 	dsim->lcd_info.hbp = res[0];
-	dsim->lcd_info.hfp = res[1];
+	dsim->lcd_info.dsim_hfp = res[1];
 	dsim->lcd_info.hsa = res[2];
-	dsim_dbg("hbp(%d), hfp(%d), hsa(%d)\n", res[0], res[1], res[2]);
+	dsim->lcd_info.decon_hfp = res[3];
+	dsim_dbg("hbp(%d), dsim_hfp(%d), hsa(%d), decon_hfp(%d)\n", res[0], res[1], res[2], res[3]);
 
 	of_property_read_u32_array(node, "timing,v-porch", res, 3);
 	dsim->lcd_info.vbp = res[0];
