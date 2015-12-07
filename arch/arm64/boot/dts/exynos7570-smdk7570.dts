@@ -83,29 +83,35 @@
 
 	decon_fb@14830000 {
 		psr_mode = <0>; /* 0: video mode, 1: DP command mode, 2: MIPI command mode */
-		/* vclk = 207Mhz */
-		disp-vclk = <207000000>;
+		/* vclk = 100Mhz */
+		disp-vclk = <100000000>;
 		/* aclk = 208Mhz */
 		disp-dvfs = <208000000>;
+		/* XEINT3, GPIO & pin control */
+		gpios = <&gpa0 3 0xf>;
 		status = "okay";
 	};
 
 	dsim_0: dsim@14800000 {
-		lcd_info = <&emul_disp>;
+		lcd_info = <&s6e8aa0>;
+		/*lcd reset */
+		gpios = <&gpd2 0 0x1>;
+		status = "okay";
 	};
 
-	emul_disp: emul_disp_fhd {
+	s6e8aa0: s6e8aa0_hd {
 		mode = <0>; /* 0: video mode, 1: DP command mode, 2: MIPI command mode */
 		/* HD(720 x 1280) */
+		panel_name = "s6e8aa0";
 		resolution = <720 1280>;
-		size = <70 121>;
+		size = <71 114>;
 		timing,refresh = <60>;
-		/* hbp, hfp, hsa */
-		timing,h-porch = <1 1837 1>;
-		/* vbp, vfp vsa */
-		timing,v-porch = <12 16 1>;
-		timing,dsi-hs-clk = <1100>;
-		timing,pms = <3 127 0>;
+		/* hbp, dsim_hfp, hsa, decon_hfp */
+		timing,h-porch = <0x1E 0x1E 0xA 551>;
+		/* VBP, VFP, VSA */
+		timing,v-porch = <0x1 0xD 0x2>;
+		timing,dsi-hs-clk = <600>;
+		timing,pms = <0x2 0x5C 0x1>;
 		timing,dsi-escape-clk = <20>;
 	};
 
