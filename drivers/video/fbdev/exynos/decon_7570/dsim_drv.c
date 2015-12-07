@@ -743,6 +743,26 @@ int dsim_set_panel_power(struct dsim_device *dsim, bool on)
 			gpio_free(res->lcd_power[1]);
 			usleep_range(10000, 11000);
 		}
+		/* HACK for backlight control. plz FIX ME */
+		if(IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA0)) {
+			void __iomem* reg;
+			u32 val;
+
+			/* GPC0_1_CON */
+			reg = ioremap(0x139B0000, SZ_4);
+			if(!reg)
+				return -ENOMEM;
+			val = readl(reg);
+			dsim_dbg("pwm read val : 0x%X\n", val);
+			val &= ~(0xf << 4);
+			val |= (0x1 << 4);
+
+			writel(val, reg);
+			dsim_dbg("pwm write val : 0x%X\n", val);
+
+			iounmap(reg);
+
+		}
 	} else {
 		ret = gpio_request_one(res->lcd_reset, GPIOF_OUT_INIT_LOW, "lcd_reset");
 		if (ret < 0) {
