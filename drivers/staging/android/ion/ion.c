@@ -704,7 +704,7 @@ static int ion_handle_add(struct ion_client *client, struct ion_handle *handle)
 	return 0;
 }
 
-int ion_parse_heap_id(unsigned int heap_id_mask, unsigned int flags);
+unsigned int ion_parse_heap_id(unsigned int heap_id_mask, unsigned int flags);
 
 struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 			     size_t align, unsigned int heap_id_mask,
@@ -736,6 +736,8 @@ struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 
 	down_read(&dev->lock);
 	heap_id_mask = ion_parse_heap_id(heap_id_mask, flags);
+	if (heap_id_mask == 0)
+		return ERR_PTR(-EINVAL);
 
 	plist_for_each_entry(heap, &dev->heaps, node) {
 		/* if the caller didn't specify this heap id */
