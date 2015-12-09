@@ -1169,18 +1169,29 @@ static int dsim_parse_lcd_info(struct dsim_device *dsim)
 	of_property_read_u32(node, "timing,refresh", &dsim->lcd_info.fps);
 	dsim_dbg("LCD refresh rate(%d)\n", dsim->lcd_info.fps);
 
-	of_property_read_u32_array(node, "timing,h-porch", res, 4);
-	dsim->lcd_info.hbp = res[0];
+	of_property_read_u32_array(node, "timing,dsim_h-porch", res, 3);
+	dsim->lcd_info.dsim_hbp = res[0];
 	dsim->lcd_info.dsim_hfp = res[1];
-	dsim->lcd_info.hsa = res[2];
-	dsim->lcd_info.decon_hfp = res[3];
-	dsim_dbg("hbp(%d), dsim_hfp(%d), hsa(%d), decon_hfp(%d)\n", res[0], res[1], res[2], res[3]);
+	dsim->lcd_info.dsim_hsa = res[2];
+	dsim_dbg("dsim H porch : hbp(%d), hfp(%d), hsa(%d)\n", res[0], res[1], res[2]);
 
-	of_property_read_u32_array(node, "timing,v-porch", res, 3);
-	dsim->lcd_info.vbp = res[0];
-	dsim->lcd_info.vfp = res[1];
-	dsim->lcd_info.vsa = res[2];
-	dsim_dbg("vbp(%d), vfp(%d), vsa(%d)\n", res[0], res[1], res[2]);
+	of_property_read_u32_array(node, "timing,dsim_v-porch", res, 3);
+	dsim->lcd_info.dsim_vbp = res[0];
+	dsim->lcd_info.dsim_vfp = res[1];
+	dsim->lcd_info.dsim_vsa = res[2];
+	dsim_dbg("dsim V porch : vbp(%d), vfp(%d), vsa(%d)\n", res[0], res[1], res[2]);
+
+	of_property_read_u32_array(node, "timing,decon_h-porch", res, 3);
+	dsim->lcd_info.decon_hbp = res[0];
+	dsim->lcd_info.decon_hfp = res[1];
+	dsim->lcd_info.decon_hsa = res[2];
+	dsim_dbg("decon H porch : hbp(%d), hfp(%d), hsa(%d)\n", res[0], res[1], res[2]);
+
+	of_property_read_u32_array(node, "timing,decon_v-porch", res, 3);
+	dsim->lcd_info.decon_vbp = res[0];
+	dsim->lcd_info.decon_vfp = res[1];
+	dsim->lcd_info.decon_vsa = res[2];
+	dsim_dbg("decon V porch : vbp(%d), vfp(%d), vsa(%d)\n", res[0], res[1], res[2]);
 
 	of_property_read_u32(node, "timing,dsi-hs-clk", &dsim->lcd_info.hs_clk);
 	dsim->clks_param.clks.hs_clk = dsim->lcd_info.hs_clk;

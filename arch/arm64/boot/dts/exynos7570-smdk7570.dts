@@ -106,12 +106,16 @@
 		resolution = <720 1280>;
 		size = <71 114>;
 		timing,refresh = <60>;
-		/* hbp, dsim_hfp, hsa, decon_hfp */
-		timing,h-porch = <0x1E 0x1E 0xA 551>;
-		/* VBP, VFP, VSA */
-		timing,v-porch = <0x1 0xD 0x2>;
+		/* dsim H porch : hbp, hfp, hsa */
+		timing,dsim_h-porch = <30 551 10>;
+		/* dsim V porch : VBP, VFP, VSA */
+		timing,dsim_v-porch = <1 13 2>;
+		/* decon H porch : hbp, hfp, hsa */
+		timing,decon_h-porch = <30 551 10>;
+		/* decon V porch : VBP, VFP, VSA */
+		timing,decon_v-porch = <1 13 2>;
 		timing,dsi-hs-clk = <600>;
-		timing,pms = <0x2 0x5C 0x1>;
+		timing,pms = <2 92 1>;
 		timing,dsi-escape-clk = <20>;
 	};
 

@@ -33,14 +33,21 @@ struct decon_lcd s6e8aa0_lcd_info = {
 	/* Only availaable VIDEO MODE */
 	.mode = VIDEO_MODE,
 
-	.vfp = 0x1,
-	.vbp = 0xD,
-	.dsim_hfp = 0x18,
+	.decon_vfp = 0x1,
+	.decon_vbp = 0xD,
 	.decon_hfp = 0x18,
-	.hbp = 0x18,
+	.decon_hfp = 0x18,
+	.decon_hbp = 0x18,
+	.decon_vsa = 0x02,
+	.decon_hsa = 0x02,
 
-	.vsa = 0x02,
-	.hsa = 0x02,
+	.dsim_vfp = 0x1,
+	.dsim_vbp = 0xD,
+	.dsim_hfp = 0x18,
+	.dsim_hfp = 0x18,
+	.dsim_hbp = 0x18,
+	.dsim_vsa = 0x02,
+	.dsim_hsa = 0x02,
 
 	.xres = 800,
 	.yres = 1280,

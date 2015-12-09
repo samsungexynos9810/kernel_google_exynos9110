@@ -770,7 +770,7 @@ static int decon_win_update_disp_config(struct decon_device *decon,
 	lcd_info.yres = win_rect->h;
 
 	lcd_info.decon_hfp = decon->lcd_info->decon_hfp + ((decon->lcd_info->xres - win_rect->w) >> 1);
-	lcd_info.vfp = decon->lcd_info->vfp + decon->lcd_info->yres - win_rect->h;
+	lcd_info.decon_vfp = decon->lcd_info->decon_vfp + decon->lcd_info->yres - win_rect->h;
 
 	v4l2_set_subdev_hostdata(decon->output_sd, &lcd_info);
 	ret = v4l2_subdev_call(decon->output_sd, core, ioctl, DSIM_IOC_SET_PORCH, NULL);
@@ -785,10 +785,10 @@ static int decon_win_update_disp_config(struct decon_device *decon,
 		decon_reg_config_mic(DECON_INT, 0, &lcd_info);
 	decon_reg_set_porch(DECON_INT, 0, &lcd_info);
 	decon_reg_set_resolution(DECON_INT, 0, &lcd_info);
-	decon_win_update_dbg("[WIN_UPDATE]%s : vfp %d vbp %d vsa %d decon_hfp %d dsim_hfp %d hbp %d hsa %d w %d h %d\n",
+	decon_win_update_dbg("[WIN_UPDATE]%s : decon porch vfp %d vbp %d vsa %d hfp %d hbp %d hsa %d w %d h %d\n",
 			__func__,
-			lcd_info.vfp, lcd_info.vbp, lcd_info.vsa,
-			lcd_info.decon_hfp, lcd_info.dsim_hfp, lcd_info.hbp, lcd_info.hsa,
+			lcd_info.decon_vfp, lcd_info.decon_vbp, lcd_info.decon_vsa,
+			lcd_info.decon_hfp, lcd_info.decon_hbp, lcd_info.decon_hsa,
 			win_rect->w, win_rect->h);
 
 	return ret;
@@ -2850,12 +2850,12 @@ static int decon_acquire_windows(struct decon_device *decon, int idx)
 	win->windata.virtual_y = lcd_info->yres * 2;
 	win->windata.width = lcd_info->xres;
 	win->windata.height = lcd_info->yres;
-	win->windata.win_mode.videomode.left_margin = lcd_info->hbp;
+	win->windata.win_mode.videomode.left_margin = lcd_info->decon_hbp;
 	win->windata.win_mode.videomode.right_margin = lcd_info->decon_hfp;
-	win->windata.win_mode.videomode.upper_margin = lcd_info->vbp;
-	win->windata.win_mode.videomode.lower_margin = lcd_info->vfp;
-	win->windata.win_mode.videomode.hsync_len = lcd_info->hsa;
-	win->windata.win_mode.videomode.vsync_len = lcd_info->vsa;
+	win->windata.win_mode.videomode.upper_margin = lcd_info->decon_vbp;
+	win->windata.win_mode.videomode.lower_margin = lcd_info->decon_vfp;
+	win->windata.win_mode.videomode.hsync_len = lcd_info->decon_hsa;
+	win->windata.win_mode.videomode.vsync_len = lcd_info->decon_vsa;
 	win->windata.win_mode.videomode.xres = lcd_info->xres;
 	win->windata.win_mode.videomode.yres = lcd_info->yres;
 	decon_missing_pixclock(&win->windata.win_mode);

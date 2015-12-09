@@ -42,14 +42,21 @@ struct stdphy_pms {
 
 struct decon_lcd {
 	enum decon_psr_mode mode;
-	unsigned int vfp;
-	unsigned int vbp;
+	unsigned int dsim_vfp;
+	unsigned int dsim_vbp;
 	unsigned int dsim_hfp;
-	unsigned int decon_hfp;
-	unsigned int hbp;
+	unsigned int dsim_hbp;
 
-	unsigned int vsa;
-	unsigned int hsa;
+	unsigned int dsim_vsa;
+	unsigned int dsim_hsa;
+
+	unsigned int decon_vfp;
+	unsigned int decon_vbp;
+	unsigned int decon_hfp;
+	unsigned int decon_hbp;
+
+	unsigned int decon_vsa;
+	unsigned int decon_hsa;
 
 	unsigned int xres;
 	unsigned int yres;

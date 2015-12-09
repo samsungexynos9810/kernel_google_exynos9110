@@ -399,16 +399,16 @@ void dsim_reg_set_porch(u32 id, struct decon_lcd *lcd)
 	if (lcd->mode == DECON_VIDEO_MODE) {
 		dsim_reg_set_cmdallow(id, DSIM_CMD_ALLOW_VALUE);
 		dsim_reg_set_stable_vfp(id, DSIM_STABLE_VFP_VALUE);
-		dsim_reg_set_vbp(id, lcd->vbp);
+		dsim_reg_set_vbp(id, lcd->dsim_vbp);
 		dsim_reg_set_hfp(id, lcd->dsim_hfp);
-		dsim_reg_set_hbp(id, lcd->hbp);
-		dsim_reg_set_vsa(id, lcd->vsa);
-		dsim_reg_set_hsa(id, lcd->hsa);
+		dsim_reg_set_hbp(id, lcd->dsim_hbp);
+		dsim_reg_set_vsa(id, lcd->dsim_vsa);
+		dsim_reg_set_hsa(id, lcd->dsim_hsa);
 	} else if (lcd->mode == DECON_MIPI_COMMAND_MODE) {
-		dsim_reg_set_vbp(id, lcd->vbp);
+		dsim_reg_set_vbp(id, lcd->dsim_vbp);
 		dsim_reg_set_hfp(id, lcd->dsim_hfp);
-		dsim_reg_set_vsa(id, lcd->vsa);
-		dsim_reg_set_hsa(id, lcd->hsa);
+		dsim_reg_set_vsa(id, lcd->dsim_vsa);
+		dsim_reg_set_hsa(id, lcd->dsim_hsa);
 	} else {
 		dsim_err("This DDI is not MIPI interface.\n");
 		return;
@@ -1040,7 +1040,7 @@ int dsim_reg_init(u32 id, struct decon_lcd *lcd_info, u32 data_lane_cnt, struct 
 	else if (lcd_info->mode == DECON_MIPI_COMMAND_MODE) {
 		/*set TE base command*/
 		time_stable_vfp = lcd_info->xres * DSIM_STABLE_VFP_VALUE * 3 / 100;
-		time_vsync_tout = lcd_info->vfp * lcd_info->xres * 3 / 100;
+		time_vsync_tout = lcd_info->dsim_vfp * lcd_info->xres * 3 / 100;
 		time_te_protect_on = clks->hs_clk * TE_PROTECT_ON / 8;
 		time_te_tout = clks->hs_clk * TE_TOUT / 8;
 		dsim_reg_set_command_control(id, 0);

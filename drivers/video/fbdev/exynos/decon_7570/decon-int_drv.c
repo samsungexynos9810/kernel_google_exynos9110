@@ -645,12 +645,12 @@ static void decon_parse_lcd_info(struct decon_device *decon)
 	struct decon_lcd *lcd_info = decon->lcd_info;
 
 	for (i = 0; i < decon->pdata->max_win; i++) {
-		decon->windows[i]->win_mode.videomode.left_margin = lcd_info->hbp;
+		decon->windows[i]->win_mode.videomode.left_margin = lcd_info->decon_hbp;
 		decon->windows[i]->win_mode.videomode.right_margin = lcd_info->decon_hfp;
-		decon->windows[i]->win_mode.videomode.upper_margin = lcd_info->vbp;
-		decon->windows[i]->win_mode.videomode.lower_margin = lcd_info->vfp;
-		decon->windows[i]->win_mode.videomode.hsync_len = lcd_info->hsa;
-		decon->windows[i]->win_mode.videomode.vsync_len = lcd_info->vsa;
+		decon->windows[i]->win_mode.videomode.upper_margin = lcd_info->decon_vbp;
+		decon->windows[i]->win_mode.videomode.lower_margin = lcd_info->decon_vfp;
+		decon->windows[i]->win_mode.videomode.hsync_len = lcd_info->decon_hsa;
+		decon->windows[i]->win_mode.videomode.vsync_len = lcd_info->decon_vsa;
 		decon->windows[i]->win_mode.videomode.xres = lcd_info->xres;
 		decon->windows[i]->win_mode.videomode.yres = lcd_info->yres;
 		decon->windows[i]->win_mode.width = lcd_info->width;
