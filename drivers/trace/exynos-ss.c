@@ -662,9 +662,10 @@ EXPORT_SYMBOL(exynos_ss_prepare_panic);
 
 int exynos_ss_post_panic(void)
 {
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
 	exynos_ss_dump_sfr();
-
-       	exynos_ss_save_context(NULL);
+#endif
+	exynos_ss_save_context(NULL);
 	flush_cache_all();
 
 	if (!ess_desc.no_wdt_dev) {
@@ -1131,7 +1132,6 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 	}
 	count = ret;
 
-	INIT_LIST_HEAD(&ess_desc.sfrdump_list);
 	for (i = 0; i < count; i++) {
 		ret = of_property_read_string_index(np, "sfr-dump-list", i,
 						(const char **)&dump_str);
@@ -1184,6 +1184,7 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 
 		pr_info("success to regsiter %s\n", sfrdump->name);
 		of_node_put(dump_np);
+		ret = 0;
 	}
 	return ret;
 }
@@ -1477,6 +1478,7 @@ static int __init exynos_ss_init_desc(void)
 	memset((struct exynos_ss_desc *)&ess_desc, 0, sizeof(struct exynos_ss_desc));
 	ess_desc.callstack = CONFIG_EXYNOS_SNAPSHOT_CALLSTACK;
 	spin_lock_init(&ess_desc.lock);
+	INIT_LIST_HEAD(&ess_desc.sfrdump_list);
 
 	for (i = 0; i < ARRAY_SIZE(ess_items); i++) {
 		len = strlen(ess_items[i].name);
@@ -1581,7 +1583,7 @@ static int __init exynos_ss_init_dt(void)
 	np = of_find_matching_node_and_match(NULL, ess_of_match, &matched_np);
 
 	if (!np) {
-		pr_info("%s: error\n", __func__);
+		pr_info("%s: couln't find device tree file of exynos-snapshot\n", __func__);
 		return -ENODEV;
 	}
 
