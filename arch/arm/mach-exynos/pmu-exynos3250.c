@@ -60,9 +60,7 @@ static struct exynos_pmu_conf exynos3250_pmu_config[] = {
 	{ EXYNOS3_APLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_BPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_VPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
-	{ EXYNOS3_EPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_UPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x1, 0x1} },
-	{ EXYNOS3_EPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_BPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_CLKSTOP_CAM_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ EXYNOS3_CMU_CLKSTOP_MFC_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
@@ -136,6 +134,8 @@ static struct exynos_pmu_conf exynos3250_pmu_config_audio[] = {
 	{ EXYNOS3_MPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x1, 0x0} },
 	{ EXYNOS3_TOP_BUS_COREBLK_SYS_PWR_REG,			{ 0x3, 0x3, 0x0} },
 	{ EXYNOS3_OSCCLK_GATE_COREBLK_SYS_PWR_REG,		{ 0x1, 0x1, 0x1} },
+	{ EXYNOS3_EPLL_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
+	{ EXYNOS3_EPLLUSER_SYSCLK_SYS_PWR_REG,			{ 0x1, 0x0, 0x0} },
 	{ PMU_TABLE_END,},
 };
 
