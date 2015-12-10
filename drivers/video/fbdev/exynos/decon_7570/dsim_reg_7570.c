@@ -453,9 +453,9 @@ void dsim_reg_set_config(u32 id, struct decon_lcd *lcd_info, u32 data_lane_cnt)
 	if (lcd_info->mode == DECON_VIDEO_MODE) {
 		dsim_reg_disable_hsa(id, 0);
 		dsim_reg_disable_hbp(id, 0);
-		dsim_reg_disable_hfp(id, 1);
+		dsim_reg_disable_hfp(id, 0);
 		dsim_reg_disable_hse(id, 0);
-		dsim_reg_set_hsync_preserve(id, 1);
+		dsim_reg_set_hsync_preserve(id, 0);
 		dsim_reg_set_burst_mode(id, 1);
 		dsim_reg_set_sync_inform(id, 0);
 		dsim_reg_enable_mflush(id, 1);
