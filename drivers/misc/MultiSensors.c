@@ -154,10 +154,9 @@ static int Msensors_Close(struct inode *inode, struct file *file)
 
 static int64_t getTimestamp(void)
 {
-    struct timespec t;
-    t.tv_sec = t.tv_nsec = 0;
-    ktime_get_ts(&t);
-    return (int64_t)t.tv_sec * 1000000000LL + t.tv_nsec;
+	struct timespec ts;
+	get_monotonic_boottime(&ts);
+	return timespec_to_ns(&ts);
 }
 
 void Msensors_SetTimestamp(void)
