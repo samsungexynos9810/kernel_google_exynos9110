@@ -219,8 +219,6 @@ struct exynos_speedy {
 	unsigned int		batcher_read_addr;
 };
 
-/* TODO : register dump should use batcher ? */
-/*
 static void dump_speedy_register(struct exynos_speedy *speedy)
 {
 	dev_err(speedy->dev, "Register dump\n");
@@ -244,7 +242,6 @@ static void dump_speedy_register(struct exynos_speedy *speedy)
 	dev_err(speedy->dev, ": CTRL_STATUS      0x%08x\n"
 			   , readl(speedy->regs + SPEEDY_CTRL_STATUS));
 }
-*/
 
 static void write_batcher(struct exynos_speedy *speedy, unsigned int description,
 			unsigned int opcode)
@@ -401,14 +398,22 @@ static void speedy_swreset_with_batcher(struct exynos_speedy *speedy)
 	u32 ip_batcher_con;
 	unsigned long timeout;
 
-
 	if (ip_batcher_state & MP_APBSEMA_CH_LOCK_STATUS) {
 		dev_err(speedy->dev, "speedy reset is started with semaphore\n");
-		ip_batcher_con = readl(speedy->regs + IPBATCHER_CON);
-		ip_batcher_con |= IP_SW_RST;
-		writel(ip_batcher_con, speedy->regs + IPBATCHER_CON);
+
+		if (ip_batcher_state & BATCHER_FSM_STATE_WAIT_INT) {
+			ip_batcher_con = readl(speedy->regs + IPBATCHER_CON);
+			ip_batcher_con |= IP_SW_RST;
+			writel(ip_batcher_con, speedy->regs + IPBATCHER_CON);
+			/* delay for speedy sw_rst */
+			udelay(10);
+		} else {
+			/* SPEEDY SW reset directly */
+			speedy_swreset_directly(speedy);
+		}
 
 		udelay(100);
+		ip_batcher_state = readl(speedy->regs + IPBATCHER_STATE);
 		if (!(ip_batcher_state & BATCHER_FSM_STATE_INIT)) {
 			mp_apbsema_sw_rst(speedy);
 			udelay(100);
@@ -713,6 +718,9 @@ static int exynos_speedy_xfer_batcher(struct exynos_speedy *speedy,
 		else
 			dev_err(speedy->dev, "at Write\n");
 
+		dump_speedy_register(speedy);
+		release_semaphore(speedy);
+
 		dev_err(speedy->dev, "Batcher State= 0x%x\n",
 				readl(speedy->regs + IPBATCHER_STATE));
 		dev_err(speedy->dev, "Batcher FIFO Status= 0x%x\n",
@@ -915,6 +923,9 @@ static int exynos_speedy_probe(struct platform_device *pdev)
 
 	/* reset speedy ctrl SFR. It may be used by bootloader */
 	speedy_swreset_directly(speedy);
+
+	/* release semaphore after direct SPEEDY SFR access */
+	release_semaphore(speedy);
 
 	/* reset batcher */
 	batcher_swreset(speedy);
