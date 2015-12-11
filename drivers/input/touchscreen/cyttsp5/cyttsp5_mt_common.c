@@ -295,11 +295,9 @@ cyttsp5_get_mt_touches_pr_tch:
 	md->num_prv_rec = num_cur_tch;
 }
 
-static void report_palm(struct cyttsp5_mt_data *md)
+static void report_palm(struct cyttsp5_mt_data *md, int on)
 {
-	input_report_key(md->input, KEY_SLEEP, 1);
-	input_sync(md->input);
-	input_report_key(md->input, KEY_SLEEP, 0);
+	input_report_key(md->input, KEY_SLEEP, on);
 	input_sync(md->input);
 }
 
@@ -345,9 +343,9 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 
 	if (!palm_on) {
 		if (tch.hdr[CY_TCH_LO]) {
+			report_palm(md, 1);
 			cyttsp5_mt_lift_all(md);
-			report_palm(md);
-			pr_info("palm on\n");
+			printk(KERN_DEBUG "palm on\n");
 			palm_on = 1;
 		} else if (num_cur_tch) {
 			if (palm_ignore == false) {
@@ -358,9 +356,10 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 		}
 	} else {
 		if (tch.hdr[CY_TCH_LO] == 0 && num_cur_tch == 0) {
+			report_palm(md, 0);
 			palm_ignore = true;
 			schedule_delayed_work(&work_palm, msecs_to_jiffies(1000));
-			pr_info("palm off\n");
+			printk(KERN_DEBUG "palm off\n");
 			palm_on = 0;
 		}
 	}
