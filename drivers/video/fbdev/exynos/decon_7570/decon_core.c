@@ -60,9 +60,10 @@ EXPORT_SYMBOL(decon_int_drvdata);
 
 static int decon_runtime_resume(struct device *dev);
 static int decon_runtime_suspend(struct device *dev);
+#ifdef PROTECT
 static void decon_set_protected_content(struct decon_device *decon,
 				struct decon_reg_data *regs, bool enable);
-
+#endif
 #ifdef CONFIG_USE_VSYNC_SKIP
 static atomic_t extra_vsync_wait;
 #endif /* CCONFIG_USE_VSYNC_SKIP */
@@ -832,14 +833,14 @@ int decon_enable(struct decon_device *decon)
 #else
 	decon_runtime_resume(decon->dev);
 #endif
-
+#ifdef PROTECT
 	ret = exynos_smc(MC_FC_SET_CFW_PROT,
 			MC_FC_DRM_SET_CFW_PROT, DECON_CFW_OFFSET, 0);
 	if (ret != 2) {
 		decon_err("smc call fail for decon: %d\n", ret);
 		return -EBUSY;
 	}
-
+#endif
 	if (decon->state == DECON_STATE_LPD_EXIT_REQ) {
 		ret = v4l2_subdev_call(decon->output_sd, core, ioctl,
 				DSIM_IOC_ENTER_ULPS, (unsigned long *)0);
@@ -971,7 +972,9 @@ int decon_disable(struct decon_device *decon)
 		BUG();
 	}
 	decon_reg_clear_int(DECON_INT);
+#ifdef PROTECT
 	decon_set_protected_content(decon, NULL, false);
+#endif
 	decon_enable_eclk_idle_gate(DECON_INT, DECON_ECLK_IDLE_GATE_DISABLE);
 	iovmm_deactivate(decon->dev);
 
@@ -1322,7 +1325,7 @@ static void decon_calc_plane_offset(struct decon_win_config *config,
 			config->format, &dma_buf_data[0].dma_addr,
 			&dma_buf_data[1].dma_addr, &dma_buf_data[2].dma_addr);
 }
-
+#ifdef PROTECT
 static void decon_save_old_buffer(struct decon_device *decon,
 		struct decon_reg_data *regs, int win)
 {
@@ -1342,7 +1345,7 @@ static void decon_set_cfw(struct decon_device *decon,
 		struct decon_reg_data *regs, int flag)
 {
 	int i;
-	int plane_num, plane, ret;
+	int plane_num, plane, ret = 0;
 
 	u32 CFW_TAG = flag ? SMC_DRM_SECBUF_CFW_PROT : SMC_DRM_SECBUF_CFW_UNPROT;
 
@@ -1366,7 +1369,7 @@ static void decon_set_cfw(struct decon_device *decon,
 			if (regs->protection[i]) {
 				plane_num = decon_get_memory_plane_cnt(regs->win_config[i].format);
 				for (plane = 0; plane < plane_num; plane++) {
-					exynos_smc(SMC_DRM_SECBUF_CFW_PROT, regs->phys_addr[i].phy_addr[plane],
+					ret = exynos_smc(SMC_DRM_SECBUF_CFW_PROT, regs->phys_addr[i].phy_addr[plane],
 							regs->phys_addr[i].phy_addr_len[plane], DECON_CFW_OFFSET);
 					if (ret) {
 						decon_err("failed to secbuf cfw protection(%d) win(%d) addr[0]\n",
@@ -1477,7 +1480,7 @@ static void decon_set_protected_content(struct decon_device *decon,
 	/* Update prev_protection_status */
 	decon->prev_protection_status = enable;
 }
-
+#endif
 static inline int decon_set_alpha_blending(struct decon_win_config *win_config,
 		struct decon_reg_data *regs, int win_no, int transp_length)
 {
@@ -1954,8 +1957,9 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 	for (i = 0; i < decon->pdata->max_win; i++)
 		decon_reg_shadow_protect_win(DECON_INT,
 				decon->windows[i]->index, 0);
-
+#ifdef PROTECT
 	decon_set_protected_content(decon, regs, true);
+#endif
 
 	decon_to_psr_info(decon, &psr);
 	decon_reg_start(DECON_INT, decon->pdata->dsi_mode, &psr);
