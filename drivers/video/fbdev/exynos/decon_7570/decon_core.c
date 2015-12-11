@@ -965,7 +965,11 @@ int decon_disable(struct decon_device *decon)
 	}
 
 	decon_to_psr_info(decon, &psr);
-	decon_reg_stop(DECON_INT, decon->pdata->dsi_mode, &psr);
+	ret = decon_reg_stop(DECON_INT, decon->pdata->dsi_mode, &psr);
+	if (ret == -ETIMEDOUT) {
+		decon_dump(decon);
+		BUG();
+	}
 	decon_reg_clear_int(DECON_INT);
 	decon_set_protected_content(decon, NULL, false);
 	decon_enable_eclk_idle_gate(DECON_INT, DECON_ECLK_IDLE_GATE_DISABLE);

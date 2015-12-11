@@ -451,16 +451,22 @@ int decon_reg_stop(u32 id, enum decon_dsi_mode dsi_mode,
 	}
 
 	if (decon_reg_get_stop_status(id) == 1) {
+#if 0
 		/* timeout : 50ms */
 		/* TODO: dual DSI scenario */
 		ret = decon_reg_wait_linecnt_is_zero_timeout(id, 0, 50 * 1000);
 		if (ret)
 			goto err;
-
+#endif
 		if (psr->psr_mode == DECON_MIPI_COMMAND_MODE)
 			decon_reg_direct_on_off(id, 0);
 		else
 			decon_reg_per_frame_off(id);
+
+		decon_reg_update_standalone(id);
+		/* timeout : 30ms */
+		if (decon_reg_wait_for_update_timeout(id, 30 * 1000) < 0)
+			return -ETIMEDOUT;
 
 		/* timeout : 20ms */
 		ret = decon_reg_wait_stop_status_timeout(id, 20 * 1000);
