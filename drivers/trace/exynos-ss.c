@@ -104,12 +104,14 @@ struct exynos_ss_item {
 struct exynos_ss_log {
 	struct task_log {
 		unsigned long long time;
+		unsigned long sp;
 		struct task_struct *task;
 		char task_comm[TASK_COMM_LEN];
 	} task[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 
 	struct work_log {
 		unsigned long long time;
+		unsigned long sp;
 		struct worker *worker;
 		char task_comm[TASK_COMM_LEN];
 		work_func_t fn;
@@ -118,7 +120,8 @@ struct exynos_ss_log {
 
 	struct cpuidle_log {
 		unsigned long long time;
-		int index;
+		unsigned long sp;
+		char *modes;
 		unsigned state;
 		u32 num_online_cpus;
 		int delta;
@@ -127,6 +130,7 @@ struct exynos_ss_log {
 
 	struct suspend_log {
 		unsigned long long time;
+		unsigned long sp;
 		void *fn;
 		struct device *dev;
 		int en;
@@ -134,6 +138,7 @@ struct exynos_ss_log {
 
 	struct irq_log {
 		unsigned long long time;
+		unsigned long sp;
 		int irq;
 		void *fn;
 		unsigned int preempt;
@@ -144,6 +149,7 @@ struct exynos_ss_log {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
 	struct irq_exit_log {
 		unsigned long long time;
+		unsigned long sp;
 		unsigned long long end_time;
 		unsigned long long latency;
 		int irq;
@@ -152,6 +158,7 @@ struct exynos_ss_log {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SPINLOCK
 	struct spinlock_log {
 		unsigned long long time;
+		unsigned long sp;
 		unsigned long long jiffies;
 #ifdef CONFIG_DEBUG_SPINLOCK
 		unsigned int magic, owner_cpu;
@@ -1738,6 +1745,7 @@ void exynos_ss_task(int cpu, void *v_task)
 				    (ARRAY_SIZE(ess_log->task[0]) - 1);
 
 		ess_log->task[cpu][i].time = cpu_clock(cpu);
+		ess_log->task[cpu][i].sp = (unsigned long) current_stack_pointer;
 		ess_log->task[cpu][i].task = (struct task_struct *)v_task;
 		strncpy(ess_log->task[cpu][i].task_comm,
 			ess_log->task[cpu][i].task->comm,
@@ -1758,6 +1766,7 @@ void exynos_ss_work(void *worker, void *v_task, void *fn, int en)
 					(ARRAY_SIZE(ess_log->work[0]) - 1);
 		struct task_struct *task = (struct task_struct *)v_task;
 		ess_log->work[cpu][i].time = cpu_clock(cpu);
+		ess_log->work[cpu][i].sp = (unsigned long) current_stack_pointer;
 		ess_log->work[cpu][i].worker = (struct worker *)worker;
 		strncpy(ess_log->work[cpu][i].task_comm, task->comm, TASK_COMM_LEN);
 		ess_log->work[cpu][i].fn = (work_func_t)fn;
@@ -1779,6 +1788,7 @@ void exynos_ss_cpuidle(int index, unsigned state, int diff, int en)
 		ess_log->cpuidle[cpu][i].time = cpu_clock(cpu);
 		ess_log->cpuidle[cpu][i].index = index;
 		ess_log->cpuidle[cpu][i].state = state;
+		ess_log->cpuidle[cpu][i].sp = (unsigned long) current_stack_pointer;
 		ess_log->cpuidle[cpu][i].num_online_cpus = num_online_cpus();
 		ess_log->cpuidle[cpu][i].delta = diff;
 		ess_log->cpuidle[cpu][i].en = en;
@@ -1797,6 +1807,7 @@ void exynos_ss_suspend(void *fn, void *dev, int en)
 				(ARRAY_SIZE(ess_log->suspend[0]) - 1);
 
 		ess_log->suspend[cpu][i].time = cpu_clock(cpu);
+		ess_log->suspend[cpu][i].sp = (unsigned long) current_stack_pointer;
 		ess_log->suspend[cpu][i].fn = fn;
 		ess_log->suspend[cpu][i].dev = (struct device *)dev;
 		ess_log->suspend[cpu][i].en = en;
@@ -1902,6 +1913,7 @@ void exynos_ss_irq(int irq, void *fn, unsigned int val, int en)
 				(ARRAY_SIZE(ess_log->irq[0]) - 1);
 
 		ess_log->irq[cpu][i].time = cpu_clock(cpu);
+		ess_log->irq[cpu][i].sp = (unsigned long) current_stack_pointer;
 		ess_log->irq[cpu][i].irq = irq;
 		ess_log->irq[cpu][i].fn = (void *)fn;
 		ess_log->irq[cpu][i].preempt = preempt_count();
@@ -1936,6 +1948,7 @@ void exynos_ss_irq_exit(unsigned int irq, unsigned long long start_time)
 		if (unlikely(latency >
 			(ess_irqexit_threshold * 1000))) {
 			ess_log->irq_exit[cpu][i].latency = latency;
+			ess_log->irq_exit[cpu][i].sp = (unsigned long) current_stack_pointer;
 			ess_log->irq_exit[cpu][i].end_time = time;
 			ess_log->irq_exit[cpu][i].time = start_time;
 			ess_log->irq_exit[cpu][i].irq = irq;
@@ -1962,6 +1975,7 @@ void exynos_ss_spinlock(void *v_lock, int en)
 #else
 		ess_log->spinlock[cpu][i].time = index;
 #endif
+		ess_log->spinlock[cpu][i].sp = (unsigned long) current_stack_pointer;
 		ess_log->spinlock[cpu][i].jiffies = jiffies_64;
 #ifdef CONFIG_DEBUG_SPINLOCK
 		ess_log->spinlock[cpu][i].task = (struct task_struct *)lock->owner;
