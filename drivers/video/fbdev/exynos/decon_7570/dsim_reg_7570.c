@@ -458,7 +458,7 @@ void dsim_reg_set_config(u32 id, struct decon_lcd *lcd_info, u32 data_lane_cnt)
 		dsim_reg_set_hsync_preserve(id, 0);
 		dsim_reg_set_burst_mode(id, 1);
 		dsim_reg_set_sync_inform(id, 0);
-		dsim_reg_enable_mflush(id, 1);
+		dsim_reg_enable_mflush(id, 0);
 		dsim_reg_enable_clocklane_stop_start(id, 1);
 	} else if (lcd_info->mode == DECON_MIPI_COMMAND_MODE) {
 		dsim_reg_enable_noncontinuous_clock(id, 1);
