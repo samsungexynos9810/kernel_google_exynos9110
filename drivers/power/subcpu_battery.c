@@ -38,7 +38,7 @@ enum subcpu_power_data2 {
 
 enum subcpu_health {
 	PWR_HEALTH_NORMAL = 0x00,
-	PWR_HEALTH_LOW_TEMP_BURN,
+	PWR_HEALTH_ERROR,
 };
 
 struct sub_battery {
@@ -118,8 +118,8 @@ static int sub_bat_health(uint8_t health)
 	case PWR_HEALTH_NORMAL:
 		ret = POWER_SUPPLY_HEALTH_GOOD;
 		break;
-	case PWR_HEALTH_LOW_TEMP_BURN:
-		ret = POWER_SUPPLY_HEALTH_OVERHEAT;
+	case PWR_HEALTH_ERROR:
+		ret = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
 		break;
 	default:
 		ret = POWER_SUPPLY_HEALTH_UNKNOWN;

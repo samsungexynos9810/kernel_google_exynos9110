@@ -52,6 +52,7 @@ struct WriteDataBuf {
 };
 
 static spinlock_t slock;
+struct mutex mlock;
 static struct WriteDataBuf WriteDataBuf[WRITE_DATABUFF_SIZE];
 static struct list_head wd_queue;
 
@@ -429,22 +430,33 @@ static int sub_read_command(uint8_t command)
 	return ret;
 }
 
+static int sub_read_command_locked(uint8_t command)
+{
+	mutex_lock(&mlock);
+	int ret = sub_read_command(command);
+	mutex_unlock(&mlock);
+
+	return ret;
+}
+
 static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret;
 
-	pr_info("%s: cmd %d\n", __func__, cmd);
+	pr_info("%s: cmd %x\n", __func__, cmd);
 	if (cmd == IOC_ACCEL_ADJ) {
 		/* accelerometer factory adjustment */
-		ret = sub_read_command(SUB_COM_GETID_ACC_ADJ);
-		if (ret < 0)
-			goto exit_ioctl;
-		ret = copy_to_user((void __user *)arg, SubReadData, 3);
+		ret = sub_read_command_locked(SUB_COM_GETID_ACC_ADJ);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 3);
+	} else if (cmd == IOC_POWER_WARN) {
+		ret = sub_read_command_locked(SUB_COM_GETID_POWER_WARN);
+		if (ret >= 0)
+			ret = copy_to_user((void __user *)arg, SubReadData, 2);
 	} else {
 		ret = -1;
 		pr_info("%s: unknown command %x\n", __func__, cmd);
 	}
-exit_ioctl:
 	return ret;
 }
 
@@ -539,6 +551,7 @@ static int Msensors_probe(struct spi_device *spi)
 	init_waitqueue_head(&wait_subint);
 	init_waitqueue_head(&wait_ioctl);
 	spin_lock_init(&slock);
+	mutex_init(&mlock);
 	INIT_LIST_HEAD(&wd_queue);
 	wake_lock_init(&wlock, WAKE_LOCK_SUSPEND, "multisensors");
 	dataBuffReadIndex = 0;

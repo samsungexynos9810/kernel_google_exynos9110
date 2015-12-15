@@ -81,7 +81,8 @@
 #define SUB_COM_GETID_ACC_ADJ		(0x04)		/* Accele Adjust */
 #define SUB_COM_GETID_ACC_READ_OFFSET	(0x05)
 #define SUB_COM_GETID_ACC_READ_GAIN		(0x06)
-#define SUB_COM_GETID_NUM	(0x07)	/* Number of GETIDs */
+#define SUB_COM_GETID_POWER_WARN		(0x07)
+#define SUB_COM_GETID_NUM	(0x08)	/* Number of GETIDs */
 
 #define SUB_COM_SENSID_ACCELE			(0x01)		/* Acceleration Data */
 #define SUB_COM_SENSID_MAG			(0x02)		/* Magnetic Data */
@@ -154,7 +155,7 @@
 
 #define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
-
+#define IOC_POWER_WARN	_IOR('K', 3, unsigned short *)
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
 #define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
