@@ -30,7 +30,7 @@ struct bd82103_chip_data {
 
 	int gpio;
 	int bl_intensity;
-	unsigned char flg_theater_mode;
+	unsigned char flg_backlight_0;
 };
 
 static int initialize_gpio(struct bd82103_chip_data *pchip)
@@ -108,14 +108,14 @@ static int bd82103_update_status(struct backlight_device *bd)
 	struct bd82103_chip_data *pchip = bl_get_data(bd);
 	int intensity = bd->props.brightness;
 
-	/* detect theater mode */
+	/* detect backlight is 0 for segmented display*/
 	if (bd->props.power == FB_BLANK_UNBLANK) {
-		if (intensity == 0 && pchip->flg_theater_mode != 1) {
-			pchip->flg_theater_mode = 1;
-			SUB_IsTheaterMode(pchip->flg_theater_mode);
-		} else if (intensity != 0 && pchip->flg_theater_mode == 1) {
-			pchip->flg_theater_mode = 0;
-			SUB_IsTheaterMode(pchip->flg_theater_mode);
+		if (intensity == 0 && pchip->flg_backlight_0 != 1) {
+			pchip->flg_backlight_0 = 1;
+			Msensors_set_backlight_zero_flag(1);
+		} else if (intensity != 0 && pchip->flg_backlight_0 != 0) {
+			pchip->flg_backlight_0 = 0;
+			Msensors_set_backlight_zero_flag(0);
 		}
 	}
 #ifndef CONFIG_FB_AMBIENT_SUPPORT
@@ -173,7 +173,7 @@ static int bd82103_probe(struct platform_device *pdev)
 #ifndef CONFIG_BACKLIGHT_SUBCPU
 	ctrl_brightness(pchip, BRIGHTNESS_INIT);
 #endif
-	pchip->flg_theater_mode = 0xFF;
+	pchip->flg_backlight_0 = 0xFF;
 
 	return 0;
 }

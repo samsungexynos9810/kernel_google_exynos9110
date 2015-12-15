@@ -66,7 +66,6 @@
 #define SUB_COM_SETID_RTC			(0x50)		/* RTC */
 #define SUB_COM_SETID_ALERM			(0x51)		/* Alarm */
 #define SUB_COM_SETID_KEYMODE			(0x52)		/* Key Mode */
-#define SUB_COM_SETID_THEATER_MODE	(0x53)		/* Theater mode flg */
 #define SUB_COM_SETID_SHIPPING_MODE	(0x54)		/* Request shipping mode */
 #define SUB_COM_SETID_CTRL_GREEN_LED	(0x55)	/* on/off green led */
 #define SUB_COM_SETID_LIMIT_CHARGING	(0x56)	/* limit charging by threshold */
@@ -153,6 +152,7 @@
 #define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
 #define IOC_POWER_WARN	_IOR('K', 3, unsigned short *)
+#define IOC_WAIT_BL_0	_IOR('K', 4, void *)
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
 #define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
@@ -225,8 +225,8 @@ ssize_t Msensors_Spi_Send(struct Msensors_state *st, char* send_buf, char* recv_
 extern void SUB_VibratorSet(int timeout);
 extern int SUBCPU_rtc_set_time(uint8_t *data);
 extern int SUBCPU_rtc_read_time(uint8_t *data);
-extern int SUB_IsTheaterMode(unsigned char flg_bl_dark);
 extern int SUB_LCDBrightnessSet(unsigned char LCDBrightness);
+void Msensors_set_backlight_zero_flag(int flg);
 void Msensors_SetTimestamp(void);
 void msensors_fw_up_init(struct Msensors_state *st);
 void Msensors_set_fw_version(struct Msensors_state *st, uint8_t *data);

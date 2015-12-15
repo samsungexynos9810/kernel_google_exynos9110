@@ -73,6 +73,8 @@ static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
 static wait_queue_head_t wait_ioctl;
 static int ioctl_complete;
+static wait_queue_head_t wait_q_bl_zero;
+static int flg_bl_zero;
 
 static wait_queue_head_t wait_rd;
 static wait_queue_head_t wait_subint;
@@ -428,12 +430,45 @@ static int sub_read_command_locked(uint8_t command)
 	return ret;
 }
 
-static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+static int wait_bl_zero(void)
 {
 	int ret;
 
+	// detect edge of 0->1
+	ret = wait_event_interruptible(wait_q_bl_zero, flg_bl_zero == 0);
+	if (ret < 0)
+		return ret;
+	ret = wait_event_interruptible(wait_q_bl_zero, flg_bl_zero == 1);
+
+	return ret;
+}
+
+void Msensors_set_backlight_zero_flag(int flg)
+{
+	flg_bl_zero = flg;
+	wake_up_interruptible(&wait_q_bl_zero);
+}
+
+static void get_subcpu_version(uint8_t *buf)
+{
+	buf[0] = g_st->fw.maj_ver;
+	buf[1] = g_st->fw.min_ver;
+	buf[2] = g_st->fw.revision;
+}
+
+static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+	int ret;
+	uint8_t buf[3];
+
+	/* this function must be reentrant */
 	pr_info("%s: cmd %x\n", __func__, cmd);
-	if (cmd == IOC_ACCEL_ADJ) {
+	if (cmd == IOC_WAIT_BL_0) {
+		ret = wait_bl_zero();
+	} else if (cmd == IOC_GET_VERSION) {
+		get_subcpu_version(buf);
+		ret = copy_to_user((void __user *)arg, buf, 3);
+	} else if (cmd == IOC_ACCEL_ADJ) {
 		/* accelerometer factory adjustment */
 		ret = sub_read_command_locked(SUB_COM_GETID_ACC_ADJ);
 		if (ret >= 0)
@@ -539,6 +574,7 @@ static int Msensors_probe(struct spi_device *spi)
 	init_waitqueue_head(&wait_rd);
 	init_waitqueue_head(&wait_subint);
 	init_waitqueue_head(&wait_ioctl);
+	init_waitqueue_head(&wait_q_bl_zero);
 	spin_lock_init(&slock);
 	mutex_init(&mlock);
 	INIT_LIST_HEAD(&wd_queue);
@@ -778,20 +814,6 @@ int SUBCPU_rtc_set_time(uint8_t *data)
 
 	Set_WriteDataBuff(&write_buff[0]);
 
-	return 0;
-}
-
-int SUB_IsTheaterMode(unsigned char flg_theater_mode)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_THEATER_MODE;
-	write_buff[2] = flg_theater_mode;	/* theater mode:1 else:0 */
-
-	Set_WriteDataBuff(&write_buff[0]);
 	return 0;
 }
 
