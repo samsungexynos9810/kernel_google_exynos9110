@@ -905,6 +905,12 @@ static int exynos_speedy_probe(struct platform_device *pdev)
 		goto err_probe;
 	}
 
+	/* clear speedy interrupt status */
+	writel(0xFFFFFFFF, speedy->regs + SPEEDY_INT_STATUS);
+
+	/* reset speedy ctrl SFR. It may be used by bootloader */
+	speedy_swreset_directly(speedy);
+
 	/* Do we need to register ISR for batcher polling mode? */
 	ret = devm_request_irq(&pdev->dev, speedy->irq,
 		exynos_speedy_irq_batcher, 0, dev_name(&pdev->dev), speedy);
@@ -917,12 +923,6 @@ static int exynos_speedy_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, speedy);
-
-	/* clear speedy interrupt status */
-	writel(0xFFFFFFFF, speedy->regs + SPEEDY_INT_STATUS);
-
-	/* reset speedy ctrl SFR. It may be used by bootloader */
-	speedy_swreset_directly(speedy);
 
 	/* release semaphore after direct SPEEDY SFR access */
 	release_semaphore(speedy);
