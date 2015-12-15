@@ -107,7 +107,7 @@
 		size = <71 114>;
 		timing,refresh = <60>;
 		/* dsim H porch : hbp, hfp, hsa */
-		timing,dsim_h-porch = <96 76 1>;
+		timing,dsim_h-porch = <1 1 1>;
 		/* dsim V porch : VBP, VFP, VSA */
 		timing,dsim_v-porch = <1 13 2>;
 		/* decon H porch : hbp, hfp, hsa */
