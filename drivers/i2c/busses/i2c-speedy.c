@@ -719,7 +719,6 @@ static int exynos_speedy_xfer_batcher(struct exynos_speedy *speedy,
 			dev_err(speedy->dev, "at Write\n");
 
 		dump_speedy_register(speedy);
-		release_semaphore(speedy);
 
 		dev_err(speedy->dev, "Batcher State= 0x%x\n",
 				readl(speedy->regs + IPBATCHER_STATE));
