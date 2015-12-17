@@ -430,6 +430,8 @@ static void speedy_swreset_directly(struct exynos_speedy *speedy)
 	writel(speedy_ctl, speedy->regs + SPEEDY_CTRL);
 	/* delay for speedy sw_rst */
 	udelay(10);
+
+	dev_err(speedy->dev, "speedy swreset directly was done\n");
 }
 
 static void speedy_swreset_with_batcher(struct exynos_speedy *speedy)
@@ -447,6 +449,7 @@ static void speedy_swreset_with_batcher(struct exynos_speedy *speedy)
 			writel(ip_batcher_con, speedy->regs + IPBATCHER_CON);
 			/* delay for speedy sw_rst */
 			udelay(10);
+			dev_err(speedy->dev, "speedy swreset through batcher was done\n");
 		} else {
 			/* SPEEDY SW reset directly */
 			speedy_swreset_directly(speedy);
