@@ -243,6 +243,46 @@ static void dump_speedy_register(struct exynos_speedy *speedy)
 			   , readl(speedy->regs + SPEEDY_CTRL_STATUS));
 }
 
+static void dump_batcher_register(struct exynos_speedy *speedy)
+{
+	int i = 0;
+
+	dev_err(speedy->dev, "Batcher CON= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_CON));
+	dev_err(speedy->dev, "Batcher State= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_STATE));
+	dev_err(speedy->dev, "Batcher INT EN= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_INT_EN));
+	dev_err(speedy->dev, "Batcher FSM UNEXPEN= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_FSM_UNEXPEN));
+	dev_err(speedy->dev, "Batcher FSM TXEN= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_FSM_TXEN));
+	dev_err(speedy->dev, "Batcher FSM RXFIFO= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_FSM_RXFIFO));
+	dev_err(speedy->dev, "Batcher FSM CON= 0x%x\n",
+			readl(speedy->regs + IPBATCHER_FSM_CON));
+	dev_err(speedy->dev, "Batcher FIFO Status= 0x%x\n",
+			readl(speedy->regs + IP_FIFO_STATUS));
+	dev_err(speedy->dev, "Batcher INT Status= 0x%x\n",
+			readl(speedy->regs + IP_INT_STATUS));
+	dev_err(speedy->dev, "Batcher INTR UNEXP state= 0x%x\n",
+			readl(speedy->regs + IP_INTR_UNEXP_STATE));
+	dev_err(speedy->dev, "Batcher INTR TX state= 0x%x\n",
+			readl(speedy->regs + IP_INTR_TX_STATE));
+	dev_err(speedy->dev, "Batcher INTR RX state= 0x%x\n",
+			readl(speedy->regs + IP_INTR_RX_STATE));
+
+	for (i = 0; i < 7; i++) {
+		dev_err(speedy->dev, "Batcher OPCODE TABLE %d= 0x%x\n",
+			i, readl(speedy->regs + (BATCHER_OPCODE + (i * 4))));
+	}
+
+	for (i = 0; i < 25; i++) {
+		dev_err(speedy->dev, "Batcher PAYLOAD FIELD %d= 0x%x\n",
+			i, readl(speedy->regs + (BATCHER_START_PAYLOAD + (i * 4))));
+	}
+}
+
 static void write_batcher(struct exynos_speedy *speedy, unsigned int description,
 			unsigned int opcode)
 {
@@ -719,13 +759,7 @@ static int exynos_speedy_xfer_batcher(struct exynos_speedy *speedy,
 			dev_err(speedy->dev, "at Write\n");
 
 		dump_speedy_register(speedy);
-
-		dev_err(speedy->dev, "Batcher State= 0x%x\n",
-				readl(speedy->regs + IPBATCHER_STATE));
-		dev_err(speedy->dev, "Batcher FIFO Status= 0x%x\n",
-				readl(speedy->regs + IP_FIFO_STATUS));
-		dev_err(speedy->dev, "Batcher INT Status= 0x%x\n",
-				readl(speedy->regs + IP_INT_STATUS));
+		dump_batcher_register(speedy);
 
 		speedy_swreset_with_batcher(speedy);
 		speedy_set_srp(speedy);
