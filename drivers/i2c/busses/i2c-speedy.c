@@ -197,6 +197,7 @@
 #define DIRECTION_READ 					0
 #define DIRECTION_WRITE					1
 
+#define SRP_COUNT					3
 #define EMULATOR
 
 struct exynos_speedy {
@@ -645,33 +646,46 @@ static void finalize_batcher(struct exynos_speedy *speedy)
 static void speedy_set_srp(struct exynos_speedy *speedy)
 {
 	int ret;
+	int i;
+	u32 speedy_ctl;
 
-	u32 speedy_ctl = 0x30051;
+	for (i = 0; i < SRP_COUNT; i++) {
+		speedy_ctl = 0x30051;
+		/* set batcher IDLE state */
+		set_batcher_idle(speedy);
 
-	/* set batcher IDLE state */
-	set_batcher_idle(speedy);
+		/* set batcher IDLE->INIT state */
+		set_batcher_enable(speedy);
 
-	/* set batcher IDLE->INIT state */
-	set_batcher_enable(speedy);
+		speedy_set_cmd(speedy, DIRECTION_WRITE, 0x0, ACCESS_RANDOM, 0);
 
-	speedy_set_cmd(speedy, DIRECTION_WRITE, 0x0, ACCESS_RANDOM, 0);
+		speedy_ctl |= SPEEDY_REMOTE_RESET_REQ_EN;
+		write_batcher(speedy, speedy_ctl, SPEEDY_CTRL);
 
-	speedy_ctl |= SPEEDY_REMOTE_RESET_REQ_EN;
-	write_batcher(speedy, speedy_ctl, SPEEDY_CTRL);
+		write_batcher(speedy, 0x00, SPEEDY_TX_DATA);
 
-	write_batcher(speedy, 0x00, SPEEDY_TX_DATA);
+		speedy_ctl &= (~SPEEDY_REMOTE_RESET_REQ_EN);
+		write_batcher(speedy, speedy_ctl, SPEEDY_CTRL);
 
-	speedy_ctl &= (~SPEEDY_REMOTE_RESET_REQ_EN);
-	write_batcher(speedy, speedy_ctl, SPEEDY_CTRL);
+		finalize_batcher(speedy);
+		/* TODO : for polling mode, need to enable batcher interrupt ? */
+		set_batcher_interrupt(speedy, 1);
+		start_batcher(speedy);
+		ret = speedy_batcher_wait_complete(speedy);
+		/* TODO : for polling mode, need to enable batcher interrupt ? */
+		set_batcher_interrupt(speedy, 0);
+		set_batcher_idle(speedy);
 
-	finalize_batcher(speedy);
-	/* TODO : for polling mode, need to enable batcher interrupt ? */
-	set_batcher_interrupt(speedy, 1);
-	start_batcher(speedy);
-	ret = speedy_batcher_wait_complete(speedy);
-	/* TODO : for polling mode, need to enable batcher interrupt ? */
-	set_batcher_interrupt(speedy, 0);
-	set_batcher_idle(speedy);
+		if (!ret) {
+			dev_err(speedy->dev, "SRP was done successfully\n");
+			break;
+		} else {
+			dev_err(speedy->dev, "SRP timeout was occured\n");
+			dump_speedy_register(speedy);
+			dump_batcher_register(speedy);
+			speedy_swreset_with_batcher(speedy);
+		}
+	}
 }
 
 static int exynos_speedy_xfer_batcher(struct exynos_speedy *speedy,
