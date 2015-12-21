@@ -218,6 +218,8 @@ struct exynos_speedy {
 	unsigned int		cmd_pointer;
 	unsigned int		desc_pointer;
 	unsigned int		batcher_read_addr;
+
+	int			always_intr_high;
 };
 
 static void dump_speedy_register(struct exynos_speedy *speedy)
@@ -519,10 +521,27 @@ static void speedy_set_cmd(struct exynos_speedy *speedy, int direction, u16 addr
 	case ACCESS_BURST:
 		speedy_command |= (SPEEDY_ACCESS_BURST | SPEEDY_BURST_INCR |
 				   SPEEDY_BURST_LENGTH(burst_length-1));
-		speedy_fifo_ctl |= (
-			SPEEDY_RX_TRIGGER_LEVEL(burst_length) |
-			SPEEDY_TX_TRIGGER_LEVEL(1)
-		);
+
+		/* To prevent batcher timeout, interrupt state should be set as high */
+		/* So, FIFO trigger level shoud be set to trigger interrupt always */
+		if (speedy->always_intr_high) {
+			if (direction == DIRECTION_READ) {
+				speedy_fifo_ctl |= (
+					SPEEDY_RX_TRIGGER_LEVEL(burst_length) |
+					SPEEDY_TX_TRIGGER_LEVEL(16)
+				);
+			} else {
+				speedy_fifo_ctl |= (
+					SPEEDY_RX_TRIGGER_LEVEL(0) |
+					SPEEDY_TX_TRIGGER_LEVEL(1)
+				);
+			}
+		} else {
+			speedy_fifo_ctl |= (
+				SPEEDY_RX_TRIGGER_LEVEL(burst_length) |
+				SPEEDY_TX_TRIGGER_LEVEL(1)
+			);
+		}
 		break;
 
 	case ACCESS_RANDOM:
@@ -547,6 +566,12 @@ static void speedy_set_cmd(struct exynos_speedy *speedy, int direction, u16 addr
 				SPEEDY_RX_GLITCH_ERR_EN |
 				SPEEDY_RX_ENDBIT_ERR_EN |
 				SPEEDY_REMOTE_RESET_REQ_EN);
+
+		/* To prevent batcher timeout, interrupt state should be set as high */
+		if (speedy->always_intr_high) {
+			speedy_int_en |= SPEEDY_FIFO_TX_ALMOST_EMPTY_EN;
+		}
+
 		break;
 
 	case DIRECTION_WRITE:
@@ -556,6 +581,12 @@ static void speedy_set_cmd(struct exynos_speedy *speedy, int direction, u16 addr
 				SPEEDY_TX_LINE_BUSY_ERR_EN |
 				SPEEDY_TX_STOPBIT_ERR_EN |
 				SPEEDY_REMOTE_RESET_REQ_EN);
+
+		/* To prevent batcher timeout, interrupt state should be set as high */
+		if (speedy->always_intr_high) {
+			speedy_int_en |= SPEEDY_FIFO_RX_ALMOST_FULL_EN;
+		}
+
 		break;
 	}
 
@@ -906,6 +937,11 @@ static int exynos_speedy_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "no memory for driver data\n");
 		return -ENOMEM;
 	}
+
+	if (of_get_property(np, "samsung,always-interrupt-high", NULL))
+		speedy->always_intr_high = 1;
+	else
+		speedy->always_intr_high = 0;
 
 	strlcpy(speedy->adap.name, "exynos-speedy", sizeof(speedy->adap.name));
 	speedy->adap.owner   = THIS_MODULE;
