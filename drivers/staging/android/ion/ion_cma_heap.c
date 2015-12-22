@@ -107,6 +107,7 @@ free_mem:
 			(PAGE_ALIGN(len) >> PAGE_SHIFT));
 err:
 	kfree(info);
+	ion_debug_heap_usage_show(heap);
 	return ION_CMA_ALLOCATE_FAILED;
 }
 
