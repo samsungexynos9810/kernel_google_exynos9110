@@ -261,7 +261,6 @@
 		PIN_IN(gpx2-1, DOWN);// NC
 		PIN_IN(gpx2-2, DOWN);// NC
 		PIN_IN(gpx2-4, DOWN);// NC
-		PIN_OUT(gpx2-5);// TP_RST
 
 		PIN_IN(gpx3-0, DOWN);// NC
 		PIN_IN(gpx3-1, DOWN);// NC
@@ -374,7 +373,6 @@
 		PIN_IN(gpx2-1, DOWN);// NC
 		PIN_IN(gpx2-2, DOWN);// NC
 		PIN_IN(gpx2-4, DOWN);// NC
-		PIN_OUT(gpx2-5);// TP_RST
 
 		PIN_IN(gpx3-0, DOWN);// NC
 		PIN_IN(gpx3-1, DOWN);// NC

@@ -185,66 +185,30 @@ int cyttsp5_xres(struct cyttsp5_core_platform_data *pdata,
 	return rc;
 }
 
-static struct regulator *vdd;
-
-static int regulator31v_power_on(struct device *dev, bool on)
+static struct regulator *regulator_power_on(struct device *dev, char *name)
 {
 	int rc;
+	struct regulator *vdd;
 
-	if (!on)
-		goto power_off;
-
-	rc = regulator_enable(vdd);
-	if (rc) {
-		dev_err(dev,"Regulator vdd enable failed rc=%d\n", rc);
-		return rc;
-	}
-	return rc;
-
-power_off:
-	rc = regulator_disable(vdd);
-	if (rc) {
-		dev_err(dev,"Regulator vdd disable failed rc=%d\n", rc);
-		return rc;
-	}
-	return rc;
-}
-
-static int regulator31v_init(struct device *dev, bool on)
-{
-	int rc;
-
-	if (!on)
-		goto pwr_deinit;
-
-	vdd = regulator_get(dev, "vdd_tsp_3.1");
+	vdd = regulator_get(dev, name);
 	if (IS_ERR(vdd)) {
 		rc = PTR_ERR(vdd);
-		dev_err(dev,
-			"Regulator get failed vdd rc=%d\n", rc);
-		return rc;
+		dev_err(dev, "Regulator %s get failed rc=%d\n", name, rc);
+		return NULL;
 	}
-
-	if (regulator_count_voltages(vdd) > 0) {
-		rc = regulator_set_voltage(vdd, 3100000, 3100000);//min, max
-		if (rc) {
-			dev_err(dev,
-				"Regulator set_vtg failed vdd rc=%d\n", rc);
-			goto reg_vdd_put;
-		}
+	rc = regulator_enable(vdd);
+	if (rc) {
+		dev_err(dev,"Regulator %s enable failed rc=%d\n", name, rc);
 	}
-	return 0;
+	return vdd;
+}
 
-reg_vdd_put:
-	regulator_put(vdd);
-	return rc;
-
-pwr_deinit:
-	if (regulator_count_voltages(vdd) > 0)
-		regulator_set_voltage(vdd, 0, 3100000);
-
-	regulator_put(vdd);
-	return 0;
+static void regulator_power_off(struct regulator *vdd)
+{
+	if (vdd) {
+		regulator_disable(vdd);
+		regulator_put(vdd);
+	}
 }
 
 int cyttsp5_init(struct cyttsp5_core_platform_data *pdata,
@@ -253,53 +217,45 @@ int cyttsp5_init(struct cyttsp5_core_platform_data *pdata,
 	int rst_gpio = pdata->rst_gpio;
 	int irq_gpio = pdata->irq_gpio;
 	int rc = 0;
+	static struct regulator *vdd31, *vdd18;
 
 	if (on) {
-		regulator31v_init(dev, 1);
-		regulator31v_power_on(dev, 1);
+		vdd31 = regulator_power_on(dev, "vdd_tsp_3.1");
+		vdd18 = regulator_power_on(dev, "vdd_tsp_1.8");
+		usleep_range(1000, 1000);
 		rc = gpio_request(rst_gpio, NULL);
-		if (rc < 0) {
-			gpio_free(rst_gpio);
-			rc = gpio_request(rst_gpio, NULL);
-		}
 		if (rc < 0) {
 			dev_err(dev,
 				"%s: Fail request gpio=%d\n", __func__,
 				rst_gpio);
-		} else {
-			rc = gpio_direction_output(rst_gpio, 1);
-			if (rc < 0) {
-				pr_err("%s: Fail set output gpio=%d\n",
-					__func__, rst_gpio);
-				gpio_free(rst_gpio);
-			} else {
-				rc = gpio_request(irq_gpio, NULL);
-				if (rc < 0) {
-					gpio_free(irq_gpio);
-					rc = gpio_request(irq_gpio,
-						NULL);
-				}
-				if (rc < 0) {
-					dev_err(dev,
-						"%s: Fail request gpio=%d\n",
-						__func__, irq_gpio);
-					gpio_free(rst_gpio);
-				} else {
-					gpio_direction_input(irq_gpio);
-				}
-			}
+			return rc;
+		}
+		gpio_set_value(rst_gpio, 1);
+
+		rc = gpio_request(irq_gpio, NULL);
+		if (rc < 0) {
+			dev_err(dev,
+				"%s: Fail request gpio=%d\n",
+				__func__, irq_gpio);
+			gpio_free(rst_gpio);
+			return rc;
 		}
 	} else {
-		regulator31v_power_on(dev, 0);
-		regulator31v_init(dev, 0);
+		regulator_power_off(vdd18);
+		regulator_power_off(vdd31);
 		gpio_free(rst_gpio);
 		gpio_free(irq_gpio);
 	}
-
-	dev_info(dev, "%s: INIT CYTTSP RST gpio=%d and IRQ gpio=%d r=%d\n",
-		__func__, rst_gpio, irq_gpio, rc);
 	return rc;
 }
+
+void cyttsp5_shutdown(struct cyttsp5_core_platform_data *pdata)
+{
+	int rst_gpio = pdata->rst_gpio;
+
+	gpio_set_value(rst_gpio, 0);
+}
+
 
 static int cyttsp5_wakeup(struct cyttsp5_core_platform_data *pdata,
 		struct device *dev, atomic_t *ignore_irq)
