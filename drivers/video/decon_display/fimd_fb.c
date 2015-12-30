@@ -1226,13 +1226,16 @@ static int s3c_fb_pan_display(struct fb_var_screeninfo *var,
 	writel(info->fix.smem_start + end_boff, buf + sfb->variant.buf_end);
 
 	shadow_protect_win(win, 0);
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_HW_TRIGGER)
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 #endif
 
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_SW_TRIGGER)
+	sfb->reg_update_done = 1;
+#endif
 	s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_HW_TRIGGER)
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
 
@@ -1290,6 +1293,13 @@ static irqreturn_t decon_fb_isr_for_eint(int irq, void *dev_id)
 	sfb->vsync_info.timestamp = timestamp;
 	wake_up_interruptible_all(&sfb->vsync_info.wait);
 	spin_unlock(&sfb->slock);
+
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_SW_TRIGGER)
+	if (sfb->reg_update_done) {
+		s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
+		sfb->reg_update_done = 0;
+	}
+#endif
 
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 	/* triggering power event for PM */
@@ -2279,7 +2289,7 @@ static void __s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 		if (!sfb->windows[i]->local)
 			shadow_protect_win(sfb->windows[i], 0);
 	}
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_HW_TRIGGER)
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 #endif
 }
@@ -2336,6 +2346,9 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 
 	do {
 		__s3c_fb_update_regs(sfb, regs);
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_SW_TRIGGER)
+		sfb->reg_update_done = 1;
+#endif
 		s3c_fb_wait_for_vsync(sfb, VSYNC_TIMEOUT_MSEC);
 		wait_for_vsync = false;
 
@@ -2360,7 +2373,7 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 						readl(sfb->regs + SHD_VIDW_BUF_START(i)));
 	}
 
-#ifdef CONFIG_FB_I80_COMMAND_MODE
+#if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_HW_TRIGGER)
 	s3c_fb_hw_trigger_set(sfb, TRIG_MASK);
 #endif
 
