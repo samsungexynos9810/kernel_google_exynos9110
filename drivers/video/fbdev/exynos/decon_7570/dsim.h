@@ -54,6 +54,7 @@
 
 extern struct dsim_device *dsim0_for_decon;
 extern struct dsim_device *dsim1_for_decon;
+extern struct mipi_dsim_lcd_driver s6e8aa5x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
 

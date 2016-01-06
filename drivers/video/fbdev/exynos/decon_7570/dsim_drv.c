@@ -1304,7 +1304,9 @@ static int dsim_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_irq;
 
-#if IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA0)
+#if IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA5X01)
+	dsim->panel_ops = &s6e8aa5x01_mipi_lcd_driver;
+#elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA0)
 	dsim->panel_ops = &s6e8aa0_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6D78A)
 	dsim->panel_ops = &s6d78a_mipi_lcd_driver;
