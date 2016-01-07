@@ -85,6 +85,8 @@ struct exynos_devfreq_ops {
 	int (*get_volt_table)(struct device *, u32, struct exynos_devfreq_opp_table *);
 	int (*um_register)(struct exynos_devfreq_data *);
 	int (*um_unregister)(struct exynos_devfreq_data *);
+	int (*pm_suspend_prepare)(struct exynos_devfreq_data *);
+	int (*pm_post_suspend)(struct exynos_devfreq_data *);
 	int (*suspend)(struct exynos_devfreq_data *);
 	int (*resume)(struct exynos_devfreq_data *);
 	int (*reboot)(struct exynos_devfreq_data *);
@@ -186,6 +188,7 @@ struct exynos_devfreq_data {
 	bool					use_tmu;
 	struct notifier_block			tmu_notifier;
 	struct notifier_block			reboot_notifier;
+	struct notifier_block			pm_notifier;
 
 	u32					ess_flag;
 
