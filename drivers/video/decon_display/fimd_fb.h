@@ -367,6 +367,7 @@ struct s3c_fb {
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_SW_TRIGGER)
 	bool reg_update_done;
 #endif
+	int accumulated_vsync_timeout;
 };
 
 struct s3c_fb_rect {

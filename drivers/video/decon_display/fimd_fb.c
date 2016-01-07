@@ -11,6 +11,7 @@
 */
 
 #include <linux/kernel.h>
+#include <linux/reboot.h>
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/dma-mapping.h>
@@ -1470,8 +1471,18 @@ static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout)
 
 	if (timeout && ret == 0) {
 		dev_err(sfb->dev, "wait for vsync timeout");
+		sfb->accumulated_vsync_timeout++;
+		if (sfb->accumulated_vsync_timeout >= 15) { //about 750msecs = VSYNC_TIMEOUT_MSEC * 15
+			sfb->accumulated_vsync_timeout = 0;
+			dev_err(sfb->dev, "waiting for vsync timeout is over\n");
+			emergency_restart();
+			while(1) {
+				msleep(1000);
+			}
+		}
 		return -ETIMEDOUT;
 	}
+	sfb->accumulated_vsync_timeout = 0;
 
 	return 0;
 }
