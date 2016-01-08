@@ -173,7 +173,7 @@
 		/* decon V porch : VBP, VFP, VSA */
 		timing,decon_v-porch = <8 14 2>;
 		timing,dsi-hs-clk = <498>;
-		timing,pms = <1 1 1>;
+		timing,pms = <3 230 2>;
 		timing,dsi-escape-clk = <20>;
 	};
 
