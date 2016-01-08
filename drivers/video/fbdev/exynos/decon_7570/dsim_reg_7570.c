@@ -145,6 +145,7 @@ const u32 dphy_timing[][10] = {
 	{520, 4, 22, 10, 5, 5, 7, 7, 3, 6},
 	{510, 4, 22, 10, 5, 5, 6, 7, 3, 6},
 	{500, 4, 21, 10, 5, 4, 6, 7, 3, 6},
+	{498, 4, 21, 10, 5, 4, 6, 7, 3, 6},
 	{490, 4, 21, 10, 5, 4, 6, 7, 3, 6},
 	{480, 4, 21, 9, 4, 4, 6, 7, 3, 6},
 };
@@ -948,10 +949,8 @@ void dsim_reg_set_standby(u32 id, u32 en)
 static int dsim_reg_get_dphy_timing(u32 hs_clk, u32 esc_clk, struct dphy_timing_value *t)
 {
 	int i = sizeof(dphy_timing) / sizeof(dphy_timing[0]) - 1;
-
-	while (i) {
+	for(; i >= 0; i--) {
 		if (dphy_timing[i][0] < hs_clk) {
-			i--;
 			continue;
 		} else {
 			t->bps = hs_clk;
@@ -968,7 +967,7 @@ static int dsim_reg_get_dphy_timing(u32 hs_clk, u32 esc_clk, struct dphy_timing_
 		}
 	}
 
-	if (!i) {
+	if (i < 0) {
 		dsim_err("%u Mhz hs clock can't find proper dphy timing values\n", hs_clk);
 		return -EINVAL;
 	}
