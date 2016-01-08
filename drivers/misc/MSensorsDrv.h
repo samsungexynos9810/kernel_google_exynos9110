@@ -99,8 +99,9 @@
 #define MSENSORS_TYPE_BHA		(0x05)		/* Sensor Type WakeMotion */
 #define MSENSORS_TYPE_STEP_COUNTER		(0x06)		/* Sensor Type Step Counter */
 #define MSENSORS_TYPE_STEP_DETECTOR		(0x07)		/* Sensor Type Step Detector */
-#define MSENSORS_TYPE_WRIST_TILT	(0x08)
-#define MSENSORS_TYPE_META			(0x09)		/* Number of Sensor Types */
+#define MSENSORS_TYPE_WRIST_TILT	(0x08)	/* Sensor Type Wrist Tilt  */
+#define MSENSORS_TYPE_SIGNIFICANT_MOTION	(0x09)	/* Sensor Type SignificantMotion */
+#define MSENSORS_TYPE_META			(0x0f)		/* Sensor Type Meta */
 
 #define SUB_COM_HEAD_INDEX_TYPE			(0x00)		/* HEADER Information Index Type */
 #define SUB_COM_HEAD_INDEX_PACKET		(0x01)		/* HEADER Information Index Packet */
