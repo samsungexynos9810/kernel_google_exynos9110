@@ -41,6 +41,12 @@ extern int disable_mc_powerdn(void);
 #endif
 
 /* option */
+#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
+void exynos_ss_acpm(unsigned long long timestamp, const char *log, unsigned int data);
+#else
+#define exynos_ss_acpm(a,b,c)         do { } while(0)
+#endif
+
 #ifdef CONFIG_EXYNOS_SNAPSHOT_REGULATOR
 extern void exynos_ss_regulator(char* f_name, unsigned int addr, unsigned int volt, int en);
 #else
@@ -134,6 +140,7 @@ void exynos_ss_dump_sfr(void);
 #endif
 
 #else
+#define exynos_ss_acpm(a,b,c)		do { } while(0)
 #define exynos_ss_task(a,b)		do { } while(0)
 #define exynos_ss_work(a,b,c,d)		do { } while(0)
 #define exynos_ss_clockevent(a,b,c)	do { } while(0)

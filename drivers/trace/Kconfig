@@ -67,6 +67,11 @@ config EXYNOS_SNAPSHOT_REGULATOR
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default y
 
+config EXYNOS_SNAPSHOT_ACPM
+	bool "Enable debugging of acpm framework"
+	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
+	default y
+
 config EXYNOS_SNAPSHOT_THERMAL
 	bool "Enable debugging of thermal driver"
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE && EXYNOS_THERMAL

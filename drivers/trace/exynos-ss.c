@@ -239,6 +239,14 @@ struct exynos_ss_log {
 		unsigned int mif_vol;
 	} mailbox[ESS_LOG_MAX_NUM];
 #endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
+	struct acpm_log {
+		unsigned long long time;
+		unsigned long long acpm_time;
+		char log[9];
+		unsigned int data;
+	} acpm[ESS_LOG_MAX_NUM];
+#endif
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	struct clockevent_log {
 		unsigned long long time;
@@ -309,6 +317,9 @@ struct exynos_ss_log_idx {
 	atomic_t clockevent_log_idx[ESS_NR_CPUS];
 	atomic_t printkl_log_idx;
 	atomic_t printk_log_idx;
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
+	atomic_t acpm_log_idx;
 #endif
 };
 #ifdef CONFIG_ARM64
@@ -1435,6 +1446,9 @@ static void __init exynos_ss_fixmap_header(void)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
 	atomic_set(&(ess_idx.clk_log_idx), -1);
 #endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
+	atomic_set(&(ess_idx.acpm_log_idx), -1);
+#endif
 	for (i = 0; i < ESS_NR_CPUS; i++) {
 		atomic_set(&(ess_idx.task_log_idx[i]), -1);
 		atomic_set(&(ess_idx.work_log_idx[i]), -1);
@@ -2019,6 +2033,30 @@ void exynos_ss_hrtimer(void *timer, s64 *now, void *fn, int en)
 		ess_log->hrtimers[cpu][i].timer = (struct hrtimer *)timer;
 		ess_log->hrtimers[cpu][i].fn = fn;
 		ess_log->hrtimers[cpu][i].en = en;
+	}
+}
+#endif
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
+void exynos_ss_acpm(unsigned long long timestamp, const char *log, unsigned int data)
+{
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
+
+	if (unlikely(!ess_base.enabled || !item->entry.enabled))
+		return;
+	{
+		int cpu = raw_smp_processor_id();
+		unsigned long i = atomic_inc_return(&ess_idx.acpm_log_idx) &
+				(ARRAY_SIZE(ess_log->acpm) - 1);
+		int len = strlen(log);
+
+		if (len >= 9)
+			len = 9;
+
+		ess_log->acpm[i].time = cpu_clock(cpu);
+		ess_log->acpm[i].acpm_time = timestamp;
+		strncpy(ess_log->acpm[i].log, log, len);
+		ess_log->acpm[i].data = data;
 	}
 }
 #endif
