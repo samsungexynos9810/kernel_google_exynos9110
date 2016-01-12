@@ -43,4 +43,49 @@ config SAMSUNG_DMADEV
 	help
 	  Use DMA device engine for PL330 DMAC.
 
+config EXYNOS_HOTPLUG_GOVERNOR
+	bool "Enable Exynos dynamic hotplug governor"
+
+config SCHED_HP_EVENT
+	bool "Gathers scheduler events to decide hotplug in/out"
+	depends on EXYNOS_HOTPLUG_GOVERNOR
+	default y
+
+config HP_EVENT_THREAD_GROUP
+	bool "Gathers thread group information"
+	depends on SCHED_HP_EVENT && SCHED_HMP
+	default y
+
+config HP_EVENT_HMP_SYSTEM_LOAD
+       bool "Gathers system load information"
+	depends on SCHED_HP_EVENT && SCHED_HMP
+	default y
+
+config CAL_IF
+	bool "Exynos Chip Abstraction Layer Interface"
+	help
+	  Support CMU CAL for Exynos SoC.
+
+config PMUCAL
+	bool "Exynos PMU Chip Abstraction Layer"
+	depends on CAL_IF
+	default y
+	help
+	 Support PMUCAL for Exynos SoC.
+
+config CMUCAL
+	bool "Exynos CMU Chip Abstraction Layer"
+	depends on CAL_IF
+	default y
+	help
+	  Support CMUCAL for Exynos SoC.
+
+config CMUCAL_DEBUG
+	bool "CMUCAL Debug Interface"
+	depends on CMUCAL
+
+config USI
+	bool "Enable Universal Serial Interface"
+	default n
+
 endif #SOC_SAMSUNG
