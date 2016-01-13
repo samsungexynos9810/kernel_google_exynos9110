@@ -72,7 +72,7 @@ static unsigned char		Flg_driver_shutdown = 0;
 static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
 static wait_queue_head_t wait_ioctl;
-static int ioctl_complete;
+static volatile int ioctl_complete;
 static wait_queue_head_t wait_q_bl_zero;
 static int flg_bl_zero;
 
@@ -415,18 +415,11 @@ static int sub_read_command(uint8_t command)
 
 	write_buff[0] = SUB_COM_TYPE_READ;
 	write_buff[1] = command;
-	Set_WriteDataBuff(&write_buff[0]);
-	ioctl_complete = 0;
-	ret = wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
-	return ret;
-}
-
-static int sub_read_command_locked(uint8_t command)
-{
 	mutex_lock(&mlock);
-	int ret = sub_read_command(command);
+	ioctl_complete = 0;
+	Set_WriteDataBuff(&write_buff[0]);
+	ret = wait_event_interruptible(wait_ioctl, ioctl_complete == 1);
 	mutex_unlock(&mlock);
-
 	return ret;
 }
 
@@ -470,11 +463,11 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 		ret = copy_to_user((void __user *)arg, buf, 3);
 	} else if (cmd == IOC_ACCEL_ADJ) {
 		/* accelerometer factory adjustment */
-		ret = sub_read_command_locked(SUB_COM_GETID_ACC_ADJ);
+		ret = sub_read_command(SUB_COM_GETID_ACC_ADJ);
 		if (ret >= 0)
 			ret = copy_to_user((void __user *)arg, SubReadData, 3);
 	} else if (cmd == IOC_POWER_WARN) {
-		ret = sub_read_command_locked(SUB_COM_GETID_POWER_WARN);
+		ret = sub_read_command(SUB_COM_GETID_POWER_WARN);
 		if (ret >= 0)
 			ret = copy_to_user((void __user *)arg, SubReadData, 2);
 	} else {
