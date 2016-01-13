@@ -82,7 +82,10 @@ static void ctrl_brightness(struct bd82103_chip_data *pchip, int intensity)
 		return;
 
 #ifdef CONFIG_BACKLIGHT_SUBCPU
-	SUB_LCDBrightnessSet((intensity >> 4) + 1);
+	if (intensity > 0)
+		SUB_LCDBrightnessSet((intensity >> 4) + 1);
+	else
+		SUB_LCDBrightnessSet(0);
 #else
 	if (intensity == 0) {
 		gpio_set_value_cansleep(pchip->gpio, 0);
