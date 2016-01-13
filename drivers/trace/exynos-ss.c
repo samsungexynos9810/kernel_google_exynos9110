@@ -683,6 +683,10 @@ EXPORT_SYMBOL(exynos_ss_get_hardlockup);
 int exynos_ss_set_hardlockup(int val)
 {
 	unsigned long flags;
+
+	if (unlikely(!ess_base.enabled))
+		return 0;
+
 	spin_lock_irqsave(&ess_desc.lock, flags);
 	ess_desc.hardlockup = val;
 	spin_unlock_irqrestore(&ess_desc.lock, flags);
@@ -693,6 +697,9 @@ EXPORT_SYMBOL(exynos_ss_set_hardlockup);
 int exynos_ss_prepare_panic(void)
 {
 	unsigned cpu;
+
+	if (unlikely(!ess_base.enabled))
+		return 0;
 
 	for (cpu = 0; cpu < ESS_NR_CPUS; cpu++) {
 		if (exynos_cpu.power_state(cpu))
@@ -711,6 +718,11 @@ EXPORT_SYMBOL(exynos_ss_prepare_panic);
 int exynos_ss_post_panic(void)
 {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+	if (unlikely(!ess_base.enabled)) {
+		flush_cache_all();
+		return 0;
+	}
+
 	exynos_ss_dump_sfr();
 #endif
 	exynos_ss_save_context(NULL);
@@ -722,7 +734,8 @@ int exynos_ss_post_panic(void)
 			goto loop;
 #endif
 	}
-	arm_pm_restart(0, "sw reset");
+	arm_pm_restart(0, "panic");
+#endif
 	/* for stall cpu when not enabling panic reboot */
 loop:
 	while(1)
@@ -737,6 +750,9 @@ EXPORT_SYMBOL(exynos_ss_post_panic);
 
 int exynos_ss_dump_panic(char *str, size_t len)
 {
+	if (unlikely(!ess_base.enabled))
+		return 0;
+
 	/*  This function is only one which runs in panic funcion */
 	if (str && len && len < 1024)
 		memcpy(S5P_VA_SS_PANIC_STRING, str, len);
@@ -748,6 +764,9 @@ EXPORT_SYMBOL(exynos_ss_dump_panic);
 int exynos_ss_post_reboot(void)
 {
 	int cpu;
+
+	if (unlikely(!ess_base.enabled))
+		return 0;
 
 	/* clear ESS_SIGN_PANIC when normal reboot */
 	for (cpu = 0; cpu < ESS_NR_CPUS; cpu++)
@@ -845,6 +864,9 @@ int exynos_ss_save_context(void *v_regs)
 {
 	unsigned long flags;
 	struct pt_regs *regs = (struct pt_regs *)v_regs;
+
+	if (unlikely(!ess_base.enabled))
+		return 0;
 
 	//exynos_trace_stop();
 
@@ -1127,6 +1149,9 @@ void exynos_ss_dump_sfr(void)
 	int i, ret;
 	static char buf[SZ_64];
 
+	if (unlikely(!ess_base.enabled))
+		return;
+
 	if (list_empty(&ess_desc.sfrdump_list) || unlikely(!item) ||
 		unlikely(item->entry.enabled == false)) {
 		pr_emerg("exynos-snapshot: %s: No information\n", __func__);
@@ -1287,6 +1312,9 @@ void exynos_ss_check_crash_key(unsigned int code, int value)
 static int exynos_ss_reboot_handler(struct notifier_block *nb,
 				    unsigned long l, void *p)
 {
+	if (unlikely(!ess_base.enabled))
+		return 0;
+
 	pr_emerg("exynos-snapshot: normal reboot [%s]\n", __func__);
 	exynos_ss_report_reason(ESS_SIGN_NORMAL_REBOOT);
 	exynos_ss_scratch_reg(ESS_SIGN_RESET);
@@ -1300,6 +1328,9 @@ static int exynos_ss_panic_handler(struct notifier_block *nb,
 				   unsigned long l, void *buf)
 {
 	exynos_ss_report_reason(ESS_SIGN_PANIC);
+	if (unlikely(!ess_base.enabled))
+		return 0;
+
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	local_irq_disable();
 	pr_emerg("exynos-snapshot: panic - reboot[%s]\n", __func__);
@@ -1327,6 +1358,9 @@ void exynos_ss_panic_handler_safe(struct pt_regs *regs)
 	char text[1024];
 	size_t len;
 
+	if (unlikely(!ess_base.enabled))
+		return;
+
 	snprintf(text, 1024, "safe panic handler at cpu %d", (int)raw_smp_processor_id());
 	len = (size_t)strnlen(text, 1024);
 
@@ -1335,6 +1369,7 @@ void exynos_ss_panic_handler_safe(struct pt_regs *regs)
 	s3c2410wdt_set_emergency_reset(100);
 
 }
+
 static unsigned int __init exynos_ss_remap(unsigned int base, unsigned int size)
 {
 	struct map_desc ess_iodesc[ESS_ITEM_MAX_NUM];
