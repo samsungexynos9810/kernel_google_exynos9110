@@ -717,23 +717,23 @@ EXPORT_SYMBOL(exynos_ss_prepare_panic);
 
 int exynos_ss_post_panic(void)
 {
-#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
-	if (unlikely(!ess_base.enabled)) {
+	if (ess_base.enabled) {
+		exynos_ss_dump_sfr();
+		exynos_ss_save_context(NULL);
 		flush_cache_all();
-		return 0;
-	}
-
-	exynos_ss_dump_sfr();
-#endif
-	exynos_ss_save_context(NULL);
-	flush_cache_all();
-
-	if (!ess_desc.no_wdt_dev) {
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
+		if (!ess_desc.no_wdt_dev) {
 #ifdef CONFIG_EXYNOS_SNAPSHOT_WATCHDOG_RESET
-		if (ess_desc.hardlockup || num_online_cpus() > 1)
-			goto loop;
+			if (ess_desc.hardlockup || num_online_cpus() > 1) {
+			/* for stall cpu */
+				while(1)
+				wfi();
+			}
+#endif
+		}
 #endif
 	}
+#ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	arm_pm_restart(0, "panic");
 #endif
 	/* for stall cpu when not enabling panic reboot */
