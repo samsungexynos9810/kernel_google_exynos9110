@@ -49,12 +49,12 @@ static const unsigned char SEQ_PENTILE_SETTING[] = {
 
 static const unsigned char SEQ_DE_DIM_GP[] = {
 	0xB0,
-	0x06, /* Global para(7th) */
+	0x06, 0x00 /* Global para(7th) */
 };
 
 static const unsigned char SEQ_DE_DIM_SETTING[] = {
 	0xB8,
-	0xA8, /* DE_DIN On */
+	0xA8, 0x00 /* DE_DIN On */
 };
 
 static const unsigned char SEQ_GAMMA_360NIT[] = {
@@ -77,28 +77,28 @@ static const unsigned char SEQ_ELVSS_360NIT[] = {
 
 static const unsigned char SEQ_GAMMA_UPDATE[] = {
 	0xF7,
-	0x03,
+	0x03, 0x00
 };
 
 static const unsigned char SEQ_ACL_OFF_OPR[] = {
 	0xB5,
-	0x40, /* 0x40 : at ACL OFF */
+	0x40, 0x00/* 0x40 : at ACL OFF */
 };
 
 static const unsigned char SEQ_ACL_OFF[] = {
 	0x55,
-	0x00, /* 0x00 : ACL OFF */
+	0x00, 0x00/* 0x00 : ACL OFF */
 };
 
 /* Tset 25 degree */
 static const unsigned char SEQ_TSET_GP[] = {
 	0xB0,
-	0x07,
+	0x07, 0x00
 };
 
 static const unsigned char SEQ_TSET[] = {
 	0xB8,
-	0x19,
+	0x19, 0x00
 };
 
 static const unsigned char SEQ_SLEEP_OUT[] = {

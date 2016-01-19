@@ -102,27 +102,27 @@ void lcd_init(struct decon_lcd * lcd)
 		ARRAY_SIZE(SEQ_ELVSS_360NIT)) == -1)
 		dsim_err("failed to send SEQ_ELVSS_360NIT.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_ACL_OFF_OPR,
 		ARRAY_SIZE(SEQ_ACL_OFF_OPR)) == -1)
 		dsim_err("failed to send SEQ_ACL_OFF_OPR.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_ACL_OFF,
 		ARRAY_SIZE(SEQ_ACL_OFF)) == -1)
 		dsim_err("failed to send SEQ_ACL_OFF.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_GAMMA_UPDATE,
 		ARRAY_SIZE(SEQ_GAMMA_UPDATE)) == -1)
 		dsim_err("failed to send SEQ_GAMMA_UPDATE.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_TSET_GP,
 		ARRAY_SIZE(SEQ_TSET_GP)) == -1)
 		dsim_err("failed to send SEQ_TSET_GP.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_TSET,
 		ARRAY_SIZE(SEQ_TSET)) == -1)
 		dsim_err("failed to send SEQ_TSET.\n");
@@ -133,12 +133,12 @@ void lcd_init(struct decon_lcd * lcd)
 		ARRAY_SIZE(SEQ_PENTILE_SETTING)) == -1)
 		dsim_err("failed to send SEQ_PENTILE_SETTING.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_DE_DIM_GP,
 		ARRAY_SIZE(SEQ_DE_DIM_GP)) == -1)
 		dsim_err("failed to send SEQ_DE_DIM_GP.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_SHORT_WRITE_PARAM,
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SEQ_DE_DIM_SETTING,
 		ARRAY_SIZE(SEQ_DE_DIM_SETTING)) == -1)
 		dsim_err("failed to send SEQ_DE_DIM_SETTING.\n");
