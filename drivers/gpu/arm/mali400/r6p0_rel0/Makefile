@@ -15,6 +15,8 @@ USING_DVFS ?= 1
 MALI_HEATMAPS_ENABLED ?= 0
 MALI_DMA_BUF_MAP_ON_ATTACH ?= 1
 MALI_PMU_PARALLEL_POWER_UP ?= 0
+USING_DT ?= 0
+MALI_MEM_SWAP_TRACKING ?= 0
 
 # The Makefile sets up "arch" based on the CONFIG, creates the version info
 # string and the __malidrv_build_info.c file, and then call the Linux build
@@ -100,8 +102,12 @@ endif
 
 # Set up build config
 export CONFIG_MALI400=m
+export CONFIG_MALI450=y
+export CONFIG_MALI470=y
 
 export EXTRA_DEFINES += -DCONFIG_MALI400=1
+export EXTRA_DEFINES += -DCONFIG_MALI450=1
+export EXTRA_DEFINES += -DCONFIG_MALI470=1
 
 ifneq ($(MALI_PLATFORM),)
 export EXTRA_DEFINES += -DMALI_FAKE_PLATFORM_DEVICE=1
@@ -155,6 +161,20 @@ endif
 ifneq ($(BUILD),release)
 # Debug
 export CONFIG_MALI400_DEBUG=y
+else
+# Release
+ifeq ($(MALI_QUIET),1)
+export CONFIG_MALI_QUIET=y
+export EXTRA_DEFINES += -DCONFIG_MALI_QUIET
+endif
+endif
+
+ifeq ($(MALI_SKIP_JOBS),1)
+EXTRA_DEFINES += -DPROFILING_SKIP_PP_JOBS=1 -DPROFILING_SKIP_GP_JOBS=1
+endif
+
+ifeq ($(MALI_MEM_SWAP_TRACKING),1)
+EXTRA_DEFINES += -DMALI_MEM_SWAP_TRACKING=1
 endif
 
 all: $(UMP_SYMVERS_FILE)
