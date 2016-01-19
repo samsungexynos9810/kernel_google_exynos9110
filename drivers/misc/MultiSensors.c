@@ -634,7 +634,7 @@ static int Msensors_probe(struct spi_device *spi)
 
 	add_sysfs_interfaces(&spi->dev);
 
-	disable_irq_wake(irq);
+	enable_irq_wake(irq);
 
 	Flg_driver_ready = 1;
 	Flg_driver_probed = 1;
@@ -694,21 +694,13 @@ static int Msensors_suspend(struct device *dev)
 
 	Flg_driver_ready = 0;
 
-	/* for SUB_MAIN_INT resume */
-	irq = gpio_to_irq(g_st->sub_main_int);
-	enable_irq_wake(irq);
-
 	return 0;
 }
 
-static int Msensors_resume(struct device *dev)
+static void Msensors_complete(struct device *dev)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
 	int irq;	/* for SUB_MAIN_INT resumu */
-
-	/* for SUB_MAIN_INT resume */
-	irq = gpio_to_irq(g_st->sub_main_int);
-	disable_irq_wake(irq);
 
 	Flg_driver_ready = 1;
 
@@ -719,8 +711,6 @@ static int Msensors_resume(struct device *dev)
 	write_buff[2] = 0x0;	/* Nomal */
 
 	Set_WriteDataBuff(&write_buff[0]);
-
-	return 0;
 }
 
 static int Msensors_runtime_suspend(struct device *dev)
@@ -735,7 +725,7 @@ static int Msensors_runtime_resume(struct device *dev)
 
 static const struct dev_pm_ops Msensors_pm = {
 	.suspend = Msensors_suspend,
-	.resume = Msensors_resume,
+	.complete = Msensors_complete,
 	SET_RUNTIME_PM_OPS(Msensors_runtime_suspend,
 			   Msensors_runtime_resume, NULL)
 };
