@@ -1,26 +1,3 @@
-config MALI400
-	tristate "Mali-300/400/450 support"
-	depends on ARM || ARM64
-	select DMA_SHARED_BUFFER
-	---help---
-	  This enables support for the ARM Mali-300, Mali-400, and Mali-450
-	  GPUs.
-
-	  To compile this driver as a module, choose M here: the module will be
-	  called mali.
-
-config MALI450
-	bool "Enable Mali-450 support"
-	depends on MALI400
-	---help---
-	  This enables support for Mali-450 specific features.
-
-config MALI470
-	bool "Enable Mali-470 support"
-	depends on MALI400
-	---help---
-	  This enables support for Mali-470 specific features.
-
 config MALI400_DEBUG
 	bool "Enable debug in Mali driver"
 	depends on MALI400
@@ -31,7 +8,7 @@ config MALI400_PROFILING
 	bool "Enable Mali profiling"
 	depends on MALI400
 	select TRACEPOINTS
-	default y
+	default n
 	---help---
 	  This enables gator profiling of Mali GPU events.
 
@@ -42,11 +19,28 @@ config MALI400_INTERNAL_PROFILING
 	---help---
 	  This enables the internal legacy Mali profiling API.
 
+config MALI_DVFS
+	bool "Enable mali DVFS"
+	depends on MALI400 && PM
+	default y
+	---help---
+		This enables Mali driver DVFS.
+
+config MALI_DVFS_FULL_LEVEL
+	bool "Enable mali DVFS full level"
+	depends on MALI_DVFS
+	default n
+	---help---
+		This enables Mali driver DVFS full level.
+
+if CPU_EXYNOS4212 || CPU_EXYNOS4412
 config MALI400_UMP
 	bool "Enable UMP support"
 	depends on MALI400
+	default y
 	---help---
 	  This enables support for the UMP memory sharing API in the Mali driver.
+endif
 
 config MALI_DVFS
 	bool "Enable Mali dynamically frequency change"
@@ -85,22 +79,3 @@ config MALI_PMU_PARALLEL_POWER_UP
 	  powering up domains one by one, with a slight delay in between. Powering on all power
 	  domains at the same time may cause peak currents higher than what some systems can handle.
 	  These systems must not enable this option.
-
-config MALI_DT
-	bool "Using device tree to initialize module"
-	depends on MALI400 && OF
-	default n
-	---help---
-	  This enable the Mali driver to choose the device tree path to get platform resoures
-	  and disable the old config method. Mali driver could run on the platform which the
-	  device tree is enabled in kernel and corresponding hardware description is implemented
-	  properly in device DTS file.
-
-config MALI_QUIET
-	bool "Make Mali driver very quiet"
-	depends on MALI400 && !MALI400_DEBUG
-	default n
-	---help---
-	  This forces the Mali driver to never print any messages.
-
-	  If unsure, say N.
