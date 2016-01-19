@@ -44,7 +44,7 @@
 #include "mali_profiling_internal.h"
 #endif
 /* MALI_SEC */
-#include <exynos3_pmm.h>
+#include <exynos4_pmm.h>
 
 #if defined(CONFIG_MALI400_PROFILING) && defined(CONFIG_MALI_DVFS)
 #include "mali_osk_profiling.h"
@@ -173,8 +173,8 @@ static int mali_driver_runtime_idle(struct device *dev);
 extern int mali_platform_device_init(struct platform_device *device);
 extern int mali_platform_device_deinit(struct platform_device *device);
 #else
-extern int mali_platform_device_register(struct platform_device *device);
-extern int mali_platform_device_unregister(struct platform_device *device);
+extern int mali_platform_device_register(void);
+extern int mali_platform_device_unregister(void);
 #endif
 #endif
 
@@ -204,17 +204,6 @@ static const struct dev_pm_ops mali_dev_pm_ops = {
 };
 #endif
 
-#ifdef CONFIG_OF
-static const struct of_device_id exynos3250_mali_match[] = {
-        {
-                .compatible = "arm,mali400",
-        },
-        {},
-};
-
-MODULE_DEVICE_TABLE(of, exynos_mali_match);
-#endif
-
 #ifdef CONFIG_MALI_DT
 static struct of_device_id base_dt_ids[] = {
 	{.compatible = "arm,mali-300"},
@@ -241,9 +230,6 @@ static struct platform_driver mali_platform_driver = {
 		.bus = &platform_bus_type,
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 29))
 		.pm = &mali_dev_pm_ops,
-#endif
-#ifndef CONFIG_MALI_DT
-		.of_match_table = exynos3250_mali_match,
 #endif
 #ifdef CONFIG_MALI_DT
 		.of_match_table = of_match_ptr(base_dt_ids),
@@ -398,6 +384,17 @@ int mali_module_init(void)
 	mali_init_cpu_time_counters_on_all_cpus(1);
 #endif
 
+	/* Initialize module wide settings */
+#ifdef MALI_FAKE_PLATFORM_DEVICE
+#ifndef CONFIG_MALI_DT
+	MALI_DEBUG_PRINT(2, ("mali_module_init() registering device\n"));
+	err = mali_platform_device_register();
+	if (0 != err) {
+		return err;
+	}
+#endif
+#endif
+
 	MALI_DEBUG_PRINT(2, ("mali_module_init() registering driver\n"));
 
 	err = platform_driver_register(&mali_platform_driver);
@@ -406,7 +403,7 @@ int mali_module_init(void)
 		MALI_DEBUG_PRINT(2, ("mali_module_init() Failed to register driver (%d)\n", err));
 #ifdef MALI_FAKE_PLATFORM_DEVICE
 #ifndef CONFIG_MALI_DT
-		mali_platform_device_unregister(mali_platform_device);
+		mali_platform_device_unregister();
 #endif
 #endif
 		mali_platform_device = NULL;
@@ -446,6 +443,13 @@ void mali_module_exit(void)
 
 	platform_driver_unregister(&mali_platform_driver);
 
+#if defined(MALI_FAKE_PLATFORM_DEVICE)
+#ifndef CONFIG_MALI_DT
+	MALI_DEBUG_PRINT(2, ("mali_module_exit() unregistering device\n"));
+	mali_platform_device_unregister();
+#endif
+#endif
+
 	/* Tracing the current frequency and voltage from rmmod*/
 	_mali_osk_profiling_add_event(MALI_PROFILING_EVENT_TYPE_SINGLE |
 				      MALI_PROFILING_EVENT_CHANNEL_GPU |
@@ -474,17 +478,6 @@ static int mali_probe(struct platform_device *pdev)
 	}
 
 	mali_platform_device = pdev;
-
-	/* Initialize module wide settings */
-#ifdef MALI_FAKE_PLATFORM_DEVICE
-#ifndef CONFIG_MALI_DT
-	MALI_DEBUG_PRINT(2, ("mali_module_init() registering device\n"));
-	err = mali_platform_device_register(mali_platform_device);
-	if (0 != err) {
-		return err;
-	}
-#endif
-#endif
 
 #ifdef CONFIG_MALI_DT
 	/* If we use DT to initialize our DDK, we have to prepare somethings. */
@@ -533,13 +526,6 @@ static int mali_remove(struct platform_device *pdev)
 	mali_miscdevice_unregister();
 	mali_terminate_subsystems();
 	_mali_osk_wq_term();
-#if defined(MALI_FAKE_PLATFORM_DEVICE)
-#ifndef CONFIG_MALI_DT
-	MALI_DEBUG_PRINT(2, ("mali_module_exit() unregistering device\n"));
-	mali_platform_device_unregister(pdev);
-#endif
-#endif
-
 #ifdef CONFIG_MALI_DT
 	mali_platform_device_deinit(mali_platform_device);
 #endif
