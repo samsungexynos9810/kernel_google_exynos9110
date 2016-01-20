@@ -43,6 +43,7 @@
 #include "../../../../staging/android/sw_sync.h"
 
 #define MHZ (1000 * 1000)
+#define PROTECT
 
 #ifdef CONFIG_OF
 static const struct of_device_id decon_device_table[] = {
@@ -95,6 +96,22 @@ void decon_dump(struct decon_device *decon)
 }
 
 /* ---------- CHECK FUNCTIONS ----------- */
+
+#ifdef PROTECT
+void decon_to_regs_paddr(struct decon_regs_data *win_regs,
+		struct decon_reg_data *regs, int idx)
+{
+	win_regs->vidw_buf_start = regs->phys_addr[idx].phy_addr[0];
+	win_regs->vidw_plane2_buf_start = regs->phys_addr[idx].phy_addr[1];
+	win_regs->vidw_plane3_buf_start = regs->phys_addr[idx].phy_addr[2];
+
+	decon_dbg(" %s, PA[0] : %#lX LEN: %#lX\n", __func__,  (ulong)regs->phys_addr[idx].phy_addr[0],
+		(ulong)regs->phys_addr[idx].phy_addr_len[0]);
+	decon_dbg(" %s, PA[1] : %#lX \n", __func__,  (ulong)regs->phys_addr[idx].phy_addr[1]);
+	decon_dbg(" %s, PA[2] : %#lX \n", __func__,  (ulong)regs->phys_addr[idx].phy_addr[2]);
+}
+#endif
+
 static void decon_to_regs_param(struct decon_regs_data *win_regs,
 		struct decon_reg_data *regs, int idx)
 {
@@ -833,14 +850,6 @@ int decon_enable(struct decon_device *decon)
 #else
 	decon_runtime_resume(decon->dev);
 #endif
-#ifdef PROTECT
-	ret = exynos_smc(MC_FC_SET_CFW_PROT,
-			MC_FC_DRM_SET_CFW_PROT, DECON_CFW_OFFSET, 0);
-	if (ret != 2) {
-		decon_err("smc call fail for decon: %d\n", ret);
-		return -EBUSY;
-	}
-#endif
 	if (decon->state == DECON_STATE_LPD_EXIT_REQ) {
 		ret = v4l2_subdev_call(decon->output_sd, core, ioctl,
 				DSIM_IOC_ENTER_ULPS, (unsigned long *)0);
@@ -1325,162 +1334,65 @@ static void decon_calc_plane_offset(struct decon_win_config *config,
 			config->format, &dma_buf_data[0].dma_addr,
 			&dma_buf_data[1].dma_addr, &dma_buf_data[2].dma_addr);
 }
+
 #ifdef PROTECT
-static void decon_save_old_buffer(struct decon_device *decon,
-		struct decon_reg_data *regs, int win)
-{
-	int i;
-
-	decon->old_info.win_id = regs->win_config[win].idma_type;
-	decon->old_info.pixel_format = regs->win_config[win].format;
-	decon->old_info.plane = decon_get_memory_plane_cnt(decon->old_info.pixel_format);
-
-	for (i = 0; i < decon->old_info.plane; i++) {
-		decon->old_info.phys_addr[i] = regs->phys_addr[win].phy_addr[i];
-		decon->old_info.phys_addr_len[i] = regs->phys_addr[win].phy_addr_len[i];
-	}
-}
-
-static void decon_set_cfw(struct decon_device *decon,
-		struct decon_reg_data *regs, int flag)
-{
-	int i;
-	int plane_num, plane, ret = 0;
-
-	u32 CFW_TAG = flag ? SMC_DRM_SECBUF_CFW_PROT : SMC_DRM_SECBUF_CFW_UNPROT;
-
-	if (CFW_TAG == SMC_DRM_SECBUF_CFW_UNPROT) {
-		for (plane = 0; plane < decon->old_info.plane; plane++) {
-			ret = exynos_smc(CFW_TAG, decon->old_info.phys_addr[plane],
-					decon->old_info.phys_addr_len[plane],
-					DECON_CFW_OFFSET);
-			if (ret) {
-				decon_err("failed to secbuf cfw unprot(%d) IDMA(%d) addr[0x%lx]\n",
-						ret, decon->old_info.win_id,
-						decon->old_info.phys_addr[plane]);
-				decon_info("CFW_UNPROT. addr:%#lx, size:%d. ip:%d\n",
-						decon->old_info.phys_addr[plane],
-						decon->old_info.phys_addr_len[plane],
-						DECON_CFW_OFFSET);
-			}
-		}
-	} else { /* CFW_TAG == SMC_DRM_SECBUF_CFW_PROT */
-		for (i = 0; i < decon->pdata->max_win; i++) {
-			if (regs->protection[i]) {
-				plane_num = decon_get_memory_plane_cnt(regs->win_config[i].format);
-				for (plane = 0; plane < plane_num; plane++) {
-					ret = exynos_smc(SMC_DRM_SECBUF_CFW_PROT, regs->phys_addr[i].phy_addr[plane],
-							regs->phys_addr[i].phy_addr_len[plane], DECON_CFW_OFFSET);
-					if (ret) {
-						decon_err("failed to secbuf cfw protection(%d) win(%d) addr[0]\n",
-								ret, decon->old_info.win_id);
-						decon_info("WIN:%d CFW_UNPROT. addr:%#lx, size:%d. ip:%d\n", i,
-								regs->phys_addr[i].phy_addr[plane],
-								regs->phys_addr[i].phy_addr_len[plane],
-								DECON_CFW_OFFSET);
-					}
-				}
-
-				/* only 1 protected idma channel is available */
-				break;
-			}
-		}
-	}
-}
-
 static void decon_set_protected_content(struct decon_device *decon,
 		struct decon_reg_data *regs, bool enable)
 {
 	int i, ret = 0;
+	u32 cur_protect_bits = 0;
 
-	/* Protection can be enabled only when cur_protection_bitmask is not 0 */
-	if (enable)
-		enable = decon->cur_protection_bitmask ? 1 : 0;
+	for (i = 0; i < decon->pdata->max_win; i++) {
+		if (!regs)
+			break;
 
-	if (decon->prev_protection_status) {
-		if (enable) {
-			/* protection is enabled in previous as well as current frame */
-
-			/* wait for DECON to stop before enabling protection. */
-			if(decon_reg_wait_linecnt_is_zero_timeout(DECON_INT, 0, 35 * 1000))
-				DISP_SS_EVENT_LOG(DISP_EVT_LINECNT_TIMEOUT,
-						&decon->sd, ktime_set(0, 0));
-
-			/* protect new buffers */
-			decon_set_cfw(decon, regs, true);
-
-			/* unprotect previous buffers */
-			decon_set_cfw(decon, regs, false);
-
-			/* save new buffers */
-			if (regs) {
-				for (i = 0; i < decon->pdata->max_win; i++) {
-					if (regs->protection[i]) {
-						decon_save_old_buffer(decon, regs, i);
-						break;
-					}
-				}
-			}
-
-			DISP_SS_EVENT_LOG(DISP_EVT_ACT_PROT, &decon->sd, ktime_set(0, 0));
-		} else {
-			/* protection is enabled in previous and need to disable for current frame */
-
-			/* wait for DECON to stop before disabling protection. */
-			if(decon_reg_wait_linecnt_is_zero_timeout(DECON_INT, 0, 35 * 1000))
-				DISP_SS_EVENT_LOG(DISP_EVT_LINECNT_TIMEOUT,
-						&decon->sd, ktime_set(0, 0));
-
-			/* unprotect previous buffers */
-			decon_set_cfw(decon, regs, false);
-
-			/* Disable smc protection */
-			ret = exynos_smc(SMC_PROTECTION_SET, 0, DRM_DEV_DECON, 0);
-			if (!ret)
-				dev_warn(decon->dev, "decon protection disable failed. ret(%d)\n", ret);
-			else
-				dev_dbg(decon->dev, "DRM disabled\n");
-
-			DISP_SS_EVENT_LOG(DISP_EVT_DEACT_PROT, &decon->sd, ktime_set(0, 0));
-		}
-	} else {
-		if (enable) {
-			/* protection is disabled in previous and need to enable for current frame */
-
-			/* wait for DECON to stop before enabling/disabling protection. */
-			if(decon_reg_wait_linecnt_is_zero_timeout(DECON_INT, 0, 35 * 1000))
-				DISP_SS_EVENT_LOG(DISP_EVT_LINECNT_TIMEOUT,
-						&decon->sd, ktime_set(0, 0));
-
-			/* protect new buffers */
-			decon_set_cfw(decon, regs, true);
-
-			if (regs) {
-				for (i = 0; i < decon->pdata->max_win; i++) {
-					if (regs->protection[i]) {
-						decon_save_old_buffer(decon, regs, i);
-						break;
-					}
-				}
-			}
-
-			/* Enable smc protection */
-			ret = exynos_smc(SMC_PROTECTION_SET, 0, DRM_DEV_DECON, 1);
-			if (!ret)
-				dev_warn(decon->dev, "decon protection ensable failed. ret(%d)\n", ret);
-			else
-				dev_dbg(decon->dev, "DRM enabled");
-
-			DISP_SS_EVENT_LOG(DISP_EVT_ACT_PROT, &decon->sd, ktime_set(0, 0));
-		} else {
-			/* protection is disabled in prev as well as current frame, do nothing. */
+		cur_protect_bits |=
+			(regs->protection[i] << regs->win_config[i].idma_type);
+		if (regs->protection[i]) {
+			decon_dbg("protect(%d), win(%d) idma(%d)\n",
+				regs->protection[i], i, regs->win_config[i].idma_type);
 		}
 	}
 
-	/* Update prev_protection_status */
-	decon->prev_protection_status = enable;
+	if (!enable) {
+		ret = exynos_smc(SMC_PROTECTION_SET, 0, DRM_DEV_DECON, 0);
+		if (!ret)
+			dev_warn(decon->dev, "decon protection set(%d) failed. ret(%d)\n",
+				cur_protect_bits, ret);
+		else
+			decon_dbg("DRM set\n");
+
+		DISP_SS_EVENT_LOG(DISP_EVT_DEACT_PROT, &decon->sd, ktime_set(0, 0));
+		return;
+	}
+
+	if (decon->prev_protection_status != cur_protect_bits) {
+		/* The operation of protection on/off should wait decon off */
+		decon_reg_per_frame_off(0);
+
+		decon_reg_update_standalone(0);
+		/* timeout : 30ms */
+		if (decon_reg_wait_for_update_timeout(0, 30 * 1000) < 0)
+			decon_err("timeout of updating decon registers\n");
+
+		ret = exynos_smc(SMC_PROTECTION_SET, 0, DRM_DEV_DECON,
+			(cur_protect_bits ? 1 : 0));
+		if (!ret)
+			dev_warn(decon->dev, "decon protection set(%d) failed. ret(%d)\n",
+				cur_protect_bits,  ret);
+		else
+			decon_dbg("DRM set\n");
+
+		DISP_SS_EVENT_LOG(cur_protect_bits ? DISP_EVT_DEACT_PROT : DISP_EVT_ACT_PROT,
+			&decon->sd, ktime_set(0, 0));
+	}
+
+	/* save current protection configs */
+	decon->prev_protection_status = cur_protect_bits;
+
 }
 #endif
+
 static inline int decon_set_alpha_blending(struct decon_win_config *win_config,
 		struct decon_reg_data *regs, int win_no, int transp_length)
 {
@@ -1629,11 +1541,22 @@ static int decon_set_win_buffer(struct decon_device *decon, struct decon_win *wi
 			ret = -ENOMEM;
 			goto err_map;
 		}
+#ifdef PROTECT
 		if (win_config->protection) {
 			ion_phys(decon->ion_client, handle,
 					(ion_phys_addr_t *)&regs->phys_addr[win_no].phy_addr[i],
 					(size_t *)&regs->phys_addr[win_no].phy_addr_len[i]);
+			decon_dbg(" %s, s_x : %d, s_y : %d, s_w : %d, s_h : %d, d_w : %d, d_h : %d \n",
+				__func__,
+				win_config->src.x, win_config->src.y,
+				win_config->src.w, win_config->src.h,
+				win_config->src.f_w, win_config->src.f_h);
+
+			decon_dbg(" %s, PA : %#lX len : %#lX\n", __func__,
+				(ulong)regs->phys_addr[win_no].phy_addr[i],
+				(ulong)regs->phys_addr[win_no].phy_addr_len[i]);
 		}
+#endif
 		win_config->vpp_parm.addr[i] = dma_buf_data[i].dma_addr;
 		handle = NULL;
 		buf[i] = NULL;
@@ -1697,8 +1620,9 @@ static int decon_set_win_buffer(struct decon_device *decon, struct decon_win *wi
 	regs->wincon[win_no] = wincon(win->fbinfo->var.bits_per_pixel,
 			win->fbinfo->var.transp.length, format);
 	regs->wincon[win_no] |= decon_rgborder(format);
+#ifdef PROTECT
 	regs->protection[win_no] = win_config->protection;
-
+#endif
 	decon_set_alpha_blending(win_config, regs, win_no,
 				win->fbinfo->var.transp.length);
 
@@ -1916,10 +1840,7 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
 	int ret;
 #endif
-
 	memset(&win_regs, 0, sizeof(struct decon_regs_data));
-
-	decon->cur_protection_bitmask = 0;
 
 	if (decon->pdata->trig_mode == DECON_HW_TRIG)
 		decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
@@ -1938,9 +1859,13 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 
 	for (i = 0; i < decon->pdata->max_win; i++) {
 		decon_to_regs_param(&win_regs, regs, i);
+#ifdef PROTECT
+		if (regs->protection[i]) {
+			decon_to_regs_paddr(&win_regs, regs, i);
+		}
+#endif
 		decon_reg_set_regs_data(DECON_INT, i, &win_regs);
-		decon->cur_protection_bitmask |=
-			regs->protection[i] << regs->win_config[i].idma_type;
+
 		plane_cnt = decon_get_memory_plane_cnt(regs->win_config[i].format);
 		for (j = 0; j < MAX_BUF_PLANE_CNT; ++j) {
 			if (j < plane_cnt)
@@ -1960,7 +1885,6 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 #ifdef PROTECT
 	decon_set_protected_content(decon, regs, true);
 #endif
-
 	decon_to_psr_info(decon, &psr);
 	decon_reg_start(DECON_INT, decon->pdata->dsi_mode, &psr);
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
