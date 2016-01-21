@@ -169,10 +169,6 @@ int update_devfreq(struct devfreq *devfreq)
 	unsigned long freq;
 	int err = 0;
 	u32 flags = 0;
-#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_EXYNOS)
-	struct devfreq_simple_exynos_data *gov_data = devfreq->data;
-	unsigned long pm_qos_max;
-#endif
 
 	if (!mutex_is_locked(&devfreq->lock)) {
 		WARN(true, "devfreq->lock must be locked by the caller.\n");
@@ -203,15 +199,6 @@ int update_devfreq(struct devfreq *devfreq)
 		freq = devfreq->max_freq;
 		flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
 	}
-#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_EXYNOS)
-	if (!strcmp(devfreq->governor->name, "simple_exynos") && gov_data->pm_qos_class_max) {
-		pm_qos_max = (unsigned long)pm_qos_request(gov_data->pm_qos_class_max);
-		if (freq > pm_qos_max) {
-			freq = pm_qos_max;
-			flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND; /* Use LUB */
-		}
-	}
-#endif
 
 	err = devfreq->profile->target(devfreq->dev.parent, &freq, flags);
 	if (err)
@@ -918,73 +905,19 @@ static ssize_t polling_interval_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(polling_interval);
 
-static ssize_t min_freq_store(struct device *dev, struct device_attribute *attr,
-			      const char *buf, size_t count)
-{
-	struct devfreq *df = to_devfreq(dev);
-	unsigned long value;
-	int ret;
-	unsigned long max;
-
-	ret = sscanf(buf, "%lu", &value);
-	if (ret != 1)
-		return -EINVAL;
-
-	mutex_lock(&df->lock);
-	max = df->max_freq;
-	if (value && max && value > max) {
-		ret = -EINVAL;
-		goto unlock;
-	}
-
-	df->min_freq = value;
-	update_devfreq(df);
-	ret = count;
-unlock:
-	mutex_unlock(&df->lock);
-	return ret;
-}
-
 static ssize_t min_freq_show(struct device *dev, struct device_attribute *attr,
 			     char *buf)
 {
 	return sprintf(buf, "%lu\n", to_devfreq(dev)->min_freq);
 }
-
-static ssize_t max_freq_store(struct device *dev, struct device_attribute *attr,
-			      const char *buf, size_t count)
-{
-	struct devfreq *df = to_devfreq(dev);
-	unsigned long value;
-	int ret;
-	unsigned long min;
-
-	ret = sscanf(buf, "%lu", &value);
-	if (ret != 1)
-		return -EINVAL;
-
-	mutex_lock(&df->lock);
-	min = df->min_freq;
-	if (value && min && value < min) {
-		ret = -EINVAL;
-		goto unlock;
-	}
-
-	df->max_freq = value;
-	update_devfreq(df);
-	ret = count;
-unlock:
-	mutex_unlock(&df->lock);
-	return ret;
-}
-static DEVICE_ATTR_RW(min_freq);
+static DEVICE_ATTR_RO(min_freq);
 
 static ssize_t max_freq_show(struct device *dev, struct device_attribute *attr,
 			     char *buf)
 {
 	return sprintf(buf, "%lu\n", to_devfreq(dev)->max_freq);
 }
-static DEVICE_ATTR_RW(max_freq);
+static DEVICE_ATTR_RO(max_freq);
 
 static ssize_t available_frequencies_show(struct device *d,
 					  struct device_attribute *attr,
