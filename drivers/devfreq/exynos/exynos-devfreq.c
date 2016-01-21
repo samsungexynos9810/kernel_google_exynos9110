@@ -87,14 +87,7 @@ static ssize_t show_exynos_devfreq_info(struct device *dev,
 			data->devfreq_profile.polling_ms);
 
 	if (data->use_get_dev) {
-		if (data->gov_type == SIMPLE_ONDEMAND) {
-			count += snprintf(buf + count, PAGE_SIZE,
-					"upthreshold     : %20u\n" "downdifferential: %20u\n"
-					"multi_weight    : %20u\n",
-					data->simple_ondemand_data.upthreshold,
-					data->simple_ondemand_data.downdifferential,
-					data->simple_ondemand_data.multiplication_weight);
-		} else if (data->gov_type == SIMPLE_EXYNOS) {
+		if (data->gov_type == SIMPLE_EXYNOS) {
 			count += snprintf(buf + count, PAGE_SIZE,
 					"urgentthreshold : %20u\n" "upthreshold     : %20u\n"
 					"downthreshold   : %20u\n" "idlethreshold   : %20u\n",
@@ -102,6 +95,9 @@ static ssize_t show_exynos_devfreq_info(struct device *dev,
 					data->simple_exynos_data.upthreshold,
 					data->simple_exynos_data.downthreshold,
 					data->simple_exynos_data.idlethreshold);
+		} else {
+			dev_err(data->dev, "not support governor type %u\n", data->gov_type);
+			return -EINVAL;
 		}
 	}
 
@@ -498,16 +494,31 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	} else if (!strcmp(devfreq_type, "int")) {
 		data->devfreq_type = DEVFREQ_INT;
 		data->pm_qos_class = PM_QOS_DEVICE_THROUGHPUT;
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+		data->pm_qos_class_max = PM_QOS_DEVICE_THROUGHPUT_MAX;
+#else
+		data->pm_qos_class_max = PM_QOS_RESERVED;
+#endif
 		data->ppmu_data.type = NONE_PPMU;
 		data->ess_flag = ESS_FLAG_INT;
 	} else if (!strcmp(devfreq_type, "disp")) {
 		data->devfreq_type = DEVFREQ_DISP;
 		data->pm_qos_class = PM_QOS_DISPLAY_THROUGHPUT;
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+		data->pm_qos_class_max = PM_QOS_DISPLAY_THROUGHPUT_MAX;
+#else
+		data->pm_qos_class_max = PM_QOS_RESERVED;
+#endif
 		data->ppmu_data.type = NONE_PPMU;
 		data->ess_flag = ESS_FLAG_DISP;
 	} else if (!strcmp(devfreq_type, "cam")) {
 		data->devfreq_type = DEVFREQ_CAM;
 		data->pm_qos_class = PM_QOS_CAM_THROUGHPUT;
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+		data->pm_qos_class_max = PM_QOS_CAM_THROUGHPUT_MAX;
+#else
+		data->pm_qos_class_max = PM_QOS_RESERVED;
+#endif
 		data->ppmu_data.type = NONE_PPMU;
 		data->ess_flag = ESS_FLAG_ISP;
 	} else {
@@ -560,9 +571,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	if (of_property_read_string(np, "gov_name", &data->governor_name))
 		return -ENODEV;
 
-	if (!strcmp(data->governor_name, "simple_ondemand")) {
-		data->gov_type = SIMPLE_ONDEMAND;
-	} else if (!strcmp(data->governor_name, "simple_exynos")) {
+	if (!strcmp(data->governor_name, "simple_exynos")) {
 		data->gov_type = SIMPLE_EXYNOS;
 	} else {
 		dev_err(data->dev, "invalid governor name (%s)\n",
@@ -570,19 +579,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 		return -EINVAL;
 	}
 
-	if (data->gov_type == SIMPLE_ONDEMAND) {
-		if (of_property_read_u32(np, "upthreshold",
-				&data->simple_ondemand_data.upthreshold))
-			return -ENODEV;
-
-		if (of_property_read_u32(np, "downdifferential",
-				&data->simple_ondemand_data.downdifferential))
-			return -ENODEV;
-
-		if (of_property_read_u32(np, "multi_weight",
-				&data->simple_ondemand_data.multiplication_weight))
-			return -ENODEV;
-	} else if (data->gov_type == SIMPLE_EXYNOS) {
+	if (data->gov_type == SIMPLE_EXYNOS) {
 		if (of_property_read_u32(np, "urgent_thres",
 				&data->simple_exynos_data.urgentthreshold))
 			return -ENODEV;
@@ -1502,11 +1499,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	if (data->use_get_dev)
 		data->devfreq_profile.get_dev_status = exynos_devfreq_get_dev_status;
 
-	if (data->gov_type == SIMPLE_ONDEMAND) {
-		data->simple_ondemand_data.pm_qos_class = data->pm_qos_class;
-		data->simple_ondemand_data.cal_qos_max = data->cal_qos_max;
-		data->governor_data = &data->simple_ondemand_data;
-	} else if (data->gov_type == SIMPLE_EXYNOS) {
+	if (data->gov_type == SIMPLE_EXYNOS) {
 		data->simple_exynos_data.pm_qos_class = data->pm_qos_class;
 		data->simple_exynos_data.pm_qos_class_max = data->pm_qos_class_max;
 		data->simple_exynos_data.cal_qos_max = data->cal_qos_max;
