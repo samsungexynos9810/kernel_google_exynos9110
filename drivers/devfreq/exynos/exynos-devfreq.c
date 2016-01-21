@@ -196,7 +196,7 @@ static ssize_t show_exynos_devfreq_get_delay(struct device *dev,
 	return count;
 }
 
-static ssize_t show_exynos_devfreq_pm_qos_max(struct device *dev,
+static ssize_t show_debug_devfreq_pm_qos_max(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
@@ -210,7 +210,7 @@ static ssize_t show_exynos_devfreq_pm_qos_max(struct device *dev,
 	return count;
 }
 
-static ssize_t store_exynos_devfreq_pm_qos_max(struct device *dev,
+static ssize_t store_debug_devfreq_pm_qos_max(struct device *dev,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
 {
@@ -225,14 +225,14 @@ static ssize_t store_exynos_devfreq_pm_qos_max(struct device *dev,
 		return -EINVAL;
 
 	if (data->pm_qos_class_max) {
-		if (pm_qos_request_active(&data->sys_pm_qos_max))
-			pm_qos_update_request(&data->sys_pm_qos_max, qos_value);
+		if (pm_qos_request_active(&data->debug_pm_qos_max))
+			pm_qos_update_request(&data->debug_pm_qos_max, qos_value);
 	}
 
 	return count;
 }
 
-static ssize_t show_exynos_devfreq_pm_qos(struct device *dev,
+static ssize_t show_debug_devfreq_pm_qos_min(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
@@ -245,7 +245,7 @@ static ssize_t show_exynos_devfreq_pm_qos(struct device *dev,
 	return count;
 }
 
-static ssize_t store_exynos_devfreq_pm_qos(struct device *dev,
+static ssize_t store_debug_devfreq_pm_qos_min(struct device *dev,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
 {
@@ -259,8 +259,8 @@ static ssize_t store_exynos_devfreq_pm_qos(struct device *dev,
 	if (ret != 1)
 		return -EINVAL;
 
-	if (pm_qos_request_active(&data->sys_pm_qos))
-		pm_qos_update_request(&data->sys_pm_qos, qos_value);
+	if (pm_qos_request_active(&data->debug_pm_qos_min))
+		pm_qos_update_request(&data->debug_pm_qos_min, qos_value);
 
 	return count;
 }
@@ -375,9 +375,9 @@ static DEVICE_ATTR(exynos_devfreq_info, 0640, show_exynos_devfreq_info, NULL);
 static DEVICE_ATTR(exynos_devfreq_get_freq, 0640, show_exynos_devfreq_get_freq, NULL);
 static DEVICE_ATTR(exynos_devfreq_cmu_dump, 0640, show_exynos_devfreq_cmu_dump, NULL);
 static DEVICE_ATTR(exynos_devfreq_get_delay, 0640, show_exynos_devfreq_get_delay, NULL);
-static DEVICE_ATTR(exynos_devfreq_pm_qos, 0640, show_exynos_devfreq_pm_qos, store_exynos_devfreq_pm_qos);
-static DEVICE_ATTR(exynos_devfreq_pm_qos_max, 0640, show_exynos_devfreq_pm_qos_max,
-						store_exynos_devfreq_pm_qos_max);
+static DEVICE_ATTR(debug_devfreq_pm_qos_min, 0640, show_debug_devfreq_pm_qos_min, store_debug_devfreq_pm_qos_min);
+static DEVICE_ATTR(debug_devfreq_pm_qos_max, 0640, show_debug_devfreq_pm_qos_max,
+						store_debug_devfreq_pm_qos_max);
 static DEVICE_ATTR(disable_pm_qos, 0640, show_exynos_devfreq_disable_pm_qos,
 					store_exynos_devfreq_disable_pm_qos);
 static DEVICE_ATTR(last_monitor_period, 0640, show_last_monitor_period, NULL);
@@ -389,8 +389,8 @@ static struct attribute *exynos_devfreq_sysfs_entries[] = {
 	&dev_attr_exynos_devfreq_get_freq.attr,
 	&dev_attr_exynos_devfreq_cmu_dump.attr,
 	&dev_attr_exynos_devfreq_get_delay.attr,
-	&dev_attr_exynos_devfreq_pm_qos.attr,
-	&dev_attr_exynos_devfreq_pm_qos_max.attr,
+	&dev_attr_debug_devfreq_pm_qos_min.attr,
+	&dev_attr_debug_devfreq_pm_qos_max.attr,
 	&dev_attr_disable_pm_qos.attr,
 	&dev_attr_last_monitor_period.attr,
 	&dev_attr_ppmu_cur_freq.attr,
@@ -403,6 +403,41 @@ static struct attribute_group exynos_devfreq_attr_group = {
         .attrs  = exynos_devfreq_sysfs_entries,
 };
 #endif
+
+static ssize_t show_devfreq_pm_qos_min(struct device *dev,
+					struct device_attribute *attr, char *buf)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	ssize_t count = 0;
+
+	count += snprintf(buf, PAGE_SIZE, "%u\n", pm_qos_request(data->pm_qos_class));
+
+	return count;
+}
+
+static ssize_t store_devfreq_pm_qos_min(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf, size_t count)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	int ret;
+	u32 qos_value;
+
+	ret = sscanf(buf, "%u", &qos_value);
+	if (ret != 1)
+		return -EINVAL;
+
+	if (pm_qos_request_active(&data->sys_pm_qos_min))
+		pm_qos_update_request(&data->sys_pm_qos_min, qos_value);
+
+	return count;
+}
+
+static DEVICE_ATTR(devfreq_pm_qos_min, 0640, show_devfreq_pm_qos_min, store_devfreq_pm_qos_min);
 
 #ifdef CONFIG_OF
 #if defined(CONFIG_ECT)
@@ -1019,8 +1054,8 @@ static int exynos_devfreq_reboot_notifier(struct notifier_block *nb,
 	struct exynos_devfreq_data *data = container_of(nb, struct exynos_devfreq_data,
 								reboot_notifier);
 
-	if (pm_qos_request_active(&data->default_pm_qos))
-		pm_qos_update_request(&data->default_pm_qos,
+	if (pm_qos_request_active(&data->default_pm_qos_min))
+		pm_qos_update_request(&data->default_pm_qos_min,
 				data->devfreq_profile.initial_freq);
 
 	if (data->ops.reboot) {
@@ -1391,22 +1426,22 @@ static int exynos_devfreq_suspend(struct device *dev)
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	int ret = 0;
 
-	if (pm_qos_request_active(&data->default_pm_qos))
-		pm_qos_update_request(&data->default_pm_qos,
+	if (pm_qos_request_active(&data->default_pm_qos_min))
+		pm_qos_update_request(&data->default_pm_qos_min,
 				data->devfreq_profile.suspend_freq);
-	if (pm_qos_request_active(&data->sys_pm_qos_max))
-		pm_qos_update_request(&data->sys_pm_qos_max,
+	if (pm_qos_request_active(&data->default_pm_qos_max))
+		pm_qos_update_request(&data->default_pm_qos_max,
 				data->devfreq_profile.suspend_freq);
 
 	if (data->ops.suspend) {
 		ret = data->ops.suspend(dev, data);
 		if (ret) {
 			dev_err(dev, "failed suspend\n");
-			if (pm_qos_request_active(&data->default_pm_qos))
-				pm_qos_update_request(&data->default_pm_qos,
+			if (pm_qos_request_active(&data->default_pm_qos_min))
+				pm_qos_update_request(&data->default_pm_qos_min,
 							data->default_qos);
-			if (pm_qos_request_active(&data->sys_pm_qos_max))
-				pm_qos_update_request(&data->sys_pm_qos_max,
+			if (pm_qos_request_active(&data->default_pm_qos_max))
+				pm_qos_update_request(&data->default_pm_qos_max,
 							data->max_freq);
 			return ret;
 		}
@@ -1427,10 +1462,10 @@ static int exynos_devfreq_resume(struct device *dev)
 			dev_err(dev, "failed resume\n");
 	}
 
-	if (pm_qos_request_active(&data->default_pm_qos))
-		pm_qos_update_request(&data->default_pm_qos, data->default_qos);
-	if (pm_qos_request_active(&data->sys_pm_qos_max))
-		pm_qos_update_request(&data->sys_pm_qos_max, data->max_freq);
+	if (pm_qos_request_active(&data->default_pm_qos_min))
+		pm_qos_update_request(&data->default_pm_qos_min, data->default_qos);
+	if (pm_qos_request_active(&data->default_pm_qos_max))
+		pm_qos_update_request(&data->default_pm_qos_max, data->max_freq);
 
 	return ret;
 }
@@ -1582,11 +1617,16 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	data->devfreq->min_freq = data->min_freq;
 	data->devfreq->max_freq = data->max_freq;
 
-	pm_qos_add_request(&data->sys_pm_qos, (int)data->pm_qos_class, data->default_qos);
+	pm_qos_add_request(&data->sys_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+	pm_qos_add_request(&data->debug_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
+	pm_qos_add_request(&data->debug_pm_qos_max, (int)data->pm_qos_class_max,
+			data->max_freq);
+#endif
 	if (data->pm_qos_class_max)
-		pm_qos_add_request(&data->sys_pm_qos_max, (int)data->pm_qos_class_max,
+		pm_qos_add_request(&data->default_pm_qos_max, (int)data->pm_qos_class_max,
 								data->max_freq);
-	pm_qos_add_request(&data->default_pm_qos, (int)data->pm_qos_class, data->default_qos);
+	pm_qos_add_request(&data->default_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
 	pm_qos_add_request(&data->boot_pm_qos, (int)data->pm_qos_class, data->default_qos);
 
 	if (data->use_ppmu) {
@@ -1639,6 +1679,11 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_reboot_noti;
 	}
 
+	ret = sysfs_create_file(&data->devfreq->dev.kobj,
+			&dev_attr_devfreq_pm_qos_min.attr);
+	if (ret)
+		dev_warn(data->dev, "failed create sysfs for devfreq pm_qos_min\n");
+
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
 	ret = sysfs_create_group(&data->devfreq->dev.kobj,
 				&exynos_devfreq_attr_group);
@@ -1671,10 +1716,14 @@ err_ppmu_nb:
 		data->ops.exit(data->dev, data);
 err_devfreq_init:
 	pm_qos_remove_request(&data->boot_pm_qos);
-	pm_qos_remove_request(&data->default_pm_qos);
+	pm_qos_remove_request(&data->default_pm_qos_min);
 	if (data->pm_qos_class_max)
-		pm_qos_remove_request(&data->sys_pm_qos_max);
-	pm_qos_remove_request(&data->sys_pm_qos);
+		pm_qos_remove_request(&data->default_pm_qos_max);
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+	pm_qos_remove_request(&data->debug_pm_qos_min);
+	pm_qos_remove_request(&data->debug_pm_qos_max);
+#endif
+	pm_qos_remove_request(&data->sys_pm_qos_min);
 	devfreq_remove_device(data->devfreq);
 err_devfreq:
 err_set_voltage:
@@ -1710,6 +1759,8 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 {
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 
+	sysfs_remove_file(&data->devfreq->dev.kobj,
+			&dev_attr_devfreq_pm_qos_min.attr);
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
 	sysfs_remove_group(&data->devfreq->dev.kobj,
 				&exynos_devfreq_attr_group);
@@ -1729,10 +1780,14 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 		data->ops.exit(data->dev, data);
 
 	pm_qos_remove_request(&data->boot_pm_qos);
-	pm_qos_remove_request(&data->default_pm_qos);
+	pm_qos_remove_request(&data->default_pm_qos_min);
 	if (data->pm_qos_class_max)
-		pm_qos_remove_request(&data->sys_pm_qos_max);
-	pm_qos_remove_request(&data->sys_pm_qos);
+		pm_qos_remove_request(&data->default_pm_qos_max);
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+	pm_qos_remove_request(&data->debug_pm_qos_min);
+	pm_qos_remove_request(&data->debug_pm_qos_max);
+#endif
+	pm_qos_remove_request(&data->sys_pm_qos_min);
 	devfreq_remove_device(data->devfreq);
 	if (data->use_regulator_dummy) {
 		if (data->vdd_dummy)

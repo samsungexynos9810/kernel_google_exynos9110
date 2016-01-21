@@ -169,9 +169,13 @@ struct exynos_devfreq_data {
 
 	u32					pm_qos_class;
 	u32					pm_qos_class_max;
-	struct pm_qos_request			sys_pm_qos;
-	struct pm_qos_request			sys_pm_qos_max;
-	struct pm_qos_request			default_pm_qos;
+	struct pm_qos_request			sys_pm_qos_min;
+#ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
+	struct pm_qos_request			debug_pm_qos_min;
+	struct pm_qos_request			debug_pm_qos_max;
+#endif
+	struct pm_qos_request			default_pm_qos_min;
+	struct pm_qos_request			default_pm_qos_max;
 	struct pm_qos_request			boot_pm_qos;
 	u32					boot_qos_timeout;
 
