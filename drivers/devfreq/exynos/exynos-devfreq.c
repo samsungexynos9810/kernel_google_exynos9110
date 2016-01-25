@@ -58,12 +58,12 @@ static ssize_t show_exynos_devfreq_info(struct device *dev,
 			dev_name(data->dev), data->devfreq_type, data->ess_flag);
 
 	count += snprintf(buf + count, PAGE_SIZE, "\n<Frequency data>\n"
-			"OPP list length  : %20u\n", data->opp_list_length);
+			"OPP list length  : %20u\n", data->max_state);
 	count += snprintf(buf + count, PAGE_SIZE, "freq opp table\n");
 	count += snprintf(buf + count, PAGE_SIZE,
 				"\t  idx      freq       volt\n");
 
-	for (i = 0; i < data->opp_list_length; i++)
+	for (i = 0; i < data->max_state; i++)
 		count += snprintf(buf + count, PAGE_SIZE, "\t%5u %10u %10u\n",
 				data->opp_list[i].idx, data->opp_list[i].freq,
 				data->opp_list[i].volt);
@@ -450,7 +450,7 @@ static int exynos_devfreq_parse_ect(struct exynos_devfreq_data *data, const char
 	if (dvfs_domain == NULL)
 		return -ENODEV;
 
-	data->opp_list_length = dvfs_domain->num_of_level;
+	data->max_state = dvfs_domain->num_of_level;
 	for (i = 0; i < dvfs_domain->num_of_level; ++i) {
 		data->opp_list[i].idx = i;
 		data->opp_list[i].freq = dvfs_domain->list_level[i].level;
@@ -463,7 +463,6 @@ static int exynos_devfreq_parse_ect(struct exynos_devfreq_data *data, const char
 
 static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq_data *data)
 {
-	int opp_size;
 	const char *devfreq_type;
 	const char *use_get_dev;
 	const char *use_regulator;
@@ -530,15 +529,9 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 		return -ENODEV;
 	not_using_ect = exynos_devfreq_parse_ect(data, devfreq_domain_name);
 #endif
-
 	if (not_using_ect) {
-		if (of_property_read_u32(np, "opp_list_length", &data->opp_list_length))
-			return -ENODEV;
-
-		opp_size = sizeof(struct exynos_devfreq_opp_table) / sizeof(u32);
-		if (of_property_read_u32_array(np, "opp_list", (u32 *)&data->opp_list,
-					(size_t)(data->opp_list_length * opp_size)))
-			return -ENODEV;
+		dev_err(data->dev, "cannot parse the DVFS info in ECT");
+		return -ENODEV;
 	}
 
 	if (of_property_read_u32_array(np, "freq_info", (u32 *)&freq_array,
@@ -1466,7 +1459,6 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_parse_dt;
 	}
 
-	data->max_state = data->opp_list_length;
 	data->devfreq_profile.max_state = data->max_state;
 	data->devfreq_profile.target = exynos_devfreq_target;
 	if (data->use_get_dev)

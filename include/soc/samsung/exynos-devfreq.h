@@ -125,7 +125,6 @@ struct exynos_devfreq_data {
 
 	enum exynos_devfreq_type		devfreq_type;
 
-	u32					opp_list_length;
 	struct exynos_devfreq_opp_table		opp_list[DEV_LV_END];
 
 	u32					default_qos;
