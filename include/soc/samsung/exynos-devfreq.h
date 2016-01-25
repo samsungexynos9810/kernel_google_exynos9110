@@ -78,29 +78,29 @@ struct exynos_devfreq_data;
 struct ppmu_exynos;
 
 struct exynos_devfreq_ops {
-	int (*init)(struct device *, struct exynos_devfreq_data *);
-	int (*exit)(struct device *, struct exynos_devfreq_data *);
-	int (*init_freq_table)(struct device *, struct exynos_devfreq_data *);
-	int (*get_volt_table)(struct device *, u32 *, struct exynos_devfreq_data *);
-	int (*ppmu_register)(struct device *, struct exynos_devfreq_data *);
-	int (*ppmu_unregister)(struct device *, struct exynos_devfreq_data *);
-	int (*suspend)(struct device *, struct exynos_devfreq_data *);
-	int (*resume)(struct device *, struct exynos_devfreq_data *);
-	int (*reboot)(struct device *, struct exynos_devfreq_data *);
-	int (*get_switch_voltage)(u32, u32, struct exynos_devfreq_data *);
+	int (*init)(struct exynos_devfreq_data *);
+	int (*exit)(struct exynos_devfreq_data *);
+	int (*init_freq_table)(struct exynos_devfreq_data *);
+	int (*get_volt_table)(struct device *, u32, struct exynos_devfreq_opp_table *);
+	int (*ppmu_register)(struct exynos_devfreq_data *);
+	int (*ppmu_unregister)(struct exynos_devfreq_data *);
+	int (*suspend)(struct exynos_devfreq_data *);
+	int (*resume)(struct exynos_devfreq_data *);
+	int (*reboot)(struct exynos_devfreq_data *);
+	int (*get_switch_voltage)(struct device *, u32, u32, u32, u32, u32 *);
 	void (*set_voltage_prepare)(struct exynos_devfreq_data *);
 	void (*set_voltage_post)(struct exynos_devfreq_data *);
-	int (*get_switch_freq)(u32, u32, u32 *);
-	int (*get_freq)(struct device *, u32 *, struct exynos_devfreq_data *);
-	int (*set_freq)(struct device *, u32, u32, struct exynos_devfreq_data *);
-	int (*set_freq_prepare)(struct device *, struct exynos_devfreq_data *);
-	int (*set_freq_post)(struct device *, struct exynos_devfreq_data *);
-	int (*change_to_switch_freq)(struct device *, struct exynos_devfreq_data *);
-	int (*restore_from_switch_freq)(struct device *, struct exynos_devfreq_data *);
-	int (*get_dev_status)(struct device *, struct ppmu_exynos *, struct exynos_devfreq_data *);
-	int (*cl_dvfs_start)(struct exynos_devfreq_data *);
-	int (*cl_dvfs_stop)(u32, struct exynos_devfreq_data *);
-	int (*cmu_dump)(struct device *, struct exynos_devfreq_data *);
+	int (*get_switch_freq)(struct device *, u32, u32, u32 *);
+	int (*get_freq)(struct device *, u32 *, struct clk *);
+	int (*set_freq)(struct device *, u32, struct clk *);
+	int (*set_freq_prepare)(struct exynos_devfreq_data *);
+	int (*set_freq_post)(struct exynos_devfreq_data *);
+	int (*change_to_switch_freq)(struct device *, struct clk *, u32, u32, u32 *);
+	int (*restore_from_switch_freq)(struct device *, struct clk *, u32, u32);
+	int (*get_dev_status)(struct exynos_devfreq_data *);
+	int (*cl_dvfs_start)(struct device *);
+	int (*cl_dvfs_stop)(struct device *, u32);
+	int (*cmu_dump)(struct exynos_devfreq_data *);
 };
 
 struct ppmu_addr {
@@ -127,7 +127,6 @@ struct exynos_devfreq_data {
 
 	u32					opp_list_length;
 	struct exynos_devfreq_opp_table		opp_list[DEV_LV_END];
-	u32					volt_table[DEV_LV_END];
 
 	u32					default_qos;
 
@@ -162,7 +161,6 @@ struct exynos_devfreq_data {
 	struct regulator			*vdd;
 	struct regulator			*vdd_dummy;
 	struct mutex				regulator_lock;
-	enum volt_order_type			set_volt_order;
 
 	u32					pm_qos_class;
 	u32					pm_qos_class_max;

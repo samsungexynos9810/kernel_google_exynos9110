@@ -32,8 +32,7 @@
 
 static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 					unsigned long event, void *v);
-static int exynos_devfreq_set_voltage(struct device *dev, u32 *target_volt,
-					struct exynos_devfreq_data *data);
+static int exynos_devfreq_set_voltage(u32 *target_volt, struct exynos_devfreq_data *data);
 
 struct exynos_devfreq_init_func {
 	int (*init_prepare)(struct exynos_devfreq_data *);
@@ -147,7 +146,7 @@ static ssize_t show_exynos_devfreq_get_freq(struct device *dev,
 	u32 get_freq = 0;
 
 	if (data->ops.get_freq) {
-		if (data->ops.get_freq(data->dev, &get_freq, data))
+		if (data->ops.get_freq(data->dev, &get_freq, data->clk))
 			dev_err(data->dev, "failed get freq\n");
 	}
 
@@ -166,7 +165,7 @@ static ssize_t show_exynos_devfreq_cmu_dump(struct device *dev,
 
 	if (data->ops.cmu_dump) {
 		mutex_lock(&data->lock);
-		if (data->ops.cmu_dump(data->dev, data))
+		if (data->ops.cmu_dump(data))
 			dev_err(data->dev, "failed CMU Dump\n");
 		mutex_unlock(&data->lock);
 	}
@@ -790,7 +789,7 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 			data->new_volt = dev_pm_opp_get_voltage(target_opp);
 			rcu_read_unlock();
 
-			ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
+			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(data->dev, "failed set voltage for sync voltage (%d:%luKhz:%uuV)\n",
 						type, freq, data->new_volt);
@@ -857,8 +856,7 @@ static u32 exynos_devfreq_get_limit_voltage(u32 voltage,
 	return voltage + data->volt_offset;
 }
 
-static int exynos_devfreq_set_voltage(struct device *dev, u32 *target_volt,
-					struct exynos_devfreq_data *data)
+static int exynos_devfreq_set_voltage(u32 *target_volt, struct exynos_devfreq_data *data)
 {
 	int ret = 0;
 
@@ -888,41 +886,39 @@ static int exynos_devfreq_set_voltage(struct device *dev, u32 *target_volt,
 	return ret;
 }
 
-static int exynos_init_freq_table(struct device *dev, struct exynos_devfreq_data *data)
+static int exynos_init_freq_table(struct exynos_devfreq_data *data)
 {
 	int i, ret;
 	u32 freq, volt;
 
 	/* volt_table should be filled (data->volt_table) */
 	if (data->ops.get_volt_table) {
-		ret = data->ops.get_volt_table(dev, data->volt_table, data);
+		ret = data->ops.get_volt_table(data->dev, data->max_state, data->opp_list);
 		if (ret) {
-			dev_err(dev, "failed get voltage table\n");
+			dev_err(data->dev, "failed get voltage table\n");
 			return ret;
 		}
 	}
 
 	for (i = 0; i < data->max_state; i++) {
 		freq = data->opp_list[i].freq;
-		if (data->volt_table[0])
-			data->opp_list[i].volt = data->volt_table[i];
 		volt = data->opp_list[i].volt;
 
 		data->devfreq_profile.freq_table[i] = freq;
 
-		ret = dev_pm_opp_add(dev, freq, volt);
+		ret = dev_pm_opp_add(data->dev, freq, volt);
 		if (ret) {
-			dev_err(dev, "failed to add opp entries %uKhz\n", freq);
+			dev_err(data->dev, "failed to add opp entries %uKhz\n", freq);
 			return ret;
 		} else {
-			dev_info(dev, "DEVFREQ : %8uKhz, %8uuV\n", freq, volt);
+			dev_info(data->dev, "DEVFREQ : %8uKhz, %8uuV\n", freq, volt);
 		}
 	}
 
 	if (data->ops.init_freq_table) {
-		ret = data->ops.init_freq_table(dev, data);
+		ret = data->ops.init_freq_table(data);
 		if (ret) {
-			dev_err(dev, "failed init frequency table\n");
+			dev_err(data->dev, "failed init frequency table\n");
 			return ret;
 		}
 	}
@@ -956,7 +952,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 
 	if (data->use_cl_dvfs && (*on)) {
 		if (data->ops.cl_dvfs_stop) {
-			ret = data->ops.cl_dvfs_stop(data->new_idx, data);
+			ret = data->ops.cl_dvfs_stop(data->dev, data->new_idx);
 			if (ret) {
 				dev_err(data->dev, "cl_dvfs does not stop in tmu\n");
 				ret = NOTIFY_BAD;
@@ -973,7 +969,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 		else
 			goto out2;
 
-		ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
+		ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 		if (ret) {
 			dev_err(data->dev, "failed set voltage for low temp (%uuV:%uuV)\n",
 					data->old_volt, data->volt_offset);
@@ -1000,7 +996,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 		data->new_volt = dev_pm_opp_get_voltage(target_opp);
 		rcu_read_unlock();
 
-		ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
+		ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 		if (ret) {
 			dev_err(data->dev, "failed set voltage from low temp (%uuV:%uuV)\n",
 					data->old_volt, data->volt_offset);
@@ -1014,7 +1010,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 out2:
 	if (data->use_cl_dvfs && !(*on)) {
 		if (data->ops.cl_dvfs_start) {
-			ret = data->ops.cl_dvfs_start(data);
+			ret = data->ops.cl_dvfs_start(data->dev);
 			if (ret) {
 				dev_err(data->dev, "cl_dvfs does not stop in tmu\n");
 				ret = NOTIFY_BAD;
@@ -1040,7 +1036,7 @@ static int exynos_devfreq_reboot_notifier(struct notifier_block *nb,
 				data->devfreq_profile.initial_freq);
 
 	if (data->ops.reboot) {
-		if (data->ops.reboot(data->dev, data)) {
+		if (data->ops.reboot(data)) {
 			dev_err(data->dev, "failed reboot\n");
 			return NOTIFY_BAD;
 		}
@@ -1089,6 +1085,7 @@ static int exynos_devfreq_target(struct device *dev,
 	s32 target_idx;
 	s32 target_time = 0, setfreq_time = 0;
 	int ret = 0;
+	enum volt_order_type volt_order;
 
 	if (data->devfreq_disabled)
 		return -EAGAIN;
@@ -1129,13 +1126,13 @@ static int exynos_devfreq_target(struct device *dev,
 			data->new_idx, data->new_freq, data->new_volt);
 
 	/* calcuration to voltage set ordering */
-	data->set_volt_order = exynos_devfreq_set_volt_order(data);
+	volt_order = exynos_devfreq_set_volt_order(data);
 
 	exynos_ss_freq(data->ess_flag, data->old_freq, data->new_freq, ESS_FLAG_IN);
 
 	if (data->use_cl_dvfs && !data->volt_offset) {
 		if (data->ops.cl_dvfs_stop) {
-			ret = data->ops.cl_dvfs_stop(data->new_idx, data);
+			ret = data->ops.cl_dvfs_stop(data->dev, data->new_idx);
 			if (ret) {
 				dev_err(dev, "cl_dvfs does not stop\n");
 				goto out;
@@ -1145,8 +1142,8 @@ static int exynos_devfreq_target(struct device *dev,
 
 	if (data->use_switch_clk) {
 		if (data->ops.get_switch_freq) {
-			ret = data->ops.get_switch_freq(data->old_freq, data->new_freq,
-							&data->switch_freq);
+			ret = data->ops.get_switch_freq(data->dev, data->old_freq,
+					data->new_freq, &data->switch_freq);
 			if (ret) {
 				dev_err(dev, "failed get switch frequency\n");
 				goto out;
@@ -1158,8 +1155,8 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.get_switch_voltage) {
-			ret = data->ops.get_switch_voltage(data->old_freq,
-					data->new_freq, data);
+			ret = data->ops.get_switch_voltage(data->dev, data->old_freq, data->new_freq,
+					data->old_volt, data->new_volt, &data->switch_volt);
 			if (ret) {
 				dev_err(dev, "failed get switch voltage\n");
 				goto out;
@@ -1180,7 +1177,7 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.set_freq_prepare) {
-			ret = data->ops.set_freq_prepare(dev, data);
+			ret = data->ops.set_freq_prepare(data);
 			if (ret) {
 				dev_err(dev, "failed set frequency prepare\n");
 				goto out;
@@ -1190,7 +1187,7 @@ static int exynos_devfreq_target(struct device *dev,
 		do_gettimeofday(&before_setfreq);
 
 		if (switch_volt > data->old_volt) {
-			ret = exynos_devfreq_set_voltage(dev, &switch_volt, data);
+			ret = exynos_devfreq_set_voltage(&switch_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage before switch freq\n");
 				goto out;
@@ -1198,7 +1195,8 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.change_to_switch_freq) {
-			ret = data->ops.change_to_switch_freq(dev, data);
+			ret = data->ops.change_to_switch_freq(dev, data->sw_clk,
+					switch_freq, data->old_freq, &data->new_freq);
 			if (ret) {
 				dev_err(dev, "failed change to switch frequency\n");
 				goto out;
@@ -1206,7 +1204,7 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (switch_volt && switch_volt < data->old_volt) {
-			ret = exynos_devfreq_set_voltage(dev, &switch_volt, data);
+			ret = exynos_devfreq_set_voltage(&switch_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage after switch freq\n");
 				goto out;
@@ -1214,8 +1212,7 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.set_freq) {
-			ret = data->ops.set_freq(dev, data->old_freq,
-					data->new_freq, data);
+			ret = data->ops.set_freq(dev, data->new_freq, data->clk);
 			if (ret) {
 				dev_err(dev, "failed set frequency (%uKhz --> %uKhz)\n",
 						data->old_freq, data->new_freq);
@@ -1224,7 +1221,7 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (switch_volt < data->new_volt) {
-			ret = exynos_devfreq_set_voltage(dev, &data->new_volt, data);
+			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage before restore from switch freq\n");
 				goto out;
@@ -1232,7 +1229,8 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.restore_from_switch_freq) {
-			ret = data->ops.restore_from_switch_freq(dev, data);
+			ret = data->ops.restore_from_switch_freq(dev, data->clk,
+					data->old_freq, data->new_freq);
 			if (ret) {
 				dev_err(dev, "failed restore from switch frequency\n");
 				goto out;
@@ -1240,7 +1238,7 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (switch_volt > data->new_volt) {
-			ret = exynos_devfreq_set_voltage(dev, &data->new_volt, data);
+			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage after restore from switch freq\n");
 				goto out;
@@ -1253,15 +1251,15 @@ static int exynos_devfreq_target(struct device *dev,
 			(after_setfreq.tv_usec - before_setfreq.tv_usec);
 
 		if (data->ops.set_freq_post) {
-			ret = data->ops.set_freq_post(dev, data);
+			ret = data->ops.set_freq_post(data);
 			if (ret) {
 				dev_err(dev, "failed set frequency post\n");
 				goto out;
 			}
 		}
 	} else {
-		if (data->set_volt_order == PRE_SET_VOLT) {
-			ret = exynos_devfreq_set_voltage(dev, &data->new_volt, data);
+		if (volt_order == PRE_SET_VOLT) {
+			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage (%uKhz:%uuV --> %uKhz:%uuV)\n",
 						data->old_freq, data->old_volt,
@@ -1271,7 +1269,7 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.set_freq_prepare) {
-			ret = data->ops.set_freq_prepare(dev, data);
+			ret = data->ops.set_freq_prepare(data);
 			if (ret) {
 				dev_err(dev, "failed set frequency prepare\n");
 				goto out;
@@ -1280,8 +1278,7 @@ static int exynos_devfreq_target(struct device *dev,
 
 		do_gettimeofday(&before_setfreq);
 		if (data->ops.set_freq) {
-			ret = data->ops.set_freq(dev, data->old_freq,
-					data->new_freq, data);
+			ret = data->ops.set_freq(dev, data->new_freq, data->clk);
 			if (ret) {
 				dev_err(dev, "failed set frequency (%uKhz --> %uKhz)\n",
 						data->old_freq, data->new_freq);
@@ -1294,15 +1291,15 @@ static int exynos_devfreq_target(struct device *dev,
 			(after_setfreq.tv_usec - before_setfreq.tv_usec);
 
 		if (data->ops.set_freq_post) {
-			ret = data->ops.set_freq_post(dev, data);
+			ret = data->ops.set_freq_post(data);
 			if (ret) {
 				dev_err(dev, "failed set frequency post\n");
 				goto out;
 			}
 		}
 
-		if (data->set_volt_order == POST_SET_VOLT) {
-			ret = exynos_devfreq_set_voltage(dev, &data->new_volt, data);
+		if (volt_order == POST_SET_VOLT) {
+			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage (%uKhz:%uuV --> %uKhz:%uuV)\n",
 						data->old_freq, data->old_volt,
@@ -1314,7 +1311,7 @@ static int exynos_devfreq_target(struct device *dev,
 
 	if (data->use_cl_dvfs && !data->volt_offset) {
 		if (data->ops.cl_dvfs_start) {
-			ret = data->ops.cl_dvfs_start(data);
+			ret = data->ops.cl_dvfs_start(data->dev);
 			if (ret) {
 				dev_err(dev, "cl_dvfs does not start\n");
 				goto out;
@@ -1359,7 +1356,7 @@ static int exynos_devfreq_get_dev_status(struct device *dev,
 		return -EAGAIN;
 
 	if (data->ops.get_dev_status) {
-		if (data->ops.get_dev_status(dev, &data->ppmu_data, data))
+		if (data->ops.get_dev_status(data))
 			return -EAGAIN;
 	}
 
@@ -1407,7 +1404,7 @@ static int exynos_devfreq_suspend(struct device *dev)
 				data->devfreq_profile.suspend_freq);
 
 	if (data->ops.suspend) {
-		ret = data->ops.suspend(dev, data);
+		ret = data->ops.suspend(data);
 		if (ret) {
 			dev_err(dev, "failed suspend\n");
 			if (pm_qos_request_active(&data->default_pm_qos_min))
@@ -1430,7 +1427,7 @@ static int exynos_devfreq_resume(struct device *dev)
 	int ret = 0;
 
 	if (data->ops.resume) {
-		ret = data->ops.resume(dev, data);
+		ret = data->ops.resume(data);
 		if (ret)
 			dev_err(dev, "failed resume\n");
 	}
@@ -1496,7 +1493,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	}
 
 	if (data->ops.init) {
-		ret = data->ops.init(data->dev, data);
+		ret = data->ops.init(data);
 		if (ret) {
 			dev_err(data->dev, "failed devfreq init\n");
 			goto err_devfreq_init;
@@ -1510,7 +1507,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_freqtable;
 	}
 
-	ret = exynos_init_freq_table(data->dev, data);
+	ret = exynos_init_freq_table(data);
 	if (ret) {
 		dev_err(data->dev, "failed initailize freq_table\n");
 		goto err_init_table;
@@ -1562,7 +1559,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 
 	dev_info(data->dev, "Initial Frequency: %ld, Initial Voltage: %d\n", init_freq, data->new_volt);
 
-	ret = exynos_devfreq_set_voltage(data->dev, &data->new_volt, data);
+	ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 	if (ret) {
 		dev_err(data->dev, "failed set voltage in probe (%ukhz:%uuV)\n",
 				data->old_freq, data->new_volt);
@@ -1617,7 +1614,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		 * And if polling_ms is 0, ppmu notifier should be register in callback.
 		 */
 		if (data->ops.ppmu_register) {
-			ret = data->ops.ppmu_register(data->dev, data);
+			ret = data->ops.ppmu_register(data);
 			if (ret) {
 				dev_err(data->dev, "failed register ppmu\n");
 				goto err_ppmu;
@@ -1674,14 +1671,14 @@ err_tmu_noti:
 err_opp_noti:
 	if (data->use_ppmu) {
 		if (data->ops.ppmu_unregister)
-			data->ops.ppmu_unregister(data->dev, data);
+			data->ops.ppmu_unregister(data);
 	}
 err_ppmu:
 	if (data->ppmu_nb)
 		kfree(data->ppmu_nb);
 err_ppmu_nb:
 	if (data->ops.exit)
-		data->ops.exit(data->dev, data);
+		data->ops.exit(data);
 err_devfreq_init:
 	pm_qos_remove_request(&data->boot_pm_qos);
 	pm_qos_remove_request(&data->default_pm_qos_min);
@@ -1738,14 +1735,14 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 
 	if (data->use_ppmu) {
 		if (data->ops.ppmu_unregister)
-			data->ops.ppmu_unregister(data->dev, data);
+			data->ops.ppmu_unregister(data);
 	}
 
 	if (data->ppmu_nb)
 		kfree(data->ppmu_nb);
 
 	if (data->ops.exit)
-		data->ops.exit(data->dev, data);
+		data->ops.exit(data);
 
 	pm_qos_remove_request(&data->boot_pm_qos);
 	pm_qos_remove_request(&data->default_pm_qos_min);
