@@ -29,18 +29,14 @@
 
 #define DEVFREQ_CAM_REBOOT_FREQ	(444000)
 
-static struct exynos_devfreq_data *cam_data;
-
-static int exynos7570_devfreq_cam_cmu_dump(struct device *dev,
-					struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_cmu_dump(struct exynos_devfreq_data *data)
 {
 	cal_vclk_dbg_info(dvfs_cam);
 
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_reboot(struct device *dev,
-					struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_reboot(struct exynos_devfreq_data *data)
 {
 	u32 freq = DEVFREQ_CAM_REBOOT_FREQ;
 
@@ -54,10 +50,9 @@ static int exynos7570_devfreq_cam_reboot(struct device *dev,
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_get_freq(struct device *dev, u32 *cur_freq,
-				struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_get_freq(struct device *dev, u32 *cur_freq, struct clk *clk)
 {
-	*cur_freq = (u32)clk_get_rate(data->clk);
+	*cur_freq = (u32)clk_get_rate(clk);
 	if (*cur_freq == 0) {
 		dev_err(dev, "failed to get frequency from CAL\n");
 		return -EINVAL;
@@ -66,21 +61,17 @@ static int exynos7570_devfreq_cam_get_freq(struct device *dev, u32 *cur_freq,
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_set_freq(struct device *dev,
-					u32 old_freq, u32 new_freq,
-					struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_set_freq(struct device *dev, u32 new_freq, struct clk *clk)
 {
-	if (clk_set_rate(data->clk, (unsigned long)new_freq)) {
-		dev_err(dev, "failed to set frequency via CAL (%uKhz)\n",
-				new_freq);
+	if (clk_set_rate(clk, (unsigned long)new_freq)) {
+		dev_err(dev, "failed to set frequency via CAL (%uKhz)\n", new_freq);
 		return -EINVAL;
 	}
 
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_init_freq_table(struct device *dev,
-					struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_init_freq_table(struct exynos_devfreq_data *data)
 {
 	u32 max_freq, min_freq;
 	unsigned long tmp_max, tmp_min;
@@ -90,21 +81,21 @@ static int exynos7570_devfreq_cam_init_freq_table(struct device *dev,
 
 	max_freq = (u32)cal_dfs_get_max_freq(dvfs_cam);
 	if (!max_freq) {
-		dev_err(dev, "failed to get max frequency\n");
+		dev_err(data->dev, "failed to get max frequency\n");
 		return -EINVAL;
 	}
 
-	dev_info(dev, "max_freq: %uKhz, get_max_freq: %uKhz\n",
+	dev_info(data->dev, "max_freq: %uKhz, get_max_freq: %uKhz\n",
 			data->max_freq, max_freq);
 
 	if (max_freq < data->max_freq) {
 		rcu_read_lock();
 		flags |= DEVFREQ_FLAG_LEAST_UPPER_BOUND;
 		tmp_max = (unsigned long)max_freq;
-		target_opp = devfreq_recommended_opp(dev, &tmp_max, flags);
+		target_opp = devfreq_recommended_opp(data->dev, &tmp_max, flags);
 		if (IS_ERR(target_opp)) {
 			rcu_read_unlock();
-			dev_err(dev, "not found valid OPP for max_freq\n");
+			dev_err(data->dev, "not found valid OPP for max_freq\n");
 			return PTR_ERR(target_opp);
 		}
 
@@ -114,21 +105,21 @@ static int exynos7570_devfreq_cam_init_freq_table(struct device *dev,
 
 	min_freq = (u32)cal_dfs_get_min_freq(dvfs_cam);
 	if (!min_freq) {
-		dev_err(dev, "failed to get min frequency\n");
+		dev_err(data->dev, "failed to get min frequency\n");
 		return -EINVAL;
 	}
 
-	dev_info(dev, "min_freq: %uKhz, get_min_freq: %uKhz\n",
+	dev_info(data->dev, "min_freq: %uKhz, get_min_freq: %uKhz\n",
 			data->min_freq, min_freq);
 
 	if (min_freq > data->min_freq) {
 		rcu_read_lock();
 		flags &= ~DEVFREQ_FLAG_LEAST_UPPER_BOUND;
 		tmp_min = (unsigned long)min_freq;
-		target_opp = devfreq_recommended_opp(dev, &tmp_min, flags);
+		target_opp = devfreq_recommended_opp(data->dev, &tmp_min, flags);
 		if (IS_ERR(target_opp)) {
 			rcu_read_unlock();
-			dev_err(dev, "not found valid OPP for min_freq\n");
+			dev_err(data->dev, "not found valid OPP for min_freq\n");
 			return PTR_ERR(target_opp);
 		}
 
@@ -136,22 +127,22 @@ static int exynos7570_devfreq_cam_init_freq_table(struct device *dev,
 		rcu_read_unlock();
 	}
 
-	dev_info(dev, "min_freq: %uKhz, max_freq: %uKhz\n",
+	dev_info(data->dev, "min_freq: %uKhz, max_freq: %uKhz\n",
 			data->min_freq, data->max_freq);
 
 	for (i = 0; i < data->max_state; i++) {
 		if (data->opp_list[i].freq > data->max_freq ||
 			data->opp_list[i].freq < data->min_freq)
-			dev_pm_opp_disable(dev, (unsigned long)data->opp_list[i].freq);
+			dev_pm_opp_disable(data->dev, (unsigned long)data->opp_list[i].freq);
 	}
 
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_get_volt_table(struct device *dev, u32 *volt_table,
-						struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_get_volt_table(struct device *dev, u32 max_state,
+					struct exynos_devfreq_opp_table *opp_list)
 {
-	struct dvfs_rate_volt cam_rate_volt[data->max_state];
+	struct dvfs_rate_volt cam_rate_volt[max_state];
 	int table_size;
 	int i;
 
@@ -161,37 +152,35 @@ static int exynos7570_devfreq_cam_get_volt_table(struct device *dev, u32 *volt_t
 		return -ENODEV;
 	}
 
-	if (table_size != data->max_state) {
+	if (table_size != max_state) {
 		dev_err(dev, "ASV table size is not matched\n");
 		return -ENODEV;
 	}
 
-	for (i = 0; i < data->max_state; i++) {
-		if (data->opp_list[i].freq != (u32)(cam_rate_volt[i].rate)) {
+	for (i = 0; i < max_state; i++) {
+		if (opp_list[i].freq != (u32)(cam_rate_volt[i].rate)) {
 			dev_err(dev, "Freq table is not matched(%u:%u)\n",
-				data->opp_list[i].freq, (u32)cam_rate_volt[i].rate);
+				opp_list[i].freq, (u32)cam_rate_volt[i].rate);
 			return -EINVAL;
 		}
-		volt_table[i] = (u32)cam_rate_volt[i].volt;
+		opp_list[i].volt= (u32)cam_rate_volt[i].volt;
 	}
 
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_init(struct device *dev,
-				struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_init(struct exynos_devfreq_data *data)
 {
-	data->clk = clk_get(dev, "dvfs_cam");
+	data->clk = clk_get(data->dev, "dvfs_cam");
 	if (IS_ERR_OR_NULL(data->clk)) {
-		dev_err(dev, "failed get dvfs vclk\n");
+		dev_err(data->dev, "failed get dvfs vclk\n");
 		return -ENODEV;
 	}
 
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_exit(struct device *dev,
-				struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_exit(struct exynos_devfreq_data *data)
 {
 	clk_put(data->clk);
 
@@ -208,8 +197,6 @@ static int __init exynos7570_devfreq_cam_init_prepare(struct exynos_devfreq_data
 	data->ops.init_freq_table = exynos7570_devfreq_cam_init_freq_table;
 	data->ops.reboot = exynos7570_devfreq_cam_reboot;
 	data->ops.cmu_dump = exynos7570_devfreq_cam_cmu_dump;
-
-	cam_data = data;
 
 	return 0;
 }
