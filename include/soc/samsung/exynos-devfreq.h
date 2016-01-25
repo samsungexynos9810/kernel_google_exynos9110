@@ -88,14 +88,11 @@ struct exynos_devfreq_ops {
 	int (*resume)(struct device *, struct exynos_devfreq_data *);
 	int (*reboot)(struct device *, struct exynos_devfreq_data *);
 	int (*get_switch_voltage)(u32, u32, struct exynos_devfreq_data *);
-	int (*set_voltage)(struct device *, u32 *, struct exynos_devfreq_data *);
 	void (*set_voltage_prepare)(struct exynos_devfreq_data *);
 	void (*set_voltage_post)(struct exynos_devfreq_data *);
-	u32 (*get_target_freq)(char *, u32);
 	int (*get_switch_freq)(u32, u32, u32 *);
 	int (*get_freq)(struct device *, u32 *, struct exynos_devfreq_data *);
 	int (*set_freq)(struct device *, u32, u32, struct exynos_devfreq_data *);
-	int (*pre_update_target)(struct device *, struct exynos_devfreq_data *);
 	int (*set_freq_prepare)(struct device *, struct exynos_devfreq_data *);
 	int (*set_freq_post)(struct device *, struct exynos_devfreq_data *);
 	int (*change_to_switch_freq)(struct device *, struct exynos_devfreq_data *);
@@ -194,7 +191,6 @@ struct exynos_devfreq_data {
 	u32					ess_flag;
 
 	bool					use_cl_dvfs;
-	u32					cl_domain;
 
 	s32					target_delay;
 	s32					setfreq_delay;
@@ -212,15 +208,8 @@ int register_exynos_devfreq_init_prepare(enum exynos_devfreq_type type,
 s32 exynos_devfreq_get_opp_idx(struct exynos_devfreq_opp_table *table,
 				unsigned int size, u32 freq);
 #if defined(CONFIG_ARM_EXYNOS_DEVFREQ)
-u32 get_target_devfreq_rate(enum exynos_devfreq_type type, char *name, u32 freq);
 int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on);
 #else
-static inline
-u32 get_target_devfreq_rate(enum exynos_devfreq_type type, char *name, u32 freq)
-{
-	return 0;
-}
-
 static inline
 int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 {

@@ -751,22 +751,6 @@ s32 exynos_devfreq_get_opp_idx(struct exynos_devfreq_opp_table *table,
         return -ENODEV;
 }
 
-u32 get_target_devfreq_rate(enum exynos_devfreq_type type, char *name, u32 freq)
-{
-	u32 target_rate = 0;
-
-	if (!devfreq_data[type])
-		return target_rate;
-
-	if (devfreq_data[type]->ops.get_target_freq)
-		target_rate = devfreq_data[type]->ops.get_target_freq(name, freq);
-
-	dev_dbg(devfreq_data[type]->dev, "%s(%d): request freq: %u, target_freq: %u\n",
-					__func__, type, freq, target_rate);
-
-	return target_rate;
-}
-
 int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 {
 	struct exynos_devfreq_data *data;
@@ -1136,14 +1120,6 @@ static int exynos_devfreq_target(struct device *dev,
 	data->new_freq = *target_freq;
 	data->new_idx = target_idx;
 	data->new_volt = target_volt;
-
-	if (data->ops.pre_update_target) {
-		ret = data->ops.pre_update_target(dev, data);
-		if (ret) {
-			dev_err(dev, "failed pre update target\n");
-			goto out;
-		}
-	}
 
 	if (data->old_freq == data->new_freq)
 		goto out;
@@ -1552,7 +1528,6 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 			ret = -ENODEV;
 			goto err_regulator;
 		}
-		data->ops.set_voltage = exynos_devfreq_set_voltage;
 	}
 
 	/* This dummy regulator is for sync voltage */
