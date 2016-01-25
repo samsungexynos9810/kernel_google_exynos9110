@@ -146,6 +146,7 @@ struct exynos_devfreq_data {
 	u32					new_freq;
 	u32					min_freq;
 	u32					max_freq;
+	u32					reboot_freq;
 
 	u32					old_volt;
 	u32					new_volt;

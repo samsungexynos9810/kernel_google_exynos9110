@@ -474,7 +474,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	const char *devfreq_domain_name;
 #endif
 	int not_using_ect = true;
-	u32 freq_array[6];
+	u32 freq_array[7];
 	u32 volt_array[4];
 
 	if (!np)
@@ -544,6 +544,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	data->cal_qos_max = freq_array[3];
 	data->min_freq = freq_array[4];
 	data->max_freq = freq_array[5];
+	data->reboot_freq = freq_array[6];
 
 	if (of_property_read_string(np, "use_get_dev", &use_get_dev))
 		return -ENODEV;
@@ -1025,8 +1026,9 @@ static int exynos_devfreq_reboot_notifier(struct notifier_block *nb,
 								reboot_notifier);
 
 	if (pm_qos_request_active(&data->default_pm_qos_min))
-		pm_qos_update_request(&data->default_pm_qos_min,
-				data->devfreq_profile.initial_freq);
+		pm_qos_update_request(&data->default_pm_qos_min, data->reboot_freq);
+	if (pm_qos_request_active(&data->default_pm_qos_max))
+		pm_qos_update_request(&data->default_pm_qos_max, data->reboot_freq);
 
 	if (data->ops.reboot) {
 		if (data->ops.reboot(data)) {
