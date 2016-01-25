@@ -54,11 +54,6 @@ static int exynos7570_devfreq_cam_reboot(struct device *dev,
 	return 0;
 }
 
-static u32 exynos7570_devfreq_cam_get_target_freq(char *name, u32 freq)
-{
-	return cal_dfs_get_rate_by_member(dvfs_cam, name, freq);
-}
-
 static int exynos7570_devfreq_cam_get_freq(struct device *dev, u32 *cur_freq,
 				struct exynos_devfreq_data *data)
 {
@@ -153,8 +148,8 @@ static int exynos7570_devfreq_cam_init_freq_table(struct device *dev,
 	return 0;
 }
 
-static int exynos7570_devfreq_cam_get_volt_table(struct device *dev,
-				u32 *volt_table, struct exynos_devfreq_data *data)
+static int exynos7570_devfreq_cam_get_volt_table(struct device *dev, u32 *volt_table,
+						struct exynos_devfreq_data *data)
 {
 	struct dvfs_rate_volt cam_rate_volt[data->max_state];
 	int table_size;
@@ -211,7 +206,6 @@ static int __init exynos7570_devfreq_cam_init_prepare(struct exynos_devfreq_data
 	data->ops.get_freq = exynos7570_devfreq_cam_get_freq;
 	data->ops.set_freq = exynos7570_devfreq_cam_set_freq;
 	data->ops.init_freq_table = exynos7570_devfreq_cam_init_freq_table;
-	data->ops.get_target_freq = exynos7570_devfreq_cam_get_target_freq;
 	data->ops.reboot = exynos7570_devfreq_cam_reboot;
 	data->ops.cmu_dump = exynos7570_devfreq_cam_cmu_dump;
 
@@ -228,4 +222,5 @@ static int __init exynos7570_devfreq_cam_initcall(void)
 
 	return 0;
 }
+
 fs_initcall(exynos7570_devfreq_cam_initcall);

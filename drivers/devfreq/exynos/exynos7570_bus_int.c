@@ -54,21 +54,16 @@ static int exynos7570_devfreq_int_reboot(struct device *dev,
 	return 0;
 }
 
-static u32 exynos7570_devfreq_int_get_target_freq(char *name, u32 freq)
-{
-	return cal_dfs_get_rate_by_member(dvfs_int, name, freq);
-}
-
 static int exynos7570_devfreq_int_get_freq(struct device *dev, u32 *cur_freq,
-                                        struct exynos_devfreq_data *data)
+				struct exynos_devfreq_data *data)
 {
 	*cur_freq = (u32)clk_get_rate(data->clk);
 	if (*cur_freq == 0) {
-		dev_err(dev, "failed get frequency from CAL\n");
+		dev_err(dev, "failed to get frequency from CAL\n");
 		return -EINVAL;
 	}
 
-        return 0;
+	return 0;
 }
 
 static int exynos7570_devfreq_int_set_freq(struct device *dev,
@@ -76,7 +71,7 @@ static int exynos7570_devfreq_int_set_freq(struct device *dev,
 					struct exynos_devfreq_data *data)
 {
 	if (clk_set_rate(data->clk, (unsigned long)new_freq)) {
-		dev_err(dev, "failed set frequency to CAL (%uKhz)\n",
+		dev_err(dev, "failed to set frequency via CAL (%uKhz)\n",
 				new_freq);
 		return -EINVAL;
 	}
@@ -85,7 +80,7 @@ static int exynos7570_devfreq_int_set_freq(struct device *dev,
 }
 
 static int exynos7570_devfreq_int_init_freq_table(struct device *dev,
-						struct exynos_devfreq_data *data)
+					struct exynos_devfreq_data *data)
 {
 	u32 max_freq, min_freq;
 	unsigned long tmp_max, tmp_min;
@@ -95,7 +90,7 @@ static int exynos7570_devfreq_int_init_freq_table(struct device *dev,
 
 	max_freq = (u32)cal_dfs_get_max_freq(dvfs_int);
 	if (!max_freq) {
-		dev_err(dev, "failed get max frequency\n");
+		dev_err(dev, "failed to get max frequency\n");
 		return -EINVAL;
 	}
 
@@ -119,7 +114,7 @@ static int exynos7570_devfreq_int_init_freq_table(struct device *dev,
 
 	min_freq = (u32)cal_dfs_get_min_freq(dvfs_int);
 	if (!min_freq) {
-		dev_err(dev, "failed get min frequency\n");
+		dev_err(dev, "failed to get min frequency\n");
 		return -EINVAL;
 	}
 
@@ -162,7 +157,7 @@ static int exynos7570_devfreq_int_get_volt_table(struct device *dev, u32 *volt_t
 
 	table_size = cal_dfs_get_rate_asv_table(dvfs_int, int_rate_volt);
 	if (!table_size) {
-		dev_err(dev, "failed get ASV table\n");
+		dev_err(dev, "failed to get ASV table\n");
 		return -ENODEV;
 	}
 
@@ -173,7 +168,7 @@ static int exynos7570_devfreq_int_get_volt_table(struct device *dev, u32 *volt_t
 
 	for (i = 0; i < data->max_state; i++) {
 		if (data->opp_list[i].freq != (u32)(int_rate_volt[i].rate)) {
-			dev_err(dev, "Freq tablle is not matched(%u:%u)\n",
+			dev_err(dev, "Freq table is not matched(%u:%u)\n",
 				data->opp_list[i].freq, (u32)int_rate_volt[i].rate);
 			return -EINVAL;
 		}
@@ -184,7 +179,7 @@ static int exynos7570_devfreq_int_get_volt_table(struct device *dev, u32 *volt_t
 }
 
 static int exynos7570_devfreq_int_init(struct device *dev,
-					struct exynos_devfreq_data *data)
+				struct exynos_devfreq_data *data)
 {
 	data->clk = clk_get(dev, "dvfs_int");
 	if (IS_ERR_OR_NULL(data->clk)) {
@@ -196,7 +191,7 @@ static int exynos7570_devfreq_int_init(struct device *dev,
 }
 
 static int exynos7570_devfreq_int_exit(struct device *dev,
-					struct exynos_devfreq_data *data)
+				struct exynos_devfreq_data *data)
 {
 	clk_put(data->clk);
 
@@ -211,7 +206,6 @@ static int __init exynos7570_devfreq_int_init_prepare(struct exynos_devfreq_data
 	data->ops.get_freq = exynos7570_devfreq_int_get_freq;
 	data->ops.set_freq = exynos7570_devfreq_int_set_freq;
 	data->ops.init_freq_table = exynos7570_devfreq_int_init_freq_table;
-	data->ops.get_target_freq = exynos7570_devfreq_int_get_target_freq;
 	data->ops.reboot = exynos7570_devfreq_int_reboot;
 	data->ops.cmu_dump = exynos7570_devfreq_int_cmu_dump;
 
