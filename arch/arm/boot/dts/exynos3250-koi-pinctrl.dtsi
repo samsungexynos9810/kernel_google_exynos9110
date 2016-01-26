@@ -289,7 +289,7 @@
 		i2c1_bus: i2c1-bus {
 			samsung,pins = "gpd1-2", "gpd1-3";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <3>;
+			samsung,pin-pud = <0>;
 			samsung,pin-drv = <0>;
 		};
 

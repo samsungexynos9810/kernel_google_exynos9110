@@ -140,8 +140,13 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	struct snd_soc_dai_driver *codec_dai_drv = codec_dai->driver;
 	int ret = 0;
 
+#ifdef CONFIG_SND_SOC_SAMSUNG_SHIRI_AK4678
+	pm_runtime_get_sync(codec_dai->dev);
+	pm_runtime_get_sync(cpu_dai->dev);
+#else
 	pm_runtime_get_sync(cpu_dai->dev);
 	pm_runtime_get_sync(codec_dai->dev);
+#endif
 	pm_runtime_get_sync(platform->dev);
 
 	mutex_lock_nested(&rtd->pcm_mutex, rtd->pcm_subclass);
