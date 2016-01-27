@@ -1391,6 +1391,11 @@ static int exynos_devfreq_suspend(struct device *dev)
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	int ret = 0;
 
+	if (data->vdd_dummy && !data->vdd) {
+		dev_warn(dev, "regulator was put already!\n");
+		return ret;
+	}
+
 	if (pm_qos_request_active(&data->default_pm_qos_min))
 		pm_qos_update_request(&data->default_pm_qos_min,
 				data->devfreq_profile.suspend_freq);
@@ -1420,6 +1425,11 @@ static int exynos_devfreq_resume(struct device *dev)
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	int ret = 0;
+
+	if (data->vdd_dummy && !data->vdd) {
+		dev_warn(dev, "regulator isn't set yet!\n");
+		return ret;
+	}
 
 	if (data->ops.resume) {
 		ret = data->ops.resume(data);
