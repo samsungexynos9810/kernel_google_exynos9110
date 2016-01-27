@@ -118,19 +118,19 @@ static ssize_t show_exynos_devfreq_info(struct device *dev,
 				data->use_cl_dvfs ? "true" : "false");
 	}
 
-	count += snprintf(buf + count, PAGE_SIZE, "\n<PPMU data>\n"
-			"use_ppmu        : %20s\n", data->use_ppmu ? "true" : "false");
+	count += snprintf(buf + count, PAGE_SIZE, "\n<UM data>\n"
+			"use_um        : %20s\n", data->use_um ? "true" : "false");
 
-	if (data->use_ppmu) {
+	if (data->use_um) {
 
 		count += snprintf(buf + count, PAGE_SIZE,
-				"ppmu_type       : %20u\n" "ppmu_count      : %20u\n",
-				data->ppmu_data.type, data->ppmu_data.ppmu_count);
+				"um_type       : %20u\n" "um_count      : %20u\n",
+				data->um_data.type, data->um_data.um_count);
 
-		count += snprintf(buf + count, PAGE_SIZE, "ppmu_list\n");
-		for (i = 0; i < data->ppmu_data.ppmu_count; i++)
+		count += snprintf(buf + count, PAGE_SIZE, "um_list\n");
+		for (i = 0; i < data->um_data.um_count; i++)
 			count += snprintf(buf + count, PAGE_SIZE, "\t0x%08X\n",
-						data->ppmu_base[i]);
+						data->um_base[i]);
 	}
 
 	return count;
@@ -310,7 +310,7 @@ static ssize_t show_last_monitor_period(struct device *dev,
 	return count;
 }
 
-static ssize_t show_ppmu_cur_freq(struct device *dev,
+static ssize_t show_um_cur_freq(struct device *dev,
 				struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
@@ -319,7 +319,7 @@ static ssize_t show_ppmu_cur_freq(struct device *dev,
 	ssize_t count = 0;
 
 	count += snprintf(buf, PAGE_SIZE, "%u%%, %uKhz\n",
-				data->last_ppmu_usage_rate, data->old_freq);
+				data->last_um_usage_rate, data->old_freq);
 
 	return count;
 }
@@ -376,7 +376,7 @@ static DEVICE_ATTR(debug_devfreq_pm_qos_max, 0640, show_debug_devfreq_pm_qos_max
 static DEVICE_ATTR(disable_pm_qos, 0640, show_exynos_devfreq_disable_pm_qos,
 					store_exynos_devfreq_disable_pm_qos);
 static DEVICE_ATTR(last_monitor_period, 0640, show_last_monitor_period, NULL);
-static DEVICE_ATTR(ppmu_cur_freq, 0640, show_ppmu_cur_freq, NULL);
+static DEVICE_ATTR(um_cur_freq, 0640, show_um_cur_freq, NULL);
 static DEVICE_ATTR(test_cold_volt, 0640, show_test_cold_volt, store_test_cold_volt);
 
 static struct attribute *exynos_devfreq_sysfs_entries[] = {
@@ -388,7 +388,7 @@ static struct attribute *exynos_devfreq_sysfs_entries[] = {
 	&dev_attr_debug_devfreq_pm_qos_max.attr,
 	&dev_attr_disable_pm_qos.attr,
 	&dev_attr_last_monitor_period.attr,
-	&dev_attr_ppmu_cur_freq.attr,
+	&dev_attr_um_cur_freq.attr,
 	&dev_attr_test_cold_volt.attr,
 	NULL,
 };
@@ -487,7 +487,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 		data->devfreq_type = DEVFREQ_MIF;
 		data->pm_qos_class = PM_QOS_BUS_THROUGHPUT;
 		data->pm_qos_class_max = PM_QOS_BUS_THROUGHPUT_MAX;
-		data->ppmu_data.type = NONE_PPMU;
+		data->um_data.type = NONE_UM;
 		data->ess_flag = ESS_FLAG_MIF;
 	} else if (!strcmp(devfreq_type, "int")) {
 		data->devfreq_type = DEVFREQ_INT;
@@ -497,7 +497,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 #else
 		data->pm_qos_class_max = PM_QOS_RESERVED;
 #endif
-		data->ppmu_data.type = NONE_PPMU;
+		data->um_data.type = NONE_UM;
 		data->ess_flag = ESS_FLAG_INT;
 	} else if (!strcmp(devfreq_type, "disp")) {
 		data->devfreq_type = DEVFREQ_DISP;
@@ -507,7 +507,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 #else
 		data->pm_qos_class_max = PM_QOS_RESERVED;
 #endif
-		data->ppmu_data.type = NONE_PPMU;
+		data->um_data.type = NONE_UM;
 		data->ess_flag = ESS_FLAG_DISP;
 	} else if (!strcmp(devfreq_type, "cam")) {
 		data->devfreq_type = DEVFREQ_CAM;
@@ -517,7 +517,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 #else
 		data->pm_qos_class_max = PM_QOS_RESERVED;
 #endif
-		data->ppmu_data.type = NONE_PPMU;
+		data->um_data.type = NONE_UM;
 		data->ess_flag = ESS_FLAG_ISP;
 	} else {
 		dev_err(data->dev, "not support devfreq type (%s)\n", devfreq_type);
@@ -674,38 +674,38 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 		return -EINVAL;
 	}
 
-	if (data->ppmu_data.type == NONE_PPMU) {
-		data->use_ppmu = false;
-		dev_info(data->dev, "not used PPMU monitor\n");
+	if (data->um_data.type == NONE_UM) {
+		data->use_um = false;
+		dev_info(data->dev, "not used UM monitor\n");
 	} else {
 		int i;
 		phys_addr_t base;
 
-		data->use_ppmu = true;
+		data->use_um = true;
 
-		if (data->ppmu_data.type >= NONE_PPMU) {
-			dev_err(data->dev, "not support ppmu type (%d)\n", data->ppmu_data.type);
+		if (data->um_data.type >= NONE_UM) {
+			dev_err(data->dev, "not support um type (%d)\n", data->um_data.type);
 			return -EINVAL;
 		}
 
-		if (of_property_read_u32(np, "ppmu_count", &data->ppmu_data.ppmu_count))
+		if (of_property_read_u32(np, "um_count", &data->um_data.um_count))
 			return -ENODEV;
 
-		if (of_property_read_u32_array(np, "ppmu_list", (u32 *)&data->ppmu_base,
-					(size_t)(data->ppmu_data.ppmu_count)))
+		if (of_property_read_u32_array(np, "um_list", (u32 *)&data->um_base,
+					(size_t)(data->um_data.um_count)))
 			return -ENODEV;
 
-		data->ppmu_data.ppmu_list = kzalloc(sizeof(struct ppmu_addr) *
-						data->ppmu_data.ppmu_count, GFP_KERNEL);
-		if (data->ppmu_data.ppmu_list == NULL) {
-			dev_err(data->dev, "failed allocated memory for ppmu list");
+		data->um_data.um_list = kzalloc(sizeof(struct um_addr) *
+						data->um_data.um_count, GFP_KERNEL);
+		if (data->um_data.um_list == NULL) {
+			dev_err(data->dev, "failed allocated memory for um list");
 			return -ENOMEM;
 		}
 
-		for (i = 0; i < data->ppmu_data.ppmu_count; i++) {
-			dev_info(data->dev, "ppmu list.%d : 0x%08X\n", i, data->ppmu_base[i]);
-			base = (phys_addr_t)data->ppmu_base[i];
-			data->ppmu_data.ppmu_list[i].base = (void __iomem *)base;
+		for (i = 0; i < data->um_data.um_count; i++) {
+			dev_info(data->dev, "um list.%d : 0x%08X\n", i, data->um_base[i]);
+			base = (phys_addr_t)data->um_base[i];
+			data->um_data.um_list[i].base = (void __iomem *)base;
 		}
 	}
 
@@ -1043,21 +1043,21 @@ static int exynos_devfreq_reboot_notifier(struct notifier_block *nb,
 static int exynos_devfreq_notifier(struct notifier_block *nb,
 					unsigned long val, void *v)
 {
-	struct devfreq_notifier_block *ppmu_nb = container_of(nb, struct devfreq_notifier_block, nb);
-	struct device *parent = ppmu_nb->df->dev.parent;
+	struct devfreq_notifier_block *um_nb = container_of(nb, struct devfreq_notifier_block, nb);
+	struct device *parent = um_nb->df->dev.parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	int err;
 	u64 cur_jiffies;
 
-	mutex_lock(&ppmu_nb->df->lock);
-	err = update_devfreq(ppmu_nb->df);
+	mutex_lock(&um_nb->df->lock);
+	err = update_devfreq(um_nb->df);
 	if (err && err != -EAGAIN) {
-		dev_err(&ppmu_nb->df->dev, "devfreq failed with (%d) error\n", err);
-		mutex_unlock(&ppmu_nb->df->lock);
+		dev_err(&um_nb->df->dev, "devfreq failed with (%d) error\n", err);
+		mutex_unlock(&um_nb->df->lock);
 		return NOTIFY_BAD;
 	}
-	mutex_unlock(&ppmu_nb->df->lock);
+	mutex_unlock(&um_nb->df->lock);
 
 	cur_jiffies = get_jiffies_64();
 	data->last_monitor_period = (u32)(cur_jiffies - data->last_monitor_jiffies);
@@ -1377,10 +1377,10 @@ static int exynos_devfreq_get_dev_status(struct device *dev,
 		simple_exynos_data->below_freq = data->opp_list[below_idx].freq;
 	}
 
-	stat->busy_time = data->ppmu_data.val_pmcnt;
-	stat->total_time = data->ppmu_data.val_ccnt;
+	stat->busy_time = data->um_data.val_pmcnt;
+	stat->total_time = data->um_data.val_ccnt;
 
-	data->last_ppmu_usage_rate = div64_u64(stat->busy_time * 100, stat->total_time);
+	data->last_um_usage_rate = div64_u64(stat->busy_time * 100, stat->total_time);
 
 	return 0;
 }
@@ -1598,30 +1598,30 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	pm_qos_add_request(&data->default_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
 	pm_qos_add_request(&data->boot_pm_qos, (int)data->pm_qos_class, data->default_qos);
 
-	if (data->use_ppmu) {
-		/* if polling_ms is 0, update_devfreq function is called by ppmu */
+	if (data->use_um) {
+		/* if polling_ms is 0, update_devfreq function is called by um */
 		if (data->devfreq_profile.polling_ms == 0) {
-			data->ppmu_nb = kzalloc(sizeof(struct devfreq_notifier_block), GFP_KERNEL);
-			if (data->ppmu_nb == NULL) {
+			data->um_nb = kzalloc(sizeof(struct devfreq_notifier_block), GFP_KERNEL);
+			if (data->um_nb == NULL) {
 				dev_err(data->dev, "failed to allocate notifier block\n");
 				ret = -ENOMEM;
-				goto err_ppmu_nb;
+				goto err_um_nb;
 			}
 
-			data->ppmu_nb->df = data->devfreq;
-			data->ppmu_nb->nb.notifier_call = exynos_devfreq_notifier;
+			data->um_nb->df = data->devfreq;
+			data->um_nb->nb.notifier_call = exynos_devfreq_notifier;
 			data->last_monitor_jiffies = get_jiffies_64();
 		}
 
 		/*
-		 * The PPMU data should be register.
-		 * And if polling_ms is 0, ppmu notifier should be register in callback.
+		 * The UM data should be register.
+		 * And if polling_ms is 0, um notifier should be register in callback.
 		 */
-		if (data->ops.ppmu_register) {
-			ret = data->ops.ppmu_register(data);
+		if (data->ops.um_register) {
+			ret = data->ops.um_register(data);
 			if (ret) {
-				dev_err(data->dev, "failed register ppmu\n");
-				goto err_ppmu;
+				dev_err(data->dev, "failed register um\n");
+				goto err_um;
 			}
 		}
 	}
@@ -1673,14 +1673,14 @@ err_reboot_noti:
 err_tmu_noti:
 	devfreq_unregister_opp_notifier(data->dev, data->devfreq);
 err_opp_noti:
-	if (data->use_ppmu) {
-		if (data->ops.ppmu_unregister)
-			data->ops.ppmu_unregister(data);
+	if (data->use_um) {
+		if (data->ops.um_unregister)
+			data->ops.um_unregister(data);
 	}
-err_ppmu:
-	if (data->ppmu_nb)
-		kfree(data->ppmu_nb);
-err_ppmu_nb:
+err_um:
+	if (data->um_nb)
+		kfree(data->um_nb);
+err_um_nb:
 	if (data->ops.exit)
 		data->ops.exit(data);
 err_devfreq_init:
@@ -1713,8 +1713,8 @@ err_init_table:
 	kfree(data->devfreq_profile.freq_table);
 err_freqtable:
 err_init_prepare:
-	if (data->use_ppmu)
-		kfree(data->ppmu_data.ppmu_list);
+	if (data->use_um)
+		kfree(data->um_data.um_list);
 err_parse_dt:
 	mutex_destroy(&data->regulator_lock);
 	mutex_destroy(&data->lock);
@@ -1737,13 +1737,13 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 	unregister_reboot_notifier(&data->reboot_notifier);
 	devfreq_unregister_opp_notifier(data->dev, data->devfreq);
 
-	if (data->use_ppmu) {
-		if (data->ops.ppmu_unregister)
-			data->ops.ppmu_unregister(data);
+	if (data->use_um) {
+		if (data->ops.um_unregister)
+			data->ops.um_unregister(data);
 	}
 
-	if (data->ppmu_nb)
-		kfree(data->ppmu_nb);
+	if (data->um_nb)
+		kfree(data->um_nb);
 
 	if (data->ops.exit)
 		data->ops.exit(data);
@@ -1768,8 +1768,8 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 	}
 	platform_set_drvdata(pdev, NULL);
 	kfree(data->devfreq_profile.freq_table);
-	if (data->use_ppmu)
-		kfree(data->ppmu_data.ppmu_list);
+	if (data->use_um)
+		kfree(data->um_data.um_list);
 	mutex_destroy(&data->regulator_lock);
 	mutex_destroy(&data->lock);
 	kfree(data);

@@ -31,10 +31,11 @@ enum exynos_devfreq_gov_type {
 	GOV_TYPE_END
 };
 
-enum PPMU_TYPE {
-	PPMU_MIF = 0,
-	PPMU_INT,
-	NONE_PPMU
+/* "Utlization Monitor" type */
+enum UM_TYPE {
+	UM_MIF = 0,
+	UM_INT,
+	NONE_UM
 };
 
 enum volt_order_type {
@@ -75,15 +76,15 @@ struct exynos_devfreq_opp_table {
 };
 
 struct exynos_devfreq_data;
-struct ppmu_exynos;
+struct um_exynos;
 
 struct exynos_devfreq_ops {
 	int (*init)(struct exynos_devfreq_data *);
 	int (*exit)(struct exynos_devfreq_data *);
 	int (*init_freq_table)(struct exynos_devfreq_data *);
 	int (*get_volt_table)(struct device *, u32, struct exynos_devfreq_opp_table *);
-	int (*ppmu_register)(struct exynos_devfreq_data *);
-	int (*ppmu_unregister)(struct exynos_devfreq_data *);
+	int (*um_register)(struct exynos_devfreq_data *);
+	int (*um_unregister)(struct exynos_devfreq_data *);
 	int (*suspend)(struct exynos_devfreq_data *);
 	int (*resume)(struct exynos_devfreq_data *);
 	int (*reboot)(struct exynos_devfreq_data *);
@@ -103,17 +104,17 @@ struct exynos_devfreq_ops {
 	int (*cmu_dump)(struct exynos_devfreq_data *);
 };
 
-struct ppmu_addr {
+struct um_addr {
 	void __iomem *base;
 };
 
-struct ppmu_exynos {
+struct um_exynos {
 	struct list_head node;
-	struct ppmu_addr *ppmu_list;
-	unsigned int ppmu_count;
+	struct um_addr *um_list;
+	unsigned int um_count;
 	u64 val_ccnt;
 	u64 val_pmcnt;
-	enum PPMU_TYPE type;
+	enum UM_TYPE type;
 };
 
 struct exynos_devfreq_data {
@@ -174,13 +175,13 @@ struct exynos_devfreq_data {
 	struct pm_qos_request			boot_pm_qos;
 	u32					boot_qos_timeout;
 
-	u32					ppmu_base[16];
-	struct devfreq_notifier_block		*ppmu_nb;
-	struct ppmu_exynos			ppmu_data;
-	bool					use_ppmu;
+	u32					um_base[16];
+	struct devfreq_notifier_block		*um_nb;
+	struct um_exynos			um_data;
+	bool					use_um;
 	u32					last_monitor_period;
 	u64					last_monitor_jiffies;
-	u32					last_ppmu_usage_rate;
+	u32					last_um_usage_rate;
 
 	bool					use_tmu;
 	struct notifier_block			tmu_notifier;
