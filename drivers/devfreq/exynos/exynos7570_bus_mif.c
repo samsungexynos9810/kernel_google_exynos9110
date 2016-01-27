@@ -225,16 +225,6 @@ static int exynos7570_devfreq_mif_get_volt_table(struct device *dev, u32 max_sta
 	return 0;
 }
 
-static int exynos7570_mif_ppmu_register(struct exynos_devfreq_data *data)
-{
-	return 0;
-}
-
-static int exynos7570_mif_ppmu_unregister(struct exynos_devfreq_data *data)
-{
-	return 0;
-}
-
 static int exynos7570_devfreq_mif_init(struct exynos_devfreq_data *data)
 {
 	data->clk = clk_get(data->dev, "dvfs_mif");
@@ -266,8 +256,6 @@ static int __init exynos7570_devfreq_mif_init_prepare(struct exynos_devfreq_data
 	data->ops.init = exynos7570_devfreq_mif_init;
 	data->ops.exit = exynos7570_devfreq_mif_exit;
 	data->ops.get_volt_table = exynos7570_devfreq_mif_get_volt_table;
-	data->ops.ppmu_register = exynos7570_mif_ppmu_register;
-	data->ops.ppmu_unregister = exynos7570_mif_ppmu_unregister;
 	data->ops.get_switch_freq = exynos7570_devfreq_mif_get_switch_freq;
 	data->ops.get_switch_voltage = exynos7570_devfreq_mif_get_switch_voltage;
 	data->ops.get_freq = exynos7570_devfreq_mif_get_freq;
