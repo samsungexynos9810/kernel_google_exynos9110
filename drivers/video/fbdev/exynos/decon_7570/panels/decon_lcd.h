@@ -64,6 +64,9 @@ struct decon_lcd {
 	unsigned int width;
 	unsigned int height;
 
+	unsigned int dispif_w;
+	unsigned int dispif_h;
+
 	unsigned int hs_clk;
 	struct stdphy_pms dphy_pms;
 	unsigned int esc_clk;
