@@ -73,8 +73,6 @@ static unsigned char SubReadData[SUB_COM_DATA_SIZE_GETDATA];
 
 static wait_queue_head_t wait_ioctl;
 static volatile int ioctl_complete;
-static wait_queue_head_t wait_q_bl_zero;
-static int flg_bl_zero;
 
 static wait_queue_head_t wait_rd;
 static wait_queue_head_t wait_subint;
@@ -423,25 +421,6 @@ static int sub_read_command(uint8_t command)
 	return ret;
 }
 
-static int wait_bl_zero(void)
-{
-	int ret;
-
-	// detect edge of 0->1
-	ret = wait_event_interruptible(wait_q_bl_zero, flg_bl_zero == 0);
-	if (ret < 0)
-		return ret;
-	ret = wait_event_interruptible(wait_q_bl_zero, flg_bl_zero == 1);
-
-	return ret;
-}
-
-void Msensors_set_backlight_zero_flag(int flg)
-{
-	flg_bl_zero = flg;
-	wake_up_interruptible(&wait_q_bl_zero);
-}
-
 static void get_subcpu_version(uint8_t *buf)
 {
 	buf[0] = g_st->fw.maj_ver;
@@ -456,9 +435,7 @@ static long Msensors_Ioctl(struct file *file, unsigned int cmd, unsigned long ar
 
 	/* this function must be reentrant */
 	pr_info("%s: cmd %x\n", __func__, cmd);
-	if (cmd == IOC_WAIT_BL_0) {
-		ret = wait_bl_zero();
-	} else if (cmd == IOC_GET_VERSION) {
+	if (cmd == IOC_GET_VERSION) {
 		get_subcpu_version(buf);
 		ret = copy_to_user((void __user *)arg, buf, 3);
 	} else if (cmd == IOC_ACCEL_ADJ) {
@@ -567,7 +544,6 @@ static int Msensors_probe(struct spi_device *spi)
 	init_waitqueue_head(&wait_rd);
 	init_waitqueue_head(&wait_subint);
 	init_waitqueue_head(&wait_ioctl);
-	init_waitqueue_head(&wait_q_bl_zero);
 	spin_lock_init(&slock);
 	mutex_init(&mlock);
 	INIT_LIST_HEAD(&wd_queue);
