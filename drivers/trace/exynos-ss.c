@@ -40,6 +40,7 @@
 #include <asm/memory.h>
 #include <asm/map.h>
 #include <soc/samsung/exynos-pmu.h>
+#include <linux/i2c.h>
 
 /*  Size domain */
 #define ESS_KEEP_HEADER_SZ		(SZ_256 * 3)
@@ -247,6 +248,16 @@ struct exynos_ss_log {
 		unsigned int data;
 	} acpm[ESS_LOG_MAX_NUM];
 #endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_I2C
+	struct i2c_log {
+		unsigned long long time;
+		int cpu;
+		struct i2c_adapter *adap;
+		struct i2c_msg *msgs;
+		int num;
+		int en;
+	} i2c[ESS_LOG_MAX_NUM];
+#endif
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	struct clockevent_log {
 		unsigned long long time;
@@ -312,6 +323,9 @@ struct exynos_ss_log_idx {
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_MBOX
 	atomic_t mailbox_log_idx;
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_I2C
+	atomic_t i2c_log_idx;
 #endif
 #ifndef CONFIG_EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	atomic_t clockevent_log_idx[ESS_NR_CPUS];
@@ -1449,6 +1463,9 @@ static void __init exynos_ss_fixmap_header(void)
 #ifdef CONFIG_EXYNOS_SNAPSHOT_ACPM
 	atomic_set(&(ess_idx.acpm_log_idx), -1);
 #endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_I2C
+	atomic_set(&(ess_idx.i2c_log_idx), -1);
+#endif
 	for (i = 0; i < ESS_NR_CPUS; i++) {
 		atomic_set(&(ess_idx.task_log_idx[i]), -1);
 		atomic_set(&(ess_idx.work_log_idx[i]), -1);
@@ -2033,6 +2050,28 @@ void exynos_ss_hrtimer(void *timer, s64 *now, void *fn, int en)
 		ess_log->hrtimers[cpu][i].timer = (struct hrtimer *)timer;
 		ess_log->hrtimers[cpu][i].fn = fn;
 		ess_log->hrtimers[cpu][i].en = en;
+	}
+}
+#endif
+
+#ifdef CONFIG_EXYNOS_SNAPSHOT_I2C
+void exynos_ss_i2c(struct i2c_adapter *adap, struct i2c_msg *msgs, int num, int en)
+{
+	struct exynos_ss_item *item = &ess_items[ess_desc.kevents_num];
+
+	if (unlikely(!ess_base.enabled || !item->entry.enabled))
+		return;
+	{
+		int cpu = raw_smp_processor_id();
+		unsigned long i = atomic_inc_return(&ess_idx.i2c_log_idx) &
+				(ARRAY_SIZE(ess_log->i2c) - 1);
+
+		ess_log->i2c[i].time = cpu_clock(cpu);
+		ess_log->i2c[i].cpu = cpu;
+		ess_log->i2c[i].adap = adap;
+		ess_log->i2c[i].msgs = msgs;
+		ess_log->i2c[i].num = num;
+		ess_log->i2c[i].en = en;
 	}
 }
 #endif

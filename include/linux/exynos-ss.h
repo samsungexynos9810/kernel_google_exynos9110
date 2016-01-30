@@ -87,6 +87,14 @@ extern void exynos_ss_hrtimer(void *timer, s64 *now, void *fn, int en);
 #define exynos_ss_hrtimer(a,b,c,d)	do { } while(0);
 #endif
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_I2C
+struct i2c_adapter;
+struct i2c_msg;
+extern void exynos_ss_i2c(struct i2c_adapter *adap, struct i2c_msg *msgs, int num, int en);
+#else
+#define exynos_ss_i2c(a,b,c,d)		do { } while(0);
+#endif
+
 #ifdef CONFIG_EXYNOS_SNAPSHOT_REG
 extern void exynos_ss_reg(unsigned int read, size_t val, size_t reg, int en);
 #else
@@ -158,6 +166,7 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_irq_exit_var(v)	do { v = 0; } while(0)
 #define exynos_ss_reg(a,b,c,d)		do { } while(0)
 #define exynos_ss_hrtimer(a,b,c,d)	do { } while(0)
+#define exynos_ss_i2c(a,b,c,d)		do { } while(0)
 #define exynos_ss_hook_pmsg(a,b)	do { } while(0)
 #define exynos_ss_printk(...)		do { } while(0)
 #define exynos_ss_printkl(a,b)		do { } while(0)
