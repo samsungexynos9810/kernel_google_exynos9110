@@ -87,9 +87,9 @@ config EXYNOS_SNAPSHOT_I2C
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default y
 
-config EXYNOS_SNAPSHOT_HOOK_LOGGER
-	bool "Enable hooking android platform log for ramdump"
-	depends on EXYNOS_SNAPSHOT
+config EXYNOS_SNAPSHOT_SPI
+	bool "Enable debugging of spi driver"
+	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default y
 
 config EXYNOS_SNAPSHOT_PSTORE
@@ -98,6 +98,11 @@ config EXYNOS_SNAPSHOT_PSTORE
 	select PSTORE
 	select PSTORE_RAM
 	select PSTORE_PMSG
+	default y
+
+config EXYNOS_SNAPSHOT_HOOK_LOGGER
+	bool "Enable hooking android platform log for ramdump"
+	depends on EXYNOS_SNAPSHOT
 	default y
 
 config EXYNOS_SNAPSHOT_PANIC_REBOOT
