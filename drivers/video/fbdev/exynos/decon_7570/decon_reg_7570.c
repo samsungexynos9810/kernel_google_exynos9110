@@ -155,8 +155,9 @@ void decon_reg_set_resolution(u32 id, int dsi_idx, struct decon_lcd *info)
 	u32 val = 0;
 
 	/* from LCD info */
-	val = VIDTCON5_LINEVAL(info->yres - 1) |
-			VIDTCON5_HOZVAL(info->xres - 1);
+	/* These values are fixed considering to 320 pixel restriction */
+	val = VIDTCON5_LINEVAL(info->dispif_h - 1) |
+			VIDTCON5_HOZVAL(info->dispif_w - 1);
 	decon_write(id, VIDTCON5(dsi_idx), val);
 }
 
@@ -214,14 +215,11 @@ void decon_reg_configure_trigger(u32 id, enum decon_trig_mode mode)
 {
 	u32 val, mask;
 
-	mask = TRIGCON_SWTRIGEN_I80_RGB | TRIGCON_HWTRIGEN_I80_RGB |
-		TRIGCON_TRIG_SAVE_DISABLE_SYNCMGR;
-
+	mask = TRIGCON_SWTRIGEN_I80_RGB | TRIGCON_HWTRIGEN_I80_RGB;
 	if (mode == DECON_SW_TRIG) {
 		val = TRIGCON_SWTRIGEN_I80_RGB;
 	} else {
-		val = TRIGCON_HWTRIGEN_I80_RGB | TRIGCON_HWTRIG_AUTO_MASK |
-			TRIGCON_TRIG_SAVE_DISABLE_SYNCMGR;
+		val = TRIGCON_HWTRIGEN_I80_RGB | TRIGCON_HWTRIG_AUTO_MASK;
 	}
 
 	decon_write_mask(id, TRIGCON, val, mask);
@@ -617,11 +615,16 @@ void decon_reg_set_tui_va(u32 id, u32 va)
 	decon_write(id, VIDW_ADD2(6), va);
 }
 
+/* DECON disp i/f size is defined VIDTCON5 sfr instead of VIDTCON4 */
 u32 decon_reg_get_lineval(u32 id, int dsi_idx, struct decon_lcd *lcd_info)
 {
 	u32 val;
 
-	val = decon_read(id, VIDTCON4(dsi_idx) + SHADOW_OFFSET);
+	if (lcd_info->mode == DECON_VIDEO_MODE)
+		val = decon_read(id, VIDTCON4(dsi_idx) + SHADOW_OFFSET);
+	else
+		val = decon_read(id, VIDTCON5(dsi_idx) + SHADOW_OFFSET);
+
 	return VIDTCONx_LINEVAL_GET(val) + 1;
 }
 
@@ -629,6 +632,10 @@ u32 decon_reg_get_hozval(u32 id, int dsi_idx, struct decon_lcd *lcd_info)
 {
 	u32 val;
 
-	val = decon_read(id, VIDTCON4(dsi_idx) + SHADOW_OFFSET);
+	if (lcd_info->mode == DECON_VIDEO_MODE)
+		val = decon_read(id, VIDTCON4(dsi_idx) + SHADOW_OFFSET);
+	else
+		val = decon_read(id, VIDTCON5(dsi_idx) + SHADOW_OFFSET);
+
 	return VIDTCONx_HOZVAL_GET(val) + 1;
 }

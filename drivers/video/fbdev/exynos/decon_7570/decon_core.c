@@ -82,7 +82,7 @@ void decon_dump(struct decon_device *decon)
 	dev_err(decon->dev, "=== DECON SFR DUMP ===\n");
 
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
-			decon->regs, 0x718, false);
+			decon->regs, 0x9ac, false);
 	dev_err(decon->dev, "=== DECON MIC SFR DUMP ===\n");
 
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
@@ -2873,6 +2873,11 @@ static void decon_parse_pdata(struct decon_device *decon, struct device *dev)
 		/* single DSI: 0, dual DSI: 1 */
 		of_property_read_u32(dev->of_node, "dsi_mode",
 				&decon->pdata->dsi_mode);
+
+		/* mif_vclk */
+		of_property_read_u32(dev->of_node, "mif-vclk",
+				&decon->pdata->mif_vclk);
+
 		/* disp_vclk */
 		of_property_read_u32(dev->of_node, "disp-vclk",
 				&decon->pdata->disp_vclk);
@@ -3415,6 +3420,8 @@ static int decon_probe(struct platform_device *pdev)
 
 	decon_reg_shadow_protect_win(DECON_INT, win_idx, 0);
 
+	decon_reg_set_int(DECON_INT, &psr, DSI_MODE_SINGLE, 1);
+
 	decon_reg_start(DECON_INT, decon->pdata->dsi_mode, &psr);
 
 	decon_reg_activate_window(DECON_INT, win_idx);
@@ -3462,34 +3469,38 @@ decon_init_done:
 		u32 reg;
 		cmu_sfr = ioremap(0x148d0224, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x148d0224 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x148d0224 cmu_sfr : 0x%08x\n", __func__, reg);
 
 		cmu_sfr = ioremap(0x148d0228, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x148d0228 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x148d0228 cmu_sfr : 0x%08x\n", __func__, reg);
 
 		cmu_sfr = ioremap(0x148d0824, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x148d0824 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x148d0824 cmu_sfr : 0x%08x\n", __func__, reg);
 
 		cmu_sfr = ioremap(0x148d0828, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x148d0828 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x148d0828 cmu_sfr : 0x%08x\n", __func__, reg);
 
 		cmu_sfr = ioremap(0x10460234, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x10460234 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x10460234 cmu_sfr : 0x%08x\n", __func__, reg);
 		cmu_sfr = ioremap(0x10460238, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x10460238 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x10460238 cmu_sfr : 0x%08x\n", __func__, reg);
 
 		cmu_sfr = ioremap(0x148d0210, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x148d0210 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x148d0210 cmu_sfr : 0x%08x\n", __func__, reg);
 
 		cmu_sfr = ioremap(0x148d0214, SZ_4);
 		reg = __raw_readl(cmu_sfr);
-		printk("%s, 0x148d0214 cmu_sfr : 0x%08x\n", __func__, reg);
+		pr_info("%s, 0x148d0214 cmu_sfr : 0x%08x\n", __func__, reg);
+
+		cmu_sfr = ioremap(0x139b0080, SZ_4);
+		reg = __raw_readl(cmu_sfr);
+		pr_info("%s, 0x139b0080 tes_gpio_sfr : 0x%08x\n", __func__, reg);
 	}
 #endif
 	return 0;

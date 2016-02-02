@@ -409,6 +409,7 @@ void dsim_reg_set_porch(u32 id, struct decon_lcd *lcd)
 	} else if (lcd->mode == DECON_MIPI_COMMAND_MODE) {
 		dsim_reg_set_vbp(id, lcd->dsim_vbp);
 		dsim_reg_set_hfp(id, lcd->dsim_hfp);
+		dsim_reg_set_hbp(id, lcd->dsim_hbp);
 		dsim_reg_set_vsa(id, lcd->dsim_vsa);
 		dsim_reg_set_hsa(id, lcd->dsim_hsa);
 	} else {
@@ -1031,8 +1032,15 @@ int dsim_reg_init(u32 id, struct decon_lcd *lcd_info, u32 data_lane_cnt, struct 
 
 	dsim_reg_enable_packetgo(id, 0);
 	dsim_reg_set_stop_state_cnt(id);
-	dsim_reg_set_vresol(id, lcd_info->yres);
-	dsim_reg_set_hresol(id, lcd_info->xres, lcd_info);
+
+	if (lcd_info->mode == DECON_VIDEO_MODE) {
+		dsim_reg_set_vresol(id, lcd_info->yres);
+		dsim_reg_set_hresol(id, lcd_info->xres, lcd_info);
+	} else {
+		dsim_reg_set_vresol(id, lcd_info->dispif_h);
+		dsim_reg_set_hresol(id, lcd_info->dispif_w, lcd_info);
+	}
+
 	dsim_reg_set_porch(id, lcd_info);
 	dsim_reg_enable_shadow(id, 0);
 	if (lcd_info->mode == DECON_VIDEO_MODE)

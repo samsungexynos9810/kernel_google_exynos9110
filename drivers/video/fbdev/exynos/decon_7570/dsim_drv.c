@@ -1161,6 +1161,11 @@ static int dsim_parse_lcd_info(struct dsim_device *dsim)
 	dsim_info("LCD(%s) resolution: xres(%d), yres(%d)\n",
 			of_node_full_name(node), res[0], res[1]);
 
+	of_property_read_u32_array(node, "dispif_resol", res, 2);
+	dsim->lcd_info.dispif_w = res[0];
+	dsim->lcd_info.dispif_h = res[1];
+	dsim_dbg("DISPIF resolution size: width(%d), height(%d)\n", res[0], res[1]);
+
 	of_property_read_u32_array(node, "size", res, 2);
 	dsim->lcd_info.width = res[0];
 	dsim->lcd_info.height = res[1];

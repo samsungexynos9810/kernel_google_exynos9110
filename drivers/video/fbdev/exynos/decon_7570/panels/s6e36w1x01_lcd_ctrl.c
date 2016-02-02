@@ -118,11 +118,6 @@ void lcd_init(struct decon_lcd * lcd)
 		dsim_err("failed to send PANEL_UPDATE.\n");
 
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
-		(unsigned long) TEON,
-		ARRAY_SIZE(TEON)) == -1)
-		dsim_err("failed to send TEON.\n");
-
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) HIDDEN_KEY_ON,
 		ARRAY_SIZE(HIDDEN_KEY_ON)) == -1)
 		dsim_err("failed to send HIDDEN_KEY_ON.\n");
@@ -152,6 +147,11 @@ void lcd_init(struct decon_lcd * lcd)
 		(unsigned long) TEST_KEY_OFF_0,
 		ARRAY_SIZE(TEST_KEY_OFF_0)) == -1)
 		dsim_err("failed to send TEST_KEY_OFF_0.\n");
+
+	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		(unsigned long) TEON,
+		ARRAY_SIZE(TEON)) == -1)
+		dsim_err("failed to send TEON.\n");
 
 	/* 120ms delay */
 	msleep(120);

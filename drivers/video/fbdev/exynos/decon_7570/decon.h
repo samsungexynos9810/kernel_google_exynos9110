@@ -147,6 +147,7 @@ struct exynos_decon_platdata {
 	int	max_win;
 	int	default_win;
 	u32	disp_vclk;
+	u32	mif_vclk;
 	u32	disp_dvfs;
 };
 

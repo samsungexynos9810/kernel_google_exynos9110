@@ -222,12 +222,13 @@
 #define VIDTCON4(_x)				(0x0620 + ((_x) * 0x50))
 #define VIDTCON4_LINEVAL(_v)			(((_v) & 0x1fff) << 16)
 #define VIDTCON4_HOZVAL(_v)			(((_v) & 0x1fff) << 0)
-#define VIDTCONx_LINEVAL_GET(_v)		(((_v) >> 16) & 0x1fff)
-#define VIDTCONx_HOZVAL_GET(_v)			(((_v) >> 0) & 0x1fff)
 
 #define VIDTCON5(_x)				(0x09a8 + ((_x) * 0x50))
 #define VIDTCON5_LINEVAL(_v)			(((_v) & 0x1fff) << 16)
 #define VIDTCON5_HOZVAL(_v)			(((_v) & 0x1fff) << 0)
+
+#define VIDTCONx_LINEVAL_GET(_v)		(((_v) >> 16) & 0x1fff)
+#define VIDTCONx_HOZVAL_GET(_v)			(((_v) >> 0) & 0x1fff)
 
 #define LINECNT_OP_THRESHOLD(_x)		(0x0630 + ((_x) * 0x50))
 
