@@ -31,8 +31,7 @@
 
 #include "../governor.h"
 
-static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
-					unsigned long event, void *v);
+static int exynos_devfreq_tmu_notifier(struct notifier_block *nb, unsigned long event, void *v);
 static int exynos_devfreq_set_voltage(u32 *target_volt, struct exynos_devfreq_data *data);
 
 struct exynos_devfreq_init_func {
@@ -53,92 +52,78 @@ static ssize_t show_exynos_devfreq_info(struct device *dev,
 	int i;
 
 	count = snprintf(buf, PAGE_SIZE, "[Exynos DEVFREQ Data]\n"
-			"devfreq dev name : %20s\n"
-			"devfreq type     : %20d\n"
-			"Exynos SS flag   : %20u\n",
-			dev_name(data->dev), data->devfreq_type, data->ess_flag);
+			 "devfreq dev name : %20s\n"
+			 "devfreq type     : %20d\n"
+			 "Exynos SS flag   : %20u\n",
+			 dev_name(data->dev), data->devfreq_type, data->ess_flag);
 
 	count += snprintf(buf + count, PAGE_SIZE, "\n<Frequency data>\n"
-			"OPP list length  : %20u\n", data->max_state);
+			  "OPP list length  : %20u\n", data->max_state);
 	count += snprintf(buf + count, PAGE_SIZE, "freq opp table\n");
-	count += snprintf(buf + count, PAGE_SIZE,
-				"\t  idx      freq       volt\n");
+	count += snprintf(buf + count, PAGE_SIZE, "\t  idx      freq       volt\n");
 
 	for (i = 0; i < data->max_state; i++)
 		count += snprintf(buf + count, PAGE_SIZE, "\t%5u %10u %10u\n",
-				data->opp_list[i].idx, data->opp_list[i].freq,
-				data->opp_list[i].volt);
+				  data->opp_list[i].idx, data->opp_list[i].freq,
+				  data->opp_list[i].volt);
 
 	count += snprintf(buf + count, PAGE_SIZE,
-			"default_qos     : %20u\n" "initial_freq    : %20lu\n"
-			"cal_qos_max     : %20u\n" "min_freq        : %20u\n"
-			"max_freq        : %20u\n" "boot_timeout(s) : %20u\n"
-			"max_state       : %20u\n" "use_switch_clk  : %20s\n",
-			data->default_qos, data->devfreq_profile.initial_freq,
-			data->cal_qos_max, data->min_freq, data->max_freq,
-			data->boot_qos_timeout, data->max_state,
-			data->use_switch_clk ? "true" : "false");
+			  "default_qos     : %20u\n" "initial_freq    : %20lu\n"
+			  "min_freq        : %20u\n" "max_freq        : %20u\n"
+			  "boot_timeout(s) : %20u\n" "max_state       : %20u\n"
+			  "use_switch_clk  : %20s\n",
+			  data->default_qos, data->devfreq_profile.initial_freq,
+			  data->min_freq, data->max_freq, data->boot_qos_timeout, data->max_state,
+			  data->use_switch_clk ? "true" : "false");
 
 	count += snprintf(buf + count, PAGE_SIZE, "\n<Governor data>\n");
 	count += snprintf(buf + count, PAGE_SIZE,
-			"governor_name   : %20s\n" "use_get_dev     : %20s\n"
-			"polling_ms(ms)  : %20u\n",
-			data->governor_name, data->use_get_dev ? "true" : "false",
-			data->devfreq_profile.polling_ms);
+			  "governor_name   : %20s\n" "use_get_dev     : %20s\n"
+			  "polling_ms(ms)  : %20u\n",
+			  data->governor_name, data->use_get_dev ? "true" : "false",
+			  data->devfreq_profile.polling_ms);
 
 	if (data->use_get_dev) {
-		if (data->gov_type == SIMPLE_EXYNOS) {
-			count += snprintf(buf + count, PAGE_SIZE,
-					"urgentthreshold : %20u\n" "upthreshold     : %20u\n"
-					"downthreshold   : %20u\n" "idlethreshold   : %20u\n",
-					data->simple_exynos_data.urgentthreshold,
-					data->simple_exynos_data.upthreshold,
-					data->simple_exynos_data.downthreshold,
-					data->simple_exynos_data.idlethreshold);
-		} else {
-			dev_err(data->dev, "not support governor type %u\n", data->gov_type);
-			return -EINVAL;
-		}
+		/* This will be needed later */
 	}
 
 	count += snprintf(buf + count, PAGE_SIZE, "\n<Regulator data>\n"
-			"use_regulator   : %20s\n" "use_regulator_dummy: %20s\n",
-			data->use_regulator ? "true" : "false",
-			data->use_regulator_dummy ? "true" : "false");
+			  "use_regulator   : %20s\n" "use_regulator_dummy: %20s\n",
+			  data->use_regulator ? "true" : "false",
+			  data->use_regulator_dummy ? "true" : "false");
 
 	if (data->use_regulator) {
 		count += snprintf(buf + count, PAGE_SIZE,
-				"regulator_name  : %20s\n" "regulator_max_uV: %20u\n"
-				"cold_volt_offset: %20u\n" "limit_cold_volt : %20u\n"
-				"min_cold_volt   : %20u\n"
-				"use_tmu         : %20s\n" "cl_dvfs         : %20s\n",
-				data->regulator_name, data->reg_max_volt,
-				data->cold_volt_offset, data->limit_cold_volt,
-				data->min_cold_volt,
-				data->use_tmu ? "true" : "false",
-				data->use_cl_dvfs ? "true" : "false");
+				  "regulator_name  : %20s\n" "regulator_max_uV: %20u\n"
+				  "cold_volt_offset: %20u\n" "limit_cold_volt : %20u\n"
+				  "min_cold_volt   : %20u\n"
+				  "use_tmu         : %20s\n" "cl_dvfs         : %20s\n",
+				  data->regulator_name, data->reg_max_volt,
+				  data->cold_volt_offset, data->limit_cold_volt,
+				  data->min_cold_volt,
+				  data->use_tmu ? "true" : "false",
+				  data->use_cl_dvfs ? "true" : "false");
 	}
 
 	count += snprintf(buf + count, PAGE_SIZE, "\n<UM data>\n"
-			"use_um        : %20s\n", data->use_um ? "true" : "false");
+			  "use_um        : %20s\n", data->use_um ? "true" : "false");
 
 	if (data->use_um) {
 
 		count += snprintf(buf + count, PAGE_SIZE,
-				"um_type       : %20u\n" "um_count      : %20u\n",
-				data->um_data.type, data->um_data.um_count);
+				  "um_type       : %20u\n" "um_count      : %20u\n",
+				  data->um_data.type, data->um_data.um_count);
 
 		count += snprintf(buf + count, PAGE_SIZE, "um_list\n");
 		for (i = 0; i < data->um_data.um_count; i++)
-			count += snprintf(buf + count, PAGE_SIZE, "\t0x%08X\n",
-						data->um_base[i]);
+			count += snprintf(buf + count, PAGE_SIZE, "\t0x%08X\n", data->um_base[i]);
 	}
 
 	return count;
 }
 
 static ssize_t show_exynos_devfreq_get_freq(struct device *dev,
-					struct device_attribute *attr, char *buf)
+					    struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -157,7 +142,7 @@ static ssize_t show_exynos_devfreq_get_freq(struct device *dev,
 }
 
 static ssize_t show_exynos_devfreq_cmu_dump(struct device *dev,
-					struct device_attribute *attr, char *buf)
+					    struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -177,17 +162,16 @@ static ssize_t show_exynos_devfreq_cmu_dump(struct device *dev,
 }
 
 static ssize_t show_exynos_devfreq_get_delay(struct device *dev,
-					struct device_attribute *attr, char *buf)
+					     struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	ssize_t count = 0;
 
-	count += snprintf(buf, PAGE_SIZE, "set frequency delay: %d usec\n",
-						data->setfreq_delay);
+	count += snprintf(buf, PAGE_SIZE, "set frequency delay: %d usec\n", data->setfreq_delay);
 	count += snprintf(buf + count, PAGE_SIZE, "set target delay: %d usec\n",
-						data->target_delay);
+			  data->target_delay);
 
 	return count;
 }
@@ -262,7 +246,7 @@ static ssize_t store_debug_devfreq_pm_qos_min(struct device *dev,
 }
 
 static ssize_t show_exynos_devfreq_disable_pm_qos(struct device *dev,
-					struct device_attribute *attr, char *buf)
+						  struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -270,14 +254,14 @@ static ssize_t show_exynos_devfreq_disable_pm_qos(struct device *dev,
 	ssize_t count = 0;
 
 	count += snprintf(buf, PAGE_SIZE, "%s\n",
-			data->devfreq->disabled_pm_qos ? "disabled" : "enabled");
+			  data->devfreq->disabled_pm_qos ? "disabled" : "enabled");
 
 	return count;
 }
 
 static ssize_t store_exynos_devfreq_disable_pm_qos(struct device *dev,
-					struct device_attribute *attr,
-					const char *buf, size_t count)
+						   struct device_attribute *attr,
+						   const char *buf, size_t count)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -305,14 +289,12 @@ static ssize_t show_last_monitor_period(struct device *dev,
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	ssize_t count = 0;
 
-	count += snprintf(buf, PAGE_SIZE, "%u usec\n",
-				jiffies_to_usecs(data->last_monitor_period));
+	count += snprintf(buf, PAGE_SIZE, "%u usec\n", jiffies_to_usecs(data->last_monitor_period));
 
 	return count;
 }
 
-static ssize_t show_um_cur_freq(struct device *dev,
-				struct device_attribute *attr, char *buf)
+static ssize_t show_um_cur_freq(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -320,28 +302,25 @@ static ssize_t show_um_cur_freq(struct device *dev,
 	ssize_t count = 0;
 
 	count += snprintf(buf, PAGE_SIZE, "%u%%, %uKhz\n",
-				data->last_um_usage_rate, data->old_freq);
+			  data->last_um_usage_rate, data->old_freq);
 
 	return count;
 }
 
-static ssize_t show_test_cold_volt(struct device *dev,
-					struct device_attribute *attr, char *buf)
+static ssize_t show_test_cold_volt(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	ssize_t count = 0;
 
-	count += snprintf(buf, PAGE_SIZE, "%s\n",
-			data->volt_offset ? "cold" : "normal");
+	count += snprintf(buf, PAGE_SIZE, "%s\n", data->volt_offset ? "cold" : "normal");
 
 	return count;
 }
 
 static ssize_t store_test_cold_volt(struct device *dev,
-					struct device_attribute *attr,
-					const char *buf, size_t count)
+				    struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -375,7 +354,7 @@ static DEVICE_ATTR(debug_devfreq_pm_qos_min, 0640, show_debug_devfreq_pm_qos_min
 static DEVICE_ATTR(debug_devfreq_pm_qos_max, 0640, show_debug_devfreq_pm_qos_max,
 						store_debug_devfreq_pm_qos_max);
 static DEVICE_ATTR(disable_pm_qos, 0640, show_exynos_devfreq_disable_pm_qos,
-					store_exynos_devfreq_disable_pm_qos);
+		   store_exynos_devfreq_disable_pm_qos);
 static DEVICE_ATTR(last_monitor_period, 0640, show_last_monitor_period, NULL);
 static DEVICE_ATTR(um_cur_freq, 0640, show_um_cur_freq, NULL);
 static DEVICE_ATTR(test_cold_volt, 0640, show_test_cold_volt, store_test_cold_volt);
@@ -395,13 +374,12 @@ static struct attribute *exynos_devfreq_sysfs_entries[] = {
 };
 
 static struct attribute_group exynos_devfreq_attr_group = {
-        .name   = "exynos_data",
-        .attrs  = exynos_devfreq_sysfs_entries,
+	.name = "exynos_data",
+	.attrs = exynos_devfreq_sysfs_entries,
 };
 #endif
 
-static ssize_t show_devfreq_pm_qos_min(struct device *dev,
-					struct device_attribute *attr, char *buf)
+static ssize_t show_devfreq_pm_qos_min(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
@@ -434,6 +412,138 @@ static ssize_t store_devfreq_pm_qos_min(struct device *dev,
 }
 
 static DEVICE_ATTR(devfreq_pm_qos_min, 0640, show_devfreq_pm_qos_min, store_devfreq_pm_qos_min);
+
+static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
+{
+	const char *cp;
+	int i;
+	int ntokens = 1;
+	unsigned int *tokenized_data;
+	int err = -EINVAL;
+
+	cp = buf;
+	while ((cp = strpbrk(cp + 1, " :")))
+		ntokens++;
+
+	if (!(ntokens & 0x1))
+		goto err;
+
+	tokenized_data = kmalloc(ntokens * sizeof(unsigned int), GFP_KERNEL);
+	if (!tokenized_data) {
+		err = -ENOMEM;
+		goto err;
+	}
+
+	cp = buf;
+	i = 0;
+	while (i < ntokens) {
+		if (sscanf(cp, "%u", &tokenized_data[i++]) != 1)
+			goto err_kfree;
+
+		cp = strpbrk(cp, " :");
+		if (!cp)
+			break;
+		cp++;
+	}
+
+	if (i != ntokens)
+		goto err_kfree;
+
+	*num_tokens = ntokens;
+	return tokenized_data;
+
+err_kfree:
+	kfree(tokenized_data);
+err:
+	return ERR_PTR(err);
+}
+
+static ssize_t show_use_delay_time(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	ssize_t count = 0;
+
+	mutex_lock(&data->devfreq->lock);
+	count += snprintf(buf, PAGE_SIZE, "%s\n",
+			  (data->simple_interactive_data.use_delay_time) ? "true" : "false");
+	mutex_unlock(&data->devfreq->lock);
+	return count;
+}
+
+static ssize_t store_use_delay_time(struct device *dev,
+				    struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	int ret;
+
+	mutex_lock(&data->devfreq->lock);
+	ret = sscanf(buf, "%d", (int *)&data->simple_interactive_data.use_delay_time);
+	mutex_unlock(&data->devfreq->lock);
+	if (ret != 1)
+		return -EINVAL;
+
+	return count;
+}
+
+static ssize_t show_delay_time(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	ssize_t count = 0;
+	int i;
+
+	mutex_lock(&data->devfreq->lock);
+	for (i = 0; i < data->simple_interactive_data.ndelay_time; i++) {
+		count += snprintf(buf + count, PAGE_SIZE, "%d%s",
+				data->simple_interactive_data.delay_time[i],
+				(i == data->simple_interactive_data.ndelay_time - 1) ?
+				"" : (i % 2) ? ":" : " ");
+	}
+	count += snprintf(buf + count, PAGE_SIZE, "\n");
+	mutex_unlock(&data->devfreq->lock);
+	return count;
+}
+
+static ssize_t store_delay_time(struct device *dev,
+				struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct device *parent = dev->parent;
+	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
+	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
+	int ntokens;
+	int *new_delay_time = NULL;
+
+	new_delay_time = get_tokenized_data(buf , &ntokens);
+	if (IS_ERR(new_delay_time))
+		return PTR_RET(new_delay_time);
+
+	mutex_lock(&data->devfreq->lock);
+	kfree(data->simple_interactive_data.delay_time);
+	data->simple_interactive_data.delay_time = new_delay_time;
+	data->simple_interactive_data.ndelay_time = ntokens;
+	mutex_unlock(&data->devfreq->lock);
+
+	return count;
+}
+
+static DEVICE_ATTR(use_delay_time, 0640, show_use_delay_time, store_use_delay_time);
+static DEVICE_ATTR(delay_time, 0640, show_delay_time, store_delay_time);
+
+static struct attribute *devfreq_delay_time_sysfs_entries[] = {
+	&dev_attr_use_delay_time.attr,
+	&dev_attr_delay_time.attr,
+	NULL,
+};
+
+static struct attribute_group devfreq_delay_time_attr_group = {
+	.name = "interactive",
+	.attrs = devfreq_delay_time_sysfs_entries,
+};
 
 #ifdef CONFIG_OF
 #if defined(CONFIG_ECT)
@@ -474,8 +584,11 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 #if defined(CONFIG_ECT)
 	const char *devfreq_domain_name;
 #endif
+	const char *buf;
+	const char *use_delay_time;
+	int ntokens;
 	int not_using_ect = true;
-	u32 freq_array[7];
+	u32 freq_array[6];
 	u32 volt_array[4];
 
 	if (!np)
@@ -536,16 +649,15 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	}
 
 	if (of_property_read_u32_array(np, "freq_info", (u32 *)&freq_array,
-					(size_t)(ARRAY_SIZE(freq_array))))
+				       (size_t)(ARRAY_SIZE(freq_array))))
 		return -ENODEV;
 
 	data->devfreq_profile.initial_freq = freq_array[0];
 	data->default_qos = freq_array[1];
 	data->devfreq_profile.suspend_freq = freq_array[2];
-	data->cal_qos_max = freq_array[3];
-	data->min_freq = freq_array[4];
-	data->max_freq = freq_array[5];
-	data->reboot_freq = freq_array[6];
+	data->min_freq = freq_array[3];
+	data->max_freq = freq_array[4];
+	data->reboot_freq = freq_array[5];
 
 	if (of_property_read_string(np, "use_get_dev", &use_get_dev))
 		return -ENODEV;
@@ -565,30 +677,42 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	if (of_property_read_string(np, "gov_name", &data->governor_name))
 		return -ENODEV;
 
-	if (!strcmp(data->governor_name, "simple_exynos")) {
-		data->gov_type = SIMPLE_EXYNOS;
+	if (!strcmp(data->governor_name, "interactive")) {
+		data->gov_type = SIMPLE_INTERACTIVE;
 	} else {
-		dev_err(data->dev, "invalid governor name (%s)\n",
-					data->governor_name);
+		dev_err(data->dev, "invalid governor name (%s)\n", data->governor_name);
 		return -EINVAL;
 	}
 
-	if (data->gov_type == SIMPLE_EXYNOS) {
-		if (of_property_read_u32(np, "urgent_thres",
-				&data->simple_exynos_data.urgentthreshold))
+	if (data->gov_type == SIMPLE_INTERACTIVE) {
+		if (of_property_read_string(np, "use_delay_time", &use_delay_time))
 			return -ENODEV;
 
-		if (of_property_read_u32(np, "upthreshold",
-				&data->simple_exynos_data.upthreshold))
-			return -ENODEV;
+		if (!strcmp(use_delay_time, "true")) {
+			data->simple_interactive_data.use_delay_time = true;
+		} else if (!strcmp(use_delay_time, "false")) {
+			data->simple_interactive_data.use_delay_time = false;
+		} else {
+			dev_err(data->dev, "invalid use_delay_time : (%s)\n", use_delay_time);
+			return -EINVAL;
+		}
 
-		if (of_property_read_u32(np, "downthreshold",
-				&data->simple_exynos_data.downthreshold))
-			return -ENODEV;
-
-		if (of_property_read_u32(np, "idlethreshold",
-				&data->simple_exynos_data.idlethreshold))
-			return -ENODEV;
+		if (data->simple_interactive_data.use_delay_time) {
+			if (of_property_read_string(np, "delay_time_list", &buf)) {
+				data->simple_interactive_data.delay_time =
+					kmalloc(sizeof(unsigned int), GFP_KERNEL);
+				*(data->simple_interactive_data.delay_time)
+					= DEFAULT_DELAY_TIME;
+				data->simple_interactive_data.ndelay_time =
+					DEFAULT_NDELAY_TIME;
+				dev_info(data->dev, "set default delay time %d ms\n",
+						DEFAULT_DELAY_TIME);
+			} else {
+				data->simple_interactive_data.delay_time =
+					get_tokenized_data(buf, &ntokens);
+				data->simple_interactive_data.ndelay_time = ntokens;
+			}
+		}
 	} else {
 		dev_err(data->dev, "not support governor type %u\n", data->gov_type);
 		return -EINVAL;
@@ -611,7 +735,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 			return -ENODEV;
 
 		if (of_property_read_u32_array(np, "volt_info", (u32 *)&volt_array,
-						(size_t)(ARRAY_SIZE(volt_array))))
+					       (size_t)(ARRAY_SIZE(volt_array))))
 			return -ENODEV;
 
 		data->cold_volt_offset = volt_array[0];
@@ -628,15 +752,14 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 			data->use_regulator_dummy = false;
 		} else {
 			dev_err(data->dev, "invalid use_regulator_dummy string (%s)\n",
-							use_regulator_dummy);
+				use_regulator_dummy);
 			return -EINVAL;
 		}
 	}
 
 	if (of_property_read_u32(np, "boot_qos_timeout", &data->boot_qos_timeout)) {
 		data->boot_qos_timeout = 40;	/* dafault timeout is 40 second */
-		dev_info(data->dev, "set default boot timeout %u second\n",
-					data->boot_qos_timeout);
+		dev_info(data->dev, "set default boot timeout %u second\n", data->boot_qos_timeout);
 	}
 
 	if (of_property_read_string(np, "use_tmu", &use_tmu))
@@ -693,7 +816,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 			return -ENODEV;
 
 		if (of_property_read_u32_array(np, "um_list", (u32 *)&data->um_base,
-					(size_t)(data->um_data.um_count)))
+					       (size_t)(data->um_data.um_count)))
 			return -ENODEV;
 
 		data->um_data.um_list = kzalloc(sizeof(struct um_addr) *
@@ -705,7 +828,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 
 		for (i = 0; i < data->um_data.um_count; i++) {
 			dev_info(data->dev, "um list.%d : 0x%08X\n", i, data->um_base[i]);
-			base = (phys_addr_t)data->um_base[i];
+			base = (phys_addr_t) data->um_base[i];
 			data->um_data.um_list[i].base = (void __iomem *)base;
 		}
 	}
@@ -720,7 +843,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfrq_
 #endif
 
 int register_exynos_devfreq_init_prepare(enum exynos_devfreq_type type,
-				int (*func)(struct exynos_devfreq_data *))
+					 int (*func) (struct exynos_devfreq_data *))
 {
 	if (type >= DEVFREQ_TYPE_END) {
 		pr_err("%s: unsupport devfreq type : %d\n", __func__, type);
@@ -732,17 +855,16 @@ int register_exynos_devfreq_init_prepare(enum exynos_devfreq_type type,
 	return 0;
 }
 
-s32 exynos_devfreq_get_opp_idx(struct exynos_devfreq_opp_table *table,
-				unsigned int size, u32 freq)
+s32 exynos_devfreq_get_opp_idx(struct exynos_devfreq_opp_table *table, unsigned int size, u32 freq)
 {
-        int i;
+	int i;
 
-        for (i = 0; i < size; ++i) {
-                if (table[i].freq == freq)
-                        return i;
-        }
+	for (i = 0; i < size; ++i) {
+		if (table[i].freq == freq)
+			return i;
+	}
 
-        return -ENODEV;
+	return -ENODEV;
 }
 
 int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
@@ -766,7 +888,7 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 			data->vdd = regulator_get(NULL, data->regulator_name);
 			if (IS_ERR(data->vdd)) {
 				dev_err(data->dev, "%s: failed get regulator(%s)\n",
-						__func__, data->regulator_name);
+					__func__, data->regulator_name);
 				ret = -ENODEV;
 				goto out;
 			}
@@ -786,8 +908,9 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 
 			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
-				dev_err(data->dev, "failed set voltage for sync voltage (%d:%luKhz:%uuV)\n",
-						type, freq, data->new_volt);
+				dev_err(data->dev,
+					"failed set voltage for sync voltage (%d:%luKhz:%uuV)\n",
+					type, freq, data->new_volt);
 				goto out;
 			}
 
@@ -798,7 +921,7 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 			ret = regulator_set_voltage(data->vdd_dummy, 1, data->reg_max_volt);
 			if (ret) {
 				dev_err(data->dev, "failed set voltage for dummy regulator : %s\n",
-						data->regulator_name);
+					data->regulator_name);
 				goto out;
 			}
 		}
@@ -831,8 +954,7 @@ static enum volt_order_type exynos_devfreq_set_volt_order(struct exynos_devfreq_
 	return order;
 }
 
-static u32 exynos_devfreq_get_limit_voltage(u32 voltage,
-					struct exynos_devfreq_data *data)
+static u32 exynos_devfreq_get_limit_voltage(u32 voltage, struct exynos_devfreq_data *data)
 {
 	if (data->limit_cold_volt) {
 		if (voltage > data->limit_cold_volt)
@@ -843,8 +965,7 @@ static u32 exynos_devfreq_get_limit_voltage(u32 voltage,
 	}
 
 	if (data->min_cold_volt) {
-		if (data->volt_offset &&
-			(voltage + data->volt_offset) < data->min_cold_volt)
+		if (data->volt_offset && (voltage + data->volt_offset) < data->min_cold_volt)
 			return data->min_cold_volt;
 	}
 
@@ -871,7 +992,7 @@ static int exynos_devfreq_set_voltage(u32 *target_volt, struct exynos_devfreq_da
 	ret = regulator_set_voltage(data->vdd, *target_volt, data->reg_max_volt);
 	if (ret)
 		dev_err(data->dev, "failed set voltage : %s, %uuV\n",
-				data->regulator_name, *target_volt);
+			data->regulator_name, *target_volt);
 
 	if (data->ops.set_voltage_post)
 		data->ops.set_voltage_post(data);
@@ -921,11 +1042,10 @@ static int exynos_init_freq_table(struct exynos_devfreq_data *data)
 	return 0;
 }
 
-static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
-					unsigned long event, void *v)
+static int exynos_devfreq_tmu_notifier(struct notifier_block *nb, unsigned long event, void *v)
 {
 	struct exynos_devfreq_data *data = container_of(nb, struct exynos_devfreq_data,
-								tmu_notifier);
+							tmu_notifier);
 	struct dev_pm_opp *target_opp;
 	unsigned long freq = 0;
 	u32 *on = v;
@@ -967,7 +1087,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 		ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 		if (ret) {
 			dev_err(data->dev, "failed set voltage for low temp (%uuV:%uuV)\n",
-					data->old_volt, data->volt_offset);
+				data->old_volt, data->volt_offset);
 			ret = NOTIFY_BAD;
 			goto out2;
 		}
@@ -994,7 +1114,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 		ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 		if (ret) {
 			dev_err(data->dev, "failed set voltage from low temp (%uuV:%uuV)\n",
-					data->old_volt, data->volt_offset);
+				data->old_volt, data->volt_offset);
 			ret = NOTIFY_BAD;
 			goto out2;
 		}
@@ -1002,7 +1122,7 @@ static int exynos_devfreq_tmu_notifier(struct notifier_block *nb,
 		data->old_volt = data->new_volt;
 	}
 
-out2:
+ out2:
 	if (data->use_cl_dvfs && !(*on)) {
 		if (data->ops.cl_dvfs_start) {
 			ret = data->ops.cl_dvfs_start(data->dev);
@@ -1020,11 +1140,10 @@ out:
 	return ret;
 }
 
-static int exynos_devfreq_reboot_notifier(struct notifier_block *nb,
-					unsigned long val, void *v)
+static int exynos_devfreq_reboot_notifier(struct notifier_block *nb, unsigned long val, void *v)
 {
 	struct exynos_devfreq_data *data = container_of(nb, struct exynos_devfreq_data,
-								reboot_notifier);
+							reboot_notifier);
 
 	if (pm_qos_request_active(&data->default_pm_qos_min))
 		pm_qos_update_request(&data->default_pm_qos_min, data->reboot_freq);
@@ -1075,8 +1194,7 @@ err:
 	return NOTIFY_BAD;
 }
 
-static int exynos_devfreq_notifier(struct notifier_block *nb,
-					unsigned long val, void *v)
+static int exynos_devfreq_notifier(struct notifier_block *nb, unsigned long val, void *v)
 {
 	struct devfreq_notifier_block *um_nb = container_of(nb, struct devfreq_notifier_block, nb);
 	struct device *parent = um_nb->df->dev.parent;
@@ -1101,8 +1219,7 @@ static int exynos_devfreq_notifier(struct notifier_block *nb,
 	return NOTIFY_OK;
 }
 
-static int exynos_devfreq_target(struct device *dev,
-				unsigned long *target_freq, u32 flags)
+static int exynos_devfreq_target(struct device *dev, unsigned long *target_freq, u32 flags)
 {
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
@@ -1137,8 +1254,7 @@ static int exynos_devfreq_target(struct device *dev,
 	target_volt = dev_pm_opp_get_voltage(target_opp);
 	rcu_read_unlock();
 
-	target_idx = exynos_devfreq_get_opp_idx(data->opp_list, data->max_state,
-							*target_freq);
+	target_idx = exynos_devfreq_get_opp_idx(data->opp_list, data->max_state, *target_freq);
 	if (target_idx < 0) {
 		ret = -EINVAL;
 		goto out;
@@ -1152,8 +1268,8 @@ static int exynos_devfreq_target(struct device *dev,
 		goto out;
 
 	dev_dbg(dev, "LV_%d, %uKhz, %uuV ======> LV_%d, %uKhz, %uuV\n",
-			data->old_idx, data->old_freq, data->old_volt,
-			data->new_idx, data->new_freq, data->new_volt);
+		data->old_idx, data->old_freq, data->old_volt,
+		data->new_idx, data->new_freq, data->new_volt);
 
 	/* calcuration to voltage set ordering */
 	volt_order = exynos_devfreq_set_volt_order(data);
@@ -1173,7 +1289,7 @@ static int exynos_devfreq_target(struct device *dev,
 	if (data->use_switch_clk) {
 		if (data->ops.get_switch_freq) {
 			ret = data->ops.get_switch_freq(data->dev, data->old_freq,
-					data->new_freq, &data->switch_freq);
+							data->new_freq, &data->switch_freq);
 			if (ret) {
 				dev_err(dev, "failed get switch frequency\n");
 				goto out;
@@ -1185,8 +1301,10 @@ static int exynos_devfreq_target(struct device *dev,
 		}
 
 		if (data->ops.get_switch_voltage) {
-			ret = data->ops.get_switch_voltage(data->dev, data->old_freq, data->new_freq,
-					data->old_volt, data->new_volt, &data->switch_volt);
+			ret =
+			    data->ops.get_switch_voltage(data->dev, data->old_freq, data->new_freq,
+							 data->old_volt, data->new_volt,
+							 &data->switch_volt);
 			if (ret) {
 				dev_err(dev, "failed get switch voltage\n");
 				goto out;
@@ -1226,7 +1344,8 @@ static int exynos_devfreq_target(struct device *dev,
 
 		if (data->ops.change_to_switch_freq) {
 			ret = data->ops.change_to_switch_freq(dev, data->sw_clk,
-					switch_freq, data->old_freq, &data->new_freq);
+							      switch_freq, data->old_freq,
+							      &data->new_freq);
 			if (ret) {
 				dev_err(dev, "failed change to switch frequency\n");
 				goto out;
@@ -1245,7 +1364,7 @@ static int exynos_devfreq_target(struct device *dev,
 			ret = data->ops.set_freq(dev, data->new_freq, data->clk);
 			if (ret) {
 				dev_err(dev, "failed set frequency (%uKhz --> %uKhz)\n",
-						data->old_freq, data->new_freq);
+					data->old_freq, data->new_freq);
 				goto out;
 			}
 		}
@@ -1253,14 +1372,15 @@ static int exynos_devfreq_target(struct device *dev,
 		if (switch_volt < data->new_volt) {
 			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
-				dev_err(dev, "failed set voltage before restore from switch freq\n");
+				dev_err(dev,
+					"failed set voltage before restore from switch freq\n");
 				goto out;
 			}
 		}
 
 		if (data->ops.restore_from_switch_freq) {
 			ret = data->ops.restore_from_switch_freq(dev, data->clk,
-					data->old_freq, data->new_freq);
+								 data->old_freq, data->new_freq);
 			if (ret) {
 				dev_err(dev, "failed restore from switch frequency\n");
 				goto out;
@@ -1278,7 +1398,7 @@ static int exynos_devfreq_target(struct device *dev,
 		do_gettimeofday(&after_setfreq);
 
 		setfreq_time = (after_setfreq.tv_sec - before_setfreq.tv_sec) * USEC_PER_SEC +
-			(after_setfreq.tv_usec - before_setfreq.tv_usec);
+		    (after_setfreq.tv_usec - before_setfreq.tv_usec);
 
 		if (data->ops.set_freq_post) {
 			ret = data->ops.set_freq_post(data);
@@ -1292,8 +1412,8 @@ static int exynos_devfreq_target(struct device *dev,
 			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage (%uKhz:%uuV --> %uKhz:%uuV)\n",
-						data->old_freq, data->old_volt,
-						data->new_freq, data->new_volt);
+					data->old_freq, data->old_volt,
+					data->new_freq, data->new_volt);
 				goto out;
 			}
 		}
@@ -1311,14 +1431,14 @@ static int exynos_devfreq_target(struct device *dev,
 			ret = data->ops.set_freq(dev, data->new_freq, data->clk);
 			if (ret) {
 				dev_err(dev, "failed set frequency (%uKhz --> %uKhz)\n",
-						data->old_freq, data->new_freq);
+					data->old_freq, data->new_freq);
 				goto out;
 			}
 		}
 		do_gettimeofday(&after_setfreq);
 
 		setfreq_time = (after_setfreq.tv_sec - before_setfreq.tv_sec) * USEC_PER_SEC +
-			(after_setfreq.tv_usec - before_setfreq.tv_usec);
+		    (after_setfreq.tv_usec - before_setfreq.tv_usec);
 
 		if (data->ops.set_freq_post) {
 			ret = data->ops.set_freq_post(data);
@@ -1332,8 +1452,8 @@ static int exynos_devfreq_target(struct device *dev,
 			ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 			if (ret) {
 				dev_err(dev, "failed set voltage (%uKhz:%uuV --> %uKhz:%uuV)\n",
-						data->old_freq, data->old_volt,
-						data->new_freq, data->new_volt);
+					data->old_freq, data->old_volt,
+					data->new_freq, data->new_volt);
 				goto out;
 			}
 		}
@@ -1361,26 +1481,20 @@ out:
 	do_gettimeofday(&after_target);
 
 	target_time = (after_target.tv_sec - before_target.tv_sec) * USEC_PER_SEC +
-			(after_target.tv_usec - before_target.tv_usec);
+	    (after_target.tv_usec - before_target.tv_usec);
 
 	data->setfreq_delay = setfreq_time;
 	data->target_delay = target_time;
 
-	dev_dbg(dev, "target time: %d usec, setfreq time: %d usec\n",
-			target_time, setfreq_time);
+	dev_dbg(dev, "target time: %d usec, setfreq time: %d usec\n", target_time, setfreq_time);
 
 	return ret;
 }
 
-static int exynos_devfreq_get_dev_status(struct device *dev,
-					struct devfreq_dev_status *stat)
+static int exynos_devfreq_get_dev_status(struct device *dev, struct devfreq_dev_status *stat)
 {
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
-	struct devfreq_simple_exynos_data *simple_exynos_data;
-	s32 cur_idx = -1;
-	int above_idx = 0;
-	int below_idx = data->max_state - 1;
 
 	if (data->devfreq_disabled)
 		return -EAGAIN;
@@ -1391,27 +1505,6 @@ static int exynos_devfreq_get_dev_status(struct device *dev,
 	}
 
 	stat->current_frequency = data->devfreq->previous_freq;
-
-	if (data->gov_type == SIMPLE_EXYNOS) {
-		simple_exynos_data = (struct devfreq_simple_exynos_data *)data->governor_data;
-
-		cur_idx = exynos_devfreq_get_opp_idx(data->opp_list, data->max_state,
-						(u32)stat->current_frequency);
-		if (cur_idx < 0)
-			return -EAGAIN;
-
-		above_idx = cur_idx - 1;
-		below_idx = cur_idx + 1;
-
-		if (above_idx < 0)
-			above_idx = 0;
-		if (below_idx >= data->max_state)
-			below_idx = data->max_state - 1;
-
-		simple_exynos_data->above_freq = data->opp_list[above_idx].freq;
-		simple_exynos_data->below_freq = data->opp_list[below_idx].freq;
-	}
-
 	stat->busy_time = data->um_data.val_pmcnt;
 	stat->total_time = data->um_data.val_ccnt;
 
@@ -1511,11 +1604,10 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	if (data->use_get_dev)
 		data->devfreq_profile.get_dev_status = exynos_devfreq_get_dev_status;
 
-	if (data->gov_type == SIMPLE_EXYNOS) {
-		data->simple_exynos_data.pm_qos_class = data->pm_qos_class;
-		data->simple_exynos_data.pm_qos_class_max = data->pm_qos_class_max;
-		data->simple_exynos_data.cal_qos_max = data->cal_qos_max;
-		data->governor_data = &data->simple_exynos_data;
+	if (data->gov_type == SIMPLE_INTERACTIVE) {
+		data->simple_interactive_data.pm_qos_class = data->pm_qos_class;
+		data->simple_interactive_data.pm_qos_class_max = data->pm_qos_class_max;
+		data->governor_data = &data->simple_interactive_data;
 	}
 
 	if (exynos_devfreq_init[data->devfreq_type].init_prepare == NULL) {
@@ -1525,8 +1617,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	} else {
 		ret = exynos_devfreq_init[data->devfreq_type].init_prepare(data);
 		if (ret) {
-			dev_err(data->dev, "failed devfreq(%d) init prepare\n",
-						data->devfreq_type);
+			dev_err(data->dev, "failed devfreq(%d) init prepare\n", data->devfreq_type);
 			goto err_init_prepare;
 		}
 	}
@@ -1570,15 +1661,15 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	if (data->use_regulator_dummy) {
 		data->vdd_dummy = regulator_get(NULL, data->regulator_name);
 		if (IS_ERR(data->vdd_dummy)) {
-			dev_err(data->dev, "failed get dummy regulator(%s)\n", data->regulator_name);
+			dev_err(data->dev, "failed get dummy regulator(%s)\n",
+				data->regulator_name);
 			ret = -ENODEV;
 			goto err_regulator_dummy;
 		}
 	}
 
 	data->old_freq = data->devfreq_profile.initial_freq;
-	data->old_idx = exynos_devfreq_get_opp_idx(data->opp_list, data->max_state,
-							data->old_freq);
+	data->old_idx = exynos_devfreq_get_opp_idx(data->opp_list, data->max_state, data->old_freq);
 	if (data->old_idx < 0) {
 		ret = -EINVAL;
 		goto err_old_idx;
@@ -1596,12 +1687,13 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	data->new_volt = dev_pm_opp_get_voltage(init_opp);
 	rcu_read_unlock();
 
-	dev_info(data->dev, "Initial Frequency: %ld, Initial Voltage: %d\n", init_freq, data->new_volt);
+	dev_info(data->dev, "Initial Frequency: %ld, Initial Voltage: %d\n", init_freq,
+		 data->new_volt);
 
 	ret = exynos_devfreq_set_voltage(&data->new_volt, data);
 	if (ret) {
 		dev_err(data->dev, "failed set voltage in probe (%ukhz:%uuV)\n",
-				data->old_freq, data->new_volt);
+			data->old_freq, data->new_volt);
 		goto err_set_voltage;
 	}
 
@@ -1611,7 +1703,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	data->devfreq_disabled = true;
 
 	data->devfreq = devfreq_add_device(data->dev, &data->devfreq_profile,
-					data->governor_name, data->governor_data);
+					   data->governor_name, data->governor_data);
 	if (IS_ERR(data->devfreq)) {
 		dev_err(data->dev, "failed devfreq device added\n");
 		ret = -EINVAL;
@@ -1624,12 +1716,11 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	pm_qos_add_request(&data->sys_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
 	pm_qos_add_request(&data->debug_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
-	pm_qos_add_request(&data->debug_pm_qos_max, (int)data->pm_qos_class_max,
-			data->max_freq);
+	pm_qos_add_request(&data->debug_pm_qos_max, (int)data->pm_qos_class_max, data->max_freq);
 #endif
 	if (data->pm_qos_class_max)
 		pm_qos_add_request(&data->default_pm_qos_max, (int)data->pm_qos_class_max,
-								data->max_freq);
+				   data->max_freq);
 	pm_qos_add_request(&data->default_pm_qos_min, (int)data->pm_qos_class, data->default_qos);
 	pm_qos_add_request(&data->boot_pm_qos, (int)data->pm_qos_class, data->default_qos);
 
@@ -1690,22 +1781,22 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_pm_noti;
 	}
 
-	ret = sysfs_create_file(&data->devfreq->dev.kobj,
-			&dev_attr_devfreq_pm_qos_min.attr);
+	ret = sysfs_create_file(&data->devfreq->dev.kobj, &dev_attr_devfreq_pm_qos_min.attr);
 	if (ret)
 		dev_warn(data->dev, "failed create sysfs for devfreq pm_qos_min\n");
 
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
-	ret = sysfs_create_group(&data->devfreq->dev.kobj,
-				&exynos_devfreq_attr_group);
+	ret = sysfs_create_group(&data->devfreq->dev.kobj, &exynos_devfreq_attr_group);
 	if (ret)
 		dev_warn(data->dev, "failed create sysfs for devfreq data\n");
 #endif
+	ret = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_delay_time_attr_group);
+	if (ret)
+		dev_warn(data->dev, "failed create sysfs for devfreq data\n");
 
 	data->devfreq_disabled = false;
-
 	pm_qos_update_request_timeout(&data->boot_pm_qos, data->devfreq_profile.initial_freq,
-					data->boot_qos_timeout * USEC_PER_SEC);
+				      data->boot_qos_timeout * USEC_PER_SEC);
 
 	dev_info(data->dev, "devfreq is initialized!!\n");
 
@@ -1772,12 +1863,12 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 {
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 
-	sysfs_remove_file(&data->devfreq->dev.kobj,
-			&dev_attr_devfreq_pm_qos_min.attr);
+	sysfs_remove_file(&data->devfreq->dev.kobj, &dev_attr_devfreq_pm_qos_min.attr);
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
-	sysfs_remove_group(&data->devfreq->dev.kobj,
-				&exynos_devfreq_attr_group);
+	sysfs_remove_group(&data->devfreq->dev.kobj, &exynos_devfreq_attr_group);
 #endif
+	sysfs_remove_group(&data->devfreq->dev.kobj, &devfreq_delay_time_attr_group);
+
 	unregister_pm_notifier(&data->pm_notifier);
 	unregister_reboot_notifier(&data->reboot_notifier);
 	devfreq_unregister_opp_notifier(data->dev, data->devfreq);
@@ -1824,34 +1915,36 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 
 static struct platform_device_id exynos_devfreq_driver_ids[] = {
 	{
-		.name		= EXYNOS_DEVFREQ_MODULE_NAME,
-	},
+	 .name = EXYNOS_DEVFREQ_MODULE_NAME,
+	 },
 	{},
 };
+
 MODULE_DEVICE_TABLE(platform, exynos_devfreq_driver_ids);
 
 static const struct of_device_id exynos_devfreq_match[] = {
 	{
-		.compatible	= "samsung,exynos-devfreq",
-	},
+	 .compatible = "samsung,exynos-devfreq",
+	 },
 	{},
 };
+
 MODULE_DEVICE_TABLE(of, exynos_devfreq_match);
 
 static const struct dev_pm_ops exynos_devfreq_pm_ops = {
-	.suspend	= exynos_devfreq_suspend,
-	.resume		= exynos_devfreq_resume,
+	.suspend = exynos_devfreq_suspend,
+	.resume = exynos_devfreq_resume,
 };
 
 static struct platform_driver exynos_devfreq_driver = {
-	.probe		= exynos_devfreq_probe,
-	.remove		= exynos_devfreq_remove,
-	.id_table	= exynos_devfreq_driver_ids,
+	.probe = exynos_devfreq_probe,
+	.remove = exynos_devfreq_remove,
+	.id_table = exynos_devfreq_driver_ids,
 	.driver = {
-		.name	= EXYNOS_DEVFREQ_MODULE_NAME,
-		.owner	= THIS_MODULE,
-		.pm	= &exynos_devfreq_pm_ops,
-		.of_match_table	= exynos_devfreq_match,
+		.name = EXYNOS_DEVFREQ_MODULE_NAME,
+		.owner = THIS_MODULE,
+		.pm = &exynos_devfreq_pm_ops,
+		.of_match_table = exynos_devfreq_match,
 	},
 };
 

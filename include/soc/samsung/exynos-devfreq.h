@@ -26,8 +26,7 @@ enum exynos_devfreq_type {
 };
 
 enum exynos_devfreq_gov_type {
-	SIMPLE_ONDEMAND = 0,
-	SIMPLE_EXYNOS,
+	SIMPLE_INTERACTIVE = 0,
 	GOV_TYPE_END
 };
 
@@ -140,13 +139,9 @@ struct exynos_devfreq_data {
 	const char				*governor_name;
 	u32					cal_qos_max;
 	void					*governor_data;
-#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_EXYNOS)
-	struct devfreq_simple_exynos_data	simple_exynos_data;
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_INTERACTIVE)
+	struct devfreq_simple_interactive_data	simple_interactive_data;
 #endif
-#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)
-	struct devfreq_simple_ondemand_data	simple_ondemand_data;
-#endif
-
 	s32					old_idx;
 	s32					new_idx;
 	u32					old_freq;

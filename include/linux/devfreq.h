@@ -16,6 +16,8 @@
 #include <linux/device.h>
 #include <linux/notifier.h>
 #include <linux/pm_opp.h>
+#include <linux/kthread.h>
+#include <linux/timer.h>
 
 #define DEVFREQ_NAME_LEN 16
 
@@ -222,7 +224,8 @@ static inline int devfreq_update_stats(struct devfreq *df)
 {
 	return df->profile->get_dev_status(df->dev.parent, &df->last_status);
 }
-#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND) || IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND) || IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_USAGE)\
+	|| IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_INTERACTIVE)
 struct devfreq_notifier_block {
 	struct notifier_block nb;
 	struct devfreq *df;
@@ -277,6 +280,26 @@ struct devfreq_simple_exynos_data {
 	int pm_qos_class;
 	unsigned long cal_qos_max;
 	bool en_monitoring;
+	struct devfreq_notifier_block nb;
+	struct devfreq_notifier_block nb_max;
+};
+#endif
+
+#if IS_ENABLED(CONFIG_DEVFREQ_GOV_SIMPLE_INTERACTIVE)
+#define DEFAULT_DELAY_TIME		10 /* msec */
+#define DEFAULT_NDELAY_TIME		1
+#define DELAY_TIME_RANGE		10
+
+struct devfreq_simple_interactive_data {
+	bool use_delay_time;
+	int *delay_time;
+	int ndelay_time;
+	unsigned long prev_freq;
+	u64 changed_time;
+	struct timer_list freq_timer;
+	struct task_struct *change_freq_task;
+	int pm_qos_class;
+	int pm_qos_class_max;
 	struct devfreq_notifier_block nb;
 	struct devfreq_notifier_block nb_max;
 };
