@@ -153,6 +153,7 @@
 #define IOC_GET_VERSION	_IOR('K', 0, unsigned char *)
 #define IOC_ACCEL_ADJ	_IOR('K', 2, unsigned char *)
 #define IOC_POWER_WARN	_IOR('K', 3, unsigned short *)
+#define IOC_WAIT_BL_0	_IOR('K', 4, void *)
 
 #define SPI_DATA_MAX (SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE + SUB_COM_DATA_SIZE_GETDATA + (SUB_COM_MAX_PACKET * ( SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE )))
 #define HEADER_DATA_SIZE ( SUB_COM_TYPE_SIZE + SUB_COM_ID_SIZE +SUB_COM_HEAD_SIZE_SETDATA )
