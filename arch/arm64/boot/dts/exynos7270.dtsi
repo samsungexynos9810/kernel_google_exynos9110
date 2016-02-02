@@ -858,7 +858,7 @@
 		clock-names = "dsim_pclk", "dphy_escclk", "dphy_byteclk";
 
 		/* number of data lanes in use */
-		data_lane_cnt = <4>;
+		data_lane_cnt = <1>;
 	};
 
 	decon_0: decon_fb@14830000 {
@@ -885,7 +885,7 @@
 		n_sink_pad = <3>;
 		n_src_pad = <1>;
 		default_win = <0>;
-		trig_mode = <1>;        /* 0: hw trigger, 1: sw trigger */
+		trig_mode = <0>;        /* 0: hw trigger, 1: sw trigger */
 		dsi_mode = <0>;         /* 0: single dsi, 1: dual dsi */
 
 		pinctrl-names = "decon_te_on", "decon_te_off";

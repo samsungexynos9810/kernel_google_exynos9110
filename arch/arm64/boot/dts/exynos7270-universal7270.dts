@@ -175,10 +175,14 @@
 	};
 
 	decon_fb@14830000 {
+		/* HW TE */
 		gpios = <&gpe0 2 0xf>;
-		psr_mode = <2>; /* 0: video mode, 1: DP command mode, 2: MIPI command mode */
-		/* vclk = 100Mhz */
-		disp-vclk = <83000000>;
+		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
+		psr_mode = <2>;
+		/* vclk_mif = 140MHz */
+		mif-vclk = <140000000>;
+		/* vclk = 20 Mhz */
+		disp-vclk = <20000000>;
 		/* aclk = 208Mhz */
 		disp-dvfs = <208000000>;
 		status = "okay";
@@ -192,21 +196,25 @@
 	};
 
 	s6e36w1x01: s6e36w1x01_custom {
-		mode = <2>; /* 0: video mode, 1: DP command mode, 2: MIPI command mode */
-		/* custom(360 x 360) */
+		/* 0: video mode, 1: DP command mode, 2: MIPI command mode */
+		mode = <2>;
+		/* custom (360 x 360) */
 		panel_name = "s6e36w1x01";
 		resolution = <360 360>;
-		size = <36 36>;
+		/* DISP I/F resolution width : 300, height : 432 */
+		dispif_resol = <300 432>;
+		size = <71 114>;
 		timing,refresh = <60>;
 		/* dsim H porch : hbp, hfp, hsa */
 		timing,dsim_h-porch = <1 1 1>;
 		/* dsim V porch : VBP, VFP, VSA */
-		timing,dsim_v-porch = <2 2 1>;
+		timing,dsim_v-porch = <5 10 1>;
 		/* decon H porch : hbp, hfp, hsa */
-		timing,decon_h-porch = <1 1 1>;
+		timing,decon_h-porch = <100 1 1>;
 		/* decon V porch : VBP, VFP, VSA */
-		timing,decon_v-porch = <2 2 1>;
-		timing,dsi-hs-clk = <384>; /* panel max speed : 384Mbps */
+		timing,decon_v-porch = <5 10 1>;
+		/* panel max speed : 384Mbps */
+		timing,dsi-hs-clk = <384>;
 		timing,pms = <2 118 2>;
 		timing,dsi-escape-clk = <8>;
 	};
