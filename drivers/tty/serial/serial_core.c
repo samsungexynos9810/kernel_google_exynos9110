@@ -1288,8 +1288,10 @@ static void uart_set_termios(struct tty_struct *tty,
 	 * If the port is doing h/w assisted flow control, do nothing.
 	 * We assume that tty->hw_stopped has never been set.
 	 */
-	if (uport->flags & UPF_HARD_FLOW)
+	if (uport->flags & UPF_HARD_FLOW) {
+		tty->hw_stopped = 0;
 		return;
+	}
 
 	/* Handle turning off CRTSCTS */
 	if ((old_termios->c_cflag & CRTSCTS) && !(cflag & CRTSCTS)) {
