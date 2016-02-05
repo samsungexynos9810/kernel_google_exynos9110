@@ -24,7 +24,8 @@
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 #include <linux/sync.h>
 #else
-#include <sync.h>
+#include "../../../../../staging/android/sync.h"
+//#include <sync.h>
 #endif
 
 

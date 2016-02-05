@@ -465,11 +465,11 @@
 		unsigned long fb_start;
 		unsigned long fb_size;
 
-		/* Max runtime [ms] for jobs */
-		int max_job_runtime;
-		
 		/* Report GPU utilization in this interval (specified in ms) */
 		unsigned long utilization_interval;
+
+		/* Max runtime [ms] for jobs */
+		int max_job_runtime;
 
 		/* Report GPU utilization and related control in this interval (specified in ms) */
 		unsigned long control_interval;
