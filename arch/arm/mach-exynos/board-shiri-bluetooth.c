@@ -62,6 +62,8 @@
 #define PR_INFO(a, args...)
 #endif
 
+#define RFKILL_BLOCKED 1
+
 static struct rfkill *bt_rfkill;
 
 struct bcm_bt_lpm {
@@ -417,6 +419,7 @@ static int bcm4330_bluetooth_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+	rfkill_init_sw_state(bt_rfkill, RFKILL_BLOCKED);
 	bluetooth_power_init();
 	rc = rfkill_register(bt_rfkill);
 
