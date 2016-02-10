@@ -188,6 +188,15 @@ static int cyttsp5_i2c_remove(struct i2c_client *client)
 	return 0;
 }
 
+void cyttsp5_shutdown(struct cyttsp5_core_platform_data *pdata);
+
+static void cyttsp5_i2c_shutdown(struct i2c_client *client)
+{
+	struct cyttsp5_core_data *cd = i2c_get_clientdata(client);
+
+	cyttsp5_shutdown(cd->cpdata);
+}
+
 static const struct i2c_device_id cyttsp5_i2c_id[] = {
 	{ CYTTSP5_I2C_NAME, 0, },
 	{ }
@@ -204,6 +213,7 @@ static struct i2c_driver cyttsp5_i2c_driver = {
 #endif
 	},
 	.probe = cyttsp5_i2c_probe,
+	.shutdown = cyttsp5_i2c_shutdown,
 	.remove = cyttsp5_i2c_remove,
 	.id_table = cyttsp5_i2c_id,
 };
