@@ -302,16 +302,17 @@ static void report_palm(struct cyttsp5_mt_data *md, int on)
 }
 
 static struct delayed_work work_palm;
-static bool palm_ignore;
+static int palm_ignore;
 static void work_palm_ignore_off(struct work_struct *work)
 {
-	palm_ignore = false;
+	palm_ignore = 0;
 }
 
 /* read xy_data for all current touches */
 static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 {
 	struct device *dev = md->dev;
+	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 	struct cyttsp5_sysinfo *si = md->si;
 	int max_tch = si->sensing_conf_data.max_tch;
 	struct cyttsp5_touch tch;
@@ -343,22 +344,24 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 
 	if (!palm_on) {
 		if (tch.hdr[CY_TCH_LO]) {
-			report_palm(md, 1);
-			cyttsp5_mt_lift_all(md);
-			printk(KERN_DEBUG "palm on\n");
-			palm_on = 1;
-		} else if (num_cur_tch) {
-			if (palm_ignore == false) {
-				cyttsp5_get_mt_touches(md, &tch, num_cur_tch);
+			if (palm_ignore == 0 && cd->irq_wake == 0) {
+				report_palm(md, 1);
+				cyttsp5_mt_lift_all(md);
+				printk(KERN_DEBUG "palm on\n");
+				palm_on = 1;
 			}
+		} else if (num_cur_tch) {
+			if (palm_ignore != 1)
+				cyttsp5_get_mt_touches(md, &tch, num_cur_tch);
 		} else {
 			cyttsp5_mt_lift_all(md);
 		}
 	} else {
 		if (tch.hdr[CY_TCH_LO] == 0 && num_cur_tch == 0) {
 			report_palm(md, 0);
-			palm_ignore = true;
-			schedule_delayed_work(&work_palm, msecs_to_jiffies(1000));
+			palm_ignore = 1;
+			wake_lock_timeout(&cd->touch_wake_lock, HZ);
+			schedule_delayed_work(&work_palm, msecs_to_jiffies(600));
 			printk(KERN_DEBUG "palm off\n");
 			palm_on = 0;
 		}
@@ -368,6 +371,16 @@ static int cyttsp5_xy_worker(struct cyttsp5_mt_data *md)
 
 cyttsp5_xy_worker_exit:
 	return rc;
+}
+
+void cyttsp5_mt_suspend(void)
+{
+	palm_ignore = 2;
+}
+
+void cyttsp5_mt_resume(void)
+{
+	schedule_delayed_work(&work_palm, msecs_to_jiffies(600));
 }
 
 static void cyttsp5_mt_send_dummy_event(struct cyttsp5_mt_data *md)

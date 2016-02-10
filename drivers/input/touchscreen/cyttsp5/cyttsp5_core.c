@@ -3926,7 +3926,7 @@ static irqreturn_t cyttsp5_irq(int irq, void *handle)
 	int rc;
 
 	if (cd->irq_wake) {
-		wake_lock_timeout(&cd->touch_wake_lock, 20 * HZ);
+		wake_lock_timeout(&cd->touch_wake_lock, 3 * HZ);
 		cd->touch_wake = true;
 		usleep_range(20000, 21000);
 	}
@@ -4601,10 +4601,14 @@ static void cyttsp5_startup_work_function(struct work_struct *work)
 }
 
 #if defined(CONFIG_PM_SLEEP)
+void cyttsp5_mt_suspend(void);
+void cyttsp5_mt_resume(void);
+
 static int cyttsp5_core_suspend(struct device *dev)
 {
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 
+	cyttsp5_mt_suspend();
 	cancel_work_sync(&cd->startup_work);
 	cyttsp5_stop_wd_timer(cd);
 
@@ -4629,6 +4633,7 @@ static int cyttsp5_core_resume(struct device *dev)
 {
 	struct cyttsp5_core_data *cd = dev_get_drvdata(dev);
 
+	cyttsp5_mt_resume();
 	/*
 	 * I2C bus pm does not call suspend if device runtime suspended
 	 * This flag is cover that case
