@@ -642,15 +642,18 @@ static void Msensors_shutdown(struct spi_device *spi)
 
 	write_buff[0] = SUB_COM_TYPE_WRITE;
 	write_buff[1] = SUB_COM_SETID_MAIN_STATUS;
-	write_buff[2] = 0x2;	/* shutdown */
 
+	write_buff[2] = 0x3;	/* prepare shutdown */
 	Set_WriteDataBuff(&write_buff[0]);
+	while (!list_empty(&wd_queue))
+		msleep(10);
 
+	write_buff[2] = 0x2;	/* shutdown */
+	Set_WriteDataBuff(&write_buff[0]);
 	while (!list_empty(&wd_queue))
 		msleep(10);
 
 	Flg_driver_shutdown = 1;
-	wake_up(&wait_subint);
 }
 
 static int Msensors_suspend(struct device *dev)
