@@ -19,6 +19,7 @@
 
 #include <asm/core_regs.h>
 #include <asm/cputype.h>
+#include <asm/smp_plat.h>
 
 #include <soc/samsung/exynos-pmu.h>
 
@@ -39,6 +40,7 @@
 #define OS_LOCK_FLAG		(DBG_REG_MAX_SIZE - 1)
 #define ITERATION		CONFIG_PC_ITERATION
 #define CORE_CNT		CONFIG_NR_CPUS
+#define MAX_CPU			(8)
 #define MSB_PADDING		(0xFFFFFFC000000000)
 #define MSB_MASKING		(0x0001ffc000000000)
 
@@ -52,7 +54,7 @@ struct cs_dbg {
 	u8			nr_wp;
 	u8			nr_bp;
 	ssize_t			bw_reg[DBG_BW_REG_MAX_SIZE];
-	struct cs_dbg_cpu	cpu[CORE_CNT];
+	struct cs_dbg_cpu	cpu[MAX_CPU];
 };
 static struct cs_dbg dbg;
 
@@ -95,6 +97,14 @@ static inline void dbg_os_unlock(void __iomem *base)
 
 #ifdef CONFIG_EXYNOS_CORESIGHT_PC_INFO
 static int exynos_cs_stat;
+
+static inline u32 logical_to_phy_cpu(unsigned int cpu)
+{
+	u32 mpidr = cpu_logical_map(cpu);
+	return (MPIDR_AFFINITY_LEVEL(mpidr, 1) << 2
+			| MPIDR_AFFINITY_LEVEL(mpidr, 0));
+}
+
 unsigned long exynos_cs_pc[CORE_CNT][ITERATION];
 
 static inline bool have_pc_offset(void __iomem *base)
@@ -105,11 +115,13 @@ static inline bool have_pc_offset(void __iomem *base)
 unsigned long exynos_cs_get_pcval(int cpu)
 {
 	unsigned long valLo, valHi;
-	void __iomem *base = dbg.cpu[cpu].base;
+	void __iomem *base;
 
 	if(!cpu_online(cpu) || !exynos_cpu.power_state(cpu))
 		return 0;
 
+	cpu = logical_to_phy_cpu(cpu);
+	base = dbg.cpu[cpu].base;
 	DBG_UNLOCK(base);
 	dbg_os_unlock(base);
 	valLo = CS_READ(base, DBGPCSRlo);
@@ -137,12 +149,11 @@ void exynos_cs_show_pcval(void)
 
 	for (iter = 0; iter < ITERATION; iter++) {
 		for (cpu = 0; cpu < CORE_CNT; cpu++) {
-			base = dbg.cpu[cpu].base;
+			u32 core = logical_to_phy_cpu(cpu);
+			base = dbg.cpu[core].base;
 			exynos_cs_pc[cpu][iter] = 0;
-			if (base == NULL || cpu == curr_cpu)
-				continue;
 
-			if (!exynos_cpu.power_state(cpu))
+			if (!base || cpu == curr_cpu || !exynos_cpu.power_state(cpu))
 				continue;
 
 			DBG_UNLOCK(base);
@@ -158,10 +169,10 @@ void exynos_cs_show_pcval(void)
 			dbg_os_lock(base);
 			DBG_LOCK(base);
 
-			if(MSB_MASKING == (MSB_MASKING & val)) {
+			if (MSB_MASKING == (MSB_MASKING & val))
 				exynos_cs_pc[cpu][iter] = MSB_PADDING | val;
-			}
-			else exynos_cs_pc[cpu][iter] = val;
+			else
+				exynos_cs_pc[cpu][iter] = val;
 		}
 	}
 
@@ -509,17 +520,14 @@ static int exynos_cs_init_dt(void)
 
 	cs_reg = of_get_property(np, "base", &len);
 	if (!cs_reg)
-		return -ESPIPE;
+		return -EINVAL;
 
 	cs_reg_base = be32_to_cpup(cs_reg);
 
 	while ((np = of_find_node_by_type(np, "cs"))) {
-		if (i >= CORE_CNT)
-			break;
-
 		offset = of_get_property(np, "dbg-offset", &len);
 		if (!offset)
-			return -ESPIPE;
+			return -EINVAL;
 
 		cs_offset = be32_to_cpup(offset);
 		dbg.cpu[i].base = ioremap(cs_reg_base + cs_offset, SZ_4K);
