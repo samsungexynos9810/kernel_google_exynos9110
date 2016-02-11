@@ -567,6 +567,12 @@ uint dhd_pktgen_len = 0;
 module_param(dhd_pktgen_len, uint, 0);
 #endif /* SDTEST */
 
+#ifdef CUSTOM_CASIO_READ_UNITMAC
+/* Read default MAC address from firmware to manage production control. */
+#define UNIT_MAC_INFO_REN 18
+uchar unit_mac[UNIT_MAC_INFO_REN];
+module_param_string(unit_mac, unit_mac, UNIT_MAC_INFO_REN, 0444);
+#endif
 
 extern char dhd_version[];
 
@@ -3527,6 +3533,10 @@ dhd_attach(osl_t *osh, struct dhd_bus *bus, uint bus_hdrlen)
 #ifdef CUSTOM_COUNTRY_CODE
 	struct cntry_locales_custom *cloc_ptr = NULL;
 #endif /* CUSTOM_COUNTRY_CODE */
+#ifdef CUSTOM_CASIO_READ_UNITMAC
+	char buf[WLC_IOCTL_SMLEN];
+	int ret = 0;
+#endif
 
 	dhd_attach_states_t dhd_state = DHD_ATTACH_STATE_INIT;
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
@@ -4239,6 +4249,16 @@ dhd_preinit_ioctls(dhd_pub_t *dhd)
 		dhd_os_set_ioctl_resp_timeout(IOCTL_RESP_TIMEOUT);
 		DHD_INFO(("%s : Set IOCTL response time.\n", __FUNCTION__));
 	}
+
+#ifdef CUSTOM_CASIO_READ_UNITMAC
+	memset(buf, 0, sizeof(buf));
+	bcm_mkiovar("cur_etheraddr", 0, 0, buf, sizeof(buf));
+	if ((ret = dhd_wl_ioctl_cmd(dhd, WLC_GET_VAR, buf, sizeof(buf), FALSE, 0)) < 0) {
+		DHD_ERROR(("%s: can't get default UNIT MAC address , error=%d\n", __FUNCTION__, ret));
+	}
+	sprintf(unit_mac, MACDBG, MAC2STRDBG(buf));
+#endif
+
 #ifdef GET_CUSTOM_MAC_ENABLE
 	ret = wifi_platform_get_mac_addr(dhd->info->adapter, ea_addr.octet);
 	if (!ret) {
