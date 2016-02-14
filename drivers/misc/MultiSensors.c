@@ -214,6 +214,52 @@ static void sub_HeaderInfoProc(void)
 	}
 }
 
+
+#define STSOBJ_NUM 4
+
+static uint32_t cnt_num[STSOBJ_NUM];	// number of samples
+static uint32_t cnt_idx[STSOBJ_NUM];
+static int64_t meas_tri;
+
+static void timestamp_estimate_ts(int64_t measTri)
+{
+	meas_tri = measTri & ~(0x3FF);
+}
+
+static void timestamp_count(uint8_t *recv, int packetnum)
+{
+	int i, type;
+
+	for (i = 0; i < STSOBJ_NUM; i++) {
+		cnt_num[i] = 0;
+		cnt_idx[i] = 0;
+	}
+
+	for (i = 0; i < packetnum; i++) {
+		type = *recv;
+		recv += (SUB_COM_DATA_SIZE_PACKET + SUB_COM_ID_SIZE);
+		if (type == 0)
+			continue;
+		else if ((type & 0xf) < MSENSORS_TYPE_BHA)
+			++cnt_num[(type & 0xf) - 1];
+	}
+}
+
+
+static int64_t get_timestamp(int type)
+{
+	int64_t t;
+	int u;
+	++cnt_idx[type];
+	/* the lower 10 bit is used for the index of decrease */
+	u = cnt_num[type] - cnt_idx[type];
+	if ( u < 0 ) u = 0;  /* not occure but safe*/
+	t = meas_tri + u;
+	return t;
+}
+
+static struct wake_lock wlock;
+
 static int SensorReadThread(void *p)
 {
 	struct Msensors_state *st = g_st;
@@ -225,7 +271,7 @@ static int SensorReadThread(void *p)
 	int recv_index;
 	int next_recv_size;
 	unsigned char* recv_buf = &st->spi.recv_buf[0];
-	int64_t event_time, last_event_time = 0;
+	int64_t event_time;
 	uint32_t elapsed_time = 0;
 	unsigned long flags;
 	struct WriteDataBuf *wb;
@@ -259,11 +305,8 @@ static int SensorReadThread(void *p)
 					send_type = SUB_COM_TYPE_GETDATA;
 				else
 					send_type = SUB_COM_TYPE_SENSOR_GETDATA;
-			} else {
-				if(PacketDataNum == 0)
-					send_type = SUB_COM_TYPE_RES_NOMAL;
-				else
-					send_type = SUB_COM_TYPE_SENSOR;
+			} else if(PacketDataNum) {
+				send_type = SUB_COM_TYPE_SENSOR;
 			}
 		} else if (type == SUB_COM_TYPE_FWUP_READY) {
 			st->fw.status = MSENSORS_FW_UP_READY;
@@ -294,6 +337,10 @@ static int SensorReadThread(void *p)
 				(type == SUB_COM_TYPE_SENSOR_GETDATA)) {	/* Get Data and Sensor Data */
 				event_time = soc_time - elapsed_time * 1000000LL;
 				/* Sensor Data Proc */
+				if (recv_buf[recv_index] == 0x00)
+					wake_lock_timeout(&wlock, HZ/5);
+				timestamp_count(&recv_buf[recv_index], PacketDataNum);
+				timestamp_estimate_ts(getTimestamp());
 				for (cnt= 0; cnt < PacketDataNum; cnt++) {
 					sensor_type = recv_buf[recv_index++];
 
@@ -302,10 +349,12 @@ static int SensorReadThread(void *p)
 										recv_buf[recv_index+1]<<8 | recv_buf[recv_index];
 						event_time = soc_time - elapsed_time * 1000000LL;
 					} else {
-						if (last_event_time >= event_time)
-							event_time = last_event_time + 1000LL;
-						last_event_time = event_time;
-						Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
+						if ((sensor_type & 0xf) >= MSENSORS_TYPE_BHA) {
+							Msensors_data_buff[dataBuffWriteIndex].timestamp = event_time;
+						} else {
+							Msensors_data_buff[dataBuffWriteIndex].timestamp =
+								get_timestamp((sensor_type & 0xf)-1);
+						}
 						Msensors_data_buff[dataBuffWriteIndex].sensor_type = sensor_type;
 						memcpy(&Msensors_data_buff[dataBuffWriteIndex].sensor_value[0],
 											&recv_buf[recv_index], 6);
@@ -524,12 +573,10 @@ static void Msensors_init(struct Msensors_state *st)
 	Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], WRITE_DATA_SIZE);
 }
 
-static struct wake_lock wlock;
 static irqreturn_t sub_main_int_wake_isr(int irq, void *dev)
 {
 	sub_main_int_occur = 1;
 	wake_up(&wait_subint);
-	wake_lock_timeout(&wlock, HZ/5);
 	return IRQ_HANDLED;
 }
 
@@ -602,12 +649,6 @@ static int Msensors_probe(struct spi_device *spi)
 		return ret;
 	}
 
-	ret = irq_set_irq_wake(irq, 1);
-	if (ret) {
-		gpio_free(st->sub_main_int);
-		return ret;
-	}
-
 	add_sysfs_interfaces(&spi->dev);
 
 	enable_irq_wake(irq);
@@ -658,7 +699,6 @@ static void Msensors_shutdown(struct spi_device *spi)
 
 static int Msensors_suspend(struct device *dev)
 {
-	int irq;	/* for SUB_MAIN_INT resumu */
 	unsigned char write_buff[WRITE_DATA_SIZE];
 
 	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
@@ -679,7 +719,6 @@ static int Msensors_suspend(struct device *dev)
 static void Msensors_complete(struct device *dev)
 {
 	unsigned char write_buff[WRITE_DATA_SIZE];
-	int irq;	/* for SUB_MAIN_INT resumu */
 
 	Flg_driver_ready = 1;
 
