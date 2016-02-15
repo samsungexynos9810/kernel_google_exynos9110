@@ -27,8 +27,6 @@
 #include "../../../drivers/soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
 #include "../governor.h"
 
-#define DEVFREQ_INT_REBOOT_FREQ	(415000)
-
 static int exynos7570_devfreq_int_cmu_dump(struct exynos_devfreq_data *data)
 {
 	cal_vclk_dbg_info(dvfs_int);
@@ -38,9 +36,7 @@ static int exynos7570_devfreq_int_cmu_dump(struct exynos_devfreq_data *data)
 
 static int exynos7570_devfreq_int_reboot(struct exynos_devfreq_data *data)
 {
-	u32 freq = DEVFREQ_INT_REBOOT_FREQ;
-
-	data->max_freq = freq;
+	data->max_freq = data->reboot_freq;
 	data->devfreq->max_freq = data->max_freq;
 
 	mutex_lock(&data->devfreq->lock);

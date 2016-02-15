@@ -32,7 +32,6 @@
 #include "../../../drivers/soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
 #include "../governor.h"
 
-#define DEVFREQ_MIF_REBOOT_FREQ	(415000)
 #define DEVFREQ_MIF_SWITCH_FREQ	(830000)
 
 u32 sw_volt_table;
@@ -47,20 +46,6 @@ static int exynos7570_devfreq_mif_cmu_dump(struct exynos_devfreq_data *data)
 {
 	mutex_lock(&data->devfreq->lock);
 	cal_vclk_dbg_info(dvfs_mif);
-	mutex_unlock(&data->devfreq->lock);
-
-	return 0;
-}
-
-static int exynos7570_devfreq_mif_reboot(struct exynos_devfreq_data *data)
-{
-	u32 freq = DEVFREQ_MIF_REBOOT_FREQ;
-
-	data->max_freq = freq;
-	data->devfreq->max_freq = data->max_freq;
-
-	mutex_lock(&data->devfreq->lock);
-	update_devfreq(data->devfreq);
 	mutex_unlock(&data->devfreq->lock);
 
 	return 0;
@@ -290,7 +275,6 @@ static int __init exynos7570_devfreq_mif_init_prepare(struct exynos_devfreq_data
 	data->ops.init_freq_table = exynos7570_devfreq_mif_init_freq_table;
 	data->ops.cl_dvfs_start = exynos7570_devfreq_cl_dvfs_start;
 	data->ops.cl_dvfs_stop = exynos7570_devfreq_cl_dvfs_stop;
-	data->ops.reboot = exynos7570_devfreq_mif_reboot;
 	data->ops.cmu_dump = exynos7570_devfreq_mif_cmu_dump;
 
 	return 0;
