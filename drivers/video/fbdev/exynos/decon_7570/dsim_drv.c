@@ -70,9 +70,16 @@ EXPORT_SYMBOL(dsim0_for_decon);
 struct dsim_device *dsim1_for_decon;
 EXPORT_SYMBOL(dsim1_for_decon);
 
+static void __dsim_dump(struct dsim_device *dsim)
+{
+	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
+			dsim->reg_base, 0xC0, false);
+}
+
 static void dsim_dump(struct dsim_device *dsim)
 {
 	dsim_info("=== DSIM SFR DUMP ===\n");
+	__dsim_dump(dsim);
 
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
 			dsim->reg_base, 0xC0, false);
@@ -376,48 +383,13 @@ static void dsim_set_lcd_full_screen(struct dsim_device *dsim)
 }
 #endif
 
-static void dsim_rx_err_handler(struct dsim_device *dsim,
-	u32 rx_fifo)
-{
-	/* Parse error report bit*/
-	if (rx_fifo & (1 << 8))
-		dev_err(dsim->dev, "SoT error!\n");
-	if (rx_fifo & (1 << 9))
-		dev_err(dsim->dev, "SoT sync error!\n");
-	if (rx_fifo & (1 << 10))
-		dev_err(dsim->dev, "EoT error!\n");
-	if (rx_fifo & (1 << 11))
-		dev_err(dsim->dev, "Escape mode entry command error!\n");
-	if (rx_fifo & (1 << 12))
-		dev_err(dsim->dev, "Low-power transmit sync error!\n");
-	if (rx_fifo & (1 << 13))
-		dev_err(dsim->dev, "HS receive timeout error!\n");
-	if (rx_fifo & (1 << 14))
-		dev_err(dsim->dev, "False control error!\n");
-	/* Bit 15 is reserved*/
-	if (rx_fifo & (1 << 16))
-		dev_err(dsim->dev, "ECC error, single-bit(detected and corrected)!\n");
-	if (rx_fifo & (1 << 17))
-		dev_err(dsim->dev, "ECC error, multi-bit(detected, not corrected)!\n");
-	if (rx_fifo & (1 << 18))
-		dev_err(dsim->dev, "Checksum error(long packet only)!\n");
-	if (rx_fifo & (1 << 19))
-		dev_err(dsim->dev, "DSI data type not recognized!\n");
-	if (rx_fifo & (1 << 20))
-		dev_err(dsim->dev, "DSI VC ID invalid!\n");
-	if (rx_fifo & (1 << 21))
-		dev_err(dsim->dev, "Invalid transmission length!\n");
-	/* Bit 22 is reserved */
-	if (rx_fifo & (1 << 23))
-		dev_err(dsim->dev, "DSI protocol violation!\n");
-}
-
 int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 	 u32 addr, u32 count, u8 *buf)
 {
 	u32 rx_fifo, rx_size = 0;
 	int i, j, ret = 0;
 	struct decon_device *decon = (struct decon_device *)dsim->decon;
+	u32 rx_fifo_depth = DSIM_RX_FIFO_MAX_DEPTH;
 
 	/* LPD related: Decon must be enabled for PACKET_GO mode */
 	decon_lpd_block_exit(decon);
@@ -430,8 +402,9 @@ int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 
 	reinit_completion(&dsim_rd_comp);
 
-	/* Init RX FIFO before read */
+	/* Init RX FIFO before read and clear DSIM_INTSRC */
 	dsim_reg_set_fifo_ctrl(dsim->id, DSIM_FIFOCTRL_INIT_RX);
+	dsim_reg_clear_int(dsim->id, DSIM_INTSRC_RX_DATA_DONE);
 
 	/* Set the maximum packet size returned */
 	dsim_write_data(dsim,
@@ -439,8 +412,7 @@ int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 
 	/* Read request */
 	dsim_write_data(dsim, data_id, addr, 0);
-	if (!wait_for_completion_timeout(&dsim_rd_comp,
-		MIPI_RD_TIMEOUT)) {
+	if (!wait_for_completion_timeout(&dsim_rd_comp, MIPI_RD_TIMEOUT)) {
 		dev_err(dsim->dev, "MIPI DSIM read Timeout!\n");
 		return -ETIMEDOUT;
 	}
@@ -448,58 +420,62 @@ int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 	mutex_lock(&dsim_rd_wr_mutex);
 	DISP_SS_EVENT_LOG_CMD(&dsim->sd, data_id, (char)addr);
 
-	rx_fifo = readl(dsim->reg_base + DSIM_RXFIFO);
+	do {
+		rx_fifo = dsim_reg_get_rx_fifo(dsim->id);
 
-	/* Parse the RX packet data types */
-	switch (rx_fifo & 0xff) {
-	case MIPI_DSI_RX_ACKNOWLEDGE_AND_ERROR_REPORT:
-		dsim_rx_err_handler(dsim, rx_fifo);
-	case MIPI_DSI_RX_END_OF_TRANSMISSION:
-		dev_dbg(dsim->dev, "EoTp was received from LCD module.\n");
-		break;
-	case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_1BYTE:
-	case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_2BYTE:
-	case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_1BYTE:
-	case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_2BYTE:
-		dev_dbg(dsim->dev, "Short Packet was received from LCD module.\n");
-		for (i = 0; i <= count; i++)
-			buf[i] = (rx_fifo >> (8 + i * 8)) & 0xff;
-		break;
-	case MIPI_DSI_RX_DCS_LONG_READ_RESPONSE:
-	case MIPI_DSI_RX_GENERIC_LONG_READ_RESPONSE:
-		dev_dbg(dsim->dev, "Long Packet was received from LCD module.\n");
-		rx_size = (rx_fifo & 0x00ffff00) >> 8;
-		dev_dbg(dsim->dev, "rx fifo : %8x, response : %x, rx_size : %d\n",
-				rx_fifo, rx_fifo & 0xff, rx_size);
-		/* Read data from RX packet payload */
-		for (i = 0; i < rx_size >> 2; i++) {
-			rx_fifo = readl(dsim->reg_base + DSIM_RXFIFO);
-			for (j = 0; j < 4; j++)
-				buf[(i*4)+j] = (u8)(rx_fifo >> (j * 8)) & 0xff;
+		/* Parse the RX packet data types */
+		switch (rx_fifo & 0xff) {
+		case MIPI_DSI_RX_ACKNOWLEDGE_AND_ERROR_REPORT:
+			ret = dsim_reg_rx_err_handler(dsim->id, rx_fifo);
+			if (ret < 0) {
+				__dsim_dump(dsim);
+				goto exit;
+			}
+			break;
+		case MIPI_DSI_RX_END_OF_TRANSMISSION:
+			dev_dbg(dsim->dev, "EoTp was received from LCD module.\n");
+			break;
+		case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_1BYTE:
+		case MIPI_DSI_RX_DCS_SHORT_READ_RESPONSE_2BYTE:
+		case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_1BYTE:
+		case MIPI_DSI_RX_GENERIC_SHORT_READ_RESPONSE_2BYTE:
+			dev_dbg(dsim->dev, "Short Packet was received from LCD module.\n");
+			for (i = 0; i <= count; i++)
+				buf[i] = (rx_fifo >> (8 + i * 8)) & 0xff;
+			break;
+		case MIPI_DSI_RX_DCS_LONG_READ_RESPONSE:
+		case MIPI_DSI_RX_GENERIC_LONG_READ_RESPONSE:
+			dev_dbg(dsim->dev, "Long Packet was received from LCD module.\n");
+			rx_size = (rx_fifo & 0x00ffff00) >> 8;
+			dev_dbg(dsim->dev, "rx fifo : %8x, response : %x, rx_size : %d\n",
+					rx_fifo, rx_fifo & 0xff, rx_size);
+			/* Read data from RX packet payload */
+			for (i = 0; i < rx_size >> 2; i++) {
+				rx_fifo = dsim_reg_get_rx_fifo(dsim->id);
+				for (j = 0; j < 4; j++)
+					buf[(i*4)+j] = (u8)(rx_fifo >> (j * 8)) & 0xff;
+			}
+			if (rx_size % 4) {
+				rx_fifo = dsim_reg_get_rx_fifo(dsim->id);
+				for (j = 0; j < rx_size % 4; j++)
+					buf[4 * i + j] =
+						(u8)(rx_fifo >> (j * 8)) & 0xff;
+			}
+			break;
+		default:
+			dev_err(dsim->dev, "Packet format is invaild.\n");
+			ret = -EBUSY;
+			goto exit;
+			break;
 		}
-		if (rx_size % 4) {
-			rx_fifo = readl(dsim->reg_base + DSIM_RXFIFO);
-			for (j = 0; j < rx_size % 4; j++)
-				buf[4 * i + j] =
-					(u8)(rx_fifo >> (j * 8)) & 0xff;
-		}
-		break;
-	default:
-		dev_err(dsim->dev, "Packet format is invaild.\n");
-		goto rx_error;
-	}
+	} while (!dsim_reg_rx_fifo_is_empty(dsim->id) && --rx_fifo_depth);
 
-	rx_fifo = readl(dsim->reg_base + DSIM_RXFIFO);
 	ret = rx_size;
-	goto exit;
-
-rx_error:
-	dsim_reg_force_dphy_stop_state(dsim->id, 1);
-	usleep_range(3000, 4000);
-	dsim_reg_force_dphy_stop_state(dsim->id, 0);
-	ret = -EPERM;
-	goto exit;
-
+	if (!rx_fifo_depth) {
+		dev_err(dsim->dev, "Check DPHY values about HS clk.\n");
+		__dsim_dump(dsim);
+		ret = -EBUSY;
+	}
 exit:
 	mutex_unlock(&dsim_rd_wr_mutex);
 	decon_lpd_unblock(decon);
