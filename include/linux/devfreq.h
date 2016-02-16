@@ -289,6 +289,7 @@ struct devfreq_simple_exynos_data {
 #define DEFAULT_DELAY_TIME		10 /* msec */
 #define DEFAULT_NDELAY_TIME		1
 #define DELAY_TIME_RANGE		10
+#define BOUND_CPU_NUM			0
 
 struct devfreq_simple_interactive_data {
 	bool use_delay_time;

@@ -1,8 +1,6 @@
 /*
- *  linux/drivers/devfreq/governor_simpleinteractive.c
- *
- *  Copyright (C) 2016 Samsung Electronics
- *	Jae Joon Yoo <joonyj7.yoo@samsung.com>
+ * Copyright (c) 2012 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -67,6 +65,7 @@ static int devfreq_simple_interactive_func(struct devfreq *df,
 				*freq >= data->delay_time[i + 1]; i += 2)
 			;
 
+		/* unit of delay time should be 10msec */
 		delay_check = data->delay_time[i] % DELAY_TIME_RANGE;
 		delay_time = delay_check ?
 				data->delay_time[i] - delay_check + DELAY_TIME_RANGE :
@@ -80,13 +79,18 @@ static int devfreq_simple_interactive_func(struct devfreq *df,
 			data->freq_timer.expires > jiffies) {
 		*freq = df->previous_freq;
 		if (!timer_pending(&data->freq_timer))
-			add_timer(&data->freq_timer);
+			/* timer is bound to cpu0 */
+			add_timer_on(&data->freq_timer, BOUND_CPU_NUM);
 
 		return 0;
 	} else if (timer_pending(&data->freq_timer)) {
 		del_timer_sync(&data->freq_timer);
 	}
 
+	/*
+	 * save current frequency and time
+	 * to use when update_devfreq is called next
+	 */
 	data->prev_freq = df->previous_freq;
 	data->changed_time = jiffies;
 
@@ -149,11 +153,12 @@ static int devfreq_simple_interactive_register_notifier(struct devfreq *df)
 		}
 	}
 
+	/* timer of governor for delay time initialize */
 	data->freq_timer.data = (unsigned long)data;
 	data->freq_timer.function = simple_interactive_timer;
 	init_timer(&data->freq_timer);
-
 	data->change_freq_task = kthread_create(devfreq_change_freq_task, df, "simpleinteractive");
+
 	if (IS_ERR(data->change_freq_task)) {
 		pr_err("%s: failed kthread_create for simpleinteractive governor\n", __func__);
 		ret = PTR_ERR(data->change_freq_task);
@@ -165,6 +170,9 @@ static int devfreq_simple_interactive_register_notifier(struct devfreq *df)
 
 		goto err2;
 	}
+
+	kthread_bind(data->change_freq_task, BOUND_CPU_NUM);
+	wake_up_process(data->change_freq_task);
 
 	return 0;
 
