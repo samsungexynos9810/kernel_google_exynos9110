@@ -243,7 +243,7 @@ void dsim_reg_set_dphy_timing_values(u32 id, struct dphy_timing_value *t)
 	val = DSIM_PHYCTRL_B_DPHYCTL0(t->b_dphyctl) |
 		DSIM_PHYCTRL_VREG;
 
-	dsim_write_mask(id, DSIM_PHYCTRL, val, DSIM_PHYCTRL_B_DPHYCTL0_MASK);
+	dsim_write_mask(id, DSIM_PHYCTRL, val, DSIM_PHYCTRL_B_DPHYCTL0_MASK | DSIM_PHYCTRL_VREG);
 }
 
 void dsim_reg_clear_int(u32 id, u32 int_src)
@@ -461,7 +461,7 @@ void dsim_reg_set_config(u32 id, struct decon_lcd *lcd_info, u32 data_lane_cnt)
 		dsim_reg_set_hsync_preserve(id, 0);
 		dsim_reg_set_burst_mode(id, 1);
 		dsim_reg_set_sync_inform(id, 0);
-		dsim_reg_enable_mflush(id, 0);
+		dsim_reg_enable_mflush(id, 1);
 		dsim_reg_enable_clocklane_stop_start(id, 1);
 	} else if (lcd_info->mode == DECON_MIPI_COMMAND_MODE) {
 		dsim_reg_enable_noncontinuous_clock(id, 1);
@@ -685,7 +685,7 @@ void dsim_reg_set_hsync_timeout(u32 id, u32 hsynctout)
 
 void dsim_reg_enable_mflush(u32 id, u32 en)
 {
-	u32 val = en ? ~0 : 0;
+	u32 val = en ? 0 : ~0;
 
 	dsim_write_mask(id, DSIM_CONFIG, val, DSIM_CONFIG_FLUSH_VS);
 }
