@@ -434,6 +434,7 @@ static ssize_t store_scaling_devfreq_min(struct device *dev,
 
 static DEVICE_ATTR(scaling_devfreq_min, 0640, show_scaling_devfreq_min, store_scaling_devfreq_min);
 
+/* get frequency and delay time data from string */
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
 {
 	const char *cp;
@@ -720,6 +721,10 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 
 		if (data->simple_interactive_data.use_delay_time) {
 			if (of_property_read_string(np, "delay_time_list", &buf)) {
+				/*
+				 * If there is not delay time list,
+				 * delay time will be filled with default time
+				 */
 				data->simple_interactive_data.delay_time =
 					kmalloc(sizeof(unsigned int), GFP_KERNEL);
 				*(data->simple_interactive_data.delay_time)
