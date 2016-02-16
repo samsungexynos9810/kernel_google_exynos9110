@@ -102,6 +102,7 @@ static char const *exynos3_dt_compat[] __initdata = {
 static void __init exynos3_reserve(void)
 {
 	init_exynos_ion_contig_heap();
+	memblock_reserve(0x41f00000, 0x100000);
 }
 
 DT_MACHINE_START(EXYNOS3_DT, "koi")
