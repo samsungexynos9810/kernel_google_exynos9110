@@ -317,9 +317,8 @@ void dsim_reg_set_esc_clk_on_lane(u32 id, u32 en, u32 lane)
 {
 	u32 val;
 
-	lane = (((1 << lane) - 1) << 1) | 1;
-
-	val = en ? DSIM_CLKCTRL_LANE_ESCCLK_EN(lane) : 0;
+	lane = en ? ((1 << lane) - 1) | DSIM_ESCCLK_CLOCK : 0;	/* Convert # of MIPI lane  to SFR bits  */
+	val = DSIM_CLKCTRL_LANE_ESCCLK_EN(lane);
 	dsim_write_mask(id, DSIM_CLKCTRL, val, DSIM_CLKCTRL_LANE_ESCCLK_EN_MASK);
 }
 

@@ -56,6 +56,16 @@ enum {
 	MIPI_DSI_ERR_BIT_MASK			= (0x3f3f), /* Error_Range[13:0] */
 };
 
+/* define DSI escape clock types. */
+enum {
+	DSIM_ESCCLK_CLOCK = (1 << 4),
+	DSIM_ESCCLK_DATA0 = (1 << 0),
+	DSIM_ESCCLK_DATA1 = (1 << 1),
+	DSIM_ESCCLK_DATA2 = (1 << 2),
+	DSIM_ESCCLK_DATA3 = (1 << 3),
+};
+
+
 struct dsim_pll_param {
 	u32 p;
 	u32 m;
