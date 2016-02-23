@@ -81,8 +81,6 @@ static void dsim_dump(struct dsim_device *dsim)
 	dsim_info("=== DSIM SFR DUMP ===\n");
 	__dsim_dump(dsim);
 
-	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4,
-			dsim->reg_base, 0xC0, false);
 }
 
 static void dsim_long_data_wr(struct dsim_device *dsim, unsigned long data0, unsigned int data1)
@@ -466,12 +464,11 @@ int dsim_read_data(struct dsim_device *dsim, u32 data_id,
 			dev_err(dsim->dev, "Packet format is invaild.\n");
 			ret = -EBUSY;
 			goto exit;
-			break;
 		}
 	} while (!dsim_reg_rx_fifo_is_empty(dsim->id) && --rx_fifo_depth);
 
 	ret = rx_size;
-	if (!rx_fifo_depth) {
+	if (!dsim_reg_rx_fifo_is_empty(dsim->id) && !rx_fifo_depth) {
 		dev_err(dsim->dev, "Check DPHY values about HS clk.\n");
 		__dsim_dump(dsim);
 		ret = -EBUSY;

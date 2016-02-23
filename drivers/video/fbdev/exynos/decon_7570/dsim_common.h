@@ -38,7 +38,7 @@ enum {
 	MIPI_DSI_ERR_LOW_POWER_TRANSMIT_SYNC	= (1 << 4),
 	MIPI_DSI_ERR_HS_RECEIVE_TIMEOUT		= (1 << 5),
 	MIPI_DSI_ERR_FALSE_CONTROL		= (1 << 6),
-	/* Bit 7 is reserved */
+	MIPI_DSI_ERR_CONTENTION_DETECTED	= (1 << 7),
 	MIPI_DSI_ERR_ECC_SINGLE_BIT		= (1 << 8),
 	MIPI_DSI_ERR_ECC_MULTI_BIT		= (1 << 9),
 	MIPI_DSI_ERR_CHECKSUM			= (1 << 10),
@@ -52,8 +52,7 @@ enum {
 	/* FALSE_ERROR_CONTROL[6] is for detect invalid escape or turnaround sequence.
 	 * This bit is not supporting @S.LSI AP because of non standard
 	 * ULPS enter/exit sequence during power-gating */
-	/* Bit [14],[7] is reserved */
-	MIPI_DSI_ERR_BIT_MASK			= (0x3f3f), /* Error_Range[13:0] */
+	/* Bit [14] is reserved */
 };
 
 /* define DSI escape clock types. */

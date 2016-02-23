@@ -33,9 +33,12 @@
 #define DSIM_STABLE_VFP_VALUE		2
 #define DSIM_M_PLL_CTRL2		0x0
 
-
+/* Timeout value for TE based command mode */
 #define TE_PROTECT_ON			158
 #define TE_TOUT			180
+
+/* Error report mask bits */
+#define MIPI_DSI_ERR_BIT_MASK	(0x3f3f)
 
 /* M_PLL_CTRL setting value */
 const u32 DSIM_M_PLL_CTRL1[3] = {0x40000000, 0x40000040, 0x40000040};
@@ -1244,6 +1247,8 @@ int dsim_reg_rx_err_handler(u32 id, u32 rx_fifo)
 		dsim_err("HS receive timeout error!\n");
 	if (err_bit & MIPI_DSI_ERR_FALSE_CONTROL)
 		dsim_err("False control error!\n");
+	if (err_bit & MIPI_DSI_ERR_CONTENTION_DETECTED)
+		dsim_err("contention detection!\n");
 	if (err_bit & MIPI_DSI_ERR_ECC_SINGLE_BIT)
 		dsim_err("ECC error, single-bit(detected and corrected)!\n");
 	if (err_bit & MIPI_DSI_ERR_ECC_MULTI_BIT)
