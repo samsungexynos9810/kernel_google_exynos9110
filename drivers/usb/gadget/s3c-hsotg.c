@@ -28,10 +28,8 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
-#include <linux/clk-provider.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_platform.h>
-#include <linux/of_gpio.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -197,8 +195,6 @@ struct s3c_hsotg {
 	struct wake_lock	wake_lock;
 #endif
     	struct usb_ctrlrequest *usb_ctrl;
-	int gpio_vbus_detect;
-	int vbus_detect_irq;
 };
 
 /**
@@ -3215,12 +3211,8 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
 {
 	struct s3c_hsotg *hsotg = to_hsotg(gadget);
 	unsigned long flags = 0;
-	u32 __maybe_unused usb_status;
 
 	dev_dbg(hsotg->dev, "%s: is_in: %d\n", __func__, is_on);
-
-	if (!__clk_is_enabled(hsotg->clk))
-		clk_enable(hsotg->clk);
 
 	spin_lock_irqsave(&hsotg->lock, flags);
 	if (is_on) {
@@ -3233,23 +3225,6 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
 
 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
 	spin_unlock_irqrestore(&hsotg->lock, flags);
-
-#if defined(CONFIG_EXYNOS3_USB_REGULATOR_DISABLE)
-	usb_status = readl(hsotg->regs + GOTGCTL);
-	/* Regulators are left enabled by udc_start;
-	 * so check here if the USB cable is not connected
-	 * and disable the regulators and phy if not required
-	 */
-	if (is_on && !(usb_status & GOTGCTL_BSESVLD)) {
-		if (regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
-						hsotg->supplies)) {
-			dev_err(hsotg->dev, "failed to disable supplies\n");
-		} else {
-			s3c_hsotg_phy_disable(hsotg);
-			clk_disable(hsotg->clk);
-		}
-	}
-#endif
 
 	return 0;
 }
@@ -3673,51 +3648,6 @@ static void s3c_hsotg_delete_debug(struct s3c_hsotg *hsotg)
 	debugfs_remove(hsotg->debug_root);
 }
 
-static int is_vbus_detect(struct s3c_hsotg *hsotg)
-{
-	if (!gpio_is_valid(hsotg->gpio_vbus_detect))
-		return 0;
-	return gpio_get_value(hsotg->gpio_vbus_detect);
-}
-
-static irqreturn_t hsotg_vbus_detect_thread(int irq, void *data)
-{
-	int __maybe_unused i, ret;
-	struct s3c_hsotg *hsotg = (struct s3c_hsotg *)data;
-
-	dev_dbg(hsotg->dev, "Vbus detect interrupt received");
-#if defined(CONFIG_EXYNOS3_USB_REGULATOR_DISABLE)
-	if (is_vbus_detect(hsotg)) {
-		if (!__clk_is_enabled(hsotg->clk))
-			clk_enable(hsotg->clk);
-
-		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
-				      hsotg->supplies);
-		if (ret) {
-			dev_err(hsotg->dev, "failed to enable supplies: %d\n", ret);
-			goto exit;
-		}
-
-		hsotg->last_rst = jiffies;
-		s3c_hsotg_phy_enable(hsotg);
-		s3c_hsotg_core_init(hsotg);
-	} else {
-		s3c_hsotg_phy_disable(hsotg);
-		for (i = 0; i < ARRAY_SIZE(hsotg->supplies); i++) {
-			if(regulator_is_enabled(hsotg->supplies[i].consumer))
-				regulator_disable(hsotg->supplies[i].consumer);
-		}
-		if (__clk_is_enabled(hsotg->clk))
-			clk_disable(hsotg->clk);
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
-		wake_unlock(&hsotg->wake_lock);
-#endif
-	}
-exit:
-#endif
-	return IRQ_HANDLED;
-}
-
 /**
  * s3c_hsotg_probe - probe function for hsotg driver
  * @pdev: The platform information for the driver
@@ -3882,36 +3812,6 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_ep_mem;
 
-	/* VBus detect gpio */
-	hsotg->gpio_vbus_detect = of_get_named_gpio(dev->of_node,
-					"samsung,vbus-detect-gpio", 0);
-	if (!gpio_is_valid(hsotg->gpio_vbus_detect)) {
-		dev_info(dev, "vbus control gpio is not available\n");
-	} else {
-		ret = devm_gpio_request(dev, hsotg->gpio_vbus_detect,
-						"usb_vbus_detect_gpio");
-		if (ret)
-			dev_err(dev, "failed to request vbus control gpio");
-		else
-			hsotg->vbus_detect_irq = gpio_to_irq(hsotg->gpio_vbus_detect);
-	}
-
-	if (hsotg->vbus_detect_irq > 0) {
-		ret = devm_request_threaded_irq(dev,
-				hsotg->vbus_detect_irq,
-				NULL,
-				hsotg_vbus_detect_thread,
-				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING |
-				IRQF_ONESHOT, "USB_VBUS_DETECT", hsotg);
-		if (ret) {
-			dev_err(dev, "Failed to request device irq %d\n",
-					hsotg->vbus_detect_irq);
-			goto err_clk;
-		}
-	}
-
-	clk_disable(hsotg->clk);
-
 	s3c_hsotg_create_debug(hsotg);
 
 	s3c_hsotg_dump(hsotg);
@@ -3962,7 +3862,6 @@ static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
 	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
 	unsigned long flags;
 	int ret = 0;
-	int i;
 
 	if (hsotg->driver)
 		dev_dbg(hsotg->dev, "suspending usb gadget %s\n",
@@ -3979,14 +3878,9 @@ static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
 		for (ep = 0; ep < hsotg->num_of_eps; ep++)
 			s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
 
-		for (i = 0; i < ARRAY_SIZE(hsotg->supplies); i++) {
-			if(regulator_is_enabled(hsotg->supplies[i].consumer))
-				regulator_disable(hsotg->supplies[i].consumer);
-		}
+		ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
+					     hsotg->supplies);
 	}
-
-	if (__clk_is_enabled(hsotg->clk))
-		clk_disable(hsotg->clk);
 
 	return ret;
 }
@@ -4000,24 +3894,9 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
 	if (hsotg->driver) {
 		dev_dbg(hsotg->dev, "resuming usb gadget %s\n",
 			 hsotg->driver->driver.name);
-		if (!IS_ENABLED(CONFIG_EXYNOS3_USB_REGULATOR_DISABLE) ||
-		    is_vbus_detect(hsotg)) {
-			ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
-					      hsotg->supplies);
-			if (ret) {
-				dev_err(hsotg->dev, "failed to enable supplies: %d\n", ret);
-				goto exit;
-			}
-		} else {
-			/* We don't need to enable the phy or controller if
-			 * we did not detect the Vbus
-			 */
-			goto exit;
-		}
+		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+				      hsotg->supplies);
 	}
-
-	if (!__clk_is_enabled(hsotg->clk))
-		clk_enable(hsotg->clk);
 
 	spin_lock_irqsave(&hsotg->lock, flags);
 	hsotg->last_rst = jiffies;
@@ -4025,7 +3904,6 @@ static int s3c_hsotg_resume(struct platform_device *pdev)
 	s3c_hsotg_core_init(hsotg);
 	spin_unlock_irqrestore(&hsotg->lock, flags);
 
-exit:
 	return ret;
 }
 
