@@ -28,16 +28,17 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/clk.h>
+#include <linux/clk-provider.h>
 #include <linux/regulator/consumer.h>
 #include <linux/of_platform.h>
+#include <linux/of_gpio.h>
+#include <linux/mutex.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 #include <linux/usb/phy.h>
 #include <linux/platform_data/s3c-hsotg.h>
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 #include <linux/wakelock.h>
-#endif
 
 #include <mach/map.h>
 
@@ -191,10 +192,12 @@ struct s3c_hsotg {
 	unsigned int		setup;
 	unsigned long           last_rst;
 	struct s3c_hsotg_ep	*eps;
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 	struct wake_lock	wake_lock;
-#endif
-    	struct usb_ctrlrequest *usb_ctrl;
+	struct mutex	mlock;
+	struct usb_ctrlrequest *usb_ctrl;
+	int gpio_vbus_detect;
+	int vbus_detect_irq;
+	struct work_struct workq;
 };
 
 /**
@@ -2524,9 +2527,6 @@ irq_retry:
 		u32 otgint = readl(hsotg->regs + GOTGINT);
 
 		dev_dbg(hsotg->dev, "OTGInt: %08x\n", otgint);
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
-		wake_unlock(&hsotg->wake_lock);
-#endif
 		writel(otgint, hsotg->regs + GOTGINT);
 	}
 
@@ -2536,9 +2536,6 @@ irq_retry:
 	}
 
 	if (gintsts & GINTSTS_EnumDone) {
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
-		wake_lock(&hsotg->wake_lock);
-#endif
 		writel(GINTSTS_EnumDone, hsotg->regs + GINTSTS);
 
 		s3c_hsotg_irq_enumdone(hsotg);
@@ -3097,6 +3094,105 @@ static void s3c_hsotg_init(struct s3c_hsotg *hsotg)
 	       hsotg->regs + GAHBCFG);
 }
 
+static int is_vbus_detect(struct s3c_hsotg *hsotg)
+{
+	if (!gpio_is_valid(hsotg->gpio_vbus_detect))
+		return 0;
+	return gpio_get_value(hsotg->gpio_vbus_detect);
+}
+
+static volatile int vbus_status = 0;
+static int power_status = 1;
+static void sync_vbus_state(struct s3c_hsotg *hsotg)
+{
+	int ep, ret = 0;
+	unsigned long flags;
+
+	mutex_lock(&hsotg->mlock);
+	if (is_vbus_detect(hsotg)) {
+		if (vbus_status < 2 && power_status == 1) {
+			/*
+			 * Because too early at the timing immediately after the VBUS interrupt, 
+			 * it was delayed to the timing after resume by adding power_status 
+			 * condition.
+			 */
+			printk(KERN_DEBUG "s3c_hsotg VBus 1\n");
+			wake_lock(&hsotg->wake_lock);
+
+			if (vbus_status == 0) {
+				clk_enable(hsotg->clk);
+				ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+						hsotg->supplies);
+
+				spin_lock_irqsave(&hsotg->lock, flags);
+				hsotg->last_rst = jiffies;
+				s3c_hsotg_phy_enable(hsotg);
+				s3c_hsotg_core_init(hsotg);
+				spin_unlock_irqrestore(&hsotg->lock, flags);
+			}
+			vbus_status = 2;
+		}
+	} else {
+		if (vbus_status == 2) {
+			printk(KERN_DEBUG "s3c_hsotg VBus 0\n");
+			vbus_status = 1;
+			wake_unlock(&hsotg->wake_lock);
+		} else if (vbus_status == 1 && power_status == 0) {
+			spin_lock_irqsave(&hsotg->lock, flags);
+			s3c_hsotg_disconnect(hsotg);
+			s3c_hsotg_phy_disable(hsotg);
+			hsotg->gadget.speed = USB_SPEED_UNKNOWN;
+			spin_unlock_irqrestore(&hsotg->lock, flags);
+
+			for (ep = 0; ep < hsotg->num_of_eps; ep++)
+				s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
+
+			ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
+					hsotg->supplies);
+
+			clk_disable(hsotg->clk);
+			vbus_status = 0;
+		}
+	}
+	mutex_unlock(&hsotg->mlock);
+}
+
+static void vbus_detect_work(struct work_struct *work)
+{
+	struct s3c_hsotg *hsotg = container_of(work, struct s3c_hsotg, workq);
+
+	sync_vbus_state(hsotg);
+}
+
+static irqreturn_t hsotg_vbus_detect_isr(int irq, void *data)
+{
+	struct s3c_hsotg *hsotg = data;
+
+	schedule_work(&hsotg->workq);
+
+	return IRQ_HANDLED;
+}
+
+static void setup_vbus_isr(struct s3c_hsotg *hsotg)
+{
+	int ret;
+	struct device *dev = hsotg->dev;
+
+	INIT_WORK(&hsotg->workq, vbus_detect_work);
+
+	if (hsotg->vbus_detect_irq > 0) {
+		ret = devm_request_irq(dev,
+				hsotg->vbus_detect_irq,
+				hsotg_vbus_detect_isr,
+				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
+				"USB_VBUS_DETECT", hsotg);
+		if (ret) {
+			dev_err(dev, "Failed to request device irq %d\n",
+					hsotg->vbus_detect_irq);
+		}
+	}
+}
+
 /**
  * s3c_hsotg_udc_start - prepare the udc for work
  * @gadget: The usb gadget state
@@ -3136,12 +3232,19 @@ static int s3c_hsotg_udc_start(struct usb_gadget *gadget,
 	hsotg->gadget.dev.of_node = hsotg->dev->of_node;
 	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
 
-	ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
-				    hsotg->supplies);
-	if (ret) {
-		dev_err(hsotg->dev, "failed to enable supplies: %d\n", ret);
-		goto err;
+	if (is_vbus_detect(hsotg)) {
+		vbus_status = 2;
+		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
+				hsotg->supplies);
+		if (ret) {
+			dev_err(hsotg->dev, "failed to enable supplies: %d\n", ret);
+			goto err;
+		}
+		wake_lock(&hsotg->wake_lock);
+	} else {
+		clk_disable(hsotg->clk);
 	}
+	setup_vbus_isr(hsotg);
 
 	hsotg->last_rst = jiffies;
 	dev_info(hsotg->dev, "bound driver %s\n", driver->driver.name);
@@ -3216,8 +3319,10 @@ static int s3c_hsotg_pullup(struct usb_gadget *gadget, int is_on)
 
 	spin_lock_irqsave(&hsotg->lock, flags);
 	if (is_on) {
-		s3c_hsotg_phy_enable(hsotg);
-		s3c_hsotg_core_init(hsotg);
+		if (vbus_status == 2) {
+			s3c_hsotg_phy_enable(hsotg);
+			s3c_hsotg_core_init(hsotg);
+		}
 	} else {
 		s3c_hsotg_disconnect(hsotg);
 		s3c_hsotg_phy_disable(hsotg);
@@ -3711,9 +3816,8 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 
 	spin_lock_init(&hsotg->lock);
 
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 	wake_lock_init(&hsotg->wake_lock, WAKE_LOCK_SUSPEND, "s3c-hsotg");
-#endif
+	mutex_init(&hsotg->mlock);
 	hsotg->irq = ret;
 
 	ret = devm_request_irq(&pdev->dev, hsotg->irq, s3c_hsotg_irq, 0,
@@ -3812,6 +3916,20 @@ static int s3c_hsotg_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_ep_mem;
 
+	/* VBus detect gpio */
+	hsotg->gpio_vbus_detect = of_get_named_gpio(dev->of_node,
+					"samsung,vbus-detect-gpio", 0);
+	if (!gpio_is_valid(hsotg->gpio_vbus_detect)) {
+		dev_info(dev, "vbus control gpio is not available\n");
+	} else {
+		ret = devm_gpio_request(dev, hsotg->gpio_vbus_detect,
+						"usb_vbus_detect_gpio");
+		if (ret)
+			dev_err(dev, "failed to request vbus control gpio");
+		else
+			hsotg->vbus_detect_irq = gpio_to_irq(hsotg->gpio_vbus_detect);
+	}
+
 	s3c_hsotg_create_debug(hsotg);
 
 	s3c_hsotg_dump(hsotg);
@@ -3824,9 +3942,7 @@ err_supplies:
 	s3c_hsotg_phy_disable(hsotg);
 err_clk:
 	clk_disable_unprepare(hsotg->clk);
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 	wake_lock_destroy(&hsotg->wake_lock);
-#endif
 
 	return ret;
 }
@@ -3850,9 +3966,7 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
 
 	s3c_hsotg_phy_disable(hsotg);
 	clk_disable_unprepare(hsotg->clk);
-#ifdef CONFIG_USB_S3C_HSOTG_ENABLE_WAKELOCK
 	wake_lock_destroy(&hsotg->wake_lock);
-#endif
 
 	return 0;
 }
@@ -3860,51 +3974,21 @@ static int s3c_hsotg_remove(struct platform_device *pdev)
 static int s3c_hsotg_suspend(struct platform_device *pdev, pm_message_t state)
 {
 	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
-	unsigned long flags;
-	int ret = 0;
 
-	if (hsotg->driver)
-		dev_dbg(hsotg->dev, "suspending usb gadget %s\n",
-			 hsotg->driver->driver.name);
+	power_status = 0;
+	sync_vbus_state(hsotg);
 
-	spin_lock_irqsave(&hsotg->lock, flags);
-	s3c_hsotg_disconnect(hsotg);
-	s3c_hsotg_phy_disable(hsotg);
-	hsotg->gadget.speed = USB_SPEED_UNKNOWN;
-	spin_unlock_irqrestore(&hsotg->lock, flags);
-
-	if (hsotg->driver) {
-		int ep;
-		for (ep = 0; ep < hsotg->num_of_eps; ep++)
-			s3c_hsotg_ep_disable(&hsotg->eps[ep].ep);
-
-		ret = regulator_bulk_disable(ARRAY_SIZE(hsotg->supplies),
-					     hsotg->supplies);
-	}
-
-	return ret;
+	return 0;
 }
 
 static int s3c_hsotg_resume(struct platform_device *pdev)
 {
 	struct s3c_hsotg *hsotg = platform_get_drvdata(pdev);
-	unsigned long flags;
-	int ret = 0;
 
-	if (hsotg->driver) {
-		dev_dbg(hsotg->dev, "resuming usb gadget %s\n",
-			 hsotg->driver->driver.name);
-		ret = regulator_bulk_enable(ARRAY_SIZE(hsotg->supplies),
-				      hsotg->supplies);
-	}
+	power_status = 1;
+	sync_vbus_state(hsotg);
 
-	spin_lock_irqsave(&hsotg->lock, flags);
-	hsotg->last_rst = jiffies;
-	s3c_hsotg_phy_enable(hsotg);
-	s3c_hsotg_core_init(hsotg);
-	spin_unlock_irqrestore(&hsotg->lock, flags);
-
-	return ret;
+	return 0;
 }
 
 #ifdef CONFIG_OF
