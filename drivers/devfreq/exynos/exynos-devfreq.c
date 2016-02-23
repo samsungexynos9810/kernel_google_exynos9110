@@ -176,21 +176,28 @@ static ssize_t show_exynos_devfreq_get_delay(struct device *dev,
 	return count;
 }
 
-static ssize_t show_debug_devfreq_pm_qos_max(struct device *dev,
+static ssize_t show_debug_scaling_devfreq_max(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	ssize_t count = 0;
+	int val;
 
-	if (data->pm_qos_class_max)
-		count += snprintf(buf, PAGE_SIZE, "%u\n", pm_qos_request(data->pm_qos_class_max));
+	if (data->pm_qos_class_max) {
+		val = pm_qos_read_req_value(data->pm_qos_class_max, &data->debug_pm_qos_max);
+		if (val < 0) {
+			dev_err(dev, "failed to read requested value\n");
+			return count;
+		}
+		count += snprintf(buf, PAGE_SIZE, "%d\n", val);
+	}
 
 	return count;
 }
 
-static ssize_t store_debug_devfreq_pm_qos_max(struct device *dev,
+static ssize_t store_debug_scaling_devfreq_max(struct device *dev,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
 {
@@ -212,20 +219,27 @@ static ssize_t store_debug_devfreq_pm_qos_max(struct device *dev,
 	return count;
 }
 
-static ssize_t show_debug_devfreq_pm_qos_min(struct device *dev,
+static ssize_t show_debug_scaling_devfreq_min(struct device *dev,
 					struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	ssize_t count = 0;
+	int val;
 
-	count += snprintf(buf, PAGE_SIZE, "%u\n", pm_qos_request(data->pm_qos_class));
+	val = pm_qos_read_req_value(data->pm_qos_class, &data->debug_pm_qos_min);
+	if (val < 0) {
+		dev_err(dev, "failed to read requested value\n");
+		return count;
+	}
+
+	count += snprintf(buf, PAGE_SIZE, "%d\n", val);
 
 	return count;
 }
 
-static ssize_t store_debug_devfreq_pm_qos_min(struct device *dev,
+static ssize_t store_debug_scaling_devfreq_min(struct device *dev,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
 {
@@ -350,9 +364,9 @@ static DEVICE_ATTR(exynos_devfreq_info, 0640, show_exynos_devfreq_info, NULL);
 static DEVICE_ATTR(exynos_devfreq_get_freq, 0640, show_exynos_devfreq_get_freq, NULL);
 static DEVICE_ATTR(exynos_devfreq_cmu_dump, 0640, show_exynos_devfreq_cmu_dump, NULL);
 static DEVICE_ATTR(exynos_devfreq_get_delay, 0640, show_exynos_devfreq_get_delay, NULL);
-static DEVICE_ATTR(debug_devfreq_pm_qos_min, 0640, show_debug_devfreq_pm_qos_min, store_debug_devfreq_pm_qos_min);
-static DEVICE_ATTR(debug_devfreq_pm_qos_max, 0640, show_debug_devfreq_pm_qos_max,
-						store_debug_devfreq_pm_qos_max);
+static DEVICE_ATTR(debug_scaling_devfreq_min, 0640, show_debug_scaling_devfreq_min, store_debug_scaling_devfreq_min);
+static DEVICE_ATTR(debug_scaling_devfreq_max, 0640, show_debug_scaling_devfreq_max,
+						store_debug_scaling_devfreq_max);
 static DEVICE_ATTR(disable_pm_qos, 0640, show_exynos_devfreq_disable_pm_qos,
 		   store_exynos_devfreq_disable_pm_qos);
 static DEVICE_ATTR(last_monitor_period, 0640, show_last_monitor_period, NULL);
@@ -364,8 +378,8 @@ static struct attribute *exynos_devfreq_sysfs_entries[] = {
 	&dev_attr_exynos_devfreq_get_freq.attr,
 	&dev_attr_exynos_devfreq_cmu_dump.attr,
 	&dev_attr_exynos_devfreq_get_delay.attr,
-	&dev_attr_debug_devfreq_pm_qos_min.attr,
-	&dev_attr_debug_devfreq_pm_qos_max.attr,
+	&dev_attr_debug_scaling_devfreq_min.attr,
+	&dev_attr_debug_scaling_devfreq_max.attr,
 	&dev_attr_disable_pm_qos.attr,
 	&dev_attr_last_monitor_period.attr,
 	&dev_attr_um_cur_freq.attr,
@@ -379,19 +393,26 @@ static struct attribute_group exynos_devfreq_attr_group = {
 };
 #endif
 
-static ssize_t show_devfreq_pm_qos_min(struct device *dev, struct device_attribute *attr, char *buf)
+static ssize_t show_scaling_devfreq_min(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	struct device *parent = dev->parent;
 	struct platform_device *pdev = container_of(parent, struct platform_device, dev);
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	ssize_t count = 0;
+	int val;
 
-	count += snprintf(buf, PAGE_SIZE, "%u\n", pm_qos_request(data->pm_qos_class));
+	val = pm_qos_read_req_value(data->pm_qos_class, &data->sys_pm_qos_min);
+	if (val < 0) {
+		dev_err(dev, "failed to read requested value\n");
+		return count;
+	}
+
+	count += snprintf(buf, PAGE_SIZE, "%d\n", val);
 
 	return count;
 }
 
-static ssize_t store_devfreq_pm_qos_min(struct device *dev,
+static ssize_t store_scaling_devfreq_min(struct device *dev,
 					struct device_attribute *attr,
 					const char *buf, size_t count)
 {
@@ -411,7 +432,7 @@ static ssize_t store_devfreq_pm_qos_min(struct device *dev,
 	return count;
 }
 
-static DEVICE_ATTR(devfreq_pm_qos_min, 0640, show_devfreq_pm_qos_min, store_devfreq_pm_qos_min);
+static DEVICE_ATTR(scaling_devfreq_min, 0640, show_scaling_devfreq_min, store_scaling_devfreq_min);
 
 static unsigned int *get_tokenized_data(const char *buf, int *num_tokens)
 {
@@ -1781,7 +1802,7 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 		goto err_pm_noti;
 	}
 
-	ret = sysfs_create_file(&data->devfreq->dev.kobj, &dev_attr_devfreq_pm_qos_min.attr);
+	ret = sysfs_create_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_min.attr);
 	if (ret)
 		dev_warn(data->dev, "failed create sysfs for devfreq pm_qos_min\n");
 
@@ -1863,7 +1884,7 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 {
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 
-	sysfs_remove_file(&data->devfreq->dev.kobj, &dev_attr_devfreq_pm_qos_min.attr);
+	sysfs_remove_file(&data->devfreq->dev.kobj, &dev_attr_scaling_devfreq_min.attr);
 #ifdef CONFIG_ARM_EXYNOS_DEVFREQ_DEBUG
 	sysfs_remove_group(&data->devfreq->dev.kobj, &exynos_devfreq_attr_group);
 #endif
