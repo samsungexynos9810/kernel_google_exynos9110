@@ -91,6 +91,12 @@
 #define tx_enabled(port) ((port)->unused[0])
 #define rx_enabled(port) ((port)->unused[1])
 
+#ifdef CONFIG_SERIAL_CORE_CONSOLE
+#define uart_console(port)	((port)->cons && (port)->cons->index == (port)->line)
+#else
+#define uart_console(port)	(0)
+#endif
+
 /* flag to ignore all characters coming in */
 #define RXSTAT_DUMMY_READ (0x10000000)
 
@@ -1450,6 +1456,8 @@ static u16 udivslot_table[16] = {
 	[15] = 0xFFDF,
 };
 
+static int console_cflag;
+
 static void s3c24xx_serial_set_termios(struct uart_port *port,
 				       struct ktermios *termios,
 				       struct ktermios *old)
@@ -1463,6 +1471,8 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	unsigned int umcon;
 	unsigned int udivslot = 0;
 
+	if (uart_console(port))
+		console_cflag = termios->c_cflag;
 	/*
 	 * We don't support modem control lines.
 	 */
@@ -2203,6 +2213,9 @@ static int s3c24xx_serial_resume(struct device *dev)
 		clk_prepare_enable(ourport->clk);
 		s3c24xx_serial_resetport(port, s3c24xx_port_to_cfg(port));
 		clk_disable_unprepare(ourport->clk);
+
+		if (uart_console(port))
+			port->cons->cflag = console_cflag;
 
 		uart_resume_port(&s3c24xx_uart_drv, port);
 	}
