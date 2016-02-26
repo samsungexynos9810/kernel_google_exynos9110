@@ -144,6 +144,9 @@ void exynos_cs_show_pcval(void)
 	if (exynos_cs_stat < 0)
 		return;
 
+	if (num_online_cpus() <= 1)
+		return;
+
 	spin_lock_irqsave(&debug_lock, flags);
 	curr_cpu = raw_smp_processor_id();
 
