@@ -448,32 +448,30 @@ int decon_reg_stop(u32 id, enum decon_dsi_mode dsi_mode,
 				DECON_TRIG_DISABLE);
 	}
 
-	if (decon_reg_get_stop_status(id) == 1) {
-#if 0
+	if (psr->psr_mode == DECON_MIPI_COMMAND_MODE){
 		/* timeout : 50ms */
-		/* TODO: dual DSI scenario */
 		ret = decon_reg_wait_linecnt_is_zero_timeout(id, 0, 50 * 1000);
-		if (ret)
+		if (ret < 0)
 			goto err;
-#endif
-		if (psr->psr_mode == DECON_MIPI_COMMAND_MODE)
-			decon_reg_direct_on_off(id, 0);
-		else
-			decon_reg_per_frame_off(id);
 
-		decon_reg_update_standalone(id);
-		/* timeout : 30ms */
-		if (decon_reg_wait_for_update_timeout(id, 30 * 1000) < 0)
-			return -ETIMEDOUT;
-
-		/* timeout : 20ms */
-		ret = decon_reg_wait_stop_status_timeout(id, 20 * 1000);
-		if (ret)
-			goto err;
+		decon_reg_direct_on_off(id, 0);
+	} else {
+		decon_reg_per_frame_off(id);
 	}
-err:
-	ret = decon_reg_reset(id);
 
+	/* set update bit */
+	decon_reg_update_standalone(id);
+
+	/* timeout : 30ms */
+	ret = decon_reg_wait_stop_status_timeout(id, 30 * 1000);
+	if(ret < 0){
+		goto err;
+	}
+
+	return 0;
+
+err:
+	decon_err("failed to decon stop\n");
 	return ret;
 }
 
@@ -574,7 +572,7 @@ void decon_reg_set_trigger(u32 id, enum decon_dsi_mode dsi_mode,
 	u32 mask;
 
 	if (trig == DECON_SW_TRIG)
-		mask = TRIGCON_SWTRIGCMD_I80_RGB;
+		mask = TRIGCON_SWTRIGCMD;
 	else
 		mask = TRIGCON_HWTRIGMASK_DISPIF0;
 	decon_write_mask(id, TRIGCON, val, mask);

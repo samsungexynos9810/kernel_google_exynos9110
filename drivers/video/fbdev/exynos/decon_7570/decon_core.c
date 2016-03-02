@@ -976,7 +976,7 @@ int decon_disable(struct decon_device *decon)
 
 	decon_to_psr_info(decon, &psr);
 	ret = decon_reg_stop(DECON_INT, decon->pdata->dsi_mode, &psr);
-	if (ret == -ETIMEDOUT) {
+	if (ret == -EBUSY) {
 		decon_dump(decon);
 		BUG();
 	}
