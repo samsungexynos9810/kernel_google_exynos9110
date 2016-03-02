@@ -477,6 +477,25 @@ err:
 	return ret;
 }
 
+void decon_reg_set_rgb_type(u32 id, int win_idx, u32 type)
+{
+	u32 csc_eq = 0;
+
+	switch (type) {
+	case BT_601_NARROW:
+		csc_eq = WINCON_RGB_TYPE_BT601N;
+		break;
+	case BT_601_WIDE:
+		csc_eq = WINCON_RGB_TYPE_BT601W;
+		break;
+	default:
+		decon_err("Unsupported CSC Equation\n");
+	}
+
+	decon_dbg("win_idx: %d CSC mode : %x\n", win_idx, csc_eq);
+	decon_write_mask(id, WINCON(win_idx), csc_eq, (0x1 << 26));
+}
+
 void decon_reg_set_regs_data(u32 id, int win_idx,
 			struct decon_regs_data *regs)
 {

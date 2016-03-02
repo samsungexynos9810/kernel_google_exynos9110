@@ -1865,6 +1865,8 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 		}
 #endif
 		decon_reg_set_regs_data(DECON_INT, i, &win_regs);
+		decon_reg_set_rgb_type(DECON_INT, i,
+				regs->win_config[i].vpp_parm.eq_mode);
 
 		plane_cnt = decon_get_memory_plane_cnt(regs->win_config[i].format);
 		for (j = 0; j < MAX_BUF_PLANE_CNT; ++j) {

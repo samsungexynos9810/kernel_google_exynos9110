@@ -101,6 +101,7 @@ void decon_reg_init(u32 id, enum decon_dsi_mode dsi_mode, struct decon_init_para
 void decon_reg_init_probe(u32 id, enum decon_dsi_mode dsi_mode, struct decon_init_param *p);
 void decon_reg_start(u32 id, enum decon_dsi_mode dsi_mode, struct decon_psr_info *psr);
 int decon_reg_stop(u32 id, enum decon_dsi_mode dsi_mode, struct decon_psr_info *psr);
+void decon_reg_set_rgb_type(u32 id, int win_idx, u32 type);
 void decon_reg_set_regs_data(u32 id, int win_idx, struct decon_regs_data *regs);
 void decon_reg_set_int(u32 id, struct decon_psr_info *psr, enum decon_dsi_mode dsi_mode, u32 en);
 void decon_reg_set_trigger(u32 id, enum decon_dsi_mode dsi_mode,
