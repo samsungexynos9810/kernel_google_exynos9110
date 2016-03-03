@@ -183,6 +183,7 @@ static int s6e36w1x01_displayon(struct dsim_device *dsim)
 
 static int s6e36w1x01_suspend(struct dsim_device *dsim)
 {
+	lcd_disable();
 	return 1;
 }
 

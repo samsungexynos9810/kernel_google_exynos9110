@@ -71,96 +71,93 @@ struct decon_lcd *decon_get_lcd_info(void)
 void lcd_init(struct decon_lcd * lcd)
 {
 	/* Test key enable */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) TEST_KEY_ON_0,
-		ARRAY_SIZE(TEST_KEY_ON_0)) == -1)
+		ARRAY_SIZE(TEST_KEY_ON_0)) < 0)
 		dsim_err("failed to send TEST_KEY_ON_0.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) TEST_KEY_ON_1,
-		ARRAY_SIZE(TEST_KEY_ON_1)) == -1)
+		ARRAY_SIZE(TEST_KEY_ON_1)) < 0)
 		dsim_err("failed to send TEST_KEY_ON_1.\n");
 
 	/* sleep out */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) SLPOUT,
-		ARRAY_SIZE(SLPOUT)) == -1)
+		ARRAY_SIZE(SLPOUT)) < 0)
 		dsim_err("failed to send SLPOUTs.\n");
 
 	/* 120ms delay */
 	msleep(120);
 
 	/* Module Information Read */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) GAMMA_360,
-		ARRAY_SIZE(GAMMA_360)) == -1)
+		ARRAY_SIZE(GAMMA_360)) < 0)
 		dsim_err("failed to send GAMMA_360.\n");
 
 	/* Brightness Setting */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) AOR_360,
-		ARRAY_SIZE(AOR_360)) == -1)
+		ARRAY_SIZE(AOR_360)) < 0)
 		dsim_err("failed to send AOR_360.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) ELVSS_360,
-		ARRAY_SIZE(ELVSS_360)) == -1)
+		ARRAY_SIZE(ELVSS_360)) < 0)
 		dsim_err("failed to send ELVSS_360.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) VINT_360,
-		ARRAY_SIZE(VINT_360)) == -1)
+		ARRAY_SIZE(VINT_360)) < 0)
 		dsim_err("failed to send VINT_360.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) PANEL_UPDATE,
-		ARRAY_SIZE(PANEL_UPDATE)) == -1)
+		ARRAY_SIZE(PANEL_UPDATE)) < 0)
 		dsim_err("failed to send PANEL_UPDATE.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) HIDDEN_KEY_ON,
-		ARRAY_SIZE(HIDDEN_KEY_ON)) == -1)
+		ARRAY_SIZE(HIDDEN_KEY_ON)) < 0)
 		dsim_err("failed to send HIDDEN_KEY_ON.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) ETC_GPARA,
-		ARRAY_SIZE(ETC_GPARA)) == -1)
+		ARRAY_SIZE(ETC_GPARA)) < 0)
 		dsim_err("failed to send ETC_GPARA.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) ETC_SET,
-		ARRAY_SIZE(ETC_SET)) == -1)
+		ARRAY_SIZE(ETC_SET)) < 0)
 		dsim_err("failed to send ETC_SET.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) HIDDEN_KEY_OFF,
-		ARRAY_SIZE(HIDDEN_KEY_OFF)) == -1)
+		ARRAY_SIZE(HIDDEN_KEY_OFF)) < 0)
 		dsim_err("failed to send HIDDEN_KEY_OFF.\n");
 
 	/* Test key disable */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) TEST_KEY_OFF_1,
-		ARRAY_SIZE(TEST_KEY_OFF_1)) == -1)
+		ARRAY_SIZE(TEST_KEY_OFF_1)) < 0)
 		dsim_err("failed to send TEST_KEY_OFF_1.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) TEST_KEY_OFF_0,
-		ARRAY_SIZE(TEST_KEY_OFF_0)) == -1)
+		ARRAY_SIZE(TEST_KEY_OFF_0)) < 0)
 		dsim_err("failed to send TEST_KEY_OFF_0.\n");
 
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) TEON,
-		ARRAY_SIZE(TEON)) == -1)
+		ARRAY_SIZE(TEON)) < 0)
 		dsim_err("failed to send TEON.\n");
 
-	/* 120ms delay */
-	msleep(120);
-
 	/* display on */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	if(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) DISPON,
-		ARRAY_SIZE(DISPON)) == -1)
-		dsim_err("failed to send SEQ_DISPLAY_ON.\n");
+		ARRAY_SIZE(DISPON)) < 0)
+		dsim_err("failed to send DISPLAY_ON.\n");
 }
 
 void lcd_enable(void)
@@ -169,6 +166,18 @@ void lcd_enable(void)
 
 void lcd_disable(void)
 {
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		(unsigned long)DISPOFF,
+		ARRAY_SIZE(DISPOFF)) < 0)
+		dsim_err("fail to write DISPLAY_OFF.\n");
+
+	if (dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+		(unsigned long)SLPIN,
+		ARRAY_SIZE(SLPIN)) < 0)
+		dsim_err("fail to write SLEEP_IN.\n");
+
+	/* 120ms delay */
+	msleep(120);
 }
 
 int lcd_gamma_ctrl(u32 backlightlevel)

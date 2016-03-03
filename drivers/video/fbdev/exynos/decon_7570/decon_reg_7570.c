@@ -215,11 +215,11 @@ void decon_reg_configure_trigger(u32 id, enum decon_trig_mode mode)
 {
 	u32 val, mask;
 
-	mask = TRIGCON_SWTRIGEN_I80_RGB | TRIGCON_HWTRIGEN_I80_RGB;
+	mask = TRIGCON_SWTRIGEN | TRIGCON_HWTRIGEN;
 	if (mode == DECON_SW_TRIG) {
-		val = TRIGCON_SWTRIGEN_I80_RGB;
+		val = TRIGCON_SWTRIGEN;
 	} else {
-		val = TRIGCON_HWTRIGEN_I80_RGB | TRIGCON_HWTRIG_AUTO_MASK;
+		val = TRIGCON_HWTRIGEN | TRIGCON_HWTRIG_AUTO_MASK;
 	}
 
 	decon_write_mask(id, TRIGCON, val, mask);
