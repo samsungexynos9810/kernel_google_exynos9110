@@ -22,6 +22,7 @@
 #include <linux/err.h>
 #include <linux/clk.h>
 #include <linux/interrupt.h>
+#include <linux/gpio.h>
 
 #include <asm/cacheflush.h>
 #include <asm/hardware/cache-l2x0.h>
@@ -55,6 +56,12 @@
 
 #define EXYNOS_WAKEUP_STAT_EINT		(1 << 0)
 #define EXYNOS_WAKEUP_STAT_RTC_ALARM	(1 << 1)
+
+/*
+ * pin number of GPX0-0 got by
+ * # cat /d/pinctrl/11000000.pinctrl/pins | grep gpx0-0
+ */
+#define EXYNOS3250_GPIO_GPX0_0	121
 
 #define msecs_to_loops(t) (loops_per_jiffy / 1000 * HZ * t)
 
@@ -207,10 +214,11 @@ static void exynos_show_wakeup_reason_eint(void)
 	int bit;
 	int reg_eintstart;
 	long unsigned int ext_int_pend;
-	unsigned long eint_wakeup_mask;
+	unsigned int eint_wakeup_mask;
 	bool found = 0;
 	extern void __iomem *exynos_eint_base;
-	int ext_ent;
+	int ext_ent, irq;
+	struct irq_desc *desc;
 
 	eint_wakeup_mask = __raw_readl(EXYNOS_EINT_WAKEUP_MASK);
 
@@ -219,19 +227,18 @@ static void exynos_show_wakeup_reason_eint(void)
 			__raw_readl(EINT_PEND(exynos_eint_base,
 					      IRQ_EINT(reg_eintstart)));
 		for_each_set_bit(bit, &ext_int_pend, 8) {
-			int irq = IRQ_EINT(reg_eintstart) + bit;
- 			struct irq_desc *desc = irq_to_desc(irq);
-
-			ext_ent= irq - IRQ_EINT(0);
-
 			if (eint_wakeup_mask & (1 << (reg_eintstart + bit)))
 				continue;
 
+			ext_ent = reg_eintstart + bit;
+			irq = gpio_to_irq(EXYNOS3250_GPIO_GPX0_0 + ext_ent);
+			desc = irq_to_desc(irq);
+
 			if (desc && desc->action && desc->action->name)
-				pr_info("Resume caused by External Hardware Interrupt %d, %s\n", ext_ent,
+				pr_info("Resume caused by XEINT_%d, %s\n", ext_ent,
 					desc->action->name);
 			else
-				pr_info("Resume caused by External Hardware Interrupt %d\n", ext_ent);
+				pr_info("Resume caused by XEINT_%d\n", ext_ent);
 
 			found = 1;
 		}
