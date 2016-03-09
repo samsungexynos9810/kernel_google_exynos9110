@@ -187,27 +187,33 @@ static int of_thermal_set_emul_temp(struct thermal_zone_device *tz,
 	return data->ops->set_emul_temp(data->sensor_data, temp);
 }
 
+static int of_thermal_get_trip_temp(struct thermal_zone_device *tz, int trip,
+				    int *temp)
+{
+	struct __thermal_zone *data = tz->devdata;
+
+	if (trip >= data->ntrips || trip < 0)
+		return -EDOM;
+
+	*temp = data->trips[trip].temperature;
+
+	return 0;
+}
+
 static int of_thermal_get_trend(struct thermal_zone_device *tz, int trip,
 				enum thermal_trend *trend)
 {
-	struct __thermal_zone *data = tz->devdata;
-	long dev_trend;
-	int r;
+	int trip_temp;
+	int ret;
 
-	if (!data->ops->get_trend)
-		return -EINVAL;
+	ret = of_thermal_get_trip_temp(tz, trip, &trip_temp);
+	if (ret < 0)
+		return ret;
 
-	r = data->ops->get_trend(data->sensor_data, &dev_trend);
-	if (r)
-		return r;
-
-	/* TODO: These intervals might have some thresholds, but in core code */
-	if (dev_trend > 0)
-		*trend = THERMAL_TREND_RAISING;
-	else if (dev_trend < 0)
-		*trend = THERMAL_TREND_DROPPING;
+	if (tz->temperature >= trip_temp)
+		*trend = THERMAL_TREND_RAISE_FULL;
 	else
-		*trend = THERMAL_TREND_STABLE;
+		*trend = THERMAL_TREND_DROP_FULL;
 
 	return 0;
 }
@@ -306,19 +312,6 @@ static int of_thermal_get_trip_type(struct thermal_zone_device *tz, int trip,
 		return -EDOM;
 
 	*type = data->trips[trip].type;
-
-	return 0;
-}
-
-static int of_thermal_get_trip_temp(struct thermal_zone_device *tz, int trip,
-				    int *temp)
-{
-	struct __thermal_zone *data = tz->devdata;
-
-	if (trip >= data->ntrips || trip < 0)
-		return -EDOM;
-
-	*temp = data->trips[trip].temperature;
 
 	return 0;
 }
