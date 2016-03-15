@@ -102,6 +102,29 @@ static int of_thermal_get_temp(struct thermal_zone_device *tz,
 }
 
 /**
+ * of_thermal_throttle_hotplug - function to throttle hotplug cpu core.
+ *
+ * @tz: pointer to a thermal zone
+ *
+ * This function call throttle_cpu_hotplug function in exynos thermal.
+ *
+ * Return: do not exist function callback, -EINVAL when data not available
+ */
+static int of_thermal_throttle_hotplug(struct thermal_zone_device *tz)
+{
+	struct __thermal_zone *data = tz->devdata;
+	int ret = 0;
+
+	if (!data->ops->throttle_cpu_hotplug)
+		return -EINVAL;
+
+	ret = data->ops->throttle_cpu_hotplug(data->sensor_data, tz->temperature);
+
+	return ret;
+}
+
+
+/**
  * of_thermal_get_ntrips - function to export number of available trip
  *			   points.
  * @tz: pointer to a thermal zone
@@ -413,6 +436,7 @@ thermal_zone_of_add_sensor(struct device_node *zone,
 	tzd->ops->get_temp = of_thermal_get_temp;
 	tzd->ops->get_trend = of_thermal_get_trend;
 	tzd->ops->set_emul_temp = of_thermal_set_emul_temp;
+	tzd->ops->throttle_hotplug = of_thermal_throttle_hotplug;
 	mutex_unlock(&tzd->lock);
 
 	return tzd;
