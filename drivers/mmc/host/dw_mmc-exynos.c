@@ -776,6 +776,14 @@ static u8 dw_mci_tuning_sampling(struct dw_mci *host)
 	}
 	clksel = (clksel & 0xfffffff8) | sample;
 	mci_writel(host, CLKSEL, clksel);
+
+	if (!(priv->ignore_phase & phase7_en)) {
+		if (phase7_en & (0x1 << sample))
+			mci_phase7_mux_en(host, AXI_BURST_LEN);
+		else
+			mci_phase7_mux_dis(host, AXI_BURST_LEN);
+	}
+
 	if (priv->ctrl_flag & DW_MMC_EXYNOS_ENABLE_SHIFT)
 		dw_mci_exynos_set_enable_shift(host, sample, false);
 
@@ -791,6 +799,12 @@ static void dw_mci_exynos_set_sample(struct dw_mci *host, u32 sample, bool tunin
 	clksel = mci_readl(host, CLKSEL);
 	clksel = (clksel & ~0x7) | SDMMC_CLKSEL_CCLK_SAMPLE(sample);
 	mci_writel(host, CLKSEL, clksel);
+
+	if (sample == 7)
+		mci_phase7_mux_en(host, AXI_BURST_LEN);
+	else
+		mci_phase7_mux_dis(host, AXI_BURST_LEN);
+
 	if (priv->ctrl_flag & DW_MMC_EXYNOS_ENABLE_SHIFT)
 		dw_mci_exynos_set_enable_shift(host, sample, false);
 	if (!tuning)
@@ -828,6 +842,17 @@ static u32 dw_mci_exynos_get_sample(struct dw_mci *host)
 	return SDMMC_CLKSEL_CCLK_SAMPLE(clksel);
 }
 
+static int __find_median_of_bits(u32 orig_bits, u16 mask, u8 startbit)
+{
+	u32 i, testbits;
+
+	testbits = orig_bits;
+	for (i = startbit; i < (8 + startbit); i++, testbits >>= 1)
+		if ((testbits & mask) == mask)
+			return SDMMC_CLKSEL_CCLK_FINE_SAMPLE(i);
+	return -1;
+}
+
 /*
  * After testing all (8) possible clock sample values and using one bit for
  * each value that works, return the "middle" bit position of any sequential
@@ -838,6 +863,10 @@ static int find_median_of_bits(struct dw_mci *host, unsigned int map, bool force
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 	unsigned int i, testbits, orig_bits;
 	u8 divratio;
+	int num_of_mask = 3;
+	u8 mask[3] = {0x7f, 0x1f, 0x7};
+	/* Tuning during the center value is set to 3/2 */
+	int optimum[3] = {4, 3, 1};
 	int sel = -1;
 
 	/* replicate the map so "arithimetic shift right" shifts in
@@ -854,37 +883,14 @@ static int find_median_of_bits(struct dw_mci *host, unsigned int map, bool force
 			testbits = orig_bits = map & (map >> 4);
 		dev_info(host->dev, "divratio: %d map: 0x %08x\n",
 					divratio, testbits);
-#define THREEBITS 0x7
-		/* Middle is bit 1. */
-		for (i = 1; i < (8 + 1); i++, testbits >>= 1) {
-			if ((testbits & THREEBITS) == THREEBITS)
-				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
-		}
+		sel = __find_median_of_bits(orig_bits, mask[2], 1);
 	} else {
-#define SEVENBITS 0x7f
-		/* Middle is bit 3 */
-		for (i = 3; i < (8 + 3); i++, testbits >>= 1) {
-			if ((testbits & SEVENBITS) == SEVENBITS)
-				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
-		}
-
-#define FIVEBITS 0x1f
-		/* Middle is bit 2. */
-		testbits = orig_bits;
-		for (i = 2; i < (8 + 2); i++, testbits >>= 1) {
-			if ((testbits & FIVEBITS) == FIVEBITS)
-				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
-		}
-
-#define THREEBITS 0x7
-		/* Middle is bit 1. */
-		testbits = orig_bits;
-		for (i = 1; i < (8 + 1); i++, testbits >>= 1) {
-			if ((testbits & THREEBITS) == THREEBITS)
-				return SDMMC_CLKSEL_CCLK_SAMPLE(i);
+		for (i = 0; i < num_of_mask; i++) {
+			sel = __find_median_of_bits(orig_bits, mask[i], optimum[i]);
+			if (-1 != sel)
+				break;
 		}
 	}
-
 	return sel;
 }
 
@@ -907,6 +913,8 @@ static int find_median_of_16bits(struct dw_mci *host, unsigned int map, bool for
 	u8 i, divratio;
 	int sel = -1;
 	u16 mask[NUM_OF_MASK] = {0x1fff, 0x7ff, 0x1ff, 0x7f, 0x1f, 0xf, 0x7};
+	/* Tuning during the center value is set to 3/2 */
+	int optimum[NUM_OF_MASK] = {9, 7, 6, 5, 3, 2, 1};
 
 	/* replicate the map so "arithimetic shift right" shifts in
 	 * the same bits "again". e.g. portable "Rotate Right" bit operation.
@@ -925,7 +933,7 @@ static int find_median_of_16bits(struct dw_mci *host, unsigned int map, bool for
 	}
 
 	for (i = 0; i < NUM_OF_MASK; i++) {
-		sel = __find_median_of_16bits(orig_bits, mask[i], NUM_OF_MASK-i);
+		sel = __find_median_of_16bits(orig_bits, mask[i], optimum[i]);
 		if (-1 != sel)
 			break;
 	}
@@ -1180,6 +1188,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci_slot *slot, u32 opcode,
 		host->pdata->clk_smpl = priv->tuned_sample = best_sample;
 		if (host->pdata->only_once_tune)
 			host->pdata->tuned = true;
+
 		dw_mci_exynos_set_sample(host, best_sample, false);
 		if (en_fine_tuning) {
 			if (best_sample_ori % 2)

@@ -56,6 +56,8 @@ struct dw_mci_exynos_priv_data {
 #define DW_MMC_EXYNOS_ENABLE_SHIFT		BIT(2)
 };
 
+#define phase7_en	BIT(7)
+
 extern int dw_mci_exynos_request_status(void);
 extern void dw_mci_reg_dump(struct dw_mci *host);
 
@@ -226,4 +228,19 @@ extern void dw_mci_reg_dump(struct dw_mci *host);
 #define HWACG_Q_ACTIVE_EN			1
 #define HWACG_Q_ACTIVE_DIS			0
 
-#endif /* _DW_MMC_EXYNOS_H_ */
+/* Phase 7 Mux Control */
+#define mci_phase7_mux_en(dev, reg) ({\
+		u32 __ret = 0;\
+		__ret = __raw_readl((dev)->regs + SDMMC_##reg);\
+		__ret &= ~(0x1 << 31);\
+		__raw_writel(((__ret) | (0x1 << 31)) , (dev)->regs + SDMMC_##reg);\
+		})
+
+#define mci_phase7_mux_dis(dev, reg) ({\
+		u32 __ret = 0;\
+		__ret = __raw_readl((dev)->regs + SDMMC_##reg);\
+		__ret &= ~(0x1 << 31);\
+		__raw_writel((__ret) , (dev)->regs + SDMMC_##reg);\
+		})
+
+#endif /* _EXYNOS_DWMCI_H_ */
