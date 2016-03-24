@@ -466,23 +466,18 @@ int bcm4430_bluetooth_suspend(struct platform_device *pdev, pm_message_t state)
 	if(gpio_get_value(BT_RESET_GPIO) == BT_PWR_ON) { // BT on, suspend
 		PR_INFO("%s() BT ON\n", __FUNCTION__);
 
-		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0302);/* 1byte:pull up 0byte:pud RX*/
-		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0302);/* 1byte:pull up 0byte:pud TX*/
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud CTS*/
 		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0302);/* 1byte:pull up 0byte:pud RTS*/
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud MAIN_DUAL_WKUP*/
 		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0102);/* 1byte:pull down 0byte:pud DUAL_MAIN_WKUP*/
 
-		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0000);/* 1byte:input 0byte:func */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0100);/* 1byte:output 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0000);/* 1byte:input 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0100);/* 1byte:output 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:output 0byte:func */
-		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */		
+		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
 
-		gpio_direction_output(BT_MAIN_TX_GPIO, 1);
 		gpio_direction_output(BT_MAIN_RTS_GPIO, 1);
-		
+
 	} else {
 		PR_INFO("%s(): BT OFF\n", __FUNCTION__);
 	}
@@ -501,20 +496,16 @@ int bcm4430_bluetooth_resume(struct platform_device *pdev)
 
 	if(gpio_get_value(BT_RESET_GPIO) == BT_PWR_ON) { // BT on, resume
 		PR_INFO("%s(): BT ON\n", __FUNCTION__);
-		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0002);/* 1byte:disable 0byte:pud */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0002);/* 1byte:disable 0byte:pud */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0002);/* 1byte:disable 0byte:pud */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0002);/* 1byte:disable 0byte:pud */
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0102);/* 1byte:pull down 0byte:pud */
 		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0002);/* 1byte:disable 0byte:pud */
 
-		ret = pin_config_set("11400000.pinctrl", "gpa0-0", 0x0200);/* 1byte:UART_0_RXD 0byte:func */
-		ret = pin_config_set("11400000.pinctrl", "gpa0-1", 0x0200);/* 1byte:UART_0_TXD 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-2", 0x0200);/* 1byte:UART_0_CTSn 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpa0-3", 0x0200);/* 1byte:UART_0_RTSn 0byte:func */
 		ret = pin_config_set("11400000.pinctrl", "gpc0-3", 0x0100);/* 1byte:Output 0byte:func */
 		ret = pin_config_set("11000000.pinctrl", "gpx2-6", 0x0F00);/* 1byte:EXT_INT42 0byte:func */
-	} 
+	}
 	return 0;
 }
 
