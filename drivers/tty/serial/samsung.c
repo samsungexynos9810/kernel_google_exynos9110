@@ -83,7 +83,8 @@
 #define ENABLE_UART_DMA_MODE	true
 #define DMA_TRANS_LIMIT	64
 #define RX_BUFFER_SIZE	256
-#define BURST_1BYTE	0
+#define RX_BURST_BYTE	3
+#define TX_BURST_BYTE   0
 #endif
 
 /* macros to change one thing to another */
@@ -391,15 +392,13 @@ static void enable_rx_dma(struct uart_port *port)
 	/* set Rx mode to DMA mode */
 	ucon = rd_regl(port, S3C2410_UCON);
 	ucon &= ~((0x7 << UCON_RXBURST_SZ) |
-			(0x1 << UCON_TIMEOUT_VAL) |
-			(0x1 << UCON_EMPTYINT_EN) |
-			(0x1 << UCON_DMASUS_EN) |
-			UCON_RXMODE_CL);
-	ucon |= (BURST_1BYTE << UCON_RXBURST_SZ) |
 			(0xf << UCON_TIMEOUT_VAL) |
 			(0x1 << UCON_EMPTYINT_EN) |
 			(0x1 << UCON_DMASUS_EN) |
-			(0x1 << UCON_TIMEOUT_EN) |
+			UCON_RXMODE_CL);
+	ucon |= (RX_BURST_BYTE << UCON_RXBURST_SZ) |
+			(0xf << UCON_TIMEOUT_VAL) |
+			(0x1 << UCON_DMASUS_EN) |
 			UCON_RXDMA_MODE;
 	wr_regl(port, S3C2410_UCON, ucon);
 
@@ -753,7 +752,7 @@ static irqreturn_t s3c24xx_serial_tx_chars(int irq, void *id)
 
 		ucon = rd_regl(port, S3C2410_UCON);
 		ucon &= ~((0x7 << UCON_TXBURST_SZ) | UCON_TXMODE_CL);
-		ucon |= (BURST_1BYTE << UCON_TXBURST_SZ) | UCON_TXDMA_MODE;
+		ucon |= (TX_BURST_BYTE << UCON_TXBURST_SZ) | UCON_TXDMA_MODE;
 		wr_regl(port,  S3C2410_UCON, ucon);
 
 		/* Mask Tx interrupt */
