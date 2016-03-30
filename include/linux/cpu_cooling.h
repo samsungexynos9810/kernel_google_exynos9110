@@ -66,6 +66,7 @@ struct cpufreq_cooling_device {
 	unsigned int max_level;
 	unsigned int *freq_table;	/* In descending order */
 	struct cpumask allowed_cpus;
+	struct cpumask target_cpus;
 	struct list_head node;
 	u32 last_load;
 	u64 *time_in_idle;

@@ -809,7 +809,7 @@ static int cpufreq_power2state(struct thermal_cooling_device *cdev,
 	cpumask_t tempmask;
 	int num_cpus;
 
-	cpumask_and(&tempmask, &cpufreq_device->allowed_cpus, cpu_online_mask);
+	cpumask_and(&tempmask, &cpufreq_device->allowed_cpus, &cpufreq_device->target_cpus);
 	num_cpus = cpumask_weight(&tempmask);
 
 	cpu = cpumask_any_and(&cpufreq_device->allowed_cpus, cpu_online_mask);
@@ -967,6 +967,7 @@ __cpufreq_cooling_register(struct device_node *np,
 	cpufreq_dev->max_level--;
 
 	cpumask_copy(&cpufreq_dev->allowed_cpus, clip_cpus);
+	cpumask_copy(&cpufreq_dev->target_cpus, clip_cpus);
 
 	if (capacitance) {
 		cpufreq_cooling_ops.get_requested_power =

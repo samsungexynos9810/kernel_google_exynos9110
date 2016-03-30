@@ -1680,6 +1680,9 @@ EXPORT_SYMBOL(thermal_cdev_update);
  */
 void thermal_notify_framework(struct thermal_zone_device *tz, int trip)
 {
+	if (atomic_read(&in_suspend))
+		return;
+
 	handle_thermal_trip(tz, trip);
 }
 EXPORT_SYMBOL_GPL(thermal_notify_framework);

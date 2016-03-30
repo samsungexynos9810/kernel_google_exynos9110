@@ -29,6 +29,8 @@
 
 #define NR_HOTPLUG_CPUS	4
 #define MCELSIUS        1000
+#define DUAL_CPU		(2)
+#define QUAD_CPU		(4)
 
 enum soc_type {
 	SOC_ARCH_EXYNOS8890 = 1,
@@ -145,6 +147,7 @@ struct exynos_tmu_data {
 	u16 temp_error1, temp_error2;
 	struct thermal_zone_device *tzd;
 	struct thermal_cooling_device *cool_dev;
+	struct notifier_block nb;
 	struct list_head node;
 	u32 sensors;
 	int num_probe;

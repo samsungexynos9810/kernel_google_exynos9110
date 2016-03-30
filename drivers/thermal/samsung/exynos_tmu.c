@@ -42,6 +42,7 @@
 #include <linux/isp_cooling.h>
 #include <linux/slab.h>
 #include <linux/exynos-ss.h>
+#include <linux/cpu.h>
 #include <soc/samsung/tmu.h>
 #include <soc/samsung/ect_parser.h>
 #include <dt-bindings/thermal/thermal_exynos.h>
@@ -1370,6 +1371,41 @@ static int exynos_isp_cooling_register(struct exynos_tmu_data *data)
 static int exynos_isp_cooling_register(struct exynos_tmu_data *data) {return 0;}
 #endif
 
+extern struct cpumask hmp_fast_cpu_mask;
+static int exynos_tmu_cpus_notifier(struct notifier_block *nb,
+				    unsigned long event, void *data)
+{
+	struct exynos_tmu_data *tmudata = container_of(nb, struct exynos_tmu_data, nb);
+	struct thermal_zone_device *tz = tmudata->tzd;
+	struct cpumask mask;
+	int big_cpu_cnt;
+	int count;
+	struct cpufreq_cooling_device *cpufreq_device = (struct cpufreq_cooling_device *)tmudata->cool_dev->devdata;
+
+
+	cpumask_copy(&mask, data);
+	cpumask_and(&mask, &mask, &hmp_fast_cpu_mask);
+	big_cpu_cnt = cpumask_weight(&mask);
+
+	cpumask_copy(&cpufreq_device->target_cpus, &mask);
+
+	switch (event) {
+	case CPUS_DOWN_COMPLETE:
+		if (big_cpu_cnt == DUAL_CPU) {
+			for (count = 0; count < tz->trips; count++)
+				thermal_notify_framework(tz, count);
+		}
+		break;
+	case CPUS_UP_PREPARE:
+		if (big_cpu_cnt == DUAL_CPU || big_cpu_cnt == QUAD_CPU) {
+			for (count = 0; count < tz->trips; count++)
+				thermal_notify_framework(tz, count);
+		}
+		break;
+	}
+	return NOTIFY_OK;
+}
+
 static int exynos_tmu_probe(struct platform_device *pdev)
 {
 	struct exynos_tmu_data *data;
@@ -1462,8 +1498,11 @@ static int exynos_tmu_probe(struct platform_device *pdev)
 	list_add_tail(&data->node, &dtm_dev_list);
 	mutex_unlock(&data->lock);
 
-	if (list_is_singular(&dtm_dev_list))
+	if (list_is_singular(&dtm_dev_list)) {
 		register_pm_notifier(&exynos_tmu_pm_notifier);
+		data->nb.notifier_call = exynos_tmu_cpus_notifier;
+		register_cpus_notifier(&data->nb);
+	}
 
 	if (!IS_ERR(data->tzd))
 		data->tzd->ops->set_mode(data->tzd, THERMAL_DEVICE_ENABLED);
@@ -1482,8 +1521,10 @@ static int exynos_tmu_remove(struct platform_device *pdev)
 	struct thermal_zone_device *tzd = data->tzd;
 	struct exynos_tmu_data *devnode;
 
-	if (list_is_singular(&dtm_dev_list))
+	if (list_is_singular(&dtm_dev_list)) {
 		unregister_pm_notifier(&exynos_tmu_pm_notifier);
+		unregister_cpus_notifier(&data->nb);
+	}
 
 	thermal_zone_of_sensor_unregister(&pdev->dev, tzd);
 	exynos_tmu_control(pdev, false);
