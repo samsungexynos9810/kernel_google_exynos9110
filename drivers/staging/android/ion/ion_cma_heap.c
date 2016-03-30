@@ -16,12 +16,14 @@
  */
 
 #include <linux/device.h>
+#include <linux/ion.h>
 #include <linux/slab.h>
 #include <linux/errno.h>
 #include <linux/err.h>
 #include <linux/dma-mapping.h>
+#include <linux/exynos_ion.h>
 
-#include "ion.h"
+/* for ion_heap_ops structure */
 #include "ion_priv.h"
 
 #define ION_CMA_ALLOCATE_FAILED -1
@@ -38,7 +40,6 @@ struct ion_cma_buffer_info {
 	dma_addr_t handle;
 	struct sg_table *table;
 };
-
 
 /* ION CMA heap operations functions */
 static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
@@ -57,9 +58,14 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 	if (align > PAGE_SIZE)
 		return -EINVAL;
 
+	if (!ion_is_heap_available(heap, flags, NULL))
+		return -EPERM;
+
 	info = kzalloc(sizeof(struct ion_cma_buffer_info), GFP_KERNEL);
-	if (!info)
+	if (!info) {
+		dev_err(dev, "Can't allocate buffer info\n");
 		return ION_CMA_ALLOCATE_FAILED;
+	}
 
 	info->cpu_addr = dma_alloc_coherent(dev, len, &(info->handle),
 						GFP_HIGHUSER | __GFP_ZERO);
@@ -70,14 +76,41 @@ static int ion_cma_allocate(struct ion_heap *heap, struct ion_buffer *buffer,
 	}
 
 	info->table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
-	if (!info->table)
+	if (!info->table) {
+		dev_err(dev, "Fail to allocate sg table\n");
 		goto free_mem;
+	}
 
 	if (dma_get_sgtable(dev, info->table, info->cpu_addr, info->handle,
 			    len))
 		goto free_table;
 	/* keep this for memory release */
 	buffer->priv_virt = info;
+
+#ifdef CONFIG_ARM64
+	if (!ion_buffer_cached(buffer) && !(buffer->flags & ION_FLAG_PROTECTED)) {
+		if (ion_buffer_need_flush_all(buffer))
+			flush_all_cpu_caches();
+		else
+			__flush_dcache_area(page_address(sg_page(info->table->sgl)),
+									len);
+	}
+#else
+	if (!ion_buffer_cached(buffer) && !(buffer->flags & ION_FLAG_PROTECTED)) {
+		if (ion_buffer_need_flush_all(buffer)) {
+			flush_all_cpu_caches();
+		} else {
+			struct sg_table *table = buffer->priv_virt;
+
+			ion_device_sync(buffer->dev, table->sgl, 1,
+					DMA_BIDIRECTIONAL, ion_buffer_flush,
+					false);
+		}
+	}
+#endif
+	if (buffer->flags & ION_FLAG_PROTECTED)
+		ion_secure_protect(heap);
+
 	dev_dbg(dev, "Allocate buffer %p\n", buffer);
 	return 0;
 
@@ -103,6 +136,9 @@ static void ion_cma_free(struct ion_buffer *buffer)
 	sg_free_table(info->table);
 	kfree(info->table);
 	kfree(info);
+
+	if (buffer->flags & ION_FLAG_PROTECTED)
+		ion_secure_unprotect(buffer->heap);
 }
 
 /* return physical address in addr */
