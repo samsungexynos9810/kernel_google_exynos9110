@@ -90,15 +90,15 @@ static void free_buffer_page(struct ion_system_heap *heap,
 {
 	unsigned int order = compound_order(page);
 
-	if (!cached) {
-		struct ion_page_pool *pool = heap->pools[order_to_index(order)];
-		if (buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE)
-			ion_page_pool_free_immediate(pool, page);
-		else
-			ion_page_pool_free(pool, page);
+	struct ion_page_pool *pool = heap->pools[order_to_index(order)];
+	if (buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE) {
+		ion_page_pool_free_immediate(pool, page);
 	} else {
-		ion_clear_page_clean(page);
-		__free_pages(page, order);
+		int uncached = ion_buffer_cached(buffer) ? 0 : 1;
+		int idx = order_to_index(order) + (num_orders * uncached);
+		struct ion_page_pool *pool = heap->pools[idx];
+
+		ion_page_pool_free(pool, page);
 	}
 }
 
@@ -215,11 +215,11 @@ static void ion_system_heap_free(struct ion_buffer *buffer)
 	int i;
 
 	/*
-	 *  uncached pages come from the page pools, zero them before returning
+	 *  pages come from the page pools, zero them before returning
 	 *  for security purposes (other allocations are zerod at
 	 *  alloc time
 	 */
-	if (!cached && !(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE))
+	if (!(buffer->private_flags & ION_PRIV_FLAG_SHRINKER_FREE))
 		ion_heap_buffer_zero(buffer);
 
 	for_each_sg(table->sgl, sg, table->nents, i)
