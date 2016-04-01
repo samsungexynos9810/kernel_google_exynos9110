@@ -18,6 +18,7 @@
 #include <linux/time.h>
 #include <linux/timer.h>
 #include <linux/kthread.h>
+#include <linux/pm_opp.h>
 
 #include "governor.h"
 
@@ -44,12 +45,22 @@ static int devfreq_simple_interactive_func(struct devfreq *df,
 	int delay_check = 0;
 	int delay_time = 0;
 	int i = 0;
+	struct dev_pm_opp *limit_opp;
 
 	if (data) {
 		if (!df->disabled_pm_qos) {
 			pm_qos_min = pm_qos_request(data->pm_qos_class);
-			if (data->pm_qos_class_max)
+			if (data->pm_qos_class_max) {
 				pm_qos_max = pm_qos_request(data->pm_qos_class_max);
+				rcu_read_lock();
+				limit_opp = devfreq_recommended_opp(df->dev.parent, &pm_qos_max,
+						DEVFREQ_FLAG_LEAST_UPPER_BOUND);
+				rcu_read_unlock();
+				if (IS_ERR(limit_opp)) {
+					pr_err("%s: failed to limit by max frequency\n", __func__);
+					return PTR_ERR(limit_opp);
+				}
+			}
 		}
 	}
 
@@ -75,7 +86,7 @@ static int devfreq_simple_interactive_func(struct devfreq *df,
 			msecs_to_jiffies(delay_time);
 	}
 
-	if (*freq <= df->previous_freq && pm_qos_max > *freq &&
+	if (pm_qos_max > df->previous_freq && *freq < df->previous_freq &&
 			data->freq_timer.expires > jiffies) {
 		*freq = df->previous_freq;
 		if (!timer_pending(&data->freq_timer))
