@@ -28,6 +28,20 @@
 #include <linux/cpu.h>
 #include <linux/gpu_cooling.h>
 #include <soc/samsung/tmu.h>
+#include <trace/events/thermal.h>
+
+/**
+ * struct power_table - frequency to power conversion
+ * @frequency:	frequency in KHz
+ * @power:	power in mW
+ *
+ * This structure is built when the cooling device registers and helps
+ * in translating frequency to power and viceversa.
+ */
+struct power_table {
+	u32 frequency;
+	u32 power;
+};
 
 /**
  * struct gpufreq_cooling_device - data for cooling device with gpufreq
@@ -50,7 +64,12 @@ struct gpufreq_cooling_device {
 	struct thermal_cooling_device *cool_dev;
 	unsigned int gpufreq_state;
 	unsigned int gpufreq_val;
+	u32 last_load;
+	struct power_table *dyn_power_table;
+	int dyn_power_table_entries;
+	get_static_t plat_get_static_power;
 };
+
 static DEFINE_IDR(gpufreq_idr);
 static DEFINE_MUTEX(cooling_gpu_lock);
 static BLOCKING_NOTIFIER_HEAD(gpu_notifier);
@@ -216,6 +235,148 @@ unsigned long gpufreq_cooling_get_level(unsigned int gpu, unsigned int freq)
 EXPORT_SYMBOL_GPL(gpufreq_cooling_get_level);
 
 /**
+ * build_dyn_power_table() - create a dynamic power to frequency table
+ * @gpufreq_device:	the gpufreq cooling device in which to store the table
+ * @capacitance: dynamic power coefficient for these gpus
+ *
+ * Build a dynamic power to frequency table for this gpu and store it
+ * in @gpufreq_device.  This table will be used in gpu_power_to_freq() and
+ * gpu_freq_to_power() to convert between power and frequency
+ * efficiently.  Power is stored in mW, frequency in KHz.  The
+ * resulting table is in ascending order.
+ *
+ * Return: 0 on success, -EINVAL if there are no OPPs for any CPUs,
+ * -ENOMEM if we run out of memory or -EAGAIN if an OPP was
+ * added/enabled while the function was executing.
+ */
+static int build_dyn_power_table(struct gpufreq_cooling_device *gpufreq_device,
+				 u32 capacitance)
+{
+	struct power_table *power_table;
+	int num_opps = 0, i, cnt = 0;
+	unsigned long freq;
+
+	num_opps = gpu_dvfs_get_step();
+
+	if (num_opps == 0)
+		return -EINVAL;
+
+	power_table = kcalloc(num_opps, sizeof(*power_table), GFP_KERNEL);
+	if (!power_table)
+		return -ENOMEM;
+
+	for (freq = 0, i = 0; i < num_opps; i++) {
+		u32 voltage_mv;
+		u64 power;
+
+		freq = gpu_dvfs_get_clock(num_opps - i - 1);
+
+		if (freq > gpu_dvfs_get_max_freq())
+			continue;
+
+		voltage_mv = gpu_dvfs_get_voltage(freq) / 1000;
+
+		/*
+		 * Do the multiplication with MHz and millivolt so as
+		 * to not overflow.
+		 */
+		power = (u64)capacitance * freq * voltage_mv * voltage_mv;
+		do_div(power, 1000000000);
+
+		power_table[i].frequency = freq;
+
+		/* power is stored in mW */
+		power_table[i].power = power;
+		cnt++;
+	}
+
+	gpufreq_device->dyn_power_table = power_table;
+	gpufreq_device->dyn_power_table_entries = cnt;
+
+	return 0;
+}
+
+static u32 gpu_freq_to_power(struct gpufreq_cooling_device *gpufreq_device,
+			     u32 freq)
+{
+	int i;
+	struct power_table *pt = gpufreq_device->dyn_power_table;
+
+	for (i = 1; i < gpufreq_device->dyn_power_table_entries; i++)
+		if (freq < pt[i].frequency)
+			break;
+
+	return pt[i - 1].power;
+}
+
+static u32 gpu_power_to_freq(struct gpufreq_cooling_device *gpufreq_device,
+			     u32 power)
+{
+	int i;
+	struct power_table *pt = gpufreq_device->dyn_power_table;
+
+	for (i = 1; i < gpufreq_device->dyn_power_table_entries; i++)
+		if (power < pt[i].power)
+			break;
+
+	return pt[i - 1].frequency;
+}
+
+/**
+ * get_static_power() - calculate the static power consumed by the gpus
+ * @gpufreq_device:	struct &gpufreq_cooling_device for this gpu cdev
+ * @tz:		thermal zone device in which we're operating
+ * @freq:	frequency in KHz
+ * @power:	pointer in which to store the calculated static power
+ *
+ * Calculate the static power consumed by the gpus described by
+ * @gpu_actor running at frequency @freq.  This function relies on a
+ * platform specific function that should have been provided when the
+ * actor was registered.  If it wasn't, the static power is assumed to
+ * be negligible.  The calculated static power is stored in @power.
+ *
+ * Return: 0 on success, -E* on failure.
+ */
+static int get_static_power(struct gpufreq_cooling_device *gpufreq_device,
+			    struct thermal_zone_device *tz, unsigned long freq,
+			    u32 *power)
+{
+	unsigned long voltage;
+
+	if (!gpufreq_device->plat_get_static_power || freq == 0) {
+		*power = 0;
+		return 0;
+	}
+
+	voltage = gpu_dvfs_get_voltage(freq);
+
+	if (voltage == 0) {
+		pr_warn("Failed to get voltage for frequency %lu\n", freq);
+		return -EINVAL;
+	}
+
+	return gpufreq_device->plat_get_static_power(NULL, tz->passive_delay,
+						     voltage, power);
+}
+
+/**
+ * get_dynamic_power() - calculate the dynamic power
+ * @gpufreq_device:	&gpufreq_cooling_device for this cdev
+ * @freq:	current frequency
+ *
+ * Return: the dynamic power consumed by the gpus described by
+ * @gpufreq_device.
+ */
+static u32 get_dynamic_power(struct gpufreq_cooling_device *gpufreq_device,
+			     unsigned long freq)
+{
+	u32 raw_gpu_power;
+
+	raw_gpu_power = gpu_freq_to_power(gpufreq_device, freq);
+	return (raw_gpu_power * gpufreq_device->last_load) / 100;
+}
+
+/**
  * gpufreq_apply_cooling - function to apply frequency clipping.
  * @gpufreq_device: gpufreq_cooling_device pointer containing frequency
  *	clipping data.
@@ -327,8 +488,151 @@ static int gpufreq_set_cur_temp(struct thermal_cooling_device *cdev,
 	return 0;
 }
 
+/**
+ * gpufreq_get_requested_power() - get the current power
+ * @cdev:	&thermal_cooling_device pointer
+ * @tz:		a valid thermal zone device pointer
+ * @power:	pointer in which to store the resulting power
+ *
+ * Calculate the current power consumption of the gpus in milliwatts
+ * and store it in @power.  This function should actually calculate
+ * the requested power, but it's hard to get the frequency that
+ * gpufreq would have assigned if there were no thermal limits.
+ * Instead, we calculate the current power on the assumption that the
+ * immediate future will look like the immediate past.
+ *
+ * We use the current frequency and the average load since this
+ * function was last called.  In reality, there could have been
+ * multiple opps since this function was last called and that affects
+ * the load calculation.  While it's not perfectly accurate, this
+ * simplification is good enough and works.  REVISIT this, as more
+ * complex code may be needed if experiments show that it's not
+ * accurate enough.
+ *
+ * Return: 0 on success, -E* if getting the static power failed.
+ */
+static int gpufreq_get_requested_power(struct thermal_cooling_device *cdev,
+				       struct thermal_zone_device *tz,
+				       u32 *power)
+{
+	unsigned long freq;
+	int ret = 0;
+	u32 static_power, dynamic_power;
+	struct gpufreq_cooling_device *gpufreq_device = cdev->devdata;
+	u32 load_gpu = 0;
+
+	freq = gpu_dvfs_get_cur_clock();
+
+	load_gpu = gpu_dvfs_get_utilization();;
+
+	gpufreq_device->last_load = load_gpu;
+
+	dynamic_power = get_dynamic_power(gpufreq_device, freq);
+	ret = get_static_power(gpufreq_device, tz, freq, &static_power);
+
+	if (ret)
+		return ret;
+
+	if (trace_thermal_power_gpu_get_power_enabled()) {
+		trace_thermal_power_gpu_get_power(
+			freq, load_gpu, dynamic_power, static_power);
+	}
+
+	*power = static_power + dynamic_power;
+	return 0;
+}
+
+/**
+ * gpufreq_state2power() - convert a gpu cdev state to power consumed
+ * @cdev:	&thermal_cooling_device pointer
+ * @tz:		a valid thermal zone device pointer
+ * @state:	cooling device state to be converted
+ * @power:	pointer in which to store the resulting power
+ *
+ * Convert cooling device state @state into power consumption in
+ * milliwatts assuming 100% load.  Store the calculated power in
+ * @power.
+ *
+ * Return: 0 on success, -EINVAL if the cooling device state could not
+ * be converted into a frequency or other -E* if there was an error
+ * when calculating the static power.
+ */
+static int gpufreq_state2power(struct thermal_cooling_device *cdev,
+			       struct thermal_zone_device *tz,
+			       unsigned long state, u32 *power)
+{
+	unsigned int freq;
+	u32 static_power, dynamic_power;
+	int ret;
+	struct gpufreq_cooling_device *gpufreq_device = cdev->devdata;
+
+	freq = gpu_freq_table[state].frequency / 1000;
+	if (!freq)
+		return -EINVAL;
+
+	dynamic_power = gpu_freq_to_power(gpufreq_device, freq);
+	ret = get_static_power(gpufreq_device, tz, freq, &static_power);
+	if (ret)
+		return ret;
+
+	*power = static_power + dynamic_power;
+	return 0;
+}
+
+/**
+ * gpufreq_power2state() - convert power to a cooling device state
+ * @cdev:	&thermal_cooling_device pointer
+ * @tz:		a valid thermal zone device pointer
+ * @power:	power in milliwatts to be converted
+ * @state:	pointer in which to store the resulting state
+ *
+ * Calculate a cooling device state for the gpus described by @cdev
+ * that would allow them to consume at most @power mW and store it in
+ * @state.  Note that this calculation depends on external factors
+ * such as the gpu load or the current static power.  Calling this
+ * function with the same power as input can yield different cooling
+ * device states depending on those external factors.
+ *
+ * Return: 0 on success, -ENODEV if no gpus are online or -EINVAL if
+ * the calculated frequency could not be converted to a valid state.
+ * The latter should not happen unless the frequencies available to
+ * gpufreq have changed since the initialization of the gpu cooling
+ * device.
+ */
+static int gpufreq_power2state(struct thermal_cooling_device *cdev,
+			       struct thermal_zone_device *tz, u32 power,
+			       unsigned long *state)
+{
+	unsigned int cur_freq, target_freq;
+	int ret;
+	s32 dyn_power;
+	u32 last_load, normalised_power, static_power;
+	struct gpufreq_cooling_device *gpufreq_device = cdev->devdata;
+
+	cur_freq = gpu_dvfs_get_cur_clock();
+	ret = get_static_power(gpufreq_device, tz, cur_freq, &static_power);
+	if (ret)
+		return ret;
+
+	dyn_power = power - static_power;
+	dyn_power = dyn_power > 0 ? dyn_power : 0;
+	last_load = gpufreq_device->last_load ?: 1;
+	normalised_power = (dyn_power * 100) / last_load;
+	target_freq = gpu_power_to_freq(gpufreq_device, normalised_power);
+
+	*state = gpufreq_cooling_get_level(0, target_freq * 1000);
+	if (*state == THERMAL_CSTATE_INVALID) {
+		pr_warn("Failed to convert %dKHz for gpu into a cdev state\n",
+				     target_freq);
+		return -EINVAL;
+	}
+
+	trace_thermal_power_gpu_limit(target_freq, *state, power);
+	return 0;
+}
+
 /* Bind gpufreq callbacks to thermal cooling device ops */
-static struct thermal_cooling_device_ops const gpufreq_cooling_ops = {
+static struct thermal_cooling_device_ops gpufreq_cooling_ops = {
 	.get_max_state = gpufreq_get_max_state,
 	.get_cur_state = gpufreq_get_cur_state,
 	.set_cur_state = gpufreq_set_cur_state,
@@ -345,6 +649,9 @@ int exynos_gpu_add_notifier(struct notifier_block *n)
  * __gpufreq_cooling_register - helper function to create gpufreq cooling device
  * @np: a valid struct device_node to the cooling device device tree node
  * @clip_gpus: gpumask of gpus where the frequency constraints will happen.
+ * @capacitance: dynamic power coefficient for these gpus
+ * @plat_static_func: function to calculate the static power consumed by these
+ *                    gpus (optional)
  *
  * This interface function registers the gpufreq cooling device with the name
  * "thermal-gpufreq-%x". This api can support multiple instances of gpufreq
@@ -356,7 +663,8 @@ int exynos_gpu_add_notifier(struct notifier_block *n)
  */
 static struct thermal_cooling_device *
 __gpufreq_cooling_register(struct device_node *np,
-			   const struct cpumask *clip_gpus)
+			   const struct cpumask *clip_gpus, u32 capacitance,
+			   get_static_t plat_static_func)
 {
 	struct thermal_cooling_device *cool_dev;
 	struct gpufreq_cooling_device *gpufreq_dev = NULL;
@@ -372,6 +680,19 @@ __gpufreq_cooling_register(struct device_node *np,
 	if (ret) {
 		kfree(gpufreq_dev);
 		return ERR_PTR(-EINVAL);
+	}
+
+	if (capacitance) {
+		gpufreq_cooling_ops.get_requested_power =
+			gpufreq_get_requested_power;
+		gpufreq_cooling_ops.state2power = gpufreq_state2power;
+		gpufreq_cooling_ops.power2state = gpufreq_power2state;
+		gpufreq_dev->plat_get_static_power = plat_static_func;
+
+		ret = build_dyn_power_table(gpufreq_dev, capacitance);
+
+		if (ret)
+			return ERR_PTR(ret);
 	}
 
 	snprintf(dev_name, sizeof(dev_name), "thermal-gpufreq-%d",
@@ -409,7 +730,7 @@ __gpufreq_cooling_register(struct device_node *np,
 struct thermal_cooling_device *
 gpufreq_cooling_register(const struct cpumask *clip_gpus)
 {
-	return __gpufreq_cooling_register(NULL, clip_gpus);
+	return __gpufreq_cooling_register(NULL, clip_gpus, 0, NULL);
 }
 EXPORT_SYMBOL_GPL(gpufreq_cooling_register);
 
@@ -433,9 +754,77 @@ of_gpufreq_cooling_register(struct device_node *np,
 	if (!np)
 		return ERR_PTR(-EINVAL);
 
-	return __gpufreq_cooling_register(np, clip_gpus);
+	return __gpufreq_cooling_register(np, clip_gpus, 0, NULL);
 }
 EXPORT_SYMBOL_GPL(of_gpufreq_cooling_register);
+
+/**
+ * gpufreq_power_cooling_register() - create gpufreq cooling device with power extensions
+ * @clip_gpus:	gpumask of gpus where the frequency constraints will happen
+ * @capacitance:	dynamic power coefficient for these gpus
+ * @plat_static_func:	function to calculate the static power consumed by these
+ *			gpus (optional)
+ *
+ * This interface function registers the gpufreq cooling device with
+ * the name "thermal-gpufreq-%x".  This api can support multiple
+ * instances of gpufreq cooling devices.  Using this function, the
+ * cooling device will implement the power extensions by using a
+ * simple gpu power model.  The gpus must have registered their OPPs
+ * using the OPP library.
+ *
+ * An optional @plat_static_func may be provided to calculate the
+ * static power consumed by these gpus.  If the platform's static
+ * power consumption is unknown or negligible, make it NULL.
+ *
+ * Return: a valid struct thermal_cooling_device pointer on success,
+ * on failure, it returns a corresponding ERR_PTR().
+ */
+struct thermal_cooling_device *
+gpufreq_power_cooling_register(const struct cpumask *clip_gpus, u32 capacitance,
+			       get_static_t plat_static_func)
+{
+	return __gpufreq_cooling_register(NULL, clip_gpus, capacitance,
+				plat_static_func);
+}
+EXPORT_SYMBOL(gpufreq_power_cooling_register);
+
+/**
+ * of_gpufreq_power_cooling_register() - create gpufreq cooling device with power extensions
+ * @np:	a valid struct device_node to the cooling device device tree node
+ * @clip_gpus:	gpumask of gpus where the frequency constraints will happen
+ * @capacitance:	dynamic power coefficient for these gpus
+ * @plat_static_func:	function to calculate the static power consumed by these
+ *			gpus (optional)
+ *
+ * This interface function registers the gpufreq cooling device with
+ * the name "thermal-gpufreq-%x".  This api can support multiple
+ * instances of gpufreq cooling devices.  Using this API, the gpufreq
+ * cooling device will be linked to the device tree node provided.
+ * Using this function, the cooling device will implement the power
+ * extensions by using a simple gpu power model.  The gpus must have
+ * registered their OPPs using the OPP library.
+ *
+ * An optional @plat_static_func may be provided to calculate the
+ * static power consumed by these gpus.  If the platform's static
+ * power consumption is unknown or negligible, make it NULL.
+ *
+ * Return: a valid struct thermal_cooling_device pointer on success,
+ * on failure, it returns a corresponding ERR_PTR().
+ */
+struct thermal_cooling_device *
+of_gpufreq_power_cooling_register(struct device_node *np,
+				  const struct cpumask *clip_gpus,
+				  u32 capacitance,
+				  get_static_t plat_static_func)
+{
+	if (!np)
+		return ERR_PTR(-EINVAL);
+
+	return __gpufreq_cooling_register(np, clip_gpus, capacitance,
+				plat_static_func);
+}
+EXPORT_SYMBOL(of_gpufreq_power_cooling_register);
+
 
 /**
  * gpufreq_cooling_unregister - function to remove gpufreq cooling device.
