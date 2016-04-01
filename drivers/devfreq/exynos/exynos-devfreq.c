@@ -88,9 +88,9 @@ static ssize_t show_exynos_devfreq_info(struct device *dev,
 	}
 
 	count += snprintf(buf + count, PAGE_SIZE, "\n<Regulator data>\n"
-			  "use_regulator   : %20s\n" "use_regulator_dummy: %20s\n",
+			  "use_regulator   : %20s\n" "use_pd_off: %20s\n",
 			  data->use_regulator ? "true" : "false",
-			  data->use_regulator_dummy ? "true" : "false");
+			  data->use_pd_off ? "true" : "false");
 
 	if (data->use_regulator) {
 		count += snprintf(buf + count, PAGE_SIZE,
@@ -599,7 +599,7 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 	const char *devfreq_type;
 	const char *use_get_dev;
 	const char *use_regulator;
-	const char *use_regulator_dummy;
+	const char *use_pd_off;
 	const char *use_tmu;
 	const char *use_cl_dvfs;
 	const char *use_switch_clk;
@@ -769,16 +769,16 @@ static int exynos_devfreq_parse_dt(struct device_node *np, struct exynos_devfreq
 		data->min_cold_volt = volt_array[2];
 		data->reg_max_volt = volt_array[3];
 
-		if (of_property_read_string(np, "use_reg_dummy", &use_regulator_dummy))
+		if (of_property_read_string(np, "use_pd_off", &use_pd_off))
 			return -ENODEV;
 
-		if (!strcmp(use_regulator_dummy, "true")) {
-			data->use_regulator_dummy = true;
-		} else if (!strcmp(use_regulator_dummy, "false")) {
-			data->use_regulator_dummy = false;
+		if (!strcmp(use_pd_off, "true")) {
+			data->use_pd_off = true;
+		} else if (!strcmp(use_pd_off, "false")) {
+			data->use_pd_off = false;
 		} else {
-			dev_err(data->dev, "invalid use_regulator_dummy string (%s)\n",
-				use_regulator_dummy);
+			dev_err(data->dev, "invalid use_pd_off string (%s)\n",
+				use_pd_off);
 			return -EINVAL;
 		}
 	}
@@ -911,7 +911,7 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 
 	if (turn_on) {
 		if (!data->vdd) {
-			data->vdd = regulator_get(NULL, data->regulator_name);
+			data->vdd = regulator_get(data->dev, data->regulator_name);
 			if (IS_ERR(data->vdd)) {
 				dev_err(data->dev, "%s: failed get regulator(%s)\n",
 					__func__, data->regulator_name);
@@ -943,22 +943,18 @@ int exynos_devfreq_sync_voltage(enum exynos_devfreq_type type, bool turn_on)
 			data->old_volt = data->new_volt;
 		}
 	} else {
-		if (data->vdd_dummy) {
-			ret = regulator_set_voltage(data->vdd_dummy, 1, data->reg_max_volt);
+		if (data->vdd && data->use_pd_off) {
+			ret = regulator_set_voltage(data->vdd, 1, data->reg_max_volt);
 			if (ret) {
-				dev_err(data->dev, "failed set voltage for dummy regulator : %s\n",
+				dev_err(data->dev,
+					"failed set voltage for preparing put regulator : %s\n",
 					data->regulator_name);
 				goto out;
 			}
-		}
 
-		if (data->vdd) {
 			regulator_put(data->vdd);
 			data->vdd = NULL;
 		}
-
-		if (data->vdd_dummy)
-			regulator_sync_voltage(data->vdd_dummy);
 	}
 
 out:
@@ -1170,6 +1166,15 @@ static int exynos_devfreq_reboot_notifier(struct notifier_block *nb, unsigned lo
 {
 	struct exynos_devfreq_data *data = container_of(nb, struct exynos_devfreq_data,
 							reboot_notifier);
+
+	if (!data->vdd) {
+		if (data->use_pd_off)
+			return NOTIFY_OK;
+		else {
+			dev_err(data->dev, "failed reboot, regulator hasn't been registered\n");
+			return NOTIFY_BAD;
+		}
+	}
 
 	if (pm_qos_request_active(&data->default_pm_qos_min))
 		pm_qos_update_request(&data->default_pm_qos_min, data->reboot_freq);
@@ -1545,9 +1550,13 @@ static int exynos_devfreq_suspend(struct device *dev)
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	int ret = 0;
 
-	if (data->vdd_dummy && !data->vdd) {
-		dev_warn(dev, "regulator was put already!\n");
-		return ret;
+	if (!data->vdd) {
+		if (data->use_pd_off)
+			return ret;
+		else {
+			dev_err(dev, "failed suspend. regulator hasn't been registered\n");
+			return -ENODEV;
+		}
 	}
 
 	if (pm_qos_request_active(&data->default_pm_qos_min))
@@ -1580,9 +1589,13 @@ static int exynos_devfreq_resume(struct device *dev)
 	struct exynos_devfreq_data *data = platform_get_drvdata(pdev);
 	int ret = 0;
 
-	if (data->vdd_dummy && !data->vdd) {
-		dev_warn(dev, "regulator isn't set yet!\n");
-		return ret;
+	if (!data->vdd) {
+		if (data->use_pd_off)
+			return ret;
+		else {
+			dev_err(dev, "failed resume. regulator hasn't been registered\n");
+			return -ENODEV;
+		}
 	}
 
 	if (data->ops.resume) {
@@ -1675,22 +1688,11 @@ static int exynos_devfreq_probe(struct platform_device *pdev)
 	if (data->use_regulator) {
 		data->volt_offset = 0;
 		data->limit_cold_volt = data->opp_list[0].volt;
-		data->vdd = regulator_get(NULL, data->regulator_name);
+		data->vdd = regulator_get(data->dev, data->regulator_name);
 		if (IS_ERR(data->vdd)) {
 			dev_err(data->dev, "failed get regulator(%s)\n", data->regulator_name);
 			ret = -ENODEV;
 			goto err_regulator;
-		}
-	}
-
-	/* This dummy regulator is for sync voltage */
-	if (data->use_regulator_dummy) {
-		data->vdd_dummy = regulator_get(NULL, data->regulator_name);
-		if (IS_ERR(data->vdd_dummy)) {
-			dev_err(data->dev, "failed get dummy regulator(%s)\n",
-				data->regulator_name);
-			ret = -ENODEV;
-			goto err_regulator_dummy;
 		}
 	}
 
@@ -1859,11 +1861,6 @@ err_devfreq:
 err_set_voltage:
 err_get_opp:
 err_old_idx:
-	if (data->use_regulator_dummy) {
-		if (data->vdd_dummy)
-			regulator_put(data->vdd_dummy);
-	}
-err_regulator_dummy:
 	if (data->use_regulator) {
 		if (data->vdd)
 			regulator_put(data->vdd);
@@ -1920,10 +1917,6 @@ static int exynos_devfreq_remove(struct platform_device *pdev)
 #endif
 	pm_qos_remove_request(&data->sys_pm_qos_min);
 	devfreq_remove_device(data->devfreq);
-	if (data->use_regulator_dummy) {
-		if (data->vdd_dummy)
-			regulator_put(data->vdd_dummy);
-	}
 	if (data->use_regulator) {
 		if (data->vdd)
 			regulator_put(data->vdd);

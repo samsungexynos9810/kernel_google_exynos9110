@@ -158,10 +158,9 @@ struct exynos_devfreq_data {
 	u32					min_cold_volt;
 	u32					reg_max_volt;
 	bool					use_regulator;
-	bool					use_regulator_dummy;
+	bool					use_pd_off;
 	const char				*regulator_name;
 	struct regulator			*vdd;
-	struct regulator			*vdd_dummy;
 	struct mutex				regulator_lock;
 
 	u32					pm_qos_class;
