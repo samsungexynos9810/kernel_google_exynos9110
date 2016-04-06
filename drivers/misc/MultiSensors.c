@@ -64,7 +64,8 @@ static struct Msensors_data	Msensors_data_buff[MSENSORS_DATA_MAX];
 static unsigned int		dataBuffReadIndex;
 static unsigned int		dataBuffWriteIndex;
 static unsigned int		PacketDataNum=0;
-static unsigned char		HeaderData[HEADER_DATA_SIZE];
+static unsigned char		HeaderData[HEADER_DATA_SIZE] = {
+	0x00, 0x00, 0x00, 0x1e, 0x21, 0x80, 0x00, 0x05 };	/* 2015/1/1 0:0:0 */
 static unsigned char		Flg_driver_ready = 0;
 static unsigned char		Flg_driver_probed = 0;
 static unsigned char		Flg_driver_shutdown = 0;
@@ -781,9 +782,6 @@ void SUB_VibratorSet(int timeout)
 
 int SUBCPU_rtc_read_time(uint8_t *data)
 {
-	/* if RTC was not set, return error */
-	if (HeaderData[3] == 0) return 1;
-
 	data[RTC_YEAR]  = (uint8_t)(HeaderData[3] >> 1);
 	data[RTC_MONTH] = (uint8_t)(((HeaderData[3] & 0x01) << 3) |
 			                    ((HeaderData[4] & 0xE0) >> 5));
