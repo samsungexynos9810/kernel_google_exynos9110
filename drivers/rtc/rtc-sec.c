@@ -181,9 +181,6 @@ static int s2m_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	}
 
 	ret = s2m_rtc_update(info, S2M_RTC_WRITE_TIME);
-#if defined(CONFIG_RTC_SYNC_SUBCPU)
-	SUBCPU_rtc_set_time(data);
-#endif
 out:
 	mutex_unlock(&info->lock);
 	return ret;
