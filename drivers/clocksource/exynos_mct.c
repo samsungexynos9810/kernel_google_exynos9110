@@ -225,7 +225,6 @@ static u64 notrace exynos4_read_sched_clock(void)
 
 #ifdef CONFIG_ARM
 static struct delay_timer exynos4_delay_timer;
-#endif
 
 static cycles_t exynos4_read_current_timer(void)
 {
@@ -233,6 +232,7 @@ static cycles_t exynos4_read_current_timer(void)
 			 "cycles_t needs to move to 32-bit for ARM64 usage");
 	return exynos4_read_count_32();
 }
+#endif
 
 static void __init exynos4_clocksource_init(void)
 {
