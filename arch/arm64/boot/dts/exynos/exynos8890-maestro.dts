@@ -1,0 +1,61 @@
+/*
+ * SAMSUNG EXYNOS8890 board device tree source
+ *
+ * Copyright (c) 2016 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+/dts-v1/;
+#include "exynos8890.dtsi"
+
+/ {
+	model = "Samsung MASTRO board based on EXYNOS8890";
+	compatible = "samsung,exynos8890", "samsung,MAESTRO";
+
+	memory@80000000 {
+		device_type = "memory";
+
+		reg = <0x80000000 0x80000000>;
+	};
+
+	chosen {
+		bootargs = "console=ttySAC2,115200 init=/linuxrc mem=1024M clk_ignore_unused ess_setup=0x86000000";
+		linux,initrd-start = <0x81000000>;
+		linux,initrd-end = <0x810FFFFF>;
+	};
+
+	fixed-rate-clocks {
+		oscclk {
+			compatible = "samsung,exynos8890-oscclk";
+			clock-frequency = <24000000>;
+		};
+	};
+
+	serial_0: uart@13630000 {
+		status = "okay";
+	};
+
+	serial_1: uart@14C20000 {
+		status = "okay";
+	};
+
+	serial_2: uart@14C30000 {
+		status = "okay";
+	};
+
+	serial_3: uart@14C40000 {
+		status = "okay";
+	};
+
+	serial_4: uart@14C50000 {
+		status = "okay";
+	};
+
+	serial_5: uart@14C10000 {
+		status = "okay";
+	};
+};
