@@ -146,6 +146,7 @@ config SOC_EXYNOS8890
 	select USE_OF
 	select COMMON_CLK_SAMSUNG
 	select CLKSRC_EXYNOS_MCT
+	select PINCTRL
 endmenu
 
 endmenu
