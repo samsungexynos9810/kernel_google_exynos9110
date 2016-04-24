@@ -1627,6 +1627,9 @@ found:
 			rdev->use_count = 0;
 	}
 
+	if (rdev->constraints && rdev->constraints->expected_consumer > 0)
+		rdev->constraints->expected_consumer--;
+
 	return regulator;
 }
 
@@ -1725,6 +1728,10 @@ static void _regulator_put(struct regulator *regulator)
 	rdev->open_count--;
 	rdev->exclusive = 0;
 	put_device(&rdev->dev);
+
+	if (rdev->constraints && rdev->constraints->expected_consumer > 0)
+		rdev->constraints->expected_consumer++;
+
 	mutex_unlock(&rdev->mutex);
 
 	kfree(regulator->supply_name);
@@ -2898,8 +2905,7 @@ static int regulator_set_voltage_unlocked(struct regulator *regulator,
 	regulator->min_uV = min_uV;
 	regulator->max_uV = max_uV;
 
-	if ((rdev->open_count < rdev->constraints->expected_consumer)
-			&& rdev->constraints->expected_consumer)
+	if (rdev->constraints->expected_consumer > 0)
 		goto out;
 
 	ret = regulator_check_consumers(rdev, &min_uV, &max_uV);
