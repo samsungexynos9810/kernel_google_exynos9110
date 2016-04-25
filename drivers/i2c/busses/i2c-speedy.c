@@ -220,6 +220,7 @@ struct exynos_speedy {
 	unsigned int		batcher_read_addr;
 
 	int			always_intr_high;
+	unsigned int		int_en;
 };
 
 static void dump_speedy_register(struct exynos_speedy *speedy)
@@ -587,6 +588,9 @@ static void speedy_set_cmd(struct exynos_speedy *speedy, int direction, u16 addr
 		break;
 	}
 
+	/* store speedy_interrupt_enable status for re-configuration later */
+	speedy->int_en = speedy_int_en;
+
 	/* clear speedy interrupt status */
 	write_batcher(speedy, 0xFFFFFFFF, SPEEDY_INT_STATUS);
 
@@ -727,6 +731,7 @@ static int exynos_speedy_xfer_batcher(struct exynos_speedy *speedy,
 	/* speedy random(single) / burst access way */
 	int random;
 	unsigned char byte;
+	unsigned int speedy_int_en;
 
 	/* initialize as reset value of SPEEDY_CTRL */
 	u32 speedy_ctl = 0x30050;
@@ -773,6 +778,13 @@ static int exynos_speedy_xfer_batcher(struct exynos_speedy *speedy,
 			byte = speedy->msg->buf[i];
 			write_batcher(speedy, byte, SPEEDY_TX_DATA);
 		}
+
+		/*
+		 * To prevent interrupt pending by FIFO_TX_ALMOST_EMPTY
+		 * We should disable FIFO_TX_ALMOST_EMPTY_EN after Tx
+		 */
+		speedy_int_en = speedy->int_en & (~SPEEDY_FIFO_TX_ALMOST_EMPTY_EN);
+		write_batcher(speedy, speedy_int_en, SPEEDY_INT_ENABLE);
 	}
 
 	finalize_batcher(speedy);
