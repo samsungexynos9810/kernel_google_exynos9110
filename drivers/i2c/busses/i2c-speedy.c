@@ -60,7 +60,7 @@
 #define SPEEDY_TIMEOUT_DATA_DISABLE			(1 << 3)
 #define SPEEDY_ALWAYS_PULLUP_EN				(1 << 7)
 #define SPEEDY_DATA_WIDTH_8BIT				(0 << 8)
-#define SPEEDY_REMOTE_RESET_REQ_EN			(1 << 30)
+#define SPEEDY_REMOTE_RESET_REQ				(1 << 30)
 #define SPEEDY_SW_RST					(1 << 31)
 
 /* SPEEDY_FIFO_CTRL Register bits */
@@ -93,7 +93,7 @@
 #define SPEEDY_RX_ENDBIT_ERR_EN				(1 << 18)
 #define SPEEDY_TX_LINE_BUSY_ERR_EN			(1 << 20)
 #define SPEEDY_TX_STOPBIT_ERR_EN			(1 << 21)
-#define SPEEDY_REMOTE_RESET_REQ				(1 << 31)
+#define SPEEDY_REMOTE_RESET_REQ_EN			(1 << 31)
 
 /* SPEEDY_INT_STATUS Register bits */
 #define SPEEDY_TRANSFER_DONE				(1 << 0)
@@ -400,8 +400,7 @@ static void program_batcher_fsm(struct exynos_speedy *speedy)
 			(SPEEDY_TIMEOUT_CMD_EN | SPEEDY_TIMEOUT_STANDBY_EN |
 			 SPEEDY_TIMEOUT_DATA_EN | SPEEDY_RX_MODEBIT_ERR_EN |
 			 SPEEDY_RX_GLITCH_ERR_EN | SPEEDY_RX_ENDBIT_ERR_EN |
-			 SPEEDY_TX_LINE_BUSY_ERR_EN | SPEEDY_TX_STOPBIT_ERR_EN |
-			 SPEEDY_REMOTE_RESET_REQ_EN);
+			 SPEEDY_TX_LINE_BUSY_ERR_EN | SPEEDY_TX_STOPBIT_ERR_EN);
 	writel(ip_batcher_fsm_unexpec_enable, speedy->regs + IPBATCHER_FSM_UNEXPEN);
 
 	/* select Tx, Rx normal interrupt of IP */
@@ -564,8 +563,7 @@ static void speedy_set_cmd(struct exynos_speedy *speedy, int direction, u16 addr
 				SPEEDY_RX_FIFO_INT_TRAILER_EN |
 				SPEEDY_RX_MODEBIT_ERR_EN |
 				SPEEDY_RX_GLITCH_ERR_EN |
-				SPEEDY_RX_ENDBIT_ERR_EN |
-				SPEEDY_REMOTE_RESET_REQ_EN);
+				SPEEDY_RX_ENDBIT_ERR_EN);
 
 		/* To prevent batcher timeout, interrupt state should be set as high */
 		if (speedy->always_intr_high) {
@@ -579,8 +577,7 @@ static void speedy_set_cmd(struct exynos_speedy *speedy, int direction, u16 addr
 		speedy_int_en |= (SPEEDY_TRANSFER_DONE_EN |
 				SPEEDY_FIFO_TX_ALMOST_EMPTY_EN |
 				SPEEDY_TX_LINE_BUSY_ERR_EN |
-				SPEEDY_TX_STOPBIT_ERR_EN |
-				SPEEDY_REMOTE_RESET_REQ_EN);
+				SPEEDY_TX_STOPBIT_ERR_EN);
 
 		/* To prevent batcher timeout, interrupt state should be set as high */
 		if (speedy->always_intr_high) {
@@ -690,12 +687,12 @@ static void speedy_set_srp(struct exynos_speedy *speedy)
 
 		speedy_set_cmd(speedy, DIRECTION_WRITE, 0x0, ACCESS_RANDOM, 0);
 
-		speedy_ctl |= SPEEDY_REMOTE_RESET_REQ_EN;
+		speedy_ctl |= SPEEDY_REMOTE_RESET_REQ;
 		write_batcher(speedy, speedy_ctl, SPEEDY_CTRL);
 
 		write_batcher(speedy, 0x00, SPEEDY_TX_DATA);
 
-		speedy_ctl &= (~SPEEDY_REMOTE_RESET_REQ_EN);
+		speedy_ctl &= (~SPEEDY_REMOTE_RESET_REQ);
 		write_batcher(speedy, speedy_ctl, SPEEDY_CTRL);
 
 		finalize_batcher(speedy);
@@ -829,7 +826,7 @@ static irqreturn_t exynos_speedy_irq_batcher(int irqno, void *dev_id)
 	ip_batcher_state = readl(speedy->regs + IPBATCHER_STATE);
 	ip_batcher_int_status = readl(speedy->regs + IP_INT_STATUS);
 
-	if (ip_batcher_int_status & SPEEDY_REMOTE_RESET_REQ) {
+	if (ip_batcher_int_status & SPEEDY_REMOTE_RESET_REQ_STAT) {
 		dev_err(speedy->dev, "remote_reset_req is occured\n");
 	}
 
