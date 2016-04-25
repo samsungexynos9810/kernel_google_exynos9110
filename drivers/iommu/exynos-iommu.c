@@ -911,6 +911,67 @@ static int __init exynos_iommu_create_domain(void)
 	return 0;
 }
 
+int exynos_iommu_runtime_suspend(struct device *master)
+{
+	int ret;
+	struct exynos_iommu_owner *owner;
+	struct sysmmu_list_data *list;
+
+	ret = pm_generic_runtime_suspend(master);
+	if (!has_sysmmu(master) || ret)
+		return ret;
+
+	owner = master->archdata.iommu;
+	list_for_each_entry(list, &owner->sysmmu_list, node) {
+		unsigned long flags;
+		struct sysmmu_drvdata *drvdata;
+
+		drvdata = dev_get_drvdata(list->sysmmu);
+
+		spin_lock_irqsave(&drvdata->lock, flags);
+		if (put_sysmmu_runtime_active(drvdata) && is_sysmmu_active(drvdata))
+			__sysmmu_disable_nocount(drvdata);
+		spin_unlock_irqrestore(&drvdata->lock, flags);
+	}
+
+	return ret;
+}
+
+int exynos_iommu_runtime_resume(struct device *master)
+{
+	struct exynos_iommu_owner *owner;
+	struct sysmmu_list_data *list;
+
+	if (!has_sysmmu(master))
+		return pm_generic_runtime_resume(master);
+
+	owner = master->archdata.iommu;
+	list_for_each_entry(list, &owner->sysmmu_list, node) {
+		unsigned long flags;
+		struct sysmmu_drvdata *drvdata;
+
+		drvdata = dev_get_drvdata(list->sysmmu);
+
+		spin_lock_irqsave(&drvdata->lock, flags);
+		if (get_sysmmu_runtime_active(drvdata) && is_sysmmu_active(drvdata))
+			__sysmmu_enable_nocount(drvdata);
+		spin_unlock_irqrestore(&drvdata->lock, flags);
+	}
+
+	return pm_generic_runtime_resume(master);
+}
+
+static const struct dev_pm_ops exynos_iommu_dev_pm_ops = {
+	.runtime_suspend = exynos_iommu_runtime_suspend,
+	.runtime_resume = exynos_iommu_runtime_resume,
+	USE_PLATFORM_PM_SLEEP_OPS
+};
+
+static void set_exynos_iommu_pm_ops(struct bus_type *bus)
+{
+	bus->pm = &exynos_iommu_dev_pm_ops;
+}
+
 static int __init exynos_iommu_init(void)
 {
 	int ret;
@@ -942,6 +1003,8 @@ static int __init exynos_iommu_init(void)
 		pr_err("%s: Failed to create domain\n", __func__);
 		goto err_create_domain;
 	}
+
+	set_exynos_iommu_pm_ops(&platform_bus_type);
 
 	return 0;
 
