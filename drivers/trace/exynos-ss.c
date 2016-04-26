@@ -38,6 +38,7 @@
 #include <linux/exynos-sdm.h>
 #include <linux/exynos-ss-soc.h>
 
+#include <asm/cputype.h>
 #include <asm/cacheflush.h>
 #include <asm/ptrace.h>
 #include <asm/memory.h>
@@ -835,10 +836,34 @@ int exynos_ss_dump(void)
 	 */
 #ifdef CONFIG_ARM64
 	unsigned long reg1, reg2;
-	asm ("mrs %0, S3_1_c15_c2_2\n\t"
-		"mrs %1, S3_1_c15_c2_3\n"
-		: "=r" (reg1), "=r" (reg2));
-	pr_emerg("CPUMERRSR: %016lx, L2MERRSR: %016lx\n", reg1, reg2);
+
+	if ((read_cpuid_implementor() == ARM_CPU_IMP_SEC)
+			&& (read_cpuid_part_number() == ARM_CPU_PART_MONGOOSE)){
+		/* for mngs */
+		asm ("mrs %0, S3_1_c15_c2_0\n\t"
+			"mrs %1, S3_1_c15_c2_4\n"
+			: "=r" (reg1), "=r" (reg2));
+		pr_emerg("FEMERR0SR: %016lx, FEMERR1SR: %016lx\n", reg1, reg2);
+		asm ("mrs %0, S3_1_c15_c2_1\n\t"
+			"mrs %1, S3_1_c15_c2_5\n"
+			: "=r" (reg1), "=r" (reg2));
+		pr_emerg("LSMERR0SR: %016lx, LSMERR1SR: %016lx\n", reg1, reg2);
+		asm ("mrs %0, S3_1_c15_c2_2\n\t"
+			"mrs %1, S3_1_c15_c2_6\n"
+			: "=r" (reg1), "=r" (reg2));
+		pr_emerg("TBWMERR0SR: %016lx, TBWMERR1SR: %016lx\n", reg1, reg2);
+		asm ("mrs %0, S3_1_c15_c2_3\n\t"
+			"mrs %1, S3_1_c15_c2_7\n"
+			: "=r" (reg1), "=r" (reg2));
+		pr_emerg("L2MERR0SR: %016lx, L2MERR1SR: %016lx\n", reg1, reg2);
+
+	} else {
+		/* for apollo */
+		asm ("mrs %0, S3_1_c15_c2_2\n\t"
+			"mrs %1, S3_1_c15_c2_3\n"
+			: "=r" (reg1), "=r" (reg2));
+		pr_emerg("CPUMERRSR: %016lx, L2MERRSR: %016lx\n", reg1, reg2);
+	}
 #else
 	unsigned long reg0;
 	asm ("mrc p15, 0, %0, c0, c0, 0\n": "=r" (reg0));
