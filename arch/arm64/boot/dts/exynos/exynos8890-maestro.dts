@@ -18,8 +18,12 @@
 
 	memory@80000000 {
 		device_type = "memory";
+		reg = <0x0 0x80000000 0x80000000>;
+	};
 
-		reg = <0x80000000 0x80000000>;
+	memory@880000000 {
+		device_type = "memory";
+		reg = <0x00000008 0x80000000 0x80000000>;
 	};
 
 	chosen {
@@ -31,7 +35,7 @@
 	fixed-rate-clocks {
 		oscclk {
 			compatible = "samsung,exynos8890-oscclk";
-			clock-frequency = <24000000>;
+			clock-frequency = <26000000>;
 		};
 	};
 

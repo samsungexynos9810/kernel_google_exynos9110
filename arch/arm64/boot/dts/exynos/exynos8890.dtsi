@@ -19,7 +19,7 @@
 / {
 	compatible = "samsung,armv8", "samsung,exynos8890";
 	interrupt-parent = <&gic>;
-	#address-cells = <1>;
+	#address-cells = <2>;
 	#size-cells = <1>;
 
 	aliases {
@@ -48,12 +48,11 @@
 		spi5 = &spi_5;
 		spi6 = &spi_6;
 		spi7 = &spi_7;
-
 	};
 
 	chipid@10000000 {
 		compatible = "samsung,exynos4210-chipid";
-		reg = <0x10000000 0x100>;
+		reg = <0x0 0x10000000 0x100>;
 	};
 
 	cpus {
@@ -73,10 +72,10 @@
 		#interrupt-cells = <3>;
 		#address-cells = <0>;
 		interrupt-controller;
-		reg =	<0x11001000 0x1000>,
-			<0x11002000 0x1000>,
-			<0x11004000 0x2000>,
-			<0x11006000 0x2000>;
+		reg =	<0x0 0x11001000 0x1000>,
+			<0x0 0x11002000 0x1000>,
+			<0x0 0x11004000 0x2000>,
+			<0x0 0x11006000 0x2000>;
 		interrupts = <1 9 0xf04>;
 	};
 
@@ -86,20 +85,20 @@
 	                     <1 14 0xff01>,
 	                     <1 11 0xff01>,
 	                     <1 10 0xff01>;
-	        clock-frequency = <24000000>;
+	        clock-frequency = <26000000>;
 		use-clocksource-only;
 		use-physical-timer;
 	};
 
 	clock: clock-controller@0x10570000 {
 		compatible = "samsung,exynos8890-clock";
-		reg = <0x10570000 0x1000>;
+		reg = <0x0 0x10570000 0x1000>;
 		#clock-cells = <1>;
 	};
 
 	mct@101C0000 {
 		compatible = "samsung,exynos4210-mct";
-		reg = <0x101C0000 0x800>;
+		reg = <0x0 0x101C0000 0x800>;
 		interrupt-controller;
 		#interrupt-cells = <1>;
 		interrupt-parent = <&mct_map>;
@@ -132,7 +131,7 @@
 	serial_0: uart@13630000 {
 		compatible = "samsung,exynos8890-uart";
 		samsung,separate-uart-clk;
-		reg = <0x13630000 0x100>;
+		reg = <0x0 0x13630000 0x100>;
 		interrupts = <0 429 0>;
 		clocks = <&clock CLK_GATE_PCLK0>, <&clock CLK_GATE_UART0>, <&clock CLK_UART0>;
 		clock-names = "gate_pclk0", "gate_uart0", "sclk_uart0";
@@ -142,7 +141,7 @@
 	serial_1: uart@14C20000 {
 		compatible = "samsung,exynos8890-uart";
 		samsung,separate-uart-clk;
-		reg = <0x14C20000 0x100>;
+		reg = <0x0 0x14C20000 0x100>;
 		interrupts = <0 432 0>;
 		clocks = <&clock CLK_GATE_PCLK1>, <&clock CLK_GATE_UART1>, <&clock CLK_UART1>;
 		clock-names = "gate_pclk1", "gate_uart1", "sclk_uart1";
@@ -152,7 +151,7 @@
 	serial_2: uart@14C30000 {
 		compatible = "samsung,exynos8890-uart";
 		samsung,separate-uart-clk;
-		reg = <0x14C30000 0x100>;
+		reg = <0x0 0x14C30000 0x100>;
 		interrupts = <0 433 0>;
 		clocks = <&clock CLK_GATE_PCLK2>, <&clock CLK_GATE_UART2>, <&clock CLK_UART2>;
 		clock-names = "gate_pclk2", "gate_uart2", "sclk_uart2";
@@ -162,7 +161,7 @@
 	serial_3: uart@14C40000 {
 		compatible = "samsung,exynos8890-uart";
 		samsung,separate-uart-clk;
-		reg = <0x14C40000 0x100>;
+		reg = <0x0 0x14C40000 0x100>;
 		interrupts = <0 434 0>;
 		clocks = <&clock CLK_GATE_PCLK3>, <&clock CLK_GATE_UART3>, <&clock CLK_UART3>;
 		clock-names = "gate_pclk3", "gate_uart3", "sclk_uart3";
@@ -172,7 +171,7 @@
 	serial_4: uart@14C50000 {
 		compatible = "samsung,exynos8890-uart";
 		samsung,separate-uart-clk;
-		reg = <0x14C50000 0x100>;
+		reg = <0x0 0x14C50000 0x100>;
 		interrupts = <0 435 0>;
 		clocks = <&clock CLK_GATE_PCLK4>, <&clock CLK_GATE_UART4>, <&clock CLK_UART4>;
 		clock-names = "gate_pclk4", "gate_uart4", "sclk_uart4";
@@ -182,7 +181,7 @@
 	serial_5: uart@14C10000 {
 		compatible = "samsung,exynos8890-uart";
 		samsung,separate-uart-clk;
-		reg = <0x14C10000 0x100>;
+		reg = <0x0 0x14C10000 0x100>;
 		interrupts = <0 436 0>;
 		clocks = <&clock CLK_GATE_PCLK5>, <&clock CLK_GATE_UART5>, <&clock CLK_UART5>;
 		clock-names = "gate_pclk5", "gate_uart5", "sclk_uart5";
@@ -191,7 +190,7 @@
 
 	spi_0: spi@14d20000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14d20000 0x100>;
+		reg = <0x0 0x14d20000 0x100>;
 		interrupts = <0 448 0>;
 /*
 		dma-mode;
@@ -211,7 +210,7 @@
 
 	spi_1: spi@14d30000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14d30000 0x100>;
+		reg = <0x0 0x14d30000 0x100>;
 		interrupts = <0 449 0>;
 /*
 		dma-mode;
@@ -231,7 +230,7 @@
 
 	spi_2: spi@14d40000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14d40000 0x100>;
+		reg = <0x0 0x14d40000 0x100>;
 		interrupts = <0 450 0>;
 /*
 		dma-mode;
@@ -250,7 +249,7 @@
 
 	spi_3: spi@14d50000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14d50000 0x100>;
+		reg = <0x0 0x14d50000 0x100>;
 		interrupts = <0 451 0>;
 /*
 		dma-mode;
@@ -270,7 +269,7 @@
 
 	spi_4: spi@14d70000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14d70000 0x100>;
+		reg = <0x0 0x14d70000 0x100>;
 		interrupts = <0 452 0>;
 /*
 		dma-mode;
@@ -290,7 +289,7 @@
 
 	spi_5: spi@14d90000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14d90000 0x100>;
+		reg = <0x0 0x14d90000 0x100>;
 		interrupts = <0 453 0>;
 /*
 		dma-mode;
@@ -310,7 +309,7 @@
 
 	spi_6: spi@14da0000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14da0000 0x100>;
+		reg = <0x0 0x14da0000 0x100>;
 		interrupts = <0 454 0>;
 /*
 		dma-mode;
@@ -330,7 +329,7 @@
 
 	spi_7: spi@14dc0000 {
 		compatible = "samsung,exynos889x-spi";
-		reg = <0x14dc0000 0x100>;
+		reg = <0x0 0x14dc0000 0x100>;
 		interrupts = <0 455 0>;
 /*
 		dma-mode;
@@ -351,7 +350,7 @@
 	hsi2c_0: hsi2c@13640000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x13640000 0x1000>;
+		reg = <0x0 0x13640000 0x1000>;
 		interrupts = <0 416 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -368,7 +367,7 @@
 	hsi2c_1: hsi2c@13650000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x13650000 0x1000>;
+		reg = <0x0 0x13650000 0x1000>;
 		interrupts = <0 417 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -385,7 +384,7 @@
 	hsi2c_2: hsi2c@14E60000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E60000 0x1000>;
+		reg = <0x0 0x14E60000 0x1000>;
 		interrupts = <0 437 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -402,7 +401,7 @@
 	hsi2c_3: hsi2c@14E70000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E70000 0x1000>;
+		reg = <0x0 0x14E70000 0x1000>;
 		interrupts = <0 438 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -419,7 +418,7 @@
 	hsi2c_4: hsi2c@13660000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x13660000 0x1000>;
+		reg = <0x0 0x13660000 0x1000>;
 		interrupts = <0 418 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -436,7 +435,7 @@
 	hsi2c_5: hsi2c@13670000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x13670000 0x1000>;
+		reg = <0x0 0x13670000 0x1000>;
 		interrupts = <0 419 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -453,7 +452,7 @@
 	hsi2c_6: hsi2c@14E00000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E00000 0x1000>;
+		reg = <0x0 0x14E00000 0x1000>;
 		interrupts = <0 439 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -470,7 +469,7 @@
 	hsi2c_7: hsi2c@14E10000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E10000 0x1000>;
+		reg = <0x0 0x14E10000 0x1000>;
 		interrupts = <0 440 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -487,7 +486,7 @@
 	hsi2c_8: hsi2c@14E20000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E20000 0x1000>;
+		reg = <0x0 0x14E20000 0x1000>;
 		interrupts = <0 441 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -504,7 +503,7 @@
 	hsi2c_9: hsi2c@13680000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x13680000 0x1000>;
+		reg = <0x0 0x13680000 0x1000>;
 		interrupts = <0 420 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -521,7 +520,7 @@
 	hsi2c_10: hsi2c@13690000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x13690000 0x1000>;
+		reg = <0x0 0x13690000 0x1000>;
 		interrupts = <0 421 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -538,7 +537,7 @@
 	hsi2c_11: hsi2c@136A0000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x136A0000 0x1000>;
+		reg = <0x0 0x136A0000 0x1000>;
 		interrupts = <0 422 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -555,7 +554,7 @@
 	hsi2c_12: hsi2c@14E30000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E30000 0x1000>;
+		reg = <0x0 0x14E30000 0x1000>;
 		interrupts = <0 442 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -572,7 +571,7 @@
 	hsi2c_13: hsi2c@14E40000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E40000 0x1000>;
+		reg = <0x0 0x14E40000 0x1000>;
 		interrupts = <0 443 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -589,7 +588,7 @@
 	hsi2c_14: hsi2c@14E50000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x14E50000 0x1000>;
+		reg = <0x0 0x14E50000 0x1000>;
 		interrupts = <0 444 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -607,7 +606,7 @@
 	hsi2c_15: hsi2c@10540000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x10540000 0x2000>, <0x10540180 0x100>;
+		reg = <0x0 0x10540000 0x2000>, <0x0 0x10540180 0x100>;
 		interrupts = <0 340 0>, <0 341 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -624,7 +623,7 @@
 	/* ALIVE */
 	pinctrl_0: pinctrl@10580000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x10580000 0x1000>;
+		reg = <0x0 0x10580000 0x1000>;
 		interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
 				<0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>,
 				<0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
@@ -640,71 +639,70 @@
 	/* AUD */
 	pinctrl_1: pinctrl@114B0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x114B0000 0x1000>;
+		reg = <0x0 0x114B0000 0x1000>;
 		interrupts = <0 61 0>;
 	};
 
 	/* CCORE */
 	pinctrl_2: pinctrl@105A0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x105A0000 0x1000>;
+		reg = <0x0 0x105A0000 0x1000>;
 		interrupts = <0 383 0>;
 	};
 
 	/* ESE */
 	pinctrl_3: pinctrl@14CA0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x14CA0000 0x1000>;
+		reg = <0x0 0x14CA0000 0x1000>;
 		interrupts = <0 459 0>;
 	};
 
 	/* FP */
 	pinctrl_4: pinctrl@14C90000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x14C90000 0x1000>;
+		reg = <0x0 0x14C90000 0x1000>;
 		interrupts = <0 458 0>;
 	};
 
 	/* FSYS0 */
 	pinctrl_5: pinctrl@10E60000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x10E60000 0x1000>;
+		reg = <0x0 0x10E60000 0x1000>;
 		interrupts = <0 212 0>;
 	};
 
 	/* FSYS1 */
 	pinctrl_6: pinctrl@15690000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x15690000 0x1000>;
+		reg = <0x0 0x15690000 0x1000>;
 		interrupts = <0 201 0>;
 	};
 
 	/* NFC */
 	pinctrl_7: pinctrl@14CD0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x14CD0000 0x1000>;
+		reg = <0x0 0x14CD0000 0x1000>;
 		interrupts = <0 456 0>;
 	};
 
 	/* PERIC0 */
 	pinctrl_8: pinctrl@136D0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x136D0000 0x1000>;
+		reg = <0x0 0x136D0000 0x1000>;
 		interrupts = <0 430 0>;
 	};
 
 	/* PERIC1 */
 	pinctrl_9: pinctrl@14CC0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x14CC0000 0x1000>;
+		reg = <0x0 0x14CC0000 0x1000>;
 		interrupts = <0 460 0>;
 	};
 
 	/* TOUCH */
 	pinctrl_10: pinctrl@14CE0000 {
 		compatible = "samsung,exynos8890-pinctrl";
-		reg = <0x14CE0000 0x1000>;
+		reg = <0x0 0x14CE0000 0x1000>;
 		interrupts = <0 457 0>;
 	};
-
 };
