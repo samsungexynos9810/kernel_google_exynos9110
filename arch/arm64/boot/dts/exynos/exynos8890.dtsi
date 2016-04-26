@@ -129,61 +129,79 @@
 	};
 
 	serial_0: uart@13630000 {
-		compatible = "samsung,exynos8890-uart";
+		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x0 0x13630000 0x100>;
+		samsung,fifo-size = <256>;
 		interrupts = <0 429 0>;
-		clocks = <&clock CLK_GATE_PCLK0>, <&clock CLK_GATE_UART0>, <&clock CLK_UART0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart0_bus>;
+		clocks = <&clock 207>, <&clock 208>, <&clock 208>;
 		clock-names = "gate_pclk0", "gate_uart0", "sclk_uart0";
 		status = "disabled";
 	};
 
 	serial_1: uart@14C20000 {
-		compatible = "samsung,exynos8890-uart";
+		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x0 0x14C20000 0x100>;
+		samsung,fifo-size = <256>;
 		interrupts = <0 432 0>;
-		clocks = <&clock CLK_GATE_PCLK1>, <&clock CLK_GATE_UART1>, <&clock CLK_UART1>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart1_bus>;
+		clocks = <&clock 258>, <&clock 263>, <&clock 263>;
 		clock-names = "gate_pclk1", "gate_uart1", "sclk_uart1";
 		status = "disabled";
 	};
 
 	serial_2: uart@14C30000 {
-		compatible = "samsung,exynos8890-uart";
+		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x0 0x14C30000 0x100>;
+		samsung,fifo-size = <16>;
 		interrupts = <0 433 0>;
-		clocks = <&clock CLK_GATE_PCLK2>, <&clock CLK_GATE_UART2>, <&clock CLK_UART2>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart2_bus>;
+		clocks = <&clock 259>, <&clock 264>, <&clock 264>;
 		clock-names = "gate_pclk2", "gate_uart2", "sclk_uart2";
 		status = "disabled";
 	};
 
 	serial_3: uart@14C40000 {
-		compatible = "samsung,exynos8890-uart";
+		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x0 0x14C40000 0x100>;
+		samsung,fifo-size = <64>;
 		interrupts = <0 434 0>;
-		clocks = <&clock CLK_GATE_PCLK3>, <&clock CLK_GATE_UART3>, <&clock CLK_UART3>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart3_bus>;
+		clocks = <&clock 260>, <&clock 265>, <&clock 265>;
 		clock-names = "gate_pclk3", "gate_uart3", "sclk_uart3";
 		status = "disabled";
 	};
 
 	serial_4: uart@14C50000 {
-		compatible = "samsung,exynos8890-uart";
+		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x0 0x14C50000 0x100>;
+		samsung,fifo-size = <256>;
 		interrupts = <0 435 0>;
-		clocks = <&clock CLK_GATE_PCLK4>, <&clock CLK_GATE_UART4>, <&clock CLK_UART4>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart4_bus>;
+		clocks = <&clock 261>, <&clock 266>, <&clock 266>;
 		clock-names = "gate_pclk4", "gate_uart4", "sclk_uart4";
 		status = "disabled";
 	};
 
 	serial_5: uart@14C10000 {
-		compatible = "samsung,exynos8890-uart";
+		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x0 0x14C10000 0x100>;
+		samsung,fifo-size = <64>;
 		interrupts = <0 436 0>;
-		clocks = <&clock CLK_GATE_PCLK5>, <&clock CLK_GATE_UART5>, <&clock CLK_UART5>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart5_bus>;
+		clocks = <&clock 262>, <&clock 267>, <&clock 267>;
 		clock-names = "gate_pclk5", "gate_uart5", "sclk_uart5";
 		status = "disabled";
 	};
