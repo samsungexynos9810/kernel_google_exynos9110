@@ -1118,6 +1118,9 @@ int iommu_attach_device(struct iommu_domain *domain, struct device *dev)
 	struct iommu_group *group;
 	int ret;
 
+	/* HACK: We don't care iommu group */
+	return __iommu_attach_device(domain, dev);
+
 	group = iommu_group_get(dev);
 	/* FIXME: Remove this when groups a mandatory for iommu drivers */
 	if (group == NULL)
