@@ -794,28 +794,6 @@ int SUBCPU_rtc_read_time(uint8_t *data)
 	return 0;
 }
 
-int SUBCPU_rtc_set_time(uint8_t *data)
-{
-	unsigned char write_buff[WRITE_DATA_SIZE];
-
-	memset(write_buff, SUB_COM_SEND_DUMMY, WRITE_DATA_SIZE);
-
-	write_buff[0] = SUB_COM_TYPE_WRITE;
-	write_buff[1] = SUB_COM_SETID_RTC;
-	write_buff[3]  = ( data[RTC_YEAR] << 1 );
-	write_buff[3] |= ( data[RTC_MONTH] >> 3 ) & 0x01;
-	write_buff[4]  = ( data[RTC_MONTH] & 0x07 ) << 5;
-	write_buff[4] |= ( data[RTC_DATE] & 0x1F );
-	write_buff[5]  = ( (__fls(data[RTC_WEEKDAY])) << 5 );
-	write_buff[5] |= ( data[RTC_HOUR] & 0x1F );
-	write_buff[6]  = data[RTC_MIN];
-	write_buff[7]  = data[RTC_SEC];
-
-	Set_WriteDataBuff(&write_buff[0]);
-
-	return 0;
-}
-
 #ifdef CONFIG_BACKLIGHT_SUBCPU
 int SUB_LCDBrightnessSet(unsigned char LCDBrightness)
 {
