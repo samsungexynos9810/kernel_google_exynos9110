@@ -335,6 +335,11 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
+#ifdef CONFIG_KOI_GPIOKEY
+	    if (button->code == KEY_VOLUMEDOWN || button->code == KEY_VOLUMEUP)
+		input_event(input, type, button->code, !!state);
+	    else
+#endif
 		input_event(input, type, button->code,
 				irqd_is_wakeup_set(&desc->irq_data) ? 1 : !!state);
 	}
