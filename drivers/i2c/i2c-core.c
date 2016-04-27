@@ -1411,6 +1411,9 @@ static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
 	if (of_get_property(node, "wakeup-source", NULL))
 		info.flags |= I2C_CLIENT_WAKE;
 
+	if (of_get_property(node, "ten-bit-address", NULL))
+		        info.flags |= I2C_CLIENT_TEN;
+
 	result = i2c_new_device(adap, &info);
 	if (result == NULL) {
 		dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
