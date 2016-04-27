@@ -374,7 +374,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c0_bus>;
-		clocks = <&clock 120>, <&clock 120>;
+		clocks = <&clock 200>, <&clock 200>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd1 0 0x1>;
@@ -391,7 +391,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c1_bus>;
-		clocks = <&clock 121>, <&clock 121>;
+		clocks = <&clock 201>, <&clock 201>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd1 2 0x1>;
@@ -408,7 +408,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c2_bus>;
-		clocks = <&clock 122>, <&clock 122>;
+		clocks = <&clock 250>, <&clock 250>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpe5 0 0x1>;
@@ -425,7 +425,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c3_bus>;
-		clocks = <&clock 123>, <&clock 123>;
+		clocks = <&clock 251>, <&clock 251>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpe5 2 0x1>;
@@ -442,7 +442,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c4_bus>;
-		clocks = <&clock 124>, <&clock 124>;
+		clocks = <&clock 202>, <&clock 202>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd3 0 0x1>;
@@ -459,7 +459,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c5_bus>;
-		clocks = <&clock 125>, <&clock 125>;
+		clocks = <&clock 203>, <&clock 203>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd3 2 0x1>;
@@ -476,7 +476,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c6_bus>;
-		clocks = <&clock 126>, <&clock 126>;
+		clocks = <&clock 252>, <&clock 252>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpf0 0 0x1>;
@@ -493,7 +493,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c7_bus>;
-		clocks = <&clock 127>, <&clock 127>;
+		clocks = <&clock 253>, <&clock 253>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpf1 0 0x1>;
@@ -510,7 +510,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c8_bus>;
-		clocks = <&clock 128>, <&clock 128>;
+		clocks = <&clock 254>, <&clock 254>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpe5 4 0x1>;
@@ -527,7 +527,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c9_bus>;
-		clocks = <&clock 129>, <&clock 129>;
+		clocks = <&clock 204>, <&clock 204>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd1 4 0x1>;
@@ -544,7 +544,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c10_bus>;
-		clocks = <&clock 130>, <&clock 130>;
+		clocks = <&clock 205>, <&clock 205>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd2 0 0x1>;
@@ -561,7 +561,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c11_bus>;
-		clocks = <&clock 131>, <&clock 131>;
+		clocks = <&clock 206>, <&clock 206>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpd2 2 0x1>;
@@ -578,7 +578,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c12_bus>;
-		clocks = <&clock 131>, <&clock 131>;
+		clocks = <&clock 255>, <&clock 255>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpe5 6 0x1>;
@@ -595,7 +595,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c13_bus>;
-		clocks = <&clock 131>, <&clock 131>;
+		clocks = <&clock 256>, <&clock 256>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpe6 0 0x1>;
@@ -612,7 +612,7 @@
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c14_bus>;
-		clocks = <&clock 131>, <&clock 131>;
+		clocks = <&clock 257>, <&clock 257>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&gpe6 2 0x1>;
@@ -621,16 +621,16 @@
 	};
 
 	/* For PMIC with batcher */
-	hsi2c_15: hsi2c@10540000 {
+	hsi2c_15: hsi2c@10550000 {
 		compatible = "samsung,exynos5-hsi2c";
 		samsung,check-transdone-int;
-		reg = <0x0 0x10540000 0x2000>, <0x0 0x10540180 0x100>;
+		reg = <0x0 0x10550000 0x2000>, <0x0 0x10540180 0x100>;
 		interrupts = <0 340 0>, <0 341 0>;
 		#address-cells = <1>;
 		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&hs_i2c15_bus>;
-		clocks = <&clock 131>, <&clock 131>;
+		clocks = <&clock 950>, <&clock 950>;
 		clock-names = "rate_hsi2c", "gate_hsi2c";
 		samsung,scl-clk-stretching;
 		gpio_sda= <&etc0 0 0x1>;
