@@ -158,24 +158,28 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 
 	exynos->vdd33 = devm_regulator_get(dev, "vdd33");
 	if (IS_ERR(exynos->vdd33)) {
-		ret = PTR_ERR(exynos->vdd33);
-		goto err2;
+		dev_dbg(dev, "couldn't get regulator vdd33\n");
+		exynos->vdd33 = NULL;
 	}
-	ret = regulator_enable(exynos->vdd33);
-	if (ret) {
-		dev_err(dev, "Failed to enable VDD33 supply\n");
-		goto err2;
+	if (exynos->vdd33) {
+		ret = regulator_enable(exynos->vdd33);
+		if (ret) {
+			dev_err(dev, "Failed to enable VDD33 supply\n");
+			goto err2;
+		}
 	}
 
 	exynos->vdd10 = devm_regulator_get(dev, "vdd10");
 	if (IS_ERR(exynos->vdd10)) {
-		ret = PTR_ERR(exynos->vdd10);
-		goto err3;
+		dev_dbg(dev, "couldn't get regulator vdd10\n");
+		exynos->vdd10 = NULL;
 	}
-	ret = regulator_enable(exynos->vdd10);
-	if (ret) {
-		dev_err(dev, "Failed to enable VDD10 supply\n");
-		goto err3;
+	if (exynos->vdd10) {
+		ret = regulator_enable(exynos->vdd10);
+		if (ret) {
+			dev_err(dev, "Failed to enable VDD10 supply\n");
+			goto err3;
+		}
 	}
 
 	ret = dwc3_exynos_register_phys(exynos);
@@ -202,9 +206,11 @@ err5:
 	platform_device_unregister(exynos->usb2_phy);
 	platform_device_unregister(exynos->usb3_phy);
 err4:
-	regulator_disable(exynos->vdd10);
+	if (exynos->vdd10)
+		regulator_disable(exynos->vdd10);
 err3:
-	regulator_disable(exynos->vdd33);
+	if (exynos->vdd33)
+		regulator_disable(exynos->vdd33);
 err2:
 	clk_disable_unprepare(exynos->axius_clk);
 axius_clk_err:
@@ -225,8 +231,10 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
 	clk_disable_unprepare(exynos->susp_clk);
 	clk_disable_unprepare(exynos->clk);
 
-	regulator_disable(exynos->vdd33);
-	regulator_disable(exynos->vdd10);
+	if (exynos->vdd33)
+		regulator_disable(exynos->vdd33);
+	if (exynos->vdd10)
+		regulator_disable(exynos->vdd10);
 
 	return 0;
 }
@@ -246,8 +254,10 @@ static int dwc3_exynos_suspend(struct device *dev)
 	clk_disable(exynos->axius_clk);
 	clk_disable(exynos->clk);
 
-	regulator_disable(exynos->vdd33);
-	regulator_disable(exynos->vdd10);
+	if (exynos->vdd33)
+		regulator_disable(exynos->vdd33);
+	if (exynos->vdd10)
+		regulator_disable(exynos->vdd10);
 
 	return 0;
 }
@@ -257,15 +267,21 @@ static int dwc3_exynos_resume(struct device *dev)
 	struct dwc3_exynos *exynos = dev_get_drvdata(dev);
 	int ret;
 
-	ret = regulator_enable(exynos->vdd33);
-	if (ret) {
-		dev_err(dev, "Failed to enable VDD33 supply\n");
-		return ret;
+	if (exynos->vdd33) {
+		ret = regulator_enable(exynos->vdd33);
+		if (ret) {
+			dev_err(dev, "Failed to enable VDD33 supply\n");
+			return ret;
+		}
 	}
-	ret = regulator_enable(exynos->vdd10);
-	if (ret) {
-		dev_err(dev, "Failed to enable VDD10 supply\n");
-		return ret;
+	if (exynos->vdd10) {
+		ret = regulator_enable(exynos->vdd10);
+		if (ret) {
+			if (exynos->vdd33)
+				regulator_disable(exynos->vdd33);
+			dev_err(dev, "Failed to enable VDD10 supply\n");
+			return ret;
+		}
 	}
 
 	clk_enable(exynos->clk);
