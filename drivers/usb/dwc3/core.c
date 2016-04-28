@@ -121,7 +121,7 @@ static int dwc3_core_soft_reset(struct dwc3 *dwc)
  * dwc3_soft_reset - Issue soft reset
  * @dwc: Pointer to our controller context structure
  */
-static int dwc3_soft_reset(struct dwc3 *dwc)
+int dwc3_soft_reset(struct dwc3 *dwc)
 {
 	unsigned long timeout;
 	u32 reg;
@@ -265,7 +265,7 @@ static int dwc3_alloc_event_buffers(struct dwc3 *dwc, unsigned length)
  *
  * Returns 0 on success otherwise negative errno.
  */
-static int dwc3_event_buffers_setup(struct dwc3 *dwc)
+int dwc3_event_buffers_setup(struct dwc3 *dwc)
 {
 	struct dwc3_event_buffer	*evt;
 	int				n;
@@ -426,7 +426,7 @@ static void dwc3_cache_hwparams(struct dwc3 *dwc)
  * initialized. The PHY interfaces and the PHYs get initialized together with
  * the core in dwc3_core_init.
  */
-static int dwc3_phy_setup(struct dwc3 *dwc)
+int dwc3_phy_setup(struct dwc3 *dwc)
 {
 	u32 reg;
 	int ret;
@@ -529,7 +529,7 @@ static int dwc3_phy_setup(struct dwc3 *dwc)
  *
  * Returns 0 on success otherwise negative errno.
  */
-static int dwc3_core_init(struct dwc3 *dwc)
+int dwc3_core_init(struct dwc3 *dwc)
 {
 	u32			hwparams4 = dwc->hwparams.hwparams4;
 	u32			reg;
@@ -664,7 +664,7 @@ err0:
 	return ret;
 }
 
-static void dwc3_core_exit(struct dwc3 *dwc)
+void dwc3_core_exit(struct dwc3 *dwc)
 {
 	dwc3_free_scratch_buffers(dwc);
 	usb_phy_shutdown(dwc->usb2_phy);
@@ -764,15 +764,26 @@ static int dwc3_core_init_mode(struct dwc3 *dwc)
 		break;
 	case USB_DR_MODE_OTG:
 		dwc3_set_mode(dwc, DWC3_GCTL_PRTCAP_OTG);
-		ret = dwc3_host_init(dwc);
+		ret = dwc3_otg_init(dwc);
 		if (ret) {
-			dev_err(dev, "failed to initialize host\n");
+			dev_err(dev, "failed to initialize otg\n");
 			return ret;
 		}
 
+		/* turn off PHYs to save power */
+		dwc3_core_exit(dwc);
+
+		ret = dwc3_host_init(dwc);
+		if (ret) {
+			dev_err(dev, "failed to initialize host\n");
+			dwc3_otg_exit(dwc);
+			return ret;
+		}
 		ret = dwc3_gadget_init(dwc);
 		if (ret) {
 			dev_err(dev, "failed to initialize gadget\n");
+			dwc3_host_exit(dwc);
+			dwc3_otg_exit(dwc);
 			return ret;
 		}
 		break;
@@ -796,6 +807,7 @@ static void dwc3_core_exit_mode(struct dwc3 *dwc)
 	case USB_DR_MODE_OTG:
 		dwc3_host_exit(dwc);
 		dwc3_gadget_exit(dwc);
+		dwc3_otg_exit(dwc);
 		break;
 	default:
 		/* do nothing */
@@ -1120,22 +1132,27 @@ static int dwc3_suspend(struct device *dev)
 
 	switch (dwc->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:
-	case USB_DR_MODE_OTG:
 		dwc3_gadget_suspend(dwc);
-		/* FALLTHROUGH */
-	case USB_DR_MODE_HOST:
-	default:
+		break;
+	case USB_DR_MODE_OTG:
 		dwc3_event_buffers_cleanup(dwc);
+		break;
+	case USB_DR_MODE_HOST:
+		dwc3_event_buffers_cleanup(dwc);
+		usb_phy_shutdown(dwc->usb3_phy);
+		usb_phy_shutdown(dwc->usb2_phy);
+		phy_exit(dwc->usb2_generic_phy);
+		phy_exit(dwc->usb3_generic_phy);
+	default:
+		/* do nothing */
 		break;
 	}
 
-	dwc->gctl = dwc3_readl(dwc->regs, DWC3_GCTL);
-	spin_unlock_irqrestore(&dwc->lock, flags);
+	/* backup GCTL only in non-OTG modes */
+	if (dwc->dr_mode != USB_DR_MODE_OTG)
+		dwc->gctl = dwc3_readl(dwc->regs, DWC3_GCTL);
 
-	usb_phy_shutdown(dwc->usb3_phy);
-	usb_phy_shutdown(dwc->usb2_phy);
-	phy_exit(dwc->usb2_generic_phy);
-	phy_exit(dwc->usb3_generic_phy);
+	spin_unlock_irqrestore(&dwc->lock, flags);
 
 	pinctrl_pm_select_sleep_state(dev);
 
@@ -1150,27 +1167,33 @@ static int dwc3_resume(struct device *dev)
 
 	pinctrl_pm_select_default_state(dev);
 
-	usb_phy_init(dwc->usb3_phy);
-	usb_phy_init(dwc->usb2_phy);
-	ret = phy_init(dwc->usb2_generic_phy);
-	if (ret < 0)
-		return ret;
-
-	ret = phy_init(dwc->usb3_generic_phy);
-	if (ret < 0)
-		goto err_usb2phy_init;
-
 	spin_lock_irqsave(&dwc->lock, flags);
 
 	dwc3_event_buffers_setup(dwc);
-	dwc3_writel(dwc->regs, DWC3_GCTL, dwc->gctl);
+
+	if (dwc->dr_mode != USB_DR_MODE_OTG)
+		dwc3_writel(dwc->regs, DWC3_GCTL, dwc->gctl);
 
 	switch (dwc->dr_mode) {
 	case USB_DR_MODE_PERIPHERAL:
-	case USB_DR_MODE_OTG:
 		dwc3_gadget_resume(dwc);
-		/* FALLTHROUGH */
+		break;
+	case USB_DR_MODE_OTG:
+		break;
 	case USB_DR_MODE_HOST:
+		usb_phy_init(dwc->usb3_phy);
+		usb_phy_init(dwc->usb2_phy);
+		ret = phy_init(dwc->usb2_generic_phy);
+		if (ret < 0) {
+			spin_unlock_irqrestore(&dwc->lock, flags);
+			return ret;
+		}
+
+		ret = phy_init(dwc->usb3_generic_phy);
+		if (ret < 0) {
+			spin_unlock_irqrestore(&dwc->lock, flags);
+			goto err_usb2phy_init;
+		}
 	default:
 		/* do nothing */
 		break;

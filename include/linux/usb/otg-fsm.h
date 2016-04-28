@@ -61,6 +61,8 @@ enum otg_fsm_timer {
 
 /* OTG state machine according to the OTG spec */
 struct otg_fsm {
+	int reset ;
+
 	/* Input */
 	int id;
 	int adp_change;

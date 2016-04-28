@@ -20,6 +20,7 @@
 #include <linux/kernel.h>
 #include <linux/slab.h>
 #include <linux/platform_device.h>
+#include <linux/mutex.h>
 #include <linux/dma-mapping.h>
 #include <linux/clk.h>
 #include <linux/usb/otg.h>
@@ -27,6 +28,15 @@
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/regulator/consumer.h>
+
+#include <linux/io.h>
+#include <linux/usb/otg-fsm.h>
+
+/* -------------------------------------------------------------------------- */
+
+struct dwc3_exynos_rsw {
+	struct otg_fsm		*fsm;
+};
 
 struct dwc3_exynos {
 	struct platform_device	*usb2_phy;
@@ -39,7 +49,131 @@ struct dwc3_exynos {
 
 	struct regulator	*vdd33;
 	struct regulator	*vdd10;
+
+	struct dwc3_exynos_rsw	rsw;
 };
+
+static const struct of_device_id exynos_dwc3_match[] = {
+	{ .compatible = "samsung,exynos5250-dwusb3" },
+	{ .compatible = "samsung,exynos7-dwusb3" },
+	{},
+};
+MODULE_DEVICE_TABLE(of, exynos_dwc3_match);
+
+void dwc3_otg_run_sm(struct otg_fsm *fsm);
+
+/* -------------------------------------------------------------------------- */
+
+static struct dwc3_exynos *dwc3_exynos_match(struct device *dev)
+{
+	const struct of_device_id *matches = NULL;
+	struct dwc3_exynos *exynos = NULL;
+
+	if (!dev)
+		return NULL;
+
+	matches = exynos_dwc3_match;
+
+	if (of_match_device(matches, dev))
+		exynos = dev_get_drvdata(dev);
+
+	return exynos;
+}
+
+bool dwc3_exynos_rsw_available(struct device *dev)
+{
+	struct dwc3_exynos *exynos;
+
+	exynos = dwc3_exynos_match(dev);
+	if (!exynos)
+		return false;
+
+	return true;
+}
+
+int dwc3_exynos_rsw_setup(struct device *dev, struct otg_fsm *fsm)
+{
+	struct dwc3_exynos	*exynos = dev_get_drvdata(dev);
+	struct dwc3_exynos_rsw	*rsw = &exynos->rsw;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	/* B-device by default */
+	fsm->id = 1;
+	fsm->b_sess_vld = 1;
+
+	rsw->fsm = fsm;
+
+	return 0;
+}
+
+void dwc3_exynos_rsw_exit(struct device *dev)
+{
+	struct dwc3_exynos	*exynos = dev_get_drvdata(dev);
+	struct dwc3_exynos_rsw	*rsw = &exynos->rsw;
+
+	dev_dbg(dev, "%s\n", __func__);
+
+	rsw->fsm = NULL;
+}
+
+/**
+ * dwc3_exynos_id_event - receive ID pin state change event.
+ * @state : New ID pin state.
+ * Context: may sleep.
+ */
+int dwc3_exynos_id_event(struct device *dev, int state)
+{
+	struct dwc3_exynos	*exynos;
+	struct otg_fsm		*fsm;
+
+	dev_dbg(dev, "EVENT: ID: %d\n", state);
+
+	exynos = dev_get_drvdata(dev);
+	if (!exynos)
+		return -ENOENT;
+
+	fsm = exynos->rsw.fsm;
+	if (!fsm)
+		return -ENOENT;
+
+	if (fsm->id != state) {
+		fsm->id = state;
+		dwc3_otg_run_sm(fsm);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(dwc3_exynos_id_event);
+
+/**
+ * dwc3_exynos_vbus_event - receive VBus change event.
+ * vbus_active : New VBus state, true if active, false otherwise.
+ * Context: may sleep.
+ */
+int dwc3_exynos_vbus_event(struct device *dev, bool vbus_active)
+{
+	struct dwc3_exynos	*exynos;
+	struct otg_fsm		*fsm;
+
+	dev_dbg(dev, "EVENT: VBUS: %sactive\n", vbus_active ? "" : "in");
+
+	exynos = dev_get_drvdata(dev);
+	if (!exynos)
+		return -ENOENT;
+
+	fsm = exynos->rsw.fsm;
+	if (!fsm)
+		return -ENOENT;
+
+	if (fsm->b_sess_vld != vbus_active) {
+		fsm->b_sess_vld = vbus_active;
+		dwc3_otg_run_sm(fsm);
+	}
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(dwc3_exynos_vbus_event);
 
 static int dwc3_exynos_register_phys(struct dwc3_exynos *exynos)
 {
@@ -128,7 +262,13 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, exynos);
 
-	exynos->dev	= dev;
+	ret = dwc3_exynos_register_phys(exynos);
+	if (ret) {
+		dev_err(dev, "couldn't register PHYs\n");
+		return ret;
+	}
+
+	exynos->dev = dev;
 
 	exynos->clk = devm_clk_get(dev, "usbdrd30");
 	if (IS_ERR(exynos->clk)) {
@@ -238,13 +378,6 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
 
 	return 0;
 }
-
-static const struct of_device_id exynos_dwc3_match[] = {
-	{ .compatible = "samsung,exynos5250-dwusb3" },
-	{ .compatible = "samsung,exynos7-dwusb3" },
-	{},
-};
-MODULE_DEVICE_TABLE(of, exynos_dwc3_match);
 
 #ifdef CONFIG_PM_SLEEP
 static int dwc3_exynos_suspend(struct device *dev)

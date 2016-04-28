@@ -398,6 +398,19 @@
 #define DWC3_DEPCMD_TYPE_BULK		2
 #define DWC3_DEPCMD_TYPE_INTR		3
 
+/* OTG Control Register */
+#define DWC3_OTG_OCTL_PERIMODE         (1 << 6)
+
+/* OTG Events Register */
+#define DWC3_OEVT_DEVICEMODE			(1 << 31)
+#define DWC3_OEVT_CLEAR_ALL			(~DWC3_OEVT_DEVICEMODE)
+#define DWC3_OEVTEN_OTGCONIDSTSCHNGEVNT		(1 << 24)
+#define DWC3_OEVTEN_OTGBDEVVBUSCHNGEVNT		(1 << 8)
+
+/* OTG Status Register */
+#define DWC3_OTG_OSTS_BSESVALID		(1 << 2)
+#define DWC3_OTG_OSTS_CONIDSTS		(1 << 0)
+
 /* Structures */
 
 struct dwc3_trb;
@@ -655,6 +668,7 @@ struct dwc3_scratchpad_array {
  * @dev: pointer to our struct device
  * @xhci: pointer to our xHCI child
  * @event_buffer_list: a list of event buffers
+ * @dotg: pointer to OTG
  * @gadget: device side representation of the peripheral controller
  * @gadget_driver: pointer to the gadget driver
  * @regs: base address for our registers
@@ -692,6 +706,8 @@ struct dwc3_scratchpad_array {
  * @lpm_nyet_threshold: LPM NYET response threshold
  * @hird_threshold: HIRD threshold
  * @hsphy_interface: "utmi" or "ulpi"
+ * @vbus_session: Indicates if the gadget was powered by the otg driver
+ * @softconnect: Indicates if pullup was issued by the usb_gadget_driver
  * @delayed_status: true when gadget driver asks for delayed status
  * @ep0_bounced: true when we used bounce buffer
  * @ep0_expect_in: true when we expect a DATA IN transfer
@@ -750,6 +766,7 @@ struct dwc3 {
 
 	struct dwc3_event_buffer **ev_buffs;
 	struct dwc3_ep		*eps[DWC3_ENDPOINTS_NUM];
+	struct dwc3_otg		*dotg;
 
 	struct usb_gadget	gadget;
 	struct usb_gadget_driver *gadget_driver;
@@ -839,6 +856,9 @@ struct dwc3 {
 	u8			hird_threshold;
 
 	const char		*hsphy_interface;
+
+	bool			vbus_session;
+	bool			softconnect;
 
 	unsigned		delayed_status:1;
 	unsigned		ep0_bounced:1;
@@ -1017,7 +1037,14 @@ struct dwc3_gadget_ep_cmd_params {
 
 /* prototypes */
 void dwc3_set_mode(struct dwc3 *dwc, u32 mode);
+int dwc3_soft_reset(struct dwc3 *dwc);
+int dwc3_event_buffers_setup(struct dwc3 *dwc);
+int dwc3_phy_setup(struct dwc3 *dwc);
+int dwc3_core_init(struct dwc3 *dwc);
+void dwc3_core_exit(struct dwc3 *dwc);
 int dwc3_gadget_resize_tx_fifos(struct dwc3 *dwc);
+int dwc3_otg_init(struct dwc3 *dwc);
+void dwc3_otg_exit(struct dwc3 *dwc);
 
 #if IS_ENABLED(CONFIG_USB_DWC3_HOST) || IS_ENABLED(CONFIG_USB_DWC3_DUAL_ROLE)
 int dwc3_host_init(struct dwc3 *dwc);
