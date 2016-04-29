@@ -1415,7 +1415,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	if (ret > 0)
 		ourport->tx_irq = ret;
 
-#if defined(CONFIG_PM_RUNTIME) && defined(CONFIG_SND_SAMSUNG_AUDSS)
+#if defined(CONFIG_PM) && defined(CONFIG_SND_SAMSUNG_AUDSS)
 	if (ourport->domain == DOMAIN_AUD)
 		lpass_register_subip(&platdev->dev, "aud-uart");
 #endif
