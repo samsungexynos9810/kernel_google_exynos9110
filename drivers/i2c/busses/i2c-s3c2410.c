@@ -38,7 +38,9 @@
 #include <asm/irq.h>
 
 #include <linux/platform_data/i2c-s3c2410.h>
+#ifdef CONFIG_PWRCAL_TEMP
 #include <soc/samsung/exynos-powermode.h>
+#endif
 
 #ifdef CONFIG_CPU_IDLE
 #include <soc/samsung/exynos-pm.h>
@@ -846,7 +848,9 @@ static int s3c24xx_i2c_xfer(struct i2c_adapter *adap,
 	int ret;
 
 	pm_runtime_get_sync(&adap->dev);
+#ifdef CONFIG_PWRCAL_TEMP
 	exynos_update_ip_idle_status(i2c->idle_ip_index, 0);
+#endif
 	ret = clk_enable(i2c->clk);
 	if (ret)
 		return ret;
@@ -861,7 +865,9 @@ static int s3c24xx_i2c_xfer(struct i2c_adapter *adap,
 
 		if (ret != -EAGAIN) {
 			clk_disable(i2c->clk);
+#ifdef CONFIG_PWRCAL_TEMP
 			exynos_update_ip_idle_status(i2c->idle_ip_index, 1);
+#endif
 			pm_runtime_put(&adap->dev);
 			return ret;
 		}
@@ -872,7 +878,9 @@ static int s3c24xx_i2c_xfer(struct i2c_adapter *adap,
 	}
 
 	clk_disable(i2c->clk);
+#ifdef CONFIG_PWRCAL_TEMP
 	exynos_update_ip_idle_status(i2c->idle_ip_index, 1);
+#endif
 	pm_runtime_put(&adap->dev);
 	return -EREMOTEIO;
 }
@@ -1192,7 +1200,9 @@ static int s3c24xx_i2c_probe(struct platform_device *pdev)
 	i2c->adap.class = I2C_CLASS_DEPRECATED;
 	i2c->tx_setup = 50;
 
+#ifdef CONFIG_PWRCAL_TEMP
 	i2c->idle_ip_index = exynos_get_idle_ip_index(dev_name(&pdev->dev));
+#endif
 
 	init_waitqueue_head(&i2c->wait);
 
