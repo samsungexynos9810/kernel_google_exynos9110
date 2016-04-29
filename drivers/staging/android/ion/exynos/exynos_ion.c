@@ -558,15 +558,6 @@ static int __init exynos_ion_init(void)
 
 subsys_initcall(exynos_ion_init);
 
-#ifdef CONFIG_HIGHMEM
-#define exynos_sync_single_for_device(addr, size, dir)	dmac_map_area(addr, size, dir)
-#define exynos_sync_single_for_cpu(addr, size, dir)	dmac_unmap_area(addr, size, dir)
-#define exynos_sync_sg_for_device(dev, size, sg, nents, dir)	\
-	ion_device_sync(ion_exynos, sg, nents, dir, dmac_map_area, false)
-#define exynos_sync_sg_for_cpu(dev, size, sg, nents, dir)	\
-	ion_device_sync(ion_exynos, sg, nents, dir, dmac_unmap_area, false)
-#define exynos_sync_all					flush_all_cpu_caches
-#else
 static void __exynos_sync_sg_for_device(struct device *dev, size_t size,
 					 struct scatterlist *sgl, int nelems,
 					 enum dma_data_direction dir)
@@ -612,7 +603,6 @@ static void __exynos_sync_sg_for_cpu(struct device *dev, size_t size,
 #define exynos_sync_sg_for_cpu(dev, size, sg, nents, dir)	\
 	__exynos_sync_sg_for_cpu(dev, size, sg, nents, dir)
 #define exynos_sync_all					flush_all_cpu_caches
-#endif
 
 void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 					struct dma_buf *dmabuf,

@@ -145,7 +145,6 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 	int i = 0;
 	unsigned long size_remaining = PAGE_ALIGN(size);
 	unsigned int max_order = orders[0];
-	bool all_pages_from_pool = true;
 
 	if (align > PAGE_SIZE)
 		return -EINVAL;
@@ -177,18 +176,12 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		sg_set_page(sg, page, len, 0);
 		sg = sg_next(sg);
 		if (should_flush_cache(page, buffer)) {
-			all_pages_from_pool = false;
-			if (!IS_ENABLED(CONFIG_HIGHMEM)) {
-				__flush_dcache_area(page_address(page), len);
-				if (!ion_buffer_cached(buffer))
-					ion_set_page_clean(page);
-			}
+			__flush_dcache_area(page_address(page), len);
+			if (!ion_buffer_cached(buffer))
+				ion_set_page_clean(page);
 		}
 		list_del(&page->lru);
 	}
-
-	if (all_pages_from_pool)
-		ion_buffer_set_ready(buffer);
 
 	buffer->priv_virt = table;
 	return 0;

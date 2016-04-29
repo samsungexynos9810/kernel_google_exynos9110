@@ -141,13 +141,8 @@ static int ion_heap_sglist_zero(struct scatterlist *sgl, unsigned int nents,
 		if (!va)
 			break;
 		clear_page(va);
-#ifdef CONFIG_ARM64
 		if (pgprot == pgprot_writecombine(PAGE_KERNEL))
 			__flush_dcache_area(va, PAGE_SIZE);
-#else
-		if (pgprot == pgprot_writecombine(PAGE_KERNEL))
-			dmac_flush_range(va, va + PAGE_SIZE);
-#endif
 		kunmap(pages[p]);
 	}
 

@@ -164,14 +164,8 @@ static bool __init_pages_for_preload(struct page *page, int order,
 
 	if (zero)
 		memset(va, 0, n_pages * PAGE_SIZE);
-#ifdef CONFIG_ARM64
 	if (flush)
 		__flush_dcache_area(va, n_pages * PAGE_SIZE);
-#else
-	if (flush)
-		dmac_flush_range(va, va + (n_pages * PAGE_SIZE));
-#endif
-
 	if (PageHighMem(page))
 		vm_unmap_ram(va, n_pages);
 err_vm_map:

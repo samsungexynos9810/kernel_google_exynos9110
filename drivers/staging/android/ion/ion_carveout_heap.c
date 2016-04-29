@@ -148,24 +148,12 @@ static void ion_carveout_heap_free(struct ion_buffer *buffer)
 	struct page *page = sg_page(table->sgl);
 	ion_phys_addr_t paddr = PFN_PHYS(page_to_pfn(page));
 
-#ifdef CONFIG_ARM64
 	if (ion_buffer_cached(buffer)) {
 		if (ion_buffer_need_flush_all(buffer))
 			flush_all_cpu_caches();
 		else
 			__flush_dcache_area(page_address(page), buffer->size);
 	}
-#else
-	if (ion_buffer_cached(buffer)) {
-		if (ion_buffer_need_flush_all(buffer)) {
-			flush_all_cpu_caches();
-		} else {
-			ion_device_sync(buffer->dev, table->sgl, 1,
-					DMA_BIDIRECTIONAL, ion_buffer_flush,
-					false);
-		}
-	}
-#endif
 	if (buffer->flags & ION_FLAG_PROTECTED)
 		ion_secure_unprotect(buffer);
 
@@ -239,22 +227,10 @@ struct ion_heap *ion_carveout_heap_create(struct ion_platform_heap *heap_data)
 	carveout_heap->heap.type = ION_HEAP_TYPE_CARVEOUT;
 	carveout_heap->heap.debug_show = carveout_heap_debug_show;
 
-#ifdef CONFIG_ARM64
 	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
 		flush_all_cpu_caches();
 	else
 		__flush_dcache_area(page_address(page), size);
-#else
-	if (size >= ION_FLUSH_ALL_HIGHLIMIT) {
-		flush_all_cpu_caches();
-	} else {
-		struct scatterlist sg;
-
-		sg_set_page(&sg, page, size, 0);
-		ion_device_sync(g_idev, &sg, 1, DMA_BIDIRECTIONAL,
-				ion_buffer_flush, false);
-	}
-#endif
 	return &carveout_heap->heap;
 }
 

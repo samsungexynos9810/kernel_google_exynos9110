@@ -859,8 +859,6 @@ static void *ion_buffer_kmap_get(struct ion_buffer *buffer)
 	buffer->vaddr = vaddr;
 	buffer->kmap_cnt++;
 
-	ion_buffer_make_ready(buffer);
-
 	return vaddr;
 }
 
@@ -1227,8 +1225,6 @@ static void ion_buffer_sync_for_device(struct ion_buffer *buffer,
 	int pages = PAGE_ALIGN(buffer->size) / PAGE_SIZE;
 	int i;
 
-	ion_buffer_make_ready_lock(buffer);
-
 	if (!ion_buffer_cached(buffer))
 		return;
 
@@ -1349,8 +1345,6 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 
 	trace_ion_mmap_start((unsigned long) buffer, buffer->size,
 			!(buffer->flags & ION_FLAG_CACHED_NEEDS_SYNC));
-
-	ion_buffer_make_ready_lock(buffer);
 
 	if (ion_buffer_fault_user_mappings(buffer)) {
 		vma->vm_flags |= VM_IO | VM_PFNMAP | VM_DONTEXPAND |
@@ -1563,6 +1557,10 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 {
 	struct dma_buf *dmabuf;
 	struct ion_buffer *buffer;
+	struct scatterlist *sg, *sgl;
+	int nelems;
+	void *vaddr;
+	int i = 0;
 
 	dmabuf = dma_buf_get(fd);
 	if (IS_ERR(dmabuf))
@@ -1587,23 +1585,12 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 				DMA_BIDIRECTIONAL, buffer->size,
 				buffer->vaddr, 0, false);
 
-	if (IS_ENABLED(CONFIG_HIGHMEM)) {
-		ion_device_sync(buffer->dev, buffer->sg_table->sgl,
-				buffer->sg_table->nents, DMA_BIDIRECTIONAL,
-				ion_buffer_flush, false);
-	} else {
-		struct scatterlist *sg, *sgl;
-		int nelems;
-		void *vaddr;
-		int i = 0;
+	sgl = buffer->sg_table->sgl;
+	nelems = buffer->sg_table->nents;
 
-		sgl = buffer->sg_table->sgl;
-		nelems = buffer->sg_table->nents;
-
-		for_each_sg(sgl, sg, nelems, i) {
-			vaddr = phys_to_virt(sg_phys(sg));
-			__dma_flush_range(vaddr, vaddr + sg->length);
-		}
+	for_each_sg(sgl, sg, nelems, i) {
+		vaddr = phys_to_virt(sg_phys(sg));
+		__dma_flush_range(vaddr, vaddr + sg->length);
 	}
 
 	trace_ion_sync_end(_RET_IP_, buffer->dev->dev.this_device,
@@ -2111,147 +2098,6 @@ void ion_device_add_heap(struct ion_device *dev, struct ion_heap *heap)
 }
 EXPORT_SYMBOL(ion_device_add_heap);
 
-#define VM_PAGE_COUNT_WIDTH 4
-#define VM_PAGE_COUNT 4
-
-static void ion_device_sync_and_unmap(unsigned long vaddr,
-					pte_t *ptep, size_t size,
-					enum dma_data_direction dir,
-					ion_device_sync_func sync, bool memzero)
-{
-	int i;
-
-	flush_cache_vmap(vaddr, vaddr + size);
-
-	if (memzero)
-		memset((void *) vaddr, 0, size);
-
-	if (sync)
-		sync((void *) vaddr, size, dir);
-
-	for (i = 0; i < (size / PAGE_SIZE); i++)
-		pte_clear(&init_mm, (void *) vaddr + (i * PAGE_SIZE), ptep + i);
-
-	flush_cache_vunmap(vaddr, vaddr + size);
-	flush_tlb_kernel_range(vaddr, vaddr + size);
-}
-
-void ion_device_sync(struct ion_device *dev, struct scatterlist *sgl,
-			int nents, enum dma_data_direction dir,
-			ion_device_sync_func sync, bool memzero)
-{
-	struct scatterlist *sg;
-	int page_idx, pte_idx, i;
-	unsigned long vaddr;
-	size_t sum = 0;
-	pte_t *ptep;
-
-	if (!memzero && !sync)
-		return;
-
-	down(&dev->vm_sem);
-
-	page_idx = atomic_pop(&dev->page_idx, VM_PAGE_COUNT_WIDTH);
-	BUG_ON((page_idx < 0) || (page_idx >= VM_PAGE_COUNT));
-
-	pte_idx = page_idx * (SZ_1M / PAGE_SIZE);
-	ptep = dev->pte[pte_idx];
-	vaddr = (unsigned long) dev->reserved_vm_area->addr +
-				(SZ_1M * page_idx);
-
-	for_each_sg(sgl, sg, nents, i) {
-		int j;
-
-		if (!PageHighMem(sg_page(sg))) {
-			if (memzero)
-				memset(page_address(sg_page(sg)),
-							0, sg->length);
-			if (sync)
-				sync(page_address(sg_page(sg)) + sg->offset,
-							sg->length, dir);
-			continue;
-		}
-
-		if (!IS_ALIGNED(sg->length | sg->offset, PAGE_SIZE)) {
-			void *va;
-			size_t len = sg->length + sg->offset;
-			size_t orglen = len;
-			off_t off = sg->offset;
-
-			BUG_ON(memzero);
-
-			for (j = 0; j < (PAGE_ALIGN(orglen) / PAGE_SIZE); j++) {
-				size_t pagelen;
-				pagelen = (len > PAGE_SIZE) ?
-						PAGE_SIZE : len;
-				va = kmap(sg_page(sg) + j);
-				sync(va + off, pagelen - off, dir);
-				kunmap(sg_page(sg) + j);
-				off = 0;
-				len -= pagelen;
-			}
-			continue;
-		}
-
-		for (j = 0; j < (sg->length / PAGE_SIZE); j++) {
-			set_pte_at(&init_mm, vaddr, ptep,
-					mk_pte(sg_page(sg) + j, PAGE_KERNEL));
-			ptep++;
-			vaddr += PAGE_SIZE;
-			sum += PAGE_SIZE;
-
-			if (sum == SZ_1M) {
-				ptep = dev->pte[pte_idx];
-				vaddr =
-				(unsigned long) dev->reserved_vm_area->addr
-					+ (SZ_1M * page_idx);
-
-				ion_device_sync_and_unmap(vaddr,
-					ptep, sum, dir, sync, memzero);
-				sum = 0;
-			}
-		}
-	}
-
-	if (sum != 0) {
-		ion_device_sync_and_unmap(
-			(unsigned long) dev->reserved_vm_area->addr +
-				(SZ_1M * page_idx),
-			dev->pte[pte_idx], sum, dir, sync, memzero);
-	}
-
-	atomic_push(&dev->page_idx, page_idx, VM_PAGE_COUNT_WIDTH);
-
-	up(&dev->vm_sem);
-}
-
-static int ion_device_reserve_vm(struct ion_device *dev)
-{
-	int i;
-
-	atomic_set(&dev->page_idx, -1);
-
-	for (i = VM_PAGE_COUNT - 1; i >= 0; i--) {
-		BUG_ON(i >= (1 << VM_PAGE_COUNT_WIDTH));
-		atomic_push(&dev->page_idx, i, VM_PAGE_COUNT_WIDTH);
-	}
-
-	sema_init(&dev->vm_sem, VM_PAGE_COUNT);
-	dev->pte = page_address(
-			alloc_pages(GFP_KERNEL,
-				get_order(((SZ_1M / PAGE_SIZE) *
-						VM_PAGE_COUNT) *
-						sizeof(*dev->pte))));
-	dev->reserved_vm_area = alloc_vm_area(SZ_1M *
-						VM_PAGE_COUNT, dev->pte);
-	if (!dev->reserved_vm_area) {
-		pr_err("%s: Failed to allocate vm area\n", __func__);
-		return -ENOMEM;
-	}
-
-	return 0;
-}
-
 #ifdef CONFIG_ION_EXYNOS_STAT_LOG
 
 #define MAX_DUMP_TASKS		8
@@ -2549,12 +2395,6 @@ debugfs_done:
 	plist_head_init(&idev->heaps);
 	idev->clients = RB_ROOT;
 
-	if (IS_ENABLED(CONFIG_HIGHMEM)) {
-		ret = ion_device_reserve_vm(idev);
-		if (ret)
-			panic("ion: failed to reserve vm area\n");
-	}
-
 	/* backup of ion device: assumes there is only one ion device */
 	g_idev = idev;
 
@@ -2566,11 +2406,6 @@ void ion_device_destroy(struct ion_device *dev)
 {
 	misc_deregister(&dev->dev);
 	debugfs_remove_recursive(dev->debug_root);
-	/* XXX need to free the heaps and clients ? */
-
-	if (IS_ENABLED(CONFIG_HIGHMEM))
-		free_vm_area(dev->reserved_vm_area);
-
 	kfree(dev);
 }
 EXPORT_SYMBOL(ion_device_destroy);

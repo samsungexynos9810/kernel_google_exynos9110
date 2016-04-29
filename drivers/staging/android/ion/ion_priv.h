@@ -404,43 +404,6 @@ void ion_device_sync(struct ion_device *dev, struct scatterlist *sgl,
 			int nents, enum dma_data_direction dir,
 			ion_device_sync_func sync, bool memzero);
 
-#ifdef CONFIG_HIGHMEM
-static inline void ion_buffer_set_ready(struct ion_buffer *buffer)
-{
-	buffer->private_flags |= ION_PRIV_FLAG_READY_TO_USE;
-}
-
-static inline void ion_buffer_flush(const void *vaddr, size_t size, int dir)
-{
-	dmac_flush_range(vaddr, vaddr + size);
-}
-
-static inline void ion_buffer_make_ready(struct ion_buffer *buffer)
-{
-	if (!(buffer->private_flags & ION_PRIV_FLAG_READY_TO_USE)) {
-		ion_device_sync(buffer->dev, buffer->sg_table->sgl,
-			buffer->sg_table->nents, DMA_BIDIRECTIONAL,
-			(ion_buffer_cached(buffer) &&
-				 !ion_buffer_fault_user_mappings(buffer)) ?
-				NULL : ion_buffer_flush,
-			!(buffer->flags & ION_FLAG_NOZEROED));
-		buffer->private_flags |= ION_PRIV_FLAG_READY_TO_USE;
-	}
-}
-
-static inline void ion_buffer_make_ready_lock(struct ion_buffer *buffer)
-{
-	mutex_lock(&buffer->lock);
-	ion_buffer_make_ready(buffer);
-	mutex_unlock(&buffer->lock);
-}
-#else
-#define ion_buffer_flush NULL
-#define ion_buffer_set_ready(buffer) do { } while (0)
-#define ion_buffer_make_ready(buffer) do { } while (0)
-#define ion_buffer_make_ready_lock(buffer) do { } while (0)
-#endif
-
 /**
  * kernel api to allocate/free from carveout -- used when carveout is
  * used to back an architecture specific custom heap
