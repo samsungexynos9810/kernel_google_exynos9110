@@ -536,23 +536,32 @@ static int exynos_ion_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static struct of_device_id exynos_ion_of_match[] __initconst = {
-	{ .compatible	= "samsung,exynos5430-ion", },
-	{ },
-};
-
 static struct platform_driver exynos_ion_driver __refdata = {
 	.probe	= exynos_ion_probe,
 	.remove	= exynos_ion_remove,
 	.driver	= {
 		.owner		= THIS_MODULE,
 		.name		= "ion-exynos",
-		.of_match_table	= of_match_ptr(exynos_ion_of_match),
 	}
 };
 
+struct platform_device *exynos_ion_pdev;
+
 static int __init exynos_ion_init(void)
 {
+	struct platform_device_info pdevinfo = {
+		.parent = NULL,
+		.name = "ion-exynos",
+		.id = -1,
+		.res = NULL,
+		.num_res = 0,
+		.data = NULL,
+		.size_data = 0,
+		.dma_mask = DMA_BIT_MASK(32),
+	};
+	exynos_ion_pdev = platform_device_register_full(&pdevinfo);
+	if (IS_ERR(exynos_ion_pdev))
+		return PTR_ERR(exynos_ion_pdev);
 	return platform_driver_register(&exynos_ion_driver);
 }
 
