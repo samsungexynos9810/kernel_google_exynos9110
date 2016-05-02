@@ -269,9 +269,9 @@ static int __init exynos_ion_reserved_mem_setup(struct reserved_mem *rmem)
 	BUG_ON(nr_heaps >= ION_NUM_HEAPS);
 
 	pdata = &plat_heaps[nr_heaps];
-	pdata->secure = !!of_get_flat_dt_prop(rmem->fdt_node, "secure", NULL);
-	pdata->reusable = !!of_get_flat_dt_prop(rmem->fdt_node, "reusable", NULL);
-	pdata->noprot = !!of_get_flat_dt_prop(rmem->fdt_node, "noprot", NULL);
+	pdata->secure = !!of_get_flat_dt_prop(rmem->fdt_node, "ion,secure", NULL);
+	pdata->reusable = !!of_get_flat_dt_prop(rmem->fdt_node, "ion,reusable", NULL);
+	pdata->noprot = !!of_get_flat_dt_prop(rmem->fdt_node, "ion,noprot", NULL);
 
 	prop = of_get_flat_dt_prop(rmem->fdt_node, "id", &len);
 	if (!prop) {
