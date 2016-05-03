@@ -580,6 +580,9 @@ static int __init arch_timer_register(void)
 	int err;
 	int ppi;
 
+	if (arch_timer_use_clocksource_only)
+		goto skip_irq_setup;
+
 	arch_timer_evt = alloc_percpu(struct clock_event_device);
 	if (!arch_timer_evt) {
 		err = -ENOMEM;
@@ -610,6 +613,7 @@ static int __init arch_timer_register(void)
 		goto out_free;
 	}
 
+skip_irq_setup:
 	err = register_cpu_notifier(&arch_timer_cpu_nb);
 	if (err)
 		goto out_free_irq;
