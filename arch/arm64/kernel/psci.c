@@ -186,6 +186,23 @@ static int psci_suspend_finisher(unsigned long index)
 				    virt_to_phys(cpu_resume));
 }
 
+/**
+ * Pack PSCI power state to integer
+ *
+ * @id : indicates system power mode. 0 means non system power mode.
+ * @type : not used.
+ * @affinity_level : indicates power down scope.
+ */
+static u32 psci_power_state_pack(u32 id, u32 type, u32 affinity_level)
+{
+	return ((id << PSCI_0_2_POWER_STATE_ID_SHIFT)
+			& PSCI_0_2_POWER_STATE_ID_MASK) |
+		((type << PSCI_0_2_POWER_STATE_TYPE_SHIFT)
+		 & PSCI_0_2_POWER_STATE_TYPE_MASK) |
+		((affinity_level << PSCI_0_2_POWER_STATE_AFFL_SHIFT)
+		 & PSCI_0_2_POWER_STATE_AFFL_MASK);
+}
+
 static int __maybe_unused cpu_psci_cpu_suspend(unsigned long index)
 {
 	int ret;
