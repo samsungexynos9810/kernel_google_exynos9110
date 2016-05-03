@@ -46,6 +46,12 @@
 
 #include "mm.h"
 
+#include <linux/vmalloc.h>
+
+#if defined(CONFIG_ECT)
+#include <soc/samsung/ect_parser.h>
+#endif
+
 u64 idmap_t0sz = TCR_T0SZ(VA_BITS);
 static int iotable_on;
 
@@ -548,6 +554,12 @@ void __init paging_init(void)
 {
 	phys_addr_t pgd_phys = early_pgtable_alloc();
 	pgd_t *pgd = pgd_set_fixmap(pgd_phys);
+
+	//map_mem();
+#if defined(CONFIG_ECT)
+	ect_init_map_io();
+#endif
+	//fixup_executable();
 
 	map_kernel(pgd);
 	map_mem(pgd);
