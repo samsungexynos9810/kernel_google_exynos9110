@@ -91,7 +91,7 @@ bool dwc3_exynos_rsw_available(struct device *dev)
 	return true;
 }
 
-int dwc3_exynos_rsw_setup(struct device *dev, struct otg_fsm *fsm)
+int dwc3_exynos_rsw_start(struct device *dev)
 {
 	struct dwc3_exynos	*exynos = dev_get_drvdata(dev);
 	struct dwc3_exynos_rsw	*rsw = &exynos->rsw;
@@ -99,8 +99,23 @@ int dwc3_exynos_rsw_setup(struct device *dev, struct otg_fsm *fsm)
 	dev_dbg(dev, "%s\n", __func__);
 
 	/* B-device by default */
-	fsm->id = 1;
-	fsm->b_sess_vld = 1;
+	rsw->fsm->id = 1;
+	rsw->fsm->b_sess_vld = 0;
+
+	return 0;
+}
+
+void dwc3_exynos_rsw_stop(struct device *dev)
+{
+	dev_dbg(dev, "%s\n", __func__);
+}
+
+int dwc3_exynos_rsw_setup(struct device *dev, struct otg_fsm *fsm)
+{
+	struct dwc3_exynos	*exynos = dev_get_drvdata(dev);
+	struct dwc3_exynos_rsw	*rsw = &exynos->rsw;
+
+	dev_dbg(dev, "%s\n", __func__);
 
 	rsw->fsm = fsm;
 
