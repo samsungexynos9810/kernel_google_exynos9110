@@ -31,9 +31,9 @@
 #include <linux/kallsyms.h>
 #include <linux/platform_device.h>
 #include <linux/pstore_ram.h>
-#include <linux/clk-private.h>
 #include <linux/input.h>
 #include <linux/of_address.h>
+#include <linux/ptrace.h>
 
 #include <asm/cacheflush.h>
 #include <asm/ptrace.h>
@@ -715,6 +715,7 @@ int exynos_ss_post_panic(void)
 	}
 	arm_pm_restart(0, "sw reset");
 	/* for stall cpu when not enabling panic reboot */
+loop:
 	while(1)
 		wfi();
 
@@ -1024,7 +1025,7 @@ static void exynos_ss_dump_one_task_info(struct task_struct *tsk, bool is_main)
 	int permitted;
 	struct mm_struct *mm;
 
-	permitted = ptrace_may_access(tsk, PTRACE_MODE_READ);
+	permitted = ptrace_may_access(tsk, PTRACE_MODE_READ_FSCREDS);
 	mm = get_task_mm(tsk);
 	if (mm) {
 		if (permitted)
@@ -1033,7 +1034,7 @@ static void exynos_ss_dump_one_task_info(struct task_struct *tsk, bool is_main)
 
 	wchan = get_wchan(tsk);
 	if (lookup_symbol_name(wchan, symname) < 0) {
-		if (!ptrace_may_access(tsk, PTRACE_MODE_READ))
+		if (!ptrace_may_access(tsk, PTRACE_MODE_READ_FSCREDS))
 			snprintf(symname, KSYM_NAME_LEN,  "_____");
 		else
 			snprintf(symname, KSYM_NAME_LEN, "%lu", wchan);
@@ -1289,21 +1290,18 @@ static int exynos_ss_reboot_handler(struct notifier_block *nb,
 static int exynos_ss_panic_handler(struct notifier_block *nb,
 				   unsigned long l, void *buf)
 {
+	exynos_ss_report_reason(ESS_SIGN_PANIC);
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PANIC_REBOOT
 	local_irq_disable();
-	exynos_ss_report_reason(ESS_SIGN_PANIC);
 	pr_emerg("exynos-snapshot: panic - reboot[%s]\n", __func__);
-	exynos_ss_dump_task_info();
 #ifdef CONFIG_EXYNOS_CORESIGHT_PC_INFO
 	memcpy(ess_log->core, exynos_cs_pc, sizeof(ess_log->core));
 #endif
-	flush_cache_all();
 #else
-	exynos_ss_report_reason(ESS_SIGN_PANIC);
 	pr_emerg("exynos-snapshot: panic - normal[%s]\n", __func__);
+#endif
 	exynos_ss_dump_task_info();
 	flush_cache_all();
-#endif
 	return 0;
 }
 
