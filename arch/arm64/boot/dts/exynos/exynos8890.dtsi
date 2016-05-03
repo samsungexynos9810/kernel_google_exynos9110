@@ -55,6 +55,11 @@
 		reg = <0x0 0x10000000 0x100>;
 	};
 
+        reboot {
+                compatible = "exynos,reboot";
+                pmu_base = <0x105C0000>;
+        };
+
 	cpus {
 		#address-cells = <2>;
 		#size-cells = <0>;
