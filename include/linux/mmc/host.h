@@ -65,6 +65,7 @@ struct mmc_ios {
 #define MMC_TIMING_MMC_DDR52	8
 #define MMC_TIMING_MMC_HS200	9
 #define MMC_TIMING_MMC_HS400	10
+#define MMC_TIMING_MMC_HS400_ES	11
 
 	unsigned char	signal_voltage;		/* signalling voltage (1.8V or 3.3V) */
 
@@ -282,14 +283,14 @@ struct mmc_host {
 #define MMC_CAP2_PACKED_WR	(1 << 13)	/* Allow packed write */
 #define MMC_CAP2_PACKED_CMD	(MMC_CAP2_PACKED_RD | \
 				 MMC_CAP2_PACKED_WR)
-#define MMC_CAP2_NO_PRESCAN_POWERUP (1 << 14)	/* Don't power up before scan */
-#define MMC_CAP2_HS400_1_8V	(1 << 15)	/* Can support HS400 1.8V */
-#define MMC_CAP2_HS400_1_2V	(1 << 16)	/* Can support HS400 1.2V */
-#define MMC_CAP2_HS400		(MMC_CAP2_HS400_1_8V | \
-				 MMC_CAP2_HS400_1_2V)
-#define MMC_CAP2_HSX00_1_2V	(MMC_CAP2_HS200_1_2V_SDR | MMC_CAP2_HS400_1_2V)
-#define MMC_CAP2_SDIO_IRQ_NOTHREAD (1 << 17)
-#define MMC_CAP2_NO_WRITE_PROTECT (1 << 18)	/* No physical write protect pin, assume that card is always read-write */
+#define MMC_CAP2_NO_PRESCAN_POWERUP	(1 << 14)	/* Don't power up before scan */
+#define MMC_CAP2_HS400_1_8V		(1 << 15)	/* Can support HS400 1.8V */
+#define MMC_CAP2_HS400_1_2V		(1 << 16)	/* Can support HS400 1.2V */
+#define MMC_CAP2_HS400			(MMC_CAP2_HS400_1_8V | MMC_CAP2_HS400_1_2V)
+#define MMC_CAP2_HSX00_1_2V		(MMC_CAP2_HS200_1_2V_SDR | MMC_CAP2_HS400_1_2V)
+#define MMC_CAP2_SDIO_IRQ_NOTHREAD	(1 << 17)
+#define MMC_CAP2_NO_WRITE_PROTECT	(1 << 18)	/* No physical write protect pin, assume that card is always read-write */
+#define MMC_CAP2_STROBE_ENHANCED	(1 << 19)	/* enhanced strobe */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
@@ -521,7 +522,8 @@ static inline bool mmc_card_ddr52(struct mmc_card *card)
 
 static inline bool mmc_card_hs400(struct mmc_card *card)
 {
-	return card->host->ios.timing == MMC_TIMING_MMC_HS400;
+	return card->host->ios.timing == MMC_TIMING_MMC_HS400 ||
+		card->host->ios.timing == MMC_TIMING_MMC_HS400_ES;
 }
 
 void mmc_retune_timer_stop(struct mmc_host *host);

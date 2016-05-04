@@ -245,7 +245,20 @@ struct dw_mci_dma_ops {
 #define DW_MCI_QUIRK_BROKEN_CARD_DETECTION	BIT(3)
 /* Timer for broken data transfer over scheme */
 #define DW_MCI_QUIRK_BROKEN_DTO			BIT(4)
-
+/* No write protect */
+#define DW_MCI_QUIRK_NO_WRITE_PROTECT		BIT(5)
+/* No detect end bit during read */
+#define DW_MCI_QUIRK_NO_DETECT_EBIT		BIT(6)
+/* Bypass the security management unit */
+#define DW_MCI_QUIRK_BYPASS_SMU			BIT(7)
+/* Use fixed IO voltage */
+#define DW_MMC_QUIRK_FIXED_VOLTAGE		BIT(8)
+/* Card init W/A HWACG ctrl */
+#define DW_MCI_QUIRK_HWACG_CTRL			BIT(9)
+/* Enables ultra low power mode */
+#define DW_MCI_QUIRK_ENABLE_ULP			BIT(10)
+/* Use the security management unit */
+#define DW_MCI_QUIRK_USE_SMU			BIT(11)
 struct dma_pdata;
 
 struct block_settings {
