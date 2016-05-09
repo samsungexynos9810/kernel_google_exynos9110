@@ -162,6 +162,7 @@ config SOC_EXYNOS8895
 	select USE_OF
 	select COMMON_CLK_SAMSUNG
 	select CLKSRC_EXYNOS_MCT
+	select PINCTRL
 
 config ARCH_EXYNOS8
 	bool "ARMv8 based Samsung Exynos8"
