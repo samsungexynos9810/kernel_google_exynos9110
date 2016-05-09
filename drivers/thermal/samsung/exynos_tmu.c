@@ -42,6 +42,7 @@
 #include <linux/isp_cooling.h>
 #include <linux/slab.h>
 #include <soc/samsung/cpufreq.h>
+#include <soc/samsung/tmu.h>
 
 #include "exynos_tmu.h"
 #include "../thermal_core.h"
@@ -192,6 +193,11 @@ static int temp_to_code(struct exynos_tmu_data *data, u8 temp)
 	struct exynos_tmu_platform_data *pdata = data->pdata;
 	int temp_code;
 
+	if (temp > EXYNOS_MAX_TEMP)
+		temp = EXYNOS_MAX_TEMP;
+	else if (temp < EXYNOS_MIN_TEMP)
+		temp = EXYNOS_MIN_TEMP;
+
 	switch (pdata->cal_type) {
 	case TYPE_TWO_POINT_TRIMMING:
 		temp_code = (temp - pdata->first_point_trim) *
@@ -233,6 +239,12 @@ static int code_to_temp(struct exynos_tmu_data *data, u16 temp_code)
 		temp = temp_code - pdata->default_temp_offset;
 		break;
 	}
+
+	/* temperature should range between minimum and maximum */
+	if (temp > EXYNOS_MAX_TEMP)
+		temp = EXYNOS_MAX_TEMP;
+	else if (temp < EXYNOS_MIN_TEMP)
+		temp = EXYNOS_MIN_TEMP;
 
 	return temp;
 }

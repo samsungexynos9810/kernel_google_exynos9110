@@ -12,7 +12,9 @@
 #ifndef __ASM_ARCH_TMU_H
 #define __ASM_ARCH_TMU_H
 
-#define EXYNOS_COLD_TEMP       15
+#define EXYNOS_MAX_TEMP		125
+#define EXYNOS_MIN_TEMP		10
+#define EXYNOS_COLD_TEMP	15
 
 enum tmu_noti_state_t {
 	TMU_NORMAL,
