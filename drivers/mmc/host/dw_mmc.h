@@ -14,7 +14,18 @@
 #ifndef _DW_MMC_H_
 #define _DW_MMC_H_
 
+#define DW_MMC_MAX_TRANSFER_SIZE	4096
+#define DW_MMC_SECTOR_SIZE		512
+
+#ifdef CONFIG_MMC_DW_FMP_DM_CRYPT
+#define MMC_DW_IDMAC_MULTIPLIER	\
+	(DW_MMC_MAX_TRANSFER_SIZE / DW_MMC_SECTOR_SIZE)
+#else
+#define MMC_DW_IDMAC_MULTIPLIER	1
+#endif
+
 #define DW_MMC_240A		0x240a
+#define DW_MMC_260A		0x260a
 
 #define SDMMC_CTRL		0x000
 #define SDMMC_PWREN		0x004
@@ -53,19 +64,9 @@
 #define SDMMC_IDINTEN		0x090
 #define SDMMC_DSCADDR		0x094
 #define SDMMC_BUFADDR		0x098
+#define SDMMC_RESP_TAT		0x0AC
 #define SDMMC_CDTHRCTL		0x100
 #define SDMMC_DATA(x)		(x)
-/*
-* Registers to support idmac 64-bit address mode
-*/
-#define SDMMC_DBADDRL		0x088
-#define SDMMC_DBADDRU		0x08c
-#define SDMMC_IDSTS64		0x090
-#define SDMMC_IDINTEN64		0x094
-#define SDMMC_DSCADDRL		0x098
-#define SDMMC_DSCADDRU		0x09c
-#define SDMMC_BUFADDRL		0x0A0
-#define SDMMC_BUFADDRU		0x0A4
 
 /*
  * Data offset is difference according to Version
@@ -148,6 +149,10 @@
 #define SDMMC_SET_FIFOTH(m, r, t)	(((m) & 0x7) << 28 | \
 					 ((r) & 0xFFF) << 16 | \
 					 ((t) & 0xFFF))
+
+#define SDMMC_FIFOTH_DMA_MULTI_TRANS_SIZE	28
+#define SDMMC_FIFOTH_RX_WMARK		16
+
 /* HCON register defines */
 #define DMA_INTERFACE_IDMA		(0x0)
 #define DMA_INTERFACE_DWDMA		(0x1)
@@ -194,6 +199,9 @@
 #define mci_writel(dev, reg, value)			\
 	writel_relaxed((value), (dev)->regs + SDMMC_##reg)
 
+/* timeout */
+#define dw_mci_set_timeout(host, value)	mci_writel(host, TMOUT, value)
+
 /* 16-bit FIFO access macros */
 #define mci_readw(dev, reg)			\
 	readw_relaxed((dev)->regs + SDMMC_##reg)
@@ -202,10 +210,25 @@
 
 /* 64-bit FIFO access macros */
 #ifdef readq
+#ifdef CONFIG_MMC_DW_FORCE_32BIT_SFR_RW
+#define mci_readq(dev, reg) ({\
+		u64 __ret = 0;\
+		u32* ptr = (u32*)&__ret;\
+		*ptr++ = __raw_readl((dev)->regs + SDMMC_##reg);\
+		*ptr = __raw_readl((dev)->regs + SDMMC_##reg + 0x4);\
+		__ret;\
+	})
+#define mci_writeq(dev, reg, value) ({\
+		u32 *ptr = (u32*)&(value);\
+		__raw_writel(*ptr++, (dev)->regs + SDMMC_##reg);\
+		__raw_writel(*ptr, (dev)->regs + SDMMC_##reg + 0x4);\
+	})
+#else
 #define mci_readq(dev, reg)			\
 	readq_relaxed((dev)->regs + SDMMC_##reg)
 #define mci_writeq(dev, reg, value)			\
 	writeq_relaxed((value), (dev)->regs + SDMMC_##reg)
+#endif /* CONFIG_MMC_DW_FORCE_32BIT_SFR_RW */
 #else
 /*
  * Dummy readq implementation for architectures that don't define it.
@@ -224,6 +247,31 @@
 	(*(volatile u64 __force *)(__reg) = (__value))
 #define __raw_readq(__reg) (*(volatile u64 __force *)(__reg))
 #endif
+
+/*
+ * platform-dependent miscellaneous control
+ *
+ * Input arguments for platform-dependent control may be different
+ * for each one, respectively. If we would add functions like them
+ * whenever we need to do that, this common header file(dw_mmc.h)
+ * will be modified so frequently.
+ * The following enumeration type is to minimize an amount of changes
+ * of common files.
+ */
+
+enum dw_mci_misc_control {
+	CTRL_RESTORE_CLKSEL = 0,
+	CTRL_REQUEST_EXT_IRQ,
+	CTRL_CHECK_CD,
+};
+
+#define SDMMC_DATA_TMOUT_SHIFT		11
+#define SDMMC_RESP_TMOUT		0xFF
+#define SDMMC_DATA_TMOUT_CRT		8
+#define SDMMC_DATA_TMOUT_EXT		0x7
+#define SDMMC_DATA_TMOUT_EXT_SHIFT	8
+
+extern u32 dw_mci_calc_timeout(struct dw_mci *host);
 
 extern int dw_mci_probe(struct dw_mci *host);
 extern void dw_mci_remove(struct dw_mci *host);
@@ -253,6 +301,8 @@ struct dw_mci_slot {
 	struct mmc_host		*mmc;
 	struct dw_mci		*host;
 
+	int			quirks;
+
 	u32			ctype;
 
 	struct mmc_request	*mrq;
@@ -267,6 +317,92 @@ struct dw_mci_slot {
 #define DW_MMC_CARD_NO_LOW_PWR	2
 	int			id;
 	int			sdio_id;
+};
+
+/**
+ * struct dw_mci_debug_data - DwMMC debugging infomation
+ * @host_count: a number of all hosts
+ * @info_count: a number of set of debugging information
+ * @info_index: index of debugging information for each host
+ * @host: pointer of each dw_mci structure
+ * @debug_info: debugging information structure
+ */
+
+struct dw_mci_cmd_log {
+	u64	send_time;
+	u64	done_time;
+	u8	cmd;
+	u32	arg;
+	u8	data_size;
+	/* no data CMD = CD, data CMD = DTO */
+	/*
+	 * 0b1000 0000	: new_cmd with without send_cmd
+	 * 0b0000 1000	: error occurs
+	 * 0b0000 0100	: data_done : DTO(Data Transfer Over)
+	 * 0b0000 0010	: resp : CD(Command Done)
+	 * 0b0000 0001	: send_cmd : set 1 only start_command
+	 */
+	u8	seq_status;	/* 0bxxxx xxxx : error data_done resp send */
+#define DW_MCI_FLAG_SEND_CMD	BIT(0)
+#define DW_MCI_FLAG_CD		BIT(1)
+#define DW_MCI_FLAG_DTO		BIT(2)
+#define DW_MCI_FLAG_ERROR	BIT(3)
+#define DW_MCI_FLAG_NEW_CMD_ERR	BIT(7)
+
+	u16	rint_sts;	/* RINTSTS value in case of error */
+	u8	status_count;	/* TBD : It can be changed */
+};
+
+enum dw_mci_req_log_state {
+	STATE_REQ_START = 0,
+	STATE_REQ_CMD_PROCESS,
+	STATE_REQ_DATA_PROCESS,
+	STATE_REQ_END,
+};
+
+struct dw_mci_req_log {
+	u64				timestamp;
+	u32				info0;
+	u32				info1;
+	u32				info2;
+	u32				info3;
+	u32				pending_events;
+	u32				completed_events;
+	enum dw_mci_state		state;
+	enum dw_mci_state		state_cmd;
+	enum dw_mci_state		state_dat;
+	enum dw_mci_req_log_state	log_state;
+};
+
+#define DWMCI_LOG_MAX		0x80
+#define DWMCI_REQ_LOG_MAX	0x40
+struct dw_mci_debug_info {
+	struct dw_mci_cmd_log		cmd_log[DWMCI_LOG_MAX];
+	atomic_t			cmd_log_count;
+	struct dw_mci_req_log		req_log[DWMCI_REQ_LOG_MAX];
+	atomic_t			req_log_count;
+	unsigned char			en_logging;
+#define DW_MCI_DEBUG_ON_CMD	BIT(0)
+#define DW_MCI_DEBUG_ON_REQ	BIT(1)
+};
+
+#define DWMCI_DBG_NUM_HOST	3
+
+#define DWMCI_DBG_NUM_INFO	3			/* configurable */
+#define DWMCI_DBG_MASK_INFO	(BIT(0) | BIT(1) | BIT(2))	/* configurable */
+#define DWMCI_DBG_BIT_HOST(x)	BIT(x)
+
+struct dw_mci_debug_data {
+	unsigned char			host_count;
+	unsigned char			info_count;
+	unsigned char			info_index[DWMCI_DBG_NUM_HOST];
+	struct dw_mci			*host[DWMCI_DBG_NUM_HOST];
+	struct dw_mci_debug_info	debug_info[DWMCI_DBG_NUM_INFO];
+};
+
+struct dw_mci_tuning_data {
+	const u8 *blk_pattern;
+	unsigned int blksz;
 };
 
 /**
@@ -290,10 +426,14 @@ struct dw_mci_drv_data {
 	void		(*prepare_command)(struct dw_mci *host, u32 *cmdr);
 	void		(*set_ios)(struct dw_mci *host, struct mmc_ios *ios);
 	int		(*parse_dt)(struct dw_mci *host);
-	int		(*execute_tuning)(struct dw_mci_slot *slot, u32 opcode);
+	int		(*execute_tuning)(struct dw_mci_slot *slot, u32 opcode,
+					struct dw_mci_tuning_data *tuning_data);
 	int		(*prepare_hs400_tuning)(struct dw_mci *host,
-						struct mmc_ios *ios);
+			struct mmc_ios *ios);
 	int		(*switch_voltage)(struct mmc_host *mmc,
-					  struct mmc_ios *ios);
+			struct mmc_ios *ios);
+	void		(*cfg_smu)(struct dw_mci *host);
+	int		(*misc_control)(struct dw_mci *host,
+	enum		dw_mci_misc_control control, void *priv);
 };
 #endif /* _DW_MMC_H_ */

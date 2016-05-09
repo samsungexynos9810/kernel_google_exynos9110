@@ -506,8 +506,11 @@ static inline int mmc_card_hs(struct mmc_card *card)
 
 static inline int mmc_card_uhs(struct mmc_card *card)
 {
-	return card->host->ios.timing >= MMC_TIMING_UHS_SDR12 &&
-		card->host->ios.timing <= MMC_TIMING_UHS_DDR50;
+	return card->host->ios.timing == MMC_TIMING_UHS_SDR12 ||
+		card->host->ios.timing == MMC_TIMING_UHS_SDR25 ||
+		card->host->ios.timing == MMC_TIMING_UHS_SDR50 ||
+		card->host->ios.timing == MMC_TIMING_UHS_SDR104 ||
+		card->host->ios.timing == MMC_TIMING_UHS_DDR50;
 }
 
 static inline bool mmc_card_hs200(struct mmc_card *card)
