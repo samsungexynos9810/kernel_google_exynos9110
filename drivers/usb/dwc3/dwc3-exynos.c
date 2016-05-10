@@ -25,6 +25,7 @@
 #include <linux/clk.h>
 #include <linux/usb/otg.h>
 #include <linux/usb/usb_phy_generic.h>
+#include <linux/usb/samsung_usb.h>
 #include <linux/of.h>
 #include <linux/of_platform.h>
 #include <linux/regulator/consumer.h>
@@ -40,6 +41,10 @@ struct dwc3_exynos_rsw {
 	struct work_struct	work;
 };
 
+struct dwc3_exynos_drvdata {
+	int cpu_type;
+};
+
 struct dwc3_exynos {
 	struct platform_device	*usb2_phy;
 	struct platform_device	*usb3_phy;
@@ -53,16 +58,33 @@ struct dwc3_exynos {
 	struct regulator	*vdd10;
 
 	struct dwc3_exynos_rsw	rsw;
+	const struct dwc3_exynos_drvdata *drv_data;
+};
+
+void dwc3_otg_run_sm(struct otg_fsm *fsm);
+
+/* -------------------------------------------------------------------------- */
+
+static struct dwc3_exynos_drvdata dwc3_exynos5250 = {
+	.cpu_type	= TYPE_EXYNOS5250,
+};
+
+static struct dwc3_exynos_drvdata dwc3_exynos7420 = {
+	.cpu_type	= TYPE_EXYNOS7420,
 };
 
 static const struct of_device_id exynos_dwc3_match[] = {
-	{ .compatible = "samsung,exynos5250-dwusb3" },
-	{ .compatible = "samsung,exynos7-dwusb3" },
+	{
+		.compatible = "samsung,exynos5250-dwusb3",
+		.data = &dwc3_exynos5250,
+	},
+	{
+		.compatible = "samsung,exynos7420-dwusb3",
+		.data = &dwc3_exynos7420,
+	},
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_dwc3_match);
-
-void dwc3_otg_run_sm(struct otg_fsm *fsm);
 
 /* -------------------------------------------------------------------------- */
 
@@ -80,6 +102,18 @@ static struct dwc3_exynos *dwc3_exynos_match(struct device *dev)
 		exynos = dev_get_drvdata(dev);
 
 	return exynos;
+}
+
+static inline const struct dwc3_exynos_drvdata
+*dwc3_exynos_get_driver_data(struct platform_device *pdev)
+{
+	if (pdev->dev.of_node) {
+		const struct of_device_id *match;
+		match = of_match_node(exynos_dwc3_match, pdev->dev.of_node);
+		return match->data;
+	}
+
+	return NULL;
 }
 
 bool dwc3_exynos_rsw_available(struct device *dev)
@@ -306,6 +340,13 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 	}
 
 	exynos->dev = dev;
+
+	exynos->drv_data = dwc3_exynos_get_driver_data(pdev);
+	if (!exynos->drv_data) {
+		dev_info(exynos->dev,
+			"%s fail: drv_data is not available\n", __func__);
+		return -EINVAL;
+	}
 
 	exynos->clk = devm_clk_get(dev, "usbdrd30");
 	if (IS_ERR(exynos->clk)) {
