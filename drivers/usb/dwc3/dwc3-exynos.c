@@ -43,6 +43,7 @@ struct dwc3_exynos_rsw {
 
 struct dwc3_exynos_drvdata {
 	int cpu_type;
+	int ip_type;
 };
 
 struct dwc3_exynos {
@@ -73,6 +74,16 @@ static struct dwc3_exynos_drvdata dwc3_exynos7420 = {
 	.cpu_type	= TYPE_EXYNOS7420,
 };
 
+static struct dwc3_exynos_drvdata dwc3_exynos8890 = {
+	.cpu_type	= TYPE_EXYNOS8890,
+	.ip_type	= TYPE_USB3DRD,
+};
+
+static struct dwc3_exynos_drvdata dwc2_exynos8890 = {
+	.cpu_type	= TYPE_EXYNOS8890,
+	.ip_type	= TYPE_USB2HOST,
+};
+
 static const struct of_device_id exynos_dwc3_match[] = {
 	{
 		.compatible = "samsung,exynos5250-dwusb3",
@@ -81,6 +92,14 @@ static const struct of_device_id exynos_dwc3_match[] = {
 	{
 		.compatible = "samsung,exynos7420-dwusb3",
 		.data = &dwc3_exynos7420,
+	},
+	{
+		.compatible = "samsung,exynos8890-dwusb3",
+		.data = &dwc3_exynos8890,
+	},
+	{
+		.compatible = "samsung,exynos8890-dwusb2",
+		.data = &dwc2_exynos8890,
 	},
 	{},
 };
