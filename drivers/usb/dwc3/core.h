@@ -1064,6 +1064,7 @@ struct dwc3_gadget_ep_cmd_params {
 void dwc3_set_mode(struct dwc3 *dwc, u32 mode);
 int dwc3_soft_reset(struct dwc3 *dwc);
 int dwc3_event_buffers_setup(struct dwc3 *dwc);
+void dwc3_event_buffers_cleanup(struct dwc3 *dwc);
 int dwc3_phy_setup(struct dwc3 *dwc);
 int dwc3_core_init(struct dwc3 *dwc);
 void dwc3_core_exit(struct dwc3 *dwc);
