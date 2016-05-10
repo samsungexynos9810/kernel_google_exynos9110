@@ -667,11 +667,11 @@ static int __dwc3_gadget_ep_disable(struct dwc3_ep *dep)
 	reg &= ~DWC3_DALEPENA_EP(dep->number);
 	dwc3_writel(dwc->regs, DWC3_DALEPENA, reg);
 
+	dep->flags = 0;
 	dep->stream_capable = false;
 	dep->endpoint.desc = NULL;
 	dep->comp_desc = NULL;
 	dep->type = 0;
-	dep->flags = 0;
 
 	snprintf(dep->name, sizeof(dep->name), "ep%d%s",
 			dep->number >> 1,
@@ -1306,6 +1306,9 @@ int __dwc3_gadget_ep_set_halt(struct dwc3_ep *dep, int value, int protocol)
 	struct dwc3				*dwc = dep->dwc;
 	int					ret;
 
+	if (dep->endpoint.desc == NULL)
+		return -EINVAL;
+
 	if (usb_endpoint_xfer_isoc(dep->endpoint.desc)) {
 		dev_err(dwc->dev, "%s is of Isochronous type\n", dep->name);
 		return -EINVAL;
@@ -1645,8 +1648,8 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 	} else {
 		dwc3_gadget_disable_irq(dwc);
 		dwc3_event_buffers_cleanup(dwc);
-		__dwc3_gadget_ep_disable(dwc->eps[0]);
 		__dwc3_gadget_ep_disable(dwc->eps[1]);
+		__dwc3_gadget_ep_disable(dwc->eps[0]);
 
 		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
 		reg &= ~DWC3_DCTL_RUN_STOP;
@@ -1820,8 +1823,8 @@ static int dwc3_gadget_stop(struct usb_gadget *g)
 	spin_lock_irqsave(&dwc->lock, flags);
 
 	dwc3_gadget_disable_irq(dwc);
-	__dwc3_gadget_ep_disable(dwc->eps[0]);
 	__dwc3_gadget_ep_disable(dwc->eps[1]);
+	__dwc3_gadget_ep_disable(dwc->eps[0]);
 
 	dwc->gadget_driver	= NULL;
 
@@ -2106,6 +2109,9 @@ static void dwc3_endpoint_transfer_complete(struct dwc3 *dwc,
 	unsigned		status = 0;
 	int			clean_busy;
 	u32			is_xfer_complete;
+
+	if (dep->endpoint.desc == NULL)
+		return;
 
 	is_xfer_complete = (event->endpoint_event == DWC3_DEPEVT_XFERCOMPLETE);
 
@@ -3088,8 +3094,8 @@ int dwc3_gadget_suspend(struct dwc3 *dwc)
 		dwc3_gadget_run_stop(dwc, true, true);
 	}
 
-	__dwc3_gadget_ep_disable(dwc->eps[0]);
 	__dwc3_gadget_ep_disable(dwc->eps[1]);
+	__dwc3_gadget_ep_disable(dwc->eps[0]);
 
 	dwc->dcfg = dwc3_readl(dwc->regs, DWC3_DCFG);
 
