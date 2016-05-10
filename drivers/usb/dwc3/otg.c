@@ -22,6 +22,7 @@
 #include <linux/mutex.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
+#include <linux/pm_runtime.h>
 
 #include "core.h"
 #include "otg.h"
@@ -203,6 +204,7 @@ static int dwc3_otg_start_host(struct otg_fsm *fsm, int on)
 
 	if (on) {
 		wake_lock(&dotg->wakelock);
+		pm_runtime_get_sync(dev);
 		ret = dwc3_phy_setup(dwc);
 		if (ret) {
 			dev_err(dwc->dev, "%s: failed to setup phy\n",
@@ -226,6 +228,7 @@ static int dwc3_otg_start_host(struct otg_fsm *fsm, int on)
 err2:
 		dwc3_core_exit(dwc);
 err1:
+		pm_runtime_put_sync(dev);
 		wake_unlock(&dotg->wakelock);
 	}
 
@@ -250,6 +253,7 @@ static int dwc3_otg_start_gadget(struct otg_fsm *fsm, int on)
 
 	if (on) {
 		wake_lock(&dotg->wakelock);
+		pm_runtime_get_sync(dev);
 		ret = dwc3_phy_setup(dwc);
 		if (ret) {
 			dev_err(dwc->dev, "%s: failed to setup phy\n",
@@ -278,6 +282,7 @@ static int dwc3_otg_start_gadget(struct otg_fsm *fsm, int on)
 err2:
 		dwc3_core_exit(dwc);
 err1:
+		pm_runtime_put_sync(dev);
 		wake_unlock(&dotg->wakelock);
 	}
 
