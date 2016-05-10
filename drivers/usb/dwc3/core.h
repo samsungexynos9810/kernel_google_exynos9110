@@ -26,6 +26,7 @@
 #include <linux/dma-mapping.h>
 #include <linux/mm.h>
 #include <linux/debugfs.h>
+#include <linux/completion.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -739,6 +740,7 @@ struct dwc3_scratchpad_array {
  * @hsphy_interface: "utmi" or "ulpi"
  * @vbus_session: Indicates if the gadget was powered by the otg driver
  * @softconnect: Indicates if pullup was issued by the usb_gadget_driver
+ * @disconnect: signals that Disconnection interrupt happend
  * @delayed_status: true when gadget driver asks for delayed status
  * @ep0_bounced: true when we used bounce buffer
  * @ep0_expect_in: true when we expect a DATA IN transfer
@@ -890,6 +892,8 @@ struct dwc3 {
 
 	bool			vbus_session;
 	bool			softconnect;
+
+	struct completion	disconnect;
 
 	unsigned		delayed_status:1;
 	unsigned		ep0_bounced:1;
