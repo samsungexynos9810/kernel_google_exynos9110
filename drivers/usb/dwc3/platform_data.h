@@ -49,5 +49,7 @@ struct dwc3_platform_data {
 
 	u32 fladj_value;
 
+	u32 suspend_clk_freq;
+
 	const char *hsphy_interface;
 };

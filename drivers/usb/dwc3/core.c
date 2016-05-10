@@ -731,6 +731,11 @@ int dwc3_core_init(struct dwc3 *dwc)
 
 	dwc3_core_num_eps(dwc);
 
+	if (dwc->suspend_clk_freq) {
+		reg &= ~DWC3_GCTL_PWRDNSCALE_MASK;
+		reg |= DWC3_GCTL_PWRDNSCALE(dwc->suspend_clk_freq/(16*1000));
+	}
+
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 
 	ret = dwc3_alloc_scratch_buffers(dwc);
@@ -1001,6 +1006,7 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	dwc->maximum_speed = usb_get_maximum_speed(dev);
 	dwc->dr_mode = usb_get_dr_mode(dev);
+	dwc->suspend_clk_freq = of_usb_get_suspend_clk_freq(dev);
 
 	dwc->has_lpm_erratum = device_property_read_bool(dev,
 				"snps,has-lpm-erratum");
@@ -1060,6 +1066,7 @@ static int dwc3_probe(struct platform_device *pdev)
 		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
 		dwc->usb3_lpm_capable = pdata->usb3_lpm_capable;
 		dwc->dr_mode = pdata->dr_mode;
+		dwc->suspend_clk_freq = pdata->suspend_clk_freq;
 
 		dwc->disable_scramble_quirk = pdata->disable_scramble_quirk;
 		dwc->u2exit_lfps_quirk = pdata->u2exit_lfps_quirk;

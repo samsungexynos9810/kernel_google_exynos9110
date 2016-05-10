@@ -178,6 +178,7 @@
 #define DWC3_GRXTHRCFG_USBMAXRXBURSTSIZE(n)	((n) << 19)
 
 #define DWC3_GCTL_PWRDNSCALE(n)	((n) << 19)
+#define DWC3_GCTL_PWRDNSCALE_MASK	DWC3_GCTL_PWRDNSCALE(0x1fff)
 #define DWC3_GCTL_U2RSTECN	(1 << 16)
 #define DWC3_GCTL_RAMCLKSEL(x)	(((x) & DWC3_GCTL_CLK_MASK) << 6)
 #define DWC3_GCTL_CLK_BUS	(0)
@@ -746,6 +747,7 @@ struct dwc3_scratchpad_array {
  * @vbus_session: Indicates if the gadget was powered by the otg driver
  * @softconnect: Indicates if pullup was issued by the usb_gadget_driver
  * @disconnect: signals that Disconnection interrupt happend
+ * @suspend_clk_freq: frequency of suspend clock
  * @delayed_status: true when gadget driver asks for delayed status
  * @ep0_bounced: true when we used bounce buffer
  * @ep0_expect_in: true when we expect a DATA IN transfer
@@ -899,6 +901,14 @@ struct dwc3 {
 	bool			softconnect;
 
 	struct completion	disconnect;
+
+	/**
+	 * Frequency of suspend clock.
+	 * Suspend clock is a clock source of 16KHz clock for a small part
+	 * of the USB3 core that operates when the SS PHY is in its lowest
+	 * power (P3) state.
+	 */
+	u32			suspend_clk_freq;
 
 	unsigned		delayed_status:1;
 	unsigned		ep0_bounced:1;
