@@ -51,9 +51,7 @@ struct dwc3_exynos {
 	struct platform_device	*usb3_phy;
 	struct device		*dev;
 
-	struct clk		*clk;
-	struct clk		*susp_clk;
-	struct clk		*axius_clk;
+	struct clk		**clocks;
 
 	struct regulator	*vdd33;
 	struct regulator	*vdd10;
@@ -104,6 +102,120 @@ static const struct of_device_id exynos_dwc3_match[] = {
 	{},
 };
 MODULE_DEVICE_TABLE(of, exynos_dwc3_match);
+
+/* -------------------------------------------------------------------------- */
+
+static const char *dwc3_exynos8890_clk_names[] = {"aclk", "sclk",
+				"phyclock", "pipe_pclk", NULL};
+static const char *dwc2_exynos8890_clk_names[] = {"aclk", "sclk",
+				"phyclock", "phy_ref", NULL};
+
+static int dwc3_exynos_clk_get(struct dwc3_exynos *exynos)
+{
+	const char **clk_ids;
+	struct clk *clk;
+	int clk_count;
+	int i;
+
+	switch (exynos->drv_data->cpu_type) {
+	case TYPE_EXYNOS8890:
+		if (exynos->drv_data->ip_type == TYPE_USB3DRD) {
+			clk_ids = dwc3_exynos8890_clk_names;
+			clk_count = ARRAY_SIZE(dwc3_exynos8890_clk_names);
+		} else {
+			clk_ids = dwc2_exynos8890_clk_names;
+			clk_count = ARRAY_SIZE(dwc2_exynos8890_clk_names);
+		}
+		break;
+	default:
+		dev_err(exynos->dev, "couldn't get clock : unknown cpu type\n");
+		return -EINVAL;
+	}
+
+	exynos->clocks = (struct clk **) devm_kmalloc(exynos->dev,
+			clk_count * sizeof(struct clk *), GFP_KERNEL);
+	if (!exynos->clocks) {
+		dev_err(exynos->dev, "%s: couldn't alloc\n", __func__);
+		return -ENOMEM;
+	}
+
+	for (i = 0; clk_ids[i] != NULL; i++) {
+		clk = devm_clk_get(exynos->dev, clk_ids[i]);
+		if (IS_ERR_OR_NULL(clk))
+			goto err;
+
+		exynos->clocks[i] = clk;
+	}
+	exynos->clocks[i] = NULL;
+
+	return 0;
+
+err:
+	dev_err(exynos->dev, "couldn't get %s clock\n", clk_ids[i]);
+	return -EINVAL;
+}
+
+static int dwc3_exynos_clk_prepare(struct dwc3_exynos *exynos)
+{
+	int i;
+	int ret;
+
+	for (i = 0; exynos->clocks[i] != NULL; i++) {
+		ret = clk_prepare(exynos->clocks[i]);
+		if (ret)
+			goto err;
+	}
+
+	return 0;
+
+err:
+	dev_err(exynos->dev, "couldn't prepare clock[%d]\n", i);
+
+	/* roll back */
+	for (i = i - 1; i >= 0; i--)
+		clk_unprepare(exynos->clocks[i]);
+
+	return ret;
+}
+
+static int dwc3_exynos_clk_enable(struct dwc3_exynos *exynos)
+{
+	int i;
+	int ret;
+
+	for (i = 0; exynos->clocks[i] != NULL; i++) {
+		ret = clk_enable(exynos->clocks[i]);
+		if (ret)
+			goto err;
+	}
+
+	return 0;
+
+err:
+	dev_err(exynos->dev, "couldn't enable clock[%d]\n", i);
+
+	/* roll back */
+	for (i = i - 1; i >= 0; i--)
+		clk_disable(exynos->clocks[i]);
+
+	return ret;
+}
+
+static void dwc3_exynos_clk_unprepare(struct dwc3_exynos *exynos)
+{
+	int i;
+
+	for (i = 0; exynos->clocks[i] != NULL; i++)
+		clk_unprepare(exynos->clocks[i]);
+}
+
+static void dwc3_exynos_clk_disable(struct dwc3_exynos *exynos)
+{
+	int i;
+
+	for (i = 0; exynos->clocks[i] != NULL; i++)
+		clk_disable(exynos->clocks[i]);
+}
 
 /* -------------------------------------------------------------------------- */
 
@@ -367,30 +479,18 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
-	exynos->clk = devm_clk_get(dev, "usbdrd30");
-	if (IS_ERR(exynos->clk)) {
-		dev_err(dev, "couldn't get clock\n");
-		return -EINVAL;
-	}
-	clk_prepare_enable(exynos->clk);
+	ret = dwc3_exynos_clk_get(exynos);
+	if (ret)
+		return ret;
 
-	exynos->susp_clk = devm_clk_get(dev, "usbdrd30_susp_clk");
-	if (IS_ERR(exynos->susp_clk)) {
-		dev_info(dev, "no suspend clk specified\n");
-		exynos->susp_clk = NULL;
-	}
-	clk_prepare_enable(exynos->susp_clk);
+	ret = dwc3_exynos_clk_prepare(exynos);
+	if (ret)
+		return ret;
 
-	if (of_device_is_compatible(node, "samsung,exynos7-dwusb3")) {
-		exynos->axius_clk = devm_clk_get(dev, "usbdrd30_axius_clk");
-		if (IS_ERR(exynos->axius_clk)) {
-			dev_err(dev, "no AXI UpScaler clk specified\n");
-			ret = -ENODEV;
-			goto axius_clk_err;
-		}
-		clk_prepare_enable(exynos->axius_clk);
-	} else {
-		exynos->axius_clk = NULL;
+	ret = dwc3_exynos_clk_enable(exynos);
+	if (ret) {
+		dwc3_exynos_clk_unprepare(exynos);
+		return ret;
 	}
 
 	pm_runtime_set_active(dev);
@@ -453,10 +553,8 @@ err3:
 		regulator_disable(exynos->vdd33);
 err2:
 	pm_runtime_disable(&pdev->dev);
-	clk_disable_unprepare(exynos->axius_clk);
-axius_clk_err:
-	clk_disable_unprepare(exynos->susp_clk);
-	clk_disable_unprepare(exynos->clk);
+	dwc3_exynos_clk_disable(exynos);
+	dwc3_exynos_clk_unprepare(exynos);
 	pm_runtime_set_suspended(&pdev->dev);
 	return ret;
 }
@@ -471,15 +569,11 @@ static int dwc3_exynos_remove(struct platform_device *pdev)
 
 	pm_runtime_disable(&pdev->dev);
 	if (!pm_runtime_status_suspended(&pdev->dev)) {
-		clk_disable(exynos->axius_clk);
-		clk_disable(exynos->susp_clk);
-		clk_disable(exynos->clk);
+		dwc3_exynos_clk_disable(exynos);
 		pm_runtime_set_suspended(&pdev->dev);
 	}
 
-	clk_unprepare(exynos->axius_clk);
-	clk_unprepare(exynos->susp_clk);
-	clk_unprepare(exynos->clk);
+	dwc3_exynos_clk_unprepare(exynos);
 
 	if (exynos->vdd33)
 		regulator_disable(exynos->vdd33);
@@ -496,9 +590,7 @@ static int dwc3_exynos_runtime_suspend(struct device *dev)
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	clk_disable(exynos->axius_clk);
-	clk_disable(exynos->susp_clk);
-	clk_disable(exynos->clk);
+	dwc3_exynos_clk_disable(exynos);
 
 	return 0;
 }
@@ -506,12 +598,15 @@ static int dwc3_exynos_runtime_suspend(struct device *dev)
 static int dwc3_exynos_runtime_resume(struct device *dev)
 {
 	struct dwc3_exynos *exynos = dev_get_drvdata(dev);
+	int ret = 0;
 
 	dev_dbg(dev, "%s\n", __func__);
 
-	clk_enable(exynos->clk);
-	clk_enable(exynos->susp_clk);
-	clk_enable(exynos->axius_clk);
+	ret = dwc3_exynos_clk_enable(exynos);
+	if (ret) {
+		dev_err(dev, "%s: clk_enable failed\n", __func__);
+		return ret;
+	}
 
 	return 0;
 }
@@ -527,9 +622,7 @@ static int dwc3_exynos_suspend(struct device *dev)
 	if (pm_runtime_suspended(dev))
 		return 0;
 
-	clk_disable(exynos->axius_clk);
-	clk_disable(exynos->susp_clk);
-	clk_disable(exynos->clk);
+	dwc3_exynos_clk_disable(exynos);
 
 	if (exynos->vdd33)
 		regulator_disable(exynos->vdd33);
@@ -563,9 +656,11 @@ static int dwc3_exynos_resume(struct device *dev)
 		}
 	}
 
-	clk_enable(exynos->clk);
-	clk_disable(exynos->susp_clk);
-	clk_enable(exynos->axius_clk);
+	ret = dwc3_exynos_clk_enable(exynos);
+	if (ret) {
+		dev_err(dev, "%s: clk_enable failed\n", __func__);
+		return ret;
+	}
 
 	/* runtime set active to reflect active state. */
 	pm_runtime_disable(dev);
