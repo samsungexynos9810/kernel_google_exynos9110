@@ -69,10 +69,6 @@ struct ion_device {
 	struct dentry *debug_root;
 	struct dentry *heaps_debug_root;
 	struct dentry *clients_debug_root;
-	struct semaphore vm_sem;
-	atomic_t page_idx;
-	struct vm_struct *reserved_vm_area;
-	pte_t **pte;
 
 #ifdef CONFIG_ION_EXYNOS_STAT_LOG
 	/* event log */
