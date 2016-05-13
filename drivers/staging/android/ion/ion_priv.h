@@ -154,8 +154,6 @@ struct ion_heap_ops {
 	int (*map_user)(struct ion_heap *mapper, struct ion_buffer *buffer,
 			struct vm_area_struct *vma);
 	int (*shrink)(struct ion_heap *heap, gfp_t gfp_mask, int nr_to_scan);
-	void (*preload) (struct ion_heap *heap, unsigned int count,
-			 unsigned int flags, struct ion_preload_object obj[]);
 };
 
 /* [INTERNAL USE ONLY] threshold value for whole cache flush */
@@ -524,11 +522,6 @@ int ion_page_pool_shrink(struct ion_page_pool *pool, gfp_t gfp_mask,
  */
 void ion_pages_sync_for_device(struct device *dev, struct page *page,
 		size_t size, enum dma_data_direction dir);
-
-void ion_page_pool_preload_prepare(struct ion_page_pool *pool, long num_pages);
-long ion_page_pool_preload(struct ion_page_pool *pool,
-			   struct ion_page_pool *alt_pool,
-			   unsigned int alloc_flags, long num_pages);
 
 #ifdef CONFIG_ION_EXYNOS_STAT_LOG
 #define ION_EVENT_LOG_MAX	1024

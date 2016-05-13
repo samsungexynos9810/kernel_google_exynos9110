@@ -1698,58 +1698,6 @@ static int ion_sync_partial_for_device(struct ion_client *client, int fd,
 	return 0;
 }
 
-static long ion_alloc_preload(struct ion_client *client,
-				unsigned int heap_id_mask,
-				unsigned int flags,
-				unsigned int count,
-				struct ion_preload_object obj[])
-{
-	struct ion_device *dev = client->dev;
-	struct ion_heap *heap;
-	bool found = false;
-	unsigned int i;
-
-	for (i = 0; i < count; i++) {
-		if (obj[i].len > SZ_32M) {
-			pr_warn("%s: too big buffer %#zx\n",
-				__func__, obj[i].len);
-			return -EPERM;
-		}
-
-		if (obj[i].count > 8) {
-			pr_warn("%s: number of buffer exceeds 8 (%d)\n",
-				__func__, obj[i].count);
-			return -EPERM;
-		}
-	}
-
-
-	down_read(&dev->lock);
-	heap_id_mask = MAKE_NEW_HEAP_MASK(heap_id_mask, flags);
-	plist_for_each_entry(heap, &dev->heaps, node) {
-		if ((1 << heap->id) & heap_id_mask) {
-			found = true;
-			break;
-		}
-	}
-	up_read(&dev->lock);
-
-	if (!found) {
-		pr_err("%s: no such heap\n", __func__);
-		return -ENODEV;
-	}
-
-	if (!heap->ops->preload) {
-		pr_err("%s: %s does not support preload allocation\n",
-				__func__, heap->name);
-		return -EPERM;
-	}
-
-	heap->ops->preload(heap, flags, count, obj);
-
-	return 0;
-}
-
 /* fix up the cases where the ioctl direction bits are incorrect */
 static unsigned int ion_ioctl_dir(unsigned int cmd)
 {
@@ -1778,7 +1726,6 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		struct ion_allocation_data allocation;
 		struct ion_handle_data handle;
 		struct ion_custom_data custom;
-		struct ion_preload_data preload;
 	} data;
 
 	dir = ion_ioctl_dir(cmd);
@@ -1865,30 +1812,6 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 		ret = dev->custom_ioctl(client, data.custom.cmd,
 						data.custom.arg);
 		break;
-	}
-	case ION_IOC_PRELOAD_ALLOC:
-	{
-		struct ion_preload_object *obj;
-		int ret;
-
-		if (data.preload.count == 0)
-			return 0;
-
-		obj = kmalloc(sizeof(*obj) * data.preload.count, GFP_KERNEL);
-		if (!obj)
-			return -ENOMEM;
-
-		if (copy_from_user(obj, (void __user *)data.preload.obj,
-					sizeof(*obj) * data.preload.count)) {
-			kfree(obj);
-			return -EFAULT;
-		}
-
-		ret = ion_alloc_preload(client, data.preload.heap_id_mask,
-						data.preload.flags,
-						data.preload.count, obj);
-		kfree(obj);
-		return ret;
 	}
 	default:
 		return -ENOTTY;
