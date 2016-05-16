@@ -34,6 +34,8 @@ static gfp_t high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN
 static gfp_t low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_ZERO | __GFP_NOWARN);
 static const unsigned int orders[] = {8, 4, 0};
 static const int num_orders = ARRAY_SIZE(orders);
+static unsigned int fixed_max_order;
+
 static int order_to_index(unsigned int order)
 {
 	int i;
@@ -144,7 +146,7 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 	struct page *page, *tmp_page;
 	int i = 0;
 	unsigned long size_remaining = PAGE_ALIGN(size);
-	unsigned int max_order = orders[0];
+	unsigned int max_order = fixed_max_order;
 
 	if (align > PAGE_SIZE)
 		return -EINVAL;
@@ -309,6 +311,34 @@ static int ion_system_heap_debug_show(struct ion_heap *heap, struct seq_file *s,
 	return 0;
 }
 
+static ssize_t ion_system_heap_orders_show(struct kobject *kobj,
+				 struct kobj_attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", fixed_max_order);
+}
+
+static ssize_t ion_system_heap_orders_store(struct kobject *kobj,
+				  struct kobj_attribute *attr,
+				  const char *buf, size_t n)
+{
+	int ret, i;
+	unsigned int order;
+	ret = sscanf(buf, "%u", &order);
+	if (ret == 1) {
+		for (i = 0; i < num_orders; i++) {
+			if (orders[i] == order) {
+				fixed_max_order = order;
+				return n;
+			}
+		}
+	}
+	return -EINVAL;
+}
+
+static struct kobj_attribute ion_system_heap_orders_attr =
+	__ATTR(ion_system_heap_orders, 0644,
+		ion_system_heap_orders_show, ion_system_heap_orders_store);
+
 struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 {
 	struct ion_system_heap *heap;
@@ -338,6 +368,11 @@ struct ion_heap *ion_system_heap_create(struct ion_platform_heap *unused)
 	}
 
 	heap->heap.debug_show = ion_system_heap_debug_show;
+	fixed_max_order = orders[0];
+
+	if (sysfs_create_file(kernel_kobj, &ion_system_heap_orders_attr.attr))
+		pr_err("%s: Failed to create sysfs on ION system heap", __func__);
+
 	return &heap->heap;
 
 destroy_pools:
