@@ -43,6 +43,7 @@
 
 #include "platform_data.h"
 #include "core.h"
+#include "otg.h"
 #include "gadget.h"
 #include "io.h"
 
@@ -650,6 +651,7 @@ int dwc3_core_init(struct dwc3 *dwc)
 {
 	u32			hwparams4 = dwc->hwparams.hwparams4;
 	u32			reg;
+	struct dwc3_otg		*dotg = dwc->dotg;
 	int			ret;
 
 	reg = dwc3_readl(dwc->regs, DWC3_GSNPSID);
@@ -692,6 +694,14 @@ int dwc3_core_init(struct dwc3 *dwc)
 	ret = dwc3_core_soft_reset(dwc);
 	if (ret)
 		goto err0;
+
+	if (dotg) {
+		phy_tune(dwc->usb2_generic_phy, dotg->otg.state);
+		phy_tune(dwc->usb3_generic_phy, dotg->otg.state);
+	} else {
+		phy_tune(dwc->usb2_generic_phy, 0);
+		phy_tune(dwc->usb3_generic_phy, 0);
+	}
 
 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
 	reg &= ~DWC3_GCTL_SCALEDOWN_MASK;

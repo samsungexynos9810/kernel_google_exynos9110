@@ -29,6 +29,8 @@
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
+#include <linux/usb/samsung_usb.h>
+#include <linux/phy/phy.h>
 
 #include "debug.h"
 #include "core.h"
@@ -1731,6 +1733,7 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 {
 	struct dwc3		*dwc = gadget_to_dwc(g);
 	unsigned long		flags;
+	struct usb_otg		*otg = &(dwc->dotg->otg);
 	int			ret;
 
 	is_on = !!is_on;
@@ -1754,8 +1757,12 @@ static int dwc3_gadget_pullup(struct usb_gadget *g, int is_on)
 		return 0;
 	}
 
-	if (is_on)
+	if (is_on) {
 		dwc3_soft_reset(dwc);
+
+		phy_tune(dwc->usb2_generic_phy, otg->state);
+		phy_tune(dwc->usb3_generic_phy, otg->state);
+	}
 	ret = dwc3_gadget_run_stop(dwc, is_on, false);
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
