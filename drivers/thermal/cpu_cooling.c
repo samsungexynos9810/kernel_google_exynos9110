@@ -790,8 +790,13 @@ static int cpufreq_power2state(struct thermal_cooling_device *cdev,
 	unsigned int cpu, cur_freq, target_freq;
 	int ret;
 	s32 dyn_power;
-	u32 last_load, normalised_power, static_power;
+	u32 normalised_power, static_power;
 	struct cpufreq_cooling_device *cpufreq_device = cdev->devdata;
+	cpumask_t tempmask;
+	int num_cpus;
+
+	cpumask_and(&tempmask, &cpufreq_device->allowed_cpus, cpu_online_mask);
+	num_cpus = cpumask_weight(&tempmask);
 
 	cpu = cpumask_any_and(&cpufreq_device->allowed_cpus, cpu_online_mask);
 
@@ -806,8 +811,7 @@ static int cpufreq_power2state(struct thermal_cooling_device *cdev,
 
 	dyn_power = power - static_power;
 	dyn_power = dyn_power > 0 ? dyn_power : 0;
-	last_load = cpufreq_device->last_load ?: 1;
-	normalised_power = (dyn_power * 100) / last_load;
+	normalised_power = dyn_power / num_cpus;
 	target_freq = cpu_power_to_freq(cpufreq_device, normalised_power);
 
 	*state = cpufreq_cooling_get_level(cpu, target_freq);
