@@ -711,8 +711,10 @@ static int ion_handle_add(struct ion_client *client, struct ion_handle *handle)
 	struct ion_handle *entry;
 
 	id = idr_alloc(&client->idr, handle, 1, 0, GFP_KERNEL);
-	if (id < 0)
+	if (id < 0) {
+		pr_err("%s: Fail to get bad id (ret %d)\n", __func__, id);
 		return id;
+	}
 
 	handle->id = id;
 
@@ -1424,7 +1426,7 @@ static void *ion_dma_buf_vmap(struct dma_buf *dmabuf)
 	if (!buffer->heap->ops->map_kernel) {
 		pr_err("%s: map kernel is not implemented by this heap.\n",
 		       __func__);
-		return -ENODEV;
+		return ERR_PTR(-ENODEV);
 	}
 
 	mutex_lock(&buffer->lock);
@@ -1775,8 +1777,14 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 						data.allocation.align,
 						data.allocation.heap_id_mask,
 						data.allocation.flags);
-		if (IS_ERR(handle))
+		if (IS_ERR(handle)) {
+			pr_err("%s: len %zu align %zu heap_id_mask %u flags %x (ret %ld)\n",
+				__func__, data.allocation.len,
+				data.allocation.align,
+				data.allocation.heap_id_mask,
+				data.allocation.flags, PTR_ERR(handle));
 			return PTR_ERR(handle);
+		}
 
 		data.allocation.handle = handle->id;
 
