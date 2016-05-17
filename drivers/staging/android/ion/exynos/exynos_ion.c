@@ -21,7 +21,7 @@
 #include "../ion.h"
 #include "../ion_priv.h"
 
-struct ion_device *ion_exynos;
+static struct ion_device *ion_exynos;
 
 /* starting from index=1 regarding default index=0 for system heap */
 static int nr_heaps = 1;
@@ -203,6 +203,11 @@ int ion_secure_unprotect(struct ion_buffer *buffer)
 	return 0;
 }
 #endif
+
+struct ion_client *exynos_ion_client_create(const char *name)
+{
+	return ion_client_create(ion_exynos, name);
+}
 
 bool ion_is_heap_available(struct ion_heap *heap,
 				unsigned long flags, void *data)
