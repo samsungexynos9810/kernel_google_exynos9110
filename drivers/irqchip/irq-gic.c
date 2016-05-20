@@ -953,7 +953,7 @@ void __init gic_init_physaddr(struct device_node *node)
 #define gic_init_physaddr(node)  do { } while (0)
 #endif
 
-static int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
+int gic_irq_domain_map(struct irq_domain *d, unsigned int irq,
 				irq_hw_number_t hw)
 {
 	struct irq_chip *chip = &gic_chip;
@@ -1062,6 +1062,11 @@ static const struct irq_domain_ops gic_irq_domain_ops = {
 	.map = gic_irq_domain_map,
 	.unmap = gic_irq_domain_unmap,
 };
+
+struct irq_domain *gic_get_root_irqdomain(unsigned int gic_nr)
+{
+	return (struct irq_domain *)gic_data[gic_nr].domain;
+}
 
 static void __init __gic_init_bases(unsigned int gic_nr, int irq_start,
 			   void __iomem *dist_base, void __iomem *cpu_base,

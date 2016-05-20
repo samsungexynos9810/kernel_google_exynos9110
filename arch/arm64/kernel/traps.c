@@ -31,6 +31,7 @@
 #include <linux/init.h>
 #include <linux/sched.h>
 #include <linux/syscalls.h>
+#include <soc/samsung/exynos-condbg.h>
 
 #include <asm/atomic.h>
 #include <asm/bug.h>
@@ -241,6 +242,7 @@ static int __die(const char *str, int err, struct thread_info *thread,
 	static int die_counter;
 	int ret;
 
+	ecd_printf("%s\n", str);
 	pr_emerg("Internal error: %s: %x [#%d]" S_PREEMPT S_SMP "\n",
 		 str, err, ++die_counter);
 

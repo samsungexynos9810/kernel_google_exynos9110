@@ -218,5 +218,15 @@ config EXYNOS_CORESIGHT_STM
         default n
         help
           STM driver is a driver for H/W event and S/W event debugging.
+
+menuconfig EXYNOS_CONSOLE_DEBUGGER
+	bool "Exynos Console Debugger(ECD) Support for debugging"
+	default y
+	depends on ARCH_EXYNOS
+
+config EXYNOS_CONSOLE_DEBUGGER_INTERFACE
+	bool "Specific Console Debugger Interface Support and Console Support"
+	depends on EXYNOS_CONSOLE_DEBUGGER
+	default y
 endif
 #

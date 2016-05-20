@@ -28,6 +28,7 @@
 #include <linux/ktime.h>
 #include <linux/printk.h>
 #include <linux/exynos-ss.h>
+#include <soc/samsung/exynos-condbg.h>
 #include <linux/kallsyms.h>
 #include <linux/platform_device.h>
 #include <linux/pstore_ram.h>
@@ -1111,7 +1112,7 @@ static inline void exynos_ss_hook_logbuf(const char *buf, size_t size)
 }
 #endif
 
-static void exynos_ss_dump_one_task_info(struct task_struct *tsk, bool is_main)
+void exynos_ss_dump_one_task_info(struct task_struct *tsk, bool is_main)
 {
 	char state_array[] = {'R', 'S', 'D', 'T', 't', 'Z', 'X', 'x', 'K', 'W'};
 	unsigned char idx = 0;
@@ -1374,6 +1375,360 @@ void exynos_ss_check_crash_key(unsigned int code, int value)
 	}
 }
 #endif
+
+
+struct vclk {
+	unsigned int type;
+	struct vclk *parent;
+	int ref_count;
+	unsigned long vfreq;
+	char *name;
+};
+
+bool exynos_ss_dumper_one(void *v_dumper,
+				char *line, size_t size, size_t *len)
+{
+	bool ret = false;
+	int idx, array_size;
+	unsigned int cpu, items;
+	unsigned long rem_nsec;
+	u64 ts;
+	struct ess_dumper *dumper = (struct ess_dumper *)v_dumper;
+
+	if (!line || size < SZ_128 ||
+		dumper->cur_cpu >= NR_CPUS)
+		goto out;
+
+	if (dumper->active) {
+		if (dumper->init_idx == dumper->cur_idx)
+			goto out;
+		cpu = dumper->cur_cpu;
+		idx = dumper->cur_idx;
+	}
+
+	items = dumper->items;
+
+	switch(items) {
+	case ESS_FLAG_TASK:
+	{
+		struct task_struct *task;
+		array_size = ARRAY_SIZE(ess_log->task[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.task_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->task[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+		task = ess_log->task[cpu][idx].task;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] task_name:%16s,  "
+					    "task:0x%16p,  stack:0x%16p,  exec_start:%16llu\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						task->comm, task, task->stack,
+						task->se.exec_start);
+		break;
+	}
+	case ESS_FLAG_WORK:
+	{
+		char work_fn[KSYM_NAME_LEN] = {0,};
+		char *task_comm;
+		int en;
+
+		array_size = ARRAY_SIZE(ess_log->work[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.work_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->work[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+		lookup_symbol_name((unsigned long)ess_log->work[cpu][idx].fn, work_fn);
+		task_comm = ess_log->work[cpu][idx].task_comm;
+		en = ess_log->work[cpu][idx].en;
+
+		dumper->step = 6;
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] task_name:%16s,  work_fn:%32s,  %3s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						task_comm, work_fn,
+						en == ESS_FLAG_IN ? "IN" : "OUT");
+		break;
+	}
+	case ESS_FLAG_CPUIDLE:
+	{
+		unsigned int delta;
+		int state, num_cpus, en;
+		char *index;
+
+		array_size = ARRAY_SIZE(ess_log->cpuidle[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.cpuidle_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->cpuidle[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		index = ess_log->cpuidle[cpu][idx].modes;
+		en = ess_log->cpuidle[cpu][idx].en;
+		state = ess_log->cpuidle[cpu][idx].state;
+		num_cpus = ess_log->cpuidle[cpu][idx].num_online_cpus;
+		delta = ess_log->cpuidle[cpu][idx].delta;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] cpuidle: %s,  "
+					    "state:%d,  num_online_cpus:%d,  stay_time:%8u,  %3s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						index, state, num_cpus, delta,
+						en == ESS_FLAG_IN ? "IN" : "OUT");
+		break;
+	}
+	case ESS_FLAG_SUSPEND:
+	{
+		char suspend_fn[KSYM_NAME_LEN];
+		int en;
+
+		array_size = ARRAY_SIZE(ess_log->suspend[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.suspend_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->suspend[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		lookup_symbol_name((unsigned long)ess_log->suspend[cpu][idx].fn, suspend_fn);
+		en = ess_log->suspend[cpu][idx].en;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] suspend_fn:%s,  %3s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						suspend_fn, en == ESS_FLAG_IN ? "IN" : "OUT");
+		break;
+	}
+	case ESS_FLAG_IRQ:
+	{
+		char irq_fn[KSYM_NAME_LEN];
+		int en, irq, preempt, val;
+
+		array_size = ARRAY_SIZE(ess_log->irq[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.irq_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->irq[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		lookup_symbol_name((unsigned long)ess_log->irq[cpu][idx].fn, irq_fn);
+		irq = ess_log->irq[cpu][idx].irq;
+		preempt = ess_log->irq[cpu][idx].preempt;
+		val = ess_log->irq[cpu][idx].val;
+		en = ess_log->irq[cpu][idx].en;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] irq:%6d,  irq_fn:%32s,  "
+					    "preempt:%6d,  val:%6d,  %3s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						irq, irq_fn, preempt, val,
+						en == ESS_FLAG_IN ? "IN" : "OUT");
+		break;
+	}
+#ifdef CONFIG_EXYNOS_SNAPSHOT_IRQ_EXIT
+	case ESS_FLAG_IRQ_EXIT:
+	{
+		unsigned long end_time, latency;
+		int irq;
+
+		array_size = ARRAY_SIZE(ess_log->irq_exit[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.irq_exit_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->irq_exit[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		end_time = ess_log->irq_exit[cpu][idx].end_time;
+		latency = ess_log->irq_exit[cpu][idx].latency;
+		irq = ess_log->irq_exit[cpu][idx].irq;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] irq:%6d,  "
+					    "latency:%16zu,  end_time:%16zu\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						irq, latency, end_time);
+		break;
+	}
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SPINLOCK
+	case ESS_FLAG_SPINLOCK:
+	{
+		unsigned int jiffies_local;
+		char callstack[CONFIG_EXYNOS_SNAPSHOT_CALLSTACK][KSYM_NAME_LEN];
+		int en, i;
+		struct task_struct *task;
+		unsigned int magic, owner_cpu;
+		u16 next, owner;
+
+		array_size = ARRAY_SIZE(ess_log->spinlock[0]) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.spinlock_log_idx[0]) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->spinlock[cpu][idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		jiffies_local = ess_log->spinlock[cpu][idx].jiffies;
+		en = ess_log->spinlock[cpu][idx].en;
+		for (i = 0; i < CONFIG_EXYNOS_SNAPSHOT_CALLSTACK; i++)
+			lookup_symbol_name((unsigned long)ess_log->spinlock[cpu][idx].caller[i],
+						callstack[i]);
+
+		task = (struct task_struct *)ess_log->spinlock[cpu][idx].task;
+		owner_cpu = ess_log->spinlock[cpu][idx].owner_cpu;
+		magic = ess_log->spinlock[cpu][idx].magic;
+		next = ess_log->spinlock[cpu][idx].next;
+		owner = ess_log->spinlock[cpu][idx].owner;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] task_name:%16s,  owner_cpu:%2d,  "
+					    "magic:%8x,  next:%8x,  owner:%8x  jiffies:%12u,  %3s\n"
+					    "callstack: %s\n"
+					    "           %s\n"
+					    "           %s\n"
+					    "           %s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						task->comm, owner_cpu <= NR_CPUS ? owner_cpu : -1, magic,
+						next, owner, jiffies_local,
+						en == ESS_FLAG_IN ? "IN" : "OUT",
+						callstack[0], callstack[1], callstack[2], callstack[3]);
+		break;
+	}
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_CLK
+	case ESS_FLAG_CLK:
+	{
+		char *clk_name, clk_fn[KSYM_NAME_LEN], *parent_name;
+		struct vclk *clk;
+		int en, ref_count;
+
+		array_size = ARRAY_SIZE(ess_log->clk) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.clk_log_idx) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->clk[idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		clk = (struct vclk *)ess_log->clk[idx].clk;
+		clk_name = clk->name;
+		ref_count = clk->ref_count;
+		parent_name = clk->parent->name;
+		lookup_symbol_name((unsigned long)ess_log->clk[idx].f_name, clk_fn);
+		en = ess_log->clk[idx].mode;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU] clk_name:%30s,  clk_fn:%30s,  "
+					    "ref_count:%2d,  parent_name:%30s,  %s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx,
+						clk_name, clk_fn, ref_count, parent_name,
+						en == ESS_FLAG_IN ? "IN" : "OUT");
+		break;
+	}
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_FREQ
+	case ESS_FLAG_FREQ:
+	{
+		char *freq_name;
+		unsigned int old_freq, target_freq, on_cpu;
+		int en;
+
+		array_size = ARRAY_SIZE(ess_log->freq) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.freq_log_idx) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->freq[idx].time;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+
+		freq_name = ess_log->freq[idx].freq_name;
+		old_freq = ess_log->freq[idx].old_freq;
+		target_freq = ess_log->freq[idx].target_freq;
+		on_cpu = ess_log->freq[idx].cpu;
+		en = ess_log->freq[idx].en;
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] freq_name:%16s,  "
+					    "old_freq:%16u,  target_freq:%16u,  %3s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, on_cpu,
+						freq_name, old_freq, target_freq,
+						en == ESS_FLAG_IN ? "IN" : "OUT");
+		break;
+	}
+#endif
+	case ESS_FLAG_PRINTK:
+	{
+		char *log;
+		char callstack[CONFIG_EXYNOS_SNAPSHOT_CALLSTACK][KSYM_NAME_LEN];
+		unsigned int cpu;
+		int i;
+
+		array_size = ARRAY_SIZE(ess_log->printk) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.printk_log_idx) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->printk[idx].time;
+		cpu = ess_log->printk[idx].cpu;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+		log = ess_log->printk[idx].log;
+		for (i = 0; i < CONFIG_EXYNOS_SNAPSHOT_CALLSTACK; i++)
+			lookup_symbol_name((unsigned long)ess_log->printk[idx].caller[i],
+						callstack[i]);
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] log:%s, callstack:%s, %s, %s, %s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						log, callstack[0], callstack[1], callstack[2], callstack[3]);
+		break;
+	}
+	case ESS_FLAG_PRINTKL:
+	{
+		char callstack[CONFIG_EXYNOS_SNAPSHOT_CALLSTACK][KSYM_NAME_LEN];
+		size_t msg, val;
+		unsigned int cpu;
+		int i;
+
+		array_size = ARRAY_SIZE(ess_log->printkl) - 1;
+		if (!dumper->active) {
+			idx = (atomic_read(&ess_idx.printkl_log_idx) + 1) & array_size;
+			dumper->init_idx = idx;
+			dumper->active = true;
+		}
+		ts = ess_log->printkl[idx].time;
+		cpu = ess_log->printkl[idx].cpu;
+		rem_nsec = do_div(ts, NSEC_PER_SEC);
+		msg = ess_log->printkl[idx].msg;
+		val = ess_log->printkl[idx].val;
+		for (i = 0; i < CONFIG_EXYNOS_SNAPSHOT_CALLSTACK; i++)
+			lookup_symbol_name((unsigned long)ess_log->printkl[idx].caller[i],
+						callstack[i]);
+
+		*len = snprintf(line, size, "[%8lu.%09lu][%04d:CPU%u] msg:%zx, val:%zx, callstack: %s, %s, %s, %s\n",
+						(unsigned long)ts, rem_nsec / NSEC_PER_USEC, idx, cpu,
+						msg, val, callstack[0], callstack[1], callstack[2], callstack[3]);
+		break;
+	}
+	default:
+		snprintf(line, size, "unsupported inforation to dump\n");
+		goto out;
+	}
+	if (array_size == idx)
+		dumper->cur_idx = 0;
+	else
+		dumper->cur_idx = idx + 1;
+
+	ret = true;
+out:
+	return ret;
+}
 
 static int exynos_ss_reboot_handler(struct notifier_block *nb,
 				    unsigned long l, void *p)

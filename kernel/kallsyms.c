@@ -62,7 +62,7 @@ static inline int is_kernel_inittext(unsigned long addr)
 
 static inline int is_kernel_text(unsigned long addr)
 {
-	if ((addr >= (unsigned long)_stext && addr <= (unsigned long)_etext) ||
+	if ((addr >= (unsigned long)_text && addr <= (unsigned long)_etext) ||
 	    arch_is_kernel_text(addr))
 		return 1;
 	return in_gate_area_no_mm(addr);
@@ -70,7 +70,7 @@ static inline int is_kernel_text(unsigned long addr)
 
 static inline int is_kernel(unsigned long addr)
 {
-	if (addr >= (unsigned long)_stext && addr <= (unsigned long)_end)
+	if (addr >= (unsigned long)_text && addr <= (unsigned long)_end)
 		return 1;
 	return in_gate_area_no_mm(addr);
 }

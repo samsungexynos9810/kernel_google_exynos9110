@@ -30,6 +30,7 @@
 #include <linux/highmem.h>
 #include <linux/perf_event.h>
 #include <linux/preempt.h>
+#include <soc/samsung/exynos-condbg.h>
 
 #include <asm/bug.h>
 #include <asm/cpufeature.h>
@@ -457,7 +458,7 @@ static int __kprobes do_translation_fault(unsigned long addr,
  */
 static int do_bad(unsigned long addr, unsigned int esr, struct pt_regs *regs)
 {
-	return 1;
+	return ecd_do_bad(addr, regs);
 }
 
 static const struct fault_info {

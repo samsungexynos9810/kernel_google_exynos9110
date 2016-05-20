@@ -25,6 +25,7 @@
 #include <linux/nmi.h>
 #include <linux/console.h>
 #include <linux/exynos-ss.h>
+#include <soc/samsung/exynos-condbg.h>
 #include <asm/core_regs.h>
 #include "sched/sched.h"
 
@@ -82,8 +83,14 @@ void panic(const char *fmt, ...)
 	long i, i_next = 0;
 	int state = 0;
 
-	 exynos_trace_stop();
+	exynos_trace_stop();
 
+	if (ecd_get_enable() &&
+		ecd_get_debug_panic() &&
+		ecd_get_debug_mode() != MODE_DEBUG) {
+		ecd_printf("Debugging in Panic on ECD\n");
+		ecd_do_break_now();
+	}
 	/*
 	 * Disable local interrupts. This will prevent panic_smp_self_stop
 	 * from deadlocking the first cpu that invokes the panic, since
@@ -110,6 +117,8 @@ void panic(const char *fmt, ...)
 	va_start(args, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
+
+	ecd_printf("Kernel Panic - not syncing: %s\n", buf);
 	pr_emerg("Kernel panic - not syncing: %s\n", buf);
 
 	exynos_ss_prepare_panic();
@@ -136,7 +145,9 @@ void panic(const char *fmt, ...)
 	 * unfortunately means it may not be hardened to work in a panic
 	 * situation.
 	 */
-	smp_send_stop();
+
+	if (!ecd_get_enable() || ecd_get_debug_mode() != MODE_DEBUG)
+		smp_send_stop();
 
 	/*
 	 * Run any panic handlers, including those that might need to

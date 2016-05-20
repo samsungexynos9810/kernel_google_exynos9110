@@ -38,6 +38,7 @@ extern int exynos_ss_set_hardlockup(int);
 extern int exynos_ss_get_hardlockup(void);
 extern unsigned int exynos_ss_get_item_size(char *);
 extern unsigned int exynos_ss_get_item_paddr(char *);
+extern bool exynos_ss_dumper_one(void *, char *, size_t, size_t *);
 extern void exynos_ss_panic_handler_safe(struct pt_regs *regs);
 #ifdef CONFIG_EXYNOS_DRAMTEST
 extern int disable_mc_powerdn(void);
@@ -197,7 +198,39 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_get_item_size(a)	do { } while(0)
 #define exynos_ss_get_item_paddr(a)	do { } while(0)
 #define exynos_ss_check_crash_key(a,b)	do { } while(0);
+#define exynos_ss_dumper_one(a,b,c,d)	false
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
+
+struct ess_dumper {
+	bool active;
+	u32 items;
+	int init_idx;
+	int cur_idx;
+	u32 cur_cpu;
+	u32 step;
+};
+
+enum ess_kevent_flag {
+	ESS_FLAG_TASK = 1,
+	ESS_FLAG_WORK,
+	ESS_FLAG_CPUIDLE,
+	ESS_FLAG_SUSPEND,
+	ESS_FLAG_IRQ,
+	ESS_FLAG_IRQ_EXIT,
+	ESS_FLAG_SPINLOCK,
+	ESS_FLAG_IRQ_DISABLE,
+	ESS_FLAG_CLK,
+	ESS_FLAG_FREQ,
+	ESS_FLAG_REG,
+	ESS_FLAG_HRTIMER,
+	ESS_FLAG_REGULATOR,
+	ESS_FLAG_THERMAL,
+	ESS_FLAG_MAILBOX,
+	ESS_FLAG_CLOCKEVENT,
+	ESS_FLAG_PRINTK,
+	ESS_FLAG_PRINTKL,
+	ESS_FLAG_KEVENT,
+};
 
 /**
  * esslog_flag - added log information supported.

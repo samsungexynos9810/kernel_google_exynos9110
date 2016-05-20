@@ -10,3 +10,5 @@ obj-$(CONFIG_EXYNOS_CORESIGHT) += exynos-coresight.o
 obj-$(CONFIG_EXYNOS_CORESIGHT_ETM) += exynos-coresight-etm.o
 obj-$(CONFIG_EXYNOS_CORESIGHT_STM) += of_coresight.o coresight.o coresight-stm.o
 obj-$(CONFIG_EXYNOS_DRAMTEST) += dramtest.o
+
+obj-$(CONFIG_EXYNOS_CONSOLE_DEBUGGER) += exynos-condbg.o exynos-condbg-dev.o

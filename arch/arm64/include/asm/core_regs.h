@@ -14,7 +14,6 @@
 #include <linux/types.h>
 
 #define OSLOCK_MAGIC	(0xc5acce55)
-#ifdef CONFIG_EXYNOS_CORESIGHT
 
 /* Defines are used by core-sight */
 #define CS_SJTAG_OFFSET	(0x8000)
@@ -28,6 +27,7 @@
 #define DBGDSCCR	(0x028)	/* RW or RAZ */
 #define DBGDSMCR	(0x02c)	/* RW or RAZ */
 #define DBGDTRRX	(0x080)	/* RW */
+#define DBGITR		(0x084)	/* RW */
 #define DBGDSCR		(0x088)	/* RW */
 #define DBGDTRTX	(0x08c)	/* RW */
 #define DBGDRCR		(0x090)	/* WO */
@@ -57,7 +57,7 @@
 #define DBGDEVTYPE	(0xfcc) /* RO */
 
 #define MIDR		(0xd00)	/* RO */
-#define ID_AA64DFR0_EL1	(0xd28)
+#define ID_AA64DFR0_EL1 (0xd28)
 
 /* DBG breakpoint registers (All RW) */
 #define DBGBVRn(n)	(0x400 + (n * 0x10)) /* 64bit */
@@ -73,7 +73,6 @@
 #define ARMV8_PROCESSOR	(0xd00)
 #define ARMV8_CORTEXA53	(0xd03)
 #define ARMV8_CORTEXA57	(0xd07)
-#endif
 
 #ifdef CONFIG_EXYNOS_CORESIGHT_PC_INFO
 extern void exynos_cs_show_pcval(void);
@@ -81,7 +80,6 @@ extern void exynos_cs_show_pcval(void);
 #define exynos_cs_show_pcval()	do { } while(0)
 #endif
 
-#ifdef CONFIG_EXYNOS_CORESIGHT_ETM
 /* TMC(ETB/ETF/ETR) registers  */
 #define TMCRSZ			(0x004)
 #define TMCSTS			(0x00c)
@@ -168,7 +166,7 @@ extern void exynos_cs_show_pcval(void);
 #define ETMPDCR			(0x310)
 #define ETMPDSR			(0x314)
 #define ETMACVR(n)		(0x400 + (n * 4))
-#define ETMACAT(n) 		(0x480 + (n * 4))
+#define ETMACAT(n)		(0x480 + (n * 4))
 #define ETMDVCVR(n)		(0x500 + (n * 4))
 #define ETMDVCMR(n)		(0x580 + (n * 4))
 #define ETMCIDCVR(n)	(0x600 + (n * 4))
@@ -178,6 +176,7 @@ extern void exynos_cs_show_pcval(void);
 #define ETMVMIDCCTLR0	(0x688)
 #define ETMVMIDCCTLR1	(0x68c)
 
+#ifdef CONFIG_EXYNOS_CORESIGHT_ETM
 extern void exynos_trace_stop(void);
 #else
 #define exynos_trace_stop()	do { } while(0)

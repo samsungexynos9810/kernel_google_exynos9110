@@ -46,6 +46,7 @@
 #include <linux/notifier.h>
 #include <trace/events/power.h>
 #include <linux/exynos-ss.h>
+#include <soc/samsung/exynos-condbg.h>
 
 #include <asm/alternative.h>
 #include <asm/compat.h>
@@ -145,7 +146,9 @@ void machine_restart(char *cmd)
 {
 	/* Disable interrupts first */
 	local_irq_disable();
-	smp_send_stop();
+
+	if (!ecd_get_enable() || ecd_get_debug_mode() != MODE_DEBUG)
+		smp_send_stop();
 
 	/*
 	 * UpdateCapsule() depends on the system being reset via
