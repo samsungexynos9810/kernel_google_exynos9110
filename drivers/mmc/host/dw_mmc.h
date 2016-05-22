@@ -296,6 +296,7 @@ extern int dw_mci_resume(struct dw_mci *host);
  * @flags: Random state bits associated with the slot.
  * @id: Number of this slot.
  * @sdio_id: Number of this slot in the SDIO interrupt registers.
+ * @last_detect_state: Most recently observed card detect state.
  */
 struct dw_mci_slot {
 	struct mmc_host		*mmc;
@@ -317,6 +318,7 @@ struct dw_mci_slot {
 #define DW_MMC_CARD_NO_LOW_PWR	2
 	int			id;
 	int			sdio_id;
+	int			last_detect_state;
 };
 
 /**

@@ -157,6 +157,7 @@ struct dw_mci {
 	struct mmc_command	stop_abort;
 	unsigned int		prev_blksz;
 	unsigned char		timing;
+	struct workqueue_struct	*card_workqueue;
 
 	/* DMA interface members*/
 	int			use_dma;
