@@ -73,11 +73,17 @@
 #define MTP_RESPONSE_OK             0x2001
 #define MTP_RESPONSE_DEVICE_BUSY    0x2019
 #define DRIVER_NAME "mtp"
+#if IS_ENABLED(CONFIG_USB_CONFIGFS_UEVENT)
+#define DRIVER_NAME_PTP "ptp"
+#endif
 
 static const char mtp_shortname[] = DRIVER_NAME "_usb";
 
 struct mtp_dev {
 	struct usb_function function;
+#if IS_ENABLED(CONFIG_USB_CONFIGFS_UEVENT)
+	struct usb_function function_ptp;
+#endif
 	struct usb_composite_dev *cdev;
 	spinlock_t lock;
 
@@ -356,6 +362,10 @@ static struct mtp_dev *_mtp_dev;
 
 static inline struct mtp_dev *func_to_mtp(struct usb_function *f)
 {
+#if IS_ENABLED(CONFIG_USB_CONFIGFS_UEVENT)
+	if (!strcmp(f->name, DRIVER_NAME_PTP))
+		return container_of(f, struct mtp_dev, function_ptp);
+#endif
 	return container_of(f, struct mtp_dev, function);
 }
 
@@ -1505,6 +1515,9 @@ struct usb_function *function_alloc_mtp_ptp(struct usb_function_instance *fi,
 {
 	struct mtp_instance *fi_mtp = to_fi_mtp(fi);
 	struct mtp_dev *dev;
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	struct usb_function *function;
+#endif
 
 	/*
 	 * PTP piggybacks on MTP function so make sure we have
@@ -1522,6 +1535,31 @@ struct usb_function *function_alloc_mtp_ptp(struct usb_function_instance *fi,
 	}
 
 	dev = fi_mtp->dev;
+#ifdef CONFIG_USB_CONFIGFS_UEVENT
+	if (mtp_config) {
+		function = &dev->function;
+		function->name = DRIVER_NAME;
+		function->fs_descriptors = fs_mtp_descs;
+		function->hs_descriptors = hs_mtp_descs;
+		function->ss_descriptors = ss_mtp_descs;
+	} else {
+		function = &dev->function_ptp;
+		function->name = DRIVER_NAME_PTP;
+		function->fs_descriptors = fs_ptp_descs;
+		function->hs_descriptors = hs_ptp_descs;
+		function->ss_descriptors = ss_ptp_descs;
+	}
+
+	function->strings = mtp_strings;
+	function->bind = mtp_function_bind;
+	function->unbind = mtp_function_unbind;
+	function->set_alt = mtp_function_set_alt;
+	function->disable = mtp_function_disable;
+	function->setup = mtp_ctrlreq_configfs;
+	function->free_func = mtp_free;
+
+	return function;
+#else
 	dev->function.name = DRIVER_NAME;
 	dev->function.strings = mtp_strings;
 	if (mtp_config) {
@@ -1541,6 +1579,7 @@ struct usb_function *function_alloc_mtp_ptp(struct usb_function_instance *fi,
 	dev->function.free_func = mtp_free;
 
 	return &dev->function;
+#endif
 }
 EXPORT_SYMBOL_GPL(function_alloc_mtp_ptp);
 
