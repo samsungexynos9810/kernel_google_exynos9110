@@ -102,9 +102,6 @@ static ssize_t booster_store(
 		struct device *dev, struct device_attribute *attr,
 		const char *buf, size_t size)
 {
-	struct host_notify_dev *ndev = (struct host_notify_dev *)
-		dev_get_drvdata(dev);
-
 	char *booster;
 	size_t ret = -ENOMEM;
 
@@ -114,16 +111,6 @@ static ssize_t booster_store(
 
 	sscanf(buf, "%s", booster);
 
-	if (ndev->set_booster) {
-		if (!strncmp(booster, "ON", 2)) {
-			ndev->set_booster(NOTIFY_SET_ON);
-			ndev->mode = NOTIFY_TEST_MODE;
-		} else if (!strncmp(booster, "OFF", 3)) {
-			ndev->set_booster(NOTIFY_SET_OFF);
-			ndev->mode = NOTIFY_NONE_MODE;
-		}
-		pr_info("host_notify: set booster %s\n", booster);
-	}
 	ret = size;
 	kfree(booster);
 error:

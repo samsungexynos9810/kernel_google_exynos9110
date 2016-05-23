@@ -533,8 +533,6 @@ static void otg_notify_state(unsigned long event, int enable)
 			goto no_save_event;
 		}
 		u_notify->oc_noti = enable;
-		if (notify->vbus_drive)
-			notify->vbus_drive((bool)enable);
 		goto no_save_event;
 	default:
 		break;
@@ -590,18 +588,12 @@ static void extra_notify_state(unsigned long event, int enable)
 			pr_err("No smart dock!!!!!!\n");
 			break;
 		}
-		if (notify->set_battcall)
-			notify->set_battcall
-				(NOTIFY_EVENT_SMTD_EXT_CURRENT, enable);
 		break;
 	case NOTIFY_EVENT_MMD_EXT_CURRENT:
 		if (u_notify->c_type != NOTIFY_EVENT_MMDOCK) {
 			pr_err("No mmdock!!!!!!\n");
 			break;
 		}
-		if (notify->set_battcall)
-			notify->set_battcall
-				(NOTIFY_EVENT_MMD_EXT_CURRENT, enable);
 		break;
 	default:
 		break;
@@ -891,16 +883,10 @@ int set_otg_notify(struct otg_notify *n)
 
 	if (!n->unsupport_host) {
 		u_notify->ndev.name = "usb_otg";
-		u_notify->ndev.set_booster = n->vbus_drive;
 		ret = host_notify_dev_register(&u_notify->ndev);
 		if (ret < 0) {
 			pr_err("host_notify_dev_register is failed\n");
 			goto err3;
-		}
-
-		if (!n->vbus_drive) {
-			pr_err("vbus_drive is null\n");
-			goto err4;
 		}
 	}
 

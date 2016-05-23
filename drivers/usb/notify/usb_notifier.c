@@ -20,7 +20,6 @@
 #include <linux/muic/muic.h>
 #include <linux/muic/muic_notifier.h>
 #endif
-#include <linux/battery/sec_charging_common.h>
 
 struct gadget_notify_dev {
 	struct device	*dev;
@@ -291,74 +290,6 @@ static int usb_handle_notification(struct notifier_block *nb,
 }
 #endif
 
-static int otg_accessory_power(bool enable)
-{
-	u8 on = (u8)!!enable;
-	union power_supply_propval val;
-	struct device_node *np_charger = NULL;
-	char *charger_name;
-
-	pr_info("otg accessory power = %d\n", on);
-
-	np_charger = of_find_node_by_name(NULL, "battery");
-	if (!np_charger) {
-		pr_err("%s: failed to get the battery device node\n", __func__);
-		return 0;
-	} else {
-		if (!of_property_read_string(np_charger, "battery,charger_name",
-					(char const **)&charger_name)) {
-			pr_info("%s: charger_name = %s\n", __func__,
-					charger_name);
-		} else {
-			pr_err("%s: failed to get the charger name\n"
-								, __func__);
-			return 0;
-		}
-	}
-
-	val.intval = enable;
-	psy_do_property(charger_name, set,
-			POWER_SUPPLY_PROP_CHARGE_OTG_CONTROL, val);
-
-	return 0;
-}
-
-static int set_online(int event, int state)
-{
-	union power_supply_propval val;
-	struct device_node *np_charger = NULL;
-	char *charger_name;
-
-	pr_info("request smartdock charging current = %s\n",
-		state ? "1000mA" : "1700mA");
-
-	np_charger = of_find_node_by_name(NULL, "battery");
-	if (!np_charger) {
-		pr_err("%s: failed to get the battery device node\n", __func__);
-		return 0;
-	} else {
-		if (!of_property_read_string(np_charger, "battery,charger_name",
-					(char const **)&charger_name)) {
-			pr_info("%s: charger_name = %s\n", __func__,
-					charger_name);
-		} else {
-			pr_err("%s: failed to get the charger name\n",
-								 __func__);
-			return 0;
-		}
-	}
-
-	if (state)
-		val.intval = POWER_SUPPLY_TYPE_SMART_OTG;
-	else
-		val.intval = POWER_SUPPLY_TYPE_SMART_NOTG;
-
-	psy_do_property(charger_name, set,
-			POWER_SUPPLY_PROP_ONLINE, val);
-
-	return 0;
-}
-
 #ifdef CONFIG_USB_HOST_NOTIFY
 static int exynos_set_host(bool enable)
 {
@@ -402,14 +333,12 @@ static int exynos_set_peripheral(bool enable)
 }
 
 static struct otg_notify dwc_lsi_notify = {
-	.vbus_drive	= otg_accessory_power,
 #ifdef CONFIG_USB_HOST_NOTIFY
 	.set_host = exynos_set_host,
 #endif
 	.set_peripheral	= exynos_set_peripheral,
 	.vbus_detect_gpio = -1,
 	.is_wakelock = 1,
-	.set_battcall = set_online,
 };
 
 static int usb_notifier_probe(struct platform_device *pdev)
