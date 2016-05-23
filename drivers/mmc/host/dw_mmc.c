@@ -3192,15 +3192,20 @@ static void dw_mci_timeout_timer(unsigned long data)
 {
 	struct dw_mci *host = (struct dw_mci *)data;
 	struct mmc_request *mrq;
+	u32 reg;
 
 	if (host && host->mrq) {
 		mrq = host->mrq;
 
-		dev_err(host->dev,
-			"Timeout waiting for hardware interrupt."
-			" state = %d\n", host->state);
-		dw_mci_reg_dump(host);
-
+		reg = mci_readl(host, CMD);
+		reg = (reg >> 11) & 0x3f;
+		if (reg == MMC_SEND_TUNING_BLOCK ||
+				reg == MMC_SEND_TUNING_BLOCK_HS200) {
+			dev_err(host->dev,
+					"Timeout waiting for hardware interrupt."
+					" state = %d\n", host->state);
+			dw_mci_reg_dump(host);
+		}
 		spin_lock(&host->lock);
 
 		host->sg = NULL;
