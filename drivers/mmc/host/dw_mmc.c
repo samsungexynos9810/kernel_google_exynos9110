@@ -1825,16 +1825,6 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	 * request wouldn't fail until another card was inserted.
 	 */
 
-#if 0
-	if (!dw_mci_stop_abort_cmd(mrq->cmd)) {
-		if (!dw_mci_wait_data_busy(host, mrq)) {
-			mrq->cmd->error = -ENOTRECOVERABLE;
-			mmc_request_done(mmc, mrq);
-			return;
-		}
-	}
-#endif
-
 	spin_lock_bh(&host->lock);
 
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
@@ -1843,6 +1833,11 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 		mmc_request_done(mmc, mrq);
 		return;
 	}
+
+	/* IDLE IP for SICD */
+#ifdef CONFIG_CPU_IDLE
+	exynos_update_ip_idle_status(slot->host->idle_ip_index, 0);
+#endif
 
 	dw_mci_queue_request(host, slot, mrq);
 
@@ -2278,6 +2273,10 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
 	spin_unlock(&host->lock);
 	mmc_request_done(prev_mmc, mrq);
 	spin_lock(&host->lock);
+
+#ifdef CONFIG_CPU_IDLE
+	exynos_update_ip_idle_status(slot->host->idle_ip_index, 1);
+#endif
 }
 
 static int dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd)
