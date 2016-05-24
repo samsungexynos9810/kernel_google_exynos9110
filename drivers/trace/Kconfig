@@ -206,5 +206,12 @@ config EXYNOS_CORESIGHT_ETM_SYSFS
         default n
         help
           Show ETM, FUNNEL, ETB, ETF and ETR status through sysfs.
+
+config EXYNOS_CORESIGHT_STM
+        bool "Enable STM driver of exynos"
+        depends on ARCH_EXYNOS
+        default n
+        help
+          STM driver is a driver for H/W event and S/W event debugging.
 endif
 #
