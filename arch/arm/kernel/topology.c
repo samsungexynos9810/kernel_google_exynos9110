@@ -288,6 +288,8 @@ static struct sched_domain_topology_level arm_topology[] = {
 	{ cpu_cpu_mask, SD_INIT_NAME(DIE) },
 	{ NULL, },
 };
+
+#ifdef CONFIG_SCHED_HMP
 void __init arch_get_fast_and_slow_cpus(struct cpumask *fast,
 					struct cpumask *slow)
 {
