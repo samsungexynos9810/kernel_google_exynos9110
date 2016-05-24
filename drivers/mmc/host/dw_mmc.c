@@ -41,6 +41,8 @@
 #include <linux/mmc/slot-gpio.h>
 #include <linux/smc.h>
 
+#include <soc/samsung/exynos-pm.h>
+#include <soc/samsung/exynos-powermode.h>
 
 #include "dw_mmc.h"
 #include "dw_mmc-exynos.h"
@@ -63,9 +65,7 @@
 /* Each descriptor can transfer up to 4KB of data in chained mode */
 #define DW_MCI_DESC_DATA_LENGTH	0x1000
 
-#if 1 
 static bool dw_mci_reset(struct dw_mci *host);
-#endif
 
 static int dw_mci_card_busy(struct mmc_host *mmc);
 bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host);
@@ -2275,7 +2275,7 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
 	spin_lock(&host->lock);
 
 #ifdef CONFIG_CPU_IDLE
-	exynos_update_ip_idle_status(slot->host->idle_ip_index, 1);
+	exynos_update_ip_idle_status(host->idle_ip_index, 1);
 #endif
 }
 
@@ -4167,11 +4167,6 @@ int dw_mci_probe(struct dw_mci *host)
 
 	tasklet_init(&host->tasklet, dw_mci_tasklet_func, (unsigned long)host);
 
-#if 0
-	/* INT min lock */
-	pm_qos_add_request(&host->pm_qos_int, PM_QOS_DEVICE_THROUGHPUT, 0);
-#endif
-
 	host->card_workqueue = alloc_workqueue("dw-mci-card",
 			WQ_MEM_RECLAIM, 1);
 	if (!host->card_workqueue) {
@@ -4282,9 +4277,6 @@ void dw_mci_remove(struct dw_mci *host)
 	mci_writel(host, CLKSRC, 0);
 
 	del_timer_sync(&host->timer);
-#if 0
-	pm_qos_remove_request(&host->pm_qos_int);
-#endif
 	destroy_workqueue(host->card_workqueue);
 
 	if (host->use_dma && host->dma_ops->exit)

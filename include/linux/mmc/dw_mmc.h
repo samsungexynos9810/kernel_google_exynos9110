@@ -176,7 +176,6 @@ struct dw_mci {
 	resource_size_t		phy_regs;
 
 	unsigned int            desc_sz;
-//	struct pm_qos_request	pm_qos_int;
 	u32			cmd_status;
 	u32			data_status;
 	u32			stop_cmdr;
