@@ -10,6 +10,11 @@ menuconfig TRACE
 
 if TRACE
 
+config EXYNOS_BUSMONITOR
+        bool "Exynos BUS Monitor support(logging / timeout)"
+        default y
+        depends on ARCH_EXYNOS
+
 menuconfig EXYNOS_SNAPSHOT
 	bool "Exynos SnapShot(ESS) support for debugging"
 	default y
