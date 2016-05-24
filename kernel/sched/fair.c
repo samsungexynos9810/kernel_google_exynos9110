@@ -9354,7 +9354,9 @@ static void task_tick_fair(struct rq *rq, struct task_struct *curr, int queued)
 		task_tick_numa(rq, curr);
 
 	update_rq_runnable_avg(rq, 1);
+#ifdef CONFIG_SMP
 	hp_event_update_rq_load(rq->cpu);
+#endif
 }
 
 /*
