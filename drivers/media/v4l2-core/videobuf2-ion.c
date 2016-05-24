@@ -956,6 +956,42 @@ int vb2_ion_buf_finish_exact(struct vb2_buffer *vb)
 }
 EXPORT_SYMBOL_GPL(vb2_ion_buf_finish_exact);
 
+void vb2_ion_detach_iommu(void *alloc_ctx)
+{
+	struct vb2_ion_context *ctx = alloc_ctx;
+
+	if (!ctx_iommu(ctx))
+		return;
+
+	mutex_lock(&ctx->lock);
+	BUG_ON(ctx->iommu_active_cnt == 0);
+
+	if (--ctx->iommu_active_cnt == 0 && !ctx->protected)
+		iovmm_deactivate(ctx->dev);
+	mutex_unlock(&ctx->lock);
+}
+EXPORT_SYMBOL_GPL(vb2_ion_detach_iommu);
+
+int vb2_ion_attach_iommu(void *alloc_ctx)
+{
+	struct vb2_ion_context *ctx = alloc_ctx;
+	int ret = 0;
+
+	if (!ctx_iommu(ctx))
+		return -ENOENT;
+
+	mutex_lock(&ctx->lock);
+	if (ctx->iommu_active_cnt == 0 && !ctx->protected)
+		ret = iovmm_activate(ctx->dev);
+	if (!ret)
+		ctx->iommu_active_cnt++;
+	mutex_unlock(&ctx->lock);
+
+	return ret;
+}
+EXPORT_SYMBOL_GPL(vb2_ion_attach_iommu);
+
+
 MODULE_AUTHOR("Cho KyongHo <pullip.cho@samsung.com>");
 MODULE_AUTHOR("Jinsung Yang <jsgood.yang@samsung.com>");
 MODULE_DESCRIPTION("Android ION allocator handling routines for videobuf2");
