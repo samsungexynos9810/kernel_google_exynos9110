@@ -40,7 +40,7 @@ struct exynos_ion_platform_heap {
 	struct ion_heap *heap;
 };
 
-static struct ion_platform_heap ion_noncontig_heap = {
+static struct ion_platform_heap ion_noncontig_heap __initdata = {
 	.name = "ion_noncontig_heap",
 	.type = ION_HEAP_TYPE_SYSTEM,
 	.id = EXYNOS_ION_HEAP_SYSTEM_ID,
@@ -476,8 +476,7 @@ static int __init exynos_ion_create_cma_devices(
 #endif
 
 
-static int exynos_ion_populate_heaps(struct platform_device *pdev,
-				     struct ion_device *ion_dev)
+static int __init exynos_ion_populate_heaps(struct ion_device *ion_dev)
 {
 	int i, ret;
 
@@ -510,64 +509,21 @@ err:
 	return ret;
 }
 
-static int __init exynos_ion_probe(struct platform_device *pdev)
+static int __init exynos_ion_init(void)
 {
 	int ret;
 
 	ion_exynos = ion_device_create(NULL);
-	if (IS_ERR_OR_NULL(ion_exynos)) {
+	if (IS_ERR(ion_exynos)) {
 		pr_err("%s: failed to create ion device\n", __func__);
 		return PTR_ERR(ion_exynos);
 	}
-
-	platform_set_drvdata(pdev, ion_exynos);
 
 	ret = exynos_ion_create_cma_class();
 	if (ret)
 		return ret;
 
-	return exynos_ion_populate_heaps(pdev, ion_exynos);
-}
-
-static int exynos_ion_remove(struct platform_device *pdev)
-{
-	struct ion_device *idev = platform_get_drvdata(pdev);
-	int i;
-
-	ion_device_destroy(idev);
-	for (i = 0; i < nr_heaps; i++)
-		ion_heap_destroy(plat_heaps[i].heap);
-
-	return 0;
-}
-
-static struct platform_driver exynos_ion_driver __refdata = {
-	.probe	= exynos_ion_probe,
-	.remove	= exynos_ion_remove,
-	.driver	= {
-		.owner		= THIS_MODULE,
-		.name		= "ion-exynos",
-	}
-};
-
-struct platform_device *exynos_ion_pdev;
-
-static int __init exynos_ion_init(void)
-{
-	struct platform_device_info pdevinfo = {
-		.parent = NULL,
-		.name = "ion-exynos",
-		.id = -1,
-		.res = NULL,
-		.num_res = 0,
-		.data = NULL,
-		.size_data = 0,
-		.dma_mask = DMA_BIT_MASK(32),
-	};
-	exynos_ion_pdev = platform_device_register_full(&pdevinfo);
-	if (IS_ERR(exynos_ion_pdev))
-		return PTR_ERR(exynos_ion_pdev);
-	return platform_driver_register(&exynos_ion_driver);
+	return exynos_ion_populate_heaps(ion_exynos);
 }
 
 subsys_initcall(exynos_ion_init);
