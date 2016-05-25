@@ -40,7 +40,6 @@ struct vb2_ion_context {
 	/* protects iommu_active_cnt and protected */
 	struct mutex		lock;
 	int			iommu_active_cnt;
-	bool			protected;
 };
 
 struct vb2_ion_buf {
@@ -243,7 +242,7 @@ void *vb2_ion_private_alloc(void *alloc_ctx, size_t size)
 	buf->ion = true;
 
 	mutex_lock(&ctx->lock);
-	if (ctx_iommu(ctx) && !ctx->protected) {
+	if (ctx_iommu(ctx)) {
 		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
 						   buf->size, 0, 0);
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
@@ -285,7 +284,7 @@ void vb2_ion_private_free(void *cookie)
 
 	ctx = buf->ctx;
 	mutex_lock(&ctx->lock);
-	if (ctx_iommu(ctx) && !ctx->protected)
+	if (ctx_iommu(ctx))
 		ion_iovmm_unmap(buf->attachment, buf->cookie.ioaddr);
 	mutex_unlock(&ctx->lock);
 
@@ -467,7 +466,7 @@ static int vb2_ion_map_dmabuf(void *mem_priv)
 	buf->cookie.paddr = sg_phys(buf->cookie.sgt->sgl) + buf->cookie.offset;
 
 	mutex_lock(&ctx->lock);
-	if (ctx_iommu(ctx) && !ctx->protected && buf->cookie.ioaddr == 0) {
+	if (ctx_iommu(ctx) && buf->cookie.ioaddr == 0) {
 		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
 					buf->size, buf->direction, 0);
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
@@ -510,7 +509,7 @@ static void vb2_ion_detach_dmabuf(void *mem_priv)
 	struct vb2_ion_context *ctx = buf->ctx;
 
 	mutex_lock(&ctx->lock);
-	if (buf->cookie.ioaddr && ctx_iommu(ctx) && !ctx->protected ) {
+	if (buf->cookie.ioaddr && ctx_iommu(ctx) ) {
 		ion_iovmm_unmap(buf->attachment, buf->cookie.ioaddr);
 		buf->cookie.ioaddr = 0;
 	}
@@ -696,13 +695,6 @@ static void *vb2_ion_get_userptr(void *alloc_ctx, unsigned long vaddr,
 	struct vb2_ion_buf *buf = NULL;
 	struct vm_area_struct *vma;
 	void *p_ret = ERR_PTR(-ENOMEM);;
-
-	if (ctx->protected) {
-		dev_err(ctx->dev,
-			"%s: protected mode is not supported with userptr\n",
-			__func__);
-		return ERR_PTR(-EINVAL);
-	}
 
 	vma = vb2_ion_get_vma(ctx->dev, vaddr, size);
 	if (!vma) {
@@ -966,7 +958,7 @@ void vb2_ion_detach_iommu(void *alloc_ctx)
 	mutex_lock(&ctx->lock);
 	BUG_ON(ctx->iommu_active_cnt == 0);
 
-	if (--ctx->iommu_active_cnt == 0 && !ctx->protected)
+	if (--ctx->iommu_active_cnt == 0)
 		iovmm_deactivate(ctx->dev);
 	mutex_unlock(&ctx->lock);
 }
@@ -981,7 +973,7 @@ int vb2_ion_attach_iommu(void *alloc_ctx)
 		return -ENOENT;
 
 	mutex_lock(&ctx->lock);
-	if (ctx->iommu_active_cnt == 0 && !ctx->protected)
+	if (ctx->iommu_active_cnt == 0)
 		ret = iovmm_activate(ctx->dev);
 	if (!ret)
 		ctx->iommu_active_cnt++;
@@ -996,4 +988,3 @@ MODULE_AUTHOR("Cho KyongHo <pullip.cho@samsung.com>");
 MODULE_AUTHOR("Jinsung Yang <jsgood.yang@samsung.com>");
 MODULE_DESCRIPTION("Android ION allocator handling routines for videobuf2");
 MODULE_LICENSE("GPL");
-
