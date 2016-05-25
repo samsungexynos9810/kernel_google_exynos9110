@@ -225,66 +225,87 @@ struct exynos_speedy {
 
 static void dump_speedy_register(struct exynos_speedy *speedy)
 {
-	dev_err(speedy->dev, "Register dump\n");
-
-	dev_err(speedy->dev, ": CTRL             0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_CTRL));
-	dev_err(speedy->dev, ": FIFO_CTRL        0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_FIFO_CTRL));
-	dev_err(speedy->dev, ": CMD              0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_CMD));
-	dev_err(speedy->dev, ": INT_ENABLE       0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_INT_ENABLE));
-	dev_err(speedy->dev, ": INT_STATUS       0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_INT_STATUS));
-	dev_err(speedy->dev, ": FIFO_STATUS      0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_FIFO_STATUS));
-	dev_err(speedy->dev, ": PACKET_GAP_TIME  0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_PACKET_GAP_TIME));
-	dev_err(speedy->dev, ": TIMEOUT_COUNT    0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_TIMEOUT_COUNT));
-	dev_err(speedy->dev, ": CTRL_STATUS      0x%08x\n"
-			   , readl(speedy->regs + SPEEDY_CTRL_STATUS));
+	dev_err(speedy->dev, "SPEEDY Register dump\n"
+		"	CTRL             0x%08x\n"
+		"	FIFO_CTRL        0x%08x\n"
+		"	CMD              0x%08x\n"
+		"	INT_ENABLE       0x%08x\n"
+		"	INT_STATUS       0x%08x\n"
+		"	FIFO_STATUS      0x%08x\n"
+		"	PACKET_GAP_TIME  0x%08x\n"
+		"	TIMEOUT_COUNT    0x%08x\n"
+		"	CTRL_STATUS      0x%08x\n"
+		, readl(speedy->regs + SPEEDY_CTRL)
+		, readl(speedy->regs + SPEEDY_FIFO_CTRL)
+		, readl(speedy->regs + SPEEDY_CMD)
+		, readl(speedy->regs + SPEEDY_INT_ENABLE)
+		, readl(speedy->regs + SPEEDY_INT_STATUS)
+		, readl(speedy->regs + SPEEDY_FIFO_STATUS)
+		, readl(speedy->regs + SPEEDY_PACKET_GAP_TIME)
+		, readl(speedy->regs + SPEEDY_TIMEOUT_COUNT)
+		, readl(speedy->regs + SPEEDY_CTRL_STATUS)
+	);
 }
 
 static void dump_batcher_register(struct exynos_speedy *speedy)
 {
 	int i = 0;
+	char buf_opcode[SZ_256];
+	char buf_payload[SZ_1K];
+	u32 len = 0;
 
-	dev_err(speedy->dev, "Batcher CON= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_CON));
-	dev_err(speedy->dev, "Batcher State= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_STATE));
-	dev_err(speedy->dev, "Batcher INT EN= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_INT_EN));
-	dev_err(speedy->dev, "Batcher FSM UNEXPEN= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_FSM_UNEXPEN));
-	dev_err(speedy->dev, "Batcher FSM TXEN= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_FSM_TXEN));
-	dev_err(speedy->dev, "Batcher FSM RXFIFO= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_FSM_RXFIFO));
-	dev_err(speedy->dev, "Batcher FSM CON= 0x%x\n",
-			readl(speedy->regs + IPBATCHER_FSM_CON));
-	dev_err(speedy->dev, "Batcher FIFO Status= 0x%x\n",
-			readl(speedy->regs + IP_FIFO_STATUS));
-	dev_err(speedy->dev, "Batcher INT Status= 0x%x\n",
-			readl(speedy->regs + IP_INT_STATUS));
-	dev_err(speedy->dev, "Batcher INTR UNEXP state= 0x%x\n",
-			readl(speedy->regs + IP_INTR_UNEXP_STATE));
-	dev_err(speedy->dev, "Batcher INTR TX state= 0x%x\n",
-			readl(speedy->regs + IP_INTR_TX_STATE));
-	dev_err(speedy->dev, "Batcher INTR RX state= 0x%x\n",
-			readl(speedy->regs + IP_INTR_RX_STATE));
+	dev_err(speedy->dev, "Batcher Register dump\n"
+		"	CON               0x%08x\n"
+		"	State             0x%08x\n"
+		"	INT_EN            0x%08x\n"
+		"	FSM_UNEXPEN       0x%08x\n"
+		"	FSM_TXEN          0x%08x\n"
+		"	FSM_RXFIFO        0x%08x\n"
+		"	FSM_CON           0x%08x\n"
+		"	FIFO_Status       0x%08x\n"
+		"	INT_Status        0x%08x\n"
+		"	INTR_UNEXP_state  0x%08x\n"
+		"	INTR_TX_state     0x%08x\n"
+		"	INTR_RX_state     0x%08x\n"
+		, readl(speedy->regs + IPBATCHER_CON)
+		, readl(speedy->regs + IPBATCHER_STATE)
+		, readl(speedy->regs + IPBATCHER_INT_EN)
+		, readl(speedy->regs + IPBATCHER_FSM_UNEXPEN)
+		, readl(speedy->regs + IPBATCHER_FSM_TXEN)
+		, readl(speedy->regs + IPBATCHER_FSM_RXFIFO)
+		, readl(speedy->regs + IPBATCHER_FSM_CON)
+		, readl(speedy->regs + IP_FIFO_STATUS)
+		, readl(speedy->regs + IP_INT_STATUS)
+		, readl(speedy->regs + IP_INTR_UNEXP_STATE)
+		, readl(speedy->regs + IP_INTR_TX_STATE)
+		, readl(speedy->regs + IP_INTR_RX_STATE)
+	);
+
+	len += snprintf(buf_opcode + len, sizeof(buf_opcode) - len,
+			"Batcher OPCODE dump\n");
 
 	for (i = 0; i < 7; i++) {
-		dev_err(speedy->dev, "Batcher OPCODE TABLE %d= 0x%x\n",
+		len += snprintf(buf_opcode + len, sizeof(buf_opcode) - len,
+			"OPCODE %d = 0x%08x\n",
 			i, readl(speedy->regs + (BATCHER_OPCODE + (i * 4))));
 	}
 
+	dev_err(speedy->dev, "%s", buf_opcode);
+
+	len = 0;
+	len += snprintf(buf_payload + len, sizeof(buf_payload) - len,
+			"Batcher PAYLOAD dump\n");
+
 	for (i = 0; i < 25; i++) {
-		dev_err(speedy->dev, "Batcher PAYLOAD FIELD %d= 0x%x\n",
+		len += snprintf(buf_payload + len, sizeof(buf_payload) - len,
+			"PAYLOAD %02d = 0x%08x   ",
 			i, readl(speedy->regs + (BATCHER_START_PAYLOAD + (i * 4))));
+		if (i % 5 == 4)
+			len += snprintf(buf_payload + len,
+					sizeof(buf_payload) - len, "\n");
 	}
+
+	dev_err(speedy->dev, "%s", buf_payload);
 }
 
 static void write_batcher(struct exynos_speedy *speedy, unsigned int description,
