@@ -72,24 +72,24 @@
 				#address-cells = <1>;
 				#size-cells = <0>;
 				reg = <0>;
-				clock-frequency = <0>;
-				#clock-cells = <0>;
+				clock-frequency = <24000000>;
+				#clock-cells = <1>;
 				clock-output-names = "xusbxti";
 			};
 
 			xxti: clock@1 {
 				compatible = "fixed-clock";
 				reg = <1>;
-				clock-frequency = <0>;
-				#clock-cells = <0>;
+				clock-frequency = <24000000>;
+				#clock-cells = <1>;
 				clock-output-names = "xxti";
 			};
 
 			xtcxo: clock@2 {
 				compatible = "fixed-clock";
 				reg = <2>;
-				clock-frequency = <0>;
-				#clock-cells = <0>;
+				clock-frequency = <24000000>;
+				#clock-cells = <1>;
 				clock-output-names = "xtcxo";
 			};
 		};
@@ -320,8 +320,8 @@
 			reg = <0x13800000 0x100>;
 			samsung,fifo-size = <256>;
 			interrupts = <0 109 0>;
-			clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>;
-			clock-names = "uart", "clk_uart_baud0";
+			clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>, <&cmu CLK_SCLK_UART0>;
+			clock-names = "gate_pclk0", "gate_uart0", "sclk_uart0";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart0_data &uart0_fctl>;
 			status = "okay";
@@ -332,8 +332,8 @@
 			reg = <0x13810000 0x100>;
 			samsung,fifo-size = <256>;
 			interrupts = <0 110 0>;
-			clocks = <&cmu CLK_UART1>, <&cmu CLK_SCLK_UART1>;
-			clock-names = "uart", "clk_uart_baud0";
+			clocks = <&cmu CLK_UART1>, <&cmu CLK_SCLK_UART1>, <&cmu CLK_SCLK_UART1>;
+			clock-names = "gate_pclk1", "gate_uart1", "sclk_uart1";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart1_data>;
 			status = "okay";
@@ -344,8 +344,8 @@
 			reg = <0x13820000 0x100>;
 			samsung,fifo-size = <16>;
 			interrupts = <0 111 0>;
-			clocks = <&cmu CLK_UART1>, <&cmu CLK_SCLK_UART1>;
-			clock-names = "uart", "clk_uart_baud0";
+			clocks = <&cmu CLK_UART1>, <&cmu CLK_SCLK_UART1>, <&cmu CLK_SCLK_UART1>;
+			clock-names = "gate_pclk2", "gate_uart2", "sclk_uart2";
 			pinctrl-names = "default";
 			pinctrl-0 = <&uart2_data>;
 			status = "okay";
