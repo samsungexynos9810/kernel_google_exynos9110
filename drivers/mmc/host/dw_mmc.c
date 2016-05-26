@@ -4088,6 +4088,7 @@ int dw_mci_probe(struct dw_mci *host)
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
 
+	exynos_update_ip_idle_status(host->idle_ip_index, 1);
 	return 0;
 
 err_workqueue:
@@ -4105,6 +4106,7 @@ err_clk_biu:
 	if (!IS_ERR(host->biu_clk))
 		clk_disable_unprepare(host->biu_clk);
 
+	exynos_update_ip_idle_status(host->idle_ip_index, 1);
 	return ret;
 }
 EXPORT_SYMBOL(dw_mci_probe);
