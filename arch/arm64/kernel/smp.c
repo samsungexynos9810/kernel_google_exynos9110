@@ -400,34 +400,8 @@ static int __init smp_cpu_setup(int cpu)
 	return 0;
 }
 
-static bool auto_cpu_mapping;
-
-bool arch_find_n_match_cpu_physical_id(struct device_node *cpun,
-					      int cpu, unsigned int *thread)
-{
-	int id;
-
-	if (auto_cpu_mapping) {
-		if (of_property_read_u32(cpun, "logical-id", &id))
-			return false;
-		if (cpu == id)
-			return true;
-	} else {
-		if (of_find_n_match_cpu_property(cpun, "reg", cpu, thread))
-			return true;
-	}
-
-	return false;
-}
-
-u64 __weak get_auto_cpu_hwid(u32 cpu)
-{
-	return INVALID_HWID;
-}
-
-
 static bool bootcpu_valid __initdata;
-static unsigned int cpu_count = 0;
+static unsigned int cpu_count = 1;
 
 #ifdef CONFIG_ACPI
 /*
@@ -507,8 +481,6 @@ acpi_parse_gic_cpu_interface(struct acpi_subtable_header *header,
 #define acpi_table_parse_madt(...)	do { } while (0)
 #endif
 
-extern void get_lot_id(void);
-
 /*
  * Enumerate the possible CPU set from the device tree and build the
  * cpu logical map array containing MPIDR values related to logical
@@ -516,24 +488,10 @@ extern void get_lot_id(void);
  */
 static void __init of_parse_and_init_cpus(void)
 {
-	struct device_node *dn;
+	struct device_node *dn = NULL;
 
-	if ((dn = of_find_node_by_path("/cpus/auto_cpu_mapping")))
-		auto_cpu_mapping = of_property_read_bool(dn, "enabled");
-
-	get_lot_id();
-
-	dn = NULL;
 	while ((dn = of_find_node_by_type(dn, "cpu"))) {
-		u64 hwid;
-
-		if (auto_cpu_mapping) {
-			/*
-			 * Get auto-mapped MPIDR value
-			 */
-			hwid = get_auto_cpu_hwid(cpu_count);
-		} else
-			hwid = of_get_cpu_mpidr(dn);
+		u64 hwid = of_get_cpu_mpidr(dn);
 
 		if (hwid == INVALID_HWID)
 			goto next;
@@ -559,7 +517,13 @@ static void __init of_parse_and_init_cpus(void)
 
 			bootcpu_valid = true;
 
-			goto next;
+			/*
+			 * cpu_logical_map has already been
+			 * initialized and the boot cpu doesn't need
+			 * the enable-method so continue without
+			 * incrementing cpu.
+			 */
+			continue;
 		}
 
 		if (cpu_count >= NR_CPUS)
