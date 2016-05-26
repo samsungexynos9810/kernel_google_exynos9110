@@ -523,7 +523,6 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem 
 {
 	int err;
 	struct mct_clock_event_device *mevt = this_cpu_ptr(&percpu_mct_tick);
-#if 0
 	struct clk *mct_clk, *tick_clk;
 
 	tick_clk = np ? of_clk_get_by_name(np, "fin_pll") :
@@ -536,9 +535,6 @@ static void __init exynos4_timer_resources(struct device_node *np, void __iomem 
 	if (IS_ERR(mct_clk))
 		panic("%s: unable to retrieve mct clock instance\n", __func__);
 	clk_prepare_enable(mct_clk);
-#endif
-
-	clk_rate = 24000000;
 
 	reg_base = base;
 	if (!reg_base)

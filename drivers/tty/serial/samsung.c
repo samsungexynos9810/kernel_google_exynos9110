@@ -1356,9 +1356,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	struct uart_port *port = &ourport->port;
 	struct s3c2410_uartcfg *cfg = ourport->cfg;
 	struct resource *res;
-#if 0
 	char clkname[MAX_CLK_NAME_LENGTH];
-#endif
 	int ret;
 
 	dbg("s3c24xx_serial_init_port: port=%p, platdev=%p\n", port, platdev);
@@ -1424,7 +1422,6 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	else
 		ourport->check_separated_clk = 0;
 
-#if 0
 	snprintf(clkname, sizeof(clkname), "gate_uart%d", ourport->port.line);
 	ourport->clk = clk_get(&platdev->dev, clkname);
 	if (IS_ERR(ourport->clk)) {
@@ -1456,7 +1453,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		clk_put(ourport->clk);
 		return ret;
 	}
-#endif
+
 	/* Keep all interrupts masked and cleared */
 	if (s3c24xx_serial_has_interrupt_mask(port)) {
 		wr_regl(port, S3C64XX_UINTM, 0xf);
