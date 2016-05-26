@@ -164,7 +164,7 @@ void *vb2_ion_create_context(struct device *dev, size_t alignment, long flags)
 		return ERR_PTR(-ENOMEM);
 
 	ctx->dev = dev;
-	ctx->client = ion_client_create(ion_exynos, dev_name(dev));
+	ctx->client = exynos_ion_client_create(dev_name(dev));
 	if (IS_ERR(ctx->client)) {
 		void *retp = ctx->client;
 		kfree(ctx);
