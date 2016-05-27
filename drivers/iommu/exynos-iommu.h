@@ -206,6 +206,7 @@ struct sysmmu_drvdata {
 	phys_addr_t pgtable;		/* assigned page table structure */
 	int version;			/* our version */
 	struct atomic_notifier_head fault_notifiers;
+	bool is_suspended;
 };
 
 struct exynos_vm_region {
@@ -274,7 +275,7 @@ static inline bool set_sysmmu_inactive(struct sysmmu_drvdata *data)
 
 static inline bool is_sysmmu_active(struct sysmmu_drvdata *data)
 {
-	return data->activations > 0;
+	return !data->is_suspended && data->activations > 0;
 }
 
 static inline void __raw_sysmmu_enable(void __iomem *sfrbase)
