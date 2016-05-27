@@ -200,7 +200,6 @@ static int __fill_v4l2_buffer(struct vb2_buffer *vb, void *pb)
 	b->timecode = vbuf->timecode;
 	b->sequence = vbuf->sequence;
 	b->reserved2 = 0;
-	b->reserved = 0;
 
 	if (V4L2_TYPE_IS_MULTIPLANAR(b->type)) {
 		/*
