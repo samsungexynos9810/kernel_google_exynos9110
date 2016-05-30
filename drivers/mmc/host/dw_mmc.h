@@ -187,11 +187,26 @@
  * as they are written to memory to be dealt with by the upper layers */
 #define mci_fifo_readw(__reg)	__raw_readw(__reg)
 #define mci_fifo_readl(__reg)	__raw_readl(__reg)
+#ifdef CONFIG_MMC_DW_FORCE_32BIT_SFR_RW
+#define mci_fifo_readq(__reg) ({\
+		u64 __ret = 0;\
+		u32* ptr = (u32*)&__ret;\
+		*ptr++ = __raw_readl(__reg);\
+		*ptr = __raw_readl(__reg + 0x4);\
+		__ret;\
+		})
+#define mci_fifo_writeq(__reg, value) ({\
+		u32 *ptr = (u32*)&(value);\
+		__raw_writel(*ptr++, __reg);\
+		__raw_writel(*ptr, __reg + 0x4);\
+		})
+#else
 #define mci_fifo_readq(__reg)	__raw_readq(__reg)
+#define mci_fifo_writeq(__value, __reg)	__raw_writeq(__reg, __value)
+#endif /* CONFIG_MMC_DW_FORCE_32BIT_SFR_RW */
 
 #define mci_fifo_writew(__value, __reg)	__raw_writew(__reg, __value)
 #define mci_fifo_writel(__value, __reg)	__raw_writel(__reg, __value)
-#define mci_fifo_writeq(__value, __reg)	__raw_writeq(__reg, __value)
 
 /* Register access macros */
 #define mci_readl(dev, reg)			\
