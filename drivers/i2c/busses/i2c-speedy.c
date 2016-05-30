@@ -663,7 +663,7 @@ static int speedy_batcher_wait_complete(struct exynos_speedy *speedy)
 				break;
 			}
 		} else {
-			udelay(100);
+			udelay(10);
 		}
 	}
 
