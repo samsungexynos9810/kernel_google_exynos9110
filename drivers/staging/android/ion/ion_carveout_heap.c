@@ -22,6 +22,7 @@
 #include <linux/ion.h>
 #include <linux/mm.h>
 #include <linux/scatterlist.h>
+#include <linux/seq_file.h>
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/exynos_ion.h>
