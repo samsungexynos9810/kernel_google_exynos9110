@@ -186,6 +186,7 @@ static int dw_mci_exynos_priv_init(struct dw_mci *host)
 /*
  * By-pass Security Management Unit
  */
+#if defined(CONFIG_FMP)
 void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 {
 	volatile unsigned int reg;
@@ -197,6 +198,7 @@ void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 	mci_writel(host, MPSEND0, DWMCI_BLOCK_NUM);
 	mci_writel(host, MPSCTRL0, DWMCI_MPSCTRL_BYPASS);
 }
+#endif
 
 static void dw_mci_exynos_set_clksel_timing(struct dw_mci *host, u32 timing)
 {
@@ -1196,7 +1198,9 @@ static const struct dw_mci_drv_data exynos_drv_data = {
 	.set_ios		= dw_mci_exynos_set_ios,
 	.parse_dt		= dw_mci_exynos_parse_dt,
 	.execute_tuning		= dw_mci_exynos_execute_tuning,
+#if defined(CONFIG_FMP)
 	.cfg_smu                = dw_mci_exynos_cfg_smu,
+#endif
 	.misc_control           = dw_mci_exynos_misc_control,
 };
 
