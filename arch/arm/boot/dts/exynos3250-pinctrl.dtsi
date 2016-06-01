@@ -408,6 +408,48 @@
 		samsung,pin-drv = <3>;
 	};
 
+	sd0_clk_fast_slew_rate_1x: sd0-clk_fast_slew_rate_1x {
+		samsung,pins = "gpk0-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <0>;
+	};
+
+	sd0_clk_fast_slew_rate_2x: sd0-clk_fast_slew_rate_2x {
+		samsung,pins = "gpk0-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <1>;
+	};
+
+	sd0_clk_fast_slew_rate_3x: sd0-clk_fast_slew_rate_3x {
+		samsung,pins = "gpk0-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <2>;
+	};
+
+	sd0_clk_fast_slew_rate_4x: sd0-clk_fast_slew_rate_4x {
+		samsung,pins = "gpk0-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <3>;
+	};
+
+	sd0_clk_fast_slew_rate_5x: sd0-clk_fast_slew_rate_5x {
+		samsung,pins = "gpk0-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <4>;
+	};
+
+	sd0_clk_fast_slew_rate_6x: sd0-clk_fast_slew_rate_6x {
+		samsung,pins = "gpk0-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <5>;
+	};
+
 	sd1_clk: sd1-clk {
 		samsung,pins = "gpk1-0";
 		samsung,pin-function = <2>;
@@ -440,6 +482,34 @@
 		samsung,pins = "gpk1-4", "gpk1-5", "gpk1-6";
 		samsung,pin-function = <2>;
 		samsung,pin-pud = <3>;
+		samsung,pin-drv = <3>;
+	};
+
+	sd1_clk_fast_slew_rate_1x: sd1-clk_fast_slew_rate_1x {
+		samsung,pins = "gpk1-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <0>;
+	};
+
+	sd1_clk_fast_slew_rate_2x: sd1-clk_fast_slew_rate_2x {
+		samsung,pins = "gpk1-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <1>;
+	};
+
+	sd1_clk_fast_slew_rate_3x: sd1-clk_fast_slew_rate_3x {
+		samsung,pins = "gpk1-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
+		samsung,pin-drv = <2>;
+	};
+
+	sd1_clk_fast_slew_rate_4x: sd1-clk_fast_slew_rate_4x {
+		samsung,pins = "gpk1-0";
+		samsung,pin-function = <2>;
+		samsung,pin-pud = <0>;
 		samsung,pin-drv = <3>;
 	};
 

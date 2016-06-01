@@ -27,8 +27,8 @@
 	aliases {
 		pinctrl0 = &pinctrl_0;
 		pinctrl1 = &pinctrl_1;
-		mshc0 = &mshc_0;
-		mshc1 = &mshc_1;
+		mshc0 = &dwmmc_0;
+		mshc1 = &dwmmc_1;
 		spi0 = &spi_0;
 		spi1 = &spi_1;
 		i2c0 = &i2c_0;
@@ -55,6 +55,30 @@
 			clock-frequency = <1000000000>;
 		};
 
+	};
+
+	dwmmc_0: dwmmc0@12510000 {
+		compatible = "samsung,exynos-dw-mshc";
+		reg = <0x12510000 0x1000>;
+		interrupts = <0 142 0>;
+		clocks = <&cmu CLK_SDMMC0>, <&cmu CLK_SCLK_MMC0>;
+		clock-names = "biu", "ciu";
+		fifo-depth = <0x80>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
+	};
+
+	dwmmc_1: dwmmc1@12520000 {
+		compatible = "samsung,exynos-dw-mshc";
+		reg = <0x12520000 0x1000>;
+		interrupts = <0 143 0>;
+		clocks = <&cmu CLK_SDMMC1>, <&cmu CLK_SCLK_MMC1>;
+		clock-names = "biu", "ciu";
+		fifo-depth = <0x80>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		status = "disabled";
 	};
 
 	soc: soc {
@@ -245,30 +269,6 @@
 			phy-names = "dsim";
 			clocks = <&cmu CLK_DSIM0>, <&cmu CLK_SCLK_MIPI0>;
 			clock-names = "bus_clk", "pll_clk";
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "disabled";
-		};
-
-		mshc_0: mshc@12510000 {
-			compatible = "samsung,exynos5250-dw-mshc";
-			reg = <0x12510000 0x1000>;
-			interrupts = <0 142 0>;
-			clocks = <&cmu CLK_SDMMC0>, <&cmu CLK_SCLK_MMC0>;
-			clock-names = "biu", "ciu";
-			fifo-depth = <0x80>;
-			#address-cells = <1>;
-			#size-cells = <0>;
-			status = "disabled";
-		};
-
-		mshc_1: mshc@12520000 {
-			compatible = "samsung,exynos5250-dw-mshc";
-			reg = <0x12520000 0x1000>;
-			interrupts = <0 143 0>;
-			clocks = <&cmu CLK_SDMMC1>, <&cmu CLK_SCLK_MMC1>;
-			clock-names = "biu", "ciu";
-			fifo-depth = <0x80>;
 			#address-cells = <1>;
 			#size-cells = <0>;
 			status = "disabled";
