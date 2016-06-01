@@ -954,12 +954,16 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 								i++, p++) {
 			addr = host->sg_dma + (sizeof(struct idmac_desc_64addr) *
 					(i + 1));
+#ifdef CONFIG_MMC_DW_64BIT_DESC
 			IDMAC_64ADDR_SET_DESC_ADDR(p,addr);
+#endif
 			IDMAC_64ADDR_SET_DESC_CLEAR(p);
 		}
 
+#ifdef CONFIG_MMC_DW_64BIT_DESC
 		/* Set the last descriptor as the end-of-ring descriptor */
 		IDMAC_64ADDR_SET_DESC_ADDR(p, host->sg_dma);
+#endif
 		p->des0 = IDMAC_DES0_ER;
 
 	} else {
