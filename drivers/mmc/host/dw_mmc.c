@@ -1844,10 +1844,10 @@ static int dw_mci_get_cd(struct mmc_host *mmc)
 	spin_lock_bh(&host->lock);
 	if (present) {
 		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
-		dev_info(&mmc->class_dev, "card is present\n");
+//		dev_info(&mmc->class_dev, "card is present\n");
 	} else {
 		clear_bit(DW_MMC_CARD_PRESENT, &slot->flags);
-		dev_info(&mmc->class_dev, "card is not present\n");
+//		dev_info(&mmc->class_dev, "card is not present\n");
 	}
 	spin_unlock_bh(&host->lock);
 
