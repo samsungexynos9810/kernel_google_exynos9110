@@ -358,8 +358,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x13860000 0x100>;
 			interrupts = <0 113 0>;
-			clocks = <&cmu CLK_I2C0>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C0>, <&cmu CLK_I2C0>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c0_bus>;
 			status = "disabled";
@@ -371,8 +371,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x13870000 0x100>;
 			interrupts = <0 114 0>;
-			clocks = <&cmu CLK_I2C1>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C1>, <&cmu CLK_I2C1>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c1_bus>;
 			status = "disabled";
@@ -384,8 +384,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x13880000 0x100>;
 			interrupts = <0 115 0>;
-			clocks = <&cmu CLK_I2C2>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C2>, <&cmu CLK_I2C2>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c2_bus>;
 			status = "disabled";
@@ -397,8 +397,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x13890000 0x100>;
 			interrupts = <0 116 0>;
-			clocks = <&cmu CLK_I2C3>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C3>, <&cmu CLK_I2C3>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c3_bus>;
 			status = "disabled";
@@ -410,8 +410,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x138A0000 0x100>;
 			interrupts = <0 117 0>;
-			clocks = <&cmu CLK_I2C4>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C4>, <&cmu CLK_I2C4>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c4_bus>;
 			status = "disabled";
@@ -423,8 +423,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x138B0000 0x100>;
 			interrupts = <0 118 0>;
-			clocks = <&cmu CLK_I2C5>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C5>, <&cmu CLK_I2C5>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c5_bus>;
 			status = "disabled";
@@ -436,8 +436,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x138C0000 0x100>;
 			interrupts = <0 119 0>;
-			clocks = <&cmu CLK_I2C6>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C6>, <&cmu CLK_I2C6>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c6_bus>;
 			status = "disabled";
@@ -449,8 +449,8 @@
 			compatible = "samsung,s3c2440-i2c";
 			reg = <0x138D0000 0x100>;
 			interrupts = <0 120 0>;
-			clocks = <&cmu CLK_I2C7>;
-			clock-names = "i2c";
+			clocks = <&cmu CLK_I2C7>, <&cmu CLK_I2C7>;
+			clock-names = "rate_i2c", "gate_i2c";
 			pinctrl-names = "default";
 			pinctrl-0 = <&i2c7_bus>;
 			status = "disabled";
