@@ -18,8 +18,8 @@
 	compatible = "samsung,KOI", "samsung,SHIRI", "samsung,exynos3250";
 
 	chosen {
-		//bootargs = "earlycon=exynos,io,0x13820000,115200n8 console=ttySAC2,115200 vmalloc=256M ess_setup=0x46000000";
-		bootargs = "earlycon=exynos,io,0x13820000,115200n8 console=ttySAC2,115200 vmalloc=256M root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M init=/linuxrc";
+		bootargs = "earlycon=exynos,io,0x13820000,115200n8 console=ttySAC2,115200 vmalloc=256M ess_setup=0x46000000";
+		//bootargs = "earlycon=exynos,io,0x13820000,115200n8 console=ttySAC2,115200 vmalloc=256M root=/dev/ram0 rw ramdisk=8192 initrd=0x41000000,8M init=/linuxrc";
 		//bootargs = "console=ttySAC2,115200 vmalloc=256M ess_setup=0x46000000";
 	};
 
