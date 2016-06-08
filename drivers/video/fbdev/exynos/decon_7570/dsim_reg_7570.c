@@ -1208,7 +1208,11 @@ void dsim_reg_set_int(u32 id, u32 en)
 		DSIM_INTMSK_FRAME_DONE | DSIM_INTMSK_RX_DATA_DONE |
 		DSIM_INTMSK_ERR_RX_ECC;
 
+	if (en == 1)
+		dsim_write(id, DSIM_INTSRC, ~0);
 	dsim_write_mask(id, DSIM_INTMSK, val, mask);
+	if (en == 0)
+		dsim_write(id, DSIM_INTSRC, ~0);
 }
 
 u32 dsim_reg_rx_fifo_is_empty(u32 id)
