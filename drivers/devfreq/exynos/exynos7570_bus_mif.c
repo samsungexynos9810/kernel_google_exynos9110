@@ -32,6 +32,10 @@
 #include "../../../drivers/soc/samsung/pwrcal/S5E7570/S5E7570-vclk.h"
 #include "../governor.h"
 
+#ifdef CONFIG_SHARE_MIF_FREQ_INFO
+#include <linux/shm_ipc.h>
+#endif
+
 #define DEVFREQ_MIF_SWITCH_FREQ	(830000)
 
 u32 sw_volt_table;
@@ -41,6 +45,14 @@ int is_dll_on(void)
 	return cal_dfs_ext_ctrl(dvfs_mif, cal_dfs_mif_is_dll_on, 0);
 }
 EXPORT_SYMBOL_GPL(is_dll_on);
+
+static int exynos7570_devfreq_mif_set_freq_post(struct exynos_devfreq_data *data)
+{
+#ifdef CONFIG_SHARE_MIF_FREQ_INFO
+	shm_set_mif_freq(data->new_freq);
+#endif
+	return 0;
+}
 
 static int exynos7570_devfreq_mif_cmu_dump(struct exynos_devfreq_data *data)
 {
@@ -264,6 +276,7 @@ static int __init exynos7570_devfreq_mif_init_prepare(struct exynos_devfreq_data
 	data->ops.cl_dvfs_start = exynos7570_devfreq_cl_dvfs_start;
 	data->ops.cl_dvfs_stop = exynos7570_devfreq_cl_dvfs_stop;
 	data->ops.cmu_dump = exynos7570_devfreq_mif_cmu_dump;
+	data->ops.set_freq_post = exynos7570_devfreq_mif_set_freq_post;
 
 	return 0;
 }
