@@ -628,7 +628,7 @@ static struct vm_area_struct *vb2_ion_get_vma(struct device *dev,
 		return NULL;
 	}
 
-	while (new_vma->vm_prev)
+	while (new_vma && new_vma->vm_prev)
 		new_vma = new_vma->vm_prev;
 
 	return new_vma;
