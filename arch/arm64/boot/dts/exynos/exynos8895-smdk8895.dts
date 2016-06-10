@@ -40,4 +40,63 @@
 		status = "okay";
 	};
 
+	usi_0: usi@10421000 {
+		usi_mode = "hsi2c0";
+		status = "okay";
+	};
+
+	usi_1: usi@10421004 {
+		usi_mode = "hsi2c0";
+		status = "okay";
+	};
+
+	usi_3: usi@1042100C {
+		usi_mode = "spi";
+		status = "okay";
+	};
+
+	usi_4: usi@10821008 {
+		usi_mode = "spi";
+		status = "okay";
+	};
+
+	usi_5: usi@1082100C {
+		usi_mode = "spi";
+		status = "okay";
+	};
+
+	usi_6: usi@10821010 {
+		usi_mode = "spi";
+		status = "okay";
+	};
+
+	usi_7: usi@10821014 {
+		usi_mode = "hsi2c1";
+		status = "okay";
+	};
+
+	usi_9: usi@1082101C {
+		usi_mode = "hsi2c0";
+		status = "okay";
+	};
+
+	usi_10: usi@10821020 {
+		usi_mode = "hsi2c0_hsi2c1";
+		status = "okay";
+	};
+
+	usi_11: usi@10821024 {
+		usi_mode = "hsi2c0";
+		status = "okay";
+	};
+
+	usi_12: usi@10821028 {
+		usi_mode = "hsi2c0_hsi2c1";
+		status = "okay";
+	};
+
+	usi_13: usi@1082102C {
+		usi_mode = "hsi2c0_hsi2c1";
+		status = "okay";
+	};
 };
