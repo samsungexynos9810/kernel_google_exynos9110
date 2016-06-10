@@ -64,6 +64,13 @@
 #define ESS_NR_CPUS			NR_CPUS
 #define ESS_ITEM_MAX_NUM		10
 
+#define ESS_MISC_0_SZ			(SZ_256K)
+#define ESS_MISC_1_SZ			(SZ_256K)
+#define ESS_MISC_2_SZ			(SZ_1M + SZ_256K)
+#define ESS_MISC_0_OFFSET		(0)					/* 256K */
+#define ESS_MISC_1_OFFSET		(ESS_MISC_0_OFFSET + ESS_MISC_0_SZ)	/* 256K */
+#define ESS_MISC_2_OFFSET		(ESS_MISC_1_OFFSET + ESS_MISC_1_SZ)	/* 1M + 256K */
+
 /* Sign domain */
 #define ESS_SIGN_RESET			0x0
 #define ESS_SIGN_RESERVED		0x1
@@ -418,6 +425,7 @@ struct exynos_ss_desc {
 	unsigned int log_kernel_num;
 	unsigned int log_platform_num;
 	unsigned int log_sfr_num;
+	unsigned int log_misc_num;
 	unsigned int log_pstore_num;
 	unsigned int log_etm_num;
 	bool need_header;
@@ -471,6 +479,9 @@ static struct exynos_ss_item ess_items[] = {
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
 	{"log_sfr",	{SZ_4M,		0, 0, false, true, true}, NULL ,NULL, 0},
+#endif
+#ifdef CONFIG_EXYNOS_SNAPSHOT_MISC
+	{"log_misc",	{SZ_2M,		0, 0, false, false, false}, NULL ,NULL, 0},
 #endif
 #ifdef CONFIG_EXYNOS_SNAPSHOT_PSTORE
 	{"log_pstore",	{SZ_2M,		0, 0, true, true, true}, NULL ,NULL, 0},
@@ -908,6 +919,29 @@ int exynos_ss_save_context(void *v_regs)
 	return 0;
 }
 EXPORT_SYMBOL(exynos_ss_save_context);
+
+int exynos_ss_set_enable_init(const char *name, int en)
+{
+	struct exynos_ss_item *item = NULL;
+	unsigned long i;
+
+	if (!strncmp(name, "base", strlen(name))) {
+		ess_base.enabled_init = en;
+		pr_info("exynos-snapshot: %sabled_init\n", en ? "en" : "dis");
+	} else {
+		for (i = 0; i < ARRAY_SIZE(ess_items); i++) {
+			if (!strncmp(ess_items[i].name, name, strlen(name))) {
+				item = &ess_items[i];
+				item->entry.enabled_init = en;
+				pr_info("exynos-snapshot: item - %s is %sabled_init\n",
+						name, en ? "en" : "dis");
+				break;
+			}
+		}
+	}
+	return 0;
+}
+EXPORT_SYMBOL(exynos_ss_set_enable_init);
 
 int exynos_ss_set_enable(const char *name, int en)
 {
@@ -1393,6 +1427,71 @@ void exynos_ss_panic_handler_safe(struct pt_regs *regs)
 
 }
 
+#ifdef CONFIG_EXYNOS_SNAPSHOT_MISC
+static int __init exynos_ss_init_misc(void)
+{
+	unsigned int val;
+	int ret;
+
+	if (!exynos_ss_get_enable("log_misc", true))
+		goto out;
+
+	ret = exynos_pmu_read(0xb00, &val);
+	if (ret) {
+		pr_err("exynos-snapshot: misc reserved failed\n");
+		goto out;
+	}
+
+	/* Configuration */
+	val |= 0x1;
+	ret = exynos_pmu_write(0xb00, val);
+
+	/* len */
+	ret = exynos_pmu_write(0xb0C, ESS_MISC_0_SZ);
+	ret |= exynos_pmu_write(0xb14, ESS_MISC_1_SZ);
+	ret |= exynos_pmu_write(0xb1c, ESS_MISC_2_SZ);
+	if (ret) {
+		pr_err("exynos-snapshot: misc writing len failed\n");
+		goto out;
+	}
+	/* addr */
+	ret = exynos_pmu_write(0xb08, (exynos_ss_get_item_paddr("log_misc") +
+					ESS_MISC_0_OFFSET) >> 12);
+	ret |= exynos_pmu_write(0xb10, (exynos_ss_get_item_paddr("log_misc") +
+					ESS_MISC_1_OFFSET) >> 12);
+	ret |= exynos_pmu_write(0xb18, (exynos_ss_get_item_paddr("log_misc") +
+					ESS_MISC_2_OFFSET) >> 12);
+	if (ret) {
+		pr_err("exynos-snapshot: misc writing addr failed\n");
+		goto out;
+	}
+	/* mask */
+	ret = exynos_pmu_write(0xb20, 0xffffffff);
+	if (ret) {
+		pr_err("exynos-snapshot: misc writing mask failed\n");
+		goto out;
+	}
+
+	/* dumpGPR disable */
+	ret = exynos_pmu_write(0x500, 0x0);
+	if (ret) {
+		pr_err("exynos-snapshot: misc disabling dumpGPR failed\n");
+		goto out;
+	} else
+		pr_info("exynos-snapshot: misc disabling dumpGPR\n");
+
+	/* enable */
+	ret = exynos_pmu_write(0xb04, 0x0301);
+	if (ret) {
+		pr_err("exynos-snapshot: misc writing enable failed\n");
+		goto out;
+	}
+out:
+	return 0;
+}
+fs_initcall(exynos_ss_init_misc);
+#endif
+
 static size_t __init exynos_ss_remap(unsigned int base, unsigned int size)
 {
 	struct map_desc ess_iodesc;
@@ -1457,6 +1556,8 @@ static int __init exynos_ss_init_desc(void)
 			ess_desc.log_platform_num = i;
 		else if (!strncmp(ess_items[i].name, "log_sfr", len))
 			ess_desc.log_sfr_num = i;
+		else if (!strncmp(ess_items[i].name, "log_misc", len))
+			ess_desc.log_misc_num = i;
 		else if (!strncmp(ess_items[i].name, "log_pstore", len))
 			ess_desc.log_pstore_num = i;
 		else if (!strncmp(ess_items[i].name, "log_etm", len))
@@ -1474,8 +1575,24 @@ static int __init exynos_ss_setup(char *str)
 	unsigned long i;
 	size_t size = 0;
 	size_t base = 0;
+	char *move;
+	char *addr, *option;
 
-	if (kstrtoul(str, 0, (unsigned long *)&base))
+	move = strchr((const char *)str, ',');
+	if (!move) {
+		addr = str;
+	} else {
+		addr = strsep(&str, ",");
+		option = strsep(&str, " ");
+
+		/* options */
+		if (!strncmp(option, "log_misc", strlen("log_misc"))) {
+			exynos_ss_set_enable_init("log_misc", true);
+			exynos_ss_set_enable("log_misc", true);
+		}
+	}
+
+	if (kstrtoul(addr, 0, (unsigned long *)&base))
 		goto out;
 
 	exynos_ss_init_desc();

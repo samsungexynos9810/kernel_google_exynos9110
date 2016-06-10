@@ -130,6 +130,11 @@ config EXYNOS_SNAPSHOT_SFRDUMP
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	default y
 
+config EXYNOS_SNAPSHOT_MISC
+	bool "Support MISC for debugging"
+	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
+	default y
+
 config EXYNOS_SNAPSHOT_MINIMIZED_MODE
 	bool "Support minimized feature configuration"
 	depends on EXYNOS_SNAPSHOT
