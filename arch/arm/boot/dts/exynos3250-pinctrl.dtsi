@@ -359,6 +359,18 @@
 		#interrupt-cells = <2>;
 	};
 
+	pmic_irq: ext-int2 {
+		samsung,pins = "gpx0-2";
+		samsung,pin-function = <0xf>;
+		samsung,pin-pud = <3>;
+		samsung,pin-drv = <3>;
+	};
+
+	pm_wrsti: xgpio9 {
+		samsung,pins = "gpe1-1";
+		samsung,pin-con-pdn = <3>;
+	};
+
 	sd0_clk: sd0-clk {
 		samsung,pins = "gpk0-0";
 		samsung,pin-function = <2>;
