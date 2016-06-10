@@ -4,20 +4,21 @@
  * Copyright (c) 2014 Samsung Electronics Co., Ltd
  *              http://www.samsung.com
  *
- * This program is free software; you can redistribute  it and/or modify it
- * under  the terms of  the GNU General  Public License as published by the
- * Free Software Foundation;  either version 2 of the  License, or (at your
- * option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ *  This program is free software; you can redistribute  it and/or modify it
+ *  under  the terms of  the GNU General  Public License as published by the
+ *  Free Software Foundation;  either version 2 of the  License, or (at your
+ *  option) any later version.
  *
  */
 
 #ifndef __LINUX_MFD_S2MPS14_H
 #define __LINUX_MFD_S2MPS14_H
+
+/* S2MPS14 Revision Number */
+enum s2mps14_revision_number {
+	S2MPS14_REV_00 = 0x00,
+	S2MPS14_REV_01 = 0x01,
+};
 
 /* S2MPS14 registers */
 enum s2mps14_reg {
@@ -33,19 +34,19 @@ enum s2mps14_reg {
 	S2MPS14_REG_PWRONSRC,
 	S2MPS14_REG_OFFSRC,
 	S2MPS14_REG_BU_CHG,
-	S2MPS14_REG_RTCCTRL,
+	S2MPS14_REG_RTC_BUF,
 	S2MPS14_REG_CTRL1,
 	S2MPS14_REG_CTRL2,
-	S2MPS14_REG_RSVD1,
-	S2MPS14_REG_RSVD2,
-	S2MPS14_REG_RSVD3,
-	S2MPS14_REG_RSVD4,
-	S2MPS14_REG_RSVD5,
-	S2MPS14_REG_RSVD6,
+	S2MPS14_REG_ETC_TEST,
+	S2MPS14_REG_OTP_ADRL,
+	S2MPS14_REG_OTP_ADRH,
+	S2MPS14_REG_OTP_DATA,
+	S2MPS14_REG_MON1SEL,
+	S2MPS14_REG_MON2SEL,
 	S2MPS14_REG_CTRL3,
-	S2MPS14_REG_RSVD7,
-	S2MPS14_REG_RSVD8,
-	S2MPS14_REG_WRSTBI,
+	S2MPS14_REG_ETC_OTP,
+	S2MPS14_REG_UVLO_OTP,
+	S2MPS14_REG_LEE_NO,
 	S2MPS14_REG_B1CTRL1,
 	S2MPS14_REG_B1CTRL2,
 	S2MPS14_REG_B2CTRL1,
@@ -81,12 +82,12 @@ enum s2mps14_reg {
 	S2MPS14_REG_L23CTRL,
 	S2MPS14_REG_L24CTRL,
 	S2MPS14_REG_L25CTRL,
-	S2MPS14_REG_LDODSCH1,
-	S2MPS14_REG_LDODSCH2,
-	S2MPS14_REG_LDODSCH3,
+	S2MPS14_REG_LDO_DSCH1,
+	S2MPS14_REG_LDO_DSCH2,
+	S2MPS14_REG_LDO_DSCH3,
 };
 
-/* S2MPS14 regulator ids */
+/* s2mps14 regulator ids */
 enum s2mps14_regulators {
 	S2MPS14_LDO1,
 	S2MPS14_LDO2,
@@ -113,34 +114,38 @@ enum s2mps14_regulators {
 	S2MPS14_LDO23,
 	S2MPS14_LDO24,
 	S2MPS14_LDO25,
+
 	S2MPS14_BUCK1,
 	S2MPS14_BUCK2,
 	S2MPS14_BUCK3,
 	S2MPS14_BUCK4,
 	S2MPS14_BUCK5,
 
-	S2MPS14_REGULATOR_MAX,
+	S2MPS14_AP_EN32KHZ,
+	S2MPS14_CP_EN32KHZ,
+	S2MPS14_BT_EN32KHZ,
+
+	S2MPS14_REG_MAX,
 };
 
-/* Regulator constraints for BUCKx */
-#define S2MPS14_BUCK1235_START_SEL	0x20
-#define S2MPS14_BUCK4_START_SEL		0x40
-/*
- * Default ramp delay in uv/us. Datasheet says that ramp delay can be
- * controlled however it does not specify which register is used for that.
- * Let's assume that default value will be set.
- */
-#define S2MPS14_BUCK_RAMP_DELAY		12500
+#define S2MPS14_BUCK_MIN1	400000
+#define S2MPS14_BUCK_MIN2	600000
+#define S2MPS14_LDO_MIN1	800000
+#define S2MPS14_LDO_MIN2	1800000
+#define S2MPS14_BUCK_STEP1	6250
+#define S2MPS14_BUCK_STEP2	12500
+#define S2MPS14_LDO_STEP1	12500
+#define S2MPS14_LDO_STEP2	25000
+#define S2MPS14_LDO_VSEL_MASK	0x3F
+#define S2MPS14_BUCK_VSEL_MASK	0xFF
+#define S2MPS14_ENABLE_MASK	(0x03 << S2MPS14_ENABLE_SHIFT)
+#define S2MPS14_RAMP_DELAY	12000
 
-#define S2MPS14_LDO_VSEL_MASK		0x3F
-#define S2MPS14_BUCK_VSEL_MASK		0xFF
-#define S2MPS14_ENABLE_MASK		(0x03 << S2MPS14_ENABLE_SHIFT)
-#define S2MPS14_ENABLE_SHIFT		6
-/* On/Off controlled by PWREN */
-#define S2MPS14_ENABLE_SUSPEND		(0x01 << S2MPS14_ENABLE_SHIFT)
-/* On/Off controlled by LDO10EN or EMMCEN */
-#define S2MPS14_ENABLE_EXT_CONTROL	(0x00 << S2MPS14_ENABLE_SHIFT)
-#define S2MPS14_LDO_N_VOLTAGES		(S2MPS14_LDO_VSEL_MASK + 1)
-#define S2MPS14_BUCK_N_VOLTAGES		(S2MPS14_BUCK_VSEL_MASK + 1)
+#define S2MPS14_ENABLE_SHIFT	0x06
+#define S2MPS14_LDO_N_VOLTAGES	(S2MPS14_LDO_VSEL_MASK + 1)
+#define S2MPS14_BUCK_N_VOLTAGES (S2MPS14_BUCK_VSEL_MASK + 1)
+
+#define S2MPS14_PMIC_EN_SHIFT	6
+#define S2MPS14_REGULATOR_MAX (S2MPS14_REG_MAX)
 
 #endif /*  __LINUX_MFD_S2MPS14_H */
