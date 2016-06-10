@@ -116,7 +116,7 @@ enum exynos3250_dmc_plls {
 	nr_dmc_plls
 };
 
-static void __iomem *reg_base;
+void __iomem *reg_base;
 static void __iomem *dmc_reg_base;
 
 /*
@@ -374,11 +374,11 @@ static struct samsung_mux_clock mux_clks[] __initdata = {
 	MUX(CLK_MOUT_AUDIO, "mout_audio", group_sclk_audio_p, SRC_PERIL1, 4, 4),
 
 	/* SRC_CPU */
-	MUX(CLK_MOUT_MPLL_USER_C, "mout_mpll_user_c", mout_mpll_user_p,
-	    SRC_CPU, 24, 1),
+	MUX_A(CLK_MOUT_MPLL_USER_C, "mout_mpll_user_c", mout_mpll_user_p,
+	    SRC_CPU, 24, 1, "mout_mpll_user_c"),
 	MUX(CLK_MOUT_HPM, "mout_hpm", mout_hpm_p, SRC_CPU, 20, 1),
-	MUX(CLK_MOUT_CORE, "mout_core", mout_core_p, SRC_CPU, 16, 1),
-	MUX(CLK_MOUT_APLL, "mout_apll", mout_apll_p, SRC_CPU, 0, 1),
+	MUX_A(CLK_MOUT_CORE, "mout_core", mout_core_p, SRC_CPU, 16, 1, "mout_core"),
+	MUX_A(CLK_MOUT_APLL, "mout_apll", mout_apll_p, SRC_CPU, 0, 1, "mout_apll"),
 };
 
 static struct samsung_div_clock div_clks[] __initdata = {
@@ -783,8 +783,8 @@ static struct samsung_pll_rate_table exynos3250_vpll_rates[] = {
 };
 
 static struct samsung_pll_clock exynos3250_plls[nr_plls] __initdata = {
-	[apll] = PLL(pll_35xx, CLK_FOUT_APLL, "fout_apll", "fin_pll",
-			APLL_LOCK, APLL_CON0, NULL),
+	[apll] = PLL_A(pll_35xx, CLK_FOUT_APLL, "fout_apll", "fin_pll",
+			APLL_LOCK, APLL_CON0, "fout_apll", NULL),
 	[mpll] = PLL(pll_35xx, CLK_FOUT_MPLL, "fout_mpll", "fin_pll",
 			MPLL_LOCK, MPLL_CON0, NULL),
 	[vpll] = PLL(pll_36xx, CLK_FOUT_VPLL, "fout_vpll", "fin_pll",
