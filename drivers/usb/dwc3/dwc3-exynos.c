@@ -98,6 +98,9 @@ static const struct of_device_id exynos_dwc3_match[] = {
 	{
 		.compatible = "samsung,exynos8890-dwusb3",
 		.data = &dwc3_exynos8890,
+	}, {
+		.compatible = "samsung,exynos8890-dwusb2",
+		.data = &dwc2_exynos8890,
 	},
 	{
 		.compatible = "samsung,exynos8890-dwusb2",
