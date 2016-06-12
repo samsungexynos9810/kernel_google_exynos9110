@@ -49,6 +49,15 @@
 #define MAX_ASV_GRP_NR 		16
 #define MAX_ASV_SUB_GRP_NR	3
 
+#ifdef CONFIG_SOC_EXYNOS3250
+#define ABB_ENABLE_SEL_OFFSET	(31)
+#define ABB_ENABLE_SET_MASK	(0x1 << ABB_ENABLE_SEL_OFFSET)
+#define ABB_ENABLE_PMOS_OFFSET	(7)
+#define ABB_ENABLE_PMOS_MASK	(0x1 << ABB_ENABLE_PMOS_OFFSET)
+#define ABB_CODE_PMOS_OFFSET	(0)
+#define ABB_CODE_PMOS_MASK	(0x1F << ABB_CODE_PMOS_OFFSET)
+#endif
+
 static inline void set_abb(void __iomem *target_reg, unsigned int target_value)
 {
 	unsigned int tmp;
@@ -60,6 +69,21 @@ static inline void set_abb(void __iomem *target_reg, unsigned int target_value)
 	__raw_writel(tmp , target_reg);
 }
 
+#ifdef CONFIG_SOC_EXYNOS3250
+enum asv_type_id {
+	ID_ARM,
+	ID_KFC,
+	ID_INT,
+	ID_MIF,
+	ID_G3D,
+	ID_ISP,
+	ID_INT_MIF_L0,
+	ID_INT_MIF_L1,
+	ID_INT_MIF_L2,
+	ID_INT_MIF_L3,
+	ASV_TYPE_END,
+};
+#else
 enum asv_type_id {
 	ID_CL1,
 	ID_CL0,
@@ -69,6 +93,7 @@ enum asv_type_id {
 	ID_ISP,
 	ASV_TYPE_END,
 };
+#endif
 
 /* define Struct for ASV common */
 struct asv_common {
@@ -82,6 +107,8 @@ struct asv_common {
 
 /* operation for CAL */
 struct asv_ops_cal {
+	s32		(*get_max_lv)(u32 id);
+	s32 		(*get_min_lv)(u32 id);
 	u32		(*get_vol)(u32, s32 eLvl);
 	u32		(*get_freq)(u32 id, s32 eLvl);
 	u32 		(*get_abb)(u32 id, s32 eLvl);
@@ -168,10 +195,11 @@ static inline void exynos_set_ema(enum asv_type_id type, unsigned int volt){};
 static inline unsigned int exynos_get_asv_info(int id){return 0;};
 extern inline unsigned int get_sub_grp_match_asv_grp(enum asv_type_id target_type, unsigned int lv){return 0;}
 #endif
-#if defined (CONFIG_EXYNOS_ASV_DYNAMIC_ABB)
+#if defined (CONFIG_EXYNOS_ASV_DYNAMIC_ABB) ||  defined (CONFIG_SOC_EXYNOS3250)
 extern unsigned int get_match_abb(enum asv_type_id target_type, unsigned int target_freq);
 extern unsigned int set_match_abb(enum asv_type_id target_type, unsigned int target_abb);
 extern bool is_set_abb_first(enum asv_type_id target_type, unsigned int old_freq, unsigned int target_freq);
+extern unsigned int exynos_set_abb(enum asv_type_id type, unsigned int target_val);
 #else
 static inline unsigned int get_match_abb(enum asv_type_id target_type, unsigned int target_freq)
 {return ABB_BYPASS;}
@@ -186,4 +214,10 @@ extern void set_rcc_info(void);
 static inline void set_rcc_info(void){};
 #endif
 
+/* define function for initialize of SoC */
+extern int exynos3250_init_asv(struct asv_common *asv_info);
+extern int exynos5410_init_asv(struct asv_common *asv_info);
+extern int exynos5422_init_asv(struct asv_common *asv_info);
+extern int exynos5430_init_asv(struct asv_common *asv_info);
+extern int exynos5_init_asv(struct asv_common *asv_info);
 #endif /* __ASM_ARCH_NEW_ASV_H */
