@@ -71,4 +71,17 @@ config EXYNOS_PSMW_CPU_HOTPLUG
 	 However, if you enable this feature, the check routine won't occur
 	 until display is updated.
 
+config EXYNOS_ASV
+	bool "ASV support for Exynos"
+	default y
+	help
+		Support to provide ABB and ASV voltage values.
+
+config ASV_MARGIN_TEST
+	bool "Enable margin test"
+	depends on EXYNOS_ASV
+	default n
+	help
+		Support to ASV voltage margin test
+
 endif #SOC_SAMSUNG

@@ -25,3 +25,7 @@ obj-$(CONFIG_EXYNOS_HOTPLUG_GOVERNOR)	+= exynos-hotplug_governor.o
 
 # memory
 obj-$(CONFIG_ARCH_EXYNOS)	+= memory/
+
+ifeq ($(CONFIG_SOC_EXYNOS3250),y)
+obj-$(CONFIG_EXYNOS_ASV)	+= asv-exynos.o asv-exynos3250.o
+endif
