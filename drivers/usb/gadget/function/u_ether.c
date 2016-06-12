@@ -544,10 +544,19 @@ static void tx_complete(struct usb_ep *ep, struct usb_request *req)
 				}
 
 				new_req->length = length;
+#ifdef CONFIG_USB_RNDIS_MULTIPACKET
+				new_req->complete = tx_complete;
+#endif
 				retval = usb_ep_queue(in, new_req, GFP_ATOMIC);
 				switch (retval) {
 				default:
 					DBG(dev, "tx queue err %d\n", retval);
+#ifdef CONFIG_USB_RNDIS_MULTIPACKET
+					new_req->length = 0;
+					spin_lock(&dev->req_lock);
+					list_add_tail(&new_req->list, &dev->tx_reqs);
+					spin_unlock(&dev->req_lock);
+#endif
 					break;
 				case 0:
 					spin_lock(&dev->req_lock);
@@ -557,7 +566,11 @@ static void tx_complete(struct usb_ep *ep, struct usb_request *req)
 				}
 			} else {
 				spin_lock(&dev->req_lock);
+#ifdef CONFIG_USB_RNDIS_MULTIPACKET
+				list_add_tail(&new_req->list, &dev->tx_reqs);
+#else
 				list_add(&new_req->list, &dev->tx_reqs);
+#endif
 				spin_unlock(&dev->req_lock);
 			}
 		} else {

@@ -435,6 +435,12 @@ config USB_CONFIGFS_UEVENT
 	  state changes. The gadget can be in any of the following
 	  three states: "CONNECTED/DISCONNECTED/CONFIGURED"
 
+config USB_RNDIS_MULTIPACKET
+	boolean "Samsung Rndis Multi Packet support"
+	depends on USB_CONFIGFS_UEVENT
+	help
+		Rndis Multipacket Support.
+
 config USB_CONFIGFS_F_UAC1
 	bool "Audio Class 1.0"
 	depends on USB_CONFIGFS

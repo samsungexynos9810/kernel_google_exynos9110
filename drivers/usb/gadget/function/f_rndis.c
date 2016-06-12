@@ -70,7 +70,11 @@
  *   - MS-Windows drivers sometimes emit undocumented requests.
  */
 
+#ifdef CONFIG_USB_RNDIS_MULTIPACKET
+static unsigned int rndis_dl_max_pkt_per_xfer = 10;
+#else
 static unsigned int rndis_dl_max_pkt_per_xfer = 3;
+#endif
 module_param(rndis_dl_max_pkt_per_xfer, uint, S_IRUGO | S_IWUSR);
 MODULE_PARM_DESC(rndis_dl_max_pkt_per_xfer,
 	"Maximum packets per transfer for DL aggregation");
