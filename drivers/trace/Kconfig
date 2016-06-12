@@ -10,8 +10,8 @@ menuconfig TRACE
 
 if TRACE
 
-config EXYNOS_BUSMONITOR
-        bool "Exynos BUS Monitor support(logging / timeout)"
+config EXYNOS_ITM
+        bool "Exynos IPs Traffic Monitor"
         default y
         depends on ARCH_EXYNOS
 

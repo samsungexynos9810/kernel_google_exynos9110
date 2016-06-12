@@ -2,10 +2,8 @@
 # Makefile for trace.
 #
 
-ifeq ($(CONFIG_SOC_EXYNOS8890),y)
-obj-$(CONFIG_EXYNOS_BUSMONITOR) += exynos8890-busmon.o
-else
-obj-$(CONFIG_EXYNOS_BUSMONITOR) += exynos-busmon.o
+ifeq ($(CONFIG_SOC_EXYNOS8895),y)
+obj-$(CONFIG_EXYNOS_ITM) += exynos8895-itm.o
 endif
 obj-$(CONFIG_EXYNOS_SNAPSHOT) += exynos-ss.o
 obj-$(CONFIG_EXYNOS_CORESIGHT) += exynos-coresight.o
