@@ -205,6 +205,7 @@
 #define DWC3_GUCTL_REFCLKPER(n)		((n) << 22)
 #define DWC3_GUCTL_REFCLKPER_MASK	DWC3_GUCTL_REFCLKPER(0x3FF)
 #define DWC3_GUCTL_USBHSTINAUTORETRYEN	(1 << 14)
+#define DWC3_GUCTL_SPRSCTRLTRANSEN	(1 << 17)
 
 /* Global USB2 PHY Configuration Register */
 #define DWC3_GUSB2PHYCFG_PHYSOFTRST	(1 << 31)
@@ -951,6 +952,8 @@ struct dwc3 {
 	unsigned		tx_de_emphasis:2;
 
 	unsigned		adj_sof_accuracy:1;
+
+	unsigned		sparse_transfer_control:1;
 };
 
 /* -------------------------------------------------------------------------- */

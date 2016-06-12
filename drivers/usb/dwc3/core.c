@@ -103,6 +103,8 @@ void dwc3_core_config(struct dwc3 *dwc)
 		reg &= ~DWC3_GUCTL_REFCLKPER_MASK;
 		reg |= DWC3_GUCTL_REFCLKPER(0x29);
 	}
+	if (dwc->sparse_transfer_control)
+		reg |= DWC3_GUCTL_SPRSCTRLTRANSEN;
 	dwc3_writel(dwc->regs, DWC3_GUCTL, reg);
 	if (dwc->revision >= DWC3_REVISION_190A &&
 		dwc->revision <= DWC3_REVISION_210A) {
@@ -1083,7 +1085,8 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	dwc->needs_fifo_resize = device_property_read_bool(dev,
 				"tx-fifo-resize");
-
+	dwc->sparse_transfer_control = device_property_read_bool(dev,
+				"enable_sprs_transfer");
 	dwc->disable_scramble_quirk = device_property_read_bool(dev,
 				"snps,disable_scramble_quirk");
 	dwc->u2exit_lfps_quirk = device_property_read_bool(dev,
@@ -1127,6 +1130,7 @@ static int dwc3_probe(struct platform_device *pdev)
 
 		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
 		dwc->usb3_lpm_capable = pdata->usb3_lpm_capable;
+		dwc->sparse_transfer_control = pdata->sparse_transfer_control;
 		dwc->dr_mode = pdata->dr_mode;
 		dwc->suspend_clk_freq = pdata->suspend_clk_freq;
 		dwc->adj_sof_accuracy = pdata->adj_sof_accuracy;
