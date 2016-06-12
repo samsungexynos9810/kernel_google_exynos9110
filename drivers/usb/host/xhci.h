@@ -1504,6 +1504,13 @@ struct xhci_hub {
 	u8	psi_uid_count;
 };
 
+/*
+ * Sometimes deadlock occurred between hub_event and remove_hcd.
+ * In order to prevent it, waiting for completion of hub_event was added.
+ * This is a timeout (300msec) value for the waiting.
+ */
+#define XHCI_HUB_EVENT_TIMEOUT	(300)
+
 /* There is one xhci_hcd structure per controller */
 struct xhci_hcd {
 	struct usb_hcd *main_hcd;
