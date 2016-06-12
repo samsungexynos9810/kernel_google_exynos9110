@@ -26,6 +26,7 @@ struct dwc3_platform_data {
 	bool tx_fifo_resize;
 	bool usb3_lpm_capable;
 	bool sparse_transfer_control;
+	bool is_not_vbus_pad;
 
 	unsigned is_utmi_l1_suspend:1;
 	u8 hird_threshold;

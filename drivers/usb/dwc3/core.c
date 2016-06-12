@@ -1089,6 +1089,8 @@ static int dwc3_probe(struct platform_device *pdev)
 
 	dwc->needs_fifo_resize = device_property_read_bool(dev,
 				"tx-fifo-resize");
+	dwc->is_not_vbus_pad = device_property_read_bool(dev,
+				"is_not_vbus_pad");
 	dwc->sparse_transfer_control = device_property_read_bool(dev,
 				"enable_sprs_transfer");
 	dwc->disable_scramble_quirk = device_property_read_bool(dev,
@@ -1135,6 +1137,7 @@ static int dwc3_probe(struct platform_device *pdev)
 		dwc->needs_fifo_resize = pdata->tx_fifo_resize;
 		dwc->usb3_lpm_capable = pdata->usb3_lpm_capable;
 		dwc->sparse_transfer_control = pdata->sparse_transfer_control;
+		dwc->is_not_vbus_pad = pdata->is_not_vbus_pad;
 		dwc->dr_mode = pdata->dr_mode;
 		dwc->suspend_clk_freq = pdata->suspend_clk_freq;
 		dwc->adj_sof_accuracy = pdata->adj_sof_accuracy;

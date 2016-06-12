@@ -954,6 +954,8 @@ struct dwc3 {
 	unsigned		adj_sof_accuracy:1;
 
 	unsigned		sparse_transfer_control:1;
+	unsigned		is_not_vbus_pad:1;
+	unsigned		start_config_issued:1;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -1134,6 +1136,7 @@ int dwc3_gadget_set_link_state(struct dwc3 *dwc, enum dwc3_link_state state);
 int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
 		unsigned cmd, struct dwc3_gadget_ep_cmd_params *params);
 int dwc3_send_gadget_generic_command(struct dwc3 *dwc, unsigned cmd, u32 param);
+void dwc3_gadget_disconnect_proc(struct dwc3 *dwc);
 #else
 static inline int dwc3_gadget_init(struct dwc3 *dwc)
 { return 0; }
@@ -1153,6 +1156,8 @@ static inline int dwc3_send_gadget_ep_cmd(struct dwc3 *dwc, unsigned ep,
 static inline int dwc3_send_gadget_generic_command(struct dwc3 *dwc,
 		int cmd, u32 param)
 { return 0; }
+static inline void dwc3_gadget_disconnect_proc(struct dwc3 *dwc)
+{ }
 #endif
 
 /* power management interface */
