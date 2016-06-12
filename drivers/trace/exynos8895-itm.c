@@ -10,8 +10,6 @@
  * published by the Free Software Foundation.
 */
 
-#define pr_fmt(fmt) "[ITM] detect: " fmt
-
 #include <linux/module.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
@@ -29,7 +27,7 @@
 #define OFFSET_REQ_W			(0x20)
 #define OFFSET_RESP_R			(0x40)
 #define OFFSET_RESP_W			(0x60)
-#define OFFSET_ERR_REPT			(0x20)
+#define OFFSET_ERR_REPT 		(0x20)
 #define OFFSET_NUM			(0x4)
 
 #define REG_INT_MASK			(0x0)
@@ -49,7 +47,7 @@
 #define REG_TMOUT_BUF_WR_ID		(0x34)
 #define REG_TMOUT_BUF_WR_PAYLOAD	(0x38)
 
-#define BIT_ERR_CODE(x)			(((x) & (0xF << 28)) >> 28)
+#define BIT_ERR_CODE(x) 		(((x) & (0xF << 28)) >> 28)
 #define BIT_ERR_OCCURRED(x)		(((x) & (0x1 << 27)) >> 27)
 #define BIT_ERR_VALID(x)		(((x) & (0x1 << 26)) >> 26)
 #define BIT_AXID(x)			(((x) & (0xFFFF)))
@@ -63,10 +61,13 @@
 #define ERRCODE_SLVERR			(0)
 #define ERRCODE_DECERR			(1)
 #define ERRCODE_UNSUPORTED		(2)
-#define	ERRCODE_POWER_DOWN		(3)
+#define ERRCODE_POWER_DOWN		(3)
 #define ERRCODE_UNKNOWN_4		(4)
-#define	ERRCODE_UNKNOWN_5		(5)
-#define	ERRCODE_TMOUT			(6)
+#define ERRCODE_UNKNOWN_5		(5)
+#define ERRCODE_TMOUT			(6)
+
+#define PATHTYPE_DATA			(0)
+#define PATHTYPE_PERI			(1)
 
 #define TMOUT				(0xFFFFF)
 #define TMOUT_TEST			(0x1)
@@ -102,8 +103,13 @@ struct itm_nodeinfo {
 	bool retention;
 };
 
+const static char *itm_pathtype[] = {
+	"DATA Path transaction (0x2000_0000 ~ 0xf_ffff_ffff)",
+	"PERI(SFR) Path transaction (0x0 ~ 0x1fff_ffff)",
+};
+
 /* Error Code Description */
-static char *itm_errcode[] = {
+const static char *itm_errcode[] = {
 	"Error Detect by the Slave(SLVERR)",
 	"Decode error(DECERR)",
 	"Unsupported transaction error",
@@ -126,43 +132,43 @@ struct itm_nodegroup {
 };
 
 struct itm_platdata {
-	struct itm_rpathinfo	*rpathinfo;
-	struct itm_masterinfo	*masterinfo;
-	struct itm_nodegroup	*nodegroup;
+	const struct itm_rpathinfo	*rpathinfo;
+	const struct itm_masterinfo	*masterinfo;
+	struct itm_nodegroup		*nodegroup;
 	bool probed;
 };
 
-static struct itm_rpathinfo rpathinfo[] = {
+const static struct itm_rpathinfo rpathinfo[] = {
 	/* Target Address = 0x2000_0000 ~ 0xf_ffff_ffff */
-	{0,	"DPU0",		"DREX",		GENMASK(5, 0),	0},
-	{1,	"DPU1",		"DREX",		GENMASK(5, 0),	0},
-	{2,	"DPU2",		"DREX",		GENMASK(5, 0),	0},
-	{3,	"CAM0",		"DREX",		GENMASK(5, 0),	0},
-	{4,	"CAM1",		"DREX",		GENMASK(5, 0),	0},
-	{5,	"ISPLP",	"DREX",		GENMASK(5, 0),	0},
-	{6,	"SRDZ",		"DREX",		GENMASK(5, 0),	0},
-	{7,	"IVA",		"DREX",		GENMASK(5, 0),	0},
-	{8,	"DSP",		"DREX",		GENMASK(5, 0),	0},
-	{9,	"VPU",		"DREX",		GENMASK(5, 0),	0},
-	{10,	"MFC0",		"DREX",		GENMASK(5, 0),	0},
-	{11,	"MFC1",		"DREX",		GENMASK(5, 0),	0},
-	{12,	"G2D0",		"DREX",		GENMASK(5, 0),	0},
-	{13,	"G2D1",		"DREX",		GENMASK(5, 0),	0},
-	{14,	"G2D2",		"DREX",		GENMASK(5, 0),	0},
-	{15,	"VTS",		"DREX",		GENMASK(5, 0),	0},
+	{0,	"DPU0", 	"DREX",		GENMASK(5, 0),	0},
+	{1,	"DPU1", 	"DREX",		GENMASK(5, 0),	0},
+	{2,	"DPU2", 	"DREX",		GENMASK(5, 0),	0},
+	{3,	"CAM0", 	"DREX",		GENMASK(5, 0),	0},
+	{4,	"CAM1", 	"DREX",		GENMASK(5, 0),	0},
+	{5,	"ISPLP", 	"DREX",		GENMASK(5, 0),	0},
+	{6,	"SRDZ", 	"DREX",		GENMASK(5, 0),	0},
+	{7,	"IVA", 		"DREX",		GENMASK(5, 0),	0},
+	{8,	"DSP", 		"DREX",		GENMASK(5, 0),	0},
+	{9,	"VPU", 		"DREX",		GENMASK(5, 0),	0},
+	{10,	"MFC0", 	"DREX",		GENMASK(5, 0),	0},
+	{11,	"MFC1", 	"DREX",		GENMASK(5, 0),	0},
+	{12,	"G2D0", 	"DREX",		GENMASK(5, 0),	0},
+	{13,	"G2D1", 	"DREX",		GENMASK(5, 0),	0},
+	{14,	"G2D2", 	"DREX",		GENMASK(5, 0),	0},
+	{15,	"VTS", 		"DREX",		GENMASK(5, 0),	0},
 	{16,	"FSYS0",	"DREX",		GENMASK(5, 0),	0},
 	{17,	"CORESIGHT",	"DREX",		GENMASK(5, 0),	0},
 	{18,	"PDMA",		"DREX",		GENMASK(5, 0),	0},
 	{19,	"SPDMA",	"DREX",		GENMASK(5, 0),	0},
 	{20,	"FSYS1",	"DREX",		GENMASK(5, 0),	0},
-	{21,	"GNSS",		"DREX",		GENMASK(5, 0),	0},
+	{21,	"GNSS", 	"DREX",		GENMASK(5, 0),	0},
 	{22,	"ALIVE",	"DREX",		GENMASK(5, 0),	0},
-	{23,	"ABOX",		"DREX",		GENMASK(5, 0),	0},
-	{24,	"DPU0",		"DREX",		GENMASK(5, 0),	0},
-	{25,	"DPU1",		"DREX",		GENMASK(5, 0),	0},
-	{26,	"DPU2",		"DREX",		GENMASK(5, 0),	0},
-	{27,	"CAM0",		"DREX",		GENMASK(5, 0),	0},
-	{28,	"CAM1",		"DREX",		GENMASK(5, 0),	0},
+	{23,	"ABOX", 	"DREX",		GENMASK(5, 0),	0},
+	{24,	"DPU0", 	"DREX",		GENMASK(5, 0),	0},
+	{25,	"DPU1", 	"DREX",		GENMASK(5, 0),	0},
+	{26,	"DPU2", 	"DREX",		GENMASK(5, 0),	0},
+	{27,	"CAM0", 	"DREX",		GENMASK(5, 0),	0},
+	{28,	"CAM1", 	"DREX",		GENMASK(5, 0),	0},
 	{29,	"ISPLP",	"DREX",		GENMASK(5, 0),	0},
 	{30,	"SRDZ",		"DREX",		GENMASK(5, 0),	0},
 	{31,	"IVA",		"DREX",		GENMASK(5, 0),	0},
@@ -240,7 +246,7 @@ static struct itm_rpathinfo rpathinfo[] = {
 };
 
 /* XIU ID Information */
-static struct itm_masterinfo masterinfo[] = {
+const static struct itm_masterinfo masterinfo[] = {
 	{"DPU0",	0,			/* 0XXXX0 */	"DPP/WBMUX",	BIT(5) | BIT(0)},
 	{"DPU0",	BIT(0),			/* 0XXXX1 */	"SYSMMU_DPU0",	BIT(5) | BIT(0)},
 
@@ -439,13 +445,13 @@ static struct itm_nodeinfo peri_core_1[] = {
 };
 
 static struct itm_nodegroup nodegroup[] = {
-	{311,		"DATA_PATH_CORE",	0x14AB3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, false},
-	{ 92,		"DATA_PATH_BUS_C",	0x151C3000, NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, false},
-	{ 72,		"DATA_PATH_BUS_1",	0x15443000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, false},
-	{315,		"PERI_PATH_CORE_0",	0x14C73000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),0, false},
-	{316,		"PERI_PATH_CORE_1",	0x14E93000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),0, false},
-	{ 77,		"PERI_PATH_BUS_1",	0x15653000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, false},
-	{ 93,		"PERI_PATH_BUS_C",	0x153D3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), 0, false},
+	{311,		"DATA_CORE",	0x14AB3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, false},
+	{ 92,		"DATA_BUS_C",	0x151C3000, NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, false},
+	{ 72,		"DATA_BUS_1",	0x15443000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, false},
+	{315,		"PERI_CORE_0",	0x14C73000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),0, false},
+	{316,		"PERI_CORE_1",	0x14E93000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),0, false},
+	{ 77,		"PERI_BUS_1",	0x15653000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, false},
+	{ 93,		"PERI_BUS_C",	0x153D3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), 0, false},
 };
 
 struct itm_dev {
@@ -487,7 +493,7 @@ static struct itm_rpathinfo* itm_get_rpathinfo
 		if (pdata->rpathinfo[i].id == (id & pdata->rpathinfo[i].bits)) {
 			if (dest_name && !strncmp(pdata->rpathinfo[i].dest_name,
 				dest_name, strlen(pdata->rpathinfo[i].dest_name))) {
-				rpath = &pdata->rpathinfo[i];
+				rpath = (struct itm_rpathinfo *)&pdata->rpathinfo[i];
 				break;
 			}
 		}
@@ -510,7 +516,7 @@ static struct itm_masterinfo* itm_get_masterinfo
 				strlen(port_name))) {
 			val = user & pdata->masterinfo[i].bits;
 			if (val == pdata->masterinfo[i].user) {
-				master = &pdata->masterinfo[i];
+				master = (struct itm_masterinfo *)&pdata->masterinfo[i];
 				break;
 			}
 		}
@@ -616,9 +622,15 @@ static void itm_report_route(struct itm_dev *itm,
 	val = __raw_readl(node->regs + offset + REG_EXT_INFO_2);
 	user = BIT_AXUSER(val);
 
-	if (!strncmp(group->name, "DATA_PATH", strlen("DATA_PATH"))) {
+	if (!strncmp(group->name, "DATA", strlen("DATA"))) {
 		/* Data Path */
 		if (node->type == S_NODE) {
+			/*
+			 * If detected S_NODE are SP or PERI,
+			 * it is for peri access. In this case, we can
+			 * find port and source. But if we want to know
+			 * target more, we should PERI's S_NODE or M_NODE
+			 */
 			rpath = itm_get_rpathinfo(itm, id, node->name);
 			if (!rpath) {
 				pr_info("failed to get route path - %s, id:%x\n",
@@ -634,15 +646,22 @@ static void itm_report_route(struct itm_dev *itm,
 			port = rpath->port_name;
 			source = master->master_name;
 			dest = rpath->dest_name;
+			if (!strncmp(port, "PERI", strlen("PERI")) ||
+				!strncmp(port, "SP", strlen("SP")))
+				val = PATHTYPE_PERI;
+			else
+				val = PATHTYPE_DATA;
 		} else {
-			master = itm_get_masterinfo(itm, node->name, id);
+			val = PATHTYPE_DATA;
+			master = itm_get_masterinfo(itm, node->name, user);
 			if (!master) {
 				pr_info("failed to get master IP with "
-					"port:%s, id:%x\n", node->name, id);
-				return;
+					"port:%s, id:%x\n", node->name, user);
+				port = node->name;
+			} else {
+				port = node->name;
+				source = master->master_name;
 			}
-			port = node->name;
-			source = master->master_name;
 		}
 	} else {
 		/*
@@ -650,27 +669,40 @@ static void itm_report_route(struct itm_dev *itm,
 		 * In this case, we will get the route table from DATA_BACKBONE interrupt
 		 * of PERI port
 		 */
+		val = PATHTYPE_PERI;
 		if (node->type == S_NODE) {
+			if ((user & GENMASK(4, 0)) & BIT(3)) {
+				/* Master is CP */
+				port = "CP";
+			} else {
+				/* Master is CPU cluster */
+				/* user & GENMASK(1, 0) = core number */
+				port = "CPU";
+				/* TODO: Core Number */
+			}
 			dest = node->name;
 		} else {
-			if (!strncmp(node->name, "BUSC_PERI_M", strlen(node->name))) {
-				if ((user & GENMASK(4, 0)) & BIT(3)) {
-					/* Master is CP */
-				} else {
-					/* Master is CPU cluster */
-					/* user & GENMASK(1, 0) = core number */
-				}
+			master = itm_get_masterinfo(itm, node->name, user);
+			if (!master) {
+				pr_info("failed to get master IP with "
+					"port:%s, id:%x\n", node->name, user);
+				port = node->name;
+			} else {
+				port = node->name;
+				source = master->master_name;
 			}
 		}
 	}
-	pr_info("\n--------------------------------------------------------------------------------\n\n"
-		"ROUTE INFORMATION - %s\n"
-		"> Master : %s %s\n"
-		"> Slave  : %s\n\n",
+	pr_info("--------------------------------------------------------------------------------\n"
+		"ROUTE INFORMATION - %s group\n"
+		"> Path Type  : %s\n"
+		"> Master     : %s %s\n"
+		"> Target     : %s\n",
 		group->name,
-		port ? port : "Note other NODE Information",
+		itm_pathtype[val],
+		port ? port : "See other ROUTE Information(Master)",
 		source ? source : "",
-		dest ? dest : "Note other NODE Information");
+		dest ? dest : "See other ROUTE Information(Target)");
 
 	itm_post_handler_by_master(itm, group, port, source, read);
 }
@@ -680,17 +712,17 @@ static void itm_report_info(struct itm_dev *itm,
 			       struct itm_nodeinfo *node,
 			       unsigned int offset)
 {
-	unsigned int val, errcode, int_info, info0, info1, info2;
+	unsigned int errcode, int_info, info0, info1, info2;
 	bool read = false, req = false;
 
-	val = __raw_readl(node->regs + offset + REG_INT_INFO);
-	if (!BIT_ERR_VALID(val)) {
-		pr_info("no information, %s/offset:%x is stopover, "
-			"check other node\n", node->name, offset);
+	int_info = __raw_readl(node->regs + offset + REG_INT_INFO);
+	if (!BIT_ERR_VALID(int_info)) {
+		pr_info("%s(0x%08X) is stopover\n",
+			node->name, node->phy_regs + offset);
 		return;
 	}
 
-	errcode = BIT_ERR_CODE(val);
+	errcode = BIT_ERR_CODE(int_info);
 	info0 = __raw_readl(node->regs + offset + REG_EXT_INFO_0);
 	info1 = __raw_readl(node->regs + offset + REG_EXT_INFO_1);
 	info2 = __raw_readl(node->regs + offset + REG_EXT_INFO_2);
@@ -701,7 +733,7 @@ static void itm_report_info(struct itm_dev *itm,
 		/* fall down */
 	case OFFSET_REQ_W:
 		req = true;
-		if (node->type == S_NODE || node->type == T_S_NODE) {
+		if (node->type == S_NODE) {
 			/* Only S-Node is able to make log to registers */
 			pr_info("invalid logging, see more following information\n");
 			goto out;
@@ -712,7 +744,7 @@ static void itm_report_info(struct itm_dev *itm,
 		/* fall down */
 	case OFFSET_RESP_W:
 		req = false;
-		if (node->type == M_NODE || node->type == T_M_NODE) {
+		if (node->type != S_NODE) {
 			/* Only S-Node is able to make log to registers */
 			pr_info("invalid logging, see more following information\n");
 			goto out;
@@ -725,28 +757,26 @@ static void itm_report_info(struct itm_dev *itm,
 	/* Normally fall down to here */
 	itm_report_route(itm, group, node, offset, read);
 
-	pr_info("\n--------------------------------------------------------------------------------\n\n"
+	pr_info("--------------------------------------------------------------------------------\n"
 		"TRANSACTION INFORMATION\n"
-		"> Path Type       : %s in %s %s \n"
-		"> Target address  : 0x%08X\n"
-		"> Error type      : %s\n\n",
-		group->name,
+		"> Transaction     : %s %s\n"
+		"> Target address  : 0x%04X_%08X\n"
+		"> Error type      : %s\n",
 		read ? "READ" : "WRITE",
 		req ? "REQUEST" : "RESPONSE",
-		info0, /* TODO: 64bit address */
+		(unsigned int)(info1 & GENMASK(3, 0)),
+		info0,
 		itm_errcode[errcode]);
 
 out:
 	/* report extention raw information of register */
-	pr_info("\n--------------------------------------------------------------------------------\n\n"
+	pr_info("--------------------------------------------------------------------------------\n"
 		"NODE RAW INFORMATION\n"
-		"> NODE NAME       : %s(%s)\n"
-		"> NODE ADDRESS    : 0x%08X\n"
+		"> NODE INFO       : %s(%s, 0x%08X)\n"
 		"> INTERRUPT_INFO  : 0x%08X\n"
 		"> EXT_INFO_0      : 0x%08X\n"
 		"> EXT_INFO_1      : 0x%08X\n"
-		"> EXT_INFO_2      : 0x%08X\n\n"
-		"--------------------------------------------------------------------------------\n",
+		"> EXT_INFO_2      : 0x%08X\n\n",
 		node->name,
 		node->type ? "M_NODE" : "S_NODE",
 		node->phy_regs + offset,
@@ -834,16 +864,16 @@ static irqreturn_t itm_irq_handler(int irq, void *data)
 	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		if (irq == nodegroup[i].irq) {
 			group = &pdata->nodegroup[i];
-			pr_info("interrupt: %s group, %d irq, 0x%x vector\n",
-				group->name, irq, __raw_readl(group->regs));
+			pr_info("\n--------------------------------------------------------------------------------\n");
+			pr_info("ITM: Abnormal Traffic Detected: %d irq, %s group, 0x%x vector\n",
+				irq, group->name, __raw_readl(group->regs));
 			break;
 		}
 	}
-
 	if (group) {
 		ret = itm_parse_info(itm, group, true);
 		if (!ret) {
-			pr_info("parsing is failed: %s, %d irq, 0x%x vector\n",
+			pr_info("ITM: parsing is failed: %s, %d irq, 0x%x vector\n",
 				group->name, irq, __raw_readl(group->regs));
 		} else {
 			if (group->irq_occurred && !group->panic_delayed)
