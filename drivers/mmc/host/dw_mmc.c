@@ -621,31 +621,6 @@ static u32 dw_mci_prep_stop_abort(struct dw_mci *host, struct mmc_command *cmd)
 	return cmdr;
 }
 
-static void dw_mci_wait_while_busy(struct dw_mci *host, u32 cmd_flags)
-{
-	unsigned long timeout = jiffies + msecs_to_jiffies(500);
-
-	/*
-	 * Databook says that before issuing a new data transfer command
-	 * we need to check to see if the card is busy.  Data transfer commands
-	 * all have SDMMC_CMD_PRV_DAT_WAIT set, so we'll key off that.
-	 *
-	 * ...also allow sending for SDMMC_CMD_VOLT_SWITCH where busy is
-	 * expected.
-	 */
-	if ((cmd_flags & SDMMC_CMD_PRV_DAT_WAIT) &&
-	    !(cmd_flags & SDMMC_CMD_VOLT_SWITCH)) {
-		while (mci_readl(host, STATUS) & SDMMC_STATUS_BUSY) {
-			if (time_after(jiffies, timeout)) {
-				/* Command will fail; we'll pass error then */
-				dev_err(host->dev, "Busy; trying anyway\n");
-				break;
-			}
-			udelay(10);
-		}
-	}
-}
-
 static void dw_mci_start_command(struct dw_mci *host,
 				 struct mmc_command *cmd, u32 cmd_flags)
 {
@@ -667,7 +642,6 @@ static void dw_mci_start_command(struct dw_mci *host,
 
 	mci_writel(host, CMDARG, cmd->arg);
 	wmb(); /* drain writebuffer */
-	dw_mci_wait_while_busy(host, cmd_flags);
 
 	mci_writel(host, CMD, cmd_flags | SDMMC_CMD_START);
 }
@@ -1194,49 +1168,6 @@ static void dw_mci_post_req(struct mmc_host *mmc,
 	data->host_cookie = 0;
 }
 
-static void dw_mci_adjust_fifoth(struct dw_mci *host, struct mmc_data *data)
-{
-	unsigned int blksz = data->blksz;
-	const u32 mszs[] = {1, 4, 8, 16, 32, 64, 128, 256};
-	u32 fifo_width = 1 << host->data_shift;
-	u32 blksz_depth = blksz / fifo_width, fifoth_val;
-	u32 msize = 0, rx_wmark = 1, tx_wmark, tx_wmark_invers;
-	int idx = ARRAY_SIZE(mszs) - 1;
-
-	/* pio should ship this scenario */
-	if (!host->use_dma)
-		return;
-
-	tx_wmark = (host->fifo_depth) / 2;
-	tx_wmark_invers = host->fifo_depth - tx_wmark;
-
-	/*
-	 * MSIZE is '1',
-	 * if blksz is not a multiple of the FIFO width
-	 */
-	if (blksz % fifo_width) {
-		msize = 0;
-		rx_wmark = 1;
-		goto done;
-	}
-
-	do {
-		if (!((blksz_depth % mszs[idx]) ||
-		     (tx_wmark_invers % mszs[idx]))) {
-			msize = idx;
-			rx_wmark = mszs[idx] - 1;
-			break;
-		}
-	} while (--idx > 0);
-	/*
-	 * If idx is '0', it won't be tried
-	 * Thus, initial values are uesed
-	 */
-done:
-	fifoth_val = SDMMC_SET_FIFOTH(msize, rx_wmark, tx_wmark);
-	mci_writel(host, FIFOTH, fifoth_val);
-}
-
 static void dw_mci_ctrl_rd_thld(struct dw_mci *host, struct mmc_data *data)
 {
 	unsigned int blksz = data->blksz;
@@ -1333,14 +1264,6 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
 			 (unsigned long)host->sg_dma,
 			 sg_len);
 
-	/*
-	 * Decide the MSIZE and RX/TX Watermark.
-	 * If current block size is same with previous size,
-	 * no need to update fifoth.
-	 */
-	if (host->prev_blksz != data->blksz)
-		dw_mci_adjust_fifoth(host, data);
-
 	/* Enable the DMA interface */
 	temp = mci_readl(host, CTRL);
 	temp |= SDMMC_CTRL_DMA_ENABLE;
@@ -1434,7 +1357,6 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
 
 	mci_writel(host, CMDARG, arg);
 	wmb(); /* drain writebuffer */
-	dw_mci_wait_while_busy(host, cmd);
 	mci_writel(host, CMD, SDMMC_CMD_START | cmd);
 
 	do {
@@ -1452,6 +1374,61 @@ static void mci_send_cmd(struct dw_mci_slot *slot, u32 cmd, u32 arg)
 	dev_err(&slot->mmc->class_dev,
 		"Timeout sending command (cmd %#x arg %#x status %#x)\n",
 		cmd, arg, cmd_status);
+}
+
+static bool dw_mci_wait_data_busy(struct dw_mci *host, struct mmc_request *mrq)
+{
+	u32 status;
+	unsigned long timeout = jiffies + msecs_to_jiffies(500);
+	struct dw_mci_slot *slot = host->cur_slot;
+	int try = 6;
+	u32 clkena;
+	bool ret = false;
+
+	do {
+		do {
+			status = mci_readl(host, STATUS);
+			if (!(status & SDMMC_STATUS_BUSY)) {
+				ret = true;
+				goto out;
+			}
+
+			usleep_range(10, 20);
+		} while (time_before(jiffies, timeout));
+
+		/* card is checked every 1s by CMD13 at least */
+		if (mrq->cmd->opcode == MMC_SEND_STATUS)
+			return true;
+
+		dw_mci_ctrl_reset(host, SDMMC_CTRL_FIFO_RESET);
+		dw_mci_ctrl_reset(host, SDMMC_CTRL_RESET);
+		/* After CTRL Reset, Should be needed clk val to CIU */
+		if (host->cur_slot) {
+			/* Disable low power mode */
+			clkena = mci_readl(host, CLKENA);
+			clkena &= ~((SDMMC_CLKEN_LOW_PWR) << slot->id);
+			mci_writel(host, CLKENA, clkena);
+
+			mci_send_cmd(host->cur_slot,
+				SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+		}
+		timeout = jiffies + msecs_to_jiffies(500);
+	} while (--try);
+out:
+	if (host->cur_slot) {
+		if (ret == false)
+			dev_err(host->dev, "Data[0]: data is busy\n");
+
+		/* enable clock */
+		mci_writel(host, CLKENA, ((SDMMC_CLKEN_ENABLE |
+					SDMMC_CLKEN_LOW_PWR) << slot->id));
+
+		/* inform CIU */
+		mci_send_cmd(slot,
+			     SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT, 0);
+	}
+
+	return ret;
 }
 
 static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
@@ -1676,6 +1653,14 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 	 * atomic, otherwise the card could be removed in between and the
 	 * request wouldn't fail until another card was inserted.
 	 */
+
+	if (!dw_mci_stop_abort_cmd(mrq->cmd)) {
+		if (!dw_mci_wait_data_busy(host, mrq)) {
+			mrq->cmd->error = -ENOTRECOVERABLE;
+			mmc_request_done(mmc, mrq);
+			return;
+		}
+	}
 
 	spin_lock_bh(&host->lock);
 
@@ -3051,8 +3036,8 @@ static void dw_mci_timeout_timer(unsigned long data)
 
 		reg = mci_readl(host, CMD);
 		reg = (reg >> 11) & 0x3f;
-		if (reg == MMC_SEND_TUNING_BLOCK ||
-				reg == MMC_SEND_TUNING_BLOCK_HS200) {
+		if (!((reg == MMC_SEND_TUNING_BLOCK) ||
+				(reg == MMC_SEND_TUNING_BLOCK_HS200))) {
 			dev_err(host->dev,
 					"Timeout waiting for hardware interrupt."
 					" state = %d\n", host->state);
