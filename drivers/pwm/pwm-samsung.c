@@ -124,19 +124,19 @@ static int pwm_samsung_clk_enable(struct samsung_pwm_chip *chip)
 	int ret;
 
 	exynos_update_ip_idle_status(chip->idle_ip_index, 0);
-	ret = clk_prepare_enable(chip->base_clk);
+	ret = clk_enable(chip->base_clk);
 	if (ret)
 		goto base_clk_err;
 
 	if (chip->sclk_ctrl) {
-		ret = clk_prepare_enable(chip->sclk);
+		ret = clk_enable(chip->sclk);
 		if (ret)
 			goto sclk_err;
 	}
 
 	return 0;
 sclk_err:
-	clk_disable_unprepare(chip->base_clk);
+	clk_disable(chip->base_clk);
 base_clk_err:
 	exynos_update_ip_idle_status(chip->idle_ip_index, 1);
 	return ret;
@@ -145,9 +145,9 @@ base_clk_err:
 static void pwm_samsung_clk_disable(struct samsung_pwm_chip *chip)
 {
 	if (chip->sclk_ctrl)
-		clk_disable_unprepare(chip->sclk);
+		clk_disable(chip->sclk);
 
-	clk_disable_unprepare(chip->base_clk);
+	clk_disable(chip->base_clk);
 	exynos_update_ip_idle_status(chip->idle_ip_index, 1);
 }
 
@@ -282,13 +282,11 @@ static int pwm_samsung_request(struct pwm_chip *chip, struct pwm_device *pwm)
 		return PTR_ERR(our_chan->clk_div);
 	}
 
-	pwm_samsung_clk_enable(our_chip);
 	spin_lock_irqsave(&samsung_pwm_lock, flags);
-
+	pwm_samsung_clk_enable(our_chip);
 	pwm_samsung_init(our_chip, pwm);
-
-	spin_unlock_irqrestore(&samsung_pwm_lock, flags);
 	pwm_samsung_clk_disable(our_chip);
+	spin_unlock_irqrestore(&samsung_pwm_lock, flags);
 
 	return 0;
 }
@@ -498,10 +496,9 @@ static void pwm_samsung_set_invert(struct samsung_pwm_chip *chip,
 	unsigned long flags;
 	u32 tcon;
 
+	spin_lock_irqsave(&samsung_pwm_lock, flags);
 	if (!chip->enable_cnt)
 		pwm_samsung_clk_enable(chip);
-
-	spin_lock_irqsave(&samsung_pwm_lock, flags);
 
 	tcon = readl(chip->base + REG_TCON);
 	if (invert) {
@@ -512,10 +509,10 @@ static void pwm_samsung_set_invert(struct samsung_pwm_chip *chip,
 		tcon &= ~TCON_INVERT(tcon_chan);
 	}
 	writel(tcon, chip->base + REG_TCON);
-
-	spin_unlock_irqrestore(&samsung_pwm_lock, flags);
 	if (!chip->enable_cnt)
 		pwm_samsung_clk_disable(chip);
+
+	spin_unlock_irqrestore(&samsung_pwm_lock, flags);
 }
 
 static int pwm_samsung_set_polarity(struct pwm_chip *chip,
@@ -672,10 +669,15 @@ static int pwm_samsung_probe(struct platform_device *pdev)
 		}
 	}
 
-	ret = pwm_samsung_clk_enable(chip);
-	if (ret < 0) {
-		dev_err(dev, "failed to enable clock\n");
-		return ret;
+	exynos_update_ip_idle_status(chip->idle_ip_index, 0);
+	ret = clk_prepare_enable(chip->base_clk);
+	if (ret)
+		goto base_clk_err;
+
+	if (chip->sclk_ctrl) {
+		ret = clk_prepare_enable(chip->sclk);
+		if (ret)
+			goto sclk_err;
 	}
 
 	dev_info(dev, "base_clk at %lu", clk_get_rate(chip->base_clk));
@@ -686,13 +688,22 @@ static int pwm_samsung_probe(struct platform_device *pdev)
 	ret = pwmchip_add(&chip->chip);
 	if (ret < 0) {
 		dev_err(dev, "failed to register PWM chip\n");
-		pwm_samsung_clk_disable(chip);
-		return ret;
+		goto chip_add_err;
 	}
 
 	pwm_samsung_clk_disable(chip);
 
 	return 0;
+
+chip_add_err:
+	if (chip->sclk_ctrl)
+		clk_disable_unprepare(chip->sclk);
+sclk_err:
+	clk_disable_unprepare(chip->base_clk);
+base_clk_err:
+	exynos_update_ip_idle_status(chip->idle_ip_index, 1);
+	return ret;
+
 }
 
 static int pwm_samsung_remove(struct platform_device *pdev)
@@ -704,7 +715,11 @@ static int pwm_samsung_remove(struct platform_device *pdev)
 	if (ret < 0)
 		return ret;
 
-	pwm_samsung_clk_disable(chip);
+	if (chip->sclk_ctrl)
+		clk_disable_unprepare(chip->sclk);
+
+	clk_disable_unprepare(chip->base_clk);
+
 	return 0;
 }
 
@@ -746,6 +761,8 @@ static int pwm_samsung_suspend(struct device *dev)
 		chip->reg_tcfg0 = __raw_readl(chip->base + REG_TCFG0);
 
 	pwm_samsung_clk_disable(chip);
+
+	return 0;
 }
 
 static int pwm_samsung_resume(struct device *dev)
