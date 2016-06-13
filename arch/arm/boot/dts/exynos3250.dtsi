@@ -252,32 +252,64 @@
 		interrupts = <0 240 0>;
 	};
 
-	fimd: fimd@11c00000 {
-		compatible = "samsung,exynos3250-fimd";
-		reg = <0x11c00000 0x30000>;
-		interrupt-names = "fifo", "vsync", "lcd_sys";
-		interrupts = <0 84 0>, <0 85 0>, <0 86 0>;
-		clocks = <&cmu CLK_SCLK_FIMD0>, <&cmu CLK_FIMD0>;
-		clock-names = "sclk_fimd", "fimd";
-		samsung,power-domain = <&pd_lcd0>;
-		samsung,sysreg = <&sys_reg>;
-		status = "disabled";
-	};
+	fimd_fb: fimd_fb {
+		compatible = "samsung,exynos3-disp_driver";
+		reg = <0x11c00000 0x40000>, <0x11c80000 0x8000>;
 
-	dsi_0: dsi@11C80000 {
-		compatible = "samsung,exynos3250-mipi-dsi";
-		reg = <0x11C80000 0x10000>;
-		interrupts = <0 83 0>;
-		samsung,phy-type = <0>;
-		samsung,power-domain = <&pd_lcd0>;
-		phys = <&mipi_phy 1>;
-		phy-names = "dsim";
-		clocks = <&cmu CLK_DSIM0>, <&cmu CLK_SCLK_MIPI0>;
-		clock-names = "bus_clk", "pll_clk";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		status = "disabled";
-	};
+		/*  VSYNC IRQ, FIFO IRQ, I80 IRQ, DSIM IRQ */
+		interrupts = <0 85 0>, <0 84 0>, <0 86 0>, <0 83 0>;
+
+		/* Clocks for the DECON/MIPI-DSI driver */
+		clocks = <&clock CLK_MOUT_FIMD0>, <&clock CLK_MOUT_MIPI0>, <&clock CLK_MOUT_ACLK_160>,
+			<&clock CLK_DIV_FIMD0>, <&clock CLK_DIV_MIPI0>, <&clock CLK_DIV_MIPI0_PRE>,
+			<&clock CLK_DIV_ACLK_160>,
+			<&clock CLK_ACLK_FIMD0>, <&clock CLK_SCLK_FIMD0>, <&clock CLK_SCLK_MIPI0>,
+			<&clock CLK_FIMD0>, <&clock CLK_DSIM0>, <&clock CLK_DIV_MPLL_PRE>;
+
+		clock-names = "mout_fimd0", "mout_mipi0", "mout_aclk_160",
+			"dout_fimd0", "dout_mipi0", "dout_mipi0_pre",
+			"dout_aclk_160",
+			"aclk_fimd0", "sclk_fimd0", "sclk_mipi0",
+			"fimd0", "dsim0", "dout_mpll_pre";
+
+		/* samsung,power-domain = <&pd_lcd0>; */
+
+		/* TE pin */
+		/*
+		pinctrl-names = "turnon_tes", "turnoff_tes";
+		pinctrl-0 = <&disp_teson>;
+		pinctrl-1 = <&disp_tesoff>;
+		*/
+		fimd: fimd_ctrl {
+			samsung,vidcon0 = <0x8000>;
+			samsung,vidcon1 = <0x80>;
+			samsung,default_win = <0>;
+			fb_driver_data {
+				fb_variant {
+					nr_windows = <5>;
+					vidcon1 = <0x20004>;
+					vidtcon = <0x20010>;
+					wincon = <0x20>;
+					winmap = <0x180>;
+					keycon = <0x140>;
+					osd = <0x40>;
+					osd_stride = <16>;
+					buf_start = <0xA0>;
+					buf_size  = <0x100>;
+					buf_end   = <0xD0>;
+					palette_0 = <0x2400>;
+					palette_1 = <0x2800>;
+					palette_2 = <0x2c00>;
+					palette_3 = <0x3000>;
+					palette_4 = <0x3400>;
+					has_shadowcon = <1>;
+					has_blendcon  = <1>;
+					has_alphacon  = <1>;
+					has_fixvclk   = <0>;
+				};
+			};
+		};
+        };
 
 	amba {
 		compatible = "arm,amba-bus";
