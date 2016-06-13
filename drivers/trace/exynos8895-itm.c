@@ -132,337 +132,336 @@ struct itm_nodegroup {
 };
 
 struct itm_platdata {
-	const struct itm_rpathinfo	*rpathinfo;
-	const struct itm_masterinfo	*masterinfo;
-	struct itm_nodegroup		*nodegroup;
+	const struct itm_rpathinfo *rpathinfo;
+	const struct itm_masterinfo *masterinfo;
+	struct itm_nodegroup *nodegroup;
 	bool probed;
 };
 
 const static struct itm_rpathinfo rpathinfo[] = {
 	/* Target Address = 0x2000_0000 ~ 0xf_ffff_ffff */
-	{0,	"DPU0", 	"DREX",		GENMASK(5, 0),	0},
-	{1,	"DPU1", 	"DREX",		GENMASK(5, 0),	0},
-	{2,	"DPU2", 	"DREX",		GENMASK(5, 0),	0},
-	{3,	"CAM0", 	"DREX",		GENMASK(5, 0),	0},
-	{4,	"CAM1", 	"DREX",		GENMASK(5, 0),	0},
-	{5,	"ISPLP", 	"DREX",		GENMASK(5, 0),	0},
-	{6,	"SRDZ", 	"DREX",		GENMASK(5, 0),	0},
-	{7,	"IVA", 		"DREX",		GENMASK(5, 0),	0},
-	{8,	"DSP", 		"DREX",		GENMASK(5, 0),	0},
-	{9,	"VPU", 		"DREX",		GENMASK(5, 0),	0},
-	{10,	"MFC0", 	"DREX",		GENMASK(5, 0),	0},
-	{11,	"MFC1", 	"DREX",		GENMASK(5, 0),	0},
-	{12,	"G2D0", 	"DREX",		GENMASK(5, 0),	0},
-	{13,	"G2D1", 	"DREX",		GENMASK(5, 0),	0},
-	{14,	"G2D2", 	"DREX",		GENMASK(5, 0),	0},
-	{15,	"VTS", 		"DREX",		GENMASK(5, 0),	0},
-	{16,	"FSYS0",	"DREX",		GENMASK(5, 0),	0},
-	{17,	"CORESIGHT",	"DREX",		GENMASK(5, 0),	0},
-	{18,	"PDMA",		"DREX",		GENMASK(5, 0),	0},
-	{19,	"SPDMA",	"DREX",		GENMASK(5, 0),	0},
-	{20,	"FSYS1",	"DREX",		GENMASK(5, 0),	0},
-	{21,	"GNSS", 	"DREX",		GENMASK(5, 0),	0},
-	{22,	"ALIVE",	"DREX",		GENMASK(5, 0),	0},
-	{23,	"ABOX", 	"DREX",		GENMASK(5, 0),	0},
-	{24,	"DPU0", 	"DREX",		GENMASK(5, 0),	0},
-	{25,	"DPU1", 	"DREX",		GENMASK(5, 0),	0},
-	{26,	"DPU2", 	"DREX",		GENMASK(5, 0),	0},
-	{27,	"CAM0", 	"DREX",		GENMASK(5, 0),	0},
-	{28,	"CAM1", 	"DREX",		GENMASK(5, 0),	0},
-	{29,	"ISPLP",	"DREX",		GENMASK(5, 0),	0},
-	{30,	"SRDZ",		"DREX",		GENMASK(5, 0),	0},
-	{31,	"IVA",		"DREX",		GENMASK(5, 0),	0},
-	{32,	"DSP",		"DREX",		GENMASK(5, 0),	0},
-	{33,	"VPU",		"DREX",		GENMASK(5, 0),	0},
-	{34,	"MFC0",		"DREX",		GENMASK(5, 0),	0},
-	{35,	"MFC1",		"DREX",		GENMASK(5, 0),	0},
-	{36,	"G2D0",		"DREX",		GENMASK(5, 0),	0},
-	{37,	"G2D1",		"DREX",		GENMASK(5, 0),	0},
-	{38,	"G2D2",		"DREX",		GENMASK(5, 0),	0},
-	{39,	"VTS",		"DREX",		GENMASK(5, 0),	0},
-	{40,	"FSYS0",	"DREX",		GENMASK(5, 0),	0},
-	{41,	"CORESIGHT",	"DREX",		GENMASK(5, 0),	0},
-	{42,	"PDMA",		"DREX",		GENMASK(5, 0),	0},
-	{43,	"SPDMA",	"DREX",		GENMASK(5, 0),	0},
-	{44,	"FSYS1",	"DREX",		GENMASK(5, 0),	0},
-	{45,	"GNSS",		"DREX",		GENMASK(5, 0),	0},
-	{46,	"ALIVE",	"DREX",		GENMASK(5, 0),	0},
-	{47,	"ABOX",		"DREX",		GENMASK(5, 0),	0},
-	{48,	"G3D0",		"DREX",		GENMASK(5, 0),	0},
-	{49,	"G3D1",		"DREX",		GENMASK(5, 0),	0},
-	{50,	"G3D2",		"DREX",		GENMASK(5, 0),	0},
-	{51,	"G3D3",		"DREX",		GENMASK(5, 0),	0},
-	{52,	"CP",		"DREX",		GENMASK(5, 0),	0},
+	{0, "DPU0", 		"DREX", GENMASK(5, 0), 0},
+	{1, "DPU1", 		"DREX", GENMASK(5, 0), 0},
+	{2, "DPU2", 		"DREX", GENMASK(5, 0), 0},
+	{3, "CAM0", 		"DREX", GENMASK(5, 0), 0},
+	{4, "CAM1", 		"DREX", GENMASK(5, 0), 0},
+	{5, "ISPLP", 		"DREX", GENMASK(5, 0), 0},
+	{6, "SRDZ", 		"DREX", GENMASK(5, 0), 0},
+	{7, "IVA", 		"DREX", GENMASK(5, 0), 0},
+	{8, "DSP", 		"DREX", GENMASK(5, 0), 0},
+	{9, "VPU", 		"DREX", GENMASK(5, 0), 0},
+	{10, "MFC0", 		"DREX", GENMASK(5, 0), 0},
+	{11, "MFC1", 		"DREX", GENMASK(5, 0), 0},
+	{12, "G2D0", 		"DREX", GENMASK(5, 0), 0},
+	{13, "G2D1", 		"DREX", GENMASK(5, 0), 0},
+	{14, "G2D2", 		"DREX", GENMASK(5, 0), 0},
+	{15, "VTS", 		"DREX", GENMASK(5, 0), 0},
+	{16, "FSYS0", 		"DREX", GENMASK(5, 0), 0},
+	{17, "CORESIGHT", 	"DREX", GENMASK(5, 0), 0},
+	{18, "PDMA", 		"DREX", GENMASK(5, 0), 0},
+	{19, "SPDMA", 		"DREX", GENMASK(5, 0), 0},
+	{20, "FSYS1", 		"DREX", GENMASK(5, 0), 0},
+	{21, "GNSS", 		"DREX", GENMASK(5, 0), 0},
+	{22, "ALIVE", 		"DREX", GENMASK(5, 0), 0},
+	{23, "ABOX", 		"DREX", GENMASK(5, 0), 0},
+	{24, "DPU0", 		"DREX", GENMASK(5, 0), 0},
+	{25, "DPU1", 		"DREX", GENMASK(5, 0), 0},
+	{26, "DPU2", 		"DREX", GENMASK(5, 0), 0},
+	{27, "CAM0", 		"DREX", GENMASK(5, 0), 0},
+	{28, "CAM1", 		"DREX", GENMASK(5, 0), 0},
+	{29, "ISPLP", 		"DREX", GENMASK(5, 0), 0},
+	{30, "SRDZ", 		"DREX", GENMASK(5, 0), 0},
+	{31, "IVA", 		"DREX", GENMASK(5, 0), 0},
+	{32, "DSP", 		"DREX", GENMASK(5, 0), 0},
+	{33, "VPU", 		"DREX", GENMASK(5, 0), 0},
+	{34, "MFC0", 		"DREX", GENMASK(5, 0), 0},
+	{35, "MFC1", 		"DREX", GENMASK(5, 0), 0},
+	{36, "G2D0", 		"DREX", GENMASK(5, 0), 0},
+	{37, "G2D1", 		"DREX", GENMASK(5, 0), 0},
+	{38, "G2D2", 		"DREX", GENMASK(5, 0), 0},
+	{39, "VTS", 		"DREX", GENMASK(5, 0), 0},
+	{40, "FSYS0", 		"DREX", GENMASK(5, 0), 0},
+	{41, "CORESIGHT", 	"DREX", GENMASK(5, 0), 0},
+	{42, "PDMA", 		"DREX", GENMASK(5, 0), 0},
+	{43, "SPDMA", 		"DREX", GENMASK(5, 0), 0},
+	{44, "FSYS1", 		"DREX", GENMASK(5, 0), 0},
+	{45, "GNSS", 		"DREX", GENMASK(5, 0), 0},
+	{46, "ALIVE", 		"DREX", GENMASK(5, 0), 0},
+	{47, "ABOX", 		"DREX", GENMASK(5, 0), 0},
+	{48, "G3D0", 		"DREX", GENMASK(5, 0), 0},
+	{49, "G3D1", 		"DREX", GENMASK(5, 0), 0},
+	{50, "G3D2", 		"DREX", GENMASK(5, 0), 0},
+	{51, "G3D3", 		"DREX", GENMASK(5, 0), 0},
+	{52, "CP", 		"DREX", GENMASK(5, 0), 0},
 	/* Target Address = 0x1800_0000 ~ 0x1fff_ffff */
-	{0,	"DPU0",		"SP",		GENMASK(4, 0),	0},
-	{1,	"DPU1",		"SP",		GENMASK(4, 0),	0},
-	{2,	"DPU2",		"SP",		GENMASK(4, 0),	0},
-	{3,	"CAM0",		"SP",		GENMASK(4, 0),	0},
-	{4,	"CAM1",		"SP",		GENMASK(4, 0),	0},
-	{5,	"ISPLP",	"SP",		GENMASK(4, 0),	0},
-	{6,	"SRDZ",		"SP",		GENMASK(4, 0),	0},
-	{7,	"IVA",		"SP",		GENMASK(4, 0),	0},
-	{8,	"DSP",		"SP",		GENMASK(4, 0),	0},
-	{9,	"VPU",		"SP",		GENMASK(4, 0),	0},
-	{10,	"MFC0",		"SP",		GENMASK(4, 0),	0},
-	{11,	"MFC1",		"SP",		GENMASK(4, 0),	0},
-	{12,	"G2D0",		"SP",		GENMASK(4, 0),	0},
-	{13,	"G2D1",		"SP",		GENMASK(4, 0),	0},
-	{14,	"G2D2",		"SP",		GENMASK(4, 0),	0},
-	{15,	"VTS",		"SP",		GENMASK(4, 0),	0},
-	{16,	"FSYS0",	"SP",		GENMASK(4, 0),	0},
-	{17,	"CORESIGHT",	"SP",		GENMASK(4, 0),	0},
-	{18,	"PDMA",		"SP",		GENMASK(4, 0),	0},
-	{19,	"SPDMA",	"SP",		GENMASK(4, 0),	0},
-	{20,	"FSYS1",	"SP",		GENMASK(4, 0),	0},
-	{21,	"GNSS",		"SP",		GENMASK(4, 0),	0},
-	{22,	"ALIVE",	"SP",		GENMASK(4, 0),	0},
-	{23,	"ABOX",		"SP",		GENMASK(4, 0),	0},
+	{0, "DPU0", 		"SP", GENMASK(4, 0), 0},
+	{1, "DPU1", 		"SP", GENMASK(4, 0), 0},
+	{2, "DPU2", 		"SP", GENMASK(4, 0), 0},
+	{3, "CAM0", 		"SP", GENMASK(4, 0), 0},
+	{4, "CAM1", 		"SP", GENMASK(4, 0), 0},
+	{5, "ISPLP", 		"SP", GENMASK(4, 0), 0},
+	{6, "SRDZ", 		"SP", GENMASK(4, 0), 0},
+	{7, "IVA", 		"SP", GENMASK(4, 0), 0},
+	{8, "DSP", 		"SP", GENMASK(4, 0), 0},
+	{9, "VPU", 		"SP", GENMASK(4, 0), 0},
+	{10, "MFC0", 		"SP", GENMASK(4, 0), 0},
+	{11, "MFC1", 		"SP", GENMASK(4, 0), 0},
+	{12, "G2D0", 		"SP", GENMASK(4, 0), 0},
+	{13, "G2D1", 		"SP", GENMASK(4, 0), 0},
+	{14, "G2D2", 		"SP", GENMASK(4, 0), 0},
+	{15, "VTS", 		"SP", GENMASK(4, 0), 0},
+	{16, "FSYS0", 		"SP", GENMASK(4, 0), 0},
+	{17, "CORESIGHT", 	"SP", GENMASK(4, 0), 0},
+	{18, "PDMA", 		"SP", GENMASK(4, 0), 0},
+	{19, "SPDMA", 		"SP", GENMASK(4, 0), 0},
+	{20, "FSYS1", 		"SP", GENMASK(4, 0), 0},
+	{21, "GNSS", 		"SP", GENMASK(4, 0), 0},
+	{22, "ALIVE", 		"SP", GENMASK(4, 0), 0},
+	{23, "ABOX", 		"SP", GENMASK(4, 0), 0},
 	/* Target Address = 0x0000_0000 ~ 0x17ff_ffff */
-	{0,	"DPU0",		"PERI",		GENMASK(4, 0),	0},
-	{1,	"DPU1",		"PERI",		GENMASK(4, 0),	0},
-	{2,	"DPU2",		"PERI",		GENMASK(4, 0),	0},
-	{3,	"CAM0",		"PERI",		GENMASK(4, 0),	0},
-	{4,	"CAM1",		"PERI",		GENMASK(4, 0),	0},
-	{5,	"ISPLP",	"PERI",		GENMASK(4, 0),	0},
-	{6,	"SRDZ",		"PERI",		GENMASK(4, 0),	0},
-	{7,	"IVA",		"PERI",		GENMASK(4, 0),	0},
-	{8,	"DSP",		"PERI",		GENMASK(4, 0),	0},
-	{9,	"VPU",		"PERI",		GENMASK(4, 0),	0},
-	{10,	"MFC0",		"PERI",		GENMASK(4, 0),	0},
-	{11,	"MFC1",		"PERI",		GENMASK(4, 0),	0},
-	{12,	"G2D0",		"PERI",		GENMASK(4, 0),	0},
-	{13,	"G2D1",		"PERI",		GENMASK(4, 0),	0},
-	{14,	"G2D2",		"PERI",		GENMASK(4, 0),	0},
-	{15,	"ABOX",		"PERI",		GENMASK(4, 0),	0},
-	{16,	"VTS",		"PERI",		GENMASK(4, 0),	0},
-	{17,	"FSYS0",	"PERI",		GENMASK(4, 0),	0},
-	{18,	"CORESIGHT",	"PERI",		GENMASK(4, 0),	0},
-	{19,	"PDMA",		"PERI",		GENMASK(4, 0),	0},
-	{20,	"SPDMA",	"PERI",		GENMASK(4, 0),	0},
-	{21,	"FSYS1",	"PERI",		GENMASK(4, 0),	0},
-	{22,	"GNSS",		"PERI",		GENMASK(4, 0),	0},
-	{22,	"ALIVE",	"PERI",		GENMASK(4, 0),	0},
+	{0, "DPU0", 		"PERI", GENMASK(4, 0), 0},
+	{1, "DPU1", 		"PERI", GENMASK(4, 0), 0},
+	{2, "DPU2", 		"PERI", GENMASK(4, 0), 0},
+	{3, "CAM0", 		"PERI", GENMASK(4, 0), 0},
+	{4, "CAM1", 		"PERI", GENMASK(4, 0), 0},
+	{5, "ISPLP", 		"PERI", GENMASK(4, 0), 0},
+	{6, "SRDZ", 		"PERI", GENMASK(4, 0), 0},
+	{7, "IVA", 		"PERI", GENMASK(4, 0), 0},
+	{8, "DSP", 		"PERI", GENMASK(4, 0), 0},
+	{9, "VPU", 		"PERI", GENMASK(4, 0), 0},
+	{10, "MFC0", 		"PERI", GENMASK(4, 0), 0},
+	{11, "MFC1", 		"PERI", GENMASK(4, 0), 0},
+	{12, "G2D0", 		"PERI", GENMASK(4, 0), 0},
+	{13, "G2D1", 		"PERI", GENMASK(4, 0), 0},
+	{14, "G2D2", 		"PERI", GENMASK(4, 0), 0},
+	{15, "ABOX", 		"PERI", GENMASK(4, 0), 0},
+	{16, "VTS", 		"PERI", GENMASK(4, 0), 0},
+	{17, "FSYS0", 		"PERI", GENMASK(4, 0), 0},
+	{18, "CORESIGHT",	"PERI", GENMASK(4, 0), 0},
+	{19, "PDMA", 		"PERI", GENMASK(4, 0), 0},
+	{20, "SPDMA", 		"PERI", GENMASK(4, 0), 0},
+	{21, "FSYS1", 		"PERI", GENMASK(4, 0), 0},
+	{22, "GNSS", 		"PERI", GENMASK(4, 0), 0},
+	{22, "ALIVE", 		"PERI", GENMASK(4, 0), 0},
 };
 
-/* XIU ID Information */
 const static struct itm_masterinfo masterinfo[] = {
-	{"DPU0",	0,			/* 0XXXX0 */	"DPP/WBMUX",	BIT(5) | BIT(0)},
-	{"DPU0",	BIT(0),			/* 0XXXX1 */	"SYSMMU_DPU0",	BIT(5) | BIT(0)},
+	{"DPU0", 0, 			/* 0XXXX0 */ "DPP/WBMUX", 	BIT(5) | BIT(0)},
+	{"DPU0", BIT(0), 		/* 0XXXX1 */ "SYSMMU_DPU0", 	BIT(5) | BIT(0)},
 
-	{"DPU1",	0,			/* 0XXXX0 */	"DPP/WBMUX",	BIT(5) | BIT(0)},
-	{"DPU1",	BIT(0),			/* 0XXXX1 */	"SYSMMU_DPU1",	BIT(5) | BIT(0)},
+	{"DPU1", 0, 			/* 0XXXX0 */ "DPP/WBMUX", 	BIT(5) | BIT(0)},
+	{"DPU1", BIT(0), 		/* 0XXXX1 */ "SYSMMU_DPU1", 	BIT(5) | BIT(0)},
 
-	{"DPU2",	0,			/* 0XXXX0 */	"DPP/WBMUX",	BIT(5) | BIT(0)},
-	{"DPU2",	BIT(0),			/* 0XXXX1 */	"SYSMMU_DPU2",	BIT(5) | BIT(0)},
+	{"DPU2", 0, 			/* 0XXXX0 */ "DPP/WBMUX", 	BIT(5) | BIT(0)},
+	{"DPU2", BIT(0), 		/* 0XXXX1 */ "SYSMMU_DPU2", 	BIT(5) | BIT(0)},
 
-	{"CAM0",	0,			/* 0XX000 */	"CSISx4",	BIT(5) | GENMASK(2, 0)},
-	{"CAM0",	BIT(1),			/* 0XX010 */	"TPU0",		BIT(5) | GENMASK(2, 0)},
-	{"CAM0",	BIT(2),			/* 0XX100 */	"VRA",		BIT(5) | GENMASK(2, 0)},
-	{"CAM0",	GENMASK(2, 1),		/* 0XX110 */	"TPU1",		BIT(5) | GENMASK(2, 0)},
-	{"CAM0",	BIT(0),			/* 0XXXX1 */	"SYSMMU_CAM0",	BIT(5) | BIT(0)},
+	{"CAM0", 0, 			/* 0XX000 */ "CSISx4", 		BIT(5) | GENMASK(2, 0)},
+	{"CAM0", BIT(1), 		/* 0XX010 */ "TPU0", 		BIT(5) | GENMASK(2, 0)},
+	{"CAM0", BIT(2), 		/* 0XX100 */ "VRA", 		BIT(5) | GENMASK(2, 0)},
+	{"CAM0", GENMASK(2, 1), 	/* 0XX110 */ "TPU1", 		BIT(5) | GENMASK(2, 0)},
+	{"CAM0", BIT(0), 		/* 0XXXX1 */ "SYSMMU_CAM0", 	BIT(5) | BIT(0)},
 
-	{"CAM1",	0,			/* 0XXXX0 */	"MC_SCALER",	BIT(5) | BIT(0)},
-	{"CAM1",	BIT(0),			/* 0XXXX1 */	"SYSMMU_CAM1",	BIT(5) | BIT(0)},
+	{"CAM1", 0, 			/* 0XXXX0 */ "MC_SCALER", 	BIT(5) | BIT(0)},
+	{"CAM1", BIT(0), 		/* 0XXXX1 */ "SYSMMU_CAM1", 	BIT(5) | BIT(0)},
 
-	{"ISPLP",	0,			/* 0XX000 */	"3AAW",		BIT(5) | GENMASK(2, 0)},
-	{"ISPLP",	BIT(1),			/* 0XX010 */	"ISPLP",	BIT(5) | GENMASK(2, 0)},
-	{"ISPLP",	BIT(2),			/* 0XX100 */	"ISPHQ",	BIT(5) | GENMASK(2, 0)},
-	{"ISPLP",	BIT(0),			/* 0XXXX1 */	"SYSMMU_ISPLP",	BIT(5) | BIT(0)},
+	{"ISPLP", 0, 			/* 0XX000 */ "3AAW", 		BIT(5) | GENMASK(2, 0)},
+	{"ISPLP", BIT(1), 		/* 0XX010 */ "ISPLP", 		BIT(5) | GENMASK(2, 0)},
+	{"ISPLP", BIT(2), 		/* 0XX100 */ "ISPHQ", 		BIT(5) | GENMASK(2, 0)},
+	{"ISPLP", BIT(0), 		/* 0XXXX1 */ "SYSMMU_ISPLP", 	BIT(5) | BIT(0)},
 
-	{"FSYS0",	0,			/* 0XXX00 */	"ETR",		BIT(5) | GENMASK(1, 0)},
-	{"FSYS0",	BIT(1),			/* 0XXX10 */	"USB",		BIT(5) | GENMASK(1, 0)},
-	{"FSYS0",	BIT(0),			/* 0XXXX1 */	"UFS",		BIT(5) | BIT(0)},
+	{"FSYS0", 0, 			/* 0XXX00 */ "ETR", 		BIT(5) | GENMASK(1, 0)},
+	{"FSYS0", BIT(1), 		/* 0XXX10 */ "USB", 		BIT(5) | GENMASK(1, 0)},
+	{"FSYS0", BIT(0), 		/* 0XXXX1 */ "UFS", 		BIT(5) | BIT(0)},
 
-	{"MFC0",	0,			/* 0XXXX0 */	"MFC0",		BIT(5) | BIT(0)},
-	{"MFC0",	BIT(0),			/* 0XXXX1 */	"SYSMMU_MFC0",	BIT(5) | BIT(0)},
+	{"MFC0", 0, 			/* 0XXXX0 */ "MFC0", 		BIT(5) | BIT(0)},
+	{"MFC0", BIT(0), 		/* 0XXXX1 */ "SYSMMU_MFC0", 	BIT(5) | BIT(0)},
 
-	{"MFC1",	0,			/* 0XXXX0 */	"MFC1",		BIT(5) | BIT(0)},
-	{"MFC1",	BIT(0),			/* 0XXXX1 */	"SYSMMU_MFC1",	BIT(5) | BIT(0)},
+	{"MFC1", 0, 			/* 0XXXX0 */ "MFC1", 		BIT(5) | BIT(0)},
+	{"MFC1", BIT(0), 		/* 0XXXX1 */ "SYSMMU_MFC1", 	BIT(5) | BIT(0)},
 
-	{"G2D0",	0,			/* 0XXXX0 */	"G2D0",		BIT(5) | BIT(0)},
-	{"G2D0",	BIT(0),			/* 0XXXX1 */	"SYSMMU_G2D0",	BIT(5) | BIT(0)},
+	{"G2D0", 0, 			/* 0XXXX0 */ "G2D0", 		BIT(5) | BIT(0)},
+	{"G2D0", BIT(0), 		/* 0XXXX1 */ "SYSMMU_G2D0", 	BIT(5) | BIT(0)},
 
-	{"G2D1",	0,			/* 0XXXX0 */	"G2D1",		BIT(5) | BIT(0)},
-	{"G2D1",	BIT(0),			/* 0XXXX1 */	"SYSMMU_G2D1",	BIT(5) | BIT(0)},
+	{"G2D1", 0, 			/* 0XXXX0 */ "G2D1", 		BIT(5) | BIT(0)},
+	{"G2D1", BIT(0), 		/* 0XXXX1 */ "SYSMMU_G2D1", 	BIT(5) | BIT(0)},
 
-	{"G2D2",	0,			/* 0XXX00 */	"JPEG",		BIT(5) | GENMASK(1, 0)},
-	{"G2D2",	BIT(1),			/* 0XXX10 */	"M2MSCALER",	BIT(5) | GENMASK(1, 0)},
-	{"G2D2",	BIT(0),			/* 0XXXX1 */	"SYSMMU_G2D2",	BIT(5) | BIT(0)},
+	{"G2D2", 0, 			/* 0XXX00 */ "JPEG", 		BIT(5) | GENMASK(1, 0)},
+	{"G2D2", BIT(1), 		/* 0XXX10 */ "M2MSCALER", 	BIT(5) | GENMASK(1, 0)},
+	{"G2D2", BIT(0), 		/* 0XXXX1 */ "SYSMMU_G2D2", 	BIT(5) | BIT(0)},
 
-	{"IVA",		0,			/* 0XXX00 */	"DSP0",		BIT(5) | GENMASK(1, 0)},
-	{"IVA",		BIT(1),			/* 0XXX10 */	"DSP1",		BIT(5) | GENMASK(1, 0)},
-	{"IVA",		BIT(0),			/* 0XXXX1 */	"SYSMMU_DSP",	BIT(5) | BIT(0)},
+	{"IVA", 0, 			/* 0XXX00 */ "DSP0", 		BIT(5) | GENMASK(1, 0)},
+	{"IVA", BIT(1), 		/* 0XXX10 */ "DSP1", 		BIT(5) | GENMASK(1, 0)},
+	{"IVA", BIT(0), 		/* 0XXXX1 */ "SYSMMU_DSP", 	BIT(5) | BIT(0)},
 
-	{"VPU",		0,			/* 0XXXX0 */	"VPU",		BIT(5) | BIT(0)},
-	{"VPU",		BIT(0),			/* 0XXXX1 */	"SYSMMU_VPU",	BIT(5) | BIT(0)},
+	{"VPU", 0, 			/* 0XXXX0 */ "VPU", 		BIT(5) | BIT(0)},
+	{"VPU", BIT(0), 		/* 0XXXX1 */ "SYSMMU_VPU", 	BIT(5) | BIT(0)},
 
-	{"FSYS1",	0,			/* 0XX000 */	"MMC2",		BIT(5) | GENMASK(2, 0)},
-	{"FSYS1",	BIT(0),			/* 0XX001 */	"PCIE0",	BIT(5) | GENMASK(2, 0)},
-	{"FSYS1",	BIT(1),			/* 0XX010 */	"PCIE1",	BIT(5) | GENMASK(2, 0)},
-	{"FSYS1",	GENMASK(1, 0),		/* 0XX011 */	"SSS",		BIT(5) | GENMASK(2, 0)},
-	{"FSYS1",	BIT(2),			/* 0XX100 */	"RTIC",		BIT(5) | GENMASK(2, 0)},
-	{"FSYS1",	BIT(2) | BIT(0),	/* 0XX101 */	"MCOMP",	BIT(5) | GENMASK(2, 0)},
+	{"FSYS1", 0, 			/* 0XX000 */ "MMC2", 		BIT(5) | GENMASK(2, 0)},
+	{"FSYS1", BIT(0), 		/* 0XX001 */ "PCIE0", 		BIT(5) | GENMASK(2, 0)},
+	{"FSYS1", BIT(1), 		/* 0XX010 */ "PCIE1", 		BIT(5) | GENMASK(2, 0)},
+	{"FSYS1", GENMASK(1, 0), 	/* 0XX011 */ "SSS", 		BIT(5) | GENMASK(2, 0)},
+	{"FSYS1", BIT(2), 		/* 0XX100 */ "RTIC", 		BIT(5) | GENMASK(2, 0)},
+	{"FSYS1", BIT(2) | BIT(0), 	/* 0XX101 */ "MCOMP", 		BIT(5) | GENMASK(2, 0)},
 
-	{"AUD",		0,			/* 0XXXX0 */	"SPUS/SPUM/CA7",BIT(5) | BIT(0)},
-	{"AUD",		BIT(0),			/* 0XXXX1 */	"SYSMMU_AUC",	BIT(5) | BIT(0)},
+	{"AUD", 0, 			/* 0XXXX0 */ "SPUS/SPUM/CA7", 	BIT(5) | BIT(0)},
+	{"AUD", BIT(0), 		/* 0XXXX1 */ "SYSMMU_AUC", 	BIT(5) | BIT(0)},
 
-	{"GNSS",	0,			/* 0XXX00 */	"CM0+",		BIT(5) | GENMASK(1, 0)},
-	{"GNSS",	BIT(0),			/* 0XXX01 */	"XDMA0",	BIT(5) | GENMASK(1, 0)},
-	{"GNSS",	BIT(1),			/* 0XXX10 */	"XDMA1",	BIT(5) | GENMASK(1, 0)},
+	{"GNSS", 0, 			/* 0XXX00 */ "CM0+", 		BIT(5) | GENMASK(1, 0)},
+	{"GNSS", BIT(0), 		/* 0XXX01 */ "XDMA0", 		BIT(5) | GENMASK(1, 0)},
+	{"GNSS", BIT(1), 		/* 0XXX10 */ "XDMA1", 		BIT(5) | GENMASK(1, 0)},
 
-	{"ALIVE",	0,			/* 0XXX00 */	"CM3",		BIT(5) | GENMASK(1, 0)},
-	{"ALIVE",	BIT(0),			/* 0XXX01 */	"SCAN2AXI",	BIT(5) | GENMASK(1, 0)},
-	{"ALIVE",	BIT(1),			/* 0XXX10 */	"CM4F/DMIC",	BIT(5) | GENMASK(1, 0)},
+	{"ALIVE", 0, 			/* 0XXX00 */ "CM3", 		BIT(5) | GENMASK(1, 0)},
+	{"ALIVE", BIT(0), 		/* 0XXX01 */ "SCAN2AXI", 	BIT(5) | GENMASK(1, 0)},
+	{"ALIVE", BIT(1), 		/* 0XXX10 */ "CM4F/DMIC", 	BIT(5) | GENMASK(1, 0)},
 
-	{"CP",		BIT(3),			/* X01XXX */	"CR7M",		GENMASK(4, 3)},
-	{"CP",		BIT(2),			/* X001XX */	"CR4MtoL2",	GENMASK(4, 2)},
-	{"CP",		GENMASK(4, 3),		/* X1100X */	"DMA",		GENMASK(4, 1)},
-	{"CP",		GENMASK(4, 3) | BIT(1),	/* X1101X */	"MDMtoL2",	GENMASK(4, 1)},
-	{"CP",		BIT(4),			/* X1000X */	"LMACtoL2",	GENMASK(4, 1)},
-	{"CP",		BIT(1),			/* X00010 */	"CSXAP",	BIT(1)},
-	{"CP",		BIT(4) | GENMASK(1, 0),	/* X10011 */	"HARQMOVERtoL2",GENMASK(4, 0)},
+	{"CP", BIT(3), 			/* X01XXX */ "CR7M", 		GENMASK(4, 3)},
+	{"CP", BIT(2), 			/* X001XX */ "CR4MtoL2", 	GENMASK(4, 2)},
+	{"CP", GENMASK(4, 3), 		/* X1100X */ "DMA", 		GENMASK(4, 1)},
+	{"CP", GENMASK(4, 3) | BIT(1), 	/* X1101X */ "MDMtoL2", 	GENMASK(4, 1)},
+	{"CP", BIT(4), 			/* X1000X */ "LMACtoL2", 	GENMASK(4, 1)},
+	{"CP", BIT(1), 			/* X00010 */ "CSXAP", 		BIT(1)},
+	{"CP", BIT(4) | GENMASK(1, 0), 	/* X10011 */ "HARQMOVERtoL2", 	GENMASK(4, 0)},
 
 	/* Others */
-	{"SRDZ",	0,					"SRDZ",		0},
-	{"DSP",		0,					"DSP",		0},
-	{"ABOX",	0,					"ABOX",		0},
-	{"VTS",		0,					"VTS",		0},
-	{"PDMA",	0,					"PDMA",		0},
-	{"SPDMA",	0,					"SPDMA",	0},
+	{"SRDZ", 0, "SRDZ", 0},
+	{"DSP",  0, "DSP",  0},
+	{"ABOX", 0, "ABOX", 0},
+	{"VTS",  0, "VTS",  0},
+	{"PDMA", 0, "PDMA", 0},
+	{"SPDMA",0, "SPDMA",0},
 };
 
 static struct itm_nodeinfo data_bus_1[] = {
-	{M_NODE,	"ALIVE",	0x15423000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"FSYS1",	0x15403000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"GNSS",		0x15413000, NULL, 0,	   false, false, true,  false},
-	{T_S_NODE,	"BUS1_B0",	0x15433000, NULL, TMOUT,   true,  false, true,  false},
+	{M_NODE, 	"ALIVE", 	0x15423000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"FSYS1", 	0x15403000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"GNSS", 	0x15413000, NULL, 0, 	false, false, true, false},
+	{T_S_NODE, 	"BUS1_B0", 	0x15433000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itm_nodeinfo data_bus_c[] = {
-	{M_NODE,	"ABOX",		0x15143000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"BUS1_B0",	0x15503000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"CAM0",		0x15043000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"CAM1",		0x15053000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"CORESIGHT",	0x15113000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"DPU0",		0x15013000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"DPU1",		0x15023000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"DPU2",		0x15033000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"DSP",		0x15093000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"FSYS0",	0x15103000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G2D0",		0x150D3000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G2D1",		0x150E3000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G2D2",		0x150F3000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"ISPLP",	0x15063000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"IVA",		0x15083000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"MFC0",		0x150B3000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"MFC1",		0x150C3000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"PDMA",		0x15123000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"SPDMA",	0x15133000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"SRDZ",		0x15073000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"VPU",		0x150A3000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"VTS",		0x15153000, NULL, 0,	   false, false, true,  false},
-	{T_S_NODE,	"BUSC_M0",	0x15163000, NULL, 0,	   false,  false, true,  false},
-	{T_S_NODE,	"BUSC_M1",	0x15173000, NULL, 0,	   false,  false, true,  false},
-	{T_S_NODE,	"BUSC_M2",	0x15183000, NULL, 0,	   false,  false, true,  false},
-	{T_S_NODE,	"BUSC_M3",	0x15193000, NULL, 0,	   false,  false, true,  false},
-	{S_NODE,	"PERI",		0x151B3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"SP",		0x151A3000, NULL, TMOUT,   true,  false, true,  false},
+	{M_NODE, 	"ABOX", 	0x15143000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"BUS1_B0", 	0x15503000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"CAM0", 	0x15043000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"CAM1", 	0x15053000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"CORESIGHT", 	0x15113000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"DPU0", 	0x15013000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"DPU1", 	0x15023000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"DPU2", 	0x15033000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"DSP", 		0x15093000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"FSYS0", 	0x15103000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G2D0", 	0x150D3000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G2D1", 	0x150E3000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G2D2", 	0x150F3000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"ISPLP", 	0x15063000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"IVA", 		0x15083000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"MFC0", 	0x150B3000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"MFC1", 	0x150C3000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"PDMA", 	0x15123000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"SPDMA", 	0x15133000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"SRDZ", 	0x15073000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"VPU", 		0x150A3000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"VTS", 		0x15153000, NULL, 0, 	false, false, true, false},
+	{T_S_NODE, 	"BUSC_M0", 	0x15163000, NULL, 0, 	false, false, true, false},
+	{T_S_NODE, 	"BUSC_M1", 	0x15173000, NULL, 0, 	false, false, true, false},
+	{T_S_NODE, 	"BUSC_M2", 	0x15183000, NULL, 0, 	false, false, true, false},
+	{T_S_NODE, 	"BUSC_M3", 	0x15193000, NULL, 0, 	false, false, true, false},
+	{S_NODE, 	"PERI", 	0x151B3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"SP", 		0x151A3000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itm_nodeinfo data_core[] = {
-	{T_M_NODE,	"BUSC_M0",	0x14A03000, NULL, 0,	   false, false, true,  false},
-	{T_M_NODE,	"BUSC_M1",	0x14A13000, NULL, 0,	   false, false, true,  false},
-	{T_M_NODE,	"BUSC_M2",	0x14A23000, NULL, 0,	   false, false, true,  false},
-	{T_M_NODE,	"BUSC_M3",	0x14A33000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"CP",		0x14A83000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G3D0",		0x14A43000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G3D1",		0x14A53000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G3D2",		0x14A63000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"G3D3",		0x14A73000, NULL, 0,	   false, false, true,  false},
-	{S_NODE,	"DREX",		0x14A93000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"DREX",		0x14AA3000, NULL, TMOUT,   true,  false, true,  false},
+	{T_M_NODE, 	"BUSC_M0", 	0x14A03000, NULL, 0, 	false, false, true, false},
+	{T_M_NODE, 	"BUSC_M1", 	0x14A13000, NULL, 0, 	false, false, true, false},
+	{T_M_NODE, 	"BUSC_M2", 	0x14A23000, NULL, 0, 	false, false, true, false},
+	{T_M_NODE, 	"BUSC_M3", 	0x14A33000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"CP", 		0x14A83000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G3D0", 	0x14A43000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G3D1", 	0x14A53000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G3D2", 	0x14A63000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"G3D3", 	0x14A73000, NULL, 0, 	false, false, true, false},
+	{S_NODE, 	"DREX", 	0x14A93000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"DREX", 	0x14AA3000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itm_nodeinfo peri_bus_1[] = {
-	{T_M_NODE,	"BUSC_BUS1",	0x15643000, NULL, 0,	   false, false, true,  false},
-	{S_NODE,	"ALIVE",	0x15633000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"BUS1_SFR",	0x15613000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"FSYS1",	0x15623000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"TREX_BUS1",	0x15603000, NULL, TMOUT,   true,  false, true,  false},
+	{T_M_NODE, 	"BUSC_BUS1", 	0x15643000, NULL, 0, 	false, false, true, false},
+	{S_NODE, 	"ALIVE", 	0x15633000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"BUS1_SFR", 	0x15613000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"FSYS1", 	0x15623000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"TREX_BUS1", 	0x15603000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itm_nodeinfo peri_bus_c[] = {
-	{M_NODE,	"BUSC_PERI_M",	0x153A3000, NULL, 0,	   false, false, true,  false},
-	{T_M_NODE,	"CORE_BUSC",	0x153B3000, NULL, 0,	   false, false, true,  false},
-	{S_NODE,	"ABOX",		0x15383000, NULL, TMOUT,   true,  false, true,  false},
-	{T_S_NODE,	"BUSC_BUS1",	0x15243000, NULL, 0,	   true,  false, true,  false},
-	{S_NODE,	"BUSC_CORE",	0x15233000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"BUSC_SFR0",	0x15213000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"BUSC_SFR1",	0x15223000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"CAM",		0x152E3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"DPU0",		0x152C3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"DPU1",		0x152D3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"DSP",		0x15363000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"FSYS0",	0x15333000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"G2D",		0x15343000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"ISPHQ",	0x15313000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"ISPLP",	0x15303000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"IVA",		0x15353000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"MFC",		0x15323000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"MIF0",		0x15253000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"MIF1",		0x15263000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"MIF2",		0x15273000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"MIF3",		0x15283000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"PERIC0",	0x152A3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"PERIC1",	0x152B3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"PERIS",	0x15293000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"SRDZ",		0x152F3000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"TREX_BUSC",	0x15203000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"VPU",		0x15373000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"VTS",		0x15393000, NULL, TMOUT,   true,  false, true,  false},
+	{M_NODE, 	"BUSC_PERI_M", 	0x153A3000, NULL, 0, 	false, false, true, false},
+	{T_M_NODE, 	"CORE_BUSC", 	0x153B3000, NULL, 0, 	false, false, true, false},
+	{S_NODE, 	"ABOX", 	0x15383000, NULL, TMOUT, true, false, true, false},
+	{T_S_NODE, 	"BUSC_BUS1", 	0x15243000, NULL, 0, 	true, false, true, false},
+	{S_NODE, 	"BUSC_CORE", 	0x15233000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"BUSC_SFR0", 	0x15213000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"BUSC_SFR1", 	0x15223000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"CAM", 		0x152E3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"DPU0", 	0x152C3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"DPU1", 	0x152D3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"DSP", 		0x15363000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"FSYS0", 	0x15333000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"G2D", 		0x15343000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"ISPHQ", 	0x15313000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"ISPLP", 	0x15303000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"IVA", 		0x15353000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"MFC", 		0x15323000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"MIF0", 	0x15253000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"MIF1", 	0x15263000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"MIF2", 	0x15273000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"MIF3", 	0x15283000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"PERIC0", 	0x152A3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"PERIC1", 	0x152B3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"PERIS", 	0x15293000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"SRDZ", 	0x152F3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"TREX_BUSC", 	0x15203000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"VPU", 		0x15373000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"VTS", 		0x15393000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itm_nodeinfo peri_core_0[] = {
-	{M_NODE,	"CP_PERI_M",	0x14C63000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"SCI_CCM0",	0x14C33000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"SCI_CCM1",	0x14C43000, NULL, 0,	   false, false, true,  false},
-	{M_NODE,	"SCI_IRPM",	0x14C53000, NULL, 0,	   false, false, true,  false},
-	{T_S_NODE,	"CORE0_CORE1",	0x14C03000, NULL, 0,	   true,  false, true,  false},
-	{T_S_NODE,	"CORE_BUSC",	0x14C13000, NULL, 0,	   true,  false, true,  false},
+	{M_NODE, 	"CP_PERI_M", 	0x14C63000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"SCI_CCM0", 	0x14C33000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"SCI_CCM1", 	0x14C43000, NULL, 0, 	false, false, true, false},
+	{M_NODE, 	"SCI_IRPM", 	0x14C53000, NULL, 0, 	false, false, true, false},
+	{T_S_NODE, 	"CORE0_CORE1", 	0x14C03000, NULL, 0, 	true, false, true, false},
+	{T_S_NODE, 	"CORE_BUSC", 	0x14C13000, NULL, 0, 	true, false, true, false},
 };
 
 static struct itm_nodeinfo peri_core_1[] = {
-	{T_M_NODE,	"BUSC_CORE",	0x14E13000, NULL, 0,	   false, false, true,  false},
-	{T_M_NODE,	"CORE0_CORE1",	0x14E03000, NULL, 0,	   false, false, true,  false},
-	{S_NODE,	"CORESIGHT",	0x14E83000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"CORE_SFR",	0x14E33000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"CPUCL0",	0x14E53000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"CPUCL1",	0x14E63000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"G3D",		0x14E73000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"IMEM",		0x14E03000, NULL, TMOUT,   true,  false, true,  false},
-	{S_NODE,	"TREX_CORE",	0x14E23000, NULL, TMOUT,   true,  false, true,  false},
+	{T_M_NODE, 	"BUSC_CORE", 	0x14E13000, NULL, 0, 	false, false, true, false},
+	{T_M_NODE, 	"CORE0_CORE1", 	0x14E03000, NULL, 0, 	false, false, true, false},
+	{S_NODE, 	"CORESIGHT", 	0x14E83000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"CORE_SFR", 	0x14E33000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"CPUCL0", 	0x14E53000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"CPUCL1", 	0x14E63000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"G3D", 		0x14E73000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"IMEM", 	0x14E03000, NULL, TMOUT, true, false, true, false},
+	{S_NODE, 	"TREX_CORE", 	0x14E23000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itm_nodegroup nodegroup[] = {
-	{311,		"DATA_CORE",	0x14AB3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, false},
-	{ 92,		"DATA_BUS_C",	0x151C3000, NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, false},
-	{ 72,		"DATA_BUS_1",	0x15443000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, false},
-	{315,		"PERI_CORE_0",	0x14C73000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),0, false},
-	{316,		"PERI_CORE_1",	0x14E93000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),0, false},
-	{ 77,		"PERI_BUS_1",	0x15653000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, false},
-	{ 93,		"PERI_BUS_C",	0x153D3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), 0, false},
+	{311, 	"DATA_CORE", 	0x14AB3000, NULL, data_core, 	ARRAY_SIZE(data_core), 	0, false},
+	{92, 	"DATA_BUS_C", 	0x151C3000, NULL, data_bus_c, 	ARRAY_SIZE(data_bus_c), 0, false},
+	{72, 	"DATA_BUS_1", 	0x15443000, NULL, data_bus_1, 	ARRAY_SIZE(data_bus_1), 0, false},
+	{315, 	"PERI_CORE_0", 	0x14C73000, NULL, peri_core_0, 	ARRAY_SIZE(peri_core_0),0, false},
+	{316, 	"PERI_CORE_1", 	0x14E93000, NULL, peri_core_1, 	ARRAY_SIZE(peri_core_1),0, false},
+	{77, 	"PERI_BUS_1", 	0x15653000, NULL, peri_bus_1, 	ARRAY_SIZE(peri_bus_1), 0, false},
+	{93, 	"PERI_BUS_C", 	0x153D3000, NULL, peri_bus_c, 	ARRAY_SIZE(peri_bus_c), 0, false},
 };
 
 struct itm_dev {
-	struct device			*dev;
-	struct itm_platdata		*pdata;
-	struct of_device_id		*match;
-	int				irq;
-	int				id;
-	void __iomem			*regs;
-	spinlock_t			ctrl_lock;
-	struct itm_notifier		notifier_info;
+	struct device *dev;
+	struct itm_platdata *pdata;
+	struct of_device_id *match;
+	int irq;
+	int id;
+	void __iomem *regs;
+	spinlock_t ctrl_lock;
+	struct itm_notifier notifier_info;
 };
 
 struct itm_panic_block {
@@ -474,16 +473,15 @@ struct itm_panic_block {
 static ATOMIC_NOTIFIER_HEAD(itm_notifier_list);
 
 static const struct of_device_id itm_dt_match[] = {
-	{ .compatible = "samsung,exynos-itm",
-	  .data = NULL, },
+	{.compatible = "samsung,exynos-itm",
+	 .data = NULL,},
 	{},
 };
 MODULE_DEVICE_TABLE(of, itm_dt_match);
 
-static struct itm_rpathinfo* itm_get_rpathinfo
-					(struct itm_dev *itm,
-					 unsigned int id,
-					 char *dest_name)
+static struct itm_rpathinfo *itm_get_rpathinfo(struct itm_dev *itm,
+					       unsigned int id,
+					       char *dest_name)
 {
 	struct itm_platdata *pdata = itm->pdata;
 	struct itm_rpathinfo *rpath = NULL;
@@ -492,7 +490,8 @@ static struct itm_rpathinfo* itm_get_rpathinfo
 	for (i = 0; i < ARRAY_SIZE(rpathinfo); i++) {
 		if (pdata->rpathinfo[i].id == (id & pdata->rpathinfo[i].bits)) {
 			if (dest_name && !strncmp(pdata->rpathinfo[i].dest_name,
-				dest_name, strlen(pdata->rpathinfo[i].dest_name))) {
+						  dest_name,
+						  strlen(pdata->rpathinfo[i].dest_name))) {
 				rpath = (struct itm_rpathinfo *)&pdata->rpathinfo[i];
 				break;
 			}
@@ -501,10 +500,9 @@ static struct itm_rpathinfo* itm_get_rpathinfo
 	return rpath;
 }
 
-static struct itm_masterinfo* itm_get_masterinfo
-					(struct itm_dev *itm,
-					 char *port_name,
-					 unsigned int user)
+static struct itm_masterinfo *itm_get_masterinfo(struct itm_dev *itm,
+						 char *port_name,
+						 unsigned int user)
 {
 	struct itm_platdata *pdata = itm->pdata;
 	struct itm_masterinfo *master = NULL;
@@ -512,8 +510,7 @@ static struct itm_masterinfo* itm_get_masterinfo
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(masterinfo); i++) {
-		if (!strncmp(pdata->masterinfo[i].port_name, port_name,
-				strlen(port_name))) {
+		if (!strncmp(pdata->masterinfo[i].port_name, port_name, strlen(port_name))) {
 			val = user & pdata->masterinfo[i].bits;
 			if (val == pdata->masterinfo[i].user) {
 				master = (struct itm_masterinfo *)&pdata->masterinfo[i];
@@ -540,12 +537,12 @@ static void itm_init(struct itm_dev *itm, bool enabled)
 				__raw_writel(enabled, node[j].regs + offset + REG_DBG_CTL);
 				/* set tmout interval value */
 				__raw_writel(node[j].time_val,
-					node[j].regs + offset + REG_TMOUT_INIT_VAL);
+					     node[j].regs + offset + REG_TMOUT_INIT_VAL);
 				pr_debug("Exynos IPM - %s timeout enabled\n", node[j].name);
 				if (node[j].tmout_frz_enabled) {
 					/* Enable freezing */
 					__raw_writel(enabled,
-						node[j].regs + offset + REG_TMOUT_FRZ_EN);
+						     node[j].regs + offset + REG_TMOUT_FRZ_EN);
 				}
 			}
 			if (node[j].err_enabled) {
@@ -583,16 +580,17 @@ static void itm_init(struct itm_dev *itm, bool enabled)
 }
 
 static void itm_post_handler_by_master(struct itm_dev *itm,
-					struct itm_nodegroup *group,
-					char *port, char *master, bool read)
+				       struct itm_nodegroup *group,
+				       char *port, char *master, bool read)
 {
 	/* After treatment by port */
 	if (!port || strlen(port) < 1)
 		return;
 
-	if (!strncmp(port, "CP", strlen(port))) {
+	if (!strncmp(port, "CP", strlen("CP"))) {
 		/* if master is DSP and operation is read, we don't care this */
-		if (master && !strncmp(master, "TL3MtoL2",strlen(master)) && read == true) {
+		if (master && !strncmp(master, "TL3MtoL2", strlen(master))
+			   && read == true) {
 			group->panic_delayed = true;
 			group->irq_occurred = 0;
 			pr_info("ITM skips CP's DSP(TL3MtoL2) detected\n");
@@ -608,14 +606,14 @@ static void itm_post_handler_by_master(struct itm_dev *itm,
 }
 
 static void itm_report_route(struct itm_dev *itm,
-				struct itm_nodegroup *group,
-				struct itm_nodeinfo *node,
-				unsigned int offset, bool read)
+			     struct itm_nodegroup *group,
+			     struct itm_nodeinfo *node, unsigned int offset, bool read)
 {
 	struct itm_masterinfo *master = NULL;
 	struct itm_rpathinfo *rpath = NULL;
 	unsigned int val, id, user;
 	char *port = NULL, *source = NULL, *dest = NULL;
+	char buf[SZ_32];
 
 	val = __raw_readl(node->regs + offset + REG_INT_INFO);
 	id = BIT_AXID(val);
@@ -633,21 +631,22 @@ static void itm_report_route(struct itm_dev *itm,
 			 */
 			rpath = itm_get_rpathinfo(itm, id, node->name);
 			if (!rpath) {
-				pr_info("failed to get route path - %s, id:%x\n",
-						node->name, id);
+				pr_info("<DATA,S_NODE> failed to get route path - %s, id:%x\n",
+					node->name, id);
 				return;
 			}
 			master = itm_get_masterinfo(itm, rpath->port_name, user);
 			if (!master) {
-				pr_info("failed to get master IP with "
-					"port:%s, user:%x\n", rpath->port_name, user);
+				pr_info("<DATA,S_NODE> failed to get master IP with "
+					"port:%s, user:%x\n",
+					rpath->port_name, user);
 				return;
 			}
 			port = rpath->port_name;
 			source = master->master_name;
 			dest = rpath->dest_name;
 			if (!strncmp(port, "PERI", strlen("PERI")) ||
-				!strncmp(port, "SP", strlen("SP")))
+			    !strncmp(port, "SP", strlen("SP")))
 				val = PATHTYPE_PERI;
 			else
 				val = PATHTYPE_DATA;
@@ -655,8 +654,8 @@ static void itm_report_route(struct itm_dev *itm,
 			val = PATHTYPE_DATA;
 			master = itm_get_masterinfo(itm, node->name, user);
 			if (!master) {
-				pr_info("failed to get master IP with "
-					"port:%s, id:%x\n", node->name, user);
+				pr_info("<DATA, M_NODE> No Master Info: Port %s, user %x\n",
+					port, user);
 				port = node->name;
 			} else {
 				port = node->name;
@@ -670,26 +669,41 @@ static void itm_report_route(struct itm_dev *itm,
 		 * of PERI port
 		 */
 		val = PATHTYPE_PERI;
-		if (node->type == S_NODE) {
-			if ((user & GENMASK(4, 0)) & BIT(3)) {
-				/* Master is CP */
-				port = "CP";
-			} else {
-				/* Master is CPU cluster */
-				/* user & GENMASK(1, 0) = core number */
-				port = "CPU";
-				/* TODO: Core Number */
+		if ((user & GENMASK(4, 0)) & BIT(3)) {
+			/* Master is CP */
+			port = "CP";
+			master = itm_get_masterinfo(itm, port, user);
+			if (!master) {
+				pr_info("<PERI, CP> No Master Info: Port %s, user %x\n",
+					port, user);
 			}
+		} else {
+			/* Master is CPU cluster */
+			/* user & GENMASK(1, 0) = core number */
+			int cluster_num, core_num;
+			core_num = user & GENMASK(1, 0);
+			cluster_num = (user & BIT(2)) >> 2;
+			snprintf(buf, SZ_32, "CPU%dCL%d", core_num, cluster_num);
+			port = "CPU";
+			source = buf;
+		}
+		/* In other case, we already were done to make port/source/dest */
+
+		if (node->type == S_NODE) {
 			dest = node->name;
 		} else {
-			master = itm_get_masterinfo(itm, node->name, user);
-			if (!master) {
-				pr_info("failed to get master IP with "
-					"port:%s, id:%x\n", node->name, user);
-				port = node->name;
-			} else {
-				port = node->name;
-				source = master->master_name;
+			if (strncmp(node->name, "BUSC_PERI_M", strlen(node->name)) &&
+			    strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
+				/* Exception Case */
+				pr_info("Warning: node %s, not CP or CPU\n", node->name);
+				master = itm_get_masterinfo(itm, node->name, user);
+				if (!master) {
+					pr_info("<PERI, M_NODE> No Master Info: Port %s, user %x\n",
+						port, user);
+				} else {
+					port = node->name;
+					source = master->master_name;
+				}
 			}
 		}
 	}
@@ -708,9 +722,9 @@ static void itm_report_route(struct itm_dev *itm,
 }
 
 static void itm_report_info(struct itm_dev *itm,
-			       struct itm_nodegroup *group,
-			       struct itm_nodeinfo *node,
-			       unsigned int offset)
+			    struct itm_nodegroup *group,
+			    struct itm_nodeinfo *node,
+			    unsigned int offset)
 {
 	unsigned int errcode, int_info, info0, info1, info2;
 	bool read = false, req = false;
@@ -727,7 +741,7 @@ static void itm_report_info(struct itm_dev *itm,
 	info1 = __raw_readl(node->regs + offset + REG_EXT_INFO_1);
 	info2 = __raw_readl(node->regs + offset + REG_EXT_INFO_2);
 
-	switch(offset) {
+	switch (offset) {
 	case OFFSET_REQ_R:
 		read = true;
 		/* fall down */
@@ -764,11 +778,9 @@ static void itm_report_info(struct itm_dev *itm,
 		"> Error type      : %s\n",
 		read ? "READ" : "WRITE",
 		req ? "REQUEST" : "RESPONSE",
-		(unsigned int)(info1 & GENMASK(3, 0)),
-		info0,
-		itm_errcode[errcode]);
+		(unsigned int)(info1 & GENMASK(3, 0)), info0, itm_errcode[errcode]);
 
-out:
+ out:
 	/* report extention raw information of register */
 	pr_info("--------------------------------------------------------------------------------\n"
 		"NODE RAW INFORMATION\n"
@@ -779,16 +791,10 @@ out:
 		"> EXT_INFO_2      : 0x%08X\n\n",
 		node->name,
 		node->type ? "M_NODE" : "S_NODE",
-		node->phy_regs + offset,
-		int_info,
-		info0,
-		info1,
-		info2);
+		node->phy_regs + offset, int_info, info0, info1, info2);
 }
 
-static int itm_parse_info(struct itm_dev *itm,
-			      struct itm_nodegroup *group,
-			      bool clear)
+static int itm_parse_info(struct itm_dev *itm, struct itm_nodegroup *group, bool clear)
 {
 	struct itm_nodeinfo *node = NULL;
 	unsigned int val, offset, vec;
@@ -813,7 +819,8 @@ static int itm_parse_info(struct itm_dev *itm,
 					/* This node occurs the error */
 					itm_report_info(itm, group, &node[bit], offset);
 					if (clear)
-						__raw_writel(1, node[bit].regs + offset + REG_INT_CLR);
+						__raw_writel(1, node[bit].regs
+								+ offset + REG_INT_CLR);
 					ret = true;
 				}
 			}
@@ -836,15 +843,15 @@ static int itm_parse_info(struct itm_dev *itm,
 						/* This node occurs the error */
 						itm_report_info(itm, group, &node[bit], offset);
 						if (clear)
-							__raw_writel(1,
-								node[j].regs + offset + REG_INT_CLR);
+							__raw_writel(1, node[j].regs
+									+ offset + REG_INT_CLR);
 						ret = true;
 					}
 				}
 			}
 		}
 	}
-exit:
+ exit:
 	spin_unlock_irqrestore(&itm->ctrl_lock, flags);
 	return ret;
 }
@@ -894,7 +901,7 @@ void itm_notifier_chain_register(struct notifier_block *block)
 }
 
 static int itm_logging_panic_handler(struct notifier_block *nb,
-				   unsigned long l, void *buf)
+				     unsigned long l, void *buf)
 {
 	struct itm_panic_block *itm_panic = (struct itm_panic_block *)nb;
 	struct itm_dev *itm = itm_panic->pdev;
@@ -924,7 +931,7 @@ static int itm_probe(struct platform_device *pdev)
 	itm = devm_kzalloc(&pdev->dev, sizeof(struct itm_dev), GFP_KERNEL);
 	if (!itm) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver's "
-				"private data\n");
+				    "private data\n");
 		return -ENOMEM;
 	}
 	itm->dev = &pdev->dev;
@@ -934,7 +941,7 @@ static int itm_probe(struct platform_device *pdev)
 	pdata = devm_kzalloc(&pdev->dev, sizeof(struct itm_platdata), GFP_KERNEL);
 	if (!pdata) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver's "
-				"platform data\n");
+				    "platform data\n");
 		return -ENOMEM;
 	}
 	itm->pdata = pdata;
@@ -942,46 +949,45 @@ static int itm_probe(struct platform_device *pdev)
 	itm->pdata->rpathinfo = rpathinfo;
 	itm->pdata->nodegroup = nodegroup;
 
-	for (i = 0; i < ARRAY_SIZE(nodegroup); i++)
-	{
+	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		dev_name = nodegroup[i].name;
 		node = nodegroup[i].nodeinfo;
 
-		nodegroup[i].regs = devm_ioremap_nocache(&pdev->dev, nodegroup[i].phy_regs, SZ_16K);
+		nodegroup[i].regs = devm_ioremap_nocache(&pdev->dev,
+							 nodegroup[i].phy_regs, SZ_16K);
 		if (nodegroup[i].regs == NULL) {
-			dev_err(&pdev->dev, "failed to claim register region - %s\n", dev_name);
+			dev_err(&pdev->dev, "failed to claim register region - %s\n",
+				dev_name);
 			return -ENOENT;
 		}
-
 
 		if (initial_multi_irq_enable)
 			irq_option = IRQF_GIC_MULTI_TARGET;
 
 		ret = devm_request_irq(&pdev->dev, nodegroup[i].irq + 32,
-					itm_irq_handler, irq_option,
-					dev_name, itm);
+				       itm_irq_handler, irq_option, dev_name, itm);
 
 		for (j = 0; j < nodegroup[i].nodesize; j++) {
 			node[j].regs = devm_ioremap_nocache(&pdev->dev, node[j].phy_regs, SZ_16K);
 			if (node[j].regs == NULL) {
-				dev_err(&pdev->dev, "failed to claim register region - %s\n", dev_name);
+				dev_err(&pdev->dev, "failed to claim register region - %s\n",
+					dev_name);
 				return -ENOENT;
 			}
 		}
 	}
 
-	itm_panic = devm_kzalloc(&pdev->dev,
-			sizeof(struct itm_panic_block), GFP_KERNEL);
+	itm_panic = devm_kzalloc(&pdev->dev, sizeof(struct itm_panic_block),
+				 GFP_KERNEL);
 
 	if (!itm_panic) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver's "
-				"panic handler data\n");
+				    "panic handler data\n");
 	} else {
-		itm_panic->nb_panic_block.notifier_call =
-					itm_logging_panic_handler;
+		itm_panic->nb_panic_block.notifier_call = itm_logging_panic_handler;
 		itm_panic->pdev = itm;
 		atomic_notifier_chain_register(&panic_notifier_list,
-					&itm_panic->nb_panic_block);
+					       &itm_panic->nb_panic_block);
 	}
 
 	platform_set_drvdata(pdev, itm);
@@ -1016,22 +1022,20 @@ static int itm_resume(struct device *dev)
 	return 0;
 }
 
-static SIMPLE_DEV_PM_OPS(itm_pm_ops,
-			 itm_suspend,
-			 itm_resume);
+static SIMPLE_DEV_PM_OPS(itm_pm_ops, itm_suspend, itm_resume);
 #define ITM_PM	(itm_pm_ops)
 #else
 #define ITM_PM	NULL
 #endif
 
 static struct platform_driver exynos_itm_driver = {
-	.probe		= itm_probe,
-	.remove		= itm_remove,
-	.driver		= {
-		.name		= "exynos-itm",
-		.of_match_table	= itm_dt_match,
-		.pm		= &itm_pm_ops,
-	},
+	.probe = itm_probe,
+	.remove = itm_remove,
+	.driver = {
+		   .name = "exynos-itm",
+		   .of_match_table = itm_dt_match,
+		   .pm = &itm_pm_ops,
+		   },
 };
 
 module_platform_driver(exynos_itm_driver);
