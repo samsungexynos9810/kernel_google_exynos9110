@@ -34,6 +34,8 @@
 #include <linux/io.h>
 #include <linux/usb/otg-fsm.h>
 
+#include <soc/samsung/exynos-powermode.h>
+
 /* -------------------------------------------------------------------------- */
 
 struct dwc3_exynos_rsw {
@@ -55,6 +57,8 @@ struct dwc3_exynos {
 
 	struct regulator	*vdd33;
 	struct regulator	*vdd10;
+
+	int			idle_ip_index;
 
 	struct dwc3_exynos_rsw	rsw;
 	const struct dwc3_exynos_drvdata *drv_data;
@@ -315,6 +319,8 @@ void dwc3_exynos_rsw_exit(struct device *dev)
 	rsw->fsm = NULL;
 }
 
+#include <soc/samsung/exynos-powermode.h>
+
 /**
  * dwc3_exynos_id_event - receive ID pin state change event.
  * @state : New ID pin state.
@@ -479,6 +485,9 @@ static int dwc3_exynos_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	exynos->idle_ip_index = exynos_get_idle_ip_index(dev_name(dev));
+	exynos_update_ip_idle_status(exynos->idle_ip_index, 0);
+
 	ret = dwc3_exynos_clk_get(exynos);
 	if (ret)
 		return ret;
@@ -592,6 +601,9 @@ static int dwc3_exynos_runtime_suspend(struct device *dev)
 
 	dwc3_exynos_clk_disable(exynos);
 
+	/* inform what USB state is idle to IDLE_IP */
+	exynos_update_ip_idle_status(exynos->idle_ip_index, 1);
+
 	return 0;
 }
 
@@ -601,6 +613,9 @@ static int dwc3_exynos_runtime_resume(struct device *dev)
 	int ret = 0;
 
 	dev_dbg(dev, "%s\n", __func__);
+
+	/* inform what USB state is not idle to IDLE_IP */
+	exynos_update_ip_idle_status(exynos->idle_ip_index, 0);
 
 	ret = dwc3_exynos_clk_enable(exynos);
 	if (ret) {
