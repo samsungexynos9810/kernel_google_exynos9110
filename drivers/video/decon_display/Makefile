@@ -1,0 +1,9 @@
+obj-$(CONFIG_DECON_MIPI_DSI)		+= decon_mipi_dsi.o decon_mipi_dsi_lowlevel.o
+obj-$(CONFIG_SOC_EXYNOS3250)		+= fimd_dt_exynos.o fimd_pm_exynos.o fimd_fb.o
+obj-$(CONFIG_DECON_DISPLAY)		+= decon_display_driver.o
+obj-$(CONFIG_DECON_LCD_S6E63J0X03)	+= s6e63j0x03_mipi_lcd.o
+obj-$(CONFIG_LCD_MIPI_SHIRI)       	+= shiri_mipi_lcd.o
+obj-$(CONFIG_LCD_MIPI_NT35510)		+= nt35510_mipi_lcd.o
+obj-$(CONFIG_FB_HIBERNATION_DISPLAY)	+= decon_pm_core.o
+obj-$(CONFIG_FB_SMIES)			+= s5p_smies.o
+obj-$(CONFIG_LCD_MIPI_SHARP)       	+= sharp_mipi_lcd.o
