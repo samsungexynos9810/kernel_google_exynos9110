@@ -296,4 +296,8 @@ typedef enum {
 	AllDsimIntr = 0xffffffff,
 	ErrDsimIntr = 0xffff,
 } DSIM_INTSRC;
+
+#define S5P_MIPI_DPHY_MRESETN	(1<<2)
+#define S5P_MIPI_DPHY_ENABLE	(1<<0)
+
 #endif /* _REGS_MIPIDSIM_H */

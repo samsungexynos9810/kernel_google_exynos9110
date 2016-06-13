@@ -126,4 +126,5 @@ unsigned int s5p_mipi_dsi_is_ulps_lane_state(struct mipi_dsim_device *dsim,
 	unsigned int enable);
 void s5p_mipi_dsi_enable_main_standby(struct mipi_dsim_device *dsim,
 	unsigned int enable);
+int exynos_dsim_phy_enable(int id, bool on);
 #endif /* _S5P_MIPI_DSI_LOWLEVEL_H */

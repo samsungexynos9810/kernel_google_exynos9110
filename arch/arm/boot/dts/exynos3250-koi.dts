@@ -464,9 +464,4 @@
 		};
 	};
 
-	backlight: bd82103 {
-		compatible = "rohm,bd82103";
-		gpios = <&gpd0 0 0x1>;
-		status = "okay";
-	};
 };

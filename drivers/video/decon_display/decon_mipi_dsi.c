@@ -37,8 +37,6 @@
 #include <linux/device.h>
 #include <linux/completion.h>
 
-#include <mach/exynos-mipiphy.h>
-
 #include "decon_display_driver.h"
 #include "decon_mipi_dsi_lowlevel.h"
 #include "decon_mipi_dsi.h"
