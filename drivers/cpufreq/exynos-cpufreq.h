@@ -22,6 +22,7 @@ enum exynos_soc_type {
 	EXYNOS_SOC_4212,
 	EXYNOS_SOC_4412,
 	EXYNOS_SOC_5250,
+	EXYNOS_SOC_3250,
 };
 
 #define APLL_FREQ(f, a0, a1, a2, a3, a4, a5, a6, a7, b0, b1, b2, m, p, s) \
@@ -45,12 +46,22 @@ struct exynos_dvfs_info {
 	struct device	*dev;
 	unsigned long	mpll_freq_khz;
 	unsigned int	pll_safe_idx;
+	unsigned int	max_support_idx;
+	unsigned int	min_support_idx;
 	struct clk	*cpu_clk;
 	unsigned int	*volt_table;
+	unsigned int	*abb_table;
 	struct cpufreq_frequency_table	*freq_table;
 	void (*set_freq)(unsigned int, unsigned int);
 	bool (*need_apll_change)(unsigned int, unsigned int);
 	void __iomem	*cmu_regs;
+	unsigned int old_freq;
+};
+
+struct cpufreq_clkdiv {
+	unsigned int	index;
+	unsigned int	clkdiv0;
+	unsigned int	clkdiv1;
 };
 
 #ifdef CONFIG_ARM_EXYNOS4210_CPUFREQ
@@ -73,6 +84,15 @@ static inline int exynos4x12_cpufreq_init(struct exynos_dvfs_info *info)
 extern int exynos5250_cpufreq_init(struct exynos_dvfs_info *);
 #else
 static inline int exynos5250_cpufreq_init(struct exynos_dvfs_info *info)
+{
+	return -EOPNOTSUPP;
+}
+#endif
+
+#ifdef CONFIG_ARM_EXYNOS3250_CPUFREQ
+extern int exynos3250_cpufreq_init(struct exynos_dvfs_info *);
+#else
+static inline int exynos3250_cpufreq_init(struct exynos_dvfs_info *info)
 {
 	return -EOPNOTSUPP;
 }
