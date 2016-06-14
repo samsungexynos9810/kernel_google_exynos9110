@@ -813,10 +813,12 @@ static void s3c24xx_serial_pm(struct uart_port *port, unsigned int level,
 
 	switch (level) {
 	case S3C24XX_UART_PORT_SUSPEND:
-		/* disable auto flow control & set nRTS for High */
-		umcon = rd_regl(port, S3C2410_UMCON);
-		umcon &= ~(S3C2410_UMCOM_AFC | S3C2410_UMCOM_RTS_LOW);
-		wr_regl(port, S3C2410_UMCON, umcon);
+		if (!ourport->in_band_wakeup) {
+			/* disable auto flow control & set nRTS for High */
+			umcon = rd_regl(port, S3C2410_UMCON);
+			umcon &= ~(S3C2410_UMCOM_AFC | S3C2410_UMCOM_RTS_LOW);
+			wr_regl(port, S3C2410_UMCON, umcon);
+		}
 
 		if (ourport->domain == DOMAIN_AUD)
 			aud_uart_gpio_cfg(&ourport->pdev->dev, level);
@@ -1691,6 +1693,11 @@ static int s3c24xx_serial_probe(struct platform_device *pdev)
 						PM_QOS_CLUSTER1_FREQ_MIN, 0);
 	}
 #endif
+	if (of_get_property(pdev->dev.of_node, "samsung,in-band-wakeup", NULL))
+		ourport->in_band_wakeup = 1;
+	else
+		ourport->in_band_wakeup = 0;
+
 	if (of_find_property(pdev->dev.of_node, "samsung,lpass-subip", NULL))
 		ourport->domain = DOMAIN_AUD;
 	else
