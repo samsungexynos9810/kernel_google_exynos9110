@@ -264,6 +264,7 @@
 		pinctrl-0 = <&uart1_bus>;
 		clocks = <&clock GATE_UART_BT>, <&clock UART_BT>, <&clock UART_BT>;
 		clock-names = "gate_pclk1", "gate_uart1", "sclk_uart1";
+		samsung,in-band-wakeup;
 		status = "disabled";
 	};
 
