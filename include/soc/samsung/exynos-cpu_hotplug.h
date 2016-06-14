@@ -12,8 +12,12 @@
 #ifndef __EXYNOS_CPU_HOTPLUG_H
 #define __EXYNOS_CPU_HOTPLUG_H __FILE__
 
+#ifdef CONFIG_SOC_EXYNOS3250
+bool exynos_cpu_hotplug_enabled(void) { return false; };
+#else
 struct kobject *exynos_cpu_hotplug_kobj(void);
 bool exynos_cpu_hotplug_enabled(void);
+#endif
 
 #ifdef CONFIG_EXYNOS_HOTPLUG_GOVERNOR
 extern void inc_boost_req_count(void);

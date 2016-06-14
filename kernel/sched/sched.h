@@ -218,7 +218,7 @@ struct task_group {
 
 	atomic_t load_weight;
 #ifdef	CONFIG_SMP
-	atomic64_t load_avg;
+	atomic_long_t load_avg;
 	atomic_t runnable_avg, usage_avg;
 #endif
 #endif
