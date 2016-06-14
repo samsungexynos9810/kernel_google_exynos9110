@@ -196,6 +196,27 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
 			return -ETIMEDOUT;
 		}
 	}
+
+	/*
+	 * W/A: For secondary core booting, core should be wake up
+	 * after SWRESET
+	 */
+	if (soc_is_exynos3250()) {
+		u32 val;
+
+		while (!pmu_raw_readl(S5P_PMU_SPARE2))
+			udelay(10);
+		udelay(10);
+
+		val = pmu_raw_readl(EXYNOS_ARM_CORE_STATUS(core_id));
+		val |= (0x3 << 8);
+		pmu_raw_writel(val, EXYNOS_ARM_CORE_STATUS(core_id));
+
+		printk(KERN_DEBUG "cpu%d: SWRESET\n", core_id);
+		pmu_raw_writel(((1 << 4) << core_id), EXYNOS_SWRESET);
+
+	}
+
 	/*
 	 * Send the secondary CPU a soft interrupt, thereby causing
 	 * the boot monitor to read the system wide flags register,
@@ -226,6 +247,9 @@ static int exynos_boot_secondary(unsigned int cpu, struct task_struct *idle)
 			}
 			__raw_writel(boot_addr, boot_reg);
 		}
+
+		if (soc_is_exynos3250())
+			dsb_sev();
 
 		call_firmware_op(cpu_boot, core_id);
 

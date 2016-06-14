@@ -75,6 +75,11 @@
 		};
 	};
 
+	firmware@02020000 {
+		compatible = "samsung,secure-firmware";
+		reg = <0x02020000 0x1000>;
+	};
+
 	cpus {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -83,6 +88,12 @@
 			device_type = "cpu";
 			compatible = "arm,cortex-a7";
 			reg = <0>;
+			clock-frequency = <1000000000>;
+		};
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a7";
+			reg = <1>;
 			clock-frequency = <1000000000>;
 		};
 
