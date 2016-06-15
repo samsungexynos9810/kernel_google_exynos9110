@@ -23,8 +23,6 @@
 #include "fimd_fb.h"
 #include "decon_mipi_dsi.h"
 #include "decon_dt.h"
-#include <mach/map.h>
-#include <plat/cpu.h>
 
 #include <../drivers/clk/samsung/clk.h>
 
@@ -133,16 +131,20 @@ void init_display_gpio_exynos(void)
 	 *  0 | MIE/MDNIE
 	 *  1 | FIMD : selected
 	 */
-	reg = __raw_readl(S3C_VA_SYS + 0x0210);
+	// DISPLAY BLK_CFG : 0x10010210
+	void __iomem *dispblk_cfg;
+	dispblk_cfg = ioremap(0x10010210, SZ_4);
+
+	reg = __raw_readl(dispblk_cfg);
 	reg &= ~(1 << 1);
 #if !defined(CONFIG_FB_SMIES)
 	reg |= (1 << 1);
 #endif
-	__raw_writel(reg, S3C_VA_SYS + 0x0210);
-	reg = __raw_readl(S3C_VA_SYS + 0x0210);
+	__raw_writel(reg, dispblk_cfg);
+	reg = __raw_readl(dispblk_cfg);
 	reg &= ~(3 << 10);
 	reg |= (1 << 10);
-	__raw_writel(reg, S3C_VA_SYS + 0x0210);
+	__raw_writel(reg, dispblk_cfg);
 }
 
 
@@ -399,8 +401,12 @@ int disable_display_decon_runtimepm(struct device *dev)
 #ifdef CONFIG_FB_HIBERNATION_DISPLAY
 bool check_camera_is_running(void)
 {
+	void __iomem *cam_stat;
+	cam_stat = ioremap(0x10023C04, SZ_4);
+
 	/* CAM1 STATUS */
-	if (readl(S5P_VA_PMU + 0x3C04) & 0x1)
+	// CAM_STAT : 0x10023C04
+	if (readl(cam_stat) & 0x1)
 		return true;
 	else
 		return false;
@@ -408,8 +414,12 @@ bool check_camera_is_running(void)
 
 bool get_display_power_status(void)
 {
+	void __iomem *disp_stat;
+	disp_stat = ioremap(0x10023C84, SZ_4);
+
 	/* DISP_STATUS */
-	if (readl(S5P_VA_PMU + 0x3C84) & 0x1)
+	// LCD0_STAT : 0x10023C84
+	if (readl(disp_stat + 0x3C84) & 0x1)
 		return true;
 	else
 		return false;

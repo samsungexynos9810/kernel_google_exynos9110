@@ -33,12 +33,10 @@
 #include <linux/pm_runtime.h>
 #include <linux/lcd.h>
 #include <linux/gpio.h>
-
 #include <video/mipi_display.h>
+#include <linux/device.h>
+#include <linux/completion.h>
 
-#include <plat/cpu.h>
-
-#include <mach/map.h>
 #include <mach/exynos-mipiphy.h>
 
 #include "decon_display_driver.h"
@@ -48,7 +46,6 @@
 #include "decon_dt.h"
 #include "decon_pm.h"
 
-#include <mach/regs-pmu.h>
 #include "fimd_fb.h"
 
 static DEFINE_MUTEX(dsim_rd_wr_mutex);
@@ -1276,6 +1273,7 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 {
 	struct mipi_dsim_device *dsim = NULL;
 	struct display_driver *dispdrv;
+	struct resource *res;
 	int ret = -1;
 
 	/* get a reference of the display driver */
@@ -1300,7 +1298,11 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	dsim->lcd_info = decon_get_lcd_info();
 
-	dsim->reg_base = devm_request_and_ioremap(&pdev->dev, dispdrv->dsi_driver.regs);
+	//devm_request_and_ioremap(&pdev->dev, dispdrv->dsi_driver.regs);
+
+	/* Get memory resource and map SFR region. */
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	dsim->reg_base = devm_ioremap_resource(&pdev->dev, res);
 	if (!dsim->reg_base) {
 		dev_err(&pdev->dev, "mipi-dsi: failed to remap io region\n");
 		ret = -EINVAL;

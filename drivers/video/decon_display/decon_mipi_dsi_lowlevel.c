@@ -22,9 +22,6 @@
 #include <linux/ctype.h>
 #include <linux/io.h>
 
-#include <mach/map.h>
-
-#include <plat/cpu.h>
 #include "regs-mipidsim.h"
 #include "decon_mipi_dsi.h"
 

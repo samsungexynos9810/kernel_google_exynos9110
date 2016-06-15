@@ -371,6 +371,10 @@ enum {
 
 #define DSIM_RX_FIFO_MAX_DEPTH		64
 
+#ifndef MHZ
+#define MHZ			(1000*1000)
+#endif
+
 #define FIN_HZ			(24 * MHZ)
 
 #define DFIN_PLL_MIN_HZ		(6 * MHZ)

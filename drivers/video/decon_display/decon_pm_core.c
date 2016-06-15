@@ -29,7 +29,6 @@
 #include "regs-fimd.h"
 #include "fimd_fb.h"
 
-#include <mach/cpufreq.h>
 #ifdef CONFIG_EXYNOS_PSMW
 #include <mach/exynos-psmw.h>
 #endif

@@ -27,9 +27,6 @@
 #include <linux/kthread.h>
 #include <linux/of_gpio.h>
 #include <linux/of.h>
-#include <mach/map.h>
-#include <mach/bts.h>
-#include <plat/cpu.h>
 
 #include "regs-fimd.h"
 
@@ -40,7 +37,6 @@
 #include <linux/highmem.h>
 #include <linux/memblock.h>
 #include "../../staging/android/sw_sync.h"
-#include <plat/devs.h>
 #include <linux/exynos_iovmm.h>
 #endif
 
@@ -2618,7 +2614,6 @@ static int s3c_fb_mmap(struct fb_info *info, struct vm_area_struct *vma)
 {
 	struct s3c_fb_win *win = info->par;
 	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
-
 	return dma_buf_mmap(win->dma_buf_data.dma_buf, vma, 0);
 }
 
@@ -3159,6 +3154,7 @@ int create_decon_display_controller(struct platform_device *pdev)
 	struct s3c_fb *sfb;
 	struct fb_info *fbinfo;
 	struct display_driver *dispdrv;
+	struct resource *res;
 	int win;
 	int default_win;
 	int i;
@@ -3247,12 +3243,16 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	pm_runtime_enable(sfb->dev);
 
-	sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
+	//sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
+	/* Get memory resource and map SFR region. */
+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	sfb->regs = devm_ioremap_resource(&pdev->dev, res);
 	if (!sfb->regs) {
 		dev_err(dev, "failed to map registers\n");
 		ret = -ENXIO;
 		goto err_lcd_clk;
 	}
+
 #ifndef CONFIG_FB_I80_COMMAND_MODE
 	ret = devm_request_irq(dev, dispdrv->decon_driver.irq_no, s3c_fb_irq,
 			  IRQF_TRIGGER_RISING, "s3c_fb_vsync", sfb);
@@ -3486,10 +3486,10 @@ err_fb:
 #ifdef CONFIG_ION_EXYNOS
 	iovmm_deactivate(sfb->dev);
 #endif
-
+#ifdef CONFIG_ION_EXYNOS
 err_iovmm:
 	device_remove_file(sfb->dev, &dev_attr_psr_info);
-
+#endif
 err_create_psr_info_file:
 	device_remove_file(sfb->dev, &dev_attr_vsync);
 
