@@ -1402,6 +1402,9 @@ static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
 		info.flags |= I2C_CLIENT_SLAVE;
 	}
 
+	if (of_get_property(node, "i2c-speedy-address", NULL))
+		info.flags |= I2C_CLIENT_SPEEDY;
+
 	if (i2c_check_addr_validity(addr, info.flags)) {
 		dev_err(&adap->dev, "of_i2c: invalid addr=%x on %s\n",
 			addr, node->full_name);
@@ -1417,9 +1420,6 @@ static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
 
 	if (of_get_property(node, "ten-bit-address", NULL))
 		        info.flags |= I2C_CLIENT_TEN;
-
-	if (of_get_property(node, "i2c-speedy-address", NULL))
-		        info.flags |= I2C_CLIENT_SPEEDY;
 
 	result = i2c_new_device(adap, &info);
 	if (result == NULL) {
