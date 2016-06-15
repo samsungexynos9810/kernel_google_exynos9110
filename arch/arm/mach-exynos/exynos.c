@@ -34,6 +34,45 @@
 
 void __iomem *pmu_base_addr;
 
+static struct map_desc exynos3_iodesc[] __initdata = {
+	{
+		.virtual	= (unsigned long)S5P_VA_SYSRAM,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSRAM),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_SYSRAM_NS,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_SYSRAM_NS),
+		.length		= SZ_4K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_BUS_TOP,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_BUS_TOP),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_CPU_ISP,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_CPU_ISP),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_ACP,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_ACP),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)EXYNOS3_VA_CMU_DMC,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_CMU_DMC),
+		.length		= SZ_64K,
+		.type		= MT_DEVICE,
+	}, {
+		.virtual	= (unsigned long)S5P_VA_PMU,
+		.pfn		= __phys_to_pfn(EXYNOS3_PA_PMU),
+		.length		= SZ_16K,
+		.type		= MT_DEVICE,
+	},
+};
+
 static struct map_desc exynos4_iodesc[] __initdata = {
 	{
 		.virtual	= (unsigned long)S3C_VA_SYS,
@@ -233,6 +272,9 @@ static void __init exynos_map_io(void)
 
 	if (soc_is_exynos5())
 		iotable_init(exynos5_iodesc, ARRAY_SIZE(exynos5_iodesc));
+
+	if (soc_is_exynos3250())
+		iotable_init(exynos3_iodesc, ARRAY_SIZE(exynos3_iodesc));
 }
 
 static void __init exynos_init_io(void)
