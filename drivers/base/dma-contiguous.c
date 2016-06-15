@@ -19,7 +19,6 @@
 #endif
 #endif
 
-#include <asm/compat.h>
 #include <asm/page.h>
 #include <asm/dma-contiguous.h>
 
@@ -537,11 +536,12 @@ int dma_contiguous_isolate(struct device *dev)
 		} while (ret == -EBUSY);
 
 		if (ret < 0) {
+			phys_addr_t phys = PFN_PHYS(cma->base_pfn + idx);
+
 			mutex_unlock(&cma_mutex);
 			dma_contiguous_deisolate_until(dev, idx_set);
-			dev_err(dev, "Failed to isolate %#lx@%#010llx (%d).\n",
-				(idx_set - idx) * PAGE_SIZE,
-				PFN_PHYS(cma->base_pfn + idx), ret);
+			dev_err(dev, "Failed to isolate %#lx@%pa (%d).\n",
+				(idx_set - idx) * PAGE_SIZE, &phys, ret);
 			return ret;
 		}
 
