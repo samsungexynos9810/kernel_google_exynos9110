@@ -14,7 +14,7 @@
 
 / {
 	/* ALIVE */
-	pinctrl@10580000 {
+	pinctrl@164B0000 {
 		gpa0: gpa0 {
 			gpio-controller;
 			#gpio-cells = <2>;
@@ -61,7 +61,7 @@
 	};
 
 	/* ABOX */
-	pinctrl@114B0000 {
+	pinctrl@13E60000 {
 		gph0: gph0 {
 			gpio-controller;
 			#gpio-cells = <2>;
@@ -137,7 +137,7 @@
 
 	/* BUSC */
 	pinctrl@15A30000 {
-	gpb2: gpb2 {
+		gpb2: gpb2 {
 			gpio-controller;
 			#gpio-cells = <2>;
 
