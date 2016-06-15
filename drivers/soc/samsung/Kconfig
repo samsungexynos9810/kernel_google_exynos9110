@@ -61,4 +61,14 @@ config EXYNOS_OTP
 	help
 		This option enables OTP (one-time programmable) tune bits functions
 
+config EXYNOS_PSMW_CPU_HOTPLUG
+	bool "On demand polling of CPU Hotplug"
+	depends on ARCH_EXYNOS
+	default n
+	help
+	 This is an aggressive power saving feature for dynamic cpu hotplug.
+	 Normally, the check routine for cpu dynamic hotplug occurs periodically.
+	 However, if you enable this feature, the check routine won't occur
+	 until display is updated.
+
 endif #SOC_SAMSUNG
