@@ -28,6 +28,7 @@ endmenu
 
 menu "Frame buffer Devices"
 source "drivers/video/fbdev/Kconfig"
+source "drivers/video/decon_display/Kconfig"
 endmenu
 
 source "drivers/video/backlight/Kconfig"
