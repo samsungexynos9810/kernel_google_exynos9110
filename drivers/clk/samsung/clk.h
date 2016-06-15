@@ -51,8 +51,9 @@ struct samsung_clock_alias {
 		.dev_name	= dname,			\
 		.alias		= a,				\
 	}
-
+#ifndef MHZ
 #define MHZ (1000 * 1000)
+#endif
 
 /**
  * struct samsung_fixed_rate_clock: information about fixed-rate clock
