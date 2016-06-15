@@ -48,6 +48,7 @@ static struct ion_platform_heap ion_noncontig_heap = {
 
 static struct exynos_ion_platform_heap plat_heaps[ION_NUM_HEAPS];
 
+#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 static int __find_platform_heap_id(unsigned int heap_id)
 {
 	int i;
@@ -63,7 +64,6 @@ static int __find_platform_heap_id(unsigned int heap_id)
 	return i;
 }
 
-#ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 static int __ion_secure_protect_buffer(struct exynos_ion_platform_heap *pdata,
 					struct ion_buffer *buffer)
 {
@@ -561,7 +561,7 @@ static int __init exynos_ion_init(void)
 
 subsys_initcall(exynos_ion_init);
 
-#ifdef CONFIG_HIGHMEM
+#if defined(CONFIG_HIGHMEM) || !defined(CONFIG_ARM64)
 #define exynos_sync_single_for_device(addr, size, dir)	dmac_map_area(addr, size, dir)
 #define exynos_sync_single_for_cpu(addr, size, dir)	dmac_unmap_area(addr, size, dir)
 #define exynos_sync_sg_for_device(dev, size, sg, nents, dir)	\
@@ -641,7 +641,7 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 
 	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
 		exynos_sync_all();
-	else if (!IS_ERR_OR_NULL(buffer->vaddr))
+	else if (!buffer->vaddr)
 		exynos_sync_single_for_device(buffer->vaddr, size, dir);
 	else
 		exynos_sync_sg_for_device(dev, size, buffer->sg_table->sgl,

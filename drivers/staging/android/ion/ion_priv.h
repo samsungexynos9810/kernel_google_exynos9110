@@ -34,6 +34,11 @@
 
 #include "ion.h"
 
+
+#ifndef CONFIG_ARM64
+#define flush_all_cpu_caches()  do { } while (0)
+#endif
+
 struct ion_buffer *ion_handle_buffer(struct ion_handle *handle);
 
 struct ion_iovm_map {

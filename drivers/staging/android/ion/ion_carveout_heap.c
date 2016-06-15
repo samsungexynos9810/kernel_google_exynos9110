@@ -25,6 +25,7 @@
 #include <linux/slab.h>
 #include <linux/vmalloc.h>
 #include <linux/exynos_ion.h>
+#include <asm/cacheflush.h>
 #include "ion_priv.h"
 
 #define MAX_CARVEOUT_ALIGNMENT	12

@@ -14,7 +14,6 @@
  *
  */
 
-#include <asm/compat.h>
 #include <asm/page.h>
 #include <linux/dma-mapping.h>
 #include <linux/err.h>
@@ -26,6 +25,7 @@
 #include <linux/vmalloc.h>
 #include <linux/kthread.h>
 #include <asm/tlbflush.h>
+#include <asm/cacheflush.h>
 #include "ion.h"
 #include "ion_priv.h"
 
@@ -186,7 +186,8 @@ static int ion_system_heap_allocate(struct ion_heap *heap,
 		if (should_flush_cache(page, buffer)) {
 			all_pages_from_pool = false;
 			if (!IS_ENABLED(CONFIG_HIGHMEM)) {
-				__flush_dcache_area(page_address(page), len);
+				dmac_flush_range(page_address(page),
+						page_address(page) + len);
 				if (!ion_buffer_cached(buffer))
 					ion_set_page_clean(page);
 			}

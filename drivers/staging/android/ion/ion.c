@@ -1571,7 +1571,7 @@ static int ion_sync_for_device(struct ion_client *client, int fd)
 
 		for_each_sg(sgl, sg, nelems, i) {
 			vaddr = phys_to_virt(sg_phys(sg));
-			__dma_flush_range(vaddr, vaddr + sg->length);
+			dmac_flush_range(vaddr, vaddr + sg->length);
 		}
 	}
 
@@ -1634,7 +1634,7 @@ static int ion_sync_partial_for_device(struct ion_client *client, int fd,
 			remained -= len_to_flush;
 		}
 
-		__dma_map_area(phys_to_virt(sg_phys(sg)) + offset,
+		dmac_map_area(phys_to_virt(sg_phys(sg)) + offset,
 				len_to_flush, DMA_TO_DEVICE);
 
 		if (remained == 0)
