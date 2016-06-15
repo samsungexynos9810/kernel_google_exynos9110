@@ -140,6 +140,9 @@ enum sys_powerdown {
 	SYS_AFTR,
 	SYS_LPA,
 	SYS_SLEEP,
+#if defined(CONFIG_SOC_EXYNOS3250)
+	SYS_WAFTR_AUDIO,
+#endif
 	NUM_SYS_POWERDOWN,
 };
 

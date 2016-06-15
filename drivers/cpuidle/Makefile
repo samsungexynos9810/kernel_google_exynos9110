@@ -16,7 +16,11 @@ obj-$(CONFIG_ARM_KIRKWOOD_CPUIDLE)	+= cpuidle-kirkwood.o
 obj-$(CONFIG_ARM_ZYNQ_CPUIDLE)		+= cpuidle-zynq.o
 obj-$(CONFIG_ARM_U8500_CPUIDLE)         += cpuidle-ux500.o
 obj-$(CONFIG_ARM_AT91_CPUIDLE)          += cpuidle-at91.o
-obj-$(CONFIG_ARM_EXYNOS_CPUIDLE)        += cpuidle-exynos.o
+ifeq ($(CONFIG_SOC_EXYNOS3250),y)
+obj-$(CONFIG_ARM_EXYNOS_CPUIDLE)          += cpuidle-exynos3250.o
+else
+obj-$(CONFIG_ARM_EXYNOS_CPUIDLE)          += cpuidle-exynos.o
+endif
 
 ###############################################################################
 # MIPS drivers
