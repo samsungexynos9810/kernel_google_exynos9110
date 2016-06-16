@@ -1131,4 +1131,5 @@ source "drivers/input/touchscreen/Cyttsp5_525a/Kconfig"
 source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 source "drivers/input/touchscreen/melfas_mms400/Kconfig"
 source "drivers/input/touchscreen/stm/Kconfig"
+source "drivers/input/touchscreen/sec_ts/Kconfig"
 endif
