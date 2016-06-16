@@ -209,7 +209,7 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 
 #if defined(CONFIG_MMC_DW)
-	if (dw_mci_exynos_request_status())
+/*	if (dw_mci_exynos_request_status())*/
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
