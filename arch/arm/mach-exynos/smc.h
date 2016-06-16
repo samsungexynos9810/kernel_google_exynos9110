@@ -26,6 +26,22 @@
 #define SMC_CMD_L2X0INVALL	(-24)
 #define SMC_CMD_L2X0DEBUG	(-25)
 
-extern void exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
+/* For Accessing CP15/SFR (General) */
+#define SMC_CMD_REG		(-101)
 
-#endif
+/* MACRO for SMC_CMD_REG */
+#define SMC_REG_CLASS_CP15	(0x0 << 30)
+#define SMC_REG_CLASS_SFR_W	(0x1 << 30)
+#define SMC_REG_CLASS_SFR_R	(0x3 << 30)
+#define SMC_REG_CLASS_MASK	(0x3 << 30)
+#define SMC_REG_ID_CP15(CRn, Op1, CRm, Op2) \
+	   (SMC_REG_CLASS_CP15 | (CRn << 10) | (Op1 << 7) | (CRm << 3) | (Op2))
+#define SMC_REG_ID_SFR_W(ADDR)	(SMC_REG_CLASS_SFR_W | ((ADDR) >> 2))
+#define SMC_REG_ID_SFR_R(ADDR)	(SMC_REG_CLASS_SFR_R | ((ADDR) >> 2))
+
+#ifndef __ASSEMBLY__
+extern void exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
+extern int exynos_smc_readsfr(u32 addr, u32 *val);
+#endif	/* __ASSEMBLY__ */
+
+#endif	/* __ASM_ARCH_EXYNOS_SMC_H */
