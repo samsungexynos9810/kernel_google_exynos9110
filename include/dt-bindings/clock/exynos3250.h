@@ -222,6 +222,7 @@
 #define CLK_BLOCK_MFC			219
 #define CLK_BLOCK_CAM			220
 #define CLK_SMIES			221
+#define CLK_ACLK_FIMD0			222
 
 /* Special clocks */
 #define CLK_SCLK_JPEG			224

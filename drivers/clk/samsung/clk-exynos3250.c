@@ -67,6 +67,7 @@
 #define DIV_PERIL5		0xc564
 #define DIV_CAM1		0xc568
 #define CLKDIV2_RATIO		0xc580
+#define GATE_BUS_LCD		0xc734
 #define GATE_SCLK_CAM		0xc820
 #define GATE_SCLK_MFC		0xc828
 #define GATE_SCLK_G3D		0xc82c
@@ -551,6 +552,10 @@ static struct samsung_gate_clock gate_clks[] __initdata = {
 	GATE(CLK_SYSREG, "sysreg", "div_aclk_100", GATE_IP_PERIR, 1,
 		CLK_IGNORE_UNUSED, 0),
 	GATE(CLK_CHIP_ID, "chip_id", "div_aclk_100", GATE_IP_PERIR, 0,
+		CLK_IGNORE_UNUSED, 0),
+
+	/* GATE_BUS_LCD */
+	GATE(CLK_ACLK_FIMD0, "aclk_fimd0", NULL, GATE_BUS_LCD, 0,
 		CLK_IGNORE_UNUSED, 0),
 
 	/* GATE_SCLK_CAM */
