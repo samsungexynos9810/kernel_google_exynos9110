@@ -19,7 +19,7 @@
 #include <linux/slab.h>
 #include <linux/delay.h>
 
-#include <mach/map.h>
+#include "exynos3250_regs-clock.h"
 
 #include "exynos3250_ppmu.h"
 

@@ -11,7 +11,7 @@
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/suspend.h>
-#include <linux/opp.h>
+#include <linux/pm_opp.h>
 #include <linux/list.h>
 #include <linux/device.h>
 #include <linux/devfreq.h>
@@ -24,24 +24,21 @@
 #include <linux/kobject.h>
 #include <linux/sched.h>
 
-#include <mach/regs-clock.h>
-#include <mach/devfreq.h>
-#include <mach/smc.h>
-#include <mach/asv-exynos.h>
+#include <soc/samsung/exynos-devfreq.h>
+#include <soc/samsung/asv-exynos.h>
+
 #ifdef CONFIG_EXYNOS_PSMW_WORKQUEUE
-#include <mach/exynos-psmw.h>
+#include <soc/samsung/exynos-psmw.h>
 #endif
 
-#include "devfreq_exynos.h"
+#include "exynos3250_regs-clock.h"
 #include "exynos3250_ppmu.h"
-#include "governor.h"
+#include "../governor.h"
 
 #define MEMCONTROL_MRR_BYTE_SHIFT	(25)
 #define MEMCONTROL_MRR_BYTE_MASK	(0x3 << MEMCONTROL_MRR_BYTE_SHIFT)
 #define MRSTATUS_THERMAL_LV_SHIFT	(5)
 #define MRSTATUS_THERMAL_LV_MASK	(0x7 << MRSTATUS_THERMAL_LV_SHIFT)
-
-#define MAX_MIFFREQ (CONFIG_EXYNOS3250_MAX_MIFFREQ * 1000)
 
 static struct pm_qos_request exynos3250_mif_qos;
 static struct pm_qos_request exynos3250_boot_mif_qos;
@@ -77,7 +74,7 @@ struct devfreq_data_mif {
 	struct regulator *vdd_mif;
 	unsigned long old_volt;
 
-	struct opp *curr_opp;
+	struct dev_pm_opp *curr_opp;
 	void __iomem *base_drex;
 	void __iomem *base_pmu_mif;
 	void __iomem *base_cmu_dmc;
@@ -98,7 +95,7 @@ cputime64_t devfreq_mif_time_in_state[] = {
 	0,
 };
 
-struct devfreq_opp_table devfreq_mif_opp_list[] = {
+struct exynos_devfreq_opp_table devfreq_mif_opp_list[] = {
 	{LV0,	400000,	875000},
 	{LV1,	200000,	800000},
 	{LV2,	133000,	800000},
@@ -117,11 +114,7 @@ static struct devfreq_pm_qos_data exynos3250_devfreq_mif_pm_qos_data = {
 static struct devfreq_simple_ondemand_data exynos3250_mif_governor_data = {
 	.pm_qos_class	= PM_QOS_BUS_THROUGHPUT,
 	.upthreshold	= 20,
-#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
-	.cal_qos_max	= MAX_MIFFREQ,
-#else
 	.cal_qos_max	= 400000,
-#endif
 };
 #endif
 
@@ -245,7 +238,7 @@ static unsigned int exynos3250_mif_set_div(enum devfreq_mif_idx target_idx)
 	return 0;
 }
 
-static inline int exynos3250_devfreq_mif_get_idx(struct devfreq_opp_table *table,
+static inline int exynos3250_devfreq_mif_get_idx(struct exynos_devfreq_opp_table *table,
 				unsigned int size,
 				unsigned long freq)
 {
@@ -298,7 +291,7 @@ static int exynos3250_devfreq_set_dll_voltage(struct devfreq_data_mif *data,
 {
 	unsigned long target_volt;
 	unsigned int tmp;
-	struct opp *target_opp;
+	struct dev_pm_opp *target_opp;
 	unsigned long freq = devfreq_mif_opp_list[target_idx].freq;
 
 	rcu_read_lock();
@@ -308,7 +301,7 @@ static int exynos3250_devfreq_set_dll_voltage(struct devfreq_data_mif *data,
 		dev_err(data->dev, "DEVFREQ(MIF) : Invalid OPP to find\n");
 		return PTR_ERR(target_opp);
 	}
-	target_volt = opp_get_voltage(target_opp);
+	target_volt = dev_pm_opp_get_voltage(target_opp);
 	target_volt += volt_offset;
 	rcu_read_unlock();
 
@@ -387,7 +380,7 @@ static int exynos3250_devfreq_mif_target(struct device *dev,
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct devfreq_data_mif *mif_data = platform_get_drvdata(pdev);
 	struct devfreq *devfreq_mif = mif_data->devfreq;
-	struct opp *target_opp;
+	struct dev_pm_opp *target_opp;
 	int target_idx, old_idx;
 	unsigned long old_freq;
 
@@ -403,7 +396,7 @@ static int exynos3250_devfreq_mif_target(struct device *dev,
 		return PTR_ERR(target_opp);
 	}
 
-	*target_freq = opp_get_freq(target_opp);
+	*target_freq = dev_pm_opp_get_freq(target_opp);
 	rcu_read_unlock();
 
 	target_idx = exynos3250_devfreq_mif_get_idx(devfreq_mif_opp_list,
@@ -439,7 +432,7 @@ static int exynos3250_mif_bus_get_dev_status(struct device *dev,
 	struct devfreq_data_mif *data = dev_get_drvdata(dev);
 
 	unsigned long busy_data;
-	unsigned long mif_ccnt = 0;
+	unsigned int mif_ccnt = 0;
 	unsigned long mif_pmcnt = 0;
 
 	if (!data_mif->use_dvfs)
@@ -504,20 +497,16 @@ static int exynos3250_mif_table(struct devfreq_data_mif *data)
 	/* will add code for ASV information setting function in here */
 
 	for (i = 0; i < ARRAY_SIZE(devfreq_mif_opp_list); i++) {
-#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
-		if (MAX_MIFFREQ < devfreq_mif_opp_list[i].freq)
-			continue;
-#endif
 		devfreq_mif_opp_list[i].volt = get_match_volt(ID_MIF, devfreq_mif_opp_list[i].freq);
 		if (devfreq_mif_opp_list[i].volt == 0) {
 			dev_err(data->dev, "Invalid value\n");
 			goto err_opp;
 		}
 
-		pr_info("MIF %luKhz ASV is %luuV\n", devfreq_mif_opp_list[i].freq,
+		pr_info("MIF %dKhz ASV is %dV\n", devfreq_mif_opp_list[i].freq,
 						devfreq_mif_opp_list[i].volt);
 
-		ret = opp_add(data->dev, devfreq_mif_opp_list[i].freq, devfreq_mif_opp_list[i].volt);
+		ret = dev_pm_opp_add(data->dev, devfreq_mif_opp_list[i].freq, devfreq_mif_opp_list[i].volt);
 
 		if (ret) {
 			dev_err(data->dev, "Fail to add opp entries.\n");
@@ -540,11 +529,7 @@ static ssize_t mif_show_state(struct device *dev, struct device_attribute *attr,
 	ssize_t cnt_remain = (ssize_t)(PAGE_SIZE - 1);
 
 	for (i = LV0; i < LV_COUNT; i++) {
-#ifdef CONFIG_EXYNOS_LOCK_MAX_MIFFREQ
-		if (MAX_MIFFREQ < devfreq_mif_opp_list[i].freq)
-			continue;
-#endif
-		len += snprintf(buf + len, cnt_remain, "%ld %llu\n",
+		len += snprintf(buf + len, cnt_remain, "%d %llu\n",
 				devfreq_mif_opp_list[i].freq,
 				(unsigned long long)devfreq_mif_time_in_state[i]);
 		cnt_remain = (ssize_t)(PAGE_SIZE - len - 1);
@@ -564,7 +549,7 @@ static ssize_t mif_show_freq(struct device *dev, struct device_attribute *attr, 
 		if (MAX_MIFFREQ < devfreq_mif_opp_list[i].freq)
 			continue;
 #endif
-		len += snprintf(buf + len, cnt_remain, "%ld ",
+		len += snprintf(buf + len, cnt_remain, "%d ",
 				devfreq_mif_opp_list[i].freq);
 		cnt_remain = (ssize_t)(PAGE_SIZE - len - 1);
 	}
@@ -783,19 +768,19 @@ static int exynos3250_devfreq_mif_probe(struct platform_device *pdev)
 	}
 
 	data->base_drex = ioremap(EXYNOS3_PA_DMC, SZ_64K);
-	if(!data->base_drex){
+	if (!data->base_drex) {
 		pr_err("DEVFREQ(MIF) : base_drex ioremap is failed \n");
 		goto err_drex;
 	}
 
 	data->base_pmu_mif = ioremap(EXYNOS3_PA_PMU, SZ_16K);
-	if(!data->base_pmu_mif){
+	if (!data->base_pmu_mif) {
 		pr_err("DEVFREQ(MIF) : base_pmu_mif ioremap is failed \n");
 		goto err_pmu_mif;
 	}
 
 	data->base_cmu_dmc= ioremap(EXYNOS3_PA_CMU_DMC, SZ_16K);
-	if(!data->base_cmu_dmc){
+	if (!data->base_cmu_dmc) {
 		pr_err("DEVFREQ(MIF) : base_pmu_dmc ioremap is failed \n");
 		goto err_cmu_dmc;
 	}

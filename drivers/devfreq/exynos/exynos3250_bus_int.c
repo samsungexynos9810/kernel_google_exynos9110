@@ -11,7 +11,7 @@
 #include <linux/slab.h>
 #include <linux/mutex.h>
 #include <linux/suspend.h>
-#include <linux/opp.h>
+#include <linux/pm_opp.h>
 #include <linux/list.h>
 #include <linux/device.h>
 #include <linux/devfreq.h>
@@ -24,17 +24,16 @@
 #include <linux/clk.h>
 #include <linux/mutex.h>
 
-#include <mach/regs-clock.h>
-#include <mach/devfreq.h>
-#include <mach/asv-exynos.h>
+#include <soc/samsung/exynos-devfreq.h>
+#include <soc/samsung/asv-exynos.h>
 
+#include "exynos3250_regs-clock.h"
 #include "exynos3250_ppmu.h"
-#include "devfreq_exynos.h"
-#include "governor.h"
+#include "../governor.h"
 
 #define SAFE_INT_VOLT(x)	(x + 25000)
 #define INT_TIMEOUT_VAL		10000
-#define MAX_INTFREQ (CONFIG_EXYNOS3250_MAX_INTFREQ * 1000)
+#define REG_MAX_VOLT_LIMIT	1000000
 
 static struct device *int_dev;
 static struct pm_qos_request exynos3250_int_qos;
@@ -47,7 +46,7 @@ static LIST_HEAD(int_dvfs_list);
 struct devfreq_data_int {
 	struct device *dev;
 	struct devfreq *devfreq;
-	struct opp *curr_opp;
+	struct dev_pm_opp *curr_opp;
 	struct regulator *vdd_int;
 	struct exynos3250_ppmu_handle *ppmu;
 	struct mutex lock;
@@ -312,9 +311,9 @@ static int int_g3d_regulator_set_voltage(int min_uV, int max_uV, enum asv_type_i
 	}
 
 	if (g3d_min_uV < int_min_uV)
-		regulator_set_voltage(int_regulator, int_min_uV, int_max_uV);
+		regulator_set_voltage(int_regulator, int_min_uV, REG_MAX_VOLT_LIMIT);
 	else
-		regulator_set_voltage(int_regulator, g3d_min_uV, g3d_max_uV);
+		regulator_set_voltage(int_regulator, g3d_min_uV, REG_MAX_VOLT_LIMIT);
 
 	mutex_unlock(&int_g3d_lock);
 	return 0;
@@ -340,7 +339,7 @@ static int exynos3250_int_devfreq_target(struct device *dev,
 	int err = 0;
 	struct platform_device *pdev = container_of(dev, struct platform_device, dev);
 	struct devfreq_data_int *data = platform_get_drvdata(pdev);
-	struct opp *opp;
+	struct dev_pm_opp *opp;
 	unsigned long freq;
 	unsigned long old_freq;
 	unsigned long target_volt;
@@ -354,13 +353,13 @@ static int exynos3250_int_devfreq_target(struct device *dev,
 		return PTR_ERR(opp);
 	}
 
-	freq = opp_get_freq(opp);
-	target_volt = opp_get_voltage(opp);
+	freq = dev_pm_opp_get_freq(opp);
+	target_volt = dev_pm_opp_get_voltage(opp);
 	rcu_read_unlock();
 
 	/* get olg opp information */
 	rcu_read_lock();
-	old_freq = opp_get_freq(data->curr_opp);
+	old_freq = dev_pm_opp_get_freq(data->curr_opp);
 	rcu_read_unlock();
 
 	exynos3250_int_update_state(old_freq);
@@ -402,7 +401,7 @@ static int exynos3250_int_bus_get_dev_status(struct device *dev,
 	unsigned long int_pmcnt = 0;
 
 	rcu_read_lock();
-	stat->current_frequency = opp_get_freq(data->curr_opp);
+	stat->current_frequency = dev_pm_opp_get_freq(data->curr_opp);
 	rcu_read_unlock();
 
 	busy_data = exynos3250_ppmu_get_busy(data->ppmu, PPMU_SET_INT,
@@ -425,11 +424,7 @@ static struct devfreq_pm_qos_data exynos3250_devfreq_int_pm_qos_data = {
 static struct devfreq_simple_ondemand_data exynos3250_int_governor_data = {
 	.pm_qos_class	= PM_QOS_DEVICE_THROUGHPUT,
 	.upthreshold	= 15,
-#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
-	.cal_qos_max = MAX_INTFREQ,
-#else
 	.cal_qos_max = 135000,
-#endif
 };
 #endif
 
@@ -523,10 +518,6 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 
 	/* will add code for ASV information setting function in here */
 	for (i = 0; i < ARRAY_SIZE(int_bus_opp_list); i++) {
-#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
-		if (MAX_INTFREQ < int_bus_opp_list[i].clk)
-			continue;
-#endif
 		int_bus_opp_list[i].volt = get_match_volt(ID_INT, int_bus_opp_list[i].clk);
 		if (int_bus_opp_list[i].volt == 0) {
 			dev_err(data->dev, "Invalid value\n");
@@ -536,7 +527,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 		pr_info("INT %luKhz ASV is %luuV\n", int_bus_opp_list[i].clk,
 							int_bus_opp_list[i].volt);
 
-		ret = opp_add(data->dev, int_bus_opp_list[i].clk, int_bus_opp_list[i].volt);
+		ret = dev_pm_opp_add(data->dev, int_bus_opp_list[i].clk, int_bus_opp_list[i].volt);
 
 		if (ret) {
 			dev_err(data->dev, "Fail to add opp entries.\n");
@@ -550,7 +541,7 @@ static int exynos3250_init_int_table(struct devfreq_data_int *data)
 static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr, char *buf)
 {
 	int i, count = 0;
-	struct opp *opp;
+	struct dev_pm_opp *opp;
 
 	if (!unlikely(int_dev)) {
 		pr_err("%s: device is not probed\n", __func__);
@@ -559,13 +550,9 @@ static ssize_t show_freq_table(struct device *dev, struct device_attribute *attr
 
 	rcu_read_lock();
 	for (i = 0; i < ARRAY_SIZE(int_bus_opp_list); i++) {
-#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
-		if (MAX_INTFREQ < int_bus_opp_list[i].clk)
-			continue;
-#endif
-		opp = opp_find_freq_exact(int_dev, int_bus_opp_list[i].clk, true);
+		opp = dev_pm_opp_find_freq_exact(int_dev, int_bus_opp_list[i].clk, true);
 		if (!IS_ERR_OR_NULL(opp))
-			count += snprintf(&buf[count], PAGE_SIZE-count, "%lu ", opp_get_freq(opp));
+			count += snprintf(&buf[count], PAGE_SIZE-count, "%lu ", dev_pm_opp_get_freq(opp));
 	}
 	rcu_read_unlock();
 
@@ -582,10 +569,6 @@ static ssize_t int_show_state(struct device *dev, struct device_attribute *attr,
 	ssize_t write_cnt = (ssize_t)((PAGE_SIZE / LV_END) - 2);
 
 	for (i = LV_0; i < LV_END; i++) {
-#ifdef CONFIG_EXYNOS_LOCK_MAX_INTFREQ
-		if (MAX_INTFREQ < int_bus_opp_list[i].clk)
-			continue;
-#endif
 		len += snprintf(buf + len, write_cnt, "%ld %llu\n", int_bus_opp_list[i].clk,
 				(unsigned long long)int_bus_opp_list[i].time_in_state);
 	}
@@ -622,7 +605,7 @@ static struct notifier_block exynos3250_int_reboot_notifier = {
 static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 {
 	struct devfreq_data_int *data;
-	struct opp *opp;
+	struct dev_pm_opp *opp;
 	struct device *dev = &pdev->dev;
 	struct exynos_devfreq_platdata *pdata;
 	int err = 0;
@@ -641,7 +624,7 @@ static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 	exynos3250_init_int_table(data);
 
 	rcu_read_lock();
-	opp = opp_find_freq_floor(dev, &exynos3250_int_devfreq_profile.initial_freq);
+	opp = dev_pm_opp_find_freq_floor(dev, &exynos3250_int_devfreq_profile.initial_freq);
 	if (IS_ERR(opp)) {
 		rcu_read_unlock();
 		dev_err(dev, "Invalid initial frequency %lu kHz.\n",
@@ -690,11 +673,17 @@ static int exynos3250_devfreq_int_probe(struct platform_device *pdev)
 
 	/* Create file for time_in_state */
 	err = sysfs_create_group(&data->devfreq->dev.kobj, &devfreq_int_attr_group);
+	if (err) {
+		pr_err("DEVFREQ(INT) : Failed create int attr group sysfs\n");
+		goto err_devfreq_add;
+	}
 
 	/* Add sysfs for freq_table */
 	err = device_create_file(&data->devfreq->dev, &dev_attr_freq_table);
-	if (err)
-		pr_err("%s: Fail to create sysfs file\n", __func__);
+	if (err) {
+		pr_err("DEVFREQ(INT) : Failed create available_frequencies sysfs\n");
+		goto err_devfreq_add;
+	}
 
 	pdata = pdev->dev.platform_data;
 	if (!pdata)
@@ -758,9 +747,13 @@ static int exynos3250_devfreq_int_suspend(struct device *dev)
 static int exynos3250_devfreq_int_resume(struct device *dev)
 {
 	struct exynos_devfreq_platdata *pdata = dev->platform_data;
+	unsigned int temp_volt;
 
 	if (!pdata)
 		pdata = &default_qos_int_pd;
+
+	temp_volt = get_match_volt(ID_INT, int_bus_opp_list[0].clk);
+	int_g3d_regulator_set_voltage(temp_volt, SAFE_INT_VOLT(temp_volt), ID_INT);
 
 	if (pm_qos_request_active(&exynos3250_int_qos))
 		pm_qos_update_request(&exynos3250_int_qos, pdata->default_qos);

@@ -109,6 +109,21 @@ config ARM_EXYNOS5_BUS_DEVFREQ
 	  It reads PPMU counters of memory controllers and adjusts the
 	  operating frequencies and voltages with OPP support.
 
+config ARM_EXYNOS3250_BUS_DEVFREQ
+	bool "ARM Exynos3250 Memory Bus DEVFREQ Driver"
+	depends on SOC_EXYNOS3250
+	default y
+	select ARCH_HAS_OPP
+	select PM_OPP
+	select DEVFREQ_GOV_SIMPLE_ONDEMAND
+	help
+          This adds the DEVFREQ driver for Exynos3250 memory bus (vdd_int)
+          and Exynos3250 memory interface and bus (vdd_mif + vdd_int).
+          It reads PPMU counters of memory controllers and adjusts
+          the operating frequencies and voltages with OPP support.
+          To operate with optimal voltages, ASV support is required
+          (CONFIG_EXYNOS_ASV).
+
 config ARM_EXYNOS8890_BUS_DEVFREQ
 	bool "ARM Exynos8890 Memory Bus DEVFREQ Driver"
 	default y

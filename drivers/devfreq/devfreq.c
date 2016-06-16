@@ -1018,6 +1018,7 @@ static ssize_t available_frequencies_show(struct device *d,
 }
 static DEVICE_ATTR_RO(available_frequencies);
 
+#ifndef CONFIG_ARM_EXYNOS3250_BUS_DEVFREQ
 static ssize_t trans_stat_show(struct device *dev,
 			       struct device_attribute *attr, char *buf)
 {
@@ -1081,6 +1082,7 @@ static ssize_t time_in_state_show(struct device *dev,
 	return len;
 }
 static DEVICE_ATTR_RO(time_in_state);
+#endif
 
 static struct attribute *devfreq_attrs[] = {
 	&dev_attr_governor.attr,
@@ -1091,8 +1093,10 @@ static struct attribute *devfreq_attrs[] = {
 	&dev_attr_polling_interval.attr,
 	&dev_attr_min_freq.attr,
 	&dev_attr_max_freq.attr,
+#ifndef CONFIG_ARM_EXYNOS3250_BUS_DEVFREQ
 	&dev_attr_trans_stat.attr,
 	&dev_attr_time_in_state.attr,
+#endif
 	NULL,
 };
 ATTRIBUTE_GROUPS(devfreq);

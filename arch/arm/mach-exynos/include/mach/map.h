@@ -12,7 +12,7 @@
 #ifndef __ASM_ARCH_MAP_H
 #define __ASM_ARCH_MAP_H __FILE__
 
-#include <plat/map-base.h>
+#include "../../../plat-samsung/include/plat/map-base.h"
 
 /*
  * EXYNOS4 UART offset is 0x10000 but the older S5P SoCs are 0x400.
@@ -20,7 +20,24 @@
  */
 #define S3C_UART_OFFSET			(0x10000)
 
-#include <plat/map-s5p.h>
+#include "../../../plat-samsung/include/plat/map-s5p.h"
+
+#define EXYNOS3_PA_SYSRAM		0x02020000
+#define EXYNOS3_PA_SYSRAM_NS		0x0205F000
+#define EXYNOS3_PA_CHIPID		0x10000000
+#define EXYNOS3_PA_SYSCON		0x10010000
+#define EXYNOS3_PA_PMU			0x10020000
+#define EXYNOS3_PA_CMU_BUS_TOP		0x10030000
+#define EXYNOS3_PA_CMU_CPU_ISP		0x10040000
+#define EXYNOS3_PA_CMU_ACP		0x10450000
+#define EXYNOS3_PA_CMU_DMC		0x105C0000
+#define EXYNOS3_PA_DMC			0x105F0000
+
+#define EXYNOS3250_PA_PPMU_CPU		0x106C0000
+#define EXYNOS3250_PA_PPMU_RIGHT	0x112A0000
+#define EXYNOS3250_PA_PPMU_LEFT		0x116A0000
+#define EXYNOS3250_PA_PPMU_DMC0		0x106A0000
+#define EXYNOS3250_PA_PPMU_DMC1		0x106B0000
 
 #define EXYNOS3_PA_SYSRAM		0x02020000
 #define EXYNOS3_PA_SYSRAM_NS		0x0205F000
