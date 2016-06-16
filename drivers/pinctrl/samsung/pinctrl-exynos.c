@@ -1824,13 +1824,14 @@ static struct samsung_pin_bank_data exynos8895_pin_banks5[] = {
 static struct samsung_pin_bank_data exynos8895_pin_banks6[] = {
 	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x000, "gpd0", 0x00),
 	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x020, "gpd1", 0x04),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x040, "gpd3", 0x08),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x060, "gpb1", 0x0C),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x080, "gpe7", 0x10),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x0A0, "gpf1", 0x14),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x0C0, "gpm0", 0x18),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x0e0, "gpm1", 0x1C),
-	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x100, "gpm2", 0x20),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x040, "gpd2", 0x08),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x060, "gpd3", 0x0C),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x080, "gpb1", 0x10),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x0A0, "gpe7", 0x14),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x0C0, "gpf1", 0x18),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x0E0, "gpm0", 0x1C),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x100, "gpm1", 0x20),
+	EXYNOS8_PIN_BANK_EINTG(bank_type_off, 8, 0x120, "gpm2", 0x24),
 };
 
 /* pin banks of exynos8895 pin-controller 7 (PERIC1) */
