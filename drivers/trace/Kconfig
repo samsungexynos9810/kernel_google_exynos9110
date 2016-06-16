@@ -10,7 +10,7 @@ menuconfig TRACE
 
 if TRACE
 
-config EXYNOS_ITM
+config EXYNOS_ITMON
         bool "Exynos IPs Traffic Monitor"
         default y
         depends on ARCH_EXYNOS

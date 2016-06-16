@@ -2,7 +2,7 @@
  * Copyright (c) 2016 Samsung Electronics Co., Ltd.
  *		http://www.samsung.com
  *
- * IPs Traffic Monitor(ITM) Driver for Samsung Exynos8895 SOC
+ * IPs Traffic Monitor(ITMON) Driver for Samsung Exynos8895 SOC
  * By Hosung Kim (hosung0.kim@samsung.com)
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 #include <linux/io.h>
 #include <linux/interrupt.h>
 #include <linux/bitops.h>
-#include <soc/samsung/exynos-itm.h>
+#include <soc/samsung/exynos-itmon.h>
 #if defined(CONFIG_SEC_SIPC_MODEM_IF)
 #include <linux/exynos-modem-ctrl.h>
 #endif
@@ -78,7 +78,7 @@
 
 static bool initial_multi_irq_enable = true;
 
-struct itm_rpathinfo {
+struct itmon_rpathinfo {
 	unsigned int id;
 	char *port_name;
 	char *dest_name;
@@ -86,16 +86,16 @@ struct itm_rpathinfo {
 	unsigned int shift_bits;
 };
 
-struct itm_masterinfo {
+struct itmon_masterinfo {
 	char *port_name;
 	unsigned int user;
 	char *master_name;
 	unsigned int bits;
 };
 
-struct itm_nodegroup;
+struct itmon_nodegroup;
 
-struct itm_traceinfo {
+struct itmon_traceinfo {
 	char* port;
 	char* master;
 	char* dest;
@@ -104,7 +104,7 @@ struct itm_traceinfo {
 	bool read;
 };
 
-struct itm_tracedata {
+struct itmon_tracedata {
 	unsigned int int_info;
 	unsigned int ext_info_0;
 	unsigned int ext_info_1;
@@ -114,7 +114,7 @@ struct itm_tracedata {
 	bool last;
 };
 
-struct itm_nodeinfo {
+struct itmon_nodeinfo {
 	unsigned int type;
 	char *name;
 	unsigned int phy_regs;
@@ -124,18 +124,18 @@ struct itm_nodeinfo {
 	bool tmout_frz_enabled;
 	bool err_enabled;
 	bool retention;
-	struct itm_tracedata tracedata;
-	struct itm_nodegroup *group;
+	struct itmon_tracedata tracedata;
+	struct itmon_nodegroup *group;
 	struct list_head list;
 };
 
-const static char *itm_pathtype[] = {
+const static char *itmon_pathtype[] = {
 	"DATA Path transaction (0x2000_0000 ~ 0xf_ffff_ffff)",
 	"PERI(SFR) Path transaction (0x0 ~ 0x1fff_ffff)",
 };
 
 /* Error Code Description */
-const static char *itm_errcode[] = {
+const static char *itmon_errcode[] = {
 	"Error Detect by the Slave(SLVERR)",
 	"Decode error(DECERR)",
 	"Unsupported transaction error",
@@ -146,35 +146,35 @@ const static char *itm_errcode[] = {
 	"Invalid errorcode",
 };
 
-const static char *itm_nodestring[] = {
+const static char *itmon_nodestring[] = {
 	"M_NODE",
 	"TAXI_S_NODE",
 	"TAXI_M_NODE",
 	"S_NODE",
 };
 
-struct itm_nodegroup {
+struct itmon_nodegroup {
 	int irq;
 	char *name;
 	unsigned int phy_regs;
 	void __iomem *regs;
-	struct itm_nodeinfo *nodeinfo;
+	struct itmon_nodeinfo *nodeinfo;
 	unsigned int nodesize;
 	unsigned int irq_occurred;
 	unsigned int bus_type;
 	bool panic_delayed;
 };
 
-struct itm_platdata {
-	const struct itm_rpathinfo *rpathinfo;
-	const struct itm_masterinfo *masterinfo;
-	struct itm_nodegroup *nodegroup;
-	struct itm_traceinfo traceinfo[BUS_PATH_TYPE];
+struct itmon_platdata {
+	const struct itmon_rpathinfo *rpathinfo;
+	const struct itmon_masterinfo *masterinfo;
+	struct itmon_nodegroup *nodegroup;
+	struct itmon_traceinfo traceinfo[BUS_PATH_TYPE];
 	struct list_head tracelist[BUS_PATH_TYPE];
 	bool probed;
 };
 
-const static struct itm_rpathinfo rpathinfo[] = {
+const static struct itmon_rpathinfo rpathinfo[] = {
 	/* Target Address = 0x2000_0000 ~ 0xf_ffff_ffff */
 	{0, "DPU0",		"DREX", GENMASK(5, 0), 0},
 	{1, "DPU1",		"DREX", GENMASK(5, 0), 0},
@@ -281,7 +281,7 @@ const static struct itm_rpathinfo rpathinfo[] = {
 	{22, "ALIVE",		"PERI", GENMASK(4, 0), 0},
 };
 
-const static struct itm_masterinfo masterinfo[] = {
+const static struct itmon_masterinfo masterinfo[] = {
 	{"DPU0", 0,			/* 0XXXX0 */ "DPP/WBMUX",	BIT(5) | BIT(0)},
 	{"DPU0", BIT(0),		/* 0XXXX1 */ "SYSMMU_DPU0",	BIT(5) | BIT(0)},
 
@@ -367,14 +367,14 @@ const static struct itm_masterinfo masterinfo[] = {
 	{"SPDMA",0, "SPDMA",0},
 };
 
-static struct itm_nodeinfo data_bus_1[] = {
+static struct itmon_nodeinfo data_bus_1[] = {
 	{M_NODE,	"ALIVE",	0x15423000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"FSYS1",	0x15403000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"GNSS",		0x15413000, NULL, 0,	false, false, true, false},
 	{T_S_NODE,	"BUS1_B0",	0x15433000, NULL, TMOUT, true, false, true, false},
 };
 
-static struct itm_nodeinfo data_bus_c[] = {
+static struct itmon_nodeinfo data_bus_c[] = {
 	{M_NODE,	"ABOX",		0x15143000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"BUS1_B0",	0x15003000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"CAM0",		0x15043000, NULL, 0,	false, false, true, false},
@@ -405,7 +405,7 @@ static struct itm_nodeinfo data_bus_c[] = {
 	{S_NODE,	"SP",		0x151A3000, NULL, TMOUT, true, false, true, false},
 };
 
-static struct itm_nodeinfo data_core[] = {
+static struct itmon_nodeinfo data_core[] = {
 	{T_M_NODE,	"BUSC_M0",	0x14A03000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"BUSC_M1",	0x14A13000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"BUSC_M2",	0x14A23000, NULL, 0,	false, false, true, false},
@@ -419,7 +419,7 @@ static struct itm_nodeinfo data_core[] = {
 	{S_NODE,	"DREX",		0x14AA3000, NULL, TMOUT, true, false, true, false},
 };
 
-static struct itm_nodeinfo peri_core_0[] = {
+static struct itmon_nodeinfo peri_core_0[] = {
 	{M_NODE,	"CP_PERI_M",	0x14C63000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"SCI_CCM0",	0x14C33000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"SCI_CCM1",	0x14C43000, NULL, 0,	false, false, true, false},
@@ -428,7 +428,7 @@ static struct itm_nodeinfo peri_core_0[] = {
 	{T_S_NODE,	"CORE_BUSC",	0x14C13000, NULL, 0,	true, false, true, false},
 };
 
-static struct itm_nodeinfo peri_core_1[] = {
+static struct itmon_nodeinfo peri_core_1[] = {
 	{T_M_NODE,	"BUSC_CORE",	0x14E13000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"CORE0_CORE1",	0x14E03000, NULL, 0,	false, false, true, false},
 	{S_NODE,	"CORESIGHT",	0x14E83000, NULL, TMOUT, true, false, true, false},
@@ -436,16 +436,16 @@ static struct itm_nodeinfo peri_core_1[] = {
 	{S_NODE,	"CPUCL0",	0x14E53000, NULL, TMOUT, true, false, true, false},
 	{S_NODE,	"CPUCL1",	0x14E63000, NULL, TMOUT, true, false, true, false},
 	{S_NODE,	"G3D",		0x14E73000, NULL, TMOUT, true, false, true, false},
-	{S_NODE,	"IMEM",		0x14E03000, NULL, TMOUT, true, false, true, false},
+	{S_NODE,	"IMEM",		0x14E43000, NULL, TMOUT, true, false, true, false},
 	{S_NODE,	"TREX_CORE",	0x14E23000, NULL, TMOUT, true, false, true, false},
 };
 
-static struct itm_nodeinfo peri_bus_c[] = {
+static struct itmon_nodeinfo peri_bus_c[] = {
 	{M_NODE,	"BUSC_PERI_M",	0x153A3000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"CORE_BUSC",	0x153B3000, NULL, 0,	false, false, true, false},
 	{S_NODE,	"ABOX",		0x15383000, NULL, TMOUT, true, false, true, false},
-	{T_S_NODE,	"BUSC_BUS1",	0x15243000, NULL, 0,	true, false, true, false},
-	{S_NODE,	"BUSC_CORE",	0x15233000, NULL, TMOUT, true, false, true, false},
+	{T_S_NODE,	"BUSC_BUS1",	0x15243000, NULL, 0,	false, false, true, false},
+	{T_S_NODE,	"BUSC_CORE",	0x15233000, NULL, 0,	false, false, true, false},
 	{S_NODE,	"BUSC_SFR0",	0x15213000, NULL, TMOUT, true, false, true, false},
 	{S_NODE,	"BUSC_SFR1",	0x15223000, NULL, TMOUT, true, false, true, false},
 	{S_NODE,	"CAM",		0x152E3000, NULL, TMOUT, true, false, true, false},
@@ -471,7 +471,7 @@ static struct itm_nodeinfo peri_bus_c[] = {
 	{S_NODE,	"VTS",		0x15393000, NULL, TMOUT, true, false, true, false},
 };
 
-static struct itm_nodeinfo peri_bus_1[] = {
+static struct itmon_nodeinfo peri_bus_1[] = {
 	{T_M_NODE,	"BUSC_BUS1",	0x15643000, NULL, 0,	false, false, true, false},
 	{S_NODE,	"ALIVE",	0x15633000, NULL, TMOUT, true, false, true, false},
 	{S_NODE,	"BUS1_SFR",	0x15613000, NULL, TMOUT, true, false, true, false},
@@ -479,7 +479,7 @@ static struct itm_nodeinfo peri_bus_1[] = {
 	{S_NODE,	"TREX_BUS1",	0x15603000, NULL, TMOUT, true, false, true, false},
 };
 
-static struct itm_nodegroup nodegroup[] = {
+static struct itmon_nodegroup nodegroup[] = {
 	{72,	"DATA_BUS_1",	0x15443000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, BUS_DATA, false},
 	{311,	"DATA_CORE",	0x14AB3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, BUS_DATA, false},
 	{92,	"DATA_BUS_C",	0x151C3000, NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, BUS_DATA, false},
@@ -489,38 +489,38 @@ static struct itm_nodegroup nodegroup[] = {
 	{77,	"PERI_BUS_1",	0x15653000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, BUS_PERI, false},
 };
 
-struct itm_dev {
+struct itmon_dev {
 	struct device *dev;
-	struct itm_platdata *pdata;
+	struct itmon_platdata *pdata;
 	struct of_device_id *match;
 	int irq;
 	int id;
 	void __iomem *regs;
 	spinlock_t ctrl_lock;
-	struct itm_notifier notifier_info;
+	struct itmon_notifier notifier_info;
 };
 
-struct itm_panic_block {
+struct itmon_panic_block {
 	struct notifier_block nb_panic_block;
-	struct itm_dev *pdev;
+	struct itmon_dev *pdev;
 };
 
 /* declare notifier_list */
-static ATOMIC_NOTIFIER_HEAD(itm_notifier_list);
+static ATOMIC_NOTIFIER_HEAD(itmon_notifier_list);
 
-static const struct of_device_id itm_dt_match[] = {
-	{.compatible = "samsung,exynos-itm",
+static const struct of_device_id itmon_dt_match[] = {
+	{.compatible = "samsung,exynos-itmon",
 	 .data = NULL,},
 	{},
 };
-MODULE_DEVICE_TABLE(of, itm_dt_match);
+MODULE_DEVICE_TABLE(of, itmon_dt_match);
 
-struct itm_rpathinfo *itm_get_rpathinfo(struct itm_dev *itm,
+struct itmon_rpathinfo *itmon_get_rpathinfo(struct itmon_dev *itmon,
 					       unsigned int id,
 					       char *dest_name)
 {
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_rpathinfo *rpath = NULL;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_rpathinfo *rpath = NULL;
 	int i;
 
 	for (i = 0; i < ARRAY_SIZE(rpathinfo); i++) {
@@ -528,7 +528,7 @@ struct itm_rpathinfo *itm_get_rpathinfo(struct itm_dev *itm,
 			if (dest_name && !strncmp(pdata->rpathinfo[i].dest_name,
 						  dest_name,
 						  strlen(pdata->rpathinfo[i].dest_name))) {
-				rpath = (struct itm_rpathinfo *)&pdata->rpathinfo[i];
+				rpath = (struct itmon_rpathinfo *)&pdata->rpathinfo[i];
 				break;
 			}
 		}
@@ -536,12 +536,12 @@ struct itm_rpathinfo *itm_get_rpathinfo(struct itm_dev *itm,
 	return rpath;
 }
 
-static struct itm_masterinfo *itm_get_masterinfo(struct itm_dev *itm,
+static struct itmon_masterinfo *itmon_get_masterinfo(struct itmon_dev *itmon,
 						 char *port_name,
 						 unsigned int user)
 {
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_masterinfo *master = NULL;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_masterinfo *master = NULL;
 	unsigned int val;
 	int i;
 
@@ -549,7 +549,7 @@ static struct itm_masterinfo *itm_get_masterinfo(struct itm_dev *itm,
 		if (!strncmp(pdata->masterinfo[i].port_name, port_name, strlen(port_name))) {
 			val = user & pdata->masterinfo[i].bits;
 			if (val == pdata->masterinfo[i].user) {
-				master = (struct itm_masterinfo *)&pdata->masterinfo[i];
+				master = (struct itmon_masterinfo *)&pdata->masterinfo[i];
 				break;
 			}
 		}
@@ -557,10 +557,10 @@ static struct itm_masterinfo *itm_get_masterinfo(struct itm_dev *itm,
 	return master;
 }
 
-static void itm_init(struct itm_dev *itm, bool enabled)
+static void itmon_init(struct itmon_dev *itmon, bool enabled)
 {
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_nodeinfo *node;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_nodeinfo *node;
 	unsigned int offset;
 	int i, j;
 
@@ -617,8 +617,8 @@ static void itm_init(struct itm_dev *itm, bool enabled)
 	}
 }
 
-static void itm_post_handler_by_master(struct itm_dev *itm,
-				       struct itm_nodegroup *group,
+static void itmon_post_handler_by_master(struct itmon_dev *itmon,
+				       struct itmon_nodegroup *group,
 				       char *port, char *master, bool read)
 {
 	/* After treatment by port */
@@ -634,7 +634,7 @@ static void itm_post_handler_by_master(struct itm_dev *itm,
 			pr_info("ITMON skips CP's DSP(TL3MtoL2) detected\n");
 		} else {
 			/* Disable busmon all interrupts */
-			itm_init(itm, false);
+			itmon_init(itmon, false);
 			group->panic_delayed = true;
 #if defined(CONFIG_SEC_SIPC_MODEM_IF)
 			ss310ap_force_crash_exit_ext();
@@ -643,14 +643,14 @@ static void itm_post_handler_by_master(struct itm_dev *itm,
 	}
 }
 
-static void itm_report_traceinfo(struct itm_dev *itm,
-				struct itm_nodeinfo *node,
+static void itmon_report_traceinfo(struct itmon_dev *itmon,
+				struct itmon_nodeinfo *node,
 				unsigned int bus_type)
 {
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_tracedata *tracedata = &node->tracedata;
-	struct itm_traceinfo *traceinfo = &pdata->traceinfo[bus_type];
-	struct itm_masterinfo *master;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_tracedata *tracedata = &node->tracedata;
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[bus_type];
+	struct itmon_masterinfo *master;
 	unsigned int user, errcode;
 	char buf[SZ_32];
 
@@ -659,8 +659,8 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 		case M_NODE:
 			user = BIT_AXUSER(tracedata->ext_info_2);
 			traceinfo->port = node->name;
-			master = (struct itm_masterinfo *)
-				itm_get_masterinfo(itm, node->name, user);
+			master = (struct itmon_masterinfo *)
+				itmon_get_masterinfo(itmon, node->name, user);
 			if (master)
 				traceinfo->master = master->master_name;
 			else
@@ -672,7 +672,7 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 			traceinfo->read = tracedata->read;
 
 			pr_info("\n-------------------------------------------------\n"
-				"      ITMON Report (%s)\n", itm_pathtype[bus_type]);
+				"      ITMON Report (%s)\n", itmon_pathtype[bus_type]);
 			pr_info("-------------------------------------------------\n"
 				"      Transaction Information (1)\n"
 				"      > Master         : %s %s\n"
@@ -704,7 +704,7 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 				"      > Error code     : %s\n"
 				"-------------------------------------------------\n",
 				traceinfo->dest,
-				itm_errcode[traceinfo->errcode]);
+				itmon_errcode[traceinfo->errcode]);
 			break;
 		case T_S_NODE:
 		case T_M_NODE:
@@ -721,7 +721,7 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 					"      > Error code     : %s\n"
 					"-------------------------------------------------\n",
 					traceinfo->dest,
-					itm_errcode[traceinfo->errcode]);
+					itmon_errcode[traceinfo->errcode]);
 			}
 			break;
 		default:
@@ -735,7 +735,7 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 			if ((user & GENMASK(4, 0)) & BIT(3)) {
 				/* Master is CP */
 				traceinfo->port = "CP";
-				master = itm_get_masterinfo(itm, traceinfo->port, user);
+				master = itmon_get_masterinfo(itmon, traceinfo->port, user);
 				if (master)
 					traceinfo->master = master->master_name;
 				else
@@ -756,7 +756,7 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
 			pr_info("\n-------------------------------------------------\n"
-				"      ITMON Report (%s)\n", itm_pathtype[bus_type]);
+				"      ITMON Report (%s)\n", itmon_pathtype[bus_type]);
 			pr_info("-------------------------------------------------\n"
 				"      Transaction Information (1)\n"
 				"      > Master         : %s %s\n"
@@ -794,7 +794,7 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 				"      > Error code     : %s\n"
 				"-------------------------------------------------\n",
 				traceinfo->dest,
-				itm_errcode[traceinfo->errcode]);
+				itmon_errcode[traceinfo->errcode]);
 			break;
 		default:
 			break;
@@ -802,13 +802,13 @@ static void itm_report_traceinfo(struct itm_dev *itm,
 	}
 }
 
-static void itm_report_rawdata(struct itm_dev *itm, struct itm_nodeinfo *node)
+static void itmon_report_rawdata(struct itmon_dev *itmon, struct itmon_nodeinfo *node)
 {
-	struct itm_tracedata *tracedata = &node->tracedata;
+	struct itmon_tracedata *tracedata = &node->tracedata;
 
 	pr_info("      > Node           : %s(%s, 0x%08X)\n"
 		"      > REG(0x08~0x18) : 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
-		node->name, itm_nodestring[node->type],
+		node->name, itmon_nodestring[node->type],
 		node->phy_regs + tracedata->offset,
 		tracedata->int_info,
 		tracedata->ext_info_0,
@@ -816,10 +816,10 @@ static void itm_report_rawdata(struct itm_dev *itm, struct itm_nodeinfo *node)
 		tracedata->ext_info_2);
 }
 
-static void itm_route_tracedata(struct itm_dev *itm)
+static void itmon_route_tracedata(struct itmon_dev *itmon)
 {
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_nodeinfo *node;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_nodeinfo *node;
 	struct list_head *entry;
 	unsigned int bus_type;
 	int i;
@@ -828,9 +828,9 @@ static void itm_route_tracedata(struct itm_dev *itm)
 	for (bus_type = 0; bus_type < BUS_PATH_TYPE; bus_type++) {
 		for (i = M_NODE; i < NODE_TYPE; i++) {
 			list_for_each(entry, &pdata->tracelist[bus_type]) {
-				node = list_entry(entry, struct itm_nodeinfo, list);
+				node = list_entry(entry, struct itmon_nodeinfo, list);
 				if (i == node->type)
-					itm_report_traceinfo(itm, node, bus_type);
+					itmon_report_traceinfo(itmon, node, bus_type);
 			}
 		}
 	}
@@ -840,30 +840,30 @@ static void itm_route_tracedata(struct itm_dev *itm)
 			"      Raw Register Information\n");
 		for (i = M_NODE; i < NODE_TYPE; i++) {
 			list_for_each(entry, &pdata->tracelist[bus_type]) {
-				node = list_entry(entry, struct itm_nodeinfo, list);
+				node = list_entry(entry, struct itmon_nodeinfo, list);
 				if (i == node->type) {
-					itm_report_rawdata(itm, node);
-					itm_post_handler_by_master(itm, node->group,
+					itmon_report_rawdata(itmon, node);
+					itmon_post_handler_by_master(itmon, node->group,
 						node->name, pdata->traceinfo[bus_type].master,
 						pdata->traceinfo[bus_type].read);
 					/* Cleanup */
-					memset(&node->tracedata, 0, sizeof(struct itm_tracedata));
+					memset(&node->tracedata, 0, sizeof(struct itmon_tracedata));
 				}
 			}
 		}
 	}
 }
 
-static void itm_trace_data(struct itm_dev *itm,
-			    struct itm_nodegroup *group,
-			    struct itm_nodeinfo *node,
+static void itmon_trace_data(struct itmon_dev *itmon,
+			    struct itmon_nodegroup *group,
+			    struct itmon_nodeinfo *node,
 			    unsigned int offset)
 {
-	struct itm_platdata *pdata = itm->pdata;
+	struct itmon_platdata *pdata = itmon->pdata;
 	unsigned int int_info, info0, info1, info2;
 	bool read = false, req = false;
 
-	memset(&node->tracedata, 0, sizeof(struct itm_tracedata));
+	memset(&node->tracedata, 0, sizeof(struct itmon_tracedata));
 
 	int_info = __raw_readl(node->regs + offset + REG_INT_INFO);
 	info0 = __raw_readl(node->regs + offset + REG_EXT_INFO_0);
@@ -911,15 +911,15 @@ static void itm_trace_data(struct itm_dev *itm,
 	list_add(&node->list, &pdata->tracelist[group->bus_type]);
 }
 
-static int itm_search_node(struct itm_dev *itm, struct itm_nodegroup *group, bool clear)
+static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *group, bool clear)
 {
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_nodeinfo *node = NULL;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_nodeinfo *node = NULL;
 	unsigned int val, offset, vec;
 	unsigned long flags, bit = 0;
 	int i, j, ret = 0;
 
-	spin_lock_irqsave(&itm->ctrl_lock, flags);
+	spin_lock_irqsave(&itmon->ctrl_lock, flags);
 	if (group) {
 		/* Processing only this group and select detected node */
 		vec = __raw_readl(group->regs);
@@ -935,7 +935,7 @@ static int itm_search_node(struct itm_dev *itm, struct itm_nodegroup *group, boo
 				val = __raw_readl(node[bit].regs + offset + REG_INT_INFO);
 				if (BIT_ERR_OCCURRED(val)) {
 					/* This node occurs the error */
-					itm_trace_data(itm, group, &node[bit], offset);
+					itmon_trace_data(itmon, group, &node[bit], offset);
 					if (clear)
 						__raw_writel(1, node[bit].regs
 								+ offset + REG_INT_CLR);
@@ -960,7 +960,7 @@ static int itm_search_node(struct itm_dev *itm, struct itm_nodegroup *group, boo
 					if (BIT_ERR_OCCURRED(val)) {
 						/* This node occurs the error */
 						list_add(&node[bit].list, &pdata->tracelist[group->bus_type]);
-						itm_trace_data(itm, group, &node[bit], offset);
+						itmon_trace_data(itmon, group, &node[bit], offset);
 						if (clear)
 							__raw_writel(1, node[j].regs
 									+ offset + REG_INT_CLR);
@@ -970,25 +970,25 @@ static int itm_search_node(struct itm_dev *itm, struct itm_nodegroup *group, boo
 			}
 		}
 	}
-	itm_route_tracedata(itm);
-	memset(pdata->traceinfo, 0, sizeof(struct itm_traceinfo) * 2);
+	itmon_route_tracedata(itmon);
+	memset(pdata->traceinfo, 0, sizeof(struct itmon_traceinfo) * 2);
  exit:
-	spin_unlock_irqrestore(&itm->ctrl_lock, flags);
+	spin_unlock_irqrestore(&itmon->ctrl_lock, flags);
 	return ret;
 }
 
-static irqreturn_t itm_irq_handler(int irq, void *data)
+static irqreturn_t itmon_irq_handler(int irq, void *data)
 {
-	struct itm_dev *itm = (struct itm_dev *)data;
-	struct itm_platdata *pdata = itm->pdata;
-	struct itm_nodegroup *group = NULL;
+	struct itmon_dev *itmon = (struct itmon_dev *)data;
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_nodegroup *group = NULL;
 	bool ret;
 	int i;
 
 	/* convert from raw irq source to SPI irq number */
 	irq = irq - 32;
 
-	/* Search itm group */
+	/* Search itmon group */
 	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		if (irq == nodegroup[i].irq) {
 			group = &pdata->nodegroup[i];
@@ -999,7 +999,7 @@ static irqreturn_t itm_irq_handler(int irq, void *data)
 		}
 	}
 	if (group) {
-		ret = itm_search_node(itm, NULL, false);
+		ret = itmon_search_node(itmon, NULL, false);
 		if (!ret) {
 			pr_info("ITMON parsing: failed %s, %d irq, 0x%x\n",
 				group->name, irq, __raw_readl(group->regs));
@@ -1016,21 +1016,21 @@ static irqreturn_t itm_irq_handler(int irq, void *data)
 	return IRQ_HANDLED;
 }
 
-void itm_notifier_chain_register(struct notifier_block *block)
+void itmon_notifier_chain_register(struct notifier_block *block)
 {
-	atomic_notifier_chain_register(&itm_notifier_list, block);
+	atomic_notifier_chain_register(&itmon_notifier_list, block);
 }
 
-static int itm_logging_panic_handler(struct notifier_block *nb,
+static int itmon_logging_panic_handler(struct notifier_block *nb,
 				     unsigned long l, void *buf)
 {
-	struct itm_panic_block *itm_panic = (struct itm_panic_block *)nb;
-	struct itm_dev *itm = itm_panic->pdev;
+	struct itmon_panic_block *itmon_panic = (struct itmon_panic_block *)nb;
+	struct itmon_dev *itmon = itmon_panic->pdev;
 	int ret;
 
-	if (!IS_ERR_OR_NULL(itm)) {
+	if (!IS_ERR_OR_NULL(itmon)) {
 		/* Check error has been logged */
-		ret = itm_search_node(itm, NULL, false);
+		ret = itmon_search_node(itmon, NULL, false);
 		if (!ret)
 			pr_info("No found error in %s\n", __func__);
 		else
@@ -1039,36 +1039,36 @@ static int itm_logging_panic_handler(struct notifier_block *nb,
 	return 0;
 }
 
-static int itm_probe(struct platform_device *pdev)
+static int itmon_probe(struct platform_device *pdev)
 {
-	struct itm_dev *itm;
-	struct itm_panic_block *itm_panic = NULL;
-	struct itm_platdata *pdata;
-	struct itm_nodeinfo *node;
+	struct itmon_dev *itmon;
+	struct itmon_panic_block *itmon_panic = NULL;
+	struct itmon_platdata *pdata;
+	struct itmon_nodeinfo *node;
 	unsigned int irq_option = 0;
 	char *dev_name;
 	int ret, i, j;
 
-	itm = devm_kzalloc(&pdev->dev, sizeof(struct itm_dev), GFP_KERNEL);
-	if (!itm) {
+	itmon = devm_kzalloc(&pdev->dev, sizeof(struct itmon_dev), GFP_KERNEL);
+	if (!itmon) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver's "
 				    "private data\n");
 		return -ENOMEM;
 	}
-	itm->dev = &pdev->dev;
+	itmon->dev = &pdev->dev;
 
-	spin_lock_init(&itm->ctrl_lock);
+	spin_lock_init(&itmon->ctrl_lock);
 
-	pdata = devm_kzalloc(&pdev->dev, sizeof(struct itm_platdata), GFP_KERNEL);
+	pdata = devm_kzalloc(&pdev->dev, sizeof(struct itmon_platdata), GFP_KERNEL);
 	if (!pdata) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver's "
 				    "platform data\n");
 		return -ENOMEM;
 	}
-	itm->pdata = pdata;
-	itm->pdata->masterinfo = masterinfo;
-	itm->pdata->rpathinfo = rpathinfo;
-	itm->pdata->nodegroup = nodegroup;
+	itmon->pdata = pdata;
+	itmon->pdata->masterinfo = masterinfo;
+	itmon->pdata->rpathinfo = rpathinfo;
+	itmon->pdata->nodegroup = nodegroup;
 
 	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		dev_name = nodegroup[i].name;
@@ -1086,7 +1086,7 @@ static int itm_probe(struct platform_device *pdev)
 			irq_option = IRQF_GIC_MULTI_TARGET;
 
 		ret = devm_request_irq(&pdev->dev, nodegroup[i].irq + 32,
-				       itm_irq_handler, irq_option, dev_name, itm);
+				       itmon_irq_handler, irq_option, dev_name, itmon);
 
 		for (j = 0; j < nodegroup[i].nodesize; j++) {
 			node[j].regs = devm_ioremap_nocache(&pdev->dev, node[j].phy_regs, SZ_16K);
@@ -1098,70 +1098,70 @@ static int itm_probe(struct platform_device *pdev)
 		}
 	}
 
-	itm_panic = devm_kzalloc(&pdev->dev, sizeof(struct itm_panic_block),
+	itmon_panic = devm_kzalloc(&pdev->dev, sizeof(struct itmon_panic_block),
 				 GFP_KERNEL);
 
-	if (!itm_panic) {
+	if (!itmon_panic) {
 		dev_err(&pdev->dev, "failed to allocate memory for driver's "
 				    "panic handler data\n");
 	} else {
-		itm_panic->nb_panic_block.notifier_call = itm_logging_panic_handler;
-		itm_panic->pdev = itm;
+		itmon_panic->nb_panic_block.notifier_call = itmon_logging_panic_handler;
+		itmon_panic->pdev = itmon;
 		atomic_notifier_chain_register(&panic_notifier_list,
-					       &itm_panic->nb_panic_block);
+					       &itmon_panic->nb_panic_block);
 	}
 
-	platform_set_drvdata(pdev, itm);
+	platform_set_drvdata(pdev, itmon);
 
-	itm_init(itm, true);
+	itmon_init(itmon, true);
 	pdata->probed = true;
 
-	dev_info(&pdev->dev, "success to probe ITM driver\n");
+	dev_info(&pdev->dev, "success to probe Exynos ITMON driver\n");
 
 	return 0;
 }
 
-static int itm_remove(struct platform_device *pdev)
+static int itmon_remove(struct platform_device *pdev)
 {
 	platform_set_drvdata(pdev, NULL);
 	return 0;
 }
 
 #ifdef CONFIG_PM_SLEEP
-static int itm_suspend(struct device *dev)
+static int itmon_suspend(struct device *dev)
 {
 	return 0;
 }
 
-static int itm_resume(struct device *dev)
+static int itmon_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
-	struct itm_dev *itm = platform_get_drvdata(pdev);
+	struct itmon_dev *itmon = platform_get_drvdata(pdev);
 
-	itm_init(itm, true);
+	itmon_init(itmon, true);
 
 	return 0;
 }
 
-static SIMPLE_DEV_PM_OPS(itm_pm_ops, itm_suspend, itm_resume);
-#define ITM_PM	(itm_pm_ops)
+static SIMPLE_DEV_PM_OPS(itmon_pm_ops, itmon_suspend, itmon_resume);
+#define ITMON_PM	(itmon_pm_ops)
 #else
-#define ITM_PM	NULL
+#define ITM_ONPM	NULL
 #endif
 
-static struct platform_driver exynos_itm_driver = {
-	.probe = itm_probe,
-	.remove = itm_remove,
+static struct platform_driver exynos_itmon_driver = {
+	.probe = itmon_probe,
+	.remove = itmon_remove,
 	.driver = {
-		   .name = "exynos-itm",
-		   .of_match_table = itm_dt_match,
-		   .pm = &itm_pm_ops,
+		   .name = "exynos-itmon",
+		   .of_match_table = itmon_dt_match,
+		   .pm = &itmon_pm_ops,
 		   },
 };
 
-module_platform_driver(exynos_itm_driver);
+module_platform_driver(exynos_itmon_driver);
 
-MODULE_DESCRIPTION("Samsung Exynos ITM DRIVER");
+MODULE_DESCRIPTION("Samsung Exynos ITMON DRIVER");
 MODULE_AUTHOR("Hosung Kim <hosung0.kim@samsung.com");
 MODULE_LICENSE("GPL v2");
-MODULE_ALIAS("platform:exynos-itm");
+MODULE_ALIAS("platform:exynos-itmon");
