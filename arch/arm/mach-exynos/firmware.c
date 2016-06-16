@@ -17,9 +17,9 @@
 #include <asm/firmware.h>
 
 #include <mach/map.h>
+#include <mach/smc.h>
 
 #include "common.h"
-#include "smc.h"
 
 static int exynos_do_idle(void)
 {
