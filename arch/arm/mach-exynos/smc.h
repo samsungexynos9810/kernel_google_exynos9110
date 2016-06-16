@@ -17,6 +17,8 @@
 #define SMC_CMD_SLEEP		(-3)
 #define SMC_CMD_CPU1BOOT	(-4)
 #define SMC_CMD_CPU0AFTR	(-5)
+#define SMC_CMD_SAVE		(-6)
+#define SMC_CMD_SHUTDOWN	(-7)
 /* For CP15 Access */
 #define SMC_CMD_C15RESUME	(-11)
 /* For L2 Cache Access */
@@ -38,6 +40,15 @@
 	   (SMC_REG_CLASS_CP15 | (CRn << 10) | (Op1 << 7) | (CRm << 3) | (Op2))
 #define SMC_REG_ID_SFR_W(ADDR)	(SMC_REG_CLASS_SFR_W | ((ADDR) >> 2))
 #define SMC_REG_ID_SFR_R(ADDR)	(SMC_REG_CLASS_SFR_R | ((ADDR) >> 2))
+
+/* op type for SMC_CMD_SAVE and SMC_CMD_SHUTDOWN */
+#define OP_TYPE_CORE            0x0
+#define OP_TYPE_CLUSTER         0x1
+
+/* Power State required for SMC_CMD_SAVE and SMC_CMD_SHUTDOWN */
+#define SMC_POWERSTATE_SLEEP    0x0
+#define SMC_POWERSTATE_IDLE     0x1
+#define SMC_POWERSTATE_SWITCH   0x2
 
 #ifndef __ASSEMBLY__
 extern void exynos_smc(u32 cmd, u32 arg1, u32 arg2, u32 arg3);
