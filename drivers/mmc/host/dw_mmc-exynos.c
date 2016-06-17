@@ -217,14 +217,18 @@ void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 	id = of_alias_get_id(host->dev->of_node, "mshc");
 	switch (id) {
 	case 0:
+#if 0
 #if defined(CONFIG_MMC_DW_FMP_DM_CRYPT) || defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
 		ret = exynos_smc(SMC_CMD_FMP, FMP_SECURITY, EMMC0_FMP, FMP_DESC_ON);
 #else
 		ret = exynos_smc(SMC_CMD_FMP, FMP_SECURITY, EMMC0_FMP, FMP_DESC_OFF);
 #endif
+#endif
 		break;
 	case 2:
+#if 0
 		ret = exynos_smc(SMC_CMD_FMP, FMP_SECURITY, EMMC2_FMP, FMP_DESC_OFF);
+#endif
 		break;
 	default:
 		goto sector_config;
