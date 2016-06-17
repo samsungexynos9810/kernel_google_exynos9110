@@ -49,28 +49,37 @@
 		status = "okay";
 	};
 
+	/* USI MODE SETTINGS
+
+	   usi_mode = "hsi2c0" or "hsi2c1" or "spi" or "uart"
+			or "hsi2c0_hsi2c1" or "uart_hsi2c1"
+	 */
 	usi_0: usi@10421000 {
-		usi_mode = "hsi2c0";
+		usi_mode = "spi";
 		status = "okay";
 	};
 
 	usi_1: usi@10421004 {
+		usi_mode = "spi";
+		status = "okay";
+	};
+
+	usi_2: usi@10421008 {
 		usi_mode = "hsi2c0";
 		status = "okay";
 	};
 
 	usi_3: usi@1042100C {
-		usi_mode = "spi";
+		usi_mode = "hsi2c0_hsi2c1";
 		status = "okay";
 	};
 
 	usi_4: usi@10821008 {
-		usi_mode = "spi";
-		status = "okay";
+		status = "disabled";
 	};
 
 	usi_5: usi@1082100C {
-		usi_mode = "spi";
+		usi_mode = "hsi2c0_hsi2c1";
 		status = "okay";
 	};
 
@@ -80,7 +89,12 @@
 	};
 
 	usi_7: usi@10821014 {
-		usi_mode = "hsi2c1";
+		usi_mode = "hsi2c0";
+		status = "okay";
+	};
+
+	usi_8: usi@10821018 {
+		usi_mode = "spi";
 		status = "okay";
 	};
 
@@ -95,17 +109,16 @@
 	};
 
 	usi_11: usi@10821024 {
-		usi_mode = "hsi2c0";
+		usi_mode = "hsi2c0_hsi2c1";
 		status = "okay";
 	};
 
 	usi_12: usi@10821028 {
-		usi_mode = "hsi2c0_hsi2c1";
-		status = "okay";
+		status = "disabled";
 	};
 
 	usi_13: usi@1082102C {
-		usi_mode = "hsi2c0_hsi2c1";
+		usi_mode = "uart_hsi2c1";
 		status = "okay";
 	};
 
