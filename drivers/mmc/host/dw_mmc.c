@@ -335,7 +335,7 @@ static inline int dw_mci_debug_init(struct dw_mci *host)
 }
 #endif /* defined (CONFIG_MMC_DW_DEBUG) */
 
-static int dw_mci_ciu_clk_en(struct dw_mci *host, bool force_gating)
+int dw_mci_ciu_clk_en(struct dw_mci *host, bool force_gating)
 {
 	int ret = 0;
 
@@ -356,7 +356,7 @@ static int dw_mci_ciu_clk_en(struct dw_mci *host, bool force_gating)
 	return ret;
 }
 
-static void dw_mci_ciu_clk_dis(struct dw_mci *host)
+void dw_mci_ciu_clk_dis(struct dw_mci *host)
 {
 
 	if (!host->pdata->use_gate_clock)
@@ -821,7 +821,7 @@ static void dw_mci_idmac_stop_dma(struct dw_mci *host)
 
 }
 
-static void dw_mci_idma_reset_dma(struct dw_mci *host)
+void dw_mci_idma_reset_dma(struct dw_mci *host)
 {
 	u32 temp;
 

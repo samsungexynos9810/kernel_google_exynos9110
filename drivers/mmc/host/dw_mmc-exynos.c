@@ -24,6 +24,210 @@
 #include "dw_mmc.h"
 #include "dw_mmc-pltfm.h"
 #include "dw_mmc-exynos.h"
+#include "./../../../arch/arm/mach-exynos/include/mach/exynos-pm.h"
+
+/* SFR save/restore for LPA */
+struct dw_mci *dw_mci_lpa_host[3] = {0, 0, 0};
+unsigned int dw_mci_host_count;
+unsigned int dw_mci_save_sfr[3][30];
+
+extern void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host);
+extern bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host);
+extern void dw_mci_idma_reset_dma(struct dw_mci *host);
+extern int dw_mci_ciu_clk_en(struct dw_mci *host, bool force_gating);
+extern void dw_mci_ciu_clk_dis(struct dw_mci *hosto);
+
+int dw_mci_exynos_request_status(void)
+{
+	int ret = DW_MMC_REQ_BUSY, i;
+
+	for (i = 0; i < dw_mci_host_count; i++) {
+		struct dw_mci *host = dw_mci_lpa_host[i];
+		if (host->req_state == DW_MMC_REQ_BUSY) {
+			ret = DW_MMC_REQ_BUSY;
+			break;
+		} else
+			ret = DW_MMC_REQ_IDLE;
+	}
+
+	return ret;
+}
+
+/*
+ * MSHC SFR save/restore
+ */
+void dw_mci_exynos_save_host_base(struct dw_mci *host)
+{
+	dw_mci_lpa_host[dw_mci_host_count] = host;
+	dw_mci_host_count++;
+}
+#ifdef CONFIG_CPU_IDLE
+static void exynos_sfr_save(unsigned int i)
+{
+	struct dw_mci *host = dw_mci_lpa_host[i];
+
+	dw_mci_save_sfr[i][0] = mci_readl(host, CTRL);
+	dw_mci_save_sfr[i][1] = mci_readl(host, PWREN);
+	dw_mci_save_sfr[i][2] = mci_readl(host, CLKDIV);
+	dw_mci_save_sfr[i][3] = mci_readl(host, CLKSRC);
+	dw_mci_save_sfr[i][4] = mci_readl(host, CLKENA);
+	dw_mci_save_sfr[i][5] = mci_readl(host, TMOUT);
+	dw_mci_save_sfr[i][6] = mci_readl(host, CTYPE);
+	dw_mci_save_sfr[i][7] = mci_readl(host, INTMASK);
+	dw_mci_save_sfr[i][8] = mci_readl(host, FIFOTH);
+	dw_mci_save_sfr[i][9] = mci_readl(host, UHS_REG);
+	dw_mci_save_sfr[i][10] = mci_readl(host, BMOD);
+	dw_mci_save_sfr[i][11] = mci_readl(host, PLDMND);
+	dw_mci_save_sfr[i][12] = mci_readl(host, IDINTEN);
+	dw_mci_save_sfr[i][13] = mci_readl(host, CLKSEL);
+	dw_mci_save_sfr[i][14] = mci_readl(host, CDTHRCTL);
+	dw_mci_save_sfr[i][15] = mci_readl(host, DBADDR);
+	dw_mci_save_sfr[i][17] = mci_readl(host, DDR200_RDDQS_EN);
+	dw_mci_save_sfr[i][18] = mci_readl(host, DDR200_DLINE_CTRL);
+
+	/* For LPA */
+	atomic_inc_return(&host->ciu_en_win);
+	if (host->pdata->enable_cclk_on_suspend) {
+		host->pdata->on_suspend = true;
+		if(dw_mci_ciu_clk_en(host, false))
+			dev_info(host->dev, "ciu_clk_enable_fail!\n");
+	}
+	atomic_dec_return(&host->ciu_en_win);
+}
+
+static void exynos_sfr_restore(unsigned int i)
+{
+	struct dw_mci *host = dw_mci_lpa_host[i];
+	const struct dw_mci_drv_data *drv_data;
+
+	drv_data = host->drv_data;
+
+	mci_writel(host, CTRL , dw_mci_save_sfr[i][0]);
+	mci_writel(host, PWREN, dw_mci_save_sfr[i][1]);
+	mci_writel(host, CLKDIV, dw_mci_save_sfr[i][2]);
+	mci_writel(host, CLKSRC, dw_mci_save_sfr[i][3]);
+	mci_writel(host, CLKENA, dw_mci_save_sfr[i][4]);
+	mci_writel(host, TMOUT, dw_mci_save_sfr[i][5]);
+	mci_writel(host, CTYPE, dw_mci_save_sfr[i][6]);
+	mci_writel(host, INTMASK, dw_mci_save_sfr[i][7]);
+	mci_writel(host, FIFOTH, dw_mci_save_sfr[i][8]);
+	mci_writel(host, UHS_REG, dw_mci_save_sfr[i][9]);
+	mci_writel(host, BMOD  , dw_mci_save_sfr[i][10]);
+	mci_writel(host, PLDMND, dw_mci_save_sfr[i][11]);
+	mci_writel(host, IDINTEN, dw_mci_save_sfr[i][12]);
+	mci_writel(host, CLKSEL, dw_mci_save_sfr[i][13]);
+	mci_writel(host, CDTHRCTL, dw_mci_save_sfr[i][14]);
+	mci_writel(host, DBADDR, dw_mci_save_sfr[i][15]);
+	mci_writel(host, DDR200_RDDQS_EN, dw_mci_save_sfr[i][17]);
+	mci_writel(host, DDR200_DLINE_CTRL, dw_mci_save_sfr[i][18]);
+
+	atomic_inc_return(&host->ciu_en_win);
+	dw_mci_ciu_clk_en(host, false);
+
+	dw_mci_fifo_reset(host->dev, host);
+	dw_mci_ciu_reset(host->dev, host);
+#ifdef CONFIG_MMC_DW_IDMAC
+	dw_mci_idma_reset_dma(host);
+#endif
+
+	/* For eMMC HS400 mode */
+	if (i == 0)
+		mci_writel(host, DDR200_ASYNC_FIFO_CTRL, 0x1);
+
+	atomic_dec_return(&host->ciu_en_win);
+
+	/* For unuse clock gating */
+	if (host->pdata->enable_cclk_on_suspend) {
+		host->pdata->on_suspend = false;
+		dw_mci_ciu_clk_dis(host);
+	}
+}
+
+static int dw_mmc_exynos_notifier0(struct notifier_block *self,
+					unsigned long cmd, void *v)
+{
+	switch (cmd) {
+	case LPA_ENTER:
+		exynos_sfr_save(0);
+		break;
+	case LPA_ENTER_FAIL:
+		break;
+	case LPA_EXIT:
+		exynos_sfr_restore(0);
+		break;
+	}
+
+	return 0;
+}
+
+static int dw_mmc_exynos_notifier1(struct notifier_block *self,
+					unsigned long cmd, void *v)
+{
+	switch (cmd) {
+	case LPA_ENTER:
+		exynos_sfr_save(1);
+		break;
+	case LPA_ENTER_FAIL:
+		break;
+	case LPA_EXIT:
+		exynos_sfr_restore(1);
+		break;
+	}
+
+	return 0;
+}
+
+static int dw_mmc_exynos_notifier2(struct notifier_block *self,
+					unsigned long cmd, void *v)
+{
+	switch (cmd) {
+	case LPA_ENTER:
+		exynos_sfr_save(2);
+		break;
+	case LPA_ENTER_FAIL:
+		break;
+	case LPA_EXIT:
+		exynos_sfr_restore(2);
+		break;
+	}
+
+	return 0;
+}
+
+static struct notifier_block dw_mmc_exynos_notifier_block[3] = {
+	[0] = {
+		.notifier_call = dw_mmc_exynos_notifier0,
+		.priority = 2,
+	},
+	[1] = {
+		.notifier_call = dw_mmc_exynos_notifier1,
+		.priority = 2,
+	},
+	[2] = {
+		.notifier_call = dw_mmc_exynos_notifier2,
+		.priority = 2,
+	},
+};
+
+void dw_mci_exynos_register_notifier(struct dw_mci *host)
+{
+	/*
+	 * Should be called sequentially
+	 */
+	dw_mci_lpa_host[dw_mci_host_count] = host;
+	exynos_pm_register_notifier(&(dw_mmc_exynos_notifier_block[dw_mci_host_count++]));
+}
+
+void dw_mci_exynos_unregister_notifier(struct dw_mci *host)
+{
+	int i;
+
+	for (i = 0; i < 3; i++) {
+		if (host == dw_mci_lpa_host[i])
+			exynos_pm_unregister_notifier(&(dw_mmc_exynos_notifier_block[i]));
+	}
+}
+#endif
 
 static void dw_mci_exynos_register_dump(struct dw_mci *host)
 {
