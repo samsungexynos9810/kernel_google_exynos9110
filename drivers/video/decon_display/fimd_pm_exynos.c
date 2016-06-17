@@ -419,7 +419,7 @@ bool get_display_power_status(void)
 
 	/* DISP_STATUS */
 	// LCD0_STAT : 0x10023C84
-	if (readl(disp_stat + 0x3C84) & 0x1)
+	if (readl(disp_stat) & 0x1)
 		return true;
 	else
 		return false;

@@ -1271,7 +1271,6 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 {
 	struct mipi_dsim_device *dsim = NULL;
 	struct display_driver *dispdrv;
-	struct resource *res;
 	int ret = -1;
 
 	/* get a reference of the display driver */
@@ -1296,11 +1295,8 @@ int create_mipi_dsi_controller(struct platform_device *pdev)
 
 	dsim->lcd_info = decon_get_lcd_info();
 
-	//devm_request_and_ioremap(&pdev->dev, dispdrv->dsi_driver.regs);
-
 	/* Get memory resource and map SFR region. */
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	dsim->reg_base = devm_ioremap_resource(&pdev->dev, res);
+	dsim->reg_base = devm_ioremap_resource(&pdev->dev, dispdrv->dsi_driver.regs);
 	if (!dsim->reg_base) {
 		dev_err(&pdev->dev, "mipi-dsi: failed to remap io region\n");
 		ret = -EINVAL;

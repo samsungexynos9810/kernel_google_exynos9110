@@ -37,7 +37,6 @@
 #include <linux/highmem.h>
 #include <linux/memblock.h>
 #include "../../staging/android/sw_sync.h"
-#include <linux/exynos_iovmm.h>
 #endif
 
 #include <video/mipi_display.h>
@@ -137,14 +136,23 @@ void debug_function(struct display_driver *dispdrv, const char *buf);
 static int s3c_fb_wait_for_vsync(struct s3c_fb *sfb, u32 timeout);
 
 #if defined(CONFIG_ION_EXYNOS)
-static void s3c_fb_dump_registers(struct s3c_fb *sfb)
+void s3c_fb_dump_registers(struct s3c_fb *sfb)
 {
+#if 0
 	int i;
 	for (i = 0; i < sfb->variant.nr_windows; i++)
-	if(sfb->windows[i]->dma_buf_data.dma_buf)
-	printk("w:%u,h:%u,s:%u,o:%u,b_a:%#010lx, b_s:%x, w_s:%x\n",
-				sfb->windows[i]->fbinfo->var.xres, sfb->windows[i]->fbinfo->var.yres, (sfb->windows[i]->fbinfo->var.xres_virtual*sfb->windows[i]->fbinfo->var.bits_per_pixel)/8,(unsigned int)(sfb->windows[i]->fbinfo->fix.smem_start - sfb->windows[i]->dma_buf_data.dma_addr),(long unsigned int)(sfb->windows[i]->dma_buf_data.dma_addr),sfb->windows[i]->dma_buf_data.dma_buf->size,sfb->windows[i]->fbinfo->fix.smem_len);
-	
+		if(sfb->windows[i]->dma_buf_data.dma_buf)
+			printk("w:%u,h:%u,s:%u,o:%u,b_a:%#010lx, b_s:%x, w_s:%x\n",
+				sfb->windows[i]->fbinfo->var.xres,
+				sfb->windows[i]->fbinfo->var.yres,
+				(sfb->windows[i]->fbinfo->var.xres_virtual
+				* sfb->windows[i]->fbinfo->var.bits_per_pixel)/8,
+				(unsigned int)(sfb->windows[i]->fbinfo->fix.smem_start
+				- sfb->windows[i]->dma_buf_data.dma_addr),
+				(long unsigned int)(sfb->windows[i]->dma_buf_data.dma_addr),
+				sfb->windows[i]->dma_buf_data.dma_buf->size,i
+				sfb->windows[i]->fbinfo->fix.smem_len);
+#endif
 	pr_err("dumping registers\n");
 	print_hex_dump(KERN_ERR, "", DUMP_PREFIX_ADDRESS, 32, 4, sfb->regs,
 			0x0280, false);
@@ -1642,21 +1650,13 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 		goto err_buf_map_attachment;
 	}
 
-	dma->dma_addr = ion_iovmm_map(dma->attachment, 0,
-			dma->dma_buf->size , DMA_TO_DEVICE, win_no);
-	if (!dma->dma_addr || IS_ERR_VALUE(dma->dma_addr)) {
-		dev_err(sfb->dev, "iovmm_map() failed: %d\n", dma->dma_addr);
-		goto err_iovmm_map;
-	}
+	dma->dma_addr = sg_phys(dma->sg_table->sgl);
 	exynos_ion_sync_dmabuf_for_device(sfb->dev, dma->dma_buf,
 			dma->dma_buf->size,
 			DMA_TO_DEVICE);
 	dma->ion_handle = ion_handle;
 	return dma->dma_buf->size;
 
-err_iovmm_map:
-	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
-			DMA_TO_DEVICE);
 err_buf_map_attachment:
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 err_buf_map_attach:
@@ -1671,8 +1671,6 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 
 	if (dma->fence)
 		sync_fence_put(dma->fence);
-
-	ion_iovmm_unmap(dma->attachment, dma->dma_addr);
 
 	dma_buf_unmap_attachment(dma->attachment, dma->sg_table,
 			DMA_TO_DEVICE);
@@ -2714,7 +2712,7 @@ static int s3c_fb_alloc_memory(struct s3c_fb *sfb,
 
 #if defined(CONFIG_ION_EXYNOS)
 	handle = ion_alloc(sfb->fb_ion_client, (size_t)size, 0,
-					EXYNOS_ION_HEAP_SYSTEM_MASK, 0);
+					EXYNOS_ION_HEAP_CRYPTO_MASK, 0);
 	if (IS_ERR(handle)) {
 		dev_err(sfb->dev, "failed to ion_alloc\n");
 		return -ENOMEM;
@@ -2984,26 +2982,6 @@ static ssize_t s3c_fb_psr_info(struct device *dev,
 }
 
 static DEVICE_ATTR(psr_info, S_IRUGO, s3c_fb_psr_info, NULL);
-#ifdef CONFIG_ION_EXYNOS
-int s3c_fb_sysmmu_fault_handler(struct iommu_domain *iodmn, struct device *dev,
-                unsigned long addr, int id, void *param)
-{
-	struct s3c_fb *sfb;
-	struct display_driver *dispdrv;
-
-	dispdrv = get_display_driver();
-	sfb = dispdrv->decon_driver.sfb;
-	pr_err("FIMD1 PAGE FAULT occurred at 0x%lx \n",	addr);
-
-	s3c_fb_dump_registers(sfb);
-
-	pr_err("Generating Kernel OOPS... because it is unrecoverable.\n");
-
-	BUG();
-
-	return 0;
-}
-#endif
 
 #ifdef CONFIG_DEBUG_FS
 
@@ -3154,7 +3132,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 	struct s3c_fb *sfb;
 	struct fb_info *fbinfo;
 	struct display_driver *dispdrv;
-	struct resource *res;
 	int win;
 	int default_win;
 	int i;
@@ -3243,16 +3220,13 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 	pm_runtime_enable(sfb->dev);
 
-	//sfb->regs = devm_request_and_ioremap(dev, dispdrv->decon_driver.regs);
 	/* Get memory resource and map SFR region. */
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	sfb->regs = devm_ioremap_resource(&pdev->dev, res);
+	sfb->regs = devm_ioremap_resource(dev, dispdrv->decon_driver.regs);
 	if (!sfb->regs) {
 		dev_err(dev, "failed to map registers\n");
 		ret = -ENXIO;
 		goto err_lcd_clk;
 	}
-
 #ifndef CONFIG_FB_I80_COMMAND_MODE
 	ret = devm_request_irq(dev, dispdrv->decon_driver.irq_no, s3c_fb_irq,
 			  IRQF_TRIGGER_RISING, "s3c_fb_vsync", sfb);
@@ -3353,11 +3327,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 		dev_err(sfb->dev, "failed to ion_client_create\n");
 		goto err_pm_runtime;
 	}
-
-	/* setup vmm */
-	exynos_create_iovmm(&pdev->dev, fbdrv->variant.nr_windows, 0);
-	iovmm_set_fault_handler(&pdev->dev,
-                s3c_fb_sysmmu_fault_handler, sfb);
 #endif
 
 	default_win = sfb->pdata->default_win;
@@ -3445,11 +3414,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 #ifdef CONFIG_ION_EXYNOS
 	s3c_fb_wait_for_vsync(sfb, 3000);
-	ret = iovmm_activate(&pdev->dev);
-	if (ret < 0) {
-		dev_err(sfb->dev, "failed to activate vmm\n");
-		goto err_iovmm;
-	}
 #endif
 
 	s3c_fb_activate_window(sfb, default_win);
@@ -3484,10 +3448,6 @@ int create_decon_display_controller(struct platform_device *pdev)
 
 err_fb:
 #ifdef CONFIG_ION_EXYNOS
-	iovmm_deactivate(sfb->dev);
-#endif
-#ifdef CONFIG_ION_EXYNOS
-err_iovmm:
 	device_remove_file(sfb->dev, &dev_attr_psr_info);
 #endif
 err_create_psr_info_file:
@@ -3682,10 +3642,6 @@ static int s3c_fb_disable(struct s3c_fb *sfb)
 
 	sfb->power_state = POWER_DOWN;
 
-#ifdef CONFIG_ION_EXYNOS
-	iovmm_deactivate(sfb->dev);
-#endif
-
 	pm_runtime_put_sync(sfb->dev);
 	sfb->output_on = false;
 
@@ -3746,14 +3702,6 @@ static int s3c_fb_enable(struct s3c_fb *sfb)
 		s3c_fb_enable_irq(sfb);
 	mutex_unlock(&sfb->vsync_info.irq_lock);
 
-#ifdef CONFIG_ION_EXYNOS
-	ret = iovmm_activate(sfb->dev);
-	if (ret < 0) {
-		dev_err(sfb->dev, "failed to reactivate vmm\n");
-		goto err;
-	}
-#endif
-
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	s3c_fb_hw_trigger_set(sfb, TRIG_UNMASK);
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
@@ -3800,9 +3748,6 @@ int s3c_fb_suspend(struct device *dev)
 			clk_disable_unprepare(sfb->axi_disp1);
 
 		clk_disable_unprepare(sfb->bus_clk);
-#ifdef CONFIG_ION_EXYNOS
-		iovmm_deactivate(dev);
-#endif
 		disp_pm_runtime_put_sync(dispdrv);
 
 		sfb->output_on = false;
@@ -3871,14 +3816,6 @@ int s3c_fb_resume(struct device *dev)
 	if (sfb->vsync_info.irq_refcount)
 		s3c_fb_enable_irq(sfb);
 	mutex_unlock(&sfb->vsync_info.irq_lock);
-
-#ifdef CONFIG_ION_EXYNOS
-	ret = iovmm_activate(dev);
-	if (ret < 0) {
-		dev_err(sfb->dev, "failed to reactivate vmm\n");
-		goto err;
-	}
-#endif
 
 #ifdef CONFIG_FB_I80_COMMAND_MODE
 	s5p_mipi_dsi_wr_data(dsim_for_decon, MIPI_DSI_DCS_SHORT_WRITE,
@@ -4082,14 +4019,6 @@ int s3c_fb_hibernation_power_on(struct display_driver *dispdrv)
         s3c_fb_config_i80(sfb, &pd->win[default_win]->win_mode);
 #endif
 
-#ifdef CONFIG_ION_EXYNOS
-	ret = iovmm_activate(sfb->dev);
-	if (ret < 0) {
-		dev_err(sfb->dev, "failed to reactivate vmm\n");
-		goto err;
-	}
-#endif
-
 	sfb->output_on = true;
 err:
 	mutex_unlock(&sfb->output_lock);
@@ -4111,9 +4040,6 @@ int s3c_fb_hibernation_power_off(struct display_driver *dispdrv)
 	bts_scen_update(TYPE_LAYERS, 0);
 	exynos5_update_media_layers(TYPE_FIMD1, 0);
 	prev_overlap_cnt = 0;
-#endif
-#ifdef CONFIG_ION_EXYNOS
-        iovmm_deactivate(sfb->dev);
 #endif
 
 #if defined(CONFIG_FB_SMIES)
