@@ -195,14 +195,12 @@
 	pinctrl_1: pinctrl@13E60000{
 		compatible = "samsung,exynos8895-pinctrl";
 		reg = <0x0 0x13E60000 0x1000>;
-		interrupts = <0 61 0>;
 	};
 
 	/* VTS */
 	pinctrl_2: pinctrl@14080000 {
 		compatible = "samsung,exynos8895-pinctrl";
 		reg = <0x0 0x14080000 0x1000>;
-		interrupts = <0 383 0>;
 	};
 
 	/* FSYS0 */
@@ -238,7 +236,7 @@
 	pinctrl_7: pinctrl@10980000 {
 		compatible = "samsung,exynos8895-pinctrl";
 		reg = <0x0 0x10980000 0x1000>;
-		interrupts = <0 460 0>;
+		interrupts = <0 430 0>;
 	};
 
 	/* UART_DBG */
