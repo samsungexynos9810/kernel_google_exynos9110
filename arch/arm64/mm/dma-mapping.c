@@ -843,7 +843,10 @@ static bool do_iommu_attach(struct device *dev, const struct iommu_ops *ops,
 	if (iommu_dma_init_domain(domain, dma_base, size))
 		goto out_detach;
 
-	dev->archdata.dma_ops = &iommu_dma_ops;
+	if (!domain->iova_cookie)
+		dev->archdata.dma_ops = &swiotlb_dma_ops;
+	else
+		dev->archdata.dma_ops = &iommu_dma_ops;
 	return true;
 
 out_detach:
