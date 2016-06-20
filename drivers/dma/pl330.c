@@ -1496,7 +1496,9 @@ static int pl330_submit_req(struct pl330_thread *thrd,
 	unsigned idx;
 	u32 ccr;
 	int ret = 0;
+#ifdef CONFIG_ARM64
 	struct device_node *np = thrd->dmac->ddma.dev->of_node;
+#endif
 
 	if (pl330->state == DYING
 		|| pl330->dmac_tbd.reset_chan & (1 << thrd->id)) {
@@ -1551,10 +1553,12 @@ static int pl330_submit_req(struct pl330_thread *thrd,
 	thrd->req[idx].desc = desc;
 	_setup_req(0, thrd, idx, &xs);
 
+#ifdef CONFIG_ARM64
 	if (np && pl330->wrapper) {
 		__raw_writel((xs.desc->px.src_addr >> 32) & 0xf, thrd->ar_wrapper);
 		__raw_writel((xs.desc->px.dst_addr >> 32) & 0xf, thrd->aw_wrapper);
 	}
+#endif
 
 	ret = 0;
 
@@ -1987,8 +1991,10 @@ static int dmac_alloc_resources(struct pl330_dmac *pl330)
 				chans * pl330->mcbufsz,
 				&pl330->mcode_bus, GFP_KERNEL);
 
+#ifdef CONFIG_ARM64
 	if (pl330->inst_wrapper)
 		__raw_writel((pl330->mcode_bus >> 32) & 0xf, pl330->inst_wrapper);
+#endif
 
 	if (!pl330->mcode_cpu) {
 		dev_err(pl330->ddma.dev, "%s:%d Can't allocate memory!\n",
@@ -2813,6 +2819,7 @@ static int pl330_dma_device_slave_caps(struct dma_chan *dchan,
 static int pl330_notifier(struct notifier_block *nb,
 			unsigned long event, void *data)
 {
+#ifdef CONFIG_ARM64
 	struct pl330_dmac *pl330 =
 		container_of(nb, struct pl330_dmac, lpa_nb);
 
@@ -2822,7 +2829,7 @@ static int pl330_notifier(struct notifier_block *nb,
 			__raw_writel((pl330->mcode_bus >> 32) & 0xf, pl330->inst_wrapper);
 		break;
 	}
-
+#endif
 	return NOTIFY_OK;
 }
 #endif /* CONFIG_CPU_IDLE */
@@ -2830,12 +2837,14 @@ static int pl330_notifier(struct notifier_block *nb,
 #ifdef CONFIG_PM
 static int pl330_resume(struct device *dev)
 {
+#ifdef CONFIG_ARM64
 	struct pl330_dmac *pl330;
 
 	pl330 = (struct pl330_dmac *)dev_get_drvdata(dev);
 
 	if (pl330->inst_wrapper)
 		__raw_writel((pl330->mcode_bus >> 32) & 0xf, pl330->inst_wrapper);
+#endif
 
 	return 0;
 }

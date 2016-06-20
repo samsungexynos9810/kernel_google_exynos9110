@@ -30,7 +30,7 @@ obj-$(CONFIG_S3C_SETUP_CAMIF)	+= setup-camif.o
 
 obj-$(CONFIG_S3C_DMA)		+= dma.o s3c-dma-ops.o
 
-obj-$(CONFIG_SAMSUNG_DMADEV)	+= dma-ops.o
+#obj-$(CONFIG_SAMSUNG_DMADEV)	+= dma-ops.o
 
 # PM support
 

@@ -33,7 +33,7 @@ static unsigned long samsung_dmadev_request(enum dma_ch dma_ch,
 		return channel;
 	}
 	else
-		return (u64)dma_request_channel(mask, pl330_filter,
+		return (unsigned long)dma_request_channel(mask, pl330_filter,
 							(void *)dma_ch);
 }
 
