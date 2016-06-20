@@ -191,6 +191,12 @@ static ssize_t chipid_product_id_show(struct kobject *kobj,
 	return snprintf(buf, 10, "%08X\n", exynos_soc_info.product_id);
 }
 
+static ssize_t chipid_unique_id_show(struct kobject *kobj,
+			         struct kobj_attribute *attr, char *buf)
+{
+	return snprintf(buf, 20, "%010LX\n", exynos_soc_info.unique_id);
+}
+
 static ssize_t chipid_lot_id_show(struct kobject *kobj,
 			         struct kobj_attribute *attr, char *buf)
 {
@@ -206,6 +212,9 @@ static ssize_t chipid_revision_show(struct kobject *kobj,
 static struct kobj_attribute chipid_product_id_attr =
         __ATTR(product_id, 0644, chipid_product_id_show, NULL);
 
+static struct kobj_attribute chipid_unique_id_attr =
+        __ATTR(unique_id, 0644, chipid_unique_id_show, NULL);
+
 static struct kobj_attribute chipid_lot_id_attr =
         __ATTR(lot_id, 0644, chipid_lot_id_show, NULL);
 
@@ -214,6 +223,7 @@ static struct kobj_attribute chipid_revision_attr =
 
 static struct attribute *chipid_sysfs_attrs[] = {
 	&chipid_product_id_attr.attr,
+	&chipid_unique_id_attr.attr,
 	&chipid_lot_id_attr.attr,
 	&chipid_revision_attr.attr,
 	NULL,
