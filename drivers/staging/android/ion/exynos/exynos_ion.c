@@ -350,6 +350,7 @@ static int __init exynos_ion_reserved_mem_setup(struct reserved_mem *rmem)
 #define DECLARE_EXYNOS_ION_RESERVED_REGION(compat, name) \
 RESERVEDMEM_OF_DECLARE(name, compat#name, exynos_ion_reserved_mem_setup)
 
+DECLARE_EXYNOS_ION_RESERVED_REGION("exynos8890-ion,", common);
 DECLARE_EXYNOS_ION_RESERVED_REGION("exynos8890-ion,", crypto);
 DECLARE_EXYNOS_ION_RESERVED_REGION("exynos8890-ion,", vfw);
 DECLARE_EXYNOS_ION_RESERVED_REGION("exynos8890-ion,", vnfw);

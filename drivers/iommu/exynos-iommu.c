@@ -2114,7 +2114,7 @@ static int __init exynos_iommu_init(void)
 
 	ret = bus_set_iommu(&platform_bus_type, &exynos_iommu_ops);
 	if (ret) {
-		pr_err("%s: Failed to register IOMMU ops\n", __func__);
+		pr_err("%s: Failed to register IOMMU ops : %d\n", __func__, ret);
 		goto err_set_iommu;
 	}
 
