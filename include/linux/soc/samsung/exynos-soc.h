@@ -32,8 +32,13 @@
 #define EXYNOS4210_REV_1_0	0x10
 #define EXYNOS4210_REV_1_1	0x11
 
+#if defined (CONFIG_SOC_EXYNOS8890)
 #define UNIQUE_ID1			0x14
 #define UNIQUE_ID2			0x18
+#else
+#define UNIQUE_ID1			0x04
+#define UNIQUE_ID2			0x08
+#endif
 
 /**
  * Struct exynos_chipid_info

@@ -91,8 +91,6 @@ void __init exynos_chipid_early_init(struct device *dev)
 {
 	struct device_node *np;
 	const struct of_device_id *match;
-	int ret;
-	u32 unique_id;
 
 	if (exynos_chipid_base)
 		return;
@@ -106,20 +104,14 @@ void __init exynos_chipid_early_init(struct device *dev)
 	if (!np)
 		panic("%s, failed to find chipid node\n", __func__);
 
-	ret = of_property_read_u32(np, "chipid,uniqu_id-offset", &unique_id);
-	if (!ret)
-		unique_id = UNIQUE_ID1;
-
 	exynos_chipid_base = of_iomap(np, 0);
 
 	if (!exynos_chipid_base)
 		panic("%s: failed to map registers\n", __func__);
 
 	exynos_soc_info.product_id  = __raw_readl(exynos_chipid_base);
-	if (unique_id == 0) {
-		exynos_soc_info.unique_id  = __raw_readl(exynos_chipid_base + unique_id);
-		exynos_soc_info.unique_id  |= (u64)__raw_readl(exynos_chipid_base + unique_id + 4) << 32;
-	}
+	exynos_soc_info.unique_id  = __raw_readl(exynos_chipid_base + UNIQUE_ID1);
+	exynos_soc_info.unique_id  |= (u64)__raw_readl(exynos_chipid_base + UNIQUE_ID2) << 32;
 	exynos_soc_info.revision = exynos_soc_info.product_id & EXYNOS_REV_MASK;
 }
 
