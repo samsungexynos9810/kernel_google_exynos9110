@@ -776,6 +776,8 @@ void __init exynos8895_clk_init(struct device_node *np)
 	/* register DVFS vclk */
 	samsung_register_vclk(ctx, exynos8895_dvfs_vclks, ARRAY_SIZE(exynos8895_dvfs_vclks));
 
+	clk_register_fixed_factor(NULL, "pwm-clock", "fin_pll",CLK_SET_RATE_PARENT, 1, 1);
+
 	samsung_clk_of_add_provider(np, ctx);
 
 	pr_info("EXYNOS8895: Clock setup completed\n");
