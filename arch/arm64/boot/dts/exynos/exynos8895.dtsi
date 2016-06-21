@@ -248,8 +248,8 @@
 		interrupts = <0 385 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart0_bus>;
-		clocks = <&clock GATE_UART_DBG>, <&clock UART_DBG>, <&clock UART_DBG>;
-		clock-names = "gate_pclk0", "gate_uart0", "sclk_uart0";
+		clocks = <&clock GATE_UART_DBG>, <&clock UART_DBG>;
+		clock-names = "gate_pclk0", "gate_uart0";
 		status = "disabled";
 	};
 
@@ -262,8 +262,8 @@
 		interrupts = <0 389 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart1_bus>;
-		clocks = <&clock GATE_UART_BT>, <&clock UART_BT>, <&clock UART_BT>;
-		clock-names = "gate_pclk1", "gate_uart1", "sclk_uart1";
+		clocks = <&clock GATE_UART_BT>, <&clock UART_BT>;
+		clock-names = "gate_pclk1", "gate_uart1";
 		samsung,in-band-wakeup;
 		status = "disabled";
 	};
@@ -277,8 +277,8 @@
 		interrupts = <0 366 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart2_bus_single>; /* or <&uart2_bus_dual> */
-		clocks = <&clock GATE_USI00>, <&clock USI00>, <&clock USI00>;
-		clock-names = "gate_pclk2", "gate_uart2", "sclk_uart2";
+		clocks = <&clock GATE_USI00>, <&clock USI00>;
+		clock-names = "gate_pclk2", "gate_uart2";
 		status = "disabled";
 	};
 
@@ -291,8 +291,8 @@
 		interrupts = <0 370 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart3_bus_single>; /* or <&uart3_bus_dual> */
-		clocks = <&clock GATE_USI01>, <&clock USI01>, <&clock USI01>;
-		clock-names = "gate_pclk3", "gate_uart3", "sclk_uart3";
+		clocks = <&clock GATE_USI01>, <&clock USI01>;
+		clock-names = "gate_pclk3", "gate_uart3";
 		status = "disabled";
 	};
 
@@ -305,8 +305,8 @@
 		interrupts = <0 374 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart4_bus_single>; /* or <&uart4_bus_dual> */
-		clocks = <&clock GATE_USI02>, <&clock USI02>, <&clock USI02>;
-		clock-names = "gate_pclk4", "gate_uart4", "sclk_uart4";
+		clocks = <&clock GATE_USI02>, <&clock USI02>;
+		clock-names = "gate_pclk4", "gate_uart4";
 		status = "disabled";
 	};
 
@@ -319,8 +319,8 @@
 		interrupts = <0 378 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart5_bus_single>; /* or <&uart5_bus_dual> */
-		clocks = <&clock GATE_USI03>, <&clock USI03>, <&clock USI03>;
-		clock-names = "gate_pclk5", "gate_uart5", "sclk_uart5";
+		clocks = <&clock GATE_USI03>, <&clock USI03>;
+		clock-names = "gate_pclk5", "gate_uart5";
 		status = "disabled";
 	};
 
@@ -333,8 +333,8 @@
 		interrupts = <0 392 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart6_bus_single>; /* or <&uart6_bus_dual> */
-		clocks = <&clock GATE_USI04>, <&clock USI04>, <&clock USI04>;
-		clock-names = "gate_pclk6", "gate_uart6", "sclk_uart6";
+		clocks = <&clock GATE_USI04>, <&clock USI04>;
+		clock-names = "gate_pclk6", "gate_uart6";
 		status = "disabled";
 	};
 
@@ -347,8 +347,8 @@
 		interrupts = <0 396 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart7_bus_single>; /* or <&uart7_bus_dual> */
-		clocks = <&clock GATE_USI05>, <&clock USI05>, <&clock USI05>;
-		clock-names = "gate_pclk7", "gate_uart7", "sclk_uart7";
+		clocks = <&clock GATE_USI05>, <&clock USI05>;
+		clock-names = "gate_pclk7", "gate_uart7";
 		status = "disabled";
 	};
 
@@ -361,8 +361,8 @@
 		interrupts = <0 400 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart8_bus_single>; /* or <&uart8_bus_dual> */
-		clocks = <&clock GATE_USI06>, <&clock USI06>, <&clock USI06>;
-		clock-names = "gate_pclk8", "gate_uart8", "sclk_uart8";
+		clocks = <&clock GATE_USI06>, <&clock USI06>;
+		clock-names = "gate_pclk8", "gate_uart8";
 		status = "disabled";
 	};
 
@@ -375,8 +375,8 @@
 		interrupts = <0 404 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart9_bus_single>; /* or <&uart9_bus_dual> */
-		clocks = <&clock GATE_USI07>, <&clock USI07>, <&clock USI07>;
-		clock-names = "gate_pclk9", "gate_uart9", "sclk_uart9";
+		clocks = <&clock GATE_USI07>, <&clock USI07>;
+		clock-names = "gate_pclk9", "gate_uart9";
 		status = "disabled";
 	};
 
@@ -389,8 +389,8 @@
 		interrupts = <0 408 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart10_bus_single>; /* or <&uart10_bus_dual> */
-		clocks = <&clock GATE_USI08>, <&clock USI08>, <&clock USI08>;
-		clock-names = "gate_pclk10", "gate_uart10", "sclk_uart10";
+		clocks = <&clock GATE_USI08>, <&clock USI08>;
+		clock-names = "gate_pclk10", "gate_uart10";
 		status = "disabled";
 	};
 
@@ -403,8 +403,8 @@
 		interrupts = <0 412 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart11_bus_single>; /* or <&uart11_bus_dual> */
-		clocks = <&clock GATE_USI09>, <&clock USI09>, <&clock USI09>;
-		clock-names = "gate_pclk11", "gate_uart11", "sclk_uart11";
+		clocks = <&clock GATE_USI09>, <&clock USI09>;
+		clock-names = "gate_pclk11", "gate_uart11";
 		status = "disabled";
 	};
 
@@ -417,8 +417,8 @@
 		interrupts = <0 416 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart12_bus_single>; /* or <&uart12_bus_dual> */
-		clocks = <&clock GATE_USI10>, <&clock USI10>, <&clock USI10>;
-		clock-names = "gate_pclk12", "gate_uart12", "sclk_uart12";
+		clocks = <&clock GATE_USI10>, <&clock USI10>;
+		clock-names = "gate_pclk12", "gate_uart12";
 		status = "disabled";
 	};
 
@@ -431,8 +431,8 @@
 		interrupts = <0 420 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart13_bus_single>; /* or <&uart13_bus_dual> */
-		clocks = <&clock GATE_USI11>, <&clock USI11>, <&clock USI11>;
-		clock-names = "gate_pclk13", "gate_uart13", "sclk_uart13";
+		clocks = <&clock GATE_USI11>, <&clock USI11>;
+		clock-names = "gate_pclk13", "gate_uart13";
 		status = "disabled";
 	};
 
@@ -445,8 +445,8 @@
 		interrupts = <0 424 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart14_bus_single>; /* or <&uart14_bus_dual> */
-		clocks = <&clock GATE_USI12>, <&clock USI12>, <&clock USI12>;
-		clock-names = "gate_pclk14", "gate_uart14", "sclk_uart14";
+		clocks = <&clock GATE_USI12>, <&clock USI12>;
+		clock-names = "gate_pclk14", "gate_uart14";
 		status = "disabled";
 	};
 
@@ -460,8 +460,8 @@
 		interrupts = <0 428 0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart15_bus_single>; /* or <&uart15_bus_dual> */
-		clocks = <&clock GATE_USI13>, <&clock USI13>, <&clock USI13>;
-		clock-names = "gate_pclk15", "gate_uart15", "sclk_uart15";
+		clocks = <&clock GATE_USI13>, <&clock USI13>;
+		clock-names = "gate_pclk15", "gate_uart15";
 		status = "disabled";
 	};
 
