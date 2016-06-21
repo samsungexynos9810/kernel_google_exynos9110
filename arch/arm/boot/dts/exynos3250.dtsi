@@ -235,22 +235,26 @@
 		clock-names = "fin_pll", "mct";
 	};
 
-	pinctrl_1: pinctrl@11000000 {
-		compatible = "samsung,exynos3250-pinctrl";
-		reg = <0x11000000 0x1000>;
-		interrupts = <0 225 0>;
+        pinctrl_0: pinctrl@11400000 {
+                compatible = "samsung,exynos3250-pinctrl";
+                reg = <0x11400000 0x1000>;
+                interrupts = <0 240 0>;
+        };
 
-		wakeup-interrupt-controller {
-			compatible = "samsung,exynos4210-wakeup-eint";
-			interrupts = <0 48 0>;
-		};
-	};
-
-	pinctrl_0: pinctrl@11400000 {
-		compatible = "samsung,exynos3250-pinctrl";
-		reg = <0x11400000 0x1000>;
-		interrupts = <0 240 0>;
-	};
+        pinctrl_1: pinctrl@11000000 {
+                compatible = "samsung,exynos3250-pinctrl";
+                reg = <0x11000000 0x1000>;
+                interrupts = <0 32 0>, <0 33 0>, <0 34 0>, <0 35 0>,
+                             <0 36 0>, <0 37 0>, <0 38 0>, <0 39 0>,
+                             <0 40 0>, <0 41 0>, <0 42 0>, <0 43 0>,
+                             <0 44 0>, <0 45 0>, <0 46 0>, <0 47 0>,
+                             <0 225 0>;
+                wakeup-interrupt-controller {
+                        compatible = "samsung,exynos4210-wakeup-eint";
+                        interrupt-parent = <&gic>;
+                        interrupts = <0 48 0>;
+                };
+        };
 
 	fimd_fb: fimd_fb {
 		compatible = "samsung,exynos3-disp_driver";
@@ -552,4 +556,4 @@
 	};
 };
 
-#include "exynos3250-pinctrl.dtsi"
+/* #include "exynos3250-pinctrl.dtsi" */

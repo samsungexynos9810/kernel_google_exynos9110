@@ -1,0 +1,385 @@
+/*
+ * SAMSUNG SHIRI board device tree source
+ *
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+*/
+
+#define PIN_CON_INPUT		0
+#define PIN_CON_OUTPUT		1
+
+#define PIN_PULL_NONE		0
+#define PIN_PULL_DOWN		1
+#define PIN_PULL_UP			3
+
+#define PIN_PDN_OUT0		0
+#define PIN_PDN_OUT1		1
+#define PIN_PDN_INPUT		2
+#define PIN_PDN_PREV		3
+
+#define PIN_IN(_pin, _pull)				\
+	_pin {								\
+		samsung,pins = #_pin;			\
+		samsung,pin-function = <0>;		\
+		samsung,pin-pud = <PIN_PULL_ ##_pull>;	\
+	}
+
+#define PIN_OUT(_pin)					\
+	_pin {								\
+		samsung,pins = #_pin;			\
+		samsung,pin-function = <1>;		\
+		samsung,pin-pud = <0>;			\
+	}
+
+#define PIN_OUT_SET(_pin, _val)			\
+	_pin {								\
+		samsung,pins = #_pin;			\
+		samsung,pin-function = <1>;		\
+		samsung,pin-pud = <0>;			\
+		samsung,pin-val	= <_val>;		\
+	}
+
+#define PIN_SLP(_pin, _mode, _pull)		\
+	_pin {								\
+		samsung,pins = #_pin;			\
+		samsung,pin-con-pdn = <PIN_PDN_ ##_mode>;	\
+		samsung,pin-pud-pdn = <PIN_PULL_ ##_pull>;	\
+	}
+
+&pinctrl_0 {
+	pinctrl-names = "sleep", "ambient";
+	pinctrl-0 = <&sleep0>;
+	pinctrl-1 = <&ambient>;
+	sleep0: sleep-state {
+		PIN_SLP(gpa0-0, PREV,  NONE);// UART0_RX(BT)
+		PIN_SLP(gpa0-1, PREV,  NONE);// UART0_TX(BT)
+		PIN_SLP(gpa0-2, PREV,  NONE);// UART0_CTS(BT)
+		PIN_SLP(gpa0-3, PREV,  NONE);// UART0_RTS(BT)
+
+		PIN_SLP(gpa0-4, INPUT, DOWN);// UART1_RX(SUB)
+		PIN_SLP(gpa0-5, OUT0,  NONE);// UART1_TX(SUB)
+		PIN_SLP(gpa0-6, INPUT, DOWN);// UART1_CTS(SUB)
+		PIN_SLP(gpa0-7, INPUT, DOWN);// UART1_RTS(SUB)
+
+		PIN_SLP(gpa1-0, INPUT, DOWN);// UART2_RX(DBG)
+		PIN_SLP(gpa1-1, OUT0,  NONE);// UART2_TX(DBG)
+		PIN_SLP(gpa1-2, INPUT, NONE);// TP_SDA
+		PIN_SLP(gpa1-3, INPUT, NONE);// TP_SCL
+		PIN_SLP(gpa1-4, INPUT, DOWN);// NC
+		PIN_SLP(gpa1-5, INPUT, DOWN);// NC
+
+		PIN_SLP(gpb-0,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-1,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-2,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-3,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-4,  INPUT, DOWN);// SPI1_CLK(SUB)
+		PIN_SLP(gpb-5,  INPUT, DOWN);// SPI1_CS(SUB)
+		PIN_SLP(gpb-6,  INPUT, DOWN);// SPI1_MISO(SUB)
+		PIN_SLP(gpb-7,  INPUT, DOWN);// SPI1_MOSI(SUB)
+
+		PIN_SLP(gpc0-0, INPUT, DOWN);// NC
+		PIN_SLP(gpc0-1, INPUT, DOWN);// LCD_RST
+		PIN_SLP(gpc0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpc0-3, INPUT, DOWN);// DUAL_WKUP
+		PIN_SLP(gpc0-4, INPUT, DOWN);// PWCTL_BL
+
+		PIN_SLP(gpc1-0, INPUT, DOWN);// I2S2_SCLK
+		PIN_SLP(gpc1-1, INPUT, DOWN);// I2S2_CDCLK
+		PIN_SLP(gpc1-2, INPUT, DOWN);// I2S2_LRCK
+		PIN_SLP(gpc1-3, INPUT, DOWN);// I2S2_SDI
+		PIN_SLP(gpc1-4, INPUT, DOWN);// I2S2_SDO
+
+		PIN_SLP(gpd0-0, INPUT, DOWN);// BL_PWM
+		PIN_SLP(gpd0-1, INPUT, DOWN);// NC
+		PIN_SLP(gpd0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpd0-3, INPUT, DOWN);// NC
+
+		PIN_SLP(gpd1-0, INPUT, NONE);// I2C0_SDA(PMIC)
+		PIN_SLP(gpd1-1, INPUT, NONE);// I2C0_SCL(PMIC)
+		PIN_SLP(gpd1-2, INPUT, DOWN);// I2C1_SDA(AKM)
+		PIN_SLP(gpd1-3, INPUT, DOWN);// I2C1_SCL(AKM)
+	};
+	ambient: ambient-state {
+		PIN_SLP(gpa0-0, PREV,  NONE);// UART0_RX(BT)
+		PIN_SLP(gpa0-1, PREV,  NONE);// UART0_TX(BT)
+		PIN_SLP(gpa0-2, PREV,  NONE);// UART0_CTS(BT)
+		PIN_SLP(gpa0-3, PREV,  NONE);// UART0_RTS(BT)
+
+		PIN_SLP(gpa0-4, INPUT, DOWN);// UART1_RX(SUB)
+		PIN_SLP(gpa0-5, OUT0,  NONE);// UART1_TX(SUB)
+		PIN_SLP(gpa0-6, INPUT, DOWN);// UART1_CTS(SUB)
+		PIN_SLP(gpa0-7, INPUT, DOWN);// UART1_RTS(SUB)
+
+		PIN_SLP(gpa1-0, INPUT, DOWN);// UART2_RX(DBG)
+		PIN_SLP(gpa1-1, OUT0,  NONE);// UART2_TX(DBG)
+		PIN_SLP(gpa1-2, INPUT, NONE);// TP_SDA
+		PIN_SLP(gpa1-3, INPUT, NONE);// TP_SCL
+		PIN_SLP(gpa1-4, INPUT, DOWN);// NC
+		PIN_SLP(gpa1-5, INPUT, DOWN);// NC
+
+		PIN_SLP(gpb-0,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-1,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-2,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-3,  INPUT, DOWN);// NC
+		PIN_SLP(gpb-4,  INPUT, DOWN);// SPI1_CLK(SUB)
+		PIN_SLP(gpb-5,  INPUT, DOWN);// SPI1_CS(SUB)
+		PIN_SLP(gpb-6,  INPUT, DOWN);// SPI1_MISO(SUB)
+		PIN_SLP(gpb-7,  INPUT, DOWN);// SPI1_MOSI(SUB)
+
+		PIN_SLP(gpc0-0, INPUT, DOWN);// NC
+		PIN_SLP(gpc0-1, OUT1,  NONE);// LCD_RST
+		PIN_SLP(gpc0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpc0-3, INPUT, DOWN);// DUAL_WKUP
+		PIN_SLP(gpc0-4, INPUT, DOWN);// PWCTL_BL
+
+		PIN_SLP(gpc1-0, INPUT, DOWN);// I2S2_SCLK
+		PIN_SLP(gpc1-1, INPUT, DOWN);// I2S2_CDCLK
+		PIN_SLP(gpc1-2, INPUT, DOWN);// I2S2_LRCK
+		PIN_SLP(gpc1-3, INPUT, DOWN);// I2S2_SDI
+		PIN_SLP(gpc1-4, INPUT, DOWN);// I2S2_SDO
+
+		PIN_SLP(gpd0-0, INPUT, DOWN);// BL_PWM
+		PIN_SLP(gpd0-1, INPUT, DOWN);// NC
+		PIN_SLP(gpd0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpd0-3, INPUT, DOWN);// NC
+
+		PIN_SLP(gpd1-0, INPUT, NONE);// I2C0_SDA(PMIC)
+		PIN_SLP(gpd1-1, INPUT, NONE);// I2C0_SCL(PMIC)
+		PIN_SLP(gpd1-2, INPUT, DOWN);// I2C1_SDA(AKM)
+		PIN_SLP(gpd1-3, INPUT, DOWN);// I2C1_SCL(AKM)
+	};
+};
+
+&pinctrl_1 {
+	pinctrl-names = "sleep","ambient";
+	pinctrl-0 = <&sleep1>;
+	pinctrl-1 = <&ambient1>;
+	sleep1: sleep-state {
+		PIN_SLP(gpe0-0, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-1, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-3, INPUT, DOWN);// EMMC_NRST
+		PIN_SLP(gpe0-4, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-5, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-6, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpe1-0, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-1, OUT1,  NONE);// PMIC_WRSTB
+		PIN_SLP(gpe1-2, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-3, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-4, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-5, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-6, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpe2-0, INPUT, DOWN);// NC
+		PIN_SLP(gpe2-1, INPUT, DOWN);// NC
+		PIN_SLP(gpe2-2, INPUT, DOWN);// NC
+
+		PIN_SLP(gpk0-0, INPUT, DOWN);// MMC_CLK
+		PIN_SLP(gpk0-1, INPUT, NONE);// MMC_CMD
+		PIN_SLP(gpk0-2, OUT0,  NONE);// MMC_EN
+		PIN_SLP(gpk0-3, INPUT, NONE);// MMC_D0
+		PIN_SLP(gpk0-4, INPUT, NONE);// MMC_D1
+		PIN_SLP(gpk0-5, INPUT, NONE);// MMC_D2
+		PIN_SLP(gpk0-6, INPUT, NONE);// MMC_D3
+		PIN_SLP(gpk0-7, INPUT, NONE);// ???
+
+		PIN_SLP(gpk1-0, PREV,  NONE);// MMC_CLK
+		PIN_SLP(gpk1-1, PREV,  NONE);// MMC_CMD
+		PIN_SLP(gpk1-3, PREV,  NONE);// MMC_D0
+		PIN_SLP(gpk1-4, PREV,  NONE);// MMC_D1
+		PIN_SLP(gpk1-5, PREV,  NONE);// MMC_D2
+		PIN_SLP(gpk1-6, PREV,  NONE);// MMC_D3
+
+		PIN_SLP(gpk2-0, INPUT, DOWN);// MMC2_CLK
+		PIN_SLP(gpk2-1, INPUT, NONE);// MMC2_CMD
+		PIN_SLP(gpk2-2, INPUT, NONE);// MMC2_EN
+		PIN_SLP(gpk2-3, INPUT, NONE);// MMC2_D0
+		PIN_SLP(gpk2-4, INPUT, NONE);// MMC2_D1
+		PIN_SLP(gpk2-5, INPUT, NONE);// MMC2_D2
+		PIN_SLP(gpk2-6, INPUT, NONE);// MMC2_D3
+
+		PIN_SLP(gpl0-0, INPUT, NONE);// MMC_D4
+		PIN_SLP(gpl0-1, INPUT, NONE);// MMC_D5
+		PIN_SLP(gpl0-2, INPUT, NONE);// MMC_D6
+		PIN_SLP(gpl0-3, INPUT, NONE);// MMC_D7
+
+		PIN_SLP(gpm0-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-4, INPUT, DOWN);// AUD_RSTN
+		PIN_SLP(gpm0-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-6, PREV,  NONE);// DUAL_RST
+		PIN_SLP(gpm0-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm1-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-4, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-6, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm2-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-4, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm3-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-4, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-6, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm4-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-4, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-6, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-7, INPUT, DOWN);// NC
+
+	PIN_OUT_SET(gpx0-6, 0);// LDO10_EN
+		PIN_IN(gpx0-7, DOWN);// NC
+
+		PIN_IN(gpx1-1, DOWN);// NC
+		PIN_IN(gpx1-2, DOWN);// NC
+		PIN_IN(gpx1-3, DOWN);// NC
+		PIN_IN(gpx2-0, DOWN);// NC
+		PIN_IN(gpx2-1, DOWN);// NC
+		PIN_IN(gpx2-2, DOWN);// NC
+		PIN_IN(gpx2-4, DOWN);// NC
+
+		PIN_IN(gpx3-0, DOWN);// NC
+		PIN_IN(gpx3-1, DOWN);// NC
+		PIN_IN(gpx3-3, DOWN);// NC
+		PIN_IN(gpx3-4, DOWN);// NC
+		PIN_IN(gpx3-5, DOWN);// NC
+		PIN_IN(gpx3-6, DOWN);// NC
+		PIN_IN(gpx3-7, DOWN);// NC
+	};
+	ambient1: ambient-state {
+		PIN_SLP(gpe0-0, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-1, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-3, INPUT, DOWN);// EMMC_NRST
+		PIN_SLP(gpe0-4, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-5, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-6, INPUT, DOWN);// NC
+		PIN_SLP(gpe0-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpe1-0, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-1, OUT1,  NONE);// PMIC_WRSTB
+		PIN_SLP(gpe1-2, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-3, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-4, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-5, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-6, INPUT, DOWN);// NC
+		PIN_SLP(gpe1-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpe2-0, INPUT, DOWN);// NC
+		PIN_SLP(gpe2-1, INPUT, DOWN);// NC
+		PIN_SLP(gpe2-2, INPUT, DOWN);// NC
+
+		PIN_SLP(gpk0-0, INPUT, DOWN);// MMC_CLK
+		PIN_SLP(gpk0-1, INPUT, NONE);// MMC_CMD
+		PIN_SLP(gpk0-2, OUT0,  NONE);// MMC_EN
+		PIN_SLP(gpk0-3, INPUT, NONE);// MMC_D0
+		PIN_SLP(gpk0-4, INPUT, NONE);// MMC_D1
+		PIN_SLP(gpk0-5, INPUT, NONE);// MMC_D2
+		PIN_SLP(gpk0-6, INPUT, NONE);// MMC_D3
+		PIN_SLP(gpk0-7, INPUT, NONE);// ???
+
+		PIN_SLP(gpk1-0, PREV,  NONE);// MMC_CLK
+		PIN_SLP(gpk1-1, PREV,  NONE);// MMC_CMD
+		PIN_SLP(gpk1-3, PREV,  NONE);// MMC_D0
+		PIN_SLP(gpk1-4, PREV,  NONE);// MMC_D1
+		PIN_SLP(gpk1-5, PREV,  NONE);// MMC_D2
+		PIN_SLP(gpk1-6, PREV,  NONE);// MMC_D3
+
+		PIN_SLP(gpk2-0, INPUT, DOWN);// MMC2_CLK
+		PIN_SLP(gpk2-1, INPUT, NONE);// MMC2_CMD
+		PIN_SLP(gpk2-2, INPUT, NONE);// MMC2_EN
+		PIN_SLP(gpk2-3, INPUT, NONE);// MMC2_D0
+		PIN_SLP(gpk2-4, INPUT, NONE);// MMC2_D1
+		PIN_SLP(gpk2-5, INPUT, NONE);// MMC2_D2
+		PIN_SLP(gpk2-6, INPUT, NONE);// MMC2_D3
+
+		PIN_SLP(gpl0-0, INPUT, NONE);// MMC_D4
+		PIN_SLP(gpl0-1, INPUT, NONE);// MMC_D5
+		PIN_SLP(gpl0-2, INPUT, NONE);// MMC_D6
+		PIN_SLP(gpl0-3, INPUT, NONE);// MMC_D7
+
+		PIN_SLP(gpm0-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-4, OUT0,  DOWN);// AUD_RSTN
+		PIN_SLP(gpm0-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm0-6, PREV,  NONE);// DUAL_RST
+		PIN_SLP(gpm0-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm1-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-4, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm1-6, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm2-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm2-4, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm3-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-4, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-6, INPUT, DOWN);// NC
+		PIN_SLP(gpm3-7, INPUT, DOWN);// NC
+
+		PIN_SLP(gpm4-0, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-1, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-2, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-3, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-4, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-5, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-6, INPUT, DOWN);// NC
+		PIN_SLP(gpm4-7, INPUT, DOWN);// NC
+
+	PIN_OUT_SET(gpx0-6, 0);// LDO10_EN
+		PIN_IN(gpx0-7, DOWN);// NC
+
+		PIN_IN(gpx1-1, DOWN);// NC
+		PIN_IN(gpx1-2, DOWN);// NC
+		PIN_IN(gpx1-3, DOWN);// NC
+		PIN_IN(gpx2-0, DOWN);// NC
+		PIN_IN(gpx2-1, DOWN);// NC
+		PIN_IN(gpx2-2, DOWN);// NC
+		PIN_IN(gpx2-4, DOWN);// NC
+
+		PIN_IN(gpx3-0, DOWN);// NC
+		PIN_IN(gpx3-1, DOWN);// NC
+		PIN_IN(gpx3-3, DOWN);// NC
+		PIN_IN(gpx3-4, DOWN);// NC
+		PIN_IN(gpx3-5, DOWN);// NC
+		PIN_IN(gpx3-6, DOWN);// NC
+		PIN_IN(gpx3-7, DOWN);// NC
+	};
+};
