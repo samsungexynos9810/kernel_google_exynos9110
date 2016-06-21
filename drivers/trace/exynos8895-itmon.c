@@ -110,6 +110,7 @@ struct itmon_tracedata {
 	unsigned int ext_info_1;
 	unsigned int ext_info_2;
 	unsigned int offset;
+	bool logging;
 	bool read;
 	bool last;
 };
@@ -480,13 +481,13 @@ static struct itmon_nodeinfo peri_bus_1[] = {
 };
 
 static struct itmon_nodegroup nodegroup[] = {
-	{72,	"DATA_BUS_1",	0x15443000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, BUS_DATA, false},
-	{311,	"DATA_CORE",	0x14AB3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, BUS_DATA, false},
-	{92,	"DATA_BUS_C",	0x151C3000, NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, BUS_DATA, false},
-	{315,	"PERI_CORE_0",	0x14C73000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),0, BUS_PERI, false},
-	{316,	"PERI_CORE_1",	0x14E93000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),0, BUS_PERI, false},
-	{93,	"PERI_BUS_C",	0x153D3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), 0, BUS_PERI, false},
-	{77,	"PERI_BUS_1",	0x15653000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, BUS_PERI, false},
+	{72,	"DATA_BUS_1",	0x155F3000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, BUS_DATA, false},
+	{311,	"DATA_CORE",	0x14AF3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, BUS_DATA, false},
+	{92,	"DATA_BUS_C",	0,	    NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, BUS_DATA, false},
+	{315,	"PERI_CORE_0",	0x14CF3000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),0, BUS_PERI, false},
+	{316,	"PERI_CORE_1",	0x14EF3000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),0, BUS_PERI, false},
+	{93,	"PERI_BUS_C",	0x153F3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), 0, BUS_PERI, false},
+	{77,	"PERI_BUS_1",	0x156F3000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, BUS_PERI, false},
 };
 
 struct itmon_dev {
@@ -648,6 +649,68 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 				unsigned int bus_type)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[bus_type];
+	unsigned int high_addr;
+
+	if (bus_type == BUS_PERI)
+		high_addr = 0;
+	else
+		high_addr = (unsigned int)node->tracedata.ext_info_2 & GENMASK(3, 0);
+
+	pr_info("--------------------------------------------------------------------------\n"
+		"      Transaction Information\n\n"
+		"      > Master         : %s %s\n"
+		"      > Target         : %s\n"
+		"      > Target Address : 0x%04X_%08X\n"
+		"      > Type           : %s\n"
+		"      > Error code     : %s\n"
+		"--------------------------------------------------------------------------\n",
+		traceinfo->port, traceinfo->master ? traceinfo->master : "",
+		traceinfo->dest, high_addr,
+		(unsigned int)node->tracedata.ext_info_0,
+		traceinfo->read ? "READ" : "WRITE",
+		itmon_errcode[traceinfo->errcode]);
+}
+
+static void itmon_report_pathinfo(struct itmon_dev *itmon,
+				  struct itmon_nodeinfo *node,
+				  unsigned int bus_type)
+{
+	struct itmon_tracedata *tracedata = &node->tracedata;
+
+	switch (node->type) {
+	case M_NODE:
+		pr_info("\n--------------------------------------------------------------------------\n"
+			"      ITMON Report (%s)\n"
+			"--------------------------------------------------------------------------\n",
+			itmon_pathtype[bus_type]);
+		pr_info("      PATH Information\n\n"
+			"      > %14s, %8s(0x%08X)\n",
+			node->name, "M_NODE", node->phy_regs + tracedata->offset);
+		break;
+	case T_S_NODE:
+		pr_info("                      ||\n"
+			"      > %14s, %8s(0x%08X)\n",
+			node->name, "T_S_NODE", node->phy_regs + tracedata->offset);
+		break;
+	case T_M_NODE:
+		pr_info("                      ||\n"
+			"      > %14s, %8s(0x%08X)\n",
+			node->name, "T_M_NODE", node->phy_regs + tracedata->offset);
+		break;
+	case S_NODE:
+		pr_info("                      ||\n"
+			"      > %14s, %8s(0x%08X)\n",
+			node->name, "S_NODE", node->phy_regs + tracedata->offset);
+		break;
+	}
+}
+
+static void itmon_report_tracedata(struct itmon_dev *itmon,
+				   struct itmon_nodeinfo *node,
+				   unsigned int bus_type)
+{
+	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_tracedata *tracedata = &node->tracedata;
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[bus_type];
 	struct itmon_masterinfo *master;
@@ -670,59 +733,39 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
-
-			pr_info("\n-------------------------------------------------\n"
-				"      ITMON Report (%s)\n", itmon_pathtype[bus_type]);
-			pr_info("-------------------------------------------------\n"
-				"      Transaction Information (1)\n"
-				"      > Master         : %s %s\n"
-				"      > Target Address : 0x%04X_%08X\n"
-				"      > Type           : %s\n"
-				"-------------------------------------------------\n",
-				traceinfo->port, traceinfo->master ? traceinfo->master : "",
-				(unsigned int)(node->tracedata.ext_info_2 & GENMASK(3, 0)),
-				(unsigned int)node->tracedata.ext_info_0,
-				traceinfo->read ? "READ" : "WRITE");
-			pr_info("      PATH Information\n"
-				"               |\n"
-				"        %s, %s(0x%08X)\n",
-				node->name, "M_NODE", node->phy_regs + tracedata->offset);
+			itmon_report_pathinfo(itmon, node, bus_type);
 			break;
 		case S_NODE:
-			pr_info("               |\n"
-				"        %s, %s(0x%08X)\n",
-				node->name, "S_NODE", node->phy_regs + tracedata->offset);
-
 			traceinfo->dest = node->name;
 			errcode = BIT_ERR_CODE(tracedata->int_info);
 			if (errcode == ERRCODE_TMOUT) {
+				/* In timeout error, it is more reliable */
 				traceinfo->errcode = errcode;
+				user = BIT_AXUSER(tracedata->ext_info_2);
+				traceinfo->port = node->name;
+				master = (struct itmon_masterinfo *)
+					itmon_get_masterinfo(itmon, node->name, user);
+				if (master)
+					traceinfo->master = master->master_name;
+				else
+					traceinfo->master = NULL;
+				traceinfo->target_addr =
+					(unsigned long)(node->tracedata.ext_info_2
+					& GENMASK(3, 0) << 32ULL);
+				traceinfo->target_addr |= node->tracedata.ext_info_0;
+				traceinfo->read = tracedata->read;
 			}
-			pr_info("-------------------------------------------------\n"
-				"      Transaction Information (2)\n"
-				"      > Target         : %s\n"
-				"      > Error code     : %s\n"
-				"-------------------------------------------------\n",
-				traceinfo->dest,
-				itmon_errcode[traceinfo->errcode]);
+			itmon_report_pathinfo(itmon, node, bus_type);
+			itmon_report_traceinfo(itmon, node, bus_type);
 			break;
 		case T_S_NODE:
 		case T_M_NODE:
-			pr_info("               |\n"
-				"        %s, %s(0x%08X)\n",
-				node->name, node->type == T_S_NODE ? "T_S_NODE" : "T_M_NODE",
-				node->phy_regs + tracedata->offset);
 			if (!strncmp(node->group->name, "DATA_CORE", strlen("DATA_CORE")) &&
 				node->type == T_M_NODE) {
 				/* Exception Situation */
-				pr_info("-------------------------------------------------\n"
-					"      Transaction Information (2)\n"
-					"      > Target         : %s\n"
-					"      > Error code     : %s\n"
-					"-------------------------------------------------\n",
-					traceinfo->dest,
-					itmon_errcode[traceinfo->errcode]);
+				traceinfo->dest = traceinfo->dest;
 			}
+			itmon_report_pathinfo(itmon, node, bus_type);
 			break;
 		default:
 			pr_info("Unknown Error - offset:%u\n", tracedata->offset);
@@ -731,6 +774,11 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 	} else {
 		switch (node->type) {
 		case M_NODE:
+		case T_S_NODE:
+		case T_M_NODE:
+			itmon_report_pathinfo(itmon, node, bus_type);
+			break;
+		case S_NODE:
 			user = BIT_AXUSER(tracedata->ext_info_2);
 			if ((user & GENMASK(4, 0)) & BIT(3)) {
 				/* Master is CP */
@@ -755,46 +803,13 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
-			pr_info("\n-------------------------------------------------\n"
-				"      ITMON Report (%s)\n", itmon_pathtype[bus_type]);
-			pr_info("-------------------------------------------------\n"
-				"      Transaction Information (1)\n"
-				"      > Master         : %s %s\n"
-				"      > Target Address : 0x%04X_%08X\n"
-				"      > Type           : %s\n"
-				"-------------------------------------------------\n",
-				traceinfo->port, traceinfo->master ? traceinfo->master : "",
-				(unsigned int)(node->tracedata.ext_info_2 & GENMASK(3, 0)),
-				(unsigned int)node->tracedata.ext_info_0,
-				traceinfo->read ? "READ" : "WRITE");
-			pr_info("      PATH Information\n"
-				"               |\n"
-				"        %s, %s(0x%08X)\n",
-				node->name, "M_NODE", node->phy_regs + tracedata->offset);
-			break;
-		case T_S_NODE:
-		case T_M_NODE:
-			pr_info("               |\n"
-				"        %s, %s(0x%08X)\n",
-				node->name, node->type == T_S_NODE ? "T_S_NODE" : "T_M_NODE",
-				node->phy_regs + tracedata->offset);
-			break;
-		case S_NODE:
-			pr_info("               |\n"
-				"        %s, %s(0x%08X)\n",
-				node->name, "S_NODE", node->phy_regs + tracedata->offset);
 			traceinfo->dest = node->name;
 			errcode = BIT_ERR_CODE(tracedata->int_info);
 			if (errcode == ERRCODE_TMOUT) {
 				traceinfo->errcode = errcode;
 			}
-			pr_info("-------------------------------------------------\n"
-				"      Transaction Information (2)\n"
-				"      > Target         : %s\n"
-				"      > Error code     : %s\n"
-				"-------------------------------------------------\n",
-				traceinfo->dest,
-				itmon_errcode[traceinfo->errcode]);
+			itmon_report_pathinfo(itmon, node, bus_type);
+			itmon_report_traceinfo(itmon, node, bus_type);
 			break;
 		default:
 			break;
@@ -806,7 +821,7 @@ static void itmon_report_rawdata(struct itmon_dev *itmon, struct itmon_nodeinfo 
 {
 	struct itmon_tracedata *tracedata = &node->tracedata;
 
-	pr_info("      > Node           : %s(%s, 0x%08X)\n"
+	pr_info("      > %s(%s, 0x%08X)\n"
 		"      > REG(0x08~0x18) : 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
 		node->name, itmon_nodestring[node->type],
 		node->phy_regs + tracedata->offset,
@@ -819,39 +834,42 @@ static void itmon_report_rawdata(struct itmon_dev *itmon, struct itmon_nodeinfo 
 static void itmon_route_tracedata(struct itmon_dev *itmon)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
-	struct itmon_nodeinfo *node;
-	struct list_head *entry;
-	unsigned int bus_type;
-	int i;
+	struct itmon_nodeinfo *node, *next_node;
+	unsigned int bus_type, offset;
+	int i, j;
 
 	/* To call function is sorted by declaration */
 	for (bus_type = 0; bus_type < BUS_PATH_TYPE; bus_type++) {
-		for (i = M_NODE; i < NODE_TYPE; i++) {
-			list_for_each(entry, &pdata->tracelist[bus_type]) {
-				node = list_entry(entry, struct itmon_nodeinfo, list);
-				if (i == node->type)
-					itmon_report_traceinfo(itmon, node, bus_type);
+		for (j = 0; j < OFFSET_NUM; j++) {
+			offset = j * OFFSET_ERR_REPT;
+			for (i = M_NODE; i < NODE_TYPE; i++) {
+				list_for_each_entry(node, &pdata->tracelist[bus_type], list) {
+					if (i == node->type && offset == (node->tracedata.offset & GENMASK(7, 0)))
+						itmon_report_tracedata(itmon, node, bus_type);
+				}
 			}
 		}
 	}
 
+	pr_info("      Raw Register Information(ITMON Internal Information)\n\n");
+
 	for (bus_type = 0; bus_type < BUS_PATH_TYPE; bus_type++) {
-		pr_info("-------------------------------------------------\n"
-			"      Raw Register Information\n");
 		for (i = M_NODE; i < NODE_TYPE; i++) {
-			list_for_each(entry, &pdata->tracelist[bus_type]) {
-				node = list_entry(entry, struct itmon_nodeinfo, list);
+			list_for_each_entry_safe(node, next_node, &pdata->tracelist[bus_type], list) {
 				if (i == node->type) {
 					itmon_report_rawdata(itmon, node);
 					itmon_post_handler_by_master(itmon, node->group,
 						node->name, pdata->traceinfo[bus_type].master,
 						pdata->traceinfo[bus_type].read);
-					/* Cleanup */
-					memset(&node->tracedata, 0, sizeof(struct itmon_tracedata));
+					/* clean up */
+					list_del(&node->list);
+					kfree(node);
 				}
 			}
 		}
 	}
+
+	pr_info("--------------------------------------------------------------------------\n");
 }
 
 static void itmon_trace_data(struct itmon_dev *itmon,
@@ -860,18 +878,14 @@ static void itmon_trace_data(struct itmon_dev *itmon,
 			    unsigned int offset)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_nodeinfo *new_node = NULL;
 	unsigned int int_info, info0, info1, info2;
 	bool read = false, req = false;
-
-	memset(&node->tracedata, 0, sizeof(struct itmon_tracedata));
 
 	int_info = __raw_readl(node->regs + offset + REG_INT_INFO);
 	info0 = __raw_readl(node->regs + offset + REG_EXT_INFO_0);
 	info1 = __raw_readl(node->regs + offset + REG_EXT_INFO_1);
 	info2 = __raw_readl(node->regs + offset + REG_EXT_INFO_2);
-
-	pr_info("%s: save %s(0x%08X) node \n",
-			__func__, node->name, node->phy_regs + offset);
 
 	switch (offset) {
 	case OFFSET_REQ_R:
@@ -879,36 +893,41 @@ static void itmon_trace_data(struct itmon_dev *itmon,
 		/* fall down */
 	case OFFSET_REQ_W:
 		req = true;
-		if (node->type == S_NODE) {
-			/* Only S-Node is able to make log to registers */
-			pr_info("invalid logging, see more following information\n");
-		}
+		/* Only S-Node is able to make log to registers */
 		break;
 	case OFFSET_RESP_R:
 		read = true;
 		/* fall down */
 	case OFFSET_RESP_W:
 		req = false;
-		if (node->type != S_NODE) {
-			/* Only S-Node is able to make log to registers */
-			pr_info("invalid logging, see more following information\n");
-		}
+		/* Only NOT S-Node is able to make log to registers */
 		break;
 	default:
-		pr_info("Unknown Error - offset:%u\n", offset);
+		pr_info("Unknown Error - node:%s offset:%u\n", node->name, offset);
 		break;
 	}
 
-	/* Fill detected node information to tracedata's list */
-	node->tracedata.int_info = int_info;
-	node->tracedata.ext_info_0 = info0;
-	node->tracedata.ext_info_1 = info1;
-	node->tracedata.ext_info_2 = info2;
-	node->tracedata.offset = offset;
-	node->tracedata.read = read;
-	node->group = group;
+	new_node = kmalloc(sizeof(struct itmon_nodeinfo), GFP_KERNEL);
+	if (new_node) {
+		/* Fill detected node information to tracedata's list */
+		memcpy(new_node, node, sizeof(struct itmon_nodeinfo));
+		new_node->tracedata.int_info = int_info;
+		new_node->tracedata.ext_info_0 = info0;
+		new_node->tracedata.ext_info_1 = info1;
+		new_node->tracedata.ext_info_2 = info2;
+		new_node->tracedata.offset = offset;
+		new_node->tracedata.read = read;
+		new_node->group = group;
+		if (BIT_ERR_VALID(int_info))
+			node->tracedata.logging = true;
+		else
+			node->tracedata.logging = false;
 
-	list_add(&node->list, &pdata->tracelist[group->bus_type]);
+		list_add(&new_node->list, &pdata->tracelist[group->bus_type]);
+	} else {
+		pr_info("failed to kmalloc for %s node %x offset\n",
+			node->name, offset);
+	}
 }
 
 static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *group, bool clear)
@@ -948,7 +967,11 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 		/* Processing all group & nodes */
 		for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 			group = &nodegroup[i];
-			vec = __raw_readl(group->regs);
+			if (group->phy_regs)
+				vec = __raw_readl(group->regs);
+			else
+				vec = GENMASK(group->nodesize, 0);
+
 			node = group->nodeinfo;
 			bit = 0;
 
@@ -959,7 +982,6 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 					val = __raw_readl(node[bit].regs + offset + REG_INT_INFO);
 					if (BIT_ERR_OCCURRED(val)) {
 						/* This node occurs the error */
-						list_add(&node[bit].list, &pdata->tracelist[group->bus_type]);
 						itmon_trace_data(itmon, group, &node[bit], offset);
 						if (clear)
 							__raw_writel(1, node[j].regs
@@ -1074,12 +1096,14 @@ static int itmon_probe(struct platform_device *pdev)
 		dev_name = nodegroup[i].name;
 		node = nodegroup[i].nodeinfo;
 
-		nodegroup[i].regs = devm_ioremap_nocache(&pdev->dev,
+		if (nodegroup[i].phy_regs) {
+			nodegroup[i].regs = devm_ioremap_nocache(&pdev->dev,
 							 nodegroup[i].phy_regs, SZ_16K);
-		if (nodegroup[i].regs == NULL) {
-			dev_err(&pdev->dev, "failed to claim register region - %s\n",
-				dev_name);
-			return -ENOENT;
+			if (nodegroup[i].regs == NULL) {
+				dev_err(&pdev->dev, "failed to claim register region - %s\n",
+					dev_name);
+				return -ENOENT;
+			}
 		}
 
 		if (initial_multi_irq_enable)
