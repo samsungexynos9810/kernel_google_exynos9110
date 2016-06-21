@@ -440,9 +440,9 @@ static struct exynos_irq_chip exynos_wkup_irq_chip = {
 		.irq_request_resources = exynos_irq_request_resources,
 		.irq_release_resources = exynos_irq_release_resources,
 	},
-	.eint_con = EXYNOS_GPIO_ECON_OFFSET,
-	.eint_mask = EXYNOS_GPIO_EMASK_OFFSET,
-	.eint_pend = EXYNOS_GPIO_EPEND_OFFSET,
+	.eint_con = EXYNOS_WKUP_ECON_OFFSET,
+	.eint_mask = EXYNOS_WKUP_EMASK_OFFSET,
+	.eint_pend = EXYNOS_WKUP_EPEND_OFFSET,
 };
 
 /* interrupt handler for wakeup interrupts 0..15 */
@@ -776,7 +776,7 @@ static struct samsung_pin_bank exynos3250_pin_banks1[] = {
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 5, 0x2a0, "gpm2", 0x2c),
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2c0, "gpm3", 0x30),
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x2e0, "gpm4", 0x34),
-	EXYNOS_PIN_BANK_EINTW(bank_type_0, 8, 0xc00, "gpx0", 0x00),
+	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc00, "gpx0", 0x00),
 	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc20, "gpx1", 0x04),
 	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc40, "gpx2", 0x08),
 	EXYNOS_PIN_BANK_EINTW(bank_type_1, 8, 0xc60, "gpx3", 0x0c),
