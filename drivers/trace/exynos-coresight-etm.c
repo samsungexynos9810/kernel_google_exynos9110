@@ -19,13 +19,14 @@
 #include <linux/cpu_pm.h>
 #include <linux/smp.h>
 #include <linux/of.h>
-#include <linux/clk.h>
 #include <linux/suspend.h>
 #include <linux/smpboot.h>
 #include <linux/delay.h>
 #include <linux/exynos-ss.h>
 
 #include <asm/core_regs.h>
+#include <asm/io.h>
+#include <asm/smp_plat.h>
 #include "coresight-priv.h"
 
 #define CHANNEL		(0)
@@ -62,7 +63,6 @@ struct etf_info {
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
 struct etr_info {
 	void __iomem	*base;
-	struct clk	*etr_clk;
 	u32		enabled;
 	u32		buf_addr;
 	u32		buf_size;
@@ -98,6 +98,13 @@ static void __iomem *g_etb_base;
 static u32 stm_funnel_port;
 #endif
 static DEFINE_PER_CPU(struct task_struct *, etm_task);
+
+static inline u32 logical_to_phy_cpu(unsigned int cpu)
+{
+	u32 mpidr = cpu_logical_map(cpu);
+	return (MPIDR_AFFINITY_LEVEL(mpidr, 1) << 2
+			| MPIDR_AFFINITY_LEVEL(mpidr, 0));
+}
 
 static void exynos_funnel_init(void)
 {
@@ -374,7 +381,8 @@ static int etm_info_init(void)
 
 static void etm_enable(unsigned int cpu)
 {
-	struct cpu_etm_info *cinfo = &g_trace_info->cpu[cpu];
+	int core = logical_to_phy_cpu(cpu);
+	struct cpu_etm_info *cinfo = &g_trace_info->cpu[core];
 	struct funnel_info *funnel;
 	unsigned int channel, port;
 
@@ -422,7 +430,8 @@ static void etm_enable(unsigned int cpu)
 
 static void etm_disable(unsigned int cpu)
 {
-	struct cpu_etm_info *cinfo = &g_trace_info->cpu[cpu];
+	int core = logical_to_phy_cpu(cpu);
+	struct cpu_etm_info *cinfo = &g_trace_info->cpu[core];
 	struct funnel_info *funnel;
 	unsigned int channel, port;
 
@@ -457,7 +466,6 @@ extern void exynos_trace_start(void)
 	exynos_etf_enable();
 #endif
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
-	clk_prepare_enable(g_trace_info->etr.etr_clk);
 	exynos_etr_enable();
 #endif
 	pr_info("coresight: %s.\n", __func__);
@@ -474,7 +482,6 @@ extern void exynos_trace_stop(void)
 #endif
 #ifdef CONFIG_EXYNOS_CORESIGHT_ETR
 	exynos_etr_disable();
-	clk_disable_unprepare(g_trace_info->etr.etr_clk);
 #endif
 	etm_disable(raw_smp_processor_id());
 
@@ -489,7 +496,7 @@ static void exynos_trace_ipi(void *info)
 	etm_disable(*hcpu);
 }
 
-static int __cpuinit core_notify(struct notifier_block *self,
+static int core_notify(struct notifier_block *self,
 						unsigned long action, void *data)
 {
 	int hcpu = (unsigned long)data;
@@ -502,7 +509,7 @@ static int __cpuinit core_notify(struct notifier_block *self,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block __cpuinitdata core_nb = {
+static struct notifier_block core_nb = {
 	.notifier_call = core_notify,
 };
 
@@ -528,7 +535,7 @@ static int exynos_c2_etm_pm_notifier(struct notifier_block *self,
 	return NOTIFY_OK;
 }
 
-static struct notifier_block __cpuinitdata exynos_c2_etm_pm_nb = {
+static struct notifier_block exynos_c2_etm_pm_nb = {
 	.notifier_call = exynos_c2_etm_pm_notifier,
 };
 
@@ -709,9 +716,6 @@ static int __init exynos_tmc_init(void)
 		pr_err("coresight TMC init FAILED!!!\n");
 		return -ENODEV;
 	}
-#ifdef CONFIG_EXYNOS_CORESIGHT_ETR
-	g_trace_info->etr.etr_clk = clk_get(NULL, "etr_clk");
-#endif
 	exynos_trace_start();
 	return 0;
 }
