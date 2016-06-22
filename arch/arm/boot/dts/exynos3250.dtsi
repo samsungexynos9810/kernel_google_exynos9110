@@ -344,6 +344,22 @@
 		};
 	};
 
+	mali: mali@13000000 {
+		compatible = "arm,mali-400";
+		reg = <0x13000000 0x5000>;
+		interrupt-names = "IRQGP", "IRQGPMMU", "IRQPP0", "IRQPPMMU0", "IRQPP1", "IRQPPMMU1";
+		interrupts = <0 187 0>, <0 182 0>, <0 183 0>, <0 178 0>, <0 184 0>, <0 179 0>;
+		clocks = <&cmu CLK_FIN_PLL>, <&cmu CLK_MOUT_VPLLSRC>,
+				<&cmu CLK_FOUT_VPLL>, <&cmu CLK_MOUT_VPLL>,
+				<&cmu CLK_MOUT_G3D_1>, <&cmu CLK_MOUT_MPLL>,
+				<&cmu CLK_MOUT_G3D_0>, <&cmu CLK_MOUT_G3D>,
+				<&cmu CLK_SCLK_G3D>, <&cmu CLK_G3D>;
+		clock-names = "ext_xtal", "mout_vpllsrc", "fout_vpll",
+			"mout_vpll", "mout_g3d1", "mout_mpll", "mout_g3d0", "mout_g3d",
+			"sclk_g3d", "g3d";
+		samsung,power-domain = <&pd_g3d>;
+	};
+
 	adc: adc@126C0000 {
 		compatible = "samsung,exynos3250-adc",
 			     "samsung,exynos-adc-v2";
