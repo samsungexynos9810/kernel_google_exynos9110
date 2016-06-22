@@ -802,7 +802,6 @@ static void dwc3_prepare_one_trb(struct dwc3_ep *dep,
 			length, last ? " last" : "",
 			chain ? " chain" : "");
 
-
 	trb = &dep->trb_pool[dep->free_slot & DWC3_TRB_MASK];
 
 	if (!req->trb) {
@@ -2504,25 +2503,9 @@ static void dwc3_gadget_reset_interrupt(struct dwc3 *dwc)
 static void dwc3_update_ram_clk_sel(struct dwc3 *dwc, u32 speed)
 {
 	u32 reg;
-	u32 usb30_clock = DWC3_GCTL_CLK_BUS;
-
-	/*
-	 * We change the clock only at SS but I dunno why I would want to do
-	 * this. Maybe it becomes part of the power saving plan.
-	 */
-
-	if (speed != DWC3_DSTS_SUPERSPEED)
-		return;
-
-	/*
-	 * RAMClkSel is reset to 0 after USB reset, so it must be reprogrammed
-	 * each time on Connect Done.
-	 */
-	if (!usb30_clock)
-		return;
 
 	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
-	reg |= DWC3_GCTL_RAMCLKSEL(usb30_clock);
+	reg |= DWC3_GCTL_RAMCLKSEL(DWC3_GCTL_CLK_MASK);
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 }
 

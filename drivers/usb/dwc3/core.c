@@ -638,6 +638,8 @@ int dwc3_phy_setup(struct dwc3 *dwc)
 	if (dwc->adj_sof_accuracy)
 		reg &= ~DWC3_GUSB2PHYCFG_U2_FREECLK_EXISTS;
 
+	reg &= ~DWC3_GUSB2PHYCFG_ENBLSLPM;
+	reg &= ~DWC3_GUSB2PHYCFG_SUSPHY;
 	dwc3_writel(dwc->regs, DWC3_GUSB2PHYCFG(0), reg);
 
 	return 0;
@@ -776,7 +778,7 @@ int dwc3_core_init(struct dwc3 *dwc)
 	}
 
 	dwc3_core_num_eps(dwc);
-
+	dwc->suspend_clk_freq = 50000000;
 	if (dwc->suspend_clk_freq) {
 		reg &= ~DWC3_GCTL_PWRDNSCALE_MASK;
 		reg |= DWC3_GCTL_PWRDNSCALE(dwc->suspend_clk_freq/(16*1000));
