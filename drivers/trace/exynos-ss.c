@@ -39,6 +39,7 @@
 #include <asm/ptrace.h>
 #include <asm/memory.h>
 #include <asm/map.h>
+#include <asm/smp_plat.h>
 #include <soc/samsung/exynos-pmu.h>
 #include <linux/i2c.h>
 #include <linux/spi/spi.h>
@@ -92,6 +93,10 @@
 
 /* S5P_VA_SS_BASE + 0xC00 -- 0xFFF is reserved */
 #define S5P_VA_SS_PANIC_STRING		(S5P_VA_SS_BASE + 0xC00)
+
+#define mpidr_cpu_num(mpidr)			\
+	( MPIDR_AFFINITY_LEVEL(mpidr, 1) << 2	\
+	 | MPIDR_AFFINITY_LEVEL(mpidr, 0))
 
 struct exynos_ss_base {
 	size_t size;
@@ -721,16 +726,18 @@ EXPORT_SYMBOL(exynos_ss_set_hardlockup);
 
 int exynos_ss_prepare_panic(void)
 {
-	unsigned cpu;
+	unsigned cpu, core, mpidr;
 
 	if (unlikely(!ess_base.enabled))
 		return 0;
 
-	for (cpu = 0; cpu < ESS_NR_CPUS; cpu++) {
+	for_each_possible_cpu(cpu) {
+		mpidr = cpu_logical_map(cpu);
+		core = mpidr_cpu_num(mpidr)^4;
 		if (exynos_cpu.power_state(cpu))
-			exynos_ss_core_power_stat(ESS_SIGN_ALIVE, cpu);
+			exynos_ss_core_power_stat(ESS_SIGN_ALIVE, core);
 		else
-			exynos_ss_core_power_stat(ESS_SIGN_DEAD, cpu);
+			exynos_ss_core_power_stat(ESS_SIGN_DEAD, core);
 	}
 	/* stop to watchdog for preventing unexpected reset
 	 * during printing panic message */
@@ -790,14 +797,17 @@ EXPORT_SYMBOL(exynos_ss_dump_panic);
 
 int exynos_ss_post_reboot(void)
 {
-	int cpu;
+	int cpu, core, mpidr;
 
 	if (unlikely(!ess_base.enabled))
 		return 0;
 
 	/* clear ESS_SIGN_PANIC when normal reboot */
-	for (cpu = 0; cpu < ESS_NR_CPUS; cpu++)
-		exynos_ss_set_core_panic_stat(ESS_SIGN_RESET, cpu);
+	for_each_possible_cpu(cpu) {
+		mpidr = cpu_logical_map(cpu);
+		core = mpidr_cpu_num(mpidr) ^ 4;
+		exynos_ss_set_core_panic_stat(ESS_SIGN_RESET, core);
+	}
 
 	return 0;
 }
