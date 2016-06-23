@@ -17,6 +17,7 @@
 void lcd_init(struct decon_lcd *lcd);
 void lcd_enable(void);
 void lcd_disable(void);
+void lcd_lane_ctl(unsigned int lane_num);
 int lcd_gamma_ctrl(unsigned int backlightlevel);
 int lcd_gamma_update(void);
 

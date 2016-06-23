@@ -55,6 +55,7 @@
 
 extern struct dsim_device *dsim0_for_decon;
 extern struct dsim_device *dsim1_for_decon;
+extern struct mipi_dsim_lcd_driver s6e3aa2_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e8aa5x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e36w1x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
@@ -225,5 +226,6 @@ u32 dsim_reg_get_xres(u32 id);
 #define DSIM_IOC_SET_PORCH		_IOW('D', 7, struct decon_lcd *)
 #define DSIM_IOC_DUMP			_IOW('D', 8, u32)
 #define DSIM_IOC_VSYNC			_IOW('D', 9, u32)
+#define DSIM_IOC_SET_CMD_LPMODE _IOW('D', 50, u32)
 
 #endif /* __DSIM_H__ */

@@ -750,8 +750,6 @@ static int dsim_enable(struct dsim_device *dsim)
 
 	/* Panel power on */
 	dsim_set_panel_power(dsim, 1);
-	dsim_reset_panel(dsim);
-
 	call_panel_ops(dsim, resume, dsim);
 
 	/* DPHY power on */
@@ -759,6 +757,8 @@ static int dsim_enable(struct dsim_device *dsim)
 
 	dsim_reg_set_clocks(dsim->id, &dsim->clks_param.clks, &dsim->lcd_info.dphy_pms, 1);
 	dsim_reg_set_lanes(dsim->id, DSIM_LANE_CLOCK | dsim->data_lane, 1);
+	/* Panel Reset activate */
+	dsim_reset_panel(dsim);
 	dsim_reg_init(dsim->id, &dsim->lcd_info, dsim->data_lane_cnt,
 			&dsim->clks_param.clks);
 
@@ -766,7 +766,18 @@ static int dsim_enable(struct dsim_device *dsim)
 
 	dsim->state = DSIM_STATE_HSCLKEN;
 
+	/* for Java W SIP 3aa2 panel */
+#if defined(CONFIG_EXYNOS_DECON_LCD_S6E3AA2)
+	/* Panel lane # is changed to  2 by using LP mode*/
+	dsim_reg_change_cmd_transfer_mode(dsim->id,1);
+#endif
 	call_panel_ops(dsim, displayon, dsim);
+
+	/* for Java W SIP 3aa2 panel */
+#if defined(CONFIG_EXYNOS_DECON_LCD_S6E3AA2)
+	/* MIPI mode is changed to HS mode*/
+	dsim_reg_change_cmd_transfer_mode(dsim->id,0);
+#endif
 
 	return 0;
 }
@@ -961,6 +972,16 @@ static long dsim_ioctl(struct v4l2_subdev *sd, unsigned int cmd, void *arg)
 		call_panel_ops(dsim, dump, dsim);
 		break;
 	case DSIM_IOC_VSYNC:
+		break;
+
+	case DSIM_IOC_SET_CMD_LPMODE:
+		if ((unsigned long)arg){
+		/* Set Command LP mode */
+			dsim_reg_change_cmd_transfer_mode(dsim->id, 1);
+		}else{
+		/* Set Command HS mode */
+			dsim_reg_change_cmd_transfer_mode(dsim->id, 0);
+		}
 		break;
 	default:
 		dev_err(dsim->dev, "unsupported ioctl");
@@ -1300,7 +1321,9 @@ static int dsim_probe(struct platform_device *pdev)
 	if (ret)
 		goto err_irq;
 
-#if IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA5X01)
+#if IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E3AA2)
+	dsim->panel_ops = &s6e3aa2_mipi_lcd_driver;
+#elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA5X01)
 	dsim->panel_ops = &s6e8aa5x01_mipi_lcd_driver;
 #elif IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E36W1X01)
 	dsim->panel_ops = &s6e36w1x01_mipi_lcd_driver;

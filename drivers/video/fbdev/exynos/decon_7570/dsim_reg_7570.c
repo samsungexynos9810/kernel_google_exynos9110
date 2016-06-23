@@ -950,6 +950,14 @@ void dsim_reg_set_standby(u32 id, u32 en)
 	dsim_write_mask(id, DSIM_SFR_CTRL, val, DSIM_SFR_CTRL_STANDBY);
 }
 
+void dsim_reg_change_cmd_transfer_mode(u32 id, u32 lp)
+{
+
+	dsim_reg_set_standby(id, 0);
+	dsim_reg_set_cmd_transfer_mode(id, lp);
+	dsim_reg_set_standby(id, 1);
+}
+
 static int dsim_reg_get_dphy_timing(u32 hs_clk, u32 esc_clk, struct dphy_timing_value *t)
 {
 	int i = sizeof(dphy_timing) / sizeof(dphy_timing[0]) - 1;

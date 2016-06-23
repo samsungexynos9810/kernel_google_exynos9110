@@ -159,19 +159,18 @@ void decon_int_set_clocks(struct decon_device *decon)
 {
 	struct device *dev = decon->dev;
 
-	if (IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E36W1X01)) {
-		/* VCLK  - Derived from shared PLL */
+	if (IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E36W1X01) || IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E3AA2)) {
+	/* VCLK  - Derived from SHARED PLL */
 		decon_clk_set_rate(dev, decon->res.vclk,
-				NULL, decon->pdata->mif_vclk);
+					NULL, decon->pdata->mif_vclk);
 	} else if(IS_ENABLED(CONFIG_EXYNOS_DECON_LCD_S6E8AA5X01)) {
-		/* VCLK  - Derived from DISP PLL */
+	/* VCLK  - Derived from CMU mif */
 		decon_clk_set_rate(dev, decon->res.vclk,
-				NULL, decon->pdata->disp_vclk);
+					NULL, decon->pdata->disp_vclk);
 	}
 
-	/* CMU dispaud */
 	decon_clk_set_rate(dev, decon->res.vclk_leaf,
-			NULL, decon->pdata->disp_vclk);
+				NULL, decon->pdata->disp_vclk);
 
 	/* DISP DVFS */
 	if (!IS_ENABLED(CONFIG_PM_DEVFREQ))

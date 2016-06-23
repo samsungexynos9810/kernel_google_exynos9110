@@ -3437,8 +3437,16 @@ static int decon_probe(struct platform_device *pdev)
 		decon_reg_set_trigger(DECON_INT, decon->pdata->dsi_mode,
 				decon->pdata->trig_mode, DECON_TRIG_ENABLE);
 
+	/* Set DSIM Command LP mode */
+	ret = v4l2_subdev_call(decon->output_sd, core, ioctl,
+		DSIM_IOC_SET_CMD_LPMODE, (unsigned long *)1);
+
 	dsim = container_of(decon->output_sd, struct dsim_device, sd);
 	call_panel_ops(dsim, displayon, dsim);
+
+	/* Set DSIM Command HS mode */
+	ret = v4l2_subdev_call(decon->output_sd, core, ioctl,
+		DSIM_IOC_SET_CMD_LPMODE, (unsigned long *)0);
 
 decon_init_done:
 
