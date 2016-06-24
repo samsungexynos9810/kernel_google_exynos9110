@@ -162,29 +162,53 @@
 		#phy-cells = <1>;
 	};
 
-	pd_cam: cam-power-domain@10023C00 {
-		compatible = "samsung,exynos4210-pd";
-		reg = <0x10023C00 0x20>;
+	pd_cam: pd-cam@0x10023c00 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10023c00 0x10>;
+		spd_gsc0: spd_gsc0@0x10023c00 {
+			compatible = "samsung,exynos-spd";
+		};
+		spd_gsc1: spd_gsc1@0x10023c00 {
+			compatible = "samsung,exynos-spd";
+		};
+		spd_mscl: spd_mscl@0x10023c00 {
+			compatible = "samsung,exynos-spd";
+		};
+		spd_csic0: spd_csic0@0x10023c00 {
+			compatible = "samsung,exynos-spd";
+		};
+		spd_csic1: spd_csic1@0x10023c00 {
+			compatible = "samsung,exynos-spd";
+		};
+		spd_jpeg: spd_jpeg@0x10023c00 {
+			compatible = "samsung,exynos-spd";
+		};
 	};
 
-	pd_mfc: mfc-power-domain@10023C40 {
-		compatible = "samsung,exynos4210-pd";
-		reg = <0x10023C40 0x20>;
+	pd_mfc: pd-mfc@0x10023c40 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10023c40 0x10>;
 	};
 
-	pd_g3d: g3d-power-domain@10023C60 {
-		compatible = "samsung,exynos4210-pd";
-		reg = <0x10023C60 0x20>;
+	pd_g3d: pd-g3d@0x10023c60 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10023c60 0x10>;
 	};
 
-	pd_lcd0: lcd0-power-domain@10023C80 {
-		compatible = "samsung,exynos4210-pd";
-		reg = <0x10023C80 0x20>;
+	pd_lcd0: pd-lcd0@0x10023c80 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10023c80 0x10>;
+		spd_fimd0: spd_fimd0@0x10023c80 {
+			compatible = "samsung,exynos-spd";
+		};
+		spd_dsim0: spd_dsim0@0x10023c80 {
+			compatible = "samsung,exynos-spd";
+		};
 	};
 
-	pd_isp: isp-power-domain@10023CA0 {
-		compatible = "samsung,exynos4210-pd";
-		reg = <0x10023CA0 0x20>;
+	pd_isp: pd-isp@0x10023ca0 {
+		compatible = "samsung,exynos-pd";
+		reg = <0x10023ca0 0x20>;
 	};
 
 	cmu: clock-controller@10030000 {
@@ -286,7 +310,7 @@
 			"aclk_fimd0", "sclk_fimd0", "sclk_mipi0",
 			"fimd0", "dsim0", "dout_mpll_pre";
 
-		/* samsung,power-domain = <&pd_lcd0>; */
+		samsung,power-domain = <&pd_lcd0>;
 
 		/* TE pin */
 		/*
