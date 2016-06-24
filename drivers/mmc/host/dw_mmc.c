@@ -3160,9 +3160,14 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 
 			present = dw_mci_get_cd(mmc);
 		}
-
-		mmc_detect_change(slot->mmc,
-			msecs_to_jiffies(host->pdata->detect_delay_ms));
+		if (present)
+			mmc_detect_change(slot->mmc,
+					msecs_to_jiffies(host->pdata->detect_delay_ms));
+		else {
+			mmc_detect_change(slot->mmc, 0);
+			if (host->pdata->only_once_tune)
+				host->pdata->tuned = false;
+		}
 	}
 }
 
