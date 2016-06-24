@@ -522,6 +522,7 @@ static int s2mps14_pmic_probe(struct platform_device *pdev)
 		}
 	}
 
+	regmap_update_bits(iodev->regmap, 0x3c, 0x01, 0x0);
 	initialize_debug_fs(s2mps14);
 
 	return 0;
