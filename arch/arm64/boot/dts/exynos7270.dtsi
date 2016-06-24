@@ -856,9 +856,6 @@
 		       <&clock 721>, /* dispaud_mipiphy_rxclkesc0 */
 		       <&clock 720>; /* dispaud_mipiphy_txbyteclkhs */
 		clock-names = "dsim_pclk", "dphy_escclk", "dphy_byteclk";
-
-		/* number of data lanes in use */
-		data_lane_cnt = <1>;
 	};
 
 	decon_0: decon_fb@14830000 {
