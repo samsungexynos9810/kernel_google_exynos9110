@@ -1832,6 +1832,10 @@ int pm_genpd_name_detach_cpuidle(const char *name)
 
 /* Default device callbacks for generic PM domains. */
 
+/* drivers/iommu/exynos-iommu.c */
+extern void sysmmu_restore_state(struct device *dev);
+extern void sysmmu_save_state(struct device *dev);
+
 /**
  * pm_genpd_default_save_state - Default "save device state" for PM domains.
  * @dev: Device to handle.
@@ -1839,6 +1843,7 @@ int pm_genpd_name_detach_cpuidle(const char *name)
 static int pm_genpd_default_save_state(struct device *dev)
 {
 	int (*cb)(struct device *__dev);
+	int ret;
 
 	if (dev->type && dev->type->pm)
 		cb = dev->type->pm->runtime_suspend;
@@ -1852,7 +1857,12 @@ static int pm_genpd_default_save_state(struct device *dev)
 	if (!cb && dev->driver && dev->driver->pm)
 		cb = dev->driver->pm->runtime_suspend;
 
-	return cb ? cb(dev) : 0;
+	ret = cb ? cb(dev) : 0;
+
+	if (ret == 0)
+		sysmmu_save_state(dev);
+
+	return ret;
 }
 
 /**
@@ -1862,6 +1872,7 @@ static int pm_genpd_default_save_state(struct device *dev)
 static int pm_genpd_default_restore_state(struct device *dev)
 {
 	int (*cb)(struct device *__dev);
+	int ret;
 
 	if (dev->type && dev->type->pm)
 		cb = dev->type->pm->runtime_resume;
@@ -1875,7 +1886,13 @@ static int pm_genpd_default_restore_state(struct device *dev)
 	if (!cb && dev->driver && dev->driver->pm)
 		cb = dev->driver->pm->runtime_resume;
 
-	return cb ? cb(dev) : 0;
+	sysmmu_restore_state(dev);
+
+	ret = cb ? cb(dev) : 0;
+	if (ret)
+		sysmmu_save_state(dev);
+
+	return ret;
 }
 
 /**

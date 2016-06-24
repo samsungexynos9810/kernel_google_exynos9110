@@ -1839,49 +1839,15 @@ static int sysmmu_pm_resume(struct device *dev)
 
 	return 0;
 }
-
-#ifdef CONFIG_PM_GENERIC_DOMAINS
-static int sysmmu_pm_genpd_suspend(struct device *dev)
-{
-	int ret;
-
-	TRACE_LOG("%s(%s) ----->\n", __func__, dev_name(dev));
-
-	ret = pm_generic_suspend(dev);
-	if (ret) {
-		TRACE_LOG("<----- %s(%s) Failed\n", __func__, dev_name(dev));
-		return ret;
-	}
-
-	ret = sysmmu_pm_suspend(dev);
-
-	TRACE_LOG("<----- %s(%s)\n", __func__, dev_name(dev));
-
-	return ret;
-}
-
-static int sysmmu_pm_genpd_resume(struct device *dev)
-{
-	struct sysmmu_list_data *list;
-	int ret;
-
-	TRACE_LOG("%s(%s) ----->\n", __func__, dev_name(dev));
-
-	sysmmu_pm_resume(dev);
-
-	ret = pm_generic_resume(dev);
-
-	TRACE_LOG("<----- %s(%s) OK\n", __func__, dev_name(dev));
-
-	return ret;
-}
-#endif /* !CONFIG_PM_GENERIC_DOMAINS */
 #endif /* CONFIG_PM_SLEEP */
 
-#ifdef CONFIG_PM_RUNTIME
-static void sysmmu_restore_state(struct device *dev)
+#ifdef CONFIG_PM_GENERIC_DOMAINS
+void sysmmu_restore_state(struct device *dev)
 {
 	struct sysmmu_list_data *list;
+
+	if (!has_sysmmu(dev))
+		return;
 
 	for_each_sysmmu_list(dev, list) {
 		struct sysmmu_drvdata *data = dev_get_drvdata(list->sysmmu);
@@ -1899,9 +1865,12 @@ static void sysmmu_restore_state(struct device *dev)
 	}
 }
 
-static void sysmmu_save_state(struct device *dev)
+void sysmmu_save_state(struct device *dev)
 {
 	struct sysmmu_list_data *list;
+
+	if (!has_sysmmu(dev))
+		return;
 
 	for_each_sysmmu_list(dev, list) {
 		struct sysmmu_drvdata *data = dev_get_drvdata(list->sysmmu);
@@ -1918,161 +1887,11 @@ static void sysmmu_save_state(struct device *dev)
 		spin_unlock_irqrestore(&data->lock, flags);
 	}
 }
-
-static int sysmmu_pm_genpd_save_state(struct device *dev)
-{
-	int (*cb)(struct device *__dev);
-	int ret = 0;
-
-	TRACE_LOG("%s(%s) ----->\n", __func__, dev_name(dev));
-
-	if (dev->type && dev->type->pm)
-		cb = dev->type->pm->runtime_suspend;
-	else if (dev->class && dev->class->pm)
-		cb = dev->class->pm->runtime_suspend;
-	else if (dev->bus && dev->bus->pm)
-		cb = dev->bus->pm->runtime_suspend;
-	else
-		cb = NULL;
-
-	if (!cb && dev->driver && dev->driver->pm)
-		cb = dev->driver->pm->runtime_suspend;
-
-	if (cb)
-		ret = cb(dev);
-
-	if (ret == 0)
-		sysmmu_save_state(dev);
-
-	TRACE_LOG("<----- %s(%s) (cb = %pS) %s\n", __func__, dev_name(dev),
-			cb, ret ? "Failed" : "OK");
-
-	return ret;
-}
-
-static int sysmmu_pm_genpd_restore_state(struct device *dev)
-{
-	int (*cb)(struct device *__dev);
-	int ret = 0;
-
-	TRACE_LOG("%s(%s) ----->\n", __func__, dev_name(dev));
-
-	if (dev->type && dev->type->pm)
-		cb = dev->type->pm->runtime_resume;
-	else if (dev->class && dev->class->pm)
-		cb = dev->class->pm->runtime_resume;
-	else if (dev->bus && dev->bus->pm)
-		cb = dev->bus->pm->runtime_resume;
-	else
-		cb = NULL;
-
-	if (!cb && dev->driver && dev->driver->pm)
-		cb = dev->driver->pm->runtime_resume;
-
-	sysmmu_restore_state(dev);
-
-	if (cb)
-		ret = cb(dev);
-
-	if (ret)
-		sysmmu_save_state(dev);
-
-	TRACE_LOG("<----- %s(%s) (cb = %pS) %s\n", __func__, dev_name(dev),
-			cb, ret ? "Failed" : "OK");
-
-	return ret;
-}
 #endif
 
-#ifdef CONFIG_PM_GENERIC_DOMAINS
-static struct gpd_dev_ops sysmmu_devpm_ops = {
-#ifdef CONFIG_PM_RUNTIME
-	.save_state = &sysmmu_pm_genpd_save_state,
-	.restore_state = &sysmmu_pm_genpd_restore_state,
-#endif
-#ifdef CONFIG_PM_SLEEP
-	.suspend = &sysmmu_pm_genpd_suspend,
-	.resume = &sysmmu_pm_genpd_resume,
-#endif
-};
-
-static int sysmmu_hook_driver_register(struct notifier_block *nb,
-					unsigned long val,
-					void *p)
-{
-	struct device *dev = p;
-
-	/*
-	 * No System MMU assigned. See exynos_sysmmu_probe().
-	 */
-	if (dev->archdata.iommu == NULL)
-		return 0;
-
-	switch (val) {
-	case BUS_NOTIFY_BIND_DRIVER:
-	{
-		if (dev->pm_domain) {
-			int ret = pm_genpd_add_callbacks(
-					dev, &sysmmu_devpm_ops, NULL);
-			if (ret && (ret != -ENOSYS)) {
-				dev_err(dev,
-				"Failed to register 'dev_pm_ops' for iommu\n");
-				return ret;
-			}
-
-			dev_info(dev, "exynos-iommu gpd_dev_ops inserted!\n");
-		}
-
-		break;
-	}
-	case BUS_NOTIFY_BOUND_DRIVER:
-	{
-		struct sysmmu_list_data *list;
-
-		if (pm_runtime_enabled(dev) && dev->pm_domain)
-			break;
-
-		for_each_sysmmu_list(dev, list) {
-			struct sysmmu_drvdata *data =
-						dev_get_drvdata(list->sysmmu);
-			unsigned long flags;
-			spin_lock_irqsave(&data->lock, flags);
-			if (is_sysmmu_active(data) && !data->runtime_active)
-				__sysmmu_enable_nocount(data);
-			data->runtime_active = true;
-			pm_runtime_disable(data->sysmmu);
-			spin_unlock_irqrestore(&data->lock, flags);
-		}
-
-		break;
-	}
-	case BUS_NOTIFY_UNBOUND_DRIVER:
-	{
-		struct exynos_iommu_owner *owner = dev->archdata.iommu;
-		WARN_ON(!list_empty(&owner->client));
-		__pm_genpd_remove_callbacks(dev, false);
-		dev_info(dev, "exynos-iommu gpd_dev_ops removed!\n");
-		break;
-	}
-	} /* switch (val) */
-
-	return 0;
-}
-
-static struct notifier_block sysmmu_notifier = {
-	.notifier_call = &sysmmu_hook_driver_register,
-};
-
-static int __init exynos_iommu_prepare(void)
-{
-	return bus_register_notifier(&platform_bus_type, &sysmmu_notifier);
-}
-arch_initcall_sync(exynos_iommu_prepare);
-#else /* CONFIG_PM_GENERIC_DOMAINS */
 static const struct dev_pm_ops sysmmu_pm_ops = {
 	SET_LATE_SYSTEM_SLEEP_PM_OPS(sysmmu_pm_suspend, sysmmu_pm_resume)
 };
-#endif /* CONFIG_PM_GENERIC_DOMAINS */
 
 #ifdef CONFIG_OF
 static struct of_device_id sysmmu_of_match[] __initconst = {
@@ -2086,9 +1905,7 @@ static struct platform_driver exynos_sysmmu_driver __refdata = {
 	.driver		= {
 		.owner		= THIS_MODULE,
 		.name		= MODULE_NAME,
-#ifndef CONFIG_PM_GENERIC_DOMAINS
 		.pm	= &sysmmu_pm_ops,
-#endif
 		.of_match_table = of_match_ptr(sysmmu_of_match),
 	}
 };
