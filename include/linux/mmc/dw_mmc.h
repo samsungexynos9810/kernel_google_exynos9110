@@ -245,6 +245,9 @@ struct dw_mci {
 
 	/* For argos */
 	unsigned int transferred_cnt;
+
+	/* Sfr dump */
+	struct dw_mci_sfe_ram_dump      *sfr_dump;
 	
 	int			sdio_id0;
 
