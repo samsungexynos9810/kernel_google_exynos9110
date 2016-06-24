@@ -15,7 +15,10 @@ endif
 obj-$(CONFIG_PWRCAL)            += pwrcal/
 obj-$(CONFIG_EXYNOS_CHIPID)	+= exynos-chipid.o
 obj-$(CONFIG_EXYNOS_REBOOT)	+= exynos-reboot.o
+
+ifeq ($(CONFIG_SOC_EXYNOS3250),n)
 obj-$(CONFIG_PM_RUNTIME)        += pm_domains/
+endif
 obj-$(CONFIG_EXYNOS_PM_DVS)        += exynos-pm-dvs.o
 
 obj-$(CONFIG_ECT)		+= ect_parser.o
