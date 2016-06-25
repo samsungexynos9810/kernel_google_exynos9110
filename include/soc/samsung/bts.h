@@ -221,4 +221,10 @@ void bts_otf_initialize(unsigned int id, bool on);
 #define bts_otf_initialize(a, b) do {} while (0)
 #endif
 
+#if defined(CONFIG_EXYONS5410_BTS)
+void bts_set_bw(unsigned int bw);
+#else
+#define bts_set_bw(a) do {} while(0)
+#endif
+
 #endif
