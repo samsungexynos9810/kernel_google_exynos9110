@@ -621,6 +621,16 @@
 		/* mmu-masters = phandles */
 	};
 
+	udc: usb@12480000 {
+		compatible = "samsung,exynos3250_udc";
+		reg = <0x12480000 0x20000>;
+		interrupts = <0 141 0>;
+		clocks = <&cmu CLK_USBOTG>;
+		clock-names = "otg";
+		phys = <&usb2_phy 0>;
+		phy-names = "usb2-phy";
+	};
+
 	usb2_phy: phy@125B0000 {
 		compatible = "samsung,exynos-usb2-phy";
 		reg = <0x125B0000 0x100>;
