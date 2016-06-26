@@ -44,6 +44,16 @@ menuconfig USB_GADGET
 
 if USB_GADGET
 
+config USB_S3C_OTGD
+	tristate "S3C HS USB OTG Device"
+	help
+	   Samsung's S3C64XX processors include high speed USB OTG2.0
+	   controller. It has 15 configurable endpoints, as well as
+	   endpoint zero (for control transfers).
+
+	   This driver has been tested on the S3C6410, S5P6440, S5PC100, S5PV210,
+	   EXYNOS4210, EXYNOS4x12, EXYNOS5250 processor.
+
 config USB_GADGET_DEBUG
 	boolean "Debugging messages (DEVELOPMENT)"
 	depends on DEBUG_KERNEL

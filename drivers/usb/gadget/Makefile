@@ -13,4 +13,6 @@ g_android-y			:= android.o
 
 obj-$(CONFIG_USB_GADGET)	+= udc/ function/ legacy/
 
+obj-$(CONFIG_USB_S3C_OTGD)	+= s3c_udc_otg.o
+
 obj-$(CONFIG_USB_G_ANDROID)	+= g_android.o
