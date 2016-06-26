@@ -234,6 +234,19 @@ config PHY_SAMSUNG_USB_CAL
 	  Enable this to support CAL (Chip Abstraction Layer)
 	  for Samsung USB PHY controller.
 
+config PHY_EXYNOS_USBOTG
+	tristate "Exynos SoC series USB2.0 OTG Device PHY driver"
+	depends on ARCH_EXYNOS
+	depends on HAS_IOMEM
+	depends on USB_EHCI_S5P || USB_OHCI_EXYNOS || USB_S3C_OTGD
+	select GENERIC_PHY
+	select MFD_SYSCON
+	default y
+	help
+	  Enable USB 2.0 PHY support for Exynos SoC series.
+	  This driver provides PHY interface for USB 2.0 OTG Device controller
+	  present on Exynos SoC series.
+
 config PHY_QCOM_APQ8064_SATA
 	tristate "Qualcomm APQ8064 SATA SerDes/PHY driver"
 	depends on ARCH_QCOM

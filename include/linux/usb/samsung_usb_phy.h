@@ -14,3 +14,7 @@ enum samsung_usb_phy_type {
 	USB_PHY_TYPE_DEVICE,
 	USB_PHY_TYPE_HOST,
 };
+
+#ifdef CONFIG_PHY_EXYNOS_USBOTG
+extern bool exynos_usb2_phy_is_on;
+#endif
