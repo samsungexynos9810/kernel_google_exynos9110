@@ -291,6 +291,7 @@ struct mmc_host {
 #define MMC_CAP2_SDIO_IRQ_NOTHREAD	(1 << 17)
 #define MMC_CAP2_NO_WRITE_PROTECT	(1 << 18)	/* No physical write protect pin, assume that card is always read-write */
 #define MMC_CAP2_STROBE_ENHANCED	(1 << 19)	/* enhanced strobe */
+#define MMC_CAP2_SKIP_INIT_SCAN		(1 << 20)	/* skip init mmc scan */
 
 	mmc_pm_flag_t		pm_caps;	/* supported pm features */
 
