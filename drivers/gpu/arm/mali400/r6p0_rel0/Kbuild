@@ -210,7 +210,12 @@ endif
 
 ccflags-y += -DSVN_REV_STRING=\"$(DRIVER_REV)\"
 
-FILES_PREFIX := $(dir $(call lastword,$(MAKEFILE_LIST)))
+# MALI_SEC
+# FILES_PREFIX := $(dir $(call lastword,$(MAKEFILE_LIST)))
+mkfile_path := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
+mkfile_dir:=$(shell cd $(shell dirname $(mkfile_path)); pwd)
+FILE_PREFIX:=$(notdir $(mkfile_dir))
+# End of MALI_SEC
 VERSION_STRINGS :=
 VERSION_STRINGS += API_VERSION=$(shell cd $(src); grep "\#define _MALI_API_VERSION" $(FILES_PREFIX)include/linux/mali/mali_utgard_uk_types.h | cut -d' ' -f 3 )
 VERSION_STRINGS += REPO_URL=$(REPO_URL)
