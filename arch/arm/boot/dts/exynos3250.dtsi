@@ -206,6 +206,16 @@
 		status = "disabled";
 	};
 
+        watchdog@10060000 {
+                compatible = "samsung,s3c2410-wdt";
+                reg = <0x10060000 0x100>;
+                interrupts = <0 224 0>;
+                clocks = <&cmu CLK_WDT>, <&cmu CLK_WDT>;
+                clock-names = "rate_watchdog", "gate_watchdog";
+                timeout-sec = <30>;
+                pmu_wdt_reset_type = <0>;
+        };
+
 	tmu: tmu@100C0000 {
 		compatible = "samsung,exynos3250-tmu";
 		reg = <0x100C0000 0x100>;
