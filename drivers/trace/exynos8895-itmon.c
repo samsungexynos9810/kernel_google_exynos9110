@@ -16,12 +16,12 @@
 #include <linux/io.h>
 #include <linux/interrupt.h>
 #include <linux/bitops.h>
+#include <linux/of_irq.h>
 #include <soc/samsung/exynos-itmon.h>
 #if defined(CONFIG_SEC_SIPC_MODEM_IF)
 #include <linux/exynos-modem-ctrl.h>
 #endif
 
-/* S-NODE Only */
 #define OFFSET_TMOUT_REG		(0x2000)
 #define OFFSET_REQ_R			(0x0)
 #define OFFSET_REQ_W			(0x20)
@@ -71,12 +71,22 @@
 #define BUS_PERI			(1)
 #define BUS_PATH_TYPE			(2)
 
+#define TRANS_TYPE_WRITE 		(0)
+#define TRANS_TYPE_READ 		(1)
+#define TRANS_TYPE_NUM			(2)
+
+#define FROM_CP 			(0)
+#define FROM_CPU 			(1)
+#define FROM_CPU_MAY 			(2)
+#define FROM_M_NODE 			(3)
+
 #define TMOUT				(0xFFFFF)
 #define TMOUT_TEST			(0x1)
 
-#define NEED_TO_CHECK			(0xCAFE)
+#define PANIC_ALLOWED_THRESHOLD 	(0x2)
 
-static bool initial_multi_irq_enable = true;
+static bool initial_multi_irq_enable = false;
+static struct itmon_dev *g_itmon = NULL;
 
 struct itmon_rpathinfo {
 	unsigned int id;
@@ -102,6 +112,8 @@ struct itmon_traceinfo {
 	unsigned long target_addr;
 	unsigned int errcode;
 	bool read;
+	bool dirty;
+	unsigned long from;
 };
 
 struct itmon_tracedata {
@@ -112,7 +124,6 @@ struct itmon_tracedata {
 	unsigned int offset;
 	bool logging;
 	bool read;
-	bool last;
 };
 
 struct itmon_nodeinfo {
@@ -161,9 +172,7 @@ struct itmon_nodegroup {
 	void __iomem *regs;
 	struct itmon_nodeinfo *nodeinfo;
 	unsigned int nodesize;
-	unsigned int irq_occurred;
 	unsigned int bus_type;
-	bool panic_delayed;
 };
 
 struct itmon_platdata {
@@ -172,6 +181,8 @@ struct itmon_platdata {
 	struct itmon_nodegroup *nodegroup;
 	struct itmon_traceinfo traceinfo[BUS_PATH_TYPE];
 	struct list_head tracelist[BUS_PATH_TYPE];
+	unsigned int err_cnt;
+	bool panic_allowed;
 	bool probed;
 };
 
@@ -481,13 +492,13 @@ static struct itmon_nodeinfo peri_bus_1[] = {
 };
 
 static struct itmon_nodegroup nodegroup[] = {
-	{72,	"DATA_BUS_1",	0x155F3000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), 0, BUS_DATA, false},
-	{311,	"DATA_CORE",	0x14AF3000, NULL, data_core,	ARRAY_SIZE(data_core),	0, BUS_DATA, false},
-	{92,	"DATA_BUS_C",	0,	    NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), 0, BUS_DATA, false},
-	{315,	"PERI_CORE_0",	0x14CF3000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),0, BUS_PERI, false},
-	{316,	"PERI_CORE_1",	0x14EF3000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),0, BUS_PERI, false},
-	{93,	"PERI_BUS_C",	0x153F3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), 0, BUS_PERI, false},
-	{77,	"PERI_BUS_1",	0x156F3000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), 0, BUS_PERI, false},
+	{72,	"DATA_BUS_1",	0x155F3000, NULL, data_bus_1,	ARRAY_SIZE(data_bus_1), BUS_DATA},
+	{311,	"DATA_CORE",	0x14AF3000, NULL, data_core,	ARRAY_SIZE(data_core),	BUS_DATA},
+	{92,	"DATA_BUS_C",	0,	    NULL, data_bus_c,	ARRAY_SIZE(data_bus_c), BUS_DATA},
+	{315,	"PERI_CORE_0",	0x14CF3000, NULL, peri_core_0,	ARRAY_SIZE(peri_core_0),BUS_PERI},
+	{316,	"PERI_CORE_1",	0x14EF3000, NULL, peri_core_1,	ARRAY_SIZE(peri_core_1),BUS_PERI},
+	{93,	"PERI_BUS_C",	0x153F3000, NULL, peri_bus_c,	ARRAY_SIZE(peri_bus_c), BUS_PERI},
+	{77,	"PERI_BUS_1",	0x156F3000, NULL, peri_bus_1,	ARRAY_SIZE(peri_bus_1), BUS_PERI},
 };
 
 struct itmon_dev {
@@ -618,73 +629,86 @@ static void itmon_init(struct itmon_dev *itmon, bool enabled)
 	}
 }
 
-static void itmon_post_handler_by_master(struct itmon_dev *itmon,
-				       struct itmon_nodegroup *group,
-				       char *port, char *master, bool read)
+void itmon_enable(bool enabled)
 {
+	if (g_itmon) {
+		itmon_init(g_itmon, enabled);
+	}
+}
+
+void itmon_set_errcnt(int cnt)
+{
+	struct itmon_platdata *pdata;
+	if (g_itmon) {
+		pdata = g_itmon->pdata;
+		pdata->err_cnt = cnt;
+	}
+}
+
+static void itmon_post_handler_by_master(struct itmon_dev *itmon,
+					struct itmon_nodeinfo *node,
+					unsigned int trans_type)
+{
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
+
 	/* After treatment by port */
-	if (!port || strlen(port) < 1)
+	if (!traceinfo->port || strlen(traceinfo->port) < 1)
 		return;
 
-	if (!strncmp(port, "CP", strlen("CP"))) {
+	if (!strncmp(traceinfo->port, "CP", strlen("CP"))) {
 		/* if master is DSP and operation is read, we don't care this */
-		if (master && !strncmp(master, "TL3MtoL2", strlen(master))
-			   && read == true) {
-			group->panic_delayed = true;
-			group->irq_occurred = 0;
-			pr_info("ITMON skips CP's DSP(TL3MtoL2) detected\n");
-		} else {
-			/* Disable busmon all interrupts */
-			itmon_init(itmon, false);
-			group->panic_delayed = true;
-#if defined(CONFIG_SEC_SIPC_MODEM_IF)
-			ss310ap_force_crash_exit_ext();
-#endif
+		if (traceinfo->master && trans_type == TRANS_TYPE_READ &&
+			!strncmp(traceinfo->master, "CR4MtoL2", strlen(traceinfo->master))) {
+			pdata->err_cnt = 0;
+			pr_info("ITMON skips CP's DSP(CR4MtoL2) detected\n");
 		}
 	}
 }
 
 static void itmon_report_traceinfo(struct itmon_dev *itmon,
 				struct itmon_nodeinfo *node,
-				unsigned int bus_type)
+				unsigned int trans_type)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
-	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[bus_type];
-	unsigned int high_addr;
-
-	if (bus_type == BUS_PERI)
-		high_addr = 0;
-	else
-		high_addr = (unsigned int)node->tracedata.ext_info_2 & GENMASK(3, 0);
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
+	struct itmon_nodegroup *group = node->group;
 
 	pr_info("--------------------------------------------------------------------------\n"
 		"      Transaction Information\n\n"
 		"      > Master         : %s %s\n"
 		"      > Target         : %s\n"
-		"      > Target Address : 0x%04X_%08X\n"
+		"      > Target Address : 0x%zx\n"
+		"      > Path Type      : %s\n"
 		"      > Type           : %s\n"
 		"      > Error code     : %s\n"
 		"--------------------------------------------------------------------------\n",
 		traceinfo->port, traceinfo->master ? traceinfo->master : "",
-		traceinfo->dest, high_addr,
-		(unsigned int)node->tracedata.ext_info_0,
-		traceinfo->read ? "READ" : "WRITE",
+		traceinfo->dest, traceinfo->target_addr,
+		itmon_pathtype[group->bus_type],
+		trans_type == TRANS_TYPE_READ ? "READ" : "WRITE",
 		itmon_errcode[traceinfo->errcode]);
 }
 
 static void itmon_report_pathinfo(struct itmon_dev *itmon,
 				  struct itmon_nodeinfo *node,
-				  unsigned int bus_type)
+				  unsigned int trans_type)
 {
+	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_tracedata *tracedata = &node->tracedata;
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
 
+	if (!traceinfo->dirty) {
+		pr_info("--------------------------------------------------------------------------\n"
+			"      ITMON Report (%s)\n"
+			"--------------------------------------------------------------------------\n"
+			"      PATH Information\n",
+			trans_type == TRANS_TYPE_READ ? "READ" : "WRITE");
+		traceinfo->dirty = true;
+	}
 	switch (node->type) {
 	case M_NODE:
-		pr_info("\n--------------------------------------------------------------------------\n"
-			"      ITMON Report (%s)\n"
-			"--------------------------------------------------------------------------\n",
-			itmon_pathtype[bus_type]);
-		pr_info("      PATH Information\n\n"
+		pr_info("                      ||\n"
 			"      > %14s, %8s(0x%08X)\n",
 			node->name, "M_NODE", node->phy_regs + tracedata->offset);
 		break;
@@ -708,22 +732,29 @@ static void itmon_report_pathinfo(struct itmon_dev *itmon,
 
 static void itmon_report_tracedata(struct itmon_dev *itmon,
 				   struct itmon_nodeinfo *node,
-				   unsigned int bus_type)
+				   unsigned int trans_type)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_tracedata *tracedata = &node->tracedata;
-	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[bus_type];
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
+	struct itmon_nodegroup *group = node->group;
 	struct itmon_masterinfo *master;
-	unsigned int user, errcode;
+	unsigned int errcode,axid;
+	unsigned long userbit;
 	char buf[SZ_32];
 
-	if (bus_type == BUS_DATA) {
-		switch (node->type) {
-		case M_NODE:
-			user = BIT_AXUSER(tracedata->ext_info_2);
+	errcode = BIT_ERR_CODE(tracedata->int_info);
+	axid = BIT_AXID(tracedata->int_info);
+	userbit = BIT_AXUSER(tracedata->ext_info_2);
+
+	switch (node->type) {
+	case M_NODE:
+		if (BIT_ERR_VALID(tracedata->int_info) && tracedata->ext_info_2) {
+			/* In this case, we can get information from M_NODE
+			 * Fill traceinfo->port / target_addr / read / master */
 			traceinfo->port = node->name;
 			master = (struct itmon_masterinfo *)
-				itmon_get_masterinfo(itmon, node->name, user);
+				itmon_get_masterinfo(itmon, node->name, userbit);
 			if (master)
 				traceinfo->master = master->master_name;
 			else
@@ -733,87 +764,99 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
-			itmon_report_pathinfo(itmon, node, bus_type);
-			break;
-		case S_NODE:
-			traceinfo->dest = node->name;
-			errcode = BIT_ERR_CODE(tracedata->int_info);
-			if (errcode == ERRCODE_TMOUT) {
-				/* In timeout error, it is more reliable */
-				traceinfo->errcode = errcode;
-				user = BIT_AXUSER(tracedata->ext_info_2);
-				traceinfo->port = node->name;
-				master = (struct itmon_masterinfo *)
-					itmon_get_masterinfo(itmon, node->name, user);
-				if (master)
-					traceinfo->master = master->master_name;
-				else
-					traceinfo->master = NULL;
-				traceinfo->target_addr =
-					(unsigned long)(node->tracedata.ext_info_2
-					& GENMASK(3, 0) << 32ULL);
-				traceinfo->target_addr |= node->tracedata.ext_info_0;
+			traceinfo->port = node->name;
+		} else {
+			/* Check SFR Path from CPU */
+			if (!strncmp(node->name, "SCI_IRPM", strlen(node->name))) {
+				set_bit(FROM_CP, &traceinfo->from);
+				set_bit(FROM_CPU, &traceinfo->from);
+			} else if (!strncmp(node->name, "SCI_CCM0", strlen(node->name)) ||
+				!strncmp(node->name, "SCI_CCM1", strlen(node->name))) {
+				set_bit(FROM_CP, &traceinfo->from);
+				set_bit(FROM_CPU_MAY, &traceinfo->from);
+			} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
+				set_bit(FROM_CP, &traceinfo->from);
+			} else if (!strncmp(node->name, "BUSC_PERI_M", strlen(node->name))) {
+				set_bit(FROM_M_NODE, &traceinfo->from);
+			}
+			if (strncmp(node->name, "SCI_CCM0", strlen(node->name)) &&
+				strncmp(node->name, "SCI_CCM1", strlen(node->name)) &&
+				strncmp(node->name, "CP_PERI_M", strlen(node->name)) &&
+				strncmp(node->name, "BUSC_PERI_M", strlen(node->name)) &&
+				strncmp(node->name, "SCI_IRPM", strlen(node->name))) {
+				/* Pure M_NODE */
+				traceinfo->master = NULL;
+				traceinfo->target_addr = 0;
 				traceinfo->read = tracedata->read;
+				traceinfo->port = node->name;
 			}
-			itmon_report_pathinfo(itmon, node, bus_type);
-			itmon_report_traceinfo(itmon, node, bus_type);
-			break;
-		case T_S_NODE:
-		case T_M_NODE:
-			if (!strncmp(node->group->name, "DATA_CORE", strlen("DATA_CORE")) &&
-				node->type == T_M_NODE) {
-				/* Exception Situation */
-				traceinfo->dest = traceinfo->dest;
-			}
-			itmon_report_pathinfo(itmon, node, bus_type);
-			break;
-		default:
-			pr_info("Unknown Error - offset:%u\n", tracedata->offset);
-			break;
 		}
-	} else {
-		switch (node->type) {
-		case M_NODE:
-		case T_S_NODE:
-		case T_M_NODE:
-			itmon_report_pathinfo(itmon, node, bus_type);
-			break;
-		case S_NODE:
-			user = BIT_AXUSER(tracedata->ext_info_2);
-			if ((user & GENMASK(4, 0)) & BIT(3)) {
-				/* Master is CP */
-				traceinfo->port = "CP";
-				master = itmon_get_masterinfo(itmon, traceinfo->port, user);
-				if (master)
-					traceinfo->master = master->master_name;
-				else
-					traceinfo->master = NULL;
+		itmon_report_pathinfo(itmon, node, trans_type);
+		break;
+	case S_NODE:
+		if (test_bit(FROM_CP, &traceinfo->from) && test_bit(3, &userbit)) {
+			snprintf(buf, SZ_32, "CP");
+			traceinfo->port = buf;
+		} else if (test_bit(FROM_CPU, &traceinfo->from)) {
+			/*
+			 * This case is only for PERI Path
+			 * Master is CPU cluster
+			 * user & GENMASK(1, 0) = core number
+			 */
+			int cluster_num, core_num;
+			core_num = axid & GENMASK(1, 0);
+			cluster_num = (axid & BIT(2)) >> 2;
+			snprintf(buf, SZ_32, "CPU%d Cluster%d", core_num, cluster_num);
+			traceinfo->port = buf;
+		} else if (test_bit(FROM_CPU_MAY, &traceinfo->from)) {
+			snprintf(buf, SZ_32, "CPU maybe");
+			traceinfo->port = buf;
+		} else {
+			/*
+			* we expect traceinfo->port is always true in this case
+			* In DECERR case, the follow information was filled.
+			*/
+			if (traceinfo->port) {
+				if (!master) {
+					master = (struct itmon_masterinfo *)
+					itmon_get_masterinfo(itmon, traceinfo->port,
+							userbit & GENMASK(2, 0));
+					if (master)
+						traceinfo->master = master->master_name;
+					else
+						traceinfo->master = NULL;
+				}
 			} else {
-				/* Master is CPU cluster */
-				/* user & GENMASK(1, 0) = core number */
-				int cluster_num, core_num;
-				core_num = user & GENMASK(1, 0);
-				cluster_num = (user & BIT(2)) >> 2;
-				snprintf(buf, SZ_32, "CPU%dCL%d", core_num, cluster_num);
-				traceinfo->port = "CPU";
-				traceinfo->master = buf;
+				traceinfo->read = tracedata->read;
+				traceinfo->port = node->name;
 			}
+		}
+		if (!traceinfo->target_addr) {
 			traceinfo->target_addr =
 				(unsigned long)(node->tracedata.ext_info_2
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
-			traceinfo->read = tracedata->read;
-			traceinfo->dest = node->name;
-			errcode = BIT_ERR_CODE(tracedata->int_info);
-			if (errcode == ERRCODE_TMOUT) {
-				traceinfo->errcode = errcode;
-			}
-			itmon_report_pathinfo(itmon, node, bus_type);
-			itmon_report_traceinfo(itmon, node, bus_type);
-			break;
-		default:
-			break;
 		}
+		traceinfo->dest = node->name;
+		itmon_report_pathinfo(itmon, node, trans_type);
+		itmon_report_traceinfo(itmon, node, trans_type);
+		break;
+	case T_S_NODE:
+	case T_M_NODE:
+		/* Data Path */
+		if (!strncmp(group->name, "DATA_CORE", strlen("DATA_CORE"))
+			&& node->type == T_M_NODE) {
+			/* Exception Situation - DREX PATH */
+			traceinfo->dest = node->name;
+			itmon_report_pathinfo(itmon, node, trans_type);
+			itmon_report_traceinfo(itmon, node, trans_type);
+		} else {
+			itmon_report_pathinfo(itmon, node, trans_type);
+		}
+		break;
+	default:
+		pr_info("Unknown Error - offset:%u\n", tracedata->offset);
+		break;
 	}
 }
 
@@ -835,32 +878,27 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_nodeinfo *node, *next_node;
-	unsigned int bus_type, offset;
-	int i, j;
+	unsigned int trans_type;
+	int i;
 
 	/* To call function is sorted by declaration */
-	for (bus_type = 0; bus_type < BUS_PATH_TYPE; bus_type++) {
-		for (j = 0; j < OFFSET_NUM; j++) {
-			offset = j * OFFSET_ERR_REPT;
-			for (i = M_NODE; i < NODE_TYPE; i++) {
-				list_for_each_entry(node, &pdata->tracelist[bus_type], list) {
-					if (i == node->type && offset == (node->tracedata.offset & GENMASK(7, 0)))
-						itmon_report_tracedata(itmon, node, bus_type);
-				}
+	for (trans_type = 0; trans_type < TRANS_TYPE_NUM; trans_type++) {
+		for (i = M_NODE; i < NODE_TYPE; i++) {
+			list_for_each_entry(node, &pdata->tracelist[trans_type], list) {
+				if (i == node->type)
+					itmon_report_tracedata(itmon, node, trans_type);
 			}
 		}
 	}
 
 	pr_info("      Raw Register Information(ITMON Internal Information)\n\n");
 
-	for (bus_type = 0; bus_type < BUS_PATH_TYPE; bus_type++) {
+	for (trans_type = 0; trans_type < TRANS_TYPE_NUM; trans_type++) {
 		for (i = M_NODE; i < NODE_TYPE; i++) {
-			list_for_each_entry_safe(node, next_node, &pdata->tracelist[bus_type], list) {
+			list_for_each_entry_safe(node, next_node, &pdata->tracelist[trans_type], list) {
 				if (i == node->type) {
 					itmon_report_rawdata(itmon, node);
-					itmon_post_handler_by_master(itmon, node->group,
-						node->name, pdata->traceinfo[bus_type].master,
-						pdata->traceinfo[bus_type].read);
+					itmon_post_handler_by_master(itmon, node, trans_type);
 					/* clean up */
 					list_del(&node->list);
 					kfree(node);
@@ -880,7 +918,8 @@ static void itmon_trace_data(struct itmon_dev *itmon,
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_nodeinfo *new_node = NULL;
 	unsigned int int_info, info0, info1, info2;
-	bool read = false, req = false;
+	bool read = TRANS_TYPE_WRITE;
+	bool req = false;
 
 	int_info = __raw_readl(node->regs + offset + REG_INT_INFO);
 	info0 = __raw_readl(node->regs + offset + REG_EXT_INFO_0);
@@ -889,14 +928,14 @@ static void itmon_trace_data(struct itmon_dev *itmon,
 
 	switch (offset) {
 	case OFFSET_REQ_R:
-		read = true;
+		read = TRANS_TYPE_READ;
 		/* fall down */
 	case OFFSET_REQ_W:
 		req = true;
 		/* Only S-Node is able to make log to registers */
 		break;
 	case OFFSET_RESP_R:
-		read = true;
+		read = TRANS_TYPE_READ;
 		/* fall down */
 	case OFFSET_RESP_W:
 		req = false;
@@ -907,7 +946,7 @@ static void itmon_trace_data(struct itmon_dev *itmon,
 		break;
 	}
 
-	new_node = kmalloc(sizeof(struct itmon_nodeinfo), GFP_KERNEL);
+	new_node = kmalloc(sizeof(struct itmon_nodeinfo), GFP_ATOMIC);
 	if (new_node) {
 		/* Fill detected node information to tracedata's list */
 		memcpy(new_node, node, sizeof(struct itmon_nodeinfo));
@@ -923,7 +962,7 @@ static void itmon_trace_data(struct itmon_dev *itmon,
 		else
 			node->tracedata.logging = false;
 
-		list_add(&new_node->list, &pdata->tracelist[group->bus_type]);
+		list_add(&new_node->list, &pdata->tracelist[read]);
 	} else {
 		pr_info("failed to kmalloc for %s node %x offset\n",
 			node->name, offset);
@@ -939,6 +978,7 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 	int i, j, ret = 0;
 
 	spin_lock_irqsave(&itmon->ctrl_lock, flags);
+	memset(pdata->traceinfo, 0, sizeof(struct itmon_traceinfo) * 2);
 	if (group) {
 		/* Processing only this group and select detected node */
 		vec = __raw_readl(group->regs);
@@ -984,7 +1024,7 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 						/* This node occurs the error */
 						itmon_trace_data(itmon, group, &node[bit], offset);
 						if (clear)
-							__raw_writel(1, node[j].regs
+							__raw_writel(1, node[bit].regs
 									+ offset + REG_INT_CLR);
 						ret = true;
 					}
@@ -993,7 +1033,6 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 		}
 	}
 	itmon_route_tracedata(itmon);
-	memset(pdata->traceinfo, 0, sizeof(struct itmon_traceinfo) * 2);
  exit:
 	spin_unlock_irqrestore(&itmon->ctrl_lock, flags);
 	return ret;
@@ -1007,33 +1046,26 @@ static irqreturn_t itmon_irq_handler(int irq, void *data)
 	bool ret;
 	int i;
 
-	/* convert from raw irq source to SPI irq number */
-	irq = irq - 32;
-
 	/* Search itmon group */
 	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		if (irq == nodegroup[i].irq) {
 			group = &pdata->nodegroup[i];
-			pr_info("\n-------------------------------------------------\n"
-				"ITMON Detected: %d irq, %s group, 0x%x vec\n",
-				irq, group->name, __raw_readl(group->regs));
+			pr_info("\nITMON Detected: %d irq, %s group, 0x%x vec, err_cnt:%u\n",
+				irq, group->name, __raw_readl(group->regs), pdata->err_cnt);
 			break;
 		}
 	}
-	if (group) {
-		ret = itmon_search_node(itmon, NULL, false);
-		if (!ret) {
-			pr_info("ITMON parsing: failed %s, %d irq, 0x%x\n",
-				group->name, irq, __raw_readl(group->regs));
-		} else {
-			if (group->irq_occurred && !group->panic_delayed)
-				panic("STOP infinite output by Exynos ITMON");
-			else
-				group->irq_occurred++;
-		}
+
+	ret = itmon_search_node(itmon, NULL, true);
+	if (!ret) {
+		pr_info("ITMON could not detect any error\n");
 	} else {
-		pr_info("interrupt group is not valid: %d irq\n", irq);
+		if (pdata->err_cnt++ > PANIC_ALLOWED_THRESHOLD)
+			pdata->panic_allowed = true;
 	}
+
+	if (pdata->panic_allowed)
+		panic("ITMON occurs panic to prevent endless log");
 
 	return IRQ_HANDLED;
 }
@@ -1067,7 +1099,7 @@ static int itmon_probe(struct platform_device *pdev)
 	struct itmon_panic_block *itmon_panic = NULL;
 	struct itmon_platdata *pdata;
 	struct itmon_nodeinfo *node;
-	unsigned int irq_option = 0;
+	unsigned int irq_option = 0, irq;
 	char *dev_name;
 	int ret, i, j;
 
@@ -1109,8 +1141,17 @@ static int itmon_probe(struct platform_device *pdev)
 		if (initial_multi_irq_enable)
 			irq_option = IRQF_GIC_MULTI_TARGET;
 
-		ret = devm_request_irq(&pdev->dev, nodegroup[i].irq + 32,
+		irq = irq_of_parse_and_map(pdev->dev.of_node, i);
+		nodegroup[i].irq = irq;
+
+		ret = devm_request_irq(&pdev->dev, irq,
 				       itmon_irq_handler, irq_option, dev_name, itmon);
+		if (ret < 0) {
+			dev_err(&pdev->dev, "failed to request irq - %s\n", dev_name);
+			return -ENOENT;
+		} else {
+			dev_err(&pdev->dev, "success to register request irq%u - %s\n", irq, dev_name);
+		}
 
 		for (j = 0; j < nodegroup[i].nodesize; j++) {
 			node[j].regs = devm_ioremap_nocache(&pdev->dev, node[j].phy_regs, SZ_16K);
@@ -1136,8 +1177,9 @@ static int itmon_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, itmon);
-
 	itmon_init(itmon, true);
+
+	g_itmon = itmon;
 	pdata->probed = true;
 
 	dev_info(&pdev->dev, "success to probe Exynos ITMON driver\n");
