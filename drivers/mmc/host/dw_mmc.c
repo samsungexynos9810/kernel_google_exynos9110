@@ -46,6 +46,7 @@
 
 #include "dw_mmc.h"
 #include "dw_mmc-exynos.h"
+#include "../card/queue.h"
 
 /* Common flag combinations */
 #define DW_MCI_DATA_ERROR_FLAGS	(SDMMC_INT_DRTO | SDMMC_INT_DCRC | \
@@ -72,7 +73,7 @@ bool dw_mci_fifo_reset(struct device *dev, struct dw_mci *host);
 void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host);
 static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
 
-extern int fmp_map_sg(struct dw_mci *host, struct idmac_desc_64addr *desc, int idx,
+extern int fmp_mmc_map_sg(struct dw_mci *host, struct idmac_desc_64addr *desc, int idx,
 			uint32_t sector_key, uint32_t sector, struct mmc_data *data);
 static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq);
 
@@ -763,7 +764,6 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 
 		for (i = 0; i < sg_len; i++) {
 			unsigned int length = sg_dma_len(&data->sg[i]);
-
 			u64 mem_addr = sg_dma_address(&data->sg[i]);
 
 			for ( ; length ; desc++) {
@@ -851,11 +851,184 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 	wmb(); /* drain writebuffer */
 }
 
+#if defined(CONFIG_FMP_MMC)
+static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_data *data,
+				    unsigned int sg_len)
+{
+	unsigned int desc_len;
+	int i, j;
+	unsigned int rw_size = DW_MMC_MAX_TRANSFER_SIZE;
+
+	if (host->dma_64bit_address == 1) {
+		struct idmac_desc_64addr *desc_first, *desc_last, *desc;
+		unsigned int sector = 0;
+		unsigned int sector_key = DW_MMC_BYPASS_SECTOR_BEGIN;
+#if defined(CONFIG_MMC_DW_FMP_DM_CRYPT)
+                struct mmc_queue_req *mq_rq = NULL;
+                struct mmc_blk_request *brq = NULL;
+
+                if (data->mrq->host) {
+                        /* it means this request comes from block i/o */
+                        brq = container_of(data, struct mmc_blk_request, data);
+                        if (brq) {
+                                mq_rq = container_of(brq, struct mmc_queue_req, brq);
+                                sector = mq_rq->req->bio->bi_iter.bi_sector;
+                                rw_size = (mq_rq->req->bio->bi_sensitive_data == 1) ?
+                                        DW_MMC_SECTOR_SIZE : DW_MMC_MAX_TRANSFER_SIZE;
+                                sector_key = (mq_rq->req->bio->bi_sensitive_data == 1) ?
+                                        DW_MMC_ENCRYPTION_SECTOR_BEGIN : DW_MMC_BYPASS_SECTOR_BEGIN;
+                        }
+                }
+#endif
+		desc_first = desc_last = desc = host->sg_cpu;
+
+		for (i = 0; i < sg_len; i++) {
+			unsigned int length = sg_dma_len(&data->sg[i]);
+			u64 mem_addr = sg_dma_address(&data->sg[i]);
+			unsigned int left = length;
+#if defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
+                        if (!((unsigned long)(sg_page(&data->sg[i])->mapping) & 0x1)) {
+                              if (sg_page(&data->sg[i])->mapping && sg_page(&data->sg[i])->mapping->key && \
+                                              !sg_page(&data->sg[i])->mapping->plain_text) {
+                                        if ((unsigned int)sg_page(&data->sg[i])->index >= 2) {
+                                                sector_key |= DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+                                                rw_size = DW_MMC_SECTOR_SIZE;
+                                        } else
+                                                sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+                                } else
+                                        sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+                        } else {
+                                sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+                        }
+#elif defined(CONFIG_MMC_DW_FMP_EXT4CRYPT_FS)
+			if (!((unsigned long)(sg_page(&data->sg[i])->mapping) & 0x1)) {
+				if ((unsigned int)(sg_page(&data->sg[i])->index) >= 2 &&
+						((uint64_t)(sg_page(&data->sg[i])->mapping)) &&
+						((unsigned int)(sg_page(&data->sg[i])->mapping->use_fmp))) {
+					sector_key |= DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+					rw_size = DW_MMC_SECTOR_SIZE;
+				} else
+					sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+			} else
+                                sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
+#endif
+			for (j = 0; j < (length + rw_size + 1) / rw_size; j++) {
+				desc_len = (left <= rw_size) ? left : rw_size;
+
+				/*
+				 * Set the OWN bit and disable interrupts
+				 * for this descriptor
+				 */
+				desc->des0 = IDMAC_DES0_OWN | IDMAC_DES0_DIC |
+							IDMAC_DES0_CH;
+
+				/* Buffer length */
+				IDMAC_64ADDR_SET_BUFFER1_SIZE(desc, desc_len);
+
+				/* Physical address to DMA to/from */
+				desc->des4 = mem_addr & 0xffffffff;
+				desc->des5 = mem_addr >> 32;
+
+				if (sector_key == DW_MMC_BYPASS_SECTOR_BEGIN) {
+					IDMAC_SET_DAS(desc, CLEAR);
+					IDMAC_SET_FAS(desc, CLEAR);
+				} else {
+					int ret;
+
+					ret = fmp_mmc_map_sg(host, desc, i, sector_key, sector, data);
+					if (ret) {
+						dev_err(host->dev, "Failed to make mmc fmp descriptor. ret = 0x%x\n", ret);
+						spin_lock(&host->lock);
+						host->mrq->cmd->error = -ENOKEY;
+						dw_mci_request_end(host, host->mrq);
+						host->state = STATE_IDLE;
+						spin_unlock(&host->lock);
+					}
+				}
+				sector += rw_size / DW_MMC_SECTOR_SIZE;
+				desc++;
+				left -= desc_len;
+
+				/* Update physical address for the next desc */
+				mem_addr += desc_len;
+
+				/* Save pointer to the last descriptor */
+				desc_last = desc;
+			}
+		}
+
+		/* Set first descriptor */
+		desc_first->des0 |= IDMAC_DES0_FD;
+
+		/* Set last descriptor */
+		desc_last->des0 &= ~(IDMAC_DES0_CH | IDMAC_DES0_DIC);
+		desc_last->des0 |= IDMAC_DES0_LD;
+
+	} else {
+		struct idmac_desc *desc_first, *desc_last, *desc;
+
+		desc_first = desc_last = desc = host->sg_cpu;
+
+		for (i = 0; i < sg_len; i++) {
+			unsigned int length = sg_dma_len(&data->sg[i]);
+
+			u32 mem_addr = sg_dma_address(&data->sg[i]);
+
+			for ( ; length ; desc++) {
+				desc_len = (length <= DW_MCI_DESC_DATA_LENGTH) ?
+					   length : DW_MCI_DESC_DATA_LENGTH;
+
+				length -= desc_len;
+
+				/*
+				 * Set the OWN bit and disable interrupts
+				 * for this descriptor
+				 */
+				desc->des0 = cpu_to_le32(IDMAC_DES0_OWN |
+							 IDMAC_DES0_DIC |
+							 IDMAC_DES0_CH);
+
+				/* Buffer length */
+				IDMAC_SET_BUFFER1_SIZE(desc, desc_len);
+
+				/* Physical address to DMA to/from */
+				desc->des2 = cpu_to_le32(mem_addr);
+
+				/* Update physical address for the next desc */
+				mem_addr += desc_len;
+
+				/* Save pointer to the last descriptor */
+				desc_last = desc;
+			}
+		}
+
+		/* Set first descriptor */
+		desc_first->des0 |= cpu_to_le32(IDMAC_DES0_FD);
+
+		/* Set last descriptor */
+		desc_last->des0 &= cpu_to_le32(~(IDMAC_DES0_CH |
+					       IDMAC_DES0_DIC));
+		desc_last->des0 |= cpu_to_le32(IDMAC_DES0_LD);
+	}
+
+	wmb(); /* drain writebuffer */
+}
+#endif
+
 static int dw_mci_idmac_start_dma(struct dw_mci *host, unsigned int sg_len)
 {
 	u32 temp;
+#if defined(CONFIG_FMP_MMC)
+	int id;
 
+	id = of_alias_get_id(host->dev->of_node, "mshc");
+	if (!id)
+		dw_mci_translate_sglist_with_fmp(host, host->data, sg_len);
+	else
+		dw_mci_translate_sglist(host, host->data, sg_len);
+#else
 	dw_mci_translate_sglist(host, host->data, sg_len);
+#endif
 
 	/* Select IDMAC interface */
 	temp = mci_readl(host, CTRL);
@@ -886,7 +1059,7 @@ static int dw_mci_idmac_init(struct dw_mci *host)
 		host->ring_size = PAGE_SIZE / sizeof(struct idmac_desc_64addr);
 
 		/* Forward link the descriptor list */
-		for (i = 0, p = host->sg_cpu; i < host->ring_size - 1;
+		for (i = 0, p = host->sg_cpu; i < host->ring_size * MMC_DW_IDMAC_MULTIPLIER - 1;
 								i++, p++) {
 			p->des6 = (host->sg_dma +
 					(sizeof(struct idmac_desc_64addr) *
@@ -3663,9 +3836,6 @@ static struct dw_mci_of_quirks {
 		.quirk	= "disable-wp",
 		.id	= DW_MCI_QUIRK_NO_WRITE_PROTECT,
 	}, {
-		.quirk  = "bypass-smu",
-		.id	= DW_MCI_QUIRK_BYPASS_SMU,
-	}, {
 		.quirk  = "fixed_voltage",
 		.id	= DW_MMC_QUIRK_FIXED_VOLTAGE,
 	}, {
@@ -3674,9 +3844,6 @@ static struct dw_mci_of_quirks {
 	}, {
 		.quirk  = "enable-ulp-mode",
 		.id	= DW_MCI_QUIRK_ENABLE_ULP,
-	}, {
-		.quirk	= "use-smu",
-		.id	= DW_MCI_QUIRK_USE_SMU,
 	},
 };
 
@@ -4158,7 +4325,7 @@ int dw_mci_resume(struct dw_mci *host)
 {
 	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	int i, ret;
-#if defined(CONFIG_MMC_DW_FMP_DM_CRYPT)
+#if defined(CONFIG_FMP_MMC)
 	int id;
 #endif
 
@@ -4178,10 +4345,10 @@ int dw_mci_resume(struct dw_mci *host)
 	if (drv_data && drv_data->cfg_smu)
 		drv_data->cfg_smu(host);
 
-#if defined(CONFIG_MMC_DW_FMP_DM_CRYPT)
+#if defined(CONFIG_FMP_MMC)
 	id = of_alias_get_id(host->dev->of_node, "mshc");
 	if (!id) {
-		ret = exynos_smc(SMC_CMD_RESUME, 0, EMMC0_FMP, 0);
+		ret = exynos_smc(SMC_CMD_FMP_RESUME, 0, ID_FMP_UFS_MMC, 0);
 		if (ret)
 			dev_err(host->dev, "failed to smc call for FMP: %x\n", ret);
 	}

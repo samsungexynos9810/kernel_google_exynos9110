@@ -243,41 +243,20 @@ void dw_mci_exynos_cfg_smu(struct dw_mci *host)
 {
 	int ret, id;
 
-#if defined(CONFIG_MMC_DW_FMP_DM_CRYPT) || defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
-	if (!((host->pdata->quirks & DW_MCI_QUIRK_USE_SMU) ||
-		(host->pdata->quirks & DW_MCI_QUIRK_BYPASS_SMU)))
-		return;
-#else
-	if (!(host->pdata->quirks & DW_MCI_QUIRK_BYPASS_SMU))
-		return;
-#endif
-
 	id = of_alias_get_id(host->dev->of_node, "mshc");
-	switch (id) {
-	case 0:
-#if 0
-#if defined(CONFIG_MMC_DW_FMP_DM_CRYPT) || defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
-		ret = exynos_smc(SMC_CMD_FMP, FMP_SECURITY, EMMC0_FMP, FMP_DESC_ON);
+	if (!id) {
+#if defined(CONFIG_FMP_MMC)
+		ret = exynos_smc(SMC_CMD_FMP_SECURITY, 0, ID_FMP_UFS_MMC, FMP_DESCTYPE_3);
 #else
-		ret = exynos_smc(SMC_CMD_FMP, FMP_SECURITY, EMMC0_FMP, FMP_DESC_OFF);
+		ret = exynos_smc(SMC_CMD_FMP_SECURITY, 0, ID_FMP_UFS_MMC, FMP_DESCTYPE_0);
 #endif
-#endif
-		break;
-	case 2:
-#if 0
-		ret = exynos_smc(SMC_CMD_FMP, FMP_SECURITY, EMMC2_FMP, FMP_DESC_OFF);
-#endif
-		break;
-	default:
-		goto sector_config;
-	}
-	if (ret)
-		dev_err(host->dev, "Fail to smc call for FMP SECURITY\n");
+		if (ret)
+			dev_err(host->dev, "Fail to smc call for FMP SECURITY\n");
 
-sector_config:
-	mci_writel(host, MPSBEGIN0, 0);
-	mci_writel(host, MPSEND0, SDMMC_BLOCK_NUM);
-	mci_writel(host, MPSCTRL0, SDMMC_MPSCTRL_BYPASS);
+		mci_writel(host, MPSBEGIN0, 0);
+		mci_writel(host, MPSEND0, SDMMC_BLOCK_NUM);
+		mci_writel(host, MPSCTRL0, SDMMC_MPSCTRL_BYPASS);
+	}
 }
 
 static void dw_mci_exynos_set_clksel_timing(struct dw_mci *host, u32 timing)
