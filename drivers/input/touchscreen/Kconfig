@@ -973,4 +973,6 @@ config TOUCHSCREEN_MXT540E
 source "drivers/input/touchscreen/synaptics_dsx/Kconfig"
 
 source "drivers/input/touchscreen/stm/Kconfig"
+
+source "drivers/input/touchscreen/cyttsp5/Kconfig"
 endif

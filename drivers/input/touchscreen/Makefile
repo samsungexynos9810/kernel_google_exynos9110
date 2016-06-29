@@ -82,3 +82,4 @@ obj-$(CONFIG_TOUCHSCREEN_ZFORCE)	+= zforce_ts.o
 obj-$(CONFIG_TOUCHSCREEN_MXT540E)       += mxt540e.o
 obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_DSX) += synaptics_dsx/
 obj-$(CONFIG_TOUCHSCREEN_FTS)          += stm/
+obj-$(CONFIG_TOUCHSCREEN_CYPRESS_CYTTSP5)       += cyttsp5/
