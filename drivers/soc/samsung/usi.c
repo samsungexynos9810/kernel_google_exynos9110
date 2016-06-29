@@ -27,6 +27,11 @@ struct usi_mode {
 	const char *name;
 };
 
+struct usi_data {
+	void __iomem	*base;
+	u32 		mode;
+};
+
 static const struct usi_mode usi_modes[] = {
 	{ .val = USI_HSI2C0_HSI2C1_DUAL_MODE , .name = "hsi2c0_hsi2c1" },
 	{ .val = USI_UART_HSI2C1_DUAL_MODE ,   .name = "uart_hsi2c1" },
@@ -52,30 +57,37 @@ static int usi_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
 	struct resource *res;
-	void __iomem *base;
 	const char* mode_name;
-	u32 mode = 0;
+	struct usi_data *data;
+
+	data = devm_kzalloc(&pdev->dev, sizeof(struct usi_data), GFP_KERNEL);
+	if (!data) {
+		dev_err(&pdev->dev, "no memory to save usi_data\n");
+		return -ENOMEM;
+	}
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	base = devm_ioremap_resource(&pdev->dev, res);
-	if (IS_ERR(base))
-		return PTR_ERR(base);
+	data->base = devm_ioremap_resource(&pdev->dev, res);
+	if (IS_ERR(data->base))
+		return PTR_ERR(data->base);
 
 	if (of_property_read_string(node, "usi_mode", &mode_name) < 0) {
 		dev_err(&pdev->dev, "missing usi mode configuration\n");
 		return -EINVAL;
 	}
 
-	mode = get_usi_mode(mode_name);
+	data->mode = get_usi_mode(mode_name);
 
-	if (mode < 0) {
+	if (data->mode < 0) {
 		dev_err(&pdev->dev, "wrong usi mode: %s\n", mode_name);
 		return -EINVAL;
 	}
 
-	writel(mode, base);
+	writel(data->mode, data->base);
 
-	dev_info(&pdev->dev, "usi_probe() mode:%d", mode);
+	dev_info(&pdev->dev, "usi_probe() mode:%d\n", data->mode);
+
+	platform_set_drvdata(pdev, data);
 
 	return 0;
 }
@@ -87,10 +99,33 @@ static const struct of_device_id usi_dt_match[] = {
 
 MODULE_DEVICE_TABLE(of, usi_dt_match);
 
+static int usi_resume_noirq(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct usi_data *data = platform_get_drvdata(pdev);
+	int ret;
+
+	if (data->mode && data->base) {
+		writel(data->mode, data->base);
+		dev_info(&pdev->dev, "%s mode:%d\n", __func__, data->mode);
+		ret = 0;
+	} else {
+		dev_err(&pdev->dev, "%s wrong usi data\n", __func__);
+		ret = -EINVAL;
+	}
+
+	return ret;
+}
+
+static const struct dev_pm_ops usi_pm = {
+	.resume_noirq = usi_resume_noirq,
+};
+
 static struct platform_driver usi_driver = {
 	.driver = {
 		.name		= "usi",
 		.owner		= THIS_MODULE,
+		.pm		= &usi_pm,
 		.of_match_table	= usi_dt_match,
 	},
 	.probe			= usi_probe,
