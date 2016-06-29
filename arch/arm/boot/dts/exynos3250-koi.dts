@@ -355,6 +355,54 @@
 		};
 	};
 
+	i2c@13890000 {
+		samsung,i2c-sda-delay = <100>;
+		samsung,i2c-max-bus-freq = <400000>;
+		#size-cells = <0>;
+		status = "okay";
+
+		touchscreen@24 {
+			compatible = "cy,cyttsp5_i2c_adapter";
+			reg = <0x24>;
+			interrupt-parent = <&gpx0>;
+			interrupts = <5 0 0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&touch_irq &touch_rst>;
+			cy,adapter_id = "cyttsp5_i2c_adapter";
+			cy,core {
+				cy,name = "cyttsp5_core";
+				cy,irq_gpio = <&gpx0 5 0x1>;
+				cy,rst_gpio = <&gpx2 5 0x1>;
+				cy,hid_desc_register = <1>;
+				cy,mt {
+					cy,name = "cyttsp5_mt";
+					cy,inp_dev_name = "cyttsp5_mt";
+					cy,abs =
+						/* ABS_MT_POSITION_X, CY_ABS_MIN_X, CY_ABS_MAX_X, 0, 0 */
+						<0x35 0 320 0 0
+						/* ABS_MT_POSITION_Y, CY_ABS_MIN_Y, CY_ABS_MAX_Y, 0, 0 */
+						0x36 0 320 0 0
+						/* ABS_MT_PRESSURE, CY_ABS_MIN_P, CY_ABS_MAX_P, 0, 0 */
+						0x3a 0 255 0 0
+						/* CY_IGNORE_VALUE, CY_ABS_MIN_W, CY_ABS_MAX_W, 0, 0 */
+						0xffff 0 255 0 0
+						/* ABS_MT_TRACKING_ID, CY_ABS_MIN_T, CY_ABS_MAX_T, 0, 0 */
+						0x39 0 15 0 0
+						/* ABS_MT_TOUCH_MAJOR, 0, 255, 0, 0 */
+						0x30 0 255 0 0
+						/* ABS_MT_TOUCH_MINOR, 0, 255, 0, 0 */
+						0x31 0 255 0 0
+						/* ABS_MT_ORIENTATION, -127, 127, 0, 0 */
+						0x34 0xffffff81 127 0 0
+						/* ABS_MT_TOOL_TYPE, 0, MT_TOOL_MAX, 0, 0 */
+						0x37 0 1 0 0>;
+						/* ABS_DISTANCE, 0, 255, 0, 0 */
+						/*0x19 0 255 0 0>;*/
+				};
+			};
+		};
+	};
+
 	fimd_fb: fimd_fb {
 		/* gpx0[6]- TE external interrupt pin */
 		gpios = <&gpx0 4 0xf>;
