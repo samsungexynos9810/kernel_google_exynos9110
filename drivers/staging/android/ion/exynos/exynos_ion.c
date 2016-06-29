@@ -642,7 +642,7 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 
 	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
 		exynos_sync_all();
-	else if (!buffer->vaddr)
+	else if (buffer->vaddr != NULL)
 		exynos_sync_single_for_device(buffer->vaddr, size, dir);
 	else
 		exynos_sync_sg_for_device(dev, size, buffer->sg_table->sgl,
@@ -724,7 +724,7 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 
 	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
 		exynos_sync_all();
-	else if (!IS_ERR_OR_NULL(buffer->vaddr))
+	else if (buffer->vaddr != NULL)
 		exynos_sync_single_for_cpu(buffer->vaddr, size, dir);
 	else
 		exynos_sync_sg_for_cpu(dev, size, buffer->sg_table->sgl,
