@@ -345,6 +345,11 @@ mali_bool mali_clk_get(struct platform_device *pdev)
 
 void mali_clk_put(mali_bool binc_mali_clock)
 {
+	/* MALI_SEC */
+#ifdef CONFIG_MALI_DT
+	return;
+#endif
+	/* end of MALI_SEC */
 
 	if (mali_parent_clock)
 		clk_put(mali_parent_clock);
@@ -621,6 +626,13 @@ static mali_bool configure_mali_clocks(struct platform_device *pdev)
 	int err = 0;
 	mali_bool ret = MALI_TRUE;
 
+	/* MALI_SEC */
+#ifdef CONFIG_MALI_DT
+	if (mali_dvfs_lock == NULL)
+		mali_dvfs_lock = _mali_osk_mutex_init(_MALI_OSK_LOCKFLAG_ORDERED, 0);
+#endif
+	/* end of MALI_SEC */
+
 	if (!mali_clk_get(pdev))
 	{
 		MALI_PRINT_ERROR(("Failed to get Mali clock\n"));
@@ -647,14 +659,23 @@ static mali_bool configure_mali_clocks(struct platform_device *pdev)
 	err = clk_set_parent(mali_mout_clock, mali_parent_clock);
 	if (err)
 		MALI_PRINT_ERROR(("mali_clock set parent to mali_parent_clock failed\n"));
+
+	/* MALI_SEC */
+#ifndef CONFIG_MALI_DT
 	if (!atomic_read(&clk_active)) {
+#endif
+	/* end of MALI_SEC */
 		if ((clk_prepare_enable(mali_clock)  < 0)
 				|| (clk_prepare_enable(g3d_clock)  < 0)) {
 			MALI_PRINT_ERROR(("Failed to enable clock\n"));
 			goto err_clk;
 		}
 		atomic_set(&clk_active, 1);
+	/* MALI_SEC */
+#ifndef CONFIG_MALI_DT
 	}
+#endif
+	/* end of MALI_SEC */
 
 	mali_clk_set_rate(pdev,(unsigned int)mali_gpu_clk, GPU_MHZ);
 	mali_clk_put(MALI_FALSE);
@@ -782,9 +803,21 @@ static _mali_osk_errcode_t disable_mali_clocks(void)
 
 	if (atomic_read(&clk_active)) {
 		clk_disable_unprepare(mali_clock);
+
+	/* MALI_SEC */
+#ifndef CONFIG_MALI_DT
 		clk_put(mali_clock);
+#endif
+	/* end of MALI_SEC */
+
 		clk_disable_unprepare(g3d_clock);
+
+	/* MALI_SEC */
+#ifndef CONFIG_MALI_DT
 		clk_put(g3d_clock);
+#endif
+	/* end of MALI_SEC */
+
 		deinit_mali_clock();
 		MALI_DEBUG_PRINT(3, ("disable_mali_clocks mali_clock %p g3d %p\n", mali_clock,g3d_clock));
 		atomic_set(&clk_active, 0);
