@@ -620,6 +620,17 @@
 		interrupts = <0 96 0>;
 		/* mmu-masters = phandles */
 	};
+
+	usb2_phy: phy@125B0000 {
+		compatible = "samsung,exynos-usb2-phy";
+		reg = <0x125B0000 0x100>;
+		clocks = <&cmu CLK_FIN_PLL>, <&cmu CLK_USBOTG>;
+		clock-names = "refclk", "busclk";
+		samsung,pmu-syscon = <&pmu_system_controller>;
+		pmu-offset = <0x0704>;
+		pmu-mask = <0x1>;
+		#phy-cells = <1>;
+	};
 };
 
 /* #include "exynos3250-pinctrl.dtsi" */
