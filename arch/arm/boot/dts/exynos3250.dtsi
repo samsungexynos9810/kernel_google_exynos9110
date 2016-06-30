@@ -641,6 +641,12 @@
 		pmu-mask = <0x1>;
 		#phy-cells = <1>;
 	};
+
+	usb-switch {
+		compatible = "samsung,exynos-usb-switch";
+		udc = <&udc>;
+		samsung,bsess-gpio = <&gpx1 0 0x2>;
+	};
 };
 
 /* #include "exynos3250-pinctrl.dtsi" */
