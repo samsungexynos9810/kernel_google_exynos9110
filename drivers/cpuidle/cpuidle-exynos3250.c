@@ -46,6 +46,10 @@
 #define REG_DIRECTGO_ADDR	(sysram_ns_base_addr + 0x24)
 #define REG_DIRECTGO_FLAG	(sysram_ns_base_addr + 0x20)
 
+#ifdef CONFIG_PHY_EXYNOS_USBOTG
+#include <linux/usb/samsung_usb_phy.h>
+#endif
+
 extern void __iomem *reg_base;
 static inline void cmu_raw_writel(u32 val, u32 offset)
 {
@@ -91,11 +95,6 @@ void clear_boot_flag(unsigned int cpu, unsigned int mode)
 
 #if defined(CONFIG_MMC_DW)
 extern int dw_mci_exynos_request_status(void);
-#endif
-
-#ifdef CONFIG_SAMSUNG_USBPHY
-extern int samsung_usbphy_check_op(void);
-extern void samsung_usb_lpa_resume(void);
 #endif
 
 static int exynos_enter_idle(struct cpuidle_device *dev,
@@ -213,8 +212,8 @@ static int __maybe_unused exynos_check_enter_mode(void)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
-#ifdef CONFIG_SAMSUNG_USBPHY
-	if (samsung_usbphy_check_op())
+#ifdef CONFIG_PHY_EXYNOS_USBOTG
+	if (exynos_usb2_phy_is_on)
 		return EXYNOS_CHECK_DIDLE;
 #endif
 
@@ -359,9 +358,6 @@ static int exynos_enter_core0_lpa(struct cpuidle_device *dev,
 		pmu_raw_writel(tmp, EXYNOS_CENTRAL_SEQ_CONFIGURATION);
 	}
 
-#ifdef CONFIG_SAMSUNG_USBPHY
-	samsung_usb_lpa_resume();
-#endif
 	clear_boot_flag(cpuid, C2_STATE);
 
 	exynos_lpa_exit();
