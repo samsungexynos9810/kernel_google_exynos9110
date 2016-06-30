@@ -292,6 +292,8 @@
 				};
 
 				ldo8_reg: LDO8 {
+					regulator-always-on;
+					regulator-boot-on;
 					regulator-name = "VDD_UOTG_AP_3.3V";
 					regulator-min-microvolt = <3000000>;
 					regulator-max-microvolt = <3000000>;
