@@ -249,6 +249,14 @@ config USB_HSIC_USB3503
        help
          This option enables support for SMSC USB3503 HSIC to USB 2.0 Driver.
 
+config USB_EXYNOS_SWITCH
+	bool "EXYNOS USB SWITCH driver"
+	depends on USB_S3C_OTGD
+	default n
+	help
+	   This driver implements USB2.0 host <-> device switch functionality
+	   for Samsung Exynos series of SoCs.
+
 config USB_LINK_LAYER_TEST
 	tristate "USB Link Layer Test driver"
 	help
