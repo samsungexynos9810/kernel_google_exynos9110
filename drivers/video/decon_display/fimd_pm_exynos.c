@@ -145,6 +145,8 @@ void init_display_gpio_exynos(void)
 	reg &= ~(3 << 10);
 	reg |= (1 << 10);
 	__raw_writel(reg, dispblk_cfg);
+
+	iounmap((void *)dispblk_cfg);
 }
 
 
@@ -402,27 +404,39 @@ int disable_display_decon_runtimepm(struct device *dev)
 bool check_camera_is_running(void)
 {
 	void __iomem *cam_stat;
+	bool ret;
 	cam_stat = ioremap(0x10023C04, SZ_4);
 
 	/* CAM1 STATUS */
 	// CAM_STAT : 0x10023C04
-	if (readl(cam_stat) & 0x1)
-		return true;
-	else
-		return false;
+	if (readl(cam_stat) & 0x1){
+		ret = true;
+	}
+	else{
+		ret = false;
+	}
+	iounmap((void *)cam_stat);
+	return ret;
 }
 
 bool get_display_power_status(void)
 {
 	void __iomem *disp_stat;
+	bool ret;
+
 	disp_stat = ioremap(0x10023C84, SZ_4);
 
 	/* DISP_STATUS */
 	// LCD0_STAT : 0x10023C84
-	if (readl(disp_stat) & 0x1)
-		return true;
-	else
-		return false;
+	if (readl(disp_stat) & 0x1){
+		ret = true;
+	}
+	else{
+		ret = false;
+	}
+
+	iounmap((void *)disp_stat);
+	return ret;
 }
 
 int get_display_line_count(struct display_driver *dispdrv)

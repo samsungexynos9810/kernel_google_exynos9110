@@ -645,15 +645,15 @@ void s5p_mipi_dsi_enable_main_standby(struct mipi_dsim_device *dsim,
 
 int exynos_dsim_phy_enable(int id, bool on)
 {
-	u32 Phy_addr, reg;
-	void __iomem *pPhy_addr;
+	u32 phy_addr, reg;
+	void __iomem *pphy_addr;
 
 	/* phy control register address */
-	Phy_addr = 0x10020710;
-	pPhy_addr = ioremap(Phy_addr, SZ_4);
-	reg = __raw_readl(pPhy_addr);
+	phy_addr = 0x10020710;
+	pphy_addr = ioremap(phy_addr, SZ_4);
+	reg = __raw_readl(pphy_addr);
 	reg = on ? ( reg | S5P_MIPI_DPHY_MRESETN ) : (reg & ~S5P_MIPI_DPHY_MRESETN);
-	__raw_writel(reg, pPhy_addr);
+	__raw_writel(reg, pphy_addr);
 
 	if (on) {
 	     reg |= S5P_MIPI_DPHY_ENABLE;
@@ -661,7 +661,8 @@ int exynos_dsim_phy_enable(int id, bool on)
 	     reg &= ~S5P_MIPI_DPHY_ENABLE;
 	}
 
-	__raw_writel(reg, pPhy_addr);
+	__raw_writel(reg, pphy_addr);
+	iounmap((void *)pphy_addr);
 
 	return 0;
 }
