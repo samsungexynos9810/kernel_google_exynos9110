@@ -1900,11 +1900,3 @@ const struct samsung_pin_ctrl exynos8895_pin_ctrl[] = {
 		.resume		= exynos_pinctrl_resume,
 	},
 };
-
-
-#if defined(CONFIG_SOC_EXYNOS8890)
-u32 exynos_eint_to_pin_num(int eint)
-{
-        return eint;
-}
-#endif
