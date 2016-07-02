@@ -574,7 +574,7 @@ static struct samsung_gate_clock gate_clks[] __initdata = {
 
 	/* GATE_SCLK_G3D */
 	GATE(CLK_SCLK_G3D, "sclk_g3d", "div_g3d",
-		GATE_SCLK_G3D, 0, CLK_IGNORE_UNUSED, 0),
+		GATE_SCLK_G3D, 0, CLK_SET_RATE_PARENT, 0),
 
 	/* GATE_SCLK_LCD */
 	GATE(CLK_SCLK_MIPIDPHY2L, "sclk_mipidphy2l", "div_mipi0",
@@ -657,14 +657,12 @@ static struct samsung_gate_clock gate_clks[] __initdata = {
 	GATE(CLK_MFC, "mfc", "div_aclk_200", GATE_IP_MFC, 0, 0, 0),
 
 	/* GATE_IP_G3D */
-	GATE(CLK_SMMUG3D, "smmug3d", "div_aclk_200", GATE_IP_G3D, 3,
-		CLK_IGNORE_UNUSED, 0),
+	GATE(CLK_SMMUG3D, "smmug3d", "div_aclk_200", GATE_IP_G3D, 3, 0, 0),
 	GATE(CLK_QEG3D, "qeg3d", "div_aclk_200", GATE_IP_G3D, 2,
 		CLK_IGNORE_UNUSED, 0),
 	GATE(CLK_PPMUG3D, "ppmug3d", "div_aclk_200", GATE_IP_G3D, 1,
 		CLK_IGNORE_UNUSED, 0),
-	GATE(CLK_G3D, "g3d", "div_aclk_200", GATE_IP_G3D, 0,
-		CLK_IGNORE_UNUSED, 0),
+	GATE(CLK_G3D, "g3d", "div_aclk_200", GATE_IP_G3D, 0, 0, 0),
 
 	/* GATE_IP_LCD */
 	GATE(CLK_QE_CH1_LCD, "qe_ch1_lcd", "div_aclk_160", GATE_IP_LCD, 7,
