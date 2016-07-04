@@ -328,6 +328,8 @@ static int __init exynos_ion_reserved_mem_setup(struct reserved_mem *rmem)
 		heap_data->type = ION_HEAP_TYPE_DMA;
 		heap_data->priv = &pdata->dev;
 
+		/* set as non-coherent device */
+		arch_setup_dma_ops(&pdata->dev, 0, 0, NULL, 0);
 		ret = dma_declare_contiguous(&pdata->dev, heap_data->size,
 						heap_data->base,
 						MEMBLOCK_ALLOC_ANYWHERE);
