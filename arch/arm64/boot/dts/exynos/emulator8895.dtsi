@@ -1,0 +1,196 @@
+/*
+ * SAMSUNG EXYNOS8895 SoC device tree source
+ *
+ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
+ *		http://www.samsung.com
+ *
+ * SAMSUNG EXYNOS8895 SoC device nodes are listed in this file.
+ * EXYNOS8895 based board files can include this file and provide
+ * values for board specfic bindings.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
+ */
+
+#include <dt-bindings/clock/exynos8895.h>
+#include "exynos8895-pinctrl.dtsi"
+
+/ {
+	compatible = "samsung,armv8", "samsung,exynos8895";
+	interrupt-parent = <&gic>;
+	#address-cells = <2>;
+	#size-cells = <1>;
+
+	aliases {
+		pinctrl0 = &pinctrl_0;
+		pinctrl1 = &pinctrl_1;
+		pinctrl2 = &pinctrl_2;
+		pinctrl3 = &pinctrl_3;
+		pinctrl4 = &pinctrl_4;
+		pinctrl5 = &pinctrl_5;
+		pinctrl6 = &pinctrl_6;
+		pinctrl7 = &pinctrl_7;
+		uart0 = &serial_0;
+
+	};
+
+	chipid@10000000 {
+		compatible = "samsung,exynos4210-chipid";
+		reg = <0x0 0x10000000 0x100>;
+		chipid,uniquid-offset = <0>;
+	};
+
+	reboot {
+		compatible = "exynos,reboot";
+		pmu_base = <0x16480000>;
+	};
+
+	cpus {
+		#address-cells = <2>;
+		#size-cells = <0>;
+
+		cpu@100 {
+			device_type = "cpu";
+			compatible = "arm,cortex-a53", "arm,armv8";
+			reg = <0x0 0x100>;
+			enable-method = "psci";
+		};
+	};
+	gic:interrupt-controller@10200000 {
+		compatible = "arm,cortex-a15-gic", "arm,cortex-a9-gic";
+		#interrupt-cells = <3>;
+		#address-cells = <0>;
+		interrupt-controller;
+		reg =	<0x0 0x10201000 0x1000>,
+			<0x0 0x10202000 0x1000>,
+			<0x0 0x10204000 0x2000>,
+			<0x0 0x10206000 0x2000>;
+		interrupts = <1 9 0xf04>;
+	};
+
+	timer {
+	        compatible = "arm,armv8-timer";
+	        interrupts = <1 13 0xff01>,
+	                     <1 14 0xff01>,
+	                     <1 11 0xff01>,
+	                     <1 10 0xff01>;
+	        clock-frequency = <26000000>;
+		use-clocksource-only;
+		use-physical-timer;
+	};
+
+	clock: clock-controller@0x15a80000 {
+		compatible = "samsung,exynos8895-clock";
+		reg = <0x0 0x15a80000 0x8000>;
+		#clock-cells = <1>;
+	};
+
+	mct@10040000 {
+		compatible = "samsung,exynos4210-mct";
+		reg = <0x0 0x10040000 0x800>;
+		interrupt-controller;
+		#interrupt-cells = <1>;
+		interrupt-parent = <&mct_map>;
+		interrupts =	<0>, <1>, <2>, <3>,
+				<4>, <5>, <6>, <7>,
+				<8>, <9>, <10>, <11>;
+		clocks = <&clock OSCCLK>, <&clock GATE_MCT>;
+		clock-names = "fin_pll", "mct";
+		use-clockevent-only;
+
+		mct_map: mct-map {
+			#interrupt-cells = <1>;
+			#address-cells = <0>;
+			#size-cells = <0>;
+			interrupt-map = <0 &gic 0 455 0>,
+					<1 &gic 0 456 0>,
+					<2 &gic 0 457 0>,
+					<3 &gic 0 458 0>,
+					<4 &gic 0 459 0>,
+					<5 &gic 0 460 0>,
+					<6 &gic 0 461 0>,
+					<7 &gic 0 462 0>,
+					<8 &gic 0 463 0>,
+					<9 &gic 0 464 0>,
+					<10 &gic 0 465 0>,
+					<11 &gic 0 466 0>;
+		};
+	};
+
+	serial_0: uart@10430000 {
+		compatible = "samsung,exynos-uart";
+		samsung,separate-uart-clk;
+		reg = <0x0 0x10430000 0x100>;
+		samsung,fifo-size = <16>;
+		interrupts = <0 385 0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart0_bus>;
+		clocks = <&clock GATE_UART_DBG>, <&clock UART_DBG>;
+		clock-names = "gate_pclk0", "gate_uart0";
+		status = "disabled";
+	};
+
+	/* ALIVE */
+	pinctrl_0: pinctrl@164B0000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x164B0000 0x1000>;
+		interrupts = <0 0 0>, <0 1 0>, <0 2 0>, <0 3 0>,
+				<0 4 0>, <0 5 0>, <0 6 0>, <0 7 0>,
+				<0 8 0>, <0 9 0>, <0 10 0>, <0 11 0>,
+				<0 12 0>, <0 13 0>, <0 14 0>, <0 15 0>;
+		wakeup-interrupt-controller {
+			compatible = "samsung,exynos7-wakeup-eint";
+			interrupt-parent = <&gic>;
+			interrupts = <0 16 0>;
+		};
+	};
+
+	/* A-BOX */
+	pinctrl_1: pinctrl@13E60000{
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x13E60000 0x1000>;
+	};
+
+	/* VTS */
+	pinctrl_2: pinctrl@14080000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x14080000 0x1000>;
+	};
+
+	/* FSYS0 */
+	pinctrl_3: pinctrl@11050000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x11050000 0x1000>;
+		interrupts = <0 335 0>;
+	};
+
+	/* FSYS1 */
+	pinctrl_4: pinctrl@11430000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x11430000 0x1000>;
+		interrupts = <0 342 0>;
+	};
+
+	/* BUSC */
+	pinctrl_5: pinctrl@15A30000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x15A30000 0x1000>;
+		interrupts = <0 103 0>;
+	};
+
+	/* PERIC0 */
+	pinctrl_6: pinctrl@104D0000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x104D0000 0x1000>;
+		interrupts = <0 386 0>;
+		pinctrl-names = "default";
+	};
+
+	/* PERIC1 */
+	pinctrl_7: pinctrl@10980000 {
+		compatible = "samsung,exynos8895-pinctrl";
+		reg = <0x0 0x10980000 0x1000>;
+		interrupts = <0 430 0>;
+	};
+};
