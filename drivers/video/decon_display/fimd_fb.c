@@ -64,6 +64,7 @@ static int prev_overlap_cnt;
 
 #if defined(CONFIG_FIMD_USE_BUS_DEVFREQ)
 #include <linux/pm_qos.h>
+#include <soc/samsung/bts.h>
 static struct pm_qos_request exynos_fimd_int_qos;
 static struct pm_qos_request exynos_fimd_mif_qos;
 #endif
