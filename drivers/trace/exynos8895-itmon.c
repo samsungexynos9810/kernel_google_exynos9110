@@ -84,6 +84,7 @@
 #define TMOUT_TEST			(0x1)
 
 #define PANIC_ALLOWED_THRESHOLD 	(0x2)
+#define SWAPPER_VALUE			(0x08000000)
 
 static bool initial_multi_irq_enable = false;
 static struct itmon_dev *g_itmon = NULL;
@@ -112,6 +113,8 @@ struct itmon_traceinfo {
 	unsigned long target_addr;
 	unsigned int errcode;
 	bool read;
+	bool path_dirty;
+	bool trans_dirty;
 	bool dirty;
 	unsigned long from;
 };
@@ -672,22 +675,35 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 {
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
-	struct itmon_nodegroup *group = node->group;
+	struct itmon_nodegroup *group = NULL;
+
+	if (!traceinfo->dirty || traceinfo->trans_dirty)
+		return;
+	else
+		traceinfo->trans_dirty = true;
 
 	pr_info("--------------------------------------------------------------------------\n"
 		"      Transaction Information\n\n"
 		"      > Master         : %s %s\n"
 		"      > Target         : %s\n"
-		"      > Target Address : 0x%zx\n"
-		"      > Path Type      : %s\n"
+		"      > Target Address : 0x%zx %s\n"
 		"      > Type           : %s\n"
-		"      > Error code     : %s\n"
-		"--------------------------------------------------------------------------\n",
+		"      > Error code     : %s\n",
 		traceinfo->port, traceinfo->master ? traceinfo->master : "",
 		traceinfo->dest, traceinfo->target_addr,
-		itmon_pathtype[group->bus_type],
+		traceinfo->target_addr == SWAPPER_VALUE ?
+		"SWAPPER - Violation Access Window by CP" : "",
 		trans_type == TRANS_TYPE_READ ? "READ" : "WRITE",
 		itmon_errcode[traceinfo->errcode]);
+
+	if (node) {
+		group = node->group;
+		pr_info("      > Path Type      : %s\n"
+			"--------------------------------------------------------------------------\n",
+			itmon_pathtype[group->bus_type]);
+	} else {
+		pr_info("--------------------------------------------------------------------------\n");
+	}
 }
 
 static void itmon_report_pathinfo(struct itmon_dev *itmon,
@@ -698,13 +714,13 @@ static void itmon_report_pathinfo(struct itmon_dev *itmon,
 	struct itmon_tracedata *tracedata = &node->tracedata;
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
 
-	if (!traceinfo->dirty) {
+	if (!traceinfo->path_dirty) {
 		pr_info("--------------------------------------------------------------------------\n"
 			"      ITMON Report (%s)\n"
 			"--------------------------------------------------------------------------\n"
 			"      PATH Information\n",
 			trans_type == TRANS_TYPE_READ ? "READ" : "WRITE");
-		traceinfo->dirty = true;
+		traceinfo->path_dirty = true;
 	}
 	switch (node->type) {
 	case M_NODE:
@@ -739,7 +755,7 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
 	struct itmon_nodegroup *group = node->group;
 	struct itmon_masterinfo *master;
-	unsigned int errcode,axid;
+	unsigned int errcode, axid;
 	unsigned long userbit;
 	char buf[SZ_32];
 
@@ -749,55 +765,68 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 
 	switch (node->type) {
 	case M_NODE:
+		/* In this case, we can get information from M_NODE
+		 * Fill traceinfo->port / target_addr / read / master */
 		if (BIT_ERR_VALID(tracedata->int_info) && tracedata->ext_info_2) {
-			/* In this case, we can get information from M_NODE
-			 * Fill traceinfo->port / target_addr / read / master */
-			traceinfo->port = node->name;
-			master = (struct itmon_masterinfo *)
-				itmon_get_masterinfo(itmon, node->name, userbit);
-			if (master)
-				traceinfo->master = master->master_name;
-			else
-				traceinfo->master = NULL;
+			/* If only detecting M_NODE only */
+			if (!strncmp(node->name, "SCI_IRPM", strlen(node->name))) {
+				int cluster_num, core_num;
+				core_num = axid & GENMASK(1, 0);
+				cluster_num = (axid & BIT(2)) >> 2;
+				snprintf(buf, SZ_32, "CPU%d Cluster%d", core_num, cluster_num);
+				traceinfo->port = buf;
+			} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
+				snprintf(buf, SZ_32, "CP");
+				traceinfo->port = buf;
+				master = (struct itmon_masterinfo *)
+					itmon_get_masterinfo(itmon, traceinfo->port, userbit);
+				if (master)
+					traceinfo->master = master->master_name;
+				else
+					traceinfo->master = NULL;
+			} else {
+				traceinfo->port = node->name;
+				master = (struct itmon_masterinfo *)
+					itmon_get_masterinfo(itmon, node->name, userbit);
+				if (master)
+					traceinfo->master = master->master_name;
+				else
+					traceinfo->master = NULL;
+			}
 			traceinfo->target_addr =
 				(unsigned long)(node->tracedata.ext_info_2
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
 			traceinfo->port = node->name;
+			traceinfo->errcode = errcode;
+			traceinfo->dirty = true;
+		}
+		/* If we excepts following M_NODE with S_NODE */
+		if (!strncmp(node->name, "SCI_IRPM", strlen(node->name))) {
+			set_bit(FROM_CPU, &traceinfo->from);
+		} else if (!strncmp(node->name, "SCI_CCM0", strlen(node->name)) ||
+			!strncmp(node->name, "SCI_CCM1", strlen(node->name))) {
+			set_bit(FROM_CPU_MAY, &traceinfo->from);
+		} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
+			set_bit(FROM_CP, &traceinfo->from);
+		} else if (!strncmp(node->name, "BUSC_PERI_M", strlen(node->name))) {
+			set_bit(FROM_M_NODE, &traceinfo->from);
 		} else {
-			/* Check SFR Path from CPU */
-			if (!strncmp(node->name, "SCI_IRPM", strlen(node->name))) {
-				set_bit(FROM_CP, &traceinfo->from);
-				set_bit(FROM_CPU, &traceinfo->from);
-			} else if (!strncmp(node->name, "SCI_CCM0", strlen(node->name)) ||
-				!strncmp(node->name, "SCI_CCM1", strlen(node->name))) {
-				set_bit(FROM_CP, &traceinfo->from);
-				set_bit(FROM_CPU_MAY, &traceinfo->from);
-			} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
-				set_bit(FROM_CP, &traceinfo->from);
-			} else if (!strncmp(node->name, "BUSC_PERI_M", strlen(node->name))) {
-				set_bit(FROM_M_NODE, &traceinfo->from);
-			}
-			if (strncmp(node->name, "SCI_CCM0", strlen(node->name)) &&
-				strncmp(node->name, "SCI_CCM1", strlen(node->name)) &&
-				strncmp(node->name, "CP_PERI_M", strlen(node->name)) &&
-				strncmp(node->name, "BUSC_PERI_M", strlen(node->name)) &&
-				strncmp(node->name, "SCI_IRPM", strlen(node->name))) {
-				/* Pure M_NODE */
+			/* Pure M_NODE and it doesn't have any information */
+			if (!traceinfo->dirty) {
 				traceinfo->master = NULL;
 				traceinfo->target_addr = 0;
 				traceinfo->read = tracedata->read;
 				traceinfo->port = node->name;
+				traceinfo->errcode = errcode;
+				traceinfo->dirty = true;
 			}
 		}
 		itmon_report_pathinfo(itmon, node, trans_type);
 		break;
 	case S_NODE:
-		if (test_bit(FROM_CP, &traceinfo->from) && test_bit(3, &userbit)) {
-			snprintf(buf, SZ_32, "CP");
-			traceinfo->port = buf;
-		} else if (test_bit(FROM_CPU, &traceinfo->from)) {
+		if (test_bit(FROM_CPU, &traceinfo->from)) {
 			/*
 			 * This case is only for PERI Path
 			 * Master is CPU cluster
@@ -816,8 +845,12 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 			* we expect traceinfo->port is always true in this case
 			* In DECERR case, the follow information was filled.
 			*/
+			if (test_bit(FROM_CP, &traceinfo->from)) {
+				snprintf(buf, SZ_32, "CP");
+				traceinfo->port = buf;
+			}
 			if (traceinfo->port) {
-				if (!master) {
+				if (!traceinfo->master) {
 					master = (struct itmon_masterinfo *)
 					itmon_get_masterinfo(itmon, traceinfo->port,
 							userbit & GENMASK(2, 0));
@@ -837,7 +870,9 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 		}
+		traceinfo->errcode = errcode;
 		traceinfo->dest = node->name;
+		traceinfo->dirty = true;
 		itmon_report_pathinfo(itmon, node, trans_type);
 		itmon_report_traceinfo(itmon, node, trans_type);
 		break;
@@ -848,6 +883,8 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 			&& node->type == T_M_NODE) {
 			/* Exception Situation - DREX PATH */
 			traceinfo->dest = node->name;
+			traceinfo->errcode = errcode;
+			traceinfo->dirty = true;
 			itmon_report_pathinfo(itmon, node, trans_type);
 			itmon_report_traceinfo(itmon, node, trans_type);
 		} else {
@@ -889,6 +926,8 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 					itmon_report_tracedata(itmon, node, trans_type);
 			}
 		}
+		/* If there is no S_NODE and T_S_NODE and T_M_NODE, check one more */
+		itmon_report_traceinfo(itmon, NULL, trans_type);
 	}
 
 	pr_info("      Raw Register Information(ITMON Internal Information)\n\n");
@@ -1050,8 +1089,13 @@ static irqreturn_t itmon_irq_handler(int irq, void *data)
 	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		if (irq == nodegroup[i].irq) {
 			group = &pdata->nodegroup[i];
-			pr_info("\nITMON Detected: %d irq, %s group, 0x%x vec, err_cnt:%u\n",
-				irq, group->name, __raw_readl(group->regs), pdata->err_cnt);
+			if (group->phy_regs != 0) {
+				pr_info("\nITMON Detected: %d irq, %s group, 0x%x vec, err_cnt:%u\n",
+					irq, group->name, __raw_readl(group->regs), pdata->err_cnt);
+			} else {
+				pr_info("\nITMON Detected: %d irq, %s group, err_cnt:%u\n",
+					irq, group->name, pdata->err_cnt);
+			}
 			break;
 		}
 	}
