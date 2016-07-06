@@ -36,7 +36,7 @@
 #include <linux/shm_ipc.h>
 #endif
 
-#define DEVFREQ_MIF_SWITCH_FREQ	(830000)
+#define DEVFREQ_MIF_SWITCH_FREQ	(840000)
 
 u32 sw_volt_table;
 
