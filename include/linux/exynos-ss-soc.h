@@ -12,10 +12,19 @@
 
 #ifndef EXYNOS_SNAPSHOT_SOC_H
 #define EXYNOS_SNAPSHOT_SOC_H
+#include <soc/samsung/cal-if.h>
 
 /* SoC Dependent Header */
 #define ESS_REG_MCT_ADDR	(0)
 #define ESS_REG_MCT_SIZE	(0)
 #define ESS_REG_UART_ADDR	(0)
 #define ESS_REG_UART_SIZE	(0)
+
+struct exynos_ss_ops {
+        int (*pd_status)(unsigned int id);
+};
+
+struct exynos_ss_ops ess_ops = {
+	.pd_status = cal_pd_status,
+};
 #endif

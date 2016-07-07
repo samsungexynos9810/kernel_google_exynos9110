@@ -35,6 +35,8 @@
 #include <linux/input.h>
 #include <linux/of_address.h>
 #include <linux/ptrace.h>
+#include <linux/exynos-sdm.h>
+#include <linux/exynos-ss-soc.h>
 
 #include <asm/cacheflush.h>
 #include <asm/ptrace.h>
@@ -420,11 +422,14 @@ struct exynos_ss_sfrdump {
 	unsigned int num;
 	struct device_node *node;
 	struct list_head list;
+	bool pwr_mode;
 };
 #endif
 
 struct exynos_ss_desc {
+#ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
 	struct list_head sfrdump_list;
+#endif
 	spinlock_t lock;
 
 	unsigned int kevents_num;
@@ -1206,6 +1211,31 @@ static void exynos_ss_dump_task_info(void)
 }
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_SFRDUMP
+static bool exynos_ss_check_pmu(struct exynos_ss_sfrdump *sfrdump,
+						const struct device_node *np)
+{
+	int ret = 0, count, i;
+	unsigned int val;
+
+	if (!sfrdump->pwr_mode)
+		return true;
+
+	count = of_property_count_u32_elems(np, "cal-pd-id");
+	for (i = 0; i < count; i++) {
+		ret = of_property_read_u32_index(np, "cal-pd-id", i, &val);
+		if (ret < 0) {
+			pr_err("failed to get pd-id - %s\n", sfrdump->name);
+			return false;
+		}
+		ret = ess_ops.pd_status(val);
+		if (ret < 0) {
+			pr_err("not powered - %s (pd-id: %d)\n", sfrdump->name, i);
+			return false;
+		}
+	}
+	return true;
+}
+
 void exynos_ss_dump_sfr(void)
 {
 	struct exynos_ss_sfrdump *sfrdump;
@@ -1228,7 +1258,12 @@ void exynos_ss_dump_sfr(void)
 	list_for_each(entry, &ess_desc.sfrdump_list) {
 		sfrdump = list_entry(entry, struct exynos_ss_sfrdump, list);
 		np = of_node_get(sfrdump->node);
-		for (i = 0; i < SZ_2K; i++) {
+		ret = exynos_ss_check_pmu(sfrdump, np);
+		if (!ret)
+			/* may off */
+			continue;
+
+		for (i = 0; i < sfrdump->num; i++) {
 			ret = of_property_read_u32_index(np, "addr", i, &reg);
 			if (ret < 0) {
 				pr_err("exynos-snapshot: failed to get address information - %s\n",
@@ -1262,9 +1297,8 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 	struct device_node *dump_np;
 	struct exynos_ss_sfrdump *sfrdump;
 	char *dump_str;
-
-	unsigned int phy_regs[2];
 	int count, ret, i;
+	u32 phy_regs[2];
 
 	ret = of_property_count_strings(np, "sfr-dump-list");
 	if (ret < 0) {
@@ -1273,6 +1307,7 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 	}
 	count = ret;
 
+	INIT_LIST_HEAD(&ess_desc.sfrdump_list);
 	for (i = 0; i < count; i++) {
 		ret = of_property_read_string_index(np, "sfr-dump-list", i,
 						(const char **)&dump_str);
@@ -1320,6 +1355,13 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 		}
 		sfrdump->phy_reg = phy_regs[0];
 		sfrdump->num = ret;
+
+		ret = of_property_count_u32_elems(dump_np, "cal-pd-id");
+		if (ret < 0)
+			sfrdump->pwr_mode = false;
+		else
+			sfrdump->pwr_mode = true;
+
 		sfrdump->node = dump_np;
 		list_add(&sfrdump->list, &ess_desc.sfrdump_list);
 
@@ -1329,7 +1371,6 @@ static int exynos_ss_sfr_dump_init(struct device_node *np)
 	}
 	return ret;
 }
-
 #endif
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT_CRASH_KEY

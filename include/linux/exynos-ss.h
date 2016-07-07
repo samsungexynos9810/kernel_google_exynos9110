@@ -16,7 +16,6 @@
 
 #ifdef CONFIG_EXYNOS_SNAPSHOT
 #include <asm/ptrace.h>
-#include "exynos-ss-soc.h"
 
 /* mandatory */
 extern void exynos_ss_task(int cpu, void *v_task);
