@@ -70,6 +70,40 @@ int soc_has_mongoose(void)
 #define EXYNOS_PMU_SWRESET				(0x0400)
 #define EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION	(0x0500)
 
+#define DFD_EDPCSR_DUMP_EN			(1 << 0)
+#define DFD_L2RSTDISABLE_MNGS_EN		(1 << 11)
+#define DFD_DBGL1RSTDISABLE_MNGS_EN		(1 << 10)
+#define DFD_L2RSTDISABLE_APOLLO_EN		(1 << 9)
+#define DFD_DBGL1RSTDISABLE_APOLLO_EN		(1 << 8)
+#define DFD_CLEAR_L2RSTDISABLE_MNGS		(1 << 7)
+#define DFD_CLEAR_DBGL1RSTDISABLE_MNGS		(1 << 6)
+#define DFD_CLEAR_L2RSTDISABLE_APOLLO		(1 << 5)
+#define DFD_CLEAR_DBGL1RSTDISABLE_APOLLO	(1 << 4)
+
+static void dfd_set_dump_gpr(int en)
+{
+	u32 reg_val;
+
+	if (en) {
+		reg_val = DFD_EDPCSR_DUMP_EN
+#if 0 /* for MNGS */
+			| DFD_L2RSTDISABLE_MNGS_EN | DFD_DBGL1RSTDISABLE_MNGS_EN
+#endif
+			| DFD_L2RSTDISABLE_APOLLO_EN | DFD_DBGL1RSTDISABLE_APOLLO_EN;
+		writel(reg_val, exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
+	} else {
+		reg_val = readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
+		if (reg_val) {
+			reg_val =
+#if 0 /* for MNGS */
+				DFD_CLEAR_L2RSTDISABLE_MNGS | DFD_CLEAR_DBGL1RSTDISABLE_MNGS |
+#endif
+				DFD_CLEAR_L2RSTDISABLE_APOLLO | DFD_CLEAR_DBGL1RSTDISABLE_APOLLO;
+		}
+		writel(reg_val, exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
+	}
+}
+
 static void mngs_reset_control(int en)
 {
 	u32 reg_val, val;
@@ -151,9 +185,12 @@ static void exynos_reboot(enum reboot_mode mode, const char *cmd)
 	soc_id = exynos_soc_info.product_id & EXYNOS_SOC_MASK;
 	switch(soc_id) {
 	case EXYNOS8890_SOC_ID:
+	case EXYNOS8895_SOC_ID:
 		/* Check reset_sequencer_configuration register */
-		if (readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION) & DFD_EDPCSR_DUMP_EN)
+		if (readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION) & DFD_EDPCSR_DUMP_EN) {
+			dfd_set_dump_gpr(0);
 			mngs_reset_control(0);
+		}
 		break;
 	default:
 		break;
