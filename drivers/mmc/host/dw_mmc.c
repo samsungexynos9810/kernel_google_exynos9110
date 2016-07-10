@@ -938,11 +938,10 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
 					ret = fmp_mmc_map_sg(host, desc, i, sector_key, sector, data);
 					if (ret) {
 						dev_err(host->dev, "Failed to make mmc fmp descriptor. ret = 0x%x\n", ret);
-						spin_lock(&host->lock);
 						host->mrq->cmd->error = -ENOKEY;
 						dw_mci_request_end(host, host->mrq);
 						host->state = STATE_IDLE;
-						spin_unlock(&host->lock);
+						return;
 					}
 				}
 				sector += rw_size / DW_MMC_SECTOR_SIZE;
