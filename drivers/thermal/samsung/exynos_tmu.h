@@ -63,4 +63,17 @@ struct exynos_tmu_platform_data {
 	u32 cal_mode;
 };
 
+enum sensing_type {
+	AVG = 0,
+	MAX,
+	MIN,
+	END_OF_TYPE,
+};
+
+static const char * const sensing_method[] = {
+	[AVG] = "avg",
+	[MAX] = "max",
+	[MIN] = "min",
+};
+
 #endif /* _EXYNOS_TMU_H */
