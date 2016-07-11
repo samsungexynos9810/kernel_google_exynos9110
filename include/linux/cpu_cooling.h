@@ -74,6 +74,11 @@ struct cpufreq_cooling_device {
 	int dyn_power_table_entries;
 	struct device *cpu_dev;
 	get_static_t plat_get_static_power;
+	int *leakage_table;
+	int *leakage_coeff;
+	int *asv_coeff;
+	unsigned int leakage_volt_size;
+	unsigned int leakage_temp_size;
 };
 
 #ifdef CONFIG_CPU_THERMAL
