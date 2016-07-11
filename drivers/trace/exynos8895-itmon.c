@@ -530,7 +530,7 @@ static const struct of_device_id itmon_dt_match[] = {
 };
 MODULE_DEVICE_TABLE(of, itmon_dt_match);
 
-struct itmon_rpathinfo *itmon_get_rpathinfo(struct itmon_dev *itmon,
+static struct itmon_rpathinfo *itmon_get_rpathinfo(struct itmon_dev *itmon,
 					       unsigned int id,
 					       char *dest_name)
 {
@@ -755,6 +755,7 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
 	struct itmon_nodegroup *group = node->group;
 	struct itmon_masterinfo *master;
+	struct itmon_rpathinfo *port;
 	unsigned int errcode, axid;
 	unsigned long userbit;
 	char buf[SZ_32];
@@ -849,27 +850,28 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				snprintf(buf, SZ_32, "CP");
 				traceinfo->port = buf;
 			}
-			if (traceinfo->port) {
-				if (!traceinfo->master) {
-					master = (struct itmon_masterinfo *)
+			if (!traceinfo->port) {
+				port = (struct itmon_rpathinfo *)
+					itmon_get_rpathinfo(itmon, axid, node->name);
+				if (port)
+					traceinfo->port = port->port_name;
+				else
+					traceinfo->port = NULL;
+			}
+			if (!traceinfo->master) {
+				master = (struct itmon_masterinfo *)
 					itmon_get_masterinfo(itmon, traceinfo->port,
-							userbit & GENMASK(2, 0));
-					if (master)
-						traceinfo->master = master->master_name;
-					else
-						traceinfo->master = NULL;
-				}
-			} else {
-				traceinfo->read = tracedata->read;
-				traceinfo->port = node->name;
+						userbit & GENMASK(2, 0));
+				if (master)
+					traceinfo->master = master->master_name;
+				else
+					traceinfo->master = NULL;
 			}
 		}
-		if (!traceinfo->target_addr) {
-			traceinfo->target_addr =
-				(unsigned long)(node->tracedata.ext_info_2
-				& GENMASK(3, 0) << 32ULL);
-			traceinfo->target_addr |= node->tracedata.ext_info_0;
-		}
+		traceinfo->target_addr =
+			(unsigned long)(node->tracedata.ext_info_2
+			& GENMASK(3, 0) << 32ULL);
+		traceinfo->target_addr |= node->tracedata.ext_info_0;
 		traceinfo->errcode = errcode;
 		traceinfo->dest = node->name;
 		traceinfo->dirty = true;
@@ -882,14 +884,11 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 		if (!strncmp(group->name, "DATA_CORE", strlen("DATA_CORE"))
 			&& node->type == T_M_NODE) {
 			/* Exception Situation - DREX PATH */
-			traceinfo->dest = node->name;
+			traceinfo->dest = "DREX";
 			traceinfo->errcode = errcode;
 			traceinfo->dirty = true;
-			itmon_report_pathinfo(itmon, node, trans_type);
-			itmon_report_traceinfo(itmon, node, trans_type);
-		} else {
-			itmon_report_pathinfo(itmon, node, trans_type);
 		}
+		itmon_report_pathinfo(itmon, node, trans_type);
 		break;
 	default:
 		pr_info("Unknown Error - offset:%u\n", tracedata->offset);
@@ -930,7 +929,9 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 		itmon_report_traceinfo(itmon, NULL, trans_type);
 	}
 
-	pr_info("      Raw Register Information(ITMON Internal Information)\n\n");
+	if (pdata->traceinfo[TRANS_TYPE_READ].dirty ||
+		pdata->traceinfo[TRANS_TYPE_WRITE].dirty)
+		pr_info("      Raw Register Information(ITMON Internal Information)\n\n");
 
 	for (trans_type = 0; trans_type < TRANS_TYPE_NUM; trans_type++) {
 		for (i = M_NODE; i < NODE_TYPE; i++) {
@@ -946,7 +947,9 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 		}
 	}
 
-	pr_info("--------------------------------------------------------------------------\n");
+	if (pdata->traceinfo[TRANS_TYPE_READ].dirty ||
+		pdata->traceinfo[TRANS_TYPE_WRITE].dirty)
+		pr_info("--------------------------------------------------------------------------\n");
 }
 
 static void itmon_trace_data(struct itmon_dev *itmon,
