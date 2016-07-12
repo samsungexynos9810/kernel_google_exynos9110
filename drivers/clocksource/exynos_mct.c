@@ -197,7 +197,6 @@ static u64 exynos4_read_count_64(void)
  * Returns the number of cycles in the global counter (lower 32 bits).
  */
 
-#if !IS_ENABLED(CONFIG_ARM64) && !IS_ENABLED(CONFIG_ARM_ARCH_TIMER)
 static u32 notrace exynos4_read_count_32(void)
 {
 	return readl_relaxed(reg_base + EXYNOS4_MCT_G_CNT_L);
@@ -235,13 +234,11 @@ static cycles_t exynos4_read_current_timer(void)
 			 "cycles_t needs to move to 32-bit for ARM64 usage");
 	return exynos4_read_count_32();
 }
-#endif
 
 static void __init exynos4_clocksource_init(void)
 {
 	exynos4_mct_frc_start();
 
-#if !IS_ENABLED(CONFIG_ARM64) && !IS_ENABLED(CONFIG_ARM_ARCH_TIMER)
 	exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
 	exynos4_delay_timer.freq = clk_rate;
 	register_current_timer_delay(&exynos4_delay_timer);
@@ -249,7 +246,6 @@ static void __init exynos4_clocksource_init(void)
 		panic("%s: can't register clocksource\n", mct_frc.name);
 
 	sched_clock_register(exynos4_read_sched_clock, 32, clk_rate);
-#endif
 }
 
 static void exynos4_mct_comp0_stop(void)
