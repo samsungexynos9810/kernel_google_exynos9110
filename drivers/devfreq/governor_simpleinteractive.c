@@ -47,19 +47,22 @@ static int devfreq_simple_interactive_func(struct devfreq *df,
 	int i = 0;
 	struct dev_pm_opp *limit_opp;
 
-	if (data) {
-		if (!df->disabled_pm_qos) {
-			pm_qos_min = pm_qos_request(data->pm_qos_class);
-			if (data->pm_qos_class_max) {
-				pm_qos_max = pm_qos_request(data->pm_qos_class_max);
-				rcu_read_lock();
-				limit_opp = devfreq_recommended_opp(df->dev.parent, &pm_qos_max,
-						DEVFREQ_FLAG_LEAST_UPPER_BOUND);
-				rcu_read_unlock();
-				if (IS_ERR(limit_opp)) {
-					pr_err("%s: failed to limit by max frequency\n", __func__);
-					return PTR_ERR(limit_opp);
-				}
+	if (!data) {
+		pr_err("%s: failed to find governor data\n", __func__);
+		return -ENODATA;
+	}
+
+	if (!df->disabled_pm_qos) {
+		pm_qos_min = pm_qos_request(data->pm_qos_class);
+		if (data->pm_qos_class_max) {
+			pm_qos_max = pm_qos_request(data->pm_qos_class_max);
+			rcu_read_lock();
+			limit_opp = devfreq_recommended_opp(df->dev.parent, &pm_qos_max,
+					DEVFREQ_FLAG_LEAST_UPPER_BOUND);
+			rcu_read_unlock();
+			if (IS_ERR(limit_opp)) {
+				pr_err("%s: failed to limit by max frequency\n", __func__);
+				return PTR_ERR(limit_opp);
 			}
 		}
 	}
