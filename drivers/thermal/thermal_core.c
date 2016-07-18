@@ -560,20 +560,25 @@ static void thermal_zone_device_reset(struct thermal_zone_device *tz)
 void thermal_zone_device_update(struct thermal_zone_device *tz)
 {
 	int count;
+	enum thermal_device_mode mode;
 
 	if (atomic_read(&in_suspend))
 		return;
 
-	if (!tz->ops->get_temp)
+	if (!tz->ops->get_temp || !tz->ops->get_mode)
 		return;
 
-	update_temperature(tz);
+	tz->ops->get_mode(tz, &mode);
 
-	for (count = 0; count < tz->trips; count++)
-		handle_thermal_trip(tz, count);
+	if (mode == THERMAL_DEVICE_ENABLED) {
+		update_temperature(tz);
 
-	if (tz->ops->throttle_hotplug)
-		tz->ops->throttle_hotplug(tz);
+		for (count = 0; count < tz->trips; count++)
+			handle_thermal_trip(tz, count);
+
+		if (tz->ops->throttle_hotplug)
+			tz->ops->throttle_hotplug(tz);
+	}
 }
 EXPORT_SYMBOL_GPL(thermal_zone_device_update);
 
