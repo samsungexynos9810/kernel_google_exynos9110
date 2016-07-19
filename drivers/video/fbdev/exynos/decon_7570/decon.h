@@ -611,6 +611,7 @@ void DISP_SS_EVENT_SIZE_ERR_LOG(struct v4l2_subdev *sd, struct disp_ss_size_info
 
 struct decon_device {
 	void __iomem			*regs;
+	void __iomem			*disp_ss_regs;
 	struct device			*dev;
 	struct exynos_decon_platdata	*pdata;
 	struct media_pad		pads[MAX_DECON_PADS];

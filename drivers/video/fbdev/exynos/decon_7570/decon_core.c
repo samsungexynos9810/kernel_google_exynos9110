@@ -44,6 +44,7 @@
 
 #define MHZ (1000 * 1000)
 #define PROTECT
+#define DISP_SS_REGS 0x148F0004
 
 #ifdef CONFIG_OF
 static const struct of_device_id decon_device_table[] = {
@@ -886,6 +887,8 @@ int decon_enable(struct decon_device *decon)
 		goto err;
 	}
 	ret = 0;
+
+	decon_reg_set_disp_ss_cfg(decon->disp_ss_regs, true);
 
 	decon_to_init_param(decon, &p);
 	decon_reg_init(DECON_INT, decon->pdata->dsi_mode, &p);
@@ -3215,6 +3218,12 @@ static int decon_probe(struct platform_device *pdev)
 		}
 	}
 
+	decon->disp_ss_regs = ioremap(DISP_SS_REGS, SZ_4);
+	if (!decon->disp_ss_regs){
+		decon_err("failed to claim sys register region.\n");
+		goto fail_lpd_work;
+	}
+
 #ifdef CONFIG_DECON_EVENT_LOG
 	snprintf(debug_name, MAX_NAME_SIZE, "event%d", DECON_INT);
 	atomic_set(&decon->disp_ss_log_idx, -1);
@@ -3400,6 +3409,8 @@ static int decon_probe(struct platform_device *pdev)
 				decon->pdata->trig_mode, DECON_TRIG_DISABLE);
 		goto decon_init_done;
 	}
+
+	decon_reg_set_disp_ss_cfg(decon->disp_ss_regs, true);
 
 	decon_reg_shadow_protect_win(DECON_INT, win_idx, 1);
 

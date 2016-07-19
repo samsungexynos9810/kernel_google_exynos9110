@@ -16,6 +16,26 @@
 #endif
 
 /******************* CAL raw functions implementation *************************/
+void decon_reg_set_disp_ss_cfg(void __iomem *disp_ss_regs, u32 enable)
+{
+	u32 val;
+
+	if (!disp_ss_regs) {
+		decon_err("decon disp_ss_regs is not mapped\n");
+		return;
+	}
+
+	val = readl(disp_ss_regs);
+	if (enable)
+		val = (val | DECON_SS_SEC);
+	else
+		val = (val & ~DECON_SS_SEC);
+	writel(val, disp_ss_regs);
+
+	decon_dbg("Display Configuration(DISP_CFG) value is 0x%x\n", val);
+}
+
+
 int decon_reg_reset(u32 id)
 {
 	int tries;

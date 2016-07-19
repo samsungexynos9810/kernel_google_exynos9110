@@ -252,6 +252,8 @@
 #define DECON_UPDATE				0x0710
 #define DECON_UPDATE_STANDALONE_F		(1 << 0)
 
+#define DECON_SS_SEC				(0x1 << 0)
+
 /* TBD: Registers for Debugging features to be added */
 
 #endif /* _REGS_DECON_H */

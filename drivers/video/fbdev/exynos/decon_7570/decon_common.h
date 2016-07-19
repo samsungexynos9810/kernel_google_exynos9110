@@ -112,6 +112,7 @@ void decon_reg_activate_window(u32 id, u32 index);
 void decon_enable_eclk_idle_gate(u32 id, enum decon_set_eclk_idle_gate en);
 
 /* CAL raw functions list */
+void decon_reg_set_disp_ss_cfg(void __iomem *disp_ss_regs, u32 enable);
 int decon_reg_reset(u32 id);
 void decon_reg_set_default_win_channel(u32 id);
 void decon_reg_set_clkgate_mode(u32 id, u32 en);
