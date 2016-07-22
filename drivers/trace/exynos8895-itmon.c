@@ -40,6 +40,7 @@
 #define REG_DBG_CTL			(0x10)
 #define REG_TMOUT_INIT_VAL		(0x14)
 #define REG_TMOUT_FRZ_EN		(0x18)
+#define REG_TMOUT_BUF_WR_OFFSET 	(0x10)
 #define REG_TMOUT_BUF_RD_ADDR		(0x20)
 #define REG_TMOUT_BUF_RD_ID		(0x24)
 #define REG_TMOUT_BUF_RD_PAYLOAD	(0x28)
@@ -430,8 +431,8 @@ static struct itmon_nodeinfo data_core[] = {
 	{M_NODE,	"G3D1",		0x14A53000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D2",		0x14A63000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D3",		0x14A73000, NULL, 0,	false, false, true, false},
-	{S_NODE,	"DREX",		0x14A93000, NULL, TMOUT, true, false, true, false},
-	{S_NODE,	"DREX",		0x14AA3000, NULL, TMOUT, true, false, true, false},
+	{S_NODE,	"DREX",		0x14A93000, NULL, TMOUT, true, true, true, false},
+	{S_NODE,	"DREX",		0x14AA3000, NULL, TMOUT, true, true, true, false},
 };
 
 static struct itmon_nodeinfo peri_core_0[] = {
@@ -669,6 +670,56 @@ static void itmon_post_handler_by_master(struct itmon_dev *itmon,
 	}
 }
 
+static void itmon_report_timeout(struct itmon_dev *itmon,
+				struct itmon_nodeinfo *node,
+				unsigned int trans_type)
+{
+	unsigned int id, payload, axid, user, valid, timeout;
+	char *master_name, *port_name;
+	struct itmon_rpathinfo *port;
+	struct itmon_masterinfo *master;
+	int i, num = (trans_type == TRANS_TYPE_READ ? SZ_128 : SZ_64);
+	int fz_offset = (trans_type == TRANS_TYPE_READ ? 0 : REG_TMOUT_BUF_WR_OFFSET);
+	pr_info("      TIMEOUT_BUFFER Information\n\n");
+	pr_info("      > NUM|   BLOCK|  MASTER|   VALID| TIMEOUT|      ID| PAYLOAD|\n");
+
+	for (i = 0; i < num; i++) {
+		writel(i, node->regs + OFFSET_TMOUT_REG +
+				REG_TMOUT_BUF_RD_ADDR + fz_offset);
+		id = readl(node->regs + OFFSET_TMOUT_REG +
+				REG_TMOUT_BUF_RD_ID + fz_offset);
+		payload = readl(node->regs + OFFSET_TMOUT_REG +
+				REG_TMOUT_BUF_RD_PAYLOAD + fz_offset);
+
+		/* ID[5:0] 6bit : R-PATH */
+		axid = id & GENMASK(5, 0);
+		/* PAYLOAD[15:8] : USER */
+		user = payload & GENMASK(15, 8) >> 8;
+		/* PAYLOAD[0] : Valid or Not valid */
+		valid = payload & BIT(0);
+		/* PAYLOAD[19:16] : Timeout */
+		timeout = payload & GENMASK(19, 16) >> 16;
+
+		port = (struct itmon_rpathinfo *)
+				itmon_get_rpathinfo(itmon, axid, "DREX");
+		if (port) {
+			port_name = port->port_name;
+			master = (struct itmon_masterinfo *)
+				itmon_get_masterinfo(itmon, port_name, user);
+			if (master)
+				master_name = master->master_name;
+			else
+				master_name = "Unknown";
+		} else {
+			port_name = "Unknown";
+			master_name = "Unknown";
+		}
+		pr_info("      > %03d|%8s|%8s|%8u|%8x|%08x|%08x|\n",
+				i, port_name, master_name, valid, timeout, id, payload);
+	}
+	pr_info("--------------------------------------------------------------------------\n");
+}
+
 static void itmon_report_traceinfo(struct itmon_dev *itmon,
 				struct itmon_nodeinfo *node,
 				unsigned int trans_type)
@@ -701,6 +752,11 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 		pr_info("      > Path Type      : %s\n"
 			"--------------------------------------------------------------------------\n",
 			itmon_pathtype[group->bus_type]);
+
+		/* timeout freezing result */
+		if (node->type == S_NODE && node->tmout_frz_enabled &&
+			traceinfo->errcode == ERRCODE_TMOUT)
+			itmon_report_timeout(itmon, node, trans_type);
 	} else {
 		pr_info("--------------------------------------------------------------------------\n");
 	}
