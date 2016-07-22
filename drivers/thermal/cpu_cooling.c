@@ -30,6 +30,7 @@
 #include <linux/slab.h>
 #include <linux/cpu.h>
 #include <linux/cpu_cooling.h>
+#include <linux/exynos-ss.h>
 
 #include <trace/events/thermal.h>
 
@@ -206,8 +207,10 @@ static int cpufreq_thermal_notifier(struct notifier_block *nb,
 		 */
 		clipped_freq = cpufreq_dev->clipped_freq;
 
-		if (policy->max > clipped_freq)
+		if (policy->max > clipped_freq) {
 			cpufreq_verify_within_limits(policy, 0, clipped_freq);
+			exynos_ss_thermal(NULL, 0, cpufreq_dev->cool_dev->type, clipped_freq);
+		}
 		break;
 	}
 	mutex_unlock(&cooling_list_lock);
