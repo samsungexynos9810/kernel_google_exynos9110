@@ -317,12 +317,8 @@ free_power_table:
 static int build_static_power_table(struct cpufreq_cooling_device *cpufreq_device)
 {
 	int i, j;
-#if 0
 	int ids = cal_asv_get_ids_info(0);
 	int asv_group = cal_asv_get_grp(0, 0);
-#endif
-	int ids = 0;
-	int asv_group = 0;
 	void *gen_block;
 	struct ect_gen_param_table *volt_temp_param, *asv_param;
 
