@@ -635,6 +635,9 @@
 		compatible = "samsung,exynos4210-sysmmu";
 		reg = <0x11E20000 0x1000>;
 		interrupts = <0 80 0>;
+		clocks = <&cmu CLK_SMMUFIMD0>;
+		clock-names = "sysmmu";
+		mmu-masters = <&fimd_fb>;
 		prop-map {
 			winmap = <0x1f>;
 		};
