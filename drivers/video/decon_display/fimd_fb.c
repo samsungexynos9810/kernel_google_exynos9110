@@ -38,6 +38,7 @@
 #include <linux/memblock.h>
 #include "../../staging/android/sw_sync.h"
 #endif
+#include <linux/exynos_iovmm.h>
 
 #include <video/mipi_display.h>
 #if defined(CONFIG_FB_SMIES)
@@ -1651,7 +1652,9 @@ static unsigned int s3c_fb_map_ion_handle(struct s3c_fb *sfb,
 		goto err_buf_map_attachment;
 	}
 
-	dma->dma_addr = sg_phys(dma->sg_table->sgl);
+	dma->dma_addr = ion_iovmm_map(dma->attachment, 0, buf->size,
+				      DMA_TO_DEVICE, IOMMU_READ);
+
 	exynos_ion_sync_dmabuf_for_device(sfb->dev, dma->dma_buf,
 			dma->dma_buf->size,
 			DMA_TO_DEVICE);
@@ -1679,6 +1682,7 @@ static void s3c_fb_free_dma_buf(struct s3c_fb *sfb,
 	exynos_ion_sync_dmabuf_for_cpu(sfb->dev, dma->dma_buf,
 			dma->dma_buf->size,
 			DMA_FROM_DEVICE);
+	ion_iovmm_unmap(dma->attachment, dma->dma_addr);
 	dma_buf_detach(dma->dma_buf, dma->attachment);
 	dma_buf_put(dma->dma_buf);
 	ion_free(sfb->fb_ion_client, dma->ion_handle);
@@ -3358,6 +3362,11 @@ int create_decon_display_controller(struct platform_device *pdev)
 	exynos5_update_media_layers(TYPE_FIMD1, 1);
 	prev_overlap_cnt = 1;
 #endif
+
+	exynos_create_iovmm(sfb->dev, 5, 0);
+
+	iovmm_activate(sfb->dev);
+
 	/* we have the register setup, start allocating framebuffers */
 	for (i = 0; i < fbdrv->variant.nr_windows; i++) {
 		win = i;
