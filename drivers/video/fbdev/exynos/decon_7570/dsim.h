@@ -60,6 +60,7 @@ extern struct mipi_dsim_lcd_driver s6e8aa5x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e36w1x01_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e8aa0_mipi_lcd_driver;
 extern struct mipi_dsim_lcd_driver s6e3fa0_mipi_lcd_driver;
+extern struct mipi_dsim_lcd_driver rm69080_mipi_lcd_driver;
 
 enum mipi_dsim_pktgo_state {
 	DSIM_PKTGO_DISABLED,

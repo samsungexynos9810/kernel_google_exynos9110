@@ -20,5 +20,6 @@ void lcd_disable(void);
 void lcd_lane_ctl(unsigned int lane_num);
 int lcd_gamma_ctrl(unsigned int backlightlevel);
 int lcd_gamma_update(void);
+void lcd_brightness_set(int brightness);
 
 #endif /* __LCD_CTRL_H__ */
