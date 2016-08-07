@@ -86,7 +86,7 @@ static void dfd_set_dump_gpr(int en)
 
 	if (en) {
 		reg_val = DFD_EDPCSR_DUMP_EN
-#if 0 /* for MNGS */
+#if 1 /* for MNGS */
 			| DFD_L2RSTDISABLE_MNGS_EN | DFD_DBGL1RSTDISABLE_MNGS_EN
 #endif
 			| DFD_L2RSTDISABLE_APOLLO_EN | DFD_DBGL1RSTDISABLE_APOLLO_EN;
@@ -95,7 +95,7 @@ static void dfd_set_dump_gpr(int en)
 		reg_val = readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
 		if (reg_val) {
 			reg_val =
-#if 0 /* for MNGS */
+#if 1 /* for MNGS */
 				DFD_CLEAR_L2RSTDISABLE_MNGS | DFD_CLEAR_DBGL1RSTDISABLE_MNGS |
 #endif
 				DFD_CLEAR_L2RSTDISABLE_APOLLO | DFD_CLEAR_DBGL1RSTDISABLE_APOLLO;
