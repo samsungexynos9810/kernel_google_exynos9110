@@ -3903,6 +3903,9 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 	if (of_find_property(np, "clock-gate", NULL))
 		pdata->use_gate_clock = true;
 
+	if (of_find_property(np, "card-detect-invert", NULL))
+		pdata->use_gpio_invert = true;
+
 	/* caps */
 
 	if (of_find_property(np, "supports-8bit", NULL))

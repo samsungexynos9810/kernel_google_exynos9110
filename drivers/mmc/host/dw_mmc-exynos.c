@@ -1234,8 +1234,12 @@ static int dw_mci_exynos_check_cd(struct dw_mci *host)
 	int ret = -1;
 	struct dw_mci_exynos_priv_data *priv = host->priv;
 
-	if (gpio_is_valid(priv->cd_gpio))
-		 ret = gpio_get_value(priv->cd_gpio) ? 0 : 1;
+	if (gpio_is_valid(priv->cd_gpio)) {
+		if(host->pdata->use_gpio_invert)
+			ret = gpio_get_value(priv->cd_gpio) ? 1 : 0;
+		else
+			ret = gpio_get_value(priv->cd_gpio) ? 0 : 1;
+	}
 	return ret;
 }
 
