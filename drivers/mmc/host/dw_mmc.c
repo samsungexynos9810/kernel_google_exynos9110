@@ -887,7 +887,7 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
 			u64 mem_addr = sg_dma_address(&data->sg[i]);
 			unsigned int left = length;
 #if defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
-                        if (!((unsigned long)(sg_page(&data->sg[i])->mapping) & 0x1)) {
+                        if (!PageAnon(sg_page(&data->sg[i]))) {
                               if (sg_page(&data->sg[i])->mapping && sg_page(&data->sg[i])->mapping->key && \
                                               !sg_page(&data->sg[i])->mapping->plain_text) {
                                         if ((unsigned int)sg_page(&data->sg[i])->index >= 2) {
@@ -901,9 +901,8 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
                                 sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
                         }
 #elif defined(CONFIG_MMC_DW_FMP_EXT4CRYPT_FS)
-			if (!((unsigned long)(sg_page(&data->sg[i])->mapping) & 0x1)) {
-				if ((unsigned int)(sg_page(&data->sg[i])->index) >= 2 &&
-						((uint64_t)(sg_page(&data->sg[i])->mapping)) &&
+                        if (!PageAnon(sg_page(&data->sg[i]))) {
+				if (((uint64_t)(sg_page(&data->sg[i])->mapping)) &&
 						((unsigned int)(sg_page(&data->sg[i])->mapping->use_fmp))) {
 					sector_key |= DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
 					rw_size = DW_MMC_SECTOR_SIZE;
