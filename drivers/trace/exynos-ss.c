@@ -52,7 +52,8 @@
 #define ESS_HEADER_SZ			SZ_4K
 #define ESS_MMU_REG_SZ			SZ_4K
 #define ESS_CORE_REG_SZ			SZ_4K
-#define ESS_HEADER_TOTAL_SZ		(ESS_HEADER_SZ + ESS_MMU_REG_SZ + ESS_CORE_REG_SZ)
+#define ESS_SPARE_SZ			SZ_16K
+#define ESS_HEADER_TOTAL_SZ		(ESS_HEADER_SZ + ESS_MMU_REG_SZ + ESS_CORE_REG_SZ + ESS_SPARE_SZ)
 #define ESS_HEADER_ALLOC_SZ		SZ_2M
 
 /*  Length domain */
@@ -96,6 +97,7 @@
 
 /* S5P_VA_SS_BASE + 0xC00 -- 0xFFF is reserved */
 #define S5P_VA_SS_PANIC_STRING		(S5P_VA_SS_BASE + 0xC00)
+#define S5P_VA_SS_SPARE_BASE		(S5P_VA_SS_BASE + ESS_HEADER_SZ + ESS_MMU_REG_SZ + ESS_CORE_REG_SZ)
 
 #define mpidr_cpu_num(mpidr)			\
 	( MPIDR_AFFINITY_LEVEL(mpidr, 1) << 2	\
@@ -684,6 +686,23 @@ static void exynos_ss_report_reason(unsigned int val)
 {
 	if (exynos_ss_get_enable("log_kevents", true))
 		__raw_writel(val, S5P_VA_SS_EMERGENCY_REASON);
+}
+
+unsigned long exynos_ss_get_spare_vaddr(unsigned int offset)
+{
+	return (unsigned long)(S5P_VA_SS_SPARE_BASE + offset);
+}
+
+unsigned long exynos_ss_get_spare_paddr(unsigned int offset)
+{
+	unsigned long kevent_vaddr = 0;
+	unsigned int kevent_paddr = exynos_ss_get_item_paddr("log_kevents");
+
+	if (kevent_paddr) {
+		kevent_vaddr = (unsigned long)(kevent_paddr + ESS_HEADER_SZ +
+				ESS_MMU_REG_SZ + ESS_CORE_REG_SZ + offset);
+	}
+	return kevent_vaddr;
 }
 
 unsigned int exynos_ss_get_item_size(char* name)

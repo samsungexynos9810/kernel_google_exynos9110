@@ -39,6 +39,8 @@ extern unsigned int exynos_ss_get_item_size(char *);
 extern unsigned int exynos_ss_get_item_paddr(char *);
 extern bool exynos_ss_dumper_one(void *, char *, size_t, size_t *);
 extern void exynos_ss_panic_handler_safe(struct pt_regs *regs);
+extern unsigned long exynos_ss_get_spare_vaddr(unsigned int offset);
+extern unsigned long exynos_ss_get_spare_paddr(unsigned int offset);
 #ifdef CONFIG_EXYNOS_DRAMTEST
 extern int disable_mc_powerdn(void);
 #endif
@@ -198,6 +200,8 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_get_item_paddr(a)	do { } while(0)
 #define exynos_ss_check_crash_key(a,b)	do { } while(0);
 #define exynos_ss_dumper_one(a,b,c,d)	false
+#define exynos_ss_get_spare_vaddr(a)	do { } while(0)
+#define exynos_ss_get_spare_paddr(a)	do { } while(0)
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
 
 struct ess_dumper {
