@@ -1706,6 +1706,12 @@ static ssize_t enable_store(struct device *pdev, struct device_attribute *attr,
 		pr_info("%s: Connect gadget: enabled=%d, dev->enabled=%d\n",
 				__func__, enabled, dev->enabled);
 		cdev->next_string_id = 0;
+
+		if (!gadget) {
+			pr_info("%s: Gadget is NULL: %p\n", __func__, gadget);
+			return -ENODEV;
+		}
+
 		usb_gadget_connect(gadget);
 		dev->enabled = true;
 	} else if (!enabled && dev->enabled) {
