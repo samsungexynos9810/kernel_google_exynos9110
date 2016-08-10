@@ -93,6 +93,8 @@
 #define TEST_PACKET_SEL		0x4
 #define TEST_FORCE_ENABLE_SEL	0x5
 
+#define S3C_UDC_SUPPLY_COUNT	2
+
 /* ************************************************************************* */
 /* IO
  */
@@ -144,6 +146,8 @@ struct s3c_udc {
 
 	struct phy *phy;
 	spinlock_t lock;
+
+	struct regulator_bulk_data supplies[S3C_UDC_SUPPLY_COUNT];
 
 	int ep0state;
 	struct s3c_ep ep[S3C_MAX_ENDPOINTS];

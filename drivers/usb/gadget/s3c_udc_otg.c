@@ -25,6 +25,7 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <linux/of_address.h>
+#include <linux/regulator/consumer.h>
 #include <linux/phy/phy.h>
 #include <linux/usb/otg.h>
 #include <linux/usb/samsung_otg_regs.h>
@@ -160,6 +161,11 @@ static struct usb_ep_ops s3c_ep_ops = {
 	.set_halt = s3c_udc_set_halt,
 	.fifo_status = s3c_fifo_status,
 	.fifo_flush = s3c_fifo_flush,
+};
+
+static const char * const s3c_udc_supply_names[S3C_UDC_SUPPLY_COUNT] = {
+	"vusb_d",		/* 1.0 V */
+	"vusb_a",		/* 3.3 V */
 };
 
 #ifdef CONFIG_USB_GADGET_DEBUG_FILES
@@ -346,6 +352,7 @@ int s3c_vbus_enable(struct usb_gadget *gadget, int is_active)
 {
 	unsigned long flags;
 	struct s3c_udc *dev = container_of(gadget, struct s3c_udc, gadget);
+	int ret;
 
 	DEBUG_SETUP("%s: is_active[%d], pullup_state[%d]\n", __func__,
 				is_active, pullup_state);
@@ -358,7 +365,23 @@ int s3c_vbus_enable(struct usb_gadget *gadget, int is_active)
 			stop_activity(dev, dev->driver);
 			spin_unlock_irqrestore(&dev->lock, flags);
 			udc_disable(dev);
+
+			ret = regulator_bulk_disable(S3C_UDC_SUPPLY_COUNT,
+					dev->supplies);
+			if (ret) {
+				dev_err(&the_controller->dev->dev,
+				"%s: failed to disable supplies\n", __func__);
+				return ret;
+			}
 		} else {
+			ret = regulator_bulk_enable(S3C_UDC_SUPPLY_COUNT,
+					dev->supplies);
+			if (ret) {
+				dev_err(&the_controller->dev->dev,
+				"%s: failed to enable supplies\n", __func__);
+				return ret;
+			}
+
 			udc_reinit(dev);
 			udc_enable(dev);
 			if (pullup_state)
@@ -1272,6 +1295,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	unsigned int irq;
 	int retval;
 	int err;
+	int i;
 
 	dev_info(&pdev->dev, "%s: %p\n", __func__, pdev);
 
@@ -1325,8 +1349,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	if (!dev->usb_ctrl) {
 		dev_err(&pdev->dev, "%s: can't get usb_ctrl dma memory\n",
 			__func__);
-		retval = -ENOMEM;
-		goto err_get_ctrl_buf;
+		return -ENOMEM;
 	}
 
 	dev->ep0_data = dma_alloc_coherent(&pdev->dev,
@@ -1343,7 +1366,19 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	err = clk_prepare_enable(dev->clk);
 	if (err) {
 		dev_err(&pdev->dev, "%s: can't clk prepare enable\n", __func__);
-		goto err_get_data_buf;
+		retval = err;
+		goto err_enable_clk;
+	}
+
+	for (i = 0; i < S3C_UDC_SUPPLY_COUNT; i++)
+		dev->supplies[i].supply = s3c_udc_supply_names[i];
+
+	err = devm_regulator_bulk_get(&pdev->dev, S3C_UDC_SUPPLY_COUNT,
+				dev->supplies);
+	if (err) {
+		dev_err(&pdev->dev, "failed to request supplies: %d\n", err);
+		retval = err;
+		goto err_get_regulator;
 	}
 
 	/* Mask any interrupt left unmasked by the bootloader */
@@ -1358,8 +1393,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 		DEBUG(KERN_ERR "%s: can't get irq %i, err %d\n", driver_name,
 		      dev->irq, retval);
 		retval = -EBUSY;
-		clk_disable_unprepare(dev->clk);
-		goto err_irq;
+		goto err_get_regulator;
 	}
 	dev->irq = irq;
 
@@ -1378,7 +1412,9 @@ static int s3c_udc_probe(struct platform_device *pdev)
 
 err_add_udc:
 	free_irq(dev->irq, dev);
-err_irq:
+err_get_regulator:
+	clk_disable_unprepare(dev->clk);
+err_enable_clk:
 	dma_free_coherent(&pdev->dev,
 			EP0_FIFO_SIZE,
 			dev->ep0_data, dev->ep0_data_dma);
@@ -1386,8 +1422,7 @@ err_get_data_buf:
 	dma_free_coherent(&pdev->dev,
 			sizeof(struct usb_ctrlrequest)*BACK2BACK_SIZE,
 			dev->usb_ctrl, dev->usb_ctrl_dma);
-err_get_ctrl_buf:
-	clk_disable_unprepare(dev->clk);
+
 	return retval;
 }
 
