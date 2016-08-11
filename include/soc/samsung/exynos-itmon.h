@@ -26,8 +26,11 @@ extern void itmon_notifier_chain_register(struct notifier_block *n);
 extern void itmon_enable(bool enabled);
 extern void itmon_set_errcnt(int cnt);
 #else
+static inline void itmon_enable(bool enabled)
+{
+	return;
+}
 #define itmon_notifier_chain_register(x)		do { } while(0)
-#define itmon_enable(x) 				do { } while(0)
 #define itmon_set_errcnt(x) 				do { } while(0)
 #endif
 

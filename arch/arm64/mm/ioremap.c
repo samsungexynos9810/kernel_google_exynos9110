@@ -29,6 +29,8 @@
 #include <asm/tlbflush.h>
 #include <asm/pgalloc.h>
 
+#include <soc/samsung/exynos-condbg.h>
+
 static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
 				      pgprot_t prot, void *caller)
 {
@@ -69,6 +71,8 @@ static void __iomem *__ioremap_caller(phys_addr_t phys_addr, size_t size,
 		vunmap((void *)addr);
 		return NULL;
 	}
+
+	ecd_hook_ioremap(phys_addr, offset + addr, size);
 
 	return (void __iomem *)(offset + addr);
 }

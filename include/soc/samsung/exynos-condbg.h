@@ -27,9 +27,11 @@ extern bool ecd_get_enable(void);
 extern int ecd_get_debug_mode(void);
 extern void ecd_do_break_now(void);
 extern int ecd_do_bad(unsigned long addr, struct pt_regs *regs);
+extern int ecd_hook_ioremap(unsigned long paddr, unsigned long vaddr, unsigned int size);
 #else
-#define ecd_console_enable(a)		do { } while(0)
+#define ecd_console_enable(a)			do { } while(0)
 #define ecd_do_break_now()			do { } while(0)
+#define ecd_hook_ioremap(a,b,c)			do { } while(0)
 static inline int ecd_do_bad(unsigned long addr, struct pt_regs *regs)
 {
 	return 1;
@@ -51,7 +53,14 @@ static inline int ecd_get_enable(void)
 	return false;
 }
 #endif
-
+#ifdef CONFIG_S3C2410_WATCHDOG
+extern int s3c2410wdt_set_emergency_reset(unsigned int timeout);
+#else
+static inline int s3c2410wdt_set_emergency_reset(unsigned int timeout)
+{
+	return -1;
+}
+#endif
 enum {
 	MODE_NORMAL = 0,
 	MODE_DEBUG,
