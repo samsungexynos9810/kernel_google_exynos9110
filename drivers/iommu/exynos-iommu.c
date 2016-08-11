@@ -1056,8 +1056,10 @@ static void clear_lv2_page_table(sysmmu_pte_t *ent, int n)
 
 static int lv1set_section(struct exynos_iommu_domain *domain,
 			  sysmmu_pte_t *sent, sysmmu_iova_t iova,
-			  phys_addr_t paddr, atomic_t *pgcnt)
+			  phys_addr_t paddr, int prot, atomic_t *pgcnt)
 {
+	bool shareable = !!(prot & IOMMU_CACHE);
+
 	if (lv1ent_section(sent)) {
 		WARN(1, "Trying mapping on 1MiB@%#08x that is mapped",
 			iova);
@@ -1074,19 +1076,25 @@ static int lv1set_section(struct exynos_iommu_domain *domain,
 	}
 
 	*sent = mk_lv1ent_sect(paddr);
+	if (shareable)
+		set_lv1ent_shareable(sent);
 	pgtable_flush(sent, sent + 1);
 
 	return 0;
 }
 
 static int lv2set_page(sysmmu_pte_t *pent, phys_addr_t paddr, size_t size,
-								atomic_t *pgcnt)
+						int prot, atomic_t *pgcnt)
 {
+	bool shareable = !!(prot & IOMMU_CACHE);
+
 	if (size == SPAGE_SIZE) {
 		if (WARN_ON(!lv2ent_fault(pent)))
 			return -EADDRINUSE;
 
 		*pent = mk_lv2ent_spage(paddr);
+		if (shareable)
+			set_lv2ent_shareable(pent);
 		pgtable_flush(pent, pent + 1);
 		atomic_dec(pgcnt);
 	} else { /* size == LPAGE_SIZE */
@@ -1099,6 +1107,8 @@ static int lv2set_page(sysmmu_pte_t *pent, phys_addr_t paddr, size_t size,
 			}
 
 			*pent = mk_lv2ent_lpage(paddr);
+			if (shareable)
+				set_lv2ent_shareable(pent);
 		}
 		pgtable_flush(pent - SPAGES_PER_LPAGE, pent);
 		atomic_sub(SPAGES_PER_LPAGE, pgcnt);
@@ -1120,7 +1130,7 @@ static int exynos_iommu_map(struct iommu_domain *iommu_domain,
 	entry = section_entry(domain->pgtable, iova);
 
 	if (size == SECT_SIZE) {
-		ret = lv1set_section(domain, entry, iova, paddr,
+		ret = lv1set_section(domain, entry, iova, paddr, prot,
 				     &domain->lv2entcnt[lv1ent_offset(iova)]);
 	} else {
 		sysmmu_pte_t *pent;
@@ -1131,7 +1141,7 @@ static int exynos_iommu_map(struct iommu_domain *iommu_domain,
 		if (IS_ERR(pent))
 			ret = PTR_ERR(pent);
 		else
-			ret = lv2set_page(pent, paddr, size,
+			ret = lv2set_page(pent, paddr, size, prot,
 				       &domain->lv2entcnt[lv1ent_offset(iova)]);
 	}
 
