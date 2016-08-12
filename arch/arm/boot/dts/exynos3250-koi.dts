@@ -645,4 +645,11 @@
 		pinctrl-names = "default";
 		pinctrl-0 = <&eint22>;
 	};
+
+	usb@12480000 {
+		vusb_d-supply = <&ldo6_reg>;
+		vusb_a-supply = <&ldo8_reg>;
+		status = "okay";
+	};
+
 };
