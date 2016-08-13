@@ -25,7 +25,6 @@ extern void exynos_ss_suspend(void *fn, void *dev, int en);
 extern void exynos_ss_irq(int irq, void *fn, unsigned int val, int en);
 extern int exynos_ss_try_enable(const char *name, unsigned long long duration);
 extern int exynos_ss_set_enable(const char *name, int en);
-extern int exynos_ss_set_enable_init(const char *name, int en);
 extern int exynos_ss_get_enable(const char *name, bool init);
 extern int exynos_ss_save_context(void *regs);
 extern int exynos_ss_save_reg(void *regs);
@@ -187,7 +186,6 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_save_context(a)	do { } while(0)
 #define exynos_ss_try_enable(a,b)	do { } while(0)
 #define exynos_ss_set_enable(a,b)	do { } while(0)
-#define exynos_ss_set_enable_init(a,b)	do { } while(0)
 #define exynos_ss_get_enable(a)		do { } while(0)
 #define exynos_ss_dump_panic(a,b)	do { } while(0)
 #define exynos_ss_dump_sfr()		do { } while(0)
