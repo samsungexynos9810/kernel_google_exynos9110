@@ -580,8 +580,6 @@ static void itmon_init(struct itmon_dev *itmon, bool enabled)
 	unsigned int offset;
 	int i, j;
 
-	INIT_LIST_HEAD(&pdata->tracelist[BUS_DATA]);
-	INIT_LIST_HEAD(&pdata->tracelist[BUS_PERI]);
 	for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 		node = pdata->nodegroup[i].nodeinfo;
 		for (j = 0; j < pdata->nodegroup[i].nodesize; j++) {
@@ -680,6 +678,7 @@ static void itmon_report_timeout(struct itmon_dev *itmon,
 	struct itmon_masterinfo *master;
 	int i, num = (trans_type == TRANS_TYPE_READ ? SZ_128 : SZ_64);
 	int fz_offset = (trans_type == TRANS_TYPE_READ ? 0 : REG_TMOUT_BUF_WR_OFFSET);
+
 	pr_info("      TIMEOUT_BUFFER Information\n\n");
 	pr_info("      > NUM|   BLOCK|  MASTER|   VALID| TIMEOUT|      ID| PAYLOAD|\n");
 
@@ -741,9 +740,10 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 		"      > Type           : %s\n"
 		"      > Error code     : %s\n",
 		traceinfo->port, traceinfo->master ? traceinfo->master : "",
-		traceinfo->dest, traceinfo->target_addr,
+		traceinfo->dest ? traceinfo->dest : "Unknown",
+		traceinfo->target_addr,
 		traceinfo->target_addr == SWAPPER_VALUE ?
-		"SWAPPER - Violation Access Window by CP" : "",
+		"(SWAPPER - Violation Access Window by CP)" : "",
 		trans_type == TRANS_TYPE_READ ? "READ" : "WRITE",
 		itmon_errcode[traceinfo->errcode]);
 
@@ -1280,6 +1280,10 @@ static int itmon_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, itmon);
+
+	INIT_LIST_HEAD(&pdata->tracelist[BUS_DATA]);
+	INIT_LIST_HEAD(&pdata->tracelist[BUS_PERI]);
+
 	itmon_init(itmon, true);
 
 	g_itmon = itmon;
