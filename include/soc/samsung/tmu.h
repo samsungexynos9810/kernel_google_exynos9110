@@ -37,6 +37,7 @@ enum gpu_noti_state_t {
 enum isp_noti_state_t {
 	ISP_NORMAL = 0,
 	ISP_COLD,
+	ISP_THROTTLING,
 	ISP_THROTTLING1,
 	ISP_THROTTLING2,
 	ISP_THROTTLING3,
