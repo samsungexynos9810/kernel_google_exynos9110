@@ -196,10 +196,17 @@ void exynos_ss_dump_sfr(void);
 #define exynos_ss_get_hardlockup()	do { } while(0)
 #define exynos_ss_get_item_size(a)	do { } while(0)
 #define exynos_ss_get_item_paddr(a)	do { } while(0)
-#define exynos_ss_check_crash_key(a,b)	do { } while(0);
+#define exynos_ss_check_crash_key(a,b)	do { } while(0)
+#define exynos_ss_dm(a,b,c,d,e)		do { } while(0)
 #define exynos_ss_dumper_one(a,b,c,d)	false
-#define exynos_ss_get_spare_vaddr(a)	do { } while(0)
-#define exynos_ss_get_spare_paddr(a)	do { } while(0)
+static inline unsigned long exynos_ss_get_spare_vaddr(unsigned int offset)
+{
+	return 0;
+}
+static inline unsigned long exynos_ss_get_spare_paddr(unsigned int offset)
+{
+	return 0;
+}
 #endif /* CONFIG_EXYNOS_SNAPSHOT */
 
 struct ess_dumper {
