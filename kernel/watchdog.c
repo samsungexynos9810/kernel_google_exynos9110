@@ -346,10 +346,12 @@ static void watchdog_check_hardlockup_other_cpu(void)
 		if (per_cpu(hard_watchdog_warn, next_cpu) == true)
 			return;
 
-		if (hardlockup_panic)
+		if (hardlockup_panic) {
+			exynos_ss_set_hardlockup(hardlockup_panic);
 			panic("Watchdog detected hard LOCKUP on cpu %u", next_cpu);
-		else
+		} else {
 			WARN(1, "Watchdog detected hard LOCKUP on cpu %u", next_cpu);
+		}
 
 		per_cpu(hard_watchdog_warn, next_cpu) = true;
 	} else {
@@ -424,8 +426,10 @@ static void watchdog_overflow_callback(struct perf_event *event,
 				!test_and_set_bit(0, &hardlockup_allcpu_dumped))
 			trigger_allbutself_cpu_backtrace();
 
-		if (hardlockup_panic)
+		if (hardlockup_panic) {
+			exynos_ss_set_hardlockup(hardlockup_panic);
 			panic("Hard LOCKUP");
+		}
 
 		__this_cpu_write(hard_watchdog_warn, true);
 		return;
