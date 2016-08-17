@@ -246,7 +246,7 @@ bool ion_may_hwrender_handle(struct ion_client *client, struct ion_handle *handl
 
 dma_addr_t ion_iovmm_map(struct dma_buf_attachment *attachment,
 			 off_t offset, size_t size,
-			 enum dma_data_direction direction, int id);
+			 enum dma_data_direction direction, int prop);
 void ion_iovmm_unmap(struct dma_buf_attachment *attachment, dma_addr_t iova);
 int ion_secure_protect(struct ion_buffer *buffer);
 int ion_secure_unprotect(struct ion_buffer *buffer);
