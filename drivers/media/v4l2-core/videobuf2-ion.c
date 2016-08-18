@@ -65,6 +65,24 @@ struct vb2_ion_buf {
 #define ctx_cached(ctx) (!(ctx->flags & VB2ION_CTX_UNCACHED))
 #define ctx_iommu(ctx) (!!(ctx->flags & VB2ION_CTX_IOMMU))
 
+static int get_iommu_prot(struct vb2_ion_context *ctx,
+			  enum dma_data_direction dir)
+{
+	int prot;
+
+	if (dir == DMA_TO_DEVICE)
+		prot = IOMMU_READ;
+	else if (dir == DMA_FROM_DEVICE)
+		prot = IOMMU_WRITE;
+	else
+		prot = IOMMU_READ | IOMMU_WRITE;
+
+	if (!!(ctx->flags & VB2ION_CTX_COHERENT_DMA))
+		prot |= IOMMU_CACHE;
+
+	return prot;
+}
+
 /**
  * vb2_get_vma() - acquire and lock the virtual memory area
  * @vma:        given virtual memory area
@@ -172,6 +190,8 @@ void *vb2_ion_create_context(struct device *dev, size_t alignment, long flags)
 
 	vb2_ion_set_alignment(ctx, alignment);
 	ctx->flags = flags;
+	if (device_get_dma_attr(dev) == DEV_DMA_COHERENT)
+		ctx->flags |= VB2ION_CTX_COHERENT_DMA;
 	mutex_init(&ctx->lock);
 
 	return ctx;
@@ -244,7 +264,8 @@ void *vb2_ion_private_alloc(void *alloc_ctx, size_t size)
 	mutex_lock(&ctx->lock);
 	if (ctx_iommu(ctx)) {
 		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
-						   buf->size, 0, 0);
+					   buf->size, buf->direction,
+					   get_iommu_prot(ctx, buf->direction));
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
 			ret = (int)buf->cookie.ioaddr;
 			mutex_unlock(&ctx->lock);
@@ -468,7 +489,8 @@ static int vb2_ion_map_dmabuf(void *mem_priv)
 	mutex_lock(&ctx->lock);
 	if (ctx_iommu(ctx) && buf->cookie.ioaddr == 0) {
 		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
-					buf->size, buf->direction, 0);
+					buf->size, buf->direction,
+					get_iommu_prot(ctx, buf->direction));
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
 			pr_err("buf->cookie.ioaddr is error: %pa\n",
 					&buf->cookie.ioaddr);
@@ -670,7 +692,8 @@ static void *vb2_ion_get_userptr_dmabuf(struct vb2_ion_context *ctx,
 
 	if (ctx_iommu(ctx)) {
 		buf->cookie.ioaddr = ion_iovmm_map(buf->attachment, 0,
-					buf->size, buf->direction, 0);
+					buf->size, buf->direction,
+					get_iommu_prot(ctx, buf->direction));
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
 			ret = ERR_PTR(buf->cookie.ioaddr);
 			goto err_iovmm;
@@ -729,22 +752,8 @@ static void *vb2_ion_get_userptr(void *alloc_ctx, unsigned long vaddr,
 		if (IS_ERR(p_ret))
 			goto err_map;
 	} else if (ctx_iommu(ctx)) {
-		int prot = IOMMU_READ;
-
-		if (dma_dir ==  DMA_FROM_DEVICE) {
-			prot |= IOMMU_WRITE;
-		} else if (dma_dir == DMA_TO_DEVICE) {
-			prot |= IOMMU_READ;
-		} else if (dma_dir == DMA_BIDIRECTIONAL) {
-			prot |= IOMMU_READ | IOMMU_WRITE;
-		} else {
-			dev_err(ctx->dev, "%s: Invalid DMA direction\n", __func__);
-			p_ret = ERR_PTR(-EINVAL);
-			goto err_alloc;
-		}
-
-		 buf->cookie.ioaddr = exynos_iovmm_map_userptr(
-						ctx->dev, vaddr, size, prot);
+		buf->cookie.ioaddr = exynos_iovmm_map_userptr(ctx->dev, vaddr,
+				 size, get_iommu_prot(ctx, buf->direction));
 		if (IS_ERR_VALUE(buf->cookie.ioaddr)) {
 			p_ret = ERR_PTR(buf->cookie.ioaddr);
 			goto err_map;
@@ -820,6 +829,9 @@ void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 	struct vb2_ion_buf *buf = container_of(cookie,
 					struct vb2_ion_buf, cookie);
 
+	if (!!(buf->ctx->flags & VB2ION_CTX_COHERENT_DMA))
+		return;
+
 	dev_dbg(buf->ctx->dev, "syncing for device, dmabuf: %p, kva: %p, "
 		"size: %zd, dir: %d\n", buf->dma_buf, buf->kva, size, dir);
 
@@ -849,6 +861,9 @@ void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 {
 	struct vb2_ion_buf *buf = container_of(cookie,
 					struct vb2_ion_buf, cookie);
+
+	if (!!(buf->ctx->flags & VB2ION_CTX_COHERENT_DMA))
+		return;
 
 	dev_dbg(buf->ctx->dev, "syncing for cpu, dmabuf: %p, kva: %p, "
 		"size: %zd, dir: %d\n", buf->dma_buf, buf->kva, size, dir);

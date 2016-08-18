@@ -33,6 +33,8 @@
 #define VB2ION_CTX_IOMMU	(1 << (ION_NUM_HEAPS + 1))
 /* Non-cached mapping to user when mmap */
 #define VB2ION_CTX_UNCACHED	(1 << (ION_NUM_HEAPS + 2))
+/* DMA of the client device is coherent with CPU */
+#define VB2ION_CTX_COHERENT_DMA	(1 << (ION_NUM_HEAPS + 3))
 
 /* flags for contents protection */
 #define VB2ION_CTX_DRM_MFCSH	(EXYNOS_ION_HEAP_EXYNOS_CONTIG_MASK | \
