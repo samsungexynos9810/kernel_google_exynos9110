@@ -114,7 +114,7 @@ static struct cpuidle_state exynos_cpuidle_set[] __initdata = {
 		.desc			= "ARM clock gating(WFI)",
 	},
 	[1] = {
-		.enter                  = exynos_enter_lowpower,
+		.enter                  = exynos_enter_idle,
 		.exit_latency           = 100,
 		.target_residency       = 5000,
 		.flags                  = CPUIDLE_FLAG_TIME_VALID,
