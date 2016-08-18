@@ -2942,7 +2942,7 @@ static int exynos_ss_combine_pmsg(char *buffer, size_t count, unsigned int level
 					tmBuf.tm_hour, tmBuf.tm_min, tmBuf.tm_sec,
 					logger.tv_nsec / 1000000, logger.pid, logger.tid);
 
-			logger.func_hook_logger("log_platform", logbuf, logbuf_len);
+			logger.func_hook_logger("log_platform", logbuf, logbuf_len - 1);
 		}
 		break;
 	case ESS_LOGGER_LEVEL_PREFIX:
@@ -2968,17 +2968,7 @@ static int exynos_ss_combine_pmsg(char *buffer, size_t count, unsigned int level
 			if (count == ESS_LOGGER_SKIP_COUNT && *eatnl != '\0')
 				break;
 
-			memcpy((void *)logbuf, buffer, count);
-			eatnl = logbuf + count - ESS_LOGGER_STRING_PAD;
-
-			/* Mark End of String for safe to buffer */
-			*eatnl = '\0';
-			while (--eatnl >= logbuf) {
-				if (*eatnl == '\n' || *eatnl == '\0')
-					*eatnl = ' ';
-			};
-
-			logger.func_hook_logger("log_platform", logbuf, count);
+			logger.func_hook_logger("log_platform", buffer, count - 1);
 		}
 		break;
 	default:
