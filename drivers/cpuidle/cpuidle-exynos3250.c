@@ -114,7 +114,7 @@ static struct cpuidle_state exynos_cpuidle_set[] __initdata = {
 		.desc			= "ARM clock gating(WFI)",
 	},
 	[1] = {
-		.enter                  = exynos_enter_idle,
+		.enter                  = exynos_enter_lowpower,
 		.exit_latency           = 100,
 		.target_residency       = 5000,
 		.flags                  = CPUIDLE_FLAG_TIME_VALID,
@@ -382,6 +382,8 @@ static int exynos_enter_lowpower(struct cpuidle_device *dev,
 				int index)
 {
 	int new_index = index;
+
+	return exynos_enter_idle(dev, drv, 0);
 
 	/* This mode only can be entered when other core's are offline */
 	if (num_online_cpus() > 1)
