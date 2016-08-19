@@ -24,7 +24,7 @@
 //#define GAMMA_PARAM_SIZE 26
 #define MAX_BRIGHTNESS 255
 #define MIN_BRIGHTNESS 0
-#define DEFAULT_BRIGHTNESS 0
+#define DEFAULT_BRIGHTNESS 72
 
 struct backlight_device *bd;
 #ifdef CONFIG_HAS_EARLYSUSPEND
