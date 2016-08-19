@@ -1807,6 +1807,9 @@ static int sysmmu_pm_suspend(struct device *dev)
 {
 	struct sysmmu_list_data *list;
 
+	if (!has_sysmmu(dev))
+		return 0;
+
 	for_each_sysmmu_list(dev, list) {
 		struct sysmmu_drvdata *drvdata = dev_get_drvdata(list->sysmmu);
 		unsigned long flags;
@@ -1825,6 +1828,9 @@ static int sysmmu_pm_suspend(struct device *dev)
 static int sysmmu_pm_resume(struct device *dev)
 {
 	struct sysmmu_list_data *list;
+
+	if (!has_sysmmu(dev))
+		return 0;
 
 	for_each_sysmmu_list(dev, list) {
 		struct sysmmu_drvdata *drvdata = dev_get_drvdata(list->sysmmu);
