@@ -73,6 +73,7 @@
 #define GATE_SCLK_G3D		0xc82c
 #define GATE_SCLK_LCD		0xc834
 #define GATE_SCLK_ISP_TOP	0xc838
+#define GATE_BUS_FSYS0		0xc740
 #define GATE_SCLK_FSYS		0xc840
 #define GATE_SCLK_PERIL		0xc850
 #define GATE_IP_CAM		0xc920
@@ -90,6 +91,9 @@
 #define DIV_CPU1		0x14504
 #define PWR_CTRL1		0x15020
 #define PWR_CTRL2		0x15024
+
+#define EXYNOS3_PA_CMU_ACP              0x10450000
+#define GATE_IP_ACP0		0x0900
 
 /* Below definitions are used for PWR_CTRL settings */
 #define PWR_CTRL1_CORE2_DOWN_RATIO(x)		(((x) & 0x7) << 28)
@@ -119,6 +123,9 @@ enum exynos3250_dmc_plls {
 
 void __iomem *reg_base;
 static void __iomem *dmc_reg_base;
+static void __iomem *acp_base;
+
+unsigned int acp_val;
 
 /*
  * Support for CMU save/restore across system suspends
@@ -177,7 +184,9 @@ static unsigned long exynos3250_cmu_clk_regs[] __initdata = {
 	GATE_SCLK_MFC,
 	GATE_SCLK_G3D,
 	GATE_SCLK_LCD,
+	GATE_BUS_LCD,
 	GATE_SCLK_ISP_TOP,
+	GATE_BUS_FSYS0,
 	GATE_SCLK_FSYS,
 	GATE_SCLK_PERIL,
 	GATE_IP_CAM,
@@ -200,11 +209,13 @@ static int exynos3250_clk_suspend(void)
 {
 	samsung_clk_save(reg_base, exynos3250_clk_regs,
 				ARRAY_SIZE(exynos3250_cmu_clk_regs));
+	acp_val = __raw_readl(reg_base + GATE_IP_ACP0);
 	return 0;
 }
 
 static void exynos3250_clk_resume(void)
 {
+	__raw_writel(acp_val, reg_base + GATE_IP_ACP0);
 	samsung_clk_restore(reg_base, exynos3250_clk_regs,
 				ARRAY_SIZE(exynos3250_cmu_clk_regs));
 }
@@ -829,6 +840,8 @@ static void __init exynos3250_cmu_init(struct device_node *np)
 	reg_base = of_iomap(np, 0);
 	if (!reg_base)
 		panic("%s: failed to map registers\n", __func__);
+
+	acp_base = ioremap(EXYNOS3_PA_CMU_ACP, SZ_4K);
 
 	ctx = samsung_clk_init(np, reg_base, CLK_NR_CLKS);
 	if (!ctx)

@@ -1421,4 +1421,9 @@ u32 exynos_eint_to_pin_num(int eint)
 {
         return exynos8890_pin_ctrl[0].base + eint;
 }
+#elif defined(CONFIG_SOC_EXYNOS3250)
+u32 exynos_eint_to_pin_num(int eint)
+{
+        return exynos3250_pin_ctrl[0].base + eint;
+}
 #endif

@@ -173,4 +173,8 @@ static inline u32 pmu_raw_readl(u32 offset)
 	return __raw_readl(pmu_base_addr + offset);
 }
 
+#ifdef CONFIG_CPU_IDLE
+extern void exynos3250_disable_idle_clock_down(void);
+#endif
+
 #endif /* __ARCH_ARM_MACH_EXYNOS_COMMON_H */
