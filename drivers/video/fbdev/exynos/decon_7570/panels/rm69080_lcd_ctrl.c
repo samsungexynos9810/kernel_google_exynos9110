@@ -24,48 +24,7 @@
 #include <video/mipi_display.h>
 #endif
 
-#define VIDEO_MODE      1
-#define COMMAND_MODE    0
-
 #define ID		0
-
-struct decon_lcd rm69080_lcd_info = {
-	/* Only availaable VIDEO MODE */
-	.mode = VIDEO_MODE,
-
-	.decon_vfp = 0x1,
-	.decon_vbp = 0xD,
-	.decon_hfp = 0x18,
-	.decon_hfp = 0x18,
-	.decon_hbp = 0x18,
-	.decon_vsa = 0x02,
-	.decon_hsa = 0x02,
-
-	.dsim_vfp = 0x1,
-	.dsim_vbp = 0xD,
-	.dsim_hfp = 0x18,
-	.dsim_hfp = 0x18,
-	.dsim_hbp = 0x18,
-	.dsim_vsa = 0x02,
-	.dsim_hsa = 0x02,
-
-	.xres = 800,
-	.yres = 1280,
-
-	.width = 71,
-	.height = 114,
-
-	/* Mhz */
-	.hs_clk = 480,
-	.esc_clk = 20,
-
-	.fps = 60,
-};
-
-struct decon_lcd *decon_get_lcd_info(void)
-{
-	return &rm69080_lcd_info;
-}
 
 void lcd_init(struct decon_lcd * lcd)
 {
@@ -122,10 +81,10 @@ void lcd_init(struct decon_lcd * lcd)
 		0x39, 0);
 
 	/*cmd_brightness_set */
-	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
+	/*while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,
 		(unsigned long) cmd_brightness_set,
 		ARRAY_SIZE(cmd_brightness_set)) == -1)
-		dsim_err("failed to cmd_brightness_set.\n");
+		dsim_err("failed to cmd_brightness_set.\n");*/
 
 
 	/* sleep out */
@@ -159,24 +118,12 @@ void lcd_disable(void)
 	msleep(120);
 }
 
-int lcd_gamma_ctrl(u32 backlightlevel)
-{
-	return 0;
-}
-
-int lcd_gamma_update(void)
-{
-	return 0;
-}
-
 void lcd_brightness_set(int brightness)
 {
-	unsigned char buffer[1] = "";
 	unsigned char reg_brightness_set[2] = "";
 
-	sprintf(buffer, "0x%02X\n", brightness);
 	reg_brightness_set[0] = 0x51;
-	reg_brightness_set[1] = buffer[0];
+	reg_brightness_set[1] = brightness;
 
 	/*brightness_set */
 	while(dsim_wr_data(ID, MIPI_DSI_DCS_LONG_WRITE,

@@ -26,7 +26,6 @@
 #define MIN_BRIGHTNESS 0
 #define DEFAULT_BRIGHTNESS 0
 
-static struct dsim_device *dsim_base;
 struct backlight_device *bd;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 static struct early_suspend    rm69080_early_suspend;
@@ -64,8 +63,7 @@ static const struct backlight_ops rm69080_backlight_ops = {
 
 static int rm69080_probe(struct dsim_device *dsim)
 {
-	dsim_base = dsim;
-
+	printk(KERN_ERR "rm69080_probe \n");
 	bd = backlight_device_register("pwm-backlight.0", NULL,
 		NULL, &rm69080_backlight_ops, NULL);
 	if (IS_ERR(bd))
@@ -79,21 +77,22 @@ static int rm69080_probe(struct dsim_device *dsim)
 
 static int rm69080_displayon(struct dsim_device *dsim)
 {
-	printk(KERN_ERR "rm69080 lcd_init \n");
+	printk(KERN_ERR "rm69080_displayon \n");
 	lcd_init(&dsim->lcd_info);
 	return 0;
 }
 
 static int rm69080_suspend(struct dsim_device *dsim)
 {
-	printk(KERN_ERR "rm69080 lcd_disable \n");
+	printk(KERN_ERR "rm69080_suspend \n");
 	lcd_disable();
 	return 0;
 }
 
 static int rm69080_resume(struct dsim_device *dsim)
 {
-	lcd_init(&dsim->lcd_info);
+	printk(KERN_ERR "rm69080_resume\n");
+	//lcd_init(&dsim->lcd_info);
 	return 0;
 }
 
