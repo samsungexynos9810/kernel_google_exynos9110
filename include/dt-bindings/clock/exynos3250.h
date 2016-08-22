@@ -68,16 +68,17 @@
 #define CLK_MOUT_TSADC			48
 #define CLK_MOUT_MMC1			49
 #define CLK_MOUT_MMC0			50
-#define CLK_MOUT_UART1			51
-#define CLK_MOUT_UART0			52
-#define CLK_MOUT_SPI1			53
-#define CLK_MOUT_SPI0			54
-#define CLK_MOUT_AUDIO			55
-#define CLK_MOUT_MPLL_USER_C		56
-#define CLK_MOUT_HPM			57
-#define CLK_MOUT_CORE			58
-#define CLK_MOUT_APLL			59
-#define CLK_MOUT_ACLK_266_SUB		60
+#define CLK_MOUT_UART2			51
+#define CLK_MOUT_UART1			52
+#define CLK_MOUT_UART0			53
+#define CLK_MOUT_SPI1			54
+#define CLK_MOUT_SPI0			55
+#define CLK_MOUT_AUDIO			56
+#define CLK_MOUT_MPLL_USER_C		57
+#define CLK_MOUT_HPM			58
+#define CLK_MOUT_CORE			59
+#define CLK_MOUT_APLL			60
+#define CLK_MOUT_ACLK_266_SUB		61
 
 /* Dividers */
 #define CLK_DIV_GPL			64
@@ -109,23 +110,24 @@
 #define CLK_DIV_MMC1			90
 #define CLK_DIV_MMC0_PRE		91
 #define CLK_DIV_MMC0			92
-#define CLK_DIV_UART1			93
-#define CLK_DIV_UART0			94
-#define CLK_DIV_SPI1_PRE		95
-#define CLK_DIV_SPI1			96
-#define CLK_DIV_SPI0_PRE		97
-#define CLK_DIV_SPI0			98
-#define CLK_DIV_PCM			99
-#define CLK_DIV_AUDIO			100
-#define CLK_DIV_I2S			101
-#define CLK_DIV_CORE2			102
-#define CLK_DIV_APLL			103
-#define CLK_DIV_PCLK_DBG		104
-#define CLK_DIV_ATB			105
-#define CLK_DIV_COREM			106
-#define CLK_DIV_CORE			107
-#define CLK_DIV_HPM			108
-#define CLK_DIV_COPY			109
+#define CLK_DIV_UART2			93
+#define CLK_DIV_UART1			94
+#define CLK_DIV_UART0			95
+#define CLK_DIV_SPI1_PRE		96
+#define CLK_DIV_SPI1			97
+#define CLK_DIV_SPI0_PRE		98
+#define CLK_DIV_SPI0			99
+#define CLK_DIV_PCM			100
+#define CLK_DIV_AUDIO			101
+#define CLK_DIV_I2S			102
+#define CLK_DIV_CORE2			103
+#define CLK_DIV_APLL			104
+#define CLK_DIV_PCLK_DBG		105
+#define CLK_DIV_ATB			106
+#define CLK_DIV_COREM			107
+#define CLK_DIV_CORE			108
+#define CLK_DIV_HPM			109
+#define CLK_DIV_COPY			110
 
 /* Gates */
 #define CLK_ASYNC_G3D			128
@@ -215,14 +217,15 @@
 #define CLK_I2C2			212
 #define CLK_I2C1			213
 #define CLK_I2C0			214
-#define CLK_UART1			215
-#define CLK_UART0			216
-#define CLK_BLOCK_LCD			217
-#define CLK_BLOCK_G3D			218
-#define CLK_BLOCK_MFC			219
-#define CLK_BLOCK_CAM			220
-#define CLK_SMIES			221
-#define CLK_ACLK_FIMD0			222
+#define CLK_UART2			215
+#define CLK_UART1			216
+#define CLK_UART0			217
+#define CLK_BLOCK_LCD			218
+#define CLK_BLOCK_G3D			219
+#define CLK_BLOCK_MFC			220
+#define CLK_BLOCK_CAM			221
+#define CLK_SMIES			222
+#define CLK_ACLK_FIMD0			223
 
 /* Special clocks */
 #define CLK_SCLK_JPEG			224
@@ -247,14 +250,15 @@
 #define CLK_SCLK_PCM			243
 #define CLK_SCLK_SPI1			244
 #define CLK_SCLK_SPI0			245
-#define CLK_SCLK_UART1			246
-#define CLK_SCLK_UART0			247
+#define CLK_SCLK_UART2			246
+#define CLK_SCLK_UART1			247
+#define CLK_SCLK_UART0			248
 
 /*
  * Total number of clocks of main CMU.
  * NOTE: Must be equal to last clock ID increased by one.
  */
-#define CLK_NR_CLKS			248
+#define CLK_NR_CLKS			249
 
 /*
  * CMU DMC
