@@ -1334,6 +1334,7 @@ static int i2s_resume(struct snd_soc_dai *dai)
 	return 0;
 }
 
+#if 0
 static int i2s_suspend_force(struct snd_soc_dai *dai)
 {
 	struct i2s_dai *i2s = to_info(dai);
@@ -1353,6 +1354,7 @@ static int i2s_resume_force(struct snd_soc_dai *dai)
 
 	return 0;
 }
+#endif
 #else
 #define i2s_suspend NULL
 #define i2s_resume  NULL
@@ -1401,6 +1403,7 @@ static int samsung_i2s_dai_probe(struct snd_soc_dai *dai)
 		return -ENOENT;
 	}
 
+#ifndef CONFIG_SOC_EXYNOS3250
 	i2s->opclk1 = clk_get(&i2s->pdev->dev, "i2s_opclk1");
 	if (IS_ERR(i2s->opclk1)) {
 		dev_err(&i2s->pdev->dev, "failed to get i2s_opclk1\n");
@@ -1417,6 +1420,7 @@ static int samsung_i2s_dai_probe(struct snd_soc_dai *dai)
 		iounmap(i2s->addr);
 		return -ENOENT;
 	}
+#endif
 #else
 	i2s->clk = clk_get(&i2s->pdev->dev, "gate_aud_mi2s");
 	if (IS_ERR(i2s->clk)) {
@@ -1466,9 +1470,11 @@ static int samsung_i2s_dai_probe(struct snd_soc_dai *dai)
 		idma_reg_addr_init(i2s->addr,
 					i2s->sec_dai->idma_playback.dma_addr);
 #endif
+#if 0
 	if (i2s->amixer)
 		eax_dai_register(dai, &samsung_i2s_dai_ops,
 					i2s_suspend_force, i2s_resume_force);
+#endif
 
 probe_exit:
 	clk_prepare_enable(i2s->opclk0);
@@ -1520,8 +1526,10 @@ static int samsung_i2s_dai_remove(struct snd_soc_dai *dai)
 
 	i2s->clk = NULL;
 
+#if 0
 	if (i2s->amixer)
 		eax_dai_unregister();
+#endif
 
 	return 0;
 }
@@ -1571,13 +1579,13 @@ static struct i2s_dai *i2s_alloc_dai(struct platform_device *pdev,
 	i2s->i2s_dai_drv.suspend = i2s_suspend;
 	i2s->i2s_dai_drv.resume = i2s_resume;
 	i2s->i2s_dai_drv.playback.channels_min = 2;
-	i2s->i2s_dai_drv.playback.channels_max = CONFIG_SND_SOC_I2S_TXSLOT_NUMBER;
+	i2s->i2s_dai_drv.playback.channels_max = 2;
 	i2s->i2s_dai_drv.playback.rates = SAMSUNG_I2S_RATES;
 	i2s->i2s_dai_drv.playback.formats = SAMSUNG_I2S_FMTS;
 
 	if (type == TYPE_PRI) {
 		i2s->i2s_dai_drv.capture.channels_min = 1;
-		i2s->i2s_dai_drv.capture.channels_max = CONFIG_SND_SOC_I2S_RXSLOT_NUMBER;
+		i2s->i2s_dai_drv.capture.channels_max = 2;
 		i2s->i2s_dai_drv.capture.rates = SAMSUNG_I2S_RATES;
 		i2s->i2s_dai_drv.capture.formats = SAMSUNG_I2S_FMTS;
 		dev_set_drvdata(&i2s->pdev->dev, i2s);
@@ -1986,9 +1994,11 @@ static int samsung_i2s_probe(struct platform_device *pdev)
 	snd_soc_register_component(&pri_dai->pdev->dev, &samsung_i2s_component,
 				   &pri_dai->i2s_dai_drv, 1);
 
+#if 0
 	if (pri_dai->amixer)
 		eax_dev_register(&pri_dai->pdev->dev, "i2s",
 			     &pri_dai->dma_playback, pri_dai->amixer);
+#endif
 
 	pm_runtime_enable(&pdev->dev);
 

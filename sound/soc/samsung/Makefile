@@ -40,7 +40,7 @@ obj-$(CONFIG_SOC_EXYNOS7580) += lpass-exynos7580.o
 obj-$(CONFIG_SOC_EXYNOS7890) += lpass-exynos7890.o
 obj-$(CONFIG_SOC_EXYNOS8890) += lpass-exynos8890.o
 endif
-obj-$(CONFIG_SND_SOC_SAMSUNG) += snd-soc-eax-dai.o snd-soc-eax-dma.o
+#obj-$(CONFIG_SND_SOC_SAMSUNG) += snd-soc-eax-dai.o snd-soc-eax-dma.o
 obj-$(CONFIG_SND_ESA_SA_EFFECT) += snd-soc-esa-sa-effect.o
 obj-$(CONFIG_SND_SOC_EAX_SLOWPATH) += snd-soc-eax-slowpath.o
 
@@ -74,6 +74,8 @@ snd-soc-universal8890-dummy-objs := universal8890_dummy.o
 snd-soc-espresso8890-wm5110-objs := cp_dummy.o espresso8890_wm5110.o
 snd-soc-pacific-arizona-objs := pacific_arizona_318.o
 snd-soc-lucky-arizona-objs := lucky_arizona_lsi.o
+snd-soc-shiri-ak4678-objs := shiri_ak4678.o
+snd-soc-koi3250-dummy-objs := koi3250_dummy.o
 
 obj-$(CONFIG_SND_SOC_SAMSUNG_JIVE_WM8750) += snd-soc-jive-wm8750.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_NEO1973_WM8753) += snd-soc-neo1973-wm8753.o
@@ -104,5 +106,7 @@ obj-$(CONFIG_SND_SOC_SAMSUNG_ESPRESSO8890_WM5110) += snd-soc-espresso8890-wm5110
 obj-$(CONFIG_SND_SOC_SAMSUNG_UNIVERSAL8890_DUMMY) += snd-soc-universal8890-dummy.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_ZERO_CLEARWATER) += snd-soc-pacific-arizona.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_LUCKY_MOON) += snd-soc-lucky-arizona.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_SHIRI_AK4678) += snd-soc-shiri-ak4678.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_KOI_DUMMY) += snd-soc-koi3250-dummy.o
 
 obj-$(CONFIG_SND_SAMSUNG_SEIREN) += seiren/

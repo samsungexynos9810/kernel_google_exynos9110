@@ -62,6 +62,7 @@ static inline int exynos_check_aud_pwr(void) { return -1; }
 #endif
 
 
+#ifdef CONFIG_SND_SAMSUNG_AUDSS
 extern int lpass_register_subip(struct device *ip_dev, const char *ip_name);
 extern int lpass_set_gpio_cb(struct device *ip_dev,
 			void (*ip_cb)(struct device *dev));
@@ -75,5 +76,13 @@ extern void lpass_dma_enable(bool on);
 
 extern void lpass_reset(int ip, int op);
 extern void lpass_reset_toggle(int ip);
+#else
+#define lpass_register_subip(ip_dev, ip_name) do { } while (0)
+#define lpass_get_sync(ip_dev) do { } while (0)
+#define lpass_put_sync(ip_dev) do { } while (0)
+#define lpass_add_stream() do { } while (0)
+#define lpass_remove_stream() do { } while (0)
+#define lpass_dma_enable(on) do { } while (0)
+#endif
 
 #endif /* __SOUND_EXYNOS_H */

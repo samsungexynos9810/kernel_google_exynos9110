@@ -37,7 +37,6 @@ extern int eax_dai_register(struct snd_soc_dai *dai,
 			const struct snd_soc_dai_ops *dai_ops,
 			int (*dai_suspend)(struct snd_soc_dai *dai),
 			int (*dai_resume)(struct snd_soc_dai *dai));
-extern int eax_dai_unregister(void);
 extern int eax_dma_dai_register(struct snd_soc_dai *dai);
 extern int eax_dma_dai_unregister(void);
 extern int eax_dma_params_register(struct s3c_dma_params *dma);

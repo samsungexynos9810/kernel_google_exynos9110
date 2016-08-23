@@ -261,6 +261,24 @@ config SND_SOC_ODROIDX2
 	help
 	  Say Y here to enable audio support for the Odroid-X2/U3.
 
+config SND_SOC_SAMSUNG_SHIRI_AK4678
+	tristate "SoC I2S Audio support for AK4678 on Shiri board"
+	depends on SND_SOC_SAMSUNG
+	depends on I2C=y
+	select SND_SAMSUNG_I2S
+	select SND_SOC_AK4678
+	help
+	  Say Y if you want to add support for SoC audio on the Shiri board.
+
+config SND_SOC_SAMSUNG_KOI_DUMMY
+	tristate "SoC I2S Audio support for Dummy Codec on KOI board"
+	depends on SND_SOC_SAMSUNG
+	depends on I2C=y
+	select SND_SAMSUNG_I2S
+	select SND_SOC_DUMMY_CODEC
+	help
+	  Say Y if you want to add support for SoC audio on the KOI board.
+
 config SND_SOC_SAMSUNG_ESPRESSO8890_WM5110
 	tristate "SoC I2S Audio support for WM5110 on ESPRESSO8890"
 	depends on SND_SOC_SAMSUNG

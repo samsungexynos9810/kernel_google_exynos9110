@@ -114,6 +114,7 @@ extern void lpass_reset_clk_default(void);
 extern void lpass_init_clk_gate(void);
 extern void lpass_disable_mif_status(bool on);
 
+#ifdef CONFIG_SND_SAMSUNG_AUDSS
 extern void lpass_update_lpclock(u32 ctrlid, bool idle);
 extern void lpass_update_lpclock_impl(struct device *dev, u32 ctrlid, bool idle);
 
@@ -124,6 +125,16 @@ extern void update_cp_available(bool);
 extern bool lpass_i2s_master_mode(void);
 #ifdef CONFIG_SND_SAMSUNG_SEIREN_OFFLOAD
 extern void lpass_set_cpu_lock(int level);
+#endif
+#else
+static inline int lpass_get_dram_usage_count(void)
+{
+	return 1;
+}
+#define lpass_inc_dram_usage_count() do { } while (0)
+#define lpass_dec_dram_usage_count() do { } while (0)
+#define lpass_update_lpclock(ctrlid, idle) do { } while (0)
+#define lpass_disable_mif_status(on) do { } while (0)
 #endif
 
 #endif /* __SND_SOC_SAMSUNG_LPASS_H */
