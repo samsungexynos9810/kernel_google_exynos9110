@@ -581,4 +581,20 @@
 		};
 	};
 
+	gaudio_codec: ak4678 {
+		compatible = "akm,ak4678";
+		status = "okay";
+	};
+
+	audio_codec_dummy: dummy-codec {
+		compatible = "samsung,dummy-codec";
+		status = "okay";
+	};
+
+	sound {
+		compatible = "samsung,koi-dummy";
+		samsung,audio-cpu = <&i2s>;
+		samsung,audio-codec = <&audio_codec_dummy>;
+		status = "okay";
+	};
 };
