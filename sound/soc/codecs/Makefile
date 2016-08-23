@@ -29,6 +29,7 @@ snd-soc-ak4554-objs := ak4554.o
 snd-soc-ak4641-objs := ak4641.o
 snd-soc-ak4642-objs := ak4642.o
 snd-soc-ak4671-objs := ak4671.o
+snd-soc-ak4678-objs := ak4678.o
 snd-soc-ak5386-objs := ak5386.o
 snd-soc-arizona-objs := arizona.o
 snd-soc-cq93vc-objs := cq93vc.o
@@ -168,6 +169,7 @@ snd-soc-wm9705-objs := wm9705.o
 snd-soc-wm9712-objs := wm9712.o
 snd-soc-wm9713-objs := wm9713.o
 snd-soc-wm-hubs-objs := wm_hubs.o
+snd-soc-dummy-objs := dummy_codec.o
 
 # Amp
 snd-soc-max9877-objs := max9877.o
@@ -343,6 +345,7 @@ obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
 obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
 obj-$(CONFIG_SND_SOC_WM_ADSP)	+= snd-soc-wm-adsp.o
 obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
+obj-$(CONFIG_SND_SOC_DUMMY_CODEC)	+= snd-soc-dummy.o
 
 # Amp
 obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o

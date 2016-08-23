@@ -39,6 +39,7 @@ config SND_SOC_ALL_CODECS
 	select SND_SOC_AK4641 if I2C
 	select SND_SOC_AK4642 if I2C
 	select SND_SOC_AK4671 if I2C
+	select SND_SOC_AK4678 if I2C
 	select SND_SOC_AK5386
 	select SND_SOC_ALC5623 if I2C
 	select SND_SOC_ALC5632 if I2C
@@ -322,6 +323,9 @@ config SND_SOC_AK4642
 
 config SND_SOC_AK4671
 	tristate
+
+config SND_SOC_AK4678
+        tristate
 
 config SND_SOC_AK5386
 	tristate "AKM AK5638 CODEC"
@@ -801,6 +805,9 @@ config SND_SOC_WM9712
 	tristate
 
 config SND_SOC_WM9713
+	tristate
+
+config SND_SOC_DUMMY_CODEC
 	tristate
 
 # Amp
