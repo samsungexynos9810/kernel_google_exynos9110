@@ -908,9 +908,13 @@ static char *mode_name(const struct pt_regs *regs)
 
 void ecd_printf(const char *fmt, ...)
 {
-	char *buf = interface->output_buf;
+	char *buf;
 	va_list ap;
 
+	if (!interface || !interface->output_buf)
+		return;
+
+	buf = interface->output_buf;
 	va_start(ap, fmt);
 	vscnprintf(buf, SZ_1K, fmt, ap);
 	va_end(ap);
