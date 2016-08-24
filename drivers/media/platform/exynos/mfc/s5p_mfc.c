@@ -608,10 +608,10 @@ static void mfc_handle_released_info(struct s5p_mfc_ctx *ctx,
 	if (released_flag) {
 		for (t = 0; t < MFC_MAX_DPBS; t++) {
 			if (released_flag & (1 << t)) {
-				if (dec->err_sync_flag & (1 << t)) {
+				if (dec->err_reuse_flag & (1 << t)) {
 					mfc_debug(2, "Released, but reuse. FD[%d] = %03d\n",
 							t, dec->assigned_fd[t]);
-					dec->err_sync_flag &= ~(1 << t);
+					dec->err_reuse_flag &= ~(1 << t);
 				} else {
 					mfc_debug(2, "Release FD[%d] = %03d\n",
 							t, dec->assigned_fd[t]);
@@ -772,8 +772,9 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 		if (s5p_mfc_mem_plane_addr(ctx, &dst_buf->vb, 0)
 							== dspl_y_addr) {
 			index = dst_buf->vb.v4l2_buf.index;
-			if (ctx->codec_mode == S5P_FIMV_CODEC_VC1RCV_DEC &&
-				s5p_mfc_err_dspl(err) == S5P_FIMV_ERR_SYNC_POINT_NOT_RECEIVED) {
+			if ((ctx->codec_mode == S5P_FIMV_CODEC_VC1RCV_DEC &&
+					s5p_mfc_err_dspl(err) == S5P_FIMV_ERR_SYNC_POINT_NOT_RECEIVED) ||
+					(s5p_mfc_err_dspl(err) == S5P_FIMV_ERR_BROKEN_LINK)) {
 				if (released_flag & (1 << index)) {
 					list_del(&dst_buf->list);
 					dec->ref_queue_cnt--;
@@ -781,10 +782,12 @@ static void s5p_mfc_handle_frame_new(struct s5p_mfc_ctx *ctx, unsigned int err)
 					ctx->dst_queue_cnt++;
 					dec->dpb_status &= ~(1 << index);
 					released_flag &= ~(1 << index);
-					mfc_debug(2, "SYNC_POINT_NOT_RECEIVED, released.\n");
+					mfc_debug(2, "Corrupted frame(%d), it will be re-used(released)\n",
+							s5p_mfc_err_dspl(err));
 				} else {
-					dec->err_sync_flag |= 1 << index;
-					mfc_debug(2, "SYNC_POINT_NOT_RECEIVED, used.\n");
+					dec->err_reuse_flag |= 1 << index;
+					mfc_debug(2, "Corrupted frame(%d), it will be re-used(not released)\n",
+							s5p_mfc_err_dspl(err));
 				}
 				dec->dynamic_used |= released_flag;
 				break;
