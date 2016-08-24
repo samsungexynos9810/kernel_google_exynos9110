@@ -36,7 +36,11 @@
 #include <linux/shm_ipc.h>
 #endif
 
+#ifdef CONFIG_SOC_EXYNOS7570_DUAL
+#define DEVFREQ_MIF_SWITCH_FREQ	(840000)
+#else
 #define DEVFREQ_MIF_SWITCH_FREQ	(830000)
+#endif
 
 u32 sw_volt_table;
 
