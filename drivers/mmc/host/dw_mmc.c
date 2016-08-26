@@ -3778,7 +3778,8 @@ static bool dw_mci_reset(struct dw_mci *host)
 
 ciu_out:
 	/* After a CTRL reset we need to have CIU set clock registers  */
-	mci_send_cmd(host->cur_slot, SDMMC_CMD_UPD_CLK, 0);
+	if (host->cur_slot != NULL)
+		mci_send_cmd(host->cur_slot, SDMMC_CMD_UPD_CLK, 0);
 
 	return ret;
 }
