@@ -144,6 +144,7 @@ struct ecd_interface {
 	unsigned int			debug_count;
 	bool				fw_loaded;
 	bool				fw_ready;
+	bool				unhandled_irq;
 
 	spinlock_t			printf_lock;
 	spinlock_t			work_lock;
@@ -1628,6 +1629,7 @@ out:
 static irqreturn_t ecd_uart_irq(int irq, void *dev)
 {
 	int c, count = 0;
+	irqreturn_t ret = IRQ_HANDLED;
 
 	if (!interface->fw_loaded) {
 		while ((c = ecd_uart_getc()) != DEBUGGER_NO_CHAR) {
@@ -1651,9 +1653,14 @@ static irqreturn_t ecd_uart_irq(int irq, void *dev)
 		if (interface->param.console_enable)
 			ecd_tty_ringbuf_consume();
 	} else {
-		interface->ops.uart_irq_handler(irq, dev);
+		ret = interface->ops.uart_irq_handler(irq, dev);
+		if (ret == IRQ_NONE) {
+			pr_err("ECD: No handled serial irq, Disable ECD\n");
+			interface->unhandled_irq = true;
+			disable_irq_nosync(irq);
+		}
 	}
-	return IRQ_HANDLED;
+	return ret;
 }
 
 static ssize_t profile_store(struct device *dev,
@@ -1890,6 +1897,7 @@ static int ecd_probe(struct platform_device *pdev)
 	inf->pdata = pdata;
 	inf->output_buf = kzalloc(SZ_1K, GFP_KERNEL);
 	inf->uart_irq = uart_irq;
+	inf->unhandled_irq = false;
 	interface = inf;
 
 	spin_lock_init(&inf->printf_lock);
