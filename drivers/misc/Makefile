@@ -58,3 +58,6 @@ obj-$(CONFIG_ECHO)		+= echo/
 obj-$(CONFIG_VEXPRESS_SYSCFG)	+= vexpress-syscfg.o
 obj-$(CONFIG_CXL_BASE)		+= cxl/
 obj-$(CONFIG_UID_CPUTIME) += uid_cputime.o
+obj-$(CONFIG_MULTI_SENSORS)	+= MultiSensors.o
+obj-$(CONFIG_MULTI_SENSORS_FW_UPDATE)	+= MSensorsDrv_fw_update.o
+obj-$(CONFIG_KOI_VIBRATOR)	+= koi-vibrator.o

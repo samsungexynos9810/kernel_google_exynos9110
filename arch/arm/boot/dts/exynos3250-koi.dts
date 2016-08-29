@@ -597,4 +597,33 @@
 		samsung,audio-codec = <&audio_codec_dummy>;
 		status = "okay";
 	};
+
+	vibrator {
+		compatible = "casio,koi-vib";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pwm1_out>;
+		samsung,pwm-ch = <1>;
+		samsung,max-timeout = <100000>;
+	};
+	spi@13930000 {
+		status = "okay";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		Msensors: MultiSensors@0 {
+			compatible = "MultiSensors,24";
+			spi-max-frequency = <20000000>;
+			reg = <0x0>;
+			nsw,sub_main_int = <&gpx1 5 0>;
+			pinctrl-names = "default";
+			pinctrl-0 = <&sub_main_irq>;
+			controller-data {
+				cs-gpio = <&gpx1 4 1>;
+				samsung,spi-feedback-delay = <0>;
+			};
+		};
+	};
+	battery: sub_bat {
+		compatible = "casio,sub-battery";
+		status = "okay";
+	};
 };

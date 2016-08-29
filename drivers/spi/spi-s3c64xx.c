@@ -42,6 +42,10 @@
 #include <soc/samsung/exynos-pm.h>
 #endif
 
+#if defined(CONFIG_MULTI_SENSORS)
+#include "../misc/MSensorsDrv.h"
+#endif
+
 #include "../pinctrl/core.h"
 
 static LIST_HEAD(drvdata_list);
@@ -502,6 +506,11 @@ static void s3c64xx_spi_dma_stop(struct s3c64xx_spi_driver_data *sdd,
 #endif
 }
 
+#if defined(CONFIG_MULTI_SENSORS)
+static int tx_fifo_rdy_occur;
+static wait_queue_head_t wait_tx;
+#endif
+
 static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
 				struct spi_device *spi,
 				struct spi_transfer *xfer, int dma_mode)
@@ -577,10 +586,19 @@ static void enable_datapath(struct s3c64xx_spi_driver_data *sdd,
 		}
 	}
 
+#if defined(CONFIG_MULTI_SENSORS)
+	modecfg &= ~(0x3f<<5);	// clear TX_RDY_LVL
+	if (!dma_mode) {
+		modecfg |= (1<<5);
+		tx_fifo_rdy_occur = 0;
+		writel(1, sdd->regs + S3C64XX_SPI_INT_EN);	// enable TX_FIFO_RDY
+	}
+#endif
 	writel(modecfg, regs + S3C64XX_SPI_MODE_CFG);
 	writel(chcfg, regs + S3C64XX_SPI_CH_CFG);
 }
 
+#if !defined(CONFIG_MULTI_SENSORS)
 static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 						struct spi_device *spi)
 {
@@ -618,6 +636,7 @@ static inline void enable_cs(struct s3c64xx_spi_driver_data *sdd,
 			       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 	}
 }
+#endif
 
 static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 				struct spi_transfer *xfer, int dma_mode)
@@ -632,10 +651,28 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 	ms = max(ms, 100); /* minimum timeout */
 
 	if (dma_mode) {
+#if defined(CONFIG_MULTI_SENSORS)
+		unsigned int cnt = 0;
+		while (1) {
+			val = wait_for_completion_timeout(&sdd->xfer_completion,
+							msecs_to_jiffies(1000));
+			if (val) {
+				break;
+			} else {
+				cnt++;
+				pr_info("%s: continuing wait %d\n", __func__, cnt);
+			}
+		}
+#else
 		val = msecs_to_jiffies(ms) + 10;
 		val = wait_for_completion_timeout(&sdd->xfer_completion, val);
+#endif
 	} else {
 		u32 status;
+#if defined(CONFIG_MULTI_SENSORS)
+		wait_event_timeout(wait_tx, tx_fifo_rdy_occur,
+						msecs_to_jiffies(1000));
+#endif
 		val = msecs_to_loops(ms);
 		do {
 			status = readl(regs + S3C64XX_SPI_STATUS);
@@ -698,6 +735,7 @@ static int wait_for_xfer(struct s3c64xx_spi_driver_data *sdd,
 static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 						struct spi_device *spi)
 {
+#if !defined(CONFIG_MULTI_SENSORS)
 	struct s3c64xx_spi_csinfo *cs = spi->controller_data;
 
 	if (sdd->tgl_spi == spi)
@@ -712,6 +750,7 @@ static inline void disable_cs(struct s3c64xx_spi_driver_data *sdd,
 			? 0 : S3C64XX_SPI_SLAVE_SIG_INACT,
 		       sdd->regs + S3C64XX_SPI_SLAVE_SEL);
 	}
+#endif
 }
 
 static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
@@ -734,6 +773,10 @@ static void s3c64xx_spi_config(struct s3c64xx_spi_driver_data *sdd)
 	val &= ~(S3C64XX_SPI_CH_SLAVE |
 			S3C64XX_SPI_CPOL_L |
 			S3C64XX_SPI_CPHA_B);
+
+#if defined(CONFIG_MULTI_SENSORS)
+	val |= S3C64XX_SPI_CH_SLAVE;
+#endif
 
 	if (sdd->cur_mode & SPI_CPOL)
 		val |= S3C64XX_SPI_CPOL_L;
@@ -978,6 +1021,9 @@ try_transfer:
 		sdd->state &= ~RXBUSY;
 		sdd->state &= ~TXBUSY;
 
+#if defined(CONFIG_MULTI_SENSORS)
+		enable_datapath(sdd, spi, xfer, use_dma);
+#else
 		if (cs->cs_mode == AUTO_CS_MODE) {
 			/* Slave Select */
 			enable_cs(sdd, spi);
@@ -989,10 +1035,20 @@ try_transfer:
 			/* Slave Select */
 			enable_cs(sdd, spi);
 		}
+#endif
 
 		spin_unlock_irqrestore(&sdd->lock, flags);
 
+#if defined(CONFIG_MULTI_SENSORS)
+		spin_lock_irqsave(&sdd->lock, flags);
+		gpio_set_value(cs->line, 1);	// MAIN_SUB_INT
+		Msensors_SetTimestamp();
+		spin_unlock_irqrestore(&sdd->lock, flags);
 		status = wait_for_xfer(sdd, xfer, use_dma);
+		gpio_set_value(cs->line, 0);	// MAIN_SUB_INT
+#else
+		status = wait_for_xfer(sdd, xfer, use_dma);
+#endif
 
 		if (status) {
 			dev_err(&spi->dev, "I/O Error: rx-%d tx-%d res:rx-%c tx-%c len-%d\n",
@@ -1019,6 +1075,7 @@ try_transfer:
 		if (xfer->delay_usecs)
 			udelay(xfer->delay_usecs);
 
+#if !defined(CONFIG_MULTI_SENSORS)
 		if (xfer->cs_change) {
 			/* Hint that the next mssg is gonna be
 			   for the same device */
@@ -1026,6 +1083,7 @@ try_transfer:
 						&msg->transfers))
 				cs_toggle = 1;
 		}
+#endif
 
 		msg->actual_length += xfer->len;
 
@@ -1150,8 +1208,13 @@ static int s3c64xx_spi_setup(struct spi_device *spi)
 
 	if (!spi_get_ctldata(spi)) {
 		if(cs->line != 0) {
+#if defined(CONFIG_MULTI_SENSORS)
+			err = gpio_request_one(cs->line, GPIOF_OUT_INIT_LOW,
+					       dev_name(&spi->dev));
+#else
 			err = gpio_request_one(cs->line, GPIOF_OUT_INIT_HIGH,
 					       dev_name(&spi->dev));
+#endif
 			if (err) {
 				dev_err(&spi->dev,
 					"Failed to get /CS gpio [%d]: %d\n",
@@ -1280,6 +1343,16 @@ static void s3c64xx_spi_cleanup(struct spi_device *spi)
 static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
 {
 	struct s3c64xx_spi_driver_data *sdd = data;
+
+#if defined(CONFIG_MULTI_SENSORS)
+	unsigned int val;
+
+	val = readl(sdd->regs + S3C64XX_SPI_STATUS);
+
+	writel(0, sdd->regs + S3C64XX_SPI_INT_EN);	// disable interrupt
+	tx_fifo_rdy_occur = 1;
+	wake_up(&wait_tx);
+#else
 	struct spi_master *spi = sdd->master;
 	unsigned int val, clr = 0;
 
@@ -1305,6 +1378,7 @@ static irqreturn_t s3c64xx_spi_irq(int irq, void *data)
 	/* Clear the pending irq by setting and then clearing it */
 	writel(clr, sdd->regs + S3C64XX_SPI_PENDING_CLR);
 	writel(0, sdd->regs + S3C64XX_SPI_PENDING_CLR);
+#endif
 
 	return IRQ_HANDLED;
 }
@@ -1667,6 +1741,9 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 	init_completion(&sdd->xfer_completion);
 	INIT_LIST_HEAD(&sdd->queue);
 
+#if defined(CONFIG_MULTI_SENSORS)
+	init_waitqueue_head(&wait_tx);
+#endif
 	ret = devm_request_irq(&pdev->dev, irq, s3c64xx_spi_irq, 0,
 				"spi-s3c64xx", sdd);
 	if (ret != 0) {
@@ -1675,9 +1752,13 @@ static int s3c64xx_spi_probe(struct platform_device *pdev)
 		goto err3;
 	}
 
+#if defined(CONFIG_MULTI_SENSORS)
+	writel(0, sdd->regs + S3C64XX_SPI_INT_EN);
+#else
 	writel(S3C64XX_SPI_INT_RX_OVERRUN_EN | S3C64XX_SPI_INT_RX_UNDERRUN_EN |
 	       S3C64XX_SPI_INT_TX_OVERRUN_EN | S3C64XX_SPI_INT_TX_UNDERRUN_EN,
 	       sdd->regs + S3C64XX_SPI_INT_EN);
+#endif
 
 #ifdef CONFIG_PM_RUNTIME
 	pm_runtime_mark_last_busy(&pdev->dev);
