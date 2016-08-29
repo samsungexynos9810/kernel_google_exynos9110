@@ -201,6 +201,32 @@ static struct map_desc exynos5_iodesc[] __initdata = {
 	},
 };
 
+#if defined(CONFIG_SOC_EXYNOS3250)
+#define EXYNOS_RECOVERY_MODE	0xf
+#define EXYNOS_NEED_UPDATE	6
+#define EXYNOS_INFORM_PANIC 0xa
+
+static void exynos_restart(enum reboot_mode mode, const char *cmd)
+{
+	int inform;
+
+	inform = readl(pmu_base_addr + S5P_INFORM4);
+
+	if (cmd == NULL) {
+		/* called from emergency_restart() from panic() */
+		__raw_writel(EXYNOS_INFORM_PANIC, pmu_base_addr + S5P_INFORM4);
+	} else if(!strncmp(cmd,"bootloader",10)){
+		__raw_writel(0xD, pmu_base_addr + S5P_INFORM4);
+	} else if(!strncmp(cmd,"recovery",8)){
+		__raw_writel(EXYNOS_RECOVERY_MODE, pmu_base_addr + S5P_INFORM4);
+	} else {
+		if(inform != EXYNOS_NEED_UPDATE)
+			__raw_writel(0x0, pmu_base_addr + S5P_INFORM4);
+	}
+
+	__raw_writel(0x1, pmu_base_addr + EXYNOS_SWRESET);
+}
+#else
 static void exynos_restart(enum reboot_mode mode, const char *cmd)
 {
 	struct device_node *np;
@@ -222,6 +248,7 @@ static void exynos_restart(enum reboot_mode mode, const char *cmd)
 
 	__raw_writel(val, addr);
 }
+#endif
 
 static struct platform_device exynos_cpuidle = {
 	.name              = "exynos_cpuidle",
