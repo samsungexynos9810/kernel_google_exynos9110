@@ -236,7 +236,7 @@ static int update_firmware_from_class(struct device *dev)
 {
 	int retval;
 
-	retval = request_firmware_nowait(THIS_MODULE, FW_ACTION_NOHOTPLUG,
+	retval = request_firmware_nowait(THIS_MODULE, false,
 			MSENSORS_FW_UPDATE_FILE_NAME, dev, GFP_KERNEL, dev,
 			_msensors_firmware_cont);
 	if (retval < 0) {

@@ -544,6 +544,7 @@ config MULTI_SENSORS
 config MULTI_SENSORS_FW_UPDATE
 	tristate "update multi deivice hub by firmware class"
 	depends on MULTI_SENSORS
+	select FW_LOADER_USER_HELPER
 	default y
 
 source "drivers/misc/c2port/Kconfig"
