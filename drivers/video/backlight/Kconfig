@@ -442,6 +442,17 @@ config BACKLIGHT_BD6107
 	help
 	  If you have a Rohm BD6107 say Y to enable the backlight driver.
 
+config BACKLIGHT_BD82103
+	tristate "Backlight Driver for BD82103"
+	help
+	  This module is Backlight Driver for BD82103.
+
+config BACKLIGHT_SUBCPU
+	tristate "Control Baclight from SubCPU"
+	depends on BACKLIGHT_BD82103
+	help
+	  say y to control backlight from SubCPU
+
 endif # BACKLIGHT_CLASS_DEVICE
 
 endif # BACKLIGHT_LCD_SUPPORT
