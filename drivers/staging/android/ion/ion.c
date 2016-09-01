@@ -1487,6 +1487,29 @@ static void ion_dma_buf_end_cpu_access(struct dma_buf *dmabuf, size_t start,
 	mutex_unlock(&buffer->lock);
 }
 
+static void ion_dma_buf_set_privflag(struct dma_buf *dmabuf)
+{
+	struct ion_buffer *buffer = dmabuf->priv;
+
+	mutex_lock(&buffer->lock);
+	buffer->private_flags |= ION_PRIV_FLAG_NEED_TO_FLUSH;
+	mutex_unlock(&buffer->lock);
+}
+
+static bool ion_dma_buf_get_privflag(struct dma_buf *dmabuf, bool clear)
+{
+	struct ion_buffer *buffer = dmabuf->priv;
+	bool ret;
+
+	mutex_lock(&buffer->lock);
+	ret = !!(buffer->private_flags & ION_PRIV_FLAG_NEED_TO_FLUSH);
+	if (clear)
+		buffer->private_flags &= ~ION_PRIV_FLAG_NEED_TO_FLUSH;
+	mutex_unlock(&buffer->lock);
+
+	return ret;
+}
+
 static struct dma_buf_ops dma_buf_ops = {
 	.map_dma_buf = ion_map_dma_buf,
 	.unmap_dma_buf = ion_unmap_dma_buf,
@@ -1500,6 +1523,8 @@ static struct dma_buf_ops dma_buf_ops = {
 	.kunmap = ion_dma_buf_kunmap,
 	.vmap = ion_dma_buf_vmap,
 	.vunmap = ion_dma_buf_vunmap,
+	.set_privflag = ion_dma_buf_set_privflag,
+	.get_privflag = ion_dma_buf_get_privflag,
 };
 
 struct dma_buf *ion_share_dma_buf(struct ion_client *client,

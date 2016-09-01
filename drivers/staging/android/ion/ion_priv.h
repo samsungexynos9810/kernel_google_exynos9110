@@ -182,6 +182,12 @@ struct ion_heap_ops {
  */
 #define ION_PRIV_FLAG_READY_TO_USE (1 << 15)
 
+/*
+ * Following private flags are used for cache maintainence between
+ * non sharable device and sharable device with cpu access.
+ */
+#define ION_PRIV_FLAG_NEED_TO_FLUSH (1 << 1)
+
 /**
  * struct ion_heap - represents a heap in the system
  * @node:		rb node to put the heap on the device's tree of heaps
