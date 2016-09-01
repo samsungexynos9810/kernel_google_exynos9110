@@ -1358,6 +1358,7 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 	struct resource *res;
 	char clkname[MAX_CLK_NAME_LENGTH];
 	int ret;
+	struct clk* baud_clk;
 
 	dbg("s3c24xx_serial_init_port: port=%p, platdev=%p\n", port, platdev);
 
@@ -1453,6 +1454,10 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 		clk_put(ourport->clk);
 		return ret;
 	}
+
+	snprintf(clkname, sizeof(clkname), "sclk_uart%d", ourport->port.line);
+	baud_clk = clk_get(&platdev->dev, clkname);
+	clk_set_rate(baud_clk, 100000000);
 
 	/* Keep all interrupts masked and cleared */
 	if (s3c24xx_serial_has_interrupt_mask(port)) {
