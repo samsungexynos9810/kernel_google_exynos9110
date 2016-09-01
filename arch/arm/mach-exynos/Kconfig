@@ -126,4 +126,11 @@ config EXYNOS5420_MCPM
 	  This is needed to provide CPU and cluster power management
 	  on Exynos5420 implementing big.LITTLE.
 
+config KOI_BLUETOOTH
+	bool "KOI board bluetooth"
+	depends on SOC_EXYNOS3250
+	default y
+	help
+	  KOI board bluetooth.
+
 endif

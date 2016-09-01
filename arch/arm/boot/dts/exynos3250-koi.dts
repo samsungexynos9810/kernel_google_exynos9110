@@ -633,4 +633,12 @@
 		gpios = <&gpd0 0 0x1>;
 		status = "okay";
 	};
+
+	bluetooth {
+		compatible = "koi-bluetooth";
+        #address-cells = <1>;
+        #size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&eint22>;
+	};
 };

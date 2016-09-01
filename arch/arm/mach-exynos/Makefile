@@ -31,3 +31,5 @@ CFLAGS_mcpm-exynos.o		+= -march=armv7-a
 ifeq ($(CONFIG_SOC_EXYNOS3250),y)
 obj-$(CONFIG_PM_RUNTIME)	+= pm_domains-exynos3250.o
 endif
+
+obj-$(CONFIG_KOI_BLUETOOTH)	+= board-koi-bluetooth.o
