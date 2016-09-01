@@ -19,12 +19,6 @@
 #include <linux/sys_soc.h>
 #include <linux/soc/samsung/exynos-soc.h>
 
-#define EXYNOS_SUBREV_MASK	(0xF << 4)
-#define EXYNOS_MAINREV_MASK	(0xF << 0)
-#define EXYNOS_REV_MASK		(EXYNOS_SUBREV_MASK | EXYNOS_MAINREV_MASK)
-
-static void __iomem *exynos_chipid_base;
-
 struct exynos_chipid_info exynos_soc_info;
 EXPORT_SYMBOL(exynos_soc_info);
 
@@ -75,45 +69,73 @@ static const char * __init product_id_to_name(unsigned int product_id)
 	}
 	return soc_name;
 }
+static const struct exynos_chipid_variant drv_data_exynos8890 = {
+	.unique_id_reg	= 0x14,
+	.rev_reg	= 0x0,
+	.main_rev_bit	= 0,
+	.sub_rev_bit	= 4,
+};
+
+static const struct exynos_chipid_variant drv_data_exynos8895 = {
+	.unique_id_reg	= 0x04,
+	.rev_reg	= 0x10,
+	.main_rev_bit	= 20,
+	.sub_rev_bit	= 16,
+};
 
 static const struct of_device_id of_exynos_chipid_ids[] __initconst = {
 	{
-		.compatible	= "samsung,exynos4210-chipid",
+		.compatible	= "samsung,exynos8890-chipid",
+		.data		= &drv_data_exynos8890,
+	},
+	{
+		.compatible	= "samsung,exynos8895-chipid",
+		.data		= &drv_data_exynos8895,
 	},
 	{},
 };
+
+static void __init exynos_chipid_get_chipid_info(void)
+{
+	const struct exynos_chipid_variant *data = exynos_soc_info.drv_data;
+	u64 val;
+
+	val = __raw_readl(exynos_soc_info.reg);
+	exynos_soc_info.product_id = val & EXYNOS_SOC_MASK;
+
+	val = __raw_readl(exynos_soc_info.reg + data->rev_reg);
+	exynos_soc_info.main_rev = (val >> data->main_rev_bit) & EXYNOS_REV_MASK;
+	exynos_soc_info.sub_rev = (val >> data->sub_rev_bit) & EXYNOS_REV_MASK;
+	exynos_soc_info.revision = (exynos_soc_info.main_rev << 4) | exynos_soc_info.sub_rev;
+
+	val = __raw_readl(exynos_soc_info.reg + data->unique_id_reg);
+	val |= (u64)__raw_readl(exynos_soc_info.reg + data->unique_id_reg + 4) << 32UL;
+	exynos_soc_info.unique_id  = val;
+	exynos_soc_info.lot_id = val & EXYNOS_LOTID_MASK;
+}
 
 /**
  *  exynos_chipid_early_init: Early chipid initialization
  *  @dev: pointer to chipid device
  */
-void __init exynos_chipid_early_init(struct device *dev)
+void __init exynos_chipid_early_init(void)
 {
 	struct device_node *np;
 	const struct of_device_id *match;
 
-	if (exynos_chipid_base)
+	if (exynos_soc_info.reg)
 		return;
 
-	if (!dev)
-		np = of_find_matching_node_and_match(NULL,
-			of_exynos_chipid_ids, &match);
-	else
-		np = dev->of_node;
+	np = of_find_matching_node_and_match(NULL, of_exynos_chipid_ids, &match);
+	if (!np || !match)
+		panic("%s, failed to find chipid node or match\n", __func__);
 
-	if (!np)
-		panic("%s, failed to find chipid node\n", __func__);
-
-	exynos_chipid_base = of_iomap(np, 0);
-
-	if (!exynos_chipid_base)
+	exynos_soc_info.drv_data = (struct exynos_chipid_variant *)match->data;
+	exynos_soc_info.reg = of_iomap(np, 0);
+	if (!exynos_soc_info.reg)
 		panic("%s: failed to map registers\n", __func__);
 
-	exynos_soc_info.product_id  = __raw_readl(exynos_chipid_base);
-	exynos_soc_info.lot_id = __raw_readl(exynos_chipid_base + UNIQUE_ID1) & EXYNOS_LOTID_MASK;
-	exynos_soc_info.unique_id  = __raw_readl(exynos_chipid_base + UNIQUE_ID1);
-	exynos_soc_info.unique_id  |= (u64)__raw_readl(exynos_chipid_base + UNIQUE_ID2) << 32;
-	exynos_soc_info.revision = exynos_soc_info.product_id & EXYNOS_REV_MASK;
+	exynos_chipid_get_chipid_info();
 }
 
 static int __init exynos_chipid_probe(struct platform_device *pdev)
@@ -122,8 +144,6 @@ static int __init exynos_chipid_probe(struct platform_device *pdev)
 	struct soc_device *soc_dev;
 	struct device_node *root;
 	int ret;
-
-	exynos_chipid_early_init(&pdev->dev);
 
 	soc_dev_attr = kzalloc(sizeof(*soc_dev_attr), GFP_KERNEL);
 	if (!soc_dev_attr)
@@ -143,13 +163,11 @@ static int __init exynos_chipid_probe(struct platform_device *pdev)
 		goto free_soc;
 
 	soc_dev_attr->soc_id = product_id_to_name(exynos_soc_info.product_id);
-
 	soc_dev = soc_device_register(soc_dev_attr);
 	if (IS_ERR(soc_dev))
 		goto free_rev;
 
 	soc_device_to_device(soc_dev);
-
 	dev_info(&pdev->dev, "Exynos: CPU[%s] CPU_REV[0x%x] Detected\n",
 			product_id_to_name(exynos_soc_info.product_id),
 			exynos_soc_info.revision);
@@ -171,6 +189,7 @@ static struct platform_driver exynos_chipid_driver __refdata = {
 
 static int __init exynos_chipid_init(void)
 {
+	exynos_chipid_early_init();
 	return platform_driver_register(&exynos_chipid_driver);
 }
 core_initcall(exynos_chipid_init);

@@ -28,30 +28,29 @@
 
 #define EXYNOS_SOC_MASK		0xFFFFF000
 #define EXYNOS_LOTID_MASK	0x001FFFFF
+#define EXYNOS_REV_MASK		0xF
 
-#define EXYNOS4210_REV_0	0x0
-#define EXYNOS4210_REV_1_0	0x10
-#define EXYNOS4210_REV_1_1	0x11
-
-#if defined (CONFIG_SOC_EXYNOS8890)
-#define UNIQUE_ID1			0x14
-#define UNIQUE_ID2			0x18
-#else
-#define UNIQUE_ID1			0x04
-#define UNIQUE_ID2			0x08
-#endif
+struct exynos_chipid_variant {
+	int unique_id_reg;
+	int rev_reg;
+	int main_rev_bit;
+	int sub_rev_bit;
+};
 
 /**
  * Struct exynos_chipid_info
  * @soc_product_id: product id allocated to exynos SoC
  * @soc_revision: revision of exynos SoC
  */
-
 struct exynos_chipid_info {
+	void __iomem *reg;
 	u32 product_id;
 	u32 revision;
+	u32 main_rev;
+	u32 sub_rev;
 	u32 lot_id;
 	u64 unique_id;
+	struct exynos_chipid_variant *drv_data;
 };
 
 extern struct exynos_chipid_info exynos_soc_info;
@@ -59,6 +58,6 @@ extern struct exynos_chipid_info exynos_soc_info;
 /* Since we need chipid to be initialized as early as possible
  * during secondary core bootup adding early initialization function
  */
-extern void exynos_chipid_early_init(struct device *dev);
+extern void exynos_chipid_early_init(void);
 
 #endif /* __EXYNOS_SOC_H */
