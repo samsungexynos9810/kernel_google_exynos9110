@@ -799,6 +799,39 @@ void dma_buf_vunmap(struct dma_buf *dmabuf, void *vaddr)
 }
 EXPORT_SYMBOL_GPL(dma_buf_vunmap);
 
+/**
+ * dma_buf_set_privflag - set the private flag for the buffer
+ * @dmabuf:	[in]	buffer to set the flag
+ */
+void dma_buf_set_privflag(struct dma_buf *dmabuf)
+{
+	if (WARN_ON(!dmabuf))
+		return;
+
+	if (!dmabuf->ops->set_privflag)
+		return;
+
+	dmabuf->ops->set_privflag(dmabuf);
+}
+EXPORT_SYMBOL_GPL(dma_buf_set_privflag);
+
+/**
+ * dma_buf_get_privflag - get the private flag for the buffer
+ * @dmabuf:	[in]	buffer to get the flag
+ * @clear:	[in]	if set, the flag need to be clear.
+ */
+bool dma_buf_get_privflag(struct dma_buf *dmabuf, bool clear)
+{
+	if (WARN_ON(!dmabuf))
+		return false;
+
+	if (!dmabuf->ops->get_privflag)
+		return false;
+
+	return dmabuf->ops->get_privflag(dmabuf, clear);
+}
+EXPORT_SYMBOL_GPL(dma_buf_get_privflag);
+
 #ifdef CONFIG_DEBUG_FS
 static int dma_buf_describe(struct seq_file *s)
 {
