@@ -888,8 +888,6 @@ int decon_enable(struct decon_device *decon)
 	}
 	ret = 0;
 
-	decon_reg_set_disp_ss_cfg(decon->disp_ss_regs, true);
-
 	decon_to_init_param(decon, &p);
 	decon_reg_init(DECON_INT, decon->pdata->dsi_mode, &p);
 	decon_enable_eclk_idle_gate(DECON_INT, DECON_ECLK_IDLE_GATE_ENABLE);
@@ -1370,14 +1368,6 @@ static void decon_set_protected_content(struct decon_device *decon,
 	}
 
 	if (decon->prev_protection_status != cur_protect_bits) {
-		/* The operation of protection on/off should wait decon off */
-		decon_reg_per_frame_off(0);
-
-		decon_reg_update_standalone(0);
-		/* timeout : 30ms */
-		if (decon_reg_wait_for_update_timeout(0, 30 * 1000) < 0)
-			decon_err("timeout of updating decon registers\n");
-
 		ret = exynos_smc(SMC_PROTECTION_SET, 0, DRM_DEV_DECON,
 			(cur_protect_bits ? 1 : 0));
 		if (!ret)
@@ -1884,12 +1874,14 @@ static void __decon_update_regs(struct decon_device *decon, struct decon_reg_dat
 			decon_enable_blocking_mode(decon, regs, i);
 	}
 
-	for (i = 0; i < decon->pdata->max_win; i++)
-		decon_reg_shadow_protect_win(DECON_INT,
-				decon->windows[i]->index, 0);
 #ifdef PROTECT
 	decon_set_protected_content(decon, regs, true);
 #endif
+
+	for (i = 0; i < decon->pdata->max_win; i++)
+		decon_reg_shadow_protect_win(DECON_INT,
+				decon->windows[i]->index, 0);
+
 	decon_to_psr_info(decon, &psr);
 	decon_reg_start(DECON_INT, decon->pdata->dsi_mode, &psr);
 #ifdef CONFIG_DECON_MIPI_DSI_PKTGO
@@ -3409,8 +3401,6 @@ static int decon_probe(struct platform_device *pdev)
 				decon->pdata->trig_mode, DECON_TRIG_DISABLE);
 		goto decon_init_done;
 	}
-
-	decon_reg_set_disp_ss_cfg(decon->disp_ss_regs, true);
 
 	decon_reg_shadow_protect_win(DECON_INT, win_idx, 1);
 
