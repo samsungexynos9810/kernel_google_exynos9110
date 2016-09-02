@@ -710,10 +710,9 @@ static int request_binary(struct ecd_interface *interface, const char *path,
 	do {
 		ret = request_firmware(&interface->fw, name, device);
 
-		if (!ret) {
+		if (!ret && !interface->fw) {
 			interface->fw_data = (void *)interface->fw->data;
 			interface->fw_size = interface->fw->size;
-
 			break;
 		}
 	} while (!(retry_cnt--));
