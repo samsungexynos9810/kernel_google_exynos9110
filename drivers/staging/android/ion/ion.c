@@ -2500,6 +2500,9 @@ dma_addr_t ion_iovmm_map(struct dma_buf_attachment *attachment,
 		return -EINVAL;
 	}
 
+	if (!ion_buffer_cached(buffer))
+		id &= ~IOMMU_CACHE;
+
 	mutex_lock(&buffer->lock);
 	list_for_each_entry(iovm_map, &buffer->iovas, list) {
 		if ((domain == iovm_map->domain) &&
