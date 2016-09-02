@@ -29,7 +29,7 @@ struct usi_mode {
 
 struct usi_data {
 	void __iomem	*base;
-	u32 		mode;
+	int 		mode;
 };
 
 static const struct usi_mode usi_modes[] = {
