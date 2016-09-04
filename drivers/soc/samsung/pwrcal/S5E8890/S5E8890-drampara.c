@@ -903,7 +903,7 @@ void *get_dram_dfs_table(void)
  * @return
  *
  *****************************************************************************/
-unsigned int pwrcal_get_dram_manufacturer(void)
+unsigned long long pwrcal_get_dram_manufacturer(void)
 {
 	return (query_key);
 }

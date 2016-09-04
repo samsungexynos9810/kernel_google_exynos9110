@@ -747,11 +747,11 @@ static int asv_rcc_set_table(void)
 	return 0;
 }
 
-unsigned int pwrcal_get_dram_manufacturer(void);
+unsigned long long pwrcal_get_dram_manufacturer(void);
 static void asv_voltage_init_table(struct asv_table_list **asv_table, struct pwrcal_vclk_dfs *dfs)
 {
 	int i, j, k;
-	unsigned int ect_query_key;
+	unsigned long long ect_query_key;
 	void *asv_block, *margin_block, *tim_block;
 	struct ect_timing_param_size *ect_mif;
 	struct ect_voltage_domain *domain;
@@ -784,7 +784,7 @@ static void asv_voltage_init_table(struct asv_table_list **asv_table, struct pwr
 
 	tim_block = ect_get_block(BLOCK_TIMING_PARAM);
 	if ((strcmp("dvfs_mif", dfs->vclk.name) == 0) && (tim_block != 0)) {
-		ect_query_key = (pwrcal_get_dram_manufacturer() & 0xffffff00) | 0x3;
+		ect_query_key = (pwrcal_get_dram_manufacturer() & 0xffffffffffffff00) | 0x3;
 		ect_mif = ect_timing_param_get_key(tim_block, ect_query_key);
 		if (ect_mif)
 			mif_volt_margin = ect_mif->timing_parameter;
