@@ -118,6 +118,7 @@ struct itmon_traceinfo {
 	bool trans_dirty;
 	bool dirty;
 	unsigned long from;
+	char buf[SZ_32];
 };
 
 struct itmon_tracedata {
@@ -665,6 +666,15 @@ static void itmon_post_handler_by_master(struct itmon_dev *itmon,
 			pdata->err_cnt = 0;
 			pr_info("ITMON skips CP's DSP(CR4MtoL2) detected\n");
 		}
+	} else if (!strncmp(traceinfo->port, "CPU", strlen("CPU"))) {
+		/* if master is CPU, then we expect any exception */
+		if (pdata->err_cnt > PANIC_ALLOWED_THRESHOLD) {
+			pdata->err_cnt = 0;
+			itmon_init(itmon, false);
+			pr_info("ITMON is turn-off when CPU transaction is detected repeatly\n");
+		} else {
+			pr_info("ITMON skips CPU transaction detected\n");
+		}
 	}
 }
 
@@ -814,7 +824,6 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 	struct itmon_rpathinfo *port;
 	unsigned int errcode, axid;
 	unsigned long userbit;
-	char buf[SZ_32];
 
 	errcode = BIT_ERR_CODE(tracedata->int_info);
 	axid = BIT_AXID(tracedata->int_info);
@@ -830,11 +839,11 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				int cluster_num, core_num;
 				core_num = axid & GENMASK(1, 0);
 				cluster_num = (axid & BIT(2)) >> 2;
-				snprintf(buf, SZ_32, "CPU%d Cluster%d", core_num, cluster_num);
-				traceinfo->port = buf;
+				snprintf(traceinfo->buf, SZ_32 - 1, "CPU%d Cluster%d", core_num, cluster_num);
+				traceinfo->port = traceinfo->buf;
 			} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
-				snprintf(buf, SZ_32, "CP");
-				traceinfo->port = buf;
+				snprintf(traceinfo->buf, SZ_32 - 1, "CP");
+				traceinfo->port = traceinfo->buf;
 				master = (struct itmon_masterinfo *)
 					itmon_get_masterinfo(itmon, traceinfo->port, userbit);
 				if (master)
@@ -855,7 +864,6 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
-			traceinfo->port = node->name;
 			traceinfo->errcode = errcode;
 			traceinfo->dirty = true;
 		}
@@ -892,19 +900,19 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 			int cluster_num, core_num;
 			core_num = axid & GENMASK(1, 0);
 			cluster_num = (axid & BIT(2)) >> 2;
-			snprintf(buf, SZ_32, "CPU%d Cluster%d", core_num, cluster_num);
-			traceinfo->port = buf;
+			snprintf(traceinfo->buf, SZ_32 - 1, "CPU%d Cluster%d", core_num, cluster_num);
+			traceinfo->port = traceinfo->buf;
 		} else if (test_bit(FROM_CPU_MAY, &traceinfo->from)) {
-			snprintf(buf, SZ_32, "CPU maybe");
-			traceinfo->port = buf;
+			snprintf(traceinfo->buf, SZ_32 - 1, "CPU maybe");
+			traceinfo->port = traceinfo->buf;
 		} else {
 			/*
 			* we expect traceinfo->port is always true in this case
 			* In DECERR case, the follow information was filled.
 			*/
 			if (test_bit(FROM_CP, &traceinfo->from)) {
-				snprintf(buf, SZ_32, "CP");
-				traceinfo->port = buf;
+				snprintf(traceinfo->buf, SZ_32 - 1, "CP");
+				traceinfo->port = traceinfo->buf;
 			}
 			if (!traceinfo->port) {
 				port = (struct itmon_rpathinfo *)
@@ -990,11 +998,11 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 		pr_info("      Raw Register Information(ITMON Internal Information)\n\n");
 
 	for (trans_type = 0; trans_type < TRANS_TYPE_NUM; trans_type++) {
+		itmon_post_handler_by_master(itmon, node, trans_type);
 		for (i = M_NODE; i < NODE_TYPE; i++) {
 			list_for_each_entry_safe(node, next_node, &pdata->tracelist[trans_type], list) {
 				if (i == node->type) {
 					itmon_report_rawdata(itmon, node);
-					itmon_post_handler_by_master(itmon, node, trans_type);
 					/* clean up */
 					list_del(&node->list);
 					kfree(node);
