@@ -176,7 +176,7 @@ void decon_int_set_clocks(struct decon_device *decon)
 	if (!IS_ENABLED(CONFIG_PM_DEVFREQ))
 		cal_dfs_set_rate(dvfs_disp, decon->pdata->disp_dvfs);
 
-	decon_dbg("%s:core %ld vclk_leaf %ld vclk %ld Mhz\n",
+	decon_info("%s:core %ld vclk_leaf %ld vclk %ld Mhz\n",
 		__func__,
 		clk_get_rate(decon->res.core_clk) / MHZ,
 		clk_get_rate(decon->res.vclk_leaf) / MHZ,
