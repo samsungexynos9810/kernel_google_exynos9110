@@ -1771,7 +1771,7 @@ const struct samsung_pin_ctrl exynos8890_pin_ctrl[] = {
 
 /* pin banks of exynos8895 pin-controller 0 (ALIVE) */
 static struct samsung_pin_bank_data exynos8895_pin_banks0[] = {
-	EXYNOS8_PIN_BANK_EINTW(bank_type_alive, 5, 0x000, "ect0", 0x20),
+	EXYNOS8_PIN_BANK_EINTW(bank_type_alive, 5, 0x000, "etc0", 0x20),
 	EXYNOS8_PIN_BANK_EINTW(bank_type_alive, 8, 0x020, "gpa0", 0x00),
 	EXYNOS8_PIN_BANK_EINTW(bank_type_alive, 8, 0x040, "gpa1", 0x04),
 	EXYNOS8_PIN_BANK_EINTW(bank_type_alive, 8, 0x060, "gpa2", 0x08),
