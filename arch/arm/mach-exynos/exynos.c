@@ -376,6 +376,17 @@ static void __init exynos_init_irq(void)
 	exynos_map_pmu();
 }
 
+#if defined(CONFIG_SOC_EXYNOS3250)
+void espresso3250_power_off(void)
+{
+	unsigned int reg;
+
+	reg = readl(pmu_base_addr + EXYNOS3_PS_HOLD_CONTROL);
+	reg &= ~(0x1<<8);
+	writel(reg, pmu_base_addr + EXYNOS3_PS_HOLD_CONTROL);
+}
+#endif
+
 static void __init exynos_dt_machine_init(void)
 {
 	struct device_node *i2c_np;
@@ -383,6 +394,9 @@ static void __init exynos_dt_machine_init(void)
 	unsigned int tmp;
 	int id;
 
+#if defined(CONFIG_SOC_EXYNOS3250)
+	pm_power_off = espresso3250_power_off;
+#endif
 	/*
 	 * Exynos5's legacy i2c controller and new high speed i2c
 	 * controller have muxed interrupt sources. By default the
