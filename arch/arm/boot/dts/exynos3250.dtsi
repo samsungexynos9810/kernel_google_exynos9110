@@ -42,6 +42,7 @@
 		uart0 = &serial_0;
 		uart1 = &serial_1;
 		uart2 = &serial_2;
+		uart3 = &serial_3;
 	};
 
 	fixed-rate-clocks {
@@ -407,7 +408,8 @@
 	};
 
 	serial_0: serial@13800000 {
-		compatible = "samsung,exynos4210-uart";
+		compatible = "samsung,exynos-uart";
+		samsung,separate-uart-clk;
 		reg = <0x13800000 0x100>;
 		samsung,fifo-size = <256>;
 		interrupts = <0 109 0>;
@@ -415,31 +417,46 @@
 		clock-names = "gate_pclk0", "gate_uart0", "sclk_uart0";
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart0_data &uart0_fctl>;
-		status = "okay";
+		status = "disabled";
 	};
 
 	serial_1: serial@13810000 {
-		compatible = "samsung,exynos4210-uart";
+		compatible = "samsung,exynos-uart";
+		samsung,separate-uart-clk;
 		reg = <0x13810000 0x100>;
-		samsung,fifo-size = <256>;
+		samsung,fifo-size = <64>;
 		interrupts = <0 110 0>;
 		clocks = <&cmu CLK_UART1>, <&cmu CLK_SCLK_UART1>, <&cmu CLK_SCLK_UART1>;
 		clock-names = "gate_pclk1", "gate_uart1", "sclk_uart1";
 		pinctrl-names = "default";
-		pinctrl-0 = <&uart1_data>;
-		status = "okay";
+		pinctrl-0 = <&uart1_data &uart1_fctl>;
+		status = "disabled";
 	};
 
 	serial_2: serial@13820000 {
-		compatible = "samsung,exynos4210-uart";
+		compatible = "samsung,exynos-uart";
+		samsung,separate-uart-clk;
 		reg = <0x13820000 0x100>;
-		samsung,fifo-size = <16>;
+		samsung,fifo-size = <256>;
 		interrupts = <0 111 0>;
 		clocks = <&cmu CLK_UART2>, <&cmu CLK_SCLK_UART2>, <&cmu CLK_SCLK_UART2>;
 		clock-names = "gate_pclk2", "gate_uart2", "sclk_uart2";
 		pinctrl-names = "default";
 		pinctrl-0 = <&uart2_data>;
-		status = "okay";
+		status = "disabled";
+	};
+
+	serial_3: serial@13830000 {
+		compatible = "samsung,exynos-uart";
+		samsung,separate-uart-clk;
+		reg = <0x13830000 0x100>;
+		samsung,fifo-size = <16>;
+		interrupts = <0 112 0>;
+		clocks = <&cmu CLK_UART3>, <&cmu CLK_SCLK_UART3>, <&cmu CLK_SCLK_UART3>;
+		clock-names = "gate_pclk3", "gate_uart3", "sclk_uart3";
+		pinctrl-names = "default";
+		pinctrl-0 = <&uart3_data>;
+		status = "disabled";
 	};
 
 	i2c_0: i2c@13860000 {
