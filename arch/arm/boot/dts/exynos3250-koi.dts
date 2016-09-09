@@ -658,10 +658,19 @@
 
 	bluetooth {
 		compatible = "koi-bluetooth";
-        #address-cells = <1>;
-        #size-cells = <0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&eint22>;
+	};
+
+	koi_gps {
+		compatible = "koi-gps";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&sub_main_int2>;
+		sub-main-int2 = <&gpx3 5 0>;
 	};
 
 	usb@12480000 {
@@ -669,5 +678,4 @@
 		vusb_a-supply = <&ldo8_reg>;
 		status = "okay";
 	};
-
 };

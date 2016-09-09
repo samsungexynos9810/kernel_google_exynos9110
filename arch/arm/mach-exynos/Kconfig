@@ -133,4 +133,11 @@ config KOI_BLUETOOTH
 	help
 	  KOI board bluetooth.
 
+config KOI_GPS
+	bool "KOI board gps"
+	depends on SOC_EXYNOS3250
+	default y
+	help
+	  KOI board gps.
+
 endif

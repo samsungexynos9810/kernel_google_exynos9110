@@ -87,14 +87,14 @@
 		uart1_data: uart1-data {
 			samsung,pins = "gpa0-4", "gpa0-5";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <1>;
 			samsung,pin-drv = <0>;
 		};
 
 		uart1_fctl: uart1-fctl {
 			samsung,pins = "gpa0-6", "gpa0-7";
 			samsung,pin-function = <2>;
-			samsung,pin-pud = <0>;
+			samsung,pin-pud = <1>;
 			samsung,pin-drv = <0>;
 		};
 
@@ -512,6 +512,13 @@
 			samsung,pins = "gpx2-7";
 			samsung,pin-function = <0xf>;
 			samsung,pin-pud = <0>;
+			samsung,pin-drv = <3>;
+		};
+
+		sub_main_int2: ext-int29 {
+			samsung,pins = "gpx3-5";
+			samsung,pin-function = <0x2>;
+			samsung,pin-pud = <1>;
 			samsung,pin-drv = <3>;
 		};
 
