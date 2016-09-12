@@ -281,8 +281,6 @@
 				};
 
 				ldo6_reg: LDO6 {
-					regulator-always-on;
-					regulator-boot-on;
 					regulator-name = "VDD_USB_AP_1.0V";
 					regulator-min-microvolt = <1000000>;
 					regulator-max-microvolt = <1000000>;
