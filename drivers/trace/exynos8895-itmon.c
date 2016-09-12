@@ -372,7 +372,7 @@ const static struct itmon_masterinfo masterinfo[] = {
 	{"CP", GENMASK(4, 3),		/* X1100X */ "DMA",		GENMASK(4, 1)},
 	{"CP", GENMASK(4, 3) | BIT(1),	/* X1101X */ "MDMtoL2",		GENMASK(4, 1)},
 	{"CP", BIT(4),			/* X1000X */ "LMACtoL2",	GENMASK(4, 1)},
-	{"CP", BIT(1),			/* X00010 */ "CSXAP",		BIT(1)},
+	{"CP", BIT(1),			/* X00010 */ "CSXAP",		GENMASK(4, 1)},
 	{"CP", BIT(4) | GENMASK(1, 0),	/* X10011 */ "HARQMOVERtoL2",	GENMASK(4, 0)},
 
 	/* Others */
