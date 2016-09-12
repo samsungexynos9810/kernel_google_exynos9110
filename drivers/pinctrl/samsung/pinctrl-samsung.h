@@ -239,6 +239,10 @@ struct samsung_pinctrl_drv_data {
 
 	void (*suspend)(struct samsung_pinctrl_drv_data *);
 	void (*resume)(struct samsung_pinctrl_drv_data *);
+
+	struct pinctrl      *pinctrl;
+	struct pinctrl_state    *pins_default;
+	struct pinctrl_state    *pins_sleep;
 };
 
 /**
