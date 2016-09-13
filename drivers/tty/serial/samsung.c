@@ -600,10 +600,11 @@ static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
 	unsigned int umstat;
 
 	umstat = rd_regb(port, S3C2410_UMSTAT);
-
+#ifndef CONFIG_KOI_BLUETOOTH
 	if (umstat & S3C2410_UMSTAT_CTS)
 		return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
 	else
+#endif
 		return TIOCM_CAR | TIOCM_DSR;
 }
 
@@ -1011,6 +1012,10 @@ static void s3c24xx_serial_set_termios(struct uart_port *port,
 	if (termios->c_cflag & CSTOPB)
 		ulcon |= S3C2410_LCON_STOPB;
 
+#ifdef CONFIG_KOI_BLUETOOTH
+	umcon = (termios->c_cflag & CRTSCTS) ? (S3C2410_UMCOM_AFC | (1<<5)) : 0;
+#endif
+
 	if (termios->c_cflag & PARENB) {
 		if (termios->c_cflag & PARODD)
 			ulcon |= S3C2410_LCON_PODD;
@@ -1131,9 +1136,16 @@ s3c24xx_serial_verify_port(struct uart_port *port, struct serial_struct *ser)
 	return 0;
 }
 
+#ifdef CONFIG_KOI_BLUETOOTH
+extern void bcm_bt_lpm_exit_lpm_locked(struct uart_port *uport);
+#endif
 static void s3c24xx_serial_wake_peer(struct uart_port *port)
 {
 	struct s3c2410_uartcfg *cfg = s3c24xx_port_to_cfg(port);
+
+#ifdef CONFIG_KOI_BLUETOOTH
+	bcm_bt_lpm_exit_lpm_locked(port);
+#endif
 
 	if (cfg->wake_peer[port->line])
 		cfg->wake_peer[port->line](port);
@@ -1185,6 +1197,14 @@ static void s3c24xx_serial_put_poll_char(struct uart_port *port,
 			 unsigned char c);
 #endif
 
+void s3c24xx_serial_throttle(struct uart_port *port)
+{
+}
+
+void s3c24xx_serial_unthrottle(struct uart_port *port)
+{
+}
+
 static struct uart_ops s3c24xx_serial_ops = {
 	.pm		= s3c24xx_serial_pm,
 	.tx_empty	= s3c24xx_serial_tx_empty,
@@ -1202,6 +1222,8 @@ static struct uart_ops s3c24xx_serial_ops = {
 	.request_port	= s3c24xx_serial_request_port,
 	.config_port	= s3c24xx_serial_config_port,
 	.verify_port	= s3c24xx_serial_verify_port,
+	.throttle       = s3c24xx_serial_throttle,
+	.unthrottle     = s3c24xx_serial_unthrottle,
 	.wake_peer	= s3c24xx_serial_wake_peer,
 #if defined(CONFIG_SERIAL_SAMSUNG_CONSOLE) && defined(CONFIG_CONSOLE_POLL)
 	.poll_get_char = s3c24xx_serial_get_poll_char,
@@ -1378,11 +1400,14 @@ static int s3c24xx_serial_init_port(struct s3c24xx_uart_port *ourport,
 
 	port->uartclk = 1;
 
+#ifdef CONFIG_KOI_BLUETOOTH
+	port->flags |= UPF_HARD_FLOW;
+#else
 	if (cfg->uart_flags & UPF_CONS_FLOW) {
 		dbg("s3c24xx_serial_init_port: enabling flow control\n");
 		port->flags |= UPF_CONS_FLOW;
 	}
-
+#endif
 	/* sort our the physical and virtual addresses for each UART */
 
 	res = platform_get_resource(platdev, IORESOURCE_MEM, 0);
