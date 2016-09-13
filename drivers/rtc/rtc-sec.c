@@ -36,6 +36,11 @@
 #ifdef CONFIG_EXYNOS_MBOX
 #include <linux/apm-exynos.h>
 #endif
+
+#ifdef CONFIG_RTC_SYNC_SUBCPU
+ #include "../misc/MSensorsDrv.h"
+#endif
+
 struct s2m_rtc_info {
 	struct device		*dev;
 	struct sec_pmic_dev	*iodev;
@@ -1337,6 +1342,15 @@ static int s2m_rtc_init_reg(struct s2m_rtc_info *info,
 	return ret;
 }
 
+#if defined(CONFIG_RTC_SYNC_SUBCPU)
+static void s2m_rtc_init_time(struct sec_platform_data *pdata) {
+	u8 data[NR_RTC_CNT_REGS];
+
+	SUBCPU_rtc_read_time(data);
+	s2m_data_to_tm(data, pdata->init_time);
+}
+#endif
+
 static int s2m_rtc_probe(struct platform_device *pdev)
 {
 	struct sec_pmic_dev *iodev = dev_get_drvdata(pdev->dev.parent);
@@ -1486,6 +1500,9 @@ static int s2m_rtc_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, info);
 
+#if defined(CONFIG_RTC_SYNC_SUBCPU)
+	s2m_rtc_init_time(pdata);
+#endif
 	ret = s2m_rtc_init_reg(info, pdata);
 	if (ret < 0) {
 		dev_err(&pdev->dev, "Failed to initialize RTC reg:%d\n", ret);
