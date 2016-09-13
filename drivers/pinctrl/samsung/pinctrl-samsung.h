@@ -183,6 +183,9 @@ struct samsung_pin_ctrl {
 	struct pinctrl		*pinctrl;
 	struct pinctrl_state	*pins_default;
 	struct pinctrl_state	*pins_sleep;
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+	struct pinctrl_state    *pins_ambient;
+#endif
 };
 
 /**

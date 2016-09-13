@@ -40,6 +40,11 @@
 #define FUNCTION_SUFFIX		"-mux"
 #define FSUFFIX_LEN		sizeof(FUNCTION_SUFFIX)
 
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+#include <linux/regulator/consumer.h>
+extern int ambient_enter;
+#endif
+
 /* list of all possible config options supported */
 static struct pin_config {
 	const char *property;
@@ -1198,6 +1203,13 @@ static int samsung_pinctrl_probe(struct platform_device *pdev)
 	if (IS_ERR(ctrl->pins_sleep))
 		dev_dbg(dev, "could not get sleep pinstate\n");
 
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+       ctrl->pins_ambient = pinctrl_lookup_state(ctrl->pinctrl,
+                                             PINCTRL_STATE_AMBIENT);
+       if (IS_ERR(ctrl->pins_ambient))
+               dev_dbg(dev, "could not get ambient pinstate\n");
+#endif
+
 	if (ctrl->eint_gpio_init)
 		ctrl->eint_gpio_init(drvdata);
 	if (ctrl->eint_wkup_init)
@@ -1379,7 +1391,15 @@ static void samsung_pinctrl_suspend_dev(
 		/* This is ignore to disable mux configuration. */
 		ctrl->pinctrl->state = NULL;
 
+#ifdef CONFIG_FB_AMBIENT_SLEEP_SUPPORT
+		if (ambient_enter)
+			ret = pinctrl_select_state(ctrl->pinctrl, ctrl->pins_ambient);
+		else
+			ret = pinctrl_select_state(ctrl->pinctrl, ctrl->pins_sleep);
+#else
 		ret = pinctrl_select_state(ctrl->pinctrl, ctrl->pins_sleep);
+#endif
+
 		if (ret)
 			dev_err(drvdata->dev, "could not set default pinstate\n");
 	}
