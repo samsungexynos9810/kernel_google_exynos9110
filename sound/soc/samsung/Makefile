@@ -76,6 +76,7 @@ snd-soc-pacific-arizona-objs := pacific_arizona_318.o
 snd-soc-lucky-arizona-objs := lucky_arizona_lsi.o
 snd-soc-shiri-ak4678-objs := shiri_ak4678.o
 snd-soc-koi3250-dummy-objs := koi3250_dummy.o
+snd-soc-koi-ak4678-objs := koi_ak4678.o
 
 obj-$(CONFIG_SND_SOC_SAMSUNG_JIVE_WM8750) += snd-soc-jive-wm8750.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_NEO1973_WM8753) += snd-soc-neo1973-wm8753.o
@@ -108,5 +109,6 @@ obj-$(CONFIG_SND_SOC_SAMSUNG_ZERO_CLEARWATER) += snd-soc-pacific-arizona.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_LUCKY_MOON) += snd-soc-lucky-arizona.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_SHIRI_AK4678) += snd-soc-shiri-ak4678.o
 obj-$(CONFIG_SND_SOC_SAMSUNG_KOI_DUMMY) += snd-soc-koi3250-dummy.o
+obj-$(CONFIG_SND_SOC_SAMSUNG_KOI_AK4678) += snd-soc-koi-ak4678.o
 
 obj-$(CONFIG_SND_SAMSUNG_SEIREN) += seiren/
