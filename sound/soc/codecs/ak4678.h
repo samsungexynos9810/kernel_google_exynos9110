@@ -20,6 +20,9 @@
 #define AK4678_CLOCK_CAPTURE	2
 #define AK4678_CLOCK_OTHER		4
 
+/* AK4678 I2C slave address  */
+// #define AK4678_I2C_ADDR            0x12
+
 #define AK4678_00_POWER_MANAGEMENT0		0x00
 #define AK4678_01_POWER_MANAGEMENT1		0x01
 #define AK4678_02_POWER_MANAGEMENT2		0x02
@@ -200,6 +203,8 @@
 
 #define AK4678_MAX_REGISTERS	(AK4678_AF_DVLCH_HPF_CO_EFFICIENT_3 + 1)
 
+/* Bitfield Definitions */
+
 /* AK4678_04_PLL_MODE_SELECT1 (0x04) Fields */
 #define AK4678_PMPLL				0x01
 #define AK4678_M_S					0x02
@@ -247,6 +252,8 @@
 #define AK4678_PLL_MODE_SELECT_0_FS3          0x80
 
 /* AK4678_03_PLL_MODE_SELECT0 (0x03) Fields */
+
+
 #define AK4678_PLL					0x0f
 #define AK4678_EXT_SLAVE			 0
 #define AK4678_EXT_MASTER			 1
@@ -254,6 +261,9 @@
 #define AK4678_PLL_MASTER            3
 #define AK4678_BICKO_32FS            4
 #define AK4678_BICKO_64FS            5
+
+
+
 
 #define AK4678_PLL_BICK32			(2 << 0)
 #define AK4678_PLL_BICK64			(3 << 0)
@@ -302,12 +312,51 @@
 
 /**
  * struct ak4678_platform_data - platform specific AK4678 configuration
+ * @gpio_power:	GPIO to control external power to AK4678
  * @gpio_npdn:	GPIO connected to AK4678 nPDN pin
  *
  * Both GPIO parameters are optional.
  */
 struct ak4678_platform_data {
+	//int gpio_power;
 	int gpio_pdn;
+};
+
+
+
+/* AK4678 Sequence setting */
+#define AK4679_DSP_COMMAND    0x201
+
+typedef struct {
+	u16	nAddr;	// Register Address at nAddr < 0x100
+	u16	nMask;	//  wait time(ms) at nAddr = AK4678_M_DELAY
+	u16	nData;	// 
+} AKSEQUENCE;
+
+
+typedef struct {
+	AKSEQUENCE *akseq;
+	u16        size;
+} AKSEQ_SIZE;
+
+static AKSEQUENCE akseq_stereoef_on[] = {
+	{AK4678_1A_FILTER_SELECT1, 0xC, 0xC},
+};
+
+static AKSEQUENCE akseq_stereoef_off[] = {
+	{AK4678_1A_FILTER_SELECT1, 0xC, 0x0},
+};
+
+static AKSEQUENCE akseq_dvlc_drc_on[] = {
+	{AK4678_70_DRC_MODE_CONTROL, 0x3, 0x3},
+	{AK4678_71_NS_CONTROL, 0x6, 0x6},
+	{AK4678_80_DVLC_FILTER_SELECT, 0x55, 0x55}
+};
+
+static AKSEQUENCE akseq_dvlc_drc_off[] = {
+	{AK4678_70_DRC_MODE_CONTROL, 0x3, 0x0},
+	{AK4678_71_NS_CONTROL, 0xff, 0x0},
+	{AK4678_80_DVLC_FILTER_SELECT, 0xff, 0x0}    
 };
 
 #endif
