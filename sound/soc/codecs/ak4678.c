@@ -83,7 +83,7 @@ static const struct reg_default ak4678_reg[] = {
   { 0x4, 0x00 },  	/*	0x04	AK4678_04_PLL_MODE_SELECT1	*/
   { 0x5, 0x02 },  	/*	0x05	AK4678_05_FORMAT_SELECT	*/
   { 0x6, 0x00 },  	/*	0x06	AK4678_06_MIC_SIGNAL_SELECT	*/
-  { 0x7, 0x33 },  	/*	0x07	AK4678_07_MIC_AMP_GAIN		*/
+  { 0x7, 0xDD },  	/*	0x07	AK4678_07_MIC_AMP_GAIN		*/
   { 0x8, 0x00 },  	/*	0x08	AK4678_08_DIGITL_MIC	*/
   { 0x9, 0x00 },  	/*	0x09	AK4678_09_DAC_PATH_SELECT	*/
   { 0xA, 0x00 },  	/*	0x0A	AK4678_0A_LINE_MANAGEMENT	*/
@@ -93,7 +93,7 @@ static const struct reg_default ak4678_reg[] = {
   { 0xE, 0x03 },  	/*	0x0E	AK4678_0E_LINEOUT_VOLUME	*/
   { 0xF, 0x19 },  	/*	0x0F	AK4678_0F_HP_VOLUME	*/
   { 0x10, 0xBB },  	/*	0x10	AK4678_10_SPRC_VOLUME	*/
-  { 0x11, 0x91 },  	/*	0x11	AK4678_11_LIN_VOLUME	*/
+  { 0x11, 0xA9 },  	/*	0x11	AK4678_11_LIN_VOLUME	*/
   { 0x12, 0x91 },  	/*	0x12	AK4678_12_RIN_VOLUME	*/
   { 0x13, 0xC9 },  	/*	0x13	AK4678_13_ALCREF_SELECT	*/
   { 0x14, 0x00 },  	/*	0x14	AK4678_14_DIGMIX_CONTROL	*/
@@ -1887,7 +1887,7 @@ static struct snd_soc_dai_ops ak4678_portA_dai_ops = {
 
 struct snd_soc_dai_driver ak4678_dai[] = {
 	{
-	.name = "AK4678",
+	.name = "ak4678-hifi",
 	.id = AK4678_PORTIIS,
 	.playback = {
 		.stream_name = "Playback",
@@ -2148,7 +2148,7 @@ static struct snd_soc_codec_driver soc_codec_dev_ak4678 = {
 	.suspend = ak4678_suspend,
 	.resume =	ak4678_resume,
 
-	.idle_bias_off = true,
+//	.idle_bias_off = true,
 	.set_bias_level = ak4678_set_bias_level,
 
 	.controls = ak4678_snd_controls,
@@ -2229,7 +2229,7 @@ MODULE_DEVICE_TABLE(i2c, ak4678_i2c_id);
 
 static struct i2c_driver ak4678_i2c_driver = {
 	.driver = {
-		.name = "ak4678",
+		.name = "ak4678-codec",
 		.owner = THIS_MODULE,
 		.of_match_table = of_match_ptr(ak4678_i2c_dt_ids),
 	},
