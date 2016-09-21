@@ -34,6 +34,20 @@
 #include "i2s.h"
 #include "i2s-regs.h"
 
+static void __iomem *exynos3250_cmu_bus_top;
+static void __iomem *exynos3250_cmu_dmc;
+static void __iomem *exynos3250_pmu;
+
+#define EXYNOS3_CLK_BUS_TOP_REG(x)     (exynos3250_cmu_bus_top + (x))
+#define EXYNOS3_MIF_L_REG(x)           (exynos3250_cmu_dmc + (x))
+#define EXYNOS_PMUREG(x)               (exynos3250_pmu + (x))
+#define EXYNOS_PMU_DEBUG               EXYNOS_PMUREG(0x0A00)
+
+#define EXYNOS3_PA_CMU_BUS_TOP         0x10030000
+#define EXYNOS3_PA_CMU_DMC             0x105C0000
+#define EXYNOS3_PA_PMU                 0x10020000
+
+
 
 #if 1
 	#define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
@@ -438,20 +452,19 @@ static int koi_probe(struct snd_soc_card *card) {
 	int i,ret;
 
 	gprintk("\n");
-	
+
 	for (i = 0; i < ARRAY_SIZE(core_supplies); i++)
 		core_supplies[i].supply = ak4678_core_supply_names[i];
-	
+
 	ret = devm_regulator_bulk_get(card->dev, ARRAY_SIZE(core_supplies), core_supplies);
 	if (ret != 0) {
 		dev_err(card->dev, "Failed to request core supplies: %d\n",ret);
 	}
-	
+
 	ret = regulator_bulk_enable(ARRAY_SIZE(core_supplies), core_supplies);
 	if (ret != 0) {
 		dev_err(card->dev, "Failed to enable core supplies: %d\n",ret);
 	}
-
 
 
 	return 0;
@@ -519,6 +532,27 @@ static int koi_ak4678_probe(struct platform_device *pdev)
 	gprintk("start \n");
 	/* register card */
 	card->dev = &pdev->dev;
+
+       exynos3250_cmu_bus_top = ioremap(EXYNOS3_PA_CMU_BUS_TOP, SZ_64K);
+       if (exynos3250_cmu_bus_top == NULL) {
+               pr_err("%s: unable to ioremap \n",
+                               __func__);
+               BUG();
+       }
+
+       exynos3250_cmu_dmc = ioremap(EXYNOS3_PA_CMU_DMC, SZ_8K);
+       if (exynos3250_cmu_dmc == NULL) {
+               pr_err("%s: unable to ioremap \n",
+                               __func__);
+               BUG();
+       }
+
+       exynos3250_pmu = ioremap(EXYNOS3_PA_PMU, SZ_4K);
+       if (exynos3250_pmu == NULL) {
+               pr_err("%s: unable to ioremap \n",
+                               __func__);
+               BUG();
+       }
 
 	fout_epll = clk_get(NULL, "fout_epll");
 	if (IS_ERR(fout_epll))

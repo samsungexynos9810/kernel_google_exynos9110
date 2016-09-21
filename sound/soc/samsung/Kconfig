@@ -288,6 +288,12 @@ config SND_SOC_SAMSUNG_KOI_AK4678
 	help
 	  Say Y if you want to add support for SoC audio on the Koi board.
 
+config SND_SAMSUNG_I2S_MASTER
+	tristate "Samsung SoC I2S Clock Master"
+	depends on SND_SOC_SAMSUNG
+	help
+	  Say Y if you want to set I2S master mode for SoC audio on the Koi board.
+
 config SND_SOC_SAMSUNG_ESPRESSO8890_WM5110
 	tristate "SoC I2S Audio support for WM5110 on ESPRESSO8890"
 	depends on SND_SOC_SAMSUNG
