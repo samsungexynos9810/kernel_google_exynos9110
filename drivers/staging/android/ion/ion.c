@@ -1638,6 +1638,38 @@ int ion_cached_needsync_dmabuf(struct dma_buf *dmabuf)
 }
 EXPORT_SYMBOL(ion_cached_needsync_dmabuf);
 
+bool ion_may_hwrender_dmabuf(struct dma_buf *dmabuf)
+{
+	struct ion_buffer *buffer = dmabuf->priv;
+
+	if (dmabuf->ops != &dma_buf_ops) {
+		WARN(1, "%s: given dmabuf is not exported by ION\n", __func__);
+		return false;
+	}
+
+	return !!(buffer->flags & ION_FLAG_MAY_HWRENDER);
+}
+EXPORT_SYMBOL(ion_may_hwrender_dmabuf);
+
+bool ion_may_hwrender_handle(struct ion_client *client, struct ion_handle *handle)
+{
+	struct ion_buffer *buffer = handle->buffer;
+	bool valid_handle;
+
+	mutex_lock(&client->lock);
+	valid_handle = ion_handle_validate(client, handle);
+
+	if (!valid_handle) {
+		WARN(1, "%s: invalid handle passed\n", __func__);
+		mutex_unlock(&client->lock);
+		return false;
+	}
+	mutex_unlock(&client->lock);
+
+	return !!(buffer->flags & ION_FLAG_MAY_HWRENDER);
+}
+EXPORT_SYMBOL(ion_may_hwrender_handle);
+
 static int ion_sync_for_device(struct ion_client *client, int fd)
 {
 	struct dma_buf *dmabuf;

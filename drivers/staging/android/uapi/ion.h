@@ -74,6 +74,9 @@ enum ion_heap_type {
 					   are prohibited.
 					 */
 #define ION_FLAG_SYNC_FORCE 32		/* cache sync forcely at allocation */
+#define ION_FLAG_MAY_HWRENDER 64	/* buffer is cachable but it can be
+					accessd by H/W on both sharable domain, non-sharable domain,
+					so it sholud flush the cache before sharable domain accesses */
 /**
  * DOC: Ion Userspace API
  *

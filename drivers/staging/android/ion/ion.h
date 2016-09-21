@@ -219,6 +219,28 @@ struct ion_handle *ion_import_dma_buf(struct ion_client *client, int fd);
  */
 int ion_cached_needsync_dmabuf(struct dma_buf *dmabuf);
 
+/**
+ * ion_may_hwrender_dmabuf() - check if a dmabuf set ION_FLAG_MAY_HWRENDER
+ * @dmabuf: a pointer to dma_buf
+ *
+ * Given a dma-buf that is exported by ION, check if the buffer is allocated
+ * with ION_FLAG_MAY_HWRENDER. If the flags are set the function returns true.
+ * If it is unset, false. If the given dmabuf is not exported by ION,
+ * false is returned.
+ */
+bool ion_may_hwrender_dmabuf(struct dma_buf *dmabuf);
+
+/**
+ * ion_may_hwrender_handle() - check if a handle set ION_FLAG_MAY_HWRENDER
+ * @client:	the client
+ * @handle:	the handle
+ *
+ * Given a handle, check if the buffer is allocated with ION_FLAG_MAY_HWRENDER.
+ * If the flags are set the function returns true. If it is unset, false.
+ * If the given handle is not valid, false is returned.
+ */
+bool ion_may_hwrender_handle(struct ion_client *client, struct ion_handle *handle);
+
 #include <linux/dma-direction.h>
 #include <linux/dma-buf.h>
 
