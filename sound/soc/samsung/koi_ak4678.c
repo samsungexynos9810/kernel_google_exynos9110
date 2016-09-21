@@ -265,20 +265,24 @@ static int koi_hw_params(struct snd_pcm_substream *substream,
 	gprintk("cdclk out\n");
 	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_CDCLK,
 					256, SND_SOC_CLOCK_OUT);
-	if (ret < 0)
+	 if (ret < 0) {
+		dev_err(card->dev, "aif1: Failed to set SAMSUNG_I2S_CDCLK\n");
 		return ret;
+	 }
 
 	gprintk("opclk out\n");
 	ret = snd_soc_dai_set_sysclk(cpu_dai, SAMSUNG_I2S_OPCLK,
 					0, MOD_OPCLK_PCLK);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err(card->dev, "aif1: Failed to set SAMSUNG_I2S_OPCLK\n");
 		return ret;
-
+	}
 	gprintk("divbclk out = %d\n", bfs);
 	ret = snd_soc_dai_set_clkdiv(cpu_dai, SAMSUNG_I2S_DIV_BCLK, bfs);
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err(card->dev, "aif1: Failed to set BFS\n");
 		return ret;
-
+}
 	return 0;
 }
 #else
