@@ -1142,16 +1142,8 @@ void exynos_ss_dump_one_task_info(struct task_struct *tsk, bool is_main)
 	unsigned long wchan;
 	unsigned long pc = 0;
 	char symname[KSYM_NAME_LEN];
-	int permitted;
-	struct mm_struct *mm;
 
-	permitted = ptrace_may_access(tsk, PTRACE_MODE_READ_FSCREDS);
-	mm = get_task_mm(tsk);
-	if (mm) {
-		if (permitted)
-			pc = KSTK_EIP(tsk);
-	}
-
+	pc = KSTK_EIP(tsk);
 	wchan = get_wchan(tsk);
 	if (lookup_symbol_name(wchan, symname) < 0) {
 		if (!ptrace_may_access(tsk, PTRACE_MODE_READ_FSCREDS))
