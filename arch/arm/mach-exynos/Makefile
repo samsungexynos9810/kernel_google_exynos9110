@@ -33,3 +33,5 @@ obj-$(CONFIG_PM_RUNTIME)	+= pm_domains-exynos3250.o
 endif
 
 obj-$(CONFIG_KOI_BLUETOOTH)	+= board-koi-bluetooth.o
+obj-$(CONFIG_KOI_GPS)	+= board-koi-gps.o
+obj-$(CONFIG_WIFI_CONTROL_FUNC) += board-wifi-bcm.o
