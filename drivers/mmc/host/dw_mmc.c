@@ -2997,6 +2997,25 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 	}
 }
 
+static void dw_mci_notify_change(struct platform_device *dev, int state)
+{
+    struct dw_mci *host = platform_get_drvdata(dev);
+    unsigned long flags;
+
+    if (host) {
+        spin_lock_irqsave(&host->lock, flags);
+        if (state) {
+            dev_err(&dev->dev, "card inserted.\n");
+            host->pdata->quirks |= DW_MCI_QUIRK_BROKEN_CARD_DETECTION;
+        } else {
+            dev_err(&dev->dev, "card removed.\n");
+            host->pdata->quirks &= ~DW_MCI_QUIRK_BROKEN_CARD_DETECTION;
+        }
+        queue_work(host->card_workqueue, &host->card_work);
+        spin_unlock_irqrestore(&host->lock, flags);
+    }
+}
+
 #ifdef CONFIG_OF
 /* given a slot id, find out the device node representing that slot */
 static struct device_node *dw_mci_of_find_slot_node(struct device *dev, u8 slot)
@@ -3060,6 +3079,11 @@ static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#if defined(CONFIG_BCMDHD)
+void (*wifi_status_cb) (struct platform_device *dev, int state);
+struct platform_device *wifi_status_cb_devid;
+int wcf_status_register(void (*cb)(struct platform_device *dev, int state));
+#endif
 static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 {
 	struct mmc_host *mmc;
@@ -3161,7 +3185,17 @@ static int dw_mci_init_slot(struct dw_mci *host, unsigned int id)
 
 	/* Card initially undetected */
 	slot->last_detect_state = 0;
-
+#if defined(CONFIG_BCMDHD)
+	// ONLY FOR Koi/Ayu device's wlan card
+	if (strcmp(to_platform_device(host->dev)->name, "12520000.dwmmc1") == 0)  {
+		if (!host->pdata->ext_cd_init) {
+			printk("%s: set ext_cd_init \n", __func__);
+			wifi_status_cb_devid = to_platform_device(host->dev);
+			host->pdata->ext_cd_init = wcf_status_register;
+		}
+		host->pdata->ext_cd_init(&dw_mci_notify_change);
+	}
+#endif
 	return 0;
 
 err_host_allocated:
