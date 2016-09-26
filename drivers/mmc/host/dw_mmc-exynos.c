@@ -157,9 +157,11 @@ void dw_mci_reg_dump(struct dw_mci *host)
 		 atomic_read(&host->ciu_en_win));
 	reg = mci_readl(host, CMD);
 	dev_err(host->dev, ": ================= CMD REG =================\n");
-	dev_err(host->dev, ": read/write        : %s\n",
-					(reg & (0x1 << 10)) ? "write" : "read");
-	dev_err(host->dev, ": data expected     : %d\n", (reg >> 9) & 0x1);
+	if((reg >> 9) & 0x1) {
+		dev_err(host->dev, ": read/write        : %s\n",
+				(reg & (0x1 << 10)) ? "write" : "read");
+		dev_err(host->dev, ": data expected     : %d\n", (reg >> 9) & 0x1);
+	}
 	dev_err(host->dev, ": cmd index         : %d\n",
 			host->sfr_dump->cmd_index =((reg >> 0) & 0x3f));
 	reg = mci_readl(host, STATUS);
