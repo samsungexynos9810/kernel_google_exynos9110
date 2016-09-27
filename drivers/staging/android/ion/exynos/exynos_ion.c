@@ -7,6 +7,7 @@
 #include <linux/platform_device.h>
 #include <linux/memblock.h>
 #include <linux/dma-contiguous.h>
+#include <linux/cma.h>
 #include <linux/dma-mapping.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
@@ -17,6 +18,9 @@
 #ifdef CONFIG_EXYNOS_CONTENT_PATH_PROTECTION
 #include <linux/smc.h>
 #endif
+
+#include <asm/dma-contiguous.h>
+#include <linux/exynos_ion.h>
 
 #include "../ion.h"
 #include "../ion_priv.h"
@@ -249,16 +253,19 @@ unsigned int ion_parse_heap_id(unsigned int heap_id_mask, unsigned int flags)
 static int exynos_ion_rmem_device_init(struct reserved_mem *rmem,
 						struct device *dev)
 {
-	/* Nothing to do */
+	WARN(1, "%s() should never be called!", __func__);
 	return 0;
 }
 
 static void exynos_ion_rmem_device_release(struct reserved_mem *rmem,
 						struct device *dev)
 {
-	/* Nothing to do */
 }
 
+/*
+ * The below rmem device ops are never called because the the device is not
+ * associated with the rmem in the flattened device tree
+ */
 static const struct reserved_mem_ops exynos_ion_rmem_ops = {
 	.device_init	= exynos_ion_rmem_device_init,
 	.device_release	= exynos_ion_rmem_device_release,
@@ -324,20 +331,24 @@ static int __init exynos_ion_reserved_mem_setup(struct reserved_mem *rmem)
 
 	if (pdata->reusable) {
 		int ret;
+		struct cma *cma;
 
 		heap_data->type = ION_HEAP_TYPE_DMA;
 		heap_data->priv = &pdata->dev;
 
 		/* set as non-coherent device */
 		arch_setup_dma_ops(&pdata->dev, 0, 0, NULL, 0);
-		ret = dma_declare_contiguous(&pdata->dev, heap_data->size,
-						heap_data->base,
-						MEMBLOCK_ALLOC_ANYWHERE);
+		ret = cma_init_reserved_mem(
+				heap_data->base, heap_data->size, 0, &cma);
 		if (ret) {
-			pr_err("%s: failed to declare cma region %s\n",
-						__func__, heap_data->name);
+			pr_err("%s: failed to declare cma region %s (%d)\n",
+			       __func__, heap_data->name, ret);
 			return ret;
 		}
+
+		dma_contiguous_early_fixup(heap_data->base, heap_data->size);
+
+		dev_set_cma_area(&pdata->dev, cma);
 
 		pr_info("CMA memory[%d]: %s:%#lx\n", heap_data->id,
 				heap_data->name, (unsigned long)rmem->size);
@@ -447,7 +458,7 @@ static int __init exynos_ion_create_cma_devices(
 
 	dev_dbg(dev, "%s: Registered (region %d)\n", __func__, pdata->id);
 
-	dev->cma_area = pdata->dev.cma_area;
+	dev_set_cma_area(dev, dev_get_cma_area(&pdata->dev));
 
 	ret = device_create_file(dev, &cma_regid_attr);
 	if (ret)
