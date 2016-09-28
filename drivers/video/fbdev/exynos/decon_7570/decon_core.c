@@ -2786,7 +2786,7 @@ static int decon_acquire_windows(struct decon_device *decon, int idx)
 	decon_missing_pixclock(&win->windata.win_mode);
 
 	for (i = 0; i < MAX_BUF_PLANE_CNT; ++i)
-		memset(&win->dma_buf_data[i], 0, sizeof(win->dma_buf_data));
+		memset(&win->dma_buf_data[i], 0, sizeof(struct decon_dma_buf_data));
 
 	if (win->index == decon->pdata->default_win) {
 		ret = decon_fb_alloc_memory(decon, win);
