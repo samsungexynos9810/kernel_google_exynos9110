@@ -172,6 +172,7 @@
 		samsung,dw-mshc-ciu-div = <3>;
 		desc-size = <4>;
 		card-detect-delay = <200>;
+		non-removable;
 		data-timeout = <200>;
 		hto-timeout = <550>;
 		clock-frequency = <800000000>;
