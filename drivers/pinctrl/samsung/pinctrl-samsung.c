@@ -1228,6 +1228,15 @@ static void samsung_pinctrl_suspend_dev(
 	if (!drvdata->suspend)
 		return;
 
+	if (!IS_ERR(drvdata->pins_sleep)) {
+		/* This is ignore to disable mux configuration. */
+		drvdata->pinctrl->state = NULL;
+
+		ret = pinctrl_select_state(drvdata->pinctrl, drvdata->pins_sleep);
+		if (ret)
+			dev_err(drvdata->dev, "could not set default pinstate\n");
+	}
+
 	for (i = 0; i < drvdata->nr_banks; i++) {
 		struct samsung_pin_bank *bank = &drvdata->pin_banks[i];
 		void __iomem *reg = virt_base + bank->pctl_offset;
@@ -1258,15 +1267,6 @@ static void samsung_pinctrl_suspend_dev(
 	}
 
 	drvdata->suspend(drvdata);
-
-	if (!IS_ERR(drvdata->pins_sleep)) {
-		/* This is ignore to disable mux configuration. */
-		drvdata->pinctrl->state = NULL;
-
-		ret = pinctrl_select_state(drvdata->pinctrl, drvdata->pins_sleep);
-		if (ret)
-			dev_err(drvdata->dev, "could not set default pinstate\n");
-	}
 }
 
 /**
