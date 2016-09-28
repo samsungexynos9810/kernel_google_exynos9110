@@ -411,6 +411,8 @@
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x13800000 0x100>;
+		dmas = <&pdma0 16 &pdma0 15>;
+		dma-names = "tx", "rx";
 		samsung,fifo-size = <256>;
 		interrupts = <0 109 0>;
 		clocks = <&cmu CLK_UART0>, <&cmu CLK_SCLK_UART0>, <&cmu CLK_SCLK_UART0>;
@@ -426,6 +428,8 @@
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x13810000 0x100>;
+		dmas = <&pdma1 16 &pdma1 15>;
+		dma-names = "tx", "rx";
 		samsung,fifo-size = <64>;
 		interrupts = <0 110 0>;
 		clocks = <&cmu CLK_UART1>, <&cmu CLK_SCLK_UART1>, <&cmu CLK_SCLK_UART1>;
@@ -441,6 +445,8 @@
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x13820000 0x100>;
+		dmas = <&pdma0 18 &pdma0 17>;
+		dma-names = "tx", "rx";
 		samsung,fifo-size = <256>;
 		interrupts = <0 111 0>;
 		clocks = <&cmu CLK_UART2>, <&cmu CLK_SCLK_UART2>, <&cmu CLK_SCLK_UART2>;
@@ -456,6 +462,8 @@
 		compatible = "samsung,exynos-uart";
 		samsung,separate-uart-clk;
 		reg = <0x13830000 0x100>;
+		dmas = <&pdma1 18 &pdma1 17>;
+		dma-names = "tx", "rx";
 		samsung,fifo-size = <16>;
 		interrupts = <0 112 0>;
 		clocks = <&cmu CLK_UART3>, <&cmu CLK_SCLK_UART3>, <&cmu CLK_SCLK_UART3>;

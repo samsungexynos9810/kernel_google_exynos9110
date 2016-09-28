@@ -57,10 +57,6 @@
 		status = "okay";
 	};
 
-	serial@13830000 {
-		status = "okay";
-	};
-
 	gpio_keys {
 		compatible = "gpio-keys";
 		#address-cells = <1>;
