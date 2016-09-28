@@ -88,18 +88,14 @@ static void dfd_set_dump_gpr(int en)
 
 	if (en) {
 		reg_val = DFD_EDPCSR_DUMP_EN
-#if 1 /* for MNGS */
 			| DFD_L2RSTDISABLE_MNGS_EN | DFD_DBGL1RSTDISABLE_MNGS_EN
-#endif
 			| DFD_L2RSTDISABLE_APOLLO_EN | DFD_DBGL1RSTDISABLE_APOLLO_EN;
 		writel(reg_val, exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
 	} else {
 		reg_val = readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
 		if (reg_val) {
 			reg_val =
-#if 1 /* for MNGS */
 				DFD_CLEAR_L2RSTDISABLE_MNGS | DFD_CLEAR_DBGL1RSTDISABLE_MNGS |
-#endif
 				DFD_CLEAR_L2RSTDISABLE_APOLLO | DFD_CLEAR_DBGL1RSTDISABLE_APOLLO;
 		}
 		writel(reg_val, exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
@@ -110,8 +106,15 @@ void mngs_reset_control(int en)
 {
 	u32 reg_val, val;
 	u32 mngs_cpu_cnt = soc_has_mongoose();
+	u32 check_dumpGPR;
 
 	if (mngs_cpu_cnt == 0 || !exynos_pmu_base)
+		return;
+
+	check_dumpGPR = DFD_EDPCSR_DUMP_EN &
+		readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION);
+
+	if (!check_dumpGPR)
 		return;
 
 	if (en) {
@@ -208,8 +211,8 @@ static void exynos_reboot(enum reboot_mode mode, const char *cmd)
 	case EXYNOS8895_SOC_ID:
 		/* Check reset_sequencer_configuration register */
 		if (readl(exynos_pmu_base + EXYNOS_PMU_RESET_SEQUENCER_CONFIGURATION) & DFD_EDPCSR_DUMP_EN) {
-			dfd_set_dump_gpr(0);
 			mngs_reset_control(0);
+			dfd_set_dump_gpr(0);
 		}
 		break;
 	default:
