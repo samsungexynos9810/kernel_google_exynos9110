@@ -335,6 +335,11 @@ static void gpio_keys_gpio_report_event(struct gpio_button_data *bdata)
 		if (state)
 			input_event(input, type, button->code, button->value);
 	} else {
+#ifdef CONFIG_KOI_GPIOKEY
+		if (bdata->timer_debounce)
+		input_event(input, type, button->code, !!state);
+		else
+#endif
 		input_event(input, type, button->code,
 				irqd_is_wakeup_set(&desc->irq_data) ? 1 : !!state);
 	}
@@ -362,12 +367,20 @@ static void gpio_keys_gpio_timer(unsigned long _data)
 static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
 {
 	struct gpio_button_data *bdata = dev_id;
+#ifdef CONFIG_KOI_GPIOKEY
+	const struct gpio_keys_button *button = bdata->button;
+	struct irq_desc *desc = irq_to_desc(gpio_to_irq(button->gpio));
+#endif
 
 	BUG_ON(irq != bdata->irq);
 
 	if (bdata->button->wakeup)
 		pm_stay_awake(bdata->input->dev.parent);
+#ifdef CONFIG_KOI_GPIOKEY
+	if (bdata->timer_debounce && irqd_is_wakeup_set(&desc->irq_data) == 0)
+#else
 	if (bdata->timer_debounce)
+#endif
 		mod_timer(&bdata->timer,
 			jiffies + msecs_to_jiffies(bdata->timer_debounce));
 	else
@@ -376,6 +389,7 @@ static irqreturn_t gpio_keys_gpio_isr(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
+#ifndef CONFIG_KOI_GPIOKEY
 static void gpio_keys_irq_timer(unsigned long _data)
 {
 	struct gpio_button_data *bdata = (struct gpio_button_data *)_data;
@@ -425,6 +439,7 @@ out:
 	spin_unlock_irqrestore(&bdata->lock, flags);
 	return IRQ_HANDLED;
 }
+#endif
 
 static void gpio_keys_quiesce_key(void *data)
 {
@@ -489,6 +504,7 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 		irqflags = IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING;
 
 	} else {
+#ifndef CONFIG_KOI_GPIOKEY
 		if (!button->irq) {
 			dev_err(dev, "No IRQ specified\n");
 			return -EINVAL;
@@ -506,6 +522,9 @@ static int gpio_keys_setup_key(struct platform_device *pdev,
 
 		isr = gpio_keys_irq_isr;
 		irqflags = 0;
+#else
+		pr_err("%s: gpio %d is not valid\n", __func__, button->gpio);
+#endif
 	}
 
 	input_set_capability(input, button->type ?: EV_KEY, button->code);

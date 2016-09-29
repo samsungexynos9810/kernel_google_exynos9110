@@ -82,7 +82,7 @@
 			linux,code = <115>;
 			gpios = <&gpx1 7 0x1>;
 			gpio-key,wakeup = <1>;
-			debounce-interval = <0>;
+			debounce-interval = <30>;
 		};
 
 		button@3 {
@@ -92,7 +92,7 @@
 			linux,code = <114>;
 			gpios = <&gpx0 0 0x1>;
 			gpio-key,wakeup = <1>;
-			debounce-interval = <0>;
+			debounce-interval = <30>;
 		};
 	};
 
