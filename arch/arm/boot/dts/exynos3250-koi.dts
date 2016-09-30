@@ -173,6 +173,9 @@
 		desc-size = <4>;
 		card-detect-delay = <200>;
 		non-removable;
+		skip-init-mmc-scan;
+		keep-power-in-suspend;
+		pm-ignore-notify;
 		data-timeout = <200>;
 		hto-timeout = <550>;
 		clock-frequency = <800000000>;
