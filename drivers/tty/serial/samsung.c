@@ -897,6 +897,7 @@ static unsigned int s3c24xx_serial_getclk(struct s3c24xx_uart_port *ourport,
 			quot = (rate + (8 * req_baud)) / (16 * req_baud);
 			baud = rate / (quot * 16);
 		}
+		ourport->baudclk_rate = rate;
 		quot--;
 
 		calc_deviation = req_baud - baud;
