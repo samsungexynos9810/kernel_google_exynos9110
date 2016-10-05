@@ -2997,6 +2997,7 @@ static void dw_mci_work_routine_card(struct work_struct *work)
 	}
 }
 
+#if defined(CONFIG_BCMDHD)
 static void dw_mci_notify_change(struct platform_device *dev, int state)
 {
     struct dw_mci *host = platform_get_drvdata(dev);
@@ -3015,6 +3016,7 @@ static void dw_mci_notify_change(struct platform_device *dev, int state)
         spin_unlock_irqrestore(&host->lock, flags);
     }
 }
+#endif
 
 #ifdef CONFIG_OF
 /* given a slot id, find out the device node representing that slot */
