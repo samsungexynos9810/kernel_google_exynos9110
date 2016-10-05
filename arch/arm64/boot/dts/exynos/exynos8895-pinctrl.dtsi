@@ -216,30 +216,6 @@
 			#interrupt-cells = <2>;
 		};
 
-		gpm0: gpm0 {
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
-		gpm1: gpm1 {
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
-		gpm2: gpm2 {
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
 		uart0_bus: uart0-bus {
 			samsung,pins = "gpd0-7", "gpd0-6";
 			samsung,pin-function = <3>;
@@ -542,30 +518,6 @@
 		};
 
 		gpg0: gpg0 {
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
-		gpv0: gpv0 {
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
-		gpv1: gpv1 {
-			gpio-controller;
-			#gpio-cells = <2>;
-
-			interrupt-controller;
-			#interrupt-cells = <2>;
-		};
-
-		gpv2: gpv2 {
 			gpio-controller;
 			#gpio-cells = <2>;
 
