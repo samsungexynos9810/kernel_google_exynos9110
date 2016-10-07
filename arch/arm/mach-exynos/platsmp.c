@@ -42,8 +42,11 @@ extern void exynos4_secondary_startup(void);
  *
  */
 void exynos_cpu_power_down(int cpu)
-{
-	pmu_raw_writel(0, EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+{	u32 val;
+
+	val = pmu_raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+	val &= ~S5P_CORE_LOCAL_PWR_EN;
+	pmu_raw_writel(val, EXYNOS_ARM_CORE_CONFIGURATION(cpu));
 }
 
 /**
@@ -54,8 +57,11 @@ void exynos_cpu_power_down(int cpu)
  */
 void exynos_cpu_power_up(int cpu)
 {
-	pmu_raw_writel(S5P_CORE_LOCAL_PWR_EN,
-			EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+	u32 val;
+
+	val = pmu_raw_readl(EXYNOS_ARM_CORE_CONFIGURATION(cpu));
+	val |= S5P_CORE_LOCAL_PWR_EN;
+	pmu_raw_writel(val, EXYNOS_ARM_CORE_CONFIGURATION(cpu));
 }
 
 /**
