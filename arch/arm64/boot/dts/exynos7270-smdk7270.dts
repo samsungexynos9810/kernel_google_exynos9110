@@ -850,8 +850,8 @@
 		mif-vclk = <121090000>;
 		/* vclk = 60.55 Mhz */
 		disp-vclk = <60550000>;
-		/* aclk = 208Mhz */
-		disp-dvfs = <208000000>;
+		/* aclk = 210Mhz */
+		disp-dvfs = <210000000>;
 		status = "okay";
 	};
 
