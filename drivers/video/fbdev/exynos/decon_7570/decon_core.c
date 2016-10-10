@@ -721,11 +721,11 @@ static void decon_wait_for_framedone(struct decon_device *decon)
 	int ret;
 	s64 time_ms = ktime_to_ms(ktime_get()) - ktime_to_ms(decon->trig_mask_timestamp);
 
-	if (time_ms < 17) {
+	if (time_ms < MAX_FRM_DONE_WAIT) {
 		DISP_SS_EVENT_LOG(DISP_EVT_DECON_FRAMEDONE_WAIT, &decon->sd, ktime_set(0, 0));
 		ret = wait_event_interruptible_timeout(decon->wait_frmdone,
 			(decon->frame_done_cnt_target <= decon->frame_done_cnt_cur),
-		msecs_to_jiffies(17 - time_ms));
+		msecs_to_jiffies(MAX_FRM_DONE_WAIT - time_ms));
 	}
 }
 

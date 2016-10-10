@@ -72,6 +72,7 @@ extern int decon_log_level;
 #define DRM_DEV_DECON		3
 #define DECON_CFW_OFFSET	3
 
+#define MAX_FRM_DONE_WAIT	34
 
 #define EVT_TYPE_INT			BIT(31)
 #define EVT_TYPE_IOCTL			BIT(30)
