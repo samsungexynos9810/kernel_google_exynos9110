@@ -1519,6 +1519,8 @@ static int android_setup(struct usb_gadget *gadget,
 	struct gadget_info *gi = container_of(cdev, struct gadget_info, cdev);
 	int value = -EOPNOTSUPP;
 	struct usb_function_instance *fi;
+	struct usb_configuration *configuration;
+	struct usb_function *f;
 
 	spin_lock_irqsave(&cdev->lock, flags);
 	if (!gi->connected) {
@@ -1531,6 +1533,15 @@ static int android_setup(struct usb_gadget *gadget,
 			value = fi->f->setup(fi->f, c);
 			if (value >= 0)
 				break;
+		}
+	}
+	list_for_each_entry(configuration, &cdev->configs, list) {
+		list_for_each_entry(f, &configuration->functions, list) {
+			if (f != NULL && f->ctrlrequest != NULL) {
+				value = f->ctrlrequest(f, c);
+				if (value >= 0)
+					break;
+			}
 		}
 	}
 
@@ -1600,7 +1611,6 @@ functions_show(struct device *pdev, struct device_attribute *attr, char *buf)
 	struct gadget_info *dev = dev_get_drvdata(pdev);
 	struct usb_composite_dev *cdev;
 	struct usb_configuration *c;
-	struct config_usb_cfg *cfg;
 	struct usb_function *f;
 	char *buff = buf;
 
@@ -1611,8 +1621,7 @@ functions_show(struct device *pdev, struct device_attribute *attr, char *buf)
 	mutex_lock(&dev->lock);
 
 	list_for_each_entry(c, &cdev->configs, list) {
-		cfg = container_of(c, struct config_usb_cfg, c);
-		list_for_each_entry(f, &cfg->func_list, list) {
+		list_for_each_entry(f, &c->functions, list) {
 			buff += sprintf(buff, "%s,", f->name);
 		}
 	}
