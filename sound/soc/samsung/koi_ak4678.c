@@ -48,6 +48,11 @@ static void __iomem *exynos3250_pmu;
 #define EXYNOS3_PA_PMU                 0x10020000
 
 
+static void __iomem *exynos3250_gpr;
+#define EXYNOS_GPREG(x)               (exynos3250_gpr + (x))
+#define EXYNOS3_PA_GPR                 0x11400000
+
+
 
 #if 1
 	#define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
@@ -85,7 +90,7 @@ static void koi_xclkout_enable(bool on)
 
 	xclkout_enabled = on;
 	/* XUSBXTI 24MHz via XCLKOUT */
-	writel(on ? 0x0900 : 0x0901, EXYNOS_PMU_DEBUG);
+//	writel(on ? 0x0900 : 0x0901, EXYNOS_PMU_DEBUG);
 }
 
 static int set_aud_pll_rate(unsigned long rate)
@@ -118,6 +123,16 @@ static int set_aud_sclk(struct snd_soc_card *card, unsigned long epll, unsigned 
 {
 	struct clk *fout_epll, *mout_epll, *mout_audio, *dout_audio, *dout_i2s, *sclk_i2s;
 	int ret = 0;
+
+// The following lines are temporal register settings
+
+	writel( 0x0022222,	EXYNOS_GPREG(0x80));
+
+	writel((readl(EXYNOS3_CLK_BUS_TOP_REG(0x0C254)) & ~0xF0) | 0x00000070,
+			EXYNOS3_CLK_BUS_TOP_REG(0x0C254));
+
+	writel(readl(EXYNOS3_CLK_BUS_TOP_REG(0x0C210)) | 0x00000010,
+			EXYNOS3_CLK_BUS_TOP_REG(0x0C210));
 
 	gprintk("set_aud_sclk\n");
 	fout_epll = clk_get(NULL, "fout_epll");
@@ -562,6 +577,13 @@ static int koi_ak4678_probe(struct platform_device *pdev)
 
        exynos3250_pmu = ioremap(EXYNOS3_PA_PMU, SZ_4K);
        if (exynos3250_pmu == NULL) {
+               pr_err("%s: unable to ioremap \n",
+                               __func__);
+               BUG();
+       }
+
+       exynos3250_gpr = ioremap(EXYNOS3_PA_GPR, SZ_4K);
+       if (exynos3250_gpr == NULL) {
                pr_err("%s: unable to ioremap \n",
                                __func__);
                BUG();
