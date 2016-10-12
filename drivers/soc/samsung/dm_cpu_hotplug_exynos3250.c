@@ -74,6 +74,7 @@ static int dynamic_hotplug(enum hotplug_mode mode)
 	case CHP_LOW_POWER:
 		for (i = 1; i < NR_CPUS; i++)
 			cpumask_set_cpu(i, &out_target);
+		cpumask_and(&out_target, &out_target, cpu_online_mask);
 		ret = __cpu_hotplug(&out_target);
 		break;
 	case CHP_NORMAL:
