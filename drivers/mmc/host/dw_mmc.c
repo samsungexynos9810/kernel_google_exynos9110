@@ -537,9 +537,6 @@ static u32 dw_mci_prepare_command(struct mmc_host *mmc, struct mmc_command *cmd)
 	if (cmd->opcode == SD_SWITCH_VOLTAGE) {
 		u32 clk_en_a;
 
-		/* Special bit makes CMD11 not die */
-		cmdr |= SDMMC_CMD_VOLT_SWITCH;
-
 		/* Change state to continue to handle CMD11 weirdness */
 		WARN_ON(slot->host->state != STATE_SENDING_CMD);
 		slot->host->state = STATE_SENDING_CMD11;
@@ -1609,10 +1606,6 @@ static void dw_mci_setup_bus(struct dw_mci_slot *slot, bool force_clkinit)
 	u32 div;
 	u32 clk_en_a;
 	u32 sdmmc_cmd_bits = SDMMC_CMD_UPD_CLK | SDMMC_CMD_PRV_DAT_WAIT;
-
-	/* We must continue to set bit 28 in CMD until the change is complete */
-	if (host->state == STATE_WAITING_CMD11_DONE)
-		sdmmc_cmd_bits |= SDMMC_CMD_VOLT_SWITCH;
 
 	if (!clock) {
 		mci_writel(host, CLKENA, 0);
