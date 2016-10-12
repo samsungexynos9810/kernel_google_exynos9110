@@ -71,7 +71,7 @@ static struct pm_qos_request exynos_fimd_mif_qos;
 #endif
 
 #ifdef CONFIG_EXYNOS_PSMW
-#include <mach/exynos-psmw.h>
+#include <soc/samsung/exynos-psmw.h>
 static bool is_booted = false;
 #endif
 

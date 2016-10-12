@@ -4,7 +4,9 @@
 #include <linux/delay.h>
 #include <linux/kthread.h>
 #include <linux/suspend.h>
+#ifdef CONFIG_EXYNOS_PSMW
 #include <soc/samsung/exynos-psmw.h>
+#endif
 
 #define NORMALMIN_FREQ	500000
 #define POLLING_MSEC	200

@@ -30,7 +30,7 @@
 #include "fimd_fb.h"
 
 #ifdef CONFIG_EXYNOS_PSMW
-#include <mach/exynos-psmw.h>
+#include <soc/samsung/exynos-psmw.h>
 #endif
 #include <../drivers/clk/samsung/clk.h>
 
