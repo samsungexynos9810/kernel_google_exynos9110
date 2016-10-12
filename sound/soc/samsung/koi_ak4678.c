@@ -66,6 +66,8 @@ int MicGain = 13;
 int IDVol = 169;
 module_param(MicGain, int, S_IRUGO|S_IWUSR);
 module_param(IDVol, int, S_IRUGO|S_IWUSR);
+#define AK4678_07_MIC_AMP_GAIN			0x07
+#define AK4678_11_LIN_VOLUME			0x11
 
 static const char *ak4678_core_supply_names[AK4678_NUM_CORE_SUPPLIES] = {
 	"vdd_18",
@@ -296,7 +298,18 @@ static int koi_hw_params(struct snd_pcm_substream *substream,
 	if (ret < 0) {
 		dev_err(card->dev, "aif1: Failed to set BFS\n");
 		return ret;
-}
+	}
+
+	/* Set mic volume dependig on units */
+	{
+		unsigned int data;
+		MicGain &=0xF;
+		data = (MicGain & 0xF) |  ((MicGain & 0xF) << 4);
+		gprintk("update MicGain = %d\n",MicGain);
+		snd_soc_write(rtd->codec, AK4678_07_MIC_AMP_GAIN, data);
+		gprintk("update DigitalVolume = %d\n",IDVol);
+		snd_soc_write(rtd->codec, AK4678_11_LIN_VOLUME, IDVol);
+	}
 	return 0;
 }
 #else
