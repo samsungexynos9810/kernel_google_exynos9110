@@ -60,7 +60,7 @@ config EXYNOS_SNAPSHOT_FREQ
 config EXYNOS_SNAPSHOT_HRTIMER
 	bool "Enable debugging of hrtimer by kevent"
 	depends on EXYNOS_SNAPSHOT && !EXYNOS_SNAPSHOT_MINIMIZED_MODE
-	default n
+	default y
 
 config EXYNOS_SNAPSHOT_REG
 	bool "Enable debugging of accessing register by kevent"
