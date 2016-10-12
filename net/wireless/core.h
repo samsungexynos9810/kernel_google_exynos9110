@@ -111,11 +111,7 @@ cfg80211_rdev_free_wowlan(struct cfg80211_registered_device *rdev)
 	    rdev->wiphy.wowlan_config->tcp->sock)
 		sock_release(rdev->wiphy.wowlan_config->tcp->sock);
 	kfree(rdev->wiphy.wowlan_config->tcp);
-#ifdef CONFIG_BCMDHD
-	// rdev->wiphy.wowlan_config is not 'kmalloc' objects. Skip.
-#else
 	kfree(rdev->wiphy.wowlan_config);
-#endif
 #endif
 }
 
