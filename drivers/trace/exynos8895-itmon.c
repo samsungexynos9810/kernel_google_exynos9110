@@ -53,6 +53,10 @@
 #define BIT_ERR_VALID(x)		(((x) & (0x1 << 26)) >> 26)
 #define BIT_AXID(x)			(((x) & (0xFFFF)))
 #define BIT_AXUSER(x)			(((x) & (0xFFFF << 16)) >> 16)
+#define BIT_AXBURST(x)			(((x) & (0x3)))
+#define BIT_AXPROT(x)			(((x) & (0x3 << 2)) >> 2)
+#define BIT_AXLEN(x)			(((x) & (0xF << 16)) >> 16)
+#define BIT_AXSIZE(x)			(((x) & (0x7 << 28)) >> 28)
 
 #define M_NODE				(0)
 #define T_S_NODE			(1)
@@ -85,7 +89,7 @@
 #define TMOUT_TEST			(0x1)
 
 #define PANIC_ALLOWED_THRESHOLD 	(0x2)
-#define SWAPPER_VALUE			(0x08000000)
+#define INVALID_REMAPPING		(0x08000000)
 
 static bool initial_multi_irq_enable = false;
 static struct itmon_dev *g_itmon = NULL;
@@ -661,7 +665,7 @@ static void itmon_post_handler_by_master(struct itmon_dev *itmon,
 
 	if (!strncmp(traceinfo->port, "CP", strlen("CP"))) {
 		/* if master is DSP and operation is read, we don't care this */
-		if (traceinfo->master && trans_type == TRANS_TYPE_READ &&
+		if (traceinfo->master && traceinfo->target_addr == INVALID_REMAPPING &&
 			!strncmp(traceinfo->master, "CR4MtoL2", strlen(traceinfo->master))) {
 			pdata->err_cnt = 0;
 			pr_info("ITMON skips CP's DSP(CR4MtoL2) detected\n");
@@ -729,12 +733,20 @@ static void itmon_report_timeout(struct itmon_dev *itmon,
 	pr_info("--------------------------------------------------------------------------\n");
 }
 
+static unsigned int power(unsigned int param, unsigned int num)
+{
+	if (num == 0)
+		return 1;
+	return param * (power(param, num - 1));
+}
+
 static void itmon_report_traceinfo(struct itmon_dev *itmon,
 				struct itmon_nodeinfo *node,
 				unsigned int trans_type)
 {
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
+	struct itmon_tracedata *tracedata = &node->tracedata;
 	struct itmon_nodegroup *group = NULL;
 
 	if (!traceinfo->dirty || traceinfo->trans_dirty)
@@ -752,10 +764,19 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 		traceinfo->port, traceinfo->master ? traceinfo->master : "",
 		traceinfo->dest ? traceinfo->dest : "Unknown",
 		traceinfo->target_addr,
-		traceinfo->target_addr == SWAPPER_VALUE ?
-		"(SWAPPER - Violation Access Window by CP)" : "",
+		traceinfo->target_addr == INVALID_REMAPPING ?
+		"(Violation Access by CP maybe)" : "",
 		trans_type == TRANS_TYPE_READ ? "READ" : "WRITE",
 		itmon_errcode[traceinfo->errcode]);
+	pr_info("      > Size           : %u bytes x %u burst => %u bytes\n"
+		"      > Burst Type     : %u (0:FIXED, 1:INCR, 2:WRAP)\n"
+		"      > Level          : %s\n"
+		"      > Protection     : %s\n",
+		power(BIT_AXSIZE(tracedata->ext_info_1), 2), BIT_AXLEN(tracedata->ext_info_1) + 1,
+		power(BIT_AXSIZE(tracedata->ext_info_1), 2) * (BIT_AXLEN(tracedata->ext_info_1) + 1),
+		BIT_AXBURST(tracedata->ext_info_2),
+		(BIT_AXPROT(tracedata->ext_info_2) & 0x1) ? "Privileged access" : "Unprivileged access",
+		(BIT_AXPROT(tracedata->ext_info_2) & 0x2) ? "Non-secure access" : "Secure access");
 
 	if (node) {
 		group = node->group;
