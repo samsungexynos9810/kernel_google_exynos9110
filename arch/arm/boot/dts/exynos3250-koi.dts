@@ -608,7 +608,7 @@
 		compatible = "samsung,koi-ak4678";
 		samsung,audio-cpu = <&i2s>;
 		samsung,audio-codec = <&gaudio_codec>;
-		clocks = <&cmu_dmc CLK_MOUT_EPLL>,
+		clocks = <&cmu CLK_MOUT_EPLL_USER>,
 			<&cmu_dmc CLK_FOUT_EPLL>,
 			<&cmu CLK_MOUT_AUDIO>,
 			<&cmu CLK_DIV_AUDIO>,
