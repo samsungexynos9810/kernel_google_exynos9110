@@ -253,7 +253,7 @@ PNAME(mout_vpll_p)		= { "fin_pll", "fout_vpll", };
 PNAME(mout_upll_p)		= { "fin_pll", "fout_upll", };
 
 PNAME(mout_mpll_user_p)		= { "fin_pll", "div_mpll_pre", };
-PNAME(mout_epll_user_p)		= { "fin_pll", "mout_epll", };
+PNAME(mout_epll_user_p)		= { "fin_pll", "fout_epll", };
 PNAME(mout_core_p)		= { "mout_apll", "mout_mpll_user_c", };
 PNAME(mout_hpm_p)		= { "mout_apll", "mout_mpll_user_c", };
 
@@ -967,7 +967,6 @@ err:
 static inline void exynos3250_dmc_clk_sleep_init(void) { }
 #endif
 
-PNAME(mout_epll_p)	= { "fin_pll", "fout_epll", };
 PNAME(mout_bpll_p)	= { "fin_pll", "fout_bpll", };
 PNAME(mout_mpll_mif_p)	= { "fin_pll", "sclk_mpll_mif", };
 PNAME(mout_dphy_p)	= { "mout_mpll_mif", "mout_bpll", };
@@ -986,9 +985,6 @@ static struct samsung_mux_clock dmc_mux_clks[] __initdata = {
 	MUX(CLK_MOUT_BPLL, "mout_bpll", mout_bpll_p, SRC_DMC, 10, 1),
 	MUX(CLK_MOUT_DPHY, "mout_dphy", mout_dphy_p, SRC_DMC, 8, 1),
 	MUX(CLK_MOUT_DMC_BUS, "mout_dmc_bus", mout_dphy_p, SRC_DMC,  4, 1),
-
-	/* SRC_EPLL */
-	MUX(CLK_MOUT_EPLL, "mout_epll", mout_epll_p, SRC_EPLL, 4, 1),
 };
 
 static struct samsung_div_clock dmc_div_clks[] __initdata = {
