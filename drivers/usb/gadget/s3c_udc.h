@@ -40,6 +40,7 @@
 #include <linux/device.h>
 #include <linux/dma-mapping.h>
 #include <linux/io.h>
+#include <linux/wakelock.h>
 
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
@@ -165,6 +166,7 @@ struct s3c_udc {
 	unsigned int gpio_device_detect;
 	unsigned req_pending:1, req_std:1, req_config:1;
 	int udc_enabled;
+	struct wake_lock wake_lock;
 };
 
 extern struct s3c_udc *the_controller;

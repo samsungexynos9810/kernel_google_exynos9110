@@ -361,6 +361,7 @@ int s3c_vbus_enable(struct usb_gadget *gadget, int is_active)
 		dev->udc_enabled = is_active;
 
 		if (!is_active) {
+			wake_unlock(&dev->wake_lock);
 			spin_lock_irqsave(&dev->lock, flags);
 			stop_activity(dev, dev->driver);
 			spin_unlock_irqrestore(&dev->lock, flags);
@@ -374,6 +375,7 @@ int s3c_vbus_enable(struct usb_gadget *gadget, int is_active)
 				return ret;
 			}
 		} else {
+			wake_lock(&dev->wake_lock);
 			ret = regulator_bulk_enable(S3C_UDC_SUPPLY_COUNT,
 					dev->supplies);
 			if (ret) {
@@ -1318,6 +1320,7 @@ static int s3c_udc_probe(struct platform_device *pdev)
 	dev->gadget.b_hnp_enable = 0;
 	dev->gadget.a_hnp_support = 0;
 	dev->gadget.a_alt_hnp_support = 0;
+	wake_lock_init(&dev->wake_lock, WAKE_LOCK_SUSPEND, "s3c_udc_otg");
 
 	the_controller = dev;
 	platform_set_drvdata(pdev, dev);
@@ -1422,6 +1425,7 @@ err_get_data_buf:
 	dma_free_coherent(&pdev->dev,
 			sizeof(struct usb_ctrlrequest)*BACK2BACK_SIZE,
 			dev->usb_ctrl, dev->usb_ctrl_dma);
+	wake_lock_destroy(&dev->wake_lock);
 
 	return retval;
 }
@@ -1436,6 +1440,7 @@ static int s3c_udc_remove(struct platform_device *pdev)
 	usb_gadget_unregister_driver(dev->driver);
 	usb_del_gadget_udc(&dev->gadget);
 	device_unregister(&dev->gadget.dev);
+	wake_lock_destroy(&dev->wake_lock);
 
 	clk_disable_unprepare(dev->clk);
 	if (dev->ep0_data)
