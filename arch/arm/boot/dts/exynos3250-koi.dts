@@ -310,7 +310,6 @@
 				};
 
 				ldo16_reg: LDO16 {
-					regulator-always-on;
 					regulator-boot-on;
 					regulator-name = "vdd_lcd_3.1";
 					regulator-min-microvolt = <3100000>;
@@ -332,7 +331,6 @@
 				};
 
 				ldo20_reg: LDO20 {
-					regulator-always-on;
 					regulator-boot-on;
 					regulator-name = "vdd_lcd_1.8";
 					regulator-min-microvolt = <1800000>;
