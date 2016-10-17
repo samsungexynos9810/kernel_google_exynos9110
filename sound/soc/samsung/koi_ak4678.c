@@ -124,10 +124,6 @@ static int set_aud_sclk(struct snd_soc_card *card, unsigned long epll, unsigned 
 	struct clk *fout_epll, *mout_epll, *mout_audio, *dout_audio, *dout_i2s, *sclk_i2s;
 	int ret = 0;
 
-// The following lines are temporal register settings
-
-	writel( 0x0022222,	EXYNOS_GPREG(0x80));
-
 	writel((readl(EXYNOS3_CLK_BUS_TOP_REG(0x0C254)) & ~0xF0) | 0x00000070,
 			EXYNOS3_CLK_BUS_TOP_REG(0x0C254));
 

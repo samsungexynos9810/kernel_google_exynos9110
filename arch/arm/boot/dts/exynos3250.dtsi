@@ -625,8 +625,8 @@
 		clock-names = "iis", "sclk_i2s";
 		samsung,supports-rstclr;
 		pinctrl-names = "default", "idle";
-		pinctrl_0 = <&i2s2_bus>;
-		pinctrl_1 = <&i2s2_bus_idle>;
+		pinctrl-0 = <&i2s2_bus>;
+		pinctrl-1 = <&i2s2_bus_idle>;
 		status = "okay";
 	};
 
