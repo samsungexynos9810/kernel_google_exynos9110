@@ -54,7 +54,7 @@ static void __iomem *exynos3250_gpr;
 
 
 
-#if 1
+#if 0
 	#define gprintk(fmt, x... ) printk( "%s: " fmt, __FUNCTION__ , ## x)
 #else
 	#define gprintk(x...) do { } while (0)
