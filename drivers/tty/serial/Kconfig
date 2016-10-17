@@ -258,7 +258,7 @@ config SERIAL_SAMSUNG_UARTS
 	int
 	depends on PLAT_SAMSUNG || ARCH_EXYNOS
 	default 4 if SERIAL_SAMSUNG_UARTS_4 || CPU_S3C2416
-	default 10
+	default 16
 	help
 	  Select the number of available UART ports for the Samsung S3C
 	  serial driver
