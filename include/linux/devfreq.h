@@ -174,6 +174,9 @@ struct devfreq {
 	unsigned int *trans_table;
 	unsigned long *time_in_state;
 	unsigned long last_stat_updated;
+#if defined(CONFIG_EXYNOS_PSMW_DVFS)
+	unsigned long locked_min_freq;
+#endif
 
 	bool disabled_pm_qos;
 };

@@ -26,6 +26,9 @@
 #include <linux/list.h>
 #include <linux/printk.h>
 #include <linux/hrtimer.h>
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+#include <soc/samsung/exynos-psmw.h>
+#endif
 #include "governor.h"
 
 static struct class *devfreq_class;
@@ -36,6 +39,13 @@ static struct class *devfreq_class;
  * monitoring mechanism.
  */
 static struct workqueue_struct *devfreq_wq;
+
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+#define MAX_POLLING_TIME	(60 * 1000)	/* 60sec */
+static struct psmw_listener_info psmw_devfreq_info;
+static struct task_struct *devfreq_flush_task;
+bool old_req = false;
+#endif
 
 /* The list of all device-devfreq governors */
 static LIST_HEAD(devfreq_governor_list);
@@ -227,6 +237,52 @@ int update_devfreq(struct devfreq *devfreq)
 }
 EXPORT_SYMBOL(update_devfreq);
 
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+static int devfreq_flush_daemon(void *data)
+{
+	int on_cpu = 0;
+	struct cpumask thread_cpumask;
+	struct devfreq *devfreq;
+
+	cpumask_clear(&thread_cpumask);
+	cpumask_set_cpu(on_cpu, &thread_cpumask);
+	sched_setaffinity(0, &thread_cpumask);
+
+	while (!kthread_should_stop()) {
+		set_current_state(TASK_INTERRUPTIBLE);
+		schedule();
+		set_current_state(TASK_RUNNING);
+
+		list_for_each_entry(devfreq, &devfreq_list, node) {
+			flush_delayed_work(&(devfreq->work));
+		}
+	}
+
+	return 0;
+}
+
+static int psmw_dvfs_vsync_notifier(struct notifier_block *this,
+		unsigned long vsync, void *_cmd)
+{
+	PSMW_DBG("Got vsync %s\n", vsync ? "ON" : "OFF");
+	if (!vsync) {
+		atomic_set(&psmw_devfreq_info.is_vsync_requested, 0);
+	} else {
+		atomic_set(&psmw_devfreq_info.is_vsync_requested, 1);
+		wake_up_process(devfreq_flush_task);
+		PSMW_DBG("flushing wq\n");
+	}
+	return NOTIFY_DONE;
+}
+
+static void psmw_dvfs_init(void)
+{
+	atomic_set(&psmw_devfreq_info.is_vsync_requested, 1);
+	psmw_devfreq_info.nb.notifier_call = psmw_dvfs_vsync_notifier;
+	register_psmw_notifier(&psmw_devfreq_info.nb);
+}
+#endif
+
 /**
  * devfreq_monitor() - Periodically poll devfreq objects.
  * @work:	the work struct used to run devfreq_monitor periodically.
@@ -237,11 +293,46 @@ static void devfreq_monitor(struct work_struct *work)
 	int err;
 	struct devfreq *devfreq = container_of(work,
 					struct devfreq, work.work);
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+	unsigned int min_dvfs_level = 1;
+#endif
 
 	mutex_lock(&devfreq->lock);
 	err = update_devfreq(devfreq);
 	if (err && err != -EAGAIN)
 		dev_err(&devfreq->dev, "dvfs failed with (%d) error\n", err);
+
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+	min_dvfs_level &= ((devfreq->previous_freq <= devfreq->min_freq) ||
+			(devfreq->previous_freq <= devfreq->locked_min_freq));
+
+	if (atomic_read(&psmw_devfreq_info.is_vsync_requested) || !min_dvfs_level) {
+		if (!old_req) {
+			PSMW_INFO("Normal polling\n");
+			old_req = true;
+		}
+#ifdef CONFIG_SCHED_HMP
+		mod_delayed_work_on(0, devfreq_wq, &devfreq->work,
+				msecs_to_jiffies(devfreq->profile->polling_ms));
+#else
+		queue_delayed_work(devfreq_wq, &devfreq->work,
+				msecs_to_jiffies(devfreq->profile->polling_ms));
+#endif
+	} else {
+		if (old_req) {
+			PSMW_INFO("Long enough polling period [%d] seconds\n",
+					MAX_POLLING_TIME/1000);
+			old_req = false;
+		}
+#ifdef CONFIG_SCHED_HMP
+		mod_delayed_work_on(0, devfreq_wq, &devfreq->work,
+				msecs_to_jiffies(MAX_POLLING_TIME));
+#else
+		queue_delayed_work(devfreq_wq, &devfreq->work,
+				msecs_to_jiffies(MAX_POLLING_TIME));
+#endif
+	}
+#else	/* CONFIG_EXYNOS_PSMW_DVFS */
 #ifdef CONFIG_SCHED_HMP
 	mod_delayed_work_on(0, devfreq_wq, &devfreq->work,
 				msecs_to_jiffies(devfreq->profile->polling_ms));
@@ -249,6 +340,7 @@ static void devfreq_monitor(struct work_struct *work)
 	queue_delayed_work(devfreq_wq, &devfreq->work,
 				msecs_to_jiffies(devfreq->profile->polling_ms));
 #endif
+#endif	/* CONFIG_EXYNOS_PSMW_DVFS */
 	mutex_unlock(&devfreq->lock);
 }
 
@@ -511,6 +603,10 @@ struct devfreq *devfreq_add_device(struct device *dev,
 						devfreq->profile->max_state,
 						GFP_KERNEL);
 	devfreq->last_stat_updated = jiffies;
+
+#if defined(CONFIG_EXYNOS_PSMW_DVFS)
+	devfreq->locked_min_freq = 0;
+#endif
 
 	dev_set_name(&devfreq->dev, "%s", dev_name(dev));
 	err = device_register(&devfreq->dev);
@@ -1115,6 +1211,17 @@ static int __init devfreq_init(void)
 		pr_err("%s: couldn't create workqueue\n", __FILE__);
 		return -ENOMEM;
 	}
+
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+	devfreq_flush_task = kthread_run(&devfreq_flush_daemon, NULL,
+						"devfreq_flush_func");
+	if (IS_ERR(devfreq_flush_task)) {
+		pr_err("Failed in creation of thread.\n");
+	} else {
+		psmw_dvfs_init();
+	}
+#endif
+
 	devfreq_class->dev_groups = devfreq_groups;
 
 	return 0;
@@ -1123,6 +1230,17 @@ subsys_initcall(devfreq_init);
 
 static void __exit devfreq_exit(void)
 {
+#ifdef CONFIG_EXYNOS_PSMW_DVFS
+	if (!IS_ERR(devfreq_flush_task)) {
+		atomic_set(&psmw_devfreq_info.is_vsync_requested, 1);
+		unregister_psmw_notifier(&psmw_devfreq_info.nb);
+	}
+
+	if (devfreq_flush_task) {
+		kthread_stop(devfreq_flush_task);
+	}
+#endif
+
 	class_destroy(devfreq_class);
 	destroy_workqueue(devfreq_wq);
 }

@@ -54,6 +54,9 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 		pm_qos_min = pm_qos_request(data->pm_qos_class);
 		if (pm_qos_min >= data->cal_qos_max) {
 			*freq = pm_qos_min;
+#if defined(CONFIG_EXYNOS_PSMW_DVFS)
+			df->locked_min_freq = pm_qos_min;
+#endif
 			return 0;
 		}
 	}
@@ -62,11 +65,17 @@ static int devfreq_simple_ondemand_func(struct devfreq *df,
 		err = df->profile->get_dev_status(df->dev.parent, &stat);
 	} else {
 		*freq = pm_qos_min;
+#if defined(CONFIG_EXYNOS_PSMW_DVFS)
+		df->locked_min_freq = pm_qos_min;
+#endif
 		return 0;
 	}
 
 	if (err)
 		return err;
+#if defined(CONFIG_EXYNOS_PSMW_DVFS)
+	df->locked_min_freq = pm_qos_min;
+#endif
 
 	if (data) {
 		if (data->upthreshold)
