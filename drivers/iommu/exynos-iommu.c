@@ -436,6 +436,9 @@ static int __init sysmmu_parse_dt(struct device *sysmmu,
 	}
 	drvdata->qos = qos;
 
+	if (of_property_read_bool(sysmmu->of_node, "sysmmu,no-suspend"))
+		dev_pm_syscore_device(sysmmu, true);
+
 	/* Parsing TLB properties */
 	cnt = of_property_count_u32_elems(sysmmu->of_node, props_name);
 	for (i = 0; i < cnt; i+=2) {
