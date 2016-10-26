@@ -27,6 +27,30 @@ static struct regulator *arm_regulator;
 static unsigned int locking_frequency;
 static DEFINE_MUTEX(cpufreq_lock);
 
+/*
+ * CPUFREQ init notifier
+ */
+static BLOCKING_NOTIFIER_HEAD(exynos_cpufreq_init_notifier_list);
+
+int exynos_cpufreq_init_register_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_register(&exynos_cpufreq_init_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos_cpufreq_init_register_notifier);
+
+int exynos_cpufreq_init_unregister_notifier(struct notifier_block *nb)
+{
+	return blocking_notifier_chain_unregister(&exynos_cpufreq_init_notifier_list, nb);
+}
+EXPORT_SYMBOL(exynos_cpufreq_init_unregister_notifier);
+
+static int exynos_cpufreq_init_notify_call_chain(unsigned long val)
+{
+	int ret = blocking_notifier_call_chain(&exynos_cpufreq_init_notifier_list, val, NULL);
+
+	return notifier_to_errno(ret);
+}
+
 static int exynos_cpufreq_get_index(unsigned int freq)
 {
 	struct cpufreq_frequency_table *freq_table = exynos_info->freq_table;
@@ -264,6 +288,8 @@ static int exynos_cpufreq_probe(struct platform_device *pdev)
 	locking_frequency = clk_get_rate(exynos_info->cpu_clk) / 1000;
 
 	if (!cpufreq_register_driver(&exynos_driver)) {
+		exynos_cpufreq_init_notify_call_chain(CPUFREQ_INIT_COMPLETE);
+
 		pr_info("CPUFreq initialized complete\n");
 		return 0;
 	}

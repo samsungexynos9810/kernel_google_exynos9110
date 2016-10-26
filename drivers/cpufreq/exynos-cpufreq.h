@@ -25,6 +25,21 @@ enum exynos_soc_type {
 	EXYNOS_SOC_3250,
 };
 
+/*
+ * CPUFREQ init events and notifiers
+ */
+#define CPUFREQ_INIT_COMPLETE	0x0001
+
+#if defined(CONFIG_ARM_EXYNOS_MP_CPUFREQ) || defined(CONFIG_ARM_EXYNOS_CPUFREQ)
+extern int exynos_cpufreq_init_register_notifier(struct notifier_block *nb);
+extern int exynos_cpufreq_init_unregister_notifier(struct notifier_block *nb);
+#else
+static inline int exynos_cpufreq_init_register_notifier(struct notifier_block *nb)
+{return 0;}
+static inline int exynos_cpufreq_init_unregister_notifier(struct notifier_block *nb)
+{return 0;}
+#endif
+
 #define APLL_FREQ(f, a0, a1, a2, a3, a4, a5, a6, a7, b0, b1, b2, m, p, s) \
 	{ \
 		.freq = (f) * 1000, \
