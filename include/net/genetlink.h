@@ -13,6 +13,7 @@
  */
 struct genl_multicast_group {
 	char			name[GENL_NAMSIZ];
+	u32			id;
 };
 
 struct genl_ops;
