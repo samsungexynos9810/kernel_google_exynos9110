@@ -10,6 +10,8 @@
 /**
  * struct genl_multicast_group - generic netlink multicast group
  * @name: name of the multicast group, names are per-family
+ * @id: multicast group ID, assigned by the core, to use with
+ *      genlmsg_multicast().
  */
 struct genl_multicast_group {
 	char			name[GENL_NAMSIZ];
