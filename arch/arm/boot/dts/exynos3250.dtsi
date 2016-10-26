@@ -247,7 +247,6 @@
 		interrupts = <0 216 0>;
 		clocks = <&cmu CLK_TMU_APBIF>;
 		clock-names = "tmu_apbif";
-		status = "disabled";
 	};
 
 	gic: interrupt-controller@10481000 {

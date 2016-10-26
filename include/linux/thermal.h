@@ -69,13 +69,11 @@ struct thermal_cooling_device;
 enum thermal_device_mode {
 	THERMAL_DEVICE_DISABLED = 0,
 	THERMAL_DEVICE_ENABLED,
-	THERMAL_DEVICE_PAUSED,
 };
 
 enum thermal_trip_type {
 	THERMAL_TRIP_ACTIVE = 0,
 	THERMAL_TRIP_PASSIVE,
-	THERMAL_TRIP_HOT,
 	THERMAL_TRIP_CRITICAL,
 };
 
@@ -150,7 +148,6 @@ struct thermal_cooling_device {
 	int id;
 	char type[THERMAL_NAME_LENGTH];
 	struct device device;
-	struct device_node *np;
 	void *devdata;
 	const struct thermal_cooling_device_ops *ops;
 	bool updated; /* true if the cooling device does not need update */
@@ -215,8 +212,9 @@ struct thermal_zone_device {
 	int last_temperature;
 	int emul_temperature;
 	int passive;
+	bool cooling_dev_en;
 	unsigned int forced_passive;
-	struct thermal_zone_device_ops *ops;
+	const struct thermal_zone_device_ops *ops;
 	const struct thermal_zone_params *tzp;
 	struct thermal_governor *governor;
 	struct list_head thermal_instances;
@@ -322,7 +320,7 @@ void thermal_zone_of_sensor_unregister(struct device *dev,
 
 #endif
 struct thermal_zone_device *thermal_zone_device_register(const char *, int, int,
-		void *, struct thermal_zone_device_ops *,
+		void *, const struct thermal_zone_device_ops *,
 		const struct thermal_zone_params *, int, int);
 void thermal_zone_device_unregister(struct thermal_zone_device *);
 
