@@ -746,7 +746,6 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 {
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
-	struct itmon_tracedata *tracedata = &node->tracedata;
 	struct itmon_nodegroup *group = NULL;
 
 	if (!traceinfo->dirty || traceinfo->trans_dirty)
@@ -768,17 +767,19 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 		"(Violation Access by CP maybe)" : "",
 		trans_type == TRANS_TYPE_READ ? "READ" : "WRITE",
 		itmon_errcode[traceinfo->errcode]);
-	pr_info("      > Size           : %u bytes x %u burst => %u bytes\n"
-		"      > Burst Type     : %u (0:FIXED, 1:INCR, 2:WRAP)\n"
-		"      > Level          : %s\n"
-		"      > Protection     : %s\n",
-		power(BIT_AXSIZE(tracedata->ext_info_1), 2), BIT_AXLEN(tracedata->ext_info_1) + 1,
-		power(BIT_AXSIZE(tracedata->ext_info_1), 2) * (BIT_AXLEN(tracedata->ext_info_1) + 1),
-		BIT_AXBURST(tracedata->ext_info_2),
-		(BIT_AXPROT(tracedata->ext_info_2) & 0x1) ? "Privileged access" : "Unprivileged access",
-		(BIT_AXPROT(tracedata->ext_info_2) & 0x2) ? "Non-secure access" : "Secure access");
 
 	if (node) {
+		struct itmon_tracedata *tracedata = &node->tracedata;
+		pr_info("      > Size           : %u bytes x %u burst => %u bytes\n"
+			"      > Burst Type     : %u (0:FIXED, 1:INCR, 2:WRAP)\n"
+			"      > Level          : %s\n"
+			"      > Protection     : %s\n",
+			power(BIT_AXSIZE(tracedata->ext_info_1), 2), BIT_AXLEN(tracedata->ext_info_1) + 1,
+			power(BIT_AXSIZE(tracedata->ext_info_1), 2) * (BIT_AXLEN(tracedata->ext_info_1) + 1),
+			BIT_AXBURST(tracedata->ext_info_2),
+			(BIT_AXPROT(tracedata->ext_info_2) & 0x1) ? "Privileged access" : "Unprivileged access",
+			(BIT_AXPROT(tracedata->ext_info_2) & 0x2) ? "Non-secure access" : "Secure access");
+
 		group = node->group;
 		pr_info("      > Path Type      : %s\n"
 			"--------------------------------------------------------------------------\n",
