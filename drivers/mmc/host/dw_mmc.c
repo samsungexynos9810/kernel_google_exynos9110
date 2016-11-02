@@ -4194,14 +4194,10 @@ int dw_mci_probe(struct dw_mci *host)
 	 * receive ready and error such as transmit, receive timeout, crc error
 	 */
 	mci_writel(host, RINTSTS, 0xFFFFFFFF);
-	if (host->pdata->cd_type == DW_MCI_CD_INTERNAL)
-		mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
-				SDMMC_INT_TXDR | SDMMC_INT_RXDR |
-				DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
-	else
-		mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
-				SDMMC_INT_TXDR | SDMMC_INT_RXDR |
-				DW_MCI_ERROR_FLAGS);
+
+	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
+			SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+			DW_MCI_ERROR_FLAGS);
 	/* Enable mci interrupt */
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
@@ -4233,8 +4229,10 @@ int dw_mci_probe(struct dw_mci *host)
 		 drv_data->misc_control(host, CTRL_REQUEST_EXT_IRQ,
 				 dw_mci_detect_interrupt);
 
-	/* Now that slots are all setup, we can enable card detect */
-	dw_mci_enable_cd(host);
+	 if(host->pdata->cd_type == DW_MCI_CD_INTERNAL) {
+		 /* Now that slots are all setup, we can enable card detect */
+		 dw_mci_enable_cd(host);
+	 }
 
 	if (host->quirks & DW_MCI_QUIRK_IDMAC_DTO)
 		dev_info(host->dev, "Internal DMAC interrupt fix enabled.\n");
@@ -4352,14 +4350,9 @@ int dw_mci_resume(struct dw_mci *host)
 	mci_writel(host, TMOUT, 0xFFFFFFFF);
 
 	mci_writel(host, RINTSTS, 0xFFFFFFFF);
-	if (host->pdata->cd_type == DW_MCI_CD_INTERNAL)
-		mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
-				SDMMC_INT_TXDR | SDMMC_INT_RXDR |
-				DW_MCI_ERROR_FLAGS | SDMMC_INT_CD);
-	else
-		mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
-				SDMMC_INT_TXDR | SDMMC_INT_RXDR |
-				DW_MCI_ERROR_FLAGS);
+	mci_writel(host, INTMASK, SDMMC_INT_CMD_DONE | SDMMC_INT_DATA_OVER |
+			SDMMC_INT_TXDR | SDMMC_INT_RXDR |
+			DW_MCI_ERROR_FLAGS);
 
 	mci_writel(host, CTRL, SDMMC_CTRL_INT_ENABLE);
 
@@ -4375,8 +4368,10 @@ int dw_mci_resume(struct dw_mci *host)
 		}
 	}
 
-	/* Now that slots are all setup, we can enable card detect */
-	dw_mci_enable_cd(host);
+	if (host->pdata->cd_type == DW_MCI_CD_INTERNAL) {
+		/* Now that slots are all setup, we can enable card detect */
+		dw_mci_enable_cd(host);
+	}
 
 	return 0;
 }
