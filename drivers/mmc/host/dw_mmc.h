@@ -450,6 +450,7 @@ struct dw_mci_drv_data {
 	int		(*switch_voltage)(struct mmc_host *mmc,
 			struct mmc_ios *ios);
 	void		(*cfg_smu)(struct dw_mci *host);
+	void		(*hwacg_control)(struct dw_mci *host, u32 flag);
 	int		(*misc_control)(struct dw_mci *host,
 	enum		dw_mci_misc_control control, void *priv);
 };

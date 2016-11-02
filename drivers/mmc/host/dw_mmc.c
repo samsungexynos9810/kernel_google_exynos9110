@@ -622,6 +622,13 @@ static u32 dw_mci_prep_stop_abort(struct dw_mci *host, struct mmc_command *cmd)
 static void dw_mci_start_command(struct dw_mci *host,
 				 struct mmc_command *cmd, u32 cmd_flags)
 {
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
+
+	if (host->quirks & DW_MCI_QUIRK_HWACG_CTRL) {
+		if (drv_data && drv_data->hwacg_control)
+			drv_data->hwacg_control(host,HWACG_Q_ACTIVE_DIS);
+	}
+
 	host->cmd = cmd;
 	dev_vdbg(host->dev,
 		 "start command: ARGR=0x%08x CMDR=0x%08x\n",
@@ -3038,6 +3045,7 @@ static void dw_mci_cmd_interrupt(struct dw_mci *host, u32 status)
 static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 {
 	struct dw_mci *host = dev_id;
+	const struct dw_mci_drv_data *drv_data = host->drv_data;
 	u32 status, pending;
 	int i;
 
@@ -3139,6 +3147,11 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			mci_writel(host, RINTSTS, SDMMC_INT_CMD_DONE);
 			dw_mci_debug_cmd_log(host->cmd, host, false,
 					DW_MCI_FLAG_CD, 0);
+
+			if (host->quirks & DW_MCI_QUIRK_HWACG_CTRL) {
+				if (drv_data && drv_data->hwacg_control)
+					drv_data->hwacg_control(host,HWACG_Q_ACTIVE_EN);
+			}
 			dw_mci_cmd_interrupt(host, pending);
 		}
 
@@ -4040,8 +4053,14 @@ int dw_mci_probe(struct dw_mci *host)
 	exynos_update_ip_idle_status(host->idle_ip_index, 0);
 #endif
 
-	if (host->quirks & DW_MCI_QUIRK_HWACG_CTRL)
-		host->qactive_check = HWACG_Q_ACTIVE_EN;
+	if (host->quirks & DW_MCI_QUIRK_HWACG_CTRL) {
+		if (drv_data && drv_data->hwacg_control)
+			drv_data->hwacg_control(host,HWACG_Q_ACTIVE_EN);
+	} else {
+		if (drv_data && drv_data->hwacg_control)
+			drv_data->hwacg_control(host,HWACG_Q_ACTIVE_DIS);
+	}
+
 	if (drv_data && drv_data->cfg_smu)
 		drv_data->cfg_smu(host);
 
@@ -4322,11 +4341,13 @@ int dw_mci_resume(struct dw_mci *host)
 	if (host->use_dma && host->dma_ops->init)
 		host->dma_ops->init(host);
 
-	if (host->pdata->quirks & DW_MCI_QUIRK_HWACG_CTRL) {
-		host->qactive_check = HWACG_Q_ACTIVE_DIS;
-		mci_writel(host, FORCE_CLK_STOP, 0);
+	if (host->quirks & DW_MCI_QUIRK_HWACG_CTRL) {
+		if (drv_data && drv_data->hwacg_control)
+			drv_data->hwacg_control(host,HWACG_Q_ACTIVE_EN);
+	} else {
+		if (drv_data && drv_data->hwacg_control)
+			drv_data->hwacg_control(host,HWACG_Q_ACTIVE_DIS);
 	}
-
 	if (drv_data && drv_data->cfg_smu)
 		drv_data->cfg_smu(host);
 
