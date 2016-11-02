@@ -2033,6 +2033,7 @@ out:
 		}
 	}
 	mci_writel(host, UHS_REG, uhs);
+	del_timer(&host->cmd11_timer);
 
 	return 0;
 }
@@ -3079,8 +3080,6 @@ static irqreturn_t dw_mci_interrupt(int irq, void *dev_id)
 			spin_lock_irqsave(&host->irq_lock, irqflags);
 			dw_mci_cmd_interrupt(host, pending);
 			spin_unlock_irqrestore(&host->irq_lock, irqflags);
-
-			del_timer(&host->cmd11_timer);
 		}
 
 		if (pending & DW_MCI_CMD_ERROR_FLAGS) {
@@ -3785,10 +3784,6 @@ static void dw_mci_cmd11_timer(unsigned long arg)
 		dev_warn(host->dev, "Unexpected CMD11 timeout\n");
 		return;
 	}
-
-	host->cmd_status = SDMMC_INT_RTO;
-	set_bit(EVENT_CMD_COMPLETE, &host->pending_events);
-	tasklet_schedule(&host->tasklet);
 }
 
 static void dw_mci_dto_timer(unsigned long arg)
