@@ -291,7 +291,7 @@ static int ak4678_sequece_exec(struct snd_soc_codec *codec,
 {
 	u32	i;
 
-	akdbgprt("\t[AK4678] %s(%d): %d\n",__FUNCTION__,__LINE__, nSqcount);
+	akdbgprt("\t[AK4678] %s: %d\n",__FUNCTION__, nSqcount);
 	for ( i = 0 ; i < nSqcount; i++ ) {
 		snd_soc_update_bits(codec, akseq[i].nAddr, akseq[i].nMask, akseq[i].nData);
 	}
@@ -358,7 +358,7 @@ static int ak4678_set_port_dai_fmt(struct snd_soc_codec *codec, unsigned int id 
 	u8 format = 0;
 	u8 reg;
 
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	switch (id) {
 	case AK4678_PORTA:
@@ -1430,7 +1430,7 @@ static int set_fschgpara(struct snd_soc_codec *codec, int fsno)
 {
 	u16 i, nAddr, nWtm;
 
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	nAddr = AK4678_29_FIL1_COEFFICIENT0;
 	for ( i = 0 ; i < 4 ; i++ ) {
@@ -1478,7 +1478,7 @@ static int ak4678_hw_params(struct snd_pcm_substream *substream,
 	u8 mode = 0;
 	u16 fsno2 = ak4678->fsno;
 
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	fs = snd_soc_read(codec, AK4678_03_PLL_MODE_SELECT0);
 	fs &= ~AK4678_FS;
@@ -1544,7 +1544,7 @@ static int ak4678_hw_params(struct snd_pcm_substream *substream,
 static int ak4678_set_dai_sysclk(struct snd_soc_dai *dai, int clk_id,
 		unsigned int freq, int dir)
 {
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 	return 0;
 }
 
@@ -1554,7 +1554,7 @@ static int ak4678_set_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	u8 mode;
 	u8 format;
 
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	/* set master/slave audio interface */
 	mode = snd_soc_read(codec, AK4678_04_PLL_MODE_SELECT1);
@@ -1687,7 +1687,7 @@ static int  ak4678_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 	snd_soc_update_bits(codec, AK4678_03_PLL_MODE_SELECT0, AK4678_PLL, pll);
 	mdelay(delay);
 		
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 	return ret;
 }
 
@@ -1695,7 +1695,7 @@ static int ak4678_set_dai_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
 {
 	u8 ret = 0;
 
-	akdbgprt("\t[AK4678] %s********(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	return ret;
 }
@@ -1703,19 +1703,19 @@ static int ak4678_set_dai_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
 static int ak4678_hw_free(struct snd_pcm_substream * substream,struct snd_soc_dai *dai)
 {
 	u8 ret = 0;
-	akdbgprt("\t[AK4678] %s************(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 	return ret;
 }
 
 void ak4678_set_dai_shutdown(struct snd_pcm_substream *substream,struct snd_soc_dai *dai)
 {
-	akdbgprt("\t[AK4678] %s************(%d)\n",__FUNCTION__,__LINE__); 
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__); 
 }
 
 static int ak4678_set_prepare(struct snd_pcm_substream *substream,struct snd_soc_dai *dai)
 {
 	int ret = 0;
-	akdbgprt("\t[AK4678] %s************(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 	return ret;
 }
 
@@ -1725,7 +1725,7 @@ static int  ak4678_set_dai_startup(struct snd_pcm_substream *substream,struct sn
 	struct snd_soc_codec *codec = dai->codec;
 	int ret;
 
-	akdbgprt("\t[AK4678] %s************(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	ret = snd_soc_update_bits(codec, AK4678_00_POWER_MANAGEMENT0, AK4678_PMVCM, AK4678_PMVCM);
 
@@ -1736,7 +1736,7 @@ static int ak4678_trigger(struct snd_pcm_substream *substream, int cmd, struct s
 {
 	int 	ret = 0;
 
-	akdbgprt("ak4678_trigger : %d ,****************** cmd = %d\n",__LINE__,cmd);
+	akdbgprt("\t[AK4678] %s: cmd = %d\n",__FUNCTION__, cmd);
 	return ret;
 }
 
@@ -1745,7 +1745,7 @@ static int ak4678_set_bias_level(struct snd_soc_codec *codec,
 {
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 
-	akdbgprt("\t[AK4678] %s(%d),BIAS LEVLE =%d\n",__FUNCTION__,__LINE__,level);
+	akdbgprt("\t[AK4678] %s,BIAS LEVLE =%d\n",__FUNCTION__,level);
 
 	switch (level) {
 	case SND_SOC_BIAS_ON:
@@ -1762,8 +1762,8 @@ static int ak4678_set_bias_level(struct snd_soc_codec *codec,
 	}
 
 	//CONFIG_LINF 2013-02-18
-	akdbgprt("\t[AK4678] %s(%d),BIAS  reg(0x00) =0x%x\n",__FUNCTION__,__LINE__,snd_soc_read(codec,AK4678_00_POWER_MANAGEMENT0));
-	akdbgprt("\t[AK4678] %s(%d),BIAS  reg(0x04) =0x%x\n",__FUNCTION__,__LINE__,snd_soc_read(codec,AK4678_04_PLL_MODE_SELECT1));
+	akdbgprt("\t[AK4678] %s,BIAS  reg(0x00) =0x%x\n",__FUNCTION__,snd_soc_read(codec,AK4678_00_POWER_MANAGEMENT0));
+	akdbgprt("\t[AK4678] %s,BIAS  reg(0x04) =0x%x\n",__FUNCTION__,snd_soc_read(codec,AK4678_04_PLL_MODE_SELECT1));
 
 	codec->dapm.bias_level = level;
 
@@ -1776,7 +1776,7 @@ static int ak4678_set_dai_mute(struct snd_soc_dai *dai, int mute)
 	int ret =0;
 	u32 mute_reg;
 
-	printk("%s() mute[%s]\n", __func__, mute ? "ON":"OFF");
+	akdbgprt("\t[AK4678] %s,  mute[%s]\n", __FUNCTION__, mute ? "ON":"OFF");
 
 	mute_reg = snd_soc_read(codec, AK4678_18_MODE1_CONTROL) & 0x4;
 	
@@ -1817,7 +1817,7 @@ static int ak4678_set_portA_dai_fmt(struct snd_soc_dai *dai, unsigned int fmt)
 	struct snd_soc_codec *codec = dai->codec;
 	int ret = 0;
 
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	ret = ak4678_set_port_dai_fmt(codec, dai->id, fmt);
 
@@ -1833,7 +1833,7 @@ static int ak4678_portA_hw_params(struct snd_pcm_substream *substream,
 	u8 	 mode;
 	u8   reg;	
 
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	switch (dai->id) {
 	case 1:
@@ -2018,7 +2018,7 @@ static int ak4678_init_reg(struct snd_soc_codec *codec)
 {
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 
-	akdbgprt("\t[AK4678 bias] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678 bias] %s\n",__FUNCTION__);
 
 
 	if ( ak4678->pdn > 0 ) {
@@ -2077,7 +2077,7 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	int ret = 0;
 
-	akdbgprt("%s :(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("%s :\n",__FUNCTION__);
 
 	ret = ak4678_parse_dt(ak4678);
 	if ( ret < 0 ) ak4678->pdn = -1;
@@ -2106,7 +2106,7 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 static int ak4678_remove(struct snd_soc_codec *codec)
 {
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
-	akdbgprt("%s :(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("%s :\n",__FUNCTION__);
 
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_OFF);
 
@@ -2122,7 +2122,7 @@ static int ak4678_suspend(struct snd_soc_codec *codec)
 {
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
 	
-	akdbgprt("%s :(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("%s :\n",__FUNCTION__);
 
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_OFF);
 
@@ -2179,7 +2179,7 @@ static int ak4678_i2c_probe(struct i2c_client *i2c,
 	struct regmap *regmap;
 	int ret;
 
-	akdbgprt("%s: start (%d)\n",__FUNCTION__,__LINE__, );
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
 	ak4678 = devm_kzalloc(&i2c->dev, sizeof(struct ak4678_priv),
 			      GFP_KERNEL);
@@ -2197,17 +2197,16 @@ static int ak4678_i2c_probe(struct i2c_client *i2c,
 	ret = snd_soc_register_codec(&i2c->dev,
 					&soc_codec_dev_ak4678, ak4678_dai, ARRAY_SIZE(ak4678_dai));
 	if (ret < 0){
-		printk("%s: fail (%d)\n",__FUNCTION__,__LINE__);
+		akdbgprt("\t[AK4678] %s failed probe\n",__FUNCTION__);
 		return ret;
 	}
 	
-	akdbgprt("%s: success (%d)\n",__FUNCTION__,__LINE__);
 	return 0;
 }
 
 static int ak4678_i2c_remove(struct i2c_client *client)
 {
-	akdbgprt("\t[AK4678] %s(%d)\n",__FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 	
 	snd_soc_unregister_codec(&client->dev);
 
@@ -2242,7 +2241,7 @@ static int __init ak4678_modinit(void)
 {
 	int ret;
 	
-	akdbgprt("\t[AK4678] %s(%d)\n", __FUNCTION__,__LINE__);
+	akdbgprt("\t[AK4678] %s\n", __FUNCTION__);
 	ret = i2c_add_driver(&ak4678_i2c_driver);
 	if (ret)
 		pr_err("Failed to register ak4678 I2C driver: %d\n", ret);
