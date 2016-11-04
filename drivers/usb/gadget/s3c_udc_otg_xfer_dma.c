@@ -511,6 +511,7 @@ static irqreturn_t s3c_udc_irq(int irq, void *_dev)
 	if (intr_status & INT_ENUMDONE) {
 		DEBUG_ISR("\tSpeed Detection interrupt\n");
 
+		wake_lock(&dev->wake_lock);
 		__raw_writel(INT_ENUMDONE, dev->regs + S3C_UDC_OTG_GINTSTS);
 		usb_status = (__raw_readl(dev->regs + S3C_UDC_OTG_DSTS) & 0x6);
 

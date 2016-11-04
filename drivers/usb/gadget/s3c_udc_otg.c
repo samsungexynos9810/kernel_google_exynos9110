@@ -375,7 +375,6 @@ int s3c_vbus_enable(struct usb_gadget *gadget, int is_active)
 				return ret;
 			}
 		} else {
-			wake_lock(&dev->wake_lock);
 			ret = regulator_bulk_enable(S3C_UDC_SUPPLY_COUNT,
 					dev->supplies);
 			if (ret) {

@@ -155,12 +155,10 @@ static irqreturn_t exynos_device_detect_thread(int irq, void *data)
 	msleep(20);
 
 	if (is_device_detect(usb_switch)) {
-		wake_lock(&usb_switch->wake_lock);
 		queue_work(usb_switch->workqueue, &usb_switch->switch_work);
 	} else {
 		/* VBUS PIN low */
 		exynos_change_usb_mode(usb_switch, USB_DEVICE_DETACHED);
-		wake_unlock(&usb_switch->wake_lock);
 	}
 
 	mutex_unlock(&usb_switch->mutex);
@@ -294,8 +292,6 @@ static int exynos_usbswitch_probe(struct platform_device *pdev)
 
 	our_switch = usb_switch;
 	mutex_init(&usb_switch->mutex);
-	wake_lock_init(&usb_switch->wake_lock, WAKE_LOCK_SUSPEND,
-			"usb_switch_present");
 	usb_switch->workqueue = create_singlethread_workqueue("usb_switch");
 	INIT_WORK(&usb_switch->switch_work, exynos_usb_switch_worker);
 
@@ -349,7 +345,6 @@ static int exynos_usbswitch_probe(struct platform_device *pdev)
 	return 0;
 
 fail:
-	wake_unlock(&usb_switch->wake_lock);
 	cancel_work_sync(&usb_switch->switch_work);
 	destroy_workqueue(usb_switch->workqueue);
 	mutex_destroy(&usb_switch->mutex);
@@ -363,7 +358,6 @@ static int exynos_usbswitch_remove(struct platform_device *pdev)
 	platform_set_drvdata(pdev, 0);
 
 	sysfs_remove_group(&pdev->dev.kobj, &exynos_usbswitch_attr_group);
-	wake_unlock(&usb_switch->wake_lock);
 	cancel_work_sync(&usb_switch->switch_work);
 	destroy_workqueue(usb_switch->workqueue);
 	mutex_destroy(&usb_switch->mutex);
