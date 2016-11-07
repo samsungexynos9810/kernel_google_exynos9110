@@ -994,15 +994,15 @@ static unsigned int s3c24xx_serial_tx_empty(struct uart_port *port)
 /* no modem control lines */
 static unsigned int s3c24xx_serial_get_mctrl(struct uart_port *port)
 {
+#ifndef CONFIG_KOI_BLUETOOTH
 	unsigned int umstat;
 
 	umstat = rd_regb(port, S3C2410_UMSTAT);
-#ifndef CONFIG_KOI_BLUETOOTH
 	if (umstat & S3C2410_UMSTAT_CTS)
 		return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
 	else
 #endif
-		return TIOCM_CAR | TIOCM_DSR;
+		return TIOCM_CAR | TIOCM_DSR | TIOCM_CTS;
 }
 
 static void s3c24xx_serial_set_mctrl(struct uart_port *port, unsigned int mctrl)
