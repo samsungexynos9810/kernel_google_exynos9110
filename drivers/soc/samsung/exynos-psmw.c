@@ -16,10 +16,10 @@
 #include <soc/samsung/exynos-psmw.h>
 #ifdef CONFIG_EXYNOS_PSMW_MEM
 #include <linux/io.h>
-#include <mach/map.h>
 
+#define EXYNOS3_PA_DMC			0x105F0000
 #define MEMCONTROL			0x04
-#define PRECHCONFIG0		0x14
+#define PRECHCONFIG0			0x14
 #define PWRDNCONFIG			0x28
 
 #define DSREF_CYC_SHIFT		16
