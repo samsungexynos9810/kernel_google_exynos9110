@@ -35,5 +35,7 @@ extern void create_pgd_mapping(struct mm_struct *mm, phys_addr_t phys,
 			       unsigned long virt, phys_addr_t size,
 			       pgprot_t prot);
 extern void *fixmap_remap_fdt(phys_addr_t dt_phys);
-
+extern void *__vmap_reserved_mem_request(unsigned long addr,
+					 unsigned int size,
+					 pgprot_t prot);
 #endif
