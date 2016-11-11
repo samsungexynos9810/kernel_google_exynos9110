@@ -28,6 +28,7 @@
 #include <linux/of_dma.h>
 #include <linux/err.h>
 #include <linux/pm_runtime.h>
+#include <linux/cpumask.h>
 
 #include "dmaengine.h"
 #include <soc/samsung/exynos-pm.h>
@@ -3039,7 +3040,11 @@ static int pl330_resume(struct device *dev)
 		for (i = 0; i < AMBA_NR_IRQS; i++) {
 			int irq = pl330->irqnum_having_multi[i];
 			if (irq)
+#if defined(CONFIG_SCHED_HMP)
+				irq_set_affinity(irq, &hmp_slow_cpu_mask);
+#else
 				irq_set_affinity(irq, cpu_all_mask);
+#endif
 			else
 				break;
 		}
@@ -3118,7 +3123,11 @@ pl330_probe(struct amba_device *adev, const struct amba_id *id)
 				return ret;
 
 			if(pl330->multi_irq) {
+#if defined(CONFIG_SCHED_HMP)
+				irq_set_affinity(irq, &hmp_slow_cpu_mask);
+#else
 				irq_set_affinity(irq, cpu_all_mask);
+#endif
 				pl330->irqnum_having_multi[count_irq++] = irq;
 			}
 		} else {
