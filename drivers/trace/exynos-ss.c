@@ -715,7 +715,7 @@ unsigned long exynos_ss_get_last_pc_paddr(void)
 unsigned long exynos_ss_get_last_pc(unsigned int cpu)
 {
 	if (exynos_ss_get_enable("log_kevents", true))
-		return __raw_readq(S5P_VA_SS_CORE_LAST_PC + cpu * 8);
+		return __raw_readq(exynos_ss_get_base_vaddr() + ESS_OFFSET_CORE_LAST_PC + cpu * 8);
 	else
 		return ess_desc.hardlockup_core_pc[cpu];
 }

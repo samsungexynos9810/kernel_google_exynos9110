@@ -3,9 +3,12 @@
 #include <asm/map.h>
 #include <asm/memory.h>
 
-#if defined(CONFIG_ECT_HEADER_IN_KERNEL)
-#include <soc/samsung/ect_binary.h>
-#endif
+#include <linux/device.h>
+#include <linux/errno.h>
+#include <linux/fs.h>
+#include <linux/file.h>
+#include <linux/module.h>
+#include <linux/vmalloc.h>
 
 #define ALIGNMENT_SIZE	 4
 
@@ -17,11 +20,12 @@ static struct ect_info ect_list[];
 
 static char ect_signature[] = "PARA";
 
-#if !defined(CONFIG_ECT_HEADER_IN_KERNEL)
-static struct map_desc exynos_iodesc_ect __initdata = {
-	.type           = MT_NORMAL_NC,
-};
-#endif
+//static struct class *ect_class;
+
+static phys_addr_t ect_address;
+static phys_addr_t ect_size;
+
+static struct vm_struct ect_early_vm;
 
 /* API for internal */
 
@@ -1791,26 +1795,28 @@ late_initcall_sync(ect_dump_init);
 #endif
 
 /* API for external */
-
-static phys_addr_t ect_address;
-#if !defined(CONFIG_ECT_HEADER_IN_KERNEL)
-static phys_addr_t ect_size;
-#endif
-
 void __init ect_init(phys_addr_t address, phys_addr_t size)
 {
-#if !defined(CONFIG_ECT_HEADER_IN_KERNEL)
-	for (ect_size = 1; ect_size < size;)
-		ect_size = ect_size << 1;
+	ect_early_vm.phys_addr = address;
+	ect_early_vm.addr = (void *)S5P_VA_ECT;
+	ect_early_vm.size = size;
 
-	exynos_iodesc_ect.length = ect_size;
-	exynos_iodesc_ect.pfn = __phys_to_pfn(address);
-	exynos_iodesc_ect.virtual = (unsigned long)S5P_VA_ECT;
+	vm_area_add_early(&ect_early_vm);
 
 	ect_address = (phys_addr_t)S5P_VA_ECT;
-#else
-	ect_address = (phys_addr_t)ect_binary;
-#endif
+	ect_size = size;
+}
+
+unsigned long long ect_read_value64(unsigned int *address, int index)
+{
+	unsigned int top, half;
+
+	index *= 2;
+
+	half = address[index];
+	top = address[index + 1];
+
+	return ((unsigned long long)top << 32 | half);
 }
 
 void *ect_get_block(char *block_name)
@@ -2072,6 +2078,8 @@ int ect_parse_binary_header(void)
 	unsigned int length, offset;
 	struct ect_header *ect_header;
 
+	ect_init_map_io();
+
 	address = (void *)ect_address;
 	if (address == NULL)
 		return -EINVAL;
@@ -2135,7 +2143,23 @@ int ect_strcmp(char *src1, char *src2)
 
 void __init ect_init_map_io(void)
 {
-#if !defined(CONFIG_ECT_HEADER_IN_KERNEL)
-	iotable_init(&exynos_iodesc_ect, 1);
-#endif
+	int page_size, i;
+	struct page *page;
+	struct page **pages;
+	int ret;
+
+	page_size = ect_early_vm.size / PAGE_SIZE;
+	if (ect_early_vm.size % PAGE_SIZE)
+		page_size++;
+	pages = kzalloc((sizeof(struct page *) * page_size), GFP_KERNEL);
+	page = phys_to_page(ect_early_vm.phys_addr);
+
+	for (i = 0; i < page_size; ++i)
+		pages[i] = page++;
+
+	ret = map_vm_area(&ect_early_vm, PAGE_KERNEL, pages);
+	if (ret) {
+		pr_err("[ECT] : failed to mapping va and pa(%d)\n", ret);
+	}
+	kfree(pages);
 }
