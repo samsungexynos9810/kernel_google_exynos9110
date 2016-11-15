@@ -1011,6 +1011,7 @@ create_s32_tzp_attr(k_d);
 create_s32_tzp_attr(integral_cutoff);
 create_s32_tzp_attr(slope);
 create_s32_tzp_attr(offset);
+create_s32_tzp_attr(integral_max);
 #undef create_s32_tzp_attr
 
 static struct device_attribute *dev_tzp_attrs[] = {
@@ -1022,6 +1023,7 @@ static struct device_attribute *dev_tzp_attrs[] = {
 	&dev_attr_integral_cutoff,
 	&dev_attr_slope,
 	&dev_attr_offset,
+	&dev_attr_integral_max,
 };
 
 static int create_tzp_attrs(struct device *dev)
