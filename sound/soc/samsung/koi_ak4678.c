@@ -74,12 +74,6 @@ module_param(IDVol, int, S_IRUGO|S_IWUSR);
 #define AK4678_07_MIC_AMP_GAIN			0x07
 #define AK4678_11_LIN_VOLUME			0x11
 
-static const char *ak4678_core_supply_names[AK4678_NUM_CORE_SUPPLIES] = {
-	"vdd_18",
-	"vdd_30",
-};
-
-struct regulator_bulk_data core_supplies[AK4678_NUM_CORE_SUPPLIES];
 
 
 static bool xclkout_enabled;
@@ -89,8 +83,7 @@ static void koi_xclkout_enable(bool on)
 	gprintk("xclkout = %s\n", on ? "on" : "off");
 
 	xclkout_enabled = on;
-	/* XUSBXTI 24MHz via XCLKOUT */
-//	writel(on ? 0x0900 : 0x0901, EXYNOS_PMU_DEBUG);
+
 }
 
 static int set_aud_pll_rate(unsigned long rate)
@@ -473,24 +466,7 @@ static struct snd_soc_dai_link koi_dai[] = {
 };
 
 static int koi_probe(struct snd_soc_card *card) {
-	int i,ret;
-
 	gprintk("\n");
-
-	for (i = 0; i < ARRAY_SIZE(core_supplies); i++)
-		core_supplies[i].supply = ak4678_core_supply_names[i];
-
-	ret = devm_regulator_bulk_get(card->dev, ARRAY_SIZE(core_supplies), core_supplies);
-	if (ret != 0) {
-		dev_err(card->dev, "Failed to request core supplies: %d\n",ret);
-	}
-
-	ret = regulator_bulk_enable(ARRAY_SIZE(core_supplies), core_supplies);
-	if (ret != 0) {
-		dev_err(card->dev, "Failed to enable core supplies: %d\n",ret);
-	}
-
-
 	return 0;
 }
 static int koi_remove(struct snd_soc_card *card) {
@@ -498,50 +474,11 @@ static int koi_remove(struct snd_soc_card *card) {
 	return 0;
 }
 
-static int koi_suspend_pre(struct snd_soc_card *card) {
-	gprintk("card=%x, card->dev=%x\n",(int)card, (int)card->dev);
-	gprintk("\n");
-	return 0;
-}
-
-static int koi_suspend_post(struct snd_soc_card *card) {
-	int ret;
-	gprintk("\n");
-	ret = regulator_bulk_disable(ARRAY_SIZE(core_supplies), core_supplies);
-    if (ret != 0) {
-            dev_err(card->dev, "Failed to disable supplies: %d\n", ret);
-            return ret;
-    }
-	return 0;
-}
-static int koi_resume_pre(struct snd_soc_card *card) {
-	int ret;
-	gprintk("\n");
-
-	ret = regulator_bulk_enable(ARRAY_SIZE(core_supplies), core_supplies);
-
-	if (ret != 0) {
-		dev_err(card->dev, "Failed to enable supplies: %d\n", ret);
-		return ret;
-	}
-
-	return 0;
-}
-static int koi_resume_post(struct snd_soc_card *card) {
-	gprintk("\n");
-	return 0;
-}
 
 static struct snd_soc_card koi = {
 	.name = "KOI-AK4678",
 	.probe = koi_probe,
 	.remove = koi_remove,
-	/* the pre and post PM functions are used to do any PM work before and
-	 * after the codec and DAIs do any PM work. */
-	.suspend_pre = koi_suspend_pre,
-	.suspend_post = koi_suspend_post,
-	.resume_pre = koi_resume_pre,
-	.resume_post = koi_resume_post,
 	.dai_link = koi_dai,
 	.num_links = ARRAY_SIZE(koi_dai),
 };

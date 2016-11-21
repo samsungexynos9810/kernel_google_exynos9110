@@ -441,9 +441,15 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 	const char *codec_dai_name = "multicodec";
 	int i, ret = 0;
 
+#ifdef CONFIG_SND_SOC_SAMSUNG_KOI_AK4678
+	for (i = 0; i < rtd->num_codecs; i++)
+		pm_runtime_get_sync(rtd->codec_dais[i]->dev);
+	pm_runtime_get_sync(cpu_dai->dev);
+#else
 	pm_runtime_get_sync(cpu_dai->dev);
 	for (i = 0; i < rtd->num_codecs; i++)
 		pm_runtime_get_sync(rtd->codec_dais[i]->dev);
+#endif
 	pm_runtime_get_sync(platform->dev);
 	pinctrl_pm_select_default_state(cpu_dai->dev);
 	for (i = 0; i < rtd->num_codecs; i++)

@@ -45,7 +45,9 @@
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
-
+#include <linux/pm_runtime.h>
+#include <linux/regulator/consumer.h>
+#include <linux/regulator/fixed.h>
 #include <linux/regmap.h>
 #include <linux/of_gpio.h>
 
@@ -58,6 +60,12 @@
 #define akdbgprt(format, arg...) do {} while (0)
 #endif
 
+#define AK4678_NUM_CORE_SUPPLIES 2
+static const char *ak4678_core_supply_names[AK4678_NUM_CORE_SUPPLIES] = {
+	"vdd_18",
+	"vdd_30",
+};
+
 #define AK4678_PORTIIS 0
 #define AK4678_PORTA 1
 #define AK4678_PORTB 2
@@ -65,6 +73,7 @@
 
 /* AK4678 Codec Private Data */
 struct ak4678_priv {
+	struct snd_soc_codec *codec;
 	struct i2c_client *i2c;
 	u16  externClkMode;
 	u16  onStereoEF;      /* Stereo Enpahsis Filter ON */
@@ -72,6 +81,8 @@ struct ak4678_priv {
 	u16  fsno;            /* fs  0 : fs <= 12kHz,  1: 12kHz < fs <= 24kHz, 2: fs > 24kHz */
 	u16  pllMode ;
 	int  pdn;
+	bool suspended;
+	struct regulator_bulk_data core_supplies[AK4678_NUM_CORE_SUPPLIES];
 };
 
 /* ak4678 register cache & default register settings */
@@ -2022,9 +2033,8 @@ static int ak4678_init_reg(struct snd_soc_codec *codec)
 
 
 	if ( ak4678->pdn > 0 ) {
-		gpio_set_value(ak4678->pdn, 0);
-		msleep(1);
-		gpio_set_value(ak4678->pdn, 1);	
+		/* need 2usec low sustained level in advance */
+		gpio_set_value(ak4678->pdn, 1);
 	}
 
 	mdelay(1);
@@ -2044,33 +2054,6 @@ static int ak4678_init_reg(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static int ak4678_parse_dt(struct ak4678_priv *ak4678)
-{
-	struct device *dev = &(ak4678->i2c->dev);
-	struct device_node *np = dev->of_node;
-
-	if (!np)
-		return -1;
-
-	akdbgprt("Read PDN pin from device tree\n");
-
-	ak4678->pdn = of_get_named_gpio(np, "ak4678,pdn-gpio", 0);
-	if (ak4678->pdn < 0) {
-		akdbgprt("Looking up %s property in node %s failed %d\n",
-				"ak4678,pdn-gpio", dev->of_node->full_name,
-				ak4678->pdn);
-		ak4678->pdn = -1;
-		return -1;
-	}
-
-	if( !gpio_is_valid(ak4678->pdn) ) {
-		printk(KERN_ERR "ak4678 pdn pin(%u) is invalid\n", ak4678->pdn);
-		return -1;
-	}
-
-	return 0;
-}
-
 
 static int ak4678_probe(struct snd_soc_codec *codec)
 {
@@ -2079,9 +2062,6 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 
 	akdbgprt("%s :\n",__FUNCTION__);
 
-	ret = ak4678_parse_dt(ak4678);
-	if ( ret < 0 ) ak4678->pdn = -1;
-
 	if ( ak4678->pdn > 0 ) {
 		ret = gpio_request(ak4678->pdn, "ak4678 pdn");
 		if (ret) {
@@ -2089,7 +2069,10 @@ static int ak4678_probe(struct snd_soc_codec *codec)
 			return ret;
 		}
 		gpio_direction_output(ak4678->pdn, 0);
+		gpio_set_value(ak4678->pdn, 0);
 	}
+
+	ak4678->codec = codec;
 
 	ak4678_init_reg(codec);
 
@@ -2110,7 +2093,7 @@ static int ak4678_remove(struct snd_soc_codec *codec)
 
 	ak4678_set_bias_level(codec, SND_SOC_BIAS_OFF);
 
-	if ( ak4678->pdn > 0 ) { 
+	if ( ak4678->pdn > 0 ) {
 		gpio_set_value(ak4678->pdn,0);
 		gpio_free(ak4678->pdn);
 	}
@@ -2118,39 +2101,72 @@ static int ak4678_remove(struct snd_soc_codec *codec)
 	return 0;
 }
 
-static int ak4678_suspend(struct snd_soc_codec *codec)
+static int ak4678_runtime_suspend(struct device *dev)
 {
-	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
-	
+	int ret;
+	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
+
 	akdbgprt("%s :\n",__FUNCTION__);
 
-	ak4678_set_bias_level(codec, SND_SOC_BIAS_OFF);
+	if (ak4678->suspended) {
+		akdbgprt("Already in suspend state\n");
+		return 0;
+	}
 
-	if ( ak4678->pdn > 0 ) { 
+	if ( ak4678->pdn > 0 ) {
 		gpio_set_value(ak4678->pdn, 0);
 	}
-	snd_soc_cache_init(codec);
+
+	ret = regulator_bulk_disable(ARRAY_SIZE(ak4678->core_supplies),
+			    ak4678->core_supplies);
+
+    if (ret != 0) {
+            dev_err(dev, "Failed to disable supplies: %d\n", ret);
+            return ret;
+    }
+
+
+	ak4678->suspended = true;
+
 
 	return 0;
 }
 
-static int ak4678_resume(struct snd_soc_codec *codec)
+static int ak4678_runtime_resume(struct device *dev)
 {
 
-	ak4678_init_reg(codec);
+	struct ak4678_priv *ak4678 = dev_get_drvdata(dev);
+	int ret;
+
+	akdbgprt("%s :\n",__FUNCTION__);
+
+	if (!ak4678->suspended) {
+		akdbgprt("Not in suspend state\n");
+		return 0;
+	}
+	ret = regulator_bulk_enable(ARRAY_SIZE(ak4678->core_supplies),
+				    ak4678->core_supplies);
+	if (ret != 0) {
+		dev_err(dev, "Failed to enable supplies: %d\n", ret);
+		return ret;
+	}
+
+	ak4678_init_reg(ak4678->codec);
+	ak4678->suspended = false;
 
 	return 0;
 }
+
+static const struct dev_pm_ops ak4678_pm_ops = {
+	.runtime_suspend = ak4678_runtime_suspend,
+	.runtime_resume = ak4678_runtime_resume,
+};
 
 static struct snd_soc_codec_driver soc_codec_dev_ak4678 = {
 	.probe = ak4678_probe,
 	.remove =	ak4678_remove,
-	.suspend = ak4678_suspend,
-	.resume =	ak4678_resume,
-
 //	.idle_bias_off = true,
 	.set_bias_level = ak4678_set_bias_level,
-
 	.controls = ak4678_snd_controls,
 	.num_controls = ARRAY_SIZE(ak4678_snd_controls),
 	.dapm_widgets = ak4678_dapm_widgets,
@@ -2177,7 +2193,8 @@ static int ak4678_i2c_probe(struct i2c_client *i2c,
 {
 	struct ak4678_priv *ak4678;
 	struct regmap *regmap;
-	int ret;
+	struct device_node *np = i2c->dev.of_node;
+	int ret,i;
 
 	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
@@ -2185,30 +2202,77 @@ static int ak4678_i2c_probe(struct i2c_client *i2c,
 			      GFP_KERNEL);
 	if (ak4678 == NULL)
 		return -ENOMEM;
-	
+
+	if (np) {
+		ak4678->pdn = of_get_named_gpio(np, "ak4678,pdn-gpio", 0);
+		if (ak4678->pdn < 0) {
+			akdbgprt("Looking up %s property in node %s failed %d\n",
+					"ak4678,pdn-gpio", np->full_name,
+					ak4678->pdn);
+			ak4678->pdn = -1;
+			dev_err(&i2c->dev, "ak4678 PDN pin error\n");
+			goto err;
+		}
+
+		if( !gpio_is_valid(ak4678->pdn) ) {
+			dev_err(&i2c->dev, "ak4678 pdn pin(%u) is invalid\n", ak4678->pdn);
+			goto err;
+		}
+	}
+
+	for (i = 0; i < ARRAY_SIZE(ak4678->core_supplies); i++)
+		ak4678->core_supplies[i].supply = ak4678_core_supply_names[i];
+
+	ret = devm_regulator_bulk_get(&i2c->dev,
+			      ARRAY_SIZE(ak4678->core_supplies),   ak4678->core_supplies);
+	if (ret != 0) {
+		dev_err(&i2c->dev, "Failed to request core supplies: %d\n", ret);
+		goto err;
+	}
+
+	ret = regulator_bulk_enable(ARRAY_SIZE(ak4678->core_supplies),
+				    ak4678->core_supplies);
+	if (ret != 0) {
+		dev_err(&i2c->dev, "Failed to enable core supplies: %d\n",  ret);
+		goto err;
+	}
+
 	regmap = devm_regmap_init_i2c(i2c, &ak4678_regmap);
-	if (IS_ERR(regmap))
-		return PTR_ERR(regmap);
-	
+	if (IS_ERR(regmap)) {
+		ret =  PTR_ERR(regmap);
+		goto err_regx;
+	}
+
 	i2c_set_clientdata(i2c, ak4678);
 
 	ak4678->i2c = i2c;
 
+	pm_runtime_set_active(&i2c->dev);
+	pm_runtime_enable(&i2c->dev);
+	pm_request_idle(&i2c->dev);
+
 	ret = snd_soc_register_codec(&i2c->dev,
 					&soc_codec_dev_ak4678, ak4678_dai, ARRAY_SIZE(ak4678_dai));
 	if (ret < 0){
+err_regx:
+		regulator_bulk_disable(ARRAY_SIZE(ak4678->core_supplies),
+			       ak4678->core_supplies);
+err:
 		akdbgprt("\t[AK4678] %s failed probe\n",__FUNCTION__);
 		return ret;
 	}
-	
+
 	return 0;
 }
 
 static int ak4678_i2c_remove(struct i2c_client *client)
 {
+	struct ak4678_priv *ak4678 = i2c_get_clientdata(client);
+
 	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
-	
+
 	snd_soc_unregister_codec(&client->dev);
+	kfree(ak4678);
 
 	return 0;
 }
@@ -2231,6 +2295,7 @@ static struct i2c_driver ak4678_i2c_driver = {
 		.name = "ak4678-codec",
 		.owner = THIS_MODULE,
 		.of_match_table = of_match_ptr(ak4678_i2c_dt_ids),
+	    .pm = &ak4678_pm_ops,
 	},
 	.probe = ak4678_i2c_probe,
 	.remove = ak4678_i2c_remove,
@@ -2240,7 +2305,7 @@ static struct i2c_driver ak4678_i2c_driver = {
 static int __init ak4678_modinit(void)
 {
 	int ret;
-	
+
 	akdbgprt("\t[AK4678] %s\n", __FUNCTION__);
 	ret = i2c_add_driver(&ak4678_i2c_driver);
 	if (ret)

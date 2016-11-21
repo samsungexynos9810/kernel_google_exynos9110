@@ -366,6 +366,8 @@
 			compatible = "akm,ak4678";
 			reg = <0x12>;
 			ak4678,pdn-gpio = <&gpm0 4 0x1>;
+			vdd_18-supply = <&ldo23_reg>;
+			vdd_30-supply = <&ldo17_reg>;
 		};
 	};
 
@@ -615,8 +617,6 @@
 		clock-names = "mout_epll", "fout_epll",
 				"mout_audio", "dout_audio",
 				"dout_i2s", "sclk_i2s";
-		vdd_18-supply = <&ldo23_reg>;
-		vdd_30-supply = <&ldo17_reg>;
 		status = "okay";
 	};
 
