@@ -176,7 +176,6 @@ enum bug_trap_type report_bug(unsigned long bugaddr, struct pt_regs *regs)
 				(void *)bugaddr);
 
 		print_modules();
-		show_regs(regs);
 		print_oops_end_marker();
 		/* Just a warning, don't kill lockdep. */
 		add_taint(BUG_GET_TAINT(bug), LOCKDEP_STILL_OK);
