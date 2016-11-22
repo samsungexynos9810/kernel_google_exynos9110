@@ -82,3 +82,18 @@ unlock:
    return ret;
 }
 EXPORT_SYMBOL(pin_config_set);
+
+int exynos_get_eint_base(void)
+{
+	struct pinctrl_dev *pctldev;
+	u32 ret;
+
+	pctldev = get_pinctrl_dev_from_devname("11000000.pinctrl");
+	BUG_ON(!pctldev);
+
+	mutex_lock(&pctldev->mutex);
+	ret = pin_get_from_name(pctldev, "gpx0-0");
+	mutex_unlock(&pctldev->mutex);
+
+	return ret;
+}

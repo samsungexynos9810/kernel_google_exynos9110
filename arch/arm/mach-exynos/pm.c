@@ -63,7 +63,7 @@
 #define REG_INFORM0		(sysram_ns_base_addr + 0x8)
 #define REG_INFORM1		(sysram_ns_base_addr + 0xC)
 
-extern u32 exynos_eint_to_pin_num(int eint);
+extern u32 exynos_get_eint_base(void);
 extern void exynos3250_enable_idle_clock_down(void);
 
 static void __iomem *exynos_eint_base;
@@ -422,8 +422,10 @@ static void exynos_show_wakeup_reason_eint(void)
 	long unsigned int ext_int_pend;
 	u64 eint_wakeup_mask;
 	bool found = 0;
+	int eint_base;
 
 	eint_wakeup_mask = pmu_raw_readl(EXYNOS_EINT_WAKEUP_MASK);
+	eint_base = exynos_get_eint_base();
 
 	for (i = 0, size = 8; i < 32; i += size) {
 
@@ -437,10 +439,11 @@ static void exynos_show_wakeup_reason_eint(void)
 			if (eint_wakeup_mask & (1 << (i + bit)))
 				continue;
 
-			gpio = exynos_eint_to_pin_num(i + bit);
+			gpio = eint_base + (i + bit);
 			irq = gpio_to_irq(gpio);
 
 			log_wakeup_reason(irq);
+			pr_info("cause of wakeup: XEINT_%d\n", i + bit);
 			update_wakeup_reason_stats(irq, i + bit);
 			found = 1;
 		}
@@ -452,8 +455,8 @@ static void exynos_show_wakeup_reason_eint(void)
 
 static void exynos_show_wakeup_registers(unsigned long wakeup_stat)
 {
-	pr_info("WAKEUP_STAT: 0x%08lx\n", wakeup_stat);
-	pr_info("EINT_PEND: 0x%02x, 0x%02x 0x%02x, 0x%02x\n",
+	pr_debug("WAKEUP_STAT: 0x%08lx\n", wakeup_stat);
+	pr_debug("EINT_PEND: 0x%02x, 0x%02x 0x%02x, 0x%02x\n",
 			__raw_readl(EXYNOS_EINT_PEND(exynos_eint_base, 0)),
 			__raw_readl(EXYNOS_EINT_PEND(exynos_eint_base, 8)),
 			__raw_readl(EXYNOS_EINT_PEND(exynos_eint_base, 16)),

@@ -58,6 +58,7 @@ static struct samsung_pin_bank_type bank_type_1 = {
 	.reg_offset = { 0x00, 0x04, 0x08, 0x0c, },
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 /* bank type for non-alive type (DRV bit field: 3) */
 static struct samsung_pin_bank_type bank_type_4  = {
 	.fld_width = { 4, 1, 2, 3, 2, 2, },
@@ -69,6 +70,7 @@ static struct samsung_pin_bank_type bank_type_5 = {
 	.fld_width = { 4, 1, 2, 3, },
 	.reg_offset = { 0x00, 0x04, 0x08, 0x0c, },
 };
+#endif
 
 /* list of external wakeup controllers supported */
 static const struct of_device_id exynos_wkup_irq_ids[] = {
@@ -700,6 +702,7 @@ static void exynos_pinctrl_resume(struct samsung_pinctrl_drv_data *drvdata)
 		}
 }
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 /* pin banks of s5pv210 pin-controller */
 static struct samsung_pin_bank s5pv210_pin_bank[] = {
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x000, "gpa0", 0x00),
@@ -750,6 +753,7 @@ struct samsung_pin_ctrl s5pv210_pin_ctrl[] = {
 		.label		= "s5pv210-gpio-ctrl0",
 	},
 };
+#endif
 
 /* pin banks of exynos3250 pin-controller 0 */
 static struct samsung_pin_bank exynos3250_pin_banks0[] = {
@@ -807,6 +811,7 @@ struct samsung_pin_ctrl exynos3250_pin_ctrl[] = {
 	},
 };
 
+#if !defined(CONFIG_SOC_EXYNOS3250)
 /* pin banks of exynos4210 pin-controller 0 */
 static struct samsung_pin_bank exynos4210_pin_banks0[] = {
 	EXYNOS_PIN_BANK_EINTG(bank_type_0, 8, 0x000, "gpa0", 0x00),
@@ -1415,15 +1420,11 @@ struct samsung_pin_ctrl exynos8890_pin_ctrl[] = {
 		.label		= "exynos8890-gpio-ctrl10",
 	},
 };
+#endif
 
 #if defined(CONFIG_SOC_EXYNOS8890)
-u32 exynos_eint_to_pin_num(int eint)
+u32 exynos_get_eint_base(void)
 {
-        return exynos8890_pin_ctrl[0].base + eint;
-}
-#elif defined(CONFIG_SOC_EXYNOS3250)
-u32 exynos_eint_to_pin_num(int eint)
-{
-        return exynos3250_pin_ctrl[0].base + eint;
+        return exynos8890_pin_ctrl[0].base;
 }
 #endif
