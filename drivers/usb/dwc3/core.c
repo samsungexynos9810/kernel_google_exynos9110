@@ -1196,11 +1196,15 @@ static int dwc3_probe(struct platform_device *pdev)
 	spin_lock_init(&dwc->lock);
 	init_completion(&dwc->disconnect);
 
+#if IS_ENABLED(CONFIG_ZONE_DMA)
 	if (!dev->dma_mask) {
+#endif
 		dev->dma_mask = dev->parent->dma_mask;
 		dev->dma_parms = dev->parent->dma_parms;
 		dma_set_coherent_mask(dev, dev->parent->coherent_dma_mask);
+#if IS_ENABLED(CONFIG_ZONE_DMA)
 	}
+#endif
 
 	ret = dwc3_alloc_event_buffers(dwc, DWC3_EVENT_BUFFERS_SIZE);
 	if (ret) {
