@@ -377,6 +377,29 @@ static void __init exynos_init_irq(void)
 }
 
 #if defined(CONFIG_SOC_EXYNOS3250)
+#include <linux/pstore_ram.h>
+#include <linux/memblock.h>
+
+#define RAMOOPS_MEM_ADDR	0x41f00000
+#define RAMOOPS_MEM_SIZE	0x100000
+#define RAMOOPS_REC_SIZE	0x20000
+/* TODO: move to FDT */
+static struct ramoops_platform_data koi_ramoops_data = {
+	.mem_size = RAMOOPS_MEM_SIZE,
+	.mem_address = RAMOOPS_MEM_ADDR,
+	.record_size = RAMOOPS_REC_SIZE,
+	.console_size = RAMOOPS_REC_SIZE,
+	.pmsg_size = RAMOOPS_REC_SIZE,
+	.dump_oops = 1,
+};
+
+static struct platform_device koi_ramoops_device = {
+	.name = "ramoops",
+	.dev = {
+		.platform_data = &koi_ramoops_data,
+	},
+};
+
 void espresso3250_power_off(void)
 {
 	unsigned int reg;
@@ -396,6 +419,7 @@ static void __init exynos_dt_machine_init(void)
 
 #if defined(CONFIG_SOC_EXYNOS3250)
 	pm_power_off = espresso3250_power_off;
+	platform_device_register(&koi_ramoops_device);
 #endif
 	/*
 	 * Exynos5's legacy i2c controller and new high speed i2c
@@ -462,6 +486,10 @@ static void __init exynos_reserve(void)
 	for (i = 0; i < ARRAY_SIZE(mfc_mem); i++)
 		if (of_scan_flat_dt(s5p_fdt_alloc_mfc_mem, mfc_mem[i]))
 			break;
+#endif
+
+#if defined(CONFIG_SOC_EXYNOS3250)
+	memblock_reserve(RAMOOPS_MEM_ADDR, RAMOOPS_MEM_SIZE);
 #endif
 }
 
