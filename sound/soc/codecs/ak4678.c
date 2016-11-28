@@ -13,17 +13,17 @@
  *     improve I/O control interface        	2012-10-30
  *
  * (ak4678_read ----- snd_soc_read)
- * (ak4678_write ----- snd_soc_write)                      
- * (ak4678_writeMask ----- snd_soc_update_bits)  
+ * (ak4678_write ----- snd_soc_write)
+ * (ak4678_writeMask ----- snd_soc_update_bits)
 
  *  delete  {ak4678_codec
  *  enum snd_soc_control_type control_type
  *  static struct ak4678_priv *ak4678_data }  2013-05-14
  *
- *  Modified without DSP                      2013-12-26 
+ *  Modified without DSP                      2013-12-26
  *
  *                      16/09/13         2.0 Kernel 3.18.XX
- *                  
+ *
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
  *
  *  This program is free software; you can redistribute  it and/or modify it
@@ -278,11 +278,11 @@ static u8 hpf2[AK4678_FS_NUM][4] = {
 };
 
 static u8 fil3band[AK4678_FS_NUM][16] = {
-	{ 0x87, 0x02, 0x0D, 0x25, 0x79, 0x1D, 0x0D, 0x25, 
+	{ 0x87, 0x02, 0x0D, 0x25, 0x79, 0x1D, 0x0D, 0x25,
       0x1D, 0x11, 0x3A, 0x02, 0xE3, 0x0E, 0x3A, 0x02 },
 	{ 0x50, 0x01, 0xA0, 0x22, 0xB0, 0x1E, 0xA0, 0x22,
       0x04, 0x0A, 0x07, 0x34, 0xFC, 0x15, 0x07, 0x34 },
-	{ 0xAB, 0x00, 0x57, 0x21, 0x55, 0x1F, 0x57, 0x21, 
+	{ 0xAB, 0x00, 0x57, 0x21, 0x55, 0x1F, 0x57, 0x21,
       0xB5, 0x05, 0x6A, 0x2B, 0x4B, 0x1A, 0x6A, 0x2B },
 };
 
@@ -316,7 +316,7 @@ static int get_stereo_ef(struct snd_kcontrol *kcontrol,
 	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
 
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
-	
+
 	ucontrol->value.enumerated.item[0] = ak4678->onStereoEF;
 
 	return 0;
@@ -328,7 +328,7 @@ static int set_stereo_ef(struct snd_kcontrol *kcontrol,
 {
 	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
-	
+
 	ak4678->onStereoEF = ucontrol->value.enumerated.item[0];
 
 	if (ak4678->onStereoEF)
@@ -344,7 +344,7 @@ static int get_dvlc_drc(struct snd_kcontrol *kcontrol,struct snd_ctl_elem_value 
 {
 	struct snd_soc_codec *codec = snd_soc_kcontrol_codec(kcontrol);
 	struct ak4678_priv *ak4678 = snd_soc_codec_get_drvdata(codec);
-	
+
 	ucontrol->value.enumerated.item[0] = ak4678->onDvlcDrc;
 
 	return 0;
@@ -430,23 +430,23 @@ static int ak4678_set_port_dai_fmt(struct snd_soc_codec *codec, unsigned int id 
 	return 0;
 }
 
-static const char *stereo_ef_on[]  = 
+static const char *stereo_ef_on[]  =
 {
 	"Stereo Enphasis Filter OFF",
 	"Stereo Enphasis Filter ON",
 };
 
-static const char *dvlc_on[]  = 
+static const char *dvlc_on[]  =
 {
 	"DVLC_DRC OFF",
     "DVLC_DRC ON",
 };
 
-static const struct soc_enum ak4678_enum[] = 
+static const struct soc_enum ak4678_enum[] =
 {
     /* Note: Dont change the order, then you need to change
      * in mixer control also */
-    /* arg1: number of elements arg2: elements name array*/  
+    /* arg1: number of elements arg2: elements name array*/
     SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(stereo_ef_on), stereo_ef_on),
     SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(dvlc_on), dvlc_on),
 };
@@ -523,7 +523,7 @@ static DECLARE_TLV_DB_SCALE(svolb_tlv, -2400, 50, 1);
 
 #ifdef AK4678_DEBUG
 
-static const char *test_reg_select[]   = 
+static const char *test_reg_select[]   =
 {
     "read Reg 00:28",
     "read Reg 29:6E",
@@ -531,7 +531,7 @@ static const char *test_reg_select[]   =
 
 };
 
-static const struct soc_enum ak4678_reg_enum[] = 
+static const struct soc_enum ak4678_reg_enum[] =
 {
     SOC_ENUM_SINGLE_EXT(ARRAY_SIZE(test_reg_select), test_reg_select),
 };
@@ -649,7 +649,7 @@ static const char * ak4678_right_line_texts[] = {
 
 static const unsigned int ak4678_rline_values[] = {
 	0x0, 0x05, 0xa, 0xf, 0x42, 0x24, 0x34};
-	
+
 static SOC_VALUE_ENUM_SINGLE_DECL(ak4678_rline_enum,
     AK4678_06_MIC_SIGNAL_SELECT, 0, 0x7f,
     ak4678_right_line_texts, ak4678_rline_values);
@@ -1031,7 +1031,7 @@ int ak4678_porta_event(struct snd_soc_dapm_widget *w,
 	case SND_SOC_DAPM_PRE_PMU:
 		ak4678_set_port_dai_fmt(codec, AK4678_PORTA, SND_SOC_DAIFMT_DSP_A|
 		                		SND_SOC_DAIFMT_IB_NF | SND_SOC_DAIFMT_CBS_CFS);
-		
+
 		printk("%s:BT Auido fmt 0x20 :0x%x\n",__func__,snd_soc_read(codec,AK4678_20_PCM_IF_CONTROL0));
 		break;
 	case SND_SOC_DAPM_POST_PMD:
@@ -1085,8 +1085,8 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 
 	/* SDTO : Enable :0 , Disable : 1 */
 	SND_SOC_DAPM_MUX("SDTO Capture Switch", SND_SOC_NOPM, 0, 0,
-		&ak4678_SDTO_mux_control), 
-		
+		&ak4678_SDTO_mux_control),
+
    	SND_SOC_DAPM_ADC("Left ADC", "Left Capture", AK4678_00_POWER_MANAGEMENT0, 4, 0),
 	SND_SOC_DAPM_ADC("Right ADC", "Right Capture", AK4678_00_POWER_MANAGEMENT0, 5, 0),
 
@@ -1111,7 +1111,7 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 	SND_SOC_DAPM_MUX("DRC", AK4678_01_POWER_MANAGEMENT1, 1, 0,
 		&DRC_mux),
 
-	/* EQ virtual mux */	
+	/* EQ virtual mux */
 	SND_SOC_DAPM_MUX("EQ", AK4678_01_POWER_MANAGEMENT1, 0, 0,
 		&EQ_virt_mux),
 
@@ -1121,7 +1121,7 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 
 	/* DAC */
 	SND_SOC_DAPM_DAC("DAC Right", "Right Playback",AK4678_01_POWER_MANAGEMENT1, 3, 0),
-	SND_SOC_DAPM_DAC("DAC Left", "Left Playback", AK4678_01_POWER_MANAGEMENT1, 2, 0),	
+	SND_SOC_DAPM_DAC("DAC Left", "Left Playback", AK4678_01_POWER_MANAGEMENT1, 2, 0),
 
 	/* LINEOUT */
 	SND_SOC_DAPM_MIXER_E("LOUT1 Mixer", AK4678_0A_LINE_MANAGEMENT, 0, 0,
@@ -1152,7 +1152,7 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 			ARRAY_SIZE(ak4678_SPKL_mixer_controls)),
 	SND_SOC_DAPM_MIXER("SPN Mixer", AK4678_0D_SPK_MANAGEMENT, 4, 0,
 			&ak4678_SPKR_mixer_controls[0],
-			ARRAY_SIZE(ak4678_SPKR_mixer_controls)), 
+			ARRAY_SIZE(ak4678_SPKR_mixer_controls)),
 
 
 	SND_SOC_DAPM_MIXER("HPL Mixer", AK4678_0B_HP_MANAGEMENT, 0, 0,
@@ -1161,7 +1161,7 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 	SND_SOC_DAPM_MIXER("HPR Mixer", AK4678_0B_HP_MANAGEMENT, 1, 0,
 			NULL,
 			0),
-			
+
 	SND_SOC_DAPM_MUX("HPL Mux", SND_SOC_NOPM, 0, 0,
 		&HPL_mux),
 	SND_SOC_DAPM_MUX("HPR Mux", SND_SOC_NOPM, 0, 0,
@@ -1172,7 +1172,7 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 			&ak4678_MIX1L_mux_control),
 	/* MIX1R */
 	SND_SOC_DAPM_MUX("MIX1R Mixer", AK4678_1F_PCM_IF_MANAGEMENT, 7, 0,
-			&ak4678_MIX1R_mux_control), 
+			&ak4678_MIX1R_mux_control),
 
 	/* MIX2A */
 	SND_SOC_DAPM_MUX("MIX2A Mixer", SND_SOC_NOPM, 0, 0,
@@ -1180,24 +1180,24 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 
 	/* MIX2B */
 	SND_SOC_DAPM_MUX("MIX2B Mixer", SND_SOC_NOPM, 0, 0,
-			&ak4678_MIX2B_mux_control), 
+			&ak4678_MIX2B_mux_control),
 
 	/* MIX2C */
 	SND_SOC_DAPM_MUX("MIX2C Mixer", SND_SOC_NOPM, 0, 0,
-			&ak4678_MIX2C_mux_control), 
+			&ak4678_MIX2C_mux_control),
 
 	/* MIX3 */
 	SND_SOC_DAPM_MUX("MIX3 Mixer", SND_SOC_NOPM, 0, 0,
-			&ak4678_MIX3_mux_control), 
-	
+			&ak4678_MIX3_mux_control),
+
 	/* SBMX */
 	SND_SOC_DAPM_MUX("SBMX", SND_SOC_NOPM, 0, 0,
-			&ak4678_SBMX_mux_control), 
+			&ak4678_SBMX_mux_control),
 
-	/* SDOAD */ 
+	/* SDOAD */
 	SND_SOC_DAPM_SWITCH("SDTOA Capture", SND_SOC_NOPM, 0, 0,
 			    &ak4678_SDTOA_switch_controls),
-	/* SDOBD */ 
+	/* SDOBD */
 	SND_SOC_DAPM_SWITCH("SDTOB Capture", SND_SOC_NOPM, 0, 0,
 			    &ak4678_SDTOB_switch_controls),
 
@@ -1217,7 +1217,7 @@ static const struct snd_soc_dapm_widget ak4678_dapm_widgets[] = {
 
 	SND_SOC_DAPM_AIF_OUT("SDTOB Lch", "Capture", 0, AK4678_1F_PCM_IF_MANAGEMENT, 6, 0),
 	SND_SOC_DAPM_AIF_OUT("SDTOB Rch", "Capture", 0, AK4678_1F_PCM_IF_MANAGEMENT, 6, 0), //CONFIG_LINF
-		
+
 	/* Outputs */
 	SND_SOC_DAPM_OUTPUT("LOUT1"),
 	SND_SOC_DAPM_OUTPUT("ROUT1"),
@@ -1697,7 +1697,7 @@ static int  ak4678_set_dai_pll(struct snd_soc_dai *dai, int pll_id, int source,
 		mode);
 	snd_soc_update_bits(codec, AK4678_03_PLL_MODE_SELECT0, AK4678_PLL, pll);
 	mdelay(delay);
-		
+
 	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 	return ret;
 }
@@ -1720,7 +1720,7 @@ static int ak4678_hw_free(struct snd_pcm_substream * substream,struct snd_soc_da
 
 void ak4678_set_dai_shutdown(struct snd_pcm_substream *substream,struct snd_soc_dai *dai)
 {
-	akdbgprt("\t[AK4678] %s\n",__FUNCTION__); 
+	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 }
 
 static int ak4678_set_prepare(struct snd_pcm_substream *substream,struct snd_soc_dai *dai)
@@ -1767,7 +1767,7 @@ static int ak4678_set_bias_level(struct snd_soc_codec *codec,
 	case SND_SOC_BIAS_OFF:
 		if(ak4678->pllMode == 1)
 			snd_soc_update_bits(codec, AK4678_04_PLL_MODE_SELECT1, 0x01,0x0);
-		
+
 		snd_soc_update_bits(codec, AK4678_00_POWER_MANAGEMENT0, AK4678_PMVCM, 0);
 		break;
 	}
@@ -1790,7 +1790,7 @@ static int ak4678_set_dai_mute(struct snd_soc_dai *dai, int mute)
 	akdbgprt("\t[AK4678] %s,  mute[%s]\n", __FUNCTION__, mute ? "ON":"OFF");
 
 	mute_reg = snd_soc_read(codec, AK4678_18_MODE1_CONTROL) & 0x4;
-	
+
 	if(mute_reg == mute)
 		return 0;
 
@@ -1842,7 +1842,7 @@ static int ak4678_portA_hw_params(struct snd_pcm_substream *substream,
 {
 	struct snd_soc_codec *codec = dai->codec;
 	u8 	 mode;
-	u8   reg;	
+	u8   reg;
 
 	akdbgprt("\t[AK4678] %s\n",__FUNCTION__);
 
@@ -1893,7 +1893,7 @@ static struct snd_soc_dai_ops ak4678_portA_dai_ops = {
 	//.hw_free = ak4678_hw_free,
 	//.shutdown = ak4678_set_dai_shutdown,
 	//.startup =ak4678_set_dai_startup,
-	//.digital_mute = ak4678_set_dai_mute,	
+	//.digital_mute = ak4678_set_dai_mute,
 };
 
 struct snd_soc_dai_driver ak4678_dai[] = {
