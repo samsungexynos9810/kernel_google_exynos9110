@@ -2034,10 +2034,11 @@ static int ak4678_init_reg(struct snd_soc_codec *codec)
 
 	if ( ak4678->pdn > 0 ) {
 		/* need 2usec low sustained level in advance */
+		usleep_range(100, 10000);
 		gpio_set_value(ak4678->pdn, 1);
 	}
 
-	mdelay(1);
+	udelay(10);
 
 	/*  Dummy command */
 	snd_soc_write(codec,AK4678_00_POWER_MANAGEMENT0,0x0);
