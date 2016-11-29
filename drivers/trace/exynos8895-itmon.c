@@ -379,6 +379,14 @@ const static struct itmon_masterinfo masterinfo[] = {
 	{"CP", BIT(1),			/* X00010 */ "CSXAP",		GENMASK(4, 1)},
 	{"CP", BIT(4) | GENMASK(1, 0),	/* X10011 */ "HARQMOVERtoL2",	GENMASK(4, 0)},
 
+	{"CP_PERI", BIT(5),		/* 1XXXXX */ "CR7M",		BIT(5)},
+	{"CP_PERI", BIT(3),		/* 001XXX */ "CR4toL2",		GENMASK(5, 3)},
+	{"CP_PERI", BIT(4),		/* 0100XX */ "DMA",		GENMASK(5, 2)},
+	{"CP_PERI", BIT(4) | BIT(2),	/* 0101XX */ "MDMtoL2",		GENMASK(5, 2)},
+	{"CP_PERI", 0,			/* 00000X */ "LMACtoL2",	GENMASK(5, 1)},
+	{"CP_PERI", BIT(2),		/* 000100 */ "CSXAP",		GENMASK(5, 0)},
+	{"CP_PERI", BIT(2) | BIT(0),	/* 000101 */ "HARQMOVERtoL2",	GENMASK(5, 0)},
+
 	/* Others */
 	{"SRDZ", 0, "SRDZ", 0},
 	{"DSP",  0, "DSP",  0},
@@ -867,7 +875,7 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				snprintf(traceinfo->buf, SZ_32 - 1, "CP");
 				traceinfo->port = traceinfo->buf;
 				master = (struct itmon_masterinfo *)
-					itmon_get_masterinfo(itmon, traceinfo->port, userbit);
+					itmon_get_masterinfo(itmon, "CP_PERI", userbit);
 				if (master)
 					traceinfo->master = master->master_name;
 				else
