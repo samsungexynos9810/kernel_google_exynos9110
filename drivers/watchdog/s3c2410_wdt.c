@@ -143,10 +143,15 @@ struct s3c2410_wdt {
 static struct s3c2410_wdt *s3c_wdt;
 
 static const struct s3c2410_wdt_variant drv_data_s3c2410 = {
-	.quirks = 0
+	.disable_reg = EXYNOS5_WDT_DISABLE_REG_OFFSET,
+	.mask_reset_reg = EXYNOS5_WDT_MASK_RESET_REG_OFFSET,
+	.mask_bit = 20,
+	.rst_stat_reg = EXYNOS5_RST_STAT_REG_OFFSET,
+	.rst_stat_bit = 20,
+	.quirks = QUIRK_HAS_PMU_CONFIG | QUIRK_HAS_RST_STAT,
 };
 
-#ifdef CONFIG_OF
+#if !defined(CONFIG_SOC_EXYNOS3250)
 static const struct s3c2410_wdt_variant drv_data_exynos5250  = {
 	.disable_reg = EXYNOS5_WDT_DISABLE_REG_OFFSET,
 	.mask_reset_reg = EXYNOS5_WDT_MASK_RESET_REG_OFFSET,
@@ -182,10 +187,12 @@ static const struct s3c2410_wdt_variant drv_data_exynos8 = {
 	.rst_stat_bit = 24,	/* A53 WDTRESET */
 	.quirks = QUIRK_HAS_PMU_CONFIG | QUIRK_HAS_RST_STAT,
 };
+#endif
 
 static const struct of_device_id s3c2410_wdt_match[] = {
 	{ .compatible = "samsung,s3c2410-wdt",
 	  .data = &drv_data_s3c2410 },
+#if !defined(CONFIG_SOC_EXYNOS3250)
 	{ .compatible = "samsung,exynos5250-wdt",
 	  .data = &drv_data_exynos5250 },
 	{ .compatible = "samsung,exynos5420-wdt",
@@ -194,10 +201,10 @@ static const struct of_device_id s3c2410_wdt_match[] = {
 	  .data = &drv_data_exynos7 },
 	{ .compatible = "samsung,exynos8-wdt",
 	  .data = &drv_data_exynos8 },
+#endif
 	{},
 };
 MODULE_DEVICE_TABLE(of, s3c2410_wdt_match);
-#endif
 
 static const struct platform_device_id s3c2410_wdt_ids[] = {
 	{
