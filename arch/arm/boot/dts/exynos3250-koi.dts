@@ -584,8 +584,8 @@
 
 			/* D-PHY PLL stable time spec :min = 200usec ~ max 400usec */
 			pll_stable_time = <0x400>;
-			/* escape clk : 7MHz */
-			esc_clk = <7000000>;
+			/* escape clk : 20MHz */
+			esc_clk = <20000000>;
 			/* stop state holding counter after bta change count 0 ~ 0xfff */
 			stop_holding_cnt = <0x0f>;
 			/* bta timeout 0 ~ 0xff */
