@@ -151,10 +151,10 @@ void dw_mci_reg_dump(struct dw_mci *host)
 			host->sfr_dump->cmd_status = host->cmd_status);
 	dev_err(host->dev, ": data_status:     0x%08x\n",
 			host->sfr_dump->force_clk_stop = host->data_status);
-	dev_err(host->dev, ": pending_events:  0x%08x\n",
+	dev_err(host->dev, ": pending_events:  0x%08lx\n",
 			host->sfr_dump->pending_events = host->pending_events);
-	dev_err(host->dev, ": completed_events:0x%08x\n",
-			host->sfr_dump->completed_events = host->completed_events);
+	dev_err(host->dev, ": completed_events:0x%08lx\n",
+			host->sfr_dump->completed_events  = host->completed_events);
 	dev_err(host->dev, ": state:           %d\n",
 			host->sfr_dump->host_state = host->state);
 	dev_err(host->dev, ": gate-clk:            %s\n",
@@ -406,7 +406,7 @@ static void dw_mci_exynos_config_hs400(struct dw_mci *host, u32 timing)
 static void dw_mci_exynos_adjust_clock(struct dw_mci *host, unsigned int wanted)
 {
 	struct dw_mci_exynos_priv_data *priv = host->priv;
-	unsigned long actual;
+	u32 actual;
 	u8 div;
 	int ret;
 	/*
@@ -827,7 +827,7 @@ static void dw_mci_set_fine_tuning_bit(struct dw_mci *host,
 	u32 clksel, sample;
 
 	clksel = mci_readl(host, CLKSEL);
-	clksel = (clksel & ~BIT(6));
+	clksel &= ~BIT(6);
 	sample = (clksel & 0x7);
 
 	if (is_fine_tuning) {

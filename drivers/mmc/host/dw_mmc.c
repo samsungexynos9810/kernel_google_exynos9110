@@ -488,7 +488,7 @@ static void dw_mci_update_clock(struct dw_mci_slot *slot)
 	unsigned long timeout;
 	int retry = 10;
 	unsigned int int_mask = 0;
-	unsigned int cmd_status = 0;
+	u32 cmd_status = 0;
 
 	dw_mci_disable_interrupt(host, &int_mask);
 

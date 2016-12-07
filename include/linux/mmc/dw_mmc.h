@@ -169,14 +169,14 @@ struct dw_mci {
 	void			*sg_cpu;
 	const struct dw_mci_dma_ops	*dma_ops;
 	/* For idmac */
-	unsigned int		ring_size;
+	unsigned short		ring_size;
 
 	/* For edmac */
 	struct dw_mci_dma_slave *dms;
 	/* Registers's physical base address */
 	resource_size_t		phy_regs;
 
-	unsigned int            desc_sz;
+	unsigned short          desc_sz;
 	struct pm_qos_request   pm_qos_int;
 	struct delayed_work	qos_work;
 	bool			qos_cntrl;
