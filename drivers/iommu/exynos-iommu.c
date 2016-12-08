@@ -164,11 +164,15 @@ void exynos_sysmmu_tlb_invalidate(struct iommu_domain *iommu_domain,
 				dev_dbg(drvdata->sysmmu,
 					"Skip TLB invalidation %#zx@%#x\n",
 							size, start);
+				exynos_ss_printk("Skip TLB invalidation %s: %#zx@%#x\n",
+						dev_name(drvdata->sysmmu), size, start);
 				continue;
 			}
 
 			dev_dbg(drvdata->sysmmu,
 				"TLB invalidation %#zx@%#x\n", size, start);
+			exynos_ss_printk("TLB invalidation %s: %#zx@%#x\n",
+					dev_name(drvdata->sysmmu), size, start);
 
 			__sysmmu_tlb_invalidate(drvdata, start, size);
 
@@ -779,9 +783,15 @@ static int __init exynos_sysmmu_probe(struct platform_device *pdev)
 
 static void __sysmmu_disable_nocount(struct sysmmu_drvdata *drvdata)
 {
+
 	writel_relaxed(0, drvdata->sfrbase + REG_MMU_CFG);
-	writel_relaxed(CTRL_BLOCK_DISABLE, drvdata->sfrbase + REG_MMU_CTRL);
-	BUG_ON(readl_relaxed(drvdata->sfrbase + REG_MMU_CTRL) != CTRL_BLOCK_DISABLE);
+	sysmmu_control(drvdata->sfrbase, false);
+
+	exynos_ss_printk("Disable %s: MMU_CTRL: %#x, MMU_CFG: %#x, MMU_STATUS: %#x\n",
+		dev_name(drvdata->sysmmu),
+		__raw_readl(drvdata->sfrbase + REG_MMU_CTRL),
+		__raw_readl(drvdata->sfrbase + REG_MMU_CFG),
+		__raw_readl(drvdata->sfrbase + REG_MMU_STATUS));
 
 	clk_disable(drvdata->clk);
 }
@@ -990,7 +1000,13 @@ static void __sysmmu_enable_nocount(struct sysmmu_drvdata *drvdata)
 
 	__sysmmu_set_ptbase(drvdata->sfrbase, drvdata->pgtable / PAGE_SIZE);
 
-	writel(CTRL_ENABLE, drvdata->sfrbase + REG_MMU_CTRL);
+	sysmmu_control(drvdata->sfrbase, true);
+
+	exynos_ss_printk("Enable %s: MMU_CTRL: %#x, MMU_CFG: %#x, MMU_STATUS: %#x\n",
+		dev_name(drvdata->sysmmu),
+		__raw_readl(drvdata->sfrbase + REG_MMU_CTRL),
+		__raw_readl(drvdata->sfrbase + REG_MMU_CFG),
+		__raw_readl(drvdata->sfrbase + REG_MMU_STATUS));
 }
 
 static int __sysmmu_enable(struct sysmmu_drvdata *drvdata, phys_addr_t pgtable)
@@ -1744,6 +1760,8 @@ int exynos_iommu_runtime_suspend(struct device *master)
 	if (!has_sysmmu(master) || ret)
 		return ret;
 
+	exynos_ss_printk("Runtime suspend %s\n", dev_name(master));
+
 	owner = master->archdata.iommu;
 	list_for_each_entry(list, &owner->sysmmu_list, node) {
 		unsigned long flags;
@@ -1767,6 +1785,8 @@ int exynos_iommu_runtime_resume(struct device *master)
 
 	if (!has_sysmmu(master))
 		return pm_generic_runtime_resume(master);
+
+	exynos_ss_printk("Runtime resume %s\n", dev_name(master));
 
 	owner = master->archdata.iommu;
 	list_for_each_entry(list, &owner->sysmmu_list, node) {

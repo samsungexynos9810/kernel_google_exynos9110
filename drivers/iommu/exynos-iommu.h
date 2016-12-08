@@ -412,26 +412,19 @@ static inline void __raw_sysmmu_enable(void __iomem *sfrbase)
 	__raw_writel(CTRL_ENABLE, sfrbase + REG_MMU_CTRL);
 }
 
-#define sysmmu_unblock __raw_sysmmu_enable
-
 void dump_sysmmu_tlb_pb(void __iomem *sfrbase);
 
-static inline bool sysmmu_block(void __iomem *sfrbase)
+static inline bool sysmmu_control(void __iomem *sfrbase, bool enable)
 {
-	int i = SYSMMU_BLOCK_POLLING_COUNT;
+	int cnt = SYSMMU_BLOCK_POLLING_COUNT;
+	u32 val = enable ? CTRL_ENABLE : CTRL_DISABLE;
 
 	__raw_writel(CTRL_BLOCK, sfrbase + REG_MMU_CTRL);
-	while ((i > 0) && !(__raw_readl(sfrbase + REG_MMU_STATUS) & 1))
-		--i;
+	while (!(__raw_readl(sfrbase + REG_MMU_STATUS) & 0x1) && (cnt-- > 0))
+		;
+	BUG_ON(cnt <= 0);
 
-	if (!(__raw_readl(sfrbase + REG_MMU_STATUS) & 1)) {
-		/*
-		 * TODO: dump_sysmmu_tlb_pb(sfrbase);
-		 */
-		panic("Failed to block System MMU!");
-		sysmmu_unblock(sfrbase);
-		return false;
-	}
+	writel_relaxed(val, sfrbase + REG_MMU_CTRL);
 
 	return true;
 }
