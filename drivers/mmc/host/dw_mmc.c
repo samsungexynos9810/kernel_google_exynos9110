@@ -76,7 +76,7 @@ static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
 extern int fmp_mmc_map_sg(struct dw_mci *host, struct idmac_desc_64addr *desc, int idx,
 			uint32_t sector_key, uint32_t sector, struct mmc_data *data);
 static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq);
-
+static struct workqueue_struct *pm_workqueue;
 #if defined(CONFIG_MMC_DW_DEBUG)
 static struct dw_mci_debug_data dw_mci_debug __cacheline_aligned;
 
@@ -290,6 +290,22 @@ static inline int dw_mci_debug_init(struct dw_mci *host)
 }
 #endif /* defined (CONFIG_MMC_DW_DEBUG) */
 
+static void dw_mci_qos_work(struct work_struct *work)
+{
+	struct dw_mci *host = container_of(work, struct dw_mci, qos_work.work);
+	pm_qos_update_request(&host->pm_qos_int, 0);
+}
+static void dw_mci_qos_get(struct dw_mci *host)
+{
+	if (delayed_work_pending(&host->qos_work))
+		cancel_delayed_work_sync(&host->qos_work);
+	pm_qos_update_request(&host->pm_qos_int, host->pdata->qos_int_level);
+}
+static void dw_mci_qos_put(struct dw_mci *host)
+{
+	queue_delayed_work(pm_workqueue, &host->qos_work,
+			msecs_to_jiffies(5));
+}
 /* Add sysfs for argos */
 static ssize_t dw_mci_transferred_cnt_show(struct device *dev,
 		struct device_attribute *attr,
@@ -1832,12 +1848,15 @@ static void dw_mci_request(struct mmc_host *mmc, struct mmc_request *mrq)
 			return;
 		}
 	}
-
+	if (host->qos_cntrl == true)
+		dw_mci_qos_get(host);
 	spin_lock_bh(&host->lock);
 
 	if (!test_bit(DW_MMC_CARD_PRESENT, &slot->flags)) {
 		spin_unlock_bh(&host->lock);
 		mrq->cmd->error = -ENOMEDIUM;
+		if (host->qos_cntrl == true)
+			dw_mci_qos_put(host);
 		mmc_request_done(mmc, mrq);
 		return;
 	}
@@ -2280,6 +2299,8 @@ static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq)
 	}
 
 	spin_unlock(&host->lock);
+	if (host->qos_cntrl == true)
+		dw_mci_qos_put(host);
 	mmc_request_done(prev_mmc, mrq);
 	spin_lock(&host->lock);
 
@@ -3877,7 +3898,10 @@ static struct dw_mci_board *dw_mci_parse_dt(struct dw_mci *host)
 			 "fifo-depth property not found, using value of FIFOTH register as default\n");
 
 	of_property_read_u32(np, "card-detect-delay", &pdata->detect_delay_ms);
-	of_property_read_u32(np, "qos_int_level", &pdata->qos_int_level);
+	if (of_property_read_u32(np, "qos-int-level", &pdata->qos_int_level))
+		host->qos_cntrl = false;
+	else
+		host->qos_cntrl = true;
 	of_property_read_u32(np, "data-timeout", &pdata->data_timeout);
 	of_property_read_u32(np, "hto-timeout", &pdata->hto_timeout);
 	of_property_read_u32(np, "desc-size", &pdata->desc_sz);
@@ -4195,6 +4219,16 @@ int dw_mci_probe(struct dw_mci *host)
 	}
 	INIT_WORK(&host->card_work, dw_mci_work_routine_card);
 
+	/* INT min lock */
+	pm_workqueue = alloc_ordered_workqueue("kmmcd", 0);
+	if (!pm_workqueue) {
+		return -ENOMEM;
+		goto err_dmaunmap;
+	}
+
+	INIT_DELAYED_WORK(&host->qos_work, dw_mci_qos_work);
+	pm_qos_add_request(&host->pm_qos_int, PM_QOS_DEVICE_THROUGHPUT, 0);
+
 	ret = devm_request_irq(host->dev, host->irq, dw_mci_interrupt,
 			       host->irq_flags, "dw-mci", host);
 
@@ -4261,6 +4295,8 @@ int dw_mci_probe(struct dw_mci *host)
 
 err_workqueue:
 	destroy_workqueue(host->card_workqueue);
+	destroy_workqueue(pm_workqueue);
+	pm_qos_remove_request(&host->pm_qos_int);
 
 err_dmaunmap:
 	if (host->use_dma && host->dma_ops->exit)
@@ -4298,6 +4334,8 @@ void dw_mci_remove(struct dw_mci *host)
 
 	del_timer_sync(&host->timer);
 	destroy_workqueue(host->card_workqueue);
+	destroy_workqueue(pm_workqueue);
+	pm_qos_remove_request(&host->pm_qos_int);
 
 	if (host->use_dma && host->dma_ops->exit)
 		host->dma_ops->exit(host);
