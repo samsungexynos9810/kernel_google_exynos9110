@@ -380,7 +380,7 @@ const static struct itmon_masterinfo masterinfo[] = {
 	{"CP", BIT(4) | GENMASK(1, 0),	/* X10011 */ "HARQMOVERtoL2",	GENMASK(4, 0)},
 
 	{"CP_PERI", BIT(5),		/* 1XXXXX */ "CR7M",		BIT(5)},
-	{"CP_PERI", BIT(3),		/* 001XXX */ "CR4toL2",		GENMASK(5, 3)},
+	{"CP_PERI", BIT(3),		/* 001XXX */ "CR4MtoL2",	GENMASK(5, 3)},
 	{"CP_PERI", BIT(4),		/* 0100XX */ "DMA",		GENMASK(5, 2)},
 	{"CP_PERI", BIT(4) | BIT(2),	/* 0101XX */ "MDMtoL2",		GENMASK(5, 2)},
 	{"CP_PERI", 0,			/* 00000X */ "LMACtoL2",	GENMASK(5, 1)},
@@ -1109,20 +1109,20 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 {
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_nodeinfo *node = NULL;
-	unsigned int val, offset, vec;
-	unsigned long flags, bit = 0;
+	unsigned int val, offset;
+	unsigned long vec, flags, bit = 0;
 	int i, j, ret = 0;
 
 	spin_lock_irqsave(&itmon->ctrl_lock, flags);
 	memset(pdata->traceinfo, 0, sizeof(struct itmon_traceinfo) * 2);
 	if (group) {
 		/* Processing only this group and select detected node */
-		vec = __raw_readl(group->regs);
+		vec = (unsigned long)__raw_readl(group->regs);
 		node = group->nodeinfo;
 		if (!vec)
 			goto exit;
 
-		for_each_set_bit(bit, (unsigned long *)&vec, group->nodesize) {
+		for_each_set_bit(bit, &vec, group->nodesize) {
 			/* exist array */
 			for (i = 0; i < OFFSET_NUM; i++) {
 				offset = i * OFFSET_ERR_REPT;
@@ -1144,14 +1144,14 @@ static int itmon_search_node(struct itmon_dev *itmon, struct itmon_nodegroup *gr
 		for (i = 0; i < ARRAY_SIZE(nodegroup); i++) {
 			group = &nodegroup[i];
 			if (group->phy_regs)
-				vec = __raw_readl(group->regs);
+				vec = (unsigned long)__raw_readl(group->regs);
 			else
 				vec = GENMASK(group->nodesize, 0);
 
 			node = group->nodeinfo;
 			bit = 0;
 
-			for_each_set_bit(bit, (unsigned long *)&vec, group->nodesize) {
+			for_each_set_bit(bit, &vec, group->nodesize) {
 				for (j = 0; j < OFFSET_NUM; j++) {
 					offset = j * OFFSET_ERR_REPT;
 					/* Check Request information */
