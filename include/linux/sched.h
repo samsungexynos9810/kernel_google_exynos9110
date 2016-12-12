@@ -2089,14 +2089,20 @@ static inline pid_t task_tgid_nr(struct task_struct *tsk)
 }
 
 pid_t task_tgid_nr_ns(struct task_struct *tsk, struct pid_namespace *ns);
+static inline int pid_alive(const struct task_struct *p);
 
 static inline pid_t task_tgid_vnr(struct task_struct *tsk)
 {
-	return pid_vnr(task_tgid(tsk));
+	pid_t pid = 0;
+
+	rcu_read_lock();
+	if (pid_alive(tsk))
+			pid = pid_vnr(task_tgid(tsk));
+	rcu_read_unlock();
+
+	return pid;
 }
 
-
-static inline int pid_alive(const struct task_struct *p);
 static inline pid_t task_ppid_nr_ns(const struct task_struct *tsk, struct pid_namespace *ns)
 {
 	pid_t pid = 0;
