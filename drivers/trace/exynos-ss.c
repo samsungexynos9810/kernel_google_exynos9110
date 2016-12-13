@@ -449,9 +449,11 @@ struct exynos_ss_interface {
 #ifdef CONFIG_S3C2410_WATCHDOG
 extern int s3c2410wdt_set_emergency_stop(void);
 extern int s3c2410wdt_set_emergency_reset(unsigned int timeout);
+extern int s3c2410wdt_keepalive_emergency(void);
 #else
-#define s3c2410wdt_set_emergency_stop()		(-1)
+#define s3c2410wdt_set_emergency_stop() 	(-1)
 #define s3c2410wdt_set_emergency_reset(a)	do { } while(0)
+#define s3c2410wdt_keepalive_emergency()	do { } while(0)
 #endif
 extern void *return_address(int);
 extern void (*arm_pm_restart)(char str, const char *cmd);
@@ -745,6 +747,11 @@ int exynos_ss_prepare_panic(void)
 
 	if (unlikely(!ess_base.enabled))
 		return 0;
+	/*
+	 * kick watchdog to prevent unexpected reset during panic sequence
+	 * and it prevents the hang during panic sequence by watchedog
+	 */
+	s3c2410wdt_keepalive_emergency();
 
 	for_each_possible_cpu(cpu) {
 		mpidr = cpu_logical_map(cpu);
@@ -754,9 +761,6 @@ int exynos_ss_prepare_panic(void)
 		else
 			exynos_ss_core_power_stat(ESS_SIGN_DEAD, core);
 	}
-	/* stop to watchdog for preventing unexpected reset
-	 * during printing panic message */
-	ess_desc.no_wdt_dev = s3c2410wdt_set_emergency_stop();
 
 	return 0;
 }
@@ -1157,7 +1161,13 @@ void exynos_ss_dump_one_task_info(struct task_struct *tsk, bool is_main)
 		state >>= 1;
 	}
 
+	/*
+	 * kick watchdog to prevent unexpected reset during panic sequence
+	 * and it prevents the hang during panic sequence by watchedog
+	 */
 	touch_softlockup_watchdog();
+	s3c2410wdt_keepalive_emergency();
+
 	pr_info("%8d %8d %8d %16lld %c(%d) %3d  %16zx %16zx  %16zx %c %16s [%s]\n",
 			tsk->pid, (int)(tsk->utime), (int)(tsk->stime),
 			tsk->se.exec_start, state_array[idx], (int)(tsk->state),
@@ -1913,6 +1923,11 @@ static int __init exynos_ss_init_desc(void)
 	if (!ess_items[ess_desc.kevents_num].entry.enabled_init)
 		ess_desc.need_header = true;
 
+#ifdef CONFIG_S3C2410_WATCHDOG
+	ess_desc.no_wdt_dev = false;
+#else
+	ess_desc.no_wdt_dev = true;
+#endif
 	return 0;
 }
 
