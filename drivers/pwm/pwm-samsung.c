@@ -757,8 +757,7 @@ static int pwm_samsung_suspend(struct device *dev)
 		chan->duty_ns = -1;
 	}
 	/* Save pwm registers*/
-	if (chip->enable_cnt)
-		chip->reg_tcfg0 = __raw_readl(chip->base + REG_TCFG0);
+	chip->reg_tcfg0 = __raw_readl(chip->base + REG_TCFG0);
 
 	pwm_samsung_clk_disable(chip);
 
@@ -773,8 +772,7 @@ static int pwm_samsung_resume(struct device *dev)
 	pwm_samsung_clk_enable(chip);
 
 	/* Restore pwm registers*/
-	if (chip->enable_cnt)
-		__raw_writel(chip->reg_tcfg0, chip->base + REG_TCFG0);
+	__raw_writel(chip->reg_tcfg0, chip->base + REG_TCFG0);
 
 	for (chan = 0; chan < SAMSUNG_PWM_NUM; ++chan) {
 		if (chip->variant.output_mask & BIT(chan)) {
