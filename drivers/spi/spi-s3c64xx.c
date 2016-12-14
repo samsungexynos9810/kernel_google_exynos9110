@@ -348,6 +348,11 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
 				S3C64XX_SPI_DMA_4BURST_LEN :
 				S3C64XX_SPI_DMA_1BURST_LEN;
 
+		if (sdd->port_id == 10) {
+			exynos_ss_printk("config.direction = %u\n", config.direction);
+			exynos_ss_printk("config.fifo = %lx\n", config.fifo);
+		}
+
 	#ifdef CONFIG_ARM64
 		sdd->ops->config((unsigned long)sdd->rx_dma.ch, &config);
 	#else
@@ -364,6 +369,11 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
 				S3C64XX_SPI_DMA_4BURST_LEN :
 				S3C64XX_SPI_DMA_1BURST_LEN;
 
+		if (sdd->port_id == 10) {
+			exynos_ss_printk("config.direction = %u\n", config.direction);
+			exynos_ss_printk("config.fifo = %lx\n", config.fifo);
+		}
+
 	#ifdef CONFIG_ARM64
 		sdd->ops->config((unsigned long)sdd->tx_dma.ch, &config);
 	#else
@@ -377,6 +387,15 @@ static void prepare_dma(struct s3c64xx_spi_dma_data *dma,
 	info.fp_param = dma;
 	info.direction = dma->direction;
 	info.buf = buf;
+
+	if (sdd->port_id == 10) {
+		exynos_ss_printk("info.cap = %u\n", info.cap);
+		exynos_ss_printk("info.len = %lu\n", info.len);
+		exynos_ss_printk("info.fp = %p\n", info.fp);
+		exynos_ss_printk("info.fp_param = %p\n", info.fp_param);
+		exynos_ss_printk("info.direction = %u\n", info.direction);
+		exynos_ss_printk("info.buf = %lx\n", info.buf);
+	}
 
 #ifdef CONFIG_ARM64
 	sdd->ops->prepare((unsigned long)dma->ch, &info);
