@@ -418,6 +418,10 @@ static int SensorReadThread(void *p)
 		while (!Flg_driver_ready)
 			msleep(10);
 
+		if (st->spi.send_buf[0] == SUB_COM_TYPE_WRITE &&
+			st->spi.send_buf[1] == SUB_COM_SETID_MAIN_STATUS &&
+			st->spi.send_buf[2] == 0x2)	/* shutdown */
+			Flg_driver_shutdown = 1;
 		Msensors_Spi_Send(st, &st->spi.send_buf[0], &st->spi.recv_buf[0], next_recv_size);
 		if (wb) {
 			spin_lock_irqsave(&slock, flags);
