@@ -841,7 +841,7 @@ void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 		BUG_ON((size > buf->size) || ((offset + size) > buf->size));
 
 		exynos_ion_sync_vaddr_for_device(buf->ctx->dev,
-						buf->kva, size, offset, dir);
+						buf->dma_buf, buf->kva, size, offset, dir);
 	} else if (buf->dma_buf) {
 		exynos_ion_sync_dmabuf_for_device(buf->ctx->dev,
 						buf->dma_buf, size, dir);
@@ -874,7 +874,7 @@ void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 		BUG_ON((size > buf->size) || ((offset + size) > buf->size));
 
 		exynos_ion_sync_vaddr_for_cpu(buf->ctx->dev,
-						buf->kva, size, offset, dir);
+						buf->dma_buf, buf->kva, size, offset, dir);
 	} else if (buf->dma_buf) {
 		exynos_ion_sync_dmabuf_for_cpu(buf->ctx->dev,
 						buf->dma_buf, size, dir);
