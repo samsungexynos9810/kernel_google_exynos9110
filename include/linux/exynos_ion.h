@@ -154,6 +154,7 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 					size_t size,
 					enum dma_data_direction dir);
 void exynos_ion_sync_vaddr_for_device(struct device *dev,
+					struct dma_buf *dmabuf,
 					void *vaddr,
 					size_t size,
 					off_t offset,
@@ -166,6 +167,7 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 					size_t size,
 					enum dma_data_direction dir);
 void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
+					struct dma_buf *dmabuf,
 					void *vaddr,
 					size_t size,
 					off_t offset,
@@ -182,11 +184,11 @@ void ion_exynos_contig_heap_deisolate(int region_id);
 #else
 #define exynos_ion_sync_dmabuf_for_device(dev, dmabuf, size, dir) \
 							do { } while (0)
-#define exynos_ion_sync_vaddr_for_device(dev, vaddr, size, offset, dir) \
+#define exynos_ion_sync_vaddr_for_device(dev, dmabuf, vaddr, size, offset, dir) \
 							do { } while (0)
 #define exynos_ion_sync_sg_for_device(dev, size, sgt, dir) do { } while (0)
 #define exynos_ion_sync_dmabuf_for_cpu(dev, dmabuf, size, dir) do { } while (0)
-#define exynos_ion_sync_vaddr_for_cpu(dev, vaddr, size, offset, dir) \
+#define exynos_ion_sync_vaddr_for_cpu(dev, dmabuf, vaddr, size, offset, dir) \
 							do { } while (0)
 #define exynos_ion_sync_sg_for_cpu(dev, size, sgt, dir) do { } while (0)
 #define ion_secure_protect(buffer) do { } while (0)

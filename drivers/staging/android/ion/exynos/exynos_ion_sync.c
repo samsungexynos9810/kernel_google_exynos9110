@@ -75,6 +75,10 @@ void exynos_ion_flush_dmabuf_for_device(struct device *dev,
 {
 	struct ion_buffer *buffer = (struct ion_buffer *)dmabuf->priv;
 
+	if (!ion_buffer_cached(buffer) ||
+		ion_buffer_fault_user_mappings(buffer))
+		return;
+
 	mutex_lock(&buffer->lock);
 
 	pr_debug("%s: flushing for device %s, buffer: %p, size: %zd\n",
@@ -131,11 +135,18 @@ void exynos_ion_sync_dmabuf_for_device(struct device *dev,
 EXPORT_SYMBOL(exynos_ion_sync_dmabuf_for_device);
 
 void exynos_ion_sync_vaddr_for_device(struct device *dev,
+					struct dma_buf *dmabuf,
 					void *vaddr,
 					size_t size,
 					off_t offset,
 					enum dma_data_direction dir)
 {
+	struct ion_buffer *buffer = (struct ion_buffer *)dmabuf->priv;
+
+	if (!ion_buffer_cached(buffer) ||
+		ion_buffer_fault_user_mappings(buffer))
+		return;
+
 	pr_debug("%s: syncing for device %s, vaddr: %p, size: %zd, offset: %ld\n",
 			__func__, dev ? dev_name(dev) : "null",
 			vaddr, size, offset);
@@ -154,23 +165,6 @@ void exynos_ion_sync_vaddr_for_device(struct device *dev,
 			vaddr, offset, size >= ION_FLUSH_ALL_HIGHLIMIT);
 }
 EXPORT_SYMBOL(exynos_ion_sync_vaddr_for_device);
-
-void exynos_ion_sync_sg_for_device(struct device *dev, size_t size,
-					struct sg_table *sgt,
-					enum dma_data_direction dir)
-{
-	trace_ion_sync_start(_RET_IP_, dev, dir, size,
-				0, 0, size >= ION_FLUSH_ALL_HIGHLIMIT);
-
-	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
-		exynos_sync_all();
-	else
-		exynos_sync_sg_for_device(dev, size, sgt->sgl, sgt->nents, dir);
-
-	trace_ion_sync_end(_RET_IP_, dev, dir, size,
-				0, 0, size >= ION_FLUSH_ALL_HIGHLIMIT);
-}
-EXPORT_SYMBOL(exynos_ion_sync_sg_for_device);
 
 void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 					struct dma_buf *dmabuf,
@@ -213,12 +207,19 @@ void exynos_ion_sync_dmabuf_for_cpu(struct device *dev,
 EXPORT_SYMBOL(exynos_ion_sync_dmabuf_for_cpu);
 
 void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
+					struct dma_buf *dmabuf,
 					void *vaddr,
 					size_t size,
 					off_t offset,
 					enum dma_data_direction dir)
 {
+	struct ion_buffer *buffer = (struct ion_buffer *)dmabuf->priv;
+
 	if (dir == DMA_TO_DEVICE)
+		return;
+
+	if (!ion_buffer_cached(buffer) ||
+		ion_buffer_fault_user_mappings(buffer))
 		return;
 
 	pr_debug("%s: syncing for cpu %s, vaddr: %p, size: %zd, offset: %ld\n",
@@ -239,23 +240,3 @@ void exynos_ion_sync_vaddr_for_cpu(struct device *dev,
 			vaddr, offset, size >= ION_FLUSH_ALL_HIGHLIMIT);
 }
 EXPORT_SYMBOL(exynos_ion_sync_vaddr_for_cpu);
-
-void exynos_ion_sync_sg_for_cpu(struct device *dev, size_t size,
-					struct sg_table *sgt,
-					enum dma_data_direction dir)
-{
-	trace_ion_sync_start(_RET_IP_, dev, dir, size,
-				0, 0, size >= ION_FLUSH_ALL_HIGHLIMIT);
-
-	if (dir == DMA_TO_DEVICE)
-		return;
-
-	if (size >= ION_FLUSH_ALL_HIGHLIMIT)
-		exynos_sync_all();
-	else
-		exynos_sync_sg_for_cpu(dev, size, sgt->sgl, sgt->nents, dir);
-
-	trace_ion_sync_end(_RET_IP_, dev, dir, size,
-				0, 0, size >= ION_FLUSH_ALL_HIGHLIMIT);
-}
-EXPORT_SYMBOL(exynos_ion_sync_sg_for_cpu);
