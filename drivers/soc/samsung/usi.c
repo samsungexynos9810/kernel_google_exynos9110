@@ -30,6 +30,7 @@ struct usi_mode {
 struct usi_data {
 	void __iomem	*base;
 	int 		mode;
+	int		ch_id;
 };
 
 static const struct usi_mode usi_modes[] = {
@@ -66,6 +67,8 @@ static int usi_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 
+	data->ch_id = of_alias_get_id(pdev->dev.of_node, "usi");
+
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	data->base = devm_ioremap_resource(&pdev->dev, res);
 	if (IS_ERR(data->base))
@@ -83,11 +86,11 @@ static int usi_probe(struct platform_device *pdev)
 		return -EINVAL;
 	}
 
+	platform_set_drvdata(pdev, data);
+
 	writel(data->mode, data->base);
 
 	dev_info(&pdev->dev, "usi_probe() mode:%d\n", data->mode);
-
-	platform_set_drvdata(pdev, data);
 
 	return 0;
 }
