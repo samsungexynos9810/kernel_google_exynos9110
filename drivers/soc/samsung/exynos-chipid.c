@@ -228,6 +228,17 @@ static ssize_t chipid_revision_show(struct kobject *kobj,
 	return snprintf(buf, 14, "%08X\n", exynos_soc_info.revision);
 }
 
+static ssize_t chipid_evt_ver_show(struct kobject *kobj,
+			         struct kobj_attribute *attr, char *buf)
+{
+	if (exynos_soc_info.revision == 0)
+		return snprintf(buf, 14, "EVT0\n");
+	else
+		return snprintf(buf, 14, "EVT%1X.%1X\n",
+				exynos_soc_info.main_rev,
+				exynos_soc_info.sub_rev);
+}
+
 static struct kobj_attribute chipid_product_id_attr =
         __ATTR(product_id, 0644, chipid_product_id_show, NULL);
 
@@ -240,11 +251,15 @@ static struct kobj_attribute chipid_lot_id_attr =
 static struct kobj_attribute chipid_revision_attr =
         __ATTR(revision, 0644, chipid_revision_show, NULL);
 
+static struct kobj_attribute chipid_evt_ver_attr =
+        __ATTR(evt_ver, 0644, chipid_evt_ver_show, NULL);
+
 static struct attribute *chipid_sysfs_attrs[] = {
 	&chipid_product_id_attr.attr,
 	&chipid_unique_id_attr.attr,
 	&chipid_lot_id_attr.attr,
 	&chipid_revision_attr.attr,
+	&chipid_evt_ver_attr.attr,
 	NULL,
 };
 
