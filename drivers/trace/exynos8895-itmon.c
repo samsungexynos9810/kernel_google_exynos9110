@@ -552,6 +552,9 @@ static struct itmon_rpathinfo *itmon_get_rpathinfo(struct itmon_dev *itmon,
 	struct itmon_rpathinfo *rpath = NULL;
 	int i;
 
+	if (!dest_name)
+		return NULL;
+
 	for (i = 0; i < ARRAY_SIZE(rpathinfo); i++) {
 		if (pdata->rpathinfo[i].id == (id & pdata->rpathinfo[i].bits)) {
 			if (dest_name && !strncmp(pdata->rpathinfo[i].dest_name,
@@ -573,6 +576,9 @@ static struct itmon_masterinfo *itmon_get_masterinfo(struct itmon_dev *itmon,
 	struct itmon_masterinfo *master = NULL;
 	unsigned int val;
 	int i;
+
+	if (!port_name)
+		return NULL;
 
 	for (i = 0; i < ARRAY_SIZE(masterinfo); i++) {
 		if (!strncmp(pdata->masterinfo[i].port_name, port_name, strlen(port_name))) {
@@ -890,7 +896,7 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 					traceinfo->master = NULL;
 			}
 			traceinfo->target_addr =
-				(unsigned long)(node->tracedata.ext_info_2
+				(unsigned long)(node->tracedata.ext_info_1
 				& GENMASK(3, 0) << 32ULL);
 			traceinfo->target_addr |= node->tracedata.ext_info_0;
 			traceinfo->read = tracedata->read;
@@ -949,21 +955,17 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 					itmon_get_rpathinfo(itmon, axid, node->name);
 				if (port)
 					traceinfo->port = port->port_name;
-				else
-					traceinfo->port = NULL;
 			}
-			if (!traceinfo->master) {
+			if (!traceinfo->master && traceinfo->port) {
 				master = (struct itmon_masterinfo *)
-					itmon_get_masterinfo(itmon, traceinfo->port,
+					 itmon_get_masterinfo(itmon, traceinfo->port,
 						userbit & GENMASK(2, 0));
 				if (master)
 					traceinfo->master = master->master_name;
-				else
-					traceinfo->master = NULL;
 			}
 		}
 		traceinfo->target_addr =
-			(unsigned long)(node->tracedata.ext_info_2
+			(unsigned long)(node->tracedata.ext_info_1
 			& GENMASK(3, 0) << 32ULL);
 		traceinfo->target_addr |= node->tracedata.ext_info_0;
 		traceinfo->errcode = errcode;
