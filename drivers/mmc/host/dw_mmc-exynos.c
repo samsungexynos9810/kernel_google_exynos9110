@@ -55,6 +55,13 @@ void dw_mci_reg_dump(struct dw_mci *host)
 
 	u32 reg;
 
+	dev_err(host->dev, ": ============== FIRST STATUS DUMP ===========\n");
+	dev_err(host->dev, ": cmd_status:      0x%08x\n", host->cmd_status);
+	dev_err(host->dev, ": data_status:     0x%08x\n", host->data_status);
+	dev_err(host->dev, ": pending_events:  0x%08lx\n", host->pending_events);
+	dev_err(host->dev, ": completed_events:0x%08lx\n", host->completed_events);
+	dev_err(host->dev, ": state:           %d\n", host->state);
+
 	dev_err(host->dev, ": ============== REGISTER DUMP ==============\n");
 	dev_err(host->dev, ": CTRL:	 0x%08x\n",
 			host->sfr_dump->contrl = mci_readl(host, CTRL));
@@ -139,7 +146,7 @@ void dw_mci_reg_dump(struct dw_mci *host)
 			host->sfr_dump->force_clk_stop = mci_readl(host, FORCE_CLK_STOP));
 	dev_err(host->dev, ": CDTHRCTL: 0x%08x\n", mci_readl(host, CDTHRCTL));
 	dw_mci_exynos_register_dump(host);
-	dev_err(host->dev, ": ============== STATUS DUMP ================\n");
+	dev_err(host->dev, ": ============== SECOND STATUS DUMP ================\n");
 	dev_err(host->dev, ": cmd_status:      0x%08x\n",
 			host->sfr_dump->cmd_status = host->cmd_status);
 	dev_err(host->dev, ": data_status:     0x%08x\n",
@@ -147,7 +154,7 @@ void dw_mci_reg_dump(struct dw_mci *host)
 	dev_err(host->dev, ": pending_events:  0x%08x\n",
 			host->sfr_dump->pending_events = host->pending_events);
 	dev_err(host->dev, ": completed_events:0x%08x\n",
-			host->sfr_dump->completed_events  = host->completed_events);
+			host->sfr_dump->completed_events = host->completed_events);
 	dev_err(host->dev, ": state:           %d\n",
 			host->sfr_dump->host_state = host->state);
 	dev_err(host->dev, ": gate-clk:            %s\n",
