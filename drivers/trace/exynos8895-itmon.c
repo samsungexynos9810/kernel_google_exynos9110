@@ -19,8 +19,9 @@
 #include <linux/of_irq.h>
 #include <soc/samsung/exynos-itmon.h>
 #if defined(CONFIG_SEC_SIPC_MODEM_IF)
-#include <linux/exynos-modem-ctrl.h>
+#include <soc/samsung/exynos-modem-ctrl.h>
 #endif
+
 
 #define OFFSET_TMOUT_REG		(0x2000)
 #define OFFSET_REQ_R			(0x0)
@@ -80,10 +81,15 @@
 #define TRANS_TYPE_READ 		(1)
 #define TRANS_TYPE_NUM			(2)
 
-#define FROM_CP 			(0)
-#define FROM_CPU 			(1)
-#define FROM_CPU_MAY 			(2)
-#define FROM_M_NODE 			(3)
+#define FROM_CP_MEM 			(0)
+#define FROM_CP_PERI 			(1)
+#define FROM_CPU 			(2)
+#define FROM_CPU_MAY 			(3)
+#define FROM_M_NODE 			(4)
+
+#define CP_COMMON_STR			"CP"
+#define CP_MEM_STR			"CP_MEM"
+#define CP_PERI_STR			"CP_PERI"
 
 #define TMOUT				(0xFFFFF)
 #define TMOUT_TEST			(0x1)
@@ -192,6 +198,7 @@ struct itmon_platdata {
 	struct list_head tracelist[BUS_PATH_TYPE];
 	unsigned int err_cnt;
 	bool panic_allowed;
+	bool crash_in_progress;
 	bool probed;
 };
 
@@ -249,7 +256,7 @@ const static struct itmon_rpathinfo rpathinfo[] = {
 	{49, "G3D1",		"DREX", GENMASK(5, 0), 0},
 	{50, "G3D2",		"DREX", GENMASK(5, 0), 0},
 	{51, "G3D3",		"DREX", GENMASK(5, 0), 0},
-	{52, "CP",		"DREX", GENMASK(5, 0), 0},
+	{52, "CP_MEM",		"DREX", GENMASK(5, 0), 0},
 	/* Target Address = 0x1800_0000 ~ 0x1fff_ffff */
 	{0, "DPU0",		"SP", GENMASK(4, 0), 0},
 	{1, "DPU1",		"SP", GENMASK(4, 0), 0},
@@ -371,13 +378,13 @@ const static struct itmon_masterinfo masterinfo[] = {
 	{"ALIVE", BIT(0),		/* 0XXX01 */ "SCAN2AXI",	BIT(5) | GENMASK(1, 0)},
 	{"ALIVE", BIT(1),		/* 0XXX10 */ "CM4F/DMIC",	BIT(5) | GENMASK(1, 0)},
 
-	{"CP", BIT(3),			/* X01XXX */ "CR7M",		GENMASK(4, 3)},
-	{"CP", BIT(2),			/* X001XX */ "CR4MtoL2",	GENMASK(4, 2)},
-	{"CP", GENMASK(4, 3),		/* X1100X */ "DMA",		GENMASK(4, 1)},
-	{"CP", GENMASK(4, 3) | BIT(1),	/* X1101X */ "MDMtoL2",		GENMASK(4, 1)},
-	{"CP", BIT(4),			/* X1000X */ "LMACtoL2",	GENMASK(4, 1)},
-	{"CP", BIT(1),			/* X00010 */ "CSXAP",		GENMASK(4, 1)},
-	{"CP", BIT(4) | GENMASK(1, 0),	/* X10011 */ "HARQMOVERtoL2",	GENMASK(4, 0)},
+	{"CP_MEM", BIT(3),		/* X01XXX */ "CR7M",		GENMASK(4, 3)},
+	{"CP_MEM", BIT(2),		/* X001XX */ "CR4MtoL2",	GENMASK(4, 2)},
+	{"CP_MEM", GENMASK(4, 3),	/* X1100X */ "DMA",		GENMASK(4, 1)},
+	{"CP_MEM", GENMASK(4, 3) | BIT(1),/* X1101X */ "MDMtoL2",	GENMASK(4, 1)},
+	{"CP_MEM", BIT(4),		/* X1000X */ "LMACtoL2",	GENMASK(4, 1)},
+	{"CP_MEM", BIT(1),		/* X00010 */ "CSXAP",		GENMASK(4, 0)},
+	{"CP_MEM", BIT(4) | GENMASK(1, 0),/* X10011 */ "HARQMOVERtoL2",	GENMASK(4, 0)},
 
 	{"CP_PERI", BIT(5),		/* 1XXXXX */ "CR7M",		BIT(5)},
 	{"CP_PERI", BIT(3),		/* 001XXX */ "CR4MtoL2",	GENMASK(5, 3)},
@@ -439,7 +446,7 @@ static struct itmon_nodeinfo data_core[] = {
 	{T_M_NODE,	"BUSC_M1",	0x14A13000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"BUSC_M2",	0x14A23000, NULL, 0,	false, false, true, false},
 	{T_M_NODE,	"BUSC_M3",	0x14A33000, NULL, 0,	false, false, true, false},
-	{M_NODE,	"CP",		0x14A83000, NULL, 0,	false, false, true, false},
+	{M_NODE,	"CP_MEM",	0x14A83000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D0",		0x14A43000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D1",		0x14A53000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D2",		0x14A63000, NULL, 0,	false, false, true, false},
@@ -449,7 +456,7 @@ static struct itmon_nodeinfo data_core[] = {
 };
 
 static struct itmon_nodeinfo peri_core_0[] = {
-	{M_NODE,	"CP_PERI_M",	0x14C63000, NULL, 0,	false, false, true, false},
+	{M_NODE,	"CP_PERI",	0x14C63000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"SCI_CCM0",	0x14C33000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"SCI_CCM1",	0x14C43000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"SCI_IRPM",	0x14C53000, NULL, 0,	false, false, true, false},
@@ -677,12 +684,19 @@ static void itmon_post_handler_by_master(struct itmon_dev *itmon,
 	if (!traceinfo->port || strlen(traceinfo->port) < 1)
 		return;
 
-	if (!strncmp(traceinfo->port, "CP", strlen("CP"))) {
+	if (!strncmp(traceinfo->port, CP_COMMON_STR, strlen(CP_COMMON_STR))) {
 		/* if master is DSP and operation is read, we don't care this */
 		if (traceinfo->master && traceinfo->target_addr == INVALID_REMAPPING &&
 			!strncmp(traceinfo->master, "CR4MtoL2", strlen(traceinfo->master))) {
 			pdata->err_cnt = 0;
 			pr_info("ITMON skips CP's DSP(CR4MtoL2) detected\n");
+		} else {
+			/* Disable busmon all interrupts */
+			itmon_init(itmon, false);
+#if defined(CONFIG_SEC_SIPC_MODEM_IF)
+			pdata->crash_in_progress = true;
+			ss310ap_force_crash_exit_ext();
+#endif
 		}
 	} else if (!strncmp(traceinfo->port, "CPU", strlen("CPU"))) {
 		/* if master is CPU, then we expect any exception */
@@ -877,15 +891,6 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 				cluster_num = (axid & BIT(2)) >> 2;
 				snprintf(traceinfo->buf, SZ_32 - 1, "CPU%d Cluster%d", core_num, cluster_num);
 				traceinfo->port = traceinfo->buf;
-			} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
-				snprintf(traceinfo->buf, SZ_32 - 1, "CP");
-				traceinfo->port = traceinfo->buf;
-				master = (struct itmon_masterinfo *)
-					itmon_get_masterinfo(itmon, "CP_PERI", userbit);
-				if (master)
-					traceinfo->master = master->master_name;
-				else
-					traceinfo->master = NULL;
 			} else {
 				traceinfo->port = node->name;
 				master = (struct itmon_masterinfo *)
@@ -909,20 +914,21 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 		} else if (!strncmp(node->name, "SCI_CCM0", strlen(node->name)) ||
 			!strncmp(node->name, "SCI_CCM1", strlen(node->name))) {
 			set_bit(FROM_CPU_MAY, &traceinfo->from);
-		} else if (!strncmp(node->name, "CP_PERI_M", strlen(node->name))) {
-			set_bit(FROM_CP, &traceinfo->from);
+		} else if (!strncmp(node->name, CP_MEM_STR, strlen(node->name))) {
+			set_bit(FROM_CP_MEM, &traceinfo->from);
+		} else if (!strncmp(node->name, CP_PERI_STR, strlen(node->name))) {
+			set_bit(FROM_CP_PERI, &traceinfo->from);
 		} else if (!strncmp(node->name, "BUSC_PERI_M", strlen(node->name))) {
 			set_bit(FROM_M_NODE, &traceinfo->from);
-		} else {
-			/* Pure M_NODE and it doesn't have any information */
-			if (!traceinfo->dirty) {
-				traceinfo->master = NULL;
-				traceinfo->target_addr = 0;
-				traceinfo->read = tracedata->read;
-				traceinfo->port = node->name;
-				traceinfo->errcode = errcode;
-				traceinfo->dirty = true;
-			}
+		}
+		/* Pure M_NODE and it doesn't have any information */
+		if (!traceinfo->dirty) {
+			traceinfo->master = NULL;
+			traceinfo->target_addr = 0;
+			traceinfo->read = tracedata->read;
+			traceinfo->port = node->name;
+			traceinfo->errcode = errcode;
+			traceinfo->dirty = true;
 		}
 		itmon_report_pathinfo(itmon, node, trans_type);
 		break;
@@ -946,10 +952,11 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 			* we expect traceinfo->port is always true in this case
 			* In DECERR case, the follow information was filled.
 			*/
-			if (test_bit(FROM_CP, &traceinfo->from)) {
-				snprintf(traceinfo->buf, SZ_32 - 1, "CP");
-				traceinfo->port = traceinfo->buf;
-			}
+			if (test_bit(FROM_CP_MEM, &traceinfo->from) && (!traceinfo->port))
+				traceinfo->port = CP_MEM_STR;
+			else if (test_bit(FROM_CP_PERI, &traceinfo->from) && (!traceinfo->port))
+				traceinfo->port = CP_PERI_STR;
+
 			if (!traceinfo->port) {
 				port = (struct itmon_rpathinfo *)
 					itmon_get_rpathinfo(itmon, axid, node->name);
@@ -1324,6 +1331,7 @@ static int itmon_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&pdata->tracelist[BUS_DATA]);
 	INIT_LIST_HEAD(&pdata->tracelist[BUS_PERI]);
 
+	pdata->crash_in_progress = false;
 	itmon_init(itmon, true);
 
 	g_itmon = itmon;
@@ -1350,8 +1358,11 @@ static int itmon_resume(struct device *dev)
 {
 	struct platform_device *pdev = to_platform_device(dev);
 	struct itmon_dev *itmon = platform_get_drvdata(pdev);
+	struct itmon_platdata *pdata = itmon->pdata;
 
-	itmon_init(itmon, true);
+	/* re-enable ITMON if cp-crash progress is not starting */
+	if (!pdata->crash_in_progress)
+		itmon_init(itmon, true);
 
 	return 0;
 }
