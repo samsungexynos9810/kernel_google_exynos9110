@@ -1411,6 +1411,7 @@ static struct platform_driver dw_mci_exynos_pltfm_driver = {
 		.name		= "dwmmc_exynos",
 		.of_match_table	= dw_mci_exynos_match,
 		.pm		= &dw_mci_exynos_pmops,
+		.suppress_bind_attrs = true,
 	},
 };
 
