@@ -1025,7 +1025,7 @@ static int dw_mci_exynos_execute_tuning(struct dw_mci_slot *slot, u32 opcode,
 
 	dev_info(host->dev, "Tuning Abnormal_result 0x%08x.\n", abnormal_result);
 
-	priv->clk_drive_tuning = priv->clk_drive_number;
+	priv->clk_drive_tuning = priv->clk_drive_number - 1;
 	drv_str_retries = priv->clk_drive_number;
 
 	do {
