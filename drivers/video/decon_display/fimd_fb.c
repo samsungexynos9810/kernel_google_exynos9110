@@ -2354,6 +2354,12 @@ static void s3c_fb_update_regs(struct s3c_fb *sfb, struct s3c_reg_data *regs)
 	}
 #endif
 
+#if defined(CONFIG_LCD_MIPI_SHARP)
+	if (dsim_for_decon->reload_param_requested) {
+		dsim_for_decon->dsim_lcd_drv->reload_params(dsim_for_decon);
+		dsim_for_decon->reload_param_requested = false;
+	}
+#endif
 	do {
 		__s3c_fb_update_regs(sfb, regs);
 #if defined(CONFIG_FB_I80_COMMAND_MODE) && defined(CONFIG_FB_I80_SW_TRIGGER)
@@ -2475,6 +2481,12 @@ static int s3c_fb_ioctl(struct fb_info *info, unsigned int cmd,
 				ret = -EFAULT;
 				break;
 			}
+#ifdef CONFIG_LCD_MIPI_SHARP
+			/* static electricity may corrupt the parameter of LCD */
+			if(ambient_enter && !p.ambient_enter) {
+				dsim_for_decon->reload_param_requested = true;
+			}
+#endif
 			ambient_enter = p.ambient_enter;
 			return 0;
 			break;

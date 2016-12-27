@@ -205,6 +205,18 @@ static void init_lcd(struct mipi_dsim_device *dsim)
 	}
 }
 
+static void sharp_mipi_reload_params(struct mipi_dsim_device *dsim)
+{
+	int ret;
+
+	ret = s5p_mipi_dsi_wr_data(dsim, MIPI_DSI_DCS_SHORT_WRITE,
+				MIPI_DCS_EXIT_SLEEP_MODE, 0x00);
+	if (ret)
+		dev_err(dsim->dev, "failed to write exit sleep command: %d\n", ret);
+
+	usleep_range(17000, 18000);
+}
+
 static int sharp_mipi_lcd_suspend(struct mipi_dsim_device *dsim)
 {
 	s5p_mipi_lp_enable(dsim);
@@ -239,4 +251,5 @@ struct mipi_dsim_lcd_driver sharp_mipi_lcd_driver = {
 	.suspend =  sharp_mipi_lcd_suspend,
 	.displayon = sharp_mipi_lcd_displayon,
 	.resume = sharp_mipi_lcd_resume,
+	.reload_params = sharp_mipi_reload_params,
 };

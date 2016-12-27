@@ -290,6 +290,7 @@ struct mipi_dsim_device {
 	struct decon_lcd	*lcd_info;
 	struct dphy_timing_value	timing;
 	spinlock_t slock;
+	bool				reload_param_requested;
 };
 
 /**
@@ -340,6 +341,7 @@ struct mipi_dsim_lcd_driver {
 	int	(*suspend)(struct mipi_dsim_device *dsim);
 	int	(*displayon)(struct mipi_dsim_device *dsim);
 	int	(*resume)(struct mipi_dsim_device *dsim);
+	void (*reload_params) (struct  mipi_dsim_device *dsim);
 };
 
 /**
