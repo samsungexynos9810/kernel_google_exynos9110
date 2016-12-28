@@ -1462,10 +1462,10 @@ bool exynos_ss_dumper_one(void *v_dumper,
 	if (dumper->active) {
 		if (dumper->init_idx == dumper->cur_idx)
 			goto out;
-		cpu = dumper->cur_cpu;
-		idx = dumper->cur_idx;
 	}
 
+	cpu = dumper->cur_cpu;
+	idx = dumper->cur_idx;
 	items = dumper->items;
 
 	switch(items) {
@@ -3119,6 +3119,9 @@ static ssize_t ess_enable_store(struct kobject *kobj,
 	char *name;
 
 	name = (char *)kstrndup(buf, count, GFP_KERNEL);
+	if (!name)
+		return count;
+
 	name[count - 1] = '\0';
 
 	en = exynos_ss_get_enable(name, false);
