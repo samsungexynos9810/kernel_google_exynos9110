@@ -290,6 +290,7 @@ static void udc_reinit(struct s3c_udc *dev)
 		ep->desc = 0;
 		ep->stopped = 0;
 		INIT_LIST_HEAD(&ep->queue);
+		usb_ep_set_maxpacket_limit(&ep->ep, ep->ep.maxpacket);
 		ep->pio_irqs = 0;
 	}
 
