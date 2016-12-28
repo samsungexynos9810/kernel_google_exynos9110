@@ -1631,9 +1631,9 @@ static irqreturn_t ecd_uart_irq(int irq, void *dev)
 	irqreturn_t ret = IRQ_HANDLED;
 
 	if (!interface->fw_loaded) {
-		while ((c = ecd_uart_getc()) != DEBUGGER_NO_CHAR) {
+		while (((c = ecd_uart_getc()) != DEBUGGER_NO_CHAR) && interface->tty_rbuf) {
 			count++;
-			if (interface->param.console_enable && interface->tty_rbuf) {
+			if (interface->param.console_enable) {
 				ecd_ringbuf_push(interface->tty_rbuf, c);
 			} else if (c == 26) {
 				/* CTRL + Z */
@@ -1785,8 +1785,6 @@ void read_ecd_rc(void)
 			break;
 		case 2:
 			strncpy(rc->action[rc->action_idx++], data, SZ_64);
-			break;
-		default:
 			break;
 		}
 		memset(data, 0, SZ_64);
