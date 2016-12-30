@@ -1622,6 +1622,7 @@ static int dwc3_gadget_run_stop(struct dwc3 *dwc, int is_on, int suspend)
 
 	if (is_on) {
 		dwc3_event_buffers_setup(dwc);
+		dwc3_link_status_check(dwc);
 		ret = dwc3_udc_init(dwc);
 		if (ret) {
 			dev_err(dwc->dev, "failed to reinitialize udc\n");

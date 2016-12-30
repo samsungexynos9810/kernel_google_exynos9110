@@ -204,6 +204,39 @@ static int dwc3_core_soft_reset(struct dwc3 *dwc)
 	do {
 		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
 		if (!(reg & DWC3_DCTL_CSFTRST))
+			goto reset_check;
+
+		udelay(1);
+	} while (--retries);
+
+	return -ETIMEDOUT;
+
+reset_check:
+	if (!dwc->suspend_clk_freq)
+		dwc->suspend_clk_freq = 50000000;
+
+	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
+	reg &= ~DWC3_GCTL_PWRDNSCALE_MASK;
+	reg |= DWC3_GCTL_PWRDNSCALE(dwc->suspend_clk_freq/(16*1000));
+	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
+
+	reg = dwc3_readl(dwc->regs, DWC3_GCTL);
+	if (reg)
+		return 0;
+
+	reg = dwc3_readl(dwc->regs, DWC3_GSTS);
+	if (reg & DWC3_GSTS_CSR_TIMEOUT)
+		dev_err(dwc->dev, "%s: CSR Timeout !!\n", __func__);
+
+	dev_info(dwc->dev, "DCTL Reset again !!\n");
+
+	reg = dwc3_readl(dwc->regs, DWC3_DCTL);
+	reg |= DWC3_DCTL_CSFTRST;
+	dwc3_writel(dwc->regs, DWC3_DCTL, reg);
+
+	do {
+		reg = dwc3_readl(dwc->regs, DWC3_DCTL);
+		if (!(reg & DWC3_DCTL_CSFTRST))
 			return 0;
 
 		udelay(1);
@@ -496,6 +529,20 @@ static void dwc3_free_scratch_buffers(struct dwc3 *dwc)
 	kfree(dwc->scratchbuf);
 }
 
+void dwc3_link_status_check(struct dwc3 *dwc)
+{
+	u32 reg;
+
+	reg = dwc3_readl(dwc->regs, DWC3_GUID);
+	dev_info(dwc->dev, "%s: GUID 0x%08x\n", __func__, reg);
+	reg = dwc3_readl(dwc->regs, DWC3_GSTS);
+	dev_info(dwc->dev, "%s: GSTS 0x%08x\n", __func__, reg);
+	reg = dwc3_readl(dwc->regs, DWC3_DCTL);
+	dev_info(dwc->dev, "%s: DCTL 0x%08x\n", __func__, reg);
+	reg = dwc3_readl(dwc->regs, DWC3_DSTS);
+	dev_info(dwc->dev, "%s: DSTS 0x%08x\n", __func__, reg);
+}
+
 static void dwc3_core_num_eps(struct dwc3 *dwc)
 {
 	struct dwc3_hwparams	*parms = &dwc->hwparams;
@@ -765,11 +812,6 @@ int dwc3_core_init(struct dwc3 *dwc)
 	}
 
 	dwc3_core_num_eps(dwc);
-	dwc->suspend_clk_freq = 50000000;
-	if (dwc->suspend_clk_freq) {
-		reg &= ~DWC3_GCTL_PWRDNSCALE_MASK;
-		reg |= DWC3_GCTL_PWRDNSCALE(dwc->suspend_clk_freq/(16*1000));
-	}
 
 	dwc3_writel(dwc->regs, DWC3_GCTL, reg);
 

@@ -202,6 +202,8 @@
 #define DWC3_GCTL_GBLHIBERNATIONEN	(1 << 1)
 #define DWC3_GCTL_DSBLCLKGTNG		(1 << 0)
 
+#define DWC3_GSTS_CSR_TIMEOUT		(1 << 5)
+
 #define DWC3_GUCTL_REFCLKPER(n)		((n) << 22)
 #define DWC3_GUCTL_REFCLKPER_MASK	DWC3_GUCTL_REFCLKPER(0x3FF)
 #define DWC3_GUCTL_USBHSTINAUTORETRYEN	(1 << 14)
@@ -1111,6 +1113,7 @@ void dwc3_set_mode(struct dwc3 *dwc, u32 mode);
 int dwc3_soft_reset(struct dwc3 *dwc);
 int dwc3_event_buffers_setup(struct dwc3 *dwc);
 void dwc3_event_buffers_cleanup(struct dwc3 *dwc);
+void dwc3_link_status_check(struct dwc3 *dwc);
 int dwc3_phy_setup(struct dwc3 *dwc);
 int dwc3_core_init(struct dwc3 *dwc);
 void dwc3_core_exit(struct dwc3 *dwc);
