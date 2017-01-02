@@ -2330,12 +2330,17 @@ static int dw_mci_command_complete(struct dw_mci *host, struct mmc_command *cmd)
 		}
 	}
 
-	if (status & SDMMC_INT_RTO)
-		cmd->error = -ETIMEDOUT;
-	else if ((cmd->flags & MMC_RSP_CRC) && (status & SDMMC_INT_RCRC))
+	if (status & (SDMMC_INT_RTO | SDMMC_INT_RESP_ERR)) {
+		cmd->resp[0] = 0;
+		cmd->resp[1] = 0;
+		cmd->resp[2] = 0;
+		cmd->resp[3] = 0;
+		if (status & SDMMC_INT_RTO)
+			cmd->error = -ETIMEDOUT;
+		else if (status & SDMMC_INT_RESP_ERR)
+			cmd->error = -EIO;
+	} else if ((cmd->flags & MMC_RSP_CRC) && (status & SDMMC_INT_RCRC))
 		cmd->error = -EILSEQ;
-	else if (status & SDMMC_INT_RESP_ERR)
-		cmd->error = -EIO;
 	else
 		cmd->error = 0;
 
