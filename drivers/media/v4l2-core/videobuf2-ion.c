@@ -65,6 +65,15 @@ struct vb2_ion_buf {
 #define ctx_cached(ctx) (!(ctx->flags & VB2ION_CTX_UNCACHED))
 #define ctx_iommu(ctx) (!!(ctx->flags & VB2ION_CTX_IOMMU))
 
+static bool vb2_ion_dma_is_coherent(struct vb2_ion_context *ctx,
+				    enum dma_data_direction dir)
+{
+	if (!(ctx->flags & VB2ION_CTX_COHERENT_DMA))
+		return false;
+	return (dir != DMA_TO_DEVICE) ||
+			!(ctx->flags & VB2ION_CTX_UNCACHED_READ_DMA);
+}
+
 static int get_iommu_prot(struct vb2_ion_context *ctx,
 			  enum dma_data_direction dir)
 {
@@ -77,7 +86,7 @@ static int get_iommu_prot(struct vb2_ion_context *ctx,
 	else
 		prot = IOMMU_READ | IOMMU_WRITE;
 
-	if (!!(ctx->flags & VB2ION_CTX_COHERENT_DMA))
+	if (vb2_ion_dma_is_coherent(ctx, dir))
 		prot |= IOMMU_CACHE;
 
 	return prot;
@@ -829,7 +838,7 @@ void vb2_ion_sync_for_device(void *cookie, off_t offset, size_t size,
 	struct vb2_ion_buf *buf = container_of(cookie,
 					struct vb2_ion_buf, cookie);
 
-	if (!!(buf->ctx->flags & VB2ION_CTX_COHERENT_DMA))
+	if (vb2_ion_dma_is_coherent(buf->ctx, dir))
 		return;
 
 	dev_dbg(buf->ctx->dev, "syncing for device, dmabuf: %p, kva: %p, "
@@ -862,7 +871,7 @@ void vb2_ion_sync_for_cpu(void *cookie, off_t offset, size_t size,
 	struct vb2_ion_buf *buf = container_of(cookie,
 					struct vb2_ion_buf, cookie);
 
-	if (!!(buf->ctx->flags & VB2ION_CTX_COHERENT_DMA))
+	if (vb2_ion_dma_is_coherent(buf->ctx, dir))
 		return;
 
 	dev_dbg(buf->ctx->dev, "syncing for cpu, dmabuf: %p, kva: %p, "
