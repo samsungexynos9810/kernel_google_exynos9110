@@ -908,7 +908,7 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
 			unsigned int left = length;
 #if defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
                         if (!PageAnon(sg_page(&data->sg[i]))) {
-                              if (sg_page(&data->sg[i])->mapping && sg_page(&data->sg[i])->mapping->key && \
+                              if (sg_page(&data->sg[i])->mapping && sg_page(&data->sg[i])->mapping->use_fmp && \
                                               !sg_page(&data->sg[i])->mapping->plain_text) {
                                         if ((unsigned int)sg_page(&data->sg[i])->index >= 2) {
                                                 sector_key |= DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
