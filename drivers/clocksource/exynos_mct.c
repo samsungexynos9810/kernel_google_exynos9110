@@ -362,7 +362,7 @@ static void exynos4_mct_tick_stop(struct mct_clock_event_device *mevt, int force
 
 	if (force || !clockevent_state_periodic(&mevt->evt)) {
 		tmp = readl_relaxed(reg_base + mevt->base + MCT_L_TCON_OFFSET);
-		tmp &= ~(MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START);
+		tmp &= ~(MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START | MCT_L_TCON_INTERVAL_MODE);
 		exynos4_mct_write(tmp, mevt->base + MCT_L_TCON_OFFSET);
 	}
 }
@@ -380,8 +380,7 @@ static void exynos4_mct_tick_start(unsigned long cycles, int periodic,
 	/* enable MCT tick interrupt */
 	exynos4_mct_write(0x1, mevt->base + MCT_L_INT_ENB_OFFSET);
 
-	tmp = readl_relaxed(reg_base + mevt->base + MCT_L_TCON_OFFSET);
-	tmp |= MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START;
+	tmp = MCT_L_TCON_INT_START | MCT_L_TCON_TIMER_START;
 
 	if (periodic)
 		tmp |= MCT_L_TCON_INTERVAL_MODE;
