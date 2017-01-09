@@ -87,7 +87,7 @@
 #define FROM_CPU_MAY 			(3)
 #define FROM_M_NODE 			(4)
 
-#define CP_COMMON_STR			"CP"
+#define CP_COMMON_STR			"CP_"
 #define CP_MEM_STR			"CP_MEM"
 #define CP_PERI_STR			"CP_PERI"
 
@@ -684,7 +684,16 @@ static void itmon_post_handler_by_master(struct itmon_dev *itmon,
 	if (!traceinfo->port || strlen(traceinfo->port) < 1)
 		return;
 
-	if (!strncmp(traceinfo->port, CP_COMMON_STR, strlen(CP_COMMON_STR))) {
+	if (!strncmp(traceinfo->port, "CPU", strlen("CPU"))) {
+		/* if master is CPU, then we expect any exception */
+		if (pdata->err_cnt > PANIC_ALLOWED_THRESHOLD) {
+			pdata->err_cnt = 0;
+			itmon_init(itmon, false);
+			pr_info("ITMON is turn-off when CPU transaction is detected repeatly\n");
+		} else {
+			pr_info("ITMON skips CPU transaction detected\n");
+		}
+	} else if (!strncmp(traceinfo->port, CP_COMMON_STR, strlen(CP_COMMON_STR))) {
 		/* if master is DSP and operation is read, we don't care this */
 		if (traceinfo->master && traceinfo->target_addr == INVALID_REMAPPING &&
 			!strncmp(traceinfo->master, "CR4MtoL2", strlen(traceinfo->master))) {
@@ -697,15 +706,6 @@ static void itmon_post_handler_by_master(struct itmon_dev *itmon,
 			pdata->crash_in_progress = true;
 			ss310ap_force_crash_exit_ext();
 #endif
-		}
-	} else if (!strncmp(traceinfo->port, "CPU", strlen("CPU"))) {
-		/* if master is CPU, then we expect any exception */
-		if (pdata->err_cnt > PANIC_ALLOWED_THRESHOLD) {
-			pdata->err_cnt = 0;
-			itmon_init(itmon, false);
-			pr_info("ITMON is turn-off when CPU transaction is detected repeatly\n");
-		} else {
-			pr_info("ITMON skips CPU transaction detected\n");
 		}
 	}
 }
