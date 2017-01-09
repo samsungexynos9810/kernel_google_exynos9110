@@ -108,6 +108,8 @@ static DEFINE_PER_CPU(unsigned long, hrtimer_interrupts_saved);
 #endif
 #ifdef CONFIG_HARDLOCKUP_DETECTOR_OTHER_CPU
 static cpumask_t __read_mostly watchdog_cpus;
+ATOMIC_NOTIFIER_HEAD(hardlockup_notifier_list);
+EXPORT_SYMBOL(hardlockup_notifier_list);
 #endif
 #ifdef CONFIG_HARDLOCKUP_DETECTOR_NMI
 static DEFINE_PER_CPU(struct perf_event *, watchdog_ev);
@@ -358,6 +360,7 @@ static void watchdog_check_hardlockup_other_cpu(void)
 
 		if (hardlockup_panic) {
 			exynos_ss_set_hardlockup(hardlockup_panic);
+			atomic_notifier_call_chain(&hardlockup_notifier_list, 0, (void *)&next_cpu);
 			panic("Watchdog detected hard LOCKUP on cpu %u", next_cpu);
 		} else {
 			WARN(1, "Watchdog detected hard LOCKUP on cpu %u", next_cpu);
