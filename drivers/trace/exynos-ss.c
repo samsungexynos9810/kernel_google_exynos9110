@@ -296,6 +296,7 @@ struct exynos_ss_log {
 		unsigned long long mct_cycle;
 		int64_t	delta_ns;
 		ktime_t	next_event;
+		void *caller[ESS_CALLSTACK_MAX_NUM];
 	} clockevent[ESS_NR_CPUS][ESS_LOG_MAX_NUM];
 
 	struct printkl_log {
@@ -2805,7 +2806,7 @@ void exynos_ss_clockevent(unsigned long long clc, int64_t delta, void *next_even
 		return;
 	{
 		int cpu = get_current_cpunum();
-		unsigned i;
+		unsigned i, j;
 
 		i = atomic_inc_return(&ess_idx.clockevent_log_idx[cpu]) &
 			(ARRAY_SIZE(ess_log->clockevent[0]) - 1);
@@ -2814,6 +2815,11 @@ void exynos_ss_clockevent(unsigned long long clc, int64_t delta, void *next_even
 		ess_log->clockevent[cpu][i].mct_cycle = clc;
 		ess_log->clockevent[cpu][i].delta_ns = delta;
 		ess_log->clockevent[cpu][i].next_event = *((ktime_t *)next_event);
+
+		for (j = 0; j < ess_desc.callstack; j++) {
+			ess_log->clockevent[cpu][i].caller[j] =
+				(void *)((size_t)return_address(j + 1));
+		}
 	}
 }
 
