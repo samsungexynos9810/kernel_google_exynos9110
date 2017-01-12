@@ -451,8 +451,8 @@ static struct itmon_nodeinfo data_core[] = {
 	{M_NODE,	"G3D1",		0x14A53000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D2",		0x14A63000, NULL, 0,	false, false, true, false},
 	{M_NODE,	"G3D3",		0x14A73000, NULL, 0,	false, false, true, false},
-	{S_NODE,	"DREX",		0x14A93000, NULL, TMOUT, true, true, true, false},
-	{S_NODE,	"DREX",		0x14AA3000, NULL, TMOUT, true, true, true, false},
+	{S_NODE,	"DREX",		0x14A93000, NULL, TMOUT, true, false, true, false},
+	{S_NODE,	"DREX",		0x14AA3000, NULL, TMOUT, true, false, true, false},
 };
 
 static struct itmon_nodeinfo peri_core_0[] = {
@@ -721,7 +721,6 @@ static void itmon_report_timeout(struct itmon_dev *itmon,
 	int i, num = (trans_type == TRANS_TYPE_READ ? SZ_128 : SZ_64);
 	int fz_offset = (trans_type == TRANS_TYPE_READ ? 0 : REG_TMOUT_BUF_WR_OFFSET);
 
-	pr_info("      TIMEOUT_BUFFER Information\n\n");
 	pr_info("      > NUM|   BLOCK|  MASTER|   VALID| TIMEOUT|      ID| PAYLOAD|\n");
 
 	for (i = 0; i < num; i++) {
@@ -735,11 +734,11 @@ static void itmon_report_timeout(struct itmon_dev *itmon,
 		/* ID[5:0] 6bit : R-PATH */
 		axid = id & GENMASK(5, 0);
 		/* PAYLOAD[15:8] : USER */
-		user = payload & GENMASK(15, 8) >> 8;
+		user = (payload & GENMASK(15, 8)) >> 8;
 		/* PAYLOAD[0] : Valid or Not valid */
 		valid = payload & BIT(0);
 		/* PAYLOAD[19:16] : Timeout */
-		timeout = payload & GENMASK(19, 16) >> 16;
+		timeout = (payload & GENMASK(19, 16)) >> 16;
 
 		port = (struct itmon_rpathinfo *)
 				itmon_get_rpathinfo(itmon, axid, "DREX");
@@ -813,10 +812,6 @@ static void itmon_report_traceinfo(struct itmon_dev *itmon,
 			"--------------------------------------------------------------------------\n",
 			itmon_pathtype[group->bus_type]);
 
-		/* timeout freezing result */
-		if (node->type == S_NODE && node->tmout_frz_enabled &&
-			traceinfo->errcode == ERRCODE_TMOUT)
-			itmon_report_timeout(itmon, node, trans_type);
 	} else {
 		pr_info("--------------------------------------------------------------------------\n");
 	}
@@ -869,7 +864,6 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 	struct itmon_platdata *pdata = itmon->pdata;
 	struct itmon_tracedata *tracedata = &node->tracedata;
 	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
-	struct itmon_nodegroup *group = node->group;
 	struct itmon_masterinfo *master;
 	struct itmon_rpathinfo *port;
 	unsigned int errcode, axid;
@@ -983,14 +977,6 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 		break;
 	case T_S_NODE:
 	case T_M_NODE:
-		/* Data Path */
-		if (!strncmp(group->name, "DATA_CORE", strlen("DATA_CORE"))
-			&& node->type == T_M_NODE) {
-			/* Exception Situation - DREX PATH */
-			traceinfo->dest = "DREX";
-			traceinfo->errcode = errcode;
-			traceinfo->dirty = true;
-		}
 		itmon_report_pathinfo(itmon, node, trans_type);
 		break;
 	default:
@@ -999,10 +985,15 @@ static void itmon_report_tracedata(struct itmon_dev *itmon,
 	}
 }
 
-static void itmon_report_rawdata(struct itmon_dev *itmon, struct itmon_nodeinfo *node)
+static void itmon_report_rawdata(struct itmon_dev *itmon,
+				 struct itmon_nodeinfo *node,
+				 unsigned int trans_type)
 {
+	struct itmon_platdata *pdata = itmon->pdata;
+	struct itmon_traceinfo *traceinfo = &pdata->traceinfo[trans_type];
 	struct itmon_tracedata *tracedata = &node->tracedata;
 
+	/* Output Raw register information */
 	pr_info("      > %s(%s, 0x%08X)\n"
 		"      > REG(0x08~0x18) : 0x%08X, 0x%08X, 0x%08X, 0x%08X\n",
 		node->name, itmon_nodestring[node->type],
@@ -1011,6 +1002,11 @@ static void itmon_report_rawdata(struct itmon_dev *itmon, struct itmon_nodeinfo 
 		tracedata->ext_info_0,
 		tracedata->ext_info_1,
 		tracedata->ext_info_2);
+
+	/* If node is to DREX S_NODE, Outputing timeout freezing result */
+	if (!strncmp(node->name, "DREX", strlen(node->name)) && node->type == S_NODE
+		&& traceinfo->errcode == ERRCODE_TMOUT)
+		itmon_report_timeout(itmon, node, trans_type);
 }
 
 static void itmon_route_tracedata(struct itmon_dev *itmon)
@@ -1041,7 +1037,7 @@ static void itmon_route_tracedata(struct itmon_dev *itmon)
 		for (i = M_NODE; i < NODE_TYPE; i++) {
 			list_for_each_entry_safe(node, next_node, &pdata->tracelist[trans_type], list) {
 				if (i == node->type) {
-					itmon_report_rawdata(itmon, node);
+					itmon_report_rawdata(itmon, node, trans_type);
 					/* clean up */
 					list_del(&node->list);
 					kfree(node);
