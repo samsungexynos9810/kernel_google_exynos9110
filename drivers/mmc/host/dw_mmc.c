@@ -44,6 +44,8 @@
 #include <soc/samsung/exynos-pm.h>
 #include <soc/samsung/exynos-powermode.h>
 
+#include <crypto/fmp.h>
+
 #include "dw_mmc.h"
 #include "dw_mmc-exynos.h"
 #include "../card/queue.h"
@@ -74,7 +76,7 @@ void dw_mci_ciu_reset(struct device *dev, struct dw_mci *host);
 static bool dw_mci_ctrl_reset(struct dw_mci *host, u32 reset);
 
 extern int fmp_mmc_map_sg(struct dw_mci *host, struct idmac_desc_64addr *desc, int idx,
-			uint32_t sector_key, uint32_t sector, struct mmc_data *data);
+			int enc_mode, uint32_t sector, struct mmc_data *data);
 static void dw_mci_request_end(struct dw_mci *host, struct mmc_request *mrq);
 static struct workqueue_struct *pm_workqueue;
 #if defined(CONFIG_MMC_DW_DEBUG)
@@ -872,6 +874,35 @@ static void dw_mci_translate_sglist(struct dw_mci *host, struct mmc_data *data,
 }
 
 #if defined(CONFIG_FMP_MMC)
+#if defined(CONFIG_MMC_DW_FMP_DM_CRYPT)
+static void get_enc_mode_from_bio(struct bio *bio, int *enc_mode)
+{
+	if (!bio)
+		return;
+	if (bio->private_enc_mode == FMP_DISK_ENC_MODE)
+		*enc_mode |= MMC_DISK_ENC_MODE;
+	return;
+}
+#endif
+
+static void get_enc_mode_from_page(struct page *page, int *enc_mode)
+{
+	/* Anonymous page */
+	if (!page || PageAnon(page))
+		return;
+
+	if (!page->mapping)
+		return;
+
+#if defined(CONFIG_DW_MMC_FMP_ECRYPT_FS)
+	if (page->mapping->plain_text || page->index < 2)
+		return;
+#endif
+	if (page->mapping->private_enc_mode == FMP_FILE_ENC_MODE)
+		*enc_mode |= MMC_FILE_ENC_MODE;
+	return;
+}
+
 static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_data *data,
 				    unsigned int sg_len)
 {
@@ -882,7 +913,7 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
 	if (host->dma_64bit_address == 1) {
 		struct idmac_desc_64addr *desc_first, *desc_last, *desc;
 		unsigned int sector = 0;
-		unsigned int sector_key = DW_MMC_BYPASS_SECTOR_BEGIN;
+		unsigned int enc_mode = 0;
 #if defined(CONFIG_MMC_DW_FMP_DM_CRYPT)
                 struct mmc_queue_req *mq_rq = NULL;
                 struct mmc_blk_request *brq = NULL;
@@ -892,11 +923,10 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
                         brq = container_of(data, struct mmc_blk_request, data);
                         if (brq) {
                                 mq_rq = container_of(brq, struct mmc_queue_req, brq);
+				get_enc_mode_from_bio(mq_rq->req->bio, &enc_mode);
+				if (enc_mode)
+					rw_size = DW_MMC_SECTOR_SIZE;
                                 sector = mq_rq->req->bio->bi_iter.bi_sector;
-                                rw_size = (mq_rq->req->bio->bi_sensitive_data == 1) ?
-                                        DW_MMC_SECTOR_SIZE : DW_MMC_MAX_TRANSFER_SIZE;
-                                sector_key = (mq_rq->req->bio->bi_sensitive_data == 1) ?
-                                        DW_MMC_ENCRYPTION_SECTOR_BEGIN : DW_MMC_BYPASS_SECTOR_BEGIN;
                         }
                 }
 #endif
@@ -906,31 +936,8 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
 			unsigned int length = sg_dma_len(&data->sg[i]);
 			u64 mem_addr = sg_dma_address(&data->sg[i]);
 			unsigned int left = length;
-#if defined(CONFIG_MMC_DW_FMP_ECRYPT_FS)
-                        if (!PageAnon(sg_page(&data->sg[i]))) {
-                              if (sg_page(&data->sg[i])->mapping && sg_page(&data->sg[i])->mapping->use_fmp && \
-                                              !sg_page(&data->sg[i])->mapping->plain_text) {
-                                        if ((unsigned int)sg_page(&data->sg[i])->index >= 2) {
-                                                sector_key |= DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-                                                rw_size = DW_MMC_SECTOR_SIZE;
-                                        } else
-                                                sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-                                } else
-                                        sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-                        } else {
-                                sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-                        }
-#elif defined(CONFIG_MMC_DW_FMP_EXT4CRYPT_FS)
-                        if (!PageAnon(sg_page(&data->sg[i]))) {
-				if (((uint64_t)(sg_page(&data->sg[i])->mapping)) &&
-						((unsigned int)(sg_page(&data->sg[i])->mapping->use_fmp))) {
-					sector_key |= DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-					rw_size = DW_MMC_SECTOR_SIZE;
-				} else
-					sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-			} else
-                                sector_key &= ~DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN;
-#endif
+
+			get_enc_mode_from_page(sg_page(&data->sg[i]), &enc_mode);
 			for (j = 0; j < (length + rw_size + 1) / rw_size; j++) {
 				desc_len = (left <= rw_size) ? left : rw_size;
 
@@ -948,13 +955,13 @@ static void dw_mci_translate_sglist_with_fmp(struct dw_mci *host, struct mmc_dat
 				desc->des4 = mem_addr & 0xffffffff;
 				desc->des5 = mem_addr >> 32;
 
-				if (sector_key == DW_MMC_BYPASS_SECTOR_BEGIN) {
+				if (!enc_mode) {
 					IDMAC_SET_DAS(desc, CLEAR);
 					IDMAC_SET_FAS(desc, CLEAR);
 				} else {
 					int ret;
 
-					ret = fmp_mmc_map_sg(host, desc, i, sector_key, sector, data);
+					ret = fmp_mmc_map_sg(host, desc, i, enc_mode, sector, data);
 					if (ret) {
 						dev_err(host->dev, "Failed to make mmc fmp descriptor. ret = 0x%x\n", ret);
 						host->mrq->cmd->error = -ENOKEY;

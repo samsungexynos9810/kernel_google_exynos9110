@@ -219,9 +219,8 @@ extern void dw_mci_reg_dump(struct dw_mci *host);
 #define DWMCI_MPSECURITY_DESCTYPE(type) 	((type & 0x3) << 19)
 
 /* FMP configuration */
-#define DW_MMC_BYPASS_SECTOR_BEGIN		0x0
-#define DW_MMC_ENCRYPTION_SECTOR_BEGIN		0x0000FFFF
-#define DW_MMC_FILE_ENCRYPTION_SECTOR_BEGIN	0xFFFF0000
+#define MMC_DISK_ENC_MODE		(1 << 0)
+#define MMC_FILE_ENC_MODE		(1 << 1)
 
 /* HWACG Control */
 #define MMC_HWACG_CONTROL			BIT(4)
