@@ -157,8 +157,6 @@ void panic(const char *fmt, ...)
 
 	kmsg_dump(KMSG_DUMP_PANIC);
 
-	exynos_cs_show_pcval();
-
 	exynos_ss_post_panic();
 
 	/*
